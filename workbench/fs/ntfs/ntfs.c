@@ -1,7 +1,7 @@
 /*
  * ntfs.handler - New Technology FileSystem handler
  *
- * Copyright (C) 2012-2025 The AROS Development Team
+ * Copyright (C) 2012-2026 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -24,6 +24,7 @@
 
 #include <clib/macros.h>
 
+#include <stddef.h>
 #include <string.h>
 #include <ctype.h>
 
@@ -276,13 +277,15 @@ IPTR ReadMFTAttribData(struct NTFSMFTAttr *at, struct MFTAttr *attrentry, UBYTE 
     rle = &runlist_entry;
     rle->attr = at;
 
-    if (AROS_LE2LONG(attrentry->length) < sizeof(struct MFTAttr)) {
+    if (AROS_LE2LONG(attrentry->length) < (attrentry->residentflag == ATTR_RESIDENT_FORM
+        ? offsetof(struct MFTAttr, data.resident.reserved) + 1
+        : offsetof(struct MFTAttr, data.non_resident.actual_size))) {
         D(bug("[NTFS] %s: error - invalid attribute length\n", __func__));
         return ~0;
     }
 
     if (attrentry->residentflag == ATTR_RESIDENT_FORM) {
-        ULONG value_offset = AROS_LE2LONG(attrentry->data.resident.value_offset);
+        ULONG value_offset = AROS_LE2WORD(attrentry->data.resident.value_offset);
         ULONG value_length = AROS_LE2LONG(attrentry->data.resident.value_length);
 
         D(bug("[NTFS] %s: ATTR_RESIDENT_FORM\n", __func__));
@@ -388,120 +391,34 @@ IPTR ReadMFTAttribData(struct NTFSMFTAttr *at, struct MFTAttr *attrentry, UBYTE 
     }
 
     if (!(rle->flags & RLEFLAG_COMPR)) {
-        D(bug("[NTFS] %s: ## Uncompressed\n", __func__));
-
-        if (!(at->mft->data->cluster_sectors & 0x1)) {
-            unsigned int sectbits_shift = ilog2(at->mft->data->cluster_sectors);
-            ULONG blocksize = 1 << (sectbits_shift + SECTORSIZE_SHIFT);
-            UBYTE *buf = dest;
-
-            UQUAD i, blockcnt = ((len + ofs) + blocksize - 1) >> (sectbits_shift + SECTORSIZE_SHIFT);
-
-            D(
-                bug("[NTFS] %s: blockcnt = %u\n", __func__, (IPTR)blockcnt);
-                bug("[NTFS] %s: blocksize = %u\n", __func__, blocksize);
-            )
-
-            for (i = ofs >> (sectbits_shift + SECTORSIZE_SHIFT); i < blockcnt; i++) {
-                UQUAD blockstart;
-                UQUAD blockoff = ofs & (blocksize - 1);
-                UQUAD blockend = blocksize;
-                UQUAD skipfirst = 0;
-
-                D(
-                    bug("[NTFS] %s: blockoff = %u\n", __func__, (IPTR)blockoff);
-                    bug("[NTFS] %s: blockend = %u\n", __func__, (IPTR)blockend);
-                )
-
-                if (i >= rle->next_vcn) {
-                    if (ReadNTFSRunList(rle)) {
-                        D(bug("[NTFS] %s: failed to read run list!\n", __func__));
-                        return -1;
-                    }
-
-                    blockstart = rle->curr_lcn;
-                } else {
-                    blockstart = (rle->flags & RLEFLAG_SPARSE) ? 0 : (i - rle->curr_vcn + rle->curr_lcn);
-                }
-
-                blockstart = blockstart << sectbits_shift;
-
-                /* Last block.  */
-                if (i == (blockcnt - 1)) {
-                    D(bug("[NTFS] %s: last block.. \n", __func__));
-
-                    blockend = (len + ofs) & (blocksize - 1);
-
-                    /* The last portion is exactly blocksize.  */
-                    if (! blockend)
-                        blockend = blocksize;
-                }
-
-                /* First block.  */
-                if (i == (ofs >> (sectbits_shift + SECTORSIZE_SHIFT))) {
-                    D(bug("[NTFS] %s: first block.. \n", __func__));
-
-                    skipfirst = blockoff;
-                    blockend -= skipfirst;
-                }
-
-                /* If the block number is 0 this block is not stored on disk but is zero filled instead.  */
-
-                D(
-                    bug("[NTFS] %s: blockstart = %u\n", __func__, (IPTR)blockstart);
-                    bug("[NTFS] %s: blockend = %u\n", __func__, (IPTR)blockend);
-                    bug("[NTFS] %s: skipfirst = %u\n", __func__, (IPTR)skipfirst);
-                )
-
-                if (blockstart) {
-                    UQUAD blocknr, skipblocks = skipfirst >> SECTORSIZE_SHIFT, lastblock = ((blockend + skipfirst) >> SECTORSIZE_SHIFT);
-                    APTR blockbuf, bufstart = buf;
-                    IPTR copysize;
-
-                    if (lastblock == 0)
-                        lastblock = 1;
-
-                    for (blocknr = skipblocks; blocknr < lastblock; blocknr++) {
-                        D(bug("[NTFS] %s: block %u\n", __func__, (IPTR)blocknr));
-                        if (blocknr >= (skipfirst >> SECTORSIZE_SHIFT)) {
-                            D(bug("[NTFS] %s: reading ..\n", __func__));
-
-                            if ((at->mft->cblock = Cache_GetBlock(at->mft->data->cache, at->mft->data->first_device_sector + blockstart + blocknr, &at->mft->cbuf)) == NULL) {
-                                D(bug("[NTFS] %s: read failed\n", __func__));
-                                return IoErr();
-                            }
-
-                            D(bug("[NTFS] %s: cbuf @ 0x%p\n", __func__, at->mft->cbuf));
-
-                            if (blocknr == (lastblock - 1) && (blockend & (at->mft->data->sectorsize - 1)))
-                                copysize = (blockend & (at->mft->data->sectorsize - 1));
-                            else
-                                copysize = at->mft->data->sectorsize;
-
-                            if ((blocknr << SECTORSIZE_SHIFT) < skipfirst) {
-                                blockbuf = at->mft->cbuf + (skipfirst & (at->mft->data->sectorsize - 1));
-
-                                copysize -= (skipfirst & (at->mft->data->sectorsize - 1));
-                            } else {
-                                blockbuf = at->mft->cbuf;
-                            }
-
-                            if (copysize > 0) {
-                                D(bug("[NTFS] %s: copying %u bytes from 0x%p -> 0x%p\n", __func__, copysize, blockbuf, bufstart));
-                                CopyMem(blockbuf, bufstart, copysize);
-                            }
-                            bufstart +=copysize;
-
-                            Cache_FreeBlock(at->mft->data->cache, at->mft->cblock);
-                            at->mft->cblock = NULL;
-                        }
-                    }
-                } else
-                    memset (buf, 0, blockend);
-
-                buf += blocksize - skipfirst;
+        ULONG remaining = len;
+        while (remaining != 0) {
+            UQUAD sector = ofs >> SECTORSIZE_SHIFT;
+            UQUAD vcn = sector / at->mft->data->cluster_sectors;
+            ULONG offset = ofs & (at->mft->data->sectorsize - 1);
+            ULONG copy = at->mft->data->sectorsize - offset;
+            if (copy > remaining)
+                copy = remaining;
+            while (vcn >= rle->next_vcn)
+                if (ReadNTFSRunList(rle))
+                    return ERROR_OBJECT_WRONG_TYPE;
+            if (rle->flags & RLEFLAG_SPARSE) {
+                memset(dest, 0, copy);
+            } else {
+                UQUAD cluster = vcn - rle->curr_vcn + rle->curr_lcn;
+                UQUAD block = cluster * at->mft->data->cluster_sectors +
+                    sector % at->mft->data->cluster_sectors;
+                at->mft->cblock = Cache_GetBlock(at->mft->data->cache,
+                    at->mft->data->first_device_sector + block, &at->mft->cbuf);
+                if (at->mft->cblock == NULL)
+                    return IoErr() ? IoErr() : ERROR_UNKNOWN;
+                CopyMem(at->mft->cbuf + offset, dest, copy);
+                Cache_FreeBlock(at->mft->data->cache, at->mft->cblock);
+                at->mft->cblock = NULL;
             }
-
+            dest += copy;
+            ofs += copy;
+            remaining -= copy;
         }
         return 0;
     }
