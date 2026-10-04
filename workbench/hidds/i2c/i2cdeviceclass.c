@@ -4,6 +4,7 @@
     Desc: PCI device class
 */
 
+#include <exec/memory.h>
 #include <exec/types.h>
 #include <hidd/i2c.h>
 #include <oop/oop.h>
@@ -87,27 +88,29 @@ BOOL METHOD(I2CDev, Hidd_I2CDevice, WriteByte)
     return I2C_WriteRead(dev->driver, o, buff, 2, NULL, 0);
 }
 
+/*
+ * The sub-address and the data as one write, so the bus driver's WriteRead
+ * carries it: a controller that runs whole transactions implements only
+ * that, and on a bit-banged bus the base class produces the same start,
+ * address, bytes and stop as before, now under the bus lock throughout.
+ */
 BOOL METHOD(I2CDev, Hidd_I2CDevice, WriteBytes)
 {
     tDevData *dev = (tDevData *)OOP_INST_DATA(cl, o);
-    BOOL r = TRUE;
     ULONG nWrite = msg->length;
-    UBYTE *WriteBuffer = msg->data;
-    
-    if (nWrite > 0)
-    {
-        if ((r = I2C_Address(dev->driver, o, dev->address & ~1)))
-        {
-            if ((r = I2C_PutByte(dev->driver, o, msg->subaddr)))
-            {
-                for (; nWrite > 0; WriteBuffer++, nWrite--)
-                    if (!(r = I2C_PutByte(dev->driver, o, *WriteBuffer)))
-                        break;
-            }
-            
-            I2C_Stop(dev->driver, o);
-        }
-    }
+    UBYTE *buffer;
+    BOOL r;
+
+    if (nWrite == 0)
+        return TRUE;
+
+    buffer = AllocVec(nWrite + 1, MEMF_ANY);
+    if (!buffer)
+        return FALSE;
+    buffer[0] = msg->subaddr;
+    CopyMem(msg->data, buffer + 1, nWrite);
+    r = I2C_WriteRead(dev->driver, o, buffer, nWrite + 1, NULL, 0);
+    FreeVec(buffer);
 
     return r;
 }
@@ -124,32 +127,21 @@ BOOL METHOD(I2CDev, Hidd_I2CDevice, WriteWord)
     return I2C_WriteRead(dev->driver, o, buff, 2, NULL, 0);
 }
 
+/*
+ * Each <register, value> pair as its own write through WriteRead, for the
+ * same reason as WriteBytes. The pairs were joined by repeated starts with
+ * one stop at the end; now each ends with a stop, which a register write
+ * does not depend on, and each is atomic on the bus.
+ */
 BOOL METHOD(I2CDev, Hidd_I2CDevice, WriteVec)
 {
     tDevData *dev = (tDevData *)OOP_INST_DATA(cl, o);
     BOOL r = TRUE;
-    int s = 0;
     ULONG nValues = msg->length;
     UBYTE *vec = msg->data;
-    
-    if (nValues > 0)
-    {
-        for (; nValues > 0; nValues--, vec+=2)
-        {
-            if (!(r = I2C_Address(dev->driver, o, dev->address & ~1)))
-                break;
-            
-            s++;
-            
-            if (!(r = I2C_PutByte(dev->driver, o, vec[0])))
-                break;
-            
-            if (!(r = I2C_PutByte(dev->driver, o, vec[1])))
-                break;
-        }
-        
-        if (s > 0) I2C_Stop(dev->driver, o);
-    }
+
+    for (; r && nValues > 0; nValues--, vec += 2)
+        r = I2C_WriteRead(dev->driver, o, vec, 2, NULL, 0);
 
     return r;
 }
