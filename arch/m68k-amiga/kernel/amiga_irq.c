@@ -168,7 +168,14 @@ static inline UWORD custom_r(ULONG reg)
             "   jsr     " #handler "\n" \
             "   tst.w   %d0\n"          \
             "   beq     0f\n"           \
-            "   jmp     Exec_6_ExitIntr\n" \
+            /* Leave through the ExitIntr() vector, the way Kickstart's  \
+             * level handlers do: SysBase is pushed above the saved      \
+             * registers and ExitIntr() pops it. A program that          \
+             * SetFunction()s ExitIntr() is then called on every         \
+             * interrupt exit, with the stack it expects. */             \
+            "   move.l  (4).w,%a6\n"    \
+            "   move.l  %a6,%sp@-\n"    \
+            "   jmp     %a6@(-36)\n"    \
             "0:\n" \
             "   movem.l %sp@+,%d0/%d1/%a0/%a1/%a5/%a6\n" \
             "   rte\n" \

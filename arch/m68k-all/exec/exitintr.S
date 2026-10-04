@@ -1,5 +1,5 @@
 /*
-    Copyright © 2012, The AROS Development Team. All rights reserved.
+    Copyright © 2012-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ExitIntr()
@@ -16,9 +16,12 @@
 
         .func AROS_SLIB_ENTRY(ExitIntr,Exec,6)
 AROS_SLIB_ENTRY(ExitIntr,Exec,6):
-        /* At this point, %d0-%d1/%a0-%a1/%a5-%a6 are on
-         * the stack, followed by SR, PC, and an exception frame
+        /* Kickstart's entry contract: the interrupt handler jumped here
+         * through the library vector with SysBase pushed on the stack.
+         * Below it are %d0-%d1/%a0-%a1/%a5-%a6, followed by SR, PC, and
+         * an exception frame.
          */
+        move.l  %sp@+,%a6
 
         /* If we are returning to supervisor mode, just do it.
          * %sp@(4*6) is the SR from the RTE.

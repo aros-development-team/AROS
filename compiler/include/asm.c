@@ -61,6 +61,7 @@ int main(void) {
     DEFINE(SysFlags      , offsetof (struct ExecBase, SysFlags));
     DEFINE(IdleCount     , offsetof (struct ExecBase, IdleCount));
     DEFINE(DispCount     , offsetof (struct ExecBase, DispCount));
+    DEFINE(LaunchPoint   , offsetof (struct ExecBase, ex_LaunchPoint));
 #if !defined(__AROSEXEC_SMP__)
     DEFINE(Quantum       , offsetof (struct ExecBase, Quantum));
     DEFINE(Elapsed       , offsetof (struct ExecBase, Elapsed));

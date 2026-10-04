@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/atomic.h>
@@ -43,7 +43,7 @@ void core_ExitInterrupt(regs_t *regs)
          * Do not disturb task if it's not necessary.
          * Reschedule only if switch pending flag is set. Exit otherwise.
          */
-        if (SysBase->AttnResched & ARF_AttnSwitch)
+        if (SysBase->SysFlags & SFF_AttnSwitch)
         {
             /* Run task scheduling sequence */
             if (core_Schedule())

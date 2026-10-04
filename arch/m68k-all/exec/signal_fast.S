@@ -77,7 +77,8 @@ AROS_SLIB_ENTRY(Signal,Exec,54):
         move.b  ln_Pri(%a1),%d1
         cmp.b   ln_Pri(%a0),%d1
         ble.s   .done
-        bset.b  #7,AttnResched+1(%a6)
+        /* SFF_AttnSwitch is bit 15 of SysFlags: bit 7 of its first byte */
+        bset.b  #7,SysFlags(%a6)
         bne.s   .done
         move.w  #0x8004,0xdff09c
         bra.s   .done

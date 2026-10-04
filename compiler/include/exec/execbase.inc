@@ -2,7 +2,7 @@
 #define EXEC_EXECBASE_H
 
 /*
-    Copyright © 1995-2023, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: structure of exec.library
@@ -146,12 +146,10 @@ struct ExecBase
 #define AFB_MMU     AFB_PRIVATEB
 #define AFF_MMU     AFF_PRIVATEB
 
-/* SysFlags. Private and AROS-specific. */
-#define SFF_SoftInt         (1L<<5)  /* There is a software interrupt pending */
-#define SFF_QuantumOver     (1L<<13) /* Task's time slice is over	      */
-
-/* AttnResched. AmigaOS(tm)-compatible, but private. */
-#define ARF_AttnSwitch      (1L<<7)  /* Delayed task switch pending */
+/* SysFlags. Private; the bits are where Kickstart keeps them. */
+#define SFF_SoftInt         (1L<<13) /* There is a software interrupt pending */
+#define SFF_QuantumOver     (1L<<14) /* Task's time slice is over	      */
+#define SFF_AttnSwitch      (1L<<15) /* Delayed task switch pending */
 
 /* Cache */
 #define CACRF_EnableI       (1L<<0)
