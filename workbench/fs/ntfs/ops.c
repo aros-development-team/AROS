@@ -1,7 +1,7 @@
 /*
  * ntfs.handler - New Technology FileSystem handler
  *
- * Copyright (C) 2012-2025 The AROS Development Team
+ * Copyright (C) 2012-2026 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -159,6 +159,11 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, LONG ac
         return ERROR_REQUIRED_ARG_MISSING;
     }
 
+#if defined(NTFS_READONLY)
+    if (action == ACTION_FINDOUTPUT)
+        return ERROR_DISK_WRITE_PROTECTED;
+#endif
+
     // no filename means they're trying to open whatever dirlock is (which
     // despite the name may not actually be a dir). since there's already an
     // extant lock, it's never going to be possible to get an exclusive lock,
@@ -308,23 +313,29 @@ LONG OpRead(struct ExtFileLock *lock, UBYTE *data, UQUAD want, UQUAD *read)
         return ERROR_REQUIRED_ARG_MISSING;
     }
 
-    if (want == 0)
+    *read = 0;
+    if (want == 0 || lock->pos >= lock->gl->size)
         return 0;
 
-    if (want + lock->pos > lock->gl->size) {
+    if (want > lock->gl->size - lock->pos) {
         want = lock->gl->size - lock->pos;
         D(bug("[NTFS] %s: full read would take us past end-of-file, adjusted want to %u bytes\n", __func__, (IPTR)want));
     }
 
     INIT_MFTATTRIB(&dataatrr, lock->entry->entry);
     if (MapMFTAttrib (&dataatrr, lock->entry->entry, AT_DATA)) {
-        if (ReadMFTAttrib(&dataatrr, data, lock->pos, want, 0) == 0) {
+        err = ReadMFTAttrib(&dataatrr, data, lock->pos, want, 0);
+        if (err < 0)
+            err = ERROR_OBJECT_WRONG_TYPE;
+        if (err == 0) {
             *read = want;
             lock->pos = lock->pos + want;
             D(bug("[NTFS] %s: read %u bytes, new file pos is %u\n", __func__, (IPTR)want, (IPTR)lock->pos));
         }
-        FreeMFTAttrib(&dataatrr);
+    } else {
+        err = ERROR_OBJECT_WRONG_TYPE;
     }
+    FreeMFTAttrib(&dataatrr);
     return err;
 }
 
