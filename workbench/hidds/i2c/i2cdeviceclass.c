@@ -124,7 +124,7 @@ BOOL METHOD(I2CDev, Hidd_I2CDevice, WriteWord)
     buff[1] = msg->data >> 8;
     buff[2] = msg->data & 0xff;
     
-    return I2C_WriteRead(dev->driver, o, buff, 2, NULL, 0);
+    return I2C_WriteRead(dev->driver, o, buff, 3, NULL, 0);
 }
 
 /*
