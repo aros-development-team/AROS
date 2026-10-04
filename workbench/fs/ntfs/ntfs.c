@@ -50,7 +50,7 @@ extern struct Globals *glob;
 /* Validation helper */
 static BOOL ValidateMFTRecord(struct MFTRecordEntry *record, ULONG expected_size)
 {
-    if (record == NULL)
+    if (record == NULL || expected_size < sizeof(*record))
         return FALSE;
 
     if (memcmp(record->header.magic, "FILE", 4) != 0)
@@ -60,25 +60,98 @@ static BOOL ValidateMFTRecord(struct MFTRecordEntry *record, ULONG expected_size
             AROS_LE2LONG(record->bytes_allocated) > expected_size)
         return FALSE;
 
-    if (AROS_LE2WORD(record->attrs_offset) >= AROS_LE2LONG(record->bytes_in_use))
+    if (AROS_LE2LONG(record->bytes_in_use) < sizeof(*record) ||
+        AROS_LE2WORD(record->attrs_offset) < offsetof(struct MFTRecordEntry, reserved) ||
+        AROS_LE2WORD(record->attrs_offset) >= AROS_LE2LONG(record->bytes_in_use))
         return FALSE;
 
     return TRUE;
 }
 
+static BOOL NTFSAttributeFits(struct NTFSMFTAttr *at, struct MFTAttr *attr)
+{
+    UBYTE *base;
+    ULONG record_size, used, offset, length, header_size, value_offset;
+    UQUAD address;
+    if (at == NULL || at->mft == NULL || at->mft->data == NULL || attr == NULL)
+        return FALSE;
+    record_size = at->mft->data->mft_size << SECTORSIZE_SHIFT;
+    address = (UQUAD)(IPTR)attr;
+    base = at->mft->buf;
+    if (base == NULL || address < (UQUAD)(IPTR)base ||
+        address - (UQUAD)(IPTR)base >= record_size)
+        base = (UBYTE *)at->emft_buf;
+    if (base == NULL || address < (UQUAD)(IPTR)base ||
+        address - (UQUAD)(IPTR)base >= record_size ||
+        !ValidateMFTRecord((struct MFTRecordEntry *)base, record_size))
+        return FALSE;
+    used = AROS_LE2LONG(((struct MFTRecordEntry *)base)->bytes_in_use);
+    offset = address - (UQUAD)(IPTR)base;
+    if (offset > used || used - offset < 0x10)
+        return FALSE;
+    length = AROS_LE2LONG(attr->length);
+    header_size = attr->residentflag == ATTR_RESIDENT_FORM ? 0x18 : 0x40;
+    if (attr->residentflag > ATTR_NONRESIDENT_FORM ||
+        length < header_size || length > used - offset)
+        return FALSE;
+    if (attr->attrname_length != 0 &&
+        (AROS_LE2WORD(attr->attrname_offset) < header_size ||
+         AROS_LE2WORD(attr->attrname_offset) > length ||
+         2 * (ULONG)attr->attrname_length > length - AROS_LE2WORD(attr->attrname_offset)))
+        return FALSE;
+    if (attr->residentflag == ATTR_RESIDENT_FORM)
+    {
+        value_offset = AROS_LE2WORD(attr->data.resident.value_offset);
+        if (value_offset < header_size || value_offset > length ||
+            AROS_LE2LONG(attr->data.resident.value_length) > length - value_offset)
+            return FALSE;
+    }
+    else
+    {
+        value_offset = AROS_LE2WORD(attr->data.non_resident.mapping_pairs_offset);
+        if (value_offset < header_size || value_offset >= length)
+            return FALSE;
+    }
+    return TRUE;
+}
+
+static ULONG NTFSListEntryLength(struct MFTAttr *entry, struct MFTAttr *end)
+{
+    UBYTE *p = (UBYTE *)entry;
+    ULONG length;
+    if (p >= (UBYTE *)end || (UBYTE *)end - p < 0x1a)
+        return 0;
+    length = AROS_LE2WORD(*(UWORD *)(p + 4));
+    if (length < 0x1a || length > (UBYTE *)end - p ||
+        (p[6] != 0 && (p[7] < 0x1a || p[7] > length || 2 * (ULONG)p[6] > length - p[7])))
+        return 0;
+    return length;
+}
+
 ULONG PostProcessMFTRecord(struct FSData *fs_data, struct MFTRecordEntry *record, int len, UBYTE *magic)
 {
     UWORD seqarray_len, seqnum;
+    ULONG bytes, offset, count;
     UBYTE *seqarray, *buf;
 
     buf = (UBYTE *)record;
 
     D(bug("[NTFS]: %s(%.4s)\n", __func__, magic));
 
-    if (record == NULL || magic == NULL) {
+    if (record == NULL || magic == NULL || fs_data == NULL) {
         D(bug("[NTFS] %s: NULL pointer passed\n", __func__));
         return ERROR_REQUIRED_ARG_MISSING;
     }
+
+    if (len <= 0 || fs_data->sectorsize < sizeof(struct MFTRecordMSH) ||
+        (ULONG)len > 0xffffffffUL / fs_data->sectorsize)
+        return ERROR_OBJECT_WRONG_TYPE;
+    bytes = (ULONG)len * fs_data->sectorsize;
+    offset = AROS_LE2WORD(record->header.usa_offset);
+    count = AROS_LE2WORD(record->header.usa_count);
+    if (offset < sizeof(struct MFTRecordMSH) || (offset & 1) || offset > bytes ||
+        count < 2 || count > (bytes - offset) / sizeof(UWORD))
+        return ERROR_OBJECT_WRONG_TYPE;
 
     /* Perform post-read MST fixup by applying the sequence array to acquired blocks */
 
@@ -139,23 +212,22 @@ ULONG PreProcessMFTRecord(struct FSData *fs_data, struct MFTRecordEntry *record,
 struct MFTAttr *GetMappingPairPos(UBYTE *mappos, int nn, UQUAD *val, int sig)
 {
     UQUAD pos = 0;
-    UQUAD mask = 1;
 
     D(bug("[NTFS]: %s()\n", __func__));
 
-    if (mappos == NULL || val == NULL || nn < 0) {
+    if (mappos == NULL || val == NULL || nn < 0 || nn > (int)sizeof(UQUAD)) {
         D(bug("[NTFS] %s: invalid parameters\n", __func__));
         return NULL;
     }
 
-    while (nn--) {
-        pos += mask * (*mappos);
-        mappos += 1;
-        mask <<= 8;
+    {
+        int i;
+        for (i = 0; i < nn; i++)
+            pos |= (UQUAD)mappos[i] << (8 * i);
+        if (sig && nn != 0 && nn < (int)sizeof(UQUAD) && (mappos[nn - 1] & 0x80))
+            pos |= (~(UQUAD)0) << (8 * nn);
+        mappos += nn;
     }
-
-    if ((sig) && (pos & (mask >> 1)))
-        pos -= mask;
 
     *val = pos;
     return (struct MFTAttr *)mappos;
@@ -165,16 +237,19 @@ IPTR ReadNTFSRunList(struct NTFSRunLstEntry * rle)
 {
     int len, offs;
     UQUAD val;
-    struct MFTAttr *mappos = (struct MFTAttr *)rle->mappingpair;
+    struct MFTAttr *mappos;
 
     if (rle == NULL || rle->mappingpair == NULL) {
         D(bug("[NTFS] %s: NULL runlist entry or mapping pair\n", __func__));
         return ~0;
     }
 
+    mappos = (struct MFTAttr *)rle->mappingpair;
     D(bug("[NTFS]: %s(mappos @ 0x%p)\n", __func__, mappos));
 
 retry:
+    if (rle->mappingend == NULL || (UBYTE *)mappos >= rle->mappingend)
+        return ~0;
     len = (*(UBYTE *)mappos & 0xF);
     offs = (*(UBYTE *)mappos >> 4);
 
@@ -195,7 +270,10 @@ retry:
                     return ~0;
                 }
 
-                mappos = (struct MFTAttr *)(IPTR)((IPTR)mappos + AROS_LE2WORD(mappos->data.non_resident.mapping_pairs_offset));
+                if (!NTFSAttributeFits(rle->attr, mappos))
+                    return ~0;
+                rle->mappingend = (UBYTE *)mappos + AROS_LE2LONG(mappos->length);
+                mappos = (struct MFTAttr *)((UBYTE *)mappos + AROS_LE2WORD(mappos->data.non_resident.mapping_pairs_offset));
                 rle->curr_lcn = 0;
                 goto retry;
             }
@@ -203,12 +281,18 @@ retry:
         D(bug("[NTFS] %s: run list overflow\n", __func__));
         return ~0;
     }
+    if (len > (int)sizeof(UQUAD) || offs > (int)sizeof(UQUAD) ||
+        (ULONG)(1 + len + offs) > (ULONG)(rle->mappingend - (UBYTE *)mappos))
+        return ~0;
+
     // current VCN  length
     mappos = GetMappingPairPos((UBYTE *)mappos + 1, len, &val, 0);
     if (mappos == NULL) {
         D(bug("[NTFS] %s: GetMappingPairPos failed for VCN\n", __func__));
         return ~0;
     }
+    if (val == 0 || val > ~(UQUAD)0 - rle->next_vcn)
+        return ~0;
     rle->curr_vcn = rle->next_vcn;
     rle->next_vcn = rle->next_vcn + val;
 
@@ -220,11 +304,20 @@ retry:
         D(bug("[NTFS] %s: GetMappingPairPos failed for LCN\n", __func__));
         return ~0;
     }
-    rle->curr_lcn = rle->curr_lcn + val;
+    if (val & ((UQUAD)1 << 63)) {
+        UQUAD distance = (UQUAD)0 - val;
+        if (distance > rle->curr_lcn)
+            return ~0;
+        rle->curr_lcn -= distance;
+    } else {
+        if (val > ~(UQUAD)0 - rle->curr_lcn)
+            return ~0;
+        rle->curr_lcn += val;
+    }
 
     D(bug("[NTFS] %s: curr_lcn = %u\n", __func__, (unsigned int)rle->curr_lcn));
 
-    if (val == 0)
+    if (offs == 0)
         rle->flags |= RLEFLAG_SPARSE;
     else
         rle->flags &= ~RLEFLAG_SPARSE;
@@ -272,14 +365,14 @@ IPTR ReadMFTAttribData(struct NTFSMFTAttr *at, struct MFTAttr *attrentry, UBYTE 
 
     if (len == 0)
         return 0;
+    if (ofs > ~(UQUAD)0 - len)
+        return ERROR_OBJECT_WRONG_TYPE;
 
     memset (&runlist_entry, 0, sizeof(struct NTFSRunLstEntry));
     rle = &runlist_entry;
     rle->attr = at;
 
-    if (AROS_LE2LONG(attrentry->length) < (attrentry->residentflag == ATTR_RESIDENT_FORM
-        ? offsetof(struct MFTAttr, data.resident.reserved) + 1
-        : offsetof(struct MFTAttr, data.non_resident.actual_size))) {
+    if (!NTFSAttributeFits(at, attrentry)) {
         D(bug("[NTFS] %s: error - invalid attribute length\n", __func__));
         return ~0;
     }
@@ -295,7 +388,7 @@ IPTR ReadMFTAttribData(struct NTFSMFTAttr *at, struct MFTAttr *attrentry, UBYTE 
             return ~0;
         }
 
-        if ((ofs + len) > value_length) {
+        if (ofs > value_length || len > value_length - ofs) {
             D(bug("[NTFS] %s: error - read out of range\n", __func__));
             return ~0;
         }
@@ -308,7 +401,8 @@ IPTR ReadMFTAttribData(struct NTFSMFTAttr *at, struct MFTAttr *attrentry, UBYTE 
     } else {
         rle->flags &= ~RLEFLAG_COMPR;
     }
-    rle->mappingpair = (UBYTE *)(IPTR)((IPTR)attrentry + AROS_LE2WORD(attrentry->data.non_resident.mapping_pairs_offset));
+    rle->mappingpair = (UBYTE *)attrentry + AROS_LE2WORD(attrentry->data.non_resident.mapping_pairs_offset);
+    rle->mappingend = (UBYTE *)attrentry + AROS_LE2LONG(attrentry->length);
 
     D(bug("[NTFS] %s: mappingpair @ 0x%p\n", __func__, rle->mappingpair));
 
@@ -352,6 +446,8 @@ IPTR ReadMFTAttribData(struct NTFSMFTAttr *at, struct MFTAttr *attrentry, UBYTE 
     }
 
     rle->next_vcn = AROS_LE2QUAD(attrentry->data.non_resident.lowest_vcn);
+    if (rle->target_vcn < rle->next_vcn)
+        return ERROR_OBJECT_WRONG_TYPE;
     rle->curr_lcn = 0;
 
     D(bug("[NTFS] %s: vcn = %u\n", __func__, vcn));
@@ -408,6 +504,9 @@ IPTR ReadMFTAttribData(struct NTFSMFTAttr *at, struct MFTAttr *attrentry, UBYTE 
                 UQUAD cluster = vcn - rle->curr_vcn + rle->curr_lcn;
                 UQUAD block = cluster * at->mft->data->cluster_sectors +
                     sector % at->mft->data->cluster_sectors;
+                if (cluster >= at->mft->data->total_sectors / at->mft->data->cluster_sectors ||
+                    block >= at->mft->data->total_sectors)
+                    return ERROR_OBJECT_WRONG_TYPE;
                 at->mft->cblock = Cache_GetBlock(at->mft->data->cache,
                     at->mft->data->first_device_sector + block, &at->mft->cbuf);
                 if (at->mft->cblock == NULL)
@@ -437,7 +536,7 @@ IPTR ReadMFTAttrib(struct NTFSMFTAttr *at, UBYTE *dest, UQUAD ofs, ULONG len, in
 
     D(bug("[NTFS]: %s(NTFSMFTAttr @ 0x%p; ofs = %d; len = %d)\n", __func__, at, (IPTR)ofs, len));
 
-    if (at == NULL || dest == NULL) {
+    if (at == NULL || dest == NULL || at->attr_cur == NULL) {
         D(bug("[NTFS] %s: NULL pointer parameter\n", __func__));
         return ~0;
     }
@@ -451,14 +550,21 @@ IPTR ReadMFTAttrib(struct NTFSMFTAttr *at, UBYTE *dest, UQUAD ofs, ULONG len, in
         D(bug("[NTFS] %s: AF_ALST\n", __func__));
 
         vcn = ofs / (at->mft->data->cluster_sectors << SECTORSIZE_SHIFT);
-        attrentry = (struct MFTAttr *)((IPTR)at->attr_nxt + AROS_LE2WORD(at->attr_nxt->length));
-        while (attrentry < at->attr_end) {
-            if (*(UBYTE *)attrentry != attr)
-                break;
-            if (AROS_LE2LONG(*((ULONG *)(attrentry + 8))) > vcn)
-                break;
-            at->attr_nxt = attrentry;
-            attrentry = (struct MFTAttr *)((IPTR)attrentry + AROS_LE2WORD(attrentry->length));
+        {
+            ULONG step = NTFSListEntryLength(at->attr_nxt, at->attr_end);
+            if (step == 0)
+                return ERROR_OBJECT_WRONG_TYPE;
+            attrentry = (struct MFTAttr *)((UBYTE *)at->attr_nxt + step);
+            while ((UBYTE *)attrentry < (UBYTE *)at->attr_end) {
+                step = NTFSListEntryLength(attrentry, at->attr_end);
+                if (step == 0)
+                    return ERROR_OBJECT_WRONG_TYPE;
+                if (*(UBYTE *)attrentry != attr ||
+                    AROS_LE2QUAD(*(UQUAD *)((UBYTE *)attrentry + 8)) > vcn)
+                    break;
+                at->attr_nxt = attrentry;
+                attrentry = (struct MFTAttr *)((UBYTE *)attrentry + step);
+            }
         }
     }
     attrentry = FindMFTAttrib(at, attr);
@@ -519,159 +625,107 @@ static IPTR ReadMFTRecord(struct NTFSMFTEntry *mft, UBYTE *buf, ULONG mft_id)
 
 struct MFTAttr *FindMFTAttrib(struct NTFSMFTAttr *at, UBYTE attr)
 {
-    D(bug("[NTFS]: %s(%u)\n", __func__, attr));
-
-    if (at == NULL) {
-        D(bug("[NTFS] %s: NULL attribute pointer\n", __func__));
+    struct MFTAttr *entry;
+    ULONG record_size;
+    UBYTE *base, *end;
+    if (at == NULL || at->mft == NULL || at->mft->data == NULL || at->mft->buf == NULL)
         return NULL;
-    }
+    record_size = at->mft->data->mft_size << SECTORSIZE_SHIFT;
+    base = at->mft->buf;
+    if (!ValidateMFTRecord((struct MFTRecordEntry *)base, record_size))
+        return NULL;
+    end = base + AROS_LE2LONG(((struct MFTRecordEntry *)base)->bytes_in_use);
 
-    if (at->flags & AF_ALST) {
-        D(bug("[NTFS] %s: AF_ALST\n", __func__));
-retry:
-        while (at->attr_nxt < at->attr_end) {
-            at->attr_cur = at->attr_nxt;
-            at->attr_nxt = (struct MFTAttr *)((IPTR)at->attr_nxt + AROS_LE2WORD(at->attr_cur->length));
-
-            D(bug("[NTFS] %s: attr_cur @ 0x%p, attr_nxt @ 0x%p\n", __func__, at->attr_cur, at->attr_nxt ));
-
-            if ((*(UBYTE *)at->attr_cur == attr) || (attr == 0)) {
-                UBYTE *new_pos;
-
-                D(bug("[NTFS] %s: attr %u found @ 0x%p\n", __func__, attr, at->attr_cur));
-
-                if (at->flags & AF_MMFT) {
-                    D(bug("[NTFS] %s: AF_MMFT\n", __func__));
-
-                    if ((at->mft->cblock = Cache_GetBlock(at->mft->data->cache, at->mft->data->first_device_sector + AROS_LE2LONG(*((ULONG *)(at->attr_cur + 0x10))), &at->mft->cbuf)) == NULL) {
-                        D(bug("[NTFS] %s: read failed\n", __func__));
-                        return NULL;
-                    }
-                    CopyMem(at->mft->cbuf, at->emft_buf, at->mft->data->sectorsize);
-                    Cache_FreeBlock(at->mft->data->cache, at->mft->cblock);
-                    at->mft->cblock = NULL;
-
-                    if ((at->mft->cblock = Cache_GetBlock(at->mft->data->cache, at->mft->data->first_device_sector + AROS_LE2LONG(*((ULONG *)(at->attr_cur + 0x14))), &at->mft->cbuf)) == NULL) {
-                        D(bug("[NTFS] %s: read failed\n", __func__));
-                        return NULL;
-                    }
-                    CopyMem(at->mft->cbuf, at->emft_buf + at->mft->data->sectorsize, at->mft->data->sectorsize);
-                    Cache_FreeBlock(at->mft->data->cache, at->mft->cblock);
-                    at->mft->cblock = NULL;
-
-                    if (PostProcessMFTRecord
-                            (at->mft->data, (struct MFTRecordEntry *)at->emft_buf, at->mft->data->mft_size,
-                             "FILE"))
-                        return NULL;
-                } else {
-                    D(bug("[NTFS] %s: !AF_MMFT\n", __func__));
-
-                    if (ReadMFTRecord(at->mft, (UBYTE *)at->emft_buf,
-                                      AROS_LE2LONG(at->attr_cur->data.resident.value_length)))
-                        return NULL;
-                }
-
-                new_pos = &((UBYTE *)at->emft_buf)[AROS_LE2WORD(at->emft_buf->data.resident.value_offset)];
-                while ((UBYTE) *new_pos != 0xFF) {
-                    if ((*new_pos ==
-                            *(UBYTE *)at->attr_cur)
-                            && (AROS_LE2WORD(*((UWORD *)(new_pos + 0xE))) == AROS_LE2WORD(*((UWORD *)(at->attr_cur + 0x18))))) {
-                        return (struct MFTAttr *)new_pos;
-                    }
-                    new_pos += AROS_LE2WORD(*((UWORD *)(new_pos + 4)));
-                }
-                D(bug("[NTFS] %s: %u not found in attribute list!\n", __func__, at->attr_cur));
+    if (!(at->flags & AF_ALST)) {
+        while ((UBYTE *)at->attr_nxt >= base && (UBYTE *)at->attr_nxt < end) {
+            entry = at->attr_nxt;
+            if ((ULONG)(end - (UBYTE *)entry) < sizeof(ULONG))
                 return NULL;
-            }
+            if (AROS_LE2LONG(entry->type) == 0xffffffffUL)
+                break;
+            if (!NTFSAttributeFits(at, entry))
+                return NULL;
+            at->attr_cur = entry;
+            at->attr_nxt = (struct MFTAttr *)((UBYTE *)entry + AROS_LE2LONG(entry->length));
+            if (AROS_LE2LONG(entry->type) == AT_ATTRIBUTE_LIST)
+                at->attr_end = entry;
+            if (AROS_LE2LONG(entry->type) == attr || attr == 0)
+                return entry;
         }
-        return NULL;
-    }
-
-    at->attr_cur = at->attr_nxt;
-
-    while (*(UBYTE *)at->attr_cur != 0xFF) {
-        at->attr_nxt = (struct MFTAttr *)((IPTR)at->attr_nxt + AROS_LE2WORD(at->attr_cur->length));
-
-        D(bug("[NTFS] %s: attr_cur @ 0x%p, attr_nxt @ 0x%p (offset %u) \n", __func__, at->attr_cur, at->attr_nxt, AROS_LE2WORD(at->attr_cur->length)));
-
-        if (*(UBYTE *)at->attr_cur == AT_ATTRIBUTE_LIST)
-            at->attr_end = at->attr_cur;
-        if ((*(UBYTE *)at->attr_cur == attr) || (attr == 0)) {
-            D(bug("[NTFS] %s: returning attr_cur @ 0x%p\n", __func__, at->attr_cur));
-            return at->attr_cur;
-        }
-        at->attr_cur = at->attr_nxt;
-    }
-    if (at->attr_end) {
-        struct MFTAttr *attrentry;
-
-        D(bug("[NTFS] %s: attr_end @ 0x%p\n", __func__, at->attr_end));
-
-        at->emft_buf = AllocMem(at->mft->data->mft_size << SECTORSIZE_SHIFT, MEMF_ANY);
+        entry = at->attr_end;
+        if (entry == NULL || !NTFSAttributeFits(at, entry))
+            return NULL;
+        if (at->emft_buf == NULL)
+            at->emft_buf = AllocMem(record_size, MEMF_ANY);
         if (at->emft_buf == NULL)
             return NULL;
-
-        D(bug("[NTFS] %s: emft_buf allocated @ 0x%p\n", __func__, at->emft_buf));
-
-        attrentry = at->attr_end;
-
-        if (attrentry->residentflag == ATTR_NONRESIDENT_FORM) {
-            int n;
-
-            n = ((AROS_LE2QUAD(attrentry->data.non_resident.data_size) + (512 - 1)) & (~(512 - 1)));
-            at->attr_cur = at->attr_end;
-            at->edat_buf = AllocVec(n, MEMF_ANY);
-            if (!at->edat_buf)
+        if (entry->residentflag == ATTR_NONRESIDENT_FORM) {
+            UQUAD length = AROS_LE2QUAD(entry->data.non_resident.data_size);
+            if (length == 0 || length > 0xffffffffUL)
                 return NULL;
-
-            D(bug("[NTFS] %s: edat_buf allocated @ 0x%p\n", __func__, at->edat_buf));
-
-            if (ReadMFTAttribData(at, attrentry, (UBYTE *)at->edat_buf, 0, n, 0)) {
-                D(bug("[NTFS] %s: failed to read non-resident attribute list!\n", __func__));
-            }
+            at->edat_buf = AllocVec((ULONG)length, MEMF_ANY);
+            if (at->edat_buf == NULL)
+                return NULL;
+            if (ReadMFTAttribData(at, entry, (UBYTE *)at->edat_buf, 0, (ULONG)length, 0))
+                return NULL;
             at->attr_nxt = at->edat_buf;
-            /* Note: The extra '(IPTR)' cast here shuts up
-             *       gcc warnings on 32-bit architectures
-             *       (converting a QUAD to a 32-bit pointer
-             */
-            at->attr_end = (struct MFTAttr *)(IPTR)((IPTR)at->edat_buf + AROS_LE2QUAD(attrentry->data.non_resident.data_size));
+            at->attr_end = (struct MFTAttr *)((UBYTE *)at->edat_buf + (ULONG)length);
         } else {
-            at->attr_nxt = (struct MFTAttr *)((IPTR)at->attr_end + AROS_LE2WORD(attrentry->data.resident.value_offset));
-            at->attr_end = (struct MFTAttr *)((IPTR)at->attr_end + AROS_LE2LONG(attrentry->length));
-            D(bug("[NTFS] %s: attr_nxt @ 0x%p, attr_end @ 0x%p\n", __func__, at->attr_nxt, at->attr_end));
+            at->attr_nxt = (struct MFTAttr *)((UBYTE *)entry + AROS_LE2WORD(entry->data.resident.value_offset));
+            at->attr_end = (struct MFTAttr *)((UBYTE *)at->attr_nxt + AROS_LE2LONG(entry->data.resident.value_length));
         }
         at->flags |= AF_ALST;
-        while (at->attr_nxt < at->attr_end) {
-            if ((*(UBYTE *)at->attr_nxt == attr) || (attr == 0))
-                break;
-            at->attr_nxt = (struct MFTAttr *)((IPTR)at->attr_nxt + AROS_LE2WORD(at->attr_nxt->length));
-        }
-        if (at->attr_nxt >= at->attr_end)
+    }
+    while ((UBYTE *)at->attr_nxt < (UBYTE *)at->attr_end) {
+        ULONG length = NTFSListEntryLength(at->attr_nxt, at->attr_end);
+        UBYTE *list_entry = (UBYTE *)at->attr_nxt;
+        UQUAD reference;
+        if (length == 0)
             return NULL;
-
-        if ((at->flags & AF_MMFT) && (attr == AT_DATA)) {
-            D(bug("[NTFS] %s: AT_DATA && AF_MMFT\n", __func__));
-
-            at->flags |= AF_GPOS;
-            at->attr_cur = at->attr_nxt;
-            attrentry = at->attr_cur;
-            attrentry->data.resident.value_length = AROS_LONG2LE(at->mft->data->mft_start);
-            attrentry->data.resident.value_offset = AROS_WORD2LE(at->mft->data->mft_start + 1);
-            attrentry = (struct MFTAttr *)((IPTR)at->attr_nxt + AROS_LE2WORD(attrentry->length));
-            while (attrentry < at->attr_end) {
-                if (*(UBYTE *)attrentry != attr)
-                    break;
-                if (ReadMFTAttrib
-                        (at, (UBYTE *)(attrentry + 0x10),
-                         AROS_LE2LONG(attrentry->data.resident.value_length) * (at->mft->data->mft_size << SECTORSIZE_SHIFT),
-                         at->mft->data->mft_size << SECTORSIZE_SHIFT, 0))
-                    return NULL;
-                attrentry = (struct MFTAttr *)((IPTR)attrentry + AROS_LE2WORD(attrentry->length));
+        at->attr_cur = at->attr_nxt;
+        at->attr_nxt = (struct MFTAttr *)(list_entry + length);
+        if (AROS_LE2LONG(*(ULONG *)list_entry) != attr && attr != 0)
+            continue;
+        reference = AROS_LE2QUAD(*(UQUAD *)(list_entry + 0x10)) & MFTREF_MASK;
+        /* ReadMFTRecord's current API supports 32-bit MFT record numbers. */
+        if (reference > 0xffffffffUL)
+            return NULL;
+        if (at->flags & AF_MMFT) {
+            /* Bootstrap an extension record from the base MFT data extent.
+             * Using this list again here would recursively read the same record. */
+            struct NTFSMFTAttr base_at;
+            struct MFTAttr *data;
+            INIT_MFTATTRIB(&base_at, at->mft);
+            data = FindMFTAttrib(&base_at, AT_DATA);
+            if (data == NULL)
+                return NULL;
+            if (ReadMFTAttribData(&base_at, data, (UBYTE *)at->emft_buf,
+                reference * record_size, record_size, 0)) {
+                FreeMFTAttrib(&base_at);
+                return NULL;
             }
-            at->attr_nxt = at->attr_cur;
-            at->flags &= ~AF_GPOS;
+            FreeMFTAttrib(&base_at);
+            if (PostProcessMFTRecord(at->mft->data,
+                (struct MFTRecordEntry *)at->emft_buf, at->mft->data->mft_size, "FILE"))
+                return NULL;
+        } else if (ReadMFTRecord(at->mft, (UBYTE *)at->emft_buf, (ULONG)reference))
+            return NULL;
+        if (!ValidateMFTRecord((struct MFTRecordEntry *)at->emft_buf, record_size))
+            return NULL;
+        base = (UBYTE *)at->emft_buf;
+        end = base + AROS_LE2LONG(((struct MFTRecordEntry *)base)->bytes_in_use);
+        entry = (struct MFTAttr *)(base + AROS_LE2WORD(((struct MFTRecordEntry *)base)->attrs_offset));
+        while ((UBYTE *)entry < end) {
+            if ((ULONG)(end - (UBYTE *)entry) < sizeof(ULONG) || AROS_LE2LONG(entry->type) == 0xffffffffUL)
+                break;
+            if (!NTFSAttributeFits(at, entry))
+                return NULL;
+            if (AROS_LE2LONG(entry->type) == AROS_LE2LONG(*(ULONG *)list_entry) &&
+                AROS_LE2WORD(entry->instance) == AROS_LE2WORD(*(UWORD *)(list_entry + 0x18)))
+                return entry;
+            entry = (struct MFTAttr *)((UBYTE *)entry + AROS_LE2LONG(entry->length));
         }
-        goto retry;
+        return NULL;
     }
     return NULL;
 }
@@ -930,6 +984,24 @@ static int bitcount(ULONG n)
 #endif
 }
 
+static BOOL NTFSRecordSectors(BYTE encoded, ULONG cluster_sectors, ULONG *sectors)
+{
+    ULONG count;
+    if (encoded > 0)
+        count = cluster_sectors * (ULONG)encoded;
+    else {
+        int bits = -(int)encoded;
+        if (bits < SECTORSIZE_SHIFT || bits >= 32)
+            return FALSE;
+        count = 1UL << (bits - SECTORSIZE_SHIFT);
+    }
+    if (count == 0 || count > (0xffffffffUL >> SECTORSIZE_SHIFT) ||
+        (count & (count - 1)) != 0)
+        return FALSE;
+    *sectors = count;
+    return TRUE;
+}
+
 LONG ReadBootSector(struct FSData *fs_data )
 {
     struct DosEnvec *de = BADDR(glob->fssm->fssm_Environ);
@@ -947,6 +1019,9 @@ LONG ReadBootSector(struct FSData *fs_data )
         return ERROR_REQUIRED_ARG_MISSING;
     }
 
+    /* The rest of this handler currently uses fixed 512-byte sector offsets. */
+    if (bsize != (1UL << SECTORSIZE_SHIFT))
+        return ERROR_NOT_IMPLEMENTED;
     boot = AllocMem(bsize, MEMF_ANY);
     if (!boot)
         return ERROR_NO_FREE_STORE;
@@ -958,7 +1033,7 @@ LONG ReadBootSector(struct FSData *fs_data )
      * this once and once only.
      */
     fs_data->first_device_sector =
-        de->de_BlocksPerTrack * de->de_Surfaces * de->de_LowCyl;
+        (UQUAD)de->de_BlocksPerTrack * de->de_Surfaces * de->de_LowCyl;
 
     D(bug("[NTFS] %s: trying bootsector at sector %ld (%ld bytes)\n", __func__, fs_data->first_device_sector, bsize));
 
@@ -980,7 +1055,7 @@ LONG ReadBootSector(struct FSData *fs_data )
     D(bug("[NTFS] %s: NTFSBootsector:\n", __func__));
 
     fs_data->sectorsize = AROS_LE2WORD(boot->bytes_per_sector);
-    if (fs_data->sectorsize == 0 || (fs_data->sectorsize & (fs_data->sectorsize - 1)) != 0) {
+    if (fs_data->sectorsize != bsize) {
         D(bug("[NTFS] %s: invalid sector size %ld\n", __func__, fs_data->sectorsize));
         err = ERROR_NOT_A_DOS_DISK;
         goto cleanup;
@@ -1010,14 +1085,19 @@ LONG ReadBootSector(struct FSData *fs_data )
 
     D(bug("[NTFS] %s:\tVolumeSize in sectors = %ld\n", __func__, fs_data->total_sectors));
     D(bug("[NTFS] %s:\t                in bytes = %ld\n", __func__, fs_data->total_sectors * fs_data->sectorsize));
-#if (0)
-    /* Warning : TODO - check the volume /drive can be properly accessed */
-    if ((fs_data->first_device_sector + fs_data->total_sectors - 1 > end) && (glob->readcmd == CMD_READ)) {
-        D(bug("[NTFS] %s: volume is too large\n", __func__));
-        FreeMem(boot, bsize);
-        return IOERR_BADADDRESS;
+    {
+        UQUAD partition_sectors;
+        if (de->de_HighCyl < de->de_LowCyl) {
+            err = ERROR_NOT_A_DOS_DISK;
+            goto cleanup;
+        }
+        partition_sectors = (UQUAD)de->de_BlocksPerTrack * de->de_Surfaces *
+            ((UQUAD)de->de_HighCyl - de->de_LowCyl + 1);
+        if (fs_data->total_sectors == 0 || fs_data->total_sectors > partition_sectors) {
+            err = IOERR_BADADDRESS;
+            goto cleanup;
+        }
     }
-#endif
 
     fs_data->cache = Cache_CreateCache(64, 64, fs_data->sectorsize);
     if (fs_data->cache == NULL) {
@@ -1028,21 +1108,21 @@ LONG ReadBootSector(struct FSData *fs_data )
 
     D(bug("[NTFS] %s: allocated cache @ 0x%p (64,64,%d)\n", __func__, fs_data->cache, fs_data->sectorsize));
 
-    if (boot->clusters_per_mft_record > 0)
-        fs_data->mft_size = fs_data->cluster_sectors * boot->clusters_per_mft_record;
-    else
-        fs_data->mft_size = 1 << (-boot->clusters_per_mft_record - SECTORSIZE_SHIFT);
+    if (!NTFSRecordSectors(boot->clusters_per_mft_record, fs_data->cluster_sectors, &fs_data->mft_size) ||
+        !NTFSRecordSectors(boot->clusters_per_index_record, fs_data->cluster_sectors, &fs_data->idx_size)) {
+        err = ERROR_NOT_A_DOS_DISK;
+        goto cleanup;
+    }
 
-    D(bug("[NTFS] %s:\tMFTRecordSize = %ld (%ld clusters per record)\n", __func__, fs_data->mft_size, boot->clusters_per_mft_record));
-
-    if (boot->clusters_per_index_record > 0)
-        fs_data->idx_size = fs_data->cluster_sectors * boot->clusters_per_index_record;
-    else
-        fs_data->idx_size = 1 << (-boot->clusters_per_index_record - SECTORSIZE_SHIFT);
-
-    D(bug("[NTFS] %s:\tIndexRecordSize = %ld (%ld clusters per index)\n", __func__, fs_data->idx_size, boot->clusters_per_index_record));
-
+    if (AROS_LE2QUAD(boot->mft_lcn) >= fs_data->total_sectors / fs_data->cluster_sectors) {
+        err = IOERR_BADADDRESS;
+        goto cleanup;
+    }
     fs_data->mft_start = AROS_LE2QUAD(boot->mft_lcn) * fs_data->cluster_sectors;
+    if (fs_data->mft_size > fs_data->total_sectors - fs_data->mft_start) {
+        err = IOERR_BADADDRESS;
+        goto cleanup;
+    }
 
     D(bug("[NTFS] %s:\tMFTStart = %ld\n", __func__, fs_data->mft_start));
 
@@ -1114,6 +1194,11 @@ LONG ReadBootSector(struct FSData *fs_data )
     )
 #endif
 
+    if (!ValidateMFTRecord((struct MFTRecordEntry *)fs_data->mft.buf,
+        fs_data->mft_size << SECTORSIZE_SHIFT)) {
+        err = ERROR_OBJECT_WRONG_TYPE;
+        goto cleanup;
+    }
     if (!MapMFTAttrib(&fs_data->mft.attr, &fs_data->mft, AT_DATA)) {
         D(bug("[NTFS] %s: no $DATA in MFT\n", __func__));
         err = ERROR_NO_FREE_STORE;
