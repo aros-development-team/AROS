@@ -2,7 +2,11 @@ include $(SRCDIR)/config/aros.cfg
 include $(SRCDIR)/workbench/libs/mesa/mesa.cfg
 
 INCLUDE_FILES := $(call WILDCARD, include/*.h)
-LLVM_LIBS := $(patsubst lib%.a,-l%,$(notdir $(wildcard $(AROS_DEVELOPER)/lib/libLLVM*.a)))
+# The target-side LLVM archives, by path: as -l names they would be looked
+# up through every -L in order, and TARGET_CXX_LDFLAGS puts the crosstools
+# lib directory first, which holds the host's own libLLVM*.a when the AROS
+# toolchain was built with LLVM.
+LLVM_LIBS := $(wildcard $(AROS_DEVELOPER)/lib/libLLVM*.a)
 
 USER_LDFLAGS := $(TARGET_CXX_LDFLAGS) \
             -L$(top_libdir) \
