@@ -665,8 +665,7 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname,
 
     /* Make a new entry in the target dir */
     if ((err = CreateDirEntry(&ddh, dname, dnamelen,
-        sde.e.entry.attr | ATTR_ARCHIVE,
-        (sde.e.entry.first_cluster_hi << 16) | sde.e.entry.first_cluster_lo,
+        sde.e.entry.attr | ATTR_ARCHIVE, FIRST_FILE_CLUSTER(&sde),
         &dde, glob)) != 0)
     {
         /* The new name could not be made (directory or volume full): keep
