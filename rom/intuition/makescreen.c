@@ -50,6 +50,8 @@
     if (screen)
     {
         struct ViewPortExtra *vpe = (struct ViewPortExtra *)GfxLookUp(&screen->ViewPort);
+        struct BitMap *bitmap = screen->ViewPort.RasInfo ?
+                                screen->ViewPort.RasInfo->BitMap : NULL;
 
         /* Classic applications update Screen's dimensions directly before
          * rebuilding its display. The backing bitmap can remain larger than
@@ -67,6 +69,19 @@
                 screen->ViewPort.DWidth = width;
             if (screen->ViewPort.DHeight > height)
                 screen->ViewPort.DHeight = height;
+        }
+
+        /* Older applications edit the embedded Screen bitmap. Adopt those
+         * changes through our private display descriptor, never by writing
+         * into a caller-owned drawing bitmap: it may be one of a pair of
+         * double buffers. An unchanged mirror leaves modern edits alone. */
+        if (bitmap && !IS_HIDD_BM(bitmap) &&
+            !IS_HIDD_BM(&screen->BitMap_OBSOLETE) &&
+            memcmp(&screen->BitMap_OBSOLETE, &GetPrivScreen(screen)->LegacyBitMap,
+                   sizeof(struct BitMap)) != 0)
+        {
+            GetPrivScreen(screen)->LegacyBitMap = screen->BitMap_OBSOLETE;
+            screen->ViewPort.RasInfo->BitMap = &GetPrivScreen(screen)->LegacyBitMap;
         }
 
         if ((screen->ViewPort.Modes ^ IntuitionBase->ViewLord.Modes) & LACE)
