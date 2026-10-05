@@ -61,9 +61,6 @@
 
     HISTORY
 
-        41.3: Balance Forbid()/Permit() when adding a new resident command
-              or removing an existing one.
-
 ******************************************************************************/
 
 #include <proto/dos.h>
