@@ -8,6 +8,9 @@
 #include <hidd/hidd.h>
 #include <graphics/driver.h>
 #include <graphics/sprite.h>
+#ifdef __mc68000__
+#include <hidd/amigavideo.h>
+#endif
 #include <intuition/intuition.h>
 #include <intuition/intuitionbase.h>
 #include <intuition/classes.h>
@@ -1931,6 +1934,10 @@ IPTR MonitorClass__MM_SetPointerShape(Class *cl, Object *obj, struct msSetPointe
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+#ifdef __mc68000__
+    struct Library *OOPBase = GetPrivIBase(IntuitionBase)->OOPBase;
+    OOP_AttrBase HiddDisplayAttrBase = GetPrivIBase(IntuitionBase)->HiddDisplayAttrBase;
+#endif
     OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
     OOP_MethodID HiddDisplayBase = GetPrivIBase(IntuitionBase)->ib_HiddDisplayBase;
     OOP_MethodID HiddDMEnumBase = GetPrivIBase(IntuitionBase)->ib_HiddDMEnumBase;
@@ -1965,7 +1972,26 @@ IPTR MonitorClass__MM_SetPointerShape(Class *cl, Object *obj, struct msSetPointe
         bm = data->tmpPtr;
     }
 
-    res = HIDD_Display_SetCursorShape(data->handle->display, HIDD_BM_OBJ(bm), msg->pointer->xoffset, msg->pointer->yoffset);
+    res = FALSE;
+#ifdef __mc68000__
+    if (msg->pointer->sprite->es_SimpleSprite.posctldata)
+    {
+        OOP_Object *gfx = NULL;
+
+        OOP_GetAttr(data->handle->display, aHidd_Display_GfxHidd, (IPTR *)&gfx);
+        if (gfx && OOP_OCLASS(gfx) == OOP_FindClass(CLID_Hidd_Gfx_AmigaVideo))
+        {
+            OOP_MethodID HiddAmigaGfxBase = OOP_GetMethodID(IID_Hidd_AmigaGfx, 0);
+
+            res = HIDD_AMIGAGFX_SetClassicCursorData(gfx,
+                msg->pointer->sprite->es_SimpleSprite.posctldata,
+                msg->pointer->sprite->es_SimpleSprite.height,
+                msg->pointer->xoffset, msg->pointer->yoffset);
+        }
+    }
+#endif
+    if (!res)
+        res = HIDD_Display_SetCursorShape(data->handle->display, HIDD_BM_OBJ(bm), msg->pointer->xoffset, msg->pointer->yoffset);
     DEBUG_POINTER(bug("[Monitor] %s: SetCursorShape() returned %d\n", __func__, res));
     if (res) {
         data->pointer = msg->pointer;

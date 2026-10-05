@@ -57,6 +57,7 @@ static int GfxInit(struct GfxBase *LIBBASE)
 
     NEWLIST(&LIBBASE->BlitWaitQ);
     NEWLIST(&LIBBASE->TextFonts);
+    LIBBASE->SimpleSprites = PrivGBase(LIBBASE)->simple_sprites;
     InitSemaphore(&PrivGBase(GfxBase)->hashtab_sema);
     InitSemaphore(&PrivGBase(GfxBase)->view_sema);
     InitSemaphore(&PrivGBase(GfxBase)->tfe_hashtab_sema);
