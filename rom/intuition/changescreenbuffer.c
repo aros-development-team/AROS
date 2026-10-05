@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 
     Desc: Intuition function ChangeScreenBuffer()
@@ -107,4 +107,5 @@ void UpdateScreenBitMap(struct Screen *screen, struct IntuitionBase *IntuitionBa
         else
             screen->BitMap_OBSOLETE.Planes[i] = NULL;
     }
+    GetPrivScreen(screen)->LegacyBitMap = screen->BitMap_OBSOLETE;
 }

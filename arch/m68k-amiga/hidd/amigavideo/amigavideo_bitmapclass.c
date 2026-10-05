@@ -1048,10 +1048,17 @@ BOOL AmigaVideoBM__Hidd_PlanarBM__SetBitMap(OOP_Class *cl, OOP_Object *o,
     result = OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (result)
     {
-        if (oldbm && data->bmcl &&
-            oldbm->BytesPerRow == msg->bitMap->BytesPerRow &&
-            oldbm->Rows == msg->bitMap->Rows &&
-            oldbm->Depth == msg->bitMap->Depth)
+        /* The caller may already have modified oldbm in place. Compare the
+         * cached layout, and rebuild an in-place bitmap rather than trying
+         * to derive its previous plane addresses from the modified object. */
+        if (oldbm && oldbm != msg->bitMap && data->bmcl &&
+            data->bytesperrow == msg->bitMap->BytesPerRow &&
+            data->height == msg->bitMap->Rows &&
+            data->depth == msg->bitMap->Depth &&
+            data->width == ((msg->bitMap->Flags & BMF_INTERLEAVED) &&
+                            msg->bitMap->Depth ?
+                            (msg->bitMap->BytesPerRow << 3) / msg->bitMap->Depth :
+                            msg->bitMap->BytesPerRow << 3))
         {
             same_layout = TRUE;
         }
@@ -1072,6 +1079,8 @@ BOOL AmigaVideoBM__Hidd_PlanarBM__SetBitMap(OOP_Class *cl, OOP_Object *o,
             data->bitmap_set_in_place = TRUE;
             commitcopperchanges(csd, data, TRUE);
         }
+        else
+            data->bitmap_set_in_place = FALSE;
     }
 
     return result;
