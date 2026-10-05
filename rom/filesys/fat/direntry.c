@@ -236,11 +236,11 @@ LONG GetDirEntryByCluster(struct DirHandle *dh, ULONG cluster,
     /* Start at the start */
     RESET_DIRHANDLE(dh);
 
-    /* Loop through the entries until we find a match */
+    /* Compare decoded cluster numbers, since the entry stores little-endian
+     * halves even when the host is big-endian. */
     while ((err = GetNextDirEntry(dh, de, glob)) == 0)
     {
-        if (de->e.entry.first_cluster_hi == (cluster >> 16)
-            && de->e.entry.first_cluster_lo == (cluster & 0xffff))
+        if (FIRST_FILE_CLUSTER(de) == cluster)
         {
             D(bug("[fat] matched starting cluster at entry %ld, returning\n",
                 dh->cur_index));

@@ -669,7 +669,7 @@ LONG FormatFATVolume(const UBYTE *name, UWORD len, struct Globals *glob)
     /* Generate a pseudo-random serial number. Not the original algorithm,
      * but it shouldn't matter */
     ReadEClock(&eclock);
-    ebpb->bs_volid = FastRand(eclock.ev_lo ^ eclock.ev_hi);
+    ebpb->bs_volid = AROS_LONG2LE(FastRand(eclock.ev_lo ^ eclock.ev_hi));
 
     /* Copy volume name in */
     for (i = 0; i < FAT_MAX_SHORT_NAME; i++)
