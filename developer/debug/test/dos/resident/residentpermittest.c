@@ -6,12 +6,25 @@
     Run beside residentpermitpayload, or pass its path as the first argument.
 */
 #include <aros/debug.h>
+#include <aros/config.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <exec/execbase.h>
 #include <dos/dosextens.h>
 #include <stdio.h>
 #include <string.h>
+
+#if defined(__AROSEXEC_SMP__)
+
+/* SMP keeps the live Forbid count in private per-CPU scheduler state;
+ * tc_TDNestCnt is only its saved value, not a valid replacement here. */
+int main(void)
+{
+    bug("RESIDENT PERMIT TEST: skipped (SMP nesting count is private)\n");
+    return RETURN_OK;
+}
+
+#else
 
 #define TEST_NAME "__ResidentPermitRegression"
 #define INTERNAL_NAME "__ResidentPermitInternalRegression"
@@ -73,7 +86,7 @@ static LONG systemcount(CONST_STRPTR name)
 
 int main(int argc, char **argv)
 {
-    CONST_STRPTR payload = argc > 1 ? argv[1] : "C:residentpermitpayload";
+    CONST_STRPTR payload = argc > 1 ? argv[1] : "PROGDIR:residentpermitpayload";
     struct Segment *segment;
     BPTR internalPayload = BNULL;
     char add[512], replace[512];
@@ -155,3 +168,5 @@ end:
     bug("RESIDENT PERMIT TEST: %lu failures\n", (unsigned long)failures);
     return failures ? RETURN_FAIL : RETURN_OK;
 }
+
+#endif /* !__AROSEXEC_SMP__ */

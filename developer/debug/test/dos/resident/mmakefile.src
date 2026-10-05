@@ -4,8 +4,6 @@ include $(SRCDIR)/config/aros.cfg
 
 USER_LDFLAGS := -static
 
-#MM- test : test-dos-resident
-#MM- test-quick : test-dos-resident-quick
 #MM test-dos-resident : includes linklibs
 
 %build_progs mmake=test-dos-resident \
