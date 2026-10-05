@@ -117,6 +117,7 @@ OOP_Object *AmigaVideoBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     data->bytesperrow = pbm ? pbm->BytesPerRow :
         ((width + data->align - 1) & ~(data->align - 1)) / 8;
     data->height = height;
+    data->viewportheight = height;
     data->depth = depth;
     data->pixelcacheoffset = -1;
     data->pbm = pbm;

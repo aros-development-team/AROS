@@ -1366,9 +1366,11 @@ static BOOL gfx_vblank_attachbm(struct amigavideo_staticdata *csd, struct amigab
     else
     {
         /* screen_finish is an absolute display coordinate. */
-        screen_finish = bm->topedge + bm->height - 1;
+        screen_finish = bm->topedge + bm->viewportheight - 1;
     }
     bm->displayheight = limitheight(csd, (screen_finish - screen_start) + 1, bm->interlace, FALSE);
+    if (bm->displayheight > bm->viewportheight)
+        bm->displayheight = bm->viewportheight;
     D(bug("[AmigaVideo] %s: screen range = %d -> %d (%d rows)\n", __func__, screen_start, screen_finish, bm->displayheight);)
     /* sanity check .. */
     if (bm->displayheight <= 1)
@@ -1644,6 +1646,8 @@ static BOOL gfx_vblank_doupdatescroll(struct amigavideo_staticdata *csd)
                 bmend >>= 1;
 
             bm->displayheight = limitheight(csd, (bmend - bm->topedge), bm->interlace, FALSE);
+            if (bm->displayheight > bm->viewportheight)
+                bm->displayheight = bm->viewportheight;
 
             /* only adjust if enough is visible - otherwise it will be obscured, and hidden in the next case... */
             if ((bm->displayheight != olddisplayheight) && (bm->displayheight > 1))
@@ -1763,7 +1767,9 @@ static BOOL gfx_vblank_doupdatescroll(struct amigavideo_staticdata *csd)
                 bm->displayheight = limitheight(csd, (bmend - bm->topedge), bm->interlace, FALSE);
             }
             else
-                bm->displayheight = limitheight(csd, bm->height, bm->interlace, FALSE);
+                bm->displayheight = limitheight(csd, bm->viewportheight, bm->interlace, FALSE);
+            if (bm->displayheight > bm->viewportheight)
+                bm->displayheight = bm->viewportheight;
             if (bm->displayheight > 1)
             {
                 setcopperscroll(csd, csd->updatescroll, ((csd->interlaced == TRUE) || (csd->updatescroll->interlace == TRUE)));

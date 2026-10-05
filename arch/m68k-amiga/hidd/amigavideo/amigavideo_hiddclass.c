@@ -1245,6 +1245,12 @@ ULONG AmigaVideoDisplay__Hidd_Display__MakeViewPort(OOP_Class *cl, OOP_Object *o
         struct GfxBase *GfxBase = (APTR)csd->cs_GfxBase;
         struct amigabm_data *bmdata = OOP_INST_DATA(OOP_OCLASS(vpd->Bitmap), vpd->Bitmap);
         struct CopList *oldcl = vpd->vpe->ViewPort->DspIns;
+        WORD viewportheight = bmdata->height;
+
+        /* The visible ViewPort may be shorter than its backing BitMap. */
+        if (vpd->vpe->ViewPort->DHeight > 0 &&
+            vpd->vpe->ViewPort->DHeight < viewportheight)
+            viewportheight = vpd->vpe->ViewPort->DHeight;
 
         /*
          * A same-layout classic planar ChangeVPBitMap() was already applied
@@ -1252,11 +1258,13 @@ ULONG AmigaVideoDisplay__Hidd_Display__MakeViewPort(OOP_Class *cl, OOP_Object *o
          * Rebuilding and replacing that list would separate a late palette
          * update from its bitmap handoff by one display field.
          */
-        if (bmdata->bitmap_set_in_place && oldcl && bmdata->bmcl == oldcl)
+        if (bmdata->bitmap_set_in_place && oldcl && bmdata->bmcl == oldcl &&
+            bmdata->viewportheight == viewportheight)
         {
             bmdata->bitmap_set_in_place = FALSE;
             return MVP_OK;
         }
+        bmdata->viewportheight = viewportheight;
 
         newcl = AllocMem(sizeof(struct CopList), MEMF_PUBLIC | MEMF_CLEAR);
         if (!newcl)
