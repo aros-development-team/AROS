@@ -29,6 +29,8 @@ LONG InitDirHandle(struct FSData *fs_data, struct DirHandle *dh, BOOL reuse)
     struct MFTAttr *curattr;
     UBYTE *bmp;
     UQUAD bitmap_len;
+    ULONG root_len, root_offset;
+    UBYTE *root_value;
     LONG ret = 0;
 
     D(bug("[NTFS]: %s(%u)\n", __func__, dh->ioh.mft.mftrec_no));
@@ -43,10 +45,13 @@ LONG InitDirHandle(struct FSData *fs_data, struct DirHandle *dh, BOOL reuse)
             Cache_FreeBlock(fs_data->cache, dh->ioh.mft.cblock);
             dh->ioh.mft.cblock = NULL;
         }
+        FreeVec(dh->idx_root_buf);
     } else {
         dh->ioh.data = fs_data;
         dh->ioh.mft.cblock = NULL;
     }
+    dh->idx_root_buf = NULL;
+    dh->idx_root = NULL;
 
     RESET_DIRHANDLE(dh);
 
@@ -70,15 +75,30 @@ LONG InitDirHandle(struct FSData *fs_data, struct DirHandle *dh, BOOL reuse)
                 (AROS_LE2LONG(*((ULONG *)((IPTR)curattr + 0x1c))) != 0x00300033)) {
             continue;
         }
-        curattr = (struct MFTAttr *)((IPTR)curattr + AROS_LE2WORD(curattr->data.resident.value_offset));
-        if (*(UBYTE *)curattr != 0x30) {	/* Not filename index */
+        root_len = AROS_LE2LONG(curattr->data.resident.value_length);
+        root_value = (UBYTE *)curattr + AROS_LE2WORD(curattr->data.resident.value_offset);
+        if (root_len < 0x12) {
+            ret = ERROR_OBJECT_WRONG_TYPE;
+            goto done;
+        }
+        if (*root_value != 0x30) {	/* Not filename index */
             continue;
         }
         break;
     }
 
-    dh->idx_root = (UBYTE *)curattr + 0x10;
-    dh->idx_root += AROS_LE2WORD(*(UWORD *)(dh->idx_root));
+    root_offset = 0x10 + AROS_LE2WORD(*(UWORD *)(root_value + 0x10));
+    if (root_offset > root_len || root_len - root_offset < sizeof(struct MFTIndexEntry)) {
+        ret = ERROR_OBJECT_WRONG_TYPE;
+        goto done;
+    }
+    dh->idx_root_buf = AllocVec(root_len, MEMF_ANY);
+    if (dh->idx_root_buf == NULL) {
+        ret = ERROR_NO_FREE_STORE;
+        goto done;
+    }
+    CopyMem(root_value, dh->idx_root_buf, root_len);
+    dh->idx_root = dh->idx_root_buf + root_offset;
 
     D(bug("[NTFS] %s: idx_root @ 0x%p\n", __func__, dh->idx_root));
 
@@ -140,6 +160,12 @@ LONG InitDirHandle(struct FSData *fs_data, struct DirHandle *dh, BOOL reuse)
     D(bug("[NTFS] %s: initialised dir handle\n", __func__));
 
 done:
+    if (ret) {
+        FreeMFTAttrib(&dh->ioh.mft.attr);
+        FreeVec(dh->idx_root_buf);
+        dh->idx_root_buf = NULL;
+        dh->idx_root = NULL;
+    }
 
     return ret;
 }
@@ -154,6 +180,8 @@ LONG ReleaseDirHandle(struct DirHandle *dh)
         FreeMem(dh->ioh.mft.buf, dh->ioh.data->mft_size << SECTORSIZE_SHIFT);
         dh->ioh.mft.buf = NULL;
     }
+    FreeVec(dh->idx_root_buf);
+    dh->idx_root_buf = NULL;
     dh->ioh.bitmap = NULL;
     dh->idx_root = NULL;
 

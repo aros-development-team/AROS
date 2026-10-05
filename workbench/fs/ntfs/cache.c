@@ -233,7 +233,7 @@ APTR Cache_GetBlock(APTR cache, UQUAD blockNum, UBYTE **data)
 
     /* Set data pointer and error, and return cache block handle */
 
-    *data = b->data + data_offset;
+    *data = b ? b->data + data_offset : NULL;
     SetIoErr(error);
 
     return b;
@@ -303,4 +303,3 @@ BOOL Cache_Flush(APTR cache)
     SetIoErr(error);
     return error == 0;
 }
-
