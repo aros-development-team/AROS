@@ -24,6 +24,11 @@
 /*** Prototypes ***/
 void cleanup(UBYTE *, int ret);              /* To cleanup properly */
 void dispatch_events(void);                  /* Collect events */
+#ifdef __AROS__
+BOOL iconify_available(void);
+void reset_iconify(void);
+void show_main_window(void);
+#endif
 
 void write_text   (Project, LINE *);         /* Render a line usign gui opts */
 LONG curs_visible (Project, LONG);           /* Be sure cursor always visible */
