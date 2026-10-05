@@ -132,9 +132,9 @@ struct UtilityBase *UtilityBase;
 #define AROS_ASMSYMNAME(s) (&s)
 
 static const int __abox__ = 1;
-static const char version[] = "\0$VER: Assign unofficial 50.14 (04.10.2026) " ISOASCII_COPYRIGHT " The AROS Dev Team" ;
+static const char version[] = "\0$VER: Assign unofficial 50.15 (05.10.2026) " ISOASCII_COPYRIGHT " The AROS Dev Team" ;
 #else
-static const char version[] __attribute__((used)) = "\0$VER: Assign 50.14 (04.10.2026) " ISOASCII_COPYRIGHT " The AROS Dev Team" ;
+static const char version[] __attribute__((used)) = "\0$VER: Assign 50.15 (05.10.2026) " ISOASCII_COPYRIGHT " The AROS Dev Team" ;
 #endif
 
 struct localdata
@@ -158,13 +158,13 @@ static int Main(struct ExecBase *sBase);
 static int checkAssign(struct localdata *ld, STRPTR name);
 static int doAssign(struct localdata *ld, STRPTR name, STRPTR *target, BOOL dismount, BOOL defer, BOOL path,
              BOOL add, BOOL prepend, BOOL remove);
-static void showAssigns(struct localdata *ld, BOOL vols, BOOL dirs, BOOL devices);
+static int showAssigns(struct localdata *ld, BOOL vols, BOOL dirs, BOOL devices);
 static int removeAssign(struct localdata *ld, STRPTR name);
 static STRPTR GetFullPath(struct localdata *ld, BPTR lock);
 
 static void _DeferPutStr(struct localdata *ld, CONST_STRPTR str);
 static void _DeferVPrintf(struct localdata *ld, CONST_STRPTR fmt, ...);
-static void _DeferFlush(struct localdata *ld, BPTR fh);
+static int _DeferFlush(struct localdata *ld, BPTR fh);
 
 #define DeferPutStr(str) _DeferPutStr(ld,str)
 #define DeferPrintf(fmt,...) \
@@ -298,7 +298,10 @@ static int Main(struct ExecBase *sBase)
                                             /* With the LIST keyword, the current assigns will be
                                                displayed also when (after) making an assign */
 
-                                            showAssigns(ld, MyArgList->vols, MyArgList->dirs, MyArgList->devices);
+                                            int showError = showAssigns(ld, MyArgList->vols, MyArgList->dirs, MyArgList->devices);
+
+                                            if (showError > error)
+                                                    error = showError;
                                     }
                             }
                             else
@@ -306,7 +309,7 @@ static int Main(struct ExecBase *sBase)
                                     /* If no NAME was given, we just show the current assigns
                                        as specified by the user (VOLS, DIRS, DEVICES) */
 
-                                    showAssigns(ld, MyArgList->vols, MyArgList->dirs, MyArgList->devices);
+                                    error = showAssigns(ld, MyArgList->vols, MyArgList->dirs, MyArgList->devices);
                             }
 
                             FreeArgs(readarg);
@@ -325,7 +328,7 @@ static int Main(struct ExecBase *sBase)
 
 
 static
-void showAssigns(struct localdata *ld, BOOL vols, BOOL dirs, BOOL devices)
+int showAssigns(struct localdata *ld, BOOL vols, BOOL dirs, BOOL devices)
 {
         ULONG           lockBits = LDF_READ;
         struct DosList *dl;
@@ -445,7 +448,7 @@ void showAssigns(struct localdata *ld, BOOL vols, BOOL dirs, BOOL devices)
 
         UnLockDosList(lockBits);
 
-        DeferFlush(Output());
+        return DeferFlush(Output());
 }
 
 
@@ -710,6 +713,7 @@ int checkAssign(struct localdata *ld, STRPTR name)
         STRPTR colon;
         struct DosList *dl;
         int             error = RETURN_OK;
+        int             flushError;
 
         if (!name)
                 name = "";
@@ -806,7 +810,9 @@ int checkAssign(struct localdata *ld, STRPTR name)
 
         UnLockDosList(LDF_DEVICES | LDF_ASSIGNS | LDF_VOLUMES | LDF_READ);
 
-        DeferFlush(Output());
+        flushError = DeferFlush(Output());
+        if (flushError > error)
+                error = flushError;
 
         if (colon)
                 *colon = ':';
@@ -900,43 +906,63 @@ void _DeferVPrintf(struct localdata *ld, CONST_STRPTR fmt, ...)
 }
 
 static
-void _DeferFlush(struct localdata *ld, BPTR fh)
+int _DeferFlush(struct localdata *ld, BPTR fh)
 {
         struct deferbufnode *node;
-        BOOL broken = FALSE;
+        int                  error = RETURN_OK;
+        LONG                 ioerr = 0;
 
-        Flush(fh);
+        if (!Flush(fh))
+        {
+                ioerr = IoErr();
+                error = RETURN_ERROR;
+        }
 
         while ((node = (struct deferbufnode *)REMHEAD(&DeferList)))
         {
                 LONG offs = 0;
                 LONG left = node->pos;
 
-                while (!broken && left)
+                while (error == RETURN_OK && left)
                 {
                         LONG len;
+                        LONG written;
 
                         if (SetSignal(0, SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
                         {
-                                broken = TRUE;
+                                ioerr = ERROR_BREAK;
+                                error = RETURN_WARN;
                                 break;
                         }
 
                         len = left > MAXOUTPUT ? MAXOUTPUT : left;
 
-                        Write(fh, node->buf + offs, len);
-                        offs += len;
-                        left -= len;
+                        written = Write(fh, node->buf + offs, len);
+                        if (written <= 0)
+                        {
+                                ioerr = IoErr();
+                                error = RETURN_ERROR;
+                                break;
+                        }
+
+                        offs += written;
+                        left -= written;
                 }
 
                 FreeMem(node, sizeof(struct deferbufnode));
         }
 
-        Flush(fh);
-
-        if (broken)
+        if (error == RETURN_OK && !Flush(fh))
         {
-                PrintFault(ERROR_BREAK, NULL);
+                ioerr = IoErr();
+                error = RETURN_ERROR;
         }
+
+        if (error != RETURN_OK)
+        {
+                PrintFault(ioerr, NULL);
+        }
+
+        return error;
 }
 
