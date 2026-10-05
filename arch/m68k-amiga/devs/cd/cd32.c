@@ -1479,17 +1479,23 @@ static LONG CD32_DoIO(struct IOStdReq *io, APTR priv)
         }
         break;
     case CD_PAUSE:
-        err = 0;
-        io->io_Actual = (cu->cu_CDInfo.Status & CDSTSF_PAUSED) ? 1 : 0;
-        if (cu->cu_CDInfo.Status & CDSTSF_TOC) {
-            UBYTE cmd[1] = { io->io_Length ? CHCD_PAUSE : CHCD_UNPAUSE };
-            UBYTE res[1];
-            err = CD32_Cmd(cu, cmd, 1, res, 1);
-            if (err == 0) {
-                if (io->io_Length)
-                    cu->cu_CDInfo.Status |= CDSTSF_PAUSED;
-                else
-                    cu->cu_CDInfo.Status &= ~CDSTSF_PAUSED;
+        {
+            /* Classic callers can initialise only the low word, leaving
+             * values such as 0x00020000 for an unpause request. */
+            UWORD pausemode = (UWORD)io->io_Length;
+
+            err = 0;
+            io->io_Actual = (cu->cu_CDInfo.Status & CDSTSF_PAUSED) ? 1 : 0;
+            if (cu->cu_CDInfo.Status & CDSTSF_TOC) {
+                UBYTE cmd[1] = { pausemode ? CHCD_PAUSE : CHCD_UNPAUSE };
+                UBYTE res[1];
+                err = CD32_Cmd(cu, cmd, 1, res, 1);
+                if (err == 0) {
+                    if (pausemode)
+                        cu->cu_CDInfo.Status |= CDSTSF_PAUSED;
+                    else
+                        cu->cu_CDInfo.Status &= ~CDSTSF_PAUSED;
+                }
             }
         }
         break;
