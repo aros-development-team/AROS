@@ -1155,8 +1155,9 @@ LONG ReadBootSector(struct FSData *fs_data )
     }
 
     volserial = AROS_LE2QUAD(boot->volume_serial_number);
-    boot->volume_serial_number = volserial;
-    UUID_Copy((const uuid_t *)&volserial, (uuid_t *)&fs_data->uuid);
+    /* NTFS stores an eight-byte serial; a uuid_t is sixteen bytes. */
+    memset(&fs_data->uuid, 0, sizeof(fs_data->uuid));
+    CopyMem(&volserial, &fs_data->uuid, sizeof(volserial));
 
     D(
         char uuid_str[UUID_STRLEN + 1];
