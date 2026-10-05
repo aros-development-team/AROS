@@ -52,6 +52,11 @@
     s->posctldata = newdata;
     x = s->x;
     y = s->y;
+    if (vp)
+    {
+        x -= vp->DxOffset;
+        y -= vp->DyOffset;
+    }
 
     MoveSprite(vp, s, x, y);
 

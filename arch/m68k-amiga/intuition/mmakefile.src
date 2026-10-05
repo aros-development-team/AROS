@@ -1,0 +1,4 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+# Publish the native cursor interface before compiling Intuition.
+#MM- kernel-intuition-amiga-m68k : kernel-amiga-m68k-amigavideo-includes
