@@ -107,5 +107,4 @@ void UpdateScreenBitMap(struct Screen *screen, struct IntuitionBase *IntuitionBa
         else
             screen->BitMap_OBSOLETE.Planes[i] = NULL;
     }
-    GetPrivScreen(screen)->LegacyBitMap = screen->BitMap_OBSOLETE;
 }
