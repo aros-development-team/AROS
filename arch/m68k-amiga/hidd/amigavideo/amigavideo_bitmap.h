@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2019, The AROS Development Team. All rights reserved.
+    Copyright  1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #ifndef _AMIGABITMAP_H
@@ -61,6 +61,7 @@ struct amigabm_data
     struct BitMap               *displayed_pbm;
     WORD                        width;
     WORD                        height;
+    WORD                        viewportheight;
     WORD                        bytesperrow;
     UBYTE                       depth;
     UBYTE                       planebuf_size;
