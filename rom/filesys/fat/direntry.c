@@ -28,7 +28,7 @@
 #define DEBUG DEBUG_DIRENTRY
 #include "debug.h"
 
-LONG InitDirHandle(struct FSSuper *sb, ULONG cluster, struct DirHandle *dh,
+void InitDirHandle(struct FSSuper *sb, ULONG cluster, struct DirHandle *dh,
     BOOL reuse, struct Globals *glob)
 {
     /* 'dh' may or may not be initialised when this is called. if it is, then
@@ -68,8 +68,6 @@ LONG InitDirHandle(struct FSSuper *sb, ULONG cluster, struct DirHandle *dh,
     D(bug("[fat] initialised dir handle, first cluster is %ld,"
         " first sector is %ld\n", dh->ioh.first_cluster,
         dh->ioh.first_sector));
-
-    return 0;
 }
 
 LONG ReleaseDirHandle(struct DirHandle *dh, struct Globals *glob)
@@ -284,8 +282,13 @@ LONG GetDirEntryByName(struct DirHandle *dh, STRPTR name, ULONG namelen,
         }
 
         /* No match, extract the long name and compare with that instead */
-        GetDirEntryLongNameFrom(&lfn_dh, de, buf, &buflen);
-        if (namelen == buflen
+        err = GetDirEntryLongNameFrom(&lfn_dh, de, buf, &buflen);
+        if (err != 0 && err != ERROR_OBJECT_NOT_FOUND)
+        {
+            ReleaseDirHandle(&lfn_dh, glob);
+            return err;
+        }
+        if (err == 0 && namelen == buflen
             && strnicmp((char *)name, (char *)buf, buflen) == 0)
         {
             D(bug("[fat] matched long name '%s' at entry %ld, returning\n",
@@ -373,7 +376,7 @@ LONG GetDirEntryByPath(struct DirHandle *dh, STRPTR path, ULONG pathlen,
         else
         {
             if ((err = GetDirEntryByName(dh, path, len, de, glob)) != 0)
-                return ERROR_OBJECT_NOT_FOUND;
+                return err;
         }
 
         /* Move up the buffer */
@@ -417,9 +420,7 @@ LONG UpdateDirEntry(struct DirEntry *de, struct Globals *glob)
     D(bug("[fat] writing dir entry %ld in dir starting at cluster %ld\n",
         de->index, de->cluster));
 
-    err = InitDirHandle(glob->sb, de->cluster, &dh, FALSE, glob);
-    if (err != 0)
-        return err;
+    InitDirHandle(glob->sb, de->cluster, &dh, FALSE, glob);
 
     err =
         WriteFileChunk(&(dh.ioh), de->pos, sizeof(struct FATDirEntry),
@@ -610,10 +611,9 @@ LONG DeleteDirEntry(struct DirEntry *de, struct Globals *glob)
     struct DirEntry short_entry = *de;
     UBYTE checksum;
     ULONG order = 1;
-    LONG err;
+    LONG err = 0;
 
-    if ((err = InitDirHandle(glob->sb, de->cluster, &dh, FALSE, glob)) != 0)
-        return err;
+    InitDirHandle(glob->sb, de->cluster, &dh, FALSE, glob);
     CALC_SHORT_NAME_CHECKSUM(de->e.entry.name, checksum);
     /* Leave the data-owning short entry present if long-name cleanup fails. */
     while (de->index != 0)

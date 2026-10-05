@@ -122,9 +122,7 @@ static LONG MoveToSubdir(struct DirHandle *dh, UBYTE **pname,
             return err;
         }
 
-        if ((err = InitDirHandle(dh->ioh.sb, FIRST_FILE_CLUSTER(&de), dh,
-            TRUE, glob)) != 0)
-            return err;
+        InitDirHandle(dh->ioh.sb, FIRST_FILE_CLUSTER(&de), dh, TRUE, glob);
     }
 
     *pname = name;
@@ -316,13 +314,8 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
         }
 
         /* Update the dir entry to make the file empty */
-        err = InitDirHandle(lock->ioh.sb, lock->gl->dir_cluster, &dh,
+        InitDirHandle(lock->ioh.sb, lock->gl->dir_cluster, &dh,
             FALSE, glob);
-        if (err != 0)
-        {
-            FreeLock(lock, glob);
-            return err;
-        }
         err = GetDirEntry(&dh, lock->gl->dir_entry, &de, glob);
         if (err != 0)
         {
@@ -375,10 +368,8 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
     )
 
     /* Otherwise it's time to create the file. Get a handle on the passed dir */
-    if ((err = InitDirHandle(glob->sb,
-        dirlock != NULL ? dirlock->ioh.first_cluster : 0, &dh, TRUE, glob))
-        != 0)
-        return err;
+    InitDirHandle(glob->sb,
+        dirlock != NULL ? dirlock->ioh.first_cluster : 0, &dh, TRUE, glob);
 
     /* Get down to the correct subdir */
     if ((err = MoveToSubdir(&dh, &name, &namelen, glob)) != 0)
@@ -469,12 +460,8 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
     {
         D(bug("[fat] file is a directory, making sure it's empty\n"));
 
-        if ((err = InitDirHandle(lock->ioh.sb, lock->ioh.first_cluster, &dh,
-            FALSE, glob)) != 0)
-        {
-            FreeLock(lock, glob);
-            return err;
-        }
+        InitDirHandle(lock->ioh.sb, lock->ioh.first_cluster, &dh,
+            FALSE, glob);
 
         /* Loop over the entries, starting from entry 2 (the first real
          * entry). Skipping unused ones, we look for the end-of-directory
@@ -508,12 +495,7 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
     }
 
     /* Open the containing directory */
-    if ((err =InitDirHandle(lock->ioh.sb, lock->gl->dir_cluster, &dh,
-        TRUE, glob)) != 0)
-    {
-        FreeLock(lock, glob);
-        return err;
-    }
+    InitDirHandle(lock->ioh.sb, lock->gl->dir_cluster, &dh, TRUE, glob);
 
     /* If the dir is write protected, can't do anything. Root dir is never
      * write protected */
@@ -574,10 +556,9 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname,
     ULONG len;
 
     /* Get the source dir handle */
-    if ((err = InitDirHandle(glob->sb,
+    InitDirHandle(glob->sb,
         sdirlock != NULL ? sdirlock->ioh.first_cluster : 0, &sdh,
-        FALSE, glob)) != 0)
-        return err;
+        FALSE, glob);
 
     /* Get down to the correct subdir */
     if ((err = MoveToSubdir(&sdh, &sname, &snamelen, glob)) != 0)
@@ -594,13 +575,9 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname,
     }
 
     /* Now get a handle on the passed dest dir */
-    if ((err = InitDirHandle(glob->sb,
+    InitDirHandle(glob->sb,
         ddirlock != NULL ? ddirlock->ioh.first_cluster : 0, &ddh,
-        FALSE, glob)) != 0)
-    {
-        ReleaseDirHandle(&sdh, glob);
-        return err;
-    }
+        FALSE, glob);
 
     /* Get down to the correct subdir */
     if ((err = MoveToSubdir(&ddh, &dname, &dnamelen, glob)) != 0)
@@ -748,10 +725,8 @@ LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
     )
 
     /* Get a handle on the passed dir */
-    if ((err = InitDirHandle(glob->sb,
-        dirlock != NULL ? dirlock->ioh.first_cluster : 0, &dh, FALSE,
-        glob)) != 0)
-        return err;
+    InitDirHandle(glob->sb,
+        dirlock != NULL ? dirlock->ioh.first_cluster : 0, &dh, FALSE, glob);
 
     /* Get down to the correct subdir */
     if ((err = MoveToSubdir(&dh, &name, &namelen, glob)) != 0)
@@ -926,7 +901,6 @@ LONG OpWrite(struct ExtFileLock *lock, UBYTE *data, ULONG want,
     ULONG *written, struct Globals *glob)
 {
     LONG err;
-    ULONG size;
     BOOL update_entry = FALSE;
     struct DirHandle dh;
     struct DirEntry de;
@@ -962,6 +936,8 @@ LONG OpWrite(struct ExtFileLock *lock, UBYTE *data, ULONG want,
     if ((err = WriteFileChunk(&(lock->ioh), lock->pos, want, data,
         written)) == 0)
     {
+        ULONG size;
+
         /* If nothing was written but success was returned (can that even
          * happen?) then we don't want to mess with the dir entry */
         if (*written == 0)
@@ -1000,10 +976,8 @@ LONG OpWrite(struct ExtFileLock *lock, UBYTE *data, ULONG want,
                 " size is %ld\n",
                 lock->ioh.first_cluster, size));
 
-            err = InitDirHandle(lock->ioh.sb, lock->gl->dir_cluster, &dh,
+            InitDirHandle(lock->ioh.sb, lock->gl->dir_cluster, &dh,
                 FALSE, glob);
-            if (err != 0)
-                return err;
             err = GetDirEntry(&dh, lock->gl->dir_entry, &de, glob);
             if (err != 0)
             {
@@ -1063,9 +1037,7 @@ LONG OpSetFileSize(struct ExtFileLock *lock, LONG offset, LONG whence,
         *newsize = size;
         return 0;
     }
-    err = InitDirHandle(sb, lock->gl->dir_cluster, &dh, FALSE, glob);
-    if (err != 0)
-        return err;
+    InitDirHandle(sb, lock->gl->dir_cluster, &dh, FALSE, glob);
     err = GetDirEntry(&dh, lock->gl->dir_entry, &de, glob);
     if (err != 0)
         goto done;
@@ -1190,10 +1162,8 @@ LONG OpSetProtect(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
     struct DirEntry de;
 
     /* Get the dir handle */
-    if ((err = InitDirHandle(glob->sb,
-        dirlock != NULL ? dirlock->ioh.first_cluster : 0, &dh, FALSE,
-        glob)) != 0)
-        return err;
+    InitDirHandle(glob->sb,
+        dirlock != NULL ? dirlock->ioh.first_cluster : 0, &dh, FALSE, glob);
 
     /* Get down to the correct subdir */
     if ((err = MoveToSubdir(&dh, &name, &namelen, glob)) != 0)
@@ -1242,9 +1212,8 @@ LONG OpSetProtect(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
 
         D(bug("[fat] setting protections for directory '.' entry\n"));
 
-        err = InitDirHandle(glob->sb, FIRST_FILE_CLUSTER(&de), &dh, TRUE, glob);
-        if (err == 0)
-            err = GetDirEntry(&dh, 0, &de, glob);
+        InitDirHandle(glob->sb, FIRST_FILE_CLUSTER(&de), &dh, TRUE, glob);
+        err = GetDirEntry(&dh, 0, &de, glob);
         if (err == 0)
         {
             de.e.entry.attr = attr;
@@ -1266,10 +1235,8 @@ LONG OpSetDate(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
     UWORD wdate, wtime;
 
     /* Get the dir handle */
-    if ((err = InitDirHandle(glob->sb,
-        dirlock != NULL ? dirlock->ioh.first_cluster : 0, &dh, FALSE,
-        glob)) != 0)
-        return err;
+    InitDirHandle(glob->sb,
+        dirlock != NULL ? dirlock->ioh.first_cluster : 0, &dh, FALSE, glob);
 
     /* Get down to the correct subdir */
     if ((err = MoveToSubdir(&dh, &name, &namelen, glob)) != 0)
@@ -1331,8 +1298,7 @@ LONG OpAddNotify(struct NotifyRequest *nr, struct Globals *glob)
 
     else
     {
-        if ((err = InitDirHandle(glob->sb, 0, &dh, FALSE, glob)) != 0)
-            return err;
+        InitDirHandle(glob->sb, 0, &dh, FALSE, glob);
 
         /* Look for the entry */
         err =

@@ -772,11 +772,7 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name, UWORD len)
     /* Search the directory for the volume ID entry. It would've been nice to
      * just use GetNextDirEntry but I didn't want a flag or something to tell
      * it not to skip the volume name */
-    if ((err = InitDirHandle(sb, 0, &dh, FALSE, glob)) != 0)
-    {
-        FreeMem(boot, bsize);
-        return err;
-    }
+    InitDirHandle(sb, 0, &dh, FALSE, glob);
 
     while ((err = GetDirEntry(&dh, dh.cur_index + 1, &de, glob)) == 0)
     {
