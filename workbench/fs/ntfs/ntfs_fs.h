@@ -104,6 +104,7 @@ struct DirHandle {
     struct IOHandle		ioh;
     UQUAD 			parent_mft;
     UBYTE			*idx_root;
+    UBYTE			*idx_root_buf;
     struct NTFSMFTAttr		idx_attr;
     ULONG               	cur_no;			/* Last entry returned, for GetNextDirEntry */
 };

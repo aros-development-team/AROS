@@ -623,11 +623,33 @@ static IPTR ReadMFTRecord(struct NTFSMFTEntry *mft, UBYTE *buf, ULONG mft_id)
     return err;
 }
 
+/* Bootstrap $MFT extension reads without following its attribute list. */
+static struct MFTAttr *FindBaseMFTData(struct NTFSMFTAttr *at)
+{
+    UBYTE *base = at->mft->buf;
+    UBYTE *end = base + AROS_LE2LONG(((struct MFTRecordEntry *)base)->bytes_in_use);
+    struct MFTAttr *entry = at->attr_nxt;
+
+    while ((UBYTE *)entry < end) {
+        if ((ULONG)(end - (UBYTE *)entry) < sizeof(ULONG) ||
+            AROS_LE2LONG(entry->type) == 0xffffffffUL ||
+            !NTFSAttributeFits(at, entry))
+            return NULL;
+        if (AROS_LE2LONG(entry->type) == AT_DATA &&
+            entry->residentflag == ATTR_NONRESIDENT_FORM &&
+            AROS_LE2QUAD(entry->data.non_resident.lowest_vcn) == 0)
+            return entry;
+        entry = (struct MFTAttr *)((UBYTE *)entry + AROS_LE2LONG(entry->length));
+    }
+    return NULL;
+}
+
 struct MFTAttr *FindMFTAttrib(struct NTFSMFTAttr *at, UBYTE attr)
 {
     struct MFTAttr *entry;
     ULONG record_size;
     UBYTE *base, *end;
+    D(bug("[NTFS]: %s(attribute %u)\n", __func__, attr));
     if (at == NULL || at->mft == NULL || at->mft->data == NULL || at->mft->buf == NULL)
         return NULL;
     record_size = at->mft->data->mft_size << SECTORSIZE_SHIFT;
@@ -661,7 +683,7 @@ struct MFTAttr *FindMFTAttrib(struct NTFSMFTAttr *at, UBYTE attr)
             return NULL;
         if (entry->residentflag == ATTR_NONRESIDENT_FORM) {
             UQUAD length = AROS_LE2QUAD(entry->data.non_resident.data_size);
-            if (length == 0 || length > 0xffffffffUL)
+            if (length == 0 || length > 256 * 1024)
                 return NULL;
             at->edat_buf = AllocVec((ULONG)length, MEMF_ANY);
             if (at->edat_buf == NULL)
@@ -696,7 +718,7 @@ struct MFTAttr *FindMFTAttrib(struct NTFSMFTAttr *at, UBYTE attr)
             struct NTFSMFTAttr base_at;
             struct MFTAttr *data;
             INIT_MFTATTRIB(&base_at, at->mft);
-            data = FindMFTAttrib(&base_at, AT_DATA);
+            data = FindBaseMFTData(&base_at);
             if (data == NULL)
                 return NULL;
             if (ReadMFTAttribData(&base_at, data, (UBYTE *)at->emft_buf,
@@ -1033,7 +1055,7 @@ LONG ReadBootSector(struct FSData *fs_data )
      * this once and once only.
      */
     fs_data->first_device_sector =
-        (UQUAD)de->de_BlocksPerTrack * de->de_Surfaces * de->de_LowCyl;
+        de->de_BlocksPerTrack * de->de_Surfaces * de->de_LowCyl;
 
     D(bug("[NTFS] %s: trying bootsector at sector %ld (%ld bytes)\n", __func__, fs_data->first_device_sector, bsize));
 
