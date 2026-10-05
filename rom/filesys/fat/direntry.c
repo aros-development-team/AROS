@@ -598,8 +598,8 @@ void FillDirEntry(struct DirEntry *de, UBYTE attr, ULONG cluster,
     de->e.entry.create_time_tenth = ds.ds_Tick % (TICKS_PER_SECOND * 2)
         / (TICKS_PER_SECOND / 10);
 
-    de->e.entry.first_cluster_lo = cluster & 0xffff;
-    de->e.entry.first_cluster_hi = cluster >> 16;
+    de->e.entry.first_cluster_lo = AROS_WORD2LE(cluster & 0xffff);
+    de->e.entry.first_cluster_hi = AROS_WORD2LE(cluster >> 16);
 
     de->e.entry.file_size = 0;
 }

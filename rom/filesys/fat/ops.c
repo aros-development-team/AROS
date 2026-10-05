@@ -853,8 +853,8 @@ LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
     cluster = dh.ioh.first_cluster;
     if (cluster == dh.ioh.sb->rootdir_cluster)
         cluster = 0;
-    sde.e.entry.first_cluster_lo = cluster & 0xffff;
-    sde.e.entry.first_cluster_hi = cluster >> 16;
+    sde.e.entry.first_cluster_lo = AROS_WORD2LE(cluster & 0xffff);
+    sde.e.entry.first_cluster_hi = AROS_WORD2LE(cluster >> 16);
     if ((err = UpdateDirEntry(&sde, glob)) != 0)
         goto create_failed;
 
