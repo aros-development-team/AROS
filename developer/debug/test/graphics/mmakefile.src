@@ -22,6 +22,7 @@ FILES := \
     textbug \
     truecolorpens \
     weightamatch \
+    wpaaglobal \
     writepixelarray \
     writepixelarrayalpha
 
