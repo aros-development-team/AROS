@@ -40,7 +40,6 @@ jobs:
 
           # A force-push can leave "before" outside the fetched history
           # or make it unrelated to the new branch history.
-          original_base = base
           available = bool(base) and base != zero and subprocess.run(
               ["git", "cat-file", "-e", f"{base}^{{commit}}"],
               stdout=subprocess.DEVNULL,
@@ -64,10 +63,16 @@ jobs:
                           base = common
                   except subprocess.CalledProcessError:
                       pass
-              if not base and available:
-                  # A rewritten default branch has no earlier common base
-                  # with itself; compare its two available tree snapshots.
-                  base = original_base
+              if not base:
+                  # With no trustworthy range, inspect only the tip commit.
+                  try:
+                      base = subprocess.check_output(
+                          ["git", "rev-parse", "--verify", f"{head}^1"],
+                          text=True,
+                          stderr=subprocess.DEVNULL,
+                      ).strip()
+                  except subprocess.CalledProcessError:
+                      pass
 
           if base:
               raw_paths = subprocess.check_output(
@@ -85,10 +90,22 @@ jobs:
                   ]
               )
           else:
-              # No reliable range exists (for example, a rewritten default
-              # branch). Inspect all tracked source files rather than skip them.
+              # A root commit has no parent to compare with.
               raw_paths = subprocess.check_output(
-                  ["git", "ls-files", "-z", "--", "*.c", "*.h"]
+                  [
+                      "git",
+                      "diff-tree",
+                      "--root",
+                      "--no-commit-id",
+                      "--name-only",
+                      "-z",
+                      "--diff-filter=ACMR",
+                      "-r",
+                      head,
+                      "--",
+                      "*.c",
+                      "*.h",
+                  ]
               )
 
           paths = [
@@ -148,6 +165,6 @@ jobs:
               )
 
           print(
-              f"Checked {len(paths)} {'changed' if base else 'tracked'} C/H file(s); "
+              f"Checked {len(paths)} changed C/H file(s); "
               f"reported {findings} line-ending issue(s)."
           )
