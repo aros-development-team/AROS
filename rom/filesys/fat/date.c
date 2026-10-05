@@ -103,11 +103,11 @@ void ConvertDOSDate(struct DateStamp *ds, UWORD * date, UWORD * time,
      * directory entry. See ConvertFATDate for the other half. */
 
     /* Date bits: yyyy yyym mmmd dddd */
-    *date = AROS_WORD2LE((((ULONG) year) << 9) |
-        (((ULONG) month) << 5) | day);
+    *date = AROS_WORD2LE((UWORD)((year << 9) |
+        (month << 5) | day));
 
     /* Time bits: hhhh hmmm mmms ssss */
-    *time = AROS_WORD2LE((((ULONG) hours) << 11) |
-        (((ULONG) mins) << 5) | secs);
+    *time = AROS_WORD2LE((UWORD)((hours << 11) |
+        (mins << 5) | secs));
 }
 
