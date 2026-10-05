@@ -24,7 +24,7 @@ void ReplyPacket(struct DosPacket *pkt, struct ExecBase *sysbase);
 
 /* direntry.c */
 void InitDir(struct FSSuper *sb, ULONG cluster, struct DirEntry *de);
-LONG InitDirHandle(struct FSSuper *sb, ULONG cluster, struct DirHandle *dh,
+void InitDirHandle(struct FSSuper *sb, ULONG cluster, struct DirHandle *dh,
     BOOL reuse, struct Globals *glob);
 LONG ReleaseDirHandle(struct DirHandle *dh, struct Globals *glob);
 LONG GetDirEntry(struct DirHandle *dh, ULONG index, struct DirEntry *de,
