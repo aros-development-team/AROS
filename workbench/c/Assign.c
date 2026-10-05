@@ -132,9 +132,9 @@ struct UtilityBase *UtilityBase;
 #define AROS_ASMSYMNAME(s) (&s)
 
 static const int __abox__ = 1;
-static const char version[] = "\0$VER: Assign unofficial 50.13 (26.04.2023) " ISOASCII_COPYRIGHT " The AROS Dev Team" ;
+static const char version[] = "\0$VER: Assign unofficial 50.14 (04.10.2026) " ISOASCII_COPYRIGHT " The AROS Dev Team" ;
 #else
-static const char version[] __attribute__((used)) = "\0$VER: Assign 50.13 (26.04.2023) " ISOASCII_COPYRIGHT " The AROS Dev Team" ;
+static const char version[] __attribute__((used)) = "\0$VER: Assign 50.14 (04.10.2026) " ISOASCII_COPYRIGHT " The AROS Dev Team" ;
 #endif
 
 struct localdata
@@ -224,7 +224,7 @@ static int Main(struct ExecBase *sBase)
         struct RDArgs *readarg, *rd;
         struct ArgList arglist;
         struct ArgList *MyArgList = &arglist;
-        int error = RETURN_OK;
+        int error = RETURN_FAIL;
 
         SysBase = sBase;
         UtilityBase = (struct UtilityBase *) OpenLibrary("utility.library",50);
@@ -243,6 +243,8 @@ static int Main(struct ExecBase *sBase)
                     readarg = ReadArgs(argtemplate, (IPTR *)MyArgList, rd);
                     if (readarg)
                     {
+                            error = RETURN_OK;
+
                             /* Verify mutually exclusive args
                              */
                             if ((MyArgList->add!=0) + (MyArgList->prepend!=0) + (MyArgList->remove!=0) + (MyArgList->path!=0) + (MyArgList->defer!=0) > 1)
