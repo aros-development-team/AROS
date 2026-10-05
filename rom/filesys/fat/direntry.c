@@ -417,7 +417,9 @@ LONG UpdateDirEntry(struct DirEntry *de, struct Globals *glob)
     D(bug("[fat] writing dir entry %ld in dir starting at cluster %ld\n",
         de->index, de->cluster));
 
-    InitDirHandle(glob->sb, de->cluster, &dh, FALSE, glob);
+    err = InitDirHandle(glob->sb, de->cluster, &dh, FALSE, glob);
+    if (err != 0)
+        return err;
 
     err =
         WriteFileChunk(&(dh.ioh), de->pos, sizeof(struct FATDirEntry),

@@ -835,20 +835,20 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name, UWORD len)
         CopyMem(de.e.entry.name, boot->ebpbs.ebpb.bs_vollab,
             FAT_MAX_SHORT_NAME);
 
-    if ((td_err = AccessDisk(TRUE, sb->first_device_sector, 1, bsize,
-        (UBYTE *) boot, glob)) != 0)
-    {
-        err = ERROR_UNKNOWN;
-        goto rename_cleanup;
-    }
-
-    /* Update name in SB */
+    /* The root entry has already changed, even if the boot write fails. */
     sb->volume.name[0] = len;
     if (len != 0)
         sb->volume.name[1] = toupper(name[0]);
     for (i = 1; i < len; i++)
         sb->volume.name[i + 1] = tolower(name[i]);
     sb->volume.name[len + 1] = '\0';
+
+    if ((td_err = AccessDisk(TRUE, sb->first_device_sector, 1, bsize,
+        (UBYTE *) boot, glob)) != 0)
+    {
+        err = ERROR_UNKNOWN;
+        goto rename_cleanup;
+    }
 
     D(bug("[fat] new volume name is '%s'\n", &(sb->volume.name[1])));
 

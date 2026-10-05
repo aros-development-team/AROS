@@ -51,7 +51,12 @@ static LONG FreeClusterChain(struct FSSuper *sb, ULONG cluster)
         ULONG next;
         if (cluster >= sb->clusters_count + 2 || ++count > sb->clusters_count)
             return ERROR_NOT_A_DOS_DISK;
+        sb->fat_io_error = FALSE;
         next = GET_NEXT_CLUSTER(sb, cluster);
+        if (sb->fat_io_error)
+            return ERROR_UNKNOWN;
+        if (next < 2)
+            return ERROR_NOT_A_DOS_DISK;
         if (!FreeCluster(sb, cluster))
             return ERROR_UNKNOWN;
         cluster = next;
@@ -311,12 +316,30 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
         }
 
         /* Update the dir entry to make the file empty */
-        InitDirHandle(lock->ioh.sb, lock->gl->dir_cluster, &dh, FALSE, glob);
-        GetDirEntry(&dh, lock->gl->dir_entry, &de, glob);
+        err = InitDirHandle(lock->ioh.sb, lock->gl->dir_cluster, &dh,
+            FALSE, glob);
+        if (err != 0)
+        {
+            FreeLock(lock, glob);
+            return err;
+        }
+        err = GetDirEntry(&dh, lock->gl->dir_entry, &de, glob);
+        if (err != 0)
+        {
+            ReleaseDirHandle(&dh, glob);
+            FreeLock(lock, glob);
+            return err;
+        }
         de.e.entry.first_cluster_lo = de.e.entry.first_cluster_hi = 0;
         de.e.entry.file_size = 0;
         de.e.entry.attr |= ATTR_ARCHIVE;
-        UpdateDirEntry(&de, glob);
+        err = UpdateDirEntry(&de, glob);
+        ReleaseDirHandle(&dh, glob);
+        if (err != 0)
+        {
+            FreeLock(lock, glob);
+            return err;
+        }
 
         D(bug("[fat] set first cluster and size to 0 in directory entry\n"));
 
@@ -368,7 +391,12 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
      * write protected */
     if (dh.ioh.first_cluster != dh.ioh.sb->rootdir_cluster)
     {
-        GetDirEntry(&dh, 0, &de, glob);
+        err = GetDirEntry(&dh, 0, &de, glob);
+        if (err != 0)
+        {
+            ReleaseDirHandle(&dh, glob);
+            return err;
+        }
         if (de.e.entry.attr & ATTR_READ_ONLY)
         {
             D(bug("[fat] containing dir is write protected, doing nothing\n"));
@@ -583,7 +611,13 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname,
     }
 
     /* Check the source and dest dirs. If either is read-only, do nothing */
-    GetDirEntry(&sdh, 0, &dde, glob);
+    err = GetDirEntry(&sdh, 0, &dde, glob);
+    if (err != 0)
+    {
+        ReleaseDirHandle(&ddh, glob);
+        ReleaseDirHandle(&sdh, glob);
+        return err;
+    }
     if (dde.e.entry.attr & ATTR_READ_ONLY)
     {
         D(bug("[fat] source dir is read only, doing nothing\n"));
@@ -591,7 +625,13 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname,
         ReleaseDirHandle(&sdh, glob);
         return ERROR_WRITE_PROTECTED;
     }
-    GetDirEntry(&ddh, 0, &dde, glob);
+    err = GetDirEntry(&ddh, 0, &dde, glob);
+    if (err != 0)
+    {
+        ReleaseDirHandle(&ddh, glob);
+        ReleaseDirHandle(&sdh, glob);
+        return err;
+    }
     if (dde.e.entry.attr & ATTR_READ_ONLY)
     {
         D(bug("[fat] dest dir is read only, doing nothing\n"));
@@ -645,7 +685,24 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname,
     dde.e.entry.create_time_tenth = sde.e.entry.create_time_tenth;
     dde.e.entry.file_size = sde.e.entry.file_size;
 
-    UpdateDirEntry(&dde, glob);
+    err = UpdateDirEntry(&dde, glob);
+    if (err != 0)
+    {
+        DeleteDirEntry(&dde, glob);
+        ReleaseDirHandle(&ddh, glob);
+        ReleaseDirHandle(&sdh, glob);
+        return err;
+    }
+
+    /* Keep the original lock until its directory entry is gone. */
+    err = DeleteDirEntry(&sde, glob);
+    if (err != 0)
+    {
+        DeleteDirEntry(&dde, glob);
+        ReleaseDirHandle(&ddh, glob);
+        ReleaseDirHandle(&sdh, glob);
+        return err;
+    }
 
     /* Update the global lock (if present) with the new dir cluster/entry */
     ForeachNode(&sdh.ioh.sb->info->locks, gl)
@@ -666,9 +723,6 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname,
             gl->name[0] = (UBYTE) len;
         }
     }
-
-    /* Delete the original */
-    DeleteDirEntry(&sde, glob);
 
     /* Notify */
     SendNotifyByDirEntry(sdh.ioh.sb, &dde);
@@ -722,7 +776,12 @@ LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
      * write protected */
     if (dh.ioh.first_cluster != dh.ioh.sb->rootdir_cluster)
     {
-        GetDirEntry(&dh, 0, &de, glob);
+        err = GetDirEntry(&dh, 0, &de, glob);
+        if (err != 0)
+        {
+            ReleaseDirHandle(&dh, glob);
+            return err;
+        }
         if (de.e.entry.attr & ATTR_READ_ONLY)
         {
             D(bug("[fat] containing dir is write protected, doing nothing\n"));
@@ -868,6 +927,7 @@ LONG OpWrite(struct ExtFileLock *lock, UBYTE *data, ULONG want,
     ULONG *written, struct Globals *glob)
 {
     LONG err;
+    ULONG size;
     BOOL update_entry = FALSE;
     struct DirHandle dh;
     struct DirEntry de;
@@ -919,9 +979,10 @@ LONG OpWrite(struct ExtFileLock *lock, UBYTE *data, ULONG want,
         lock->pos += *written;
 
         /* Update the dir entry if the size changed */
-        if (lock->pos > lock->gl->size)
+        size = lock->gl->size;
+        if (lock->pos > size)
         {
-            lock->gl->size = lock->pos;
+            size = lock->pos;
             update_entry = TRUE;
         }
 
@@ -932,29 +993,40 @@ LONG OpWrite(struct ExtFileLock *lock, UBYTE *data, ULONG want,
             update_entry = TRUE;
 
         D(bug("[fat] wrote %ld bytes, new file pos is %ld, size is %ld\n",
-            *written, lock->pos, lock->gl->size));
+            *written, lock->pos, size));
 
         if (update_entry)
         {
             D(bug("[fat] updating dir entry, first cluster is %ld,"
                 " size is %ld\n",
-                lock->ioh.first_cluster, lock->gl->size));
+                lock->ioh.first_cluster, size));
 
-            lock->gl->first_cluster = lock->ioh.first_cluster;
+            err = InitDirHandle(lock->ioh.sb, lock->gl->dir_cluster, &dh,
+                FALSE, glob);
+            if (err != 0)
+                return err;
+            err = GetDirEntry(&dh, lock->gl->dir_entry, &de, glob);
+            if (err != 0)
+            {
+                ReleaseDirHandle(&dh, glob);
+                return err;
+            }
 
-            InitDirHandle(lock->ioh.sb, lock->gl->dir_cluster, &dh, FALSE,
-                glob);
-            GetDirEntry(&dh, lock->gl->dir_entry, &de, glob);
-
-            de.e.entry.file_size = lock->gl->size;
-            de.e.entry.first_cluster_lo = lock->gl->first_cluster & 0xffff;
-            de.e.entry.first_cluster_hi = lock->gl->first_cluster >> 16;
+            de.e.entry.file_size = AROS_LONG2LE(size);
+            de.e.entry.first_cluster_lo =
+                AROS_WORD2LE(lock->ioh.first_cluster & 0xffff);
+            de.e.entry.first_cluster_hi =
+                AROS_WORD2LE(lock->ioh.first_cluster >> 16);
 
             de.e.entry.attr |= ATTR_ARCHIVE;
-            UpdateDirEntry(&de, glob);
+            err = UpdateDirEntry(&de, glob);
 
             ReleaseDirHandle(&dh, glob);
+            if (err != 0)
+                return err;
+            lock->gl->first_cluster = lock->ioh.first_cluster;
         }
+        lock->gl->size = size;
     }
 
     return err;
@@ -969,6 +1041,7 @@ LONG OpSetFileSize(struct ExtFileLock *lock, LONG offset, LONG whence,
     QUAD size;
     LONG err;
     ULONG first, cl, next, count = 0, want, keep = 0, tail = 0;
+    ULONG keep_next = 0;
     ULONG added = 0, added_last = 0, last = 0, original_next = 0;
     BOOL linked = FALSE;
 
@@ -1000,6 +1073,13 @@ LONG OpSetFileSize(struct ExtFileLock *lock, LONG offset, LONG whence,
     want = ((ULONG)size >> sb->clustersize_bits) +
         (((ULONG)size & (sb->clustersize - 1)) != 0);
     first = FIRST_FILE_CLUSTER(&de);
+    if (first != 0 &&
+        (first < 2 || first >= sb->eoc_mark - 7 ||
+         first >= sb->clusters_count + 2))
+    {
+        err = ERROR_NOT_A_DOS_DISK;
+        goto done;
+    }
     cl = first;
     while (cl >= 2 && cl < sb->eoc_mark - 7)
     {
@@ -1011,7 +1091,15 @@ LONG OpSetFileSize(struct ExtFileLock *lock, LONG offset, LONG whence,
         if (count == want)
             keep = cl;
         last = cl;
+        sb->fat_io_error = FALSE;
         cl = GET_NEXT_CLUSTER(sb, cl);
+        if (sb->fat_io_error)
+        {
+            err = ERROR_UNKNOWN;
+            goto done;
+        }
+        if (count == want)
+            keep_next = cl;
         if (cl < 2)
         {
             err = ERROR_NOT_A_DOS_DISK;
@@ -1058,7 +1146,7 @@ LONG OpSetFileSize(struct ExtFileLock *lock, LONG offset, LONG whence,
     if (want == 0)
         tail = first;
     else if (keep != 0 && count > want)
-        tail = GET_NEXT_CLUSTER(sb, keep);
+        tail = keep_next;
     if (first < 2)
         first = added;
     if (want == 0)
