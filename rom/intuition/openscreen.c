@@ -2412,7 +2412,11 @@ static const char THIS_FILE[] = __FILE__;
     {
         /* Copy the BitMap's info for compatability with existing AmigaOS apps */
         CopyMem(screen->Screen.RastPort.BitMap, &screen->Screen.BitMap_OBSOLETE, sizeof(struct BitMap));
-        screen->LegacyBitMap = screen->Screen.BitMap_OBSOLETE;
+        /* Raw SA_BitMap screens display the embedded legacy header while
+         * drawing keeps the caller-owned header. Legacy edits are therefore
+         * visible on rebuild without modifying either drawing buffer. */
+        if (!IS_HIDD_BM(screen->Screen.RastPort.BitMap))
+            screen->Screen.ViewPort.RasInfo->BitMap = &screen->Screen.BitMap_OBSOLETE;
     }
 
     DEBUG_OPENSCREEN(dprintf("OpenScreen: return 0x%lx\n", screen));

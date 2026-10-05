@@ -67,8 +67,12 @@ static void rebuild(struct Screen *screen, struct BitMap *bitmap)
 int main(void)
 {
     struct Screen *screen = NULL;
+    struct Screen *ordinary = NULL;
+    struct ScreenBuffer *original_buffer = NULL, *other_buffer = NULL;
     struct BitMap bitmap;
+    struct BitMap other;
     struct BitMap drawing_before;
+    struct BitMap *display;
     PLANEPTR planes[7] = {0};
     ULONG i;
 
@@ -93,47 +97,83 @@ int main(void)
         check(FALSE, "open test screen");
         goto end;
     }
-    rebuild(screen, &bitmap);
-    bitmap.Depth = 5;
-    rebuild(screen, &bitmap);
-    bitmap.Depth = 3;
-    rebuild(screen, &bitmap);
-    bitmap.Depth = 6;
-    rebuild(screen, &bitmap);
-    bitmap.Depth = 3;
-    bitmap.Planes[0] = planes[6];
-    rebuild(screen, &bitmap);
-    bitmap.Planes[0] = planes[0];
-    rebuild(screen, &bitmap);
-
-    /* The old Screen bitmap is a separate public mirror. Liberation
-     * changes this field rather than RastPort.BitMap. */
     drawing_before = bitmap;
-    screen->BitMap_OBSOLETE.Depth = 5;
-    screen->BitMap_OBSOLETE.Planes[0] = planes[6];
-    rebuild(screen, &screen->BitMap_OBSOLETE);
-    check(screen->ViewPort.RasInfo->BitMap->Depth == 5 &&
-          screen->ViewPort.RasInfo->BitMap->Planes[0] == planes[6],
-          "legacy screen bitmap changes reach the display bitmap");
+    display = &screen->BitMap_OBSOLETE;
+    check(screen->ViewPort.RasInfo->BitMap == display,
+          "raw custom screen displays its embedded bitmap header");
+    check(screen->RastPort.BitMap == &bitmap,
+          "drawing retains the caller's bitmap header");
+    rebuild(screen, display);
+    display->Depth = 5;
+    rebuild(screen, display);
+    display->Depth = 3;
+    rebuild(screen, display);
+    display->Depth = 6;
+    rebuild(screen, display);
+    display->Depth = 3;
+    display->Planes[0] = planes[6];
+    rebuild(screen, display);
+    display->Planes[0] = planes[0];
+    rebuild(screen, display);
     check(memcmp(&bitmap, &drawing_before, sizeof(bitmap)) == 0,
           "legacy display changes preserve the caller's drawing bitmap");
-    screen->BitMap_OBSOLETE.Depth = 3;
-    rebuild(screen, &screen->BitMap_OBSOLETE);
-    check(screen->ViewPort.RasInfo->BitMap->Depth == 3, "legacy bitmap can shrink again");
-    check(memcmp(&bitmap, &drawing_before, sizeof(bitmap)) == 0,
-          "repeated legacy changes preserve distinct double-buffer planes");
 
-    /* A later modern bitmap change must not be overwritten by an
-     * unchanged legacy mirror. */
+    /* Explicit pointer swaps select the display header. Later embedded
+     * edits must not override that choice or alias the drawing buffers. */
     screen->ViewPort.RasInfo->BitMap = &bitmap;
     bitmap.Depth = 6;
     rebuild(screen, &bitmap);
-    check(bitmap.Depth == 6, "unchanged legacy mirror preserves modern edits");
+    other = bitmap;
+    other.Planes[0] = planes[6];
+    screen->ViewPort.RasInfo->BitMap = &other;
+    rebuild(screen, &other);
+    display->Depth = 5;
+    rebuild(screen, &other);
+    check(screen->ViewPort.RasInfo->BitMap == &other,
+          "embedded edits do not override an explicit display pointer");
+    check(bitmap.Planes[0] == planes[0] && other.Planes[0] == planes[6],
+          "drawing buffers keep distinct plane addresses");
+    screen->ViewPort.RasInfo->BitMap = &bitmap;
     bitmap.Depth = 3;
     rebuild(screen, &bitmap);
+
+    other.Depth = 3;
+    original_buffer = AllocScreenBuffer(screen, &bitmap, 0);
+    other_buffer = AllocScreenBuffer(screen, &other, 0);
+    check(original_buffer && other_buffer, "allocate caller-owned screen buffers");
+    if (original_buffer && other_buffer)
+    {
+        check(ChangeScreenBuffer(screen, other_buffer), "select alternate screen buffer");
+        rebuild(screen, &other);
+        check(screen->ViewPort.RasInfo->BitMap == &other &&
+              screen->RastPort.BitMap == &other,
+              "screen-buffer swap selects both display and drawing header");
+        check(ChangeScreenBuffer(screen, original_buffer), "restore original screen buffer");
+        rebuild(screen, &bitmap);
+        check(screen->ViewPort.RasInfo->BitMap == &bitmap &&
+              screen->RastPort.BitMap == &bitmap,
+              "screen-buffer restore retains the selected header");
+    }
+
+    ordinary = OpenScreenTags(NULL, SA_Width, 320, SA_Height, 100,
+        SA_Depth, 3, SA_Type, CUSTOMSCREEN, SA_Quiet, TRUE,
+        SA_ShowTitle, FALSE, TAG_DONE);
+    check(ordinary != NULL, "open ordinary managed screen");
+    if (ordinary)
+    {
+        check(ordinary->ViewPort.RasInfo->BitMap == ordinary->RastPort.BitMap,
+              "ordinary managed screens retain their original display header");
+        check(MakeScreen(ordinary) == 0 && RethinkDisplay() == 0,
+              "rebuild ordinary managed screen");
+        CloseScreen(ordinary);
+        ordinary = NULL;
+    }
     bug("CLASSIC VIEWPORT READY: depth %lu, retained higher planes\n", (unsigned long)bitmap.Depth);
     Delay(250);
 end:
+    if (ordinary) CloseScreen(ordinary);
+    if (other_buffer) FreeScreenBuffer(screen, other_buffer);
+    if (original_buffer) FreeScreenBuffer(screen, original_buffer);
     if (screen)
     {
         CloseScreen(screen);

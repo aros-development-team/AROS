@@ -758,7 +758,6 @@ struct IntScreen
     struct NewDecorator     *Decorator;
 
     struct BitMap           *AllocatedBitMap;
-    struct BitMap            LegacyBitMap; /* Private legacy display descriptor. */
     struct DBufInfo         *RestoreDBufInfo;
 #ifdef SKINS
     WORD                     LastClockPos;
