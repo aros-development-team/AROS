@@ -5654,10 +5654,21 @@ parse_domain_list(struct parse *cfile, int compress)
 	struct expression *t = NULL;
 	unsigned len, clen = 0;
 	int result;
-	unsigned char compbuf[256 * NS_MAXCDNAME];
+	/*
+	 * AROS: compbuf is 256 * NS_MAXCDNAME (~64K) and overflows the
+	 * small default process stack dhclient runs on, so allocate it on
+	 * the heap and free it at cleanup:.  dnptrs holds only pointers
+	 * (small), so it stays on the stack.
+	 */
+	const unsigned compbuf_sz = 256 * NS_MAXCDNAME;
+	unsigned char *compbuf;
 	const unsigned char *dnptrs[256], **lastdnptr;
 
-	memset(compbuf, 0, sizeof(compbuf));
+	compbuf = dmalloc(compbuf_sz, MDL);
+	if (compbuf == NULL)
+		log_fatal("No memory for domain list compression buffer.");
+
+	memset(compbuf, 0, compbuf_sz);
 	memset(dnptrs, 0, sizeof(dnptrs));
 	dnptrs[0] = compbuf;
 	lastdnptr = &dnptrs[255];
@@ -5672,7 +5683,7 @@ parse_domain_list(struct parse *cfile, int compress)
 
 		if (token != STRING) {
 			parse_warn(cfile, "Expecting a domain string.");
-			return NULL;
+			goto cleanup;
 		}
 
 		/* If compression pointers are enabled, compress.  If not,
@@ -5680,19 +5691,19 @@ parse_domain_list(struct parse *cfile, int compress)
 		 */
 		if (compress) {
 			result = MRns_name_compress(val, compbuf + clen,
-						    sizeof(compbuf) - clen,
+						    compbuf_sz - clen,
 						    dnptrs, lastdnptr);
 
 			if (result < 0) {
 				parse_warn(cfile, "Error compressing domain "
 						  "list: %m");
-				return NULL;
+				goto cleanup;
 			}
 
 			clen += result;
 		} else {
 			result = MRns_name_pton(val, compbuf + clen,
-						sizeof(compbuf) - clen);
+						compbuf_sz - clen);
 
 			/* result == 1 means the input was fully qualified.
 			 * result == 0 means the input wasn't.
@@ -5701,7 +5712,7 @@ parse_domain_list(struct parse *cfile, int compress)
 			if (result < 0) {
 				parse_warn(cfile, "Error assembling domain "
 						  "list: %m");
-				return NULL;
+				goto cleanup;
 			}
 
 			/*
@@ -5715,7 +5726,7 @@ parse_domain_list(struct parse *cfile, int compress)
 			clen++;
 		}
 
-		if (clen > sizeof(compbuf))
+		if (clen > compbuf_sz)
 			log_fatal("Impossible error at %s:%d", MDL);
 
 		token = peek_token(&val, NULL, cfile);
@@ -5724,6 +5735,8 @@ parse_domain_list(struct parse *cfile, int compress)
 	if (!make_const_data(&t, compbuf, clen, 1, 1, MDL))
 		log_fatal("No memory for domain list object.");
 
+ cleanup:
+	dfree(compbuf, MDL);
 	return t;
 }
 
