@@ -33,6 +33,7 @@
 #include <proto/kernel.h>
 #include <proto/gpio.h>
 #include <proto/mbox.h>
+#include <proto/openfirmware.h>
 #include <proto/pl011bt.h>
 
 #include "pl011bt_private.h"
@@ -42,6 +43,7 @@
  * and GPIO 43 carries GPCLK2 in ALT0, which the controller uses as its LPO.
  */
 #define BT_GPIO_CTS             30
+#define BT_GPIO_TXD             32
 #define BT_GPIO_RXD             33
 #define BT_GPIO_LPO             43
 
@@ -81,15 +83,16 @@ static inline void pl011bt_wr(IPTR addr, ULONG value)
  * RP1 instead. Both matter here -- GPFSEL3 also carries the WiFi SDIO bus on
  * GPIO 34-39, and clearing that from under sdio.resource is not recoverable.
  */
-static void route_bluetooth_uart(void)
+static void route_bluetooth_uart(struct PL011BTBase *PL011BTBase)
 {
+    unsigned int first = PL011BTBase->pl011bt_RTSCTS ? BT_GPIO_CTS : BT_GPIO_TXD;
     unsigned int pin;
 
-    for (pin = BT_GPIO_CTS; pin <= BT_GPIO_RXD; pin++)
+    for (pin = first; pin <= BT_GPIO_RXD; pin++)
         GPIOSetFunc(pin, GPIO_FSEL_ALT3);
 
     D(bug("[PL011BT] GPIO %lu-%lu -> ALT3\n",
-          (ULONG)BT_GPIO_CTS, (ULONG)BT_GPIO_RXD));
+          (ULONG)first, (ULONG)BT_GPIO_RXD));
 }
 
 /*
@@ -255,6 +258,59 @@ static void pl011bt_rx_handler(void *data, void *unused)
                PL011_INT_RX | PL011_INT_RT | PL011_INT_OE);
 }
 
+/*
+ * serial0 is the console. disable-bt and miniuart-bt point it at the PL011
+ * (serial@7e201000), and then the PL011 is not ours.
+ */
+static BOOL pl011bt_is_console(void)
+{
+    static const char pl011[] = "201000";
+    APTR OpenFirmwareBase = OpenResource("openfirmware.resource");
+    void *key, *prop;
+    const char *s;
+    ULONG len, i;
+
+    if (!OpenFirmwareBase || !(key = OF_OpenKey("/aliases")) ||
+        !(prop = OF_FindProperty(key, "serial0")))
+        return FALSE;
+
+    /* The length counts the terminating NUL. */
+    len = OF_GetPropLen(prop);
+    if (len < sizeof(pl011))
+        return FALSE;
+    s = (const char *)OF_GetPropValue(prop) + len - sizeof(pl011);
+    for (i = 0; i < sizeof(pl011) - 1; i++)
+        if (s[i] != pl011[i])
+            return FALSE;
+
+    return TRUE;
+}
+
+/*
+ * CTS/RTS are wired to GPIO 30/31 when the live uart0_pins list them
+ * (3B+, Zero 2 W), not on a Pi 3B. Default: wired.
+ */
+static BOOL pl011bt_has_rtscts(void)
+{
+    APTR OpenFirmwareBase = OpenResource("openfirmware.resource");
+    void *key, *prop;
+    const ULONG *pins;
+    ULONG n, i;
+
+    if (!OpenFirmwareBase ||
+        !(key = OF_OpenKey("/soc/gpio@7e200000/uart0_pins")) ||
+        !(prop = OF_FindProperty(key, "brcm,pins")))
+        return TRUE;
+
+    pins = (const ULONG *)OF_GetPropValue(prop);
+    n = OF_GetPropLen(prop) / sizeof(ULONG);
+    for (i = 0; i < n; i++)
+        if (AROS_BE2LONG(pins[i]) == BT_GPIO_CTS)
+            return TRUE;
+
+    return FALSE;
+}
+
 static int pl011bt_init(struct PL011BTBase *PL011BTBase)
 {
     IPTR periiobase;
@@ -297,6 +353,12 @@ static int pl011bt_init(struct PL011BTBase *PL011BTBase)
     }
     PL011BTBase->pl011bt_periiobase = (unsigned int)periiobase;
 
+    if (pl011bt_is_console())
+    {
+        bug("[PL011BT] the PL011 is serial0 (the console), standing down\n");
+        return FALSE;
+    }
+
     GPIOBase = OpenResource("gpio.resource");
     if (GPIOBase == NULL)
     {
@@ -314,12 +376,14 @@ static int pl011bt_init(struct PL011BTBase *PL011BTBase)
          & ~(IPTR)(MBOX_MSG_ALIGN - 1));
 
     PL011BTBase->pl011bt_ClockHz = query_uart_clock(PL011BTBase);
+    PL011BTBase->pl011bt_RTSCTS = pl011bt_has_rtscts();
     PL011BTBase->pl011bt_Caps = PL011BT_CAP_PRESENT |
         PL011BT_CAP_BAUD_CHANGE | PL011BT_CAP_POWER_CONTROL;
 
-    bug("[PL011BT] ready: PL011=0x%08lx clock=%lu mbox=%s\n",
+    bug("[PL011BT] ready: PL011=0x%08lx clock=%lu mbox=%s rts/cts=%s\n",
         (ULONG)PL011_0_BASE, (ULONG)PL011BTBase->pl011bt_ClockHz,
-        MBoxBase != NULL ? "yes" : "no");
+        MBoxBase != NULL ? "yes" : "no",
+        PL011BTBase->pl011bt_RTSCTS ? "yes" : "no");
 
     return TRUE;
 }
@@ -415,7 +479,7 @@ AROS_LH3(long, PL011BTConfigure,
         ReleaseSemaphore(&PL011BTBase->pl011bt_Sem);
         return PL011BT_ERR_TIMEOUT;
     }
-    route_bluetooth_uart();
+    route_bluetooth_uart(PL011BTBase);
 
     pl011bt_wr(PL011_0_BASE + PL011_CR, 0);
     while ((pl011bt_rd(PL011_0_BASE + PL011_FR) & PL011_FR_BUSY) && --wait != 0)
@@ -466,7 +530,8 @@ AROS_LH3(long, PL011BTConfigure,
                PL011_LCRH_WLEN8 | PL011_LCRH_FEN);
 
     control = PL011_CR_UARTEN | PL011_CR_TXE | PL011_CR_RXE;
-    if (flags & PL011BT_CONFIG_RTS_CTS)
+    /* Without the wires CTS floats and CTSEN can stall TX. */
+    if ((flags & PL011BT_CONFIG_RTS_CTS) && PL011BTBase->pl011bt_RTSCTS)
         control |= PL011_CR_RTSEN | PL011_CR_CTSEN;
     pl011bt_wr(PL011_0_BASE + PL011_CR, control);
 

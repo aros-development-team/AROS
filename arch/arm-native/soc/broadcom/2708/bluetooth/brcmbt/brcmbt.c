@@ -40,13 +40,9 @@
 
 /* /// "brcmFwPath()" */
 /*
- * Which file to load.
- *
- * Linux names these by chip: BCM43430A1.hcd is the Pi 3 and Pi Zero W,
- * BCM4345C0.hcd the Pi 3B+ and Pi 4. LMP subversion identifies the part, and
- * the mapping below covers what this port can run on; anything else falls
- * back to the generic name so an unknown board can still be given a blob by
- * hand.
+ * Which file to load, by chip from the LMP subversion: BCM43430A1.hcd for
+ * the Pi 3 and Zero W, BCM4345C0.hcd for the 3B+ and Pi 4. Anything else
+ * falls back to BCM.hcd, so an unknown board can be given a blob by hand.
  */
 static CONST_STRPTR brcmFwName(struct BtFirmwareContext *ctx)
 {

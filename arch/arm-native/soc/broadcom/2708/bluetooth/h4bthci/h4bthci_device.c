@@ -61,21 +61,26 @@ static struct H4BTHCIUnit *h4bthci_OpenUnit(LIBBASETYPEPTR H4BTHCIBase,
         NewList((struct List *)&unit->hu_Listeners);
         InitSemaphore(&unit->hu_QueueLock);
 
-        unit->hu_ReadySignal = SIGB_SINGLE;
+        /* Own signal: SIGF_SINGLE belongs to the semaphores. */
+        unit->hu_ReadySignal = AllocSignal(-1);
         unit->hu_ReadySigTask = FindTask(NULL);
-        SetSignal(0, SIGF_SINGLE);
 
-        task = (struct Task *)CreateNewProcTags(
-            NP_Entry,    (IPTR)h4bthci_UnitTask,
-            NP_Name,     (IPTR)"h4bthci.device unit",
-            NP_Priority, 10,
-            NP_UserData, (IPTR)unit,
-            TAG_END);
+        task = NULL;
+        if (unit->hu_ReadySignal != -1)
+            task = (struct Task *)CreateNewProcTags(
+                NP_Entry,    (IPTR)h4bthci_UnitTask,
+                NP_Name,     (IPTR)"h4bthci.device unit",
+                NP_Priority, 10,
+                NP_UserData, (IPTR)unit,
+                TAG_END);
 
         if (task)
-            Wait(SIGF_SINGLE);
+            while (!unit->hu_Ready)
+                Wait(1L << unit->hu_ReadySignal);
 
         unit->hu_ReadySigTask = NULL;
+        if (unit->hu_ReadySignal != -1)
+            FreeSignal(unit->hu_ReadySignal);
 
         if (!unit->hu_Task)
         {
@@ -96,21 +101,26 @@ static struct H4BTHCIUnit *h4bthci_OpenUnit(LIBBASETYPEPTR H4BTHCIBase,
 static void h4bthci_CloseUnit(LIBBASETYPEPTR H4BTHCIBase,
                                 struct H4BTHCIUnit *unit)
 {
+    BYTE sig;
+
     ObtainSemaphore(&H4BTHCIBase->hu_Lock);
     H4BTHCIBase->hu_Unit = NULL;
     ReleaseSemaphore(&H4BTHCIBase->hu_Lock);
 
+    sig = AllocSignal(-1);
+
     Forbid();
-    unit->hu_ReadySignal = SIGB_SINGLE;
+    unit->hu_ReadySignal = (sig != -1) ? sig : SIGB_SINGLE;
     unit->hu_ReadySigTask = FindTask(NULL);
-    SetSignal(0, SIGF_SINGLE);
     if (unit->hu_Task)
         Signal(unit->hu_Task, SIGBREAKF_CTRL_C);
     Permit();
 
     while (unit->hu_Task)
-        Wait(SIGF_SINGLE);
+        Wait(1L << unit->hu_ReadySignal);
 
+    if (sig != -1)
+        FreeSignal(sig);
     FreeVec(unit);
 }
 

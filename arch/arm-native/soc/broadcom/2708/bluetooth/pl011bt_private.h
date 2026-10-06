@@ -49,6 +49,7 @@ struct PL011BTBase
     ULONG                       pl011bt_Baud;
     ULONG                       pl011bt_ConfigFlags;
     ULONG                       pl011bt_RXErrors;   /* status reports emitted */
+    BOOL                        pl011bt_RTSCTS;     /* CTS/RTS wired to GPIO 30/31 */
 
     /*
      * One mailbox message buffer for the life of the resource, allocated and
