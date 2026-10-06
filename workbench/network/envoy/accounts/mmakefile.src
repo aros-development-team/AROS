@@ -1,0 +1,23 @@
+#
+#   Rules to build accounts.library (Envoy user and group accounts API)
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := \
+        accounts_init \
+        accounts_wire \
+        accounts_lib \
+        accounts_ecrypt
+
+USER_INCLUDES := -I$(SRCDIR)/workbench/network/envoy/include
+USER_LDFLAGS  := -static
+#USER_CPPFLAGS := -DDEBUG=1
+
+#MM- workbench-network-envoy : workbench-network-envoy-accounts
+#MM workbench-network-envoy-accounts : includes linklibs includes-copy-envoy workbench-network-envoy-nipc-includes workbench-network-envoy-nipc-linklib
+
+%build_module mmake=workbench-network-envoy-accounts modname=accounts \
+  modtype=library files="$(FILES)" \
+  uselibs=""
+
+%common

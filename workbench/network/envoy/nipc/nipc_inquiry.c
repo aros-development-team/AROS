@@ -14,6 +14,8 @@
 #include <string.h>
 
 #include <proto/nipc.h>
+#include <proto/services.h>
+#include "services_private.h"
 
 #include "nipc_intern.h"
 
@@ -373,6 +375,47 @@ static ULONG LibVersion(struct NIPCBase *NIPCBase, CONST_STRPTR name)
     return v;
 }
 
+
+/* The service list lives in services.library. The inquiry answers from it only when that
+ * library is already in memory (a Services Manager is running); opening it from disk here
+ * would make nipc.library and services.library hold each other open for ever. */
+#define ServicesBase            services
+
+static struct Library *OpenLoadedServices(void)
+{
+    struct Library *services = NULL;
+
+    Forbid();
+    if (FindName(&SysBase->LibList, "services.library"))
+        services = OpenLibrary("services.library", 0);
+    Permit();
+    return services;
+}
+
+static BOOL ServiceIsOffered(struct Library *services, CONST_STRPTR name)
+{
+    struct ServiceNode *n;
+    BOOL found = FALSE;
+
+    LockServiceList();
+    if ((n = FindServiceByName(name)))
+        found = (n->sn_Flags & SNF_ACTIVE) != 0;
+    UnlockServiceList();
+    return found;
+}
+
+static void QueryServices(struct Library *services, struct PktBuilder *pb, ULONG tag)
+{
+    struct ServiceNode *n;
+
+    for (n = LockServiceList(); n; n = NextService(n))
+    {
+        if (n->sn_Flags & SNF_ACTIVE)
+            PbStringItem(pb, tag, n->sn_Name, NULL, 0);
+    }
+    UnlockServiceList();
+}
+
 static BOOL MatchItem(struct NIPCBase *NIPCBase, struct PktItem *it, const UBYTE *pkt, ULONG len, ULONG originator)
 {
     CONST_STRPTR s;
@@ -389,7 +432,16 @@ static BOOL MatchItem(struct NIPCBase *NIPCBase, struct PktItem *it, const UBYTE
     case MATCH_IPADDR:
         return NetIsLocalAddress(NIPCBase, it->Data);
     case MATCH_SERVICE:
-        return FALSE;                               /* services.library: later */
+    {
+        struct Library *services = OpenLoadedServices();
+        BOOL found = FALSE;
+        if (services)
+        {
+            found = ServiceIsOffered(services, PktString(pkt, len, it->Data));
+            CloseLibrary(services);
+        }
+        return found;
+    }
     case MATCH_ENTITY:
     {
         BOOL found;
@@ -473,7 +525,15 @@ static void BuildReply(struct NIPCBase *NIPCBase, const UBYTE *pkt, ULONG len, s
                 PbStringItem(&pb, it->Tag, r->Name, NULL, 0);
             break;
         case QUERY_SERVICE:
-            break;                                  /* services.library: later */
+        {
+            struct Library *services = OpenLoadedServices();
+            if (services)
+            {
+                QueryServices(services, &pb, it->Tag);
+                CloseLibrary(services);
+            }
+            break;
+        }
         case QUERY_ENTITY:
             ObtainSemaphore(&NIPCBase->Sem);
             ForeachNode(&NIPCBase->Entities, en)

@@ -3,11 +3,11 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-INCLUDE_FILES := envoy/nipc.h envoy/nipclowlevel.h envoy/errors.h
+INCLUDE_FILES := envoy/nipc.h envoy/nipclowlevel.h envoy/errors.h envoy/services.h envoy/accounts.h
 
 #MM- includes-copy : includes-copy-envoy
 #MM workbench-network-envoy-includes : includes-copy-envoy
 
-%copy_includes mmake=includes-copy-envoy path=envoy dir=envoy includes="nipc.h nipclowlevel.h errors.h"
+%copy_includes mmake=includes-copy-envoy path=envoy dir=envoy includes="nipc.h nipclowlevel.h errors.h services.h accounts.h"
 
 %common
