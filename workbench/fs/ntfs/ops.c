@@ -104,14 +104,17 @@ LONG OpLockParent(struct ExtFileLock *lock, struct ExtFileLock **parent)
     // get the parent dir
     if (lock->gl->attr & ATTR_DIRECTORY) {
         dh.ioh.mft.mftrec_no = lock->dir->ioh.mft.mftrec_no;
-        InitDirHandle(glob->data, &dh, FALSE);
+        if ((err = InitDirHandle(glob->data, &dh, FALSE)) != 0)
+            return err;
 
         if ((err = GetDirEntryByPath(&dh, "/", 1, &de)) != 0) {
+            ReleaseDirHandle(&dh);
             return err;
         }
     } else {
         dh.ioh.mft.mftrec_no = lock->gl->dir_cluster / glob->data->mft_size;
-        InitDirHandle(glob->data, &dh, FALSE);
+        if ((err = InitDirHandle(glob->data, &dh, FALSE)) != 0)
+            return err;
 
         INIT_MFTATTRIB(&dirattr, &dh.ioh.mft);
         attrentry = FindMFTAttrib(&dirattr, AT_FILENAME);
@@ -124,15 +127,18 @@ LONG OpLockParent(struct ExtFileLock *lock, struct ExtFileLock **parent)
         dh.ioh.first_cluster = dh.ioh.mft.mftrec_no * glob->data->mft_size;
         D(bug("[NTFS] %s: parent_mft = %u [%u]\n", __func__, (IPTR)(dh.ioh.first_cluster / glob->data->mft_size), (IPTR)dh.ioh.mft.mftrec_no));
         ReleaseDirHandle(&dh);
-        InitDirHandle(dh.ioh.data, &dh, TRUE);
+        if ((err = InitDirHandle(dh.ioh.data, &dh, TRUE)) != 0)
+            return err;
 
         if ((err = GetDirEntryByCluster(&dh, lock->gl->dir_cluster, &de)) != 0) {
+            ReleaseDirHandle(&dh);
             return err;
         }
     }
 
     D(bug("[NTFS] %s: found parent!\n", __func__));
 
+    ReleaseDirHandle(&dh);
     err = LockFile(&de, SHARED_LOCK, parent);
 
     return err;

@@ -105,6 +105,7 @@ struct DirHandle {
     UQUAD 			parent_mft;
     UBYTE			*idx_root;
     UBYTE			*idx_root_buf;
+    ULONG               idx_root_len;
     struct NTFSMFTAttr		idx_attr;
     ULONG               	cur_no;			/* Last entry returned, for GetNextDirEntry */
 };
