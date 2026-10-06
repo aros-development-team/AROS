@@ -123,8 +123,15 @@ LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
             for (i = 0; i < cluster_offset - ioh->cluster_offset; i++)
             {
                 /* Get the next one */
+                ioh->sb->fat_io_error = FALSE;
                 ioh->cur_cluster =
                     GET_NEXT_CLUSTER(ioh->sb, ioh->cur_cluster);
+
+                if (ioh->sb->fat_io_error)
+                {
+                    RESET_HANDLE(ioh);
+                    return ERROR_UNKNOWN;
+                }
 
                 /* If it was free (shouldn't happen) or we hit the end of the
                  * chain, the requested data isn't here */
@@ -322,8 +329,16 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
             for (i = 0; i < cluster_offset - ioh->cluster_offset; i++)
             {
                 /* Get the next one */
-                ULONG next_cluster =
-                    GET_NEXT_CLUSTER(ioh->sb, ioh->cur_cluster);
+                ULONG next_cluster;
+
+                ioh->sb->fat_io_error = FALSE;
+                next_cluster = GET_NEXT_CLUSTER(ioh->sb, ioh->cur_cluster);
+
+                if (ioh->sb->fat_io_error)
+                {
+                    RESET_HANDLE(ioh);
+                    return ERROR_UNKNOWN;
+                }
 
                 /* If it was free (shouldn't happen) or we hit the end of the
                  * chain, there is no next cluster, so we have to allocate a

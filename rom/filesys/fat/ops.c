@@ -26,23 +26,7 @@
 #define DEBUG DEBUG_OPS
 #include "debug.h"
 
-/*
- * Clusters 0 and 1 are reserved - entry 0 carries the media descriptor -
- * so an empty file, whose chain starts at 0, has nothing to free. The
- * old lower bound was 'cluster >= 0' on an unsigned, always true, and
- * freeing cluster 0 wrote over the media descriptor.
- */
-#define FREE_CLUSTER_CHAIN(sb,cl)                               \
-    do {                                                        \
-        ULONG cluster = cl;                                     \
-        while (cluster >= 2 && cluster < sb->eoc_mark - 7) {    \
-            ULONG next_cluster = GET_NEXT_CLUSTER(sb, cluster); \
-            FreeCluster(sb, cluster);                           \
-            cluster = next_cluster;                             \
-        }                                                       \
-    } while(0)
-
-/* Release a chain without continuing after an entry update fails. */
+/* Clusters 0 and 1 are reserved. Stop if a FAT read or update fails. */
 static LONG FreeClusterChain(struct FSSuper *sb, ULONG cluster)
 {
     ULONG count = 0;
@@ -337,10 +321,16 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
         D(bug("[fat] set first cluster and size to 0 in directory entry\n"));
 
         /* Free the clusters */
-        FREE_CLUSTER_CHAIN(lock->ioh.sb, lock->ioh.first_cluster);
+        err = FreeClusterChain(lock->ioh.sb, lock->ioh.first_cluster);
         lock->gl->first_cluster = lock->ioh.first_cluster = 0xffffffff;
         RESET_HANDLE(&lock->ioh);
         lock->gl->size = 0;
+
+        if (err != 0)
+        {
+            FreeLock(lock, glob);
+            return err;
+        }
 
         D(bug("[fat] file truncated, returning the lock\n"));
 
@@ -524,7 +514,7 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
     ReleaseDirHandle(&dh, glob);
 
     /* Now free the clusters the file was using */
-    FREE_CLUSTER_CHAIN(lock->ioh.sb, lock->ioh.first_cluster);
+    err = FreeClusterChain(lock->ioh.sb, lock->ioh.first_cluster);
 
     /* Notify */
     SendNotifyByLock(lock->ioh.sb, lock->gl);
@@ -538,7 +528,7 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
         bug("'\n");
     )
 
-    return 0;
+    return err;
 delete_failed:
     ReleaseDirHandle(&dh, glob);
     FreeLock(lock, glob);
