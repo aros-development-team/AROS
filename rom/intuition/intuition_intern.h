@@ -1085,6 +1085,15 @@ ULONG TellWBTaskToOpenWindows(struct IntuitionBase *IntuitionBase);
 /* intuition_misc protos */
 extern void SetDisplayDefaults(struct IntuitionBase * IntuitionBase);
 extern void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase);
+
+/* Architecture defaults; overridden by the target build. */
+struct ExtSprite;
+extern void InitDefaultPreferences(struct Preferences *prefs);
+extern void PreparePointerSprite(struct ExtSprite *sprite, struct BitMap *bitmap,
+    BOOL legacy, IPTR width, struct IntuitionBase *IntuitionBase);
+extern BOOL SetDisplayPointerShape(OOP_Object *display,
+    struct SharedPointer *pointer, struct BitMap *bitmap,
+    struct IntuitionBase *IntuitionBase);
 Object* CreateStdSysImage(WORD which, WORD preferred_height, struct Screen *scr,
     	    	    	  struct DrawInfo *dri, struct IntuitionBase *IntuitionBase);
 extern void CheckRectFill(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, struct IntuitionBase * IntuitionBase);
