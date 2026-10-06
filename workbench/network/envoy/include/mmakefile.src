@@ -1,0 +1,13 @@
+#
+#   Install the Envoy headers (<envoy/*.h>)
+
+include $(SRCDIR)/config/aros.cfg
+
+INCLUDE_FILES := envoy/nipc.h envoy/nipclowlevel.h envoy/errors.h
+
+#MM- includes-copy : includes-copy-envoy
+#MM workbench-network-envoy-includes : includes-copy-envoy
+
+%copy_includes mmake=includes-copy-envoy path=envoy dir=envoy includes="nipc.h nipclowlevel.h errors.h"
+
+%common
