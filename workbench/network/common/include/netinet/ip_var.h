@@ -53,39 +53,33 @@ struct ipovly {
  * They are timed out after ipq_ttl drops to 0, and may also
  * be reclaimed if memory becomes tight.
  */
+struct mbuf;
+struct ip;
+
+/*
+ * A fragment held for reassembly.  One ipqent is allocated per fragment
+ * and links the fragments of a datagram into the queue below.  The links
+ * live here, never overlaid on the IP header: on a 64-bit target two
+ * 8-byte pointers do not fit in the header's address fields, so the old
+ * in-header "struct ipasfrag" overlay ran past the header into the payload
+ * and no longer matched struct ipq, crashing ip_reass() on the first
+ * received fragment.  32-bit targets happened to be safe.
+ */
+struct ipqent {
+	struct	ipqent *ipqe_next;	/* next fragment */
+	struct	ipqent *ipqe_prev;	/* previous fragment */
+	struct	mbuf   *ipqe_m;		/* mbuf holding this fragment */
+	struct	ip     *ipqe_ip;		/* the fragment's (intact) IP header */
+	u_char	ipqe_mff;		/* more fragments after this one */
+};
+
 struct ipq {
 	struct	ipq *next,*prev;	/* to other reass headers */
 	u_char	ipq_ttl;		/* time for reass q to live */
 	u_char	ipq_p;			/* protocol of this fragment */
 	u_short	ipq_id;			/* sequence id for reassembly */
-	struct	ipasfrag *ipq_next,*ipq_prev;
-					/* to ip headers of fragments */
-	struct	in_addr ipq_src,ipq_dst;
-};
-
-/*
- * Ip header, when holding a fragment.
- *
- * Note: ipf_next must be at same offset as ipq_next above
- */
-struct	ipasfrag {
-#if BYTE_ORDER == LITTLE_ENDIAN 
-	u_char	ip_hl:4;
-	u_char	ip_v:4;
-#endif
-#if BYTE_ORDER == BIG_ENDIAN 
-	u_char	ip_v:4;
-	u_char	ip_hl:4;
-#endif
-	u_char	ipf_mff;		/* copied from (ip_off&IP_MF) */
-	short	ip_len;
-	u_short	ip_id;
-	short	ip_off;
-	u_char	ip_ttl;
-	u_char	ip_p;
-	u_short	ip_sum;
-	struct	ipasfrag *ipf_next;	/* next fragment */
-	struct	ipasfrag *ipf_prev;	/* previous fragment */
+	struct	ipqent ipq_frag;	/* circular sentinel of the fragment list */
+	struct	in_addr ipq_src,ipq_dst;	/* saved source/dest addresses */
 };
 
 /*
