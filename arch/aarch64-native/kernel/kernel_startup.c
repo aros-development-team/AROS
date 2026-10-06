@@ -129,10 +129,20 @@ static void __attribute__((used)) __clear_bss(struct TagItem *msg)
    as a fallback for a bootstrap that predates that tag. Either way it is
    settled before the first character goes out. */
 static uintptr_t dbg_uart = 0x3f201000;
+/* BCM283x AUX mini-UART (AUX_MU_IO_REG), the console on Pi 3 with Bluetooth */
+static int dbg_mini = 0;
 
 static inline void uart_putc(char c)
 {
     volatile uint32_t *uart = (volatile uint32_t *)dbg_uart;
+    if (dbg_mini)
+    {
+        /* AUX_MU_LSR bit 5: transmitter can take a byte */
+        while (!(uart[0x14/4] & (1 << 5))) ;
+        if (c == '\n') { uart[0] = '\r'; while (!(uart[0x14/4] & (1 << 5))) ; }
+        uart[0] = c;
+        return;
+    }
     while (uart[0x18/4] & (1 << 5)) ; /* wait for TXFF clear */
     if (c == '\n') { uart[0] = '\r'; while (uart[0x18/4] & (1 << 5)) ; }
     uart[0] = c;
@@ -166,7 +176,10 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
         }
 
         if (uartbase)
+        {
             dbg_uart = uartbase;
+            dbg_mini = ((uartbase & 0xFFFFFF) == 0x215040);
+        }
         else if (plat == 0xc44)
             dbg_uart = 0xfe201000;      /* BCM2711 PL011 */
         else if (plat == 0x2712)

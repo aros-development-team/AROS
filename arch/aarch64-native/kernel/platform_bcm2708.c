@@ -233,9 +233,36 @@ static APTR bcm2708_init_gputimer(APTR _kernelBase)
     return GPUTimerHandle;
 }
 
+/*
+ * The AUX mini-UART, used as the console when the bootstrap found serial0
+ * there (Pi 3 / Zero 2 W, where the PL011 belongs to the Bluetooth radio).
+ */
+#define AUX_MU_LSR_RXREADY      (1 << 0)
+#define AUX_MU_LSR_TXEMPTY      (1 << 5)
+
+static void bcm2708_mu_putc(uint8_t chr)
+{
+    while ((rd32le(AUX_MU_LSR_REG) & AUX_MU_LSR_TXEMPTY) == 0) ;
+    if (chr == '\n')
+    {
+        wr32le(AUX_MU_IO_REG, '\r');
+        while ((rd32le(AUX_MU_LSR_REG) & AUX_MU_LSR_TXEMPTY) == 0) ;
+    }
+    wr32le(AUX_MU_IO_REG, chr);
+}
+
+static int bcm2708_mu_getc(void)
+{
+    if (rd32le(AUX_MU_LSR_REG) & AUX_MU_LSR_RXREADY)
+        return (int)(rd32le(AUX_MU_IO_REG) & 0xFF);
+
+    return -1;
+}
+
 static IPTR bcm2708_probe(struct ARM_Implementation *krnARMImpl, struct TagItem *msg)
 {
     void *bootPutC = NULL;
+    IPTR uartBase = 0;
 
     while (msg->ti_Tag != TAG_DONE)
     {
@@ -243,6 +270,9 @@ static IPTR bcm2708_probe(struct ARM_Implementation *krnARMImpl, struct TagItem 
         {
         case KRN_FuncPutC:
             bootPutC = (void *)msg->ti_Data;
+            break;
+        case KRN_DebugUartBase:
+            uartBase = msg->ti_Data;
             break;
         }
         msg++;
@@ -265,8 +295,16 @@ static IPTR bcm2708_probe(struct ARM_Implementation *krnARMImpl, struct TagItem 
     krnARMImpl->ARMI_InitTimer = &bcm2708_init_gputimer;
     krnARMImpl->ARMI_LED_Toggle = &bcm27xx_toggle_led;
 
-    krnARMImpl->ARMI_SerPutChar = &bcm27xx_ser_putc;
-    krnARMImpl->ARMI_SerGetChar = &bcm27xx_ser_getc;
+    if (uartBase == AUX_MU_IO_REG)
+    {
+        krnARMImpl->ARMI_SerPutChar = &bcm2708_mu_putc;
+        krnARMImpl->ARMI_SerGetChar = &bcm2708_mu_getc;
+    }
+    else
+    {
+        krnARMImpl->ARMI_SerPutChar = &bcm27xx_ser_putc;
+        krnARMImpl->ARMI_SerGetChar = &bcm27xx_ser_getc;
+    }
 
     if ((krnARMImpl->ARMI_PutChar = bootPutC) != NULL)
     {

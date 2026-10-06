@@ -15,6 +15,7 @@
 
 #include "serialdebug.h"
 #include "bcm2708_boot.h"
+#include "devicetree.h"
 #include "bootconsole.h"
 #include "vc_mb.h"
 #include "io.h"
@@ -34,6 +35,17 @@ uintptr_t __uart_base = 0;
 
 #define UART_BASE (__arm_socid == 0x2712 ? RP1_UART0_BASE : PL011_0_BASE)
 
+/*
+ * On a Pi 3 or Zero 2 W the firmware gives the PL011 to the Bluetooth radio
+ * and makes the AUX mini-UART serial0 on GPIO 14/15. The bootstrap follows
+ * the serial0 alias there, so the console never shares a UART with the radio.
+ */
+#define AUX_MU_LSR_TXEMPTY  (1 << 5)
+
+static int ser_mini;
+
+#define SER_DR (ser_mini ? AUX_MU_IO_REG : UART_BASE + PL011_DR)
+
 #define PL011_ICR_FLAGS (PL011_ICR_RXIC|PL011_ICR_TXIC|PL011_ICR_RTIC|PL011_ICR_FEIC|PL011_ICR_PEIC|PL011_ICR_BEIC|PL011_ICR_OEIC|PL011_ICR_RIMIC|PL011_ICR_CTSMIC|PL011_ICR_DSRMIC|PL011_ICR_DCDMIC)
 
 #define DEF_BAUD 115200
@@ -49,6 +61,12 @@ unsigned int uartbaud;
 
 inline void waitSerOUT()
 {
+    if (ser_mini)
+    {
+        while ((rd32le(AUX_MU_LSR_REG) & AUX_MU_LSR_TXEMPTY) == 0) ;
+        return;
+    }
+
     while(1)
     {
        if ((rd32le(UART_BASE + PL011_FR) & PL011_FR_TXFF) == 0) break;
@@ -61,10 +79,31 @@ inline void putByte(uint8_t chr)
 
     if (chr == '\n')
     {
-        wr32le(UART_BASE + PL011_DR, '\r');
+        wr32le(SER_DR, '\r');
         waitSerOUT();
     }
-    wr32le(UART_BASE + PL011_DR, chr);
+    wr32le(SER_DR, chr);
+}
+
+/* Does the device tree's serial0 alias name the mini-UART (serial@7e215040)? */
+static int serial0_is_mini(void)
+{
+    static const char mu[] = "215040";
+    of_node_t *aliases = dt_find_node("/aliases");
+    of_property_t *p = aliases ? dt_find_property(aliases, "serial0") : NULL;
+    const char *s;
+    int i, n;
+
+    if (!p || p->op_length < sizeof(mu))
+        return 0;
+
+    /* op_length counts the terminating NUL */
+    s = (const char *)p->op_value + p->op_length - sizeof(mu);
+    for (i = 0, n = sizeof(mu) - 1; i < n; i++)
+        if (s[i] != mu[i])
+            return 0;
+
+    return 1;
 }
 
 void serInit(void)
@@ -99,12 +138,19 @@ void serInit(void)
         return;
     }
 
+    /* BCM2711 is left on the PL011: pl011bt does not drive its radio. */
+    if (__arm_socid == 0xc43 && serial0_is_mini())
+    {
+        ser_mini = 1;
+        __uart_base = AUX_MU_IO_REG;
+    }
+
     uart_msg[0] = AROS_LONG2LE(8 * 4);
     uart_msg[1] = AROS_LONG2LE(VCTAG_REQ);
     uart_msg[2] = AROS_LONG2LE(VCTAG_GETCLKRATE);
     uart_msg[3] = AROS_LONG2LE(8);
     uart_msg[4] = AROS_LONG2LE(4);
-    uart_msg[5] = AROS_LONG2LE(0x000000002);                  // UART clock
+    uart_msg[5] = AROS_LONG2LE(ser_mini ? VCCLOCK_CORE : VCCLOCK_UART);  // the mini-UART divides the core clock
     uart_msg[6] = 0;
     uart_msg[7] = 0;                            // terminate tag
 
@@ -114,15 +160,22 @@ void serInit(void)
     if (uart_msg)
         uartclock = AROS_LE2LONG(uart_msg[6]);
     else
-        uartclock = 48000000;   /* firmware default UART clock */
+        uartclock = ser_mini ? 250000000 : 48000000;   /* firmware defaults */
 
-    wr32le(UART_BASE + PL011_CR, 0);
+    if (ser_mini)
+    {
+        wr32le(AUX_ENABLES, rd32le(AUX_ENABLES) | 1);
+        wr32le(AUX_MU_CNTL_REG, 0);
+        wr32le(AUX_MU_IER_REG, 0);
+    }
+    else
+        wr32le(UART_BASE + PL011_CR, 0);
 
     uartvar = rd32le(GPFSEL1);
     uartvar &= ~(7<<12);                        // TX on GPIO14
-    uartvar |= 4<<12;                           // alt0
+    uartvar |= (ser_mini ? 2 : 4)<<12;          // alt5 (mini-UART) or alt0 (PL011)
     uartvar &= ~(7<<15);                        // RX on GPIO15
-    uartvar |= 4<<15;                           // alt0
+    uartvar |= (ser_mini ? 2 : 4)<<15;
     wr32le(GPFSEL1, uartvar);
 
     /* Disable pull-ups and pull-downs on rs232 lines */
@@ -135,6 +188,16 @@ void serInit(void)
     for (uartvar = 0; uartvar < 150; uartvar++) asm volatile ("nop\n");
 
     wr32le(GPPUDCLK0, 0);
+
+    if (ser_mini)
+    {
+        wr32le(AUX_MU_LCR_REG, 3);              // 8 bit (bit 1 is needed too)
+        wr32le(AUX_MU_MCR_REG, 0);
+        wr32le(AUX_MU_IIR_REG, 0xC6);           // clear both FIFOs
+        wr32le(AUX_MU_BAUD_REG, uartclock / (8 * uartbaud) - 1);
+        wr32le(AUX_MU_CNTL_REG, 3);             // enable tx and rx
+        return;
+    }
 
     wr32le(UART_BASE + PL011_ICR, PL011_ICR_FLAGS);
     uartdivint = PL011_BAUDINT(uartbaud, uartclock);
