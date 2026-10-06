@@ -1,0 +1,27 @@
+#
+#   Rules to build envoy.library (the Envoy requesters)
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := \
+        envoy_init \
+        envoy_strings \
+        envoy_req \
+        envoy_host \
+        envoy_login \
+        envoy_user \
+        envoy_password
+
+USER_INCLUDES := -I$(SRCDIR)/workbench/network/envoy/include
+USER_LDFLAGS  := -static
+#USER_CPPFLAGS := -DDEBUG=1
+
+#MM- workbench-network-envoy : workbench-network-envoy-envoy
+#MM workbench-network-envoy-envoy : includes linklibs includes-copy-envoy \
+#MM     workbench-network-envoy-nipc-includes workbench-network-envoy-accounts-includes
+
+%build_module mmake=workbench-network-envoy-envoy modname=envoy \
+  modtype=library files="$(FILES)" \
+  uselibs=""
+
+%common
