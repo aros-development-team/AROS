@@ -13,6 +13,7 @@
 #include <exec/lists.h>
 #include <libraries/debug.h>
 #include <proto/exec.h>
+#include <proto/kernel.h>
 #include <clib/alib_protos.h>
 
 #include <stdlib.h>
@@ -27,6 +28,24 @@ static BOOL HandleModuleSegments(module_t *mod, struct MinList * list);
 static void FreeModuleSegmentList(struct MinList *list);
 static void RegisterModule_Hunk(const char *name, BPTR segList, ULONG DebugType, APTR DebugInfo, struct Library *DebugBase);
 static int compare_segments(const void *left, const void *right);
+static void PublishModule(module_t *mod, struct Library *DebugBase);
+
+static void PublishModule(module_t *mod, struct Library *DebugBase)
+{
+    struct DebugBase *debugBase = DBGBASE(DebugBase);
+
+    ObtainSemaphore(&debugBase->db_ModSem);
+
+    if (debugBase->db_SymResolverABI >= KRN_SYMRESOLVER_ABI_LEASE)
+        KrnSpinLock(&debugBase->db_ResolverSpin, NULL, SPINLOCK_MODE_WRITE);
+
+    AddTail((struct List *)&debugBase->db_Modules, (struct Node *)mod);
+
+    if (debugBase->db_SymResolverABI >= KRN_SYMRESOLVER_ABI_LEASE)
+        KrnSpinUnLock(&debugBase->db_ResolverSpin);
+
+    ReleaseSemaphore(&debugBase->db_ModSem);
+}
 
 /*****************************************************************************
 
@@ -161,9 +180,7 @@ static int compare_segments(const void *left, const void *right);
 
                             if (HandleModuleSegments(mod, &tmplist))
                             {
-                                ObtainSemaphore(&DBGBASE(DebugBase)->db_ModSem);
-                                AddTail((struct List *)&DBGBASE(DebugBase)->db_Modules, (struct Node *)mod);
-                                ReleaseSemaphore(&DBGBASE(DebugBase)->db_ModSem);
+                                PublishModule(mod, DebugBase);
 
                                 continue;
                             }
@@ -371,9 +388,7 @@ static void RegisterModule_Hunk(const char *name, BPTR segList, ULONG DebugType,
         return;
     }
 
-    ObtainSemaphore(&DBGBASE(DebugBase)->db_ModSem);
-    AddTail((struct List *)&DBGBASE(DebugBase)->db_Modules, (struct Node *)mod);
-    ReleaseSemaphore(&DBGBASE(DebugBase)->db_ModSem);
+    PublishModule(mod, DebugBase);
 }
 
 void RegisterModule_ELF(const char *name, BPTR segList, struct elfheader *eh, struct sheader *sections,
@@ -514,9 +529,7 @@ void RegisterModule_ELF(const char *name, BPTR segList, struct elfheader *eh, st
             }
         }
 
-        ObtainSemaphore(&DBGBASE(DebugBase)->db_ModSem);
-        AddTail((struct List *)&DBGBASE(DebugBase)->db_Modules, (struct Node *)mod);
-        ReleaseSemaphore(&DBGBASE(DebugBase)->db_ModSem);
+        PublishModule(mod, DebugBase);
 
         D(bug("[Debug] Module %s added to list of modules\n", mod->m_name));
     }

@@ -31,12 +31,24 @@ AROS_LH3(ULONG, KrnBacktraceFromFrame,
 {
     AROS_LIBFUNC_INIT
 
-    KrnSymResolver_t resolver = KernelBase->kb_gResolver;
+    KrnSymResolver_t resolver;
+    APTR priv;
     IPTR *sp = (IPTR *)((IPTR)frame_in & ~(IPTR)7);
     ULONG n = 0, i;
 
-    if (!resolver || !sp)
+    if (!sp)
         return 0;
+
+    if (!KrnSpinTryLock(&KernelBase->kb_gResolverSpinLock, SPINLOCK_MODE_READ))
+        return 0;
+
+    resolver = KernelBase->kb_gResolver;
+    priv = KernelBase->kb_gResolvPrivate;
+    if (!resolver)
+    {
+        KrnSpinUnLock(&KernelBase->kb_gResolverSpinLock);
+        return 0;
+    }
 
     for (i = 0; i < SCAN_WORDS && n < max_depth; i++)
     {
@@ -47,10 +59,14 @@ AROS_LH3(ULONG, KrnBacktraceFromFrame,
         if (!val || (val & 1))
             continue;
 
-        if (resolver(KernelBase->kb_gResolvPrivate, (APTR)val, &info))
+        if (resolver(priv, (APTR)val, &info))
             out_pcs[n++] = (APTR)val;
+
+        if (info.release)
+            info.release(info.release_cookie);
     }
 
+    KrnSpinUnLock(&KernelBase->kb_gResolverSpinLock);
     return n;
 
     AROS_LIBFUNC_EXIT
