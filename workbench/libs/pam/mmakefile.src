@@ -1,0 +1,27 @@
+#
+#   Rules to build pam.library (pluggable authentication)
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := \
+        pam_init \
+        pam_handle \
+        pam_config \
+        pam_stack \
+        pam_conv \
+        pam_modules \
+        pam_builtin \
+        pam_security \
+        pam_unixpw
+
+USER_LDFLAGS := -static
+#USER_CPPFLAGS := -DDEBUG=1
+
+#MM workbench-libs-pam : includes linklibs kernel-security-includes workbench-libs-usergroup-includes
+%subtarget parentmmake=workbench-libs mmake=workbench-libs-pam
+
+%build_module mmake=workbench-libs-pam modname=pam \
+  modtype=library files="$(FILES)" \
+  uselibs=""
+
+%common
