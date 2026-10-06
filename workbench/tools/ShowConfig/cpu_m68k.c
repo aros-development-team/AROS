@@ -11,8 +11,8 @@
 
 static const char *features[] =
 {
-    "AMMX",
-    "Hyperthreading"
+    "Hyperthreading",
+    "AMMX"
 };
 
 void PrintCPUSpecificInfo(ULONG i, APTR ProcessorBase)
