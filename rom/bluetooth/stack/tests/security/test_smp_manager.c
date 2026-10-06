@@ -19,6 +19,7 @@ struct fake_manager_port
     uint8_t peer_public_y[32];
     int keys_complete_calls;
     struct bt_smp_distributed_keys peer_keys;
+    struct bt_smp_distributed_keys local_keys;
     int complete_calls;
     enum bt_smp_manager_result result;
     int user_calls;
@@ -91,9 +92,9 @@ static void fake_keys_complete(void *context, const struct bt_smp_distributed_ke
 {
     struct fake_manager_port *port = context;
 
-    (void)local;
     ++port->keys_complete_calls;
     port->peer_keys = *peer;
+    port->local_keys = *local;
 }
 
 static void fake_user(void *context, enum bt_smp_user_action action, uint32_t passkey)
@@ -309,6 +310,59 @@ static void test_legacy_just_works_success(void)
     BT_CHECK(port.complete_calls == 1 && port.result == BT_SMP_MANAGER_OK);
 }
 
+static void test_legacy_responder_just_works(void)
+{
+    struct bt_smp_manager manager;
+    struct fake_manager_port port;
+    struct bt_smp_pairing_features request = {
+        0x03, 0, BT_SMP_AUTHREQ_BONDING | BT_SMP_AUTHREQ_SC, 16,
+        BT_SMP_KEYDIST_ID_KEY, BT_SMP_KEYDIST_ID_KEY};
+    struct bt_buf_writer w;
+    uint8_t request_pdu[7], peer_random[16], peer_confirm[16];
+    uint8_t irk[16], identity[6] = {1, 3, 5, 7, 9, 11};
+    size_t i;
+
+    init_manager(&manager, &port, BT_SMP_AUTHREQ_BONDING | BT_SMP_AUTHREQ_SC);
+    bt_buf_writer_init(&w, request_pdu, sizeof(request_pdu));
+    BT_CHECK(bt_smp_encode_pairing_features(&w, BT_SMP_PAIRING_REQUEST,
+                                             &request) == BT_OK);
+    BT_CHECK(bt_smp_manager_accept(&manager, request_pdu, sizeof(request_pdu),
+                                    10) == BT_OK);
+    BT_CHECK(manager.responder && !manager.negotiation.secure_connections);
+    BT_CHECK(manager.state == BT_SMP_STATE_WAIT_PAIRING_CONFIRM);
+    BT_CHECK(port.sent[0] == BT_SMP_PAIRING_RESPONSE);
+
+    for (i = 0; i < sizeof(peer_random); ++i)
+        peer_random[i] = (uint8_t)(0x90u + i);
+    BT_CHECK(bt_smp_crypto_c1(&manager.aes, manager.tk, peer_random,
+                              manager.preq, manager.pres,
+                              manager.config.initiator_address_type,
+                              manager.config.responder_address_type,
+                              manager.config.initiator_address,
+                              manager.config.responder_address,
+                              peer_confirm) == BT_OK);
+    feed_value(&manager, BT_SMP_PAIRING_CONFIRM, peer_confirm, 20);
+    BT_CHECK(manager.state == BT_SMP_STATE_WAIT_PAIRING_RANDOM);
+    BT_CHECK(port.sent[0] == BT_SMP_PAIRING_CONFIRM);
+    feed_value(&manager, BT_SMP_PAIRING_RANDOM, peer_random, 30);
+    BT_CHECK(manager.state == BT_SMP_STATE_WAIT_ENCRYPTION);
+    BT_CHECK(port.sent[0] == BT_SMP_PAIRING_RANDOM);
+    BT_CHECK(port.encryption_calls == 1);
+
+    bt_smp_manager_on_encryption_changed(&manager, true, 40);
+    BT_CHECK(manager.state == BT_SMP_STATE_WAIT_KEY_DISTRIBUTION);
+    /* Phase 3: the responder distributes first, unprompted */
+    BT_CHECK(port.sent[0] == BT_SMP_IDENTITY_ADDRESS_INFORMATION);
+    port.sent[0] = 0;
+    memset(irk, 0x5a, sizeof(irk));
+    feed_value(&manager, BT_SMP_IDENTITY_INFORMATION, irk, 50);
+    feed_identity_address(&manager, 0, identity, 60);
+    BT_CHECK(manager.state == BT_SMP_STATE_COMPLETE);
+    BT_CHECK(port.sent[0] == 0); /* nothing more to send */
+    BT_CHECK(port.keys_complete_calls == 1);
+    BT_CHECK(port.complete_calls == 1 && port.result == BT_SMP_MANAGER_OK);
+}
+
 static void test_confirm_failure_and_timeout(void)
 {
     struct bt_smp_manager manager;
@@ -432,6 +486,8 @@ static void test_secure_connections_just_works(void)
     BT_CHECK(port.keys_complete_calls == 1);
     BT_CHECK(port.peer_keys.key_mask == BT_SMP_KEYDIST_ENC_KEY);
     BT_CHECK(memcmp(port.peer_keys.ltk, manager.stk, 16) == 0);
+    BT_CHECK(port.local_keys.key_mask == BT_SMP_KEYDIST_ENC_KEY);
+    BT_CHECK(memcmp(port.local_keys.ltk, manager.stk, 16) == 0);
     {
         uint8_t zero[8] = {0};
 
@@ -639,13 +695,471 @@ static void test_full_key_distribution_and_order_validation(void)
     BT_CHECK(port.sent[0] == BT_SMP_PAIRING_FAILED && port.sent[1] == 0x0A);
 }
 
+/* Responder-role Secure Connections: an initiator manager and a responder
+ * manager exchange real PDUs through queues. The CMAC is the deterministic
+ * fake above, so both sides agree only if they feed f4/f5/f6/g2 the same
+ * values in the same order the specification requires. */
+#define LOOP_QUEUE 8
+
+struct loop_side
+{
+    struct bt_smp_manager m;
+    struct loop_side *peer;
+    uint8_t inbox[LOOP_QUEUE][65];
+    size_t inbox_len[LOOP_QUEUE];
+    size_t inbox_count;
+    uint8_t next_random;
+    uint8_t public_x[32];
+    uint8_t public_y[32];
+    bool public_key_requested;
+    bool dhkey_requested;
+    bool user_pending;
+    enum bt_smp_user_action user_action;
+    uint32_t user_value;
+    int encryption_calls;
+    uint8_t stk[16];
+    int complete_calls;
+    enum bt_smp_manager_result result;
+    struct bt_smp_pairing_negotiation negotiation;
+    uint8_t keys_complete_mask;
+    uint8_t local_keys_complete_mask;
+    bool pdus_first;   /* a slow controller: PDUs overtake its crypto events */
+};
+
+static bt_status_t loop_send(void *context, const uint8_t *pdu, size_t len)
+{
+    struct loop_side *side = context;
+    struct loop_side *peer = side->peer;
+
+    if (peer->inbox_count == LOOP_QUEUE || len > sizeof(peer->inbox[0]))
+        return BT_ERR_NO_RESOURCES;
+    memcpy(peer->inbox[peer->inbox_count], pdu, len);
+    peer->inbox_len[peer->inbox_count++] = len;
+    return BT_OK;
+}
+
+static bt_status_t loop_random(void *context, uint8_t *out, size_t len)
+{
+    struct loop_side *side = context;
+    size_t i;
+
+    for (i = 0; i < len; ++i)
+        out[i] = side->next_random++;
+    return BT_OK;
+}
+
+static bt_status_t loop_start_encryption(void *context, const uint8_t stk[16],
+                                          uint8_t key_size)
+{
+    struct loop_side *side = context;
+
+    (void)key_size;
+    ++side->encryption_calls;
+    memcpy(side->stk, stk, 16);
+    return BT_OK;
+}
+
+static bt_status_t loop_generate_public_key(void *context)
+{
+    ((struct loop_side *)context)->public_key_requested = true;
+    return BT_OK;
+}
+
+static bt_status_t loop_generate_dhkey(void *context, const uint8_t peer_x[32],
+                                       const uint8_t peer_y[32])
+{
+    struct loop_side *side = context;
+
+    BT_CHECK(memcmp(peer_x, side->peer->public_x, 32) == 0);
+    BT_CHECK(memcmp(peer_y, side->peer->public_y, 32) == 0);
+    side->dhkey_requested = true;
+    return BT_OK;
+}
+
+static void loop_keys_complete(void *context, const struct bt_smp_distributed_keys *peer,
+                               const struct bt_smp_distributed_keys *local)
+{
+    struct loop_side *side = context;
+
+    side->keys_complete_mask = peer->key_mask;
+    side->local_keys_complete_mask = local->key_mask;
+}
+
+static void loop_user(void *context, enum bt_smp_user_action action, uint32_t value)
+{
+    struct loop_side *side = context;
+
+    side->user_pending = true;
+    side->user_action = action;
+    side->user_value = value;
+}
+
+static void loop_complete(void *context, enum bt_smp_manager_result result,
+                          const struct bt_smp_pairing_negotiation *negotiation)
+{
+    struct loop_side *side = context;
+
+    ++side->complete_calls;
+    side->result = result;
+    side->negotiation = *negotiation;
+}
+
+static const struct bt_smp_manager_ops loop_ops = {
+    .send = loop_send,
+    .random = loop_random,
+    .start_encryption = loop_start_encryption,
+    .generate_public_key = loop_generate_public_key,
+    .generate_dhkey = loop_generate_dhkey,
+    .get_local_keys = fake_get_local_keys,
+    .keys_complete = loop_keys_complete,
+    .user_action = loop_user,
+    .complete = loop_complete};
+
+static void loop_init(struct loop_side *side, struct loop_side *peer, uint8_t io,
+                      uint8_t auth_req, uint8_t seed)
+{
+    struct bt_smp_manager_config config;
+    struct bt_smp_aes128 aes = {identity_aes, NULL};
+    struct bt_smp_aes_cmac cmac = {fake_cmac, NULL};
+    size_t i;
+
+    memset(side, 0, sizeof(*side));
+    memset(&config, 0, sizeof(config));
+    config.features.io_capability = io;
+    config.features.auth_req = auth_req;
+    config.features.max_encryption_key_size = 16;
+    config.features.initiator_key_distribution = BT_SMP_KEYDIST_ID_KEY;
+    config.features.responder_key_distribution =
+        BT_SMP_KEYDIST_ENC_KEY | BT_SMP_KEYDIST_ID_KEY;
+    config.responder_address_type = 1;
+    for (i = 0; i < 6; ++i)
+    {
+        config.initiator_address[i] = (uint8_t)(0xA1u + i);
+        config.responder_address[i] = (uint8_t)(0xB1u + i);
+    }
+    for (i = 0; i < 32; ++i)
+    {
+        side->public_x[i] = (uint8_t)(seed + i);
+        side->public_y[i] = (uint8_t)(seed ^ (uint8_t)(3u * i));
+    }
+    side->peer = peer;
+    side->next_random = seed;
+    bt_smp_manager_init(&side->m, &config, &aes, &loop_ops, side);
+    bt_smp_manager_set_cmac(&side->m, &cmac);
+}
+
+/* Completes the port's asynchronous crypto, then delivers queued PDUs, until
+ * both sides are idle or wait for their user. A controller answers its own
+ * P-256 commands before the peer can react to the same exchange. The responder accepts the
+ * initiator's Pairing Request the way hwconn.c does. */
+static void loop_pump(struct loop_side *initiator, struct loop_side *responder,
+                      uint64_t *now_us)
+{
+    static const uint8_t dhkey[32] = {0x5d, 0x4b, 0x13, 0x7e};
+    struct loop_side *sides[2];
+    bool progress = true;
+    size_t i;
+
+    sides[0] = initiator;
+    sides[1] = responder;
+    while (progress)
+    {
+        progress = false;
+        for (i = 0; i < 2; ++i)
+        {
+            struct loop_side *side = sides[i];
+            uint8_t pdu[65];
+            size_t len;
+
+            if (side->inbox_count != 0 && side->pdus_first)
+                goto deliver;
+            if (side->public_key_requested)
+            {
+                side->public_key_requested = false;
+                bt_smp_manager_on_local_public_key(&side->m, true, side->public_x,
+                                                   side->public_y, *now_us);
+                progress = true;
+            }
+            else if (side->dhkey_requested)
+            {
+                side->dhkey_requested = false;
+                bt_smp_manager_on_dhkey(&side->m, true, dhkey, *now_us);
+                progress = true;
+            }
+            else if (side->inbox_count != 0)
+            {
+            deliver:
+                len = side->inbox_len[0];
+                memcpy(pdu, side->inbox[0], len);
+                memmove(side->inbox[0], side->inbox[1],
+                        (side->inbox_count - 1) * sizeof(side->inbox[0]));
+                memmove(side->inbox_len, side->inbox_len + 1,
+                        (side->inbox_count - 1) * sizeof(side->inbox_len[0]));
+                --side->inbox_count;
+                *now_us += 10;
+                if (side == responder && side->m.state == BT_SMP_STATE_IDLE)
+                    BT_CHECK(bt_smp_manager_accept(&side->m, pdu, len, *now_us) == BT_OK);
+                else
+                    bt_smp_manager_on_pdu(&side->m, pdu, len, *now_us);
+                progress = true;
+            }
+        }
+    }
+}
+
+static void loop_encrypt(struct loop_side *initiator, struct loop_side *responder,
+                         uint64_t *now_us)
+{
+    BT_CHECK(initiator->m.state == BT_SMP_STATE_WAIT_ENCRYPTION);
+    BT_CHECK(responder->m.state == BT_SMP_STATE_WAIT_ENCRYPTION);
+    BT_CHECK(initiator->encryption_calls == 1 && responder->encryption_calls == 1);
+    BT_CHECK(memcmp(initiator->stk, responder->stk, 16) == 0);
+    /* Phase 3 order: the initiator waits for the responder's keys, even
+     * when its own Encryption Change is reported first. */
+    bt_smp_manager_on_encryption_changed(&initiator->m, true, ++*now_us);
+    BT_CHECK(initiator->m.state == BT_SMP_STATE_WAIT_KEY_DISTRIBUTION);
+    BT_CHECK(responder->inbox_count == 0);
+    bt_smp_manager_on_encryption_changed(&responder->m, true, ++*now_us);
+    BT_CHECK(initiator->inbox_count == 2); /* IdentityInfo + IdentityAddress */
+    BT_CHECK(responder->inbox_count == 0);
+    loop_pump(initiator, responder, now_us);
+    BT_CHECK(initiator->complete_calls == 1 && initiator->result == BT_SMP_MANAGER_OK);
+    BT_CHECK(responder->complete_calls == 1 && responder->result == BT_SMP_MANAGER_OK);
+    /* SC: the LTK is f5-derived, so only identities travel */
+    BT_CHECK(initiator->keys_complete_mask ==
+             (BT_SMP_KEYDIST_ENC_KEY | BT_SMP_KEYDIST_ID_KEY));
+    BT_CHECK(responder->keys_complete_mask ==
+             (BT_SMP_KEYDIST_ENC_KEY | BT_SMP_KEYDIST_ID_KEY));
+    BT_CHECK(initiator->local_keys_complete_mask ==
+             (BT_SMP_KEYDIST_ENC_KEY | BT_SMP_KEYDIST_ID_KEY));
+    BT_CHECK(responder->local_keys_complete_mask ==
+             (BT_SMP_KEYDIST_ENC_KEY | BT_SMP_KEYDIST_ID_KEY));
+}
+
+static void loop_start(struct loop_side *initiator, struct loop_side *responder,
+                       uint8_t initiator_io, uint8_t initiator_auth,
+                       uint8_t responder_io, uint8_t responder_auth, uint64_t *now_us)
+{
+    loop_init(initiator, responder, initiator_io, initiator_auth, 0x10);
+    loop_init(responder, initiator, responder_io, responder_auth, 0x80);
+    *now_us = 0;
+    BT_CHECK(bt_smp_manager_start(&initiator->m, 0) == BT_OK);
+    loop_pump(initiator, responder, now_us);
+}
+
+static void test_sc_responder_just_works(void)
+{
+    struct loop_side initiator, responder;
+    uint64_t now = 0;
+    uint8_t sc_bond = BT_SMP_AUTHREQ_SC | BT_SMP_AUTHREQ_BONDING;
+
+    loop_start(&initiator, &responder, 0x03, sc_bond, 0x04,
+               sc_bond | BT_SMP_AUTHREQ_MITM, &now);
+    BT_CHECK(responder.m.responder && responder.m.negotiation.secure_connections);
+    BT_CHECK(initiator.m.negotiation.responder_key_distribution == BT_SMP_KEYDIST_ID_KEY);
+    BT_CHECK(responder.m.negotiation.responder_key_distribution == BT_SMP_KEYDIST_ID_KEY);
+    BT_CHECK(responder.m.negotiation.association == BT_SMP_ASSOC_JUST_WORKS);
+    BT_CHECK(!initiator.user_pending && !responder.user_pending);
+    loop_encrypt(&initiator, &responder, &now);
+    BT_CHECK(initiator.negotiation.secure_connections &&
+             responder.negotiation.secure_connections);
+}
+
+static void test_sc_responder_numeric_comparison(bool initiator_first)
+{
+    struct loop_side initiator, responder;
+    uint64_t now = 0;
+    uint8_t auth = BT_SMP_AUTHREQ_SC | BT_SMP_AUTHREQ_BONDING | BT_SMP_AUTHREQ_MITM;
+
+    loop_start(&initiator, &responder, 0x01, auth, 0x04, auth, &now);
+    BT_CHECK(responder.m.negotiation.association == BT_SMP_ASSOC_NUMERIC_COMPARISON);
+    BT_CHECK(initiator.user_pending && responder.user_pending);
+    BT_CHECK(initiator.user_action == BT_SMP_USER_CONFIRM_NUMERIC);
+    BT_CHECK(responder.user_action == BT_SMP_USER_CONFIRM_NUMERIC);
+    BT_CHECK(initiator.user_value == responder.user_value);
+    BT_CHECK(responder.user_value < 1000000u);
+    if (initiator_first)
+    {
+        /* Ea reaches the responder before its user answered: it waits */
+        BT_CHECK(bt_smp_manager_confirm_numeric(&initiator.m, true, ++now) == BT_OK);
+        loop_pump(&initiator, &responder, &now);
+        BT_CHECK(responder.m.peer_dhkey_check_pending);
+        BT_CHECK(responder.m.state == BT_SMP_STATE_WAIT_NUMERIC_CONFIRMATION);
+        BT_CHECK(responder.encryption_calls == 0);
+        BT_CHECK(bt_smp_manager_confirm_numeric(&responder.m, true, ++now) == BT_OK);
+    }
+    else
+    {
+        BT_CHECK(bt_smp_manager_confirm_numeric(&responder.m, true, ++now) == BT_OK);
+        BT_CHECK(responder.m.state == BT_SMP_STATE_WAIT_DHKEY_CHECK);
+        BT_CHECK(bt_smp_manager_confirm_numeric(&initiator.m, true, ++now) == BT_OK);
+    }
+    loop_pump(&initiator, &responder, &now);
+    loop_encrypt(&initiator, &responder, &now);
+    BT_CHECK(responder.negotiation.mitm_requested);
+}
+
+/* The upstream central must not fail when the responder's Cb overtakes the
+ * DHKey event from its own controller. */
+static void test_sc_initiator_early_responder_confirm(void)
+{
+    struct loop_side initiator, responder;
+    uint64_t now = 0;
+    uint8_t auth = BT_SMP_AUTHREQ_SC | BT_SMP_AUTHREQ_BONDING | BT_SMP_AUTHREQ_MITM;
+
+    loop_init(&initiator, &responder, 0x01, auth, 0x10);
+    loop_init(&responder, &initiator, 0x03, auth, 0x80);
+    initiator.pdus_first = true;
+    BT_CHECK(bt_smp_manager_start(&initiator.m, 0) == BT_OK);
+    loop_pump(&initiator, &responder, &now);
+    BT_CHECK(!initiator.m.peer_confirm_pending);
+    BT_CHECK(initiator.m.negotiation.association == BT_SMP_ASSOC_JUST_WORKS);
+    loop_encrypt(&initiator, &responder, &now);
+
+    loop_init(&initiator, &responder, 0x01, auth, 0x10);
+    loop_init(&responder, &initiator, 0x01, auth, 0x80);
+    initiator.pdus_first = true;
+    BT_CHECK(bt_smp_manager_start(&initiator.m, 0) == BT_OK);
+    now = 0;
+    loop_pump(&initiator, &responder, &now);
+    BT_CHECK(initiator.m.state == BT_SMP_STATE_WAIT_NUMERIC_CONFIRMATION);
+    BT_CHECK(initiator.user_value == responder.user_value);
+}
+
+static void test_sc_responder_numeric_rejected(void)
+{
+    struct loop_side initiator, responder;
+    uint64_t now = 0;
+    uint8_t auth = BT_SMP_AUTHREQ_SC | BT_SMP_AUTHREQ_BONDING | BT_SMP_AUTHREQ_MITM;
+
+    loop_start(&initiator, &responder, 0x01, auth, 0x01, auth, &now);
+    BT_CHECK(bt_smp_manager_confirm_numeric(&responder.m, false, ++now) == BT_OK);
+    loop_pump(&initiator, &responder, &now);
+    BT_CHECK(responder.result == BT_SMP_MANAGER_ERROR_CONFIRM);
+    BT_CHECK(initiator.m.state == BT_SMP_STATE_FAILED);
+    BT_CHECK(responder.encryption_calls == 0);
+}
+
+static void test_sc_responder_passkey(uint8_t initiator_io, uint8_t responder_io,
+                                      enum bt_smp_association_method association,
+                                      bool wrong_passkey)
+{
+    struct loop_side initiator, responder;
+    struct loop_side *display = NULL;
+    uint64_t now = 0;
+    uint8_t auth = BT_SMP_AUTHREQ_SC | BT_SMP_AUTHREQ_BONDING | BT_SMP_AUTHREQ_MITM;
+    uint32_t passkey = 424242u;
+
+    loop_start(&initiator, &responder, initiator_io, auth, responder_io, auth, &now);
+    BT_CHECK(responder.m.negotiation.association == association);
+    BT_CHECK(initiator.user_pending && responder.user_pending);
+    if (initiator.user_action == BT_SMP_USER_DISPLAY_PASSKEY)
+        display = &initiator;
+    else if (responder.user_action == BT_SMP_USER_DISPLAY_PASSKEY)
+        display = &responder;
+    if (display != NULL)
+    {
+        passkey = display->user_value;
+        BT_CHECK(passkey < 1000000u);
+    }
+    /* the initiator's typist is fast: its round-0 commitment is queued
+     * before the responder's user has entered anything */
+    if (initiator.user_action == BT_SMP_USER_REQUEST_PASSKEY)
+    {
+        BT_CHECK(bt_smp_manager_provide_passkey(&initiator.m, passkey, ++now) == BT_OK);
+        loop_pump(&initiator, &responder, &now);
+    }
+    if (responder.user_action == BT_SMP_USER_REQUEST_PASSKEY)
+    {
+        if (initiator.user_action == BT_SMP_USER_REQUEST_PASSKEY)
+            BT_CHECK(responder.m.peer_confirm_pending);
+        BT_CHECK(bt_smp_manager_provide_passkey(&responder.m,
+                                                wrong_passkey ? passkey ^ 0x400u : passkey,
+                                                ++now) == BT_OK);
+    }
+    loop_pump(&initiator, &responder, &now);
+    if (wrong_passkey)
+    {
+        BT_CHECK(initiator.m.state == BT_SMP_STATE_FAILED);
+        BT_CHECK(responder.m.state == BT_SMP_STATE_FAILED);
+        BT_CHECK(responder.encryption_calls == 0);
+        return;
+    }
+    BT_CHECK(initiator.m.sc_round == 20 && responder.m.sc_round == 20);
+    loop_encrypt(&initiator, &responder, &now);
+}
+
+static void test_sc_responder_fallbacks(void)
+{
+    struct loop_side initiator, responder;
+    uint64_t now = 0;
+    uint8_t request[7] = {BT_SMP_PAIRING_REQUEST, 0x04, 0x01,
+                          BT_SMP_AUTHREQ_SC | BT_SMP_AUTHREQ_BONDING, 16,
+                          BT_SMP_KEYDIST_ID_KEY, BT_SMP_KEYDIST_ID_KEY};
+
+    /* a legacy-only central gets legacy Just Works, whatever we offer */
+    loop_start(&initiator, &responder, 0x01, BT_SMP_AUTHREQ_BONDING | BT_SMP_AUTHREQ_MITM,
+               0x04, BT_SMP_AUTHREQ_SC | BT_SMP_AUTHREQ_BONDING | BT_SMP_AUTHREQ_MITM, &now);
+    BT_CHECK(!responder.m.negotiation.secure_connections);
+    BT_CHECK(responder.m.negotiation.association == BT_SMP_ASSOC_JUST_WORKS);
+    BT_CHECK(responder.m.pres[5] == 0x03); /* NoInputNoOutput in the response */
+    BT_CHECK(initiator.m.state == BT_SMP_STATE_WAIT_ENCRYPTION);
+    BT_CHECK(memcmp(initiator.stk, responder.stk, 16) == 0);
+
+    /* an SC central with OOB data would select OOB: answer legacy instead */
+    loop_init(&responder, &initiator, 0x04,
+              BT_SMP_AUTHREQ_SC | BT_SMP_AUTHREQ_BONDING | BT_SMP_AUTHREQ_MITM, 0x80);
+    BT_CHECK(bt_smp_manager_accept(&responder.m, request, sizeof(request), 1) == BT_OK);
+    BT_CHECK(!responder.m.negotiation.secure_connections);
+    BT_CHECK(responder.m.state == BT_SMP_STATE_WAIT_PAIRING_CONFIRM);
+
+    /* without CMAC there is no Secure Connections */
+    loop_init(&responder, &initiator, 0x04,
+              BT_SMP_AUTHREQ_SC | BT_SMP_AUTHREQ_BONDING, 0x80);
+    bt_smp_manager_set_cmac(&responder.m, NULL);
+    request[2] = 0;
+    BT_CHECK(bt_smp_manager_accept(&responder.m, request, sizeof(request), 1) == BT_OK);
+    BT_CHECK(!responder.m.negotiation.secure_connections);
+
+    /* a reflected public key is refused */
+    loop_init(&responder, &initiator, 0x03, BT_SMP_AUTHREQ_SC | BT_SMP_AUTHREQ_BONDING, 0x80);
+    BT_CHECK(bt_smp_manager_accept(&responder.m, request, sizeof(request), 1) == BT_OK);
+    BT_CHECK(responder.m.state == BT_SMP_STATE_WAIT_PEER_PUBLIC_KEY);
+    feed_public_key(&responder.m, responder.public_x, responder.public_y, 2);
+    BT_CHECK(responder.public_key_requested);
+    bt_smp_manager_on_local_public_key(&responder.m, true, responder.public_x,
+                                       responder.public_y, 3);
+    BT_CHECK(responder.m.state == BT_SMP_STATE_FAILED);
+    BT_CHECK(responder.result == BT_SMP_MANAGER_ERROR_PROTOCOL);
+
+    /* a commitment in Just Works is a protocol violation */
+    loop_init(&responder, &initiator, 0x03, BT_SMP_AUTHREQ_SC | BT_SMP_AUTHREQ_BONDING, 0x80);
+    BT_CHECK(bt_smp_manager_accept(&responder.m, request, sizeof(request), 1) == BT_OK);
+    {
+        uint8_t value[16] = {0};
+        feed_value(&responder.m, BT_SMP_PAIRING_CONFIRM, value, 2);
+    }
+    BT_CHECK(responder.m.state == BT_SMP_STATE_FAILED);
+}
+
 void run_smp_manager_tests(void)
 {
     test_legacy_just_works_success();
+    test_legacy_responder_just_works();
     test_confirm_failure_and_timeout();
     test_passkey_input();
     test_secure_connections_just_works();
     test_secure_connections_numeric_confirmation();
     test_secure_connections_passkey_entry();
     test_full_key_distribution_and_order_validation();
+    test_sc_responder_just_works();
+    test_sc_responder_numeric_comparison(true);
+    test_sc_responder_numeric_comparison(false);
+    test_sc_responder_numeric_rejected();
+    test_sc_initiator_early_responder_confirm();
+    test_sc_responder_passkey(0x02, 0x04, BT_SMP_ASSOC_PASSKEY_RESPONDER_DISPLAYS, false);
+    test_sc_responder_passkey(0x00, 0x04, BT_SMP_ASSOC_PASSKEY_INITIATOR_DISPLAYS, false);
+    test_sc_responder_passkey(0x02, 0x02, BT_SMP_ASSOC_PASSKEY_BOTH_INPUT, false);
+    test_sc_responder_passkey(0x02, 0x02, BT_SMP_ASSOC_PASSKEY_BOTH_INPUT, true);
+    test_sc_responder_fallbacks();
 }

@@ -1,0 +1,15 @@
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+USER_CPPFLAGS := -DMUIMASTER_YES_INLINE_STDARG
+
+FILES := btmidi btmidi_central btmidi_gui blemidi camdbridge
+
+#MM- kernel-bluetooth-classes-btmidi : kernel-bluetooth-btclass kernel-bluetooth-library-includes \
+#MM				workbench-libs-camd-includes
+
+%build_module_library mmake=kernel-bluetooth-classes-btmidi \
+    modname=btmidi modtype=btclass modsuffix="class" \
+    files="$(FILES)"
+
+%common

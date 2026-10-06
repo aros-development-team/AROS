@@ -35,6 +35,13 @@ static enum bt_smp_association_method io_association(uint8_t initiator, uint8_t 
         if (initiator == 0x00u || initiator == 0x01u || initiator == 0x04u)
             return BT_SMP_ASSOC_PASSKEY_INITIATOR_DISPLAYS;
     }
+    /* KeyboardDisplay types when the other side can only display; between
+     * two KeyboardDisplay devices (legacy) the initiator displays. */
+    if (initiator == 0x04u && (responder == 0x00u || responder == 0x01u))
+        return BT_SMP_ASSOC_PASSKEY_RESPONDER_DISPLAYS;
+    if (responder == 0x04u &&
+        (initiator == 0x00u || initiator == 0x01u || initiator == 0x04u))
+        return BT_SMP_ASSOC_PASSKEY_INITIATOR_DISPLAYS;
     return BT_SMP_ASSOC_JUST_WORKS;
 }
 

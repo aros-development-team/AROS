@@ -2871,7 +2871,7 @@ AROS_UFH0(void, bHWTask)
     struct BtHardware *bth;
     struct BtHWCore *hc = NULL;
     struct Task *thistask;
-    ULONG sigs;
+    ULONG sigs = 0;
     ULONG sigmask;
     LONG ioerr;
     struct BtChannel *bch;
@@ -2957,7 +2957,7 @@ AROS_UFH0(void, bHWTask)
                 }
                 bConnInit(hc);
 
-                sigmask = SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_F |
+                sigmask = SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_E | SIGBREAKF_CTRL_F |
                           (1UL<<bth->bth_DevMsgPort.mp_SigBit) |
                           (1UL<<bth->bth_TaskMsgPort.mp_SigBit) |
                           (1UL<<bth->bth_EventMsgPort.mp_SigBit) |
@@ -3059,6 +3059,9 @@ AROS_UFH0(void, bHWTask)
                         if(!hc->hc_TimerPending) {
                             bTick(hc);
                             bArmTimer(hc);
+                        }
+                        if(sigs & SIGBREAKF_CTRL_E) {
+                            bGattSrvPoll(hc);
                         }
                         if(hc->hc_FirmwarePending) {
                             /* HCB_FIRMWARE reached during a re-run bring-up (or
