@@ -2,10 +2,11 @@
 
 include $(SRCDIR)/config/aros.cfg
 USER_LDFLAGS := -static
+USER_INCLUDES := -I$(SRCDIR)/rom/intuition
 
 #MM test-graphics-classicsprites : includes linklibs
 
 %build_progs mmake=test-graphics-classicsprites \
-    files=classicsprites targetdir=$(AROS_TESTS)/graphics/classicsprites
+    files="classicsprites genericprefs" targetdir=$(AROS_TESTS)/graphics/classicsprites
 
 %common

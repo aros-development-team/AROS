@@ -1,6 +1,5 @@
 #include <aros/config.h>
 #include <intuition/preferences.h>
-#include <graphics/monitor.h>
 
 /*
 ** The intuition default preferences structure
@@ -62,13 +61,8 @@ CONST struct Preferences IntuitionDefaultPreferences =
 
     0,      // ViewXOffset
     0,      // ViewYOffset
-#ifdef __mc68000__
-    STANDARD_VIEW_X, // Native display's initial horizontal beam origin.
-    STANDARD_VIEW_Y, // Native display's initial vertical beam origin.
-#else
     0,      // ViewInitX
-    0,      // ViewInitY
-#endif
+    0,      // ViewINitY
 
     (BOOL)MOUSE_ACCEL,      // EnableCLI
 
