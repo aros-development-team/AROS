@@ -846,7 +846,8 @@ IPTR InitMFTEntry(struct NTFSMFTEntry *mft, ULONG mft_id)
     return 0;
 }
 LONG
-ProcessFSEntry(struct NTFSMFTEntry *diro, struct DirEntry *de, ULONG **countptr)
+ProcessFSEntry(struct NTFSMFTEntry *diro, struct DirEntry *de, ULONG **countptr,
+    UBYTE *idx_base, ULONG idx_bytes)
 {
     ULONG *count = NULL;
     UBYTE *np;
@@ -860,12 +861,10 @@ ProcessFSEntry(struct NTFSMFTEntry *diro, struct DirEntry *de, ULONG **countptr)
     if (countptr)
         count = *countptr;
 
-    if (!de->key || !de->key->indx || !diro->data)
+    if (!de->key || !de->key->indx || !diro->data || !idx_base || !idx_bytes)
         return ERROR_INVALID_COMPONENT_NAME;
 
-    UBYTE *idx_base = de->key->indx;
-    size_t total_bytes = (size_t)diro->data->idx_size << SECTORSIZE_SHIFT;
-    UBYTE *idx_end = idx_base + total_bytes;
+    UBYTE *idx_end = idx_base + idx_bytes;
 
     while (1) {
         if (!de->key->pos)
@@ -875,6 +874,9 @@ ProcessFSEntry(struct NTFSMFTEntry *diro, struct DirEntry *de, ULONG **countptr)
             de->key->pos = NULL;
             return 0;
         }
+
+        if (idx_end - de->key->pos < 0x10)
+            return ERROR_INVALID_COMPONENT_NAME;
 
         if (de->key->pos[0xC] & INDEX_ENTRY_END) {
             de->key->pos = NULL;
@@ -887,7 +889,7 @@ ProcessFSEntry(struct NTFSMFTEntry *diro, struct DirEntry *de, ULONG **countptr)
         UWORD step_tmp;
         memcpy(&step_tmp, de->key->pos + 8, sizeof(UWORD));
         UWORD step = AROS_LE2WORD(step_tmp);
-        if (!step)
+        if (step < 0x10 || step > idx_end - de->key->pos)
             return ERROR_INVALID_COMPONENT_NAME;
 
         if (de->key->pos + 0x50 + 2 > idx_end) {
@@ -1231,7 +1233,8 @@ LONG ReadBootSector(struct FSData *fs_data )
     struct DirHandle dh;
     dh.ioh.mft.buf = NULL;
     dh.ioh.mft.mftrec_no = FILE_ROOT;
-    InitDirHandle(fs_data, &dh, FALSE);
+    if ((err = InitDirHandle(fs_data, &dh, FALSE)) != 0)
+        goto cleanup;
 
     struct DirEntry dir_entry;
     memset(&dir_entry, 0, sizeof(struct DirEntry));
@@ -1308,6 +1311,10 @@ LONG ReadBootSector(struct FSData *fs_data )
             FreeVec(MFTBitmap);
         }
     }
+
+    ReleaseDirHandle(&dh);
+    if (err != ERROR_OBJECT_NOT_FOUND)
+        goto cleanup;
 
     if (fs_data->volume.name[0] == '\0') {
         char tmp[UUID_STRLEN + 1];
