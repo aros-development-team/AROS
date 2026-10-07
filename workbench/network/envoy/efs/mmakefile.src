@@ -1,0 +1,20 @@
+#
+#   Rules to build the Envoy filesystem client, L:envoyfs-handler
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := efs_main efs_wire efs_mount efs_ops efs_rw efs_server
+
+USER_INCLUDES := -I$(SRCDIR)/workbench/network/envoy/include
+USER_CPPFLAGS := -D__NOLIBBASE__
+USER_LDFLAGS  := -static
+#USER_CPPFLAGS += -DDEBUG=1
+
+#MM- workbench-network-envoy : workbench-network-envoy-efs
+#MM workbench-network-envoy-efs : includes linklibs includes-copy-envoy \
+#MM     workbench-network-envoy-nipc-includes workbench-network-envoy-services-includes
+
+%build_module mmake=workbench-network-envoy-efs modname=envoyfs \
+  modtype=handler files="$(FILES)" uselibs=""
+
+%common
