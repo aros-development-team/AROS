@@ -2,6 +2,7 @@
 #include <aros/kernel.h>
 #include <exec/execbase.h>
 #include <exec/memory.h>
+#include <utility/date.h>
 #include <resources/hpet.h>
 #include <resources/processor.h>
 
@@ -18,7 +19,7 @@
 #include "storage.h"
 
 #define APPNAME "ShowConfig"
-#define VERSION "ShowConfig 0.6"
+#define VERSION "ShowConfig 0.7"
 
 const char version[] = "$VER: " VERSION " (" ADATE ")\n";
 
@@ -95,22 +96,38 @@ static VOID PrintSystemInformation()
 {
     IPTR release_major = 0;
     IPTR release_minor = 0;
+    IPTR release_date = 0;
     IPTR abi = (IPTR)-1;
     STRPTR builddate = NULL;
     STRPTR variant = NULL;
     STRPTR architecture = NULL;
+    struct ClockData release_clock;
 
     ArosInquire(AI_ArosReleaseMajor, (IPTR)&release_major,
                 AI_ArosReleaseMinor, (IPTR)&release_minor,
+                AI_ArosReleaseDate, (IPTR)&release_date,
                 AI_ArosBuildDate, (IPTR)&builddate,
                 AI_ArosVariant, (IPTR)&variant,
                 AI_ArosArchitecture, (IPTR)&architecture,
                 AI_ArosABIMajor, (IPTR)&abi,
                 TAG_DONE);
 
-    printf("RELEASE:\tAROS %lu.%lu\n",
-           (unsigned long)release_major,
-           (unsigned long)release_minor);
+    if (release_date)
+    {
+        Amiga2Date((ULONG)release_date * 86400UL, &release_clock);
+        printf("RELEASE:\tAROS %lu.%lu (%04u-%02u-%02u)\n",
+               (unsigned long)release_major,
+               (unsigned long)release_minor,
+               (unsigned int)release_clock.year,
+               (unsigned int)release_clock.month,
+               (unsigned int)release_clock.mday);
+    }
+    else
+    {
+        printf("RELEASE:\tAROS %lu.%lu\n",
+               (unsigned long)release_major,
+               (unsigned long)release_minor);
+    }
 
     if (builddate)
         printf("BUILD:\t\t%s\n", builddate);
