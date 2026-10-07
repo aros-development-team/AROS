@@ -1273,14 +1273,10 @@ void __pthread_Exit_Func(void)
         if (inf->task && !inf->finished)
             pthread_cancel(i);
         ReleaseSemaphore(&thread_sem);
-        // a detached thread cannot be joined: wait for it to end
-        if (pthread_join(i, NULL) == EINVAL)
-        {
-            D(bug("waiting for detached thread %d\n", i));
-            // TODO longer delay between retries?
-            while (inf->task)
-                Delay(1);
-        }
+        // wait for it to end, but leave the join to the program: a thread
+        // still tearing down may be about to join it
+        while (inf->task && !inf->finished)
+            Delay(1);
     }
 
     // the main thread's slot stays usable for later exit code
