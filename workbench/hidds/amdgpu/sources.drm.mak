@@ -879,6 +879,32 @@ AROS_AMDGPU_DRM_SOURCES = \
             drm/amd/amdgpu/vega20_ih \
             drm/amd/amdgpu/vega20_reg_init \
             drm/amd/amdgpu/vi \
+            drm/amd/amdgpu/cik \
+            drm/amd/amdgpu/cik_ih \
+            drm/amd/amdgpu/cik_sdma \
+            drm/amd/amdgpu/dce_v6_0 \
+            drm/amd/amdgpu/dce_v8_0 \
+            drm/amd/amdgpu/gfx_v6_0 \
+            drm/amd/amdgpu/gfx_v7_0 \
+            drm/amd/amdgpu/gmc_v6_0 \
+            drm/amd/amdgpu/si \
+            drm/amd/amdgpu/si_dma \
+            drm/amd/amdgpu/si_ih \
+            drm/amd/amdgpu/uvd_v3_1 \
+            drm/amd/amdgpu/uvd_v4_2 \
+            drm/amd/amdgpu/vce_v2_0 \
+            drm/amd/display/dc/bios/dce60/command_table_helper_dce60 \
+            drm/amd/display/dc/clk_mgr/dce60/dce60_clk_mgr \
+            drm/amd/display/dc/dce60/dce60_timing_generator \
+            drm/amd/display/dc/gpio/dce60/hw_factory_dce60 \
+            drm/amd/display/dc/gpio/dce60/hw_translate_dce60 \
+            drm/amd/display/dc/hwss/dce60/dce60_hwseq \
+            drm/amd/display/dc/irq/dce60/irq_service_dce60 \
+            drm/amd/display/dc/resource/dce60/dce60_resource \
+            drm/amd/pm/legacy-dpm/kv_dpm \
+            drm/amd/pm/legacy-dpm/kv_smc \
+            drm/amd/pm/legacy-dpm/si_dpm \
+            drm/amd/pm/legacy-dpm/si_smc \
             drm/amd/amdgpu/vpe_v6_1 \
             drm-aros/amdgpu_vkms_aros \
             drm-aros/amdgpu_aros \

@@ -129,6 +129,7 @@ AMD_INCLUDES := \
 # configuration as CONFIG_ symbols; the default x86_64 configuration is used.
 DRM_CPPFLAGS := -D__KERNEL__ -DCONFIG_X86 -DCONFIG_X86_64 -DDRM_COMPAT_NAME=\"amdgpu\" \
                 -DCONFIG_DRM_AMDGPU -DCONFIG_DRM_AMD_DC -DCONFIG_DRM_AMD_DC_FP \
+                -DCONFIG_DRM_AMDGPU_SI -DCONFIG_DRM_AMDGPU_CIK -DCONFIG_DRM_AMD_DC_SI \
                 -DBUILD_FEATURE_TIMING_SYNC=0 \
                 -include linux/kconfig.h -include linux/compiler_types.h
 DRM_NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_STRICT_ALIASING) $(NOWARN_UNUSED_BUT_SET_VARIABLE) $(NOWARN_UNUSED_VARIABLE) $(NOWARN_UNUSED_FUNCTION) $(NOWARN_MISSING_BRACES) -Wno-override-init -Wno-incompatible-pointer-types
