@@ -24,7 +24,15 @@ cpu = '@aros_target_cpu@'
 endian = '@aros_target_meson_endian@'
 
 [properties]
-sys_root = '@AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Developer'
+#
+# sys_root is what meson prefixes onto the paths pkg-config reports, so it
+# must be the volume root, NOT the compiler sysroot above: our .pc files say
+# prefix=/Developer, so pointing it at AROS/Developer yielded include and
+# library paths with "Developer" twice and every pkg-config dependency became
+# unusable (a meson port then silently built a bundled copy instead). This
+# matches PKG_CONFIG_SYSROOT_DIR in make-autotools.tmpl and make-cmake.tmpl.
+#
+sys_root = '@AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS'
 pkg_config_libdir = '@AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Developer/lib/pkgconfig'
 
 [built-in options]
