@@ -210,6 +210,30 @@ void ATAUnit__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 *****************************************************************************************/
 
+BOOL ATAUnit__Hidd_StorageUnit__GetCapacity(OOP_Class *cl, OOP_Object *o,
+    struct pHidd_StorageUnit_GetCapacity *msg)
+{
+    struct ata_Unit *unit = OOP_INST_DATA(cl, o);
+
+    if (msg->blockCount)
+        *msg->blockCount = 0;
+    if (msg->blockSize)
+        *msg->blockSize = 0;
+
+    if (!msg->blockCount || !msg->blockSize)
+        return FALSE;
+
+    if ((unit->au_XferModes & AF_XFER_PACKET) ||
+        !unit->au_Capacity48 ||
+        unit->au_SectorShift >= 32)
+        return FALSE;
+
+    *msg->blockCount = unit->au_Capacity48;
+    *msg->blockSize = 1UL << unit->au_SectorShift;
+
+    return TRUE;
+}
+
 void ATAUnit__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct ataBase *ATABase = cl->UserData;
