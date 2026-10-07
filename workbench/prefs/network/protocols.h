@@ -46,6 +46,7 @@ struct ProtocolAddress
     TEXT                 pa_mask[IPBUFLEN];    /* netmask (IPv4 only)                    */
     LONG                 pa_prefix;            /* prefix length (IPv6 only)              */
     TEXT                 pa_gate[IP6BUFLEN];   /* default gateway (any mode)             */
+    TEXT                 pa_dns[2][IP6BUFLEN]; /* per-protocol DNS servers (0..2)        */
 };
 
 /*--- MUI list hooks (defined in protocols.c, shared by all callers) --------*/

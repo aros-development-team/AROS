@@ -36,6 +36,7 @@
   "IP/K,NETMASK/K,UP/S," \
   "IP6/K,PREFIXLEN/N/K," \
   "GW/K,GW6/K," \
+  "DNS/K,DNS6/K," \
   "IPTYPE/N/K," \
   "ARPTYPE=IPARPTYPE/N/K," \
   "IPREQ=IPREQUESTS/N/K," \
@@ -59,6 +60,8 @@ struct ssc_args {
   LONG  *a_prefixlen;
   UBYTE *a_gw;
   UBYTE *a_gw6;
+  UBYTE *a_dns;			/* comma-separated DNS servers (IPv4 protocol)  */
+  UBYTE *a_dns6;		/* comma-separated DNS servers (IPv6 protocol)  */
   LONG  *a_iptype;
   LONG  *a_arptype;
   LONG  *a_ipno;

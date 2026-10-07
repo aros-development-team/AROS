@@ -187,6 +187,7 @@ BOOL api_show(VOID);
 VOID api_hide(VOID);
 VOID api_setfunctions(VOID);
 VOID api_sendbreaktotasks(VOID);
+VOID api_logopeners(VOID);
 VOID api_deinit(VOID);
 
 /* Function which sets Errno value */

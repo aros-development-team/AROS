@@ -37,6 +37,7 @@ struct Net6Win_Data
     Object *n6_addrObj;
     Object *n6_prefixObj;
     Object *n6_gateObj;
+    Object *n6_dnsObj[2];
 };
 
 static CONST_STRPTR IPv6ModeCycle[] = { NULL, NULL, NULL, NULL };
@@ -44,7 +45,7 @@ static CONST_STRPTR IPv6ModeCycle[] = { NULL, NULL, NULL, NULL };
 /*---------------------------------------------------------------------------*/
 static IPTR Net6Win__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 {
-    Object *mode, *addr, *prefix, *gate, *content;
+    Object *mode, *addr, *prefix, *gate, *dns1, *dns2, *content;
 
     IPv6ModeCycle[0] = _(MSG_IP_MODE_DHCP);
     IPv6ModeCycle[1] = _(MSG_IP6_MODE_AUTO);
@@ -79,6 +80,18 @@ static IPTR Net6Win__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
             MUIA_String_Accept, (IPTR)IP6CHARS,
             MUIA_CycleChain,    1,
         End),
+        Child, (IPTR)Label2(__(MSG_DNS1)),
+        Child, (IPTR)(dns1 = (Object *)StringObject,
+            StringFrame,
+            MUIA_String_Accept, (IPTR)IP6CHARS,
+            MUIA_CycleChain,    1,
+        End),
+        Child, (IPTR)Label2(__(MSG_DNS2)),
+        Child, (IPTR)(dns2 = (Object *)StringObject,
+            StringFrame,
+            MUIA_String_Accept, (IPTR)IP6CHARS,
+            MUIA_CycleChain,    1,
+        End),
     End;
 
     if (!content)
@@ -99,6 +112,8 @@ static IPTR Net6Win__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
     data->n6_addrObj   = addr;
     data->n6_prefixObj = prefix;
     data->n6_gateObj   = gate;
+    data->n6_dnsObj[0] = dns1;
+    data->n6_dnsObj[1] = dns2;
 
     /* Mode cycle notifies the window to update gadget states */
     DoMethod(mode, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
@@ -132,6 +147,8 @@ static IPTR Net6Win__MUIM_PAWin_Show(Class *cl, Object *obj,
         SET(data->n6_prefixObj, MUIA_String_Contents, "");
     }
     SET(data->n6_gateObj, MUIA_String_Contents, pa->pa_gate);
+    SET(data->n6_dnsObj[0], MUIA_String_Contents, pa->pa_dns[0]);
+    SET(data->n6_dnsObj[1], MUIA_String_Contents, pa->pa_dns[1]);
     return 0;
 }
 
@@ -159,9 +176,17 @@ static IPTR Net6Win__MUIM_PAWin_Apply(Class *cl, Object *obj,
     strncpy(pa->pa_gate,
             (STRPTR)XGET(data->n6_gateObj, MUIA_String_Contents),
             sizeof(pa->pa_gate) - 1);
+    strncpy(pa->pa_dns[0],
+            (STRPTR)XGET(data->n6_dnsObj[0], MUIA_String_Contents),
+            sizeof(pa->pa_dns[0]) - 1);
+    strncpy(pa->pa_dns[1],
+            (STRPTR)XGET(data->n6_dnsObj[1], MUIA_String_Contents),
+            sizeof(pa->pa_dns[1]) - 1);
 
     pa->pa_addr[sizeof(pa->pa_addr) - 1] = '\0';
     pa->pa_gate[sizeof(pa->pa_gate) - 1] = '\0';
+    pa->pa_dns[0][sizeof(pa->pa_dns[0]) - 1] = '\0';
+    pa->pa_dns[1][sizeof(pa->pa_dns[1]) - 1] = '\0';
     return 0;
 }
 
@@ -252,6 +277,14 @@ void Net6_WriteTokens(FILE *f, struct ProtocolAddress *pa)
     }
     if (pa->pa_gate[0])
         fprintf(f, "GW6=%s ", pa->pa_gate);
+    /* DNS servers as one comma-separated token (the interface line is parsed
+     * with a strict ReadArgs template, so a repeated keyword is not allowed). */
+    if (pa->pa_dns[0][0] && pa->pa_dns[1][0])
+        fprintf(f, "DNS6=%s,%s ", pa->pa_dns[0], pa->pa_dns[1]);
+    else if (pa->pa_dns[0][0])
+        fprintf(f, "DNS6=%s ", pa->pa_dns[0]);
+    else if (pa->pa_dns[1][0])
+        fprintf(f, "DNS6=%s ", pa->pa_dns[1]);
 }
 
 /* Find (or create and append) this plugin's address node on an interface's
@@ -309,6 +342,27 @@ struct Node *Net6_ReadTokens(struct List *protoList, CONST_STRPTR token, UBYTE i
     {
         if (!(pa = net6_node(protoList, id))) return NULL;
         strlcpy(pa->pa_gate, token + 4, sizeof(pa->pa_gate));
+        return &pa->pa_node;
+    }
+    if (strncmp(token, "DNS6=", 5) == 0)
+    {
+        CONST_STRPTR comma;
+        if (!(pa = net6_node(protoList, id))) return NULL;
+        val = token + 5;
+        comma = (CONST_STRPTR)strchr((const char *)val, ',');
+        if (comma)
+        {
+            ULONG n = (ULONG)(comma - val);
+            if (n >= sizeof(pa->pa_dns[0]))
+                n = sizeof(pa->pa_dns[0]) - 1;
+            memcpy(pa->pa_dns[0], val, n);
+            pa->pa_dns[0][n] = '\0';
+            strlcpy(pa->pa_dns[1], comma + 1, sizeof(pa->pa_dns[1]));
+        }
+        else
+        {
+            strlcpy(pa->pa_dns[0], val, sizeof(pa->pa_dns[0]));
+        }
         return &pa->pa_node;
     }
     return NULL;

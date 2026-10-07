@@ -36,6 +36,7 @@ struct Net4Win_Data
     Object *n4_addrObj;
     Object *n4_maskObj;
     Object *n4_gateObj;
+    Object *n4_dnsObj[2];
 };
 
 static CONST_STRPTR IPv4ModeCycle[] = { NULL, NULL, NULL, NULL };
@@ -44,7 +45,7 @@ static const TEXT   ipv4_max_str[]  = "255.255.255.255 ";
 /*---------------------------------------------------------------------------*/
 static IPTR Net4Win__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 {
-    Object *mode, *addr, *mask, *gate, *content;
+    Object *mode, *addr, *mask, *gate, *dns1, *dns2, *content;
 
     IPv4ModeCycle[0] = _(MSG_IP_MODE_DHCP);
     IPv4ModeCycle[1] = _(MSG_IP_MODE_AUTO);
@@ -78,6 +79,20 @@ static IPTR Net4Win__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
             MUIA_CycleChain,     1,
             MUIA_FixWidthTxt,    (IPTR)ipv4_max_str,
         End),
+        Child, (IPTR)Label2(__(MSG_DNS1)),
+        Child, (IPTR)(dns1 = (Object *)StringObject,
+            StringFrame,
+            MUIA_String_Accept,  (IPTR)IPCHARS,
+            MUIA_CycleChain,     1,
+            MUIA_FixWidthTxt,    (IPTR)ipv4_max_str,
+        End),
+        Child, (IPTR)Label2(__(MSG_DNS2)),
+        Child, (IPTR)(dns2 = (Object *)StringObject,
+            StringFrame,
+            MUIA_String_Accept,  (IPTR)IPCHARS,
+            MUIA_CycleChain,     1,
+            MUIA_FixWidthTxt,    (IPTR)ipv4_max_str,
+        End),
     End;
 
     if (!content)
@@ -98,6 +113,8 @@ static IPTR Net4Win__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
     data->n4_addrObj = addr;
     data->n4_maskObj = mask;
     data->n4_gateObj = gate;
+    data->n4_dnsObj[0] = dns1;
+    data->n4_dnsObj[1] = dns2;
 
     /* Mode cycle notifies the window to update gadget states */
     DoMethod(mode, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
@@ -130,6 +147,8 @@ static IPTR Net4Win__MUIM_PAWin_Show(Class *cl, Object *obj,
         SET(data->n4_maskObj, MUIA_String_Contents, "");
     }
     SET(data->n4_gateObj, MUIA_String_Contents, pa->pa_gate);
+    SET(data->n4_dnsObj[0], MUIA_String_Contents, pa->pa_dns[0]);
+    SET(data->n4_dnsObj[1], MUIA_String_Contents, pa->pa_dns[1]);
     return 0;
 }
 
@@ -159,10 +178,18 @@ static IPTR Net4Win__MUIM_PAWin_Apply(Class *cl, Object *obj,
     strncpy(pa->pa_gate,
             (STRPTR)XGET(data->n4_gateObj, MUIA_String_Contents),
             sizeof(pa->pa_gate) - 1);
+    strncpy(pa->pa_dns[0],
+            (STRPTR)XGET(data->n4_dnsObj[0], MUIA_String_Contents),
+            sizeof(pa->pa_dns[0]) - 1);
+    strncpy(pa->pa_dns[1],
+            (STRPTR)XGET(data->n4_dnsObj[1], MUIA_String_Contents),
+            sizeof(pa->pa_dns[1]) - 1);
 
     pa->pa_addr[sizeof(pa->pa_addr) - 1] = '\0';
     pa->pa_mask[sizeof(pa->pa_mask) - 1] = '\0';
     pa->pa_gate[sizeof(pa->pa_gate) - 1] = '\0';
+    pa->pa_dns[0][sizeof(pa->pa_dns[0]) - 1] = '\0';
+    pa->pa_dns[1][sizeof(pa->pa_dns[1]) - 1] = '\0';
     return 0;
 }
 
@@ -260,6 +287,14 @@ void Net4_WriteTokens(FILE *f, struct ProtocolAddress *pa)
     }
     if (pa->pa_gate[0])
         fprintf(f, "GW=%s ", pa->pa_gate);
+    /* DNS servers as one comma-separated token (the interface line is parsed
+     * with a strict ReadArgs template, so a repeated keyword is not allowed). */
+    if (pa->pa_dns[0][0] && pa->pa_dns[1][0])
+        fprintf(f, "DNS=%s,%s ", pa->pa_dns[0], pa->pa_dns[1]);
+    else if (pa->pa_dns[0][0])
+        fprintf(f, "DNS=%s ", pa->pa_dns[0]);
+    else if (pa->pa_dns[1][0])
+        fprintf(f, "DNS=%s ", pa->pa_dns[1]);
 }
 
 /* Find (or create and append) this plugin's address node on an interface's
@@ -318,6 +353,27 @@ struct Node *Net4_ReadTokens(struct List *protoList, CONST_STRPTR token, UBYTE i
     {
         if (!(pa = net4_node(protoList, id))) return NULL;
         strlcpy(pa->pa_gate, token + 3, sizeof(pa->pa_gate));
+        return &pa->pa_node;
+    }
+    if (strncmp(token, "DNS=", 4) == 0)
+    {
+        CONST_STRPTR comma;
+        if (!(pa = net4_node(protoList, id))) return NULL;
+        val = token + 4;
+        comma = (CONST_STRPTR)strchr((const char *)val, ',');
+        if (comma)
+        {
+            ULONG n = (ULONG)(comma - val);
+            if (n >= sizeof(pa->pa_dns[0]))
+                n = sizeof(pa->pa_dns[0]) - 1;
+            memcpy(pa->pa_dns[0], val, n);
+            pa->pa_dns[0][n] = '\0';
+            strlcpy(pa->pa_dns[1], comma + 1, sizeof(pa->pa_dns[1]));
+        }
+        else
+        {
+            strlcpy(pa->pa_dns[0], val, sizeof(pa->pa_dns[0]));
+        }
         return &pa->pa_node;
     }
     return NULL;

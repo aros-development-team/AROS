@@ -37,6 +37,7 @@
 #include <kern/amiga_includes.h>
 #include <kern/amiga_gui.h>
 #include <kern/amiga_dhcp.h>
+#include <kern/amiga_netdb.h>
 
 #include <sys/synch.h>
 
@@ -1167,6 +1168,7 @@ sana_linkdown(struct sana_softc *ssc)
     int deleted = 0;
 
     kill_dhclient(ifp);
+    ifnet_clear_dns(ifp);       /* drop this interface's DNS servers with its addresses */
     if(ssc->ss_autoip.state != AUTOIP_DISABLED)
         autoip_stop(ifp);
 
