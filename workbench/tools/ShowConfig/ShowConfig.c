@@ -1,3 +1,4 @@
+#include <aros/inquire.h>
 #include <aros/kernel.h>
 #include <exec/execbase.h>
 #include <exec/memory.h>
@@ -17,7 +18,7 @@
 #include "storage.h"
 
 #define APPNAME "ShowConfig"
-#define VERSION "ShowConfig 0.4"
+#define VERSION "ShowConfig 0.5"
 
 const char version[] = "$VER: " VERSION " (" ADATE ")\n";
 
@@ -73,6 +74,42 @@ ULONG ComputeKBytes(APTR a, APTR b)
     IPTR result = b - a;
 
     return (ULONG)(result >> 10);
+}
+
+static VOID PrintSystemInformation()
+{
+    IPTR release_major = 0;
+    IPTR release_minor = 0;
+    IPTR abi = (IPTR)-1;
+    STRPTR builddate = NULL;
+    STRPTR variant = NULL;
+    STRPTR architecture = NULL;
+
+    ArosInquire(AI_ArosReleaseMajor, (IPTR)&release_major,
+                AI_ArosReleaseMinor, (IPTR)&release_minor,
+                AI_ArosBuildDate, (IPTR)&builddate,
+                AI_ArosVariant, (IPTR)&variant,
+                AI_ArosArchitecture, (IPTR)&architecture,
+                AI_ArosABIMajor, (IPTR)&abi,
+                TAG_DONE);
+
+    printf("RELEASE:\tAROS %lu.%lu\n",
+           (unsigned long)release_major,
+           (unsigned long)release_minor);
+
+    if (builddate)
+        printf("BUILD:\t\t%s\n", builddate);
+
+    if (architecture)
+        printf("ARCH:\t\t%s\n", architecture);
+
+    if (abi == (IPTR)-1)
+        printf("ABI:\t\tv1 (development)\n");
+    else
+        printf("ABI:\t\t%lu\n", (unsigned long)abi);
+
+    if (variant && *variant)
+        printf("VARIANT:\t%s\n", variant);
 }
 
 static ULONG GetProcessorsCount()
@@ -223,6 +260,8 @@ int main()
 
     printf("VERS:\t\tAROS version %d.%d, Exec version %d.%d %s\n", ArosBase->lib_Version, ArosBase->lib_Revision,
 	   SysBase->LibNode.lib_Version, SysBase->LibNode.lib_Revision, execextra);
+
+    PrintSystemInformation();
 
     ProcessorBase = OpenResource(PROCESSORNAME);
     if (ProcessorBase)
