@@ -396,7 +396,21 @@ VOID Amdgpu__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Co
     {
         struct BitmapData *srcbd = OOP_INST_DATA(OOP_OCLASS(msg->src), msg->src);
         struct BitmapData *dstbd = OOP_INST_DATA(OOP_OCLASS(msg->dest), msg->dest);
+        BOOL gpu = FALSE;
 
+        if (mode == vHidd_GC_DrawMode_Copy && srcbd->bytesperpix == 4 && dstbd->bytesperpix == 4 &&
+            srcbd->fb.handle)
+        {
+            if (srcbd == dstbd)
+                gpu = Amdgpu_2D_CopyBox(&XSD(cl)->kms, srcbd, msg->srcX, msg->srcY,
+                                        msg->destX, msg->destY, msg->width, msg->height);
+            else if (!dstbd->fb.handle && msg->width * msg->height >= AMDGPU_2D_MIN_READ)
+                gpu = Amdgpu_2D_Read(&XSD(cl)->kms, srcbd, msg->srcX, msg->srcY, msg->width, msg->height,
+                                     dstbd->VideoData + msg->destY * dstbd->pitch + msg->destX * 4,
+                                     dstbd->pitch);
+        }
+
+        if (!gpu)
         switch (mode)
         {
             case vHidd_GC_DrawMode_Copy:
@@ -453,6 +467,8 @@ VOID Amdgpu__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Co
 static int Amdgpu_InitStatic(LIBBASETYPEPTR LIBBASE)
 {
     D(bug("[Amdgpu] %s()\n", __func__);)
+
+    Amdgpu_2D_Init();
 
     if (!OOP_ObtainAttrBases(attrbases))
     {

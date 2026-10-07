@@ -20,6 +20,7 @@
 #include "amdgpu_bitmap.h"
 
 #include "util/xmlconfig.h"
+#include "amdgpu_2d.h"
 #include "amdgpu_hidd.h"
 
 #define SYNC_DESCNAME_LEN               32

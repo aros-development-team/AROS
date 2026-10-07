@@ -294,6 +294,12 @@ VOID MNAME_BM(GetImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetIma
                 break;
 
             case 4:
+#ifdef OnBitmap
+                if (data->fb.handle && msg->width * msg->height >= AMDGPU_2D_MIN_READ &&
+                    Amdgpu_2D_Read(&XSD(cl)->kms, data, msg->x, msg->y, msg->width, msg->height,
+                                   msg->pixels, msg->modulo))
+                    break;
+#endif
                 CopyMemBox32(data, msg->pixels, msg->x, msg->y, msg->width, msg->height, msg->modulo, FALSE);
                 break;
         }
@@ -319,6 +325,12 @@ VOID MNAME_BM(GetImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetIma
                 break;
 
             case 4:
+#ifdef OnBitmap
+                if (data->fb.handle && msg->width * msg->height >= AMDGPU_2D_MIN_READ &&
+                    Amdgpu_2D_Read(&XSD(cl)->kms, data, msg->x, msg->y, msg->width, msg->height,
+                                   msg->pixels, msg->modulo))
+                    break;
+#endif
                 CopyMemBox32(data, msg->pixels, msg->x, msg->y, msg->width, msg->height, msg->modulo, FALSE);
                 break;
         }
@@ -464,6 +476,13 @@ VOID MNAME_BM(FillRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRe
                     break;
 
                 case 4:
+#ifdef OnBitmap
+                    if (data->fb.handle &&
+                        (msg->maxX - msg->minX + 1) * (msg->maxY - msg->minY + 1) >= AMDGPU_2D_MIN_FILL &&
+                        Amdgpu_2D_Fill(&XSD(cl)->kms, data, msg->minX, msg->minY,
+                                       msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, pixel))
+                        break;
+#endif
                     HIDD_BM_FillMemRect32(o, data->VideoData, msg->minX, msg->minY, msg->maxX, msg->maxY, mod, pixel);
                     break;
 
