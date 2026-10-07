@@ -62,7 +62,7 @@
     INTERNALS
 
     HISTORY
-
+        08-Oct-26 Resolve unbuilt raw ViewPorts to the native chipset display.
 
 ******************************************************************************/
 {
@@ -85,10 +85,21 @@
     {
         sprite->x = x;
         sprite->y = y;
+        mdd = &CDD(GfxBase)->mdisplay;
+    }
+
+    /* Before MakeVPort(), a raw bitmap has no associated display.
+     * Like a NULL ViewPort, it refers to the native chipset. The common
+     * software renderer does not implement Amiga sprites. */
+    if (mdd == &CDD(GfxBase)->mdisplay)
+    {
         for (mdd = CDD(GfxBase)->mdisplay.display_next; mdd; mdd = mdd->display_next)
             if (mdd->display_flags & DF_ExternalPlanar)
                 break;
     }
+
+    if (!mdd)
+        return;
 
     /* SimpleSprite buffers are live DMA streams, sometimes containing
      * several chained images. Keep the caller's memory rather than turning
