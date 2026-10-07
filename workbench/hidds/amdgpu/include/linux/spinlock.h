@@ -5,6 +5,7 @@
 #ifndef _LINUX_SPINLOCK_H_
 #define _LINUX_SPINLOCK_H_
 
+#include <aros/config.h>
 #include <proto/exec.h>
 #include <linux/spinlock_types.h>
 #include <linux/atomic.h>
@@ -29,9 +30,13 @@ static inline void __compat_spin_acquire(struct raw_spinlock *lock)
         lock->owner_nest++;
         return;
     }
+#if defined(__AROSEXEC_SMP__)
     while (__atomic_exchange_n(&lock->locked, 1, __ATOMIC_ACQUIRE))
         while (__atomic_load_n(&lock->locked, __ATOMIC_RELAXED))
             __builtin_ia32_pause();
+#else
+    lock->locked = 1;
+#endif
     lock->owner = me;
     lock->owner_nest = 1;
 }
@@ -45,10 +50,14 @@ static inline int __compat_spin_tryacquire(struct raw_spinlock *lock)
         lock->owner_nest++;
         return 1;
     }
+#if defined(__AROSEXEC_SMP__)
     if (__atomic_exchange_n(&lock->locked, 1, __ATOMIC_ACQUIRE)) {
         Permit();
         return 0;
     }
+#else
+    lock->locked = 1;
+#endif
     lock->owner = me;
     lock->owner_nest = 1;
     return 1;
@@ -58,7 +67,11 @@ static inline void __compat_spin_release(struct raw_spinlock *lock)
 {
     if (--lock->owner_nest == 0) {
         lock->owner = NULL;
+#if defined(__AROSEXEC_SMP__)
         __atomic_store_n(&lock->locked, 0, __ATOMIC_RELEASE);
+#else
+        lock->locked = 0;
+#endif
     }
     Permit();
 }
