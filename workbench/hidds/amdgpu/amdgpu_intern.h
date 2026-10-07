@@ -52,6 +52,9 @@ struct HIDDGalliumAmdgpuData
     struct pipe_context         *pipe;          /* for reading resources back */
     driOptionCache              option_info;
     driOptionCache              option_cache;
+    struct pipe_resource        *scanout;       /* the screen's buffer, as a gallium resource */
+    ULONG                       scanout_handle;
+    APTR                        scanout_map;
 };
 
 struct Amdgpu_staticdata {
