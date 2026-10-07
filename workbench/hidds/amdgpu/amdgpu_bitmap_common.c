@@ -339,9 +339,22 @@ VOID MNAME_BM(GetImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetIma
     {
         APTR dst_pixels, src_pixels;
         OOP_Object *srcPF, *dstPF;
+        UBYTE *copy = NULL;
 
         src_pixels = data->VideoData + msg->y * srcmod
             + msg->x * data->bytesperpix;
+#ifdef OnBitmap
+        if (data->fb.handle && data->bytesperpix == 4 && msg->width * msg->height >= AMDGPU_2D_MIN_READ)
+        {
+            copy = AllocVec(msg->width * msg->height * 4, MEMF_ANY);
+            if (copy && Amdgpu_2D_Read(&XSD(cl)->kms, data, msg->x, msg->y, msg->width, msg->height,
+                                       copy, msg->width * 4))
+            {
+                src_pixels = copy;
+                srcmod = msg->width * 4;
+            }
+        }
+#endif
         dst_pixels = msg->pixels;
         OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&srcPF);
         dstPF = HIDD_DMEnum_GetPixFmt(XSD(cl)->dmenum, msg->pixFmt);
@@ -349,6 +362,8 @@ VOID MNAME_BM(GetImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetIma
         HIDD_BM_ConvertPixels(o, &src_pixels, (HIDDT_PixelFormat *)srcPF,
             srcmod, &dst_pixels, (HIDDT_PixelFormat *)dstPF,
             msg->modulo, msg->width, msg->height, NULL);
+        if (copy)
+            FreeVec(copy);
     }
 
     UNLOCK_BITMAP
