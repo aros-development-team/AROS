@@ -161,11 +161,12 @@ static IPTR Net6Win__MUIM_PAWin_Apply(Class *cl, Object *obj,
 
     pa->pa_mode = (enum IPMode)XGET(data->n6_modeObj, MUIA_Cycle_Active);
 
+    /* strlcpy always NUL-terminates and never over-reads (unlike strncpy). */
     if (pa->pa_mode == IP_MODE_MANUAL)
     {
-        strncpy(pa->pa_addr,
+        strlcpy(pa->pa_addr,
                 (STRPTR)XGET(data->n6_addrObj, MUIA_String_Contents),
-                sizeof(pa->pa_addr) - 1);
+                sizeof(pa->pa_addr));
         pa->pa_prefix = (LONG)XGET(data->n6_prefixObj, MUIA_String_Integer);
     }
     else
@@ -173,20 +174,15 @@ static IPTR Net6Win__MUIM_PAWin_Apply(Class *cl, Object *obj,
         pa->pa_addr[0] = '\0';
         pa->pa_prefix  = 0;
     }
-    strncpy(pa->pa_gate,
+    strlcpy(pa->pa_gate,
             (STRPTR)XGET(data->n6_gateObj, MUIA_String_Contents),
-            sizeof(pa->pa_gate) - 1);
-    strncpy(pa->pa_dns[0],
+            sizeof(pa->pa_gate));
+    strlcpy(pa->pa_dns[0],
             (STRPTR)XGET(data->n6_dnsObj[0], MUIA_String_Contents),
-            sizeof(pa->pa_dns[0]) - 1);
-    strncpy(pa->pa_dns[1],
+            sizeof(pa->pa_dns[0]));
+    strlcpy(pa->pa_dns[1],
             (STRPTR)XGET(data->n6_dnsObj[1], MUIA_String_Contents),
-            sizeof(pa->pa_dns[1]) - 1);
-
-    pa->pa_addr[sizeof(pa->pa_addr) - 1] = '\0';
-    pa->pa_gate[sizeof(pa->pa_gate) - 1] = '\0';
-    pa->pa_dns[0][sizeof(pa->pa_dns[0]) - 1] = '\0';
-    pa->pa_dns[1][sizeof(pa->pa_dns[1]) - 1] = '\0';
+            sizeof(pa->pa_dns[1]));
     return 0;
 }
 

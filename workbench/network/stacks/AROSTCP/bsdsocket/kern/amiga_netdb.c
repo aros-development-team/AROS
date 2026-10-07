@@ -535,8 +535,8 @@ static BOOL defer_remember(const char *name, const char *line, ULONG length)
  * servers.  They are registered as dynamic nameservers tagged with the owning
  * interface (nsn_Owner), so the resolver picks them up (res_init merges
  * DynDB.dyn_NameServers) and they can be dropped again when the interface goes
- * away.  Server addresses are IPv4 only - the resolver's nsaddr_list is
- * in_addr; a DNS server given as an IPv6 address is skipped for now.
+ * away.  A server may be given as an IPv4 or an IPv6 literal (either token may
+ * carry either family); the node is tagged with nsn_Family accordingly.
  */
 static void ifdns_remove_locked(struct ifnet *ifp)
 {
@@ -558,28 +558,46 @@ static int ifdns_add_csv_locked(struct ifnet *ifp, const UBYTE *csv)
     int added = 0;
 
     while(p && *p) {
-        const UBYTE *comma = (const UBYTE *)strchr((const char *)p, ',');
-        size_t n = comma ? (size_t)(comma - p) : strlen((const char *)p);
+        /* Bound the scan to the buffer: strnlen() never over-reads past a
+         * missing terminator, and a token that does not fit is skipped. */
+        size_t avail = strnlen((const char *)p, sizeof(buf));
+        const UBYTE *comma = (const UBYTE *)memchr(p, ',', avail);
+        size_t n = comma ? (size_t)(comma - p) : avail;
         struct sockaddr_in sin;
+        struct in6_addr in6;
 
         if(n > 0 && n < sizeof(buf)) {
+            struct NameserventNode *nsn = NULL;
+
             memcpy(buf, p, n);
             buf[n] = '\0';
             memset(&sin, 0, sizeof(sin));
             if(setaddr(&sin, buf, AF_INET)) {
-                struct NameserventNode *nsn =
-                    bsd_malloc(sizeof(*nsn), M_NETDB, M_WAITOK);
-                if(nsn) {
+                /* IPv4 server */
+                if((nsn = bsd_malloc(sizeof(*nsn), M_NETDB, M_WAITOK)) != NULL) {
                     nsn->nsn_EntSize = sizeof(nsn->nsn_Ent);
+                    nsn->nsn_Family = AF_INET;
                     nsn->nsn_Ent.ns_addr.s_addr = sin.sin_addr.s_addr;
-                    nsn->nsn_Owner = (APTR)ifp;
-                    AddTail((struct List *)&DynDB.dyn_NameServers,
-                            (struct Node *)nsn);
-                    added++;
+                }
+            } else if(inet6_aton(buf, &in6)) {
+                /* IPv6 server */
+                if((nsn = bsd_malloc(sizeof(*nsn), M_NETDB, M_WAITOK)) != NULL) {
+                    nsn->nsn_EntSize = sizeof(nsn->nsn_Ent);
+                    nsn->nsn_Family = AF_INET6;
+                    nsn->nsn_Ent.ns_addr.s_addr = 0;
+                    nsn->nsn_Addr6 = in6;
                 }
             }
+            if(nsn) {
+                nsn->nsn_Owner = (APTR)ifp;
+                AddTail((struct List *)&DynDB.dyn_NameServers,
+                        (struct Node *)nsn);
+                added++;
+            }
         }
-        p = comma ? comma + 1 : NULL;
+        /* Advance past this token; the comma offset is within the bounded
+         * region, so there is no unterminated-string read here either. */
+        p = (comma && comma[1]) ? comma + 1 : NULL;
     }
     return added;
 }
@@ -1248,6 +1266,7 @@ addnameservent(struct NetDataBase *ndb,
         return RETURN_FAIL;
     }
     nsn->nsn_EntSize = sizeof(nsn->nsn_Ent);
+    nsn->nsn_Family = AF_INET;
     nsn->nsn_Ent.ns_addr.s_addr = ns_addr.s_addr;
 
     /* TODO: NicJA - Where does CHECK_POINTER() Come from? */
