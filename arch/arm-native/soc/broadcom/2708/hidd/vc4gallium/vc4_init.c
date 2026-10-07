@@ -261,6 +261,8 @@ static int HiddVC4Gallium_InitLib(LIBBASETYPEPTR LIBBASE)
     InitSemaphore(&LIBBASE->sd.mbox_lock);
     InitSemaphore(&LIBBASE->sd.wait_gate);
     InitSemaphore(&LIBBASE->sd.render_lock);
+    InitSemaphore(&LIBBASE->sd.mem_lock);
+    NEWLIST(&LIBBASE->sd.arenas);
 
     /* Install the vblank int server that wakes GPU waiters (~50 Hz). */
     LIBBASE->sd.vblank_waiter = NULL;

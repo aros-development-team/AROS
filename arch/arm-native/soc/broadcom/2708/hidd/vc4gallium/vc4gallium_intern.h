@@ -13,6 +13,7 @@
 #include <exec/types.h>
 #include <exec/libraries.h>
 #include <exec/semaphores.h>
+#include <exec/memory.h>
 #include <exec/interrupts.h>
 #include <devices/timer.h>
 #include <oop/oop.h>
@@ -129,6 +130,25 @@ struct vc4_frame_bo
     ULONG   size;           /* Current allocated size (0 = not allocated) */
 };
 
+/* GPU memory from ARM RAM instead of the firmware's gpu_mem partition.
+ * The arenas are remapped Normal-NC, which needs KrnMapGlobal - only the
+ * aarch64 kernel implements it, so arm32 stays on ALLOCMEM. */
+#ifdef __aarch64__
+#define VC4_ARM_MEM 1
+#else
+#define VC4_ARM_MEM 0
+#endif
+
+struct vc4_arena
+{
+    struct MinNode      node;
+    APTR                raw;
+    ULONG               raw_size;
+    APTR                base;
+    ULONG               size;
+    struct MemHeader    mh;
+};
+
 /* Static data for the module */
 struct vc4galliumstaticdata
 {
@@ -158,6 +178,12 @@ struct vc4galliumstaticdata
     ULONG                   gpu_mem_allocs;
     ULONG                   vcram_base;
     ULONG                   vcram_size;
+
+    /* VC4_ARM_MEM: the arenas BOs are carved from. mem_lock is a leaf
+     * lock, never held while taking another. */
+    struct MinList          arenas;
+    ULONG                   arena_bytes;
+    struct SignalSemaphore  mem_lock;
 
     /* Mailbox message buffer (16-byte aligned) */
     APTR                    mbox_msg_raw;   /* Raw allocation for FreeMem */

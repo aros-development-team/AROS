@@ -35,7 +35,8 @@
     We intercept at the drmIoctl level and dispatch to our handlers.
 
     This file implements:
-    - BO (Buffer Object) management via mailbox GPU memory allocation
+    - BO (Buffer Object) management: ARM RAM arenas on aarch64, mailbox
+      GPU memory allocation on arm32
     - Bin CL processing: strip GEM_HANDLES, patch addresses
     - Shader record relocation: resolve BO handle indices to GPU bus addresses
     - RCL (Render Control List) generation from surface configuration
@@ -276,7 +277,7 @@ static void gpu_mem_report(struct vc4galliumstaticdata *sd, ULONG failed_size)
     if (++report_n > 3 && (report_n & 63) != 0)
         return;
 
-    if (sd->vcram_size == 0)
+    if (!VC4_ARM_MEM && (sd->vcram_size == 0))
     {
         ObtainSemaphore(&sd->mbox_lock);
         sd->mbox_msg[0] = AROS_LE2LONG(9 * 4);
@@ -316,13 +317,190 @@ static void gpu_mem_report(struct vc4galliumstaticdata *sd, ULONG failed_size)
     }
     ReleaseSemaphore(&sd->bo_lock);
 
+#if VC4_ARM_MEM
+    bug("[VC4Gallium] OOM: %u KB request failed. Arenas %u KB; driver "
+        "holds %u KB in %u allocs (pools %u KB, %u BOs %u KB)\n",
+        failed_size / 1024, sd->arena_bytes / 1024,
+        sd->gpu_mem_bytes / 1024, sd->gpu_mem_allocs,
+        pool_bytes / 1024, bo_live, bo_bytes / 1024);
+#else
     bug("[VC4Gallium] OOM: %u KB request failed. VC partition %u KB at "
         "0x%08x; driver holds %u KB in %u allocs (pools %u KB, %u BOs "
         "%u KB)\n",
         failed_size / 1024, sd->vcram_size / 1024, sd->vcram_base,
         sd->gpu_mem_bytes / 1024, sd->gpu_mem_allocs,
         pool_bytes / 1024, bo_live, bo_bytes / 1024);
+#endif
 }
+
+#if VC4_ARM_MEM
+/* Most BOs are far smaller; a bigger one gets an arena of its own. */
+#define VC4_ARENA_SIZE  (32 << 20)
+
+/* 2MB-aligned and -sized so KrnMapGlobal uses block entries only: the
+ * kernel never frees the table page a 4K-aligned edge would need. */
+#define VC4_BLOCK       (2 << 20)
+#define VC4_BLOCK_MASK  (VC4_BLOCK - 1)
+#define VC4_PAGE_MASK   4095
+
+/* GPU_BUS_ADDR's 0xC0000000 alias only reaches the first 1GB. */
+#define VC4_PA_LIMIT    0x40000000ULL
+
+static void arena_free(struct vc4galliumstaticdata *sd, struct vc4_arena *a)
+{
+    /* Back to cacheable for the next owner. */
+    KrnMapGlobal(a->base, a->base, a->size, MAP_Readable | MAP_Writable);
+
+    sd->arena_bytes -= a->size;
+    FreeMem(a->raw, a->raw_size);
+    FreeMem(a, sizeof(struct vc4_arena));
+}
+
+static struct vc4_arena *arena_new(struct vc4galliumstaticdata *sd, ULONG want)
+{
+    struct vc4_arena *a;
+    APTR raw;
+    IPTR base;
+    ULONG raw_size;
+
+    want = (want + VC4_BLOCK_MASK) & ~(ULONG)VC4_BLOCK_MASK;
+    raw_size = want + VC4_BLOCK;
+
+    if (!(a = AllocMem(sizeof(struct vc4_arena), MEMF_ANY | MEMF_CLEAR)))
+        return NULL;
+    if (!(raw = AllocMem(raw_size, MEMF_ANY)))
+    {
+        FreeMem(a, sizeof(struct vc4_arena));
+        return NULL;
+    }
+
+    base = ((IPTR)raw + VC4_BLOCK_MASK) & ~(IPTR)VC4_BLOCK_MASK;
+
+    /* Clean first, or a dirty line of the previous owner lands on GPU
+     * data once the range is non-cacheable. */
+    CacheClearE((APTR)base, want, CACRF_ClearD);
+
+    if (((UQUAD)base + want > VC4_PA_LIMIT)
+        || !KrnMapGlobal((APTR)base, (APTR)base, want,
+                         MAP_Readable | MAP_Writable | MAP_WriteThrough))
+    {
+        bug("[VC4Gallium] no arena at 0x%p: above 1GB or not mappable Normal-NC\n",
+            (void *)base);
+        FreeMem(raw, raw_size);
+        FreeMem(a, sizeof(struct vc4_arena));
+        return NULL;
+    }
+
+    a->raw      = raw;
+    a->raw_size = raw_size;
+    a->base     = (APTR)base;
+    a->size     = want;
+
+    /* A private heap over the arena, its header in cached memory. */
+    a->mh.mh_Node.ln_Type    = NT_MEMORY;
+    a->mh.mh_Node.ln_Name    = "vc4 gpu";
+    a->mh.mh_Attributes      = MEMF_ANY;
+    a->mh.mh_Lower           = (APTR)base;
+    a->mh.mh_Upper           = (APTR)(base + want);
+    a->mh.mh_First           = (struct MemChunk *)base;
+    a->mh.mh_First->mc_Next  = NULL;
+    a->mh.mh_First->mc_Bytes = want;
+    a->mh.mh_Free            = want;
+
+    AddTail((struct List *)&sd->arenas, (struct Node *)&a->node);
+    sd->arena_bytes += want;
+
+    D(bug("[VC4Gallium] arena %u KB at 0x%p (%u KB total)\n",
+        want >> 10, (void *)base, sd->arena_bytes >> 10));
+
+    return a;
+}
+
+/* The handle is the address itself. Every request is whole pages from a
+ * 2MB-aligned arena, so 4K alignment - the most any caller asks - holds. */
+static APTR arm_mem_alloc(struct vc4galliumstaticdata *sd, ULONG size,
+                          ULONG flags, ULONG *out_handle)
+{
+    struct vc4_arena *a;
+    APTR mem = NULL;
+
+    size = (size + VC4_PAGE_MASK) & ~(ULONG)VC4_PAGE_MASK;
+
+    ObtainSemaphore(&sd->mem_lock);
+    ForeachNode(&sd->arenas, a)
+    {
+        if ((a->mh.mh_Free >= size) && ((mem = Allocate(&a->mh, size)) != NULL))
+            break;
+    }
+    if (!mem && ((a = arena_new(sd, (size > VC4_ARENA_SIZE) ? size : VC4_ARENA_SIZE)) != NULL))
+        mem = Allocate(&a->mh, size);
+    if (mem)
+    {
+        sd->gpu_mem_bytes += size;
+        sd->gpu_mem_allocs++;
+    }
+    ReleaseSemaphore(&sd->mem_lock);
+
+    if (!mem)
+    {
+        gpu_mem_report(sd, size);
+        return NULL;
+    }
+
+    /* VCMEM_ZERO, which the VPU did for ALLOCMEM. Volatile so the loop
+     * does not become a call to the byte memset above. */
+    if (flags & VCMEM_ZERO)
+    {
+        volatile UQUAD *p = mem;
+        ULONG n = size / sizeof(UQUAD);
+
+        while (n--)
+            *p++ = 0;
+    }
+
+    if (out_handle)
+        *out_handle = (ULONG)(IPTR)mem;
+    return mem;
+}
+
+static void arm_mem_free(struct vc4galliumstaticdata *sd, ULONG handle, ULONG size)
+{
+    struct vc4_arena *a;
+    IPTR addr = handle;
+
+    size = (size + VC4_PAGE_MASK) & ~(ULONG)VC4_PAGE_MASK;
+
+    ObtainSemaphore(&sd->mem_lock);
+    ForeachNode(&sd->arenas, a)
+    {
+        if ((addr >= (IPTR)a->base) && (addr < (IPTR)a->base + a->size))
+        {
+            Deallocate(&a->mh, (APTR)addr, size);
+            sd->gpu_mem_bytes -= size;
+            sd->gpu_mem_allocs--;
+            break;
+        }
+    }
+    ReleaseSemaphore(&sd->mem_lock);
+}
+
+/* Hand every empty arena back to the system. */
+static void arm_mem_release(struct vc4galliumstaticdata *sd)
+{
+    struct vc4_arena *a, *next;
+
+    ObtainSemaphore(&sd->mem_lock);
+    ForeachNodeSafe(&sd->arenas, a, next)
+    {
+        if (a->mh.mh_Free == a->size)
+        {
+            Remove((struct Node *)&a->node);
+            arena_free(sd, a);
+        }
+    }
+    ReleaseSemaphore(&sd->mem_lock);
+}
+#endif
 
 /* Allocate GPU memory via mailbox; returns physical address (0x3fffffff masked). */
 static void gpu_mem_free(struct vc4galliumstaticdata *sd, ULONG gpu_handle,
@@ -332,6 +510,10 @@ static APTR gpu_mem_alloc(struct vc4galliumstaticdata *sd, ULONG size, ULONG ali
 {
     APTR phys = NULL;
     ULONG gpu_handle;
+
+#if VC4_ARM_MEM
+    return arm_mem_alloc(sd, size, flags, out_handle);
+#endif
 
     ObtainSemaphore(&sd->mbox_lock);
 
@@ -429,6 +611,11 @@ static void gpu_mem_free(struct vc4galliumstaticdata *sd, ULONG gpu_handle,
                          ULONG size)
 {
     D(bug("[VC4Gallium] gpu_mem_free: gpu_handle=0x%08x\n", gpu_handle));
+
+#if VC4_ARM_MEM
+    arm_mem_free(sd, gpu_handle, size);
+    return;
+#endif
 
     ObtainSemaphore(&sd->mbox_lock);
 
@@ -2494,7 +2681,8 @@ static int do_submit_cl(struct vc4galliumstaticdata *sd, struct drm_vc4_submit_c
      * Make the CPU-written CL/shader/uniform/RCL bytes visible to V3D, which
      * fetches through the uncached 0xC0000000 alias. Every buffer here — the
      * exec/rcl/tile pools AND every referenced BO — comes from gpu_mem_alloc,
-     * i.e. VideoCore GPU-pool memory that is mapped UNCACHED on the ARM. So
+     * i.e. VideoCore GPU-pool memory, or on aarch64 an ARM arena remapped
+     * Normal-NC - UNCACHED on the ARM either way. So
      * there are NO dirty ARM cache lines to clean: a dsb that drains the CPU
      * write buffer (the volatile byte stores from process_bin_cl /
      * relocate_shader_recs / build_rcl and the tile_state zeroing) to RAM is
@@ -3169,4 +3357,8 @@ void vc4_aros_release_all_bos(struct vc4galliumstaticdata *sd)
         sd->shader_state_scratch = NULL;
         sd->shader_state_scratch_max = 0;
     }
+
+#if VC4_ARM_MEM
+    arm_mem_release(sd);
+#endif
 }
