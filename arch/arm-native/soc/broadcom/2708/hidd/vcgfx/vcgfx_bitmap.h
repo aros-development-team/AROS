@@ -20,6 +20,8 @@ enum {
     aoHidd_VideoCoreGfxBitMap_Overlay,         /* [GS.] set: struct vc4gfx_overlay * (NULL
                                                 * clears); get: 1 while an overlay is shown */
     aoHidd_VideoCoreGfxBitMap_LatchWait,       /* [G..] wait for the last armed update to latch */
+    aoHidd_VideoCoreGfxBitMap_VBlank,          /* [.S.] struct vc4gfx_vblank * (NULL removes);
+                                                * all HVS generations */
     num_Hidd_VideoCoreGfxBitMap_Attrs
 };
 
@@ -45,6 +47,14 @@ struct vc4gfx_overlay
 
 /* Don't wait for the latch; keep the displaced buffer until LatchWait. */
 #define VC4GFX_OVL_NOWAIT (1 << 0)
+
+/* Per-vblank callback, run in interrupt context: no locks, no printing.
+ * Mirrored by hand on the v3d side. */
+struct vc4gfx_vblank
+{
+    void (*vbl_Func)(APTR data);
+    APTR  vbl_Data;
+};
 
 /* This structure is used for both onscreen and offscreen bitmaps !! */
 

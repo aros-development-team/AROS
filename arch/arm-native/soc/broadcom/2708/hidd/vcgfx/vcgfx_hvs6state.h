@@ -10,6 +10,8 @@
 
 #include "vcgfx_edid.h"
 
+struct vc4gfx_vblank;
+
 struct vc4_hvs6_state
 {
     BOOL    h6_Active;      /* our list is the one being scanned out   */
@@ -84,6 +86,7 @@ struct vc4_hvs6_state
     volatile ULONG  h6_VSyncStamp;
     struct Task * volatile h6_VSyncTask;
     ULONG           h6_VSyncSigMask;
+    struct vc4gfx_vblank * volatile h6_VBlank;  /* client callback */
 
     /* The firmware's colour path, put back with the boot mode: CSC_CTL,
      * the six coefficient words and CHANNEL_CTL, the output crossbar,

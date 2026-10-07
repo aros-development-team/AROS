@@ -668,6 +668,13 @@ IPTR MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
             ReleaseSemaphore(&xsd->vcsd_OvlLock);
             return TRUE;
         }
+        else if (IS_VideoCoreGfxBM_ATTR(tag->ti_Tag, idx)
+                 && idx == aoHidd_VideoCoreGfxBitMap_VBlank)
+        {
+            xsd->vcsd_HVS.hvs_VBlank   = (struct vc4gfx_vblank *)tag->ti_Data;
+            xsd->vcsd_HVS6.h6_VBlank = (struct vc4gfx_vblank *)tag->ti_Data;
+            return TRUE;
+        }
     }
 
     D(bug("[VideoCoreGfx] OnBitMap::Set: has_modeid=%d, newmodeid=0x%08lx\n",
