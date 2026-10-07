@@ -3,6 +3,9 @@
 */
 
 #include <aros/debug.h>
+#include <proto/exec.h>
+#include <exec/lists.h>
+#include <exec/tasks.h>
 
 #include <libdrm/arosdrm.h>
 
@@ -35,7 +38,69 @@ extern struct drm_device *current_drm_device;
 #define MAX_DRM_FILES 128
 static struct drm_file *drm_files[MAX_DRM_FILES] = { NULL };
 
-static int drm_driver_ioctl(int fd, unsigned long index, void *data, unsigned long size)
+#define DRM_STACK_SIZE  (256 * 1024)
+#define DRM_STACK_MIN   (128 * 1024)
+
+static struct SignalSemaphore drm_stack_lock;
+static struct MinList drm_stack_pool;
+static volatile BOOL drm_stack_ready;
+
+static APTR drm_stack_get(void)
+{
+    struct MinNode *n;
+
+    if (!drm_stack_ready)
+    {
+        Forbid();
+        if (!drm_stack_ready)
+        {
+            InitSemaphore(&drm_stack_lock);
+            NEWLIST((struct List *)&drm_stack_pool);
+            drm_stack_ready = TRUE;
+        }
+        Permit();
+    }
+    ObtainSemaphore(&drm_stack_lock);
+    n = (struct MinNode *)REMHEAD((struct List *)&drm_stack_pool);
+    ReleaseSemaphore(&drm_stack_lock);
+    return n ? (APTR)n : AllocMem(DRM_STACK_SIZE, MEMF_ANY);
+}
+
+static void drm_stack_put(APTR stack)
+{
+    ObtainSemaphore(&drm_stack_lock);
+    ADDHEAD((struct List *)&drm_stack_pool, (struct Node *)stack);
+    ReleaseSemaphore(&drm_stack_lock);
+}
+
+/* the Linux driver expects a kernel-sized stack; callers such as
+   input.device have a few tens of KB */
+static IPTR drm_call(APTR func, IPTR a, IPTR b, IPTR c, IPTR d)
+{
+    struct Task *me = FindTask(NULL);
+    UBYTE *sp = (UBYTE *)__builtin_frame_address(0);
+    struct StackSwapStruct sss;
+    struct StackSwapArgs args;
+    APTR stack;
+    IPTR ret;
+
+    if (sp - (UBYTE *)me->tc_SPLower >= DRM_STACK_MIN || !(stack = drm_stack_get()))
+        return ((IPTR (*)(IPTR, IPTR, IPTR, IPTR))func)(a, b, c, d);
+
+    sss.stk_Lower = stack;
+    sss.stk_Upper = (UBYTE *)stack + DRM_STACK_SIZE;
+    sss.stk_Pointer = sss.stk_Upper;
+    memset(&args, 0, sizeof(args));
+    args.Args[0] = a;
+    args.Args[1] = b;
+    args.Args[2] = c;
+    args.Args[3] = d;
+    ret = NewStackSwap(&sss, func, &args);
+    drm_stack_put(stack);
+    return ret;
+}
+
+static int drm_driver_ioctl_impl(int fd, unsigned long index, void *data, unsigned long size)
 {
     struct drm_device *dev = current_drm_device;
     const struct drm_driver *drv;
@@ -58,6 +123,11 @@ static int drm_driver_ioctl(int fd, unsigned long index, void *data, unsigned lo
     ret = desc->func(dev, data, drm_files[fd]);
     D(if (ret) amdgpu_compat_log("[amdgpu] ioctl %lu failed, %d\n", index, ret);)
     return ret;
+}
+
+static int drm_driver_ioctl(int fd, unsigned long index, void *data, unsigned long size)
+{
+    return (int)drm_call(drm_driver_ioctl_impl, fd, index, (IPTR)data, size);
 }
 
 int drmCommandNone(int fd, unsigned long drmCommandIndex)
@@ -184,7 +254,7 @@ static int drm_getcap(struct drm_device *dev, struct drm_get_cap *req)
     return 0;
 }
 
-int drmIoctl(int fd, unsigned long request, void *arg)
+static int drmIoctl_impl(int fd, unsigned long request, void *arg)
 {
     struct drm_device *dev = current_drm_device;
     struct drm_file *file;
@@ -271,6 +341,11 @@ int drmIoctl(int fd, unsigned long request, void *arg)
     return ret;
 }
 
+int drmIoctl(int fd, unsigned long request, void *arg)
+{
+    return (int)drm_call(drmIoctl_impl, fd, request, (IPTR)arg, 0);
+}
+
 int drmCloseBufferHandle(int fd, uint32_t handle)
 {
     struct drm_gem_close args = { .handle = handle };
@@ -302,14 +377,14 @@ void *drmMMap(int fd, uint32_t handle, VOID (*unmapped)(APTR), APTR data)
 {
     if (fd < 0 || fd >= MAX_DRM_FILES || !drm_files[fd])
         return NULL;
-    return drm_gem_amdgpu_mmap(current_drm_device, drm_files[fd], handle);
+    return (void *)drm_call(drm_gem_amdgpu_mmap, (IPTR)current_drm_device, (IPTR)drm_files[fd], handle, 0);
 }
 
 void drmMUnmap(int fd, uint32_t handle)
 {
     if (fd < 0 || fd >= MAX_DRM_FILES || !drm_files[fd])
         return;
-    drm_gem_amdgpu_munmap(current_drm_device, drm_files[fd], handle);
+    drm_call(drm_gem_amdgpu_munmap, (IPTR)current_drm_device, (IPTR)drm_files[fd], handle, 0);
 }
 
 BOOL drmGetChipName(int fd, char *name, int namelen)
