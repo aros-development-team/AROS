@@ -254,6 +254,7 @@ FILES	:=	\
 	amdgpu_galliumclass \
 	amdgpu_stdio \
 	amdgpu_2d \
+	amdgpu_pthread \
 	$(SRCDIR)/workbench/libs/mesa/emul_arosc \
 	amdgpu_util
 
@@ -271,6 +272,7 @@ USER_CFLAGS := $(MESA_STD) $(MESA_COMPILEOPTIONS) $(CFLAGS_NO_STRICT_ALIASING) $
 
 USER_LDFLAGS := \
   -L$(top_libdir) -L$(AROS_LIB) \
+  -Wl,--wrap=pthread_create \
   -Wl,--start-group -lgallium_radeonsi -llibdrm_amdgpu -laco -lamd_common -laddrlib -lcompiler \
   -ldrm_amdgpu -ldrm_amdgpu_drv -ldrm_amdgpu_core \
   -lgalliumauxiliary -lmesautil \

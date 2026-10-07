@@ -1253,35 +1253,3 @@ diff -ruN mesa-26.0.0/src/gallium/winsys/amdgpu/drm/amdgpu_winsys.c mesa-26.0.0.
  
     sws->aws = aws;
  
-diff -ruN mesa-26.0.0/src/c11/impl/threads_posix.c mesa-26.0.0.aros/src/c11/impl/threads_posix.c
---- mesa-26.0.0/src/c11/impl/threads_posix.c
-+++ mesa-26.0.0.aros/src/c11/impl/threads_posix.c
-@@ -252,10 +252,28 @@
-     if (!pack) return thrd_nomem;
-     pack->func = func;
-     pack->arg = arg;
-+#ifdef __AROS__
-+    {
-+        /* AROS threads inherit the creator's stack size, often a few tens
-+         * of KB; give them the 8 MiB glibc default Mesa is written for */
-+        pthread_attr_t attr;
-+        int ret;
-+
-+        pthread_attr_init(&attr);
-+        pthread_attr_setstacksize(&attr, 8 * 1024 * 1024);
-+        ret = pthread_create(thr, &attr, impl_thrd_routine, pack);
-+        pthread_attr_destroy(&attr);
-+        if (ret != 0) {
-+            free(pack);
-+            return thrd_error;
-+        }
-+    }
-+#else
-     if (pthread_create(thr, NULL, impl_thrd_routine, pack) != 0) {
-         free(pack);
-         return thrd_error;
-     }
-+#endif
-     return thrd_success;
- }
- 
