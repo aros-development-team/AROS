@@ -88,6 +88,8 @@ static int GM_UNIQUENAME(libInit)(LIBBASETYPEPTR BluetoothBase)
 
         NewList(&BluetoothBase->bt_DeadlockDebug);
         NewList(&BluetoothBase->bt_ServiceRecords);
+        NewList(&BluetoothBase->bt_GattNotifications);
+        InitSemaphore(&BluetoothBase->bt_GattLock);
         BluetoothBase->bt_NextRecordHandle = 0x00010000;
         BluetoothBase->bt_NextGattHandle = 0x0001;
 
@@ -1228,6 +1230,7 @@ static const ULONG BtBasePT[] = {
     PACK_ENTRY(BSA_Dummy, BSA_OSVersion, BtBase, bt_OSVersion, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
     PACK_ENTRY(BSA_Dummy, BSA_LEAdvertising, BtBase, bt_LEAdvertising, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENTRY(BSA_Dummy, BSA_EIRServices, BtBase, bt_EIRServices, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(BSA_Dummy, BSA_LEConnInterval, BtBase, bt_LEConnInterval, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
     PACK_ENDTABLE
 };
 
@@ -1410,6 +1413,9 @@ static const ULONG BtEventNotePT[] = {
     PACK_ENTRY(BENA_Dummy, BENA_EventID, BtEventNote, ben_Event, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENTRY(BENA_Dummy, BENA_Param1, BtEventNote, ben_Param1, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
     PACK_ENTRY(BENA_Dummy, BENA_Param2, BtEventNote, ben_Param2, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(BENA_Dummy, BENA_Data, BtEventNote, ben_Data, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(BENA_Dummy, BENA_DataLength, BtEventNote, ben_DataLength, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(BENA_Dummy, BENA_Device, BtEventNote, ben_Device, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
     PACK_ENDTABLE
 };
 
@@ -1446,6 +1452,7 @@ static const ULONG BtServiceRecordPT[] = {
     PACK_ENTRY(BSRA_Dummy, BSRA_Name, BtServiceRecord, bsr_Name, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
     PACK_ENTRY(BSRA_Dummy, BSRA_NumCharacteristics, BtServiceRecord, bsr_NumChars, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENTRY(BSRA_Dummy, BSRA_Owner, BtServiceRecord, bsr_Owner, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(BSRA_Dummy, BSRA_LEConnInterval, BtServiceRecord, bsr_LEConnInterval, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENTRY(BSRA_Dummy, BSRA_Enabled, BtServiceRecord, bsr_Enabled, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENTRY(BSRA_Dummy, BSRA_FirstHandle, BtServiceRecord, bsr_FirstHandle, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENTRY(BSRA_Dummy, BSRA_LastHandle, BtServiceRecord, bsr_LastHandle, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
@@ -1496,6 +1503,22 @@ AROS_LH3(LONG, btGetAttrsA,
         }
         if((ti = FindTagItem(BSA_ClassList, tags))) {
             *((struct List **) ti->ti_Data) = &BluetoothBase->bt_Classes;
+            count++;
+        }
+        if((ti = FindTagItem(BSA_LENotifyPayload, tags))) {
+            struct BtHardware *bth;
+            ULONG payload = 0;
+
+            btLockReadBase();
+            for(bth = (struct BtHardware *) BluetoothBase->bt_Hardware.lh_Head;
+                bth->bth_Node.ln_Succ; bth = (struct BtHardware *) bth->bth_Node.ln_Succ) {
+                UWORD p = bth->bth_LENotifyPayload;
+                if(p && (!payload || (p < payload))) {
+                    payload = p;
+                }
+            }
+            btUnlockBase();
+            *((ULONG *) ti->ti_Data) = (payload > 20) ? payload : 20;
             count++;
         }
         if((ti = FindTagItem(BSA_ErrorMsgList, tags))) {
@@ -1736,6 +1759,14 @@ AROS_LH3(LONG, btSetAttrsA,
             BluetoothBase->bt_LEAdvSeq++;
             count++;
         }
+        if((ti = FindTagItem(BSA_LEConnInterval, tags))) {
+            /* peripheral links ask for it with their next tick */
+            /* The fixed 3 s supervision timeout must be strictly greater
+               than twice the maximum interval: 1200 units is already 3 s. */
+            BluetoothBase->bt_LEConnInterval = (ti->ti_Data >= 1200) ? 1199 : (ULONG) ti->ti_Data;
+            bUpdateLEConnInterval(BluetoothBase);
+            count++;
+        }
         if((ti = FindTagItem(BSA_EIRServices, tags))) {
             BluetoothBase->bt_EIRServices = ti->ti_Data ? TRUE : FALSE;
             BluetoothBase->bt_EIRSeq++;
@@ -1750,6 +1781,7 @@ AROS_LH3(LONG, btSetAttrsA,
             /* the service list the radios broadcast follows */
             if(bsr->bsr_Protocol == BSVP_ATT) {
                 BluetoothBase->bt_LEAdvSeq++;
+                bUpdateLEConnInterval(BluetoothBase);
             } else {
                 BluetoothBase->bt_EIRSeq++;
             }

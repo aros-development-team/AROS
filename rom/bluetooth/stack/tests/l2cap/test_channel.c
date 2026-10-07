@@ -824,10 +824,151 @@ static void test_information_echo_and_reject(void)
     BT_CHECK(!take_last_sig_command(&ft, &hdr, &cmd_data));
 }
 
+struct conn_param_log
+{
+    bool accept;
+    int requests;
+    struct bt_l2cap_conn_params last;
+    int responses;
+    bool last_accepted;
+};
+
+static bool log_conn_param_request(void *user_data, const struct bt_l2cap_conn_params *params)
+{
+    struct conn_param_log *log = user_data;
+
+    log->requests++;
+    log->last = *params;
+    return log->accept;
+}
+
+static void log_conn_param_response(void *user_data, bool accepted)
+{
+    struct conn_param_log *log = user_data;
+
+    log->responses++;
+    log->last_accepted = accepted;
+}
+
+static void feed_conn_param_request(struct bt_l2cap_channel_manager *mgr, uint8_t identifier,
+                                    uint16_t min, uint16_t max, uint16_t latency,
+                                    uint16_t timeout, uint64_t now_us)
+{
+    uint8_t buf[16];
+    struct bt_buf_writer w;
+
+    bt_buf_writer_init(&w, buf, sizeof(buf));
+    bt_l2cap_sig_encode_header(&w, BT_L2CAP_SIG_CONN_PARAM_UPDATE_REQUEST, identifier, 8);
+    bt_buf_writer_write_le16(&w, min);
+    bt_buf_writer_write_le16(&w, max);
+    bt_buf_writer_write_le16(&w, latency);
+    bt_buf_writer_write_le16(&w, timeout);
+    feed_signaling_command(mgr, buf, bt_buf_writer_len(&w), now_us);
+}
+
+static void test_conn_param_update(void)
+{
+    struct fake_transport ft;
+    struct bt_l2cap_channel_manager mgr;
+    struct bt_l2cap_sig_header hdr;
+    const uint8_t *cmd_data;
+    struct conn_param_log log;
+    struct bt_l2cap_conn_params midi = {12, 12, 0, 300}; /* 15 ms, 3 s */
+    struct bt_l2cap_conn_params bad = {12, 12, 0, 5};
+    uint8_t buf[16];
+    struct bt_buf_writer w;
+    uint8_t id;
+
+    BT_CHECK(bt_l2cap_conn_params_valid(&midi));
+    BT_CHECK(!bt_l2cap_conn_params_valid(&bad));
+    bad.timeout = 6;
+    bad.interval_min = bad.interval_max = 3200;
+    BT_CHECK(!bt_l2cap_conn_params_valid(&bad)); /* timeout too short */
+    bad.interval_min = 5;
+    bad.interval_max = 12;
+    bad.timeout = 300;
+    BT_CHECK(!bt_l2cap_conn_params_valid(&bad));
+
+    memset(&log, 0, sizeof(log));
+
+    /* peripheral: our request goes out on the LE signaling channel */
+    fake_transport_init(&ft);
+    bt_l2cap_channel_manager_init(&mgr, &ft.base, 0x0042, BT_L2CAP_CID_SIGNALING_LE, 27);
+    bt_l2cap_channel_manager_set_conn_param_handlers(&mgr, NULL, log_conn_param_response, &log);
+    BT_CHECK(bt_l2cap_channel_manager_request_conn_params(&mgr, &midi) == BT_OK);
+    BT_CHECK(take_last_sig_command(&ft, &hdr, &cmd_data));
+    BT_CHECK(hdr.code == BT_L2CAP_SIG_CONN_PARAM_UPDATE_REQUEST && hdr.length == 8);
+    BT_CHECK(cmd_data[0] == 12 && cmd_data[2] == 12 && cmd_data[4] == 0);
+    BT_CHECK((cmd_data[6] | (cmd_data[7] << 8)) == 300);
+    id = hdr.identifier;
+    BT_CHECK(bt_l2cap_channel_manager_request_conn_params(&mgr, &midi) == BT_ERR_BUSY);
+
+    /* a response to another identifier is ignored */
+    bt_buf_writer_init(&w, buf, sizeof(buf));
+    bt_l2cap_sig_encode_header(&w, BT_L2CAP_SIG_CONN_PARAM_UPDATE_RESPONSE, (uint8_t)(id + 1), 2);
+    bt_buf_writer_write_le16(&w, 0);
+    feed_signaling_command(&mgr, buf, bt_buf_writer_len(&w), 1);
+    BT_CHECK(log.responses == 0);
+
+    bt_buf_writer_init(&w, buf, sizeof(buf));
+    bt_l2cap_sig_encode_header(&w, BT_L2CAP_SIG_CONN_PARAM_UPDATE_RESPONSE, id, 2);
+    bt_buf_writer_write_le16(&w, 0);
+    feed_signaling_command(&mgr, buf, bt_buf_writer_len(&w), 2);
+    BT_CHECK(log.responses == 1 && log.last_accepted);
+    BT_CHECK(!take_last_sig_command(&ft, &hdr, &cmd_data)); /* no reply to a response */
+
+    /* a central that does not know the command rejects it */
+    BT_CHECK(bt_l2cap_channel_manager_request_conn_params(&mgr, &midi) == BT_OK);
+    BT_CHECK(take_last_sig_command(&ft, &hdr, &cmd_data));
+    id = hdr.identifier;
+    bt_buf_writer_init(&w, buf, sizeof(buf));
+    bt_l2cap_sig_encode_header(&w, BT_L2CAP_SIG_COMMAND_REJECT, id, 2);
+    bt_buf_writer_write_le16(&w, 0);
+    feed_signaling_command(&mgr, buf, bt_buf_writer_len(&w), 3);
+    BT_CHECK(log.responses == 2 && !log.last_accepted);
+
+    /* as a peripheral (no request handler) a request is rejected */
+    feed_conn_param_request(&mgr, 0x31, 6, 12, 0, 300, 4);
+    BT_CHECK(take_last_sig_command(&ft, &hdr, &cmd_data));
+    BT_CHECK(hdr.code == BT_L2CAP_SIG_COMMAND_REJECT && hdr.identifier == 0x31);
+
+    /* central: valid requests reach the handler, which decides */
+    bt_l2cap_channel_manager_set_conn_param_handlers(&mgr, log_conn_param_request, NULL, &log);
+    log.accept = true;
+    feed_conn_param_request(&mgr, 0x32, 6, 12, 0, 300, 5);
+    BT_CHECK(log.requests == 1 && log.last.interval_min == 6 && log.last.interval_max == 12);
+    BT_CHECK(take_last_sig_command(&ft, &hdr, &cmd_data));
+    BT_CHECK(hdr.code == BT_L2CAP_SIG_CONN_PARAM_UPDATE_RESPONSE && hdr.identifier == 0x32);
+    BT_CHECK(hdr.length == 2 && cmd_data[0] == 0 && cmd_data[1] == 0);
+    BT_CHECK(log.accept);
+    log.accept = false;
+    feed_conn_param_request(&mgr, 0x33, 6, 12, 0, 300, 6);
+    BT_CHECK(take_last_sig_command(&ft, &hdr, &cmd_data));
+    BT_CHECK(hdr.code == BT_L2CAP_SIG_CONN_PARAM_UPDATE_RESPONSE && cmd_data[0] == 1);
+    BT_CHECK(!log.accept);
+    /* invalid parameters are refused without asking */
+    log.accept = true;
+    feed_conn_param_request(&mgr, 0x34, 12, 6, 0, 300, 7);
+    BT_CHECK(log.requests == 2);
+    BT_CHECK(take_last_sig_command(&ft, &hdr, &cmd_data));
+    BT_CHECK(hdr.code == BT_L2CAP_SIG_CONN_PARAM_UPDATE_RESPONSE && cmd_data[0] == 1);
+
+    /* not on BR/EDR */
+    fake_transport_init(&ft);
+    bt_l2cap_channel_manager_init(&mgr, &ft.base, 0x0042, BT_L2CAP_CID_SIGNALING_CLASSIC, 200);
+    bt_l2cap_channel_manager_set_conn_param_handlers(&mgr, log_conn_param_request, NULL, &log);
+    BT_CHECK(bt_l2cap_channel_manager_request_conn_params(&mgr, &midi) == BT_ERR_INVALID_ARGUMENT);
+    feed_conn_param_request(&mgr, 0x35, 6, 12, 0, 300, 8);
+    BT_CHECK(take_last_sig_command(&ft, &hdr, &cmd_data));
+    BT_CHECK(hdr.code == BT_L2CAP_SIG_COMMAND_REJECT);
+    BT_CHECK(log.requests == 2);
+}
+
 void run_l2cap_channel_tests(void)
 {
     test_incoming_connection_accepted();
     test_information_echo_and_reject();
+    test_conn_param_update();
     test_open_full_handshake();
     test_connection_refused();
     test_data_round_trip();
