@@ -30,6 +30,8 @@
 #include "pipe/p_screen.h"
 #include "pipe/p_state.h"        // For struct pipe_transfer
 #include "util/u_inlines.h"      // For pipe_texture_map()
+#include "frontend/winsys_handle.h"
+#include "util/os_time.h"
 
 #ifdef GALLIUM_RADEONSI
 #include "radeonsi/si_public.h"
@@ -156,6 +158,7 @@ VOID METHOD(GalliumAmdgpu, Hidd_Gallium, DestroyPipeScreen)
     if (!screen || screen != data->screen)
         return;
 
+    pipe_resource_reference(&data->scanout, NULL);
     if (data->pipe)
     {
         data->pipe->destroy(data->pipe);
@@ -169,6 +172,99 @@ VOID METHOD(GalliumAmdgpu, Hidd_Gallium, DestroyPipeScreen)
         drmClose(data->fd);
         data->fd = -1;
     }
+}
+
+static struct pipe_resource *amdgpu_scanout_resource(OOP_Class *cl, struct HIDDGalliumAmdgpuData *data,
+                                                     struct BitmapData *bmdata)
+{
+    struct Amdgpu_FB *fb = &bmdata->fb;
+    struct drm_gem_flink flink;
+    struct winsys_handle wh;
+    struct pipe_resource templ;
+
+    if (data->scanout && data->scanout_handle == fb->handle && data->scanout_map == fb->map)
+        return data->scanout;
+    pipe_resource_reference(&data->scanout, NULL);
+
+    memset(&flink, 0, sizeof(flink));
+    flink.handle = fb->handle;
+    if (drmIoctl(XSD(cl)->kms.fd, DRM_IOCTL_GEM_FLINK, &flink) != 0)
+        return NULL;
+
+    memset(&wh, 0, sizeof(wh));
+    wh.type = WINSYS_HANDLE_TYPE_SHARED;
+    wh.handle = flink.name;
+    wh.stride = fb->pitch;
+    wh.format = PIPE_FORMAT_B8G8R8X8_UNORM;
+
+    memset(&templ, 0, sizeof(templ));
+    templ.target = PIPE_TEXTURE_2D;
+    templ.format = PIPE_FORMAT_B8G8R8X8_UNORM;
+    templ.width0 = fb->width;
+    templ.height0 = fb->height;
+    templ.depth0 = 1;
+    templ.array_size = 1;
+    templ.bind = PIPE_BIND_RENDER_TARGET | PIPE_BIND_SCANOUT | PIPE_BIND_SHARED;
+
+    data->scanout = data->screen->resource_from_handle(data->screen, &templ, &wh,
+                                                       PIPE_HANDLE_USAGE_FRAMEBUFFER_WRITE);
+    if (data->scanout)
+    {
+        data->scanout_handle = fb->handle;
+        data->scanout_map = fb->map;
+    }
+    return data->scanout;
+}
+
+static BOOL amdgpu_display_gpu(OOP_Class *cl, struct HIDDGalliumAmdgpuData *data,
+                               struct pHidd_Gallium_DisplayResource *msg)
+{
+    OOP_Object *bm = HIDD_BM_OBJ(msg->bitmap);
+    struct pipe_resource *res = (struct pipe_resource *)msg->resource;
+    struct pipe_resource *dst;
+    struct pipe_fence_handle *fence = NULL;
+    struct pipe_blit_info blit;
+    struct BitmapData *bmdata;
+
+    if (!bm || OOP_OCLASS(bm) != XSD(cl)->amdgpuonbmclass)
+        return FALSE;
+    bmdata = OOP_INST_DATA(OOP_OCLASS(bm), bm);
+    if (!bmdata->fb.handle)
+        return FALSE;
+
+    ObtainSemaphore(&bmdata->bmsem);
+    dst = amdgpu_scanout_resource(cl, data, bmdata);
+    if (dst)
+    {
+        memset(&blit, 0, sizeof(blit));
+        blit.src.resource = res;
+        blit.src.format = res->format;
+        blit.src.box.x = msg->srcx;
+        blit.src.box.y = msg->srcy;
+        blit.src.box.width = msg->width;
+        blit.src.box.height = msg->height;
+        blit.src.box.depth = 1;
+        blit.dst.resource = dst;
+        blit.dst.format = dst->format;
+        blit.dst.box.x = msg->dstx;
+        blit.dst.box.y = msg->dsty;
+        blit.dst.box.width = msg->width;
+        blit.dst.box.height = msg->height;
+        blit.dst.box.depth = 1;
+        blit.mask = PIPE_MASK_RGBA;
+        blit.filter = PIPE_TEX_FILTER_NEAREST;
+
+        data->pipe->blit(data->pipe, &blit);
+        data->pipe->flush(data->pipe, &fence, 0);
+        if (fence)
+        {
+            data->screen->fence_finish(data->screen, NULL, fence, OS_TIMEOUT_INFINITE);
+            data->screen->fence_reference(data->screen, &fence, NULL);
+        }
+    }
+    ReleaseSemaphore(&bmdata->bmsem);
+
+    return dst != NULL;
 }
 
 VOID METHOD(GalliumAmdgpu, Hidd_Gallium, DisplayResource)
@@ -188,6 +284,9 @@ VOID METHOD(GalliumAmdgpu, Hidd_Gallium, DisplayResource)
     )
 
     if (!pipe || !res || !msg->bitmap)
+        return;
+
+    if (amdgpu_display_gpu(cl, data, msg))
         return;
 
     // Map the resource for CPU read
