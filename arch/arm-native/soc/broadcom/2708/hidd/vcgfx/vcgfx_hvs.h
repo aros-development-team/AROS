@@ -290,6 +290,7 @@ struct vc4_hvs_state
     struct Task * volatile hvs_VSyncTask;
     ULONG           hvs_VSyncSigMask;
     volatile ULONG  hvs_VSyncStamp;
+    struct vc4gfx_vblank * volatile hvs_VBlank;  /* client callback */
 };
 
 /* Phase 1: read-only state dump (parses the firmware's live display
@@ -330,6 +331,7 @@ void vc4_hvs_update_cursor(struct VideoCoreGfx_staticdata *xsd);
  * updates on a live overlay are patched in place and latch at vblank
  * like page flips. Takes the mailbox lock itself. */
 struct vc4gfx_overlay;
+struct vc4gfx_vblank;
 BOOL vc4_hvs_overlay(struct VideoCoreGfx_staticdata *xsd,
                      const struct vc4gfx_overlay *ovl);
 

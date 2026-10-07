@@ -922,6 +922,7 @@ static inline void pv_wr(ULONG base_off, ULONG offset, ULONG value)
 static void hvs5_vsync_irq(struct vc4_hvs_state *st, struct ExecBase *sysBase)
 {
     ULONG stat = pv_rd(st->hvs_PVOffset, HVS5_PV_INTSTAT);
+    struct vc4gfx_vblank *vbl;
 
     if (stat)
     {
@@ -932,6 +933,8 @@ static void hvs5_vsync_irq(struct vc4_hvs_state *st, struct ExecBase *sysBase)
             st->hvs_VSyncStamp = hvs5_now_us();
             if (st->hvs_VSyncTask)
                 Signal(st->hvs_VSyncTask, st->hvs_VSyncSigMask);
+            if ((vbl = st->hvs_VBlank))
+                vbl->vbl_Func(vbl->vbl_Data);
         }
     }
 }

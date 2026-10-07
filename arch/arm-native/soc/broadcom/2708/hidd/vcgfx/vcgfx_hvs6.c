@@ -500,6 +500,7 @@ static void hvs6_vsync_irq(struct vc4_hvs6_state *st, struct ExecBase *sysBase)
 {
     volatile ULONG *pv = hvs6_pv0();
     ULONG stat = pv[HVS6_PV_INTSTAT / 4];
+    struct vc4gfx_vblank *vbl;
 
     if (!stat)
         return;
@@ -511,6 +512,8 @@ static void hvs6_vsync_irq(struct vc4_hvs6_state *st, struct ExecBase *sysBase)
         st->h6_VSyncStamp = hvs6_now_us();
         if (st->h6_VSyncTask)
             Signal(st->h6_VSyncTask, st->h6_VSyncSigMask);
+        if ((vbl = st->h6_VBlank))
+            vbl->vbl_Func(vbl->vbl_Data);
     }
 }
 

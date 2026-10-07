@@ -522,6 +522,7 @@ static ULONG hvs_build_list(struct VideoCoreGfx_staticdata *xsd)
 static void hvs_vsync_irq(struct vc4_hvs_state *st, struct ExecBase *sysBase)
 {
     ULONG stat = pv_rd(VC4_PV2_BASE, PV_INTSTAT);
+    struct vc4gfx_vblank *vbl;
 
     if (stat)
     {
@@ -529,6 +530,8 @@ static void hvs_vsync_irq(struct vc4_hvs_state *st, struct ExecBase *sysBase)
         if (stat & st->hvs_VSyncMask)
         {
             st->hvs_VSyncCount++;
+            if ((vbl = st->hvs_VBlank))
+                vbl->vbl_Func(vbl->vbl_Data);
         }
     }
 }
