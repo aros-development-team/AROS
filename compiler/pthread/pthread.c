@@ -981,10 +981,14 @@ void pthread_testcancel(void)
     thread = pthread_self();
     inf = GetThreadInfo(thread);
 
-    if (inf->canceled && (inf->cancelstate == PTHREAD_CANCEL_ENABLE))
-        pthread_exit(PTHREAD_CANCELED);
-
-    SetSignal(SIGBREAKF_CTRL_C, 0);
+    if (inf->canceled)
+    {
+        if (inf->cancelstate == PTHREAD_CANCEL_ENABLE)
+            pthread_exit(PTHREAD_CANCELED);
+        // pending but disabled: drop the wake-up pthread_cancel() sent. Only
+        // then, or a user's Ctrl-C would be lost at every cancellation point
+        SetSignal(0, SIGBREAKF_CTRL_C);
+    }
 }
 
 static void OnceCleanup(void *arg)
