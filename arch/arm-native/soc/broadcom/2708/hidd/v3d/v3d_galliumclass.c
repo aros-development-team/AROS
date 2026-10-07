@@ -16,6 +16,7 @@
 #include <aros/debug.h>
 #include <proto/oop.h>
 #include <proto/exec.h>
+#include <dos/dos.h>
 #include <proto/graphics.h>
 #include <proto/layers.h>
 #include <proto/cybergraphics.h>
@@ -140,7 +141,11 @@ static struct
 /* Four pages, not two: the present shows the PREVIOUS frame, whose jobs
  * retired while this one was built, so it never waits on the frame just
  * submitted. Costs one frame of latency. The fourth lets the Set skip the
- * latch wait: a displaced page parks in `retiring` for one present. */
+ * latch wait: a displaced page parks in `retiring` for one present.
+ *
+ * An app that stops presenting (draws only on change) would leave its
+ * last frame queued forever, so a vblank with no present for a whole
+ * frame has v3d_ovl_task put it on. Under sd->ovl_lock. */
 static struct
 {
     struct pipe_resource *rsc;
@@ -155,6 +160,12 @@ static struct
     struct pipe_resource *refused;  /* overlay said no (scaled desktop /
                                      * no takeover): don't retry per frame */
     OOP_Object     *bm;
+    LONG            x, y;           /* where the last present put it */
+    ULONG           w, h, stride;
+    volatile ULONG  gen;            /* bumped per queued frame */
+    volatile ULONG  vbl_gen;        /* gen at the last vblank */
+    volatile ULONG  flush_gen;      /* gen the task was woken for */
+    BOOL            flushed;        /* the task emptied the queue */
 } v3d_ovl;
 
 /* Raw drop, for the dirty-exit reset where the Mesa objects are gone. */
@@ -387,9 +398,25 @@ static void v3d_ovl_suspend(struct V3DData *sd)
     }
 }
 
+static struct vc4gfx_vblank v3d_ovl_vbl;
+
+static void v3d_ovl_set_vblank(struct V3DData *sd, OOP_Object *bmobj,
+                               struct vc4gfx_vblank *vbl)
+{
+    struct TagItem vbltags[] =
+    {
+        { sd->hiddVCGfxBMAB + aoVCGfxBM_VBlank, (IPTR)vbl },
+        { TAG_DONE, 0 }
+    };
+
+    OOP_SetAttrs(bmobj, vbltags);
+}
+
 /* Full teardown: resource changed or the session is going away. */
 static void v3d_ovl_exit(struct V3DData *sd)
 {
+    if (v3d_ovl.bm)
+        v3d_ovl_set_vblank(sd, v3d_ovl.bm, NULL);
     v3d_ovl_suspend(sd);
     /* The clear must latch before the pages go back to Mesa. */
     v3d_ovl_latch_wait(sd);
@@ -406,6 +433,69 @@ static void v3d_ovl_exit(struct V3DData *sd)
     v3d_ovl.rsc = NULL;
     v3d_ovl.page_handle = 0;
     v3d_ovl.bm = NULL;
+}
+
+/* Record a newly queued frame and where it goes. */
+static void v3d_ovl_queued_at(LONG x, LONG y, ULONG w, ULONG h, ULONG stride)
+{
+    v3d_ovl.x = x;
+    v3d_ovl.y = y;
+    v3d_ovl.w = w;
+    v3d_ovl.h = h;
+    v3d_ovl.stride = stride;
+    v3d_ovl.gen++;
+}
+
+/* Put the queued frame on, as the next present would have. That present
+ * then takes the refill path. Caller holds ovl_lock. */
+static void v3d_ovl_flush(struct V3DData *sd)
+{
+    struct v3d_bo *off;
+
+    if (!v3d_ovl.queued || !v3d_ovl.shown || v3d_ovl.gen != v3d_ovl.flush_gen)
+        return;
+
+    v3d_hw_wait_seqno(sd, v3d_ovl.queued_seqno);
+    v3d_ovl_latch_wait(sd);
+    if (!v3d_show_overlay(sd, v3d_ovl.bm, v3d_ovl.queued, v3d_ovl.stride,
+                          v3d_ovl.x, v3d_ovl.y, v3d_ovl.w, v3d_ovl.h))
+        return;
+
+    /* `retiring` latched above: it becomes the spare the refill takes. */
+    off = v3d_ovl.onplane;
+    v3d_ovl.onplane = v3d_ovl.queued;
+    v3d_ovl.queued = NULL;
+    v3d_ovl.queued_seqno = 0;
+    v3d_ovl.freep = v3d_ovl.retiring;
+    v3d_ovl.retiring = off;
+    v3d_ovl.latch_due = V3D_OVL_NOWAIT;
+    v3d_ovl.flushed = TRUE;
+}
+
+/* Interrupt context, every vblank while the overlay is up. */
+static void v3d_ovl_vblank(APTR data)
+{
+    struct V3DData *sd = data;
+    ULONG gen = v3d_ovl.gen;
+
+    if (gen != v3d_ovl.vbl_gen)
+        v3d_ovl.vbl_gen = gen;
+    else if (gen != v3d_ovl.flush_gen && v3d_ovl.queued && sd->ovl_task)
+    {
+        v3d_ovl.flush_gen = gen;
+        Signal(sd->ovl_task, SIGBREAKF_CTRL_F);
+    }
+}
+
+static void v3d_ovl_task(struct V3DData *sd)
+{
+    for (;;)
+    {
+        Wait(SIGBREAKF_CTRL_F);
+        ObtainSemaphore(&sd->ovl_lock);
+        v3d_ovl_flush(sd);
+        ReleaseSemaphore(&sd->ovl_lock);
+    }
 }
 
 OOP_Object *HiddV3D__Root__New(OOP_Class *cl, OOP_Object *o,
@@ -479,6 +569,7 @@ APTR HiddV3D__Hidd_Gallium__CreatePipeScreen(OOP_Class *cl, OOP_Object *o,
     {
         sd->session_swept = TRUE;
 
+        ObtainSemaphore(&sd->ovl_lock);
         ObtainSemaphore(&sd->bo_lock);
         /* Pointers into freed Mesa objects: drop, never dereference. */
         v3d_scan_forget();
@@ -494,6 +585,7 @@ APTR HiddV3D__Hidd_Gallium__CreatePipeScreen(OOP_Class *cl, OOP_Object *o,
         v3d_ovl.refused = NULL;
         v3d_ovl.bm = NULL;
         ReleaseSemaphore(&sd->bo_lock);
+        ReleaseSemaphore(&sd->ovl_lock);
 
         v3d_release_all_bos(sd);
         sd->screen_count = 0;
@@ -547,7 +639,9 @@ VOID HiddV3D__Hidd_Gallium__DestroyPipeScreen(OOP_Class *cl, OOP_Object *o,
          * overlay page and the scanout wrap belong to one of them, and
          * which one cannot be told from here. Re-entry is one blitted
          * frame for a survivor. */
+        ObtainSemaphore(&sd->ovl_lock);
         v3d_ovl_exit(sd);
+        ReleaseSemaphore(&sd->ovl_lock);
         v3d_scan_release();
 
         screen->destroy(screen);
@@ -760,6 +854,7 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
     stride = rsc->slices[0].stride;
 
     LockLayerRom(L);
+    ObtainSemaphore(&sd->ovl_lock);
     scr_bm_obj = HIDD_BM_OBJ(rp->BitMap);
 
     /* Drop stale state when the bound resource went away (resize). */
@@ -847,6 +942,7 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
                         emit_acc = rend_acc = vs_acc = job_acc = 0;
                     }
 #endif
+                    ReleaseSemaphore(&sd->ovl_lock);
                     UnlockLayerRom(L);
                     return TRUE;
                 }
@@ -931,15 +1027,18 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
 #endif
                 if (!v3d_ovl.queued)
                 {
-                    /* The ring only empties at entry or after a
-                     * suspend. Counting up during a running app means
-                     * presents are being dropped. */
+                    /* The ring only empties at entry, after a suspend,
+                     * or when v3d_ovl_task put an idle app's frame on.
+                     * Counting up otherwise means presents are being
+                     * dropped. */
                     static ULONG refills = 0;
 
-                    if (++refills <= 8 || (refills & 63) == 0)
+                    if (!v3d_ovl.flushed
+                        && (++refills <= 8 || (refills & 63) == 0))
                         bug("[V3D] present: overlay ring refill #%u "
                             "(a present showed nothing new)\n",
                             (unsigned)refills);
+                    v3d_ovl.flushed = FALSE;
 
                     /* Ring not full yet (the present right after entry,
                      * or after a reveal): queue the frame just rendered,
@@ -947,10 +1046,12 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
                      * the plane showing what it already has. */
                     v3d_ovl.queued = rsc->bo;
                     v3d_ovl.queued_seqno = sd->seqno;
+                    v3d_ovl_queued_at(absX, absY, xSize, ySize, stride);
                     rsc->bo = v3d_ovl.freep;
                     v3d_ovl.freep = NULL;
                     rsc->slices[0].offset = 0;
                     v3d_ovl.page_handle = rsc->bo->handle;
+                    ReleaseSemaphore(&sd->ovl_lock);
                     UnlockLayerRom(L);
                     return TRUE;
                 }
@@ -1021,6 +1122,7 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
                     v3d_ovl.onplane = v3d_ovl.queued;
                     v3d_ovl.queued = rsc->bo;
                     v3d_ovl.queued_seqno = sd->seqno;
+                    v3d_ovl_queued_at(absX, absY, xSize, ySize, stride);
                     v3d_ovl.shown = TRUE;
                     v3d_ovl.bm = scr_bm_obj;
                     v3d_ovl.latch_due = V3D_OVL_NOWAIT;
@@ -1028,6 +1130,7 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
                     v3d_ovl.retiring = off;
                     rsc->slices[0].offset = 0;
                     v3d_ovl.page_handle = rsc->bo->handle;
+                    ReleaseSemaphore(&sd->ovl_lock);
                     UnlockLayerRom(L);
                     return TRUE;
                 }
@@ -1088,6 +1191,17 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
                     rsc->bo = nb;
                     rsc->slices[0].offset = 0;
                     v3d_ovl.page_handle = nb->handle;
+
+                    if (!sd->ovl_task)
+                        sd->ovl_task = NewCreateTask(TASKTAG_PC, v3d_ovl_task,
+                                                     TASKTAG_NAME, "v3d overlay",
+                                                     TASKTAG_PRI, 1,
+                                                     TASKTAG_ARG1, sd,
+                                                     TAG_DONE);
+                    v3d_ovl_vbl.vbl_Func = v3d_ovl_vblank;
+                    v3d_ovl_vbl.vbl_Data = sd;
+                    v3d_ovl_set_vblank(sd, scr_bm_obj, &v3d_ovl_vbl);
+                    ReleaseSemaphore(&sd->ovl_lock);
                     UnlockLayerRom(L);
                     return TRUE;
                 }
@@ -1137,6 +1251,7 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
     base = v3d_bo_map(rsc->bo);
     if (!base)
     {
+        ReleaseSemaphore(&sd->ovl_lock);
         UnlockLayerRom(L);
         return TRUE;
     }
@@ -1201,6 +1316,7 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
     else if (detach_after_blit)
         v3d_scan_unbind(rsc);
 
+    ReleaseSemaphore(&sd->ovl_lock);
     UnlockLayerRom(L);
     return TRUE;
 }

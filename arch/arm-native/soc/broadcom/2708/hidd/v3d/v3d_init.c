@@ -217,6 +217,7 @@ static int V3D_Init(LIBBASETYPEPTR LIBBASE)
     InitSemaphore(&sd->bo_lock);
     NEWLIST(&sd->arenas);
     InitSemaphore(&sd->job_lock);
+    InitSemaphore(&sd->ovl_lock);
 
     /* The CoreAPI table rides in on the attribute list at object
      * creation; without the base the tag id cannot even be computed. */
