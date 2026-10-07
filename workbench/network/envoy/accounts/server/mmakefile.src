@@ -1,0 +1,17 @@
+#
+#   Rules to build the Envoy Accounts Server
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := AccountsServer acc_store acc_cmds
+
+USER_INCLUDES := -I$(SRCDIR)/workbench/network/envoy/include
+#USER_CPPFLAGS := -DDEBUG=1
+
+#MM- workbench-network-envoy : workbench-network-envoy-accounts-server
+#MM workbench-network-envoy-accounts-server : includes linklibs includes-copy-envoy workbench-network-envoy-nipc-includes workbench-network-envoy-nipc-linklib
+
+%build_prog mmake=workbench-network-envoy-accounts-server progname=AccountsServer \
+    files="$(FILES)" targetdir=$(AROS_SYSTEM)/Network/Envoy uselibs="nipc"
+
+%common

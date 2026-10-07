@@ -132,6 +132,7 @@ POSIXC := \
     getpwuid \
     getpwuid_r \
     getrlimit \
+    getrusage \
     gets \
     gettimeofday \
     getuid \

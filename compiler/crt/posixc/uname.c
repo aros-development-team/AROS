@@ -59,8 +59,8 @@
 
     ArosInquire(AI_ArosBuildDate, &str_builddate,
                 AI_ArosVersion, &version,
-                AI_ArosReleaseMajor, &release_minor,
-                AI_ArosReleaseMinor, &release_major,
+                AI_ArosReleaseMajor, &release_major,
+                AI_ArosReleaseMinor, &release_minor,
                 AI_ArosArchitecture, &architecture,
                 TAG_DONE);
 

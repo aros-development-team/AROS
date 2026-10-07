@@ -31,8 +31,8 @@ EXEDIR := $(AROS_TESTS)/graphics
 #MM- test : test-graphics
 #MM- test-quick : test-graphics-quick
 
-#MM test-graphics : includes linklibs test-graphics-classicviewport
-#MM- test-graphics-quick : test-graphics-classicviewport-quick
+#MM test-graphics : includes linklibs test-graphics-classicviewport test-graphics-classicsprites
+#MM- test-graphics-quick : test-graphics-classicviewport-quick test-graphics-classicsprites-quick
 
 %build_progs mmake=test-graphics \
     files=$(FILES) targetdir=$(EXEDIR)

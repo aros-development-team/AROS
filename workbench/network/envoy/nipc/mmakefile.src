@@ -18,13 +18,13 @@ FILES := \
         nipc_net \
         nipc_config
 
-USER_INCLUDES := -I$(SRCDIR)/workbench/network/envoy/include
+USER_INCLUDES := -I$(SRCDIR)/workbench/network/envoy/include -I$(SRCDIR)/workbench/network/envoy/services
 USER_LDFLAGS  := -static
 #USER_CPPFLAGS := -DDEBUG=1
 
 #MM- workbench-network : workbench-network-envoy
 #MM- workbench-network-envoy : workbench-network-envoy-nipc
-#MM workbench-network-envoy-nipc : includes linklibs includes-copy-envoy
+#MM workbench-network-envoy-nipc : includes linklibs includes-copy-envoy workbench-network-envoy-services-includes
 
 %build_module mmake=workbench-network-envoy-nipc modname=nipc \
   modtype=library files="$(FILES)" \
