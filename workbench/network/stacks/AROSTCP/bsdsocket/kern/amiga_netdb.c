@@ -1706,8 +1706,9 @@ do_netdb(struct CSource *csarg, UBYTE **errstrp, struct CSource *res)
 
         LOCK_W_NDB(NDB);
 
-        retval = addndbent(NDB, rdargs, errstrp, res, 0);
-        /* TODO: set flags here */
+        /* An interface line names one to bring up now, as at start;
+         * an existing interface is left as it is. */
+        retval = addndbent(NDB, rdargs, errstrp, res, NETDB_IFF_ADDNEW);
 
         UNLOCK_NDB(NDB);
 
