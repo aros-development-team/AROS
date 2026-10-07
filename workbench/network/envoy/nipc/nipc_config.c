@@ -175,6 +175,7 @@ void LoadConfig(struct NIPCBase *NIPCBase)
         if (!name[0])
             strcpy(name, "AROS");
         strncpy(NIPCBase->Config.HostName, name, sizeof(NIPCBase->Config.HostName) - 1);
+        NIPCBase->Config.HostFromStack = TRUE;
     }
     if (!NIPCBase->Config.HostName[0])
         strcpy(NIPCBase->Config.HostName, old.HostName[0] ? old.HostName : "AROS");
@@ -182,4 +183,27 @@ void LoadConfig(struct NIPCBase *NIPCBase)
     NLOG(DEBUG_NAME_STR " config: host '%s' realm '%s' server %08lx use %d is %d owner '%s'\n",
           NIPCBase->Config.HostName, NIPCBase->Config.RealmName, (unsigned long)NIPCBase->Config.RealmServer,
           NIPCBase->Config.UseRealmServer, NIPCBase->Config.IsRealmServer, NIPCBase->Config.Owner);
+}
+
+/*
+ * Without Envoy preferences the host name is the stack's. nipc.library may be opened
+ * before the stack has read its configuration (servers started at boot), so the name is
+ * looked up again whenever the interfaces are refreshed.
+ */
+void RefreshStackHostName(struct NIPCBase *NIPCBase)
+{
+    char name[256], *dot;
+
+    if (!NIPCBase->Config.HostFromStack || !SocketBase)
+        return;
+    name[0] = '\0';
+    if (gethostname(name, sizeof(name) - 1) != 0 || !name[0])
+        return;
+    if ((dot = strchr(name, '.')))
+        *dot = '\0';
+    if (!name[0] || !strcmp(name, NIPCBase->Config.HostName))
+        return;
+    NLOG(DEBUG_NAME_STR " host name now '%s'\n", name);
+    memset(NIPCBase->Config.HostName, 0, sizeof(NIPCBase->Config.HostName));
+    strncpy(NIPCBase->Config.HostName, name, sizeof(NIPCBase->Config.HostName) - 1);
 }

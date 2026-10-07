@@ -1,0 +1,16 @@
+; $VER: Envoy-PackageStartup 1.0 (7.10.2026)
+; Envoy-PackageStartup (c) The AROS Dev Team.
+;
+; Run at boot from ENV:SYS/Packages/Envoy. Starts the Envoy servers in the
+; background when ENV:Envoy/AutoRun is "True". It does not wait for the
+; network stack: nipc.library connects to it once it is up.
+; The current directory is the package directory, SYS:System/Network/Envoy.
+
+If ${Envoy/AutoRun} eq "True"
+    ; first start: offer the filesystem service (exports are configured separately)
+    If NOT EXISTS ENVARC:Envoy/services.prefs
+        ServicesConfig >NIL: CFGFILE=S/services.default SAVE
+    EndIf
+    Run >NIL: QUIET ServicesManager
+    Run >NIL: QUIET AccountsServer
+EndIf

@@ -36,40 +36,58 @@ static ULONG SockAddrIP(struct sockaddr *sa)
     return sa->sa_family == AF_INET ? ntohl(((struct sockaddr_in *)sa)->sin_addr.s_addr) : 0;
 }
 
+/*
+ * Open the stack and create whichever of the two sockets is still missing. nipc.library
+ * may be opened while the stack is still starting (the Envoy servers start at boot), so
+ * the supervisor calls this again until both sockets exist.
+ */
 BOOL NetOpen(struct NIPCBase *NIPCBase)
 {
     struct sockaddr_in sin;
     LONG on = 1, size = 262144;
 
-    NIPCBase->RawSock = NIPCBase->UdpSock = -1;
-    if (!(SocketBase = OpenLibrary("bsdsocket.library", 4)))
+    if (!SocketBase)
     {
-        NLOG(DEBUG_NAME_STR " no bsdsocket.library: network disabled\n");
-        return FALSE;
+        NIPCBase->RawSock = NIPCBase->UdpSock = -1;
+        if (!(SocketBase = OpenLibrary("bsdsocket.library", 4)))
+        {
+            NLOG(DEBUG_NAME_STR " no bsdsocket.library yet\n");
+            return FALSE;
+        }
     }
     if (!RxBuf && !(RxBuf = AllocVec(RXBUFSIZE, MEMF_PUBLIC)))
         return FALSE;
 
-    NIPCBase->RawSock = socket(AF_INET, SOCK_RAW, NIPC_IPPROTO_RDP);
-    if (NIPCBase->RawSock >= 0)
-        setsockopt(NIPCBase->RawSock, SOL_SOCKET, SO_RCVBUF, &size, sizeof(size));
-    else
-        NLOG(DEBUG_NAME_STR " raw socket failed, errno %ld\n", (long)Errno());
-
-    NIPCBase->UdpSock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (NIPCBase->UdpSock >= 0)
+    if (NIPCBase->RawSock < 0)
     {
-        setsockopt(NIPCBase->UdpSock, SOL_SOCKET, SO_BROADCAST, &on, sizeof(on));
-        setsockopt(NIPCBase->UdpSock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
-        memset(&sin, 0, sizeof(sin));
-        sin.sin_family = AF_INET;
-        sin.sin_len = sizeof(sin);
-        sin.sin_port = htons(NIPC_INQUIRY_PORT);
-        sin.sin_addr.s_addr = INADDR_ANY;
-        if (bind(NIPCBase->UdpSock, (struct sockaddr *)&sin, sizeof(sin)) < 0)
-            NLOG(DEBUG_NAME_STR " bind *:376 failed, errno %ld\n", (long)Errno());
+        NIPCBase->RawSock = socket(AF_INET, SOCK_RAW, NIPC_IPPROTO_RDP);
+        if (NIPCBase->RawSock >= 0)
+            setsockopt(NIPCBase->RawSock, SOL_SOCKET, SO_RCVBUF, &size, sizeof(size));
+        else
+            NLOG(DEBUG_NAME_STR " raw socket failed, errno %ld\n", (long)Errno());
     }
-    return TRUE;
+
+    if (NIPCBase->UdpSock < 0)
+    {
+        NIPCBase->UdpSock = socket(AF_INET, SOCK_DGRAM, 0);
+        if (NIPCBase->UdpSock >= 0)
+        {
+            setsockopt(NIPCBase->UdpSock, SOL_SOCKET, SO_BROADCAST, &on, sizeof(on));
+            setsockopt(NIPCBase->UdpSock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
+            memset(&sin, 0, sizeof(sin));
+            sin.sin_family = AF_INET;
+            sin.sin_len = sizeof(sin);
+            sin.sin_port = htons(NIPC_INQUIRY_PORT);
+            sin.sin_addr.s_addr = INADDR_ANY;
+            if (bind(NIPCBase->UdpSock, (struct sockaddr *)&sin, sizeof(sin)) < 0)
+            {
+                NLOG(DEBUG_NAME_STR " bind *:376 failed, errno %ld\n", (long)Errno());
+                CloseSocket(NIPCBase->UdpSock);
+                NIPCBase->UdpSock = -1;
+            }
+        }
+    }
+    return NIPCBase->RawSock >= 0 && NIPCBase->UdpSock >= 0;
 }
 
 void NetClose(struct NIPCBase *NIPCBase)

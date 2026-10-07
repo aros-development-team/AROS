@@ -14,6 +14,9 @@
           malformed request, otherwise the service's own result.
 
           The configuration is reloaded whenever the ENV: file changes.
+
+          ServicesManager QUIT/S
+          Only one manager runs; QUIT (or Ctrl-C) stops the running one.
 */
 
 #include <proto/exec.h>
@@ -30,7 +33,7 @@
 #include "../services_private.h"
 #include "prefsfile.h"
 
-const char version[] = "$VER: ServicesManager 50.0 (6.10.2026)";
+const char version[] = "$VER: ServicesManager 50.1 (7.10.2026)";
 
 struct Library *NIPCBase;
 struct Library *ServicesBase;
@@ -153,31 +156,71 @@ static void HandleRequest(struct Transaction *t)
     ReplyTransaction(t);
 }
 
+/* A public port marks the running manager, so that a second start and QUIT can find it */
+#define MANAGER_PORT            "Envoy Services Manager"
+
 int main(void)
 {
     struct Entity *entity = NULL;
     struct NotifyRequest notify;
+    struct MsgPort *port = NULL;
+    struct RDArgs *rda;
+    IPTR args[1] = { 0 };
     ULONG esig = 0;
-    BYTE nsig;
+    BYTE nsig = -1;
     BOOL notifying = FALSE;
     int rc = RETURN_FAIL;
+
+    if (!(rda = ReadArgs("QUIT/S", args, NULL)))
+    {
+        PrintFault(IoErr(), "ServicesManager");
+        return RETURN_FAIL;
+    }
+    FreeArgs(rda);
+
+    Forbid();
+    if ((port = FindPort(MANAGER_PORT)))
+    {
+        if (args[0])
+            Signal(port->mp_SigTask, SIGBREAKF_CTRL_C);
+        Permit();
+        PutStr(args[0] ? "ServicesManager: told the running manager to quit\n"
+                       : "ServicesManager: already running\n");
+        return args[0] ? RETURN_OK : RETURN_WARN;
+    }
+    Permit();
+    if (args[0])
+    {
+        PutStr("ServicesManager: not running\n");
+        return RETURN_WARN;
+    }
+
+    if (!(port = CreateMsgPort()))
+        return RETURN_FAIL;
+    port->mp_Node.ln_Name = (char *)MANAGER_PORT;
+    port->mp_Node.ln_Pri = 0;
+    AddPort(port);
 
     if (!(NIPCBase = OpenLibrary(NIPCNAME, 50)))
     {
         PutStr("ServicesManager: cannot open nipc.library 50\n");
+        RemPort(port);
+        DeleteMsgPort(port);
         return RETURN_FAIL;
     }
     if (!(ServicesBase = OpenLibrary("services.library", 50)))
     {
         PutStr("ServicesManager: cannot open services.library 50\n");
         CloseLibrary(NIPCBase);
+        RemPort(port);
+        DeleteMsgPort(port);
         return RETURN_FAIL;
     }
     if ((nsig = AllocSignal(-1)) < 0)
         goto done;
     if (!(entity = CreateEntity(ENT_Name, (IPTR)SERVICES_MANAGER_ENTITY, ENT_Public, TRUE, ENT_AllocSignal, (IPTR)&esig, TAG_DONE)))
     {
-        PutStr("ServicesManager: cannot create the entity (already running?)\n");
+        PutStr("ServicesManager: cannot create the entity \"Services Manager\"\n");
         goto done;
     }
 
@@ -226,5 +269,7 @@ done:
     }
     CloseLibrary(ServicesBase);
     CloseLibrary(NIPCBase);
+    RemPort(port);
+    DeleteMsgPort(port);
     return rc;
 }

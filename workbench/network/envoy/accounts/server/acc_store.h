@@ -31,6 +31,7 @@ struct AccUser
     char            Hash[64];
     UWORD           Uid, Gid;
     ULONG           Flags;                  /* UFLAGF_#?, derived from the store */
+    BOOL            Locked;                 /* password field "*" or "!...": no login at all */
     char            Gecos[128], Home[128], Shell[64];
 };
 

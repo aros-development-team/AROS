@@ -173,6 +173,18 @@ static void HandleReq(struct NIPCBase *NIPCBase, struct SuperReq *req)
     }
 }
 
+static BOOL HaveUsableIface(struct NIPCBase *NIPCBase)
+{
+    struct Iface *ifa;
+
+    ForeachNode(&NIPCBase->Ifaces, ifa)
+    {
+        if (!ifa->Loopback && ifa->Address)
+            return TRUE;
+    }
+    return FALSE;
+}
+
 static void Tick(struct NIPCBase *NIPCBase, const struct timeval *now)
 {
     NIPCBase->Ticks++;
@@ -184,8 +196,19 @@ static void Tick(struct NIPCBase *NIPCBase, const struct timeval *now)
         RdpHeartbeat(NIPCBase);
         LinkHeartbeat(NIPCBase);
         InquiryHeartbeat(NIPCBase);
-        if (NIPCBase->Ticks % (NIPC_TICKS_PER_HB * 30) == 0)
+        /* every 30 s; every second during the first two minutes while the stack is still
+           coming up (no sockets, no resolver or no configured interface yet) */
+        if (NIPCBase->Ticks % (NIPC_TICKS_PER_HB * 30) == 0 ||
+            (NIPCBase->Ticks < NIPC_TICKS_PER_HB * 120 &&
+             (!HaveUsableIface(NIPCBase) || NIPCBase->RawSock < 0 || NIPCBase->UdpSock < 0 || !NIPCBase->Resolver)))
+        {
+            if (!NIPCBase->SocketBase || NIPCBase->RawSock < 0 || NIPCBase->UdpSock < 0)
+                NetOpen(NIPCBase);          /* opened before the stack was ready */
+            if (!NIPCBase->Resolver)
+                ResolverStart(NIPCBase);    /* needs the stack; retried until it is there */
             NetRefreshIfaces(NIPCBase);
+            RefreshStackHostName(NIPCBase);
+        }
     }
 }
 

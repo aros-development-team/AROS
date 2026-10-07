@@ -66,33 +66,34 @@ static BOOL IsStart(const UBYTE *rec)
     return Get16(rec + 32) == 0 && rec[0] == '\0';
 }
 
-/* The record-match rule (§6.2): ID, name, and the other fields all agree */
+/*
+ * The record-match rule (§6.2): ID, name, and the other fields all agree. The name is
+ * looked up first: a usergroup.library database can give two accounts the same ID
+ * (AROSTCP's default passwd has daemon and guest both at 1), and an ID lookup would then
+ * find the wrong one and end every iteration there.
+ */
 static struct AccUser *MatchUser(struct AccStore *s, const UBYTE *rec)
 {
-    struct AccUser *u = StoreUserById(s, Get16(rec + 32));
+    struct AccUser *u;
     char name[32];
 
-    if (!u)
-        return NULL;
     GetName(name, rec);
-    if (StoreUserByName(s, name) != u)
+    if (!(u = StoreUserByName(s, name)))
         return NULL;
-    if (u->Gid != Get16(rec + 34) || u->Flags != Get32(rec + 36))
+    if (u->Uid != Get16(rec + 32) || u->Gid != Get16(rec + 34) || u->Flags != Get32(rec + 36))
         return NULL;
     return u;
 }
 
 static struct AccGroup *MatchGroup(struct AccStore *s, const UBYTE *rec)
 {
-    struct AccGroup *g = StoreGroupById(s, Get16(rec + 32));
+    struct AccGroup *g;
     char name[32];
 
-    if (!g)
-        return NULL;
     GetName(name, rec);
-    if (StoreGroupByName(s, name) != g)
+    if (!(g = StoreGroupByName(s, name)))
         return NULL;
-    if (g->Admin != Get16(rec + 34) || g->Flags != Get32(rec + 36))
+    if (g->Gid != Get16(rec + 32) || g->Admin != Get16(rec + 34) || g->Flags != Get32(rec + 36))
         return NULL;
     return g;
 }

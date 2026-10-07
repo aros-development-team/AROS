@@ -1,0 +1,23 @@
+#
+#   Envoy Services preferences: SYS:Prefs/Envoy/Services, the editor for
+#   ENV:Envoy/services.prefs (the services this host offers) and
+#   ENV:Envoy/AutoRun. Reads and writes the file with the code ServicesConfig
+#   and the Services Manager use (services/tools/prefsfile.c).
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := main args locale prefs svceditor svcprefsfile
+
+EXEDIR := $(AROSDIR)/Prefs/Envoy
+
+USER_INCLUDES := -I$(SRCDIR)/workbench/network/envoy/include
+#USER_CPPFLAGS := -DDEBUG=1
+
+#MM- workbench-network-envoy : workbench-network-envoy-prefs-services
+#MM workbench-network-envoy-prefs-services : includes linklibs includes-copy-envoy
+
+%build_prog mmake=workbench-network-envoy-prefs-services \
+    progname=Services targetdir=$(EXEDIR) \
+    files="$(FILES)"
+
+%common

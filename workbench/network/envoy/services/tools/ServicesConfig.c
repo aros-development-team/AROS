@@ -11,7 +11,10 @@
               SERVICE "name" "path" [Active]  add or replace a service;
                                               without Active it is inactive
           SAVE writes ENVARC:Envoy/services.prefs and ENV:Envoy/services.prefs.
-          LIST prints the configuration (after applying CFGFILE, if given).
+          LIST prints the configuration (after applying CFGFILE, if given),
+          in the CFGFILE syntax; without arguments the command lists.
+          A CFGFILE with bad lines is reported (return code 5) and not saved;
+          one that cannot be read gives return code 10.
 */
 
 #include <proto/exec.h>
@@ -22,7 +25,7 @@
 #include "../services_private.h"
 #include "prefsfile.h"
 
-const char version[] = "$VER: ServicesConfig 50.0 (6.10.2026)";
+const char version[] = "$VER: ServicesConfig 50.1 (7.10.2026)";
 
 #define TEMPLATE "CFGFILE/K,SAVE/S,LIST/S"
 
@@ -53,7 +56,8 @@ static char *Token(char **cursor)
     return start;
 }
 
-static BOOL ApplyFile(CONST_STRPTR filename, struct List *entries)
+/* RETURN_OK, RETURN_WARN (bad lines, reported) or RETURN_ERROR (file cannot be read) */
+static int ApplyFile(CONST_STRPTR filename, struct List *entries)
 {
     BPTR fh;
     char line[512];
@@ -63,7 +67,7 @@ static BOOL ApplyFile(CONST_STRPTR filename, struct List *entries)
     if (!(fh = Open(filename, MODE_OLDFILE)))
     {
         Printf("ServicesConfig: cannot open %s\n", filename);
-        return FALSE;
+        return RETURN_ERROR;
     }
     while (FGets(fh, line, sizeof(line)))
     {
@@ -113,7 +117,7 @@ static BOOL ApplyFile(CONST_STRPTR filename, struct List *entries)
         }
     }
     Close(fh);
-    return ok;
+    return ok ? RETURN_OK : RETURN_WARN;
 }
 
 int main(void)
@@ -132,9 +136,11 @@ int main(void)
     if (ReadServicesPrefs(SERVICES_PREFS_ENV, &entries) < 0)
         ReadServicesPrefs(SERVICES_PREFS_ENVARC, &entries);
 
-    if (args[0] && !ApplyFile((CONST_STRPTR)args[0], &entries))
-        rc = RETURN_WARN;
-    if (args[1])
+    if (args[0])
+        rc = ApplyFile((CONST_STRPTR)args[0], &entries);
+    if (args[1] && rc != RETURN_OK)
+        PutStr("ServicesConfig: not saved because of the errors above\n");
+    else if (args[1])
     {
         if (!WriteServicesPrefs(SERVICES_PREFS_ENVARC, &entries) || !WriteServicesPrefs(SERVICES_PREFS_ENV, &entries))
         {
@@ -142,7 +148,7 @@ int main(void)
             rc = RETURN_FAIL;
         }
     }
-    if (args[2])
+    if (args[2] || (!args[0] && !args[1]))           /* no arguments: list */
     {
         struct PrefsEntry *e;
 

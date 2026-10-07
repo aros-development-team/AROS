@@ -7,8 +7,9 @@
 
     Publishes the entity "Accounts Server" and answers the Envoy accounts
     protocol (re/spec/services-accounts.md §6) from the system's own account
-    store (acc_store.c). A second invocation makes the running one quit;
-    SHUTDOWN also waits until it has gone. Start it detached:
+    store (acc_store.c). Only one server runs: a second start reports
+    "already running"; SHUTDOWN stops the running one and waits until it
+    has gone. Start it detached:
         Run >NIL: SYS:System/Network/Envoy/AccountsServer
 */
 
@@ -78,9 +79,10 @@ int main(void)
     }
     verbose = args[1] != 0;
 
+    /* one server only: a second start reports it; SHUTDOWN (or Ctrl-C) stops the running one */
     Forbid();
     existing = FindPort(PORTNAME);
-    if (existing)
+    if (existing && args[0])
         Signal(existing->mp_SigTask, SIGBREAKF_CTRL_C);
     Permit();
     if (existing)
@@ -90,15 +92,19 @@ int main(void)
             int n;
             for (n = 0; n < 50 && FindPort(PORTNAME); n++)
                 Delay(10);
+            printf("AccountsServer: told the running server to quit\n");
+            FreeArgs(rda);
+            return RETURN_OK;
         }
-        printf("AccountsServer: running instance told to quit\n");
+        printf("AccountsServer: already running\n");
         FreeArgs(rda);
-        return RETURN_OK;
+        return RETURN_WARN;
     }
     if (args[0])
     {
+        printf("AccountsServer: not running\n");
         FreeArgs(rda);
-        return RETURN_OK;
+        return RETURN_WARN;
     }
     FreeArgs(rda);
 

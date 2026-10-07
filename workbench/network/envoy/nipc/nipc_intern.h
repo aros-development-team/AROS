@@ -296,6 +296,7 @@ struct NipcConfig
     BOOL                UseRealmServer;
     BOOL                IsRealmServer;
     BOOL                Gateway;
+    BOOL                HostFromStack;  /* no Envoy prefs: the name follows the stack's */
 };
 
 /* RDP tunables (NIPCControlA) */
@@ -426,6 +427,7 @@ extern BOOL RealmServerInEffect(struct NIPCBase *NIPCBase);
 
 /* nipc_config.c */
 extern void LoadConfig(struct NIPCBase *NIPCBase);
+extern void RefreshStackHostName(struct NIPCBase *NIPCBase);
 extern void FreeRealms(struct NIPCBase *NIPCBase);
 
 /* nipc_event.c */

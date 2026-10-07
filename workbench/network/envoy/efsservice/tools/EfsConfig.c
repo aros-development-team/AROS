@@ -13,6 +13,9 @@
         EXPORT "name" "path" [SNAPSHOT] [LEFTOUT] [MOUNTSFILES|NOSECURITY]
                [EMULATEEXALL] [READONLY] [REMOVABLE] [USER id ...] [GROUP id ...]
     Access entries are numeric Envoy IDs (what accounts.library reports).
+    LIST prints the exports in the CFGFILE syntax; without arguments the
+    command lists. A CFGFILE with bad lines is reported (return code 5) and
+    not saved; one that cannot be read gives return code 10.
 */
 
 #include <proto/exec.h>
@@ -21,7 +24,7 @@
 #include <exec/memory.h>
 #include <string.h>
 
-const char version[] = "$VER: EfsConfig 50.0 (6.10.2026)";
+const char version[] = "$VER: EfsConfig 50.1 (7.10.2026)";
 
 #define TEMPLATE        "CFGFILE/K,SAVE/S,LIST/S"
 #define PREFS_ENV       "ENV:Envoy/EFS.prefs"
@@ -189,16 +192,18 @@ static char *Word(char *p, char *out, ULONG size)
     return p;
 }
 
-static BOOL ReadConfig(CONST_STRPTR filename, struct List *entries)
+/* RETURN_OK, RETURN_WARN (bad lines, reported) or RETURN_ERROR (file cannot be read) */
+static int ReadConfig(CONST_STRPTR filename, struct List *entries)
 {
     BPTR fh;
     char line[512], word[256];
     ULONG lineno = 0;
+    int rc = RETURN_OK;
 
     if (!(fh = Open(filename, MODE_OLDFILE)))
     {
         Printf("EfsConfig: cannot open %s\n", filename);
-        return FALSE;
+        return RETURN_ERROR;
     }
     while (FGets(fh, line, sizeof(line)))
     {
@@ -219,6 +224,7 @@ static BOOL ReadConfig(CONST_STRPTR filename, struct List *entries)
             if (!e->path[0])
             {
                 Printf("EfsConfig: line %lu: EXPORT needs a name and a path\n", (ULONG)lineno);
+                rc = RETURN_WARN;
                 FreeVec(e);
                 continue;
             }
@@ -246,7 +252,10 @@ static BOOL ReadConfig(CONST_STRPTR filename, struct List *entries)
                         e->naccess++;
                     }
                     else
+                    {
                         Printf("EfsConfig: line %lu: unknown word '%s'\n", (ULONG)lineno, word);
+                        rc = RETURN_WARN;
+                    }
                 }
             }
             if (!e->name[0] || e->name[0] == ':')
@@ -260,10 +269,13 @@ static BOOL ReadConfig(CONST_STRPTR filename, struct List *entries)
             AddTail(entries, &e->node);
         }
         else
+        {
             Printf("EfsConfig: line %lu: unknown directive '%s'\n", (ULONG)lineno, word);
+            rc = RETURN_WARN;
+        }
     }
     Close(fh);
-    return TRUE;
+    return rc;
 }
 
 int main(void)
@@ -282,9 +294,11 @@ int main(void)
     }
     if (!ReadPrefs(PREFS_ENV, &entries))
         ReadPrefs(PREFS_ENVARC, &entries);
-    if (args[0] && !ReadConfig((CONST_STRPTR)args[0], &entries))
-        rc = RETURN_ERROR;
-    if (rc == RETURN_OK && args[1])
+    if (args[0])
+        rc = ReadConfig((CONST_STRPTR)args[0], &entries);
+    if (args[1] && rc != RETURN_OK)
+        PutStr("EfsConfig: not saved because of the errors above\n");
+    else if (args[1])
     {
         if (!WritePrefs(PREFS_ENVARC, &entries) || !WritePrefs(PREFS_ENV, &entries))
         {
@@ -292,12 +306,21 @@ int main(void)
             rc = RETURN_ERROR;
         }
     }
-    if (args[2])
+    if (args[2] || (!args[0] && !args[1]))           /* no arguments: list */
     {
+        static const struct { ULONG bit; CONST_STRPTR word; } fw[] =
+        {
+            { 0x01, "SNAPSHOT" }, { 0x02, "LEFTOUT" }, { 0x04, "MOUNTSFILES" }, { 0x08, "NOSECURITY" },
+            { 0x10, "EMULATEEXALL" }, { 0x20, "READONLY" }, { 0x40, "REMOVABLE" }, { 0, NULL }
+        };
         ForeachNode(&entries, e)
         {
             ULONG i;
-            Printf("EXPORT \"%s\" \"%s\" FLAGS=0x%lx", e->name, e->path, e->flags);
+            /* in the input syntax, so the output can be fed back with CFGFILE */
+            Printf("EXPORT \"%s\" \"%s\"", e->name, e->path);
+            for (i = 0; fw[i].word; i++)
+                if (e->flags & fw[i].bit)
+                    Printf(" %s", fw[i].word);
             for (i = 0; i < e->naccess; i++)
                 Printf(" %s %lu", e->acckind[i] ? (CONST_STRPTR)"GROUP" : (CONST_STRPTR)"USER", (ULONG)e->accid[i]);
             PutStr("\n");
