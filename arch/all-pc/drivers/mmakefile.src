@@ -6,6 +6,7 @@
 
 #MM- AROS-pci-gfx-drivers : \
 #MM    workbench-hidds-vmwaresvga \
+#MM    workbench-hidds-amdgpu \
 #MM    workbench-hidds-radeon \
 #MM    workbench-hidds-nouveau \
 #MM    devs-monitors-intelgma
