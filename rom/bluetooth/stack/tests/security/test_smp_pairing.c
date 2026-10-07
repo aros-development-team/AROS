@@ -56,6 +56,43 @@ static void test_association_models(void)
     BT_CHECK(out.association == BT_SMP_ASSOC_PASSKEY_RESPONDER_DISPLAYS);
 }
 
+/* Core Vol 3 Part H, Table 2.8: rows are the initiator's IO capability,
+ * columns the responder's (DisplayOnly, DisplayYesNo, KeyboardOnly,
+ * NoInputNoOutput, KeyboardDisplay). */
+static void test_full_io_capability_table(void)
+{
+    enum
+    {
+        J = BT_SMP_ASSOC_JUST_WORKS,
+        N = BT_SMP_ASSOC_NUMERIC_COMPARISON,
+        I = BT_SMP_ASSOC_PASSKEY_INITIATOR_DISPLAYS,
+        R = BT_SMP_ASSOC_PASSKEY_RESPONDER_DISPLAYS,
+        B = BT_SMP_ASSOC_PASSKEY_BOTH_INPUT
+    };
+    static const unsigned char legacy[5][5] = {
+        {J, J, I, J, I}, {J, J, I, J, I}, {R, R, B, J, R}, {J, J, J, J, J}, {R, R, I, J, I}};
+    static const unsigned char secure[5][5] = {
+        {J, J, I, J, I}, {J, N, I, J, N}, {R, R, B, J, R}, {J, J, J, J, J}, {R, N, I, J, N}};
+    struct bt_smp_pairing_features req;
+    struct bt_smp_pairing_features rsp;
+    struct bt_smp_pairing_negotiation out;
+    uint8_t i;
+    uint8_t r;
+
+    for (i = 0; i < 5; ++i)
+        for (r = 0; r < 5; ++r)
+        {
+            req = features(i, BT_SMP_AUTHREQ_MITM);
+            rsp = features(r, 0);
+            BT_CHECK(bt_smp_negotiate_pairing(&req, &rsp, &out) == BT_OK);
+            BT_CHECK(out.association == legacy[i][r]);
+            req = features(i, BT_SMP_AUTHREQ_SC);
+            rsp = features(r, BT_SMP_AUTHREQ_SC | BT_SMP_AUTHREQ_MITM);
+            BT_CHECK(bt_smp_negotiate_pairing(&req, &rsp, &out) == BT_OK);
+            BT_CHECK(out.association == secure[i][r]);
+        }
+}
+
 static void test_oob_rules(void)
 {
     struct bt_smp_pairing_features req = features(0x03, BT_SMP_AUTHREQ_SC);
@@ -93,6 +130,7 @@ void run_smp_pairing_tests(void)
 {
     test_basic_negotiation();
     test_association_models();
+    test_full_io_capability_table();
     test_oob_rules();
     test_invalid_response_escalation();
 }

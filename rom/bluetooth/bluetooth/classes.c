@@ -734,6 +734,9 @@ AROS_LH3(void, btSendEvent,
                 ben->ben_Event = behmt;
                 ben->ben_Param1 = param1;
                 ben->ben_Param2 = param2;
+                ben->ben_Data = NULL;
+                ben->ben_DataLength = 0;
+                ben->ben_Device = NULL;
                 PutMsg(beh->beh_MsgPort, &ben->ben_Msg);
             }
         }
@@ -741,6 +744,41 @@ AROS_LH3(void, btSendEvent,
     }
     ReleaseSemaphore(&BluetoothBase->bt_ReentrantLock);
     AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "bSendServiceWriteEvent()" */
+/* Send every listener its own stable copy. The service value itself may be
+ * overwritten by the next ATT Write Command before the owner task runs. */
+void bSendServiceWriteEvent(struct BtBase *BluetoothBase, APTR record, ULONG index,
+                            const UBYTE *data, ULONG length, APTR device)
+{
+    struct BtEventNote *ben;
+    struct BtEventHook *beh;
+
+    bGarbageCollectEvents(BluetoothBase);
+    ObtainSemaphore(&BluetoothBase->bt_ReentrantLock);
+    beh = (struct BtEventHook *) BluetoothBase->bt_EventHooks.lh_Head;
+    while(beh->beh_Node.ln_Succ) {
+        if(beh->beh_MsgMask & BEHMF_SERVICEWRITE) {
+            if((ben = btAllocVec(sizeof(struct BtEventNote) + length))) {
+                ben->ben_Msg.mn_ReplyPort = &BluetoothBase->bt_EventReplyPort;
+                ben->ben_Msg.mn_Length = sizeof(struct BtEventNote) + length;
+                ben->ben_Event = BEHMB_SERVICEWRITE;
+                ben->ben_Param1 = record;
+                ben->ben_Param2 = (APTR) (IPTR) index;
+                ben->ben_Data = length ? (APTR) (ben + 1) : NULL;
+                ben->ben_DataLength = length;
+                ben->ben_Device = device;
+                if(length) {
+                    CopyMem((APTR) data, ben->ben_Data, length);
+                }
+                PutMsg(beh->beh_MsgPort, &ben->ben_Msg);
+            }
+        }
+        beh = (struct BtEventHook *) beh->beh_Node.ln_Succ;
+    }
+    ReleaseSemaphore(&BluetoothBase->bt_ReentrantLock);
 }
 /* \\\ */
 

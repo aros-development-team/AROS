@@ -84,12 +84,13 @@ static UWORD bGattValue(struct BtHWConn *cn, struct BtGattChar *bgc)
         }
         return(len);
     }
-    Forbid();
+    if(bgc->bgc_Properties & BGDP_STREAM) {
+        return(0);                      /* past events are not a value */
+    }
     len = bgc->bgc_Len;
     if(len) {
         CopyMem(bgc->bgc_Value, cn->cn_GATTVal, len);
     }
-    Permit();
     return(len);
 }
 /* \\\ */
@@ -199,15 +200,15 @@ static uint8_t bGattWrite(void *context, const struct bt_gatt_server_attr *a, co
     if(len > bgc->bgc_MaxLen) {
         return(ATT_ERR_INVALID_VALUE_LEN);
     }
-    Forbid();
     if(len) {
         CopyMem((APTR) data, bgc->bgc_Value, len);
     }
     bgc->bgc_Len = len;
-    Permit();
     /* the owner hears about it once the base is unlocked again */
     cn->cn_GATTWrRec = bsr;
     cn->cn_GATTWrIdx = a->ref_index;
+    cn->cn_GATTWrData = data;
+    cn->cn_GATTWrLen = len;
     return(0);
 }
 /* \\\ */
@@ -227,15 +228,22 @@ static void bGattRequest(const uint8_t *pdu, size_t len, uint64_t now_us, void *
                        cn->cn_Device->bd_Name);
     }
     cn->cn_GATTWrRec = NULL;
+    cn->cn_GATTWrData = NULL;
+    cn->cn_GATTWrLen = 0;
     btLockReadBase();
+    ObtainSemaphore(&BluetoothBase->bt_GattLock);
     n = bt_gatt_server_handle_pdu(&cn->cn_GATTServer, pdu, len, rsp, sizeof(rsp));
+    ReleaseSemaphore(&BluetoothBase->bt_GattLock);
     btUnlockBase();
     if(n) {
         bt_l2cap_channel_manager_send(&cn->cn_L2CAP, BT_L2CAP_CID_ATT, rsp, n, now_us);
     }
     if(cn->cn_GATTWrRec) {
-        btSendEvent(BEHMB_SERVICEWRITE, cn->cn_GATTWrRec, (APTR) (IPTR) cn->cn_GATTWrIdx);
+        bSendServiceWriteEvent(BluetoothBase, cn->cn_GATTWrRec, cn->cn_GATTWrIdx,
+                               cn->cn_GATTWrData, cn->cn_GATTWrLen, cn->cn_Device);
         cn->cn_GATTWrRec = NULL;
+        cn->cn_GATTWrData = NULL;
+        cn->cn_GATTWrLen = 0;
     }
 }
 /* \\\ */
@@ -248,6 +256,8 @@ void bGattSrvInit(struct BtHWConn *cn)
     memset(cn->cn_GATTSubs, 0, sizeof(cn->cn_GATTSubs));
     cn->cn_GATTSeen = FALSE;
     cn->cn_GATTWrRec = NULL;
+    cn->cn_GATTWrData = NULL;
+    cn->cn_GATTWrLen = 0;
     bt_gatt_server_init(&cn->cn_GATTServer, bGattNext, bGattWrite, cn);
     bt_gatt_client_set_request_handler(&cn->cn_GATT, bGattRequest, cn);
     if(cn->cn_LinkType == BDLT_LE) {
@@ -261,43 +271,80 @@ void bGattSrvInit(struct BtHWConn *cn)
 static void bGattNotifyChanged(struct BtHWCore *hc, ULONG oldseq, ULONG newseq)
 {
     struct BtBase *BluetoothBase = hc->hc_Base;
-    struct BtServiceRecord *bsr;
+    struct BtGattNotification *bgn;
     struct MinNode *mn;
     UBYTE pdu[BT_GATT_SERVER_RX_MTU];
 
     btLockReadBase();
-    for(bsr = (struct BtServiceRecord *) BluetoothBase->bt_ServiceRecords.lh_Head; bsr->bsr_Node.ln_Succ;
-        bsr = (struct BtServiceRecord *) bsr->bsr_Node.ln_Succ) {
-        ULONG k;
+    ObtainSemaphore(&BluetoothBase->bt_GattLock);
+    for(bgn = (struct BtGattNotification *) BluetoothBase->bt_GattNotifications.lh_Head;
+        bgn->bgn_Node.ln_Succ;
+        bgn = (struct BtGattNotification *) bgn->bgn_Node.ln_Succ) {
+        struct BtServiceRecord *bsr = bgn->bgn_Record;
+        UWORD vh;
 
-        if((bsr->bsr_Protocol != BSVP_ATT) || !bsr->bsr_Enabled) {
+        if(((LONG) (bgn->bgn_Seq - oldseq) <= 0) ||
+           ((LONG) (bgn->bgn_Seq - newseq) > 0) ||
+           !bsr->bsr_Enabled || (bgn->bgn_Index >= bsr->bsr_NumChars)) {
             continue;
         }
-        for(k = 0; k < bsr->bsr_NumChars; k++) {
-            struct BtGattChar *bgc = &bsr->bsr_Chars[k];
-            UWORD vh = bsr->bsr_FirstHandle + 2 + 3 * k;
+        vh = bsr->bsr_FirstHandle + 2 + 3 * bgn->bgn_Index;
 
-            if(!(bgc->bgc_Properties & (BGDP_NOTIFY|BGDP_INDICATE)) ||
-               ((LONG) (bgc->bgc_Seq - oldseq) <= 0) || ((LONG) (bgc->bgc_Seq - newseq) > 0)) {
+        for(mn = hc->hc_Conns.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ) {
+            struct BtHWConn *cn = (struct BtHWConn *) mn;
+            UWORD *sub;
+            size_t n;
+
+            if((cn->cn_State != HCNS_CONNECTED) || (cn->cn_LinkType != BDLT_LE) ||
+               !(sub = bGattSub(cn, vh + 1, FALSE)) || !(*sub & 3)) {
                 continue;
             }
-            for(mn = hc->hc_Conns.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ) {
-                struct BtHWConn *cn = (struct BtHWConn *) mn;
-                UWORD *sub;
-                size_t n;
-
-                if((cn->cn_State != HCNS_CONNECTED) || (cn->cn_LinkType != BDLT_LE) ||
-                   !(sub = bGattSub(cn, vh + 1, FALSE)) || !(*sub & 3)) {
-                    continue;
-                }
-                n = bt_gatt_server_encode_handle_value(&cn->cn_GATTServer, vh, cn->cn_GATTVal, bGattValue(cn, bgc),
-                                                        (*sub & 1) ? false : true, pdu, sizeof(pdu));
-                if(n) {
-                    bt_l2cap_channel_manager_send(&cn->cn_L2CAP, BT_L2CAP_CID_ATT, pdu, n, bNowUS(hc));
-                }
+            n = bt_gatt_server_encode_handle_value(&cn->cn_GATTServer, vh,
+                                                    bgn->bgn_Data, bgn->bgn_Length,
+                                                    (*sub & 1) ? false : true,
+                                                    pdu, sizeof(pdu));
+            if(n) {
+                bt_l2cap_channel_manager_send(&cn->cn_L2CAP, BT_L2CAP_CID_ATT,
+                                              pdu, n, bNowUS(hc));
             }
         }
     }
+    ReleaseSemaphore(&BluetoothBase->bt_GattLock);
+    btUnlockBase();
+}
+/* \\\ */
+
+/* /// "bGattNotificationGC()" */
+/* A snapshot may be freed after every running radio has passed its sequence. */
+static void bGattNotificationGC(struct BtBase *BluetoothBase)
+{
+    struct BtGattNotification *bgn, *next;
+    struct BtHardware *bth;
+
+    btLockReadBase();
+    ObtainSemaphore(&BluetoothBase->bt_GattLock);
+    bgn = (struct BtGattNotification *) BluetoothBase->bt_GattNotifications.lh_Head;
+    while(bgn->bgn_Node.ln_Succ) {
+        BOOL consumed = TRUE;
+
+        for(bth = (struct BtHardware *) BluetoothBase->bt_Hardware.lh_Head;
+            bth->bth_Node.ln_Succ; bth = (struct BtHardware *) bth->bth_Node.ln_Succ) {
+            struct BtHWCore *other = bth->bth_Core;
+            if(other && ((LONG) (other->hc_GattSeq - bgn->bgn_Seq) < 0)) {
+                consumed = FALSE;
+                break;
+            }
+        }
+        if(!consumed) {
+            break;
+        }
+        next = (struct BtGattNotification *) bgn->bgn_Node.ln_Succ;
+        Remove(&bgn->bgn_Node);
+        BluetoothBase->bt_GattNotificationCount--;
+        btFreeVec(bgn);
+        bgn = next;
+    }
+    ReleaseSemaphore(&BluetoothBase->bt_GattLock);
     btUnlockBase();
 }
 /* \\\ */
@@ -347,7 +394,8 @@ static void bLEAdvUpdate(struct BtHWCore *hc)
     struct BtServiceRecord *bsr;
     STRPTR name = bth->bth_LocalName ? bth->bth_LocalName : (STRPTR) "AROS";
     UBYTE p[32];
-    ULONG pos, lenpos, nlen;
+    ULONG pos, lenpos, lenpos128, nlen;
+    BOOL incomplete16 = FALSE, incomplete128 = FALSE;
 
     if(!(bth->bth_Flags & BTHF_LE) || !hc->hc_BringupDone || hc->hc_Shutdown) {
         return;
@@ -385,14 +433,42 @@ static void bLEAdvUpdate(struct BtHWCore *hc)
     p[pos++] = (bth->bth_Flags & BTHF_CLASSIC) ? 0x1a : 0x06;
     p[pos++] = 3; p[pos++] = 0x19;  /* appearance: computer */
     p[pos++] = 0x80; p[pos++] = 0x00;
-    lenpos = pos;
+    /* A BLE MIDI client discovers the service from its 128-bit UUID. Put one
+       or more vendor UUIDs first, then use the remaining bytes for adopted
+       16-bit services. UUIDs in advertising use ATT little-endian order. */
+    lenpos128 = pos;
     pos += 2;
     btLockReadBase();
     for(bsr = (struct BtServiceRecord *) BluetoothBase->bt_ServiceRecords.lh_Head; bsr->bsr_Node.ln_Succ;
         bsr = (struct BtServiceRecord *) bsr->bsr_Node.ln_Succ) {
+        if((bsr->bsr_Protocol != BSVP_ATT) || !bsr->bsr_Enabled || (bsr->bsr_UUIDLen != 16)) {
+            continue;
+        }
+        if(pos + 16 > 32) {
+            incomplete128 = TRUE;
+            continue;
+        }
+        CopyMem(bsr->bsr_UUID, &p[pos], 16);
+        pos += 16;
+    }
+    if(pos > lenpos128 + 2) {
+        p[lenpos128] = pos - lenpos128 - 1;
+        p[lenpos128 + 1] = incomplete128 ? 0x06 : 0x07;
+    } else {
+        pos = lenpos128;
+        p[pos] = p[pos + 1] = 0;
+    }
+    lenpos = pos;
+    pos += 2;
+    for(bsr = (struct BtServiceRecord *) BluetoothBase->bt_ServiceRecords.lh_Head; bsr->bsr_Node.ln_Succ;
+        bsr = (struct BtServiceRecord *) bsr->bsr_Node.ln_Succ) {
         if((bsr->bsr_Protocol != BSVP_ATT) || !bsr->bsr_Enabled || (bsr->bsr_UUIDLen != 2) ||
-           (bsr->bsr_UUID16 == 0x1800) || (bsr->bsr_UUID16 == 0x1801) || (pos + 2 > 32)) {
+           (bsr->bsr_UUID16 == 0x1800) || (bsr->bsr_UUID16 == 0x1801)) {
             continue; /* the two every device has are not worth the room */
+        }
+        if(pos + 2 > 32) {
+            incomplete16 = TRUE;
+            continue;
         }
         p[pos++] = bsr->bsr_UUID[0];
         p[pos++] = bsr->bsr_UUID[1];
@@ -400,7 +476,7 @@ static void bLEAdvUpdate(struct BtHWCore *hc)
     btUnlockBase();
     if(pos > lenpos + 2) {
         p[lenpos] = pos - lenpos - 1;
-        p[lenpos + 1] = 0x03;       /* 16-bit service UUIDs */
+        p[lenpos + 1] = incomplete16 ? 0x02 : 0x03;
     } else {
         pos = lenpos;
         p[pos] = p[pos + 1] = 0;
@@ -450,6 +526,7 @@ void bGattSrvPoll(struct BtHWCore *hc)
     if(hc->hc_GattSeq != seq) {
         bGattNotifyChanged(hc, hc->hc_GattSeq, seq);
         hc->hc_GattSeq = seq;
+        bGattNotificationGC(BluetoothBase);
     }
 }
 /* \\\ */

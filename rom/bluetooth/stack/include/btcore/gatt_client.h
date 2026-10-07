@@ -206,6 +206,12 @@ bt_status_t bt_gatt_client_write(struct bt_gatt_client *client, uint16_t handle,
                                   bt_gatt_client_complete_fn on_complete, void *user_data,
                                   uint64_t now_us);
 
+/* Sends an ATT Write Command without waiting for a response. BLE MIDI uses
+ * this operation. It may run alongside another GATT transaction. */
+bt_status_t bt_gatt_client_write_without_response(struct bt_gatt_client *client,
+                                                   uint16_t handle, const uint8_t *value,
+                                                   size_t value_len);
+
 /* Must be called by the owning event loop as time advances. Times out the
  * current ATT transaction; late responses are ignored. */
 void bt_gatt_client_tick(struct bt_gatt_client *client, uint64_t now_us);
