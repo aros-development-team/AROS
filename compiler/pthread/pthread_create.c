@@ -243,6 +243,17 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start)
         return EAGAIN;
     }
 
+    if (threadnew == threads_used)
+    {
+        // AllocVec: memory from a thread's C runtime goes away with the thread
+        if (!(threads[threadnew] = AllocVec(sizeof(ThreadInfo), MEMF_ANY)))
+        {
+            ReleaseSemaphore(&thread_sem);
+            return EAGAIN;
+        }
+        __atomic_store_n(&threads_used, threadnew + 1, __ATOMIC_RELEASE);
+    }
+
     // prepare the ThreadInfo structure
     inf = GetThreadInfo(threadnew);
     memset(inf, 0, sizeof(ThreadInfo));

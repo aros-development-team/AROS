@@ -39,7 +39,11 @@
 
 //#define USE_ASYNC_CANCEL
 
-ThreadInfo threads[PTHREAD_THREADS_MAX];
+// A ThreadInfo is about 1 KB: allocated when its slot is first used rather
+// than 2 MB of bss in every program. Slots below threads_used are allocated.
+ThreadInfo *threads[PTHREAD_THREADS_MAX];
+pthread_t threads_used;
+static ThreadInfo mainthread;
 struct SignalSemaphore thread_sem;
 TLSKey tlskeys[PTHREAD_KEYS_MAX];
 struct SignalSemaphore tls_sem;
@@ -73,28 +77,29 @@ ThreadInfo *GetThreadInfo(pthread_t thread)
     DB2(bug("%s(%u)\n", __FUNCTION__, thread));
 
     // TODO: more robust error handling?
-    if (thread < PTHREAD_THREADS_MAX)
-        return &threads[thread];
+    if (thread < __atomic_load_n(&threads_used, __ATOMIC_ACQUIRE))
+        return threads[thread];
 
     return 0;
 }
 
 pthread_t GetThreadId(struct Task *task)
 {
-    pthread_t i;
+    pthread_t i, used = __atomic_load_n(&threads_used, __ATOMIC_ACQUIRE);
 
     DB2(bug("%s(%p)\n", __FUNCTION__, task));
 
     // 0 is main task, First thread id will be 1 so that it is different than default value of pthread_t
-    for (i = 0; i < PTHREAD_THREADS_MAX; i++)
+    for (i = 0; i < used; i++)
     {
         // be sure not to select existing, "not joined" thread slot with the exec task pointer same as
         // this one (if a new exec task structure get allocated exactly at the same addres as the old one)
-        if (threads[i].task == task && !threads[i].finished)
-            break;
+        if (threads[i]->task == task && !threads[i]->finished)
+            return i;
     }
 
-    return i;
+    // a free slot may also be a new one
+    return task == NULL ? used : PTHREAD_THREADS_MAX;
 }
 
 #if defined __mc68000__
@@ -1235,12 +1240,13 @@ int __pthread_Init_Func(void)
 {
     DB2(bug("%s()\n", __FUNCTION__));
 
-    //memset(&threads, 0, sizeof(threads));
     InitSemaphore(&thread_sem);
     InitSemaphore(&tls_sem);
 
     // reserve ID 0 for the main thread
-    ThreadInfo *inf = &threads[0];
+    ThreadInfo *inf = &mainthread;
+    threads[0] = inf;
+    threads_used = 1;
 
     inf->task = GET_THIS_TASK;
 
@@ -1258,9 +1264,9 @@ void __pthread_Exit_Func(void)
     __pthread_exiting = TRUE;
 
     // if we don't do this we can easily end up with unloaded code being executed
-    for (i = 1; i < PTHREAD_THREADS_MAX; i++)
+    for (i = 1; i < threads_used; i++)
     {
-        inf = &threads[i];
+        inf = threads[i];
         // idle workers never return: cancel them. A finished thread's task
         // is gone; thread_sem keeps a running one from finishing meanwhile
         ObtainSemaphore(&thread_sem);
@@ -1276,6 +1282,13 @@ void __pthread_Exit_Func(void)
                 Delay(1);
         }
     }
+
+    // the main thread's slot stays usable for later exit code
+    ObtainSemaphore(&thread_sem);
+    for (i = 1; i < threads_used; i++)
+        FreeVec(threads[i]);
+    threads_used = 1;
+    ReleaseSemaphore(&thread_sem);
 }
 
 #if defined(__AROS__) || (defined(__AMIGA__) && !defined(__MORPHOS__))
