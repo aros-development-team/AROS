@@ -129,4 +129,8 @@ AROS_UFP2(void, bRawFmtLength,
                    AROS_UFPA(char, ch, D0),
                    AROS_UFPA(ULONG *, len, A3));
 
+/* gattsrv.c: free the notification snapshots every radio has sent (or that
+   no radio is left to send); any task, no lock held */
+void bGattSrvCollect(struct BtBase *BluetoothBase);
+
 #endif /* BLUETOOTH_LIBRARY_H */

@@ -143,6 +143,7 @@ struct bt_l2cap_channel_manager
     bt_l2cap_conn_param_response_fn conn_param_response;
     void *conn_param_user_data;
     uint8_t conn_param_identifier; /* nonzero while our request is outstanding */
+    uint64_t conn_param_deadline_us; /* when it is given up (0: from the next tick on) */
 };
 
 /* signaling_cid is BT_L2CAP_CID_SIGNALING_CLASSIC or BT_L2CAP_CID_SIGNALING_LE
@@ -174,7 +175,13 @@ void bt_l2cap_channel_manager_set_conn_param_handlers(struct bt_l2cap_channel_ma
                                                       void *user_data);
 
 /* Peripheral role, LE links only: asks the central for new connection
- * parameters. Fails while an earlier request is unanswered. */
+ * parameters. Fails while an earlier request is unanswered. A request the
+ * central does not answer within BT_L2CAP_CONN_PARAM_RTX_US (counted by
+ * bt_l2cap_channel_manager_tick()) is reported as refused, and the next one
+ * may go. */
+#ifndef BT_L2CAP_CONN_PARAM_RTX_US
+#define BT_L2CAP_CONN_PARAM_RTX_US 30000000ull /* the signaling RTX, 1..60 s */
+#endif
 bt_status_t bt_l2cap_channel_manager_request_conn_params(struct bt_l2cap_channel_manager *mgr,
                                                          const struct bt_l2cap_conn_params *params);
 

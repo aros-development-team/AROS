@@ -927,6 +927,27 @@ static void test_conn_param_update(void)
     feed_signaling_command(&mgr, buf, bt_buf_writer_len(&w), 3);
     BT_CHECK(log.responses == 2 && !log.last_accepted);
 
+    /* an unanswered request times out and the next one may go */
+    BT_CHECK(bt_l2cap_channel_manager_request_conn_params(&mgr, &midi) == BT_OK);
+    BT_CHECK(take_last_sig_command(&ft, &hdr, &cmd_data));
+    bt_l2cap_channel_manager_tick(&mgr, 1000000);
+    BT_CHECK(bt_l2cap_channel_manager_request_conn_params(&mgr, &midi) == BT_ERR_BUSY);
+    bt_l2cap_channel_manager_tick(&mgr, 1000000 + BT_L2CAP_CONN_PARAM_RTX_US - 1);
+    BT_CHECK(log.responses == 2);
+    bt_l2cap_channel_manager_tick(&mgr, 1000000 + BT_L2CAP_CONN_PARAM_RTX_US);
+    BT_CHECK(log.responses == 3 && !log.last_accepted);
+    BT_CHECK(bt_l2cap_channel_manager_request_conn_params(&mgr, &midi) == BT_OK);
+    BT_CHECK(take_last_sig_command(&ft, &hdr, &cmd_data));
+    id = hdr.identifier;
+    bt_buf_writer_init(&w, buf, sizeof(buf));
+    bt_l2cap_sig_encode_header(&w, BT_L2CAP_SIG_CONN_PARAM_UPDATE_RESPONSE, id, 2);
+    bt_buf_writer_write_le16(&w, 0);
+    feed_signaling_command(&mgr, buf, bt_buf_writer_len(&w), 3);
+    BT_CHECK(log.responses == 4 && log.last_accepted);
+    /* answered: the old deadline does not fire */
+    bt_l2cap_channel_manager_tick(&mgr, 1000000 + 3 * BT_L2CAP_CONN_PARAM_RTX_US);
+    BT_CHECK(log.responses == 4);
+
     /* as a peripheral (no request handler) a request is rejected */
     feed_conn_param_request(&mgr, 0x31, 6, 12, 0, 300, 4);
     BT_CHECK(take_last_sig_command(&ft, &hdr, &cmd_data));

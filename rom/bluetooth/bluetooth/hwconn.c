@@ -933,13 +933,16 @@ static void bConnParamResponse(void *user_data, bool accepted)
     struct BtBase *BluetoothBase = cn->cn_Core->hc_Base;
 
     btAddErrorMsg(accepted ? RETURN_OK : RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
-                   "%s %s the shorter connection interval.", cn->cn_Device->bd_Name,
-                   accepted ? "accepted" : "declined");
+                   "%s %s the connection interval we asked for.", cn->cn_Device->bd_Name,
+                   accepted ? "accepted" : "declined (or did not answer)");
 }
 
 /* Ask the central for BSA_LEConnInterval, within what iOS accepts (Apple
    Accessory Design Guidelines): a minimum of at least 15 ms, and a maximum
-   at least 15 ms above it unless both are 15 ms. */
+   at least 15 ms above it unless both are 15 ms. The window starts at the
+   interval wanted - a central picks the low end, so a long interval wanted
+   to save power must be the minimum - and the supervision timeout grows
+   with it: at least three intervals, 3 to 6 s. */
 static void bConnAskParams(struct BtHWConn *cn)
 {
     struct BtHWCore *hc = cn->cn_Core;
@@ -956,10 +959,24 @@ static void bConnAskParams(struct BtHWConn *cn)
         cn->cn_ConnParamSeq = BluetoothBase->bt_LEConnSeq;  /* nothing to ask for */
         return;
     }
-    p.interval_min = 12;
-    p.interval_max = (want <= 12) ? 12 : ((want < 24) ? 24 : (UWORD) want);
+    if(want <= 12) {
+        p.interval_min = p.interval_max = 12;       /* 15 ms */
+    } else {
+        if(want > 1580) {
+            want = 1580;                /* 3 intervals must fit in 6 s */
+        }
+        p.interval_min = want;
+        p.interval_max = want + 12;
+    }
     p.latency = 0;
-    p.timeout = 300;                    /* 3 s */
+    /* timeout in 10 ms, interval in 1.25 ms: 3 intervals = interval * 3.75 / 10 */
+    p.timeout = (p.interval_max * 3 * 125 + 999) / 1000 + 10;
+    if(p.timeout < 300) {
+        p.timeout = 300;                /* 3 s */
+    }
+    if(p.timeout > 600) {
+        p.timeout = 600;
+    }
     switch(bt_l2cap_channel_manager_request_conn_params(&cn->cn_L2CAP, &p)) {
     case BT_OK:
     case BT_ERR_INVALID_ARGUMENT:       /* no use asking again */
@@ -1128,6 +1145,7 @@ static void bConnDown(struct BtHWConn *cn, LONG error, UBYTE reason)
     cn->cn_State = HCNS_FREE;
     cn->cn_Reason = reason;
     if(wasup && (cn->cn_LinkType == BDLT_LE)) {
+        bGattSrvLinkDown(cn); /* its subscriptions end with it */
         bGattSrvRefresh(hc); /* advertise again if we are asked to */
     }
 
@@ -1951,6 +1969,12 @@ static void bGATTConnectCB(bool success, void *user_data)
         } else {
             bConnHandleRequest(cn->cn_Core, bch);
         }
+        /* requests that queued up behind the connect: a Write Command (or a
+           failure) completes at once, and no GATT operation completion would
+           ever come along to release them */
+        if(!cn->cn_CtrlReq) {
+            bDispatchWaiting(cn);
+        }
     }
 }
 /* \\\ */
@@ -2365,10 +2389,20 @@ static void bPairingDone(struct BtHWConn *cn, LONG error, ULONG status)
         return;
     }
     cn->cn_PairState = PAIR_IDLE;
+    cn->cn_SMPRequestLen = 0;
+    cn->cn_SMPAcceptWait = FALSE;
     btLockWriteDevice(bd);
     bd->bd_PairingRequest = BPRT_NONE;
     if(!error) {
         bd->bd_PairingState = BDPS_DONE;
+        if((cn->cn_LinkType == BDLT_LE) && (cn->cn_Role == BDR_PERIPHERAL) &&
+           !(bd->bd_Flags & BDFF_REGISTERED)) {
+            /* a phone or computer that paired with our services: it comes
+               to us. Connecting out to it whenever it advertises (it does
+               all the time) is not what it bonded for; the user may still
+               switch it on for the device. */
+            bd->bd_PoPoCfg.bpc_AutoConnect = FALSE;
+        }
         bd->bd_Flags |= BDFF_BONDED|BDFF_REGISTERED;
     } else {
         bd->bd_PairingState = BDPS_FAILED;
@@ -2473,6 +2507,36 @@ static void bAskUser(struct BtHWConn *cn, UBYTE type, ULONG passkey)
 }
 /* \\\ */
 
+/* Bytes of controller entropy a pairing as the responder draws: Srand or Nb,
+   then the LTK, Rand and EDIV it hands out (plus slack). */
+#define SMP_RESPONDER_ENTROPY 48
+
+/* /// "bSMPAcceptHeld()" */
+/* Answer the Pairing Request the user agreed to. */
+static void bSMPAcceptHeld(struct BtHWConn *cn)
+{
+    struct BtBase *BluetoothBase = cn->cn_Core->hc_Base;
+    struct BtDevice *bd = cn->cn_Device;
+    UBYTE request[sizeof(cn->cn_SMPRequest)];
+    UBYTE request_len = cn->cn_SMPRequestLen;
+
+    cn->cn_SMPAcceptWait = FALSE;
+    if(!request_len) {
+        return;
+    }
+    CopyMem(cn->cn_SMPRequest, request, request_len);
+    cn->cn_SMPRequestLen = 0;
+    if(bt_smp_manager_accept(&cn->cn_SMP, request, request_len, bNowUS(cn->cn_Core)) != BT_OK) {
+        bSMPFail(cn, 0x05, "pairing request could not be accepted");
+        return;
+    }
+    btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                   "%s: LE pairing accepted as peripheral after user consent (%s).",
+                   bd->bd_Name, cn->cn_SMP.negotiation.secure_connections ?
+                   (STRPTR) "secure connections" : (STRPTR) "legacy");
+}
+/* \\\ */
+
 /* /// "bPairingReply()" */
 static LONG bPairingReply(struct BtHWConn *cn, struct BtPairParams *bpp)
 {
@@ -2493,24 +2557,29 @@ static LONG bPairingReply(struct BtHWConn *cn, struct BtPairParams *bpp)
         bd->bd_PairingRequest = BPRT_NONE;
         btUnlockDevice(bd);
         if(cn->cn_SMPRequestLen) {
-            UBYTE request[sizeof(cn->cn_SMPRequest)];
-            UBYTE request_len = cn->cn_SMPRequestLen;
+            ULONG want;
 
-            CopyMem(cn->cn_SMPRequest, request, request_len);
-            cn->cn_SMPRequestLen = 0;
             if(!bpp->bpp_HaveConfirm || !bpp->bpp_Confirm) {
+                cn->cn_SMPRequestLen = 0;
                 bSMPFail(cn, 0x05, "pairing was not accepted by the user");
                 return(0);
             }
-            if(!bSMPSetup(cn) ||
-               (bt_smp_manager_accept(&cn->cn_SMP, request, request_len, now) != BT_OK)) {
+            if(!bSMPSetup(cn)) {
+                cn->cn_SMPRequestLen = 0;
                 bSMPFail(cn, 0x05, "pairing request could not be accepted");
                 return(0);
             }
-            btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
-                           "%s: LE pairing accepted as peripheral after user consent (%s).",
-                           bd->bd_Name, cn->cn_SMP.negotiation.secure_connections ?
-                           (STRPTR) "secure connections" : (STRPTR) "legacy");
+            /* the randoms and the key we hand out come from the controller,
+               as they do for a pairing we start (bStartPairing()); usually
+               the entropy asked for with the request is in by now */
+            want = (hc->hc_RandAvail >= SMP_RESPONDER_ENTROPY) ? 0 :
+                   bConnRequestEntropy(hc, (SMP_RESPONDER_ENTROPY - hc->hc_RandAvail + 7) / 8);
+            if(want) {
+                cn->cn_SMPRandWait = (UBYTE) want;
+                cn->cn_SMPAcceptWait = TRUE;
+            } else {
+                bSMPAcceptHeld(cn);
+            }
             return(0);
         }
         if(!cn->cn_SMPActive) {
@@ -2651,7 +2720,11 @@ static void bRandFillCB(struct bt_cmdq_completion *completion, void *user_data)
         struct BtHWConn *cn = (struct BtHWConn *) mn;
         if(cn->cn_SMPActive && cn->cn_SMPRandWait) {
             if(--cn->cn_SMPRandWait == 0) {
-                bSMPStart(cn);
+                if(cn->cn_SMPAcceptWait) {
+                    bSMPAcceptHeld(cn);     /* we are the responder */
+                } else {
+                    bSMPStart(cn);
+                }
             }
         }
     }
@@ -2960,17 +3033,41 @@ static void bSMPChannelEvent(struct bt_l2cap_channel_event_info *info, void *use
             }
         } else if(info->data[0] == BT_SMP_PAIRING_REQUEST) {
             /* Never turn an unsolicited connection into a bond.  Hold the
-               request until the normal pairing UI explicitly accepts it. */
-            if(cn->cn_Role != BDR_PERIPHERAL || info->data_len != 7 ||
-               (bd->bd_Flags & BDFF_BONDED) || cn->cn_SMPRequestLen) {
+               request until the normal pairing UI explicitly accepts it.
+               That holds for a device we are bonded with too: it may have
+               been bonded in the other role or over BR/EDR (no key of ours
+               for this one), or have lost its own key - with the user's
+               say-so the new pairing replaces the bond, while a pairing
+               that fails or is refused leaves the old one as it was. */
+            if((cn->cn_Role != BDR_PERIPHERAL) || (info->data_len != 7) ||
+               (cn->cn_SMPAcceptWait)) {
                 UBYTE pdu[2] = { BT_SMP_PAIRING_FAILED, 0x05 };
                 cn->cn_SMPActive = FALSE;
                 bSMPSend(cn, pdu, 2);
+            } else if(cn->cn_SMPRequestLen) {
+                /* the central started over (it gave up waiting for us, or
+                   resent): the answer the user gives is to this one */
+                CopyMem((APTR) info->data, cn->cn_SMPRequest, 7);
             } else {
                 CopyMem((APTR) info->data, cn->cn_SMPRequest, 7);
                 cn->cn_SMPRequestLen = 7;
+                if(bd->bd_Flags & BDFF_BONDED) {
+                    btAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                   "%s wants to pair again - accepting replaces the bond with it.", bd->bd_Name);
+                }
+                /* stock up on controller entropy while the user decides */
+                if(cn->cn_Core->hc_RandAvail < SMP_RESPONDER_ENTROPY) {
+                    bConnRequestEntropy(cn->cn_Core,
+                                        (SMP_RESPONDER_ENTROPY - cn->cn_Core->hc_RandAvail + 7) / 8);
+                }
                 bAskUser(cn, BPRT_CONSENT, 0);
             }
+        } else if((info->data[0] == BT_SMP_PAIRING_FAILED) && cn->cn_SMPRequestLen) {
+            /* the central gave up on the request we hold: so does the user */
+            cn->cn_SMPRequestLen = 0;
+            btAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                           "%s withdrew its pairing request.", bd->bd_Name);
+            bPairingDone(cn, BTIOERR_SECURITY, (info->data_len >= 2) ? info->data[1] : 0x08);
         }
         break;
     }
@@ -3937,7 +4034,10 @@ BOOL bConnHandleRequest(struct BtHWCore *hc, struct BtChannel *bch)
                 return(TRUE);
             }
             if(!cn->cn_GATTReady) {
-                if(cn->cn_CtrlReq) {
+                /* an enumeration brings the ATT channel up itself and releases
+                   what waits when it is done; a second connect would take its
+                   callback over and orphan this request */
+                if(cn->cn_CtrlReq || (cn->cn_EnumState != ENUM_IDLE)) {
                     bReqQueueAdd(&cn->cn_WaitReqs, bch);
                     return(TRUE);
                 }
@@ -4089,8 +4189,9 @@ BOOL bConnHandleRequest(struct BtHWCore *hc, struct BtChannel *bch)
                 return(TRUE);
             }
             if(!cn->cn_GATTReady) {
-                /* bring the ATT channel up first, then retry */
-                if(cn->cn_CtrlReq) {
+                /* bring the ATT channel up first, then retry (not alongside an
+                   enumeration, which does that itself) */
+                if(cn->cn_CtrlReq || (cn->cn_EnumState != ENUM_IDLE)) {
                     bReqQueueAdd(&cn->cn_WaitReqs, bch);
                     return(TRUE);
                 }

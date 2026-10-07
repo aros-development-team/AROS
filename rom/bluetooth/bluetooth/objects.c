@@ -1727,8 +1727,11 @@ void bUpdateLEConnInterval(LIBBASETYPEPTR BluetoothBase)
             interval = bsr->bsr_LEConnInterval;
         }
     }
-    BluetoothBase->bt_LEServiceInterval = interval;
-    BluetoothBase->bt_LEConnSeq++;
+    /* only a change is worth a new request on every peripheral link */
+    if(BluetoothBase->bt_LEServiceInterval != interval) {
+        BluetoothBase->bt_LEServiceInterval = interval;
+        BluetoothBase->bt_LEConnSeq++;
+    }
     btUnlockBase();
 }
 
@@ -1917,7 +1920,14 @@ AROS_LH4(LONG, btSetServiceValue,
             CopyMem(data, bgn->bgn_Data, len);
         }
     }
+    /* what every radio has sent (or none is left to send) goes first */
+    bGattSrvCollect(BluetoothBase);
     ObtainSemaphore(&BluetoothBase->bt_GattLock);
+    if(bgn && !bgc->bgc_Subscribers) {
+        /* nobody follows this value: there is nothing to send */
+        btFreeVec(bgn);
+        bgn = NULL;
+    }
     if(bgn && (BluetoothBase->bt_GattNotificationCount >= 256)) {
         ReleaseSemaphore(&BluetoothBase->bt_GattLock);
         btFreeVec(bgn);

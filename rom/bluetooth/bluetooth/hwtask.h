@@ -252,6 +252,9 @@ struct BtHWConn
     const UBYTE        *cn_GATTWrData;     /* valid for the duration of bGattRequest() */
     UWORD               cn_GATTWrLen;
     BOOL                cn_GATTSeen;   /* the device has asked for something */
+    ULONG               cn_GATTSeq;    /* bt_GattSeq up to which this link was notified */
+    ULONG               cn_GATTIndSince; /* hc_Tick the unconfirmed indication was sent */
+    BOOL                cn_GATTIndDead;  /* the device stopped confirming: no more indications */
     UBYTE               cn_GATTVal[BGATT_MAXVALUE]; /* the value being read */
     struct MinList      cn_Endpoints;  /* BtHWEndpoint */
     struct MinList      cn_WaitReqs;   /* BtChannel requests waiting for the link */
@@ -286,6 +289,7 @@ struct BtHWConn
     BOOL                cn_SMPChanOpen;   /* fixed SMP channel registered on this link */
     UBYTE               cn_SMPRequest[7]; /* inbound request held for user consent */
     UBYTE               cn_SMPRequestLen;
+    BOOL                cn_SMPAcceptWait; /* accepted: answer it once the entropy is in */
     BOOL                cn_EncryptPending;/* encryption with the stored key in flight (enumeration held back) */
     ULONG               cn_EncryptSince;  /* hc_Tick when it was requested (bConnTick() gives up on silence) */
     UBYTE               cn_SMPRandWait;   /* LE Rand completions to collect before starting */
@@ -459,7 +463,8 @@ struct BtHWCore
 
     /* GATT server (gattsrv.c) */
     ULONG               hc_LEAdvSeq;       /* bt_LEAdvSeq the advertising was set up for */
-    ULONG               hc_GattSeq;        /* bt_GattSeq up to which subscribers were notified */
+    ULONG               hc_GattSeq;        /* bt_GattSeq up to which every link was notified
+                                              (the snapshots before it may be freed) */
     BOOL                hc_LEAdvAsked;     /* we asked the controller to advertise ... */
     BOOL                hc_LEAdvOn;        /* ... and it does */
     BOOL                hc_LEAdvWarned;    /* its refusal has been reported */
@@ -497,6 +502,7 @@ struct BtDevice * bNoteIncomingLE(struct BtHWCore *hc, const UBYTE *addr, UBYTE 
 void bGattSrvInit(struct BtHWConn *cn);
 void bGattSrvRefresh(struct BtHWCore *hc);
 void bGattSrvPoll(struct BtHWCore *hc);
+void bGattSrvLinkDown(struct BtHWConn *cn);
 LONG bStopDiscovery(struct BtHWCore *hc);
 void bReplyChannel(struct BtBase *BluetoothBase, struct BtChannel *bch, LONG error, ULONG actual);
 void bStartACLWrite(struct BtHWCore *hc);

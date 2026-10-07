@@ -511,6 +511,7 @@ static void finish_conn_param_request(struct bt_l2cap_channel_manager *mgr, uint
     if (mgr->conn_param_identifier == 0 || identifier != mgr->conn_param_identifier)
         return;
     mgr->conn_param_identifier = 0;
+    mgr->conn_param_deadline_us = 0;
     if (mgr->conn_param_response != NULL)
         mgr->conn_param_response(mgr->conn_param_user_data, accepted);
 }
@@ -609,6 +610,7 @@ void bt_l2cap_channel_manager_init(struct bt_l2cap_channel_manager *mgr,
     mgr->conn_param_response = NULL;
     mgr->conn_param_user_data = NULL;
     mgr->conn_param_identifier = 0;
+    mgr->conn_param_deadline_us = 0;
 
     for (i = 0; i < BT_L2CAP_CHANNEL_MANAGER_MAX_CHANNELS; i++)
     {
@@ -663,6 +665,7 @@ bt_status_t bt_l2cap_channel_manager_request_conn_params(struct bt_l2cap_channel
     if (send_l2cap_pdu(mgr, mgr->signaling_cid, buf, bt_buf_writer_len(&w)) != BT_OK)
         return BT_ERR_NO_RESOURCES;
     mgr->conn_param_identifier = identifier;
+    mgr->conn_param_deadline_us = 0; /* the next tick starts the clock */
     return BT_OK;
 }
 
@@ -893,4 +896,14 @@ void bt_l2cap_channel_manager_tick(struct bt_l2cap_channel_manager *mgr, uint64_
 
     while ((t = bt_timer_list_pop_expired(&mgr->timers, now_us)) != NULL)
         t->callback(t, t->user_data);
+
+    /* our connection parameter request: an unanswered one must not block
+     * every later one for the life of the link */
+    if (mgr->conn_param_identifier != 0)
+    {
+        if (mgr->conn_param_deadline_us == 0)
+            mgr->conn_param_deadline_us = now_us + BT_L2CAP_CONN_PARAM_RTX_US;
+        else if (now_us >= mgr->conn_param_deadline_us)
+            finish_conn_param_request(mgr, mgr->conn_param_identifier, false);
+    }
 }

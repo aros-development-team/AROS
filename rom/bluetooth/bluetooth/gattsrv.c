@@ -11,9 +11,10 @@
  * advertises so that devices can find and connect to it, is decided by the
  * GATT server class (btgatt.class) and its user.
  *
- * Everything here runs in the hardware task. Other tasks never call in: they
- * change the records and bump a sequence number in the library base, and
- * bGattSrvPoll() picks that up with the next tick.
+ * Everything here runs in the hardware task, but for bGattSrvCollect().
+ * Other tasks change the records and values and bump a sequence number in
+ * the library base; bGattSrvPoll() picks that up when they signal the task,
+ * or with the next tick.
  */
 
 #include "debug.h"
@@ -31,6 +32,10 @@
 
 #define ATT_ERR_INVALID_VALUE_LEN 0x0d
 #define ATT_ERR_NO_RESOURCES      0x11
+
+/* ATT transaction timeout: a device that has not confirmed an indication by
+   then is not going to */
+#define GATT_INDICATION_TIMEOUT_MS 30000
 
 /* /// "bGattSub()" */
 /* The client configuration a device wrote for one characteristic. */
@@ -189,12 +194,20 @@ static uint8_t bGattWrite(void *context, const struct bt_gatt_server_attr *a, co
         if(len != 2) {
             return(ATT_ERR_INVALID_VALUE_LEN);
         }
+        UWORD old;
         if(!(sub = bGattSub(cn, a->handle, TRUE))) {
             return(ATT_ERR_NO_RESOURCES);
         }
+        old = *sub & 3;
         /* only what the characteristic offers can be subscribed to */
         *sub = data[0] & (((bgc->bgc_Properties & BGDP_NOTIFY) ? 1 : 0) |
                           ((bgc->bgc_Properties & BGDP_INDICATE) ? 2 : 0));
+        /* bt_GattLock is held (bGattRequest()) */
+        if(!old && *sub) {
+            bgc->bgc_Subscribers++;
+        } else if(old && !*sub && bgc->bgc_Subscribers) {
+            bgc->bgc_Subscribers--;
+        }
         return(0);
     }
     if(len > bgc->bgc_MaxLen) {
@@ -238,6 +251,11 @@ static void bGattRequest(const uint8_t *pdu, size_t len, uint64_t now_us, void *
     if(n) {
         bt_l2cap_channel_manager_send(&cn->cn_L2CAP, BT_L2CAP_CID_ATT, rsp, n, now_us);
     }
+    if((len >= 1) && (pdu[0] == BT_ATT_OPCODE_HANDLE_VALUE_CONFIRMATION) &&
+       (cn->cn_GATTSeq != BluetoothBase->bt_GattSeq)) {
+        /* the next indication may go now, not a tick later */
+        bGattSrvPoll(cn->cn_Core);
+    }
     if(cn->cn_GATTWrRec) {
         bSendServiceWriteEvent(BluetoothBase, cn->cn_GATTWrRec, cn->cn_GATTWrIdx,
                                cn->cn_GATTWrData, cn->cn_GATTWrLen, cn->cn_Device);
@@ -255,6 +273,10 @@ void bGattSrvInit(struct BtHWConn *cn)
 {
     memset(cn->cn_GATTSubs, 0, sizeof(cn->cn_GATTSubs));
     cn->cn_GATTSeen = FALSE;
+    /* what was queued before the link existed is not for it */
+    cn->cn_GATTSeq = cn->cn_Core->hc_Base->bt_GattSeq;
+    cn->cn_GATTIndSince = 0;
+    cn->cn_GATTIndDead = FALSE;
     cn->cn_GATTWrRec = NULL;
     cn->cn_GATTWrData = NULL;
     cn->cn_GATTWrLen = 0;
@@ -266,57 +288,141 @@ void bGattSrvInit(struct BtHWConn *cn)
 }
 /* \\\ */
 
-/* /// "bGattNotifyChanged()" */
-/* Values set since the last look: tell the devices that subscribed. */
-static void bGattNotifyChanged(struct BtHWCore *hc, ULONG oldseq, ULONG newseq)
+/* /// "bGattSrvLinkDown()" */
+/* A link is gone: its subscriptions no longer count. */
+void bGattSrvLinkDown(struct BtHWConn *cn)
 {
-    struct BtBase *BluetoothBase = hc->hc_Base;
-    struct BtGattNotification *bgn;
-    struct MinNode *mn;
-    UBYTE pdu[BT_GATT_SERVER_RX_MTU];
+    struct BtBase *BluetoothBase = cn->cn_Core->hc_Base;
+    struct BtServiceRecord *bsr;
+    ULONG n;
 
     btLockReadBase();
     ObtainSemaphore(&BluetoothBase->bt_GattLock);
-    for(bgn = (struct BtGattNotification *) BluetoothBase->bt_GattNotifications.lh_Head;
-        bgn->bgn_Node.ln_Succ;
-        bgn = (struct BtGattNotification *) bgn->bgn_Node.ln_Succ) {
-        struct BtServiceRecord *bsr = bgn->bgn_Record;
-        UWORD vh;
+    for(n = 0; n < HC_GATT_MAXSUBS; n++) {
+        UWORD h = cn->cn_GATTSubs[n].handle;
 
-        if(((LONG) (bgn->bgn_Seq - oldseq) <= 0) ||
-           ((LONG) (bgn->bgn_Seq - newseq) > 0) ||
-           !bsr->bsr_Enabled || (bgn->bgn_Index >= bsr->bsr_NumChars)) {
+        if(!h || !(cn->cn_GATTSubs[n].value & 3)) {
             continue;
         }
-        vh = bsr->bsr_FirstHandle + 2 + 3 * bgn->bgn_Index;
-
-        for(mn = hc->hc_Conns.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ) {
-            struct BtHWConn *cn = (struct BtHWConn *) mn;
-            UWORD *sub;
-            size_t n;
-
-            if((cn->cn_State != HCNS_CONNECTED) || (cn->cn_LinkType != BDLT_LE) ||
-               !(sub = bGattSub(cn, vh + 1, FALSE)) || !(*sub & 3)) {
+        /* the handles are never handed out twice: the record that has this
+           one is the one subscribed to, if it is still there */
+        for(bsr = (struct BtServiceRecord *) BluetoothBase->bt_ServiceRecords.lh_Head; bsr->bsr_Node.ln_Succ;
+            bsr = (struct BtServiceRecord *) bsr->bsr_Node.ln_Succ) {
+            ULONG idx;
+            if((bsr->bsr_Protocol != BSVP_ATT) || (h <= bsr->bsr_FirstHandle) || (h > bsr->bsr_LastHandle)) {
                 continue;
             }
-            n = bt_gatt_server_encode_handle_value(&cn->cn_GATTServer, vh,
-                                                    bgn->bgn_Data, bgn->bgn_Length,
-                                                    (*sub & 1) ? false : true,
-                                                    pdu, sizeof(pdu));
-            if(n) {
-                bt_l2cap_channel_manager_send(&cn->cn_L2CAP, BT_L2CAP_CID_ATT,
-                                              pdu, n, bNowUS(hc));
+            idx = h - bsr->bsr_FirstHandle - 1;
+            if(((idx % 3) == 2) && (idx / 3 < bsr->bsr_NumChars) && bsr->bsr_Chars[idx / 3].bgc_Subscribers) {
+                bsr->bsr_Chars[idx / 3].bgc_Subscribers--;
             }
+            break;
         }
     }
+    memset(cn->cn_GATTSubs, 0, sizeof(cn->cn_GATTSubs));
     ReleaseSemaphore(&BluetoothBase->bt_GattLock);
     btUnlockBase();
 }
 /* \\\ */
 
-/* /// "bGattNotificationGC()" */
-/* A snapshot may be freed after every running radio has passed its sequence. */
-static void bGattNotificationGC(struct BtBase *BluetoothBase)
+/* /// "bGattNotifyLink()" */
+/*
+ * Send one link what was queued for it since it was last served, in order.
+ * An indication needs the device's confirmation before the next one may go:
+ * the link stays behind at that snapshot, which is kept, and is served again
+ * once the confirmation came (bGattRequest()) or with the next poll. The
+ * base and bt_GattLock are held.
+ */
+static void bGattNotifyLink(struct BtHWConn *cn, ULONG newseq)
+{
+    struct BtHWCore *hc = cn->cn_Core;
+    struct BtBase *BluetoothBase = hc->hc_Base;
+    struct BtGattNotification *bgn;
+    UBYTE pdu[BT_GATT_SERVER_RX_MTU];
+
+    if(cn->cn_GATTServer.indication_pending && !cn->cn_GATTIndDead &&
+       ((LONG) (hc->hc_Tick - cn->cn_GATTIndSince) >= GATT_INDICATION_TIMEOUT_MS)) {
+        cn->cn_GATTIndDead = TRUE;
+        btAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                       "%s does not confirm our indications - sending it no more.", cn->cn_Device->bd_Name);
+    }
+    for(bgn = (struct BtGattNotification *) BluetoothBase->bt_GattNotifications.lh_Head;
+        bgn->bgn_Node.ln_Succ;
+        bgn = (struct BtGattNotification *) bgn->bgn_Node.ln_Succ) {
+        struct BtServiceRecord *bsr = bgn->bgn_Record;
+        UWORD *sub;
+        UWORD vh;
+        BOOL indicate;
+        size_t n;
+
+        if((LONG) (bgn->bgn_Seq - cn->cn_GATTSeq) <= 0) {
+            continue;   /* sent already */
+        }
+        if((LONG) (bgn->bgn_Seq - newseq) > 0) {
+            break;      /* queued after this round started */
+        }
+        vh = bsr->bsr_FirstHandle + 2 + 3 * bgn->bgn_Index;
+        if(!bsr->bsr_Enabled || (bgn->bgn_Index >= bsr->bsr_NumChars) ||
+           !(sub = bGattSub(cn, vh + 1, FALSE)) || !(*sub & 3)) {
+            cn->cn_GATTSeq = bgn->bgn_Seq;
+            continue;
+        }
+        indicate = (*sub & 1) ? FALSE : TRUE;
+        if(indicate && cn->cn_GATTIndDead) {
+            cn->cn_GATTSeq = bgn->bgn_Seq;
+            continue;
+        }
+        if(indicate && cn->cn_GATTServer.indication_pending) {
+            return;     /* wait for the confirmation */
+        }
+        n = bt_gatt_server_encode_handle_value(&cn->cn_GATTServer, vh, bgn->bgn_Data, bgn->bgn_Length,
+                                                indicate ? true : false, pdu, sizeof(pdu));
+        if(n) {
+            bt_l2cap_channel_manager_send(&cn->cn_L2CAP, BT_L2CAP_CID_ATT, pdu, n, bNowUS(hc));
+            if(indicate) {
+                cn->cn_GATTIndSince = hc->hc_Tick;
+            }
+        }
+        cn->cn_GATTSeq = bgn->bgn_Seq;
+    }
+    cn->cn_GATTSeq = newseq;
+}
+/* \\\ */
+
+/* /// "bGattNotifyChanged()" */
+/* Values set since the last look: tell the devices that subscribed. Then
+   hc_GattSeq says how far every link of this radio got. */
+static void bGattNotifyChanged(struct BtHWCore *hc, ULONG newseq)
+{
+    struct BtBase *BluetoothBase = hc->hc_Base;
+    struct MinNode *mn;
+    ULONG low = newseq;
+
+    btLockReadBase();
+    ObtainSemaphore(&BluetoothBase->bt_GattLock);
+    for(mn = hc->hc_Conns.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ) {
+        struct BtHWConn *cn = (struct BtHWConn *) mn;
+
+        if((cn->cn_State != HCNS_CONNECTED) || (cn->cn_LinkType != BDLT_LE)) {
+            continue;
+        }
+        if(cn->cn_GATTSeq != newseq) {
+            bGattNotifyLink(cn, newseq);
+        }
+        if((LONG) (cn->cn_GATTSeq - low) < 0) {
+            low = cn->cn_GATTSeq;
+        }
+    }
+    ReleaseSemaphore(&BluetoothBase->bt_GattLock);
+    btUnlockBase();
+    hc->hc_GattSeq = low;
+}
+/* \\\ */
+
+/* /// "bGattSrvCollect()" */
+/* A snapshot may be freed once every running radio is past its sequence.
+   With no radio left, none will ever be sent: they all go. */
+void bGattSrvCollect(struct BtBase *BluetoothBase)
 {
     struct BtGattNotification *bgn, *next;
     struct BtHardware *bth;
@@ -330,7 +436,8 @@ static void bGattNotificationGC(struct BtBase *BluetoothBase)
         for(bth = (struct BtHardware *) BluetoothBase->bt_Hardware.lh_Head;
             bth->bth_Node.ln_Succ; bth = (struct BtHardware *) bth->bth_Node.ln_Succ) {
             struct BtHWCore *other = bth->bth_Core;
-            if(other && ((LONG) (other->hc_GattSeq - bgn->bgn_Seq) < 0)) {
+            if(other && bth->bth_Task && !other->hc_Shutdown &&
+               ((LONG) (other->hc_GattSeq - bgn->bgn_Seq) < 0)) {
                 consumed = FALSE;
                 break;
             }
@@ -524,9 +631,9 @@ void bGattSrvPoll(struct BtHWCore *hc)
     }
     seq = BluetoothBase->bt_GattSeq;
     if(hc->hc_GattSeq != seq) {
-        bGattNotifyChanged(hc, hc->hc_GattSeq, seq);
-        hc->hc_GattSeq = seq;
-        bGattNotificationGC(BluetoothBase);
+        /* new values, or a link still behind (an unconfirmed indication) */
+        bGattNotifyChanged(hc, seq);
+        bGattSrvCollect(BluetoothBase);
     }
 }
 /* \\\ */

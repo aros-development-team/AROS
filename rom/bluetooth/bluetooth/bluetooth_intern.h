@@ -241,8 +241,10 @@ struct BtGattChar
     UWORD               bgc_Properties;   /* BGDP_xxx */
     UWORD               bgc_MaxLen;
     UWORD               bgc_Len;
-    UBYTE              *bgc_Value;        /* bgc_MaxLen bytes; changed under Forbid() */
+    UBYTE              *bgc_Value;        /* bgc_MaxLen bytes; under bt_GattLock */
     ULONG               bgc_Seq;          /* bt_GattSeq of the last btSetServiceValue() */
+    UWORD               bgc_Subscribers;  /* links subscribed to it (bt_GattLock); a value
+                                             nobody follows is not queued for sending */
 };
 
 struct BtGattNotification
