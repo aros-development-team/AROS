@@ -5,5 +5,5 @@
 HOST 192.168.0.188 arosbox.arosnet arosbox
 ; Domain names
 DOMAIN arosnet 192.168.0.
-; Name servers
-NAMESERVER 192.168.0.1
+; Name servers : supplied by DHCP, or written by
+; Network prefs for a static setup.
