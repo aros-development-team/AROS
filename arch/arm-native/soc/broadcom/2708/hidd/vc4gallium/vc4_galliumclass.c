@@ -43,6 +43,7 @@
 #define aoHidd_VideoCoreGfxBitMap_Flip          2
 #define aoHidd_VideoCoreGfxBitMap_Overlay       3
 #define aoHidd_VideoCoreGfxBitMap_LatchWait     4
+#define aoHidd_VideoCoreGfxBitMap_VBlank        5
 
 /* Mirrored from vcgfx_bitmap.h, like the attr indices above. */
 struct vc4gfx_overlay
@@ -55,6 +56,13 @@ struct vc4gfx_overlay
     ULONG ovl_Flags;
 };
 #define VC4GFX_OVL_NOWAIT (1 << 0)
+
+/* Per-vblank callback, interrupt context (mirrored from vcgfx_bitmap.h). */
+struct vc4gfx_vblank
+{
+    void (*vbl_Func)(APTR data);
+    APTR  vbl_Data;
+};
 
 #if (AROS_BIG_ENDIAN == 1)
 #define AROS_PIXFMT RECTFMT_RAW
@@ -817,6 +825,25 @@ int vc4_aros_set_overlay(struct vc4galliumstaticdata *sd,
         vc4_aros_bo_unref_locked(sd, prev);
     ReleaseSemaphore(&sd->bo_lock);
     return 0;
+}
+
+/* Installs vcgfx's per-vblank callback, NULL removes it. Called by the
+ * present half (aros_drm_vc4.c), which is linked into this hidd too, so
+ * the bridge ABI shared with mesa3dgl stays as it is. */
+void vc4_aros_set_vblank(void *ctx, OOP_Object *bm_obj,
+                         struct vc4gfx_vblank *vbl)
+{
+    struct vc4galliumstaticdata *sd = ctx;
+    struct TagItem vbltags[] =
+    {
+        { 0, (IPTR)vbl },
+        { TAG_DONE, 0 }
+    };
+
+    if (!bm_obj || !sd->hiddVC4GfxBMAB)
+        return;
+    vbltags[0].ti_Tag = sd->hiddVC4GfxBMAB + aoHidd_VideoCoreGfxBitMap_VBlank;
+    OOP_SetAttrs(bm_obj, vbltags);
 }
 
 void vc4_aros_overlay_latch_wait(struct vc4galliumstaticdata *sd)
