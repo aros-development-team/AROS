@@ -25,7 +25,6 @@ static void check(BOOL okay, CONST_STRPTR what)
     }
 }
 
-#ifdef __mc68000__
 static LONG coppermove(struct ViewPort *vp, UWORD reg)
 {
     struct CopList *cl = vp->DspIns;
@@ -44,12 +43,10 @@ static LONG coppermove(struct ViewPort *vp, UWORD reg)
     }
     return -1;
 }
-#endif
 
 static void rebuild(struct Screen *screen, struct BitMap *bitmap)
 {
     check(MakeScreen(screen) == 0 && RethinkDisplay() == 0, "rebuild classic bitmap");
-#ifdef __mc68000__
     {
         LONG con0 = coppermove(&screen->ViewPort, 0x100);
         LONG hi = coppermove(&screen->ViewPort, 0xe0);
@@ -61,7 +58,6 @@ static void rebuild(struct Screen *screen, struct BitMap *bitmap)
               (((ULONG)hi << 16) | lo) == (ULONG)bitmap->Planes[0],
               "copper uses current plane address");
     }
-#endif
 }
 
 int main(void)

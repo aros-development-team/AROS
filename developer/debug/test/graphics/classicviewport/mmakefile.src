@@ -3,6 +3,7 @@
 include $(SRCDIR)/config/aros.cfg
 USER_LDFLAGS := -static
 
+# Selected by the component's Amiga target; checks native copper hardware.
 #MM test-graphics-classicviewport : includes linklibs
 
 %build_progs mmake=test-graphics-classicviewport \
