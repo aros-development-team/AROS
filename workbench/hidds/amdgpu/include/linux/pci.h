@@ -158,6 +158,7 @@ int pcie_capability_read_dword(struct pci_dev *pdev, int pos, u32 *val);
 int pcie_capability_write_word(struct pci_dev *pdev, int pos, u16 val);
 int pcie_capability_clear_and_set_word(struct pci_dev *pdev, int pos, u16 clear, u16 set);
 #define pcie_capability_set_word(pdev, pos, set)     pcie_capability_clear_and_set_word(pdev, pos, 0, set)
+
 #define pcie_capability_clear_word(pdev, pos, clear) pcie_capability_clear_and_set_word(pdev, pos, clear, 0)
 
 int  pci_enable_device(struct pci_dev *pdev);
@@ -265,8 +266,10 @@ typedef int pci_power_t;
 #define PCI_EXP_LNKCAP                  0x0c
 #define PCI_EXP_LNKCAP_SLS              0x0000000f
 #define PCI_EXP_LNKCAP_MLW              0x000003f0
+#define PCI_EXP_LNKCAP_CLKPM            0x00040000
 #define PCI_EXP_LNKCTL                  0x10
 #define PCI_EXP_LNKCTL_ASPMC            0x0003
+#define PCI_EXP_LNKCTL_HAWD             0x0200
 #define PCI_EXP_LNKCTL_ASPM_L0S         0x0001
 #define PCI_EXP_LNKCTL_ASPM_L1          0x0002
 #define PCI_EXP_LNKSTA                  0x12
@@ -280,6 +283,8 @@ typedef int pci_power_t;
 #define PCI_EXP_LNKCTL2                 0x30
 #define PCI_EXP_LNKCTL2_TLS             0x000f
 #define PCI_EXP_LNKCTL2_TLS_2_5GT       0x0001
+#define PCI_EXP_LNKCTL2_ENTER_COMP      0x0010
+#define PCI_EXP_LNKCTL2_TX_MARGIN       0x0380
 #define PCI_EXP_LNKCTL2_TLS_5_0GT       0x0002
 #define PCI_EXP_LNKCTL2_TLS_8_0GT       0x0003
 #define PCI_EXP_LNKCTL2_TLS_16_0GT      0x0004
@@ -369,6 +374,7 @@ struct pci_error_handlers {
 #define PCI_CLASS_ACCELERATOR_PROCESSING 0x1200
 #define PCI_PRIMARY_BUS                 0x18
 #define PCI_EXP_DEVSTA                  0x0a
+#define PCI_EXP_DEVSTA_TRPND            0x0020
 #define PCI_ERR_UNCOR_STATUS            0x04
 #define PCI_ERR_COR_STATUS              0x10
 
@@ -432,6 +438,22 @@ static inline const struct pci_device_id *pci_match_id(const struct pci_device_i
             return ids;
     }
     return NULL;
+}
+
+static inline int pcie_get_readrq(struct pci_dev *dev)
+{
+    u16 ctl = 0;
+
+    pcie_capability_read_word(dev, PCI_EXP_DEVCTL, &ctl);
+    return 128 << ((ctl & PCI_EXP_DEVCTL_READRQ) >> 12);
+}
+
+static inline int pcie_set_readrq(struct pci_dev *dev, int rq)
+{
+    if (rq < 128 || rq > 4096 || (rq & (rq - 1)))
+        return -EINVAL;
+    return pcie_capability_clear_and_set_word(dev, PCI_EXP_DEVCTL, PCI_EXP_DEVCTL_READRQ,
+                                              (__builtin_ctz(rq) - 7) << 12);
 }
 
 #endif /* _LINUX_PCI_H_ */
