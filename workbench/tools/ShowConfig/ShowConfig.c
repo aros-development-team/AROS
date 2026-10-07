@@ -18,7 +18,7 @@
 #include "storage.h"
 
 #define APPNAME "ShowConfig"
-#define VERSION "ShowConfig 0.5"
+#define VERSION "ShowConfig 0.6"
 
 const char version[] = "$VER: " VERSION " (" ADATE ")\n";
 
@@ -34,17 +34,17 @@ ULONG ExtUDivMod32(ULONG a, ULONG b, ULONG *mod)
 
 void PrintNum(ULONG num)
 {
-    /* MBytes ? */
+    /* MiB ? */
     if(num > 1023) 
     {
 	ULONG  x, xx;
-	char* fmt = "meg";
+	char* fmt = "MiB";
 	
-	/* GBytes ? */
+	/* GiB ? */
 	if(num > 0xfffff)
 	{ 
 	    num >>= 10; 
-	    fmt = "gig";
+	    fmt = "GiB";
 	}
 	
 	num = ExtUDivMod32(UMult32(num, 100) >> 10, 100, &x);
@@ -65,7 +65,7 @@ void PrintNum(ULONG num)
     }
     else 
     {
-        printf("%d K", (int)num);
+        printf("%d KiB", (int)num);
     }
 }
 
@@ -74,6 +74,21 @@ ULONG ComputeKBytes(APTR a, APTR b)
     IPTR result = b - a;
 
     return (ULONG)(result >> 10);
+}
+
+static VOID PrintMemoryInformation()
+{
+    IPTR total = AvailMem(MEMF_TOTAL);
+    IPTR free = AvailMem(MEMF_ANY);
+    IPTR largest = AvailMem(MEMF_LARGEST);
+
+    printf("MEMORY:\t\tTotal ");
+    PrintNum((ULONG)(total >> 10));
+    printf(", Free ");
+    PrintNum((ULONG)(free >> 10));
+    printf(", Largest ");
+    PrintNum((ULONG)(largest >> 10));
+    printf("\n");
 }
 
 static VOID PrintSystemInformation()
@@ -293,6 +308,8 @@ int main()
 	    printf("HPET %02u:\t\t%s\n", (unsigned)(++i), owner->ln_Name);
 	}
     }
+
+    PrintMemoryInformation();
 
     printf("RAM:");
     for (mh = (struct MemHeader *)SysBase->MemList.lh_Head; mh->mh_Node.ln_Succ; mh = (struct MemHeader *)mh->mh_Node.ln_Succ) {
