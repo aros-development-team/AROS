@@ -12,8 +12,6 @@ USER_INCLUDES  := -I $(SRCDIR)/$(CURDIR)/includes
 #MM- test : test-lowlevel
 #MM- test-quick : test-lowlevel-quick
 
-#MM test-lowlevel : linklibs-bootconsole
-
 # The mouse regression reads native Amiga hardware registers.
 #MM- test-lowlevel-amiga-m68k : test-lowlevel-mouse
 #MM- test-lowlevel-amiga-m68k-quick : test-lowlevel-mouse-quick
