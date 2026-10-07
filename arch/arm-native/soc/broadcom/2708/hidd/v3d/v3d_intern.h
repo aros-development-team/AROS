@@ -234,6 +234,7 @@ static inline ULONG v3d_now_us(void)
 #define aoVCGfxBM_Flip          2   /* [S] TRUE = flip front/back */
 #define aoVCGfxBM_Overlay       3   /* [GS] overlay descriptor */
 #define aoVCGfxBM_LatchWait     4   /* [G] block until the last Set latched */
+#define aoVCGfxBM_VBlank        5   /* [S] struct vc4gfx_vblank *, NULL removes */
 
 /* ovl_Flags: skip the latch wait; LatchWait before reusing the old page. */
 #define VC4GFX_OVL_NOWAIT       (1 << 0)
@@ -250,6 +251,13 @@ struct vc4gfx_overlay
     ULONG ovl_DestW, ovl_DestH;     /* on-screen size; 0 (or == source)
                                      * = unscaled, larger = HVS upscale */
     ULONG ovl_Flags;                /* VC4GFX_OVL_* */
+};
+
+/* Per-vblank callback, interrupt context (mirrored from vcgfx_bitmap.h). */
+struct vc4gfx_vblank
+{
+    void (*vbl_Func)(APTR data);
+    APTR  vbl_Data;
 };
 
 /*
@@ -437,6 +445,11 @@ struct V3DData
      * wraps them as BOs and renders straight into the back page. */
     ULONG           scanout_phys[2];
     ULONG           scanout_size;
+
+    /* Overlay ring (v3d_galliumclass.c): the present path and the task
+     * that puts an idle app's last frame on at vblank. */
+    struct SignalSemaphore ovl_lock;
+    struct Task     *ovl_task;
 
     /* timer.device (UNIT_MICROHZ) for the wait loops' microsleeps. Only
      * io_Device/io_Unit are kept - each nap clones them into a stack
