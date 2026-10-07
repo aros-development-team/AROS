@@ -10,6 +10,8 @@ include $(SRCDIR)/config/aros.cfg
 #MM- workbench-devs-eaudio-ppc : workbench-devs-eaudio
 #MM- workbench-devs-eaudio-arm : workbench-devs-eaudio
 #MM- workbench-devs-eaudio-aarch64 : workbench-devs-eaudio
+#MM- workbench-devs-eaudio-riscv : workbench-devs-eaudio
+#MM- workbench-devs-eaudio-riscv64 : workbench-devs-eaudio
 
 FILES := libfunctions audio_commands objpoollite audio_esys
 
