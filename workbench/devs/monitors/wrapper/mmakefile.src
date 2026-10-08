@@ -28,7 +28,7 @@ endif
     progname=Wrapper targetdir=$(STORAGEDIR) \
     files=$(FILES)
 
-WRAPPER_MONITORS := $(PCIDEVSDIR)/ATI $(PCIDEVSDIR)/NVidia
+WRAPPER_MONITORS := $(PCIDEVSDIR)/ATI $(PCIDEVSDIR)/AMDGPU $(PCIDEVSDIR)/NVidia
 ifeq ($(AROS_TARGET_ARCH),pc)
 WRAPPER_MONITORS += $(PCDEVSDIR)/VMWare
 endif
@@ -40,6 +40,10 @@ endif
 devs-monitors-wrapper-copy: $(WRAPPER_MONITORS)
 
 $(PCIDEVSDIR)/ATI: $(STORAGEDIR)/Wrapper | $(PCIDEVSDIR)
+	%fileactionmsg msg="Creating   " file="$@" elipses="..."
+	@$(CP) -f $< $@
+
+$(PCIDEVSDIR)/AMDGPU: $(STORAGEDIR)/Wrapper | $(PCIDEVSDIR)
 	%fileactionmsg msg="Creating   " file="$@" elipses="..."
 	@$(CP) -f $< $@
 
