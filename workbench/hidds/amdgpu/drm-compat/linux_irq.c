@@ -37,6 +37,8 @@ struct irq_handler_entry {
     volatile ULONG irq_pending;
     volatile BOOL irq_stop;
     struct Task *irq_parent;
+    ULONG irq_ack;                  /* parent's signal for start/stop handshakes */
+    volatile BOOL irq_done;
 };
 
 static LIST_HEAD(irq_handlers);
@@ -84,7 +86,7 @@ static void irq_task_main(void)
     BYTE sigbit = AllocSignal(-1);
 
     entry->irq_sigmask = (sigbit >= 0) ? (1UL << sigbit) : 0;
-    Signal(entry->irq_parent, SIGF_SINGLE);
+    Signal(entry->irq_parent, entry->irq_ack);
     if (sigbit < 0)
         return;
 
@@ -98,7 +100,8 @@ static void irq_task_main(void)
         }
     }
     FreeSignal(sigbit);
-    Signal(entry->irq_parent, SIGF_SINGLE);
+    entry->irq_done = TRUE;
+    Signal(entry->irq_parent, entry->irq_ack);
 }
 
 static AROS_INTH1(irq_dispatcher, struct irq_handler_entry *, entry)
@@ -138,6 +141,7 @@ int request_threaded_irq(unsigned int irq, irq_handler_t handler, irq_handler_t 
     unsigned long flags, const char *name, void *dev)
 {
     struct irq_handler_entry *entry;
+    BYTE ack;
 
     if (!handler && !thread_fn)
         return -EINVAL;
@@ -159,10 +163,10 @@ int request_threaded_irq(unsigned int irq, irq_handler_t handler, irq_handler_t 
     entry->is.is_Code = (VOID_FUNC)irq_dispatcher;
     entry->is.is_Data = entry;
 
-    if (irq < COMPAT_VIRQ_BASE && handler && compat_irq_is_msi(irq))
+    if (irq < COMPAT_VIRQ_BASE && handler && compat_irq_is_msi(irq) && (ack = AllocSignal(-1)) >= 0)
     {
+        entry->irq_ack = 1UL << ack;
         entry->irq_parent = FindTask(NULL);
-        SetSignal(0, SIGF_SINGLE);
         entry->irq_task = (struct Task *)CreateNewProcTags(
             NP_Name, (IPTR)"Amdgpu IRQ",
             NP_Priority, 30,
@@ -172,7 +176,8 @@ int request_threaded_irq(unsigned int irq, irq_handler_t handler, irq_handler_t 
             NP_UserData, (IPTR)entry,
             TAG_DONE);
         if (entry->irq_task)
-            Wait(SIGF_SINGLE);
+            Wait(entry->irq_ack);
+        FreeSignal(ack);
         if (!entry->irq_task || !entry->irq_sigmask)
             entry->irq_task = NULL;
     }
@@ -196,11 +201,19 @@ void *free_irq(unsigned int irq, void *dev_id)
                 RemIntServer(INTB_KERNEL + irq, &entry->is);
             if (entry->irq_task)
             {
+                BYTE ack = AllocSignal(-1);
+
+                entry->irq_ack = (ack >= 0) ? (1UL << ack) : 0;
                 entry->irq_parent = FindTask(NULL);
-                SetSignal(0, SIGF_SINGLE);
                 entry->irq_stop = TRUE;
                 Signal(entry->irq_task, entry->irq_sigmask);
-                Wait(SIGF_SINGLE);
+                if (ack >= 0)
+                {
+                    Wait(entry->irq_ack);
+                    FreeSignal(ack);
+                }
+                while (!entry->irq_done)
+                    Delay(1);
             }
             list_del(&entry->node);
             kfree(entry);

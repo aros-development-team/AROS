@@ -23,18 +23,26 @@
 
 /*
  * The Linux sleep protocol - mark the task, check the condition, sleep -
- * is carried by SIGF_SINGLE: marking clears the signal, sleeping waits
- * for it, waking sends it. A wakeup that arrives between the check and
- * the sleep is latched in the signal mask, so it is not lost.
+ * is carried by a signal of the task's own (wake_sig): marking clears the
+ * signal, sleeping waits for it, waking sends it. A wakeup that arrives
+ * between the check and the sleep is latched in the signal mask, so it is
+ * not lost.
  */
 
 extern struct Device *TimerBase;
 extern struct timerequest *compat_timer_template(void);
 
+static ULONG current_wake_sig(void)
+{
+    struct task_struct *ts = compat_current();
+
+    return ts ? ts->wake_sig : SIGF_SINGLE;
+}
+
 void __set_current_state(long state)
 {
     if (state != TASK_RUNNING)
-        SetSignal(0, SIGF_SINGLE);
+        SetSignal(0, current_wake_sig());
 }
 
 /*
@@ -42,49 +50,58 @@ void __set_current_state(long state)
  * driver; the list is short.
  */
 static LIST_HEAD(task_records);
+static raw_spinlock_t task_records_lock;
 static int next_pid = 1;
 
 struct task_struct *compat_current(void)
 {
     struct Task *task = FindTask(NULL);
     struct task_struct *ts;
+    unsigned long flags;
+    BYTE sig;
 
-    Forbid();
+    raw_spin_lock_irqsave(&task_records_lock, flags);
     list_for_each_entry(ts, &task_records, node) {
         if (ts->task == task) {
-            Permit();
+            raw_spin_unlock_irqrestore(&task_records_lock, flags);
+            if (ts->wake_sig != SIGF_SINGLE && !(task->tc_SigAlloc & ts->wake_sig)) {
+                sig = AllocSignal(-1);
+                ts->wake_sig = (sig >= 0) ? (1UL << sig) : SIGF_SINGLE;
+            }
             return ts;
         }
     }
-    Permit();
+    raw_spin_unlock_irqrestore(&task_records_lock, flags);
 
     ts = kzalloc(sizeof(*ts), GFP_KERNEL);
     if (!ts)
         return NULL;
     ts->task = task;
-    ts->pid = next_pid++;
+    sig = AllocSignal(-1);
+    ts->wake_sig = (sig >= 0) ? (1UL << sig) : SIGF_SINGLE;
     ts->group_leader = ts;
     if (task->tc_Node.ln_Name)
         strscpy(ts->comm, task->tc_Node.ln_Name, sizeof(ts->comm));
-    Forbid();
+    raw_spin_lock_irqsave(&task_records_lock, flags);
+    ts->pid = next_pid++;
     list_add(&ts->node, &task_records);
-    Permit();
+    raw_spin_unlock_irqrestore(&task_records_lock, flags);
     return ts;
 }
 
 int wake_up_process(struct task_struct *p)
 {
-    Signal(p->task, SIGF_SINGLE);
+    Signal(p->task, p->wake_sig);
     return 1;
 }
 
 void schedule(void)
 {
-    Wait(SIGF_SINGLE);
+    Wait(current_wake_sig());
 }
 
 /*
- * Sleep for usecs, or until woken (SIGF_SINGLE). The platform timer is a
+ * Sleep for usecs, or until woken (wake_sig). The platform timer is a
  * one-shot with microsecond resolution, so short sleeps are real: a
  * fence wait can nap for a fraction of a millisecond instead of a whole
  * one. Returns the microseconds left when woken early, 0 when the time
@@ -94,13 +111,14 @@ unsigned long compat_sleep_usecs(unsigned long usecs)
 {
     struct timerequest req;
     struct MsgPort port;
-    ULONG sigs;
+    ULONG sigs, wake;
     ktime_t start;
 
     if (!usecs)
         return 0;
+    wake = current_wake_sig();
     if (!TimerBase) {
-        Wait(SIGF_SINGLE);
+        Wait(wake);
         return usecs;
     }
 
@@ -113,7 +131,7 @@ unsigned long compat_sleep_usecs(unsigned long usecs)
     port.mp_SigTask = FindTask(NULL);
     NEWLIST(&port.mp_MsgList);
     if (port.mp_SigBit == (UBYTE)-1) {
-        Wait(SIGF_SINGLE);
+        Wait(wake);
         return usecs;
     }
 
@@ -125,14 +143,14 @@ unsigned long compat_sleep_usecs(unsigned long usecs)
     req.tr_time.tv_micro = usecs % 1000000;
     SendIO((struct IORequest *)&req);
 
-    sigs = Wait(SIGF_SINGLE | (1UL << port.mp_SigBit));
+    sigs = Wait(wake | (1UL << port.mp_SigBit));
 
     if (!CheckIO((struct IORequest *)&req))
         AbortIO((struct IORequest *)&req);
     WaitIO((struct IORequest *)&req);
     FreeSignal(port.mp_SigBit);
 
-    if (sigs & SIGF_SINGLE) {
+    if (sigs & wake) {
         s64 spent = (ktime_get() - start) / NSEC_PER_USEC;
         return spent < (s64)usecs ? usecs - spent : 1;
     }
@@ -144,7 +162,7 @@ signed long schedule_timeout(signed long timeout)
     unsigned long left;
 
     if (timeout == MAX_SCHEDULE_TIMEOUT) {
-        Wait(SIGF_SINGLE);
+        schedule();
         return timeout;
     }
     if (timeout <= 0)
@@ -429,6 +447,7 @@ struct kthread_start {
     int (*fn)(void *);
     void *data;
     struct Task *parent;
+    ULONG parent_ack;
     struct Task *self;
     struct task_struct *ts;
     volatile BOOL should_stop;
@@ -442,7 +461,7 @@ static void kthread_entry(void)
 
     ks->self = self;
     ks->ts = compat_current();
-    Signal(ks->parent, SIGF_SINGLE);
+    Signal(ks->parent, ks->parent_ack);
     ks->result = ks->fn(ks->data);
 }
 
@@ -450,12 +469,19 @@ struct task_struct *kthread_run_compat(int (*threadfn)(void *data), void *data, 
 {
     struct kthread_start *ks = kzalloc(sizeof(*ks), GFP_KERNEL);
     struct Process *proc;
+    BYTE ack;
 
     if (!ks)
         return ERR_PTR(-ENOMEM);
+    ack = AllocSignal(-1);
+    if (ack < 0) {
+        kfree(ks);
+        return ERR_PTR(-ENOMEM);
+    }
     ks->fn = threadfn;
     ks->data = data;
     ks->parent = FindTask(NULL);
+    ks->parent_ack = 1UL << ack;
 
     proc = CreateNewProcTags(
         NP_Name, (IPTR)name,
@@ -466,10 +492,12 @@ struct task_struct *kthread_run_compat(int (*threadfn)(void *data), void *data, 
         NP_UserData, (IPTR)ks,
         TAG_DONE);
     if (!proc) {
+        FreeSignal(ack);
         kfree(ks);
         return ERR_PTR(-ENOMEM);
     }
-    Wait(SIGF_SINGLE);
+    Wait(ks->parent_ack);
+    FreeSignal(ack);
     return ks->ts;
 }
 

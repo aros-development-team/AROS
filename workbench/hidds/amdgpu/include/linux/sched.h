@@ -20,10 +20,10 @@
 #include <linux/hrtimer.h>
 
 /*
- * A Linux task is an exec Task; the sleep/wake protocol maps onto
- * SIGF_SINGLE. set_current_state() clears the signal, schedule() waits
- * for it, wake_up_process() sends it - so a wakeup that lands between the
- * state change and the sleep is not lost, exactly as on Linux.
+ * A Linux task is an exec Task; the sleep/wake protocol maps onto a signal
+ * of its own (wake_sig). set_current_state() clears the signal, schedule()
+ * waits for it, wake_up_process() sends it - so a wakeup that lands between
+ * the state change and the sleep is not lost, exactly as on Linux.
  */
 #define TASK_COMM_LEN           16
 /*
@@ -32,6 +32,7 @@
  */
 struct task_struct {
     struct Task *task;
+    ULONG wake_sig;
     char comm[TASK_COMM_LEN];
     int pid;
     struct list_head node;

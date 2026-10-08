@@ -33,6 +33,7 @@ static struct timerequest *timer_init_req = NULL;
 static struct MsgPort *timer_proc_port = NULL;
 static struct Process *timer_proc = NULL;
 static struct Task *timer_parent = NULL;
+static ULONG timer_parent_ack;
 static struct SignalSemaphore timer_lock;
 
 static int init_timerbase(void)
@@ -139,7 +140,6 @@ static void timed_wait(unsigned long usecs)
     if (!TimerBase)
         return;
 
-    /* not SIGF_SINGLE: that bit carries the sleep/wake protocol */
     memset(&port, 0, sizeof(port));
     port.mp_Node.ln_Type = NT_MSGPORT;
     port.mp_Flags = PA_SIGNAL;
@@ -292,7 +292,7 @@ static void timer_proc_main(void)
 
     timer_proc_port = CreateMsgPort();
     timer_cmd_port = CreateMsgPort();
-    Signal(timer_parent, SIGF_SINGLE);
+    Signal(timer_parent, timer_parent_ack);
     if (!timer_proc_port || !timer_cmd_port)
         return;
 
@@ -326,12 +326,15 @@ static void timer_proc_main(void)
 
 static BOOL timer_proc_start(void)
 {
+    BYTE ack;
+
     if (timer_proc)
         return TRUE;
 
     ObtainSemaphore(&timer_lock);
-    if (!timer_proc) {
+    if (!timer_proc && (ack = AllocSignal(-1)) >= 0) {
         timer_parent = FindTask(NULL);
+        timer_parent_ack = 1UL << ack;
         timer_proc = CreateNewProcTags(
             NP_Name, (IPTR)"Amdgpu Timers",
             NP_Priority, 21,     /* kernel timer callbacks must outrank waiters, like the workqueues */
@@ -340,7 +343,8 @@ static BOOL timer_proc_start(void)
             NP_StackSize, 64 * 1024,
             TAG_DONE);
         if (timer_proc)
-            Wait(SIGF_SINGLE);
+            Wait(timer_parent_ack);
+        FreeSignal(ack);
     }
     ReleaseSemaphore(&timer_lock);
     return timer_proc && timer_cmd_port;
