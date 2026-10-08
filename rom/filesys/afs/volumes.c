@@ -199,9 +199,9 @@ struct Volume *initVolume
                         volume->maxtransfer = devicedef->de_MaxTransfer;
                 D(bug("[afs] initVolume: MaxTransfer=%lu\n", volume->maxtransfer));
                 volume->blockcache=initCache(afsbase, volume, volume->numbuffers);
-                initBulkBuffer(afsbase, volume);
                 if (volume->blockcache != NULL)
                 {
+                        initBulkBuffer(afsbase, volume);
                         if (openBlockDevice(afsbase, &volume->ioh)!= NULL)
                         {
                                 volume->countblocks =
