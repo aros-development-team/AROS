@@ -221,24 +221,6 @@ void usleep_range(unsigned long min, unsigned long max)
 }
 
 
-/*
- * TEMPORARY DIAGNOSTIC: how long a short timer.device wait really takes
- * on this platform. Reported once at notice level.
- */
-void amdgpu_compat_time_check(void)
-{
-    static const unsigned long tests[] = { 50, 200, 1000, 5000 };
-    char line[160];
-    int n = 0, i;
-
-    for (i = 0; i < 4; i++) {
-        ktime_t t0 = ktime_get();
-        timed_wait(tests[i]);
-        n += snprintf(line + n, sizeof(line) - n, " %luus->%lldus", tests[i], (long long)((ktime_get() - t0) / 1000));
-    }
-    printk(KERN_NOTICE "[amdgpu] timer check:%s\n", line);
-}
-
 /* --- kernel timers ---------------------------------------------------- */
 
 /*

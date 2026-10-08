@@ -387,17 +387,13 @@ dma_fence_default_wait(struct dma_fence *fence, bool intr, signed long timeout)
 		const bool forever = (timeout == MAX_SCHEDULE_TIMEOUT);
 		unsigned long remain_us = forever ? ~0UL : jiffies_to_usecs(rv);
 		unsigned long slice_us = 50;
-		unsigned long slept_us = 0;
-		bool spun = false;
 
 		spin_unlock(fence->lock);
 		{
 			int spins;
 			for (spins = 0; spins < 12; spins++) {
-				if (dma_fence_is_signaled(fence)) {
-					spun = true;
+				if (dma_fence_is_signaled(fence))
 					break;
-				}
 				udelay(spins < 4 ? 5 : 20);
 			}
 		}
@@ -413,7 +409,6 @@ dma_fence_default_wait(struct dma_fence *fence, bool intr, signed long timeout)
 				__set_current_state(TASK_UNINTERRUPTIBLE);
 			spin_unlock(fence->lock);
 			left = compat_sleep_usecs(chunk);
-			slept_us += chunk - left;
 			if (!forever)
 				remain_us -= chunk - left;
 			/* the completion interrupt can be missed for a fence
@@ -431,18 +426,6 @@ dma_fence_default_wait(struct dma_fence *fence, bool intr, signed long timeout)
 				rv = forever ? MAX_SCHEDULE_TIMEOUT : (signed long)(usecs_to_jiffies(remain_us) ?: 1);
 			else
 				rv = 0;
-		}
-		/* TEMPORARY: how fence waits are resolved on this platform */
-		{
-			extern unsigned long amdgpu_fence_uevent_irqs;
-			static unsigned long n, nspun, nslept, tslept;
-
-			n++;
-			if (spun) nspun++;
-			if (slept_us) { nslept++; tslept += slept_us; }
-			if ((n & 511) == 0)
-				bug("[amdgpu] fence waits %lu: done in spin %lu, slept %lu (avg %lu us), uevent irqs %lu\n",
-				    n, nspun, nslept, nslept ? tslept / nslept : 0, amdgpu_fence_uevent_irqs);
 		}
 	}
 	if (!list_empty(&cb.base.node))

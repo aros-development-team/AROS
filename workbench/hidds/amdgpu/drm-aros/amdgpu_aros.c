@@ -60,8 +60,6 @@ IPTR HIDDAmdgpuAllocSize(CONST_APTR memory)
     return 0;
 }
 
-unsigned long amdgpu_fence_uevent_irqs;
-
 /* --- buffer object mappings for the hidd and the winsys ------------------ */
 
 /*
