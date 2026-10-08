@@ -9,6 +9,7 @@
 #include <aros/debug.h>
 
 #include <proto/exec.h>
+#include <proto/dos.h>
 #include <proto/cybergraphics.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
@@ -44,6 +45,10 @@ static const driOptionDescription amdgpu_driconf[] = {
 #endif
 
 #include <xf86drm.h>
+#include <stdlib.h>
+
+int amdgpu_aros_wait_vblank(unsigned int crtc_id);
+static void amdgpu_presenter_stop(struct HIDDGalliumAmdgpuData *data);
 
 
 // ****************************************************************************
@@ -64,9 +69,15 @@ OOP_Object *METHOD(GalliumAmdgpu, Root, New)
     if (o)
     {
         struct HIDDGalliumAmdgpuData * data = OOP_INST_DATA(cl, o);
+        char value[8];
 
         memset(data, 0, sizeof(struct HIDDGalliumAmdgpuData));
         data->fd = -1;
+        data->swap_interval = AMDGPU_SWAP_MAILBOX;
+        data->cl = cl;
+        InitSemaphore(&data->mbox_lock);
+        if (GetVar("AMDGPU_SWAP_INTERVAL", value, sizeof(value), 0) > 0)
+            data->swap_interval = strtoul(value, NULL, 10);
     }
 
     return o;
@@ -158,6 +169,7 @@ VOID METHOD(GalliumAmdgpu, Hidd_Gallium, DestroyPipeScreen)
     if (!screen || screen != data->screen)
         return;
 
+    amdgpu_presenter_stop(data);
     pipe_resource_reference(&data->scanout, NULL);
     if (data->pipe)
     {
@@ -216,15 +228,233 @@ static struct pipe_resource *amdgpu_scanout_resource(OOP_Class *cl, struct HIDDG
     return data->scanout;
 }
 
+static void amdgpu_blit(struct pipe_context *pipe, struct pipe_resource *src, const struct pipe_box *box,
+                        struct pipe_resource *dst, LONG dstx, LONG dsty)
+{
+    struct pipe_blit_info blit;
+
+    memset(&blit, 0, sizeof(blit));
+    blit.src.resource = src;
+    blit.src.format = src->format;
+    blit.src.box = *box;
+    blit.dst.resource = dst;
+    blit.dst.format = dst->format;
+    blit.dst.box.x = dstx;
+    blit.dst.box.y = dsty;
+    blit.dst.box.width = box->width;
+    blit.dst.box.height = box->height;
+    blit.dst.box.depth = 1;
+    blit.mask = PIPE_MASK_RGBA;
+    blit.filter = PIPE_TEX_FILTER_NEAREST;
+    pipe->blit(pipe, &blit);
+}
+
+static void amdgpu_finish(struct pipe_screen *screen, struct pipe_context *pipe)
+{
+    struct pipe_fence_handle *fence = NULL;
+
+    pipe->flush(pipe, &fence, 0);
+    if (fence)
+    {
+        screen->fence_finish(screen, NULL, fence, OS_TIMEOUT_INFINITE);
+        screen->fence_reference(screen, &fence, NULL);
+    }
+}
+
+/* Shows the newest frame of the mailbox once per vblank. */
+static void amdgpu_presenter(void)
+{
+    struct HIDDGalliumAmdgpuData *data = FindTask(NULL)->tc_UserData;
+    OOP_Class *cl = data->cl;
+    BYTE sigbit = AllocSignal(-1);
+
+    data->presenter_sigmask = sigbit >= 0 ? 1UL << sigbit : 0;
+    Signal(data->presenter_parent, data->presenter_ack);
+    if (sigbit < 0)
+        return;
+
+    while (!data->presenter_stop)
+    {
+        struct BitmapData *bm;
+        struct pipe_resource *dst;
+        ULONG i;
+
+        if (!data->mbox_dirty)
+        {
+            Wait(data->presenter_sigmask);
+            continue;
+        }
+        bm = data->mbox_bm;
+        if (bm && XSD(cl)->kms.curfb == &bm->fb)
+            amdgpu_aros_wait_vblank(XSD(cl)->kms.crtc_id);
+
+        ObtainSemaphore(&data->mbox_lock);
+        bm = data->mbox_bm;
+        if (data->mbox_dirty && bm && data->mbox)
+        {
+            if (data->mbox_fence)
+                data->screen->fence_finish(data->screen, NULL, data->mbox_fence, OS_TIMEOUT_INFINITE);
+            ObtainSemaphore(&bm->bmsem);
+            Amdgpu_2D_Sync();
+            dst = amdgpu_scanout_resource(cl, data, bm);
+            if (dst)
+            {
+                for (i = 0; i < data->mbox_count; i++)
+                    amdgpu_blit(data->present_pipe, data->mbox, &data->mbox_src[i], dst,
+                                data->mbox_dstx[i], data->mbox_dsty[i]);
+                amdgpu_finish(data->screen, data->present_pipe);
+            }
+            ReleaseSemaphore(&bm->bmsem);
+        }
+        data->mbox_dirty = FALSE;
+        ReleaseSemaphore(&data->mbox_lock);
+    }
+    FreeSignal(sigbit);
+    data->presenter_done = TRUE;
+    Signal(data->presenter_parent, data->presenter_ack);
+}
+
+static BOOL amdgpu_presenter_start(struct HIDDGalliumAmdgpuData *data)
+{
+    BYTE ack;
+
+    if (data->presenter)
+        return TRUE;
+    data->present_pipe = data->screen->context_create(data->screen, NULL, 0);
+    if (!data->present_pipe)
+        return FALSE;
+    ack = AllocSignal(-1);
+    if (ack < 0)
+    {
+        data->present_pipe->destroy(data->present_pipe);
+        data->present_pipe = NULL;
+        return FALSE;
+    }
+    data->presenter_ack = 1UL << ack;
+    data->presenter_parent = FindTask(NULL);
+    data->presenter_stop = FALSE;
+    data->presenter_done = FALSE;
+    data->presenter = (struct Task *)CreateNewProcTags(NP_Name, (IPTR)"Amdgpu GL Present",
+                                                       NP_Priority, 22,
+                                                       NP_Affinity, TASKAFFINITY_ANY,
+                                                       NP_Entry, (IPTR)amdgpu_presenter,
+                                                       NP_UserData, (IPTR)data,
+                                                       NP_StackSize, 256 * 1024,
+                                                       TAG_DONE);
+    if (!data->presenter)
+    {
+        FreeSignal(ack);
+        data->present_pipe->destroy(data->present_pipe);
+        data->present_pipe = NULL;
+        return FALSE;
+    }
+    Wait(data->presenter_ack);
+    FreeSignal(ack);
+    return data->presenter_sigmask != 0;
+}
+
+static void amdgpu_presenter_stop(struct HIDDGalliumAmdgpuData *data)
+{
+    BYTE ack;
+
+    if (!data->presenter)
+        return;
+    ack = AllocSignal(-1);
+    data->presenter_ack = ack >= 0 ? 1UL << ack : 0;
+    data->presenter_parent = FindTask(NULL);
+    data->presenter_stop = TRUE;
+    Signal(data->presenter, data->presenter_sigmask);
+    if (ack >= 0)
+    {
+        Wait(data->presenter_ack);
+        FreeSignal(ack);
+    }
+    while (!data->presenter_done)
+        Delay(1);
+    data->presenter = NULL;
+    data->present_pipe->destroy(data->present_pipe);
+    data->present_pipe = NULL;
+    pipe_resource_reference(&data->mbox, NULL);
+    if (data->mbox_fence)
+        data->screen->fence_reference(data->screen, &data->mbox_fence, NULL);
+}
+
+/* Queue a frame region for the presenter; a region overlapping one already
+   queued starts a new frame. */
+static BOOL amdgpu_display_mailbox(struct HIDDGalliumAmdgpuData *data, struct BitmapData *bmdata,
+                                   struct pipe_resource *res, struct pHidd_Gallium_DisplayResource *msg)
+{
+    struct pipe_box box;
+    ULONG i;
+
+    if (!amdgpu_presenter_start(data))
+        return FALSE;
+
+    memset(&box, 0, sizeof(box));
+    box.x = msg->srcx;
+    box.y = msg->srcy;
+    box.width = msg->width;
+    box.height = msg->height;
+    box.depth = 1;
+
+    ObtainSemaphore(&data->mbox_lock);
+    if (!data->mbox || data->mbox->width0 != res->width0 || data->mbox->height0 != res->height0 ||
+        data->mbox->format != res->format)
+    {
+        struct pipe_resource templ = *res;
+
+        pipe_resource_reference(&data->mbox, NULL);
+        templ.bind = PIPE_BIND_RENDER_TARGET | PIPE_BIND_SAMPLER_VIEW;
+        templ.usage = PIPE_USAGE_DEFAULT;
+        templ.nr_samples = templ.nr_storage_samples = 0;
+        data->mbox = data->screen->resource_create(data->screen, &templ);
+        data->mbox_count = 0;
+    }
+    if (!data->mbox)
+    {
+        ReleaseSemaphore(&data->mbox_lock);
+        return FALSE;
+    }
+    if (data->mbox_bm != bmdata)
+        data->mbox_count = 0;
+    for (i = 0; i < data->mbox_count; i++)
+    {
+        const struct pipe_box *q = &data->mbox_src[i];
+
+        if (box.x < q->x + q->width && q->x < box.x + box.width &&
+            box.y < q->y + q->height && q->y < box.y + box.height)
+        {
+            data->mbox_count = 0;
+            break;
+        }
+    }
+    if (data->mbox_count < 32)
+    {
+        data->mbox_src[data->mbox_count] = box;
+        data->mbox_dstx[data->mbox_count] = msg->dstx;
+        data->mbox_dsty[data->mbox_count] = msg->dsty;
+        data->mbox_count++;
+    }
+    data->pipe->resource_copy_region(data->pipe, data->mbox, 0, box.x, box.y, 0, res, 0, &box);
+    if (data->mbox_fence)
+        data->screen->fence_reference(data->screen, &data->mbox_fence, NULL);
+    data->pipe->flush(data->pipe, &data->mbox_fence, 0);
+    data->mbox_bm = bmdata;
+    data->mbox_dirty = TRUE;
+    ReleaseSemaphore(&data->mbox_lock);
+
+    Signal(data->presenter, data->presenter_sigmask);
+    return TRUE;
+}
+
 static BOOL amdgpu_display_gpu(OOP_Class *cl, struct HIDDGalliumAmdgpuData *data,
                                struct pHidd_Gallium_DisplayResource *msg)
 {
     OOP_Object *bm = HIDD_BM_OBJ(msg->bitmap);
     struct pipe_resource *res = (struct pipe_resource *)msg->resource;
     struct pipe_resource *dst;
-    struct pipe_fence_handle *fence = NULL;
-    struct pipe_blit_info blit;
     struct BitmapData *bmdata;
+    struct pipe_box box;
 
     if (!bm || OOP_OCLASS(bm) != XSD(cl)->amdgpuonbmclass)
         return FALSE;
@@ -232,35 +462,31 @@ static BOOL amdgpu_display_gpu(OOP_Class *cl, struct HIDDGalliumAmdgpuData *data
     if (!bmdata->fb.handle)
         return FALSE;
 
+    if (data->swap_interval == AMDGPU_SWAP_MAILBOX)
+        return amdgpu_display_mailbox(data, bmdata, res, msg);
+
+    if (XSD(cl)->kms.curfb == &bmdata->fb)
+    {
+        ULONG n;
+
+        for (n = 0; n < data->swap_interval; n++)
+            amdgpu_aros_wait_vblank(XSD(cl)->kms.crtc_id);
+    }
+
+    memset(&box, 0, sizeof(box));
+    box.x = msg->srcx;
+    box.y = msg->srcy;
+    box.width = msg->width;
+    box.height = msg->height;
+    box.depth = 1;
+
     ObtainSemaphore(&bmdata->bmsem);
+    Amdgpu_2D_Sync();
     dst = amdgpu_scanout_resource(cl, data, bmdata);
     if (dst)
     {
-        memset(&blit, 0, sizeof(blit));
-        blit.src.resource = res;
-        blit.src.format = res->format;
-        blit.src.box.x = msg->srcx;
-        blit.src.box.y = msg->srcy;
-        blit.src.box.width = msg->width;
-        blit.src.box.height = msg->height;
-        blit.src.box.depth = 1;
-        blit.dst.resource = dst;
-        blit.dst.format = dst->format;
-        blit.dst.box.x = msg->dstx;
-        blit.dst.box.y = msg->dsty;
-        blit.dst.box.width = msg->width;
-        blit.dst.box.height = msg->height;
-        blit.dst.box.depth = 1;
-        blit.mask = PIPE_MASK_RGBA;
-        blit.filter = PIPE_TEX_FILTER_NEAREST;
-
-        data->pipe->blit(data->pipe, &blit);
-        data->pipe->flush(data->pipe, &fence, 0);
-        if (fence)
-        {
-            data->screen->fence_finish(data->screen, NULL, fence, OS_TIMEOUT_INFINITE);
-            data->screen->fence_reference(data->screen, &fence, NULL);
-        }
+        amdgpu_blit(data->pipe, res, &box, dst, msg->dstx, msg->dsty);
+        amdgpu_finish(data->screen, data->pipe);
     }
     ReleaseSemaphore(&bmdata->bmsem);
 
