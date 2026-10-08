@@ -38,3 +38,5 @@ pkg_config_libdir = '@AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@ar
 [built-in options]
 default_library = 'static'
 prefer_static = true
+# AROS code is never position independent (-fno-pic -mcmodel=large)
+b_staticpic = false
