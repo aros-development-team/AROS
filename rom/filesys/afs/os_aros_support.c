@@ -77,9 +77,12 @@ LONG initDeviceList
 {
 STRPTR name;
 BSTR newname;
-UBYTE i;
+UBYTE i, length;
 
         name=(char *)rootblock->buffer+(BLK_DISKNAME_START(volume)*4);
+        length = (UBYTE)name[0];
+        if (length > MAX_NAME_LENGTH)
+                return DOSFALSE;
         volume->devicelist.dl_Next = 0;
         volume->devicelist.dl_Type = DLT_VOLUME;
         volume->devicelist.dl_Lock = 0;
@@ -101,9 +104,9 @@ UBYTE i;
                 if (newname == BNULL)
                         return DOSFALSE;
         }
-        for (i=0; i<name[0]; i++)
+        for (i=0; i<length; i++)
                 AROS_BSTR_putchar(newname, i, name[i+1]);
-        AROS_BSTR_setstrlen(newname, name[0]);
+        AROS_BSTR_setstrlen(newname, length);
         volume->devicelist.dl_Name = newname;
         return DOSTRUE;
 }
@@ -172,6 +175,8 @@ UBYTE i;
             return DOSTRUE;
         }
         bname = volume->devicelist.dl_Name;
+        if (AROS_BSTR_strlen(bname) >= sizeof(string))
+                return DOSFALSE;
         for (i=0; i<AROS_BSTR_strlen(bname); i++)
                 string[i] = AROS_BSTR_getchar(bname,i);
         string[AROS_BSTR_strlen(bname)] = 0;
@@ -313,6 +318,10 @@ BOOL added = TRUE;
 LONG osMediumInit
         (struct AFSBase *afsbase, struct Volume *volume, struct BlockCache *block)
 {
+        UBYTE *name = (UBYTE *)block->buffer + BLK_DISKNAME_START(volume) * 4;
+
+        if (name[0] > MAX_NAME_LENGTH)
+                return ERROR_DISK_NOT_VALIDATED;
         if (!initDeviceList(afsbase, volume, block))
                 return ERROR_NO_FREE_STORE;
         if (!createDosVolume(afsbase, volume))
