@@ -836,14 +836,15 @@ countSockets(struct SocketBase *libPtr, struct socket *so)
     return count;
 }
 
-LONG __CloseSocket(LONG fd, struct SocketBase *libPtr)
+/*
+ * Close fd in libPtr's table. The caller holds syscall_semaphore; it need
+ * not be libPtr's task (fd.library hooks close for other threads).
+ */
+LONG closeSocketLocked(LONG fd, struct SocketBase *libPtr)
 {
     register int error;
     struct socket *so;
     struct soevent *se;
-
-    CHECK_TASK();
-    ObtainSyscallSemaphore(libPtr);
 
     if(fd < 0) {
         error = EBADF;
@@ -915,6 +916,16 @@ LONG __CloseSocket(LONG fd, struct SocketBase *libPtr)
 #endif
 
 Return:
+    return error;
+}
+
+LONG __CloseSocket(LONG fd, struct SocketBase *libPtr)
+{
+    LONG error;
+
+    CHECK_TASK();
+    ObtainSyscallSemaphore(libPtr);
+    error = closeSocketLocked(fd, libPtr);
     ReleaseSyscallSemaphore(libPtr);
     API_STD_RETURN(error, 0);
 }
@@ -1018,8 +1029,12 @@ AROS_LH2(LONG, ReleaseSocket,
             goto Return;
         }
 
-    /*if (so->so_pgid == libPtr && countSockets(libPtr, so) == 1)
-        so->so_pgid = NULL;*/	  /* not ours any more */
+    if(so->so_pgid == libPtr && countSockets(libPtr, so) == 1) {
+        /* nobody's until obtained; sowakeup() uses so_pgid at splnet */
+        spl_t s = splnet();
+        so->so_pgid = NULL;
+        splx(s);
+    }
     sn->sn_Id = id;
     sn->sn_Socket = so;
     libPtr->dTable[fd] = NULL;
@@ -1137,7 +1152,12 @@ AROS_LH4(LONG, ObtainSocket,
                 continue;
             Remove(sn);
             libPtr->dTable[fd] = ((struct SocketNode *)sn)->sn_Socket;
-//    ((struct SocketNode *)sn)->sn_Socket->so_pgid = libPtr;
+            {
+                /* events and signals go to the new owner */
+                spl_t s = splnet();
+                libPtr->dTable[fd]->so_pgid = libPtr;
+                splx(s);
+            }
             FD_SET(fd, (fd_set *)(libPtr->dTable + libPtr->dTableSize));
 #if defined(ENABLE_FDLIBRARY)
             /* posixc's read()/write()/close() hooks take the socket from here */

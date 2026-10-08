@@ -45,6 +45,12 @@
 #include <kern/amiga_subr.h>
 #include <kern/amiga_log.h>
 
+#include <sys/synch.h>
+#include <sys/socketvar.h>
+#include <netinet/in.h>
+#include <netinet/in_pcb.h>
+#include <net/raw_cb.h>
+
 #if 0
 /*#if sizeof (fd_mask) != 4 || sizeof (long) != 4*/
 #error AmiTCP/IP currently depends on fd_mask and longword size of 32 bits.
@@ -350,6 +356,33 @@ AROS_LH0I(LONG, Null, struct Library *, libPtr, 0, LIB)
     AROS_LIBFUNC_EXIT
 }
 
+/*
+ * A socket can name a base whose table it is not in (FIOSETOWN), and the
+ * daemon signals so_pgid, so every socket forgets a base before it is freed.
+ */
+static void forgetSocketOwner(struct SocketBase *libPtr)
+{
+    extern struct inpcbhead tcb, udb;
+    extern struct rawcb rawcb;
+    struct inpcb *inp;
+    struct rawcb *rp;
+    spl_t s;
+
+    ObtainSemaphore(&syscall_semaphore);    /* FIOGETOWN reads it under this */
+    s = splnet();
+    for(inp = tcb.lh_first; inp; inp = inp->inp_list.le_next)
+        if(inp->inp_socket && inp->inp_socket->so_pgid == libPtr)
+            inp->inp_socket->so_pgid = NULL;
+    for(inp = udb.lh_first; inp; inp = inp->inp_list.le_next)
+        if(inp->inp_socket && inp->inp_socket->so_pgid == libPtr)
+            inp->inp_socket->so_pgid = NULL;
+    for(rp = rawcb.rcb_next; rp && rp != &rawcb; rp = rp->rcb_next)
+        if(rp->rcb_socket && rp->rcb_socket->so_pgid == libPtr)
+            rp->rcb_socket->so_pgid = NULL;
+    splx(s);
+    ReleaseSemaphore(&syscall_semaphore);
+}
+
 ULONG *__UL_Close(struct SocketBase *libPtr)
 {
     VOID *freestart;
@@ -388,10 +421,14 @@ ULONG *__UL_Close(struct SocketBase *libPtr)
      * dTable may be NULL if Open() failed before allocating it and called
      * us to clean up (dTableSize is set before dTable is allocated).
      */
+    /*
+     * Another task's dup can swap the table, so leave the reading to
+     * CloseSocket(), which holds the semaphore; unused numbers are EBADF.
+     */
     if(libPtr->dTable)
         for(i = 0; i < libPtr->dTableSize; i++)
-            if(libPtr->dTable[i] != NULL)
-                __CloseSocket(i, libPtr);
+            __CloseSocket(i, libPtr);
+    forgetSocketOwner(libPtr);
 
     ObtainSemaphore(&baselist_semaphore);
     Remove((struct Node *)libPtr); /* remove this librarybase from our list
