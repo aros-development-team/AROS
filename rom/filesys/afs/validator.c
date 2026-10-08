@@ -52,10 +52,12 @@ LONG checkValid(struct AFSBase *afsbase, struct Volume *vol)
 #ifdef __AROS__
     struct BlockCache *blockbuffer;
 
-    if (vol == NULL)
+    if (vol == NULL || vol->cachepending || vol->writefailed || !mediumPresent(&vol->ioh))
         return 0;
 
     blockbuffer = getBlock(afsbase, vol, vol->rootblock);
+    if (blockbuffer == NULL)
+        return 0;
 
     UBYTE  n[vol->FNameMax + 1];
     CONST_FSBSTR name;
@@ -79,7 +81,8 @@ LONG checkValid(struct AFSBase *afsbase, struct Volume *vol)
 
         return (vol->state == ID_VALIDATED) ? 1 : 0;
 #else
-        return 1;
+        return vol != NULL && !vol->cachepending && !vol->writefailed
+                && vol->state != ID_VALIDATING;
 #endif
 }
 

@@ -112,6 +112,10 @@ static struct Volume *AFS_open_volume(struct AFSBase *handler, struct DosPacket 
 static BOOL AFS_close_volume(struct AFSBase *handler, struct Volume *volume, SIPTR *io_DosError)
 {
     if (!volume->locklist) {
+        if (!flushForRelease(handler, volume)) {
+            *io_DosError = ERROR_UNKNOWN;
+            return FALSE;
+        }
         uninitVolume(handler, volume);
         return TRUE;
     }
@@ -155,9 +159,23 @@ static VOID startFlushTimer(struct AFSBase *handler)
     }
 }
 
+static VOID stopFlushMotor(struct AFSBase *handler, struct Volume *volume)
+{
+    if (volume->ioh.flags & IOHF_MOTOR_OFF) {
+        motorOff(handler, &volume->ioh);
+        volume->ioh.flags &= ~IOHF_MOTOR_OFF;
+    }
+}
+
 static VOID onFlushTimer(struct AFSBase *handler, struct Volume *volume)
 {
     handler->timer_flags &= ~TIMER_ACTIVE;
+    if (volume->writefailed || volume->cachepending)
+    {
+        handler->timer_flags &= ~TIMER_RESTART;
+        stopFlushMotor(handler, volume);
+        return; /* Retry/Cancel already ran; only an explicit flush retries now. */
+    }
 
     if (handler->timer_flags & TIMER_RESTART) {
         startFlushTimer(handler);
@@ -171,12 +189,28 @@ static VOID onFlushTimer(struct AFSBase *handler, struct Volume *volume)
             if ((volume->volumenode != NULL) && !volume->volumenodeadded)
                     addDosVolume(handler, volume);
 
-            flushCache(handler, volume);
-            blockbuffer = getBlock(handler, volume, volume->rootblock);
-            if ((blockbuffer->flags & BCF_WRITE) != 0)
+            if (!flushCache(handler, volume))
             {
-                    writeBlock(handler, volume, blockbuffer, -1);
-                    blockbuffer->flags &= ~BCF_WRITE;
+                    if (!volume->writefailed)
+                            startFlushTimer(handler);
+                    else
+                            stopFlushMotor(handler, volume);
+                    return;
+            }
+            blockbuffer = getBlock(handler, volume, volume->rootblock);
+            if (blockbuffer == NULL)
+            {
+                    volume->writefailed = TRUE;
+                    volume->state = ID_VALIDATING;
+            }
+            if (blockbuffer == NULL || ((blockbuffer->flags & BCF_WRITE) != 0
+                    && !writeBlock(handler, volume, blockbuffer, -1)))
+            {
+                    if (!volume->writefailed)
+                            startFlushTimer(handler);
+                    else
+                            stopFlushMotor(handler, volume);
+                    return;
             }
             if (volume->ioh.flags & IOHF_MOTOR_OFF) {
                     D(bug("[afs 0x%08lX] turning off motor\n", volume));
@@ -195,21 +229,7 @@ static VOID onFlushTimer(struct AFSBase *handler, struct Volume *volume)
  */
 static LONG flushVolumeNow(struct AFSBase *handler, struct Volume *volume)
 {
-    struct BlockCache *blockbuffer;
-
-    flushCache(handler, volume);
-    blockbuffer = getBlock(handler, volume, volume->rootblock);
-    if (blockbuffer != NULL && (blockbuffer->flags & BCF_WRITE) != 0)
-    {
-        writeBlock(handler, volume, blockbuffer, -1);
-        blockbuffer->flags &= ~BCF_WRITE;
-    }
-    volume->ioh.ioreq->iotd_Req.io_Command = CMD_UPDATE;
-    volume->ioh.ioreq->iotd_Req.io_Data = NULL;
-    volume->ioh.ioreq->iotd_Req.io_Length = 0;
-    if (DoIO((struct IORequest *)&volume->ioh.ioreq->iotd_Req) != 0)
-        return ERROR_UNKNOWN;
-    return 0;
+    return flush(handler, volume) ? 0 : ERROR_UNKNOWN;
 }
 
 static BOOL mediacheck(struct Volume *volume, SIPTR *ok, SIPTR *res2)
@@ -308,11 +328,11 @@ LONG AFS_work(struct ExecBase *SysBase)
 
         sigs = Wait(packetmask | timermask | changemask);
 
+        /* Process a media-change interrupt before touching cached disk data,
+         * even when it woke the packet port rather than SIGBREAKB_CTRL_F. */
+        checkDeviceFlags(handler);
         if (sigs & timermask)
             onFlushTimer(handler, volume);
-        if (sigs & changemask) {
-            checkDeviceFlags(handler);
-        }
 
         if (!(sigs & packetmask))
             continue;
@@ -326,7 +346,17 @@ LONG AFS_work(struct ExecBase *SysBase)
             dp = (struct DosPacket *)mn->mn_Node.ln_Name;
 
             D(bug("[AFS] packet %p:%d\n", dp, dp->dp_Type));
-            startFlushTimer(handler);
+            if (volume->cachepending && dp->dp_Type != ACTION_END
+                    && dp->dp_Type != ACTION_FREE_LOCK
+                    && dp->dp_Type != ACTION_IS_FILESYSTEM
+                    && dp->dp_Type != ACTION_IS_SECFS
+                    && dp->dp_Type != ACTION_GET_SECFS_VERSION
+                    && dp->dp_Type != ACTION_DISK_INFO) {
+                replypkt2(dp, DOSFALSE, ERROR_NO_DISK);
+                continue;
+            }
+            if (!volume->cachepending)
+                startFlushTimer(handler);
             afsSecBeginPacket(handler, volume, dp);
 
             switch (dp->dp_Type) {
@@ -360,12 +390,15 @@ LONG AFS_work(struct ExecBase *SysBase)
                     LONG numbuff = dp->dp_Arg1;
 
                     if (numbuff) {
+                        if (!flush(handler, volume)) {
+                            res2 = ERROR_UNKNOWN;
+                            break;
+                        }
                         volume->numbuffers += numbuff;
 
                         if (volume->numbuffers < 1)
                             volume->numbuffers = 1;
 
-                        flushCache(handler, volume);
                         Forbid();
                         freeCache(handler, volume->blockcache);
                         for (;;) {
@@ -564,7 +597,7 @@ LONG AFS_work(struct ExecBase *SysBase)
                     struct FileLock  *fl;
                     struct AfsHandle *ah;
 
-                    if (!mediacheck(volume, &ok, &res2))
+                    if (!volume->cachepending && !mediacheck(volume, &ok, &res2))
                         break;
 
                     fl = BADDR(dp->dp_Arg1);
