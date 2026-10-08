@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -257,7 +257,10 @@ void ATAUnit__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
             {
                 case DEV_SATA:
                 case DEV_ATA:
-                    *msg->storage = vHidd_StorageUnit_Type_FixedDisk;
+                    if (unit->au_Drive->id_NominalMediaRotationRate == 0x0001)
+                        *msg->storage = vHidd_StorageUnit_Type_SolidStateDisk;
+                    else
+                        *msg->storage = vHidd_StorageUnit_Type_FixedDisk;
                     break;
 
                 case DEV_SATAPI:
