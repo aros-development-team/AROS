@@ -1790,8 +1790,10 @@ static BPTR load_seg_elf_int
          * Accept both SHT_REL and SHT_RELA: the actual section type produced by
          * a given toolchain is not fixed (e.g. clang/lld emits SHT_REL for ARM
          * 32-bit while some gcc builds emit SHT_RELA).
+         * An empty relocation section is valid ELF and has nothing to apply;
+         * skip it, as load_block() can't allocate a block of size 0.
          */
-        if ((sh[i].type == SHT_REL || sh[i].type == SHT_RELA) && sh[sh[i].info].addr)
+        if ((sh[i].type == SHT_REL || sh[i].type == SHT_RELA) && sh[i].size && sh[sh[i].info].addr)
         {
             sh[i].addr = load_block(file, sh[i].offset, sh[i].size, funcarray, &srb, DOSBase);
             if (!sh[i].addr || !relocate(&eh, sh, i, symtab_shndx, reloc_out_of_range, DOSBase))
