@@ -667,7 +667,7 @@ LONG readData
 {
 struct BlockCache *extensionbuffer;
 struct BlockCache *databuffer;
-UWORD size;
+ULONG size;
 LONG readbytes=0;
 char *source;
 
@@ -763,6 +763,13 @@ D(
                 if (ah->volume->dosflags == 0)
                 {
                         size = OS_BE2LONG(databuffer->buffer[BLK_DATA_SIZE]);
+                        if (size > BLOCK_SIZE(ah->volume) - BLK_DATA_START * 4
+                                || size <= ah->current.byte)
+                        {
+                                extensionbuffer->flags &= ~BCF_USED;
+                                *error = ERROR_DISK_NOT_VALIDATED;
+                                return ENDSTREAMCH;
+                        }
                         source += (BLK_DATA_START*4);
                 }
                 else
