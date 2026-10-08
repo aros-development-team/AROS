@@ -28,6 +28,12 @@
 #endif
 
 #ifdef OnBitmap
+#define CPU_ACCESS                  { if (data->fb.handle) Amdgpu_2D_Sync(); }
+#else
+#define CPU_ACCESS
+#endif
+
+#ifdef OnBitmap
 /*********  BitMap::Clear()  *************************************/
 VOID MNAME_BM(Clear)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *msg)
 {
@@ -42,6 +48,7 @@ VOID MNAME_BM(Clear)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *ms
         UNLOCK_BITMAP
         return;
     }
+    CPU_ACCESS
 
     /* Get width & height from bitmap */
     OOP_GetAttr(o, aHidd_BitMap_Width,  &width);
@@ -122,6 +129,7 @@ VOID MNAME_BM(PutPixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPix
         UNLOCK_BITMAP
         return;
     }
+    CPU_ACCESS
 
     putpixel(data, msg->x, msg->y, msg->pixel);
     DAMAGE(msg->x, msg->y, msg->x, msg->y);
@@ -135,6 +143,8 @@ HIDDT_Pixel MNAME_BM(GetPixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
     HIDDT_Pixel pixel = 0;
     struct BitmapData *data = OOP_INST_DATA(cl, o);
     ULONG offset = (msg->x*data->bytesperpix)+(msg->y*data->pitch);
+
+    CPU_ACCESS
 
     if (!data->VideoData)
         return 0;
@@ -182,6 +192,7 @@ VOID MNAME_BM(PutImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutIma
         UNLOCK_BITMAP
         return;
     }
+    CPU_ACCESS
 
     if (msg->pixFmt == vHidd_StdPixFmt_Native)
     {
@@ -272,6 +283,7 @@ VOID MNAME_BM(GetImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetIma
         UNLOCK_BITMAP
         return;
     }
+    CPU_ACCESS
 
     if (msg->pixFmt == vHidd_StdPixFmt_Native)
     {
@@ -388,6 +400,7 @@ VOID MNAME_BM(PutImageLUT)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Put
         UNLOCK_BITMAP
         return;
     }
+    CPU_ACCESS
 
     restadd = (data->pitch - (msg->width*data->bytesperpix));
     buffer = data->VideoData + (msg->x*data->bytesperpix)+(msg->y*data->pitch);
@@ -438,6 +451,7 @@ VOID MNAME_BM(GetImageLUT)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Get
         UNLOCK_BITMAP
         return;
     }
+    CPU_ACCESS
 
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
@@ -483,10 +497,12 @@ VOID MNAME_BM(FillRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRe
                     break;
 
                 case 2:
+                    CPU_ACCESS
                     HIDD_BM_FillMemRect16(o, data->VideoData, msg->minX, msg->minY, msg->maxX, msg->maxY, mod, pixel);
                     break;
 
                 case 3:
+                    CPU_ACCESS
                     HIDD_BM_FillMemRect24(o, data->VideoData, msg->minX, msg->minY, msg->maxX, msg->maxY, mod, pixel);
                     break;
 
@@ -498,6 +514,7 @@ VOID MNAME_BM(FillRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRe
                                        msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, pixel))
                         break;
 #endif
+                    CPU_ACCESS
                     HIDD_BM_FillMemRect32(o, data->VideoData, msg->minX, msg->minY, msg->maxX, msg->maxY, mod, pixel);
                     break;
 
@@ -506,6 +523,7 @@ VOID MNAME_BM(FillRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRe
 
         case vHidd_GC_DrawMode_Invert:
             done = TRUE;
+            CPU_ACCESS
             HIDD_BM_InvertMemRect(o, data->VideoData,
                                 msg->minX * data->bytesperpix, msg->minY,
                                 msg->maxX * data->bytesperpix + data->bytesperpix - 1, msg->maxY,
@@ -516,6 +534,7 @@ VOID MNAME_BM(FillRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRe
 
     if (!done)
     {
+        CPU_ACCESS
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
 
@@ -542,6 +561,7 @@ VOID MNAME_BM(BlitColorExpansion)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
         UNLOCK_BITMAP
         return;
     }
+    CPU_ACCESS
 
     fg = GC_FG(msg->gc);
     bg = GC_BG(msg->gc);

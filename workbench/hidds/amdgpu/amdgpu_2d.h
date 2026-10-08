@@ -15,6 +15,7 @@ struct Amdgpu_KMS;
 struct BitmapData;
 
 void Amdgpu_2D_Init(void);
+void Amdgpu_2D_Sync(void);
 BOOL Amdgpu_2D_CopyBox(struct Amdgpu_KMS *kms, struct BitmapData *bm, LONG sx, LONG sy,
                        LONG dx, LONG dy, LONG w, LONG h);
 BOOL Amdgpu_2D_Fill(struct Amdgpu_KMS *kms, struct BitmapData *bm, LONG x, LONG y, LONG w, LONG h, ULONG pixel);

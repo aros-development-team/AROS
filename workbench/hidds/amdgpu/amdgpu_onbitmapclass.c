@@ -251,7 +251,10 @@ VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     if (XSD(cl)->visible == o)
         XSD(cl)->visible = NULL;
     if (data->fb.handle)
+    {
+        Amdgpu_2D_Sync();
         Amdgpu_KMS_DestroyFB(&XSD(cl)->kms, &data->fb);
+    }
 
     OOP_DoSuperMethod(cl, o, msg);
 }

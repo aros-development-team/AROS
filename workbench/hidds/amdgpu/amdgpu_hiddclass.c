@@ -410,6 +410,8 @@ VOID Amdgpu__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Co
                                      dstbd->pitch);
         }
 
+        if (!gpu && (srcbd->fb.handle || dstbd->fb.handle))
+            Amdgpu_2D_Sync();
         if (!gpu)
         switch (mode)
         {
