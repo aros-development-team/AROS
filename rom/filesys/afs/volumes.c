@@ -44,6 +44,12 @@ LONG error;
 ULONG dostype;
 UBYTE dosflags;
 
+#ifdef __AROS__
+        error = prepareMediumCache(afsbase, volume);
+        if (error != 0)
+                return error;
+#endif
+        volume->bitmapinvalid = FALSE; /* New media starts with an unknown root state. */
         /* Check validity of root block first, since boot block may be left over
            from an overwritten partition of a different size
            Read bootblock first to prevent multiple seeks when using floppies
@@ -79,6 +85,8 @@ UBYTE dosflags;
         if ((dostype != ID_DOS_DISK) && (dostype != ID_DOS_muFS_DISK))
         {
                 blockbuffer = getBlock(afsbase, volume, 1);
+                if (blockbuffer == NULL)
+                        return ERROR_UNKNOWN;
                 dostype = OS_BE2LONG(blockbuffer->buffer[0]) & 0xFFFFFF00;
                 dosflags = OS_BE2LONG(blockbuffer->buffer[0]) & 0xFF;
         }
@@ -98,6 +106,7 @@ UBYTE dosflags;
         volume->dostype = dostype;
         volume->dosflags = dosflags;
 
+        volume->bitmapinvalid = blockbuffer->buffer[BLK_BITMAP_VALID_FLAG(volume)] == 0;
         for (i=0;i<=24;i++)
         {
                 volume->bitmapblockpointers[i]=OS_BE2LONG
@@ -125,6 +134,8 @@ UBYTE dosflags;
          * it's safe to assume that the block is still there
          */
         blockbuffer=getBlock(afsbase, volume,volume->rootblock);
+        if (blockbuffer == NULL)
+                return ERROR_UNKNOWN;
         
         if (blockbuffer->buffer[BLK_BITMAP_VALID_FLAG(volume)])
         {
