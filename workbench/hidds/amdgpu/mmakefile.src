@@ -17,7 +17,7 @@ include $(SRCDIR)/$(CURDIR)/sources.radeonsi.mak
 
 #MM- workbench-hidds-amdgpu : hidd-amdgpu-mesa$(OPT_MESAGL)
 #MM- hidd-amdgpu-mesa26.0.0 : hidd-amdgpu-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
-#MM- hidd-amdgpu-pc-x86_64 : hidd-amdgpu
+#MM- hidd-amdgpu-pc-x86_64 : hidd-amdgpu hidd-amdgpu-ids
 #MM hidd-amdgpu: includes hidd-amdgpu-drmcore hidd-amdgpu-drm hidd-amdgpu-libdrm hidd-amdgpu-libdrm-amdgpu hidd-amdgpu-radeonsi hidd-gallium mesa3dgl-linklibs linklibs-libatomic workbench-libs-z-linklib
 #MM hidd-amdgpu-libdrm : mesa3dgl-linklibs
 #MM hidd-amdgpu-libdrm-amdgpu : includes
@@ -287,5 +287,7 @@ USER_LDFLAGS += -Wl,--end-group
   modname=amdgpu modtype=hidd \
   files=$(FILES) \
   uselibs="" alwayscxxlink=yes objdir="$(OBJDIR)/$(MESAGLVERSION)"
+
+%copy_files_q mmake=hidd-amdgpu-ids files=amdgpu.ids src=libdrm/data dst=$(AROS_DEVS)
 
 %common
