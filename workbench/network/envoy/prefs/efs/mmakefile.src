@@ -13,7 +13,8 @@ USER_INCLUDES := -I$(SRCDIR)/workbench/network/envoy/include
 
 #MM- workbench-network-envoy : workbench-network-envoy-prefs-efs
 #MM workbench-network-envoy-prefs-efs : includes linklibs includes-copy-envoy \
-#MM     workbench-network-envoy-accounts-includes workbench-network-envoy-envoy-includes
+#MM     workbench-network-envoy-accounts-includes workbench-network-envoy-envoy-includes \
+#MM     workbench-libs-muimaster-includes
 
 %build_prog mmake=workbench-network-envoy-prefs-efs \
     progname=FilesystemExports targetdir=$(EXEDIR) \

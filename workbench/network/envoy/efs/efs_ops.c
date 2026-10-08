@@ -67,7 +67,7 @@ struct EfsLock *NewLock(struct Globals *glob, ULONG handle, ULONG volid, LONG mo
     l->FL.fl_Key = (IPTR)l;
     l->FL.fl_Access = mode;
     l->FL.fl_Task = glob->Port;
-    l->FL.fl_Volume = MKBADDR(l->Vol ? l->Vol->DosList : NULL);
+    l->FL.fl_Volume = MKBADDR((l->Vol ? l->Vol->DosList : NULL));
     AddTail((struct List *)&glob->Locks, (struct Node *)&l->Node);
     return l;
 }
@@ -940,7 +940,7 @@ static void ActInfo(struct Globals *glob, struct DosPacket *dp, ULONG action)
         id->id_NumBlocksUsed = 1;
         id->id_BytesPerBlock = 512;
         id->id_DiskType = (LONG)-1;
-        id->id_VolumeNode = MKBADDR(glob->CurVol ? glob->CurVol->DosList : NULL);
+        id->id_VolumeNode = MKBADDR((glob->CurVol ? glob->CurVol->DosList : NULL));
         OK(dp);
         return;
     }
@@ -962,7 +962,7 @@ static void ActInfo(struct Globals *glob, struct DosPacket *dp, ULONG action)
     id->id_NumBlocksUsed = (LONG)GetL(d, 16);
     id->id_BytesPerBlock = (LONG)GetL(d, 20);
     id->id_DiskType = (GetL(d, 24) == 0x42555359UL) ? (LONG)0x42555359UL : ID_DOS_DISK;
-    id->id_VolumeNode = MKBADDR(glob->CurVol ? glob->CurVol->DosList : NULL);
+    id->id_VolumeNode = MKBADDR((glob->CurVol ? glob->CurVol->DosList : NULL));
     id->id_InUse = GetL(d, 32);
     if (id->id_DiskState == ID_VALIDATED && glob->WriteProtect)
         id->id_DiskState = ID_WRITE_PROTECTED;
@@ -1279,7 +1279,7 @@ static void Dispatch(struct Globals *glob, struct DosPacket *dp)
     {
         struct EfsFile *f = FileFromArg(glob, dp->dp_Arg1);
         struct EfsVolume *v = (f && f->Vol) ? f->Vol : glob->CurVol;
-        dp->dp_Res1 = (SIPTR)MKBADDR(v ? v->DosList : NULL);
+        dp->dp_Res1 = (SIPTR)MKBADDR((v ? v->DosList : NULL));
         dp->dp_Res2 = 0;
         break;
     }

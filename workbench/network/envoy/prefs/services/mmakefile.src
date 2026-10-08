@@ -14,7 +14,8 @@ USER_INCLUDES := -I$(SRCDIR)/workbench/network/envoy/include
 #USER_CPPFLAGS := -DDEBUG=1
 
 #MM- workbench-network-envoy : workbench-network-envoy-prefs-services
-#MM workbench-network-envoy-prefs-services : includes linklibs includes-copy-envoy
+#MM workbench-network-envoy-prefs-services : includes linklibs includes-copy-envoy \
+#MM     workbench-libs-muimaster-includes
 
 %build_prog mmake=workbench-network-envoy-prefs-services \
     progname=Services targetdir=$(EXEDIR) \

@@ -18,7 +18,8 @@ USER_LDFLAGS  := -static
 
 #MM- workbench-network-envoy : workbench-network-envoy-envoy
 #MM workbench-network-envoy-envoy : includes linklibs includes-copy-envoy \
-#MM     workbench-network-envoy-nipc-includes workbench-network-envoy-accounts-includes
+#MM     workbench-network-envoy-nipc-includes workbench-network-envoy-accounts-includes \
+#MM     workbench-libs-muimaster-includes
 
 %build_module mmake=workbench-network-envoy-envoy modname=envoy \
   modtype=library files="$(FILES)" \

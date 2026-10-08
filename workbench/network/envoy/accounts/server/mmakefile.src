@@ -9,7 +9,8 @@ USER_INCLUDES := -I$(SRCDIR)/workbench/network/envoy/include
 #USER_CPPFLAGS := -DDEBUG=1
 
 #MM- workbench-network-envoy : workbench-network-envoy-accounts-server
-#MM workbench-network-envoy-accounts-server : includes linklibs includes-copy-envoy workbench-network-envoy-nipc-includes workbench-network-envoy-nipc-linklib
+#MM workbench-network-envoy-accounts-server : includes linklibs includes-copy-envoy workbench-network-envoy-nipc-includes workbench-network-envoy-nipc-linklib \
+#MM     kernel-security-includes workbench-libs-pam-includes
 
 %build_prog mmake=workbench-network-envoy-accounts-server progname=AccountsServer \
     files="$(FILES)" targetdir=$(AROS_SYSTEM)/Network/Envoy uselibs="nipc"
