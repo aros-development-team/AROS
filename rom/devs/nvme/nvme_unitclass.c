@@ -104,8 +104,7 @@ BOOL NVMEUnit__Hidd_StorageUnit__GetCapacity(OOP_Class *cl, OOP_Object *o,
         unit->au_SecShift >= 32)
         return FALSE;
 
-    *msg->blockCount =
-        unit->au_SecCnt >> (unit->au_SecShift - 9);
+    *msg->blockCount = unit->au_SecCnt;
     *msg->blockSize = 1UL << unit->au_SecShift;
 
     if (!*msg->blockCount)
