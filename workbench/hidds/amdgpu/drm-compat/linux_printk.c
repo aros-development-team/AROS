@@ -329,13 +329,13 @@ int scnprintk(char *buf, size_t size, const char *fmt, ...)
 }
 
 /*
- * Where a line goes. Everything is appended to a ring buffer that a
- * helper process writes to a log file (AMDGPU_LOGFILE, default
- * SYS:amdgpu.log, or T:amdgpu.log when SYS: cannot be written -
- * read-only boot media; "off" to disable). The serial console only gets
- * lines up to KERN_NOTICE unless AMDGPU_SERIAL is set to "all"; the
- * driver's debug chatter would otherwise overrun a serial capture.
+ * Where a line goes. The serial console gets lines up to KERN_NOTICE. In
+ * DEBUG builds everything is also appended to a ring buffer that a helper
+ * process writes to a log file (AMDGPU_LOGFILE, default SYS:amdgpu.log, or
+ * T:amdgpu.log when SYS: cannot be written - read-only boot media; "off"
+ * to disable), and AMDGPU_SERIAL set to "all" sends every line to serial.
  */
+#if DEBUG
 #define NLOG_SIZE   (2 * 1024 * 1024)
 
 static struct {
@@ -516,6 +516,19 @@ BOOL amdgpu_log_init(void)
                       NP_Affinity, TASKAFFINITY_ANY, NP_Entry, (IPTR)nlog_flusher, NP_StackSize, 32 * 1024, TAG_DONE);
     return TRUE;
 }
+#else
+#define nlog_append(s, n) ((void)(s), (void)(n))
+#ifdef DRM_COMPAT_SERIAL_ALL
+#define NLOG_SERIAL_ALL TRUE
+#else
+#define NLOG_SERIAL_ALL FALSE
+#endif
+
+BOOL amdgpu_log_init(void)
+{
+    return TRUE;
+}
+#endif
 
 /* Every formatted line ends up here: strip the level marker, then route */
 static void nlog_emit(char *buf, size_t n)
@@ -530,7 +543,11 @@ static void nlog_emit(char *buf, size_t n)
         n -= 2;
     }
     nlog_append(buf, n);
+#if DEBUG
     if (level <= 5 || nlog.serial_all || !nlog.buf)
+#else
+    if (level <= 5 || NLOG_SERIAL_ALL)
+#endif
         bug("%s", buf);
 }
 
