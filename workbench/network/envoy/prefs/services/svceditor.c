@@ -280,8 +280,12 @@ IPTR SvcEditor__MUIM_PrefsEditor_Import(Class *CLASS, Object *self, struct MUIP_
 {
     SETUP_INST_DATA;
 
+    D(bug("[Services] Import '%s'\n", message->filename));
     if (!Prefs_Load(message->filename))
+    {
+        D(bug("[Services] Import: load failed\n"));
         return FALSE;
+    }
     if (IsOurPath(message->filename))
         Prefs_LoadAutoRun(PREFS_AUTORUN);
     Prefs2Gadgets(data);
@@ -301,8 +305,12 @@ IPTR SvcEditor__MUIM_PrefsEditor_ImportFH(Class *CLASS, Object *self, struct MUI
 {
     SETUP_INST_DATA;
 
+    D(bug("[Services] ImportFH\n"));
     if (!Prefs_ImportFH(message->fh))
+    {
+        D(bug("[Services] ImportFH: failed\n"));
         return FALSE;
+    }
     Prefs2Gadgets(data);
     return TRUE;
 }
@@ -316,6 +324,7 @@ IPTR SvcEditor__MUIM_PrefsEditor_SetDefaults(Class *CLASS, Object *self, Msg mes
 {
     SETUP_INST_DATA;
 
+    D(bug("[Services] SetDefaults\n"));
     if (!Prefs_Default())
         return FALSE;
     Prefs2Gadgets(data);

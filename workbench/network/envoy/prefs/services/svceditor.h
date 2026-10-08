@@ -7,7 +7,9 @@
 #include <exec/types.h>
 #include <libraries/mui.h>
 
-#define MUIB_SvcEditor                  (TAG_USER | 0x10000000)
+/* not TAG_USER | 0x1000000x: the PrefsEditor class uses that range for its own private
+   methods (one of them loads the settings when the window is set up) */
+#define MUIB_SvcEditor                  (TAG_USER | 0x2EF60000)
 #define MUIM_SvcEditor_Select           (MUIB_SvcEditor | 1)   /* list selection changed     */
 #define MUIM_SvcEditor_Update           (MUIB_SvcEditor | 2)   /* an entry field was edited  */
 #define MUIM_SvcEditor_Add              (MUIB_SvcEditor | 3)

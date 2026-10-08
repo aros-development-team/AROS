@@ -8,6 +8,7 @@
           handles, so those are bridged with a temporary file.
 */
 
+#include <aros/debug.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <exec/memory.h>
@@ -44,8 +45,12 @@ BOOL Prefs_Load(CONST_STRPTR filename)
     struct List tmp;
     struct Node *n;
 
+    LONG r;
+
     NEWLIST(&tmp);
-    if (ReadServicesPrefs(filename, &tmp) < 0)
+    r = ReadServicesPrefs(filename, &tmp);
+    D(bug("[Services] Prefs_Load '%s' -> %ld\n", filename, (long)r));
+    if (r < 0)
     {
         FreePrefsEntries(&tmp);
         return FALSE;

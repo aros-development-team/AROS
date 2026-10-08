@@ -61,6 +61,7 @@ AROS_UFH3S(IPTR, InqHook,
     struct HostReq *hr = hook->h_Data;
     struct TagItem *tag;
 
+    ELOG("[envoy] InqHook tags %p\n", tags);
     if (!tags)
         hr->Running = FALSE;
     else
@@ -71,6 +72,7 @@ AROS_UFH3S(IPTR, InqHook,
             struct Node *n;
             ULONG len;
 
+            ELOG("[envoy]   tag %08lx data %p\n", (unsigned long)tag->ti_Tag, (APTR)tag->ti_Data);
             if (tag->ti_Tag != QUERY_HOSTNAME && tag->ti_Tag != QUERY_REALMS)
                 continue;
             s = (CONST_STRPTR)tag->ti_Data;
@@ -124,6 +126,7 @@ static void StartInquiry(struct Req *req, struct HostReq *hr, BOOL realms)
         hr->InqTags[2].ti_Data = (IPTR)hr->MatchClone;
     }
     hr->Running = NIPCInquiryA(&hr->Hook, 10, 500, hr->InqTags);
+    ELOG("[envoy] StartInquiry realms %d realm '%s' -> %d\n", realms, hr->Realm, hr->Running);
 }
 
 static void SetText(struct Req *req, struct HostReq *hr)
@@ -218,7 +221,9 @@ static void HostSignals(struct Req *req, ULONG sigs)
     struct EnvoyBase *EnvoyBase = req->EnvoyBase;
     struct HostReq *hr = req->ClientData;
     struct Node *n;
+    BOOL added = FALSE;
 
+    SetAttrs(req->ListObj, MUIA_List_Quiet, TRUE, TAG_DONE);
     for (;;)
     {
         IPTR count = 0, i;
@@ -229,6 +234,7 @@ static void HostSignals(struct Req *req, ULONG sigs)
         ReleaseSemaphore(&hr->Sem);
         if (!n)
             break;
+        ELOG("[envoy] HostSignals: '%s'\n", n->ln_Name);
         GetAttr(MUIA_List_Entries, req->ListObj, &count);
         for (i = 0; i < count && !dup; i++)
         {
@@ -238,9 +244,16 @@ static void HostSignals(struct Req *req, ULONG sigs)
                 dup = TRUE;
         }
         if (!dup)
+        {
             DoMethod(req->ListObj, MUIM_List_InsertSingle, (IPTR)n->ln_Name, MUIV_List_Insert_Sorted);
+            added = TRUE;
+        }
         FreeVec(n);
     }
+    /* leaving quiet mode redraws the list once with everything that came in */
+    SetAttrs(req->ListObj, MUIA_List_Quiet, FALSE, TAG_DONE);
+    if (added)
+        ELOG("[envoy] HostSignals: list now has entries\n");
 }
 
 static BOOL HostAccept(struct Req *req, struct HostReq *hr)

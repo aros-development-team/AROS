@@ -347,7 +347,8 @@ static BOOL BuildObjects(struct Req *req)
         MUIA_Window_NoMenus, TRUE,
         MUIA_Window_LeftEdge, MUIV_Window_LeftEdge_Centered,
         MUIA_Window_TopEdge, MUIV_Window_TopEdge_Centered,
-        req->OptimWindow ? MUIA_Window_RefWindow : TAG_IGNORE, (IPTR)req->OptimWindow,
+        /* OptimWindow is an Intuition window, not a Zune object, so it cannot be given as
+           MUIA_Window_RefWindow (Zune would call methods on it); see CentreOver() */
         req->Screen ? MUIA_Window_Screen : TAG_IGNORE, (IPTR)req->Screen,
         WindowContents, (IPTR)root,
         End;
@@ -387,6 +388,32 @@ static BOOL BuildObjects(struct Req *req)
     return TRUE;
 }
 
+/* Place the open requester over the caller's OptimWindow, kept on the screen */
+static void CentreOver(struct Req *req)
+{
+    struct EnvoyBase *EnvoyBase = req->EnvoyBase;
+    struct Window *ref = req->OptimWindow, *win = NULL;
+    struct Screen *scr;
+    LONG x, y;
+
+    if (!ref)
+        return;
+    GetAttr(MUIA_Window_Window, req->Win, (IPTR *)&win);
+    if (!win || !(scr = win->WScreen) || ref->WScreen != scr)
+        return;
+    x = ref->LeftEdge + (ref->Width - win->Width) / 2;
+    y = ref->TopEdge + (ref->Height - win->Height) / 2;
+    if (x + win->Width > scr->Width)
+        x = scr->Width - win->Width;
+    if (y + win->Height > scr->Height)
+        y = scr->Height - win->Height;
+    if (x < 0)
+        x = 0;
+    if (y < 0)
+        y = 0;
+    MoveWindow(win, x - win->LeftEdge, y - win->TopEdge);
+}
+
 static void EventLoop(struct Req *req)
 {
     struct EnvoyBase *EnvoyBase = req->EnvoyBase;
@@ -405,6 +432,7 @@ static void EventLoop(struct Req *req)
         req->Result = FALSE;
         return;
     }
+    CentreOver(req);
     if (req->Client->Setup2)
         req->Client->Setup2(req);
 
