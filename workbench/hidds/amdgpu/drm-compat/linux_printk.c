@@ -463,7 +463,7 @@ static void nlog_flusher(void)
 
             if (!NameFromFH(fh, full, sizeof(full)))
                 strcpy(full, "?");
-            bug("[amdgpu] logging to %s (%s)\n", name, full);
+            D(bug("[amdgpu] logging to %s (%s)\n", name, full));
             created = TRUE;
         }
         else

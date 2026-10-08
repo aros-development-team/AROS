@@ -332,7 +332,7 @@ BOOL Amdgpu_KMS_ShowCursor(struct Amdgpu_KMS *kms, BOOL show)
 
     if (ret)
     {
-        D(bug("[Amdgpu:KMS] %s: the device refused the cursor (%d)\n", __func__, ret));
+        bug("[Amdgpu:KMS] %s: the device refused the cursor (%d), drawing it in software\n", __func__, ret);
         kms->cursor_ok = FALSE;
         return FALSE;
     }

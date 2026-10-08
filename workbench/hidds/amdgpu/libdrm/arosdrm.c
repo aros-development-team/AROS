@@ -335,8 +335,7 @@ static int drmIoctl_impl(int fd, unsigned long request, void *arg)
         }
     } while (ret == -EINTR || ret == -EAGAIN);
 
-    if (ret)
-        amdgpu_compat_log("[amdgpu] drmIoctl: request 0x%lx failed, %d\n", request, ret);
+    D(if (ret) amdgpu_compat_log("[amdgpu] drmIoctl: request 0x%lx failed, %d\n", request, ret);)
 
     return ret;
 }

@@ -182,7 +182,7 @@ int request_threaded_irq(unsigned int irq, irq_handler_t handler, irq_handler_t 
             entry->irq_task = NULL;
     }
 
-    printk(KERN_NOTICE "[amdgpu] request_irq: %s on IRQ %u%s\n", name, irq,
+    printk(KERN_INFO "[amdgpu] request_irq: %s on IRQ %u%s\n", name, irq,
            entry->irq_task ? " (MSI, handled in a task)" : "");
 
     list_add(&entry->node, &irq_handlers);

@@ -405,7 +405,6 @@ void tasklet_kill(struct tasklet_struct *t)
  * that the processes exist before any interrupt tries to queue to them.
  */
 BOOL amdgpu_log_init(void);
-void amdgpu_compat_time_check(void);
 
 BOOL workqueue_init(void)
 {
@@ -413,7 +412,6 @@ BOOL workqueue_init(void)
         return TRUE;
 
     amdgpu_log_init();
-    amdgpu_compat_time_check();
 
     system_wq = alloc_workqueue("Amdgpu WorkQueue", 0, 0);
     if (!system_wq)
