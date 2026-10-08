@@ -35,6 +35,7 @@ struct workqueue_struct {
     struct MinList items;
     struct Process *worker;
     struct Task *creator;
+    ULONG creator_ack;
     ULONG sigbit;
     volatile struct work_struct *running;
     raw_spinlock_t lock;
@@ -58,7 +59,7 @@ static void worker_main(void)
     struct workqueue_struct *wq = self->tc_UserData;
 
     wq->sigbit = AllocSignal(-1);
-    Signal(wq->creator, SIGF_SINGLE);
+    Signal(wq->creator, wq->creator_ack);
     if (wq->sigbit == (ULONG)-1)
         return;
 
@@ -100,6 +101,7 @@ struct workqueue_struct *alloc_workqueue(const char *fmt, unsigned int flags, in
 {
     struct workqueue_struct *wq;
     va_list ap;
+    BYTE ack;
 
     wq = kzalloc(sizeof(*wq), GFP_KERNEL);
     if (!wq)
@@ -114,6 +116,12 @@ struct workqueue_struct *alloc_workqueue(const char *fmt, unsigned int flags, in
     InitSemaphore(&wq->flush_lock);
     wq->creator = FindTask(NULL);
     wq->sigbit = (ULONG)-1;
+    ack = AllocSignal(-1);
+    if (ack < 0) {
+        kfree(wq);
+        return NULL;
+    }
+    wq->creator_ack = 1UL << ack;
 
     wq->worker = CreateNewProcTags(
         NP_Name, (IPTR)wq->name,
@@ -130,10 +138,12 @@ struct workqueue_struct *alloc_workqueue(const char *fmt, unsigned int flags, in
         NP_UserData, (IPTR)wq,
         TAG_DONE);
     if (!wq->worker) {
+        FreeSignal(ack);
         kfree(wq);
         return NULL;
     }
-    Wait(SIGF_SINGLE);
+    Wait(wq->creator_ack);
+    FreeSignal(ack);
     if (wq->sigbit == (ULONG)-1) {
         kfree(wq);
         return NULL;
