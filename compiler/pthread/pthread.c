@@ -1261,6 +1261,11 @@ void __pthread_Exit_Func(void)
 
     DB2(bug("%s()\n", __FUNCTION__));
 
+    // an earlier init function failed: the exit set still runs, but
+    // __pthread_Init_Func never did and thread_sem is not initialised
+    if (threads_used == 0)
+        return;
+
     __pthread_exiting = TRUE;
 
     // if we don't do this we can easily end up with unloaded code being executed
