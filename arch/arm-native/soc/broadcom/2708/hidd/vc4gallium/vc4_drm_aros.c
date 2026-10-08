@@ -2389,6 +2389,19 @@ static int do_submit_cl(struct vc4galliumstaticdata *sd, struct drm_vc4_submit_c
     if (!v3d->v3d_available)
         return -1;
 
+    /* No surface to store means no EOF in the RCL: RFC never fires and the
+     * render thread wedges. Mesa sends these when a depth-only clear is
+     * invalidated at swap. Nothing would be written, so complete it as a
+     * no-op. */
+    if (args->color_write.hindex == (ULONG)~0
+        && args->zs_write.hindex == (ULONG)~0
+        && args->msaa_color_write.hindex == (ULONG)~0
+        && args->msaa_zs_write.hindex == (ULONG)~0)
+    {
+        args->seqno = v3d->seqno;
+        return 0;
+    }
+
     ULONG _t_entry = VC4G_NOW_US();
 
     bo_handles = (ULONG *)(IPTR)args->bo_handles;
