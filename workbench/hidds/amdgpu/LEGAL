@@ -4,7 +4,7 @@
 (b)----drm/amd
 (c)----gpu/buddy.c, include/linux/gpu_buddy.h
 (d)----libdrm/arosdrmmode.c, include/libdrm
-(e)----libdrm/amdgpu, libdrm/include, libdrm/util_*.h
+(e)----libdrm/amdgpu, libdrm/include, libdrm/util_*.h, libdrm/data
 (f)----drm (core subset, display/, ttm/, scheduler/), include/drm, include/uapi
 (g)----drm-compat, include/linux, include/asm*, include/acpi, include/soc, include/video, include/trace, include/kunit, include/sys, include/media, include/xen
 
@@ -26,7 +26,8 @@ libdrm's KMS wrappers (MIT), from the nouveau hidd, with additions.
 
 (e)
 libdrm 2.4.134's libdrm_amdgpu and its copy of amdgpu_drm.h (MIT), built
-for the radeonsi winsys. Local changes are guarded by __AROS__.
+for the radeonsi winsys, and its data/amdgpu.ids table. Local changes are
+guarded by __AROS__.
 
 (f)
 Linux 6.18.44 drivers/gpu/drm (core subset, display/, ttm/, scheduler/),
