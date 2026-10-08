@@ -544,7 +544,7 @@ static void ifdns_remove_locked(struct ifnet *ifp)
 
     for(node = DynDB.dyn_NameServers.mlh_Head; node->mln_Succ; node = next) {
         next = node->mln_Succ;
-        if(((struct NameserventNode *)node)->nsn_Owner == (APTR)ifp) {
+        if(((struct NameserventNode *)node)->nsn_Owner == ifp) {
             Remove((struct Node *)node);
             bsd_free(node, M_NETDB);
         }
@@ -589,7 +589,7 @@ static int ifdns_add_csv_locked(struct ifnet *ifp, const UBYTE *csv)
                 }
             }
             if(nsn) {
-                nsn->nsn_Owner = (APTR)ifp;
+                nsn->nsn_Owner = ifp;
                 AddTail((struct List *)&DynDB.dyn_NameServers,
                         (struct Node *)nsn);
                 added++;

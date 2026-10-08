@@ -105,7 +105,7 @@ struct NameserventNode {
   struct nameservent {
     struct in_addr ns_addr;	/* IPv4 server (nsn_Family == AF_INET) */
   } nsn_Ent;
-  APTR            nsn_Owner;	/* owning struct ifnet * for per-interface DNS, else NULL */
+  struct ifnet   *nsn_Owner;	/* owning interface for per-interface DNS, else NULL */
   UBYTE           nsn_Family;	/* AF_INET or AF_INET6 (0 == AF_INET for old creators) */
   struct in6_addr nsn_Addr6;	/* IPv6 server (nsn_Family == AF_INET6) */
 };
