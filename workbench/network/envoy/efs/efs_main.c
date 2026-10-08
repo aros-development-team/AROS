@@ -11,6 +11,7 @@
 
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <devices/timer.h>
 #include <string.h>
 
 #include "efs_intern.h"
@@ -83,8 +84,20 @@ static LONG Startup(struct Globals *glob, struct DosPacket *dp)
     NEWLIST(&glob->Volumes);
     if (!(glob->NotifyPort = CreateMsgPort()))
         return ERROR_NO_FREE_STORE;
-    if (!(glob->Entity = CreateEntity(ENT_Name, (IPTR)glob->DevName, ENT_Public, TRUE, ENT_AllocSignal, (IPTR)&glob->EntSig, TAG_DONE)))
-        return ERROR_NO_FREE_STORE;
+    {
+        /* A handler of an earlier, dismounted mount of the same device may still own the
+           entity name: it leaves within a few seconds (see DeviceListed()), so wait. */
+        int tries;
+        for (tries = 0; tries < 12; tries++)
+        {
+            if ((glob->Entity = CreateEntity(ENT_Name, (IPTR)glob->DevName, ENT_Public, TRUE,
+                                             ENT_AllocSignal, (IPTR)&glob->EntSig, TAG_DONE)))
+                break;
+            Delay(25);
+        }
+        if (!glob->Entity)
+            return ERROR_OBJECT_IN_USE;
+    }
     if (!(glob->Trans = AllocTransaction(TRN_AllocReqBuffer, EFS_BUFSIZE, TAG_DONE)))
         return ERROR_NO_FREE_STORE;
     glob->Buf = glob->Trans->trans_RequestData;
@@ -92,6 +105,31 @@ static LONG Startup(struct Globals *glob, struct DosPacket *dp)
     if (!FindFilesystem(glob) || !DoMount(glob))
         return MountErrorToDos(glob->LastError);
     return 0;
+}
+
+/*
+ * Assign DISMOUNT only takes the device node out of the DOS list and frees it; the
+ * handler keeps running, and with it the public entity named after the device, which
+ * would make the next mount of the same export fail. So the handler looks every few
+ * seconds whether its node is still listed, and leaves once it is gone and nothing is
+ * open on it any more.
+ */
+static BOOL DeviceListed(struct Globals *glob)
+{
+    struct DosList *dl;
+    BOOL found = FALSE;
+
+    dl = LockDosList(LDF_DEVICES | LDF_READ);
+    while ((dl = NextDosEntry(dl, LDF_DEVICES)))
+    {
+        if ((struct DeviceNode *)dl == glob->DevNode)
+        {
+            found = TRUE;
+            break;
+        }
+    }
+    UnLockDosList(LDF_DEVICES | LDF_READ);
+    return found;
 }
 
 LONG handler(struct ExecBase *sysbase)
@@ -143,10 +181,41 @@ LONG handler(struct ExecBase *sysbase)
         ULONG pktsig = 1UL << port->mp_SigBit;
         ULONG entsig = 1UL << glob->EntSig;
         ULONG notsig = 1UL << glob->NotifyPort->mp_SigBit;
+        ULONG timsig = 0;
+        struct MsgPort *tport = CreateMsgPort();
+        struct timerequest *treq = tport ? (struct timerequest *)CreateIORequest(tport, sizeof(struct timerequest)) : NULL;
+        BOOL topen = treq && !OpenDevice("timer.device", UNIT_VBLANK, &treq->tr_node, 0);
+
+        if (topen)
+        {
+            timsig = 1UL << tport->mp_SigBit;
+            treq->tr_node.io_Command = TR_ADDREQUEST;
+            treq->tr_time.tv_secs = 3;
+            treq->tr_time.tv_micro = 0;
+            SendIO(&treq->tr_node);
+        }
 
         while (!glob->Quit)
         {
-            ULONG sigs = Wait(pktsig | entsig | notsig);
+            ULONG sigs = Wait(pktsig | entsig | notsig | timsig);
+            if (sigs & timsig)
+            {
+                WaitIO(&treq->tr_node);
+                if (!DeviceListed(glob))
+                {
+                    glob->Dismounted = TRUE;
+                    if (IsListEmpty((struct List *)&glob->Locks) && IsListEmpty((struct List *)&glob->Files))
+                    {
+                        EFSLOG("device dismounted: leaving\n");
+                        glob->Quit = TRUE;
+                        timsig = 0;
+                        continue;
+                    }
+                }
+                treq->tr_time.tv_secs = 3;
+                treq->tr_time.tv_micro = 0;
+                SendIO(&treq->tr_node);
+            }
             if (sigs & entsig)
                 HandleEntity(glob);
             if (sigs & pktsig)
@@ -157,10 +226,25 @@ LONG handler(struct ExecBase *sysbase)
             if (sigs & notsig)
                 HandleNotifyReplies(glob);
         }
+
+        if (topen)
+        {
+            if (timsig)
+            {
+                AbortIO(&treq->tr_node);
+                WaitIO(&treq->tr_node);
+            }
+            CloseDevice(&treq->tr_node);
+        }
+        if (treq)
+            DeleteIORequest(&treq->tr_node);
+        if (tport)
+            DeleteMsgPort(tport);
     }
 
     EFSLOG("shutting down\n");
-    glob->DevNode->dn_Task = NULL;
+    if (!glob->Dismounted)
+        glob->DevNode->dn_Task = NULL;      /* after Assign DISMOUNT the node is freed */
     Cleanup(glob);
     FreeVec(glob);
     return RETURN_OK;

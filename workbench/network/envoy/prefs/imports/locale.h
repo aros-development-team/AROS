@@ -1,0 +1,52 @@
+#ifndef LOCALE_H
+#define LOCALE_H
+/*
+    Copyright (C) 2026, The AROS Development Team. All rights reserved.
+*/
+
+#include <exec/types.h>
+
+enum
+{
+    MSG_WINTITLE,
+    MSG_HOST,
+    MSG_SELECTHOST,
+    MSG_LIST,
+    MSG_VOLUMES,
+    MSG_MODE,
+    MSG_MODE_TEMPORARY,
+    MSG_MODE_PERMANENT,
+    MSG_MODE_STORAGE,
+    MSG_CONNECT,
+    MSG_QUIT,
+    MSG_LOGINTITLE,
+    MSG_STATUS_READY,
+    MSG_STATUS_NOHOST,
+    MSG_STATUS_LISTING,
+    MSG_STATUS_LISTED,
+    MSG_STATUS_EMPTY,
+    MSG_STATUS_NOVOLUME,
+    MSG_STATUS_MOUNTING,
+    MSG_STATUS_MOUNTED,
+    MSG_STATUS_ALREADY,
+    MSG_STATUS_MOUNTFAIL,
+    MSG_STATUS_WRITEFAIL,
+    MSG_ERR_NOLIB,
+    MSG_ERR_UNKNOWNHOST,
+    MSG_ERR_NOSERVICE,
+    MSG_ERR_NOSERVICELIB,
+    MSG_ERR_TIMEOUT,
+    MSG_ERR_UNREACHABLE,
+    MSG_ERR_REFUSED,
+    MSG_ERR_RESOURCES,
+    MSG_ERR_OTHER,
+    MSG_COUNT
+};
+
+CONST_STRPTR _(ULONG id);
+#define __(id) ((IPTR)_(id))
+
+VOID Locale_Initialize(VOID);
+VOID Locale_Deinitialize(VOID);
+
+#endif

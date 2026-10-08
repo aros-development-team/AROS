@@ -153,6 +153,7 @@ struct Globals
     struct MsgPort          *Port;
     struct MsgPort          *NotifyPort;
     struct DeviceNode       *DevNode;
+    BOOL                    Dismounted;     /* the node was taken out of the DOS list (and freed) */
 
     char                    Host[80];
     char                    Export[80];
