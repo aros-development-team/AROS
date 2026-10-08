@@ -59,6 +59,7 @@ steps:
     fi
     sudo apt-get install -y libpng-dev zlib1g-dev libxcursor-dev libgl1-mesa-dev libasound2-dev
     sudo apt-get install -y gawk bison flex netpbm automake cmake genisoimage sshpass
+    sudo apt-get install -y meson ninja-build
     sudo apt-get install -y python3-mako python3-yaml python3-distutils-extra
     sudo apt-get install -y libswitch-perl gperf gcc-multilib g++ ccache libclang-dev
     sudo apt-get install -y jlha-utils wget liblzma-dev mtools xorriso nasm
@@ -118,7 +119,7 @@ steps:
 
     # Install formulae idempotently. sshpass is available from Homebrew core,
     # so no third-party tap is required.
-    for formula in gawk gnu-sed autoconf automake wget ccache cmake netpbm md5sha1sum bison sshpass; do
+    for formula in gawk gnu-sed autoconf automake wget ccache cmake meson ninja netpbm md5sha1sum bison sshpass; do
       brew list "$formula" >/dev/null 2>&1 || brew install "$formula"
     done
 
