@@ -21,6 +21,9 @@
 #include "amdgpu.h"
 #include "amdgpu_object.h"
 #include "amdgpu_xcp_drv.h"
+#include "amdgpu_mode.h"
+#include <drm/drm_crtc.h>
+#include <drm/drm_vblank.h>
 
 /* --- allocator behind kmalloc ------------------------------------------- */
 
@@ -219,5 +222,56 @@ BOOL amdgpu_aros_has_mob(void)
 
 void amdgpu_aros_reset(void)
 {
+}
+
+unsigned long compat_sleep_usecs(unsigned long usecs);
+
+/* Wait for the start of the next vertical blank of a CRTC. */
+int amdgpu_aros_wait_vblank(unsigned int crtc_id)
+{
+    struct drm_device *dev = current_drm_device;
+    const struct drm_display_mode *mode;
+    struct drm_crtc *crtc;
+    unsigned long long line_ns;
+    int vpos, hpos, flags, tries;
+
+    if (!dev)
+        return -1;
+    crtc = drm_crtc_find(dev, NULL, crtc_id);
+    if (!crtc || !crtc->state || !crtc->state->active)
+        return -1;
+    mode = &crtc->state->adjusted_mode;
+    if (!mode->crtc_clock || !mode->crtc_htotal)
+        return -1;
+    line_ns = (unsigned long long)mode->crtc_htotal * 1000000ULL / mode->crtc_clock;
+
+    for (tries = 0; tries < 1000; tries++)
+    {
+        flags = amdgpu_display_get_crtc_scanoutpos(dev, drm_crtc_index(crtc), GET_DISTANCE_TO_VBLANKSTART,
+                                                   &vpos, &hpos, NULL, NULL, mode);
+        if (!(flags & DRM_SCANOUTPOS_VALID))
+            return -1;
+        if (!(flags & DRM_SCANOUTPOS_IN_VBLANK))
+            break;
+        udelay(20);
+    }
+
+    for (tries = 0; tries < 10000; tries++)
+    {
+        unsigned long usecs;
+
+        flags = amdgpu_display_get_crtc_scanoutpos(dev, drm_crtc_index(crtc), GET_DISTANCE_TO_VBLANKSTART,
+                                                   &vpos, &hpos, NULL, NULL, mode);
+        if (!(flags & DRM_SCANOUTPOS_VALID))
+            return -1;
+        if (flags & DRM_SCANOUTPOS_IN_VBLANK)
+            return 0;
+        usecs = (unsigned long)(-vpos * line_ns / 1000);
+        if (usecs > 300)
+            compat_sleep_usecs(usecs - 200);
+        else
+            udelay(20);
+    }
+    return -1;
 }
 
