@@ -161,9 +161,8 @@ static void CloseBootScreen(struct DosLibrary *DOSBase, struct IntuitionBase *In
 void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
 {
     BPTR cis = BNULL;
-#ifdef DOS_REUSE_BOOT_PROCESS
+    struct BootConsole console = {0};
     BPTR shellseg = BNULL;
-#endif
 
     /*  We have been created as a process by DOS, we should now
         try and boot the system. */
@@ -308,20 +307,19 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
     }
 
     if (cis == BNULL) {
-#ifdef DOS_REUSE_BOOT_PROCESS
-        if ((BootFlags & BF_NO_BOOT_REQUESTERS) && shellseg) {
-            /* Appliance boot (CD): no boot console window either - the
-             * CD32 Kickstart never opens one, and the console's window
-             * is what would drag in a Workbench screen.
-             */
-            cis = Open("NIL:", MODE_OLDFILE);
-        } else
-#endif
-            cis = Open("CON:////AROS/AUTO/CLOSE/SMART/BOOT", MODE_OLDFILE);
+        /* Even a silent boot needs a console port: legacy programs send
+         * DOS packets directly to pr_ConsoleTask during their setup. */
+        cis = internal_OpenBootConsole(
+            (BootFlags & BF_NO_BOOT_REQUESTERS) && shellseg,
+            &console, DOSBase);
     }
 
     if (cis) {
-        BPTR cos = OpenFromLock(DupLockFromFH(cis));
+        /* Quiet boot consoles keep standard output a sink. Emergency
+         * consoles bypass the factory and retain visible output. */
+        BPTR cos = console.quiet
+            ? Open("NIL:", MODE_NEWFILE)
+            : OpenFromLock(DupLockFromFH(cis));
         BYTE *C = generate_banner();
 
         D(bug("[DOS] %s:  handle @ 0x%p (0x%p)\n", __func__, cis, cos);)
@@ -391,4 +389,5 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
         D(bug("[DOS] %s:  .. failed!\n", __func__);)
         Alert(AN_NoWindow);
     }
+    internal_CloseBootConsole(&console, DOSBase);
 }

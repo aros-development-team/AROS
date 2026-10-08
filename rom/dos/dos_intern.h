@@ -7,6 +7,7 @@
 #define DOS_INTERN_H
 
 #include <aros/system.h>
+#include <bootconsole.h>
 #include <exec/io.h>
 #include <exec/memory.h>
 #include <dos/dos.h>
@@ -340,6 +341,12 @@ void freepacketinfo(struct DosLibrary *DOSBase, struct PacketHelperStruct*);
     } while (0);
 
 /* Shell utilities */
+BPTR internal_OpenBootConsole(BOOL quiet, struct BootConsole *state,
+    struct DosLibrary *DOSBase);
+void internal_CloseBootConsole(struct BootConsole *state,
+    struct DosLibrary *DOSBase);
+BPTR internal_OpenConsoleOutput(struct DosLibrary *DOSBase);
+#define BOOT_CONSOLE_NAME "CON:////AROS/AUTO/CLOSE/SMART/BOOT"
 BPTR findseg_cli(BOOL isBoot, struct DosLibrary *DOSBase);
 #ifdef DOS_REUSE_BOOT_PROCESS
 LONG internal_RunBootShell(BPTR shellseg, BPTR sis, BPTR sos, BPTR script, struct DosLibrary *DOSBase);
