@@ -40,6 +40,7 @@ LONG newMedium(struct AFSBase *afsbase, struct Volume *volume) {
 struct BlockCache *blockbuffer;
 UWORD i;
 BOOL gotdostype = FALSE;
+BOOL counted = FALSE;
 LONG error;
 ULONG dostype;
 UBYTE dosflags;
@@ -127,7 +128,11 @@ UBYTE dosflags;
                 volume->usedblockscount=0;
                 volume->state = ID_VALIDATING;
 
+#ifdef __AROS__
+                counted = launchValidator(afsbase, volume) == vr_OK;
+#else
                 launchValidator(afsbase, volume);
+#endif
         }
 
         /*
@@ -141,7 +146,8 @@ UBYTE dosflags;
         {
                 blockbuffer->flags |= BCF_USED; // won't be cleared until volume is ejected
                 D(bug("[afs] counting used blocks...\n"));
-                volume->usedblockscount=countUsedBlocks(afsbase, volume);
+                if (!counted)
+                        volume->usedblockscount=countUsedBlocks(afsbase, volume);
                 D(bug("[afs] %u blocks in use\n", volume->usedblockscount));
                 volume->state = diskWritable(afsbase, &volume->ioh) ?
                         ID_VALIDATED : ID_WRITE_PROTECTED;
