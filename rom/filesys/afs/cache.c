@@ -35,6 +35,9 @@ struct BlockCache *head;
 struct BlockCache *cache;
 ULONG i;
 
+        if (numBuffers == 0)
+                return NULL;
+
         head = AllocVec
                 (
                         numBuffers*(sizeof(struct BlockCache)+BLOCK_SIZE(volume)),
