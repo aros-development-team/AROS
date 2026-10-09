@@ -129,34 +129,39 @@ AROS_UFH3S(BOOL, StorageUnitEnum,
 
     data->count++;
 
-    printf("STORAGE %u:\t[%s] %s/%lu\n",
+    if (data->count > 1)
+        printf("\n");
+
+    printf("  Storage %-9u%s\n",
         (unsigned)data->count,
-        StorageTypeName(type),
+        StorageTypeName(type));
+
+    printf("    Device         %s/%lu\n",
         device ? (const char *)device : "Unknown",
         (unsigned long)unit);
 
     if (model && *((const char *)model))
-        printf("\t\tModel: %s\n", (const char *)model);
+        printf("    Model          %s\n", (const char *)model);
 
     if (revision && *((const char *)revision))
-        printf("\t\tRevision: %s\n", (const char *)revision);
+        printf("    Revision       %s\n", (const char *)revision);
 
     if (HIDD_StorageUnit_GetCapacity(unitObj, &blockCount, &blockSize) &&
         blockCount && blockSize)
     {
-        printf("\t\tCapacity: ");
+        printf("    Capacity       ");
 
         if (blockCount <= (~(UQUAD)0) / blockSize)
             PrintStorageSize(blockCount * (UQUAD)blockSize);
         else
             printf("Unknown");
 
-        printf("\n\t\tBlock size: ");
+        printf("\n    Block size     ");
         PrintStorageSize((UQUAD)blockSize);
         printf("\n");
     }
 
-    printf("\t\tRemovable: %s\n",
+    printf("    Removable      %s\n",
         removable ? "Yes" : "No");
 
     return FALSE;

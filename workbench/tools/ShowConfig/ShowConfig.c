@@ -14,12 +14,13 @@
 #include <proto/processor.h>
 
 #include <stdio.h>
+#include <string.h>
 
 #include "cpuspecific.h"
 #include "storage.h"
 
 #define APPNAME "ShowConfig"
-#define VERSION "ShowConfig 0.7"
+#define VERSION "ShowConfig 0.8"
 
 const char version[] = "$VER: " VERSION " (" ADATE ")\n";
 
@@ -77,17 +78,66 @@ ULONG ComputeKBytes(APTR a, APTR b)
     return (ULONG)(result >> 10);
 }
 
+void PrintCPUFeatures(const char * const *features, const BOOL *flags, ULONG count)
+{
+    ULONG i;
+    ULONG column = 19;
+    BOOL found = FALSE;
+
+    printf("    Features       ");
+
+    for (i = 0; i < count; i++)
+    {
+        if (flags[i])
+        {
+            /* Feature names come from static NUL-terminated string tables. */
+            ULONG length = (ULONG)strlen(features[i]); /* Flawfinder: ignore */
+
+            if (found)
+            {
+                if (column + 1 + length > 78)
+                {
+                    printf("\n                   ");
+                    column = 19;
+                }
+                else
+                {
+                    printf(" ");
+                    column++;
+                }
+            }
+
+            printf("%s", features[i]);
+            column += length;
+            found = TRUE;
+        }
+    }
+
+    if (!found)
+        printf("None");
+
+    printf("\n");
+}
+
+static VOID PrintSectionHeader(const char *name, BOOL separator)
+{
+    if (separator)
+        printf("\n---\n\n");
+
+    printf("[%s]\n\n", name);
+}
+
 static VOID PrintMemoryInformation()
 {
     IPTR total = AvailMem(MEMF_TOTAL);
     IPTR free = AvailMem(MEMF_ANY);
     IPTR largest = AvailMem(MEMF_LARGEST);
 
-    printf("MEMORY:\t\tTotal ");
+    printf("  Total            ");
     PrintNum((ULONG)(total >> 10));
-    printf(", Free ");
+    printf("\n  Free             ");
     PrintNum((ULONG)(free >> 10));
-    printf(", Largest ");
+    printf("\n  Largest block    ");
     PrintNum((ULONG)(largest >> 10));
     printf("\n");
 }
@@ -115,7 +165,7 @@ static VOID PrintSystemInformation()
     if (release_date)
     {
         Amiga2Date((ULONG)release_date * 86400UL, &release_clock);
-        printf("RELEASE:\tAROS %lu.%lu (%04u-%02u-%02u)\n",
+        printf("  Release          AROS %lu.%lu (%04u-%02u-%02u)\n",
                (unsigned long)release_major,
                (unsigned long)release_minor,
                (unsigned int)release_clock.year,
@@ -124,24 +174,24 @@ static VOID PrintSystemInformation()
     }
     else
     {
-        printf("RELEASE:\tAROS %lu.%lu\n",
+        printf("  Release          AROS %lu.%lu\n",
                (unsigned long)release_major,
                (unsigned long)release_minor);
     }
 
     if (builddate)
-        printf("BUILD:\t\t%s\n", builddate);
+        printf("  Build            %s\n", builddate);
 
     if (architecture)
-        printf("ARCH:\t\t%s\n", architecture);
+        printf("  Architecture     %s\n", architecture);
 
     if (abi == (IPTR)-1)
-        printf("ABI:\t\tv1 (development)\n");
+        printf("  ABI              v1 (development)\n");
     else
-        printf("ABI:\t\t%lu\n", (unsigned long)abi);
+        printf("  ABI              %lu\n", (unsigned long)abi);
 
     if (variant && *variant)
-        printf("VARIANT:\t%s\n", variant);
+        printf("  Variant          %s\n", variant);
 }
 
 static ULONG GetProcessorsCount()
@@ -196,7 +246,7 @@ static VOID PrintTopologyInformation()
     if (topo->pt_Packages > 1 || topo->pt_Clusters > 1 ||
         topo->pt_ThreadsPerCore > 1 || topo->pt_Cores != topo->pt_Count)
     {
-        printf("TOPOLOGY:\t%u package(s), %u cluster(s), %u core(s), %u thread(s) per core\n",
+        printf("  Topology         %u package(s), %u cluster(s), %u core(s), %u thread(s) per core\n",
                (unsigned int)topo->pt_Packages,
                (unsigned int)topo->pt_Clusters,
                (unsigned int)topo->pt_Cores,
@@ -253,7 +303,7 @@ static VOID PrintProcessorInformation()
 	if (!modelstring)
 	    modelstring = "Unknown";
 
-        printf("PROCESSOR %d:\t[%s/%s] %s", (int)(i + 1), architecturestring, endiannessstring, modelstring);
+        printf("  Processor %-7u[%s/%s] %s", (unsigned int)(i + 1), architecturestring, endiannessstring, modelstring);
         if (cpuspeed)
             printf(" (%llu MHz)", (unsigned long long)(cpuspeed / 1000000));
         printf("\n");
@@ -270,6 +320,7 @@ int main()
     struct MemHeader *mh;
     APTR KernelBase;
     APTR CSBase;
+    ULONG memoryRegion = 0;
     int offset = 0;
 
 #if (__WORDSIZE==64)
@@ -290,72 +341,90 @@ int main()
         execextra[offset]       = ']';
     }
 
-    printf("VERS:\t\tAROS version %d.%d, Exec version %d.%d %s\n", ArosBase->lib_Version, ArosBase->lib_Revision,
-	   SysBase->LibNode.lib_Version, SysBase->LibNode.lib_Revision, execextra);
+    PrintSectionHeader("SYSTEM", FALSE);
+    printf("  Version          AROS version %d.%d, Exec version %d.%d %s\n",
+           ArosBase->lib_Version, ArosBase->lib_Revision,
+           SysBase->LibNode.lib_Version, SysBase->LibNode.lib_Revision,
+           execextra);
 
     PrintSystemInformation();
 
+    PrintSectionHeader("PROCESSOR", TRUE);
     ProcessorBase = OpenResource(PROCESSORNAME);
     if (ProcessorBase)
         PrintProcessorInformation();
 
+    PrintSectionHeader("TIMERS", TRUE);
     KernelBase = OpenResource("kernel.resource");
     if (KernelBase)
     {
         CSBase = (APTR)KrnGetSystemAttr(KATTR_ClockSource);
         if (CSBase != (APTR)-1)
-                printf("Kernel Clock Source:\t%s\n", ((struct Node *)CSBase)->ln_Name);
+            printf("  Kernel clock     %s\n", ((struct Node *)CSBase)->ln_Name);
     }
 
     CSBase = OpenResource("hpet.resource");
     if (CSBase)
     {
-    	const struct Node *owner;
+        const struct Node *owner;
         struct Node unusedtsunit =
         {
             .ln_Name = "Available for use"
         };
-    	ULONG i = 0;
+        ULONG i = 0;
 
-	while (GetCSUnitAttrs(i, CLOCKSOURCE_UNIT_OWNER, &owner, TAG_DONE))
-	{
-	    if (!owner)
-	    	owner = &unusedtsunit;
+        while (GetCSUnitAttrs(i, CLOCKSOURCE_UNIT_OWNER, &owner, TAG_DONE))
+        {
+            if (!owner)
+                owner = &unusedtsunit;
 
-	    printf("HPET %02u:\t\t%s\n", (unsigned)(++i), owner->ln_Name);
-	}
+            printf("  HPET %02u          %s\n",
+                   (unsigned)(++i), owner->ln_Name);
+        }
     }
 
+    PrintSectionHeader("MEMORY", TRUE);
     PrintMemoryInformation();
 
-    printf("RAM:");
-    for (mh = (struct MemHeader *)SysBase->MemList.lh_Head; mh->mh_Node.ln_Succ; mh = (struct MemHeader *)mh->mh_Node.ln_Succ) {
+    for (mh = (struct MemHeader *)SysBase->MemList.lh_Head;
+         mh->mh_Node.ln_Succ;
+         mh = (struct MemHeader *)mh->mh_Node.ln_Succ)
+    {
         char *memtype = "ROM";
 
         if (mh->mh_Attributes & MEMF_CHIP)
             memtype = "CHIP";
         if (mh->mh_Attributes & MEMF_FAST)
             memtype = "FAST";
-        printf("\t\tNode Type 0x%X, Attributes 0x%X (%s), at $%p-$%p (", mh->mh_Node.ln_Type, mh->mh_Attributes, memtype, mh->mh_Lower, mh->mh_Upper - 1);
+
+        printf("\n  Region %-10u%s\n",
+               (unsigned int)(++memoryRegion), memtype);
+        printf("    Size           ");
         PrintNum(ComputeKBytes(mh->mh_Lower, mh->mh_Upper));
-        printf(")\n");
+        printf("\n");
+        printf("    Address        $%p-$%p\n",
+               mh->mh_Lower, mh->mh_Upper - 1);
+        printf("    Node type      0x%X\n", mh->mh_Node.ln_Type);
+        printf("    Attributes     0x%X\n", mh->mh_Attributes);
     }
 
+    PrintSectionHeader("STORAGE", TRUE);
     PrintStorageInformation();
 
+    PrintSectionHeader("BOOT", TRUE);
     if (KernelBase)
     {
-	struct TagItem *bootinfo = KrnGetBootInfo();
-	struct TagItem *tag;
+        struct TagItem *bootinfo = KrnGetBootInfo();
+        struct TagItem *tag;
 
-	tag = FindTagItem(KRN_BootLoader, bootinfo);
-	if (tag)
-    	    printf("BOOTLDR:\t%s\n", (char *)tag->ti_Data);
+        tag = FindTagItem(KRN_BootLoader, bootinfo);
+        if (tag)
+            printf("  Loader           %s\n", (char *)tag->ti_Data);
 
-	tag = FindTagItem(KRN_CmdLine, bootinfo);
-	if (tag)
-            printf("ARGS:\t\t%s\n", (char *)tag->ti_Data);
-
+        tag = FindTagItem(KRN_CmdLine, bootinfo);
+        if (tag)
+            printf("  Arguments        %s\n", (char *)tag->ti_Data);
     }
+
     return 0;
 }

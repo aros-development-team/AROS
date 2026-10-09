@@ -40,23 +40,13 @@ void PrintCPUSpecificInfo(ULONG i, APTR ProcessorBase)
     }
 
     if (haveExtFeats)
-    {
-        printf("\t\tFeatures: ");
+        PrintCPUFeatures(features, flags, FLAGS_NUM);
 
-        for (i = 0; i < FLAGS_NUM; i++)
-        {
-            if (flags[i])
-            {
-                printf("%s ", features[i]);
-            }
-        }
-        printf("\n");
-    }   
     if (icache > 0)
-	printf("L1 I-CACHE:\t%d bytes\n", icache);
- 
+        printf("    L1 I-cache     %u bytes\n", (unsigned int)icache);
+
     if (dcache > 0)
-	printf("L1 D-CACHE:\t%d bytes\n", dcache);
+        printf("    L1 D-cache     %u bytes\n", (unsigned int)dcache);
 }
 
 #endif

@@ -57,36 +57,23 @@ void PrintCPUSpecificInfo(ULONG i, APTR ProcessorBase)
     for (i = 0; vendors[i]; i++)
     {
         const char *name = vendors[i];
-        
+
         if (name[0] == vendor)
         {
-            printf("\t\t%s", &name[1]);
+            printf("    Vendor         %s\n", &name[1]);
             found = TRUE;
             break;
         }
     }
 
     if (!found)
-        printf("\t\tUnknown vendor (0x%X)", vendor);
+        printf("    Vendor         Unknown (0x%X)\n", vendor);
 
-    printf(" 0x%X revision %d variant %d\n", part, ARM_REVISION(version), ARM_VARIANT(version));
+    printf("    Part           0x%X\n", part);
+    printf("    Revision       %d\n", ARM_REVISION(version));
+    printf("    Variant        %d\n", ARM_VARIANT(version));
 
-    printf("\t\tFeatures: ");
-
-    found = FALSE;
-    for (i = 0; i < FLAGS_NUM; i++)
-    {
-    	
-        if (flags[i])
-        {
-            found = TRUE;
-            printf("%s ", features[i]);
-        }
-    }
-    
-    if (!found)
-        printf("None");
-    printf("\n");
+    PrintCPUFeatures(features, flags, FLAGS_NUM);
 }
 
 #endif
