@@ -2153,7 +2153,7 @@ ConvertBString(LONG max_len,STRPTR cstring,APTR bstring)
 	for(len = 0; len < max_len-1 && source[len] != '\0'; len++)
 		;
 #else
-	len = source[0];
+	len = (UBYTE)source[0];
 	source++;
 	if(len > max_len-1)
 		len = max_len-1;
