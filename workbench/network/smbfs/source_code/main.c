@@ -2141,22 +2141,26 @@ AddVolume(
 
 /****************************************************************************/
 
-/* Convert a BCPL string into a standard NUL terminated 'C' string. */
+/* DOS packet names are C strings on fast-BSTR systems and counted strings
+ * elsewhere. Copy only bytes that belong to the source string.
+ */
 INLINE STATIC VOID
 ConvertBString(LONG max_len,STRPTR cstring,APTR bstring)
 {
-	STRPTR from = bstring;
-	LONG len = 
-#if !defined(AROS_FAST_BSTR)
-		from[0];
-
+	STRPTR source = bstring;
+	LONG len;
+#if defined(AROS_FAST_BSTR)
+	for(len = 0; len < max_len-1 && source[len] != '\0'; len++)
+		;
+#else
+	len = source[0];
+	source++;
 	if(len > max_len-1)
-		len =
+		len = max_len-1;
 #endif
-			max_len-1;
 
 	if(len > 0)
-		memcpy(cstring,from+1,len);
+		memcpy(cstring,source,len);
 
 	cstring[len] = '\0';
 }
