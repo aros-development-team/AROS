@@ -192,7 +192,7 @@ STATIC VOID TranslateBName(UBYTE *name, UBYTE *map);
 STATIC VOID Cleanup(VOID);
 STATIC BOOL Setup(STRPTR opt_password, BOOL opt_changecase, LONG *opt_time_zone_offset, LONG *opt_dst_offset, STRPTR translation_file);
 STATIC BOOL AddVolume(STRPTR device_name, STRPTR volume_name, STRPTR service, STRPTR workgroup, STRPTR username, STRPTR opt_password, STRPTR opt_clientname, STRPTR opt_servername, int opt_cachesize, int opt_max_transmit, BOOL opt_raw_smb);
-STATIC VOID ConvertBString(LONG max_len, STRPTR cstring, APTR bstring);
+STATIC BOOL ConvertBString(LONG max_len, STRPTR cstring, APTR bstring);
 STATIC BOOL Action_Startup(struct FileSysStartupMsg *fssm, struct DosList *device_node, SIPTR *error_ptr);
 STATIC BPTR Action_Parent(struct FileLock *parent, SIPTR *error_ptr);
 STATIC LONG Action_DeleteObject(struct FileLock *parent, APTR bcpl_name, SIPTR *error_ptr);
@@ -2144,7 +2144,7 @@ AddVolume(
 /* DOS packet names are C strings on fast-BSTR systems and counted strings
  * elsewhere. Copy only bytes that belong to the source string.
  */
-INLINE STATIC VOID
+INLINE STATIC BOOL
 ConvertBString(LONG max_len,STRPTR cstring,APTR bstring)
 {
 	STRPTR source = bstring;
@@ -2152,17 +2152,21 @@ ConvertBString(LONG max_len,STRPTR cstring,APTR bstring)
 #if defined(AROS_FAST_BSTR)
 	for(len = 0; len < max_len-1 && source[len] != '\0'; len++)
 		;
+
+	if(source[len] != '\0')
+		return FALSE;
 #else
 	len = (UBYTE)source[0];
 	source++;
 	if(len > max_len-1)
-		len = max_len-1;
+		return FALSE;
 #endif
 
 	if(len > 0)
 		memcpy(cstring,source,len);
 
 	cstring[len] = '\0';
+	return TRUE;
 }
 
 /* Convert a NUL terminated 'C' string into a BCPL string. */
@@ -2692,7 +2696,11 @@ Action_DeleteObject(
 	 * BCPL format and needs to be converted into
 	 * 'C' format.
 	 */
-	ConvertBString(sizeof(name),name,bcpl_name);
+	if(!ConvertBString(sizeof(name),name,bcpl_name))
+	{
+		error = ERROR_INVALID_COMPONENT_NAME;
+		goto out;
+	}
 
 	/* Translate the Amiga file name into UTF-8 encoded form? */
 	if (TranslateUTF8)
@@ -2895,7 +2903,11 @@ Action_CreateDir(
 		parent_name = NULL;
 	}
 
-	ConvertBString(sizeof(name),name,bcpl_name);
+	if(!ConvertBString(sizeof(name),name,bcpl_name))
+	{
+		error = ERROR_INVALID_COMPONENT_NAME;
+		goto out;
+	}
 
 	if (TranslateUTF8)
 	{
@@ -3052,7 +3064,11 @@ Action_LocateObject(
 		parent_name = NULL;
 	}
 
-	ConvertBString(sizeof(name),name,bcpl_name);
+	if(!ConvertBString(sizeof(name),name,bcpl_name))
+	{
+		error = ERROR_INVALID_COMPONENT_NAME;
+		goto out;
+	}
 
 	if (TranslateUTF8)
 	{
@@ -3357,7 +3373,11 @@ Action_SetProtect(
 		parent_name = NULL;
 	}
 
-	ConvertBString(sizeof(name),name,bcpl_name);
+	if(!ConvertBString(sizeof(name),name,bcpl_name))
+	{
+		error = ERROR_INVALID_COMPONENT_NAME;
+		goto out;
+	}
 
 	if (TranslateUTF8)
 	{
@@ -3494,7 +3514,11 @@ Action_RenameObject(
 		parent_name = NULL;
 	}
 
-	ConvertBString(sizeof(name),name,source_bcpl_name);
+	if(!ConvertBString(sizeof(name),name,source_bcpl_name))
+	{
+		error = ERROR_INVALID_COMPONENT_NAME;
+		goto out;
+	}
 
 	if (TranslateUTF8)
 	{
@@ -3540,7 +3564,11 @@ Action_RenameObject(
 		parent_name = NULL;
 	}
 
-	ConvertBString(sizeof(name),name,destination_bcpl_name);
+	if(!ConvertBString(sizeof(name),name,destination_bcpl_name))
+	{
+		error = ERROR_INVALID_COMPONENT_NAME;
+		goto out;
+	}
 
 	if (TranslateUTF8)
 	{
@@ -4595,7 +4623,11 @@ Action_Find(
 		parent_name = NULL;
 	}
 
-	ConvertBString(sizeof(name),name,bcpl_name);
+	if(!ConvertBString(sizeof(name),name,bcpl_name))
+	{
+		error = ERROR_INVALID_COMPONENT_NAME;
+		goto out;
+	}
 
 	if (TranslateUTF8)
 	{
@@ -5186,7 +5218,11 @@ Action_SetDate(
 		parent_name = NULL;
 	}
 
-	ConvertBString(sizeof(name),name,bcpl_name);
+	if(!ConvertBString(sizeof(name),name,bcpl_name))
+	{
+		error = ERROR_INVALID_COMPONENT_NAME;
+		goto out;
+	}
 
 	if (TranslateUTF8)
 	{
@@ -5908,7 +5944,11 @@ Action_SetComment(
 		parent_name = NULL;
 	}
 
-	ConvertBString(sizeof(name),name,bcpl_name);
+	if(!ConvertBString(sizeof(name),name,bcpl_name))
+	{
+		error = ERROR_INVALID_COMPONENT_NAME;
+		goto out;
+	}
 
 	if (TranslateUTF8)
 	{
@@ -5952,7 +5992,11 @@ Action_SetComment(
 		goto out;
 	}
 
-	ConvertBString(sizeof(comment),comment,bcpl_comment);
+	if(!ConvertBString(sizeof(comment),comment,bcpl_comment))
+	{
+		error = ERROR_COMMENT_TOO_BIG;
+		goto out;
+	}
 
 	SHOWSTRING(comment);
 
