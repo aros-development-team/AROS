@@ -1629,6 +1629,41 @@ smb_decode_long_dirent (char *p, struct smb_dirent *finfo, int level)
 	return result;
 }
 
+/* Check each FIND record against the assembled data before its fields and
+ * name are used by smb_get_dirent_name() or smb_decode_long_dirent().
+ */
+static int
+smb_long_dirent_size (const char *p, int remaining, int level, int last)
+{
+	if (level == 1)
+	{
+		int size;
+
+		if (remaining < 28)
+			return -EIO;
+		size = 28 + BVAL (p, 26);
+		if (size > remaining || memchr (p + 27, '\0', size - 27) == NULL)
+			return -EIO;
+		return size;
+	}
+	else if (level == 260)
+	{
+		dword name_len, next;
+
+		if (remaining < 94)
+			return -EIO;
+		name_len = DVAL (p, 60);
+		next = DVAL (p, 0);
+		if (name_len > (dword)(remaining - 94) ||
+		    (next == 0 && !last) ||
+		    (next != 0 && (next < 94 + name_len || next > (dword)remaining)))
+			return -EIO;
+		return next != 0 ? next : remaining;
+	}
+
+	return -EIO;
+}
+
 static int
 smb_proc_readdir_long (struct smb_server *server, char *path, int fpos, int cache_size, struct smb_dirent *entry)
 {
@@ -1799,9 +1834,11 @@ smb_proc_readdir_long (struct smb_server *server, char *path, int fpos, int cach
 			break;
 		}
 
-		/* ZZZ bail out if this is empty. */
-		if (resp_param == NULL)
-			break;
+		if (resp_param == NULL || resp_param_len < (first != 0 ? 6 : 4))
+		{
+			error = -EIO;
+			goto fail;
+		}
 
 		/* parse out some important return info */
 		p = resp_param;
@@ -1821,16 +1858,28 @@ smb_proc_readdir_long (struct smb_server *server, char *path, int fpos, int cach
 		if (ff_searchcount == 0)
 			break;
 
-		/* ZZZ bail out if this is empty. */
 		if (resp_data == NULL)
-			break;
+		{
+			error = -EIO;
+			goto fail;
+		}
 
 		/* point to the data bytes */
 		p = resp_data;
 
 		/* Now we are ready to parse smb directory entries. */
+		int remaining = resp_data_len;
 		for (i = 0; i < ff_searchcount; i++)
 		{
+			int entry_size = smb_long_dirent_size (p, remaining, info_level,
+				i == ff_searchcount - 1);
+			if (entry_size < 0)
+			{
+				error = entry_size;
+				goto fail;
+			}
+			remaining -= entry_size;
+
 			if(i == ff_searchcount - 1)
 			{
 				char * last_name;
