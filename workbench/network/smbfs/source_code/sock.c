@@ -84,6 +84,12 @@ smb_receive_raw (const struct smb_server *server, int sock_fd, unsigned char *ta
 		/* 0x85 == session keepalive */
 		case 0x85:
 
+			/* Keepalives have no payload to leave in the byte stream. */
+			if (netbios_session_payload_size != 0)
+			{
+				result = -EIO;
+				goto out;
+			}
 			LOG (("smb_receive_raw: Got SESSION KEEP ALIVE\n"));
 			goto re_recv;
 
