@@ -12,9 +12,16 @@ USER_LDFLAGS := -static
 %build_prog progname="Bluetooth" mmake=kernel-bluetooth-prefs \
     files=$(FILES) targetdir=$(AROS_PREFS)
 
-# Placeholder icon (reuses the Trident prefs icon) so the program is
-# clickable in the Prefs drawer; a dedicated Bluetooth icon is a follow-up.
+# Keep the original Trident-based fallback for other icon sets.
+# Gorilla and GorillaSmall supply Bluetooth.info through their iconsets.
+ifeq ($(filter Gorilla GorillaSmall,$(AROS_TARGET_ICONSET)),)
 %copy_files_q mmake=kernel-bluetooth-prefs-icon \
     src="$(SRCDIR)/$(CURDIR)" files="Bluetooth.info" dst="$(AROS_PREFS)"
+else
+.PHONY: kernel-bluetooth-prefs-icon
+#MM
+kernel-bluetooth-prefs-icon:
+	@$(NOP)
+endif
 
 %common
