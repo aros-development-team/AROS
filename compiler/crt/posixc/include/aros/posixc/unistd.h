@@ -336,7 +336,9 @@ enum {
     _SC_XOPEN_VERSION,
     /* Extensions (glibc/BSD), appended so the POSIX values above keep their
        numbers. */
-    _SC_PHYS_PAGES
+    _SC_PHYS_PAGES,
+    _SC_NPROCESSORS_CONF,
+    _SC_NPROCESSORS_ONLN
 };
 /*
     Make the sysconf() name constants visible to the preprocessor
@@ -468,6 +470,8 @@ enum {
 #define _SC_XOPEN_UUCP _SC_XOPEN_UUCP
 #define _SC_XOPEN_VERSION _SC_XOPEN_VERSION
 #define _SC_PHYS_PAGES _SC_PHYS_PAGES
+#define _SC_NPROCESSORS_CONF _SC_NPROCESSORS_CONF
+#define _SC_NPROCESSORS_ONLN _SC_NPROCESSORS_ONLN
 
 #define STDIN_FILENO    0
 #define STDOUT_FILENO   1

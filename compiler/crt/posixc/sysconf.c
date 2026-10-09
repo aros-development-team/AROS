@@ -7,7 +7,9 @@
 #include <errno.h>
 #include <limits.h>
 #include <exec/memory.h>
+#include <resources/processor.h>
 #include <proto/exec.h>
+#include <proto/processor.h>
 
 /*****************************************************************************
 
@@ -28,8 +30,8 @@
 
     NOTES
         Only _SC_ARG_MAX, _SC_PAGESIZE/_SC_PAGE_SIZE, _SC_CLK_TCK and the
-        _SC_PHYS_PAGES extension are implemented; other names fail with
-        EINVAL.
+        _SC_PHYS_PAGES, _SC_NPROCESSORS_CONF and _SC_NPROCESSORS_ONLN
+        extensions are implemented; other names fail with EINVAL.
 
     EXAMPLE
 
@@ -62,6 +64,19 @@
             /* What times() and clock() count in; CPython refuses to start
                when this query fails. */
             return CLOCKS_PER_SEC;
+
+        case _SC_NPROCESSORS_CONF:
+        case _SC_NPROCESSORS_ONLN:
+        {
+            /* CPUs are not brought on- or offline at run time, so both are
+               the count processor.resource reports. */
+            APTR ProcessorBase = OpenResource(PROCESSORNAME);
+            ULONG count = 0;
+
+            if (ProcessorBase)
+                GetCPUInfoTags(GCIT_NumberOfProcessors, (IPTR)&count, TAG_DONE);
+            return count ? (long)count : 1;
+        }
 
         default:
             errno = EINVAL;
