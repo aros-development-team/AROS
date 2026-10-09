@@ -395,6 +395,57 @@ smb_connect (struct smb_server *server)
  *
  ****************************************************************************/
 
+/* A NetBIOS session reply is a four-byte control frame, not an SMB reply. */
+int
+smb_request_session (struct smb_server *server)
+{
+	int sock_fd = server->mount_data.fd;
+	byte *packet = server->packet;
+	byte reply[4];
+	int result;
+
+	if (sock_fd < 0 || packet == NULL)
+	{
+		result = -EBADF;
+		goto out;
+	}
+	if (server->state != CONN_VALID)
+	{
+		result = -EIO;
+		goto out;
+	}
+
+	result = smb_send_all (sock_fd, packet, smb_len (packet) + 4);
+	if (result < 0)
+		goto out;
+
+	result = smb_receive_all (sock_fd, reply, sizeof(reply));
+	if (result < 0)
+		goto out;
+
+	#if defined(DUMP_SMB)
+	dump_netbios_header(__FILE__,__LINE__,reply,NULL,0);
+	#endif
+
+	if (reply[0] != 0x82 || reply[1] != 0 || smb_len(reply) != 0)
+	{
+		result = -EIO;
+		goto out;
+	}
+
+	memcpy(packet,reply,sizeof(reply));
+	result = 0;
+
+ out:
+	if (result < 0)
+	{
+		server->state = CONN_INVALID;
+		smb_invalidate_all_inodes(server);
+	}
+
+	return result;
+}
+
 /* Returns number of bytes received (>= 0) or a negative value in
  * case of error.
  */
