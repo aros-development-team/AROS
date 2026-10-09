@@ -171,6 +171,52 @@ smb_receive_raw (const struct smb_server *server, int sock_fd, unsigned char *ta
 	return result;
 }
 
+/* Transaction offsets are relative to the SMB header, not the NetBIOS
+ * header. Verify each fragment before reading its words or copying its data.
+ */
+static int
+smb_valid_trans2_response (const byte *packet, int payload_length)
+{
+	int packet_length = payload_length + 4;
+	int word_count;
+	int bytes_offset;
+	int data_start;
+	int data_end;
+	int param_count, param_offset;
+	int data_count, data_offset;
+
+	if (packet_length < SMB_HEADER_LEN + 10 * 2 + 2 ||
+	    packet[4] != 0xff || packet[5] != 'S' ||
+	    packet[6] != 'M' || packet[7] != 'B' ||
+	    packet[8] != SMBtrans2)
+		return -EIO;
+
+	word_count = packet[SMB_HEADER_LEN - 1];
+	if (word_count < 10 || packet_length < SMB_HEADER_LEN + word_count * 2 + 2)
+		return -EIO;
+
+	bytes_offset = SMB_HEADER_LEN + word_count * 2;
+	if (packet_length < bytes_offset + 2 + WVAL(packet,bytes_offset))
+		return -EIO;
+
+	data_start = bytes_offset + 2 - 4;
+	data_end = data_start + WVAL(packet,bytes_offset);
+	param_count = WVAL(packet,smb_prcnt);
+	param_offset = WVAL(packet,smb_proff);
+	data_count = WVAL(packet,smb_drcnt);
+	data_offset = WVAL(packet,smb_droff);
+
+	if ((param_count != 0 &&
+	     (param_offset < data_start || param_offset > data_end ||
+	      param_count > data_end - param_offset)) ||
+	    (data_count != 0 &&
+	     (data_offset < data_start || data_offset > data_end ||
+	      data_count > data_end - data_offset)))
+		return -EIO;
+
+	return 0;
+}
+
 /* smb_receive
    fs points to the correct segment, server != NULL, sock!=NULL */
 int
@@ -216,9 +262,20 @@ smb_receive_trans2 (struct smb_server *server, int sock_fd, int *data_len, int *
 	result = smb_receive (server, sock_fd);
 	if (result < 0)
 		goto fail;
+	if (result < 9)
+	{
+		result = -EIO;
+		goto fail;
+	}
 
 	if (server->rcls != 0)
 		goto fail;
+
+	if (smb_valid_trans2_response(inbuf,result) != 0)
+	{
+		result = -EIO;
+		goto fail;
+	}
 
 	/* parse out the lengths */
 	total_data = WVAL (inbuf, smb_tdrcnt);
@@ -316,12 +373,22 @@ smb_receive_trans2 (struct smb_server *server, int sock_fd, int *data_len, int *
 		result = smb_receive (server, sock_fd);
 		if (result < 0)
 			goto fail;
+		if (result < 9)
+		{
+			result = -EIO;
+			goto fail;
+		}
 
 		if (server->rcls != 0)
 		{
 			/* smb_trans2_request() will check server->rcls, etc. and
 			 * produce a matching error code value.
 			 */
+			result = -EIO;
+			goto fail;
+		}
+		if (smb_valid_trans2_response(inbuf,result) != 0)
+		{
 			result = -EIO;
 			goto fail;
 		}
