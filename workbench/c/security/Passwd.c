@@ -37,10 +37,12 @@
 
 #include <dos/dos.h>
 #include <libraries/security.h>
+#include <libraries/pam.h>
+#include <proto/pam.h>
 
 #include <string.h>
 
-const TEXT version[] = "$VER: Passwd 45.1 (28.08.2026)";
+const TEXT version[] = "$VER: Passwd 45.2 (06.10.2026)";
 
 #define TEMPLATE "OLD/K,NEW/K"
 
@@ -91,6 +93,45 @@ static BOOL ReadPassword(CONST_STRPTR prompt, STRPTR buf, ULONG size)
     return ok;
 }
 
+struct Library *PamBase;
+
+/*
+ * Change the password through pam.library's "passwd" service when the
+ * library is available (the stack decides what a password change means on
+ * this system), otherwise directly through security.library.
+ */
+static BOOL ChangePassword(STRPTR oldpwd, STRPTR newpwd)
+{
+    struct PamHandle *h;
+    struct secUserInfo *info;
+    LONG r = PAM_SYSTEM_ERR;
+    BOOL done = FALSE;
+
+    if ((PamBase = OpenLibrary(PAMNAME, PAMVERSION)))
+    {
+        if ((info = secAllocUserInfo()))
+        {
+            info->uid = (UWORD)(secGetTaskOwner(NULL) >> 16);
+            if (secGetUserInfo(info, secKeyType_uid) &&
+                (h = PamStartA("passwd", info->UserID, NULL, NULL)))
+            {
+                PamSetItem(h, PAM_OLDAUTHTOK, oldpwd);
+                PamSetItem(h, PAM_AUTHTOK, newpwd);
+                r = PamChAuthTok(h, 0);
+                if (r != PAM_SUCCESS)
+                    Printf("%s\n", PamStrError(h, r));
+                PamEnd(h, r);
+                done = TRUE;
+            }
+            secFreeUserInfo(info);
+        }
+        CloseLibrary(PamBase);
+        if (done)
+            return r == PAM_SUCCESS;
+    }
+    return secPasswd(oldpwd, newpwd);
+}
+
 int main(void)
 {
     IPTR args[ARG_COUNT] = { 0 };
@@ -133,7 +174,7 @@ int main(void)
                 }
                 n = newpwd;
             }
-            if (secPasswd(o, n))
+            if (ChangePassword(o, n))
             {
                 PutStr("Password successfully changed\n");
                 rc = RETURN_OK;

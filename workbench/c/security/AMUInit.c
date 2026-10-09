@@ -65,7 +65,7 @@
 #include <libraries/security.h>
 #include <string.h>
 
-const TEXT version[] = "$VER: AMUInit 45.3 (31.08.2026)";
+const TEXT version[] = "$VER: AMUInit 45.4 (06.10.2026)";
 
 #define TEMPLATE "ENABLE/S,DISABLE/S,VOLUME/A,FORCE/S"
 enum { ARG_ENABLE, ARG_DISABLE, ARG_VOLUME, ARG_FORCE, ARG_COUNT };
@@ -75,7 +75,7 @@ enum { ARG_ENABLE, ARG_DISABLE, ARG_VOLUME, ARG_FORCE, ARG_COUNT };
 #define STARTUP_OFF     "S/Security-Startup.disabled"
 
 static const char StartupScript[] =
-    "; $VER: Security-Startup 45.8 (31.08.2026)\n"
+    "; $VER: Security-Startup 45.9 (06.10.2026)\n"
     ";\n"
     "FailAt 21\n"
     "Assign LIBS: SYS:Classes ADD\n"
@@ -125,7 +125,7 @@ static const char StartupScript[] =
     "    SetOwner \"SYS:Security\" UID=65535 GID=65535 >NIL:\n"
     "    Protect \"SYS:Security\" rwed GROUP=re OTHER=re QUIET\n"
     "    SetOwner \"SYS:Security/passwd\" UID=65535 GID=65535 >NIL:\n"
-    "    Protect \"SYS:Security/passwd\" rwd GROUP=r OTHER=r QUIET\n"
+    "    Protect \"SYS:Security/passwd\" rwd QUIET\n"
     "    SetOwner \"SYS:Security/group\" UID=65535 GID=65535 >NIL:\n"
     "    Protect \"SYS:Security/group\" rwd GROUP=r OTHER=r QUIET\n"
     "    If EXISTS \"SYS:Security/Security.config\"\n"

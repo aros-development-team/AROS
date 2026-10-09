@@ -23,6 +23,7 @@
 #include "security_intern.h"
 #include "security_task.h"
 #include "security_login.h"
+#include "security_auth.h"
 #include "security_server.h"
 #include "security_userinfo.h"
 #include "security_memory.h"
@@ -51,6 +52,7 @@ BOOL InterpretTagList(struct SecurityBase *secBase, struct TagItem *taglist, str
     tags->Quiet = FALSE;
     tags->All = FALSE;
     tags->NoLog = FALSE;
+    tags->Ticket = 0;
 
     while ((tag = NextTagItem(&tstate)))
     {
@@ -70,6 +72,7 @@ BOOL InterpretTagList(struct SecurityBase *secBase, struct TagItem *taglist, str
         case secT_All:           tags->All = tag->ti_Data ? TRUE : FALSE;       break;
         case secT_NoLog:         tags->NoLog = tag->ti_Data ? TRUE : FALSE;     break;
         case secT_System:        tags->System = tag->ti_Data ? TRUE : FALSE;    break;
+        case secT_Ticket:        tags->Ticket = (ULONG)tag->ti_Data;             break;
         }
     }
 
@@ -564,6 +567,80 @@ static void PostLogin(struct SecurityBase *secBase, struct secTags *tags, struct
     }
 }
 
+/*
+ * Login through pam.library when it is available: the "login" service's
+ * stack decides. Without a service file the stack is the built-in default,
+ * which on a configured system is the "security" module, so the behaviour
+ * is that of LoginRequest(). An administrator may add modules to
+ * SYS:Security/PAM/login.
+ *
+ * Returns PAMLOGIN_FALLBACK when pam.library cannot be used for this
+ * request (not on disk, graphical login, root logging in without a
+ * password): the caller then uses LoginRequest().
+ */
+#define PAMLOGIN_FALLBACK   ((struct secPrivUserInfo *)-1)
+
+#include <libraries/pam.h>
+#include <proto/pam.h>
+
+static struct secPrivUserInfo *PamLoginRequest(struct SecurityBase *secBase, struct secTags *tags, BOOL failallowed, BOOL nopasswd, struct LocaleInfo *li)
+{
+    struct Library *PamBase;
+    struct PamHandle *h;
+    struct secPrivUserInfo *info = NULL;
+    CONST_STRPTR user;
+    LONG r;
+
+    if (tags->Graphical || nopasswd || !secBase->sec_AfterDOSDone)
+        return PAMLOGIN_FALLBACK;
+    if (!(PamBase = OpenLibrary(PAMNAME, PAMVERSION)))
+        return PAMLOGIN_FALLBACK;
+
+    for (;;)
+    {
+        struct TagItem ptags[] =
+        {
+            { PAMT_Interactive, (tags->UserID && tags->Password) ? FALSE : TRUE },
+            { PAMT_Input,       (IPTR)tags->Input      },
+            { PAMT_Output,      (IPTR)tags->Output     },
+            { tags->Password ? PAMT_AuthTok : TAG_IGNORE, (IPTR)tags->Password },
+            { PAMT_Task,        (IPTR)tags->Task       },
+            { TAG_DONE,         0                      }
+        };
+
+        if (!(h = PamStartA("login", tags->UserID, NULL, ptags)))
+            break;
+        r = PamAuthenticate(h, 0);
+        if (r == PAM_SUCCESS)
+            r = PamAcctMgmt(h, 0);
+        if (r == PAM_SUCCESS && PamGetItem(h, PAM_USER, (APTR *)&user) == PAM_SUCCESS && user)
+        {
+            if ((info = (struct secPrivUserInfo *)secAllocUserInfo()))
+            {
+                strncpy(info->Pub.UserID, user, secUSERIDSIZE - 1);
+                if (secGetUserInfo(&info->Pub, secKeyType_UserID))
+                    CreateUserProfile(secBase, info);
+                else
+                {
+                    secFreeUserInfo((struct secUserInfo *)info);
+                    info = NULL;
+                    r = PAM_USER_UNKNOWN;
+                }
+            }
+        }
+        PamEnd(h, r);
+
+        if (info || r == PAM_CONV_ERR || failallowed)
+            break;
+        /* secLogoutA(): ask again until somebody logs in */
+        myfputs(secBase, tags->Output, GetLocS(secBase, li, MSG_LOGINFAIL_CON));
+        if (!tags->Input)
+            break;
+    }
+    CloseLibrary(PamBase);
+    return info;
+}
+
 /*****************************************************************************
 
     NAME */
@@ -633,7 +710,10 @@ static void PostLogin(struct SecurityBase *secBase, struct secTags *tags, struct
     if (nobody && !tags.Quiet && secBase->Configured)
     {
         OpenLoc(secBase, &li);
-        if ((info = LoginRequest(secBase, &tags, FALSE, FALSE, &li)))
+        info = PamLoginRequest(secBase, &tags, FALSE, FALSE, &li);
+        if (info == PAMLOGIN_FALLBACK)
+            info = LoginRequest(secBase, &tags, FALSE, FALSE, &li);
+        if (info)
         {
             if ((xuser = secUserInfo2ExtOwner((struct secUserInfo *)info)))
             {
@@ -690,6 +770,8 @@ static void PostLogin(struct SecurityBase *secBase, struct secTags *tags, struct
         secT_UserID     - (STRPTR) do not ask for a UserID.
         secT_Password   - (STRPTR) do not ask for a password (needs secT_UserID).
         secT_NoLog      - (BOOL) do not log this action (root only).
+        secT_Ticket     - (ULONG) a ticket from secVerifyUserA(): log in the
+                          user it was issued for, without prompting.
 
     RESULT
         The user that logged in (uid<<16 | gid), or secOWNER_NOBODY for a
@@ -732,10 +814,26 @@ static void PostLogin(struct SecurityBase *secBase, struct secTags *tags, struct
         /* Unconfigured: everybody is root */
         xuser = CloneExtOwner(&RootExtOwner);
     }
+    else if (tags.Ticket)
+    {
+        /* A ticket from secVerifyUserA(): the user was authenticated by the
+         * authentication process on behalf of this task; no prompt */
+        if ((info = RedeemTicket(secBase, tags.Ticket)))
+            xuser = secUserInfo2ExtOwner((struct secUserInfo *)info);
+        if (!xuser)
+        {
+            if (info)
+                secFreeUserInfo((struct secUserInfo *)info);
+            return secOWNER_NOBODY;
+        }
+    }
     else
     {
         OpenLoc(secBase, &li);
-        if ((info = LoginRequest(secBase, &tags, TRUE, isroot, &li)))
+        info = PamLoginRequest(secBase, &tags, TRUE, isroot, &li);
+        if (info == PAMLOGIN_FALLBACK)
+            info = LoginRequest(secBase, &tags, TRUE, isroot, &li);
+        if (info)
             xuser = secUserInfo2ExtOwner((struct secUserInfo *)info);
         CloseLoc(secBase, &li);
         if (!xuser)

@@ -23,6 +23,8 @@ struct secConfig
     ULONG               LogFlags;               /* See definitions below                        */
     UWORD               PasswduidLevel;         /* Highest uid for users who can change passwd  */
     UWORD               PasswdgidLevel;         /* Highest gid for users who can change passwd  */
+    UWORD               MaxTries;               /* Security.auth: failures before a lock-out    */
+    UWORD               LockTime;               /* Security.auth: lock-out time in seconds      */
 };
 
 #define secCFGB_LimitDOSSetProtection   (0)     /* LimitDOSSetProtection                */
@@ -30,12 +32,14 @@ struct secConfig
 #define secCFGB_LastLoginReq            (2)     /* Display the lastlogin date           */
 #define secCFGB_UseFSTab                (3)     /* Use the fstab file for extra FS      */
 #define secCFGB_RT                      (4)     /* Enable resourcetracking (unused)     */
+#define secCFGB_HashedLogin             (5)     /* secVerifyUserA() accepts secHASH_#?  */
 
 #define secCFGF_LimitDOSSetProtection   (1 << secCFGB_LimitDOSSetProtection)
 #define secCFGF_Profile                 (1 << secCFGB_Profile)
 #define secCFGF_LastLoginReq            (1 << secCFGB_LastLoginReq)
 #define secCFGF_UseFSTab                (1 << secCFGB_UseFSTab)
 #define secCFGF_RT                      (1 << secCFGB_RT)
+#define secCFGF_HashedLogin             (1 << secCFGB_HashedLogin)
 
 #define secLogB_Startup                 (0)     /* Startup Information                  */
 #define secLogB_Login                   (1)     /* Log successful Login/Logout          */

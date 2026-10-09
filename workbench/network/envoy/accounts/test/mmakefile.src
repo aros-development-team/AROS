@@ -1,0 +1,17 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+#
+# accounts.library test program
+
+include $(SRCDIR)/config/aros.cfg
+
+EXEDIR := $(AROS_TESTS)/envoy
+FILES  := acctest
+
+USER_INCLUDES := -I$(SRCDIR)/workbench/network/envoy/include
+
+#MM- test : test-envoy-accounts
+#MM test-envoy-accounts : includes linklibs includes-copy-envoy workbench-network-envoy-nipc-includes workbench-network-envoy-nipc-linklib workbench-network-envoy-accounts-includes workbench-network-envoy-accounts-linklib
+
+%build_progs mmake=test-envoy-accounts files=$(FILES) targetdir=$(EXEDIR) uselibs="accounts nipc"
+
+%common

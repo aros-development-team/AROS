@@ -1183,3 +1183,73 @@ diff -ruN mesa-26.0.0/src/gallium/drivers/vc4/vc4_uniforms.c mesa-26.0.0.aros/sr
  }
  
  static void
+diff -ruN mesa-26.0.0/src/util/os_drm.h mesa-26.0.0.aros/src/util/os_drm.h
+--- mesa-26.0.0/src/util/os_drm.h
++++ mesa-26.0.0.aros/src/util/os_drm.h
+@@ -14,10 +14,32 @@
+ #error "Windows shouldn't include this."
+ #endif
+ 
+-#include <sys/ioctl.h>
+ #include <errno.h>
+ #include <xf86drm.h>
+ 
++#ifdef __AROS__
++/* the kernel driver runs in-process; requests go through the libdrm shim */
++static inline int
++drm_ioctl(int fd, uint32_t request, void *arg)
++{
++   return drmIoctl(fd, request, arg);
++}
++
++static inline int
++drm_ioctl_write(int fd, unsigned drm_command_index, void *data, unsigned size)
++{
++   return drmCommandWrite(fd, drm_command_index, data, size);
++}
++
++static inline int
++drm_ioctl_write_read(int fd, unsigned drm_command_index, void *data,
++                     unsigned size)
++{
++   return drmCommandWriteRead(fd, drm_command_index, data, size);
++}
++#else
++#include <sys/ioctl.h>
++
+ static inline int
+ drm_ioctl(int fd, uint32_t request, void *arg)
+ {
+@@ -48,3 +70,5 @@
+ }
+ 
+ #endif
++
++#endif
+diff -ruN mesa-26.0.0/src/gallium/winsys/amdgpu/drm/amdgpu_winsys.c mesa-26.0.0.aros/src/gallium/winsys/amdgpu/drm/amdgpu_winsys.c
+--- mesa-26.0.0/src/gallium/winsys/amdgpu/drm/amdgpu_winsys.c
++++ mesa-26.0.0.aros/src/gallium/winsys/amdgpu/drm/amdgpu_winsys.c
+@@ -156,8 +156,10 @@
+    if (!locked)
+       simple_mtx_unlock(&dev_tab_mutex);
+ 
++#ifndef __AROS__
+    if (sws->fd != aws->fd)
+       close(sws->fd);
++#endif
+ 
+    if (destroy)
+       do_winsys_deinit(aws);
+@@ -549,7 +551,12 @@
+    }
+ 
+    if (sws->fd < 0)
++#ifdef __AROS__
++      /* the fd is an index into the in-process shim */
++      sws->fd = fd;
++#else
+       sws->fd = os_dupfd_cloexec(fd);
++#endif
+ 
+    sws->aws = aws;
+ 

@@ -977,6 +977,7 @@ BOOL AmigaVideoDisplay__Hidd_Display__SetCursorShape(OOP_Class *cl, OOP_Object *
     if (width > maxw || height > maxh)
         return FALSE;
 
+    csd->classic_cursor_data = NULL;
     OOP_GetAttr(o, aHidd_Display_GfxHidd, (IPTR *)&gfx);
     if (!setsprite(csd->amigagfxclass, gfx, width, height, msg))
         return FALSE;
@@ -1003,6 +1004,23 @@ BOOL AmigaVideoCl__Hidd_AmigaGfx__SetSpriteShape(OOP_Class *cl, OOP_Object *o, s
     if (!new_setsprite(cl, o, width, height, msg, spritenum))
         return FALSE;
 
+    return TRUE;
+}
+
+BOOL AmigaVideoCl__Hidd_AmigaGfx__SetClassicCursorData(OOP_Class *cl, OOP_Object *o,
+    struct pHidd_AmigaGfx_SetClassicCursorData *msg)
+{
+    struct amigavideo_staticdata *csd = CSD(cl);
+
+    if (!msg->data || msg->height <= 0 || msg->height > 128 ||
+        !(TypeOfMem(msg->data) & MEMF_CHIP))
+        return FALSE;
+    csd->classic_cursor_data = msg->data;
+    csd->classic_cursor_height = msg->height;
+    csd->classic_cursor_xoffset = msg->xoffset;
+    csd->classic_cursor_yoffset = msg->yoffset;
+    csd->fmode_spr = 0;
+    setspritevisible(csd, csd->cursorvisible);
     return TRUE;
 }
 

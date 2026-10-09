@@ -24,7 +24,7 @@ void ReplyPacket(struct DosPacket *pkt, struct ExecBase *sysbase);
 
 /* direntry.c */
 void InitDir(struct FSSuper *sb, ULONG cluster, struct DirEntry *de);
-LONG InitDirHandle(struct FSSuper *sb, ULONG cluster, struct DirHandle *dh,
+void InitDirHandle(struct FSSuper *sb, ULONG cluster, struct DirHandle *dh,
     BOOL reuse, struct Globals *glob);
 LONG ReleaseDirHandle(struct DirHandle *dh, struct Globals *glob);
 LONG GetDirEntry(struct DirHandle *dh, ULONG index, struct DirEntry *de,
@@ -68,8 +68,8 @@ BOOL SetFat16Entry(struct FSSuper *sb, ULONG n, ULONG val);
 BOOL SetFat32Entry(struct FSSuper *sb, ULONG n, ULONG val);
 LONG FindFreeCluster(struct FSSuper *sb, ULONG *rcluster);
 void CountFreeClusters(struct FSSuper *sb);
-void AllocCluster(struct FSSuper *sb, ULONG cluster);
-void FreeCluster(struct FSSuper *sb, ULONG cluster);
+BOOL AllocCluster(struct FSSuper *sb, ULONG cluster);
+BOOL FreeCluster(struct FSSuper *sb, ULONG cluster);
 
 /* volume.c */
 LONG ReadFATSuper(struct FSSuper *s);

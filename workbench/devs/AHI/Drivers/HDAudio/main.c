@@ -134,6 +134,12 @@ ULONG _AHIsub_AllocAudio(struct TagItem *taglist,
             }
         }
 
+        /* Report the rate the hardware will actually run. The converter and
+           stream formats are programmed from selected_freq_index, not from
+           the request, so without this the mixer runs the request while the
+           hardware runs the nearest listed rate and nothing reports it. */
+        AudioCtrl->ahiac_MixFreq = card->frequencies[card->selected_freq_index].frequency;
+
         if(card->bitsizes[card->selected_bitsize_index] == 24)
             ret |= AHISF_KNOWHIFI;
 

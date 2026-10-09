@@ -26,8 +26,11 @@
 #include <kern/amiga_log.h>
 #include <net/route.h>
 #include <net/if.h>
+#include <net/if_types.h>
 #include <net/if_protos.h>
 #include <net/pfil.h>
+#include <sys/socketvar.h>
+#include <sys/sysctl.h>
 #include <errno.h>
 #include <netdb.h>
 #include <string.h>
@@ -166,12 +169,48 @@ AROS_LH7(int, MiamiSysCtl,
         )
 {
     AROS_LIBFUNC_INIT
+#ifdef ENABLE_SYSCTL
+    size_t oldlen = 0, nlen;
+    int error;
+#endif
+
 #if defined(__AROS__)
     D(bug("[AROSTCP.MIAMI] miami_api.c: MiamiSysCtl()\n"));
 #endif
 
+#ifdef ENABLE_SYSCTL
+    /*
+     * BSD sysctl() over the net.inet.{ip,tcp,udp} MIB (kern_sysctl()).  The
+     * six leading arguments are the standard sysctl() parameters; name[] is
+     * the MIB OID path, e.g. { CTL_NET, PF_INET, IPPROTO_TCP, TCPCTL_STATS }.
+     * Returns 0 on success or a (positive) BSD error number.
+     *
+     * NOTE: the 7th argument (len, register D2) is a Miami-specific parameter
+     * whose meaning is not yet verified against the Miami SDK autodoc.  For
+     * native AROS callers the MIB name[] is a LONG array (LONG == int here),
+     * so no element-stride fix-up is needed and len is ignored; reconcile with
+     * the SDK before relying on it.
+     */
+    (void)len;
+    if(name == NULL || namelen == 0)
+        return EINVAL;
+
+    if(oldlenp)
+        oldlen = (size_t)(ULONG)*oldlenp;
+    nlen = (size_t)(ULONG)newlen;
+
+    ObtainSemaphore(&syscall_semaphore);
+    error = kern_sysctl((int *)name, (u_int)namelen, oldp,
+                        oldlenp ? &oldlen : NULL, newp, nlen);
+    ReleaseSemaphore(&syscall_semaphore);
+
+    if(oldlenp)
+        *oldlenp = (LONG)oldlen;
+    return error;
+#else
     __log(LOG_CRIT, "MiamiSysCtl() is not implemented");
     return ENOSYS;
+#endif
     AROS_LIBFUNC_EXIT
 }
 
@@ -284,13 +323,30 @@ AROS_LH1(int, MiamiGetHardwareLen,
         )
 {
     AROS_LIBFUNC_INIT
+    struct ifnet *ifp;
+    int len = 0;
 
 #if defined(__AROS__)
-    D(bug("[AROSTCP.MIAMI] miami_api.c: MiamiGetHardwareLen()\n"));
+    D(bug("[AROSTCP.MIAMI] miami_api.c: MiamiGetHardwareLen(%s)\n", name ? name : "(null)"));
 #endif
 
-    __log(LOG_CRIT, "MiamiGetHardwareLen() is not implemented");
-    return 0;
+    /*
+     * Return the link-layer (hardware) address length, in bytes, of the
+     * named interface -- 6 for an ethernet or Wi-Fi link.  Only interfaces
+     * that actually carry a hardware MAC qualify (IFT_ETHER, set solely by
+     * the SANA-II ethernet wire type, and IFT_IEEE80211 for Wi-Fi); a
+     * loopback, point-to-point (PPP/SLIP), tunnel or unknown interface -- or
+     * one that is not present -- has no hardware address and returns 0.
+     */
+    if(name != NULL) {
+        ObtainSemaphore(&syscall_semaphore);
+        ifp = ifunit((char *)name);
+        if(ifp != NULL &&
+           (ifp->if_type == IFT_ETHER || ifp->if_type == IFT_IEEE80211))
+            len = ifp->if_addrlen;
+        ReleaseSemaphore(&syscall_semaphore);
+    }
+    return len;
 
     AROS_LIBFUNC_EXIT
 }
@@ -1025,13 +1081,36 @@ AROS_LH1(LONG, sockatmark,
         )
 {
     AROS_LIBFUNC_INIT
+    struct socket *so;
+    LONG atmark;
 
 #if defined(__AROS__)
-    D(bug("[AROSTCP.MIAMI] miami_api.c: sockatmark()\n"));
+    D(bug("[AROSTCP.MIAMI] miami_api.c: sockatmark(%ld)\n", sockfd));
 #endif
 
-    __log(LOG_CRIT, "sockatmark() is not implemented");
-    return 0;
+    /*
+     * POSIX.1g sockatmark(): return 1 if the socket's read pointer is at
+     * the out-of-band mark, 0 if not, -1 (errno EBADF) for a bad descriptor.
+     * This is the state the SIOCATMARK ioctl reports (SS_RCVATMARK, kept by
+     * the TCP input and receive paths).  The descriptor is resolved in the
+     * SocketBase miami.library holds (SocketBase == MiamiBase->_SocketBase),
+     * as with every fd-based Miami call.
+     */
+    if(SocketBase == NULL) {
+        return -1;
+    }
+
+    ObtainSyscallSemaphore(SocketBase);
+    if((ULONG)sockfd >= (ULONG)SocketBase->dTableSize ||
+       (so = SocketBase->dTable[(short)sockfd]) == NULL) {
+        ReleaseSyscallSemaphore(SocketBase);
+        writeErrnoValue(SocketBase, EBADF);
+        return -1;
+    }
+    atmark = (so->so_state & SS_RCVATMARK) != 0;
+    ReleaseSyscallSemaphore(SocketBase);
+
+    return atmark;
 
     AROS_LIBFUNC_EXIT
 }

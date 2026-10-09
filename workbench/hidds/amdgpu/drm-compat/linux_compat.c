@@ -1,0 +1,77 @@
+/*-
+ * Copyright (c) 2010 Isilon Systems, Inc.
+ * Copyright (c) 2010 iX Systems, Inc.
+ * Copyright (c) 2010 Panasas, Inc.
+ * Copyright (c) 2013-2021 Mellanox Technologies, Ltd.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice unmodified, this list of conditions, and the following
+ *    disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+ * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include <aros/debug.h>
+
+#include <linux/kernel.h>
+#include <linux/slab.h>
+#include <linux/rbtree.h>
+#include <linux/list.h>
+#include <string.h>
+/* Undo Linux compat changes. */
+#undef RB_ROOT
+#undef file
+#undef cdev
+#define	RB_ROOT(head)	(head)->rbh_root
+
+int
+panic_cmp(struct rb_node *one, struct rb_node *two)
+{
+	bug("no cmp in rbtree");
+	return 0;
+}
+
+RB_GENERATE(linux_root, rb_node, __entry, panic_cmp);
+
+#include <linux/list_sort.h>
+
+void
+list_sort(void *priv, struct list_head *head, list_cmp_func_t cmp)
+{
+    struct list_head *p, *q;
+    int swapped;
+
+    if (list_empty(head) || list_is_singular(head))
+        return;
+
+    do {
+        swapped = 0;
+        list_for_each(p, head) {
+            q = p->next;
+            if (q == head) break;
+            if (cmp(priv, p, q) > 0) {
+                list_del(p);
+                list_add(p, q);   /* insert p after q */
+                p = q;            /* advance correctly after swap */
+                swapped = 1;
+            }
+        }
+    } while (swapped);
+}
+

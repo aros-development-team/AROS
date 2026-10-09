@@ -1,7 +1,7 @@
 /*
  * ntfs.handler - New Technology FileSystem handler
  *
- * Copyright (C) 2012-2025 The AROS Development Team
+ * Copyright (C) 2012-2026 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -29,6 +29,8 @@ LONG InitDirHandle(struct FSData *fs_data, struct DirHandle *dh, BOOL reuse)
     struct MFTAttr *curattr;
     UBYTE *bmp;
     UQUAD bitmap_len;
+    ULONG root_len, root_offset;
+    UBYTE *root_value;
     LONG ret = 0;
 
     D(bug("[NTFS]: %s(%u)\n", __func__, dh->ioh.mft.mftrec_no));
@@ -43,23 +45,38 @@ LONG InitDirHandle(struct FSData *fs_data, struct DirHandle *dh, BOOL reuse)
             Cache_FreeBlock(fs_data->cache, dh->ioh.mft.cblock);
             dh->ioh.mft.cblock = NULL;
         }
+        if (dh->idx_attr.mft == &dh->ioh.mft)
+            FreeMFTAttrib(&dh->idx_attr);
+        FreeMFTAttrib(&dh->ioh.mft.attr);
+        FreeVec(dh->idx_root_buf);
+        FreeVec(dh->ioh.bitmap);
     } else {
         dh->ioh.data = fs_data;
         dh->ioh.mft.cblock = NULL;
     }
+    dh->idx_root_buf = NULL;
+    dh->idx_root = NULL;
+    dh->idx_root_len = 0;
+    dh->ioh.bitmap = NULL;
+    dh->ioh.bitmap_len = 0;
+    dh->idx_attr.mft = NULL;
+    memset(&dh->ioh.mft.attr, 0, sizeof(dh->ioh.mft.attr));
 
     RESET_DIRHANDLE(dh);
 
     dh->ioh.mft.data = fs_data;
     dh->ioh.first_cluster = dh->ioh.mft.mftrec_no * fs_data->mft_size;
 
-    InitMFTEntry(&dh->ioh.mft, dh->ioh.mft.mftrec_no);
+    ret = InitMFTEntry(&dh->ioh.mft, dh->ioh.mft.mftrec_no);
+    if (ret != 0)
+        return ret == ~0 ? ERROR_UNKNOWN : ret;
 
     INIT_MFTATTRIB(&dh->ioh.mft.attr, &dh->ioh.mft);
 
     while(1) {
         if ((curattr = FindMFTAttrib(&dh->ioh.mft.attr, AT_INDEX_ROOT)) == NULL) {
             D(bug("[NTFS] %s: no $INDEX_ROOT found!\n", __func__));
+            ret = ERROR_OBJECT_WRONG_TYPE;
             goto done;
         }
 
@@ -70,20 +87,33 @@ LONG InitDirHandle(struct FSData *fs_data, struct DirHandle *dh, BOOL reuse)
                 (AROS_LE2LONG(*((ULONG *)((IPTR)curattr + 0x1c))) != 0x00300033)) {
             continue;
         }
-        curattr = (struct MFTAttr *)((IPTR)curattr + AROS_LE2WORD(curattr->data.resident.value_offset));
-        if (*(UBYTE *)curattr != 0x30) {	/* Not filename index */
+        root_len = AROS_LE2LONG(curattr->data.resident.value_length);
+        root_value = (UBYTE *)curattr + AROS_LE2WORD(curattr->data.resident.value_offset);
+        if (root_len < 0x12) {
+            ret = ERROR_OBJECT_WRONG_TYPE;
+            goto done;
+        }
+        if (*root_value != 0x30) {	/* Not filename index */
             continue;
         }
         break;
     }
 
-    dh->idx_root = (UBYTE *)curattr + 0x10;
-    dh->idx_root += AROS_LE2WORD(*(UWORD *)(dh->idx_root));
+    root_offset = 0x10 + AROS_LE2WORD(*(UWORD *)(root_value + 0x10));
+    if (root_offset > root_len || root_len - root_offset < sizeof(struct MFTIndexEntry)) {
+        ret = ERROR_OBJECT_WRONG_TYPE;
+        goto done;
+    }
+    dh->idx_root_buf = AllocVec(root_len, MEMF_ANY);
+    if (dh->idx_root_buf == NULL) {
+        ret = ERROR_NO_FREE_STORE;
+        goto done;
+    }
+    CopyMem(root_value, dh->idx_root_buf, root_len);
+    dh->idx_root = dh->idx_root_buf + root_offset;
+    dh->idx_root_len = root_len;
 
     D(bug("[NTFS] %s: idx_root @ 0x%p\n", __func__, dh->idx_root));
-
-    dh->ioh.bitmap = NULL;
-    dh->ioh.bitmap_len = 0;
 
     FreeMFTAttrib(&dh->ioh.mft.attr);
     INIT_MFTATTRIB(&dh->ioh.mft.attr, &dh->ioh.mft);
@@ -98,10 +128,17 @@ LONG InitDirHandle(struct FSData *fs_data, struct DirHandle *dh, BOOL reuse)
 
             bitmap_len = (is_resident) ? AROS_LE2LONG(curattr->data.resident.value_length) : AROS_LE2QUAD(curattr->data.non_resident.data_size);
 
+            if (bitmap_len == 0 || bitmap_len > (UQUAD)~(ULONG)0) {
+                ret = ERROR_OBJECT_WRONG_TYPE;
+                goto done;
+            }
+
             D(bug("[NTFS] %s: bitmap_len = %d\n", __func__, bitmap_len));
 
-            if ((bmp = AllocVec(bitmap_len, MEMF_ANY)) == NULL)
+            if ((bmp = AllocVec((ULONG)bitmap_len, MEMF_ANY)) == NULL) {
+                ret = ERROR_NO_FREE_STORE;
                 goto done;
+            }
 
             if (is_resident) {
                 CopyMem((UBYTE *) ((IPTR)curattr + AROS_LE2WORD(curattr->data.resident.value_offset)), bmp, bitmap_len);
@@ -109,9 +146,11 @@ LONG InitDirHandle(struct FSData *fs_data, struct DirHandle *dh, BOOL reuse)
             } else {
                 if (ReadMFTAttribData(&dh->ioh.mft.attr, curattr, bmp, 0, bitmap_len, 0)) {
                     D(bug("[NTFS] %s: failed to read $BITMAP\n", __func__));
+                    FreeVec(bmp);
+                    ret = ERROR_UNKNOWN;
                     goto done;
                 }
-                dh->ioh.bitmap_len = AROS_LE2LONG(*((ULONG *)(curattr + 0x30)));
+                dh->ioh.bitmap_len = bitmap_len;
             }
 
             dh->ioh.bitmap = (UBYTE *) bmp;
@@ -134,12 +173,16 @@ LONG InitDirHandle(struct FSData *fs_data, struct DirHandle *dh, BOOL reuse)
 
     if ((!curattr) && (dh->ioh.bitmap)) {
         D(bug("[NTFS] %s: $BITMAP without $INDEX_ALLOCATION\n", __func__));
+        ret = ERROR_OBJECT_WRONG_TYPE;
         goto done;
     }
 
     D(bug("[NTFS] %s: initialised dir handle\n", __func__));
 
 done:
+    if (ret) {
+        ReleaseDirHandle(dh);
+    }
 
     return ret;
 }
@@ -150,11 +193,22 @@ LONG ReleaseDirHandle(struct DirHandle *dh)
 
     RESET_DIRHANDLE(dh);
 
+    if (dh->idx_attr.mft == &dh->ioh.mft) {
+        FreeMFTAttrib(&dh->idx_attr);
+        dh->idx_attr.mft = NULL;
+    }
+    FreeMFTAttrib(&dh->ioh.mft.attr);
+
     if (dh->ioh.mft.buf != NULL) {
         FreeMem(dh->ioh.mft.buf, dh->ioh.data->mft_size << SECTORSIZE_SHIFT);
         dh->ioh.mft.buf = NULL;
     }
+    FreeVec(dh->idx_root_buf);
+    dh->idx_root_buf = NULL;
+    dh->idx_root_len = 0;
+    FreeVec(dh->ioh.bitmap);
     dh->ioh.bitmap = NULL;
+    dh->ioh.bitmap_len = 0;
     dh->idx_root = NULL;
 
     return 0;
@@ -174,6 +228,8 @@ LONG GetDirEntry(struct DirHandle *dh, ULONG no, struct DirEntry *de)
 
     if (de->key == NULL) {
         de->key = AllocMem(sizeof(struct Index_Key), MEMF_ANY|MEMF_CLEAR);
+        if (de->key == NULL)
+            return ERROR_NO_FREE_STORE;
         dh->cur_no = -1;
         de->key->indx = dh->ioh.mft.buf;
         de->key->pos = dh->idx_root;
@@ -181,8 +237,12 @@ LONG GetDirEntry(struct DirHandle *dh, ULONG no, struct DirEntry *de)
 
     if (de->key->indx == dh->ioh.mft.buf) {
         while (de->key->pos != NULL) {
-            ret = ProcessFSEntry(&dh->ioh.mft, de, &count);
-            if (de->key->pos != NULL) de->key->pos += AROS_LE2WORD(*((UWORD *)(de->key->pos + 8)));
+            ret = ProcessFSEntry(&dh->ioh.mft, de, &count,
+                dh->idx_root_buf, dh->idx_root_len);
+            if (ret != 0 && ret != 1)
+                goto done;
+            if (de->key->pos != NULL)
+                de->key->pos += AROS_LE2WORD(*((UWORD *)(de->key->pos + 8)));
             if (ret)
                 goto done;
         }
@@ -198,8 +258,10 @@ LONG GetDirEntry(struct DirHandle *dh, ULONG no, struct DirEntry *de)
         if (de->key->indx == NULL)
             de->key->indx = AllocMem(dh->ioh.data->idx_size << SECTORSIZE_SHIFT, MEMF_ANY);
 
-        if (de->key->indx == NULL)
+        if (de->key->indx == NULL) {
+            ret = ERROR_NO_FREE_STORE;
             goto done;
+        }
 
         if (de->key->i == 0) {
             de->key->v = 1;
@@ -219,11 +281,14 @@ LONG GetDirEntry(struct DirHandle *dh, ULONG no, struct DirEntry *de)
                     if ((ReadMFTAttrib
                             (&dh->idx_attr, de->key->indx, i * (dh->ioh.data->idx_size << SECTORSIZE_SHIFT),
                              (dh->ioh.data->idx_size << SECTORSIZE_SHIFT), 0))
-                            || (PostProcessMFTRecord(dh->ioh.data, (struct MFTRecordEntry *)de->key->indx, dh->ioh.data->idx_size, "INDX")))
+                            || (PostProcessMFTRecord(dh->ioh.data, (struct MFTRecordEntry *)de->key->indx, dh->ioh.data->idx_size, "INDX"))) {
+                        ret = ERROR_UNKNOWN;
                         goto done;
+                    }
                     de->key->pos = &de->key->indx[0x18 + AROS_LE2WORD(*((UWORD *)(de->key->indx + 0x18)))];
                 }
-                ret = ProcessFSEntry(&dh->ioh.mft, de, &count);
+                ret = ProcessFSEntry(&dh->ioh.mft, de, &count,
+                    de->key->indx, dh->ioh.data->idx_size << SECTORSIZE_SHIFT);
                 if (ret)
                     goto done;
             }
@@ -246,12 +311,14 @@ done:
             FreeMem(de->entry->buf, dh->ioh.data->mft_size << SECTORSIZE_SHIFT);
             de->entry->buf = NULL;
         }
-        InitMFTEntry(de->entry, de->entry->mftrec_no);
+        ret = InitMFTEntry(de->entry, de->entry->mftrec_no);
+        if (ret == ~0)
+            ret = ERROR_UNKNOWN;
 
         D(bug("[NTFS] %s: entry initialised\n", __func__));
     }
 
-    return ret ? ERROR_OBJECT_NOT_FOUND : 0;
+    return ret == ~0 ? ERROR_OBJECT_NOT_FOUND : ret;
 }
 
 LONG GetNextDirEntry(struct DirHandle *dh, struct DirEntry *de, BOOL skipsys)
@@ -350,7 +417,9 @@ LONG GetParentDir(struct DirHandle *dh, struct DirEntry *de)
 
     D(bug("[NTFS] %s: parent_mft = %u [%u]\n", __func__, (IPTR)(parentdh.ioh.first_cluster / glob->data->mft_size), (IPTR)parentdh.ioh.mft.mftrec_no));
     parentdh.ioh.mft.buf = NULL;
-    InitDirHandle(dh->ioh.data, &parentdh, TRUE);
+    err = InitDirHandle(dh->ioh.data, &parentdh, FALSE);
+    if (err != 0)
+        return err;
 
     if ((parentdh.ioh.mft.mftrec_no != 0x2) && (parentdh.ioh.mft.mftrec_no != FILE_ROOT)) {
         INIT_MFTATTRIB(&dirattr, &parentdh.ioh.mft);
@@ -365,7 +434,9 @@ LONG GetParentDir(struct DirHandle *dh, struct DirEntry *de)
 
         D(bug("[NTFS] %s: grandparent_mft = %u [%u]\n", __func__, (IPTR)(parentdh.ioh.first_cluster / glob->data->mft_size), (IPTR)parentdh.ioh.mft.mftrec_no));
         ReleaseDirHandle(&parentdh);
-        InitDirHandle(dh->ioh.data, &parentdh, TRUE);
+        err = InitDirHandle(dh->ioh.data, &parentdh, TRUE);
+        if (err != 0)
+            return err;
 
         err = GetDirEntryByCluster(&parentdh, de->cluster, de);
     } else {
@@ -373,6 +444,7 @@ LONG GetParentDir(struct DirHandle *dh, struct DirEntry *de)
         de->entrytype = ATTR_DIRECTORY;
         de->no = -1;
     }
+    ReleaseDirHandle(&parentdh);
     return err;
 }
 
@@ -434,7 +506,9 @@ LONG GetDirEntryByPath(struct DirHandle *dh, STRPTR path, ULONG pathlen, struct 
             dh->ioh.mft.mftrec_no = FILE_ROOT;
             if (dh->ioh.mft.buf)
                 ReleaseDirHandle(dh);
-            InitDirHandle(dh->ioh.data, dh, TRUE);
+            err = InitDirHandle(dh->ioh.data, dh, TRUE);
+            if (err != 0)
+                return err;
 
             /* If we were called with simply ":" as the name we will return
                immediately after this, so we prepare a fictional direntry for
@@ -472,7 +546,7 @@ LONG GetDirEntryByPath(struct DirHandle *dh, STRPTR path, ULONG pathlen, struct 
         /* otherwise, we want to search the current directory for this name */
         else {
             if ((err = GetDirEntryByName(dh, path, len, de)) != 0)
-                return ERROR_OBJECT_NOT_FOUND;
+                return err;
             D(bug("[NTFS] %s: #%d\n", __func__, de->no));
         }
 
@@ -507,7 +581,9 @@ LONG GetDirEntryByPath(struct DirHandle *dh, STRPTR path, ULONG pathlen, struct 
             }
             dh->ioh.mft.mftrec_no = de->entry->mftrec_no;
             ReleaseDirHandle(dh);
-            InitDirHandle(dh->ioh.data, dh, TRUE);
+            err = InitDirHandle(dh->ioh.data, dh, TRUE);
+            if (err != 0)
+                return err;
         }
     }
 

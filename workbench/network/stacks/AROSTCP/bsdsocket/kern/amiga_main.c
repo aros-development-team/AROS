@@ -325,6 +325,19 @@ main(int argc, char *argv[])
 
                 api_sendbreaktotasks(); /* send brk to all tasks w/ SBase open */
 
+#ifdef ENABLE_FDLIBRARY
+                /*
+                 * Release any bsdsocket.library bases the fd.library bridge
+                 * opened on behalf of posixc socket users.  Those tasks never
+                 * close them, so a leaked base would keep the open count above
+                 * one and abort the restart below.
+                 */
+                {
+                    extern void fdhooks_closetaskbases(void);
+                    fdhooks_closetaskbases();
+                }
+#endif
+
                 /* Try three times with a short delay */
                 for(i = 0; i < 3 && MasterSocketBase->lib_OpenCnt > 1; i++) {
                     Delay(50);		          /* give tasks time to close socket base */
@@ -340,6 +353,8 @@ main(int argc, char *argv[])
                     __log(LOG_ERR, "Got CTRL-C while %d %s still open.\n",
                           (MasterSocketBase->lib_OpenCnt - 1),
                           (MasterSocketBase->lib_OpenCnt == 2) ? "library" : "libraries");
+
+                    api_logopeners(); /* name the task(s) still holding a base */
 
                     api_show(); /* stopping not successful, show API to users */
                 } else {

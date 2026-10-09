@@ -31,8 +31,12 @@ EXEDIR := $(AROS_TESTS)/graphics
 #MM- test : test-graphics
 #MM- test-quick : test-graphics-quick
 
-#MM test-graphics : includes linklibs test-graphics-classicviewport
-#MM- test-graphics-quick : test-graphics-classicviewport-quick
+#MM test-graphics : includes linklibs test-graphics-classicsprites
+#MM- test-graphics-quick : test-graphics-classicsprites-quick
+
+# The classic viewport regression inspects native Amiga copper lists.
+#MM- test-graphics-amiga-m68k : test-graphics-classicviewport
+#MM- test-graphics-amiga-m68k-quick : test-graphics-classicviewport-quick
 
 %build_progs mmake=test-graphics \
     files=$(FILES) targetdir=$(EXEDIR)

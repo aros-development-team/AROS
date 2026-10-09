@@ -38,7 +38,9 @@ PUBLICFUNCS := \
 	secUserInfo2ExtOwner \
 	secIsConfigured \
 	secLimitProtection \
-	secIsVolumeSecured
+	secIsVolumeSecured \
+	secVerifyUserA \
+	secQueryUserA
 
 CRTPUBLICFUNCS := \
 	secgetgid \
@@ -79,7 +81,8 @@ SECURITYFILES := \
 	security_segment \
 	security_support \
 	security_login \
-	security_logingui
+	security_logingui \
+	security_auth
 
 %get_archincludes modname=exec \
     includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
@@ -89,7 +92,7 @@ USER_CPPFLAGS := -DUSE_EXEC_DEBUG
 #USER_CPPFLAGS += -DDEBUG=1
 USER_LDFLAGS := -static
 
-#MM kernel-security : includes linklibs kernel-security-catalogs kernel-task-includes
+#MM kernel-security : includes linklibs kernel-security-catalogs kernel-task-includes workbench-libs-pam-includes
 #MM kernel-security-includes : includes kernel-security-catalogs
 
 %build_module mmake=kernel-security modname=security \

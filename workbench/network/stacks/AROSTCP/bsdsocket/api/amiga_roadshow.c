@@ -1054,6 +1054,7 @@ AROS_LH1(LONG, AddDomainNameServer,
     }
 
     nsn->nsn_EntSize = sizeof(nsn->nsn_Ent);
+    nsn->nsn_Family = AF_INET;
     nsn->nsn_Ent.ns_addr.s_addr = sa.sin_addr.s_addr;
 
     ObtainSemaphore(&DynDB.dyn_Lock);
@@ -1090,6 +1091,7 @@ AROS_LH1(LONG, RemoveDomainNameServer,
     for(node = DynDB.dyn_NameServers.mlh_Head; node->mln_Succ;) {
         struct NameserventNode *nsn = (struct NameserventNode *)node;
         nnode = node->mln_Succ;
+        if(nsn->nsn_Family == AF_INET6) { node = nnode; continue; } /* IPv4 API */
         if(nsn->nsn_Ent.ns_addr.s_addr == target.s_addr) {
             Remove((struct Node *)node);
             bsd_free(node, NULL);
@@ -1159,6 +1161,7 @@ AROS_LH0(struct List *, ObtainDomainNameServerList,
             struct DomainNameServerNode *dnsn;
             int slen;
 
+            if(nsn->nsn_Family == AF_INET6) continue; /* IPv4-only Roadshow API */
             fmt_ipaddr(ipstr, nsn->nsn_Ent.ns_addr);
             slen = strnlen(ipstr, sizeof(ipstr)) + 1;
 
@@ -1183,6 +1186,7 @@ AROS_LH0(struct List *, ObtainDomainNameServerList,
         struct DomainNameServerNode *dnsn;
         int slen;
 
+        if(nsn->nsn_Family == AF_INET6) continue; /* IPv4-only Roadshow API */
         fmt_ipaddr(ipstr, nsn->nsn_Ent.ns_addr);
         slen = strnlen(ipstr, sizeof(ipstr)) + 1;
 

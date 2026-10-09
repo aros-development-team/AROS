@@ -379,6 +379,7 @@ void h4bthci_UnitTask(void)
     struct H4BTHCIUnit *unit = (struct H4BTHCIUnit *)
         ((struct Process *)self)->pr_Task.tc_UserData;
     struct Task *waiter;
+    BOOL started;
 
     /*
      * Say which step failed.
@@ -422,14 +423,17 @@ void h4bthci_UnitTask(void)
         }
     }
 
-    /* Tell the opener whether there is a controller, either way. */
+    /* Tell the opener either way. A failed unit may be freed after
+     * Permit(), so decide first. */
     Forbid();
+    unit->hu_Ready = TRUE;
+    started = (unit->hu_Task != NULL);
     waiter = unit->hu_ReadySigTask;
     if (waiter)
         Signal(waiter, 1L << unit->hu_ReadySignal);
     Permit();
 
-    if (!unit->hu_Task)
+    if (!started)
         return;
 
     /* %lu, not %u: kprintf fetches a %u as a 16-bit UWORD, and 115200

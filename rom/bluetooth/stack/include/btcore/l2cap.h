@@ -119,6 +119,22 @@ bt_status_t bt_l2cap_fragmenter_next(struct bt_l2cap_fragmenter *fr, struct bt_b
 #define BT_L2CAP_SIG_ECHO_RESPONSE 0x09u
 #define BT_L2CAP_SIG_INFORMATION_REQUEST 0x0au
 #define BT_L2CAP_SIG_INFORMATION_RESPONSE 0x0bu
+#define BT_L2CAP_SIG_CONN_PARAM_UPDATE_REQUEST 0x12u  /* LE only */
+#define BT_L2CAP_SIG_CONN_PARAM_UPDATE_RESPONSE 0x13u /* LE only */
+
+/* LE connection parameters, in the units of the Core specification:
+ * intervals in 1.25 ms, latency in connection events, timeout in 10 ms. */
+struct bt_l2cap_conn_params
+{
+    uint16_t interval_min;
+    uint16_t interval_max;
+    uint16_t latency;
+    uint16_t timeout;
+};
+
+/* Within the ranges of the Core specification, with a supervision timeout
+ * longer than twice the effective connection interval. */
+bool bt_l2cap_conn_params_valid(const struct bt_l2cap_conn_params *params);
 
 #define BT_L2CAP_CONFIG_OPTION_MTU 0x01u
 

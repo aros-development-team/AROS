@@ -253,6 +253,7 @@ struct GfxBase_intern {
 
     /* ChangeVPBitMap() replies due after the display's next vertical blank. */
     struct DBufInfo             *dbuf_pending;
+    struct SimpleSprite         *simple_sprites[8];
 };
 
 void internal_QueueDBufInfo(struct DBufInfo *db, struct GfxBase *GfxBase);

@@ -24,6 +24,9 @@ UBYTE diskPresent(struct AFSBase *, struct IOHandle *);
 BOOL diskWritable(struct AFSBase *, struct IOHandle *);
 ULONG sectorSize(struct AFSBase *, struct IOHandle *);
 BOOL flush(struct AFSBase *, struct Volume *);
+#ifdef __AROS__
+LONG prepareMediumCache(struct AFSBase *, struct Volume *);
+#endif
 struct IOHandle *openBlockDevice(struct AFSBase *, struct IOHandle *);
 void closeBlockDevice(struct AFSBase *, struct IOHandle *);
 void check64BitSupport(struct AFSBase *, struct Volume *);

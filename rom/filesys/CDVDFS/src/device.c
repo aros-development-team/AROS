@@ -5,12 +5,15 @@
  *
  * ----------------------------------------------------------------------
  * This code is (C) Copyright 1993,1994 by Frank Munkert.
- *              (C) Copyright 2002-2023 The AROS Development Team
+ *              (C) Copyright 2002-2026 The AROS Development Team
  * All rights reserved.
  * This software may be freely distributed and redistributed for
  * non-commercial purposes, provided this notice is included.
  * ----------------------------------------------------------------------
  * History:
+ *
+ * 08-Oct-26         Allow update-open of existing files on read-only CDs;
+ *                   report rejected writes with the DOS failure value.
  *
  * 08-Nov-13 neil      - Only delay 2 seconds upon exiting if debugging is
  *                       enabled.
@@ -205,7 +208,7 @@ ULONG __abox__ = 1;
 #endif
 
 #ifndef __AROS__
-char __version__[] = "\0$VER: CDVDFS 3.0 (07.02.2024)";
+char __version__[] = "\0$VER: CDVDFS 3.1 (08.10.2026)";
 struct ExecBase *SysBase;
 LONG SAVEDS Main(void)
 {
@@ -595,6 +598,7 @@ UBYTE   notdone = 1;
                                         packet->dp_Arg3
                                 );
                         break;
+                case ACTION_FINDUPDATE: /* Existing file; writes remain protected */
                 case ACTION_FINDINPUT: /* FileHandle,Lock,Name   Bool */
                 {
                         if (!(error = Mount_Check (global)))
@@ -633,7 +637,8 @@ UBYTE   notdone = 1;
                                                 goto openbreak;
                                         }
                                         else if (global->iso_errno == ISOERR_NOT_FOUND)
-                                                error = ERROR_OBJECT_NOT_FOUND;
+                                                error = packet->dp_Type == ACTION_FINDUPDATE ?
+                                                        ERROR_DISK_WRITE_PROTECTED : ERROR_OBJECT_NOT_FOUND;
                                         else if (global->iso_errno == ISOERR_NO_MEMORY)
                                         {
                                                 error = ERROR_NO_FREE_STORE;
@@ -991,7 +996,7 @@ openbreak:
                         }
                 break;
     /*
-     *  FINDINPUT and FINDOUTPUT normally should return the
+     *  FINDOUTPUT normally should return the
      *  'write protected' error. If the field 'Name', however,
      *  designates the root (e.g. CD0:), then the 'wrong type'
      *  error should be returned. Otherwise, AmigaDOS would do
@@ -1000,7 +1005,6 @@ openbreak:
      *  field 'Mount' set to 1.
      */
                 case ACTION_FINDOUTPUT: /* Handle  Lock  Name         Bool */
-                case ACTION_FINDUPDATE: /* Handle  Lock  Name         Bool */
                 {
                         int pos;
 
@@ -1109,7 +1113,7 @@ openbreak:
                         if (error)
                         {
                                 D(bug("ERR=%ld\n", error);)
-                                packet->dp_Res1 = DOSFALSE;
+                                packet->dp_Res1 = packet->dp_Type == ACTION_WRITE ? -1 : DOSFALSE;
                                 packet->dp_Res2 = error;
                         }
                         else

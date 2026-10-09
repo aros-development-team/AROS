@@ -66,6 +66,8 @@ BOOL bOpenDOS(struct BtBase *BluetoothBase);
 BOOL bHaveDOS(struct BtBase *BluetoothBase);
 
 void bGarbageCollectEvents(struct BtBase *BluetoothBase);
+void bSendServiceWriteEvent(struct BtBase *BluetoothBase, APTR record, ULONG index,
+                            const UBYTE *data, ULONG length, APTR device);
 BOOL bStartEventHandler(struct BtBase *BluetoothBase);
 
 /* PoPo-style pairing popup handled inside the library */
@@ -73,6 +75,7 @@ void bShowPairingPopup(struct BtBase *BluetoothBase, struct BtDevice *bd, ULONG 
 void bStopPopup(struct BtBase *BluetoothBase);
 
 void bStripString(struct BtBase *BluetoothBase, STRPTR str);
+void bUpdateLEConnInterval(struct BtBase *BluetoothBase);
 struct Node * bFindName(struct BtBase *BluetoothBase, struct List *list, STRPTR name);
 struct BtHardware * bFindHardware(struct BtBase *BluetoothBase, STRPTR name, ULONG unit);
 
@@ -125,5 +128,9 @@ AROS_UFP2(void, bPutChar,
 AROS_UFP2(void, bRawFmtLength,
                    AROS_UFPA(char, ch, D0),
                    AROS_UFPA(ULONG *, len, A3));
+
+/* gattsrv.c: free the notification snapshots every radio has sent (or that
+   no radio is left to send); any task, no lock held */
+void bGattSrvCollect(struct BtBase *BluetoothBase);
 
 #endif /* BLUETOOTH_LIBRARY_H */

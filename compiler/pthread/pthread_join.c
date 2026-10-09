@@ -28,6 +28,7 @@
 int pthread_join(pthread_t thread, void **value_ptr)
 {
     ThreadInfo *inf;
+    struct Task *task;
 
     D(bug("%s(%u, %p)\n", __FUNCTION__, thread, value_ptr));
 
@@ -41,14 +42,32 @@ int pthread_join(pthread_t thread, void **value_ptr)
 
     pthread_testcancel();
 
+    // waiter, finished and detached are decided with the exiting thread
+    // under thread_sem. A thread detached meanwhile clears its slot.
+    ObtainSemaphore(&thread_sem);
+    if (inf->parent == NULL)
+    {
+        ReleaseSemaphore(&thread_sem);
+        return ESRCH;
+    }
+    task = inf->task;
     inf->waiter = GET_THIS_TASK;
-    while (!inf->finished)
+    while (!inf->finished && !inf->detached && inf->task == task)
+    {
+        ReleaseSemaphore(&thread_sem);
         Wait(SIGF_PARENT);
+        ObtainSemaphore(&thread_sem);
+    }
+    if (!inf->finished || inf->task != task)
+    {
+        if (inf->task == task)
+            inf->waiter = NULL;
+        ReleaseSemaphore(&thread_sem);
+        return EINVAL;
+    }
 
     if (value_ptr)
         *value_ptr = inf->ret;
-
-    ObtainSemaphore(&thread_sem);
     memset(inf, 0, sizeof(ThreadInfo));
     ReleaseSemaphore(&thread_sem);
 

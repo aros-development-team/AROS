@@ -14,6 +14,7 @@
 #include <proto/security.h>
 
 #include "security_intern.h"
+#include "security_auth.h"
 #include "security_plugins.h"
 #include "security_crypto.h"
 #include "security_enforce.h"
@@ -577,7 +578,7 @@ BOOL ReadKeyFiles(struct SecurityBase *secBase)
 void LoadConfig(struct SecurityBase *secBase)
 {
     BPTR file, olddir;
-    SIPTR *argarray[15];
+    SIPTR *argarray[18];
 
 #define argLIMITDOSSETPROTECTION    0
 #define argPROFILE                  1
@@ -594,6 +595,9 @@ void LoadConfig(struct SecurityBase *secBase)
 #define argFSTAB                    12
 #define argRESOURCETRACKING         13
 #define argLOADPLUGIN               14
+#define argHASHEDLOGIN              15
+#define argMAXTRIES                 16
+#define argLOCKTIME                 17
 
     struct RDArgs *rdargs;
     ULONG line;
@@ -606,6 +610,8 @@ void LoadConfig(struct SecurityBase *secBase)
     config.LogFlags = 0;
     config.PasswduidLevel = secNOBODY_UID;
     config.PasswdgidLevel = secNOBODY_UID;
+    config.MaxTries = secAUTH_DEFMAXTRIES;
+    config.LockTime = secAUTH_DEFLOCKTIME;
 
     if (secBase->_cfgLock && ClearBuffer(secBase) && (rdargs = AllocDosObject(DOS_RDARGS, NULL)))
     {
@@ -630,7 +636,8 @@ void LoadConfig(struct SecurityBase *secBase)
                 if (ReadArgs("LIMITDOSSETPROTECTION/K/N,PROFILE/K/N,LASTLOGINREQ/K/N,LOGSTARTUP/K/N,"
                              "LOGLOGIN/K/N,LOGLOGINFAIL/K/N,LOGPASSWD/K/N,LOGPASSWDFAIL/K/N,"
                              "LOGCHECKPASSWD/K/N,LOGCHECKPASSWDFAIL/K/N,PASSWDUIDLEVEL/K/N,"
-                             "PASSWDGIDLEVEL/K/N,FSTAB/K/N,RESOURCETRACKING/K/N,LOADPLUGIN/K",
+                             "PASSWDGIDLEVEL/K/N,FSTAB/K/N,RESOURCETRACKING/K/N,LOADPLUGIN/K,"
+                             "HASHEDLOGIN/K/N,MAXTRIES/K/N,LOCKTIME/K/N",
                              (SIPTR *)argarray, rdargs))
                 {
 #define BOOLOPT(idx, var, flag) \
@@ -641,6 +648,7 @@ void LoadConfig(struct SecurityBase *secBase)
                     BOOLOPT(argLASTLOGINREQ, config.Flags, secCFGF_LastLoginReq);
                     BOOLOPT(argFSTAB, config.Flags, secCFGF_UseFSTab);
                     BOOLOPT(argRESOURCETRACKING, config.Flags, secCFGF_RT);
+                    BOOLOPT(argHASHEDLOGIN, config.Flags, secCFGF_HashedLogin);
                     BOOLOPT(argLOGSTARTUP, config.LogFlags, secLogF_Startup);
                     BOOLOPT(argLOGLOGIN, config.LogFlags, secLogF_Login);
                     BOOLOPT(argLOGLOGINFAIL, config.LogFlags, secLogF_LoginFail);
@@ -663,6 +671,10 @@ void LoadConfig(struct SecurityBase *secBase)
                         else
                             config.PasswdgidLevel = *argarray[argPASSWDGIDLEVEL];
                     }
+                    if (argarray[argMAXTRIES])
+                        config.MaxTries = (*argarray[argMAXTRIES] < 0 || *argarray[argMAXTRIES] > 65535) ? secAUTH_DEFMAXTRIES : *argarray[argMAXTRIES];
+                    if (argarray[argLOCKTIME])
+                        config.LockTime = (*argarray[argLOCKTIME] < 0 || *argarray[argLOCKTIME] > 65535) ? secAUTH_DEFLOCKTIME : *argarray[argLOCKTIME];
                     if (argarray[argLOADPLUGIN])
                     {
                         /* LOADPLUGIN name: the plugin file, WITHOUT the suffix */
@@ -726,6 +738,9 @@ BOOL UpdateUserDefs(struct SecurityBase *secBase)
             def = def->Next;
         }
         res = Close(file) && res;
+        /* A rewrite may recreate the file (SFS, afs); it holds the password
+         * hashes, so make sure only the owner (root) can read it. */
+        SetProtection(PasswdFileName, FIBF_EXECUTE);
     }
     CurrentDir(olddir);
 
@@ -747,6 +762,7 @@ void VLogF(struct SecurityBase *secBase, CONST_STRPTR fmt, SIPTR *argv)
     if (!secBase->_cfgLock)
         return;
 
+    ObtainSemaphore(&secBase->LogSem);
     olddir = CurrentDir(secBase->_cfgLock);
     if ((file = Open(LogFileName, MODE_READWRITE)))
     {
@@ -769,4 +785,5 @@ void VLogF(struct SecurityBase *secBase, CONST_STRPTR fmt, SIPTR *argv)
         Close(file);
     }
     CurrentDir(olddir);
+    ReleaseSemaphore(&secBase->LogSem);
 }

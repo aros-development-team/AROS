@@ -217,7 +217,6 @@ SIPTR error;
         blockbuffer = findBlock(afsbase, ah, name, &lastblock, &error);
         if (blockbuffer == NULL)
                 return error;
-        blockbuffer = findBlock(afsbase, ah, name, &lastblock, &error);
         if (findHandle(ah->volume, blockbuffer->blocknum) != NULL)
                 return ERROR_OBJECT_IN_USE;
         if (OS_BE2LONG(blockbuffer->buffer[BLK_PROTECT(ah->volume)]) & FIBF_DELETE)
@@ -249,10 +248,22 @@ SIPTR error;
                 return ERROR_UNKNOWN;
         }
         priorbuffer->flags |= BCF_USED;
+        if (!invalidBitmap(afsbase, ah->volume))
+        {
+                priorbuffer->flags &= ~BCF_USED;
+                blockbuffer->flags &= ~BCF_USED;
+                return ERROR_UNKNOWN;
+        }
         unLinkBlock(afsbase, ah->volume, priorbuffer, blockbuffer);
-        invalidBitmap(afsbase, ah->volume);
-        writeBlock(afsbase, ah->volume, priorbuffer, -1);
-        markBlock(afsbase, ah->volume, blockbuffer->blocknum, -1);
+        if (!writeBlock(afsbase, ah->volume, priorbuffer, -1))
+        {
+                releaseBitmap(ah->volume);
+                priorbuffer->flags &= ~BCF_USED;
+                blockbuffer->flags &= ~BCF_USED;
+                return ERROR_UNKNOWN;
+        }
+        if (!markBlock(afsbase, ah->volume, blockbuffer->blocknum, -1))
+                goto delete_error;
         if (
                         OS_BE2LONG
                                 (blockbuffer->buffer[BLK_SECONDARY_TYPE(ah->volume)]) == ST_FILE
@@ -268,8 +279,9 @@ SIPTR error;
                                         key--
                                 )
                         {
-                                markBlock
-                                        (afsbase, ah->volume, OS_BE2LONG(blockbuffer->buffer[key]), -1);
+                                if (!markBlock
+                                        (afsbase, ah->volume, OS_BE2LONG(blockbuffer->buffer[key]), -1))
+                                        goto delete_error;
                         }
                         if (blockbuffer->buffer[BLK_EXTENSION(ah->volume)] == 0)
                                 break;
@@ -284,23 +296,36 @@ SIPTR error;
                         if (blockbuffer == NULL)
                         {
                                 priorbuffer->flags &= ~BCF_USED;
+                                releaseBitmap(ah->volume);
                                 return ERROR_UNKNOWN;
                         }
                         if (calcChkSum(ah->volume->SizeBlock, blockbuffer->buffer))
                         {
                                 priorbuffer->flags &= ~BCF_USED;
+                                releaseBitmap(ah->volume);
                                 if (showError(afsbase, ERR_CHECKSUM))
                                         launchValidator(afsbase, ah->volume);
                                 return ERROR_UNKNOWN;
                         }
                         blockbuffer->flags |= BCF_USED;
-                        markBlock(afsbase, ah->volume, blockbuffer->blocknum, -1);
+                        if (!markBlock(afsbase, ah->volume, blockbuffer->blocknum, -1))
+                                goto delete_error;
                 }
         }
-        validBitmap(afsbase, ah->volume);
+        if (!validBitmap(afsbase, ah->volume))
+        {
+                blockbuffer->flags &= ~BCF_USED;
+                priorbuffer->flags &= ~BCF_USED;
+                return ERROR_UNKNOWN;
+        }
         blockbuffer->flags &= ~BCF_USED;
         priorbuffer->flags &= ~BCF_USED;
         return 0;
+delete_error:
+        releaseBitmap(ah->volume);
+        blockbuffer->flags &= ~BCF_USED;
+        priorbuffer->flags &= ~BCF_USED;
+        return ERROR_UNKNOWN;
 }
 
 /********************************************
@@ -314,9 +339,15 @@ ULONG deleteFileRemainder(struct AFSBase *afsbase, struct AfsHandle *ah)
 ULONG key;
 struct BlockCache *blockbuffer;
 
-        invalidBitmap(afsbase, ah->volume);
+        if (!invalidBitmap(afsbase, ah->volume))
+                return ERROR_UNKNOWN;
 
         blockbuffer = getBlock(afsbase, ah->volume, ah->current.block);
+        if (blockbuffer == NULL)
+        {
+                releaseBitmap(ah->volume);
+                return ERROR_UNKNOWN;
+        }
         blockbuffer->flags |= BCF_USED;
 
         /* Start with the first block that will be wholly unused afterwards */
@@ -329,8 +360,9 @@ struct BlockCache *blockbuffer;
                 D(bug("[afs]   extensionblock=%u\n", blockbuffer->blocknum));
                 while (key >= BLK_TABLE_START && blockbuffer->buffer[key] != 0)
                 {
-                        markBlock(afsbase, ah->volume,
-                                OS_BE2LONG(blockbuffer->buffer[key]), -1);
+                        if (!markBlock(afsbase, ah->volume,
+                                OS_BE2LONG(blockbuffer->buffer[key]), -1))
+                                goto remainder_error;
                         key--;
                 }
                 if (blockbuffer->buffer[BLK_EXTENSION(ah->volume)] == 0)
@@ -345,22 +377,33 @@ struct BlockCache *blockbuffer;
                         );
                 if (blockbuffer == NULL)
                 {
+                        releaseBitmap(ah->volume);
                         return ERROR_UNKNOWN;
                 }
                 if (calcChkSum(ah->volume->SizeBlock, blockbuffer->buffer))
                 {
+                        releaseBitmap(ah->volume);
                         if (showError(afsbase, ERR_CHECKSUM))
                                 launchValidator(afsbase, ah->volume);
                         return ERROR_UNKNOWN;
                 }
                 blockbuffer->flags |= BCF_USED;
-                markBlock(afsbase, ah->volume, blockbuffer->blocknum, -1);
+                if (!markBlock(afsbase, ah->volume, blockbuffer->blocknum, -1))
+                        goto remainder_error;
                 key = BLK_TABLE_END(ah->volume);
         }
 
-        validBitmap(afsbase, ah->volume);
+        if (!validBitmap(afsbase, ah->volume))
+        {
+                blockbuffer->flags &= ~BCF_USED;
+                return ERROR_UNKNOWN;
+        }
         blockbuffer->flags &= ~BCF_USED;
         return 0;
+remainder_error:
+        releaseBitmap(ah->volume);
+        blockbuffer->flags &= ~BCF_USED;
+        return ERROR_UNKNOWN;
 }
 
 /********************************************
@@ -508,6 +551,11 @@ SIPTR error;
         oldfile->flags |= BCF_USED;
         existingfile = getHeaderBlock(afsbase, dirah->volume, newentryname,
                 dirblock, &block, &error);
+        if (existingfile == NULL && error != ERROR_OBJECT_NOT_FOUND)
+        {
+                oldfile->flags &= ~BCF_USED;
+                return error;
+        }
         if (existingfile != NULL && existingfile->blocknum != oldfile->blocknum)
         {
                 /* Release the source header too, as every other exit does. */
@@ -616,21 +664,33 @@ SIPTR error;
                 syscrash after this: 2 dirs pointing to the same
                 dir and one wrong linked entry->recoverable
         */
-        writeBlock(afsbase, dirah->volume, dirblock, -1);
+        if (!writeBlock(afsbase, dirah->volume, dirblock, -1))
+                goto rename_error;
         /*
                 syscrash after this: directory pointing is now
                 correct but one wrong linked entry->recoverable
         */
-        writeBlock(afsbase, dirah->volume, lastlink, -1);
-        writeBlock(afsbase, dirah->volume, oldfile, -1);
+        if (!writeBlock(afsbase, dirah->volume, lastlink, -1)
+                || !writeBlock(afsbase, dirah->volume, oldfile, -1))
+                goto rename_error;
         oldfile->flags &= ~BCF_USED;
         lastlink->flags &= ~BCF_USED;
         /*
                 if newdir=rootblock we now write the correct
                 (changed) buffer back
         */
-        setBitmapFlag(afsbase, dirah->volume, -1);
+        if (!setBitmapFlag(afsbase, dirah->volume, -1))
+                return ERROR_UNKNOWN;
         return 0;
+
+rename_error:
+        /* Preserve all modified headers for an explicit retry. */
+        writeBlockDeferred(afsbase, dirah->volume, dirblock, BLK_CHECKSUM);
+        writeBlockDeferred(afsbase, dirah->volume, lastlink, BLK_CHECKSUM);
+        writeBlockDeferred(afsbase, dirah->volume, oldfile, BLK_CHECKSUM);
+        oldfile->flags &= ~BCF_USED;
+        lastlink->flags &= ~BCF_USED;
+        return ERROR_UNKNOWN;
 }
 
 /********************************************
@@ -670,10 +730,16 @@ ULONG i;
                 *error = ERROR_OBJECT_EXISTS;
                 return NULL;
         }
+        if (*error != ERROR_OBJECT_NOT_FOUND)
+        {
+                dirblock->flags &= ~BCF_USED;
+                return NULL;
+        }
         *error = 0;
         if (!invalidBitmap(afsbase, volume))
         {
                 dirblock->flags &= ~BCF_USED;
+                *error = ERROR_UNKNOWN;
                 return NULL;
         }
         i = allocBlock(afsbase, volume);
@@ -729,10 +795,21 @@ ULONG i;
                 if crash after this block not yet linked->block
                 not written to disk, bitmap corrected
         */
-        writeBlock(afsbase, volume, newblock, -1);
-        /* consistent after this */
-        writeBlock(afsbase, volume, dirblock, -1);
-        validBitmap(afsbase, volume);
+        if (!writeBlock(afsbase, volume, newblock, -1)
+                || !writeBlock(afsbase, volume, dirblock, -1))
+        {
+                writeBlockDeferred(afsbase, volume, dirblock, BLK_CHECKSUM);
+                newblock->flags &= ~BCF_USED;
+                validBitmap(afsbase, volume); /* Release bitmap while retaining invalid flag. */
+                *error = ERROR_UNKNOWN;
+                return NULL;
+        }
+        if (!validBitmap(afsbase, volume))
+        {
+                newblock->flags &= ~BCF_USED;
+                *error = ERROR_UNKNOWN;
+                return NULL;
+        }
         newblock->flags &= ~BCF_USED;
         return newblock;
 }

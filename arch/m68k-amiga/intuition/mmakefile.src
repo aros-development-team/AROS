@@ -1,0 +1,19 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+# Publish the native cursor interface before compiling Intuition.
+#MM- kernel-intuition-amiga-m68k-includes : kernel-amiga-m68k-amigavideo-includes
+
+USER_INCLUDES := -I$(SRCDIR)/rom/intuition
+USER_CPPFLAGS := -D__OOP_NOMETHODBASES__ \
+                 -D__OOP_NOATTRBASES__ \
+                 -D__OOP_NOLIBBASE__ \
+                 -D__GRAPHICS_NOLIBBASE__ \
+                 -D__INTUITION_NOLIBBASE__
+
+%build_archspecific mainmmake=kernel-intuition maindir=rom/intuition \
+    arch=amiga-m68k modname=intuition files=intuition_arch \
+    cflags="$(AROSROM_MODULE_CFLAGS) $(ROM_OPTIMIZATION_CFLAGS)"
+
+%common
