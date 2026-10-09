@@ -2295,7 +2295,7 @@ smb_proc_reconnect (struct smb_server *server)
 	/* If the server does not support any of the listed
 	 * dialects, ist must return a dialect index of 0xFFFF.
 	 */
-	if(dialect_index > num_prots || dialect_index == 0xFFFFU)
+	if(dialect_index >= num_prots)
 	{
 		LOG (("smb_proc_connect: Unsupported dialect\n"));
 
