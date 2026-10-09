@@ -141,6 +141,7 @@ IPTR *InternalFindResident(const UBYTE *name, IPTR *list);
 
 void FastPutMsg(struct MsgPort *port, struct Message *message, struct ExecBase *SysBase);
 void InternalPutMsg(struct MsgPort *port, struct Message *message, struct ExecBase *SysBase);
+void InternalPutMsgType(struct MsgPort *port, struct Message *message, UBYTE type, struct ExecBase *SysBase);
 
 LONG AllocTaskSignal(struct Task *ThisTask, LONG signalNum, struct ExecBase *SysBase);
 

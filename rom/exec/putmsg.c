@@ -70,6 +70,19 @@
 
 void InternalPutMsg(struct MsgPort *port, struct Message *message, struct ExecBase *SysBase)
 {
+    InternalPutMsgType(port, message, 0, SysBase);
+}
+
+/*
+ * As InternalPutMsg(), and with a type other than 0 the message's node type
+ * is set inside the port's lock, together with the queueing. ReplyMsg()
+ * needs that on smp systems: WaitIO() on another core takes NT_REPLYMSG as
+ * the sign that the message is on the port's list and removes it, so the
+ * type must not become visible before the message is queued, which is
+ * guaranteed only if both happen in one critical section.
+ */
+void InternalPutMsgType(struct MsgPort *port, struct Message *message, UBYTE type, struct ExecBase *SysBase)
+{
     /*
      * Add a message to the ports list.
      * NB : Messages may be sent from interrupts, therefore
@@ -84,6 +97,8 @@ void InternalPutMsg(struct MsgPort *port, struct Message *message, struct ExecBa
 #if defined(__AROSEXEC_SMP__)
     EXEC_SPINLOCK_LOCK(&port->mp_SpinLock, NULL, SPINLOCK_MODE_WRITE);
 #endif
+    if (type)
+        message->mn_Node.ln_Type = type;
     AddTail(&port->mp_MsgList, &message->mn_Node);
     D(bug("[EXEC] PutMsg: Port MsgList->lh_TailPred =  0x%p\n", port->mp_MsgList.lh_TailPred);)
 #if defined(__AROSEXEC_SMP__)
