@@ -236,6 +236,9 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                     D(bug("[USB2OTG] %s: Unit Allocated at 0x%p\n",
                                                 __PRETTY_FUNCTION__, USB2OTGBase->hd_Unit));
 
+                                    /* INT-as-BULK works around the BCM2835 core; QEMU's emulated 2.94a core runs direct INT natively */
+                                    USB2OTGBase->hd_Unit->hu_IntAsBulk = (rd32le(USB2OTG_VENDORID) != 0x4F54294A);
+
                                     /* Heap memory (VC bus alias maps it), and 64-byte
                                      * aligned so DMA cache maintenance owns its lines. */
                                     USB2OTGBase->hd_Unit->hu_BounceRaw = AllocMem((8 * DMA_BOUNCE_SIZE) + 63,
