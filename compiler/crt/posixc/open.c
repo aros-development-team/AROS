@@ -90,6 +90,6 @@
         va_end(ap);
     }
     
-    return __open(__getfirstfd(0), pathname, flags, mode);
+    return __open(__FD_FIRSTFREE, pathname, flags, mode);
 } /* open */
 
