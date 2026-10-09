@@ -3714,6 +3714,30 @@ Action_Info(
 
 /****************************************************************************/
 
+/* ACTION_EXAMINE_OBJECT returns a counted name even with fast BSTRs. */
+STATIC VOID
+SetRootFileName(struct FileInfoBlock *fib)
+{
+#if !defined(__AROS__)
+	STRPTR volume_name = BADDR(VolumeNode->dol_Name);
+	LONG len = (UBYTE)volume_name[0];
+
+	volume_name++;
+#else
+	STRPTR volume_name = AROS_BSTR_ADDR(VolumeNode->dol_Name);
+	LONG len = AROS_BSTR_strlen(VolumeNode->dol_Name);
+#endif
+
+	/* Keep the full mounted label, but fit its examination result in the FIB. */
+	if(len > sizeof(fib->fib_FileName)-1)
+		len = sizeof(fib->fib_FileName)-1;
+
+	fib->fib_FileName[0] = len;
+	memcpy(fib->fib_FileName+1,volume_name,len);
+}
+
+/****************************************************************************/
+
 STATIC LONG
 Action_ExamineObject(
 	struct FileLock *		lock,
@@ -3731,19 +3755,7 @@ Action_ExamineObject(
 
 	if(lock == NULL)
 	{
-#if !defined(__AROS__)
-		STRPTR volume_name = BADDR(VolumeNode->dol_Name);
-		LONG len = volume_name[0];
-
-		memcpy(fib->fib_FileName+1,volume_name+1,len);
-		fib->fib_FileName[0] = len;
-#else
-		STRPTR volume_name = AROS_BSTR_ADDR(VolumeNode->dol_Name);
-		LONG len = AROS_BSTR_strlen(VolumeNode->dol_Name);
-
-		memcpy(fib->fib_FileName + 1, volume_name, len);
-		fib->fib_FileName[0] = len;
-#endif
+		SetRootFileName(fib);
 		SHOWMSG("ZERO root lock");
 
 		fib->fib_DirEntryType	= ST_ROOT;
@@ -3781,19 +3793,7 @@ Action_ExamineObject(
 
 		if(strcmp(ln->ln_FullName,SMB_ROOT_DIR_NAME) == SAME)
 		{
-#if !defined(__AROS__)
-			STRPTR volume_name = BADDR(VolumeNode->dol_Name);
-			LONG len = volume_name[0];
-
-			memcpy(fib->fib_FileName+1,volume_name+1,len);
-			fib->fib_FileName[0] = len;
-#else
-			STRPTR volume_name = AROS_BSTR_ADDR(VolumeNode->dol_Name);
-			LONG len = AROS_BSTR_strlen(VolumeNode->dol_Name);
-
-			memcpy(fib->fib_FileName + 1, volume_name, len);
-			fib->fib_FileName[0] = len;
-#endif
+			SetRootFileName(fib);
 			SHOWMSG("root lock");
 
 			fib->fib_DirEntryType	= ST_ROOT;
