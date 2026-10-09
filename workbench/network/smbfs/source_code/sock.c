@@ -438,6 +438,10 @@ smb_receive_trans2 (struct smb_server *server, int sock_fd, int *data_len, int *
 			(*param_len) = smb_count_trans2_bytes (param_covered, WVAL (inbuf, smb_tprcnt));
 		total_data = WVAL (inbuf, smb_tdrcnt);
 		total_param = WVAL (inbuf, smb_tprcnt);
+		if ((*data_len) > total_data)
+			(*data_len) = total_data;
+		if ((*param_len) > total_param)
+			(*param_len) = total_param;
 		if (total_data <= (*data_len) && total_param <= (*param_len))
 			break;
 
