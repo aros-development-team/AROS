@@ -29,8 +29,13 @@ BOOL initBulkBuffer(struct AFSBase *, struct Volume *);
 void freeBulkBuffer(struct AFSBase *, struct Volume *);
 LONG writeBlock(struct AFSBase *, struct Volume *, struct BlockCache *, LONG);
 VOID writeBlockDeferred(struct AFSBase *, struct Volume *, struct BlockCache *, LONG);
+void discardCache(struct Volume *);
+void clearCleanCache(struct Volume *);
 void clearCache(struct AFSBase *, struct BlockCache *);
-VOID flushCache(struct AFSBase *, struct Volume *);
+BOOL cacheDirty(struct Volume *);
+BOOL flushCache(struct AFSBase *, struct Volume *);
+BOOL flushBlocks(struct AFSBase *, struct Volume *);
+BOOL flushForRelease(struct AFSBase *, struct Volume *);
 void checkCache(struct AFSBase *, struct Volume *);
 
 #endif

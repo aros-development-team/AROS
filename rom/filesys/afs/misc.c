@@ -103,8 +103,13 @@ LONG inhibit(struct AFSBase *afsbase, struct Volume *volume, ULONG forbid) {
 /*              if (exclusiveLocks(&volume->locklist)) return DOSFALSE; */
                         if (mediumPresent(&volume->ioh))
                         {
-                                flush(afsbase, volume);
+                                if (!flushForRelease(afsbase, volume))
+                                {
+                                        volume->inhibitcounter--;
+                                        return ERROR_UNKNOWN;
+                                }
                                 osMediumFree(afsbase, volume, FALSE);
+                                clearCleanCache(volume);
                         }
                 }
         }
@@ -116,8 +121,18 @@ LONG inhibit(struct AFSBase *afsbase, struct Volume *volume, ULONG forbid) {
                         if (diskPresent(afsbase, &volume->ioh))
                         {
                                 D(bug("[afs 0x%p] media inserted\n", volume));
-                                newMedium(afsbase, volume);
                                 volume->ioh.ioflags |= IOHF_DISK_IN;
+                                {
+                                        LONG error = newMedium(afsbase, volume);
+                                        /* NDOS and unreadable media are still present.
+                                         * Only pending writes prevent us from accepting
+                                         * this medium after a failed remount. */
+                                        if (error != 0 && volume->cachepending)
+                                        {
+                                                volume->ioh.ioflags &= ~IOHF_DISK_IN;
+                                                return error;
+                                        }
+                                }
                         }
                         else
                                 volume->ioh.ioflags &= ~IOHF_DISK_IN;
@@ -133,29 +148,36 @@ LONG inhibit(struct AFSBase *afsbase, struct Volume *volume, ULONG forbid) {
  Input : volume  - the volume
  Output: -
 ********************************************/
-void markBitmaps(struct AFSBase *afsbase, struct Volume *volume) {
+BOOL markBitmaps(struct AFSBase *afsbase, struct Volume *volume) {
 struct BlockCache *blockbuffer;
 ULONG i,curblock;
 
         for (i=0; (i<=24) && (volume->bitmapblockpointers[i] != 0); i++)
-                markBlock(afsbase, volume, volume->bitmapblockpointers[i], 0);
+                if (!markBlock(afsbase, volume, volume->bitmapblockpointers[i], 0))
+                        return DOSFALSE;
         curblock = volume->bitmapextensionblock;
         while (curblock != 0)
         {
                 blockbuffer = getBlock(afsbase, volume, curblock);
                 if (blockbuffer == NULL)
-                        return;
+                        return DOSFALSE;
                 blockbuffer->flags |= BCF_USED;
-                markBlock(afsbase, volume, curblock, 0);
+                if (!markBlock(afsbase, volume, curblock, 0))
+                        goto failed;
                 for (i=0; i<volume->SizeBlock-1; i++)
                 {
                         if (blockbuffer->buffer[i] == 0)
                                 break;
-                        markBlock(afsbase, volume, OS_BE2LONG(blockbuffer->buffer[i]), 0);
+                        if (!markBlock(afsbase, volume, OS_BE2LONG(blockbuffer->buffer[i]), 0))
+                                goto failed;
                 }
                 curblock = OS_BE2LONG(blockbuffer->buffer[volume->SizeBlock-1]);
                 blockbuffer->flags &= ~BCF_USED;
         }
+        return DOSTRUE;
+failed:
+        blockbuffer->flags &= ~BCF_USED;
+        return DOSFALSE;
 }
 
 /*******************************************
@@ -179,7 +201,8 @@ UWORD i;
         {
                 blockbuffer->buffer[0] = OS_LONG2BE(dostype);
                 blockbuffer->buffer[2] = OS_LONG2BE(volume->rootblock);
-                writeBlock(afsbase, volume, blockbuffer, -1);
+                if (!writeBlock(afsbase, volume, blockbuffer, -1))
+                        return ERROR_UNKNOWN;
                 blockbuffer = getFreeCacheBlock(afsbase, volume, volume->rootblock);
                 if (blockbuffer != NULL)
                 {
@@ -193,7 +216,11 @@ UWORD i;
                         for (i=BLK_TABLE_START; i<=BLK_TABLE_END(volume); i++)
                                 blockbuffer->buffer[i] = 0;
                         blockbuffer->buffer[BLK_BITMAP_VALID_FLAG(volume)] = -1;
-                        createNewBitmapBlocks(afsbase, volume);
+                        if (!createNewBitmapBlocks(afsbase, volume))
+                        {
+                                blockbuffer->flags &= ~BCF_USED;
+                                return ERROR_UNKNOWN;
+                        }
                         for (
                                         i=BLK_BITMAP_POINTERS_START(volume);
                                         i<=BLK_BITMAP_POINTERS_END(volume);
@@ -228,12 +255,26 @@ UWORD i;
                         blockbuffer->buffer[volume->SizeBlock-3] = 0;
                         blockbuffer->buffer[volume->SizeBlock-2] = 0;
                         blockbuffer->buffer[BLK_SECONDARY_TYPE(volume)] = OS_LONG2BE(ST_ROOT);
-                        writeBlock(afsbase, volume, blockbuffer, BLK_CHECKSUM);
+                        if (!writeBlock(afsbase, volume, blockbuffer, BLK_CHECKSUM))
+                        {
+                                blockbuffer->flags &= ~BCF_USED;
+                                return ERROR_UNKNOWN;
+                        }
                         blockbuffer->flags &= ~BCF_USED;
-                        invalidBitmap(afsbase, volume);
-                        markBlock(afsbase, volume, volume->rootblock, 0);
-                        markBitmaps(afsbase, volume);
-                        validBitmap(afsbase, volume);
+                        if (!invalidBitmap(afsbase, volume))
+                                return ERROR_UNKNOWN;
+                        if (!markBlock(afsbase, volume, volume->rootblock, 0)
+                                || !markBitmaps(afsbase, volume))
+                        {
+                                if (volume->bitmapblock != NULL)
+                                        volume->bitmapblock->flags &= ~BCF_USED;
+                                volume->writefailed = TRUE;
+                                volume->state = ID_VALIDATING;
+                                setBitmapFlag(afsbase, volume, 0);
+                                return ERROR_UNKNOWN;
+                        }
+                        if (!validBitmap(afsbase, volume))
+                                return ERROR_UNKNOWN;
                         return 0;
                 }
         }
@@ -279,7 +320,11 @@ struct DateStamp ds;
         blockbuffer->buffer[BLK_VOLUME_DAYS(volume)] = OS_LONG2BE(ds.ds_Days);
         blockbuffer->buffer[BLK_VOLUME_MINS(volume)] = OS_LONG2BE(ds.ds_Minute);
         blockbuffer->buffer[BLK_VOLUME_TICKS(volume)] = OS_LONG2BE(ds.ds_Tick);
-        writeBlock(afsbase, volume, blockbuffer, BLK_CHECKSUM);
+        if (!writeBlock(afsbase, volume, blockbuffer, BLK_CHECKSUM))
+        {
+                *error = ERROR_UNKNOWN;
+                return DOSFALSE;
+        }
         /* update os specific information of the medium */
         osMediumInit(afsbase, volume, blockbuffer);
         return DOSTRUE;

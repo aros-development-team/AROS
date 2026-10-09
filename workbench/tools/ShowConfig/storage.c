@@ -21,6 +21,7 @@ OOP_AttrBase HiddStorageUnitAB;
 OOP_MethodID HWBase;
 OOP_MethodID HiddStorageControllerBase;
 OOP_MethodID HiddStorageBusBase;
+OOP_MethodID HiddStorageUnitBase;
 
 static const struct OOP_ABDescr storage_abd[] =
 {
@@ -58,6 +59,49 @@ static const char *StorageTypeName(IPTR type)
     }
 }
 
+static void PrintStorageSize(UQUAD bytes)
+{
+    UQUAD divisor = 1;
+    UQUAD whole;
+    UQUAD tenth;
+    const char *unit = "B";
+
+    if (bytes >= ((UQUAD)1 << 40))
+    {
+        divisor = (UQUAD)1 << 40;
+        unit = "TiB";
+    }
+    else if (bytes >= ((UQUAD)1 << 30))
+    {
+        divisor = (UQUAD)1 << 30;
+        unit = "GiB";
+    }
+    else if (bytes >= ((UQUAD)1 << 20))
+    {
+        divisor = (UQUAD)1 << 20;
+        unit = "MiB";
+    }
+    else if (bytes >= ((UQUAD)1 << 10))
+    {
+        divisor = (UQUAD)1 << 10;
+        unit = "KiB";
+    }
+
+    if (divisor == 1)
+    {
+        printf("%llu %s", (unsigned long long)bytes, unit);
+        return;
+    }
+
+    whole = bytes / divisor;
+    tenth = ((bytes % divisor) * 10) / divisor;
+
+    printf("%llu.%llu %s",
+        (unsigned long long)whole,
+        (unsigned long long)tenth,
+        unit);
+}
+
 AROS_UFH3S(BOOL, StorageUnitEnum,
     AROS_UFHA(struct Hook *, hook, A0),
     AROS_UFHA(OOP_Object *, unitObj, A2),
@@ -71,6 +115,8 @@ AROS_UFH3S(BOOL, StorageUnitEnum,
     IPTR model = 0;
     IPTR revision = 0;
     IPTR removable = FALSE;
+    UQUAD blockCount = 0;
+    ULONG blockSize = 0;
 
     (void)hook;
 
@@ -94,6 +140,21 @@ AROS_UFH3S(BOOL, StorageUnitEnum,
 
     if (revision && *((const char *)revision))
         printf("\t\tRevision: %s\n", (const char *)revision);
+
+    if (HIDD_StorageUnit_GetCapacity(unitObj, &blockCount, &blockSize) &&
+        blockCount && blockSize)
+    {
+        printf("\t\tCapacity: ");
+
+        if (blockCount <= (~(UQUAD)0) / blockSize)
+            PrintStorageSize(blockCount * (UQUAD)blockSize);
+        else
+            printf("Unknown");
+
+        printf("\n\t\tBlock size: ");
+        PrintStorageSize((UQUAD)blockSize);
+        printf("\n");
+    }
 
     printf("\t\tRemovable: %s\n",
         removable ? "Yes" : "No");
@@ -172,6 +233,8 @@ void PrintStorageInformation(void)
         OOP_GetMethodID(IID_Hidd_StorageController, 0);
     HiddStorageBusBase =
         OOP_GetMethodID(IID_Hidd_StorageBus, 0);
+    HiddStorageUnitBase =
+        OOP_GetMethodID(IID_Hidd_StorageUnit, 0);
 
     storageRoot = OOP_NewObject(NULL, CLID_Hidd_Storage, NULL);
 
