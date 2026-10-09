@@ -89,7 +89,8 @@ CONST TEXT HandlerName[] = "smb-handler";
 
 typedef STRPTR	KEY;
 typedef LONG *	NUMBER;
-typedef LONG	SWITCH;
+/* ReadArgs writes one pointer-sized slot for every template item. */
+typedef IPTR	SWITCH;
 
 /****************************************************************************/
 
