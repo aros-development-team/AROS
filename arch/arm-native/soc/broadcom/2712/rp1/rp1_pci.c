@@ -1,7 +1,8 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
-    Desc: PCI driver presenting the RP1 xHCI controllers as PCI devices.
+    Desc: PCI driver presenting the RP1 xHCI and Ethernet controllers as
+          PCI devices.
 */
 
 /* Bring-up diagnostics, as in the rest of the rp1 modules. */
@@ -35,18 +36,26 @@
 #define HiddAttrBase    (PSD(cl)->hiddAB)
 
 /*
- * The xHCI blocks are not PCI functions of their own; they sit in RP1's
- * BAR1 window, which rp1.resource had the root complex map.  Each is given a
- * synthetic type 0 header at 00:0n.0, so pcixhci finds them like any
- * other controller.  The BAR holds the CPU address.
+ * The xHCI and GEM blocks sit in RP1's BAR1 window, not as PCI functions.
+ * Each gets a synthetic type 0 header at 00:0n.0; the BAR holds the CPU address.
  */
 #define RP1_XHCI_SIZE   0x100000
+#define RP1_ETH_SIZE    0x4000
 
-static void cfg_init(ULONG *cfg, IPTR base, ULONG irq)
+/* GEM module ID; below 2 is the older MACB. */
+#define GEM_MID         0xFC
+#define GEM_MID_IDNUM(x) (((x) >> 16) & 0xFFF)
+
+static void cfg_init(struct pcirp1_staticdata *psd, int dev, ULONG class,
+                     IPTR base, ULONG size, ULONG irq)
 {
+    ULONG *cfg = psd->cfg[dev];
+
+    psd->barsize[dev] = size;
+
     cfg[PCICS_VENDOR / 4]    = (RP1_PCIE_DEVICE_ID << 16) | RP1_PCIE_VENDOR_ID;
-    cfg[PCICS_REVISION / 4]  = 0x0C033000;              /* USB, xHCI */
-    cfg[PCICS_BAR0 / 4]      = ((ULONG)base & ~(RP1_XHCI_SIZE - 1)) | PCIBAR_MEMTYPE_64BIT;
+    cfg[PCICS_REVISION / 4]  = class;
+    cfg[PCICS_BAR0 / 4]      = ((ULONG)base & ~(size - 1)) | PCIBAR_MEMTYPE_64BIT;
     cfg[PCICS_BAR0 / 4 + 1]  = (ULONG)((UQUAD)base >> 32);
     cfg[PCICS_SUBVENDOR / 4] = cfg[PCICS_VENDOR / 4];
     cfg[PCICS_INT_LINE / 4]  = (1 << 8) | irq;          /* INTA, GIC INTID */
@@ -54,7 +63,7 @@ static void cfg_init(ULONG *cfg, IPTR base, ULONG irq)
 
 static ULONG *cfg_lookup(struct pcirp1_staticdata *psd, UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg)
 {
-    if (bus || sub || dev >= RP1_XHCI_COUNT || reg >= sizeof(psd->cfg[0]) || !psd->cfg[dev][0])
+    if (bus || sub || dev >= RP1_DEV_COUNT || reg >= sizeof(psd->cfg[0]) || !psd->cfg[dev][0])
         return NULL;
 
     return &psd->cfg[dev][reg / 4];
@@ -81,7 +90,7 @@ static void WriteConfigLong(struct pcirp1_staticdata *psd, UBYTE bus, UBYTE dev,
         *p = (*p & 0xFFFF0000) | (val & (PCICMF_MEMDECODE | PCICMF_BUSMASTER));
         break;
     case PCICS_BAR0:
-        *p = (val & ~(RP1_XHCI_SIZE - 1)) | PCIBAR_MEMTYPE_64BIT;
+        *p = (val & ~(psd->barsize[dev] - 1)) | PCIBAR_MEMTYPE_64BIT;
         break;
     case PCICS_BAR0 + 4:
         *p = val;
@@ -95,7 +104,7 @@ OOP_Object *PCIRP1__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 
     struct TagItem mytags[] = {
         { aHidd_Name, (IPTR)"PCIRP1" },
-        { aHidd_HardwareName, (IPTR)"RP1 southbridge xHCI controllers" },
+        { aHidd_HardwareName, (IPTR)"RP1 southbridge xHCI and Ethernet controllers" },
         { TAG_DONE, 0 }
     };
 
@@ -266,9 +275,27 @@ static int PCIRP1_Init(LIBBASETYPEPTR LIBBASE)
             continue;
         }
 
-        cfg_init(psd->cfg[i], base[i], irq[i]);
+        cfg_init(psd, i, 0x0C033000, base[i], RP1_XHCI_SIZE, irq[i]);    /* USB, xHCI */
         found++;
         D(bug("[PCIRP1] xHCI%d at 0x%p, INTID %u\n", i, (APTR)base[i], (unsigned)irq[i]));
+    }
+
+    /* GEM is on clk_sys, so MID reads before any clock setup. */
+    {
+        ULONG mid = *(volatile ULONG *)(rp1->rp1_ETH + GEM_MID);
+
+        if (mid == 0xFFFFFFFF || GEM_MID_IDNUM(mid) < 2 || !rp1->rp1_EthIrq || rp1->rp1_EthIrq > 255)
+        {
+            D(bug("[PCIRP1] GEM at 0x%p skipped: MID 0x%08x, INTID %u\n",
+                  (APTR)rp1->rp1_ETH, (unsigned)mid, (unsigned)rp1->rp1_EthIrq));
+        }
+        else
+        {
+            cfg_init(psd, RP1_ETH_DEV, 0x02000000, rp1->rp1_ETH, RP1_ETH_SIZE, rp1->rp1_EthIrq); /* Ethernet */
+            found++;
+            D(bug("[PCIRP1] GEM at 0x%p, MID 0x%08x, INTID %u\n",
+                  (APTR)rp1->rp1_ETH, (unsigned)mid, (unsigned)rp1->rp1_EthIrq));
+        }
     }
 
     if (!found)
