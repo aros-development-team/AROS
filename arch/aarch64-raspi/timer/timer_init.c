@@ -23,6 +23,7 @@
 #include <proto/arossupport.h>
 #include <proto/bootloader.h>
 #include <proto/exec.h>
+#include <proto/execlock.h>
 #include <proto/kernel.h>
 
 
@@ -102,6 +103,19 @@ static int Timer_Init(struct TimerBase *TimerBase)
     unsigned int timerIRQ;
 
     D(bug("[Timer] Timer_Init: kernel.resource @ 0x%p\n", KernelBase));
+
+#if defined(__AROSEXEC_SMP__)
+    /* Set up by rom/timer/timer_init.c, which this file replaces */
+    {
+        struct ExecLockBase *ExecLockBase = OpenResource("execlock.resource");
+
+        if (ExecLockBase)
+        {
+            TimerBase->tb_ExecLockBase = ExecLockBase;
+            TimerBase->tb_ListLock = AllocLock();
+        }
+    }
+#endif
 
     TimerBase->tb_Platform.tbp_periiobase = KrnGetSystemAttr(KATTR_PeripheralBase);
 
