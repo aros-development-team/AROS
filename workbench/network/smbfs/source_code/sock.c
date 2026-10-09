@@ -70,33 +70,7 @@ smb_receive_raw (const struct smb_server *server, int sock_fd, unsigned char *ta
 	netbios_session_payload_size = (int)smb_len (netbios_session_buf);
 
 	#if defined(DUMP_SMB)
-	{
-		if(netbios_session_buf[0] != 0x00 && netbios_session_payload_size > 0)
-		{
-			if(netbios_session_payload_size > 256 - 4)
-				netbios_session_payload_size = 256 - 4;
-
-			result = recvfrom (sock_fd, &netbios_session_buf[4], netbios_session_payload_size - 4, 0, NULL, NULL);
-			if (result < 0)
-			{
-				LOG (("smb_receive_raw: recv error = %ld\n", errno));
-				result = (-errno);
-				goto out;
-			}
-
-			if(result < netbios_session_payload_size - 4)
-			{
-				result = -EIO;
-				goto out;
-			}
-
-			dump_netbios_header(__FILE__,__LINE__,netbios_session_buf,&netbios_session_buf[4],netbios_session_payload_size);
-		}
-		else
-		{
-			dump_netbios_header(__FILE__,__LINE__,netbios_session_buf,NULL,0);
-		}
-	}
+	dump_netbios_header(__FILE__,__LINE__,netbios_session_buf,NULL,0);
 	#endif /* defined(DUMP_SMB) */
 
 	/* Check the session type. */
