@@ -2319,6 +2319,12 @@ smb_proc_reconnect (struct smb_server *server)
 		/* NT LAN Manager or newer. */
 		if (server->protocol >= PROTOCOL_NT1)
 		{
+			if (SMB_WCT (packet) < 17)
+			{
+				result = -EIO;
+				goto fail;
+			}
+
 			server->security_mode = BVAL(packet, smb_vwv1);
 			max_buffer_size = DVAL (packet, smb_vwv3 + 1);
 			server->max_raw_size = DVAL (packet, smb_vwv5 + 1);
@@ -2326,12 +2332,17 @@ smb_proc_reconnect (struct smb_server *server)
 			server->capabilities = DVAL (packet, smb_vwv9 + 1);
 			server->crypt_key_length = BVAL (packet, smb_vwv16 + 1);
 
-			memcpy(server->crypt_key,SMB_BUF(packet),server->crypt_key_length);
 		}
 		/* LAN Manager 2.0 or older */
 		else
 		{
 			word blkmode;
+
+			if (SMB_WCT (packet) < 13)
+			{
+				result = -EIO;
+				goto fail;
+			}
 
 			server->security_mode = BVAL(packet, smb_vwv1);
 			max_buffer_size = WVAL (packet, smb_vwv2);
@@ -2340,10 +2351,9 @@ smb_proc_reconnect (struct smb_server *server)
 			blkmode = WVAL (packet, smb_vwv5);
 			server_sesskey = DVAL (packet, smb_vwv6);
 
-			/* Crypt key size is fixed to 8 bytes. */
-			server->crypt_key_length = 8;
-
-			memcpy(server->crypt_key,SMB_BUF(packet),server->crypt_key_length);
+			/* Plaintext authentication does not need a challenge. */
+			server->crypt_key_length =
+				(server->security_mode & NEGOTIATE_ENCRYPT_PASSWORDS) ? 8 : 0;
 
 			/* We translate this into capabilities. According to the
 			   LAN Manager 1.x/2.0 documentation both bits 0+1 being set
@@ -2351,6 +2361,21 @@ smb_proc_reconnect (struct smb_server *server)
 			if((blkmode & 3) == 3)
 				server->capabilities = CAP_RAW_MODE;
 		}
+
+		/* The legacy password algorithms consume exactly eight challenge bytes.
+		 * Check both the destination and the received data before copying.
+		 */
+		if (server->crypt_key_length > sizeof(server->crypt_key) ||
+		    server->crypt_key_length > SMB_BCC (packet) ||
+		    ((server->security_mode & NEGOTIATE_ENCRYPT_PASSWORDS) &&
+		     server->crypt_key_length != sizeof(server->crypt_key)))
+		{
+			result = -EIO;
+			goto fail;
+		}
+
+		memset(server->crypt_key,0,sizeof(server->crypt_key));
+		memcpy(server->crypt_key,SMB_BUF(packet),server->crypt_key_length);
 
 		SHOWVALUE(server->security_mode);
 
