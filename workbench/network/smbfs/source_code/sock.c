@@ -217,6 +217,41 @@ smb_valid_trans2_response (const byte *packet, int payload_length)
 	return 0;
 }
 
+/* Count unique bytes, since retransmitted or overlapping fragments do not
+ * fill gaps in a transaction response.
+ */
+static int
+smb_mark_trans2_bytes (byte *covered, int offset, int count)
+{
+	int i, added = 0;
+
+	for (i = 0; i < count; i++)
+	{
+		int position = offset + i;
+		byte mask = 1 << (position & 7);
+
+		if ((covered[position >> 3] & mask) == 0)
+		{
+			covered[position >> 3] |= mask;
+			added++;
+		}
+	}
+
+	return added;
+}
+
+static int
+smb_count_trans2_bytes (const byte *covered, int length)
+{
+	int i, count = 0;
+
+	for (i = 0; i < length; i++)
+		if (covered[i >> 3] & (1 << (i & 7)))
+			count++;
+
+	return count;
+}
+
 /* smb_receive
    fs points to the correct segment, server != NULL, sock!=NULL */
 int
@@ -253,6 +288,8 @@ smb_receive_trans2 (struct smb_server *server, int sock_fd, int *data_len, int *
 	int total_data;
 	int total_param;
 	int result;
+	byte *data_covered = NULL;
+	byte *param_covered = NULL;
 
 	LOG (("smb_receive_trans2: enter\n"));
 
@@ -287,6 +324,28 @@ smb_receive_trans2 (struct smb_server *server, int sock_fd, int *data_len, int *
 
 		result = -EIO;
 		goto fail;
+	}
+
+	/* A complete first fragment needs no coverage map or per-byte work. */
+	if (WVAL (inbuf, smb_drcnt) < total_data)
+	{
+		data_covered = malloc ((total_data + 7) / 8);
+		if (data_covered == NULL)
+		{
+			result = -ENOMEM;
+			goto fail;
+		}
+		memset (data_covered, 0, (total_data + 7) / 8);
+	}
+	if (WVAL (inbuf, smb_prcnt) < total_param)
+	{
+		param_covered = malloc ((total_param + 7) / 8);
+		if (param_covered == NULL)
+		{
+			result = -ENOMEM;
+			goto fail;
+		}
+		memset (param_covered, 0, (total_param + 7) / 8);
 	}
 
 	/* Allocate it, but only if there is something to allocate
@@ -341,7 +400,11 @@ smb_receive_trans2 (struct smb_server *server, int sock_fd, int *data_len, int *
 		if((*param) != NULL)
 			memcpy ((*param) + WVAL (inbuf, smb_prdisp), smb_base (inbuf) + WVAL (inbuf, smb_proff), WVAL (inbuf, smb_prcnt));
 
-		(*param_len) += WVAL (inbuf, smb_prcnt);
+		if (param_covered != NULL)
+			(*param_len) += smb_mark_trans2_bytes (param_covered,
+				WVAL (inbuf, smb_prdisp), WVAL (inbuf, smb_prcnt));
+		else
+			(*param_len) += WVAL (inbuf, smb_prcnt);
 
 		if (WVAL (inbuf, smb_drdisp) + WVAL (inbuf, smb_drcnt) > total_data)
 		{
@@ -353,7 +416,11 @@ smb_receive_trans2 (struct smb_server *server, int sock_fd, int *data_len, int *
 		if((*data) != NULL)
 			memcpy ((*data) + WVAL (inbuf, smb_drdisp), smb_base (inbuf) + WVAL (inbuf, smb_droff), WVAL (inbuf, smb_drcnt));
 
-		(*data_len) += WVAL (inbuf, smb_drcnt);
+		if (data_covered != NULL)
+			(*data_len) += smb_mark_trans2_bytes (data_covered,
+				WVAL (inbuf, smb_drdisp), WVAL (inbuf, smb_drcnt));
+		else
+			(*data_len) += WVAL (inbuf, smb_drcnt);
 
 		LOG (("smb_rec_trans2: drcnt/prcnt: %ld/%ld\n", WVAL (inbuf, smb_drcnt), WVAL (inbuf, smb_prcnt)));
 
@@ -365,6 +432,10 @@ smb_receive_trans2 (struct smb_server *server, int sock_fd, int *data_len, int *
 			goto fail;
 		}
 
+		if (data_covered != NULL && WVAL (inbuf, smb_tdrcnt) < total_data)
+			(*data_len) = smb_count_trans2_bytes (data_covered, WVAL (inbuf, smb_tdrcnt));
+		if (param_covered != NULL && WVAL (inbuf, smb_tprcnt) < total_param)
+			(*param_len) = smb_count_trans2_bytes (param_covered, WVAL (inbuf, smb_tprcnt));
 		total_data = WVAL (inbuf, smb_tdrcnt);
 		total_param = WVAL (inbuf, smb_tprcnt);
 		if (total_data <= (*data_len) && total_param <= (*param_len))
@@ -395,6 +466,8 @@ smb_receive_trans2 (struct smb_server *server, int sock_fd, int *data_len, int *
 	}
 
 	LOG (("smb_receive_trans2: normal exit\n"));
+	free (data_covered);
+	free (param_covered);
 	return 0;
 
  fail:
@@ -406,6 +479,8 @@ smb_receive_trans2 (struct smb_server *server, int sock_fd, int *data_len, int *
 
 	if((*data) != NULL)
 		free (*data);
+	free (data_covered);
+	free (param_covered);
 
 	(*param) = (*data) = NULL;
 
