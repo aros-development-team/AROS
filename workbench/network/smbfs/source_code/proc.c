@@ -1439,9 +1439,10 @@ smb_decode_long_dirent (char *p, struct smb_dirent *finfo, int level)
 			#if DEBUG
 			{
 				char buffer[255];
+				int len = min (BVAL (p, 26), sizeof(buffer)-1);
 
-				memcpy(buffer,p + 27,sizeof(buffer)-1);
-				buffer[sizeof(buffer)-1] = '\0';
+				memcpy(buffer,p + 27,len);
+				buffer[len] = '\0';
 
 				LOG(("type=%ld, name='%s'\n",level,buffer));
 			}
@@ -1486,9 +1487,10 @@ smb_decode_long_dirent (char *p, struct smb_dirent *finfo, int level)
 			#if DEBUG
 			{
 				char buffer[255];
+				int len = min (BVAL (p, 30), sizeof(buffer)-1);
 
-				memcpy(buffer,p + 31,sizeof(buffer)-1);
-				buffer[sizeof(buffer)-1] = '\0';
+				memcpy(buffer,p + 31,len);
+				buffer[len] = '\0';
 
 				LOG(("type=%ld, name='%s'\n",level,buffer));
 			}
