@@ -514,6 +514,10 @@ off_t lseek(int filedes, off_t offset, int whence);
 __off64_t lseek64(int filedes, __off64_t offset, int whence);
 # endif
 int pipe(int filedes[2]);
+ssize_t pread(int d, void *buf, size_t nbytes, off_t offset);
+# if defined(__off64_t_defined)
+ssize_t pread64(int d, void *buf, size_t nbytes, __off64_t offset);
+# endif
 ssize_t read(int d, void *buf, size_t nbytes);
 int rmdir(const char *path);
 int setuid(uid_t uid);
