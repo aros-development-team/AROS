@@ -1,0 +1,7 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-network-stacks-arostcp-db : workbench-network-stacks-arostcp-db-servicesd
+
+%copy_files_q mmake=workbench-network-stacks-arostcp-db-servicesd files="$(filter-out mmakefile.src mmakefile, $(call WILDCARD, *))" \
+    dst=$(AROS_SYSTEM)/Network/AROSTCP/db/services.d

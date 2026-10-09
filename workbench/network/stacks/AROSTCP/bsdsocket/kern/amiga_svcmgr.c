@@ -5,8 +5,9 @@
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  *
- * Service manager - launches external service daemons listed in db/services
- * and owns their process lifecycle.  See amiga_svcmgr.h.
+ * Service manager - launches external service daemons configured under
+ * db/services.d/ (one file per service) and owns their process lifecycle.
+ * See amiga_svcmgr.h.
  */
 
 #include <conf.h>
@@ -17,6 +18,7 @@
 #include <exec/tasks.h>
 #include <dos/dos.h>
 #include <dos/dostags.h>
+#include <dos/dosextens.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <aros/debug.h>
@@ -138,107 +140,156 @@ static void svc_stop_one(struct SvcProc *sp, BOOL force)
 }
 
 /* -------------------------------------------------------------------------
- * Manifest (db/services)
+ * Per-service config (db/services.d/<name>)
  * ------------------------------------------------------------------------- */
 
-/* Parse one manifest line in place:
- *   "<name> <path> [order] [stopsigbit] [signal|restart]"
- * Returns FALSE for blank/comment lines.  reload policy defaults to SIGNAL
- * (the daemon survives a reload and is told to quiesce/resume via signals). */
-static BOOL svc_parse_line(char *line, char **name, char **path, ULONG *stopsig,
-                           ULONG *policy)
+/* Case-insensitive match of a NUL-terminated key against a literal. */
+static BOOL svc_keyeq(const char *k, const char *lit)
 {
-    char *p = line;
-    char *tok;
+    while(*k && *lit) {
+        char a = *k, b = *lit;
+        if(a >= 'a' && a <= 'z') a -= 32;
+        if(b >= 'a' && b <= 'z') b -= 32;
+        if(a != b)
+            return FALSE;
+        k++; lit++;
+    }
+    return *k == '\0' && *lit == '\0';
+}
 
-    *stopsig = 0;
-    *policy  = NSRP_SIGNAL;
+/* Split "KEY = VALUE" in place, trimming surrounding whitespace.  Returns FALSE
+ * for blank / comment (# or ;) / non-assignment lines. */
+static BOOL svc_cfg_kv(char *line, char **key, char **val)
+{
+    char *p = line, *eq, *e;
 
     while(*p == ' ' || *p == '\t')
         p++;
-    if(*p == '\0' || *p == '\n' || *p == '#' || *p == ';')
+    if(*p == '\0' || *p == '\n' || *p == '\r' || *p == '#' || *p == ';')
         return FALSE;
 
-    /* name */
-    *name = p;
-    while(*p && *p != ' ' && *p != '\t' && *p != '\n')
-        p++;
-    if(*p)
-        *p++ = '\0';
-    while(*p == ' ' || *p == '\t')
-        p++;
-    if(*p == '\0' || *p == '\n')
-        return FALSE;   /* no path */
+    eq = p;
+    while(*eq && *eq != '=' && *eq != '\n')
+        eq++;
+    if(*eq != '=')
+        return FALSE;
 
-    /* path */
-    *path = p;
-    while(*p && *p != ' ' && *p != '\t' && *p != '\n')
-        p++;
-    if(*p)
-        *p++ = '\0';
+    *key = p;
+    e = eq;                             /* terminate + rtrim the key */
+    *eq = '\0';
+    while(e > p && (e[-1] == ' ' || e[-1] == '\t'))
+        *--e = '\0';
 
-    /* optional: order (ignored for now - file order is launch order), stopsig */
+    p = eq + 1;                         /* value: ltrim then rtrim */
     while(*p == ' ' || *p == '\t')
         p++;
-    tok = p;                        /* order token (skipped) */
-    while(*p && *p != ' ' && *p != '\t' && *p != '\n')
-        p++;
-    if(*p)
-        *p++ = '\0';
-    while(*p == ' ' || *p == '\t')
-        p++;
-    /* stopsig token: a signal bit number (e.g. 12 for CTRL-C) */
-    if(*p >= '0' && *p <= '9') {
-        LONG n = 0;
-        while(*p >= '0' && *p <= '9')
-            n = n * 10 + (*p++ - '0');
-        if(n >= 0 && n < 32)
-            *stopsig = 1UL << n;
-    }
-    while(*p == ' ' || *p == '\t')
-        p++;
-    /* policy token: "restart" (kill+relaunch on reload), "ignore" (untouched),
-     * else "signal" (default - survive reload, quiesce/resume via signals) */
-    if(p[0] == 'r' || p[0] == 'R')
-        *policy = NSRP_RESTART;
-    else if(p[0] == 'i' || p[0] == 'I')
-        *policy = NSRP_IGNORE;
-    (void)tok;
+    *val = p;
+    e = p;
+    while(*e && *e != '\n' && *e != '\r')
+        e++;
+    while(e > p && (e[-1] == ' ' || e[-1] == '\t'))
+        e--;
+    *e = '\0';
     return TRUE;
+}
+
+/* Read one service config file (the current dir is db/services.d) and launch
+ * it.  The service name is the file name; the file holds its management config:
+ *   Path=<executable>              (required)
+ *   Order=<n>                      (bring-up priority hint; informational)
+ *   StopSig=<bit>                  (signal bit to stop it; default CTRL-C = 12)
+ *   Policy=signal|restart|ignore   (reload policy; default signal) */
+static void svc_launch_from_cfg(CONST_STRPTR name)
+{
+    BPTR  fh;
+    char  line[256];
+    char  path[256];
+    ULONG stopsig = 0, policy = NSRP_SIGNAL;
+    BOOL  havepath = FALSE;
+
+    if(name[0] == '\0' || name[0] == '.')   /* skip "", hidden, "." / ".." */
+        return;
+    if(svc_find(name))                       /* already running */
+        return;
+
+    fh = Open((STRPTR)name, MODE_OLDFILE);   /* relative to services.d */
+    if(fh == BNULL)
+        return;
+
+    while(FGets(fh, (STRPTR)line, sizeof(line))) {
+        char *key = NULL, *val = NULL;
+
+        if(!svc_cfg_kv(line, &key, &val))
+            continue;
+
+        if(svc_keyeq(key, "Path")) {
+            int i;
+            for(i = 0; i < (int)sizeof(path) - 1 && val[i]; i++)
+                path[i] = val[i];
+            path[i]  = '\0';
+            havepath = (i > 0);
+        } else if(svc_keyeq(key, "StopSig")) {
+            LONG n = 0;
+            const char *v = val;
+            while(*v >= '0' && *v <= '9')
+                n = n * 10 + (*v++ - '0');
+            if(n >= 0 && n < 32)
+                stopsig = 1UL << n;
+        } else if(svc_keyeq(key, "Policy")) {
+            if(val[0] == 'r' || val[0] == 'R')
+                policy = NSRP_RESTART;
+            else if(val[0] == 'i' || val[0] == 'I')
+                policy = NSRP_IGNORE;
+            else
+                policy = NSRP_SIGNAL;
+        }
+        /* Order= is accepted but not acted on yet (scan order = launch order). */
+    }
+    Close(fh);
+
+    if(havepath)
+        svc_launch(name, path, stopsig, policy);
+    else
+        __log(LOG_ERR, "servicemgr: service '%s' has no Path", name);
 }
 
 void svcmgr_launch_all(void)
 {
-    BPTR lock, old, fh;
-    char line[256];
+    BPTR dblock, svclock, old;
+    struct FileInfoBlock *fib;
 
     if(!SvcMgrReady)
         return;
 
-    lock = Lock(db_path, ACCESS_READ);
-    if(lock == BNULL)
+    dblock = Lock(db_path, ACCESS_READ);
+    if(dblock == BNULL)
         return;
-    old = CurrentDir(lock);
-    /* "netservices", not "services": the latter is the IANA port-name netdb
-     * file (getservbyname) and would collide. */
-    fh  = Open("netservices", MODE_OLDFILE);
-    CurrentDir(old);
-    UnLock(lock);
-    if(fh == BNULL)
-        return;     /* no manifest -> no external service daemons */
-
-    D(bug("[AROSTCP](amiga_svcmgr.c) svcmgr_launch_all(): reading db/netservices\n"));
-    while(FGets(fh, (STRPTR)line, sizeof(line))) {
-        char *name = NULL, *path = NULL;
-        ULONG stopsig = 0, policy = NSRP_SIGNAL;
-
-        if(!svc_parse_line(line, &name, &path, &stopsig, &policy))
-            continue;
-        if(svc_find(name))              /* already running */
-            continue;
-        svc_launch(name, path, stopsig, policy);
+    old = CurrentDir(dblock);
+    /* One file per service under db/services.d/.  (db/services itself is the
+     * IANA port-name database read by getservbyname, hence the ".d" dir name
+     * to avoid colliding with it.) */
+    svclock = Lock("services.d", ACCESS_READ);
+    if(svclock == BNULL) {
+        CurrentDir(old);
+        UnLock(dblock);
+        return;             /* no services.d -> no external service daemons */
     }
-    Close(fh);
+
+    fib = AllocDosObject(DOS_FIB, NULL);
+    if(fib != NULL && Examine(svclock, fib)) {
+        CurrentDir(svclock);    /* so Open(name) resolves inside services.d */
+        D(bug("[AROSTCP](amiga_svcmgr.c) svcmgr_launch_all(): scanning db/services.d\n"));
+        while(ExNext(svclock, fib)) {
+            if(fib->fib_DirEntryType > 0)       /* skip subdirectories */
+                continue;
+            svc_launch_from_cfg(fib->fib_FileName);
+        }
+    }
+    if(fib != NULL)
+        FreeDosObject(DOS_FIB, fib);
+    CurrentDir(old);
+    UnLock(svclock);
+    UnLock(dblock);
 }
 
 void svcmgr_stop_all(BOOL force)

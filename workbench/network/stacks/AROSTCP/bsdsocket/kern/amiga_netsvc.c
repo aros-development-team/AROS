@@ -64,7 +64,7 @@ static LONG svc_interfaces_stop(struct NetService *s, BOOL force)
 }
 static const struct NetServiceOps interfaces_ops = { svc_interfaces_start, svc_interfaces_stop };
 
-/* dhcp is now an EXTERNAL service daemon (services/dhcp -> db/netservices); it
+/* dhcp is now an EXTERNAL service daemon (services/dhcp -> db/services.d/dhcp); it
  * registers itself through netservices.library and manages dhclient in its own
  * process, so there is no internal dhcp netservice here any more. */
 

@@ -1,0 +1,19 @@
+#
+# AROSTCP network service: DHCP client manager.
+#
+# One file per service under db/services.d/.  The file name is the service
+# name; this file holds the management config the service manager needs to
+# launch and supervise the daemon:
+#
+#   Path    - the daemon executable (required)
+#   Order   - bring-up priority hint, higher starts earlier (informational)
+#   StopSig - signal bit sent to stop it (12 = CTRL-C, the default)
+#   Policy  - reload policy:
+#               signal  : survive a reload, quiesce/resume via signals (default)
+#               restart : stop and relaunch across a reload
+#               ignore  : leave untouched across a reload
+#
+Path=SYS:System/Network/Services/dhcpd
+Order=50
+StopSig=12
+Policy=signal

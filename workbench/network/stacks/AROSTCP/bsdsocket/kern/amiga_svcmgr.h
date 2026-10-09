@@ -7,9 +7,10 @@
  *
  * Service manager: the stack's launcher for EXTERNAL service daemons.
  *
- * A data-driven manifest (db/netservices) lists daemons the stack should run:
- *     <name> <path> [order] [stopsignal]
- * one per line ('#' and ';' begin comments).  svcmgr launches each with
+ * Data-driven config under db/services.d/ - one file per service, the file
+ * name being the service name and holding key=value management settings:
+ *     Path=<exe>  Order=<n>  StopSig=<bit>  Policy=signal|restart|ignore
+ * ('#' and ';' begin comments).  svcmgr launches each with
  * LoadSeg()+CreateNewProc() (as amiga_dhcp.c already does for dhclient),
  * tracks it, and on stop signals it and waits for it to exit (via NP_ExitCode)
  * before unloading - so "stop" means the daemon is really gone, not just told

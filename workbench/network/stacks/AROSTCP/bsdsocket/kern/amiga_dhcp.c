@@ -13,7 +13,7 @@ extern struct ifnet *ifnet;
 /*
  * DHCP client launching has been EXTERNALISED to the dhcp service daemon
  * (workbench/network/stacks/AROSTCP/services/dhcp, installed as
- * SYS:System/Network/Services/dhcpd and listed in db/netservices).  The daemon
+ * SYS:System/Network/Services/dhcpd and configured in db/services.d/dhcp).  The daemon
  * iterates interfaces (SIOCGIFDHCP), launches/manages the ISC dhclient, and
  * cycles it on reconfigure via netservices.library.
  *
