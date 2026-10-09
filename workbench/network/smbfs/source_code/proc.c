@@ -2240,7 +2240,7 @@ smb_proc_reconnect (struct smb_server *server)
 		p = smb_name_mangle (p, server->mount_data.server_name);
 		p = smb_name_mangle (p, server->mount_data.client_name);
 
-		smb_encode_smb_length (packet, (byte *) p - (byte *) (packet));
+		smb_encode_smb_length (packet, (byte *) p - (packet + 4));
 
 		packet[0] = 0x81; /* SESSION REQUEST */
 
