@@ -477,6 +477,7 @@ struct USB2OTGUnit
      */
     UBYTE               hu_CtrlSplitChan;
     UBYTE               hu_BurnedChannels;
+    BOOL                hu_IntAsBulk;       /* direct INT armed as BULK (BCM2835 workaround) */
 
 /*
  * DMA buffers — must be in heap memory so the 0xC0000000 VC bus
