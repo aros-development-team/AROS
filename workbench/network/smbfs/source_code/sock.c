@@ -25,6 +25,30 @@
 
 /*****************************************************************************/
 
+/* TCP may split any part of a session frame across several reads. */
+static int
+smb_receive_all (int sock_fd, unsigned char *target, int length)
+{
+	int received = 0;
+
+	while (received < length)
+	{
+		int result = recvfrom (sock_fd, target + received, length - received, 0, NULL, NULL);
+
+		/* EINTR also reports Ctrl-C through the configured socket break mask. */
+		if (result < 0)
+			return -errno;
+
+		/* An orderly close cannot complete the remaining frame. */
+		if (result == 0)
+			return -EIO;
+
+		received += result;
+	}
+
+	return received;
+}
+
 /* smb_receive_raw
    fs points to the correct segment, sock != NULL, target != NULL
    The smb header is only stored if want_header != 0. */
@@ -135,17 +159,11 @@ smb_receive_raw (const struct smb_server *server, int sock_fd, unsigned char *ta
 		target += 4;
 	}
 
-	for(already_read = 0 ; already_read < len ; already_read += result)
+	already_read = smb_receive_all (sock_fd, target, len);
+	if (already_read < 0)
 	{
-		result = recvfrom (sock_fd, (void *) (target + already_read), len - already_read, 0, NULL, NULL);
-		if (result < 0)
-		{
-			LOG (("smb_receive_raw: recvfrom error = %ld\n", errno));
-
-			result = (-errno);
-
-			goto out;
-		}
+		result = already_read;
+		goto out;
 	}
 
 	#if defined(DUMP_SMB)
