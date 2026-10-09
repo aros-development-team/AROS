@@ -111,8 +111,7 @@ int logname_changed(void *pt, IPTR new);
 extern STRPTR logfilename;
 extern LONG OpenGUIOnStartup;
 extern ULONG gui_refresh;
-extern STRPTR dhclient_name;
-int dhclient_path_changed(void *pt, IPTR new);
+extern STRPTR dhclient_name;   /* legacy sysctl slot; DHCP is an external service now */
 
 /* Global variables */
 STRPTR KW_Protocols = KW_ROUTES;
@@ -148,5 +147,5 @@ struct cfg_variable variables[] = {
     { VAR_STRP, VF_RW, NULL, &logfilename, logname_changed },
     { VAR_ENUM, VF_RCONF, NULL, &OpenGUIOnStartup, boolean_enum },
     { VAR_LONG, VF_RCONF, NULL, &gui_refresh, NULL },
-    { VAR_STRP, VF_RCONF, NULL, &dhclient_name, dhclient_path_changed }
+    { VAR_STRP, VF_RCONF, NULL, &dhclient_name, NULL }
 };

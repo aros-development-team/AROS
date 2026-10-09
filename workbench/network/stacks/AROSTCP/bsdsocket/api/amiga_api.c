@@ -36,6 +36,8 @@
 #include <sys/syslog.h>
 
 #include <kern/amiga_includes.h>
+#include <bsdsocket/socketbasetags.h>
+#include <libraries/netservice.h>
 
 #include <api/amiga_api.h>
 #include <api/allocdatabuffer.h>
@@ -81,6 +83,7 @@ struct SignalSemaphore baselist_semaphore = { {0} };
  */
 struct Library *MasterSocketBase = NULL;
 struct Library *MasterMiamiBase = NULL;
+struct Library *MasterNetServicesBase = NULL;
 struct List	socketBaseList;	     /* list of opened socket library bases */
 struct List	garbageSocketBaseList; /* list of libray bases not active
 				      anymore (NOT YET IMPLEMENTED) */
@@ -601,6 +604,7 @@ BOOL api_init()
     extern void select_init(void);
     extern f_void ExecLibraryList_funcTable[];
     extern ULONG Miami_InitFuncTable[];
+    extern ULONG NetServices_InitFuncTable[];
 
 #if defined(__AROS__)
     D(bug("[AROSTCP](amiga_api.c) api_init()\n"));
@@ -660,6 +664,25 @@ BOOL api_init()
     D(Printf("Created master miami.library base: 0x%p\n", MasterMiamiBase);)
     if(MasterMiamiBase == NULL)
         return FALSE;
+
+    /* netservices.library: the managed-service registry.  A conventional
+     * single shared base (no per-opener MakeLibrary in its Open), holding no
+     * SocketBase.  The registry data was already initialised by
+     * netservice_registry_init() in init_all(). */
+    MasterNetServicesBase = MakeLibrary(NetServices_InitFuncTable,
+                                        NULL,
+                                        NULL,
+                                        sizeof(struct NetServicesBase),
+                                        BNULL);
+    if(MasterNetServicesBase == NULL)
+        return FALSE;
+    ((struct Library *)MasterNetServicesBase)->lib_Node.ln_Type = NT_LIBRARY;
+    ((struct Library *)MasterNetServicesBase)->lib_Node.ln_Name = (APTR)NETSERVICESNAME;
+    ((struct Library *)MasterNetServicesBase)->lib_Flags = (LIBF_SUMUSED | LIBF_CHANGED);
+    ((struct Library *)MasterNetServicesBase)->lib_Version = NETSERVICES_VERSION;
+    ((struct Library *)MasterNetServicesBase)->lib_Revision = NETSERVICES_REVISION;
+    ((struct Library *)MasterNetServicesBase)->lib_IdString = (APTR)RELEASESTRING VSTRING;
+    D(bug("[AROSTCP](amiga_api.c) api_init: Created netservices.library base: 0x%p\n", MasterNetServicesBase));
 
     InitSemaphore(&syscall_semaphore);
     InitSemaphore(&baselist_semaphore);
@@ -757,6 +780,7 @@ BOOL api_show()
 #endif
     AddLibrary(MasterSocketBase);
     AddLibrary(MasterMiamiBase);
+    AddLibrary(MasterNetServicesBase);
     api_state = API_SHOWN;
 
     return TRUE;
@@ -776,6 +800,7 @@ VOID api_hide()
     /* unlink Master SocketBase from System Library list */
     Remove((struct Node *)MasterSocketBase);
     Remove((struct Node *)MasterMiamiBase);
+    Remove((struct Node *)MasterNetServicesBase);
     liblist_unlock(lock);
     api_state = API_HIDDEN;
 }
@@ -793,7 +818,7 @@ VOID api_setfunctions() /* DOES NOTHING NOW */
     if(api_state == API_SHOWN) {
         /* unlink Master SocketBase from System Library list */
         APTR lock = liblist_lock(TRUE);
-
+        Remove((struct Node *)MasterNetServicesBase);
         Remove((struct Node *)MasterMiamiBase);
         Remove((struct Node *)MasterSocketBase);
         liblist_unlock(lock);
@@ -824,6 +849,77 @@ VOID api_sendbreaktotasks()
             Signal(((struct SocketBase *)libNode)->thisTask, SIGBREAKF_CTRL_C);
 
     ReleaseSemaphore(&baselist_semaphore);
+}
+
+ULONG api_reconfig_state = NETRC_ONLINE;
+ULONG api_reconfig_generation = 0;
+ULONG api_reconfig_expected = 0;          /* subscribers signalled at reconfigure-begin */
+volatile ULONG api_reconfig_acked = 0;    /* how many have acked (SBTC_RECONFIG_ACK) */
+
+/*
+ * Reconfigure notification.  Signals every open consumer that set
+ * SBTC_SIG_RECONFIG_MASK (the NETTRACE task is skipped; the Master base is not
+ * on socketBaseList).  begin=TRUE marks the start of an in-place reload and
+ * sets the state to NETRC_RECONFIGURING; begin=FALSE marks the end, bumps the
+ * generation and returns the state to NETRC_ONLINE.  A woken consumer reads
+ * SBTC_RECONFIG_STATE/SBTC_RECONFIG_GENERATION to tell begin from end.
+ */
+VOID api_sendreconfig(BOOL begin)
+{
+    extern struct List socketBaseList; /* :/ */
+    struct Node *libNode;
+
+#if defined(__AROS__)
+    D(bug("[AROSTCP](amiga_api.c) api_sendreconfig(begin=%ld)\n", (long)begin));
+#endif
+
+    ULONG count = 0;
+
+    if(begin) {
+        api_reconfig_state = NETRC_RECONFIGURING;
+        api_reconfig_acked = 0;         /* reset the ack tally for this begin */
+    } else {
+        api_reconfig_generation++;
+        api_reconfig_state = NETRC_ONLINE;
+    }
+
+    Forbid();
+    for(libNode = socketBaseList.lh_Head; libNode->ln_Succ;
+            libNode = libNode->ln_Succ) {
+        struct SocketBase *sb = (struct SocketBase *)libNode;
+        if(sb->thisTask != Nettrace_Task && sb->sigReconfigMask) {
+            Signal(sb->thisTask, sb->sigReconfigMask);
+            count++;
+        }
+    }
+    Permit();
+
+    if(begin)
+        api_reconfig_expected = count;  /* how many acks to wait for (net_reload) */
+}
+
+/*
+ * Signal every consumer subscribed to SBTC_SIG_ADDRESS_CHANGE_MASK that an
+ * interface address was added or removed.  Fired centrally from rt_newaddrmsg()
+ * on RTM_NEWADDR/RTM_DELADDR, so it covers both IPv4 and IPv6.  A woken consumer
+ * re-reads interface addresses (e.g. SIOCGIFCONF).
+ */
+VOID api_sendaddrchange(VOID)
+{
+    extern struct List socketBaseList; /* :/ */
+    struct Node *libNode;
+
+    if(api_state != API_SHOWN)
+        return;         /* no external consumers before the API is visible */
+
+    Forbid();
+    for(libNode = socketBaseList.lh_Head; libNode->ln_Succ;
+            libNode = libNode->ln_Succ) {
+        struct SocketBase *sb = (struct SocketBase *)libNode;
+        if(sb->thisTask != Nettrace_Task && sb->sigAddrChangeMask)
+            Signal(sb->thisTask, sb->sigAddrChangeMask);
+    }
+    Permit();
 }
 
 /*

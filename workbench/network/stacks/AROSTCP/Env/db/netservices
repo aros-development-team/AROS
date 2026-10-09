@@ -1,0 +1,15 @@
+#
+# AROSTCP network service manifest.
+#
+# Lists the external service daemons the stack launches at startup and manages
+# across a configuration reload (through netservices.library).  One per line:
+#
+#   <name>  <path>  [order]  [stopsignalbit]  [signal|restart|ignore]
+#
+#   order        - bring-up priority hint (higher starts earlier)
+#   stopsignalbit - signal number to send on stop (12 = CTRL-C, the default)
+#   reload policy - signal  : survive a reload, quiesce/resume via signals (default)
+#                   restart : stop and relaunch across a reload
+#                   ignore  : leave untouched across a reload
+#
+dhcp  SYS:System/Network/Services/dhcpd  50  12  signal

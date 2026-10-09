@@ -1,7 +1,6 @@
 #include <conf.h>
 
 #include <dos/dos.h>
-#include <dos/dostags.h>
 #include <proto/dos.h>
 #include <kern/amiga_gui.h>
 #include <kern/amiga_dhcp.h>
@@ -9,234 +8,48 @@
 #include <net/if_sana.h>
 #include <net/sana2arp.h>   /* for autoip_start() */
 
-#include <stdio.h>
-#include <string.h>
-
-extern UBYTE dhclient_path[];
 extern struct ifnet *ifnet;
-extern struct Library *logDOSBase;
 
-#define DOSBase logDOSBase
+/*
+ * DHCP client launching has been EXTERNALISED to the dhcp service daemon
+ * (workbench/network/stacks/AROSTCP/services/dhcp, installed as
+ * SYS:System/Network/Services/dhcpd and listed in db/netservices).  The daemon
+ * iterates interfaces (SIOCGIFDHCP), launches/manages the ISC dhclient, and
+ * cycles it on reconfigure via netservices.library.
+ *
+ * The in-stack entry points below are now thin: addifent() and the interface
+ * teardown still call run_dhclient()/kill_dhclient() etc. to mark intent, but
+ * the actual process management is the daemon's job - the stack only records
+ * the per-interface ifi_aros_usedhcp flag (set by addifent), which the daemon
+ * reads back through SIOCGIFDHCP.  These remain as no-ops so existing callers
+ * are undisturbed; autoip (IPv4LL) stays in the stack.
+ */
 
-static const TEXT dhclient_proc_name[] = "AROSTCP DHCP client";
-static const TEXT dhclient_cmd_name[] = "dhclient";
+void run_dhclient(struct ifnet *ifp)        { (void)ifp; }
+void kill_dhclient(struct ifnet *ifp)       { (void)ifp; }
 #if INET6 && DHCP6
-static const TEXT dhclient6_proc_name[] = "AROSTCP DHCPv6 client";
+void run_dhclient6(struct ifnet *ifp)       { (void)ifp; }
+void kill_dhclient6(struct ifnet *ifp)      { (void)ifp; }
 #endif
+void dhcp_stop_all(void)                    { }
 
 /*
- * Build the dhclient argument string for all interfaces that have
- * ifi_aros_usedhcp set, optionally excluding one interface (e.g. one
- * that is going offline).  Returns the number of interfaces included.
- */
-static int
-build_dhclient_args(char *buf, size_t len, struct ifnet *exclude_ifp, int v6)
-{
-    struct ifnet *ifp;
-    int count = 0;
-    char tmp[IFNAMSIZ + 8];
-
-    if(v6)
-        snprintf(buf, len, "-6 -q");
-    else
-        snprintf(buf, len, "-q");
-
-    for(ifp = ifnet; ifp; ifp = ifp->if_next) {
-        if(ifp == exclude_ifp)
-            continue;
-        if(v6) {
-#if INET6 && DHCP6
-            if(!ifp->if_data.ifi_aros_usedhcp6)
-                continue;
-#else
-            continue;
-#endif
-        } else {
-            if(!ifp->if_data.ifi_aros_usedhcp)
-                continue;
-        }
-        snprintf(tmp, sizeof(tmp), " %s%u", ifp->if_name, ifp->if_unit);
-        strncat(buf, tmp, len - strnlen(buf, len) - 1);
-        count++;
-    }
-    return count;
-}
-
-/*
- * Internal: kill any running dhclient for IPv4, then restart with args
- * built from all DHCP-enabled interfaces, excluding exclude_ifp.
- * If no interfaces remain, just kill and do not restart.
- */
-static void
-_update_dhclient(struct ifnet *exclude_ifp)
-{
-    BPTR seglist;
-    int count;
-
-    /* Kill existing client if running */
-    if(aros_dhcpv4.pid) {
-        Signal((APTR)aros_dhcpv4.pid, SIGBREAKF_CTRL_C);
-        aros_dhcpv4.pid = (pid_t)NULL;
-    }
-
-    count = build_dhclient_args(aros_dhcpv4.args, sizeof(aros_dhcpv4.args),
-                                exclude_ifp, 0);
-    if(count == 0) {
-        D(bug("[AROSTCP](amiga_dhcp.c) _update_dhclient: no interfaces need DHCPv4\n"));
-        return; /* no interfaces need DHCPv4 */
-    }
-
-    D(bug("[AROSTCP](amiga_dhcp.c) _update_dhclient: Starting DHCP client: %s (path=%s)\n", aros_dhcpv4.args,
-          dhclient_path));
-    seglist = LoadSeg(dhclient_path);
-    D(bug("[AROSTCP](amiga_dhcp.c) _update_dhclient: dhclient seglist = 0x%p\n", seglist));
-    if(seglist) {
-        aros_dhcpv4.pid =
-            (pid_t)CreateNewProcTags(NP_Seglist, seglist,
-                                     NP_Arguments, aros_dhcpv4.args,
-                                     NP_Cli, TRUE,
-                                     NP_Name, dhclient_proc_name,
-                                     NP_CommandName, dhclient_cmd_name,
-                                     NP_ConsoleTask, NULL,
-                                     TAG_DONE);
-        DDHCP(KPrintF("dhclient pid = 0x%p\n", aros_dhcpv4.pid);)
-        D(bug("[AROSTCP](amiga_dhcp.c) _update_dhclient: dhclient pid = 0x%p\n", aros_dhcpv4.pid));
-        if(!aros_dhcpv4.pid) {
-            UnLoadSeg(seglist);
-            seglist = BNULL;
-        }
-    }
-    if(!seglist)
-        error_request("Unable to start DHCP client (%s)", (IPTR)aros_dhcpv4.args, 0);
-}
-
-/* Start (or restart) the DHCPv4 client including ifp. */
-void run_dhclient(struct ifnet *ifp)
-{
-    char new_args[AROS_DHCP_ARGS_LEN];
-
-    if(build_dhclient_args(new_args, sizeof(new_args), NULL, 0) == 0)
-        return;
-
-    /* Already running for the same set of interfaces — don't disturb it */
-    if(aros_dhcpv4.pid && strcmp(aros_dhcpv4.args, new_args) == 0)
-        return;
-
-    _update_dhclient(NULL);
-}
-
-/* Kill DHCPv4 client for ifp going offline; restart for remaining interfaces. */
-void kill_dhclient(struct ifnet *ifp)
-{
-    _update_dhclient(ifp);
-}
-
-#if INET6 && DHCP6
-/*
- * Internal: kill any running dhclient6, then restart with args built from
- * all DHCPv6-enabled interfaces, excluding exclude_ifp.
- */
-static void
-_update_dhclient6(struct ifnet *exclude_ifp)
-{
-    BPTR seglist;
-    int count;
-
-    if(aros_dhcpv6.pid) {
-        Signal((APTR)aros_dhcpv6.pid, SIGBREAKF_CTRL_C);
-        aros_dhcpv6.pid = (pid_t)NULL;
-    }
-
-    count = build_dhclient_args(aros_dhcpv6.args, sizeof(aros_dhcpv6.args),
-                                exclude_ifp, 1);
-    if(count == 0)
-        return;
-
-    DDHCP(KPrintF("Starting DHCPv6 client: %s\n", aros_dhcpv6.args);)
-    seglist = LoadSeg(dhclient_path);
-    DDHCP(KPrintF("dhclient6 seglist = 0x%p\n", seglist);)
-    if(seglist) {
-        aros_dhcpv6.pid =
-            (pid_t)CreateNewProcTags(NP_Seglist, seglist,
-                                     NP_Arguments, aros_dhcpv6.args,
-                                     NP_Cli, TRUE,
-                                     NP_Name, dhclient6_proc_name,
-                                     NP_CommandName, dhclient_cmd_name,
-                                     NP_ConsoleTask, NULL,
-                                     TAG_DONE);
-        DDHCP(KPrintF("dhclient6 pid = 0x%p\n", aros_dhcpv6.pid);)
-        if(!aros_dhcpv6.pid) {
-            UnLoadSeg(seglist);
-            seglist = BNULL;
-        }
-    }
-    if(!seglist)
-        error_request("Unable to start DHCPv6 client (%s)", (IPTR)aros_dhcpv6.args, 0);
-}
-
-void run_dhclient6(struct ifnet *ifp)
-{
-    char new_args[AROS_DHCP_ARGS_LEN];
-
-    if(build_dhclient_args(new_args, sizeof(new_args), NULL, 1) == 0)
-        return;
-
-    /* Already running for the same set of interfaces — don't disturb it */
-    if(aros_dhcpv6.pid && strcmp(aros_dhcpv6.args, new_args) == 0)
-        return;
-
-    _update_dhclient6(NULL);
-}
-
-void kill_dhclient6(struct ifnet *ifp)
-{
-    _update_dhclient6(ifp);
-}
-#endif /* INET6 && DHCP6 */
-
-/*
- * Called during AROSTCP startup to start DHCP for all interfaces that had
- * IFF_DELAYUP set (i.e. DHCP was configured but the GUI wasn't up yet).
- * Clears the flag for all pending interfaces first, then starts a single
- * dhclient process covering all of them.
+ * Called once the API is up (from the log/NETTRACE task) to deal with
+ * interfaces that were configured before the stack was visible (IFF_DELAYUP).
+ * DHCP for those is now handled by the dhcp daemon when it starts; here we only
+ * clear the deferral flag and bring up IPv4LL (autoip) for AUTO interfaces that
+ * neither use DHCP nor have a static address.
  */
 void run_dhcp(void)
 {
     struct ifnet *ifp;
-    int need4 = 0;
-#if INET6 && DHCP6
-    int need6 = 0;
-#endif
 
-    D(bug("[AROSTCP](amiga_dhcp.c) run_dhcp: scanning interfaces for IFF_DELAYUP\n"));
     for(ifp = ifnet; ifp; ifp = ifp->if_next) {
-        D(bug("[AROSTCP](amiga_dhcp.c) run_dhcp: %s%u flags=0x%x usedhcp=%d\n",
-              ifp->if_name, ifp->if_unit, ifp->if_flags,
-              ifp->if_data.ifi_aros_usedhcp));
         if(ifp->if_flags & IFF_DELAYUP) {
-            DDHCP(KPrintF("Executing delayed DHCP start for %s%u\n", ifp->if_name, ifp->if_unit);)
-            D(bug("[AROSTCP](amiga_dhcp.c) run_dhcp: delayed start for %s%u\n", ifp->if_name, ifp->if_unit));
             ifp->if_flags &= ~IFF_DELAYUP;
-            if(ifp->if_data.ifi_aros_usedhcp)
-                need4 = 1;
-            else if(((struct sana_softc *)ifp)->ss_ipaddr.s_addr == INADDR_ANY)
-                autoip_start(ifp);	/* no DHCPv4 and no address assigned */
-#if INET6 && DHCP6
-            if(ifp->if_data.ifi_aros_usedhcp6)
-                need6 = 1;
-#endif
+            if(!ifp->if_data.ifi_aros_usedhcp &&
+                    ((struct sana_softc *)ifp)->ss_ipaddr.s_addr == INADDR_ANY)
+                autoip_start(ifp);  /* no DHCPv4 and no address assigned */
         }
     }
-
-    if(need4) {
-        D(bug("[AROSTCP](amiga_dhcp.c) run_dhcp: launching DHCPv4 client\n"));
-        _update_dhclient(NULL);
-    }
-#if INET6 && DHCP6
-    if(need6) {
-        D(bug("[AROSTCP](amiga_dhcp.c) run_dhcp: launching DHCPv6 client\n"));
-        _update_dhclient6(NULL);
-    }
-#endif
 }
-

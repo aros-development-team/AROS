@@ -724,6 +724,22 @@ AROS_LH1(ULONG, SocketBaseTagList,
 
                 CASE_LONG(SBTC_SIGEVENTMASK, sigEventMask);
 
+                CASE_LONG(SBTC_SIG_RECONFIG_MASK,       sigReconfigMask);
+
+                CASE_LONG(SBTC_SIG_ADDRESS_CHANGE_MASK, sigAddrChangeMask);
+
+            case(SBTC_RECONFIG_STATE << SBTB_CODE):  /* get */
+                *tagData = (IPTR)api_reconfig_state;
+                break;
+
+            case(SBTC_RECONFIG_GENERATION << SBTB_CODE):  /* get */
+                *tagData = (IPTR)api_reconfig_generation;
+                break;
+
+            case(SBTC_RECONFIG_ACK << SBTB_CODE) | SBTF_SET:  /* set: consumer quiesced */
+                api_reconfig_acked++;
+                break;
+
             case(SBTC_ERRNO << SBTB_CODE):  /* get */
                 *tagData = (IPTR)readErrnoValue(libPtr);
                 break;

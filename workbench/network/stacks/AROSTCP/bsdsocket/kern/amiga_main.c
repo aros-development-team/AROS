@@ -57,6 +57,10 @@ BOOL sana_poll(void);
 #include <kern/amiga_netdb.h>
 #include <kern/amiga_rc.h>
 #include <kern/amiga_log.h>
+#include <api/netservice_api.h>
+#include <kern/amiga_svcmgr.h>
+#include <kern/amiga_netsvc.h>
+#include <bsdsocket/socketbasetags.h>   /* NetControlMsg / NCMD_* / AROSTCP_CTRLPORT_NAME */
 #include <kern/kern_malloc_protos.h>
 #include <api/amiga_api.h>
 
@@ -81,7 +85,11 @@ extern WORD nthLibrary;
 
 static ULONG sanamask = 0,
              sig = 0, signalmask = 0, timermask = 0,
-             breakmask = 0;
+             breakmask = 0, controlmask = 0;
+
+static struct MsgPort *controlport = NULL;  /* AROSTCP.ctrl: RELOAD/SHUTDOWN requests */
+static BOOL  ctrl_shutdown = FALSE;          /* set by an NCMD_SHUTDOWN control message */
+static BOOL  control_poll(void);
 
 UBYTE *taskname = NULL;
 /*BPTR db_lock = NULL;*/
@@ -95,35 +103,14 @@ TEXT netdb_path[FILENAME_MAX];
 TEXT db_path[FILENAME_MAX];
 TEXT config_path[FILENAME_MAX];
 UBYTE logfiledefname[FILENAME_MAX];
-UBYTE dhclient_path[FILENAME_MAX];
 
 /*
- * Notify callback for the DHCLIENT config variable.
- * Resolves relative paths against the AROSTCP root directory.
+ * DHCP client management (which client, where it lives, how it is launched) is
+ * no longer the stack's concern - it belongs entirely to the external dhcp
+ * service daemon (services/dhcp).  The stack only launches that service.  The
+ * dhclient_name variable is kept only so the legacy sysctl slot still exists;
+ * nothing in the stack reads it.
  */
-int dhclient_path_changed(void *pt, IPTR new)
-{
-    STRPTR newpath = (STRPTR)new;
-
-    if(newpath == NULL || newpath[0] == '\0')
-        return 0;
-
-    /* If it contains a colon it's an absolute Amiga path — use as-is */
-    if(strchr(newpath, ':') != NULL) {
-        strncpy(dhclient_path, newpath, FILENAME_MAX - 1);
-        dhclient_path[FILENAME_MAX - 1] = '\0';
-    } else {
-        /* Relative path: resolve against the AROSTCP root (parent of db/) */
-        TEXT root[FILENAME_MAX];
-        strncpy(root, db_path, FILENAME_MAX - 1);
-        root[FILENAME_MAX - 1] = '\0';
-        /* db_path points to "<root>/db" — go up one level */
-        PathPart(root)[0] = '\0';
-        strncpy(dhclient_path, root, FILENAME_MAX);
-        AddPart(dhclient_path, newpath, FILENAME_MAX);
-    }
-    return 0;
-}
 
 /*
 TEXT hequiv_path[FILENAME_MAX];
@@ -210,7 +197,6 @@ main(int argc, char *argv[])
     strncpy(config_path, interfaces_path, FILENAME_MAX);
     strncpy(logfiledefname, "T:", FILENAME_MAX);             /* NicJA: Default to storing logs in Temp for launching
                                                from read only media                          */
-    strncpy(dhclient_path, interfaces_path, FILENAME_MAX);
     /*strcpy(hequiv_path, interfaces_path);
       strcpy(inetdconf_path, interfaces_path);*/
     AddPart(interfaces_path, _PATH_DB, FILENAME_MAX);
@@ -218,7 +204,7 @@ main(int argc, char *argv[])
     AddPart(db_path, _PATH_DB, FILENAME_MAX);
     AddPart(config_path, _PATH_DB, FILENAME_MAX);
     AddPart(logfiledefname, _PATH_SYSLOG, FILENAME_MAX);
-    AddPart(dhclient_path, _PATH_DHCLIENT, FILENAME_MAX);
+    /* DHCP client path/launch is the dhcp service daemon's concern, not ours. */
     /*AddPart(hequiv_path, _PATH_HEQUIV, FILENAME_MAX);
       AddPart(inetdconf_path, _PATH_INETDCONF, FILENAME_MAX);*/
 
@@ -290,7 +276,7 @@ main(int argc, char *argv[])
 
         /* Initialize signal mask for the wait */
         breakmask = SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_F;
-        signalmask = timermask | breakmask | sanamask;
+        signalmask = timermask | breakmask | sanamask | controlmask;
 
         /*
          * Now when everything else is successfully initialized,
@@ -310,11 +296,17 @@ main(int argc, char *argv[])
                     if(!timer_poll()) sig &= ~timermask;
                 }
 
+                if(sig & controlmask) {
+                    if(!control_poll()) sig &= ~controlmask;
+                }
+
                 sig |= SetSignal(0L, signalmask) & signalmask;
             } while(sig & (~breakmask));
 
-            if(sig & breakmask) {
+            if((sig & breakmask) || ctrl_shutdown) {
                 int i;
+
+                ctrl_shutdown = FALSE;      /* consume: one stop attempt per request */
 
 #if defined(__AROS__)
                 D(bug("[AROSTCP](amiga_main.c) main: Task received CTRL-C\n"));
@@ -323,9 +315,19 @@ main(int argc, char *argv[])
                  * NETTRACE task keeps one base open, it is not counted. */
                 api_hide();		          /* hides the API from users */
 
+                /* Tell registered external services to stop and release their
+                 * bindings, then stop and WAIT for the service-manager's
+                 * launched daemons to exit, so their bases are gone before we
+                 * count remaining openers. */
+                netservice_signal_external(NSPHASE_STOP);
+                svcmgr_stop_all(TRUE);
+
                 api_sendbreaktotasks(); /* send brk to all tasks w/ SBase open */
 
-                /* Try three times with a short delay */
+                /* Try three times with a short delay.  A stack-managed service
+                 * was signalled to stop above and closes its own base as it
+                 * shuts down, so the open count drops to the NETTRACE baseline
+                 * without any special accounting here. */
                 for(i = 0; i < 3 && MasterSocketBase->lib_OpenCnt > 1; i++) {
                     Delay(50);		          /* give tasks time to close socket base */
                 }
@@ -366,6 +368,40 @@ main(int argc, char *argv[])
 /*
  * Do all initializations
  */
+/*
+ * Drain the out-of-band control port.  Mirrors sana_poll/timer_poll: it
+ * returns FALSE (GetMsg drains everything, so no persistent pending state).
+ * An NCMD_SHUTDOWN sets ctrl_shutdown, routed into the same orderly-stop path
+ * as a CTRL-C; an NCMD_RELOAD runs in this (main-task) context - it drives the
+ * netservice_stop_all()/reload/netservice_start_all() reconfigure (net_reload)
+ * here.
+ */
+static BOOL control_poll(void)
+{
+    struct NetControlMsg *msg;
+
+    if(controlport == NULL)
+        return FALSE;
+
+    while((msg = (struct NetControlMsg *)GetMsg(controlport)) != NULL) {
+        msg->ncm_Result = 0;
+        switch(msg->ncm_Command) {
+        case NCMD_SHUTDOWN:
+            ctrl_shutdown = TRUE;
+            break;
+        case NCMD_RELOAD:
+            D(bug("[AROSTCP](amiga_main.c) control: RELOAD\n"));
+            msg->ncm_Result = net_reload();   /* in-place reconfigure (main-task context) */
+            break;
+        case NCMD_NOP:
+        default:
+            break;
+        }
+        ReplyMsg((struct Message *)msg);
+    }
+    return FALSE;
+}
+
 BOOL
 init_all(void)
 {
@@ -389,6 +425,14 @@ init_all(void)
      */
     sleep_init();
     D(Printf("sleep_init() complete\n");)
+
+    /*
+     * initialize the network service registry (lives in netservices.library;
+     * empty until services register).  The registry data is ready now; the
+     * library base that exposes it to external daemons is created in api_init().
+     */
+    netservice_registry_init();
+    D(Printf("netservice_registry_init() complete\n");)
 
     /*
      * Read command line arguments and configuration file
@@ -461,6 +505,18 @@ init_all(void)
         return FALSE;
     D(Printf("api_show() complete\n");)
 
+    /*
+     * Create the out-of-band control port (RELOAD / SHUTDOWN requests).
+     * Non-fatal on failure: the stack simply has no reload channel.
+     */
+    if((controlport = CreateMsgPort()) != NULL) {
+        controlport->mp_Node.ln_Name = (char *)AROSTCP_CTRLPORT_NAME;
+        controlport->mp_Node.ln_Pri  = 0;
+        AddPort(controlport);
+        controlmask = 1UL << controlport->mp_SigBit;
+        D(Printf("control port '%s' up\n", AROSTCP_CTRLPORT_NAME);)
+    }
+
     if(Nettrace_Task) {
         D(Printf("Initialization complete, signalling NETTRACE\n");)
         Signal(Nettrace_Task, SIGBREAKF_CTRL_F);
@@ -469,6 +525,9 @@ init_all(void)
 
     rc_start();
     D(Printf("rc_start() complete, initialization finished\n");)
+
+    /* Register the built-in services now that the subsystems are up. */
+    net_services_register();
 
 #if defined(__AROS__)
     D(bug("[AROSTCP](amiga_main.c) init_all: Initialisation successful.\n"));
@@ -494,6 +553,22 @@ deinit_all(void)
 
     api_hide();			/* hides the API from users */
     D(Printf("api_hide() completed\n");)
+
+    /*
+     * Remove the control port so no new RELOAD/SHUTDOWN arrives during
+     * teardown; reply any stragglers so senders waiting on us don't block.
+     */
+    if(controlport) {
+        struct NetControlMsg *m;
+        RemPort(controlport);
+        while((m = (struct NetControlMsg *)GetMsg(controlport)) != NULL) {
+            m->ncm_Result = -1;
+            ReplyMsg((struct Message *)m);
+        }
+        DeleteMsgPort(controlport);
+        controlport = NULL;
+        controlmask = 0;
+    }
 
     /*
      * Deinitialize network database.
@@ -524,6 +599,11 @@ deinit_all(void)
 
     log_deinit();
     D(Printf("log_deinit() completed\n");)
+
+    /*
+     * Tear down the service registry (services own their own storage).
+     */
+    netservice_registry_deinit();
 
     /*
      * Free memory pool.

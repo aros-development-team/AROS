@@ -131,6 +131,7 @@ struct sana_softc {
   UBYTE          *ss_execname;
   ULONG           ss_execunit;
   UBYTE           ss_name[IFNAMSIZ];
+  ULONG           ss_reloadseen;      /* reload generation this iface was last in config */
   struct sana_softc *ss_next;
 };
 

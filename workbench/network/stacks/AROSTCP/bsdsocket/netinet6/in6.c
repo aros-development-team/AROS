@@ -331,8 +331,12 @@ in6_ifinit(struct ifnet *ifp, struct in6_ifaddr *ia,
         flags |= RTF_CLONING;
     }
 
-    if((error = rtinit(&ia->ia_ifa, RTM_ADD, flags)) == 0)
+    error = rtinit(&ia->ia_ifa, RTM_ADD, flags);
+    if(error == 0)
         ia->ia6_flags |= IFA_ROUTE;
+    else if(error == EEXIST)
+        error = 0;  /* prefix route already present (e.g. a reload re-applying
+                     * an interface's existing config) - that is not an error */
 
     return error;
 }

@@ -9,7 +9,7 @@
 
 extern UBYTE InitFlags;
 extern TEXT db_path[];
-struct Task *AmiTCP_Task;
+extern struct Task *AROSTCP_Task;   /* the stack's main task (kern/amiga_main.c) */
 UBYTE RcCommand[FILENAME_MAX];
 UBYTE RcStartDone = 0;
 UBYTE RC_Stopped = 1;
@@ -64,7 +64,12 @@ void SAVEDS rc_stop_process(void)
     Forbid();
     InternalProc--;
     RC_Stopped = 1;
-    Signal(AmiTCP_Task, SIGBREAKF_CTRL_F);
+    /*
+     * No CTRL-F signal to the main task: nothing waits on it (RC_Stopped is the
+     * status), and CTRL-F is in the main loop's breakmask, so signalling it from
+     * here made an in-place reload's rc cycling look like a shutdown request.
+     * A waiter should poll RC_Stopped instead.
+     */
 }
 
 

@@ -162,6 +162,8 @@ LONG do_netdb(struct CSource *cs, UBYTE **errstrp, struct CSource *res);
 LONG reset_netdb(struct CSource *cs, UBYTE **errstrp, struct CSource *res);
 LONG init_netdb(void);
 void netdb_deinit(void);
+LONG netdb_reload(void);        /* re-read config in place (reload): swap NDB, re-apply interfaces */
+void dyndb_flush(void);         /* drop all dynamic nameservers/domains (reload) */
 #define NETDB_DEFER_SECS 5      /* how often a DEFER interface is tried again */
 void netdb_defer_timer(void);   /* periodic retry of DEFER interfaces */
      

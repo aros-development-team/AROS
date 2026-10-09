@@ -628,3 +628,82 @@ int cmd, flags;
     }
     return (error);
 }
+
+/*
+ * rt_find_ifroute - return the first route in this radix tree (descending
+ * through its subtrees and each leaf's duplicate-key chain) that resolves
+ * through ifp.  Pure lookup: it never mutates the tree, so rt_purgeif() can
+ * find a route, delete it, then rescan from the top.
+ *
+ * Every non-ROOT leaf's radix node is rtentry.rt_nodes[0] (rn_addroute() is
+ * handed rt->rt_nodes and rn_match() results are cast straight to rtentry *
+ * elsewhere in this file), so the cast below is the same idiom.
+ */
+static struct rtentry *
+rt_find_ifroute(rn, ifp)
+register struct radix_node *rn;
+struct ifnet *ifp;
+{
+    struct rtentry *rt;
+
+    if(rn == 0)
+        return (0);
+    if(rn->rn_b >= 0) {
+        /* interior node: descend both progeny */
+        if((rt = rt_find_ifroute(rn->rn_l, ifp)))
+            return (rt);
+        return (rt_find_ifroute(rn->rn_r, ifp));
+    }
+    /* leaf: scan this key's duplicate chain */
+    for(; rn; rn = rn->rn_dupedkey) {
+        if(rn->rn_flags & RNF_ROOT)
+            continue;
+        rt = (struct rtentry *)rn;
+        if(rt->rt_ifp == ifp)
+            return (rt);
+    }
+    return (0);
+}
+
+/*
+ * rt_purgeif - delete every route that resolves through ifp, across all
+ * address families.  Because it matches on rt_ifp it catches cloning prefix
+ * routes, their cloned host children and ARP/NDP llinfo entries alike - each
+ * carries rt_ifp == ifp - so no stale route is left pointing at an interface
+ * whose addresses are about to be removed (such a dangling route otherwise
+ * makes re-adding the prefix fail EEXIST, or leaves rt_ifa pointing at freed
+ * ifaddr storage).
+ *
+ * One route is removed per radix-tree scan and the tree is then rescanned, so
+ * it is never walked while rtrequest()/rn_delete() is mutating it.  The work
+ * is bounded by the number of routes on the interface; the last-pointer guard
+ * stops the loop if a route cannot be removed rather than spinning on it.
+ */
+void
+rt_purgeif(ifp)
+struct ifnet *ifp;
+{
+    register struct radix_node_head *rnh;
+    spl_t s = splnet();
+
+    if(rtinits_done == 0)
+        rtinitheads();
+    for(rnh = radix_node_head; rnh; rnh = rnh->rnh_next) {
+        struct rtentry *rt, *last = 0;
+
+        while((rt = rt_find_ifroute(rnh->rnh_treetop, ifp)) != 0
+                && rt != last) {
+            last = rt;
+            /*
+             * Snapshot nothing: rtrequest(RTM_DELETE) reads dst/netmask from
+             * rt (to drive rn_delete) before it frees rt, and performs no
+             * allocation in between, so the key pointers stay valid for the
+             * call.
+             */
+            (void)rtrequest(RTM_DELETE, rt_key(rt), rt->rt_gateway,
+                            rt_mask(rt), (int)rt->rt_flags,
+                            (struct rtentry **)0);
+        }
+    }
+    splx(s);
+}

@@ -87,6 +87,7 @@ struct LibInitTable {
 
 extern struct LibInitTable Miami_initTable;
 extern struct Library *MasterMiamiBase;
+extern struct Library *MasterNetServicesBase;
 
 struct newselbuf;
 
@@ -124,6 +125,8 @@ struct SocketBase {
   ULONG			sigIOMask;
   ULONG			sigUrgMask;
   ULONG			sigEventMask;
+  ULONG			sigReconfigMask;   /* SBTC_SIG_RECONFIG_MASK: reload begin/end */
+  ULONG			sigAddrChangeMask; /* SBTC_SIG_ADDRESS_CHANGE_MASK: address change */
 /* -- these are used by tsleep()/wakeup() -- */
   const char *		p_wmesg;
   queue_chain_t 	p_sleep_link;
@@ -201,6 +204,19 @@ VOID api_hide(VOID);
 VOID api_setfunctions(VOID);
 VOID api_sendbreaktotasks(VOID);
 VOID api_logopeners(VOID);
+
+/*
+ * Reconfigure notification: signal every consumer that set
+ * SBTC_SIG_RECONFIG_MASK.  begin=TRUE marks the start of an in-place reload
+ * (state -> NETRC_RECONFIGURING); begin=FALSE marks the end (generation bumped,
+ * state -> NETRC_ONLINE).  State and generation are read via SocketBaseTagList.
+ */
+VOID api_sendreconfig(BOOL begin);
+VOID api_sendaddrchange(VOID);
+extern ULONG api_reconfig_state;        /* NETRC_ONLINE / NETRC_RECONFIGURING */
+extern ULONG api_reconfig_generation;   /* bumped after each completed reload  */
+extern ULONG api_reconfig_expected;     /* consumers signalled at reconfigure-begin */
+extern volatile ULONG api_reconfig_acked; /* consumers that acked (SBTC_RECONFIG_ACK) */
 VOID api_deinit(VOID);
 
 /* Function which sets Errno value */

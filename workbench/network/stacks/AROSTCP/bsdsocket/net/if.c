@@ -223,6 +223,49 @@ struct ifnet *ifp;
 }
 
 /*
+ * if_detach - reverse of if_attach() for a live interface removal.
+ *
+ * Unlink ifp from the global interface list and free the link-level (AF_LINK)
+ * ifaddr that if_attach() created, clearing its ifnet_addrs[] slot.  The caller
+ * must already have removed every route that resolves through the interface
+ * (rt_purgeif) and every protocol (AF_INET/AF_INET6) address on it, so by the
+ * time we run if_addrlist holds only the link-level address.
+ *
+ * The if_index is deliberately not reclaimed: indices are handed out
+ * monotonically and never reused, so no later lookup can resolve the freed
+ * index back to this (now freed) ifaddr.
+ */
+void
+if_detach(ifp)
+struct ifnet *ifp;
+{
+    struct ifnet **p;
+    struct ifaddr *ifa, *nifa;
+    spl_t s = splimp();
+
+    /* unlink from the global interface list */
+    for(p = &ifnet; *p; p = &((*p)->if_next)) {
+        if(*p == ifp) {
+            *p = ifp->if_next;
+            break;
+        }
+    }
+
+    /* free whatever ifaddrs remain (the link-level one, plus any stragglers)
+     * and clear this interface's ifnet_addrs[] slot */
+    for(ifa = ifp->if_addrlist; ifa; ifa = nifa) {
+        nifa = ifa->ifa_next;
+        if(ifnet_addrs && ifp->if_index > 0 &&
+                ifnet_addrs[ifp->if_index - 1] == ifa)
+            ifnet_addrs[ifp->if_index - 1] = 0;
+        bsd_free((caddr_t)ifa, M_IFADDR);
+    }
+    ifp->if_addrlist = 0;
+
+    splx(s);
+}
+
+/*
  * Locate an interface based on a complete address.
  */
 
@@ -611,6 +654,13 @@ caddr_t data;
 
     case SIOCGIFMETRIC:
         ifr->ifr_metric = ifp->if_metric;
+        break;
+
+    case SIOCGIFDHCP:
+        /* Expose the per-interface "wants DHCP" config so the external DHCP
+         * daemon can enumerate interfaces and act on the DHCP ones. */
+        ifr->ifr_metric = (ifp->if_data.ifi_aros_usedhcp  ? 1 : 0)
+                        | (ifp->if_data.ifi_aros_usedhcp6 ? 2 : 0);
         break;
 
     case SIOCGIFMTU:

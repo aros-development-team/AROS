@@ -4,6 +4,10 @@
 
 #include <proto/dos.h>
 #include <proto/exec.h>
+#include <proto/intuition.h>
+#include <exec/ports.h>
+#include <bsdsocket/socketbasetags.h>   /* NetControlMsg / NCMD_* / AROSTCP_CTRLPORT_NAME */
+#include <intuition/intuition.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -746,9 +750,104 @@ BOOL IsStackRunning()
     return FindTask("bsdsocket.library") != NULL;
 }
 
+/* Outcome of an in-place reload attempt. */
+enum
+{
+    RELOAD_NO_PORT = 0,   /* no control port: older stack, no reload capability */
+    RELOAD_OK,            /* stack reconfigured in place                        */
+    RELOAD_FAILED         /* control port present but the reload reported error */
+};
+
+/*
+ * Ask the running stack to reconfigure in place via its control port.
+ * Distinguishes "no port" (older stack - caller should fall back silently)
+ * from "port present but the reload failed" (caller should ask the user before
+ * the disruptive full restart).  RELOAD_OK means the bsdsocket.library task
+ * stayed alive and consumers holding the library open are undisturbed.
+ */
+static int TryReloadStack(void)
+{
+    struct MsgPort *reply, *ctrl;
+    struct NetControlMsg msg;
+    int result = RELOAD_NO_PORT;
+
+    reply = CreateMsgPort();
+    if (reply == NULL)
+        return RELOAD_NO_PORT;   /* cannot even try; fall back silently */
+
+    Forbid();
+    ctrl = FindPort(AROSTCP_CTRLPORT_NAME);
+    if (ctrl != NULL)
+    {
+        memset(&msg, 0, sizeof(msg));
+        msg.ncm_Msg.mn_Node.ln_Type = NT_MESSAGE;
+        msg.ncm_Msg.mn_ReplyPort    = reply;
+        msg.ncm_Msg.mn_Length       = sizeof(msg);
+        msg.ncm_Command             = NCMD_RELOAD;
+        PutMsg(ctrl, (struct Message *)&msg);
+    }
+    Permit();
+
+    if (ctrl != NULL)
+    {
+        /* reply arrives once the stack has finished reconfiguring */
+        WaitPort(reply);
+        GetMsg(reply);
+        result = (msg.ncm_Result == 0) ? RELOAD_OK : RELOAD_FAILED;
+    }
+
+    DeleteMsgPort(reply);
+    return result;
+}
+
+/*
+ * Ask whether to force a full stack restart after an in-place reload failed.
+ * Returns TRUE if the user chose "Force Restart", FALSE for "Cancel".  Uses a
+ * plain intuition requester (no MUI app/window pointer available here).
+ */
+static BOOL ForceRestartRequester(void)
+{
+    struct EasyStruct es =
+    {
+        sizeof(struct EasyStruct), 0,
+        "Network",
+        "In-place reload failed. Force a full stack restart?\n"
+        "This stops and relaunches AROSTCP and will disconnect\n"
+        "programs currently using the network.",
+        "Force Restart|Cancel"
+    };
+
+    /* EasyRequest: 1 = first gadget (Force Restart), 0 = last (Cancel). */
+    return (EasyRequestArgs(NULL, &es, NULL, NULL) == 1);
+}
+
 BOOL RestartStack()
 {
     ULONG trycount = 0;
+
+    /*
+     * Prefer an in-place reload.  If the running stack reconfigures itself
+     * through its control port, the bsdsocket.library task stays alive and no
+     * kill+relaunch is needed.
+     *   - no control port (older stack): fall back silently to kill+relaunch;
+     *   - reload succeeded: done, nothing else to do;
+     *   - reload failed: ask before the disruptive full restart.
+     */
+    if (IsStackRunning())
+    {
+        switch (TryReloadStack())
+        {
+        case RELOAD_OK:
+            return TRUE;
+        case RELOAD_FAILED:
+            if (!ForceRestartRequester())
+                return FALSE;   /* user cancelled: leave the stack as-is */
+            break;              /* otherwise fall through to kill+relaunch */
+        case RELOAD_NO_PORT:
+        default:
+            break;              /* older stack: silent kill+relaunch */
+        }
+    }
 
     /* Shutdown */
     if (IsStackRunning())

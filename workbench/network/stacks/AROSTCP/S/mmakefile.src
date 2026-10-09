@@ -15,10 +15,12 @@ SFILES := \
 %copy_files_q mmake=workbench-network-stacks-arostcp-s \
     files="$(SFILES)" dst=$(AROS_SYSTEM)/Network/AROSTCP/S
 
-$(AROS_PACKAGES)/AROSTCP:
+$(AROS_PACKAGES)/AROSTCP: $(SRCDIR)/$(CURDIR)/mmakefile.src
 	%fileactionmsg msg="Creating" file="$(AROS_PACKAGES)/AROSTCP"
 	%mkdirs_q $(AROS_PACKAGES)
 	@$(ECHO) "SYS:System/Network/AROSTCP" >$(AROS_PACKAGES)/AROSTCP
+	@$(ECHO) "PRI=10" >>$(AROS_PACKAGES)/AROSTCP
+	@$(ECHO) "GROUP=Network" >>$(AROS_PACKAGES)/AROSTCP
 
 #MM
 workbench-network-stacks-arostcp-envpackage : $(AROS_PACKAGES)/AROSTCP

@@ -15,6 +15,10 @@
 #include <utility/tagitem.h>
 #endif
 
+#ifndef EXEC_PORTS_H
+#include <exec/ports.h>         /* struct Message for the control channel below */
+#endif
+
 /*
  * utility/tagitem.h specifies that bits 16-30 in tags are reserved. So we 
  * don't use them for maximum compatability.
@@ -64,6 +68,56 @@
 #define SBTC_SIGIOMASK		2
 #define SBTC_SIGURGMASK		3
 #define SBTC_SIGEVENTMASK  4                 /* AMITCP v4.0 Stack Addition */
+
+/*
+ * Stack reconfigure/address-change notification (AROS additions).
+ *
+ * A consumer sets SBTC_SIG_RECONFIG_MASK to a signal mask; the stack signals
+ * it when an in-place reconfigure (reload) begins and again when it ends.  The
+ * consumer tells begin from end by reading SBTC_RECONFIG_STATE (NETRC_*), and
+ * can detect that a reload happened at all via SBTC_RECONFIG_GENERATION, which
+ * is bumped after each completed reload.  SBTC_SIG_ADDRESS_CHANGE_MASK (the
+ * Roadshow-defined code 57) is signalled when interface addresses change.
+ */
+#ifndef SBTC_SIG_ADDRESS_CHANGE_MASK
+#define SBTC_SIG_ADDRESS_CHANGE_MASK 57      /* set/get: signal on address change */
+#endif
+#define SBTC_SIG_RECONFIG_MASK   70          /* set/get: signal on reconfigure begin & end */
+#define SBTC_RECONFIG_STATE      71          /* get: NETRC_* current reconfigure state */
+#define SBTC_RECONFIG_GENERATION 72          /* get: ULONG, bumped after each reload */
+#define SBTC_RECONFIG_ACK        73          /* set: consumer acks reconfigure-begin (quiesced) */
+
+#define NETRC_ONLINE        0                /* stack configured and running */
+#define NETRC_RECONFIGURING 1                /* an in-place reload is in progress */
+
+/*
+ * Out-of-band control channel for the stack's main task (AROS addition).
+ *
+ * The main task's CTRL-C/CTRL-F break bits already mean "shut down" (and the
+ * CTRL-F handshake), so a distinct control request - above all a configuration
+ * RELOAD that must run in the main task's context, where interface and route
+ * teardown/rebuild is serialised against SANA I/O - needs its own channel.
+ * This is what drives the reconfigure the SBTC_RECONFIG_* tags above report.
+ *
+ * The channel is a public, named Exec MsgPort owned by the main task.  A sender
+ * (network prefs, an ARexx command, ...) FindPort()s it, PutMsg()es a
+ * NetControlMsg with mn_ReplyPort set, and WaitPort()s the reply; ncm_Result
+ * carries the outcome (0 == ok).
+ */
+#define AROSTCP_CTRLPORT_NAME   "AROSTCP.ctrl"
+
+/* ncm_Command */
+enum {
+    NCMD_NOP = 0,
+    NCMD_RELOAD,        /* reconfigure in place (stop services, reload config, start) */
+    NCMD_SHUTDOWN       /* orderly stack shutdown (equivalent to CTRL-C) */
+};
+
+struct NetControlMsg {
+    struct Message  ncm_Msg;        /* mn_ReplyPort must be set by the sender */
+    ULONG           ncm_Command;    /* NCMD_* */
+    LONG            ncm_Result;     /* filled by the stack before ReplyMsg (0 = ok) */
+};
 
 /* error code handling */
 #define SBTC_ERRNO		6

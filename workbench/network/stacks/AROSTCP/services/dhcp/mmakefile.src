@@ -1,0 +1,15 @@
+include $(SRCDIR)/config/aros.cfg
+
+#MM workbench-network-stacks-arostcp-services-dhcp : \
+#MM     network-includes-copy \
+#MM     arostcp-linklibs-netlib
+
+FILES := dhcpd
+
+%build_prog mmake=workbench-network-stacks-arostcp-services-dhcp \
+    progname=dhcpd \
+    files="$(FILES)" \
+    uselibs="net" \
+    targetdir=$(AROS_SYSTEM)/Network/Services
+
+%common
