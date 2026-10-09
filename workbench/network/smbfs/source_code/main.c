@@ -3816,6 +3816,8 @@ Action_ExamineObject(
 				}
 			}
 
+			name_len = strlen(name);
+
 			/* Just checking: will the name fit? */
 			if(name_len >= sizeof(fib->fib_FileName))
 			{
@@ -5287,6 +5289,8 @@ Action_ExamineFH(
 			break;
 		}
 	}
+
+	name_len = strlen(name);
 
 	/* Just checking: will the name fit? */
 	if(name_len >= sizeof(fib->fib_FileName))
