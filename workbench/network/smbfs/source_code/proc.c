@@ -2244,7 +2244,7 @@ smb_proc_reconnect (struct smb_server *server)
 
 		packet[0] = 0x81; /* SESSION REQUEST */
 
-		if ((result = smb_request (server)) < 0)
+		if ((result = smb_request_session (server)) < 0)
 		{
 			LOG (("smb_proc_connect: Failed to send SESSION REQUEST.\n"));
 			goto fail;
