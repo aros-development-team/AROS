@@ -63,20 +63,9 @@ smb_receive_raw (const struct smb_server *server, int sock_fd, unsigned char *ta
  re_recv:
 
 	/* Read the NetBIOS session header (rfc-1002, section 4.3.1) */
-	result = recvfrom (sock_fd, netbios_session_buf, 4, 0, NULL, NULL);
+	result = smb_receive_all (sock_fd, netbios_session_buf, 4);
 	if (result < 0)
-	{
-		LOG (("smb_receive_raw: recv error = %ld\n", errno));
-		result = (-errno);
 		goto out;
-	}
-
-	if (result < 4)
-	{
-		LOG (("smb_receive_raw: got less than 4 bytes\n"));
-		result = -EIO;
-		goto out;
-	}
 
 	netbios_session_payload_size = (int)smb_len (netbios_session_buf);
 
