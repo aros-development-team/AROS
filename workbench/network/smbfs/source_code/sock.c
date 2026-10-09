@@ -25,6 +25,28 @@
 
 /*****************************************************************************/
 
+/* A successful send may transfer only a prefix of a TCP frame. */
+static int
+smb_send_all (int sock_fd, const unsigned char *source, int length)
+{
+	int sent = 0;
+
+	while (sent < length)
+	{
+		int result = send (sock_fd, (void *)(source + sent), length - sent, 0);
+
+		/* Preserve socket errors, including the Ctrl-C break indication. */
+		if (result < 0)
+			return -errno;
+		if (result == 0)
+			return -EIO;
+
+		sent += result;
+	}
+
+	return sent;
+}
+
 /* TCP may split any part of a session frame across several reads. */
 static int
 smb_receive_all (int sock_fd, unsigned char *target, int length)
@@ -408,14 +430,8 @@ smb_request (struct smb_server *server)
 	dump_smb(__FILE__,__LINE__,0,buffer+4,len-4,smb_packet_from_consumer,server->max_recv);
 	#endif /* defined(DUMP_SMB) */
 
-	result = send (sock_fd, (void *) buffer, len, 0);
-	if (result < 0)
-	{
-		LOG (("smb_request: send error = %ld\n", errno));
-
-		result = (-errno);
-	}
-	else
+	result = smb_send_all (sock_fd, buffer, len);
+	if (result >= 0)
 	{
 		result = smb_receive (server, sock_fd);
 	}
@@ -460,14 +476,8 @@ smb_trans2_request (struct smb_server *server, int *data_len, int *param_len, ch
 	dump_smb(__FILE__,__LINE__,0,buffer+4,len-4,smb_packet_from_consumer,server->max_recv);
 	#endif /* defined(DUMP_SMB) */
 
-	result = send (sock_fd, (void *) buffer, len, 0);
-	if (result < 0)
-	{
-		LOG (("smb_trans2_request: send error = %ld\n", errno));
-
-		result = (-errno);
-	}
-	else
+	result = smb_send_all (sock_fd, buffer, len);
+	if (result >= 0)
 	{
 		result = smb_receive_trans2 (server, sock_fd, data_len, param_len, data, param);
 	}
@@ -514,17 +524,11 @@ smb_request_read_raw (struct smb_server *server, unsigned char *target, int max_
 	#endif /* defined(DUMP_SMB) */
 
 	/* Request that data should be read in raw mode. */
-	result = send (sock_fd, (void *) buffer, len, 0);
+	result = smb_send_all (sock_fd, buffer, len);
 
 	LOG (("smb_request_read_raw: send returned %ld\n", result));
 
-	if (result < 0)
-	{
-		LOG (("smb_request_read_raw: send error = %ld\n", errno));
-
-		result = (-errno);
-	}
-	else
+	if (result >= 0)
 	{
 		/* Wait for the raw data to be sent by the server. */
 		result = smb_receive_raw (server, sock_fd, target, max_len, 0);
@@ -562,21 +566,9 @@ smb_request_write_raw (struct smb_server *server, unsigned const char *source, i
 	/* Send the NetBIOS header. */
 	smb_encode_smb_length (nb_header, length);
 
-	result = send (sock_fd, (void *) nb_header, 4, 0);
-	if (result == 4)
-	{
-		/* Now send the data to be written. */
-		result = send (sock_fd, (void *) source, length, 0);
-		if(result < 0)
-			result = (-errno);
-	}
-	else
-	{
-		if(result < 0)
-			result = (-errno);
-		else
-			result = -EIO;
-	}
+	result = smb_send_all (sock_fd, nb_header, 4);
+	if (result >= 0)
+		result = smb_send_all (sock_fd, source, length);
 
 	LOG (("smb_request_write_raw: send returned %ld\n", result));
 
