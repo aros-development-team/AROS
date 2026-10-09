@@ -2080,6 +2080,15 @@ AddVolume(
 		goto out;
 	}
 
+	/* DOS reconstructs volume paths from the root FileInfoBlock name. */
+	if(actual_volume_name_len >= sizeof(((struct FileInfoBlock *)0)->fib_FileName))
+	{
+		UnLockDosList(LDF_WRITE|LDF_VOLUMES|LDF_DEVICES);
+		ReportError("Volume name must be at most %ld characters.",
+			(long)(sizeof(((struct FileInfoBlock *)0)->fib_FileName)-1));
+		goto out;
+	}
+
 	/* Now, finally, take care of the volume name. */
 	memcpy(name,actual_volume_name,actual_volume_name_len);
 	name[actual_volume_name_len] = '\0';
@@ -5610,10 +5619,21 @@ Action_RenameDisk(
 	name = bcpl_name;
 
 #if defined(__AROS__) && defined(AROS_FAST_BSTR)
-	len = strlen((STRPTR)name);
-	new_name = AllocVec(len+1,MEMF_ANY|MEMF_PUBLIC);
+	for(len = 0; len < sizeof(((struct FileInfoBlock *)0)->fib_FileName) &&
+	    name[len] != '\0'; len++)
+		;
 #else
 	len = name[0];
+#endif
+	if(len >= sizeof(((struct FileInfoBlock *)0)->fib_FileName))
+	{
+		error = ERROR_INVALID_COMPONENT_NAME;
+		goto out;
+	}
+
+#if defined(__AROS__) && defined(AROS_FAST_BSTR)
+	new_name = AllocVec(len+1,MEMF_ANY|MEMF_PUBLIC);
+#else
 	new_name = AllocVec(1+len+1,MEMF_ANY|MEMF_PUBLIC);
 #endif
 	if(new_name == NULL)
