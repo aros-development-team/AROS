@@ -144,6 +144,8 @@ struct NepClassEth
 
     UBYTE              *ncp_ReadBuffer[2]; /* Packet Double Buffered Read Buffer */
     UBYTE              *ncp_WriteBuffer[2]; /* Packet Write Buffer */
+    UBYTE              *ncp_RxCarry;      /* Incomplete RNDIS message carried to the next read */
+    LONG                ncp_RxCarryLen;
 
     UWORD               ncp_ReadBufNum;   /* Next Read Buffer to use */
     UWORD               ncp_WriteBufNum;  /* Next Write Buffer to use */

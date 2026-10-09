@@ -10,6 +10,8 @@
 #define RNDIS_RX_LIST_CNT	1
 #define RNDIS_TX_LIST_CNT	1
 #define RNDIS_BUFSZ		1562
+/* Buffer slot: holds a full RNDIS message (header + max Ethernet frame) */
+#define RNDIS_SLOTSZ		2048
 
 #define RNDIS_STATUS_BUFFER_OVERFLOW 	0x80000005L
 #define RNDIS_STATUS_FAILURE 		0xC0000001L

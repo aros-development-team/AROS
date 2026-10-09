@@ -51,7 +51,8 @@ uint32_t urndis_ctrl_init(struct NepClassEth *ncp);
 uint32_t urndis_ctrl_handle(struct NepClassEth *ncp, struct urndis_comp_hdr *hdr,void **buf, size_t *bufsz);
 void urndis_attach(struct NepClassEth *ncp);
 long urndis_encap(struct NepClassEth *ncp, BYTE *m,LONG len );
-void urndis_decap(struct NepClassEth *ncp, const UBYTE *buf, const LONG datalen);
+LONG urndis_decap(struct NepClassEth *ncp, const UBYTE *buf, const LONG datalen, BOOL more);
+void urndis_rx(struct NepClassEth *ncp, UBYTE *buf, LONG len);
 
 AROS_UFP0(void, nEthTask);
 //AROS_UFP0(void, nGUITask);
