@@ -120,7 +120,8 @@ KERN_C= \
 	kern/kern_synch kern/kern_malloc kern/uipc_mbuf \
 	kern/uipc_domain kern/uipc_socket kern/uipc_socket2 \
 	kern/amiga_log kern/amiga_cstat kern/amiga_rexx \
-	kern/subr_prf kern/accesscontrol kern/config_var
+	kern/subr_prf kern/accesscontrol kern/config_var \
+	kern/kern_sysctl
 
 KERN_H= \
 	kern/amiga_includes.h kern/amiga_time.h kern/amiga_config.h \
@@ -200,6 +201,7 @@ USER_CPPFLAGS := \
 	-DENABLE_MULTICAST \
 	-DENABLE_FDLIBRARY \
 	-DAMITCP -DKERNEL \
+	-DENABLE_SYSCTL \
 	-D_XOPEN_SOURCE=600 \
 	-D__BSD_VISIBLE=1
 #USER_CPPFLAGS += -DDEBUG=1

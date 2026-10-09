@@ -41,6 +41,7 @@ struct secSPacket
 #define secSAction_LoadPlugin           10      /* Load a plugin by name                        */
 #define secSAction_UnloadPlugin         11      /* Unload a plugin by name                      */
 #define secSAction_Log                  12      /* Append a line to the log file                */
+#define secSAction_GetUserHash          13      /* Security.auth only: user record + stored hash*/
 
 extern struct Process *CreateServer(struct SecurityBase *secBase);
 extern BOOL StartServer(struct SecurityBase *secBase);

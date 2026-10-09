@@ -728,7 +728,7 @@ void history_walk(struct filehandle *fh, WORD inp)
             do_movecursor(fh, CUR_LEFT, fh->inputpos - fh->inputstart);
         }
 
-        do_eraseinline(fh);
+        do_eraseindisplay(fh);
 
         fh->inputsize = fh->inputstart;
         fh->inputpos = fh->inputstart;
@@ -917,7 +917,7 @@ BOOL process_input(struct filehandle *fh)
                 do_movecursor(fh, CUR_LEFT, fh->inputpos - fh->inputstart);
                 if (fh->inputpos == fh->inputsize)
                 {
-                    do_eraseinline(fh);
+                    do_eraseindisplay(fh);
 
                     fh->inputpos = fh->inputsize = fh->inputstart;
                 }
@@ -927,7 +927,7 @@ BOOL process_input(struct filehandle *fh)
 
                     do_cursorvisible(fh, FALSE);
                     do_write(fh, &fh->inputbuffer[fh->inputpos], chars_right);
-                    do_eraseinline(fh);
+                    do_eraseindisplay(fh);
                     do_movecursor(fh, CUR_LEFT, chars_right);
                     do_cursorvisible(fh, TRUE);
 
@@ -967,7 +967,7 @@ BOOL process_input(struct filehandle *fh)
             if (fh->inputpos < fh->inputsize)
             {
                 fh->inputsize = fh->inputpos;
-                do_eraseinline(fh);
+                do_eraseindisplay(fh);
             }
             break;
 
@@ -980,7 +980,7 @@ BOOL process_input(struct filehandle *fh)
                 fh->killbuffer[fh->killsize] = '\0';
 
                 fh->inputsize = fh->inputpos;
-                do_eraseinline(fh);
+                do_eraseindisplay(fh);
             }
             else
             {
@@ -1024,7 +1024,7 @@ BOOL process_input(struct filehandle *fh)
                 {
                     do_movecursor(fh, CUR_LEFT, fh->inputpos - fh->inputstart);
                 }
-                do_eraseinline(fh);
+                do_eraseindisplay(fh);
 
                 fh->inputpos = fh->inputsize = fh->inputstart;
             }

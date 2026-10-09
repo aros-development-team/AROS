@@ -5,7 +5,7 @@ include $(SRCDIR)/config/aros.cfg
 
 FUNCS       := registermodule unregistermodule decodelocation enumeratesymbolsa disassemble
 FILES       := debug_init symresolver
-STATICFUNCS := kdofmt kgetchar kmaygetchar kputstr _kprintf kvprintf
+STATICFUNCS := kdofmt kgetchar kmaygetchar kputchar kputstr _kprintf kvprintf
 
 USER_CPPFLAGS := -DHOST_OS_$(FAMILY) -D__UTILITY_NOLIBBASE__ -DNO_INLINE_STDARG
 USER_LDFLAGS := -static

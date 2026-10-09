@@ -31,6 +31,7 @@
 #include <aros/libcall.h>
 #include <exec/types.h>
 #include <exec/libraries.h>
+#include <exec/memory.h>
 #include <proto/exec.h>
 
 #include <libraries/fd.h>
@@ -45,6 +46,38 @@
 struct Library *FDBase = NULL;
 
 LONG __CloseSocket(LONG fd, struct SocketBase *libPtr);
+
+/*
+ * Per-task bases opened lazily by fdh_task_base().
+ *
+ * A posixc task that reaches a socket through the bridge without having opened
+ * bsdsocket.library itself gets a base opened on its behalf.  It never closes
+ * that base - it does not know it owns one - so each one is remembered here
+ * and released by fdhooks_closetaskbases() at shutdown.  Left open, such a
+ * base keeps bsdsocket.library's open count above one and makes a stack
+ * restart abort with "N libraries still open".
+ */
+struct fdh_base {
+    struct MinNode     fb_Node;
+    struct SocketBase *fb_Base;
+};
+static struct MinList         fdh_bases;
+static struct SignalSemaphore fdh_baselock;
+static BOOL                   fdh_tracking = FALSE;
+
+static void fdh_track_base(struct SocketBase *p)
+{
+    struct fdh_base *fb;
+
+    if (!fdh_tracking)
+        return;
+    if ((fb = AllocVec(sizeof(*fb), MEMF_PUBLIC | MEMF_CLEAR)) != NULL) {
+        fb->fb_Base = p;
+        ObtainSemaphore(&fdh_baselock);
+        AddTail((struct List *)&fdh_bases, (struct Node *)fb);
+        ReleaseSemaphore(&fdh_baselock);
+    }
+}
 
 /*
  * The fd.library data for a socket descriptor is the struct socket * itself.
@@ -73,8 +106,11 @@ static struct SocketBase *fdh_task_base(struct socket *so)
 {
     struct SocketBase *p = FindSocketBase(FindTask(NULL));
 
-    if (p == NULL)
+    if (p == NULL) {
         p = (struct SocketBase *)OpenLibrary("bsdsocket.library", 0);
+        if (p != NULL)
+            fdh_track_base(p); /* remember it so shutdown can release it */
+    }
     if (p == NULL)
         p = (struct SocketBase *)so->so_pgid; /* last resort */
 
@@ -233,6 +269,40 @@ static const struct fd_hooks bsdsocket_fd_hooks =
     fdh_sock_dup,
 };
 
+/*
+ * Close every per-task base opened on a task's behalf by fdh_task_base().
+ *
+ * Called from the CTRL-C shutdown path once the socket tasks have been broken
+ * and the API hidden, so no new bridge base can appear while these are
+ * released.  The whole list is detached under the lock, then closed outside
+ * it (CloseLibrary() must not run under a held semaphore).
+ */
+void fdhooks_closetaskbases(void)
+{
+    struct MinList taken;
+    struct fdh_base *fb;
+    int closed = 0;
+
+    if (!fdh_tracking)
+        return;
+
+    NewList((struct List *)&taken);
+    ObtainSemaphore(&fdh_baselock);
+    while ((fb = (struct fdh_base *)RemHead((struct List *)&fdh_bases)) != NULL)
+        AddTail((struct List *)&taken, (struct Node *)fb);
+    ReleaseSemaphore(&fdh_baselock);
+
+    while ((fb = (struct fdh_base *)RemHead((struct List *)&taken)) != NULL) {
+        CloseLibrary((struct Library *)fb->fb_Base);
+        FreeVec(fb);
+        closed++;
+    }
+
+    if (closed > 0)
+        __log(LOG_NOTICE, "fd.library bridge: released %d leaked base(s)\n",
+              closed);
+}
+
 /* Called from api_init(): open fd.library and publish the network hooks. */
 BOOL fdhooks_setup(void)
 {
@@ -241,6 +311,10 @@ BOOL fdhooks_setup(void)
 
     if (FDBase == NULL)
         return FALSE;
+
+    NewList((struct List *)&fdh_bases);
+    InitSemaphore(&fdh_baselock);
+    fdh_tracking = TRUE;
 
     FD_SetOwnerHooks(FD_OWNER_BSDSOCKET, &bsdsocket_fd_hooks);
     return TRUE;
@@ -251,6 +325,8 @@ void fdhooks_cleanup(void)
     if (FDBase != NULL)
     {
         FD_SetOwnerHooks(FD_OWNER_BSDSOCKET, NULL);
+        fdhooks_closetaskbases();   /* release any bases still tracked */
+        fdh_tracking = FALSE;
         CloseLibrary(FDBase);
         FDBase = NULL;
     }

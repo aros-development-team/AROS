@@ -1,0 +1,24 @@
+#
+#   filesystem.service: the Envoy filesystem server (EFS). A service
+#   library in the xxx.service layout; the Services Manager opens it and
+#   StartServiceA() starts the one server process, which owns the public
+#   entity "Filesystem" and serves every client mount.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := fs_init fs_service fs_server fs_config fs_wire fs_auth fs_actions
+
+USER_INCLUDES := -I$(SRCDIR)/workbench/network/envoy/include
+USER_LDFLAGS  := -static
+#USER_CPPFLAGS := -DDEBUG=1
+
+#MM- workbench-network-envoy : workbench-network-envoy-efsservice
+#MM workbench-network-envoy-efsservice : includes linklibs includes-copy-envoy \
+#MM     workbench-network-envoy-nipc-includes workbench-network-envoy-accounts-includes \
+#MM     kernel-security-includes
+
+%build_module mmake=workbench-network-envoy-efsservice modname=filesystem \
+  modtype=library modsuffix=service moduledir=System/Network/Envoy/Services \
+  files="$(FILES)" uselibs=""
+
+%common

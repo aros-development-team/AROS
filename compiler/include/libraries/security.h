@@ -166,6 +166,31 @@ struct secGroupInfo
 #define secT_NoLog              (TAG_USER+13)   /* for secLoginA(), only root                       */
 #define secT_Force              (TAG_USER+14)   /* for secKill(): RemTask() instead of CTRL-C       */
 #define secT_System             (TAG_USER+15)   /* for secLoginA(): the boot login (Security-Startup); the graphical login offers Shutdown/Reboot instead of Cancel */
+/* AROS additions: secVerifyUserA() / secQueryUserA() / secLoginA() */
+#define secT_Service            (TAG_USER+16)   /* (STRPTR) name of the service asking (log, monitors)            */
+#define secT_RemoteHost         (TAG_USER+17)   /* (STRPTR) host the request came from (log, failure tally)       */
+#define secT_PasswordHash       (TAG_USER+18)   /* (STRPTR) pre-hashed token instead of secT_Password             */
+#define secT_HashType           (TAG_USER+19)   /* (ULONG) secHASH_#? form of secT_PasswordHash                   */
+#define secT_UserInfo           (TAG_USER+20)   /* (struct secUserInfo *) filled on success (secAllocUserInfo())  */
+#define secT_Ticket             (TAG_USER+21)   /* secVerifyUserA(): (ULONG *) receives a login ticket;           */
+                                                /* secLoginA(): (ULONG) the ticket to log in with                 */
+#define secT_HasPassword        (TAG_USER+22)   /* secQueryUserA(): (BOOL *) the user has a password              */
+#define secT_MayChangePassword  (TAG_USER+23)   /* secQueryUserA(): (BOOL *) the user may change it               */
+
+/* secT_HashType */
+#define secHASH_NONE            (0)             /* clear text (secT_Password)                                       */
+#define secHASH_ACRYPT_LC       (1)             /* ACrypt(password, lower-cased user ID), 11 characters: what an    */
+                                                /* Envoy client sends. Accepted only with HASHEDLOGIN=1 and for     */
+                                                /* users whose stored ID is lower case.                             */
+
+/* secVerifyUserA() results */
+#define secVERIFY_OK            (0)             /* the user exists and the token is right                           */
+#define secVERIFY_FAILED        (1)             /* unknown user or wrong token (not distinguished)                  */
+#define secVERIFY_LOCKED        (2)             /* too many failures for this user/host; try again later            */
+#define secVERIFY_BUSY          (3)             /* the authentication process has too much queued                   */
+#define secVERIFY_NOTSUPPORTED  (4)             /* this token form is not accepted on this system                   */
+#define secVERIFY_UNAVAILABLE   (5)             /* no password database (unconfigured) or no authentication process */
+#define secVERIFY_BADARGS       (6)             /* missing user ID or token                                         */
 
 /*
  * Protection bits (see also <dos/dos.h>)
@@ -348,6 +373,9 @@ struct secPointers
  *   PASSWDGIDLEVEL         users with a gid <= <val> can change their passwords [secNOBODY_UID]
  *   FSTAB                  read the fstab file and enforce the listed volumes [0]
  *   LOADPLUGIN             name of a plugin to load (may be repeated)
+ *   HASHEDLOGIN            secVerifyUserA() accepts pre-hashed tokens (secHASH_#?) [0]
+ *   MAXTRIES               failed verifications per user and host before a lock-out, 0 = none [5]
+ *   LOCKTIME               seconds a lock-out lasts [300]
  */
 #define secConfig_FileName      "Security.config"
 

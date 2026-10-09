@@ -119,8 +119,10 @@ void InputPrefs_Handler(STRPTR filename)
          * Disable keymap switcher.
          * It will stay disabled if the file does not contain KMSW chunk.
          * This is done for backwards compatibility.
+         * Without kms.library there is no switcher to set up.
          */
-        KMSBase->kms_SwitchQual = KMS_QUAL_DISABLE;
+        if (KMSBase)
+            KMSBase->kms_SwitchQual = KMS_QUAL_DISABLE;
 
         while(ParseIFF(iff, IFFPARSE_SCAN) == 0)
         {
@@ -147,7 +149,9 @@ void InputPrefs_Handler(STRPTR filename)
             case ID_KMSW:
                 D(bug("InputPrefs_Handler: KMSW chunk\n"));
 
-                kmsprefs = LoadChunk(iff, sizeof(struct KMSPrefs), MEMF_ANY);
+                kmsprefs = KMSBase
+                    ? LoadChunk(iff, sizeof(struct KMSPrefs), MEMF_ANY)
+                    : NULL;
                 if (kmsprefs)
                 {
                     D(bug("KMS Chunk @ 0x%p\n", kmsprefs));

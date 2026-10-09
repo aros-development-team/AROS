@@ -208,6 +208,7 @@ ipintr()
     register struct ipq *fp;
     register struct in_ifaddr *ia;
     int hlen;
+    int mff = 0;
     spl_t s;
 
 next:
@@ -384,9 +385,7 @@ found:
          * convert offset of this to bytes.
          */
         ip->ip_len -= hlen;
-        ((struct ipasfrag *)(void *)ip)->ipf_mff = 0;
-        if(ip->ip_off & IP_MF)
-            ((struct ipasfrag *)(void *)ip)->ipf_mff = 1;
+        mff = (ip->ip_off & IP_MF) ? 1 : 0;
         ip->ip_off <<= 3;
 
         /*
@@ -394,9 +393,9 @@ found:
          * or if this is not the first fragment,
          * attempt reassembly; if it succeeds, proceed.
          */
-        if(((struct ipasfrag *)(void *)ip)->ipf_mff || ip->ip_off) {
+        if(mff || ip->ip_off) {
             ipstat.ips_fragments++;
-            ip = ip_reass((struct ipasfrag *)(void *)ip, fp);
+            ip = ip_reass(ip, fp, mff);
             if(ip == 0)
                 goto next;
             else
@@ -425,14 +424,23 @@ bad:
  * reassemble it into whole datagram.  If a chain for
  * reassembly of this datagram already exists, then it
  * is given as fp; otherwise have to make a chain.
+ *
+ * Fragments are chained through separately allocated ipqent nodes rather
+ * than by overlaying link pointers on the IP header (the 4.3BSD struct
+ * ipasfrag): two 8-byte pointers do not fit in the header's address fields
+ * on a 64-bit target, so that overlay both ran past the header into the
+ * payload and mismatched struct ipq, crashing on the first fragment.
  */
 struct ip *
-ip_reass(ip, fp)
-register struct ipasfrag *ip;
+ip_reass(ip, fp, mff)
+register struct ip *ip;
 register struct ipq *fp;
+int mff;
 {
     register struct mbuf *m = dtom(ip);
-    register struct ipasfrag *q;
+    register struct ipqent *q, *nq;
+    struct ipqent *sentinel;
+    struct ipqent *qe = NULL;
     struct mbuf *t;
     int hlen = ip->ip_hl << 2;
     int i, next;
@@ -445,16 +453,24 @@ register struct ipq *fp;
     m->m_len -= hlen;
 
     /*
-     * Reject any fragment whose last byte lies beyond the largest
-     * legal datagram.  ip_off has already been converted to bytes and
-     * ip_len holds the payload length.  Both fields are declared signed
-     * 16-bit in the fragment overlay, so an offset above 32767 reads
-     * back negative; interpret them as unsigned here so a crafted
-     * offset cannot slip past the bound and wrap the signed arithmetic
-     * used in the overlap/trim logic below.
+     * Reject any fragment whose last byte lies beyond the largest legal
+     * datagram.  ip_off has already been converted to bytes and ip_len
+     * holds the payload length; both are unsigned 16-bit here, so no
+     * signed wrap is possible in the overlap/trim arithmetic below.
      */
-    if(((u_short)ip->ip_off + (u_short)ip->ip_len) > IP_MAXPACKET)
+    if((int)ip->ip_off + (int)ip->ip_len > IP_MAXPACKET)
         goto dropfrag;
+
+    /*
+     * Allocate this fragment's list node first, so an allocation failure
+     * is handled before the queue is touched.
+     */
+    if((t = m_get(M_DONTWAIT, MT_FTABLE)) == NULL)
+        goto dropfrag;
+    qe = mtod(t, struct ipqent *);
+    qe->ipqe_m = m;
+    qe->ipqe_ip = ip;
+    qe->ipqe_mff = (u_char)mff;
 
     /*
      * If first fragment to arrive, create a reassembly queue.
@@ -476,18 +492,20 @@ register struct ipq *fp;
         fp->ipq_ttl = IPFRAGTTL;
         fp->ipq_p = ip->ip_p;
         fp->ipq_id = ip->ip_id;
-        fp->ipq_next = fp->ipq_prev = (struct ipasfrag *)fp;
-        fp->ipq_src = ((struct ip *)ip)->ip_src;
-        fp->ipq_dst = ((struct ip *)ip)->ip_dst;
-        q = (struct ipasfrag *)fp;
+        fp->ipq_frag.ipqe_next = fp->ipq_frag.ipqe_prev = &fp->ipq_frag;
+        fp->ipq_src = ip->ip_src;
+        fp->ipq_dst = ip->ip_dst;
+        q = &fp->ipq_frag;
         goto insert;
     }
+
+    sentinel = &fp->ipq_frag;
 
     /*
      * Find a segment which begins after this one does.
      */
-    for(q = fp->ipq_next; q != (struct ipasfrag *)fp; q = q->ipf_next)
-        if(q->ip_off > ip->ip_off)
+    for(q = fp->ipq_frag.ipqe_next; q != sentinel; q = q->ipqe_next)
+        if(q->ipqe_ip->ip_off > ip->ip_off)
             break;
 
     /*
@@ -495,12 +513,13 @@ register struct ipq *fp;
      * our data already.  If so, drop the data from the incoming
      * segment.  If it provides all of our data, drop us.
      */
-    if(q->ipf_prev != (struct ipasfrag *)fp) {
-        i = q->ipf_prev->ip_off + q->ipf_prev->ip_len - ip->ip_off;
+    if(q->ipqe_prev != sentinel) {
+        i = q->ipqe_prev->ipqe_ip->ip_off + q->ipqe_prev->ipqe_ip->ip_len
+            - ip->ip_off;
         if(i > 0) {
             if(i >= ip->ip_len)
                 goto dropfrag;
-            m_adj(dtom(ip), i);
+            m_adj(m, i);
             ip->ip_off += i;
             ip->ip_len -= i;
         }
@@ -510,17 +529,19 @@ register struct ipq *fp;
      * While we overlap succeeding segments trim them or,
      * if they are completely covered, dequeue them.
      */
-    while(q != (struct ipasfrag *)fp && ip->ip_off + ip->ip_len > q->ip_off) {
-        i = (ip->ip_off + ip->ip_len) - q->ip_off;
-        if(i < q->ip_len) {
-            q->ip_len -= i;
-            q->ip_off += i;
-            m_adj(dtom(q), i);
+    while(q != sentinel && ip->ip_off + ip->ip_len > q->ipqe_ip->ip_off) {
+        i = (ip->ip_off + ip->ip_len) - q->ipqe_ip->ip_off;
+        if(i < q->ipqe_ip->ip_len) {
+            q->ipqe_ip->ip_len -= i;
+            q->ipqe_ip->ip_off += i;
+            m_adj(q->ipqe_m, i);
             break;
         }
-        q = q->ipf_next;
-        m_freem(dtom(q->ipf_prev));
-        ip_deq(q->ipf_prev);
+        nq = q->ipqe_next;
+        m_freem(q->ipqe_m);
+        ip_deq(q);
+        (void) m_free(dtom(q));
+        q = nq;
     }
 
 insert:
@@ -528,29 +549,36 @@ insert:
      * Stick new segment in its place;
      * check for complete reassembly.
      */
-    ip_enq(ip, q->ipf_prev);
+    ip_enq(qe, q->ipqe_prev);
+    sentinel = &fp->ipq_frag;
     next = 0;
-    for(q = fp->ipq_next; q != (struct ipasfrag *)fp; q = q->ipf_next) {
-        if(q->ip_off != next)
+    for(q = fp->ipq_frag.ipqe_next; q != sentinel; q = q->ipqe_next) {
+        if(q->ipqe_ip->ip_off != next)
             return (0);
-        next += q->ip_len;
+        next += q->ipqe_ip->ip_len;
     }
-    if(q->ipf_prev->ipf_mff)
+    if(sentinel->ipqe_prev->ipqe_mff)
         return (0);
 
     /*
-     * Reassembly is complete; concatenate fragments.
+     * Reassembly is complete; concatenate fragments, freeing each
+     * fragment's list node (but not its data) as we go.
      */
-    q = fp->ipq_next;
-    m = dtom(q);
+    q = fp->ipq_frag.ipqe_next;
+    ip = q->ipqe_ip;
+    m = q->ipqe_m;
     t = m->m_next;
     m->m_next = 0;
     m_cat(m, t);
-    q = q->ipf_next;
-    while(q != (struct ipasfrag *)fp) {
-        t = dtom(q);
-        q = q->ipf_next;
+    nq = q->ipqe_next;
+    (void) m_free(dtom(q));
+    q = nq;
+    while(q != sentinel) {
+        t = q->ipqe_m;
+        nq = q->ipqe_next;
+        (void) m_free(dtom(q));
         m_cat(m, t);
+        q = nq;
     }
 
     /*
@@ -559,10 +587,9 @@ insert:
      * dequeue and discard fragment reassembly header.
      * Make header visible.
      */
-    ip = fp->ipq_next;
     ip->ip_len = next;
-    ((struct ip *)ip)->ip_src = fp->ipq_src;
-    ((struct ip *)ip)->ip_dst = fp->ipq_dst;
+    ip->ip_src = fp->ipq_src;
+    ip->ip_dst = fp->ipq_dst;
     remque(fp);
     (void) m_free(dtom(fp));
     if(nipq > 0)		/* queue consumed on completed reassembly */
@@ -577,9 +604,11 @@ insert:
             plen += m->m_len;
         t->m_pkthdr.len = plen;
     }
-    return ((struct ip *)ip);
+    return (ip);
 
 dropfrag:
+    if(qe != NULL)
+        (void) m_free(dtom(qe));
     ipstat.ips_fragdropped++;
     m_freem(m);
     return (0);
@@ -593,12 +622,14 @@ void
 ip_freef(fp)
 struct ipq *fp;
 {
-    register struct ipasfrag *q, *p;
+    register struct ipqent *q, *p;
+    struct ipqent *sentinel = &fp->ipq_frag;
 
-    for(q = fp->ipq_next; q != (struct ipasfrag *)fp; q = p) {
-        p = q->ipf_next;
+    for(q = fp->ipq_frag.ipqe_next; q != sentinel; q = p) {
+        p = q->ipqe_next;
         ip_deq(q);
-        m_freem(dtom(q));
+        m_freem(q->ipqe_m);
+        (void) m_free(dtom(q));
     }
     remque(fp);
     (void) m_free(dtom(fp));
@@ -608,17 +639,17 @@ struct ipq *fp;
 
 /*
  * Put an ip fragment on a reassembly chain.
- * Like insque, but pointers in middle of structure.
+ * Like insque, but for ipqent nodes.
  */
 void
 ip_enq(p, prev)
-register struct ipasfrag *p, *prev;
+register struct ipqent *p, *prev;
 {
 
-    p->ipf_prev = prev;
-    p->ipf_next = prev->ipf_next;
-    prev->ipf_next->ipf_prev = p;
-    prev->ipf_next = p;
+    p->ipqe_prev = prev;
+    p->ipqe_next = prev->ipqe_next;
+    prev->ipqe_next->ipqe_prev = p;
+    prev->ipqe_next = p;
 }
 
 /*
@@ -626,11 +657,11 @@ register struct ipasfrag *p, *prev;
  */
 void
 ip_deq(p)
-register struct ipasfrag *p;
+register struct ipqent *p;
 {
 
-    p->ipf_prev->ipf_next = p->ipf_next;
-    p->ipf_next->ipf_prev = p->ipf_prev;
+    p->ipqe_prev->ipqe_next = p->ipqe_next;
+    p->ipqe_next->ipqe_prev = p->ipqe_prev;
 }
 
 /*

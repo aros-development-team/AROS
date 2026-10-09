@@ -41,7 +41,8 @@ ULONG examineEAD
                 ULONG mode
         )
 {
-STRPTR next,end,name;
+STRPTR next,end;
+UBYTE *name;
 ULONG owner;
 
         next = (STRPTR)ead+sizes[mode];
@@ -59,7 +60,9 @@ ULONG owner;
         case ED_COMMENT :
                 if (OS_BE2LONG(entryblock->buffer[BLK_SECONDARY_TYPE(volume)]) != ST_ROOT)
                 {
-                        name = (STRPTR)((char *)entryblock->buffer+(BLK_COMMENT_START(volume)*4));
+                        name = (UBYTE *)((char *)entryblock->buffer+(BLK_COMMENT_START(volume)*4));
+                        if (name[0] > MAX_COMMENT_LENGTH)
+                                return ERROR_DISK_NOT_VALIDATED;
                         if ((next+name[0]+1) > end)
                                 return ERROR_BUFFER_OVERFLOW;
                         ead->ed_Comment = next;
@@ -80,7 +83,9 @@ ULONG owner;
         case ED_TYPE :
                 ead->ed_Type = OS_BE2LONG(entryblock->buffer[BLK_SECONDARY_TYPE(volume)]);
         case ED_NAME :
-                name = (STRPTR)((char *)entryblock->buffer+(BLK_FILENAME_START(volume)*4));
+                name = (UBYTE *)((char *)entryblock->buffer+(BLK_FILENAME_START(volume)*4));
+                if (name[0] > MAX_NAME_LENGTH)
+                        return ERROR_DISK_NOT_VALIDATED;
                 if ((next+name[0]+1) > end)
                         return ERROR_BUFFER_OVERFLOW;
                 ead->ed_Name = next;
@@ -111,7 +116,11 @@ struct BlockCache *entryblock;
         entryblock = getBlock(afsbase, ah->volume, ah->header_block);
         if (entryblock == NULL)
                 return ERROR_UNKNOWN;
-        examineEAD(afsbase, ah->volume, ead, entryblock, size, mode);
+        {
+                ULONG error = examineEAD(afsbase, ah->volume, ead, entryblock, size, mode);
+                if (error != 0)
+                        return error;
+        }
         *dirpos = ah->header_block;
         return 0;
 }
@@ -121,7 +130,7 @@ ULONG getNextExamineBlock
 {
 struct BlockCache *entryblock;
 UBYTE cstr[34];
-STRPTR string;
+UBYTE *string;
 
         entryblock = getBlock(afsbase, ah->volume, *key);
         if (entryblock == NULL)
@@ -139,11 +148,11 @@ STRPTR string;
                 }
                 else
                 {
-                        string = (char *)entryblock->buffer+(BLK_FILENAME_START(ah->volume)*4);
-                        /* The length byte comes from the disk: bound it. */
-                        ULONG n = string[0] < sizeof(cstr) ? string[0] : sizeof(cstr) - 1;
-                        CopyMem(string+1, cstr, n);
-                        cstr[n] = 0;
+                        string = (UBYTE *)entryblock->buffer+(BLK_FILENAME_START(ah->volume)*4);
+                        if (string[0] > MAX_NAME_LENGTH || string[0] >= sizeof(cstr))
+                                return ERROR_DISK_NOT_VALIDATED;
+                        CopyMem(string+1, cstr, string[0]);
+                        cstr[(ULONG)string[0]] = 0;
                         *pos = BLK_TABLE_START+getHashKey(cstr, ah->volume->SizeBlock-56, ah->volume->dosflags)+1;
                         if (*pos > BLK_TABLE_END(ah->volume))
                                 return ERROR_NO_MORE_ENTRIES;
@@ -259,9 +268,9 @@ ULONG examineNext
         (struct AFSBase *afsbase, struct AfsHandle *ah, struct FileInfoBlock *fib)
 {
         struct BlockCache *entryblock;
-        STRPTR string;
+        UBYTE *string;
         ULONG filelistentries,datablocksize,datablocks;
-        ULONG owner;
+        ULONG owner, commentlength;
         ULONG error,filekey;
         ULONG dirkey = fib->fib_DiskKey; /* fib_DiskKey is an IPTR, so we need this conversion */
 
@@ -276,9 +285,16 @@ ULONG examineNext
         entryblock = getBlock(afsbase, ah->volume, dirkey);
         if (entryblock == NULL)
                 return ERROR_UNKNOWN;
+        string = (UBYTE *)entryblock->buffer+(BLK_FILENAME_START(ah->volume)*4);
+        if (string[0] > MAX_NAME_LENGTH)
+                return ERROR_DISK_NOT_VALIDATED;
+        string = (UBYTE *)entryblock->buffer+(BLK_COMMENT_START(ah->volume)*4);
+        if (OS_BE2LONG(entryblock->buffer[BLK_SECONDARY_TYPE(ah->volume)]) != ST_ROOT
+                && string[0] > MAX_COMMENT_LENGTH)
+                return ERROR_DISK_NOT_VALIDATED;
         fib->fib_DirEntryType =
                 OS_BE2LONG(entryblock->buffer[BLK_SECONDARY_TYPE(ah->volume)]);
-        string = (char *)entryblock->buffer+(BLK_FILENAME_START(ah->volume)*4);
+        string = (UBYTE *)entryblock->buffer+(BLK_FILENAME_START(ah->volume)*4);
         CopyMem(string, fib->fib_FileName, string[0]+1);
         fib->fib_Protection = OS_BE2LONG(entryblock->buffer[BLK_PROTECT(ah->volume)]);
         fib->fib_EntryType = fib->fib_DirEntryType;
@@ -295,8 +311,12 @@ ULONG examineNext
         fib->fib_Date.ds_Tick = OS_BE2LONG(entryblock->buffer[BLK_TICKS(ah->volume)]);
         if (fib->fib_DirEntryType != ST_ROOT)
         {
-                string = (char *)entryblock->buffer+(BLK_COMMENT_START(ah->volume)*4);
-                CopyMem(string, fib->fib_Comment, string[0] + 1);
+                string = (UBYTE *)entryblock->buffer+(BLK_COMMENT_START(ah->volume)*4);
+                commentlength = string[0];
+                if (commentlength >= sizeof(fib->fib_Comment))
+                        commentlength = sizeof(fib->fib_Comment) - 1;
+                fib->fib_Comment[0] = commentlength;
+                CopyMem(string + 1, fib->fib_Comment + 1, commentlength);
         }
         owner = OS_BE2LONG(entryblock->buffer[BLK_OWNER(ah->volume)]);
         fib->fib_OwnerUID = owner>>16;

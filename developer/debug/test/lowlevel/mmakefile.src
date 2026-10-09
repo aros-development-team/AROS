@@ -1,3 +1,4 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
 #
 #   Makefile to make test lowlevel module.
 
@@ -8,7 +9,12 @@ EXEDIR := $(AROS_TESTS)/lowlevel
 
 USER_INCLUDES  := -I $(SRCDIR)/$(CURDIR)/includes
 
-#MM test-lowlevel : linklibs-bootconsole
+#MM- test : test-lowlevel
+#MM- test-quick : test-lowlevel-quick
+
+# The mouse regression reads native Amiga hardware registers.
+#MM- test-lowlevel-amiga-m68k : test-lowlevel-mouse
+#MM- test-lowlevel-amiga-m68k-quick : test-lowlevel-mouse-quick
 
 %build_prog mmake=test-lowlevel \
     progname=lowlevel targetdir=$(EXEDIR) \

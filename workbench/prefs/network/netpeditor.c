@@ -39,7 +39,6 @@
 #include "netprefs_intern.h"
 
 static CONST_STRPTR NetworkTabs[] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL};
-static CONST_STRPTR DHCPCycle[] = { NULL, NULL, NULL, NULL };
 static CONST_STRPTR EncCycle[] = { NULL, NULL, NULL, NULL };
 static CONST_STRPTR KeyCycle[] = { NULL, NULL, NULL };
 static CONST_STRPTR ServiceTypeCycle[] = { NULL, NULL };
@@ -92,8 +91,6 @@ struct NetPEditor_DATA
 {
     // Main window
     Object  *netped_interfaceList,
-            *netped_DHCPState,
-            *netped_DNSString[2],
             *netped_hostString,
             *netped_domainString,
             *netped_Autostart,
@@ -488,7 +485,9 @@ static BOOL proto_present(struct ProtocolAddress *pa)
 {
     return pa->pa_mode == IP_MODE_DHCP ||
            pa->pa_mode == IP_MODE_AUTO ||
-           pa->pa_addr[0] != '\0';
+           pa->pa_addr[0] != '\0' ||
+           pa->pa_dns[0][0] != '\0' ||
+           pa->pa_dns[1][0] != '\0';
 }
 
 /* Load a working slot from the interface's node for this plugin id (or leave
@@ -502,7 +501,12 @@ static void proto_slot_load(struct ProtocolAddress *slot,
     memset(slot, 0, sizeof(*slot));
     slot->pa_node.ln_Type = id;
     slot->pa_family       = fam;
-    slot->pa_mode         = IP_MODE_MANUAL;
+    /* Default an un-configured protocol slot to the usual automatic mode for
+     * its family - DHCP for IPv4, stateless autoconfiguration for IPv6 - so a
+     * newly added interface comes up automatic rather than Manual.  An
+     * existing node (below) overrides this with the saved mode. */
+    slot->pa_mode         = (fam == PROTO_FAMILY_IPV6) ? IP_MODE_AUTO
+                                                       : IP_MODE_DHCP;
 
     if (pa)
     {
@@ -584,18 +588,12 @@ BOOL Gadgets2NetworkPrefs(struct NetPEditor_DATA *data)
     }
     SetInterfaceCount(entries);
 
-    GET(data->netped_DNSString[0], MUIA_String_Contents, &str);
-    SetDNS(0, str);
-    GET(data->netped_DNSString[1], MUIA_String_Contents, &str);
-    SetDNS(1, str);
     GET(data->netped_hostString, MUIA_String_Contents, &str);
     SetHostname(str);
     GET(data->netped_domainString, MUIA_String_Contents, &str);
     SetDomain(str);
     GET(data->netped_Autostart, MUIA_Selected, &lng);
     SetAutostart(lng);
-    GET(data->netped_DHCPState, MUIA_Cycle_Active, &lng);
-    SetDHCP(lng);
 
     entries = XGET(data->netped_hostList, MUIA_List_Entries);
     for(i = 0; i < entries; i++)
@@ -697,12 +695,9 @@ BOOL NetworkPrefs2Gadgets
 
     SET(data->netped_interfaceList, MUIA_List_Quiet, FALSE);
 
-    NNSET(data->netped_DNSString[0], MUIA_String_Contents, (IPTR)GetDNS(0));
-    NNSET(data->netped_DNSString[1], MUIA_String_Contents, (IPTR)GetDNS(1));
     NNSET(data->netped_hostString, MUIA_String_Contents, (IPTR)GetHostname());
     NNSET(data->netped_domainString, MUIA_String_Contents, (IPTR)GetDomain());
     NNSET(data->netped_Autostart, MUIA_Selected, (IPTR)GetAutostart());
-    NNSET(data->netped_DHCPState, MUIA_Cycle_Active, (IPTR)GetDHCP() ? 1 : 0);
 
     entries = GetHostCount();
 
@@ -970,8 +965,8 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         return NULL;
 
     // main window
-    Object  *DNSString[2], *hostString, *domainString,
-            *autostart, *interfaceList, *DHCPState,
+    Object  *hostString, *domainString,
+            *autostart, *interfaceList,
             *addInterface, *editButton, *removeButton, *inputGroup,
             *hostList, *hostAddButton, *hostEditButton, *hostRemoveButton,
             *networkList, *netAddButton, *netEditButton, *netRemoveButton,
@@ -1002,9 +997,6 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             *serverService, *serverUser, *serverGroup, *serverPass,
             *serverApplyButton, *serverCloseButton;
 
-    DHCPCycle[0] = _(MSG_IP_MODE_DHCP);
-    DHCPCycle[1] = _(MSG_IP_MODE_AUTO);
-    DHCPCycle[2] = _(MSG_IP_MODE_MANUAL);
 
     EncCycle[0] = _(MSG_ENC_NONE);
     EncCycle[1] = _(MSG_ENC_WEP);
@@ -1072,39 +1064,19 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                         Child, (IPTR)HVSpace,
                     End),
                 End),
-                Child, (IPTR)(inputGroup = (Object *)ColGroup(4),
+                Child, (IPTR)(inputGroup = (Object *)ColGroup(2),
                     GroupFrame,
-                    Child, (IPTR)Label2(__(MSG_IP_MODE)),
-                    Child, (IPTR)(DHCPState = (Object *)CycleObject,
-                        MUIA_Cycle_Entries, (IPTR)DHCPCycle,
-                    End),
-                    Child, (IPTR)HVSpace,
-                    Child, (IPTR)HVSpace,
                     Child, (IPTR)Label2(__(MSG_HOST_NAME)),
                     Child, (IPTR)(hostString = (Object *)StringObject,
                         StringFrame,
                         MUIA_String_Accept, (IPTR)NAMECHARS,
                         MUIA_CycleChain, 1,
                     End),
-                    Child, (IPTR)Label2(__(MSG_DNS1)),
-                    Child, (IPTR)(DNSString[0] = (Object *)StringObject,
-                        StringFrame,
-                        MUIA_String_Accept, (IPTR)IPCHARS,
-                        MUIA_CycleChain, 1,
-                        MUIA_FixWidthTxt, (IPTR)max_ip_str,
-                    End),
                     Child, (IPTR)Label2(__(MSG_DOMAIN_NAME)),
                     Child, (IPTR)(domainString = (Object *)StringObject,
                         StringFrame,
                         MUIA_String_Accept, (IPTR)NAMECHARS,
                         MUIA_CycleChain, 1,
-                    End),
-                    Child, (IPTR)Label2(__(MSG_DNS2)),
-                    Child, (IPTR)(DNSString[1] = (Object *)StringObject,
-                        StringFrame,
-                        MUIA_String_Accept, (IPTR)IPCHARS,
-                        MUIA_CycleChain, 1,
-                        MUIA_FixWidthTxt, (IPTR)max_ip_str,
                     End),
                 End),
                 Child, (IPTR)ColGroup(2),
@@ -1636,9 +1608,6 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
         // main window
         data->netped_mainTabs = mainTabs;
-        data->netped_DHCPState = DHCPState;
-        data->netped_DNSString[0] = DNSString[0];
-        data->netped_DNSString[1] = DNSString[1];
         data->netped_hostString = hostString;
         data->netped_domainString = domainString;
         data->netped_Autostart = autostart;
@@ -1761,16 +1730,6 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
         DoMethod
         (
-            DNSString[0], MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
-            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
-        );
-        DoMethod
-        (
-            DNSString[1], MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
-            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
-        );
-        DoMethod
-        (
             hostString, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
             (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
         );
@@ -1783,11 +1742,6 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         (
             autostart, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
             (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
-        );
-        DoMethod
-        (
-            DHCPState, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
-            (IPTR)self, 2, MUIM_NetPEditor_IPModeChanged, FALSE
         );
 
         DoMethod
@@ -2057,7 +2011,6 @@ IPTR NetPEditor__MUIM_Setup
 
     /* Fill the gadgets from the loaded configuration. */
     NetworkPrefs2Gadgets(data);
-    DoMethod(self, MUIM_NetPEditor_IPModeChanged, FALSE);
     SET(self, MUIA_PrefsEditor_Changed, FALSE);
 
     return TRUE;
@@ -2179,8 +2132,6 @@ IPTR NetPEditor__MUIM_PrefsEditor_ImportFH
 
     NetworkPrefs2Gadgets(data);
 
-    DoMethod(self, MUIM_NetPEditor_IPModeChanged, FALSE);
-
     return success;
 }
 
@@ -2193,45 +2144,6 @@ IPTR NetPEditor__MUIM_PrefsEditor_ExportFH
     return TRUE;
 }
 
-/* Global DHCP mode changed — enable/disable DNS gadgets */
-IPTR NetPEditor__MUIM_NetPEditor_IPModeChanged
-(
-    Class *CLASS, Object *self,
-    struct MUIP_NetPEditor_IPModeChanged *message
-)
-{
-    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
-    STRPTR str = NULL;
-    IPTR lng = 0;
-
-    /* message->interface is now always FALSE; the per-protocol mode
-     * changes are handled internally by Net4WinClass / Net6WinClass */
-    GetAttr(MUIA_Cycle_Active, data->netped_DHCPState, &lng);
-
-    if (lng == 1)
-    {
-        /* DHCP: DNS is supplied automatically */
-        SET(data->netped_DNSString[0], MUIA_Disabled, TRUE);
-        GET(data->netped_DNSString[0], MUIA_String_Contents, &str);
-        SetDNS(0, str);
-        SET(data->netped_DNSString[0], MUIA_String_Contents, "");
-
-        SET(data->netped_DNSString[1], MUIA_Disabled, TRUE);
-        GET(data->netped_DNSString[1], MUIA_String_Contents, &str);
-        SetDNS(1, str);
-        SET(data->netped_DNSString[1], MUIA_String_Contents, "");
-    }
-    else
-    {
-        SET(data->netped_DNSString[0], MUIA_Disabled, FALSE);
-        SET(data->netped_DNSString[0], MUIA_String_Contents, GetDNS(0));
-        SET(data->netped_DNSString[1], MUIA_Disabled, FALSE);
-        SET(data->netped_DNSString[1], MUIA_String_Contents, GetDNS(1));
-    }
-
-    SET(self, MUIA_PrefsEditor_Changed, TRUE);
-    return TRUE;
-}
 
 /* IPv4 mode cycle changed inside the IPv4 config sub-window */
 /* (removed - mode changes are now handled internally by Net4WinClass) */
@@ -2958,7 +2870,7 @@ IPTR NetPEditor__MUIM_NetPEditor_AddTetheringEntry
     return 0;
 }
 /*** Setup ******************************************************************/
-ZUNE_CUSTOMCLASS_26
+ZUNE_CUSTOMCLASS_25
 (
     NetPEditor, NULL, MUIC_PrefsEditor, NULL,
     OM_NEW,                               struct opSet *,
@@ -2968,7 +2880,6 @@ ZUNE_CUSTOMCLASS_26
     MUIM_PrefsEditor_ExportFH,            struct MUIP_PrefsEditor_ExportFH *,
     MUIM_PrefsEditor_Save,                Msg,
     MUIM_PrefsEditor_Use,                 Msg,
-    MUIM_NetPEditor_IPModeChanged,        struct MUIP_NetPEditor_IPModeChanged *,
     MUIM_NetPEditor_ShowEntry,            Msg,
     MUIM_NetPEditor_EditEntry,            struct MUIP_NetPEditor_EditEntry *,
     MUIM_NetPEditor_ApplyEntry,           Msg,

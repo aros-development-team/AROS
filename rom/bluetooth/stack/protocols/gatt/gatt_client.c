@@ -682,6 +682,26 @@ bt_status_t bt_gatt_client_write(struct bt_gatt_client *client, uint16_t handle,
     return BT_OK;
 }
 
+bt_status_t bt_gatt_client_write_without_response(struct bt_gatt_client *client,
+                                                   uint16_t handle, const uint8_t *value,
+                                                   size_t value_len)
+{
+    uint8_t buf[3 + BT_GATT_CLIENT_MAX_VALUE_LEN];
+    struct bt_buf_writer w;
+
+    if (!client->channel_ready || handle == 0 || (value_len > 0 && value == NULL) ||
+        client->mtu < 3 || value_len > (size_t)(client->mtu - 3) ||
+        value_len > BT_GATT_CLIENT_MAX_VALUE_LEN)
+        return BT_ERR_INVALID_ARGUMENT;
+
+    bt_buf_writer_init(&w, buf, sizeof(buf));
+    if (bt_att_encode_write_command(&w, handle, value, value_len) != BT_OK)
+        return BT_ERR_INVALID_ARGUMENT;
+
+    return bt_l2cap_channel_manager_send(client->l2cap, BT_L2CAP_CID_ATT, buf,
+                                          bt_buf_writer_len(&w), 0);
+}
+
 void bt_gatt_client_tick(struct bt_gatt_client *client, uint64_t now_us)
 {
     if (!client->busy || client->request_deadline_us == 0 || now_us < client->request_deadline_us)

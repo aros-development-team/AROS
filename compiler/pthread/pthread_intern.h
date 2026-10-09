@@ -122,10 +122,12 @@ typedef struct
     int detached;
 } ThreadInfo;
 
-extern ThreadInfo threads[PTHREAD_THREADS_MAX];
+extern ThreadInfo *threads[PTHREAD_THREADS_MAX];
+extern pthread_t threads_used;
 extern struct SignalSemaphore thread_sem;
 extern TLSKey tlskeys[PTHREAD_KEYS_MAX];
 extern struct SignalSemaphore tls_sem;
+extern volatile BOOL __pthread_exiting;
 
 /* .c */
 extern int SemaphoreIsInvalid(struct SignalSemaphore *sem);

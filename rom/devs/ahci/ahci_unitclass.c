@@ -89,6 +89,35 @@ void AHCIUnit__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     OOP_DoSuperMethod(cl, o, msg);
 }
 
+BOOL AHCIUnit__Hidd_StorageUnit__GetCapacity(OOP_Class *cl, OOP_Object *o,
+    struct pHidd_StorageUnit_GetCapacity *msg)
+{
+    struct ahci_Unit *unit = OOP_INST_DATA(cl, o);
+    struct ata_port *at = NULL;
+
+    if (msg->blockCount)
+        *msg->blockCount = 0;
+    if (msg->blockSize)
+        *msg->blockSize = 0;
+
+    if (!msg->blockCount || !msg->blockSize ||
+        !unit->au_Bus || !unit->au_Bus->ab_Port)
+        return FALSE;
+
+    at = unit->au_Bus->ab_Port->ap_ata[0];
+
+    if (!at ||
+        unit->au_Bus->ab_Port->ap_type != ATA_PORT_T_DISK ||
+        !at->at_capacity ||
+        !at->at_identify.sector_size)
+        return FALSE;
+
+    *msg->blockCount = at->at_capacity;
+    *msg->blockSize = at->at_identify.sector_size;
+
+    return TRUE;
+}
+
 void AHCIUnit__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct AHCIBase *AHCIBase = cl->UserData;

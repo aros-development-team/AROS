@@ -891,6 +891,104 @@ static struct BtHWConn * bAllocConn(struct BtHWCore *hc, struct BtDevice *bd, UB
 }
 /* \\\ */
 
+/* /// "LE connection parameters" */
+/* As the central we take a peripheral's wish for other connection
+   parameters (a MIDI keyboard asks for a short interval) and hand it to the
+   controller. As the peripheral we ask for BSA_LEConnInterval. */
+static bool bConnParamRequest(void *user_data, const struct bt_l2cap_conn_params *p)
+{
+    struct BtHWConn *cn = user_data;
+    struct BtHWCore *hc = cn->cn_Core;
+    struct BtBase *BluetoothBase = hc->hc_Base;
+    UBYTE params[14];
+
+    if(cn->cn_Role != BDR_CENTRAL) {
+        return(FALSE);
+    }
+    params[0] = cn->cn_Handle & 0xff;
+    params[1] = cn->cn_Handle >> 8;
+    params[2] = p->interval_min & 0xff;
+    params[3] = p->interval_min >> 8;
+    params[4] = p->interval_max & 0xff;
+    params[5] = p->interval_max >> 8;
+    params[6] = p->latency & 0xff;
+    params[7] = p->latency >> 8;
+    params[8] = p->timeout & 0xff;
+    params[9] = p->timeout >> 8;
+    memset(&params[10], 0, 4);          /* connection event length: any */
+    if(!bSubmitCmd(hc, HC_OP_LE_CONN_UPDATE, params, 14, bIgnoreCompletion, hc)) {
+        return(FALSE);
+    }
+    btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                   "%s asked for a %ld.%02ld-%ld.%02ld ms connection interval - granted.",
+                   cn->cn_Device->bd_Name,
+                   (ULONG) (p->interval_min * 125 / 100), (ULONG) (p->interval_min * 125 % 100),
+                   (ULONG) (p->interval_max * 125 / 100), (ULONG) (p->interval_max * 125 % 100));
+    return(TRUE);
+}
+
+static void bConnParamResponse(void *user_data, bool accepted)
+{
+    struct BtHWConn *cn = user_data;
+    struct BtBase *BluetoothBase = cn->cn_Core->hc_Base;
+
+    btAddErrorMsg(accepted ? RETURN_OK : RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                   "%s %s the connection interval we asked for.", cn->cn_Device->bd_Name,
+                   accepted ? "accepted" : "declined (or did not answer)");
+}
+
+/* Ask the central for BSA_LEConnInterval, within what iOS accepts (Apple
+   Accessory Design Guidelines): a minimum of at least 15 ms, and a maximum
+   at least 15 ms above it unless both are 15 ms. The window starts at the
+   interval wanted - a central picks the low end, so a long interval wanted
+   to save power must be the minimum - and the supervision timeout grows
+   with it: at least three intervals, 3 to 6 s. */
+static void bConnAskParams(struct BtHWConn *cn)
+{
+    struct BtHWCore *hc = cn->cn_Core;
+    struct BtBase *BluetoothBase = hc->hc_Base;
+    struct bt_l2cap_conn_params p;
+    ULONG want = BluetoothBase->bt_LEServiceInterval;
+
+    if((cn->cn_LinkType != BDLT_LE) || (cn->cn_Role != BDR_PERIPHERAL) ||
+       (cn->cn_ConnParamSeq == BluetoothBase->bt_LEConnSeq) ||
+       ((LONG) (hc->hc_Tick - cn->cn_ConnParamAt) < 0)) {
+        return;
+    }
+    if(!want) {
+        cn->cn_ConnParamSeq = BluetoothBase->bt_LEConnSeq;  /* nothing to ask for */
+        return;
+    }
+    if(want <= 12) {
+        p.interval_min = p.interval_max = 12;       /* 15 ms */
+    } else {
+        if(want > 1580) {
+            want = 1580;                /* 3 intervals must fit in 6 s */
+        }
+        p.interval_min = want;
+        p.interval_max = want + 12;
+    }
+    p.latency = 0;
+    /* timeout in 10 ms, interval in 1.25 ms: 3 intervals = interval * 3.75 / 10 */
+    p.timeout = (p.interval_max * 3 * 125 + 999) / 1000 + 10;
+    if(p.timeout < 300) {
+        p.timeout = 300;                /* 3 s */
+    }
+    if(p.timeout > 600) {
+        p.timeout = 600;
+    }
+    switch(bt_l2cap_channel_manager_request_conn_params(&cn->cn_L2CAP, &p)) {
+    case BT_OK:
+    case BT_ERR_INVALID_ARGUMENT:       /* no use asking again */
+        cn->cn_ConnParamSeq = BluetoothBase->bt_LEConnSeq;
+        break;
+    default:                            /* the last request is unanswered */
+        cn->cn_ConnParamAt = hc->hc_Tick + 1000;
+        break;
+    }
+}
+/* \\\ */
+
 /* /// "bConnUp()" */
 static void bConnUp(struct BtHWConn *cn, UWORD handle, UBYTE role)
 {
@@ -918,6 +1016,14 @@ static void bConnUp(struct BtHWConn *cn, UWORD handle, UBYTE role)
     bt_l2cap_channel_manager_init(&cn->cn_L2CAP, &hc->hc_Transport, handle,
                                   (cn->cn_LinkType == BDLT_LE) ? BT_L2CAP_CID_SIGNALING_LE : BT_L2CAP_CID_SIGNALING_CLASSIC,
                                   fraglen);
+    if(cn->cn_LinkType == BDLT_LE) {
+        bt_l2cap_channel_manager_set_conn_param_handlers(&cn->cn_L2CAP,
+                                                         (role == BDR_CENTRAL) ? bConnParamRequest : NULL,
+                                                         bConnParamResponse, cn);
+        /* let the central discover our services first */
+        cn->cn_ConnParamSeq = BluetoothBase->bt_LEConnSeq - 1;
+        cn->cn_ConnParamAt = hc->hc_Tick + 1000;
+    }
     bt_sdp_client_init(&cn->cn_SDP, &cn->cn_L2CAP);
     bt_gatt_client_init(&cn->cn_GATT, &cn->cn_L2CAP);
     bt_gatt_client_set_notify_handler(&cn->cn_GATT, bGATTNotify, cn);
@@ -1039,6 +1145,7 @@ static void bConnDown(struct BtHWConn *cn, LONG error, UBYTE reason)
     cn->cn_State = HCNS_FREE;
     cn->cn_Reason = reason;
     if(wasup && (cn->cn_LinkType == BDLT_LE)) {
+        bGattSrvLinkDown(cn); /* its subscriptions end with it */
         bGattSrvRefresh(hc); /* advertise again if we are asked to */
     }
 
@@ -1862,6 +1969,12 @@ static void bGATTConnectCB(bool success, void *user_data)
         } else {
             bConnHandleRequest(cn->cn_Core, bch);
         }
+        /* requests that queued up behind the connect: a Write Command (or a
+           failure) completes at once, and no GATT operation completion would
+           ever come along to release them */
+        if(!cn->cn_CtrlReq) {
+            bDispatchWaiting(cn);
+        }
     }
 }
 /* \\\ */
@@ -2058,6 +2171,7 @@ static void bGATTEnumCB(struct bt_gatt_client_completion *completion, void *user
                     bep->bep_Properties = props;
                     bep->bep_CanRead = (props & 0x30) ? TRUE : FALSE;
                     bep->bep_CanWrite = (props & 0x0c) ? TRUE : FALSE;
+                    bep->bep_MaxPktSize = (cn->cn_GATT.mtu > 3) ? (cn->cn_GATT.mtu - 3) : 20;
                     bep->bep_EndHandle = endh;
                     bep->bep_EnumMark = 1;
                     continue;
@@ -2072,7 +2186,7 @@ static void bGATTEnumCB(struct bt_gatt_client_completion *completion, void *user
                     bep->bep_Properties = props;
                     bep->bep_CanRead = (props & 0x30) ? TRUE : FALSE;  /* notify | indicate */
                     bep->bep_CanWrite = (props & 0x0c) ? TRUE : FALSE; /* write | write without response */
-                    bep->bep_MaxPktSize = 20;
+                    bep->bep_MaxPktSize = (cn->cn_GATT.mtu > 3) ? (cn->cn_GATT.mtu - 3) : 20;
                     /* the characteristic's descriptors live between its value
                        handle and the next declaration (or the service end) */
                     bep->bep_EndHandle = endh;
@@ -2275,10 +2389,20 @@ static void bPairingDone(struct BtHWConn *cn, LONG error, ULONG status)
         return;
     }
     cn->cn_PairState = PAIR_IDLE;
+    cn->cn_SMPRequestLen = 0;
+    cn->cn_SMPAcceptWait = FALSE;
     btLockWriteDevice(bd);
     bd->bd_PairingRequest = BPRT_NONE;
     if(!error) {
         bd->bd_PairingState = BDPS_DONE;
+        if((cn->cn_LinkType == BDLT_LE) && (cn->cn_Role == BDR_PERIPHERAL) &&
+           !(bd->bd_Flags & BDFF_REGISTERED)) {
+            /* a phone or computer that paired with our services: it comes
+               to us. Connecting out to it whenever it advertises (it does
+               all the time) is not what it bonded for; the user may still
+               switch it on for the device. */
+            bd->bd_PoPoCfg.bpc_AutoConnect = FALSE;
+        }
         bd->bd_Flags |= BDFF_BONDED|BDFF_REGISTERED;
     } else {
         bd->bd_PairingState = BDPS_FAILED;
@@ -2383,6 +2507,36 @@ static void bAskUser(struct BtHWConn *cn, UBYTE type, ULONG passkey)
 }
 /* \\\ */
 
+/* Bytes of controller entropy a pairing as the responder draws: Srand or Nb,
+   then the LTK, Rand and EDIV it hands out (plus slack). */
+#define SMP_RESPONDER_ENTROPY 48
+
+/* /// "bSMPAcceptHeld()" */
+/* Answer the Pairing Request the user agreed to. */
+static void bSMPAcceptHeld(struct BtHWConn *cn)
+{
+    struct BtBase *BluetoothBase = cn->cn_Core->hc_Base;
+    struct BtDevice *bd = cn->cn_Device;
+    UBYTE request[sizeof(cn->cn_SMPRequest)];
+    UBYTE request_len = cn->cn_SMPRequestLen;
+
+    cn->cn_SMPAcceptWait = FALSE;
+    if(!request_len) {
+        return;
+    }
+    CopyMem(cn->cn_SMPRequest, request, request_len);
+    cn->cn_SMPRequestLen = 0;
+    if(bt_smp_manager_accept(&cn->cn_SMP, request, request_len, bNowUS(cn->cn_Core)) != BT_OK) {
+        bSMPFail(cn, 0x05, "pairing request could not be accepted");
+        return;
+    }
+    btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                   "%s: LE pairing accepted as peripheral after user consent (%s).",
+                   bd->bd_Name, cn->cn_SMP.negotiation.secure_connections ?
+                   (STRPTR) "secure connections" : (STRPTR) "legacy");
+}
+/* \\\ */
+
 /* /// "bPairingReply()" */
 static LONG bPairingReply(struct BtHWConn *cn, struct BtPairParams *bpp)
 {
@@ -2402,6 +2556,32 @@ static LONG bPairingReply(struct BtHWConn *cn, struct BtPairParams *bpp)
         bd->bd_PairingState = BDPS_INPROGRESS;
         bd->bd_PairingRequest = BPRT_NONE;
         btUnlockDevice(bd);
+        if(cn->cn_SMPRequestLen) {
+            ULONG want;
+
+            if(!bpp->bpp_HaveConfirm || !bpp->bpp_Confirm) {
+                cn->cn_SMPRequestLen = 0;
+                bSMPFail(cn, 0x05, "pairing was not accepted by the user");
+                return(0);
+            }
+            if(!bSMPSetup(cn)) {
+                cn->cn_SMPRequestLen = 0;
+                bSMPFail(cn, 0x05, "pairing request could not be accepted");
+                return(0);
+            }
+            /* the randoms and the key we hand out come from the controller,
+               as they do for a pairing we start (bStartPairing()); usually
+               the entropy asked for with the request is in by now */
+            want = (hc->hc_RandAvail >= SMP_RESPONDER_ENTROPY) ? 0 :
+                   bConnRequestEntropy(hc, (SMP_RESPONDER_ENTROPY - hc->hc_RandAvail + 7) / 8);
+            if(want) {
+                cn->cn_SMPRandWait = (UBYTE) want;
+                cn->cn_SMPAcceptWait = TRUE;
+            } else {
+                bSMPAcceptHeld(cn);
+            }
+            return(0);
+        }
         if(!cn->cn_SMPActive) {
             return(0);                      /* pairing already finished */
         }
@@ -2472,11 +2652,14 @@ static LONG bPairingReply(struct BtHWConn *cn, struct BtPairParams *bpp)
 /* The btcore SMP manager runs the pairing state machine; this glue supplies
    what it needs from the port: AES-128, random numbers, the L2CAP fixed
    channel (CID 6), the controller's crypto commands (LE Start Encryption,
-   P-256 public key, DH key) and the user-interaction popups. We only pair as
-   the central/initiator. Keys are kept in the device's BtKeyCfg (HCI byte
+   P-256 public key, DH key) and the user-interaction popups. We pair as the
+   central/initiator, and as the peripheral/responder when a central connects
+   to one of our GATT services. Keys are kept in the device's BtKeyCfg (HCI byte
    order) so a bonded device is re-encrypted on every reconnect. */
 
 #define SMP_IO_DISPLAYYESNO 0x01
+#define SMP_IO_NOINPUTNOOUTPUT 0x03
+#define SMP_IO_KEYBOARDDISPLAY 0x04
 
 static void bReverseBytes(UBYTE *dst, const UBYTE *src, ULONG len)
 {
@@ -2537,7 +2720,11 @@ static void bRandFillCB(struct bt_cmdq_completion *completion, void *user_data)
         struct BtHWConn *cn = (struct BtHWConn *) mn;
         if(cn->cn_SMPActive && cn->cn_SMPRandWait) {
             if(--cn->cn_SMPRandWait == 0) {
-                bSMPStart(cn);
+                if(cn->cn_SMPAcceptWait) {
+                    bSMPAcceptHeld(cn);     /* we are the responder */
+                } else {
+                    bSMPStart(cn);
+                }
             }
         }
     }
@@ -2604,6 +2791,11 @@ static bt_status_t bSMPStartEncryption(void *context, const uint8_t stk[16], uin
     /* the manager keeps keys most-significant octet first; HCI wants them LSB first */
     bReverseBytes(cn->cn_SMPLTK, stk, 16);
     cn->cn_SMPKeySize = key_size;
+    if(cn->cn_Role == BDR_PERIPHERAL) {
+        /* The central starts link encryption. Keep the STK for the ensuing
+           LE Long Term Key Request event from the controller. */
+        return(BT_OK);
+    }
     return(bLEStartEncryption(cn, cn->cn_SMPLTK, zero8, 0) ? BT_OK : BT_ERR_NO_RESOURCES);
 }
 
@@ -2652,10 +2844,18 @@ static void bSMPKeysComplete(void *context, const struct bt_smp_distributed_keys
     struct BtHWConn *cn = context;
     struct BtBase *BluetoothBase = cn->cn_Core->hc_Base;
     struct BtDevice *bd = cn->cn_Device;
-    (void) local;
     cn->cn_Core->hc_Hardware->bth_LEListsDirty = TRUE;   /* a new bond for the controller's lists */
     btLockWriteDevice(bd);
-    if(peer->key_mask & BT_SMP_KEYDIST_ENC_KEY) {
+    if((cn->cn_Role == BDR_PERIPHERAL) &&
+       (local->key_mask & BT_SMP_KEYDIST_ENC_KEY)) {
+        CopyMem((APTR) local->ltk, bd->bd_Keys.bkc_LocalLTK, 16);
+        CopyMem((APTR) local->rand, bd->bd_Keys.bkc_LocalRand, 8);
+        bd->bd_Keys.bkc_LocalEDIV[0] = local->ediv & 0xff;
+        bd->bd_Keys.bkc_LocalEDIV[1] = local->ediv >> 8;
+        bd->bd_Keys.bkc_Flags |= BKCF_LOCAL_LTK;
+        bd->bd_Keys.bkc_Flags &= ~BKCF_LOCAL_SC;
+    } else if((cn->cn_Role == BDR_CENTRAL) &&
+              (peer->key_mask & BT_SMP_KEYDIST_ENC_KEY)) {
         /* distributed as on the wire = HCI byte order */
         CopyMem((APTR) peer->ltk, bd->bd_Keys.bkc_LTK, 16);
         CopyMem((APTR) peer->rand, bd->bd_Keys.bkc_Rand, 8);
@@ -2731,10 +2931,17 @@ static void bSMPComplete(void *context, enum bt_smp_manager_result result,
         btLockWriteDevice(bd);
         if(neg && neg->secure_connections) {
             /* LE Secure Connections: the LTK is the f5-derived key we encrypted with */
-            CopyMem(cn->cn_SMPLTK, bd->bd_Keys.bkc_LTK, 16);
-            memset(bd->bd_Keys.bkc_Rand, 0, 8);
-            bd->bd_Keys.bkc_EDIV[0] = bd->bd_Keys.bkc_EDIV[1] = 0;
-            bd->bd_Keys.bkc_Flags |= BKCF_LTK | BKCF_SC;
+            if(cn->cn_Role == BDR_PERIPHERAL) {
+                CopyMem(cn->cn_SMPLTK, bd->bd_Keys.bkc_LocalLTK, 16);
+                memset(bd->bd_Keys.bkc_LocalRand, 0, 8);
+                bd->bd_Keys.bkc_LocalEDIV[0] = bd->bd_Keys.bkc_LocalEDIV[1] = 0;
+                bd->bd_Keys.bkc_Flags |= BKCF_LOCAL_LTK | BKCF_LOCAL_SC;
+            } else {
+                CopyMem(cn->cn_SMPLTK, bd->bd_Keys.bkc_LTK, 16);
+                memset(bd->bd_Keys.bkc_Rand, 0, 8);
+                bd->bd_Keys.bkc_EDIV[0] = bd->bd_Keys.bkc_EDIV[1] = 0;
+                bd->bd_Keys.bkc_Flags |= BKCF_LTK | BKCF_SC;
+            }
         }
         btUnlockDevice(bd);
         btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
@@ -2743,14 +2950,15 @@ static void bSMPComplete(void *context, enum bt_smp_manager_result result,
                        neg ? (STRPTR) assocname[neg->association] : (STRPTR) "?",
                        neg ? (ULONG) neg->encryption_key_size : 0UL,
                        (neg && neg->mitm_requested) ? (STRPTR) ", authenticated" : (STRPTR) "",
-                       (bd->bd_Keys.bkc_Flags & BKCF_LTK) ? (STRPTR) ", key stored" : (STRPTR) "");
+                       (bd->bd_Keys.bkc_Flags & (BKCF_LTK|BKCF_LOCAL_LTK)) ?
+                       (STRPTR) ", key stored" : (STRPTR) "");
         bPairingDone(cn, 0, 0);
     } else if((result == BT_SMP_MANAGER_ERROR_UNSUPPORTED) && neg && neg->secure_connections &&
-              !cn->cn_SMPLegacy && (cn->cn_State == HCNS_CONNECTED)) {
-        /* the SMP manager's LE Secure Connections covers Just Works and
-           Numeric Comparison only; a keyboard peer negotiates Passkey Entry.
-           Legacy pairing has it: run the pairing again without offering SC
-           (from bConnTick(), not from inside the manager's own callback). */
+              (cn->cn_Role == BDR_CENTRAL) && !cn->cn_SMPLegacy && (cn->cn_State == HCNS_CONNECTED)) {
+        /* the SMP manager's LE Secure Connections covers Just Works, Numeric
+           Comparison and Passkey Entry, but not out-of-band data. Legacy
+           pairing may still succeed: run the pairing again without offering
+           SC (from bConnTick(), not from inside the manager's own callback). */
         btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
                        "%s: %s is not available with LE Secure Connections - pairing the legacy way.",
                        bd->bd_Name, assocname[neg->association]);
@@ -2824,11 +3032,42 @@ static void bSMPChannelEvent(struct bt_l2cap_channel_event_info *info, void *use
                 bStartPairing(cn);
             }
         } else if(info->data[0] == BT_SMP_PAIRING_REQUEST) {
-            /* the peer wants to pair us as the peripheral: not supported */
-            UBYTE pdu[2];
-            pdu[0] = BT_SMP_PAIRING_FAILED;
-            pdu[1] = 0x05;
-            bSMPSend(cn, pdu, 2);
+            /* Never turn an unsolicited connection into a bond.  Hold the
+               request until the normal pairing UI explicitly accepts it.
+               That holds for a device we are bonded with too: it may have
+               been bonded in the other role or over BR/EDR (no key of ours
+               for this one), or have lost its own key - with the user's
+               say-so the new pairing replaces the bond, while a pairing
+               that fails or is refused leaves the old one as it was. */
+            if((cn->cn_Role != BDR_PERIPHERAL) || (info->data_len != 7) ||
+               (cn->cn_SMPAcceptWait)) {
+                UBYTE pdu[2] = { BT_SMP_PAIRING_FAILED, 0x05 };
+                cn->cn_SMPActive = FALSE;
+                bSMPSend(cn, pdu, 2);
+            } else if(cn->cn_SMPRequestLen) {
+                /* the central started over (it gave up waiting for us, or
+                   resent): the answer the user gives is to this one */
+                CopyMem((APTR) info->data, cn->cn_SMPRequest, 7);
+            } else {
+                CopyMem((APTR) info->data, cn->cn_SMPRequest, 7);
+                cn->cn_SMPRequestLen = 7;
+                if(bd->bd_Flags & BDFF_BONDED) {
+                    btAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                   "%s wants to pair again - accepting replaces the bond with it.", bd->bd_Name);
+                }
+                /* stock up on controller entropy while the user decides */
+                if(cn->cn_Core->hc_RandAvail < SMP_RESPONDER_ENTROPY) {
+                    bConnRequestEntropy(cn->cn_Core,
+                                        (SMP_RESPONDER_ENTROPY - cn->cn_Core->hc_RandAvail + 7) / 8);
+                }
+                bAskUser(cn, BPRT_CONSENT, 0);
+            }
+        } else if((info->data[0] == BT_SMP_PAIRING_FAILED) && cn->cn_SMPRequestLen) {
+            /* the central gave up on the request we hold: so does the user */
+            cn->cn_SMPRequestLen = 0;
+            btAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                           "%s withdrew its pairing request.", bd->bd_Name);
+            bPairingDone(cn, BTIOERR_SECURITY, (info->data_len >= 2) ? info->data[1] : 0x08);
         }
         break;
     }
@@ -2845,26 +3084,46 @@ static BOOL bSMPSetup(struct BtHWConn *cn)
     struct bt_smp_manager_config cfg;
     struct bt_smp_aes128 aes;
     struct bt_smp_aes_cmac cmac;
+    BOOL sc;
 
     memset(&cfg, 0, sizeof(cfg));
-    cfg.features.io_capability = SMP_IO_DISPLAYYESNO;  /* a keyboard peer -> we display the passkey */
     cfg.features.oob_data_flag = 0;
     /* LE Secure Connections is offered only with the "btlesc" boot argument:
        legacy pairing is what every device so far has been bonded with, and
        the SC Passkey Entry exchange stalls against the G915 keyboard on the
        rtl8761bu (whose LE Read Local P-256 Public Key also returns the same
        key on every boot) - see the SMP trace in the log with btdebug. */
-    cfg.features.auth_req = BT_SMP_AUTHREQ_BONDING | BT_SMP_AUTHREQ_MITM |
-                            (((bth->bth_LECaps & BTLC_SECURECONN) && (BluetoothBase->bt_Flags & BTF_LESC) &&
-                              !cn->cn_SMPLegacy) ? BT_SMP_AUTHREQ_SC : 0);
+    sc = (bth->bth_LECaps & BTLC_SECURECONN) && (BluetoothBase->bt_Flags & BTF_LESC) &&
+         !cn->cn_SMPLegacy;
+    if(cn->cn_Role == BDR_PERIPHERAL) {
+        /* As the responder, legacy pairing stays Just Works. With Secure
+           Connections we ask for MITM protection and can both show and type
+           a number: a phone gets Numeric Comparison, a keyboard-only or
+           display-only central gets Passkey Entry (the pairing popup). */
+        cfg.features.io_capability = sc ? SMP_IO_KEYBOARDDISPLAY : SMP_IO_NOINPUTNOOUTPUT;
+        cfg.features.auth_req = BT_SMP_AUTHREQ_BONDING |
+                                (sc ? (BT_SMP_AUTHREQ_MITM | BT_SMP_AUTHREQ_SC) : 0);
+    } else {
+        cfg.features.io_capability = SMP_IO_DISPLAYYESNO;
+        cfg.features.auth_req = BT_SMP_AUTHREQ_BONDING | BT_SMP_AUTHREQ_MITM |
+                                (sc ? BT_SMP_AUTHREQ_SC : 0);
+    }
     cfg.features.max_encryption_key_size = 16;
-    cfg.features.initiator_key_distribution = 0;
+    cfg.features.initiator_key_distribution = (cn->cn_Role == BDR_PERIPHERAL) ?
+                                               BT_SMP_KEYDIST_ID_KEY : 0;
     cfg.features.responder_key_distribution = BT_SMP_KEYDIST_ENC_KEY | BT_SMP_KEYDIST_ID_KEY;
     /* the manager wants addresses most-significant octet first */
-    cfg.initiator_address_type = 0;
-    bReverseBytes(cfg.initiator_address, bth->bth_Address.bd_Addr, 6);
-    cfg.responder_address_type = bd->bd_AddrType & 1;
-    bReverseBytes(cfg.responder_address, bd->bd_Address.bd_Addr, 6);
+    if(cn->cn_Role == BDR_PERIPHERAL) {
+        cfg.initiator_address_type = bd->bd_AddrType & 1;
+        bReverseBytes(cfg.initiator_address, bd->bd_Address.bd_Addr, 6);
+        cfg.responder_address_type = 0;
+        bReverseBytes(cfg.responder_address, bth->bth_Address.bd_Addr, 6);
+    } else {
+        cfg.initiator_address_type = 0;
+        bReverseBytes(cfg.initiator_address, bth->bth_Address.bd_Addr, 6);
+        cfg.responder_address_type = bd->bd_AddrType & 1;
+        bReverseBytes(cfg.responder_address, bd->bd_Address.bd_Addr, 6);
+    }
 
     aes.encrypt = bSMPAES;
     aes.context = hc;
@@ -3437,14 +3696,90 @@ BOOL bConnHandleEvent(struct BtHWCore *hc, UBYTE code, const UBYTE *params, ULON
             return(TRUE);
         }
         if(sub == HC_LE_SUB_LTK_REQUEST) {
-            /* we do not act as LE peripheral yet: negative reply */
-            UBYTE p[2];
-            if(len < 3) {
+            UBYTE p[18];
+            UWORD handle;
+            BOOL have = FALSE;
+            if(len < 13) {
                 return(TRUE);
             }
+            handle = (params[1] | (params[2] << 8)) & 0x0fff;
             p[0] = params[1];
             p[1] = params[2];
-            bSubmitCmd(hc, HC_OP_LE_LTK_REQ_NEG_REPLY, p, 2, bIgnoreCompletion, hc);
+            cn = bFindConnByHandle(hc, handle);
+            if(cn && cn->cn_SMPActive && (cn->cn_Role == BDR_PERIPHERAL) &&
+               (cn->cn_SMP.state == BT_SMP_STATE_WAIT_ENCRYPTION)) {
+                static const UBYTE zero[10] = { 0 };
+                if(!memcmp(&params[3], zero, sizeof(zero))) {
+                    CopyMem(cn->cn_SMPLTK, &p[2], 16);
+                    have = TRUE;
+                }
+            } else if(cn && (cn->cn_Role == BDR_PERIPHERAL) &&
+                      (cn->cn_Device->bd_Keys.bkc_Flags & BKCF_LOCAL_LTK) &&
+                      !memcmp(&params[3], cn->cn_Device->bd_Keys.bkc_LocalRand, 8) &&
+                      params[11] == cn->cn_Device->bd_Keys.bkc_LocalEDIV[0] &&
+                      params[12] == cn->cn_Device->bd_Keys.bkc_LocalEDIV[1]) {
+                CopyMem(cn->cn_Device->bd_Keys.bkc_LocalLTK, &p[2], 16);
+                have = TRUE;
+            }
+            bSubmitCmd(hc, have ? HC_OP_LE_LTK_REQ_REPLY : HC_OP_LE_LTK_REQ_NEG_REPLY,
+                       p, have ? 18 : 2, bIgnoreCompletion, hc);
+            return(TRUE);
+        }
+        if(sub == HC_LE_SUB_REMOTE_CONN_PARAM) {
+            /* The peer asked through the link layer (Connection Parameters
+               Request procedure) for other parameters, and the controller
+               waits for our answer: left unanswered, the procedure times
+               out and the link goes with it. Take what it asks for if it is
+               valid, as a central does with an L2CAP request. */
+            struct bt_l2cap_conn_params cp;
+            UBYTE p[14];
+            UWORD handle;
+            if(len < 11) {
+                return(TRUE);
+            }
+            handle = (params[1] | (params[2] << 8)) & 0x0fff;
+            cp.interval_min = params[3] | (params[4] << 8);
+            cp.interval_max = params[5] | (params[6] << 8);
+            cp.latency = params[7] | (params[8] << 8);
+            cp.timeout = params[9] | (params[10] << 8);
+            cn = bFindConnByHandle(hc, handle);
+            CopyMem((APTR) &params[1], p, 10);          /* handle and the four values */
+            memset(&p[10], 0, 4);                       /* connection event length: any */
+            if(bt_l2cap_conn_params_valid(&cp)) {
+                bSubmitCmd(hc, HC_OP_LE_REM_CONN_PARAM_REPLY, p, 14, bIgnoreCompletion, hc);
+            } else {
+                p[2] = 0x3b;                            /* unacceptable connection parameters */
+                bSubmitCmd(hc, HC_OP_LE_REM_CONN_PARAM_NEG, p, 3, bIgnoreCompletion, hc);
+            }
+            if(cn) {
+                btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                               "%s asked for a %ld.%02ld-%ld.%02ld ms connection interval - %s.",
+                               cn->cn_Device->bd_Name,
+                               (ULONG) (cp.interval_min * 125 / 100), (ULONG) (cp.interval_min * 125 % 100),
+                               (ULONG) (cp.interval_max * 125 / 100), (ULONG) (cp.interval_max * 125 % 100),
+                               bt_l2cap_conn_params_valid(&cp) ? "granted" : "refused, invalid");
+            }
+            return(TRUE);
+        }
+        if(sub == HC_LE_SUB_CONN_UPDATE) {
+            /* what the link runs at now, whoever asked for it */
+            UWORD handle, interval;
+            if(len < 10) {
+                return(TRUE);
+            }
+            handle = (params[2] | (params[3] << 8)) & 0x0fff;
+            interval = params[4] | (params[5] << 8);
+            cn = bFindConnByHandle(hc, handle);
+            if(cn) {
+                btAddErrorMsg(params[1] ? RETURN_WARN : RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                               params[1] ? "%s: connection update failed (0x%02lx)."
+                                         : "%s: connection interval now %ld.%02ld ms, latency %ld, timeout %ld ms.",
+                               cn->cn_Device->bd_Name,
+                               params[1] ? (ULONG) params[1] : (ULONG) (interval * 125 / 100),
+                               (ULONG) (interval * 125 % 100),
+                               (ULONG) (params[6] | (params[7] << 8)),
+                               (ULONG) ((params[8] | (params[9] << 8)) * 10));
+            }
             return(TRUE);
         }
         return(FALSE);
@@ -3698,16 +4033,32 @@ BOOL bConnHandleRequest(struct BtHWCore *hc, struct BtChannel *bch)
                 bReplyChannel(BluetoothBase, bch, BTIOERR_NOTSUPPORTED, 0);
                 return(TRUE);
             }
-            if(cn->cn_CtrlReq || (cn->cn_EnumState != ENUM_IDLE)) {
-                bReplyChannel(BluetoothBase, bch, IOERR_UNITBUSY, 0);
-                return(TRUE);
-            }
             if(!cn->cn_GATTReady) {
+                /* an enumeration brings the ATT channel up itself and releases
+                   what waits when it is done; a second connect would take its
+                   callback over and orphan this request */
+                if(cn->cn_CtrlReq || (cn->cn_EnumState != ENUM_IDLE)) {
+                    bReqQueueAdd(&cn->cn_WaitReqs, bch);
+                    return(TRUE);
+                }
                 cn->cn_CtrlReq = bch;
                 if(bt_gatt_client_connect(&cn->cn_GATT, bGATTConnectCB, cn, now) != BT_OK) {
                     cn->cn_CtrlReq = NULL;
                     bReplyChannel(BluetoothBase, bch, BTIOERR_CHANNELFAILED, 0);
                 }
+                return(TRUE);
+            }
+            /* A Write Command has no response and is not a GATT transaction;
+               it may be sent while a request or enumeration is in flight. */
+            if(bch->bch_Request == BTPR_GATTWRITENORSP) {
+                bt_status_t st = bt_gatt_client_write_without_response(&cn->cn_GATT,
+                                            bch->bch_Value, bch->bch_Data, bch->bch_Length);
+                bReplyChannel(BluetoothBase, bch, st == BT_OK ? 0 : BTIOERR_HOSTERROR,
+                              st == BT_OK ? bch->bch_Length : 0);
+                return(TRUE);
+            }
+            if(cn->cn_CtrlReq || (cn->cn_EnumState != ENUM_IDLE)) {
+                bReplyChannel(BluetoothBase, bch, IOERR_UNITBUSY, 0);
                 return(TRUE);
             }
             cn->cn_CtrlReq = bch;
@@ -3838,8 +4189,9 @@ BOOL bConnHandleRequest(struct BtHWCore *hc, struct BtChannel *bch)
                 return(TRUE);
             }
             if(!cn->cn_GATTReady) {
-                /* bring the ATT channel up first, then retry */
-                if(cn->cn_CtrlReq) {
+                /* bring the ATT channel up first, then retry (not alongside an
+                   enumeration, which does that itself) */
+                if(cn->cn_CtrlReq || (cn->cn_EnumState != ENUM_IDLE)) {
                     bReqQueueAdd(&cn->cn_WaitReqs, bch);
                     return(TRUE);
                 }
@@ -3891,15 +4243,22 @@ BOOL bConnHandleRequest(struct BtHWCore *hc, struct BtChannel *bch)
                     bReqQueueAdd(&hep->hep_ReadReqs, bch);
                 }
             } else {
-                if(cn->cn_CtrlReq || (cn->cn_EnumState != ENUM_IDLE)) {
-                    bReplyChannel(BluetoothBase, bch, IOERR_UNITBUSY, 0);
-                    return(TRUE);
-                }
-                cn->cn_CtrlReq = bch;
-                if(bt_gatt_client_write(&cn->cn_GATT, bep->bep_Handle, bch->bch_Data, bch->bch_Length,
-                                        bGATTOpComplete, cn, now) != BT_OK) {
-                    cn->cn_CtrlReq = NULL;
-                    bReplyChannel(BluetoothBase, bch, BTIOERR_HOSTERROR, 0);
+                if((bep->bep_Properties & 0x04) && !(bep->bep_Properties & 0x08)) {
+                    bt_status_t st = bt_gatt_client_write_without_response(&cn->cn_GATT,
+                                             bep->bep_Handle, bch->bch_Data, bch->bch_Length);
+                    bReplyChannel(BluetoothBase, bch, st == BT_OK ? 0 : BTIOERR_HOSTERROR,
+                                  st == BT_OK ? bch->bch_Length : 0);
+                } else {
+                    if(cn->cn_CtrlReq || (cn->cn_EnumState != ENUM_IDLE)) {
+                        bReplyChannel(BluetoothBase, bch, IOERR_UNITBUSY, 0);
+                        return(TRUE);
+                    }
+                    cn->cn_CtrlReq = bch;
+                    if(bt_gatt_client_write(&cn->cn_GATT, bep->bep_Handle, bch->bch_Data,
+                                               bch->bch_Length, bGATTOpComplete, cn, now) != BT_OK) {
+                        cn->cn_CtrlReq = NULL;
+                        bReplyChannel(BluetoothBase, bch, BTIOERR_HOSTERROR, 0);
+                    }
                 }
             }
             return(TRUE);
@@ -4007,6 +4366,7 @@ void bConnTick(struct BtHWCore *hc)
 {
     struct MinNode *mn, *next;
     uint64_t now = bNowUS(hc);
+    UWORD payload = 0;
 
     for(mn = hc->hc_Conns.mlh_Head; (next = mn->mln_Succ); mn = next) {
         struct BtHWConn *cn = (struct BtHWConn *) mn;
@@ -4060,6 +4420,25 @@ void bConnTick(struct BtHWCore *hc)
             cn->cn_PairRetry = FALSE;
             bStartPairing(cn);
         }
+        bConnAskParams(cn);
+        if(cn->cn_LinkType == BDLT_LE) {
+            UWORD n;
+            BOOL subscribed = FALSE;
+
+            for(n = 0; n < HC_GATT_MAXSUBS; n++) {
+                if(cn->cn_GATTSubs[n].handle && (cn->cn_GATTSubs[n].value & 3)) {
+                    subscribed = TRUE;
+                    break;
+                }
+            }
+            if(subscribed) {
+                /* Minimum only across links that consume notifications. */
+                UWORD p = (cn->cn_GATTServer.mtu > 3) ? cn->cn_GATTServer.mtu - 3 : 0;
+                if(!payload || (p < payload)) {
+                    payload = p;
+                }
+            }
+        }
         if(cn->cn_EncryptPending && ((LONG) (hc->hc_Tick - cn->cn_EncryptSince) > 10000)) {
             /* no Authentication Complete / Encryption Change came back:
                do not hold the enumeration hostage to it */
@@ -4100,6 +4479,9 @@ void bConnTick(struct BtHWCore *hc)
             }
         }
     }
+    /* a new link starts at the default MTU, and needs longer than a tick
+       to discover and subscribe to a service */
+    hc->hc_Hardware->bth_LENotifyPayload = payload;
     bConnClassicTick(hc);
 }
 /* \\\ */

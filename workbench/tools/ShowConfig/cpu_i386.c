@@ -7,7 +7,7 @@
 
 #ifdef __x86__
 
-#define FLAGS_NUM 17
+#define FLAGS_NUM 31
 
 static const char *features[] =
 {
@@ -27,7 +27,21 @@ static const char *features[] =
     "AVX",
     "NoExecute",
     "64Bit",
-    "Hyperthreading"
+    "Hyperthreading",
+    "VME",
+    "PSE",
+    "PAE",
+    "CX8",
+    "APIC",
+    "CMOV",
+    "PSE36",
+    "CLFSH",
+    "ACPI",
+    "FXSR",
+    "CX16",
+    "Virtualization",
+    "MSR",
+    "Virtualized"
 };
 
 void PrintCPUSpecificInfo(ULONG i, APTR ProcessorBase)
@@ -53,6 +67,20 @@ void PrintCPUSpecificInfo(ULONG i, APTR ProcessorBase)
         {GCIT_SupportsNoExecutionBit, (IPTR)&flags[14]},
         {GCIT_Supports64BitMode     , (IPTR)&flags[15]},
         {GCIT_SupportsHTT           , (IPTR)&flags[16]},
+        {GCIT_SupportsVME           , (IPTR)&flags[17]},
+        {GCIT_SupportsPSE           , (IPTR)&flags[18]},
+        {GCIT_SupportsPAE           , (IPTR)&flags[19]},
+        {GCIT_SupportsCX8           , (IPTR)&flags[20]},
+        {GCIT_SupportsAPIC          , (IPTR)&flags[21]},
+        {GCIT_SupportsCMOV          , (IPTR)&flags[22]},
+        {GCIT_SupportsPSE36         , (IPTR)&flags[23]},
+        {GCIT_SupportsCLFSH         , (IPTR)&flags[24]},
+        {GCIT_SupportsACPI          , (IPTR)&flags[25]},
+        {GCIT_SupportsFXSR          , (IPTR)&flags[26]},
+        {GCIT_SupportsCX16          , (IPTR)&flags[27]},
+        {GCIT_SupportsVirtualization, (IPTR)&flags[28]},
+        {GCIT_SupportsMSR           , (IPTR)&flags[29]},
+        {GCIT_Virtualized           , (IPTR)&flags[30]},
         {TAG_DONE                   , 0               }
     };
 

@@ -358,9 +358,10 @@ void CountFreeClusters(struct FSSuper *sb)
     D(bug("\tfree clusters: %ld\n", free));
 }
 
-void AllocCluster(struct FSSuper *sb, ULONG cluster)
+BOOL AllocCluster(struct FSSuper *sb, ULONG cluster)
 {
-    SET_NEXT_CLUSTER(sb, cluster, sb->eoc_mark);
+    if (!SET_NEXT_CLUSTER(sb, cluster, sb->eoc_mark))
+        return FALSE;
     sb->free_clusters--;
     if (sb->fsinfo_buffer != NULL)
     {
@@ -368,15 +369,18 @@ void AllocCluster(struct FSSuper *sb, ULONG cluster)
         sb->fsinfo_buffer->next_free = AROS_LONG2LE(sb->next_cluster);
         Cache_MarkBlockDirty(sb->cache, sb->fsinfo_block);
     }
+    return TRUE;
 }
 
-void FreeCluster(struct FSSuper *sb, ULONG cluster)
+BOOL FreeCluster(struct FSSuper *sb, ULONG cluster)
 {
-    SET_NEXT_CLUSTER(sb, cluster, 0);
+    if (!SET_NEXT_CLUSTER(sb, cluster, 0))
+        return FALSE;
     sb->free_clusters++;
     if (sb->fsinfo_buffer != NULL)
     {
         sb->fsinfo_buffer->free_count = AROS_LONG2LE(sb->free_clusters);
         Cache_MarkBlockDirty(sb->cache, sb->fsinfo_block);
     }
+    return TRUE;
 }

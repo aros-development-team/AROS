@@ -325,9 +325,19 @@ AROS_LH1(void, begin_io, AROS_LHA(struct IOSana2Req *, req, A1), LIBBASETYPEPTR,
 AROS_LH1(long, abort_io, AROS_LHA(struct IOSana2Req *, req, A1), LIBBASETYPEPTR, LIBBASE, 6, eth_device) {
     AROS_LIBFUNC_INIT
 
-    /* XXX anything to do here? */
+    /* reads and writes wait on a list until the iotask replies them. take
+     * the request off and return it, unless it has already been replied */
+    Disable();
+    if (req->ios2_Req.io_Message.mn_Node.ln_Type == NT_MESSAGE &&
+        ! (req->ios2_Req.io_Flags & IOF_QUICK)) {
+        Remove((APTR) req);
+        req->ios2_Req.io_Error = IOERR_ABORTED;
+        req->ios2_WireError = S2WERR_GENERIC_ERROR;
+        ReplyMsg((APTR) req);
+    }
+    Enable();
 
-    return 1;
+    return 0;
 
     AROS_LIBFUNC_EXIT
 }

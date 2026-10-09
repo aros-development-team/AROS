@@ -1,11 +1,13 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
 
 #include <hidd/gfx.h>
 #include <aros/debug.h>
+#include <exec/memory.h>
+#include <proto/exec.h>
 
 #include "cybergraphics_intern.h"
 #include "gfxfuncsupport.h"
@@ -14,7 +16,11 @@ struct render_data
 {
     UBYTE *array;
     ULONG modulo;
+    UBYTE alpha;    /* global alpha, 0xFF = source alpha only */
 };
+
+/* Rows are scaled through a bounded buffer so large blits need no large allocation */
+#define WPAA_BUFSIZE 65536
 
 static ULONG RenderHook(struct render_data *data, LONG srcx, LONG srcy,
     OOP_Object *dstbm_obj, OOP_Object *dst_gc, struct Rectangle *rect,
@@ -57,8 +63,10 @@ static ULONG RenderHook(struct render_data *data, LONG srcx, LONG srcy,
             to write to (in pixels).
         width, height - size of the affected area (in pixels).
         globalalpha - an alpha value applied globally to every pixel taken
-            from the source rectangle (the full 32-bit range of values is
-            used: 0 to 0xFFFFFFFF).
+            from the source rectangle, on top of each pixel's own alpha.
+            The full 32-bit range is used: 0xFFFFFFFF leaves the source
+            alpha as it is, 0x80000000 halves it, 0 draws nothing. Only the
+            most significant 8 bits take part.
 
     RESULT
         count - the number of pixels written to.
@@ -70,7 +78,6 @@ static ULONG RenderHook(struct render_data *data, LONG srcx, LONG srcy,
     EXAMPLE
 
     BUGS
-        The globalalpha parameter is currently ignored.
 
     SEE ALSO
         WritePixelArray(), graphics.library/SetDrMd()
@@ -89,6 +96,10 @@ static ULONG RenderHook(struct render_data *data, LONG srcx, LONG srcy,
     if (width == 0 || height == 0)
         return 0;
 
+    /* Fully transparent: nothing to draw */
+    if ((globalalpha >> 24) == 0)
+        return 0;
+
     /* This is cybergraphx. We only work wih HIDD bitmaps */
     if (!IS_HIDD_BM(rp->BitMap))
     {
@@ -103,6 +114,7 @@ static ULONG RenderHook(struct render_data *data, LONG srcx, LONG srcy,
 
     data.array  = ((UBYTE *)src) + start_offset;
     data.modulo = srcmod;
+    data.alpha  = globalalpha >> 24;
 
     rr.MinX = destx;
     rr.MinY = desty;
@@ -123,9 +135,68 @@ static ULONG RenderHook(struct render_data *data, LONG srcx, LONG srcy,
     ULONG  width  = rect->MaxX - rect->MinX + 1;
     ULONG  height = rect->MaxY - rect->MinY + 1;
     UBYTE *array = data->array + data->modulo * srcy + 4 * srcx;
+    ULONG  modulo, rows, bufsize, y;
+    UBYTE *buf;
 
-    HIDD_BM_PutAlphaImage(dstbm_obj, dst_gc, array, data->modulo,
-        rect->MinX, rect->MinY, width, height);
+    if (data->alpha == 0xFF)
+    {
+        HIDD_BM_PutAlphaImage(dstbm_obj, dst_gc, array, data->modulo,
+            rect->MinX, rect->MinY, width, height);
+
+        return width * height;
+    }
+
+    /*
+     * Apply the global alpha to a copy of the source, a few rows at a time:
+     * the caller's array must not be modified. The source is ARGB, alpha
+     * being the first byte of each pixel.
+     */
+    modulo = width * 4;
+    rows = WPAA_BUFSIZE / modulo;
+    if (rows == 0)
+        rows = 1;
+    if (rows > height)
+        rows = height;
+    bufsize = rows * modulo;
+
+    buf = AllocMem(bufsize, MEMF_ANY);
+    if (!buf)
+    {
+        rows = 1;
+        bufsize = modulo;
+        buf = AllocMem(bufsize, MEMF_ANY);
+        if (!buf)
+            return 0;
+    }
+
+    for (y = 0; y < height; y += rows)
+    {
+        ULONG  n = height - y;
+        ULONG  r, i;
+
+        if (n > rows)
+            n = rows;
+
+        for (r = 0; r < n; r++)
+        {
+            UBYTE *a = buf + r * modulo;
+
+            /* Bytewise: the caller's array need not be longword aligned */
+            CopyMem(array + (y + r) * data->modulo, a, modulo);
+
+            for (i = 0; i < width; i++, a += 4)
+            {
+                ULONG v = *a * data->alpha + 127;
+
+                *a = (v + (v >> 8)) >> 8;
+            }
+        }
+
+        HIDD_BM_PutAlphaImage(dstbm_obj, dst_gc, buf, modulo,
+            rect->MinX, rect->MinY + y, width, n);
+    }
+
+    FreeMem(buf, bufsize);
 
     return width * height;
 }

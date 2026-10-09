@@ -65,6 +65,8 @@ ACO_GEN_CXX_SOURCES := \
     $(ACO_GENDIR)/aco_opcodes
 
 USER_INCLUDES += \
+    -I$(SRCDIR)/workbench/hidds/amdgpu/libdrm/amdgpu \
+    -I$(SRCDIR)/workbench/hidds/amdgpu/include \
     -iquote $(top_srcdir)/$(CUR_MESADIR) \
     -iquote $(top_srcdir)/$(CUR_MESADIR)/instruction_selection \
     -iquote $(top_srcdir)/src \

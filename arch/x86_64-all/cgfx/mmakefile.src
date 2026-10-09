@@ -7,7 +7,9 @@ FILES  := \
         processpixelarray_opblur \
         processpixelarray_opbrightness \
         processpixelarray_opsetalpha \
-        processpixelarray_optint
+        processpixelarray_optint \
+        writepixelarrayalpha \
+        writepixelarrayalpha_avx
 
 GFXDIR_BASE := workbench/libs/cgfx
 USER_INCLUDES := -iquote $(SRCDIR)/$(GFXDIR_BASE)

@@ -5,7 +5,7 @@ include $(SRCDIR)/config/aros.cfg
 # Headless stays in Storage/ on every target - it is moved into Devs/ by
 # hand, only on machines that actually want a display-less driver.
 STORAGEICONS := Wrapper Headless
-PCIDEVSICONS   := ATI NVidia
+PCIDEVSICONS   := ATI AMDGPU NVidia
 PCDEVSICONS    := IntelGMA VMWare
 # Cards on a PCI bus can be fitted to any machine that has one
 ifeq ($(filter pc opensbi,$(AROS_TARGET_ARCH)),)

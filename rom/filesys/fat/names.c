@@ -158,7 +158,7 @@ LONG GetDirEntryLongNameFrom(struct DirHandle *dh, struct DirEntry *short_de,
     struct DirEntry de;
     LONG index;
     UBYTE order;
-    LONG err;
+    LONG err = ERROR_OBJECT_NOT_FOUND;
 
     /* Make sure the entry is good */
     raw = short_de->e.entry.name;
@@ -167,7 +167,7 @@ LONG GetDirEntryLongNameFrom(struct DirHandle *dh, struct DirEntry *short_de,
         D(bug("[fat] entry name has first byte 0x%02x,"
             " returning empty long name\n", raw[0]));
         *name = '\0';
-        len = 0;
+        *len = 0;
         return 0;
     }
 
@@ -266,7 +266,7 @@ LONG GetDirEntryLongNameFrom(struct DirHandle *dh, struct DirEntry *short_de,
 
     D(bug("[fat] long name construction failed\n"));
 
-    return ERROR_OBJECT_NOT_FOUND;
+    return err == 0 ? ERROR_OBJECT_NOT_FOUND : err;
 }
 
 /* Set the name of an entry. This will set the long name too. It assumes
@@ -566,7 +566,7 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len)
     D(bug("[fat] successfully wrote short & long names\n"));
 
     /* Set hidden flags on .info files */
-    if (strcmp(name + len - 5, ".info") == 0)
+    if (len >= 5 && memcmp(name + len - 5, ".info", 5) == 0)
         short_de->e.entry.attr |= ATTR_HIDDEN;
 
     return 0;

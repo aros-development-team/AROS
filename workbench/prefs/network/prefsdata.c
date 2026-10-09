@@ -493,13 +493,9 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
         }
     }
 
-    if (!GetDHCP())
-    {
-        fprintf(ConfFile, "; Domain names\n");
-        fprintf(ConfFile, "; Name servers\n");
-        fprintf(ConfFile, "NAMESERVER %s\n", GetDNS(0));
-        fprintf(ConfFile, "NAMESERVER %s\n", GetDNS(1));
-    }
+    /* DNS is written per interface, per protocol by the net4/net6 plugins
+     * (DNS=/DNS6= tokens on each interface line); there is no global
+     * NAMESERVER block any more. */
     fclose(ConfFile);
 
     CombinePath2P(filename, filenamelen, destdbdir, "static-routes");

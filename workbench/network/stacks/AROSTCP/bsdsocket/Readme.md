@@ -100,6 +100,12 @@ comes up advertising a large MTU, `mb_autosize` raises the cluster cap in propor
 a frame of that MTU needs — grow-only, and clamped to a fraction of free memory — so a jumbo
 interface has enough clusters to keep the pipe full. `m_valid` (a slot-alignment check against the
 pool chunks) and the length bounds on `m_prepend`/`m_adj` guard against malformed mbuf chains.
+`mbinit` starts the pool even on a memory-tight or fragmented machine: rather than demanding the
+whole initial pool (~512 KB) as one block, it halves the initial mbuf and cluster requests on
+failure down to a small floor (64 mbufs / 4 clusters), logging a one-line notice when the pool
+starts smaller than configured. The pool still grows on demand once running, a normal-memory boot is
+unchanged (the full pool succeeds first try), and a genuine allocation failure is still returned so
+the stack aborts cleanly instead of running with no mbufs.
 
 > **`M_WAIT` semantics.** The port does not honour the blocking `M_WAIT`/`M_WAITOK` flag —
 > allocation returns `NULL` once the mbuf cap or the general pool is exhausted, unlike stock BSD
@@ -320,12 +326,23 @@ the tunnel server.
   `addifent()` (`kern/amiga_netdb.c`) then creates the pseudo-interface instead of opening a device.
   Behind NAT the router must forward inbound protocol 41 to the AROS host (double-NAT cannot work).
 
+### 6.6 Scoped link-local and multicast output
+
+With more than one interface, link-local (`fe80::/64`) and multicast IPv6 output no longer follow the
+single shared `fe80::/64` route: the egress link is taken from the one the caller names — a
+`sin6_scope_id` on the destination, an `IPV6_PKTINFO` ancillary interface index, or the interface the
+chosen source address lives on — so a link-local send leaves the correct link on a multi-homed host.
+`HOST` database entries may also carry an IPv6 address.
+
 ---
 
 ## 7. IPv4, ICMP, and UDP
 
 - **IPv4** (`ip_input.c`/`ip_output.c`) provides input demux, forwarding, fragmentation and
-  reassembly, and options handling.
+  reassembly, and options handling. Incoming fragments are held on a reassembly queue
+  (`struct ipq`, bounded by `maxnipq`) and linked through separately allocated `struct ipqent`
+  nodes — the fragment chain is kept out of the packet rather than overlaid on the IP header, so it
+  is correct on 64-bit targets and a received fragment can no longer crash the stack (§10).
 - **ICMP** (`ip_icmp.c`) generates and processes error and informational messages. Error generation
   is rate-limited by a token bucket (`icmp_ratelimit`): a burst of 10 tokens refills at 5 tokens per
   500 ms slow-tick, keyed off the `tcp_now` clock; suppressed errors are counted in
@@ -333,7 +350,9 @@ the tunnel server.
 - **UDP** (`udp_usrreq.c`) is the standard datagram path over the shared `udb` table. The default
   UDP receive buffer (`udp_recvspace`, 256 datagrams) and the IP input queue depth
   (`ipqmaxlen = 4·IFQ_MAXLEN`, `ip_input.c`) are sized to absorb short high-rate receive bursts
-  before the owning task drains them, rather than dropping at the ~40-datagram default.
+  before the owning task drains them, rather than dropping at the ~40-datagram default. `SO_BINDTODEVICE`
+  pins a UDP socket to one interface, so a limited broadcast (`255.255.255.255`) or a reply can be
+  directed out a chosen link even on a multi-homed host with no default route.
 - **IPv4 multicast** (built under `-DENABLE_MULTICAST`) provides host-side group membership,
   mirroring the IPv6 path. `in_addmulti`/`in_delmulti` (`in.c`) maintain the reference-counted
   `in_multihead` list and program the NIC hardware filter over SANA-II (RFC 1112 class-D →
@@ -382,6 +401,17 @@ locals before summing rather than reading them through a `u_int16_t *` taken fro
 - **Tunnel pseudo-interface.** `if_stf.c` provides a deviceless 6in4 (SIT) interface that
   encapsulates IPv6 in IPv4 (protocol 41) over the existing IPv4 stack — no SANA-II device is bound.
   See §6.5.
+- **Interface bring-up is resilient.** An interface whose SANA-II device fails to open no longer
+  brings the whole stack down: with the `DEFER` keyword the open is retried in the background;
+  otherwise a requester offers retry / skip / shutdown. On a wireless link the stack requests
+  `S2EVENT_DISCONNECT` and, when the link drops, tears down the addresses and routes that belonged to
+  the old network; `sana_unrun` aborts the parked `S2_ONEVENT` before waiting on it, so another
+  opener keeping the device online can no longer hang shutdown.
+- **DHCP across several interfaces.** The DHCP client (`kern/amiga_dhcp.c` launching `dhclient`) runs
+  one socket per interface, each bound to its link, so a second interface (e.g. a Bluetooth PAN
+  alongside ethernet) also gets an address; the default route, name servers and search domain follow
+  the first bound interface rather than whichever lease arrived last. The unspecified DHCP
+  placeholder address installs no network route.
 
 ---
 
@@ -404,6 +434,17 @@ Properties the implementation provides:
 - **IPv6 fragmentation** builds each output fragment as a header mbuf with the fragment payload
   chained on via `m_copy`, so a fragment is not limited to one cluster and jumbo-MTU IPv6 fragments
   are emitted correctly; payload is never copied into a bare `MHLEN` mbuf.
+- **IPv4 reassembly** links held fragments through separately allocated `struct ipqent` nodes
+  (`ip_input.c`) rather than overlaying list pointers on the IP header as 4.3BSD did. Two 8-byte
+  pointers do not fit in the header's address fields on a 64-bit target, so the old overlay ran past
+  the header into the payload and mismatched `struct ipq` — one received fragment (e.g. a ping
+  larger than the MTU) crashed the stack, a remote one-packet denial of service on every 64-bit
+  AROS. The queue is bounded by `maxnipq` and each fragment's offset+length is range-checked against
+  `IP_MAXPACKET` (read unsigned), so a flood of distinct ids or a crafted overlap cannot exhaust
+  memory or wrap the trim arithmetic. 32-bit layout was unaffected.
+- **mbuf pool starts under memory pressure.** `mbinit` scales the initial pool down to a floor
+  rather than refusing to start when the full ~512 KB block will not fit on a tight or fragmented
+  machine (§3.3), so a low-memory boot still brings the stack up.
 
 > **Single-lock dependency.** Several data structures are safe only under the global
 > `syscall_semaphore` (§3.2) — for example `radix.c`'s shared `maskedKey` scratch and the cluster

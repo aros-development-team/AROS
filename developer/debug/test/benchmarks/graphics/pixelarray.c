@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Benchmark for:
           cybergraphics.library/WritePixelArray
@@ -258,7 +258,7 @@ static void action_pixelarray(void)
         switch(function)
         {
         case(FUNCTION_WRITE_ALPHA):
-            WritePixelArrayAlpha((ULONG *)buffer + ( i % 1000000), 0, 0, width * 4, win->RPort, xact, 0, widthact, height, 0);
+            WritePixelArrayAlpha((ULONG *)buffer + ( i % 1000000), 0, 0, width * 4, win->RPort, xact, 0, widthact, height, 0xFFFFFFFF);
             break;
         case(FUNCTION_WRITE):
             WritePixelArray((ULONG *)buffer + ( i % 1000000), 0, 0, width * 4, win->RPort, xact, 0, widthact, height, pixfmt);

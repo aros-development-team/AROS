@@ -178,9 +178,8 @@ void ProcessPackets(struct Globals *glob)
                 if ((err = TestLock(fl, glob)))
                     break;
 
-                if ((err = InitDirHandle(glob->sb, fl->ioh.first_cluster, &dh,
-                    FALSE, glob)) != 0)
-                    break;
+                InitDirHandle(glob->sb, fl->ioh.first_cluster, &dh,
+                    FALSE, glob);
 
                 dh.cur_index = fib->fib_DiskKey;
 

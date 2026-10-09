@@ -40,10 +40,17 @@ LONG newMedium(struct AFSBase *afsbase, struct Volume *volume) {
 struct BlockCache *blockbuffer;
 UWORD i;
 BOOL gotdostype = FALSE;
+BOOL counted = FALSE;
 LONG error;
 ULONG dostype;
 UBYTE dosflags;
 
+#ifdef __AROS__
+        error = prepareMediumCache(afsbase, volume);
+        if (error != 0)
+                return error;
+#endif
+        volume->bitmapinvalid = FALSE; /* New media starts with an unknown root state. */
         /* Check validity of root block first, since boot block may be left over
            from an overwritten partition of a different size
            Read bootblock first to prevent multiple seeks when using floppies
@@ -79,6 +86,8 @@ UBYTE dosflags;
         if ((dostype != ID_DOS_DISK) && (dostype != ID_DOS_muFS_DISK))
         {
                 blockbuffer = getBlock(afsbase, volume, 1);
+                if (blockbuffer == NULL)
+                        return ERROR_UNKNOWN;
                 dostype = OS_BE2LONG(blockbuffer->buffer[0]) & 0xFFFFFF00;
                 dosflags = OS_BE2LONG(blockbuffer->buffer[0]) & 0xFF;
         }
@@ -98,6 +107,7 @@ UBYTE dosflags;
         volume->dostype = dostype;
         volume->dosflags = dosflags;
 
+        volume->bitmapinvalid = blockbuffer->buffer[BLK_BITMAP_VALID_FLAG(volume)] == 0;
         for (i=0;i<=24;i++)
         {
                 volume->bitmapblockpointers[i]=OS_BE2LONG
@@ -118,19 +128,26 @@ UBYTE dosflags;
                 volume->usedblockscount=0;
                 volume->state = ID_VALIDATING;
 
+#ifdef __AROS__
+                counted = launchValidator(afsbase, volume) == vr_OK;
+#else
                 launchValidator(afsbase, volume);
+#endif
         }
 
         /*
          * it's safe to assume that the block is still there
          */
         blockbuffer=getBlock(afsbase, volume,volume->rootblock);
+        if (blockbuffer == NULL)
+                return ERROR_UNKNOWN;
         
         if (blockbuffer->buffer[BLK_BITMAP_VALID_FLAG(volume)])
         {
                 blockbuffer->flags |= BCF_USED; // won't be cleared until volume is ejected
                 D(bug("[afs] counting used blocks...\n"));
-                volume->usedblockscount=countUsedBlocks(afsbase, volume);
+                if (!counted)
+                        volume->usedblockscount=countUsedBlocks(afsbase, volume);
                 D(bug("[afs] %u blocks in use\n", volume->usedblockscount));
                 volume->state = diskWritable(afsbase, &volume->ioh) ?
                         ID_VALIDATED : ID_WRITE_PROTECTED;
@@ -199,9 +216,9 @@ struct Volume *initVolume
                         volume->maxtransfer = devicedef->de_MaxTransfer;
                 D(bug("[afs] initVolume: MaxTransfer=%lu\n", volume->maxtransfer));
                 volume->blockcache=initCache(afsbase, volume, volume->numbuffers);
-                initBulkBuffer(afsbase, volume);
                 if (volume->blockcache != NULL)
                 {
+                        initBulkBuffer(afsbase, volume);
                         if (openBlockDevice(afsbase, &volume->ioh)!= NULL)
                         {
                                 volume->countblocks =

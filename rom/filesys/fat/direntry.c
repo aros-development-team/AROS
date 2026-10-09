@@ -28,7 +28,7 @@
 #define DEBUG DEBUG_DIRENTRY
 #include "debug.h"
 
-LONG InitDirHandle(struct FSSuper *sb, ULONG cluster, struct DirHandle *dh,
+void InitDirHandle(struct FSSuper *sb, ULONG cluster, struct DirHandle *dh,
     BOOL reuse, struct Globals *glob)
 {
     /* 'dh' may or may not be initialised when this is called. if it is, then
@@ -68,8 +68,6 @@ LONG InitDirHandle(struct FSSuper *sb, ULONG cluster, struct DirHandle *dh,
     D(bug("[fat] initialised dir handle, first cluster is %ld,"
         " first sector is %ld\n", dh->ioh.first_cluster,
         dh->ioh.first_sector));
-
-    return 0;
 }
 
 LONG ReleaseDirHandle(struct DirHandle *dh, struct Globals *glob)
@@ -236,11 +234,11 @@ LONG GetDirEntryByCluster(struct DirHandle *dh, ULONG cluster,
     /* Start at the start */
     RESET_DIRHANDLE(dh);
 
-    /* Loop through the entries until we find a match */
+    /* Compare decoded cluster numbers, since the entry stores little-endian
+     * halves even when the host is big-endian. */
     while ((err = GetNextDirEntry(dh, de, glob)) == 0)
     {
-        if (de->e.entry.first_cluster_hi == (cluster >> 16)
-            && de->e.entry.first_cluster_lo == (cluster & 0xffff))
+        if (FIRST_FILE_CLUSTER(de) == cluster)
         {
             D(bug("[fat] matched starting cluster at entry %ld, returning\n",
                 dh->cur_index));
@@ -284,8 +282,13 @@ LONG GetDirEntryByName(struct DirHandle *dh, STRPTR name, ULONG namelen,
         }
 
         /* No match, extract the long name and compare with that instead */
-        GetDirEntryLongNameFrom(&lfn_dh, de, buf, &buflen);
-        if (namelen == buflen
+        err = GetDirEntryLongNameFrom(&lfn_dh, de, buf, &buflen);
+        if (err != 0 && err != ERROR_OBJECT_NOT_FOUND)
+        {
+            ReleaseDirHandle(&lfn_dh, glob);
+            return err;
+        }
+        if (err == 0 && namelen == buflen
             && strnicmp((char *)name, (char *)buf, buflen) == 0)
         {
             D(bug("[fat] matched long name '%s' at entry %ld, returning\n",
@@ -373,7 +376,7 @@ LONG GetDirEntryByPath(struct DirHandle *dh, STRPTR path, ULONG pathlen,
         else
         {
             if ((err = GetDirEntryByName(dh, path, len, de, glob)) != 0)
-                return ERROR_OBJECT_NOT_FOUND;
+                return err;
         }
 
         /* Move up the buffer */
@@ -494,10 +497,14 @@ LONG AllocDirEntry(struct DirHandle *dh, ULONG gap, struct DirEntry *de,
             last = de->index + nwant;
             do
             {
-                if (GetDirEntry(dh, de->index + 1, de, glob) != 0)
+                err = GetDirEntry(dh, de->index + 1, de, glob);
+                if (err == ERROR_OBJECT_NOT_FOUND)
                     clusteradded = TRUE;
+                else if (err != 0)
+                    return err;
                 de->e.entry.name[0] = 0x00;
-                UpdateDirEntry(de, glob);
+                if ((err = UpdateDirEntry(de, glob)) != 0)
+                    return err;
             }
             while (de->index != last);
 
@@ -505,14 +512,20 @@ LONG AllocDirEntry(struct DirHandle *dh, ULONG gap, struct DirEntry *de,
 
             /* Clear all remaining entries in any new cluster added */
             if (clusteradded)
-                while (GetDirEntry(dh, de->index + 1, de, glob) == 0)
+            {
+                while ((err = GetDirEntry(dh, de->index + 1, de, glob)) == 0)
                 {
                     SetMem(&de->e.entry, 0, sizeof(struct FATDirEntry));
-                    UpdateDirEntry(de, glob);
+                    if ((err = UpdateDirEntry(de, glob)) != 0)
+                        return err;
                 }
+                if (err != ERROR_OBJECT_NOT_FOUND)
+                    return err;
+            }
 
             /* Get the previous entry; this is the base (short name) entry */
-            GetDirEntry(dh, last - 1, de, glob);
+            if ((err = GetDirEntry(dh, last - 1, de, glob)) != 0)
+                return err;
 
             break;
         }
@@ -586,8 +599,8 @@ void FillDirEntry(struct DirEntry *de, UBYTE attr, ULONG cluster,
     de->e.entry.create_time_tenth = ds.ds_Tick % (TICKS_PER_SECOND * 2)
         / (TICKS_PER_SECOND / 10);
 
-    de->e.entry.first_cluster_lo = cluster & 0xffff;
-    de->e.entry.first_cluster_hi = cluster >> 16;
+    de->e.entry.first_cluster_lo = AROS_WORD2LE(cluster & 0xffff);
+    de->e.entry.first_cluster_hi = AROS_WORD2LE(cluster >> 16);
 
     de->e.entry.file_size = 0;
 }
@@ -595,47 +608,36 @@ void FillDirEntry(struct DirEntry *de, UBYTE attr, ULONG cluster,
 LONG DeleteDirEntry(struct DirEntry *de, struct Globals *glob)
 {
     struct DirHandle dh;
+    struct DirEntry short_entry = *de;
     UBYTE checksum;
-    ULONG order;
-    LONG err;
+    ULONG order = 1;
+    LONG err = 0;
 
     InitDirHandle(glob->sb, de->cluster, &dh, FALSE, glob);
-
-    /* Calculate the short name checksum before we trample on the name */
     CALC_SHORT_NAME_CHECKSUM(de->e.entry.name, checksum);
-
-    D(bug("[fat] short name checksum is 0x%02x\n", checksum));
-
-    /* Mark the short entry free */
-    de->e.entry.name[0] = 0xe5;
-    UpdateDirEntry(de, glob);
-
-    D(bug("[fat] deleted short name entry\n"));
-
-    /* Now we loop over the previous entries, looking for matching long name
-     * entries and killing them */
-    order = 1;
-    while ((err = GetDirEntry(&dh, de->index - 1, de, glob)) == 0)
+    /* Leave the data-owning short entry present if long-name cleanup fails. */
+    while (de->index != 0)
     {
-
-        /* See if this is a matching long name entry. If it's not, we're done */
-        if (!((de->e.entry.attr & ATTR_LONG_NAME_MASK) == ATTR_LONG_NAME) ||
+        err = GetDirEntry(&dh, de->index - 1, de, glob);
+        if (err != 0)
+            break;
+        if ((de->e.entry.attr & ATTR_LONG_NAME_MASK) != ATTR_LONG_NAME ||
             (de->e.long_entry.order & ~0x40) != order ||
             de->e.long_entry.checksum != checksum)
-
             break;
-
-        /* Kill it */
         de->e.entry.name[0] = 0xe5;
-        UpdateDirEntry(de, glob);
-
+        err = UpdateDirEntry(de, glob);
+        if (err != 0)
+            break;
         order++;
     }
-
-    D(bug("[fat] deleted %ld long name entries\n", order - 1));
-
+    if (err == 0)
+    {
+        short_entry.e.entry.name[0] = 0xe5;
+        err = UpdateDirEntry(&short_entry, glob);
+    }
+    *de = short_entry;
     ReleaseDirHandle(&dh, glob);
-
     return err;
 }
 

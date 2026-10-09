@@ -158,7 +158,7 @@ $(NAK_HOSTDIR)/libsyn.rlib : $(NAK_HOSTDIR)/libquote.rlib
 	    --extern proc_macro2=$(NAK_HOSTDIR)/libproc_macro2.rlib -o $@ \
 	    $(NAK_CRATESDIR)/$(CRATE_SYN)/src/lib.rs
 
-$(NAK_HOSTDIR)/libpaste.so : $(NAK_CRATESDIR)/$(CRATE_PASTE)/src/lib.rs
+$(NAK_HOSTDIR)/libpaste.$(RUST_HOST_DYLIB_EXT) : $(NAK_CRATESDIR)/$(CRATE_PASTE)/src/lib.rs
 	%mkdir_q dir="$(NAK_HOSTDIR)"
 	$(Q)$(ECHO) "Compiling  rust proc-macro crate paste (host)"
 	+$(Q)$(NAK_RUSTC_HOST) --edition 2018 --crate-type proc-macro --crate-name paste -o $@ \
@@ -171,7 +171,7 @@ $(NAK_HOSTDIR)/libcompiler_proc.rlib : $(NAK_HOSTDIR)/libsyn.rlib $(top_srcdir)/
 	    --extern proc_macro2=$(NAK_HOSTDIR)/libproc_macro2.rlib -o $@ \
 	    $(top_srcdir)/src/compiler/rust/proc/lib.rs
 
-$(NAK_HOSTDIR)/libnak_ir_proc.so : $(NAK_HOSTDIR)/libcompiler_proc.rlib $(NAK_SRCDIR)/nak/ir_proc.rs
+$(NAK_HOSTDIR)/libnak_ir_proc.$(RUST_HOST_DYLIB_EXT) : $(NAK_HOSTDIR)/libcompiler_proc.rlib $(NAK_SRCDIR)/nak/ir_proc.rs
 	$(Q)$(ECHO) "Compiling  rust proc-macro crate nak_ir_proc (host)"
 	+$(Q)$(NAK_RUSTC_HOST) --edition 2021 --crate-type proc-macro --crate-name nak_ir_proc \
 	    --extern compiler_proc=$(NAK_HOSTDIR)/libcompiler_proc.rlib --extern syn=$(NAK_HOSTDIR)/libsyn.rlib \
@@ -221,7 +221,7 @@ NVH_RS_GENDIR := $(NAK_GENDIR)/nvidia-headers-rs
 
 $(NVH_RS_GENDIR)/lib.rs : $(SRCDIR)/$(CURDIR)/gen-nvidia-headers-rs.sh $(NAK_HDRDIR)/meson.build
 	$(Q)$(ECHO) "Generating rust nvidia_headers crate"
-	$(Q)$(SRCDIR)/$(CURDIR)/gen-nvidia-headers-rs.sh $(NAK_HDRDIR) $(NVH_RS_GENDIR) "$(PYTHON)" \
+	$(Q)$(SHELL) $(SRCDIR)/$(CURDIR)/gen-nvidia-headers-rs.sh $(NAK_HDRDIR) $(NVH_RS_GENDIR) "$(PYTHON)" \
 	    "$(NAK_BINDGEN) $(NAK_BINDGEN_OUTPUT_ARGS)" -- $(NAK_BINDGEN_CLANG_ARGS)
 
 $(NAK_TGTDIR)/libnvidia_headers.rlib : $(NVH_RS_GENDIR)/lib.rs
@@ -289,11 +289,11 @@ $(NAK_TGTDIR)/libnil_rs_bindings.rlib : $(NIL_GENDIR)/nil_bindings.rs
 	$(Q)$(ECHO) "Compiling  rust crate nil_rs_bindings"
 	+$(Q)$(NAK_RUSTC_TGT) --edition 2021 --crate-type rlib --crate-name nil_rs_bindings -o $@ $<
 
-$(NAK_TGTDIR)/libnil_rs.a : $(wildcard $(NIL_SRCDIR)/*.rs) $(NAK_HOSTDIR)/libpaste.so \
+$(NAK_TGTDIR)/libnil_rs.a : $(wildcard $(NIL_SRCDIR)/*.rs) $(NAK_HOSTDIR)/libpaste.$(RUST_HOST_DYLIB_EXT) \
         $(NAK_TGTDIR)/libbitview.rlib $(NAK_TGTDIR)/libnvidia_headers.rlib $(NAK_TGTDIR)/libnil_rs_bindings.rlib
 	$(Q)$(ECHO) "Compiling  rust crate nil (staticlib)"
 	+$(Q)$(NAK_RUSTC_TGT) --edition 2021 --crate-type staticlib --crate-name nil -A non_snake_case \
-	    --extern paste=$(NAK_HOSTDIR)/libpaste.so --extern bitview=$(NAK_TGTDIR)/libbitview.rlib \
+	    --extern paste=$(NAK_HOSTDIR)/libpaste.$(RUST_HOST_DYLIB_EXT) --extern bitview=$(NAK_TGTDIR)/libbitview.rlib \
 	    --extern nvidia_headers=$(NAK_TGTDIR)/libnvidia_headers.rlib \
 	    --extern nil_rs_bindings=$(NAK_TGTDIR)/libnil_rs_bindings.rlib \
 	    -o $@ $(NIL_SRCDIR)/lib.rs
@@ -322,12 +322,12 @@ mesa3d-nil-generate-c : $(NIL_GENDIR)/nil_format_table.c $(NIL_GENDIR)/nil.h
 
 # NAK itself, as a C-ABI static library
 $(NAK_TGTDIR)/libnak_rs.a : $(wildcard $(NAK_SRCDIR)/nak/*.rs) \
-        $(NAK_HOSTDIR)/libpaste.so $(NAK_HOSTDIR)/libnak_ir_proc.so \
+        $(NAK_HOSTDIR)/libpaste.$(RUST_HOST_DYLIB_EXT) $(NAK_HOSTDIR)/libnak_ir_proc.$(RUST_HOST_DYLIB_EXT) \
         $(NAK_TGTDIR)/librustc_hash.rlib $(NAK_TGTDIR)/libbitview.rlib $(NAK_TGTDIR)/libcompiler.rlib \
         $(NAK_TGTDIR)/libnvidia_headers.rlib $(NAK_TGTDIR)/libnak_bindings.rlib $(NAK_TGTDIR)/libnak_latencies.rlib
 	$(Q)$(ECHO) "Compiling  rust crate nak (staticlib)"
 	+$(Q)$(NAK_RUSTC_TGT) --edition 2021 --crate-type staticlib --crate-name nak -A non_snake_case \
-	    --extern paste=$(NAK_HOSTDIR)/libpaste.so --extern nak_ir_proc=$(NAK_HOSTDIR)/libnak_ir_proc.so \
+	    --extern paste=$(NAK_HOSTDIR)/libpaste.$(RUST_HOST_DYLIB_EXT) --extern nak_ir_proc=$(NAK_HOSTDIR)/libnak_ir_proc.$(RUST_HOST_DYLIB_EXT) \
 	    --extern rustc_hash=$(NAK_TGTDIR)/librustc_hash.rlib --extern bitview=$(NAK_TGTDIR)/libbitview.rlib \
 	    --extern compiler=$(NAK_TGTDIR)/libcompiler.rlib --extern nvidia_headers=$(NAK_TGTDIR)/libnvidia_headers.rlib \
 	    --extern nak_bindings=$(NAK_TGTDIR)/libnak_bindings.rlib --extern nak_latencies=$(NAK_TGTDIR)/libnak_latencies.rlib \
