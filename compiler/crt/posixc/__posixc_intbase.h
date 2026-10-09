@@ -111,6 +111,14 @@ struct PosixCIntBase
     /* set(e)gid.c/get(e)gid.c */
     gid_t gid; /* Real group id of process */
     gid_t egid; /* Effective group id of process */
+
+    /* __upath.c, at the end to keep the offsets above: a program linked
+       against the global PosixCBase shares it with its pthreads; those Tasks
+       convert into their own buffers (upath_others), upathbuf stays with the
+       Task that opened the base. */
+    struct Task *upath_task;
+    struct MinList upath_others;
+    struct SignalSemaphore upath_sem;
 };
 
 /* flags; values of flags are power of two so they can be ORed together */
@@ -126,5 +134,8 @@ struct PosixCIntBase
    execution of child code, even though that it's actually executed by parent
    process until execve() is called. */
 #define PRETEND_CHILD 0x00000004
+
+/* __upath.c: frees the path buffers of other Tasks (upath_others) */
+void __upath_free_others(struct PosixCIntBase *PosixCBase);
 
 #endif //__POSIXC_INTBASE_H
