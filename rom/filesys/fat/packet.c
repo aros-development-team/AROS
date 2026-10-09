@@ -29,6 +29,25 @@
 #define DEBUG DEBUG_PACKETS
 #include "debug.h"
 
+/*
+ * A lock the client already freed (a second UnLock() or Close()): FreeLock()
+ * clears the magic, so refuse it instead of freeing it again, and name the
+ * sender so the bug can be found.
+ */
+static BOOL FreedLock(struct ExtFileLock *fl, struct DosPacket *pkt,
+    struct Globals *glob)
+{
+    struct Task *sender;
+
+    if (fl == NULL || fl->magic == ID_FAT_DISK)
+        return FALSE;
+
+    sender = pkt->dp_Port != NULL ? pkt->dp_Port->mp_SigTask : NULL;
+    bug("[fat] packet %ld with a freed lock %p from '%s'\n", (long)pkt->dp_Type,
+        fl, sender != NULL && sender->tc_Node.ln_Name != NULL ? sender->tc_Node.ln_Name : "?");
+    return TRUE;
+}
+
 void ProcessPackets(struct Globals *glob)
 {
     struct Message *msg;
@@ -77,6 +96,12 @@ void ProcessPackets(struct Globals *glob)
                     pkt->dp_Arg1,
                     fl != NULL ? fl->gl->dir_cluster : 0,
                     fl != NULL ? fl->gl->dir_entry : 0));
+
+                if (FreedLock(fl, pkt, glob))
+                {
+                    err = ERROR_INVALID_LOCK;
+                    break;
+                }
 
                 OpUnlockFile(fl, glob);
 
@@ -379,6 +404,12 @@ void ProcessPackets(struct Globals *glob)
                     pkt->dp_Arg1,
                     fl != NULL ? fl->gl->dir_cluster : 0,
                     fl != NULL ? fl->gl->dir_entry : 0));
+
+                if (FreedLock(fl, pkt, glob))
+                {
+                    err = ERROR_INVALID_LOCK;
+                    break;
+                }
 
                 if ((err = TestLock(fl, glob)))
                     break;
