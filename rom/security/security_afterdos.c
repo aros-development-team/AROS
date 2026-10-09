@@ -19,6 +19,7 @@
 #include "security_intern.h"
 #include "security_task.h"
 #include "security_server.h"
+#include "security_auth.h"
 #include "security_memory.h"
 
 #include LC_LIBDEFS_FILE
@@ -69,6 +70,17 @@ BOOL Security_AfterDOS(struct SecurityBase *secBase)
     }
 
     D(bug(DEBUG_NAME_STR " %s: server running\n", __func__);)
+
+    /* The authentication process: answers secVerifyUserA() so that the
+     * server is never on the path of a (possibly network-driven) login */
+    if (CreateAuthServer(secBase))
+    {
+        SetTaskExtOwner(secBase, (struct Task *)secBase->Auth, &RootExtOwner);
+        if (!StartAuthServer(secBase))
+        {
+            D(bug(DEBUG_NAME_STR " %s: failed to start the authentication process\n", __func__);)
+        }
+    }
 
     return TRUE;
 }

@@ -1,7 +1,7 @@
 /*
  * ntfs.handler - New Technology FileSystem handler
  *
- * Copyright (C) 2012 The AROS Development Team
+ * Copyright (C) 2012-2026 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -156,7 +156,7 @@ struct MFTAttr {
 	struct {
 	    UQUAD lowest_vcn;
 	    UQUAD highest_vcn;
-	    UQUAD mapping_pairs_offset;
+	    UWORD mapping_pairs_offset;
 	    UBYTE compression_unit;
 	    UBYTE reserved[5];
 	    UQUAD allocated_size;

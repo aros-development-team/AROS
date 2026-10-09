@@ -10981,7 +10981,6 @@ printf '%s\n' "$darwin_sdk_path" >&6; }
                 aros_macosx_version="11.0"
                                                 aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_OMIT_FP) -D__arm64__"
                 aros_config_cxxflags="$aros_config_cxxflags $""(CFLAGS_NO_OMIT_FP) -D__arm64__"
-                                                                                aros_config_ldflags="$aros_config_ldflags -lstdc.static"
                 default_llvm_version="20.1.0"
                 aros_kernel_isa_flags="-arch arm64"
                 aros_kernel_ldflags="-arch arm64"

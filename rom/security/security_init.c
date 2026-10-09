@@ -57,6 +57,7 @@ static int Security_Init(LIBBASETYPEPTR secBase)
     InitSemaphore(&secBase->VolumesSem);
     InitSemaphore(&secBase->MonitorSem);
     InitSemaphore(&secBase->PluginModuleSem);
+    InitSemaphore(&secBase->LogSem);
 
     NEWLIST((struct List *)&secBase->PluginModuleList);
     NEWLIST((struct List *)&secBase->NativeVolumes);

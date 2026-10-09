@@ -1633,6 +1633,7 @@ static struct BtServiceRecord *bAddGattRecord(LIBBASETYPEPTR BluetoothBase, stru
     ULONG num = GetTagData(BSRA_NumCharacteristics, 0, tags);
     STRPTR name = (STRPTR) GetTagData(BSRA_Name, 0, tags);
     STRPTR owner = (STRPTR) GetTagData(BSRA_Owner, 0, tags);
+    ULONG interval = GetTagData(BSRA_LEConnInterval, 0, tags);
     ULONG n;
 
     if((!uuid16 && !uuid128) || (num && !defs) || (num > 64)) {
@@ -1661,6 +1662,7 @@ static struct BtServiceRecord *bAddGattRecord(LIBBASETYPEPTR BluetoothBase, stru
     }
     bsr->bsr_Owner = owner ? btCopyStr(owner) : NULL;
     bsr->bsr_NumChars = num;
+    bsr->bsr_LEConnInterval = (interval >= 1200) ? 1199 : interval;
     if(num) {
         if(!(bsr->bsr_Chars = btAllocVec(num * sizeof(struct BtGattChar)))) {
             bFreeServiceRecord(BluetoothBase, bsr);
@@ -1709,6 +1711,29 @@ static struct BtServiceRecord *bAddGattRecord(LIBBASETYPEPTR BluetoothBase, stru
     return(bsr);
 }
 /* \\\ */
+
+/* Cache the shortest interval requested by an enabled GATT service. */
+void bUpdateLEConnInterval(LIBBASETYPEPTR BluetoothBase)
+{
+    struct BtServiceRecord *bsr;
+    ULONG interval = BluetoothBase->bt_LEConnInterval;
+
+    btLockReadBase();
+    for(bsr = (struct BtServiceRecord *) BluetoothBase->bt_ServiceRecords.lh_Head;
+        bsr->bsr_Node.ln_Succ; bsr = (struct BtServiceRecord *) bsr->bsr_Node.ln_Succ) {
+        if(bsr->bsr_Enabled && (bsr->bsr_Protocol == BSVP_ATT) &&
+           bsr->bsr_LEConnInterval &&
+           (!interval || (bsr->bsr_LEConnInterval < interval))) {
+            interval = bsr->bsr_LEConnInterval;
+        }
+    }
+    /* only a change is worth a new request on every peripheral link */
+    if(BluetoothBase->bt_LEServiceInterval != interval) {
+        BluetoothBase->bt_LEServiceInterval = interval;
+        BluetoothBase->bt_LEConnSeq++;
+    }
+    btUnlockBase();
+}
 
 /* /// "btAddServiceRecordA()" */
 /*
@@ -1828,13 +1853,27 @@ AROS_LH1(void, btRemServiceRecord,
 {
     AROS_LIBFUNC_INIT
     struct BtServiceRecord *bsr = record;
+    struct BtGattNotification *bgn, *next;
     if(!bsr) {
         return;
     }
     /* the radio tasks only look at the records with the base locked */
     btLockWriteBase();
     Remove(&bsr->bsr_Node);
+    ObtainSemaphore(&BluetoothBase->bt_GattLock);
+    bgn = (struct BtGattNotification *) BluetoothBase->bt_GattNotifications.lh_Head;
+    while(bgn->bgn_Node.ln_Succ) {
+        next = (struct BtGattNotification *) bgn->bgn_Node.ln_Succ;
+        if(bgn->bgn_Record == bsr) {
+            Remove(&bgn->bgn_Node);
+            BluetoothBase->bt_GattNotificationCount--;
+            btFreeVec(bgn);
+        }
+        bgn = next;
+    }
+    ReleaseSemaphore(&BluetoothBase->bt_GattLock);
     btUnlockBase();
+    bUpdateLEConnInterval(BluetoothBase);
     BluetoothBase->bt_LEAdvSeq++;
     BluetoothBase->bt_EIRSeq++;
     bServiceRecordEvent(BluetoothBase, bsr, FALSE);
@@ -1859,6 +1898,9 @@ AROS_LH4(LONG, btSetServiceValue,
     AROS_LIBFUNC_INIT
     struct BtServiceRecord *bsr = record;
     struct BtGattChar *bgc;
+    struct BtGattNotification *bgn = NULL;
+    struct BtHardware *bth;
+    ULONG seq;
 
     if(!bsr || (bsr->bsr_Protocol != BSVP_ATT) || (index >= bsr->bsr_NumChars) || (len && !data)) {
         return(-1);
@@ -1867,13 +1909,51 @@ AROS_LH4(LONG, btSetServiceValue,
     if(len > bgc->bgc_MaxLen) {
         return(-1);
     }
-    Forbid();
+    if(bgc->bgc_Properties & (BGDP_NOTIFY|BGDP_INDICATE)) {
+        if(!(bgn = btAllocVec(sizeof(struct BtGattNotification) + len))) {
+            return(-1);
+        }
+        bgn->bgn_Record = bsr;
+        bgn->bgn_Index = index;
+        bgn->bgn_Length = len;
+        if(len) {
+            CopyMem(data, bgn->bgn_Data, len);
+        }
+    }
+    /* what every radio has sent (or none is left to send) goes first */
+    bGattSrvCollect(BluetoothBase);
+    ObtainSemaphore(&BluetoothBase->bt_GattLock);
+    if(bgn && !bgc->bgc_Subscribers) {
+        /* nobody follows this value: there is nothing to send */
+        btFreeVec(bgn);
+        bgn = NULL;
+    }
+    if(bgn && (BluetoothBase->bt_GattNotificationCount >= 256)) {
+        ReleaseSemaphore(&BluetoothBase->bt_GattLock);
+        btFreeVec(bgn);
+        return(-1);             /* explicit backpressure: no silent data loss */
+    }
     if(len) {
         CopyMem(data, bgc->bgc_Value, len);
     }
     bgc->bgc_Len = len;
-    bgc->bgc_Seq = ++BluetoothBase->bt_GattSeq;
-    Permit();
+    seq = ++BluetoothBase->bt_GattSeq;
+    bgc->bgc_Seq = seq;
+    if(bgn) {
+        bgn->bgn_Seq = seq;
+        AddTail(&BluetoothBase->bt_GattNotifications, &bgn->bgn_Node);
+        BluetoothBase->bt_GattNotificationCount++;
+    }
+    ReleaseSemaphore(&BluetoothBase->bt_GattLock);
+
+    /* Do not quantise notifications to the radio's 100 ms maintenance tick. */
+    btLockReadBase();
+    for(bth = (struct BtHardware *) BluetoothBase->bt_Hardware.lh_Head;
+        bth->bth_Node.ln_Succ; bth = (struct BtHardware *) bth->bth_Node.ln_Succ) {
+        if(bth->bth_Task)
+            Signal(bth->bth_Task, SIGBREAKF_CTRL_E);
+    }
+    btUnlockBase();
     return((LONG) len);
     AROS_LIBFUNC_EXIT
 }
@@ -1898,12 +1978,12 @@ AROS_LH4(LONG, btGetServiceValue,
         return(-1);
     }
     bgc = &bsr->bsr_Chars[index];
-    Forbid();
+    ObtainSemaphore(&BluetoothBase->bt_GattLock);
     actual = bgc->bgc_Len;
     if(buf && len && actual) {
         CopyMem(bgc->bgc_Value, buf, min((ULONG) actual, len));
     }
-    Permit();
+    ReleaseSemaphore(&BluetoothBase->bt_GattLock);
     return(actual);
     AROS_LIBFUNC_EXIT
 }

@@ -6,6 +6,8 @@
 #include <aros/debug.h>
 #include <graphics/view.h>
 #include <graphics/sprite.h>
+#include <graphics/monitor.h>
+#include <proto/exec.h>
 #include <oop/oop.h>
 
 #include "graphics_intern.h"
@@ -60,7 +62,7 @@
     INTERNALS
 
     HISTORY
-
+        08-Oct-26 Resolve unbuilt raw ViewPorts to the native chipset display.
 
 ******************************************************************************/
 {
@@ -68,11 +70,76 @@
 
     OOP_Object *gfxhidd = NULL;
     OOP_Object *display = NULL;
+    struct gfxdisplay_data *mdd = NULL;
 
-    if (vp) {
-        struct gfxdisplay_data *mdd = GET_BM_DRIVERDATA(vp->RasInfo->BitMap);
+    if (!sprite || sprite->num > 7)
+        return;
+
+    if (vp)
+    {
+        mdd = GET_VP_DRIVERDATA(vp);
         sprite->x = x + vp->DxOffset;
         sprite->y = y + vp->DyOffset;
+    }
+    else
+    {
+        sprite->x = x;
+        sprite->y = y;
+        mdd = &CDD(GfxBase)->mdisplay;
+    }
+
+    /* Before MakeVPort(), a raw bitmap has no associated display.
+     * Like a NULL ViewPort, it refers to the native chipset. The common
+     * software renderer does not implement Amiga sprites. */
+    if (mdd == &CDD(GfxBase)->mdisplay)
+    {
+        for (mdd = CDD(GfxBase)->mdisplay.display_next; mdd; mdd = mdd->display_next)
+            if (mdd->display_flags & DF_ExternalPlanar)
+                break;
+    }
+
+    if (!mdd)
+        return;
+
+    /* SimpleSprite buffers are live DMA streams, sometimes containing
+     * several chained images. Keep the caller's memory rather than turning
+     * it into a copied cursor shape. Extended sprites use the HIDD path. */
+    if (mdd && (mdd->display_flags & DF_ExternalPlanar) &&
+        !(GfxBase->ExtSprites & (1 << sprite->num)) &&
+        sprite->posctldata &&
+        (GfxBase->SpriteReserved & (1 << sprite->num)))
+    {
+        UWORD *data = sprite->posctldata;
+        struct View *view = GfxBase->ActiView;
+        WORD xpos = sprite->x, ypos = sprite->y;
+        UWORD stop;
+
+        if (!data || !GfxBase->SimpleSprites ||
+            !(GfxBase->SpriteReserved & (1 << sprite->num)))
+            return;
+        if (vp)
+        {
+            if (vp->Modes & SUPERHIRES)
+                xpos >>= 2;
+            else if (vp->Modes & HIRES)
+                xpos >>= 1;
+            if (vp->Modes & LACE)
+                ypos >>= 1;
+        }
+        xpos += STANDARD_VIEW_X + (view ? view->DxOffset : 0);
+        ypos += STANDARD_VIEW_Y + (view ? view->DyOffset : 0);
+        stop = ypos + sprite->height;
+        Disable();
+        data[0] = (ypos << 8) | ((xpos >> 1) & 0xff);
+        data[1] = (stop << 8) | (data[1] & SPRITE_ATTACHED) |
+                  ((ypos & 0x100) >> 6) | ((stop & 0x100) >> 7) |
+                  (xpos & 1);
+        GfxBase->SimpleSprites[sprite->num] = sprite;
+        Enable();
+        return;
+    }
+
+    if (vp) {
         gfxhidd = mdd->display_gfxhidd;
         display = mdd->display_obj;
     } else {

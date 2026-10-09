@@ -65,6 +65,13 @@
 #define BSA_LEAdvertising    (BSA_Dummy + 0x70) /* BOOL (settable): advertise on the LE radios, so that LE
                                                    devices can find this machine, connect to it and use
                                                    the enabled GATT services */
+#define BSA_LENotifyPayload  (BSA_Dummy + 0x73) /* ULONG: the largest value a notification
+                                                   carries whole to every connected LE device
+                                                   (ATT MTU - 3, at least 20) */
+#define BSA_LEConnInterval   (BSA_Dummy + 0x72) /* ULONG (settable, 0..1199): when this machine is the LE peripheral,
+                                                   the connection interval to ask the central for, in
+                                                   1.25 ms units (12 = 15 ms, what BLE MIDI wants);
+                                                   0 leaves it to the central */
 
 /* Tags for btGetAttrs(BGA_BTCLASS,...) */
 #define BCA_Dummy            (BT_TAGBASE + 0x100)
@@ -320,6 +327,9 @@
 #define BENA_EventID         (BENA_Dummy + 0x01) /* ULONG BEHMB_xxx */
 #define BENA_Param1          (BENA_Dummy + 0x02) /* APTR */
 #define BENA_Param2          (BENA_Dummy + 0x03) /* APTR */
+#define BENA_Data            (BENA_Dummy + 0x04) /* APTR event-owned data, valid until ReplyMsg() */
+#define BENA_DataLength      (BENA_Dummy + 0x05) /* ULONG bytes at BENA_Data */
+#define BENA_Device          (BENA_Dummy + 0x06) /* APTR bd behind the event, or NULL */
 
 /* Tags for btGetAttrs(BGA_STACKCFG,...) */
 #define BGCA_Dummy           (BT_TAGBASE + 0xa00)
@@ -369,6 +379,7 @@
 #define BSRA_NumCharacteristics (BSRA_Dummy + 0x0a) /* ULONG entries in that array */
 /* for every kind of record */
 #define BSRA_Owner           (BSRA_Dummy + 0x0b) /* STRPTR who offers the service (default: the name of the calling task) */
+#define BSRA_LEConnInterval  (BSRA_Dummy + 0x0c) /* ULONG 1.25 ms units (0..1199): preferred while this GATT service is enabled */
 /* btGetAttrs(BGA_SERVICERECORD): the above (not BSRA_Characteristics) and */
 #define BSRA_Enabled         (BSRA_Dummy + 0x10) /* BOOL (settable): offered to connecting devices */
 #define BSRA_FirstHandle     (BSRA_Dummy + 0x11) /* ULONG first attribute handle (BSVP_ATT) */
@@ -390,6 +401,9 @@ struct BtGattCharDef
 #define BGDP_WRITE    0x08 /* devices may write it */
 #define BGDP_NOTIFY   0x10 /* devices may subscribe to changes */
 #define BGDP_INDICATE 0x20 /* the same, acknowledged */
+#define BGDP_STREAM   0x8000 /* not sent to devices: the value is a stream of events
+                                (BLE MIDI); a read returns no data, while writes and
+                                notifications are delivered as usual */
 
 #define BGATT_MAXVALUE 512
 
@@ -481,7 +495,7 @@ struct BtGattCharDef
 #define BEHMB_SERVICEGONE     0x18 /* Param1 = bsv (an incoming service whose connection closed; released and freed by the stack) */
 #define BEHMB_ADDSERVICEREC   0x19 /* Param1 = service record */
 #define BEHMB_REMSERVICEREC   0x1a /* Param1 = service record (already gone: only good for comparing) */
-#define BEHMB_SERVICEWRITE    0x1b /* Param1 = service record, Param2 = (IPTR) index of the characteristic a device wrote */
+#define BEHMB_SERVICEWRITE    0x1b /* Param1 = service record, Param2 = characteristic index, Data = value written, Device = writer */
 
 #define BEHMF_ADDHARDWARE     (1L<<BEHMB_ADDHARDWARE)
 #define BEHMF_REMHARDWARE     (1L<<BEHMB_REMHARDWARE)

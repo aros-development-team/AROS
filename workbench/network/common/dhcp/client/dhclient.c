@@ -6344,7 +6344,9 @@ dhclient_ddns_cb_free(dhcp_ddns_cb_t *ddns_cb, char* file, int line) {
  * \return a result for I/O success or error (used by the I/O subsystem)
  */
 isc_result_t dhcpv4o6_handler(omapi_object_t *h) {
-	char buf[65536];
+	char *buf;
+	const unsigned buf_sz = 65536;
+	isc_result_t status = ISC_R_SUCCESS;
 	char start_msg[5] = { 'S', 'T', 'A', 'R', 'T' };
 	char stop_msg[4] = { 'S', 'T', 'O', 'P' };
 	char poll_msg[4] = { 'P', 'O', 'L', 'L' };
@@ -6354,9 +6356,16 @@ isc_result_t dhcpv4o6_handler(omapi_object_t *h) {
 	if (h->type != dhcp4o6_type)
 		return DHCP_R_INVALIDARG;
 
-	cc = recv(dhcp4o6_fd, buf, sizeof(buf), 0);
+	/* AROS: 64K packet buffer off the stack (small default proc stack). */
+	buf = dmalloc(buf_sz, MDL);
+	if (buf == NULL) {
+		log_error("dhcpv4o6_handler: no memory for packet buffer");
+		return ISC_R_NOMEMORY;
+	}
+
+	cc = recv(dhcp4o6_fd, buf, buf_sz, 0);
 	if (cc <= 0)
-		return ISC_R_UNEXPECTED;
+		{ status = ISC_R_UNEXPECTED; goto cleanup; }
 
 	if (local_family == AF_INET6) {
 		if ((cc == 4) &&
@@ -6370,16 +6379,16 @@ isc_result_t dhcpv4o6_handler(omapi_object_t *h) {
 					  sizeof(start_msg), 0);
 			if (cc < 0) {
 				log_error("dhcpv4o6_handler: send(): %m");
-				return ISC_R_IOERROR;
+				{ status = ISC_R_IOERROR; goto cleanup; }
 			}
 		} else {
 			if (cc < DHCP_FIXED_NON_UDP + 8)
-				return ISC_R_UNEXPECTED;
+				{ status = ISC_R_UNEXPECTED; goto cleanup; }
 			memset(&raw, 0, sizeof(raw));
 			if (!buffer_allocate(&raw.buffer, cc, MDL)) {
 				log_error("dhcpv4o6_handler: "
 					  "no memory buffer.");
-				return ISC_R_NOMEMORY;
+				{ status = ISC_R_NOMEMORY; goto cleanup; }
 			}
 			raw.data = raw.buffer->data;
 			raw.len = cc;
@@ -6406,12 +6415,12 @@ isc_result_t dhcpv4o6_handler(omapi_object_t *h) {
 			dhcp4o6_resume();
 		} else {
 			if (cc < DHCP_FIXED_NON_UDP + 16)
-				return ISC_R_UNEXPECTED;
+				{ status = ISC_R_UNEXPECTED; goto cleanup; }
 			memset(&raw, 0, sizeof(raw));
 			if (!buffer_allocate(&raw.buffer, cc, MDL)) {
 				log_error("dhcpv4o6_handler: "
 					  "no memory buffer.");
-				return ISC_R_NOMEMORY;
+				{ status = ISC_R_NOMEMORY; goto cleanup; }
 			}
 			raw.data = raw.buffer->data;
 			raw.len = cc;
@@ -6423,7 +6432,9 @@ isc_result_t dhcpv4o6_handler(omapi_object_t *h) {
 		}
 	}
 
-	return ISC_R_SUCCESS;
+ cleanup:
+	dfree(buf, MDL);
+	return status;
 }
 
 /*

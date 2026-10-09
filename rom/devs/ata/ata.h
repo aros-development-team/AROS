@@ -291,7 +291,9 @@ struct DriveIdent {
    UWORD       id_SecurityStatus;      // 128
    UWORD       pad14[40];              // 129 - 168
    UWORD       id_DSManagement;        // 169
-   UWORD       pad15[86];              // 170 - 256
+   UWORD       pad15[47];              // 170 - 216
+   UWORD       id_NominalMediaRotationRate; // 217
+   UWORD       pad16[38];              // 218 - 255
 } __attribute__((packed));
 
 typedef struct

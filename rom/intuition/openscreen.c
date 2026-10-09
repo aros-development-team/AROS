@@ -1379,6 +1379,15 @@ static const char THIS_FILE[] = __FILE__;
            from withing LoadRGBxx() functions
         */
         D(bug("got allocated stuff\n"));
+        /* Classic custom screens draw through their embedded bitmap header.
+         * Keep the caller's original header intact, and select the same
+         * header for drawing and display before creating screen layers. */
+        if (!IS_HIDD_BM(screen->Screen.RastPort.BitMap))
+        {
+            CopyMem(screen->Screen.RastPort.BitMap,
+                &screen->Screen.BitMap_OBSOLETE, sizeof(struct BitMap));
+            screen->Screen.RastPort.BitMap = &screen->Screen.BitMap_OBSOLETE;
+        }
         screen->Screen.ViewPort.RasInfo->BitMap = screen->Screen.RastPort.BitMap;
     }
 
@@ -2408,9 +2417,11 @@ static const char THIS_FILE[] = __FILE__;
         screen = 0;
 
     } /* if (!ok) */
-    else if (screen->Screen.RastPort.BitMap)
+    else if (screen->Screen.RastPort.BitMap &&
+             screen->Screen.RastPort.BitMap != &screen->Screen.BitMap_OBSOLETE)
     {
-        /* Copy the BitMap's info for compatability with existing AmigaOS apps */
+        /* Managed bitmaps retain their drawing/display header and expose a
+         * legacy snapshot. Raw custom screens already use the embedded one. */
         CopyMem(screen->Screen.RastPort.BitMap, &screen->Screen.BitMap_OBSOLETE, sizeof(struct BitMap));
     }
 

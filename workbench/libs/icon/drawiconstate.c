@@ -172,7 +172,7 @@
         if (image->ARGBMap) {
             WritePixelArrayAlpha(image->ARGBMap, 0, 0, ni->ni_Width * sizeof(ULONG),
                                        rp, leftEdge, topEdge,
-                                       ni->ni_Width,  ni->ni_Height, 0);
+                                       ni->ni_Width,  ni->ni_Height, 0xFFFFFFFF);
             goto emboss;
         }
 

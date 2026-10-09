@@ -379,8 +379,14 @@ void eth_iotask(struct eth_base *ETHBase, struct eth_unit *unit)
 
     DeleteMsgPort(unit->write_queue);
 
+    /* wait for the closer's reply before freeing the message */
+    reply_port = CreateMsgPort();
     msg = (struct Message *) AllocVec(sizeof(struct Message), MEMF_PUBLIC | MEMF_CLEAR);
-    // FIXME: message may be freed before receiver gets it!
+    msg->mn_ReplyPort = reply_port;
+    msg->mn_Length = sizeof(struct Message);
     PutMsg(unit->iosyncport, msg);
+    WaitPort(reply_port);
+    GetMsg(reply_port);
     FreeVec(msg);
+    DeleteMsgPort(reply_port);
 }

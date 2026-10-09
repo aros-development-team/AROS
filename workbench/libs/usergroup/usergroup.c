@@ -216,6 +216,19 @@ static int UserGroup__Expunge(LIBBASETYPEPTR LIBBASE)
     return TRUE;
 }
 
+/*
+ * The base is per task: when a task's last CloseLibrary() happens, release
+ * what it opened on its behalf (netinfo.device unit, port, request), or the
+ * port's signal is lost with the task.
+ */
+static int UserGroup__Close(LIBBASETYPEPTR LIBBASE)
+{
+    D(bug("[UserGroup] %s()\n", __func__));
+
+    CleanupNIO((struct Library *)LIBBASE);
+    return TRUE;
+}
+
 static int UserGroup__Init(LIBBASETYPEPTR LIBBASE)
 {
     D(bug("[UserGroup] %s()\n", __func__));
@@ -240,6 +253,7 @@ static int UserGroup__Init(LIBBASETYPEPTR LIBBASE)
 
 ADD2INITLIB(UserGroup__Init, 0)
 ADD2EXPUNGELIB(UserGroup__Expunge, 0)
+ADD2CLOSELIB(UserGroup__Close, 0)
 #endif
 
 /*

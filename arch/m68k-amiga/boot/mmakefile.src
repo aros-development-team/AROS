@@ -84,6 +84,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     workbench-libs-nonvolatile-kobj \
 #MM     workbench-libs-nvdisk-kobj \
 #MM     workbench-libs-workbench-kobj \
+#MM     workbench-devs-ramdrive-kobj \
 #MM     linklibs-loadseg \
 #MM     compiler-stdc \
 #MM     compiler-stdcio \
@@ -184,7 +185,7 @@ KLIBS   :=  graphics layers intuition gadtools icon workbench \
             freeanim nonvolatile nvdisk \
             mathffp mathieeesingbas \
             setpatch lowlevel
-KDEVS   := cd cd32mpeg ata
+KDEVS   := cd cd32mpeg ata ramdrive
 KHNDLRS := cdrom
 KHIDDS  := bus storage system p96gfx
 KRSRCS  := battclock battmem potgo misc shellcommands workbook wbtag

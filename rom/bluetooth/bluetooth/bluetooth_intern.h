@@ -190,9 +190,15 @@ struct BtBase
     BOOL                bt_LEAdvertising; /* advertise on the LE radios */
     ULONG               bt_LEAdvSeq;      /* bumped when what is advertised changed */
     ULONG               bt_GattSeq;       /* bumped with every value set */
+    struct SignalSemaphore bt_GattLock;   /* values and notification queue */
+    struct List         bt_GattNotifications; /* queued value snapshots for subscribers */
+    ULONG               bt_GattNotificationCount;
     /* SDP server */
     BOOL                bt_EIRServices;   /* name and classic services in the extended inquiry response */
     ULONG               bt_EIRSeq;        /* bumped when what it would say changed */
+    ULONG               bt_LEConnInterval; /* BSA_LEConnInterval */
+    ULONG               bt_LEServiceInterval; /* enabled-service aggregate */
+    ULONG               bt_LEConnSeq;     /* bumped when it changed */
 };
 
 /* bt_Flags */
@@ -224,6 +230,7 @@ struct BtServiceRecord
     UWORD               bsr_FirstHandle;
     UWORD               bsr_LastHandle;
     UWORD               bsr_NumChars;
+    UWORD               bsr_LEConnInterval; /* preferred interval while enabled */
     struct BtGattChar  *bsr_Chars;
 };
 
@@ -234,8 +241,20 @@ struct BtGattChar
     UWORD               bgc_Properties;   /* BGDP_xxx */
     UWORD               bgc_MaxLen;
     UWORD               bgc_Len;
-    UBYTE              *bgc_Value;        /* bgc_MaxLen bytes; changed under Forbid() */
+    UBYTE              *bgc_Value;        /* bgc_MaxLen bytes; under bt_GattLock */
     ULONG               bgc_Seq;          /* bt_GattSeq of the last btSetServiceValue() */
+    UWORD               bgc_Subscribers;  /* links subscribed to it (bt_GattLock); a value
+                                             nobody follows is not queued for sending */
+};
+
+struct BtGattNotification
+{
+    struct Node             bgn_Node;
+    struct BtServiceRecord *bgn_Record;
+    ULONG                   bgn_Seq;
+    UWORD                   bgn_Index;
+    UWORD                   bgn_Length;
+    UBYTE                   bgn_Data[1];
 };
 
 struct BtEventHook
@@ -251,6 +270,9 @@ struct BtEventNote
     UWORD               ben_Event;        /* Event number as specified above */
     APTR                ben_Param1;       /* Parameter 1 for event */
     APTR                ben_Param2;       /* Parameter 2 */
+    APTR                ben_Data;         /* Event-owned data, if any */
+    ULONG               ben_DataLength;
+    APTR                ben_Device;       /* the device behind the event, if any */
 };
 
 struct BtEventNoteInternal
@@ -368,6 +390,8 @@ struct BtHardware
     UWORD               bth_SCONumPkts;
     UWORD               bth_LEACLMaxPktSize;
     UWORD               bth_LEACLNumPkts;
+    UWORD               bth_LENotifyPayload;    /* smallest notification payload on this radio's
+                                                   LE links, 0 without one (radio task) */
     BOOL                bth_RemoveMe;           /* Hardware scheduled for removal */
     ULONG               bth_ErrorCount;         /* transport errors */
     ULONG               bth_LastHCIError;       /* last HCI status */
@@ -416,6 +440,11 @@ struct BtKeyCfg
     UBYTE bkc_IRK[16];
     UBYTE bkc_CSRK[16];
     UBYTE bkc_Reserved[4];
+    /* Key our peripheral role distributed to a remote central.  It cannot
+       share bkc_LTK, which is the peer key used when we are central. */
+    UBYTE bkc_LocalLTK[16];
+    UBYTE bkc_LocalEDIV[2];
+    UBYTE bkc_LocalRand[8];
 };
 
 #define BKCF_LINKKEY 0x01
@@ -423,6 +452,8 @@ struct BtKeyCfg
 #define BKCF_IRK     0x04
 #define BKCF_CSRK    0x08
 #define BKCF_SC      0x10                 /* LE secure connections key */
+#define BKCF_LOCAL_LTK 0x20               /* our key, used while peripheral */
+#define BKCF_LOCAL_SC  0x40               /* local key is secure connections */
 
 struct BtDevice
 {

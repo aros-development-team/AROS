@@ -121,6 +121,13 @@ struct bt_smp_manager
     uint8_t peer_dhkey_check[16];
     uint32_t numeric_value;
     uint8_t sc_round;              /* Passkey Entry: commitment round 0..19 */
+    bool responder;
+    /* A peer commitment that arrived early: the responder's Cb before the
+     * initiator's DHKey is ready, or the initiator's Ca while the responder's
+     * passkey is still being entered. Responder only: a DHKey Check that
+     * arrived before the local user accepted Numeric Comparison. */
+    bool peer_confirm_pending;
+    bool peer_dhkey_check_pending;
 };
 
 void bt_smp_manager_init(struct bt_smp_manager *manager,
@@ -132,6 +139,16 @@ void bt_smp_manager_set_cmac(struct bt_smp_manager *manager,
 
 /* Central/initiator role. Sends Pairing Request immediately. */
 bt_status_t bt_smp_manager_start(struct bt_smp_manager *manager, uint64_t now_us);
+
+/* Peripheral/responder role. Accepts a Pairing Request and sends the Pairing
+ * Response. When both sides set the SC flag and CMAC plus the P-256 port
+ * operations are available, LE Secure Connections is negotiated with the
+ * configured IO capability and MITM flag: Just Works, Numeric Comparison or
+ * Passkey Entry. Otherwise, or when SC would select OOB, the responder falls
+ * back to legacy Just Works. */
+bt_status_t bt_smp_manager_accept(struct bt_smp_manager *manager,
+                                   const uint8_t *request, size_t request_len,
+                                   uint64_t now_us);
 
 /* Feed one complete PDU received on BT_L2CAP_CID_SMP. */
 void bt_smp_manager_on_pdu(struct bt_smp_manager *manager, const uint8_t *pdu,

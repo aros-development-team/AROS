@@ -64,6 +64,7 @@ static const struct libinfo
     STRPTR      name;
     WORD        version;
     BOOL        nocloseafterpatch;
+    BOOL        optional;           /* missing only disables a feature */
 }
 libtable[] =
 {
@@ -73,7 +74,7 @@ libtable[] =
     {&IFFParseBase      , "iffparse.library"            , 39, FALSE },
     {&LocaleBase        , "locale.library"              , 39, TRUE  },
     {&KeymapBase        , "keymap.library"              , 39, FALSE },
-    {&KMSBase           , "kms.library"                 , 3,  FALSE },
+    {&KMSBase           , "kms.library"                 , 3,  FALSE, TRUE },
     {&LayersBase        , "layers.library"              , 39, FALSE },
     {&DataTypesBase     , "datatypes.library"           , 39, FALSE },
     {&DiskfontBase      , "diskfont.library"            , 39, FALSE },
@@ -163,6 +164,12 @@ static void OpenLibs(void)
         if (!((*(struct Library **)li->var) = OpenLibrary(li->name,
                                                           li->version)))
         {
+            if (li->optional)
+            {
+                D(bug("IPrefs: %s V%d not available\n", li->name,
+                      li->version));
+                continue;
+            }
             sprintf(s, "Can't open %s V%d!", li->name, li->version);
             Cleanup(s);
         }

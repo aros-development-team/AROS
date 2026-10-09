@@ -475,6 +475,47 @@ static void handle_information_request(struct bt_l2cap_channel_manager *mgr, uin
     send_l2cap_pdu(mgr, mgr->signaling_cid, buf, bt_buf_writer_len(&w));
 }
 
+static void send_command_reject(struct bt_l2cap_channel_manager *mgr, uint8_t identifier);
+
+static void handle_conn_param_request(struct bt_l2cap_channel_manager *mgr, uint8_t identifier,
+                                      const uint8_t *cmd_data, size_t cmd_data_len)
+{
+    uint8_t buf[BT_L2CAP_SIG_HEADER_LEN + 2];
+    struct bt_buf_writer w;
+    struct bt_l2cap_conn_params params;
+    bool accepted;
+
+    /* Only a central answers; a peripheral (or a BR/EDR link) rejects it. */
+    if (mgr->signaling_cid != BT_L2CAP_CID_SIGNALING_LE || mgr->conn_param_request == NULL ||
+        cmd_data_len != 8)
+    {
+        send_command_reject(mgr, identifier);
+        return;
+    }
+    params.interval_min = (uint16_t)(cmd_data[0] | (cmd_data[1] << 8));
+    params.interval_max = (uint16_t)(cmd_data[2] | (cmd_data[3] << 8));
+    params.latency = (uint16_t)(cmd_data[4] | (cmd_data[5] << 8));
+    params.timeout = (uint16_t)(cmd_data[6] | (cmd_data[7] << 8));
+    accepted = bt_l2cap_conn_params_valid(&params) &&
+               mgr->conn_param_request(mgr->conn_param_user_data, &params);
+
+    bt_buf_writer_init(&w, buf, sizeof(buf));
+    bt_l2cap_sig_encode_header(&w, BT_L2CAP_SIG_CONN_PARAM_UPDATE_RESPONSE, identifier, 2);
+    bt_buf_writer_write_le16(&w, accepted ? 0x0000u : 0x0001u);
+    send_l2cap_pdu(mgr, mgr->signaling_cid, buf, bt_buf_writer_len(&w));
+}
+
+static void finish_conn_param_request(struct bt_l2cap_channel_manager *mgr, uint8_t identifier,
+                                      bool accepted)
+{
+    if (mgr->conn_param_identifier == 0 || identifier != mgr->conn_param_identifier)
+        return;
+    mgr->conn_param_identifier = 0;
+    mgr->conn_param_deadline_us = 0;
+    if (mgr->conn_param_response != NULL)
+        mgr->conn_param_response(mgr->conn_param_user_data, accepted);
+}
+
 static void send_command_reject(struct bt_l2cap_channel_manager *mgr, uint8_t identifier)
 {
     uint8_t buf[BT_L2CAP_SIG_HEADER_LEN + 2];
@@ -522,7 +563,15 @@ static void process_signaling_pdu(struct bt_l2cap_channel_manager *mgr, const ui
         handle_disconnection_response(mgr, hdr.identifier, cmd_data, hdr.length, now_us);
         break;
     case BT_L2CAP_SIG_COMMAND_REJECT:
+        finish_conn_param_request(mgr, hdr.identifier, false);
         handle_command_reject(mgr, hdr.identifier, cmd_data, hdr.length, now_us);
+        break;
+    case BT_L2CAP_SIG_CONN_PARAM_UPDATE_REQUEST:
+        handle_conn_param_request(mgr, hdr.identifier, cmd_data, hdr.length);
+        break;
+    case BT_L2CAP_SIG_CONN_PARAM_UPDATE_RESPONSE:
+        finish_conn_param_request(mgr, hdr.identifier,
+                                  hdr.length >= 2 && (cmd_data[0] | (cmd_data[1] << 8)) == 0);
         break;
     case BT_L2CAP_SIG_ECHO_REQUEST:
         handle_echo_request(mgr, hdr.identifier, cmd_data, hdr.length);
@@ -557,6 +606,11 @@ void bt_l2cap_channel_manager_init(struct bt_l2cap_channel_manager *mgr,
     bt_l2cap_reassembler_init(&mgr->reassembler);
     mgr->next_local_cid = BT_L2CAP_CID_DYNAMIC_START;
     mgr->next_identifier = 1;
+    mgr->conn_param_request = NULL;
+    mgr->conn_param_response = NULL;
+    mgr->conn_param_user_data = NULL;
+    mgr->conn_param_identifier = 0;
+    mgr->conn_param_deadline_us = 0;
 
     for (i = 0; i < BT_L2CAP_CHANNEL_MANAGER_MAX_CHANNELS; i++)
     {
@@ -569,6 +623,50 @@ void bt_l2cap_channel_manager_init(struct bt_l2cap_channel_manager *mgr,
     }
     for (i = 0; i < BT_L2CAP_CHANNEL_MANAGER_MAX_LISTENERS; i++)
         mgr->listeners[i].psm = 0;
+}
+
+bool bt_l2cap_conn_params_valid(const struct bt_l2cap_conn_params *p)
+{
+    return p != NULL && p->interval_min >= 6 && p->interval_max <= 3200 &&
+           p->interval_min <= p->interval_max && p->latency <= 499 &&
+           p->timeout >= 10 && p->timeout <= 3200 &&
+           /* timeout * 10 ms > 2 * (1 + latency) * interval_max * 1.25 ms */
+           (uint32_t)p->timeout * 4u > (uint32_t)(1u + p->latency) * p->interval_max;
+}
+
+void bt_l2cap_channel_manager_set_conn_param_handlers(struct bt_l2cap_channel_manager *mgr,
+                                                      bt_l2cap_conn_param_request_fn on_request,
+                                                      bt_l2cap_conn_param_response_fn on_response,
+                                                      void *user_data)
+{
+    mgr->conn_param_request = on_request;
+    mgr->conn_param_response = on_response;
+    mgr->conn_param_user_data = user_data;
+}
+
+bt_status_t bt_l2cap_channel_manager_request_conn_params(struct bt_l2cap_channel_manager *mgr,
+                                                         const struct bt_l2cap_conn_params *params)
+{
+    uint8_t buf[BT_L2CAP_SIG_HEADER_LEN + 8];
+    struct bt_buf_writer w;
+    uint8_t identifier;
+
+    if (mgr->signaling_cid != BT_L2CAP_CID_SIGNALING_LE || !bt_l2cap_conn_params_valid(params))
+        return BT_ERR_INVALID_ARGUMENT;
+    if (mgr->conn_param_identifier != 0)
+        return BT_ERR_BUSY;
+    identifier = alloc_identifier(mgr);
+    bt_buf_writer_init(&w, buf, sizeof(buf));
+    bt_l2cap_sig_encode_header(&w, BT_L2CAP_SIG_CONN_PARAM_UPDATE_REQUEST, identifier, 8);
+    bt_buf_writer_write_le16(&w, params->interval_min);
+    bt_buf_writer_write_le16(&w, params->interval_max);
+    bt_buf_writer_write_le16(&w, params->latency);
+    bt_buf_writer_write_le16(&w, params->timeout);
+    if (send_l2cap_pdu(mgr, mgr->signaling_cid, buf, bt_buf_writer_len(&w)) != BT_OK)
+        return BT_ERR_NO_RESOURCES;
+    mgr->conn_param_identifier = identifier;
+    mgr->conn_param_deadline_us = 0; /* the next tick starts the clock */
+    return BT_OK;
 }
 
 bt_status_t bt_l2cap_channel_manager_listen(struct bt_l2cap_channel_manager *mgr, uint16_t psm,
@@ -798,4 +896,14 @@ void bt_l2cap_channel_manager_tick(struct bt_l2cap_channel_manager *mgr, uint64_
 
     while ((t = bt_timer_list_pop_expired(&mgr->timers, now_us)) != NULL)
         t->callback(t, t->user_data);
+
+    /* our connection parameter request: an unanswered one must not block
+     * every later one for the life of the link */
+    if (mgr->conn_param_identifier != 0)
+    {
+        if (mgr->conn_param_deadline_us == 0)
+            mgr->conn_param_deadline_us = now_us + BT_L2CAP_CONN_PARAM_RTX_US;
+        else if (now_us >= mgr->conn_param_deadline_us)
+            finish_conn_param_request(mgr, mgr->conn_param_identifier, false);
+    }
 }

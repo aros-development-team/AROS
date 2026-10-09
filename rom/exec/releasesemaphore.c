@@ -60,6 +60,7 @@
 
     struct TraceLocation tp = CURRENT_LOCATION("ReleaseSemaphore");
     struct Task *ThisTask = GET_THIS_TASK;
+    BOOL corrupt = FALSE;
 
     /* We can be called from within exec's pre-init code. It's okay. */
     if (!ThisTask)
@@ -99,7 +100,7 @@
                 If it is not, there is a chance that the semaphore
                 is corrupt. It will be afterwards anyway :-)
             */
-            Alert( AN_SemCorrupt );
+            corrupt = TRUE;
         }
 #endif
 
@@ -201,7 +202,7 @@
             This can't happen. It means that somebody has released
             more times than they have obtained.
         */
-        Alert( AN_SemCorrupt );
+        corrupt = TRUE;
     }
 
 #if defined(__AROSEXEC_SMP__)
@@ -209,6 +210,10 @@
 #endif
     /* All done. */
     Permit();
+
+    /* Not under the lock: the alert path may itself obtain this semaphore */
+    if (corrupt)
+        Alert( AN_SemCorrupt );
 
     AROS_LIBFUNC_EXIT
 } /* ReleaseSemaphore */

@@ -18,6 +18,7 @@
 #include "bootconsole.h"
 #include "vc_mb.h"
 #include "io.h"
+#include "devicetree.h"
 
 #undef ARM_PERIIOBASE
 #define ARM_PERIIOBASE (__arm_periiobase)
@@ -34,6 +35,38 @@ uintptr_t __uart_base = 0;
 
 #define UART_BASE (__arm_socid == 0x2712 ? RP1_UART0_BASE : PL011_0_BASE)
 
+/*
+ * The BCM283x AUX mini-UART. On a Raspberry Pi 3, 3B+ and Zero 2 W the
+ * firmware gives the PL011 to the on-board Bluetooth radio and puts the
+ * mini-UART on the GPIO header instead; serial0 in the device tree's
+ * aliases says which. Only the data and line-status registers are used:
+ * with enable_uart=1 the firmware has set it up (115200, GPIO 14/15).
+ */
+#define MINIUART_BASE   (ARM_PERIIOBASE + 0x215040)
+#define MINIUART_IO     0x00
+#define MINIUART_LSR    0x14
+#define MINIUART_LSR_TXEMPTY    (1 << 5)
+#define MINIUART_WAIT   100000  /* never hang if the firmware left it off */
+
+static int uart_mini;
+
+/* serial0 -> "/soc/serial@7e215040" when the header carries the mini-UART */
+static int firmware_console_is_mini(void)
+{
+    of_node_t *aliases = dt_find_node("/aliases");
+    of_property_t *serial0 = aliases ? dt_find_property(aliases, "serial0") : NULL;
+    const char *path = serial0 ? (const char *)serial0->op_value : NULL;
+    const char *p;
+
+    if (!path)
+        return 0;
+    for (p = path; *p; p++)
+        if (p[0] == '2' && p[1] == '1' && p[2] == '5' && p[3] == '0' &&
+            p[4] == '4' && p[5] == '0' && p[6] == 0)
+            return 1;
+    return 0;
+}
+
 #define PL011_ICR_FLAGS (PL011_ICR_RXIC|PL011_ICR_TXIC|PL011_ICR_RTIC|PL011_ICR_FEIC|PL011_ICR_PEIC|PL011_ICR_BEIC|PL011_ICR_OEIC|PL011_ICR_RIMIC|PL011_ICR_CTSMIC|PL011_ICR_DSRMIC|PL011_ICR_DCDMIC)
 
 #define DEF_BAUD 115200
@@ -49,10 +82,26 @@ unsigned int uartbaud;
 
 inline void waitSerOUT()
 {
+    if (uart_mini)
+    {
+        unsigned int timeout = MINIUART_WAIT;
+
+        while (timeout-- && !(rd32le(__uart_base + MINIUART_LSR) & MINIUART_LSR_TXEMPTY))
+            ;
+        return;
+    }
     while(1)
     {
        if ((rd32le(UART_BASE + PL011_FR) & PL011_FR_TXFF) == 0) break;
     }
+}
+
+static inline void writeSer(uint8_t chr)
+{
+    if (uart_mini)
+        wr32le(__uart_base + MINIUART_IO, chr);
+    else
+        wr32le(UART_BASE + PL011_DR, chr);
 }
 
 inline void putByte(uint8_t chr)
@@ -61,10 +110,10 @@ inline void putByte(uint8_t chr)
 
     if (chr == '\n')
     {
-        wr32le(UART_BASE + PL011_DR, '\r');
+        writeSer('\r');
         waitSerOUT();
     }
-    wr32le(UART_BASE + PL011_DR, chr);
+    writeSer(chr);
 }
 
 void serInit(void)
@@ -94,6 +143,18 @@ void serInit(void)
          * GPIO15 = RX
          * 115200 8N1
          */
+        uartbaud = 115200;
+
+        return;
+    }
+
+    /* Leave the PL011 to the Bluetooth radio, and its pins alone: printing
+       through it, or muxing GPIO 14/15 to it as well, would talk over the
+       radio and share its receive line. */
+    if (firmware_console_is_mini())
+    {
+        uart_mini = 1;
+        __uart_base = MINIUART_BASE;
         uartbaud = 115200;
 
         return;

@@ -106,6 +106,9 @@
 #define HC_OP_LE_CREATE_CONNECTION    HC_OP(0x08, 0x000d)
 #define HC_OP_LE_CREATE_CONN_CANCEL   HC_OP(0x08, 0x000e)
 #define HC_OP_LE_START_ENCRYPTION     HC_OP(0x08, 0x0019)
+#define HC_OP_LE_CONN_UPDATE          HC_OP(0x08, 0x0013)
+#define HC_OP_LE_REM_CONN_PARAM_REPLY HC_OP(0x08, 0x0020)
+#define HC_OP_LE_REM_CONN_PARAM_NEG   HC_OP(0x08, 0x0021)
 #define HC_OP_LE_LTK_REQ_REPLY        HC_OP(0x08, 0x001a)
 #define HC_OP_LE_LTK_REQ_NEG_REPLY    HC_OP(0x08, 0x001b)
 #define HC_GIAC_LAP                   0x9E8B33
@@ -137,7 +140,9 @@
 #define HC_EVT_LE_META                0x3e
 #define HC_LE_SUB_CONN_COMPLETE       0x01
 #define HC_LE_SUB_ADV_REPORT          0x02
+#define HC_LE_SUB_CONN_UPDATE         0x03
 #define HC_LE_SUB_LTK_REQUEST         0x05
+#define HC_LE_SUB_REMOTE_CONN_PARAM   0x06
 #define HC_LE_SUB_P256_COMPLETE       0x08
 #define HC_LE_SUB_DHKEY_COMPLETE      0x09
 #define HC_LE_SUB_ENH_CONN_COMPLETE   0x0a
@@ -244,7 +249,12 @@ struct BtHWConn
     }                   cn_GATTSubs[HC_GATT_MAXSUBS];
     struct BtServiceRecord *cn_GATTWrRec; /* a value the device wrote during this request */
     UWORD               cn_GATTWrIdx;
+    const UBYTE        *cn_GATTWrData;     /* valid for the duration of bGattRequest() */
+    UWORD               cn_GATTWrLen;
     BOOL                cn_GATTSeen;   /* the device has asked for something */
+    ULONG               cn_GATTSeq;    /* bt_GattSeq up to which this link was notified */
+    ULONG               cn_GATTIndSince; /* hc_Tick the unconfirmed indication was sent */
+    BOOL                cn_GATTIndDead;  /* the device stopped confirming: no more indications */
     UBYTE               cn_GATTVal[BGATT_MAXVALUE]; /* the value being read */
     struct MinList      cn_Endpoints;  /* BtHWEndpoint */
     struct MinList      cn_WaitReqs;   /* BtChannel requests waiting for the link */
@@ -277,6 +287,9 @@ struct BtHWConn
     struct bt_smp_cmac_aes128 cn_SMPCmac;
     BOOL                cn_SMPActive;     /* manager initialised for a pairing in progress */
     BOOL                cn_SMPChanOpen;   /* fixed SMP channel registered on this link */
+    UBYTE               cn_SMPRequest[7]; /* inbound request held for user consent */
+    UBYTE               cn_SMPRequestLen;
+    BOOL                cn_SMPAcceptWait; /* accepted: answer it once the entropy is in */
     BOOL                cn_EncryptPending;/* encryption with the stored key in flight (enumeration held back) */
     ULONG               cn_EncryptSince;  /* hc_Tick when it was requested (bConnTick() gives up on silence) */
     UBYTE               cn_SMPRandWait;   /* LE Rand completions to collect before starting */
@@ -285,6 +298,8 @@ struct BtHWConn
        (a keyboard), the pairing is run again without offering SC */
     BOOL                cn_SMPLegacy;     /* do not offer SC this time */
     BOOL                cn_PairRetry;     /* restart the pairing from bConnTick() (outside the SMP callback) */
+    ULONG               cn_ConnParamSeq;  /* bt_LEConnSeq last asked for as the LE peripheral */
+    ULONG               cn_ConnParamAt;   /* hc_Tick before which we do not ask */
     UBYTE               cn_SMPKeySize;
     UBYTE               cn_SMPLTK[16];    /* key handed to LE Start Encryption (HCI byte order) */
     ULONG               cn_LastActivity;
@@ -448,7 +463,8 @@ struct BtHWCore
 
     /* GATT server (gattsrv.c) */
     ULONG               hc_LEAdvSeq;       /* bt_LEAdvSeq the advertising was set up for */
-    ULONG               hc_GattSeq;        /* bt_GattSeq up to which subscribers were notified */
+    ULONG               hc_GattSeq;        /* bt_GattSeq up to which every link was notified
+                                              (the snapshots before it may be freed) */
     BOOL                hc_LEAdvAsked;     /* we asked the controller to advertise ... */
     BOOL                hc_LEAdvOn;        /* ... and it does */
     BOOL                hc_LEAdvWarned;    /* its refusal has been reported */
@@ -486,6 +502,7 @@ struct BtDevice * bNoteIncomingLE(struct BtHWCore *hc, const UBYTE *addr, UBYTE 
 void bGattSrvInit(struct BtHWConn *cn);
 void bGattSrvRefresh(struct BtHWCore *hc);
 void bGattSrvPoll(struct BtHWCore *hc);
+void bGattSrvLinkDown(struct BtHWConn *cn);
 LONG bStopDiscovery(struct BtHWCore *hc);
 void bReplyChannel(struct BtBase *BluetoothBase, struct BtChannel *bch, LONG error, ULONG actual);
 void bStartACLWrite(struct BtHWCore *hc);

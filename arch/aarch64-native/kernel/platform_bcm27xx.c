@@ -613,12 +613,36 @@ void bcm27xx_toggle_led(int LED, int state)
     wr32le((lit ? GPSET0 : GPCLR0) + 4 * (pin / 32), 1 << (pin % 32));
 }
 
+/* The debug UART the bootstrap printed through (KRN_DebugUartBase). On a
+   Pi 3 whose PL011 belongs to the Bluetooth radio that is the AUX mini-UART:
+   data at +0x00, line status at +0x14 (bit 0 data ready, bit 5 transmitter
+   empty). Everything else keeps using the PL011. */
+extern uintptr_t krn_dbg_uart;
+#define SER_MINI        ((krn_dbg_uart & 0xfff) == 0x040)
+#define MINI_IO         (krn_dbg_uart + 0x00)
+#define MINI_LSR        (krn_dbg_uart + 0x14)
+
 static inline void bcm27xx_ser_waitout()
 {
+    if (SER_MINI)
+    {
+        unsigned int timeout = 100000;
+        while (timeout-- && !(rd32le(MINI_LSR) & (1 << 5)))
+            ;
+        return;
+    }
     while (1)
     {
         if ((rd32le(PL011_0_BASE + PL011_FR) & PL011_FR_TXFF) == 0) break;
     }
+}
+
+static inline void bcm27xx_ser_write(uint8_t chr)
+{
+    if (SER_MINI)
+        wr32le(MINI_IO, chr);
+    else
+        wr32le(PL011_0_BASE + PL011_DR, chr);
 }
 
 void bcm27xx_ser_putc(uint8_t chr)
@@ -627,14 +651,16 @@ void bcm27xx_ser_putc(uint8_t chr)
 
     if (chr == '\n')
     {
-        wr32le(PL011_0_BASE + PL011_DR, '\r');
+        bcm27xx_ser_write('\r');
         bcm27xx_ser_waitout();
     }
-    wr32le(PL011_0_BASE + PL011_DR, chr);
+    bcm27xx_ser_write(chr);
 }
 
 int bcm27xx_ser_getc(void)
 {
+    if (SER_MINI)
+        return (rd32le(MINI_LSR) & 1) ? (int)(rd32le(MINI_IO) & 0xff) : -1;
     if ((rd32le(PL011_0_BASE + PL011_FR) & PL011_FR_RXFE) == 0)
         return (int)rd32le(PL011_0_BASE + PL011_DR);
 

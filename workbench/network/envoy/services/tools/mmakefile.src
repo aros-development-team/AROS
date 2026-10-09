@@ -1,0 +1,26 @@
+#
+#   The Services Manager and the batch configuration editor, installed in
+#   SYS:System/Network/Envoy/ next to the services (Services/*.service).
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_INCLUDES := -I$(SRCDIR)/workbench/network/envoy/include
+USER_CFLAGS   := -noposixc
+USER_LDFLAGS  := -static
+
+EXEDIR := $(AROS_SYSTEM)/Network/Envoy
+
+#MM- workbench-network-envoy : workbench-network-envoy-tools
+#MM- workbench-network-envoy-tools : workbench-network-envoy-tools-manager workbench-network-envoy-tools-config
+#MM workbench-network-envoy-tools-manager : includes linklibs includes-copy-envoy \
+#MM     workbench-network-envoy-nipc-includes workbench-network-envoy-nipc-linklib \
+#MM     workbench-network-envoy-services-includes workbench-network-envoy-services-linklib
+#MM workbench-network-envoy-tools-config : includes linklibs includes-copy-envoy
+
+%build_prog mmake=workbench-network-envoy-tools-manager progname=ServicesManager \
+    files="ServicesManager prefsfile" targetdir=$(EXEDIR) uselibs="nipc services"
+
+%build_prog mmake=workbench-network-envoy-tools-config progname=ServicesConfig \
+    files="ServicesConfig prefsfile" targetdir=$(EXEDIR)
+
+%common

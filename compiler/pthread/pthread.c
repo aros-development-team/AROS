@@ -39,10 +39,16 @@
 
 //#define USE_ASYNC_CANCEL
 
-ThreadInfo threads[PTHREAD_THREADS_MAX];
+// A ThreadInfo is about 1 KB: allocated when its slot is first used rather
+// than 2 MB of bss in every program. Slots below threads_used are allocated.
+ThreadInfo *threads[PTHREAD_THREADS_MAX];
+pthread_t threads_used;
+static ThreadInfo mainthread;
 struct SignalSemaphore thread_sem;
 TLSKey tlskeys[PTHREAD_KEYS_MAX];
 struct SignalSemaphore tls_sem;
+// set once the program exits: remaining threads end without TLS destructors
+volatile BOOL __pthread_exiting;
 
 //
 // Helper functions
@@ -71,28 +77,29 @@ ThreadInfo *GetThreadInfo(pthread_t thread)
     DB2(bug("%s(%u)\n", __FUNCTION__, thread));
 
     // TODO: more robust error handling?
-    if (thread < PTHREAD_THREADS_MAX)
-        return &threads[thread];
+    if (thread < __atomic_load_n(&threads_used, __ATOMIC_ACQUIRE))
+        return threads[thread];
 
     return 0;
 }
 
 pthread_t GetThreadId(struct Task *task)
 {
-    pthread_t i;
+    pthread_t i, used = __atomic_load_n(&threads_used, __ATOMIC_ACQUIRE);
 
     DB2(bug("%s(%p)\n", __FUNCTION__, task));
 
     // 0 is main task, First thread id will be 1 so that it is different than default value of pthread_t
-    for (i = 0; i < PTHREAD_THREADS_MAX; i++)
+    for (i = 0; i < used; i++)
     {
         // be sure not to select existing, "not joined" thread slot with the exec task pointer same as
         // this one (if a new exec task structure get allocated exactly at the same addres as the old one)
-        if (threads[i].task == task && !threads[i].finished)
-            break;
+        if (threads[i]->task == task && !threads[i]->finished)
+            return i;
     }
 
-    return i;
+    // a free slot may also be a new one
+    return task == NULL ? used : PTHREAD_THREADS_MAX;
 }
 
 #if defined __mc68000__
@@ -279,12 +286,13 @@ static int _obtain_sema_timed(struct SignalSemaphore *sema, const struct timespe
         // absolute time has to be converted to relative
         // GetSysTime can't be used due to the timezone offset in abstime
         gettimeofday(&starttime, NULL);
-        timersub(&tvabstime, &starttime, &tvabstime);
-        if (!timerisset(&tvabstime))
+        // tv_sec is unsigned: test for a passed deadline before subtracting
+        if (!timercmp(&starttime, &tvabstime, <))
         {
             CloseTimerDevice((struct IORequest *)&timerio);
             return ETIMEDOUT;
         }
+        timersub(&tvabstime, &starttime, &tvabstime);
     }
     timerio.tr_time.tv_secs = tvabstime.tv_sec;
     timerio.tr_time.tv_micro = tvabstime.tv_usec;
@@ -950,10 +958,20 @@ int pthread_detach(pthread_t thread)
     if (inf == NULL || inf->task == NULL)
         return ESRCH;
 
+    ObtainSemaphore(&thread_sem);
     if (inf->detached)
+    {
+        ReleaseSemaphore(&thread_sem);
         return EINVAL;
+    }
 
-    inf->detached = TRUE;
+    // a thread that already finished waits for a join that will never
+    // come: free its slot now, or __pthread_Exit_Func waits forever
+    if (inf->finished)
+        memset(inf, 0, sizeof(ThreadInfo));
+    else
+        inf->detached = TRUE;
+    ReleaseSemaphore(&thread_sem);
 
     return 0;
 }
@@ -968,10 +986,14 @@ void pthread_testcancel(void)
     thread = pthread_self();
     inf = GetThreadInfo(thread);
 
-    if (inf->canceled && (inf->cancelstate == PTHREAD_CANCEL_ENABLE))
-        pthread_exit(PTHREAD_CANCELED);
-
-    SetSignal(SIGBREAKF_CTRL_C, 0);
+    if (inf->canceled)
+    {
+        if (inf->cancelstate == PTHREAD_CANCEL_ENABLE)
+            pthread_exit(PTHREAD_CANCELED);
+        // pending but disabled: drop the wake-up pthread_cancel() sent. Only
+        // then, or a user's Ctrl-C would be lost at every cancellation point
+        SetSignal(0, SIGBREAKF_CTRL_C);
+    }
 }
 
 static void OnceCleanup(void *arg)
@@ -1218,12 +1240,13 @@ int __pthread_Init_Func(void)
 {
     DB2(bug("%s()\n", __FUNCTION__));
 
-    //memset(&threads, 0, sizeof(threads));
     InitSemaphore(&thread_sem);
     InitSemaphore(&tls_sem);
 
     // reserve ID 0 for the main thread
-    ThreadInfo *inf = &threads[0];
+    ThreadInfo *inf = &mainthread;
+    threads[0] = inf;
+    threads_used = 1;
 
     inf->task = GET_THIS_TASK;
 
@@ -1238,22 +1261,35 @@ void __pthread_Exit_Func(void)
 
     DB2(bug("%s()\n", __FUNCTION__));
 
+    // an earlier init function failed: the exit set still runs, but
+    // __pthread_Init_Func never did and thread_sem is not initialised
+    if (threads_used == 0)
+        return;
+
+    __pthread_exiting = TRUE;
+
     // if we don't do this we can easily end up with unloaded code being executed
-    for (i = 1; i < PTHREAD_THREADS_MAX; i++)
+    for (i = 1; i < threads_used; i++)
     {
-        inf = &threads[i];
-        if (inf->detached)
-        {
-            D(bug("waiting for detached thread %d\n", i));
-            // TODO longer delay between retries?
-            while (inf->task)
-                Delay(1);
-        }
-        else
-        {
-            pthread_join(i, NULL);
-        }
+        inf = threads[i];
+        // idle workers never return: cancel them. A finished thread's task
+        // is gone; thread_sem keeps a running one from finishing meanwhile
+        ObtainSemaphore(&thread_sem);
+        if (inf->task && !inf->finished)
+            pthread_cancel(i);
+        ReleaseSemaphore(&thread_sem);
+        // wait for it to end, but leave the join to the program: a thread
+        // still tearing down may be about to join it
+        while (inf->task && !inf->finished)
+            Delay(1);
     }
+
+    // the main thread's slot stays usable for later exit code
+    ObtainSemaphore(&thread_sem);
+    for (i = 1; i < threads_used; i++)
+        FreeVec(threads[i]);
+    threads_used = 1;
+    ReleaseSemaphore(&thread_sem);
 }
 
 #if defined(__AROS__) || (defined(__AMIGA__) && !defined(__MORPHOS__))

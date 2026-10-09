@@ -15,6 +15,7 @@
 
 #include "validator.h"
 #include "volumes.h"
+#include "bitmap.h"
 
 #undef SDEBUG
 #undef DEBUG
@@ -52,10 +53,12 @@ LONG checkValid(struct AFSBase *afsbase, struct Volume *vol)
 #ifdef __AROS__
     struct BlockCache *blockbuffer;
 
-    if (vol == NULL)
+    if (vol == NULL || vol->cachepending || vol->writefailed || !mediumPresent(&vol->ioh))
         return 0;
 
     blockbuffer = getBlock(afsbase, vol, vol->rootblock);
+    if (blockbuffer == NULL)
+        return 0;
 
     UBYTE  n[vol->FNameMax + 1];
     CONST_FSBSTR name;
@@ -79,7 +82,8 @@ LONG checkValid(struct AFSBase *afsbase, struct Volume *vol)
 
         return (vol->state == ID_VALIDATED) ? 1 : 0;
 #else
-        return 1;
+        return vol != NULL && !vol->cachepending && !vol->writefailed
+                && vol->state != ID_VALIDATING;
 #endif
 }
 
@@ -95,8 +99,11 @@ LONG checkValid(struct AFSBase *afsbase, struct Volume *vol)
 LONG launchValidator(struct AFSBase *afsbase, struct Volume *volume)
 {
 #ifdef __AROS__
+        if (!diskWritable(afsbase, &volume->ioh))
+                return vr_WriteError;
         D(bug("[afs]: flushing cache...\n"));
-        flushCache(afsbase, volume);
+        if (!flush(afsbase, volume))
+                return vr_WriteError;
 
         /*
          * initially this was meant to be a synchronous validation
@@ -119,7 +126,10 @@ LONG launchValidator(struct AFSBase *afsbase, struct Volume *volume)
 LONG validate(struct AFSBase *afsbase, struct Volume *vol)
 {
         DiskStructure     ds;
-        ValidationResult  res = vr_OK;
+        ValidationResult  res = vr_OutOfMemory;
+
+        if (!diskWritable(afsbase, &vol->ioh))
+                return vr_WriteError;
 
         /*
          * fill in diskstructure. we will need it for the sake of validation.
@@ -133,9 +143,11 @@ LONG validate(struct AFSBase *afsbase, struct Volume *vol)
          */
         if (0 == bm_allocate_bitmap(&ds))
         {
-                inhibit(afsbase, vol, 1);
+                /* Validation is synchronous: do not unmount and remount the medium,
+                 * which would launch validation recursively after a failure. */
+                vol->inhibitcounter++;
                 res = start_superblock(&ds);
-                inhibit(afsbase, vol, 0);
+                vol->inhibitcounter--;
         }
         bm_free_bitmap(&ds);
 
@@ -149,6 +161,9 @@ LONG validate(struct AFSBase *afsbase, struct Volume *vol)
                         break;
                 case vr_ReadError:
                         D(bug("[afs validate]: Could not read disk. \n"));
+                        break;
+                case vr_WriteError:
+                        D(bug("[afs validate]: Could not write or update disk. \n"));
                         break;
                 case vr_UnknownDiskType:
                         D(bug("[afs validate]: Unhandled disk type. \n"));
@@ -175,15 +190,31 @@ LONG validate(struct AFSBase *afsbase, struct Volume *vol)
 
         {
                 struct BlockCache *bc = getBlock(afsbase, vol, vol->rootblock);
-                ULONG* mem = bc->buffer;
+                ULONG* mem;
 
+                if (bc == NULL)
+                {
+                        vol->state = ID_VALIDATING;
+                        return res == vr_OK ? vr_ReadError : res;
+                }
+                mem = bc->buffer;
                 if (res != vr_OK)
                 {
-                        mem[BLK_BITMAP_VALID_FLAG(vol)] = 0;
+                        if (mem[BLK_BITMAP_VALID_FLAG(vol)] != 0)
+                        {
+                                mem[BLK_BITMAP_VALID_FLAG(vol)] = 0;
+                                verify_checksum(&ds, mem);
+                                bc->flags |= BCF_WRITE;
+                        }
                         vol->state = ID_VALIDATING;
                 }
                 else
-                        vol->state = ID_VALIDATED;
+                {
+                        bc->flags |= BCF_USED;
+                        vol->usedblockscount = countUsedBlocks(afsbase, vol);
+                        vol->state = diskWritable(afsbase, &vol->ioh)
+                                ? ID_VALIDATED : ID_WRITE_PROTECTED;
+                }
 
                 if (verify_checksum(&ds, mem) != 0)
                 {
@@ -220,22 +251,46 @@ LONG check_block_range(DiskStructure *ds, ULONG num)
  */
 ValidationResult start_superblock(DiskStructure *ds)
 {
-        ValidationResult res = vr_OK;
+        ValidationResult res;
+        struct BlockCache *root = getBlock(ds->afs, ds->vol, ds->vol->rootblock);
+
+        if (root == NULL)
+                return vr_ReadError;
+        /* Keep the on-disk bitmap invalid throughout repair. */
+        root->buffer[BLK_BITMAP_VALID_FLAG(ds->vol)] = 0;
+        verify_checksum(ds, root->buffer);
+        if (!writeBlock(ds->afs, ds->vol, root, -1) || !flush(ds->afs, ds->vol))
+                return vr_WriteError;
 
         res = collect_directory_blocks(ds, ds->vol->rootblock);
-        D(bug("[afs validate]: validation complete. Result: %ld\n", res));
+        if (res != vr_OK)
+                return res;
+        /* Persist tree repairs before publishing their rebuilt allocation map. */
+        if (!flush(ds->afs, ds->vol))
+                return vr_WriteError;
+        res = record_bitmap(ds);
+        if (res != vr_OK)
+                return res;
+        if (!flush(ds->afs, ds->vol))
+                return vr_WriteError;
 
-        /*
-         * record bitmap back to disk, set bitmap valid flag, and update checksum of the root sector
-         * please note: it is hell important to have this checksum valid ;) so you better keep an eye
-         * on all your changes
-         */
-        if (res == vr_OK)
+        root = getBlock(ds->afs, ds->vol, ds->vol->rootblock);
+        if (root == NULL)
+                return vr_ReadError;
+        root->buffer[BLK_BITMAP_VALID_FLAG(ds->vol)] = ~0;
+        verify_checksum(ds, root->buffer);
+        if (!writeBlock(ds->afs, ds->vol, root, -1) || !flush(ds->afs, ds->vol))
         {
-                record_bitmap(ds);
+                /* Do not leave a valid flag queued for a later timer retry. */
+                root = getBlock(ds->afs, ds->vol, ds->vol->rootblock);
+                if (root != NULL)
+                {
+                        root->buffer[BLK_BITMAP_VALID_FLAG(ds->vol)] = 0;
+                        writeBlockDeferred(ds->afs, ds->vol, root, BLK_CHECKSUM);
+                }
+                return vr_WriteError;
         }
-
-        return res;
+        return vr_OK;
 }
 
 /*
@@ -410,6 +465,8 @@ ValidationResult collect_bitmap(DiskStructure* ds, struct BlockCache* block)
                                 return vr_BlockUsedTwice;
 
                         block = getBlock(ds->afs, ds->vol, blk);
+                        if (block == NULL)
+                                return vr_ReadError;
                         mem = block->buffer;
                         strt = 0;
                         stop = ds->vol->SizeBlock-2;
@@ -506,6 +563,8 @@ ValidationResult collect_file_extensions(DiskStructure* ds, struct BlockCache* b
                         else
                         {
                                 block = getBlock(ds->afs, ds->vol, blk);
+                                if (block == NULL)
+                                        return vr_ReadError;
                                 mem = block->buffer;
                         }
                 }
@@ -600,13 +659,10 @@ ValidationResult collect_directory_blocks(DiskStructure *ds, ULONG blk)
                 if (id != vr_OK)
                         return id;
 
-                /*
-                 * initially -- mark bitmap status as valid
-                 */
+                /* The valid flag is committed only after record_bitmap succeeds. */
                 bc = getBlock(ds->afs, ds->vol, blk);
-                bc->buffer[BLK_BITMAP_VALID_FLAG(ds->vol)] = ~0;
-                verify_checksum(ds, bc->buffer);
-                bc->flags |= BCF_WRITE;
+                if (bc == NULL)
+                        return vr_ReadError;
         }
         
         /*
@@ -643,7 +699,8 @@ ValidationResult collect_directory_blocks(DiskStructure *ds, ULONG blk)
                                  * move on and bug them about whatever is really bad
                                  */
                                 id = collect_directory_blocks(ds, id);
-                                if (id == vr_Aborted)
+                                if (id == vr_Aborted || id == vr_ReadError || id == vr_WriteError
+                                        || id == vr_OutOfMemory)
                                         return id;
 
                                 /*
@@ -651,6 +708,8 @@ ValidationResult collect_directory_blocks(DiskStructure *ds, ULONG blk)
                                  * this will work well if the modified block gets marked as BCF_WRITE
                                  */
                                 bc = getBlock(ds->afs, ds->vol, blk);
+                                if (bc == NULL)
+                                        return vr_ReadError;
 
                                 if (vr_OK != id)
                                 {
@@ -676,8 +735,12 @@ ValidationResult collect_directory_blocks(DiskStructure *ds, ULONG blk)
          */
         if (entry_type == -3)
         {
-                collect_file_extensions(ds, bc);
+                id = collect_file_extensions(ds, bc);
+                if (id != vr_OK)
+                        return id;
                 bc = getBlock(ds->afs, ds->vol, blk);
+                if (bc == NULL)
+                        return vr_ReadError;
                 id = OS_BE2LONG(bc->buffer[BLK_BYTE_SIZE(ds->vol)]);
                 if (id > (ds->file_blocks * ds->vol->SizeBlock << 2))
                 {
@@ -703,7 +766,8 @@ ValidationResult collect_directory_blocks(DiskStructure *ds, ULONG blk)
                 /*
                  * if aborted, simply quit
                  */
-                if (id == vr_Aborted)
+                if (id == vr_Aborted || id == vr_ReadError || id == vr_WriteError
+                                        || id == vr_OutOfMemory)
                 {
                         return id;
                 }
@@ -715,6 +779,8 @@ ValidationResult collect_directory_blocks(DiskStructure *ds, ULONG blk)
                 {
                         D(bug("[afs validate]: removing faulty chain\n"));
                         bc = getBlock(ds->afs, ds->vol, blk);
+                        if (bc == NULL)
+                                return vr_ReadError;
                         bc->buffer[BLK_HASHCHAIN(ds->vol)] = 0;
                         verify_checksum(ds, bc->buffer);
                         bc->flags |= BCF_WRITE;
@@ -730,17 +796,43 @@ ValidationResult collect_directory_blocks(DiskStructure *ds, ULONG blk)
  * The bitmap content is fully known in memory, so the on-disk blocks are
  * built here and written out in runs of consecutive blocks, without first
  * reading each block in. Bitmap data blocks are never pulled into the block
- * cache during validation, so writing around the cache is safe.
+ * cache deliberately, but read-ahead may have cached copies. Invalidate those
+ * copies before bypassing the cache; preserve all caller-owned buffers.
  */
 #define BM_RECORDBATCHBYTES 65536
 
-void record_bitmap(DiskStructure *ds)
+/* Direct bitmap writes must not evict buffers owned by the calling packet. */
+static BOOL invalidateBitmapCache(DiskStructure *ds, BOOL invalidate)
+{
+        struct BlockCache *bc;
+        ULONG i;
+        for (bc = ds->vol->blockcache; bc != NULL; bc = bc->next)
+                for (i = 0; i < ds->bm_lastblk; i++)
+                        if (bc->blocknum == ds->bm_blocks[i]
+                                && (bc->flags & (BCF_USED | BCF_WRITE)))
+                                return DOSFALSE;
+        if (!invalidate)
+                return DOSTRUE;
+        for (bc = ds->vol->blockcache; bc != NULL; bc = bc->next)
+                for (i = 0; i < ds->bm_lastblk; i++)
+                        if (bc->blocknum == ds->bm_blocks[i])
+                        {
+                                bc->blocknum = 0;
+                                bc->newness = 0;
+                                break;
+                        }
+        return DOSTRUE;
+}
+
+ValidationResult record_bitmap(DiskStructure *ds)
 {
         ULONG bmap_blk_bytes = (ds->vol->SizeBlock-1)<<2;
         ULONG batchblocks = BM_RECORDBATCHBYTES / BLOCK_SIZE(ds->vol);
         UBYTE *buf = NULL;
         ULONG i;
 
+        if (!invalidateBitmapCache(ds, FALSE))
+                return vr_NoAccess;
         if (batchblocks > 1)
                 buf = AllocVec(batchblocks * BLOCK_SIZE(ds->vol), MEMF_PUBLIC);
         if (buf == NULL)
@@ -752,15 +844,24 @@ void record_bitmap(DiskStructure *ds)
                 for (i=0; i<ds->bm_lastblk; i++)
                 {
                         bc = getBlock(ds->afs, ds->vol, ds->bm_blocks[i]);
+                        if (bc == NULL)
+                                return vr_ReadError;
                         mem = bc->buffer;
 
                         CopyMemQuick(&((char*)ds->bitmap)[i*bmap_blk_bytes], &mem[1], bmap_blk_bytes);
                         verify_bm_checksum(ds, mem);
-                        bc->flags |= BCF_WRITE;
+                        if (!writeBlock(ds->afs, ds->vol, bc, -1))
+                                return vr_WriteError;
                 }
-                return;
+                return vr_OK;
         }
 
+        /* Invalidate before bypassing the cache, also covering partial failure. */
+        if (!invalidateBitmapCache(ds, TRUE))
+        {
+                FreeVec(buf);
+                return vr_NoAccess;
+        }
         i = 0;
         while (i < ds->bm_lastblk)
         {
@@ -779,10 +880,15 @@ void record_bitmap(DiskStructure *ds)
                         CopyMemQuick(&((char*)ds->bitmap)[(i + n) * bmap_blk_bytes], &mem[1], bmap_blk_bytes);
                         verify_bm_checksum(ds, mem);
                 }
-                writeDisk(ds->afs, ds->vol, ds->bm_blocks[i], runlen, buf);
+                if (writeDisk(ds->afs, ds->vol, ds->bm_blocks[i], runlen, buf) != 0)
+                {
+                        FreeVec(buf);
+                        return vr_WriteError;
+                }
                 i += runlen;
         }
         FreeVec(buf);
+        return vr_OK;
 }
 
 /*

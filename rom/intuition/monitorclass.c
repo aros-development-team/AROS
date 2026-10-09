@@ -1965,7 +1965,7 @@ IPTR MonitorClass__MM_SetPointerShape(Class *cl, Object *obj, struct msSetPointe
         bm = data->tmpPtr;
     }
 
-    res = HIDD_Display_SetCursorShape(data->handle->display, HIDD_BM_OBJ(bm), msg->pointer->xoffset, msg->pointer->yoffset);
+    res = SetDisplayPointerShape(data->handle->display, msg->pointer, bm, IntuitionBase);
     DEBUG_POINTER(bug("[Monitor] %s: SetCursorShape() returned %d\n", __func__, res));
     if (res) {
         data->pointer = msg->pointer;

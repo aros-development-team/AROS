@@ -94,6 +94,7 @@ static void RunCRTThreadHooks(BOOL enter)
 static void StarterFunc(void)
 {
     ThreadInfo *inf;
+    struct Task *waiter;
     int i, j;
     int foundkey = TRUE;
 #ifdef USE_ASYNC_CANCEL
@@ -110,7 +111,10 @@ static void StarterFunc(void)
     inf = (ThreadInfo *)FindTask(NULL)->tc_UserData;
 #endif
 
-    Wait(SIGF_SINGLE);
+    // wait until the parent has set inf->task. Not by signal: a SIGF_SINGLE
+    // arriving while DosEntry waits in ObtainSemaphore ends that wait unowned
+    ObtainSemaphore(&thread_sem);
+    ReleaseSemaphore(&thread_sem);
 
     // trim the name
     //inf->task->tc_Node.ln_Name[inf->oldlen];
@@ -179,8 +183,10 @@ static void StarterFunc(void)
 
     // destroy all non-NULL TLS key values
     // since the destructors can set the keys themselves, we have to do multiple iterations
+    // (not when cancelled by the program's exit: as with POSIX exit() the thread
+    // just ends, its destructors may wait for the code it was cancelled in)
     ObtainSemaphoreShared(&tls_sem);
-    for (j = 0; foundkey && j < PTHREAD_DESTRUCTOR_ITERATIONS; j++)
+    for (j = 0; !__pthread_exiting && foundkey && j < PTHREAD_DESTRUCTOR_ITERATIONS; j++)
     {
         foundkey = FALSE;
         for (i = 0; i < PTHREAD_KEYS_MAX; i++)
@@ -200,20 +206,19 @@ static void StarterFunc(void)
     // (including TLS destructors) has run
     RunCRTThreadHooks(FALSE);
 
+    // decide under thread_sem: pthread_detach() and pthread_join() may run
+    // concurrently. A joiner is woken even if we were detached meanwhile.
+    ObtainSemaphore(&thread_sem);
+    waiter = inf->waiter;
     if (!inf->detached)
-    {
-        // tell the parent thread that we are done
-        Forbid();
         inf->finished = TRUE;
-        Signal(inf->waiter, SIGF_PARENT);
-    }
     else
-    {
-        // no one is waiting for us, do the clean up
-        ObtainSemaphore(&thread_sem);
         memset(inf, 0, sizeof(ThreadInfo));
-        ReleaseSemaphore(&thread_sem);
-    }
+    ReleaseSemaphore(&thread_sem);
+    // the joiner may unload our code: let it run once we are gone
+    Forbid();
+    if (waiter)
+        Signal(waiter, SIGF_PARENT);
 }
 
 int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start)(void *), void *arg)
@@ -238,13 +243,23 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start)
         return EAGAIN;
     }
 
+    if (threadnew == threads_used)
+    {
+        // AllocVec: memory from a thread's C runtime goes away with the thread
+        if (!(threads[threadnew] = AllocVec(sizeof(ThreadInfo), MEMF_ANY)))
+        {
+            ReleaseSemaphore(&thread_sem);
+            return EAGAIN;
+        }
+        __atomic_store_n(&threads_used, threadnew + 1, __ATOMIC_RELEASE);
+    }
+
     // prepare the ThreadInfo structure
     inf = GetThreadInfo(threadnew);
     memset(inf, 0, sizeof(ThreadInfo));
     inf->start = start;
     inf->arg = arg;
     inf->parent = GET_THIS_TASK;
-    inf->waiter = inf->parent;
     if (attr)
         inf->attr = *attr;
     else
@@ -284,8 +299,6 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start)
         inf->parent = NULL;
         return EAGAIN;
     }
-
-    Signal(inf->task, SIGF_SINGLE);
 
     *thread = threadnew;
 

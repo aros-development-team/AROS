@@ -69,6 +69,11 @@ extern struct SignalSemaphore ndb_Lock;
 extern struct DynDataBase DynDB;
 extern ULONG ndb_Serial;
 
+/* Per-interface DNS servers (DNS=/DNS6= interface tokens). */
+struct ifnet;
+void ifnet_set_dns(struct ifnet *ifp, const UBYTE *v4csv, const UBYTE *v6csv);
+void ifnet_clear_dns(struct ifnet *ifp);
+
 /* Locking macros for NDB */
 #define LOCK_W_NDB(ndb) (ObtainSemaphore(&ndb_Lock))
 #define LOCK_R_NDB(ndb) (ObtainSemaphoreShared(&ndb_Lock))
@@ -98,8 +103,11 @@ struct NameserventNode {
   struct MinNode  nsn_Node;
   short           nsn_EntSize;
   struct nameservent {
-    struct in_addr ns_addr;
+    struct in_addr ns_addr;	/* IPv4 server (nsn_Family == AF_INET) */
   } nsn_Ent;
+  struct ifnet   *nsn_Owner;	/* owning interface for per-interface DNS, else NULL */
+  UBYTE           nsn_Family;	/* AF_INET or AF_INET6 (0 == AF_INET for old creators) */
+  struct in6_addr nsn_Addr6;	/* IPv6 server (nsn_Family == AF_INET6) */
 };
 
 struct DomainentNode {

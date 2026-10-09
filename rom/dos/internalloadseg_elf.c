@@ -958,12 +958,25 @@ static int relocate
                 *p = (*p & 0xffe0001fu) | ((((s + rel->addend) >> 48) & 0xffff) << 5);
                 break;
 
-            /* ADRP: 21-bit page offset, split immlo (bits 29-30) / immhi (5-23) */
+            /*
+             * ADRP: 21-bit signed page offset, split immlo (bits 29-30) /
+             * immhi (5-23). The reach is +/-4GB; a PG_HI21 target outside
+             * that range must be refused rather than silently truncated.
+             * PG_HI21_NC has no overflow check by definition.
+             */
             case R_AARCH64_ADR_PREL_PG_HI21:
             case R_AARCH64_ADR_PREL_PG_HI21_NC:
             {
-                IPTR x = (((s + rel->addend) & ~(IPTR)0xfff) - ((IPTR)p & ~(IPTR)0xfff)) >> 12;
-                *p = (*p & 0x9f00001fu) | ((x & 0x3) << 29) | (((x >> 2) & 0x7ffff) << 5);
+                SIPTR x = (SIPTR)(((s + rel->addend) & ~(IPTR)0xfff) - ((IPTR)p & ~(IPTR)0xfff)) >> 12;
+
+                if (ELF_R_TYPE(rel->info) == R_AARCH64_ADR_PREL_PG_HI21
+                    && (x < -((SIPTR)1 << 20) || x > (((SIPTR)1 << 20) - 1))) {
+                    D(bug("[ELF Loader] ADR_PREL_PG_HI21 target out of range\n"));
+                    SetIoErr(ERROR_BAD_HUNK);
+                    return 0;
+                }
+
+                *p = (*p & 0x9f00001fu) | (((ULONG)x & 0x3) << 29) | ((((ULONG)(x >> 2)) & 0x7ffff) << 5);
                 break;
             }
 
@@ -1790,8 +1803,10 @@ static BPTR load_seg_elf_int
          * Accept both SHT_REL and SHT_RELA: the actual section type produced by
          * a given toolchain is not fixed (e.g. clang/lld emits SHT_REL for ARM
          * 32-bit while some gcc builds emit SHT_RELA).
+         * An empty relocation section is valid ELF and has nothing to apply;
+         * skip it, as load_block() can't allocate a block of size 0.
          */
-        if ((sh[i].type == SHT_REL || sh[i].type == SHT_RELA) && sh[sh[i].info].addr)
+        if ((sh[i].type == SHT_REL || sh[i].type == SHT_RELA) && sh[i].size && sh[sh[i].info].addr)
         {
             sh[i].addr = load_block(file, sh[i].offset, sh[i].size, funcarray, &srb, DOSBase);
             if (!sh[i].addr || !relocate(&eh, sh, i, symtab_shndx, reloc_out_of_range, DOSBase))

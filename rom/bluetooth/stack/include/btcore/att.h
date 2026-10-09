@@ -39,6 +39,7 @@
 #define BT_ATT_OPCODE_READ_BY_GROUP_TYPE_RESPONSE 0x11u
 #define BT_ATT_OPCODE_WRITE_REQUEST 0x12u
 #define BT_ATT_OPCODE_WRITE_RESPONSE 0x13u
+#define BT_ATT_OPCODE_WRITE_COMMAND 0x52u
 #define BT_ATT_OPCODE_HANDLE_VALUE_NOTIFICATION 0x1Bu
 #define BT_ATT_OPCODE_HANDLE_VALUE_INDICATION 0x1Du
 #define BT_ATT_OPCODE_HANDLE_VALUE_CONFIRMATION 0x1Eu
@@ -146,6 +147,8 @@ bt_status_t bt_att_encode_read_blob_request(struct bt_buf_writer *w, uint16_t ha
  * value" -- callers read params directly once the opcode is confirmed. */
 
 bt_status_t bt_att_encode_write_request(struct bt_buf_writer *w, uint16_t handle,
+                                         const uint8_t *value, size_t value_len);
+bt_status_t bt_att_encode_write_command(struct bt_buf_writer *w, uint16_t handle,
                                          const uint8_t *value, size_t value_len);
 /* Write Response has no parameters at all -- confirming the opcode is enough. */
 

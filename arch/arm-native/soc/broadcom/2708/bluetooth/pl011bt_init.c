@@ -33,6 +33,7 @@
 #include <proto/kernel.h>
 #include <proto/gpio.h>
 #include <proto/mbox.h>
+#include <proto/openfirmware.h>
 #include <proto/pl011bt.h>
 
 #include "pl011bt_private.h"
@@ -42,11 +43,11 @@
  * and GPIO 43 carries GPCLK2 in ALT0, which the controller uses as its LPO.
  */
 #define BT_GPIO_CTS             30
+#define BT_GPIO_TXD             32
 #define BT_GPIO_RXD             33
 #define BT_GPIO_LPO             43
 
-/* Mailbox property tags for the firmware-owned GPIO expander. BT_REG_EN is
- * expander pin 128 and is not addressable through the SoC GPIO block. */
+/* Mailbox tags for the firmware's GPIO expander, pins numbered from 128. */
 #define FW_SET_GPIO_STATE       0x00038041
 #define FW_SET_GPIO_CONFIG      0x00038043
 #define FW_GPIO_BT_REG_EN       128
@@ -81,15 +82,16 @@ static inline void pl011bt_wr(IPTR addr, ULONG value)
  * RP1 instead. Both matter here -- GPFSEL3 also carries the WiFi SDIO bus on
  * GPIO 34-39, and clearing that from under sdio.resource is not recoverable.
  */
-static void route_bluetooth_uart(void)
+static void route_bluetooth_uart(struct PL011BTBase *PL011BTBase)
 {
+    unsigned int first = PL011BTBase->pl011bt_RTSCTS ? BT_GPIO_CTS : BT_GPIO_TXD;
     unsigned int pin;
 
-    for (pin = BT_GPIO_CTS; pin <= BT_GPIO_RXD; pin++)
+    for (pin = first; pin <= BT_GPIO_RXD; pin++)
         GPIOSetFunc(pin, GPIO_FSEL_ALT3);
 
     D(bug("[PL011BT] GPIO %lu-%lu -> ALT3\n",
-          (ULONG)BT_GPIO_CTS, (ULONG)BT_GPIO_RXD));
+          (ULONG)first, (ULONG)BT_GPIO_RXD));
 }
 
 /*
@@ -131,8 +133,7 @@ static LONG setup_lpo_clock(struct PL011BTBase *PL011BTBase)
 }
 
 /*
- * BT_REG_EN, the radio's enable line, sits on the firmware's GPIO expander
- * rather than on the SoC, so it is reachable only through the mailbox.
+ * Expander pins are reachable only through the mailbox.
  * Caller holds pl011bt_Sem: the message buffer is shared.
  */
 static LONG firmware_gpio_set(struct PL011BTBase *PL011BTBase, ULONG gpio,
@@ -255,6 +256,95 @@ static void pl011bt_rx_handler(void *data, void *unused)
                PL011_INT_RX | PL011_INT_RT | PL011_INT_OE);
 }
 
+/*
+ * serial0 is the console. disable-bt and miniuart-bt point it at the PL011
+ * (serial@7e201000), and then the PL011 is not ours.
+ */
+static BOOL pl011bt_is_console(void)
+{
+    static const char pl011[] = "201000";
+    APTR OpenFirmwareBase = OpenResource("openfirmware.resource");
+    void *key, *prop;
+    const char *s;
+    ULONG len, i;
+
+    if (!OpenFirmwareBase || !(key = OF_OpenKey("/aliases")) ||
+        !(prop = OF_FindProperty(key, "serial0")))
+        return FALSE;
+
+    /* The length counts the terminating NUL. */
+    len = OF_GetPropLen(prop);
+    if (len < sizeof(pl011))
+        return FALSE;
+    s = (const char *)OF_GetPropValue(prop) + len - sizeof(pl011);
+    for (i = 0; i < sizeof(pl011) - 1; i++)
+        if (s[i] != pl011[i])
+            return FALSE;
+
+    return TRUE;
+}
+
+/*
+ * CTS/RTS are wired to GPIO 30/31 when the live uart0_pins list them
+ * (3B+, Zero 2 W), not on a Pi 3B. Default: wired.
+ */
+static BOOL pl011bt_has_rtscts(void)
+{
+    APTR OpenFirmwareBase = OpenResource("openfirmware.resource");
+    void *key, *prop;
+    const ULONG *pins;
+    ULONG n, i;
+
+    if (!OpenFirmwareBase ||
+        !(key = OF_OpenKey("/soc/gpio@7e200000/uart0_pins")) ||
+        !(prop = OF_FindProperty(key, "brcm,pins")))
+        return TRUE;
+
+    pins = (const ULONG *)OF_GetPropValue(prop);
+    n = OF_GetPropLen(prop) / sizeof(ULONG);
+    for (i = 0; i < n; i++)
+        if (AROS_BE2LONG(pins[i]) == BT_GPIO_CTS)
+            return TRUE;
+
+    return FALSE;
+}
+
+/*
+ * BT_REG_EN from the radio's shutdown-gpios: the expander on a Pi 3B/3B+,
+ * SoC GPIO 42 on a Zero 2 W. Default: expander pin 0.
+ */
+static void pl011bt_find_power(struct PL011BTBase *PL011BTBase)
+{
+    APTR OpenFirmwareBase = OpenResource("openfirmware.resource");
+    void *key, *prop, *gpio, *phandle;
+    const ULONG *cell;
+
+    PL011BTBase->pl011bt_PowerPin = FW_GPIO_BT_REG_EN;
+    PL011BTBase->pl011bt_PowerSoC = FALSE;
+    PL011BTBase->pl011bt_PowerLow = FALSE;
+
+    if (!OpenFirmwareBase ||
+        !(key = OF_OpenKey("/soc/serial@7e201000/bluetooth")) ||
+        !(prop = OF_FindProperty(key, "shutdown-gpios")) ||
+        OF_GetPropLen(prop) < 3 * sizeof(ULONG))
+        return;
+
+    cell = (const ULONG *)OF_GetPropValue(prop);
+    gpio = OF_OpenKey("/soc/gpio@7e200000");
+    phandle = gpio ? OF_FindProperty(gpio, "phandle") : NULL;
+
+    /* Both big-endian: compare as is. */
+    if (phandle && OF_GetPropLen(phandle) == sizeof(ULONG) &&
+        *(const ULONG *)OF_GetPropValue(phandle) == cell[0])
+    {
+        PL011BTBase->pl011bt_PowerSoC = TRUE;
+        PL011BTBase->pl011bt_PowerPin = AROS_BE2LONG(cell[1]);
+    }
+    else
+        PL011BTBase->pl011bt_PowerPin = FW_GPIO_BT_REG_EN + AROS_BE2LONG(cell[1]);
+    PL011BTBase->pl011bt_PowerLow = (AROS_BE2LONG(cell[2]) & 1) != 0;
+}
+
 static int pl011bt_init(struct PL011BTBase *PL011BTBase)
 {
     IPTR periiobase;
@@ -280,7 +370,7 @@ static int pl011bt_init(struct PL011BTBase *PL011BTBase)
      *
      * The arrangement this drives -- PL011 on GPIO 30-33 to the radio, the
      * console pushed onto the AUX mini-UART, the LPO on GPCLK2, BT_REG_EN on
-     * the firmware's GPIO expander -- is the BCM2835/6/7 one, and IRQ_VC_UART
+     * the expander or a SoC GPIO -- is the BCM2835/6/7 one, and IRQ_VC_UART
      * below is the legacy interrupt controller's numbering. A BCM2711 wires
      * its radio the same way but presents the GPU interrupts through the GIC
      * at BCM2711_GPUIRQ_OFFSET, and a BCM2712 does not use this UART for
@@ -296,6 +386,12 @@ static int pl011bt_init(struct PL011BTBase *PL011BTBase)
         return FALSE;
     }
     PL011BTBase->pl011bt_periiobase = (unsigned int)periiobase;
+
+    if (pl011bt_is_console())
+    {
+        bug("[PL011BT] the PL011 is serial0 (the console), standing down\n");
+        return FALSE;
+    }
 
     GPIOBase = OpenResource("gpio.resource");
     if (GPIOBase == NULL)
@@ -314,12 +410,18 @@ static int pl011bt_init(struct PL011BTBase *PL011BTBase)
          & ~(IPTR)(MBOX_MSG_ALIGN - 1));
 
     PL011BTBase->pl011bt_ClockHz = query_uart_clock(PL011BTBase);
+    PL011BTBase->pl011bt_RTSCTS = pl011bt_has_rtscts();
+    pl011bt_find_power(PL011BTBase);
     PL011BTBase->pl011bt_Caps = PL011BT_CAP_PRESENT |
         PL011BT_CAP_BAUD_CHANGE | PL011BT_CAP_POWER_CONTROL;
 
-    bug("[PL011BT] ready: PL011=0x%08lx clock=%lu mbox=%s\n",
+    bug("[PL011BT] ready: PL011=0x%08lx clock=%lu mbox=%s rts/cts=%s"
+        " power=%s%lu\n",
         (ULONG)PL011_0_BASE, (ULONG)PL011BTBase->pl011bt_ClockHz,
-        MBoxBase != NULL ? "yes" : "no");
+        MBoxBase != NULL ? "yes" : "no",
+        PL011BTBase->pl011bt_RTSCTS ? "yes" : "no",
+        PL011BTBase->pl011bt_PowerSoC ? "gpio" : "fw",
+        (ULONG)PL011BTBase->pl011bt_PowerPin);
 
     return TRUE;
 }
@@ -415,7 +517,7 @@ AROS_LH3(long, PL011BTConfigure,
         ReleaseSemaphore(&PL011BTBase->pl011bt_Sem);
         return PL011BT_ERR_TIMEOUT;
     }
-    route_bluetooth_uart();
+    route_bluetooth_uart(PL011BTBase);
 
     pl011bt_wr(PL011_0_BASE + PL011_CR, 0);
     while ((pl011bt_rd(PL011_0_BASE + PL011_FR) & PL011_FR_BUSY) && --wait != 0)
@@ -466,7 +568,8 @@ AROS_LH3(long, PL011BTConfigure,
                PL011_LCRH_WLEN8 | PL011_LCRH_FEN);
 
     control = PL011_CR_UARTEN | PL011_CR_TXE | PL011_CR_RXE;
-    if (flags & PL011BT_CONFIG_RTS_CTS)
+    /* Without the wires CTS floats and CTSEN can stall TX. */
+    if ((flags & PL011BT_CONFIG_RTS_CTS) && PL011BTBase->pl011bt_RTSCTS)
         control |= PL011_CR_RTSEN | PL011_CR_CTSEN;
     pl011bt_wr(PL011_0_BASE + PL011_CR, control);
 
@@ -527,7 +630,20 @@ AROS_LH2(long, PL011BTSetPower,
     if (PL011BTBase->pl011bt_Owner != owner)
         result = PL011BT_ERR_NOT_OWNER;
     else
-        result = firmware_gpio_set(PL011BTBase, FW_GPIO_BT_REG_EN, enabled);
+    {
+        ULONG level = (enabled != 0) ^ PL011BTBase->pl011bt_PowerLow;
+
+        if (PL011BTBase->pl011bt_PowerSoC)
+        {
+            /* Level before direction, so the pin does not glitch. */
+            GPIOSet(PL011BTBase->pl011bt_PowerPin, level);
+            GPIOSetFunc(PL011BTBase->pl011bt_PowerPin, GPIO_FSEL_OUTPUT);
+            result = PL011BT_OK;
+        }
+        else
+            result = firmware_gpio_set(PL011BTBase,
+                                       PL011BTBase->pl011bt_PowerPin, level);
+    }
     ReleaseSemaphore(&PL011BTBase->pl011bt_Sem);
 
     return result;

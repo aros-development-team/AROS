@@ -1,0 +1,5 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+#MM- test : test-filesys
+#MM- test-quick : test-filesys-quick
+#MM- test-filesys : test-filesys-cdupdate
+#MM- test-filesys-quick : test-filesys-cdupdate-quick

@@ -154,6 +154,25 @@ static inline ULONG llPollJoystick(int port)
     return JP_TYPE_JOYSTK | bits;
 }
 
+static inline ULONG llPollMouse(int port)
+{
+    volatile struct Custom *custom = (struct Custom *)0xdff000;
+    volatile struct CIA *cia = (struct CIA *)0xbfe001;
+    ULONG state = JP_TYPE_MOUSE |
+                  (port == 0 ? custom->joy0dat : custom->joy1dat);
+    UWORD pot = custom->potinp;
+    UBYTE fire = port == 0 ? (1 << 6) : (1 << 7);
+    UBYTE shift = port == 0 ? 8 : 12;
+
+    if (!(cia->ciapra & fire))
+        state |= JPF_BUTTON_RED;
+    if (!(pot & (1 << (shift + 2))))
+        state |= JPF_BUTTON_BLUE;
+    if (!(pot & (1 << shift)))
+        state |= JPF_BUTTON_PLAY;
+    return state;
+}
+
 
 ULONG llPortOpen(struct LowLevelBase *LowLevelBase, int port, UWORD *bits)
 {
@@ -162,7 +181,20 @@ ULONG llPortOpen(struct LowLevelBase *LowLevelBase, int port, UWORD *bits)
     struct Library *PotgoBase = LowLevelBase->ll_Arch.llad_PotgoBase;
     volatile struct Custom *custom = (struct Custom*)0xdff000;
 
-    if (type == 0 || type == JP_TYPE_GAMECTLR || type == JP_TYPE_JOYSTK) {
+    /* Joysticks use only the two direction bits of each JOYDAT byte.
+     * Movement beyond that range identifies quadrature mouse counters.
+     * Recheck a cached joystick classification so a mouse first sampled
+     * at rest can become visible after it moves. Keep a detected mouse
+     * classified while its byte counters stop or wrap. */
+    if ((type == 0 || type == JP_TYPE_JOYSTK) &&
+        ((port == 0 ? custom->joy0dat : custom->joy1dat) & ~0x0303))
+    {
+        type = JP_TYPE_MOUSE;
+        LowLevelBase->ll_Arch.llad_PortType[port] = type;
+    }
+
+    if (type == 0 || type == JP_TYPE_GAMECTLR || type == JP_TYPE_JOYSTK ||
+        type == JP_TYPE_MOUSE) {
         if (port == 0)
             potbits = POTGO_GAMEPAD_PORT0;
         else
@@ -175,11 +207,20 @@ ULONG llPortOpen(struct LowLevelBase *LowLevelBase, int port, UWORD *bits)
             type = JP_TYPE_NOTAVAIL;
             PotgoBase = NULL;
         } else {
-            /* Set Pin 5 as output, load mode */
+            /* Mouse buttons require both potentiometer lines as inputs;
+             * pads need Pin 5 driven high to load their serial state. */
             UWORD pot;
             pot = custom->potinp;
-            pot &= ~((port == 0) ? (3 << 8) : (3 << 12));
-            custom->potgo = pot | ((port == 0) ? (3 << 8) : (3 << 12));
+            if (type == JP_TYPE_MOUSE)
+            {
+                pot &= ~potbits;
+                custom->potgo = pot;
+            }
+            else
+            {
+                pot &= ~((port == 0) ? (3 << 8) : (3 << 12));
+                custom->potgo = pot | ((port == 0) ? (3 << 8) : (3 << 12));
+            }
         }
     } else {
         /* No Potgo bits allocated */
@@ -228,6 +269,9 @@ AROS_LH1(ULONG, ReadJoyPort,
           break;
       case JP_TYPE_JOYSTK:
           state = llPollJoystick(port);
+          break;
+      case JP_TYPE_MOUSE:
+          state = llPollMouse(port);
           break;
       default:
           state = JP_TYPE_UNKNOWN;

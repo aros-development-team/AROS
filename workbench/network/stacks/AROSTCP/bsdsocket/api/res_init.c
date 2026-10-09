@@ -23,6 +23,9 @@
 #include <conf.h>
 
 #include <sys/param.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/nameser.h>
 #include <kern/amiga_includes.h>
 #include <kern/amiga_netdb.h>
 #include <api/resolv.h>
@@ -48,6 +51,29 @@ void res_cleanup_db(struct state *state)
     if(state->nsaddr_list)
         bsd_free(state->nsaddr_list, NULL);
     state->options = 0;
+}
+
+/*
+ * Fill one nsaddr_list slot from a nameserver node as a fully-formed sockaddr
+ * (family, port and address), so res_send() can open a socket of the matching
+ * family and connect straight to it - IPv4 or IPv6.
+ */
+static void res_fill_ns(struct sockaddr_storage *ss, struct NameserventNode *ns)
+{
+    memset(ss, 0, sizeof(*ss));
+    if(ns->nsn_Family == AF_INET6) {
+        struct sockaddr_in6 *s6 = (struct sockaddr_in6 *)ss;
+        s6->sin6_len    = sizeof(*s6);
+        s6->sin6_family = AF_INET6;
+        s6->sin6_port   = htons(NAMESERVER_PORT);
+        s6->sin6_addr   = ns->nsn_Addr6;
+    } else {
+        struct sockaddr_in *s4 = (struct sockaddr_in *)ss;
+        s4->sin_len         = sizeof(*s4);
+        s4->sin_family      = AF_INET;
+        s4->sin_port        = htons(NAMESERVER_PORT);
+        s4->sin_addr.s_addr = ns->nsn_Ent.ns_addr.s_addr;
+    }
 }
 
 int res_update_db(struct state *state)
@@ -167,7 +193,7 @@ int res_update_db(struct state *state)
 #endif
 
     /* Allocate space for the array */
-    state->nsaddr_list = bsd_malloc(n * sizeof(struct in_addr), NULL, NULL);
+    state->nsaddr_list = bsd_malloc(n * sizeof(struct sockaddr_storage), NULL, NULL);
     if(!state->nsaddr_list) {
 #if defined(__AROS__)
         D(bug("[AROSTCP](res_init.c) res_update_db: Failed to allocate array for nsaddr_list pointers\n"));
@@ -182,18 +208,18 @@ int res_update_db(struct state *state)
     for(ns = (struct NameserventNode *)NDB->ndb_NameServers.mlh_Head;
             ns->nsn_Node.mln_Succ;
             ns = (struct NameserventNode *)ns->nsn_Node.mln_Succ) {
-        state->nsaddr_list[n++].s_addr = ns->nsn_Ent.ns_addr.s_addr;
+        res_fill_ns(&state->nsaddr_list[n++], ns);
     }
     UNLOCK_NDB(NDB);
 
     for(ns = (struct NameserventNode *)DynDB.dyn_NameServers.mlh_Head;
             ns->nsn_Node.mln_Succ;
             ns = (struct NameserventNode *)ns->nsn_Node.mln_Succ) {
-        state->nsaddr_list[n++].s_addr = ns->nsn_Ent.ns_addr.s_addr;
+        res_fill_ns(&state->nsaddr_list[n++], ns);
     }
     ReleaseSemaphore(&DynDB.dyn_Lock);
-    /* Terminale the array */
-    state->nsaddr_list[n].s_addr = 0;
+    /* Terminate the array: a zero family marks the end. */
+    state->nsaddr_list[n].ss_family = 0;
     /* Remember NetDB update count */
     state->dbserial = ndb_Serial;
     state->options = opts;
