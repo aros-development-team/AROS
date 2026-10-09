@@ -119,10 +119,19 @@ int devres_release(struct device *dev, dr_release_t release, void *match, void *
 #define dev_vdbg(dev, fmt, ...)     no_printk(fmt, ##__VA_ARGS__)
 #define dev_WARN(dev, fmt, ...)     WARN(1, fmt, ##__VA_ARGS__)
 #define dev_WARN_ONCE(dev, c, fmt, ...) WARN_ONCE(c, fmt, ##__VA_ARGS__)
-#define dev_err_once(dev, fmt, ...) dev_err(dev, fmt, ##__VA_ARGS__)
-#define dev_warn_once(dev, fmt, ...) dev_warn(dev, fmt, ##__VA_ARGS__)
-#define dev_info_once(dev, fmt, ...) dev_info(dev, fmt, ##__VA_ARGS__)
-#define dev_notice_once(dev, fmt, ...) dev_notice(dev, fmt, ##__VA_ARGS__)
+/*
+ * The _once variants print once per call site, as on Linux. Drivers use
+ * them for conditions met on every frame (drm_plane_get_damage_clips()
+ * warns on each plane update of the legacy display unit), so printing
+ * every time floods the debug output.
+ */
+#define dev_level_once(dev_level, dev, fmt, ...) ({                     \
+    static bool __print_once;                                           \
+    if (!__print_once) { __print_once = true; dev_level(dev, fmt, ##__VA_ARGS__); } })
+#define dev_err_once(dev, fmt, ...) dev_level_once(dev_err, dev, fmt, ##__VA_ARGS__)
+#define dev_warn_once(dev, fmt, ...) dev_level_once(dev_warn, dev, fmt, ##__VA_ARGS__)
+#define dev_info_once(dev, fmt, ...) dev_level_once(dev_info, dev, fmt, ##__VA_ARGS__)
+#define dev_notice_once(dev, fmt, ...) dev_level_once(dev_notice, dev, fmt, ##__VA_ARGS__)
 #define dev_dbg_once(dev, fmt, ...) dev_dbg(dev, fmt, ##__VA_ARGS__)
 #define dev_err_ratelimited(dev, fmt, ...)  dev_err(dev, fmt, ##__VA_ARGS__)
 #define dev_warn_ratelimited(dev, fmt, ...) dev_warn(dev, fmt, ##__VA_ARGS__)
@@ -130,7 +139,6 @@ int devres_release(struct device *dev, dr_release_t release, void *match, void *
 #define dev_dbg_ratelimited(dev, fmt, ...)  dev_dbg(dev, fmt, ##__VA_ARGS__)
 #define dev_notice_ratelimited(dev, fmt, ...) dev_notice(dev, fmt, ##__VA_ARGS__)
 #define dev_err_probe(dev, err, fmt, ...)  ({ dev_err(dev, fmt, ##__VA_ARGS__); (err); })
-#define dev_level_once(f, dev, fmt, ...) f(dev, fmt, ##__VA_ARGS__)
 #define dev_driver_string(dev)  "nouveau"
 #define dev_bus_name(dev)       "pci"
 

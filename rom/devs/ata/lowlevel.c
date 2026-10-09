@@ -1766,6 +1766,7 @@ static BYTE ata_Identify(struct ata_Unit *unit)
     SWAP_LE_WORD(unit->au_Drive->id_PhysSectorSize);
     SWAP_LE_WORD(unit->au_Drive->id_RemMediaStatusNotificationFeatures);
     SWAP_LE_WORD(unit->au_Drive->id_SecurityStatus);
+    SWAP_LE_WORD(unit->au_Drive->id_NominalMediaRotationRate);
 
     SWAP_LE_LONG(unit->au_Drive->id_WordsPerLogicalSector);
     SWAP_LE_LONG(unit->au_Drive->id_LBASectors);

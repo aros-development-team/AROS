@@ -1,4 +1,4 @@
-# Copyright (C) 2003-2025, The AROS Development Team. All rights reserved.
+# Copyright (C) 2003-2026, The AROS Development Team. All rights reserved.
 
 include $(SRCDIR)/config/aros.cfg
 
@@ -63,8 +63,8 @@ CUNITSTDCTESTFILES := \
 #MM- test : test-dos
 #MM- test-quick : test-dos-quick
 
-#MM- test-dos : test-dos-common test-dos-pure test-dos-cunit
-#MM- test-dos-quick : test-dos-common-quick test-dos-pure-quick test-dos-cunit-quick
+#MM- test-dos : test-dos-common test-dos-pure test-dos-cunit test-dos-resident
+#MM- test-dos-quick : test-dos-common-quick test-dos-pure-quick test-dos-cunit-quick test-dos-resident-quick
 
 #MM- test-cunit : test-dos-cunit
 #MM- test-cunit-quick : test-dos-cunit-quick

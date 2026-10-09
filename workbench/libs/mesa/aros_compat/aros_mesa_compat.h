@@ -20,4 +20,9 @@ static inline FILE *open_memstream(char **ptr, size_t *sizeloc)
     return NULL;
 }
 
+static inline int getpagesize(void)
+{
+    return 4096;
+}
+
 #endif /* _AROS_MESA_COMPAT_H */

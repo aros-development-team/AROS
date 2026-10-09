@@ -1,0 +1,293 @@
+include $(SRCDIR)/config/aros.cfg
+include $(SRCDIR)/workbench/libs/mesa/mesa.cfg
+
+GALLIUM_PATH = $(top_srcdir)/src/gallium
+
+include $(SRCDIR)/$(CURDIR)/sources.drm.mak
+include $(SRCDIR)/$(CURDIR)/sources.radeonsi.mak
+
+# WARNING - THIS MMAKEFILE REFERENCES SOURCE CODE OUTSIDE OF ITS TREE
+# (Mesa's gallium headers, from the mesa port)
+#
+# The device is driven by a port of the Linux amdgpu kernel driver, with its
+# display (DC) and power management (pm) parts, in the way the nouveau and
+# vmwaresvga hidds are built. The DRM core, TTM, the GPU scheduler and the
+# Linux compatibility layer are the same base the vmwaresvga hidd carries, as a
+# copy of its own in this tree.
+
+#MM- workbench-hidds-amdgpu : hidd-amdgpu-mesa$(OPT_MESAGL)
+#MM- hidd-amdgpu-mesa26.0.0 : hidd-amdgpu-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
+#MM- hidd-amdgpu-pc-x86_64 : hidd-amdgpu hidd-amdgpu-ids
+#MM hidd-amdgpu: includes hidd-amdgpu-drmcore hidd-amdgpu-drm hidd-amdgpu-libdrm hidd-amdgpu-libdrm-amdgpu hidd-amdgpu-radeonsi hidd-gallium mesa3dgl-linklibs linklibs-libatomic workbench-libs-z-linklib
+#MM hidd-amdgpu-libdrm : mesa3dgl-linklibs
+#MM hidd-amdgpu-libdrm-amdgpu : includes
+#MM hidd-amdgpu-radeonsi : hidd-amdgpu-radeonsi-gen mesa3dgl-linklibs mesa3d-linklib-aco mesa3d-linklib-amd-common
+
+MESA_INCLUDES := \
+            -I$(top_srcdir)/include \
+            -I$(top_srcdir)/include/GL \
+            -I$(top_srcdir)/src \
+            -iquote $(GALLIUM_PATH)/drivers \
+            -iquote $(GALLIUM_PATH)/include \
+            -iquote $(GALLIUM_PATH)/auxiliary \
+            -iquote $(GENDIR)/workbench/libs/mesa/$(MESAGLVERSION)/src/mesa/main \
+            -iquote $(top_builddir)/src \
+            -iquote $(top_builddir)/src/util \
+            -iquote $(top_builddir)/src/util/format
+
+NOWARN_FLAGS := $(NOWARN_UNUSED_VALUE) $(NOWARN_UNUSED_VARIABLE) $(NOWARN_STRICT_ALIASING)
+
+###############################################
+# libdrm shim -> libdrm_amdgpu.a
+###############################################
+
+USER_INCLUDES := \
+            -I$(SRCDIR)/$(CURDIR)/include \
+            $(MESA_INCLUDES) \
+            -I$(SRCDIR)/$(CURDIR)/include/uapi \
+            -I$(SRCDIR)/$(CURDIR)/include/uapi/drm \
+            -I$(SRCDIR)/$(CURDIR)/drm \
+
+USER_CPPFLAGS := -DDRM_COMPAT_NAME=\"amdgpu\"
+USER_CFLAGS := $(MESA_STD) $(CFLAGS_NO_STRICT_ALIASING) $(NOWARN_FLAGS)
+
+%build_linklib mmake=hidd-amdgpu-libdrm libname=drm_amdgpu objdir=$(GENDIR)/$(CURDIR)/$(MESAGLVERSION)/libdrm \
+    files="$(AROS_AMDGPU_LIBDRM_SOURCES)" srcdir="$(SRCDIR)/$(CURDIR)" usetree=yes
+
+###############################################
+# DRM core, TTM, scheduler, linux compat -> libdrm_amdgpu_core.a
+###############################################
+
+DRM_INCLUDES := \
+            -I$(SRCDIR)/$(CURDIR)/include \
+            -I$(SRCDIR)/$(CURDIR)/include/uapi \
+            -I$(SRCDIR)/$(CURDIR)/include/uapi/drm \
+            -I$(SRCDIR)/$(CURDIR)/drm \
+
+AMD_PATH := $(SRCDIR)/$(CURDIR)/drm/amd
+AMD_INCLUDES := \
+            -I$(AMD_PATH)/include/asic_reg \
+            -I$(AMD_PATH)/include \
+            -I$(AMD_PATH)/amdgpu \
+            -I$(AMD_PATH)/amdkfd \
+            -I$(AMD_PATH)/amdxcp \
+            -I$(AMD_PATH)/acp/include \
+            -I$(AMD_PATH)/ras/ras_mgr \
+            -I$(AMD_PATH)/pm/inc \
+            -I$(AMD_PATH)/pm/legacy-dpm \
+            -I$(AMD_PATH)/pm/powerplay/hwmgr \
+            -I$(AMD_PATH)/pm/powerplay/inc \
+            -I$(AMD_PATH)/pm/powerplay/smumgr \
+            -I$(AMD_PATH)/pm/swsmu \
+            -I$(AMD_PATH)/pm/swsmu/inc \
+            -I$(AMD_PATH)/pm/swsmu/inc/pmfw_if \
+            -I$(AMD_PATH)/pm/swsmu/smu11 \
+            -I$(AMD_PATH)/pm/swsmu/smu12 \
+            -I$(AMD_PATH)/pm/swsmu/smu13 \
+            -I$(AMD_PATH)/pm/swsmu/smu14 \
+            -I$(AMD_PATH)/display \
+            -I$(AMD_PATH)/display/include \
+            -I$(AMD_PATH)/display/amdgpu_dm \
+            -I$(AMD_PATH)/display/dc \
+            -I$(AMD_PATH)/display/dc/inc \
+            -I$(AMD_PATH)/display/dc/inc/hw \
+            -I$(AMD_PATH)/display/dc/clk_mgr \
+            -I$(AMD_PATH)/display/dc/dccg \
+            -I$(AMD_PATH)/display/dc/dio \
+            -I$(AMD_PATH)/display/dc/dml2 \
+            -I$(AMD_PATH)/display/dc/dml2/dml21 \
+            -I$(AMD_PATH)/display/dc/dml2/dml21/inc \
+            -I$(AMD_PATH)/display/dc/dml2/dml21/src/dml2_core \
+            -I$(AMD_PATH)/display/dc/dml2/dml21/src/dml2_dpmm \
+            -I$(AMD_PATH)/display/dc/dml2/dml21/src/dml2_mcg \
+            -I$(AMD_PATH)/display/dc/dml2/dml21/src/dml2_pmo \
+            -I$(AMD_PATH)/display/dc/dml2/dml21/src/dml2_standalone_libraries \
+            -I$(AMD_PATH)/display/dc/dml2/dml21/src/inc \
+            -I$(AMD_PATH)/display/dc/dpp \
+            -I$(AMD_PATH)/display/dc/dsc \
+            -I$(AMD_PATH)/display/dc/dwb \
+            -I$(AMD_PATH)/display/dc/hpo \
+            -I$(AMD_PATH)/display/dc/hubbub \
+            -I$(AMD_PATH)/display/dc/hubp \
+            -I$(AMD_PATH)/display/dc/hwss \
+            -I$(AMD_PATH)/display/dc/mmhubbub \
+            -I$(AMD_PATH)/display/dc/mpc \
+            -I$(AMD_PATH)/display/dc/opp \
+            -I$(AMD_PATH)/display/dc/optc \
+            -I$(AMD_PATH)/display/dc/pg \
+            -I$(AMD_PATH)/display/dc/resource \
+            -I$(AMD_PATH)/display/dc/soc_and_ip_translator \
+            -I$(AMD_PATH)/display/dmub/inc \
+            -I$(AMD_PATH)/display/modules/color \
+            -I$(AMD_PATH)/display/modules/freesync \
+            -I$(AMD_PATH)/display/modules/hdcp \
+            -I$(AMD_PATH)/display/modules/inc \
+            -I$(AMD_PATH)/display/modules/info_packet \
+            -I$(AMD_PATH)/display/modules/power
+
+# Kbuild forces kconfig.h and compiler_types.h into every file and passes the
+# configuration as CONFIG_ symbols; the default x86_64 configuration is used.
+DRM_CPPFLAGS := -D__KERNEL__ -DCONFIG_X86 -DCONFIG_X86_64 -DDRM_COMPAT_NAME=\"amdgpu\" \
+                -DCONFIG_DRM_AMDGPU -DCONFIG_DRM_AMD_DC -DCONFIG_DRM_AMD_DC_FP \
+                -DCONFIG_DRM_AMDGPU_SI -DCONFIG_DRM_AMDGPU_CIK -DCONFIG_DRM_AMD_DC_SI \
+                -DBUILD_FEATURE_TIMING_SYNC=0 \
+                -include linux/kconfig.h -include linux/compiler_types.h
+DRM_NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_STRICT_ALIASING) $(NOWARN_UNUSED_BUT_SET_VARIABLE) $(NOWARN_UNUSED_VARIABLE) $(NOWARN_UNUSED_FUNCTION) $(NOWARN_MISSING_BRACES) -Wno-override-init -Wno-incompatible-pointer-types
+
+USER_INCLUDES := $(DRM_INCLUDES) $(AMD_INCLUDES)
+USER_CPPFLAGS := $(DRM_CPPFLAGS)
+USER_CFLAGS := $(DRM_NOWARN_FLAGS) $(CFLAGS_GNU11) -fno-strict-aliasing
+
+%build_linklib mmake=hidd-amdgpu-drmcore libname=drm_amdgpu_core objdir=$(GENDIR)/$(CURDIR)/drmcore \
+    files="$(AROS_AMDGPU_DRMCORE_SOURCES)" srcdir="$(SRCDIR)/$(CURDIR)" usetree=yes
+
+###############################################
+# amdgpu driver + AROS glue -> libdrm_amdgpu_drv.a
+###############################################
+
+USER_INCLUDES := $(DRM_INCLUDES) $(AMD_INCLUDES)
+USER_CPPFLAGS := $(DRM_CPPFLAGS)
+USER_CFLAGS := $(DRM_NOWARN_FLAGS) $(CFLAGS_GNU11) -fno-strict-aliasing
+
+%build_linklib mmake=hidd-amdgpu-drm libname=drm_amdgpu_drv objdir=$(GENDIR)/$(CURDIR)/drm \
+    files="$(AROS_AMDGPU_DRM_SOURCES)" srcdir="$(SRCDIR)/$(CURDIR)" usetree=yes
+
+###############################################
+# libdrm_amdgpu -> liblibdrm_amdgpu.a
+###############################################
+
+USER_INCLUDES := \
+            -I$(SRCDIR)/$(CURDIR)/libdrm/include/drm \
+            -I$(SRCDIR)/$(CURDIR)/include \
+            -I$(SRCDIR)/$(CURDIR)/include/uapi/drm \
+            -I$(SRCDIR)/$(CURDIR)/libdrm \
+            -I$(SRCDIR)/$(CURDIR)/libdrm/amdgpu \
+
+USER_CPPFLAGS := -DAMDGPU_ASIC_ID_TABLE=\"DEVS:amdgpu.ids\"
+USER_CFLAGS := $(CFLAGS_GNU11) $(CFLAGS_NO_STRICT_ALIASING) $(NOWARN_FLAGS)
+
+%build_linklib mmake=hidd-amdgpu-libdrm-amdgpu libname=libdrm_amdgpu objdir=$(GENDIR)/$(CURDIR)/libdrm_amdgpu \
+    files="$(AROS_AMDGPU_LIBDRM_AMDGPU_SOURCES)" srcdir="$(SRCDIR)/$(CURDIR)" usetree=yes
+
+###############################################
+# RadeonSI + amdgpu winsys -> libgallium_radeonsi.a
+###############################################
+
+RADEONSI_PATH := $(GALLIUM_PATH)/drivers/radeonsi
+WINSYS_PATH := $(GALLIUM_PATH)/winsys/amdgpu/drm
+RADEONSI_GENDIR := $(GENDIR)/$(CURDIR)/radeonsi-gen
+
+RADEONSI_GENERATED := $(RADEONSI_GENDIR)/si_tracepoints.c $(RADEONSI_GENDIR)/si_tracepoints.h \
+                      $(RADEONSI_GENDIR)/si_tracepoints_perfetto.h $(RADEONSI_GENDIR)/driconf_static.h
+
+#MM
+hidd-amdgpu-radeonsi-gen : $(RADEONSI_GENERATED)
+
+$(filter-out %/driconf_static.h,$(RADEONSI_GENERATED)) : $(RADEONSI_PATH)/si_tracepoints.py
+	@$(IF) $(TEST) ! -d $(RADEONSI_GENDIR) ; then $(MKDIR) $(RADEONSI_GENDIR) ; else $(NOP) ; fi
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $< -p $(top_srcdir)/src/util/perf/ -C $(RADEONSI_GENDIR)/si_tracepoints.c \
+	    --perfetto-hdr $(RADEONSI_GENDIR)/si_tracepoints_perfetto.h -H $(RADEONSI_GENDIR)/si_tracepoints.h
+
+# driconf's built-in defaults, for xmlconfig.c without expat
+$(RADEONSI_GENDIR)/driconf_static.h : $(top_srcdir)/src/util/driconf_static.py $(top_srcdir)/src/util/00-mesa-defaults.conf
+	@$(IF) $(TEST) ! -d $(RADEONSI_GENDIR) ; then $(MKDIR) $(RADEONSI_GENDIR) ; else $(NOP) ; fi
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $^ $@
+
+USER_INCLUDES := \
+            -I$(top_srcdir)/include \
+            -I$(top_srcdir)/include/GL \
+            -I$(top_srcdir)/src \
+            -iquote $(RADEONSI_PATH) \
+            -iquote $(GALLIUM_PATH)/drivers \
+            -iquote $(GALLIUM_PATH)/include \
+            -iquote $(GALLIUM_PATH)/auxiliary \
+            -iquote $(GENDIR)/workbench/libs/mesa/$(MESAGLVERSION)/src/mesa/main \
+            -iquote $(top_builddir)/src \
+            -iquote $(top_builddir)/src/compiler \
+            -iquote $(top_builddir)/src/compiler/glsl \
+            -iquote $(top_builddir)/src/compiler/nir \
+            -iquote $(top_builddir)/src/util \
+            -iquote $(top_builddir)/src/util/format \
+            -iquote $(top_srcdir)/src/compiler \
+            -iquote $(top_srcdir)/src/compiler/nir \
+            -iquote $(GENDIR)/workbench/libs/mesa/src/compiler/nir \
+            -iquote $(top_builddir)/src/gallium/auxiliary \
+            -iquote $(top_builddir)/src/gallium/auxiliary/util \
+            -I$(top_srcdir)/src/amd \
+            -I$(top_srcdir)/src/amd/common \
+            -I$(top_srcdir)/src/amd/compiler \
+            -I$(top_srcdir)/src/amd/common/nir \
+            -I$(top_builddir)/src/amd/common \
+            -I$(WINSYS_PATH) \
+            -I$(top_srcdir)/src/virtio \
+            -I$(top_srcdir)/src/amd/vpelib/inc \
+            -I$(RADEONSI_GENDIR) \
+            -I$(SRCDIR)/$(CURDIR)/libdrm/amdgpu \
+            -I$(SRCDIR)/$(CURDIR)/libdrm \
+            -I$(SRCDIR)/$(CURDIR)/include \
+            -I$(SRCDIR)/$(CURDIR)/include/uapi/drm \
+            -I$(SRCDIR)/workbench/libs/mesa/aros_compat
+
+USER_CPPFLAGS := $(MESA_COMPILEFLAGS) $(MESA_DEBUG) \
+                -DPACKAGE_VERSION=\"$(MESAGLVERSION)\" \
+                -DAMD_LLVM_AVAILABLE=0 \
+                -DWITH_XMLCONFIG=0 -DNO_REGEX -DHAVE_LIBDRM=1 \
+                -Damdgpu_bo_create=amdgpu_winsys_bo_create \
+                -include $(SRCDIR)/$(CURDIR)/include/uapi/drm/drm.h \
+                -include $(SRCDIR)/workbench/libs/mesa/aros_compat/aros_mesa_compat.h
+USER_CFLAGS := $(MESA_STD) $(MESA_COMPILEOPTIONS) $(CFLAGS_NO_STRICT_ALIASING) $(NOWARN_FLAGS)
+
+%build_linklib mmake=hidd-amdgpu-radeonsi libname=gallium_radeonsi objdir=$(GENDIR)/$(CURDIR)/radeonsi \
+    files="$(addprefix $(RADEONSI_PATH)/,$(AROS_AMDGPU_RADEONSI_C_SOURCES) $(AROS_AMDGPU_RADEONSI_VIDEO_SOURCES)) $(addprefix $(WINSYS_PATH)/,$(AROS_AMDGPU_WINSYS_C_SOURCES)) $(RADEONSI_GENDIR)/si_tracepoints $(top_srcdir)/src/util/xmlconfig $(top_srcdir)/src/util/u_sync_provider $(SRCDIR)/$(CURDIR)/radeonsi/radeonsi_aros" \
+    cxxfiles="$(addprefix $(RADEONSI_PATH)/,$(AROS_AMDGPU_RADEONSI_CXX_SOURCES)) $(addprefix $(WINSYS_PATH)/,$(AROS_AMDGPU_WINSYS_CXX_SOURCES)) $(addprefix $(SRCDIR)/$(CURDIR)/,$(AROS_AMDGPU_RADEONSI_DRAW_SOURCES))"
+
+#################################################
+# hidd classes -> amdgpu.hidd
+#################################################
+
+FILES	:=	\
+	amdgpu_init \
+	amdgpu_hiddclass \
+	amdgpu_displayclass \
+	amdgpu_kms \
+	amdgpu_offbitmapclass \
+	amdgpu_onbitmapclass \
+	amdgpu_galliumclass \
+	amdgpu_stdio \
+	amdgpu_2d \
+	amdgpu_pthread \
+	$(SRCDIR)/workbench/libs/mesa/emul_arosc \
+	amdgpu_util
+
+USER_INCLUDES := \
+            -I$(SRCDIR)/$(CURDIR)/include \
+            $(MESA_INCLUDES) \
+            -I$(SRCDIR)/$(CURDIR)/include/uapi \
+            -I$(SRCDIR)/$(CURDIR)/include/uapi/drm \
+
+USER_CPPFLAGS := $(MESA_COMPILEFLAGS) $(MESA_DEBUG) \
+                -DPACKAGE_VERSION=\"$(MESAGLVERSION)\" \
+                -DEMBEDDED_DEVICE \
+                -DGALLIUM_RADEONSI
+USER_CFLAGS := $(MESA_STD) $(MESA_COMPILEOPTIONS) $(CFLAGS_NO_STRICT_ALIASING) $(NOWARN_FLAGS)
+
+USER_LDFLAGS := \
+  -L$(top_libdir) -L$(AROS_LIB) \
+  -Wl,--wrap=pthread_create \
+  -Wl,--start-group -lgallium_radeonsi -llibdrm_amdgpu -laco -lamd_common -laddrlib -lcompiler \
+  -ldrm_amdgpu -ldrm_amdgpu_drv -ldrm_amdgpu_core \
+  -lgalliumauxiliary -lmesautil \
+  -loop -lhiddstubs -lz -lpthread -lposixc -lstdc
+ifneq ($(TARGET_LIBATOMIC),)
+USER_LDFLAGS += $(TARGET_CXX_LIBS)
+endif
+USER_LDFLAGS += -Wl,--end-group
+
+%build_module mmake=hidd-amdgpu \
+  modname=amdgpu modtype=hidd \
+  files=$(FILES) \
+  uselibs="" alwayscxxlink=yes objdir="$(OBJDIR)/$(MESAGLVERSION)"
+
+%copy_files_q mmake=hidd-amdgpu-ids files=amdgpu.ids src=libdrm/data dst=$(AROS_DEVS)
+
+%common

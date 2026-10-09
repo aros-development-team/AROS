@@ -35,6 +35,9 @@ struct BlockCache *head;
 struct BlockCache *cache;
 ULONG i;
 
+        if (numBuffers == 0)
+                return NULL;
+
         head = AllocVec
                 (
                         numBuffers*(sizeof(struct BlockCache)+BLOCK_SIZE(volume)),
@@ -66,6 +69,35 @@ void freeCache(struct AFSBase *afsbase, struct BlockCache *cache) {
         FreeVec(cache);
 }
 
+void discardCache(struct Volume *volume)
+{
+        struct BlockCache *block;
+        for (block = volume->blockcache; block != NULL; block = block->next)
+        {
+                block->blocknum = 0;
+                block->newness = 0;
+                block->flags = 0;
+        }
+        volume->cachepending = FALSE;
+        volume->bitmapinvalid = FALSE;
+        volume->writefailed = FALSE;
+}
+
+void clearCleanCache(struct Volume *volume)
+{
+        struct BlockCache *block;
+        for (block = volume->blockcache; block != NULL; block = block->next)
+        {
+                /* A packet cannot still own a cache block during a media change. */
+                block->flags &= ~BCF_USED;
+                if (!(block->flags & BCF_WRITE))
+                {
+                        block->blocknum = 0;
+                        block->newness = 0;
+                }
+        }
+}
+
 void clearCache(struct AFSBase *afsbase, struct BlockCache *cache) {
 
         while (cache != NULL)
@@ -82,19 +114,79 @@ void clearCache(struct AFSBase *afsbase, struct BlockCache *cache) {
         }
 }
 
-VOID flushCache
+BOOL cacheDirty(struct Volume *volume)
+{
+        struct BlockCache *block;
+        for (block = volume->blockcache; block != NULL; block = block->next)
+                if (block->flags & BCF_WRITE)
+                        return TRUE;
+        return FALSE;
+}
+
+BOOL flushCache
         (struct AFSBase *afsbase, struct Volume *volume)
 {
 struct BlockCache *block;
+BOOL success = DOSTRUE;
 
+        if (volume->cachepending)
+                return DOSFALSE;
         for (block = volume->blockcache; block != NULL; block = block->next)
         {
-                if ((block->flags & (BCF_WRITE | BCF_USED)) == BCF_WRITE)
+                /* The root must be written last, including when it is not pinned. */
+                if (block->blocknum == volume->rootblock || !(block->flags & BCF_WRITE))
+                        continue;
+                if (block->flags & BCF_USED)
+                        success = DOSFALSE;
+                else if (writeDisk(afsbase, volume, block->blocknum, 1, block->buffer) != 0)
                 {
-                        writeDisk(afsbase, volume, block->blocknum, 1, block->buffer);
-                        block->flags &= ~BCF_WRITE;
+                        volume->writefailed = TRUE;
+                        volume->state = ID_VALIDATING;
+                        success = DOSFALSE;
+                        break; /* Cancel ends this attempt, including its requesters. */
                 }
+                else
+                        block->flags &= ~BCF_WRITE;
         }
+        return success;
+}
+
+/* A full flush writes the root last; eviction only uses flushCache. */
+BOOL flushBlocks(struct AFSBase *afsbase, struct Volume *volume)
+{
+        struct BlockCache *root;
+        BOOL previousFailure = volume->writefailed;
+
+        /* Only a full, explicit flush retries a cancelled write. */
+        volume->writefailed = FALSE;
+        if (!flushCache(afsbase, volume))
+        {
+                volume->writefailed |= previousFailure;
+                return DOSFALSE;
+        }
+        for (root = volume->blockcache; root != NULL; root = root->next)
+                if (root->blocknum == volume->rootblock && (root->flags & BCF_WRITE)
+                        && !writeBlock(afsbase, volume, root, -1))
+                        return DOSFALSE;
+        return DOSTRUE;
+}
+
+/* Discard is allowed only by a positive confirmation, including without a GUI. */
+BOOL flushForRelease(struct AFSBase *afsbase, struct Volume *volume)
+{
+        if (flush(afsbase, volume))
+                return DOSTRUE;
+#ifdef __AROS__
+        if (showPtrArgsText(afsbase,
+                "Pending changes could not be saved. Continue to discard them and release the volume, or Cancel to keep them",
+                Req_ContinueCancel, NULL) == 1)
+        {
+                discardCache(volume);
+                volume->state = ID_VALIDATING;
+                return DOSTRUE;
+        }
+#endif
+        return DOSFALSE;
 }
 
 /* Mark a buffer as the most recently used */
@@ -116,6 +208,9 @@ struct BlockCache *getCacheBlock
 struct BlockCache *cache;
 struct BlockCache *bestcache=NULL;
 BOOL found = FALSE;
+BOOL retried = FALSE;
+
+retry:
 
         /* Check if block is already cached, or else reuse least-recently-used buffer */
         D(bug("[afs]    getCacheBlock: getting cacheblock %u\n",blocknum));
@@ -172,10 +267,16 @@ BOOL found = FALSE;
         {
                 /* We should only run out of cache blocks if blocks need to be
                    written, so write them and try again */
-                flushCache(afsbase, volume);
-                bestcache = getCacheBlock(afsbase, volume, blocknum);
-                if (bestcache == NULL)
-                        showText(afsbase, "Oh, ohhhhh, where is all the cache gone? BUG!!!");
+                if (!retried)
+                {
+                        /* A pinned bitmap can prevent a durable flush even when
+                         * other buffers were cleaned and can now be reused. */
+                        if (volume->writefailed)
+                                return NULL;
+                        flushCache(afsbase, volume);
+                        retried = TRUE;
+                        goto retry;
+                }
         }
 
         return bestcache;
@@ -196,9 +297,14 @@ struct BlockCache *getFreeCacheBlock
 {
 struct BlockCache *cache;
 
+        if (volume->cachepending)
+                return NULL;
         cache = getCacheBlock(afsbase, volume, blocknum);
-        cache->blocknum = blocknum;
-        cache->newness = 0;
+        if (cache != NULL)
+        {
+                cache->blocknum = blocknum;
+                cache->newness = 0;
+        }
         return cache;
 }
 
@@ -359,6 +465,8 @@ LONG writeBlock
                 LONG checksumoffset
         )
 {
+        if (volume->cachepending)
+                return DOSFALSE;
         /* Update checksum if requested by caller */
         if(checksumoffset != -1)
         {
@@ -367,12 +475,27 @@ LONG writeBlock
                         OS_LONG2BE(0 - calcChkSum(volume->SizeBlock,blockbuffer->buffer));
         }
 
+        /* Retain the block for retry if either prerequisite or write fails. */
+        blockbuffer->flags |= BCF_WRITE;
+        if (volume->writefailed)
+                return DOSFALSE;
         /* Ensure bitmap isn't marked valid while there are dirty blocks in the cache */
-        if (blockbuffer->blocknum == volume->rootblock)
-                flushCache(afsbase, volume);
+        if (blockbuffer->blocknum == volume->rootblock
+                && blockbuffer->buffer[BLK_BITMAP_VALID_FLAG(volume)] != 0
+                && !flushCache(afsbase, volume))
+                return DOSFALSE;
 
-        /* Write block to disk */
-        writeDisk(afsbase, volume, blockbuffer->blocknum, 1, blockbuffer->buffer);
+        /* A failed/partial root write makes the on-disk flag uncertain. */
+        if (blockbuffer->blocknum == volume->rootblock)
+                volume->bitmapinvalid = FALSE;
+        if (writeDisk(afsbase, volume, blockbuffer->blocknum, 1, blockbuffer->buffer) != 0)
+        {
+                volume->writefailed = TRUE;
+                volume->state = ID_VALIDATING;
+                return DOSFALSE;
+        }
+        if (blockbuffer->blocknum == volume->rootblock)
+                volume->bitmapinvalid = blockbuffer->buffer[BLK_BITMAP_VALID_FLAG(volume)] == 0;
         blockbuffer->flags &= ~BCF_WRITE;
         return DOSTRUE;
 }
@@ -393,6 +516,8 @@ VOID writeBlockDeferred
                         OS_LONG2BE(0 - calcChkSum(volume->SizeBlock,blockbuffer->buffer));
         }
 
+        if (volume->cachepending)
+                return;
         /* Mark block as needing to be written when the time comes */
         blockbuffer->flags |= BCF_WRITE;
         return;

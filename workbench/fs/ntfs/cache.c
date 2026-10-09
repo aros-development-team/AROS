@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2010-2026, The AROS Development Team. All rights reserved.
 
     Disk cache.
  */
@@ -104,19 +104,20 @@ APTR Cache_CreateCache(ULONG hash_size, ULONG block_count, ULONG block_size)
 
         c->blocks = AllocVec(sizeof(APTR) * block_count,
                              MEMF_PUBLIC | MEMF_CLEAR);
-        if(c == NULL)
+        if(c->blocks == NULL)
             success = FALSE;
 
         for(i = 0; i < block_count && success; i++) {
             b = AllocVec(sizeof(struct BlockRange)
                          + (c->block_size << RANGE_SHIFT), MEMF_PUBLIC);
-            b->use_count = 0;
-            b->state = BS_EMPTY;
-            b->num = 0;
-            b->data = (UBYTE *)b + sizeof(struct BlockRange);
-
             if(b != NULL)
+            {
+                b->use_count = 0;
+                b->state = BS_EMPTY;
+                b->num = 0;
+                b->data = (UBYTE *)b + sizeof(struct BlockRange);
                 c->blocks[i] = b;
+            }
             else
                 success = FALSE;
 
@@ -141,10 +142,14 @@ VOID Cache_DestroyCache(APTR cache)
 
     D(bug("[NTFS]: %s()\n", __func__));
 
+    if(c == NULL)
+        return;
+
     Cache_Flush(c);
 
-    for(i = 0; i < c->block_count; i++)
-        FreeVec(c->blocks[i]);
+    if(c->blocks != NULL)
+        for(i = 0; i < c->block_count; i++)
+            FreeVec(c->blocks[i]);
     FreeVec(c->blocks);
     FreeVec(c->hash_table);
     FreeVec(c);
@@ -228,7 +233,7 @@ APTR Cache_GetBlock(APTR cache, UQUAD blockNum, UBYTE **data)
 
     /* Set data pointer and error, and return cache block handle */
 
-    *data = b->data + data_offset;
+    *data = b ? b->data + data_offset : NULL;
     SetIoErr(error);
 
     return b;
@@ -277,8 +282,8 @@ BOOL Cache_Flush(APTR cache)
 
     D(bug("[NTFS]: %s()\n", __func__));
 
-    while((n = (struct MinNode *)RemHead((struct List *)&c->dirty_list))
-            != NULL && error == 0) {
+    while(error == 0 &&
+            (n = (struct MinNode *)RemHead((struct List *)&c->dirty_list)) != NULL) {
         /* Write dirty block range to disk */
 
         b = NODE2(n);
@@ -298,4 +303,3 @@ BOOL Cache_Flush(APTR cache)
     SetIoErr(error);
     return error == 0;
 }
-

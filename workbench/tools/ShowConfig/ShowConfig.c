@@ -1,6 +1,8 @@
+#include <aros/inquire.h>
 #include <aros/kernel.h>
 #include <exec/execbase.h>
 #include <exec/memory.h>
+#include <utility/date.h>
 #include <resources/hpet.h>
 #include <resources/processor.h>
 
@@ -17,7 +19,7 @@
 #include "storage.h"
 
 #define APPNAME "ShowConfig"
-#define VERSION "ShowConfig 0.4"
+#define VERSION "ShowConfig 0.7"
 
 const char version[] = "$VER: " VERSION " (" ADATE ")\n";
 
@@ -33,17 +35,17 @@ ULONG ExtUDivMod32(ULONG a, ULONG b, ULONG *mod)
 
 void PrintNum(ULONG num)
 {
-    /* MBytes ? */
+    /* MiB ? */
     if(num > 1023) 
     {
 	ULONG  x, xx;
-	char* fmt = "meg";
+	char* fmt = "MiB";
 	
-	/* GBytes ? */
+	/* GiB ? */
 	if(num > 0xfffff)
 	{ 
 	    num >>= 10; 
-	    fmt = "gig";
+	    fmt = "GiB";
 	}
 	
 	num = ExtUDivMod32(UMult32(num, 100) >> 10, 100, &x);
@@ -64,7 +66,7 @@ void PrintNum(ULONG num)
     }
     else 
     {
-        printf("%d K", (int)num);
+        printf("%d KiB", (int)num);
     }
 }
 
@@ -73,6 +75,73 @@ ULONG ComputeKBytes(APTR a, APTR b)
     IPTR result = b - a;
 
     return (ULONG)(result >> 10);
+}
+
+static VOID PrintMemoryInformation()
+{
+    IPTR total = AvailMem(MEMF_TOTAL);
+    IPTR free = AvailMem(MEMF_ANY);
+    IPTR largest = AvailMem(MEMF_LARGEST);
+
+    printf("MEMORY:\t\tTotal ");
+    PrintNum((ULONG)(total >> 10));
+    printf(", Free ");
+    PrintNum((ULONG)(free >> 10));
+    printf(", Largest ");
+    PrintNum((ULONG)(largest >> 10));
+    printf("\n");
+}
+
+static VOID PrintSystemInformation()
+{
+    IPTR release_major = 0;
+    IPTR release_minor = 0;
+    IPTR release_date = 0;
+    IPTR abi = (IPTR)-1;
+    STRPTR builddate = NULL;
+    STRPTR variant = NULL;
+    STRPTR architecture = NULL;
+    struct ClockData release_clock;
+
+    ArosInquire(AI_ArosReleaseMajor, (IPTR)&release_major,
+                AI_ArosReleaseMinor, (IPTR)&release_minor,
+                AI_ArosReleaseDate, (IPTR)&release_date,
+                AI_ArosBuildDate, (IPTR)&builddate,
+                AI_ArosVariant, (IPTR)&variant,
+                AI_ArosArchitecture, (IPTR)&architecture,
+                AI_ArosABIMajor, (IPTR)&abi,
+                TAG_DONE);
+
+    if (release_date)
+    {
+        Amiga2Date((ULONG)release_date * 86400UL, &release_clock);
+        printf("RELEASE:\tAROS %lu.%lu (%04u-%02u-%02u)\n",
+               (unsigned long)release_major,
+               (unsigned long)release_minor,
+               (unsigned int)release_clock.year,
+               (unsigned int)release_clock.month,
+               (unsigned int)release_clock.mday);
+    }
+    else
+    {
+        printf("RELEASE:\tAROS %lu.%lu\n",
+               (unsigned long)release_major,
+               (unsigned long)release_minor);
+    }
+
+    if (builddate)
+        printf("BUILD:\t\t%s\n", builddate);
+
+    if (architecture)
+        printf("ARCH:\t\t%s\n", architecture);
+
+    if (abi == (IPTR)-1)
+        printf("ABI:\t\tv1 (development)\n");
+    else
+        printf("ABI:\t\t%lu\n", (unsigned long)abi);
+
+    if (variant && *variant)
+        printf("VARIANT:\t%s\n", variant);
 }
 
 static ULONG GetProcessorsCount()
@@ -224,6 +293,8 @@ int main()
     printf("VERS:\t\tAROS version %d.%d, Exec version %d.%d %s\n", ArosBase->lib_Version, ArosBase->lib_Revision,
 	   SysBase->LibNode.lib_Version, SysBase->LibNode.lib_Revision, execextra);
 
+    PrintSystemInformation();
+
     ProcessorBase = OpenResource(PROCESSORNAME);
     if (ProcessorBase)
         PrintProcessorInformation();
@@ -254,6 +325,8 @@ int main()
 	    printf("HPET %02u:\t\t%s\n", (unsigned)(++i), owner->ln_Name);
 	}
     }
+
+    PrintMemoryInformation();
 
     printf("RAM:");
     for (mh = (struct MemHeader *)SysBase->MemList.lh_Head; mh->mh_Node.ln_Succ; mh = (struct MemHeader *)mh->mh_Node.ln_Succ) {

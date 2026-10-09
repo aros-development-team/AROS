@@ -74,9 +74,9 @@ AMD_COMMON_NIR_SOURCES := \
     nir/ac_nir_prerast_utils \
     nir/ac_nir_surface
 
-# AROS-specific sources (replaces ac_linux_drm.c)
-AMD_COMMON_AROS_SOURCES := \
-    ac_aros_drm
+# the kernel driver is reached through the amdgpu hidd's libdrm
+AMD_COMMON_DRM_SOURCES := \
+    ac_linux_drm
 
 # Generated source
 AMD_COMMON_GEN_SOURCES := \
@@ -86,14 +86,15 @@ AMD_COMMON_GEN_SOURCES := \
 AMD_COMMON_ALL_SOURCES := \
     $(addprefix $(top_srcdir)/$(CUR_MESADIR)/,$(AMD_COMMON_C_SOURCES)) \
     $(addprefix $(top_srcdir)/$(CUR_MESADIR)/,$(AMD_COMMON_NIR_SOURCES)) \
-    $(addprefix $(SRCDIR)/$(CURDIR)/,$(AMD_COMMON_AROS_SOURCES)) \
+    $(addprefix $(top_srcdir)/$(CUR_MESADIR)/,$(AMD_COMMON_DRM_SOURCES)) \
     $(AMD_COMMON_GEN_SOURCES)
 
-# NOTE: We skip ac_linux_drm.c (Linux-specific DRM ioctls)
-# and ac_rtld.c / ac_rgp_elf_object_pack.c (require libelf)
-# AROS replacement: ac_aros_drm.c provides stub implementations
+# NOTE: We skip ac_rtld.c / ac_rgp_elf_object_pack.c (require libelf)
 
 USER_INCLUDES += \
+    -I$(SRCDIR)/workbench/hidds/amdgpu/libdrm/amdgpu \
+    -I$(SRCDIR)/workbench/hidds/amdgpu/include \
+    -I$(SRCDIR)/workbench/hidds/amdgpu/include/uapi/drm \
     -iquote $(SRCDIR)/$(CURDIR) \
     -iquote $(SRCDIR)/$(CURDIR)/../aros_compat \
     -iquote $(top_srcdir)/src \
@@ -124,7 +125,9 @@ USER_INCLUDES += \
 USER_CPPFLAGS += \
     -DADDR_FASTCALL= \
     -DAMD_LLVM_AVAILABLE=0 \
+    -DHAVE_LIBDRM=1 \
     -DNDEBUG \
+    -include $(SRCDIR)/workbench/hidds/amdgpu/include/uapi/drm/drm.h \
     -include $(SRCDIR)/$(CURDIR)/../aros_compat/aros_mesa_compat.h
 
 USER_CFLAGS += $(MESA_NOWARNFLAGS) $(NOWARN_STRICT_ALIASING)
@@ -138,7 +141,10 @@ USER_CFLAGS += $(MESA_NOWARNFLAGS) $(NOWARN_STRICT_ALIASING)
 #MM
 mesa3d-generate-amd-headers :
 	@$(ECHO) "Generating AMD register headers..."
-	@$(MKDIR) -p $(AMD_GENDIR)
+	@$(MKDIR) -p $(AMD_GENDIR) $(top_builddir)/src/util
+	@python3 $(top_srcdir)/src/util/process_shader_stats.py \
+	    $(top_srcdir)/src/util/shader_stats.rnc \
+	    $(top_srcdir)/src/util/shader_stats.xml > $(top_builddir)/src/util/shader_stats.h
 	@python3 $(top_srcdir)/src/amd/registers/makeregheader.py \
 	    $(top_srcdir)/src/amd/registers/gfx6.json \
 	    $(top_srcdir)/src/amd/registers/gfx7.json \

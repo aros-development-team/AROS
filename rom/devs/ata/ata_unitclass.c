@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -210,6 +210,30 @@ void ATAUnit__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 *****************************************************************************************/
 
+BOOL ATAUnit__Hidd_StorageUnit__GetCapacity(OOP_Class *cl, OOP_Object *o,
+    struct pHidd_StorageUnit_GetCapacity *msg)
+{
+    struct ata_Unit *unit = OOP_INST_DATA(cl, o);
+
+    if (msg->blockCount)
+        *msg->blockCount = 0;
+    if (msg->blockSize)
+        *msg->blockSize = 0;
+
+    if (!msg->blockCount || !msg->blockSize)
+        return FALSE;
+
+    if ((unit->au_XferModes & AF_XFER_PACKET) ||
+        !unit->au_Capacity48 ||
+        unit->au_SectorShift >= 32)
+        return FALSE;
+
+    *msg->blockCount = unit->au_Capacity48;
+    *msg->blockSize = 1UL << unit->au_SectorShift;
+
+    return TRUE;
+}
+
 void ATAUnit__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct ataBase *ATABase = cl->UserData;
@@ -233,7 +257,10 @@ void ATAUnit__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
             {
                 case DEV_SATA:
                 case DEV_ATA:
-                    *msg->storage = vHidd_StorageUnit_Type_FixedDisk;
+                    if (unit->au_Drive->id_NominalMediaRotationRate == 0x0001)
+                        *msg->storage = vHidd_StorageUnit_Type_SolidStateDisk;
+                    else
+                        *msg->storage = vHidd_StorageUnit_Type_FixedDisk;
                     break;
 
                 case DEV_SATAPI:

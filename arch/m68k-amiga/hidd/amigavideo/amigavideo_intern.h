@@ -142,6 +142,10 @@ struct amigavideo_staticdata
     BOOL                        ecs_agnus, ecs_denise, aga;
     BOOL                        aga_enabled;
     BOOL                        cursorvisible;
+    UWORD                       *classic_cursor_data;
+    WORD                        classic_cursor_height;
+    WORD                        classic_cursor_xoffset, classic_cursor_yoffset;
+    UBYTE                       classic_sprite_mask;
     BOOL                        palmode;
     BOOL                        interlaced;
    

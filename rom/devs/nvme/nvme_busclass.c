@@ -553,10 +553,10 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                     } else {
                         /* Optional feature - no ranges defined still reports success. */
                         D(bug ("[NVME:Bus] NVMEBus_Start:      No LBA range reported, using nsze\n");)
-                        lbaEnd = id_ns->nsze << (id_ns->lbaf[lbaf].ds - 9);
+                        lbaEnd = id_ns->nsze;
                     }
                 } else
-                    lbaEnd = id_ns->nsze << (id_ns->lbaf[lbaf].ds - 9);
+                    lbaEnd = id_ns->nsze;
 
                 if (lbaEnd) {
                     if ((data->ab_Units[nn] = OOP_NewObject(NVMEBase->unitClass, NULL, attrs)) != NULL) {
@@ -576,7 +576,7 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
 
                             unit->au_SecShift = id_ns->lbaf[lbaf].ds;
                             D(bug ("[NVME:Bus] NVMEBus_Start:      Sector Size = %ubytes\n", 1 << unit->au_SecShift);)
-                            unit->au_SecCnt = id_ns->nsze << (unit->au_SecShift - 9);
+                            unit->au_SecCnt = id_ns->nsze;
                             D(bug ("[NVME:Bus] NVMEBus_Start:      # of Sectors = %u\n", unit->au_SecCnt);)
                             unit->au_Low = lbaStart;
                             unit->au_High = lbaEnd - 1;

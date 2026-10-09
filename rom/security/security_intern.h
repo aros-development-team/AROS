@@ -73,6 +73,12 @@ struct SecurityBase
     struct Process              *Server;
     struct MsgPort              *ServerPort;
 
+    /* The authentication process (security_auth.c) */
+    struct Process              *Auth;
+    struct MsgPort              *AuthPort;
+    LONG                        AuthPending;            /* requests queued, bounded */
+    struct SignalSemaphore      LogSem;                 /* VLogF() from server and auth */
+
     /* List of sessions */
     struct MinList              SessionsList;
 

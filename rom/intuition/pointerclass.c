@@ -120,6 +120,8 @@ IPTR PointerClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
         {
             struct SharedPointer *shared;
 
+            PreparePointerSprite(sprite, bitmap, oldbitmap, width, IntuitionBase);
+
             /* If our pointer doesn't already have a user-supplied colormap, we attach it here.
                This makes the pointer to always have its own colors on hi- and truecolor screens.
                In addition it gets an alpha channel.

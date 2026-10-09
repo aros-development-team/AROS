@@ -21,6 +21,8 @@
 #include "error.h"
 #include "extstrings.h"
 #include "volumes.h"
+#include "cache.h"
+#include "checksums.h"
 #include "baseredef.h"
 
 /*
@@ -77,9 +79,12 @@ LONG initDeviceList
 {
 STRPTR name;
 BSTR newname;
-UBYTE i;
+UBYTE i, length;
 
         name=(char *)rootblock->buffer+(BLK_DISKNAME_START(volume)*4);
+        length = (UBYTE)name[0];
+        if (length > MAX_NAME_LENGTH)
+                return DOSFALSE;
         volume->devicelist.dl_Next = 0;
         volume->devicelist.dl_Type = DLT_VOLUME;
         volume->devicelist.dl_Lock = 0;
@@ -101,9 +106,9 @@ UBYTE i;
                 if (newname == BNULL)
                         return DOSFALSE;
         }
-        for (i=0; i<name[0]; i++)
+        for (i=0; i<length; i++)
                 AROS_BSTR_putchar(newname, i, name[i+1]);
-        AROS_BSTR_setstrlen(newname, name[0]);
+        AROS_BSTR_setstrlen(newname, length);
         volume->devicelist.dl_Name = newname;
         return DOSTRUE;
 }
@@ -172,6 +177,8 @@ UBYTE i;
             return DOSTRUE;
         }
         bname = volume->devicelist.dl_Name;
+        if (AROS_BSTR_strlen(bname) >= sizeof(string))
+                return DOSFALSE;
         for (i=0; i<AROS_BSTR_strlen(bname); i++)
                 string[i] = AROS_BSTR_getchar(bname,i);
         string[AROS_BSTR_strlen(bname)] = 0;
@@ -313,6 +320,10 @@ BOOL added = TRUE;
 LONG osMediumInit
         (struct AFSBase *afsbase, struct Volume *volume, struct BlockCache *block)
 {
+        UBYTE *name = (UBYTE *)block->buffer + BLK_DISKNAME_START(volume) * 4;
+
+        if (name[0] > MAX_NAME_LENGTH)
+                return ERROR_DISK_NOT_VALIDATED;
         if (!initDeviceList(afsbase, volume, block))
                 return ERROR_NO_FREE_STORE;
         if (!createDosVolume(afsbase, volume))
@@ -478,6 +489,44 @@ void motorOff(struct AFSBase *afsbase, struct IOHandle *ioh) {
         DoIO((struct IORequest *)&ioh->ioreq->iotd_Req);
 }
 
+LONG prepareMediumCache(struct AFSBase *afsbase, struct Volume *volume)
+{
+        ULONG *root;
+        LONG error = ERROR_DISK_NOT_VALIDATED;
+
+        clearCleanCache(volume);
+        if (!volume->cachepending)
+                return 0;
+        root = AllocVec(BLOCK_SIZE(volume), MEMF_PUBLIC);
+        if (root == NULL)
+                return ERROR_NO_FREE_STORE;
+        /* The creation timestamp is the volume identity; do not consult the
+         * old cache or the mutable label when deciding where to retry writes. */
+        if (readDisk(afsbase, volume, volume->rootblock, 1, root) == 0
+                && calcChkSum(volume->SizeBlock, root) == 0
+                && OS_BE2LONG(root[BLK_PRIMARY_TYPE]) == T_SHORT
+                && OS_BE2LONG(root[BLK_SECONDARY_TYPE(volume)]) == ST_ROOT
+                && OS_BE2LONG(root[BLK_CREATION_DAYS(volume)]) == volume->devicelist.dl_VolumeDate.ds_Days
+                && OS_BE2LONG(root[BLK_CREATION_MINS(volume)]) == volume->devicelist.dl_VolumeDate.ds_Minute
+                && OS_BE2LONG(root[BLK_CREATION_TICKS(volume)]) == volume->devicelist.dl_VolumeDate.ds_Tick)
+        {
+                volume->cachepending = FALSE;
+                if (flush(afsbase, volume))
+                        error = 0;
+                else
+                        volume->cachepending = TRUE;
+        }
+        FreeVec(root);
+        if (error != 0 && showPtrArgsText(afsbase,
+                "Pending changes need the previous volume. Cancel to retain them for reinsertion, or Continue to discard them",
+                Req_ContinueCancel, NULL) == 1)
+        {
+                discardCache(volume);
+                return 0;
+        }
+        return error;
+}
+
 void checkDeviceFlags(struct AFSBase *afsbase) {
 struct Volume *volume;
 struct IOHandle *ioh;
@@ -494,16 +543,30 @@ struct IOHandle *ioh;
                             if (!volume->inhibitcounter)
                             {
                                 D(bug("[afs 0x%08lX] Media inserted\n", volume));
-                                newMedium(afsbase, volume);
+                                /* A direct disk swap may deliver only one change event. */
+                                clearCleanCache(volume);
+                                volume->cachepending = cacheDirty(volume) || volume->writefailed;
+                                remDosVolume(afsbase, volume);
+                                ioh->ioflags |= IOHF_DISK_IN;
+                                if (newMedium(afsbase, volume) != 0 && volume->cachepending)
+                                {
+                                        ioh->ioflags &= ~IOHF_DISK_IN;
+                                        showText(afsbase, "Re-insert the previous volume to save pending changes");
+                                }
                             }
-                            ioh->ioflags |= IOHF_DISK_IN;
                         }
                         else
                         {
                             if (!volume->inhibitcounter)
                             {
-                                flush(afsbase, volume);
+                                /* Do not issue writes or update to an absent medium. */
+                                clearCleanCache(volume);
+                                volume->cachepending = cacheDirty(volume) || volume->writefailed;
                                 remDosVolume(afsbase, volume);
+                                if (volume->cachepending && showPtrArgsText(afsbase,
+                                        "Re-insert the previous volume to save pending changes. Continue to discard them, or Cancel to retain them",
+                                        Req_ContinueCancel, NULL) == 1)
+                                        discardCache(volume);
                             }
                             ioh->ioflags &= ~IOHF_DISK_IN;
                         }
@@ -576,14 +639,24 @@ UWORD *cmdcheck;
  Name  : flush
  Descr.: flush buffers and update disk (sync)
  Input : volume  - volume to flush
- Output: DOSTRUE
+ Output: DOSTRUE on success, DOSFALSE on write/update failure
 ********************************************/
 BOOL flush(struct AFSBase *afsbase, struct Volume *volume) {
 
-        flushCache(afsbase, volume);
+        if (!mediumPresent(&volume->ioh))
+                return !volume->cachepending && !volume->writefailed && !cacheDirty(volume);
+        if (!flushBlocks(afsbase, volume))
+                return DOSFALSE;
         volume->ioh.ioreq->iotd_Req.io_Command = CMD_UPDATE;
-        DoIO((struct IORequest *)&volume->ioh.ioreq->iotd_Req);
-        clearCache(afsbase, volume->blockcache);
+        volume->ioh.ioreq->iotd_Req.io_Data = NULL;
+        volume->ioh.ioreq->iotd_Req.io_Length = 0;
+        if (DoIO((struct IORequest *)&volume->ioh.ioreq->iotd_Req) != 0)
+        {
+                /* Transfers succeeded; a failed commit alone needs no tree repair. */
+                volume->writefailed = TRUE;
+                return DOSFALSE;
+        }
+        volume->writefailed = FALSE;
         return DOSTRUE;
 }
 

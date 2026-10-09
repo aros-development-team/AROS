@@ -137,12 +137,10 @@
             }
             vpe->Flags &= ~VPXF_WRAPPED_BITMAP;
         } else if(current_owned) {
-            struct BitMap *wrapped = NULL;
-
-            OOP_GetAttr(vpd->Bitmap, aHidd_PlanarBM_BitMap,
-                        (IPTR *)&wrapped);
-            if(wrapped != bitmap &&
-               !HIDD_PlanarBM_SetBitMap(vpd->Bitmap, bitmap))
+            /* Classic callers can change the same BitMap's depth, stride or
+             * plane addresses before rebuilding the ViewPort. Pointer
+             * identity alone does not mean the wrapper is still current. */
+            if(!HIDD_PlanarBM_SetBitMap(vpd->Bitmap, bitmap))
                 ret = MVP_NO_DISPLAY;
         } else {
             struct TagItem tags[] = {

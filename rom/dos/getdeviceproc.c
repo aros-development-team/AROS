@@ -269,6 +269,13 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
     if (dl->dol_Type == DLT_NONBINDING) {
         lock = Lock(dl->dol_misc.dol_assign.dol_AssignName, SHARED_LOCK);
 
+        /* didn't find the target; Lock() has set IoErr() */
+        if (lock == BNULL) {
+            UnLockDosList(LDF_ALL | LDF_READ);
+            FreeMem(dp, sizeof(struct DevProc));
+            return NULL;
+        }
+
         /* just fill out the dp and return */
         dp->dvp_Port = ((struct FileLock *) BADDR(lock))->fl_Task;
         dp->dvp_Lock = lock;

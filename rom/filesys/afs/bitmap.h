@@ -14,6 +14,7 @@ ULONG createNewBitmapBlocks(struct AFSBase *, struct Volume *);
 LONG setBitmapFlag(struct AFSBase *, struct Volume *, LONG);
 LONG invalidBitmap(struct AFSBase *, struct Volume *);
 LONG validBitmap(struct AFSBase *, struct Volume *);
+void releaseBitmap(struct Volume *);
 LONG markBlock(struct AFSBase *, struct Volume *, ULONG, ULONG);
 ULONG allocBlock(struct AFSBase *, struct Volume *);
 

@@ -6,9 +6,11 @@ EXEDIR := $(AROS_TESTS)/security
 
 FILES   := sectest fsformat
 UGFILES := ugtest
+PAMFILES := pamtest
 
 #MM- test : test-security
-#MM test-security : includes linklibs kernel-security-includes test-security-usergroup
+#MM test-security : includes linklibs kernel-security-includes test-security-usergroup test-security-pam
+#MM test-security-pam : includes linklibs kernel-security-includes workbench-libs-pam-includes workbench-libs-pam-linklib
 #MM test-security-usergroup : includes linklibs kernel-security-includes \
 #MM     workbench-libs-usergroup-includes workbench-libs-usergroup-linklib
 
@@ -18,5 +20,9 @@ UGFILES := ugtest
 # UGTest needs the usergroup.library link library (per-task base)
 %build_progs mmake=test-security-usergroup \
     files=$(UGFILES) targetdir=$(EXEDIR) uselibs="usergroup"
+
+# PamTest needs the pam.library link library
+%build_progs mmake=test-security-pam \
+    files=$(PAMFILES) targetdir=$(EXEDIR) uselibs="pam"
 
 %common

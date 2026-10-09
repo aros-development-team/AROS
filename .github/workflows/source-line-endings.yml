@@ -18,12 +18,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check changed C/H files
+      - name: Check C/H line endings
         shell: python
         env:
           PULL_REQUEST_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PUSH_BEFORE_SHA: ${{ github.event.before }}
           HEAD_SHA: ${{ github.sha }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           import os
           import pathlib
@@ -37,17 +38,41 @@ jobs:
           )
           head = os.environ["HEAD_SHA"]
 
-          # A newly created branch has no meaningful "before" commit.
-          # Pull requests will be checked against their real base later;
-          # for a push-only run, inspect the current commit when possible.
-          if not base or base == zero:
-              try:
-                  base = subprocess.check_output(
-                      ["git", "rev-parse", f"{head}^"],
-                      text=True,
-                  ).strip()
-              except subprocess.CalledProcessError:
-                  base = ""
+          # A force-push can leave "before" outside the fetched history
+          # or make it unrelated to the new branch history.
+          available = bool(base) and base != zero and subprocess.run(
+              ["git", "cat-file", "-e", f"{base}^{{commit}}"],
+              stdout=subprocess.DEVNULL,
+              stderr=subprocess.DEVNULL,
+          ).returncode == 0
+          if not available or subprocess.run(
+              ["git", "merge-base", "--is-ancestor", base, head],
+              stdout=subprocess.DEVNULL,
+              stderr=subprocess.DEVNULL,
+          ).returncode != 0:
+              base = ""
+              default_branch = os.environ.get("DEFAULT_BRANCH", "")
+              if default_branch:
+                  try:
+                      common = subprocess.check_output(
+                          ["git", "merge-base", head, f"origin/{default_branch}"],
+                          text=True,
+                          stderr=subprocess.DEVNULL,
+                      ).strip()
+                      if common != head:
+                          base = common
+                  except subprocess.CalledProcessError:
+                      pass
+              if not base:
+                  # With no trustworthy range, inspect only the tip commit.
+                  try:
+                      base = subprocess.check_output(
+                          ["git", "rev-parse", "--verify", f"{head}^1"],
+                          text=True,
+                          stderr=subprocess.DEVNULL,
+                      ).strip()
+                  except subprocess.CalledProcessError:
+                      pass
 
           if base:
               raw_paths = subprocess.check_output(
@@ -65,7 +90,23 @@ jobs:
                   ]
               )
           else:
-              raw_paths = b""
+              # A root commit has no parent to compare with.
+              raw_paths = subprocess.check_output(
+                  [
+                      "git",
+                      "diff-tree",
+                      "--root",
+                      "--no-commit-id",
+                      "--name-only",
+                      "-z",
+                      "--diff-filter=ACMR",
+                      "-r",
+                      head,
+                      "--",
+                      "*.c",
+                      "*.h",
+                  ]
+              )
 
           paths = [
               os.fsdecode(path)

@@ -519,9 +519,13 @@ void handle_port( void )
 					clear_brcorner();
 				}
 			case CMD_SHOW:
+#ifdef __AROS__
+				show_main_window();
+#else
 				WindowToFront( Wnd );
 				ScreenToFront( Scr );
 				ActivateWindow( Wnd );
+#endif
 				break;
 			case CMD_KILL: cleanup(0,0); break;
 			case CMD_PREF:

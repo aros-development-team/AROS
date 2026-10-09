@@ -61,6 +61,7 @@ struct H4BTHCIUnit
     struct Task             *hu_Task;
     struct Task             *hu_ReadySigTask;
     BYTE                     hu_ReadySignal;
+    BOOL                     hu_Ready;          /* bring-up finished */
     BOOL                     hu_Open;
 
     /* Requests waiting for something to arrive from the controller. */

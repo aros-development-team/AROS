@@ -977,6 +977,7 @@ BOOL AmigaVideoDisplay__Hidd_Display__SetCursorShape(OOP_Class *cl, OOP_Object *
     if (width > maxw || height > maxh)
         return FALSE;
 
+    csd->classic_cursor_data = NULL;
     OOP_GetAttr(o, aHidd_Display_GfxHidd, (IPTR *)&gfx);
     if (!setsprite(csd->amigagfxclass, gfx, width, height, msg))
         return FALSE;
@@ -1003,6 +1004,23 @@ BOOL AmigaVideoCl__Hidd_AmigaGfx__SetSpriteShape(OOP_Class *cl, OOP_Object *o, s
     if (!new_setsprite(cl, o, width, height, msg, spritenum))
         return FALSE;
 
+    return TRUE;
+}
+
+BOOL AmigaVideoCl__Hidd_AmigaGfx__SetClassicCursorData(OOP_Class *cl, OOP_Object *o,
+    struct pHidd_AmigaGfx_SetClassicCursorData *msg)
+{
+    struct amigavideo_staticdata *csd = CSD(cl);
+
+    if (!msg->data || msg->height <= 0 || msg->height > 128 ||
+        !(TypeOfMem(msg->data) & MEMF_CHIP))
+        return FALSE;
+    csd->classic_cursor_data = msg->data;
+    csd->classic_cursor_height = msg->height;
+    csd->classic_cursor_xoffset = msg->xoffset;
+    csd->classic_cursor_yoffset = msg->yoffset;
+    csd->fmode_spr = 0;
+    setspritevisible(csd, csd->cursorvisible);
     return TRUE;
 }
 
@@ -1245,6 +1263,12 @@ ULONG AmigaVideoDisplay__Hidd_Display__MakeViewPort(OOP_Class *cl, OOP_Object *o
         struct GfxBase *GfxBase = (APTR)csd->cs_GfxBase;
         struct amigabm_data *bmdata = OOP_INST_DATA(OOP_OCLASS(vpd->Bitmap), vpd->Bitmap);
         struct CopList *oldcl = vpd->vpe->ViewPort->DspIns;
+        WORD viewportheight = bmdata->height;
+
+        /* The visible ViewPort may be shorter than its backing BitMap. */
+        if (vpd->vpe->ViewPort->DHeight > 0 &&
+            vpd->vpe->ViewPort->DHeight < viewportheight)
+            viewportheight = vpd->vpe->ViewPort->DHeight;
 
         /*
          * A same-layout classic planar ChangeVPBitMap() was already applied
@@ -1252,11 +1276,13 @@ ULONG AmigaVideoDisplay__Hidd_Display__MakeViewPort(OOP_Class *cl, OOP_Object *o
          * Rebuilding and replacing that list would separate a late palette
          * update from its bitmap handoff by one display field.
          */
-        if (bmdata->bitmap_set_in_place && oldcl && bmdata->bmcl == oldcl)
+        if (bmdata->bitmap_set_in_place && oldcl && bmdata->bmcl == oldcl &&
+            bmdata->viewportheight == viewportheight)
         {
             bmdata->bitmap_set_in_place = FALSE;
             return MVP_OK;
         }
+        bmdata->viewportheight = viewportheight;
 
         newcl = AllocMem(sizeof(struct CopList), MEMF_PUBLIC | MEMF_CLEAR);
         if (!newcl)

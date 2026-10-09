@@ -22,6 +22,7 @@
 #include "security_crypto.h"
 #include "security_plugins.h"
 #include "security_support.h"
+#include "security_auth.h"
 
 #define SERVERPRI               (4)
 #define SERVERSTACK             (AROS_STACKSIZE * 2)
@@ -610,6 +611,28 @@ static void ServerProcess(void)
                     /* Arg1: fmt, Arg2: SIPTR *args */
                     VLogF(secBase, (CONST_STRPTR)pkt->Arg1, (SIPTR *)pkt->Arg2);
                     pkt->Res1 = TRUE;
+                    break;
+
+                case secSAction_GetUserHash:
+                    /* Security.auth only. Arg1: STRPTR userid, Arg2: STRPTR hash buffer
+                     * (secHASHBUFSIZE), Arg3: struct secPrivUserInfo * to fill. Res1: BOOL found */
+                    pkt->Res1 = FALSE;
+                    if (client && client == (struct Task *)secBase->Auth)
+                    {
+                        struct secUserDef *def;
+
+                        for (def = GetUserDefs(secBase); def; def = def->Next)
+                        {
+                            if (!strcmp((STRPTR)pkt->Arg1, def->UserID))
+                            {
+                                strncpy((STRPTR)pkt->Arg2, def->Password, secHASHBUFSIZE - 1);
+                                ((STRPTR)pkt->Arg2)[secHASHBUFSIZE - 1] = '\0';
+                                FillUserInfo(def, (struct secPrivUserInfo *)pkt->Arg3);
+                                pkt->Res1 = TRUE;
+                                break;
+                            }
+                        }
+                    }
                     break;
 
                 default:

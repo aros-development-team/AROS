@@ -26,21 +26,27 @@
 #define DEBUG DEBUG_OPS
 #include "debug.h"
 
-/*
- * Clusters 0 and 1 are reserved - entry 0 carries the media descriptor -
- * so an empty file, whose chain starts at 0, has nothing to free. The
- * old lower bound was 'cluster >= 0' on an unsigned, always true, and
- * freeing cluster 0 wrote over the media descriptor.
- */
-#define FREE_CLUSTER_CHAIN(sb,cl)                               \
-    do {                                                        \
-        ULONG cluster = cl;                                     \
-        while (cluster >= 2 && cluster < sb->eoc_mark - 7) {    \
-            ULONG next_cluster = GET_NEXT_CLUSTER(sb, cluster); \
-            FreeCluster(sb, cluster);                           \
-            cluster = next_cluster;                             \
-        }                                                       \
-    } while(0)
+/* Clusters 0 and 1 are reserved. Stop if a FAT read or update fails. */
+static LONG FreeClusterChain(struct FSSuper *sb, ULONG cluster)
+{
+    ULONG count = 0;
+    while (cluster >= 2 && cluster < sb->eoc_mark - 7)
+    {
+        ULONG next;
+        if (cluster >= sb->clusters_count + 2 || ++count > sb->clusters_count)
+            return ERROR_NOT_A_DOS_DISK;
+        sb->fat_io_error = FALSE;
+        next = GET_NEXT_CLUSTER(sb, cluster);
+        if (sb->fat_io_error)
+            return ERROR_UNKNOWN;
+        if (next < 2)
+            return ERROR_NOT_A_DOS_DISK;
+        if (!FreeCluster(sb, cluster))
+            return ERROR_UNKNOWN;
+        cluster = next;
+    }
+    return 0;
+}
 
 /*
  * This takes a full path and moves to the directory that would contain the
@@ -100,9 +106,7 @@ static LONG MoveToSubdir(struct DirHandle *dh, UBYTE **pname,
             return err;
         }
 
-        if ((err = InitDirHandle(dh->ioh.sb, FIRST_FILE_CLUSTER(&de), dh,
-            TRUE, glob)) != 0)
-            return err;
+        InitDirHandle(dh->ioh.sb, FIRST_FILE_CLUSTER(&de), dh, TRUE, glob);
     }
 
     *pname = name;
@@ -294,20 +298,39 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
         }
 
         /* Update the dir entry to make the file empty */
-        InitDirHandle(lock->ioh.sb, lock->gl->dir_cluster, &dh, FALSE, glob);
-        GetDirEntry(&dh, lock->gl->dir_entry, &de, glob);
+        InitDirHandle(lock->ioh.sb, lock->gl->dir_cluster, &dh,
+            FALSE, glob);
+        err = GetDirEntry(&dh, lock->gl->dir_entry, &de, glob);
+        if (err != 0)
+        {
+            ReleaseDirHandle(&dh, glob);
+            FreeLock(lock, glob);
+            return err;
+        }
         de.e.entry.first_cluster_lo = de.e.entry.first_cluster_hi = 0;
         de.e.entry.file_size = 0;
         de.e.entry.attr |= ATTR_ARCHIVE;
-        UpdateDirEntry(&de, glob);
+        err = UpdateDirEntry(&de, glob);
+        ReleaseDirHandle(&dh, glob);
+        if (err != 0)
+        {
+            FreeLock(lock, glob);
+            return err;
+        }
 
         D(bug("[fat] set first cluster and size to 0 in directory entry\n"));
 
         /* Free the clusters */
-        FREE_CLUSTER_CHAIN(lock->ioh.sb, lock->ioh.first_cluster);
+        err = FreeClusterChain(lock->ioh.sb, lock->ioh.first_cluster);
         lock->gl->first_cluster = lock->ioh.first_cluster = 0xffffffff;
         RESET_HANDLE(&lock->ioh);
         lock->gl->size = 0;
+
+        if (err != 0)
+        {
+            FreeLock(lock, glob);
+            return err;
+        }
 
         D(bug("[fat] file truncated, returning the lock\n"));
 
@@ -335,10 +358,8 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
     )
 
     /* Otherwise it's time to create the file. Get a handle on the passed dir */
-    if ((err = InitDirHandle(glob->sb,
-        dirlock != NULL ? dirlock->ioh.first_cluster : 0, &dh, TRUE, glob))
-        != 0)
-        return err;
+    InitDirHandle(glob->sb,
+        dirlock != NULL ? dirlock->ioh.first_cluster : 0, &dh, TRUE, glob);
 
     /* Get down to the correct subdir */
     if ((err = MoveToSubdir(&dh, &name, &namelen, glob)) != 0)
@@ -351,7 +372,12 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
      * write protected */
     if (dh.ioh.first_cluster != dh.ioh.sb->rootdir_cluster)
     {
-        GetDirEntry(&dh, 0, &de, glob);
+        err = GetDirEntry(&dh, 0, &de, glob);
+        if (err != 0)
+        {
+            ReleaseDirHandle(&dh, glob);
+            return err;
+        }
         if (de.e.entry.attr & ATTR_READ_ONLY)
         {
             D(bug("[fat] containing dir is write protected, doing nothing\n"));
@@ -424,12 +450,8 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
     {
         D(bug("[fat] file is a directory, making sure it's empty\n"));
 
-        if ((err = InitDirHandle(lock->ioh.sb, lock->ioh.first_cluster, &dh,
-            FALSE, glob)) != 0)
-        {
-            FreeLock(lock, glob);
-            return err;
-        }
+        InitDirHandle(lock->ioh.sb, lock->ioh.first_cluster, &dh,
+            FALSE, glob);
 
         /* Loop over the entries, starting from entry 2 (the first real
          * entry). Skipping unused ones, we look for the end-of-directory
@@ -455,21 +477,22 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
         }
 
         ReleaseDirHandle(&dh, glob);
+        if (err != 0 && err != ERROR_OBJECT_NOT_FOUND)
+        {
+            FreeLock(lock, glob);
+            return err;
+        }
     }
 
     /* Open the containing directory */
-    if ((err =InitDirHandle(lock->ioh.sb, lock->gl->dir_cluster, &dh,
-        TRUE, glob)) != 0)
-    {
-        FreeLock(lock, glob);
-        return err;
-    }
+    InitDirHandle(lock->ioh.sb, lock->gl->dir_cluster, &dh, TRUE, glob);
 
     /* If the dir is write protected, can't do anything. Root dir is never
      * write protected */
     if (dh.ioh.first_cluster != dh.ioh.sb->rootdir_cluster)
     {
-        GetDirEntry(&dh, 0, &de, glob);
+        if ((err = GetDirEntry(&dh, 0, &de, glob)) != 0)
+            goto delete_failed;
         if (de.e.entry.attr & ATTR_READ_ONLY)
         {
             D(bug("[fat] containing dir is write protected, doing nothing\n"));
@@ -480,16 +503,18 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
     }
 
     /* Get the entry for the file */
-    GetDirEntry(&dh, lock->gl->dir_entry, &de, glob);
+    if ((err = GetDirEntry(&dh, lock->gl->dir_entry, &de, glob)) != 0)
+        goto delete_failed;
 
-    /* Kill it */
-    DeleteDirEntry(&de, glob);
+    /* Release data only after the directory entry was removed successfully. */
+    if ((err = DeleteDirEntry(&de, glob)) != 0)
+        goto delete_failed;
 
     /* It's all good */
     ReleaseDirHandle(&dh, glob);
 
     /* Now free the clusters the file was using */
-    FREE_CLUSTER_CHAIN(lock->ioh.sb, lock->ioh.first_cluster);
+    err = FreeClusterChain(lock->ioh.sb, lock->ioh.first_cluster);
 
     /* Notify */
     SendNotifyByLock(lock->ioh.sb, lock->gl);
@@ -503,7 +528,11 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
         bug("'\n");
     )
 
-    return 0;
+    return err;
+delete_failed:
+    ReleaseDirHandle(&dh, glob);
+    FreeLock(lock, glob);
+    return err;
 }
 
 LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname,
@@ -517,10 +546,9 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname,
     ULONG len;
 
     /* Get the source dir handle */
-    if ((err = InitDirHandle(glob->sb,
+    InitDirHandle(glob->sb,
         sdirlock != NULL ? sdirlock->ioh.first_cluster : 0, &sdh,
-        FALSE, glob)) != 0)
-        return err;
+        FALSE, glob);
 
     /* Get down to the correct subdir */
     if ((err = MoveToSubdir(&sdh, &sname, &snamelen, glob)) != 0)
@@ -537,13 +565,9 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname,
     }
 
     /* Now get a handle on the passed dest dir */
-    if ((err = InitDirHandle(glob->sb,
+    InitDirHandle(glob->sb,
         ddirlock != NULL ? ddirlock->ioh.first_cluster : 0, &ddh,
-        FALSE, glob)) != 0)
-    {
-        ReleaseDirHandle(&sdh, glob);
-        return err;
-    }
+        FALSE, glob);
 
     /* Get down to the correct subdir */
     if ((err = MoveToSubdir(&ddh, &dname, &dnamelen, glob)) != 0)
@@ -554,7 +578,13 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname,
     }
 
     /* Check the source and dest dirs. If either is read-only, do nothing */
-    GetDirEntry(&sdh, 0, &dde, glob);
+    err = GetDirEntry(&sdh, 0, &dde, glob);
+    if (err != 0)
+    {
+        ReleaseDirHandle(&ddh, glob);
+        ReleaseDirHandle(&sdh, glob);
+        return err;
+    }
     if (dde.e.entry.attr & ATTR_READ_ONLY)
     {
         D(bug("[fat] source dir is read only, doing nothing\n"));
@@ -562,7 +592,13 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname,
         ReleaseDirHandle(&sdh, glob);
         return ERROR_WRITE_PROTECTED;
     }
-    GetDirEntry(&ddh, 0, &dde, glob);
+    err = GetDirEntry(&ddh, 0, &dde, glob);
+    if (err != 0)
+    {
+        ReleaseDirHandle(&ddh, glob);
+        ReleaseDirHandle(&sdh, glob);
+        return err;
+    }
     if (dde.e.entry.attr & ATTR_READ_ONLY)
     {
         D(bug("[fat] dest dir is read only, doing nothing\n"));
@@ -596,8 +632,7 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname,
 
     /* Make a new entry in the target dir */
     if ((err = CreateDirEntry(&ddh, dname, dnamelen,
-        sde.e.entry.attr | ATTR_ARCHIVE,
-        (sde.e.entry.first_cluster_hi << 16) | sde.e.entry.first_cluster_lo,
+        sde.e.entry.attr | ATTR_ARCHIVE, FIRST_FILE_CLUSTER(&sde),
         &dde, glob)) != 0)
     {
         /* The new name could not be made (directory or volume full): keep
@@ -616,7 +651,24 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname,
     dde.e.entry.create_time_tenth = sde.e.entry.create_time_tenth;
     dde.e.entry.file_size = sde.e.entry.file_size;
 
-    UpdateDirEntry(&dde, glob);
+    err = UpdateDirEntry(&dde, glob);
+    if (err != 0)
+    {
+        DeleteDirEntry(&dde, glob);
+        ReleaseDirHandle(&ddh, glob);
+        ReleaseDirHandle(&sdh, glob);
+        return err;
+    }
+
+    /* Keep the original lock until its directory entry is gone. */
+    err = DeleteDirEntry(&sde, glob);
+    if (err != 0)
+    {
+        DeleteDirEntry(&dde, glob);
+        ReleaseDirHandle(&ddh, glob);
+        ReleaseDirHandle(&sdh, glob);
+        return err;
+    }
 
     /* Update the global lock (if present) with the new dir cluster/entry */
     ForeachNode(&sdh.ioh.sb->info->locks, gl)
@@ -637,9 +689,6 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname,
             gl->name[0] = (UBYTE) len;
         }
     }
-
-    /* Delete the original */
-    DeleteDirEntry(&sde, glob);
 
     /* Notify */
     SendNotifyByDirEntry(sdh.ioh.sb, &dde);
@@ -666,10 +715,8 @@ LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
     )
 
     /* Get a handle on the passed dir */
-    if ((err = InitDirHandle(glob->sb,
-        dirlock != NULL ? dirlock->ioh.first_cluster : 0, &dh, FALSE,
-        glob)) != 0)
-        return err;
+    InitDirHandle(glob->sb,
+        dirlock != NULL ? dirlock->ioh.first_cluster : 0, &dh, FALSE, glob);
 
     /* Get down to the correct subdir */
     if ((err = MoveToSubdir(&dh, &name, &namelen, glob)) != 0)
@@ -693,7 +740,12 @@ LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
      * write protected */
     if (dh.ioh.first_cluster != dh.ioh.sb->rootdir_cluster)
     {
-        GetDirEntry(&dh, 0, &de, glob);
+        err = GetDirEntry(&dh, 0, &de, glob);
+        if (err != 0)
+        {
+            ReleaseDirHandle(&dh, glob);
+            return err;
+        }
         if (de.e.entry.attr & ATTR_READ_ONLY)
         {
             D(bug("[fat] containing dir is write protected, doing nothing\n"));
@@ -711,6 +763,12 @@ LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
         return ERROR_OBJECT_EXISTS;
     }
 
+    if (err != ERROR_OBJECT_NOT_FOUND)
+    {
+        ReleaseDirHandle(&dh, glob);
+        return err;
+    }
+
     /* Find a free cluster to store the dir in */
     if ((err = FindFreeCluster(dh.ioh.sb, &cluster)) != 0)
     {
@@ -719,7 +777,11 @@ LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
     }
 
     /* Allocate it */
-    AllocCluster(dh.ioh.sb, cluster);
+    if (!AllocCluster(dh.ioh.sb, cluster))
+    {
+        ReleaseDirHandle(&dh, glob);
+        return ERROR_UNKNOWN;
+    }
 
     D(bug("[fat] allocated cluster %ld for directory\n", cluster));
 
@@ -739,30 +801,38 @@ LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
 
     /* Create the dot entry. It's a direct copy of the just-created entry, but
      * with a different name */
-    GetDirEntry(&sdh, 0, &sde, glob);
+    if ((err = GetDirEntry(&sdh, 0, &sde, glob)) != 0)
+        goto create_failed;
     CopyMem(&de.e.entry, &sde.e.entry, sizeof(struct FATDirEntry));
     CopyMem(".          ", &sde.e.entry.name, FAT_MAX_SHORT_NAME);
-    UpdateDirEntry(&sde, glob);
+    if ((err = UpdateDirEntry(&sde, glob)) != 0)
+        goto create_failed;
 
     /* Create the dot-dot entry. Again, a copy, with the cluster pointer set
      * up to point to the parent */
-    GetDirEntry(&sdh, 1, &sde, glob);
+    if ((err = GetDirEntry(&sdh, 1, &sde, glob)) != 0)
+        goto create_failed;
     CopyMem(&de.e.entry, &sde.e.entry, sizeof(struct FATDirEntry));
     CopyMem("..         ", &sde.e.entry.name, FAT_MAX_SHORT_NAME);
     cluster = dh.ioh.first_cluster;
     if (cluster == dh.ioh.sb->rootdir_cluster)
         cluster = 0;
-    sde.e.entry.first_cluster_lo = cluster & 0xffff;
-    sde.e.entry.first_cluster_hi = cluster >> 16;
-    UpdateDirEntry(&sde, glob);
+    sde.e.entry.first_cluster_lo = AROS_WORD2LE(cluster & 0xffff);
+    sde.e.entry.first_cluster_hi = AROS_WORD2LE(cluster >> 16);
+    if ((err = UpdateDirEntry(&sde, glob)) != 0)
+        goto create_failed;
 
     /* Clear all remaining entries (the first of which marks the end of the
      * directory) */
-    for (i = 2; GetDirEntry(&sdh, i, &sde, glob) == 0; i++)
+    for (i = 2; (err = GetDirEntry(&sdh, i, &sde, glob)) == 0; i++)
     {
         SetMem(&sde.e.entry, 0, sizeof(struct FATDirEntry));
-        UpdateDirEntry(&sde, glob);
+        if ((err = UpdateDirEntry(&sde, glob)) != 0)
+            goto create_failed;
     }
+
+    if (err != ERROR_OBJECT_NOT_FOUND)
+        goto create_failed;
 
     /* New dir created */
     ReleaseDirHandle(&sdh, glob);
@@ -774,8 +844,18 @@ LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
     ReleaseDirHandle(&dh, glob);
 
     /* Notify */
-    SendNotifyByLock((*newdirlock)->ioh.sb, (*newdirlock)->gl);
+    if (err == 0)
+        SendNotifyByLock((*newdirlock)->ioh.sb, (*newdirlock)->gl);
 
+    return err;
+
+create_failed:
+    cluster = sdh.ioh.first_cluster;
+    ReleaseDirHandle(&sdh, glob);
+    /* A failed unlink may have changed part of the entry: retain its data. */
+    if (DeleteDirEntry(&de, glob) == 0)
+        FreeCluster(dh.ioh.sb, cluster);
+    ReleaseDirHandle(&dh, glob);
     return err;
 }
 
@@ -846,6 +926,8 @@ LONG OpWrite(struct ExtFileLock *lock, UBYTE *data, ULONG want,
     if ((err = WriteFileChunk(&(lock->ioh), lock->pos, want, data,
         written)) == 0)
     {
+        ULONG size;
+
         /* If nothing was written but success was returned (can that even
          * happen?) then we don't want to mess with the dir entry */
         if (*written == 0)
@@ -862,9 +944,10 @@ LONG OpWrite(struct ExtFileLock *lock, UBYTE *data, ULONG want,
         lock->pos += *written;
 
         /* Update the dir entry if the size changed */
-        if (lock->pos > lock->gl->size)
+        size = lock->gl->size;
+        if (lock->pos > size)
         {
-            lock->gl->size = lock->pos;
+            size = lock->pos;
             update_entry = TRUE;
         }
 
@@ -875,29 +958,38 @@ LONG OpWrite(struct ExtFileLock *lock, UBYTE *data, ULONG want,
             update_entry = TRUE;
 
         D(bug("[fat] wrote %ld bytes, new file pos is %ld, size is %ld\n",
-            *written, lock->pos, lock->gl->size));
+            *written, lock->pos, size));
 
         if (update_entry)
         {
             D(bug("[fat] updating dir entry, first cluster is %ld,"
                 " size is %ld\n",
-                lock->ioh.first_cluster, lock->gl->size));
+                lock->ioh.first_cluster, size));
 
-            lock->gl->first_cluster = lock->ioh.first_cluster;
+            InitDirHandle(lock->ioh.sb, lock->gl->dir_cluster, &dh,
+                FALSE, glob);
+            err = GetDirEntry(&dh, lock->gl->dir_entry, &de, glob);
+            if (err != 0)
+            {
+                ReleaseDirHandle(&dh, glob);
+                return err;
+            }
 
-            InitDirHandle(lock->ioh.sb, lock->gl->dir_cluster, &dh, FALSE,
-                glob);
-            GetDirEntry(&dh, lock->gl->dir_entry, &de, glob);
-
-            de.e.entry.file_size = lock->gl->size;
-            de.e.entry.first_cluster_lo = lock->gl->first_cluster & 0xffff;
-            de.e.entry.first_cluster_hi = lock->gl->first_cluster >> 16;
+            de.e.entry.file_size = AROS_LONG2LE(size);
+            de.e.entry.first_cluster_lo =
+                AROS_WORD2LE(lock->ioh.first_cluster & 0xffff);
+            de.e.entry.first_cluster_hi =
+                AROS_WORD2LE(lock->ioh.first_cluster >> 16);
 
             de.e.entry.attr |= ATTR_ARCHIVE;
-            UpdateDirEntry(&de, glob);
+            err = UpdateDirEntry(&de, glob);
 
             ReleaseDirHandle(&dh, glob);
+            if (err != 0)
+                return err;
+            lock->gl->first_cluster = lock->ioh.first_cluster;
         }
+        lock->gl->size = size;
     }
 
     return err;
@@ -906,176 +998,150 @@ LONG OpWrite(struct ExtFileLock *lock, UBYTE *data, ULONG want,
 LONG OpSetFileSize(struct ExtFileLock *lock, LONG offset, LONG whence,
     LONG *newsize, struct Globals *glob)
 {
-    LONG err;
-    LONG size;
+    struct FSSuper *sb = glob->sb;
     struct DirHandle dh;
     struct DirEntry de;
-    ULONG want, count;
-    ULONG cl, next, first, last;
+    QUAD size;
+    LONG err;
+    ULONG first, cl, next, count = 0, want, keep = 0, tail = 0;
+    ULONG keep_next = 0;
+    ULONG added = 0, added_last = 0, last = 0, original_next = 0;
+    BOOL linked = FALSE;
 
-    /* Need an exclusive lock to do what is effectively a write */
     if (lock->gl->access != EXCLUSIVE_LOCK)
-    {
-        D(bug("[fat] can't modify global attributes via a shared lock\n"));
         return ERROR_OBJECT_IN_USE;
-    }
-
-    /* Don't modify the file if it's protected */
     if (lock->gl->attr & ATTR_READ_ONLY)
-    {
-        D(bug("[fat] file is write protected\n"));
         return ERROR_WRITE_PROTECTED;
-    }
-
-    /* Calculate the new length based on the current position */
-    if (whence == OFFSET_BEGINNING && offset >= 0)
+    if (whence == OFFSET_BEGINNING)
         size = offset;
-    else if (whence == OFFSET_CURRENT && lock->pos + offset >= 0)
-        size = lock->pos + offset;
-    else if (whence == OFFSET_END && offset <= 0
-        && lock->gl->size + offset >= 0)
-        size = lock->gl->size + offset;
+    else if (whence == OFFSET_CURRENT)
+        size = (QUAD)lock->pos + offset;
+    else if (whence == OFFSET_END && offset <= 0)
+        size = (QUAD)lock->gl->size + offset;
     else
         return ERROR_SEEK_ERROR;
-
-    if (lock->gl->size == size)
+    if (size < 0 || size > 0x7fffffff)
+        return ERROR_SEEK_ERROR;
+    if (size == lock->gl->size)
     {
-        D(bug("[fat] new size matches old size, nothing to do\n"));
         *newsize = size;
         return 0;
     }
-
-    D(bug("[fat] old size was %ld bytes, new size is %ld bytes\n",
-        lock->gl->size, size));
-
-    /* Get the dir that this file is in */
-    if ((err = InitDirHandle(glob->sb, lock->gl->dir_cluster, &dh,
-        FALSE, glob)) != 0)
-        return err;
-
-    /* And the entry */
-    if ((err = GetDirEntry(&dh, lock->gl->dir_entry, &de, glob)) != 0)
+    InitDirHandle(sb, lock->gl->dir_cluster, &dh, FALSE, glob);
+    err = GetDirEntry(&dh, lock->gl->dir_entry, &de, glob);
+    if (err != 0)
+        goto done;
+    want = ((ULONG)size >> sb->clustersize_bits) +
+        (((ULONG)size & (sb->clustersize - 1)) != 0);
+    first = FIRST_FILE_CLUSTER(&de);
+    if (first != 0 &&
+        (first < 2 || first >= sb->eoc_mark - 7 ||
+         first >= sb->clusters_count + 2))
     {
-        ReleaseDirHandle(&dh, glob);
-        return err;
+        err = ERROR_NOT_A_DOS_DISK;
+        goto done;
     }
-
-    /* Calculate how many clusters we need */
-    want = (size >> glob->sb->clustersize_bits)
-        + ((size & (glob->sb->clustersize - 1)) ? 1 : 0);
-
-    D(bug("[fat] want %ld clusters for file\n", want));
-
-    /* We're getting three things here - the first cluster of the existing
-     * file, the last cluster of the existing file (which might be the same),
-     * and the number of clusters currently allocated to it (it's not safe to
-     * infer it from the current size as a broken fat implementation may have
-     * allocated it more than it needs). We handle file shrinking/truncation
-     * here as it falls out naturally from following the current cluster chain
-     */
-
-    cl = FIRST_FILE_CLUSTER(&de);
-    if (cl == 0)
+    cl = first;
+    while (cl >= 2 && cl < sb->eoc_mark - 7)
     {
-        D(bug("[fat] file is empty\n"));
-
-        first = 0;
-        count = 0;
-    }
-
-    else if (want == 0)
-    {
-        /* If we're fully truncating the file, then the below loop will
-         * actually not truncate the file at all (count will get incremented
-         * past want first time around the loop). It's a pain to incorporate a
-         * full truncate into the loop, not counting the change to the first
-         * cluster, so it's easier to just take care of it all here */
-        D(bug("[fat] want nothing, so truncating the entire file\n"));
-
-        FREE_CLUSTER_CHAIN(glob->sb, cl);
-
-        /* Now it has nothing */
-        first = 0;
-        count = 0;
-    }
-
-    else
-    {
-        first = cl;
-        count = 0;
-
-        /* Do the actual count */
-        while ((last = GET_NEXT_CLUSTER(glob->sb, cl))
-            < glob->sb->eoc_mark - 7)
+        if (cl >= sb->clusters_count + 2 || ++count > sb->clusters_count)
         {
-            count++;
-            cl = last;
-
-            /* If we get as many clusters as we want, kill everything after
-             * it */
-            if (count == want)
-            {
-                FREE_CLUSTER_CHAIN(glob->sb, GET_NEXT_CLUSTER(glob->sb, cl));
-                SET_NEXT_CLUSTER(glob->sb, cl, glob->sb->eoc_mark);
-
-                D(bug("[fat] truncated file\n"));
-
-                break;
-            }
+            err = ERROR_NOT_A_DOS_DISK;
+            goto done;
         }
-
-        D(bug("[fat] file has %ld clusters\n", count));
-    }
-
-    /* Now we know how big the current file is. If we don't have enough,
-     * allocate more until we do */
-    if (count < want)
-    {
-        D(bug("[fat] growing file\n"));
-
-        while (count < want)
+        if (count == want)
+            keep = cl;
+        last = cl;
+        sb->fat_io_error = FALSE;
+        cl = GET_NEXT_CLUSTER(sb, cl);
+        if (sb->fat_io_error)
         {
-            if ((err = FindFreeCluster(glob->sb, &next)) != 0)
-            {
-                /* XXX: probably no free clusters left. We should clean up the
-                 * extras we allocated before returning. It won't hurt
-                 * anything to leave them but it is dead space */
-                ReleaseDirHandle(&dh, glob);
-                return err;
-            }
-
-            /* Mark the cluster used */
-            AllocCluster(glob->sb, next);
-
-            /* If the file had no clusters, then this is the first and we
-             * need to note it for later storage in the direntry */
-            if (cl == 0)
-                first = next;
-
-            /* Otherwise, hook it up to the current one */
-            else
-                SET_NEXT_CLUSTER(glob->sb, cl, next);
-
-            /* One more */
-            count++;
-            cl = next;
+            err = ERROR_UNKNOWN;
+            goto done;
+        }
+        if (count == want)
+            keep_next = cl;
+        if (cl < 2)
+        {
+            err = ERROR_NOT_A_DOS_DISK;
+            goto done;
         }
     }
+    original_next = cl;
 
-    /* Clusters are fixed, now update the directory entry */
-    de.e.entry.first_cluster_lo = first & 0xffff;
-    de.e.entry.first_cluster_hi = first >> 16;
-    de.e.entry.file_size = size;
+    /* Build growth separately so allocation failure leaves the original chain. */
+    while (count < want)
+    {
+        err = FindFreeCluster(sb, &next);
+        if (err != 0)
+            goto rollback;
+        if (!AllocCluster(sb, next))
+        {
+            err = ERROR_UNKNOWN;
+            goto rollback;
+        }
+        if (added_last != 0 && !SET_NEXT_CLUSTER(sb, added_last, next))
+        {
+            err = ERROR_UNKNOWN;
+            /* A failed mirror write may already have changed the first FAT. */
+            if (!SET_NEXT_CLUSTER(sb, added_last, sb->eoc_mark))
+                goto done;
+            FreeCluster(sb, next);
+            goto rollback;
+        }
+        if (added == 0)
+            added = next;
+        added_last = next;
+        count++;
+    }
+    if (added != 0 && first >= 2)
+    {
+        /* Restore this link even if only some FAT copies were updated. */
+        linked = TRUE;
+        if (!SET_NEXT_CLUSTER(sb, last, added))
+        {
+            err = ERROR_UNKNOWN;
+            goto rollback;
+        }
+    }
+    if (want == 0)
+        tail = first;
+    else if (keep != 0 && count > want)
+        tail = keep_next;
+    if (first < 2)
+        first = added;
+    if (want == 0)
+        first = 0;
+    de.e.entry.first_cluster_lo = AROS_WORD2LE(first & 0xffff);
+    de.e.entry.first_cluster_hi = AROS_WORD2LE(first >> 16);
+    de.e.entry.file_size = AROS_LONG2LE((ULONG)size);
     de.e.entry.attr |= ATTR_ARCHIVE;
-    UpdateDirEntry(&de, glob);
+    err = UpdateDirEntry(&de, glob);
+    if (err != 0)
+        goto rollback;
 
-    D(bug("[fat] set file size to %ld, first cluster is %ld\n", size,
-        first));
-
-    /* Done! */
+    lock->gl->size = size;
+    lock->gl->first_cluster = lock->ioh.first_cluster = first ? first : 0xffffffff;
+    RESET_HANDLE(&lock->ioh);
     *newsize = size;
+    if (tail >= 2 && tail < sb->eoc_mark - 7)
+    {
+        if (keep != 0 && !SET_NEXT_CLUSTER(sb, keep, sb->eoc_mark))
+            err = ERROR_UNKNOWN;
+        else
+            err = FreeClusterChain(sb, tail);
+    }
+    goto done;
 
-    return 0;
+rollback:
+    /* If restoring a link fails, keep its allocated data rather than free it. */
+    if (linked && !SET_NEXT_CLUSTER(sb, last, original_next))
+        goto done;
+    if (added != 0)
+        FreeClusterChain(sb, added);
+done:
+    ReleaseDirHandle(&dh, glob);
+    return err;
 }
 
 LONG OpSetProtect(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
@@ -1086,10 +1152,8 @@ LONG OpSetProtect(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
     struct DirEntry de;
 
     /* Get the dir handle */
-    if ((err = InitDirHandle(glob->sb,
-        dirlock != NULL ? dirlock->ioh.first_cluster : 0, &dh, FALSE,
-        glob)) != 0)
-        return err;
+    InitDirHandle(glob->sb,
+        dirlock != NULL ? dirlock->ioh.first_cluster : 0, &dh, FALSE, glob);
 
     /* Get down to the correct subdir */
     if ((err = MoveToSubdir(&dh, &name, &namelen, glob)) != 0)
@@ -1120,7 +1184,11 @@ LONG OpSetProtect(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
     /* Only set read-only if neither writable nor deletable */
     if ((prot & (FIBF_WRITE | FIBF_DELETE)) == (FIBF_WRITE | FIBF_DELETE))
         de.e.entry.attr |= ATTR_READ_ONLY;
-    UpdateDirEntry(&de, glob);
+    if ((err = UpdateDirEntry(&de, glob)) != 0)
+    {
+        ReleaseDirHandle(&dh, glob);
+        return err;
+    }
 
     D(bug("[fat] new protection is 0x%08x\n", de.e.entry.attr));
 
@@ -1135,14 +1203,17 @@ LONG OpSetProtect(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
         D(bug("[fat] setting protections for directory '.' entry\n"));
 
         InitDirHandle(glob->sb, FIRST_FILE_CLUSTER(&de), &dh, TRUE, glob);
-        GetDirEntry(&dh, 0, &de, glob);
-        de.e.entry.attr = attr;
-        UpdateDirEntry(&de, glob);
+        err = GetDirEntry(&dh, 0, &de, glob);
+        if (err == 0)
+        {
+            de.e.entry.attr = attr;
+            err = UpdateDirEntry(&de, glob);
+        }
     }
 
     ReleaseDirHandle(&dh, glob);
 
-    return 0;
+    return err;
 }
 
 LONG OpSetDate(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
@@ -1154,10 +1225,8 @@ LONG OpSetDate(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
     UWORD wdate, wtime;
 
     /* Get the dir handle */
-    if ((err = InitDirHandle(glob->sb,
-        dirlock != NULL ? dirlock->ioh.first_cluster : 0, &dh, FALSE,
-        glob)) != 0)
-        return err;
+    InitDirHandle(glob->sb,
+        dirlock != NULL ? dirlock->ioh.first_cluster : 0, &dh, FALSE, glob);
 
     /* Get down to the correct subdir */
     if ((err = MoveToSubdir(&dh, &name, &namelen, glob)) != 0)
@@ -1189,13 +1258,13 @@ LONG OpSetDate(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
     de.e.entry.write_date = wdate;
     de.e.entry.write_time = wtime;
     de.e.entry.last_access_date = wdate;
-    UpdateDirEntry(&de, glob);
-
-    SendNotifyByDirEntry(glob->sb, &de);
+    err = UpdateDirEntry(&de, glob);
+    if (err == 0)
+        SendNotifyByDirEntry(glob->sb, &de);
 
     ReleaseDirHandle(&dh, glob);
 
-    return 0;
+    return err;
 }
 
 LONG OpAddNotify(struct NotifyRequest *nr, struct Globals *glob)
@@ -1219,8 +1288,7 @@ LONG OpAddNotify(struct NotifyRequest *nr, struct Globals *glob)
 
     else
     {
-        if ((err = InitDirHandle(glob->sb, 0, &dh, FALSE, glob)) != 0)
-            return err;
+        InitDirHandle(glob->sb, 0, &dh, FALSE, glob);
 
         /* Look for the entry */
         err =

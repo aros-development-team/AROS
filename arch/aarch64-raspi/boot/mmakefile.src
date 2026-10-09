@@ -22,7 +22,8 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-package-raspi-aarch64 \
 #MM workbench-devs-networks-bwfm \
 #MM distfiles-raspi-aarch64-fw \
-#MM distfiles-raspi-aarch64-wifi-fw
+#MM distfiles-raspi-aarch64-wifi-fw \
+#MM distfiles-raspi-aarch64-bt-fw
 
 #MM kernel-package-raspi-aarch64-quick: \
 #MM linklibs-stdc-static-quick \
@@ -240,6 +241,25 @@ distfiles-raspi-aarch64-fw:
 	@for f in $(RASPIFW_OVERLAYS) ; do \
 	    wget -4 -t 5 -T 15 -c "$(RASPIFW_URI)/overlays/$$f" -O "$(AROSDIR)/overlays/$$f" \
 	        || $(ECHO) "WARNING: could not fetch overlay $$f" ; \
+	done
+
+# The on-board Bluetooth radios run from ROM until brcmbt.fwl sends them a
+# patchram from DEVS:Firmware/brcm/: without one a BCM43430A1 answers
+# HCI_Reset but reports the placeholder address AA:AA:AA:AA:AA:AA, which
+# pairing cannot use. BCM43430A1 is the Pi 3 and Zero W part, BCM4345C0 the
+# Pi 3B+, and BCM4345C5 the Pi 400 / CM4 (brcmbt picks the file by the
+# controller's LMP subversion). LICENSE.cypress carries the redistribution
+# terms for these firmware files and is installed beside them.
+RASPIBTFW_BRANCH := bookworm
+RASPIBTFW_URI    := https://github.com/RPi-Distro/bluez-firmware/raw/$(RASPIBTFW_BRANCH)/debian/firmware/broadcom
+RASPIBTFW_FILES  := BCM43430A1.hcd BCM4345C0.hcd BCM4345C5.hcd LICENSE.cypress
+
+#MM
+distfiles-raspi-aarch64-bt-fw:
+	@$(MKDIR) $(AROSDIR)/Devs/Firmware/brcm
+	@for f in $(RASPIBTFW_FILES) ; do \
+	    wget -4 -t 5 -T 15 -c "$(RASPIBTFW_URI)/$$f" -O "$(AROSDIR)/Devs/Firmware/brcm/$$f" \
+	        || $(ECHO) "WARNING: could not fetch Bluetooth firmware $$f" ; \
 	done
 
 #MM

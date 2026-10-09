@@ -644,6 +644,45 @@ VOID api_sendbreaktotasks()
     Permit();
 }
 
+/*
+ * Log which tasks still hold a socket base open.  Called when a CTRL-C
+ * shutdown cannot complete because an opener did not close its base, so the
+ * log names the culprit(s) instead of only reporting a count.  The Master
+ * base and the NETTRACE task's base are the expected baseline and are skipped.
+ */
+VOID api_logopeners(VOID)
+{
+    extern struct List socketBaseList; /* :/ */
+    struct Node *libNode;
+    struct { struct Task *task; char name[48]; } held[8];
+    int n = 0, i;
+
+    Forbid();
+    for(libNode = socketBaseList.lh_Head; libNode->ln_Succ && n < 8;
+            libNode = libNode->ln_Succ)
+    {
+        struct SocketBase *sb = (struct SocketBase *)libNode;
+        struct Task *t = sb->thisTask;
+        const char *nm;
+        int j;
+
+        if(sb == (struct SocketBase *)MasterSocketBase || t == Nettrace_Task)
+            continue;
+
+        nm = (t && t->tc_Node.ln_Name) ? t->tc_Node.ln_Name : "(unnamed)";
+        held[n].task = t;
+        for(j = 0; j < (int)sizeof(held[n].name) - 1 && nm[j]; j++)
+            held[n].name[j] = nm[j];
+        held[n].name[j] = '\0';
+        n++;
+    }
+    Permit();
+
+    for(i = 0; i < n; i++)
+        __log(LOG_ERR, "bsdsocket.library still held by task '%s' (0x%p)",
+              held[i].name, (IPTR)held[i].task);
+}
+
 
 VOID api_deinit()
 {
