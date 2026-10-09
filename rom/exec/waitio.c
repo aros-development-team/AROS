@@ -8,6 +8,8 @@
 #include <aros/libcall.h>
 #include <proto/exec.h>
 
+#include "exec_intern.h"
+
 /*****************************************************************************
 
     NAME */
@@ -70,9 +72,24 @@
     {
         /* Arbitrate for the message queue. */
         Disable();
+#if defined(__AROSEXEC_SMP__)
+        /*
+         * Disable() stops only this core, while ReplyMsg() may be queueing
+         * the next reply on the same port from another. The message's type
+         * became NT_REPLYMSG under the port's lock, so once we hold it the
+         * message is on the list.
+         */
+        if (iORequest->io_Message.mn_ReplyPort)
+            EXEC_SPINLOCK_LOCK(&iORequest->io_Message.mn_ReplyPort->mp_SpinLock,
+                               NULL, SPINLOCK_MODE_WRITE);
+#endif
 
         /* Remove the message */
         Remove(&iORequest->io_Message.mn_Node);
+#if defined(__AROSEXEC_SMP__)
+        if (iORequest->io_Message.mn_ReplyPort)
+            EXEC_SPINLOCK_UNLOCK(&iORequest->io_Message.mn_ReplyPort->mp_SpinLock);
+#endif
         Enable();
     }
 
