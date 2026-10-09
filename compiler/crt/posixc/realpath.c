@@ -11,6 +11,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>  // for getcwd, chdir, readlink, etc.
+#include <proto/dos.h>
+
+#include "__posixc_intbase.h"
 
 #ifndef SYMLOOP_MAX
 #define SYMLOOP_MAX 40
@@ -18,6 +21,8 @@
 
 static char *
 __realpath(const char *path, char *resolved_path, int count);
+static char *
+__realpath_ados(const char *path, char *resolved_path);
 
 /*****************************************************************************
 
@@ -76,6 +81,8 @@ __realpath(const char *path, char *resolved_path, int count);
 
 ******************************************************************************/
 {
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
     char *ret;
     int dofree = 0;
     int fd;
@@ -86,6 +93,15 @@ __realpath(const char *path, char *resolved_path, int count);
             return NULL;
         }
         dofree = 1;
+    }
+
+    /* Without -nix path translation "." is no directory, so the walk below
+       cannot even start: AmigaDOS paths go through a lock instead. */
+    if (!PosixCBase->doupath) {
+        ret = __realpath_ados(path, resolved_path);
+        if (ret == NULL && dofree)
+            free(resolved_path);
+        return ret;
     }
 
     /* Save current working directory by opening "." */
@@ -197,3 +213,31 @@ __realpath(const char *path, char *resolved_path, int count)
     return resolved_path;
 }
 
+/* A lock names the object with links resolved, and fails if it is missing. */
+static char *
+__realpath_ados(const char *path, char *resolved_path)
+{
+    BPTR lock;
+
+    if (path == NULL) {
+        errno = EINVAL;
+        return NULL;
+    }
+    if (path[0] == '\0') {
+        errno = ENOENT;
+        return NULL;
+    }
+
+    lock = Lock(path, SHARED_LOCK);
+    if (lock == BNULL) {
+        errno = __stdc_ioerr2errno(IoErr());
+        return NULL;
+    }
+    if (!NameFromLock(lock, resolved_path, PATH_MAX)) {
+        errno = __stdc_ioerr2errno(IoErr());
+        UnLock(lock);
+        return NULL;
+    }
+    UnLock(lock);
+    return resolved_path;
+}
