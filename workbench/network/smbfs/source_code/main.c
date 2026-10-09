@@ -5604,25 +5604,31 @@ Action_RenameDisk(
 		goto out;
 	}
 
-	/* Now for the really interesting part; the new name
-	 * is to be a NUL-terminated BCPL string, and as such
-	 * must be allocated via AllocVec().
+	/* Relabel supplies a C string on fast-BSTR AROS and a counted
+	 * string on classic systems. Match the DosList name representation.
 	 */
-
 	name = bcpl_name;
 
+#if defined(__AROS__) && defined(AROS_FAST_BSTR)
+	len = strlen((STRPTR)name);
+	new_name = AllocVec(len+1,MEMF_ANY|MEMF_PUBLIC);
+#else
 	len = name[0];
-
-	new_name = AllocVec(1 + len + 1,MEMF_ANY|MEMF_PUBLIC);
+	new_name = AllocVec(1+len+1,MEMF_ANY|MEMF_PUBLIC);
+#endif
 	if(new_name == NULL)
 	{
 		error = ERROR_NO_FREE_STORE;
 		goto out;
 	}
 
+#if defined(__AROS__) && defined(AROS_FAST_BSTR)
+	memcpy(new_name,name,len+1);
+#else
 	new_name[0] = len;
 	memcpy(&new_name[1],&name[1],len);
 	new_name[len+1] = '\0';
+#endif
 
 	Forbid();
 
