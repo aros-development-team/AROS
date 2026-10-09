@@ -2161,13 +2161,9 @@ ConvertCString(APTR bstring,LONG max_len,STRPTR cstring,LONG len)
 	if(len > max_len-1)
 		len = max_len-1;
 
-#if !defined(AROS_FAST_BSTR)
+	/* FileInfoBlock names are counted even on fast-BSTR systems. */
 	(*to++) = len;
-#endif
 	memcpy(to,cstring,len);
-#if defined(AROS_FAST_BSTR)
-	to[len] = '\0';
-#endif
 }
 
 /****************************************************************************/
