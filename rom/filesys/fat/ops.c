@@ -1001,7 +1001,12 @@ LONG OpRead(struct ExtFileLock *lock, UBYTE *data, ULONG want,
         lock->pos));
 
     if (want == 0)
+    {
+        /* ACTION_READ returns *read: leaving it unset made a zero-length
+           Read() report a random byte count */
+        *read = 0;
         return 0;
+    }
 
     if (want + lock->pos > lock->gl->size)
     {
