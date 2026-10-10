@@ -12,8 +12,11 @@
 #               signal  : survive a reload, quiesce/resume via signals (default)
 #               restart : stop and relaunch across a reload
 #               ignore  : leave untouched across a reload
+#   Enabled - yes (default) or no.  Set "no" to turn the service off while
+#             keeping this script; it stops at the next boot or reload.
 #
 Path=SYS:System/Network/Services/dhcpd
 Order=50
 StopSig=12
 Policy=signal
+Enabled=yes

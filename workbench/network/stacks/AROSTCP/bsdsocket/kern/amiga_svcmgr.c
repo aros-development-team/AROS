@@ -193,23 +193,43 @@ static BOOL svc_cfg_kv(char *line, char **key, char **val)
     return TRUE;
 }
 
-/* Read one service config file (the current dir is db/services.d) and launch
- * it.  The service name is the file name; the file holds its management config:
+/* Interpret a config value as a boolean (dflt when empty).  False = no / false
+ * / 0 / off; anything else is true. */
+static BOOL svc_cfg_bool(const char *v, BOOL dflt)
+{
+    char c;
+
+    if(v == NULL || v[0] == '\0')
+        return dflt;
+    c = v[0];
+    if(c == 'n' || c == 'N' || c == 'f' || c == 'F' || c == '0')
+        return FALSE;
+    if((c == 'o' || c == 'O') && (v[1] == 'f' || v[1] == 'F'))   /* "off" */
+        return FALSE;
+    return TRUE;
+}
+
+/* Read one service config file (the current dir is db/services.d) and bring the
+ * service into line with it.  The service name is the file name; the file holds
+ * its management config:
  *   Path=<executable>              (required)
  *   Order=<n>                      (bring-up priority hint; informational)
  *   StopSig=<bit>                  (signal bit to stop it; default CTRL-C = 12)
- *   Policy=signal|restart|ignore   (reload policy; default signal) */
-static void svc_launch_from_cfg(CONST_STRPTR name)
+ *   Policy=signal|restart|ignore   (reload policy; default signal)
+ *   Enabled=yes|no                 (default yes)
+ * An enabled service not yet running is launched; a disabled service that IS
+ * running is stopped.  So a service is turned off by setting Enabled=no (it
+ * takes effect at the next boot or reload) WITHOUT deleting its script. */
+static void svc_apply_cfg(CONST_STRPTR name)
 {
     BPTR  fh;
     char  line[256];
     char  path[256];
     ULONG stopsig = 0, policy = NSRP_SIGNAL;
-    BOOL  havepath = FALSE;
+    BOOL  havepath = FALSE, enabled = TRUE;
+    struct SvcProc *existing;
 
     if(name[0] == '\0' || name[0] == '.')   /* skip "", hidden, "." / ".." */
-        return;
-    if(svc_find(name))                       /* already running */
         return;
 
     fh = Open((STRPTR)name, MODE_OLDFILE);   /* relative to services.d */
@@ -242,15 +262,26 @@ static void svc_launch_from_cfg(CONST_STRPTR name)
                 policy = NSRP_IGNORE;
             else
                 policy = NSRP_SIGNAL;
+        } else if(svc_keyeq(key, "Enabled")) {
+            enabled = svc_cfg_bool(val, TRUE);
         }
         /* Order= is accepted but not acted on yet (scan order = launch order). */
     }
     Close(fh);
 
-    if(havepath)
-        svc_launch(name, path, stopsig, policy);
-    else
-        __log(LOG_ERR, "servicemgr: service '%s' has no Path", name);
+    existing = svc_find(name);
+    if(enabled) {
+        if(existing)                        /* already running */
+            return;
+        if(havepath)
+            svc_launch(name, path, stopsig, policy);
+        else
+            __log(LOG_ERR, "servicemgr: service '%s' has no Path", name);
+    } else if(existing) {
+        /* Disabled but running: keep the script, stop the service. */
+        __log(LOG_NOTICE, "servicemgr: service '%s' disabled, stopping", name);
+        svc_stop_one(existing, FALSE);
+    }
 }
 
 void svcmgr_launch_all(void)
@@ -282,7 +313,7 @@ void svcmgr_launch_all(void)
         while(ExNext(svclock, fib)) {
             if(fib->fib_DirEntryType > 0)       /* skip subdirectories */
                 continue;
-            svc_launch_from_cfg(fib->fib_FileName);
+            svc_apply_cfg(fib->fib_FileName);
         }
     }
     if(fib != NULL)
