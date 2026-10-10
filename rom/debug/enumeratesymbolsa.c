@@ -29,15 +29,27 @@ static void EnumerateModules(struct Hook * handler, struct Library * DebugBase);
 
 /*  FUNCTION
     Function will call the handler hook for all symbols from kickstart and
-    loaded modules that match the given search criteria.
+    loaded modules.
 
     The message that is passed to hook contains a pointer to struct SymbolInfo.
 
     INPUTS
+        handler - Hook called once for each symbol.
+        tags    - Reserved for future use. Currently ignored.
 
     RESULT
 
     NOTES
+        In normal task context the module database is held shared while the
+        handler hook is called. On guarded supervisor targets a non-blocking
+        read guard is held for the callback; if a writer owns the database,
+        enumeration is skipped instead of waiting.
+
+        The hook must not call RegisterModule() or UnregisterModule(), or
+        otherwise require exclusive access to the module database.
+
+        The SymbolInfo message and the strings it references are borrowed and
+        are valid only for the duration of the hook call.
 
     EXAMPLE
 
@@ -53,16 +65,28 @@ static void EnumerateModules(struct Hook * handler, struct Library * DebugBase);
 
     struct DebugBase *debugBase = DBGBASE(DebugBase);
     BOOL super;
+    BOOL resolverlock = FALSE;
+    BOOL enumerate = TRUE;
 
     /* We can be called in supervisor mode. No semaphores in the case! */
     super = KrnIsSuper();
     if (!super)
         ObtainSemaphoreShared(&debugBase->db_ModSem);
+    else if (debugBase->db_SymResolverABI >= KRN_SYMRESOLVER_ABI_LEASE)
+    {
+        if (KrnSpinTryLock(&debugBase->db_ResolverSpin, SPINLOCK_MODE_READ))
+            resolverlock = TRUE;
+        else
+            enumerate = FALSE;
+    }
 
-    EnumerateModules(handler, DebugBase);
+    if (enumerate)
+        EnumerateModules(handler, DebugBase);
 
     if (!super)
         ReleaseSemaphore(&debugBase->db_ModSem);
+    else if (resolverlock)
+        KrnSpinUnLock(&debugBase->db_ResolverSpin);
 
     AROS_LIBFUNC_EXIT
 }

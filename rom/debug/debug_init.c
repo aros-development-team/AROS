@@ -45,6 +45,10 @@ static int Debug_Init(struct DebugBase *DebugBase)
     NEWLIST(&DebugBase->db_Modules);
     InitSemaphore(&DebugBase->db_ModSem);
 
+    DebugBase->db_SymResolverABI = KrnGetSystemAttr(KATTR_SymResolverABI);
+    if (DebugBase->db_SymResolverABI >= KRN_SYMRESOLVER_ABI_LEASE)
+        KrnSpinInit(&DebugBase->db_ResolverSpin);
+
     bootMsg = KrnGetBootInfo();
     kmod = (struct ELF_ModuleInfo *)LibGetTagData(KRN_DebugInfo, 0, bootMsg);
 
@@ -54,8 +58,11 @@ static int Debug_Init(struct DebugBase *DebugBase)
         RegisterModule_ELF(kmod->Name, BNULL, kmod->eh, kmod->sh, (struct Library *)DebugBase);
     }
 
-    /* Let the kernel's backtraces and trap handlers name addresses */
-    KrnRegisterSymResolver(Debug_SymResolver, DebugBase);
+    /* Let the kernel's backtraces and trap handlers name addresses. */
+    if (DebugBase->db_SymResolverABI >= KRN_SYMRESOLVER_ABI_LEASE)
+        KrnRegisterSymResolver(Debug_SymResolver, DebugBase);
+    else
+        KrnRegisterSymResolver(Debug_SymResolverLegacy, DebugBase);
 
 #if AROS_MODULES_DEBUG
     HostIFace = (APTR)LibGetTagData(KRN_HostInterface, 0, bootMsg);

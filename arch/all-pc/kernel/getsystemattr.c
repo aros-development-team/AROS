@@ -33,6 +33,8 @@
 
           KATTR_PeripheralBase [.G] IPTR   - IO Base address for ARM peripherals
 
+          KATTR_SymResolverABI [.G] IPTR   - Symbol-resolver ABI level.
+
     INPUTS
         id - ID of the attribute to get
 
@@ -71,6 +73,10 @@
     else if ((id == KATTR_ClockSource) && (KernelBase->kb_ClockSource))
     {
         retval = (intptr_t)KernelBase->kb_ClockSource;
+    }
+    else if (id == KATTR_SymResolverABI)
+    {
+        retval = KRN_SYMRESOLVER_ABI_LEASE;
     }
     
     return retval;

@@ -17,6 +17,9 @@
 
 #include "debug_intern.h"
 
+#define DL_INTERNAL_RESOLVER_LEASE  (DL_Dummy + 0x0fff)
+static const UBYTE ResolverLeaseCookie;
+
 /* Binary search over sorted array of segments */
 static struct segment * FindSegmentInModule(void *addr, module_t *mod)
 {
@@ -164,6 +167,9 @@ static BOOL FindSymbol(module_t *mod, char **function, void **funstart, void **f
     NOTES
         If the function fails values pointed to by taglist will not be changed.
 
+        Returned module, segment and symbol name pointers are borrowed from
+        the debug database and must not be retained across database changes.
+
     EXAMPLE
 
     BUGS
@@ -192,6 +198,8 @@ static BOOL FindSymbol(module_t *mod, char **function, void **funstart, void **f
     void *symaddr = NULL;
     int ret = 0;
     int super;
+    BOOL resolverlock = FALSE;
+    BOOL resolverlease = FALSE;
 
     D(bug("[Debug] DecodeLocationA(0x%p)\n", addr));
 
@@ -200,6 +208,10 @@ static BOOL FindSymbol(module_t *mod, char **function, void **funstart, void **f
     {
         switch (tag->ti_Tag)
         {
+        case DL_INTERNAL_RESOLVER_LEASE:
+            resolverlease = (tag->ti_Data == (IPTR)&ResolverLeaseCookie);
+            break;
+
         case DL_ModuleName:
             module = (char **)tag->ti_Data;
             break;
@@ -247,8 +259,17 @@ static BOOL FindSymbol(module_t *mod, char **function, void **funstart, void **f
 
     /* We can be called in supervisor mode. No semaphores in the case! */
     super = KrnIsSuper();
-    if (!super)
-        ObtainSemaphoreShared(&DBGBASE(DebugBase)->db_ModSem);
+    if (!resolverlease)
+    {
+        if (!super)
+            ObtainSemaphoreShared(&DBGBASE(DebugBase)->db_ModSem);
+        else if (DBGBASE(DebugBase)->db_SymResolverABI >= KRN_SYMRESOLVER_ABI_LEASE)
+        {
+            if (!KrnSpinTryLock(&DBGBASE(DebugBase)->db_ResolverSpin, SPINLOCK_MODE_READ))
+                return 0;
+            resolverlock = TRUE;
+        }
+    }
 
     seg = FindSegment(addr, DebugBase);
     if (seg)
@@ -269,10 +290,27 @@ static BOOL FindSymbol(module_t *mod, char **function, void **funstart, void **f
         ret = 1;
     }
 
-    if (!super)
-        ReleaseSemaphore(&DBGBASE(DebugBase)->db_ModSem);
+    if (!resolverlease)
+    {
+        if (!super)
+            ReleaseSemaphore(&DBGBASE(DebugBase)->db_ModSem);
+        else if (resolverlock)
+            KrnSpinUnLock(&DBGBASE(DebugBase)->db_ResolverSpin);
+    }
 
     return ret;
 
     AROS_LIBFUNC_EXIT
+}
+
+int Debug_DecodeLocationAInternal(void *addr, struct TagItem *tags,
+        struct Library *DebugBase)
+{
+    struct TagItem internalTags[] =
+    {
+        { DL_INTERNAL_RESOLVER_LEASE, (IPTR)&ResolverLeaseCookie },
+        { TAG_MORE,                   (IPTR)tags                 }
+    };
+
+    return DecodeLocationA(addr, internalTags);
 }
