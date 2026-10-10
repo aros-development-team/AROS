@@ -26,14 +26,16 @@
 #include "quad_math.h"
 #endif /* _QUAD_MATH_H */
 
+#if !defined(__AROS__) || defined(DUMP_SMB)
+
 /****************************************************************************/
 
 /* Divide a 64 bit integer by a 32 bit integer, filling in a 64 bit quotient
    and returning a 32 bit remainder. */
 ULONG
-divide_64_by_32(QUAD * dividend,ULONG divisor,QUAD * quotient)
+divide_64_by_32(SMB_QUAD * dividend,ULONG divisor,SMB_QUAD * quotient)
 {
-	QUAD dividend_cdef = (*dividend);
+	SMB_QUAD dividend_cdef = (*dividend);
 	ULONG dividend_ab = 0;
 	LONG i;
 
@@ -89,9 +91,9 @@ divide_64_by_32(QUAD * dividend,ULONG divisor,QUAD * quotient)
    64 bit integer difference, returning a 32 bit integer that indicates
    whether or not an underflow occured. */
 ULONG
-subtract_64_from_64_to_64(const QUAD * const minuend,const QUAD * const subtrahend,QUAD * difference)
+subtract_64_from_64_to_64(const SMB_QUAD * const minuend,const SMB_QUAD * const subtrahend,SMB_QUAD * difference)
 {
-	QUAD extended_minuend;
+	SMB_QUAD extended_minuend;
 
 	/* We may have to borrow if the minuend is less than the
 	   subtrahend, so we set up a local variable to track
@@ -122,3 +124,5 @@ subtract_64_from_64_to_64(const QUAD * const minuend,const QUAD * const subtrahe
 	/* Return the underflow, if any. */
 	return(extended_minuend.High);
 }
+
+#endif /* !__AROS__ || DUMP_SMB */
