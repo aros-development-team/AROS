@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Version CLI command
 */
@@ -37,6 +37,12 @@
     ARCH      -- displays architecture information about a file
 
     RESULT
+    RETURN_OK when a $VER: tag can be displayed (even without a numeric
+    version) or an MD5 checksum has been calculated successfully.
+    RETURN_WARN if a requested minimum version/revision was not met.
+    RETURN_ERROR or RETURN_FAIL if version information or an object
+    cannot be obtained. With multiple names, the most severe
+    return code is retained. MD5SUM alone does not require a $VER: tag.
 
     NOTES
     If the tag contains a trailing space and dollar sign, you may use the Unix command ident.
@@ -561,108 +567,72 @@ static
 int findinfile(BPTR file, CONST_STRPTR string, STRPTR buffer, int *lenptr, unsigned char digest[16])
 {
     int error = RETURN_OK;
-    int buflen = *lenptr, len = 0, pos, stringlen;
-    BOOL ready = FALSE;
+    int buflen = *lenptr;
+    /* The only caller passes the statically NUL-terminated $VER: marker. */
+    int stringlen = strlen(string); /* Flawfinder: ignore */
+    int len, i, matched = 0, copied = 0;
+    BOOL found = FALSE, complete = FALSE;
     MD5_CTX md5ctx;
-    STRPTR bufpos;
     STRPTR tmp;
+
+    *lenptr = -1;
+    if (buflen <= 0 || stringlen <= 0)
+        return RETURN_FAIL;
 
     tmp = AllocMem(buflen, MEMF_PUBLIC);
     if (!tmp)
     {
+        SetIoErr(ERROR_NO_FREE_STORE);
         return RETURN_FAIL;
     }
 
-    stringlen = strlen(string);
-    *lenptr = -1;
-
     if (args.arg_md5sum)
-    {
         MD5Init(&md5ctx);
-    }
 
-    bufpos = tmp;
-    while ((len = Read(file, &tmp[len], buflen - len)) > 0)
+    while ((len = Read(file, tmp, buflen)) > 0)
     {
-        pos = 0;
-
         if (args.arg_md5sum)
-        {
-            MD5Update(&md5ctx, bufpos, len);
-        }
+            MD5Update(&md5ctx, (unsigned char *)tmp, len);
 
-        if (ready)
+        if (!complete)
         {
-            /* If we get here we're scanning the rest of the file for md5sum. - Piru */
-            len = 0;
-        }
-        else
-        {
-            while ((len - pos) >= stringlen)
+            for (i = 0; i < len; i++)
             {
-                /* Compare the current buffer position with the supplied string. */
-                if (strncmp(&tmp[pos], string, stringlen) == 0)
+                if (!found)
                 {
-                    /* It is equal! Now move the rest of the buffer to the top of
-                     * the buffer and fill it up.
-                     */
-                    int findstrlen = len - pos;
-
-                    memcpy(buffer, &tmp[pos + stringlen], findstrlen);
-
-                    len = Read(file, &buffer[findstrlen], buflen - findstrlen);
-                    if (len >= 0)
-                    {
-                        if (args.arg_md5sum)
-                        {
-                            MD5Update(&md5ctx, &buffer[findstrlen], len);
-                        }
-
-                        *lenptr = findstrlen + len;
-                    }
+                    if (tmp[i] == string[matched])
+                        matched++;
                     else
-                    {
-                        error = RETURN_FAIL;
-                    }
-                    ready = TRUE;
-                    break;
+                        matched = tmp[i] == string[0] ? 1 : 0;
+
+                    if (matched == stringlen)
+                        found = TRUE;
                 }
-                pos++;
-            }
-            /* Move the rest of the buffer that could not be compared (because it
-             * is smaller than the string to compare) to the top of the buffer.
-             */
-            if (!ready)
-            {
-                memmove(tmp, &tmp[len - stringlen], stringlen);
-            }
-            else
-            {
-                /* If we're not md5summing, stop file scanning now. - Piru */
-                if (!args.arg_md5sum)
+                else if (copied < buflen)
                 {
-                    break;
+                    buffer[copied++] = tmp[i];
+                    if (tmp[i] == '\r' || tmp[i] == '\n' || copied == buflen)
+                    {
+                        complete = TRUE;
+                        break;
+                    }
                 }
             }
-            len = stringlen;
         }
 
-        bufpos = &tmp[len];
+        if (complete && !args.arg_md5sum)
+            break;
     }
+
+    if (len < 0)
+        error = RETURN_FAIL;
+    else if (args.arg_md5sum)
+        MD5Final(digest, &md5ctx);
+
+    if (found)
+        *lenptr = copied;
 
     FreeMem(tmp, buflen);
-
-    if (len == -1)
-    {
-        error = RETURN_FAIL;
-    }
-
-    if (args.arg_md5sum)
-    {
-        SetMem(digest, 0, 16);
-        MD5Final(digest, &md5ctx);
-    }
-
     return error;
 }
 
@@ -914,7 +884,8 @@ void printverstring(void)
 
             Printf("%s%s%s%s%s%s%s\n",
                    (IPTR) parsedver.pv_name, (IPTR) (*parsedver.pv_name ? " " : ""),
-                   (IPTR) parsedver.pv_vername, (IPTR) parsedver.pv_revname,
+                   (IPTR) (parsedver.pv_vername ? parsedver.pv_vername : ""),
+                   (IPTR) (parsedver.pv_revname ? parsedver.pv_revname : ""),
                    (IPTR) (parsedver.pv_datestr ? (IPTR)parsedver.pv_datestr : (IPTR)""),
                    (IPTR) (parsedver.pv_extralf ? (IPTR)parsedver.pv_extralf : (IPTR)""),
                    (IPTR) (parsedver.pv_extrastr ? (IPTR)parsedver.pv_extrastr : (IPTR)""));
@@ -923,7 +894,8 @@ void printverstring(void)
         {
             Printf("%s%s%s%s\n",
                    (IPTR) parsedver.pv_name, (IPTR) (*parsedver.pv_name ? " " : ""),
-                   (IPTR) parsedver.pv_vername, (IPTR) parsedver.pv_revname);
+                   (IPTR) (parsedver.pv_vername ? parsedver.pv_vername : ""),
+                   (IPTR) (parsedver.pv_revname ? parsedver.pv_revname : ""));
         }
         
         if (args.arg_arch)
@@ -1066,10 +1038,11 @@ int makedatafromstring(CONST_STRPTR buffer)
 
             ptr = buffer + pos + 1;
 
-            if (makedata(buffer, ptr, pos))
-            {
+            int result = makedata(buffer, ptr, pos);
+            if (result == RETURN_FAIL)
+                return RETURN_FAIL;
+            if (result)
                 break;
-            }
         }
         pos++;
     }
@@ -1225,7 +1198,7 @@ static
 int createlibraryver(struct Library *MyLibrary)
 {
     STRPTR buffer, tmpbuffer;
-    int error, foundver = FALSE, pos;
+    int error = RETURN_OK, foundver = FALSE, pos;
 
     if (MyLibrary->lib_IdString)
     {
@@ -1478,10 +1451,15 @@ STRPTR FindSegmentVER(BPTR  Segment)
         MySegment   = BADDR(Segment);
         MyBuffer    = (CONST_STRPTR) (MySegment + sizeof(BPTR));
         BufferLen   = *(ULONG *)(MySegment - sizeof(ULONG));
+        if (BufferLen < sizeof(BPTR) + 5)
+        {
+            Segment = *(BPTR *)MySegment;
+            continue;
+        }
         SegmentEnd  = (CONST_STRPTR) (MySegment + (BufferLen - sizeof(BPTR)));
         EndBuffer   = SegmentEnd - 5;
 
-        while (MyBuffer < EndBuffer)
+        while (MyBuffer <= EndBuffer)
         {
             if (MyBuffer[0] == '$' &&
                 MyBuffer[1] == 'V' &&
@@ -1556,6 +1534,8 @@ int makedevicever(CONST_STRPTR name)
 
 static int elf_read_block(BPTR file, ULONG offset, APTR buffer, ULONG size)
 {
+    if (offset > 0x7fffffffUL || size > 0x7fffffffUL - offset)
+        return 0;
     if (Seek(file, offset, OFFSET_BEGINNING) < 0)
         return 0;
 
@@ -1564,8 +1544,23 @@ static int elf_read_block(BPTR file, ULONG offset, APTR buffer, ULONG size)
 
 static void *load_block(BPTR file, ULONG offset, ULONG size)
 {
-    void *block = AllocMem(size, MEMF_ANY);
+    LONG here, end;
+    void *block;
 
+    if (!size || offset > 0x7fffffffUL || size > 0x7fffffffUL - offset)
+        return NULL;
+
+    here = Seek(file, 0, OFFSET_CURRENT);
+    if (here < 0)
+        return NULL;
+    if (Seek(file, 0, OFFSET_END) < 0)
+        return NULL;
+    end = Seek(file, 0, OFFSET_CURRENT);
+    if (Seek(file, here, OFFSET_BEGINNING) < 0 ||
+        end < 0 || offset > (ULONG)end || size > (ULONG)end - offset)
+        return NULL;
+
+    block = AllocMem(size, MEMF_ANY);
     if (block)
     {
         if (elf_read_block(file, offset, block, size) == size)
@@ -1639,111 +1634,128 @@ static ULONG read_shnum(BPTR file, struct elfheader *eh)
     return shnum;
 }
 
+static ULONG ARM_Read32(const UBYTE *buffer, struct elfheader *eh)
+{
+    ULONG value;
+
+    CopyMem((APTR)buffer, &value, sizeof(value));
+    return elf_read_long(value, eh);
+}
+
+static BOOL ARM_ReadULEB128(const UBYTE **buffer, ULONG *remaining, ULONG *value)
+{
+    ULONG result = 0, shift = 0;
+
+    while (*remaining)
+    {
+        UBYTE byte = **buffer;
+        ULONG part = byte & 0x7f;
+
+        (*buffer)++;
+        (*remaining)--;
+        if (shift >= 32 || part > (0xffffffffUL >> shift))
+            return FALSE;
+
+        result |= part << shift;
+        if (!(byte & 0x80))
+        {
+            *value = result;
+            return TRUE;
+        }
+        shift += 7;
+    }
+    return FALSE;
+}
+
 static BOOL ARM_ParseAttrs(UBYTE *data, ULONG len, struct elfheader *eh)
 {
-    struct attrs_section *attrs;
+    const UBYTE *section;
+    ULONG remaining;
 
-    if (data[0] != ATTR_VERSION_CURRENT)
-    {
-        D(Printf("Unknown attributes version: 0x%02\n", data[0]));
+    if (!len || data[0] != ATTR_VERSION_CURRENT)
         return FALSE;
-    }
 
-    attrs = (void *)data + 1;
-    while (len > 0)
+    section = data + 1;
+    remaining = len - 1;
+
+    while (remaining)
     {
-        ULONG attrs_size = elf_read_long(attrs->size, eh);
+        ULONG section_size, sub_remaining;
+        const UBYTE *vendor_end, *sub;
 
-        if (!strcmp(attrs->vendor, "aeabi"))
+        if (remaining < sizeof(ULONG) + 1)
+            return FALSE;
+        section_size = ARM_Read32(section, eh);
+        if (section_size < sizeof(ULONG) + 1 || section_size > remaining)
+            return FALSE;
+
+        vendor_end = memchr(section + sizeof(ULONG), '\0', section_size - sizeof(ULONG));
+        if (!vendor_end)
+            return FALSE;
+
+        sub = vendor_end + 1;
+        sub_remaining = section_size - (sub - section);
+
+        if (vendor_end - (section + sizeof(ULONG)) == 5 &&
+            !memcmp(section + sizeof(ULONG), "aeabi", 5))
         {
-            struct attrs_subsection *aeabi_attrs = (void *)attrs->vendor + 6;
-            ULONG aeabi_len = attrs_size - 10;
-
-            D(Printf("Found aeabi attributes @ 0x%p (length %u)\n", aeabi_attrs, aeabi_len));
-
-            while (aeabi_len > 0)
+            while (sub_remaining)
             {
-                ULONG aeabi_attrs_size = elf_read_long(aeabi_attrs->size, eh);
+                ULONG sub_size;
+                const UBYTE *attr;
+                ULONG attr_remaining;
 
-                if (aeabi_attrs->tag == Tag_File)
+                if (sub_remaining < sizeof(struct attrs_subsection))
+                    return FALSE;
+                sub_size = ARM_Read32(sub + 1, eh);
+                if (sub_size < sizeof(struct attrs_subsection) || sub_size > sub_remaining)
+                    return FALSE;
+
+                if (sub[0] == Tag_File)
                 {
-                    UBYTE *file_subsection = (void *)aeabi_attrs + sizeof(struct attrs_subsection);
-                    UBYTE file_len = aeabi_attrs_size - sizeof(struct attrs_subsection);
-
-                    D(Printf("Found file-wide attributes @ 0x%p (length %u)\n", file_subsection, file_len));
-                            
-                    while (file_len > 0)
+                    attr = sub + sizeof(struct attrs_subsection);
+                    attr_remaining = sub_size - sizeof(struct attrs_subsection);
+                    while (attr_remaining)
                     {
-                        UBYTE tag, shift;
-                        ULONG val = 0;
+                        ULONG tag, val = 0;
+                        const UBYTE *end;
 
-                        tag = *file_subsection++;
-                        file_len--;
-
-                        if (file_len == 0)
-                        {
-                            D(Printf("Mailformed attribute tag %d (no data)\n", tag));
+                        if (!ARM_ReadULEB128(&attr, &attr_remaining, &tag))
                             return FALSE;
-                        }
 
-                        switch (tag)
+                        if (tag == Tag_compatibility)
                         {
-                        case Tag_CPU_raw_name:
-                        case Tag_CPU_name:
-                        case Tag_compatibility:
-                        case Tag_also_compatible_with:
-                        case Tag_conformance:
-                            /* These two are NULL-terminated strings. Just skip. */
-                            while (file_len)
-                            {
-                                file_len--;
-                                if (*file_subsection++ == 0)
-                                    break;
-                            }
-                            break;
-
-                        default:
-                            /* Read ULEB128 value */
-                            shift = 0;
-                            while (file_len)
-                            {
-                                UBYTE byte;
-
-                                byte = *file_subsection++;
-                                file_len--;
-
-                                val |= (byte & 0x7F) << shift;
-                                if (!(byte & 0x80))
-                                    break;
-
-                                shift += 7;
-                            }
+                            if (!ARM_ReadULEB128(&attr, &attr_remaining, &val))
+                                return FALSE;
                         }
-                                
-                        switch (tag)
+                        if (tag == Tag_CPU_raw_name || tag == Tag_CPU_name ||
+                            tag == Tag_compatibility || tag == Tag_also_compatible_with ||
+                            tag == Tag_conformance)
                         {
-                        case Tag_CPU_arch:
-                            D(Printf("ARM CPU architecture set to %d\n", val));
-                            parsedver.pv_arm_cpu = val;
-                            break;
-
-                        case Tag_FP_arch:
-                            D(Printf("ARM FPU architecture set to %d\n", val));
-                            parsedver.pv_arm_fpu = val;
-                            break;
+                            end = memchr(attr, '\0', attr_remaining);
+                            if (!end)
+                                return FALSE;
+                            attr_remaining -= end + 1 - attr;
+                            attr = end + 1;
+                        }
+                        else
+                        {
+                            if (!ARM_ReadULEB128(&attr, &attr_remaining, &val))
+                                return FALSE;
+                            if (tag == Tag_CPU_arch)
+                                parsedver.pv_arm_cpu = val <= 255 ? val : 255;
+                            else if (tag == Tag_FP_arch)
+                                parsedver.pv_arm_fpu = val <= 255 ? val : 255;
                         }
                     }
-
                     return TRUE;
                 }
-                aeabi_attrs = (void *)aeabi_attrs + aeabi_attrs_size;
-                aeabi_len -= aeabi_attrs_size;
+                sub += sub_size;
+                sub_remaining -= sub_size;
             }
-
-            return FALSE;
         }
-        attrs = (void *)attrs + attrs_size;
-        len -= attrs_size;
+        section += section_size;
+        remaining -= section_size;
     }
     return FALSE;
 }
@@ -1763,13 +1775,17 @@ static int arm_read_cpudata(BPTR file, struct elfheader *eh)
     shoff     = elf_read_long(eh->shoff, eh);
     shentsize = elf_read_word(eh->shentsize, eh);
 
+    if (shentsize != sizeof(struct sheader) ||
+        int_shnum > (0x7fffffffUL / shentsize))
+        return 0;
+
     /* load section headers */
     if (!(sh = load_block(file, shoff, int_shnum * shentsize)))
         return 0;
 
     for (i = 0; i < int_shnum; i++)
     {
-        if (sh[i].type == SHT_ARM_ATTRIBUTES)
+        if (elf_read_long(sh[i].type, eh) == SHT_ARM_ATTRIBUTES)
         {
             ULONG off = elf_read_long(sh[i].offset, eh);
             ULONG len = elf_read_long(sh[i].size, eh);
@@ -1779,7 +1795,11 @@ static int arm_read_cpudata(BPTR file, struct elfheader *eh)
 
             if (data)
             {
-                ARM_ParseAttrs(data, len, eh);
+                if (!ARM_ParseAttrs(data, len, eh))
+                {
+                    parsedver.pv_arm_cpu = (UBYTE)-1;
+                    parsedver.pv_arm_fpu = 0;
+                }
                 FreeMem(data, len);
             }
             break;
@@ -1801,6 +1821,7 @@ int makefilever(CONST_STRPTR name)
     BPTR file;
     int error; // = RETURN_OK;
 
+    freeverstring();
     file = Open((STRPTR) name, MODE_OLDFILE);
     if (file)
     {
@@ -1842,7 +1863,8 @@ int makefilever(CONST_STRPTR name)
             error = findinfile(file, ver, buffer, &len, parsedver.pv_md5sum);
             if (error == RETURN_OK)
             {
-                parsedver.pv_flags |= PVF_MD5SUM;
+                if (args.arg_md5sum)
+                    parsedver.pv_flags |= PVF_MD5SUM;
 
                 if (len >= 0)
                 {
@@ -1862,22 +1884,22 @@ int makefilever(CONST_STRPTR name)
 
                     Close(file);
 
-                    file = LoadSeg((STRPTR) name);
-                    if (file)
-                    {
-                        struct Resident *MyResident;
-
-                        MyResident = FindLibResident(file);
-                        if (MyResident /*&&
-                            (MyResident->rt_Type == NT_LIBRARY ||
-                             MyResident->rt_Type == NT_DEVICE)*/)
-                        {
-                            error = createresidentver(MyResident);
-                        }
-
-                        UnLoadSeg(file);
-                    }
                     file = BNULL;
+                    if (!args.arg_md5sum || args.arg_version || args.arg_revision)
+                    {
+                        file = LoadSeg((STRPTR) name);
+                        if (file)
+                        {
+                            struct Resident *MyResident;
+
+                            MyResident = FindLibResident(file);
+                            if (MyResident)
+                                error = createresidentver(MyResident);
+
+                            UnLoadSeg(file);
+                        }
+                        file = BNULL;
+                    }
 
                     if (error != RETURN_OK)
                     {
@@ -2063,8 +2085,17 @@ static
 int makeverstring(CONST_STRPTR name)
 {
     int error; // = RETURN_OK;
-    BOOL volume = name[strlen(name) - 1] == ':';
-    CONST_STRPTR filepart = FilePart(name);
+    BOOL volume;
+    CONST_STRPTR filepart;
+
+    if (!name || !*name)
+    {
+        PrintFault(ERROR_OBJECT_NOT_FOUND, (STRPTR) ERROR_HEADER);
+        return RETURN_FAIL;
+    }
+    /* ReadArgs names are NUL-terminated; NULL and empty names are rejected. */
+    volume = name[strlen(name) - 1] == ':'; /* Flawfinder: ignore */
+    filepart = FilePart(name);
 
     error = -1;
 
@@ -2134,16 +2165,22 @@ int makeverstring(CONST_STRPTR name)
         error = makerescmdver(name);
     }
 
-    if (error)
+    if ((error == RETURN_WARN || error == RETURN_ERROR) &&
+        args.arg_md5sum && (parsedver.pv_flags & PVF_MD5SUM) &&
+        !args.arg_version && !args.arg_revision)
     {
-        /* If user asked for md5sum, and we could calculate it, don't print error
-         *  but the md5sum + file.
-         */
-        if (args.arg_md5sum && (parsedver.pv_flags & PVF_MD5SUM))
+        STRPTR namecopy = dupstr(name, -1);
+        if (namecopy)
         {
-            parsedver.pv_name = dupstr(name, -1);
+            FreeVec(parsedver.pv_name);
+            parsedver.pv_name = namecopy;
             parsedver.pv_flags |= PVF_NOVERSION;
             error = RETURN_OK;
+        }
+        else
+        {
+            PrintFault(ERROR_NO_FREE_STORE, (STRPTR) ERROR_HEADER);
+            error = RETURN_FAIL;
         }
     }
 
@@ -2163,6 +2200,9 @@ void freeverstring(void)
     parsedver.pv_flags    = 0;
     parsedver.pv_version  = 0;
     parsedver.pv_revision = 0;
+    parsedver.pv_arch     = 0;
+    parsedver.pv_arm_cpu  = (UBYTE)-1;
+    parsedver.pv_arm_fpu  = 0;
 
     FreeVec(parsedver.pv_extrastr);
     parsedver.pv_extrastr = NULL;
@@ -2241,7 +2281,6 @@ int main (void)
         else
         {
             CONST_STRPTR *name;
-            BOOL multifile;
 #if 1
             /* Workaround for:
              * version file ver
@@ -2273,30 +2312,26 @@ int main (void)
                 }
             }
 #endif
-            multifile = args.arg_name[1] != NULL;
-
+            error = RETURN_OK;
             for (name = args.arg_name; *name; name++)
             {
-                error = makeverstring(*name);
-                if (error == RETURN_OK)
+                LONG itemerror = makeverstring(*name);
+                if (itemerror == RETURN_OK)
                 {
                     printverstring();
-
-                    if (!multifile)
+                    if (parsedver.pv_flags & PVF_NOVERSION)
                     {
-                        /* Single args, do compare stuff also */
-                        if (parsedver.pv_flags & PVF_NOVERSION)
-                        {
-                            error = RETURN_FAIL;
-                        }
-                        if (error == RETURN_OK)
-                        {
-                            error = cmpargsparsed();
-                        }
+                        if (!args.arg_md5sum || args.arg_version || args.arg_revision)
+                            itemerror = RETURN_FAIL;
+                    }
+                    else
+                    {
+                        itemerror = cmpargsparsed();
                     }
                 }
+                if (itemerror > error)
+                    error = itemerror;
                 freeverstring();
-
             }
         }
 
