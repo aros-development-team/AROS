@@ -38,7 +38,7 @@
 #include <aros/libcall.h>
 #include "netprefs_intern.h"
 
-static CONST_STRPTR NetworkTabs[] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+static CONST_STRPTR NetworkTabs[] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 static CONST_STRPTR EncCycle[] = { NULL, NULL, NULL, NULL };
 static CONST_STRPTR KeyCycle[] = { NULL, NULL, NULL };
 static CONST_STRPTR ServiceTypeCycle[] = { NULL, NULL };
@@ -85,6 +85,7 @@ static struct Hook  wireless_displayHook,
 static struct Hook  server_displayHook,
                     server_constructHook,
                     server_destructHook;
+static struct Hook  service_displayHook;
 
 /*** Instance Data **********************************************************/
 struct NetPEditor_DATA
@@ -115,6 +116,9 @@ struct NetPEditor_DATA
             *netped_serverAddButton,
             *netped_serverEditButton,
             *netped_serverRemoveButton,
+            *netped_serviceList,
+            *netped_svcEnabled,
+            *netped_svcPath,
             *netped_mainTabs;
 
     // Interface window
@@ -468,6 +472,31 @@ AROS_UFHA(struct Server *, entry, A1))
     AROS_USERFUNC_EXIT
 }
 
+/* Services tab: name, enabled, program. List entries point into netservices[]. */
+AROS_UFH3S(LONG, serviceDisplayFunc,
+AROS_UFHA(struct Hook *, hook, A0),
+AROS_UFHA(char **, array, A2),
+AROS_UFHA(struct NetSvcEntry *, entry, A1))
+{
+    AROS_USERFUNC_INIT
+    if (entry)
+    {
+        *array++ = entry->nse_Name;
+        *array++ = entry->nse_Enabled ? (STRPTR)_(MSG_SVC_YES) : (STRPTR)_(MSG_SVC_NO);
+        *array++ = entry->nse_Path;
+    }
+    else
+    {
+        *array++ = (STRPTR)_(MSG_SVC_COL_NAME);
+        *array++ = (STRPTR)_(MSG_SVC_COL_ENABLED);
+        *array++ = (STRPTR)_(MSG_SVC_PATH);
+    }
+
+    return 0;
+
+    AROS_USERFUNC_EXIT
+}
+
 /* ------------------------------------------------------------------------
  * Protocol-address working-slot helpers.
  *
@@ -668,6 +697,18 @@ BOOL Gadgets2NetworkPrefs(struct NetPEditor_DATA *data)
     return TRUE;
 }
 
+/* Services tab: reflect the active list entry in the Enabled checkmark + path. */
+static void ShowSelectedService(struct NetPEditor_DATA *data)
+{
+    struct NetSvcEntry *e = NULL;
+
+    DoMethod(data->netped_serviceList, MUIM_List_GetEntry,
+             MUIV_List_GetEntry_Active, (IPTR)&e);
+    NNSET(data->netped_svcEnabled, MUIA_Selected, e ? e->nse_Enabled : FALSE);
+    SET(data->netped_svcEnabled, MUIA_Disabled, e == NULL);
+    SET(data->netped_svcPath, MUIA_Text_Contents, (IPTR)(e ? e->nse_Path : ""));
+}
+
 BOOL NetworkPrefs2Gadgets
 (
     struct NetPEditor_DATA *data
@@ -793,6 +834,17 @@ BOOL NetworkPrefs2Gadgets
     }
 
     SET(data->netped_serverList, MUIA_List_Quiet, FALSE);
+
+    /* Services tab */
+    SET(data->netped_serviceList, MUIA_List_Quiet, TRUE);
+    DoMethod(data->netped_serviceList, MUIM_List_Clear);
+    for (i = 0; i < netserviceCount; i++)
+        DoMethod(data->netped_serviceList, MUIM_List_InsertSingle,
+                 (IPTR)&netservices[i], MUIV_List_Insert_Bottom);
+    SET(data->netped_serviceList, MUIA_List_Quiet, FALSE);
+    SET(data->netped_serviceList, MUIA_List_Active,
+        netserviceCount ? 0 : MUIV_List_Active_Off);
+    ShowSelectedService(data);
 
     return TRUE;
 }
@@ -972,7 +1024,8 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             *networkList, *netAddButton, *netEditButton, *netRemoveButton,
             *serverList, *serverAddButton, *serverEditButton, *serverRemoveButton,
             *MBBInitString[MAXATCOMMANDS], *MBBDeviceString, *MBBUnit,
-            *MBBUsername, *MBBPassword, *tetheringAddButton, *mainTabs;
+            *MBBUsername, *MBBPassword, *tetheringAddButton, *mainTabs,
+            *serviceList, *svcEnabled, *svcPath;
 
     // inferface window
     Object  *deviceString, *protoAddrList, *protoEditButton,
@@ -1013,6 +1066,7 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     NetworkTabs[3] = _(MSG_TAB_TETHERING);
     NetworkTabs[4] = _(MSG_TAB_MOBILE);
     NetworkTabs[5] = _(MSG_TAB_SERVERS);
+    NetworkTabs[6] = _(MSG_TAB_SERVICES);
 
     netpeditor_constructHook.h_Entry = (HOOKFUNC)constructFunc;
     netpeditor_destructHook.h_Entry = (HOOKFUNC)destructFunc;
@@ -1029,6 +1083,7 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     server_constructHook.h_Entry = (HOOKFUNC)serverConstructFunc;
     server_destructHook.h_Entry = (HOOKFUNC)serverDestructFunc;
     server_displayHook.h_Entry = (HOOKFUNC)serverDisplayFunc;
+    service_displayHook.h_Entry = (HOOKFUNC)serviceDisplayFunc;
 
     self = (Object *)DoSuperNewTags
     (
@@ -1234,6 +1289,33 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                         Child, (IPTR)HVSpace,
                     End),
                 End),
+            End,
+
+            /* Services tab: enable/disable the stack's managed network services */
+            Child, (IPTR)VGroup,
+                Child, (IPTR)(TextObject,
+                    MUIA_Text_Contents, (IPTR)_(MSG_SVC_DESC),
+                End),
+                Child, (IPTR)ListviewObject,
+                    MUIA_Listview_List, (IPTR)(serviceList = (Object *)ListObject,
+                        ReadListFrame,
+                        MUIA_List_Title, TRUE,
+                        MUIA_List_Format, (IPTR)"BAR,P=\33c BAR,BAR,",
+                        MUIA_List_DisplayHook, (IPTR)&service_displayHook,
+                    End),
+                End,
+                Child, (IPTR)ColGroup(2),
+                    GroupFrameT(_(MSG_SVC_GROUP)),
+                    Child, (IPTR)Label1(_(MSG_SVC_ENABLED)),
+                    Child, (IPTR)(HGroup,
+                        Child, (IPTR)(svcEnabled = MUI_MakeObject(MUIO_Checkmark, NULL)),
+                        Child, (IPTR)HVSpace,
+                    End),
+                    Child, (IPTR)Label2(_(MSG_SVC_PATH)),
+                    Child, (IPTR)(svcPath = (Object *)TextObject,
+                        MUIA_Text_Contents, (IPTR)"",
+                    End),
+                End,
             End,
 
         End, // register
@@ -1624,6 +1706,10 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->netped_netAddButton = netAddButton;
         data->netped_netEditButton = netEditButton;
         data->netped_netRemoveButton = netRemoveButton;
+        data->netped_serviceList = serviceList;
+        data->netped_svcEnabled = svcEnabled;
+        data->netped_svcPath = svcPath;
+        set(svcEnabled, MUIA_CycleChain, 1);
         data->netped_serverList = serverList;
         data->netped_serverAddButton = serverAddButton;
         data->netped_serverEditButton = serverEditButton;
@@ -1869,6 +1955,18 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         (
             serverList, MUIM_Notify, MUIA_Listview_DoubleClick, MUIV_EveryTime,
             (IPTR)self, 3, MUIM_NetPEditor_EditServerEntry, FALSE
+        );
+
+        /* Services tab */
+        DoMethod
+        (
+            serviceList, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
+            (IPTR)self, 1, MUIM_NetPEditor_ShowServiceEntry
+        );
+        DoMethod
+        (
+            svcEnabled, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            (IPTR)self, 1, MUIM_NetPEditor_ToggleService
         );
 
         DoMethod
@@ -2869,8 +2967,39 @@ IPTR NetPEditor__MUIM_NetPEditor_AddTetheringEntry
 
     return 0;
 }
+/* Services tab: list selection changed -> reflect it in the Enabled checkmark */
+IPTR NetPEditor__MUIM_NetPEditor_ShowServiceEntry
+(
+    Class *CLASS, Object *self, Msg message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    ShowSelectedService(data);
+    return 0;
+}
+
+/* Services tab: Enabled checkmark toggled -> update the active service entry */
+IPTR NetPEditor__MUIM_NetPEditor_ToggleService
+(
+    Class *CLASS, Object *self, Msg message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+    struct NetSvcEntry *e = NULL;
+
+    DoMethod(data->netped_serviceList, MUIM_List_GetEntry,
+             MUIV_List_GetEntry_Active, (IPTR)&e);
+    if (e == NULL)
+        return 0;
+    e->nse_Enabled = XGET(data->netped_svcEnabled, MUIA_Selected) ? TRUE : FALSE;
+    DoMethod(data->netped_serviceList, MUIM_List_Redraw, MUIV_List_Redraw_Active);
+    SET(self, MUIA_PrefsEditor_Changed, TRUE);
+    return 0;
+}
+
 /*** Setup ******************************************************************/
-ZUNE_CUSTOMCLASS_25
+ZUNE_CUSTOMCLASS_27
 (
     NetPEditor, NULL, MUIC_PrefsEditor, NULL,
     OM_NEW,                               struct opSet *,
@@ -2897,5 +3026,7 @@ ZUNE_CUSTOMCLASS_25
     MUIM_NetPEditor_ApplyProtoEntry,      struct MUIP_NetPEditor_ApplyProtoEntry *,
     MUIM_NetPEditor_AddConnection,        struct MUIP_NetPEditor_AddConnection *,
     MUIM_NetPEditor_EditTunnelEntry,      struct MUIP_NetPEditor_EditTunnelEntry *,
-    MUIM_NetPEditor_ApplyTunnelEntry,     Msg
+    MUIM_NetPEditor_ApplyTunnelEntry,     Msg,
+    MUIM_NetPEditor_ShowServiceEntry,     Msg,
+    MUIM_NetPEditor_ToggleService,        Msg
 );

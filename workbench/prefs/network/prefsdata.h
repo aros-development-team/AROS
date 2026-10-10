@@ -289,5 +289,26 @@ void SetServerActive(struct Server *net, BOOL w);
 
 void SetServerCount(LONG w);
 
+/* ------------------------------------------------------------------------
+ * Managed network services (db/services.d/<name>) - the Services tab.
+ * ------------------------------------------------------------------------ */
+#define MAX_NETSERVICES     32
+
+struct NetSvcEntry
+{
+    char  nse_Name[32];     /* service name = config file name */
+    char  nse_Path[256];    /* Path= */
+    char  nse_Order[8];     /* Order= (kept verbatim) */
+    char  nse_StopSig[8];   /* StopSig= (kept verbatim) */
+    char  nse_Policy[16];   /* Policy= (kept verbatim) */
+    BOOL  nse_Enabled;      /* Enabled= (yes/no) - what the tab toggles */
+};
+
+extern struct NetSvcEntry netservices[MAX_NETSERVICES];
+extern int netserviceCount;
+
+BOOL ReadNetServices(void);                         /* ENV: then ENVARC: then install default */
+BOOL WriteNetServices(CONST_STRPTR prefspath);      /* <prefspath>/db/services.d/<name> */
+
 
 #endif /* _PREFSDATA_H_ */

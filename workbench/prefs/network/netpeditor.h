@@ -41,6 +41,8 @@ extern struct MUI_CustomClass *NetPEditor_CLASS;
 #define MUIM_NetPEditor_AddConnection    (MUIB_NetPEditor | 0x00000012)
 #define MUIM_NetPEditor_EditTunnelEntry  (MUIB_NetPEditor | 0x00000013)
 #define MUIM_NetPEditor_ApplyTunnelEntry (MUIB_NetPEditor | 0x00000014)
+#define MUIM_NetPEditor_ShowServiceEntry (MUIB_NetPEditor | 0x00000015)
+#define MUIM_NetPEditor_ToggleService    (MUIB_NetPEditor | 0x00000016)
 
 struct MUIP_NetPEditor_EditEntry    {STACKED ULONG MethodID; STACKED ULONG addEntry;};
 struct MUIP_NetPEditor_AddConnection {STACKED ULONG MethodID; STACKED LONG type;};
