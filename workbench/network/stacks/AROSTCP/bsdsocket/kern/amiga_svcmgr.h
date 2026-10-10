@@ -10,6 +10,7 @@
  * Data-driven config under db/services.d/ - one file per service, the file
  * name being the service name and holding key=value management settings:
  *     Path=<exe>  Order=<n>  StopSig=<bit>  Policy=signal|restart|ignore
+ *     Enabled=yes|no   (default yes; "no" keeps the script but doesn't run it)
  * ('#' and ';' begin comments).  svcmgr launches each with
  * LoadSeg()+CreateNewProc() (as amiga_dhcp.c already does for dhclient),
  * tracks it, and on stop signals it and waits for it to exit (via NP_ExitCode)

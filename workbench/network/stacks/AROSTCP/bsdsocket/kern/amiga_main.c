@@ -60,7 +60,8 @@ BOOL sana_poll(void);
 #include <api/netservice_api.h>
 #include <kern/amiga_svcmgr.h>
 #include <kern/amiga_netsvc.h>
-#include <bsdsocket/socketbasetags.h>   /* NetControlMsg / NCMD_* / AROSTCP_CTRLPORT_NAME */
+#include <bsdsocket/socketbasetags.h>   /* SBTC_RECONFIG_* reconfigure tags */
+#include <bsdsocket/netcontrol.h>       /* NetControlMsg / NCMD_* / AROSTCP_CTRLPORT_NAME */
 #include <kern/kern_malloc_protos.h>
 #include <api/amiga_api.h>
 

@@ -10,10 +10,12 @@ USER_CFLAGS := $(CFLAGS_C99)
 USER_LDFLAGS := -L$(LIBSSH_LIBDIR) -L$(MBEDTLS_LIBDIR) \
     -lssh -lmbedtls -lmbedx509 -lmbedcrypto
 
-#MM- workbench-network-sshd : workbench-libs-libssh workbench-libs-mbedtls
+#MM- workbench-network-sshd : workbench-libs-libssh workbench-libs-mbedtls network-includes-copy
 
+# The sshd daemon installs alongside the other managed network services
+# (matching dhcpd); the ssh/ssh-keygen client tools stay in C:.
 %build_prog mmake=workbench-network-sshd \
-    progname=sshd targetdir=$(AROS_C) \
+    progname=sshd targetdir=$(AROS_SYSTEM)/Network/Services \
     files="sshd"
 
 %build_prog mmake=workbench-network-ssh \
