@@ -42,22 +42,67 @@
 #define RP1_XHCI_SIZE   0x100000
 #define RP1_ETH_SIZE    0x4000
 
+/* RP1 itself enumerates as an Ethernet controller, so the GEM carries
+   Cadence's GEM ID to be told apart; the subsystem ID says RP1. */
+#define RP1_ID          ((RP1_PCIE_DEVICE_ID << 16) | RP1_PCIE_VENDOR_ID)
+#define CDNS_GEM_ID     ((0xE007 << 16) | 0x17CD)
+
 /* GEM module ID; below 2 is the older MACB. */
 #define GEM_MID         0xFC
 #define GEM_MID_IDNUM(x) (((x) >> 16) & 0xFFF)
 
-static void cfg_init(struct pcirp1_staticdata *psd, int dev, ULONG class,
+/*
+ * The GEM's PHY reset is RP1 GPIO 32, active low ("phy-reset-gpios" on
+ * Pi 5, Pi 500 and CM5): bank 1, pin 4. Register layout from OpenBSD
+ * rpigpio.c. Driven high (out of reset) as a plain GPIO output.
+ */
+#define RP1_IO_BANK1            0x0D4000
+#define RP1_SYS_RIO1            0x0E4000
+#define RP1_PADS_BANK1          0x0F4004
+#define RP1_PHY_RESET_PIN       4
+
+#define GPIO_CTRL(n)            (0x004 + (n) * 8)
+#define  GPIO_CTRL_FUNCSEL_MASK 0x1F
+#define  GPIO_CTRL_FUNCSEL_RIO  5
+#define  GPIO_CTRL_OVER_MASK    (0xF << 12)     /* OUTOVER, OEOVER: normal */
+#define RIO_OUT                 0x000
+#define RIO_OE                  0x004
+#define RIO_IN                  0x008
+#define PAD_CTRL(n)             ((n) * 4)
+#define  PAD_IN_EN              (1 << 6)
+#define  PAD_OUT_DIS            (1 << 7)
+
+static void rp1_phy_release(IPTR bar1)
+{
+    volatile ULONG *ctrl = (volatile ULONG *)(bar1 + RP1_IO_BANK1 + GPIO_CTRL(RP1_PHY_RESET_PIN));
+    volatile ULONG *rio  = (volatile ULONG *)(bar1 + RP1_SYS_RIO1);
+    volatile ULONG *pad  = (volatile ULONG *)(bar1 + RP1_PADS_BANK1 + PAD_CTRL(RP1_PHY_RESET_PIN));
+    ULONG bit = 1 << RP1_PHY_RESET_PIN;
+
+    D(bug("[PCIRP1] PHY reset pin: ctrl 0x%08x, out %u, oe %u, in %u, pad 0x%02x\n",
+          (unsigned)*ctrl, (unsigned)!!(rio[RIO_OUT / 4] & bit),
+          (unsigned)!!(rio[RIO_OE / 4] & bit), (unsigned)!!(rio[RIO_IN / 4] & bit),
+          (unsigned)*pad));
+
+    /* Level first, then direction, so the pin never drives low */
+    rio[RIO_OUT / 4] |= bit;
+    rio[RIO_OE / 4]  |= bit;
+    *pad  = (*pad & ~PAD_OUT_DIS) | PAD_IN_EN;
+    *ctrl = (*ctrl & ~(GPIO_CTRL_FUNCSEL_MASK | GPIO_CTRL_OVER_MASK)) | GPIO_CTRL_FUNCSEL_RIO;
+}
+
+static void cfg_init(struct pcirp1_staticdata *psd, int dev, ULONG id, ULONG class,
                      IPTR base, ULONG size, ULONG irq)
 {
     ULONG *cfg = psd->cfg[dev];
 
     psd->barsize[dev] = size;
 
-    cfg[PCICS_VENDOR / 4]    = (RP1_PCIE_DEVICE_ID << 16) | RP1_PCIE_VENDOR_ID;
+    cfg[PCICS_VENDOR / 4]    = id;
     cfg[PCICS_REVISION / 4]  = class;
     cfg[PCICS_BAR0 / 4]      = ((ULONG)base & ~(size - 1)) | PCIBAR_MEMTYPE_64BIT;
     cfg[PCICS_BAR0 / 4 + 1]  = (ULONG)((UQUAD)base >> 32);
-    cfg[PCICS_SUBVENDOR / 4] = cfg[PCICS_VENDOR / 4];
+    cfg[PCICS_SUBVENDOR / 4] = RP1_ID;
     cfg[PCICS_INT_LINE / 4]  = (1 << 8) | irq;          /* INTA, GIC INTID */
 }
 
@@ -275,7 +320,7 @@ static int PCIRP1_Init(LIBBASETYPEPTR LIBBASE)
             continue;
         }
 
-        cfg_init(psd, i, 0x0C033000, base[i], RP1_XHCI_SIZE, irq[i]);    /* USB, xHCI */
+        cfg_init(psd, i, RP1_ID, 0x0C033000, base[i], RP1_XHCI_SIZE, irq[i]);    /* USB, xHCI */
         found++;
         D(bug("[PCIRP1] xHCI%d at 0x%p, INTID %u\n", i, (APTR)base[i], (unsigned)irq[i]));
     }
@@ -291,7 +336,8 @@ static int PCIRP1_Init(LIBBASETYPEPTR LIBBASE)
         }
         else
         {
-            cfg_init(psd, RP1_ETH_DEV, 0x02000000, rp1->rp1_ETH, RP1_ETH_SIZE, rp1->rp1_EthIrq); /* Ethernet */
+            rp1_phy_release(rp1->rp1_BAR1);
+            cfg_init(psd, RP1_ETH_DEV, CDNS_GEM_ID, 0x02000000, rp1->rp1_ETH, RP1_ETH_SIZE, rp1->rp1_EthIrq); /* Ethernet */
             found++;
             D(bug("[PCIRP1] GEM at 0x%p, MID 0x%08x, INTID %u\n",
                   (APTR)rp1->rp1_ETH, (unsigned)mid, (unsigned)rp1->rp1_EthIrq));
