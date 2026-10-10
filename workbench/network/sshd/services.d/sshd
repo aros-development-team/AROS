@@ -1,0 +1,20 @@
+#
+# AROSTCP network service: SSH server (sshd).
+#
+# One file per service under db/services.d/ (the file name is the service name).
+#   Path    - the daemon executable
+#   Order   - bring-up priority hint (higher starts earlier)
+#   StopSig - signal bit sent to stop it (12 = CTRL-C)
+#   Policy  - reload policy: signal (survive, quiesce/resume) is right for sshd
+#             so a network reconfigure does not drop active SSH sessions
+#   Enabled - yes or no.  DISABLED BY DEFAULT: sshd exposes a remote login, so
+#             enable it deliberately after setting up authentication
+#             (ENVARC:SSH/authorized_keys or ENVARC:SSH/password).  Set
+#             Enabled=yes and reboot or reload the stack to turn it on; set it
+#             back to no to turn it off without deleting this script.
+#
+Path=SYS:System/Network/Services/sshd
+Order=20
+StopSig=12
+Policy=signal
+Enabled=no

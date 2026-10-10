@@ -16,9 +16,12 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/socket.h>
+#include <proto/netservice.h>
 #include <exec/types.h>
 #include <dos/dostags.h>
 #include <dos/dos.h>
+#include <libraries/netservice.h>
+#include <utility/tagitem.h>
 
 #include <libssh/libssh.h>
 #include <libssh/server.h>
@@ -48,6 +51,7 @@ static const char __attribute__((used)) verstag[] = "\0$VER: sshd 0.1 (19.8.2026
 #define BUF_SIZE            4096
 
 struct Library *SocketBase;
+struct Library *NetServicesBase;        /* optional: set when run as a managed service */
 static volatile BOOL g_shutdown = FALSE;
 
 /* --- Utility: SHA-256 hex digest --- */
@@ -676,46 +680,102 @@ int main(int argc, char **argv)
     }
 
     Printf("sshd: " SSHD_BANNER " listening on port %ld\n", (long)port);
-    Printf("sshd: Press CTRL-C to shutdown\n");
 
-    /* Accept loop */
+    /*
+     * Register with netservices.library when it is present, so the stack's
+     * service manager can run us from db/services.d/sshd and drive us across a
+     * configuration reload and a clean shutdown.  Started from a plain CLI
+     * (no stack service manager) this simply doesn't register and CTRL-C still
+     * works.  We ask for the reconfigure-begin/end and stop signals; on begin
+     * we only pause accepting (we must NOT call into the stack while it holds
+     * its reload fence), on end we resume, on stop we exit.
+     */
+    BYTE  sStop  = AllocSignal(-1);
+    BYTE  sBegin = AllocSignal(-1);
+    BYTE  sEnd   = AllocSignal(-1);
+    ULONG mStop  = (sStop  >= 0) ? (1UL << sStop)  : 0;
+    ULONG mBegin = (sBegin >= 0) ? (1UL << sBegin) : 0;
+    ULONG mEnd   = (sEnd   >= 0) ? (1UL << sEnd)   : 0;
+    APTR  nshandle = NULL;
+    BOOL  paused = FALSE;
+
+    NetServicesBase = OpenLibrary(NETSERVICESNAME, 0);
+    if (NetServicesBase)
+    {
+        struct TagItem nstags[] = {
+            { NETSERVICE_Name,             (IPTR)"sshd" },
+            { NETSERVICE_Order,            (IPTR)NSPRI_RCDAEMONS },
+            { NETSERVICE_ReconfigBeginSig, (IPTR)sBegin },
+            { NETSERVICE_ReconfigEndSig,   (IPTR)sEnd },
+            { NETSERVICE_StopSig,          (IPTR)sStop },
+            { TAG_DONE, 0 }
+        };
+        nshandle = RegisterNetService(nstags);
+    }
+    if (nshandle)
+        Printf("sshd: registered as a network service\n");
+    else
+        Printf("sshd: Press CTRL-C to shutdown\n");
+
+    /* Accept loop.  Existing sessions run in their own processes, unaffected. */
     while (!g_shutdown)
     {
-        /* Check for CTRL-C */
-        if (SetSignal(0L, SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
-        {
-            Printf("sshd: Shutdown requested\n");
-            break;
-        }
+        ULONG sigs;
 
-        /* Use WaitSelect with 1-second timeout to allow periodic signal checks */
+        if (paused)
+        {
+            /* Quiesced during a stack reconfigure: wait only on signals. */
+            sigs = Wait(mStop | mBegin | mEnd | SIGBREAKF_CTRL_C);
+        }
+        else
         {
             int bind_fd = ssh_bind_get_fd(sshbind);
             fd_set rfds;
             struct timeval tv;
+            ULONG sigmask = mStop | mBegin | mEnd | SIGBREAKF_CTRL_C;
+            int sel;
 
             FD_ZERO(&rfds);
             FD_SET(bind_fd, &rfds);
             tv.tv_sec = 1;
             tv.tv_usec = 0;
 
-            int sel = WaitSelect(bind_fd + 1, &rfds, NULL, NULL, &tv, NULL);
-            if (sel <= 0)
-                continue; /* timeout or error — loop back to check CTRL-C */
+            /* WaitSelect also returns when one of the requested signals fires;
+             * sigmask comes back holding the signals that were received. */
+            sel = WaitSelect(bind_fd + 1, &rfds, NULL, NULL, &tv, &sigmask);
+            sigs = sigmask;
+
+            if (sel > 0 && FD_ISSET(bind_fd, &rfds))
+            {
+                ssh_session session = ssh_new();
+                if (session)
+                {
+                    if (ssh_bind_accept(sshbind, session) == SSH_OK)
+                        spawn_session(session);
+                    else
+                        ssh_free(session);
+                }
+            }
         }
 
-        ssh_session session = ssh_new();
-        if (!session) continue;
-
-        if (ssh_bind_accept(sshbind, session) == SSH_OK)
+        if (sigs & (mStop | SIGBREAKF_CTRL_C))
         {
-            spawn_session(session);
+            Printf("sshd: Shutdown requested\n");
+            break;
         }
-        else
-        {
-            ssh_free(session);
-        }
+        if (sigs & mBegin)
+            paused = TRUE;      /* reconfigure beginning - stop touching the stack */
+        if (sigs & mEnd)
+            paused = FALSE;     /* reconfigure done - resume accepting */
     }
+
+    if (nshandle)
+        UnregisterNetService(nshandle);
+    if (NetServicesBase)
+        CloseLibrary(NetServicesBase);
+    if (sStop  >= 0) FreeSignal(sStop);
+    if (sBegin >= 0) FreeSignal(sBegin);
+    if (sEnd   >= 0) FreeSignal(sEnd);
 
     ssh_bind_free(sshbind);
     ssh_finalize();
