@@ -164,7 +164,7 @@ BOOL common_BeginIO(struct timerequest *timereq, struct TimerBase *TimerBase)
 #endif
                 /* Ok, we add this to the list */
                 addToWaitList(&TimerBase->tb_Lists[TL_WAITVBL], timereq, SysBase);
-                timereq->tr_node.io_Flags &= ~IOF_QUICK;
+                timereq->tr_node.io_Flags &= ~(IOF_QUICK | TIMERF_REPLYING);
 
                 /*
                  * If our request was added to the head of the list, we may need to
@@ -208,7 +208,7 @@ BOOL common_BeginIO(struct timerequest *timereq, struct TimerBase *TimerBase)
 #endif
                 /* Slot it into the list. Use unit number as index. */
                 addToWaitList(&TimerBase->tb_Lists[unitNum], timereq, SysBase);
-                timereq->tr_node.io_Flags &= ~IOF_QUICK;
+                timereq->tr_node.io_Flags &= ~(IOF_QUICK | TIMERF_REPLYING);
 
                 /* Indicate if HW need to be reprogrammed */
                 if (TimerBase->tb_Lists[unitNum].mlh_Head == (struct MinNode *)timereq)
@@ -268,6 +268,9 @@ void TimerProcessMicroHZ(struct TimerBase *TimerBase, struct ExecBase *SysBase, 
 #endif
     struct MinList *unit = &TimerBase->tb_Lists[TL_MICROHZ];
     struct timerequest *tr, *next;
+    struct MinList replies;
+
+    NEWLIST(&replies);
 
     /*
      * Go through the list and return requests that have completed.
@@ -323,8 +326,8 @@ void TimerProcessMicroHZ(struct TimerBase *TimerBase, struct ExecBase *SysBase, 
             tr->tr_time.tv_secs  = 0;
             tr->tr_time.tv_micro = 0;
             tr->tr_node.io_Error = 0;
-
-            ReplyMsg(&tr->tr_node.io_Message);
+            tr->tr_node.io_Flags |= TIMERF_REPLYING;
+            ADDTAIL(&replies, tr);
         }
         else
         {
@@ -338,6 +341,8 @@ void TimerProcessMicroHZ(struct TimerBase *TimerBase, struct ExecBase *SysBase, 
 #if defined(__AROSEXEC_SMP__)
     if (ExecLockBase && !locked) ReleaseLock(TimerBase->tb_ListLock, 0);
 #endif
+    while ((tr = (struct timerequest *)REMHEAD(&replies)))
+        ReplyMsg(&tr->tr_node.io_Message);
 }
 
 void TimerProcessVBlank(struct TimerBase *TimerBase, struct ExecBase *SysBase, BOOL locked)
@@ -353,6 +358,9 @@ void TimerProcessVBlank(struct TimerBase *TimerBase, struct ExecBase *SysBase, B
      * We could use subroutines and save some space, but we prefer speed here.
      */
     struct timerequest *tr, *next;
+    struct MinList replies;
+
+    NEWLIST(&replies);
 
     /*
      * Go through the "wait for x seconds" list and return requests
@@ -371,8 +379,8 @@ void TimerProcessVBlank(struct TimerBase *TimerBase, struct ExecBase *SysBase, B
 
             tr->tr_time.tv_secs = tr->tr_time.tv_micro = 0;
             tr->tr_node.io_Error = 0;
-
-            ReplyMsg(&tr->tr_node.io_Message);
+            tr->tr_node.io_Flags |= TIMERF_REPLYING;
+            ADDTAIL(&replies, tr);
         }
         else
             break;
@@ -391,8 +399,8 @@ void TimerProcessVBlank(struct TimerBase *TimerBase, struct ExecBase *SysBase, B
 
             tr->tr_time.tv_secs = tr->tr_time.tv_micro = 0;
             tr->tr_node.io_Error = 0;
-
-            ReplyMsg(&tr->tr_node.io_Message);
+            tr->tr_node.io_Flags |= TIMERF_REPLYING;
+            ADDTAIL(&replies, tr);
         }
         else
             break;
@@ -400,6 +408,8 @@ void TimerProcessVBlank(struct TimerBase *TimerBase, struct ExecBase *SysBase, B
 #if defined(__AROSEXEC_SMP__)
     if (ExecLockBase && !locked) ReleaseLock(TimerBase->tb_ListLock, 0);
 #endif
+    while ((tr = (struct timerequest *)REMHEAD(&replies)))
+        ReplyMsg(&tr->tr_node.io_Message);
 }
 
 /****************************************************************************************/
