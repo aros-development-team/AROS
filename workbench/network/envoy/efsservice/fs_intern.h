@@ -23,6 +23,8 @@
 
 #define FS_SERVICE_NAME         "Filesystem"            /* SVCAttrs_Name                     */
 #define FS_ENTITY_NAME          "Filesystem"            /* the one public entity (§5.1)      */
+#define FS_MANAGER_ENTITY       "Services Manager"      /* services.library FindService target */
+#define FS_DAEMON_PORT          "Envoy EFS Daemon"      /* single-instance marker port       */
 #define FS_PREFS_ENV            "ENV:Envoy/EFS.prefs"
 #define FS_PREFS_ENVARC         "ENVARC:Envoy/EFS.prefs"
 
@@ -71,14 +73,12 @@
 /* Envoy IDs */
 #define EFS_NOUSER              0xFFFF  /* "no valid login" on the wire                   */
 
+/* The thin compatibility stub filesystem.service keeps the original library
+ * layout; the server itself now runs as the standalone envoyfs daemon. */
 struct FSServiceBase
 {
     struct Library          fb_Lib;
     struct SignalSemaphore  fb_Sem;
-    struct Process         *fb_Server;
-    struct Task            *fb_Starter;
-    ULONG                   fb_StartResult;
-    ULONG                   fb_Clients;
 };
 
 struct Export
@@ -168,7 +168,6 @@ struct Event
 
 struct FSServer
 {
-    struct FSServiceBase *Base;
     struct Library      *NipcLib;
     struct Library      *AccLib;
     struct Library      *UtilLib;
@@ -177,6 +176,10 @@ struct FSServer
     ULONG                OwnOwner;              /* our own uid<<16|gid                 */
     struct Entity       *Ent;
     ULONG                EntSig;
+    struct Entity       *MgrEnt;                /* "Services Manager" responder - only
+                                                 * when no real manager owns the name  */
+    ULONG                MgrSig;
+    BOOL                 Paused;                /* inside a stack reconfigure fence    */
     struct MsgPort      *NotifyPort;
     struct MsgPort      *TimerPort;
     struct timerequest  *Timer;
@@ -222,8 +225,10 @@ LONG   AuthRewriteProtection(struct FSServer *srv, struct Mount *m, const struct
 /* fs_actions.c */
 void   ActionsHandle(struct FSServer *srv, struct Mount *m, struct Transaction *t);
 
-/* fs_server.c */
-void   ServerProcess(void);
+/* fs_server.c - the daemon body: returns 0 on clean exit, nonzero when the
+ * server could not come up.  The three masks are the netservices reconfigure
+ * begin/end and stop signal masks (0 when not registered). */
+int    ServerMain(ULONG stopmask, ULONG beginmask, ULONG endmask);
 void   ServerImpersonate(struct FSServer *srv, struct Mount *m);
 void   ServerUnimpersonate(struct FSServer *srv);
 void   MountDestroy(struct FSServer *srv, struct Mount *m);

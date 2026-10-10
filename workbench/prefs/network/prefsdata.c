@@ -89,47 +89,6 @@ static const TEXT mount_template[] =
     "MOUNT=ACTIVATE/K,"
     "FORCELOAD/K";
 
-enum
-{
-    ARG_WORKGROUP,
-    ARG_USERNAME,
-    ARG_PASSWORD,
-    ARG_CHANGECASE,
-    ARG_CASESENSITIVE,
-    ARG_OMITHIDDEN,
-    ARG_QUIET,
-    ARG_CLIENTNAME,
-    ARG_SERVERNAME,
-    ARG_DEVICENAME,
-    ARG_VOLUMENAME,
-    ARG_CACHESIZE,
-    ARG_DEBUGLEVEL,
-    ARG_TIMEZONEOFFSET,
-    ARG_DSTOFFSET,
-    ARG_TRANSLATIONFILE,
-    ARG_SERVICE,
-    NUM_CONTROLARGS
-};
-
-static const TEXT control_template[] =
-    "DOMAIN=WORKGROUP/K,"
-    "USER=USERNAME/K,"
-    "PASSWORD/K,"
-    "CHANGECASE/S,"
-    "CASE=CASESENSITIVE/S,"
-    "OMITHIDDEN/S,"
-    "QUIET/S,"
-    "CLIENT=CLIENTNAME/K,"
-    "SERVER=SERVERNAME/K,"
-    "DEVICE=DEVICENAME/K,"
-    "VOLUME=VOLUMENAME/K,"
-    "CACHE=CACHESIZE/N/K,"
-    "DEBUGLEVEL=DEBUG/N/K,"
-    "TZ=TIMEZONEOFFSET/N/K,"
-    "DST=DSTOFFSET/N/K,"
-    "TRANSLATE=TRANSLATIONFILE/K,"
-    "SERVICE/A";
-
 static struct TCPPrefs prefs;
 
 struct Tokenizer
@@ -144,8 +103,10 @@ struct Tokenizer
 /* List of devices that require NOTRACKING option */
 static STRPTR notrackingdevices[] = {"prm-rtl8029.device", NULL};
 
-static BOOL ReadServer(struct Server *server, BPTR file, LONG size);
-static CONST_STRPTR GetActiveServers();
+static struct FSHandlerNode *ClaimMount(CONST_STRPTR name, BPTR file,
+                                        LONG size, struct MountedShare *ms);
+static BOOL ShareIsActive(CONST_STRPTR activelist, CONST_STRPTR name);
+static void DeleteStaleMounts(CONST_STRPTR destdir);
 
 void OpenTokenFile(struct Tokenizer * tok, STRPTR FileName)
 {
@@ -223,6 +184,20 @@ void SetDefaultNetworkPrefsValues()
         InitHost(GetHost(i));
     }
     SetHostCount(0);
+
+    /* The mounted-share list: initialise once (prefs is static, so the
+     * embedded list header starts zeroed), empty it on later re-inits. */
+    {
+        static BOOL sharesInited = FALSE;
+
+        if (!sharesInited)
+        {
+            NEWLIST(&prefs.mountedShares);
+            sharesInited = TRUE;
+        }
+        else
+            FreeShares(&prefs.mountedShares);
+    }
 }
 
 void SetDefaultWirelessPrefsValues()
@@ -648,48 +623,152 @@ BOOL WriteMobilePrefs(CONST_STRPTR destdir)
 }
 
 
-BOOL WriteServers(CONST_STRPTR destdir, CONST_STRPTR envdir)
+/*
+ * Write every mounted share back out: one Mountfile per share (written by
+ * its owning filesystem module) plus the automount variable listing the
+ * active devices.  Afterwards, mountfiles in destdir that belong to a
+ * registered handler but are no longer in the share list are deleted, so
+ * removed shares stay removed.  Files no handler claims are never touched.
+ */
+BOOL WriteMounts(CONST_STRPTR destdir, CONST_STRPTR envdir)
 {
     FILE *mount_file, *env_file;
-    LONG i;
-    struct Server *server;
-    ULONG filenamelen = strlen(destdir) + 4 + 20;
+    struct MountedShare *share;
+    ULONG destlen = strlen(destdir), envlen = strlen(envdir);
+    ULONG filenamelen =
+        (destlen > envlen ? destlen : envlen) + MOUNT_DEVBUFLEN + 24;
     TEXT filename[filenamelen];
 
     CombinePath2P(filename, filenamelen, envdir, "ServerAutoMounts");
     env_file = fopen(filename, "w");
     if (!env_file) return FALSE;
 
-    for (i = 0; i < prefs.serverCount; i++)
+    ForeachNode(&prefs.mountedShares, share)
     {
-        server = &prefs.servers[i];
-        CombinePath2P(filename, filenamelen, destdir, server->device);
+        struct FSHandlerNode *fsh = FSHandler_ByID(share->ms_node.ln_Type);
+
+        if (fsh == NULL || fsh->fsh_WriteMount == NULL)
+            continue;
+
+        CombinePath2P(filename, filenamelen, destdir, share->ms_device);
         mount_file = fopen(filename, "w");
         if (!mount_file)
         {
             fclose(env_file);
-             return FALSE;
+            return FALSE;
         }
-
-        fprintf(mount_file, "EHandler = " SERVER_HANDLER "\nActivate = 1\n");
-        fprintf(mount_file, "Control = \"");
-        if (server->user[0] != '\0')
-            fprintf(mount_file, "USER=*\"%s*\" ", server->user);
-        if (server->group[0] != '\0')
-            fprintf(mount_file, "WORKGROUP=*\"%s*\" ", server->group);
-        if (server->pass[0] != '\0')
-            fprintf(mount_file, "PASSWORD=*\"%s*\" ", server->pass);
-        fprintf(mount_file, "SERVICE=*\"//%s/%s*\"\"\n", server->host,
-            server->service);
+        fsh->fsh_WriteMount(mount_file, share);
         fclose(mount_file);
 
-        if (server->active)
-            fprintf(env_file, "%s: ", server->device);
+        if (share->ms_active)
+            fprintf(env_file, "%s: ", share->ms_device);
     }
 
     fclose(env_file);
 
+    DeleteStaleMounts(destdir);
+
     return TRUE;
+}
+
+/* Delete handler-claimed mountfiles in destdir whose share was removed. */
+static void DeleteStaleMounts(CONST_STRPTR destdir)
+{
+    BPTR dir, old, file;
+    APTR ex_buffer;
+    struct ExAllControl *ex_control;
+    struct ExAllData *entry;
+    BOOL more = TRUE;
+
+    dir = Lock(destdir, SHARED_LOCK);
+    if (dir == BNULL)
+        return;
+
+    ex_buffer = AllocVec(EX_BUF_SIZE, MEMF_PUBLIC);
+    ex_control = AllocDosObject(DOS_EXALLCONTROL, NULL);
+    if (ex_buffer == NULL || ex_control == NULL)
+    {
+        FreeVec(ex_buffer);
+        if (ex_control) FreeDosObject(DOS_EXALLCONTROL, ex_control);
+        UnLock(dir);
+        return;
+    }
+
+    {
+        /* Two phases: collect stale names during the scan, delete after -
+         * removing entries mid-ExAll would disturb the iteration. */
+        struct List stale;
+        struct Node *node;
+
+        NEWLIST(&stale);
+
+        old = CurrentDir(dir);
+        ex_control->eac_LastKey = 0;
+        while (more)
+        {
+            more = ExAll(dir, ex_buffer, EX_BUF_SIZE, ED_SIZE, ex_control);
+            if (!more && (IoErr() != ERROR_NO_MORE_ENTRIES))
+                break;
+            if (ex_control->eac_Entries == 0)
+                continue;
+
+            for (entry = ex_buffer; entry != NULL; entry = entry->ed_Next)
+            {
+                struct MountedShare ms, *share;
+                BOOL known = FALSE;
+
+                if (entry->ed_Type >= 0)
+                    continue;
+
+                /* Still in the share list? Then it was just rewritten. */
+                ForeachNode(&prefs.mountedShares, share)
+                {
+                    if (strcasecmp(share->ms_device,
+                                   (char *)entry->ed_Name) == 0)
+                    {
+                        known = TRUE;
+                        break;
+                    }
+                }
+                if (known)
+                    continue;
+
+                /* Only files one of OUR handlers claims may be deleted. */
+                file = Open(entry->ed_Name, MODE_OLDFILE);
+                if (file == BNULL)
+                    continue;
+                if (ClaimMount((CONST_STRPTR)entry->ed_Name, file,
+                               entry->ed_Size, &ms) != NULL)
+                {
+                    ULONG len = strlen((char *)entry->ed_Name) + 1;
+                    node = AllocVec(sizeof(struct Node) + len, MEMF_CLEAR);
+                    if (node)
+                    {
+                        node->ln_Name = (char *)(node + 1);
+                        CopyMem(entry->ed_Name, node->ln_Name, len);
+                        AddTail(&stale, node);
+                    }
+                }
+                Close(file);
+            }
+        }
+
+        while ((node = RemHead(&stale)) != NULL)
+        {
+            TEXT info[MOUNT_DEVBUFLEN + 8];
+
+            DeleteFile(node->ln_Name);
+            snprintf(info, sizeof(info), "%s.info", node->ln_Name);
+            DeleteFile((STRPTR)info);
+            FreeVec(node);
+        }
+
+        CurrentDir(old);
+    }
+
+    FreeDosObject(DOS_EXALLCONTROL, ex_control);
+    FreeVec(ex_buffer);
+    UnLock(dir);
 }
 
 
@@ -1013,30 +1092,45 @@ BOOL StartMobile()
     return TRUE;
 }
 
-static CONST_STRPTR GetActiveServers()
+/*
+ * Exact-token membership test against the automount variable's contents
+ * ("SMB0: fileserver-work: ..."): whitespace-separated tokens, compared
+ * minus any trailing ':' - so "SMB1" no longer matches "SMB10".
+ */
+static BOOL ShareIsActive(CONST_STRPTR activelist, CONST_STRPTR name)
 {
-    /* Use static variable so that it is initialized only once (and can be returned) */
-    static TEXT servers [256] = {0};
+    CONST_STRPTR p = activelist;
+    ULONG nlen = strlen(name);
 
-    /* Load variable if needed - this will happen only once */
-    if (servers[0] == '\0')
+    while (p != NULL && *p != '\0')
     {
-        GetVar(AUTOMOUNT_VARIABLE, servers, 256, LV_VAR);
-    }
+        CONST_STRPTR t;
+        ULONG tlen;
 
-    return servers;
+        while (*p == ' ' || *p == '\t')
+            p++;
+        t = p;
+        while (*p != '\0' && *p != ' ' && *p != '\t')
+            p++;
+        tlen = p - t;
+        if (tlen > 0 && t[tlen - 1] == ':')
+            tlen--;
+        if (tlen == nlen && strncasecmp((const char *)t, name, tlen) == 0)
+            return TRUE;
+    }
+    return FALSE;
 }
 
-BOOL MountServers()
+BOOL MountShares(void)
 {
     BPTR dir;
 
-    dir = Lock(SERVER_PATH_ENV, SHARED_LOCK);
+    dir = Lock(MOUNT_PATH_ENV, SHARED_LOCK);
     if (dir == BNULL)
         return FALSE;
 
     /* Startup */
-    if (GetServerCount() > 0)
+    if (GetShareCount() > 0)
     {
         struct TagItem tags[] =
         {
@@ -1048,8 +1142,11 @@ BOOL MountServers()
             { TAG_DONE,         0                   }
         };
 
+        /* the asynchronous Mount inherits (and releases) dir */
         SystemTagList("C:Mount ${AROSTCP/ServerAutoMounts}\n", tags);
     }
+    else
+        UnLock(dir);
 
     /* All ok */
     return TRUE;
@@ -1107,7 +1204,7 @@ enum ErrorCode SaveNetworkPrefs()
     if (!WriteNetworkPrefs(PREFS_PATH_ENVARC)) return NOT_SAVED_PREFS_ENVARC;
     if (!WriteWirelessPrefs(WIRELESS_PATH_ENVARC)) return NOT_SAVED_PREFS_ENVARC;
     if (!WriteMobilePrefs(MOBILEBB_PATH_ENVARC)) return NOT_SAVED_PREFS_ENVARC;
-    if (!WriteServers(SERVER_PATH_STORAGE, PREFS_PATH_ENVARC))
+    if (!WriteMounts(MOUNT_PATH_STORAGE, PREFS_PATH_ENVARC))
         return NOT_SAVED_PREFS_ENVARC;
     WriteNetServices(PREFS_PATH_ENVARC);
 
@@ -1120,8 +1217,8 @@ enum ErrorCode UseNetworkPrefs()
     if (!WriteNetworkPrefs(PREFS_PATH_ENV)) return NOT_SAVED_PREFS_ENV;
     if (!WriteWirelessPrefs(WIRELESS_PATH_ENV)) return NOT_SAVED_PREFS_ENV;
     if (!WriteMobilePrefs(MOBILEBB_PATH_ENV)) return NOT_SAVED_PREFS_ENV;
-    if (!RecursiveCreateDir(SERVER_PATH_ENV)) return NOT_SAVED_PREFS_ENV;
-    if (!WriteServers(SERVER_PATH_ENV, PREFS_PATH_ENV))
+    if (!RecursiveCreateDir(MOUNT_PATH_ENV)) return NOT_SAVED_PREFS_ENV;
+    if (!WriteMounts(MOUNT_PATH_ENV, PREFS_PATH_ENV))
         return NOT_SAVED_PREFS_ENV;
     WriteNetServices(PREFS_PATH_ENV);
 
@@ -1132,7 +1229,7 @@ enum ErrorCode UseNetworkPrefs()
     if (StopMobile())
         if (GetMobile_Autostart())
             if (!StartMobile()) return NOT_RESTARTED_MOBILE;
-    MountServers();
+    MountShares();
 
     return ALL_OK;
 }
@@ -1580,16 +1677,19 @@ BOOL ReadNetServices(void)
 
             e = &netservices[netserviceCount];
             svc_copy(e->nse_Name, sizeof(e->nse_Name), fib->fib_FileName);
-            e->nse_Path[0] = e->nse_Order[0] = e->nse_StopSig[0] = e->nse_Policy[0] = '\0';
+            e->nse_FriendlyName[0] = e->nse_Path[0] = e->nse_Order[0] = '\0';
+            e->nse_StopSig[0] = e->nse_Policy[0] = e->nse_ConfigTool[0] = '\0';
             e->nse_Enabled = TRUE;
             while (FGets(file, (STRPTR)line, sizeof(line)))
             {
                 if (!svc_kv(line, &key, &val)) continue;
-                if (svc_keyeq(key, "Path"))         svc_copy(e->nse_Path, sizeof(e->nse_Path), val);
-                else if (svc_keyeq(key, "Order"))   svc_copy(e->nse_Order, sizeof(e->nse_Order), val);
-                else if (svc_keyeq(key, "StopSig")) svc_copy(e->nse_StopSig, sizeof(e->nse_StopSig), val);
-                else if (svc_keyeq(key, "Policy"))  svc_copy(e->nse_Policy, sizeof(e->nse_Policy), val);
-                else if (svc_keyeq(key, "Enabled")) e->nse_Enabled = svc_bool(val);
+                if (svc_keyeq(key, "Path"))            svc_copy(e->nse_Path, sizeof(e->nse_Path), val);
+                else if (svc_keyeq(key, "Name"))       svc_copy(e->nse_FriendlyName, sizeof(e->nse_FriendlyName), val);
+                else if (svc_keyeq(key, "Order"))      svc_copy(e->nse_Order, sizeof(e->nse_Order), val);
+                else if (svc_keyeq(key, "StopSig"))    svc_copy(e->nse_StopSig, sizeof(e->nse_StopSig), val);
+                else if (svc_keyeq(key, "Policy"))     svc_copy(e->nse_Policy, sizeof(e->nse_Policy), val);
+                else if (svc_keyeq(key, "ConfigTool")) svc_copy(e->nse_ConfigTool, sizeof(e->nse_ConfigTool), val);
+                else if (svc_keyeq(key, "Enabled"))    e->nse_Enabled = svc_bool(val);
             }
             Close(file);
             if (e->nse_Path[0] != '\0')
@@ -1632,10 +1732,12 @@ BOOL WriteNetServices(CONST_STRPTR prefspath)
         if (fh == BNULL)
             continue;
         FPuts(fh, (STRPTR)"# AROSTCP network service (managed by Network prefs)\n");
+        if (e->nse_FriendlyName[0]) { FPuts(fh, (STRPTR)"Name=");  FPuts(fh, (STRPTR)e->nse_FriendlyName); FPutC(fh, '\n'); }
         if (e->nse_Path[0])    { FPuts(fh, (STRPTR)"Path=");    FPuts(fh, (STRPTR)e->nse_Path);    FPutC(fh, '\n'); }
         if (e->nse_Order[0])   { FPuts(fh, (STRPTR)"Order=");   FPuts(fh, (STRPTR)e->nse_Order);   FPutC(fh, '\n'); }
         if (e->nse_StopSig[0]) { FPuts(fh, (STRPTR)"StopSig="); FPuts(fh, (STRPTR)e->nse_StopSig); FPutC(fh, '\n'); }
         if (e->nse_Policy[0])  { FPuts(fh, (STRPTR)"Policy=");  FPuts(fh, (STRPTR)e->nse_Policy);  FPutC(fh, '\n'); }
+        if (e->nse_ConfigTool[0]) { FPuts(fh, (STRPTR)"ConfigTool="); FPuts(fh, (STRPTR)e->nse_ConfigTool); FPutC(fh, '\n'); }
         FPuts(fh, (STRPTR)(e->nse_Enabled ? "Enabled=yes\n" : "Enabled=no\n"));
         Close(fh);
     }
@@ -1643,47 +1745,54 @@ BOOL WriteNetServices(CONST_STRPTR prefspath)
 }
 
 
-BOOL ReadServers()
+/*
+ * Scan the mounts directory (session copy in ENV:, else the saved copies in
+ * storage) and rebuild the mounted-share list.  Each Mountfile is pre-parsed
+ * with the generic Mountfile template and offered to the registered
+ * filesystem handlers in priority order; the first to claim it owns it.
+ * Files no handler recognises (ordinary user DOSDrivers) are left alone.
+ */
+BOOL ReadMounts(void)
 {
-    BPTR dir, file;
+    BPTR dir, old, file;
     APTR ex_buffer = NULL;
     struct ExAllControl *ex_control = NULL;
     struct ExAllData *entry;
     BOOL success = TRUE, more = TRUE;
-    LONG i = 0;
-    struct Server *server;
+    TEXT active[256];
 
-    dir = Lock(SERVER_PATH_ENV, SHARED_LOCK);
+    FreeShares(&prefs.mountedShares);
+
+    dir = Lock(MOUNT_PATH_ENV, SHARED_LOCK);
     if (dir == BNULL)
     {
-        dir = Lock(SERVER_PATH_STORAGE, SHARED_LOCK);
+        dir = Lock(MOUNT_PATH_STORAGE, SHARED_LOCK);
         if (dir == BNULL)
-            success = FALSE;
-        else
-        {
-            D(bug("[Network Prefs/ReadServers] scan directory " SERVER_PATH_STORAGE "\n"));
-        }
+            return FALSE;
+        D(bug("[Network Prefs/ReadMounts] scan directory " MOUNT_PATH_STORAGE "\n"));
     }
     else
     {
-        D(bug("[Network Prefs/ReadServers] scan directory " SERVER_PATH_ENV "\n"));
+        D(bug("[Network Prefs/ReadMounts] scan directory " MOUNT_PATH_ENV "\n"));
     }
+
+    /* Re-read the automount variable on every scan (no stale cache). */
+    active[0] = '\0';
+    GetVar(AUTOMOUNT_VARIABLE, active, sizeof(active), LV_VAR);
+
+    ex_buffer = AllocVec(EX_BUF_SIZE, MEMF_PUBLIC);
+    if (ex_buffer == NULL)
+        success = FALSE;
+
+    ex_control = AllocDosObject(DOS_EXALLCONTROL, NULL);
+    if (ex_control == NULL)
+        success = FALSE;
 
     if (success)
     {
-        ex_buffer = AllocVec(EX_BUF_SIZE, MEMF_PUBLIC);
-        if (ex_buffer == NULL)
-            success = FALSE;
-
-        ex_control = AllocDosObject(DOS_EXALLCONTROL, NULL);
-        if (ex_control == NULL)
-            success = FALSE;
-    }
-
-    if (success)
-    {
+        old = CurrentDir(dir);
         ex_control->eac_LastKey = 0;
-        while (more && i < MAXSERVERS)
+        while (more)
         {
             more = ExAll(dir, ex_buffer, EX_BUF_SIZE, ED_SIZE, ex_control);
 
@@ -1692,146 +1801,118 @@ BOOL ReadServers()
             if (ex_control->eac_Entries == 0)
                 continue;
 
-            entry = ex_buffer;
-            while (entry != NULL)
+            for (entry = ex_buffer; entry != NULL; entry = entry->ed_Next)
             {
-                if (entry->ed_Type < 0)
-                {
-                    dir = CurrentDir(dir);
-                    D(bug("[Network Prefs/ReadServers] filename %s\n", entry->ed_Name));
-                    file = Open(entry->ed_Name, MODE_OLDFILE);
-                    if (file != BNULL)
-                    {
-                        server = &prefs.servers[i];
-                        if (ReadServer(server, file, entry->ed_Size))
-                        {
-                            i++;
-                            SetServerDevice(server, entry->ed_Name);
-                            if (strstr(GetActiveServers(), entry->ed_Name)
-                                != NULL)
-                                SetServerActive(server, TRUE);
-                        }
-                        Close(file);
-                    }
-                    dir = CurrentDir(dir);
-                }
-                entry = entry->ed_Next;
+                struct MountedShare ms;
+                struct FSHandlerNode *fsh;
+                struct MountedShare *share;
+
+                if (entry->ed_Type >= 0)
+                    continue;
+
+                D(bug("[Network Prefs/ReadMounts] filename %s\n", entry->ed_Name));
+                file = Open(entry->ed_Name, MODE_OLDFILE);
+                if (file == BNULL)
+                    continue;
+                fsh = ClaimMount((CONST_STRPTR)entry->ed_Name, file,
+                                 entry->ed_Size, &ms);
+                Close(file);
+                if (fsh == NULL)
+                    continue;       /* not one of ours */
+
+                share = AddShare(fsh->fsh_ID);
+                if (share == NULL)
+                    continue;
+                strlcpy(share->ms_host,   ms.ms_host,   sizeof(share->ms_host));
+                strlcpy(share->ms_volume, ms.ms_volume, sizeof(share->ms_volume));
+                strlcpy(share->ms_user,   ms.ms_user,   sizeof(share->ms_user));
+                strlcpy(share->ms_secret, ms.ms_secret, sizeof(share->ms_secret));
+                strlcpy(share->ms_extra,  ms.ms_extra,  sizeof(share->ms_extra));
+                /* the core owns the device name and the active flag */
+                strlcpy(share->ms_device, (char *)entry->ed_Name,
+                        sizeof(share->ms_device));
+                share->ms_active =
+                    ShareIsActive((CONST_STRPTR)active, share->ms_device);
             }
         }
-        prefs.serverCount = i;
+        CurrentDir(old);
     }
 
     if (ex_control != NULL)
-    {
         FreeDosObject(DOS_EXALLCONTROL, ex_control);
-    }
-
     FreeVec(ex_buffer);
+    UnLock(dir);
 
     return success;
 }
 
 
-/* Read and parse a server mount file */
-static BOOL ReadServer(struct Server *server, BPTR file, LONG size)
+/*
+ * Read one Mountfile, pre-parse the generic Mountfile keywords, and offer it
+ * to each registered filesystem handler.  Returns the claiming handler with
+ * *ms filled in (its payload fields only), or NULL.
+ */
+static struct FSHandlerNode *ClaimMount(CONST_STRPTR name, BPTR file,
+                                        LONG size, struct MountedShare *ms)
 {
-    BOOL success = TRUE;
+    struct NetPrefsBase *npb = NetPrefs_GetBase();
+    struct FSHandlerNode *fsh, *claimed = NULL;
     UBYTE *mount_buffer;
-    IPTR mount_args[NUM_MOUNTARGS] = {0}, control_args[NUM_CONTROLARGS] = {0};
-    struct RDArgs *mount_rdargs = NULL, *control_rdargs = NULL;
+    IPTR mount_args[NUM_MOUNTARGS] = {0};
+    struct RDArgs *mount_rdargs;
+    struct NetPrefsMountInfo mi;
     LONG i;
-    STRPTR host, service;
 
-    /* Allocate buffer for entire mount file */
-    mount_buffer = AllocVec(size+100, MEMF_ANY|MEMF_CLEAR);
+    if (npb == NULL || IsListEmpty(&npb->npb_FSHandlers))
+        return NULL;
+
+    mount_buffer = AllocVec(size + 100, MEMF_ANY | MEMF_CLEAR);
     if (mount_buffer == NULL)
-        success = FALSE;
+        return NULL;
 
-    /* Read mount file into buffer */
-    if (success)
+    if (FRead(file, mount_buffer, size, 1) != 1)
     {
-        if (FRead(file, mount_buffer, size, 1) != 1)
-            success = FALSE;
+        FreeVec(mount_buffer);
+        return NULL;
     }
 
-    if (success)
-    {
-        for (i = 0; i < size; i++)
-            if (mount_buffer[i] == '\n')
-                mount_buffer[i] = ' ';
+    for (i = 0; i < size; i++)
+        if (mount_buffer[i] == '\n')
+            mount_buffer[i] = ' ';
 
-        mount_rdargs = AllocDosObject(DOS_RDARGS, NULL);
-        control_rdargs = AllocDosObject(DOS_RDARGS, NULL);
-        if (mount_rdargs == NULL || control_rdargs == NULL)
-            success = FALSE;
-    }
-
-    /* Parse mount parameters */
-    if (success)
-    {
-        mount_rdargs->RDA_Source.CS_Buffer = mount_buffer;
-        mount_rdargs->RDA_Source.CS_Length = size+1;
-        mount_rdargs->RDA_Flags = RDAF_NOPROMPT;
-        mount_rdargs =
-            ReadArgs(mount_template, (IPTR *)&mount_args, mount_rdargs);
-        if (mount_rdargs == NULL)
-            success = FALSE;
-    }
-
-    /* Check if this is a server mount */
-    if (success)
-    {
-        if ((char *)mount_args[ARG_EHANDLER] == NULL)
-            success = FALSE;
-        else if (strcasecmp((char *)mount_args[ARG_EHANDLER],
-            SERVER_HANDLER) != 0)
-            success = FALSE;
-    }
-
-    /* Parse control parameters */
-    if (success)
-    {
-        control_rdargs->RDA_Source.CS_Buffer = (UBYTE *)mount_args[ARG_CONTROL];
-        control_rdargs->RDA_Source.CS_Length =
-            strlen((STRPTR)mount_args[ARG_CONTROL]);
-        control_rdargs =
-            ReadArgs(control_template, (IPTR *)&control_args, control_rdargs);
-        if (control_rdargs == NULL)
-            success = FALSE;
-    }
-
-    /* Extract needed control parameters */
-    if (success)
-    {
-        STRPTR p;
-        service = FilePart((STRPTR)control_args[ARG_SERVICE]);
-        SetServerService(server, service);
-        service--;
-        *service = '\0';
-        host = (STRPTR)control_args[ARG_SERVICE] + 2;
-        SetServerHost(server, host);
-
-        p = (STRPTR)control_args[ARG_USERNAME];
-        SetServerUser(server, (p != NULL ? p : (STRPTR)""));
-        p = (STRPTR)control_args[ARG_WORKGROUP];
-        SetServerGroup(server, (p != NULL ? p : (STRPTR)""));
-        p = (STRPTR)control_args[ARG_PASSWORD];
-        SetServerPass(server, (p != NULL ? p : (STRPTR)""));
-    }
-
-    if (control_rdargs != NULL)
-    {
-        FreeArgs(control_rdargs);
-        FreeDosObject(DOS_RDARGS, control_rdargs);
-    }
-
+    mount_rdargs = AllocDosObject(DOS_RDARGS, NULL);
     if (mount_rdargs != NULL)
     {
-        FreeArgs(mount_rdargs);
+        mount_rdargs->RDA_Source.CS_Buffer = mount_buffer;
+        mount_rdargs->RDA_Source.CS_Length = size + 1;
+        mount_rdargs->RDA_Flags = RDAF_NOPROMPT;
+        if (ReadArgs(mount_template, (IPTR *)&mount_args, mount_rdargs) != NULL)
+        {
+            memset(&mi, 0, sizeof(mi));
+            mi.nmi_FileName   = name;
+            mi.nmi_Handler    = (CONST_STRPTR)mount_args[ARG_HANDLER];
+            mi.nmi_EHandler   = (CONST_STRPTR)mount_args[ARG_EHANDLER];
+            mi.nmi_Filesystem = (CONST_STRPTR)mount_args[ARG_FILESYSTEM];
+            mi.nmi_Control    = (CONST_STRPTR)mount_args[ARG_CONTROL];
+            mi.nmi_Unit       = (CONST_STRPTR)mount_args[ARG_UNIT];
+            mi.nmi_Device     = (CONST_STRPTR)mount_args[ARG_DEVICE];
+
+            ForeachNode(&npb->npb_FSHandlers, fsh)
+            {
+                memset(ms, 0, sizeof(*ms));
+                if (fsh->fsh_ReadMount != NULL && fsh->fsh_ReadMount(&mi, ms))
+                {
+                    claimed = fsh;
+                    break;
+                }
+            }
+            FreeArgs(mount_rdargs);
+        }
         FreeDosObject(DOS_RDARGS, mount_rdargs);
     }
 
-    return success;
+    FreeVec(mount_buffer);
+    return claimed;
 }
 
 
@@ -1922,7 +2003,7 @@ void InitNetworkPrefs(CONST_STRPTR directory, BOOL use, BOOL save)
     ReadNetworkPrefs(directory);
     ReadWirelessPrefs(WIRELESS_PATH_ENV);
     ReadMobilePrefs(MOBILEBB_PATH_ENV);
-    ReadServers();
+    ReadMounts();
     ReadNetServices();
 
     if (save)
@@ -2164,19 +2245,6 @@ void InitNetwork(struct Network *net)
     SetAdHoc(net, FALSE);
 }
 
-void InitServer(struct Server *server, char *workgroup)
-{
-    if ((workgroup == NULL) && ((workgroup = GetDomain()) == NULL))
-        workgroup = "workgroup";
-
-    SetServerDevice(server, DEFAULTSERVERDEV);
-    SetServerHost(server, "");
-    SetServerGroup(server, workgroup);
-    SetServerService(server, "share");
-    SetServerUser(server, "guest");
-    SetServerPass(server, "");
-    SetServerActive(server, TRUE);
-}
 
 
 /* Getters */
@@ -2294,49 +2362,54 @@ LONG GetMobile_timeout(void)
     return prefs.mobile.timeout;
 }
 
-struct Server *GetServer(LONG index)
+/* ------------------------------------------------------------------------
+ * Mounted shares - list access.
+ * ------------------------------------------------------------------------ */
+
+struct MountedShare *GetShare(LONG index)
 {
-    return &prefs.servers[index];
+    struct MountedShare *share;
+
+    ForeachNode(&prefs.mountedShares, share)
+        if (index-- == 0)
+            return share;
+    return NULL;
 }
 
-STRPTR GetServerDevice(struct Server *server)
+LONG GetShareCount(void)
 {
-    return server->device;
+    struct MountedShare *share;
+    LONG n = 0;
+
+    ForeachNode(&prefs.mountedShares, share)
+        n++;
+    return n;
 }
 
-STRPTR GetServerHost(struct Server *server)
+struct MountedShare *AddShare(UBYTE fshID)
 {
-    return server->host;
+    struct MountedShare *share = AllocVec(sizeof(*share), MEMF_CLEAR);
+
+    if (share)
+    {
+        share->ms_node.ln_Type = fshID;
+        share->ms_node.ln_Name = share->ms_device;
+        AddTail(&prefs.mountedShares, &share->ms_node);
+    }
+    return share;
 }
 
-STRPTR GetServerService(struct Server *server)
+void ClearShares(void)
 {
-    return server->service;
+    FreeShares(&prefs.mountedShares);
 }
 
-STRPTR GetServerUser(struct Server *server)
+void FreeShares(struct List *list)
 {
-    return server->user;
-}
+    struct Node *node;
 
-STRPTR GetServerGroup(struct Server *server)
-{
-    return server->group;
-}
-
-STRPTR GetServerPass(struct Server *server)
-{
-    return server->pass;
-}
-
-BOOL GetServerActive(struct Server *server)
-{
-    return server->active;
-}
-
-LONG GetServerCount(void)
-{
-    return prefs.serverCount;
+    while ((node = RemHead(list)) != NULL)
+        FreeVec(node);
 }
 
 /* Setters */
@@ -2465,58 +2538,4 @@ void SetMobile_timeout(LONG w)
     prefs.mobile.timeout = w;
 }
 
-void SetServer
-(
-    struct Server *server, STRPTR device, STRPTR host, STRPTR service,
-    STRPTR user, STRPTR group, STRPTR pass, BOOL active
-)
-{
-    SetServerDevice(server, device);
-    SetServerHost(server, host);
-    SetServerService(server, service);
-    SetServerUser(server, user);
-    SetServerGroup(server, group);
-    SetServerPass(server, pass);
-    SetServerActive(server, active);
-}
-
-void SetServerDevice(struct Server *server, STRPTR w)
-{
-    strlcpy(server->device, w, SMBBUFLEN);
-}
-
-void SetServerHost(struct Server *server, STRPTR w)
-{
-    strlcpy(server->host, w, NAMEBUFLEN);
-}
-
-void SetServerService(struct Server *server, STRPTR w)
-{
-    strlcpy(server->service, w, SMBBUFLEN);
-}
-
-void SetServerUser(struct Server *server, STRPTR w)
-{
-    strlcpy(server->user, w, SMBBUFLEN);
-}
-
-void SetServerGroup(struct Server *server, STRPTR w)
-{
-    strlcpy(server->group, w, SMBBUFLEN);
-}
-
-void SetServerPass(struct Server *server, STRPTR w)
-{
-    strlcpy(server->pass, w, SMBBUFLEN);
-}
-
-void SetServerActive(struct Server *server, BOOL w)
-{
-    server->active = w;
-}
-
-void SetServerCount(LONG w)
-{
-    prefs.serverCount = w;
-}
 

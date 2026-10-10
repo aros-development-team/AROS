@@ -8,6 +8,8 @@
 #include <exec/types.h>
 #include <exec/lists.h>
 
+#include "netprefs_module.h"    /* struct MountedShare - the shares page model */
+
 #define PREFS_PATH_ENV              "ENV:AROSTCP"
 #define PREFS_PATH_ENVARC           "ENVARC:AROSTCP"
 #define AROSTCP_PACKAGE_VARIABLE    "SYS/Packages/AROSTCP"
@@ -15,7 +17,6 @@
 #define IPBUFLEN (15 + 1)
 #define IP6BUFLEN (39 + 1)
 #define NAMEBUFLEN 128
-#define SMBBUFLEN (16 + 1)
 
 #define IPCHARS "0123456789."
 #define IP6CHARS "0123456789abcdefABCDEF:"
@@ -36,7 +37,6 @@
 #define DEFAULTDOMAIN "arosnet"
 
 #define MAXNETWORKS 100
-#define MAXSERVERS 10
 
 #define WIRELESS_PATH_ENV              "ENV:Sys"
 #define WIRELESS_PATH_ENVARC           "ENVARC:Sys"
@@ -44,15 +44,15 @@
 #define MOBILEBB_PATH_ENV              "ENV:"
 #define MOBILEBB_PATH_ENVARC           "ENVARC:"
 
-#define SERVER_PATH_STORAGE "SYS:Storage/DOSDrivers"
-#define SERVER_PATH_ENV     "ENV:SMB"
-#define AUTOMOUNT_VARIABLE  "AROSTCP/ServerAutoMounts"
-#define SERVER_HANDLER      "smb-handler"
+/* Mounted network shares: one DOS Mountfile per share, owned by whichever
+ * registered netprefs filesystem module claims it (CIFS, Envoy FS, ...).
+ * Saved copies go to storage; the in-use session copies live in ENV:. */
+#define MOUNT_PATH_STORAGE "SYS:Storage/DOSDrivers"
+#define MOUNT_PATH_ENV     "ENV:DOSDrivers"
+#define AUTOMOUNT_VARIABLE "AROSTCP/ServerAutoMounts"
 
 #define SSIDBUFLEN (32 + 1)
 #define KEYBUFLEN (64 + 1)
-
-#define DEFAULTSERVERDEV "SMB0"
 
 enum ErrorCode
 {
@@ -128,17 +128,6 @@ struct MobileBroadBand
     BOOL autostart;
 };
 
-struct Server
-{
-    TEXT device[SMBBUFLEN];
-    TEXT host[NAMEBUFLEN];
-    TEXT service[SMBBUFLEN];
-    TEXT user[SMBBUFLEN];
-    TEXT group[SMBBUFLEN];
-    TEXT pass[SMBBUFLEN];
-    BOOL active;
-};
-
 struct TCPPrefs
 {
     struct Interface interface[MAXINTERFACES];
@@ -155,8 +144,7 @@ struct TCPPrefs
     struct MobileBroadBand mobile;
     STRPTR wirelessDevice;
     LONG wirelessUnit;
-    struct Server servers[MAXSERVERS];
-    LONG serverCount;
+    struct List mountedShares;      /* struct MountedShare nodes (netprefs_module.h) */
 };
 
 void InitNetworkPrefs(CONST_STRPTR directory, BOOL use, BOOL save);
@@ -203,7 +191,18 @@ void SetAutostart(BOOL w);
 
 void InitHost(struct Host *host);
 void InitNetwork(struct Network *net);
-void InitServer(struct Server *server, char *workgroup);
+
+/* ------------------------------------------------------------------------
+ * Mounted shares - generic, module-backed (see netprefs_module.h).
+ * ------------------------------------------------------------------------ */
+struct MountedShare *GetShare(LONG index);
+LONG GetShareCount(void);
+struct MountedShare *AddShare(UBYTE fshID);     /* alloc + AddTail to prefs */
+void ClearShares(void);                         /* empty the prefs share list */
+void FreeShares(struct List *list);
+BOOL ReadMounts(void);
+BOOL WriteMounts(CONST_STRPTR destdir, CONST_STRPTR envdir);
+BOOL MountShares(void);
 
 struct Host *GetHost(LONG index);
 STRPTR GetHostNames(struct Host *host);
@@ -229,17 +228,6 @@ STRPTR GetMobile_password(void);
 LONG GetMobile_unit(void);
 LONG GetMobile_timeout(void);
 LONG GetMobile_atcommandcount(void);
-
-struct Server *GetServer(LONG index);
-STRPTR GetServerDevice(struct Server *server);
-STRPTR GetServerHost(struct Server *server);
-STRPTR GetServerService(struct Server *server);
-STRPTR GetServerUser(struct Server *server);
-STRPTR GetServerGroup(struct Server *server);
-STRPTR GetServerPass(struct Server *server);
-BOOL GetServerActive(struct Server *server);
-
-LONG GetServerCount(void);
 
 void SetHost
 (
@@ -274,21 +262,6 @@ void SetMobile_password(STRPTR w);
 void SetMobile_unit(LONG w);
 void SetMobile_timeout(LONG w);
 
-void SetServer
-(
-    struct Server *server, STRPTR device, STRPTR host, STRPTR service,
-    STRPTR user, STRPTR group, STRPTR pass, BOOL active
-);
-void SetServerDevice(struct Server *server, STRPTR w);
-void SetServerHost(struct Server *server, STRPTR w);
-void SetServerService(struct Server *server, STRPTR w);
-void SetServerUser(struct Server *server, STRPTR w);
-void SetServerGroup(struct Server *server, STRPTR w);
-void SetServerPass(struct Server *server, STRPTR w);
-void SetServerActive(struct Server *net, BOOL w);
-
-void SetServerCount(LONG w);
-
 /* ------------------------------------------------------------------------
  * Managed network services (db/services.d/<name>) - the Services tab.
  * ------------------------------------------------------------------------ */
@@ -296,12 +269,14 @@ void SetServerCount(LONG w);
 
 struct NetSvcEntry
 {
-    char  nse_Name[32];     /* service name = config file name */
-    char  nse_Path[256];    /* Path= */
-    char  nse_Order[8];     /* Order= (kept verbatim) */
-    char  nse_StopSig[8];   /* StopSig= (kept verbatim) */
-    char  nse_Policy[16];   /* Policy= (kept verbatim) */
-    BOOL  nse_Enabled;      /* Enabled= (yes/no) - what the tab toggles */
+    char  nse_Name[32];         /* service name = config file name */
+    char  nse_FriendlyName[64]; /* Name= - shown in the UI (falls back to nse_Name) */
+    char  nse_Path[256];        /* Path= */
+    char  nse_Order[8];         /* Order= - launch priority, higher starts earlier */
+    char  nse_StopSig[8];       /* StopSig= (kept verbatim) */
+    char  nse_Policy[16];       /* Policy= (kept verbatim) */
+    char  nse_ConfigTool[256];  /* ConfigTool= - the service's prefs editor */
+    BOOL  nse_Enabled;          /* Enabled= (yes/no) - what the tab toggles */
 };
 
 extern struct NetSvcEntry netservices[MAX_NETSERVICES];

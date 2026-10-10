@@ -160,6 +160,47 @@ AROS_LH6(void, RegisterProtoHandler,
 }
 
 /* -----------------------------------------------------------------------
+ * RegisterFSHandler — vector 9
+ * Register a mounted-share (filesystem) handler for the "Mounted Shares"
+ * page.  Called by modules during their Startup callback.
+ * ----------------------------------------------------------------------- */
+AROS_LH7(void, RegisterFSHandler,
+         AROS_LHA(CONST_STRPTR, name, A0),
+         AROS_LHA(LONG, pri, D0),
+         AROS_LHA(struct MUI_CustomClass *, winclass, A1),
+         AROS_LHA(NETPREFS_READMOUNT, readmount, A2),
+         AROS_LHA(NETPREFS_WRITEMOUNT, writemount, A3),
+         AROS_LHA(NETPREFS_INITSHARE, initshare, A4),
+         AROS_LHA(NETPREFS_FSDISPLAY, display, D1),
+         struct NetPrefsBase *, NetPrefsBase, 9, NetPrefs)
+{
+    AROS_LIBFUNC_INIT
+
+    D(bug("[netprefs.library] %s('%s', pri=%ld)\n",
+          __func__, name, (long)pri));
+
+    struct FSHandlerNode *fsh =
+        AllocMem(sizeof(struct FSHandlerNode), MEMF_CLEAR);
+    if (fsh)
+    {
+        /* Non-zero session ID: tags this handler's MountedShare nodes'
+         * ln_Type.  Never persisted anywhere. */
+        fsh->fsh_ID           = ++NetPrefsBase->npb_NextFSID;
+        fsh->fsh_Node.ln_Name = (char *)name;
+        fsh->fsh_Node.ln_Pri  = (BYTE)pri;
+        fsh->fsh_Node.ln_Type = fsh->fsh_ID;
+        fsh->fsh_WinClass     = winclass;
+        fsh->fsh_ReadMount    = readmount;
+        fsh->fsh_WriteMount   = writemount;
+        fsh->fsh_InitShare    = initshare;
+        fsh->fsh_Display      = display;
+        Enqueue(&NetPrefsBase->npb_FSHandlers, &fsh->fsh_Node);
+    }
+
+    AROS_LIBFUNC_EXIT
+}
+
+/* -----------------------------------------------------------------------
  * Library function table — built by hand (like sysexp_library.c).
  * ----------------------------------------------------------------------- */
 void *NetPrefsLibrary_funcTable[] =
@@ -172,6 +213,7 @@ void *NetPrefsLibrary_funcTable[] =
     AROS_SLIB_ENTRY(RegisterBase, NetPrefs, 6),
     AROS_SLIB_ENTRY(GetBase, NetPrefs, 7),
     AROS_SLIB_ENTRY(RegisterProtoHandler, NetPrefs, 8),
+    AROS_SLIB_ENTRY(RegisterFSHandler, NetPrefs, 9),
     (void *)-1
 };
 
@@ -197,6 +239,8 @@ void netprefs_initlib(struct NetPrefsBase **basePtr)
         NEWLIST(&base->npb_GenericBases);
         NEWLIST(&base->npb_Modules);
         NEWLIST(&base->npb_ProtoHandlers);
+        NEWLIST(&base->npb_FSHandlers);
+        base->npb_NextFSID = 0;
     }
 
     *basePtr = base;

@@ -1,0 +1,19 @@
+include $(SRCDIR)/config/aros.cfg
+
+#MM workbench-network-stacks-arostcp-services-firewall : \
+#MM     network-includes-copy
+
+FILES := firewalld
+
+%build_prog mmake=workbench-network-stacks-arostcp-services-firewall \
+    progname=firewalld \
+    files="$(FILES)" \
+    targetdir=$(AROS_SYSTEM)/Network/Services
+
+# Install the daemon's default service config into the service-manager dir
+# (db/services.d/), alongside the stack's own scripts.
+%copy_files_q mmake=workbench-network-stacks-arostcp-services-firewall-svccfg \
+    files="firewall" src=services.d \
+    dst=$(AROS_SYSTEM)/Network/AROSTCP/db/services.d
+
+%common

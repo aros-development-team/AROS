@@ -1,0 +1,24 @@
+#
+# AROSTCP network service: Envoy filesystem exports server (EFS).
+#
+# One file per service under db/services.d/ (the file name is the service name).
+#   Name       - friendly name shown by the Network prefs Services tab
+#   Path       - the daemon executable
+#   Order      - bring-up priority hint (higher starts earlier)
+#   StopSig    - signal bit sent to stop it (12 = CTRL-C)
+#   Policy     - reload policy: signal (survive, quiesce/resume) keeps client
+#                mounts alive across a network reconfigure
+#   ConfigTool - preferences editor for this service (the Configure button):
+#                FilesystemExports edits which directories are exported
+#   Enabled    - yes or no.  DISABLED BY DEFAULT: the server exposes local
+#                directories to the network; configure the exports and
+#                accounts first, then set Enabled=yes and reboot or reload
+#                the stack.
+#
+Name=Envoy Filesystem Exports
+Path=SYS:System/Network/Services/envoyfs
+Order=20
+StopSig=12
+Policy=signal
+ConfigTool=SYS:Prefs/Envoy/FilesystemExports
+Enabled=no

@@ -11,6 +11,8 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM- workbench-network-stacks-arostcp-services : workbench-network-stacks-arostcp-services-example
 #MM- workbench-network-stacks-arostcp-services : workbench-network-stacks-arostcp-services-dhcp
+#MM- workbench-network-stacks-arostcp-services : workbench-network-stacks-arostcp-services-firewall
+#MM- workbench-network-stacks-arostcp-services : workbench-network-stacks-arostcp-services-firewall-svccfg
 
 %copy_files_q mmake=workbench-network-stacks-arostcp files="README" \
     dst=$(AROS_SYSTEM)/Network/AROSTCP

@@ -13,6 +13,7 @@
 #             Enabled=yes and reboot or reload the stack to turn it on; set it
 #             back to no to turn it off without deleting this script.
 #
+Name=SSH Server
 Path=SYS:System/Network/Services/sshd
 Order=20
 StopSig=12

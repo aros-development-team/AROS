@@ -28,9 +28,9 @@ extern struct MUI_CustomClass *NetPEditor_CLASS;
 #define MUIM_NetPEditor_ShowNetEntry    (MUIB_NetPEditor | 0x00000008)
 #define MUIM_NetPEditor_EditNetEntry    (MUIB_NetPEditor | 0x00000009)
 #define MUIM_NetPEditor_ApplyNetEntry   (MUIB_NetPEditor | 0x0000000A)
-#define MUIM_NetPEditor_ShowServerEntry  (MUIB_NetPEditor | 0x0000000B)
-#define MUIM_NetPEditor_EditServerEntry  (MUIB_NetPEditor | 0x0000000C)
-#define MUIM_NetPEditor_ApplyServerEntry (MUIB_NetPEditor | 0x0000000D)
+#define MUIM_NetPEditor_ShowShareEntry   (MUIB_NetPEditor | 0x0000000B)
+#define MUIM_NetPEditor_EditShareEntry   (MUIB_NetPEditor | 0x0000000C)
+#define MUIM_NetPEditor_ApplyShareEntry  (MUIB_NetPEditor | 0x0000000D)
 #define MUIM_NetPEditor_AddTetheringEntry (MUIB_NetPEditor | 0x0000000E)
 
 /* Protocol address list methods (plugin-based protocol modules) */
@@ -43,11 +43,14 @@ extern struct MUI_CustomClass *NetPEditor_CLASS;
 #define MUIM_NetPEditor_ApplyTunnelEntry (MUIB_NetPEditor | 0x00000014)
 #define MUIM_NetPEditor_ShowServiceEntry (MUIB_NetPEditor | 0x00000015)
 #define MUIM_NetPEditor_ToggleService    (MUIB_NetPEditor | 0x00000016)
+#define MUIM_NetPEditor_SetServicePri    (MUIB_NetPEditor | 0x00000017)
+#define MUIM_NetPEditor_ConfigureService (MUIB_NetPEditor | 0x00000018)
 
 struct MUIP_NetPEditor_EditEntry    {STACKED ULONG MethodID; STACKED ULONG addEntry;};
 struct MUIP_NetPEditor_AddConnection {STACKED ULONG MethodID; STACKED LONG type;};
 struct MUIP_NetPEditor_EditTunnelEntry {STACKED ULONG MethodID; STACKED ULONG addEntry;};
 struct MUIP_NetPEditor_EditNetEntry {STACKED ULONG MethodID; STACKED ULONG addEntry;};
 struct MUIP_NetPEditor_ApplyProtoEntry {STACKED ULONG MethodID; STACKED ULONG family;};
+struct MUIP_NetPEditor_ApplyShareEntry {STACKED ULONG MethodID; STACKED ULONG fshID;};
 
 #endif /* _NETPEDITOR_H_ */

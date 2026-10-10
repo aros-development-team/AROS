@@ -16,6 +16,13 @@ IPV4_FILES  := locale $(IPV4MODDIR)/ipv4_init $(IPV4MODDIR)/ipv4_win
 IPV6MODDIR  := Modules/IPv6
 IPV6_FILES  := locale $(IPV6MODDIR)/ipv6_init $(IPV6MODDIR)/ipv6_win
 
+CIFSMODDIR  := Modules/CIFS
+CIFS_FILES  := locale $(CIFSMODDIR)/cifs_init $(CIFSMODDIR)/cifs_mount $(CIFSMODDIR)/cifs_win
+
+EFSMODDIR   := Modules/EnvoyFS
+EFS_FILES   := locale $(EFSMODDIR)/envoyfs_init $(EFSMODDIR)/envoyfs_mount \
+               $(EFSMODDIR)/envoyfs_imports $(EFSMODDIR)/envoyfs_win
+
 NETPREFSCOMMON_INCLUDES := -I$(NETPREFS_GENINCDIR)
 
 #MM- workbench-prefs : workbench-prefs-network
@@ -27,7 +34,9 @@ NETPREFSCOMMON_INCLUDES := -I$(NETPREFS_GENINCDIR)
 #MM  workbench-prefs-network-modules
 
 #MM- workbench-prefs-network-modules : workbench-prefs-network-module-ipv4 \
-#MM  workbench-prefs-network-module-ipv6
+#MM  workbench-prefs-network-module-ipv6 \
+#MM  workbench-prefs-network-module-cifs \
+#MM  workbench-prefs-network-module-envoyfs
 
 # --- Generate includes from netprefs.conf ---
 
@@ -90,6 +99,44 @@ USER_LDFLAGS := -static
     files="$(IPV6_FILES)" moduledir=Prefs/NetModules \
     uselibs="amiga posixc stdcio stdc" includedir=$(NETPREFS_GENINCDIR) \
     conffile=$(NETPREFS_SRCDIR)/$(IPV6MODDIR)/ipv6.conf
+
+# --- CIFS/SMB mounted-share module ---
+
+#MM workbench-prefs-network-module-cifs : includes linklibs \
+#MM workbench-prefs-network-includes workbench-prefs-network-catalogs
+
+USER_INCLUDES := $(NETPREFSCOMMON_INCLUDES) -I$(NETPREFS_SRCDIR)/$(CIFSMODDIR)
+# Link the module -static, as AROS modules are: it must carry its own C
+# library rather than depend on the caller's. That drops the compiler's
+# automatic "posixc stdcio stdc" chain, so uselibs below names the set in
+# full - posixc calls into stdcio for __aros_getbase_StdCIOBase.
+USER_LDFLAGS := -static
+%build_module mmake=workbench-prefs-network-module-cifs \
+    modname=cifs modtype=library modsuffix=netprefs \
+    files="$(CIFS_FILES)" moduledir=Prefs/NetModules \
+    uselibs="amiga posixc stdcio stdc" includedir=$(NETPREFS_GENINCDIR) \
+    conffile=$(NETPREFS_SRCDIR)/$(CIFSMODDIR)/cifs.conf
+
+# --- Envoy Filesystem mounted-share module ---
+
+#MM workbench-prefs-network-module-envoyfs : includes linklibs \
+#MM workbench-prefs-network-includes workbench-prefs-network-catalogs \
+#MM includes-copy-envoy \
+#MM workbench-network-envoy-nipc-includes workbench-network-envoy-services-includes \
+#MM workbench-network-envoy-accounts-includes workbench-network-envoy-envoy-includes
+
+USER_INCLUDES := $(NETPREFSCOMMON_INCLUDES) -I$(NETPREFS_SRCDIR)/$(EFSMODDIR) \
+    -I$(SRCDIR)/workbench/network/envoy/include
+# Link the module -static, as AROS modules are: it must carry its own C
+# library rather than depend on the caller's. That drops the compiler's
+# automatic "posixc stdcio stdc" chain, so uselibs below names the set in
+# full - posixc calls into stdcio for __aros_getbase_StdCIOBase.
+USER_LDFLAGS := -static
+%build_module mmake=workbench-prefs-network-module-envoyfs \
+    modname=envoyfs modtype=library modsuffix=netprefs \
+    files="$(EFS_FILES)" moduledir=Prefs/NetModules \
+    uselibs="amiga posixc stdcio stdc" includedir=$(NETPREFS_GENINCDIR) \
+    conffile=$(NETPREFS_SRCDIR)/$(EFSMODDIR)/envoyfs.conf
 
 %copy_files_q mmake=workbench-prefs-network-cpy \
     files="interface host wireless protocol" src=. dst=$(AROS_IMAGES)

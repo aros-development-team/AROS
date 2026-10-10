@@ -213,7 +213,7 @@ static BOOL svc_cfg_bool(const char *v, BOOL dflt)
  * service into line with it.  The service name is the file name; the file holds
  * its management config:
  *   Path=<executable>              (required)
- *   Order=<n>                      (bring-up priority hint; informational)
+ *   Order=<n>                      (bring-up priority; higher launches first)
  *   StopSig=<bit>                  (signal bit to stop it; default CTRL-C = 12)
  *   Policy=signal|restart|ignore   (reload policy; default signal)
  *   Enabled=yes|no                 (default yes)
@@ -265,7 +265,8 @@ static void svc_apply_cfg(CONST_STRPTR name)
         } else if(svc_keyeq(key, "Enabled")) {
             enabled = svc_cfg_bool(val, TRUE);
         }
-        /* Order= is accepted but not acted on yet (scan order = launch order). */
+        /* Order= sequences the scan (svcmgr_launch_all), not this function;
+         * Name= and ConfigTool= are UI-side keys (Network prefs). */
     }
     Close(fh);
 
@@ -284,10 +285,48 @@ static void svc_apply_cfg(CONST_STRPTR name)
     }
 }
 
+/* Read just a service file's Order= (launch priority, higher first; 0 when
+ * absent).  The current dir is db/services.d. */
+static LONG svc_read_order(CONST_STRPTR name)
+{
+    BPTR fh;
+    char line[256];
+    LONG order = 0;
+
+    fh = Open((STRPTR)name, MODE_OLDFILE);
+    if(fh == BNULL)
+        return 0;
+    while(FGets(fh, (STRPTR)line, sizeof(line))) {
+        char *key = NULL, *val = NULL;
+
+        if(!svc_cfg_kv(line, &key, &val))
+            continue;
+        if(svc_keyeq(key, "Order")) {
+            const char *v = val;
+            LONG n = 0;
+
+            while(*v >= '0' && *v <= '9')
+                n = n * 10 + (*v++ - '0');
+            order = n;
+        }
+    }
+    Close(fh);
+    return order;
+}
+
+#define SVC_MAXSCAN 32
+
+struct SvcScanEnt {
+    char name[108];                 /* fib_FileName size */
+    LONG order;
+};
+
 void svcmgr_launch_all(void)
 {
     BPTR dblock, svclock, old;
     struct FileInfoBlock *fib;
+    struct SvcScanEnt *found;
+    int nfound = 0, i, j;
 
     if(!SvcMgrReady)
         return;
@@ -306,6 +345,8 @@ void svcmgr_launch_all(void)
         return;             /* no services.d -> no external service daemons */
     }
 
+    found = AllocVec(sizeof(struct SvcScanEnt) * SVC_MAXSCAN,
+                     MEMF_PUBLIC | MEMF_CLEAR);
     fib = AllocDosObject(DOS_FIB, NULL);
     if(fib != NULL && Examine(svclock, fib)) {
         CurrentDir(svclock);    /* so Open(name) resolves inside services.d */
@@ -313,11 +354,33 @@ void svcmgr_launch_all(void)
         while(ExNext(svclock, fib)) {
             if(fib->fib_DirEntryType > 0)       /* skip subdirectories */
                 continue;
-            svc_apply_cfg(fib->fib_FileName);
+            if(found != NULL && nfound < SVC_MAXSCAN) {
+                int k;
+
+                /* collect first: launches are sequenced by Order= below */
+                for(k = 0; k < (int)sizeof(found[0].name) - 1 && fib->fib_FileName[k]; k++)
+                    found[nfound].name[k] = fib->fib_FileName[k];
+                found[nfound].name[k] = '\0';
+                found[nfound].order = svc_read_order(found[nfound].name);
+                nfound++;
+            } else
+                svc_apply_cfg(fib->fib_FileName);   /* overflow: scan order */
         }
+        /* Launch highest Order first; insertion sort keeps equal orders in
+         * scan order. */
+        for(i = 1; i < nfound; i++) {
+            struct SvcScanEnt tmp = found[i];
+
+            for(j = i; j > 0 && found[j - 1].order < tmp.order; j--)
+                found[j] = found[j - 1];
+            found[j] = tmp;
+        }
+        for(i = 0; i < nfound; i++)
+            svc_apply_cfg(found[i].name);
     }
     if(fib != NULL)
         FreeDosObject(DOS_FIB, fib);
+    FreeVec(found);
     CurrentDir(old);
     UnLock(svclock);
     UnLock(dblock);

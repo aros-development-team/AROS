@@ -33,6 +33,23 @@ struct ProtoHandlerNode
 };
 
 /*
+ * FSHandlerNode - registered by a module's Startup callback via
+ * RegisterFSHandler().  The main app iterates this list to discover
+ * mounted-share (filesystem) types for the "Mounted Shares" page.
+ */
+struct FSHandlerNode
+{
+    struct Node             fsh_Node;       /* ln_Name = display name, ln_Pri = pri   */
+    UBYTE                   fsh_ID;         /* assigned at registration; used as      */
+                                            /* ln_Type of this handler's share nodes  */
+    struct MUI_CustomClass *fsh_WinClass;   /* PAWinClass subclass for the edit window */
+    NETPREFS_READMOUNT      fsh_ReadMount;  /* claims + parses one mountfile           */
+    NETPREFS_WRITEMOUNT     fsh_WriteMount; /* writes one share's mountfile            */
+    NETPREFS_INITSHARE      fsh_InitShare;  /* defaults for a newly added share        */
+    NETPREFS_FSDISPLAY      fsh_Display;    /* optional column text override           */
+};
+
+/*
  * NetPrefsIntBase - wraps a named base registration (like SysexpIntBase).
  */
 struct NetPrefsIntBase
@@ -60,6 +77,8 @@ struct NetPrefsBase
     struct List             npb_GenericBases;    /* NetPrefsIntBase nodes       */
     struct List             npb_Modules;         /* NetPrefsIntModule nodes     */
     struct List             npb_ProtoHandlers;   /* ProtoHandlerNode nodes      */
+    struct List             npb_FSHandlers;      /* FSHandlerNode nodes         */
+    UBYTE                   npb_NextFSID;        /* fsh_ID allocator (session)  */
 };
 
 #endif /* _NETPREFS_INTERN_H_ */

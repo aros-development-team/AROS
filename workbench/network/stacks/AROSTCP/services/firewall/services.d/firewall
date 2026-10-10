@@ -1,0 +1,24 @@
+#
+# AROSTCP network service: firewall lifecycle manager.
+#
+# One file per service under db/services.d/ (the file name is the service name).
+#   Name       - friendly name shown by the Network prefs Services tab
+#   Path       - the daemon executable
+#   Order      - bring-up priority (higher starts earlier: the firewall comes
+#                up before the other services)
+#   StopSig    - signal bit sent to stop it (12 = CTRL-C); stopping the daemon
+#                leaves the kernel rules in place
+#   Policy     - reload policy: signal (survive, quiesce/resume); the daemon
+#                re-applies the rules at reconfigure-end
+#   ConfigTool - preferences editor for this service (the Configure button)
+#   Enabled    - yes or no.  DISABLED BY DEFAULT: define a rule set with
+#                SYS:Prefs/Firewall first, then set Enabled=yes and reboot or
+#                reload the stack.
+#
+Name=Firewall
+Path=SYS:System/Network/Services/firewalld
+Order=90
+StopSig=12
+Policy=signal
+ConfigTool=SYS:Prefs/Firewall
+Enabled=no
