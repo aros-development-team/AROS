@@ -9,6 +9,7 @@ FILES = \
     smb_abstraction \
     sock \
     crypt \
+    quad_math \
     errno \
     utf-8-iso-8859-1-conversion \
     dump_smb

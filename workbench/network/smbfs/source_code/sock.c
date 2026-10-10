@@ -25,6 +25,52 @@
 
 /*****************************************************************************/
 
+/* A successful send may transfer only a prefix of a TCP frame. */
+static int
+smb_send_all (int sock_fd, const unsigned char *source, int length)
+{
+	int sent = 0;
+
+	while (sent < length)
+	{
+		int result = send (sock_fd, (void *)(source + sent), length - sent, 0);
+
+		/* Preserve socket errors, including the Ctrl-C break indication. */
+		if (result < 0)
+			return -errno;
+		if (result == 0)
+			return -EIO;
+
+		sent += result;
+	}
+
+	return sent;
+}
+
+/* TCP may split any part of a session frame across several reads. */
+static int
+smb_receive_all (int sock_fd, unsigned char *target, int length)
+{
+	int received = 0;
+
+	while (received < length)
+	{
+		int result = recvfrom (sock_fd, target + received, length - received, 0, NULL, NULL);
+
+		/* EINTR also reports Ctrl-C through the configured socket break mask. */
+		if (result < 0)
+			return -errno;
+
+		/* An orderly close cannot complete the remaining frame. */
+		if (result == 0)
+			return -EIO;
+
+		received += result;
+	}
+
+	return received;
+}
+
 /* smb_receive_raw
    fs points to the correct segment, sock != NULL, target != NULL
    The smb header is only stored if want_header != 0. */
@@ -39,51 +85,14 @@ smb_receive_raw (const struct smb_server *server, int sock_fd, unsigned char *ta
  re_recv:
 
 	/* Read the NetBIOS session header (rfc-1002, section 4.3.1) */
-	result = recvfrom (sock_fd, netbios_session_buf, 4, 0, NULL, NULL);
+	result = smb_receive_all (sock_fd, netbios_session_buf, 4);
 	if (result < 0)
-	{
-		LOG (("smb_receive_raw: recv error = %ld\n", errno));
-		result = (-errno);
 		goto out;
-	}
-
-	if (result < 4)
-	{
-		LOG (("smb_receive_raw: got less than 4 bytes\n"));
-		result = -EIO;
-		goto out;
-	}
 
 	netbios_session_payload_size = (int)smb_len (netbios_session_buf);
 
 	#if defined(DUMP_SMB)
-	{
-		if(netbios_session_buf[0] != 0x00 && netbios_session_payload_size > 0)
-		{
-			if(netbios_session_payload_size > 256 - 4)
-				netbios_session_payload_size = 256 - 4;
-
-			result = recvfrom (sock_fd, &netbios_session_buf[4], netbios_session_payload_size - 4, 0, NULL, NULL);
-			if (result < 0)
-			{
-				LOG (("smb_receive_raw: recv error = %ld\n", errno));
-				result = (-errno);
-				goto out;
-			}
-
-			if(result < netbios_session_payload_size - 4)
-			{
-				result = -EIO;
-				goto out;
-			}
-
-			dump_netbios_header(__FILE__,__LINE__,netbios_session_buf,&netbios_session_buf[4],netbios_session_payload_size);
-		}
-		else
-		{
-			dump_netbios_header(__FILE__,__LINE__,netbios_session_buf,NULL,0);
-		}
-	}
+	dump_netbios_header(__FILE__,__LINE__,netbios_session_buf,NULL,0);
 	#endif /* defined(DUMP_SMB) */
 
 	/* Check the session type. */
@@ -97,6 +106,12 @@ smb_receive_raw (const struct smb_server *server, int sock_fd, unsigned char *ta
 		/* 0x85 == session keepalive */
 		case 0x85:
 
+			/* Keepalives have no payload to leave in the byte stream. */
+			if (netbios_session_payload_size != 0)
+			{
+				result = -EIO;
+				goto out;
+			}
 			LOG (("smb_receive_raw: Got SESSION KEEP ALIVE\n"));
 			goto re_recv;
 
@@ -135,17 +150,11 @@ smb_receive_raw (const struct smb_server *server, int sock_fd, unsigned char *ta
 		target += 4;
 	}
 
-	for(already_read = 0 ; already_read < len ; already_read += result)
+	already_read = smb_receive_all (sock_fd, target, len);
+	if (already_read < 0)
 	{
-		result = recvfrom (sock_fd, (void *) (target + already_read), len - already_read, 0, NULL, NULL);
-		if (result < 0)
-		{
-			LOG (("smb_receive_raw: recvfrom error = %ld\n", errno));
-
-			result = (-errno);
-
-			goto out;
-		}
+		result = already_read;
+		goto out;
 	}
 
 	#if defined(DUMP_SMB)
@@ -160,6 +169,87 @@ smb_receive_raw (const struct smb_server *server, int sock_fd, unsigned char *ta
  out:
 
 	return result;
+}
+
+/* Transaction offsets are relative to the SMB header, not the NetBIOS
+ * header. Verify each fragment before reading its words or copying its data.
+ */
+static int
+smb_valid_trans2_response (const byte *packet, int payload_length)
+{
+	int packet_length = payload_length + 4;
+	int word_count;
+	int bytes_offset;
+	int data_start;
+	int data_end;
+	int param_count, param_offset;
+	int data_count, data_offset;
+
+	if (packet_length < SMB_HEADER_LEN + 10 * 2 + 2 ||
+	    packet[4] != 0xff || packet[5] != 'S' ||
+	    packet[6] != 'M' || packet[7] != 'B' ||
+	    packet[8] != SMBtrans2)
+		return -EIO;
+
+	word_count = packet[SMB_HEADER_LEN - 1];
+	if (word_count < 10 || packet_length < SMB_HEADER_LEN + word_count * 2 + 2)
+		return -EIO;
+
+	bytes_offset = SMB_HEADER_LEN + word_count * 2;
+	if (packet_length < bytes_offset + 2 + WVAL(packet,bytes_offset))
+		return -EIO;
+
+	data_start = bytes_offset + 2 - 4;
+	data_end = data_start + WVAL(packet,bytes_offset);
+	param_count = WVAL(packet,smb_prcnt);
+	param_offset = WVAL(packet,smb_proff);
+	data_count = WVAL(packet,smb_drcnt);
+	data_offset = WVAL(packet,smb_droff);
+
+	if ((param_count != 0 &&
+	     (param_offset < data_start || param_offset > data_end ||
+	      param_count > data_end - param_offset)) ||
+	    (data_count != 0 &&
+	     (data_offset < data_start || data_offset > data_end ||
+	      data_count > data_end - data_offset)))
+		return -EIO;
+
+	return 0;
+}
+
+/* Count unique bytes, since retransmitted or overlapping fragments do not
+ * fill gaps in a transaction response.
+ */
+static int
+smb_mark_trans2_bytes (byte *covered, int offset, int count)
+{
+	int i, added = 0;
+
+	for (i = 0; i < count; i++)
+	{
+		int position = offset + i;
+		byte mask = 1 << (position & 7);
+
+		if ((covered[position >> 3] & mask) == 0)
+		{
+			covered[position >> 3] |= mask;
+			added++;
+		}
+	}
+
+	return added;
+}
+
+static int
+smb_count_trans2_bytes (const byte *covered, int length)
+{
+	int i, count = 0;
+
+	for (i = 0; i < length; i++)
+		if (covered[i >> 3] & (1 << (i & 7)))
+			count++;
+
+	return count;
 }
 
 /* smb_receive
@@ -198,6 +288,8 @@ smb_receive_trans2 (struct smb_server *server, int sock_fd, int *data_len, int *
 	int total_data;
 	int total_param;
 	int result;
+	byte *data_covered = NULL;
+	byte *param_covered = NULL;
 
 	LOG (("smb_receive_trans2: enter\n"));
 
@@ -207,9 +299,20 @@ smb_receive_trans2 (struct smb_server *server, int sock_fd, int *data_len, int *
 	result = smb_receive (server, sock_fd);
 	if (result < 0)
 		goto fail;
+	if (result < 9)
+	{
+		result = -EIO;
+		goto fail;
+	}
 
 	if (server->rcls != 0)
 		goto fail;
+
+	if (smb_valid_trans2_response(inbuf,result) != 0)
+	{
+		result = -EIO;
+		goto fail;
+	}
 
 	/* parse out the lengths */
 	total_data = WVAL (inbuf, smb_tdrcnt);
@@ -221,6 +324,28 @@ smb_receive_trans2 (struct smb_server *server, int sock_fd, int *data_len, int *
 
 		result = -EIO;
 		goto fail;
+	}
+
+	/* A complete first fragment needs no coverage map or per-byte work. */
+	if (WVAL (inbuf, smb_drcnt) < total_data)
+	{
+		data_covered = malloc ((total_data + 7) / 8);
+		if (data_covered == NULL)
+		{
+			result = -ENOMEM;
+			goto fail;
+		}
+		memset (data_covered, 0, (total_data + 7) / 8);
+	}
+	if (WVAL (inbuf, smb_prcnt) < total_param)
+	{
+		param_covered = malloc ((total_param + 7) / 8);
+		if (param_covered == NULL)
+		{
+			result = -ENOMEM;
+			goto fail;
+		}
+		memset (param_covered, 0, (total_param + 7) / 8);
 	}
 
 	/* Allocate it, but only if there is something to allocate
@@ -275,7 +400,11 @@ smb_receive_trans2 (struct smb_server *server, int sock_fd, int *data_len, int *
 		if((*param) != NULL)
 			memcpy ((*param) + WVAL (inbuf, smb_prdisp), smb_base (inbuf) + WVAL (inbuf, smb_proff), WVAL (inbuf, smb_prcnt));
 
-		(*param_len) += WVAL (inbuf, smb_prcnt);
+		if (param_covered != NULL)
+			(*param_len) += smb_mark_trans2_bytes (param_covered,
+				WVAL (inbuf, smb_prdisp), WVAL (inbuf, smb_prcnt));
+		else
+			(*param_len) += WVAL (inbuf, smb_prcnt);
 
 		if (WVAL (inbuf, smb_drdisp) + WVAL (inbuf, smb_drcnt) > total_data)
 		{
@@ -287,7 +416,11 @@ smb_receive_trans2 (struct smb_server *server, int sock_fd, int *data_len, int *
 		if((*data) != NULL)
 			memcpy ((*data) + WVAL (inbuf, smb_drdisp), smb_base (inbuf) + WVAL (inbuf, smb_droff), WVAL (inbuf, smb_drcnt));
 
-		(*data_len) += WVAL (inbuf, smb_drcnt);
+		if (data_covered != NULL)
+			(*data_len) += smb_mark_trans2_bytes (data_covered,
+				WVAL (inbuf, smb_drdisp), WVAL (inbuf, smb_drcnt));
+		else
+			(*data_len) += WVAL (inbuf, smb_drcnt);
 
 		LOG (("smb_rec_trans2: drcnt/prcnt: %ld/%ld\n", WVAL (inbuf, smb_drcnt), WVAL (inbuf, smb_prcnt)));
 
@@ -299,14 +432,27 @@ smb_receive_trans2 (struct smb_server *server, int sock_fd, int *data_len, int *
 			goto fail;
 		}
 
+		if (data_covered != NULL && WVAL (inbuf, smb_tdrcnt) < total_data)
+			(*data_len) = smb_count_trans2_bytes (data_covered, WVAL (inbuf, smb_tdrcnt));
+		if (param_covered != NULL && WVAL (inbuf, smb_tprcnt) < total_param)
+			(*param_len) = smb_count_trans2_bytes (param_covered, WVAL (inbuf, smb_tprcnt));
 		total_data = WVAL (inbuf, smb_tdrcnt);
 		total_param = WVAL (inbuf, smb_tprcnt);
+		if ((*data_len) > total_data)
+			(*data_len) = total_data;
+		if ((*param_len) > total_param)
+			(*param_len) = total_param;
 		if (total_data <= (*data_len) && total_param <= (*param_len))
 			break;
 
 		result = smb_receive (server, sock_fd);
 		if (result < 0)
 			goto fail;
+		if (result < 9)
+		{
+			result = -EIO;
+			goto fail;
+		}
 
 		if (server->rcls != 0)
 		{
@@ -316,9 +462,16 @@ smb_receive_trans2 (struct smb_server *server, int sock_fd, int *data_len, int *
 			result = -EIO;
 			goto fail;
 		}
+		if (smb_valid_trans2_response(inbuf,result) != 0)
+		{
+			result = -EIO;
+			goto fail;
+		}
 	}
 
 	LOG (("smb_receive_trans2: normal exit\n"));
+	free (data_covered);
+	free (param_covered);
 	return 0;
 
  fail:
@@ -330,6 +483,8 @@ smb_receive_trans2 (struct smb_server *server, int sock_fd, int *data_len, int *
 
 	if((*data) != NULL)
 		free (*data);
+	free (data_covered);
+	free (param_covered);
 
 	(*param) = (*data) = NULL;
 
@@ -386,6 +541,57 @@ smb_connect (struct smb_server *server)
  *
  ****************************************************************************/
 
+/* A NetBIOS session reply is a four-byte control frame, not an SMB reply. */
+int
+smb_request_session (struct smb_server *server)
+{
+	int sock_fd = server->mount_data.fd;
+	byte *packet = server->packet;
+	byte reply[4];
+	int result;
+
+	if (sock_fd < 0 || packet == NULL)
+	{
+		result = -EBADF;
+		goto out;
+	}
+	if (server->state != CONN_VALID)
+	{
+		result = -EIO;
+		goto out;
+	}
+
+	result = smb_send_all (sock_fd, packet, smb_len (packet) + 4);
+	if (result < 0)
+		goto out;
+
+	result = smb_receive_all (sock_fd, reply, sizeof(reply));
+	if (result < 0)
+		goto out;
+
+	#if defined(DUMP_SMB)
+	dump_netbios_header(__FILE__,__LINE__,reply,NULL,0);
+	#endif
+
+	if (reply[0] != 0x82 || reply[1] != 0 || smb_len(reply) != 0)
+	{
+		result = -EIO;
+		goto out;
+	}
+
+	memcpy(packet,reply,sizeof(reply));
+	result = 0;
+
+ out:
+	if (result < 0)
+	{
+		server->state = CONN_INVALID;
+		smb_invalidate_all_inodes(server);
+	}
+
+	return result;
+}
+
 /* Returns number of bytes received (>= 0) or a negative value in
  * case of error.
  */
@@ -421,14 +627,8 @@ smb_request (struct smb_server *server)
 	dump_smb(__FILE__,__LINE__,0,buffer+4,len-4,smb_packet_from_consumer,server->max_recv);
 	#endif /* defined(DUMP_SMB) */
 
-	result = send (sock_fd, (void *) buffer, len, 0);
-	if (result < 0)
-	{
-		LOG (("smb_request: send error = %ld\n", errno));
-
-		result = (-errno);
-	}
-	else
+	result = smb_send_all (sock_fd, buffer, len);
+	if (result >= 0)
 	{
 		result = smb_receive (server, sock_fd);
 	}
@@ -473,14 +673,8 @@ smb_trans2_request (struct smb_server *server, int *data_len, int *param_len, ch
 	dump_smb(__FILE__,__LINE__,0,buffer+4,len-4,smb_packet_from_consumer,server->max_recv);
 	#endif /* defined(DUMP_SMB) */
 
-	result = send (sock_fd, (void *) buffer, len, 0);
-	if (result < 0)
-	{
-		LOG (("smb_trans2_request: send error = %ld\n", errno));
-
-		result = (-errno);
-	}
-	else
+	result = smb_send_all (sock_fd, buffer, len);
+	if (result >= 0)
 	{
 		result = smb_receive_trans2 (server, sock_fd, data_len, param_len, data, param);
 	}
@@ -527,17 +721,11 @@ smb_request_read_raw (struct smb_server *server, unsigned char *target, int max_
 	#endif /* defined(DUMP_SMB) */
 
 	/* Request that data should be read in raw mode. */
-	result = send (sock_fd, (void *) buffer, len, 0);
+	result = smb_send_all (sock_fd, buffer, len);
 
 	LOG (("smb_request_read_raw: send returned %ld\n", result));
 
-	if (result < 0)
-	{
-		LOG (("smb_request_read_raw: send error = %ld\n", errno));
-
-		result = (-errno);
-	}
-	else
+	if (result >= 0)
 	{
 		/* Wait for the raw data to be sent by the server. */
 		result = smb_receive_raw (server, sock_fd, target, max_len, 0);
@@ -575,21 +763,9 @@ smb_request_write_raw (struct smb_server *server, unsigned const char *source, i
 	/* Send the NetBIOS header. */
 	smb_encode_smb_length (nb_header, length);
 
-	result = send (sock_fd, (void *) nb_header, 4, 0);
-	if (result == 4)
-	{
-		/* Now send the data to be written. */
-		result = send (sock_fd, (void *) source, length, 0);
-		if(result < 0)
-			result = (-errno);
-	}
-	else
-	{
-		if(result < 0)
-			result = (-errno);
-		else
-			result = -EIO;
-	}
+	result = smb_send_all (sock_fd, nb_header, 4);
+	if (result >= 0)
+		result = smb_send_all (sock_fd, source, length);
 
 	LOG (("smb_request_write_raw: send returned %ld\n", result));
 

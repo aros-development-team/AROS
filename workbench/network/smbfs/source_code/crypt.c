@@ -55,13 +55,13 @@ static int local_wcslen (short *str);
 static int local_mbstowcs (short *dst, unsigned char *src, int len);
 static void E_md4hash (unsigned char *passwd, unsigned char *p16);
 static void smb_owf_encrypt (unsigned char *passwd, unsigned char *c8, unsigned char *p24);
-static unsigned long F (unsigned long X, unsigned long Y, unsigned long Z);
-static unsigned long G (unsigned long X, unsigned long Y, unsigned long Z);
-static unsigned long H (unsigned long X, unsigned long Y, unsigned long Z);
-static unsigned long lshift (unsigned long x, int s);
-static void mdfour64 (unsigned long *M);
-static void copy64 (unsigned long *M, unsigned char *in);
-static void copy4 (unsigned char *out, unsigned long x);
+static ULONG F (ULONG X, ULONG Y, ULONG Z);
+static ULONG G (ULONG X, ULONG Y, ULONG Z);
+static ULONG H (ULONG X, ULONG Y, ULONG Z);
+static ULONG lshift (ULONG x, int s);
+static void mdfour64 (ULONG *M);
+static void copy64 (ULONG *M, unsigned char *in);
+static void copy4 (unsigned char *out, ULONG x);
 static void mdfour (unsigned char *out, unsigned char *in, int n);
 
 /****************************************************************************/
@@ -539,28 +539,29 @@ smb_nt_encrypt (unsigned char *passwd, unsigned char *c8, unsigned char *p24)
 
 /****************************************************************************/
 
-static unsigned long A, B, C, D;
+/* MD4 words must wrap at 32 bits, including on 64-bit AROS. */
+static ULONG A, B, C, D;
 
-static unsigned long
-F(unsigned long X, unsigned long Y, unsigned long Z)
+static ULONG
+F(ULONG X, ULONG Y, ULONG Z)
 {
 	return (X & Y) | ((~X) & Z);
 }
 
-static unsigned long
-G(unsigned long X, unsigned long Y, unsigned long Z)
+static ULONG
+G(ULONG X, ULONG Y, ULONG Z)
 {
 	return (X & Y) | (X & Z) | (Y & Z);
 }
 
-static unsigned long
-H(unsigned long X, unsigned long Y, unsigned long Z)
+static ULONG
+H(ULONG X, ULONG Y, ULONG Z)
 {
 	return X ^ Y ^ Z;
 }
 
-static unsigned long
-lshift (unsigned long x, int s)
+static ULONG
+lshift (ULONG x, int s)
 {
 	return (x << s) | (x >> (32 - s));
 }
@@ -571,10 +572,10 @@ lshift (unsigned long x, int s)
 
 /* this applies md4 to 64 byte chunks */
 static void
-mdfour64 (unsigned long *M)
+mdfour64 (ULONG *M)
 {
-	unsigned long AA, BB, CC, DD;
-	unsigned long X[16];
+	ULONG AA, BB, CC, DD;
+	ULONG X[16];
 
 	memcpy(X,M,sizeof(X));
 
@@ -641,19 +642,19 @@ mdfour64 (unsigned long *M)
 }
 
 static void
-copy64 (unsigned long *M, unsigned char *in)
+copy64 (ULONG *M, unsigned char *in)
 {
 	int i;
 
 	for (i = 0; i < 16; i++)
 	{
-		M[i] = (in[i * 4 + 3] << 24) | (in[i * 4 + 2] << 16) |
-			(in[i * 4 + 1] << 8) | (in[i * 4 + 0] << 0);
+		M[i] = ((ULONG)in[i * 4 + 3] << 24) | ((ULONG)in[i * 4 + 2] << 16) |
+			((ULONG)in[i * 4 + 1] << 8) | (ULONG)in[i * 4 + 0];
 	}
 }
 
 static void
-copy4 (unsigned char *out, unsigned long x)
+copy4 (unsigned char *out, ULONG x)
 {
 	out[0] = x & 0xFF;
 	out[1] = (x >> 8) & 0xFF;
@@ -666,8 +667,8 @@ static void
 mdfour (unsigned char *out, unsigned char *in, int n)
 {
 	unsigned char buf[128];
-	unsigned long M[16];
-	unsigned long b = n * 8;
+	ULONG M[16];
+	ULONG b = n * 8;
 
 	A = 0x67452301;
 	B = 0xefcdab89;

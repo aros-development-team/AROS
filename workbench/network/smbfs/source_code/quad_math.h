@@ -37,12 +37,12 @@ typedef struct
 {
 	ULONG High;
 	ULONG Low;
-} QUAD;
+} SMB_QUAD;
 
 /****************************************************************************/
 
-ULONG divide_64_by_32(QUAD * dividend,ULONG divisor,QUAD * quotient);
-ULONG subtract_64_from_64_to_64(const QUAD * const minuend,const QUAD * const subtrahend,QUAD * difference);
+ULONG divide_64_by_32(SMB_QUAD * dividend,ULONG divisor,SMB_QUAD * quotient);
+ULONG subtract_64_from_64_to_64(const SMB_QUAD * const minuend,const SMB_QUAD * const subtrahend,SMB_QUAD * difference);
 
 /****************************************************************************/
 

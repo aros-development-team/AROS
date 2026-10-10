@@ -72,6 +72,7 @@ int smb_proc_dskattr (struct smb_server *server, struct smb_dskattr *attr);
 int smb_proc_connect(struct smb_server *server);
 
 /* sock.c */
+int smb_request_session(struct smb_server *server);
 int smb_receive (struct smb_server *server, int sock_fd);
 int smb_catch_keepalive(struct smb_server *server);
 int smb_dont_catch_keepalive(struct smb_server *server);
