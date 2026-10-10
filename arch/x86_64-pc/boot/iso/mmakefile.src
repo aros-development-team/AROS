@@ -6,7 +6,13 @@ include $(SRCDIR)/config/aros.cfg
 TARGET_ISO := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-pc-x86_64.iso
 
 #MM bootiso-pc-x86_64 : \
-#MM                              bootiso-native
+#MM                              bootiso-native \
+#MM                              bootloader-grub-pc-x86_64
+# bootloader-grub-pc-x86_64 = the GRUB legacy 0.97 stages + menu.lst under
+# SYS:boot/grub. The live CD itself boots through grub2 (El Torito / EFI),
+# but InstallAROS/Install-grub2 write the LEGACY stage1/stage2_hdisk chain
+# onto the installed disk, so a CD without those files installs a system
+# that hangs at "GRUB loading.." (2026-09-17 DH0 forensics).
 
 #MM
 bootiso-pc-x86_64: $(TARGET_ISO)
