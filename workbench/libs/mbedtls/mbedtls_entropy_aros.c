@@ -12,7 +12,9 @@
 #include <proto/kernel.h>
 #include <string.h>
 
-extern APTR KernelBase;
+/* kernel.resource, opened on first use - linking programs need not
+ * provide a KernelBase of their own */
+static APTR krnres;
 
 /*
  * mbedtls_hardware_poll — called by mbedTLS entropy collector.
@@ -21,10 +23,18 @@ extern APTR KernelBase;
 int mbedtls_hardware_poll(void *data, unsigned char *output,
                           size_t len, size_t *olen)
 {
+    /* shadows proto/kernel.h's extern so the Krn inline uses our base */
+    APTR KernelBase;
+    IPTR peribase;
+
     (void)data;
 
+    if (krnres == NULL)
+        krnres = OpenResource("kernel.resource");
+    KernelBase = krnres;
+
     /* Try RNG200 hardware (BCM2711 at peribase+0x104000) */
-    IPTR peribase = KrnGetSystemAttr(KATTR_PeripheralBase);
+    peribase = KernelBase ? KrnGetSystemAttr(KATTR_PeripheralBase) : 0;
     if (peribase)
     {
         volatile ULONG *rng_data = (volatile ULONG *)(peribase + 0x104000 + 0x20);

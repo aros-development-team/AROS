@@ -137,6 +137,10 @@ static BOOL ensure_host_key(void)
     return generate_host_key();
 }
 
+/* Set by the auth callbacks on success; libssh has no server-side
+ * "is authenticated" query (the daemon serves one session at a time). */
+static int sshd_authenticated;
+
 /* --- Public key authentication callback --- */
 static int auth_pubkey_cb(ssh_session session, const char *user,
                           struct ssh_key_struct *pubkey,
@@ -202,6 +206,8 @@ static int auth_pubkey_cb(ssh_session session, const char *user,
     }
 
     Close(fh);
+    if (found)
+        sshd_authenticated = 1;
     return found ? SSH_AUTH_SUCCESS : SSH_AUTH_DENIED;
 }
 
@@ -234,7 +240,10 @@ static int auth_password_cb(ssh_session session, const char *user,
     sha256_hex(password, computed_hash);
 
     if (strcmp(computed_hash, stored_hash) == 0)
+    {
+        sshd_authenticated = 1;
         return SSH_AUTH_SUCCESS;
+    }
 
     return SSH_AUTH_DENIED;
 }
@@ -398,6 +407,7 @@ static void handle_session(ssh_session session)
     cb.auth_password_function = auth_password_cb;
     cb.userdata = NULL;
 
+    sshd_authenticated = 0;
     ssh_callbacks_init(&cb);
     ssh_set_server_callbacks(session, &cb);
     ssh_set_auth_methods(session, SSH_AUTH_METHOD_PUBLICKEY | SSH_AUTH_METHOD_PASSWORD);
@@ -413,7 +423,7 @@ static void handle_session(ssh_session session)
     ssh_event_add_session(event, session);
 
     int n_auth = 0;
-    while (!ssh_is_authenticated(session) && n_auth < 20)
+    while (!sshd_authenticated && n_auth < 20)
     {
         if (ssh_event_dopoll(event, 1000) == SSH_ERROR)
             break;
@@ -422,7 +432,7 @@ static void handle_session(ssh_session session)
 
     ssh_event_free(event);
 
-    if (!ssh_is_authenticated(session))
+    if (!sshd_authenticated)
     {
         Printf("sshd: authentication failed\n");
         goto done;
