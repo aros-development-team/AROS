@@ -1339,8 +1339,8 @@ smb_proc_readdir_short (struct smb_server *server, char *path, int fpos, int cac
 static time_t
 interpret_long_date(char * p)
 {
-	QUAD adjust;
-	QUAD long_date;
+	SMB_QUAD adjust;
+	SMB_QUAD long_date;
 	ULONG underflow;
 	time_t result;
 
