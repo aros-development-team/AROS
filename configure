@@ -5178,12 +5178,12 @@ fi
 # detect the compiler version
 { printf '%s\n' "$as_me:${as_lineno-$LINENO}: checking which toolchain family ${CC_BASE} belongs to" >&5
 printf %s "checking which toolchain family ${CC_BASE} belongs to... " >&6; }
-HOST_COMPILER_VERSION=`"$CC" --version 2>/dev/null`
+HOST_COMPILER_VERSION=`$CC --version 2>/dev/null`
 if test x"$HOST_COMPILER_VERSION" = "x"; then
-    HOST_COMPILER_VERSION=`"$CC" --qversion 2>/dev/null`
+    HOST_COMPILER_VERSION=`$CC --qversion 2>/dev/null`
 fi
 if test x"$HOST_COMPILER_VERSION" = "x"; then
-    HOST_COMPILER_VERSION=`"$CC" -V 2>/dev/null`
+    HOST_COMPILER_VERSION=`$CC -V 2>/dev/null`
 fi
 
 IS_SUN_COMPILER=`echo $HOST_COMPILER_VERSION | grep -i -c -E 'Sun C\+\+'`
@@ -5194,13 +5194,22 @@ if test "$IS_SUN_COMPILER" -ne "0"; then
     HOST_TOOLCHAIN_SUFFIX=
     HOST_TOOLCHAIN_FAMILY=sun
 fi
+if test -z "$HOST_CC_NAME"; then
+    for aros_cc_word in $CC_BASE; do
+        case "$aros_cc_word" in
+            -*) continue ;;
+        esac
+        HOST_CC_NAME=`basename "$aros_cc_word"`
+        break
+    done
+fi
 IS_LLVM_COMPILER=`echo $HOST_COMPILER_VERSION | grep -i -c -E 'LLVM|clang'`
 if test "$IS_LLVM_COMPILER" -ne "0"; then
-    if test "$CC_BASE" != "gcc"; then
+    if test "$HOST_CC_NAME" != "gcc"; then
         HOST_TOOLCHAIN_CC=clang
         HOST_TOOLCHAIN_CXX=clang++
         HOST_TOOLCHAIN_PREFIX=llvm-
-        HOST_TOOLCHAIN_SUFFIX="`echo $CC_BASE | sed -e \"s|clang||g\"`"
+                        HOST_TOOLCHAIN_SUFFIX=`expr "X$HOST_CC_NAME" : 'X.*clang\(.*\)'`
         HOST_TOOLCHAIN_FAMILY=llvm
     else
         IS_GNU_COMPILER=1
