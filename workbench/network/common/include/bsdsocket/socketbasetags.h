@@ -15,10 +15,6 @@
 #include <utility/tagitem.h>
 #endif
 
-#ifndef EXEC_PORTS_H
-#include <exec/ports.h>         /* struct Message for the control channel below */
-#endif
-
 /*
  * utility/tagitem.h specifies that bits 16-30 in tags are reserved. So we 
  * don't use them for maximum compatability.
@@ -91,33 +87,12 @@
 #define NETRC_RECONFIGURING 1                /* an in-place reload is in progress */
 
 /*
- * Out-of-band control channel for the stack's main task (AROS addition).
- *
- * The main task's CTRL-C/CTRL-F break bits already mean "shut down" (and the
- * CTRL-F handshake), so a distinct control request - above all a configuration
- * RELOAD that must run in the main task's context, where interface and route
- * teardown/rebuild is serialised against SANA I/O - needs its own channel.
- * This is what drives the reconfigure the SBTC_RECONFIG_* tags above report.
- *
- * The channel is a public, named Exec MsgPort owned by the main task.  A sender
- * (network prefs, an ARexx command, ...) FindPort()s it, PutMsg()es a
- * NetControlMsg with mn_ReplyPort set, and WaitPort()s the reply; ncm_Result
- * carries the outcome (0 == ok).
+ * The out-of-band control channel that drives the reconfigure reported by the
+ * SBTC_RECONFIG_* tags above (named MsgPort + NetControlMsg) lives in its own
+ * header, <bsdsocket/netcontrol.h> - it is NOT here because socketbasetags.h is
+ * pulled in by <netdb.h> for every networking program and must not force
+ * <exec/ports.h> (struct Message) on all of them.
  */
-#define AROSTCP_CTRLPORT_NAME   "AROSTCP.ctrl"
-
-/* ncm_Command */
-enum {
-    NCMD_NOP = 0,
-    NCMD_RELOAD,        /* reconfigure in place (stop services, reload config, start) */
-    NCMD_SHUTDOWN       /* orderly stack shutdown (equivalent to CTRL-C) */
-};
-
-struct NetControlMsg {
-    struct Message  ncm_Msg;        /* mn_ReplyPort must be set by the sender */
-    ULONG           ncm_Command;    /* NCMD_* */
-    LONG            ncm_Result;     /* filled by the stack before ReplyMsg (0 = ok) */
-};
 
 /* error code handling */
 #define SBTC_ERRNO		6

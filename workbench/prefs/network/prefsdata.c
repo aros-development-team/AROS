@@ -6,7 +6,8 @@
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <exec/ports.h>
-#include <bsdsocket/socketbasetags.h>   /* NetControlMsg / NCMD_* / AROSTCP_CTRLPORT_NAME */
+#include <bsdsocket/socketbasetags.h>
+#include <bsdsocket/netcontrol.h>
 #include <intuition/intuition.h>
 #include <stdlib.h>
 #include <string.h>
