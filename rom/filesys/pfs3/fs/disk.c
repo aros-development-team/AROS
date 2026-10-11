@@ -870,6 +870,8 @@ static ULONG WriteToFile(fileentry_t *file, UBYTE *buffer, ULONG size,
 				/* for one block no offset growing file */
 				slotnr = CachedRead(chnode->an.blocknr + anodeoffset, error, TRUE, g);
 			}
+			if (*error)
+				goto wtf_error;
 
 			/* copy data to cache and mark block as dirty */
 			firstblock = &g->dc.data[slotnr<<BLOCKSHIFT];
