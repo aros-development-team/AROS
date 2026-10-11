@@ -2401,6 +2401,7 @@ LONG ReadSoftLink(union objectinfo *linkfi, const char *prefix, char *buffer, UL
 	struct canode anode;
 	UBYTE *softblock;
 	ULONG rc;
+	ULONG linklen;
 	ULONG prefixlen;
 	ULONG postfixlen;
 	char *ptr = buffer;
@@ -2412,7 +2413,13 @@ LONG ReadSoftLink(union objectinfo *linkfi, const char *prefix, char *buffer, UL
 		return -1;
 	}
 
-	softblock = AllocVec(1024, 0);
+	linklen = linkfi->file.direntry->fsize;
+	if (linklen > BLOCKSIZE)
+	{
+		*error = ERROR_OBJECT_TOO_LARGE;
+		return -1;
+	}
+	softblock = AllocVec(BLOCKSIZE, 0);
 	if (!softblock) {
 		*error = ERROR_NO_FREE_STORE;
 		return -1;
@@ -2436,7 +2443,7 @@ LONG ReadSoftLink(union objectinfo *linkfi, const char *prefix, char *buffer, UL
 	}
 
 	/* If link destination is absolute, ignore prefix */
-	if (strchr(softblock, ':'))
+	if (memchr(softblock, ':', linklen))
 	{
 		prefixlen = 0;
 
@@ -2493,7 +2500,8 @@ LONG ReadSoftLink(union objectinfo *linkfi, const char *prefix, char *buffer, UL
 	ptr += prefixlen;
 	memcpy(ptr, softblock, linkfi->file.direntry->fsize);
 	ptr += linkfi->file.direntry->fsize;
-	memcpy(ptr, g->unparsed, postfixlen);
+	if (postfixlen)
+		memcpy(ptr, g->unparsed, postfixlen);
 	ptr += postfixlen;
 	*ptr = '\0';
 
@@ -2505,12 +2513,12 @@ LONG ReadSoftLink(union objectinfo *linkfi, const char *prefix, char *buffer, UL
 BOOL CreateSoftLink(union objectinfo *linkdir, STRPTR linkname, STRPTR softlink,
 					union objectinfo *newlink, SIPTR *error, globaldata * g)
 {
-	ULONG anodenr;
+	ULONG anodenr, write_error;
 	UBYTE entrybuffer[MAX_ENTRYSIZE];
 	struct direntry *de;
 	UBYTE *softblock = NULL;
 	struct canode anode;
-	size_t l;
+	size_t l, linklen;
 
 	ENTER("CreateSoftLink");
 #if DELDIR
@@ -2543,6 +2551,14 @@ BOOL CreateSoftLink(union objectinfo *linkdir, STRPTR linkname, STRPTR softlink,
 	if (l > FILENAMESIZE - 1)
 		linkname[FILENAMESIZE - 1] = 0x0;
 
+	/* A soft link occupies exactly one filesystem block. */
+	linklen = strlen(softlink);
+	if (linklen >= BLOCKSIZE)
+	{
+		*error = ERROR_LINE_TOO_LONG;
+		return DOSFALSE;
+	}
+
 	/* check reserved area lock */
 	if (ReservedAreaIsLocked)
 	{
@@ -2557,7 +2573,7 @@ BOOL CreateSoftLink(union objectinfo *linkdir, STRPTR linkname, STRPTR softlink,
 		return DOSFALSE;
 	}
 
-	softblock = AllocVec(1024, MEMF_CLEAR);
+	softblock = AllocVec(BLOCKSIZE, MEMF_CLEAR);
 	if (!softblock) {
 		*error = ERROR_NO_FREE_STORE;
 		return DOSFALSE;
@@ -2582,9 +2598,16 @@ BOOL CreateSoftLink(union objectinfo *linkdir, STRPTR linkname, STRPTR softlink,
 	}
 
 	GetAnode(&anode, de->anode, g);
-	strcpy(softblock, softlink);
-	DiskWrite(softblock, 1, anode.blocknr, g);
-	newlink->file.direntry->fsize = strlen(softblock);
+	memcpy(softblock, softlink, linklen);
+	if ((write_error = DiskWrite(softblock, 1, anode.blocknr, g)))
+	{
+		SIPTR rollback_error = 0;
+		DeleteObject(newlink, &rollback_error, g);
+		*error = write_error;
+		FreeVec(softblock);
+		return DOSFALSE;
+	}
+	newlink->file.direntry->fsize = linklen;
 	FreeVec(softblock);
 	return DOSTRUE;
 
