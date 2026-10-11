@@ -1439,7 +1439,16 @@ ULONG DiskWrite(UBYTE *buffer, ULONG blockstowrite, ULONG blocknr, globaldata *g
 	}
 	error = RawWrite(buffer, blockstowrite, blocknr, g);
 	if (error)
+	{
+		/* A partial write can leave clean cached copies stale. Keep dirty
+		 * copies: they still represent the last successfully buffered write. */
+		for (slotnr = 0; slotnr < g->dc.size; slotnr++)
+			if (!g->dc.ref[slotnr].dirty &&
+			    g->dc.ref[slotnr].blocknr >= blocknr &&
+			    g->dc.ref[slotnr].blocknr - blocknr < blockstowrite)
+				g->dc.ref[slotnr].blocknr = 0;
 		return error;
+	}
 	ValidateCache(blocknr, blockstowrite, write, g);
 
 	/* The write succeeded; caching the last block is optional. */
