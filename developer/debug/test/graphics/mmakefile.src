@@ -2,7 +2,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES := \
+FILES := screenppm \
     allocbitmap \
     alphascreen \
     areatest2 \

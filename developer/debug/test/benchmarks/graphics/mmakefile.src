@@ -1,8 +1,8 @@
-# Copyright (C) 2003, The AROS Development Team. All rights reserved.
+# Copyright (C) 2003-2026, The AROS Development Team. All rights reserved.
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES       := primitives pixelarray text gfxbench amigademo
+FILES       := primitives pixelarray text gfxbench amigademo layerhooks
 EXEDIR      := $(AROS_TESTS)/benchmarks/graphics
 NOWARN_FLAGS:= $(NOWARN_OLD_STYLE_DEFINITION)
 USER_CFLAGS := $(NOWARN_FLAGS)
@@ -10,9 +10,9 @@ USER_CFLAGS := $(NOWARN_FLAGS)
 #MM- test-benchmarks : test-benchmarks-graphics
 #MM- test-benchmarks-quick : test-benchmarks-graphics-quick
 
-#MM test-benchmarks-graphics : includes linklibs
+#MM test-benchmarks-graphics : includes linklibs workbench-libs-decorator-includes
 
 %build_progs mmake=test-benchmarks-graphics \
-    files=$(FILES) targetdir=$(EXEDIR)
+    files=$(FILES) targetdir=$(EXEDIR) uselibs="decorator"
 
 %common

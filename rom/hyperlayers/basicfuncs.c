@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Basic support functions for layers.library.
 */
@@ -26,7 +26,7 @@
 
 #define CLIPRECTS_OUTSIDE_OF_SHAPE 1
 
-#define SCROLLSIGN +
+
 
 /*
  *  Sections:
@@ -627,136 +627,152 @@ kprintf("%s: _cr: %d/%d-%d/%d!\n\n",
             LONG xSrc, xDest;
             LONG ySrc, yDest;
             struct BitMap * destbm;
-            
+
             if (IS_SUPERREFRESH(l))
-              destbm = l->SuperBitMap;
-            else
-              destbm = _cr->BitMap;
-            
-            /*
-             * Does the source rect have a bitmap (off screen)
-             * or is it on the screen.
-             */
-            if (oldcr->lobs && !IS_SUPERREFRESH(l))
             {
               /*
-               * Copy from hidden bitmap to hidden bitmap
+               * Superbitmap layer: the superbitmap is the only backing
+               * store. A part that was already hidden is in it; a part
+               * that was on screen is copied to where it belongs. The
+               * superbitmap coordinates are the rastport coordinates,
+               * and the layer shows the superbitmap from Scroll_X/Y.
                */
-              xSrc = (oldcr->bounds.MinX - _cr->bounds.MinX);
-              if (xSrc < 0)
+              if (NULL == oldcr->lobs)
               {
-                /*
-                 * oldcr is further to the left
-                 */
-                xSrc = -xSrc;
-                xDest = 0;
+                BltBitMap(l->rp->BitMap,
+                          intersect.MinX,
+                          intersect.MinY,
+                          l->SuperBitMap,
+                          intersect.MinX - l->bounds.MinX + l->Scroll_X,
+                          intersect.MinY - l->bounds.MinY + l->Scroll_Y,
+                          xSize,
+                          ySize,
+                          0x0c0,
+                          0xff,
+                          NULL);
               }
-              else
-              {
-                /*
-                 * oldcr is further to the right
-                 */
-                xDest = xSrc;
-                xSrc = 0;
-              }
-              
-              xSrc  += ALIGN_OFFSET(oldcr->bounds.MinX + srcdx);
-              xDest += ALIGN_OFFSET(_cr->bounds.MinX + destdx);
-              
-              ySrc = (oldcr->bounds.MinY - _cr->bounds.MinY);
-              if (ySrc < 0)
-              {
-                ySrc   = -ySrc;
-                yDest  = 0;
-              }
-              else
-              {
-                yDest = ySrc;
-                ySrc  = 0;
-              }
-//kprintf("Using old cr's BitMap!\n");
-              srcbm = oldcr->BitMap;
+              area -= (xSize * ySize);
             }
             else
             {
+
+              destbm = _cr->BitMap;
+
               /*
-               * Copy from screen.
+               * Does the source rect have a bitmap (off screen)
+               * or is it on the screen.
                */
-              if (oldcr->bounds.MinX > _cr->bounds.MinX)
+              if (oldcr->lobs)
               {
-                xSrc = oldcr->bounds.MinX;
-                if (IS_SUPERREFRESH(l))
-                  xDest = (oldcr->bounds.MinX - _cr->bounds.MinX) SCROLLSIGN l->Scroll_X;
+                /*
+                 * Copy from hidden bitmap to hidden bitmap
+                 */
+                xSrc = (oldcr->bounds.MinX - _cr->bounds.MinX);
+                if (xSrc < 0)
+                {
+                  /*
+                   * oldcr is further to the left
+                   */
+                  xSrc = -xSrc;
+                  xDest = 0;
+                }
                 else
+                {
+                  /*
+                   * oldcr is further to the right
+                   */
+                  xDest = xSrc;
+                  xSrc = 0;
+                }
+
+                xSrc  += ALIGN_OFFSET(oldcr->bounds.MinX + srcdx);
+                xDest += ALIGN_OFFSET(_cr->bounds.MinX + destdx);
+
+                ySrc = (oldcr->bounds.MinY - _cr->bounds.MinY);
+                if (ySrc < 0)
+                {
+                  ySrc   = -ySrc;
+                  yDest  = 0;
+                }
+                else
+                {
+                  yDest = ySrc;
+                  ySrc  = 0;
+                }
+  //kprintf("Using old cr's BitMap!\n");
+                srcbm = oldcr->BitMap;
+              }
+              else
+              {
+                /*
+                 * Copy from screen.
+                 */
+                if (oldcr->bounds.MinX > _cr->bounds.MinX)
+                {
+                  xSrc = oldcr->bounds.MinX;
                   xDest = (oldcr->bounds.MinX - _cr->bounds.MinX) + ALIGN_OFFSET((_cr->bounds.MinX + destdx));
-              }
-              else
-              {
-                xSrc = _cr->bounds.MinX;
-                if (IS_SUPERREFRESH(l))
-                  xDest = SCROLLSIGN l->Scroll_X;
+                }
                 else
+                {
+                  xSrc = _cr->bounds.MinX;
                   xDest = ALIGN_OFFSET((_cr->bounds.MinX + destdx));
+                }
+
+                if (oldcr->bounds.MinY > _cr->bounds.MinY)
+                {
+                  ySrc = oldcr->bounds.MinY;
+                  yDest = oldcr->bounds.MinY - _cr->bounds.MinY;
+                }
+                else
+                {
+                  ySrc = _cr->bounds.MinY;
+                  yDest = 0;
+                }
+
+                srcbm = l->rp->BitMap;
+  //kprintf("Using bitmap of screen!\n");
               }
-              
-              if (oldcr->bounds.MinY > _cr->bounds.MinY)
+
+              if (IS_SIMPLEREFRESH(l) &&
+                  NULL == _cr->BitMap &&
+                  TRUE == backupmode)
               {
-                ySrc = oldcr->bounds.MinY;
-                yDest = oldcr->bounds.MinY - _cr->bounds.MinY;
-                if (IS_SUPERREFRESH(l))
-                  yDest = yDest SCROLLSIGN l->Scroll_Y;
+                /*
+                 * Get a bitmap (if not there) and make a backup
+                 */
+                _cr->BitMap = AllocBitMap(
+                   _cr->bounds.MaxX - _cr->bounds.MinX + 1 + ALIGN_CLIPRECT,
+                   _cr->bounds.MaxY - _cr->bounds.MinY + 1,
+                   display_bm->Depth,
+                   BMF_CLEAR,
+                   display_bm);
+                destbm = _cr->BitMap;
               }
-              else
-              {
-                ySrc = _cr->bounds.MinY;
-                yDest = 0;
-                if (IS_SUPERREFRESH(l))
-                  yDest = yDest SCROLLSIGN l->Scroll_Y;
-              }
-              
-              srcbm = l->rp->BitMap;
-//kprintf("Using bitmap of screen!\n");
+
+              BltBitMap(srcbm,
+                        xSrc,
+                        ySrc,
+                        destbm,
+                        xDest,
+                        yDest,
+                        xSize,
+                        ySize,
+                        0x0c0,
+                        0xff,
+                        NULL);
+  #if 0
+  kprintf("%s: backing up: from %d/%d to %d/%d  width:%d, height: %d\n",
+          __FUNCTION__,
+          xSrc,
+          ySrc,
+          xDest,
+          yDest,
+          xSize,
+          ySize);
+  #endif
+
+              area -= (xSize * ySize);
             }
-
-            if (IS_SIMPLEREFRESH(l) &&
-                NULL == _cr->BitMap &&
-                TRUE == backupmode)
-            {
-              /*
-               * Get a bitmap (if not there) and make a backup
-               */
-              _cr->BitMap = AllocBitMap(
-                 _cr->bounds.MaxX - _cr->bounds.MinX + 1 + ALIGN_CLIPRECT,
-                 _cr->bounds.MaxY - _cr->bounds.MinY + 1,
-                 display_bm->Depth,
-                 BMF_CLEAR,
-                 display_bm);
-              destbm = _cr->BitMap;
-            }
-
-            BltBitMap(srcbm,
-                      xSrc,
-                      ySrc,
-                      destbm,
-                      xDest,
-                      yDest,
-                      xSize,
-                      ySize,
-                      0x0c0,
-                      0xff,
-                      NULL);
-#if 0
-kprintf("%s: backing up: from %d/%d to %d/%d  width:%d, height: %d\n",
-        __FUNCTION__,
-        xSrc,
-        ySrc,
-        xDest,
-        yDest,
-        xSize,
-        ySize);
-#endif
-
-            area -= (xSize * ySize);
             
           }
         }
@@ -882,17 +898,14 @@ kprintf("%s: _cr: %d/%d-%d/%d!\n",
               else
               {
                 /*
-                 * superbitmap layer
+                 * Superbitmap layer: the part is in the superbitmap at
+                 * its rastport coordinates; the layer shows the
+                 * superbitmap from Scroll_X/Y.
                  */
-                xSrc = (oldcr->bounds.MinX > _cr->bounds.MinX) ?
-                        oldcr->bounds.MinX - _cr->bounds.MinX SCROLLSIGN l->Scroll_X :
-                        _cr->bounds.MinX - oldcr->bounds.MinX SCROLLSIGN l->Scroll_X;
-                xDest = _cr->bounds.MinX;
-                
-                ySrc = (oldcr->bounds.MinY > _cr->bounds.MinY) ?
-                        oldcr->bounds.MinY - _cr->bounds.MinY SCROLLSIGN l->Scroll_Y :
-                        _cr->bounds.MinY - oldcr->bounds.MinY SCROLLSIGN l->Scroll_Y;
-                yDest = _cr->bounds.MinY;
+                xSrc  = intersect.MinX - l->bounds.MinX + l->Scroll_X;
+                ySrc  = intersect.MinY - l->bounds.MinY + l->Scroll_Y;
+                xDest = intersect.MinX;
+                yDest = intersect.MinY;
                 
               }
               
@@ -908,7 +921,7 @@ kprintf("\t\t%s: Show cliprect: %d/%d-%d/%d; blitting to %d/%d _cr->lobs: %d\n",
         _cr->lobs);
 #endif
 
-/* FIXME: Must have oldcr->BitMap also for SuperBitMap layers! */
+
 
               BltBitMap(srcbm,
                         xSrc,
@@ -1183,8 +1196,8 @@ kprintf("\t\tClearing background! %d/%d-%d/%d  bitmap: %p\n",
         if (IS_SUPERREFRESH(l))
         {
           BltBitMap(l->SuperBitMap,
-                    cr->bounds.MinX - l->bounds.MinX,
-                    cr->bounds.MinY - l->bounds.MinY,
+                    cr->bounds.MinX - l->bounds.MinX + l->Scroll_X,
+                    cr->bounds.MinY - l->bounds.MinY + l->Scroll_Y,
                     l->rp->BitMap,
                     cr->bounds.MinX,
                     cr->bounds.MinY,
@@ -1347,6 +1360,26 @@ kprintf("\t\t: %s Clearing rect : %d/%d-%d/%d  layer: %p, hook: %p, bitmap: %p\n
         l->BackFill,
         l->rp->BitMap);
 #endif
+     if (IS_SUPERREFRESH(l))
+     {
+       /*
+        * A superbitmap layer has no backfill: the newly exposed area
+        * shows the superbitmap (rastport coordinates, shown from
+        * Scroll_X/Y).
+        */
+       BltBitMap(l->SuperBitMap,
+                 RR->bounds.MinX - l->bounds.MinX + l->Scroll_X,
+                 RR->bounds.MinY - l->bounds.MinY + l->Scroll_Y,
+                 l->rp->BitMap,
+                 RR->bounds.MinX,
+                 RR->bounds.MinY,
+                 RR->bounds.MaxX - RR->bounds.MinX + 1,
+                 RR->bounds.MaxY - RR->bounds.MinY + 1,
+                 0x0c0,
+                 0xff,
+                 NULL);
+     }
+     else
      _CallLayerHook(l->BackFill,
                     l->rp,
                     l,
