@@ -1575,9 +1575,16 @@ retry:
 	while (blocks > 0)
 	{
 		transfer = min(blocks,maxtransfer);
-		*((UWORD *)&cmdbuf[0]) = write ? 0x2a00 : 0x2800;
-		*((ULONG *)&cmdbuf[2]) = blocknr;
-		*((ULONG *)&cmdbuf[6]) = transfer << 8;
+		cmdbuf[0] = write ? 0x2a : 0x28;
+		cmdbuf[1] = 0;
+		cmdbuf[2] = blocknr >> 24;
+		cmdbuf[3] = blocknr >> 16;
+		cmdbuf[4] = blocknr >> 8;
+		cmdbuf[5] = blocknr;
+		cmdbuf[6] = 0;
+		cmdbuf[7] = transfer >> 8;
+		cmdbuf[8] = transfer;
+		cmdbuf[9] = 0;
 		PROFILE_OFF();
 		if (!DoSCSICommand(buffer, transfer << BLOCKSHIFT, transfer << BLOCKSHIFT,
 			cmdbuf, 10, write ? SCSIF_WRITE : SCSIF_READ, g))
@@ -1998,9 +2005,7 @@ static BOOL testread_ds2(UBYTE *buffer, globaldata *g)
 
 		fillbuffer(buffer, 0xfe, g);
 
-		*((UWORD *)&cmdbuf[0]) = 0;
-		*((ULONG *)&cmdbuf[2]) = 0;
-		*((ULONG *)&cmdbuf[6]) = 0;
+		memset(cmdbuf, 0, sizeof(cmdbuf));
 		if (!DoSCSICommand(buffer, 0, 0, cmdbuf, 6, SCSIF_READ, g)) {
 #if DETECTDEBUG
 			DebugPutStr("DoSCSICommand TUR failed\n");
@@ -2009,7 +2014,7 @@ static BOOL testread_ds2(UBYTE *buffer, globaldata *g)
 		}
 
 		/* Read Capacity */
-		*((UWORD *)&cmdbuf[0]) = 0x2500;
+		cmdbuf[0] = 0x25;
 		if (!DoSCSICommand(buffer, sizeof(struct SCSICapacity), sizeof(struct SCSICapacity), cmdbuf, 10, SCSIF_READ, g)) {
 #if DETECTDEBUG
 			DebugPutStr("DoSCSICommand Read Capacity failed\n");
@@ -2034,9 +2039,13 @@ static BOOL testread_ds2(UBYTE *buffer, globaldata *g)
 		}
 		fillbuffer(buffer, cnt, g);
 		/* Read(10) */
-		*((UWORD *)&cmdbuf[0]) = 0x2800;
-		*((ULONG *)&cmdbuf[2]) = g->lastblock;
-		*((ULONG *)&cmdbuf[6]) = 1 << 8;
+		memset(cmdbuf, 0, sizeof(cmdbuf));
+		cmdbuf[0] = 0x28;
+		cmdbuf[2] = g->lastblock >> 24;
+		cmdbuf[3] = g->lastblock >> 16;
+		cmdbuf[4] = g->lastblock >> 8;
+		cmdbuf[5] = g->lastblock;
+		cmdbuf[8] = 1;
 		if (!DoSCSICommand(buffer, 1 << BLOCKSHIFT, 1 << BLOCKSHIFT, cmdbuf, 10, SCSIF_READ, g)) {
 #if DETECTDEBUG
 			DebugPutStr("DoSCSICommand Read(10) failed\n");
