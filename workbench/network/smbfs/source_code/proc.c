@@ -1546,7 +1546,10 @@ smb_decode_long_dirent (char *p, struct smb_dirent *finfo, int level)
 			}
 			#endif /* DEBUG */
 
-			result = p + WVAL (p, 0);
+			/* NextEntryOffset is 32 bits wide; smb_long_dirent_size()
+			 * validated the same field.
+			 */
+			result = p + DVAL (p, 0);
 
 			if (finfo != NULL)
 			{
@@ -2297,21 +2300,7 @@ smb_proc_reconnect (struct smb_server *server)
 
 		if ((result = smb_request_session (server)) < 0)
 		{
-			LOG (("smb_proc_connect: Failed to send SESSION REQUEST.\n"));
-			goto fail;
-		}
-
-		if (packet[0] != 0x82)
-		{
-			LOG (("smb_proc_connect: Did not receive positive response (err = %lx)\n",packet[0]));
-
-			#if DEBUG
-			{
-				smb_dump_packet (packet);
-			}
-			#endif /* DEBUG */
-
-			result = -EIO;
+			LOG (("smb_proc_connect: SESSION REQUEST failed.\n"));
 			goto fail;
 		}
 
@@ -2413,12 +2402,15 @@ smb_proc_reconnect (struct smb_server *server)
 				server->capabilities = CAP_RAW_MODE;
 		}
 
-		/* The legacy password algorithms consume exactly eight challenge bytes.
-		 * Check both the destination and the received data before copying.
+		/* The legacy password algorithms consume exactly eight challenge
+		 * bytes. A server negotiating extended security sends none at all
+		 * (key length 0); that is only a problem once a password has to be
+		 * encrypted with it, see below. Check both the destination and the
+		 * received data before copying.
 		 */
 		if (server->crypt_key_length > sizeof(server->crypt_key) ||
 		    server->crypt_key_length > SMB_BCC (packet) ||
-		    ((server->security_mode & NEGOTIATE_ENCRYPT_PASSWORDS) &&
+		    (server->crypt_key_length != 0 &&
 		     server->crypt_key_length != sizeof(server->crypt_key)))
 		{
 			result = -EIO;
@@ -2433,6 +2425,17 @@ smb_proc_reconnect (struct smb_server *server)
 		if(server->security_mode & NEGOTIATE_ENCRYPT_PASSWORDS)
 		{
 			SHOWMSG("encrypted passwords required");
+
+			/* Without a challenge only the empty (guest/share level)
+			 * password can be offered; anything else cannot be encrypted.
+			 */
+			if(server->crypt_key_length == 0 && server->mount_data.password[0] != '\0')
+			{
+				LOG (("smb_proc_connect: server sent no password challenge\n"));
+
+				result = -EACCES;
+				goto fail;
+			}
 
 			memset(password,0,sizeof(password));
 			strlcpy(password,server->mount_data.password,sizeof(password));

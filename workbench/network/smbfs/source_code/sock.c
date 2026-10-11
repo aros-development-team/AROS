@@ -79,7 +79,7 @@ smb_receive_raw (const struct smb_server *server, int sock_fd, unsigned char *ta
 {
 	int len, result;
 	int already_read;
-	unsigned char netbios_session_buf[256];
+	unsigned char netbios_session_buf[4];
 	int netbios_session_payload_size;
 
  re_recv:
@@ -218,23 +218,35 @@ smb_valid_trans2_response (const byte *packet, int payload_length)
 }
 
 /* Count unique bytes, since retransmitted or overlapping fragments do not
- * fill gaps in a transaction response.
+ * fill gaps in a transaction response. Coverage is tracked in a bitmap
+ * which is marked and counted one map byte (eight payload bytes) at a time.
  */
+static const byte smb_nibble_bits[16] = { 0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4 };
+
+#define SMB_BYTE_BITS(b) (smb_nibble_bits[(b) & 15] + smb_nibble_bits[((b) >> 4) & 15])
+
 static int
 smb_mark_trans2_bytes (byte *covered, int offset, int count)
 {
-	int i, added = 0;
+	int end = offset + count;
+	int added = 0;
 
-	for (i = 0; i < count; i++)
+	while (offset < end)
 	{
-		int position = offset + i;
-		byte mask = 1 << (position & 7);
+		int first = offset & 7;
+		int last = end - (offset - first);
+		byte old = covered[offset >> 3];
+		byte mask;
 
-		if ((covered[position >> 3] & mask) == 0)
-		{
-			covered[position >> 3] |= mask;
-			added++;
-		}
+		if (last > 8)
+			last = 8;
+
+		/* Bits first..last-1 of this map byte lie inside the fragment. */
+		mask = (byte)(((1 << last) - 1) & ~((1 << first) - 1));
+
+		covered[offset >> 3] = old | mask;
+		added += SMB_BYTE_BITS (mask & ~old);
+		offset += last - first;
 	}
 
 	return added;
@@ -245,9 +257,11 @@ smb_count_trans2_bytes (const byte *covered, int length)
 {
 	int i, count = 0;
 
-	for (i = 0; i < length; i++)
-		if (covered[i >> 3] & (1 << (i & 7)))
-			count++;
+	for (i = 0; i + 8 <= length; i += 8)
+		count += SMB_BYTE_BITS (covered[i >> 3]);
+
+	if (i < length)
+		count += SMB_BYTE_BITS (covered[i >> 3] & ((1 << (length - i)) - 1));
 
 	return count;
 }
@@ -266,6 +280,16 @@ smb_receive (struct smb_server *server, int sock_fd)
 	if (result < 0)
 	{
 		LOG (("smb_receive: receive error: %ld\n", result));
+		goto out;
+	}
+
+	/* Even an error reply carries the complete SMB header plus the word
+	 * and byte counts; the status fields below and every caller rely on it.
+	 */
+	if (result < SMB_HEADER_LEN - 4 + 2)
+	{
+		LOG (("smb_receive: reply too short (%ld bytes)\n", result));
+		result = -EIO;
 		goto out;
 	}
 
@@ -290,6 +314,8 @@ smb_receive_trans2 (struct smb_server *server, int sock_fd, int *data_len, int *
 	int result;
 	byte *data_covered = NULL;
 	byte *param_covered = NULL;
+	int data_high = 0;	/* end of the highest covered byte */
+	int param_high = 0;
 
 	LOG (("smb_receive_trans2: enter\n"));
 
@@ -299,11 +325,6 @@ smb_receive_trans2 (struct smb_server *server, int sock_fd, int *data_len, int *
 	result = smb_receive (server, sock_fd);
 	if (result < 0)
 		goto fail;
-	if (result < 9)
-	{
-		result = -EIO;
-		goto fail;
-	}
 
 	if (server->rcls != 0)
 		goto fail;
@@ -401,8 +422,12 @@ smb_receive_trans2 (struct smb_server *server, int sock_fd, int *data_len, int *
 			memcpy ((*param) + WVAL (inbuf, smb_prdisp), smb_base (inbuf) + WVAL (inbuf, smb_proff), WVAL (inbuf, smb_prcnt));
 
 		if (param_covered != NULL)
+		{
 			(*param_len) += smb_mark_trans2_bytes (param_covered,
 				WVAL (inbuf, smb_prdisp), WVAL (inbuf, smb_prcnt));
+			if (WVAL (inbuf, smb_prdisp) + WVAL (inbuf, smb_prcnt) > param_high)
+				param_high = WVAL (inbuf, smb_prdisp) + WVAL (inbuf, smb_prcnt);
+		}
 		else
 			(*param_len) += WVAL (inbuf, smb_prcnt);
 
@@ -417,8 +442,12 @@ smb_receive_trans2 (struct smb_server *server, int sock_fd, int *data_len, int *
 			memcpy ((*data) + WVAL (inbuf, smb_drdisp), smb_base (inbuf) + WVAL (inbuf, smb_droff), WVAL (inbuf, smb_drcnt));
 
 		if (data_covered != NULL)
+		{
 			(*data_len) += smb_mark_trans2_bytes (data_covered,
 				WVAL (inbuf, smb_drdisp), WVAL (inbuf, smb_drcnt));
+			if (WVAL (inbuf, smb_drdisp) + WVAL (inbuf, smb_drcnt) > data_high)
+				data_high = WVAL (inbuf, smb_drdisp) + WVAL (inbuf, smb_drcnt);
+		}
 		else
 			(*data_len) += WVAL (inbuf, smb_drcnt);
 
@@ -432,10 +461,17 @@ smb_receive_trans2 (struct smb_server *server, int sock_fd, int *data_len, int *
 			goto fail;
 		}
 
-		if (data_covered != NULL && WVAL (inbuf, smb_tdrcnt) < total_data)
+		/* A shrink only changes the count if it cuts into covered bytes. */
+		if (data_covered != NULL && WVAL (inbuf, smb_tdrcnt) < data_high)
+		{
 			(*data_len) = smb_count_trans2_bytes (data_covered, WVAL (inbuf, smb_tdrcnt));
-		if (param_covered != NULL && WVAL (inbuf, smb_tprcnt) < total_param)
+			data_high = WVAL (inbuf, smb_tdrcnt);
+		}
+		if (param_covered != NULL && WVAL (inbuf, smb_tprcnt) < param_high)
+		{
 			(*param_len) = smb_count_trans2_bytes (param_covered, WVAL (inbuf, smb_tprcnt));
+			param_high = WVAL (inbuf, smb_tprcnt);
+		}
 		total_data = WVAL (inbuf, smb_tdrcnt);
 		total_param = WVAL (inbuf, smb_tprcnt);
 		if ((*data_len) > total_data)
@@ -448,11 +484,6 @@ smb_receive_trans2 (struct smb_server *server, int sock_fd, int *data_len, int *
 		result = smb_receive (server, sock_fd);
 		if (result < 0)
 			goto fail;
-		if (result < 9)
-		{
-			result = -EIO;
-			goto fail;
-		}
 
 		if (server->rcls != 0)
 		{
@@ -575,11 +606,11 @@ smb_request_session (struct smb_server *server)
 
 	if (reply[0] != 0x82 || reply[1] != 0 || smb_len(reply) != 0)
 	{
+		LOG (("smb_request_session: unexpected session reply 0x%02lx\n", reply[0]));
 		result = -EIO;
 		goto out;
 	}
 
-	memcpy(packet,reply,sizeof(reply));
 	result = 0;
 
  out:

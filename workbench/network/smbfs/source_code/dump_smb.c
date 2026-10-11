@@ -31,10 +31,27 @@
 #include "dump_smb.h"
 #include "quad_math.h"
 
-/* Filesystem handlers have no useful Output() stream on AROS. */
+/* Filesystem handlers have no useful Output() stream on AROS, so the dump
+ * goes to the debug log. The format strings in this file follow the
+ * RawDoFmt() conventions ("%ld" consumes a 32-bit argument), which the C
+ * style kprintf() does not share - format them with RawDoFmt() itself.
+ */
 #if defined(__AROS__)
+#include <exec/rawfmt.h>
+#include <clib/alib_protos.h>
+
+static VOID
+dump_printf(const char *format, ...)
+{
+	CONST_STRPTR fmt = (CONST_STRPTR)format;
+
+	AROS_SLOWSTACKFORMAT_PRE_USING(format, fmt);
+	RawDoFmt(fmt, AROS_SLOWSTACKFORMAT_ARG(fmt), RAWFMTFUNC_SERIAL, NULL);
+	AROS_SLOWSTACKFORMAT_POST(fmt);
+}
+
 #undef Printf
-#define Printf kprintf
+#define Printf dump_printf
 #endif
 
 /*****************************************************************************/
@@ -913,7 +930,7 @@ print_smb_transaction2_subcommand(int command,enum smb_packet_source_t smb_packe
 				Printf("\t                   %s\n",convert_filetime_to_string(last_access_time));
 				Printf("\tlast change time = 0x%08lx%08lx\n",last_change_time[0],last_change_time[1]);
 				Printf("\t                   %s\n",convert_filetime_to_string(last_change_time));
-				Printf("\tend of file = %ls (0x%08lx%08lx)\n",convert_qword_to_string(end_of_file),end_of_file[0],end_of_file[1]);
+				Printf("\tend of file = %s (0x%08lx%08lx)\n",convert_qword_to_string(end_of_file),end_of_file[0],end_of_file[1]);
 				Printf("\tallocation size = %s (0x%08lx%08lx)\n",convert_qword_to_string(allocation_size),allocation_size[0],allocation_size[1]);
 
 				Printf("\text file attributes = 0x%08lx\n",ext_file_attributes);

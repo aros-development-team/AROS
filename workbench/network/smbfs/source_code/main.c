@@ -80,6 +80,11 @@ CONST TEXT HandlerName[] = "smb-handler";
 #define UNIX_TIME_OFFSET 252460800
 #define MAX_FILENAME_LEN 256
 
+/* DOS rebuilds volume paths from fib_FileName, so a volume label
+ * must fit in there (counted string: size - 1 characters).
+ */
+#define FIB_NAME_SIZE sizeof(((struct FileInfoBlock *)0)->fib_FileName)
+
 /****************************************************************************/
 
 #define SMB_ROOT_DIR_NAME	"\\"
@@ -1517,7 +1522,8 @@ MapErrnoToIoErr(int error)
 /****************************************************************************/
 
 /* Translate a BCPL style file name (i.e. length is in the first byte)
- * via a mapping table.
+ * via a mapping table. FileInfoBlock names are counted even on fast-BSTR
+ * systems, see ConvertCString().
  */
 INLINE STATIC VOID
 TranslateBName(UBYTE * name,UBYTE * map)
@@ -1525,12 +1531,8 @@ TranslateBName(UBYTE * name,UBYTE * map)
 	LONG len;
 	UBYTE c;
 
-#if !defined(N__AROS__)
 	len = (*name++);
-#else
-		len = AROS_BSTR_strlen(name);
-		name = AROS_BSTR_ADDR(name);
-#endif
+
 	while(len-- > 0)
 	{
 		c = (*name);
@@ -2082,11 +2084,11 @@ AddVolume(
 	}
 
 	/* DOS reconstructs volume paths from the root FileInfoBlock name. */
-	if(actual_volume_name_len >= sizeof(((struct FileInfoBlock *)0)->fib_FileName))
+	if(actual_volume_name_len >= FIB_NAME_SIZE)
 	{
 		UnLockDosList(LDF_WRITE|LDF_VOLUMES|LDF_DEVICES);
 		ReportError("Volume name must be at most %ld characters.",
-			(long)(sizeof(((struct FileInfoBlock *)0)->fib_FileName)-1));
+			(long)(FIB_NAME_SIZE-1));
 		goto out;
 	}
 
@@ -5637,7 +5639,7 @@ Action_RenameDisk(
 	LONG error = OK;
 	STRPTR old_name;
 	STRPTR new_name;
-	UBYTE * name;
+	UBYTE name[FIB_NAME_SIZE];
 	LONG len;
 
 	ENTER();
@@ -5654,41 +5656,39 @@ Action_RenameDisk(
 		goto out;
 	}
 
-	/* Relabel supplies a C string on fast-BSTR AROS and a counted
-	 * string on classic systems. Match the DosList name representation.
+	/* The new label arrives in the DOS packet name format; it has to
+	 * fit the root FileInfoBlock name like any other volume name.
 	 */
-	name = bcpl_name;
-
-#if defined(__AROS__) && defined(AROS_FAST_BSTR)
-	for(len = 0; len < sizeof(((struct FileInfoBlock *)0)->fib_FileName) &&
-	    name[len] != '\0'; len++)
-		;
-#else
-	len = name[0];
-#endif
-	if(len >= sizeof(((struct FileInfoBlock *)0)->fib_FileName))
+	if(!ConvertBString(sizeof(name),name,bcpl_name))
 	{
 		error = ERROR_INVALID_COMPONENT_NAME;
 		goto out;
 	}
 
-#if defined(__AROS__) && defined(AROS_FAST_BSTR)
+	len = strlen(name);
+
+	/* Match the DosList name representation: a C string on fast-BSTR
+	 * systems, a NUL terminated counted string elsewhere.
+	 */
+#if defined(AROS_FAST_BSTR)
 	new_name = AllocVec(len+1,MEMF_ANY|MEMF_PUBLIC);
-#else
-	new_name = AllocVec(1+len+1,MEMF_ANY|MEMF_PUBLIC);
-#endif
 	if(new_name == NULL)
 	{
 		error = ERROR_NO_FREE_STORE;
 		goto out;
 	}
 
-#if defined(__AROS__) && defined(AROS_FAST_BSTR)
 	memcpy(new_name,name,len+1);
 #else
+	new_name = AllocVec(1+len+1,MEMF_ANY|MEMF_PUBLIC);
+	if(new_name == NULL)
+	{
+		error = ERROR_NO_FREE_STORE;
+		goto out;
+	}
+
 	new_name[0] = len;
-	memcpy(&new_name[1],&name[1],len);
-	new_name[len+1] = '\0';
+	memcpy(&new_name[1],name,len+1);
 #endif
 
 	Forbid();
