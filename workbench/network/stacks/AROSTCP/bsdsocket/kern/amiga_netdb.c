@@ -766,7 +766,7 @@ addifent(struct NetDataBase *ndb,
                 if(ssc->args->a_ip) {
                     if(!ssc->args->a_up) {
                         DIFCONF(Printf("> No auto-online\n");)
-                        ifp->if_flags |= IFF_NOUP;
+                        ((struct sana_softc *)ifp)->ss_cflags |= SSF_NOUP;
                     }
                     DIFCONF(Printf("> IP address: %s\n", ssc->args->a_ip);)
                     if(stricmp(ssc->args->a_ip, "DHCP") == 0) {
@@ -776,7 +776,7 @@ addifent(struct NetDataBase *ndb,
                             if(api_state == API_SHOWN)
                                 run_dhclient(ifp);
                             else
-                                ifp->if_flags |= IFF_DELAYUP;
+                                ((struct sana_softc *)ifp)->ss_cflags |= SSF_DELAYUP;
                         }
                     } else if(stricmp(ssc->args->a_ip, "AUTO") == 0) {
                         /* Automatic: use IPv4LL (RFC 3927) to assign 169.254.x.x */
@@ -786,7 +786,7 @@ addifent(struct NetDataBase *ndb,
                             if(api_state == API_SHOWN)
                                 autoip_start(ifp);
                             else
-                                ifp->if_flags |= IFF_DELAYUP;
+                                ((struct sana_softc *)ifp)->ss_cflags |= SSF_DELAYUP;
                         }
                     } else {
                         ifp->if_data.ifi_aros_usedhcp = 0;
@@ -823,7 +823,7 @@ addifent(struct NetDataBase *ndb,
                         if(api_state == API_SHOWN)
                             run_dhclient6(ifp);
                         else
-                            ifp->if_flags |= IFF_DELAYUP;
+                            ((struct sana_softc *)ifp)->ss_cflags |= SSF_DELAYUP;
                     }
 #endif
                 } else {

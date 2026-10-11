@@ -141,12 +141,15 @@ struct sana_softc {
 #define SSF_TRACK (1<<0)	      /* Should we track packets? */
 #define SSB_TRACK 0
 
+/*
+ * Set while the interface is being configured. They are not in if_flags:
+ * every bit there has a meaning of its own (0x8000 is IFF_MULTICAST).
+ */
+#define SSF_NOUP    (1<<1)	      /* do not put online with the address */
+#define SSF_DELAYUP (1<<2)	      /* configure once the API is shown */
+
 /* Default configuration flags */
 #define SS_CFLAGS (SSF_TRACK)
-
-/* Private Interface Config flags */
-#define IFF_NOUP     0x8000
-#define IFF_DELAYUP  0x4000
 
 /*
  * Global functions defined in if_sana.c

@@ -585,6 +585,23 @@ arpresolve(register struct sana_softc *ssc,
         return 1;
     }
 
+    /*
+     * A group has no ARP entry: RFC 1112 section 6.4 gives its Ethernet
+     * address, 01:00:5e and the low 23 bits of the group.
+     */
+    if(ssc->ss_hwtype == S2WireType_Ethernet &&
+            IN_MULTICAST(ntohl(destip->s_addr))) {
+        u_long group = ntohl(destip->s_addr);
+
+        desten[0] = 0x01;
+        desten[1] = 0x00;
+        desten[2] = 0x5e;
+        desten[3] = (group >> 16) & 0x7f;
+        desten[4] = (group >> 8) & 0xff;
+        desten[5] = group & 0xff;
+        return 1;
+    }
+
     /* if for us, use software loopback driver if up */
     for(register struct in_ifaddr *ia = in_ifaddr; ia; ia = ia->ia_next)
         if((ia->ia_ifp == &ssc->ss_if) &&
