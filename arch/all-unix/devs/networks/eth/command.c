@@ -244,14 +244,16 @@ static BOOL eth_get_global_stats(struct IOSana2Req *req, struct eth_unit *unit) 
  * task passes on only frames for those: the list is the filter a network
  * card would be programmed with. */
 static struct eth_mcast *eth_find_mcast(struct eth_unit *unit, UBYTE *addr) {
-    struct eth_mcast *mcast;
+    struct eth_mcast *mcast, *found = NULL;
 
     ForeachNode(&(unit->mcasts), mcast) {
-        if (memcmp(mcast->addr, addr, sizeof(mcast->addr)) == 0)
-            return mcast;
+        if (memcmp(mcast->addr, addr, sizeof(mcast->addr)) == 0) {
+            found = mcast;
+            break;
+        }
     }
 
-    return NULL;
+    return found;
 }
 
 static BOOL eth_add_mcast(struct IOSana2Req *req, struct eth_unit *unit) {
