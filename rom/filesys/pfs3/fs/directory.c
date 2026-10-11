@@ -1016,6 +1016,7 @@ static void FillFib(struct direntry *direntry, struct FileInfoBlock *fib, global
 {
 	struct extrafields extrafields;
 	UBYTE *comment;
+	size_t available, name_len, comment_len;
 	FSIZE size;
 	
 	/* directories have no size (their fsize field is not a size) */
@@ -1029,12 +1030,27 @@ static void FillFib(struct direntry *direntry, struct FileInfoBlock *fib, global
 	fib->fib_Date.ds_Days = direntry->creationday;
 	fib->fib_Date.ds_Minute = direntry->creationminute;
 	fib->fib_Date.ds_Tick = direntry->creationtick;
-	strncpy(fib->fib_FileName, (UBYTE *)&direntry->nlength, direntry->nlength + 1);
-	fib->fib_FileName[direntry->nlength + 1] = 0;
+	/* Counted DOS strings may fill their fields without a spare terminator. */
+	available = direntry->next > offsetof(struct direntry, startofname) ?
+		direntry->next - offsetof(struct direntry, startofname) : 0;
+	name_len = min(direntry->nlength, available);
+	name_len = min(name_len, sizeof(fib->fib_FileName) - 1);
+	fib->fib_FileName[0] = name_len;
+	memcpy(&fib->fib_FileName[1], &direntry->startofname, name_len);
+	if (name_len + 1 < sizeof(fib->fib_FileName))
+		fib->fib_FileName[name_len + 1] = 0;
 
-	comment = (UBYTE *)&direntry->startofname + direntry->nlength;
-	strncpy(fib->fib_Comment, comment, min(*comment + 1, CMSIZE));
-	fib->fib_Comment[*comment + 1] = 0;
+	comment_len = 0;
+	if (direntry->nlength < available)
+	{
+		comment = (UBYTE *)&direntry->startofname + direntry->nlength;
+		comment_len = min(*comment, available - direntry->nlength - 1);
+		comment_len = min(comment_len, sizeof(fib->fib_Comment) - 1);
+		memcpy(&fib->fib_Comment[1], comment + 1, comment_len);
+	}
+	fib->fib_Comment[0] = comment_len;
+	if (comment_len + 1 < sizeof(fib->fib_Comment))
+		fib->fib_Comment[comment_len + 1] = 0;
 
 	if (g->dirextension)
 	{
