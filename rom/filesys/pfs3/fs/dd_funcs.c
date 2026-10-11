@@ -1087,7 +1087,11 @@ static SIPTR dd_WriteProtect(struct DosPacket *pkt, globaldata * g)
 	{
 		if (g->softprotect)     /* already protected */
 			return DOSFALSE;
-		UpdateDisk(g);
+		if (g->dirty && !UpdateDisk(g))
+		{
+			pkt->dp_Res2 = g->softprotect ? ERROR_DISK_WRITE_PROTECTED : ERROR_NOT_A_DOS_DISK;
+			return DOSFALSE;
+		}
 		/* updatedisk can cause a softprotect, so check again */
 		if (!g->softprotect)
 		{
