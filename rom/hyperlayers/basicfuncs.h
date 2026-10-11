@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Basic support functions for layers.library.
 */
@@ -135,6 +135,7 @@ int _CopyClipRectsToClipRects(struct Layer * l,
                               int backupmode,
                               int freelist,
                               int addtodamagelist,
+                              int fresh,
 			      struct LayersBase *LayersBase);
 void UninstallClipRegionClipRects(struct Layer_Info * LI);
 void InstallClipRegionClipRects(struct Layer_Info * LI);

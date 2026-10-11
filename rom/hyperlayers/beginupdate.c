@@ -126,6 +126,7 @@
                                 FALSE,
                                 FALSE,
                                 FALSE,
+                                TRUE,
                                 LayersBase);
 
   }

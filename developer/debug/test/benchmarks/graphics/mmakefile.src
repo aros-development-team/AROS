@@ -2,7 +2,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES       := primitives pixelarray text gfxbench amigademo layerhooks
+FILES       := primitives pixelarray text gfxbench amigademo layerhooks layerops
 EXEDIR      := $(AROS_TESTS)/benchmarks/graphics
 NOWARN_FLAGS:= $(NOWARN_OLD_STYLE_DEFINITION)
 USER_CFLAGS := $(NOWARN_FLAGS)

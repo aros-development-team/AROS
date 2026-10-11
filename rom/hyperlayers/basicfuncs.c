@@ -430,11 +430,17 @@ struct ClipRect * _CreateClipRectsFromRegion(struct Region *r,
 
       if (TRUE == invisible && IS_SMARTREFRESH(l))
       {
+        /*
+         * Not cleared: _CopyClipRectsToClipRects() fills it from the
+         * previous ClipRects and clears only what they do not cover.
+         * Clearing here cost more than everything else a layer
+         * operation does.
+         */
         cr->BitMap = AllocBitMap(
                    cr->bounds.MaxX - cr->bounds.MinX + 1 + ALIGN_CLIPRECT,
                    cr->bounds.MaxY - cr->bounds.MinY + 1,
                    display_bm->Depth,
-                   BMF_CLEAR,
+                   0,
                    display_bm);
       }
 
@@ -491,10 +497,95 @@ int _CopyClipRectsToClipRects(struct Layer * l,
                               int backupmode,
                               int freelist,
                               int addtodamagelist,
+                              int fresh,
                               struct LayersBase *LayersBase)
 {
   struct BitMap * display_bm = l->rp->BitMap;
-  
+
+  /*
+   * New backing bitmaps are allocated uncleared. Normally the old
+   * ClipRects tile the whole layer and fill them completely below. The
+   * parts they do not cover (the layer grew while covered) are
+   * backfilled into the backing bitmap, as AmigaOS does: the hook is
+   * called with the ClipRect's bitmap in the RastPort, the bounds in
+   * bitmap coordinates and the offsets in layer coordinates. Only for
+   * freshly created lists: when copying back into an existing list
+   * (EndUpdate, clip region removal) the destination already holds
+   * valid content outside the source.
+   */
+  if (fresh && IS_SMARTREFRESH(l))
+  {
+    struct ClipRect * _cr;
+
+    for (_cr = newcr; NULL != _cr; _cr = _cr->Next)
+    {
+      struct ClipRect * ocr;
+      struct Region * uncovered;
+      struct RegionRectangle * rr;
+      int covered = 0, area;
+
+      if (NULL == _cr->lobs || NULL == _cr->BitMap)
+        continue;
+
+      area = RECTAREA(&_cr->bounds);
+      for (ocr = oldcr; NULL != ocr && covered < area; ocr = ocr->Next)
+      {
+        struct Rectangle is;
+
+        if (AndRectRect(&_cr->bounds, &ocr->bounds, &is))
+          covered += RECTAREA(&is);
+      }
+      if (covered >= area)
+        continue;
+
+      if (l->BackFill == LAYERS_NOBACKFILL || NULL == (uncovered = NewRegion()))
+      {
+        /* nothing will paint it: at least do not show stale memory */
+        BltBitMap(_cr->BitMap, 0, 0, _cr->BitMap, 0, 0,
+                  _cr->bounds.MaxX - _cr->bounds.MinX + 1 + ALIGN_CLIPRECT,
+                  _cr->bounds.MaxY - _cr->bounds.MinY + 1,
+                  0x000, 0xff, NULL);
+        continue;
+      }
+
+      OrRectRegion(uncovered, &_cr->bounds);
+      for (ocr = oldcr; NULL != ocr; ocr = ocr->Next)
+      {
+        struct Rectangle is;
+
+        if (AndRectRect(&_cr->bounds, &ocr->bounds, &is))
+          ClearRectRegion(uncovered, &is);
+      }
+
+      for (rr = uncovered->RegionRectangle; NULL != rr; rr = rr->Next)
+      {
+        struct Rectangle screenrect, bmrect;
+        struct BitMap * bm = l->rp->BitMap;
+
+        screenrect.MinX = rr->bounds.MinX + uncovered->bounds.MinX;
+        screenrect.MinY = rr->bounds.MinY + uncovered->bounds.MinY;
+        screenrect.MaxX = rr->bounds.MaxX + uncovered->bounds.MinX;
+        screenrect.MaxY = rr->bounds.MaxY + uncovered->bounds.MinY;
+
+        bmrect.MinX = screenrect.MinX - _cr->bounds.MinX + ALIGN_OFFSET(_cr->bounds.MinX + destdx);
+        bmrect.MinY = screenrect.MinY - _cr->bounds.MinY;
+        bmrect.MaxX = screenrect.MaxX - _cr->bounds.MinX + ALIGN_OFFSET(_cr->bounds.MinX + destdx);
+        bmrect.MaxY = screenrect.MaxY - _cr->bounds.MinY;
+
+        l->rp->BitMap = _cr->BitMap;
+        _CallLayerHook(l->BackFill,
+                       l->rp,
+                       l,
+                       &bmrect,
+                       screenrect.MinX - l->bounds.MinX + l->Scroll_X,
+                       screenrect.MinY - l->bounds.MinY + l->Scroll_Y,
+                       LayersBase);
+        l->rp->BitMap = bm;
+      }
+      DisposeRegion(uncovered);
+    }
+  }
+
   while (NULL != oldcr)
   {
     struct ClipRect * _cr = newcr;
@@ -1063,6 +1154,7 @@ int _BackupPartsOfLayer(struct Layer * l,
                                    backupsimplerefresh,
                                    TRUE,
                                    TRUE,
+                                   TRUE,
                                    LayersBase);
 
           l->ClipRect = newcr;
@@ -1127,6 +1219,7 @@ int _ShowPartsOfLayer(struct Layer * l,
                                 FALSE,
                                 TRUE,
                                 FALSE,
+                                TRUE,
                                 LayersBase);
 
 
@@ -1431,6 +1524,7 @@ struct Region *_InternalInstallClipRegion(struct Layer *l, struct Region *region
                                     FALSE,
                                     TRUE,
                                     FALSE,
+                                    FALSE,
                                     LayersBase);
         else
           _FreeClipRectListBM(l, l->ClipRect, LayersBase);
@@ -1475,6 +1569,7 @@ struct Region *_InternalInstallClipRegion(struct Layer *l, struct Region *region
                                 destdx,
                                 FALSE,
                                 FALSE,
+                                TRUE,
                                 TRUE,
                                 LayersBase); /* stegerg: should be FALSE. but that does not work??? */
 
