@@ -76,7 +76,7 @@ static ULONG bitmap_render(APTR bitmap_rd, WORD srcx, WORD srcy,
         minterm - How to copy. See BltBitMap() for an explanation.
 
     RESULT
-        TRUE.
+        None.
 
     NOTES
         If special hardware is available, this function will use it.
@@ -87,12 +87,6 @@ static ULONG bitmap_render(APTR bitmap_rd, WORD srcx, WORD srcy,
 
     SEE ALSO
         ClipBlit()
-
-    INPUTS
-
-    RESULT
-
-    NOTES
 
     INTERNALS
 
