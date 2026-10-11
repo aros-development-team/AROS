@@ -263,14 +263,12 @@ BOOL UpdateDisk (globaldata *g)
 
 		/* update root (MUST be done last) */
 	update_root:
-		if (updateok)
+		if (updateok &&
+		    !WriteRootBlocks((UBYTE *)volume->rootblk, volume->rootblk->rblkcluster, ROOTBLOCK, g) &&
+		    !UpdateAndMotorOff(g))
 		{
-			WriteRootBlocks((UBYTE *)volume->rootblk, volume->rootblk->rblkcluster, ROOTBLOCK, g);
 			volume->rootblk->datestamp++;
 			volume->rootblockchangeflag = FALSE;
-
-			/* make sure update is really done */
-			UpdateAndMotorOff(g);
 			success = TRUE;
 		}
 		else

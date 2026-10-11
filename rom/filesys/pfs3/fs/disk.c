@@ -2263,14 +2263,16 @@ BOOL detectaccessmode(UBYTE *buffer, globaldata *g)
 
 /*************************************************************************/
 
-void UpdateAndMotorOff(globaldata *g)
+ULONG UpdateAndMotorOff(globaldata *g)
 {
 	struct IOExtTD *request = g->request;
+	ULONG error;
 
 	request->iotd_Req.io_Command = CMD_UPDATE;
-	DoIO((struct IORequest *)request);
+	error = DoIO((struct IORequest *)request);
 
 	request->iotd_Req.io_Command = TD_MOTOR;
 	request->iotd_Req.io_Length  = 0;
 	DoIO((struct IORequest*)request);
+	return error;
 }
