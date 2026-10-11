@@ -56,7 +56,6 @@ struct btmidi_binding *btmidi_force_binding(struct BTMidiBase *base,
     struct BtEndpoint *endpoint;
     STRPTR device_name = NULL;
     IPTR handle = 0;
-    LONG port;
 
     if (!(bluetooth = OpenLibrary((CONST_STRPTR)"bluetooth.library", 45)))
         return NULL;
@@ -67,6 +66,7 @@ struct btmidi_binding *btmidi_force_binding(struct BTMidiBase *base,
         (binding = AllocVec(sizeof(*binding), MEMF_PUBLIC | MEMF_CLEAR))) {
         struct Task *task;
         UBYTE task_name[48];
+        LONG port;
 
         btGetAttrs(BGA_DEVICE, device, BDA_Name, &device_name, TAG_END);
         btGetAttrs(BGA_ENDPOINT, endpoint, BEA_Handle, &handle, TAG_END);

@@ -83,7 +83,8 @@ static void show_ports(struct btmidi_gui *gui, struct BTMidiBase *base)
                        (STRPTR)"%s" BTMIDI_DRIVER_NAME ".%lu  %s%s",
                        (IPTR)(out == text ? "" : "\n"), port,
                        (IPTR)names[port], (IPTR)(open[port] ? " (in use)" : ""));
-        out += strlen(out);
+        while (*out)
+            out++;
     }
     set(gui->ports_obj, MUIA_Text_Contents, (IPTR)text);
 }
