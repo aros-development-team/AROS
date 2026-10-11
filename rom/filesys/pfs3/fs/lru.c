@@ -194,8 +194,12 @@ retry:
 
 			if (lrunode->cblk.changeflag)
 			{
+				/* Protected volumes cannot accept the write. Keep dirty
+				 * metadata without retrying it or repeating requesters. */
+				if (g->softprotect)
+					continue;
+
 				DB(Trace(1,"AllocLRU","ResToBeFreed %lx\n",&lrunode->cblk));
-				ResToBeFreed(lrunode->cblk.oldblocknr, g);
 				UpdateDatestamp(&lrunode->cblk, g);
 				error = WriteReservedBlocks ((UBYTE *)&lrunode->cblk.data, RESCLUSTER, lrunode->cblk.blocknr, g);
 				if (error) {
@@ -203,7 +207,9 @@ retry:
 					args[0] = lrunode->cblk.blocknr;
 					args[1] = error;
 					ErrorMsg (AFS_ERROR_LRU_UPDATE_FAIL, args, g);
+					continue;
 				}
+				ResToBeFreed(lrunode->cblk.oldblocknr, g);
 			}
 
 			FlushBlock(&lrunode->cblk, g);
