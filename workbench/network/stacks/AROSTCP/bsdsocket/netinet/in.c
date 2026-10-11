@@ -692,7 +692,7 @@ struct in_addr in;
  * RFC 1112 §6.4: map a class-D address to 01:00:5e:XX:XX:XX using the low
  * 23 bits of the group address.
  */
-static void
+void
 in_mcast_macaddr(struct in_addr *maddr, u_int8_t *mac)
 {
     u_long addr = ntohl(maddr->s_addr);
@@ -718,7 +718,7 @@ sana_add_mcast(struct ifnet *ifp, struct in_addr *maddr)
     u_int8_t mac[6];
     int error = 0;
 
-    if(ifp->if_addrlen != 6)
+    if(!sana_ether_mcast(ifp))
         return 0;  /* not Ethernet -- nothing to do */
 
     in_mcast_macaddr(maddr, mac);
@@ -753,7 +753,7 @@ sana_del_mcast(struct ifnet *ifp, struct in_addr *maddr)
     u_int8_t mac[6];
     int error = 0;
 
-    if(ifp->if_addrlen != 6)
+    if(!sana_ether_mcast(ifp))
         return 0;
 
     in_mcast_macaddr(maddr, mac);

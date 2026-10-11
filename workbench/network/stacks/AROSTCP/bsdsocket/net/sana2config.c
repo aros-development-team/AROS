@@ -197,13 +197,13 @@ static const struct wire_defaults {
         0, 0,
         IFF_POINTOPOINT | IFF_NOARP,
     },
-    /* Use ethernet as default */
+    /* Use ethernet as default; no IFF_MULTICAST, see sana_ether_mcast() */
     {
         0,
         ETHERTYPE_IP, 16, SANA2_DEF_WRITENO,
         ETHERTYPE_ARP, 4, 1,
         ETHERTYPE_IPV6, 16,
-        IFF_BROADCAST | IFF_SIMPLEX | IFF_MULTICAST,
+        IFF_BROADCAST | IFF_SIMPLEX,
     },
 };
 

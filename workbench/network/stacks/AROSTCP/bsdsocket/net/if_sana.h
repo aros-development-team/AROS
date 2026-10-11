@@ -167,6 +167,21 @@ sana_softc_of(struct ifnet *ifp)
 {
     return (ifp->if_output == sana_output) ? (struct sana_softc *)ifp : NULL;
 }
+
+/*
+ * Whether an IPv4 group has a link address on this interface, which is
+ * true of Ethernet alone (RFC 1112 section 6.4). The one test for it:
+ * IFF_MULTICAST is set where it holds, the device is told of a group's
+ * address where it holds, and arpresolve() gives that address where it
+ * holds.
+ */
+static inline int
+sana_ether_mcast(struct ifnet *ifp)
+{
+    struct sana_softc *ssc = sana_softc_of(ifp);
+
+    return ssc != NULL && ssc->ss_hwtype == S2WireType_Ethernet;
+}
 /* queue for sana network interfaces */
 extern struct sana_softc *ssq;
 #endif /* of IF_SANA_H */
