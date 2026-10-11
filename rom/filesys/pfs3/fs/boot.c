@@ -558,7 +558,7 @@ static void Quit (globaldata *g)
 		struct volumedata *v = g->currentvolume;
 		if (v) {
 			/* 'remove' disk */
-			if (SafeDiskRemoveSequence(g)) {
+			if (SafeDiskRemoveSequence(g, NULL)) {
 				volume = v;
 			} else {
 				Delay(5);

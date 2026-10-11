@@ -399,7 +399,6 @@ void InhibitedCommands(struct DosPacket *action, globaldata *g)
 			break;
 
 		case ACTION_DIE:            // <sendpkt only>
-			g->dieing = TRUE;
 			action->dp_Res1 = dd_Quit(action, g);
 			break;
 

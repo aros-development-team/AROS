@@ -257,7 +257,7 @@ static BOOL SameDisk(struct rootblock *, struct rootblock *);
 static BOOL SameDiskDL(struct rootblock *, struct DeviceList *);
 static void TakeOverLocks(struct FileLock *, globaldata *);
 static void DiskInsertSequence(struct rootblock *rootblock, globaldata *g);
-static void DiskRemoveSequence(globaldata *g);
+static BOOL DiskRemoveSequence(globaldata *g);
 
 void NewVolume (BOOL FORCE, globaldata *g)
 {
@@ -273,7 +273,8 @@ void NewVolume (BOOL FORCE, globaldata *g)
 		return;
 
 	ENTER("NewVolume");
-	FlushDataCache (g);
+	if (!g->dirty)
+		FlushDataCache (g);
 
 	/* newstate <=> there is a PFS disk present */
 	oldstate = g->currentvolume ? TRUE : FALSE;
@@ -283,8 +284,8 @@ void NewVolume (BOOL FORCE, globaldata *g)
 	if ((g->softprotect == 1) && g->protectkey == ~0)
 		g->softprotect = g->protectkey = 0;
 
-	if (oldstate && !newstate)
-		DiskRemoveSequence (g);
+	if (oldstate && !newstate && !DiskRemoveSequence(g))
+		goto remove_failed;
 
 	if (newstate)
 	{
@@ -294,8 +295,11 @@ void NewVolume (BOOL FORCE, globaldata *g)
 		}
 		else
 		{
-			if (oldstate)
-				DiskRemoveSequence (g);
+			if (oldstate && !DiskRemoveSequence(g))
+			{
+				FreeBufmem(rootblock, g);
+				goto remove_failed;
+			}
 			DiskInsertSequence (rootblock, g);
 		}
 	}
@@ -308,6 +312,12 @@ void NewVolume (BOOL FORCE, globaldata *g)
 
 	UpdateAndMotorOff(g);
 	EXIT("NewVolume");
+	return;
+
+remove_failed:
+	/* Keep the old volume and pending cache entries available for recovery. */
+	UnLockDosList(LDF_VOLUMES | LDF_WRITE);
+	EXIT("NewVolume");
 }
 
 
@@ -318,7 +328,7 @@ void NewVolume (BOOL FORCE, globaldata *g)
 ** return waarde = currentdisk back in drive?
 ** used by NewVolume and ACTION_INHIBIT
 */
-static void DiskRemoveSequence(globaldata *g)
+static BOOL DiskRemoveSequence(globaldata *g)
 {
   struct volumedata *oldvolume = g->currentvolume;
 
@@ -333,8 +343,7 @@ static void DiskRemoveSequence(globaldata *g)
 	if(oldvolume && g->dirty)
 	{
 		RequestCurrentVolumeBack(g);
-		UpdateDisk(g);
-		return;
+		return UpdateDisk(g);
 	}
 
 	/* disk removed */
@@ -376,16 +385,25 @@ static void DiskRemoveSequence(globaldata *g)
 #endif
 
 	EXIT("DiskRemoveSequence");
-	return;
+	return TRUE;
 }
 
-BOOL SafeDiskRemoveSequence(globaldata *g)
+BOOL SafeDiskRemoveSequence(globaldata *g, SIPTR *error)
 {
+	if (error)
+		*error = 0;
 	while (g->currentvolume) {    /* inefficient.. */
 		if (AttemptLockDosList(LDF_VOLUMES | LDF_WRITE)) {
-			DiskRemoveSequence(g);
+			BOOL removed = DiskRemoveSequence(g);
 			UnLockDosList(LDF_VOLUMES | LDF_WRITE);
+			if (!removed) {
+				if (error)
+					*error = g->softprotect ? ERROR_DISK_WRITE_PROTECTED : ERROR_NOT_A_DOS_DISK;
+				return FALSE;
+			}
 		} else {
+			if (error)
+				*error = ERROR_OBJECT_IN_USE;
 			return FALSE;
 		}
 	}
