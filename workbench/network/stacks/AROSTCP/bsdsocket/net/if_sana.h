@@ -157,6 +157,16 @@ struct sana_softc {
 int sana_output(struct ifnet *ifp, struct mbuf *m0,
 			struct sockaddr *dst, struct rtentry *rt);
 int sana_ioctl(register struct ifnet *ifp, int cmd, caddr_t data);
+
+/*
+ * The SANA-II interface behind an ifnet, or NULL for any other kind: a
+ * tunnel and the loopback are a struct ifnet with something else behind it.
+ */
+static inline struct sana_softc *
+sana_softc_of(struct ifnet *ifp)
+{
+    return (ifp->if_output == sana_output) ? (struct sana_softc *)ifp : NULL;
+}
 /* queue for sana network interfaces */
 extern struct sana_softc *ssq;
 #endif /* of IF_SANA_H */
