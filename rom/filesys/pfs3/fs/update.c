@@ -263,19 +263,25 @@ BOOL UpdateDisk (globaldata *g)
 
 		/* update root (MUST be done last) */
 	update_root:
-		if (updateok &&
-		    !WriteRootBlocks((UBYTE *)volume->rootblk, volume->rootblk->rblkcluster, ROOTBLOCK, g) &&
-		    !UpdateAndMotorOff(g))
+		if (updateok)
 		{
+			ULONG root_error = WriteRootBlocks((UBYTE *)volume->rootblk,
+				volume->rootblk->rblkcluster, ROOTBLOCK, g);
+			/* A failed write or update may still have put this generation's
+			 * root on disk. Never reuse its datestamp for the next attempt. */
 			volume->rootblk->datestamp++;
-			volume->rootblockchangeflag = FALSE;
-			success = TRUE;
+			if (!root_error && !UpdateAndMotorOff(g))
+			{
+				volume->rootblockchangeflag = FALSE;
+				success = TRUE;
+			}
+			else
+				success = FALSE;
 		}
 		else
-		{
-			ErrorMsg (AFS_ERROR_UPDATE_FAIL, NULL, g);
 			success = FALSE;
-		}
+		if (!success)
+			ErrorMsg (AFS_ERROR_UPDATE_FAIL, NULL, g);
 
 		g->uip = FALSE;
 
