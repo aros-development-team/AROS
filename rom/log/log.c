@@ -38,7 +38,7 @@
             - A global list maintained by the log.resource itself
             - A per-producer list
 
-        Entries are added using `logAddEntryA()` which supports a printf-style format string
+        Entries are added using `logAddEntryA()` with a RawDoFmt-style format string
         and metadata such as component, subcomponent, originator, and event ID.
 
         Each entry stores:
@@ -56,11 +56,11 @@
         taglist and returns selected fields such as LOGMA_Entry, LOGMA_Flags, LOGMA_Component,
         and others.
 
-        Entries may be removed via `logRemEntry()`, which safely unlinks and deallocates
-        all associated resources, including copied strings.
+        `logRemEntry()` unlinks entries and may queue their disposal on the
+        service task. This does not guarantee complete deallocation.
 
-        `logLockEntries()` and `logUnlockEntries()` provide concurrency protection for
-        iteration or filtering.
+        `logLockEntries()` and `logUnlockEntries()` serialize cooperating readers
+        with insertion, but do not exclude every entry-removal path.
 
         The log.resource is self-contained and allocates memory via the producer's
         memory pool (`lrh_Pool`) to simplify cleanup and ownership tracking.
@@ -132,9 +132,43 @@ BOOL GM_UNIQUENAME(OpenUtility)(LIBBASETYPEPTR LIBBASE)
 
 #define UtilityBase LIBBASE->lrb_UtilityBase
 
-AROS_LH1(APTR, logInitialise,
-         AROS_LHA(APTR, logProvider, A0),
-         LIBBASETYPEPTR, LIBBASE, 1, log)
+/*****************************************************************************
+
+    NAME */
+        AROS_LH1(APTR, logInitialise,
+
+/*  SYNOPSIS */
+                 AROS_LHA(APTR, logProvider, A0),
+
+/*  LOCATION */
+                 LIBBASETYPEPTR, LIBBASE, 1, log)
+/*  FUNCTION
+        Register a log producer and allocate its entry pool.
+
+    INPUTS
+        logProvider - Non-NULL pointer to an object beginning with a
+                      struct Node. ln_Name identifies the producer and
+                      should point to a NUL-terminated name.
+
+    RESULT
+        A producer handle for logAddEntryA(), or NULL if the service task
+        is unavailable, logProvider is NULL, or pool creation fails.
+
+    NOTES
+        The name is copied; the provider object is not retained. The
+        resource owns the returned handle and pool. Do not free them with
+        FreeVec() or DeletePool(). Call from task context. Provider-list
+        updates are not protected internally; serialize registrations.
+
+    BUGS
+        Handle allocation is not checked before dereferencing its result.
+        Name-copy failure can leave a registered handle without a name.
+        logFinalise() does not yet release the handle or its pool.
+
+    SEE ALSO
+        logAddEntryA(), logFinalise()
+
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
@@ -160,9 +194,40 @@ AROS_LH1(APTR, logInitialise,
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH1(void, logFinalise,
-         AROS_LHA(APTR, logProvider, A0),
-         LIBBASETYPEPTR, LIBBASE, 2, log)
+/*****************************************************************************
+
+    NAME */
+        AROS_LH1(void, logFinalise,
+
+/*  SYNOPSIS */
+                 AROS_LHA(APTR, logProvider, A0),
+
+/*  LOCATION */
+                 LIBBASETYPEPTR, LIBBASE, 2, log)
+/*  FUNCTION
+        Locate registered producers by name. Cleanup is not implemented.
+
+    INPUTS
+        logProvider - Non-NULL pointer to an object beginning with a
+                      struct Node whose ln_Name is a valid NUL-terminated
+                      producer name. A producer handle has this prefix.
+
+    RESULT
+        None.
+
+    NOTES
+        The function compares names but does not unlink providers, remove
+        entries, release pools or wait for pending events. Returning from
+        this call does not establish that a producer has been shut down.
+        Provider-list traversal is not protected internally.
+
+    BUGS
+        The finalization body is a placeholder. No resources are released.
+
+    SEE ALSO
+        logInitialise()
+
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
