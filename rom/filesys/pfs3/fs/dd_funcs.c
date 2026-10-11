@@ -960,8 +960,7 @@ static SIPTR dd_AddBuffers(struct DosPacket *pkt, globaldata * g)
 	// RES1 = BOOL Success/failure (DOSTRUE/DOSFALSE)
 	// RES2 = new total number of cache buffers or failurecode (if res1 = DOSFALSE)
 
-	struct lru_cachedblock *lrunode, *nextnode;
-	LONG numbuffers;
+	LONG numbuffers, oldbuffers;
 
 	/* Keep the old cache if dirty metadata could not be committed. */
 	if (g->dirty && !UpdateDisk(g))
@@ -970,21 +969,16 @@ static SIPTR dd_AddBuffers(struct DosPacket *pkt, globaldata * g)
 		return DOSFALSE;
 	}
 
-	for (lrunode = (struct lru_cachedblock *)g->glob_lrudata.LRUqueue.mlh_Head; lrunode->next;
-		 lrunode = nextnode)
-	{
-		FlushBlock(&lrunode->cblk, g);
-		nextnode = lrunode->next;
-		MinRemove(lrunode);
-	}
-
-	DeallocLRU(g);
-	numbuffers = g->dosenvec->de_NumBuffers;
-	numbuffers = max(0, numbuffers + (LONG)pkt->dp_Arg1);
+	oldbuffers = g->dosenvec->de_NumBuffers;
+	numbuffers = max(0, oldbuffers + (LONG)pkt->dp_Arg1);
 	g->dosenvec->de_NumBuffers = numbuffers;
 
-	while (!InitLRU(g, SIZEOF_RESBLOCK))
-		g->dosenvec->de_NumBuffers--;
+	if (!ResizeLRU(g, SIZEOF_RESBLOCK))
+	{
+		g->dosenvec->de_NumBuffers = oldbuffers;
+		pkt->dp_Res2 = ERROR_NO_FREE_STORE;
+		return DOSFALSE;
+	}
 
 	pkt->dp_Res2 = g->dosenvec->de_NumBuffers;
 	return (LONG)g->dosenvec->de_NumBuffers;
