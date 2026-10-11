@@ -26,6 +26,16 @@
  * miami.library binding, 0 without it). */
 unsigned int if_nametoindex(const char *ifname);
 
+/* A bsdsocket.library base belongs to the task that opened it, so a program
+ * that serves sessions from several tasks needs one base per task. Every
+ * socket call libssh makes resolves its base through this lookup;
+ * libssh_net_aros.c supplies a default returning the program's global base,
+ * which a multi-task program overrides (sshd). proto/bsdsocket.h honours
+ * SocketBase being a macro. */
+struct Library;
+struct Library *__libssh_SocketBase(void);
+#define SocketBase (__libssh_SocketBase())
+
 #define PACKAGE "libssh"
 #define VERSION "0.12.0"
 

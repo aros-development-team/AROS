@@ -13,10 +13,18 @@
  *   - CTRL-C signal to shutdown
  */
 
+/* bsdsocket bases are per task: the main task and every session task open
+ * their own, and all socket calls (ours and libssh's) resolve the base
+ * through __libssh_SocketBase() below */
+struct Library;
+struct Library *__libssh_SocketBase(void);
+#define SocketBase (__libssh_SocketBase())
+
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/socket.h>
 #include <proto/netservice.h>
+#include <libraries/bsdsocket.h>
 #include <exec/types.h>
 #include <dos/dostags.h>
 #include <dos/dos.h>
@@ -50,7 +58,19 @@ static const char __attribute__((used)) verstag[] = "\0$VER: sshd 0.1 (19.8.2026
 #define MAX_LINE            1024
 #define BUF_SIZE            4096
 
-struct Library *SocketBase;
+/* The main task's base; a session task keeps its own in tc_UserData
+ * (CreateNewProc's NP_UserData slot, unused by anything else here). */
+static struct Task *DaemonTask;
+static struct Library *DaemonSocketBase;
+
+struct Library *__libssh_SocketBase(void)
+{
+    struct Task *me = FindTask(NULL);
+
+    if (me == DaemonTask)
+        return DaemonSocketBase;
+    return (struct Library *)me->tc_UserData;
+}
 struct Library *NetServicesBase;        /* optional: set when run as a managed service */
 static volatile BOOL g_shutdown = FALSE;
 
@@ -137,16 +157,20 @@ static BOOL ensure_host_key(void)
     return generate_host_key();
 }
 
-/* Set by the auth callbacks on success; libssh has no server-side
- * "is authenticated" query (the daemon serves one session at a time). */
-static int sshd_authenticated;
+/* Per-session state handed to the auth callbacks as userdata; libssh has
+ * no server-side "is authenticated" query. */
+struct SessionCtx {
+    int authenticated;
+};
 
 /* --- Public key authentication callback --- */
 static int auth_pubkey_cb(ssh_session session, const char *user,
                           struct ssh_key_struct *pubkey,
                           char signature_state, void *userdata)
 {
-    (void)session; (void)userdata;
+    struct SessionCtx *ctx = userdata;
+
+    (void)session;
 
     if (strcmp(user, "root") != 0)
         return SSH_AUTH_DENIED;
@@ -207,7 +231,7 @@ static int auth_pubkey_cb(ssh_session session, const char *user,
 
     Close(fh);
     if (found)
-        sshd_authenticated = 1;
+        ctx->authenticated = 1;
     return found ? SSH_AUTH_SUCCESS : SSH_AUTH_DENIED;
 }
 
@@ -215,7 +239,9 @@ static int auth_pubkey_cb(ssh_session session, const char *user,
 static int auth_password_cb(ssh_session session, const char *user,
                             const char *password, void *userdata)
 {
-    (void)session; (void)userdata;
+    struct SessionCtx *ctx = userdata;
+
+    (void)session;
 
     if (strcmp(user, "root") != 0)
         return SSH_AUTH_DENIED;
@@ -241,7 +267,7 @@ static int auth_password_cb(ssh_session session, const char *user,
 
     if (strcmp(computed_hash, stored_hash) == 0)
     {
-        sshd_authenticated = 1;
+        ctx->authenticated = 1;
         return SSH_AUTH_SUCCESS;
     }
 
@@ -403,11 +429,12 @@ static void handle_shell(ssh_session session, ssh_channel channel, int cols, int
 static void handle_session(ssh_session session)
 {
     struct ssh_server_callbacks_struct cb = {0};
+    struct SessionCtx ctx = {0};
+
     cb.auth_pubkey_function = auth_pubkey_cb;
     cb.auth_password_function = auth_password_cb;
-    cb.userdata = NULL;
+    cb.userdata = &ctx;
 
-    sshd_authenticated = 0;
     ssh_callbacks_init(&cb);
     ssh_set_server_callbacks(session, &cb);
     ssh_set_auth_methods(session, SSH_AUTH_METHOD_PUBLICKEY | SSH_AUTH_METHOD_PASSWORD);
@@ -423,7 +450,7 @@ static void handle_session(ssh_session session)
     ssh_event_add_session(event, session);
 
     int n_auth = 0;
-    while (!sshd_authenticated && n_auth < 20)
+    while (!ctx.authenticated && n_auth < 20)
     {
         if (ssh_event_dopoll(event, 1000) == SSH_ERROR)
             break;
@@ -432,7 +459,7 @@ static void handle_session(ssh_session session)
 
     ssh_event_free(event);
 
-    if (!sshd_authenticated)
+    if (!ctx.authenticated)
     {
         Printf("sshd: authentication failed\n");
         goto done;
@@ -560,65 +587,112 @@ done:
     ssh_free(session);
 }
 
-/* --- Child process entry point for concurrent sessions --- */
+/* --- Session tasks ---
+ * Every session runs in its own process with its own bsdsocket base. The
+ * main task accepts the connection and parks the socket in the stack with
+ * ReleaseSocket(); the session task adopts it with ObtainSocket() on its
+ * own base and wraps it with ssh_bind_accept_fd(), which only reads the
+ * bind object (listening, host keys already imported). */
 struct SessionMsg {
     struct Message msg;
-    ssh_session    session;
+    ssh_bind       sshbind;
+    LONG           socket_id;   /* ReleaseSocket() unique id */
 };
 
-static void session_proc_entry(void)
+/* Serve an accepted socket owned by the calling task's base. */
+static void serve_socket(ssh_bind sshbind, LONG fd)
 {
-    struct Process *me = (struct Process *)FindTask(NULL);
-    struct MsgPort *port = &me->pr_MsgPort;
+    ssh_session session = ssh_new();
 
-    WaitPort(port);
-    struct SessionMsg *sm = (struct SessionMsg *)GetMsg(port);
-    ssh_session session = sm->session;
-    ReplyMsg(&sm->msg);
-
-    SocketBase = OpenLibrary("bsdsocket.library", 4);
-    if (!SocketBase)
+    if (session == NULL)
     {
-        ssh_disconnect(session);
+        CloseSocket(fd);
+        return;
+    }
+
+    if (ssh_bind_accept_fd(sshbind, session, fd) != SSH_OK)
+    {
+        Printf("sshd: accept failed: %s\n", (IPTR)ssh_get_error(sshbind));
+        CloseSocket(fd);
         ssh_free(session);
         return;
     }
 
     handle_session(session);
-
-    CloseLibrary(SocketBase);
 }
 
-static void spawn_session(ssh_session session)
+static void session_proc_entry(void)
 {
-    struct MsgPort *reply_port = CreateMsgPort();
-    if (!reply_port)
+    struct Process *me = (struct Process *)FindTask(NULL);
+    struct MsgPort *port = &me->pr_MsgPort;
+    struct SessionMsg *sm;
+    ssh_bind sshbind;
+    LONG socket_id, fd;
+
+    WaitPort(port);
+    sm = (struct SessionMsg *)GetMsg(port);
+    sshbind = sm->sshbind;
+    socket_id = sm->socket_id;
+    ReplyMsg(&sm->msg);
+
+    /* our own base; __libssh_SocketBase() finds it here from now on */
+    me->pr_Task.tc_UserData = OpenLibrary("bsdsocket.library", 4);
+    if (me->pr_Task.tc_UserData == NULL)
     {
-        handle_session(session);
+        Printf("sshd: session cannot open bsdsocket.library\n");
         return;
     }
 
-    struct Process *proc = CreateNewProcTags(
-        NP_Entry,   (IPTR)session_proc_entry,
-        NP_Name,    (IPTR)"sshd_session",
-        NP_Priority, 0,
-        NP_StackSize, 65536,
-        TAG_DONE);
+    fd = ObtainSocket(socket_id, 0, 0, 0);
+    if (fd >= 0)
+        serve_socket(sshbind, fd);
+    else
+        Printf("sshd: ObtainSocket failed (%ld)\n", (long)Errno());
 
-    if (!proc)
-    {
-        DeleteMsgPort(reply_port);
-        handle_session(session);
-        return;
-    }
+    CloseLibrary((struct Library *)me->pr_Task.tc_UserData);
+    me->pr_Task.tc_UserData = NULL;
+}
 
-    /* Send session pointer to child via message */
+static void spawn_session(ssh_bind sshbind, LONG fd)
+{
+    struct MsgPort *reply_port;
+    struct Process *proc = NULL;
     struct SessionMsg sm = {0};
+    LONG socket_id;
+
+    socket_id = ReleaseSocket(fd, UNIQUE_ID);
+    if (socket_id < 0)
+    {
+        CloseSocket(fd);
+        return;
+    }
+
+    reply_port = CreateMsgPort();
+    if (reply_port != NULL)
+        proc = CreateNewProcTags(
+            NP_Entry,   (IPTR)session_proc_entry,
+            NP_Name,    (IPTR)"sshd_session",
+            NP_Priority, 0,
+            NP_StackSize, 65536,
+            TAG_DONE);
+
+    if (proc == NULL)
+    {
+        /* no session task: take the socket back and serve it here */
+        if (reply_port != NULL)
+            DeleteMsgPort(reply_port);
+        fd = ObtainSocket(socket_id, 0, 0, 0);
+        if (fd >= 0)
+            serve_socket(sshbind, fd);
+        return;
+    }
+
     sm.msg.mn_ReplyPort = reply_port;
     sm.msg.mn_Length = sizeof(sm);
-    sm.session = session;
+    sm.sshbind = sshbind;
+    sm.socket_id = socket_id;
 
-    PutMsg(&((struct Process *)proc)->pr_MsgPort, &sm.msg);
+    PutMsg(&proc->pr_MsgPort, &sm.msg);
     WaitPort(reply_port);
     GetMsg(reply_port);
     DeleteMsgPort(reply_port);
@@ -648,8 +722,9 @@ int main(int argc, char **argv)
         }
     }
 
-    SocketBase = OpenLibrary("bsdsocket.library", 4);
-    if (!SocketBase)
+    DaemonTask = FindTask(NULL);
+    DaemonSocketBase = OpenLibrary("bsdsocket.library", 4);
+    if (!DaemonSocketBase)
     {
         Printf("sshd: Cannot open bsdsocket.library v4\n");
         return RETURN_FAIL;
@@ -658,7 +733,7 @@ int main(int argc, char **argv)
     /* Ensure host key exists */
     if (!ensure_host_key())
     {
-        CloseLibrary(SocketBase);
+        CloseLibrary(DaemonSocketBase);
         return RETURN_FAIL;
     }
 
@@ -669,7 +744,7 @@ int main(int argc, char **argv)
     {
         Printf("sshd: Cannot create SSH bind\n");
         ssh_finalize();
-        CloseLibrary(SocketBase);
+        CloseLibrary(DaemonSocketBase);
         return RETURN_FAIL;
     }
 
@@ -685,7 +760,7 @@ int main(int argc, char **argv)
         Printf("sshd: Listen failed: %s\n", (IPTR)ssh_get_error(sshbind));
         ssh_bind_free(sshbind);
         ssh_finalize();
-        CloseLibrary(SocketBase);
+        CloseLibrary(DaemonSocketBase);
         return RETURN_FAIL;
     }
 
@@ -757,14 +832,10 @@ int main(int argc, char **argv)
 
             if (sel > 0 && FD_ISSET(bind_fd, &rfds))
             {
-                ssh_session session = ssh_new();
-                if (session)
-                {
-                    if (ssh_bind_accept(sshbind, session) == SSH_OK)
-                        spawn_session(session);
-                    else
-                        ssh_free(session);
-                }
+                LONG fd = accept(bind_fd, NULL, NULL);
+
+                if (fd >= 0)
+                    spawn_session(sshbind, fd);
             }
         }
 
@@ -789,7 +860,7 @@ int main(int argc, char **argv)
 
     ssh_bind_free(sshbind);
     ssh_finalize();
-    CloseLibrary(SocketBase);
+    CloseLibrary(DaemonSocketBase);
 
     Printf("sshd: Stopped\n");
     return RETURN_OK;

@@ -22,6 +22,17 @@
              AROS_LCA(char *, (name), A0), \
              struct Library *, (base), 46, Miami)
 
+/* Base lookup for single-task programs: the global SocketBase they open
+ * themselves. Weak so that a program serving several tasks (sshd) can
+ * provide its own. */
+#undef SocketBase
+extern struct Library *SocketBase;
+
+__attribute__((weak)) struct Library *__libssh_SocketBase(void)
+{
+    return SocketBase;
+}
+
 unsigned int if_nametoindex(const char *ifname)
 {
     struct Library *MiamiBase;
