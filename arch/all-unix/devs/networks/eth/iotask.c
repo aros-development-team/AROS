@@ -79,7 +79,9 @@ static void eth_receive(struct eth_base *ETHBase, struct eth_unit *unit)
         BOOL found = FALSE;
 
         Disable();
-        ForeachNode(&(unit->mcasts), wanted) {
+        for (wanted = (struct eth_mcast *) unit->mcasts.mlh_Head;
+             wanted->node.mln_Succ != NULL;
+             wanted = (struct eth_mcast *) wanted->node.mln_Succ) {
             if (memcmp(wanted->addr, eth->h_dest, sizeof(wanted->addr)) == 0) {
                 found = TRUE;
                 break;
