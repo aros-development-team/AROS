@@ -102,6 +102,30 @@ static void ip_mloopback
 __P((struct ifnet *, struct mbuf *, struct sockaddr_in *));
 #endif
 
+#ifdef ENABLE_MULTICAST
+/*
+ * The interface a datagram to a group leaves by when that is known without
+ * the routing table: the one the sender chose with IP_MULTICAST_IF, or,
+ * when there is no route to the group, the one of the socket's first
+ * membership. A host with a static address and no default route can then
+ * still talk to a group on its link, as mDNS and SSDP do. NULL leaves the
+ * choice, or the error, to the routing table.
+ */
+static struct ifnet *
+ip_multicast_if(struct ip_moptions *imo, struct route *ro)
+{
+    if(imo == NULL)
+        return NULL;
+    if(imo->imo_multicast_ifp != NULL)
+        return imo->imo_multicast_ifp;
+    if(ro->ro_rt == 0)
+        rtalloc(ro);
+    if(ro->ro_rt == 0 && imo->imo_num_memberships > 0)
+        return imo->imo_membership[0]->inm_ifp;
+    return NULL;
+}
+#endif
+
 /*
  * IP output.  The packet in mbuf chain m contains a skeletal IP
  * header (with len, off, ttl, proto, tos, src, dst).
@@ -244,15 +268,12 @@ int	STKARGFUN ip_output(void *args, ...)
         ifp = ia->ia_ifp;
         ip->ip_ttl = 1;
 #ifdef ENABLE_MULTICAST
-    } else if(IN_MULTICAST(ntohl(ip->ip_dst.s_addr)) && imo != NULL &&
-              imo->imo_multicast_ifp != NULL) {
+    } else if(IN_MULTICAST(ntohl(ip->ip_dst.s_addr)) &&
+              (ifp = ip_multicast_if(imo, ro)) != NULL) {
         /*
-         * The sender chose the interface with IP_MULTICAST_IF, so the
-         * group needs no route. A host with no default route can then
-         * still send to the link.
+         * The group is reached on that interface's link and needs no
+         * route; the multicast block below does the rest.
          */
-        ifp = imo->imo_multicast_ifp;
-        IFP_TO_IA(ifp, ia);
 #endif
     } else {
         if(ro->ro_rt == 0)
