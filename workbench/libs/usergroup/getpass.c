@@ -42,7 +42,7 @@
 /*  FUNCTION
         The getpass() function displays a prompt to, and reads in a password
         from "CONSOLE:".  If this device is not accessible, getpass()
-        displays the prompt on the standard error output and reads from the
+        displays the prompt on the standard output and reads from the
         standard input.
 
         The password may be up to _PASSWORD_LEN (currently 128) characters
@@ -54,7 +54,8 @@
     RESULT
         password -  a pointer to the null terminated password
 
-    FILES
+    NOTES
+        Files:
         Special device "CONSOLE:"
 
     SEE ALSO
