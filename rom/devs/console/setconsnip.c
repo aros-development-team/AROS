@@ -9,9 +9,43 @@
 
 #include "console_gcc.h"
 
-AROS_LH1(LONG, SetConSnip,
+/*****************************************************************************
+
+    NAME */
+        AROS_LH1(LONG, SetConSnip,
+
+/*  SYNOPSIS */
     AROS_LHA(APTR, data, A0),
+
+/*  LOCATION */
     struct ConsoleBase *, ConsoleDevice, 10, Console)
+/*  FUNCTION
+        Replace the console selection buffer with a copy of a
+        NUL-terminated string. The previous buffer is discarded before
+        storage for the replacement is allocated. A NULL pointer or an
+        empty string clears the selection buffer.
+
+    INPUTS
+        data - Pointer to a readable NUL-terminated string, or NULL to
+               clear the buffer. The input remains owned by the caller
+               and need only remain valid until this call returns.
+
+    RESULT
+        1 if a nonempty string was successfully copied.
+        0 if data is NULL, the string is empty, or allocation failed.
+        In each of these cases the selection buffer is left empty; the
+        previous contents are not restored on failure.
+
+    NOTES
+        SetConSnip() does not notify registered hooks. Only bytes before
+        the first NUL in data are copied.
+
+        This function takes the copy-buffer semaphore and may block.
+
+    SEE ALSO
+        GetConSnip(), AddConSnipHook()
+
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
