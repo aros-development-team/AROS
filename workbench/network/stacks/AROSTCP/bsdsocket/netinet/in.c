@@ -279,6 +279,29 @@ extern	struct ifnet loif;
 
 static int in_control_locked(struct socket *, int, caddr_t, struct ifnet *);
 
+#ifdef ENABLE_MULTICAST
+/*
+ * Every multicast interface belongs to the all-hosts group, 224.0.0.1
+ * (RFC 1112 section 7.2). IGMP queries are sent to it: an interface that
+ * is not a member never hears one, never answers, and a snooping switch
+ * or a router stops forwarding its groups when their membership times out.
+ * No report is ever sent for this group itself.
+ */
+static void
+in_join_allhosts(struct ifnet *ifp)
+{
+    struct in_addr allhosts;
+    struct in_multi *inm;
+
+    if((ifp->if_flags & IFF_MULTICAST) == 0)
+        return;
+    allhosts.s_addr = htonl(INADDR_ALLHOSTS_GROUP);
+    IN_LOOKUP_MULTI(allhosts, ifp, inm);
+    if(inm == NULL)
+        (void)in_addmulti(&allhosts, ifp);
+}
+#endif
+
 /*
  * Generic internet control operations (ioctl's).
  * Ifp is 0 if not an interface-specific ioctl.
@@ -639,6 +662,9 @@ int scrub;
     }
     if((error = rtinit(&(ia->ia_ifa), (int)RTM_ADD, flags)) == 0)
         ia->ia_flags |= IFA_ROUTE;
+#ifdef ENABLE_MULTICAST
+    in_join_allhosts(ifp);
+#endif
     return (error);
 }
 
