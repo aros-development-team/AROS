@@ -884,18 +884,18 @@ void printverstring(void)
 
             Printf("%s%s%s%s%s%s%s\n",
                    (IPTR) parsedver.pv_name, (IPTR) (*parsedver.pv_name ? " " : ""),
-                   (IPTR) (parsedver.pv_vername ? parsedver.pv_vername : ""),
-                   (IPTR) (parsedver.pv_revname ? parsedver.pv_revname : ""),
-                   (IPTR) (parsedver.pv_datestr ? (IPTR)parsedver.pv_datestr : (IPTR)""),
-                   (IPTR) (parsedver.pv_extralf ? (IPTR)parsedver.pv_extralf : (IPTR)""),
-                   (IPTR) (parsedver.pv_extrastr ? (IPTR)parsedver.pv_extrastr : (IPTR)""));
+                   (parsedver.pv_vername ? (IPTR)parsedver.pv_vername : (IPTR)""),
+                   (parsedver.pv_revname ? (IPTR)parsedver.pv_revname : (IPTR)""),
+                   (parsedver.pv_datestr ? (IPTR)parsedver.pv_datestr : (IPTR)""),
+                   (parsedver.pv_extralf ? (IPTR)parsedver.pv_extralf : (IPTR)""),
+                   (parsedver.pv_extrastr ? (IPTR)parsedver.pv_extrastr : (IPTR)""));
         }
         else
         {
             Printf("%s%s%s%s\n",
                    (IPTR) parsedver.pv_name, (IPTR) (*parsedver.pv_name ? " " : ""),
-                   (IPTR) (parsedver.pv_vername ? parsedver.pv_vername : ""),
-                   (IPTR) (parsedver.pv_revname ? parsedver.pv_revname : ""));
+                   (parsedver.pv_vername ? (IPTR)parsedver.pv_vername : (IPTR)""),
+                   (parsedver.pv_revname ? (IPTR)parsedver.pv_revname : (IPTR)""));
         }
         
         if (args.arg_arch)
