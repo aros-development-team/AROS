@@ -73,8 +73,6 @@
             Programming: Sigbjørn Skjæret <cisc@c2i.net>
             Idea & Docs: Nicholas Stallard <snowy@netphile.de>
 
-    EXAMPLE
-
     BUGS
 
         Will not return  to prompt while waiting. This is intended.

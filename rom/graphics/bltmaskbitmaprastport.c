@@ -73,7 +73,7 @@ static ULONG bltmask_render(APTR bltmask_rd, WORD srcx, WORD srcy,
         bltMask - The mask bitplane must be of the same size as the source bitmap.
 
     RESULT
-        TRUE.
+        None.
 
     NOTES
 
@@ -83,12 +83,6 @@ static ULONG bltmask_render(APTR bltmask_rd, WORD srcx, WORD srcy,
 
     SEE ALSO
         ClipBlit()
-
-    INPUTS
-
-    RESULT
-
-    NOTES
 
     INTERNALS
 
