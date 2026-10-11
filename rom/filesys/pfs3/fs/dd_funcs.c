@@ -1062,7 +1062,11 @@ static SIPTR dd_Info(struct DosPacket *pkt, globaldata * g)
 /* flush cache (BTW: doesn't actually flush the cache right now) */
 static SIPTR dd_Flush(struct DosPacket *pkt, globaldata * g)
 {
-	UpdateDisk(g);
+	if (g->dirty && !UpdateDisk(g))
+	{
+		pkt->dp_Res2 = g->softprotect ? ERROR_DISK_WRITE_PROTECTED : ERROR_NOT_A_DOS_DISK;
+		return DOSFALSE;
+	}
 	FreeUnusedResources(g->currentvolume, g);
 	g->timeout = 0;
 	return DOSTRUE;
