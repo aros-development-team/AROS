@@ -127,7 +127,7 @@ BOOL InitLRU (globaldata *g, UWORD reserved_blksize)
 	g->uip = FALSE;
 	g->locknr = 1;
 
-	g->glob_lrudata.LRUarray = AllocVec(sizeof(struct lru_cachedblock*) * g->glob_lrudata.poolsize, 0);
+	g->glob_lrudata.LRUarray = AllocVec(sizeof(struct lru_cachedblock*) * g->glob_lrudata.poolsize, MEMF_CLEAR);
 	if (!g->glob_lrudata.LRUarray)
 		return FALSE;
 	for(j = 0; j < g->glob_lrudata.poolsize; j++) {
