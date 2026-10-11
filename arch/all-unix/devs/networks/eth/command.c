@@ -18,6 +18,9 @@ static const UWORD eth_supported_commands[] = {
     S2_ONLINE,
     S2_OFFLINE,
     S2_BROADCAST,
+    S2_MULTICAST,
+    S2_ADDMULTICASTADDRESS,
+    S2_DELMULTICASTADDRESS,
     CMD_READ,
     CMD_WRITE,
     CMD_FLUSH,
@@ -317,6 +320,26 @@ void eth_handle_request(struct IOSana2Req *req) {
         case S2_BROADCAST:
             D(bug("[eth] [%d] S2_BROADCAST\n", unit->num));
             completed = eth_broadcast(req, unit);
+            break;
+
+        case S2_MULTICAST:
+            /* the caller filled in the group's address: write as normal */
+            D(bug("[eth] [%d] S2_MULTICAST\n", unit->num));
+            completed = eth_write(req, unit);
+            break;
+
+        case S2_ADDMULTICASTADDRESS:
+        case S2_DELMULTICASTADDRESS:
+            /* the host interface is opened promiscuous, so every group
+             * already arrives and there is no filter to program. the
+             * address must still be a multicast one */
+            D(bug("[eth] [%d] S2_%sMULTICASTADDRESS\n", unit->num,
+                  req->ios2_Req.io_Command == S2_ADDMULTICASTADDRESS ? "ADD" : "DEL"));
+            if ((req->ios2_SrcAddr[0] & 0x1) == 0) {
+                req->ios2_Req.io_Error = S2ERR_BAD_ADDRESS;
+                req->ios2_WireError = S2WERR_BAD_MULTICAST;
+            }
+            completed = TRUE;
             break;
 
         case S2_TRACKTYPE:

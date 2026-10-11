@@ -70,12 +70,6 @@ static void eth_receive(struct eth_base *ETHBase, struct eth_unit *unit)
         mcast = TRUE;
     }
 
-    /* drop multicast packets (until we have support for them) */
-    if (mcast) {
-        D(bug("[eth] [io:%d] no support for multicast packets, dropping it\n", unit->num));
-        return;
-    }
-
     /* now we loop through our openers, seeing if anyone wants the packet */
     ForeachNodeSafe(&(unit->openers), opener, opener_next) {
 
