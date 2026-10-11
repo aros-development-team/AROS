@@ -867,7 +867,11 @@ BOOL ExamineFile(listentry_t *file, struct FileInfoBlock * fib, SIPTR *error, gl
 			fib->fib_Date.ds_Tick = (ULONG)volume->rootblk->creationtick;
 		}
 
-                CopyMem(volume->rootblk->diskname, fib->fib_FileName, volume->rootblk->diskname[0] + 1);
+		/* The on-disk label is a counted string in a 32-byte field. */
+		fib->fib_FileName[0] = min(volume->rootblk->diskname[0], DNSIZE - 1);
+		CopyMem(volume->rootblk->diskname + 1, fib->fib_FileName + 1,
+			fib->fib_FileName[0]);
+		fib->fib_FileName[fib->fib_FileName[0] + 1] = 0;
 		fib->fib_Comment[0] = 0x0;
 		//fib->fib_Reserved[0]  = 0x0;
 	}
