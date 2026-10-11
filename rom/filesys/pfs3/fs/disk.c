@@ -1579,7 +1579,8 @@ retry:
 		*((ULONG *)&cmdbuf[2]) = blocknr;
 		*((ULONG *)&cmdbuf[6]) = transfer << 8;
 		PROFILE_OFF();
-		if (!DoSCSICommand(buffer, transfer << BLOCKSHIFT, 0, cmdbuf, 10, write ? SCSIF_WRITE : SCSIF_READ, g))
+		if (!DoSCSICommand(buffer, transfer << BLOCKSHIFT, transfer << BLOCKSHIFT,
+			cmdbuf, 10, write ? SCSIF_WRITE : SCSIF_READ, g))
 		{
 			PROFILE_ON();
 			if (ErrorRequest(write, g->scsicmd.scsi_Status, blocknr, transfer, g))
@@ -1612,6 +1613,7 @@ static ULONG RawReadWrite_TD(BOOL write, UBYTE *buffer, ULONG blocks, ULONG bloc
 	ULONG realblocknr;
 	ULONG io_length, io_transfer, io_offset, io_actual = 0, io_startblock = 0;
 	UBYTE *io_buffer;
+	BYTE io_error;
 
 	DB(Trace(1, write ? "RawWrite" : "RawRead", "%ld blocks from %ld + %ld\n", blocks, blocknr, g->firstblock));
 
@@ -1651,7 +1653,10 @@ retry:
 			request->iotd_Req.io_Command = g->tdmode == ACCESS_NSD ? (write ? NSCMD_TD_WRITE64 : NSCMD_TD_READ64) : (write ? TD_WRITE64 : TD_READ64);
 		}
 		PROFILE_OFF();
-		if (DoIO((struct IORequest*)request) != 0)
+		io_error = DoIO((struct IORequest*)request);
+		if (!io_error && request->iotd_Req.io_Actual != io_transfer)
+			request->iotd_Req.io_Error = TDERR_TooFewSecs;
+		if (io_error || request->iotd_Req.io_Actual != io_transfer)
 		{
 			PROFILE_ON();
 			if (ErrorRequest(write, request->iotd_Req.io_Error, realblocknr, io_transfer >> BLOCKSHIFT, g))
