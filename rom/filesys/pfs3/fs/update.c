@@ -289,9 +289,8 @@ BOOL UpdateDisk (globaldata *g)
 	}
 	else
 	{
-		if (volume && g->dirty && g->softprotect)
-			ErrorMsg (AFS_ERROR_UPDATE_FAIL, NULL, g);
-
+		/* The failure that set softprotect already reported the error.
+		 * Keep pending changes without reopening a requester on each timer tick. */
 		success = FALSE;
 	}
 
