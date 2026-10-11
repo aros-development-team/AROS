@@ -59,6 +59,7 @@
 #include <netinet/in_pcb.h>
 #include "in_var.h"
 #include <netinet/ip_var.h>
+#include <netinet/ip_output_protos.h>
 
 extern u_char inetctlerrmap[];
 
@@ -405,7 +406,7 @@ struct inpcb *inp;
         (void)m_free(inp->inp_options);
     if(inp->inp_route.ro_rt)
         rtfree(inp->inp_route.ro_rt);
-#ifdef ENABLE_MUPTICAST
+#ifdef ENABLE_MULTICAST
     ip_freemoptions(inp->inp_moptions);
 #endif
     s = splnet();
