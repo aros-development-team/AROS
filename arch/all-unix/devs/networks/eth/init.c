@@ -261,6 +261,7 @@ static int GM_UNIQUENAME(close)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req) 
     struct eth_unit *unit = (struct eth_unit *) req->ios2_Req.io_Unit;
     struct eth_opener *opener = (struct eth_opener *) req->ios2_BufferManagement;
     struct eth_tracker *tracker, *tracker_next;
+    struct eth_mcast *mcast, *mcast_next;
     ULONG unitnum = unit->num;
 
     D(bug("[eth] in close\n"));
@@ -291,6 +292,10 @@ static int GM_UNIQUENAME(close)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req) 
         /* kill trackers */
         ForeachNodeSafe(&(unit->trackers), tracker, tracker_next)
             FreeVec(tracker);
+
+        /* and the multicast addresses nobody removed */
+        ForeachNodeSafe(&(unit->mcasts), mcast, mcast_next)
+            FreeVec(mcast);
 
         /* fastest way to kill it */
         memset(unit, 0, sizeof(struct eth_unit));
