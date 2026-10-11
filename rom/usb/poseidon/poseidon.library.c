@@ -6619,10 +6619,44 @@ AROS_LH1(void, psdHubReleaseIfBinding,
 /* *** Events *** */
 
 /* /// "psdAddEventHandler()" */
-AROS_LH2(struct PsdEventHook *, psdAddEventHandler,
+/****** poseidon.library/psdAddEventHandler ************************
+
+    NAME */
+        AROS_LH2(struct PsdEventHook *, psdAddEventHandler,
+
+/*  SYNOPSIS */
          AROS_LHA(struct MsgPort *, mp, A1),
          AROS_LHA(ULONG, msgmask, D0),
+/*  LOCATION */
          LIBBASETYPEPTR, ps, 47, psd)
+/*  FUNCTION
+        Register a message port to receive selected Poseidon events.
+        Each matching event is delivered as a library-allocated message.
+
+    INPUTS
+        mp - Message port to receive the events. Must not be NULL.
+        msgmask - Bitmask of EHMF_* event flags from libraries/poseidon.h.
+
+    RESULT
+        A registration handle, or NULL if mp is NULL or allocation
+        fails. The handle is released by psdRemEventHandler().
+
+    NOTES
+        The caller owns the message port and must keep it valid until
+        psdRemEventHandler() returns. Reply to each delivered message
+        using ReplyMsg(); Poseidon reclaims replied messages later.
+        Event parameters refer to existing objects and are not copied.
+        Their lifetime must not be inferred from the message lifetime.
+
+    BUGS
+        The current removal routine drains and replies to every
+        message still queued on the registered port. Use a dedicated
+        message port to avoid consuming unrelated messages.
+
+    SEE ALSO
+        psdRemEventHandler(), psdSendEvent()
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     struct PsdEventHook *peh = NULL;
@@ -6644,9 +6678,38 @@ AROS_LH2(struct PsdEventHook *, psdAddEventHandler,
 /* \\\ */
 
 /* /// "psdRemEventHandler()" */
-AROS_LH1(void, psdRemEventHandler,
+/****** poseidon.library/psdRemEventHandler ************************
+
+    NAME */
+        AROS_LH1(void, psdRemEventHandler,
+
+/*  SYNOPSIS */
          AROS_LHA(struct PsdEventHook *, peh, A0),
+/*  LOCATION */
          LIBBASETYPEPTR, ps, 48, psd)
+/*  FUNCTION
+        Unregister an event handler and free its registration handle.
+        A NULL handle has no effect.
+
+    INPUTS
+        peh - Handle returned by psdAddEventHandler(), or NULL.
+
+    NOTES
+        Removes the handler while holding Poseidon's reentrant lock.
+        Replies to all messages currently queued at its message port,
+        then collects replied event messages and frees the handle.
+        The caller retains ownership of the message port.
+        Do not use peh after this call.
+
+    BUGS
+        The current implementation drains the entire supplied port,
+        including unrelated queued messages, not just Poseidon events.
+        Register a dedicated port and avoid other concurrent consumers.
+
+    SEE ALSO
+        psdAddEventHandler(), psdSendEvent()
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     struct Message *msg;
@@ -6668,11 +6731,43 @@ AROS_LH1(void, psdRemEventHandler,
 /* \\\ */
 
 /* /// "psdSendEvent()" */
-AROS_LH3(void, psdSendEvent,
+/****** poseidon.library/psdSendEvent ************************
+
+    NAME */
+        AROS_LH3(void, psdSendEvent,
+
+/*  SYNOPSIS */
          AROS_LHA(ULONG, ehmt, D0),
          AROS_LHA(APTR, param1, A0),
          AROS_LHA(APTR, param2, A1),
+/*  LOCATION */
          LIBBASETYPEPTR, ps, 49, psd)
+/*  FUNCTION
+        Send an event to every registered message port whose mask
+        includes the selected event number.
+
+    INPUTS
+        ehmt - EHMB_* event number defined by libraries/poseidon.h.
+        param1 - Event-dependent object pointer; the object is not copied.
+        param2 - Second event-dependent pointer; also not copied.
+
+    NOTES
+        For each matching handler, a separate event message is allocated
+        and queued. The receiver must ReplyMsg() to release the message
+        back to Poseidon for later collection. This call does not wait
+        for receivers to process the message.
+        The event mask is calculated as 1L << ehmt. Pass only defined
+        EHMB_* values, never arbitrary shifts or bit masks.
+
+    BUGS
+        Message allocation failures silently skip the affected handler.
+        No completion or delivery status is returned. Event parameter
+        pointers can become invalid before a receiver processes them.
+
+    SEE ALSO
+        psdAddEventHandler(), psdRemEventHandler()
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     struct PsdEventNote *pen;
