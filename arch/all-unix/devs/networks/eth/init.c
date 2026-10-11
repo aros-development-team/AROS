@@ -178,6 +178,9 @@ static int GM_UNIQUENAME(open)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req, U
             /* and for the trackers */
             NEWLIST(&(unit->trackers));
 
+            /* and for the multicast addresses to receive */
+            NEWLIST(&(unit->mcasts));
+
             /* a port to sync actions with the iotask */
             unit->iosyncport = CreateMsgPort();
 
