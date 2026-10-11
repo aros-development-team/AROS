@@ -1,53 +1,14 @@
 /*
- * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
- *                    Helsinki University of Technology, Finland.
- *                    All rights reserved.
- * Copyright (C) 2005 Neil Cafferkey
+ * Copyright (C) 2005-2026, The AROS Development Team. All rights reserved.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
- * MA 02111-1307, USA.
- *
- */
-
-/* 
- * Mach Operating System
- * Copyright (C) 1992 Carnegie Mellon University
- * All Rights Reserved.
- * 
- * Permission to use, copy, modify and distribute this software and its
- * documentation is hereby granted, provided that both the copyright
- * notice and this permission notice appear in all copies of the
- * software, derivative works or modified versions, and any portions
- * thereof, and that both notices appear in supporting documentation.
- * 
- * CARNEGIE MELLON ALLOWS FREE USE OF THIS SOFTWARE IN ITS "AS IS"
- * CONDITION.  CARNEGIE MELLON DISCLAIMS ANY LIABILITY OF ANY KIND FOR
- * ANY DAMAGES WHATSOEVER RESULTING FROM THE USE OF THIS SOFTWARE.
- * 
- * Carnegie Mellon requests users of this software to return to
- * 
- *  Software Distribution Coordinator  or  Software.Distribution@CS.CMU.EDU
- *  School of Computer Science
- *  Carnegie Mellon University
- *  Pittsburgh PA 15213-3890
- * 
- * any improvements or extensions that they make and grant Carnegie Mellon 
- * the rights to redistribute these changes.
+ * Derived from the 4.3BSD-Reno/Net-2 <net/radix.h> (7.4, Berkeley, 6/28/90);
+ * the Berkeley notice and terms follow. AROS changes: include guard, and the
+ * node/mask storage macros use the stack's bsd_malloc()/bsd_free() instead of
+ * the kernel allocator.
  */
 
 /*
- * Copyright (C) 1988, 1989 Regents of the University of California.
+ * Copyright (c) 1988, 1989 Regents of the University of California.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -83,8 +44,6 @@
 
 #ifndef NET_RADIX_H
 #define NET_RADIX_H
-
-/*#include <sys/malloc.h>*/
 
 /*
  * Radix search tree node layout.
@@ -157,19 +116,11 @@ extern struct radix_node_head {
 } *radix_node_head;
 
 
-/*#ifndef KERNEL*/
-#if 0
-#define Bcmp(a, b, n) bcmp(((char *)(a)), ((char *)(b)), (n))
-#define Bzero(p, n) bzero((char *)(p), (int)(n));
-#define R_Malloc(p, t, n) (p = (t) malloc((unsigned int)(n)))
-#define Free(p) free((char *)p);
-#else
+/* The stack provides bsd_malloc()/bsd_free() in place of the kernel allocator. */
 #define Bcmp(a, b, n) bcmp(((caddr_t)(a)), ((caddr_t)(b)), (unsigned)(n))
 #define Bcopy(a, b, n) bcopy(((caddr_t)(a)), ((caddr_t)(b)), (unsigned)(n))
 #define Bzero(p, n) bzero((caddr_t)(p), (unsigned)(n));
 #define R_Malloc(p, t, n) (p = (t) bsd_malloc((unsigned long)(n), M_RTABLE, M_DONTWAIT))
 #define Free(p) bsd_free((caddr_t)p, M_RTABLE);
-#endif /*KERNEL*/
 
 #endif /*NET_RADIX_H*/
-
