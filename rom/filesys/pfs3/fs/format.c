@@ -164,6 +164,7 @@ BOOL FDSFormat (DSTR diskname, LONG disktype, SIPTR *error, BOOL showrequesters,
   struct crootblockextension *rext;
   ULONG err;
   ULONG i;
+  BOOL committed;
 
 	ENTER("FDSFormat");
 
@@ -230,10 +231,15 @@ BOOL FDSFormat (DSTR diskname, LONG disktype, SIPTR *error, BOOL showrequesters,
 	g->dirty = TRUE;
 #endif
 
-	UpdateDisk (g);
+	committed = UpdateDisk(g);
 	FreeVolumeResources (volume, g);
 	g->currentvolume = NULL;
-
+	g->dirty = FALSE;
+	if (!committed)
+	{
+		*error = g->softprotect ? ERROR_DISK_WRITE_PROTECTED : ERROR_NOT_A_DOS_DISK;
+		return DOSFALSE;
+	}
 	return DOSTRUE;
 }
 
