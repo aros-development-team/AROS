@@ -48,7 +48,12 @@
 #include "ipfilter.h"
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
-#include "netinet/in_var.h"
+/* the stack's own, not the public <netinet/in_var.h>: it declares
+ * in_mcast_macaddr() */
+#include "../netinet/in_var.h"
+#ifndef AROSTCP_NETINET_IN_VAR_H
+#error "the stack's netinet/in_var.h was not the one included"
+#endif
 #include <netinet/ip.h>
 
 #include <net/if_sana.h>
