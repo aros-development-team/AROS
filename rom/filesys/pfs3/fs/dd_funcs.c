@@ -963,8 +963,12 @@ static SIPTR dd_AddBuffers(struct DosPacket *pkt, globaldata * g)
 	struct lru_cachedblock *lrunode, *nextnode;
 	LONG numbuffers;
 
-	/* kill old cache */
-	UpdateDisk(g);
+	/* Keep the old cache if dirty metadata could not be committed. */
+	if (g->dirty && !UpdateDisk(g))
+	{
+		pkt->dp_Res2 = g->softprotect ? ERROR_DISK_WRITE_PROTECTED : ERROR_NOT_A_DOS_DISK;
+		return DOSFALSE;
+	}
 
 	for (lrunode = (struct lru_cachedblock *)g->glob_lrudata.LRUqueue.mlh_Head; lrunode->next;
 		 lrunode = nextnode)
