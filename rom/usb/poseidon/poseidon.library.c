@@ -3699,9 +3699,49 @@ AROS_LH1(struct PsdDevice *, psdGetNextDevice,
 /* \\\ */
 
 /* /// "psdSuspendBindings()" */
-AROS_LH1(BOOL, psdSuspendBindings,
+/****** poseidon.library/psdSuspendBindings ************************
+
+    NAME */
+        AROS_LH1(BOOL, psdSuspendBindings,
+/*  SYNOPSIS */
          AROS_LHA(struct PsdDevice *, pd, A0),
+/*  LOCATION */
          LIBBASETYPEPTR, ps, 100, psd)
+/*  FUNCTION
+        Prepare a configured USB device for suspension by asking its
+        device and interface class bindings to suspend. Classes that
+        advertise UCCA_SupportsSuspend receive UCM_AttemptSuspendDevice.
+
+    INPUTS
+        pd - Configured Poseidon device with a valid current config.
+             NULL returns FALSE.
+
+    RESULT
+        TRUE if all examined bindings allow suspension, FALSE for NULL
+        or a binding that refuses or blocks suspension. TRUE does not
+        mean the USB device itself has been suspended.
+
+    NOTES
+        Forced suspension is enabled only when pgc_ForceSuspend is set
+        and the current configuration advertises USCAF_REMOTE_WAKEUP.
+        A busy class without suspend support blocks an ordinary suspend;
+        forced suspension requests release of that binding instead.
+        An application device binding also blocks suspension unless
+        forced release is enabled. An idle class without suspend support
+        can remain bound.
+        psdSuspendDevice() takes the device write lock before calling
+        this function. Direct callers must provide suitable synchronization.
+
+    BUGS
+        The implementation dereferences pd->pd_CurrentConfig without
+        validating it. On failure, earlier bindings may already have been
+        suspended or released; no rollback is performed.
+
+    SEE ALSO
+        psdSuspendDevice(), psdResumeBindings(), psdReleaseDevBinding(),
+        psdReleaseIfBinding()
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     struct PsdUsbClass *puc;
@@ -3848,9 +3888,43 @@ AROS_LH1(BOOL, psdSuspendDevice,
 /* \\\ */
 
 /* /// "psdResumeBindings()" */
-AROS_LH1(BOOL, psdResumeBindings,
+/****** poseidon.library/psdResumeBindings ************************
+
+    NAME */
+        AROS_LH1(BOOL, psdResumeBindings,
+/*  SYNOPSIS */
          AROS_LHA(struct PsdDevice *, pd, A0),
+/*  LOCATION */
          LIBBASETYPEPTR, ps, 101, psd)
+/*  FUNCTION
+        Ask existing class bindings to resume after device suspension.
+        If a class rejects UCM_AttemptResumeDevice, request release of
+        its binding and run psdClassScan() to look for a replacement.
+
+    INPUTS
+        pd - Configured Poseidon device with a valid current config.
+             NULL is accepted and leaves bindings unchanged.
+
+    RESULT
+        TRUE unconditionally. This is not confirmation that bindings
+        resumed successfully or that a replacement binding was found.
+
+    NOTES
+        Application-level device bindings are skipped. The implementation
+        considers the first interface with a binding, then leaves the
+        interface loop without visiting subsequent bound interfaces.
+        psdResumeDevice() invokes this routine after hub resume succeeds.
+        Direct callers must provide suitable synchronization.
+
+    BUGS
+        The first-bound-interface limit can leave other interface
+        bindings unresumed. The return value does not report class resume
+        failures, rebinding results or the NULL-device case.
+
+    SEE ALSO
+        psdResumeDevice(), psdSuspendBindings(), psdClassScan()
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     struct PsdUsbClass *puc;
@@ -6156,9 +6230,37 @@ AROS_LH1(void, psdReleaseAppBinding,
 /* \\\ */
 
 /* /// "psdReleaseDevBinding()" */
-AROS_LH1(void, psdReleaseDevBinding,
+/****** poseidon.library/psdReleaseDevBinding ************************
+
+    NAME */
+        AROS_LH1(void, psdReleaseDevBinding,
+/*  SYNOPSIS */
          AROS_LHA(struct PsdDevice *, pd, A0),
+/*  LOCATION */
          LIBBASETYPEPTR, ps, 50, psd)
+/*  FUNCTION
+        Request release of an existing whole-device binding. A root-hub
+        binding is released through psdHubReleaseDevBinding(); for a child
+        device the request is forwarded to its parent hub class.
+
+    INPUTS
+        pd - Pointer to a valid Poseidon device. Must not be NULL.
+
+    NOTES
+        The function has no effect when pd->pd_DevBinding is NULL. For
+        child devices it sends UCM_HubReleaseDevBinding only if the parent
+        hub has both a device binding and an associated class.
+        No completion status is returned; the function does not itself
+        clear a child device's binding pointer.
+
+    BUGS
+        A NULL or invalid device pointer is not checked. A missing parent
+        hub binding silently leaves the device binding in place.
+
+    SEE ALSO
+        psdReleaseIfBinding(), psdHubReleaseDevBinding()
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     struct PsdUsbClass *puc;
@@ -6181,9 +6283,37 @@ AROS_LH1(void, psdReleaseDevBinding,
 /* \\\ */
 
 /* /// "psdReleaseIfBinding()" */
-AROS_LH1(void, psdReleaseIfBinding,
+/****** poseidon.library/psdReleaseIfBinding ************************
+
+    NAME */
+        AROS_LH1(void, psdReleaseIfBinding,
+/*  SYNOPSIS */
          AROS_LHA(struct PsdInterface *, pif, A0),
+/*  LOCATION */
          LIBBASETYPEPTR, ps, 51, psd)
+/*  FUNCTION
+        Request release of a USB interface binding through its hub.
+        An interface belonging to a root hub is released directly through
+        psdHubReleaseIfBinding().
+
+    INPUTS
+        pif - Pointer to a valid Poseidon interface. Must not be NULL.
+
+    NOTES
+        The release is requested only if both pif->pif_IfBinding and
+        pif->pif_ClsBinding are set. For a child device the parent hub
+        must have a device binding and an associated class; the request
+        is then sent as UCM_HubReleaseIfBinding. No completion status
+        is returned.
+
+    BUGS
+        A NULL or invalid interface pointer is not checked. An absent
+        class or parent hub binding can leave the interface bound.
+
+    SEE ALSO
+        psdReleaseDevBinding(), psdHubReleaseIfBinding()
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     struct PsdUsbClass *puc;
