@@ -53,7 +53,7 @@ void run_dhcp(void)
         if(ssc->ss_cflags & SSF_DELAYUP) {
             ssc->ss_cflags &= ~SSF_DELAYUP;
             if(!ifp->if_data.ifi_aros_usedhcp &&
-                    ((struct sana_softc *)ifp)->ss_ipaddr.s_addr == INADDR_ANY)
+                    ssc->ss_ipaddr.s_addr == INADDR_ANY)
                 autoip_start(ifp);  /* no DHCPv4 and no address assigned */
         }
     }
