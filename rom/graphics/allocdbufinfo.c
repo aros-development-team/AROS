@@ -30,12 +30,11 @@
 
     INPUTS
 
-    vp  -  pointer to a ViewPort
+    vp  -  pointer to a ViewPort (currently unused).
 
-    RESULTS
+    RESULT
 
-    Returns NULL if there wasn't enough memory (or if the viewport doesn't
-    support double buffering).
+    A newly allocated DBufInfo structure, or NULL if allocation fails.
 
     NOTES
 
