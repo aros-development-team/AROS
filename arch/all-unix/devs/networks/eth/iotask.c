@@ -11,6 +11,8 @@
 
 #include "eth.h"
 
+#include <string.h>
+
 #include <signal.h>
 
 /* this fires whenever data is waiting to be read on the eth descriptor */
@@ -68,6 +70,27 @@ static void eth_receive(struct eth_base *ETHBase, struct eth_unit *unit)
     else if ((eth->h_dest[0] & 0x1) != 0) {
         D(bug("[eth] [io:%d] multicast packet\n"));
         mcast = TRUE;
+    }
+
+    /* a multicast packet is wanted only if a client asked for its address:
+     * the host interface is promiscuous and has no filter of its own */
+    if (mcast) {
+        struct eth_mcast *wanted;
+        BOOL found = FALSE;
+
+        Disable();
+        ForeachNode(&(unit->mcasts), wanted) {
+            if (memcmp(wanted->addr, eth->h_dest, sizeof(wanted->addr)) == 0) {
+                found = TRUE;
+                break;
+            }
+        }
+        Enable();
+
+        if (!found) {
+            D(bug("[eth] [io:%d] multicast address nobody asked for, dropping it\n", unit->num));
+            return;
+        }
     }
 
     /* now we loop through our openers, seeing if anyone wants the packet */
