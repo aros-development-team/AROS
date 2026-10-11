@@ -31,7 +31,7 @@ ULONG ReadReservedBlocks(UBYTE *, ULONG, ULONG, globaldata *);
 
 ULONG WriteReservedBlocks(UBYTE *, ULONG, ULONG, globaldata *);
 
-void UpdateAndMotorOff(globaldata * );
+ULONG UpdateAndMotorOff(globaldata * );
 
 void UpdateCache (globaldata *g);
 void FlushDataCache (globaldata *g);
