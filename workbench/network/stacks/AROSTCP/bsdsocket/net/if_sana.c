@@ -1421,7 +1421,9 @@ sana_start(struct sana_softc *ssc)
         req->ioip_s2.ios2_PacketType     = st->st_type;
         bcopy(st->st_dstaddr, req->ioip_s2.ios2_DstAddr, ifp->if_addrlen);
         req->ioip_s2.ios2_Req.io_Message.mn_Node.ln_Pri = st->st_pri;
-        req->ioip_Command  = (m->m_flags & M_BCAST) ? S2_BROADCAST : CMD_WRITE;
+        /* a group's frame is not an ordinary write to a SANA-II driver */
+        req->ioip_Command  = (m->m_flags & M_BCAST) ? S2_BROADCAST :
+                             (m->m_flags & M_MCAST) ? S2_MULTICAST : CMD_WRITE;
         req->ioip_dispatch = free_written_packet;
         req->ioip_packet   = m;
         req->ioip_s2.ios2_DataLength = m->m_pkthdr.len;
@@ -1429,7 +1431,7 @@ sana_start(struct sana_softc *ssc)
         m_free(tag);			/* metadata consumed; the packet lives on */
 
         ifp->if_obytes += m->m_pkthdr.len;
-        if(m->m_flags & M_BCAST)
+        if(m->m_flags & (M_BCAST | M_MCAST))
             ifp->if_omcasts++;
 
         BeginIO((struct IORequest *)req);
