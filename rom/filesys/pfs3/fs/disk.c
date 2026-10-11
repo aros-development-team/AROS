@@ -1229,7 +1229,8 @@ static int CachedRead(ULONG blocknr, SIPTR *error, BOOL fake, globaldata *g)
 		*error = RawRead(&g->dc.data[i<<BLOCKSHIFT], 1, blocknr, g);
 	g->dc.roving = (g->dc.roving+1)&g->dc.mask;
 	g->dc.ref[i].dirty = 0;
-	g->dc.ref[i].blocknr = blocknr;
+	/* Do not turn a failed read into a successful cache hit. */
+	g->dc.ref[i].blocknr = *error ? 0 : blocknr;
 	return i;
 }
 
@@ -1369,7 +1370,8 @@ ULONG DiskRead(UBYTE *buffer, ULONG blockstoread, ULONG blocknr, globaldata *g)
 	if (blockstoread == 1)
 	{
 		slotnr = CachedRead(blocknr, &error, FALSE, g);
-		memcpy(buffer, &g->dc.data[slotnr<<BLOCKSHIFT], BLOCKSIZE);
+		if (!error)
+			memcpy(buffer, &g->dc.data[slotnr<<BLOCKSHIFT], BLOCKSIZE);
 		return error;
 	}
 	ValidateCache(blocknr, blockstoread, read, g);
