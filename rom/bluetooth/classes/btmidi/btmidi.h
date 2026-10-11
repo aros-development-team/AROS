@@ -19,45 +19,37 @@
 #include <libraries/btclass.h>
 
 #include "blemidi.h"
-#include "camdbridge.h"
+#include "btmidi_camd.h"
 
 #define BTMIDI_NAME_SIZE 32
+#define BTMIDI_VALUE_SIZE 512     /* the largest BLE MIDI packet taken */
 
-#define BTMIDI_DEFAULT_NODE "BLE MIDI"
-#define BTMIDI_DEFAULT_IN   "BLE MIDI In"
-#define BTMIDI_DEFAULT_OUT  "BLE MIDI Out"
-
-/* The class configuration, stored as chunk 'BMID' of the class's
-   configuration by bluetooth.library: the names of the CAMD node and of its
-   two clusters. Other programs may read it to recognise the ports. */
-struct BTMidiCfg {
-    ULONG mc_ChunkID;
-    ULONG mc_Length;
-    char mc_NodeName[BTMIDI_NAME_SIZE];
-    char mc_InName[BTMIDI_NAME_SIZE];
-    char mc_OutName[BTMIDI_NAME_SIZE];
-};
-
-/* Written by the service task only; the settings window reads them. */
+/* Written by the service task only; the status window reads them. */
 struct BTMidiStats {
     ULONG ms_RxPackets;   /* BLE MIDI packets written by centrals */
-    ULONG ms_RxMessages;  /* MIDI messages delivered to CAMD */
+    ULONG ms_RxMessages;  /* MIDI messages handed to CAMD */
     ULONG ms_TxPackets;   /* notifications queued to centrals */
     ULONG ms_TxMessages;  /* MIDI messages taken from CAMD */
     ULONG ms_Errors;      /* malformed packets and failed notifications */
 };
 
-enum btmidi_camd_state {
-    BTMIDI_CAMD_CLOSED,
-    BTMIDI_CAMD_OPEN,
-    BTMIDI_CAMD_DEFAULTS  /* the configured names failed; defaults in use */
+enum btmidi_driver_state {
+    BTMIDI_DRIVER_UNKNOWN,    /* not looked at yet: no DOS so far */
+    BTMIDI_DRIVER_INSTALLED,  /* DEVS:Midi/btmidi is this class's driver */
+    BTMIDI_DRIVER_FAILED      /* it could not be written */
+};
+
+/* MIDI bytes on their way to a port's CAMD side. */
+struct btmidi_rx {
+    struct BTMidiAdapter *adapter;
+    struct BTMidiRXData data;
 };
 
 struct btmidi_gui;
 
 /* A BLE MIDI peripheral (a keyboard, a controller) this machine connects
-   to as the central: bound to its BLE MIDI service, with a CAMD node of its
-   own named after the device. */
+   to as the central: bound to its BLE MIDI service, with a CAMD port of
+   its own, btmidi.1 and up. */
 struct btmidi_binding {
     struct BTMidiBase *base;
     struct Library *bt_base;        /* bluetooth.library (binding task) */
@@ -86,13 +78,13 @@ struct btmidi_binding {
     BOOL primed;                    /* read done; notifications follow */
     ULONG packet_limit;
 
-    struct btmidi_camd camd;
-    char node_name[BTMIDI_NAME_SIZE];
-    char in_name[BTMIDI_NAME_SIZE];
-    char out_name[BTMIDI_NAME_SIZE];
-    UBYTE notify_buf[512];
-    UBYTE read_buf[512];
-    struct blemidi_stream stream;
+    ULONG port;                     /* its CAMD port */
+    LONG tx_signal;                 /* the port's ring has bytes to send */
+    UBYTE notify_buf[BTMIDI_VALUE_SIZE];
+    UBYTE read_buf[BTMIDI_VALUE_SIZE];
+    struct blemidi_decoder decoder;
+    struct blemidi_writer writer;
+    struct btmidi_rx rx;
 };
 
 struct BTMidiBase {
@@ -102,23 +94,22 @@ struct BTMidiBase {
     struct Task *ready_task;
     LONG ready_signal;
 
-    struct BTMidiCfg cfg;           /* the configuration in effect */
-    BOOL using_default_cfg;
     APTR record;                    /* the BLE MIDI service record */
-    enum btmidi_camd_state camd_state;
+    enum btmidi_driver_state driver_state;
     struct BTMidiStats stats;
 
-    struct Task *gui_task;          /* the settings window, if open */
+    /* One per CAMD port. An adapter's ba_Owner and the port's name change
+       under Forbid(). */
+    struct BTMidiAdapter adapters[BTMIDI_PORTS];
+    char port_names[BTMIDI_PORTS][BTMIDI_NAME_SIZE];
+
+    struct Task *gui_task;          /* the status window, if open */
     struct btmidi_gui *gui;
     volatile BOOL activity_pending; /* the window has not refreshed yet */
 };
 
-void btmidi_default_cfg(struct BTMidiCfg *cfg);
-void btmidi_load_cfg(struct BTMidiBase *base, struct Library *bluetooth);
-void btmidi_store_cfg(struct BTMidiBase *base, struct Library *bluetooth,
-                      BOOL to_disk);
-void btmidi_reconfigure(struct BTMidiBase *base);
 BOOL btmidi_open_cfg_window(struct BTMidiBase *base, struct Library *bluetooth);
+void btmidi_notify_gui(struct BTMidiBase *base);
 
 UWORD btmidi_now_ms(struct Device *timer);
 AROS_UFP0(void, btmidi_gui_task);
@@ -130,5 +121,22 @@ struct btmidi_binding *btmidi_force_binding(struct BTMidiBase *base,
                                             struct BtService *service);
 void btmidi_release_binding(struct BTMidiBase *base,
                             struct btmidi_binding *binding);
+
+/* btmidi_camd.c: the class's side of the CAMD driver. */
+void btmidi_camd_init(struct BTMidiBase *base);
+void btmidi_camd_free(struct BTMidiBase *base);
+void btmidi_camd_install(struct BTMidiBase *base);
+/* A port belongs to one role or binding at a time. Reserving one fixes who
+   it stands for; attaching names the task that does its I/O. */
+LONG btmidi_camd_reserve(struct BTMidiBase *base, LONG port, APTR owner,
+                         const char *name);
+void btmidi_camd_attach(struct BTMidiAdapter *adapter, struct Task *task,
+                        ULONG sigmask);
+void btmidi_camd_release(struct BTMidiBase *base, ULONG port);
+/* In the attached task only. */
+ULONG btmidi_camd_read(struct BTMidiAdapter *adapter, UBYTE *buffer,
+                       ULONG size);
+void btmidi_camd_rx_byte(struct btmidi_rx *rx, UBYTE byte);
+void btmidi_camd_rx_flush(struct btmidi_rx *rx);
 
 #endif

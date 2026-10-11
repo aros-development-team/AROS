@@ -2,16 +2,14 @@
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 */
 
-/* The BLE MIDI 1.0 packet format: decoding, encoding, and the reassembly of
-   MIDI messages from one sender's packets. Portable C. */
+/* The BLE MIDI 1.0 packet format: packets to a stream of MIDI bytes and
+   back. Portable C. */
 
 #ifndef BTMIDI_BLEMIDI_H
 #define BTMIDI_BLEMIDI_H
 
 #include <stddef.h>
 #include <stdint.h>
-
-#include "btmidi_limits.h"
 
 #define BLEMIDI_SERVICE_UUID \
     {0x03,0xb8,0x0e,0x5a,0xed,0xe8,0x4b,0x33,0xa7,0x51,0x6c,0xe3,0x4e,0xc4,0xc7,0x00}
@@ -30,49 +28,40 @@ void blemidi_decoder_init(struct blemidi_decoder *decoder);
 int blemidi_decode(struct blemidi_decoder *decoder,
                        const uint8_t *packet, size_t length,
                        blemidi_byte_callback callback, void *context);
-int blemidi_encode_message(const uint8_t *message, size_t length,
-                                uint16_t timestamp, uint8_t *packet,
-                                size_t capacity, size_t *written);
-int blemidi_encode_sysex_chunk(const uint8_t *message, size_t length,
-                                    size_t *offset, uint16_t timestamp,
-                                    uint8_t *packet, size_t capacity,
-                                    size_t *written);
 
-/* Reassembles complete MIDI messages from the BLE MIDI packets of one
-   sender: running status and SysEx span packets, so every connection needs
-   its own stream. The callback receives each channel, System Common or
-   Real-Time message, and each SysEx from F0 to F7. */
-typedef void (*blemidi_message_callback)(void *context,
-                                             const uint8_t *message,
-                                             size_t length);
+/* The other way: MIDI bytes, as a serial port would carry them, into BLE
+   MIDI packets. A packet takes as many whole messages as fit; a SysEx
+   continues over as many packets as it needs. send gets each full packet,
+   and flush whatever is left once the sender has no more bytes. */
+#define BLEMIDI_PACKET_MIN 20   /* what the default ATT MTU carries */
+#define BLEMIDI_PACKET_MAX 512
 
-struct blemidi_stream {
-    struct blemidi_decoder decoder;
-    blemidi_message_callback callback;
+typedef int (*blemidi_packet_callback)(void *context, const uint8_t *packet,
+                                       size_t length);
+
+struct blemidi_writer {
+    blemidi_packet_callback send;
     void *context;
+    size_t capacity;            /* of a packet: the link's payload */
+    size_t length;              /* of the packet being filled, 0 for none */
+    uint8_t sysex;              /* inside a SysEx */
+    uint8_t running;
     uint8_t message[3];
-    uint8_t message_length;
-    uint8_t message_needed;
-    size_t sysex_length;
-    uint8_t sysex[BTMIDI_SYSEX_MAX];
+    uint8_t have;
+    uint8_t need;
+    unsigned long messages;     /* messages written, for statistics */
+    uint8_t packet[BLEMIDI_PACKET_MAX];
 };
 
-void blemidi_stream_init(struct blemidi_stream *stream,
-                             blemidi_message_callback callback,
-                             void *context);
-/* Forgets a partial message, e.g. after the link was lost. */
-void blemidi_stream_reset(struct blemidi_stream *stream);
-/* Returns -1 for a malformed packet or an oversized SysEx; the stream is
-   then reset and the next packet starts afresh. */
-int blemidi_stream_feed(struct blemidi_stream *stream,
-                            const uint8_t *packet, size_t length);
-
-/* The CAMD names of a BLE MIDI device AROS connects to: the node is named
-   after the device, its clusters "<name> In" (what the device plays) and
-   "<name> Out" (what is sent to it). Each buffer holds size bytes; the name
-   is shortened so that " Out" still fits. btmidi.class makes the ports, and other
-   programs can recognise them by these names. */
-void blemidi_port_names(const char *device_name, char *node, char *in,
-                            char *out, size_t size);
+void blemidi_writer_init(struct blemidi_writer *writer,
+                         blemidi_packet_callback send, void *context);
+/* Forgets a partial message and packet, e.g. after the link was lost. */
+void blemidi_writer_reset(struct blemidi_writer *writer);
+/* Takes effect with the next packet; call it between flushes. */
+void blemidi_writer_capacity(struct blemidi_writer *writer, size_t capacity);
+/* Both return -1 when send refused a packet; the packet is then lost. */
+int blemidi_writer_put(struct blemidi_writer *writer, uint16_t timestamp,
+                       uint8_t byte);
+int blemidi_writer_flush(struct blemidi_writer *writer);
 
 #endif

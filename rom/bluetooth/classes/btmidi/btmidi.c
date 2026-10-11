@@ -2,11 +2,11 @@
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 */
 
-/* BLE MIDI GATT service and CAMD bridge for bluetooth.library. */
+/* The BLE MIDI class: the peripheral role's GATT service, and the class
+   entry points. The CAMD side is in btmidi_camd.c. */
 
 #include "btmidi.h"
 #include "blemidi.h"
-#include "camdbridge.h"
 #include <exec/memory.h>
 #include <proto/bluetooth.h>
 #include <proto/exec.h>
@@ -14,7 +14,6 @@
 #include <string.h>
 #include <proto/timer.h>
 
-#define BTMIDI_VALUE_SIZE 512
 #define BTMIDI_TX_PACKET_MIN 20    /* fits the default ATT MTU */
 #define BTMIDI_TX_PACKET_MAX 244   /* the stack's largest ATT MTU, less 3 */
 #define BTMIDI_MAX_PEERS 4
@@ -25,29 +24,32 @@ struct Library *BluetoothBase;
 struct btmidi_runtime;
 
 /* What a central has sent so far. Each connected central has its own: their
-   packets interleave, and running status and SysEx span packets. */
+   packets interleave, and a SysEx spans packets. */
 struct btmidi_peer {
     struct btmidi_runtime *runtime;
     BOOL in_use;
     APTR device;              /* the writer, or NULL from an older stack */
     ULONG last_use;
-    struct blemidi_stream stream;
+    BOOL sysex;               /* it is inside a SysEx */
+    BOOL dropping;            /* which does not reach CAMD */
+    struct blemidi_decoder decoder;
 };
 
+/* The peripheral role: CAMD port 0. */
 struct btmidi_runtime {
     struct BTMidiBase *base;
-    char node_name[BTMIDI_NAME_SIZE];
-    char in_name[BTMIDI_NAME_SIZE];
-    char out_name[BTMIDI_NAME_SIZE];
     struct MsgPort *event_port;
     APTR event_handler;
     APTR record;
-    struct btmidi_camd camd;
+    struct BTMidiAdapter *adapter;
+    LONG tx_signal;           /* the port's ring has bytes to send */
     struct btmidi_peer *peers[BTMIDI_MAX_PEERS];
+    struct btmidi_peer *sysex_peer;   /* whose SysEx CAMD is receiving */
     ULONG use_counter;
-    ULONG tx_payload;         /* what every connected central receives whole */
     struct timerequest timer_io;  /* only opened, for its base: the clock */
     struct Device *timer;
+    struct blemidi_writer writer;
+    struct btmidi_rx rx;
 };
 
 /* The BLE MIDI timestamp: milliseconds, 13 bits. timer is an opened
@@ -65,21 +67,63 @@ UWORD btmidi_now_ms(struct Device *timer)
                     (unsigned long long)now.tv_usec / 1000ULL) & 0x1fff);
 }
 
-static void deliver(void *context, const uint8_t *message, size_t length)
+/* One MIDI byte from a central, on its way to port 0. The centrals share
+   the port, and CAMD parses a single stream: whole messages may alternate,
+   but only one central's SysEx can be under way. A second SysEx is left
+   out, and a message that interrupts a SysEx ends it for CAMD, so the rest
+   of that SysEx is left out too. */
+static int peer_byte(void *context, uint16_t timestamp, uint8_t byte)
 {
     struct btmidi_peer *peer = context;
     struct btmidi_runtime *runtime = peer->runtime;
 
-    if (message[0] == 0xf0)
-        btmidi_camd_deliver_sysex(&runtime->camd, message, length);
-    else
-        btmidi_camd_deliver(&runtime->camd, message, length);
-    runtime->base->stats.ms_RxMessages++;
+    (void)timestamp;
+    if (byte >= 0xf8) {
+        runtime->base->stats.ms_RxMessages++;
+    } else if (byte == 0xf0) {
+        peer->sysex = TRUE;
+        peer->dropping = runtime->sysex_peer && runtime->sysex_peer != peer;
+        if (peer->dropping) {
+            runtime->base->stats.ms_Errors++;
+            return 0;
+        }
+        runtime->sysex_peer = peer;
+        runtime->base->stats.ms_RxMessages++;
+    } else if (peer->sysex) {
+        if (byte == 0xf7) {
+            peer->sysex = FALSE;
+            if (runtime->sysex_peer == peer)
+                runtime->sysex_peer = NULL;
+        }
+        if (peer->dropping) {
+            if (byte == 0xf7)
+                peer->dropping = FALSE;
+            return 0;
+        }
+    } else if (byte & 0x80) {
+        if (runtime->sysex_peer) {
+            runtime->sysex_peer->dropping = TRUE;
+            runtime->sysex_peer = NULL;
+            runtime->base->stats.ms_Errors++;
+        }
+        runtime->base->stats.ms_RxMessages++;
+    }
+    btmidi_camd_rx_byte(&runtime->rx, byte);
+    return 0;
 }
 
-static int set_packet(struct btmidi_runtime *runtime,
-                      const UBYTE *packet, ULONG length)
+static void peer_reset(struct btmidi_peer *peer)
 {
+    if (peer->runtime->sysex_peer == peer)
+        peer->runtime->sysex_peer = NULL;   /* the next status ends it */
+    peer->sysex = peer->dropping = FALSE;
+    blemidi_decoder_init(&peer->decoder);
+}
+
+static int set_packet(void *context, const uint8_t *packet, size_t length)
+{
+    struct btmidi_runtime *runtime = context;
+
     if (btSetServiceValue(runtime->record, 0, (APTR)packet, length) != (LONG)length) {
         runtime->base->stats.ms_Errors++;
         return -1;
@@ -88,30 +132,26 @@ static int set_packet(struct btmidi_runtime *runtime,
     return 0;
 }
 
-static int send_to_ble(void *context, const uint8_t *message, size_t length)
+/* What CAMD clients sent to port 0 goes to every subscribed central. */
+static void send_to_ble(struct btmidi_runtime *runtime)
 {
-    struct btmidi_runtime *runtime = context;
-    UBYTE packet[BTMIDI_TX_PACKET_MAX];
-    size_t written;
+    UBYTE bytes[64];
+    IPTR payload = BTMIDI_TX_PACKET_MIN;
+    unsigned long before = runtime->writer.messages;
     UWORD timestamp = btmidi_now_ms(runtime->timer);
+    ULONG count, n;
 
-    runtime->base->stats.ms_TxMessages++;
-
-    if (length >= 2 && message[0] == 0xf0 && message[length - 1] == 0xf7) {
-        size_t offset = 0;
-        while (offset < length) {
-            if (blemidi_encode_sysex_chunk(message, length, &offset,
-                                                timestamp, packet,
-                                                runtime->tx_payload, &written) ||
-                set_packet(runtime, packet, written))
-                return -1;
-        }
-        return 0;
-    }
-    if (blemidi_encode_message(message, length, timestamp, packet,
-                                   runtime->tx_payload, &written))
-        return -1;
-    return set_packet(runtime, packet, written);
+    /* larger packets once every central has negotiated a larger ATT MTU:
+       SysEx needs fewer of them */
+    btGetAttrs(BGA_STACK, NULL, BSA_LENotifyPayload, &payload, TAG_END);
+    if (payload > BTMIDI_TX_PACKET_MAX)
+        payload = BTMIDI_TX_PACKET_MAX;
+    blemidi_writer_capacity(&runtime->writer, payload);
+    while ((count = btmidi_camd_read(runtime->adapter, bytes, sizeof(bytes))))
+        for (n = 0; n < count; n++)
+            blemidi_writer_put(&runtime->writer, timestamp, bytes[n]);
+    blemidi_writer_flush(&runtime->writer);
+    runtime->base->stats.ms_TxMessages += runtime->writer.messages - before;
 }
 
 static APTR add_service(void)
@@ -167,7 +207,7 @@ static struct btmidi_peer *find_peer(struct btmidi_runtime *runtime, APTR device
     peer->runtime = runtime;
     peer->in_use = TRUE;
     peer->device = device;
-    blemidi_stream_init(&peer->stream, deliver, peer);
+    peer_reset(peer);
 found:
     peer->last_use = ++runtime->use_counter;
     return peer;
@@ -179,17 +219,10 @@ static void forget_peer(struct btmidi_runtime *runtime, APTR device)
 
     for (n = 0; n < BTMIDI_MAX_PEERS; n++)
         if (runtime->peers[n] && runtime->peers[n]->in_use &&
-            runtime->peers[n]->device == device)
+            runtime->peers[n]->device == device) {
+            peer_reset(runtime->peers[n]);
             runtime->peers[n]->in_use = FALSE;
-}
-
-static void reset_peers(struct btmidi_runtime *runtime)
-{
-    ULONG n;
-
-    for (n = 0; n < BTMIDI_MAX_PEERS; n++)
-        if (runtime->peers[n])
-            runtime->peers[n]->in_use = FALSE;
+        }
 }
 
 static void handle_event(struct btmidi_runtime *runtime, struct Message *message)
@@ -208,54 +241,20 @@ static void handle_event(struct btmidi_runtime *runtime, struct Message *message
     } else if (event == BEHMB_SERVICEWRITE && record == runtime->record &&
                index == 0 && value && length > 0 && length <= BTMIDI_VALUE_SIZE) {
         runtime->base->stats.ms_RxPackets++;
-        if (!(peer = find_peer(runtime, device)) ||
-            blemidi_stream_feed(&peer->stream, value, (size_t)length))
+        if (!(peer = find_peer(runtime, device))) {
             runtime->base->stats.ms_Errors++;
+        } else if (blemidi_decode(&peer->decoder, value, (size_t)length,
+                                  peer_byte, peer)) {
+            runtime->base->stats.ms_Errors++;
+            peer_reset(peer);
+        }
+        btmidi_camd_rx_flush(&runtime->rx);
     }
     ReplyMsg(message);
 }
 
-/* Opens the CAMD node under the configured names. Should CAMD refuse them,
-   the defaults keep the service usable. */
-static void open_camd(struct btmidi_runtime *runtime)
-{
-    struct BTMidiBase *base = runtime->base;
-    enum btmidi_camd_state state = BTMIDI_CAMD_OPEN;
-
-    Forbid();
-    CopyMem(base->cfg.mc_NodeName, runtime->node_name, BTMIDI_NAME_SIZE);
-    CopyMem(base->cfg.mc_InName, runtime->in_name, BTMIDI_NAME_SIZE);
-    CopyMem(base->cfg.mc_OutName, runtime->out_name, BTMIDI_NAME_SIZE);
-    Permit();
-    if (btmidi_camd_open_named(&runtime->camd, runtime->node_name,
-                                  runtime->in_name, runtime->out_name)) {
-        strcpy(runtime->node_name, BTMIDI_DEFAULT_NODE);
-        strcpy(runtime->in_name, BTMIDI_DEFAULT_IN);
-        strcpy(runtime->out_name, BTMIDI_DEFAULT_OUT);
-        state = btmidi_camd_open_named(&runtime->camd, runtime->node_name,
-                                          runtime->in_name, runtime->out_name)
-                    ? BTMIDI_CAMD_CLOSED : BTMIDI_CAMD_DEFAULTS;
-    }
-    base->camd_state = state;
-}
-
-static BOOL camd_names_changed(struct btmidi_runtime *runtime)
-{
-    BOOL changed;
-
-    Forbid();
-    changed = memcmp(runtime->node_name, runtime->base->cfg.mc_NodeName,
-                     BTMIDI_NAME_SIZE) ||
-              memcmp(runtime->in_name, runtime->base->cfg.mc_InName,
-                     BTMIDI_NAME_SIZE) ||
-              memcmp(runtime->out_name, runtime->base->cfg.mc_OutName,
-                     BTMIDI_NAME_SIZE);
-    Permit();
-    return changed;
-}
-
 /* At most one wake-up per refresh of the settings window. */
-static void notify_gui(struct BTMidiBase *base)
+void btmidi_notify_gui(struct BTMidiBase *base)
 {
     Forbid();
     if (base->gui_task && !base->activity_pending) {
@@ -275,7 +274,10 @@ AROS_UFH0(void, btmidi_task)
 
     memset(&runtime, 0, sizeof(runtime));
     runtime.base = task->tc_UserData;
-    runtime.camd.signal_bit = -1;
+    runtime.adapter = &runtime.base->adapters[0];
+    runtime.rx.adapter = runtime.adapter;
+    blemidi_writer_init(&runtime.writer, set_packet, &runtime);
+    runtime.tx_signal = AllocSignal(-1);
     if (!OpenDevice((CONST_STRPTR)"timer.device", UNIT_VBLANK,
                     (struct IORequest *)&runtime.timer_io, 0))
         runtime.timer = runtime.timer_io.tr_node.io_Device;
@@ -285,14 +287,19 @@ AROS_UFH0(void, btmidi_task)
         CloseLibrary(BluetoothBase);
         BluetoothBase = NULL;
     }
-    if (BluetoothBase && (runtime.event_port = CreateMsgPort()) &&
+    if (BluetoothBase && runtime.tx_signal >= 0 &&
+        (runtime.event_port = CreateMsgPort()) &&
         (runtime.record = add_service())) {
-        /* without CAMD the service still runs; the window tells */
-        open_camd(&runtime);
         runtime.event_handler = btAddEventHandler(runtime.event_port,
                                                    BEHMF_SERVICEWRITE |
                                                    BEHMF_DEVICEDISCONNECTED);
         if (runtime.event_handler) {
+            /* CAMD finds the driver the next time it starts; until then,
+               and without CAMD, the service runs and the window tells */
+            btmidi_camd_install(runtime.base);
+            btmidi_camd_reserve(runtime.base, 0, &runtime, "This computer");
+            btmidi_camd_attach(runtime.adapter, task,
+                               1UL << runtime.tx_signal);
             runtime.base->record = runtime.record;
             runtime.base->task = task;
         }
@@ -307,51 +314,32 @@ AROS_UFH0(void, btmidi_task)
     }
     if (runtime.base->task) {
         do {
-            ULONG mask = (1UL << runtime.event_port->mp_SigBit) |
-                         SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_E;
-
-            if (runtime.camd.signal_bit >= 0)
-                mask |= 1UL << runtime.camd.signal_bit;
-            signals = Wait(mask);
+            signals = Wait((1UL << runtime.event_port->mp_SigBit) |
+                           (1UL << runtime.tx_signal) | SIGBREAKF_CTRL_C);
             while ((message = GetMsg(runtime.event_port)))
                 handle_event(&runtime, message);
-            if ((runtime.camd.signal_bit >= 0) &&
-                (signals & (1UL << runtime.camd.signal_bit))) {
-                /* larger packets once every central has negotiated a
-                   larger ATT MTU: SysEx needs fewer of them */
-                runtime.tx_payload = BTMIDI_TX_PACKET_MIN;
-                btGetAttrs(BGA_STACK, NULL, BSA_LENotifyPayload,
-                           &runtime.tx_payload, TAG_END);
-                if (runtime.tx_payload < BTMIDI_TX_PACKET_MIN)
-                    runtime.tx_payload = BTMIDI_TX_PACKET_MIN;
-                if (runtime.tx_payload > BTMIDI_TX_PACKET_MAX)
-                    runtime.tx_payload = BTMIDI_TX_PACKET_MAX;
-                btmidi_camd_poll(&runtime.camd, send_to_ble, &runtime);
-            }
-            if ((signals & SIGBREAKF_CTRL_E) && camd_names_changed(&runtime)) {
-                /* new port names: CAMD clients reconnect by name */
-                btmidi_camd_close(&runtime.camd);
-                reset_peers(&runtime);
-                open_camd(&runtime);
-            }
-            notify_gui(runtime.base);
+            if (signals & (1UL << runtime.tx_signal))
+                send_to_ble(&runtime);
+            btmidi_notify_gui(runtime.base);
         } while (!(signals & SIGBREAKF_CTRL_C));
     }
+    if (runtime.base->task)
+        btmidi_camd_release(runtime.base, 0);
     runtime.base->record = NULL;
-    runtime.base->camd_state = BTMIDI_CAMD_CLOSED;
     if (runtime.event_handler)
         btRemEventHandler(runtime.event_handler);
     while (runtime.event_port && (message = GetMsg(runtime.event_port)))
         ReplyMsg(message);
     if (runtime.record)
         btRemServiceRecord(runtime.record);
-    btmidi_camd_close(&runtime.camd);
     for (index = 0; index < BTMIDI_MAX_PEERS; index++)
         FreeVec(runtime.peers[index]);
     if (runtime.event_port)
         DeleteMsgPort(runtime.event_port);
     if (BluetoothBase)
         CloseLibrary(BluetoothBase);
+    if (runtime.tx_signal >= 0)
+        FreeSignal(runtime.tx_signal);
     if (runtime.timer)
         CloseDevice((struct IORequest *)&runtime.timer_io);
     runtime.base->task = NULL;
@@ -362,68 +350,9 @@ AROS_UFH0(void, btmidi_task)
     AROS_USERFUNC_EXIT
 }
 
-/* The configuration lives with the other Bluetooth class settings. The
-   functions below take the caller's bluetooth.library base: the global one
-   belongs to the service task. */
+/* The functions below take the caller's bluetooth.library base: the global
+   one belongs to the service task. */
 #define BluetoothBase bluetooth
-
-static void terminate_name(char *name, const char *fallback)
-{
-    name[BTMIDI_NAME_SIZE - 1] = 0;
-    if (!name[0])
-        strcpy(name, fallback);
-}
-
-void btmidi_default_cfg(struct BTMidiCfg *cfg)
-{
-    memset(cfg, 0, sizeof(*cfg));
-    cfg->mc_ChunkID = AROS_LONG2BE(MAKE_ID('B','M','I','D'));
-    cfg->mc_Length = AROS_LONG2BE(sizeof(*cfg) - 8);
-    strcpy(cfg->mc_NodeName, BTMIDI_DEFAULT_NODE);
-    strcpy(cfg->mc_InName, BTMIDI_DEFAULT_IN);
-    strcpy(cfg->mc_OutName, BTMIDI_DEFAULT_OUT);
-}
-
-void btmidi_load_cfg(struct BTMidiBase *base, struct Library *bluetooth)
-{
-    struct BTMidiCfg *cfg = &base->cfg;
-    struct BTMidiCfg *chunk;
-    APTR pic;
-
-    Forbid();
-    btmidi_default_cfg(cfg);
-    base->using_default_cfg = TRUE;
-    if ((pic = btGetClsCfg((STRPTR)MOD_NAME_STRING)) &&
-        (chunk = btGetCfgChunk(pic, AROS_LONG2BE(cfg->mc_ChunkID)))) {
-        ULONG len = AROS_LONG2BE(chunk->mc_Length);
-
-        if (len > sizeof(*cfg) - 8)
-            len = sizeof(*cfg) - 8;
-        CopyMem(((UBYTE *)chunk) + 8, ((UBYTE *)cfg) + 8, len);
-        btFreeVec(chunk);
-        terminate_name(cfg->mc_NodeName, BTMIDI_DEFAULT_NODE);
-        terminate_name(cfg->mc_InName, BTMIDI_DEFAULT_IN);
-        terminate_name(cfg->mc_OutName, BTMIDI_DEFAULT_OUT);
-        base->using_default_cfg = FALSE;
-    }
-    Permit();
-}
-
-void btmidi_store_cfg(struct BTMidiBase *base, struct Library *bluetooth,
-                      BOOL to_disk)
-{
-    APTR pic;
-
-    if (!(pic = btGetClsCfg((STRPTR)MOD_NAME_STRING))) {
-        btSetClsCfg((STRPTR)MOD_NAME_STRING, NULL);
-        pic = btGetClsCfg((STRPTR)MOD_NAME_STRING);
-    }
-    if (pic && btAddCfgEntry(pic, &base->cfg)) {
-        base->using_default_cfg = FALSE;
-        if (to_disk)
-            btSaveCfgToDisk(NULL, FALSE);
-    }
-}
 
 BOOL btmidi_open_cfg_window(struct BTMidiBase *base, struct Library *bluetooth)
 {
@@ -440,14 +369,6 @@ BOOL btmidi_open_cfg_window(struct BTMidiBase *base, struct Library *bluetooth)
     return ok;
 }
 
-void btmidi_reconfigure(struct BTMidiBase *base)
-{
-    Forbid();
-    if (base->task)
-        Signal(base->task, SIGBREAKF_CTRL_E);
-    Permit();
-}
-
 static int GM_UNIQUENAME(libInit)(LIBBASETYPEPTR base)
 {
     struct Library *bluetooth;
@@ -462,7 +383,7 @@ static int GM_UNIQUENAME(libInit)(LIBBASETYPEPTR base)
         CloseLibrary(base->utility_base);
         return FALSE;
     }
-    btmidi_load_cfg(base, bluetooth);
+    btmidi_camd_init(base);
     base->ready_signal = SIGB_SINGLE;
     base->ready_task = FindTask(NULL);
     SetSignal(0, SIGF_SINGLE);
@@ -490,6 +411,7 @@ static int GM_UNIQUENAME(libExpunge)(LIBBASETYPEPTR base)
         while (base->task) Wait(SIGF_SINGLE);
         base->ready_task = NULL;
     }
+    btmidi_camd_free(base);
     CloseLibrary(base->utility_base);
     return TRUE;
 }
@@ -512,7 +434,7 @@ AROS_LH3(LONG, btcGetAttrsA,
             *((SIPTR *)tag->ti_Data) = 0; count++;
         }
         if ((tag = FindTagItem(BCCA_Description, tags))) {
-            *((STRPTR *)tag->ti_Data) = (STRPTR)"BLE MIDI: devices and phones as CAMD ports"; count++;
+            *((STRPTR *)tag->ti_Data) = (STRPTR)"BLE MIDI: devices and phones as ports of the CAMD driver btmidi"; count++;
         }
         if ((tag = FindTagItem(BCCA_HasClassCfgGUI, tags))) {
             *((IPTR *)tag->ti_Data) = TRUE; count++;
@@ -524,7 +446,7 @@ AROS_LH3(LONG, btcGetAttrsA,
             *((IPTR *)tag->ti_Data) = TRUE; count++;
         }
         if ((tag = FindTagItem(BCCA_UsingDefaultCfg, tags))) {
-            *((IPTR *)tag->ti_Data) = base->using_default_cfg; count++;
+            *((IPTR *)tag->ti_Data) = TRUE; count++;
         }
     } else if (type == BCGA_BINDING) {
         struct btmidi_binding *binding = object;
@@ -574,17 +496,9 @@ AROS_LH2(SIPTR, btcDoMethodA,
         btmidi_release_binding(base, (struct btmidi_binding *)data[0]);
         return TRUE;
     case BCM_OpenCfgWindow:
-    case BCM_ConfigChangedEvent:
         if (!(bluetooth = OpenLibrary((CONST_STRPTR)"bluetooth.library", 45)))
             break;
-        if (method == BCM_OpenCfgWindow) {
-            result = btmidi_open_cfg_window(base, bluetooth);
-        } else if (!base->gui_task) {
-            /* not while the window edits it; its Use and Save apply it */
-            btmidi_load_cfg(base, bluetooth);
-            btmidi_reconfigure(base);
-            result = TRUE;
-        }
+        result = btmidi_open_cfg_window(base, bluetooth);
         CloseLibrary(bluetooth);
         break;
     }

@@ -160,160 +160,126 @@ int blemidi_decode(struct blemidi_decoder *decoder,
     return 0;
 }
 
-int blemidi_encode_sysex_chunk(const uint8_t *message, size_t length,
-                                    size_t *offset, uint16_t timestamp,
-                                    uint8_t *packet, size_t capacity,
-                                    size_t *written)
+void blemidi_writer_init(struct blemidi_writer *writer,
+                         blemidi_packet_callback send, void *context)
 {
-    size_t pos, available, remaining, copy, i;
-    if (!message || !offset || !packet || !written || length < 2 ||
-        message[0] != 0xf0 || message[length - 1] != 0xf7 ||
-        *offset >= length || capacity < 5)
-        return -1;
-    for (i = 1; i + 1 < length; i++)
-        if (message[i] & 0x80)
-            return -1;
-    packet[0] = (uint8_t)(0x80 | ((timestamp >> 7) & 0x3f));
-    pos = 1;
-    if (*offset == 0)
-        packet[pos++] = (uint8_t)(0x80 | (timestamp & 0x7f));
-    available = capacity - pos;
-    remaining = length - 1 - *offset;
-    copy = remaining <= available - 2 ? remaining :
-           (remaining > available ? available : remaining - 1);
-    if (copy) {
-        memcpy(packet + pos, message + *offset, copy);
-        *offset += copy;
-        pos += copy;
+    memset(writer, 0, sizeof(*writer));
+    writer->send = send;
+    writer->context = context;
+    writer->capacity = BLEMIDI_PACKET_MIN;
+}
+
+void blemidi_writer_reset(struct blemidi_writer *writer)
+{
+    writer->length = 0;
+    writer->sysex = writer->running = 0;
+    writer->have = writer->need = 0;
+}
+
+void blemidi_writer_capacity(struct blemidi_writer *writer, size_t capacity)
+{
+    if (capacity < BLEMIDI_PACKET_MIN)
+        capacity = BLEMIDI_PACKET_MIN;
+    if (capacity > BLEMIDI_PACKET_MAX)
+        capacity = BLEMIDI_PACKET_MAX;
+    if (!writer->length)
+        writer->capacity = capacity;
+}
+
+int blemidi_writer_flush(struct blemidi_writer *writer)
+{
+    int result = 0;
+
+    if (writer->length > 1 &&
+        writer->send(writer->context, writer->packet, writer->length))
+        result = -1;
+    writer->length = 0;
+    return result;
+}
+
+/* Makes room for count more bytes, in a new packet if they do not fit.
+   A packet that continues a SysEx starts with data after its header. */
+static int writer_room(struct blemidi_writer *writer, uint16_t timestamp,
+                       size_t count)
+{
+    int result = 0;
+
+    if (writer->length && writer->length + count > writer->capacity)
+        result = blemidi_writer_flush(writer);
+    if (!writer->length) {
+        writer->packet[0] = (uint8_t)(0x80 | ((timestamp >> 7) & 0x3f));
+        writer->length = 1;
     }
-    if (*offset == length - 1) {
-        packet[pos++] = (uint8_t)(0x80 | (timestamp & 0x7f));
-        packet[pos++] = 0xf7;
-        *offset = length;
-    }
-    *written = pos;
-    return 0;
+    return result;
 }
 
-int blemidi_encode_message(const uint8_t *message, size_t length,
-                                uint16_t timestamp, uint8_t *packet,
-                                size_t capacity, size_t *written)
+int blemidi_writer_put(struct blemidi_writer *writer, uint16_t timestamp,
+                       uint8_t byte)
 {
-    size_t i;
-    if (!message || !packet || !written || !length || capacity < length + 2 ||
-        message_size(message[0]) != length)
-        return -1;
-    for (i = 1; i < length; i++)
-        if (message[i] & 0x80)
-            return -1;
-    packet[0] = (uint8_t)(0x80 | ((timestamp >> 7) & 0x3f));
-    packet[1] = (uint8_t)(0x80 | (timestamp & 0x7f));
-    memcpy(packet + 2, message, length);
-    *written = length + 2;
-    return 0;
-}
+    uint8_t low = (uint8_t)(0x80 | (timestamp & 0x7f));
+    int result = 0;
 
-void blemidi_stream_init(struct blemidi_stream *stream,
-                             blemidi_message_callback callback,
-                             void *context)
-{
-    stream->callback = callback;
-    stream->context = context;
-    blemidi_stream_reset(stream);
-}
-
-void blemidi_stream_reset(struct blemidi_stream *stream)
-{
-    blemidi_decoder_init(&stream->decoder);
-    stream->message_length = stream->message_needed = 0;
-    stream->sysex_length = 0;
-}
-
-static int stream_byte(void *context, uint16_t timestamp, uint8_t byte)
-{
-    struct blemidi_stream *stream = context;
-
-    (void)timestamp;
     if (byte >= 0xf8) {
-        /* Real-Time may appear anywhere, even inside SysEx */
-        stream->callback(stream->context, &byte, 1);
-        return 0;
+        /* Real-Time goes out at once, also inside another message */
+        result = writer_room(writer, timestamp, 2);
+        writer->packet[writer->length++] = low;
+        writer->packet[writer->length++] = byte;
+        writer->messages++;
+        return result;
     }
-    if (stream->sysex_length) {
-        if (stream->sysex_length == BTMIDI_SYSEX_MAX) {
-            stream->sysex_length = 0;
-            return -1;
+    if (writer->sysex) {
+        if (!(byte & 0x80)) {
+            result = writer_room(writer, timestamp, 1);
+            writer->packet[writer->length++] = byte;
+            return result;
         }
-        stream->sysex[stream->sysex_length++] = byte;
-        if (byte == 0xf7) {
-            stream->callback(stream->context, stream->sysex,
-                             stream->sysex_length);
-            stream->sysex_length = 0;
-        }
-        return 0;
+        /* F7, or a status that cuts the SysEx short: it ends either way */
+        result = writer_room(writer, timestamp, 2);
+        writer->packet[writer->length++] = low;
+        writer->packet[writer->length++] = 0xf7;
+        writer->sysex = 0;
+        if (byte == 0xf7)
+            return result;
     }
     if (byte == 0xf0) {
-        stream->sysex[0] = byte;
-        stream->sysex_length = 1;
-        stream->message_length = stream->message_needed = 0;
-        return 0;
+        writer->have = writer->need = writer->running = 0;
+        if (writer_room(writer, timestamp, 2))
+            result = -1;
+        writer->packet[writer->length++] = low;
+        writer->packet[writer->length++] = byte;
+        writer->sysex = 1;
+        writer->messages++;
+        return result;
     }
     if (byte & 0x80) {
         unsigned size = message_size(byte);
 
-        stream->message_length = stream->message_needed = 0;
-        if (size == 1) {        /* Tune Request */
-            stream->callback(stream->context, &byte, 1);
-            return 0;
-        }
+        writer->have = writer->need = 0;
+        writer->running = byte < 0xf0 ? byte : 0;
         if (!size)              /* a stray F7 or an undefined status */
-            return 0;
-        stream->message[0] = byte;
-        stream->message_length = 1;
-        stream->message_needed = (uint8_t)(size - 1);
-        return 0;
-    }
-    if (!stream->message_needed)
-        return -1;
-    stream->message[stream->message_length++] = byte;
-    if (!--stream->message_needed) {
-        stream->callback(stream->context, stream->message,
-                         stream->message_length);
-        stream->message_length = 0;
-    }
-    return 0;
-}
-
-int blemidi_stream_feed(struct blemidi_stream *stream,
-                            const uint8_t *packet, size_t length)
-{
-    if (blemidi_decode(&stream->decoder, packet, length, stream_byte,
-                           stream)) {
-        blemidi_stream_reset(stream);
-        return -1;
-    }
-    return 0;
-}
-
-void blemidi_port_names(const char *device_name, char *node, char *in,
-                            char *out, size_t size)
-{
-    size_t n = 0, limit = size > 5 ? size - 5 : 0;
-
-    if (device_name)
-        while (n < limit && device_name[n]) {
-            node[n] = device_name[n];
-            n++;
+            return result;
+        writer->message[0] = byte;
+        writer->have = 1;
+        writer->need = (uint8_t)(size - 1);
+    } else {
+        if (!writer->need) {
+            if (!writer->running)
+                return result;  /* data that belongs to nothing */
+            writer->message[0] = writer->running;
+            writer->have = 1;
+            writer->need = (uint8_t)(message_size(writer->running) - 1);
         }
-    while (n && node[n - 1] == ' ')
-        n--;
-    node[n] = 0;
-    if (!n && limit >= 15) {
-        strcpy(node, "BLE MIDI device");
-        n = 15;
+        writer->message[writer->have++] = byte;
+        writer->need--;
     }
-    memcpy(in, node, n);
-    memcpy(in + n, " In", 4);
-    memcpy(out, node, n);
-    memcpy(out + n, " Out", 5);
+    if (!writer->need) {
+        if (writer_room(writer, timestamp, (size_t)writer->have + 1))
+            result = -1;
+        writer->packet[writer->length++] = low;
+        memcpy(writer->packet + writer->length, writer->message, writer->have);
+        writer->length += writer->have;
+        writer->have = 0;
+        writer->messages++;
+    }
+    return result;
 }

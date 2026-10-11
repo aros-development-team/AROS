@@ -2,8 +2,11 @@
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 */
 
-/* The btmidi.class settings window: CAMD port names and BLE MIDI activity.
-   It runs as its own task, opened from Bluetooth Preferences. Pairing,
+/* The btmidi.class status window: which device has which CAMD port, and
+   BLE MIDI activity. There is nothing to configure: the ports are those of
+   the CAMD driver btmidi, and CAMD names them btmidi.in.<n> and
+   btmidi.out.<n>. It runs as its own task, opened from Bluetooth
+   Preferences. Pairing,
    advertising and whether the service is offered stay in Bluetooth
    Preferences and the GATT server settings. */
 
@@ -27,19 +30,14 @@ struct btmidi_gui {
     struct Library *intuition_base;
     Object *app;
     Object *window;
-    Object *node_obj;
-    Object *in_obj;
-    Object *out_obj;
+    Object *ports_obj;
     Object *service_obj;
     Object *camd_obj;
     Object *rx_obj;
     Object *tx_obj;
     Object *errors_obj;
     Object *reset_obj;
-    Object *defaults_obj;
-    Object *save_obj;
-    Object *use_obj;
-    Object *cancel_obj;
+    Object *close_obj;
     Object *about_mi;
     Object *mui_prefs_mi;
 };
@@ -48,9 +46,6 @@ struct btmidi_gui {
 #define MUIMasterBase gui->mui_base
 #define IntuitionBase gui->intuition_base
 
-#define ID_SAVE     1
-#define ID_USE      2
-#define ID_DEFAULTS 3
 #define ID_RESET    4
 #define ID_ABOUT    5
 
@@ -64,64 +59,52 @@ static Object *make_button(struct btmidi_gui *gui, CONST_STRPTR label)
         End;
 }
 
-static Object *make_name(struct btmidi_gui *gui, CONST_STRPTR help)
+/* A line for each port that stands for something. */
+static void show_ports(struct btmidi_gui *gui, struct BTMidiBase *base)
 {
-    return StringObject, StringFrame,
-        MUIA_CycleChain, 1,
-        MUIA_String_MaxLen, BTMIDI_NAME_SIZE,
-        MUIA_ShortHelp, (IPTR)help,
-        End;
-}
+    static char text[BTMIDI_PORTS * (BTMIDI_NAME_SIZE + 24)];
+    char names[BTMIDI_PORTS][BTMIDI_NAME_SIZE];
+    BOOL open[BTMIDI_PORTS];
+    char *out = text;
+    ULONG port;
 
-static void show_names(struct btmidi_gui *gui, const struct BTMidiCfg *cfg)
-{
-    set(gui->node_obj, MUIA_String_Contents, (IPTR)cfg->mc_NodeName);
-    set(gui->in_obj, MUIA_String_Contents, (IPTR)cfg->mc_InName);
-    set(gui->out_obj, MUIA_String_Contents, (IPTR)cfg->mc_OutName);
-}
-
-static void read_name(struct btmidi_gui *gui, Object *obj, char *name,
-                      const char *fallback)
-{
-    STRPTR text = NULL;
-    ULONG start = 0, end;
-
-    get(obj, MUIA_String_Contents, &text);
-    if (text) {
-        end = 0;
-        while (end < BTMIDI_NAME_SIZE - 1 && text[end])
-            end++;
-        while (start < end && text[start] == ' ')
-            start++;
-        while (end > start && text[end - 1] == ' ')
-            end--;
-        CopyMem(text + start, name, end - start);
-        name[end - start] = 0;
-    } else {
-        name[0] = 0;
+    Forbid();
+    CopyMem(base->port_names, names, sizeof(names));
+    for (port = 0; port < BTMIDI_PORTS; port++) {
+        open[port] = base->adapters[port].ba_IsOpen;
+        if (!base->adapters[port].ba_Owner)
+            names[port][0] = 0;
     }
-    if (!name[0])
-        strcpy(name, fallback);
+    Permit();
+    for (port = 0; port < BTMIDI_PORTS; port++) {
+        if (!names[port][0])
+            continue;
+        btSafeRawDoFmt((STRPTR)out, BTMIDI_NAME_SIZE + 24,
+                       (STRPTR)"%s" BTMIDI_DRIVER_NAME ".%lu  %s%s",
+                       (IPTR)(out == text ? "" : "\n"), port,
+                       (IPTR)names[port], (IPTR)(open[port] ? " (in use)" : ""));
+        out += strlen(out);
+    }
+    set(gui->ports_obj, MUIA_Text_Contents, (IPTR)text);
 }
 
 /* Fills the activity group from what the service task reports. */
 static void show_status(struct btmidi_gui *gui, struct BTMidiBase *base)
 {
     struct BTMidiStats stats;
-    char node[BTMIDI_NAME_SIZE];
     char buf[160];
     IPTR enabled = FALSE;
     APTR record;
-    enum btmidi_camd_state camd_state;
-    CONST_STRPTR service;
+    enum btmidi_driver_state driver_state;
+    CONST_STRPTR service, driver;
 
     Forbid();
     base->activity_pending = FALSE;
     stats = base->stats;
     record = base->record;
-    camd_state = base->camd_state;
-    CopyMem(base->cfg.mc_NodeName, node, sizeof(node));
+    driver_state = base->driver_state;
     Permit();
+    show_ports(gui, base);
 
     if (record) {
         btLockReadBase();
@@ -134,20 +117,18 @@ static void show_status(struct btmidi_gui *gui, struct BTMidiBase *base)
     }
     set(gui->service_obj, MUIA_Text_Contents, (IPTR)service);
 
-    switch (camd_state) {
-    case BTMIDI_CAMD_OPEN:
-        btSafeRawDoFmt((STRPTR)buf, sizeof(buf), (STRPTR)"Open as \"%s\"", (IPTR)node);
+    switch (driver_state) {
+    case BTMIDI_DRIVER_INSTALLED:
+        driver = (CONST_STRPTR)"Installed as " BTMIDI_DRIVER_PATH "/" BTMIDI_DRIVER_NAME;
         break;
-    case BTMIDI_CAMD_DEFAULTS:
-        btSafeRawDoFmt((STRPTR)buf, sizeof(buf),
-                       (STRPTR)"The names failed; open as \"%s\"",
-                       (IPTR)BTMIDI_DEFAULT_NODE);
+    case BTMIDI_DRIVER_FAILED:
+        driver = (CONST_STRPTR)"Could not write " BTMIDI_DRIVER_PATH "/" BTMIDI_DRIVER_NAME;
         break;
     default:
-        strcpy(buf, "Not open (is camd.library installed?)");
+        driver = (CONST_STRPTR)"Not installed yet";
         break;
     }
-    set(gui->camd_obj, MUIA_Text_Contents, (IPTR)buf);
+    set(gui->camd_obj, MUIA_Text_Contents, (IPTR)driver);
 
     btSafeRawDoFmt((STRPTR)buf, sizeof(buf), (STRPTR)"%lu packets, %lu MIDI messages",
                    stats.ms_RxPackets, stats.ms_RxMessages);
@@ -173,7 +154,7 @@ static BOOL build_window(struct btmidi_gui *gui)
         MUIA_Application_Version, (IPTR)VERSION_STRING,
         MUIA_Application_Copyright, (IPTR)"(c) 2026 The AROS Development Team",
         MUIA_Application_Author, (IPTR)"The AROS Development Team",
-        MUIA_Application_Description, (IPTR)"Settings for the Bluetooth LE MIDI service",
+        MUIA_Application_Description, (IPTR)"Status of the Bluetooth LE MIDI service",
         MUIA_Application_Base, (IPTR)"BTMIDI",
         MUIA_Application_Menustrip, (IPTR)MenustripObject,
             Child, (IPTR)MenuObjectT((IPTR)"Project"),
@@ -196,23 +177,13 @@ static BOOL build_window(struct btmidi_gui *gui)
             MUIA_HelpNode, (IPTR)MOD_NAME_STRING,
 
             WindowContents, (IPTR)VGroup,
-                Child, (IPTR)ColGroup(2), GroupFrameT("CAMD ports"),
-                    Child, (IPTR)Label2((IPTR)"Device:"),
-                    Child, (IPTR)(gui->node_obj = make_name(gui,
-                        (CONST_STRPTR)"The name of the CAMD device BLE MIDI appears as.")),
-                    Child, (IPTR)Label2((IPTR)"From Bluetooth:"),
-                    Child, (IPTR)(gui->in_obj = make_name(gui,
-                        (CONST_STRPTR)"The cluster that carries MIDI received from\n"
-                                      "the connected phone or computer.")),
-                    Child, (IPTR)Label2((IPTR)"To Bluetooth:"),
-                    Child, (IPTR)(gui->out_obj = make_name(gui,
-                        (CONST_STRPTR)"The cluster whose MIDI is sent to\n"
-                                      "the connected phone or computer.")),
+                Child, (IPTR)VGroup, GroupFrameT("CAMD ports"),
+                    Child, (IPTR)(gui->ports_obj = make_status(gui)),
                     End,
                 Child, (IPTR)ColGroup(2), GroupFrameT("Activity"),
                     Child, (IPTR)Label1((IPTR)"Service:"),
                     Child, (IPTR)(gui->service_obj = make_status(gui)),
-                    Child, (IPTR)Label1((IPTR)"CAMD:"),
+                    Child, (IPTR)Label1((IPTR)"CAMD driver:"),
                     Child, (IPTR)(gui->camd_obj = make_status(gui)),
                     Child, (IPTR)Label1((IPTR)"Received:"),
                     Child, (IPTR)(gui->rx_obj = make_status(gui)),
@@ -226,11 +197,9 @@ static BOOL build_window(struct btmidi_gui *gui)
                         End,
                     End,
                 Child, (IPTR)HGroup,
-                    MUIA_Group_SameWidth, TRUE,
-                    Child, (IPTR)(gui->save_obj = make_button(gui, (CONST_STRPTR)"\33c Save ")),
-                    Child, (IPTR)(gui->use_obj = make_button(gui, (CONST_STRPTR)"\33c Use ")),
-                    Child, (IPTR)(gui->defaults_obj = make_button(gui, (CONST_STRPTR)"\33c Defaults ")),
-                    Child, (IPTR)(gui->cancel_obj = make_button(gui, (CONST_STRPTR)"\33c Cancel ")),
+                    Child, (IPTR)HSpace(0),
+                    Child, (IPTR)(gui->close_obj = make_button(gui, (CONST_STRPTR)"\33c Close ")),
+                    Child, (IPTR)HSpace(0),
                     End,
                 End,
             End),
@@ -238,16 +207,15 @@ static BOOL build_window(struct btmidi_gui *gui)
     if (!gui->app)
         return FALSE;
 
+    set(gui->ports_obj, MUIA_ShortHelp,
+        (IPTR)"Port 0 is this computer, for the phones and computers that\n"
+              "connect to it. Each BLE MIDI device it is bound to has a port\n"
+              "of its own. CAMD programs find port n as " BTMIDI_DRIVER_NAME ".in.n\n"
+              "and " BTMIDI_DRIVER_NAME ".out.n.");
     set(gui->reset_obj, MUIA_ShortHelp, (IPTR)"Set the activity counters back to zero.");
     DoMethod(gui->window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
              gui->app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
-    DoMethod(gui->save_obj, MUIM_Notify, MUIA_Pressed, FALSE,
-             gui->app, 2, MUIM_Application_ReturnID, ID_SAVE);
-    DoMethod(gui->use_obj, MUIM_Notify, MUIA_Pressed, FALSE,
-             gui->app, 2, MUIM_Application_ReturnID, ID_USE);
-    DoMethod(gui->defaults_obj, MUIM_Notify, MUIA_Pressed, FALSE,
-             gui->app, 2, MUIM_Application_ReturnID, ID_DEFAULTS);
-    DoMethod(gui->cancel_obj, MUIM_Notify, MUIA_Pressed, FALSE,
+    DoMethod(gui->close_obj, MUIM_Notify, MUIA_Pressed, FALSE,
              gui->app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
     DoMethod(gui->reset_obj, MUIM_Notify, MUIA_Pressed, FALSE,
              gui->app, 2, MUIM_Application_ReturnID, ID_RESET);
@@ -283,7 +251,6 @@ AROS_UFH0(void, btmidi_gui_task)
     AROS_USERFUNC_INIT
     struct BTMidiBase *base = FindTask(NULL)->tc_UserData;
     struct btmidi_gui *gui;
-    struct BTMidiCfg edit;
     IPTR is_open = FALSE, iconified = FALSE;
     ULONG sigs = 0;
     IPTR id;
@@ -299,11 +266,6 @@ AROS_UFH0(void, btmidi_gui_task)
     }
     base->gui = gui;
 
-    /* the window edits a copy; Use and Save put it into effect */
-    Forbid();
-    edit = base->cfg;
-    Permit();
-    show_names(gui, &edit);
     show_status(gui, base);
 
     get(gui->app, MUIA_Application_Iconified, &iconified);
@@ -318,22 +280,6 @@ AROS_UFH0(void, btmidi_gui_task)
         if (id == MUIV_Application_ReturnID_Quit)
             break;
         switch (id) {
-        case ID_SAVE:
-        case ID_USE:
-            read_name(gui, gui->node_obj, edit.mc_NodeName, BTMIDI_DEFAULT_NODE);
-            read_name(gui, gui->in_obj, edit.mc_InName, BTMIDI_DEFAULT_IN);
-            read_name(gui, gui->out_obj, edit.mc_OutName, BTMIDI_DEFAULT_OUT);
-            Forbid();
-            base->cfg = edit;
-            Permit();
-            btmidi_store_cfg(base, BluetoothBase, id == ID_SAVE);
-            btmidi_reconfigure(base);
-            id = MUIV_Application_ReturnID_Quit;
-            break;
-        case ID_DEFAULTS:
-            btmidi_default_cfg(&edit);
-            show_names(gui, &edit);
-            break;
         case ID_RESET:
             Forbid();
             memset(&base->stats, 0, sizeof(base->stats));
@@ -352,7 +298,7 @@ AROS_UFH0(void, btmidi_gui_task)
             if (sigs & SIGBREAKF_CTRL_C)
                 break;
             if (sigs & SIGBREAKF_CTRL_F)
-                show_status(gui, base);   /* MIDI went through */
+                show_status(gui, base);   /* MIDI went through, or a port changed */
         }
     }
     set(gui->window, MUIA_Window_Open, FALSE);
