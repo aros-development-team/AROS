@@ -145,7 +145,7 @@ static void ShowVersion (globaldata *g);
 static ULONG MakeBootBlock(globaldata *g);
 static rootblock_t *MakeRootBlock (DSTR diskname, BOOL showrequesters, globaldata *g);
 static void MakeBitmap (globaldata *g);
-static void MakeRootDir (globaldata *g);
+static BOOL MakeRootDir (globaldata *g);
 static ULONG CalcNumReserved (globaldata *g, ULONG resblocksize);
 static void MakeReservedBitmap (struct rootblock **rbl, ULONG numreserved, globaldata *g);
 static crootblockextension_t *MakeFormatRBlkExtension (struct rootblock *rbl, globaldata *g);
@@ -222,7 +222,14 @@ BOOL FDSFormat (DSTR diskname, LONG disktype, SIPTR *error, BOOL showrequesters,
 		i = AllocAnode (0, g);
 	} while (i<ANODE_ROOTDIR-1);
 
-	MakeRootDir (g);
+	if (!MakeRootDir (g))
+	{
+		*error = ERROR_NO_FREE_STORE;
+		FreeVolumeResources (volume, g);
+		g->currentvolume = NULL;
+		g->dirty = FALSE;
+		return DOSFALSE;
+	}
 
 #if DELDIR
 	/* add deldir */
@@ -465,14 +472,28 @@ static void MakeBitmap (globaldata *g)
 		NewBitmapBlock (i,g);
 }
 
-static void MakeRootDir (globaldata *g)
+static BOOL MakeRootDir (globaldata *g)
 {
   struct cdirblock *blk;
   ULONG blocknr, anodenr;
 
 	blocknr = AllocReservedBlock (g);
+	if (!blocknr)
+		return FALSE;
 	anodenr = AllocAnode (0, g);
+	if (!anodenr)
+	{
+		FreeReservedBlock(blocknr, g);
+		return FALSE;
+	}
 	blk = MakeDirBlock (blocknr, anodenr, anodenr, 0, g);
+	if (!blk)
+	{
+		FreeAnode(anodenr, g);
+		FreeReservedBlock(blocknr, g);
+		return FALSE;
+	}
+	return TRUE;
 }
 
 static const ULONG schijf[][2] =

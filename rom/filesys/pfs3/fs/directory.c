@@ -1721,6 +1721,12 @@ lockentry_t *NewDir(union objectinfo *parent, STRPTR dirname, SIPTR *error, glob
 
 	blk = MakeDirBlock(blocknr, info.file.direntry->anode,
 					   info.file.direntry->anode, parentnr, g);
+	if (!blk)
+	{
+		FreeReservedBlock(blocknr, g);
+		*error = ERROR_NO_FREE_STORE;
+		goto error2;
+	}
 
 	return (lockentry_t *)fileentry;
 }
@@ -1738,9 +1744,11 @@ struct cdirblock *MakeDirBlock(ULONG blocknr, ULONG anodenr, ULONG rootanodenr,
 	anode.clustersize = 1;
 	anode.blocknr = blocknr;
 	anode.next = 0;
-	SaveAnode(&anode, anodenr, g);
-
 	blk = (struct cdirblock *)AllocLRU(g);
+	if (!blk)
+		return NULL;
+	LOCK(blk);
+	SaveAnode(&anode, anodenr, g);
 	blk->blk.id = DBLKID;
 	blk->blk.anodenr = rootanodenr;
 	blk->blk.parent = parentnr;
@@ -1750,7 +1758,6 @@ struct cdirblock *MakeDirBlock(ULONG blocknr, ULONG anodenr, ULONG rootanodenr,
 	blk->changeflag = TRUE;
 
 	Hash(blk, volume->dirblks, HASHM_DIR);
-	LOCK(blk);
 	return blk;
 }
 
@@ -3195,9 +3202,20 @@ static BOOL MoveToPrevious(struct fileinfo de, struct direntry *to, struct filei
 			newanode.next = anode.next;
 			anode.next = newanode.nr;
 		}
+		if (!(prev ? newanode.nr : anode.nr))
+		{
+			FreeReservedBlock(newanode.blocknr, g);
+			return FALSE;
+		}
 
-		SaveAnode(&anode, anode.nr, g);
 		newblock = MakeDirBlock(newanode.blocknr, newanode.nr, de.dirblock->blk.anodenr, parent, g);
+		if (!newblock)
+		{
+			FreeAnode(prev ? newanode.nr : anode.nr, g);
+			FreeReservedBlock(newanode.blocknr, g);
+			return FALSE;
+		}
+		SaveAnode(&anode, anode.nr, g);
 		SaveAnode(&newanode, newanode.nr, g);   /* MUST be done AFTER MakeDirBlock */
 
 		/* add entry */
@@ -3328,7 +3346,7 @@ static BOOL AddDirectoryEntry(union objectinfo *dir, struct direntry *newentry,
 	for (GetAnode(&anode, diranodenr, g); !done && !eof; eof = !NextBlock(&anode, &anodeoffset, g))
 	{
 		if (!(blok = LoadDirBlock(anode.blocknr + anodeoffset, g)))
-			break;
+			return FALSE;
 
 		entry = (struct direntry *)&blok->blk.entries;
 
@@ -3364,8 +3382,19 @@ static BOOL AddDirectoryEntry(union objectinfo *dir, struct direntry *newentry,
 		GetAnode (&anode, diranodenr, g);
 		newanode.nr = diranodenr;
 		newanode.next = anode.nr = AllocAnode (anode.next ? anode.next : anode.nr, g);
-		SaveAnode(&anode, anode.nr, g);
+		if (!anode.nr)
+		{
+			FreeReservedBlock(newanode.blocknr, g);
+			return FALSE;
+		}
 		blok = MakeDirBlock (newanode.blocknr, newanode.nr, diranodenr, parent, g);
+		if (!blok)
+		{
+			FreeAnode(anode.nr, g);
+			FreeReservedBlock(newanode.blocknr, g);
+			return FALSE;
+		}
+		SaveAnode(&anode, anode.nr, g);
 		SaveAnode (&newanode, newanode.nr, g);
 		entry = (struct direntry *)&blok->blk.entries;
 		memcpy(entry, newentry, newentry->next);
@@ -3537,6 +3566,8 @@ struct cdirblock *LoadDirBlock(ULONG blocknr, globaldata * g)
 	{
 		// -II- not in cache -> put it in
 		dirblk = (struct cdirblock *)AllocLRU(g);
+		if (!dirblk)
+			return NULL;
 
 		DB(Trace(10, "LoadDirBlock", "loading block %lx from disk\n", blocknr));
 		if (ReadReservedBlocks((UBYTE *)&dirblk->blk, RESCLUSTER, blocknr, g) == 0)
