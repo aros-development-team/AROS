@@ -1885,6 +1885,17 @@ struct SCSIBlockDescriptor
 	ULONG scbd_BlockLength;
 };
 
+static ULONG SCSIReadBE24(const UBYTE *bytes)
+{
+	return ((ULONG)bytes[0] << 16) | ((ULONG)bytes[1] << 8) | bytes[2];
+}
+
+static ULONG SCSIReadBE32(const UBYTE *bytes)
+{
+	return ((ULONG)bytes[0] << 24) | ((ULONG)bytes[1] << 16) |
+		((ULONG)bytes[2] << 8) | bytes[3];
+}
+
 /* Simulate TD_GETGEOMETRY using SCSI commands */
 BOOL get_scsi_geometry(globaldata *g)
 {
@@ -1925,11 +1936,11 @@ BOOL get_scsi_geometry(globaldata *g)
 	if (DoSCSICommand(buffer, cmdbuf[4], sizeof(struct SCSIPageHeader) + sizeof(struct SCSIBlockDescriptor), cmdbuf, 6, SCSIF_READ, g)) {
 		struct SCSIPageHeader *ph = (struct SCSIPageHeader*)buffer;
 		if (ph->spch_BlockDescriptorLength >= sizeof(struct SCSIBlockDescriptor) && ph->spch_ModeDataLength >= sizeof(struct SCSIPageHeader) - 1) {
-			struct SCSIBlockDescriptor *bd = (struct SCSIBlockDescriptor*)(ph + 1);
-			ULONG blocks = bd->scbd_NumberOfBlocks & 0x00ffffff;
+			const UBYTE *bd = buffer + sizeof(*ph);
+			ULONG blocks = SCSIReadBE24(bd + 1);
 			if (blocks != 0x00ffffff)
 				geom->dg_TotalSectors = blocks;
-			geom->dg_SectorSize = bd->scbd_BlockLength & 0x00ffffff;
+			geom->dg_SectorSize = SCSIReadBE24(bd + 5);
 		}
 	}
 
@@ -1937,10 +1948,11 @@ BOOL get_scsi_geometry(globaldata *g)
 	memset(cmdbuf, 0, sizeof(cmdbuf));
 	cmdbuf[0] = 0x25;
 	if (DoSCSICommand(buffer, 8, sizeof(struct SCSICapacity), cmdbuf, 10, SCSIF_READ, g)) {
-		struct SCSICapacity *scc = (struct SCSICapacity*)buffer;
-		geom->dg_SectorSize = scc->scc_BlockLength ? scc->scc_BlockLength : 512;
-		if (scc->scc_Block + 1 != 0)
-			geom->dg_TotalSectors = scc->scc_Block + 1;
+		ULONG last_lba = SCSIReadBE32(buffer);
+		ULONG sector_size = SCSIReadBE32(buffer + 4);
+		geom->dg_SectorSize = sector_size ? sector_size : 512;
+		if (last_lba != 0xffffffffUL)
+			geom->dg_TotalSectors = last_lba + 1;
 	}
 	
 	if (!geom->dg_TotalSectors || !geom->dg_SectorSize)
@@ -1956,9 +1968,8 @@ BOOL get_scsi_geometry(globaldata *g)
 		struct SCSIPageHeader *ph = (struct SCSIPageHeader*)buffer;
 		struct RigidDiskPage *rdp = (struct RigidDiskPage*)(buffer + sizeof(struct SCSIPageHeader));
 		if (ph->spch_ModeDataLength >= sizeof(struct SCSIPageHeader) + 2 + 4 - 1 && ph->spch_BlockDescriptorLength == 0 && (rdp->rgp_PageCode & 0x3f) == 4 && rdp->rgp_PageLength >= 5 - 1) {
-			ULONG cylhead = *((ULONG*)(&rdp->rgp_NumberOfCylinders[0]));
-			geom->dg_Heads = cylhead & 255;
-			geom->dg_Cylinders = cylhead >> 8;
+			geom->dg_Heads = rdp->rgp_NumberOfHeads;
+			geom->dg_Cylinders = SCSIReadBE24(rdp->rgp_NumberOfCylinders);
 		}
 	}
 
@@ -2021,7 +2032,7 @@ static BOOL testread_ds2(UBYTE *buffer, globaldata *g)
 #endif
 			return FALSE;
 		}
-		capacity = *((ULONG*)buffer);
+		capacity = SCSIReadBE32(buffer);
 
 #if DETECTDEBUG
 		ULONG args[2];
