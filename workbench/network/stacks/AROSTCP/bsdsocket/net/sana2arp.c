@@ -48,7 +48,7 @@
 #include "ipfilter.h"
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
-#include <netinet/in_var.h>
+#include "netinet/in_var.h"
 #include <netinet/ip.h>
 
 #include <net/if_sana.h>
@@ -585,22 +585,22 @@ arpresolve(register struct sana_softc *ssc,
         return 1;
     }
 
+#ifdef ENABLE_MULTICAST
     /*
-     * A group has no ARP entry: RFC 1112 section 6.4 gives its Ethernet
-     * address, 01:00:5e and the low 23 bits of the group.
+     * A group has no ARP entry. On Ethernet it has an address of its own;
+     * anywhere else ip_output() has already refused the packet, as the
+     * interface has no IFF_MULTICAST.
      */
-    if(ssc->ss_hwtype == S2WireType_Ethernet &&
-            IN_MULTICAST(ntohl(destip->s_addr))) {
-        u_long group = ntohl(destip->s_addr);
-
-        desten[0] = 0x01;
-        desten[1] = 0x00;
-        desten[2] = 0x5e;
-        desten[3] = (group >> 16) & 0x7f;
-        desten[4] = (group >> 8) & 0xff;
-        desten[5] = group & 0xff;
+    if(IN_MULTICAST(ntohl(destip->s_addr))) {
+        if(!sana_ether_mcast(&ssc->ss_if)) {
+            m_freem(m);
+            *error = ENETUNREACH;
+            return 0;
+        }
+        in_mcast_macaddr(destip, desten);
         return 1;
     }
+#endif
 
     /* if for us, use software loopback driver if up */
     for(register struct in_ifaddr *ia = in_ifaddr; ia; ia = ia->ia_next)
