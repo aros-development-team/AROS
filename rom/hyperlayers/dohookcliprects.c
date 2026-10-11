@@ -188,12 +188,10 @@
 
                                 D(bug("[Layers] %s:   Hidden\n", __func__));
 
-                                bounds.MinX -= CR->bounds.MinX;
-                                bounds.MinX += ALIGN_OFFSET(CR->bounds.MinX);
-                                bounds.MinY -= CR->bounds.MinY;
-                                bounds.MaxX -= CR->bounds.MinX;
-                                bounds.MaxX += ALIGN_OFFSET(CR->bounds.MinX);
-                                bounds.MaxY -= CR->bounds.MinY;
+                                bounds.MinX = bounds.MinX - CR->bounds.MinX + CR_BMOFFX(CR);
+                                bounds.MinY = bounds.MinY - CR->bounds.MinY + CR_BMOFFY(CR);
+                                bounds.MaxX = bounds.MaxX - CR->bounds.MinX + CR_BMOFFX(CR);
+                                bounds.MaxY = bounds.MaxY - CR->bounds.MinY + CR_BMOFFY(CR);
 
                                 rport->BitMap = CR->BitMap;
                             }

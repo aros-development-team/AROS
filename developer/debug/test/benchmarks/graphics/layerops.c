@@ -132,6 +132,21 @@ int main(int argc, char **argv)
     tstart();
     for (i = 0; i < n; i++) { InstallClipRegion(rear->RPort->Layer, reg); InstallClipRegion(rear->RPort->Layer, NULL); }
     tend("InstallClipRegion install + remove on rear window", n);
+    {
+        struct Region *small = NewRegion();
+        rect.MinX = 25; rect.MinY = 35; rect.MaxX = 35; rect.MaxY = 45;   /* top left corner, visible */
+        OrRectRegion(small, &rect);
+        tstart();
+        for (i = 0; i < n; i++) { InstallClipRegion(rear->RPort->Layer, small); InstallClipRegion(rear->RPort->Layer, NULL); }
+        tend("InstallClipRegion install + remove, small visible region", n);
+        tstart();
+        for (i = 0; i < n; i++) { InstallClipRegion(w[0]->RPort->Layer, small); InstallClipRegion(w[0]->RPort->Layer, NULL); }
+        tend("InstallClipRegion install + remove, uncovered window", n);
+        tstart();
+        for (i = 0; i < n; i++) { InstallClipRegion(w[0]->RPort->Layer, reg); InstallClipRegion(w[0]->RPort->Layer, NULL); }
+        tend("InstallClipRegion install + remove, big region, uncovered window", n);
+        DisposeRegion(small);
+    }
 
     tstart();
     for (i = 0; i < n; i++) { BeginUpdate(rear->RPort->Layer); EndUpdate(rear->RPort->Layer, TRUE); }

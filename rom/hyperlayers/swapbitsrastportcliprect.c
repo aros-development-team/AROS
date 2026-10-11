@@ -76,8 +76,8 @@
    */
 
   BltBitMap(cr->BitMap,
-            ALIGN_OFFSET(cr->bounds.MinX),
-            0,
+            CR_BMOFFX(cr),
+            CR_BMOFFY(cr),
             rp->BitMap,
             cr->bounds.MinX,
             cr->bounds.MinY,
@@ -92,8 +92,11 @@
      Free the 'old' BitMap of the ClipRect and hang the new BitMap into
      the ClipRect structure.
    */
-  FreeBitMap(cr->BitMap);
+  if (!(cr->Flags & CR_SHAREDBITMAP))
+    FreeBitMap(cr->BitMap);
   cr->BitMap = NewBM;
+  CR_SETBMOFF(cr, ALIGN_OFFSET(cr->bounds.MinX), 0);
+  cr->Flags &= ~CR_SHAREDBITMAP;
 
   AROS_LIBFUNC_EXIT
 } /* SwapBitsRastPortClipRect */

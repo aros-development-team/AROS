@@ -37,6 +37,18 @@ LIBBASETYPE
 #define GfxBase     (LIBBASE->lb_GfxBase)
 #define UtilityBase (LIBBASE->lb_UtilityBase)
 
+/*
+ * Build-time option: one layer-sized backing bitmap (the "surface") per
+ * smart refresh layer, the hidden ClipRects being views into it, instead
+ * of one bitmap per hidden ClipRect. Hidden content is then never copied
+ * between ClipRects, and clip regions and BeginUpdate() need no copying
+ * at all. Costs one layer sized bitmap per smart refresh layer. Enable
+ * with -DLAYERS_BACKING_SURFACE=1 (USER_CPPFLAGS in the mmakefile).
+ */
+#ifndef LAYERS_BACKING_SURFACE
+#define LAYERS_BACKING_SURFACE 0
+#endif
+
 struct IntLayer
 {
     struct Layer    lay;
@@ -44,6 +56,10 @@ struct IntLayer
     IPTR	    window;	/* This is passed to shape hook. Comes from Intuition. */
     ULONG	    intflags;
     struct RastPort rp;		/* lay.rp */
+#if LAYERS_BACKING_SURFACE
+    struct BitMap  *surface;	/* backing store of a smart refresh layer, layer relative */
+    WORD	    surfw, surfh;
+#endif
 };
 
 #define IL(x) ((struct IntLayer *)(x))

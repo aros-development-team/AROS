@@ -207,8 +207,8 @@ struct CollectPixelsMsg
                                                                         cplm.yDest = intersect.MinY;
                                                                         cplm.bm    = l->rp->BitMap;
                                                                 } else {
-                                                                        cplm.xSrc  = intersect.MinX - cr->bounds.MinX + ALIGN_OFFSET(intersect.MinX);
-                                                                        cplm.ySrc  = intersect.MinY - cr->bounds.MinY;
+                                                                        cplm.xSrc  = intersect.MinX - cr->bounds.MinX + CR_BMOFFX(cr);
+                                                                        cplm.ySrc  = intersect.MinY - cr->bounds.MinY + CR_BMOFFY(cr);
                                                                         cplm.width = intersect.MaxX - intersect.MinX + 1;
                                                                         cplm.height= intersect.MaxY - intersect.MinY + 1;
                                                                         cplm.xDest = intersect.MinX;

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
 
     Desc: Basic support functions for layers.library.
 */
@@ -181,10 +181,17 @@ void _BackFillRegion(struct Layer * l,
                      int addtodamagelist,
                      struct LayersBase * LayersBase);
 
+BOOL _AllocClipRectBitMap(struct ClipRect *cr, struct BitMap *display_bm, int aligndx, struct LayersBase *LayersBase);
+BOOL _BackClipRect(struct ClipRect *cr, struct Layer *l, int aligndx, struct LayersBase *LayersBase);
+#if LAYERS_BACKING_SURFACE
+BOOL _EnsureSurfaceSize(struct Layer *l, WORD w, WORD h, struct LayersBase *LayersBase);
+#endif
 struct ClipRect * _CreateClipRectsFromRegion(struct Region *r,
                                              struct Layer * l,
                                              int invisible,
-                                             struct Region *inverter,
+                                             struct Region * inverter,
+                                             int aligndx,
+                                             struct ClipRect * viewsof,
 					     struct LayersBase *LayersBase);
 
 struct Region *_InternalInstallClipRegion(struct Layer *l, struct Region *region,
