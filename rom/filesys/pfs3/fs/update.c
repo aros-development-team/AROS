@@ -460,14 +460,14 @@ static BOOL UpdateList (struct cachedblock *blk, globaldata *g)
 	{
 		if (blk->changeflag)
 		{
-			FreeReservedBlock (blk->oldblocknr, g);
 			blk2 = (struct cbitmapblock *)blk;
 			blk2->blk.datestamp = blk2->volume->rootblk->datestamp;
-			blk->oldblocknr = 0;
 			error = WriteReservedBlocks ((UBYTE *)&blk->data, RESCLUSTER, blk->blocknr, g);
 			if (error)
 				goto update_error;
 
+			FreeReservedBlock (blk->oldblocknr, g);
+			blk->oldblocknr = 0;
 			blk->changeflag = FALSE;
 		}
 
@@ -490,14 +490,14 @@ static BOOL UpdateDirtyBlock (struct cachedblock *blk, globaldata *g)
 
 	if (blk->changeflag)
 	{
-		FreeReservedBlock (blk->oldblocknr, g);
-		blk->oldblocknr = 0;
 		error = WriteReservedBlocks ((UBYTE *)&blk->data, RESCLUSTER, blk->blocknr, g);
 		if (error)
 		{
 			ErrorMsg (AFS_ERROR_UPDATE_FAIL, NULL, g);
 			return FALSE;
 		}
+		FreeReservedBlock (blk->oldblocknr, g);
+		blk->oldblocknr = 0;
 	}
 
 	blk->changeflag = FALSE;
