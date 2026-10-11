@@ -3,16 +3,23 @@
     Author: Fabian Schmieder (@metaneutrons)
 
     mbedTLS hardware entropy source for AROS.
-    Uses BCM2711/BCM2712 RNG200 via peripheral base, or falls back
-    to timer-based jitter entropy.
+
+    Draws from entropy.resource, the system CSPRNG that every architecture
+    seeds from its own software collector and, where the board or CPU has
+    one, a hardware source (x86 RDRAND/RDSEED, the Raspberry Pi RNG, ...).
+    The glue deliberately knows nothing about SoC registers: probing them
+    from here is not portable (KrnGetSystemAttr(KATTR_PeripheralBase) is -1
+    on platforms without one, which once sent sshd into a bus fault on
+    riscv64), and the resource already does the detection properly.
 */
 
 #include "mbedtls/entropy.h"
 #include <proto/exec.h>
-#include <proto/kernel.h>
-#include <string.h>
+#include <proto/entropy.h>
+#include <resources/entropy.h>
 
-extern APTR KernelBase;
+/* entropy.resource, opened on first use - resources are never closed */
+static APTR entropyres;
 
 /*
  * mbedtls_hardware_poll — called by mbedTLS entropy collector.
@@ -21,60 +28,33 @@ extern APTR KernelBase;
 int mbedtls_hardware_poll(void *data, unsigned char *output,
                           size_t len, size_t *olen)
 {
+    /* local base for the GetEntropy() inline */
+    struct Library *EntropyBase;
+
     (void)data;
 
-    /* Try RNG200 hardware (BCM2711 at peribase+0x104000) */
-    IPTR peribase = KrnGetSystemAttr(KATTR_PeripheralBase);
-    if (peribase)
+    *olen = 0;
+
+    if (entropyres == NULL)
+        entropyres = OpenResource(ENTROPYNAME);
+    EntropyBase = entropyres;
+
+    /* No system entropy source: fail loudly rather than degrade to
+     * something weak - the caller's DRBG seeding reports the error. */
+    if (EntropyBase == NULL)
+        return MBEDTLS_ERR_ENTROPY_SOURCE_FAILED;
+
+    while (len > 0)
     {
-        volatile ULONG *rng_data = (volatile ULONG *)(peribase + 0x104000 + 0x20);
-        volatile ULONG *rng_count = (volatile ULONG *)(peribase + 0x104000 + 0x24);
-        size_t filled = 0;
+        /* keep each request within what the resource serves per call */
+        ULONG chunk = len > 256 ? 256 : (ULONG)len;
 
-        while (filled < len)
-        {
-            /* Wait for data available */
-            int timeout = 10000;
-            while (!(*rng_count & 0xFF) && --timeout > 0)
-                ;
-            if (timeout <= 0)
-                break;
+        if (GetEntropy(output, chunk) != (LONG)chunk)
+            return MBEDTLS_ERR_ENTROPY_SOURCE_FAILED;
 
-            ULONG val = *rng_data;
-            size_t chunk = len - filled;
-            if (chunk > 4) chunk = 4;
-            memcpy(output + filled, &val, chunk);
-            filled += chunk;
-        }
-
-        if (filled == len)
-        {
-            *olen = len;
-            return 0;
-        }
-    }
-
-    /* Fallback: timer jitter (less secure but functional) */
-    {
-        size_t i;
-        ULONG seed = 0;
-        for (i = 0; i < len; i++)
-        {
-#if defined(__aarch64__)
-            ULONG cnt;
-            __asm__ volatile("mrs %0, cntpct_el0" : "=r"(cnt));
-            seed ^= cnt;
-#elif defined(__x86_64__) || defined(__i386__)
-            ULONG lo, hi;
-            __asm__ volatile("rdtsc" : "=a"(lo), "=d"(hi));
-            seed ^= lo ^ hi;
-#else
-            seed ^= (ULONG)(IPTR)&seed ^ (ULONG)i;
-#endif
-            seed = (seed * 1103515245 + 12345);
-            output[i] = (unsigned char)(seed >> 16);
-        }
-        *olen = len;
+        output += chunk;
+        len -= chunk;
+        *olen += chunk;
     }
 
     return 0;

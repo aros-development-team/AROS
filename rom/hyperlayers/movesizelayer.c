@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -399,7 +399,7 @@ kprintf("\t\t%s: SHOWING parts of the layers behind the layer to be moved!\n",
    * If the size of the layer became larger clear the
    * new area where it is visible.
    */
-  if ((dw > 0 || dh > 0) && !IS_SUPERREFRESH(l))
+  if (dw > 0 || dh > 0)   /* a superbitmap layer shows the superbitmap there */
   {
     ClearRegion(&r);
     if (dw > 0)

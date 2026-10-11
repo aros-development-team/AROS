@@ -1,6 +1,6 @@
 include $(SRCDIR)/config/aros.cfg
 
-FILES := CRList DamageList clippingtest layerstest sortlayercr
+FILES := CRList DamageList clippingtest hookoffsets layerstest sortlayercr superbitmap
 
 %build_progs mmake=test-layers \
     files=$(FILES) targetdir=$(AROS_TESTS)/layers

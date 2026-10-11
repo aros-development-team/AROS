@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 
 */
 
@@ -1071,13 +1071,16 @@ AROS_UFH3S(void, WindowPatternBackFillFunc,
 
     // The first tile normally isn't totally visible => calculate the offset
     // (offset 0 would mean that the left edge of the damage rectangle
-    // coincides with the left edge of a tile)
-    OffsetX = BFM->Bounds.MinX - BFI->Options.OffsetX;
+    // coincides with the left edge of a tile). BFM->OffsetX/Y is the
+    // position of the rectangle in layer coordinates; BFM->Bounds is where
+    // to paint it in RP->BitMap and, for a backed up (hidden) ClipRect, is
+    // relative to that ClipRect's own bitmap, so it must not be used here.
+    OffsetX = BFM->OffsetX - BFI->Options.OffsetX;
 //      if (BFI->Options.CenterX) // horizontal centering?
 //              OffsetX -= (BFI->Screen->Width-BFI->Width)/2;
 
     // The same values are calculated for y direction
-    OffsetY = BFM->Bounds.MinY - BFI->Options.OffsetY;
+    OffsetY = BFM->OffsetY - BFI->Options.OffsetY;
 
 /*
         if (BFI->Options.OffsetTitleY) // shift the tiles down?
@@ -1182,22 +1185,11 @@ void dt_put_on_rastport_tiled(struct dt_node *node, struct RastPort *rp,
         rect.MaxX = x2;
         rect.MaxY = y2;
 
-        if (rp->Layer)
-        {
-            LockLayer(0, rp->Layer);
-            xoffset -= rp->Layer->bounds.MinX;
-            yoffset -= rp->Layer->bounds.MinY;
-        }
-
+        /* xoffset/yoffset are in layer coordinates, like the hook's offsets */
         bfi->OffsetX = xoffset;
         bfi->OffsetY = yoffset;
 
         DoHookClipRects((struct Hook *)bfi, rp, &rect);
-
-        if (rp->Layer)
-        {
-            UnlockLayer(rp->Layer);
-        }
     }
     ReleaseSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
 }

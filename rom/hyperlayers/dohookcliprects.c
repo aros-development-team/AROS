@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -170,10 +170,11 @@
 
                                 D(bug("[Layers] %s:   SuperBitMap\n", __func__));
 
-                                bounds.MinX -= ( L->bounds.MinX + L->Scroll_X );
-                                bounds.MinY -= ( L->bounds.MinY + L->Scroll_Y );
-                                bounds.MaxX -= ( L->bounds.MinX + L->Scroll_X );
-                                bounds.MaxY -= ( L->bounds.MinY + L->Scroll_Y );
+                                /* superbitmap coordinates are rastport coordinates */
+                                bounds.MinX = bounds.MinX - L->bounds.MinX + L->Scroll_X;
+                                bounds.MinY = bounds.MinY - L->bounds.MinY + L->Scroll_Y;
+                                bounds.MaxX = bounds.MaxX - L->bounds.MinX + L->Scroll_X;
+                                bounds.MaxY = bounds.MaxY - L->bounds.MinY + L->Scroll_Y;
                                 rport->BitMap = L->SuperBitMap;
                             }
                             else

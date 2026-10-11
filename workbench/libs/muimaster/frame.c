@@ -1,5 +1,5 @@
 /*
-    Copyright  2002-2020, The AROS Development Team.
+    Copyright  2002-2026, The AROS Development Team.
     Copyright  1999, David Le Corfec.
     All rights reserved.
 
@@ -222,7 +222,7 @@ struct FrameFillInfo {
     struct Hook Hook;
     struct dt_frame_image *fi;
     struct NewImage *ni;
-    WORD gl, gt, gw, gh, left, top, width, height, ox, oy;
+    WORD gl, gt, gw, gh, left, top, width, height;
 };
 
 struct BackFillMsg {
@@ -248,13 +248,20 @@ AROS_UFH3S(void, WindowPatternBackFillFunc, AROS_UFHA(struct Hook *, Hook, A0),
     if (depth < 15)
         truecolor = FALSE;
 
-    int left = BFM->Bounds.MinX;
-    int top = BFM->Bounds.MinY;
-    int width = BFM->Bounds.MaxX - left + 1;
-    int height = BFM->Bounds.MaxY - top + 1;
+    /* The area to paint in RP->BitMap ... */
+    int bx = BFM->Bounds.MinX;
+    int by = BFM->Bounds.MinY;
+    int width = BFM->Bounds.MaxX - bx + 1;
+    int height = BFM->Bounds.MaxY - by + 1;
+    /* ... and where it lies in layer coordinates. Only the offsets tell
+       that: for a backed up (hidden) ClipRect the bounds are relative to
+       the ClipRect's own bitmap. */
+    int left = BFM->OffsetX;
+    int top = BFM->OffsetY;
+    /* The hook has to render into RP->BitMap: use a layerless copy */
+    struct RastPort temprp = *RP;
 
-    left -= FFI->ox;
-    top -= FFI->oy;
+    temprp.Layer = NULL;
 
     BOOL alpha = !FFI->fi->noalpha;
     BOOL direct = FALSE;
@@ -269,10 +276,10 @@ AROS_UFH3S(void, WindowPatternBackFillFunc, AROS_UFHA(struct Hook *, Hook, A0),
                             FFI->gl, FFI->gt, FFI->gw, FFI->gh, left, top, width,
                             height);
             if (FFI->fi->noalpha)
-                WritePixelArray(dest->data, 0, 0, dest->w * 4, RP, left, top, width,
+                WritePixelArray(dest->data, 0, 0, dest->w * 4, &temprp, bx, by, width,
                                 height, RECTFMT_ARGB);
             else
-                WritePixelArrayAlpha(dest->data, 0, 0, dest->w * 4, RP, left, top,
+                WritePixelArrayAlpha(dest->data, 0, 0, dest->w * 4, &temprp, bx, by,
                                      width, height, 0xffffffff);
 
             DisposeImageContainer(dest);
@@ -281,9 +288,10 @@ AROS_UFH3S(void, WindowPatternBackFillFunc, AROS_UFHA(struct Hook *, Hook, A0),
     }
 
     if (direct) {
-        draw_tile_frame(RP, truecolor, FALSE, alpha, FFI->fi, FFI->ni, NULL,
-                        FFI->gl, FFI->gt, FFI->gw, FFI->gh, left, top, width,
-                        height);
+        /* Everything shifted from layer coordinates into bitmap coordinates */
+        draw_tile_frame(&temprp, truecolor, FALSE, alpha, FFI->fi, FFI->ni, NULL,
+                        FFI->gl + bx - left, FFI->gt + by - top, FFI->gw, FFI->gh,
+                        bx, by, width, height);
     }
 
     AROS_USERFUNC_EXIT
@@ -311,26 +319,13 @@ void dt_do_frame_rects(struct RastPort *rp, struct dt_frame_image *fi,
     ffi.gw = gw;
     ffi.gh = gh;
 
-    ffi.ox = 0;
-    ffi.oy = 0;
-
     ffi.ni = ni;
 
     ffi.fi = fi;
 
     ffi.Hook.h_Entry = (HOOKFUNC)WindowPatternBackFillFunc;
 
-    if (rp->Layer) {
-        LockLayer(0, rp->Layer);
-        ffi.ox = rp->Layer->bounds.MinX;
-        ffi.oy = rp->Layer->bounds.MinY;
-    }
-
     DoHookClipRects((struct Hook *)&ffi, rp, &rect);
-
-    if (rp->Layer) {
-        UnlockLayer(rp->Layer);
-    }
 }
 
 static void frame_custom(struct dt_frame_image *fi, BOOL state,

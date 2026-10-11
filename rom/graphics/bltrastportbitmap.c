@@ -54,11 +54,12 @@ void BltRastPortBitMap(struct RastPort *srcRastPort, WORD xSrc, WORD ySrc,
              * required region?
              */
             WORD crX0, crX1, crY0, crY1;
-            /* cr?? have to be coordinates related to the rastport */
-            crX0 = srcCR->bounds.MinX - srcLayer->bounds.MinX;
-            crX1 = srcCR->bounds.MaxX - srcLayer->bounds.MinX;
-            crY0 = srcCR->bounds.MinY - srcLayer->bounds.MinY;
-            crY1 = srcCR->bounds.MaxY - srcLayer->bounds.MinY;
+            /* cr?? have to be coordinates related to the rastport:
+               rastport x is on screen at x + bounds.MinX - Scroll_X */
+            crX0 = srcCR->bounds.MinX - srcLayer->bounds.MinX + srcLayer->Scroll_X;
+            crX1 = srcCR->bounds.MaxX - srcLayer->bounds.MinX + srcLayer->Scroll_X;
+            crY0 = srcCR->bounds.MinY - srcLayer->bounds.MinY + srcLayer->Scroll_Y;
+            crY1 = srcCR->bounds.MaxY - srcLayer->bounds.MinY + srcLayer->Scroll_Y;
 
             /* the only case that must not happen is that
               this ClipRect is outside the source area.  */
@@ -76,7 +77,7 @@ void BltRastPortBitMap(struct RastPort *srcRastPort, WORD xSrc, WORD ySrc,
                  * get the pointer to the bitmap structure and fill out
                  * the rectangle structure that shows which part we mean to copy
                  */
-                if(NULL != srcCR->BitMap) {
+                if(srcCR->lobs && (NULL != srcCR->BitMap || (srcLayer->Flags & LAYERSUPER))) {
                     if(0 == (srcLayer->Flags & LAYERSUPER)) {
                         /* no superbitmap */
                         SrcOffsetX = ALIGN_OFFSET(srcCR->bounds.MinX);
@@ -99,24 +100,24 @@ void BltRastPortBitMap(struct RastPort *srcRastPort, WORD xSrc, WORD ySrc,
 
                         srcBM = srcCR->BitMap;
                     } else {
-                        /* with superbitmap */
+                        /* with superbitmap: rastport coordinates are superbitmap coordinates */
                         if(xSrc >= crX0) {
-                            bltSrcX  = xSrc - srcLayer->Scroll_X;
+                            bltSrcX  = xSrc;
                             bltDestX = 0;
                         } else {
-                            bltSrcX  = crX0 - srcLayer->Scroll_X;
+                            bltSrcX  = crX0;
                             bltDestX = crX0 - xSrc;
                         }
 
                         if(ySrc >= crY0) {
-                            bltSrcY  = ySrc - srcLayer->Scroll_Y;
+                            bltSrcY  = ySrc;
                             bltDestY = 0;
                         } else {
-                            bltSrcY  = crY0 - srcLayer->Scroll_Y;
+                            bltSrcY  = crY0;
                             bltDestY = crY0 - ySrc;
                         }
 
-                        srcBM = srcCR->BitMap;
+                        srcBM = srcLayer->SuperBitMap;
                     }
 
                 } else {
@@ -133,7 +134,7 @@ void BltRastPortBitMap(struct RastPort *srcRastPort, WORD xSrc, WORD ySrc,
                         bltSrcX  = srcCR->bounds.MinX;
                         bltDestX = crX0 - xSrc;
                     } else {
-                        bltSrcX  = xSrc + srcLayer->bounds.MinX;
+                        bltSrcX  = xSrc + srcLayer->bounds.MinX - srcLayer->Scroll_X;
                         bltDestX = 0;
                     }
 
@@ -141,7 +142,7 @@ void BltRastPortBitMap(struct RastPort *srcRastPort, WORD xSrc, WORD ySrc,
                         bltSrcY  = srcCR->bounds.MinY;
                         bltDestY = crY0 - ySrc;
                     } else {
-                        bltSrcY  = ySrc + srcLayer->bounds.MinY;
+                        bltSrcY  = ySrc + srcLayer->bounds.MinY - srcLayer->Scroll_Y;
                         bltDestY = 0;
                     }
                 }

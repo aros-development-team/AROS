@@ -98,6 +98,84 @@ ULONG do_render_func(struct RastPort *rp, Point *src, struct Rectangle *rr,
  * GetDriverData() resets the GC to RastPort's values.
  * This is another entry point which avoids that. Use it if you have already set up GC.
  */
+/*
+ * Documented AmigaOS behaviour for superbitmap layers: rendering that
+ * falls outside the layer goes into the superbitmap. 'torender' is the
+ * area in screen coordinates; the parts of it outside the layer's bounds
+ * are rendered at superbitmap coordinates (rastport coordinates).
+ */
+static ULONG render_outside_super(struct Layer *L, struct Rectangle *torender, struct Rectangle *rpclip,
+                                  RENDERFUNC render_func, APTR funcdata, WORD srcx, WORD srcy,
+                                  OOP_Object *gc, BOOL do_update, BOOL get_special_info,
+                                  struct GfxBase *GfxBase)
+{
+    struct Rectangle parts[4];
+    ULONG pixwritten = 0, n = 0, i;
+    LONG  sbw = GetBitMapAttr(L->SuperBitMap, BMA_WIDTH);
+    LONG  sbh = GetBitMapAttr(L->SuperBitMap, BMA_HEIGHT);
+
+    /* the strips above and below the layer, then those left and right of it
+       (between the layer's rows); each clipped to the area itself */
+    if(torender->MinY < L->bounds.MinY) {
+        parts[n] = *torender;
+        if(parts[n].MaxY > L->bounds.MinY - 1) parts[n].MaxY = L->bounds.MinY - 1;
+        n++;
+    }
+    if(torender->MaxY > L->bounds.MaxY) {
+        parts[n] = *torender;
+        if(parts[n].MinY < L->bounds.MaxY + 1) parts[n].MinY = L->bounds.MaxY + 1;
+        n++;
+    }
+    if(torender->MinX < L->bounds.MinX) {
+        parts[n] = *torender;
+        if(parts[n].MaxX > L->bounds.MinX - 1) parts[n].MaxX = L->bounds.MinX - 1;
+        if(parts[n].MinY < L->bounds.MinY) parts[n].MinY = L->bounds.MinY;
+        if(parts[n].MaxY > L->bounds.MaxY) parts[n].MaxY = L->bounds.MaxY;
+        n++;
+    }
+    if(torender->MaxX > L->bounds.MaxX) {
+        parts[n] = *torender;
+        if(parts[n].MinX < L->bounds.MaxX + 1) parts[n].MinX = L->bounds.MaxX + 1;
+        if(parts[n].MinY < L->bounds.MinY) parts[n].MinY = L->bounds.MinY;
+        if(parts[n].MaxY > L->bounds.MaxY) parts[n].MaxY = L->bounds.MaxY;
+        n++;
+    }
+
+    for(i = 0; i < n; i++) {
+        struct Rectangle part = parts[i], sb;
+        WORD xoffset, yoffset;
+
+        if(part.MinX > part.MaxX || part.MinY > part.MaxY)
+            continue;
+        if(rpclip && !_AndRectRect(rpclip, &part, &part))
+            continue;
+
+        /* to superbitmap coordinates, clipped to the superbitmap */
+        sb.MinX = part.MinX - L->bounds.MinX + L->Scroll_X;
+        sb.MinY = part.MinY - L->bounds.MinY + L->Scroll_Y;
+        sb.MaxX = part.MaxX - L->bounds.MinX + L->Scroll_X;
+        sb.MaxY = part.MaxY - L->bounds.MinY + L->Scroll_Y;
+        if(sb.MinX < 0) sb.MinX = 0;
+        if(sb.MinY < 0) sb.MinY = 0;
+        if(sb.MaxX > sbw - 1) sb.MaxX = sbw - 1;
+        if(sb.MaxY > sbh - 1) sb.MaxY = sbh - 1;
+        if(sb.MinX > sb.MaxX || sb.MinY > sb.MaxY)
+            continue;
+
+        /* source offset of the clipped part within the whole area */
+        xoffset = (sb.MinX - L->Scroll_X + L->bounds.MinX) - torender->MinX;
+        yoffset = (sb.MinY - L->Scroll_Y + L->bounds.MinY) - torender->MinY;
+
+        if(get_special_info) {
+            RSI(funcdata)->curbm = L->SuperBitMap;
+        }
+        pixwritten += CallRenderFunc(render_func, funcdata, srcx + xoffset, srcy + yoffset,
+                                     L->SuperBitMap, gc, &sb, do_update, GfxBase);
+    }
+
+    return pixwritten;
+}
+
 ULONG do_render_with_gc(struct RastPort *rp, Point *src, struct Rectangle *rr,
                         RENDERFUNC render_func, APTR funcdata, OOP_Object *gc,
                         BOOL do_update, BOOL get_special_info, struct GfxBase *GfxBase)
@@ -183,7 +261,18 @@ ULONG do_render_with_gc(struct RastPort *rp, Point *src, struct Rectangle *rr,
                         if(L->Flags & LAYERSIMPLE)
                             continue;
                         else if(L->Flags & LAYERSUPER) {
-                            D(bug("do_render_func(): Superbitmap not handled yet\n"));
+                            /* Render into the superbitmap. RastPort coordinates are
+                               superbitmap coordinates; the layer shows the superbitmap
+                               from (Scroll_X, Scroll_Y). */
+                            if(get_special_info) {
+                                RSI(funcdata)->curbm = L->SuperBitMap;
+                            }
+                            intersect.MinX = intersect.MinX - L->bounds.MinX + L->Scroll_X;
+                            intersect.MinY = intersect.MinY - L->bounds.MinY + L->Scroll_Y;
+                            intersect.MaxX = intersect.MaxX - L->bounds.MinX + L->Scroll_X;
+                            intersect.MaxY = intersect.MaxY - L->bounds.MinY + L->Scroll_Y;
+                            pixwritten += CallRenderFunc(render_func, funcdata, srcx + xoffset, srcy + yoffset,
+                                                         L->SuperBitMap, gc, &intersect, do_update, GfxBase);
                         } else {
 
                             if(get_special_info) {
@@ -206,6 +295,12 @@ ULONG do_render_with_gc(struct RastPort *rp, Point *src, struct Rectangle *rr,
             } /* if (cliprect intersects with area to render into) */
 
         } /* for (each cliprect in the layer) */
+
+        if(L->Flags & LAYERSUPER) {
+            pixwritten += render_outside_super(L, &torender, have_rp_cliprectangle ? &rp_clip_rectangle : NULL,
+                                               render_func, funcdata, srcx, srcy, gc, do_update,
+                                               get_special_info, GfxBase);
+        }
 
         UnlockLayerRom(L);
     } /* if (rp->Layer) */
@@ -273,6 +368,7 @@ ULONG do_pixel_func(struct RastPort *rp
     } else {
         struct ClipRect *CR;
         WORD absx, absy;
+        BOOL found = FALSE;
 
         LockLayerRom(L);
 
@@ -301,7 +397,11 @@ ULONG do_pixel_func(struct RastPort *rp
                             retval =  0;
 
                         } else if(L->Flags & LAYERSUPER) {
-                            D(bug("driver_WriteRGBPixel(): Superbitmap not handled yet\n"));
+                            /* Into the superbitmap, at rastport coordinates */
+                            retval = CallPixelFunc(render_func, funcdata, L->SuperBitMap, gc,
+                                                   absx - L->bounds.MinX + L->Scroll_X,
+                                                   absy - L->bounds.MinY + L->Scroll_Y,
+                                                   do_update, GfxBase);
                         } else {
                             retval = CallPixelFunc(render_func, funcdata, CR->BitMap, gc,
                                                    absx - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX),
@@ -314,11 +414,28 @@ ULONG do_pixel_func(struct RastPort *rp
                 } /* if point is also inside possible rastport clip rectangle */
 
                 /* The pixel was found and put inside one of the cliprects, just exit */
+                found = TRUE;
                 break;
 
             } /* if (cliprect intersects with area we want to draw to) */
 
         } /* while (cliprects to examine) */
+
+        if(!found && (L->Flags & LAYERSUPER) &&
+           (absx < L->bounds.MinX || absx > L->bounds.MaxX || absy < L->bounds.MinY || absy > L->bounds.MaxY) &&
+           (!have_rp_cliprectangle || _IsPointInRect(&rp_clip_rectangle, absx, absy))) {
+            /* Outside the layer: documented AmigaOS behaviour is that this
+               goes into the superbitmap (at rastport coordinates) */
+            LONG sx = absx - L->bounds.MinX + L->Scroll_X;
+            LONG sy = absy - L->bounds.MinY + L->Scroll_Y;
+
+            if(sx >= 0 && sy >= 0 &&
+               sx < GetBitMapAttr(L->SuperBitMap, BMA_WIDTH) &&
+               sy < GetBitMapAttr(L->SuperBitMap, BMA_HEIGHT)) {
+                retval = CallPixelFunc(render_func, funcdata, L->SuperBitMap, gc, sx, sy, do_update, GfxBase);
+            }
+        }
+
         UnlockLayerRom(L);
     }
 
@@ -962,13 +1079,14 @@ BOOL MoveRaster(struct RastPort *rp, WORD dx, WORD dy, WORD x1, WORD y1,
                         if(L->Flags & LAYERSIMPLE) continue;
 
                         if(L->Flags & LAYERSUPER) {
-                            corrsrcx = - MinX(L) - L->Scroll_X;
-                            corrsrcy = - MinY(L) - L->Scroll_Y;
+                            corrsrcx = - MinX(L) + L->Scroll_X;
+                            corrsrcy = - MinY(L) + L->Scroll_Y;
+                            srcbm = L->SuperBitMap;
                         } else {
                             corrsrcx = - MinX(SrcCR) + ALIGN_OFFSET(MinX(SrcCR));
                             corrsrcy = - MinY(SrcCR);
+                            srcbm = SrcCR->BitMap;
                         }
-                        srcbm = SrcCR->BitMap;
                     } else {
                         corrsrcx  = 0;
                         corrsrcy  = 0;
@@ -990,13 +1108,14 @@ BOOL MoveRaster(struct RastPort *rp, WORD dx, WORD dy, WORD x1, WORD y1,
                                 if(L->Flags & LAYERSIMPLE) continue;
 
                                 if(L->Flags & LAYERSUPER) {
-                                    corrdstx = - MinX(L) - L->Scroll_X;
-                                    corrdsty = - MinY(L) - L->Scroll_Y;
+                                    corrdstx = - MinX(L) + L->Scroll_X;
+                                    corrdsty = - MinY(L) + L->Scroll_Y;
+                                    dstbm = L->SuperBitMap;
                                 } else {
                                     corrdstx = - MinX(DstCR) + ALIGN_OFFSET(MinX(DstCR));
                                     corrdsty = - MinY(DstCR);
+                                    dstbm = DstCR->BitMap;
                                 }
-                                dstbm = DstCR->BitMap;
                             } else {
                                 corrdstx  = 0;
                                 corrdsty  = 0;

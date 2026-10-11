@@ -1,29 +1,16 @@
 /*
- * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
- *                    Helsinki University of Technology, Finland.
- *                    All rights reserved.
- * Copyright (C) 2005 Neil Cafferkey
- * Copyright (C) 2005 Pavel Fedin
- * Copyright (C) 2005-2026 The AROS Dev Team
+ * Copyright (C) 2005-2026, The AROS Development Team. All rights reserved.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
- * MA 02111-1307, USA.
- *
+ * Derived from the 4.3BSD-Reno/Net-2 <sys/socketvar.h> (7.17, Berkeley, 5/5/91);
+ * the Berkeley notice and terms follow. AROS changes: a socket is owned by a
+ * bsdsocket library base rather than a process (so_pgid, so_refcnt, sb_sel
+ * select chains, timeval linger/buffer timeouts), socket event reporting
+ * (so_eventmask, struct soevent), SO_TTCP_SHUTUP, SB_MAX per architecture,
+ * and the Unix file-operation prototypes are dropped.
  */
 
 /*-
- * Copyright (C) 1982, 1986, 1990 The Regents of the University of California.
+ * Copyright (c) 1982, 1986, 1990 The Regents of the University of California.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -81,7 +68,7 @@ struct socket {
 	short	so_options;		/* from socket call, see socket.h */
 	struct timeval so_linger;	/* time to linger while closing */
 	short	so_state;		/* internal state flags SS_*, below */
-	short   so_refcnt;              /* reference count for this socket */
+	short	so_refcnt;		/* holders keeping the socket alive across sleeps */
 	caddr_t	so_pcb;			/* protocol control block */
 	struct	protosw *so_proto;	/* protocol handle */
 /*
@@ -103,7 +90,7 @@ struct socket {
 	short	so_qlimit;		/* max number queued connections */
 	short	so_timeo;		/* connection timeout */
 	u_short	so_error;		/* error affecting connection */
-	struct  SocketBase *so_pgid;	/* owner for signals */
+	struct	SocketBase *so_pgid;	/* owning library base; gets signals/events */
 	u_long	so_oobmark;		/* chars to oob mark */
 /*
  * Variables for socket buffering.
@@ -115,7 +102,7 @@ struct socket {
 		u_long	sb_mbmax;	     /* max chars of mbufs to use */
 		long	sb_lowat;	     /* low water mark */
 		struct	mbuf *sb_mb;	     /* the mbuf chain */
-		struct	newselitem *sb_sel;  /* chain for selecting tasks */
+		struct	newselitem *sb_sel;  /* tasks blocked in WaitSelect() on this buffer */
 		short	sb_flags;	     /* flags, see below */
 		struct timeval sb_timeo;     /* timeout for read/write */
 	} so_rcv, so_snd;
@@ -133,15 +120,17 @@ struct socket {
 #define	SB_COLL		0x20		/* collision selecting */
 #define	SB_NOINTR	0x40		/* operations not interruptible */
 
-	u_long so_eventmask;		/* Events mask */
+	u_long	so_eventmask;		/* FD_* event classes to report (SO_EVENTMASK) */
 	caddr_t	so_tpcb;		/* Wisc. protocol control block XXX */
 };
 
-/* Socket event descriptor */
+/* A reported event, queued on the owning base's EventList until
+ * GetSocketEvents() collects it.
+ */
 struct soevent {
 	struct MinNode node;
-	struct socket *socket;
-	u_long events;
+	struct socket *socket;		/* socket the events belong to */
+	u_long events;			/* FD_* classes that occurred */
 };
 
 /*
@@ -160,8 +149,9 @@ struct soevent {
 #define	SS_ASYNC		0x200	/* async i/o notify */
 #define	SS_ISCONFIRMING		0x400	/* deciding to accept connection req */
 
-/*
- * Private socket options
+/* so_options bit internal to the stack: TCP_NOPUSH was set, so a T/TCP
+ * style sendto() on an unconnected socket reports ENOTCONN (see
+ * amiga_sendrecv.c).
  */
 #define SO_TTCP_SHUTUP 0x8000
 
@@ -229,10 +219,6 @@ struct soevent {
 		wakeup((caddr_t)&(sb)->sb_flags); \
 	} \
 }
-/*
-#define	sorwakeup(so)	sowakeup((so), &(so)->so_rcv)
-#define	sowwakeup(so)	sowakeup((so), &(so)->so_snd)
-*/
 #ifdef KERNEL
 extern u_long	sb_max;
 
@@ -241,8 +227,3 @@ extern	char netio[], netcon[], netcls[];
 
 #endif
 #endif /* !SYS_SOCKETVAR_H */
-
-
-
-
-

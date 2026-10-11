@@ -25,6 +25,10 @@ struct statvfs {
     unsigned long  f_namemax;  // Maximum filename length
 };
 
+/* f_flag bits (POSIX.1-2008) */
+#define ST_RDONLY   0x0001     // Read-only file system
+#define ST_NOSUID   0x0002     // Setuid/setgid bits are ignored
+
 __BEGIN_DECLS
 
 int statvfs(const char *path, struct statvfs *buf);

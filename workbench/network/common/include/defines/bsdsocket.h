@@ -827,6 +827,32 @@
 #define inet_aton(arg1, arg2) \
     __inet_aton_WB(SocketBase, (arg1), (arg2))
 
+#define __inet_ntop_WB(__SocketBase, __arg1, __arg2, __arg3, __arg4) \
+        AROS_LC4(STRPTR, RS_inet_ntop, \
+                  AROS_LCA(LONG,(__arg1),D0), \
+                  AROS_LCA(void *,(__arg2),A0), \
+                  AROS_LCA(char *,(__arg3),A1), \
+                  AROS_LCA(LONG,(__arg4),D1), \
+        struct Library *, (__SocketBase), 100, BSDSocket)
+
+/* defines/miami.h carries its own inet_ntop/inet_pton bindings */
+#ifndef inet_ntop
+#define inet_ntop(arg1, arg2, arg3, arg4) \
+    __inet_ntop_WB(SocketBase, (arg1), (void *)(arg2), (arg3), (arg4))
+#endif
+
+#define __inet_pton_WB(__SocketBase, __arg1, __arg2, __arg3) \
+        AROS_LC3(LONG, RS_inet_pton, \
+                  AROS_LCA(LONG,(__arg1),D0), \
+                  AROS_LCA(const char *,(__arg2),A0), \
+                  AROS_LCA(void *,(__arg3),A1), \
+        struct Library *, (__SocketBase), 101, BSDSocket)
+
+#ifndef inet_pton
+#define inet_pton(arg1, arg2, arg3) \
+    __inet_pton_WB(SocketBase, (arg1), (arg2), (arg3))
+#endif
+
 #define __gethostbyname_r_WB(__SocketBase, __arg1, __arg2, __arg3, __arg4, __arg5) \
         AROS_LC5(struct hostent *, RS_gethostbyname_r, \
                   AROS_LCA(const char *,(__arg1),A0), \
