@@ -31,7 +31,7 @@
           - set the the coordinates of the VSprite of this
             sequence to whatever these routines cause
 
-    INPUT
+    INPUTS
         anKey = address of a pointer to the first AnimOb in the list
                 (same address that was passed to AddAnimOb!)
         rp    = pointer to a valid RastPort structure
