@@ -2310,6 +2310,10 @@ ULONG UpdateAndMotorOff(globaldata *g)
 
 	request->iotd_Req.io_Command = CMD_UPDATE;
 	error = DoIO((struct IORequest *)request);
+	/* Some block devices have no update command or hardware write cache.
+	 * Preserve the old successful-commit behaviour for that case. */
+	if ((LONG)error == IOERR_NOCMD)
+		error = 0;
 
 	request->iotd_Req.io_Command = TD_MOTOR;
 	request->iotd_Req.io_Length  = 0;
