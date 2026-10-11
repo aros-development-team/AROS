@@ -1494,7 +1494,7 @@ addndbent(struct NetDataBase *ndb,
 {
     if(NDB) {
         LONG item;
-        enum ndbtype which;
+        LONG which;                     /* FindArg() returns -1; an enum may be unsigned */
         UBYTE Buffer[KEYWORDLEN];
 
 #if defined(__AROS__)
