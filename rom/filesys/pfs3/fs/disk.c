@@ -209,9 +209,9 @@ enum vctype {read, write};
 static int CheckDataCache(ULONG blocknr, globaldata *g);
 static int CachedRead(ULONG blocknr, SIPTR *error, BOOL fake, globaldata *g);
 static UBYTE *CachedReadD(ULONG blknr, SIPTR *err, globaldata *g);
-static int CachedWrite(UBYTE *data, ULONG blocknr, globaldata *g);
-static void ValidateCache(ULONG blocknr, ULONG numblocks, enum vctype, globaldata *g);
-static void UpdateSlot(int slotnr, globaldata *g);
+static int CachedWrite(UBYTE *data, ULONG blocknr, SIPTR *error, globaldata *g);
+static ULONG ValidateCache(ULONG blocknr, ULONG numblocks, enum vctype, globaldata *g);
+static ULONG UpdateSlot(int slotnr, globaldata *g);
 static ULONG ReadFromRollover(fileentry_t *file, UBYTE *buffer, ULONG size, SIPTR *error, globaldata *g);
 static ULONG WriteToRollover(fileentry_t *file, UBYTE *buffer, ULONG size, SIPTR *error, globaldata *g);
 static SFSIZE SeekInRollover(fileentry_t *file, SFSIZE offset, LONG mode, SIPTR *error, globaldata *g);
@@ -1221,7 +1221,11 @@ static int CachedRead(ULONG blocknr, SIPTR *error, BOOL fake, globaldata *g)
 	if (i != -1) return i;
 	i = g->dc.roving;
 	if (g->dc.ref[i].dirty && g->dc.ref[i].blocknr)
-		UpdateSlot(i, g);
+	{
+		*error = UpdateSlot(i, g);
+		if (*error)
+			return i;
+	}
 
 	if (fake)
 		memset(&g->dc.data[i<<BLOCKSHIFT], 0xAA, BLOCKSIZE);
@@ -1245,20 +1249,23 @@ static UBYTE *CachedReadD(ULONG blknr, SIPTR *err, globaldata *g)
 		return &g->dc.data[i<<BLOCKSHIFT];
 }
 
-/* write block in cache. if block was already cached,
- * overwrite it. return slotnr (never fails).
- */
-static int CachedWrite(UBYTE *data, ULONG blocknr, globaldata *g)
+/* Write a block in cache, preserving an old dirty slot if eviction fails. */
+static int CachedWrite(UBYTE *data, ULONG blocknr, SIPTR *error, globaldata *g)
 {
 	int i;
 
+	*error = 0;
 	i = CheckDataCache(blocknr, g);
 	if (i == -1)
 	{
 		i = g->dc.roving;
-		g->dc.roving = (g->dc.roving+1)&g->dc.mask;
 		if (g->dc.ref[i].dirty && g->dc.ref[i].blocknr)
-			UpdateSlot(i, g);
+		{
+			*error = UpdateSlot(i, g);
+			if (*error)
+				return -1;
+		}
+		g->dc.roving = (g->dc.roving+1)&g->dc.mask;
 	}
 	memcpy(&g->dc.data[i<<BLOCKSHIFT], data, BLOCKSIZE);
 	g->dc.ref[i].dirty = 1;
@@ -1279,43 +1286,54 @@ void FlushDataCache(globaldata *g)
 
 /* write all dirty blocks to disk
  */
-void UpdateDataCache(globaldata *g)
+ULONG UpdateDataCache(globaldata *g)
 {
 	int i;
+	ULONG error;
 
 	for (i=0; i<g->dc.size; i++)
 		if (g->dc.ref[i].dirty && g->dc.ref[i].blocknr)
-			UpdateSlot (i, g);
+		{
+			error = UpdateSlot(i, g);
+			if (error)
+				return error;
+		}
+	return 0;
 }
 
 
 /* update a data cache slot, and any adjacent blocks
  */
-static void UpdateSlot(int slotnr, globaldata *g)
+static ULONG UpdateSlot(int slotnr, globaldata *g)
 {
 	ULONG blocknr;
-	int i;
-	
+	ULONG error;
+	int i, end;
+
 	blocknr = g->dc.ref[slotnr].blocknr;
 
-	/* find out how many adjacent blocks can be written */
-	for (i=slotnr; i<g->dc.size; i++)
+	/* Gather adjacent dirty slots, but keep them dirty until the write succeeds. */
+	for (end=slotnr; end<g->dc.size; end++)
 	{
-		if (g->dc.ref[i].blocknr != blocknr++)
+		if (!g->dc.ref[end].dirty || g->dc.ref[end].blocknr != blocknr++)
 			break;
-		g->dc.ref[i].dirty = 0;
 	}
 
-	/* write them */
-	RawWrite(&g->dc.data[slotnr<<BLOCKSHIFT], i-slotnr, g->dc.ref[slotnr].blocknr, g);
+	error = RawWrite(&g->dc.data[slotnr<<BLOCKSHIFT], end-slotnr,
+		g->dc.ref[slotnr].blocknr, g);
+	if (!error)
+		for (i=slotnr; i<end; i++)
+			g->dc.ref[i].dirty = 0;
+	return error;
 }
 
 /* update cache to reflect blocks read to or written
  * from disk. to be called before disk is accessed.
  */
-static void ValidateCache(ULONG blocknr, ULONG numblocks, enum vctype vctype, globaldata *g)
+static ULONG ValidateCache(ULONG blocknr, ULONG numblocks, enum vctype vctype, globaldata *g)
 {
 	int i;
+	ULONG error;
 
 	ENTER("ValidateCache");
 	for (i=0; i<g->dc.size; i++)
@@ -1326,12 +1344,17 @@ static void ValidateCache(ULONG blocknr, ULONG numblocks, enum vctype vctype, gl
 			if (vctype == read)
 			{
 				if (g->dc.ref[i].dirty)
-					UpdateSlot(i, g);
+				{
+					error = UpdateSlot(i, g);
+					if (error)
+						return error;
+				}
 			}
 			else    // flush
 				g->dc.ref[i].blocknr = 0;
 		}
 	}
+	return 0;
 }
 
 
@@ -1374,7 +1397,9 @@ ULONG DiskRead(UBYTE *buffer, ULONG blockstoread, ULONG blocknr, globaldata *g)
 			memcpy(buffer, &g->dc.data[slotnr<<BLOCKSHIFT], BLOCKSIZE);
 		return error;
 	}
-	ValidateCache(blocknr, blockstoread, read, g);
+	error = ValidateCache(blocknr, blockstoread, read, g);
+	if (error)
+		return error;
 	return RawRead(buffer, blockstoread, blocknr, g);
 }
 
@@ -1393,7 +1418,8 @@ ULONG DiskRead(UBYTE *buffer, ULONG blockstoread, ULONG blocknr, globaldata *g)
 */
 ULONG DiskWrite(UBYTE *buffer, ULONG blockstowrite, ULONG blocknr, globaldata *g)
 {
-	ULONG slotnr;
+	int slotnr;
+	SIPTR cache_error;
 	ULONG error = 0;
 
 	DB(Trace(1, "DiskWrite", "%ld blocks from %ld + %ld\n", blockstowrite, blocknr,
@@ -1406,20 +1432,20 @@ ULONG DiskWrite(UBYTE *buffer, ULONG blockstowrite, ULONG blocknr, globaldata *g
 
 	if (blockstowrite == 1)
 	{
-		CachedWrite(buffer, blocknr, g);
-		return 0;
+		CachedWrite(buffer, blocknr, &cache_error, g);
+		return cache_error;
 	}
-	ValidateCache(blocknr, blockstowrite, write, g);
 	error = RawWrite(buffer, blockstowrite, blocknr, g);
+	if (error)
+		return error;
+	ValidateCache(blocknr, blockstowrite, write, g);
 
-	/* cache last block written */
-	if (!error)
-	{
-		buffer += ((blockstowrite-1)<<BLOCKSHIFT);
-		slotnr = CachedWrite(buffer, blocknr+blockstowrite-1, g);
-		g->dc.ref[slotnr].dirty = 0;    // we just wrote it
-	}
-	return error;
+	/* The write succeeded; caching the last block is optional. */
+	buffer += ((blockstowrite-1)<<BLOCKSHIFT);
+	slotnr = CachedWrite(buffer, blocknr+blockstowrite-1, &cache_error, g);
+	if (!cache_error)
+		g->dc.ref[slotnr].dirty = 0;
+	return 0;
 }
 
 /*

@@ -4,7 +4,7 @@ volume.c
 
 void NewVolume(BOOL , globaldata * );
 
-BOOL SafeDiskRemoveSequence(globaldata * );
+BOOL SafeDiskRemoveSequence(globaldata *, SIPTR *);
 
 struct volumedata * MakeVolumeData(struct rootblock * , globaldata * );
 

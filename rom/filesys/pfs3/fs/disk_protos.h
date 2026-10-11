@@ -35,7 +35,7 @@ void UpdateAndMotorOff(globaldata * );
 
 void UpdateCache (globaldata *g);
 void FlushDataCache (globaldata *g);
-void UpdateDataCache (globaldata *g);
+ULONG UpdateDataCache (globaldata *g);
 
 BOOL detectaccessmode(UBYTE *buffer, globaldata *g);
 BOOL get_scsi_geometry(globaldata *g);

@@ -200,7 +200,11 @@ BOOL UpdateDisk (globaldata *g)
 
 		g->uip = TRUE;
 		updateok = TRUE;
-		UpdateDataCache (g);            /* flush DiskRead DiskWrite cache */
+		if (UpdateDataCache(g))           /* data must reach disk before metadata */
+		{
+			updateok = FALSE;
+			goto update_root;
+		}
 
 #if VERSION23
 		/* make sure rootblockextension is reallocated */
@@ -258,6 +262,7 @@ BOOL UpdateDisk (globaldata *g)
 		updateok &= UpdateList ((struct cachedblock *)HeadOf(&volume->bmindexblks), g);
 
 		/* update root (MUST be done last) */
+	update_root:
 		if (updateok)
 		{
 			WriteRootBlocks((UBYTE *)volume->rootblk, volume->rootblk->rblkcluster, ROOTBLOCK, g);
@@ -286,7 +291,8 @@ BOOL UpdateDisk (globaldata *g)
 		success = FALSE;
 	}
 
-	g->dirty = FALSE;
+	if (success)
+		g->dirty = FALSE;
 
 	EXIT("UpdateDisk");
 	return success;

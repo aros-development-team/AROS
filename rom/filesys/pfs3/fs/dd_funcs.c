@@ -148,23 +148,23 @@ static SIPTR dd_IsFileSystem(struct DosPacket *pkt, globaldata * g)
  */
 static SIPTR dd_Quit(struct DosPacket *pkt, globaldata * g)
 {
-#if UNSAFEQUIT
-	g->dieing = TRUE;
-	return DOSTRUE;
-#else
+#if !UNSAFEQUIT
 	struct volumedata *volume = g->currentvolume;
 
-	if (!volume || (IsMinListEmpty(&volume->fileentries) && IsMinListEmpty(&volume->notifylist)))
-	{
-		g->dieing = TRUE;
-		return DOSTRUE;
-	}
-	else
+	if (volume && (!IsMinListEmpty(&volume->fileentries) || !IsMinListEmpty(&volume->notifylist)))
 	{
 		pkt->dp_Res2 = ERROR_OBJECT_IN_USE;
 		return DOSFALSE;
 	}
 #endif
+	/* Reject shutdown before Quit removes handlers or drains pending packets. */
+	if (g->dirty && !UpdateDisk(g))
+	{
+		pkt->dp_Res2 = g->softprotect ? ERROR_DISK_WRITE_PROTECTED : ERROR_SEEK_ERROR;
+		return DOSFALSE;
+	}
+	g->dieing = TRUE;
+	return DOSTRUE;
 }
 
 static SIPTR dd_CurrentVolume(struct DosPacket *pkt, globaldata * g)
@@ -1597,8 +1597,7 @@ static SIPTR dd_InhibitOn(struct DosPacket *pkt, globaldata * g)
 
 	if (pkt->dp_Arg1 != DOSFALSE)   /* don't check for DOSTRUE (Holger Kruse!) */
 	{
-		if (!SafeDiskRemoveSequence(g)) {
-			pkt->dp_Res2 = ERROR_OBJECT_IN_USE;
+		if (!SafeDiskRemoveSequence(g, &pkt->dp_Res2)) {
 			return DOSFALSE;
 		}
 		g->inhibitcount++;
@@ -1676,8 +1675,7 @@ static SIPTR dd_Format(struct DosPacket *pkt, globaldata * g)
 	if (g->inhibitcount == 0)
 	{
 		g->dirty = FALSE;
-		if (!SafeDiskRemoveSequence(g)) {
-			pkt->dp_Res2 = ERROR_OBJECT_IN_USE;
+		if (!SafeDiskRemoveSequence(g, &pkt->dp_Res2)) {
 			return DOSFALSE;
 		}
 	}
