@@ -45,8 +45,11 @@ void run_dhcp(void)
     struct ifnet *ifp;
 
     for(ifp = ifnet; ifp; ifp = ifp->if_next) {
-        if(ifp->if_flags & IFF_DELAYUP) {
-            ifp->if_flags &= ~IFF_DELAYUP;
+        /* only a SANA-II interface is ever marked */
+        if(ifp->if_output != sana_output)
+            continue;
+        if(((struct sana_softc *)ifp)->ss_cflags & SSF_DELAYUP) {
+            ((struct sana_softc *)ifp)->ss_cflags &= ~SSF_DELAYUP;
             if(!ifp->if_data.ifi_aros_usedhcp &&
                     ((struct sana_softc *)ifp)->ss_ipaddr.s_addr == INADDR_ANY)
                 autoip_start(ifp);  /* no DHCPv4 and no address assigned */

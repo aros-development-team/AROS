@@ -858,9 +858,9 @@ sana_ioctl(register struct ifnet *ifp, int cmd, caddr_t data)
          * does not mean sana_up() (CmdOnline + CmdRead) has been called.
          */
         if((ssc->ss_if.if_flags & IFF_DRV_RUNNING) && (ssc->ss_ip.sent == 0)) {
-            if(ssc->ss_if.if_flags & IFF_NOUP) {
+            if(ssc->ss_cflags & SSF_NOUP) {
                 D(bug("[AROSTCP:SANA] %s: SIFADDR Clearing interface NOUP flag .. \n", __func__));
-                ssc->ss_if.if_flags &= ~IFF_NOUP;
+                ssc->ss_cflags &= ~SSF_NOUP;
             } else {
                 D(bug("[AROSTCP:SANA] %s: SIFADDR bringing interface UP .. \n", __func__));
                 sana_up(ssc);
@@ -891,9 +891,9 @@ sana_ioctl(register struct ifnet *ifp, int cmd, caddr_t data)
             sana_run(ssc, ssc->ss_reqno, ifa);
         }
         if((ssc->ss_if.if_flags & IFF_DRV_RUNNING) && (ssc->ss_ip.sent == 0)) {
-            if(ssc->ss_if.if_flags & IFF_NOUP) {
+            if(ssc->ss_cflags & SSF_NOUP) {
                 D(bug("[AROSTCP:SANA] %s: SIOCAIFADDR_IN6 Clearing interface NOUP flag ..\n", __func__));
-                ssc->ss_if.if_flags &= ~IFF_NOUP;
+                ssc->ss_cflags &= ~SSF_NOUP;
             } else {
                 D(bug("[AROSTCP:SANA] %s: SIOCAIFADDR_IN6 bringing interface UP ..\n", __func__));
                 sana_up(ssc);

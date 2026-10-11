@@ -243,6 +243,17 @@ int	STKARGFUN ip_output(void *args, ...)
         }
         ifp = ia->ia_ifp;
         ip->ip_ttl = 1;
+#ifdef ENABLE_MULTICAST
+    } else if(IN_MULTICAST(ntohl(ip->ip_dst.s_addr)) && imo != NULL &&
+              imo->imo_multicast_ifp != NULL) {
+        /*
+         * The sender chose the interface with IP_MULTICAST_IF, so the
+         * group needs no route. A host with no default route can then
+         * still send to the link.
+         */
+        ifp = imo->imo_multicast_ifp;
+        IFP_TO_IA(ifp, ia);
+#endif
     } else {
         if(ro->ro_rt == 0)
             rtalloc(ro);
