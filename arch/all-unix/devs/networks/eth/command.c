@@ -246,7 +246,9 @@ static BOOL eth_get_global_stats(struct IOSana2Req *req, struct eth_unit *unit) 
 static struct eth_mcast *eth_find_mcast(struct eth_unit *unit, UBYTE *addr) {
     struct eth_mcast *mcast, *found = NULL;
 
-    ForeachNode(&(unit->mcasts), mcast) {
+    for (mcast = (struct eth_mcast *) unit->mcasts.mlh_Head;
+         mcast->node.mln_Succ != NULL;
+         mcast = (struct eth_mcast *) mcast->node.mln_Succ) {
         if (memcmp(mcast->addr, addr, sizeof(mcast->addr)) == 0) {
             found = mcast;
             break;
