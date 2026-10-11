@@ -13,8 +13,13 @@ USER_CPPFLAGS := -DMBEDTLS_CONFIG_FILE='"mbedtls_aros_config.h"'
 # gnu99: strict c99 removes the 'asm' keyword the inline LVO headers need
 USER_CFLAGS := $(CFLAGS_GNU99)
 
-#MM- workbench-network-sshd : workbench-libs-libssh workbench-libs-mbedtls \
-#MM  network-includes-copy arostcp-linklibs-netlib
+#MM- workbench-network: workbench-network-sshd
+
+#MM- workbench-network-sshd : \
+#MM      network-includes-copy \
+#MM      arostcp-linklibs-netlib \
+#MM      workbench-libs-libssh \
+#MM      workbench-libs-mbedtls
 
 # The sshd daemon installs alongside the other managed network services
 # (matching dhcpd); the ssh/ssh-keygen client tools stay in C:.
