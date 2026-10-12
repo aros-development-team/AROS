@@ -228,4 +228,21 @@ struct vc4gfx_overlay;
 BOOL vc4_hvs5_overlay(struct VideoCoreGfx_staticdata *xsd,
                       const struct vc4gfx_overlay *ovl);
 
+/* HDMI0 mode setting (vcgfx_hvs5_mode.c). Capture records the firmware's
+ * boot mode and decides whether any other can be set; restore puts it
+ * back before the firmware is asked for a framebuffer again, and apply
+ * sets a mode of ours after a takeover. */
+struct vcgfx_timing;
+void vc4_hvs5_mode_capture(struct VideoCoreGfx_staticdata *xsd);
+const struct vcgfx_timing *vc4_hvs5_mode(struct VideoCoreGfx_staticdata *xsd, ULONG i);
+BOOL vc4_hvs5_mode_usable(struct VideoCoreGfx_staticdata *xsd, const struct vcgfx_timing *t);
+const struct vcgfx_timing *vc4_hvs5_mode_lookup(struct VideoCoreGfx_staticdata *xsd,
+                                                ULONG w, ULONG h,
+                                                const struct vcgfx_timing *want, BOOL *boot);
+BOOL vc4_hvs5_mode_set(struct VideoCoreGfx_staticdata *xsd, ULONG ch, ULONG list,
+                       const struct vcgfx_timing *t, BOOL boot);
+void vc4_hvs5_mode_restore(struct VideoCoreGfx_staticdata *xsd);
+BOOL vc4_hvs5_mode_apply(struct VideoCoreGfx_staticdata *xsd, ULONG w, ULONG h,
+                         ULONG pitch, const struct vcgfx_timing *want);
+
 #endif /* _VIDEOCOREGFX_HVS5_H */

@@ -243,14 +243,10 @@ void vcgfx_edid_probe(struct VideoCoreGfx_staticdata *xsd)
         const struct vcgfx_timing *t = &e->timings[0];
         ULONG mhz = (UQUAD)t->clock * 1000000 / (t->htotal * t->vtotal);
 
-        if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
-            bug("[VideoCoreGfx] EDID: \"%s\" %ux%u@%u.%03u (%u kHz), max TMDS %u MHz%s\n",
-                e->name, t->hdisp, t->vdisp, mhz / 1000, mhz % 1000, t->clock,
-                e->maxtmds / 1000, e->scdc ? ", SCDC" : "");
-        else
-            D(bug("[VideoCoreGfx] EDID: \"%s\" %ux%u@%u.%03u (%u kHz), max TMDS %u MHz%s\n",
-                e->name, t->hdisp, t->vdisp, mhz / 1000, mhz % 1000, t->clock,
-                e->maxtmds / 1000, e->scdc ? ", SCDC" : ""));
+        bug("[VideoCoreGfx] EDID: \"%s\" %ux%u@%u.%03u (%u kHz), max TMDS %u MHz,"
+            " range max %u MHz%s\n",
+            e->name, t->hdisp, t->vdisp, mhz / 1000, mhz % 1000, t->clock,
+            e->maxtmds / 1000, e->maxclock / 1000, e->scdc ? ", SCDC" : "");
     }
 }
 
@@ -293,3 +289,55 @@ UBYTE vcgfx_edid_vic(const struct vcgfx_timing *t, UBYTE *aspect)
     *aspect = 0;
     return 0;
 }
+
+/* An AVI infoframe for RGB at a timing: limited range for a CEA format
+ * past VIC 1, full otherwise, with its VIC and picture aspect. Packet RAM
+ * layout - header, then 7-byte subpackets as 4 + 3 bytes. Returns the VIC. */
+UBYTE vcgfx_edid_avi(const struct vcgfx_timing *t, ULONG avi[9], BOOL *limited)
+{
+    UBYTE hb[3] = { 0x82, 0x02, 0x0d }, pb[14] = { 0 }, aspect;
+    UBYTE vic = vcgfx_edid_vic(t, &aspect);
+    ULONG sum, i;
+
+    *limited = (vic > 1);
+
+    pb[1] = 0x12;                               /* RGB, active format, underscan */
+    pb[2] = (aspect << 4) | 0x08;               /* aspect, same as picture */
+    pb[3] = (*limited ? 1 : 2) << 2;            /* Q */
+    pb[4] = vic;
+    pb[5] = *limited ? 0x00 : 0x40;             /* YQ */
+    for (sum = hb[0] + hb[1] + hb[2], i = 1; i < 14; i++)
+        sum += pb[i];
+    pb[0] = (0x100 - (sum & 0xff)) & 0xff;
+
+    for (i = 0; i < 9; i++)
+        avi[i] = 0;
+    avi[0] = hb[0] | (hb[1] << 8) | (hb[2] << 16);
+    avi[1] = pb[0] | (pb[1] << 8) | (pb[2] << 16) | ((ULONG)pb[3] << 24);
+    avi[2] = pb[4] | (pb[5] << 8) | (pb[6] << 16);
+    avi[3] = pb[7] | (pb[8] << 8) | (pb[9] << 16) | ((ULONG)pb[10] << 24);
+    avi[4] = pb[11] | (pb[12] << 8) | (pb[13] << 16);
+    return vic;
+}
+
+#define P_H     VCGFX_TIMING_PHSYNC
+#define P_V     VCGFX_TIMING_PVSYNC
+
+/* CEA-861 and VESA DMT, 60 Hz but for 3840x2160 at 30: clock, h disp/
+ * start/end/total, v ditto. */
+const struct vcgfx_timing vcgfx_std_modes[VCGFX_STD_MODES] =
+{
+    {  25175,  640,  656,  752,  800,  480,  490,  492,  525, 0         },
+    {  40000,  800,  840,  968, 1056,  600,  601,  605,  628, P_H | P_V },
+    {  65000, 1024, 1048, 1184, 1344,  768,  771,  777,  806, 0         },
+    {  74250, 1280, 1390, 1430, 1650,  720,  725,  730,  750, P_H | P_V },
+    {  83500, 1280, 1352, 1480, 1680,  800,  803,  809,  831, P_V       },
+    { 106500, 1440, 1520, 1672, 1904,  900,  903,  909,  934, P_V       },
+    { 108000, 1280, 1328, 1440, 1688, 1024, 1025, 1028, 1066, P_H | P_V },
+    { 108000, 1600, 1624, 1704, 1800,  900,  901,  904, 1000, P_H | P_V },
+    { 146250, 1680, 1784, 1960, 2240, 1050, 1053, 1059, 1089, P_V       },
+    { 148500, 1920, 2008, 2052, 2200, 1080, 1084, 1089, 1125, P_H | P_V },
+    { 154000, 1920, 1968, 2000, 2080, 1200, 1203, 1209, 1235, P_H       },
+    { 241500, 2560, 2608, 2640, 2720, 1440, 1443, 1448, 1481, P_H       },
+    { 297000, 3840, 4016, 4104, 4400, 2160, 2168, 2178, 2250, P_H | P_V },
+};

@@ -16,6 +16,7 @@
 
 #include "vcgfx_hardware.h"
 #include "vcgfx_hvs.h"
+#include "vcgfx_hvs5state.h"
 #include "vcgfx_hvs6state.h"
 #include "vcgfx_edid.h"
 #include "vcgfx_bitmap.h"
@@ -129,6 +130,9 @@ struct VideoCoreGfx_staticdata {
         ULONG                   vcsd_BootFBPitch;
         ULONG                   vcsd_BootFBWidth;
         ULONG                   vcsd_BootFBHeight;
+
+        /* BCM2711 HDMI0 mode setting (vcgfx_hvs5_mode.c). */
+        struct vc4_hvs5_mode    vcsd_HVS5M;
 
         /* HVS6 display-list ownership (vcgfx_hvs6.c). */
         struct vc4_hvs6_state   vcsd_HVS6;
