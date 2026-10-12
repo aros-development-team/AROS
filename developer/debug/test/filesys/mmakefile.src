@@ -4,5 +4,5 @@
 #MM- test-filesys : test-filesys-cdupdate test-filesys-afs
 #MM- test-filesys-quick : test-filesys-cdupdate-quick test-filesys-afs-quick
 
-#MM- test-filesys-afs : test-filesys-afs-requesters test-filesys-afs-io
-#MM- test-filesys-afs-quick : test-filesys-afs-requesters-quick test-filesys-afs-io-quick
+#MM- test-filesys-afs : test-filesys-afs-requesters test-filesys-afs-requesters-inline test-filesys-afs-io
+#MM- test-filesys-afs-quick : test-filesys-afs-requesters-quick test-filesys-afs-requesters-inline-quick test-filesys-afs-io-quick

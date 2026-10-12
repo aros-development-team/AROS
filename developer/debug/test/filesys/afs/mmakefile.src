@@ -5,7 +5,13 @@ USER_LDFLAGS := -static
 #MM test-filesys-afs-requesters : includes linklibs
 %build_prog mmake=test-filesys-afs-requesters \
     files="requesters $(SRCDIR)/rom/filesys/afs/os_aros_requesters" \
+    cflags="-DAFS_INLINE_REQUESTERS=0" \
     progname=requesters targetdir=$(AROS_TESTS)/filesys/afs
+
+#MM test-filesys-afs-requesters-inline : includes linklibs
+%build_prog mmake=test-filesys-afs-requesters-inline \
+    files=requesters_inline cflags="-DAFS_INLINE_REQUESTERS=1" \
+    progname=requesters-inline targetdir=$(AROS_TESTS)/filesys/afs
 
 #MM test-filesys-afs-io : includes linklibs
 %build_progs mmake=test-filesys-afs-io \
