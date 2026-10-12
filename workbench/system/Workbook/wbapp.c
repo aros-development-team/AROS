@@ -90,18 +90,7 @@ static IPTR WBAppNew(Class *cl, Object *obj, struct opSet *ops)
     my->AppMask = (1UL << my->AppPort->mp_SigBit);
     my->WinMask = (1UL << my->WinPort->mp_SigBit);
 
-    /* Create our root window */
-    my->Root = NewObject(WBWindow, NULL,
-                         WBWA_Path, NULL,
-                         WBWA_UserPort, my->WinPort,
-                         TAG_END);
-
-    if (my->Root == NULL) {
-        DeleteMsgPort(my->WinPort);
-        DeleteMsgPort(my->AppPort);
-        DoSuperMethod(cl, (Object *)rc, OM_DISPOSE);
-        return 0;
-    }
+    my->Root = NULL;
 
     return rc;
 }
@@ -123,7 +112,8 @@ static IPTR WBAppDispose(Class *cl, Object *obj, Msg msg)
     }
 
     /* Get rid of the main window */
-    DisposeObject(my->Root);
+    if (my->Root)
+        DisposeObject(my->Root);
 
     DeleteMsgPort(my->AppPort);
     DeleteMsgPort(my->WinPort);
@@ -318,9 +308,20 @@ static IPTR WBAppWorkbench(Class *cl, Object *obj, Msg msg)
     struct wbApp *my = INST_DATA(cl, obj);
     BOOL done = FALSE;
 
-    CurrentDir(BNULL);
-
     if (RegisterWorkbench(my->AppPort)) {
+        /* Do not create visible Workbench state until registration succeeds. */
+        my->Root = NewObject(WBWindow, NULL,
+                             WBWA_Path, NULL,
+                             WBWA_UserPort, my->WinPort,
+                             TAG_END);
+
+        if (my->Root == NULL) {
+            UnregisterWorkbench(my->AppPort);
+            return FALSE;
+        }
+
+        CurrentDir(BNULL);
+
         while (!done) {
             ULONG mask;
 
@@ -377,6 +378,21 @@ static IPTR WBAppWorkbench(Class *cl, Object *obj, Msg msg)
         wbCloseAllWindows(cl, obj);
 
         UnregisterWorkbench(my->AppPort);
+        return TRUE;
+    }
+
+    {
+        struct EasyStruct es =
+        {
+            sizeof(struct EasyStruct),
+            0,
+            "Workbook",
+            "Another Workbench application is already active.\n"
+            "Quit it before starting Workbook.",
+            "OK"
+        };
+
+        EasyRequestArgs(NULL, &es, NULL, NULL);
     }
 
     return FALSE;
