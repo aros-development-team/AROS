@@ -22,9 +22,17 @@
 #define BTMIDI_PORTS        16
 #define BTMIDI_TXBUF_SIZE   4096    /* a power of two */
 
+/* camd.library never unloads a driver, so the one it has in memory may come
+   from an older class than the one that answers it. The driver opens a port
+   only when the class's adapter has the layout it was built with. Count this
+   up with any change to struct BTMidiAdapter; ba_ActivateFunc and ba_Version
+   keep their places whatever else changes. */
+#define BTMIDI_ADAPTER_VERSION  1
+
 struct BTMidiAdapter
 {
     APTR                    ba_ActivateFunc;  /* struct MidiPortData -- filled by the CAMD driver */
+    ULONG                   ba_Version;       /* BTMIDI_ADAPTER_VERSION of the class */
     BOOL                    ba_IsOpen;        /* TRUE while CAMD has the port open */
     struct Hook             ba_CAMDRXFunc;    /* RX function in the CAMD driver */
     struct Interrupt        ba_CAMDTXFunc;    /* TX function in the CAMD driver (soft interrupt) */

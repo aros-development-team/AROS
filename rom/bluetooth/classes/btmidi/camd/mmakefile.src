@@ -11,7 +11,9 @@ USER_INCLUDES := -I$(OBJDIR)/../include -iquote $(SRCDIR)/$(CURDIR)/..
 #MM kernel-bluetooth-classes-btmidi-camddriver : kernel-bluetooth-classes-btmidi-includes
 #MM- kernel-bluetooth-classes-btmidi-camddriver-quick : kernel-bluetooth-classes-btmidi-camddriver
 
-$(OBJDIR)/%.o : $(SRCDIR)/$(CURDIR)/%.c | $(OBJDIR)
+# The adapter's layout is in the class's header: a change there has to reach
+# the driver, which checks BTMIDI_ADAPTER_VERSION when it opens a port.
+$(OBJDIR)/%.o : $(SRCDIR)/$(CURDIR)/%.c $(SRCDIR)/$(CURDIR)/../btmidi_camd.h | $(OBJDIR)
 	%compile_q
 
 # The class writes this blob to DEVS:Midi/ and camd.library LoadSeg()s it, so

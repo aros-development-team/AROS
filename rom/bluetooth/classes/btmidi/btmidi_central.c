@@ -247,10 +247,15 @@ static void channel_done(struct btmidi_binding *binding, APTR channel)
             return;
         }
         if (actual) {
-            if (blemidi_decode(&binding->decoder, binding->notify_buf,
-                               actual, device_byte, binding))
+            if (blemidi_check(&binding->decoder, binding->notify_buf,
+                              actual)) {
+                /* nothing of a malformed packet reaches CAMD */
                 blemidi_decoder_init(&binding->decoder);
-            btmidi_camd_rx_flush(&binding->rx);
+            } else {
+                blemidi_decode(&binding->decoder, binding->notify_buf,
+                               actual, device_byte, binding);
+                btmidi_camd_rx_flush(&binding->rx);
+            }
         }
         if (!(SetSignal(0, 0) & SIGBREAKF_CTRL_C))
             start_requests(binding);

@@ -35,6 +35,7 @@ void btmidi_camd_init(struct BTMidiBase *base)
     ULONG port;
 
     for (port = 0; port < BTMIDI_PORTS; port++) {
+        base->adapters[port].ba_Version = BTMIDI_ADAPTER_VERSION;
         base->adapters[port].ba_PortNum = port;
         InitSemaphore(&base->adapters[port].ba_Lock);
     }

@@ -182,6 +182,10 @@ AROS_UFH5(struct MidiPortData *, AROS_SLIB_ENTRY(OpenPort, BTMidiCAMD, 0),
     port = btmidiCAMDOpenPort(transmitfunc, receivefunc, userdata, name, portnum);
     if (!port)
         return NULL;
+    /* a class newer or older than this driver: nothing in the adapter
+       beyond its version can be relied on */
+    if (port->ba_Version != BTMIDI_ADAPTER_VERSION)
+        return NULL;
 
     port->ba_ActivateFunc = ActivateXmit;
     port->ba_CAMDRXFunc.h_Entry = (HOOKFUNC)SendToCAMD;

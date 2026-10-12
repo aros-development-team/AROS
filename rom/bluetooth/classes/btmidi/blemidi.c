@@ -160,6 +160,25 @@ int blemidi_decode(struct blemidi_decoder *decoder,
     return 0;
 }
 
+static int no_byte(void *context, uint16_t timestamp, uint8_t byte)
+{
+    (void)context;
+    (void)timestamp;
+    (void)byte;
+    return 0;
+}
+
+int blemidi_check(const struct blemidi_decoder *decoder,
+                  const uint8_t *packet, size_t length)
+{
+    struct blemidi_decoder copy;
+
+    if (!decoder)
+        return -1;
+    copy = *decoder;
+    return blemidi_decode(&copy, packet, length, no_byte, NULL);
+}
+
 void blemidi_writer_init(struct blemidi_writer *writer,
                          blemidi_packet_callback send, void *context)
 {

@@ -243,12 +243,15 @@ static void handle_event(struct btmidi_runtime *runtime, struct Message *message
         runtime->base->stats.ms_RxPackets++;
         if (!(peer = find_peer(runtime, device))) {
             runtime->base->stats.ms_Errors++;
-        } else if (blemidi_decode(&peer->decoder, value, (size_t)length,
-                                  peer_byte, peer)) {
+        } else if (blemidi_check(&peer->decoder, value, (size_t)length)) {
+            /* nothing of a malformed packet reaches CAMD */
             runtime->base->stats.ms_Errors++;
             peer_reset(peer);
+        } else {
+            blemidi_decode(&peer->decoder, value, (size_t)length,
+                           peer_byte, peer);
+            btmidi_camd_rx_flush(&runtime->rx);
         }
-        btmidi_camd_rx_flush(&runtime->rx);
     }
     ReplyMsg(message);
 }

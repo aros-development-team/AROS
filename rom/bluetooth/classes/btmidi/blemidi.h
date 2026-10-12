@@ -28,6 +28,11 @@ void blemidi_decoder_init(struct blemidi_decoder *decoder);
 int blemidi_decode(struct blemidi_decoder *decoder,
                        const uint8_t *packet, size_t length,
                        blemidi_byte_callback callback, void *context);
+/* Whether blemidi_decode() would take the whole packet, without decoding
+   it: 0 when it would, -1 when it would stop at a malformed byte. For a
+   receiver that must not pass on the first half of a broken packet. */
+int blemidi_check(const struct blemidi_decoder *decoder,
+                  const uint8_t *packet, size_t length);
 
 /* The other way: MIDI bytes, as a serial port would carry them, into BLE
    MIDI packets. A packet takes as many whole messages as fit; a SysEx
