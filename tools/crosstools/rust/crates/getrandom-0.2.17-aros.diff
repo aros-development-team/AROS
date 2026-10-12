@@ -1,0 +1,23 @@
+diff -ruN -x .cargo-checksum.json -x Cargo.toml.orig -x .cargo_vcs_info.json -x target -x Cargo.lock a/src/lib.rs b/src/lib.rs
+--- a/src/lib.rs	2006-07-24 02:21:28.000000000 +0100
++++ b/src/lib.rs	2026-10-12 13:20:22.296089175 +0100
+@@ -239,6 +239,7 @@
+         mod util_libc;
+         #[path = "use_file.rs"] mod imp;
+     } else if #[cfg(any(
++        target_os = "aros",
+         target_os = "macos",
+         target_os = "openbsd",
+         target_os = "vita",
+diff -ruN -x .cargo-checksum.json -x Cargo.toml.orig -x .cargo_vcs_info.json -x target -x Cargo.lock a/src/util_libc.rs b/src/util_libc.rs
+--- a/src/util_libc.rs	2006-07-24 02:21:28.000000000 +0100
++++ b/src/util_libc.rs	2026-10-12 13:20:22.296204775 +0100
+@@ -19,6 +19,8 @@
+         use libc::__error as errno_location;
+     } else if #[cfg(target_os = "haiku")] {
+         use libc::_errnop as errno_location;
++    } else if #[cfg(target_os = "aros")] {
++        use libc::__stdc_geterrnoptr as errno_location;
+     } else if #[cfg(target_os = "nto")] {
+         use libc::__get_errno_ptr as errno_location;
+     } else if #[cfg(any(all(target_os = "horizon", target_arch = "arm"), target_os = "vita"))] {
