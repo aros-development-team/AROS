@@ -16,7 +16,10 @@
 #include "workbook_intern.h"
 #include "classes.h"
 
-/* Allocate classes and run the main app */
+/* Create Workbook's private classes and application object, run the Workbench
+ * handler method, and release the classes. Returns RETURN_OK only when the
+ * handler method reports success; otherwise returns RETURN_ERROR.
+ */
 static int WB_Main(struct WorkbookBase *wb)
 {
     int rc = RETURN_ERROR;
@@ -67,8 +70,8 @@ exit:
 #undef WorkbenchBase
 #undef DOSBase
 
-/* This wrapper is needed, so that we can start
- * workbench items from an Input handler
+/* Helper-process entrypoint used by the input handler to open an absolute
+ * path through workbench.library.
  */
 AROS_PROCH(wbOpener, argstr, argsize, SysBase)
 {
@@ -91,6 +94,9 @@ AROS_PROCH(wbOpener, argstr, argsize, SysBase)
 }
 
 
+/* Set up Workbook process state, required libraries, and the opener segment;
+ * invoke WB_Main(), then perform process-level teardown and return its status.
+ */
 ULONG WorkbookMain(void)
 {
     struct WorkbookBase *wb;
