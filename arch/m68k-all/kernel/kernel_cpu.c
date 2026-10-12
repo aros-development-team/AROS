@@ -23,7 +23,10 @@ asm (
         "       movem.l %d0-%d1/%a0-%a1/%a6,%sp@-\n"
         "       move.l  (4),%a6\n"
         "       jsr     %a6@(-1 * 6 * 11 /* Exception */)\n"
+        "       jsr     %a6@(-1 * 6 * 21 /* Enable */)\n"
         "       movem.l %sp@+,%d0-%d1/%a0-%a1/%a6\n"
+        "       move.w  %sp@+,%ccr\n"
+        "       addq.l  #2,%sp\n" /* Skip payload padding without changing CCR */
         "       rts\n"
 );
 
@@ -83,10 +86,12 @@ APTR m68k_DispatchFrame(void)
     frame = task->tc_SPReg;
     if (task->tc_Flags & TF_EXCEPT) {
         ULONG originalPC = *(ULONG *)frame;
-        UBYTE *exceptionFrame = frame - sizeof(ULONG);
+        UWORD originalSR = *(UWORD *)(frame + sizeof(ULONG));
+        UBYTE *exceptionFrame = frame - 2 * sizeof(ULONG);
         unsigned int i;
 
-        /* Exec_Exception() balances this Disable() when it returns. */
+        /* Keep signals stable until Exec_Exception() starts. The
+         * cpu_Exception trampoline balances this Disable() on return. */
         Disable();
 
         if (exceptionFrame <= (UBYTE *)task->tc_SPLower)
@@ -95,12 +100,17 @@ APTR m68k_DispatchFrame(void)
         /*
          * Make room below the 66-byte task-stack frame.  The destination is
          * lower than the source, so a forward byte copy is overlap-safe.
-         * Restoring this shifted frame sets USP to the word immediately after
-         * it; place the interrupted PC there for cpu_Exception's final RTS.
+         * Restoring this shifted frame sets USP immediately after it. Keep
+         * the original CCR and PC in that payload: the exception handler and
+         * Enable() may change comparison flags needed by interrupted code.
+         * Restoring CCR from the saved SR works on 68000 too, without a
+         * privileged MOVE-from-SR or a 68010-only MOVE-from-CCR instruction.
          */
         for (i = 0; i < 66; i++)
             exceptionFrame[i] = frame[i];
-        *(ULONG *)(exceptionFrame + 66) = originalPC;
+        *(UWORD *)(exceptionFrame + 66) = originalSR;
+        *(UWORD *)(exceptionFrame + 68) = 0;
+        *(ULONG *)(exceptionFrame + 70) = originalPC;
         *(ULONG *)exceptionFrame = (ULONG)cpu_Exception;
         task->tc_SPReg = exceptionFrame;
         frame = exceptionFrame;
