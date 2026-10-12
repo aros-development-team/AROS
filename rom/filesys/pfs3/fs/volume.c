@@ -595,8 +595,18 @@ static BOOL SameDisk(struct rootblock *disk1, struct rootblock *disk2)
 static BOOL SameDiskDL(struct rootblock *disk1, struct DeviceList *disk2)
 {
   BOOL result;
+  UBYTE diskname[DNSIZE];
+  ULONG len, i;
 
-	result = ddstricmp(disk1->diskname, BADDR(disk2->dl_Name)) &&
+	if (!disk2->dl_Name)
+		return FALSE;
+	len = AROS_BSTR_strlen(disk2->dl_Name);
+	if (len >= sizeof(diskname))
+		return FALSE;
+	diskname[0] = len;
+	for (i = 0; i < len; i++)
+		diskname[i + 1] = AROS_BSTR_getchar(disk2->dl_Name, i);
+	result = ddstricmp(disk1->diskname, diskname) &&
 			 disk1->creationday    == disk2->dl_VolumeDate.ds_Days &&
 			 disk1->creationminute == disk2->dl_VolumeDate.ds_Minute &&
 			 disk1->creationtick   == disk2->dl_VolumeDate.ds_Tick;
