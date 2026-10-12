@@ -70,7 +70,6 @@ mdnsNameToWire(const char *name, UBYTE *buf, LONG buflen, LONG *used)
 LONG
 mdnsSkipName(const UBYTE *pkt, LONG pktlen, LONG offset)
 {
-    UBYTE label;
     LONG pos;
 
     if (pkt == NULL || offset < 0 || offset >= pktlen) {
@@ -79,7 +78,8 @@ mdnsSkipName(const UBYTE *pkt, LONG pktlen, LONG offset)
 
     pos = offset;
     while (pos < pktlen) {
-        label = pkt[pos];
+        UBYTE label = pkt[pos];
+
         if (label == 0) {
             return pos + 1;
         }
@@ -104,7 +104,6 @@ mdnsWireToName(const UBYTE *pkt, LONG pktlen, LONG offset,
     UBYTE label;
     LONG pos;
     LONG out;
-    LONG jump;
     LONG jumps;
     LONG nextpos;
 
@@ -134,7 +133,8 @@ mdnsWireToName(const UBYTE *pkt, LONG pktlen, LONG offset,
             if (pos + 1 >= pktlen) {
                 return -1;
             }
-            jump = ((label & 0x3F) << 8) | pkt[pos + 1];
+            LONG jump = ((label & 0x3F) << 8) | pkt[pos + 1];
+
             if (jump < 0 || jump >= baselen) {
                 return -1;
             }

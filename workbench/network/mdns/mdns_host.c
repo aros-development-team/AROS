@@ -33,12 +33,14 @@
 static void
 host_fqdn(struct MDNSDaemon *md, char *buf, LONG buflen)
 {
-    strncpy(buf, md->md_HostName, buflen - 1);
-    buf[buflen - 1] = '\0';
-    if (strchr(buf, '.') != NULL) {
-        *strchr(buf, '.') = '\0';
+    LONG n = 0;
+
+    while (n < buflen - 1 && md->md_HostName[n] != '\0' &&
+           md->md_HostName[n] != '.') {
+        buf[n] = md->md_HostName[n];
+        n++;
     }
-    strncat(buf, "." MDNS_DOMAIN_LOCAL, buflen - 1 - strlen(buf));
+    mdnsTextCopy(buf + n, buflen - n, "." MDNS_DOMAIN_LOCAL);
 }
 
 static void

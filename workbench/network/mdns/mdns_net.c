@@ -38,7 +38,6 @@ find_interfaces(struct Library *SocketBase, struct found *out, LONG max)
     char buf[2048];
     struct ifconf ifc;
     struct ifreq *ifr, *end, flags;
-    struct sockaddr *sa;
     LONG count = 0;
     int sock;
 
@@ -56,19 +55,21 @@ find_interfaces(struct Library *SocketBase, struct found *out, LONG max)
     ifr = ifc.ifc_req;
     end = (struct ifreq *)&ifc.ifc_buf[ifc.ifc_len];
     while (ifr < end && count < max) {
-        sa = &ifr->ifr_addr;
+        struct sockaddr *sa = &ifr->ifr_addr;
+
         if (sa->sa_family == AF_INET) {
             ULONG addr = (ULONG)ntohl((unsigned long)
                 ((struct sockaddr_in *)sa)->sin_addr.s_addr);
 
             memset(&flags, 0, sizeof(flags));
-            strncpy(flags.ifr_name, ifr->ifr_name, IFNAMSIZ);
+            memcpy(flags.ifr_name, ifr->ifr_name, IFNAMSIZ);
             if (addr != 0 &&
                 IoctlSocket(sock, SIOCGIFFLAGS, (char *)&flags) == 0 &&
                 (flags.ifr_flags & (IFF_UP | IFF_MULTICAST | IFF_LOOPBACK)) ==
                     (IFF_UP | IFF_MULTICAST)) {
+                /* ifr_name need not end with a NUL; name[] is one longer */
                 memset(out[count].name, 0, sizeof(out[count].name));
-                strncpy(out[count].name, ifr->ifr_name, IFNAMSIZ);
+                memcpy(out[count].name, ifr->ifr_name, IFNAMSIZ);
                 out[count].addr = addr;
                 count++;
             }
@@ -106,7 +107,7 @@ open_socket(struct Library *SocketBase, const char *name, ULONG addr)
 #endif
     /* Only what arrives on this interface; what is sent leaves there. */
     setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, (char *)name,
-        (int)strlen(name));
+        (int)mdnsTextLength(name, IFNAMSIZ));
 
     memset(&sin, 0, sizeof(sin));
     sin.sin_family = AF_INET;
@@ -146,10 +147,8 @@ open_socket(struct Library *SocketBase, const char *name, ULONG addr)
 }
 
 static void
-set_primary(struct MDNSDaemon *md)
+set_primary(struct Library *SocketBase, struct MDNSDaemon *md)
 {
-    struct Library *SocketBase = md->md_SocketBase;
-
     md->md_Socket = md->md_IfCount > 0 ? md->md_Ifs[0].mi_Socket : -1;
     md->md_HostAddr = md->md_IfCount > 0 ? md->md_Ifs[0].mi_Addr : 0;
 
@@ -159,7 +158,7 @@ set_primary(struct MDNSDaemon *md)
 
         base[0] = '\0';
         if (gethostname(base, MDNS_MAX_HOST) != 0 || base[0] == '\0') {
-            strcpy(base, "aros");
+            mdnsTextCopy(base, (LONG)sizeof(base), "aros");
         }
         base[MDNS_MAX_HOST] = '\0';
         /* over mDNS a host is its first label, in the mDNS domain */
@@ -168,7 +167,8 @@ set_primary(struct MDNSDaemon *md)
         }
         /* another name from the system starts without a number again */
         if (strcmp(base, md->md_HostBase) != 0) {
-            strcpy(md->md_HostBase, base);
+            mdnsTextCopy(md->md_HostBase, (LONG)sizeof(md->md_HostBase),
+                base);
             md->md_HostSuffix = 0;
         }
     }
@@ -184,7 +184,8 @@ mdnsNetNameHost(struct MDNSDaemon *md)
     ULONG number = md->md_HostSuffix;
     LONG n = 0, len;
 
-    strcpy(md->md_HostName, md->md_HostBase);
+    mdnsTextCopy(md->md_HostName, (LONG)sizeof(md->md_HostName),
+        md->md_HostBase);
     if (number == 0) {
         return;
     }
@@ -193,7 +194,7 @@ mdnsNetNameHost(struct MDNSDaemon *md)
         number /= 10;
     } while (number != 0);
     /* a label has at most 63 characters */
-    len = (LONG)strlen(md->md_HostName);
+    len = mdnsTextLength(md->md_HostName, MDNS_MAX_HOST);
     if (len > 63 - 1 - n) {
         len = 63 - 1 - n;
     }
@@ -249,31 +250,35 @@ mdnsNetRescan(struct MDNSDaemon *md)
         if (sock < 0) {
             continue;       /* tried again at the next look */
         }
-        strcpy(md->md_Ifs[md->md_IfCount].mi_Name, now[k].name);
+        mdnsTextCopy(md->md_Ifs[md->md_IfCount].mi_Name,
+            (LONG)sizeof(md->md_Ifs[0].mi_Name), now[k].name);
         md->md_Ifs[md->md_IfCount].mi_Addr = now[k].addr;
         md->md_Ifs[md->md_IfCount].mi_Socket = sock;
         md->md_IfCount++;
         changed = TRUE;
     }
     if (changed) {
-        set_primary(md);
+        set_primary(SocketBase, md);
     }
     return changed;
 }
 
 
-void
-mdnsNetClose(struct MDNSDaemon *md)
+static void
+close_sockets(struct Library *SocketBase, struct MDNSDaemon *md)
 {
-    struct Library *SocketBase;
-
-    if (md == NULL || md->md_SocketBase == NULL) {
-        return;
-    }
-    SocketBase = md->md_SocketBase;
     while (md->md_IfCount > 0) {
         CloseSocket((int)md->md_Ifs[--md->md_IfCount].mi_Socket);
     }
+}
+
+void
+mdnsNetClose(struct MDNSDaemon *md)
+{
+    if (md == NULL || md->md_SocketBase == NULL) {
+        return;
+    }
+    close_sockets(md->md_SocketBase, md);
     md->md_Socket = -1;
     md->md_HostAddr = 0;
 }

@@ -29,7 +29,7 @@ mdnsHandlePacket(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
 {
     const struct MDNSHeader *hdr;
     struct MDNSQuestion q;
-    LONG offset, consumed, nq = 0, nproposed = 0;
+    LONG offset, consumed, nq = 0;
     UWORD i, flags;
 
     if (pktlen < (LONG)sizeof(struct MDNSHeader)) {
@@ -70,6 +70,8 @@ mdnsHandlePacket(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
          * the same name at this moment, one of the two has to give way.
          */
         if (i == ntohs(hdr->ancount)) {
+            LONG nproposed = 0;
+
             for (i = 0; i < ntohs(hdr->nscount); i++) {
                 if (mdnsParseRecord(pkt, pktlen, offset,
                         &proposed[nproposed], &consumed) != 0) {
