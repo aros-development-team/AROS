@@ -13,8 +13,7 @@
 /****** usergroup.library/getgrent *******************************************
 
     NAME
-        getgrgid, getgrnam, getgrent, setgrent, endgrent
-         - group database operations
+        getgrgid, getgrnam, getgrent, setgrent, endgrent - group database operations
 
     SYNOPSIS
         #include <grp.h>
