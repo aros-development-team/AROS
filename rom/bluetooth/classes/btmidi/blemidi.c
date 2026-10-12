@@ -6,6 +6,11 @@
 
 #include <string.h>
 
+/* Sections and rules cited here are those of "Specification for MIDI over
+   Bluetooth Low Energy (BLE-MIDI)" 1.0, MMA/AMEI RP-052. */
+
+/* The length of a MIDI 1.0 message by its status, 0 for what is not the
+   start of one here: data, F0 and F7, and the undefined F4 and F5. */
 static unsigned message_size(uint8_t status)
 {
     if (status < 0x80)
@@ -32,6 +37,14 @@ static int emit(void *context, blemidi_byte_callback callback,
     return callback(context, timestamp, byte) == 0 ? 0 : -1;
 }
 
+/* Section 7: a header byte, then timestamp bytes and MIDI messages. Every
+   status byte has a timestamp byte before it; data without a status is a
+   running status message, of the last full channel message of the same
+   packet (running status rules 1 to 4). Section 8: a packet whose byte
+   after the header is data continues a SysEx message, and inside one only
+   System Real Time and the end may come, each with its timestamp byte.
+   Section 9: a low part smaller than the one before it in the packet
+   means the high part went up by one. */
 int blemidi_decode(struct blemidi_decoder *decoder,
                        const uint8_t *packet, size_t length,
                        blemidi_byte_callback callback, void *context)
@@ -43,8 +56,9 @@ int blemidi_decode(struct blemidi_decoder *decoder,
     uint8_t previous_low = 0;
     int after_timestamp = 0, have_timestamp = 0;
 
+    /* bit 6 of the header is reserved: sent as 0, not looked at here */
     if (!decoder || !packet || !callback || length < 2 ||
-        (packet[0] & 0xc0) != 0x80)
+        !(packet[0] & 0x80))
         return -1;
     high = (uint16_t)(packet[0] & 0x3f) << 7;
     timestamp = decoder->timestamp;
@@ -132,6 +146,8 @@ int blemidi_decode(struct blemidi_decoder *decoder,
                 if (emit(context, callback, timestamp, byte))
                     return -1;
                 need = (uint8_t)(size - 1);
+                /* System Common and Real Time do not cancel running status
+                   (rule 3) */
                 if (byte < 0xf0)
                     running = byte;
             }
@@ -140,16 +156,14 @@ int blemidi_decode(struct blemidi_decoder *decoder,
             unsigned size;
             if (!running)
                 return -1;
+            /* with a timestamp byte of its own or, without one, at the
+               time of the message before it (running status rule 2) */
             size = message_size(running);
-            if (after_timestamp || i > 1) {
-                if (emit(context, callback, timestamp, running))
-                    return -1;
-                need = (uint8_t)(size - 1);
-                after_timestamp = 0;
-            }
-            if (emit(context, callback, timestamp, byte))
+            if (emit(context, callback, timestamp, running) ||
+                emit(context, callback, timestamp, byte))
                 return -1;
-            need--;
+            need = (uint8_t)(size - 2);
+            after_timestamp = 0;
         }
         i++;
     }
@@ -217,7 +231,11 @@ int blemidi_writer_flush(struct blemidi_writer *writer)
 }
 
 /* Makes room for count more bytes, in a new packet if they do not fit.
-   A packet that continues a SysEx starts with data after its header. */
+   A packet that continues a SysEx starts with data after its header
+   (section 8, rule 3). The header's high part is that of the packet's
+   first message; a later message is given its low part only, which a
+   receiver follows over one wrap (section 9). The class flushes at each
+   pump with one time for all, so the two never differ by more. */
 static int writer_room(struct blemidi_writer *writer, uint16_t timestamp,
                        size_t count)
 {
@@ -239,7 +257,9 @@ int blemidi_writer_put(struct blemidi_writer *writer, uint16_t timestamp,
     int result = 0;
 
     if (byte >= 0xf8) {
-        /* Real-Time goes out at once, also inside another message */
+        /* Real Time goes out at once, also inside another message, which
+           is then written whole after it: section 7 has the two apart,
+           and section 8, rule 4, lets it stand inside a SysEx */
         result = writer_room(writer, timestamp, 2);
         writer->packet[writer->length++] = low;
         writer->packet[writer->length++] = byte;
@@ -252,7 +272,9 @@ int blemidi_writer_put(struct blemidi_writer *writer, uint16_t timestamp,
             writer->packet[writer->length++] = byte;
             return result;
         }
-        /* F7, or a status that cuts the SysEx short: it ends either way */
+        /* F7, or a status that cuts the SysEx short: it ends either way,
+           with a timestamp byte (section 8, rule 7), since nothing but
+           Real Time may come before a SysEx is complete */
         result = writer_room(writer, timestamp, 2);
         writer->packet[writer->length++] = low;
         writer->packet[writer->length++] = 0xf7;
@@ -292,6 +314,8 @@ int blemidi_writer_put(struct blemidi_writer *writer, uint16_t timestamp,
         writer->need--;
     }
     if (!writer->need) {
+        /* always in full: leaving the status out is allowed, not asked
+           for (section 7) */
         if (writer_room(writer, timestamp, (size_t)writer->have + 1))
             result = -1;
         writer->packet[writer->length++] = low;
