@@ -299,18 +299,11 @@ mdnsNetIsOwn(struct MDNSDaemon *md, ULONG addr)
 
 /* Sends on one interface: to the mDNS group, or to the one who asked when
  * md_ReplyAddr names one. */
-BOOL
-mdnsNetSendOn(struct MDNSDaemon *md, LONG index, const UBYTE *pkt,
-    LONG pktlen)
+static BOOL
+send_on(struct Library *SocketBase, struct MDNSDaemon *md, LONG index,
+    const UBYTE *pkt, LONG pktlen)
 {
-    struct Library *SocketBase;
     struct sockaddr_in sin;
-
-    if (md == NULL || md->md_SocketBase == NULL || pkt == NULL ||
-        pktlen <= 0 || index < 0 || index >= md->md_IfCount) {
-        return FALSE;
-    }
-    SocketBase = md->md_SocketBase;
 
     memset(&sin, 0, sizeof(sin));
     sin.sin_family = AF_INET;
@@ -328,5 +321,16 @@ mdnsNetSendOn(struct MDNSDaemon *md, LONG index, const UBYTE *pkt,
     }
     md->md_TxPackets++;
     return TRUE;
+}
+
+BOOL
+mdnsNetSendOn(struct MDNSDaemon *md, LONG index, const UBYTE *pkt,
+    LONG pktlen)
+{
+    if (md == NULL || md->md_SocketBase == NULL || pkt == NULL ||
+        pktlen <= 0 || index < 0 || index >= md->md_IfCount) {
+        return FALSE;
+    }
+    return send_on(md->md_SocketBase, md, index, pkt, pktlen);
 }
 

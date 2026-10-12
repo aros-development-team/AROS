@@ -101,7 +101,6 @@ LONG
 mdnsWireToName(const UBYTE *pkt, LONG pktlen, LONG offset,
     const UBYTE *pktbase, LONG baselen, char *name, LONG namelen)
 {
-    UBYTE label;
     LONG pos;
     LONG out;
     LONG jumps;
@@ -117,7 +116,8 @@ mdnsWireToName(const UBYTE *pkt, LONG pktlen, LONG offset,
     nextpos = -1;
 
     while (pos >= 0 && pos < pktlen && jumps < 16) {
-        label = pkt[pos];
+        UBYTE label = pkt[pos];
+
         if (label == 0) {
             if (out > 0) {
                 name[out - 1] = '\0';
