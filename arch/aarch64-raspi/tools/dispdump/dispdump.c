@@ -1,7 +1,7 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
-    Desc: BCM2712 display boot-state dump - step 1 of real modesetting.
+    Desc: BCM2712/BCM2711 display boot-state dump - step 1 of real modesetting.
 
     Read-only. Records what the firmware programmed for the boot mode and
     nothing can be derived from: the HDMI PHY PLL_MISC words and lane
@@ -9,7 +9,11 @@
     pixelvalve FIFO level and the infoframes in the packet RAM. Ends with
     the constants as C.
 
+    BCM2711: the pixelvalve is decoded, every HDMI block the device tree
+    names is dumped raw. Diff captures taken at different firmware modes.
+
     Usage: dispdump [PORT=<0|1>]      default = the port with a sink
+                                      (BCM2711: the enabled pixelvalve)
 */
 
 #include <aros/debug.h>
@@ -24,8 +28,10 @@
 #include <proto/kernel.h>
 #include <proto/mbox.h>
 #include <proto/dos.h>
+#include <proto/openfirmware.h>
 
 #include <stdio.h>
+#include <string.h>
 
 static IPTR periiobase;
 
@@ -37,8 +43,16 @@ static IPTR periiobase;
 
 /* The mbox.resource stubs resolve the base from a symbol of this name. */
 APTR MBoxBase;
+APTR OpenFirmwareBase;
 
 #define VCMB_OFFSET_BCM2712     0x013880
+static ULONG mbox_off = VCMB_OFFSET_BCM2712;
+
+/* BCM2711: /soc maps the 0x7e000000 bus window 1:1 onto the peripherals.
+ * HDMI0 is fed by PV2, HDMI1 by PV4. */
+#define BCM2711_BUS_PERIIOBASE  0x7e000000
+#define BCM2711_DUMP_MAX        0x400
+static const ULONG pv2711_off[2] = { 0x20a000, 0x216000 };
 
 /* Offsets from the peripheral base, see DISPLAY-SPEC.md section 1. */
 #define HVS_OFF                 0x580000
@@ -62,13 +76,18 @@ static const ULONG pkt_off[2]  = { 0x703800, 0x708800 };
 #define HDMI_HOTPLUG            0x1c8
 
 static ULONG faults;
+static BOOL has_ras = TRUE;
 
 /* Barriers make an unclaimed-address SError land on the offending read;
- * DISR_EL1 records it when the error is containable. */
+ * DISR_EL1 records it when the error is containable. DISR_EL1 is RAS
+ * (ARMv8.2): undefined on the Pi 4's Cortex-A72. */
 static ULONG rd(IPTR addr)
 {
     ULONG v;
     UQUAD disr;
+
+    if (!has_ras)
+        return *(volatile ULONG *)addr;
 
     asm volatile (
         "msr    daifset, #4             \n"
@@ -119,7 +138,7 @@ static ULONG clock_tag(ULONG tag, ULONG id)
     mb[6] = 0;
     mb[7] = 0;
 
-    if (MBoxCall((void *)(periiobase + VCMB_OFFSET_BCM2712), VCMB_PROPCHAN, mb)
+    if (MBoxCall((void *)(periiobase + mbox_off), VCMB_PROPCHAN, mb)
             == (volatile unsigned int *)-1 || mb[1] != AROS_LONG2LE(VCTAG_RESP))
         return 0;
     return AROS_LE2LONG(mb[6]);
@@ -177,15 +196,14 @@ static void dump_hvs(BOOL *d0)
     }
 }
 
-static void dump_pv(int port)
+static void dump_pv(const char *name, ULONG b)
 {
-    ULONG b = pv_off[port];
     ULONG ctl = R(b + 0x00), vctl = R(b + 0x04);
     ULONG ha = R(b + 0x0c), hb = R(b + 0x10), va = R(b + 0x14), vb = R(b + 0x18);
     ULONG ppc = (vctl & (1 << 29)) ? 1 : 2;
     ULONG hact = hb & 0xffff, hfp = hb >> 16, hsync = ha & 0xffff, hbp = ha >> 16;
 
-    dump_regs(port ? "pixelvalve1" : "pixelvalve0", b, 0x38);
+    dump_regs(name, b, 0x38);
     P("  CONTROL: EN %u, CLK_SELECT %u, PIXEL_REP %u, FORMAT %u,"
       " FIFO_LEVEL %u, FIFO_LEVEL_HIGH %u, WAIT_HSTART %u, TRIG_UF %u, CLR_AT_START %u\n",
       (unsigned)(ctl & 1), (unsigned)((ctl >> 2) & 3), (unsigned)(((ctl >> 4) & 3) + 1),
@@ -339,6 +357,73 @@ static void dump_csc(int port, ULONG *coef)
     P("\n");
 }
 
+/* Every block the node's reg-names lists, raw. */
+static void dump_dt_blocks(const char *compat)
+{
+    void *node = OF_FindNodeByCompatible(NULL, (char *)compat);
+    void *reg = node ? OF_FindProperty(node, "reg") : NULL;
+    void *names = node ? OF_FindProperty(node, "reg-names") : NULL;
+    const char *n = names ? OF_GetPropValue(names) : "";
+    LONG nlen = names ? OF_GetPropLen(names) : 0;
+    const ULONG *r;
+    ULONG count, i;
+    char title[64];
+
+    if (!reg)
+    {
+        P("\n%s: not in the device tree\n", compat);
+        return;
+    }
+    r = OF_GetPropValue(reg);
+    count = OF_GetPropLen(reg) / 8;
+
+    for (i = 0; i < count; i++)
+    {
+        ULONG bus = AROS_BE2LONG(r[i * 2]), size = AROS_BE2LONG(r[i * 2 + 1]);
+
+        snprintf(title, sizeof(title), "%s %s", compat, (nlen > 0) ? n : "reg");
+        if (nlen > 0)
+        {
+            nlen -= strlen(n) + 1;
+            n += strlen(n) + 1;
+        }
+        if (bus < BCM2711_BUS_PERIIOBASE)
+            continue;
+        dump_regs(title, bus - BCM2711_BUS_PERIIOBASE,
+                  (size < BCM2711_DUMP_MAX) ? size : BCM2711_DUMP_MAX);
+    }
+}
+
+static int dump_2711(IPTR *args)
+{
+    char compat[32];
+    int port;
+
+    if (!(OpenFirmwareBase = OpenResource("openfirmware.resource")))
+    {
+        P("dispdump: no openfirmware.resource\n");
+        return RETURN_FAIL;
+    }
+    mbox_off = VCMB_OFFSET;
+    has_ras = FALSE;
+
+    if (args[0])
+        port = *(LONG *)args[0] & 1;
+    else
+        port = (R(pv2711_off[0]) & 1) ? 0 : 1;
+
+    P("dispdump: BCM2711 HDMI%d\n", port);
+
+    dump_clocks();
+    dump_dt_blocks("brcm,bcm2711-hvs");
+    dump_pv(port ? "pixelvalve4" : "pixelvalve2", pv2711_off[port]);
+    snprintf(compat, sizeof(compat), "brcm,bcm2711-hdmi%d", port);
+    dump_dt_blocks(compat);
+
+    P("\ndispdump: done, %u reads faulted\n", (unsigned)faults);
+    return RETURN_OK;
+}
+
 #define TEMPLATE "PORT/N"
 
 int main(void)
@@ -357,9 +442,16 @@ int main(void)
     }
 
     periiobase = KernelBase ? (IPTR)KrnGetSystemAttr(KATTR_PeripheralBase) : 0;
+    if (periiobase == BCM2711_PERIIOBASE)
+    {
+        int rc = dump_2711(args);
+
+        FreeArgs(rda);
+        return rc;
+    }
     if (periiobase != BCM2712_PERIIOBASE)
     {
-        P("dispdump: not a BCM2712 - refusing\n");
+        P("dispdump: not a BCM2711 or BCM2712 - refusing\n");
         FreeArgs(rda);
         return RETURN_FAIL;
     }
@@ -375,7 +467,7 @@ int main(void)
 
     dump_clocks();
     dump_hvs(&d0);
-    dump_pv(port);
+    dump_pv(port ? "pixelvalve1" : "pixelvalve0", pv_off[port]);
     dump_hdmi(port);
     dump_phy(port, misc, lane);
     dump_csc(port, coef);
