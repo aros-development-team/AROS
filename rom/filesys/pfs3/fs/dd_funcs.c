@@ -907,8 +907,8 @@ static SIPTR dd_Relabel(struct DosPacket *pkt, globaldata * g)
 	// ARG1 = BSTR new disk name
 	// RES1 = BOOL Success/failure (DOSTRUE/DOSFALSE)
 
-	UBYTE newlabel[FNSIZE], *newname;
-	UBYTE newnamelen;
+	UBYTE newlabel[FNSIZE];
+	struct DosList *newentry;
 
 #if MULTIUSER
 	if (g->user->uid != muROOT_UID)
@@ -923,23 +923,22 @@ static SIPTR dd_Relabel(struct DosPacket *pkt, globaldata * g)
 	if (!CheckVolume(g->currentvolume, 1, &pkt->dp_Res2, g))
 		return DOSFALSE;
 
-	newnamelen = strlen(newlabel) + 2;
-	newname = AllocMem(newnamelen, MEMF_CLEAR | MEMF_PUBLIC);
-	if (newname) {
+	/* Let DOS allocate the name using the active BSTR representation. */
+	newentry = MakeDosEntry(newlabel, DLT_VOLUME);
+	if (newentry) {
 		/* change rootblock */
 		if (RenameDisk(newlabel, g))
 		{
 				// change volume name
 				struct DeviceList *devlist = g->currentvolume->devlist;
-				UBYTE *oldname = BADDR(devlist->dl_Name);
-				strcpy(newname + 1, newlabel);
-				newname[0] = newnamelen;
-				devlist->dl_Name = MKBADDR(newname);
-				FreeMem(oldname, oldname[0] + 2);
+				BSTR oldname = devlist->dl_Name;
+				devlist->dl_Name = newentry->dol_Name;
+				newentry->dol_Name = oldname;
+				FreeDosEntry(newentry);
 		}
 		else
 		{
-			FreeMem(newname, newnamelen);
+			FreeDosEntry(newentry);
 			pkt->dp_Res2 = ERROR_INVALID_COMPONENT_NAME;
 			return DOSFALSE;
 		}
