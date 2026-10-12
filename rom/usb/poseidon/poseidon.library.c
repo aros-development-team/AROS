@@ -3699,9 +3699,49 @@ AROS_LH1(struct PsdDevice *, psdGetNextDevice,
 /* \\\ */
 
 /* /// "psdSuspendBindings()" */
-AROS_LH1(BOOL, psdSuspendBindings,
+/****** poseidon.library/psdSuspendBindings ************************
+
+    NAME */
+        AROS_LH1(BOOL, psdSuspendBindings,
+/*  SYNOPSIS */
          AROS_LHA(struct PsdDevice *, pd, A0),
+/*  LOCATION */
          LIBBASETYPEPTR, ps, 100, psd)
+/*  FUNCTION
+        Prepare a configured USB device for suspension by asking its
+        device and interface class bindings to suspend. Classes that
+        advertise UCCA_SupportsSuspend receive UCM_AttemptSuspendDevice.
+
+    INPUTS
+        pd - Configured Poseidon device with a valid current config.
+             NULL returns FALSE.
+
+    RESULT
+        TRUE if all examined bindings allow suspension, FALSE for NULL
+        or a binding that refuses or blocks suspension. TRUE does not
+        mean the USB device itself has been suspended.
+
+    NOTES
+        Forced suspension is enabled only when pgc_ForceSuspend is set
+        and the current configuration advertises USCAF_REMOTE_WAKEUP.
+        A busy class without suspend support blocks an ordinary suspend;
+        forced suspension requests release of that binding instead.
+        An application device binding also blocks suspension unless
+        forced release is enabled. An idle class without suspend support
+        can remain bound.
+        psdSuspendDevice() takes the device write lock before calling
+        this function. Direct callers must provide suitable synchronization.
+
+    BUGS
+        The implementation dereferences pd->pd_CurrentConfig without
+        validating it. On failure, earlier bindings may already have been
+        suspended or released; no rollback is performed.
+
+    SEE ALSO
+        psdSuspendDevice(), psdResumeBindings(), psdReleaseDevBinding(),
+        psdReleaseIfBinding()
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     struct PsdUsbClass *puc;
@@ -3848,9 +3888,43 @@ AROS_LH1(BOOL, psdSuspendDevice,
 /* \\\ */
 
 /* /// "psdResumeBindings()" */
-AROS_LH1(BOOL, psdResumeBindings,
+/****** poseidon.library/psdResumeBindings ************************
+
+    NAME */
+        AROS_LH1(BOOL, psdResumeBindings,
+/*  SYNOPSIS */
          AROS_LHA(struct PsdDevice *, pd, A0),
+/*  LOCATION */
          LIBBASETYPEPTR, ps, 101, psd)
+/*  FUNCTION
+        Ask existing class bindings to resume after device suspension.
+        If a class rejects UCM_AttemptResumeDevice, request release of
+        its binding and run psdClassScan() to look for a replacement.
+
+    INPUTS
+        pd - Configured Poseidon device with a valid current config.
+             NULL is accepted and leaves bindings unchanged.
+
+    RESULT
+        TRUE unconditionally. This is not confirmation that bindings
+        resumed successfully or that a replacement binding was found.
+
+    NOTES
+        Application-level device bindings are skipped. The implementation
+        considers the first interface with a binding, then leaves the
+        interface loop without visiting subsequent bound interfaces.
+        psdResumeDevice() invokes this routine after hub resume succeeds.
+        Direct callers must provide suitable synchronization.
+
+    BUGS
+        The first-bound-interface limit can leave other interface
+        bindings unresumed. The return value does not report class resume
+        failures, rebinding results or the NULL-device case.
+
+    SEE ALSO
+        psdResumeDevice(), psdSuspendBindings(), psdClassScan()
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     struct PsdUsbClass *puc;
@@ -6156,9 +6230,37 @@ AROS_LH1(void, psdReleaseAppBinding,
 /* \\\ */
 
 /* /// "psdReleaseDevBinding()" */
-AROS_LH1(void, psdReleaseDevBinding,
+/****** poseidon.library/psdReleaseDevBinding ************************
+
+    NAME */
+        AROS_LH1(void, psdReleaseDevBinding,
+/*  SYNOPSIS */
          AROS_LHA(struct PsdDevice *, pd, A0),
+/*  LOCATION */
          LIBBASETYPEPTR, ps, 50, psd)
+/*  FUNCTION
+        Request release of an existing whole-device binding. A root-hub
+        binding is released through psdHubReleaseDevBinding(); for a child
+        device the request is forwarded to its parent hub class.
+
+    INPUTS
+        pd - Pointer to a valid Poseidon device. Must not be NULL.
+
+    NOTES
+        The function has no effect when pd->pd_DevBinding is NULL. For
+        child devices it sends UCM_HubReleaseDevBinding only if the parent
+        hub has both a device binding and an associated class.
+        No completion status is returned; the function does not itself
+        clear a child device's binding pointer.
+
+    BUGS
+        A NULL or invalid device pointer is not checked. A missing parent
+        hub binding silently leaves the device binding in place.
+
+    SEE ALSO
+        psdReleaseIfBinding(), psdHubReleaseDevBinding()
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     struct PsdUsbClass *puc;
@@ -6181,9 +6283,37 @@ AROS_LH1(void, psdReleaseDevBinding,
 /* \\\ */
 
 /* /// "psdReleaseIfBinding()" */
-AROS_LH1(void, psdReleaseIfBinding,
+/****** poseidon.library/psdReleaseIfBinding ************************
+
+    NAME */
+        AROS_LH1(void, psdReleaseIfBinding,
+/*  SYNOPSIS */
          AROS_LHA(struct PsdInterface *, pif, A0),
+/*  LOCATION */
          LIBBASETYPEPTR, ps, 51, psd)
+/*  FUNCTION
+        Request release of a USB interface binding through its hub.
+        An interface belonging to a root hub is released directly through
+        psdHubReleaseIfBinding().
+
+    INPUTS
+        pif - Pointer to a valid Poseidon interface. Must not be NULL.
+
+    NOTES
+        The release is requested only if both pif->pif_IfBinding and
+        pif->pif_ClsBinding are set. For a child device the parent hub
+        must have a device binding and an associated class; the request
+        is then sent as UCM_HubReleaseIfBinding. No completion status
+        is returned.
+
+    BUGS
+        A NULL or invalid interface pointer is not checked. An absent
+        class or parent hub binding can leave the interface bound.
+
+    SEE ALSO
+        psdReleaseDevBinding(), psdHubReleaseIfBinding()
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     struct PsdUsbClass *puc;
@@ -6206,8 +6336,43 @@ AROS_LH1(void, psdReleaseIfBinding,
 /* \\\ */
 
 /* /// "psdUnbindAll()" */
-AROS_LH0(void, psdUnbindAll,
+/****** poseidon.library/psdUnbindAll ************************
+
+    NAME */
+        AROS_LH0(void, psdUnbindAll,
+/*  SYNOPSIS */
+/*  LOCATION */
          LIBBASETYPEPTR, ps, 61, psd)
+/*  FUNCTION
+        Request the release of all device and interface bindings on the
+        registered USB hardware. The function walks each device's bindings
+        and requests their release through the normal Poseidon API.
+
+    INPUTS
+        None.
+
+    NOTES
+        The traversal normally holds the Poseidon base read lock. Before
+        each release request it drops that lock, calls psdReleaseDevBinding()
+        or psdReleaseIfBinding(), reacquires the lock and restarts from the
+        first hardware entry. No status is returned, and the operation is
+        not an atomic snapshot or transaction.
+
+        For a child device, the release functions forward requests to the
+        parent hub. A request does not itself guarantee that the binding
+        has been removed.
+
+    BUGS
+        The loop does not check whether a release request made progress.
+        If a binding remains present, the same request may be repeated
+        indefinitely. Hardware or device removal while the base lock is
+        temporarily dropped is not handled by a stable traversal cursor.
+
+    SEE ALSO
+        psdReleaseDevBinding(), psdReleaseIfBinding(),
+        psdHubReleaseDevBinding(), psdHubReleaseIfBinding()
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     struct PsdHardware *phw;
@@ -6548,9 +6713,47 @@ AROS_LH1(struct PsdAppBinding *, psdHubClaimAppBindingA,
 /* \\\ */
 
 /* /// "psdHubReleaseDevBinding()" */
-AROS_LH1(void, psdHubReleaseDevBinding,
+/****** poseidon.library/psdHubReleaseDevBinding ************************
+
+    NAME */
+        AROS_LH1(void, psdHubReleaseDevBinding,
+/*  SYNOPSIS */
          AROS_LHA(struct PsdDevice *, pd, A0),
+/*  LOCATION */
          LIBBASETYPEPTR, ps, 84, psd)
+/*  FUNCTION
+        Release a device binding through its local hub-side teardown path.
+        Application bindings receive their release hook; class bindings
+        receive UCM_ReleaseDeviceBinding when an owning class is present.
+
+    INPUTS
+        pd - Poseidon device whose binding is to be released. NULL is
+             accepted and has no effect.
+
+    NOTES
+        The function takes the device write lock and does nothing when
+        pd->pd_DevBinding is NULL.
+
+        An application binding is detached, its release hook is called
+        with the stored user data, the binding is freed, and
+        EHMB_REMBINDING is sent. For a class binding, the device binding
+        pointer is cleared first. If pd->pd_ClsBinding is set, the class
+        pointer is cleared, UCM_ReleaseDeviceBinding is dispatched, the
+        class use count is decremented, and EHMB_REMBINDING is sent.
+
+        The function returns no completion status. A class binding's
+        storage is not freed directly by this entry point.
+
+    BUGS
+        A non-application binding with no associated class is cleared
+        without a class release method or removal event. The release
+        callback's result is not reported to the caller.
+
+    SEE ALSO
+        psdReleaseDevBinding(), psdHubReleaseIfBinding(),
+        psdSendEvent()
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     struct PsdUsbClass *puc;
@@ -6586,9 +6789,45 @@ AROS_LH1(void, psdHubReleaseDevBinding,
 /* \\\ */
 
 /* /// "psdHubReleaseIfBinding()" */
-AROS_LH1(void, psdHubReleaseIfBinding,
+/****** poseidon.library/psdHubReleaseIfBinding ************************
+
+    NAME */
+        AROS_LH1(void, psdHubReleaseIfBinding,
+/*  SYNOPSIS */
          AROS_LHA(struct PsdInterface *, pif, A0),
+/*  LOCATION */
          LIBBASETYPEPTR, ps, 85, psd)
+/*  FUNCTION
+        Release a USB interface binding through its local hub-side
+        teardown path, invoking the owning class's
+        UCM_ReleaseInterfaceBinding method when a class is present.
+
+    INPUTS
+        pif - Valid Poseidon interface. NULL is accepted and has no
+              effect. A non-NULL interface must have a valid configuration
+              and parent device.
+
+    NOTES
+        The parent device is obtained from the interface's configuration.
+        The function takes that device's write lock. If an interface
+        binding exists, its pointer is cleared. When an owning class is
+        present, the class pointer is also cleared, the release method is
+        called and the class use count is decremented.
+
+        EHMB_REMBINDING is sent for any interface binding that was
+        present, including one with no associated class. No event is sent
+        if the binding was already NULL. The function returns no status.
+
+    BUGS
+        A binding without an owning class is cleared without calling a
+        class release method. The class release method's outcome is not
+        reported to the caller.
+
+    SEE ALSO
+        psdReleaseIfBinding(), psdHubReleaseDevBinding(),
+        psdSendEvent()
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     struct PsdUsbClass *puc;
@@ -6619,10 +6858,44 @@ AROS_LH1(void, psdHubReleaseIfBinding,
 /* *** Events *** */
 
 /* /// "psdAddEventHandler()" */
-AROS_LH2(struct PsdEventHook *, psdAddEventHandler,
+/****** poseidon.library/psdAddEventHandler ************************
+
+    NAME */
+        AROS_LH2(struct PsdEventHook *, psdAddEventHandler,
+
+/*  SYNOPSIS */
          AROS_LHA(struct MsgPort *, mp, A1),
          AROS_LHA(ULONG, msgmask, D0),
+/*  LOCATION */
          LIBBASETYPEPTR, ps, 47, psd)
+/*  FUNCTION
+        Register a message port to receive selected Poseidon events.
+        Each matching event is delivered as a library-allocated message.
+
+    INPUTS
+        mp - Message port to receive the events. Must not be NULL.
+        msgmask - Bitmask of EHMF_* event flags from libraries/poseidon.h.
+
+    RESULT
+        A registration handle, or NULL if mp is NULL or allocation
+        fails. The handle is released by psdRemEventHandler().
+
+    NOTES
+        The caller owns the message port and must keep it valid until
+        psdRemEventHandler() returns. Reply to each delivered message
+        using ReplyMsg(); Poseidon reclaims replied messages later.
+        Event parameters refer to existing objects and are not copied.
+        Their lifetime must not be inferred from the message lifetime.
+
+    BUGS
+        The current removal routine drains and replies to every
+        message still queued on the registered port. Use a dedicated
+        message port to avoid consuming unrelated messages.
+
+    SEE ALSO
+        psdRemEventHandler(), psdSendEvent()
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     struct PsdEventHook *peh = NULL;
@@ -6644,9 +6917,38 @@ AROS_LH2(struct PsdEventHook *, psdAddEventHandler,
 /* \\\ */
 
 /* /// "psdRemEventHandler()" */
-AROS_LH1(void, psdRemEventHandler,
+/****** poseidon.library/psdRemEventHandler ************************
+
+    NAME */
+        AROS_LH1(void, psdRemEventHandler,
+
+/*  SYNOPSIS */
          AROS_LHA(struct PsdEventHook *, peh, A0),
+/*  LOCATION */
          LIBBASETYPEPTR, ps, 48, psd)
+/*  FUNCTION
+        Unregister an event handler and free its registration handle.
+        A NULL handle has no effect.
+
+    INPUTS
+        peh - Handle returned by psdAddEventHandler(), or NULL.
+
+    NOTES
+        Removes the handler while holding Poseidon's reentrant lock.
+        Replies to all messages currently queued at its message port,
+        then collects replied event messages and frees the handle.
+        The caller retains ownership of the message port.
+        Do not use peh after this call.
+
+    BUGS
+        The current implementation drains the entire supplied port,
+        including unrelated queued messages, not just Poseidon events.
+        Register a dedicated port and avoid other concurrent consumers.
+
+    SEE ALSO
+        psdAddEventHandler(), psdSendEvent()
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     struct Message *msg;
@@ -6668,11 +6970,43 @@ AROS_LH1(void, psdRemEventHandler,
 /* \\\ */
 
 /* /// "psdSendEvent()" */
-AROS_LH3(void, psdSendEvent,
+/****** poseidon.library/psdSendEvent ************************
+
+    NAME */
+        AROS_LH3(void, psdSendEvent,
+
+/*  SYNOPSIS */
          AROS_LHA(ULONG, ehmt, D0),
          AROS_LHA(APTR, param1, A0),
          AROS_LHA(APTR, param2, A1),
+/*  LOCATION */
          LIBBASETYPEPTR, ps, 49, psd)
+/*  FUNCTION
+        Send an event to every registered message port whose mask
+        includes the selected event number.
+
+    INPUTS
+        ehmt - EHMB_* event number defined by libraries/poseidon.h.
+        param1 - Event-dependent object pointer; the object is not copied.
+        param2 - Second event-dependent pointer; also not copied.
+
+    NOTES
+        For each matching handler, a separate event message is allocated
+        and queued. The receiver must ReplyMsg() to release the message
+        back to Poseidon for later collection. This call does not wait
+        for receivers to process the message.
+        The event mask is calculated as 1L << ehmt. Pass only defined
+        EHMB_* values, never arbitrary shifts or bit masks.
+
+    BUGS
+        Message allocation failures silently skip the affected handler.
+        No completion or delivery status is returned. Event parameter
+        pointers can become invalid before a receiver processes them.
+
+    SEE ALSO
+        psdAddEventHandler(), psdRemEventHandler()
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     struct PsdEventNote *pen;

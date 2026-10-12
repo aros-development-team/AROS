@@ -129,7 +129,7 @@ struct ifnet {
 	u_short	if_index;		/* numeric abbreviation for this if  */
 	short	if_unit;		/* sub-unit for lower level driver */
 	short	if_timer;		/* time 'til if_watchdog called */
-	short	if_flags;		/* up/down, broadcast, etc. */
+	u_short	if_flags;		/* up/down, broadcast, etc. */
 	struct	if_data if_data;
 /* procedure handles */
 	int	(*if_init)		/* init routine */
@@ -466,7 +466,7 @@ struct	ifreq {
 		struct	sockaddr ifru_addr;
 		struct	sockaddr ifru_dstaddr;
 		struct	sockaddr ifru_broadaddr;
-		short	ifru_flags;
+		u_short	ifru_flags;
 		short	ifru_index;
 		int	ifru_metric;
 		int	ifru_mtu;

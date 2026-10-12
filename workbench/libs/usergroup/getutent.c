@@ -13,14 +13,10 @@
 /****** usergroup.library/getutent *******************************************
 
     NAME
-        getutsid, getutent, setutent, endutent - utmp database operations
+        getutent, setutent, endutent - utmp database operations
 
     SYNOPSIS
         #include <utmp.h>
-
-        utmpent = getutsid(sid)
-           D0              D0
-        struct utmp *getutsid(long);
 
         utmpent = getutent()
            D0
@@ -48,38 +44,34 @@
               char    ut_host[UT_HOSTSIZE]; \* where the login originated *\
             };
 
-        The getutsid() function search the utmp database for the given
-        session id, returning the first one encountered.  The getutent()
-        function sequentially reads the utmp database.  Both functions also
-        open the utmp database, if necessary.
+        The getutent() function sequentially reads the utmp database and
+        opens it if necessary.
 
         The setutent() function opens the utmp database.  The
         endutent() function closes the utmp database.  It is
         recommended to call endutent() if the program won't access
         utmp database any more.
 
-    RESULTS
-        The functions getutsid() and getutent() return a pointer to the utmp
-        entry if successful; if the end of database is reached or an error
-        occurs a null pointer is returned.  The functions endutent() and
-        setutent() have no return value.
+    RESULT
+        getutent() returns a pointer to the utmp entry on success and NULL
+        at the end of the database or on error. endutent() and setutent()
+        have no return value.
 
-    ERRORS
+    NOTES
+        Errors:
         [ENOENT] -- no utmp entries were available.
 
     SEE ALSO
 
     BUGS
-        The getutent() and getutsid() function leave their result in an
-        internal static object and return a pointer to that object.
-        Subsequent calls to the same function will modify the same object.
+        getutent() returns storage owned by usergroup.library. Subsequent
+        enumeration calls may overwrite that storage; copy entries that
+        must be retained.
 
-        Current implementation allows only one user to be logged in
-        concurrently.
+        Without security.library the implementation exposes one session
+        record. With security.library it reads entries from the utmp file.
 
-*****************************************************************************
-*
-*/
+******************************************************************************/
 
 #ifdef DEBUG
 #undef DEBUG
@@ -261,10 +253,11 @@ AROS_LH1(struct utmp *, getutsid,
 }
 #endif
 
+#include <utmp.h>
+
 /*****************************************************************************
 
     NAME */
-#include <utmp.h>
         AROS_LH1(struct lastlog *, getlastlog,
 
 /*  SYNOPSIS */
@@ -291,11 +284,12 @@ AROS_LH1(struct utmp *, getutsid,
                 char  ll_host[UT_HOSTSIZE]; \* where the login originated *\
               };
 
-    RESULTS
+    RESULT
         The function getlastlog() returns a pointer to the lastlog entry if
         successful; if an error occurs a null pointer is returned.
 
-    ERRORS
+    NOTES
+        Errors:
         [ENOENT] -- no lastlog entry was found
         [EINVAL] -- the user ID was illegal
 
@@ -360,10 +354,11 @@ AROS_LH1(struct utmp *, getutsid,
     AROS_LIBFUNC_EXIT
 }
 
+#include <utmp.h>
+
 /*****************************************************************************
 
     NAME */
-        #include <utmp.h>
         AROS_LH4(int, setlastlog,
 
 /*  SYNOPSIS */
@@ -386,12 +381,13 @@ AROS_LH1(struct utmp *, getutsid,
         console -- the console handler name (from ug_GetConsole())
         host    -- the host which the user is logging in from
 
-    RESULTS
+    RESULT
         The setlastlog() function returns an success indicator, 0 if the
         call was successful, -1 otherwise.  The error code is set if an
         error occurs.
 
-    ERRORS
+    NOTES
+        Errors:
         The setlastlog() can have following error codes:
         [EFAULT] -- the utmp entry cannot be accessed
         [ENOMEM] -- the memory has been exhausted
@@ -400,8 +396,6 @@ AROS_LH1(struct utmp *, getutsid,
     BUGS
         Current implementation stores only the lastlog data of the latest
         user logged in.
-
-    FILES
 
     SEE ALSO
         getutent(), getlastlog()

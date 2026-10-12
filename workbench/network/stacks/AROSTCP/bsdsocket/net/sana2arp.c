@@ -48,7 +48,12 @@
 #include "ipfilter.h"
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
-#include <netinet/in_var.h>
+/* the stack's own, not the public <netinet/in_var.h>: it declares
+ * in_mcast_macaddr() */
+#include "../netinet/in_var.h"
+#ifndef AROSTCP_NETINET_IN_VAR_H
+#error "the stack's netinet/in_var.h was not the one included"
+#endif
 #include <netinet/ip.h>
 
 #include <net/if_sana.h>
@@ -584,6 +589,23 @@ arpresolve(register struct sana_softc *ssc,
     if(m->m_flags & M_BCAST) {	/* broadcast */
         return 1;
     }
+
+#ifdef ENABLE_MULTICAST
+    /*
+     * A group has no ARP entry. On Ethernet it has an address of its own;
+     * anywhere else ip_output() has already refused the packet, as the
+     * interface has no IFF_MULTICAST.
+     */
+    if(IN_MULTICAST(ntohl(destip->s_addr))) {
+        if(!sana_ether_mcast(&ssc->ss_if)) {
+            m_freem(m);
+            *error = ENETUNREACH;
+            return 0;
+        }
+        in_mcast_macaddr(destip, desten);
+        return 1;
+    }
+#endif
 
     /* if for us, use software loopback driver if up */
     for(register struct in_ifaddr *ia = in_ifaddr; ia; ia = ia->ia_next)

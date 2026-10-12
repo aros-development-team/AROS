@@ -279,10 +279,10 @@ ULONG do_render_with_gc(struct RastPort *rp, Point *src, struct Rectangle *rr,
                                 RSI(funcdata)->curbm = CR->BitMap;
                             }
 
-                            intersect.MinX = intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX);
-                            intersect.MinY = intersect.MinY - CR->bounds.MinY;
-                            intersect.MaxX = intersect.MaxX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX);
-                            intersect.MaxY = intersect.MaxY - CR->bounds.MinY;
+                            intersect.MinX = intersect.MinX - CR->bounds.MinX + CR_BMOFFX(CR);
+                            intersect.MinY = intersect.MinY - CR->bounds.MinY + CR_BMOFFY(CR);
+                            intersect.MaxX = intersect.MaxX - CR->bounds.MinX + CR_BMOFFX(CR);
+                            intersect.MaxY = intersect.MaxY - CR->bounds.MinY + CR_BMOFFY(CR);
 
                             pixwritten += CallRenderFunc(render_func, funcdata, srcx + xoffset, srcy + yoffset,
                                                          CR->BitMap, gc, &intersect, do_update, GfxBase);
@@ -404,8 +404,8 @@ ULONG do_pixel_func(struct RastPort *rp
                                                    do_update, GfxBase);
                         } else {
                             retval = CallPixelFunc(render_func, funcdata, CR->BitMap, gc,
-                                                   absx - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX),
-                                                   absy - CR->bounds.MinY,
+                                                   absx - CR->bounds.MinX + CR_BMOFFX(CR),
+                                                   absy - CR->bounds.MinY + CR_BMOFFY(CR),
                                                    do_update, GfxBase);
                         } /* If (SMARTREFRESH cliprect) */
 
@@ -1083,8 +1083,8 @@ BOOL MoveRaster(struct RastPort *rp, WORD dx, WORD dy, WORD x1, WORD y1,
                             corrsrcy = - MinY(L) + L->Scroll_Y;
                             srcbm = L->SuperBitMap;
                         } else {
-                            corrsrcx = - MinX(SrcCR) + ALIGN_OFFSET(MinX(SrcCR));
-                            corrsrcy = - MinY(SrcCR);
+                            corrsrcx = - MinX(SrcCR) + CR_BMOFFX(SrcCR);
+                            corrsrcy = - MinY(SrcCR) + CR_BMOFFY(SrcCR);
                             srcbm = SrcCR->BitMap;
                         }
                     } else {
@@ -1112,8 +1112,8 @@ BOOL MoveRaster(struct RastPort *rp, WORD dx, WORD dy, WORD x1, WORD y1,
                                     corrdsty = - MinY(L) + L->Scroll_Y;
                                     dstbm = L->SuperBitMap;
                                 } else {
-                                    corrdstx = - MinX(DstCR) + ALIGN_OFFSET(MinX(DstCR));
-                                    corrdsty = - MinY(DstCR);
+                                    corrdstx = - MinX(DstCR) + CR_BMOFFX(DstCR);
+                                    corrdsty = - MinY(DstCR) + CR_BMOFFY(DstCR);
                                     dstbm = DstCR->BitMap;
                                 }
                             } else {

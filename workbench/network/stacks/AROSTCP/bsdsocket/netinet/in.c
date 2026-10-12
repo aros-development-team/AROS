@@ -279,6 +279,29 @@ extern	struct ifnet loif;
 
 static int in_control_locked(struct socket *, int, caddr_t, struct ifnet *);
 
+#ifdef ENABLE_MULTICAST
+/*
+ * Every multicast interface belongs to the all-hosts group, 224.0.0.1
+ * (RFC 1112 section 7.2). IGMP queries are sent to it: an interface that
+ * is not a member never hears one, never answers, and a snooping switch
+ * or a router stops forwarding its groups when their membership times out.
+ * No report is ever sent for this group itself.
+ */
+static void
+in_join_allhosts(struct ifnet *ifp)
+{
+    struct in_addr allhosts;
+    struct in_multi *inm;
+
+    if((ifp->if_flags & IFF_MULTICAST) == 0)
+        return;
+    allhosts.s_addr = htonl(INADDR_ALLHOSTS_GROUP);
+    IN_LOOKUP_MULTI(allhosts, ifp, inm);
+    if(inm == NULL)
+        (void)in_addmulti(&allhosts, ifp);
+}
+#endif
+
 /*
  * Generic internet control operations (ioctl's).
  * Ifp is 0 if not an interface-specific ioctl.
@@ -639,6 +662,9 @@ int scrub;
     }
     if((error = rtinit(&(ia->ia_ifa), (int)RTM_ADD, flags)) == 0)
         ia->ia_flags |= IFA_ROUTE;
+#ifdef ENABLE_MULTICAST
+    in_join_allhosts(ifp);
+#endif
     return (error);
 }
 
@@ -692,7 +718,7 @@ struct in_addr in;
  * RFC 1112 §6.4: map a class-D address to 01:00:5e:XX:XX:XX using the low
  * 23 bits of the group address.
  */
-static void
+void
 in_mcast_macaddr(struct in_addr *maddr, u_int8_t *mac)
 {
     u_long addr = ntohl(maddr->s_addr);
@@ -718,7 +744,7 @@ sana_add_mcast(struct ifnet *ifp, struct in_addr *maddr)
     u_int8_t mac[6];
     int error = 0;
 
-    if(ifp->if_addrlen != 6)
+    if(!sana_ether_mcast(ifp))
         return 0;  /* not Ethernet -- nothing to do */
 
     in_mcast_macaddr(maddr, mac);
@@ -753,7 +779,7 @@ sana_del_mcast(struct ifnet *ifp, struct in_addr *maddr)
     u_int8_t mac[6];
     int error = 0;
 
-    if(ifp->if_addrlen != 6)
+    if(!sana_ether_mcast(ifp))
         return 0;
 
     in_mcast_macaddr(maddr, mac);
@@ -835,11 +861,15 @@ in_delmulti(struct in_multi *inm)
     if(--inm->inm_refcount > 0)
         return;
 
-    /* announce that we are leaving before removing from the list */
-    igmp_leavegroup(inm);
+    /* a membership that outlived its interface has nobody to tell;
+     * see in_ifdetach() */
+    if(inm->inm_ifp != NULL) {
+        /* announce that we are leaving before removing from the list */
+        igmp_leavegroup(inm);
 
-    /* unregister the Ethernet multicast address from the NIC */
-    sana_del_mcast(inm->inm_ifp, &inm->inm_addr);
+        /* unregister the Ethernet multicast address from the NIC */
+        sana_del_mcast(inm->inm_ifp, &inm->inm_addr);
+    }
 
     for(p = &in_multihead; *p != NULL; p = &(*p)->inm_next) {
         if(*p == inm) {
@@ -848,6 +878,44 @@ in_delmulti(struct in_multi *inm)
         }
     }
     FREE(inm, M_IFADDR);
+}
+
+/*
+ * in_ifdetach - the interface is going away for good: nothing may keep a
+ * membership that names it. Another ifnet can be allocated at the same
+ * address later, and would then look as if it had joined already, so the
+ * device would never be told the group's address.
+ *
+ * The interface's own membership of the all-hosts group, from
+ * in_join_allhosts(), is released here. What sockets still hold cannot be
+ * freed under them: those entries are cut loose from the interface and go
+ * when their sockets drop them. Nothing is sent and the device is not
+ * asked to forget the addresses: it is offline and about to be closed.
+ */
+void
+in_ifdetach(struct ifnet *ifp)
+{
+    struct in_multi *inm, **p;
+    spl_t s = splimp();
+
+    p = &in_multihead;
+    while((inm = *p) != NULL) {
+        if(inm->inm_ifp != ifp) {
+            p = &inm->inm_next;
+            continue;
+        }
+        inm->inm_timer = 0;
+        inm->inm_state = IGMP_OTHERMEMBER;
+        inm->inm_ifp = NULL;
+        if(ntohl(inm->inm_addr.s_addr) == INADDR_ALLHOSTS_GROUP &&
+           --inm->inm_refcount == 0) {
+            *p = inm->inm_next;
+            FREE(inm, M_IFADDR);
+            continue;
+        }
+        p = &inm->inm_next;
+    }
+    splx(s);
 }
 #endif /* ENABLE_MULTICAST */
 #endif

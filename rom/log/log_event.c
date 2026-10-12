@@ -33,9 +33,43 @@ extern BOOL GM_UNIQUENAME(HaveTimer)(LIBBASETYPEPTR LIBBASE);
 #define UtilityBase LIBBASE->lrb_UtilityBase
 #define KernelBase LIBBASE->lrb_KernelBase
 
-AROS_LH1(VOID, logLockEntries,
-         AROS_LHA(ULONG, flags, D0),
-         LIBBASETYPEPTR, LIBBASE, 13, log)
+/*****************************************************************************
+
+    NAME */
+        AROS_LH1(VOID, logLockEntries,
+
+/*  SYNOPSIS */
+                 AROS_LHA(ULONG, flags, D0),
+
+/*  LOCATION */
+                 LIBBASETYPEPTR, LIBBASE, 13, log)
+/*  FUNCTION
+        Acquire the resource's entry-list semaphore.
+
+    INPUTS
+        flags - LLF_READ or LLF_WRITE. Currently ignored.
+
+    RESULT
+        None. Returns after acquiring the semaphore.
+
+    NOTES
+        Call from task context where waiting is permitted. Both flag values
+        acquire the same exclusive semaphore. Balance each acquisition with
+        logUnlockEntries() in the same task.
+
+        Hold the lock while traversing entries and inspecting borrowed
+        attributes. This serializes cooperating users and the service task's
+        insertion path; it does not establish complete entry-lifetime safety.
+
+    BUGS
+        logRemEntry() does not acquire this semaphore. The service task's
+        removal and deallocation path does not acquire it either. A held
+        lock alone cannot protect against every concurrent removal.
+
+    SEE ALSO
+        logUnlockEntries(), logNextEntry(), logGetEntryAttrs()
+
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     struct ExecBase *SysBase = GM_SYSBASE_FIELD(LIBBASE);
@@ -43,9 +77,34 @@ AROS_LH1(VOID, logLockEntries,
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH1(VOID, logUnlockEntries,
-         AROS_LHA(ULONG, flags, D0),
-         LIBBASETYPEPTR, LIBBASE, 15, log)
+/*****************************************************************************
+
+    NAME */
+        AROS_LH1(VOID, logUnlockEntries,
+
+/*  SYNOPSIS */
+                 AROS_LHA(ULONG, flags, D0),
+
+/*  LOCATION */
+                 LIBBASETYPEPTR, LIBBASE, 15, log)
+/*  FUNCTION
+        Release the semaphore acquired by logLockEntries().
+
+    INPUTS
+        flags - LLF_READ or LLF_WRITE. Currently ignored.
+
+    RESULT
+        None.
+
+    NOTES
+        The calling task must own a matching acquisition. Do not use this
+        call to release another task's lock. Borrowed entry pointers are
+        not reference-counted and must not be assumed valid after unlocking.
+
+    SEE ALSO
+        logLockEntries(), logNextEntry()
+
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     struct ExecBase *SysBase = GM_SYSBASE_FIELD(LIBBASE);
@@ -53,9 +112,41 @@ AROS_LH1(VOID, logUnlockEntries,
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH1(APTR, logNextEntry,
-         AROS_LHA(APTR *, entryHandle, A0),
-         LIBBASETYPEPTR, LIBBASE, 14, log)
+/*****************************************************************************
+
+    NAME */
+        AROS_LH1(APTR, logNextEntry,
+
+/*  SYNOPSIS */
+                 AROS_LHA(APTR *, entryHandle, A0),
+
+/*  LOCATION */
+                 LIBBASETYPEPTR, LIBBASE, 14, log)
+/*  FUNCTION
+        Advance a cursor through the global list of published log entries.
+
+    INPUTS
+        entryHandle - Pointer to a writable APTR cursor. Initialize it to
+                      LOGEntry_First; subsequently retain each returned
+                      entry or LOGEntry_Last. NULL is accepted.
+
+    RESULT
+        The next entry, also written to *entryHandle, or LOGEntry_Last
+        for an empty list or end of traversal. Passing LOGEntry_Last leaves
+        it unchanged; it does not return the final entry. A NULL cursor
+        pointer returns NULL.
+
+    NOTES
+        Returned entries are borrowed. Hold logLockEntries() during
+        traversal and coordinate removal separately as described there.
+        Only pass live published entries from this list as cursors; a stale
+        address is not made safe by the node-type check. This function does
+        not acquire a lock or allocate storage.
+
+    SEE ALSO
+        logLockEntries(), logUnlockEntries(), logGetEntryAttrs()
+
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
@@ -92,10 +183,67 @@ AROS_LH1(APTR, logNextEntry,
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH2(IPTR, logGetEntryAttrs,
-         AROS_LHA(APTR, entryHandle, A0),
-         AROS_LHA(struct TagItem *, tags, A1),
-         LIBBASETYPEPTR, LIBBASE, 9, log)
+/*****************************************************************************
+
+    NAME */
+        AROS_LH2(IPTR, logGetEntryAttrs,
+
+/*  SYNOPSIS */
+                 AROS_LHA(APTR, entryHandle, A0),
+                 AROS_LHA(struct TagItem *, tags, A1),
+
+/*  LOCATION */
+                 LIBBASETYPEPTR, LIBBASE, 9, log)
+/*  FUNCTION
+        Read selected attributes from a published log entry.
+
+    INPUTS
+        entryHandle - Live published entry handle, or NULL. Do not pass
+                      LOGEntry_Last or a freed entry.
+        tags - Tag list whose ti_Data fields point to writable destinations
+               of the types listed below.
+
+    TAGS
+        LOGMA_Flags (ULONG *)
+            Entry flags with the private high-byte flags removed.
+        LOGMA_DateStamp (struct DateStamp **)
+            Pointer to the entry's stored timestamp.
+        LOGMA_EventID (ULONG *)
+            Event identifier supplied by the producer.
+        LOGMA_Origin (char **)
+            Recorded originating task description.
+        LOGMA_Component (char **)
+            Producer name. Written only if a producer is associated.
+        LOGMA_SubComponent (char **)
+            Subcomponent string supplied when the entry was added.
+        LOGMA_LogTag (char **)
+            Source/tag string supplied when the entry was added.
+        LOGMA_Entry (char **)
+            Formatted message text.
+
+    RESULT
+        The number of attributes written. Zero is returned for NULL,
+        a node not marked NT_LOGENTRY, or failure to open utility.library.
+        Unsupported tags are ignored. Only the first occurrence of each
+        supported tag is processed; skipped destinations are unchanged.
+
+    NOTES
+        Use normal tag-list termination and control tags. String and date
+        results point into resource-owned storage; they are not copies.
+        Do not modify or free them. Individual string results may be NULL.
+        Hold the entry lock and coordinate entry removal before reading or
+        copying these values. The function does not acquire the entry lock
+        and may open utility.library; call from task context.
+
+    BUGS
+        LOGMA_Level and LOGMA_Type are not handled. Obtain their bits from
+        LOGMA_Flags instead. The public LOGMA_Type macro is also malformed
+        in this version of <resources/log.h>.
+
+    SEE ALSO
+        logNextEntry(), logLockEntries(), logRemEntry()
+
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
@@ -275,9 +423,48 @@ AROS_LH2(IPTR, logGetEntryAttrs,
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH1(void, logRemEntry,
-         AROS_LHA(struct logEntry *, le, A0),
-         LIBBASETYPEPTR, LIBBASE, 11, log)
+/*****************************************************************************
+
+    NAME */
+        AROS_LH1(void, logRemEntry,
+
+/*  SYNOPSIS */
+                 AROS_LHA(struct logEntry *, le, A0),
+
+/*  LOCATION */
+                 LIBBASETYPEPTR, LIBBASE, 11, log)
+/*  FUNCTION
+        Unlink a published entry and queue its disposal by the service task.
+
+    INPUTS
+        le - Live published entry from log.resource, removed at most once,
+             or NULL. An entry still awaiting publication is not valid here.
+
+    RESULT
+        None. NULL has no effect.
+
+    NOTES
+        The function removes both global and producer linkage as applicable.
+        If the service task is running, it queues EHMB_REMENTRY and returns
+        without waiting for notification or deallocation. Treat the handle
+        and all borrowed attributes as invalid after requesting removal.
+        Do not free the entry yourself.
+
+        List removal uses Forbid()/Permit(), not the entry semaphore.
+        Callers must coordinate removal with readers; logLockEntries() alone
+        does not exclude this path.
+
+    BUGS
+        No node-state or duplicate-removal check is made. If the service
+        task has stopped, the entry is unlinked but not freed. The service
+        task does not free the copied subcomponent string. Its removal
+        notification contains a pointer that it then frees without waiting
+        for listeners to consume the message.
+
+    SEE ALSO
+        logGetEntryAttrs(), logLockEntries(), logEventBroadcast()
+
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 

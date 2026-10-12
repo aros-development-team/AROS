@@ -75,6 +75,12 @@
   InitRegion(&cutnewshape);
 
   LockLayers(l->LayerInfo);
+
+#if LAYERS_BACKING_SURFACE
+  /* a growing layer needs a bigger surface before anything is backed up */
+  if (dw > 0 || dh > 0)
+    _EnsureSurfaceSize(l, l->Width + dw, l->Height + dh, LayersBase);
+#endif
   
   clipregion = _InternalInstallClipRegion(l, NULL, 0, 0, LayersBase);
 

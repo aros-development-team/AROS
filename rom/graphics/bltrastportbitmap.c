@@ -80,7 +80,7 @@ void BltRastPortBitMap(struct RastPort *srcRastPort, WORD xSrc, WORD ySrc,
                 if(srcCR->lobs && (NULL != srcCR->BitMap || (srcLayer->Flags & LAYERSUPER))) {
                     if(0 == (srcLayer->Flags & LAYERSUPER)) {
                         /* no superbitmap */
-                        SrcOffsetX = ALIGN_OFFSET(srcCR->bounds.MinX);
+                        SrcOffsetX = CR_BMOFFX(srcCR);
 
                         if(xSrc >= crX0) {
                             bltSrcX  = xSrc - crX0 + SrcOffsetX;
@@ -91,10 +91,10 @@ void BltRastPortBitMap(struct RastPort *srcRastPort, WORD xSrc, WORD ySrc,
                         }
 
                         if(ySrc > crY0) {
-                            bltSrcY  = ySrc - crY0;
+                            bltSrcY  = ySrc - crY0 + CR_BMOFFY(srcCR);
                             bltDestY = 0;
                         } else {
-                            bltSrcY  = 0;
+                            bltSrcY  = CR_BMOFFY(srcCR);
                             bltDestY = crY0 - ySrc;
                         }
 

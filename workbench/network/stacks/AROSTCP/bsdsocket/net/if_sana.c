@@ -858,9 +858,9 @@ sana_ioctl(register struct ifnet *ifp, int cmd, caddr_t data)
          * does not mean sana_up() (CmdOnline + CmdRead) has been called.
          */
         if((ssc->ss_if.if_flags & IFF_DRV_RUNNING) && (ssc->ss_ip.sent == 0)) {
-            if(ssc->ss_if.if_flags & IFF_NOUP) {
+            if(ssc->ss_cflags & SSF_NOUP) {
                 D(bug("[AROSTCP:SANA] %s: SIFADDR Clearing interface NOUP flag .. \n", __func__));
-                ssc->ss_if.if_flags &= ~IFF_NOUP;
+                ssc->ss_cflags &= ~SSF_NOUP;
             } else {
                 D(bug("[AROSTCP:SANA] %s: SIFADDR bringing interface UP .. \n", __func__));
                 sana_up(ssc);
@@ -891,9 +891,9 @@ sana_ioctl(register struct ifnet *ifp, int cmd, caddr_t data)
             sana_run(ssc, ssc->ss_reqno, ifa);
         }
         if((ssc->ss_if.if_flags & IFF_DRV_RUNNING) && (ssc->ss_ip.sent == 0)) {
-            if(ssc->ss_if.if_flags & IFF_NOUP) {
+            if(ssc->ss_cflags & SSF_NOUP) {
                 D(bug("[AROSTCP:SANA] %s: SIOCAIFADDR_IN6 Clearing interface NOUP flag ..\n", __func__));
-                ssc->ss_if.if_flags &= ~IFF_NOUP;
+                ssc->ss_cflags &= ~SSF_NOUP;
             } else {
                 D(bug("[AROSTCP:SANA] %s: SIOCAIFADDR_IN6 bringing interface UP ..\n", __func__));
                 sana_up(ssc);
@@ -1421,7 +1421,9 @@ sana_start(struct sana_softc *ssc)
         req->ioip_s2.ios2_PacketType     = st->st_type;
         bcopy(st->st_dstaddr, req->ioip_s2.ios2_DstAddr, ifp->if_addrlen);
         req->ioip_s2.ios2_Req.io_Message.mn_Node.ln_Pri = st->st_pri;
-        req->ioip_Command  = (m->m_flags & M_BCAST) ? S2_BROADCAST : CMD_WRITE;
+        /* a group's frame is not an ordinary write to a SANA-II driver */
+        req->ioip_Command  = (m->m_flags & M_BCAST) ? S2_BROADCAST :
+                             (m->m_flags & M_MCAST) ? S2_MULTICAST : CMD_WRITE;
         req->ioip_dispatch = free_written_packet;
         req->ioip_packet   = m;
         req->ioip_s2.ios2_DataLength = m->m_pkthdr.len;
@@ -1429,7 +1431,7 @@ sana_start(struct sana_softc *ssc)
         m_free(tag);			/* metadata consumed; the packet lives on */
 
         ifp->if_obytes += m->m_pkthdr.len;
-        if(m->m_flags & M_BCAST)
+        if(m->m_flags & (M_BCAST | M_MCAST))
             ifp->if_omcasts++;
 
         BeginIO((struct IORequest *)req);

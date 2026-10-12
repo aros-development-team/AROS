@@ -72,6 +72,13 @@ struct eth_opener {
     struct Hook                 *filter;
 };
 
+/* a multicast address a client asked for, with S2_ADDMULTICASTADDRESS */
+struct eth_mcast {
+    struct MinNode              node;
+    ULONG                       refcount;
+    UBYTE                       addr[6];
+};
+
 struct eth_tracker {
     struct MinNode              node;
     ULONG                       refcount;
@@ -97,6 +104,7 @@ struct eth_unit
     struct MinList              openers;
 
     struct MinList              trackers;
+    struct MinList              mcasts;
     struct Sana2DeviceStats     stats;
 
     struct MsgPort              *iosyncport;

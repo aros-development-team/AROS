@@ -211,7 +211,15 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
     l->bounds.MaxY = y1;
     l->Width  = x1 - x0 + 1;
     l->Height = y1 - y0 + 1;
-
+#if LAYERS_BACKING_SURFACE
+    if (IS_SMARTREFRESH(l))
+    {
+      /* no surface (out of memory) means per ClipRect bitmaps as before */
+      IL(l)->surface = AllocBitMap(l->Width, l->Height, bm->Depth, 0, bm);
+      IL(l)->surfw = l->Width;
+      IL(l)->surfh = l->Height;
+    }
+#endif
     LockLayer(0, l);
     
     if (NULL == (l->DamageList = NewRegion()))
@@ -387,6 +395,10 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
 failexit:
   if (l)
   {
+#if LAYERS_BACKING_SURFACE
+    if (IL(l)->surface)
+      FreeBitMap(IL(l)->surface);
+#endif
     if (l->VisibleRegion)
       DisposeRegion(l->VisibleRegion);
     if (l->DamageList)

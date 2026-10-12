@@ -101,6 +101,10 @@ struct ifnet *aifunit(register char *name);
 int aifconf(int cmd, caddr_t data);
 
 #include <kern/uipc_domain_protos.h>
+
+#ifdef ENABLE_MULTICAST
+void in_ifdetach(struct ifnet *ifp);    /* netinet/in.c */
+#endif
 #include <net/rtsock_protos.h>
 
 static char *sprint_d(u_int n, char *buf, int buflen);
@@ -261,6 +265,11 @@ struct ifnet *ifp;
         bsd_free((caddr_t)ifa, M_IFADDR);
     }
     ifp->if_addrlist = 0;
+
+#ifdef ENABLE_MULTICAST
+    /* no group membership may go on naming this interface */
+    in_ifdetach(ifp);
+#endif
 
     splx(s);
 }

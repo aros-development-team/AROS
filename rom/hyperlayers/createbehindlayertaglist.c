@@ -88,15 +88,35 @@
 {
     AROS_LIBFUNC_INIT
 
-    /*
-     * *** !!! FIXME !!! ***
-     * This condition was copied from CreateBehindHookLayer() and
-     * it is 100% identical to one in CreateUpfrontHookLayer().
-     * This urgently needs to be fixed.
-     */
     int priority = (LAYERBACKDROP == (flags & LAYERBACKDROP)) ? BACKDROPPRIORITY: UPFRONTPRIORITY;
+    struct TagItem behindtags[] =
+    {
+        {LA_InFrontOf, 0           },
+        {TAG_MORE,     (IPTR)tagList}
+    };
+    struct Layer *l;
 
-    return CreateLayerTagList(li, bm, x0, y0, x1, y1, flags, priority, tagList, LayersBase);
+    /*
+     * Behind all other layers of this kind (AmigaOS): in front of the
+     * first top level layer of lower priority, i.e. the backdrop layers
+     * or the root layer, unless the caller said where to put it.
+     */
+    if (!FindTagItem(LA_InFrontOf, tagList) && !FindTagItem(LA_Behind, tagList))
+    {
+        LockLayerInfo(li);
+        for (l = li->top_layer; NULL != l; l = l->back)
+        {
+            if (l->priority < priority && (NULL == l->parent || li->check_lp == l->parent))
+            {
+                behindtags[0].ti_Data = (IPTR)l;
+                break;
+            }
+        }
+        UnlockLayerInfo(li);
+    }
+
+    return CreateLayerTagList(li, bm, x0, y0, x1, y1, flags, priority,
+                              behindtags[0].ti_Data ? behindtags : tagList, LayersBase);
 
     AROS_LIBFUNC_EXIT
 } /* CreateBehindHookLayer */

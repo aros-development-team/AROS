@@ -141,12 +141,15 @@ struct sana_softc {
 #define SSF_TRACK (1<<0)	      /* Should we track packets? */
 #define SSB_TRACK 0
 
+/*
+ * Set while the interface is being configured. They are not in if_flags:
+ * every bit there has a meaning of its own (0x8000 is IFF_MULTICAST).
+ */
+#define SSF_NOUP    (1<<1)	      /* do not put online with the address */
+#define SSF_DELAYUP (1<<2)	      /* configure once the API is shown */
+
 /* Default configuration flags */
 #define SS_CFLAGS (SSF_TRACK)
-
-/* Private Interface Config flags */
-#define IFF_NOUP     0x8000
-#define IFF_DELAYUP  0x4000
 
 /*
  * Global functions defined in if_sana.c
@@ -154,6 +157,31 @@ struct sana_softc {
 int sana_output(struct ifnet *ifp, struct mbuf *m0,
 			struct sockaddr *dst, struct rtentry *rt);
 int sana_ioctl(register struct ifnet *ifp, int cmd, caddr_t data);
+
+/*
+ * The SANA-II interface behind an ifnet, or NULL for any other kind: a
+ * tunnel and the loopback are a struct ifnet with something else behind it.
+ */
+static inline struct sana_softc *
+sana_softc_of(struct ifnet *ifp)
+{
+    return (ifp->if_output == sana_output) ? (struct sana_softc *)ifp : NULL;
+}
+
+/*
+ * Whether an IPv4 group has a link address on this interface, which is
+ * true of Ethernet alone (RFC 1112 section 6.4). The one test for it:
+ * IFF_MULTICAST is set where it holds, the device is told of a group's
+ * address where it holds, and arpresolve() gives that address where it
+ * holds.
+ */
+static inline int
+sana_ether_mcast(struct ifnet *ifp)
+{
+    struct sana_softc *ssc = sana_softc_of(ifp);
+
+    return ssc != NULL && ssc->ss_hwtype == S2WireType_Ethernet;
+}
 /* queue for sana network interfaces */
 extern struct sana_softc *ssq;
 #endif /* of IF_SANA_H */

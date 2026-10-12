@@ -127,6 +127,20 @@ STRPTR WITH_TEMPLATE =
 #define WITHARGS 2
 enum witharg { WITH_FILE, WITH_PREFIX };
 
+/*
+ * Marks an interface that is being configured. Only a SANA-II interface
+ * has these flags and anything that looks at them (sana_ioctl(),
+ * run_dhcp()); a tunnel is a struct stf_softc and has neither.
+ */
+static void
+ifconf_mark(struct ifnet *ifp, UWORD flags)
+{
+    struct sana_softc *ssc = sana_softc_of(ifp);
+
+    if(ssc != NULL)
+        ssc->ss_cflags |= flags;
+}
+
 /* prototypes for the netdb parsing functions */
 
 LONG addwith(struct NetDataBase *ndb,
@@ -766,7 +780,7 @@ addifent(struct NetDataBase *ndb,
                 if(ssc->args->a_ip) {
                     if(!ssc->args->a_up) {
                         DIFCONF(Printf("> No auto-online\n");)
-                        ifp->if_flags |= IFF_NOUP;
+                        ifconf_mark(ifp, SSF_NOUP);
                     }
                     DIFCONF(Printf("> IP address: %s\n", ssc->args->a_ip);)
                     if(stricmp(ssc->args->a_ip, "DHCP") == 0) {
@@ -776,7 +790,7 @@ addifent(struct NetDataBase *ndb,
                             if(api_state == API_SHOWN)
                                 run_dhclient(ifp);
                             else
-                                ifp->if_flags |= IFF_DELAYUP;
+                                ifconf_mark(ifp, SSF_DELAYUP);
                         }
                     } else if(stricmp(ssc->args->a_ip, "AUTO") == 0) {
                         /* Automatic: use IPv4LL (RFC 3927) to assign 169.254.x.x */
@@ -786,7 +800,7 @@ addifent(struct NetDataBase *ndb,
                             if(api_state == API_SHOWN)
                                 autoip_start(ifp);
                             else
-                                ifp->if_flags |= IFF_DELAYUP;
+                                ifconf_mark(ifp, SSF_DELAYUP);
                         }
                     } else {
                         ifp->if_data.ifi_aros_usedhcp = 0;
@@ -823,7 +837,7 @@ addifent(struct NetDataBase *ndb,
                         if(api_state == API_SHOWN)
                             run_dhclient6(ifp);
                         else
-                            ifp->if_flags |= IFF_DELAYUP;
+                            ifconf_mark(ifp, SSF_DELAYUP);
                     }
 #endif
                 } else {
@@ -1494,7 +1508,7 @@ addndbent(struct NetDataBase *ndb,
 {
     if(NDB) {
         LONG item;
-        enum ndbtype which;
+        LONG which;                     /* FindArg() returns -1; an enum may be unsigned */
         UBYTE Buffer[KEYWORDLEN];
 
 #if defined(__AROS__)

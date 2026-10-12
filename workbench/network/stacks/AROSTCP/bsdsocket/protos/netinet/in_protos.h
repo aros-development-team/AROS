@@ -29,6 +29,8 @@ int in_ifinit(register struct ifnet * ifp,
               struct sockaddr_in * sin,
               int scrub);
 
+void in_ifdetach(struct ifnet * ifp);
+
 struct in_ifaddr * in_iaonnetof(u_long net);
 
 int in_broadcast(struct in_addr in);
