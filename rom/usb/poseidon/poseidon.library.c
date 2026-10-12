@@ -8067,11 +8067,57 @@ AROS_LH3(struct PsdIFFContext *, psdGetUsbDevCfg,
 /* \\\ */
 
 /* /// "psdSetForcedBinding()" */
-AROS_LH3(BOOL, psdSetForcedBinding,
+/****** poseidon.library/psdSetForcedBinding ************************
+
+    NAME */
+        AROS_LH3(BOOL, psdSetForcedBinding,
+/*  SYNOPSIS */
          AROS_LHA(STRPTR, owner, A2),
          AROS_LHA(STRPTR, devid, A0),
          AROS_LHA(STRPTR, ifid, A1),
+/*  LOCATION */
          LIBBASETYPEPTR, ps, 69, psd)
+/*  FUNCTION
+        Store or remove a forced USB class binding in Poseidon's device
+        configuration. A binding may apply to a whole device or to one
+        interface, depending on whether an interface identifier is given.
+
+    INPUTS
+        owner - Class owner name to store. NULL or an empty string removes
+                the forced-binding chunk instead.
+        devid - NUL-terminated device identifier to look up; must be valid.
+        ifid  - NUL-terminated interface identifier for an interface-level
+                setting, or NULL for a device-level setting.
+
+    RESULT
+        TRUE if the requested configuration operation is reported as
+        successful; FALSE if a required form or chunk could not be added.
+        Removing a binding can return TRUE even when no matching record
+        or forced-binding chunk existed.
+
+    NOTES
+        The configuration is accessed under the exclusive ConfigLock.
+        Existing matching records are updated. For a nonempty owner,
+        missing device or interface forms may be created. The class name
+        is copied into a configuration chunk. The configuration-change
+        check runs after releasing ConfigLock.
+
+        This function changes stored configuration. It does not release
+        existing USB bindings, claim devices, or guarantee that the named
+        class will be selected immediately.
+
+    BUGS
+        Removal reports TRUE without checking whether a chunk was found
+        or deleted. Adding a form or a sequence of string chunks has no
+        rollback: allocation failure can leave incomplete configuration
+        records even when FALSE is returned. Duplicate matching interface
+        forms may all be updated. No validation of a NULL device identifier
+        is performed before string comparison.
+
+    SEE ALSO
+        psdGetForcedBinding(), psdParseCfg(), psdAddStringChunk()
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     struct PsdIFFContext *pic;
@@ -8176,10 +8222,52 @@ AROS_LH3(BOOL, psdSetForcedBinding,
 /* \\\ */
 
 /* /// "psdGetForcedBinding()" */
-AROS_LH2(STRPTR, psdGetForcedBinding,
+/****** poseidon.library/psdGetForcedBinding ************************
+
+    NAME */
+        AROS_LH2(STRPTR, psdGetForcedBinding,
+/*  SYNOPSIS */
          AROS_LHA(STRPTR, devid, A0),
          AROS_LHA(STRPTR, ifid, A1),
+/*  LOCATION */
          LIBBASETYPEPTR, ps, 70, psd)
+/*  FUNCTION
+        Look up the configured forced class binding for a device or one
+        of its interfaces.
+
+    INPUTS
+        devid - NUL-terminated device identifier to look up; must be valid.
+        ifid  - NUL-terminated interface identifier, or NULL to query the
+                device-level forced binding.
+
+    RESULT
+        Pointer to the class owner name stored in the matching
+        configuration chunk, or NULL if no matching forced binding is
+        found. The pointer is borrowed; it must not be freed by the caller.
+
+    NOTES
+        The lookup holds ConfigLock in shared mode but releases it before
+        returning. The result points directly into Poseidon's internal
+        configuration storage, not to an allocated copy. A later update,
+        deletion or relocation of the chunk buffer may invalidate it.
+        External synchronization is required when a stable reference is
+        needed; the function provides no protected copy operation.
+
+        A non-NULL interface identifier selects interface-level lookup.
+        If no interface binding is found, the function does not fall back
+        to a device-level setting. NULL also represents missing device
+        or interface records.
+
+    BUGS
+        The returned pointer is not protected against concurrent
+        configuration changes after the shared lock is released.
+        No validation of a NULL device identifier is performed before
+        string comparison.
+
+    SEE ALSO
+        psdSetForcedBinding(), psdGetStringChunk(), psdParseCfg()
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     struct PsdIFFContext *pic;
