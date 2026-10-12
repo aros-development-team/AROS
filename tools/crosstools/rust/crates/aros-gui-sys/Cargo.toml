@@ -1,0 +1,10 @@
+[package]
+name = "aros-gui-sys"
+version = "0.1.0"
+edition = "2021"
+description = "C glue for Intuition windows, input and signals on AROS"
+license = "Apache-2.0 OR MIT"
+links = "aros_gui_glue"
+
+[build-dependencies]
+cc = "1.2"

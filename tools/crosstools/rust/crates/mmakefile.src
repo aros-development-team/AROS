@@ -10,7 +10,9 @@
 #   program's mmakefile depends on rust-crates-config (which fetches all of
 #   them: cargo refuses a [patch] entry whose path does not exist) and runs
 #   cargo with $(RUST_CARGO), which passes the config. The second group are unpatched crates that mesa's NAK
-#   compiler compiles with rustc directly.
+#   compiler compiles with rustc directly. The third group, aros-*-sys, are
+#   crates written for AROS (C glue and bindings for its libraries and
+#   devices); their sources live here.
 #
 #   Crates that only applications need (tokio, iced, ...) have the same kind
 #   of store in contrib/development/rust/crates.
@@ -48,7 +50,8 @@ rust-crates :
         getrandom=$(RUST_CRATESDIR)/$(RUST_CRATE_GETRANDOM04) \
         getrandom03:getrandom=$(RUST_CRATESDIR)/$(RUST_CRATE_GETRANDOM03) \
         getrandom02:getrandom=$(RUST_CRATESDIR)/$(RUST_CRATE_GETRANDOM02) \
-        parking_lot_core=$(RUST_CRATESDIR)/$(RUST_CRATE_PARKING_LOT_CORE)"
+        parking_lot_core=$(RUST_CRATESDIR)/$(RUST_CRATE_PARKING_LOT_CORE) \
+        aros-gui-sys=$(RUST_SYS_CRATESDIR)/aros-gui-sys"
 
 ## Unpatched, for NAK (workbench/libs/mesa/libnak) ###
 
