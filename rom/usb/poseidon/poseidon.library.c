@@ -7120,9 +7120,46 @@ AROS_LH2(BOOL, psdReadCfg,
 /* \\\ */
 
 /* /// "psdLoadCfgFromDisk()" */
-AROS_LH1(BOOL, psdLoadCfgFromDisk,
+/****** poseidon.library/psdLoadCfgFromDisk ************************
+
+    NAME */
+        AROS_LH1(BOOL, psdLoadCfgFromDisk,
+/*  SYNOPSIS */
          AROS_LHA(STRPTR, filename, A1),
+/*  LOCATION */
          LIBBASETYPEPTR, ps, 79, psd)
+/*  FUNCTION
+        Load a Poseidon preferences FORM from a DOS file and attempt to apply
+        its configuration to the USB stack.
+
+    INPUTS
+        filename - DOS path to the preferences file, or NULL to search the
+                   default paths.
+
+    RESULT
+        TRUE after a recognized FORM header and complete payload read;
+        FALSE if a file cannot be opened or the read cannot be completed.
+        TRUE does not establish that the configuration was accepted.
+
+    NOTES
+        With a NULL filename, ENV:Sys/poseidon.prefs is tried first and
+        ENVARC:Sys/poseidon.prefs is tried only if the first load fails.
+        The file must be a Poseidon IFF PSDCFG FORM. After reading, the
+        implementation calls psdReadCfg() and psdParseCfg(), which may
+        change registered USB classes and hardware. On reported success,
+        the current configuration hash is marked as saved.
+
+    BUGS
+        The return value of psdReadCfg() is ignored. A complete file read
+        can therefore be reported as success even if the FORM is rejected.
+        The FORM length is not checked for a minimum value or a safe upper
+        bound before subtraction and allocation. Malformed length fields
+        can cause unsigned underflow or invalid memory access.
+
+    SEE ALSO
+        psdSaveCfgToDisk(), psdReadCfg(), psdParseCfg()
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     ULONG *buf;
@@ -7199,10 +7236,47 @@ AROS_LH1(BOOL, psdLoadCfgFromDisk,
 /* \\\ */
 
 /* /// "psdSaveCfgToDisk()" */
-AROS_LH2(BOOL, psdSaveCfgToDisk,
+/****** poseidon.library/psdSaveCfgToDisk ************************
+
+    NAME */
+        AROS_LH2(BOOL, psdSaveCfgToDisk,
+/*  SYNOPSIS */
          AROS_LHA(STRPTR, filename, A1),
          AROS_LHA(BOOL, executable, D0),
+/*  LOCATION */
          LIBBASETYPEPTR, ps, 80, psd)
+/*  FUNCTION
+        Serialize the current Poseidon configuration and write it to a
+        DOS file.
+
+    INPUTS
+        filename   - Destination DOS path, or NULL for both default
+                     preferences paths.
+        executable - Unused by the current implementation.
+
+    RESULT
+        TRUE when serialization returns a buffer and the destination
+        file is opened, or when both default-path calls report TRUE.
+        FALSE otherwise. A TRUE result does not confirm a complete write.
+
+    NOTES
+        With a NULL filename, ENVARC:Sys/poseidon.prefs is written first,
+        followed by ENV:Sys/poseidon.prefs; both calls are made and both
+        must report success. A named destination is opened with
+        MODE_NEWFILE, replacing its previous contents. The serialized
+        buffer is released internally. After reported success, the current
+        configuration hash is marked as saved. The executable argument
+        does not affect file creation or permissions.
+
+    BUGS
+        The return value of Write() is ignored. Short or failed writes
+        may be reported as successful, including when a destination has
+        been truncated. No temporary file or atomic replacement is used.
+
+    SEE ALSO
+        psdLoadCfgFromDisk(), psdWriteCfg(), psdParseCfg()
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     ULONG *buf;
