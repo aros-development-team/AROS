@@ -151,7 +151,47 @@ int sem_unlink(const char *name)
     return 0;
 }
 
-int sem_init(sem_t *sem, int pshared, unsigned int value)
+/****************************************************************************
+    NAME */
+        int sem_init(
+
+/*  SYNOPSIS */
+        sem_t *sem,
+        int pshared,
+        unsigned int value)
+
+/*  FUNCTION
+        Initialize an unnamed counting semaphore in caller-provided storage.
+        Set its available count to value and initialize the internal mutex and
+        condition variable used to wait for a positive count.
+
+    INPUTS
+        sem - Non-NULL writable semaphore storage that is not already in use.
+        pshared - Use 0 for threads in the same pthread runtime. The argument
+            is ignored; nonzero does not enable process sharing.
+        value - Initial count in 0..SEM_VALUE_MAX.
+
+    RESULT
+        0 on success. -1 with errno set to EINVAL if sem is NULL or value exceeds
+        SEM_VALUE_MAX. Validation failure leaves the object unchanged.
+
+    NOTES
+        Include <semaphore.h>; link with pthread. No separate semaphore storage
+        is allocated. Initialize before publishing to other tasks, retain the
+        object while any operation can use it, and destroy it only after all
+        users have finished. Reinitializing an active semaphore is invalid.
+        The semaphore must not be copied while in use.
+
+    BUGS
+        Process-shared operation is not implemented or rejected. Successful
+        initialization with nonzero pshared does not establish that capability.
+
+    SEE ALSO
+        sem_wait(),
+        sem_post(),
+        sem_destroy()
+
+*****************************************************************************/
 {
     D(bug("%s(%p, %d, %u)\n", __FUNCTION__, sem, pshared, value));
 
@@ -169,7 +209,43 @@ int sem_init(sem_t *sem, int pshared, unsigned int value)
     return 0;
 }
 
-int sem_destroy(sem_t *sem)
+/****************************************************************************
+    NAME */
+        int sem_destroy(
+
+/*  SYNOPSIS */
+        sem_t *sem)
+
+/*  FUNCTION
+        Attempt to destroy an unused unnamed semaphore's internal mutex and
+        condition variable, then clear its count and waiter count.
+
+    INPUTS
+        sem - Initialized semaphore with no active operations or waiters.
+            Prevent all new operations before destroying or releasing storage.
+
+    RESULT
+        0 after the internal destruction calls. -1 with errno EINVAL if sem is
+        NULL, or EBUSY if its internal mutex cannot be acquired immediately.
+
+    NOTES
+        Include <semaphore.h>; link with pthread. The ownership probe does not
+        wait. The caller's storage is not freed. Reinitialize before reuse.
+        Do not use this function to cancel or wake waiting tasks.
+
+    BUGS
+        Return values from pthread_mutex_destroy() and pthread_cond_destroy()
+        are ignored. A sleeping waiter can leave the mutex available for the
+        probe, so destruction can return 0 despite busy internal objects.
+        Success does not establish that waiting tasks are gone. Quiescence
+        must be established by the application before this call.
+
+    SEE ALSO
+        sem_init(),
+        sem_wait(),
+        sem_post()
+
+*****************************************************************************/
 {
     D(bug("%s(%p)\n", __FUNCTION__, sem));
 
@@ -258,14 +334,96 @@ int sem_timedwait(sem_t *sem, const struct timespec *abstime)
     return 0;
 }
 
-int sem_wait(sem_t *sem)
+/****************************************************************************
+    NAME */
+        int sem_wait(
+
+/*  SYNOPSIS */
+        sem_t *sem)
+
+/*  FUNCTION
+        Wait until the semaphore count is positive, then decrement it by one.
+        A positive count is consumed without a condition wait. The internal
+        mutex can still delay acquisition even when a unit is available.
+
+    INPUTS
+        sem - Initialized semaphore. Keep its storage valid until every active
+            operation and waiter has finished.
+
+    RESULT
+        0 after consuming one unit. -1 with errno EINVAL if sem is NULL.
+        An internal condition-wait failure is returned as -1 with its error
+        number in errno. Cancellation during a condition wait exits the worker
+        instead of returning.
+
+    NOTES
+        Include <semaphore.h>; link with pthread. Call from the initial program
+        task or a registered worker. There is no timeout. Posting is not tied to
+        ownership; another task can supply the unit with sem_post(). CTRL_C without
+        active cancellation does not produce EINTR: the count is checked again.
+        Do not destroy the semaphore to terminate this wait.
+
+    BUGS
+        Cancellation inside the condition wait occurs with the internal mutex
+        reacquired. No cleanup handler releases it or decrements waiters_count,
+        so cancellation can leave the semaphore locked and unusable. Avoid
+        cancellation of a worker blocked here; arrange explicit wakeup and
+        orderly termination instead.
+
+        A pending request is not checked when a unit is available immediately.
+        Repeated posts can also coalesce on one condition waiter; see sem_post().
+
+    SEE ALSO
+        sem_post(),
+        sem_init(),
+        sem_destroy()
+
+*****************************************************************************/
 {
     D(bug("%s(%p)\n", __FUNCTION__, sem));
 
     return sem_timedwait(sem, NULL);
 }
 
-int sem_post(sem_t *sem)
+/****************************************************************************
+    NAME */
+        int sem_post(
+
+/*  SYNOPSIS */
+        sem_t *sem)
+
+/*  FUNCTION
+        Increment the semaphore count and signal one condition waiter when the
+        recorded waiter count is nonzero. No waiting task owns a particular
+        posted unit until it successfully decrements the count.
+
+    INPUTS
+        sem - Initialized semaphore whose storage remains valid throughout
+            this operation and all concurrent waits.
+
+    RESULT
+        0 after incrementing. -1 with errno EINVAL if sem is NULL, or EOVERFLOW
+        if the count is already SEM_VALUE_MAX. No unit is added on overflow.
+        Builds without EOVERFLOW define it as EINVAL in this implementation.
+
+    NOTES
+        Include <semaphore.h>; link with pthread. The call acquires the internal
+        mutex and can block. It is not safe in interrupt context or an
+        asynchronous signal handler. The semaphore is counting, not owned;
+        a posting task need not have performed a corresponding wait.
+
+    BUGS
+        pthread_cond_signal() can repeatedly target the same listed waiter
+        before it removes itself. Multiple posts can therefore leave other
+        waiters asleep despite a positive count. No fairness or distinct-waiter
+        wakeup guarantee is provided.
+
+    SEE ALSO
+        sem_wait(),
+        sem_init(),
+        sem_destroy()
+
+*****************************************************************************/
 {
     D(bug("%s(%p)\n", __FUNCTION__, sem));
 
