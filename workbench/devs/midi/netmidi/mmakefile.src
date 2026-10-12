@@ -1,0 +1,29 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+# CAMD drivers for MIDI over the network: ports and no network code. One
+# source is built twice, so that a port's name says what kind of peer is
+# behind it: applemidi for AppleMIDI (RTP-MIDI) sessions, networkmidi2 for
+# Network MIDI 2.0 sessions. The sessions are run by a service of the
+# network stack, which attaches to the adapters these drivers make public;
+# without it a port takes what is sent to it and drops it.
+
+EXEDIR := $(AROS_DEVS)/Midi
+
+#MM- workbench-devs-midi : workbench-devs-midi-applemidi \
+#MM      workbench-devs-midi-networkmidi2
+#MM workbench-devs-midi-applemidi : includes linklibs
+#MM workbench-devs-midi-networkmidi2 : includes linklibs
+
+%build_prog mmake=workbench-devs-midi-applemidi \
+    progname=applemidi targetdir=$(EXEDIR) \
+    files=netmididriver \
+    objdir=$(GENDIR)/$(CURDIR)/applemidi
+
+%build_prog mmake=workbench-devs-midi-networkmidi2 \
+    progname=networkmidi2 targetdir=$(EXEDIR) \
+    files=netmididriver \
+    objdir=$(GENDIR)/$(CURDIR)/networkmidi2 \
+    cppflags="-DNETMIDI_DRIVER_NETWORKMIDI2"
+
+%common
