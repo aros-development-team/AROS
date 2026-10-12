@@ -7338,9 +7338,37 @@ AROS_LH1(struct PsdIFFContext *, psdNextCfgForm,
 /* \\\ */
 
 /* /// "psdAllocCfgForm()" */
-AROS_LH1(struct PsdIFFContext *, psdAllocCfgForm,
+/****** poseidon.library/psdAllocCfgForm ************************
+
+    NAME */
+        AROS_LH1(struct PsdIFFContext *, psdAllocCfgForm,
+/*  SYNOPSIS */
          AROS_LHA(ULONG, formid, D0),
+/*  LOCATION */
          LIBBASETYPEPTR, ps, 86, psd)
+/*  FUNCTION
+        Allocate an empty Poseidon IFF FORM context with the specified form
+        identifier. The new context is registered in the library's separate
+        configuration-form list, not inserted into the active config tree.
+
+    INPUTS
+        formid - IFF FORM type identifier stored in the new context.
+
+    RESULT
+        A new FORM context, or NULL if allocation fails.
+
+    NOTES
+        The context initially contains no chunks or child FORMs. Its FORM
+        payload length is four bytes for the type identifier. Release the
+        context with psdRemCfgForm() when it is no longer needed; do not
+        free the returned pointer directly. No active configuration change
+        or notification is performed by this function.
+
+    SEE ALSO
+        psdRemCfgForm(), psdReadCfg(), psdWriteCfg(),
+        psdAddStringChunk()
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     struct PsdIFFContext *pic;
@@ -8126,11 +8154,46 @@ AROS_LH2(STRPTR, psdGetForcedBinding,
 /* \\\ */
 
 /* /// "psdAddStringChunk()" */
-AROS_LH3(BOOL, psdAddStringChunk,
+/****** poseidon.library/psdAddStringChunk ************************
+
+    NAME */
+        AROS_LH3(BOOL, psdAddStringChunk,
+/*  SYNOPSIS */
          AROS_LHA(struct PsdIFFContext *, pic, A0),
          AROS_LHA(ULONG, chunkid, D0),
          AROS_LHA(CONST_STRPTR, str, A1),
+/*  LOCATION */
          LIBBASETYPEPTR, ps, 87, psd)
+/*  FUNCTION
+        Store a string in a configuration FORM as an IFF chunk. An
+        existing chunk with the same identifier is replaced.
+
+    INPUTS
+        pic     - Valid Poseidon FORM context. Must not be NULL.
+        chunkid - Identifier of the chunk to create or replace.
+        str     - NUL-terminated input string. Must not be NULL.
+
+    RESULT
+        TRUE when the chunk was stored; FALSE if allocation or insertion
+        fails.
+
+    NOTES
+        The string is copied, including its terminating NUL, into a
+        length-prefixed IFF chunk. The temporary chunk buffer is released
+        before this function returns. The config write lock covers the
+        operation. This entry point does not set ps_CheckConfigReq or
+        dispatch a configuration-change notification.
+
+    BUGS
+        Replacing a chunk is not atomic. The existing chunk is removed
+        before the replacement's storage is grown. If that allocation
+        fails, the original value has already been lost.
+
+    SEE ALSO
+        psdMatchStringChunk(), psdGetStringChunk(),
+        psdRemCfgChunk(), psdAddCfgEntry()
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     BOOL res;
@@ -8144,11 +8207,40 @@ AROS_LH3(BOOL, psdAddStringChunk,
 /* \\\ */
 
 /* /// "psdMatchStringChunk()" */
-AROS_LH3(BOOL, psdMatchStringChunk,
+/****** poseidon.library/psdMatchStringChunk ************************
+
+    NAME */
+        AROS_LH3(BOOL, psdMatchStringChunk,
+/*  SYNOPSIS */
          AROS_LHA(struct PsdIFFContext *, pic, A0),
          AROS_LHA(ULONG, chunkid, D0),
          AROS_LHA(CONST_STRPTR, str, A1),
+/*  LOCATION */
          LIBBASETYPEPTR, ps, 88, psd)
+/*  FUNCTION
+        Compare a supplied string with the contents of a string chunk
+        in a configuration FORM.
+
+    INPUTS
+        pic     - Valid Poseidon FORM context. Must not be NULL.
+        chunkid - Identifier of the chunk to inspect.
+        str     - NUL-terminated string to compare. Must not be NULL.
+
+    RESULT
+        TRUE if a matching chunk was found; FALSE if no matching chunk
+        exists or the comparison fails.
+
+    NOTES
+        Comparison is case-sensitive. The config read lock covers the
+        lookup and comparison. The stored length limits the comparison;
+        this routine does not validate the chunk as a complete, properly
+        NUL-terminated string. Malformed chunk data may therefore produce
+        misleading matches.
+
+    SEE ALSO
+        psdAddStringChunk(), psdGetStringChunk(), psdGetCfgChunk()
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     BOOL res;
@@ -8162,10 +8254,45 @@ AROS_LH3(BOOL, psdMatchStringChunk,
 /* \\\ */
 
 /* /// "psdGetStringChunk()" */
-AROS_LH2(STRPTR, psdGetStringChunk,
+/****** poseidon.library/psdGetStringChunk ************************
+
+    NAME */
+        AROS_LH2(STRPTR, psdGetStringChunk,
+/*  SYNOPSIS */
          AROS_LHA(struct PsdIFFContext *, pic, A0),
          AROS_LHA(ULONG, chunkid, D0),
+/*  LOCATION */
          LIBBASETYPEPTR, ps, 89, psd)
+/*  FUNCTION
+        Return an allocated copy of the contents of a string chunk in
+        a configuration FORM.
+
+    INPUTS
+        pic     - Valid Poseidon FORM context. Must not be NULL.
+        chunkid - Identifier of the chunk to copy.
+
+    RESULT
+        Allocated copy of the chunk data, or NULL if the chunk is absent
+        or memory allocation fails.
+
+    NOTES
+        The config read lock covers the lookup and copy. The function
+        allocates the stored chunk length plus one byte, copies exactly
+        the stored length and returns the allocation to the caller.
+        Release it with psdFreeVec(). Unlike a borrowed config pointer,
+        this allocation remains owned by the caller after the read lock
+        is released.
+
+    BUGS
+        The function does not explicitly write a trailing NUL. Treat
+        the result as a C string only when the stored chunk contains a
+        terminator; arbitrary or malformed chunk data is not validated.
+
+    SEE ALSO
+        psdAddStringChunk(), psdMatchStringChunk(), psdFreeVec(),
+        psdGetCfgChunk()
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     STRPTR str;
