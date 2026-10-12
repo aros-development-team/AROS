@@ -69,7 +69,8 @@ BOOL CreateRollover(union objectinfo *dir, STRPTR rollname, ULONG size,
 	union objectinfo *result, SIPTR *error, globaldata *g);
 ULONG SetRollover(fileentry_t *rooi, struct rolloverinfo *roinfo, globaldata *g);
 
-void ChangeDirEntry(struct fileinfo from, struct direntry *to, union objectinfo *destdir, struct fileinfo *result, globaldata *g);
+/* Returns zero on success or a DOS error; result keeps a valid source reference on failure. */
+SIPTR ChangeDirEntry(struct fileinfo from, struct direntry *to, union objectinfo *destdir, struct fileinfo *result, globaldata *g);
 
 struct cdirblock * LoadDirBlock(ULONG , globaldata * );
 

@@ -452,9 +452,10 @@ static ULONG WriteToRollover(fileentry_t *file, UBYTE *buffer, ULONG size,
 
 	/* commit changes */
 	if (!GetParent(&file->le.info, &directory, error, g))
-		return DOSFALSE;
-	else
-		ChangeDirEntry(file->le.info.file, destentry, &directory, &fi, g);
+		return (ULONG)-1;
+	*error = ChangeDirEntry(file->le.info.file, destentry, &directory, &fi, g);
+	if (*error)
+		return (ULONG)-1;
 
 	return (ULONG)written;
 
@@ -581,9 +582,10 @@ static SFSIZE ChangeRolloverSize(fileentry_t *file, SFSIZE releof, LONG mode,
 
 	/* commit changes */
 	if (!GetParent(&file->le.info, &directory, error, g))
-		return DOSFALSE;
-	else
-		ChangeDirEntry(file->le.info.file, destentry, &directory, &fi, g);
+		return -1;
+	*error = ChangeDirEntry(file->le.info.file, destentry, &directory, &fi, g);
+	if (*error)
+		return -1;
 
 	return virtualeof;
 
