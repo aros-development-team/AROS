@@ -927,7 +927,7 @@ static SIPTR dd_Relabel(struct DosPacket *pkt, globaldata * g)
 	newentry = MakeDosEntry(newlabel, DLT_VOLUME);
 	if (newentry) {
 		/* change rootblock */
-		if (RenameDisk(newlabel, g))
+		if (RenameDisk(newlabel, &pkt->dp_Res2, g))
 		{
 				// change volume name
 				struct DeviceList *devlist = g->currentvolume->devlist;
@@ -939,7 +939,6 @@ static SIPTR dd_Relabel(struct DosPacket *pkt, globaldata * g)
 		else
 		{
 			FreeDosEntry(newentry);
-			pkt->dp_Res2 = ERROR_INVALID_COMPONENT_NAME;
 			return DOSFALSE;
 		}
 	}

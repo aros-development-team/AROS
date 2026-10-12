@@ -21,7 +21,7 @@
  * function prototypes
  */
 
-static BOOL RenameDisk(UBYTE *, globaldata *);
+static BOOL RenameDisk(UBYTE *, SIPTR *, globaldata *);
 
 static void NotifyUser(struct NotifyRequest *nr, globaldata *g);
 static struct notifyobject *CheckNotify(ULONG parentanodenr, DSTR objectname,
@@ -148,30 +148,56 @@ do {                                                                   \
  * rename disk
  */
 
-static BOOL RenameDisk (UBYTE *newname, globaldata *g)  //%4.5
+static BOOL RenameDisk (UBYTE *newname, SIPTR *error, globaldata *g)  //%4.5
 {
-  UBYTE *diskname;
   struct volumedata *volume = g->currentvolume;
+  struct rootblock *newroot;
+  ULONG write_error;
 
 	ENTER("RenameDisk");
 
-	if (g->currentvolume && (strlen(newname) < DNSIZE))
+	if (!volume || strlen(newname) >= DNSIZE)
 	{
-		/* Write changes directly to disk to prevent disk recognition problems.
-		 * (So DON'T use updatedisk)
-		*/
-		diskname = volume->rootblk->diskname;
-		*diskname = strlen(newname);
-		CopyMem (newname, diskname+1, strlen(newname));
-		WriteRootBlocks ((UBYTE *)volume->rootblk, 1, ROOTBLOCK, g);   /* %7.2 */
-		UpdateAndMotorOff(g);
-		volume->rootblockchangeflag = FALSE;
-		return DOSTRUE;
-	}
-	else
-	{
+		*error = ERROR_INVALID_COMPONENT_NAME;
 		return DOSFALSE;
 	}
+	/* A root containing pending block replacements is not safe to write yet. */
+	if (g->dirty && !UpdateDisk(g))
+	{
+		*error = g->softprotect ? ERROR_DISK_WRITE_PROTECTED : ERROR_SEEK_ERROR;
+		return DOSFALSE;
+	}
+	newroot = AllocBufmem(BLOCKSIZE, g);
+	if (!newroot)
+	{
+		*error = ERROR_NO_FREE_STORE;
+		return DOSFALSE;
+	}
+	CopyMem(volume->rootblk, newroot, BLOCKSIZE);
+	memset(newroot->diskname, 0, sizeof(newroot->diskname));
+	newroot->diskname[0] = strlen(newname);
+	CopyMem(newname, newroot->diskname + 1, newroot->diskname[0]);
+
+	/* Keep the old identity available while device-error handling asks for it. */
+	write_error = WriteRootBlocks((UBYTE *)newroot, 1, ROOTBLOCK, g);
+	/* Even a failed write may have exposed this generation on disk. */
+	volume->rootblk->datestamp++;
+	if (!write_error && UpdateAndMotorOff(g))
+		write_error = ERROR_SEEK_ERROR;
+	if (write_error)
+	{
+		volume->rootblockchangeflag = TRUE;
+		g->dirty = TRUE;
+		*error = write_error;
+		FreeBufmem(newroot, g);
+		if (!g->softprotect)
+			ErrorMsg(AFS_ERROR_UPDATE_FAIL, NULL, g);
+		return DOSFALSE;
+	}
+	CopyMem(newroot->diskname, volume->rootblk->diskname, sizeof(newroot->diskname));
+	FreeBufmem(newroot, g);
+	volume->rootblockchangeflag = FALSE;
+	return DOSTRUE;
 }
 
 
