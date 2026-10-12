@@ -150,7 +150,7 @@ main(void)
     static struct MDNSDaemon daemon;
     struct MDNSDaemon *md = &daemon;
     struct MDNSDSignals sig;
-    ULONG got, lastScan = 0;
+    ULONG lastScan = 0;
     BOOL running = TRUE, probing = FALSE;
 
     md->md_Socket = -1;
@@ -173,7 +173,7 @@ main(void)
     net_up(md);
 
     while (running) {
-        got = wait_and_receive(md,
+        ULONG got = wait_and_receive(md,
             sig.ms_Stop | sig.ms_Begin | sig.ms_End | SIGBREAKF_CTRL_C,
             probing);
 

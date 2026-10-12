@@ -81,6 +81,31 @@ struct MDNSDaemon
     UWORD                   md_QueryPort;
 };
 
+/* Text of at most max characters: its length, and a copy that always ends
+ * with a NUL within size bytes. */
+static inline LONG
+mdnsTextLength(const char *text, LONG max)
+{
+    LONG n = 0;
+
+    while (n < max && text[n] != '\0') {
+        n++;
+    }
+    return n;
+}
+
+static inline void
+mdnsTextCopy(char *to, LONG size, const char *from)
+{
+    LONG n = 0;
+
+    while (n < size - 1 && from[n] != '\0') {
+        to[n] = from[n];
+        n++;
+    }
+    to[n] = '\0';
+}
+
 /* mdnsd.c */
 ULONG mdnsNow(void);            /* seconds */
 ULONG mdnsTicks(void);          /* fiftieths of a second */
