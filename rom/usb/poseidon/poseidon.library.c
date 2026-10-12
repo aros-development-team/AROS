@@ -1738,11 +1738,57 @@ struct PsdEndpoint * pAllocEndpoint(struct PsdInterface *pif)
 /* \\\ */
 
 /* /// "psdFindEndpointA()" */
-AROS_LH3(struct PsdEndpoint *, psdFindEndpointA,
+/****** poseidon.library/psdFindEndpointA ************************
+
+    NAME */
+        AROS_LH3(struct PsdEndpoint *, psdFindEndpointA,
+/*  SYNOPSIS */
          AROS_LHA(struct PsdInterface *, pif, A0),
          AROS_LHA(struct PsdEndpoint *, pep, A2),
          AROS_LHA(struct TagItem *, tags, A1),
+/*  LOCATION */
          LIBBASETYPEPTR, ps, 67, psd)
+/*  FUNCTION
+        Find an endpoint in the given interface's endpoint list. A previous
+        result may be supplied to continue the search.
+
+    INPUTS
+        pif  - Interface whose endpoint list is searched; must be valid.
+        pep  - Previous endpoint or NULL to start at the first endpoint.
+        tags - Optional endpoint match criteria; see TAGS.
+
+    TAGS
+        EA_IsIn            - Nonzero selects IN, zero selects OUT.
+        EA_EndpointNum     - Endpoint number.
+        EA_TransferType    - Transfer type.
+        EA_MaxPktSize      - Maximum packet size.
+        EA_Interval        - Polling interval.
+        EA_MaxBurst        - Maximum burst value.
+        EA_CompAttributes  - Companion descriptor attributes.
+        EA_BytesPerInterval - Bytes per service interval.
+
+    RESULT
+        Next matching endpoint, or NULL if no match remains. The result
+        is owned by the interface and must not be freed by the caller.
+
+    NOTES
+        All supplied criteria are combined using exact equality, except
+        EA_IsIn, which treats any nonzero value as IN. A NULL pep starts
+        at the list head; otherwise iteration begins at pep's successor.
+
+        No lock is acquired and no ownership check is made for pep. Keep
+        the interface and its endpoint list stable across iteration.
+
+    BUGS
+        Other endpoint tags defined by the public header, including
+        EA_Interface, EA_SyncType, EA_UsageType and EA_MaxStreams, are not
+        interpreted by this search. The function does not check a NULL pif
+        or verify that the continuation endpoint belongs to the list.
+
+    SEE ALSO
+        psdFindInterfaceA(), psdFindDescriptorA()
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     struct TagItem *ti;
@@ -1850,11 +1896,67 @@ struct PsdInterface * pAllocInterface(struct PsdConfig *pc)
 /* \\\ */
 
 /* /// "psdFindInterfaceA()" */
-AROS_LH3(struct PsdInterface *, psdFindInterfaceA,
+/****** poseidon.library/psdFindInterfaceA ************************
+
+    NAME */
+        AROS_LH3(struct PsdInterface *, psdFindInterfaceA,
+/*  SYNOPSIS */
          AROS_LHA(struct PsdDevice *, pd, A0),
          AROS_LHA(struct PsdInterface *, pif, A2),
          AROS_LHA(struct TagItem *, tags, A1),
+/*  LOCATION */
          LIBBASETYPEPTR, ps, 66, psd)
+/*  FUNCTION
+        Find an interface in the device's current configuration. Repeated
+        calls can traverse matching interfaces, including alternate settings
+        when alternate-interface searching is enabled.
+
+    INPUTS
+        pd   - Device whose current configuration is searched; must be valid.
+        pif  - Previous interface returned by this search, or NULL to start
+               at the first primary interface of the current configuration.
+        tags - Optional match criteria; see TAGS.
+
+    TAGS
+        IFA_InterfaceNum  - Interface number.
+        IFA_AlternateNum  - Alternate-setting number, or a value above 255 to
+                            enable alternate traversal without filtering by
+                            alternate-setting number.
+        IFA_NumEndpoints  - Number of endpoints.
+        IFA_Class         - Interface class.
+        IFA_SubClass      - Interface subclass.
+        IFA_Protocol      - Interface protocol.
+        IFA_Binding       - Binding pointer.
+        IFA_InterfaceName - Interface name, compared with strcmp().
+        IFA_IDString      - Interface identifier, compared with strcmp().
+
+    RESULT
+        First matching interface after pif, or NULL if no further match
+        exists. The result belongs to the device; it is not a new allocation.
+
+    NOTES
+        A NULL pif starts with the device's current configuration; if there
+        is no current configuration, the function returns NULL. Supplying a
+        previous interface advances past that entry. Alternate interfaces
+        are visited when IFA_AlternateNum is present or when iteration is
+        resumed from an alternate interface.
+
+        The function does not acquire a device lock. A returned pointer and
+        a continuation pointer are valid only while the owning interface
+        lists remain unchanged. String match tags require valid
+        NUL-terminated strings; the implementation does not check for NULL
+        before calling strcmp().
+
+    BUGS
+        The implementation ignores other IFA_* tags declared in the
+        public header, including IFA_Config and IFA_BindingClass. It does
+        not validate that pif belongs to pd or protect traversal against
+        concurrent reconfiguration.
+
+    SEE ALSO
+        psdFindEndpointA(), psdFindDescriptorA()
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     struct PsdConfig *pc;
@@ -2051,11 +2153,59 @@ struct PsdDescriptor * pAllocDescriptor(struct PsdDevice *pd, UBYTE *buf)
 /* \\\ */
 
 /* /// "psdFindDescriptorA()" */
-AROS_LH3(struct PsdDescriptor *, psdFindDescriptorA,
+/****** poseidon.library/psdFindDescriptorA ************************
+
+    NAME */
+        AROS_LH3(struct PsdDescriptor *, psdFindDescriptorA,
+/*  SYNOPSIS */
          AROS_LHA(struct PsdDevice *, pd, A0),
          AROS_LHA(struct PsdDescriptor *, pdd, A2),
          AROS_LHA(struct TagItem *, tags, A1),
+/*  LOCATION */
          LIBBASETYPEPTR, ps, 91, psd)
+/*  FUNCTION
+        Search the device's descriptor list in list order, optionally
+        restricting matches by configuration, interface, endpoint and
+        descriptor fields.
+
+    INPUTS
+        pd   - Device whose descriptors are searched; must be valid.
+        pdd  - Previous descriptor, or NULL to start at the list head.
+        tags - Optional descriptor match criteria; see TAGS.
+
+    TAGS
+        DDA_Config           - Exact configuration pointer. If absent,
+                               only the current configuration is searched;
+                               an explicit NULL searches all configurations.
+        DDA_Interface        - Exact interface pointer, including NULL.
+        DDA_Endpoint         - Exact endpoint pointer, including NULL.
+        DDA_DescriptorType   - Descriptor type.
+        DDA_CS_SubType       - Class-specific descriptor subtype.
+        DDA_DescriptorLength - Descriptor length.
+
+    RESULT
+        Next matching descriptor, or NULL when no match remains. The
+        pointer refers to a descriptor owned by the device.
+
+    NOTES
+        A NULL pdd starts at the first descriptor; otherwise iteration
+        starts at the next list node. An absent DDA_Config tag restricts
+        results to the device's current configuration. Supplying the tag
+        with a NULL value disables that default restriction.
+
+        No device lock is acquired. Do not retain or continue iterating
+        through pointers after the descriptor list has been changed.
+
+    BUGS
+        DDA_Device, DDA_Name and DDA_DescriptorData are declared in the
+        public header but are not handled as search criteria here. A NULL
+        pd is dereferenced, and an unrelated continuation pointer is not
+        checked before traversal.
+
+    SEE ALSO
+        psdFindInterfaceA(), psdFindEndpointA()
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     struct PsdConfig *pc = pd->pd_CurrentConfig;
