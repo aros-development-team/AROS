@@ -1,0 +1,20 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+# gnu99: strict c99 removes the 'asm' keyword the inline LVO headers need
+USER_CFLAGS := $(CFLAGS_GNU99)
+
+#MM- workbench-network : workbench-network-mdns
+
+#MM- workbench-network-mdns : workbench-network-mdnsd
+
+#MM workbench-network-mdnsd : \
+#MM      network-includes-copy \
+#MM      workbench-network-mdns-svccfg
+
+# The daemon installs alongside the other managed network services.
+%build_prog mmake=workbench-network-mdnsd \
+    progname=mdnsd targetdir=$(AROS_SYSTEM)/Network/Services \
+    files="mdnsd mdnsd_service mdns_net mdns_dns mdns_host mdns_packet"
+
+%common
