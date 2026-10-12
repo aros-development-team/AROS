@@ -5106,9 +5106,37 @@ AROS_LH1(LONG, psdWaitPipe,
 /* \\\ */
 
 /* /// "psdCheckPipe()" */
-AROS_LH1(struct PsdPipe *, psdCheckPipe,
+/****** poseidon.library/psdCheckPipe **************************************
+
+    NAME */
+        AROS_LH1(struct PsdPipe *, psdCheckPipe,
+/*  SYNOPSIS */
          AROS_LHA(struct PsdPipe *, pp, A1),
+/*  LOCATION */
          LIBBASETYPEPTR, ps, 71, psd)
+/*  FUNCTION
+        Check whether a pipe's message is still pending, without waiting.
+
+    INPUTS
+        pp - Pipe to inspect; must be valid.
+
+    RESULT
+        NULL while the pipe message has node type NT_MESSAGE. Otherwise
+        returns pp. No new reference or allocation is created.
+
+    NOTES
+        This is a message-state test, not a transfer completion or success
+        check. It does not consume a reply, wait for the hardware task, or
+        examine the transfer's I/O error. Use psdWaitPipe() to collect the
+        result, and psdGetPipeError() to inspect the transfer status.
+
+    BUGS
+        The implementation dereferences pp without checking for NULL.
+
+    SEE ALSO
+        psdSendPipe(), psdWaitPipe(), psdGetPipeError()
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     KPRINTF(5, ("psdCheckPipe(%p)\n", pp));
@@ -5147,10 +5175,76 @@ AROS_LH1(LONG, psdGetPipeError,
 /* *** Streams *** */
 
 /* /// "psdOpenStreamA()" */
-AROS_LH2(struct PsdPipeStream *, psdOpenStreamA,
+/****** poseidon.library/psdOpenStreamA ************************************
+
+    NAME */
+        AROS_LH2(struct PsdPipeStream *, psdOpenStreamA,
+/*  SYNOPSIS */
          AROS_LHA(struct PsdEndpoint *, pep, A0),
          AROS_LHA(struct TagItem *, tags, A1),
+/*  LOCATION */
          LIBBASETYPEPTR, ps, 72, psd)
+/*  FUNCTION
+        Create a buffered pipe stream for a USB endpoint and configure its
+        underlying pipes using the supplied stream attributes.
+
+    INPUTS
+        pep  - Endpoint to use; must be valid and remain available for the
+               lifetime of the stream.
+        tags - Optional stream configuration tags; see TAGS.
+
+    TAGS
+        PSA_MessagePort      - Reply port; otherwise an internal port is
+                               created. A supplied port remains caller-owned.
+        PSA_NumPipes         - Number of underlying pipes.
+        PSA_BufferSize       - Size of each stream buffer segment.
+        PSA_NakTimeoutTime   - NAK timeout interval.
+        PSA_Error            - Initial stream error value.
+        PSA_TermArray        - Termination-character array.
+        PSA_AbortSigMask     - Signals used to interrupt waiting.
+        PSA_AsyncIO          - Enable asynchronous I/O.
+        PSA_ShortPktTerm     - End reads when a short packet arrives.
+        PSA_ReadAhead        - Enable read-ahead.
+        PSA_BufferedRead     - Enable buffered reads.
+        PSA_BufferedWrite    - Enable buffered writes.
+        PSA_NoZeroPktTerm    - Set the UHFF_NOSHORTPKT pipe flag.
+        PSA_NakTimeout       - Enable NAK timeout handling.
+        PSA_AllowRuntPackets - Permit short packets.
+        PSA_DoNotWait        - Allow reads to return without waiting.
+
+    RESULT
+        New stream pointer, or NULL if pep is NULL, stream allocation
+        fails, or no underlying pipe array is installed. The caller owns
+        the stream and must close it with psdCloseStream().
+
+    NOTES
+        Both directions default to four pipes and a NAK timeout value
+        of 5000. IN endpoints default to read-ahead, buffered reads,
+        and runt-packet acceptance, with 32 maximum packets per buffer
+        segment. OUT endpoints default to no short-packet termination,
+        with four maximum packets per segment.
+
+        PSA_BytesPending and PSA_ActivePipe are query-only attributes,
+        not stream configuration tags.
+
+        psdSetAttrsA(PGA_PIPESTREAM, ...) applies the supplied tags,
+        enforces a minimum of one pipe and one maximum packet per buffer
+        segment, and limits pipe count to available USB3 stream IDs when
+        applicable. The function does not check the attribute setter's
+        return value.
+
+    BUGS
+        A non-NULL result does not establish that every underlying pipe
+        was allocated: the implementation checks the pipe-array pointer,
+        not each entry. On an IN endpoint, failure to allocate the array
+        can also enter cleanup through psdCloseStream(), whose initial
+        flush accesses the missing array.
+
+    SEE ALSO
+        psdCloseStream(), psdSetAttrsA(), psdStreamRead(),
+        psdStreamWrite(), psdStreamFlush()
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     struct PsdPipeStream *pps;
@@ -5191,9 +5285,46 @@ AROS_LH2(struct PsdPipeStream *, psdOpenStreamA,
 /* \\\ */
 
 /* /// "psdCloseStream()" */
-AROS_LH1(void, psdCloseStream,
+/****** poseidon.library/psdCloseStream ************************************
+
+    NAME */
+        AROS_LH1(void, psdCloseStream,
+/*  SYNOPSIS */
          AROS_LHA(struct PsdPipeStream *, pps, A1),
+/*  LOCATION */
          LIBBASETYPEPTR, ps, 73, psd)
+/*  FUNCTION
+        Close a pipe stream, attempting to flush pending stream data,
+        then aborting and waiting for its pipe requests before freeing
+        the pipes, buffers, and stream object.
+
+    INPUTS
+        pps - Stream returned by psdOpenStreamA(), or NULL.
+
+    RESULT
+        None.
+
+    NOTES
+        A NULL pointer is ignored. For an IN stream, the initial flush
+        aborts pending reads and discards buffered replies. For an OUT
+        stream, the flush attempts to submit buffered output when a free
+        pipe is available.
+
+        A reply port created by the stream is deleted. A port supplied
+        by the caller remains caller-owned. The stream pointer is invalid
+        after this call and must not be used again.
+
+    BUGS
+        The result of psdStreamFlush() is discarded, so this function
+        does not report a failed or skipped output flush. Call
+        psdStreamFlush() explicitly before closing when its result
+        matters. Cleanup assumes that each entry in an allocated pipe
+        array is valid; partially initialized streams are unsafe.
+
+    SEE ALSO
+        psdOpenStreamA(), psdStreamFlush(), psdAbortPipe(), psdWaitPipe()
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     struct PsdPipe *pp;
@@ -5231,11 +5362,63 @@ AROS_LH1(void, psdCloseStream,
 /* \\\ */
 
 /* /// "psdStreamRead()" */
-AROS_LH3(LONG, psdStreamRead,
+/****** poseidon.library/psdStreamRead *************************************
+
+    NAME */
+        AROS_LH3(LONG, psdStreamRead,
+/*  SYNOPSIS */
          AROS_LHA(struct PsdPipeStream *, pps, A1),
          AROS_LHA(UBYTE *, buffer, A0),
          AROS_LHA(LONG, length, D0),
+/*  LOCATION */
          LIBBASETYPEPTR, ps, 74, psd)
+/*  FUNCTION
+        Read data from a stream connected to an IN endpoint. Depending on
+        stream attributes, receive transfers directly or consume data held
+        in the stream's read buffers.
+
+    INPUTS
+        pps    - Open IN stream returned by psdOpenStreamA().
+        buffer - Destination buffer, large enough for the requested data.
+        length - Maximum bytes to copy; zero is permitted. In buffered
+                 mode, -1 requests all currently buffered bytes instead.
+
+    RESULT
+        Number of bytes copied. Returns -1 for a NULL stream, a stream
+        without pipes, the wrong endpoint direction, or an internal
+        read-queue consistency failure. Zero is possible when no data is
+        available or when no read is performed.
+
+    NOTES
+        Each call with a non-NULL stream clears the recorded stream error
+        before checking direction and performing any I/O. A transfer error
+        can terminate a buffered read after some bytes have been copied;
+        check psdGetStreamError() separately for the I/O status.
+
+        With PSA_BufferedRead enabled, successful replies are queued and
+        consumed in order. PSA_ReadAhead may queue further reads. A
+        termination-character array stops the copy after a matching byte,
+        including that byte in the count. PSA_ShortPktTerm can terminate
+        the read after a short packet. PSA_DoNotWait allows a partial or
+        zero-length return rather than waiting for another reply.
+
+        Without buffered reading, the function issues at most one direct
+        transfer when a free pipe is available. The implementation's
+        asynchronous-I/O branch does not issue a read.
+
+    BUGS
+        The special length value -1 substitutes the number of pending
+        bytes without checking the destination buffer's capacity. It can
+        overwrite an undersized buffer. Outside buffered-read mode, -1
+        is also passed on to a transfer taking an unsigned byte count.
+        Do not use this value. A non-NULL destination pointer is not
+        validated.
+
+    SEE ALSO
+        psdOpenStreamA(), psdStreamWrite(), psdStreamFlush(),
+        psdGetStreamError()
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     struct PsdPipe *pp;
@@ -5456,11 +5639,55 @@ AROS_LH3(LONG, psdStreamRead,
 /* \\\ */
 
 /* /// "psdStreamWrite()" */
-AROS_LH3(LONG, psdStreamWrite,
+/****** poseidon.library/psdStreamWrite ************************************
+
+    NAME */
+        AROS_LH3(LONG, psdStreamWrite,
+/*  SYNOPSIS */
          AROS_LHA(struct PsdPipeStream *, pps, A1),
          AROS_LHA(UBYTE *, buffer, A0),
          AROS_LHA(LONG, length, D0),
+/*  LOCATION */
          LIBBASETYPEPTR, ps, 75, psd)
+/*  FUNCTION
+        Write data to an OUT endpoint stream, optionally retaining a
+        trailing partial packet in the stream buffer for a later flush.
+
+    INPUTS
+        pps    - Open OUT stream returned by psdOpenStreamA().
+        buffer - Bytes to write, or a NUL-terminated string when length
+                 is -1; must remain valid during synchronous transfers.
+        length - Number of bytes to accept, or -1 to use strlen(buffer).
+
+    RESULT
+        Number of bytes accepted or transferred, which may be smaller
+        than the requested length. Returns -1 if pps is NULL, the pipe
+        array is absent, or the endpoint direction is not OUT. Zero can
+        mean that no pipe was free or no write was attempted.
+
+    NOTES
+        A non-NULL stream has its recorded error reset at entry. When
+        PSA_BufferedWrite is active, the result may include bytes copied
+        into the stream buffer but not yet sent to the USB device. Call
+        psdStreamFlush() to submit pending output and check its result.
+
+        A configured termination-character array limits the data accepted
+        to the first matching byte, inclusive. With length -1, strlen()
+        determines the original extent and the terminating NUL is not
+        written. On an I/O error, the function records the error and may
+        still return a positive count for bytes processed beforehand.
+
+    BUGS
+        The PSA_AsyncIO branch does not submit output and returns zero.
+        The implementation does not check a non-NULL buffer pointer.
+        Bytes counted as accepted in buffered mode are not a guarantee
+        that the device received them.
+
+    SEE ALSO
+        psdOpenStreamA(), psdStreamRead(), psdStreamFlush(),
+        psdGetStreamError()
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     struct PsdPipe *pp;
@@ -5691,9 +5918,50 @@ AROS_LH3(LONG, psdStreamWrite,
 /* \\\ */
 
 /* /// "psdStreamFlush()" */
-AROS_LH1(LONG, psdStreamFlush,
+/****** poseidon.library/psdStreamFlush ************************************
+
+    NAME */
+        AROS_LH1(LONG, psdStreamFlush,
+/*  SYNOPSIS */
          AROS_LHA(struct PsdPipeStream *, pps, A1),
+/*  LOCATION */
          LIBBASETYPEPTR, ps, 76, psd)
+/*  FUNCTION
+        Discard pending input or attempt to transmit buffered output,
+        according to the stream endpoint's direction.
+
+    INPUTS
+        pps - Open pipe stream returned by psdOpenStreamA().
+
+    RESULT
+        Returns -1 if pps is NULL. For an IN stream, returns nonzero
+        after its pending reads and buffers have been cleared. For an
+        OUT stream, returns nonzero if a free pipe was available and any
+        buffered output was successfully sent; otherwise returns zero.
+
+    NOTES
+        The function clears the recorded stream error at entry. For IN
+        streams, it aborts and waits for each pipe, moves ready replies
+        back to the free list, drains the reply port, and resets buffered
+        byte counters and offsets. The return value does not indicate
+        whether an aborted read had an I/O error.
+
+        For OUT streams, only the first available free pipe is used. If
+        output bytes are pending, psdDoPipe() submits them synchronously.
+        A failed transfer sets the stream error and returns zero. When no
+        free pipe is available, the function returns zero, even if no
+        output bytes are pending.
+
+    BUGS
+        The implementation assumes a fully initialized pipe array; it
+        does not check pps_Pipes or individual pipe pointers before the
+        IN direction's abort-and-wait loop.
+
+    SEE ALSO
+        psdCloseStream(), psdStreamWrite(), psdStreamRead(),
+        psdGetStreamError()
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     struct PsdPipe *pp;
@@ -5759,9 +6027,39 @@ AROS_LH1(LONG, psdStreamFlush,
 /* \\\ */
 
 /* /// "psdGetStreamError()" */
-AROS_LH1(LONG, psdGetStreamError,
+/****** poseidon.library/psdGetStreamError *********************************
+
+    NAME */
+        AROS_LH1(LONG, psdGetStreamError,
+/*  SYNOPSIS */
          AROS_LHA(struct PsdPipeStream *, pps, A1),
+/*  LOCATION */
          LIBBASETYPEPTR, ps, 77, psd)
+/*  FUNCTION
+        Return the error value recorded by a pipe stream.
+
+    INPUTS
+        pps - Pipe stream to inspect, or NULL.
+
+    RESULT
+        Recorded stream error, or -1 if pps is NULL. A value of zero
+        means that the stream currently records no error.
+
+    NOTES
+        The value is read without modifying it. Read, write, and flush
+        operations reset the stored error at entry, so the result should
+        be inspected immediately after the operation of interest. The
+        stored error does not by itself report the number of bytes
+        transferred or prove that buffered output has reached the device.
+
+    BUGS
+        This function does not acquire the stream semaphore. Concurrent
+        activity can change the returned value.
+
+    SEE ALSO
+        psdStreamRead(), psdStreamWrite(), psdStreamFlush()
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     KPRINTF(1, ("psdGetStreamError(%p)\n", pps));
