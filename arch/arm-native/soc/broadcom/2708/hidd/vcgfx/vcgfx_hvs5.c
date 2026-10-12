@@ -717,6 +717,52 @@ BOOL vc4_hvs5_takeover(struct VideoCoreGfx_staticdata *xsd,
     return st->hvs_Active;
 }
 
+/*
+ * After a takeover: if w x h at the rate in want is a mode we can set,
+ * set it, showing the framebuffer as a unity plane at 0,0 - whatever the
+ * firmware had scaled it into.
+ */
+BOOL vc4_hvs5_mode_apply(struct VideoCoreGfx_staticdata *xsd, ULONG w, ULONG h,
+                         ULONG pitch, const struct vcgfx_timing *want)
+{
+    struct vc4_hvs_state *st = &xsd->vcsd_HVS;
+    const struct vcgfx_timing *t;
+    ULONG base;
+    BOOL boot, ok;
+
+    if (!st->hvs_Active || !(t = vc4_hvs5_mode_lookup(xsd, w, h, want, &boot)) || boot)
+        return FALSE;
+    if (pitch < w * 4)
+    {
+        bug("[VC4HVS5] fb pitch %u is short of %ux%u - firmware clamped it?\n",
+            (unsigned)pitch, (unsigned)w, (unsigned)h);
+        return FALSE;
+    }
+
+    st->hvs_FBEntry[0] = HVS5_CTL0_CURSOR;
+    st->hvs_FBEntry[1] = HVS5_POS0(0, 0);
+    st->hvs_FBEntry[2] = HVS5_ALPHA_FIXED;
+    st->hvs_FBEntry[3] = HVS5_POS2(w, h);
+    st->hvs_FBEntry[4] = 0;
+    st->hvs_FBEntry[5] = 0;
+    st->hvs_FBEntry[6] = 0;
+    st->hvs_FBEntry[7] = pitch;
+    st->hvs_FBWords    = HVS5_PLANE_WORDS;
+    st->hvs_FBPtrOff   = HVS5_PLANE_WORDS - HVS5_PTROFF_FROM_END;
+    st->hvs_FBX        = 0;
+    st->hvs_FBY        = 0;
+    st->hvs_SrcW       = st->hvs_DestW = w;
+    st->hvs_SrcH       = st->hvs_DestH = h;
+    st->hvs_OvlUsable  = TRUE;
+    st->hvs_FBLBM      = HVS5_LBM_TOP;
+
+    VC4_MBOX_LOCK(xsd);
+    base = hvs5_build_list(xsd);
+    ok = vc4_hvs5_mode_set(xsd, st->hvs_Channel, base, t, FALSE);
+    VC4_MBOX_UNLOCK(xsd);
+    return ok;
+}
+
 BOOL vc4_hvs5_flip_page(struct VideoCoreGfx_staticdata *xsd, ULONG page_phys)
 {
     struct vc4_hvs_state *st = &xsd->vcsd_HVS;

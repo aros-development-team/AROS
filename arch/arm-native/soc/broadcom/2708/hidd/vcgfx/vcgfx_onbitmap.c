@@ -25,6 +25,7 @@
 #include "vcgfx_bitmap.h"
 #include "vcgfx_hidd.h"
 #include "vcgfx_hvs.h"
+#include "vcgfx_hvs5.h"
 #include "vcgfx_hvs6.h"
 
 #include LC_LIBDEFS_FILE
@@ -172,6 +173,11 @@ static BOOL vc4_program_fb(struct VideoCoreGfx_staticdata *xsd,
     ULONG fb_pitch = 0, fb_size = 0;
     int pages;
 
+    /* The firmware builds its lists for the mode it set itself, so a mode
+     * of ours goes back to that one first. */
+    if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS5)
+        vc4_hvs5_mode_restore(xsd);
+
     /* Mode is changing: the FBALLOC sequence below makes the firmware
      * rebuild its display list and repoint the channel, so give up list
      * ownership first; it is re-taken once the new framebuffer is up. */
@@ -291,6 +297,21 @@ static BOOL vc4_program_fb(struct VideoCoreGfx_staticdata *xsd,
         /* Did the allocation really cover both pages? */
         if (pages > 1 && fb_size < fb_pitch * height * 2)
             continue;
+
+        /* The Pi 4 firmware caps the size at max_framebuffer_width/height
+         * and says so only in what it hands back: drawing into that would
+         * run past its end. */
+        if ((xsd->vcsd_HVSGen == VCGFX_HVS_HVS5)
+            && ((fb_pitch < aligned_width * bytesperpix) || (fb_size < fb_pitch * height)))
+        {
+            bug("[VideoCoreGfx] %ux%u: the firmware gave %u bytes at pitch %u"
+                " - raise max_framebuffer_width/height in config.txt\n",
+                (unsigned)aligned_width, (unsigned)height, (unsigned)fb_size,
+                (unsigned)fb_pitch);
+            if (pages > 1)
+                continue;
+            return FALSE;
+        }
         break;
     }
 
@@ -339,6 +360,8 @@ static BOOL vc4_program_fb(struct VideoCoreGfx_staticdata *xsd,
      * updates become dlist repoints; falls back to the firmware paths
      * (and returns FALSE) if the live list can't be inherited. */
     vc4_hvs_takeover(xsd, (ULONG)(IPTR)fb_ptr, fb_pitch);
+    if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS5)
+        vc4_hvs5_mode_apply(xsd, aligned_width, height, fb_pitch, want);
 
     *fb_ptr_out   = fb_ptr;
     *fb_pitch_out = fb_pitch;

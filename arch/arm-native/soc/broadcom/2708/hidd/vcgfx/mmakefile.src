@@ -17,6 +17,7 @@ FILES	:=	\
 	vcgfx_hardware \
 	vcgfx_hvs \
 	vcgfx_hvs5 \
+	vcgfx_hvs5_mode \
 	vcgfx_hvs6 \
 	vcgfx_hvs6_mode \
 	vcgfx_pixfmts \
