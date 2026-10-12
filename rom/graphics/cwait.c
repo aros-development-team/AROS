@@ -6,6 +6,7 @@
 #include <exec/types.h>
 #include <graphics/copper.h>
 #include "graphics_intern.h"
+#include "copper_intern.h"
 
 /*****************************************************************************
 
@@ -54,7 +55,9 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct CopIns *copIns = ucl->CopList->CopPtr;
+    struct CopIns *copIns = GetUserCopperInstruction(ucl, GfxBase);
+    if (!copIns)
+        return;
     copIns->OpCode = COPPER_WAIT;
     copIns->u3.u4.u1.VWaitPos = v;
     copIns->u3.u4.u2.HWaitPos = h;
