@@ -262,7 +262,7 @@ static BOOL DiskRemoveSequence(globaldata *g);
 void NewVolume (BOOL FORCE, globaldata *g)
 {
   BOOL oldstate, newstate, changed;
-  struct rootblock *rootblock;
+  struct rootblock *rootblock = NULL;
 
 	/* check if something changed */
 	changed = UpdateChangeCount (g);
@@ -283,6 +283,18 @@ void NewVolume (BOOL FORCE, globaldata *g)
 	/* undo error enforced softprotect */
 	if ((g->softprotect == 1) && g->protectkey == ~0)
 		g->softprotect = g->protectkey = 0;
+
+	/* Committing a removed dirty volume asks for it back. The root read
+	 * before that request no longer identifies the medium in the drive. */
+	if (oldstate && g->dirty &&
+		(!newstate || !SameDisk(rootblock, g->currentvolume->rootblk)))
+	{
+		if (rootblock)
+			FreeBufmem(rootblock, g);
+		if (!DiskRemoveSequence(g))
+			goto remove_failed;
+		newstate = GetCurrentRoot(&rootblock, g);
+	}
 
 	if (oldstate && !newstate && !DiskRemoveSequence(g))
 		goto remove_failed;
@@ -336,9 +348,9 @@ static BOOL DiskRemoveSequence(globaldata *g)
 
 	/* -I- update disk 
 	** will ask for old volume if there are unsaved changes
-	** causes recursive NewVolume call. That's why 'currentvolume'
-	** has to be cleared first; UpdateDisk won't be called for the
-	** same disk again
+	** This step leaves currentvolume attached. Media-change callers must
+	** read the root again afterwards; inhibit calls repeat removal once
+	** the volume is clean.
 	*/
 	if(oldvolume && g->dirty)
 	{
@@ -1013,6 +1025,7 @@ static BOOL GetCurrentRoot(struct rootblock **rootblock, globaldata *g)
   int rblsize;
 
 	ENTER("GetCurrentRoot");
+	*rootblock = NULL;
 
 	if (g->removable)
 	{
