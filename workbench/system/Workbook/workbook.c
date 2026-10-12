@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2011-2026, The AROS Development Team. All rights reserved.
 
     Desc: Workbook Main
 */
@@ -19,7 +19,7 @@
 /* Allocate classes and run the main app */
 static int WB_Main(struct WorkbookBase *wb)
 {
-    int rc = RETURN_OK;
+    int rc = RETURN_ERROR;
 
     wb->wb_WBApp = WBApp_MakeClass(wb);
     if (!wb->wb_WBApp)
@@ -45,9 +45,8 @@ static int WB_Main(struct WorkbookBase *wb)
     if (wb->wb_App) {
         STACKED ULONG wbmethodID;
         wbmethodID = WBAM_WORKBENCH;
-        DoMethodA(wb->wb_App, &wbmethodID);
+        rc = DoMethodA(wb->wb_App, &wbmethodID) ? RETURN_OK : RETURN_ERROR;
         DisposeObject(wb->wb_App);
-        rc = 0;
     }
 
 exit:
