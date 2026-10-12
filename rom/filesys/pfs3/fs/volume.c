@@ -1115,7 +1115,11 @@ static BOOL GetCurrentRoot(struct rootblock **rootblock, globaldata *g)
 				FreeBufmem(*rootblock, g);
 				*rootblock = AllocBufmemR (rblsize << BLOCKSHIFT, g);
 				error = ReadRootBlocks((UBYTE *)*rootblock, rblsize, ROOTBLOCK, g);
+				if (error)
+					goto nrd_error;
 			}
+			else
+				goto nrd_error;
 
 			/* size check */
 			if (((*rootblock)->options & MODE_SIZEFIELD) &&
@@ -1128,6 +1132,7 @@ static BOOL GetCurrentRoot(struct rootblock **rootblock, globaldata *g)
 		}
 
 nrd_error:
+		g->ErrorMsg = _NormalErrorMsg;
 		g->disktype = ID_NOT_REALLY_DOS;
 		CreateInputEvent(TRUE, g);
 		FreeBufmem (*rootblock, g);
