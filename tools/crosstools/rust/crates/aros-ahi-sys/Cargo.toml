@@ -1,0 +1,10 @@
+[package]
+name = "aros-ahi-sys"
+version = "0.1.0"
+edition = "2021"
+description = "C glue for playback through ahi.device on AROS"
+license = "Apache-2.0 OR MIT"
+links = "aros_ahi_glue"
+
+[build-dependencies]
+cc = "1.2"
