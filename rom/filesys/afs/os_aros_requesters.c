@@ -4,24 +4,8 @@
 
 #include "os_aros_support.h"
 
-LONG showText(struct AFSBase *afsbase, const char *format, ...)
-{
-    LONG ret;
-
-    AROS_SLOWSTACKFORMAT_PRE(format);
-    ret = showPtrArgsText(afsbase, format, Req_Cancel, AROS_SLOWSTACKFORMAT_ARG(format));
-    AROS_SLOWSTACKFORMAT_POST(format);
-
-    return ret;
-}
-
-LONG showRetriableError(struct AFSBase *afsbase, const char *format, ...)
-{
-    LONG ret;
-
-    AROS_SLOWSTACKFORMAT_PRE(format);
-    ret = showPtrArgsText(afsbase, format, Req_RetryCancel, AROS_SLOWSTACKFORMAT_ARG(format));
-    AROS_SLOWSTACKFORMAT_POST(format);
-
-    return ret;
-}
+#if !AFS_INLINE_REQUESTERS
+#define AFS_REQUESTER_LINKAGE
+#include "os_aros_requesters.h"
+#undef AFS_REQUESTER_LINKAGE
+#endif

@@ -1,0 +1,5 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+# Share requester wrappers to keep the Amiga filesystem handler within its
+# ROM budget. Other targets use the generic inline default.
+AFS_INLINE_REQUESTERS := 0

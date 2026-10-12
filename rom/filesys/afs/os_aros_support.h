@@ -56,8 +56,20 @@ enum showReqType;
 LONG showPtrArgsText(struct AFSBase *afsbase, const char *string, enum showReqType type, RAWARG args);
 LONG showError(struct AFSBase *afsbase, ULONG error, ...);
 
+/* Generic clients retain inline wrappers; constrained builds can select
+ * one shared implementation through their target build rules. */
+#ifndef AFS_INLINE_REQUESTERS
+#define AFS_INLINE_REQUESTERS 1
+#endif
+
+#if AFS_INLINE_REQUESTERS
+#define AFS_REQUESTER_LINKAGE static inline
+#include "os_aros_requesters.h"
+#undef AFS_REQUESTER_LINKAGE
+#else
 LONG showText(struct AFSBase *afsbase, const char *format, ...);
 LONG showRetriableError(struct AFSBase *afsbase, const char *format, ...);
+#endif
 
 void checkDeviceFlags(struct AFSBase *);
 void motorOff(struct AFSBase *afsbase, struct IOHandle *ioh);
