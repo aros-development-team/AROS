@@ -1605,7 +1605,6 @@ static SIPTR dd_InhibitOn(struct DosPacket *pkt, globaldata * g)
 			return DOSFALSE;
 		}
 		g->inhibitcount++;
-		g->timeron = FALSE;
 		g->timeout = 0;
 		g->DoCommand = InhibitedCommands;
 		g->disktype = ID_BUSY;
@@ -1638,7 +1637,6 @@ static SIPTR dd_InhibitOff(struct DosPacket *pkt, globaldata * g)
 			}
 
 			g->DoCommand = NormalCommands;
-			g->timeron = FALSE;
 			g->newvolumepending = TRUE;
 		}
 	}

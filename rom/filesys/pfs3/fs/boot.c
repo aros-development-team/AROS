@@ -362,6 +362,8 @@ void __saveds EntryPoint (struct ExecBase *SysBase)
 		{
 			if ((msg = GetMsg(g->timeport)))
 			{
+				/* The request is available for reuse even while inhibited. */
+				g->timeron = FALSE;
 				if (g->inhibitcount == 0)
 				{
 					/* postpone until timeoutcounter 'timeout' is 0 */
@@ -384,7 +386,6 @@ void __saveds EntryPoint (struct ExecBase *SysBase)
 						else
 						{
 							UpdateAndMotorOff(g);
-							g->timeron = FALSE;
 							for (idle = HeadOf(&g->idlelist); idle->next; idle = idle->next)
 								Signal (idle->task, 1L<<idle->cleansignal);
 
@@ -426,7 +427,6 @@ void __saveds EntryPoint (struct ExecBase *SysBase)
 				{
 					/* set timer for first period (always extended) */
 					SetTimer(200000, g);
-					g->timeron = TRUE;
 				}
 
 				if (g->dieing) {
@@ -524,6 +524,7 @@ static void SetTimer (int micros, globaldata *g)
 	g->trequest->tr_time.tv_secs     = 0;
 	g->trequest->tr_time.tv_micro    = micros;
 	SendIO ((struct IORequest *)g->trequest);
+	g->timeron = TRUE;
 }
 
 
