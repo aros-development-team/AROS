@@ -2,17 +2,23 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES       := primitives pixelarray text gfxbench amigademo layerhooks layerops
+FILES       := primitives pixelarray text gfxbench amigademo layerops
 EXEDIR      := $(AROS_TESTS)/benchmarks/graphics
 NOWARN_FLAGS:= $(NOWARN_OLD_STYLE_DEFINITION)
 USER_CFLAGS := $(NOWARN_FLAGS)
 
-#MM- test-benchmarks : test-benchmarks-graphics
-#MM- test-benchmarks-quick : test-benchmarks-graphics-quick
+#MM- test-benchmarks : test-benchmarks-graphics test-benchmarks-graphics-layerhooks
+#MM- test-benchmarks-quick : test-benchmarks-graphics-quick test-benchmarks-graphics-layerhooks-quick
 
-#MM test-benchmarks-graphics : includes linklibs workbench-libs-decorator-includes
+#MM test-benchmarks-graphics : includes linklibs
 
 %build_progs mmake=test-benchmarks-graphics \
-    files=$(FILES) targetdir=$(EXEDIR) uselibs="decorator"
+    files=$(FILES) targetdir=$(EXEDIR)
+
+#MM test-benchmarks-graphics-layerhooks : includes linklibs workbench-libs-decorator-includes workbench-libs-decorator-linklib
+
+%build_prog mmake=test-benchmarks-graphics-layerhooks \
+    files=layerhooks targetdir=$(EXEDIR) \
+    progname=layerhooks uselibs="decorator"
 
 %common
