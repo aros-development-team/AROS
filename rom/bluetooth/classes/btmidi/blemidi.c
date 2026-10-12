@@ -34,6 +34,10 @@ void blemidi_decoder_init(struct blemidi_decoder *decoder)
 static int emit(void *context, blemidi_byte_callback callback,
                 uint16_t timestamp, uint8_t byte)
 {
+    /* F9 and FD are undefined in MIDI 1.0, whose receivers are to ignore
+       them: they are taken off the stream here */
+    if (byte == 0xf9 || byte == 0xfd)
+        return 0;
     return callback(context, timestamp, byte) == 0 ? 0 : -1;
 }
 
@@ -256,6 +260,8 @@ int blemidi_writer_put(struct blemidi_writer *writer, uint16_t timestamp,
     uint8_t low = (uint8_t)(0x80 | (timestamp & 0x7f));
     int result = 0;
 
+    if (byte == 0xf9 || byte == 0xfd)
+        return 0;               /* undefined: not sent */
     if (byte >= 0xf8) {
         /* Real Time goes out at once, also inside another message, which
            is then written whole after it: section 7 has the two apart,
