@@ -23,7 +23,37 @@
 #include "pthread_intern.h"
 #include "debug.h"
 
-int pthread_equal(pthread_t t1, pthread_t t2)
+/****************************************************************************
+    NAME */
+        int pthread_equal(
+
+/*  SYNOPSIS */
+        pthread_t t1,
+        pthread_t t2)
+
+/*  FUNCTION
+        Compare two thread identifier values. This implementation compares the
+        numeric identifiers without looking up either thread.
+
+    INPUTS
+        t1 - First thread identifier.
+        t2 - Second thread identifier.
+
+    RESULT
+        Nonzero (1) if the values are equal; 0 otherwise. No errors are reported.
+
+    NOTES
+        Include <pthread.h>; link with pthread. This call neither blocks nor
+        changes thread state. Equality does not prove that a thread exists or
+        is still running. An identifier may be reused after its slot is released,
+        so equal values obtained at different times need not name the same
+        worker lifetime.
+
+    SEE ALSO
+        pthread_self(),
+        pthread_create()
+
+*****************************************************************************/
 {
     D(bug("%s(%u, %u)\n", __FUNCTION__, t1, t2));
 
