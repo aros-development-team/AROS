@@ -23,7 +23,40 @@
 #include "pthread_intern.h"
 #include "debug.h"
 
-int pthread_mutexattr_init(pthread_mutexattr_t *attr)
+/****************************************************************************
+    NAME */
+        int pthread_mutexattr_init(
+
+/*  SYNOPSIS */
+        pthread_mutexattr_t *attr)
+
+/*  FUNCTION
+        Set a mutex attribute object's kind to PTHREAD_MUTEX_DEFAULT, which is
+        PTHREAD_MUTEX_NORMAL in this implementation.
+
+    INPUTS
+        attr - Non-NULL writable mutex attribute object.
+
+    RESULT
+        0 on success; EINVAL if attr is NULL. Errors are returned directly.
+
+    NOTES
+        Include <pthread.h>; link with pthread. No mutex or other resource is
+        allocated, and the call does not block. pthread_mutex_init() copies the
+        kind; the attribute object need not outlive the initialized mutex.
+        Exclude concurrent access to attr.
+
+    BUGS
+        Only kind is initialized. The process-sharing field is left untouched,
+        and pthread_mutex_init() ignores that field. This call does not provide
+        process-shared synchronization.
+
+    SEE ALSO
+        pthread_mutexattr_settype(),
+        pthread_mutexattr_destroy(),
+        pthread_mutex_init()
+
+*****************************************************************************/
 {
     D(bug("%s(%p)\n", __FUNCTION__, attr));
 
