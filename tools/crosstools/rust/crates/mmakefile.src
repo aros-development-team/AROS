@@ -52,7 +52,8 @@ rust-crates :
         getrandom02:getrandom=$(RUST_CRATESDIR)/$(RUST_CRATE_GETRANDOM02) \
         parking_lot_core=$(RUST_CRATESDIR)/$(RUST_CRATE_PARKING_LOT_CORE) \
         aros-gui-sys=$(RUST_SYS_CRATESDIR)/aros-gui-sys \
-        aros-pty-sys=$(RUST_SYS_CRATESDIR)/aros-pty-sys"
+        aros-pty-sys=$(RUST_SYS_CRATESDIR)/aros-pty-sys \
+        aros-ahi-sys=$(RUST_SYS_CRATESDIR)/aros-ahi-sys"
 
 ## Unpatched, for NAK (workbench/libs/mesa/libnak) ###
 
