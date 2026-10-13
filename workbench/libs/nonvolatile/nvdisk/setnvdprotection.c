@@ -4,9 +4,7 @@
     Desc:
 */
 
-/*****************************************************************************
 
-    NAME */
 
 #include "nvdisk_intern.h"
 #include <nvdisk_arch.h>
@@ -15,7 +13,11 @@
 #include <libraries/nonvolatile.h>
 
 
-AROS_LH3(BOOL, SetNVDProtection,
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH3(BOOL, SetNVDProtection,
 
 /*  SYNOPSIS */
 
@@ -29,32 +31,38 @@ AROS_LH3(BOOL, SetNVDProtection,
 
 /*  FUNCTION
 
-    Protect an item saved in nonvolatile memory.
+    Set the filesystem protection flags of a nonvolatile data item.
 
     INPUTS
 
-    appName   --  the application owning the item
-    itemName  --  the item to protect
-    mask      --  protection status to inflict
+    appName   --  name of the application owning the item
+    itemName  --  name of the item whose protection is to be changed
+    mask      --  protection flags passed to SetProtection()
 
     RESULT
 
-    The memory item 'itemName' will be protected as specified by the 'mask'.
+    TRUE if the filesystem-backed SetProtection() call succeeds;
+    FALSE if the application directory cannot be locked or the
+    protection operation fails.
 
     NOTES
 
-    EXAMPLE
+    The filesystem-backed implementation locks the application
+    directory but does not make it the current directory before
+    calling SetProtection(itemName, mask). Consequently, a successful
+    call is not proof that the intended application's item was changed.
+    An active native backend delegates to NVDisk_ArchProtect().
 
-    BUGS
+    Callers should use nonvolatile.library/SetNVProtection().
 
     SEE ALSO
 
-    INTERNALS
+    nonvolatile.library/SetNVProtection(), <libraries/nonvolatile.h>
 
     HISTORY
 
-    April 2000,  SDuvan  --  implemented
-    
+    April 2000, SDuvan -- implemented
+
 ******************************************************************************/
 
 {
