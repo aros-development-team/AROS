@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002, The AROS Development Team.
+    Copyright (C) 2002-2026, The AROS Development Team.
     All rights reserved.
     
 */
@@ -8,13 +8,13 @@
 #include <utility/tagitem.h>
 #include <proto/alib.h>
 
-/*****************************************************************************
-
-    NAME */
 #define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/muimaster.h>
 extern struct Library * MUIMasterBase;
 
+/*****************************************************************************
+
+    NAME */
         Object * MUI_NewObject (
 
 /*  SYNOPSIS */
@@ -23,22 +23,20 @@ extern struct Library * MUIMasterBase;
         ...)
 
 /*  FUNCTION
+        Create an object of the named MUI class using tag/value pairs.
+        This is the varargs form of MUI_NewObjectA().
 
     INPUTS
+        classname - Case-sensitive MUI class identifier.
+        tag1      - First tag in a sequence of tag/value pairs terminated
+                    by TAG_DONE.
 
     RESULT
+        Pointer to the object, or NULL if the class cannot be found
+        or the object cannot be created.
 
     NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-    HISTORY
+        Dispose of the returned object with MUI_DisposeObject().
 
 *****************************************************************************/
 {
