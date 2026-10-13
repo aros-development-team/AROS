@@ -725,6 +725,9 @@ LONG transfer_buffered(UWORD action, UBYTE *buffer, ULONG blockoffset, ULONG blo
        line, and asking the cache for another line there recurses through
        lruiocache() until the stack is exhausted. Use a private DMA-able
        allocation for the duration of the transfer instead. */
+    if(maxblocks>(0xFFFFFFFFUL>>globals->shifts_block)) {
+        maxblocks=0xFFFFFFFFUL>>globals->shifts_block;
+    }
     if(globals->scsidirect && maxblocks>65535/globals->sectors_block) {
         maxblocks=65535/globals->sectors_block;
     }
@@ -862,6 +865,9 @@ LONG transfer(UWORD action, UBYTE *buffer, ULONG blockoffset, ULONG blocklength)
             return(0);
         }
 
+        if(maxblocks>(0xFFFFFFFFUL>>globals->shifts_block)) {
+            maxblocks=0xFFFFFFFFUL>>globals->shifts_block;
+        }
         if(globals->scsidirect && maxblocks>65535/globals->sectors_block) {
             maxblocks=65535/globals->sectors_block;
         }
