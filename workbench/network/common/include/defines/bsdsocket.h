@@ -283,14 +283,14 @@
 
 #define __Inet_NtoA_WB(__SocketBase, __arg1) \
         AROS_LC1(char *, Inet_NtoA, \
-                  AROS_LCA(unsigned long,(__arg1),D0), \
+                  AROS_LCA(ULONG,(__arg1),D0), \
         struct Library *, (__SocketBase), 29, BSDSocket)
 
 #define Inet_NtoA(arg1) \
     __Inet_NtoA_WB(SocketBase, (arg1))
 
 #define __inet_addr_WB(__SocketBase, __arg1) \
-        AROS_LC1(unsigned long, inet_addr, \
+        AROS_LC1(ULONG, inet_addr, \
                   AROS_LCA(const char *,(__arg1),A0), \
         struct Library *, (__SocketBase), 30, BSDSocket)
 
@@ -298,32 +298,32 @@
     __inet_addr_WB(SocketBase, (arg1))
 
 #define __Inet_LnaOf_WB(__SocketBase, __arg1) \
-        AROS_LC1(unsigned long, Inet_LnaOf, \
-                  AROS_LCA(unsigned long,(__arg1),D0), \
+        AROS_LC1(ULONG, Inet_LnaOf, \
+                  AROS_LCA(ULONG,(__arg1),D0), \
         struct Library *, (__SocketBase), 31, BSDSocket)
 
 #define Inet_LnaOf(arg1) \
     __Inet_LnaOf_WB(SocketBase, (arg1))
 
 #define __Inet_NetOf_WB(__SocketBase, __arg1) \
-        AROS_LC1(unsigned long, Inet_NetOf, \
-                  AROS_LCA(unsigned long,(__arg1),D0), \
+        AROS_LC1(ULONG, Inet_NetOf, \
+                  AROS_LCA(ULONG,(__arg1),D0), \
         struct Library *, (__SocketBase), 32, BSDSocket)
 
 #define Inet_NetOf(arg1) \
     __Inet_NetOf_WB(SocketBase, (arg1))
 
 #define __Inet_MakeAddr_WB(__SocketBase, __arg1, __arg2) \
-        AROS_LC2(unsigned long, Inet_MakeAddr, \
-                  AROS_LCA(int,(__arg1),D0), \
-                  AROS_LCA(int,(__arg2),D1), \
+        AROS_LC2(ULONG, Inet_MakeAddr, \
+                  AROS_LCA(ULONG,(__arg1),D0), \
+                  AROS_LCA(ULONG,(__arg2),D1), \
         struct Library *, (__SocketBase), 33, BSDSocket)
 
 #define Inet_MakeAddr(arg1, arg2) \
     __Inet_MakeAddr_WB(SocketBase, (arg1), (arg2))
 
 #define __inet_network_WB(__SocketBase, __arg1) \
-        AROS_LC1(unsigned long, inet_network, \
+        AROS_LC1(ULONG, inet_network, \
                   AROS_LCA(const char *,(__arg1),A0), \
         struct Library *, (__SocketBase), 34, BSDSocket)
 

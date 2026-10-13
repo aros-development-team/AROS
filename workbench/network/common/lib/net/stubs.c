@@ -42,7 +42,7 @@ inet_ntoa(struct in_addr addr)
 #undef inet_makeaddr
 
 struct in_addr 
-inet_makeaddr(int net, int host)
+inet_makeaddr(in_addr_t net, in_addr_t host)
 {
   struct in_addr addr;
   addr.s_addr = Inet_MakeAddr(net, host);
@@ -51,7 +51,7 @@ inet_makeaddr(int net, int host)
 
 #undef inet_lnaof
 
-unsigned long 
+in_addr_t 
 inet_lnaof(struct in_addr addr) 
 {
   return Inet_LnaOf(addr.s_addr);
@@ -59,7 +59,7 @@ inet_lnaof(struct in_addr addr)
 
 #undef inet_netof
 
-unsigned long   
+in_addr_t 
 inet_netof(struct in_addr addr)
 {
   return Inet_NetOf(addr.s_addr);
