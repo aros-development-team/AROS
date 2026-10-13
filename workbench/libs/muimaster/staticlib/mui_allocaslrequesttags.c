@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002, The AROS Development Team.
+    Copyright (C) 2002-2026, The AROS Development Team.
     All rights reserved.
     
 */
@@ -8,13 +8,13 @@
 #include <utility/tagitem.h>
 #include <proto/alib.h>
 
-/*****************************************************************************
-
-    NAME */
 #define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/muimaster.h>
 extern struct Library * MUIMasterBase;
 
+/*****************************************************************************
+
+    NAME */
         APTR MUI_AllocAslRequestTags (
 
 /*  SYNOPSIS */
@@ -23,22 +23,20 @@ extern struct Library * MUIMasterBase;
         ...)
 
 /*  FUNCTION
+        Allocate an ASL requester using a variable-length tag list.
+        This is the varargs form of MUI_AllocAslRequest().
 
     INPUTS
+        reqType - Requester type: ASL_FileRequest, ASL_FontRequest or
+                  ASL_ScreenModeRequest.
+        tag1    - First tag in a sequence of tag/value pairs terminated
+                  by TAG_DONE.
 
     RESULT
+        Pointer to the allocated requester, or NULL if allocation fails.
 
     NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-    HISTORY
+        Release the requester with MUI_FreeAslRequest().
 
 *****************************************************************************/
 {
