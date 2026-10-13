@@ -303,5 +303,6 @@ void    vcgfx_plane_forget(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm);
 ULONG   vcgfx_plane_backpage(struct VideoCoreGfx_staticdata *xsd,
                              struct BitmapData *data);
 BOOL    vcgfx_plane_flip(OOP_Class *cl, OOP_Object *bm);
+BOOL    vcgfx_plane_overlay_shown(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm);
 
 #endif /* _VIDEOCOREGFX_CLASS_H */

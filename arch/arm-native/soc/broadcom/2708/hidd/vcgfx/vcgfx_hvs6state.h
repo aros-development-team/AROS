@@ -7,6 +7,7 @@
 */
 
 #include <exec/types.h>
+#include <oop/oop.h>
 
 #include "vcgfx_edid.h"
 
@@ -47,6 +48,18 @@ struct vc4_hvs6_state
     /* FRCNT at the last overlay write, and whether a wait is pending */
     ULONG   h6_OvlFrame;
     BOOL    h6_OvlLatchDue;
+
+    /* Screens as planes: the overlay's source, x/y relative to the
+     * screen it belongs to; three lists so one is always free to write;
+     * UPM between h6_UpmFloor and h6_UpmTop (bytes) for the screens. */
+    OOP_Object *h6_OvlOwner;
+    ULONG   h6_OvlPhys;
+    ULONG   h6_OvlW, h6_OvlH;
+    LONG    h6_OvlX, h6_OvlY;
+    ULONG   h6_PlList[3];       /* word offsets from h6_ListBase, 0 = none */
+    ULONG   h6_PlLast;          /* the one last written to DISPLIST */
+    ULONG   h6_UpmTop;
+    ULONG   h6_UpmFloor;
 
     /* The firmware's boot mode on HDMI0, captured before anything was
      * touched (vcgfx_hvs6_mode.c). Switching back to its size restores
