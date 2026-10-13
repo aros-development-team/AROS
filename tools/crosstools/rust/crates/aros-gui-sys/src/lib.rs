@@ -18,6 +18,7 @@ pub const AROS_GUI_FR_DRAWERS: c_int = 2;
 pub const IDCMP_NEWSIZE: u32 = 1 << 1;
 pub const IDCMP_MOUSEBUTTONS: u32 = 1 << 3;
 pub const IDCMP_MOUSEMOVE: u32 = 1 << 4;
+pub const IDCMP_DELTAMOVE: u32 = 1 << 20;
 pub const IDCMP_CLOSEWINDOW: u32 = 1 << 9;
 pub const IDCMP_RAWKEY: u32 = 1 << 10;
 pub const IDCMP_ACTIVEWINDOW: u32 = 1 << 18;
@@ -97,6 +98,8 @@ extern "C" {
     pub fn aros_gui_window_focus(window: usize);
     pub fn aros_gui_window_is_active(window: usize) -> c_int;
     pub fn aros_gui_window_next_message(window: usize, out: *mut aros_gui_message) -> c_int;
+    pub fn aros_gui_window_set_delta_move(window: usize, on: c_int);
+    pub fn aros_gui_window_delta_move(window: usize) -> c_int;
 
     pub fn aros_gui_map_rawkey(code: u16, qualifier: u16, buf: *mut c_char, len: c_int) -> c_int;
 
@@ -128,6 +131,15 @@ extern "C" {
     pub fn aros_gui_string_free(text: *mut c_char);
 
     pub fn aros_gui_gl_create(window: usize, alpha: c_int, depth: c_int, stencil: c_int) -> usize;
+    pub fn aros_gui_gl_create_profile(
+        window: usize,
+        alpha: c_int,
+        depth: c_int,
+        stencil: c_int,
+        core: c_int,
+        major: c_int,
+        minor: c_int,
+    ) -> usize;
     pub fn aros_gui_gl_destroy(ctx: usize);
     pub fn aros_gui_gl_make_current(ctx: usize);
     pub fn aros_gui_gl_current() -> usize;

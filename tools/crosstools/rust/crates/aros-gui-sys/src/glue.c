@@ -272,11 +272,38 @@ int aros_gui_window_next_message(uintptr_t handle, struct aros_gui_message *out)
     out->class = msg->Class;
     out->code = msg->Code;
     out->qualifier = msg->Qualifier;
-    out->mouse_x = msg->MouseX - window->BorderLeft;
-    out->mouse_y = msg->MouseY - window->BorderTop;
+    if (msg->Class == IDCMP_MOUSEMOVE && (window->IDCMPFlags & IDCMP_DELTAMOVE)) {
+        /* A movement, not a position. */
+        out->mouse_x = msg->MouseX;
+        out->mouse_y = msg->MouseY;
+    } else {
+        out->mouse_x = msg->MouseX - window->BorderLeft;
+        out->mouse_y = msg->MouseY - window->BorderTop;
+    }
 
     ReplyMsg((struct Message *)msg);
     return 1;
+}
+
+void aros_gui_window_set_delta_move(uintptr_t handle, int on)
+{
+    struct Window *window = (struct Window *)handle;
+    ULONG flags = window->IDCMPFlags;
+
+    if (on)
+        flags |= IDCMP_DELTAMOVE;
+    else
+        flags &= ~IDCMP_DELTAMOVE;
+    /* Non-zero flags on an open port only replace the flags. */
+    if (flags != window->IDCMPFlags)
+        ModifyIDCMP(window, flags);
+}
+
+int aros_gui_window_delta_move(uintptr_t handle)
+{
+    struct Window *window = (struct Window *)handle;
+
+    return (window->IDCMPFlags & IDCMP_DELTAMOVE) != 0;
 }
 
 int aros_gui_map_rawkey(uint16_t code, uint16_t qualifier, char *buf, int len)
