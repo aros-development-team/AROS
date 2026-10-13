@@ -243,6 +243,20 @@ static OOP_Object *vc4_screen_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New
         data->bpp         = 32;
         data->disp        = -1;
         data->scan[0]     = sb;
+        data->modew       = width;
+        data->modeh       = height;
+        if (sync)
+        {
+            IPTR mw = 0, mh = 0;
+
+            OOP_GetAttr(sync, aHidd_Sync_HDisp, &mw);
+            OOP_GetAttr(sync, aHidd_Sync_VDisp, &mh);
+            if (mw && mh)
+            {
+                data->modew = mw;
+                data->modeh = mh;
+            }
+        }
     }
 
     D(bug("[VideoCoreGfx] OffBitMap::New: %ux%u screen @ 0x%p, pitch %u\n",

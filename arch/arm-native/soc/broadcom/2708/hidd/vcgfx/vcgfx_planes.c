@@ -6,9 +6,10 @@
     graphics.library hands ShowViewPorts() the screens front to back and
     moves one by setting LeftEdge/TopEdge on its bitmap. Each screen bitmap
     lives in scanout memory, so showing or dragging it only rewrites the
-    display list - no blit, and no mode set unless the frontmost screen's
-    mode differs. The fb stays allocated for the firmware's sake and, kept
-    black, is the backdrop where no screen covers.
+    display list - no blit. Every screen scales to fill the display as its
+    own mode would, so the display keeps its timing while screens come and
+    go. The fb stays allocated for the firmware's sake and, kept black, is
+    the backdrop where no screen covers.
 */
 
 #define DEBUG 0
@@ -258,8 +259,11 @@ ULONG vcgfx_show_viewports(struct VideoCoreGfx_staticdata *xsd,
         n++;
     }
 
-    /* The frontmost screen sets the display mode. */
-    if (n && xsd->vcsd_FBObj)
+    /* A mode set blanks the display, so the timing follows the front
+     * screen only when it is alone, or too big to scale down into it. */
+    if (n && xsd->vcsd_FBObj
+        && ((n == 1) || !vc4_hvs5_plane_fits(xsd, shown[0].pl_Data->modew,
+                                             shown[0].pl_Data->modeh)))
     {
         IPTR mode = vHidd_ModeID_Invalid, fbmode = vHidd_ModeID_Invalid;
 
