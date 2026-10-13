@@ -22,7 +22,9 @@
 static void WriteClockData(struct BattClockBase *BattClockBase,
                            struct ClockData *date)
 {
-    UBYTE buf[2 + M41T11_CLOCK_REGS];
+    UBYTE buf[1 + M41T11_CLOCK_REGS];
+    UBYTE secs = M41T11_REG_SECS;
+    UBYTE st[2];
 
     if (!BattClockBase->bb_Bus)
         return;
@@ -40,28 +42,46 @@ static void WriteClockData(struct BattClockBase *BattClockBase,
     }
 
     /*
-     * Written as one transfer starting at register 0, so the part takes
-     * the whole time at once instead of being caught part way through
-     * being changed. The fraction of a second goes back to zero, which
-     * is as close to "now" as the caller's whole seconds can get.
+     * The datasheet asks for ST to be set and then cleared to guarantee
+     * oscillator start-up after a power-up. The block write below clears
+     * it, so this is the first half of that sequence, and it is only
+     * done when the oscillator is stopped - a running clock does not
+     * want interrupting.
      */
-    buf[0] = M41T11_REG_HSECS;
-    buf[1] = 0;
+    if (BattClock_I2CWriteRead(BattClockBase, &secs, 1, st, 1) &&
+        (st[0] & M41T11_SECS_ST))
+    {
+        D(bug("[BattClock] kick-starting a stopped oscillator\n"));
+
+        st[0] = M41T11_REG_SECS;
+        st[1] = M41T11_SECS_ST;
+
+        BattClock_I2CWrite(BattClockBase, st, 2);
+    }
+
+    /*
+     * One transfer from the seconds, so the part takes the whole time at
+     * once rather than being caught part way through a change. The
+     * register past the year is the control byte and is left out.
+     */
+    buf[0] = M41T11_REG_SECS;
 
     /* ST left clear, so the oscillator runs on from here */
-    buf[2] = m41t11_ToBCD(date->sec);
-    buf[3] = m41t11_ToBCD(date->min);
-    buf[4] = m41t11_ToBCD(date->hour);
+    buf[1] = m41t11_ToBCD(date->sec);
+    buf[2] = m41t11_ToBCD(date->min);
+
+    /* CEB and CB left clear too - m41t11.h fixes the century instead */
+    buf[3] = m41t11_ToBCD(date->hour);
 
     /*
      * The part never interprets the weekday register, it only counts it
      * 1 to 7, so all that matters is that it agrees with the date.
      */
-    buf[5] = (date->wday + 1) & M41T11_WDAY_MASK;
+    buf[4] = (date->wday + 1) & M41T11_WDAY_MASK;
 
-    buf[6] = m41t11_ToBCD(date->mday);
-    buf[7] = m41t11_ToBCD(date->month);
-    buf[8] = m41t11_ToBCD(date->year - M41T11_CENTURY);
+    buf[5] = m41t11_ToBCD(date->mday);
+    buf[6] = m41t11_ToBCD(date->month);
+    buf[7] = m41t11_ToBCD(date->year - M41T11_CENTURY);
 
     if (!BattClock_I2CWrite(BattClockBase, buf, sizeof(buf)))
     {

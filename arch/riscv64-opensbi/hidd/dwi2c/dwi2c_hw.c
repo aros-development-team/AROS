@@ -278,12 +278,14 @@ static BOOL dwi2c_write(struct dwi2c_ctrl *ctrl, const UBYTE *buf,
             {
                 D(bug("[DWI2C:HW] %s: abort %08x writing byte %u\n",
                       ctrl->name, abrt, i);)
+                ctrl->lastFail = abrt;
                 return FALSE;
             }
 
             if (spins >= DWI2C_SPIN_LIMIT)
             {
                 D(bug("[DWI2C:HW] %s: tx FIFO never drained\n", ctrl->name);)
+                ctrl->lastFail = DWI2C_FAIL_TXSTUCK;
                 return FALSE;
             }
         }
@@ -341,6 +343,7 @@ static BOOL dwi2c_read(struct dwi2c_ctrl *ctrl, UBYTE *buf, ULONG len,
         {
             D(bug("[DWI2C:HW] %s: abort %08x after %u of %u bytes read\n",
                   ctrl->name, abrt, got, len);)
+            ctrl->lastFail = abrt;
             return FALSE;
         }
 
@@ -350,6 +353,7 @@ static BOOL dwi2c_read(struct dwi2c_ctrl *ctrl, UBYTE *buf, ULONG len,
         {
             D(bug("[DWI2C:HW] %s: read stalled after %u of %u bytes\n",
                   ctrl->name, got, len);)
+            ctrl->lastFail = DWI2C_FAIL_RXSTALL;
             return FALSE;
         }
     }
@@ -371,11 +375,14 @@ static BOOL dwi2c_waitstop(struct dwi2c_ctrl *ctrl)
         {
             D(bug("[DWI2C:HW] %s: abort %08x waiting for stop\n",
                   ctrl->name, abrt);)
+            ctrl->lastFail = abrt;
             return FALSE;
         }
     }
 
     D(bug("[DWI2C:HW] %s: no stop condition\n", ctrl->name);)
+
+    ctrl->lastFail = DWI2C_FAIL_NOSTOP;
 
     return FALSE;
 }
@@ -409,6 +416,8 @@ BOOL DWI2C_HWTransfer(struct dwi2c_ctrl *ctrl, UWORD address,
               address);)
         return FALSE;
     }
+
+    ctrl->lastFail = DWI2C_FAIL_NONE;
 
     if (!dwi2c_program(ctrl, address))
         return FALSE;
