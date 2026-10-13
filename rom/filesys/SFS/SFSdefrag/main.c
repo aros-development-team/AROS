@@ -239,6 +239,12 @@ AROS_UFH3(void, start_function,
                     ds=(struct DefragmentStep *)((ULONG *)ds + 2 + ds->length);
                 }
             }
+            else
+            {
+                /* Capture/report IoErr before UI calls can overwrite it. */
+                ShowError(app, NULL, "Defragmentation step failed", TRUE);
+                break;
+            }
             updateBitmap(clrlo, clrhi);
             updateBitmap(setlo, sethi);
             DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs);
