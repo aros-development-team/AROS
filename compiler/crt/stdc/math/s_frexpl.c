@@ -35,8 +35,59 @@
 #error "Unsupported long double format"
 #endif
 
-long double
-frexpl(long double x, int *ex)
+/****************************************************************************
+    NAME */
+        long double frexpl(
+
+/*  SYNOPSIS */
+        long double x,
+        int *ex)
+
+/*  FUNCTION
+        Split x into a signed binary fraction and an integer exponent.
+        For finite nonzero x, the returned fraction m and stored exponent e
+        satisfy x = m * 2^e, with 0.5 <= |m| < 1. Subnormal inputs are
+        normalized before the fraction and exponent are extracted.
+
+    INPUTS
+        x - Long double value to decompose.
+        ex - Non-NULL pointer to a writable int for the exponent. Required
+            even when x is zero or nonfinite. The pointer is not retained.
+
+    RESULT
+        The signed fraction in long double precision. A zero input returns
+        the same signed zero and stores exponent 0. An infinite or NaN
+        input returns that value; see NOTES for the exponent output.
+        There is no separate error sentinel.
+
+    NOTES
+        Include <math.h>. The exponent is a power of two, not a decimal
+        exponent. For example, x = 12 yields fraction 0.75 and exponent 4.
+
+        The call writes through ex but retains no application storage,
+        allocates nothing, performs no I/O or waiting, and does not set
+        or clear errno. NULL is not a supported exponent output: this
+        function does not provide a discard-output or size-query mode.
+
+        For infinity or NaN, the separate long double implementation does
+        not write *ex. The previous int value remains; it must not be used
+        as an exponent for the nonfinite result. Initialize the output if
+        its unchanged value will be inspected after such a call.
+
+        The separate source requires LDBL_MAX_EXP == 0x4000 and is selected
+        by the build for supported extended-precision targets. Where long
+        double and double have equal precision, the double source supplies
+        the frexpl alias. That alias stores exponent 0 for nonfinite inputs.
+        Do not rely on one nonfinite exponent value across AROS targets.
+
+        No NaN payload, signaling-NaN or trap-behavior guarantee is made
+        here. The value contract assumes the target's supported floating-
+        point representation and ordinary subnormal handling.
+
+    SEE ALSO
+        frexp(), frexpf(), ldexpl()
+
+*****************************************************************************/
 {
 	union IEEEl2bits u;
 
