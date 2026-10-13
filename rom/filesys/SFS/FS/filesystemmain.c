@@ -1495,57 +1495,73 @@ sfsSecBeginPacket(globals->packet);
                                                 UBYTE *src = sl->string, ch;
                                                 UBYTE *s = globals->string;
 
-                                                while((*s++ = *path++) != 0) {    // Work-around for bug in ixemul, which sometimes provides the same pointer for dp_Arg2 (path) and dp_Arg3 (soft-link buffer)
-                                                }
+                                                ULONG capacity = globals->bytes_block - sizeof(struct fsSoftLink);
+                                                ULONG suffixlength = 0;
 
-                                                s = globals->string;
-
-                                                _DEBUG("ACTION_READ_LINK: length = %ld, sl->string = '%s', path = '%s'\n", length, sl->string, s);
-
-                                                /* cb is no longer valid at this point. */
-
-                                                /* Check if link target is an absolute path */
-
-                                                while((ch = *src++) != '\0') {
-                                                    if(ch == ':')
-                                                        break;
-                                                }
-                                                src = sl->string;
-
-                                                /* If target is a relative path, put path preceding
-                                                   link into buffer so that result is relative to
-                                                   lock passed in */
-
-                                                if(ch != ':') {
-                                                    while(prefix != p && length-- > 0) {
-                                                        *dest++ = *prefix++;
-                                                    }
-                                                }
-
-                                                /* Copy link target to buffer */
-
-                                                while(length-- > 0 && (*dest++ = *src++) != 0) {
-                                                }
-                                                dest--;
-                                                length++;
-
-                                                /* Ensure we don't insert an extraneous slash */
-
-                                                if(length != globals->packet->dp_Arg4 && *(dest - 1) == '/') {
-                                                    *--dest = '\0';
-                                                    length++;
-                                                }
-                                                if(*(dest - 1) == ':' && *s == '/') {
-                                                    s++;
-                                                }
-
-                                                /* Append remainder of original path */
-
-                                                while(length-- > 0 && (*dest++ = *s++) != 0) {
-                                                }
-
-                                                if(length < 0) {
+                                                if(length <= 0) {
                                                     errorcode = ERROR_LINE_TOO_LONG;
+                                                } else if(memchr(src, 0, capacity) == 0) {
+                                                    errorcode = ERROR_NOT_A_DOS_DISK;
+                                                }
+                                                while(suffixlength < sizeof(globals->string) && path[suffixlength] != 0) {
+                                                    suffixlength++;
+                                                }
+                                                if(suffixlength == sizeof(globals->string)) {
+                                                    errorcode = ERROR_LINE_TOO_LONG;
+                                                }
+                                                if(errorcode == 0) {
+                                                    /* The path and output may alias, as with ixemul. */
+                                                    CopyMem(path, s, suffixlength + 1);
+
+                                                    s = globals->string;
+
+                                                    _DEBUG("ACTION_READ_LINK: length = %ld, sl->string = '%s', path = '%s'\n", length, sl->string, s);
+
+                                                    /* cb is no longer valid at this point. */
+
+                                                    /* Check if link target is an absolute path */
+
+                                                    while((ch = *src++) != '\0') {
+                                                        if(ch == ':')
+                                                            break;
+                                                    }
+                                                    src = sl->string;
+
+                                                    /* If target is a relative path, put path preceding
+                                                       link into buffer so that result is relative to
+                                                       lock passed in */
+
+                                                    if(ch != ':') {
+                                                        while(prefix != p && length-- > 0) {
+                                                            *dest++ = *prefix++;
+                                                        }
+                                                    }
+
+                                                    /* Copy link target to buffer */
+
+                                                    while(length-- > 0 && (*dest++ = *src++) != 0) {
+                                                    }
+                                                    dest--;
+                                                    length++;
+
+                                                    /* Ensure we don't insert an extraneous slash */
+
+                                                    if(dest > (UBYTE *)globals->packet->dp_Arg3 && length != globals->packet->dp_Arg4 && *(dest - 1) == '/') {
+                                                        *--dest = '\0';
+                                                        length++;
+                                                    }
+                                                    if(dest > (UBYTE *)globals->packet->dp_Arg3 && *(dest - 1) == ':' && *s == '/') {
+                                                        s++;
+                                                    }
+
+                                                    /* Append remainder of original path */
+
+                                                    while(length-- > 0 && (*dest++ = *s++) != 0) {
+                                                    }
+
+                                                    if(length < 0) {
+                                                        errorcode = ERROR_LINE_TOO_LONG;
+                                                    }
                                                 }
                                             }
                                         }
