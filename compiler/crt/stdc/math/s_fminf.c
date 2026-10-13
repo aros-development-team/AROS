@@ -30,8 +30,52 @@ __FBSDID("$FreeBSD: src/lib/msun/src/s_fminf.c,v 1.1 2004/06/30 07:04:01 das Exp
 
 #include "fpmath.h"
 
-float
-fminf(float x, float y)
+/****************************************************************************
+    NAME */
+        float fminf(
+
+/*  SYNOPSIS */
+        float x,
+        float y)
+
+/*  FUNCTION
+        Return the lesser of x and y. A single NaN is treated as missing
+        data: return the other argument. The implementation classifies
+        NaNs before comparing values and handles opposite signs explicitly.
+
+    INPUTS
+        x - First float value.
+        y - Second float value.
+            Finite values, signed zeros, infinities and NaNs are accepted.
+
+    RESULT
+        The lesser numerical value when neither argument is NaN.
+        For a pair containing +0 and -0, return -0, regardless of argument
+        order. Equal non-NaN arguments with the same sign select y.
+        If exactly one argument is NaN, return the non-NaN argument.
+        If both arguments are NaN, return a NaN. There is no error sentinel.
+
+    NOTES
+        Include <math.h>. Arguments and results are values; no application
+        storage is retained or allocated. The call performs no I/O or
+        waiting and does not set or clear errno.
+
+        This operation is not interchangeable with a comparison expression
+        such as x < y ? x : y: that expression has different behavior for
+        NaNs and opposite-signed zeros.
+
+        When both inputs are NaNs, this implementation returns y without
+        an arithmetic combination. This is not a guarantee of NaN payload
+        preservation or unchanged exception state across the target ABI.
+
+        Signaling-NaN handling and enabled floating-point traps depend on
+        the target and its floating-point environment. A NaN result alone
+        is not evidence of an errno error.
+
+    SEE ALSO
+        fmaxf(), fmin(), fminl()
+
+*****************************************************************************/
 {
 	union IEEEf2bits u[2];
 
