@@ -138,13 +138,19 @@ void updateBitmap(ULONG first, ULONG last)
     if(bitmap == NULL || blocks_inone == 0)
         return;
 
-    for (cnt=first/blocks_inone; cnt <= (last+blocks_inone-1)/blocks_inone; cnt++)
+    /* Ranges are [first,last), as supplied by the handler's MOVE steps. */
+    if(first >= last || first >= blocks_total)
+        return;
+    if(last > blocks_total)
+        last = blocks_total;
+
+    for (cnt=first/blocks_inone; cnt <= (last-1)/blocks_inone; cnt++)
     {
         ULONG x,y,pen=pen3;
         y = (cnt / 166) * 3;
         x = (cnt % 166) * 3;
         
-        if ((cnt+1) * blocks_inone > blocks_total) blck = blocks_total - cnt*blocks_inone;
+        blck = MIN(blocks_inone, blocks_total - cnt*blocks_inone);
         
         if (bmtstz(bitmap, cnt*blocks_inone, blck))
             pen=pen2;
