@@ -635,7 +635,8 @@ void setiorequest(struct fsIORequest *fsi, UWORD action, UBYTE *buffer, ULONG bl
     }
 }
 
-/* A zero device error is only success when the whole request completed. */
+/* Rebuild each request before retrying: io_Actual is also the high offset
+   input for TD64/NSD and is overwritten by the device on completion. */
 static LONG transferrequest(UWORD action, UBYTE *buffer, ULONG blockoffset, ULONG blocks)
 {
     LONG errorcode;
@@ -643,8 +644,8 @@ static LONG transferrequest(UWORD action, UBYTE *buffer, ULONG blockoffset, ULON
     starttimeout();
     globals->retries=MAX_RETRIES;
 
-    setiorequest(&globals->fsioreq, action, buffer, blockoffset, blocks);
     for(;;) {
+        setiorequest(&globals->fsioreq, action, buffer, blockoffset, blocks);
         globals->fsioreq.scsicmd.scsi_Actual=0;
         errorcode=DoIO((struct IORequest *)globals->fsioreq.ioreq);
 
