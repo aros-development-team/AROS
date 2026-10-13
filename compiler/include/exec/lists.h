@@ -2,7 +2,7 @@
 #define EXEC_LISTS_H
 
 /*
-    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
         
     Structures and macros for exec lists.
@@ -40,8 +40,7 @@ struct MinList
 };
 #else
 /* Normal list */
-struct __mayalias List;
-struct List
+struct __mayalias List
 {
     struct Node * lh_Head,
                 * lh_Tail;
@@ -55,8 +54,7 @@ struct List
 };
 
 /* Minimal list */
-struct __mayalias MinList;
-struct MinList
+struct __mayalias MinList
 {
     struct MinNode * mlh_Head,
                    * mlh_Tail;

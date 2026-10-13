@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #ifndef EXEC_NODES_H
@@ -27,8 +27,9 @@
 	       Structures
 **************************************/
 
-struct __mayalias Node;
-struct Node
+/* The attribute must be on the definition: gcc ignores it on a forward declaration,
+   and the list macros rely on it to access MinList/MinNode objects as List/Node. */
+struct __mayalias Node
 {
     struct Node * ln_Succ,
 		* ln_Pred;
@@ -37,8 +38,7 @@ struct Node
     char	* ln_Name;
 };
 
-struct __mayalias MinNode;
-struct MinNode
+struct __mayalias MinNode
 {
     struct MinNode * mln_Succ,
 		   * mln_Pred;
