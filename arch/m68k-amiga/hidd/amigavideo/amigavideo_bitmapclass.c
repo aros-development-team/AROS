@@ -73,7 +73,7 @@ OOP_Object *AmigaVideoBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
         modeid = modeidtag->ti_Data;
         if (modeid & HAM_KEY)
         {
-            bug("[AmigaVideo:Bitmap] %s: HAM mode requested\n", __func__);
+            D(bug("[AmigaVideo:Bitmap] %s: HAM mode requested\n", __func__));
             hamFlag = TRUE;
         }
     }

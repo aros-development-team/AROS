@@ -1,8 +1,8 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
-#define DEBUG 1
+#define DEBUG 0
 
 #include <aros/debug.h>
 #include <exec/types.h>
