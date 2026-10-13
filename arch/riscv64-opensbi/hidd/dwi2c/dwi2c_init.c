@@ -29,6 +29,7 @@
 
 #include LC_LIBDEFS_FILE
 #include "dwi2c_intern.h"
+#include "dp1000_pinctrl.h"
 
 /*
  * Nothing in this file runs with a class pointer in scope, so the
@@ -142,6 +143,10 @@ static BOOL dwi2c_add(struct dwi2c_staticdata *psd, fdt_node_t node)
         D(bug("[DWI2C] %s has no registers\n", FDT_NodeName(node));)
         return FALSE;
     }
+
+    /* Switch the pads to this controller before anything reads it: the
+       firmware only sets up the buses it uses itself */
+    DP1000_PinctrlApply(KernelBase, node);
 
     ctrl = &psd->ctrl[unit];
 
