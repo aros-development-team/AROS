@@ -10,7 +10,7 @@ include $(SRCDIR)/config/aros.cfg
 # hidd.i2c.device; see <hidd/dwi2c.h>.
 #
 
-FILES := dwi2c_init dwi2c_class dwi2c_hw
+FILES := dwi2c_init dwi2c_class dwi2c_hw dp1000_pinctrl
 
 INCLUDE_FILES := dwi2c.h
 

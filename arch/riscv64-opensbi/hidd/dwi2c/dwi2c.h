@@ -88,6 +88,13 @@ enum
      * having to reproduce this driver's enumeration order.
      */
     aoHidd_I2C_DW_MMIOBase,
+    /*
+     * Why the last transfer on this bus failed: 0 when it worked,
+     * otherwise the controller's IC_TX_ABRT_SOURCE or one of the
+     * DWI2C_FAIL_* codes. Lets a caller tell a plain address NOACK from
+     * a bus that is not working at all. [..G]
+     */
+    aoHidd_I2C_DW_LastFail,
 
     num_Hidd_I2C_DW_Attrs
 };
@@ -95,6 +102,15 @@ enum
 #define aHidd_I2C_DW_Unit   (HiddI2CDWAttrBase + aoHidd_I2C_DW_Unit)
 #define aHidd_I2C_DW_MMIOBase \
                             (HiddI2CDWAttrBase + aoHidd_I2C_DW_MMIOBase)
+#define aHidd_I2C_DW_LastFail \
+                            (HiddI2CDWAttrBase + aoHidd_I2C_DW_LastFail)
+
+/*
+ * The DWI2C_FAIL_* half of aHidd_I2C_DW_LastFail. Below these the value
+ * is an IC_TX_ABRT_SOURCE, whose bit 0 is "no device acknowledged".
+ */
+#define HIDD_I2C_DW_NOACK       0x0001
+#define HIDD_I2C_DW_FAIL_FIRST  0x10000000
 
 #define IS_I2CDW_ATTR(attr, idx) \
     (((idx) = (attr) - HiddI2CDWAttrBase) < num_Hidd_I2C_DW_Attrs)
