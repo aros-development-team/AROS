@@ -19,6 +19,7 @@
 */
 
 #include <exec/types.h>
+#include <oop/oop.h>
 
 /* ------------------------------------------------------------------ */
 /* HVS: bus 0x7E400000                                                 */
@@ -270,6 +271,12 @@ struct vc4_hvs_state
     ULONG       hvs_OvlWords;               /* entry length in the list */
     ULONG       hvs_OvlLBM;                 /* line-buffer base, scaled only */
     ULONG       hvs_FBLBM;                  /* LBM ceiling left by the fb plane */
+    OOP_Object *hvs_OvlOwner;               /* HVS5: screen bitmap ovl x/y are in */
+
+    /* HVS5: a list waiting for the vblank interrupt to repoint at it, and
+     * the last one written to DISPLIST - neither may be rewritten. */
+    volatile ULONG  hvs_PendList;
+    volatile ULONG  hvs_LastList;
 
     /* Filter kernel for scaled planes, copied from the firmware's at
      * takeover; hvs_KernelOK gates scaled-overlay support. */
@@ -333,7 +340,7 @@ void vc4_hvs_update_cursor(struct VideoCoreGfx_staticdata *xsd);
 struct vc4gfx_overlay;
 struct vc4gfx_vblank;
 BOOL vc4_hvs_overlay(struct VideoCoreGfx_staticdata *xsd,
-                     const struct vc4gfx_overlay *ovl);
+                     const struct vc4gfx_overlay *ovl, OOP_Object *owner);
 
 /* Wait for the last armed flip/overlay to latch (VC4GFX_OVL_NOWAIT). */
 void vc4_hvs_latch_wait(struct VideoCoreGfx_staticdata *xsd);

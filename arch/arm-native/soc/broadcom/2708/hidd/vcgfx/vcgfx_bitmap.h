@@ -70,6 +70,14 @@ struct Box
     int x2, y2;
 };
 
+/* A page of scanout memory (vcgfx_scanout_alloc), 4K aligned. */
+struct vcgfx_scanbuf
+{
+    APTR                sb_Raw;
+    ULONG               sb_RawSize;
+    UBYTE              *sb_Pixels;
+};
+
 struct BitmapData {
 	APTR                data;
 	UBYTE               *VideoData;             /* Pointing to video data */
@@ -83,6 +91,8 @@ struct BitmapData {
 	struct MouseData    *mouse;
 	ULONG               gpuhandle;              /* Offscreen: firmware mem handle (0 = RAM-backed) */
 	ULONG               dispwidth;              /* Mode width (width is 16px-aligned) */
+	struct vcgfx_scanbuf scan[2];               /* Offscreen screen pages, [front] = VideoData */
+	UBYTE               front;
 };
 
 #endif /* _VIDEOCOREGFX_BITMAP_H */

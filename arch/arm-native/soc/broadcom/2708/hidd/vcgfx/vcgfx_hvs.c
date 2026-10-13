@@ -935,7 +935,7 @@ BOOL vc4_hvs_flip_page(struct VideoCoreGfx_staticdata *xsd, ULONG page_phys)
 }
 
 BOOL vc4_hvs_overlay(struct VideoCoreGfx_staticdata *xsd,
-                     const struct vc4gfx_overlay *ovl)
+                     const struct vc4gfx_overlay *ovl, OOP_Object *owner)
 {
     struct vc4_hvs_state *st = &xsd->vcsd_HVS;
     ULONG dw, dh;
@@ -945,7 +945,7 @@ BOOL vc4_hvs_overlay(struct VideoCoreGfx_staticdata *xsd,
     if (!hvs_hw_known(xsd))
     {
         if (hvs_have_hvs5(xsd))
-            return vc4_hvs5_overlay(xsd, ovl);
+            return vc4_hvs5_overlay(xsd, ovl, owner);
         if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
             return vc4_hvs6_overlay(xsd, ovl);
         return FALSE;
