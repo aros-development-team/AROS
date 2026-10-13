@@ -66,6 +66,7 @@ BOOL isPointerInSeglist(APTR pointer,BPTR seglist,ULONG minsize);
 
 	STRPTR addr;
 	ULONG size;
+	ULONG skip;
 
 	seg=seglist=LoadSeg(name);
 
@@ -86,9 +87,24 @@ BOOL isPointerInSeglist(APTR pointer,BPTR seglist,ULONG minsize);
 			continue;
 		}
 
+		addr+=sizeof(BPTR)+sizeof(ULONG);
+		size-=sizeof(BPTR)+sizeof(ULONG);
+
+		/* MidiDeviceData is aligned in memory, but a hunk's data need not
+		   start aligned: the hunk header is 12 bytes on 64-bit targets,
+		   and the arena container's data holds sections placed at aligned
+		   addresses. Stepping from an unaligned start would never meet
+		   the structure, so start at the first aligned address. */
+		skip=(AROS_PTRALIGN-((IPTR)addr&(AROS_PTRALIGN-1)))&(AROS_PTRALIGN-1);
+		if(size<skip){
+			seg=*(BPTR *)BADDR(seg);
+			continue;
+		}
+		addr+=skip;
+		size-=skip;
+
 		for(
-			addr+=sizeof(BPTR)+sizeof(ULONG),
-			  size-=sizeof(BPTR)+sizeof(ULONG);		// Is this a bug? (- -> + ?)
+			;
 			size>=sizeof(struct MidiDeviceData);
 			size-=AROS_PTRALIGN,addr+=AROS_PTRALIGN
 		){
