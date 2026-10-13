@@ -80,7 +80,8 @@ void notify_mousemove_screensandwindows(struct IntuitionBase * IntuitionBase)
         if (GetPrivScreen(scr)->IMonitorNode != GetPrivIBase(IntuitionBase)->ActiveMonitor)
             continue;
 
-        if (GetPrivScreen(scr)->IMonitorNode)
+        if ((GetPrivScreen(scr)->SpecialFlags & SF_ScaledCoords)
+            && GetPrivScreen(scr)->IMonitorNode)
         {
             /* In the screen's own pixels, which need not be the display's. */
             UWORD sx, sy;
@@ -1462,7 +1463,8 @@ WORD ScreenTopInDisplay(struct Screen *scr, struct IntuitionBase *IntuitionBase)
         .DispY      = &dy
     };
 
-    if ((scr->TopEdge < 0) || !GetPrivScreen(scr)->IMonitorNode)
+    if (!(GetPrivScreen(scr)->SpecialFlags & SF_ScaledCoords)
+        || (scr->TopEdge < 0) || !GetPrivScreen(scr)->IMonitorNode)
         return scr->TopEdge * int_MouseScaleY(scr);
 
     DoMethodA(GetPrivScreen(scr)->IMonitorNode, (Msg)&coordmsg);

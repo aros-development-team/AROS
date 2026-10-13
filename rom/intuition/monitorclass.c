@@ -1169,9 +1169,9 @@ void MonitorClass__MM_GetDisplayBounds(Class *cl, Object *obj, struct msGetDispl
             data->FBBounds.MinY = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinY;
             data->FBBounds.MaxY = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxY;
 
-            /* The clip is in the screen's pixels; a driver may scale the
-             * screen into a display of another mode. */
-            if (IS_HIDD_BM(scr->RastPort.BitMap))
+            /* The clip is in the screen's pixels, which a scaling driver
+             * fits to a display of another mode. */
+            if (GetPrivScreen(scr)->SpecialFlags & SF_ScaledCoords)
             {
                 UWORD w, h;
                 struct msScreenToDisplayCoords coordmsg =
@@ -1268,9 +1268,9 @@ void MonitorClass__MM_DisplayToScreenCoords(Class *cl, Object *obj, struct msDis
     struct IMonitorNode *data = INST_DATA(cl, obj);
     D(bug("[Monitor] %s(0x%p, %d, %d)\n", __func__, msg->Screen, msg->DispX, msg->DispY);)
 
-    /* The base class hook is the identity; a driver composing screens of
-     * different modes scales here. */
-    if (IS_HIDD_BM(msg->Screen->RastPort.BitMap))
+    /* A driver scaling screens of other modes converts here too. */
+    if ((data->dcsupported || (GetPrivScreen(msg->Screen)->SpecialFlags & SF_ScaledCoords))
+        && IS_HIDD_BM(msg->Screen->RastPort.BitMap))
     {
         struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
         OOP_MethodID HiddDisplayBase = GetPrivIBase(IntuitionBase)->ib_HiddDisplayBase;
@@ -1340,7 +1340,8 @@ void MonitorClass__MM_ScreenToDisplayCoords(Class *cl, Object *obj, struct msScr
     struct IMonitorNode *data = INST_DATA(cl, obj);
     D(bug("[Monitor] %s(0x%p, %d, %d)\n", __func__, msg->Screen, msg->DispX, msg->DispY);)
 
-    if (IS_HIDD_BM(msg->Screen->RastPort.BitMap))
+    if ((data->dcsupported || (GetPrivScreen(msg->Screen)->SpecialFlags & SF_ScaledCoords))
+        && IS_HIDD_BM(msg->Screen->RastPort.BitMap))
     {
         struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
         OOP_MethodID HiddDisplayBase = GetPrivIBase(IntuitionBase)->ib_HiddDisplayBase;
