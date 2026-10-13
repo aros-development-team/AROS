@@ -696,6 +696,30 @@ static LONG createobjecttagitem(struct CacheBuffer **io_cb, struct fsObject **io
      If this function returns no error it will return in io_cb & io_o the new object
      (prepared). */
 
+  /* Reject an oversized target before changing the parent or allocating
+     metadata.  A soft link occupies one block, including its terminator. */
+  {
+    struct TagItem *bitstag=FindTagItem(CO_BITS, tags);
+    struct TagItem *linktag=FindTagItem(CO_SOFTLINK, tags);
+
+    if(bitstag!=0 && (bitstag->ti_Data & (OTYPE_LINK|OTYPE_HARDLINK))==OTYPE_LINK && linktag!=0) {
+      ULONG capacity;
+      ULONG length;
+      UBYTE *target=(UBYTE *)linktag->ti_Data;
+
+      if(target==0 || globals->bytes_block<=sizeof(struct fsSoftLink)) {
+        return(ERROR_LINE_TOO_LONG);
+      }
+
+      capacity=globals->bytes_block-sizeof(struct fsSoftLink);
+      for(length=0; length<capacity && target[length]!=0; length++) {
+      }
+      if(length==capacity) {
+        return(ERROR_LINE_TOO_LONG);
+      }
+    }
+  }
+
   _XDEBUG(DEBUG_OBJECTS,"createobjecttags: Creating object '%s' in dir '%s'.\n",objectname,(*io_o)->name);
 
   if(BE2L((*io_o)->be_objectnode)!=RECYCLEDNODE || globals->internalrename!=FALSE) {
