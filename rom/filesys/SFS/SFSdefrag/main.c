@@ -134,7 +134,10 @@ void updateBitmap(ULONG first, ULONG last)
 {
     ULONG cnt;
     ULONG blck = blocks_inone;
-    
+
+    if(bitmap == NULL || blocks_inone == 0)
+        return;
+
     for (cnt=first/blocks_inone; cnt <= (last+blocks_inone-1)/blocks_inone; cnt++)
     {
         ULONG x,y,pen=pen3;
