@@ -143,8 +143,9 @@
 #define HVS5_PPF(src, dst)      ((1UL << 30) \
                                  | ((((ULONG)(src) << 16) / (ULONG)(dst)) << 8) \
                                  | 0x60)
-/* The ratio field is 16 bits, so a plane cannot shrink by more than 2:1. */
-#define HVS5_PPF_FITS(src, dst) ((((ULONG)(src) << 16) / (ULONG)(dst)) <= 0xffff)
+/* Measured lists only ever upscaled. Shrinking to 2/3 assumes the ratio
+ * field runs up to bit 24, as on VideoCore IV - unverified on HVS5. */
+#define HVS5_PPF_FITS(src, dst) ((((ULONG)(src) << 16) / (ULONG)(dst)) <= 0x18000)
 
 #define HVS5_LBM_TOP            0xbc00
 #define HVS5_LBM_BYTES(w)       ((ULONG)(w) * 8)
@@ -236,6 +237,9 @@ BOOL vc4_hvs5_overlay(struct VideoCoreGfx_staticdata *xsd,
  * The caller holds the mailbox lock. */
 BOOL vc4_hvs5_planes_ok(void);
 void vc4_hvs5_planes_commit(struct VideoCoreGfx_staticdata *xsd);
+
+/* Can a screen of a w x h mode scale to fill the current output? */
+BOOL vc4_hvs5_plane_fits(struct VideoCoreGfx_staticdata *xsd, ULONG w, ULONG h);
 
 /* HDMI0 mode setting (vcgfx_hvs5_mode.c). Capture records the firmware's
  * boot mode and decides whether any other can be set; restore puts it

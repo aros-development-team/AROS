@@ -417,6 +417,52 @@ ULONG MNAME_DISPLAY(ModeProperties)(OOP_Class *cl, OOP_Object *o, struct pHidd_D
     return len;
 }
 
+/* A screen that is a plane fills the display as its own mode would, so its
+ * pixels are the display's scaled by mode size over display mode size. */
+static BOOL vc4_screen_scale(OOP_Class *cl, OOP_Object *bm, ULONG *mw, ULONG *mh,
+                             ULONG *dw, ULONG *dh)
+{
+    struct VideoCoreGfx_staticdata *xsd = XSD(cl);
+    struct BitmapData *data;
+
+    if (!xsd->vcsd_PlanesMode || !bm
+        || (OOP_OCLASS(bm) != xsd->vcsd_VideoCoreGfxOffBMClass))
+        return FALSE;
+
+    data = OOP_INST_DATA(xsd->vcsd_VideoCoreGfxOffBMClass, bm);
+    *mw = data->modew;
+    *mh = data->modeh;
+    *dw = xsd->vcsd_HVS.hvs_SrcW;
+    *dh = xsd->vcsd_HVS.hvs_SrcH;
+    return *mw && *mh && *dw && *dh;
+}
+
+VOID MNAME_DISPLAY(DisplayToBMCoords)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_DisplayToBMCoords *msg)
+{
+    ULONG mw, mh, dw, dh;
+
+    if (!vc4_screen_scale(cl, msg->Target, &mw, &mh, &dw, &dh))
+    {
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        return;
+    }
+    *msg->TargetX = (ULONG)msg->DispX * mw / dw;
+    *msg->TargetY = (ULONG)msg->DispY * mh / dh;
+}
+
+VOID MNAME_DISPLAY(BMToDisplayCoords)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_BMToDisplayCoords *msg)
+{
+    ULONG mw, mh, dw, dh;
+
+    if (!vc4_screen_scale(cl, msg->Target, &mw, &mh, &dw, &dh))
+    {
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        return;
+    }
+    *msg->DispX = (ULONG)msg->TargetX * dw / mw;
+    *msg->DispY = (ULONG)msg->TargetY * dh / mh;
+}
+
 BOOL MNAME_DISPLAY(SetCursorShape)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_SetCursorShape *msg)
 {
     struct VideoCoreGfx_staticdata *xsd = XSD(cl);

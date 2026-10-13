@@ -93,6 +93,7 @@ struct BitmapData {
 	ULONG               dispwidth;              /* Mode width (width is 16px-aligned) */
 	struct vcgfx_scanbuf scan[2];               /* Offscreen screen pages, [front] = VideoData */
 	UBYTE               front;
+	ULONG               modew, modeh;           /* Screen: its mode's display size */
 };
 
 #endif /* _VIDEOCOREGFX_BITMAP_H */
