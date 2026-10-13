@@ -57,8 +57,11 @@ extern struct Hook proto_displayHook;
 /*--- Protocol-object list helpers (protocols.c) ----------------------------*/
 
 struct ProtoHandlerNode;
+struct FSHandlerNode;
 
 struct ProtoHandlerNode *ProtoHandler_ByID(UBYTE id);
+struct FSHandlerNode    *FSHandler_ByID(UBYTE id);
+struct FSHandlerNode    *FSHandler_ByIndex(ULONG n);
 struct ProtocolAddress  *ProtoAddr_Find(struct List *list, UBYTE id);
 struct ProtocolAddress  *ProtoAddr_FindOrAdd(struct List *list, UBYTE id);
 void                     ProtoAddr_FreeList(struct List *list);
@@ -72,6 +75,9 @@ void                     ProtoAddr_CopyList(struct List *dst, struct List *src);
 /* Init-only attributes (set in OM_NEW tags) */
 #define MUIA_PAWin_ProtocolName     (MUIB_PAWin | 0x0001) /* STRPTR  */
 #define MUIA_PAWin_Content          (MUIB_PAWin | 0x0002) /* Object* */
+#define MUIA_PAWin_TypeLabel        (MUIB_PAWin | 0x0005) /* STRPTR; label for the
+                                       name row - defaults to the protocol label,
+                                       mounted-share windows pass "Service Type" */
 
 /* Read-only attributes */
 #define MUIA_PAWin_UseButton        (MUIB_PAWin | 0x0003) /* Object* */

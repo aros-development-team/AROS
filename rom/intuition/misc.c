@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -407,3 +407,25 @@ void ReleaseSharedPointer(struct SharedPointer *pointer,
     }
     UnlockIBase(lock);
 }
+
+// TODO: Move to arch specific files.
+#ifdef __mc68000__
+/* See intuition_intern.h */
+UWORD int_MouseScaleX(const struct Screen *screen)
+{
+    if (screen && screen->RastPort.BitMap &&
+        !IS_HIDD_BM(screen->RastPort.BitMap) &&
+        !(screen->ViewPort.Modes & (HIRES | SUPERHIRES)))
+        return 2;
+    return 1;
+}
+
+UWORD int_MouseScaleY(const struct Screen *screen)
+{
+    if (screen && screen->RastPort.BitMap &&
+        !IS_HIDD_BM(screen->RastPort.BitMap) &&
+        !(screen->ViewPort.Modes & LACE))
+        return 2;
+    return 1;
+}
+#endif

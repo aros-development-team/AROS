@@ -246,7 +246,7 @@ LONG checkLine(ShellState *ss, Buffer *in, Buffer *out, BOOL echo)
                 tmpchr = out->buf[out->len - 1];
                 out->buf[out->len - 1] = 0;
             }
-            bug("[Shell] %s %s\n", ss->command + 2, out->buf);
+            D(bug("[Shell] %s %s\n", ss->command + 2, out->buf));
             if (out->len > 0)
                 out->buf[out->len - 1] = tmpchr;
         }

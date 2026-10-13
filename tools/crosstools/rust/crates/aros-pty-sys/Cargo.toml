@@ -1,0 +1,10 @@
+[package]
+name = "aros-pty-sys"
+version = "0.1.0"
+edition = "2021"
+description = "A pseudo console for AROS: a DOS handler a shell uses as its console"
+license = "Apache-2.0 OR MIT"
+links = "aros_pty"
+
+[build-dependencies]
+cc = "1.2"

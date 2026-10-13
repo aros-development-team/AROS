@@ -25,7 +25,54 @@
 #include "pthread_intern.h"
 #include "debug.h"
 
-int pthread_join(pthread_t thread, void **value_ptr)
+/****************************************************************************
+    NAME */
+        int pthread_join(
+
+/*  SYNOPSIS */
+        pthread_t thread,
+        void **value_ptr)
+
+/*  FUNCTION
+        Wait for a joinable worker to finish, optionally copy its result pointer,
+        and release its thread record for reuse. A worker that has already
+        finished is collected without waiting for another completion signal.
+
+    INPUTS
+        thread - Valid joinable worker identifier. Must not identify the caller.
+            Exactly one caller may join it; do not detach it concurrently.
+        value_ptr - Writable pointer output, or NULL to discard the result.
+            The result is the start routine's return value, the value passed
+            to pthread_exit(), or PTHREAD_CANCELED after cancellation.
+
+    RESULT
+        0 after collection. ESRCH if the record is absent or no longer active.
+        EINVAL if it is detached, or changes identity/state before collection.
+        On failure, value_ptr is not written. Errors are returned directly.
+        Pending enabled cancellation at the entry check exits the caller.
+
+    NOTES
+        Include <pthread.h>; link with pthread. Call from the initial program
+        task or a registered worker, in task context. The wait has no timeout.
+        The result is copied, not freed; arranging its lifetime and disposal
+        remains the application's responsibility. Successful collection ends
+        the identifier's lifetime. Worker destructors and runtime leave hooks
+        precede the completion indication.
+
+    BUGS
+        Self-join is not detected and can block indefinitely. Multiple joiners
+        overwrite the single waiter field and can strand earlier callers.
+        Cancellation is checked only before entering the wait loop. The loop
+        waits for SIGBREAKF_CTRL_F, not the CTRL_C cancellation signal, and does
+        not recheck cancellation after waking. This call cannot be relied on
+        as an interruptible wait. It also consumes that task signal.
+
+    SEE ALSO
+        pthread_create(),
+        pthread_exit(),
+        pthread_cancel()
+
+*****************************************************************************/
 {
     ThreadInfo *inf;
     struct Task *task;

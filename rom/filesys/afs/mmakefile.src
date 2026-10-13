@@ -1,5 +1,9 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
 include $(SRCDIR)/config/aros.cfg
+
+AFS_INLINE_REQUESTERS ?= 1
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/filesys/afs/make.opts
 
 FILES := main \
 	bitmap \
@@ -17,10 +21,15 @@ FILES := main \
 	volumes \
    	validator
 
+ifeq ($(AFS_INLINE_REQUESTERS),0)
+FILES += os_aros_requesters
+endif
+
 #MM- kernel-fs-afs : includes linklibs kernel-security-includes kernel-task-includes
 
 USER_CPPFLAGS := \
                -DUSE_EXEC_DEBUG \
+	       -DAFS_INLINE_REQUESTERS=$(AFS_INLINE_REQUESTERS) \
 	       -D__INTUITION_NOLIBBASE__ \
 	       -DADATE="\"$(shell date '+%d.%m.%Y')\""
 USER_LDFLAGS := -static

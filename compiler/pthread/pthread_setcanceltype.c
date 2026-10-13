@@ -23,7 +23,44 @@
 #include "pthread_intern.h"
 #include "debug.h"
 
-int pthread_setcanceltype(int type, int *oldtype)
+/****************************************************************************
+    NAME */
+        int pthread_setcanceltype(
+
+/*  SYNOPSIS */
+        int type,
+        int *oldtype)
+
+/*  FUNCTION
+        Set the calling thread's cancellation type, optionally saving the
+        previous value. A newly created worker starts with PTHREAD_CANCEL_DEFERRED.
+
+    INPUTS
+        type - PTHREAD_CANCEL_DEFERRED or PTHREAD_CANCEL_ASYNCHRONOUS.
+        oldtype - Writable output for the previous value, or NULL.
+
+    RESULT
+        0 on success. EINVAL for any other type; neither the setting nor the
+        optional output is changed on that error. Errors are returned directly.
+
+    NOTES
+        Include <pthread.h>; link with pthread. The call updates only the current
+        thread record and does not wait. It neither clears a pending request
+        nor tests it. Arrange cleanup before enabling cancellation and use
+        pthread_testcancel() when an immediate deferred check is required.
+
+    BUGS
+        The default build does not enable the exception handler needed for
+        remote asynchronous cancellation. Accepting the asynchronous constant
+        does not establish that capability. Switching types does not process
+        an already pending request. Use only from a registered worker; an
+        unregistered task aliases the initial task's state.
+
+    SEE ALSO
+        pthread_cancel(),
+        pthread_setcancelstate()
+
+*****************************************************************************/
 {
     pthread_t thread;
     ThreadInfo *inf;

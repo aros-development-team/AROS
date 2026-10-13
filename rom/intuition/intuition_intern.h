@@ -1517,26 +1517,21 @@ struct menudecor_data
 /* Classic Intuition tracks the pointer in high-resolution, interlaced
  * display coordinates. Native planar screens convert those to screen pixels;
  * HIDD bitmaps already use the display driver's coordinate conversion. */
+#ifdef __mc68000__
+/* Out of line on m68k (misc.c): their bodies are too large to repeat at
+ * every call site in the ROM. Elsewhere the scale is always 1. */
+UWORD int_MouseScaleX(const struct Screen *screen);
+UWORD int_MouseScaleY(const struct Screen *screen);
+#else
 static inline UWORD int_MouseScaleX(const struct Screen *screen)
 {
-#ifdef __mc68000__
-    if (screen && screen->RastPort.BitMap &&
-        !IS_HIDD_BM(screen->RastPort.BitMap) &&
-        !(screen->ViewPort.Modes & (HIRES | SUPERHIRES)))
-        return 2;
-#endif
     return 1;
 }
 
 static inline UWORD int_MouseScaleY(const struct Screen *screen)
 {
-#ifdef __mc68000__
-    if (screen && screen->RastPort.BitMap &&
-        !IS_HIDD_BM(screen->RastPort.BitMap) &&
-        !(screen->ViewPort.Modes & LACE))
-        return 2;
-#endif
     return 1;
 }
+#endif
 
 #endif /* INTUITION_INTERN_H */

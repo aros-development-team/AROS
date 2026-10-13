@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -61,7 +61,12 @@
 
 /**************************************************************************************************/
 
+#if defined(__mc68000__)
+/* One copy, shared with scrdecorclass.c, to save ROM space on m68k */
+VOID getintframesizes(struct IntuitionBase *IntuitionBase, WORD *xsize, WORD *ysize)
+#else
 static inline VOID getintframesizes(struct IntuitionBase *IntuitionBase, WORD *xsize, WORD *ysize)
+#endif
 {
     switch (FRAME_SIZE(IntuitionBase))
     {

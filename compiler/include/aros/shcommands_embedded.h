@@ -1,7 +1,7 @@
 #ifndef SHCOMMANDS_EMBEDDED_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -15,6 +15,15 @@
 #include <aros/shcommands_notembedded.h>
 
 DECLARESET(SHCOMMANDS)
+
+#if defined(SHCOMMANDS_SHARED_PRINTF)
+/* Builds short of ROM space (m68k) share one Printf() between the embedded
+   commands instead of giving every command its own copy of the varargs
+   inline; the helper lives in the shellcommands resource. */
+LONG __shcommands_Printf(struct DosLibrary *DOSBase, CONST_STRPTR format, ...);
+#undef Printf
+#define Printf(...) __shcommands_Printf((struct DosLibrary *)__DOS_LIBBASE, __VA_ARGS__)
+#endif
 
 struct shcommand
 {

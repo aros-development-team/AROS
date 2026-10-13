@@ -25,7 +25,33 @@
 #include "pthread_intern.h"
 #include "debug.h"
 
-int pthread_mutexattr_destroy(pthread_mutexattr_t *attr)
+/****************************************************************************
+    NAME */
+        int pthread_mutexattr_destroy(
+
+/*  SYNOPSIS */
+        pthread_mutexattr_t *attr)
+
+/*  FUNCTION
+        Clear a mutex attribute object after its last use.
+
+    INPUTS
+        attr - Non-NULL writable mutex attribute object that is no longer in use.
+
+    RESULT
+        0 on success; EINVAL if attr is NULL. Errors are returned directly.
+
+    NOTES
+        Include <pthread.h>; link with pthread. The call zeroes the object; it
+        allocates and releases no resources and does not block. Existing
+        mutexes retain their copied kind. Exclude concurrent access and call
+        pthread_mutexattr_init() before using the object again.
+
+    SEE ALSO
+        pthread_mutexattr_init(),
+        pthread_mutex_init()
+
+*****************************************************************************/
 {
     D(bug("%s(%p)\n", __FUNCTION__, attr));
 

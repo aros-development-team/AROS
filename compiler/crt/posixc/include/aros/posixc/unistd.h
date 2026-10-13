@@ -336,7 +336,9 @@ enum {
     _SC_XOPEN_VERSION,
     /* Extensions (glibc/BSD), appended so the POSIX values above keep their
        numbers. */
-    _SC_PHYS_PAGES
+    _SC_PHYS_PAGES,
+    _SC_NPROCESSORS_CONF,
+    _SC_NPROCESSORS_ONLN
 };
 /*
     Make the sysconf() name constants visible to the preprocessor
@@ -468,6 +470,8 @@ enum {
 #define _SC_XOPEN_UUCP _SC_XOPEN_UUCP
 #define _SC_XOPEN_VERSION _SC_XOPEN_VERSION
 #define _SC_PHYS_PAGES _SC_PHYS_PAGES
+#define _SC_NPROCESSORS_CONF _SC_NPROCESSORS_CONF
+#define _SC_NPROCESSORS_ONLN _SC_NPROCESSORS_ONLN
 
 #define STDIN_FILENO    0
 #define STDOUT_FILENO   1
@@ -510,6 +514,10 @@ off_t lseek(int filedes, off_t offset, int whence);
 __off64_t lseek64(int filedes, __off64_t offset, int whence);
 # endif
 int pipe(int filedes[2]);
+ssize_t pread(int d, void *buf, size_t nbytes, off_t offset);
+# if defined(__off64_t_defined)
+ssize_t pread64(int d, void *buf, size_t nbytes, __off64_t offset);
+# endif
 ssize_t read(int d, void *buf, size_t nbytes);
 int rmdir(const char *path);
 int setuid(uid_t uid);

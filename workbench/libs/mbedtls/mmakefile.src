@@ -7,9 +7,9 @@ include $(SRCDIR)/config/aros.cfg
 #MM     linklibs-mbedtls \
 #MM     workbench-libs-mbedtls-includes
 
-#MM linklibs-mbedcrypto : mbedtls-fetch workbench-libs-mbedtls-includes
-#MM linklibs-mbedx509 : mbedtls-fetch workbench-libs-mbedtls-includes
-#MM linklibs-mbedtls : mbedtls-fetch workbench-libs-mbedtls-includes
+#MM linklibs-mbedcrypto : mbedtls-fetch workbench-libs-mbedtls-includes kernel-entropy-includes
+#MM linklibs-mbedx509 : mbedtls-fetch workbench-libs-mbedtls-includes kernel-entropy-includes
+#MM linklibs-mbedtls : mbedtls-fetch workbench-libs-mbedtls-includes kernel-entropy-includes
 
 #MM- workbench-libs-mbedtls-includes : workbench-libs-mbedtls-includes-copy
 #MM workbench-libs-mbedtls-includes-copy : mbedtls-fetch

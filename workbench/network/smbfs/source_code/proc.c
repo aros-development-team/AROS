@@ -1339,8 +1339,8 @@ smb_proc_readdir_short (struct smb_server *server, char *path, int fpos, int cac
 static time_t
 interpret_long_date(char * p)
 {
-	QUAD adjust;
-	QUAD long_date;
+	SMB_QUAD adjust;
+	SMB_QUAD long_date;
 	ULONG underflow;
 	time_t result;
 
@@ -1439,9 +1439,10 @@ smb_decode_long_dirent (char *p, struct smb_dirent *finfo, int level)
 			#if DEBUG
 			{
 				char buffer[255];
+				int len = min (BVAL (p, 26), sizeof(buffer)-1);
 
-				memcpy(buffer,p + 27,sizeof(buffer)-1);
-				buffer[sizeof(buffer)-1] = '\0';
+				memcpy(buffer,p + 27,len);
+				buffer[len] = '\0';
 
 				LOG(("type=%ld, name='%s'\n",level,buffer));
 			}
@@ -1486,9 +1487,10 @@ smb_decode_long_dirent (char *p, struct smb_dirent *finfo, int level)
 			#if DEBUG
 			{
 				char buffer[255];
+				int len = min (BVAL (p, 30), sizeof(buffer)-1);
 
-				memcpy(buffer,p + 31,sizeof(buffer)-1);
-				buffer[sizeof(buffer)-1] = '\0';
+				memcpy(buffer,p + 31,len);
+				buffer[len] = '\0';
 
 				LOG(("type=%ld, name='%s'\n",level,buffer));
 			}
@@ -1544,7 +1546,10 @@ smb_decode_long_dirent (char *p, struct smb_dirent *finfo, int level)
 			}
 			#endif /* DEBUG */
 
-			result = p + WVAL (p, 0);
+			/* NextEntryOffset is 32 bits wide; smb_long_dirent_size()
+			 * validated the same field.
+			 */
+			result = p + DVAL (p, 0);
 
 			if (finfo != NULL)
 			{
@@ -1627,6 +1632,41 @@ smb_decode_long_dirent (char *p, struct smb_dirent *finfo, int level)
 	}
 
 	return result;
+}
+
+/* Check each FIND record against the assembled data before its fields and
+ * name are used by smb_get_dirent_name() or smb_decode_long_dirent().
+ */
+static int
+smb_long_dirent_size (const char *p, int remaining, int level, int last)
+{
+	if (level == 1)
+	{
+		int size;
+
+		if (remaining < 28)
+			return -EIO;
+		size = 28 + BVAL (p, 26);
+		if (size > remaining || memchr (p + 27, '\0', size - 27) == NULL)
+			return -EIO;
+		return size;
+	}
+	else if (level == 260)
+	{
+		dword name_len, next;
+
+		if (remaining < 94)
+			return -EIO;
+		name_len = DVAL (p, 60);
+		next = DVAL (p, 0);
+		if (name_len > (dword)(remaining - 94) ||
+		    (next == 0 && !last) ||
+		    (next != 0 && (next < 94 + name_len || next > (dword)remaining)))
+			return -EIO;
+		return next != 0 ? next : remaining;
+	}
+
+	return -EIO;
 }
 
 static int
@@ -1799,9 +1839,11 @@ smb_proc_readdir_long (struct smb_server *server, char *path, int fpos, int cach
 			break;
 		}
 
-		/* ZZZ bail out if this is empty. */
-		if (resp_param == NULL)
-			break;
+		if (resp_param == NULL || resp_param_len < (first != 0 ? 6 : 4))
+		{
+			error = -EIO;
+			goto fail;
+		}
 
 		/* parse out some important return info */
 		p = resp_param;
@@ -1821,16 +1863,28 @@ smb_proc_readdir_long (struct smb_server *server, char *path, int fpos, int cach
 		if (ff_searchcount == 0)
 			break;
 
-		/* ZZZ bail out if this is empty. */
 		if (resp_data == NULL)
-			break;
+		{
+			error = -EIO;
+			goto fail;
+		}
 
 		/* point to the data bytes */
 		p = resp_data;
 
 		/* Now we are ready to parse smb directory entries. */
+		int remaining = resp_data_len;
 		for (i = 0; i < ff_searchcount; i++)
 		{
+			int entry_size = smb_long_dirent_size (p, remaining, info_level,
+				i == ff_searchcount - 1);
+			if (entry_size < 0)
+			{
+				error = entry_size;
+				goto fail;
+			}
+			remaining -= entry_size;
+
 			if(i == ff_searchcount - 1)
 			{
 				char * last_name;
@@ -2240,27 +2294,13 @@ smb_proc_reconnect (struct smb_server *server)
 		p = smb_name_mangle (p, server->mount_data.server_name);
 		p = smb_name_mangle (p, server->mount_data.client_name);
 
-		smb_encode_smb_length (packet, (byte *) p - (byte *) (packet));
+		smb_encode_smb_length (packet, (byte *) p - (packet + 4));
 
 		packet[0] = 0x81; /* SESSION REQUEST */
 
-		if ((result = smb_request (server)) < 0)
+		if ((result = smb_request_session (server)) < 0)
 		{
-			LOG (("smb_proc_connect: Failed to send SESSION REQUEST.\n"));
-			goto fail;
-		}
-
-		if (packet[0] != 0x82)
-		{
-			LOG (("smb_proc_connect: Did not receive positive response (err = %lx)\n",packet[0]));
-
-			#if DEBUG
-			{
-				smb_dump_packet (packet);
-			}
-			#endif /* DEBUG */
-
-			result = -EIO;
+			LOG (("smb_proc_connect: SESSION REQUEST failed.\n"));
 			goto fail;
 		}
 
@@ -2295,7 +2335,7 @@ smb_proc_reconnect (struct smb_server *server)
 	/* If the server does not support any of the listed
 	 * dialects, ist must return a dialect index of 0xFFFF.
 	 */
-	if(dialect_index > num_prots || dialect_index == 0xFFFFU)
+	if(dialect_index >= num_prots)
 	{
 		LOG (("smb_proc_connect: Unsupported dialect\n"));
 
@@ -2319,6 +2359,12 @@ smb_proc_reconnect (struct smb_server *server)
 		/* NT LAN Manager or newer. */
 		if (server->protocol >= PROTOCOL_NT1)
 		{
+			if (SMB_WCT (packet) < 17)
+			{
+				result = -EIO;
+				goto fail;
+			}
+
 			server->security_mode = BVAL(packet, smb_vwv1);
 			max_buffer_size = DVAL (packet, smb_vwv3 + 1);
 			server->max_raw_size = DVAL (packet, smb_vwv5 + 1);
@@ -2326,12 +2372,17 @@ smb_proc_reconnect (struct smb_server *server)
 			server->capabilities = DVAL (packet, smb_vwv9 + 1);
 			server->crypt_key_length = BVAL (packet, smb_vwv16 + 1);
 
-			memcpy(server->crypt_key,SMB_BUF(packet),server->crypt_key_length);
 		}
 		/* LAN Manager 2.0 or older */
 		else
 		{
 			word blkmode;
+
+			if (SMB_WCT (packet) < 13)
+			{
+				result = -EIO;
+				goto fail;
+			}
 
 			server->security_mode = BVAL(packet, smb_vwv1);
 			max_buffer_size = WVAL (packet, smb_vwv2);
@@ -2340,10 +2391,9 @@ smb_proc_reconnect (struct smb_server *server)
 			blkmode = WVAL (packet, smb_vwv5);
 			server_sesskey = DVAL (packet, smb_vwv6);
 
-			/* Crypt key size is fixed to 8 bytes. */
-			server->crypt_key_length = 8;
-
-			memcpy(server->crypt_key,SMB_BUF(packet),server->crypt_key_length);
+			/* Plaintext authentication does not need a challenge. */
+			server->crypt_key_length =
+				(server->security_mode & NEGOTIATE_ENCRYPT_PASSWORDS) ? 8 : 0;
 
 			/* We translate this into capabilities. According to the
 			   LAN Manager 1.x/2.0 documentation both bits 0+1 being set
@@ -2352,11 +2402,40 @@ smb_proc_reconnect (struct smb_server *server)
 				server->capabilities = CAP_RAW_MODE;
 		}
 
+		/* The legacy password algorithms consume exactly eight challenge
+		 * bytes. A server negotiating extended security sends none at all
+		 * (key length 0); that is only a problem once a password has to be
+		 * encrypted with it, see below. Check both the destination and the
+		 * received data before copying.
+		 */
+		if (server->crypt_key_length > sizeof(server->crypt_key) ||
+		    server->crypt_key_length > SMB_BCC (packet) ||
+		    (server->crypt_key_length != 0 &&
+		     server->crypt_key_length != sizeof(server->crypt_key)))
+		{
+			result = -EIO;
+			goto fail;
+		}
+
+		memset(server->crypt_key,0,sizeof(server->crypt_key));
+		memcpy(server->crypt_key,SMB_BUF(packet),server->crypt_key_length);
+
 		SHOWVALUE(server->security_mode);
 
 		if(server->security_mode & NEGOTIATE_ENCRYPT_PASSWORDS)
 		{
 			SHOWMSG("encrypted passwords required");
+
+			/* Without a challenge only the empty (guest/share level)
+			 * password can be offered; anything else cannot be encrypted.
+			 */
+			if(server->crypt_key_length == 0 && server->mount_data.password[0] != '\0')
+			{
+				LOG (("smb_proc_connect: server sent no password challenge\n"));
+
+				result = -EACCES;
+				goto fail;
+			}
 
 			memset(password,0,sizeof(password));
 			strlcpy(password,server->mount_data.password,sizeof(password));

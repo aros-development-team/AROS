@@ -1,0 +1,28 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+include $(SRCDIR)/config/aros.cfg
+
+#MM test-filesys-afs-requesters : includes linklibs
+
+USER_INCLUDES := -I$(SRCDIR)/rom/filesys/afs
+USER_LDFLAGS := -static
+USER_CPPFLAGS := -DAFS_INLINE_REQUESTERS=0
+
+%build_prog mmake=test-filesys-afs-requesters \
+    files="requesters $(SRCDIR)/rom/filesys/afs/os_aros_requesters" \
+    progname=requesters targetdir=$(AROS_TESTS)/filesys/afs
+
+#MM test-filesys-afs-requesters-inline : includes linklibs
+
+USER_CPPFLAGS := -DAFS_INLINE_REQUESTERS=1
+
+%build_prog mmake=test-filesys-afs-requesters-inline \
+    files=requesters_inline \
+    progname=requesters-inline targetdir=$(AROS_TESTS)/filesys/afs
+
+#MM test-filesys-afs-io : includes linklibs
+
+USER_CPPFLAGS :=
+
+%build_progs mmake=test-filesys-afs-io \
+    files=io targetdir=$(AROS_TESTS)/filesys/afs
+%common

@@ -393,9 +393,39 @@ AROS_LH1(void, begin_io, AROS_LHA(struct IOSana2Req *, req, A1), LIBBASETYPEPTR,
 AROS_LH1(long, abort_io, AROS_LHA(struct IOSana2Req *, req, A1), LIBBASETYPEPTR, LIBBASE, 6, tap_device) {
     AROS_LIBFUNC_INIT
 
-    /* XXX anything to do here? */
+    struct tap_opener *opener = (struct tap_opener *) req->ios2_BufferManagement;
+    struct Node *node;
+    long result = -1;   /* not ours / not pending -> nothing aborted */
 
-    return 1;
+    D(bug("[tap] abort_io req=%p cmd=%d\n", req, req->ios2_Req.io_Command));
+
+    /*
+     * A queued CMD_READ sits on the opener's read_pending port until a matching
+     * packet arrives (see tap_read()/iotask).  Without this the request can only
+     * ever complete on traffic, so a caller tearing an interface down would hang
+     * in WaitIO().  Pull it back off the queue under Disable() (the same lock the
+     * iotask uses to Remove()) and reply it IOERR_ABORTED.
+     */
+    if (opener != NULL) {
+        Disable();
+        ForeachNode(&(opener->read_pending.mp_MsgList), node) {
+            if (node == (struct Node *) req) {
+                Remove((struct Node *) req);
+                result = 0;
+                break;
+            }
+        }
+        Enable();
+
+        if (result == 0) {
+            req->ios2_Req.io_Error = IOERR_ABORTED;
+            req->ios2_WireError = S2WERR_GENERIC_ERROR;
+            ReplyMsg((struct Message *) req);
+            D(bug("[tap] abort_io: aborted parked request %p\n", req));
+        }
+    }
+
+    return result;
 
     AROS_LIBFUNC_EXIT
 }

@@ -23,7 +23,44 @@
 #include "pthread_intern.h"
 #include "debug.h"
 
-int pthread_mutex_unlock(pthread_mutex_t *mutex)
+/****************************************************************************
+    NAME */
+        int pthread_mutex_unlock(
+
+/*  SYNOPSIS */
+        pthread_mutex_t *mutex)
+
+/*  FUNCTION
+        Release one acquisition of a mutex owned by the calling task. A recursive
+        mutex remains owned until every nested acquisition has been released.
+
+    INPUTS
+        mutex - Mutex owned by the caller. No other task may destroy it during
+            this operation.
+
+    RESULT
+        0 after ReleaseSemaphore(). EINVAL if mutex is NULL. EPERM if a
+        non-NORMAL mutex is not owned by the caller. Errors are returned directly.
+
+    NOTES
+        Include <pthread.h>; link with pthread. Use from task context. The call
+        does not wait for ownership or check cancellation. Releasing the last
+        acquisition allows another waiting task to proceed. It does not free
+        the mutex storage.
+
+    BUGS
+        NORMAL performs no ownership check before ReleaseSemaphore(). Passing
+        an unowned or already unlocked mutex is invalid and may corrupt its
+        state. A successful return is not independent proof of prior ownership.
+        An uninitialized semaphore also takes a lazy-initialization path; that
+        path does not make unlocking without an acquisition valid.
+
+    SEE ALSO
+        pthread_mutex_lock(),
+        pthread_mutex_trylock(),
+        pthread_mutex_destroy()
+
+*****************************************************************************/
 {
     D(bug("%s(%p)\n", __FUNCTION__, mutex));
 

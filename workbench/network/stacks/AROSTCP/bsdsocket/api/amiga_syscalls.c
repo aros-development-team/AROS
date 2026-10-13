@@ -69,7 +69,7 @@ void dump_sockaddr_in(struct sockaddr_in *name, struct SocketBase *libPtr)
 LONG __socket(LONG domain, LONG type, LONG protocol, struct SocketBase *libPtr)
 {
     struct socket *so;
-    LONG fd, error;
+    LONG fd, error, flags;
 
 #if defined(__AROS__)
     D(bug("[AROSTCP](amiga_syscalls.c) __socket()\n"));
@@ -77,12 +77,17 @@ LONG __socket(LONG domain, LONG type, LONG protocol, struct SocketBase *libPtr)
 
     CHECK_TASK();
 
+    /* Creation flags are OR'ed into type; CLOEXEC/CLOFORK mean nothing here */
+    flags = type & (SOCK_CLOEXEC | SOCK_NONBLOCK | SOCK_CLOFORK);
+    type &= ~(SOCK_CLOEXEC | SOCK_NONBLOCK | SOCK_CLOFORK);
+
     if(error = sdFind(libPtr, &fd))
         goto Return;
 
     ObtainSyscallSemaphore(libPtr);
     error = socreate(domain, &so, type, protocol);
-    ReleaseSyscallSemaphore(libPtr);
+    if(! error && (flags & SOCK_NONBLOCK))
+        so->so_state |= SS_NBIO;
 
     if(! error) {
         /*
@@ -107,8 +112,12 @@ LONG __socket(LONG domain, LONG type, LONG protocol, struct SocketBase *libPtr)
             D(bug("[AROSTCP](amiga_syscalls.c) __socket: created socket 0x%p fd = %ld libPtr = 0x%p\n", so, fd, libPtr));
 #endif
             DEVENTS(__log(LOG_DEBUG, "socket(): created socket 0x%p fd = %ld libPtr = 0x%p", so, fd, libPtr);)
-        }
+        } else
+            soclose(so);
     }
+    ReleaseSyscallSemaphore(libPtr);
+    if(error)
+        sdFree(fd);
 
 Return:
     API_STD_RETURN(error, fd);
@@ -254,7 +263,15 @@ AROS_LH3(LONG, accept,
         goto Return_spl;
     }
 
+    /* Before the descriptor: a failure after it would leak the number */
+    nam = m_get(M_WAIT, MT_SONAME);
+    if(nam == NULL) {
+        error = ENOBUFS;
+        goto Return_spl;
+    }
+
     if(error = sdFind(libPtr, &fd)) {
+        m_freem(nam);
         goto Return_spl;
     }
 
@@ -264,8 +281,11 @@ AROS_LH3(LONG, accept,
     if(libPtr->fdCallback)
         if(error = AROS_UFC2(int, libPtr->fdCallback,
                              AROS_UFCA(int, fd, D0),
-                             AROS_UFCA(int, FDCB_ALLOC, D1)))
+                             AROS_UFCA(int, FDCB_ALLOC, D1))) {
+            sdFree(fd);
+            m_freem(nam);
             goto Return_spl;
+        }
 
     {
         struct socket *aso = so->so_q;
@@ -284,11 +304,6 @@ AROS_LH3(LONG, accept,
     }
 #endif
 
-    nam = m_get(M_WAIT, MT_SONAME);
-    if(nam == NULL) {
-        error = ENOBUFS;
-        goto Return_spl;
-    }
     (void)soaccept(so, nam);  /* is this always successful */
     if(name && anamelen) {
         if(*anamelen > nam->m_len)
@@ -332,8 +347,10 @@ LONG __connect(LONG s, caddr_t name, LONG namelen, struct SocketBase *libPtr)
     if(error = sockArgs(&nam, name, namelen, MT_SONAME))
         goto Return;
     error = soconnect(so, nam);
-    if(error)
+    if(error) {
+        old_spl = splnet();
         goto bad;
+    }
     if((so->so_state & SS_NBIO) && (so->so_state & SS_ISCONNECTING)) {
         m_freem(nam);
         error = EINPROGRESS;
@@ -347,9 +364,10 @@ LONG __connect(LONG s, caddr_t name, LONG namelen, struct SocketBase *libPtr)
         error = so->so_error;
         so->so_error = 0;
     }
-    splx(old_spl);
 bad:
+    /* Under splnet: tcp_input may be setting SS_ISCONNECTED right now */
     so->so_state &= ~SS_ISCONNECTING;
+    splx(old_spl);
     m_freem(nam);
     if(error == ERESTART)
         error = EINTR;
@@ -647,6 +665,18 @@ LONG sockArgs(struct mbuf **mp,
 }
 
 /*
+ * Give back a number sdFind() handed out that never got a socket. The
+ * private bitmask needs nothing: callers set the bit only on success.
+ */
+void sdFree(LONG fd)
+{
+#if defined(ENABLE_FDLIBRARY)
+    if (FDBase != NULL)
+        FD_Free(fd, FD_OWNER_BSDSOCKET);
+#endif
+}
+
+/*
  * sdFind replaces old fdAlloc. This version now looks for free socket
  * from socket usage bitmask stored right after descriptor table
  */
@@ -666,9 +696,9 @@ LONG sdFind(struct SocketBase *libPtr, LONG *fdp)
      * When fd.library is available it is the system-wide descriptor-number
      * authority (shared with posixc.library), so take the number from it
      * rather than from our private per-task bitmask.  The descriptor still
-     * lives in dTable[fd]/the used-socket bitmask for internal use, so it
-     * must fall inside the current table; grow-on-demand is not yet wired
-     * up, so fail cleanly if it would not.
+     * lives in dTable[fd]/the used-socket bitmask for internal use, so the
+     * table is grown to cover it: the numbers are system-wide, so they pass
+     * the per-base FD_SETSIZE once other tasks hold enough descriptors.
      */
     if (FDBase != NULL) {
         LONG fd, error;
@@ -680,6 +710,13 @@ LONG sdFind(struct SocketBase *libPtr, LONG *fdp)
         if (error)
             return EMFILE;
 
+        if ((ULONG)fd >= libPtr->dTableSize) {
+            /* fd hooks of other tasks use this table under syscall_semaphore */
+            ObtainSemaphore(&syscall_semaphore);
+            if ((ULONG)fd >= libPtr->dTableSize && fd < 0xFFC0)
+                setdtablesize(libPtr, (fd / 64 + 1) * 64);
+            ReleaseSemaphore(&syscall_semaphore);
+        }
         if ((ULONG)fd >= libPtr->dTableSize) {
             FD_Free(fd, FD_OWNER_BSDSOCKET);
             return EMFILE;

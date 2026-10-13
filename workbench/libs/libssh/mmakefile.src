@@ -1,50 +1,102 @@
+#   AROS metamakefile for libssh (static linklib, mbedTLS backend).
+#
+#   The cmake build is bypassed: config.h is the hand-written AROS
+#   configuration next to this file and libssh_version.h is generated from
+#   the archive's template below.  The source list mirrors src/CMakeLists.txt
+#   for WITH_MBEDTLS + WITH_SERVER + WITH_SFTP + WITH_GEX, single-threaded
+#   (threads/noop); mbedTLS provides ChaCha20-Poly1305 and curve25519, so
+#   the bundled fallbacks for those are left out.
+
 include $(SRCDIR)/config/aros.cfg
 
 LIBSSH_VERSION := 0.12.0
+LIBSSH_VMAJOR := $(word 1,$(subst ., ,$(LIBSSH_VERSION)))
+LIBSSH_VMINOR := $(word 2,$(subst ., ,$(LIBSSH_VERSION)))
+LIBSSH_VPATCH := $(word 3,$(subst ., ,$(LIBSSH_VERSION)))
 LIBSSH_ARCHBASE := libssh-$(LIBSSH_VERSION)
 LIBSSH_SUFFIXES := tar.xz
 LIBSSH_REPOSITORIES := https://www.libssh.org/files/0.12/
 
 LIBSSH_SRCDIR := $(PORTSDIR)/libssh/$(LIBSSH_ARCHBASE)
-LIBSSH_LIBDIR := $(GENDIR)/$(CURDIR)/lib
 LIBSSH_INCDIR := $(LIBSSH_SRCDIR)/include
 
-MBEDTLS_INCDIR := $(PORTSDIR)/mbedtls/mbedtls-3.6.6/include
-MBEDTLS_LIBDIR := $(GENDIR)/workbench/libs/mbedtls/lib
+# mbedTLS headers are installed into the standard include tree by
+# workbench-libs-mbedtls (no version-pinned Ports path to go stale).
+MBEDTLS_INCDIR := $(AROS_INCLUDES)
 
-#MM- workbench-libs-libssh : mbedtls-build libssh-fetch libssh-build
+#MM- workbench-libs-libssh : linklibs-ssh
+#MM linklibs-ssh : libssh-fetch libssh-genversion workbench-libs-mbedtls
+#MM libssh-genversion : libssh-fetch
 
 %fetch mmake=libssh-fetch archive=$(LIBSSH_ARCHBASE) \
     destination=$(PORTSDIR)/libssh suffixes=$(LIBSSH_SUFFIXES) \
     location=$(PORTSSOURCEDIR) archive_origins=$(LIBSSH_REPOSITORIES)
 
-LIBSSH_CFLAGS := -I$(LIBSSH_INCDIR) -I$(LIBSSH_SRCDIR)/src \
-    -I$(MBEDTLS_INCDIR) -I$(SRCDIR)/workbench/libs/mbedtls \
-    -DWITH_MBEDTLS -DHAVE_SELECT -DHAVE_SYS_SOCKET_H \
-    -DHAVE_NETINET_IN_H -DHAVE_ARPA_INET_H -DHAVE_UNISTD_H \
-    -DGLOBAL_CLIENT_CONFIG=\"ENVARC:SSH/ssh_config\" \
-    -O2
+# libssh.h includes <libssh/libssh_version.h>, which cmake generates from
+# the template in the archive; substitute the version numbers ourselves.
+LIBSSH_VERSION_H := $(LIBSSH_INCDIR)/libssh/libssh_version.h
 
 #MM
-libssh-build : $(LIBSSH_LIBDIR)/libssh.a
+libssh-genversion : $(LIBSSH_VERSION_H)
 
-$(LIBSSH_LIBDIR)/libssh.a : | libssh-fetch mbedtls-build
-	@$(MKDIR) $(LIBSSH_LIBDIR)
-	@$(ECHO) "Building libssh $(LIBSSH_VERSION) with mbedTLS..."
-	@cd $(LIBSSH_SRCDIR)/src && \
-	    $(AROS_CROSSTOOL_PREFIX)gcc $(LIBSSH_CFLAGS) -c \
-	        session.c channels.c kex.c auth.c pki.c pki_mbedcrypto.c \
-	        packet.c socket.c connect.c buffer.c \
-	        messages.c server.c bind.c bind_config.c \
-	        scp.c sftp.c knownhosts.c config.c \
-	        dh.c dh-gex.c ecdh.c ecdh_mbedcrypto.c \
-	        crypto_common.c mbedcrypto_missing.c \
-	        wrapper.c misc.c error.c string.c \
-	        options.c log.c match.c \
-	        token.c callbacks.c poll.c \
-	    2>&1 | grep -v 'note:' | head -5; \
-	    $(AROS_CROSSTOOL_PREFIX)ar rcs $(LIBSSH_LIBDIR)/libssh.a *.o 2>/dev/null; \
-	    rm -f *.o
-	@$(ECHO) "libssh built: $(LIBSSH_LIBDIR)/libssh.a"
+$(LIBSSH_VERSION_H) : | libssh-fetch
+	@$(ECHO) "Generating libssh_version.h..."
+	@sed -e 's/@libssh_VERSION_MAJOR@/$(LIBSSH_VMAJOR)/' \
+	     -e 's/@libssh_VERSION_MINOR@/$(LIBSSH_VMINOR)/' \
+	     -e 's/@libssh_VERSION_PATCH@/$(LIBSSH_VPATCH)/' \
+	     < $(LIBSSH_VERSION_H).cmake > $@
+
+# src/CMakeLists.txt libssh_SRCS + threads/noop + the WITH_MBEDTLS,
+# WITH_SFTP(+server) and WITH_SERVER sets, relative to $(LIBSSH_SRCDIR)/src.
+# NOTE sntrup761 and external/sntrup761 share a basename: the linklib is
+# built with usetree=yes so the object layout mirrors the source tree.
+LIBSSH_FILES := \
+    agent auth base64 bignum buffer callbacks channels \
+    client config connect connector crypto_common curve25519 \
+    sntrup761 dh ecdh error getpass gzip hybrid_mlkem \
+    init kdf kex known_hosts knownhosts legacy log match \
+    messages misc mlkem options packet packet_cb \
+    packet_crypt pcap pki pki_context pki_container_openssh \
+    poll session scp socket string threads ttyopts \
+    wrapper external/bcrypt_pbkdf external/blowfish \
+    config_parser token pki_ed25519_common \
+    threads/noop \
+    libmbedcrypto mbedcrypto_missing \
+    pki_mbedcrypto ecdh_mbedcrypto getrandom_mbedcrypto \
+    md_mbedcrypto dh_key pki_ed25519 external/ed25519 \
+    external/fe25519 external/ge25519 external/sc25519 \
+    external/sntrup761 curve25519_mbedcrypto \
+    mlkem_native external/libcrux_mlkem768_sha3 \
+    sftp sftp_common sftp_aio sftpserver \
+    server bind bind_config dh-gex
+
+# The AROS config.h lives next to this makefile; the mbedTLS linklibs are
+# built with mbedtls_aros_config.h, so compile against the same
+# configuration.  __CONFIG_ROADSHOW__ exposes the bsdsocket getaddrinfo
+# bindings the sources rely on (HAVE_GETADDRINFO).
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) \
+    -I$(LIBSSH_INCDIR) -I$(LIBSSH_SRCDIR)/src \
+    -I$(MBEDTLS_INCDIR) -I$(SRCDIR)/workbench/libs/mbedtls
+USER_CPPFLAGS := -DMBEDTLS_CONFIG_FILE='"mbedtls_aros_config.h"' \
+    -D__CONFIG_ROADSHOW__ \
+    -D_GNU_SOURCE=1 -D__BSD_VISIBLE=1 \
+    -DGLOBAL_CLIENT_CONFIG=\"ENVARC:SSH/ssh_config\"
+
+# libssh_threads_aros.c replaces src/threads/mbedtls.c (see that file);
+# libssh_net_aros.c supplies if_nametoindex()
+LIBSSH_GLUE := libssh_threads_aros libssh_net_aros
+LIBSSH_GLUE_OBJ := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/libssh/,$(LIBSSH_GLUE)))
+
+%rule_compile_multi mmake=linklibs-ssh-glue \
+    basenames="$(addprefix $(SRCDIR)/$(CURDIR)/,$(LIBSSH_GLUE))" \
+    targetdir="$(GENDIR)/$(CURDIR)/libssh" \
+    cppflags="$(CPPFLAGS)"
+
+# the .c order-only prerequisites need the paths into the Ports tree;
+# files= stays relative for the object layout (see mesa for the pattern)
+linklibs-ssh_C_FILES := $(addprefix $(LIBSSH_SRCDIR)/src/,$(LIBSSH_FILES))
+%build_linklib mmake=linklibs-ssh libname=ssh \
+    objdir=$(GENDIR)/$(CURDIR)/libssh srcdir=$(LIBSSH_SRCDIR)/src \
+    files="$(LIBSSH_FILES)" objs="$(LIBSSH_GLUE_OBJ)" usetree=yes
 
 %common

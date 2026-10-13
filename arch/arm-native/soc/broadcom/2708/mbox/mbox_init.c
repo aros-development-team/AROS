@@ -108,9 +108,37 @@ volatile unsigned int *mbox_call_locked(struct MBoxBase *MBoxBase, void *mb,
     return (volatile unsigned int *)-1;
 }
 
-AROS_LH1(unsigned int, MBoxStatus,
-                AROS_LHA(void *, mb, A0),
-                struct MBoxBase *, MBoxBase, 1, Mbox)
+/*****************************************************************************
+
+    NAME */
+        AROS_LH1(unsigned int, MBoxStatus,
+
+/*  SYNOPSIS */
+                        AROS_LHA(void *, mb, A0),
+
+/*  LOCATION */
+                        struct MBoxBase *, MBoxBase, 1, Mbox)
+/*  FUNCTION
+        Read the mailbox status register and convert it to CPU byte order.
+
+    INPUTS
+        mb - Valid CPU-accessible base address of the mailbox registers.
+
+    RESULT
+        The raw status bits. Despite their names, a set
+        VCMB_STATUS_READREADY bit (bit 30) means the read FIFO is empty;
+        a set VCMB_STATUS_WRITEREADY bit (bit 31) means the write FIFO is
+        full. The transfer routines wait while these bits are set.
+
+    NOTES
+        No semaphore is acquired, no message is consumed and no wait is
+        performed. This is an instantaneous observation, not a reservation
+        of FIFO space or proof that the next operation will not wait.
+
+    SEE ALSO
+        MBoxRead(), MBoxWrite(), MBoxCall()
+
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
@@ -121,10 +149,62 @@ AROS_LH1(unsigned int, MBoxStatus,
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH2(volatile unsigned int *, MBoxRead,
-                AROS_LHA(void *, mb, A0),
-                AROS_LHA( unsigned int, chan, D0),
-                struct MBoxBase *, MBoxBase, 2, Mbox)
+/*****************************************************************************
+
+    NAME */
+        AROS_LH2(volatile unsigned int *, MBoxRead,
+
+/*  SYNOPSIS */
+                        AROS_LHA(void *, mb, A0),
+                        AROS_LHA( unsigned int, chan, D0),
+
+/*  LOCATION */
+                        struct MBoxBase *, MBoxBase, 2, Mbox)
+/*  FUNCTION
+        Read messages until a reply for the requested channel is found.
+        The channel bits are removed from its address and the indicated
+        message range is invalidated from the data cache before return.
+
+    INPUTS
+        mb - Valid CPU-accessible base address of the mailbox registers.
+        chan - Mailbox channel from 0 through VCMB_CHAN_MAX (8).
+
+    RESULT
+        The address carried by the matching reply, or
+        (volatile unsigned int *)-1 for an invalid channel or exhausted
+        empty-FIFO polling budget. NULL is not the error sentinel.
+
+    NOTES
+        Message buffers must start at MBOX_MSG_ALIGN (64-byte) alignment
+        and exclusively own every cache line covered by the message,
+        including its final line. The first ULONG is the total message
+        length in little-endian byte order. Prepare the remaining data in
+        the format required by the selected firmware service. Memory must
+        be contiguous and accessible to the firmware; the physical address
+        must fit the mailbox's 32-bit address field. The implementation
+        uses reply addresses directly as CPU pointers.
+
+        The reply buffer is borrowed; this function allocates no message
+        storage and does not transfer ownership. It does not verify the
+        reply address against a particular request. Other-channel messages
+        are consumed and discarded, not queued for their intended callers.
+        Coordinate all users of the mailbox accordingly.
+
+        Call from task context where waiting is permitted. The resource
+        semaphore serializes FIFO access, but a separate MBoxWrite() and
+        MBoxRead() pair is not one indivisible request/reply operation.
+        Prefer MBoxCall() when matching a submitted message.
+
+    BUGS
+        The budget of 0x2000000 polls decreases only while the FIFO is
+        empty. A stream of unmatched messages does not consume it, so the
+        call has no guaranteed finite duration. Reply addresses and lengths
+        are trusted and are not checked against caller-owned storage.
+
+    SEE ALSO
+        MBoxCall(), MBoxWrite(), MBoxStatus()
+
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
@@ -178,11 +258,64 @@ AROS_LH2(volatile unsigned int *, MBoxRead,
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH3(void, MBoxWrite,
-                AROS_LHA(void *, mb, A0),
-                AROS_LHA( unsigned int, chan, D0),
-                AROS_LHA(void *, msg, A1),
-                struct MBoxBase *, MBoxBase, 3, Mbox)
+/*****************************************************************************
+
+    NAME */
+        AROS_LH3(void, MBoxWrite,
+
+/*  SYNOPSIS */
+                        AROS_LHA(void *, mb, A0),
+                        AROS_LHA( unsigned int, chan, D0),
+                        AROS_LHA(void *, msg, A1),
+
+/*  LOCATION */
+                        struct MBoxBase *, MBoxBase, 3, Mbox)
+/*  FUNCTION
+        Prepare a message for firmware access using CachePreDMA(), wait
+        for write-FIFO space and submit its physical address with the
+        channel number. This call does not wait for the reply.
+
+    INPUTS
+        mb - Valid CPU-accessible base address of the mailbox registers.
+        chan - Mailbox channel from 0 through VCMB_CHAN_MAX (8).
+        msg - Non-NULL pointer to a prepared message satisfying the buffer
+              requirements below.
+
+    RESULT
+        None. An invalid channel or an address not aligned to 16 bytes
+        silently causes no submission. Successful return does not report
+        firmware completion or service-level success.
+
+    NOTES
+        Message buffers must start at MBOX_MSG_ALIGN (64-byte) alignment
+        and exclusively own every cache line covered by the message,
+        including its final line. The first ULONG is the total message
+        length in little-endian byte order. Prepare the remaining data in
+        the format required by the selected firmware service. Memory must
+        be contiguous and accessible to the firmware; the physical address
+        must fit the mailbox's 32-bit address field. The implementation
+        uses reply addresses directly as CPU pointers.
+
+        The caller retains ownership. Keep the message allocated and do not
+        modify or reuse it until firmware has finished using it. Obtain the
+        reply separately; this function does not perform reply cache
+        invalidation. No allocation is performed by the resource itself.
+
+        Call from task context where waiting is permitted. FIFO submission
+        uses the resource semaphore. Independent write/read calls can be
+        interleaved with other users; prefer MBoxCall() for a matched
+        request/reply exchange.
+
+    BUGS
+        The write-FIFO polling loop has no timeout and can wait forever
+        while holding the resource semaphore. NULL is not rejected before
+        the message header is read. Cache-line ownership, message length,
+        physical-address range and DMA contiguity are not validated.
+
+    SEE ALSO
+        MBoxRead(), MBoxCall(), MBoxStatus(), exec.library/CachePreDMA()
+
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
@@ -212,11 +345,71 @@ AROS_LH3(void, MBoxWrite,
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH3(volatile unsigned int *, MBoxCall,
-                AROS_LHA(void *, mb, A0),
-                AROS_LHA(unsigned int, chan, D0),
-                AROS_LHA(void *, msg, A1),
-                struct MBoxBase *, MBoxBase, 4, Mbox)
+/*****************************************************************************
+
+    NAME */
+        AROS_LH3(volatile unsigned int *, MBoxCall,
+
+/*  SYNOPSIS */
+                        AROS_LHA(void *, mb, A0),
+                        AROS_LHA(unsigned int, chan, D0),
+                        AROS_LHA(void *, msg, A1),
+
+/*  LOCATION */
+                        struct MBoxBase *, MBoxBase, 4, Mbox)
+/*  FUNCTION
+        Submit a prepared mailbox message and wait for a reply matching
+        both its channel and physical address. The resource holds its
+        semaphore across submission and reply selection. The reply's
+        message range is invalidated from the data cache before return.
+
+    INPUTS
+        mb - Valid CPU-accessible base address of the mailbox registers.
+        chan - Mailbox channel from 0 through VCMB_CHAN_MAX (8).
+        msg - Pointer to a prepared message satisfying the buffer
+              requirements below. NULL is rejected.
+
+    RESULT
+        The original msg pointer when a matching reply is found, or
+        (volatile unsigned int *)-1 for NULL, an invalid channel, failure
+        of 16-byte address alignment, or an exhausted polling budget.
+        A matching reply does not establish firmware service-level success;
+        inspect the response header and tag status for the requested service.
+
+    NOTES
+        Message buffers must start at MBOX_MSG_ALIGN (64-byte) alignment
+        and exclusively own every cache line covered by the message,
+        including its final line. The first ULONG is the total message
+        length in little-endian byte order. Prepare the remaining data in
+        the format required by the selected firmware service. Memory must
+        be contiguous and accessible to the firmware; the physical address
+        must fit the mailbox's 32-bit address field. The implementation
+        uses reply addresses directly as CPU pointers.
+
+        The caller retains ownership. No message allocation is performed.
+        Other-channel and other-address replies are consumed and discarded.
+        This can affect clients sharing the mailbox even though each call
+        uses the resource semaphore. Coordinate users of all channels.
+
+        Call from task context where waiting is permitted. The write wait
+        and empty-read wait each have a 0x2000000-poll budget, measured in
+        iterations rather than time. Semaphore acquisition is not bounded.
+        An error after submission does not cancel firmware access; do not
+        assume it is then safe to free or reuse the message.
+
+    BUGS
+        The read budget decreases only on empty-FIFO polls, not discarded
+        messages. Unmatched traffic can therefore keep the call running
+        indefinitely. For same-channel replies, the supplied address and
+        length are dereferenced and invalidated before address matching.
+        They are not validated. Alignment to 64 bytes is diagnosed but not
+        enforced; message length, physical range and DMA contiguity are
+        also not checked.
+
+    SEE ALSO
+        MBoxWrite(), MBoxRead(), MBoxStatus(), exec.library/CachePreDMA()
+
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 

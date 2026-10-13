@@ -11,6 +11,8 @@
 
 #include "eth.h"
 
+#include <string.h>
+
 static const UWORD eth_supported_commands[] = {
     S2_DEVICEQUERY,
     S2_GETSTATIONADDRESS,
@@ -18,6 +20,9 @@ static const UWORD eth_supported_commands[] = {
     S2_ONLINE,
     S2_OFFLINE,
     S2_BROADCAST,
+    S2_MULTICAST,
+    S2_ADDMULTICASTADDRESS,
+    S2_DELMULTICASTADDRESS,
     CMD_READ,
     CMD_WRITE,
     CMD_FLUSH,
@@ -234,6 +239,75 @@ static BOOL eth_get_global_stats(struct IOSana2Req *req, struct eth_unit *unit) 
     return TRUE;
 }
 
+/* The host interface is opened promiscuous and hands over every group's
+ * frames. The unit keeps the addresses its clients asked for, and the io
+ * task passes on only frames for those: the list is the filter a network
+ * card would be programmed with. */
+static struct eth_mcast *eth_find_mcast(struct eth_unit *unit, UBYTE *addr) {
+    struct eth_mcast *mcast, *found = NULL;
+
+    for (mcast = (struct eth_mcast *) unit->mcasts.mlh_Head;
+         mcast->node.mln_Succ != NULL;
+         mcast = (struct eth_mcast *) mcast->node.mln_Succ) {
+        if (memcmp(mcast->addr, addr, sizeof(mcast->addr)) == 0) {
+            found = mcast;
+            break;
+        }
+    }
+
+    return found;
+}
+
+static BOOL eth_add_mcast(struct IOSana2Req *req, struct eth_unit *unit) {
+    struct eth_mcast *mcast;
+
+    if ((req->ios2_SrcAddr[0] & 0x1) == 0) {
+        req->ios2_Req.io_Error = S2ERR_BAD_ADDRESS;
+        req->ios2_WireError = S2WERR_BAD_MULTICAST;
+        return TRUE;
+    }
+
+    if ((mcast = eth_find_mcast(unit, req->ios2_SrcAddr)) != NULL) {
+        mcast->refcount ++;
+        return TRUE;
+    }
+
+    mcast = AllocVec(sizeof(struct eth_mcast), MEMF_PUBLIC | MEMF_CLEAR);
+    if (mcast == NULL) {
+        req->ios2_Req.io_Error = S2ERR_NO_RESOURCES;
+        req->ios2_WireError = S2WERR_GENERIC_ERROR;
+        return TRUE;
+    }
+    mcast->refcount = 1;
+    CopyMem(req->ios2_SrcAddr, mcast->addr, sizeof(mcast->addr));
+
+    Disable();
+    AddTail((APTR) &(unit->mcasts), (APTR) mcast);
+    Enable();
+
+    return TRUE;
+}
+
+static BOOL eth_del_mcast(struct IOSana2Req *req, struct eth_unit *unit) {
+    struct eth_mcast *mcast;
+
+    if ((mcast = eth_find_mcast(unit, req->ios2_SrcAddr)) == NULL) {
+        req->ios2_Req.io_Error = S2ERR_BAD_STATE;
+        req->ios2_WireError = S2WERR_BAD_MULTICAST;
+        return TRUE;
+    }
+
+    if (-- mcast->refcount == 0) {
+        Disable();
+        Remove((APTR) mcast);
+        Enable();
+
+        FreeVec(mcast);
+    }
+
+    return TRUE;
+}
+
 static BOOL eth_broadcast(struct IOSana2Req *req, struct eth_unit *unit) {
     /* just fill in the broadcast address as the dest, and write as normal */
     char *addr = req->ios2_DstAddr;
@@ -317,6 +391,22 @@ void eth_handle_request(struct IOSana2Req *req) {
         case S2_BROADCAST:
             D(bug("[eth] [%d] S2_BROADCAST\n", unit->num));
             completed = eth_broadcast(req, unit);
+            break;
+
+        case S2_MULTICAST:
+            /* the caller filled in the group's address: write as normal */
+            D(bug("[eth] [%d] S2_MULTICAST\n", unit->num));
+            completed = eth_write(req, unit);
+            break;
+
+        case S2_ADDMULTICASTADDRESS:
+            D(bug("[eth] [%d] S2_ADDMULTICASTADDRESS\n", unit->num));
+            completed = eth_add_mcast(req, unit);
+            break;
+
+        case S2_DELMULTICASTADDRESS:
+            D(bug("[eth] [%d] S2_DELMULTICASTADDRESS\n", unit->num));
+            completed = eth_del_mcast(req, unit);
             break;
 
         case S2_TRACKTYPE:

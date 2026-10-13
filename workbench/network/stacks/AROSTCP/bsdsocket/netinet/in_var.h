@@ -120,6 +120,7 @@ struct ip_moptions {
 	(ia) = _ia;							\
 }
 
+void in_mcast_macaddr(struct in_addr *, u_int8_t *);
 struct in_multi *in_addmulti(struct in_addr *, struct ifnet *);
 void in_delmulti(struct in_multi *);
 #endif /* ENABLE_MULTICAST */

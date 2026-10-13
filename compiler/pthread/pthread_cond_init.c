@@ -23,7 +23,47 @@
 #include "pthread_intern.h"
 #include "debug.h"
 
-int pthread_cond_init(pthread_cond_t *cond, const pthread_condattr_t *attr)
+/****************************************************************************
+    NAME */
+        int pthread_cond_init(
+
+/*  SYNOPSIS */
+        pthread_cond_t *cond,
+        const pthread_condattr_t *attr)
+
+/*  FUNCTION
+        Initialize a condition variable with an empty waiter list. Select the
+        absolute-deadline clock from attr, or CLOCK_REALTIME by default.
+
+    INPUTS
+        cond - Non-NULL writable condition storage, not already in use.
+        attr - Attributes initialized with pthread_condattr_init(), or NULL.
+            On AROS, CLOCK_REALTIME and CLOCK_MONOTONIC are accepted.
+
+    RESULT
+        0 on success. EINVAL if cond is NULL or attr specifies an unsupported
+        clock on AROS. Validation failure leaves cond unchanged.
+        Errors are returned directly.
+
+    NOTES
+        Include <pthread.h>; link with pthread. No waiter or timer is allocated.
+        The caller retains the storage until no task can wait or signal and
+        pthread_cond_destroy() has completed. Attributes are copied and need
+        not outlive the condition. Initialize before publishing to other tasks.
+        Use pthread_condattr_init(), not manual zeroing: clock identifier 0
+        denotes CLOCK_MONOTONIC on AROS, not the realtime default.
+
+    BUGS
+        Process-sharing attributes are ignored. Reinitialization of an active
+        condition is not detected. Static lazy initialization elsewhere in
+        this implementation is not serialized against simultaneous first use.
+
+    SEE ALSO
+        pthread_cond_wait(),
+        pthread_cond_timedwait(),
+        pthread_cond_destroy()
+
+*****************************************************************************/
 {
     D(bug("%s(%p, %p)\n", __FUNCTION__, cond, attr));
 

@@ -1,0 +1,68 @@
+#   The shared store of crates.io crates for the Rust code built in the tree
+#   (tools/crosstools/rust.cfg names the versions and the directories).
+#
+#   The first group are crates that need AROS changes (the libc crate's AROS
+#   module, getrandom's getentropy() backend for its 0.2/0.3/0.4 lines,
+#   parking_lot_core's realtime-clock
+#   condition variable); any Rust program with randomness or parking_lot pulls
+#   them in. They are fetched and patched here once, and rust-crates.toml,
+#   the generated cargo config, replaces the crates.io versions with them: a
+#   program's mmakefile depends on rust-crates-config (which fetches all of
+#   them: cargo refuses a [patch] entry whose path does not exist) and runs
+#   cargo with $(RUST_CARGO), which passes the config. The second group are unpatched crates that mesa's NAK
+#   compiler compiles with rustc directly. The third group, aros-*-sys, are
+#   crates written for AROS (C glue and bindings for its libraries and
+#   devices); their sources live here.
+#
+#   Crates that only applications need (tokio, iced, ...) have the same kind
+#   of store in contrib/development/rust/crates.
+
+include $(SRCDIR)/config/aros.cfg
+-include $(SRCDIR)/tools/crosstools/rust.cfg
+
+#MM rust-crates : rust-crates-libc rust-crates-getrandom02 rust-crates-getrandom03 rust-crates-getrandom04 \
+#MM     rust-crates-parking-lot-core rust-crates-config \
+#MM     rust-crates-paste rust-crates-rustc-hash rust-crates-syn rust-crates-quote \
+#MM     rust-crates-proc-macro2 rust-crates-unicode-ident
+rust-crates :
+	$(Q)$(NOP)
+
+## Patched for AROS ###
+
+%rust_crate mmake=rust-crates-libc crate=libc version=$(RUST_LIBC_VERSION) \
+    patch=$(RUST_CRATE_LIBC)-aros.diff
+%rust_crate mmake=rust-crates-getrandom02 crate=getrandom version=$(RUST_GETRANDOM02_VERSION) \
+    patch=$(RUST_CRATE_GETRANDOM02)-aros.diff
+%rust_crate mmake=rust-crates-getrandom03 crate=getrandom version=$(RUST_GETRANDOM03_VERSION) \
+    patch=$(RUST_CRATE_GETRANDOM03)-aros.diff
+%rust_crate mmake=rust-crates-getrandom04 crate=getrandom version=$(RUST_GETRANDOM04_VERSION) \
+    patch=$(RUST_CRATE_GETRANDOM04)-aros.diff
+%rust_crate mmake=rust-crates-parking-lot-core crate=parking_lot_core version=$(RUST_PARKING_LOT_CORE_VERSION) \
+    patch=$(RUST_CRATE_PARKING_LOT_CORE)-aros.diff
+
+# The cargo config that puts them in place of the crates.io ones. Every entry
+# must exist (cargo refuses a [patch] path that does not), so the config target
+# fetches all of them; a program that does not use one only gets a warning.
+#MM rust-crates-config : rust-crates-libc rust-crates-getrandom02 rust-crates-getrandom03 rust-crates-getrandom04 \
+#MM     rust-crates-parking-lot-core
+%rust_patches_config mmake=rust-crates-config file=$(RUST_CRATES_CONFIG) \
+    patches="libc=$(RUST_CRATESDIR)/$(RUST_CRATE_LIBC) \
+        getrandom=$(RUST_CRATESDIR)/$(RUST_CRATE_GETRANDOM04) \
+        getrandom03:getrandom=$(RUST_CRATESDIR)/$(RUST_CRATE_GETRANDOM03) \
+        getrandom02:getrandom=$(RUST_CRATESDIR)/$(RUST_CRATE_GETRANDOM02) \
+        parking_lot_core=$(RUST_CRATESDIR)/$(RUST_CRATE_PARKING_LOT_CORE) \
+        aros-gui-sys=$(RUST_SYS_CRATESDIR)/aros-gui-sys \
+        aros-pty-sys=$(RUST_SYS_CRATESDIR)/aros-pty-sys \
+        aros-ahi-sys=$(RUST_SYS_CRATESDIR)/aros-ahi-sys \
+        aros-mui-sys=$(RUST_SYS_CRATESDIR)/aros-mui-sys"
+
+## Unpatched, for NAK (workbench/libs/mesa/libnak) ###
+
+%rust_crate mmake=rust-crates-paste crate=paste version=$(RUST_PASTE_VERSION)
+%rust_crate mmake=rust-crates-rustc-hash crate=rustc-hash version=$(RUST_RUSTC_HASH_VERSION)
+%rust_crate mmake=rust-crates-syn crate=syn version=$(RUST_SYN_VERSION)
+%rust_crate mmake=rust-crates-quote crate=quote version=$(RUST_QUOTE_VERSION)
+%rust_crate mmake=rust-crates-proc-macro2 crate=proc-macro2 version=$(RUST_PROC_MACRO2_VERSION)
+%rust_crate mmake=rust-crates-unicode-ident crate=unicode-ident version=$(RUST_UNICODE_IDENT_VERSION)
+
+%common

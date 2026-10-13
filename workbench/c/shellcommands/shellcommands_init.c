@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     The shell program.
 */
@@ -83,3 +83,19 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 }
 
 ADD2INITLIB(GM_UNIQUENAME(Init), 0);
+
+#if defined(SHCOMMANDS_SHARED_PRINTF)
+/* The single Printf() the embedded commands use, see <aros/shcommands_embedded.h>.
+   They pass their own DOSBase, so drop this file's macro for the resource's. */
+#undef DOSBase
+LONG __shcommands_Printf(struct DosLibrary *DOSBase, CONST_STRPTR format, ...)
+{
+    LONG retval;
+
+    AROS_SLOWSTACKFORMAT_PRE(format);
+    retval = VPrintf(format, AROS_SLOWSTACKFORMAT_ARG(format));
+    AROS_SLOWSTACKFORMAT_POST(format);
+
+    return retval;
+}
+#endif

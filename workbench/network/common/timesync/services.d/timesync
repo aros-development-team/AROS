@@ -1,0 +1,21 @@
+#
+# AROSTCP network service: SNTP clock synchronisation (timesyncd).
+#
+# One file per service under db/services.d/ (the file name is the service name).
+#   Path    - the daemon executable
+#   Order   - bring-up priority hint (higher starts earlier)
+#   StopSig - signal bit sent to stop it (12 = CTRL-C)
+#   Policy  - reload policy: signal (survive a reload, quiesce/resume); the
+#             daemon syncs again shortly after every reconfigure
+#   Enabled - yes or no.  Enabled by default: it only ever talks to the NTP
+#             servers listed in ENV:AROSTCP/timesync.conf (pool.ntp.org
+#             unless changed) and sets the clock from the first that answers.
+#             Set Enabled=no and reload the stack to turn it off without
+#             deleting this script.
+#
+Name=Clock Synchronisation (SNTP)
+Path=SYS:System/Network/Services/timesyncd
+Order=30
+StopSig=12
+Policy=signal
+Enabled=yes
