@@ -299,3 +299,30 @@ mdnsAppendRecord(UBYTE *pkt, LONG pktmax, LONG *pos, UWORD *ancount,
     (*ancount)++;
     return 0;
 }
+
+LONG
+mdnsTxtNext(const char *text, LONG *pos, UBYTE *item, LONG max)
+{
+    LONG in = *pos;
+    LONG out = 0;
+
+    while (text[in] == ' ') {
+        in++;
+    }
+    if (text[in] == '\0') {
+        *pos = in;
+        return -1;
+    }
+    while (text[in] != '\0' && text[in] != ' ') {
+        /* a backslash gives the next character as it is */
+        if (text[in] == '\\' && text[in + 1] != '\0') {
+            in++;
+        }
+        if (out < max) {
+            item[out++] = (UBYTE)text[in];
+        }
+        in++;
+    }
+    *pos = in;
+    return out;
+}

@@ -74,4 +74,16 @@ LONG mdnsAppendRecord(UBYTE *pkt, LONG pktmax, LONG *pos, UWORD *ancount,
     const UBYTE *rdata, UWORD rdlength);
 void mdnsInitHeader(struct MDNSHeader *hdr, UWORD flags, UWORD qdcount);
 
+/*
+ * A service's text, as clients give it, is one string of "key=value" items
+ * with a space between them. A space that belongs to an item is written
+ * with a backslash before it, and a backslash as two; in the TXT record
+ * each item is a string of its own with neither (RFC 6763 section 6).
+ *
+ * mdnsTxtNext() takes the next item of text from *pos, without its
+ * backslashes, into item (max bytes, no terminator added) and moves *pos
+ * past it. It returns the item's length, cut at max, or -1 at the end.
+ */
+LONG mdnsTxtNext(const char *text, LONG *pos, UBYTE *item, LONG max);
+
 #endif /* MDNSD_MDNS_DNS_H */

@@ -10,11 +10,13 @@ USER_CFLAGS := $(CFLAGS_GNU99)
 
 #MM workbench-network-mdnsd : \
 #MM      network-includes-copy \
+#MM      workbench-network-mdns-includes \
 #MM      workbench-network-mdns-svccfg
 
 # The daemon installs alongside the other managed network services.
 %build_prog mmake=workbench-network-mdnsd \
     progname=mdnsd targetdir=$(AROS_SYSTEM)/Network/Services \
-    files="mdnsd mdnsd_service mdns_net mdns_dns mdns_host mdns_packet"
+    files="mdnsd mdnsd_service mdns_net mdns_dns mdns_host mdns_packet \
+           mdns_reg mdns_client"
 
 %common

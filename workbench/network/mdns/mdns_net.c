@@ -334,3 +334,16 @@ mdnsNetSendOn(struct MDNSDaemon *md, LONG index, const UBYTE *pkt,
     return send_on(md->md_SocketBase, md, index, pkt, pktlen);
 }
 
+/* Sends a packet that is the same on every link: to the interface a
+ * packet being answered came in on, or else to all of them. */
+void
+mdnsNetSendAll(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen)
+{
+    LONG i;
+
+    for (i = 0; i < md->md_IfCount; i++) {
+        if (md->md_SendIf < 0 || i == md->md_SendIf) {
+            mdnsNetSendOn(md, i, pkt, pktlen);
+        }
+    }
+}

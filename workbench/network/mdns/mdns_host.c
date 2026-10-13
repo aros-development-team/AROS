@@ -20,18 +20,13 @@
 
 #include "mdnsd.h"
 
-/* a record that went to the group this many seconds ago or less may be
- * answered to the asker alone when the question allows it: a quarter of
- * its life */
-#define MDNS_UNICAST_SECONDS (MDNS_TTL_HOST / 4)
-
 /*
  * "amiga1" becomes "amiga1.local". A host name with a unicast DNS domain
  * ("amiga1.example.org") keeps only its first label: a name answered over
  * mDNS is in the mDNS domain.
  */
-static void
-host_fqdn(struct MDNSDaemon *md, char *buf, LONG buflen)
+void
+mdnsHostFqdn(const struct MDNSDaemon *md, char *buf, LONG buflen)
 {
     LONG n = 0;
 
@@ -43,8 +38,8 @@ host_fqdn(struct MDNSDaemon *md, char *buf, LONG buflen)
     mdnsTextCopy(buf + n, buflen - n, "." MDNS_DOMAIN_LOCAL);
 }
 
-static void
-host_addr_data(ULONG addr, UBYTE *data)
+void
+mdnsAddrData(ULONG addr, UBYTE *data)
 {
     data[0] = (UBYTE)((addr >> 24) & 0xFF);
     data[1] = (UBYTE)((addr >> 16) & 0xFF);
@@ -57,8 +52,8 @@ host_addr_data(ULONG addr, UBYTE *data)
  * for a resolver that speaks plain DNS repeats the ID and the question it
  * sent (RFC 6762 section 6.7).
  */
-static LONG
-response_begin(struct MDNSDaemon *md, UBYTE *pkt)
+LONG
+mdnsResponseBegin(struct MDNSDaemon *md, UBYTE *pkt)
 {
     struct MDNSHeader *hdr = (struct MDNSHeader *)pkt;
     LONG pos;
@@ -88,7 +83,7 @@ host_send_probe(struct MDNSDaemon *md)
     LONG pos, i;
     UWORD nscount;
 
-    host_fqdn(md, fqdn, (LONG)sizeof(fqdn));
+    mdnsHostFqdn(md, fqdn, (LONG)sizeof(fqdn));
     for (i = 0; i < md->md_IfCount; i++) {
         nscount = 0;
         if (mdnsBuildQuery(pkt, (LONG)MDNS_MAX_PACKET, 0, fqdn, DNS_TYPE_ANY,
@@ -96,7 +91,7 @@ host_send_probe(struct MDNSDaemon *md)
                     (md->md_HostStep == 0 ? DNS_QU_BIT : 0)), &pos) != 0) {
             return;
         }
-        host_addr_data(md->md_Ifs[i].mi_Addr, addrdata);
+        mdnsAddrData(md->md_Ifs[i].mi_Addr, addrdata);
         if (mdnsAppendRecord(pkt, (LONG)MDNS_MAX_PACKET, &pos, &nscount, fqdn,
                 DNS_TYPE_A, DNS_CLASS_IN, MDNS_TTL_HOST, addrdata, 4) != 0) {
             return;
@@ -124,14 +119,14 @@ host_send_addr(struct MDNSDaemon *md, BOOL goodbye)
     LONG pos, i;
     UWORD ancount;
 
-    host_fqdn(md, fqdn, (LONG)sizeof(fqdn));
+    mdnsHostFqdn(md, fqdn, (LONG)sizeof(fqdn));
     for (i = 0; i < md->md_IfCount; i++) {
         if (md->md_SendIf >= 0 && i != md->md_SendIf) {
             continue;
         }
-        pos = response_begin(md, pkt);
+        pos = mdnsResponseBegin(md, pkt);
         ancount = 0;
-        host_addr_data(md->md_Ifs[i].mi_Addr, addrdata);
+        mdnsAddrData(md->md_Ifs[i].mi_Addr, addrdata);
         if (mdnsAppendRecord(pkt, (LONG)MDNS_MAX_PACKET, &pos, &ancount, fqdn,
                 DNS_TYPE_A,
                 (UWORD)(legacy ? DNS_CLASS_IN : DNS_CLASS_IN_FLUSH),
@@ -193,11 +188,14 @@ mdnsHostTick(struct MDNSDaemon *md)
                 md->md_HostStep++;
                 md->md_HostNextTick = now + MDNS_PROBE_TICKS;
             } else {
-                /* Nobody objected: the name is this host's. */
+                /* Nobody objected: the name is this host's. Services
+                 * announced under an earlier name or address are
+                 * announced again with this one. */
                 md->md_HostState = MDNS_NAME_ANNOUNCED;
                 md->md_HostStep = 1;
                 md->md_HostNextTick = now + 50;
                 host_send_addr(md, FALSE);
+                mdnsRegAnnounceAll(md);
             }
         }
         return md->md_HostState == MDNS_NAME_PROBING;
@@ -230,7 +228,7 @@ mdnsHostHandleQuery(struct MDNSDaemon *md, struct MDNSQuestion *q)
         (q->qtype != DNS_TYPE_ANY && q->qtype != DNS_TYPE_A)) {
         return;
     }
-    host_fqdn(md, fqdn, (LONG)sizeof(fqdn));
+    mdnsHostFqdn(md, fqdn, (LONG)sizeof(fqdn));
     if (Stricmp(q->qname, fqdn) != 0) {
         return;
     }
@@ -273,8 +271,8 @@ mdnsHostHandleProbe(struct MDNSDaemon *md, const struct MDNSRecord *theirs,
         return;         /* not probing, or has not asked yet */
     }
     index = md->md_SendIf >= 0 ? md->md_SendIf : 0;
-    host_fqdn(md, fqdn, (LONG)sizeof(fqdn));
-    host_addr_data(md->md_Ifs[index].mi_Addr, mine);
+    mdnsHostFqdn(md, fqdn, (LONG)sizeof(fqdn));
+    mdnsAddrData(md->md_Ifs[index].mi_Addr, mine);
     for (i = 0; i < count; i++) {
         /* same class and type, so the data decides */
         if (Stricmp(theirs[i].name, fqdn) == 0 &&
@@ -304,7 +302,7 @@ mdnsHostHandleRecord(struct MDNSDaemon *md, const struct MDNSRecord *r)
         r->ttl == 0) {
         return;
     }
-    host_fqdn(md, fqdn, (LONG)sizeof(fqdn));
+    mdnsHostFqdn(md, fqdn, (LONG)sizeof(fqdn));
     if (Stricmp(fqdn, r->name) != 0) {
         return;
     }

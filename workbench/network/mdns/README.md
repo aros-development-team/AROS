@@ -1,13 +1,17 @@
-# mdnsd
+# mdnsd and bonami.library
 
-A multicast DNS responder (RFC 6762) for AROSTCP. It answers for the host's
-name in the mDNS domain, `<hostname>.local`, on every interface that can
-multicast, so that other machines on the link find this one by name without
-a DNS server: `ping amiga.local`, `ssh amiga.local`.
+`mdnsd` is a multicast DNS responder (RFC 6762) for AROSTCP. It answers for
+the host's name in the mDNS domain, `<hostname>.local`, on every interface
+that can multicast, so that other machines on the link find this one by name
+without a DNS server: `ping amiga.local`, `ssh amiga.local`.
 
-This is the first part of a system mDNS/DNS-SD service. It only speaks for
-the host's own name and address. Registering and browsing services, and a
-client library, are to follow.
+It also answers for the services that programs on this host offer (DNS-SD,
+RFC 6763), which they register through `bonami.library`, so that other
+machines find a printer, a file share or a MIDI session without being told
+an address or a port.
+
+These are the first two parts of a system mDNS/DNS-SD service. Looking for
+other hosts' services and names (browse, resolve, lookup) is to follow.
 
 ## What it does
 
@@ -34,6 +38,67 @@ client library, are to follow.
 - **Goodbye.** When it stops, or lets go of the stack, it withdraws the
   record with a time to live of zero.
 
+## Services
+
+- **The records.** A registered service is an instance name under a type,
+  `Printer._ipp._tcp.local`, with a `PTR` record from the type to the
+  instance, the instance's `SRV` (this host's name and the port) and `TXT`,
+  and the host's address. Its own records live 75 minutes and the `SRV` two,
+  or what its client asked for.
+- **The name** is asked for and announced as the host's is, and waits for
+  the host's name to be settled. When another host has it the service
+  becomes `Printer (2)`, then `Printer (3)`; when two hosts ask at the same
+  moment the `SRV` records are compared (section 8.2).
+- **Answers.** A question for the type is answered after 20 to 120 ms,
+  picked at random, with every instance of the type in one response and the
+  host's address once (section 6); an instance the asker lists as known is
+  left out (section 7.1). A question for one instance is answered at once.
+  `_services._dns-sd._udp.local` is answered with the types there are.
+  Plain DNS resolvers and the unicast-response bit are treated as for the
+  host's name.
+- **Another host's service.** A client may register a service with a host
+  name and an address of its own, for a machine that does not speak mDNS:
+  mdnsd then answers for that name too.
+- **Clients that go away.** With a task's last `CloseLibrary()` what it
+  registered is withdrawn. A task that ends without closing is noticed
+  within a few seconds, by its absence from the system's task lists.
+
+## bonami.library
+
+The library holds no state: each call is a message to mdnsd's public port,
+and the reply is waited for. Without mdnsd the calls return
+`MDNSERR_NOENGINE`.
+
+| Function | What it does |
+|---|---|
+| `OpenMDNSEngine()` | says whether mdnsd is running |
+| `CloseMDNSEngine()` | withdraws everything the calling task registered |
+| `RegisterServiceA(tags)` | offers a service; returns at once |
+| `UpdateServiceA(ref, tags)` | changes its text or port |
+| `DeregisterService(ref)` | withdraws it |
+
+```c
+#include <proto/bonami.h>
+
+MDNSRegisterRef ref = NULL;
+struct TagItem tags[] = {
+    { MDNS_ServiceName, (IPTR)"Living Room" },
+    { MDNS_ServiceType, (IPTR)"_http._tcp" },
+    { MDNS_Port, 80 },
+    { MDNS_TXTRecord, (IPTR)"path=/ note=two\\ words" },
+    { MDNS_RegisterRef, (IPTR)&ref },
+    { TAG_END, 0 }
+};
+
+if (RegisterServiceA(tags) == MDNS_OK) {
+    /* ... */
+    DeregisterService(ref);
+}
+```
+
+The text is `key=value` items with a space between them; a space inside an
+item is written with a backslash before it.
+
 ## How it runs
 
 mdnsd is a managed service of AROSTCP. The service manager starts it from
@@ -52,6 +117,10 @@ Started by hand it runs until Ctrl-C.
 - The number after a name that was lost is not remembered when mdnsd
   restarts: it starts from the system's name again.
 - At most eight interfaces.
+- A service's text is at most 256 characters, its instance name 64.
+- A question for the service types is not delayed, known answers that
+  come in a second packet are not waited for, and a record that went to
+  the group less than a second ago is sent again all the same.
 - It needs a stack that delivers IPv4 multicast to a socket that joined a
   group, and a SANA-II driver that accepts `S2_ADDMULTICASTADDRESS` and
   `S2_MULTICAST`.
@@ -64,8 +133,13 @@ Started by hand it runs until Ctrl-C.
 | `mdnsd_service.c` | registration with `netservices.library` |
 | `mdns_net.c` | the interfaces and their sockets, the name in use |
 | `mdns_host.c` | the host's name: probing, announcing, answering, conflicts |
+| `mdns_reg.c` | registered services: probing, announcing, answering |
+| `mdns_client.c` | the library's messages; clients that went away |
 | `mdns_packet.c` | takes a received packet apart |
 | `mdns_dns.c` | the DNS wire format |
+| `mdns_ipc.h` | the messages between the library and mdnsd |
+| `library/` | `bonami.library` |
+| `include/` | `<bonami/mdns.h>`, `<libraries/bonamibase.h>` |
 | `services.d/mdns` | the service manager's entry |
 
 Derived from [amigazen Bonami](https://github.com/amigazen/Bonami), under
