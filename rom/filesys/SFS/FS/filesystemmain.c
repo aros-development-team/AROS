@@ -252,6 +252,22 @@ LONG mainprogram(struct ExecBase *SysBase) {
 #endif
 
     globals = AllocMem(sizeof(struct SFSBase), MEMF_PUBLIC | MEMF_CLEAR);
+    if(globals == NULL) {
+        struct Process *task = (struct Process *)FindTask(NULL);
+        struct DosPacket *packet = waitpacket(task);
+        struct MsgPort *replyport = packet->dp_Port;
+        struct Message *msg = packet->dp_Link;
+
+        packet->dp_Res1 = DOSFALSE;
+        packet->dp_Res2 = ERROR_NO_FREE_STORE;
+        packet->dp_Port = &task->pr_MsgPort;
+        msg->mn_Node.ln_Name = (char *)packet;
+        msg->mn_Node.ln_Succ = NULL;
+        msg->mn_Node.ln_Pred = NULL;
+        PutMsg(replyport, msg);
+        return(ERROR_NO_FREE_STORE);
+    }
+
 #ifndef __AROS__
     globals->sysBase = SysBase;
 #endif
