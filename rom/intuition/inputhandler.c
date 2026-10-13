@@ -1403,16 +1403,16 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 
                 DoMethodA(GetPrivIBase(IntuitionBase)->ActiveMonitor, (Msg)&coordmsg);
 
-                /* The pointer moves in display pixels, the screen in its
-                 * own; keep what the division drops for the next move. */
-                if ((DSWidth != DWidth) && DWidth)
+                /* The pointer moves in display pixels, a scaled screen in
+                 * its own; keep what the division drops for the next move. */
+                if ((spFlags & SF_ScaledCoords) && (DSWidth != DWidth) && DWidth)
                 {
                     LONG v = (LONG)dx * DSWidth + iihdata->ScreenDragRemX;
 
                     dx = v / DWidth;
                     iihdata->ScreenDragRemX = v - (LONG)dx * DWidth;
                 }
-                if ((DSHeight != DHeight) && DHeight)
+                if ((spFlags & SF_ScaledCoords) && (DSHeight != DHeight) && DHeight)
                 {
                     LONG v = (LONG)dy * DSHeight + iihdata->ScreenDragRemY;
 

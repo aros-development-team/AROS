@@ -795,6 +795,7 @@ void UpdateScreenBitMap(struct Screen *s, struct IntuitionBase *IntuitionBase);
 #define SF_ComposeBelow	    (0x0200)
 #define SF_ComposeLeft	    (0x0400)
 #define SF_ComposeRight	    (0x0800)
+#define SF_ScaledCoords	    (0x1000) /* COMPF_SCALE: own pixels via the driver */
 
 #define SF_VertCompose (SF_ComposeAbove|SF_ComposeBelow)
 #define SF_HorCompose  (SF_ComposeLeft |SF_ComposeRight)
