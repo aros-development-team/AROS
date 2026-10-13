@@ -31,6 +31,7 @@ struct ARMProcessorInformation
 
     /* Frequency information */
     UQUAD           MaxCPUFrequency;
+    UQUAD           CPUFrequency;   /* sampled once, then cached */
 
     /* Multiprocessor Affinity Register; 0 when not implemented */
     ULONG           MPIDR;
@@ -38,7 +39,8 @@ struct ARMProcessorInformation
 
 VOID ReadProcessorInformation(struct ARMProcessorInformation * info);
 VOID ReadMaxFrequencyInformation(struct ARMProcessorInformation * info);
-UQUAD GetCurrentProcessorFrequency(struct ARMProcessorInformation * info);
+/* Needs ProcessorBase to reach KernelBase - as on all-pc. */
+UQUAD GetCurrentProcessorFrequency(struct ProcessorBase *ProcessorBase, struct ARMProcessorInformation * info);
 VOID Processor_FillTopology(struct ProcessorBase * ProcessorBase);
 VOID ARM_AnswerTag(struct ProcessorBase * ProcessorBase, ULONG coreNo, struct TagItem * tag);
 

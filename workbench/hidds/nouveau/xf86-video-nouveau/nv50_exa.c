@@ -1059,6 +1059,8 @@ BOOL HIDDNouveauNV50FillSolidRect(struct CardData * carddata,
     {
         NV50EXASolid(bmdata, minX, minY, maxX + 1, maxY + 1);
         NV50EXADoneSolid(bmdata);
+        bmdata->gpu_dirty = TRUE;
+		HIDDNouveauFlushDisplayable(carddata, bmdata);
         return TRUE;
     }
 
@@ -1072,6 +1074,11 @@ BOOL HIDDNouveauNV50CopySameFormat(struct CardData * carddata,
     LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
     ULONG drawmode)
 {
+	/* acceleration setup can fail and leave the channel torn down;
+	 * report the blit as not accelerated rather than dereference it */
+	if (!carddata->pushbuf)
+		return FALSE;
+
     if (!carddata->channel)
         return FALSE;
 
@@ -1079,6 +1086,9 @@ BOOL HIDDNouveauNV50CopySameFormat(struct CardData * carddata,
     {
         NV50EXACopy(destdata, srcX, srcY, destX , destY, width, height);
         NV50EXADoneCopy(destdata);
+        srcdata->gpu_dirty = TRUE;
+        destdata->gpu_dirty = TRUE;
+		HIDDNouveauFlushDisplayable(carddata, destdata);
         return TRUE;
     }
 

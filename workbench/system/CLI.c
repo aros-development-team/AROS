@@ -161,7 +161,7 @@ int main(int argc, char **argv)
         fromspec = "S:Shell-Startup";
 
     if (winspec == NULL)
-        winspec = "CON:0/50//130/AROS-Shell/CLOSE";
+        winspec = "CON:10/50/640/480/AROS-Shell/CLOSE";
 
     D(bug("[CLI] stack %d from %s window %s\n", stack, fromspec, winspec));
 

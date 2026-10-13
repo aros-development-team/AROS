@@ -64,6 +64,10 @@ FUNCS := \
 
 #MM- core-linklibs: linklibs-layers
 
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
 %build_module mmake=kernel-layers \
   modname=layers modtype=library \
   files="layers_init $(FUNCS) $(FILES)"

@@ -1,0 +1,13 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+USER_LDFLAGS := -static
+
+#MM- test : test-intuition-viewportgeometry
+#MM- test-quick : test-intuition-viewportgeometry-quick
+#MM test-intuition-viewportgeometry : includes linklibs
+
+%build_progs mmake=test-intuition-viewportgeometry \
+    files=viewportgeometry targetdir=$(AROS_TESTS)/intuition/viewportgeometry
+
+%common

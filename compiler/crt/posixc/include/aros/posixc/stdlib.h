@@ -48,7 +48,7 @@ int posix_memalign(void **memptr, size_t alignment, size_t size);
  */
 #if defined(_GNU_SOURCE) || (_POSIX_C_SOURCE >= 200112L) || defined(__USE_XOPEN2K) \
     || defined(__USE_XOPEN_EXTENDED) || defined(__USE_XOPEN2K8)
-char *realpath(const char * restrict, char * restrict);
+char *realpath(const char * __restrict, char * __restrict);
 #endif
 
 /* XSI extensions (X/Open, e.g. XPG4, POSIX.1-2001) */
@@ -88,13 +88,13 @@ char *gcvt(double number, int ndigit, char *buf);
 #if defined(_GNU_SOURCE) || (_XOPEN_SOURCE >= 700) || (_POSIX_C_SOURCE >= 200809L)
 #include <aros/types/locale_t.h>
 
-long                strtol_l(const char * restrict nptr, char ** restrict endptr, int base, locale_t loc);
-float               strtof_l(const char * restrict nptr, char ** restrict endptr, locale_t loc);
-double              strtod_l(const char * restrict nptr, char ** restrict endptr, locale_t loc);
-long double         strtold_l(const char * restrict nptr, char ** restrict endptr, locale_t loc);
-unsigned long       strtoul_l(const char * restrict nptr, char ** restrict endptr, int base, locale_t loc);
-long long           strtoll_l(const char * restrict nptr, char ** restrict endptr, int base, locale_t loc);
-unsigned long long  strtoull_l(const char * restrict nptr, char ** restrict endptr, int base, locale_t loc);
+long                strtol_l(const char * __restrict nptr, char ** __restrict endptr, int base, locale_t loc);
+float               strtof_l(const char * __restrict nptr, char ** __restrict endptr, locale_t loc);
+double              strtod_l(const char * __restrict nptr, char ** __restrict endptr, locale_t loc);
+long double         strtold_l(const char * __restrict nptr, char ** __restrict endptr, locale_t loc);
+unsigned long       strtoul_l(const char * __restrict nptr, char ** __restrict endptr, int base, locale_t loc);
+long long           strtoll_l(const char * __restrict nptr, char ** __restrict endptr, int base, locale_t loc);
+unsigned long long  strtoull_l(const char * __restrict nptr, char ** __restrict endptr, int base, locale_t loc);
 #endif
 
 POSIXCFUNC(char *, getenv, (const char *name));

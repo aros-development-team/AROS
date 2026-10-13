@@ -1,12 +1,17 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+%get_archincludes modname=dos \
+    includeflag=TARGET_DOS_INCLUDES maindir=$(CURDIR)
+
 REPODIR      ?= $(SRCDIR)
 REPOTYPE     := $(shell $(SRCDIR)/scripts/repo_type.sh $(REPODIR))
 REPOREVISION := $(shell $(SRCDIR)/scripts/repo_rev.sh $(REPODIR))
 REPOID       := $(shell $(SRCDIR)/scripts/repo_id.sh $(REPODIR))
 
-USER_INCLUDES := -I$(GENDIR)/$(CURDIR)/dos
+# dos_platform.h can be overridden in an arch-specific directory: the arch
+# includes come first, then this directory for the generic fallback.
+USER_INCLUDES := $(TARGET_DOS_INCLUDES) -I$(SRCDIR)/$(CURDIR) -I$(GENDIR)/$(CURDIR)/dos
 DOS_CPPFLAGS := \
                -DUSE_EXEC_DEBUG \
 	       -D__DOS_NOLIBBASE__ \
@@ -16,9 +21,10 @@ ifneq ($(REPOTYPE),)
 endif
 USER_LDFLAGS := -static
 ifeq ($(AROS_TARGET_CPU),m68k)
-# Make sure we optimize this code for size on m68k..
-OPTIMIZATION_CFLAGS := -Os
 DOS_CPPFLAGS   += -D__DOS_NOLIBINLINE__ 
+endif
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
 endif
 
 DOS_CPPFLAGS += -DDOCACHECLEAR
@@ -71,6 +77,7 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
 
 #MM kernel-dos-includes : \
 #MM     kernel-utility-includes \
+#MM     kernel-security-includes \
 #MM     kernel-exec-includes \
 #MM     kernel-timer-includes \
 #MM     kernel-intuition-includes \
@@ -80,6 +87,7 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
 
 DOS_CPPFLAGS += -DAROS_CPU="\"$(AROS_TARGET_CPU)\""
 USER_CPPFLAGS := $(DOS_CPPFLAGS)
+#USER_CPPFLAGS += -DDEBUG=1
 
 %build_module mmake=kernel-dos \
   modname=dos modtype=library \

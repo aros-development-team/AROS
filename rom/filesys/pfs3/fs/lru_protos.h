@@ -3,6 +3,7 @@ lru.c
  */
 
 BOOL InitLRU(globaldata *, UWORD);
+BOOL ResizeLRU(globaldata *, UWORD);
 void DeallocLRU(globaldata *);
 
 struct cachedblock * AllocLRU(globaldata * );

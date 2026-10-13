@@ -22,6 +22,8 @@
 #include <oop/oop.h>
 #include <proto/exec.h>
 
+#include "../../include/host_vacall.h"
+
 /* Android is not a real Linux :-) */
 #ifdef HOST_OS_android
 #define __off_t off_t

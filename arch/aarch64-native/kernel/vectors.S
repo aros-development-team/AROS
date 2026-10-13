@@ -317,6 +317,11 @@ __el0_fiq:
     save_context 1
     mov     x0, sp
     bl      handle_fiq
+    /* The IPI arrives as an FIQ, and its handler only flags the core for
+     * reschedule - take the switch here, on the way back to the task. */
+    mov     x0, sp
+    mov     fp, #0
+    bl      core_ExitInterrupt
     restore_context 1
 
 .type __el0_serror, %function

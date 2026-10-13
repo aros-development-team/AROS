@@ -1,11 +1,28 @@
 /*
-    Copyright (C) 2002-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
-#include <aros/debug.h>
-#include <stdio.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/utility.h>
+#include <proto/intuition.h>
+
+#include <proto/security.h>
 
 #include "security_intern.h"
+#include "security_task.h"
+#include "security_server.h"
+#include "security_segment.h"
+#include "security_monitor.h"
+#include "security_memory.h"
+#include "security_plugins.h"
+#include "security_crypto.h"
+#include "security_enforce.h"
+#include "security_packetio.h"
+#include "security_userinfo.h"
+#include "security_groupinfo.h"
+#include "security_login.h"
+#include "security_support.h"
 
 /*****************************************************************************
 
@@ -13,43 +30,31 @@
         AROS_LH1(BOOL, secLimitDOSSetProtection,
 
 /*  SYNOPSIS */
-        /* (flag) */
         AROS_LHA(BOOL, flag, D0),
 
 /*  LOCATION */
         struct SecurityBase *, secBase, 16, Security)
 
-/*  FUNCTION
+/*
+    FUNCTION
+        Limit dos.library/SetProtection() to changing only the protection
+        bits for the owner of a file; the GROUP and OTHER bits can then only
+        be changed via secSetProtection(). Root only.
 
     INPUTS
-
+        flag - TRUE to turn limiting on.
 
     RESULT
+        success
 
-
-    NOTES
-
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-
-    INTERNALS
-
-    HISTORY
-
-*****************************************************************************/
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
-
-    return 0;
+    if (!CallerIsRoot(secBase))
+        return FALSE;
+    secBase->LimitDOSSetProtection = flag ? TRUE : FALSE;
+    return TRUE;
 
     AROS_LIBFUNC_EXIT
-
 } /* secLimitDOSSetProtection */
-

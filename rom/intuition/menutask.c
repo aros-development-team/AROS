@@ -254,6 +254,21 @@ BOOL InitDefaultMenuHandler(struct IntuitionBase *IntuitionBase)
     return result;
 }
 
+/**************************************************************************************************/
+
+BOOL EnsureDefaultMenuHandler(struct IntuitionBase *IntuitionBase)
+{
+    struct IntIntuitionBase *priv = GetPrivIBase(IntuitionBase);
+    BOOL result = TRUE;
+
+    ObtainSemaphore(priv->IBaseLock);
+    if (!priv->MenuHandlerPort)
+        result = InitDefaultMenuHandler(IntuitionBase);
+    ReleaseSemaphore(priv->IBaseLock);
+
+    return result;
+}
+
 
 /**************************************************************************************************/
 
@@ -2018,4 +2033,3 @@ static void AddToSelection(struct MenuHandlerData *mhd, struct IntuitionBase *In
 
     } /* if ((mhd->activemenunum != -1) && (mhd->activeitemnum != -1)) */
 }
-

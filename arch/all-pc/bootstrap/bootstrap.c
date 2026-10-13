@@ -292,9 +292,61 @@ D(
 #define str_Bootstrap "bootstrap"
 )
 
+static int range_available(const void *start, const void *end, IPTR size)
+{
+    IPTR first = (IPTR)start;
+    IPTR last = (IPTR)end;
+
+    return first <= last && size <= last - first;
+}
+
+static int pkg_next(void **file, void *end, char **name, void **data)
+{
+    void *cursor = *file;
+    char *path;
+    unsigned int len;
+    IPTR remaining;
+
+    if (!range_available(cursor, end, sizeof(len)))
+        return 0;
+
+    len = LONG2BE(*(unsigned int *)cursor);
+    cursor = (void *)((IPTR)cursor + sizeof(len));
+
+    remaining = (IPTR)end - (IPTR)cursor;
+    if (len >= remaining)
+        return 0;
+    if (((char *)cursor)[len] != 0)
+        return 0;
+
+    path = cursor;
+    cursor = (void *)((IPTR)cursor + len + 1);
+
+    if (!range_available(cursor, end, sizeof(len)))
+        return 0;
+
+    len = LONG2BE(*(unsigned int *)cursor);
+    cursor = (void *)((IPTR)cursor + sizeof(len));
+
+    if (!range_available(cursor, end, len))
+        return 0;
+
+    *name = __bs_remove_path(path);
+    *data = cursor;
+    *file = (void *)((IPTR)cursor + len);
+
+    return 1;
+}
+
 unsigned long AddModule(unsigned long mod_start, unsigned long mod_end, unsigned long end)
 {
     char *p = (char *)mod_start;
+
+    if (!range_available(p, (void *)mod_end, 4))
+    {
+        D(kprintf("[%s] Truncated module @ %p\n", str_Bootstrap, p);)
+        return end;
+    }
 
     if (p[0] == 0x7f && p[1] == 'E' && p[2] == 'L' && p[3] == 'F')
     {
@@ -318,31 +370,48 @@ unsigned long AddModule(unsigned long mod_start, unsigned long mod_end, unsigned
          * The loaded file is an PKG\0 archive. Scan it to find all modules which are
          * stored here.
          */
-        void *file = p + 8;
-
-        D(kprintf("[%s] * package @ %p:\n", str_Bootstrap, mod_start);)
-
-        while (file < (void*)mod_end)
+        if (range_available(p, (void *)mod_end, 8))
         {
-            int len = LONG2BE(*(int *)file);
-            char *s = __bs_remove_path(file+4);
-            struct ELFNode *mo = module_prepare(s);
+            unsigned int packageSize = LONG2BE(*(unsigned int *)(p + 4));
 
-            file += 5+len;
-            len = LONG2BE(*(int *)file);
-            file += 4;
+            if (packageSize >= 8 &&
+                range_available(p, (void *)mod_end, packageSize))
+            {
+                void *pkg_end = (void *)((IPTR)p + packageSize);
+                void *file = p + 8;
 
-            mo->Name = s;
-            mo->eh = file;
-            D(kprintf("[%s]   * PKG module %s @ %p\n", str_Bootstrap, mo->Name, mo->eh);)
+                D(kprintf("[%s] * package @ %p:\n", str_Bootstrap, mod_start);)
 
-            file += len;
+                while (file < pkg_end)
+                {
+                    char *s;
+                    void *data;
+                    struct ELFNode *mo;
+
+                    if (!pkg_next(&file, pkg_end, &s, &data))
+                    {
+                        D(kprintf("[%s]   * Malformed PKG member @ %p\n", str_Bootstrap, file);)
+                        break;
+                    }
+
+                    mo = module_prepare(s);
+                    mo->Name = s;
+                    mo->eh = data;
+                    D(kprintf("[%s]   * PKG module %s @ %p\n", str_Bootstrap, mo->Name, mo->eh);)
+                }
+            }
+            else
+            {
+                D(kprintf("[%s] * Invalid package size %u @ %p\n",
+                          str_Bootstrap, packageSize, p);)
+            }
         }
+        D(else kprintf("[%s] * Truncated package header @ %p\n", str_Bootstrap, p);)
 
         if (mod_end > end)
             end = mod_end;
     }
-    else if (memcmp(p,"!<arch>\n",8) == 0) {
+    else if (range_available(p, (void *)mod_end, 8) && memcmp(p,"!<arch>\n",8) == 0) {
         const struct ar_header *file;
         char *name;
         const struct ar_header *longnames = NULL;
@@ -607,18 +676,32 @@ static void __bootstrap(unsigned int magic, void *mb)
      * Boot-time allocator needs to be smarter.
      */
     /*
-     * Reserve extra room for kernel boot-time allocations.
-     * 64-bit GOP/UEFI boots may need substantially more early memory because
-     * of larger boot data relocation and MMU/GDT/TSS setup (large identity
-     * maps, per-core TSS). 32-bit targets keep the historic small reserve:
-     * requiring a 256MB contiguous region would make low-memory i386
-     * machines unbootable.
+     * Reserve room for the kernel's boot-time allocator (krnAllocBootMem()).
+     * The x86-64 kernel takes at most this much from it (kernel_startup.c,
+     * mmu.c; the identity map is capped at 512 GiB there):
+     *
+     *   supervisor, panic and ring 1 stacks      3 x 64 KiB      192 KiB
+     *   PML4 + PDP                                2 x 4 KiB         8 KiB
+     *   PDE for the 2 MiB-page identity map    262144 x 8 B    2048 KiB
+     *   4 KiB split page pool                  32 x 512 x 8 B   128 KiB
+     *   GDT, IDT, TLS, one TSS per core (<= 256)              <  64 KiB
+     *   relocated taglist, memory map, VBE
+     *   info, command line, BSS tracker                       <  64 KiB
+     *
+     * plus page alignment: under 2.5 MiB, so 4 MiB leaves a wide margin.
+     * A fixed 256 MiB was demanded here for a while; that made any machine
+     * or VM with less than about 280 MiB, or with a fragmented map below
+     * 4 GiB, stop in the bootstrap with a message nobody could see.
+     * The kernel side trims the identity map to whatever it finds behind
+     * the kickstart (core_SetupMMU()), so the two stay consistent.
+     * 32-bit targets keep the historic small reserve.
      */
 #ifdef MULTIBOOT_64BIT
-    ksize = ro_size + rw_size + PAGE_SIZE - 1 + 0x10000000;
+#define KICKSTART_BOOTMEM_RESERVE (4 << 20)
 #else
-    ksize = ro_size + rw_size + PAGE_SIZE - 1 + 0x80000;
+#define KICKSTART_BOOTMEM_RESERVE 0x80000
 #endif
+    ksize = ro_size + rw_size + PAGE_SIZE - 1 + KICKSTART_BOOTMEM_RESERVE;
 
     /* Now locate the highest appropriate region */
     while (len >= sizeof(struct mb_mmap))

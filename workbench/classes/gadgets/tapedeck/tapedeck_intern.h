@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016, The AROS Development Team. All rights reserved.
+    Copyright (C) 2016-2026, The AROS Development Team. All rights reserved.
 */
 
 /***********************************************************************************/
@@ -52,6 +52,7 @@ struct TapeDeckData
     IPTR                        tdd_TopLast;            // for the input handler
     ULONG                       tdd_Mode;
     ULONG                       tdd_ModeLast;
+    ULONG                       tdd_ModeRendered;
     ULONG                       tdd_FrameCount;
     ULONG                       tdd_FrameCurrent;
     ULONG                       tdd_ButtonPen[3];

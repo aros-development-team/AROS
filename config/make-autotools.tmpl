@@ -44,6 +44,8 @@
 #     - extracflags     = additional flags to use with the C compiler.
 #     - usecxxflags      = .
 #     - extracxxflags   = additional flags to use with the C++ compiler.
+#     - usecrosstoolsdir = for host builds, add $(CROSSTOOLSDIR) include/lib
+#                         paths. Defaults to yes.
 #     - nix_dir_layout  = if yes the binary will be stored in a bin subdirectory.
 #                         Defaults to the value of the nix argument.
 #     - nix             = enable u*nix path handling, i.e. a path like
@@ -98,7 +100,8 @@
     targetisaflags="$(TARGET_ISA_CFLAGS)" \
     aros_prefix= nix_dir_layout= nix=no compiler=target crossbuild=no \
     install_target=install preconfigure= postconfigure= postinstall= \
-    config_env_extra= install_env= use_build_env=no buildflags=yes gnuflags=yes nlsflag=yes xflag=yes
+    config_env_extra= install_env= use_build_env=no buildflags=yes gnuflags=yes nlsflag=yes xflag=yes \
+    usecrosstoolsdir=yes
 
 ifneq (%(prefix),)
     %(mmake)-prefix := %(prefix)
@@ -234,12 +237,16 @@ ifeq (%(compiler),host)
     # since that won't get picked up during configure.
     # We also cannot pass in the compiler including std flags so we need to use
     # the "plain" host compiler.
+ifeq (%(usecrosstoolsdir),yes)
+    %(mmake)-crosstools-cflags := -I$(CROSSTOOLSDIR)/include
+    %(mmake)-crosstools-ldflags := -L$(CROSSTOOLSDIR)/lib
+endif
     %(mmake)-cfg-env := %(config_env_extra) \
         CPP="$(HOST_CPP)" \
         CXXCPP="$(HOST_CPP)" \
-        CC="$(strip $(%(mmake)-HOST_CC) $(%(mmake)-HOST_CFLAGS) -I$(CROSSTOOLSDIR)/include)" \
-        CXX="$(strip $(%(mmake)-HOST_CXX) $(%(mmake)-HOST_CXXFLAGS) -I$(CROSSTOOLSDIR)/include)" \
-        LDFLAGS="-L$(CROSSTOOLSDIR)/lib $(USER_LDFLAGS)"
+        CC="$(strip $(%(mmake)-HOST_CC) $(%(mmake)-HOST_CFLAGS) $(%(mmake)-crosstools-cflags))" \
+        CXX="$(strip $(%(mmake)-HOST_CXX) $(%(mmake)-HOST_CXXFLAGS) $(%(mmake)-crosstools-cflags))" \
+        LDFLAGS="$(strip $(%(mmake)-crosstools-ldflags) $(USER_LDFLAGS))"
 ifeq (%(usecppflags),yes)
     %(mmake)-cfg-env += TARGET_CPPFLAGS="$(KERNEL_CPPFLAGS)"
 endif
@@ -566,6 +573,7 @@ $(%(mmake)-configflag) : $(%(mmake)-touchfileflag) $(TOP)/$(CURDIR)/mmakefile
 #    - extracflags      = same meaning as the one for the %build_with_configure macro.
 #    - usecxxflags      = same meaning as the one for the %build_with_configure macro.
 #    - extracxxflags    = same meaning as the one for the %build_with_configure macro.
+#    - usecrosstoolsdir = same meaning as the one for the %build_with_configure macro.
 #    - preconfigure     = same meaning as the one for the %build_with_configure macro.
 #    - postconfigure    = same meaning as the one for the %build_with_configure macro.
 #    - postinstall      = same meaning as the one for the %build_with_configure macro.
@@ -584,7 +592,8 @@ $(%(mmake)-configflag) : $(%(mmake)-touchfileflag) $(TOP)/$(CURDIR)/mmakefile
     usecxxflags=yes extracxxflags="$(OPTIMIZATION_CFLAGS)" \
     config_env_extra= install_env= use_build_env=no nix=no nix_dir_layout= create_pkg=no \
     buildflags=yes gnuflags=yes nlsflag=yes xflag=yes \
-    hostisaflags="$(HOST_ISA_CFLAGS)" kernelisaflags="$(KERNEL_ISA_CFLAGS)" targetisaflags="$(TARGET_ISA_CFLAGS)"
+    hostisaflags="$(HOST_ISA_CFLAGS)" kernelisaflags="$(KERNEL_ISA_CFLAGS)" targetisaflags="$(TARGET_ISA_CFLAGS)" \
+    usecrosstoolsdir=yes
 
 #MM- %(mmake)-quick : %(mmake)-%(subpackage)-quick
 #MM- %(mmake)-%(subpackage)-quick : %(mmake)-%(subpackage)-fetch
@@ -669,7 +678,8 @@ endif
      usecflags="%(usecflags)" extracflags="%(extracflags)" \
      usecxxflags="%(usecxxflags)" extracxxflags="%(extracxxflags)" \
      buildflags=%(buildflags) gnuflags=%(gnuflags) nlsflag=%(nlsflag) xflag=%(xflag) \
-     hostisaflags=%(hostisaflags) kernelisaflags="%(kernelisaflags)" targetisaflags=%(targetisaflags)
+     hostisaflags=%(hostisaflags) kernelisaflags="%(kernelisaflags)" targetisaflags=%(targetisaflags) \
+     usecrosstoolsdir="%(usecrosstoolsdir)"
 
 .PHONY : %(mmake)-%(subpackage)-make-package %(mmake)-%(subpackage)-create-patch
 #MM %(mmake)-%(subpackage)-make-package : %(mmake)-%(subpackage)-quick

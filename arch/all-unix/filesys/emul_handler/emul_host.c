@@ -478,7 +478,7 @@ LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG access, LONG 
             flags |= O_CREAT;
         }
 
-        r = emulbase->pdata.SysIFace->open(fh->hostname, flags, 0770);
+        r = HOST_VACALL3(emulbase->pdata.SysIFace->open, fh->hostname, flags, 0770);
         AROS_HOST_BARRIER
 
         if (r < 0 && err_u2a(emulbase) == ERROR_WRITE_PROTECTED)

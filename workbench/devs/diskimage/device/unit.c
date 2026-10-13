@@ -29,6 +29,7 @@
 
 #ifdef __AROS__
 #include <expat.h>
+#include "catalogs/catalog_version.h"
 #else
 #include <proto/expat.h>
 #endif
@@ -121,7 +122,8 @@ int UnitProcMain (struct DiskImageUnit *unit) {
 #ifdef __AROS__
 	ObtainSemaphore(libBase->PluginSemaphore);
 	if (IsListEmpty(libBase->Plugins)) {
-		InitLocaleInfo(SysBase, &libBase->LocaleInfo, "diskimagedevice.catalog");
+		InitLocaleInfoVersion(SysBase, &libBase->LocaleInfo,
+			"diskimagedevice.catalog", CATALOG_VERSION);
 		LoadPlugins(libBase);
 	}
 	ReleaseSemaphore(libBase->PluginSemaphore);

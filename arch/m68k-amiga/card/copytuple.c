@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: CopyTuple() function.
 */
@@ -8,7 +8,7 @@
 
 #include "card_intern.h"
 
-#define TUPLEDEBUG(x) do { if (buffer == NULL) x; } while(0);
+#define TUPLEDEBUG(x)
 #define TUPLEDEBUG2(x) x
 #define TUPLELOGGING 1
 

@@ -17,12 +17,12 @@
 /*  SYNOPSIS */
         AROS_LHA(struct RastPort   *, rp, A1),
         AROS_LHA(CONST_STRPTR       , string, A0),
-        AROS_LHA(ULONG              , strLen, D0),
+        AROS_LHA(UWORD              , strLen, D0),
         AROS_LHA(struct TextExtent *, textExtent, A2),
         AROS_LHA(struct TextExtent *, constrainingExtent, A3),
-        AROS_LHA(LONG               , strDirection, D1),
-        AROS_LHA(ULONG              , constrainingBitWidth, D2),
-        AROS_LHA(ULONG              , constrainingBitHeight, D3),
+        AROS_LHA(WORD               , strDirection, D1),
+        AROS_LHA(UWORD              , constrainingBitWidth, D2),
+        AROS_LHA(UWORD              , constrainingBitHeight, D3),
 
 /*  LOCATION */
         struct GfxBase *, GfxBase, 116, Graphics)

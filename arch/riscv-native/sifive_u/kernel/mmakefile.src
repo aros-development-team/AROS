@@ -27,7 +27,7 @@ kernel-sifive_u-riscv: $(OSGENDIR)/boot/core.elf
 
 #MM- kernel-sifive_u-riscv-quick: setup-native-riscv-sifive_u-quick kernel-kernel-kobj-quick kernel-exec-kobj-quick kernel-task-kobj-quick kernel-sifive_u-riscv
 
-ELFCORELIBS := -L$(AROS_LIB) -larossupport -lautoinit -llibinit -lstdc.static
+ELFCORELIBS := -L$(AROS_LIB) -larossupport -lautoinit -lamiga -llibinit -lstdc.static
 ifeq ("$(AROS_TOOLCHAIN)","gnu")
 ELFCORELIBS += -L$(CROSSTOOLSDIR)/lib/gcc/$(AROS_TARGET_CPU)-aros/$(TARGET_GCC_VER) -lgcc
 endif

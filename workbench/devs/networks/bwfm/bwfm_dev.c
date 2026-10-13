@@ -95,7 +95,7 @@ static const UWORD supported_commands[] =
      * Listing S2_GETNETWORKS makes wpa_supplicant treat us as a hard-MAC
      * (FullMAC) device, which matches the chip. */
     S2_GETNETWORKS, S2_GETCRYPTTYPES, S2_ONEVENT, S2_SETOPTIONS, S2_SETKEY,
-    S2_GETNETWORKINFO,
+    S2_GETNETWORKINFO, S2_GETSIGNALQUALITY,
     NSCMD_DEVICEQUERY,
     0
 };
@@ -298,6 +298,9 @@ static APTR nvram_convert(const UBYTE *src, ULONG size, ULONG *newlenp)
 /* ----------------------------------------------------------------------- */
 /* Async SDPCM RX pump + SANA-II datapath                                  */
 
+struct bwfm_tracker *find_tracker(struct bwfm_unit *unit, ULONG type);
+static void report_events(struct bwfm_unit *unit, ULONG events);
+
 /*
  * Deliver one received 802.3 frame to whichever opener has a matching pending
  * CMD_READ request. Modelled on tap.device's tap_receive().
@@ -373,6 +376,25 @@ static void rx_deliver(LIBBASETYPEPTR LIBBASE, struct bwfm_unit *unit,
             break;          /* one read per opener; keep offering to the rest */
         }
     }
+
+    {
+        struct bwfm_tracker *t = find_tracker(unit, packet_type);
+
+        if (delivered)
+            unit->stats.PacketsReceived++;
+        else
+            unit->stats.UnknownTypesReceived++;
+        if (t != NULL)
+        {
+            if (delivered)
+            {
+                t->stats.PacketsReceived++;
+                t->stats.BytesReceived += len;
+            }
+            else
+                t->stats.PacketsDropped++;
+        }
+    }
     ReleaseSemaphore(&unit->lock);
 
     /* IP/ARP flood the log and have a reader by definition; anything else is
@@ -392,24 +414,41 @@ static void rx_deliver(LIBBASETYPEPTR LIBBASE, struct bwfm_unit *unit,
 static void report_events(struct bwfm_unit *unit, ULONG events);
 
 /*
- * Follow the firmware's link state and pass a change on to the openers as a
- * SANA-II event. Transition-only: our own join reports CONNECT itself, and a
- * repeated announcement would have the supplicant redo association handling.
+ * A join succeeded. Announced unconditionally, and only from here: stopping the
+ * supplicant does not disassociate, so a fresh join often finds the firmware
+ * still joined to the old link, and a transition test would swallow the event.
+ * The stack restarts DHCP off exactly this event - miss it and the interface
+ * keeps an address from the network we just left, or never gets one.
  */
-static void link_change(struct bwfm_unit *unit, int up)
+static void link_up(struct bwfm_unit *unit)
+{
+    ObtainSemaphore(&unit->lock);
+    unit->joined = 1;
+    ReleaseSemaphore(&unit->lock);
+
+    D(bug("[bwfm.device] link up\n"));
+    report_events(unit, S2EVENT_CONNECT);
+}
+
+/*
+ * The firmware lost the link, or moved it without being asked. Transition-only
+ * here: an access point retrying a deauth should not turn into a stream of
+ * events, and the supplicant only needs telling once that the session ended.
+ */
+static void link_down(struct bwfm_unit *unit)
 {
     int changed;
 
     ObtainSemaphore(&unit->lock);
-    changed = (unit->joined != up);
-    unit->joined = up;
+    changed = (unit->joined != 0);
+    unit->joined = 0;
     ReleaseSemaphore(&unit->lock);
 
     if (!changed)
         return;
 
-    D(bug("[bwfm.device] link %s\n", up ? "up" : "down"));
-    report_events(unit, up ? S2EVENT_CONNECT : S2EVENT_DISCONNECT);
+    D(bug("[bwfm.device] link down\n"));
+    report_events(unit, S2EVENT_DISCONNECT);
 }
 
 static void bwfm_pump(void)
@@ -471,20 +510,20 @@ static void bwfm_pump(void)
                  * a change of state, so our own join (which reports CONNECT
                  * itself) does not announce it twice.
                  */
-                if (etype == BWFM_E_LINK && (info & BWFM_RX_EVENT_LINKUP))
-                    link_change(unit, 1);
-                else if (etype == BWFM_E_LINK || etype == BWFM_E_DEAUTH ||
-                         etype == BWFM_E_DEAUTH_IND ||
-                         etype == BWFM_E_DISASSOC ||
-                         etype == BWFM_E_DISASSOC_IND ||
-                         etype == BWFM_E_REASSOC || etype == BWFM_E_ROAM)
+                /*
+                 * Only losses come from here. A link coming up is announced by
+                 * whoever asked for it, so a roam - which arrives as AUTH plus
+                 * LINK-up with no link-down in between, keys gone all the same -
+                 * is reported as the session ending: the supplicant then
+                 * re-associates through S2_SETOPTIONS, and that announces the
+                 * new link.
+                 */
+                if (etype == BWFM_E_DEAUTH || etype == BWFM_E_DEAUTH_IND ||
+                    etype == BWFM_E_DISASSOC || etype == BWFM_E_DISASSOC_IND ||
+                    etype == BWFM_E_REASSOC || etype == BWFM_E_ROAM ||
+                    (etype == BWFM_E_LINK && !(info & BWFM_RX_EVENT_LINKUP)))
                 {
-                    /* A roam or reassociation arrives as AUTH + LINK-up with no
-                     * link-down in between, so the transition test would miss
-                     * it - and the keys are gone all the same. Reporting the
-                     * session as ended is enough: the supplicant re-associates
-                     * through S2_SETOPTIONS, which announces CONNECT itself. */
-                    link_change(unit, 0);
+                    link_down(unit);
                 }
             }
             else if (unit->online)
@@ -606,6 +645,10 @@ static void start_pump(LIBBASETYPEPTR LIBBASE)
  * copy the caller's payload through its tx buffer-management hook, and hand
  * the frame to bwfm.resource. Modelled on tap.device's tap_send().
  */
+struct bwfm_tracker *find_tracker(struct bwfm_unit *unit, ULONG type);
+static void report_events(struct bwfm_unit *unit, ULONG events);
+
+
 static void tx_request(struct bwfm_unit *unit, struct IOSana2Req *req)
 {
     struct bwfm_opener *opener = (struct bwfm_opener *)req->ios2_BufferManagement;
@@ -641,6 +684,8 @@ static void tx_request(struct bwfm_unit *unit, struct IOSana2Req *req)
     {
         req->ios2_Req.io_Error = S2ERR_NO_RESOURCES;
         req->ios2_WireError = S2WERR_BUFF_ERROR;
+        report_events(unit, S2EVENT_ERROR | S2EVENT_SOFTWARE | S2EVENT_BUFF |
+                            S2EVENT_TX);
         return;
     }
 
@@ -648,7 +693,32 @@ static void tx_request(struct bwfm_unit *unit, struct IOSana2Req *req)
     {
         req->ios2_Req.io_Error = S2ERR_TX_FAILURE;
         req->ios2_WireError = S2WERR_GENERIC_ERROR;
+        D(bug("[bwfm.device] TX FAILED type 0x%04x len %u\n",
+              (unsigned)req->ios2_PacketType, (unsigned)framelen));
+        report_events(unit, S2EVENT_ERROR | S2EVENT_HARDWARE | S2EVENT_TX);
+        return;
     }
+
+    /* Counted, because otherwise nothing in the system can say whether a frame
+     * ever left: S2_GETGLOBALSTATS feeds ifconfig and SysMon. */
+    ObtainSemaphore(&unit->lock);
+    {
+        struct bwfm_tracker *t = find_tracker(unit, req->ios2_PacketType);
+
+        unit->stats.PacketsSent++;
+        if (t != NULL)
+        {
+            t->stats.PacketsSent++;
+            t->stats.BytesSent += framelen;
+        }
+    }
+    ReleaseSemaphore(&unit->lock);
+
+    D(bug("[bwfm.device] TX type 0x%04x len %u to"
+          " %02x:%02x:%02x:%02x:%02x:%02x\n",
+          (unsigned)req->ios2_PacketType, (unsigned)framelen,
+          req->ios2_DstAddr[0], req->ios2_DstAddr[1], req->ios2_DstAddr[2],
+          req->ios2_DstAddr[3], req->ios2_DstAddr[4], req->ios2_DstAddr[5]));
 }
 
 /* One-time chip firmware bring-up. Returns TRUE on success. */
@@ -823,13 +893,129 @@ static void try_join(struct bwfm_unit *unit)
 
     ssid[ssidlen] = '\0';
     D(bug("[bwfm.device] auto-join \"%s\" (%s)\n", ssid, keylen ? "WPA2" : "open"));
+
+    /* Record it like an S2_SETOPTIONS join would, so S2_GETNETWORKINFO can
+     * name the network afterwards. */
+    ObtainSemaphore(&unit->lock);
+    CopyMem(ssid, unit->assoc_ssid, ssidlen + 1);
+    unit->assoc_ssidlen = ssidlen;
+    ReleaseSemaphore(&unit->lock);
     if (BWFMJoin(ssid, ssidlen, keylen ? key : NULL, keylen, NULL, 0) == 0)
     {
-        link_change(unit, 1);
+        link_up(unit);
         D(bug("[bwfm.device] auto-join OK\n"));
     }
     else
         D(bug("[bwfm.device] auto-join failed\n"));
+}
+
+/* Caller holds unit->lock. NULL when this type is not tracked. */
+struct bwfm_tracker *find_tracker(struct bwfm_unit *unit, ULONG type)
+{
+    struct bwfm_tracker *t, *tn;
+
+    ForeachNodeSafe(&unit->trackers, t, tn)
+        if (t->packet_type == type)
+            return t;
+    return NULL;
+}
+
+/* ----------------------------------------------------------------------- */
+/* Multicast                                                               */
+
+static BOOL same_addr(const UBYTE *a, const UBYTE *b)
+{
+    int i;
+
+    for (i = 0; i < ETHER_ADDR_LEN; i++)
+        if (a[i] != b[i])
+            return FALSE;
+    return TRUE;
+}
+
+/*
+ * Hand the current list to the firmware. A FullMAC chip drops multicast that
+ * is not on its list before the host ever sees it, so accepting the SANA-II
+ * command without doing this leaves the group silently deaf. Mirrors
+ * brcmfmac's brcmf_netdev_set_multicast_list(). Caller holds unit->lock.
+ */
+static void push_mcast_list(struct bwfm_unit *unit)
+{
+    UBYTE buf[4 + BWFM_MAX_MCAST * ETHER_ADDR_LEN];
+    uint32_t allmulti = (unit->mcast_over > 0) ? 1 : 0;
+    ULONG i, n = unit->mcast_count;
+
+    /* count is a little-endian 32-bit field ahead of the addresses */
+    buf[0] = (UBYTE)n;
+    buf[1] = (UBYTE)(n >> 8);
+    buf[2] = 0;
+    buf[3] = 0;
+    for (i = 0; i < n; i++)
+        CopyMem(unit->mcast[i].addr, buf + 4 + i * ETHER_ADDR_LEN,
+                ETHER_ADDR_LEN);
+
+    BWFMIovar((uint8_t *)"mcast_list", 1, buf, 4 + n * ETHER_ADDR_LEN);
+    BWFMIovar((uint8_t *)"allmulti", 1, &allmulti, sizeof(allmulti));
+
+    D(bug("[bwfm.device] mcast list %u group(s)%s\n", (unsigned)n,
+          allmulti ? " + allmulti" : ""));
+}
+
+static void add_mcast(struct bwfm_unit *unit, struct IOSana2Req *req)
+{
+    UBYTE *addr = req->ios2_SrcAddr;
+    ULONG i;
+
+    ObtainSemaphore(&unit->lock);
+    for (i = 0; i < unit->mcast_count; i++)
+    {
+        if (same_addr(unit->mcast[i].addr, addr))
+        {
+            unit->mcast[i].refs++;          /* already asked for; just count it */
+            ReleaseSemaphore(&unit->lock);
+            return;
+        }
+    }
+
+    if (unit->mcast_count >= BWFM_MAX_MCAST)
+        unit->mcast_over++;                 /* out of slots: take everything */
+    else
+    {
+        CopyMem(addr, unit->mcast[unit->mcast_count].addr, ETHER_ADDR_LEN);
+        unit->mcast[unit->mcast_count].refs = 1;
+        unit->mcast_count++;
+    }
+    push_mcast_list(unit);
+    ReleaseSemaphore(&unit->lock);
+}
+
+static void del_mcast(struct bwfm_unit *unit, struct IOSana2Req *req)
+{
+    UBYTE *addr = req->ios2_SrcAddr;
+    ULONG i;
+
+    ObtainSemaphore(&unit->lock);
+    for (i = 0; i < unit->mcast_count; i++)
+    {
+        if (!same_addr(unit->mcast[i].addr, addr))
+            continue;
+        if (--unit->mcast[i].refs > 0)
+            break;                          /* another user still wants it */
+
+        unit->mcast_count--;
+        if (i != unit->mcast_count)
+            unit->mcast[i] = unit->mcast[unit->mcast_count];
+        push_mcast_list(unit);
+        ReleaseSemaphore(&unit->lock);
+        return;
+    }
+
+    if (i == unit->mcast_count && unit->mcast_over > 0)
+    {
+        if (--unit->mcast_over == 0)
+            push_mcast_list(unit);          /* last overflow gone: drop allmulti */
+    }
+    ReleaseSemaphore(&unit->lock);
 }
 
 /* SANA-II per-packet-type tracking (used by AROSTCP at interface setup). */
@@ -1241,6 +1427,23 @@ static void queue_associate(struct bwfm_unit *unit, struct IOSana2Req *req)
     if (tags == NULL)
         return;
 
+    /* Leaving is the one thing that does not need the worker: the firmware
+     * does it synchronously, and there is no association to wait for. */
+    if (GetTagData(S2INFO_Disassociate, 0, tags))
+    {
+        D(bug("[bwfm.device] disassociating\n"));
+        BWFMIoctl(BWFM_C_DISASSOC, 1, NULL, 0);
+
+        ObtainSemaphore(&unit->lock);
+        unit->assoc_ssidlen = 0;
+        unit->assoc_ssid[0] = '\0';
+        unit->assoc_pending = FALSE;
+        ReleaseSemaphore(&unit->lock);
+
+        link_down(unit);
+        return;
+    }
+
     ssid = (UBYTE *)GetTagData(S2INFO_SSID, (IPTR)NULL, tags);
     if (ssid == NULL || ssid[0] == '\0')
         return;                         /* not an associate request - just ack */
@@ -1323,11 +1526,7 @@ static void do_associate(struct bwfm_unit *unit)
     if (BWFMJoin(ssid, ssidlen, passlen ? pass : NULL, passlen,
                  ielen ? ie : NULL, ielen) == 0)
     {
-        /* Through link_change, not report_events: the pump may already have
-         * seen the E_LINK for this very join and announced it, and a second
-         * CONNECT has the supplicant redo association handling - including its
-         * EAPOL state machine - in the middle of the handshake. */
-        link_change(unit, 1);
+        link_up(unit);
     }
     else
         D(bug("[bwfm.device] ctrl worker: associate failed\n"));
@@ -1343,14 +1542,15 @@ static void get_networkinfo(struct bwfm_unit *unit, struct IOSana2Req *req)
 {
     APTR pool = req->ios2_Data;
     struct TagItem *tl;
-    UBYTE *bssid;
+    UBYTE *bssid, *ssid = NULL;
+    ULONG ssidlen;
 
     if (pool == NULL)
     {
         req->ios2_Req.io_Error = S2ERR_BAD_ARGUMENT;
         return;
     }
-    tl = AllocPooled(pool, sizeof(struct TagItem) * 2);
+    tl = AllocPooled(pool, sizeof(struct TagItem) * 3);
     bssid = AllocPooled(pool, ETH_ALEN);
     if (tl == NULL || bssid == NULL)
     {
@@ -1365,8 +1565,27 @@ static void get_networkinfo(struct bwfm_unit *unit, struct IOSana2Req *req)
         return;
     }
 
+    /* The BSSID alone answers "am I associated" but not "to what", which is
+     * what a caller asking about the network actually wants to know. */
+    ObtainSemaphore(&unit->lock);
+    ssidlen = unit->assoc_ssidlen;
+    if (ssidlen > 0 && (ssid = AllocPooled(pool, ssidlen + 1)) != NULL)
+    {
+        CopyMem(unit->assoc_ssid, ssid, ssidlen);
+        ssid[ssidlen] = '\0';
+    }
+    ReleaseSemaphore(&unit->lock);
+
     tl[0].ti_Tag = S2INFO_BSSID; tl[0].ti_Data = (IPTR)bssid;
-    tl[1].ti_Tag = TAG_DONE;     tl[1].ti_Data = 0;
+    if (ssid != NULL)
+    {
+        tl[1].ti_Tag = S2INFO_SSID; tl[1].ti_Data = (IPTR)ssid;
+        tl[2].ti_Tag = TAG_DONE;    tl[2].ti_Data = 0;
+    }
+    else
+    {
+        tl[1].ti_Tag = TAG_DONE;    tl[1].ti_Data = 0;
+    }
     req->ios2_StatData = tl;
 }
 
@@ -1526,11 +1745,38 @@ static void handle_request(struct IOSana2Req *req)
         break;
 
     case S2_ADDMULTICASTADDRESS:
-    case S2_DELMULTICASTADDRESS:
-        /* Accept: in managed mode the firmware passes multicast through, so we
-         * don't program a hardware filter (yet). Stops AROSTCP's in6_addmulti
-         * from erroring and lets IPv4/IPv6 multicast through. */
+        add_mcast(unit, req);
         break;
+
+    case S2_DELMULTICASTADDRESS:
+        del_mcast(unit, req);
+        break;
+
+    case S2_GETSIGNALQUALITY:
+    {
+        /* The one wireless query the driver never answered. Noise has no
+         * firmware command here, so only the level is real. */
+        struct Sana2SignalQuality *q =
+            (struct Sana2SignalQuality *)req->ios2_StatData;
+        int32_t rssi = 0;
+
+        if (q == NULL)
+        {
+            req->ios2_Req.io_Error = S2ERR_BAD_ARGUMENT;
+            req->ios2_WireError = S2WERR_BAD_STATDATA;
+            break;
+        }
+        if (!unit->joined ||
+            BWFMIoctl(BWFM_C_GET_RSSI, 0, &rssi, sizeof(rssi)) != 0)
+        {
+            req->ios2_Req.io_Error = S2ERR_BAD_STATE;
+            req->ios2_WireError = S2WERR_GENERIC_ERROR;
+            break;
+        }
+        q->SignalLevel = rssi;
+        q->NoiseLevel = 0;
+        break;
+    }
 
     case S2_GETNETWORKS:
         get_networks(unit, req);

@@ -642,7 +642,9 @@ KERNEL_DBUS_KOBJ
 DBUS_LIBFLAGS
 DBUS_CFLAGS
 jpegxl_toolchainsupport
-rust_target
+nouveau_toolchainsupport
+aros_enable_rust
+target_rust_version
 java_target
 objc_target
 llvm_target_cpu
@@ -702,6 +704,7 @@ aros_debug_aflags
 aros_debug_cxxflags
 aros_debug_cflags
 aros_debug_cppflags
+rom_optimization_cflags
 kernel_optimization_cflags
 aros_kernel_ldflags
 aros_kernel_objcflags
@@ -1021,6 +1024,7 @@ with_aros_toolchain_install
 with_binutils_version
 with_gcc_version
 with_llvm_version
+with_rust_version
 enable_objc
 enable_java
 enable_rust
@@ -1731,7 +1735,8 @@ Optional Features:
   --disable-crosstools    Do not build cross-compiler toolchain
   --enable-objc           Enable Objectve-C support (default=no)
   --enable-java           Enable Java support (default=no)
-  --enable-rust           Enable Rust support (default=no)
+  --enable-rust           Build a Rust cross compiler (rustc, a std for the
+                          target, cargo) into the crosstools (default=no)
   --enable-includes=dir   Alternative system include directory
   --enable-palm-debug-hack
                           Enable palm debug output hack in palm native
@@ -1816,6 +1821,8 @@ Optional Packages:
                           Compile gcc-VERSION for AROS
   --with-llvm-version=VERSION
                           Compile llvm-VERSION for AROS
+  --with-rust-version=VERSION
+                          Compile rust-VERSION for AROS (default=1.98.1)
   --with-cpu=<spec>       Specify minumum CPU (default=$gcc_default_cpu).
   --with-fpu=<spec>       Specify minumum FPU (default=$gcc_float_fpu).
   --with-float=<spec>     Specify floating point ABI
@@ -1825,7 +1832,7 @@ Optional Packages:
   --with-iconset=NAME     Use a specific Icon-set (default=Gorilla).
   --with-theme=NAME       Use a specific GUI Theme
   --with-mesagl=family    Which version of MesaGL to build (defaults to
-                          20.0.8)
+                          26.0.0)
   --with-resolution=XRESxYRESxDEPTH
                           Default resolution of the initial WorkbenchScreen
   --with-serial-debug     Enable serial debug output in native (default=no)
@@ -7999,6 +8006,68 @@ See 'config.log' for more details" "$LINENO" 5; }
 fi
 
 
+{ printf '%s\n' "$as_me:${as_lineno-$LINENO}: checking if Python's yaml module is installed" >&5
+printf %s "checking if Python's yaml module is installed... " >&6; }
+
+{ printf '%s\n' "$as_me:${as_lineno-$LINENO}: checking for Python 'yaml' library" >&5
+printf %s "checking for Python 'yaml' library... " >&6; }
+if test ${pc_cv_python_module_yaml+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) ac_ext=py
+ac_compile='chmod +x conftest.$ac_ext >&5'
+ac_link='chmod +x conftest.$ac_ext && cp conftest.$ac_ext conftest >&5'
+     if test "$cross_compiling" = yes
+then :
+  { { printf '%s\n' "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
+printf '%s\n' "$as_me: error: in '$ac_pwd':" >&2;}
+as_fn_error $? "cannot run test program while cross compiling
+See 'config.log' for more details" "$LINENO" 5; }
+else case e in #(
+  e) cat > conftest.$ac_ext <<_ACEOF
+#!$PYTHON
+import sys
+try:
+    import yaml
+except:
+    sys.exit(1)
+else:
+    sys.exit(0)
+
+
+_ACEOF
+if ac_fn_py_try_run "$LINENO"
+then :
+  pc_cv_python_module_yaml="yes"
+else case e in #(
+  e) pc_cv_python_module_yaml="no" ;;
+esac
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+  conftest.$ac_objext conftest.beam conftest.$ac_ext ;;
+esac
+fi
+
+     ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+     ;;
+esac
+fi
+{ printf '%s\n' "$as_me:${as_lineno-$LINENO}: result: $pc_cv_python_module_yaml" >&5
+printf '%s\n' "$pc_cv_python_module_yaml" >&6; }
+if test "$pc_cv_python_module_yaml" = "no"
+then :
+  { { printf '%s\n' "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
+printf '%s\n' "$as_me: error: in '$ac_pwd':" >&2;}
+as_fn_error $? "failed to detect the Python yaml module (PyYAML)
+See 'config.log' for more details" "$LINENO" 5; }
+fi
+
+
 # Check whether --enable-libpng-config was given.
 if test ${enable_libpng_config+y}
 then :
@@ -10912,7 +10981,6 @@ printf '%s\n' "$darwin_sdk_path" >&6; }
                 aros_macosx_version="11.0"
                                                 aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_OMIT_FP) -D__arm64__"
                 aros_config_cxxflags="$aros_config_cxxflags $""(CFLAGS_NO_OMIT_FP) -D__arm64__"
-                                                                                aros_config_ldflags="$aros_config_ldflags -lstdc.static"
                 default_llvm_version="20.1.0"
                 aros_kernel_isa_flags="-arch arm64"
                 aros_kernel_ldflags="-arch arm64"
@@ -11494,6 +11562,10 @@ fi
                 if test "$optimization" = "default"; then
                     optimization_level=$toolchain_size_opt_lvl
                 fi
+                # ROM-resident code must fit in two 512KB kickstart banks, so it
+                # is always built for size - even when the rest of the system is
+                # built with an explicitly requested --with-optimization level.
+                rom_optimization_level=$toolchain_size_opt_lvl
                 aros_config_aflags="$aros_config_aflags"
                 aros_target_strip_flags="-R.comment --strip-debug"
                 aros_nominal_width=640
@@ -12267,6 +12339,7 @@ printf '%s\n' "$as_me: $aros_target_cpu needs gcc $riscv_min_gcc, raising it fro
 esac
 
 jpegxl_toolchainsupport=""
+nouveau_toolchainsupport=""
 if test "$aros_toolchain" = "gnu" ; then
     { printf '%s\n' "$as_me:${as_lineno-$LINENO}: result: $target_gcc_version" >&5
 printf '%s\n' "$target_gcc_version" >&6; }
@@ -12290,6 +12363,14 @@ printf '%s\n' "release" >&6; }
     # libjxl (used by jpegxl.datatype) requires gcc >= 8
     if test "$GCC_VERSION_MAJOR" -lt "8" ; then
         jpegxl_toolchainsupport="no"
+    fi
+
+    # Mesa 26's nouveau codegen reads NIR from C++, where the generated
+    # builder macros mix a positional initializer with designated ones.
+    # gcc took those up in 8; before that it stops at "non-trivial
+    # designated initializers not supported" and the driver cannot build.
+    if test "$GCC_VERSION_MAJOR" -lt "8" ; then
+        nouveau_toolchainsupport="no"
     fi
 
     gcc_fix_bitfields="false"
@@ -12483,23 +12564,38 @@ else
     java_target="no-java"
 fi
 
-{ printf '%s\n' "$as_me:${as_lineno-$LINENO}: checking whether to enable Rust suppport" >&5
-printf %s "checking whether to enable Rust suppport... " >&6; }
+{ printf '%s\n' "$as_me:${as_lineno-$LINENO}: checking whether to build the Rust cross compiler" >&5
+printf %s "checking whether to build the Rust cross compiler... " >&6; }
 # Check whether --enable-rust was given.
 if test ${enable_rust+y}
 then :
-  enableval=$enable_rust; rust="$enableval"
+  enableval=$enable_rust; aros_enable_rust="$enableval"
 else case e in #(
-  e) rust="no" ;;
+  e) aros_enable_rust="no" ;;
 esac
 fi
 
-{ printf '%s\n' "$as_me:${as_lineno-$LINENO}: result: $rust" >&5
-printf '%s\n' "$rust" >&6; }
-if test "x$rust" != "xno"; then
-    rust_target="$rust"
+if test "x$aros_enable_rust" != "xno"; then
+    aros_enable_rust="yes"
+fi
+{ printf '%s\n' "$as_me:${as_lineno-$LINENO}: result: $aros_enable_rust" >&5
+printf '%s\n' "$aros_enable_rust" >&6; }
+
+default_rust_version="1.98.1"
+
+# Check whether --with-rust-version was given.
+if test ${with_rust_version+y}
+then :
+  withval=$with_rust_version; use_rust_version="$withval"
+else case e in #(
+  e) use_rust_version="" ;;
+esac
+fi
+
+if test "$use_rust_version" = ""; then
+    target_rust_version="$default_rust_version"
 else
-    rust_target="no-rust"
+    target_rust_version="$use_rust_version"
 fi
 
 spec_obj_format="-m $aros_object_format"
@@ -12861,7 +12957,7 @@ if test ${with_mesagl+y}
 then :
   withval=$with_mesagl; aros_mesagl="$withval"
 else case e in #(
-  e) aros_mesagl="20.0.8" ;;
+  e) aros_mesagl="26.0.0" ;;
 esac
 fi
 
@@ -19645,6 +19741,9 @@ kernel_optimization_cflags="$kernel_optimization_level"
 { printf '%s\n' "$as_me:${as_lineno-$LINENO}: result: $kernel_optimization_level" >&5
 printf '%s\n' "$kernel_optimization_level" >&6; }
 
+rom_optimization_cflags="$rom_optimization_level"
+
+
 
 { printf '%s\n' "$as_me:${as_lineno-$LINENO}: checking if we should enable unit tests" >&5
 printf %s "checking if we should enable unit tests... " >&6; }
@@ -19910,6 +20009,7 @@ fi
 
 
 # Target Related #########################
+
 
 
 
@@ -21674,4 +21774,3 @@ if test -n "$aros_shared_cflags" ; then
     echo "SHARED_CFLAGS := $aros_shared_cflags" >> ${aros_hostcfg_dir}/host.cfg
     echo "SHARED_AR := $aros_shared_ar" >> ${aros_hostcfg_dir}/host.cfg
 fi
-

@@ -1333,7 +1333,9 @@ got_one_v6(omapi_object_t *h) {
 	struct in6_addr to;
 	struct iaddr ifrom;
 	int result;
-	char buf[65536];	/* maximum size for a UDP packet is 65536 */
+	char *buf;
+	const unsigned buf_sz = 65536;	/* maximum UDP packet size */
+	isc_result_t status = ISC_R_SUCCESS;
 	struct interface_info *ip;
 	int is_unicast;
 	unsigned int if_idx = 0;
@@ -1343,16 +1345,26 @@ got_one_v6(omapi_object_t *h) {
 	}
 	ip = (struct interface_info *)h;
 
-	result = receive_packet6(ip, (unsigned char *)buf, sizeof(buf),
+	/* AROS: 64K packet buffer off the stack (small default proc stack). */
+	buf = dmalloc(buf_sz, MDL);
+	if (buf == NULL) {
+		log_error("got_one_v6: no memory for packet buffer");
+		return ISC_R_NOMEMORY;
+	}
+
+	result = receive_packet6(ip, (unsigned char *)buf, buf_sz,
 				 &from, &to, &if_idx);
 	if (result < 0) {
 		log_error("receive_packet6() failed on %s: %m", ip->name);
-		return ISC_R_UNEXPECTED;
+		status = ISC_R_UNEXPECTED;
+		goto cleanup;
 	}
 
 	/* 0 is 'any' interface. */
-	if (if_idx == 0)
-		return ISC_R_NOTFOUND;
+	if (if_idx == 0) {
+		status = ISC_R_NOTFOUND;
+		goto cleanup;
+	}
 
 	if (dhcpv6_packet_handler != NULL) {
 		/*
@@ -1372,15 +1384,19 @@ got_one_v6(omapi_object_t *h) {
 		while ((ip != NULL) && (if_nametoindex(ip->name) != if_idx))
 			ip = ip->next;
 
-		if (ip == NULL)
-			return ISC_R_NOTFOUND;
+		if (ip == NULL) {
+			status = ISC_R_NOTFOUND;
+			goto cleanup;
+		}
 
 		(*dhcpv6_packet_handler)(ip, buf,
 					 result, from.sin6_port,
 					 &ifrom, is_unicast);
 	}
 
-	return ISC_R_SUCCESS;
+ cleanup:
+	dfree(buf, MDL);
+	return status;
 }
 #endif /* DHCPv6 */
 

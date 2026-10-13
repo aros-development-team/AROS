@@ -399,8 +399,21 @@ void tap_iotask(struct tap_base *TAPBase, struct tap_unit *unit)
 
     DeleteMsgPort(unit->write_queue);
 
+    /*
+     * Hand the closer a sync message and wait for it to reply before freeing
+     * it, exactly as the startup handshake above does.  Freeing the message
+     * immediately after PutMsg() (the old code) raced close()'s GetMsg(): once
+     * a second unit's iotask was churning memory the freed message's list links
+     * were reused before close() dequeued it, so GetMsg() returned NULL and the
+     * closer faulted in ReplyMsg(NULL).
+     */
+    reply_port = CreateMsgPort();
     msg = (struct Message *) AllocVec(sizeof(struct Message), MEMF_PUBLIC | MEMF_CLEAR);
-    // FIXME: message may be freed before receiver gets it!
+    msg->mn_ReplyPort = reply_port;
+    msg->mn_Length = sizeof(struct Message);
     PutMsg(unit->iosyncport, msg);
+    WaitPort(reply_port);
+    GetMsg(reply_port);
     FreeVec(msg);
+    DeleteMsgPort(reply_port);
 }

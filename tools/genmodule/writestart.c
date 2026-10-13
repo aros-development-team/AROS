@@ -24,14 +24,30 @@ static void writesets(FILE *, struct config *);
 
 static inline const char *upname(const char *s)
 {
-    static char name[512];
-    int i = 0;
+    static char *name;
+    static size_t size;
+    /* upname() is called only with NUL-terminated string-list entries. */
+    size_t len = s ? strlen(s) : 0; /* Flawfinder: ignore */
+    size_t i;
+    char *newname;
 
-    while (s && i < (sizeof(name)-1))
-        name[i++] = toupper(*(s++));
-    name[i] = 0;
+    if (len + 1 > size)
+    {
+        newname = realloc(name, len + 1);
+        if (newname == NULL)
+        {
+            fprintf(stderr, "Out of memory\n");
+            exit(20);
+        }
+        name = newname;
+        size = len + 1;
+    }
 
-    return &name[0];
+    for (i = 0; i < len; i++)
+        name[i] = toupper(s[i]);
+    name[len] = 0;
+
+    return name;
 }
 
 
@@ -87,10 +103,10 @@ static inline const char *upname(const char *s)
 void writestart(struct config *cfg)
 {
     FILE *out;
-    char line[256], *banner;
+    char *line, *banner;
     struct classinfo *cl;
 
-    snprintf(line, 255, "%s/%s_start.c", cfg->gendir, cfg->modulename);
+    line = make_output_path("%s/%s_start.c", cfg->gendir, cfg->modulename);
     out = fopen(line, "w");
 
     if (out == NULL)
@@ -171,6 +187,7 @@ void writestart(struct config *cfg)
     }
 
     fclose(out);
+    free(line);
 }
 
 
@@ -757,6 +774,100 @@ static void writeresident(FILE *out, struct config *cfg)
     );
 }
 
+/* Register multiple filesystem variants from one readonly table. No handler
+ * state is stored here: allocation and publication still happen per entry. */
+static void writefsentries(FILE *out, struct config *cfg)
+{
+    struct handlerinfo *hl, *first = cfg->handlerlist;
+    int index, count = 0;
+    int stackvar = 0, priorityvar = 0, startupvar = 0;
+
+    for (hl = first; hl; hl = hl->next) {
+        stackvar |= hl->stacksize != first->stacksize;
+        priorityvar |= hl->priority != first->priority;
+        startupvar |= hl->startup != first->startup;
+        count++;
+    }
+    for (hl = first, index = 0; hl; hl = hl->next, index++) {
+        if (hl->name)
+            fprintf(out, "static BSTR GM_UNIQUENAME(HandlerName%d)(void)\n"
+                         "{\n    return AROS_CONST_BSTR(\"%s\");\n}\n\n",
+                    index, hl->name);
+    }
+    fprintf(out, "static const struct GM_UNIQUENAME(HandlerInfo) {\n"
+                 "    ULONG dos_type;\n"
+                 "    BSTR (*name)(void);\n"
+                 "    BYTE autodetect;\n");
+    if (stackvar) fprintf(out, "    ULONG stacksize;\n");
+    if (priorityvar) fprintf(out, "    LONG priority;\n");
+    if (startupvar) fprintf(out, "    LONG startup;\n");
+    fprintf(out, "} GM_UNIQUENAME(HandlerInfo)[%d] = {\n", count);
+    for (hl = first, index = 0; hl; hl = hl->next, index++) {
+        fprintf(out, "    { 0x%08x, ", hl->id);
+        if (hl->name) fprintf(out, "GM_UNIQUENAME(HandlerName%d)", index);
+        else fprintf(out, "NULL");
+        fprintf(out, ", %d", hl->autodetect);
+        if (stackvar) fprintf(out, ", %u", hl->stacksize);
+        if (priorityvar) fprintf(out, ", %d", hl->priority);
+        if (startupvar) fprintf(out, ", %d", hl->startup);
+        fprintf(out, " },\n");
+    }
+    fprintf(out, "};\n\n"
+                 "static inline BOOL GM_UNIQUENAME(InitHandler)(struct ExecBase *SysBase)\n"
+                 "{\n"
+                 "    struct FileSysResource *fsr;\n"
+                 "    BPTR seg;\n"
+                 "    unsigned int i;\n"
+                 "    fsr = (struct FileSysResource *)OpenResource(\"FileSystem.resource\");\n"
+                 "    if (!fsr) return FALSE;\n"
+                 "    seg = CreateSegList(GM_UNIQUENAME(Handler));\n"
+                 "    if (seg != BNULL) {\n"
+                 "        for (i = 0; i < %d; i++) {\n"
+                 "            const struct GM_UNIQUENAME(HandlerInfo) *info = &GM_UNIQUENAME(HandlerInfo)[i];\n"
+                 "            BSTR name = info->name ? info->name() : BNULL;\n"
+                 "            struct FileSysEntry *fse = AllocMem(sizeof(*fse), MEMF_CLEAR);\n"
+                 "            if (fse) {\n"
+                 "                fse->fse_Node.ln_Name = VERSION_STRING;\n"
+                 "                fse->fse_Node.ln_Pri = info->autodetect;\n"
+                 "                fse->fse_DosType = info->dos_type;\n"
+                 "                fse->fse_Version = (MAJOR_VERSION << 16) | MINOR_VERSION;\n"
+                 "                fse->fse_PatchFlags = FSEF_SEGLIST | FSEF_GLOBALVEC | FSEF_PRIORITY;\n", count);
+    if (stackvar)
+        fprintf(out, "                if (info->stacksize) {\n"
+                     "                    fse->fse_PatchFlags |= FSEF_STACKSIZE;\n"
+                     "                    fse->fse_StackSize = info->stacksize;\n"
+                     "                }\n");
+    else if (first->stacksize)
+        fprintf(out, "                fse->fse_PatchFlags |= FSEF_STACKSIZE;\n"
+                     "                fse->fse_StackSize = %u;\n", first->stacksize);
+    fprintf(out, "                if (name != BNULL) {\n"
+                 "                    fse->fse_PatchFlags |= FSEF_HANDLER;\n"
+                 "                    fse->fse_Handler = name;\n"
+                 "                }\n");
+    if (priorityvar) fprintf(out, "                fse->fse_Priority = info->priority;\n");
+    else fprintf(out, "                fse->fse_Priority = %d;\n", first->priority);
+    if (startupvar) fprintf(out, "                fse->fse_Startup = (BPTR)info->startup;\n");
+    else fprintf(out, "                fse->fse_Startup = (BPTR)%d;\n", first->startup);
+    fprintf(out, "                fse->fse_SegList = seg;\n"
+                 "                fse->fse_GlobalVec = (BPTR)(SIPTR)-1;\n"
+                 "                Forbid();\n"
+                 "                Enqueue(&fsr->fsr_FileSysEntries, (struct Node *)fse);\n"
+                 "                Permit();\n"
+                 "            }\n"
+                 "            /* Named segments remain published even if the entry allocation fails. */\n"
+                 "            if (name != BNULL) {\n"
+                 "                struct DosLibrary *DOSBase = (struct DosLibrary *)OpenLibrary(\"dos.library\", 0);\n"
+                 "                if (DOSBase) {\n"
+                 "                    AddSegment(AROS_BSTR_ADDR(name), seg, CMD_SYSTEM);\n"
+                 "                    CloseLibrary((struct Library *)DOSBase);\n"
+                 "                }\n"
+                 "            }\n"
+                 "        }\n"
+                 "    }\n"
+                 "    return TRUE;\n"
+                 "}\n\n");
+}
+
 static void writehandler(FILE *out, struct config *cfg)
 {
     int i, handlers=0;
@@ -807,6 +918,11 @@ static void writehandler(FILE *out, struct config *cfg)
            , cfg->handlerfunc
            , cfg->handlerfunc
     );
+
+    if (need_fse && !need_dos) {
+        writefsentries(out, cfg);
+        return;
+    }
 
     fprintf(out,
             "\n"
@@ -977,6 +1093,38 @@ static void writeinitlib(FILE *out, struct config *cfg)
     if (cfg->handlerlist)
         writehandler(out, cfg);
 
+    /* Per-module set descriptor - see struct __aros_libinit_sets. Handlers
+       return before ever using it, so do not emit an unused table for them. */
+    if (cfg->modtype != HANDLER)
+    {
+        fprintf(out,
+                "static const struct __aros_libinit_sets GM_UNIQUENAME(InitSets) =\n"
+                "{\n"
+        );
+        fprintf(out, "    %s,\n", (cfg->options & OPTION_NOAUTOLIB) ? "NULL" : "SETNAME(LIBS)");
+        /* norootrellibs: no rellib is opened for the root base. InitLib
+           runs in the task that loads the module, so for a pertaskbase
+           rellib the root base would hold that task's own per-task base
+           until expunge. The same NULL keeps the expunge and the InitLib
+           rollback from closing what was not opened. The bases created by
+           OpenLib still open their rellibs. */
+        fprintf(out, "    %s,\n", (cfg->rellibs && !(cfg->options & OPTION_NOROOTRELLIBS))
+                                    ? "SETNAME(RELLIBS)" : "NULL");
+        fprintf(out, "    SETNAME(INIT),\n");
+        fprintf(out, "    %s,\n", (cfg->classlist != NULL) ? "SETNAME(CLASSESINIT)" : "NULL");
+        fprintf(out,
+                "    SETNAME(CTORS),\n"
+                "    SETNAME(INIT_ARRAY),\n"
+                "    SETNAME(INITLIB),\n"
+                "    SETNAME(EXPUNGELIB),\n"
+                "    SETNAME(FINI_ARRAY),\n"
+                "    SETNAME(DTORS),\n"
+                "    SETNAME(EXIT),\n"
+        );
+        fprintf(out, "    %s\n", (cfg->classlist != NULL) ? "SETNAME(CLASSESEXPUNGE)" : "NULL");
+        fprintf(out, "};\n\n");
+    }
+
     fprintf(out,
             "extern const LONG __aros_libreq_SysBase __attribute__((weak));\n"
             "\n"
@@ -1008,7 +1156,6 @@ static void writeinitlib(FILE *out, struct config *cfg)
     fprintf(out,
             "\n"
             "    int ok;\n"
-            "    int initcalled = 0;\n"
     );
     /* Set the global SysBase, needed for __aros_setoffsettable()/__aros_getoffsettable() */
     if (cfg->options & OPTION_DUPBASE)
@@ -1121,45 +1268,14 @@ static void writeinitlib(FILE *out, struct config *cfg)
         fprintf(out, "    GM_SEGLIST_FIELD(LIBBASE) = segList;\n");
     if (cfg->options & OPTION_DUPBASE)
         fprintf(out, "    GM_ROOTBASE_FIELD(LIBBASE) = (LIBBASETYPEPTR)LIBBASE;\n");
-    fprintf(out, "    if (");
-    if (!(cfg->options & OPTION_NOAUTOLIB))
-        fprintf(out, "set_open_libraries() && ");
-    if (cfg->rellibs)
-        fprintf(out, "set_open_rellibraries(LIBBASE) && ");
+    /* The whole open/init/rollback sequence now lives in _set_libinit(),
+       driven by the descriptor emitted above. */
     fprintf(out,
-            "set_call_funcs(SETNAME(INIT), 1, 1) &&"
-    );
-    if (cfg->classlist != NULL)
-        fprintf(out, "set_call_libfuncs(SETNAME(CLASSESINIT), 1, 1, LIBBASE) && ");
-    fprintf(out,
-            "1)\n"
-            "    {\n"
-            "        set_call_funcs(SETNAME(CTORS), -1, 0);\n"
-            "        set_call_funcs(SETNAME(INIT_ARRAY), 1, 0);\n"
-            "\n"
-    );
-
-    fprintf(out,
-            "        initcalled = 1;\n"
-            "        ok = set_call_libfuncs(SETNAME(INITLIB), 1, 1, LIBBASE);\n"
-            "    }\n"
-            "    else\n"
-            "        ok = 0;\n"
+            "    ok = set_libinit(&GM_UNIQUENAME(InitSets), LIBBASE);\n"
             "\n"
             "    if (!ok)\n"
             "    {\n"
-            "        if (initcalled)\n"
-            "            set_call_libfuncs(SETNAME(EXPUNGELIB), -1, 0, LIBBASE);\n"
-            "        set_call_funcs(SETNAME(FINI_ARRAY), -1, 0);\n"
-            "        set_call_funcs(SETNAME(DTORS), 1, 0);\n"
-            "        set_call_funcs(SETNAME(EXIT), -1, 0);\n"
     );
-    if (cfg->classlist != NULL)
-        fprintf(out, "        set_call_libfuncs(SETNAME(CLASSESEXPUNGE), -1, 0, LIBBASE);\n");
-    if (cfg->rellibs)
-        fprintf(out, "        set_close_rellibraries(LIBBASE);\n");
-    if (!(cfg->options & OPTION_NOAUTOLIB))
-        fprintf(out, "        set_close_libraries();\n");
 
     if (cfg->options & OPTION_RESAUTOINIT)
     {
@@ -1326,7 +1442,14 @@ static void writeopenlib(FILE *out, struct config *cfg)
                         "    if (newlib)\n"
                         "    {\n"
                         "        struct __GM_DupBase *dupbase = (struct __GM_DupBase *)newlib;\n"
-                        "        if (dupbase->task != thistask)\n"
+                        "        /* The slot may still name a dup that another task closed and\n"
+                        "           freed (an expunge sweep closing the bases a library init\n"
+                        "           opened, for instance), or a dup of an earlier incarnation of\n"
+                        "           this library that got the same slot id. A dup is a copy of\n"
+                        "           the root it was made from, so its name pointer identifies\n"
+                        "           that root; anything else is stale and must not be reused. */\n"
+                        "        if (dupbase->task != thistask\n"
+                        "            || ((struct Library *)newlib)->lib_Node.ln_Name != ((struct Library *)LIBBASE)->lib_Node.ln_Name)\n"
                         "            newlib = NULL;\n"
                         "        else if (thistask->tc_Node.ln_Type == NT_PROCESS\n"
                         "                 && dupbase->retaddr != ((struct Process *)thistask)->pr_ReturnAddr\n"
@@ -1480,7 +1603,13 @@ static void writecloselib(FILE *out, struct config *cfg)
         );
         if (cfg->options & OPTION_PERTASKBASE)
             fprintf(out,
-                    "    __GM_SetPerTaskBase(((struct __GM_DupBase *)LIBBASE)->oldpertaskbase);\n"
+                    "    /* Only the owning task's slot chain is ours to unwind. When another\n"
+                    "       task closes this dup (an expunge sweep, typically) its own slot\n"
+                    "       must be left alone; the owner's slot keeps pointing here, so mark\n"
+                    "       the dup dead before it is freed so OpenLib rejects it. */\n"
+                    "    if (dupbase->task == FindTask(NULL))\n"
+                    "        __GM_SetPerTaskBase(dupbase->oldpertaskbase);\n"
+                    "    dupbase->task = NULL;\n"
             );
         fprintf(out,
                 "    __freebase(LIBBASE);\n"
@@ -1554,17 +1683,10 @@ static void writeexpungelib(FILE *out, struct config *cfg)
                 "\n"
                 "        Remove((struct Node *)LIBBASE);\n"
                 "\n"
-                "        set_call_funcs(SETNAME(FINI_ARRAY), -1, 0);\n"
-                "        set_call_funcs(SETNAME(DTORS), 1, 0);\n"
-                "        set_call_funcs(SETNAME(EXIT), -1, 0);\n"
+                "        set_libexpunge(&GM_UNIQUENAME(InitSets), LIBBASE);\n"
         );
-        if (cfg->classlist != NULL)
-            fprintf(out, "        set_call_libfuncs(SETNAME(CLASSESEXPUNGE), -1, 0, LIBBASE);\n");
-        if (cfg->rellibs)
-            fprintf(out, "        set_close_rellibraries(LIBBASE);\n");
         if (!(cfg->options & OPTION_NOAUTOLIB))
-            fprintf(out, "        set_close_libraries();\n"
-                         "#ifdef GM_OOPBASE_FIELD\n"
+            fprintf(out, "#ifdef GM_OOPBASE_FIELD\n"
                          "        CloseLibrary((struct Library *)GM_OOPBASE_FIELD(LIBBASE));\n"
                          "#endif\n"
                     );

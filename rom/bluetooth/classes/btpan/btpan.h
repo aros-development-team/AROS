@@ -171,6 +171,7 @@ struct BTPanUnit
     /* the persistent identity of the unit (units survive rebinds) */
     UBYTE               ncp_UnitAddr[6];  /* device BD address */
     UWORD               ncp_UnitUUID;     /* service class (NAP/GN/PANU) */
+    BOOL                ncp_Standby;      /* opened before any network bound: the next binding takes it */
     //BOOL                ncp_DenyRequests; /* Do not accept further IO requests */
 
     struct List         ncp_BufManList;   /* Buffer Managers */
@@ -239,6 +240,7 @@ struct BTPanBase
     struct List         nh_Units;         /* List of units available */
 
     struct BTPanUnit  nh_DefaultUnit;      /* Dummy ncp for default config */
+
 };
 
 
@@ -281,6 +283,7 @@ struct BTPanUnit * bAllocEth(void);
 void bFreeEth(struct BTPanUnit *ncp);
 
 void bDoEvent(struct BTPanUnit *ncp, ULONG events);
+struct BTPanUnit * bStandbyUnit(struct BTPanBase *nh, ULONG unitno);
 BOOL bWritePacket(struct BTPanUnit *ncp, struct IOSana2Req *ioreq);
 BOOL bReadPacket(struct BTPanUnit *ncp, UBYTE *pktptr, ULONG len);
 

@@ -4,8 +4,11 @@
     Desc: 
 */
 
+#include <exec/rawfmt.h>
 #include <proto/exec.h>
 #include <proto/utility.h>
+
+#include <stdarg.h>
 #include "camd_intern.h"
 
 ULONG mystrlen(char *string){
@@ -44,18 +47,17 @@ ASM void stuffChar( REG(d0) UBYTE in,REG(a3) char **stream){
 
 
 #ifndef __amigaos4__
+/* Taking the arguments from &fmt+1 only works where they are passed on the
+   stack one after the other (m68k, i386). On AArch64 and x86_64 they come in
+   registers, so every cluster name came out as garbage. A va_list is right
+   everywhere; VNewRawDoFmt() reads a %ld from it as an int, which is what
+   the callers pass. */
 void mysprintf(struct CamdBase *CamdBase,char *string,char *fmt,...){
-	void *start=&fmt+1;
+	va_list args;
 
-	// You should change your proto-file, if there is a warning about const.
-	CONST_STRPTR string2=string;
-
-	RawDoFmt(
-		 fmt,
-		 start,
-		 (VOID_FUNC)stuffChar,
-		 (APTR)&string2
-		 );
+	va_start(args,fmt);
+	VNewRawDoFmt(fmt,RAWFMTFUNC_STRING,string,args);
+	va_end(args);
 }
 #endif
 

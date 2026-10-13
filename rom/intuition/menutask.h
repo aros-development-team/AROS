@@ -127,6 +127,7 @@ struct MenuHandlerData
 #endif /* SKINS */
 
 BOOL InitDefaultMenuHandler(struct IntuitionBase *IntuitionBase);
+BOOL EnsureDefaultMenuHandler(struct IntuitionBase *IntuitionBase);
 struct Task *CreateMenuHandlerTask(APTR taskparams, struct IntuitionBase *IntuitionBase);
 void DefaultMenuHandler(struct MenuTaskParams *taskparams);
 

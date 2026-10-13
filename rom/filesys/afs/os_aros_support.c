@@ -21,6 +21,8 @@
 #include "error.h"
 #include "extstrings.h"
 #include "volumes.h"
+#include "cache.h"
+#include "checksums.h"
 #include "baseredef.h"
 
 /*
@@ -77,9 +79,12 @@ LONG initDeviceList
 {
 STRPTR name;
 BSTR newname;
-UBYTE i;
+UBYTE i, length;
 
         name=(char *)rootblock->buffer+(BLK_DISKNAME_START(volume)*4);
+        length = (UBYTE)name[0];
+        if (length > MAX_NAME_LENGTH)
+                return DOSFALSE;
         volume->devicelist.dl_Next = 0;
         volume->devicelist.dl_Type = DLT_VOLUME;
         volume->devicelist.dl_Lock = 0;
@@ -101,22 +106,68 @@ UBYTE i;
                 if (newname == BNULL)
                         return DOSFALSE;
         }
-        for (i=0; i<name[0]; i++)
+        for (i=0; i<length; i++)
                 AROS_BSTR_putchar(newname, i, name[i+1]);
-        AROS_BSTR_setstrlen(newname, name[0]);
+        AROS_BSTR_setstrlen(newname, length);
         volume->devicelist.dl_Name = newname;
         return DOSTRUE;
 }
 
 /*******************************************
- Name  : attemptAddDosVolume
- Descr.: adds a new volume to dos
- Input : volume - volume to add
+ Name  : findOfflineNode
+ Descr.: find a parked offline volume node for this medium,
+         matched by name and volume creation date
+ Input : volume - the mounted medium
+         name   - its volume name as a C string
+ Output: the parked node, or NULL
+********************************************/
+static struct OfflineNode *findOfflineNode
+        (struct AFSBase *afsbase, struct Volume *volume, CONST_STRPTR name)
+{
+struct OfflineNode *on;
+
+        for (on = (struct OfflineNode *)afsbase->offlinevols.mlh_Head;
+             on->node.mln_Succ != NULL;
+             on = (struct OfflineNode *)on->node.mln_Succ)
+        {
+                struct DosList *dl = on->dl;
+                BSTR bname = dl->dol_Name;
+                UBYTE len = AROS_BSTR_strlen(bname);
+                UBYTE i;
+
+                if (dl->dol_misc.dol_volume.dol_VolumeDate.ds_Days !=
+                                volume->devicelist.dl_VolumeDate.ds_Days ||
+                    dl->dol_misc.dol_volume.dol_VolumeDate.ds_Minute !=
+                                volume->devicelist.dl_VolumeDate.ds_Minute ||
+                    dl->dol_misc.dol_volume.dol_VolumeDate.ds_Tick !=
+                                volume->devicelist.dl_VolumeDate.ds_Tick)
+                        continue;
+                for (i=0; i<len; i++)
+                {
+                        if (name[i] == '\0')
+                                break;
+                        if (ToUpper(AROS_BSTR_getchar(bname, i)) != ToUpper(name[i]))
+                                break;
+                }
+                if (i == len && name[i] == '\0')
+                        return on;
+        }
+        return NULL;
+}
+
+/*******************************************
+ Name  : createDosVolume
+ Descr.: create (or reconnect) the DosList node for the current medium.
+         The node exists from here on, so every handle references its
+         final node; publishing it in the system DosList may still be
+         deferred (addDosVolume).
+ Input : volume - volume to make the node for
  Output: DOSTRUE for success; DOSFALSE otherwise
 ********************************************/
-LONG attemptAddDosVolume(struct AFSBase *afsbase, struct Volume *volume) {
-struct DosList *doslist;
-struct DosList *dl=NULL;
+static LONG createDosVolume(struct AFSBase *afsbase, struct Volume *volume)
+{
+struct DosList *dl;
+struct OfflineNode *on;
 char string[32];
 BSTR bname;
 UBYTE i;
@@ -126,54 +177,78 @@ UBYTE i;
             return DOSTRUE;
         }
         bname = volume->devicelist.dl_Name;
+        if (AROS_BSTR_strlen(bname) >= sizeof(string))
+                return DOSFALSE;
         for (i=0; i<AROS_BSTR_strlen(bname); i++)
                 string[i] = AROS_BSTR_getchar(bname,i);
         string[AROS_BSTR_strlen(bname)] = 0;
         D(bug("[afs 0x%08lX] Processing inserted volume %s\n", volume, string));
-        /* is the volume already in the list? */
-        doslist = AttemptLockDosList(LDF_WRITE | LDF_VOLUMES);
-        if (doslist != NULL)
+        on = findOfflineNode(afsbase, volume, string);
+        if (on != NULL)
         {
-                dl = FindDosEntry(doslist,string,LDF_VOLUMES);
-                UnLockDosList(LDF_WRITE | LDF_VOLUMES);
+                D(bug("[afs 0x%08lX] Reconnecting offline VolumeNode\n", volume));
+                dl = on->dl;
+                volume->volumenodeadded = on->added;
+                Remove((struct Node *)&on->node);
+                FreeMem(on, sizeof(struct OfflineNode));
+                /* take back the locks that kept the node alive */
+                volume->locklist = BADDR(dl->dol_misc.dol_volume.dol_LockList);
+                dl->dol_misc.dol_volume.dol_LockList = BNULL;
+                Forbid();
+                dl->dol_Task = &((struct Process *)FindTask(NULL))->pr_MsgPort;
+                Permit();
         }
         else
-                return TRUE;
-
-        /* if not create a new doslist */
-        if (dl == NULL)
         {
                 D(bug("[afs 0x%08lX] Creating new VolumeNode\n", volume));
-                doslist = MakeDosEntry(string,DLT_VOLUME);
-                if (doslist == NULL)
+                dl = MakeDosEntry(string,DLT_VOLUME);
+                if (dl == NULL)
                         return DOSFALSE;
-                doslist->dol_Task = &((struct Process *)FindTask(NULL))->pr_MsgPort;
-                doslist->dol_misc.dol_volume.dol_VolumeDate.ds_Days =
+                dl->dol_Task = &((struct Process *)FindTask(NULL))->pr_MsgPort;
+                dl->dol_misc.dol_volume.dol_VolumeDate.ds_Days =
                         volume->devicelist.dl_VolumeDate.ds_Days;
-                doslist->dol_misc.dol_volume.dol_VolumeDate.ds_Minute =
+                dl->dol_misc.dol_volume.dol_VolumeDate.ds_Minute =
                         volume->devicelist.dl_VolumeDate.ds_Minute;
-                doslist->dol_misc.dol_volume.dol_VolumeDate.ds_Tick =
+                dl->dol_misc.dol_volume.dol_VolumeDate.ds_Tick =
                         volume->devicelist.dl_VolumeDate.ds_Tick;
-                AddDosEntry(doslist);
-                /* if we re-use "volume" clear locklist */
                 volume->locklist = NULL;
-                dl = doslist;
+                volume->volumenodeadded = FALSE;
         }
         volume->volumenode = dl;
+        return DOSTRUE;
+}
+
+/*******************************************
+ Name  : addDosVolume
+ Descr.: publish the volume node in the system DosList; retried from
+         the flush timer while the list stays contended
+ Input : volume - volume whose node to publish
+ Output: DOSTRUE when published (or nothing to do); DOSFALSE to retry
+********************************************/
+LONG addDosVolume(struct AFSBase *afsbase, struct Volume *volume)
+{
+        if ((volume->volumenode == NULL) || volume->volumenodeadded)
+                return DOSTRUE;
+        /* don't block: a DosList holder may be waiting on this handler */
+        if (AttemptLockDosList(LDF_WRITE | LDF_VOLUMES) == NULL)
+                return DOSFALSE;
+        UnLockDosList(LDF_WRITE | LDF_VOLUMES);
+        AddDosEntry(volume->volumenode); /* takes LDF_READ|LDF_ENTRY itself */
+        volume->volumenodeadded = TRUE;
         SendEvent(afsbase, IECLASS_DISKINSERTED);
         return DOSTRUE;
 }
 
 /*******************************************
  Name  : remDosVolume
- Descr.: removes a volume added by addDosVolume
-         or if there are some locks active
-         set dol_LockList
+ Descr.: removes a volume's node, or parks it offline
+         while locks are active
  Input : volume - volume to remove
  Output: -
 ********************************************/
 void remDosVolume(struct AFSBase *afsbase, struct Volume *volume) {
 struct DosList *dl;
+struct OfflineNode *on;
 
         dl = volume->volumenode;
         if (dl) {
@@ -181,40 +256,83 @@ struct DosList *dl;
                 {
                         D(bug("[afs 0x%08lX] VolumeNode in use, keeping as offline\n", volume));
                         dl->dol_misc.dol_volume.dol_LockList = MKBADDR(volume->locklist);
+                        volume->locklist = NULL;
+                        Forbid();
+                        dl->dol_Task = NULL;
+                        Permit();
+                        on = AllocMem(sizeof(struct OfflineNode), MEMF_PUBLIC | MEMF_CLEAR);
+                        if (on != NULL)
+                        {
+                                on->dl = dl;
+                                on->added = volume->volumenodeadded;
+                                AddTail((struct List *)&afsbase->offlinevols,
+                                        (struct Node *)&on->node);
+                        }
+                        /* if the record could not be made the node stays
+                           reachable through its handles only; a re-insert
+                           then makes a fresh node */
                 }
                 else
                 {
                         D(bug("[afs 0x%08lX] Removing VolumeNode\n", volume));
-                        remDosNode(afsbase, dl);
+                        if (volume->volumenodeadded)
+                                remDosNode(afsbase, dl);
+                        else
+                                FreeDosEntry(dl);
                 }
                 volume->volumenode = NULL;
+                volume->volumenodeadded = FALSE;
         }
 }
 
 /*******************************************
  Name  : remDosNode
- Descr.: removes a DOS volume node
+ Descr.: removes a DOS volume node; parked nodes that were never
+         published are only freed
  Input : dl - volume to remove
  Output: -
 ********************************************/
 void remDosNode(struct AFSBase *afsbase, struct DosList *dl)
 {
-        RemDosEntry(dl);
+struct OfflineNode *on;
+BOOL added = TRUE;
+
+        for (on = (struct OfflineNode *)afsbase->offlinevols.mlh_Head;
+             on->node.mln_Succ != NULL;
+             on = (struct OfflineNode *)on->node.mln_Succ)
+        {
+                if (on->dl == dl)
+                {
+                        added = on->added;
+                        Remove((struct Node *)&on->node);
+                        FreeMem(on, sizeof(struct OfflineNode));
+                        break;
+                }
+        }
+        if (added)
+        {
+                RemDosEntry(dl);
+                SendEvent(afsbase, IECLASS_DISKREMOVED);
+        }
         FreeDosEntry(dl);
-        SendEvent(afsbase, IECLASS_DISKREMOVED);
 }
 
 LONG osMediumInit
         (struct AFSBase *afsbase, struct Volume *volume, struct BlockCache *block)
 {
+        UBYTE *name = (UBYTE *)block->buffer + BLK_DISKNAME_START(volume) * 4;
+
+        if (name[0] > MAX_NAME_LENGTH)
+                return ERROR_DISK_NOT_VALIDATED;
         if (!initDeviceList(afsbase, volume, block))
                 return ERROR_NO_FREE_STORE;
-        if (!attemptAddDosVolume(afsbase, volume))
+        if (!createDosVolume(afsbase, volume))
         {
                 showError(afsbase, ERR_DOSENTRY);
                 remDosVolume(afsbase, volume);
                 return ERROR_UNKNOWN;
         }
+        addDosVolume(afsbase, volume);
         return 0;
 }
 
@@ -371,6 +489,44 @@ void motorOff(struct AFSBase *afsbase, struct IOHandle *ioh) {
         DoIO((struct IORequest *)&ioh->ioreq->iotd_Req);
 }
 
+LONG prepareMediumCache(struct AFSBase *afsbase, struct Volume *volume)
+{
+        ULONG *root;
+        LONG error = ERROR_DISK_NOT_VALIDATED;
+
+        clearCleanCache(volume);
+        if (!volume->cachepending)
+                return 0;
+        root = AllocVec(BLOCK_SIZE(volume), MEMF_PUBLIC);
+        if (root == NULL)
+                return ERROR_NO_FREE_STORE;
+        /* The creation timestamp is the volume identity; do not consult the
+         * old cache or the mutable label when deciding where to retry writes. */
+        if (readDisk(afsbase, volume, volume->rootblock, 1, root) == 0
+                && calcChkSum(volume->SizeBlock, root) == 0
+                && OS_BE2LONG(root[BLK_PRIMARY_TYPE]) == T_SHORT
+                && OS_BE2LONG(root[BLK_SECONDARY_TYPE(volume)]) == ST_ROOT
+                && OS_BE2LONG(root[BLK_CREATION_DAYS(volume)]) == volume->devicelist.dl_VolumeDate.ds_Days
+                && OS_BE2LONG(root[BLK_CREATION_MINS(volume)]) == volume->devicelist.dl_VolumeDate.ds_Minute
+                && OS_BE2LONG(root[BLK_CREATION_TICKS(volume)]) == volume->devicelist.dl_VolumeDate.ds_Tick)
+        {
+                volume->cachepending = FALSE;
+                if (flush(afsbase, volume))
+                        error = 0;
+                else
+                        volume->cachepending = TRUE;
+        }
+        FreeVec(root);
+        if (error != 0 && showPtrArgsText(afsbase,
+                "Pending changes need the previous volume. Cancel to retain them for reinsertion, or Continue to discard them",
+                Req_ContinueCancel, NULL) == 1)
+        {
+                discardCache(volume);
+                return 0;
+        }
+        return error;
+}
+
 void checkDeviceFlags(struct AFSBase *afsbase) {
 struct Volume *volume;
 struct IOHandle *ioh;
@@ -387,16 +543,30 @@ struct IOHandle *ioh;
                             if (!volume->inhibitcounter)
                             {
                                 D(bug("[afs 0x%08lX] Media inserted\n", volume));
-                                newMedium(afsbase, volume);
+                                /* A direct disk swap may deliver only one change event. */
+                                clearCleanCache(volume);
+                                volume->cachepending = cacheDirty(volume) || volume->writefailed;
+                                remDosVolume(afsbase, volume);
+                                ioh->ioflags |= IOHF_DISK_IN;
+                                if (newMedium(afsbase, volume) != 0 && volume->cachepending)
+                                {
+                                        ioh->ioflags &= ~IOHF_DISK_IN;
+                                        showText(afsbase, "Re-insert the previous volume to save pending changes");
+                                }
                             }
-                            ioh->ioflags |= IOHF_DISK_IN;
                         }
                         else
                         {
                             if (!volume->inhibitcounter)
                             {
-                                flush(afsbase, volume);
+                                /* Do not issue writes or update to an absent medium. */
+                                clearCleanCache(volume);
+                                volume->cachepending = cacheDirty(volume) || volume->writefailed;
                                 remDosVolume(afsbase, volume);
+                                if (volume->cachepending && showPtrArgsText(afsbase,
+                                        "Re-insert the previous volume to save pending changes. Continue to discard them, or Cancel to retain them",
+                                        Req_ContinueCancel, NULL) == 1)
+                                        discardCache(volume);
                             }
                             ioh->ioflags &= ~IOHF_DISK_IN;
                         }
@@ -469,14 +639,24 @@ UWORD *cmdcheck;
  Name  : flush
  Descr.: flush buffers and update disk (sync)
  Input : volume  - volume to flush
- Output: DOSTRUE
+ Output: DOSTRUE on success, DOSFALSE on write/update failure
 ********************************************/
 BOOL flush(struct AFSBase *afsbase, struct Volume *volume) {
 
-        flushCache(afsbase, volume);
+        if (!mediumPresent(&volume->ioh))
+                return !volume->cachepending && !volume->writefailed && !cacheDirty(volume);
+        if (!flushBlocks(afsbase, volume))
+                return DOSFALSE;
         volume->ioh.ioreq->iotd_Req.io_Command = CMD_UPDATE;
-        DoIO((struct IORequest *)&volume->ioh.ioreq->iotd_Req);
-        clearCache(afsbase, volume->blockcache);
+        volume->ioh.ioreq->iotd_Req.io_Data = NULL;
+        volume->ioh.ioreq->iotd_Req.io_Length = 0;
+        if (DoIO((struct IORequest *)&volume->ioh.ioreq->iotd_Req) != 0)
+        {
+                /* Transfers succeeded; a failed commit alone needs no tree repair. */
+                volume->writefailed = TRUE;
+                return DOSFALSE;
+        }
+        volume->writefailed = FALSE;
         return DOSTRUE;
 }
 
@@ -520,38 +700,60 @@ UQUAD offset;
         return retval;
 }
 
-LONG readDisk(struct AFSBase *afsbase, struct Volume *volume, ULONG start, ULONG count, APTR data) {
+/*
+ * Issue a transfer in pieces no larger than the device's MaxTransfer,
+ * offering the usual Retry/Cancel requester for each failing piece.
+ */
+static LONG readwriteDiskChunked
+        (
+                struct AFSBase *afsbase,
+                struct Volume *volume,
+                ULONG start,
+                ULONG count,
+                APTR data,
+                ULONG cmd,
+                CONST_STRPTR errtext
+        )
+{
 LONG result = 0;
-BOOL retry = TRUE;
+ULONG maxblocks = volume->maxtransfer / BLOCK_SIZE(volume);
 
-        while (retry)
+        if (maxblocks == 0)
+                maxblocks = 1;
+
+        while (count > 0)
         {
-                DB2(bug("[afs]    readDisk: reading blocks %lu to %lu\n", start, start+count-1));
-                result = readwriteDisk(afsbase, volume, start, count, data, volume->ioh.cmdread);
-                if (result == 0)
-                        retry = FALSE;
-                else
-                        retry = showRetriableError(afsbase, "Read error %ld on block %lu", result, start) == 1;
+                ULONG chunk = (count < maxblocks) ? count : maxblocks;
+                BOOL retry = TRUE;
+
+                while (retry)
+                {
+                        DB2(bug("[afs]    readwriteDisk: cmd %lu blocks %lu to %lu\n", cmd, start, start+chunk-1));
+                        result = readwriteDisk(afsbase, volume, start, chunk, data, cmd);
+                        if (result == 0)
+                                retry = FALSE;
+                        else
+                                retry = showRetriableError(afsbase, errtext, result, start) == 1;
+                }
+                if (result != 0)
+                        return result;
+
+                start += chunk;
+                count -= chunk;
+                data = (UBYTE *)data + chunk * BLOCK_SIZE(volume);
         }
 
-        return result;
+        return 0;
+}
+
+LONG readDisk(struct AFSBase *afsbase, struct Volume *volume, ULONG start, ULONG count, APTR data) {
+        return readwriteDiskChunked(afsbase, volume, start, count, data,
+                volume->ioh.cmdread, "Read error %ld on block %lu");
 }
 
 LONG writeDisk(struct AFSBase *afsbase, struct Volume *volume, ULONG start, ULONG count, APTR data) {
-LONG result = 0;
-BOOL retry = TRUE;
-
-        while (retry)
-        {
-                DB2(bug("[afs]    writeDisk: writing blocks %lu to %lu\n", start, start+count-1));
-                result = readwriteDisk(afsbase, volume, start, count, data, volume->ioh.cmdwrite);
-                if (result == 0)
-                        retry = FALSE;
-                else
-                        retry = showRetriableError(afsbase, "Write error %ld on block %lu", result, start) == 1;
-        }
-
-        return result;
+        return readwriteDiskChunked(afsbase, volume, start, count, data,
+                volume->ioh.cmdwrite, "Write error %ld on block %lu");
 }
 
 #undef SysBase

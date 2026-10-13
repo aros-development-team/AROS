@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
 */
 
@@ -80,7 +80,7 @@
                                 /* The following are common defaults */
                                 ph->de.de_TableSize      = DE_BUFMEMTYPE;
                                 ph->de.de_SectorPerBlock = 1;
-                                ph->de.de_NumBuffers     = 20;
+                                ph->de.de_NumBuffers     = PartitionDefaultNumBuffers();
 
                                 PartitionNsdCheck(PartitionBase, ph);
                                 return ph;

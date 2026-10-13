@@ -333,6 +333,13 @@ IPTR Lamp__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
     D(bug("[Lamp/Draw] right %d bottom %d\n", right, bottom));
 
+    /* Every draw, not just the one that obtained the pen: whoever drew last
+     * (a list row's text, say) has left its own pen in the rastport. */
+    if (data->lmp_PenChangedOld == PCH_NEWSPEC)
+        SetAPen(_rp(obj), MUIPEN(data->lmp_PenNr));
+    else if (data->lmp_PenChangedOld == PCH_NEWPEN && data->lmp_PenNr != -1)
+        SetAPen(_rp(obj), data->lmp_PenNr);
+
     RectFill(_rp(obj), _mleft(obj), _mtop(obj), right, bottom);
 
     return 0;

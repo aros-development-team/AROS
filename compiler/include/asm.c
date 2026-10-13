@@ -61,6 +61,7 @@ int main(void) {
     DEFINE(SysFlags      , offsetof (struct ExecBase, SysFlags));
     DEFINE(IdleCount     , offsetof (struct ExecBase, IdleCount));
     DEFINE(DispCount     , offsetof (struct ExecBase, DispCount));
+    DEFINE(LaunchPoint   , offsetof (struct ExecBase, ex_LaunchPoint));
 #if !defined(__AROSEXEC_SMP__)
     DEFINE(Quantum       , offsetof (struct ExecBase, Quantum));
     DEFINE(Elapsed       , offsetof (struct ExecBase, Elapsed));
@@ -109,6 +110,7 @@ int main(void) {
     DEFINE(pr_FileSystemTask, offsetof (struct Process, pr_FileSystemTask));
     DEFINE(pr_MsgPort    , offsetof (struct Process, pr_MsgPort));
     DEFINE(pr_Result2    , offsetof (struct Process, pr_Result2));
+    DEFINE(pr_GlobVec    , offsetof (struct Process, pr_GlobVec));
     DEFINE(pr_ReturnAddr , offsetof (struct Process, pr_ReturnAddr));
     DEFINE(pr_SegList    , offsetof (struct Process, pr_SegList));
     DEFINE(pr_WindowPtr  , offsetof (struct Process, pr_WindowPtr));

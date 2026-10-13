@@ -14,8 +14,8 @@ bootiso-pc-x86_64: $(TARGET_ISO)
 #MM- bootiso-pc-x86_64-quick: \
 #MM                              bootiso-pc-x86_64
 
-$(AROSDIR)/.backdrop: $(SRCDIR)/workbench/.backdrop
-		@$(CP) $< $@
+#MM- bootiso-pc-x86_64 : workbench-backdrop
+
 
 ifeq ($(AROS_TARGET_BOOTLOADER),grub)
 BOOTLOADER_ELTORITO_REL := $(AROS_DIR_BOOT)/grub/iso9660_stage1_5
@@ -88,7 +88,7 @@ ISO_DEPS := $(addprefix $(AROSARCHDIR)/, $(BOOTSTRAP_BOOT_FILES)) \
 
 $(warning BOOTLOADER_ELTORITO_REL = $(BOOTLOADER_ELTORITO_REL))
 
-$(TARGET_ISO): $(ISO_DEPS) $(AROSDIR)/.backdrop
+$(TARGET_ISO): $(ISO_DEPS)
 	%mkdirs_q $(AROSDIR)/S
 	$(Q)$(CP) $(SRCDIR)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
 	$(Q)$(MKDIR) -p "$(DISTDIR)"

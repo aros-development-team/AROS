@@ -53,7 +53,7 @@ void Exec_SystemAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APT
             location = iet->iet_AlertLocation;
             stack = iet->iet_AlertStack;
             type = iet->iet_AlertType;
-            data = (APTR)&iet->iet_AlertData;
+            data = (APTR)ETaskAlertData(iet);
         }
         else
             t = PrivExecBase(SysBase)->SAT.sat_Task;

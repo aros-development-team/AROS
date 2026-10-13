@@ -35,7 +35,8 @@ USER_CPPFLAGS := \
 #MM     arostcp-linklibs-miami
 
 BASEFILES := \
-    arp
+    arp \
+    wifi
 
 MIAMIFILES := \
     hostname \

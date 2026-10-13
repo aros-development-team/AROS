@@ -3,6 +3,7 @@
 File: handler_protos.h
 Author: Neil Cafferkey
 Copyright (C) 2001-2008 Neil Cafferkey
+Copyright (C) 2011-2026 The AROS Development Team
 
 This file is free software; you can redistribute it and/or modify it
 under the terms of the GNU Lesser General Public License as
@@ -26,6 +27,7 @@ MA 02111-1307, USA.
 
 
 #include "handler.h"
+#include "ram_security.h"
 
 
 /* Function prototypes */

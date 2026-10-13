@@ -13,7 +13,7 @@
 #include <proto/graphics.h>
 #include <proto/intuition.h>
 
-#include "dosboot_intern.h"
+#include "bootanim.h"
 
 /*
  * 'quiet' asks for NULL rather than an alert when the display database
@@ -123,9 +123,11 @@ struct Screen *NoBootMediaScreen(struct DOSBootBase *DOSBootBase)
            setup runs, so the default arrow doesn't linger over the screen. */
         if (DOSBootBase->bm_Window)
         {
-            DOSBootBase->blank_pointer = AllocMem(6 * 2, MEMF_CHIP | MEMF_CLEAR);
+            DOSBootBase->blank_pointer = AllocMem(BOOT_POINTER_SIZE,
+                                                   MEMF_CHIP | MEMF_CLEAR);
             if (DOSBootBase->blank_pointer)
-                SetPointer(DOSBootBase->bm_Window, DOSBootBase->blank_pointer, 1, 16, 0, 0);
+                SetPointer(DOSBootBase->bm_Window, DOSBootBase->blank_pointer,
+                           BOOT_POINTER_HEIGHT, 16, 0, 0);
         }
 
         if (!anim_Init(scr, DOSBootBase))
@@ -145,10 +147,22 @@ void CloseBootScreen(struct Screen *scr, struct DOSBootBase *DOSBootBase)
     if (DOSBootBase->bm_Window)
     {
         CloseWindow(DOSBootBase->bm_Window);
+        DOSBootBase->bm_Window = NULL;
     }
 
     CloseScreen(scr);
 
     CloseLibrary(&IntuitionBase->LibNode);
     CloseLibrary(&GfxBase->LibNode);
+}
+
+void CloseNoBootMediaScreen(struct DOSBootBase *DOSBootBase)
+{
+    if (DOSBootBase->bm_Screen)
+    {
+        CloseBootScreen(DOSBootBase->bm_Screen, DOSBootBase);
+        DOSBootBase->bm_Screen = NULL;
+    }
+
+    anim_Stop(DOSBootBase);
 }

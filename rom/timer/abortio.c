@@ -60,6 +60,7 @@
     struct ExecLockBase *ExecLockBase = TimerBase->tb_ExecLockBase;
 #endif
     LONG ret = -1;
+    BOOL reply = FALSE;
 
     /*
         As the timer.device runs as an interrupt, we had better protect
@@ -70,7 +71,8 @@
 #if defined(__AROSEXEC_SMP__)
     if (ExecLockBase) ObtainLock(TimerBase->tb_ListLock, SPINLOCK_MODE_WRITE, 0);
 #endif
-    if(timereq->tr_node.io_Message.mn_Node.ln_Type != NT_REPLYMSG)
+    if(timereq->tr_node.io_Message.mn_Node.ln_Type != NT_REPLYMSG &&
+       !(timereq->tr_node.io_Flags & TIMERF_REPLYING))
     {
         Remove((struct Node *)timereq);
 
@@ -78,14 +80,23 @@
         timereq->tr_time.tv_secs = 0;
         timereq->tr_time.tv_micro = 0;
 
-        if (!(timereq->tr_node.io_Flags & IOF_QUICK))
-            ReplyMsg((struct Message *)timereq);
+        reply = !(timereq->tr_node.io_Flags & IOF_QUICK);
         ret = 0;
     }
 #if defined(__AROSEXEC_SMP__)
     if (ExecLockBase) ReleaseLock(TimerBase->tb_ListLock, 0);
 #endif
     Enable();
+
+    if (reply)
+        ReplyMsg((struct Message *)timereq);
+    else
+    {
+        /* Callers expect a completed request's reply at the port */
+        while (((volatile struct Node *)&timereq->tr_node.io_Message.mn_Node)->ln_Type != NT_REPLYMSG &&
+               (timereq->tr_node.io_Flags & TIMERF_REPLYING))
+            ;
+    }
 
     return ret;
 

@@ -310,9 +310,12 @@ LONG initcachedio(UBYTE *devicename, IPTR unit, ULONG flags, struct DosEnvec *de
 
     /* Note: There MUST be atleast 4 IOCache_lines for cachedio to work correctly at the moment!! */
 
-    if((setiocache(8, 8192, TRUE))==0) {
+    /* A cache that could not be set up is an error: returning 0 here let
+       the handler run with no IOCache. */
+    if((errorcode=setiocache(8, 8192, TRUE))==0) {
       return(0);
     }
+    cleanupdeviceio();
   }
 
   return(errorcode);
@@ -325,7 +328,9 @@ void cleanupcachedio(void) {
   /* Only call this if initcachedio() was succesful. */
 
   flushiocache();    /*** returns an errorcode... */
-  freeIOCache(globals->iocache_lruhead);
+  if(globals->iocache_lruhead!=0) {
+    freeIOCache(globals->iocache_lruhead);
+  }
   globals->iocache_lruhead=0;
 
   globals->iocache_lines=0;
@@ -537,6 +542,11 @@ LONG flushiocache(void) {
   /* Writes all dirty data to disk, but keeps the cached data for
      later reads.  Use this to ensure data is comitted to disk
      when doing critical operations. */
+
+  /* Nothing to flush if the cache was never (fully) set up */
+  if(globals->iocache_lruhead==0) {
+    return(0);
+  }
 
   ioc=(struct IOCache *)globals->iocache_lruhead->mlh_Head;
 

@@ -92,7 +92,11 @@ struct KernelBase
     struct List         kb_ICList;                      /* list of all controller types         */
     struct List         kb_InterruptMappings;
 #endif
+#ifdef KERNEL_SPARSE_EXCEPTIONS
+    struct MinList      kb_Exceptions;
+#else
     struct MinList      kb_Exceptions[EXCEPTIONS_COUNT];
+#endif
     struct KernelInt    kb_Interrupts[HW_IRQ_COUNT];
 #if defined(__AROSEXEC_SMP__)
     spinlock_t          kb_IntrSpinLock;            /* guards kb_Exceptions/kb_Interrupts chains */
@@ -109,6 +113,14 @@ struct KernelBase
     KrnSymResolver_t    kb_gResolver;
     APTR                kb_gResolvPrivate;
 };
+
+#ifdef KERNEL_SPARSE_EXCEPTIONS
+#define KERNEL_EXCEPTION_LIST(num) (&KernelBase->kb_Exceptions)
+#define KERNEL_EXCEPTION_MATCH(node, num) ((node)->in_nr == (num))
+#else
+#define KERNEL_EXCEPTION_LIST(num) (&KernelBase->kb_Exceptions[num])
+#define KERNEL_EXCEPTION_MATCH(node, num) (TRUE)
+#endif
 
 /*
  * Some useful global variables. They are global because:

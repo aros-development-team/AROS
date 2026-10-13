@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Set the protection bits of a file.
 */
@@ -51,6 +51,10 @@
     struct PacketHelperStruct phs;
 
     D(bug("[SetProtection] '%s':%x\n", name, protect));
+
+    /* Multi-user: LIMITDOSSETPROTECTION may keep the GROUP/OTHER bits */
+    if (SECURITY_ACTIVE)
+        protect = secLimitProtection(name, protect);
 
     if (getpacketinfo(DOSBase, name, &phs)) {
         status = dopacket4(DOSBase, NULL, phs.port, ACTION_SET_PROTECT, BNULL, phs.lock, phs.name, protect);

@@ -342,6 +342,11 @@ WORD uhciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     ptd->ptd_Flags |= PTDF_BUFFER_VALID;
     ptdpriv->ptd_BounceBuffer = NULL;
     rtn->rtn_BufferReq = *bufreq;
+    /* RT iso contract (cf. denebusb): after each request the client buffer
+       pointer advances by the length transferred, so the next request hook
+       continues from the following data unless it supplies a new buffer. */
+    if(urti)
+        rtn->rtn_BufferReq.ubr_Buffer += bufreq->ubr_Length;
 
     return RC_OK;
 }

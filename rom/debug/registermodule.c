@@ -23,7 +23,8 @@
 
 static inline char *getstrtab(struct sheader *sh);
 static void addsymbol(module_t *mod, dbg_sym_t *sym, struct symbol *st, APTR value);
-static void HandleModuleSegments(module_t *mod, struct MinList * list);
+static BOOL HandleModuleSegments(module_t *mod, struct MinList * list);
+static void FreeModuleSegmentList(struct MinList *list);
 static void RegisterModule_Hunk(const char *name, BPTR segList, ULONG DebugType, APTR DebugInfo, struct Library *DebugBase);
 static int compare_segments(const void *left, const void *right);
 
@@ -50,9 +51,9 @@ static int compare_segments(const void *left, const void *right);
     INPUTS
         name      - Module name
         segList   - DOS segment list for the module
-        debugType - Type of supplied debug information. The only currently
-                    supported type is DEBUG_ELF.
-        debugInfo - Debug information data. For DEBUG_ELF type this should be
+        debugType - Type of supplied debug information. Supported types are
+                    DEBUG_ELF, DEBUG_PARTHENOPE and DEBUG_HUNK.
+        debugInfo - Type-specific debug information. For DEBUG_ELF this should be
                     a pointer to struct ELF_DebugInfo, filled in as follows:
                       eh - a pointer to ELF file header.
                       sh - a pointer to an array of ELF section headers.
@@ -158,13 +159,16 @@ static int compare_segments(const void *left, const void *right);
 
                             AddTail((struct List *)&tmplist, (struct Node *)seg);
 
-                            ObtainSemaphore(&DBGBASE(DebugBase)->db_ModSem);
-                            AddTail((struct List *)&DBGBASE(DebugBase)->db_Modules, (struct Node *)mod);
-                            ReleaseSemaphore(&DBGBASE(DebugBase)->db_ModSem);
+                            if (HandleModuleSegments(mod, &tmplist))
+                            {
+                                ObtainSemaphore(&DBGBASE(DebugBase)->db_ModSem);
+                                AddTail((struct List *)&DBGBASE(DebugBase)->db_Modules, (struct Node *)mod);
+                                ReleaseSemaphore(&DBGBASE(DebugBase)->db_ModSem);
 
-                            HandleModuleSegments(mod, &tmplist);
+                                continue;
+                            }
 
-                            continue;
+                            FreeVec(mod->m_symbols);
                         }
 
                         FreeVec(mod->m_str);
@@ -228,12 +232,20 @@ static int compare_segments(const void *left, const void *right)
     return 0;
 }
 
-static void HandleModuleSegments(module_t *mod, struct MinList * list)
+static BOOL HandleModuleSegments(module_t *mod, struct MinList * list)
 {
     struct segment *seg;
     struct Node *tmpnode;
     LONG segidx = 0, i = 0;
     IPTR maxgapsize = 0;
+
+    if (mod->m_segcnt == 0)
+        return FALSE;
+
+    mod->m_segments = AllocVec(mod->m_segcnt * sizeof(struct segment *), MEMF_PUBLIC | MEMF_CLEAR);
+    if (!mod->m_segments)
+        return FALSE;
+
 #if AROS_MODULES_DEBUG
     TEXT buffer[2048];
     /* If you start getting crashes with weird 'last' values, it might be an overrun of buffer.
@@ -241,8 +253,6 @@ static void HandleModuleSegments(module_t *mod, struct MinList * list)
     STRPTR last = NULL;
     ULONG seggdbhlplen = 0;
 #endif
-
-    mod->m_segments = AllocVec(mod->m_segcnt * sizeof(struct segment *), MEMF_PUBLIC | MEMF_CLEAR);
 
 #if AROS_MODULES_DEBUG
     ForeachNode(list, seg)
@@ -306,6 +316,20 @@ static void HandleModuleSegments(module_t *mod, struct MinList * list)
     }
 
     D(bug("[Debug] Module %s gap 0x%x - 0x%x\n", mod->m_name, mod->m_gaplowest, mod->m_gaphighest));
+
+    return TRUE;
+}
+
+static void FreeModuleSegmentList(struct MinList *list)
+{
+    struct segment *seg;
+    struct Node *tmpnode;
+
+    ForeachNodeSafe(list, seg, tmpnode)
+    {
+        Remove((struct Node *)seg);
+        FreeMem(seg, sizeof(struct segment));
+    }
 }
 
 static void RegisterModule_Hunk(const char *name, BPTR segList, ULONG DebugType, APTR DebugInfo, struct Library *DebugBase)
@@ -340,11 +364,16 @@ static void RegisterModule_Hunk(const char *name, BPTR segList, ULONG DebugType,
         i++;
     }
 
+    if (!HandleModuleSegments(mod, &tmplist))
+    {
+        FreeModuleSegmentList(&tmplist);
+        FreeVec(mod);
+        return;
+    }
+
     ObtainSemaphore(&DBGBASE(DebugBase)->db_ModSem);
     AddTail((struct List *)&DBGBASE(DebugBase)->db_Modules, (struct Node *)mod);
     ReleaseSemaphore(&DBGBASE(DebugBase)->db_ModSem);
-
-    HandleModuleSegments(mod, &tmplist);
 }
 
 void RegisterModule_ELF(const char *name, BPTR segList, struct elfheader *eh, struct sheader *sections,
@@ -435,12 +464,16 @@ void RegisterModule_ELF(const char *name, BPTR segList, struct elfheader *eh, st
             return;
         }
 
-        ObtainSemaphore(&DBGBASE(DebugBase)->db_ModSem);
-        AddTail((struct List *)&DBGBASE(DebugBase)->db_Modules, (struct Node *)mod);
-        ReleaseSemaphore(&DBGBASE(DebugBase)->db_ModSem);
+        if (!HandleModuleSegments(mod, &tmplist))
+        {
+            FreeModuleSegmentList(&tmplist);
+            FreeVec(mod->m_str);
+            FreeVec(mod->m_shstr);
+            FreeVec(mod);
+            return;
+        }
 
-        HandleModuleSegments(mod, &tmplist);
-        D(bug("[Debug] Module %s, 0x%x - 0x%x added to list of modules\n", mod->m_name, mod->m_lowest, mod->m_highest));
+        D(bug("[Debug] Module %s, 0x%x - 0x%x prepared\n", mod->m_name, mod->m_lowest, mod->m_highest));
 
         /* Parse module's symbol table */
         for (i=0; i < int_shnum; i++)
@@ -480,5 +513,11 @@ void RegisterModule_ELF(const char *name, BPTR segList, struct elfheader *eh, st
                 break;
             }
         }
+
+        ObtainSemaphore(&DBGBASE(DebugBase)->db_ModSem);
+        AddTail((struct List *)&DBGBASE(DebugBase)->db_Modules, (struct Node *)mod);
+        ReleaseSemaphore(&DBGBASE(DebugBase)->db_ModSem);
+
+        D(bug("[Debug] Module %s added to list of modules\n", mod->m_name));
     }
 }

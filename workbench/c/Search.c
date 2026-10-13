@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 /*****************************************************************************
@@ -115,7 +115,7 @@ BOOL MatchString(TEXT *string, TEXT *text, TEXT *text_end, UBYTE *pi,
 
 const TEXT template[] =
      "FROM/M,SEARCH/A,ALL/S,NONUM/S,QUIET/S,QUICK/S,FILE/S,PATTERN/S,CASE/S,LINES/N";
-const TEXT version_string[] = "$VER: Search 42.4 (6.4.2008)";
+const TEXT version_string[] = "$VER: Search 42.5 (1.10.2026)";
 const TEXT locale_name[]    = "locale.library";
 
 const TEXT control_codes[]  = { 0x9b, 'K', 13 };
@@ -245,6 +245,20 @@ int main(void)
                 anchor->ap_FoundBreak = 0;
                 anchor->ap_Flags = 0;
                 error = MatchFirst(*from, anchor);
+
+                if(error)
+                {
+                    MatchEnd(anchor);
+
+                    if(error != ERROR_NO_MORE_ENTRIES)
+                    {
+                        success = FALSE;
+                        SetIoErr(error);
+                        break;
+                    }
+
+                    continue;
+                }
                 
                 /* Work out if more than one file is being searched */
                 

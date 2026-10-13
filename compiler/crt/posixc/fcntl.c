@@ -113,7 +113,7 @@
                        modify and write back the flags behave correctly. */
                     LONG e2 = 0, nb = 0;
                     if (hooks->fdh_ioctl)
-                        nb = hooks->fdh_ioctl(data, FIONBIO, NULL, &e2);
+                        nb = hooks->fdh_ioctl(data, fd, FIONBIO, NULL, &e2);
                     return O_RDWR | (nb > 0 ? O_NONBLOCK : 0);
                 }
                 case F_SETFL:
@@ -126,7 +126,7 @@
                     va_end(ap);
                     nb = (arg & O_NONBLOCK) ? 1 : 0;
                     if (hooks->fdh_ioctl)
-                        hooks->fdh_ioctl(data, FIONBIO, &nb, &e2);
+                        hooks->fdh_ioctl(data, fd, FIONBIO, &nb, &e2);
                     return 0;
                 }
                 case F_DUPFD:

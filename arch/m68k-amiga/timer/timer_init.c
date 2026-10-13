@@ -62,6 +62,15 @@ static void start_eclock(struct TimerBase *tb, UWORD cnt)
     *tb->tb_eclock_hi = cnt >> 8;
     *tb->tb_eclock_cr |= 0x10;
     *tb->tb_eclock_cr |= 0x01;
+
+    /*
+     * cnt preserves the remaining count when moving the E-clock timer.
+     * Once that partial period expires, every subsequent interrupt must
+     * represent a full ECLOCK_BASE period. Updating the latch while the
+     * timer runs leaves its current count intact.
+     */
+    *tb->tb_eclock_lo = 0xff;
+    *tb->tb_eclock_hi = 0xff;
 }
 static void set_eclock(struct TimerBase *tb, WORD intbit)
 {

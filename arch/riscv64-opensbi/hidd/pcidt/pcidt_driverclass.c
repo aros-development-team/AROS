@@ -140,7 +140,7 @@ static void pcidt_mapranges(struct pcidt_staticdata *psd, fdt_node_t node,
             b->mem64Size    = (IPTR)size;
             b->mem64Va      = (IPTR)cpu;
             if ((IPTR)cpu >= PCIDT_SV39_IDENTITY_LIMIT)
-                b->mem64Va = PCIDT_HIGH_WINDOW;
+                b->mem64Va = PCIDT_HIGH_WINDOW + ((IPTR)cpu - PCIDT_SV39_IDENTITY_LIMIT);
             D(bug("[PCIDT:Driver] leaving the 64-bit window at %p (%p) "
                   "unmapped, reachable at %p\n", (IPTR)cpu, (IPTR)size,
                   (APTR)b->mem64Va);)

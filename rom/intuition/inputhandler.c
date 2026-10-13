@@ -1583,8 +1583,9 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
             /* Prevent mouse going above all screens */
             scr = FindHighestScreen(IntuitionBase);
             if (scr) {
-                if (ie->ie_Y < scr->TopEdge)
-                    ie->ie_Y = scr->TopEdge;
+                WORD top = scr->TopEdge * int_MouseScaleY(scr);
+                if (ie->ie_Y < top)
+                    ie->ie_Y = top;
             }
         }
         else if (GetPrivIBase(IntuitionBase)->ScreenModePrefs) /* !GetPrivIBase(IntuitionBase)->ActiveMonitor */

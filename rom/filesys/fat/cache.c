@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 2010-2026, The AROS Development Team. All rights reserved.
 
     Disk cache.
  */
@@ -55,6 +55,10 @@
 
 #include "cache.h"
 
+/* Clean shutdown bit tracking (validate.c) */
+struct Globals;
+void MarkVolumeDirty(struct Globals *glob);
+
 #define SysBase (c->sys_base)
 #define DOSBase (c->dos_base)
 
@@ -65,6 +69,24 @@
 #define NODE2(A) \
    ((struct BlockRange *)(((A) != NULL) ? \
    (((BYTE *)(A)) - (IPTR)&((struct BlockRange *)NULL)->node2) : NULL))
+
+
+/* Ranges to cache for a volume: 1/1024 of its size (the size of its FAT at
+ * 4 KB clusters), from 16 ranges up to 4 MB. A power of two, as the hash
+ * table needs */
+ULONG Cache_RangeCount(UQUAD volume_size, ULONG block_size)
+{
+    UQUAD range_size = (UQUAD)block_size << RANGE_SHIFT;
+    UQUAD budget = volume_size >> 10;
+    ULONG count = 16;
+
+    if(budget > (4 << 20))
+        budget = 4 << 20;
+    while((UQUAD)count * 2 * range_size <= budget)
+        count <<= 1;
+
+    return count;
+}
 
 
 APTR Cache_CreateCache(APTR priv, ULONG hash_size, ULONG block_count,
@@ -115,23 +137,22 @@ APTR Cache_CreateCache(APTR priv, ULONG hash_size, ULONG block_count,
         {
             b = AllocVec(sizeof(struct BlockRange)
                 + (c->block_size << RANGE_SHIFT), MEMF_PUBLIC);
-            b->use_count = 0;
-            b->state = BS_EMPTY;
-            b->num = 0;
-            b->data = (UBYTE *)b + sizeof(struct BlockRange);
-
             if(b != NULL)
+            {
+                b->use_count = 0;
+                b->state = BS_EMPTY;
+                b->num = 0;
+                b->data = (UBYTE *)b + sizeof(struct BlockRange);
                 c->blocks[i] = b;
-            else
-                success = FALSE;
-
-            if(success)
                 AddTail((struct List *)&c->free_list,
                     (struct Node *)&b->node2);
+            }
+            else
+                success = FALSE;
         }
     }
 
-    if(!success)
+    if(!success && c != NULL)
     {
         Cache_DestroyCache(c);
         c = NULL;
@@ -148,7 +169,7 @@ VOID Cache_DestroyCache(APTR cache)
 
     Cache_Flush(c);
 
-    for(i = 0; i < c->block_count; i++)
+    for(i = 0; c->blocks != NULL && i < c->block_count; i++)
         FreeVec(c->blocks[i]);
     FreeVec(c->blocks);
     FreeVec(c->hash_table);
@@ -284,6 +305,9 @@ VOID Cache_MarkBlockDirty(APTR cache, APTR block)
         AddTail((struct List *)&c->dirty_list, (struct Node *)&b->node2);
     }
 
+    /* Let the volume note that it now has unwritten changes */
+    MarkVolumeDirty((struct Globals *)c->priv);
+
     return;
 }
 
@@ -295,8 +319,10 @@ BOOL Cache_Flush(APTR cache)
     struct MinNode *n;
     struct BlockRange *b;
 
-    while((n = (struct MinNode *)RemHead((struct List *)&c->dirty_list))
-        != NULL && error == 0)
+    /* A failed range is put back at the head. Do not remove it again while
+     * evaluating the next iteration: the caller must be able to retry it. */
+    while(error == 0 &&
+        (n = (struct MinNode *)RemHead((struct List *)&c->dirty_list)) != NULL)
     {
         /* Write dirty block range to disk */
         b = NODE2(n);

@@ -1,3 +1,4 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
 include $(SRCDIR)/config/aros.cfg
 
@@ -27,7 +28,7 @@ FILES := boolgadgets boopsigadgets buttongclass frameiclass frbuttonclass \
          menus barlabelclass fillrectclass groupgclass wbtasktalk \
          rootclass icclass modelclass itexticlass misc sysiclass menutask \
 	 windecorclass scrdecorclass menudecorclass monitorclass screennotifytask \
-	 screenclass decoration sysrequest_intern shutdownscreen
+	 screenclass decoration sysrequest_intern shutdownscreen intuition_arch
 
 FUNCS := \
 	activategadget \
@@ -188,6 +189,16 @@ FUNCS := \
 #MM     kernel-input-includes \
 #MM     includes-copy
 #MM- core-linklibs: linklibs-intuition
+
+ifeq ($(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH),m68k-amiga)
+# The amiga-m68k kickstart has to fit in a 512KB ROM bank - drop the runtime
+# debug log machinery (see rom/exec/mmakefile.src).
+USER_CPPFLAGS += -DNO_RUNTIME_DEBUG
+endif
+
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
 
 %build_module mmake=kernel-intuition \
   modname=intuition modtype=library \

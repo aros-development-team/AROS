@@ -28,6 +28,10 @@ USER_CPPFLAGS += \
 
 OBJDIR := $(OBJDIR).kernel
 
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
 %build_module mmake=kernel-workbook \
   modname=workbook modtype=resource \
   files="workbook_init $(FILES)"

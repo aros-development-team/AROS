@@ -206,9 +206,9 @@ AROS_UFH0(void, GM_UNIQUENAME(bGUITask))
     {
         STRPTR devname = NULL;
         btGetAttrs(BGA_DEVICE, nhb->nhb_Device, BDA_Name, &devname, TAG_END);
-        btSafeRawDoFmt(nhb->nhb_WinTitle, sizeof(nhb->nhb_WinTitle), "%s: %s", GM_UNIQUENAME(libname), devname ? devname : (STRPTR) "device");
+        btSafeRawDoFmt(nhb->nhb_WinTitle, sizeof(nhb->nhb_WinTitle), "Bluetooth input device: %s", devname ? devname : (STRPTR) "device");
     } else {
-        btSafeRawDoFmt(nhb->nhb_WinTitle, sizeof(nhb->nhb_WinTitle), "%s defaults", GM_UNIQUENAME(libname));
+        btSafeRawDoFmt(nhb->nhb_WinTitle, sizeof(nhb->nhb_WinTitle), "Bluetooth input devices: default settings");
     }
 
     nhb->nhb_ActionClass = MUI_CreateCustomClass(NULL, MUIC_Area  , NULL, sizeof(struct ActionData), GM_UNIQUENAME(ActionDispatcher));

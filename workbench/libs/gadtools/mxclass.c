@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Internal GadTools mx class.
 */
@@ -118,12 +118,20 @@ IPTR GTMX__OM_NEW(Class *cl, Object *objcl, struct opSet *msg)
         data->font = OpenFont(data->tattr);
         
     /* Calculate fontheight */
+    UWORD height = g->Height;
+
     if (data->tattr)
-        data->fontheight = data->tattr->ta_YSize;
-    else if ((g->Flags & GFLG_LABELITEXT) && (g->GadgetText))
-        data->fontheight = g->GadgetText->ITextFont->ta_YSize;
-    else
-        data->fontheight = g->Height;
+        height = data->tattr->ta_YSize;
+    else if (((g->Flags & GFLG_LABELMASK) == GFLG_LABELITEXT) &&
+             g->GadgetText)
+    {
+        if (g->GadgetText->ITextFont)
+            height = g->GadgetText->ITextFont->ta_YSize;
+        else if (data->dri && data->dri->dri_Font)
+            height = data->dri->dri_Font->tf_YSize;
+    }
+
+    data->fontheight = height;
 
     /* Calculate gadget size */
     if (g->Width == 0)

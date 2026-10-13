@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2013, The MorphOS Development Team. All Rights Reserved.
 
     Open a new screen.
@@ -67,6 +67,9 @@
 #undef DEBUG
 #if DEBUG_OpenScreen
 #define DEBUG 1
+#endif
+#ifndef DEBUG
+#define DEBUG 0
 #endif
 #include <aros/debug.h>
 
@@ -1376,6 +1379,15 @@ static const char THIS_FILE[] = __FILE__;
            from withing LoadRGBxx() functions
         */
         D(bug("got allocated stuff\n"));
+        /* Classic custom screens draw through their embedded bitmap header.
+         * Keep the caller's original header intact, and select the same
+         * header for drawing and display before creating screen layers. */
+        if (!IS_HIDD_BM(screen->Screen.RastPort.BitMap))
+        {
+            CopyMem(screen->Screen.RastPort.BitMap,
+                &screen->Screen.BitMap_OBSOLETE, sizeof(struct BitMap));
+            screen->Screen.RastPort.BitMap = &screen->Screen.BitMap_OBSOLETE;
+        }
         screen->Screen.ViewPort.RasInfo->BitMap = screen->Screen.RastPort.BitMap;
     }
 
@@ -1476,6 +1488,14 @@ static const char THIS_FILE[] = __FILE__;
     screen->RecallHotkey.ia_Key = 0xFF;
 #endif
     screen->ModeID = modeid;
+
+#ifdef __mc68000__
+    /* Classic Intuition mirrors the ModeID's legacy mode word into the
+     * ViewPort before attaching its ColorMap. For monitor-qualified modes
+     * this includes the system-owned EXTENDED_MODE bit. */
+    if (modeid != INVALID_ID)
+        screen->Screen.ViewPort.Modes = (UWORD)modeid | SPRITES;
+#endif
 
     if (ok)
     {
@@ -2313,6 +2333,13 @@ static const char THIS_FILE[] = __FILE__;
 
     if (!ok)
     {
+        /* The bar layer is a child of the root layer: delete it before ThinLayerInfo() drops the root */
+        if (screen->Screen.BarLayer)
+        {
+            DEBUG_OPENSCREEN(dprintf("OpenScreen: KillScreenBar\n"));
+            KillScreenBar(&screen->Screen, IntuitionBase);
+        }
+
         if (li_inited)
         {
             DEBUG_OPENSCREEN(dprintf("OpenScreen: Get ThinLayerInfo\n"));
@@ -2336,12 +2363,6 @@ static const char THIS_FILE[] = __FILE__;
 #endif
 
             FreeColorMap(screen->Screen.ViewPort.ColorMap);
-        }
-
-        if (screen->Screen.BarLayer)
-        {
-            DEBUG_OPENSCREEN(dprintf("OpenScreen: KillScreenBar\n"));
-            KillScreenBar(&screen->Screen, IntuitionBase);
         }
 
         if (screen->DInfo.dri_Customize)
@@ -2396,9 +2417,11 @@ static const char THIS_FILE[] = __FILE__;
         screen = 0;
 
     } /* if (!ok) */
-    else if (screen->Screen.RastPort.BitMap)
+    else if (screen->Screen.RastPort.BitMap &&
+             screen->Screen.RastPort.BitMap != &screen->Screen.BitMap_OBSOLETE)
     {
-        /* Copy the BitMap's info for compatability with existing AmigaOS apps */
+        /* Managed bitmaps retain their drawing/display header and expose a
+         * legacy snapshot. Raw custom screens already use the embedded one. */
         CopyMem(screen->Screen.RastPort.BitMap, &screen->Screen.BitMap_OBSOLETE, sizeof(struct BitMap));
     }
 

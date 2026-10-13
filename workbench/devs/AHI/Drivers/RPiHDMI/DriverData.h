@@ -45,6 +45,8 @@ struct RPiHDMIData {
     IPTR periiobase;
     LONG dma_channel;     /* Allocated from dma.resource, -1 = none */
     ULONG dma_dreq;
+    BOOL dma4;            /* Channel is a 40-bit DMA4 engine (BCM2712) */
+    UQUAD dest_addr;      /* MAI_DATA as the engine addresses it */
 
     /* DMA control blocks (32-byte aligned) */
     struct BCM2708DMACB *cb_base; /* Allocated block (for free) */
@@ -58,6 +60,7 @@ struct RPiHDMIData {
 
     /* IRQ */
     APTR irq_handle;
+    ULONG irq_count;      /* Completion IRQs seen this session */
 
     /* Configuration */
     ULONG samplerate;

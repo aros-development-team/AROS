@@ -1,0 +1,19 @@
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_INCLUDES := -I$(SRCDIR)/rom/processor
+
+FILES := \
+    getcpuinfo \
+    getcoreinfo \
+    processor_init \
+    processor_util \
+    processor_frequency
+
+#MM- kernel-processor-raspi-aarch64 : includes
+
+%build_archspecific mainmmake=kernel-processor modname=processor maindir=rom/processor \
+    arch=raspi-aarch64 files=$(FILES)
+
+%common

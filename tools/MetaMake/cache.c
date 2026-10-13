@@ -1,5 +1,5 @@
 /* MetaMake - A Make extension
-   Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
+   Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
 This file is part of MetaMake.
 
@@ -77,6 +77,36 @@ struct Regenerate
     char *src;
     char *dest;
 };
+
+
+static char *
+makecachepath (struct Cache_priv * cache)
+{
+    char * path;
+    int length;
+    int written;
+    size_t size;
+
+    length = snprintf (NULL, 0, "%s/mmake.cache", cache->project->buildtop);
+    if (length < 0)
+    {
+        error ("Could not format cache path");
+        exit (20);
+    }
+
+    size = (size_t)length + 1;
+    path = xmalloc (size);
+
+    written = snprintf (path, size, "%s/mmake.cache", cache->project->buildtop);
+    if (written != length)
+    {
+        xfree (path);
+        error ("Could not format cache path");
+        exit (20);
+    }
+
+    return path;
+}
 
 
 static void
@@ -162,13 +192,9 @@ progress (FILE * fh)
 void
 readcache (struct Cache_priv * cache)
 {
-    char path[256];
+    char * path = makecachepath (cache);
     FILE * fh;
     uint32_t id;
-
-    strcpy (path, cache->project->buildtop);
-    strcat (path, "/mmake.cache");
-    assert (strlen(path) < sizeof(path));
 
     fh = fopen (path, "rb");
 
@@ -222,6 +248,8 @@ readcache (struct Cache_priv * cache)
     if (fh)
         fclose (fh);
 
+    xfree (path);
+
     if (debug)
     {
         printf ("readcache()\n");
@@ -233,7 +261,7 @@ void
 writecache (struct Cache_priv * cache)
 {
     int ok = 1;
-    char path[256];
+    char * path;
     FILE * fh = NULL;
     uint32_t id;
     struct Node *addedfile;
@@ -243,9 +271,7 @@ writecache (struct Cache_priv * cache)
     if (!cache->topdir)
         return;
 
-    strcpy (path, cache->project->buildtop);
-    strcat (path, "/mmake.cache");
-    assert (strlen(path) < sizeof(path));
+    path = makecachepath (cache);
 
     fh = fopen (path, "wb");
 
@@ -288,6 +314,8 @@ writecacheend:
 
         printf ("[MMAKE] %s: Warning! - Creating the cache failed\n", __func__);
     }
+
+    xfree (path);
 }
 
 
@@ -328,10 +356,8 @@ checknewsrc (struct Cache_priv * cache, struct Makefile * makefile, struct List 
             || checkdeps (&cache->project->genmakefiledeps, dst.st_mtime)
        )
     {
-        static char currdir[PATH_MAX];
         struct Regenerate *reg = new (struct Regenerate);
 
-        ASSERT(getcwd(currdir, PATH_MAX) != NULL);
         reg->dir = xstrdup (buildpath(makefile->dir));
         reg->src = mfsrc;
         reg->dest = xstrdup (makefile->node.name);
@@ -381,13 +407,14 @@ updatemflist (struct Cache_priv * cache, struct DirNode * node, struct List * re
     struct DirNode *subdir, *subdir2, *prevdir = NULL;
     struct Makefile * makefile;
     int goup = 0, reread = 0;
-    char curdir[1024];
+    char * curdir = NULL;
 
     debug(printf("MMAKE:cache.c->updatemflist(\"%s\")\n", node->node.name));
 
     if (strlen(node->node.name) != 0)
     {
-        if (getcwd(curdir, sizeof(curdir)) == NULL)
+        curdir = getcwd(NULL, 0);
+        if (curdir == NULL)
         {
             error("Could not get current directory");
             exit (20);
@@ -395,6 +422,7 @@ updatemflist (struct Cache_priv * cache, struct DirNode * node, struct List * re
         if (chdir(node->node.name) < 0)
         {
             error("Could not change to dir '%s'", node->node.name);
+            free (curdir);
             exit (20);
         }
         goup = 1;
@@ -443,7 +471,10 @@ updatemflist (struct Cache_priv * cache, struct DirNode * node, struct List * re
     }
 
     if (goup)
+    {
         ASSERT(chdir(curdir) == 0);
+        free (curdir);
+    }
 
     progress (stdout);
 

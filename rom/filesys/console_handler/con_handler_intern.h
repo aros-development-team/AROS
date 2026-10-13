@@ -1,7 +1,7 @@
 #ifndef __CON_HANDLER_INTERN_H
 #define __CON_HANDLER_INTERN_H
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal header-file for emulation-handler.
@@ -41,6 +41,9 @@
 #define CMD_HISTORY_SIZE        32
 #define PASTEBUFSIZE            16384
 
+struct AppIcon;
+struct DiskObject;
+
 struct conTaskParams
 {
     struct conbase  *conbase;
@@ -67,6 +70,9 @@ struct filehandle
     struct MsgPort          *appmsgport;
     struct AppMessage       *appmsg;
     struct AppWindow        *appwindow;
+    struct AppIcon          *appicon;
+    struct DiskObject       *appicondiskobject;
+    STRPTR                  appiconlabel;
     UBYTE                   *wintitle;
     UBYTE                   *screenname;
 #if BETTER_WRITE_HANDLING
@@ -78,6 +84,7 @@ struct filehandle
     WORD                    inputstart; /* usually 0, but needed for multi-lines (CONTROL RETURN) */
     WORD                    inputpos; /* cursor pos. inside line */
     WORD                    inputsize; /* length of input string */
+    WORD                    killsize;
     WORD                    canreadsize;
     WORD                    historysize;
     WORD                    historypos;
@@ -87,6 +94,7 @@ struct filehandle
 
     UBYTE                   consolebuffer[CONSOLEBUFFER_SIZE + 2];
     UBYTE                   inputbuffer[INPUTBUFFER_SIZE + 2];
+    UBYTE                   killbuffer[INPUTBUFFER_SIZE + 1];
     UBYTE                   historybuffer[CMD_HISTORY_SIZE][INPUTBUFFER_SIZE + 1];
 
     /* If pastebuffer != 0, this contains data to paste from ConClip */
@@ -107,6 +115,7 @@ struct filehandle
     struct Library          *gtbase;
     struct Library          *utilbase;
     struct Library          *workbenchbase;
+    struct Library          *iconbase;
 };
 
 /* filehandle flags */
@@ -124,6 +133,7 @@ struct filehandle
 #define FHFLG_BOOTCON           1024/* Special marker for boot console */
 #define FHFLG_DEVICEMODE        2048/* Driving a plain device, no window */
 #define FHFLG_NOWINDOW          4096/* Boot console failed to get a window: act as a sink */
+#define FHFLG_ICONIFIED         8192/* Handler-owned window is hidden behind an AppIcon */
 
 #undef InputBase
 #undef IntuitionBase
@@ -131,6 +141,7 @@ struct filehandle
 #undef GadToolsBase
 #undef UtilityBase
 #undef WorkbenchBase
+#undef IconBase
 
 /*
  * FIXME: Remove these #define xxxBase hacks
@@ -143,5 +154,6 @@ struct filehandle
 #define GfxBase	fh->gfxbase
 #define UtilityBase fh->utilbase
 #define WorkbenchBase fh->workbenchbase
+#define IconBase fh->iconbase
 
 #endif /* __CON_HANDLER_INTERN_H */

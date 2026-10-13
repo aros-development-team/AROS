@@ -540,7 +540,7 @@ ULONG muFS_CheckReadAccess (ULONG protection, ULONG flags, globaldata *g)
 	else if (!(protection & FIBF_OTR_READ))
 		return ERROR_READ_PROTECTED;
 
-	return NULL;
+	return 0;
 }
 
 ULONG muFS_CheckWriteAccess (ULONG protection, ULONG flags, globaldata *g)
@@ -558,7 +558,7 @@ ULONG muFS_CheckWriteAccess (ULONG protection, ULONG flags, globaldata *g)
 	else if (!(protection & FIBF_OTR_WRITE))
 		return ERROR_WRITE_PROTECTED;
 
-	return NULL;
+	return 0;
 }
 
 ULONG muFS_CheckDeleteAccess (ULONG protection, ULONG flags, globaldata *g)
@@ -576,7 +576,7 @@ ULONG muFS_CheckDeleteAccess (ULONG protection, ULONG flags, globaldata *g)
 	else if (!(protection & FIBF_OTR_DELETE))
 		return ERROR_DELETE_PROTECTED;
 
-	return NULL;
+	return 0;
 }
 
 #endif

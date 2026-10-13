@@ -43,6 +43,10 @@ FUNCS	:=  createcontext \
 #MM- workbench-libs-gadtools : linklibs
 #MM- core-linklibs : linklibs-gadtools
 
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
 %build_module mmake=workbench-libs-gadtools \
     modname=gadtools modtype=library \
     files="gadtools_init $(FUNCS) $(FILES)"

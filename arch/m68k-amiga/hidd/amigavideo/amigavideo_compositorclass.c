@@ -95,7 +95,7 @@ OOP_Object *METHOD(AmigaVideoCompositor, Root, New)
                                  * stack is chip RAM on an unexpanded
                                  * machine.
                                  */
-                                TASKTAG_STACKSIZE  , 4096,
+                                TASKTAG_STACKSIZE  , 2048,
                                 TASKTAG_PC         , DisplayServiceTask,
                                 TASKTAG_ARG1       , o,
                                 TAG_DONE);
@@ -311,13 +311,26 @@ VOID METHOD(AmigaVideoCompositor, Hidd_Compositor, BitMapStackChanged)
             }
             else
             {
-                screen_finish = bmdata->height - 1;
+                /* The bitmap height is relative to its display top edge. */
+                screen_finish = bmdata->topedge + bmdata->viewportheight - 1;
             }
             bmdata->displayheight = limitheight(csd, (screen_finish - screen_start) + 1, bmdata->interlace, FALSE);
+            if (bmdata->displayheight > bmdata->viewportheight)
+                bmdata->displayheight = bmdata->viewportheight;
             D(bug("[AmigaVideo:Compositor] %s:  -- screen range = %d -> %d (%d rows)\n", __func__, screen_start, screen_finish, bmdata->displayheight);)
             setcopperscroll(csd, bmdata, ((csd->interlaced == TRUE) || (bmdata->interlace != 0)));
 
-#if !USE_UCOP_DIRECT
+#if USE_UCOP_DIRECT
+            /*
+             * MakeViewPort() runs before the compositor has calculated the
+             * visible height of a newly attached bitmap. Reparse its user
+             * copper list now that displayheight is valid; otherwise a WAIT
+             * on the first visible line is mistaken for the end of the list.
+             */
+            if (bmdata->bmucl)
+                AmigaVideo_ParseCopperlist(csd, bmdata,
+                                           bmvp->UCopIns->FirstCopList);
+#else
             if ((bmdata->bmucl) && !(bmdata->bmucl->Flags & (1<<15)))
             {
                 D(bug("[AmigaVideo:Compositor] %s:  -- copying user-copperlist data ...\n", __func__);)
@@ -444,7 +457,18 @@ VOID METHOD(AmigaVideoCompositor, Hidd_Compositor, BitMapStackChanged)
                 }
 
         if (csd->acb)
-             csd->acb(csd->acbdata, bm);
+        {
+            /* Report the display as active only when the screen it shows on
+               top is the frontmost screen overall. A native display that
+               shares its output with an RTG one (UAE, scan-doubled setups)
+               is (re)composed whenever any screen changes, and claiming the
+               pointer then would take it away from the RTG screen the user
+               just brought to the front */
+            struct ViewPort *topvp = msg->data ? msg->data->vpe->ViewPort : NULL;
+
+            if (topvp && GfxBase->ActiView && (GfxBase->ActiView->ViewPort == topvp))
+                csd->acb(csd->acbdata, bm);
+        }
     }
     else {
         D(bug("[AmigaVideo:Compositor] %s:  no visible screens .. blanking\n", __func__);)

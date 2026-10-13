@@ -1,0 +1,10 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM workbench-devs-ramdrive : includes linklibs
+
+USER_LDFLAGS := -static
+
+%build_module mmake=workbench-devs-ramdrive \
+    modname=ramdrive modtype=device \
+    files=ramdrive_device

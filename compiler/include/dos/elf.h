@@ -208,6 +208,7 @@
 #define SHF_ALLOC               (1 << 1)
 #define SHF_EXECINSTR           (1 << 2)
 
+#define ELF_ST_BIND(i)          ((i) >> 4)
 #define ELF_ST_TYPE(i)          ((i) & 0x0F)
 
 #define EI_VERSION              6

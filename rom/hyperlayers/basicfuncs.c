@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Basic support functions for layers.library.
 */
@@ -26,7 +26,7 @@
 
 #define CLIPRECTS_OUTSIDE_OF_SHAPE 1
 
-#define SCROLLSIGN +
+
 
 /*
  *  Sections:
@@ -65,7 +65,7 @@ void BltRPtoCR(struct RastPort *    rp,
               cr->bounds.MinX,
               cr->bounds.MinY,
               cr->BitMap,
-              ALIGN_OFFSET(cr->bounds.MinX), 0,
+              CR_BMOFFX(cr), CR_BMOFFY(cr),
               cr->bounds.MaxX - cr->bounds.MinX + 1,
               cr->bounds.MaxY - cr->bounds.MinY + 1,
               Mode,
@@ -80,8 +80,8 @@ void BltCRtoRP(struct RastPort *   rp,
                struct LayersBase  * LayersBase)
 {
     BltBitMap(cr->BitMap,
-              ALIGN_OFFSET(cr->bounds.MinX),
-              0,
+              CR_BMOFFX(cr),
+              CR_BMOFFY(cr),
               rp->BitMap,
               cr->bounds.MinX,
               cr->bounds.MinY,
@@ -174,7 +174,7 @@ void _FreeLayer(struct Layer * l, struct LayersBase *LayersBase)
   
   while (cr)
   {
-    if (cr->BitMap)
+    if (cr->BitMap && !(cr->Flags & CR_SHAREDBITMAP))
       FreeBitMap(cr->BitMap);
     _cr = cr->Next;
 
@@ -196,11 +196,14 @@ void _FreeLayer(struct Layer * l, struct LayersBase *LayersBase)
     cr = _cr;
   }
 
+#if LAYERS_BACKING_SURFACE
+  if (IL(l)->surface)
+    FreeBitMap(IL(l)->surface);
+#endif
   DisposeRegion(l->DamageList);
   DisposeRegion(l->VisibleRegion);
   DisposeRegion(l->shape);
   DisposeRegion(l->visibleshape);
-  
   FreeMem(l, sizeof(struct IntLayer));
 }
 
@@ -326,10 +329,22 @@ struct ClipRect * _AllocClipRect(struct Layer * L, struct LayersBase *LayersBase
     CR->Next   = NULL;
     CR->lobs   = NULL;
     CR->BitMap = NULL;
+    CR->_p1    = NULL;
+    CR->_p2    = NULL;
     return CR;
   }
 
-  return AllocPooled(LayersBase->lb_ClipRectPool, sizeof(struct ClipRect));
+  CR = AllocPooled(LayersBase->lb_ClipRectPool, sizeof(struct ClipRect));
+  if (NULL != CR)
+  {
+    CR->Flags  = 0;
+    CR->Next   = NULL;
+    CR->lobs   = NULL;
+    CR->BitMap = NULL;
+    CR->_p1    = NULL;
+    CR->_p2    = NULL;
+  }
+  return CR;
 }
 
 /*
@@ -378,7 +393,8 @@ void _FreeClipRectListBM(struct Layer * L,
   {
     if (NULL != _CR->BitMap && TRUE == isSmart)
     {
-      FreeBitMap(_CR->BitMap);
+      if (!(_CR->Flags & CR_SHAREDBITMAP))
+        FreeBitMap(_CR->BitMap);
       _CR->BitMap = NULL;
     }
     if (NULL != _CR->Next)
@@ -402,53 +418,175 @@ void _FreeClipRectListBM(struct Layer * L,
 /*                              MISCELLANEOUS                              */
 /***************************************************************************/
 
+/*
+ * Make a hidden smart refresh ClipRect a view into the bitmap of the
+ * ClipRect 'owner' that it lies in: no bitmap of its own, no copying.
+ */
+static void _MakeClipRectView(struct ClipRect *cr, struct ClipRect *owner)
+{
+  cr->BitMap = owner->BitMap;
+  CR_SETBMOFF(cr, CR_BMOFFX(owner) + cr->bounds.MinX - owner->bounds.MinX,
+                  CR_BMOFFY(owner) + cr->bounds.MinY - owner->bounds.MinY);
+  cr->Flags |= CR_SHAREDBITMAP;
+}
+
+/*
+ * Give a hidden ClipRect a (not cleared) bitmap of its own. 'aligndx' is
+ * a translation the ClipRect undergoes later (MoveLayer): the content is
+ * placed so that it is aligned for the final position.
+ */
+BOOL _AllocClipRectBitMap(struct ClipRect *cr, struct BitMap *display_bm, int aligndx, struct LayersBase *LayersBase)
+{
+  cr->BitMap = AllocBitMap(cr->bounds.MaxX - cr->bounds.MinX + 1 + ALIGN_CLIPRECT,
+                           cr->bounds.MaxY - cr->bounds.MinY + 1,
+                           display_bm->Depth,
+                           0,
+                           display_bm);
+  CR_SETBMOFF(cr, ALIGN_OFFSET(cr->bounds.MinX + aligndx), 0);
+  cr->Flags &= ~CR_SHAREDBITMAP;
+  return (NULL != cr->BitMap);
+}
+
+/*
+ * Give a hidden smart refresh ClipRect its backing store: a view into the
+ * layer's surface when there is one that holds it, else a bitmap of its own.
+ */
+BOOL _BackClipRect(struct ClipRect *cr, struct Layer *l, int aligndx, struct LayersBase *LayersBase)
+{
+#if LAYERS_BACKING_SURFACE
+  if (NULL != IL(l)->surface &&
+      cr->bounds.MinX >= l->bounds.MinX && cr->bounds.MinY >= l->bounds.MinY &&
+      cr->bounds.MaxX - l->bounds.MinX < IL(l)->surfw &&
+      cr->bounds.MaxY - l->bounds.MinY < IL(l)->surfh)
+  {
+    cr->BitMap = IL(l)->surface;
+    CR_SETBMOFF(cr, cr->bounds.MinX - l->bounds.MinX, cr->bounds.MinY - l->bounds.MinY);
+    cr->Flags |= CR_SHAREDBITMAP;
+    return TRUE;
+  }
+#endif
+  return _AllocClipRectBitMap(cr, l->rp->BitMap, aligndx, LayersBase);
+}
+
+#if LAYERS_BACKING_SURFACE
+/*
+ * Make the layer's surface at least w x h, keeping its content and
+ * re-pointing the ClipRects that view it. Content outside the old size
+ * is undefined; the backfill of grown areas takes care of it.
+ */
+BOOL _EnsureSurfaceSize(struct Layer *l, WORD w, WORD h, struct LayersBase *LayersBase)
+{
+  struct BitMap *old = IL(l)->surface, *new;
+  struct ClipRect *lists[3], *cr;
+  int i;
+
+  if (NULL == old)
+    return FALSE;
+  if (w <= IL(l)->surfw && h <= IL(l)->surfh)
+    return TRUE;
+  if (w < IL(l)->surfw) w = IL(l)->surfw;
+  if (h < IL(l)->surfh) h = IL(l)->surfh;
+
+  new = AllocBitMap(w, h, l->rp->BitMap->Depth, 0, l->rp->BitMap);
+  if (NULL == new)
+    return FALSE;
+
+  BltBitMap(old, 0, 0, new, 0, 0, IL(l)->surfw, IL(l)->surfh, 0x0c0, 0xff, NULL);
+
+  lists[0] = l->ClipRect;
+  lists[1] = l->_cliprects;
+  lists[2] = l->cr2;
+  for (i = 0; i < 3; i++)
+    for (cr = lists[i]; NULL != cr; cr = cr->Next)
+      if (cr->BitMap == old)
+        cr->BitMap = new;
+
+  FreeBitMap(old);
+  IL(l)->surface = new;
+  IL(l)->surfw = w;
+  IL(l)->surfh = h;
+  return TRUE;
+}
+#endif
+
+/*
+ * From region r create a list of ClipRects: visible ones for r itself,
+ * hidden ones for the rest of the layer (or of 'inverter' if given).
+ * Hidden ClipRects of a smart refresh layer get a bitmap of their own,
+ * or, if 'viewsof' is given (a clip region or damage list being derived
+ * from the layer's regular ClipRects), become views into the hidden
+ * ClipRects of that list, which they lie within.
+ */
 struct ClipRect * _CreateClipRectsFromRegion(struct Region *r,
                                              struct Layer * l,
                                              int invisible,
                                              struct Region * inverter,
+                                             int aligndx,
+                                             struct ClipRect * viewsof,
                                              struct LayersBase *LayersBase)
 {
   int looped = FALSE;
   struct ClipRect * firstcr = NULL, * cr;
   struct BitMap * display_bm = l->rp->BitMap;
 
-  /*
-   * From region r create cliprects
-   */
   while (1)
   {
     struct RegionRectangle * rr = r->RegionRectangle;
+
     while (rr)
     {
-      cr = _AllocClipRect(l, LayersBase);
-      cr->bounds.MinX = rr->bounds.MinX + r->bounds.MinX;
-      cr->bounds.MinY = rr->bounds.MinY + r->bounds.MinY;
-      cr->bounds.MaxX = rr->bounds.MaxX + r->bounds.MinX;
-      cr->bounds.MaxY = rr->bounds.MaxY + r->bounds.MinY;
-      cr->lobs  = (struct Layer *)(IPTR)invisible;
-      cr->Next  = firstcr;
+      struct Rectangle bounds;
 
-      if (TRUE == invisible && IS_SMARTREFRESH(l))
+      bounds.MinX = rr->bounds.MinX + r->bounds.MinX;
+      bounds.MinY = rr->bounds.MinY + r->bounds.MinY;
+      bounds.MaxX = rr->bounds.MaxX + r->bounds.MinX;
+      bounds.MaxY = rr->bounds.MaxY + r->bounds.MinY;
+
+      if (TRUE == invisible && IS_SMARTREFRESH(l) && NULL != viewsof)
       {
-        cr->BitMap = AllocBitMap(
-                   cr->bounds.MaxX - cr->bounds.MinX + 1 + ALIGN_CLIPRECT,
-                   cr->bounds.MaxY - cr->bounds.MinY + 1,
-                   display_bm->Depth,
-                   BMF_CLEAR,
-                   display_bm);
+        /*
+         * Views: one per hidden ClipRect of 'viewsof' overlapping this
+         * rectangle. Should they not cover it completely (they always
+         * do), fall back to a ClipRect with a bitmap of its own.
+         */
+        struct ClipRect * ocr;
+        int covered = 0;
+
+        for (ocr = viewsof; NULL != ocr; ocr = ocr->Next)
+        {
+          struct Rectangle is;
+
+          if (NULL != ocr->lobs && NULL != ocr->BitMap && AndRectRect(&bounds, &ocr->bounds, &is))
+            covered += RECTAREA(&is);
+        }
+
+        if (covered >= RECTAREA(&bounds))
+        {
+          for (ocr = viewsof; NULL != ocr; ocr = ocr->Next)
+          {
+            struct Rectangle is;
+
+            if (NULL == ocr->lobs || NULL == ocr->BitMap || !AndRectRect(&bounds, &ocr->bounds, &is))
+              continue;
+            cr = _AllocClipRect(l, LayersBase);
+            cr->bounds = is;
+            cr->lobs   = (struct Layer *)(IPTR)TRUE;
+            _MakeClipRectView(cr, ocr);
+            cr->Next = firstcr;
+            firstcr  = cr;
+          }
+          rr = rr->Next;
+          continue;
+        }
       }
 
-#if 0
-kprintf("\t\t%s: Created cliprect %d/%d-%d/%d invisible: %d\n",
-        __FUNCTION__,
-        cr->bounds.MinX,
-        cr->bounds.MinY,
-        cr->bounds.MaxX,
-        cr->bounds.MaxY,
-        invisible);
-#endif
-
-      firstcr = cr;
+      cr = _AllocClipRect(l, LayersBase);
+      cr->bounds = bounds;
+      cr->lobs   = (struct Layer *)(IPTR)invisible;
+      if (TRUE == invisible && IS_SMARTREFRESH(l))
+        _BackClipRect(cr, l, aligndx, LayersBase);
+      cr->Next = firstcr;
+      firstcr  = cr;
 
       rr = rr->Next;
     }
@@ -491,10 +629,95 @@ int _CopyClipRectsToClipRects(struct Layer * l,
                               int backupmode,
                               int freelist,
                               int addtodamagelist,
+                              int fresh,
                               struct LayersBase *LayersBase)
 {
   struct BitMap * display_bm = l->rp->BitMap;
-  
+
+  /*
+   * New backing bitmaps are allocated uncleared. Normally the old
+   * ClipRects tile the whole layer and fill them completely below. The
+   * parts they do not cover (the layer grew while covered) are
+   * backfilled into the backing bitmap, as AmigaOS does: the hook is
+   * called with the ClipRect's bitmap in the RastPort, the bounds in
+   * bitmap coordinates and the offsets in layer coordinates. Only for
+   * freshly created lists: when copying back into an existing list
+   * (EndUpdate, clip region removal) the destination already holds
+   * valid content outside the source.
+   */
+  if (fresh && IS_SMARTREFRESH(l))
+  {
+    struct ClipRect * _cr;
+
+    for (_cr = newcr; NULL != _cr; _cr = _cr->Next)
+    {
+      struct ClipRect * ocr;
+      struct Region * uncovered;
+      struct RegionRectangle * rr;
+      int covered = 0, area;
+
+      if (NULL == _cr->lobs || NULL == _cr->BitMap)
+        continue;
+
+      area = RECTAREA(&_cr->bounds);
+      for (ocr = oldcr; NULL != ocr && covered < area; ocr = ocr->Next)
+      {
+        struct Rectangle is;
+
+        if (AndRectRect(&_cr->bounds, &ocr->bounds, &is))
+          covered += RECTAREA(&is);
+      }
+      if (covered >= area)
+        continue;
+
+      if (l->BackFill == LAYERS_NOBACKFILL || NULL == (uncovered = NewRegion()))
+      {
+        /* nothing will paint it: at least do not show stale memory */
+        BltBitMap(_cr->BitMap, 0, 0, _cr->BitMap, 0, 0,
+                  _cr->bounds.MaxX - _cr->bounds.MinX + 1 + ALIGN_CLIPRECT,
+                  _cr->bounds.MaxY - _cr->bounds.MinY + 1,
+                  0x000, 0xff, NULL);
+        continue;
+      }
+
+      OrRectRegion(uncovered, &_cr->bounds);
+      for (ocr = oldcr; NULL != ocr; ocr = ocr->Next)
+      {
+        struct Rectangle is;
+
+        if (AndRectRect(&_cr->bounds, &ocr->bounds, &is))
+          ClearRectRegion(uncovered, &is);
+      }
+
+      for (rr = uncovered->RegionRectangle; NULL != rr; rr = rr->Next)
+      {
+        struct Rectangle screenrect, bmrect;
+        struct BitMap * bm = l->rp->BitMap;
+
+        screenrect.MinX = rr->bounds.MinX + uncovered->bounds.MinX;
+        screenrect.MinY = rr->bounds.MinY + uncovered->bounds.MinY;
+        screenrect.MaxX = rr->bounds.MaxX + uncovered->bounds.MinX;
+        screenrect.MaxY = rr->bounds.MaxY + uncovered->bounds.MinY;
+
+        bmrect.MinX = screenrect.MinX - _cr->bounds.MinX + CR_BMOFFX(_cr);
+        bmrect.MinY = screenrect.MinY - _cr->bounds.MinY + CR_BMOFFY(_cr);
+        bmrect.MaxX = screenrect.MaxX - _cr->bounds.MinX + CR_BMOFFX(_cr);
+        bmrect.MaxY = screenrect.MaxY - _cr->bounds.MinY + CR_BMOFFY(_cr);
+
+        l->rp->BitMap = _cr->BitMap;
+        _CallLayerHook(l->BackFill,
+                       l->rp,
+                       l,
+                       &bmrect,
+                       screenrect.MinX - l->bounds.MinX + l->Scroll_X,
+                       screenrect.MinY - l->bounds.MinY + l->Scroll_Y,
+                       LayersBase);
+        l->rp->BitMap = bm;
+      }
+      DisposeRegion(uncovered);
+    }
+  }
+
   while (NULL != oldcr)
   {
     struct ClipRect * _cr = newcr;
@@ -627,136 +850,79 @@ kprintf("%s: _cr: %d/%d-%d/%d!\n\n",
             LONG xSrc, xDest;
             LONG ySrc, yDest;
             struct BitMap * destbm;
-            
+
             if (IS_SUPERREFRESH(l))
-              destbm = l->SuperBitMap;
-            else
-              destbm = _cr->BitMap;
-            
-            /*
-             * Does the source rect have a bitmap (off screen)
-             * or is it on the screen.
-             */
-            if (oldcr->lobs && !IS_SUPERREFRESH(l))
             {
               /*
-               * Copy from hidden bitmap to hidden bitmap
+               * Superbitmap layer: the superbitmap is the only backing
+               * store. A part that was already hidden is in it; a part
+               * that was on screen is copied to where it belongs. The
+               * superbitmap coordinates are the rastport coordinates,
+               * and the layer shows the superbitmap from Scroll_X/Y.
                */
-              xSrc = (oldcr->bounds.MinX - _cr->bounds.MinX);
-              if (xSrc < 0)
+              if (NULL == oldcr->lobs)
               {
-                /*
-                 * oldcr is further to the left
-                 */
-                xSrc = -xSrc;
-                xDest = 0;
+                BltBitMap(l->rp->BitMap,
+                          intersect.MinX,
+                          intersect.MinY,
+                          l->SuperBitMap,
+                          intersect.MinX - l->bounds.MinX + l->Scroll_X,
+                          intersect.MinY - l->bounds.MinY + l->Scroll_Y,
+                          xSize,
+                          ySize,
+                          0x0c0,
+                          0xff,
+                          NULL);
               }
-              else
-              {
-                /*
-                 * oldcr is further to the right
-                 */
-                xDest = xSrc;
-                xSrc = 0;
-              }
-              
-              xSrc  += ALIGN_OFFSET(oldcr->bounds.MinX + srcdx);
-              xDest += ALIGN_OFFSET(_cr->bounds.MinX + destdx);
-              
-              ySrc = (oldcr->bounds.MinY - _cr->bounds.MinY);
-              if (ySrc < 0)
-              {
-                ySrc   = -ySrc;
-                yDest  = 0;
-              }
-              else
-              {
-                yDest = ySrc;
-                ySrc  = 0;
-              }
-//kprintf("Using old cr's BitMap!\n");
-              srcbm = oldcr->BitMap;
+              area -= (xSize * ySize);
             }
             else
             {
-              /*
-               * Copy from screen.
-               */
-              if (oldcr->bounds.MinX > _cr->bounds.MinX)
-              {
-                xSrc = oldcr->bounds.MinX;
-                if (IS_SUPERREFRESH(l))
-                  xDest = (oldcr->bounds.MinX - _cr->bounds.MinX) SCROLLSIGN l->Scroll_X;
-                else
-                  xDest = (oldcr->bounds.MinX - _cr->bounds.MinX) + ALIGN_OFFSET((_cr->bounds.MinX + destdx));
-              }
-              else
-              {
-                xSrc = _cr->bounds.MinX;
-                if (IS_SUPERREFRESH(l))
-                  xDest = SCROLLSIGN l->Scroll_X;
-                else
-                  xDest = ALIGN_OFFSET((_cr->bounds.MinX + destdx));
-              }
-              
-              if (oldcr->bounds.MinY > _cr->bounds.MinY)
-              {
-                ySrc = oldcr->bounds.MinY;
-                yDest = oldcr->bounds.MinY - _cr->bounds.MinY;
-                if (IS_SUPERREFRESH(l))
-                  yDest = yDest SCROLLSIGN l->Scroll_Y;
-              }
-              else
-              {
-                ySrc = _cr->bounds.MinY;
-                yDest = 0;
-                if (IS_SUPERREFRESH(l))
-                  yDest = yDest SCROLLSIGN l->Scroll_Y;
-              }
-              
-              srcbm = l->rp->BitMap;
-//kprintf("Using bitmap of screen!\n");
-            }
 
-            if (IS_SIMPLEREFRESH(l) &&
-                NULL == _cr->BitMap &&
-                TRUE == backupmode)
-            {
               /*
-               * Get a bitmap (if not there) and make a backup
+               * Copy the intersection into the new hidden ClipRect's
+               * bitmap, from the old ClipRect's bitmap or from the screen.
                */
-              _cr->BitMap = AllocBitMap(
-                 _cr->bounds.MaxX - _cr->bounds.MinX + 1 + ALIGN_CLIPRECT,
-                 _cr->bounds.MaxY - _cr->bounds.MinY + 1,
-                 display_bm->Depth,
-                 BMF_CLEAR,
-                 display_bm);
+              if (IS_SIMPLEREFRESH(l) && NULL == _cr->BitMap && TRUE == backupmode)
+              {
+                /* Get a bitmap (if not there) and make a backup */
+                _AllocClipRectBitMap(_cr, display_bm, destdx, LayersBase);
+              }
               destbm = _cr->BitMap;
+              xDest  = intersect.MinX - _cr->bounds.MinX + CR_BMOFFX(_cr);
+              yDest  = intersect.MinY - _cr->bounds.MinY + CR_BMOFFY(_cr);
+
+              if (oldcr->lobs)
+              {
+                srcbm = oldcr->BitMap;
+                xSrc  = intersect.MinX - oldcr->bounds.MinX + CR_BMOFFX(oldcr);
+                ySrc  = intersect.MinY - oldcr->bounds.MinY + CR_BMOFFY(oldcr);
+              }
+              else
+              {
+                srcbm = l->rp->BitMap;
+                xSrc  = intersect.MinX;
+                ySrc  = intersect.MinY;
+              }
+
+              /* A view of the same content needs no copy */
+              if (NULL != srcbm && NULL != destbm &&
+                  !(srcbm == destbm && xSrc == xDest && ySrc == yDest))
+              {
+                BltBitMap(srcbm,
+                          xSrc,
+                          ySrc,
+                          destbm,
+                          xDest,
+                          yDest,
+                          xSize,
+                          ySize,
+                          0x0c0,
+                          0xff,
+                          NULL);
+              }
+              area -= (xSize * ySize);
             }
-
-            BltBitMap(srcbm,
-                      xSrc,
-                      ySrc,
-                      destbm,
-                      xDest,
-                      yDest,
-                      xSize,
-                      ySize,
-                      0x0c0,
-                      0xff,
-                      NULL);
-#if 0
-kprintf("%s: backing up: from %d/%d to %d/%d  width:%d, height: %d\n",
-        __FUNCTION__,
-        xSrc,
-        ySrc,
-        xDest,
-        yDest,
-        xSize,
-        ySize);
-#endif
-
-            area -= (xSize * ySize);
             
           }
         }
@@ -832,68 +998,28 @@ kprintf("%s: _cr: %d/%d-%d/%d!\n",
               LONG ySrc, yDest;
               struct BitMap * srcbm;
               
+              xDest = intersect.MinX;
+              yDest = intersect.MinY;
               if (IS_SUPERREFRESH(l))
-                srcbm = l->SuperBitMap;
-              else
-                srcbm = oldcr->BitMap;
-           
-              /*
-               * I have to make the old one visible
-               * two cases left: SMART REFRESH and SUPERBITMAP
-               */
-
-              if (!IS_SUPERREFRESH(l))
               {
                 /*
-                 * Copy from hidden BitMap to screen!
-                 * If a simple refresh layer is moved it might
-                 * also have a BitMap!!!
+                 * Superbitmap layer: the part is in the superbitmap at
+                 * its rastport coordinates; the layer shows the
+                 * superbitmap from Scroll_X/Y.
                  */
-                xSrc = (oldcr->bounds.MinX - _cr->bounds.MinX);
-                if (xSrc < 0)
-                {
-                  /*
-                   * old cr is further to the left
-                   */
-                  xSrc   = -xSrc + ALIGN_OFFSET(oldcr->bounds.MinX + srcdx);
-                  xDest  = _cr->bounds.MinX;
-                }
-                else
-                {
-                  /*
-                   * oldcr is further to the right
-                   */
-                  xDest = oldcr->bounds.MinX;
-                  xSrc  = ALIGN_OFFSET(oldcr->bounds.MinX + srcdx);
-                }
-                
-                ySrc = (oldcr->bounds.MinY - _cr->bounds.MinY);
-                if (ySrc < 0)
-                {
-                  ySrc   = -ySrc;
-                  yDest = _cr->bounds.MinY;
-                }
-                else
-                {
-                  yDest = oldcr->bounds.MinY;
-                  ySrc  = 0;
-                }
+                srcbm = l->SuperBitMap;
+                xSrc  = intersect.MinX - l->bounds.MinX + l->Scroll_X;
+                ySrc  = intersect.MinY - l->bounds.MinY + l->Scroll_Y;
               }
               else
               {
                 /*
-                 * superbitmap layer
+                 * From the hidden bitmap (a moved simple refresh layer
+                 * may have one too).
                  */
-                xSrc = (oldcr->bounds.MinX > _cr->bounds.MinX) ?
-                        oldcr->bounds.MinX - _cr->bounds.MinX SCROLLSIGN l->Scroll_X :
-                        _cr->bounds.MinX - oldcr->bounds.MinX SCROLLSIGN l->Scroll_X;
-                xDest = _cr->bounds.MinX;
-                
-                ySrc = (oldcr->bounds.MinY > _cr->bounds.MinY) ?
-                        oldcr->bounds.MinY - _cr->bounds.MinY SCROLLSIGN l->Scroll_Y :
-                        _cr->bounds.MinY - oldcr->bounds.MinY SCROLLSIGN l->Scroll_Y;
-                yDest = _cr->bounds.MinY;
-                
+                srcbm = oldcr->BitMap;
+                xSrc  = intersect.MinX - oldcr->bounds.MinX + CR_BMOFFX(oldcr);
+                ySrc  = intersect.MinY - oldcr->bounds.MinY + CR_BMOFFY(oldcr);
               }
               
 #if 0
@@ -908,8 +1034,9 @@ kprintf("\t\t%s: Show cliprect: %d/%d-%d/%d; blitting to %d/%d _cr->lobs: %d\n",
         _cr->lobs);
 #endif
 
-/* FIXME: Must have oldcr->BitMap also for SuperBitMap layers! */
 
+
+              if (NULL != srcbm)
               BltBitMap(srcbm,
                         xSrc,
                         ySrc,
@@ -944,7 +1071,7 @@ kprintf("\t\t%s: Show cliprect: %d/%d-%d/%d; blitting to %d/%d _cr->lobs: %d\n",
     if (TRUE == freelist)
     {
       _cr = oldcr->Next;
-      if (oldcr->BitMap)
+      if (oldcr->BitMap && !(oldcr->Flags & CR_SHAREDBITMAP))
         FreeBitMap(oldcr->BitMap);
       _FreeClipRect(oldcr, l, LayersBase);
       oldcr = _cr;
@@ -1037,9 +1164,8 @@ int _BackupPartsOfLayer(struct Layer * l,
   
   if (r)
   {
-     newcr = _CreateClipRectsFromRegion(r,l,FALSE,NULL,LayersBase);
+     newcr = _CreateClipRectsFromRegion(r,l,FALSE,NULL,dx,NULL,LayersBase);
      DisposeRegion(r);
-
      if (newcr)
      {
          _CopyClipRectsToClipRects(l,
@@ -1048,6 +1174,7 @@ int _BackupPartsOfLayer(struct Layer * l,
                                    0,
                                    dx,
                                    backupsimplerefresh,
+                                   TRUE,
                                    TRUE,
                                    TRUE,
                                    LayersBase);
@@ -1103,9 +1230,8 @@ int _ShowPartsOfLayer(struct Layer * l,
   r = AndRegionRegionND(l->visibleshape, l->VisibleRegion);
   if (r != NULL)
   {
-      newcr = _CreateClipRectsFromRegion(r,l,FALSE,NULL,LayersBase);
+      newcr = _CreateClipRectsFromRegion(r,l,FALSE,NULL,0,NULL,LayersBase);
       DisposeRegion(r);
-
       _CopyClipRectsToClipRects(l,
                                 l->ClipRect /* source */,
                                 newcr /* destination */,
@@ -1114,6 +1240,7 @@ int _ShowPartsOfLayer(struct Layer * l,
                                 FALSE,
                                 TRUE,
                                 FALSE,
+                                TRUE,
                                 LayersBase);
 
 
@@ -1144,7 +1271,7 @@ int _ShowLayer(struct Layer * l, struct LayersBase *LayersBase)
     {
       struct ClipRect * cr;
 
-      cr = (struct ClipRect *)AllocPooled(LayersBase->lb_ClipRectPool, sizeof(struct ClipRect));
+      cr = _AllocClipRect(l, LayersBase);
 
 //kprintf("\t\tinvisible: %d !!!!!!!!!!!!\n",invisible);
 
@@ -1183,8 +1310,8 @@ kprintf("\t\tClearing background! %d/%d-%d/%d  bitmap: %p\n",
         if (IS_SUPERREFRESH(l))
         {
           BltBitMap(l->SuperBitMap,
-                    cr->bounds.MinX - l->bounds.MinX,
-                    cr->bounds.MinY - l->bounds.MinY,
+                    cr->bounds.MinX - l->bounds.MinX + l->Scroll_X,
+                    cr->bounds.MinY - l->bounds.MinY + l->Scroll_Y,
                     l->rp->BitMap,
                     cr->bounds.MinX,
                     cr->bounds.MinY,
@@ -1208,21 +1335,32 @@ kprintf("\t\tClearing background! %d/%d-%d/%d  bitmap: %p\n",
       else
       {
         /*
-         * This part is to be invisible!
+         * This part is to be invisible! The backfill hook is run into
+         * the backing bitmap, as AmigaOS does (verified on Kickstart
+         * 3.1: CreateBehindHookLayer() under another layer calls the
+         * hook for the hidden part too).
          */
         if (IS_SMARTREFRESH(l))
         {
-          cr->BitMap = AllocBitMap(
-             cr->bounds.MaxX - cr->bounds.MinX + 1 + ALIGN_CLIPRECT,
-             cr->bounds.MaxY - cr->bounds.MinY + 1,
-             bm->Depth,
-             BMF_CLEAR,
-             bm);
+          if (_BackClipRect(cr, l, 0, LayersBase))
+          {
+            struct Rectangle bmrect;
 
-/* FIXME:
- * stegerg: the backfill hook should be called for this bitmap!
- * But _CallLayerHook always uses rp->BitMap
- */
+            bmrect.MinX = CR_BMOFFX(cr);
+            bmrect.MinY = CR_BMOFFY(cr);
+            bmrect.MaxX = bmrect.MinX + cr->bounds.MaxX - cr->bounds.MinX;
+            bmrect.MaxY = bmrect.MinY + cr->bounds.MaxY - cr->bounds.MinY;
+
+            l->rp->BitMap = cr->BitMap;
+            _CallLayerHook(l->BackFill,
+                           l->rp,
+                           l,
+                           &bmrect,
+                           cr->bounds.MinX - l->bounds.MinX + l->Scroll_X,
+                           cr->bounds.MinY - l->bounds.MinY + l->Scroll_Y,
+                           LayersBase);
+            l->rp->BitMap = bm;
+          }
         }
       }
 
@@ -1347,6 +1485,26 @@ kprintf("\t\t: %s Clearing rect : %d/%d-%d/%d  layer: %p, hook: %p, bitmap: %p\n
         l->BackFill,
         l->rp->BitMap);
 #endif
+     if (IS_SUPERREFRESH(l))
+     {
+       /*
+        * A superbitmap layer has no backfill: the newly exposed area
+        * shows the superbitmap (rastport coordinates, shown from
+        * Scroll_X/Y).
+        */
+       BltBitMap(l->SuperBitMap,
+                 RR->bounds.MinX - l->bounds.MinX + l->Scroll_X,
+                 RR->bounds.MinY - l->bounds.MinY + l->Scroll_Y,
+                 l->rp->BitMap,
+                 RR->bounds.MinX,
+                 RR->bounds.MinY,
+                 RR->bounds.MaxX - RR->bounds.MinX + 1,
+                 RR->bounds.MaxY - RR->bounds.MinY + 1,
+                 0x0c0,
+                 0xff,
+                 NULL);
+     }
+     else
      _CallLayerHook(l->BackFill,
                     l->rp,
                     l,
@@ -1398,6 +1556,7 @@ struct Region *_InternalInstallClipRegion(struct Layer *l, struct Region *region
                                     FALSE,
                                     TRUE,
                                     FALSE,
+                                    FALSE,
                                     LayersBase);
         else
           _FreeClipRectListBM(l, l->ClipRect, LayersBase);
@@ -1432,6 +1591,8 @@ struct Region *_InternalInstallClipRegion(struct Layer *l, struct Region *region
                                                l,
                                                FALSE,
                                                region,
+                                               destdx,
+                                               l->_cliprects,
                                                LayersBase);
       DisposeRegion(r);
 
@@ -1442,6 +1603,7 @@ struct Region *_InternalInstallClipRegion(struct Layer *l, struct Region *region
                                 destdx,
                                 FALSE,
                                 FALSE,
+                                TRUE,
                                 TRUE,
                                 LayersBase); /* stegerg: should be FALSE. but that does not work??? */
 

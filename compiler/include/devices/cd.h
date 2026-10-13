@@ -157,19 +157,19 @@ union CDTOC {
 #define CD_READXL_INTP(n, cdxl, data) \
     AROS_UFP3(VOID, n, \
             AROS_UFPA(struct CDXL *, cdxl, A2), \
-            AROS_UFPA(APTR, data, A4), \
+            AROS_UFPA(APTR, data, A1), \
             AROS_UFPA(struct ExecBase *, __cxdl_SysBase, A6))
 
 #define CD_READXL_INTC(n, cdxl, data) \
     AROS_UFC3(VOID, n, \
             AROS_UFCA(struct CDXL *, cdxl, A2), \
-            AROS_UFCA(APTR, data, A4), \
+            AROS_UFCA(APTR, data, A1), \
             AROS_UFCA(struct ExecBase *, SysBase, A6))
 
 #define CD_READXL_INTH(n, cdxl, data) \
     AROS_UFH3(VOID, n, \
             AROS_UFHA(struct CDXL *, cdxl, A2), \
-            AROS_UFHA(APTR, data, A4), \
+            AROS_UFHA(APTR, data, A1), \
             AROS_UFHA(struct ExecBase *, SysBase, A6))
 
 #define CD_READXL_INTFUNC_INIT  AROS_USERFUNC_INIT

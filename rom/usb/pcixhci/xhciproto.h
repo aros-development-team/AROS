@@ -145,6 +145,7 @@ static inline UWORD xhciDevEPKey(const struct IOUsbHWReq *ioreq)
 // xhcichip.c
 BOOL xhciInit(struct PCIController *, struct PCIUnit *, struct timerequest *timerreq);
 void xhciFree(struct PCIController *hc, struct PCIUnit *hu);
+void xhciFreeHCMem(struct PCIController *hc, struct XhciHCPrivate *xhcic);
 
 struct pciusbXHCIDevice *xhciFindDeviceCtx(struct PCIController *hc, UWORD devaddr);
 struct pciusbXHCIDevice *xhciFindRouteDevice(struct PCIController *hc, ULONG route, UWORD rootPortIndex);

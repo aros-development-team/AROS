@@ -23,6 +23,7 @@ extern struct aros_dhcp_state aros_dhcpv6;
 void run_dhclient(struct ifnet *ifp);
 void kill_dhclient(struct ifnet *ifp);
 void run_dhcp(void);
+void dhcp_stop_all(void);       /* stop every DHCP client outright (reload) */
 
 #if INET6 && DHCP6
 void run_dhclient6(struct ifnet *ifp);

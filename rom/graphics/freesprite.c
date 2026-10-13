@@ -48,11 +48,13 @@
 {
     AROS_LIBFUNC_INIT
 
-    if(pick < 8) {
+    if(pick >= 0 && pick < 8) {
         UBYTE Mask = (0x01 << pick) ^ 0xff;
         Disable();
         GfxBase->SpriteReserved &= Mask;
         GfxBase->ExtSprites &= Mask;
+        if (GfxBase->SimpleSprites)
+            GfxBase->SimpleSprites[pick] = NULL;
         Enable();
     }
     AROS_LIBFUNC_EXIT

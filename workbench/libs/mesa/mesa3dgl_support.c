@@ -44,20 +44,25 @@ static inline const void *gallium_core_get_api(void) { return (const void *)0; }
 #endif
 
 /*
- * Second gate: only HVS4 builds a scaled plane, so on the BCM2711 a
+ * Second gate: only HVS4 builds a scaled plane, so anywhere else a
  * scaled request would leave a 1/N image in the top-left corner. Not a
  * build-time decision - one aarch64 build ships both gallium hidds - and
  * the driver has no attribute to ask without pulling oop.library in here.
+ * An allow list: an unknown SoC renders unscaled until someone has
+ * checked its HVS, rather than silently taking the scaled path.
  */
 #ifdef MESA3DGL_HAVE_COREAPI
 static BOOL MESA3DGLScalerAvailable(VOID)
 {
     struct Library *KernelBase = OpenResource("kernel.resource");
+    IPTR base;
 
     if (!KernelBase)
         return FALSE;
 
-    return KrnGetSystemAttr(KATTR_PeripheralBase) != BCM2711_PERIIOBASE;
+    base = (IPTR)KrnGetSystemAttr(KATTR_PeripheralBase);
+
+    return (base == BCM2835_PERIPHYSBASE) || (base == BCM2836_PERIPHYSBASE);
 }
 #else
 static inline BOOL MESA3DGLScalerAvailable(VOID) { return FALSE; }

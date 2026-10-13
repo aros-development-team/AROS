@@ -10,6 +10,7 @@
 #include <aros/debug.h>
 #include <proto/exec.h>
 
+#include "exec_intern.h"
 #include "exec_util.h"
 #include "semaphores.h"
 
@@ -69,10 +70,18 @@ void InternalObtainSemaphore(struct SignalSemaphore *sigSem, struct Task *owner,
         return;  /* A crude attempt to recover... */
 
     /*
-     * Arbitrate for the semaphore structure.
-     * TODO: SMP-aware versions of this code likely need to use spinlocks here
+     * Arbitrate for the semaphore structure. Forbid() blocks local-CPU
+     * preemption only; under SMP a spinlock on the semaphore protects
+     * ss_QueueCount/ss_NestCount/ss_Owner and the ss_WaitQueue list
+     * against concurrent obtain/release from other cores. The spinlock
+     * field lives in ss_MultipleLink.sr_SpinLock (InitSemaphore initialises
+     * it). Must be released before Wait() / Permit() to allow other cores
+     * to release the semaphore and signal us.
      */
     Forbid();
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_LOCK(&sigSem->ss_MultipleLink.sr_SpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
 
     /*
      * ss_QueueCount == -1 indicates that the semaphore is
@@ -128,12 +137,26 @@ void InternalObtainSemaphore(struct SignalSemaphore *sigSem, struct Task *owner,
         AddTail((struct List *)&sigSem->ss_WaitQueue, (struct Node *)&sr);
 
         /*
+         * Drop the lock before Wait() so a Release elsewhere can reach
+         * us. Order: semaphore lock outer, tc_SpinLock inner.
+         */
+#if defined(__AROSEXEC_SMP__)
+        EXEC_SPINLOCK_UNLOCK(&sigSem->ss_MultipleLink.sr_SpinLock);
+#endif
+        /*
          * Finally, we simply wait, ReleaseSemaphore() will fill in
          * who owns the semaphore.
          */
         Wait(SIGF_SINGLE);
+
+        /* All Done! */
+        Permit();
+        return;
     }
 
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(&sigSem->ss_MultipleLink.sr_SpinLock);
+#endif
     /* All Done! */
     Permit();
 }
@@ -147,10 +170,14 @@ ULONG InternalAttemptSemaphore(struct SignalSemaphore *sigSem, struct Task *owne
         return FALSE;  /* A crude attempt to recover... */
 
     /*
-     * Arbitrate for the semaphore structure.
-     * TODO: SMP-aware versions of this code likely need to use spinlocks here
+     * Arbitrate for the semaphore structure. See InternalObtainSemaphore
+     * for rationale. AttemptSemaphore never waits, so we can hold the
+     * spinlock for the whole critical section.
      */
     Forbid();
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_LOCK(&sigSem->ss_MultipleLink.sr_SpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
 
     /* Increment the queue count */
     sigSem->ss_QueueCount++;
@@ -173,6 +200,9 @@ ULONG InternalAttemptSemaphore(struct SignalSemaphore *sigSem, struct Task *owne
         retval = FALSE;
     }
 
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(&sigSem->ss_MultipleLink.sr_SpinLock);
+#endif
     /* All done. */
     Permit();
 

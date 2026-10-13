@@ -7,6 +7,7 @@
 
 #include <inttypes.h>
 #include "kernel_arm.h"
+#include "tls.h"
 
 extern uint32_t __arm_affinitymask;
 
@@ -61,10 +62,12 @@ typedef uint8_t cpumode_t;
 
 void cpu_DumpRegs(regs_t *regs);
 
+/* Logical id from TLS, set by the boot CPU: MPIDR_EL1 is unreliable on
+ * Pi 3, some armstubs leave a core's EL1 view at 0. */
 static inline int GetCPUNumber() {
-    uint64_t tmp;
-    asm volatile ("mrs %0, mpidr_el1" : "=r" (tmp));
-    return tmp & 3;
+    tls_t *__tls;
+    asm volatile ("mrs %0, tpidr_el1" : "=r" (__tls));
+    return (int)__tls->CPUNumber;
 }
 
 static inline void SendIPISelf(uint32_t ipi, uint32_t ipi_param)
@@ -84,5 +87,33 @@ static inline void SendIPIAll(uint32_t ipi, uint32_t ipi_param)
     int cpu = GetCPUNumber();
     __arm_arosintern.ARMI_SendIPI((ipi & 0x0fffffff) | (cpu << 28), ipi_param, 0xf);
 }
+
+/* Refreshes iet_CpuUsage for TaskTag_CPUUsage, from the timer IRQ. */
+#define TASKUSAGE_WINDOW        1000000 /* microseconds */
+
+void core_TaskCPUUsage(void);
+
+#if defined(__AROSEXEC_SMP__)
+/*
+ * Per-core load for KrnGetSystemAttr(KATTR_CPULoad + cpu): the inverse of
+ * the idle task's share of the window. Its busy time is already in
+ * iet_private2, so only the previous sample is kept here.
+ */
+#define AARCH64_MAXCPUS     4
+
+struct aarch64_CPULoadData
+{
+    UQUAD       cpl_LastIdle;       /* idle busy time at the last sample */
+    UQUAD       cpl_LastStamp;      /* when that sample was taken (us)   */
+    ULONG       cpl_LastLoad;       /* the load that sample produced     */
+};
+
+/* Shortest window worth measuring - callers asking again within it are
+ * served the previous result. */
+#define CPULOAD_MINWINDOW       100000  /* microseconds */
+
+extern struct Task *aarch64_IdleTask[AARCH64_MAXCPUS];
+extern struct aarch64_CPULoadData aarch64_CPULoad[AARCH64_MAXCPUS];
+#endif
 
 #endif /* CPU_AARCH64_H_ */

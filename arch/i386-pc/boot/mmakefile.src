@@ -93,6 +93,6 @@ LEGACY_DEVS  := trackdisk
 LEGACY_HIDDS := serialmouse
 
 %make_package mmake=kernel-legacy-pc-i386 file=$(AROSARCHDIR)/aros-legacy.pkg \
-	devs=$(LEGACY_DEVS) hidds=$(LEGACY_HIDDS) res=$(LEGACY_RSRCS) packfmt=$(AROS_PACKAGE_FMT)
+	devs=$(LEGACY_DEVS) hidds=$(LEGACY_HIDDS) res=$(LEGACY_RSRCS) packfmt=$(AROS_PACKAGE_FMT) prune=no
 
 %common

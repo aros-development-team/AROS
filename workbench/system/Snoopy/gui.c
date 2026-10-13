@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2006-2015, The AROS Development Team. All rights reserved.
+    Copyright (C) 2006-2026, The AROS Development Team. All rights reserved.
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
@@ -10,6 +10,8 @@
 #include <libraries/mui.h>
 
 #include <proto/alib.h>
+#include <proto/dos.h>
+#include <proto/exec.h>
 #include <proto/muimaster.h>
 #include <proto/intuition.h>
 
@@ -30,6 +32,14 @@ static Object *findTaskCM, *lockScreenCM, *openDeviceCM, *openFontCM, *openLibra
 
 static struct Hook save_hook, open_hook, use_hook, undo_hook, reset_hook, cancel_hook;
 
+static void gui_pattern_error(LONG error)
+{
+    char buffer[100];
+
+    Fault(error, MSG(MSG_MATCH), buffer, sizeof(buffer));
+    MUI_Request(app, window, 0, MSG(MSG_TITLE), MSG(MSG_OK), "%s", buffer);
+}
+
 AROS_UFH3S(void, save_function,
     AROS_UFHA(struct Hook *, h, A0),
     AROS_UFHA(Object *, object, A2),
@@ -37,12 +47,22 @@ AROS_UFH3S(void, save_function,
 {
     AROS_USERFUNC_INIT
 
-    oldsetup = setup;
-    gui_get();
-    patches_set();
-    if ( ! setup_save())
+    struct Setup previous = setup;
+    LONG error = gui_get();
+
+    if (error)
     {
-        MUI_Request ( app, window, 0, MSG(MSG_TITLE), MSG(MSG_OK), MSG(MSG_ERROR_SAVE), PREFFILE);
+        gui_pattern_error(error);
+        gui_set();
+    }
+    else
+    {
+        oldsetup = previous;
+        patches_set();
+        if ( ! setup_save())
+        {
+            MUI_Request ( app, window, 0, MSG(MSG_TITLE), MSG(MSG_OK), MSG(MSG_ERROR_SAVE), PREFFILE);
+        }
     }
     
     AROS_USERFUNC_EXIT
@@ -87,9 +107,19 @@ AROS_UFH3S(void, use_function,
 {
     AROS_USERFUNC_INIT
 
-    oldsetup = setup;
-    gui_get();
-    patches_set();
+    struct Setup previous = setup;
+    LONG error = gui_get();
+
+    if (error)
+    {
+        gui_pattern_error(error);
+        gui_set();
+    }
+    else
+    {
+        oldsetup = previous;
+        patches_set();
+    }
 
     AROS_USERFUNC_EXIT
 }
@@ -328,7 +358,12 @@ void gui_handleevents(void)
 
 void gui_cleanup(void)
 {
-    MUI_DisposeObject(app);
+    if (app)
+    {
+        MUI_DisposeObject(app);
+        app = NULL;
+        window = NULL;
+    }
 }
 
 void gui_set(void)
@@ -341,7 +376,6 @@ void gui_set(void)
     set(breakPointCM,    MUIA_Selected, setup.breakPoint);
 
     set(patternStr,      MUIA_String_Contents, setup.pattern);
-    main_parsepattern();
 
     set(changeDirCM,     MUIA_Selected, setup.enableChangeDir);
     set(deleteCM,        MUIA_Selected, setup.enableDelete);
@@ -374,46 +408,62 @@ void gui_set(void)
     set(optionNum,       MUIA_Numeric_Value, setup.optionLen);
 }
 
-void gui_get(void)
+LONG gui_get(void)
 {
-    setup.onlyShowFails       = XGET(failCM,          MUIA_Selected);
-    setup.showCliNr           = XGET(cliCM,           MUIA_Selected);
-    setup.showPaths           = XGET(pathCM,          MUIA_Selected);
-    setup.useDevNames         = XGET(devCM,           MUIA_Selected);
-    setup.ignoreWB            = XGET(ignoreCM,        MUIA_Selected);
-    setup.breakPoint          = XGET(breakPointCM,    MUIA_Selected);
+    struct Setup candidate = setup;
+    CONST_STRPTR pattern;
+    LONG error;
+    int i;
 
-    setup.pattern             = (STRPTR)XGET(patternStr, MUIA_String_Contents);
-    main_parsepattern();
+    candidate.onlyShowFails       = XGET(failCM,          MUIA_Selected);
+    candidate.showCliNr           = XGET(cliCM,           MUIA_Selected);
+    candidate.showPaths           = XGET(pathCM,          MUIA_Selected);
+    candidate.useDevNames         = XGET(devCM,           MUIA_Selected);
+    candidate.ignoreWB            = XGET(ignoreCM,        MUIA_Selected);
+    candidate.breakPoint          = XGET(breakPointCM,    MUIA_Selected);
 
-    setup.enableChangeDir     = XGET(changeDirCM,     MUIA_Selected);
-    setup.enableDelete        = XGET(deleteCM,        MUIA_Selected);
-    setup.enableExecute       = XGET(executeCM,       MUIA_Selected);
-    setup.enableGetVar        = XGET(getVarCM,        MUIA_Selected);
-    setup.enableLoadSeg       = XGET(loadSegCM,       MUIA_Selected);
-    setup.enableLock          = XGET(lockCM,          MUIA_Selected);
-    setup.enableMakeDir       = XGET(makeDirCM,       MUIA_Selected);
-    setup.enableMakeLink      = XGET(makeLinkCM,      MUIA_Selected);
-    setup.enableOpen          = XGET(openCM,          MUIA_Selected);
-    setup.enableRename        = XGET(renameCM,        MUIA_Selected);
-    setup.enableRunCommand    = XGET(runCommandCM,    MUIA_Selected);
-    setup.enableSetVar        = XGET(setVarCM,        MUIA_Selected);
-    setup.enableSystem        = XGET(systemCM,        MUIA_Selected);
+    pattern = (CONST_STRPTR)XGET(patternStr, MUIA_String_Contents);
+    for (i = 0; pattern && (i < PATTERNLEN - 1) && pattern[i]; i++)
+        candidate.pattern[i] = pattern[i];
+    candidate.pattern[i] = '\0';
 
-    setup.enableFindPort      = XGET(findPortCM,      MUIA_Selected);
-    setup.enableFindResident  = XGET(findResidentCM,  MUIA_Selected);
-    setup.enableFindSemaphore = XGET(findSemaphoreCM, MUIA_Selected);
-    setup.enableFindTask      = XGET(findTaskCM,      MUIA_Selected);
-    setup.enableLockScreen    = XGET(lockScreenCM,    MUIA_Selected);
-    setup.enableOpenDevice    = XGET(openDeviceCM,    MUIA_Selected);
-    setup.enableOpenFont      = XGET(openFontCM,      MUIA_Selected);
-    setup.enableOpenLibrary   = XGET(openLibraryCM,   MUIA_Selected);
-    setup.enableOpenResource  = XGET(openResourceCM,  MUIA_Selected);
-    setup.enableReadToolTypes = XGET(readToolTypesCM, MUIA_Selected);
+    candidate.enableChangeDir     = XGET(changeDirCM,     MUIA_Selected);
+    candidate.enableDelete        = XGET(deleteCM,        MUIA_Selected);
+    candidate.enableExecute       = XGET(executeCM,       MUIA_Selected);
+    candidate.enableGetVar        = XGET(getVarCM,        MUIA_Selected);
+    candidate.enableLoadSeg       = XGET(loadSegCM,       MUIA_Selected);
+    candidate.enableLock          = XGET(lockCM,          MUIA_Selected);
+    candidate.enableMakeDir       = XGET(makeDirCM,       MUIA_Selected);
+    candidate.enableMakeLink      = XGET(makeLinkCM,      MUIA_Selected);
+    candidate.enableOpen          = XGET(openCM,          MUIA_Selected);
+    candidate.enableRename        = XGET(renameCM,        MUIA_Selected);
+    candidate.enableRunCommand    = XGET(runCommandCM,    MUIA_Selected);
+    candidate.enableSetVar        = XGET(setVarCM,        MUIA_Selected);
+    candidate.enableSystem        = XGET(systemCM,        MUIA_Selected);
 
-    setup.nameLen             = XGET(nameNum,         MUIA_Numeric_Value);
-    setup.actionLen           = XGET(actionNum,       MUIA_Numeric_Value);
-    setup.targetLen           = XGET(targetNum,       MUIA_Numeric_Value);
-    setup.optionLen           = XGET(optionNum,       MUIA_Numeric_Value);
+    candidate.enableFindPort      = XGET(findPortCM,      MUIA_Selected);
+    candidate.enableFindResident  = XGET(findResidentCM,  MUIA_Selected);
+    candidate.enableFindSemaphore = XGET(findSemaphoreCM, MUIA_Selected);
+    candidate.enableFindTask      = XGET(findTaskCM,      MUIA_Selected);
+    candidate.enableLockScreen    = XGET(lockScreenCM,    MUIA_Selected);
+    candidate.enableOpenDevice    = XGET(openDeviceCM,    MUIA_Selected);
+    candidate.enableOpenFont      = XGET(openFontCM,      MUIA_Selected);
+    candidate.enableOpenLibrary   = XGET(openLibraryCM,   MUIA_Selected);
+    candidate.enableOpenResource  = XGET(openResourceCM,  MUIA_Selected);
+    candidate.enableReadToolTypes = XGET(readToolTypesCM, MUIA_Selected);
+
+    candidate.nameLen             = XGET(nameNum,         MUIA_Numeric_Value);
+    candidate.actionLen           = XGET(actionNum,       MUIA_Numeric_Value);
+    candidate.targetLen           = XGET(targetNum,       MUIA_Numeric_Value);
+    candidate.optionLen           = XGET(optionNum,       MUIA_Numeric_Value);
+
+    error = main_parsepattern(&candidate);
+    if (error)
+        return error;
+
+    Forbid();
+    setup = candidate;
+    Permit();
+
+    return 0;
 }
-

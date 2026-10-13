@@ -116,7 +116,7 @@ void *krnAddExceptionHandler(UBYTE num, APTR handler,  APTR handlerData, APTR ha
 #if defined(__AROSEXEC_SMP__)
             KrnSpinLock(&KernelBase->kb_IntrSpinLock, NULL, SPINLOCK_MODE_WRITE);
 #endif
-            ADDHEAD(&KernelBase->kb_Exceptions[num], &handle->in_Node);
+            ADDHEAD(KERNEL_EXCEPTION_LIST(num), &handle->in_Node);
 #if defined(__AROSEXEC_SMP__)
             KrnSpinUnLock(&KernelBase->kb_IntrSpinLock);
 #endif
@@ -134,8 +134,12 @@ int krnRunExceptionHandlers(struct KernelBase *KernelBase, uint8_t exception, vo
     int ret = 0;
 
     /* We can be called really early. Protect against this. */
-    if (!KernelBase || (EXCEPTIONS_COUNT < exception))
+    if (!KernelBase)
         return 0;
+#if EXCEPTIONS_COUNT < 256
+    if (exception >= EXCEPTIONS_COUNT)
+        return 0;
+#endif
 
 #if defined(__AROSEXEC_SMP__)
     /*
@@ -159,9 +163,9 @@ int krnRunExceptionHandlers(struct KernelBase *KernelBase, uint8_t exception, vo
         unsigned int n = 0, i;
 
         KrnSpinLock(&KernelBase->kb_IntrSpinLock, NULL, SPINLOCK_MODE_READ);
-        ForeachNodeSafe(&KernelBase->kb_Exceptions[exception], in, in2)
+        ForeachNodeSafe(KERNEL_EXCEPTION_LIST(exception), in, in2)
         {
-            if (in->in_Handler)
+            if (KERNEL_EXCEPTION_MATCH(in, exception) && in->in_Handler)
             {
                 if (n < sizeof(snap) / sizeof(snap[0]))
                 {
@@ -181,11 +185,11 @@ int krnRunExceptionHandlers(struct KernelBase *KernelBase, uint8_t exception, vo
             ret |= snap[i].h(ctx, snap[i].d1, snap[i].d2);
     }
 #else
-    ForeachNodeSafe(&KernelBase->kb_Exceptions[exception], in, in2)
+    ForeachNodeSafe(KERNEL_EXCEPTION_LIST(exception), in, in2)
     {
         exhandler_t h = in->in_Handler;
 
-        if (h)
+        if (KERNEL_EXCEPTION_MATCH(in, exception) && h)
             ret |= h(ctx, in->in_HandlerData, in->in_HandlerData2);
     }
 #endif

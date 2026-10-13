@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2015-2026, The AROS Development Team. All rights reserved.
 */
 
 #ifdef DEBUG
@@ -73,14 +73,22 @@ AROS_LH4(APTR, NewAddTask,
         nat_Tags[1].ti_Data = (IPTR)tagList;
     }
 
+    if (!IsMinListEmpty(&TaskResBase->trb_NotifyHooks))
+        taskres_NotifyTasks(TaskResBase, TNA_ADDED, task, FindTask(NULL), tagList);
+
     D(bug("[TaskRes] %s: Calling original Exec->NewAddTask()\n", __func__));
 
-    return AROS_CALL4(APTR, TaskResBase->trb_NewAddTask,
+    APTR result = AROS_CALL4(APTR, TaskResBase->trb_NewAddTask,
                 AROS_LCA(struct Task *,     task,      A1),
                 AROS_LCA(APTR,              initialPC, A2),
                 AROS_LCA(APTR,              finalPC,   A3),
                 AROS_LCA(struct TagItem *,  nat_Tags,   A4),
                 struct ExecBase *, SysBase);
+
+    if (!result && !IsMinListEmpty(&TaskResBase->trb_NotifyHooks))
+        taskres_NotifyTasks(TaskResBase, TNA_FAILED, task, FindTask(NULL), tagList);
+
+    return result;
 
     AROS_LIBFUNC_EXIT
 }
@@ -106,6 +114,9 @@ AROS_LH1(void, RemTask,
         if (findTask != task)
             bug("[TaskRes] %s: Real task @ 0x%p\n", __func__, findTask);
     )
+
+    if (!IsMinListEmpty(&TaskResBase->trb_NotifyHooks))
+        taskres_NotifyTasks(TaskResBase, TNA_REMOVED, findTask, NULL, NULL);
 
     ForeachNodeSafe(&TaskResBase->trb_NewTasks, taskEntry, tmpEntry)
     {

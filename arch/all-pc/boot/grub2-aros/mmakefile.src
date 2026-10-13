@@ -14,10 +14,16 @@ endif
 
 GRUB2PACKAGE    := grub
 GRUB2DESTDIR    := $(AROS_CONTRIB)/GNU
+# GRUB moved off savannah/ftp.gnu.org: releases from 2.16 on are published on
+# freedesktop GitLab, where each release's tarballs live under a directory named
+# after the tag. ftp.gnu.org is kept for the older versions still built from it.
 GRUB2REPOS      := \
     cache:// \
+    https://gitlab.freedesktop.org/api/v4/projects/26558/packages/generic/source-assets/$(GRUB2PACKAGE)-$(GRUB2_VERSION) \
     ftp://ftp.gnu.org/gnu/grub
 
+# automake terminates every link rule with $(LIBS), so setting it here
+# replaces the per-utility *_LDADD hunks the AROS patch used to carry.
 CONFIG_OPTS := \
 		--with-platform=$(GRUB_ARCH)        \
 		--datarootdir=$(GRUB2DESTDIR)/share \
@@ -27,7 +33,8 @@ CONFIG_OPTS := \
 		--disable-efiemu                    \
 		--disable-grub-mkfont               \
 		--disable-werror                    \
-		--program-prefix=
+		--program-prefix=                   \
+		LIBS=-lpthread
 
 #ifeq ($(GRUB2_USELZMA),yes)
 #CONFIG_OPTS += \
@@ -75,6 +82,6 @@ TARGET_ISA_CFLAGS := $(NOWARN_CFLAGS)
 TARGET_ISA_CFLAGS += -D_STDC_NOINLINE_CTYPE
 
 %fetch_and_build mmake=grub2-aros \
-        package=$(GRUB2PACKAGE) version=$(GRUB2_VERSION) suffixes="tar.gz tar.xz" package_repo=$(GRUB2REPOS) \
+        package=$(GRUB2PACKAGE) version=$(GRUB2_VERSION) suffixes="tar.xz tar.gz" package_repo=$(GRUB2REPOS) \
         prefix="$(GRUB2DESTDIR)" patch=yes aros_prefix="/GNU" nix=no gnuflags=no xflag=no \
         extraoptions="$(CONFIG_OPTS)" config_env_extra="$(GRUB2_ENV)" kernelisaflags= crossbuild=$(GRUB2_CROSSFLAG)

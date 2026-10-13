@@ -164,6 +164,13 @@ static void timed_wait(unsigned long usecs)
     FreeSignal(port.mp_SigBit);
 }
 
+/*
+ * Set while the shutdown reset callback unloads the card: a wait that
+ * yields there would let the callback chain advance to the platform
+ * reset in the middle of the unload, so every wait spins instead.
+ */
+int nouveau_compat_atomic;
+
 /* Linux busy-waits these, and callers rely on that (they hold spinlocks) */
 static void spin_wait(unsigned long usecs)
 {
@@ -193,7 +200,10 @@ void mdelay(unsigned long msecs)
 /* these may sleep */
 void msleep(unsigned int msecs)
 {
-    timed_wait((unsigned long)msecs * 1000);
+    if (nouveau_compat_atomic)
+        spin_wait((unsigned long)msecs * 1000);
+    else
+        timed_wait((unsigned long)msecs * 1000);
 }
 
 unsigned long msleep_interruptible(unsigned int msecs)
@@ -204,7 +214,7 @@ unsigned long msleep_interruptible(unsigned int msecs)
 
 void usleep_range(unsigned long min, unsigned long max)
 {
-    if (min < 20)
+    if (min < 20 || nouveau_compat_atomic)
         spin_wait(min);
     else
         timed_wait(min);

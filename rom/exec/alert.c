@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Display an alert.
 */
@@ -120,13 +120,13 @@ void Exec_ExtAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APTR d
             D(bug("[Alert] Setting alert context, type %u, data 0x%p\n", type, data));
 
             iet->iet_AlertType = type;
-            CopyMem(data, &iet->iet_AlertData, contextSizes[type]);
+            CopyMem(data, ETaskAlertData(iet), contextSizes[type]);
         }
         else
         {
             /* Either no data or already present */
             type = iet->iet_AlertType;
-            data = &iet->iet_AlertData;
+            data = ETaskAlertData(iet);
             
             D(bug("[Alert] Got stored alert context, type %u, data 0x%p\n", type, data));
         }
@@ -182,8 +182,7 @@ void Exec_ExtAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APTR d
         /* Um, we have to do something here in order to prevent the
            computer from continuing... */
         PrivExecBase(SysBase)->SupervisorDeadEndCnt++;
-        ColdReboot();
-        ShutdownA(SD_ACTION_COLDREBOOT);
+        ShutdownA(SD_ACTION_REBOOT);
     }
 
     Enable();

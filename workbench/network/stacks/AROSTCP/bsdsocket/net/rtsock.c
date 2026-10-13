@@ -618,6 +618,14 @@ struct rtentry *rt;
     struct ifnet *ifp = ifa->ifa_ifp;
     struct sockaddr *sa, *mask;
     int len, sa_len;
+    extern void api_sendaddrchange(void);
+
+    /*
+     * Wake SBTC_SIG_ADDRESS_CHANGE_MASK subscribers on every address add/remove,
+     * independent of whether a routing socket is listening (the any_count==0
+     * early return below skips only the PF_ROUTE message, not this).
+     */
+    api_sendaddrchange();
 
     if(route_cb.any_count == 0)
         return;

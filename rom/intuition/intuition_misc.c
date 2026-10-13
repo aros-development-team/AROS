@@ -144,6 +144,7 @@ void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase)
      * one is unusable on anything but the lowest-resolution mice.
      */
     _intuitionBase->DefaultPreferences.PointerTicks = 2;
+    InitDefaultPreferences(&_intuitionBase->DefaultPreferences);
 
     CopyMem(&_intuitionBase->DefaultPreferences,
             &_intuitionBase->ActivePreferences,

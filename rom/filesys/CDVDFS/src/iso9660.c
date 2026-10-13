@@ -239,12 +239,19 @@ t_bool Iso_Init_Vol_Info(VOLUME *p_volume, int p_skip, t_ulong p_offset, t_ulong
 
         if ((p_volume->cd->buffer[0] == 1) || (p_volume->cd->buffer[0] == 2))
         {
-            CopyMem
-                (
-                 p_volume->cd->buffer,
-                 &VOL(p_volume,pvd),
-                 sizeof (prim_vol_desc)
-                );
+            const prim_vol_desc *pvd =
+                (const prim_vol_desc *)p_volume->cd->buffer;
+
+            CopyMem(pvd->system_id, VOL(p_volume,pvd).system_id,
+                    sizeof(VOL(p_volume,pvd).system_id));
+            CopyMem(pvd->volume_id, VOL(p_volume,pvd).volume_id,
+                    sizeof(VOL(p_volume,pvd).volume_id));
+            VOL(p_volume,pvd).space_size = pvd->space_size;
+            VOL(p_volume,pvd).block_size = pvd->block_size;
+            CopyMem(&pvd->root, &VOL(p_volume,pvd).root,
+                    sizeof(VOL(p_volume,pvd).root));
+            CopyMem(pvd->vol_creation, VOL(p_volume,pvd).vol_creation,
+                    sizeof(VOL(p_volume,pvd).vol_creation));
             break;
         }
 
@@ -277,7 +284,7 @@ t_bool Iso_Init_Vol_Info(VOLUME *p_volume, int p_skip, t_ulong p_offset, t_ulong
     /*
        Look at the system ID to find out if the CD is supposed
        to feature proper file names. These are CDs made for use
-       with the CDTV and the CD³² (both share the "CDTV" system ID)
+       with the CDTV and the CD32 (both share the "CDTV" system ID)
        and the "Fresh Fish", "Frozen Fish" and "Gold Fish" CDs
        created by Mkisofs. If any of these IDs is found the
        file name to lower case conversion is temporarily
@@ -691,13 +698,14 @@ int Iso_Read_From_File(CDROM_OBJ *p_file, char *p_buffer, int p_buffer_length)
     /*
      * how much data available in next read chunk?
      */
-    remain_block = (SCSI_BUFSIZE << 4) - ((loc << 11) & ((SCSI_BUFSIZE << 4) - 1)) - offset;
+    remain_block = SCSI_BUFSIZE * cd->buffer_sectors -
+        ((loc << 11) & (SCSI_BUFSIZE * cd->buffer_sectors - 1)) - offset;
 
     while (todo)
     {
         D(bug("[CDVDFS]\tRead: BPos: %6ld; FPos: %6ld; Ofst: %6ld; Blck: %6ld;\n", buf_pos, p_file->pos, offset, loc));
 
-        if (!Read_Chunk(cd, loc))
+        if (!Read_File_Chunk(cd, loc))
         {
             global->iso_errno = ISOERR_SCSI_ERROR;
             return -1;
@@ -737,10 +745,11 @@ int Iso_Read_From_File(CDROM_OBJ *p_file, char *p_buffer, int p_buffer_length)
         if (p_file->pos >= OBJ(p_file,dir)->data_length)
             break;
 
-        remain_block = (SCSI_BUFSIZE << 4);
+        remain_block = SCSI_BUFSIZE * cd->buffer_sectors;
         offset = 0;
 
-        loc = (loc + 16) &~ 15;
+        loc = (loc + cd->buffer_sectors) &
+            ~(cd->buffer_sectors - 1);
     }
 
     return buf_pos;
@@ -1095,4 +1104,3 @@ static t_handler const g_iso_handler =
     Iso_File_Length,
     Iso_Block_Size
 };
-

@@ -17,7 +17,6 @@
 #include <exec/types.h>
 #include <exec/lists.h>
 #include <hidd/gfx.h>
-#include <hidd/pci.h>
 #include <oop/oop.h>
 #include <utility/utility.h>
 #include <aros/symbolsets.h>
@@ -27,7 +26,6 @@
 #include LC_LIBDEFS_FILE
 
 static OOP_AttrBase HiddPixFmtAttrBase; // = 0;
-static OOP_AttrBase HiddPCIDeviceAttrBase;
 
 static struct OOP_ABDescr abd[] =
 {
@@ -35,139 +33,14 @@ static struct OOP_ABDescr abd[] =
     { NULL,             NULL                }
 };
 
-AROS_UFH3(void, VMWSVGAEnumerator,
-    AROS_UFHA(struct Hook *,    hook,           A0),
-    AROS_UFHA(OOP_Object *,     pciDevice,      A2),
-    AROS_UFHA(APTR,             message,        A1))
-{
-    AROS_USERFUNC_INIT
-
-    struct VMWareSVGA_staticdata *xsd = (struct VMWareSVGA_staticdata *)hook->h_Data;
-    IPTR io_base, fb_base, mmio_base, INTLine;
-    IPTR fb_size = 0, mmio_size = 0;
-    IPTR ProductID, VendorID, SubClass;
-    OOP_Object *pciDriver = NULL;
-
-    OOP_GetAttr(pciDevice, aHidd_PCIDevice_ProductID, &ProductID);
-    OOP_GetAttr(pciDevice, aHidd_PCIDevice_VendorID, &VendorID);
-    OOP_GetAttr(pciDevice, aHidd_PCIDevice_SubClass, &SubClass);
-
-    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0, &io_base);
-    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base1, &fb_base);
-    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size1, &fb_size);
-    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base2, &mmio_base);
-    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size2, &mmio_size);
-    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (IPTR *)&pciDriver);
-
-    /*
-     * Base0 is an IO port range, but the framebuffer and FIFO are memory -
-     * outside the identity mapped window they have no CPU mapping yet.
-     */
-    xsd->data.iobase = (APTR)io_base;
-    xsd->data.vrambase = HIDD_PCIDriver_MapPCI(pciDriver, (APTR)fb_base, (ULONG)fb_size);
-    xsd->data.mmiobase = HIDD_PCIDriver_MapPCI(pciDriver, (APTR)mmio_base, (ULONG)mmio_size);
-    if (!xsd->data.vrambase || !xsd->data.mmiobase)
-    {
-        D(bug("[vmwaresvga.hidd] %s: failed to map the card's memory\n", __func__);)
-        return;
-    }
-    OOP_GetAttr(pciDevice, aHidd_PCIDevice_INTLine, &INTLine);
-    xsd->data.hwint = (ULONG)INTLine;
-
-    D(bug("[vmwaresvga.hidd] %s: VMWare SVGA device %04x\n", __func__, ProductID);)
-
-    if (ProductID == DEVICE_VMWARE0710)
-    {
-        xsd->data.indexReg = SVGA_LEGACY_BASE_PORT + SVGA_INDEX_PORT * sizeof(ULONG);
-        xsd->data.valueReg = SVGA_LEGACY_BASE_PORT + SVGA_VALUE_PORT * sizeof(ULONG);
-
-        D(bug("[vmwaresvga.hidd] %s: Found VMWare SVGA 0710 device\n", __func__);)
-        xsd->card = pciDevice;
-    }
-    else if (ProductID == DEVICE_VMWARE0405)
-    {
-        xsd->data.indexReg = io_base + SVGA_INDEX_PORT;
-        xsd->data.valueReg = io_base + SVGA_VALUE_PORT;
-
-        D(bug("[vmwaresvga.hidd] %s: Found VMWare SVGA 0405 device\n", __func__);)
-        xsd->card = pciDevice;
-    }
-
-    AROS_USERFUNC_EXIT
-}
-
-AROS_UFH3(void, QEMUEnumerator,
-    AROS_UFHA(struct Hook *,    hook,           A0),
-    AROS_UFHA(OOP_Object *,     pciDevice,      A2),
-    AROS_UFHA(APTR,             message,        A1))
-{
-    AROS_USERFUNC_INIT
-
-    struct VMWareSVGA_staticdata *xsd = (struct VMWareSVGA_staticdata *)hook->h_Data;
-
-    xsd->isQEMU = TRUE;
-
-    AROS_USERFUNC_EXIT
-}
-
-STATIC VOID findQEMU(struct VMWareSVGA_staticdata *xsd)
-{
-    struct Hook findHook = {
-        .h_Entry =      (IPTR (*)())QEMUEnumerator,
-        .h_Data =       xsd,
-    };
-
-    struct TagItem Requirements[] = {
-        {tHidd_PCI_SubsystemVendorID, 0x1af4 }, /* RedHat Inc. */
-        {tHidd_PCI_SubsystemID,       0x1100 }, /* QEMU Virtual Machine */
-        {TAG_DONE,              0UL          }
-    };
-
-    HIDD_PCI_EnumDevices(xsd->pcihidd, &findHook, (struct TagItem *)&Requirements);
-}
-
-STATIC BOOL findCard(struct VMWareSVGA_staticdata *xsd)
-{
-    struct Hook findHook = {
-        .h_Entry =      (IPTR (*)())VMWSVGAEnumerator,
-        .h_Data =       xsd,
-    };
-
-    struct TagItem Requirements[] =
-        {
-            {tHidd_PCI_VendorID,    VENDOR_VMWARE   },
-            {tHidd_PCI_Class,       3               }, /* Display */
-            {tHidd_PCI_Interface,   0               },
-            {TAG_DONE,              0UL             }
-        };
-
-    HIDD_PCI_EnumDevices(xsd->pcihidd, &findHook, (struct TagItem *)&Requirements);
-
-    if (xsd->card)
-    {
-        if (!initVMWareSVGAHW(&xsd->data, xsd->card))
-        {
-            D(bug("[vmwaresvga.hidd] %s: Unsupported VMWare SVGA device found - skipping\n", __func__);)
-            xsd->card = NULL;
-        }
-    }
-
-    if (xsd->card)
-        findQEMU(xsd);
-
-    return (xsd->card) ? TRUE : FALSE;
-}
-
 static int VMWareSVGA_Init(LIBBASETYPEPTR LIBBASE)
 {
     struct VMWareSVGA_staticdata *xsd = &LIBBASE->vsd;
 
+    D(bug("[vmwaresvga.hidd] %s: code @ 0x%p\n", __func__, VMWareSVGA_KMS_Init);)
+
     xsd->VMWareSVGACyberGfxBase = OpenLibrary((STRPTR)"cybergraphics.library",0);
     if (xsd->VMWareSVGACyberGfxBase == NULL)
-        goto failure;
-
-    xsd->VMWareSVGAKernelBase = OpenResource("kernel.resource");
-    if (xsd->VMWareSVGAKernelBase == NULL)
         goto failure;
 
     if (!OOP_ObtainAttrBases(abd))
@@ -176,20 +49,21 @@ static int VMWareSVGA_Init(LIBBASETYPEPTR LIBBASE)
     xsd->basebm = OOP_FindClass(CLID_Hidd_BitMap);
     xsd->basegallium = OOP_FindClass(CLID_Hidd_Gallium);
 
-    xsd->pcihidd = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
-    if (xsd->pcihidd == NULL)
-        goto failure;
-
-    HiddPCIDeviceAttrBase = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
-    if (HiddPCIDeviceAttrBase == 0)
-        goto failure;
-
     xsd->hiddGalliumAB = OOP_ObtainAttrBase((STRPTR)IID_Hidd_Gallium);
     if (xsd->hiddGalliumAB == 0)
         goto failure;
 
-    if (!findCard(xsd))
+    /*
+     * The vmwgfx driver finds the card, brings it up and owns it from
+     * here on; the hidd talks to it as a DRM client.
+     */
+    if (!VMWareSVGA_KMS_Init(&xsd->kms))
+    {
+        /* with its tasks up the driver cannot be unloaded; the class just declines */
+        if (xsd->kms.started)
+            return TRUE;
         goto failure;
+    }
 
     D(bug("[vmwaresvga.hidd] %s: Suitable adaptor found\n", __func__);)
     return TRUE;
@@ -203,18 +77,6 @@ failure:
     if (xsd->hiddGalliumAB)
         OOP_ReleaseAttrBase((STRPTR)IID_Hidd_Gallium);
 
-    if (HiddPCIDeviceAttrBase != 0)
-    {
-        OOP_ReleaseAttrBase(IID_Hidd_PCIDevice);
-        HiddPCIDeviceAttrBase = 0;
-    }
-
-    if (xsd->pcihidd != NULL)
-    {
-        OOP_DisposeObject(xsd->pcihidd);
-        xsd->pcihidd = NULL;
-    }
-
     OOP_ReleaseAttrBases(abd);
 
     return FALSE;
@@ -223,3 +85,4 @@ failure:
 ADD2INITLIB(VMWareSVGA_Init, 0)
 
 ADD2LIBS((STRPTR)"gallium.hidd", 7, static struct Library *, GalliumHiddBase);
+ADD2LIBS((STRPTR)"pci.hidd", 0, static struct Library *, PciHiddBase);

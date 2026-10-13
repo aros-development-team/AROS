@@ -1,0 +1,28 @@
+include $(SRCDIR)/config/aros.cfg
+
+#
+# The HCI transport for the Pi's on-board controller.
+#
+# AROS's Bluetooth stack talks to HCI devices in DEVS:Bluetooth. Upstream
+# ships exactly one, vbthci, and it is virtual -- so on real hardware the
+# stack has nothing to talk to. This is the other half: H:4 framing over the
+# PL011 that pl011bt.resource owns.
+#
+# It deliberately knows nothing about the board. Pin muxing, the LPO on
+# GPCLK2, BT_REG_EN, the baud rate and flow control all belong to that
+# resource, and what is here would work over any transport that can move
+# bytes. Firmware upload is not here either: a BCM43438 runs from ROM until
+# something sends it a patchram image, and that protocol is brcmbt.fwl.
+#
+FILES := h4bthci_device h4bthci_unit
+
+USER_INCLUDES := -I$(SRCDIR)/rom/bluetooth/stack/include
+
+#MM kernel-h4bthci-bcm2708 : kernel-bluetooth-library-includes kernel-pl011bt-bcm2708-includes
+
+%build_module mmake=kernel-h4bthci-bcm2708 \
+    modname=h4bthci modtype=device \
+    moduledir=Devs/Bluetooth \
+    files="$(FILES)"
+
+%common

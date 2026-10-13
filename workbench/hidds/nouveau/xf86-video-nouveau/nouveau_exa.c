@@ -406,7 +406,7 @@ static void
 nouveau_exa_flush(ScrnInfoPtr pScrn)
 {
 	NVPtr pNv = NVPTR(pScrn);
-	nouveau_pushbuf_kick(pNv->pushbuf, pNv->pushbuf->channel);
+	nouveau_pushbuf_kick(pNv->pushbuf);
 }
 
 Bool
@@ -560,6 +560,14 @@ BOOL HiddNouveauNVAccelUploadM2MF(
     char *dst;
     Bool ret;
 
+    /* The engine copies exactly the rectangle it is given; one that
+       leaves the bitmap faults and kills the channel. Leave such a
+       transfer to the software path, which clips. */
+    if (x < 0 || y < 0 || width <= 0 || height <= 0 ||
+        x + width > (LONG)pdpix->drawable.width ||
+        y + height > (LONG)pdpix->drawable.height)
+        return FALSE;
+
     cpp = pdpix->drawable.depth > 16 ? 4 : 2;
     dst_pitch  = exaGetPixmapPitch(pdpix);
     tmp_pitch = width * cpp;
@@ -589,29 +597,40 @@ BOOL HiddNouveauNVAccelUploadM2MF(
 
     while (height) {
         int lines = (height > 2047) ? 2047 : height;
-        int tmp_offset = 0;
+        int chunk;
 
         /* Limit transfer to GART buffer size */
         if ((unsigned)lines > pNv->GART->size / tmp_pitch)
             lines = pNv->GART->size / tmp_pitch;
+        chunk = tmp_pitch * lines;
+
+        /* The GART buffer is a ring: successive uploads stream into it
+           and only a wrap has to wait for the engine to be done reading
+           the earlier chunks. */
+        if (pNv->gart_pos + chunk > pNv->GART->size) {
+            nouveau_bo_wait(pNv->GART, NOUVEAU_BO_WR, pNv->client);
+            pNv->gart_pos = 0;
+        }
 
         /* RAM -> CPU -> GART */
-        nouveau_bo_wait(pNv->GART, NOUVEAU_BO_WR, pNv->client);
-
-        if (nouveau_bo_map(pNv->GART, NOUVEAU_BO_WR, pNv->client))
-            return FALSE;
-        dst = pNv->GART->map;
+        if (!pNv->GART->map) {
+            if (nouveau_bo_map(pNv->GART, NOUVEAU_BO_WR, pNv->client))
+                return FALSE;
+        }
+        dst = (char *)pNv->GART->map + pNv->gart_pos;
 
         HiddNouveauWriteFromRAM( (APTR)srcpixels, srcpitch, srcPixFmt, dst, tmp_pitch,
             width, lines, cl, o);
+        nouveau_staging_to_gpu(dst, tmp_pitch * lines);
         srcpixels += srcpitch * lines;
 
         /* GART -> GPU -> VRAM */
-        if (!NVAccelM2MF(pNv, width, lines, cpp, tmp_offset, 0, pNv->GART,
+        if (!NVAccelM2MF(pNv, width, lines, cpp, pNv->gart_pos, 0, pNv->GART,
                     NOUVEAU_BO_GART, tmp_pitch, lines, 0, 0,
                     nouveau_pixmap_bo(pdpix), NOUVEAU_BO_VRAM,
                     dst_pitch, pdpix->drawable.height, x, y))
             return FALSE;
+        pNv->gart_pos = (pNv->gart_pos + chunk + 255) & ~255UL;
 
         /* next! */
         height -= lines;
@@ -638,6 +657,11 @@ BOOL HiddNouveauNVAccelDownloadM2MF(
     int src_pitch, tmp_pitch, cpp;
     char *src;
     Bool ret;
+
+    if (x < 0 || y < 0 || width <= 0 || height <= 0 ||
+        x + width > (LONG)pspix->drawable.width ||
+        y + height > (LONG)pspix->drawable.height)
+        return FALSE;
 
     cpp = pspix->drawable.depth > 16 ? 4 : 2;
     src_pitch  = exaGetPixmapPitch(pspix);
@@ -666,6 +690,7 @@ BOOL HiddNouveauNVAccelDownloadM2MF(
             return FALSE;
         src = pNv->GART->map;
 
+        nouveau_staging_from_gpu(src, tmp_pitch * lines);
         HiddNouveauReadIntoRAM(src, tmp_pitch, dstpixels, dstpitch,
             dstPixFmt, width, lines, cl, o);
         dstpixels += dstpitch * lines;

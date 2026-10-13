@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function SetAPen()
 */
@@ -17,7 +17,7 @@
 
 /*  SYNOPSIS */
         AROS_LHA(struct RastPort *, rp, A1),
-        AROS_LHA(ULONG            , pen, D0),
+        AROS_LHA(UBYTE            , pen, D0),
 
 /*  LOCATION */
         struct GfxBase *, GfxBase, 57, Graphics)

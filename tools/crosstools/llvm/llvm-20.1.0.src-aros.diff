@@ -1,6 +1,114 @@
-diff -ruN llvm-20.1.0.src/include/llvm/TargetParser/Triple.h llvm-20.1.0.src.aros/include/llvm/TargetParser/Triple.h
---- llvm-20.1.0.src/include/llvm/TargetParser/Triple.h	2025-03-04 19:51:43.000000000 +0000
-+++ llvm-20.1.0.src.aros/include/llvm/TargetParser/Triple.h	2025-07-15 21:34:46.158949979 +0000
+diff --color -ruN llvm-20.1.0.src/cmake/config-ix.cmake llvm-20.1.0.src.aros/cmake/config-ix.cmake
+--- llvm-20.1.0.src/cmake/config-ix.cmake	2025-03-04 20:51:43
++++ llvm-20.1.0.src.aros/cmake/config-ix.cmake	2026-09-07 00:05:43
+@@ -145,8 +145,10 @@
+       check_library_exists(c pthread_mutex_lock "" HAVE_PTHREAD_MUTEX_LOCK)
+     endif()
+   endif()
+-  check_library_exists(dl dlopen "" HAVE_LIBDL)
+-  check_library_exists(rt shm_open "" HAVE_LIBRT)
++  if(NOT CMAKE_SYSTEM_NAME STREQUAL "AROS")
++    check_library_exists(dl dlopen "" HAVE_LIBDL)
++    check_library_exists(rt shm_open "" HAVE_LIBRT)
++  endif()
+ endif()
+ 
+ # Check for libpfm.
+@@ -156,10 +158,14 @@
+   # We want to find pthreads library and at the moment we do want to
+   # have it reported as '-l<lib>' instead of '-pthread'.
+   # TODO: switch to -pthread once the rest of the build system can deal with it.
+-  set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
+-  set(THREADS_HAVE_PTHREAD_ARG Off)
+-  find_package(Threads REQUIRED)
+-  set(LLVM_PTHREAD_LIB ${CMAKE_THREAD_LIBS_INIT})
++  if(CMAKE_SYSTEM_NAME STREQUAL "AROS")
++    set(LLVM_PTHREAD_LIB pthread)
++  else()
++    set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
++    set(THREADS_HAVE_PTHREAD_ARG Off)
++    find_package(Threads REQUIRED)
++    set(LLVM_PTHREAD_LIB ${CMAKE_THREAD_LIBS_INIT})
++  endif()
+ endif()
+ 
+ if(LLVM_ENABLE_ZLIB)
+diff --color -ruN llvm-20.1.0.src/cmake/modules/TableGen.cmake llvm-20.1.0.src.aros/cmake/modules/TableGen.cmake
+--- llvm-20.1.0.src/cmake/modules/TableGen.cmake	2025-03-04 20:51:43
++++ llvm-20.1.0.src.aros/cmake/modules/TableGen.cmake	2026-09-07 08:35:11
+@@ -199,6 +199,12 @@
+   if(ADD_TABLEGEN_EXPORT)
+     set(${project}_TABLEGEN "${${project}_TABLEGEN_DEFAULT}" CACHE
+       STRING "Native TableGen executable. Saves building one when cross-compiling.")
++    # An externally supplied tablegen means this one is never run. Building it
++    # is then pure waste, and on a target that cannot link host-style
++    # executables it is a hard error, so keep it out of the default build.
++    if(NOT LLVM_BUILD_UTILS AND NOT "${${project}_TABLEGEN}" STREQUAL "${target}")
++      set_target_properties(${target} PROPERTIES EXCLUDE_FROM_ALL ON)
++    endif()
+   else()
+     # Internal tablegen
+     set(${project}_TABLEGEN "${${project}_TABLEGEN_DEFAULT}")
+diff --color -ruN llvm-20.1.0.src/include/llvm/ADT/bit.h llvm-20.1.0.src.aros/include/llvm/ADT/bit.h
+--- llvm-20.1.0.src/include/llvm/ADT/bit.h	2025-03-04 20:51:43
++++ llvm-20.1.0.src.aros/include/llvm/ADT/bit.h	2026-09-07 08:04:53
+@@ -27,7 +27,10 @@
+ #include <cstdlib>  // for _byteswap_{ushort,ulong,uint64}
+ #endif
+ 
+-#if defined(__linux__) || defined(__GNU__) || defined(__HAIKU__) ||            \
++#if defined(__AROS__)
++// AROS defines BYTE_ORDER and friends in <limits.h>, not <endian.h>.
++#include <limits.h>
++#elif defined(__linux__) || defined(__GNU__) || defined(__HAIKU__) ||          \
+     defined(__Fuchsia__) || defined(__EMSCRIPTEN__) || defined(__NetBSD__) ||  \
+     defined(__OpenBSD__) || defined(__DragonFly__)
+ #include <endian.h>
+diff --color -ruN llvm-20.1.0.src/include/llvm/BinaryFormat/Wasm.h llvm-20.1.0.src.aros/include/llvm/BinaryFormat/Wasm.h
+--- llvm-20.1.0.src/include/llvm/BinaryFormat/Wasm.h	2025-03-04 20:51:43
++++ llvm-20.1.0.src.aros/include/llvm/BinaryFormat/Wasm.h	2026-09-07 08:13:12
+@@ -19,6 +19,11 @@
+ #include "llvm/ADT/StringRef.h"
+ #include <optional>
+ 
++#if defined(__AROS__) && defined(GLOBAL)
++// AROS defines GLOBAL as 'extern', which collides with NameType::GLOBAL below.
++#undef GLOBAL
++#endif
++
+ namespace llvm {
+ namespace wasm {
+ 
+diff --color -ruN llvm-20.1.0.src/include/llvm/Support/ExitCodes.h llvm-20.1.0.src.aros/include/llvm/Support/ExitCodes.h
+--- llvm-20.1.0.src/include/llvm/Support/ExitCodes.h	2025-03-04 20:51:43
++++ llvm-20.1.0.src.aros/include/llvm/Support/ExitCodes.h	2026-09-07 00:13:10
+@@ -20,7 +20,7 @@
+ 
+ #if HAVE_SYSEXITS_H
+ #include <sysexits.h>
+-#elif __MVS__ || defined(_WIN32)
++#elif __MVS__ || defined(_WIN32) || defined(__AROS__)
+ // <sysexits.h> does not exist on z/OS and Windows. The only value used in LLVM
+ // is EX_IOERR, which is used to signal a special error condition (broken pipe).
+ // Define the macro with its usual value from BSD systems, which is chosen to
+diff --color -ruN llvm-20.1.0.src/include/llvm/Support/Process.h llvm-20.1.0.src.aros/include/llvm/Support/Process.h
+--- llvm-20.1.0.src/include/llvm/Support/Process.h	2025-03-04 20:51:43
++++ llvm-20.1.0.src.aros/include/llvm/Support/Process.h	2026-09-07 00:05:25
+@@ -42,7 +42,11 @@
+ /// current executing process.
+ class Process {
+ public:
++#if defined(__AROS__)
++  using Pid = intptr_t;
++#else
+   using Pid = int32_t;
++#endif
+ 
+   /// Get the process's identifier.
+   static Pid getProcessId();
+diff --color -ruN llvm-20.1.0.src/include/llvm/TargetParser/Triple.h llvm-20.1.0.src.aros/include/llvm/TargetParser/Triple.h
+--- llvm-20.1.0.src/include/llvm/TargetParser/Triple.h	2025-03-04 20:51:43
++++ llvm-20.1.0.src.aros/include/llvm/TargetParser/Triple.h	2026-09-07 00:04:48
 @@ -199,6 +199,7 @@
    enum OSType {
      UnknownOS,
@@ -9,20 +117,1326 @@ diff -ruN llvm-20.1.0.src/include/llvm/TargetParser/Triple.h llvm-20.1.0.src.aro
      Darwin,
      DragonFly,
      FreeBSD,
-@@ -537,6 +538,10 @@
-     return getOSVersion() < Other.getOSVersion();
-   }
+@@ -535,6 +536,10 @@
  
-+  bool isAROS() const {
-+    return getOS() == Triple::AROS;
+   bool isOSVersionLT(const Triple &Other) const {
+     return getOSVersion() < Other.getOSVersion();
 +  }
 +
++  bool isAROS() const {
++    return getOS() == Triple::AROS;
+   }
+ 
    /// Comparison function for checking OS X version compatibility, which handles
-   /// supporting skewed version numbering schemes used by the "darwin" triples.
-   bool isMacOSXVersionLT(unsigned Major, unsigned Minor = 0,
-diff -ruN llvm-20.1.0.src/lib/TargetParser/Triple.cpp llvm-20.1.0.src.aros/lib/TargetParser/Triple.cpp
---- llvm-20.1.0.src/lib/TargetParser/Triple.cpp	2025-03-04 19:51:43.000000000 +0000
-+++ llvm-20.1.0.src.aros/lib/TargetParser/Triple.cpp	2025-07-15 21:39:58.441701332 +0000
+diff --color -ruN llvm-20.1.0.src/lib/BinaryFormat/Dwarf.cpp llvm-20.1.0.src.aros/lib/BinaryFormat/Dwarf.cpp
+--- llvm-20.1.0.src/lib/BinaryFormat/Dwarf.cpp	2025-03-04 20:51:43
++++ llvm-20.1.0.src.aros/lib/BinaryFormat/Dwarf.cpp	2026-09-07 00:07:34
+@@ -893,6 +893,6 @@
+ constexpr char llvm::dwarf::EnumTraits<Attribute>::Type[];
+ constexpr char llvm::dwarf::EnumTraits<Form>::Type[];
+ constexpr char llvm::dwarf::EnumTraits<Index>::Type[];
+-constexpr char llvm::dwarf::EnumTraits<Tag>::Type[];
++constexpr char llvm::dwarf::EnumTraits<llvm::dwarf::Tag>::Type[];
+ constexpr char llvm::dwarf::EnumTraits<LineNumberOps>::Type[];
+ constexpr char llvm::dwarf::EnumTraits<LocationAtom>::Type[];
+diff --color -ruN llvm-20.1.0.src/lib/CodeGen/SelectionDAG/SDNodeDbgValue.h llvm-20.1.0.src.aros/lib/CodeGen/SelectionDAG/SDNodeDbgValue.h
+--- llvm-20.1.0.src/lib/CodeGen/SelectionDAG/SDNodeDbgValue.h	2025-03-04 20:51:43
++++ llvm-20.1.0.src.aros/lib/CodeGen/SelectionDAG/SDNodeDbgValue.h	2026-09-07 00:08:34
+@@ -18,6 +18,10 @@
+ #include "llvm/Support/DataTypes.h"
+ #include <utility>
+ 
++#if defined(__AROS__) && defined(CONST)
++#undef CONST
++#endif
++
+ namespace llvm {
+ 
+ class DIVariable;
+diff --color -ruN llvm-20.1.0.src/lib/Demangle/ItaniumDemangle.cpp llvm-20.1.0.src.aros/lib/Demangle/ItaniumDemangle.cpp
+--- llvm-20.1.0.src/lib/Demangle/ItaniumDemangle.cpp	2025-03-04 20:51:43
++++ llvm-20.1.0.src.aros/lib/Demangle/ItaniumDemangle.cpp	2026-09-07 00:07:25
+@@ -25,6 +25,8 @@
+ using namespace llvm;
+ using namespace llvm::itanium_demangle;
+ 
++using IDNode = llvm::itanium_demangle::Node;
++
+ constexpr const char *itanium_demangle::FloatData<float>::spec;
+ constexpr const char *itanium_demangle::FloatData<double>::spec;
+ constexpr const char *itanium_demangle::FloatData<long double>::spec;
+@@ -82,7 +84,7 @@
+   void print(std::string_view SV) {
+     fprintf(stderr, "\"%.*s\"", (int)SV.size(), SV.data());
+   }
+-  void print(const Node *N) {
++  void print(const IDNode *N) {
+     if (N)
+       N->visit(std::ref(*this));
+     else
+@@ -92,7 +94,7 @@
+     ++Depth;
+     printStr("{");
+     bool First = true;
+-    for (const Node *N : A) {
++    for (const IDNode *N : A) {
+       if (First)
+         print(N);
+       else
+@@ -173,47 +175,47 @@
+       return printStr("TemplateParamKind::Template");
+     }
+   }
+-  void print(Node::Prec P) {
++  void print(IDNode::Prec P) {
+     switch (P) {
+-    case Node::Prec::Primary:
++    case IDNode::Prec::Primary:
+       return printStr("Node::Prec::Primary");
+-    case Node::Prec::Postfix:
++    case IDNode::Prec::Postfix:
+       return printStr("Node::Prec::Postfix");
+-    case Node::Prec::Unary:
++    case IDNode::Prec::Unary:
+       return printStr("Node::Prec::Unary");
+-    case Node::Prec::Cast:
++    case IDNode::Prec::Cast:
+       return printStr("Node::Prec::Cast");
+-    case Node::Prec::PtrMem:
++    case IDNode::Prec::PtrMem:
+       return printStr("Node::Prec::PtrMem");
+-    case Node::Prec::Multiplicative:
++    case IDNode::Prec::Multiplicative:
+       return printStr("Node::Prec::Multiplicative");
+-    case Node::Prec::Additive:
++    case IDNode::Prec::Additive:
+       return printStr("Node::Prec::Additive");
+-    case Node::Prec::Shift:
++    case IDNode::Prec::Shift:
+       return printStr("Node::Prec::Shift");
+-    case Node::Prec::Spaceship:
++    case IDNode::Prec::Spaceship:
+       return printStr("Node::Prec::Spaceship");
+-    case Node::Prec::Relational:
++    case IDNode::Prec::Relational:
+       return printStr("Node::Prec::Relational");
+-    case Node::Prec::Equality:
++    case IDNode::Prec::Equality:
+       return printStr("Node::Prec::Equality");
+-    case Node::Prec::And:
++    case IDNode::Prec::And:
+       return printStr("Node::Prec::And");
+-    case Node::Prec::Xor:
++    case IDNode::Prec::Xor:
+       return printStr("Node::Prec::Xor");
+-    case Node::Prec::Ior:
++    case IDNode::Prec::Ior:
+       return printStr("Node::Prec::Ior");
+-    case Node::Prec::AndIf:
++    case IDNode::Prec::AndIf:
+       return printStr("Node::Prec::AndIf");
+-    case Node::Prec::OrIf:
++    case IDNode::Prec::OrIf:
+       return printStr("Node::Prec::OrIf");
+-    case Node::Prec::Conditional:
++    case IDNode::Prec::Conditional:
+       return printStr("Node::Prec::Conditional");
+-    case Node::Prec::Assign:
++    case IDNode::Prec::Assign:
+       return printStr("Node::Prec::Assign");
+-    case Node::Prec::Comma:
++    case IDNode::Prec::Comma:
+       return printStr("Node::Prec::Comma");
+-    case Node::Prec::Default:
++    case IDNode::Prec::Default:
+       return printStr("Node::Prec::Default");
+     }
+   }
+@@ -355,7 +357,7 @@
+   }
+ 
+   void *allocateNodeArray(size_t sz) {
+-    return Alloc.allocate(sizeof(Node *) * sz);
++    return Alloc.allocate(sizeof(IDNode *) * sz);
+   }
+ };
+ }  // unnamed namespace
+@@ -372,7 +374,7 @@
+ 
+   Demangler Parser(MangledName.data(),
+                    MangledName.data() + MangledName.length());
+-  Node *AST = Parser.parse(ParseParams);
++  IDNode *AST = Parser.parse(ParseParams);
+   if (!AST)
+     return nullptr;
+ 
+@@ -412,7 +414,7 @@
+   return RootNode == nullptr;
+ }
+ 
+-static char *printNode(const Node *RootNode, char *Buf, size_t *N) {
++static char *printNode(const IDNode *RootNode, char *Buf, size_t *N) {
+   OutputBuffer OB(Buf, N);
+   RootNode->print(OB);
+   OB += '\0';
+@@ -425,23 +427,23 @@
+   if (!isFunction())
+     return nullptr;
+ 
+-  const Node *Name = static_cast<const FunctionEncoding *>(RootNode)->getName();
++  const IDNode *Name = static_cast<const FunctionEncoding *>(RootNode)->getName();
+ 
+   while (true) {
+     switch (Name->getKind()) {
+-    case Node::KAbiTagAttr:
++    case IDNode::KAbiTagAttr:
+       Name = static_cast<const AbiTagAttr *>(Name)->Base;
+       continue;
+-    case Node::KModuleEntity:
++    case IDNode::KModuleEntity:
+       Name = static_cast<const ModuleEntity *>(Name)->Name;
+       continue;
+-    case Node::KNestedName:
++    case IDNode::KNestedName:
+       Name = static_cast<const NestedName *>(Name)->Name;
+       continue;
+-    case Node::KLocalName:
++    case IDNode::KLocalName:
+       Name = static_cast<const LocalName *>(Name)->Entity;
+       continue;
+-    case Node::KNameWithTemplateArgs:
++    case IDNode::KNameWithTemplateArgs:
+       Name = static_cast<const NameWithTemplateArgs *>(Name)->Name;
+       continue;
+     default:
+@@ -454,31 +456,31 @@
+                                                           size_t *N) const {
+   if (!isFunction())
+     return nullptr;
+-  const Node *Name = static_cast<const FunctionEncoding *>(RootNode)->getName();
++  const IDNode *Name = static_cast<const FunctionEncoding *>(RootNode)->getName();
+ 
+   OutputBuffer OB(Buf, N);
+ 
+  KeepGoingLocalFunction:
+   while (true) {
+-    if (Name->getKind() == Node::KAbiTagAttr) {
++    if (Name->getKind() == IDNode::KAbiTagAttr) {
+       Name = static_cast<const AbiTagAttr *>(Name)->Base;
+       continue;
+     }
+-    if (Name->getKind() == Node::KNameWithTemplateArgs) {
++    if (Name->getKind() == IDNode::KNameWithTemplateArgs) {
+       Name = static_cast<const NameWithTemplateArgs *>(Name)->Name;
+       continue;
+     }
+     break;
+   }
+ 
+-  if (Name->getKind() == Node::KModuleEntity)
++  if (Name->getKind() == IDNode::KModuleEntity)
+     Name = static_cast<const ModuleEntity *>(Name)->Name;
+ 
+   switch (Name->getKind()) {
+-  case Node::KNestedName:
++  case IDNode::KNestedName:
+     static_cast<const NestedName *>(Name)->Qual->print(OB);
+     break;
+-  case Node::KLocalName: {
++  case IDNode::KLocalName: {
+     auto *LN = static_cast<const LocalName *>(Name);
+     LN->Encoding->print(OB);
+     OB += "::";
+@@ -525,7 +527,7 @@
+ 
+   OutputBuffer OB(Buf, N);
+ 
+-  if (const Node *Ret =
++  if (const IDNode *Ret =
+           static_cast<const FunctionEncoding *>(RootNode)->getReturnType())
+     Ret->print(OB);
+ 
+@@ -537,7 +539,7 @@
+ 
+ char *ItaniumPartialDemangler::finishDemangle(char *Buf, size_t *N) const {
+   assert(RootNode != nullptr && "must call partialDemangle()");
+-  return printNode(static_cast<Node *>(RootNode), Buf, N);
++  return printNode(static_cast<IDNode *>(RootNode), Buf, N);
+ }
+ 
+ bool ItaniumPartialDemangler::hasFunctionQualifiers() const {
+@@ -549,30 +551,30 @@
+ }
+ 
+ bool ItaniumPartialDemangler::isCtorOrDtor() const {
+-  const Node *N = static_cast<const Node *>(RootNode);
++  const IDNode *N = static_cast<const IDNode *>(RootNode);
+   while (N) {
+     switch (N->getKind()) {
+     default:
+       return false;
+-    case Node::KCtorDtorName:
++    case IDNode::KCtorDtorName:
+       return true;
+ 
+-    case Node::KAbiTagAttr:
++    case IDNode::KAbiTagAttr:
+       N = static_cast<const AbiTagAttr *>(N)->Base;
+       break;
+-    case Node::KFunctionEncoding:
++    case IDNode::KFunctionEncoding:
+       N = static_cast<const FunctionEncoding *>(N)->getName();
+       break;
+-    case Node::KLocalName:
++    case IDNode::KLocalName:
+       N = static_cast<const LocalName *>(N)->Entity;
+       break;
+-    case Node::KNameWithTemplateArgs:
++    case IDNode::KNameWithTemplateArgs:
+       N = static_cast<const NameWithTemplateArgs *>(N)->Name;
+       break;
+-    case Node::KNestedName:
++    case IDNode::KNestedName:
+       N = static_cast<const NestedName *>(N)->Name;
+       break;
+-    case Node::KModuleEntity:
++    case IDNode::KModuleEntity:
+       N = static_cast<const ModuleEntity *>(N)->Name;
+       break;
+     }
+@@ -582,14 +584,14 @@
+ 
+ bool ItaniumPartialDemangler::isFunction() const {
+   assert(RootNode != nullptr && "must call partialDemangle()");
+-  return static_cast<const Node *>(RootNode)->getKind() ==
+-         Node::KFunctionEncoding;
++  return static_cast<const IDNode *>(RootNode)->getKind() ==
++         IDNode::KFunctionEncoding;
+ }
+ 
+ bool ItaniumPartialDemangler::isSpecialName() const {
+   assert(RootNode != nullptr && "must call partialDemangle()");
+-  auto K = static_cast<const Node *>(RootNode)->getKind();
+-  return K == Node::KSpecialName || K == Node::KCtorVtableSpecialName;
++  auto K = static_cast<const IDNode *>(RootNode)->getKind();
++  return K == IDNode::KSpecialName || K == IDNode::KCtorVtableSpecialName;
+ }
+ 
+ bool ItaniumPartialDemangler::isData() const {
+diff --color -ruN llvm-20.1.0.src/lib/Demangle/MicrosoftDemangle.cpp llvm-20.1.0.src.aros/lib/Demangle/MicrosoftDemangle.cpp
+--- llvm-20.1.0.src/lib/Demangle/MicrosoftDemangle.cpp	2025-03-04 20:51:43
++++ llvm-20.1.0.src.aros/lib/Demangle/MicrosoftDemangle.cpp	2026-09-07 00:07:26
+@@ -31,12 +31,14 @@
+ using namespace llvm;
+ using namespace ms_demangle;
+ 
++using MSNode = llvm::ms_demangle::Node;
++
+ static bool startsWithDigit(std::string_view S) {
+   return !S.empty() && std::isdigit(S.front());
+ }
+ 
+ struct NodeList {
+-  Node *N = nullptr;
++  MSNode *N = nullptr;
+   NodeList *Next = nullptr;
+ };
+ 
+@@ -364,7 +366,7 @@
+   QualifiedNameNode *QN = Arena.alloc<QualifiedNameNode>();
+   QN->Components = Arena.alloc<NodeArrayNode>();
+   QN->Components->Count = 1;
+-  QN->Components->Nodes = Arena.allocArray<Node *>(1);
++  QN->Components->Nodes = Arena.allocArray<MSNode *>(1);
+   QN->Components->Nodes[0] = Identifier;
+   return QN;
+ }
+@@ -1603,7 +1605,7 @@
+                                           size_t Count) {
+   NodeArrayNode *N = Arena.alloc<NodeArrayNode>();
+   N->Count = Count;
+-  N->Nodes = Arena.allocArray<Node *>(Count);
++  N->Nodes = Arena.allocArray<MSNode *>(Count);
+   for (size_t I = 0; I < Count; ++I) {
+     N->Nodes[I] = Head->N;
+     Head = Head->Next;
+diff --color -ruN llvm-20.1.0.src/lib/Demangle/MicrosoftDemangleNodes.cpp llvm-20.1.0.src.aros/lib/Demangle/MicrosoftDemangleNodes.cpp
+--- llvm-20.1.0.src/lib/Demangle/MicrosoftDemangleNodes.cpp	2025-03-04 20:51:43
++++ llvm-20.1.0.src.aros/lib/Demangle/MicrosoftDemangleNodes.cpp	2026-09-07 00:07:26
+@@ -18,6 +18,8 @@
+ using namespace llvm;
+ using namespace ms_demangle;
+ 
++using MSNode = llvm::ms_demangle::Node;
++
+ #define OUTPUT_ENUM_CLASS_VALUE(Enum, Value, Desc)                             \
+   case Enum::Value:                                                            \
+     OB << Desc;                                                                \
+@@ -117,7 +119,7 @@
+   }
+ }
+ 
+-std::string Node::toString(OutputFlags Flags) const {
++std::string MSNode::toString(OutputFlags Flags) const {
+   OutputBuffer OB;
+   this->output(OB, Flags);
+   std::string_view SV = OB;
+diff --color -ruN llvm-20.1.0.src/lib/ExecutionEngine/ExecutionEngine.cpp llvm-20.1.0.src.aros/lib/ExecutionEngine/ExecutionEngine.cpp
+--- llvm-20.1.0.src/lib/ExecutionEngine/ExecutionEngine.cpp	2025-03-04 20:51:43
++++ llvm-20.1.0.src.aros/lib/ExecutionEngine/ExecutionEngine.cpp	2026-09-07 00:09:53
+@@ -507,8 +507,13 @@
+ 
+   // Make sure we can resolve symbols in the program as well. The zero arg
+   // to the function tells DynamicLibrary to load the program, not a library.
++  // On AROS there is no host process to dlopen(NULL) - skip the failure check.
++#if !defined(__AROS__)
+   if (sys::DynamicLibrary::LoadLibraryPermanently(nullptr, ErrorStr))
+     return nullptr;
++#else
++  sys::DynamicLibrary::LoadLibraryPermanently(nullptr, nullptr);
++#endif
+ 
+   // If the user specified a memory manager but didn't specify which engine to
+   // create, we assume they only want the JIT, and we fail if they only want
+diff --color -ruN llvm-20.1.0.src/lib/ExecutionEngine/MCJIT/MCJIT.cpp llvm-20.1.0.src.aros/lib/ExecutionEngine/MCJIT/MCJIT.cpp
+--- llvm-20.1.0.src/lib/ExecutionEngine/MCJIT/MCJIT.cpp	2025-03-04 20:51:43
++++ llvm-20.1.0.src.aros/lib/ExecutionEngine/MCJIT/MCJIT.cpp	2026-09-07 00:09:53
+@@ -38,6 +38,13 @@
+ }
+ 
+ extern "C" void LLVMLinkInMCJIT() {
++#if defined(__AROS__)
++  /* AROS: C++ static constructors from statically-linked libraries may not
++   * run automatically.  Explicitly register the MCJIT factory here so that
++   * EngineBuilder::create() finds MCJITCtor set when called from Mesa.
++   * Calling Register() multiple times is safe (idempotent assignment). */
++  MCJIT::Register();
++#endif
+ }
+ 
+ ExecutionEngine *
+diff --color -ruN llvm-20.1.0.src/lib/ExecutionEngine/Orc/MemoryMapper.cpp llvm-20.1.0.src.aros/lib/ExecutionEngine/Orc/MemoryMapper.cpp
+--- llvm-20.1.0.src/lib/ExecutionEngine/Orc/MemoryMapper.cpp	2025-03-04 20:51:43
++++ llvm-20.1.0.src.aros/lib/ExecutionEngine/Orc/MemoryMapper.cpp	2026-09-07 08:04:53
+@@ -12,7 +12,7 @@
+ #include "llvm/ExecutionEngine/Orc/Shared/OrcRTBridge.h"
+ #include "llvm/Support/WindowsError.h"
+ 
+-#if defined(LLVM_ON_UNIX) && !defined(__ANDROID__)
++#if defined(LLVM_ON_UNIX) && !defined(__ANDROID__) && !defined(__AROS__)
+ #include <fcntl.h>
+ #include <sys/mman.h>
+ #if defined(__MVS__)
+@@ -196,14 +196,14 @@
+ SharedMemoryMapper::SharedMemoryMapper(ExecutorProcessControl &EPC,
+                                        SymbolAddrs SAs, size_t PageSize)
+     : EPC(EPC), SAs(SAs), PageSize(PageSize) {
+-#if (!defined(LLVM_ON_UNIX) || defined(__ANDROID__)) && !defined(_WIN32)
++#if (!defined(LLVM_ON_UNIX) || defined(__ANDROID__) || defined(__AROS__)) && !defined(_WIN32)
+   llvm_unreachable("SharedMemoryMapper is not supported on this platform yet");
+ #endif
+ }
+ 
+ Expected<std::unique_ptr<SharedMemoryMapper>>
+ SharedMemoryMapper::Create(ExecutorProcessControl &EPC, SymbolAddrs SAs) {
+-#if (defined(LLVM_ON_UNIX) && !defined(__ANDROID__)) || defined(_WIN32)
++#if (defined(LLVM_ON_UNIX) && !defined(__ANDROID__) && !defined(__AROS__)) || defined(_WIN32)
+   auto PageSize = sys::Process::getPageSize();
+   if (!PageSize)
+     return PageSize.takeError();
+@@ -218,7 +218,7 @@
+ 
+ void SharedMemoryMapper::reserve(size_t NumBytes,
+                                  OnReservedFunction OnReserved) {
+-#if (defined(LLVM_ON_UNIX) && !defined(__ANDROID__)) || defined(_WIN32)
++#if (defined(LLVM_ON_UNIX) && !defined(__ANDROID__) && !defined(__AROS__)) || defined(_WIN32)
+ 
+   EPC.callSPSWrapperAsync<
+       rt::SPSExecutorSharedMemoryMapperServiceReserveSignature>(
+@@ -240,7 +240,7 @@
+ 
+         void *LocalAddr = nullptr;
+ 
+-#if defined(LLVM_ON_UNIX)
++#if defined(LLVM_ON_UNIX) && !defined(__AROS__)
+ 
+ #if defined(__MVS__)
+         ArrayRef<uint8_t> Data(
+@@ -385,7 +385,7 @@
+ 
+ void SharedMemoryMapper::release(ArrayRef<ExecutorAddr> Bases,
+                                  OnReleasedFunction OnReleased) {
+-#if (defined(LLVM_ON_UNIX) && !defined(__ANDROID__)) || defined(_WIN32)
++#if (defined(LLVM_ON_UNIX) && !defined(__ANDROID__) && !defined(__AROS__)) || defined(_WIN32)
+   Error Err = Error::success();
+ 
+   {
+@@ -393,7 +393,7 @@
+ 
+     for (auto Base : Bases) {
+ 
+-#if defined(LLVM_ON_UNIX)
++#if defined(LLVM_ON_UNIX) && !defined(__AROS__)
+ 
+ #if defined(__MVS__)
+       if (shmdt(Reservations[Base].LocalAddr) < 0)
+@@ -440,7 +440,7 @@
+   std::lock_guard<std::mutex> Lock(Mutex);
+   for (const auto &R : Reservations) {
+ 
+-#if defined(LLVM_ON_UNIX) && !defined(__ANDROID__)
++#if defined(LLVM_ON_UNIX) && !defined(__ANDROID__) && !defined(__AROS__)
+ 
+ #if defined(__MVS__)
+     shmdt(R.second.LocalAddr);
+diff --color -ruN llvm-20.1.0.src/lib/ExecutionEngine/Orc/TargetProcess/ExecutorSharedMemoryMapperService.cpp llvm-20.1.0.src.aros/lib/ExecutionEngine/Orc/TargetProcess/ExecutorSharedMemoryMapperService.cpp
+--- llvm-20.1.0.src/lib/ExecutionEngine/Orc/TargetProcess/ExecutorSharedMemoryMapperService.cpp	2025-03-04 20:51:43
++++ llvm-20.1.0.src.aros/lib/ExecutionEngine/Orc/TargetProcess/ExecutorSharedMemoryMapperService.cpp	2026-09-07 08:04:53
+@@ -13,7 +13,7 @@
+ #include "llvm/Support/WindowsError.h"
+ #include <sstream>
+ 
+-#if defined(LLVM_ON_UNIX)
++#if defined(LLVM_ON_UNIX) && !defined(__AROS__)
+ #include <errno.h>
+ #include <fcntl.h>
+ #include <sys/mman.h>
+@@ -50,9 +50,9 @@
+ 
+ Expected<std::pair<ExecutorAddr, std::string>>
+ ExecutorSharedMemoryMapperService::reserve(uint64_t Size) {
+-#if (defined(LLVM_ON_UNIX) && !defined(__ANDROID__)) || defined(_WIN32)
++#if (defined(LLVM_ON_UNIX) && !defined(__ANDROID__) && !defined(__AROS__)) || defined(_WIN32)
+ 
+-#if defined(LLVM_ON_UNIX)
++#if defined(LLVM_ON_UNIX) && !defined(__AROS__)
+ 
+   std::string SharedMemoryName;
+   {
+@@ -139,7 +139,7 @@
+ 
+ Expected<ExecutorAddr> ExecutorSharedMemoryMapperService::initialize(
+     ExecutorAddr Reservation, tpctypes::SharedMemoryFinalizeRequest &FR) {
+-#if (defined(LLVM_ON_UNIX) && !defined(__ANDROID__)) || defined(_WIN32)
++#if (defined(LLVM_ON_UNIX) && !defined(__ANDROID__) && !defined(__AROS__)) || defined(_WIN32)
+ 
+   ExecutorAddr MinAddr(~0ULL);
+ 
+@@ -148,7 +148,7 @@
+     if (Segment.Addr < MinAddr)
+       MinAddr = Segment.Addr;
+ 
+-#if defined(LLVM_ON_UNIX)
++#if defined(LLVM_ON_UNIX) && !defined(__AROS__)
+ 
+ #if defined(__MVS__)
+       // TODO Is it possible to change the protection level?
+@@ -233,7 +233,7 @@
+ 
+ Error ExecutorSharedMemoryMapperService::release(
+     const std::vector<ExecutorAddr> &Bases) {
+-#if (defined(LLVM_ON_UNIX) && !defined(__ANDROID__)) || defined(_WIN32)
++#if (defined(LLVM_ON_UNIX) && !defined(__ANDROID__) && !defined(__AROS__)) || defined(_WIN32)
+   Error Err = Error::success();
+ 
+   for (auto Base : Bases) {
+@@ -260,7 +260,7 @@
+     if (Error E = deinitialize(AllocAddrs))
+       Err = joinErrors(std::move(Err), std::move(E));
+ 
+-#if defined(LLVM_ON_UNIX)
++#if defined(LLVM_ON_UNIX) && !defined(__AROS__)
+ 
+ #if defined(__MVS__)
+     (void)Size;
+diff --color -ruN llvm-20.1.0.src/lib/ProfileData/ItaniumManglingCanonicalizer.cpp llvm-20.1.0.src.aros/lib/ProfileData/ItaniumManglingCanonicalizer.cpp
+--- llvm-20.1.0.src/lib/ProfileData/ItaniumManglingCanonicalizer.cpp	2025-03-04 20:51:43
++++ llvm-20.1.0.src.aros/lib/ProfileData/ItaniumManglingCanonicalizer.cpp	2026-09-07 08:24:48
+@@ -15,13 +15,13 @@
+ 
+ using namespace llvm;
+ using llvm::itanium_demangle::ForwardTemplateReference;
+-using llvm::itanium_demangle::Node;
++using IDNode = llvm::itanium_demangle::Node;
+ using llvm::itanium_demangle::NodeKind;
+ 
+ namespace {
+ struct FoldingSetNodeIDBuilder {
+   llvm::FoldingSetNodeID &ID;
+-  void operator()(const Node *P) { ID.AddPointer(P); }
++  void operator()(const IDNode *P) { ID.AddPointer(P); }
+   void operator()(std::string_view Str) {
+     if (Str.empty())
+       ID.AddString({});
+@@ -34,13 +34,13 @@
+   }
+   void operator()(itanium_demangle::NodeArray A) {
+     ID.AddInteger(A.size());
+-    for (const Node *N : A)
++    for (const IDNode *N : A)
+       (*this)(N);
+   }
+ };
+ 
+ template<typename ...T>
+-void profileCtor(llvm::FoldingSetNodeID &ID, Node::Kind K, T ...V) {
++void profileCtor(llvm::FoldingSetNodeID &ID, IDNode::Kind K, T ...V) {
+   FoldingSetNodeIDBuilder Builder = {ID};
+   Builder(K);
+   int VisitInOrder[] = {
+@@ -69,12 +69,12 @@
+   llvm_unreachable("should never canonicalize a ForwardTemplateReference");
+ }
+ 
+-void profileNode(llvm::FoldingSetNodeID &ID, const Node *N) {
++void profileNode(llvm::FoldingSetNodeID &ID, const IDNode *N) {
+   N->visit(ProfileNode{ID});
+ }
+ 
+ class FoldingNodeAllocator {
+-  class alignas(alignof(Node *)) NodeHeader : public llvm::FoldingSetNode {
++  class alignas(alignof(IDNode *)) NodeHeader : public llvm::FoldingSetNode {
+   public:
+     // 'Node' in this context names the injected-class-name of the base class.
+     itanium_demangle::Node *getNode() {
+@@ -90,7 +90,7 @@
+   void reset() {}
+ 
+   template <typename T, typename... Args>
+-  std::pair<Node *, bool> getOrCreateNode(bool CreateNewNodes, Args &&... As) {
++  std::pair<IDNode *, bool> getOrCreateNode(bool CreateNewNodes, Args &&... As) {
+     // FIXME: Don't canonicalize forward template references for now, because
+     // they contain state (the resolved template node) that's not known at their
+     // point of creation.
+@@ -123,24 +123,24 @@
+   }
+ 
+   template<typename T, typename... Args>
+-  Node *makeNode(Args &&...As) {
++  IDNode *makeNode(Args &&...As) {
+     return getOrCreateNode<T>(true, std::forward<Args>(As)...).first;
+   }
+ 
+   void *allocateNodeArray(size_t sz) {
+-    return RawAlloc.Allocate(sizeof(Node *) * sz, alignof(Node *));
++    return RawAlloc.Allocate(sizeof(IDNode *) * sz, alignof(IDNode *));
+   }
+ };
+ 
+ class CanonicalizerAllocator : public FoldingNodeAllocator {
+-  Node *MostRecentlyCreated = nullptr;
+-  Node *TrackedNode = nullptr;
++  IDNode *MostRecentlyCreated = nullptr;
++  IDNode *TrackedNode = nullptr;
+   bool TrackedNodeIsUsed = false;
+   bool CreateNewNodes = true;
+-  llvm::SmallDenseMap<Node*, Node*, 32> Remappings;
++  llvm::SmallDenseMap<IDNode*, IDNode*, 32> Remappings;
+ 
+-  template<typename T, typename ...Args> Node *makeNodeSimple(Args &&...As) {
+-    std::pair<Node *, bool> Result =
++  template<typename T, typename ...Args> IDNode *makeNodeSimple(Args &&...As) {
++    std::pair<IDNode *, bool> Result =
+         getOrCreateNode<T>(CreateNewNodes, std::forward<Args>(As)...);
+     if (Result.second) {
+       // Node is new. Make a note of that.
+@@ -161,13 +161,13 @@
+   /// Helper to allow makeNode to be partially-specialized on T.
+   template<typename T> struct MakeNodeImpl {
+     CanonicalizerAllocator &Self;
+-    template<typename ...Args> Node *make(Args &&...As) {
++    template<typename ...Args> IDNode *make(Args &&...As) {
+       return Self.makeNodeSimple<T>(std::forward<Args>(As)...);
+     }
+   };
+ 
+ public:
+-  template<typename T, typename ...Args> Node *makeNode(Args &&...As) {
++  template<typename T, typename ...Args> IDNode *makeNode(Args &&...As) {
+     return MakeNodeImpl<T>{*this}.make(std::forward<Args>(As)...);
+   }
+ 
+@@ -175,15 +175,15 @@
+ 
+   void setCreateNewNodes(bool CNN) { CreateNewNodes = CNN; }
+ 
+-  void addRemapping(Node *A, Node *B) {
++  void addRemapping(IDNode *A, IDNode *B) {
+     // Note, we don't need to check whether B is also remapped, because if it
+     // was we would have already remapped it when building it.
+     Remappings.insert(std::make_pair(A, B));
+   }
+ 
+-  bool isMostRecentlyCreated(Node *N) const { return MostRecentlyCreated == N; }
++  bool isMostRecentlyCreated(IDNode *N) const { return MostRecentlyCreated == N; }
+ 
+-  void trackUsesOf(Node *N) {
++  void trackUsesOf(IDNode *N) {
+     TrackedNode = N;
+     TrackedNodeIsUsed = false;
+   }
+@@ -211,7 +211,7 @@
+ 
+   auto Parse = [&](StringRef Str) {
+     P->Demangler.reset(Str.begin(), Str.end());
+-    Node *N = nullptr;
++    IDNode *N = nullptr;
+     switch (Kind) {
+       // A <name>, with minor extensions to allow arbitrary namespace and
+       // template names that can't easily be written as <name>s.
+@@ -252,7 +252,7 @@
+     return std::make_pair(N, Alloc.isMostRecentlyCreated(N));
+   };
+ 
+-  Node *FirstNode, *SecondNode;
++  IDNode *FirstNode, *SecondNode;
+   bool FirstIsNew, SecondIsNew;
+ 
+   std::tie(FirstNode, FirstIsNew) = Parse(First);
+@@ -288,7 +288,7 @@
+   // be remapped by (eg)
+   //   encoding 6memcpy 7memmove
+   // consistent with how they are encoded as local-names inside a C++ mangling.
+-  Node *N;
++  IDNode *N;
+   if (Mangling.starts_with("_Z") || Mangling.starts_with("__Z") ||
+       Mangling.starts_with("___Z") || Mangling.starts_with("____Z"))
+     N = Demangler.parse();
+diff --color -ruN llvm-20.1.0.src/lib/Support/LockFileManager.cpp llvm-20.1.0.src.aros/lib/Support/LockFileManager.cpp
+--- llvm-20.1.0.src/lib/Support/LockFileManager.cpp	2025-03-04 20:51:43
++++ llvm-20.1.0.src.aros/lib/Support/LockFileManager.cpp	2026-09-07 00:09:53
+@@ -94,7 +94,7 @@
+   StringRef UUIDRef(UUIDStr);
+   HostID.append(UUIDRef.begin(), UUIDRef.end());
+ 
+-#elif LLVM_ON_UNIX
++#elif LLVM_ON_UNIX && !defined(__AROS__)
+   char HostName[256];
+   HostName[255] = 0;
+   HostName[0] = 0;
+@@ -111,7 +111,7 @@
+ }
+ 
+ bool LockFileManager::processStillExecuting(StringRef HostID, int PID) {
+-#if LLVM_ON_UNIX && !defined(__ANDROID__)
++#if LLVM_ON_UNIX && !defined(__ANDROID__) && !defined(__AROS__)
+   SmallString<256> StoredHostID;
+   if (getHostID(StoredHostID))
+     return true; // Conservatively assume it's executing on error.
+diff --color -ruN llvm-20.1.0.src/lib/Support/Unix/Memory.inc llvm-20.1.0.src.aros/lib/Support/Unix/Memory.inc
+--- llvm-20.1.0.src/lib/Support/Unix/Memory.inc	2025-03-04 20:51:43
++++ llvm-20.1.0.src.aros/lib/Support/Unix/Memory.inc	2026-09-07 00:10:43
+@@ -18,6 +18,11 @@
+ #include "llvm/Support/Process.h"
+ #include "llvm/Support/Valgrind.h"
+ 
++#if defined(__AROS__)
++#include <exec/memory.h>
++#include <proto/exec.h>
++#endif
++
+ #ifdef HAVE_SYS_MMAN_H
+ #include <sys/mman.h>
+ #endif
+@@ -37,6 +42,9 @@
+ #endif
+ 
+ static int getPosixProtectionFlags(unsigned Flags) {
++#if defined(__AROS__)
++  return Flags ? 0 : -1;
++#else
+   switch (Flags & llvm::sys::Memory::MF_RWE_MASK) {
+   case llvm::sys::Memory::MF_READ:
+     return PROT_READ;
+@@ -65,6 +73,7 @@
+   }
+   // Provide a default return value as required by some compilers.
+   return PROT_NONE;
++#endif
+ }
+ 
+ namespace llvm {
+@@ -80,6 +89,25 @@
+   // On platforms that have it, we can use MAP_ANON to get a memory-mapped
+   // page without file backing, but we need a fallback of opening /dev/zero
+   // for strictly POSIX platforms instead.
++#if defined(__AROS__)
++  // No mmap(): AllocMem gives page-aligned, executable public memory, which
++  // is what the JIT needs. Protection is not enforced (see
++  // getPosixProtectionFlags), so everything is allocated RWX.
++  static const size_t PageSize = Process::getPageSizeEstimate();
++  const size_t NumPages = (NumBytes + PageSize - 1) / PageSize;
++  void *Addr = AllocMem(PageSize * NumPages,
++                        MEMF_PUBLIC | MEMF_CLEAR | MEMF_EXECUTABLE);
++  if (!Addr) {
++    EC = std::error_code(ENOMEM, std::generic_category());
++    return MemoryBlock();
++  }
++
++  MemoryBlock Result;
++  Result.Address = Addr;
++  Result.AllocatedSize = PageSize * NumPages;
++  Result.Flags = PFlags;
++  return Result;
++#else
+   int fd;
+ #if defined(MAP_ANON)
+   fd = -1;
+@@ -146,14 +174,19 @@
+   }
+ 
+   return Result;
++#endif
+ }
+ 
+ std::error_code Memory::releaseMappedMemory(MemoryBlock &M) {
+   if (M.Address == nullptr || M.AllocatedSize == 0)
+     return std::error_code();
+ 
++#if defined(__AROS__)
++  FreeMem(M.Address, M.AllocatedSize);
++#else
+   if (0 != ::munmap(M.Address, M.AllocatedSize))
+     return errnoAsErrorCode();
++#endif
+ 
+   M.Address = nullptr;
+   M.AllocatedSize = 0;
+@@ -171,6 +204,13 @@
+     return std::error_code(EINVAL, std::generic_category());
+ 
+   int Protect = getPosixProtectionFlags(Flags);
++#if defined(__AROS__)
++  (void)Protect;
++  (void)PageSize;
++  if (Flags & MF_EXEC)
++    Memory::InvalidateInstructionCache(M.Address, M.AllocatedSize);
++  return std::error_code();
++#else
+   uintptr_t Start =
+       alignAddr((const uint8_t *)M.Address - PageSize.value() + 1, PageSize);
+   uintptr_t End =
+@@ -202,6 +242,7 @@
+     Memory::InvalidateInstructionCache(M.Address, M.AllocatedSize);
+ 
+   return std::error_code();
++#endif
+ }
+ 
+ /// InvalidateInstructionCache - Before the JIT can run a block of code
+@@ -222,6 +263,10 @@
+   assert(Status == ZX_OK && "cannot invalidate instruction cache");
+ 
+ #else
++
++#if defined(__AROS__)
++  CacheClearE(const_cast<void *>(Addr), Len, CACRF_ClearI | CACRF_ClearD);
++#endif
+ 
+ #if defined(__powerpc__) && defined(__GNUC__)
+   const size_t LineSize = 32;
+diff --color -ruN llvm-20.1.0.src/lib/Support/Unix/Path.inc llvm-20.1.0.src.aros/lib/Support/Unix/Path.inc
+--- llvm-20.1.0.src/lib/Support/Unix/Path.inc	2025-03-04 20:51:43
++++ llvm-20.1.0.src.aros/lib/Support/Unix/Path.inc	2026-09-07 00:13:53
+@@ -16,6 +16,9 @@
+ //===----------------------------------------------------------------------===//
+ 
+ #include "Unix.h"
++#if defined(__AROS__)
++#include <cstdlib>
++#endif
+ #include <limits.h>
+ #include <stdio.h>
+ #include <sys/stat.h>
+@@ -107,6 +110,7 @@
+ #endif
+ 
+ #if defined(__NetBSD__) || defined(__DragonFly__) || defined(__GNU__) ||       \
++    defined(__AROS__) ||                                                       \
+     defined(__MVS__)
+ #define STATVFS_F_FLAG(vfs) (vfs).f_flag
+ #else
+@@ -329,6 +333,9 @@
+   char link_path[PATH_MAX];
+   if (realpath(DLInfo.dli_fname, link_path))
+     return link_path;
++#elif defined(__AROS__)
++  (void)MainAddr;
++  return "";
+ #else
+ #error GetMainExecutable is not implemented on this host yet.
+ #endif
+@@ -550,6 +557,8 @@
+   // The file system can have an arbitrary structure on z/OS; must go with the
+   // conservative answer.
+   return false;
++#elif defined(__AROS__)
++  return true;
+ #else
+   return !!(STATVFS_F_FLAG(Vfs) & MNT_LOCAL);
+ #endif
+@@ -826,6 +835,29 @@
+                                          mapmode Mode) {
+   assert(Size != 0);
+ 
++#if defined(__AROS__)
++  // AROS has no mmap(): read the range into an ordinary allocation. Writes
++  // are therefore private and never reach the file, which is all LLVM's
++  // readonly/priv mappings need.
++  (void)Mode;
++  Mapping = std::malloc(Size);
++  if (!Mapping)
++    return std::error_code(ENOMEM, std::generic_category());
++  if (::lseek(FD, Offset, SEEK_SET) < 0) {
++    std::free(Mapping);
++    Mapping = nullptr;
++    return errnoAsErrorCode();
++  }
++  ssize_t Got = ::read(FD, Mapping, Size);
++  if (Got < 0 || static_cast<size_t>(Got) != Size) {
++    std::error_code EC =
++        Got < 0 ? errnoAsErrorCode() : std::error_code(EIO, std::generic_category());
++    std::free(Mapping);
++    Mapping = nullptr;
++    return EC;
++  }
++  return std::error_code();
++#else
+   int flags = (Mode == readwrite) ? MAP_SHARED : MAP_PRIVATE;
+   int prot = (Mode == readonly) ? PROT_READ : (PROT_READ | PROT_WRITE);
+ #if defined(MAP_NORESERVE)
+@@ -855,6 +887,7 @@
+   if (Mapping == MAP_FAILED)
+     return errnoAsErrorCode();
+   return std::error_code();
++#endif
+ }
+ 
+ mapped_file_region::mapped_file_region(int fd, mapmode mode, size_t length,
+@@ -868,14 +901,18 @@
+ 
+ void mapped_file_region::unmapImpl() {
+   if (Mapping)
++#if defined(__AROS__)
++    std::free(Mapping);
++#else
+     ::munmap(Mapping, Size);
++#endif
+ }
+ 
+ void mapped_file_region::dontNeedImpl() {
+   assert(Mode == mapped_file_region::readonly);
+   if (!Mapping)
+     return;
+-#if defined(__MVS__) || defined(_AIX)
++#if defined(__MVS__) || defined(_AIX) || defined(__AROS__)
+     // If we don't have madvise, or it isn't beneficial, treat this as a no-op.
+ #elif defined(POSIX_MADV_DONTNEED)
+   ::posix_madvise(Mapping, Size, POSIX_MADV_DONTNEED);
+diff --color -ruN llvm-20.1.0.src/lib/Support/Unix/Process.inc llvm-20.1.0.src.aros/lib/Support/Unix/Process.inc
+--- llvm-20.1.0.src/lib/Support/Unix/Process.inc	2025-03-04 20:51:43
++++ llvm-20.1.0.src.aros/lib/Support/Unix/Process.inc	2026-09-07 00:13:53
+@@ -40,6 +40,12 @@
+ using namespace llvm;
+ using namespace sys;
+ 
++#if defined(__AROS__) && HAVE_DECL_ARC4RANDOM && defined(__STRICT_ANSI__)
++// CMake probes the C header without strict mode, while LLVM builds as C++17.
++// Supply the declaration AROS's stdlib.h hides in strict language modes.
++extern "C" unsigned int arc4random(void);
++#endif
++
+ static std::pair<std::chrono::microseconds, std::chrono::microseconds>
+ getRUsageTimes() {
+ #if defined(HAVE_GETRUSAGE)
+@@ -63,7 +69,9 @@
+ // On Cygwin, getpagesize() returns 64k(AllocationGranularity) and
+ // offset in mmap(3) should be aligned to the AllocationGranularity.
+ Expected<unsigned> Process::getPageSize() {
+-#if defined(HAVE_GETPAGESIZE)
++#if defined(__AROS__)
++  static const int page_size = 4096;
++#elif defined(HAVE_GETPAGESIZE)
+   static const int page_size = ::getpagesize();
+ #elif defined(HAVE_SYSCONF)
+   static long page_size = ::sysconf(_SC_PAGE_SIZE);
+@@ -248,7 +256,7 @@
+     return errnoAsErrorCode();
+ 
+     // Atomically swap our current signal mask with a full mask.
+-#if LLVM_ENABLE_THREADS
++#if LLVM_ENABLE_THREADS && !defined(__AROS__)
+   if (int EC = pthread_sigmask(SIG_SETMASK, &FullSet, &SavedSet))
+     return std::error_code(EC, std::generic_category());
+ #else
+@@ -263,7 +271,7 @@
+     ErrnoFromClose = errno;
+   // Restore the signal mask back to what we saved earlier.
+   int EC = 0;
+-#if LLVM_ENABLE_THREADS
++#if LLVM_ENABLE_THREADS && !defined(__AROS__)
+   EC = pthread_sigmask(SIG_SETMASK, &SavedSet, nullptr);
+ #else
+   if (sigprocmask(SIG_SETMASK, &SavedSet, nullptr) < 0)
+diff --color -ruN llvm-20.1.0.src/lib/Support/Unix/Program.inc llvm-20.1.0.src.aros/lib/Support/Unix/Program.inc
+--- llvm-20.1.0.src/lib/Support/Unix/Program.inc	2025-03-04 20:51:43
++++ llvm-20.1.0.src.aros/lib/Support/Unix/Program.inc	2026-09-07 00:12:03
+@@ -35,6 +35,9 @@
+ #if HAVE_UNISTD_H
+ #include <unistd.h>
+ #endif
++#if defined(__AROS__)
++#include <sys/wait.h>
++#endif
+ #ifdef HAVE_POSIX_SPAWN
+ #include <spawn.h>
+ 
+@@ -264,6 +267,46 @@
+   }
+ #endif // HAVE_POSIX_SPAWN
+ 
++#if defined(__AROS__)
++  // AROS has no fork(). posixc's vfork() gives the child a copy of the file
++  // descriptor table and runs it in the parent's context until an exec*()
++  // detaches it as a real DOS process - enough for spawn semantics. vfork
++  // discipline applies: the child must never return from this frame and must
++  // _exit() on any failure after vfork. MemoryLimit is not enforceable here
++  // and is ignored.
++  int child = vfork();
++  if (child == -1) {
++    MakeErrMsg(ErrMsg, "Couldn't vfork");
++    return false;
++  }
++  if (child == 0) {
++    if (!Redirects.empty()) {
++      if (RedirectIO(Redirects[0], 0, ErrMsg))
++        _exit(126);
++      if (RedirectIO(Redirects[1], 1, ErrMsg))
++        _exit(126);
++      if (Redirects[1] && Redirects[2] && *Redirects[1] == *Redirects[2]) {
++        if (dup2(1, 2) == -1)
++          _exit(126);
++      } else {
++        if (RedirectIO(Redirects[2], 2, ErrMsg))
++          _exit(126);
++      }
++    }
++
++    if (Envp != nullptr)
++      execve(Program.str().c_str(), const_cast<char **>(Argv),
++             const_cast<char **>(Envp));
++    else
++      execv(Program.str().c_str(), const_cast<char **>(Argv));
++
++    _exit(127);
++  }
++
++  PI.Pid = child;
++  PI.Process = child;
++  return true;
++#else
+   // Create a child process.
+   int child = fork();
+   switch (child) {
+@@ -337,12 +380,15 @@
+   PI.Process = child;
+ 
+   return true;
++#endif
+ }
+ 
+ namespace llvm {
+ namespace sys {
+ 
+-#if defined(_AIX)
++#if defined(__AROS__)
++// No wait4(); the AROS branch of Wait() below uses waitpid().
++#elif defined(_AIX)
+ static pid_t(wait4)(pid_t pid, int *status, int options, struct rusage *usage);
+ #elif !defined(__Fuchsia__)
+ using ::wait4;
+@@ -390,6 +436,53 @@
+                             std::string *ErrMsg,
+                             std::optional<ProcessStatistics> *ProcStat,
+                             bool Polling) {
++#if defined(__AROS__)
++  // posixc waitpid() supports exactly WNOHANG, and there is no SIGALRM, so a
++  // bounded SecondsToWait degrades to a blocking wait. The in-tree clients
++  // (clang driver, LockFileManager) pass either nothing or 0.
++  (void)Polling;
++  assert(PI.Pid && "invalid pid to wait on, process not started?");
++  int status = 0;
++  int WaitPidOptions = 0;
++  if (SecondsToWait && *SecondsToWait == 0)
++    WaitPidOptions = WNOHANG;
++
++  if (ProcStat)
++    ProcStat->reset();
++
++  ProcessInfo WaitResult;
++  do {
++    WaitResult.Pid = waitpid(PI.Pid, &status, WaitPidOptions);
++  } while (WaitResult.Pid == -1 && errno == EINTR);
++
++  if (WaitResult.Pid != PI.Pid) {
++    if (WaitResult.Pid == 0)
++      return WaitResult; // Non-blocking wait: child still running.
++    MakeErrMsg(ErrMsg, "Error waiting for child process");
++    WaitResult.ReturnCode = -1;
++    return WaitResult;
++  }
++
++  if (WIFEXITED(status)) {
++    int result = WEXITSTATUS(status);
++    WaitResult.ReturnCode = result;
++    if (result == 127) {
++      if (ErrMsg)
++        *ErrMsg = llvm::sys::StrError(ENOENT);
++      WaitResult.ReturnCode = -1;
++    } else if (result == 126) {
++      if (ErrMsg)
++        *ErrMsg = "Program could not be executed";
++      WaitResult.ReturnCode = -1;
++    }
++  } else if (WIFSIGNALED(status)) {
++    // No strsignal() in AROS stdc; report the number.
++    if (ErrMsg)
++      *ErrMsg = "Child terminated by signal " + llvm::utostr(WTERMSIG(status));
++    WaitResult.ReturnCode = -2;
++  }
++  return WaitResult;
++#else
+   struct sigaction Act, Old;
+   assert(PI.Pid && "invalid pid to wait on, process not started?");
+ 
+@@ -507,6 +600,7 @@
+     WaitResult.ReturnCode = -2;
+   }
+   return WaitResult;
++#endif
+ }
+ 
+ std::error_code llvm::sys::ChangeStdinMode(fs::OpenFlags Flags) {
+@@ -555,6 +649,11 @@
+ 
+ bool llvm::sys::commandLineFitsWithinSystemLimits(StringRef Program,
+                                                   ArrayRef<StringRef> Args) {
++#if defined(__AROS__)
++  (void)Program;
++  (void)Args;
++  return true;
++#else
+   static long ArgMax = sysconf(_SC_ARG_MAX);
+   // POSIX requires that _POSIX_ARG_MAX is 4096, which is the lowest possible
+   // value for ARG_MAX on a POSIX compliant system.
+@@ -592,4 +691,5 @@
+   }
+ 
+   return true;
++#endif
+ }
+diff --color -ruN llvm-20.1.0.src/lib/Support/Unix/Signals.inc llvm-20.1.0.src.aros/lib/Support/Unix/Signals.inc
+--- llvm-20.1.0.src/lib/Support/Unix/Signals.inc	2025-03-04 20:51:43
++++ llvm-20.1.0.src.aros/lib/Support/Unix/Signals.inc	2026-09-07 00:13:53
+@@ -52,7 +52,9 @@
+ #endif
+ #include <signal.h>
+ #include <sys/stat.h>
++#if !defined(__AROS__)
+ #include <dlfcn.h>
++#endif
+ #if HAVE_MACH_MACH_H
+ #include <mach/mach.h>
+ #endif
+diff --color -ruN llvm-20.1.0.src/lib/Support/Unix/Unix.h llvm-20.1.0.src.aros/lib/Support/Unix/Unix.h
+--- llvm-20.1.0.src/lib/Support/Unix/Unix.h	2025-03-04 20:51:43
++++ llvm-20.1.0.src.aros/lib/Support/Unix/Unix.h	2026-09-07 00:13:10
+@@ -39,7 +39,10 @@
+ #include <sys/time.h>
+ #include <time.h>
+ 
++#if !defined(__AROS__)
++// AROS has no dlfcn.h; HAVE_DLOPEN is off there and nothing below needs it.
+ #include <dlfcn.h>
++#endif
+ 
+ # include <fcntl.h>
+ 
+diff --color -ruN llvm-20.1.0.src/lib/Support/Unix/Watchdog.inc llvm-20.1.0.src.aros/lib/Support/Unix/Watchdog.inc
+--- llvm-20.1.0.src/lib/Support/Unix/Watchdog.inc	2025-03-04 20:51:43
++++ llvm-20.1.0.src.aros/lib/Support/Unix/Watchdog.inc	2026-09-07 00:09:53
+@@ -12,20 +12,20 @@
+ 
+ #include "llvm/Config/config.h"
+ 
+-#ifdef HAVE_UNISTD_H
++#if defined(HAVE_UNISTD_H) && !defined(__AROS__)
+ #include <unistd.h>
+ #endif
+ 
+ namespace llvm {
+ namespace sys {
+ Watchdog::Watchdog(unsigned int seconds) {
+-#ifdef HAVE_UNISTD_H
++#if defined(HAVE_UNISTD_H) && !defined(__AROS__)
+   alarm(seconds);
+ #endif
+ }
+ 
+ Watchdog::~Watchdog() {
+-#ifdef HAVE_UNISTD_H
++#if defined(HAVE_UNISTD_H) && !defined(__AROS__)
+   alarm(0);
+ #endif
+ }
+diff --color -ruN llvm-20.1.0.src/lib/Support/YAMLParser.cpp llvm-20.1.0.src.aros/lib/Support/YAMLParser.cpp
+--- llvm-20.1.0.src/lib/Support/YAMLParser.cpp	2025-03-04 20:51:43
++++ llvm-20.1.0.src.aros/lib/Support/YAMLParser.cpp	2026-09-07 00:06:32
+@@ -37,6 +37,7 @@
+ 
+ using namespace llvm;
+ using namespace yaml;
++using YAMLNode = llvm::yaml::Node;
+ 
+ enum UnicodeEncodingForm {
+   UEF_UTF32_LE, ///< UTF-32 Little Endian
+@@ -108,7 +109,7 @@
+ }
+ 
+ /// Pin the vtables to this file.
+-void Node::anchor() {}
++void YAMLNode::anchor() {}
+ void NullNode::anchor() {}
+ void ScalarNode::anchor() {}
+ void BlockScalarNode::anchor() {}
+@@ -1952,14 +1953,14 @@
+     Doc.skip();
+ }
+ 
+-Node::Node(unsigned int Type, std::unique_ptr<Document> &D, StringRef A,
++YAMLNode::Node(unsigned int Type, std::unique_ptr<Document> &D, StringRef A,
+            StringRef T)
+     : Doc(D), TypeID(Type), Anchor(A), Tag(T) {
+   SMLoc Start = SMLoc::getFromPointer(peekNext().Range.begin());
+   SourceRange = SMRange(Start, Start);
+ }
+ 
+-std::string Node::getVerbatimTag() const {
++std::string YAMLNode::getVerbatimTag() const {
+   StringRef Raw = getRawTag();
+   if (!Raw.empty() && Raw != "!") {
+     std::string Ret;
+@@ -2004,27 +2005,27 @@
+   return "";
+ }
+ 
+-Token &Node::peekNext() {
++Token &YAMLNode::peekNext() {
+   return Doc->peekNext();
+ }
+ 
+-Token Node::getNext() {
++Token YAMLNode::getNext() {
+   return Doc->getNext();
+ }
+ 
+-Node *Node::parseBlockNode() {
++YAMLNode *YAMLNode::parseBlockNode() {
+   return Doc->parseBlockNode();
+ }
+ 
+-BumpPtrAllocator &Node::getAllocator() {
++BumpPtrAllocator &YAMLNode::getAllocator() {
+   return Doc->NodeAllocator;
+ }
+ 
+-void Node::setError(const Twine &Msg, Token &Tok) const {
++void YAMLNode::setError(const Twine &Msg, Token &Tok) const {
+   Doc->setError(Msg, Tok);
+ }
+ 
+-bool Node::failed() const {
++bool YAMLNode::failed() const {
+   return Doc->failed();
+ }
+ 
+@@ -2254,7 +2255,7 @@
+   return parseScalarValue(RawValue, Storage, "\r\n", nullptr);
+ }
+ 
+-Node *KeyValueNode::getKey() {
++YAMLNode *KeyValueNode::getKey() {
+   if (Key)
+     return Key;
+   // Handle implicit null keys.
+@@ -2279,7 +2280,7 @@
+   return Key = parseBlockNode();
+ }
+ 
+-Node *KeyValueNode::getValue() {
++YAMLNode *KeyValueNode::getValue() {
+   if (Value)
+     return Value;
+ 
+@@ -2509,7 +2510,7 @@
+   return stream.scanner->failed();
+ }
+ 
+-Node *Document::parseBlockNode() {
++YAMLNode *Document::parseBlockNode() {
+   Token T = peekNext();
+   // Handle properties.
+   Token AnchorInfo;
+diff --color -ruN llvm-20.1.0.src/lib/Support/YAMLTraits.cpp llvm-20.1.0.src.aros/lib/Support/YAMLTraits.cpp
+--- llvm-20.1.0.src/lib/Support/YAMLTraits.cpp	2025-03-04 20:51:43
++++ llvm-20.1.0.src.aros/lib/Support/YAMLTraits.cpp	2026-09-07 00:07:24
+@@ -29,6 +29,7 @@
+ 
+ using namespace llvm;
+ using namespace yaml;
++using YAMLNode = llvm::yaml::Node;
+ 
+ //===----------------------------------------------------------------------===//
+ //  IO
+@@ -103,7 +104,7 @@
+   return ++DocIterator != Strm->end();
+ }
+ 
+-const Node *Input::getCurrentNode() const {
++const YAMLNode *Input::getCurrentNode() const {
+   return CurrentNode ? CurrentNode->_node : nullptr;
+ }
+ 
+diff --color -ruN llvm-20.1.0.src/lib/Support/raw_socket_stream.cpp llvm-20.1.0.src.aros/lib/Support/raw_socket_stream.cpp
+--- llvm-20.1.0.src/lib/Support/raw_socket_stream.cpp	2025-03-04 20:51:43
++++ llvm-20.1.0.src.aros/lib/Support/raw_socket_stream.cpp	2026-09-07 08:06:28
+@@ -11,6 +11,17 @@
+ //
+ //===----------------------------------------------------------------------===//
+ 
++#if defined(__AROS__)
++
++// AROS has no POSIX sockets. bsdsocket.library is reached through
++// proto/socket.h and a per-task SocketBase, which is a different calling
++// convention entirely - there is no <poll.h> either. Nothing in the
++// target-side build (gallivm/llvmpipe) uses LLVM's socket streams, so leave
++// the implementation out rather than half-emulate it; a caller that does
++// appear will fail to link, which is the honest outcome.
++
++#else
++
+ #include "llvm/Support/raw_socket_stream.h"
+ #include "llvm/Config/config.h"
+ #include "llvm/Support/Error.h"
+@@ -338,3 +349,5 @@
+   }
+   return raw_fd_stream::read(Ptr, Size);
+ }
++
++#endif // defined(__AROS__)
+diff --color -ruN llvm-20.1.0.src/lib/TargetParser/Triple.cpp llvm-20.1.0.src.aros/lib/TargetParser/Triple.cpp
+--- llvm-20.1.0.src/lib/TargetParser/Triple.cpp	2025-03-04 20:51:43
++++ llvm-20.1.0.src.aros/lib/TargetParser/Triple.cpp	2026-09-07 00:04:48
 @@ -282,6 +282,7 @@
    case AIX: return "aix";
    case AMDHSA: return "amdhsa";

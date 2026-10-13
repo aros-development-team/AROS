@@ -135,6 +135,15 @@ _AHIsub_AllocAudio(struct TagItem *taglist, struct AHIAudioCtrlDrv *AudioCtrl,
         }
     }
 
+    /* Report the rate the hardware will actually run. _AHIsub_Start
+       programs Frequencies[freqbit], falling back to Frequencies[6]
+       (44100) for off-list requests, so without this the mixer runs the
+       request while the hardware runs the fallback and nothing reports
+       it. i == FREQUENCIES exactly when the request matched nothing. */
+    if(i == FREQUENCIES) {
+        AudioCtrl->ahiac_MixFreq = Frequencies[6];
+    }
+
     return ret;
 }
 

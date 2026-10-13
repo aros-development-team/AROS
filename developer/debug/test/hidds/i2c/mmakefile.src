@@ -1,0 +1,16 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+EXEDIR := $(AROS_TESTS)/hidds/i2c
+
+# Only the Pi has the BSC driver
+#MM- test-raspi : test-hidd-i2c-bcm2708
+#MM- test-raspi-quick : test-hidd-i2c-bcm2708-quick
+
+#MM test-hidd-i2c-bcm2708 : includes includes-copy linklibs
+
+%build_prog mmake=test-hidd-i2c-bcm2708 \
+    files=i2cbcm2708 targetdir=$(EXEDIR) \
+    progname=I2C-BCM2708
+
+%common

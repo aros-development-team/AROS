@@ -20,7 +20,7 @@
 # NAME/A, DEV=DEVICE/A/K, UNIT/N/K, IP/K, NETMASK/K,UP/S, IPTYPE/N/K,
 # ARPTYPE=IPARPTYPE/N/K, IPREQ=IPREQUESTS/N/K, ARPREQ=ARPREQUESTS/N/K,
 # WRITEREQ=WRITEREQUESTS/N/K, NOTRACKING/S, NOARP/S, ARPHDR/N/K,
-# P2P=POINT2POINT/S, NOSIMPLEX/S, LOOPBACK/S
+# P2P=POINT2POINT/S, NOSIMPLEX/S, LOOPBACK/S, DEFER/S
 #
 # Lines can be continued if their last character is '+'
 # '#' and ';' are comment characters - rest of the line is ignored
@@ -46,6 +46,11 @@
 #   Netmask the interface should use.
 # UP/S
 #   Automatically put the interface ONLINE.
+# DEFER/S
+#   The device may not be there when the stack starts (hot-plugged, wireless
+#   or Bluetooth hardware). If it does not open, keep trying in the
+#   background and start the interface as soon as it does. Without DEFER a
+#   device that does not open brings up a requester (retry, skip, shut down).
 # IPTYPE/N/K (*
 #   Packet type (framing) for Internet Protocol (IP)
 # IPREQ=IPREQUESTS/N/K

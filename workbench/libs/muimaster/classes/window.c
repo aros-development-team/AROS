@@ -6,6 +6,7 @@
 */
 #include <exec/types.h>
 #include <exec/memory.h>
+#include <aros/atomic.h>
 
 #include <string.h>
 #include <stdio.h>
@@ -1104,8 +1105,8 @@ static void CalcWindowPosition(Object *obj, struct MUI_WindowData *data)
     if (data->wd_X == MUIV_Window_LeftEdge_Centered)
     {
         if (data->wd_RefWindow != NULL)
-            /* FIXME: only correct if border thickness is the same for both
-               windows */
+            /* FIXME: refw/refh are GZZ client sizes while width/height
+               include borders; reference-window centering mixes geometry bases. */
             data->wd_X = refx + (refw - width) / 2;
         else
             data->wd_X = (scr->ViewPort.DWidth - width) / 2;
@@ -2405,11 +2406,11 @@ static void HandleInputEvent(Object *win, struct MUI_WindowData *data,
         if (ContextMenuUnderPointer(data, data->wd_RootObject,
                 event->MouseX, event->MouseY))
         {
-            iWin->Flags |= WFLG_RMBTRAP;
+            AROS_ATOMIC_OR(iWin->Flags, WFLG_RMBTRAP);
         }
         else if (!data->wd_NoMenus)
         {
-            iWin->Flags &= ~WFLG_RMBTRAP;
+            AROS_ATOMIC_AND(iWin->Flags, ~WFLG_RMBTRAP);
         }
     }
 
@@ -3228,9 +3229,9 @@ IPTR Window__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
             if (data->wd_RenderInfo.mri_Window)
             {
                 if (data->wd_NoMenus)
-                    data->wd_RenderInfo.mri_Window->Flags |= WFLG_RMBTRAP;
+                    AROS_ATOMIC_OR(data->wd_RenderInfo.mri_Window->Flags, WFLG_RMBTRAP);
                 else
-                    data->wd_RenderInfo.mri_Window->Flags &= ~WFLG_RMBTRAP;
+                    AROS_ATOMIC_AND(data->wd_RenderInfo.mri_Window->Flags, ~WFLG_RMBTRAP);
             }
             break;
 
@@ -3299,7 +3300,7 @@ IPTR Window__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
                     data->wd_SleepMaxHeight=data->wd_RenderInfo.mri_Window->MaxHeight;
                     data->wd_SleepMinHeight=data->wd_RenderInfo.mri_Window->MinHeight;
                     data->wd_SleepMaxWidth=data->wd_RenderInfo.mri_Window->MaxWidth;
-                    data->wd_SleepMinWidth=data->wd_RenderInfo.mri_Window->MaxWidth;
+                    data->wd_SleepMinWidth=data->wd_RenderInfo.mri_Window->MinWidth;
                     /* According to MUI autodocs, sleeping windows can't be resized.
                      * MUI 3.8/AmigaOS also changes min/max values with WindowLimits */
                     WindowLimits(data->wd_RenderInfo.mri_Window,
@@ -3880,7 +3881,7 @@ IPTR Window__MUIM_RecalcDisplay(struct IClass *cl, Object *obj,
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
     LONG left, top, width, height;
-    BOOL resized, reshow = FALSE;
+    BOOL reshow = FALSE;
     Object *current_obj;
 
     if (!(data->wd_Flags & MUIWF_OPENED))
@@ -3941,14 +3942,7 @@ IPTR Window__MUIM_RecalcDisplay(struct IClass *cl, Object *obj,
 
     /* resize window ? */
     WindowSelectDimensions(data);
-    resized = WindowResize(data);
-
-    if (!resized)
-    {
-        /* FIXME: Should we short circuit the following
-         *        if the window size didn't change?
-         */
-    }
+    WindowResize(data);
 
     {
         struct Window *win = data->wd_RenderInfo.mri_Window;

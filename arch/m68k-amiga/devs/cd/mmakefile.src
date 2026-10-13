@@ -12,6 +12,8 @@ FILES := cd cd32
 
 #USER_CPPFLAGS += -DDEBUG=1
 
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+
 %build_module mmake=kernel-amiga-m68k-cd \
        modname=cd modtype=device \
        files="$(FILES)"

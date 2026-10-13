@@ -1481,7 +1481,10 @@ static int bwfm_init(struct BWFMBase *BWFMBase)
 
     SDIOBase = OpenResource("sdio.resource");
     if (!SDIOBase)
+    {
         D(bug("[bwfm] sdio.resource not available\n"));
+        return FALSE;
+    }
 
     /* Chip bring-up (power + enumeration) is deferred to the first BWFMAttach(),
      * which bwfm.device calls when it is opened - so the WiFi chip stays

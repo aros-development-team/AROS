@@ -1,0 +1,40 @@
+# Xbox 360 profile: XInput family layout, dpad as buttons 11-14, +Y up inverted by the driver
+expect reading mapped 1
+expect reading sequence 0
+expect noevent
+btn 0 1
+expect reading button 0 1
+expect reading gp south 1
+expect event press 0 1
+expect event frame
+btn 0 0
+expect reading gp south 0
+expect event release 0 0
+axis 0 32767
+expect reading axis 0 32767
+expect reading gpaxis 0 32767
+expect event axis 0 32767
+axis 1 32767
+expect reading axis 1 -32767
+expect reading gpaxis 1 -32767
+axis 0 0
+axis 1 0
+expect reading gpaxis 0 0
+expect reading gpaxis 1 0
+axis 4 255
+expect reading axis 4 32767
+expect reading gpaxis 4 32767
+axis 4 0
+expect reading gpaxis 4 0
+btn 11 1
+expect reading gp dpup 1
+expect event press 11 1
+btn 11 0
+btn 7 1
+expect reading gp start 1
+btn 7 0
+rumble 1000 2000
+expect output rumble 1000 2000
+player 2
+expect output player 2
+expect reading sequence 12

@@ -40,6 +40,10 @@ USER_CPPFLAGS += \
                -DAROS_KERNEL
 USER_LDFLAGS := -static
 
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
 %build_module mmake=kernel-fs-cdvdfs \
     modname=cdrom modtype=handler \
     files="$(HANDLER_FILES)"

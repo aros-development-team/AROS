@@ -10,10 +10,57 @@
 
 #include <aros/libcall.h>
 #include <exec/types.h>
+#include <exec/io.h>
 #include <dos/dosextens.h>
 #include <libraries/lowlevel.h>
 
 #include "lowlevel_intern.h"
+
+static BOOL SetInputState(BOOL stop, struct LowLevelBase *LowLevelBase)
+{
+    struct Task *me = FindTask(NULL);
+    struct MsgPort *port;
+    struct IOStdReq *io;
+    BOOL change = FALSE;
+    BOOL success = TRUE;
+
+    Forbid();
+    if (LowLevelBase->ll_InputOwner == NULL)
+        LowLevelBase->ll_InputOwner = me;
+
+    if (LowLevelBase->ll_InputOwner != me)
+        success = FALSE;
+    else if (stop)
+        change = (++LowLevelBase->ll_InputNest == 0);
+    else if (LowLevelBase->ll_InputNest >= 0)
+    {
+        change = (--LowLevelBase->ll_InputNest < 0);
+        if (change)
+            LowLevelBase->ll_InputOwner = NULL;
+    }
+    Permit();
+
+    if (!success || !change)
+        return success;
+
+    port = CreateMsgPort();
+    io = port ? (struct IOStdReq *)CreateIORequest(port, sizeof(*io)) : NULL;
+    if (io && OpenDevice("input.device", 0, (struct IORequest *)io, 0) == 0)
+    {
+        io->io_Command = stop ? CMD_STOP : CMD_RESET;
+        success = DoIO((struct IORequest *)io) == 0;
+        CloseDevice((struct IORequest *)io);
+    }
+    else
+        success = FALSE;
+
+    if (io)
+        DeleteIORequest((struct IORequest *)io);
+    if (port)
+        DeleteMsgPort(port);
+
+    return success;
+}
 
 /*****************************************************************************
 
@@ -76,7 +123,7 @@
         of queried controls.
 
     BUGS
-        This function’s implementation is incomplete and not all control
+        This function's implementation is incomplete and not all control
         tags are acted upon in current releases.
 
     SEE ALSO
@@ -84,7 +131,7 @@
 
     INTERNALS
         SystemControlA() modifies or queries global state flags held within
-        lowlevel.library.  These flags are checked by the library’s input
+        lowlevel.library.  These flags are checked by the library's input
         handling routines to determine whether to pass events to the system
         or suppress them for exclusive mode operation.
 
@@ -97,7 +144,6 @@
 
     D(bug("[lowlevel] %s()\n", __func__);)
 
-    /* For now, dump all tags in debug mode */
     while ((tag = LibNextTagItem(&tagp))) {
         switch (tag->ti_Tag)
         {
@@ -120,8 +166,12 @@
                 }
                 break;
 
-        case SCON_CDReboot:
         case SCON_StopInput:
+                if (!SetInputState(tag->ti_Data != 0, LowLevelBase))
+                    failtag = tag->ti_Tag;
+                break;
+
+        case SCON_CDReboot:
         case SCON_RemCreateKeys:
         default:
                 D(bug("%s: Tag SCON_Dummy+%d, Data %p\n", __func__, tag->ti_Tag - SCON_Dummy, (APTR)tag->ti_Data));

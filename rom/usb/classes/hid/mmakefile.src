@@ -1,11 +1,12 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES :=    hid.class hid.gui hidctrl.gui numtostr debug
+FILES :=    hid.class hid.gui hidctrl.gui hidcontroller hidctrl_map numtostr debug
 
 #MM- kernel-usb-classes-hid : kernel-usb-usbclass kernel-usb-poseidon-includes \
 #MM				classes-zune-classes-nlist-class \
-#MM				classes-zune-classes-nlistview-class
+#MM				classes-zune-classes-nlistview-class \
+#MM				workbench-hidds-controller-includes kernel-hidd-input-includes
 
 USER_CPPFLAGS := -DUSE_NLIST -DMUIMASTER_YES_INLINE_STDARG
 USER_LDFLAGS := -static

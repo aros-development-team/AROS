@@ -1,0 +1,15 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/rom/battclock
+
+#MM- kernel-battclock-raspi-includes : kernel-mbox-bcm2708-includes kernel-openfirmware-includes \
+#MM     hidd-i2c-includes includes-copy
+
+# arch=raspi: the mailbox RTC and the i2c bus are the same on arm and aarch64.
+%build_archspecific \
+  mainmmake=kernel-battclock maindir=rom/battclock \
+  arch=raspi modname=battclock \
+  files="readbattclock writebattclock battclock_ds3231"
+
+%common

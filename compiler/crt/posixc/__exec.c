@@ -553,6 +553,13 @@ static void __exec_do_regular(struct PosixCIntBase *PosixCBase)
         }
     }
 
+    /* The hosted program's startup/shutdown rewires and then tears down the
+       per-task base pointers; our epilogue below (_Exit via the StdCBase
+       relwrapper) then jumped through NULL.  Preserve the launcher-owned
+       instances across the program's lifetime and restore them afterwards. */
+    struct StdCBase *savedstdc = PosixCBase->PosixCBase.StdCBase;
+    struct StdCIOBase *savedstdcio = PosixCBase->PosixCBase.StdCIOBase;
+
     D(bug("[__exec_do_regular] Running program, PosixCBase=%x\n", PosixCBase));
     returncode = RunCommand(
         PosixCBase->exec_seglist,
@@ -585,6 +592,22 @@ static void __exec_do_regular(struct PosixCIntBase *PosixCBase)
 
     self->tc_Node.ln_Name = oldtaskname;
     SetProgramName((STRPTR)oldtaskname);
+
+    /* Restore into both the entry-time base and whatever base the task
+       resolves now: the relwrapper re-fetches the offset table per call, so
+       if the hosted program's lifecycle swapped this task's posixc instance,
+       the live slot is on the current one. */
+    PosixCBase->PosixCBase.StdCBase = savedstdc;
+    PosixCBase->PosixCBase.StdCIOBase = savedstdcio;
+    {
+        struct PosixCIntBase *curbase =
+            (struct PosixCIntBase *)__aros_getbase_PosixCBase();
+        if (curbase && curbase != PosixCBase)
+        {
+            curbase->PosixCBase.StdCBase = savedstdc;
+            curbase->PosixCBase.StdCIOBase = savedstdcio;
+        }
+    }
 
     __exec_cleanup(PosixCBase);
     

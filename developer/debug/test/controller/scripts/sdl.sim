@@ -1,0 +1,24 @@
+# SDL3 backend scenario (x360 profile): give the SDL test time to see the device, then press and move
+wait 3000
+btn 0 1
+wait 300
+btn 0 0
+wait 300
+btn 7 1
+wait 300
+btn 7 0
+wait 300
+axis 0 32767
+wait 300
+axis 0 0
+wait 300
+axis 4 255
+wait 300
+axis 4 0
+wait 300
+btn 11 1
+wait 300
+btn 11 0
+wait 500
+# the SDL test rumbles each gamepad it opens (0x4000 / 0x8000 for 500 ms)
+expect output rumble 16384 32768

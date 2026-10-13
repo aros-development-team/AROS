@@ -45,6 +45,7 @@ static int AmigaVideo_Init(LIBBASETYPEPTR LIBBASE)
                            DDRV_KeepBootMode, TRUE,
                            DDRV_MonitorID   , 0,
                            DDRV_IDMask      , 0xF0000000,
+                           DDRV_ExternalPlanar, TRUE,
                            TAG_DONE);
 
     D(bug("[AmigaVideo] %s: AddDisplayDriver() result: %u\n", __func__, err);)

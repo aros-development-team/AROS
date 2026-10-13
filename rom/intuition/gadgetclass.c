@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2020, The AROS Development Team. All rights reserved.
+    Copyright  1995-2026, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -535,7 +535,7 @@ IPTR GadgetClass__OM_GET(Class *cl, struct ExtGadget *eg, struct opGet *msg)
             break;
 
         case GA_IntuiText:
-            *msg->opg_Storage = (IPTR)((eg->Flags & GFLG_LABELITEXT) ? eg->GadgetText : 0);
+            *msg->opg_Storage = (IPTR)(((eg->Flags & GFLG_LABELMASK) == GFLG_LABELITEXT) ? eg->GadgetText : 0);
             break;
 
         case GA_Text:

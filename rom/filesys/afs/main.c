@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #ifndef DEBUG
@@ -21,6 +21,7 @@
 #include "filehandles2.h"
 #include "filehandles3.h"
 #include "misc.h"
+#include "afs_security.h"
 #include "volumes.h"
 
 #include "baseredef.h"
@@ -111,6 +112,10 @@ static struct Volume *AFS_open_volume(struct AFSBase *handler, struct DosPacket 
 static BOOL AFS_close_volume(struct AFSBase *handler, struct Volume *volume, SIPTR *io_DosError)
 {
     if (!volume->locklist) {
+        if (!flushForRelease(handler, volume)) {
+            *io_DosError = ERROR_UNKNOWN;
+            return FALSE;
+        }
         uninitVolume(handler, volume);
         return TRUE;
     }
@@ -154,9 +159,23 @@ static VOID startFlushTimer(struct AFSBase *handler)
     }
 }
 
+static VOID stopFlushMotor(struct AFSBase *handler, struct Volume *volume)
+{
+    if (volume->ioh.flags & IOHF_MOTOR_OFF) {
+        motorOff(handler, &volume->ioh);
+        volume->ioh.flags &= ~IOHF_MOTOR_OFF;
+    }
+}
+
 static VOID onFlushTimer(struct AFSBase *handler, struct Volume *volume)
 {
     handler->timer_flags &= ~TIMER_ACTIVE;
+    if (volume->writefailed || volume->cachepending)
+    {
+        handler->timer_flags &= ~TIMER_RESTART;
+        stopFlushMotor(handler, volume);
+        return; /* Retry/Cancel already ran; only an explicit flush retries now. */
+    }
 
     if (handler->timer_flags & TIMER_RESTART) {
         startFlushTimer(handler);
@@ -166,16 +185,32 @@ static VOID onFlushTimer(struct AFSBase *handler, struct Volume *volume)
         /* D(bug("[afs] Alarm rang.\n")); */
         if (((volume->dostype == ID_DOS_DISK) || (volume->dostype == ID_DOS_muFS_DISK)) && mediumPresent(&volume->ioh))
         {
-            /* Check if adding volume node needs to be retried */
-            if (volume->volumenode == NULL)
-                    attemptAddDosVolume(handler, volume);
+            /* Check if publishing the volume node needs to be retried */
+            if ((volume->volumenode != NULL) && !volume->volumenodeadded)
+                    addDosVolume(handler, volume);
 
-            flushCache(handler, volume);
-            blockbuffer = getBlock(handler, volume, volume->rootblock);
-            if ((blockbuffer->flags & BCF_WRITE) != 0)
+            if (!flushCache(handler, volume))
             {
-                    writeBlock(handler, volume, blockbuffer, -1);
-                    blockbuffer->flags &= ~BCF_WRITE;
+                    if (!volume->writefailed)
+                            startFlushTimer(handler);
+                    else
+                            stopFlushMotor(handler, volume);
+                    return;
+            }
+            blockbuffer = getBlock(handler, volume, volume->rootblock);
+            if (blockbuffer == NULL)
+            {
+                    volume->writefailed = TRUE;
+                    volume->state = ID_VALIDATING;
+            }
+            if (blockbuffer == NULL || ((blockbuffer->flags & BCF_WRITE) != 0
+                    && !writeBlock(handler, volume, blockbuffer, -1)))
+            {
+                    if (!volume->writefailed)
+                            startFlushTimer(handler);
+                    else
+                            stopFlushMotor(handler, volume);
+                    return;
             }
             if (volume->ioh.flags & IOHF_MOTOR_OFF) {
                     D(bug("[afs 0x%08lX] turning off motor\n", volume));
@@ -184,6 +219,17 @@ static VOID onFlushTimer(struct AFSBase *handler, struct Volume *volume)
             }
         }
     }
+}
+
+/*
+ * ACTION_FLUSH: write every dirty block and the root, then ask the device
+ * to commit its own cache, without detaching the volume. A failed device
+ * commit is reported: a caller asking for a barrier must not be told the
+ * data is durable when it is not.
+ */
+static LONG flushVolumeNow(struct AFSBase *handler, struct Volume *volume)
+{
+    return flush(handler, volume) ? 0 : ERROR_UNKNOWN;
 }
 
 static BOOL mediacheck(struct Volume *volume, SIPTR *ok, SIPTR *res2)
@@ -256,6 +302,7 @@ LONG AFS_work(struct ExecBase *SysBase)
         return RETURN_FAIL;
     }
 
+    NEWLIST(&handler->offlinevols);
     volume = AFS_open_volume(handler, dp, &retval);
     if (volume == NULL) {
         D(bug("[AFS] Can't open volume\n"));
@@ -281,11 +328,11 @@ LONG AFS_work(struct ExecBase *SysBase)
 
         sigs = Wait(packetmask | timermask | changemask);
 
+        /* Process a media-change interrupt before touching cached disk data,
+         * even when it woke the packet port rather than SIGBREAKB_CTRL_F. */
+        checkDeviceFlags(handler);
         if (sigs & timermask)
             onFlushTimer(handler, volume);
-        if (sigs & changemask) {
-            checkDeviceFlags(handler);
-        }
 
         if (!(sigs & packetmask))
             continue;
@@ -299,7 +346,18 @@ LONG AFS_work(struct ExecBase *SysBase)
             dp = (struct DosPacket *)mn->mn_Node.ln_Name;
 
             D(bug("[AFS] packet %p:%d\n", dp, dp->dp_Type));
-            startFlushTimer(handler);
+            if (volume->cachepending && dp->dp_Type != ACTION_END
+                    && dp->dp_Type != ACTION_FREE_LOCK
+                    && dp->dp_Type != ACTION_IS_FILESYSTEM
+                    && dp->dp_Type != ACTION_IS_SECFS
+                    && dp->dp_Type != ACTION_GET_SECFS_VERSION
+                    && dp->dp_Type != ACTION_DISK_INFO) {
+                replypkt2(dp, DOSFALSE, ERROR_NO_DISK);
+                continue;
+            }
+            if (!volume->cachepending)
+                startFlushTimer(handler);
+            afsSecBeginPacket(handler, volume, dp);
 
             switch (dp->dp_Type) {
             case ACTION_DIE:
@@ -312,6 +370,12 @@ LONG AFS_work(struct ExecBase *SysBase)
                 break;
             case ACTION_IS_FILESYSTEM:
                 ok = TRUE;
+                break;
+            case ACTION_IS_SECFS:
+                ok = afsSecIsActive(handler) ? DOSTRUE : DOSFALSE;
+                break;
+            case ACTION_GET_SECFS_VERSION:
+                ok = secFS_API_VERSION;
                 break;
             case ACTION_INHIBIT:
                 res2 = inhibit(handler, volume, dp->dp_Arg1);
@@ -326,12 +390,15 @@ LONG AFS_work(struct ExecBase *SysBase)
                     LONG numbuff = dp->dp_Arg1;
 
                     if (numbuff) {
+                        if (!flush(handler, volume)) {
+                            res2 = ERROR_UNKNOWN;
+                            break;
+                        }
                         volume->numbuffers += numbuff;
 
                         if (volume->numbuffers < 1)
                             volume->numbuffers = 1;
 
-                        flushCache(handler, volume);
                         Forbid();
                         freeCache(handler, volume->blockcache);
                         for (;;) {
@@ -387,8 +454,32 @@ LONG AFS_work(struct ExecBase *SysBase)
 
                     fn = skipdevname(fn);
 
+                    /* multi-user: check access before touching anything */
+                    if (afsSecIsActive(handler)) {
+                        LONG err;
+
+                        if (dp->dp_Type == ACTION_FINDINPUT) {
+                            err = afsSecCheckName(handler, dh, fn, AFS_ACCESS_READ);
+                        } else if (dp->dp_Type == ACTION_FINDUPDATE) {
+                            err = afsSecCheckName(handler, dh, fn, AFS_ACCESS_WRITE);
+                            if (err == ERROR_OBJECT_NOT_FOUND)
+                                err = afsSecCheckParent(handler, dh, fn, AFS_ACCESS_WRITE);
+                        } else {
+                            err = afsSecCheckName(handler, dh, fn, AFS_ACCESS_WRITE | AFS_ACCESS_DELETE);
+                            if (err == ERROR_OBJECT_NOT_FOUND)
+                                err = 0;
+                            if (err == 0)
+                                err = afsSecCheckParent(handler, dh, fn, AFS_ACCESS_WRITE);
+                        }
+                        if (err) {
+                            res2 = err;
+                            ok = DOSFALSE;
+                            break;
+                        }
+                    }
+
                     if (dp->dp_Type == ACTION_FINDOUTPUT) {
-                        ah = openfile(handler, dh, fn, mode, 0, &res2);
+                        ah = openfile(handler, dh, fn, mode, afsSecNewProtection(handler, 0), &res2);
                     } else {
                         ah = openf(handler, dh, fn, mode, &res2);
                     }
@@ -431,6 +522,16 @@ LONG AFS_work(struct ExecBase *SysBase)
                         mode = MODE_NEWFILE;
 
                     fn = skipdevname(fn);
+
+                    /* multi-user: locking needs read access to the object */
+                    if (afsSecIsActive(handler)) {
+                        LONG err = afsSecCheckName(handler, dh, fn, AFS_ACCESS_READ);
+                        if (err && err != ERROR_OBJECT_NOT_FOUND) {
+                            res2 = err;
+                            ok = DOSFALSE;
+                            break;
+                        }
+                    }
 
                     ah = openf(handler, dh, fn, mode, &res2);
                     if (ah == NULL) {
@@ -496,7 +597,7 @@ LONG AFS_work(struct ExecBase *SysBase)
                     struct FileLock  *fl;
                     struct AfsHandle *ah;
 
-                    if (!mediacheck(volume, &ok, &res2))
+                    if (!volume->cachepending && !mediacheck(volume, &ok, &res2))
                         break;
 
                     fl = BADDR(dp->dp_Arg1);
@@ -697,7 +798,11 @@ LONG AFS_work(struct ExecBase *SysBase)
                         oh = (APTR)opl->fl_Key;
                     on = skipdevname(on);
                     nn = skipdevname(nn);
-                    res2 = renameObject(handler, oh, on, nn);
+                    /* multi-user: property access to the object, write access to both directories */
+                    if ((res2 = afsSecCheckNameProperty(handler, oh, on)) == 0 &&
+                        (res2 = afsSecCheckParent(handler, oh, on, AFS_ACCESS_WRITE)) == 0 &&
+                        (res2 = afsSecCheckParent(handler, oh, nn, AFS_ACCESS_WRITE)) == 0)
+                        res2 = renameObject(handler, oh, on, nn);
                     ok = res2 ? DOSFALSE : DOSTRUE;
                     break;
                 }
@@ -717,9 +822,14 @@ LONG AFS_work(struct ExecBase *SysBase)
                     else
                         h = (APTR)fl->fl_Key;
                     n = skipdevname(n);
+                    /* multi-user: write access to the parent directory */
+                    if ((res2 = afsSecCheckParent(handler, h, n, AFS_ACCESS_WRITE))) {
+                        ok = DOSFALSE;
+                        break;
+                    }
                     flnew = AllocMem(sizeof(*flnew), MEMF_CLEAR);
                     if (flnew != NULL) {
-                        ah = createDir(handler, h, n, 0, &res2);
+                        ah = createDir(handler, h, n, afsSecNewProtection(handler, 0), &res2);
                         ok = res2 ? DOSFALSE : DOSTRUE;
                         if (ok) {
                             flnew->fl_Link = BNULL;
@@ -745,7 +855,10 @@ LONG AFS_work(struct ExecBase *SysBase)
                     else
                         h = (APTR)fl->fl_Key;
                     n = skipdevname(n);
-                    res2 = deleteObject(handler, h, n);
+                    /* multi-user: delete access to the object, write access to its directory */
+                    if ((res2 = afsSecCheckName(handler, h, n, AFS_ACCESS_DELETE)) == 0 &&
+                        (res2 = afsSecCheckParent(handler, h, n, AFS_ACCESS_WRITE)) == 0)
+                        res2 = deleteObject(handler, h, n);
                     ok = res2 ? DOSFALSE : DOSTRUE;
                     break;
                 }
@@ -760,7 +873,8 @@ LONG AFS_work(struct ExecBase *SysBase)
                     else
                         h = (APTR)fl->fl_Key;
                     n = skipdevname(n);
-                    res2 = setComment(handler, h, n, c);
+                    if ((res2 = afsSecCheckNameProperty(handler, h, n)) == 0)
+                        res2 = setComment(handler, h, n, c);
                     ok = res2 ? DOSFALSE : DOSTRUE;
                     break;
                 }
@@ -775,7 +889,8 @@ LONG AFS_work(struct ExecBase *SysBase)
                     else
                         h = (APTR)fl->fl_Key;
                     n = skipdevname(n);
-                    res2 = setProtect(handler, h, n, p);
+                    if ((res2 = afsSecCheckNameProperty(handler, h, n)) == 0)
+                        res2 = setProtect(handler, h, n, p);
                     ok = res2 ? DOSFALSE : DOSTRUE;
                     break;
                 }
@@ -790,12 +905,39 @@ LONG AFS_work(struct ExecBase *SysBase)
                     else
                         h = (APTR)fl->fl_Key;
                     n = skipdevname(n);
-                    res2 = setDate(handler, h, n, ds);
+                    if ((res2 = afsSecCheckNameProperty(handler, h, n)) == 0)
+                        res2 = setDate(handler, h, n, ds);
+                    ok = res2 ? DOSFALSE : DOSTRUE;
+                    break;
+                }
+                case ACTION_SET_OWNER:
+                {
+                    struct FileLock   *fl = BADDR(dp->dp_Arg2);
+                    struct AfsHandle  *h;
+                    CONST_STRPTR       n = AROS_BSTR_ADDR(dp->dp_Arg3);
+                    if (!mediacheck(volume, &ok, &res2))
+                        break;
+                    if (fl == NULL)
+                        h = &volume->ah;
+                    else
+                        h = (APTR)fl->fl_Key;
+                    n = skipdevname(n);
+                    res2 = afsSecSetOwner(handler, h, n, (ULONG)dp->dp_Arg4);
                     ok = res2 ? DOSFALSE : DOSTRUE;
                     break;
                 }
                 case ACTION_INHIBIT:
                     res2 = inhibit(handler, volume, dp->dp_Arg1);
+                    ok = res2 ? DOSFALSE : DOSTRUE;
+                    break;
+                case ACTION_FLUSH:
+                    if (volume->inhibitcounter != 0 || !mediacheck(volume, &ok, &res2))
+                    {
+                        ok = DOSFALSE;
+                        res2 = ERROR_NO_DISK;
+                        break;
+                    }
+                    res2 = flushVolumeNow(handler, volume);
                     ok = res2 ? DOSFALSE : DOSTRUE;
                     break;
                 case ACTION_FORMAT:
@@ -820,6 +962,7 @@ LONG AFS_work(struct ExecBase *SysBase)
                 break;
             }
 
+            afsSecEndPacket(handler);
             replypkt2(dp, ok, res2);
         }
     }

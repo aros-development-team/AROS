@@ -782,6 +782,13 @@ LONG addcachebuffers(LONG buffers) {
   if(buffers>0) {
     _DEBUG("Allocating buffers\n");
 
+    /* The mount entry's buffer memory type may not exist on this system
+       (e.g. MEMF_CHIP on non-Amiga hardware): fall back to public memory */
+    if(AvailMem(globals->bufmemtype & ~MEMF_CLEAR)==0 && (globals->bufmemtype & ~(MEMF_PUBLIC|MEMF_CLEAR))!=0) {
+      _DEBUG("Buffer memory type 0x%08lx not available, using MEMF_PUBLIC\n", globals->bufmemtype);
+      globals->bufmemtype=MEMF_PUBLIC;
+    }
+
     while(buffers!=0 && (cb=AllocMem(globals->bytes_block+sizeof(struct CacheBuffer),MEMF_CLEAR|globals->bufmemtype))!=0) {
       _DEBUG("*");
       counter++;

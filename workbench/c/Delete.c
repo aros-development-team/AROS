@@ -205,6 +205,7 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
 {
     LONG  match = 0;
     int   i;
+    int   retval = RETURN_OK;
     char  name[MAX_PATH_LEN];
     BOOL  deleteit = FALSE;
     BOOL  deletedfile = FALSE;
@@ -258,6 +259,7 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
                     LONG ioerr = IoErr();
                     Printf("%s  Not Deleted", (IPTR)name);
                     PrintFault(ioerr, "");
+                    retval = RETURN_FAIL;
                 }
                 else
                 {
@@ -311,7 +313,7 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
             /* Check permissions */
             if (!isDeletable(&ap->ap_Info))
             {
-                /* Consider delete protected file/dir 'deleted' */
+                /* Count a protected match for the final no-file message. */
                 deletedfile = TRUE;
 
                 if (force)
@@ -321,6 +323,7 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
                     Printf("%s  Not Deleted", (IPTR)ap->ap_Buf);
                     PrintFault(ERROR_DELETE_PROTECTED, "");
                     deleteit = FALSE;
+                    retval = RETURN_FAIL;
                 }
             }
             strcpy(name, ap->ap_Buf);
@@ -335,6 +338,7 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
                 LONG ioerr = IoErr();
                 Printf("%s  Not Deleted", (IPTR)name);
                 PrintFault(ioerr, "");
+                retval = RETURN_FAIL;
                 if (ioerr == ERROR_DISK_WRITE_PROTECTED)
                 {
                     return RETURN_FAIL;
@@ -358,6 +362,11 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
     {
         PrintFault(match, NULL);
         return RETURN_WARN;
+    }
+
+    if (retval != RETURN_OK)
+    {
+        return retval;
     }
 
     if (!deletedfile)

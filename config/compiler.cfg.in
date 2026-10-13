@@ -34,6 +34,7 @@ CXXFLAGS_CXX20                          := @aros_cxxflags_cxx20@
 CXXFLAGS_GNU20                          := @aros_cxxflags_gnu20@
 CXXFLAGS_CXX23                          := @aros_cxxflags_cxx23@
 CXXFLAGS_GNU23                          := @aros_cxxflags_gnu23@
+CXXFLAGS_LIFETIME_DSE1                  := @aros_cxxflags_lifetime_dse1@
 
 CXXFLAGS_NOSTDLIBXX                     := @aros_cxxflags_nostdlibxx@
 
@@ -351,6 +352,15 @@ NOWARN_INT_IN_BOOL_CONTEXT              := @aros_nowarnflags_int_in_bool_context
 NOWARN_IGNORED_OPTIMIZATION_ARGUMENT    := @aros_nowarnflags_ignored_optimization_argument@
 NOWARN_BUILTIN_DECLARATION_MISMATCH     := @aros_nowarnflags_builtin_declaration_mismatch@
 NOWARN_OLD_STYLE_DEFINITION             := @aros_nowarnflags_old_style_definition@
+
+#
+# Per-diagnostic "error" / "no error" flags
+#
+
+ERROR_INT_CONVERSION                    := @aros_errorflags_int_conversion@
+ERROR_INCOMPAT_POINTER_TYPES            := @aros_errorflags_incompatible_pointer_types@
+NOERROR_INT_CONVERSION                  := @aros_noerrorflags_int_conversion@
+NOERROR_INCOMPAT_POINTER_TYPES          := @aros_noerrorflags_incompatible_pointer_types@
 
 # Toolchain support
 

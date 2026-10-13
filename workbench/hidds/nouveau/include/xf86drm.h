@@ -20,4 +20,37 @@ extern int drmCloseBufferHandle(int fd, uint32_t handle);
 extern int drmPrimeHandleToFD(int fd, uint32_t handle, uint32_t flags, int *prime_fd);
 extern int drmPrimeFDToHandle(int fd, int prime_fd, uint32_t *handle);
 
+/* Device enumeration, reduced to the PCI case the nouveau library asks for */
+#define DRM_BUS_PCI        0
+
+typedef struct _drmPciBusInfo {
+    uint16_t domain;
+    uint8_t bus;
+    uint8_t dev;
+    uint8_t func;
+} drmPciBusInfo, *drmPciBusInfoPtr;
+
+typedef struct _drmPciDeviceInfo {
+    uint16_t vendor_id;
+    uint16_t device_id;
+    uint16_t subvendor_id;
+    uint16_t subdevice_id;
+    uint8_t revision_id;
+} drmPciDeviceInfo, *drmPciDeviceInfoPtr;
+
+typedef struct _drmDevice {
+    char **nodes;
+    int available_nodes;
+    int bustype;
+    union {
+        drmPciBusInfoPtr pci;
+    } businfo;
+    union {
+        drmPciDeviceInfoPtr pci;
+    } deviceinfo;
+} drmDevice, *drmDevicePtr;
+
+extern int  drmGetDevice2(int fd, uint32_t flags, drmDevicePtr *device);
+extern void drmFreeDevice(drmDevicePtr *device);
+
 #endif

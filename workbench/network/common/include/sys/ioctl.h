@@ -120,6 +120,10 @@ __END_DECLS
 
 #define SIOCGIFHWADDR	_IOWR('i', 57, struct ifreq)    /* get IF hw address */
 
+#define SIOCGIFDHCP	_IOWR('i', 58, struct ifreq)    /* get IF DHCP-requested flags
+                                                           (ifr_metric: bit0=DHCPv4,
+                                                           bit1=DHCPv6) */
+
 /*
  * IPv6 interface address ioctls.
  * Requires <netinet/in_var.h> for struct in6_ifreq / in6_aliasreq / in6_ifconf.

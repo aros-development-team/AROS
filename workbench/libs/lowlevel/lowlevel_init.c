@@ -231,6 +231,7 @@ static int Init(LIBBASETYPEPTR LowLevelBase)
     NEWLIST(&LowLevelBase->ll_KBInterrupts);
     LowLevelBase->ll_LastKey = 0xFF;
     LowLevelBase->ll_SysReqNest = -1;
+    LowLevelBase->ll_InputNest = -1;
 
     if ((LowLevelBase->ll_UtilityBase = OpenLibrary("utility.library", 0)))
     {

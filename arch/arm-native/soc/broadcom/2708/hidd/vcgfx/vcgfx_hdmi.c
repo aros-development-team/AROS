@@ -9,6 +9,7 @@
 #include <stdio.h>
 
 #include "vcgfx_hidd.h"
+#include "vcgfx_hvs6.h"
 
 #ifdef MBoxBase
 #undef MBoxBase
@@ -69,8 +70,61 @@ static struct DisplayMode *VC4_BuildMode(const struct VC4ModeEntry *e)
     m->dm_vtotal = e->vtotal;
     m->dm_descr  = AllocVec(64, MEMF_CLEAR);
     if (m->dm_descr)
-        sprintf(m->dm_descr, "VideoCore: HDMI %dx%d", (int)e->width, (int)e->height);
+        sprintf(m->dm_descr, "VC: HDMI %dx%d", (int)e->width, (int)e->height);
     return m;
+}
+
+/* Same size and rate - the clock alone does not tell 1080p50 from 60. */
+static BOOL VC4_HaveMode(struct List *modelist, const struct vcgfx_timing *t)
+{
+    struct DisplayMode *m;
+
+    ForeachNode(modelist, m)
+        if ((m->dm_hdisp == t->hdisp) && (m->dm_vdisp == t->vdisp) && (m->dm_clock == t->clock)
+            && (m->dm_htotal == t->htotal) && (m->dm_vtotal == t->vtotal))
+            return TRUE;
+    return FALSE;
+}
+
+/* Refresh rate in mHz, for ordering. */
+static ULONG VC4_ModeRate(const struct DisplayMode *m)
+{
+    return (m->dm_htotal && m->dm_vtotal)
+           ? (ULONG)((UQUAD)m->dm_clock * 1000000 / (m->dm_htotal * m->dm_vtotal)) : 0;
+}
+
+static BOOL VC4_ModeBefore(const struct DisplayMode *a, const struct DisplayMode *b)
+{
+    if (a->dm_hdisp != b->dm_hdisp)
+        return a->dm_hdisp < b->dm_hdisp;
+    if (a->dm_vdisp != b->dm_vdisp)
+        return a->dm_vdisp < b->dm_vdisp;
+    return VC4_ModeRate(a) < VC4_ModeRate(b);
+}
+
+/* ScreenMode shows modes in the order they are given: by size, then rate. */
+static void VC4_SortModes(struct List *modelist)
+{
+    struct List sorted;
+    struct DisplayMode *m, *pos;
+
+    NewList(&sorted);
+    while ((m = (struct DisplayMode *)RemHead(modelist)) != NULL)
+    {
+        ForeachNode(&sorted, pos)
+            if (VC4_ModeBefore(m, pos))
+                break;
+
+        if (!pos->dm_Node.ln_Succ)
+            AddTail(&sorted, &m->dm_Node);
+        else if (pos == (struct DisplayMode *)sorted.lh_Head)
+            AddHead(&sorted, &m->dm_Node);
+        else
+            Insert(&sorted, &m->dm_Node, pos->dm_Node.ln_Pred);
+    }
+
+    while ((m = (struct DisplayMode *)RemHead(&sorted)) != NULL)
+        AddTail(modelist, &m->dm_Node);
 }
 
 /* Probe a single resolution via VCTAG_TESTRES. The firmware returns the
@@ -132,11 +186,34 @@ int FNAME_SUPPORT(HDMI_SyncGen)(struct List *modelist, OOP_Class *cl)
     xsd->vcsd_NativeWidth  = native_w;
     xsd->vcsd_NativeHeight = native_h;
 
+    vcgfx_edid_probe(xsd);
+
+    /* BCM2712: record the boot mode before anything touches it. */
+    if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
+        vc4_hvs6_mode_capture(xsd);
+
     if (native_w && native_h)
     {
+        const struct vcgfx_timing *t = vcgfx_edid_find(xsd, native_w, native_h);
         struct VC4ModeEntry n = { native_w, native_h, 25174,
             native_w, native_w, native_w,
             native_h, native_h, native_h };
+
+        /* What the pixelvalve really runs, or else the sink's own
+         * timings for this size, where it lists them. */
+        if (xsd->vcsd_HVS6.h6_ModeOK && (xsd->vcsd_HVS6.h6_BootTiming.hdisp == native_w)
+            && (xsd->vcsd_HVS6.h6_BootTiming.vdisp == native_h))
+            t = &xsd->vcsd_HVS6.h6_BootTiming;
+        if (t)
+        {
+            n.clock  = t->clock;
+            n.hstart = t->hstart;
+            n.hend   = t->hend;
+            n.htotal = t->htotal;
+            n.vstart = t->vstart;
+            n.vend   = t->vend;
+            n.vtotal = t->vtotal;
+        }
         if ((hdmi_mode = VC4_BuildMode(&n)) != NULL)
         {
             AddTail(modelist, &hdmi_mode->dm_Node);
@@ -153,6 +230,37 @@ int FNAME_SUPPORT(HDMI_SyncGen)(struct List *modelist, OOP_Class *cl)
      * the panel can't display larger modes correctly even if the HVS would
      * happily produce them.
      */
+    /* BCM2712 TESTRES echoes the current mode and SETRES is a no-op, so
+     * offer what vcgfx_hvs6_mode.c can set - nothing when mode setting
+     * is off. */
+    if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
+    {
+        const struct vcgfx_timing *t;
+
+        for (i = 0; (t = vc4_hvs6_mode(xsd, i)) != NULL; i++)
+        {
+            struct VC4ModeEntry e = { t->hdisp, t->vdisp, t->clock,
+                t->hstart, t->hend, t->htotal, t->vstart, t->vend, t->vtotal };
+
+            if (!vc4_hvs6_mode_usable(xsd, t)
+                || VC4_HaveMode(modelist, t))
+                continue;
+            if ((hdmi_mode = VC4_BuildMode(&e)) != NULL)
+            {
+                /* One size can come at several rates now. */
+                if (hdmi_mode->dm_descr)
+                    sprintf(hdmi_mode->dm_descr, "VC: HDMI %dx%d@%d", (int)t->hdisp,
+                        (int)t->vdisp, (int)((t->clock * 1000 + t->htotal * t->vtotal / 2)
+                                             / (t->htotal * t->vtotal)));
+                AddTail(modelist, &hdmi_mode->dm_Node);
+                hdmi_modecount++;
+            }
+        }
+        VC4_SortModes(modelist);
+        bug("[VideoCoreGfx] BCM2712: %d HDMI mode(s)\n", hdmi_modecount);
+        return hdmi_modecount;
+    }
+
     for (i = 0; i < VC4_NUM_CANDIDATES; i++)
     {
         const struct VC4ModeEntry *e = &vc4_candidate_modes[i];

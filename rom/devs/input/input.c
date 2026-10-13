@@ -29,6 +29,9 @@
 
 static const UWORD SupportedCommands[] =
 {
+    CMD_RESET,
+    CMD_STOP,
+    CMD_START,
     IND_ADDHANDLER,
     IND_REMHANDLER,
     IND_WRITEEVENT,
@@ -149,6 +152,9 @@ AROS_LH1(void, beginio,
     case IND_ADDEVENT:
     case IND_SETTHRESH:
     case IND_SETPERIOD:
+    case CMD_RESET:
+    case CMD_STOP:
+    case CMD_START:
         done_quick = FALSE;
         break;
 

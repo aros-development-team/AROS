@@ -1844,7 +1844,7 @@ static IPTR thunk_dos_AssignAddToList(struct M68KEmuContext *ctx, void *cpu)
     return (IPTR)AssignAddToList(arg_name, arg_lock, arg_position);
 }
 
-/* ── exec.library (81 thunks) ── */
+/* ── exec.library (79 thunks) ── */
 
 /* -96: FindResident(name=a1) */
 static IPTR thunk_exec_FindResident(struct M68KEmuContext *ctx, void *cpu)
@@ -2396,16 +2396,6 @@ static IPTR thunk_exec_TaggedOpenLibrary(struct M68KEmuContext *ctx, void *cpu)
 static IPTR thunk_exec_ReadGayle(struct M68KEmuContext *ctx, void *cpu)
 {
     return (IPTR)ReadGayle();
-}
-
-/* -822: VNewRawDoFmt(FormatString=a0, PutChProc=a2, PutChData=a3, VaListStream=a1) */
-static IPTR thunk_exec_VNewRawDoFmt(struct M68KEmuContext *ctx, void *cpu)
-{
-    APTR arg_FormatString = THUNK_PTR(0);
-    APTR arg_PutChProc = THUNK_PTR(2);
-    APTR arg_PutChData = THUNK_PTR(3);
-    APTR arg_VaListStream = THUNK_PTR(1);
-    return (IPTR)VNewRawDoFmt(arg_FormatString, arg_PutChProc, arg_PutChData, arg_VaListStream);
 }
 
 /* -828: NewMinList(ml=a0) */
@@ -7457,7 +7447,6 @@ const struct M68KThunkEntry m68kemu_thunks_exec_gen[] = {
     { 804, thunk_exec_NewStackSwap },
     { 810, thunk_exec_TaggedOpenLibrary },
     { 816, thunk_exec_ReadGayle },
-    { 822, thunk_exec_VNewRawDoFmt },
     { 828, thunk_exec_NewMinList },
     { 876, thunk_exec_AVL_FindPrevNodeByAddress },
     { 882, thunk_exec_AVL_FindPrevNodeByKey },
@@ -7473,7 +7462,7 @@ const struct M68KThunkEntry m68kemu_thunks_exec_gen[] = {
     { 1056, thunk_exec_NewAddTask },
     { 0, NULL }
 };
-const ULONG m68kemu_thunks_exec_gen_count = 80;
+const ULONG m68kemu_thunks_exec_gen_count = 79;
 
 const struct M68KThunkEntry m68kemu_thunks_expansion_gen[] = {
     { 30, thunk_expansion_AddConfigDev },
@@ -8052,4 +8041,4 @@ const struct M68KLibThunkSet m68kemu_all_gen_libs[] = {
 };
 const ULONG m68kemu_all_gen_libs_count = 17;
 
-/* Total: 790 auto-generated thunks across 17 libraries */
+/* Total: 789 auto-generated thunks across 17 libraries */

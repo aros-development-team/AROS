@@ -486,6 +486,7 @@ int main (void)
         } else
         {
                 PrintFault(IoErr(), NULL);
+                retval = RETURN_ERROR;
         }
     }else
     {

@@ -123,7 +123,7 @@
      * so nothing downstream changes; with zero free bytes it can never
      * satisfy an allocation nor be reclaimed as an empty puddle.
      */
-    headerSize = MEMHEADER_TOTAL + mhac_GetCtxSize()
+    headerSize = MEMHEADER_TOTAL
         + ((poolstruct_size + MEMCHUNK_TOTAL - 1) & ~(MEMCHUNK_TOTAL - 1));
 
     firstPuddle = nommu_AllocMem(headerSize, requirements & ~MEMF_SEM_PROTECTED, &tp, SysBase);
@@ -206,7 +206,12 @@
              * Note that we use ln_Name of our MemHeader to point back to
              * our pool (directly or indirectly).
              */
-            mhac_PoolMemHeaderSetup(firstPuddle, pool);
+            /*
+             * The compact handle block has no allocatable space after the
+             * pool structure.  It therefore needs no allocator search
+             * context; only real data puddles need one.
+             */
+            firstPuddle->mh_Node.ln_Name = NULL;
             AddTail((struct List *)&pool->pool.PuddleList, &firstPuddle->mh_Node);
         }
     }

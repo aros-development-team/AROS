@@ -10,6 +10,12 @@
 #include <libraries/gadtools.h>				/* Menu events */
 #include <dos/dos.h>								/* Standard error codes */
 #include <exec/memory.h>						/* Memory allocation */
+#ifdef __AROS__
+#include <intuition/extensions.h>
+#include <workbench/workbench.h>
+#include <proto/icon.h>
+#include <proto/workbench.h>
+#endif
 #include "Version.h"
 #include "Jed.h"
 #include "DiskIO.h"
@@ -45,6 +51,16 @@ struct LocaleBase    *LocaleBase    = NULL;
 struct Library       *DiskfontBase  = NULL;
 struct UtilityBase   *UtilityBase   = NULL;
 struct Library       *IFFParseBase  = NULL;
+#ifdef __AROS__
+struct Library       *WorkbenchBase = NULL;
+struct Library       *IconBase      = NULL;
+ULONG                 sigappicon     = 0;
+static struct MsgPort *appiconport   = NULL;
+static struct AppIcon *appicon       = NULL;
+static struct DiskObject *appicondiskobject = NULL;
+static STRPTR         appiconlabel   = NULL;
+static BOOL           iconified      = FALSE;
+#endif
 
 struct IntuiMessage *msg, msgbuf;     /* Used to collect events */
 
@@ -52,6 +68,113 @@ StartUpArgs args;
 
 #if	DEBUG
 ULONG bmem, amem;
+#endif
+
+#ifdef __AROS__
+BOOL iconify_available(void)
+{
+	return WorkbenchBase && IconBase && appiconport;
+}
+
+static void remove_appicon(void)
+{
+	if(appicon) RemoveAppIcon(appicon), appicon = NULL;
+	if(appicondiskobject) FreeDiskObject(appicondiskobject), appicondiskobject = NULL;
+	if(appiconlabel) FreeVec(appiconlabel), appiconlabel = NULL;
+}
+
+static void init_iconify(void)
+{
+	if(WorkbenchBase && IconBase && (appiconport = CreateMsgPort()))
+		sigappicon = 1L << appiconport->mp_SigBit;
+}
+
+void reset_iconify(void)
+{
+	remove_appicon();
+	iconified = FALSE;
+}
+
+static void close_iconify(void)
+{
+	struct AppMessage *appmsg;
+
+	reset_iconify();
+	if(appiconport)
+	{
+		while((appmsg = (struct AppMessage *)GetMsg(appiconport)))
+			ReplyMsg((struct Message *)appmsg);
+		DeleteMsgPort(appiconport);
+		appiconport = NULL;
+		sigappicon = 0;
+	}
+}
+
+static void iconify_window(void)
+{
+	struct DiskObject *dobj;
+	CONST_STRPTR title;
+	ULONG len;
+
+	if(!Wnd || !iconify_available() || iconified || appicon) return;
+
+	dobj = GetDefDiskObject(WBAPPICON);
+	if(!dobj) dobj = GetDefDiskObject(WBTOOL);
+	if(!dobj) return;
+
+	title = (CONST_STRPTR)APPNAME;
+	len = sizeof(APPNAME) - 1;
+	appiconlabel = AllocVec(len + 1, MEMF_ANY);
+	if(!appiconlabel)
+	{
+		FreeDiskObject(dobj);
+		return;
+	}
+	CopyMem(title, appiconlabel, len + 1);
+	appicondiskobject = dobj;
+
+	dobj->do_CurrentX = NO_ICON_POSITION;
+	dobj->do_CurrentY = NO_ICON_POSITION;
+	appicon = AddAppIconA(0, 0, appiconlabel, appiconport, BNULL, dobj, NULL);
+	if(!appicon)
+	{
+		remove_appicon();
+		return;
+	}
+
+	if(!HideWindow(Wnd))
+	{
+		remove_appicon();
+		return;
+	}
+	iconified = TRUE;
+}
+
+void show_main_window(void)
+{
+	if(!Wnd) return;
+	if(iconified)
+	{
+		if(!ShowWindow(Wnd, NULL)) return;
+		reset_iconify();
+	}
+	WindowToFront(Wnd);
+	ScreenToFront(Scr);
+	ActivateWindow(Wnd);
+}
+
+static void handle_appicon(void)
+{
+	struct AppMessage *appmsg;
+
+	while((appmsg = (struct AppMessage *)GetMsg(appiconport)))
+	{
+		BOOL restore = appmsg->am_Type == AMTYPE_APPICON && iconified &&
+		               appmsg->am_NumArgs == 0 && appmsg->am_ArgList == NULL;
+		ReplyMsg((struct Message *)appmsg);
+		if(restore) show_main_window();
+	}
+}
 #endif
 
 /*** MAIN LOOP ***/
@@ -74,6 +197,10 @@ int main(int argc, char *argv[])
 	LocaleBase   = (struct LocaleBase *) OpenLibrary("locale.library",  38);
 	DiskfontBase = (struct Library *)    OpenLibrary("diskfont.library", 0);
 	IFFParseBase = (struct Library *)    OpenLibrary("iffparse.library",36);
+#ifdef __AROS__
+	WorkbenchBase = (struct Library *)    OpenLibrary("workbench.library", 0);
+	IconBase      = (struct Library *)    OpenLibrary("icon.library",      0);
+#endif
 
 	if(LocaleBase) InitLocale();    /* Localize the prog */
 
@@ -92,6 +219,9 @@ int main(int argc, char *argv[])
 		
 		load_prefs(&prefs, NULL);     /* See if it exists a config file */
 		sigport = create_port();
+#ifdef __AROS__
+		init_iconify();
+#endif
 
 		/* Create whether an empty project or an existing one */
 		if( ( edit = create_projects(NULL, args.sa_ArgLst, args.sa_NbArgs) ) )
@@ -122,6 +252,9 @@ void cleanup(UBYTE *msg, int errcode)
 	CBClose();
 	close_port();
 	CloseMainWnd(1);
+#ifdef __AROS__
+	close_iconify();
+#endif
 	CleanupLocale();
 	free_macros();
 	free_diskio_alloc();		/* ASL */
@@ -133,6 +266,10 @@ void cleanup(UBYTE *msg, int errcode)
 	if(UtilityBase)   CloseLibrary((struct Library *)UtilityBase);
 	if(KeymapBase)    CloseLibrary(KeymapBase);
 	if(GadToolsBase)  CloseLibrary(GadToolsBase);
+#ifdef __AROS__
+	if(IconBase)      CloseLibrary(IconBase);
+	if(WorkbenchBase) CloseLibrary(WorkbenchBase);
+#endif
 	if(GfxBase)       CloseLibrary((struct Library *)GfxBase);
 	if(IntuitionBase) CloseLibrary((struct Library *)IntuitionBase);
 	if(msg)           puts(msg);
@@ -160,6 +297,9 @@ void dispatch_events()
 /*		if(sigrcvd & SIGBREAKF_CTRL_C) break;
 
 		else */ if(sigrcvd & sigport) { handle_port(); continue; }
+#ifdef __AROS__
+		else if(sigappicon && (sigrcvd & sigappicon)) { handle_appicon(); continue; }
+#endif
 
 		else if(sigrcvd & swinsig) { handle_search(); continue; }
 
@@ -219,6 +359,11 @@ void dispatch_events()
 					state=0;
 					if(msgbuf.IAddress == (APTR) Prop)
 						scroll_disp(edit, FALSE), scrolldisp=0;
+#ifdef __AROS__
+					else if(msgbuf.IAddress &&
+					        ((struct Gadget *)msgbuf.IAddress)->GadgetID == ETI_Iconify)
+						iconify_window();
+#endif
 					break;
 				case IDCMP_MOUSEMOVE:
 					if(mark) scrolldisp=2;

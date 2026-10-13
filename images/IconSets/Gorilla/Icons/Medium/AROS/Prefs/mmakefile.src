@@ -5,7 +5,12 @@ include $(SRCDIR)/config/aros.cfg
 BASEICONS := Time Locale Serial Presets Input IControl Font ScreenMode Palette Pointer Printer
 ADDITIONALICONS := AHI Asl Appearance Boot  \
  ReqTools Wanderer Zune Editor Trackdisk PSI Network Trident \
- OpenURL BoingIconBar
+ OpenURL BoingIconBar Bluetooth
+
+# The WiFi preferences program is built for raspi only.
+ifeq ($(AROS_TARGET_ARCH),raspi)
+ADDITIONALICONS += WiFi
+endif
 
 #MM- iconset-Gorilla-wbench-icons-aros-clean : iconset-Gorilla-wbench-icons-aros-prefs-clean
 #MM- iconset-Gorilla-additional-icons-aros-clean : iconset-Gorilla-additional-icons-aros-prefs-clean

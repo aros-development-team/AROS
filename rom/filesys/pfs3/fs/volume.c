@@ -257,12 +257,12 @@ static BOOL SameDisk(struct rootblock *, struct rootblock *);
 static BOOL SameDiskDL(struct rootblock *, struct DeviceList *);
 static void TakeOverLocks(struct FileLock *, globaldata *);
 static void DiskInsertSequence(struct rootblock *rootblock, globaldata *g);
-static void DiskRemoveSequence(globaldata *g);
+static BOOL DiskRemoveSequence(globaldata *g);
 
 void NewVolume (BOOL FORCE, globaldata *g)
 {
   BOOL oldstate, newstate, changed;
-  struct rootblock *rootblock;
+  struct rootblock *rootblock = NULL;
 
 	/* check if something changed */
 	changed = UpdateChangeCount (g);
@@ -273,7 +273,8 @@ void NewVolume (BOOL FORCE, globaldata *g)
 		return;
 
 	ENTER("NewVolume");
-	FlushDataCache (g);
+	if (!g->dirty)
+		FlushDataCache (g);
 
 	/* newstate <=> there is a PFS disk present */
 	oldstate = g->currentvolume ? TRUE : FALSE;
@@ -283,8 +284,20 @@ void NewVolume (BOOL FORCE, globaldata *g)
 	if ((g->softprotect == 1) && g->protectkey == ~0)
 		g->softprotect = g->protectkey = 0;
 
-	if (oldstate && !newstate)
-		DiskRemoveSequence (g);
+	/* Committing a removed dirty volume asks for it back. The root read
+	 * before that request no longer identifies the medium in the drive. */
+	if (oldstate && g->dirty &&
+		(!newstate || !SameDisk(rootblock, g->currentvolume->rootblk)))
+	{
+		if (rootblock)
+			FreeBufmem(rootblock, g);
+		if (!DiskRemoveSequence(g))
+			goto remove_failed;
+		newstate = GetCurrentRoot(&rootblock, g);
+	}
+
+	if (oldstate && !newstate && !DiskRemoveSequence(g))
+		goto remove_failed;
 
 	if (newstate)
 	{
@@ -294,8 +307,11 @@ void NewVolume (BOOL FORCE, globaldata *g)
 		}
 		else
 		{
-			if (oldstate)
-				DiskRemoveSequence (g);
+			if (oldstate && !DiskRemoveSequence(g))
+			{
+				FreeBufmem(rootblock, g);
+				goto remove_failed;
+			}
 			DiskInsertSequence (rootblock, g);
 		}
 	}
@@ -308,6 +324,12 @@ void NewVolume (BOOL FORCE, globaldata *g)
 
 	UpdateAndMotorOff(g);
 	EXIT("NewVolume");
+	return;
+
+remove_failed:
+	/* Keep the old volume and pending cache entries available for recovery. */
+	UnLockDosList(LDF_VOLUMES | LDF_WRITE);
+	EXIT("NewVolume");
 }
 
 
@@ -318,7 +340,7 @@ void NewVolume (BOOL FORCE, globaldata *g)
 ** return waarde = currentdisk back in drive?
 ** used by NewVolume and ACTION_INHIBIT
 */
-static void DiskRemoveSequence(globaldata *g)
+static BOOL DiskRemoveSequence(globaldata *g)
 {
   struct volumedata *oldvolume = g->currentvolume;
 
@@ -326,15 +348,14 @@ static void DiskRemoveSequence(globaldata *g)
 
 	/* -I- update disk 
 	** will ask for old volume if there are unsaved changes
-	** causes recursive NewVolume call. That's why 'currentvolume'
-	** has to be cleared first; UpdateDisk won't be called for the
-	** same disk again
+	** This step leaves currentvolume attached. Media-change callers must
+	** read the root again afterwards; inhibit calls repeat removal once
+	** the volume is clean.
 	*/
 	if(oldvolume && g->dirty)
 	{
 		RequestCurrentVolumeBack(g);
-		UpdateDisk(g);
-		return;
+		return UpdateDisk(g);
 	}
 
 	/* disk removed */
@@ -365,7 +386,7 @@ static void DiskRemoveSequence(globaldata *g)
 	if(g->trackdisk)
 	{
 		g->request->iotd_Req.io_Command = CMD_CLEAR;
-		DoIO(g->request);
+		DoIO((struct IORequest *)g->request);
 	}
 #endif
 
@@ -376,16 +397,25 @@ static void DiskRemoveSequence(globaldata *g)
 #endif
 
 	EXIT("DiskRemoveSequence");
-	return;
+	return TRUE;
 }
 
-BOOL SafeDiskRemoveSequence(globaldata *g)
+BOOL SafeDiskRemoveSequence(globaldata *g, SIPTR *error)
 {
+	if (error)
+		*error = 0;
 	while (g->currentvolume) {    /* inefficient.. */
 		if (AttemptLockDosList(LDF_VOLUMES | LDF_WRITE)) {
-			DiskRemoveSequence(g);
+			BOOL removed = DiskRemoveSequence(g);
 			UnLockDosList(LDF_VOLUMES | LDF_WRITE);
+			if (!removed) {
+				if (error)
+					*error = g->softprotect ? ERROR_DISK_WRITE_PROTECTED : ERROR_NOT_A_DOS_DISK;
+				return FALSE;
+			}
 		} else {
+			if (error)
+				*error = ERROR_OBJECT_IN_USE;
 			return FALSE;
 		}
 	}
@@ -577,8 +607,18 @@ static BOOL SameDisk(struct rootblock *disk1, struct rootblock *disk2)
 static BOOL SameDiskDL(struct rootblock *disk1, struct DeviceList *disk2)
 {
   BOOL result;
+  UBYTE diskname[DNSIZE];
+  ULONG len, i;
 
-	result = ddstricmp(disk1->diskname, BADDR(disk2->dl_Name)) &&
+	if (!disk2->dl_Name)
+		return FALSE;
+	len = AROS_BSTR_strlen(disk2->dl_Name);
+	if (len >= sizeof(diskname))
+		return FALSE;
+	diskname[0] = len;
+	for (i = 0; i < len; i++)
+		diskname[i + 1] = AROS_BSTR_getchar(disk2->dl_Name, i);
+	result = ddstricmp(disk1->diskname, diskname) &&
 			 disk1->creationday    == disk2->dl_VolumeDate.ds_Days &&
 			 disk1->creationminute == disk2->dl_VolumeDate.ds_Minute &&
 			 disk1->creationtick   == disk2->dl_VolumeDate.ds_Tick;
@@ -841,7 +881,8 @@ BOOL CheckVolume(struct volumedata *volume, BOOL write, SIPTR *error, globaldata
 				*error = ERROR_NOT_A_DOS_DISK;
 				return(DOSFALSE);
 
-			case ID_NO_DISK_PRESENT:
+			/* disktype is unsigned, ID_NO_DISK_PRESENT is -1 */
+			case (ULONG)ID_NO_DISK_PRESENT:
 				if(!volume && !g->currentvolume)
 				{
 					*error = ERROR_NO_DISK;
@@ -984,6 +1025,7 @@ static BOOL GetCurrentRoot(struct rootblock **rootblock, globaldata *g)
   int rblsize;
 
 	ENTER("GetCurrentRoot");
+	*rootblock = NULL;
 
 	if (g->removable)
 	{
@@ -998,7 +1040,7 @@ static BOOL GetCurrentRoot(struct rootblock **rootblock, globaldata *g)
 		if (g->trackdisk)
 		{
 			g->request->iotd_Req.io_Command = CMD_CLEAR;
-			DoIO(g->request);
+			DoIO((struct IORequest *)g->request);
 		}
 #endif
 
@@ -1073,7 +1115,11 @@ static BOOL GetCurrentRoot(struct rootblock **rootblock, globaldata *g)
 				FreeBufmem(*rootblock, g);
 				*rootblock = AllocBufmemR (rblsize << BLOCKSHIFT, g);
 				error = ReadRootBlocks((UBYTE *)*rootblock, rblsize, ROOTBLOCK, g);
+				if (error)
+					goto nrd_error;
 			}
+			else
+				goto nrd_error;
 
 			/* size check */
 			if (((*rootblock)->options & MODE_SIZEFIELD) &&
@@ -1086,6 +1132,7 @@ static BOOL GetCurrentRoot(struct rootblock **rootblock, globaldata *g)
 		}
 
 nrd_error:
+		g->ErrorMsg = _NormalErrorMsg;
 		g->disktype = ID_NOT_REALLY_DOS;
 		CreateInputEvent(TRUE, g);
 		FreeBufmem (*rootblock, g);

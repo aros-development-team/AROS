@@ -36,6 +36,10 @@
 #define MSG_WARNING_GUI 2
 #define MSG_LOGINREQ_GUI 3
 #define MSG_LOGINPROMPT_GUI 4
+#define MSG_LOGIN 5
+#define MSG_CANCEL 6
+#define MSG_SHUTDOWN 7
+#define MSG_REBOOT 8
 
 #endif /* CATCOMP_NUMBERS */
 
@@ -49,6 +53,10 @@
 #define MSG_WARNING_GUI_STR "Security Warning"
 #define MSG_LOGINREQ_GUI_STR "Security Login Request"
 #define MSG_LOGINPROMPT_GUI_STR "\33cWelcome to the AROS Research OS\nAROS Version: %s\n\nPlease fill in your user details\nto log onto %s."
+#define MSG_LOGIN_STR "_Login"
+#define MSG_CANCEL_STR "_Cancel"
+#define MSG_SHUTDOWN_STR "_Shutdown"
+#define MSG_REBOOT_STR "_Reboot"
 
 #endif /* CATCOMP_STRINGS */
 
@@ -71,6 +79,10 @@ static const struct CatCompArrayType CatCompArray[] =
   {MSG_WARNING_GUI,(STRPTR)MSG_WARNING_GUI_STR},
   {MSG_LOGINREQ_GUI,(STRPTR)MSG_LOGINREQ_GUI_STR},
   {MSG_LOGINPROMPT_GUI,(STRPTR)MSG_LOGINPROMPT_GUI_STR},
+  {MSG_LOGIN,(STRPTR)MSG_LOGIN_STR},
+  {MSG_CANCEL,(STRPTR)MSG_CANCEL_STR},
+  {MSG_SHUTDOWN,(STRPTR)MSG_SHUTDOWN_STR},
+  {MSG_REBOOT,(STRPTR)MSG_REBOOT_STR},
   {0,NULL}
 };
 

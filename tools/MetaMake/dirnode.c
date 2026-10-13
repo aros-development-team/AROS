@@ -1,5 +1,5 @@
 /* MetaMake - A Make extension
-   Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+   Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
 This file is part of MetaMake.
 
@@ -27,6 +27,9 @@ Boston, MA 02111-1307, USA.  */
 #include <stdlib.h>
 #include <assert.h>
 #include <errno.h>
+#ifndef _WIN32
+#   include <fcntl.h>
+#endif
 #ifdef HAVE_STRING_H
 #   include <string.h>
 #else
@@ -723,14 +726,24 @@ scanmakefiles (struct Project * prj, struct DirNode * node, struct List * vars)
 struct Makefile *
 addmakefile (struct DirNode * node, const char * filename)
 {
+#ifdef _WIN32
     static char curdir[PATH_MAX];
+#else
+    int curdir;
+#endif
     const char * ptr = filename;
     char * name;
     int len = 0;
     struct DirNode * subnode;
     struct Makefile * makefile = NULL;
 
+#ifdef _WIN32
     ASSERT(getcwd(curdir, PATH_MAX) != NULL);
+#else
+    /* Preserve the current directory across temporary path traversal. */
+    curdir = open(".", O_RDONLY); /* Flawfinder: ignore */
+    ASSERT(curdir >= 0);
+#endif
 
     while (ptr != NULL)
     {
@@ -748,7 +761,15 @@ addmakefile (struct DirNode * node, const char * filename)
             if (subnode == NULL)
             {
                 xfree(name);
+#ifdef _WIN32
                 ASSERT(chdir (curdir) == 0);
+#else
+                {
+                    int rc = fchdir(curdir);
+                    close(curdir);
+                    ASSERT(rc == 0);
+                }
+#endif
                 return NULL;
             }
             ASSERT(chdir (name) == 0);
@@ -775,7 +796,15 @@ addmakefile (struct DirNode * node, const char * filename)
                     if (stat (name, &st) != 0)
                     {
                         xfree (name);
+#ifdef _WIN32
                         ASSERT(chdir (curdir) == 0);
+#else
+                        {
+                            int rc = fchdir(curdir);
+                            close(curdir);
+                            ASSERT(rc == 0);
+                        }
+#endif
                         return NULL;
                     }
                     name[len]=0;
@@ -794,7 +823,15 @@ addmakefile (struct DirNode * node, const char * filename)
         xfree (name);
     }
 
+#ifdef _WIN32
     ASSERT(chdir (curdir) == 0);
+#else
+    {
+        int rc = fchdir(curdir);
+        close(curdir);
+        ASSERT(rc == 0);
+    }
+#endif
 
     return makefile;
 }
@@ -855,32 +892,78 @@ struct DirNodeRef
 const char *
 buildpath (struct DirNode * node)
 {
-    static char path[PATH_MAX];
-    struct List tree;
-    struct DirNodeRef * ref = NULL;
+    static char * path = NULL;
+    static size_t pathsize = 0;
+    struct DirNode * current;
+    size_t size = 1;
+    size_t components = 0;
+    char * ptr;
 
-    NewList (&tree);
-
-    do
+    for (current = node; current != NULL; current = current->parent)
     {
-        if ((strlen (node->node.name) > 0) && (strcmp(node->node.name, mm_srcdir) != 0))
+        const char * name = current->node.name;
+
+        if ((*name != 0) && (strcmp(name, mm_srcdir) != 0))
         {
-            ref = newnodesize ("", sizeof (struct DirNodeRef));
-            ref->dirnode = node;
-            AddHead (&tree, ref);
-        }
-        node = node->parent;
-    } while (node != NULL);
+            /* Node names are NUL-terminated copies owned by MetaMake. */
+            /* Flawfinder: ignore */
+            size_t namelen = strlen (name);
 
-    strcpy (path, "");
-    ForeachNode (&tree, ref)
-    {
-        if (path[0] != 0)
-            strcat (path, "/");
-        strcat (path, ref->dirnode->node.name);
+            if (components != 0)
+            {
+                if (size == (size_t)-1)
+                {
+                    error ("buildpath(): path is too long");
+                    exit (20);
+                }
+                size ++;
+            }
+
+            if (namelen > (size_t)-1 - size)
+            {
+                error ("buildpath(): path is too long");
+                exit (20);
+            }
+
+            size += namelen;
+            components ++;
+        }
     }
 
-    freelist (&tree);
+    if (size > pathsize)
+    {
+        char * newpath = xmalloc (size);
+
+        if (path != NULL)
+            xfree (path);
+
+        path = newpath;
+        pathsize = size;
+    }
+
+    ptr = path + size - 1;
+    *ptr = 0;
+
+    for (current = node; current != NULL; current = current->parent)
+    {
+        const char * name = current->node.name;
+
+        if ((*name != 0) && (strcmp(name, mm_srcdir) != 0))
+        {
+            /* Node names are NUL-terminated copies owned by MetaMake. */
+            /* Flawfinder: ignore */
+            size_t namelen = strlen (name);
+
+            ptr -= namelen;
+            memcpy (ptr, name, namelen);
+
+            components --;
+            if (components != 0)
+                *--ptr = '/';
+        }
+    }
+
+    assert (ptr == path);
 
     return path;
 }

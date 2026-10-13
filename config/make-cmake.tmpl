@@ -173,9 +173,11 @@ else
 %(mmake)-cmakecleandir := %(cleandir)
 endif
 
+# '+' lets the make spawned by "cmake --build" inherit the jobserver, so the
+# cmake build runs with the parallelism given to the top level make.
 $(%(mmake)-installflag) : $(%(mmake)-cmakeflag)
-	$(%(mmake)-cmakecmdbuild)
-	$(%(mmake)-cmakecmdinstall)
+	+$(%(mmake)-cmakecmdbuild)
+	+$(%(mmake)-cmakecmdinstall)
 	$(TOUCH) $@
 	$(IF) $(TEST) "%(cleanafterbuild)" = "yes"; then \
 	    $(IF) ! $(CMAKE) --build $(%(mmake)-pkgdir) --target clean; then \

@@ -1,3 +1,4 @@
+extern unsigned long compat_sleep_usecs(unsigned long usecs);
 /*-
  * Copyright (c) 2022 Beckhoff Automation GmbH & Co. KG
  *
@@ -368,19 +369,20 @@ dma_fence_default_wait(struct dma_fence *fence, bool intr, signed long timeout)
 	 * count, so a broken interrupt path shows up in the log.
 	 */
 	{
-		const signed long maxslice = msecs_to_jiffies(10) ? msecs_to_jiffies(10) : 1;
-		signed long slice = 1;
-		signed long waited = 0;
-
 		/*
-		 * The engine may already be done, or be about to be: most 2D
-		 * work completes within microseconds, so look a few times
-		 * before paying for a sleep at all (as the earlier port did).
+		 * Most engine work finishes within microseconds. Look a few
+		 * times first, then nap in slices that start well below a
+		 * millisecond and grow - a completion interrupt wakes the nap
+		 * early, and without one the engine's write is still seen at
+		 * the next slice.
 		 */
+		const bool forever = (timeout == MAX_SCHEDULE_TIMEOUT);
+		unsigned long remain_us = forever ? ~0UL : jiffies_to_usecs(rv);
+		unsigned long slice_us = 50;
+
 		spin_unlock(fence->lock);
 		{
 			int spins;
-
 			for (spins = 0; spins < 12; spins++) {
 				if (dma_fence_is_signaled(fence))
 					break;
@@ -388,36 +390,36 @@ dma_fence_default_wait(struct dma_fence *fence, bool intr, signed long timeout)
 			}
 		}
 		spin_lock(fence->lock);
+		while (!test_bit(DMA_FENCE_FLAG_SIGNALED_BIT, &fence->flags) && remain_us) {
+			unsigned long chunk = remain_us < slice_us ? remain_us : slice_us, left;
 
-		while (!test_bit(DMA_FENCE_FLAG_SIGNALED_BIT, &fence->flags) && rv > 0) {
-			signed long chunk = rv < slice ? rv : slice, left;
-
-			if (slice < maxslice)
-				slice *= 2;
-
+			if (slice_us < 10000)
+				slice_us *= 2;
 			if (intr)
 				__set_current_state(TASK_INTERRUPTIBLE);
 			else
 				__set_current_state(TASK_UNINTERRUPTIBLE);
 			spin_unlock(fence->lock);
-
-			left = schedule_timeout(chunk);
-			waited += chunk - left;
-			rv -= chunk - left;
-			if (rv < 0)
-				rv = 0;
-
+			left = compat_sleep_usecs(chunk);
+			if (!forever)
+				remain_us -= chunk - left;
+			/* the completion interrupt can be missed for a fence
+			   emitted after it fired; the sequence the engine wrote
+			   is the truth, so look at it rather than only the flag */
+			dma_fence_is_signaled(fence);
 			spin_lock(fence->lock);
-			if (rv > 0 && intr && signal_pending(current))
+			if (remain_us && intr && signal_pending(current)) {
 				rv = -ERESTARTSYS;
+				break;
+			}
 		}
-		if (rv <= 0 && waited && timeout != MAX_SCHEDULE_TIMEOUT)
-			rv = 0;
-		if (rv > 0 || test_bit(DMA_FENCE_FLAG_SIGNALED_BIT, &fence->flags))
-			if (rv <= 0)
-				rv = 1;
+		if (rv >= 0) {
+			if (test_bit(DMA_FENCE_FLAG_SIGNALED_BIT, &fence->flags))
+				rv = forever ? MAX_SCHEDULE_TIMEOUT : (signed long)(usecs_to_jiffies(remain_us) ?: 1);
+			else
+				rv = 0;
+		}
 	}
-
 	if (!list_empty(&cb.base.node))
 		list_del(&cb.base.node);
 	__set_current_state(TASK_RUNNING);

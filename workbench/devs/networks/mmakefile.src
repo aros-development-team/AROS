@@ -2,23 +2,80 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM- workbench-devs-networks: \
 #MM     workbench-devs-networks-$(AROS_TOOLCHAIN) \
-#MM     workbench-devs-networks-broadcom4400 \
+#MM     workbench-devs-networks-pci-$(AROS_TARGET_CPU) \
+#MM     workbench-devs-networks-x86-$(AROS_TARGET_CPU) \
 #MM     workbench-devs-networks-dwmac-$(AROS_TARGET_CPU) \
-#MM     workbench-devs-networks-e1000-$(AROS_TARGET_CPU) \
-#MM     workbench-devs-networks-etherlink3 \
-#MM     workbench-devs-networks-intelpro100 \
-#MM     workbench-devs-networks-lpe32002-$(AROS_TARGET_CPU) \
-#MM     workbench-devs-networks-nforce-$(AROS_TARGET_CPU) \
-#MM     workbench-devs-networks-nvidianet \
-#MM     workbench-devs-networks-pcnet32-$(AROS_TARGET_CPU) \
 #MM     workbench-devs-networks-ppp \
-#MM     workbench-devs-networks-prism2 \
 #MM     workbench-devs-networks-realtek8180-$(AROS_TARGET_ARCH) \
-#MM     workbench-devs-networks-rhine \
-#MM     workbench-devs-networks-rtl8029 \
-#MM     workbench-devs-networks-rtl8139 \
-#MM     workbench-devs-networks-rtl816x-$(AROS_TARGET_CPU) \
-#MM     workbench-devs-networks-sis900-$(AROS_TARGET_CPU)
+#MM     workbench-devs-networks-soc-$(AROS_TARGET_ARCH)
 
 #MM- workbench-devs-networks-gnu: \
 #MM     workbench-devs-networks-atheros5000
+
+#
+# Drivers for plug-in cards: PCI, and PCMCIA on the classic machines. None of
+# them depends on the CPU, so they are grouped by what they drive, and the
+# groups are built wherever such a card can be fitted - x86, RISC-V with its
+# PCIe root complex (boards with slots, and QEMU's virt machine), and m68k or
+# ppc with a PCI bridge or a PCMCIA slot. On ARM the network hardware is part
+# of the SoC (bcmgenet, dwmac) or hangs off USB, so shipping them there only
+# fills DEVS:Networks with drivers for absent hardware. That is not merely
+# untidy: anything enumerating the directory has to open them to ask what they
+# are, and a driver initialising against hardware that is not present can
+# take the machine down.
+#
+#MM- workbench-devs-networks-pci-i386    : workbench-devs-networks-pci
+#MM- workbench-devs-networks-pci-x86_64  : workbench-devs-networks-pci
+#MM- workbench-devs-networks-pci-m68k    : workbench-devs-networks-pci
+#MM- workbench-devs-networks-pci-ppc     : workbench-devs-networks-pci
+#MM- workbench-devs-networks-pci-riscv   : workbench-devs-networks-pci
+#MM- workbench-devs-networks-pci-riscv64 : workbench-devs-networks-pci
+
+#MM- workbench-devs-networks-pci: \
+#MM     workbench-devs-networks-ethernet-pci \
+#MM     workbench-devs-networks-wifi-pci \
+#MM     workbench-devs-networks-fc-pci
+
+#MM- workbench-devs-networks-ethernet-pci: \
+#MM     workbench-devs-networks-broadcom4400 \
+#MM     workbench-devs-networks-e1000 \
+#MM     workbench-devs-networks-etherlink3 \
+#MM     workbench-devs-networks-intelpro100 \
+#MM     workbench-devs-networks-rhine \
+#MM     workbench-devs-networks-rtl8029 \
+#MM     workbench-devs-networks-rtl8139 \
+#MM     workbench-devs-networks-rtl816x
+
+# WiFi (802.11)
+#MM- workbench-devs-networks-wifi-pci: \
+#MM     workbench-devs-networks-prism2
+
+# Emulex LightPulse Fibre Channel HBAs (presented to SANA-II as Ethernet)
+#MM- workbench-devs-networks-fc-pci: \
+#MM     workbench-devs-networks-lpe32002
+
+#
+# Drivers that are x86 by nature: Ethernet built into a PC chipset (NVIDIA
+# nForce - the hardware only exists on x86 boards; nforce.device is
+# additionally 32-bit only), and pcnet32 and sis900, which time their delays
+# with the PC's 8254 timer through x86 port I/O and inline assembly.
+#
+#MM- workbench-devs-networks-x86-i386 : \
+#MM     workbench-devs-networks-nforce-i386 \
+#MM     workbench-devs-networks-nvidianet \
+#MM     workbench-devs-networks-pcnet32 \
+#MM     workbench-devs-networks-sis900
+#MM- workbench-devs-networks-x86-x86_64 : \
+#MM     workbench-devs-networks-nvidianet \
+#MM     workbench-devs-networks-pcnet32 \
+#MM     workbench-devs-networks-sis900
+
+#
+# On-chip and on-board network hardware, found through the device tree rather
+# than a probeable bus, so it is the machine that decides whether the driver
+# makes sense. Both were built only when asked for by name until now, which
+# left a plain build without either the WiFi or the ethernet driver.
+#
+#MM- workbench-devs-networks-soc-raspi: \
+#MM     workbench-devs-networks-bcmgenet \
+#MM     workbench-devs-networks-bwfm

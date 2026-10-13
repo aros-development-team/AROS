@@ -95,6 +95,12 @@ static void nvme_iotask(struct nvme_queue *nvmeq)
 
                 D(bug ("[NVME:Bus] %s: replying to IO @ 0x%p\n", __func__, iotd);)
 
+                /*
+                 * Release the transfer's DMA mappings and PRP/SGL storage here, in
+                 * task context (the completion hook may have run from the interrupt),
+                 * and before the request is handed back.
+                 */
+                nvme_finish_ioevent(slot);
                 ReplyMsg((struct Message *)iotd);
 
                 slot->ceh_Reply = FALSE;
@@ -509,7 +515,8 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                 for (i = 0; i < id_ns->nlbaf + 1; i++) {
                     D(bug ("[NVME:Bus] NVMEBus_Start: ns#%u       lbaf[%u], ms = %u, ds = %u, rp = %u\n", nn + 1, i, id_ns->lbaf[i].ms, id_ns->lbaf[i].ds, id_ns->lbaf[i].rp);)
                 }
-                struct nvme_lba_range_type *rt = (struct nvme_lba_range_type *)(IPTR)buffer + 4096;
+                /* Second page of the buffer - casting first would scale the offset. */
+                struct nvme_lba_range_type *rt = (struct nvme_lba_range_type *)((IPTR)buffer + 4096);
 
                 D(bug ("[NVME:Bus] NVMEBus_Start: ns#%u lba_range_type buffer @ 0x%p\n", nn + 1, rt);)
 
@@ -537,15 +544,19 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                         bug ("[NVME:Bus] NVMEBus_Start: ns#%u           nlb %08x%08x\n", nn + 1, (rt->nlb >> 32), rt->nlb & 0xFFFFFFFF);
                     )
 
-                    if (!(rt->attributes & NVME_LBART_ATTRIB_HIDE)) {
+                    if (rt->attributes & NVME_LBART_ATTRIB_HIDE) {
+                        D(bug ("[NVME:Bus] NVMEBus_Start:      Skipping hidden namespace\n");)
+                        lbaEnd = 0;
+                    } else if (rt->nlb) {
                         lbaStart = rt->slba;
                         lbaEnd =  rt->slba + rt->nlb;
                     } else {
-                        D(bug ("[NVME:Bus] NVMEBus_Start:      Skipping hidden namespace\n");)
-                        lbaEnd = 0;
+                        /* Optional feature - no ranges defined still reports success. */
+                        D(bug ("[NVME:Bus] NVMEBus_Start:      No LBA range reported, using nsze\n");)
+                        lbaEnd = id_ns->nsze;
                     }
                 } else
-                    lbaEnd = id_ns->nsze << (id_ns->lbaf[lbaf].ds - 9);
+                    lbaEnd = id_ns->nsze;
 
                 if (lbaEnd) {
                     if ((data->ab_Units[nn] = OOP_NewObject(NVMEBase->unitClass, NULL, attrs)) != NULL) {
@@ -565,11 +576,25 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
 
                             unit->au_SecShift = id_ns->lbaf[lbaf].ds;
                             D(bug ("[NVME:Bus] NVMEBus_Start:      Sector Size = %ubytes\n", 1 << unit->au_SecShift);)
-                            unit->au_SecCnt = id_ns->nsze << (unit->au_SecShift - 9);
+                            unit->au_SecCnt = id_ns->nsze;
                             D(bug ("[NVME:Bus] NVMEBus_Start:      # of Sectors = %u\n", unit->au_SecCnt);)
                             unit->au_Low = lbaStart;
                             unit->au_High = lbaEnd - 1;
                             unit->au_Bus = data;
+                            /*
+                             * Per-unit transfer cap: the controller's MDTS (if any),
+                             * further bounded by the 16 bit zero-based NLB field,
+                             * i.e. at most 65536 LBAs in a single command.
+                             */
+                            {
+                                UQUAD nlbmax = (UQUAD)65536 << unit->au_SecShift;
+                                UQUAD cap = data->ab_Dev->dev_MaxXfer ? data->ab_Dev->dev_MaxXfer : nlbmax;
+                                if (cap > nlbmax)
+                                    cap = nlbmax;
+                                if (cap > 0xFFFFFFFFULL)
+                                    cap = 0xFFFFFFFFULL;
+                                unit->au_MaxTransfer = (ULONG)cap;
+                            }
 
                             data->ab_IDNode = HIDD_Storage_AllocateID(NVMEBase->storageRoot, NVMEIDTags);
 
@@ -613,12 +638,13 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                             pp[DE_HIGHCYL      + 4] = unit->nu_Cyl - 1;
                             pp[DE_NUMBUFFERS   + 4] = 10;
                             pp[DE_BUFMEMTYPE   + 4] = MEMF_PUBLIC;
-                            pp[DE_MAXTRANSFER  + 4] = (1 << data->ab_Dev->dev_mdts) * data->ab_Dev->pagesize;
+                            pp[DE_MAXTRANSFER  + 4] = unit->au_MaxTransfer;
                             D(
                                 bug("[NVME:Bus] NVMEBus_Start: mdts = %u\n", data->ab_Dev->dev_mdts);
                                 bug("[NVME:Bus] NVMEBus_Start: DE_MAXTRANSFER = %u\n", pp[DE_MAXTRANSFER + 4]);
                             )
-                            pp[DE_MASK         + 4] = 0x7FFFFFFF; // & ~(data->ab_Dev->pagesize - 1);
+                            /* NVMe addresses memory with 64-bit PRPs and only needs dword alignment */
+                            pp[DE_MASK         + 4] = ~3;
                             D(bug("[NVME:Bus] NVMEBus_Start: DE_MASK= %08x\n", pp[DE_MASK + 4]);)
                             pp[DE_BOOTPRI      + 4] = 0;
                             pp[DE_DOSTYPE      + 4] = IdDOS;

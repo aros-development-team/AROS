@@ -523,6 +523,7 @@ void drm_send_event_timestamp_locked(struct drm_device *dev, struct drm_pending_
 
 int nouveau_aros_probe(struct pci_dev *pdev, struct drm_device **pdrm_dev);
 struct drm_device *current_drm_device;
+struct pci_dev *nouveau_aros_pdev;
 BOOL workqueue_init(void);
 
 /*
@@ -572,6 +573,7 @@ int nouveau_init_probe(struct pci_dev *pdev)
 
     bug("\003\n"); /* Tell vga text mode debug output to die */
 
+    nouveau_aros_pdev = pdev;
     ps.pdev = pdev;
     ps.parent = FindTask(NULL);
     ps.ret = -1;
@@ -597,4 +599,32 @@ int nouveau_init_probe(struct pci_dev *pdev)
 int nouveau_init(void)
 {
     return nouveau_init_probe(nouveau_init_findcard());
+}
+
+int nouveau_aros_shutdown(struct drm_device *dev);
+extern int nouveau_compat_atomic;
+
+/*
+ * Called from the shutdown reset callback, after display work has been
+ * stopped and just before the platform reset performer runs. Waits spin
+ * from here on: yielding would let the callback chain reach the reset
+ * while the unload is still in flight.
+ */
+void nouveau_shutdown(void)
+{
+    int ret;
+
+    if (!current_drm_device)
+        return;
+
+    nouveau_compat_atomic = 1;
+    bug("[nouveau] shutting down: unloading GSP-RM\n");
+    ret = nouveau_aros_shutdown(current_drm_device);
+    if (ret < 0)
+        bug("[nouveau] GSP-RM partially unloaded - far enough for the "
+            "next boot to start it fresh\n");
+    else if (ret > 0)
+        bug("[nouveau] GSP-RM unloaded, RISC-V still active\n");
+    else
+        bug("[nouveau] GSP-RM unloaded, RISC-V halted\n");
 }

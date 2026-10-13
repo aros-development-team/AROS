@@ -23,7 +23,45 @@
 #include "pthread_intern.h"
 #include "debug.h"
 
-int pthread_mutex_trylock(pthread_mutex_t *mutex)
+/****************************************************************************
+    NAME */
+        int pthread_mutex_trylock(
+
+/*  SYNOPSIS */
+        pthread_mutex_t *mutex)
+
+/*  FUNCTION
+        Attempt to acquire a mutex without waiting for another owner. A
+        recursive mutex may be reacquired by its owner. Initialize a static
+        mutex lazily if its semaphore is uninitialized.
+
+    INPUTS
+        mutex - Initialized mutex, or a supported static initializer. Keep its
+            storage valid until it is unlocked and no longer in use.
+
+    RESULT
+        0 with one acquisition held. EBUSY if the semaphore cannot be acquired,
+        or if the caller owns a nonrecursive mutex. EINVAL if mutex is NULL.
+        Errors are returned directly.
+
+    NOTES
+        Include <pthread.h>; link with pthread. Call from task context. This
+        function does not enqueue a wait or check cancellation. A successful
+        call must be paired with pthread_mutex_unlock(); failure grants no
+        ownership. Explicit initialization before sharing avoids the
+        unsynchronized lazy-initialization path.
+
+    BUGS
+        Owner reacquisition of an ERRORCHECK mutex returns EBUSY here, whereas
+        pthread_mutex_lock() returns EDEADLK. Owner reacquisition of NORMAL is
+        rejected here but allowed by the blocking lock implementation.
+
+    SEE ALSO
+        pthread_mutex_lock(),
+        pthread_mutex_unlock(),
+        pthread_mutex_init()
+
+*****************************************************************************/
 {
     ULONG ret;
 

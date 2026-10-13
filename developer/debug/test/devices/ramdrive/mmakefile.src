@@ -1,0 +1,15 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+# Run directly from a ROM-only CD boot without requiring stdc.library.
+USER_LDFLAGS := -static
+
+#MM- test : test-devices-ramdrive
+#MM- test-quick : test-devices-ramdrive-quick
+#MM test-devices-ramdrive : includes linklibs
+
+%build_progs mmake=test-devices-ramdrive \
+    files=ramdrivetest targetdir=$(AROS_TESTS)/devices/ramdrive
+
+%common

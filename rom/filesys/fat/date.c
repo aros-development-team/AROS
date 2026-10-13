@@ -24,6 +24,12 @@ void ConvertFATDate(UWORD date, UWORD time, struct DateStamp *ds,
     ULONG year, month, day, hours, mins, secs;
     struct ClockData clock_data;
 
+    /* The fields arrive raw from the directory entry, which is little-endian
+     * on disk whatever the host is. Decode before unpacking the bitfields,
+     * not after -- the masks below are defined on the FAT value. */
+    date = AROS_LE2WORD(date);
+    time = AROS_LE2WORD(time);
+
     /* Date bits: yyyy yyym mmmd dddd */
     year = (date & 0xfe00) >> 9;    /* Bits 15-9 */
     month = (date & 0x01e0) >> 5;   /* bits 8-5 */
@@ -93,10 +99,15 @@ void ConvertDOSDate(struct DateStamp *ds, UWORD * date, UWORD * time,
 
     /* All that remains is to bit-encode the whole lot */
 
+    /* Encoded last, so the caller may store the result straight into the
+     * directory entry. See ConvertFATDate for the other half. */
+
     /* Date bits: yyyy yyym mmmd dddd */
-    *date = (((ULONG) year) << 9) | (((ULONG) month) << 5) | day;
+    *date = AROS_WORD2LE((UWORD)((year << 9) |
+        (month << 5) | day));
 
     /* Time bits: hhhh hmmm mmms ssss */
-    *time = (((ULONG) hours) << 11) | (((ULONG) mins) << 5) | secs;
+    *time = AROS_WORD2LE((UWORD)((hours << 11) |
+        (mins << 5) | secs));
 }
 

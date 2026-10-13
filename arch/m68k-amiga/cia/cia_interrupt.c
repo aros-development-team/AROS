@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <exec/libraries.h>
@@ -24,9 +24,9 @@ AROS_INTH1(Cia_Handler, struct CIABase *, CiaBase)
         CiaBase->active_mask &= ~mask;
         for (i = 0; i < VECTORS_NUM; i++) {
             if (mask & (1 << i)) {
-                struct Interrupt *ciaint = CiaBase->Vectors[i];
-                if (ciaint) {
-                    AROS_INTC1(ciaint->is_Code, ciaint->is_Data);
+                struct CIAIntVector *iv = &CiaBase->Vectors[i];
+                if (iv->iv_Code) {
+                    AROS_INTC1(iv->iv_Code, iv->iv_Data);
                 }
             }
         }

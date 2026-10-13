@@ -1,0 +1,14 @@
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES := btbattery.class debug
+
+#MM- kernel-bluetooth-classes-btbattery : kernel-bluetooth-btclass kernel-bluetooth-library-includes \
+#MM				kernel-hidd-telemetry-includes
+
+%build_module_library mmake=kernel-bluetooth-classes-btbattery \
+    modname=btbattery modtype=btclass modsuffix="class" \
+    files="$(FILES)"
+
+%common

@@ -1,0 +1,7 @@
+include $(SRCDIR)/config/aros.cfg
+
+%set_archincludes mainmmake=kernel-dos maindir=rom/dos \
+  modname=dos pri=0 arch=amiga-m68k \
+  includes="-I$(SRCDIR)/$(CURDIR)"
+
+%common

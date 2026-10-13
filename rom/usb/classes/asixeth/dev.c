@@ -173,7 +173,7 @@ AROS_LH1(BPTR, devClose,
     //ncp->ncp_DenyRequests = TRUE;
 
     ncp->ncp_Unit.unit_OpenCnt--;
-    if(ncp->ncp_Unit.unit_OpenCnt == 1)
+    if(ncp->ncp_Unit.unit_OpenCnt == 0)
     {
         ncp->ncp_OpenFlags = 0; // clear all flags, if all units are closed
     }

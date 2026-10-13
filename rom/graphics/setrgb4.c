@@ -15,10 +15,10 @@
 
 /*  SYNOPSIS */
         AROS_LHA(struct ViewPort *, vp, A0),
-        AROS_LHA(ULONG            , n, D0),
-        AROS_LHA(ULONG            , r, D1),
-        AROS_LHA(ULONG            , g, D2),
-        AROS_LHA(ULONG            , b, D3),
+        AROS_LHA(WORD             , n, D0),
+        AROS_LHA(UBYTE            , r, D1),
+        AROS_LHA(UBYTE            , g, D2),
+        AROS_LHA(UBYTE            , b, D3),
 
 /*  LOCATION */
         struct GfxBase *, GfxBase, 48, Graphics)

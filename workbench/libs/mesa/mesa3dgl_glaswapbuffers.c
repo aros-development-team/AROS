@@ -1,10 +1,11 @@
 /*
-    Copyright (C) 2009-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2009-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
 
 #include "util/os_misc.h"
+#include "pipe/p_context.h"
 #include "pipe/p_defines.h"
 #include "pipe/p_screen.h"
 #include "pipe/p_state.h"
@@ -54,8 +55,17 @@
 
     if (_ctx->framebuffer->render_resource)
     {
+        struct pipe_context *pipe = _ctx->st->pipe;
+        struct pipe_resource *zs =
+            _ctx->framebuffer->textures[ST_ATTACHMENT_DEPTH_STENCIL];
+
+        /* Depth/stencil is undefined after a swap: invalidate it before
+         * the flush, so a tiler skips storing it (as Mesa's DRI does). */
+        if (zs && pipe->invalidate_resource)
+            pipe->invalidate_resource(pipe, zs);
+
         /* Flush rendering cache before blitting */
-        _ctx->st->flush(_ctx->st, ST_FLUSH_FRONT, NULL, NULL, NULL);
+        st_context_flush(_ctx->st, ST_FLUSH_FRONT, NULL, NULL, NULL);
 
         /* gallium.library tries the whole-window DisplayResourceRP method
          * first (vc4 presents zero-copy there) and falls back to the

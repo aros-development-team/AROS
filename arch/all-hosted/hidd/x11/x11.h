@@ -16,6 +16,7 @@
 #include <hidd/input.h>
 
 #include "x11_class.h"
+#include "x11_keystate.h"
 
 #ifndef X11_TYPES_H
 /* Note: x11_types.h is not included intentionally to resolve compilation
@@ -71,7 +72,11 @@ struct x11kbd_data
 {
     InputIrqCallBack_t  kbd_callback;
     APTR    callbackdata;
-    UWORD   prev_keycode;
+    struct x11_keystate keys;
+    UBYTE f12[256];
+    UWORD f12_count;
+    BOOL active;
+    BOOL await_keymap;
 };
 
 /* IDs */
@@ -173,6 +178,8 @@ struct x11_staticdata
     OOP_Object      	        *x11display;
     OOP_Object      	        *mousehidd;
     OOP_Object      	        *kbdhidd;
+    BOOL                        detectable_repeat;
+    Window                      keyboard_window;
 
 #if USE_XSHM
     struct SignalSemaphore      shm_sema;	/* singlethread access to shared mem */

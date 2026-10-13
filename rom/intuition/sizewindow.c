@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -14,8 +14,8 @@
 
 /*  SYNOPSIS */
         AROS_LHA(struct Window *, window, A0),
-        AROS_LHA(LONG           , dx, D0),
-        AROS_LHA(LONG           , dy, D1),
+        AROS_LHA(WORD           , dx, D0),
+        AROS_LHA(WORD           , dy, D1),
 
 /*  LOCATION */
         struct IntuitionBase *, IntuitionBase, 48, Intuition)
@@ -48,9 +48,6 @@
     AROS_LIBFUNC_INIT
 
     SANITY_CHECK(window)
-
-    EXTENDWORD(dx);
-    EXTENDWORD(dy);
 
     ChangeWindowBox(window, window->LeftEdge, window->TopEdge,
                     window->Width + dx, window->Height + dy);

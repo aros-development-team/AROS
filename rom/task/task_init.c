@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2015-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -55,6 +55,8 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
 
     NEWLIST(&TaskResBase->trb_TaskList);
     NEWLIST(&TaskResBase->trb_NewTasks);
+    NEWLIST(&TaskResBase->trb_NotifyHooks);
+    InitSemaphore(&TaskResBase->trb_NotifySem);
     NEWLIST(&TaskResBase->trb_LockedLists);
 
     SysBase->lb_TaskResBase = (struct Library *)TaskResBase;

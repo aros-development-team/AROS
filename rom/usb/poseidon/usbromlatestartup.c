@@ -54,6 +54,7 @@ AROS_UFH3(static IPTR, usbromstartup_late,
 
         if(!(psdAddClass("hid.class", 0)))
         {
+            D(bug("[USBROMStartup] %s: hid.class unavailable, falling back to the boot protocol classes\n", __func__));
             psdAddClass("bootmouse.class", 0);
             psdAddClass("bootkeyboard.class", 0);
         }

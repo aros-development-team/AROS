@@ -1,0 +1,195 @@
+#   Build libvulkan_runtime.a — Mesa Vulkan common runtime
+#
+#   Provides shared Vulkan object infrastructure (VkInstance, VkDevice,
+#   VkCommandBuffer, etc.) used by all Mesa Vulkan drivers (RADV, etc.).
+#   Generated files (entrypoints, dispatch tables, etc.) must be
+#   pre-generated before building. See mesa3d-generate-vulkan-runtime target.
+
+include $(SRCDIR)/config/aros.cfg
+
+CUR_MESADIR := src/vulkan
+include $(SRCDIR)/$(CURDIR)/../mesa.cfg
+
+VK_GENDIR := $(top_builddir)/$(CUR_MESADIR)
+VK_RT_GENDIR := $(VK_GENDIR)/runtime
+VK_UTIL_GENDIR := $(VK_GENDIR)/util
+
+#MM mesa3d-linklib-vulkan-runtime : mesa3d-generate-vulkan-runtime includes linklibs-galliumauxiliary mesa3d-linklib-mesautil mesa3d-linklib-compiler
+
+# Runtime sources from src/vulkan/runtime/
+VK_RUNTIME_SOURCES := \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_blend \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_buffer \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_buffer_view \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_cmd_copy \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_cmd_enqueue \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_command_buffer \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_command_pool \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_debug_report \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_debug_utils \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_deferred_operation \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_descriptors \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_descriptor_set_layout \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_descriptor_update_template \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_device \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_device_generated_commands \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_device_memory \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_fence \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_framebuffer \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_graphics_state \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_image \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_instance \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_log \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_meta \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_meta_blit_resolve \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_meta_clear \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_meta_copy_fill_update \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_meta_draw_rects \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_meta_object_list \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_nir \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_nir_convert_ycbcr \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_object \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_physical_device \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_pipeline \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_pipeline_cache \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_pipeline_layout \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_query_pool \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_queue \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_render_pass \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_sampler \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_semaphore \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_shader \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_shader_module \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_standard_sample_locations \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_sync \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_sync_binary \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_sync_dummy \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_synchronization \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_sync_timeline \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_video \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_ycbcr_conversion
+
+# Vulkan util sources (non-generated)
+VK_UTIL_SOURCES := \
+    $(top_srcdir)/$(CUR_MESADIR)/util/vk_alloc \
+    $(top_srcdir)/$(CUR_MESADIR)/util/vk_format \
+    $(top_srcdir)/$(CUR_MESADIR)/util/vk_util
+
+# Generated runtime sources
+VK_RT_GEN_SOURCES := \
+    $(VK_RT_GENDIR)/vk_common_entrypoints \
+    $(VK_RT_GENDIR)/vk_cmd_queue \
+    $(VK_RT_GENDIR)/vk_cmd_enqueue_entrypoints \
+    $(VK_RT_GENDIR)/vk_dispatch_trampolines \
+    $(VK_RT_GENDIR)/vk_physical_device_features \
+    $(VK_RT_GENDIR)/vk_physical_device_properties \
+    $(VK_RT_GENDIR)/vk_physical_device_spirv_caps \
+    $(VK_RT_GENDIR)/vk_synchronization_helpers \
+    $(VK_RT_GENDIR)/vk_format_info
+
+# Generated util sources
+VK_UTIL_GEN_SOURCES := \
+    $(VK_UTIL_GENDIR)/vk_dispatch_table \
+    $(VK_UTIL_GENDIR)/vk_enum_to_str \
+    $(VK_UTIL_GENDIR)/vk_extensions
+
+USER_INCLUDES += \
+    -iquote $(SRCDIR)/$(CURDIR)/../aros_compat \
+    -iquote $(top_srcdir)/$(CUR_MESADIR)/runtime \
+    -iquote $(top_srcdir)/$(CUR_MESADIR)/util \
+    -iquote $(top_srcdir)/src \
+    -iquote $(top_srcdir)/src/util \
+    -iquote $(top_srcdir)/src/compiler \
+    -iquote $(top_srcdir)/src/compiler/glsl \
+    -iquote $(top_srcdir)/src/compiler/nir \
+    -iquote $(top_srcdir)/src/include \
+    -iquote $(top_srcdir)/include \
+    -iquote $(top_builddir)/src \
+    -iquote $(top_builddir)/src/util \
+    -iquote $(top_builddir)/src/compiler \
+    -iquote $(top_builddir)/src/compiler/glsl \
+    -iquote $(top_builddir)/src/compiler/nir \
+    -iquote $(VK_RT_GENDIR) \
+    -iquote $(VK_UTIL_GENDIR) \
+    -I $(SRCDIR)/$(CURDIR)/../aros_compat \
+    -I $(top_srcdir)/$(CUR_MESADIR)/runtime \
+    -I $(top_srcdir)/$(CUR_MESADIR)/util \
+    -I $(top_srcdir)/src/include \
+    -I $(VK_RT_GENDIR) \
+    -I $(VK_UTIL_GENDIR)
+
+USER_CPPFLAGS += \
+    -DNO_AMIGA_LINKAGE_TYPES \
+    -DPACKAGE_VERSION=\"26.0.0\" \
+    -DNDEBUG
+
+USER_CFLAGS += $(MESA_NOWARNFLAGS)
+
+%build_linklib mmake=mesa3d-linklib-vulkan-runtime \
+    libname=vulkan_runtime \
+    libdir=$(top_libdir) \
+    objdir=$(top_builddir)/$(CUR_MESADIR) \
+    files="$(VK_RUNTIME_SOURCES) $(VK_UTIL_SOURCES) $(VK_RT_GEN_SOURCES) $(VK_UTIL_GEN_SOURCES)"
+
+#MM
+mesa3d-generate-vulkan-runtime :
+	@$(ECHO) "Generating Vulkan runtime headers..."
+	@$(MKDIR) -p $(VK_RT_GENDIR) $(VK_UTIL_GENDIR)
+	@VK_XML=$(top_srcdir)/$(CUR_MESADIR)/registry/vk.xml && \
+	PYTHONPATH="$(top_srcdir)/$(CUR_MESADIR)/util:$(top_srcdir)/src/util:$(top_srcdir)/src:$$PYTHONPATH" && \
+	export PYTHONPATH && \
+	python3 $(top_srcdir)/$(CUR_MESADIR)/util/vk_dispatch_table_gen.py \
+	  --xml "$$VK_XML" --beta false \
+	  --out-c "$(VK_UTIL_GENDIR)/vk_dispatch_table.c" \
+	  --out-h "$(VK_UTIL_GENDIR)/vk_dispatch_table.h" && \
+	python3 $(top_srcdir)/$(CUR_MESADIR)/util/gen_enum_to_str.py \
+	  --xml "$$VK_XML" --beta false \
+	  --out-c "$(VK_UTIL_GENDIR)/vk_enum_to_str.c" \
+	  --out-h "$(VK_UTIL_GENDIR)/vk_enum_to_str.h" \
+	  --out-d "$(VK_UTIL_GENDIR)/vk_enum_defines.h" && \
+	python3 $(top_srcdir)/$(CUR_MESADIR)/util/vk_extensions_gen.py \
+	  --xml "$$VK_XML" \
+	  --out-c "$(VK_UTIL_GENDIR)/vk_extensions.c" \
+	  --out-h "$(VK_UTIL_GENDIR)/vk_extensions.h" && \
+	python3 $(top_srcdir)/$(CUR_MESADIR)/util/vk_struct_type_cast_gen.py \
+	  --xml "$$VK_XML" --beta false \
+	  --out "$(VK_UTIL_GENDIR)/vk_struct_type_cast.h" && \
+	python3 $(top_srcdir)/$(CUR_MESADIR)/util/vk_entrypoints_gen.py \
+	  --xml "$$VK_XML" --beta false --proto --weak \
+	  --prefix vk_common \
+	  --out-c "$(VK_RT_GENDIR)/vk_common_entrypoints.c" \
+	  --out-h "$(VK_RT_GENDIR)/vk_common_entrypoints.h" && \
+	python3 $(top_srcdir)/$(CUR_MESADIR)/util/vk_cmd_queue_gen.py \
+	  --xml "$$VK_XML" --beta false \
+	  --out-c "$(VK_RT_GENDIR)/vk_cmd_queue.c" \
+	  --out-h "$(VK_RT_GENDIR)/vk_cmd_queue.h" && \
+	python3 $(top_srcdir)/$(CUR_MESADIR)/util/vk_entrypoints_gen.py \
+	  --xml "$$VK_XML" --beta false --proto --weak \
+	  --prefix vk_cmd_enqueue --prefix vk_cmd_enqueue_unless_primary \
+	  --out-c "$(VK_RT_GENDIR)/vk_cmd_enqueue_entrypoints.c" \
+	  --out-h "$(VK_RT_GENDIR)/vk_cmd_enqueue_entrypoints.h" && \
+	python3 $(top_srcdir)/$(CUR_MESADIR)/util/vk_dispatch_trampolines_gen.py \
+	  --xml "$$VK_XML" --beta false \
+	  --out-c "$(VK_RT_GENDIR)/vk_dispatch_trampolines.c" \
+	  --out-h "$(VK_RT_GENDIR)/vk_dispatch_trampolines.h" && \
+	python3 $(top_srcdir)/$(CUR_MESADIR)/util/vk_physical_device_features_gen.py \
+	  --xml "$$VK_XML" --beta false \
+	  --out-c "$(VK_RT_GENDIR)/vk_physical_device_features.c" \
+	  --out-h "$(VK_RT_GENDIR)/vk_physical_device_features.h" && \
+	python3 $(top_srcdir)/$(CUR_MESADIR)/util/vk_physical_device_properties_gen.py \
+	  --xml "$$VK_XML" --beta false \
+	  --out-c "$(VK_RT_GENDIR)/vk_physical_device_properties.c" \
+	  --out-h "$(VK_RT_GENDIR)/vk_physical_device_properties.h" && \
+	python3 $(top_srcdir)/$(CUR_MESADIR)/util/vk_physical_device_spirv_caps_gen.py \
+	  --xml "$$VK_XML" --beta false \
+	  --out-c "$(VK_RT_GENDIR)/vk_physical_device_spirv_caps.c" && \
+	python3 $(top_srcdir)/$(CUR_MESADIR)/util/vk_synchronization_helpers_gen.py \
+	  --xml "$$VK_XML" --beta false \
+	  --out-c "$(VK_RT_GENDIR)/vk_synchronization_helpers.c" && \
+	python3 $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_format_info_gen.py \
+	  --xml "$$VK_XML" \
+	  --out-c "$(VK_RT_GENDIR)/vk_format_info.c" \
+	  --out-h "$(VK_RT_GENDIR)/vk_format_info.h"
+	@$(ECHO) "Vulkan runtime headers generated."
+
+%common

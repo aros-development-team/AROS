@@ -1,0 +1,14 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+#MM- test : test-devices-cd
+#MM- test-quick : test-devices-cd-quick
+#MM test-devices-cd : includes linklibs
+
+%build_progs mmake=test-devices-cd \
+    files=cdframeinttest targetdir=$(AROS_TESTS)/devices/cd
+
+%common

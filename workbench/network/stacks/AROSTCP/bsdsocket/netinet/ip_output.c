@@ -102,6 +102,30 @@ static void ip_mloopback
 __P((struct ifnet *, struct mbuf *, struct sockaddr_in *));
 #endif
 
+#ifdef ENABLE_MULTICAST
+/*
+ * The interface a datagram to a group leaves by when that is known without
+ * the routing table: the one the sender chose with IP_MULTICAST_IF, or,
+ * when there is no route to the group, the one of the socket's first
+ * membership. A host with a static address and no default route can then
+ * still talk to a group on its link, as mDNS and SSDP do. NULL leaves the
+ * choice, or the error, to the routing table.
+ */
+static struct ifnet *
+ip_multicast_if(struct ip_moptions *imo, struct route *ro)
+{
+    if(imo == NULL)
+        return NULL;
+    if(imo->imo_multicast_ifp != NULL)
+        return imo->imo_multicast_ifp;
+    if(ro->ro_rt == 0)
+        rtalloc(ro);
+    if(ro->ro_rt == 0 && imo->imo_num_memberships > 0)
+        return imo->imo_membership[0]->inm_ifp;
+    return NULL;
+}
+#endif
+
 /*
  * IP output.  The packet in mbuf chain m contains a skeletal IP
  * header (with len, off, ttl, proto, tos, src, dst).
@@ -125,6 +149,7 @@ int	STKARGFUN ip_output(void *args, ...)
     struct route iproute;
     struct sockaddr_in *dst;
     struct in_ifaddr *ia;
+    struct ifnet *boundifp = NULL;
     va_list va;
 
     va_start(va, args);
@@ -145,6 +170,11 @@ int	STKARGFUN ip_output(void *args, ...)
         hlen = len;
     }
     ip = mtod(m, struct ip *);
+    if(flags & IP_BOUNDIF) {
+        /* the sender is bound to an interface (SO_BINDTODEVICE) */
+        boundifp = m->m_pkthdr.rcvif;
+        m->m_pkthdr.rcvif = (struct ifnet *)0;
+    }
     /*
      * Fill in IP header.
      */
@@ -186,7 +216,49 @@ int	STKARGFUN ip_output(void *args, ...)
      */
 #define ifatoia(ifa)	((struct in_ifaddr *)(ifa))
 #define sintosa(sin)	((struct sockaddr *)(sin))
-    if(flags & IP_ROUTETOIF) {
+    if(boundifp) {
+        /*
+         * Bound to an interface: the packet leaves there or not at all.
+         * The interface need not have an address yet (a DHCP client asking
+         * for one), so the routing table is only consulted for
+         * destinations that are not on the link.
+         */
+        int direct = (ip->ip_dst.s_addr == INADDR_BROADCAST) ||
+                     IN_MULTICAST(ntohl(ip->ip_dst.s_addr));
+        struct in_ifaddr *ifia;
+
+        ifp = boundifp;
+        ia = NULL;
+        for(ifia = in_ifaddr; ifia; ifia = ifia->ia_next) {
+            if(ifia->ia_ifp != ifp)
+                continue;
+            if(ia == NULL)
+                ia = ifia;
+            if(IA_SIN(ifia)->sin_addr.s_addr != INADDR_ANY &&
+                    (ntohl(ip->ip_dst.s_addr) & ifia->ia_subnetmask) == ifia->ia_subnet) {
+                ia = ifia;
+                direct = 1;
+            }
+        }
+        if(direct) {
+            /* a route cached for another interface must not travel with it */
+            if(ro->ro_rt && ro->ro_rt->rt_ifp != ifp) {
+                RTFREE(ro->ro_rt);
+                ro->ro_rt = (struct rtentry *)0;
+            }
+        } else {
+            if(ro->ro_rt == 0)
+                rtalloc(ro);
+            if(ro->ro_rt == 0 || ro->ro_rt->rt_ifp != ifp) {
+                ipstat.ips_noroute++;
+                error = EHOSTUNREACH;
+                goto bad;
+            }
+            ro->ro_rt->rt_use++;
+            if(ro->ro_rt->rt_flags & RTF_GATEWAY)
+                dst = (struct sockaddr_in *)ro->ro_rt->rt_gateway;
+        }
+    } else if(flags & IP_ROUTETOIF) {
         if((ia = ifatoia(ifa_ifwithdstaddr(sintosa(dst)))) == 0 &&
                 (ia = ifatoia(ifa_ifwithnet(sintosa(dst)))) == 0) {
             ipstat.ips_noroute++;
@@ -195,6 +267,14 @@ int	STKARGFUN ip_output(void *args, ...)
         }
         ifp = ia->ia_ifp;
         ip->ip_ttl = 1;
+#ifdef ENABLE_MULTICAST
+    } else if(IN_MULTICAST(ntohl(ip->ip_dst.s_addr)) &&
+              (ifp = ip_multicast_if(imo, ro)) != NULL) {
+        /*
+         * The group is reached on that interface's link and needs no
+         * route; the multicast block below does the rest.
+         */
+#endif
     } else {
         if(ro->ro_rt == 0)
             rtalloc(ro);
@@ -307,7 +387,7 @@ int	STKARGFUN ip_output(void *args, ...)
      * If source address not specified yet, use address
      * of outgoing interface.
      */
-    if(ip->ip_src.s_addr == INADDR_ANY)
+    if(ip->ip_src.s_addr == INADDR_ANY && ia != NULL)
         ip->ip_src = IA_SIN(ia)->sin_addr;
 #endif
     /*

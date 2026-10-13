@@ -24,10 +24,42 @@ static char value(char chr)
     return chr;
 }
 
-AROS_LH2(int, UUID_Parse,
+/*****************************************************************************
+
+    NAME */
+        AROS_LH2(int, UUID_Parse,
+
+/*  SYNOPSIS */
          AROS_LHA(const char *, in, A0),
          AROS_LHA(uuid_t *, uuid, A1),
+
+/*  LOCATION */
          struct uuid_base *, UUIDBase, 7, UUID)
+/*  FUNCTION
+        Convert a NUL-terminated UUID string to a uuid_t. The required
+        form is xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx, where each x is a
+        hexadecimal digit. Uppercase and lowercase hexadecimal letters are accepted.
+        The input must contain exactly UUID_STRLEN (36) characters before
+        the terminator; braces, surrounding whitespace and prefixes are
+        not accepted.
+
+    INPUTS
+        in - Non-NULL pointer to a readable NUL-terminated string.
+        uuid - Non-NULL pointer to a writable uuid_t.
+
+    RESULT
+        1 on success, with the converted value in *uuid.
+        0 for an invalid length, separator or hexadecimal digit; *uuid
+        is left unchanged.
+
+    NOTES
+        Version and variant fields are not validated. The nil UUID is
+        accepted, and the input string is unchanged.
+
+    SEE ALSO
+        UUID_Unparse(), UUID_Unpack()
+
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     
@@ -106,10 +138,37 @@ AROS_LH2(int, UUID_Parse,
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH2(void, UUID_Unparse,
+/*****************************************************************************
+
+    NAME */
+        AROS_LH2(void, UUID_Unparse,
+
+/*  SYNOPSIS */
          AROS_LHA(const uuid_t *, uuid, A0),
          AROS_LHA(char *, out, A1),
+
+/*  LOCATION */
          struct uuid_base *, UUIDBase, 8, UUID)
+/*  FUNCTION
+        Write the UUID as lowercase hexadecimal text in the form
+        xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx, followed by a NUL byte.
+
+    INPUTS
+        uuid - Non-NULL pointer to a readable uuid_t.
+        out - Non-NULL pointer to a writable buffer of at least
+              UUID_STRLEN + 1 (37) bytes, separate from the input object.
+
+    RESULT
+        None. The textual representation is written to out.
+
+    NOTES
+        The caller must provide the full 37-byte buffer; there is no
+        size argument. Version and variant fields are not validated.
+
+    SEE ALSO
+        UUID_Parse(), UUID_Pack()
+
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 

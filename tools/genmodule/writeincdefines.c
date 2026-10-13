@@ -12,11 +12,11 @@ static void writealiases(FILE *, struct functionhead *, struct config *);
 void writeincdefines(struct config *cfg)
 {
     FILE *out;
-    char line[256], *banner;
+    char *line, *banner;
     struct functionhead *funclistit;
 
 #if (1)
-    snprintf(line, 255, "%s/defines/%s_LVO.h", cfg->gendir, cfg->includename);
+    line = make_output_path("%s/defines/%s_LVO.h", cfg->gendir, cfg->includename);
     out = fopen(line, "w");
 
     if (out == NULL)
@@ -53,9 +53,10 @@ void writeincdefines(struct config *cfg)
             cfg->includenameupper
     );
     fclose(out);
+    free(line);
 #endif
 
-    snprintf(line, 255, "%s/defines/%s.h", cfg->gendir, cfg->includename);
+    line = make_output_path("%s/defines/%s.h", cfg->gendir, cfg->includename);
     out = fopen(line, "w");
 
     if (out == NULL)
@@ -136,29 +137,32 @@ void writeincdefines(struct config *cfg)
                 lastname = arglistit->name;
                 assert(lastname != NULL);
 
-                if (*(funclistit->name + strlen(funclistit->name) - 1) == 'A')
+                /* Function names are duplicated by newfunctionhead() and are NUL-terminated. */
+                size_t namelen = strlen(funclistit->name); /* Flawfinder: ignore */
+
+                if (namelen > 0 && funclistit->name[namelen - 1] == 'A')
                 {
                     funclistit->varargtype = 1;
                     varargname = strdup(funclistit->name);
-                    varargname[strlen(funclistit->name)-1] = '\0';
+                    varargname[namelen - 1] = '\0';
                     if (arglistit && strncmp(arglistit->arg, "RAWARG",6) == 0)
                         funclistit->varargtype = 3;
                 }
-                else if (strcmp(funclistit->name + strlen(funclistit->name) - 7, "TagList") == 0)
+                else if (namelen >= 7 && strcmp(funclistit->name + namelen - 7, "TagList") == 0)
                 {
                     funclistit->varargtype = 1;
                     /* TagList has to be changed to Tags at the end of the functionname */
                     varargname = strdup(funclistit->name);
-                    varargname[strlen(funclistit->name)-4] = 's';
-                    varargname[strlen(funclistit->name)-3] = '\0';
+                    varargname[namelen - 4] = 's';
+                    varargname[namelen - 3] = '\0';
                 }
-                else if (strcmp(funclistit->name + strlen(funclistit->name) - 4, "Args") == 0
+                else if (namelen >= 4 && strcmp(funclistit->name + namelen - 4, "Args") == 0
                          && (strcasecmp(lastname, "args") == 0 || strcasecmp(lastname, "arglist") == 0)
                 )
                 {
                     funclistit->varargtype = 1;
                     varargname = strdup(funclistit->name);
-                    varargname[strlen(funclistit->name)-4] = '\0';
+                    varargname[namelen - 4] = '\0';
                 }
                 else if ((funclistit->name[0] == 'V') &&  (strncmp(arglistit->arg, "va_list", 7) == 0))
                 {
@@ -229,6 +233,7 @@ void writeincdefines(struct config *cfg)
             cfg->includenameupper
     );
     fclose(out);
+    free(line);
 }
 
 void
@@ -352,28 +357,53 @@ writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
 {
     struct functionarg *arglistit = funclistit->arguments;
     int isvoid;
-    const char *guard_open, *guard_close;
-    char guard_open_buf[256], guard_close_buf[256];
+    char *guard_open, *guard_close;
+    size_t guard_open_size, guard_close_size;
 
     isvoid = strcmp(funclistit->type, "void") == 0
         || strcmp(funclistit->type, "VOID") == 0;
 
     if (funclistit->inlineguard)
     {
-        snprintf(guard_open_buf, sizeof(guard_open_buf),
-                 "\n#if defined(%s)\n", funclistit->inlineguard);
-        snprintf(guard_close_buf, sizeof(guard_close_buf),
-                 "#endif /* defined(%s) */\n", funclistit->inlineguard);
-        guard_open = guard_open_buf;
-        guard_close = guard_close_buf;
+        /* Inline guards are created with strndup() and are NUL-terminated. */
+        guard_open_size = strlen(funclistit->inlineguard) /* Flawfinder: ignore */
+                        + sizeof("\n#if defined()\n");
+        /* Inline guards are created with strndup() and are NUL-terminated. */
+        guard_close_size = strlen(funclistit->inlineguard) /* Flawfinder: ignore */
+                         + sizeof("#endif /* defined() */\n");
     }
     else
     {
-        snprintf(guard_open_buf, sizeof(guard_open_buf),
+        /* The uppercase include name is duplicated from a NUL-terminated string. */
+        guard_open_size = strlen(cfg->includenameupper) /* Flawfinder: ignore */
+                        + sizeof("\n#if !defined(NO_INLINE_STDARG) && !defined(_NO_INLINE_STDARG)\n");
+        guard_close_size = sizeof("#endif /* !NO_INLINE_STDARG */\n");
+    }
+
+    guard_open = malloc(guard_open_size);
+    guard_close = malloc(guard_close_size);
+    if (guard_open == NULL || guard_close == NULL)
+    {
+        free(guard_open);
+        free(guard_close);
+        fprintf(stderr, "Out of memory\n");
+        exit(20);
+    }
+
+    if (funclistit->inlineguard)
+    {
+        snprintf(guard_open, guard_open_size,
+                 "\n#if defined(%s)\n", funclistit->inlineguard);
+        snprintf(guard_close, guard_close_size,
+                 "#endif /* defined(%s) */\n", funclistit->inlineguard);
+    }
+    else
+    {
+        snprintf(guard_open, guard_open_size,
                  "\n#if !defined(NO_INLINE_STDARG) && !defined(%s_NO_INLINE_STDARG)\n",
                  cfg->includenameupper);
-        guard_open = guard_open_buf;
-        guard_close = "#endif /* !NO_INLINE_STDARG */\n";
+        snprintf(guard_close, guard_close_size,
+                 "#endif /* !NO_INLINE_STDARG */\n");
     }
 
     if (funclistit->varargtype == 1)
@@ -582,6 +612,9 @@ writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
         );
         fprintf(out, "%s", guard_close);
     }
+
+    free(guard_open);
+    free(guard_close);
 }
 
 void

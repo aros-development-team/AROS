@@ -135,6 +135,7 @@
 #define	SO_MAX_PACING_RATE	0x1018	/* socket's max TX pacing rate (Linux name) */
 #define	SO_DOMAIN	0x1019		/* get socket domain */
 #define	SO_SPLICE	0x1023		/* splice data to other socket */
+#define	SO_BINDTODEVICE	0x1024		/* bind to one interface (struct ifreq, or its name) */
 #endif
 
 #if __BSD_VISIBLE

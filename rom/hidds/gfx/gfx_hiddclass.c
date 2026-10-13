@@ -1652,6 +1652,133 @@ IPTR GFXHIDD__Hidd_Gfx__CopyBoxMasked(OOP_Class *cl, OOP_Object *obj, struct pHi
     return ret;
 }
 
+/*****************************************************************************************
+
+    NAME
+        moHidd_Gfx_CopyBoxAlpha
+
+    SYNOPSIS
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_CopyBoxAlpha *msg);
+
+        VOID HIDD_Gfx_CopyBoxAlpha(OOP_Object *gfxHidd, OOP_Object *src, WORD srcX, WORD srcY,
+                                   OOP_Object *dest, WORD destX, WORD destY, UWORD width, UWORD height,
+                                   UBYTE opacity, OOP_Object *gc);
+
+    LOCATION
+        hidd.gfx.driver
+
+    FUNCTION
+        Blend a rectangle of the source bitmap over the destination bitmap
+        (Porter-Duff "source over"). The source's per-pixel alpha channel,
+        scaled by the constant opacity, is the coverage; the destination's
+        own alpha channel, if it has one, takes part and is updated. A
+        source without an alpha channel reads as fully opaque, so with
+        opacity 255 the call degenerates to a copy.
+
+        Neither bitmap needs to be directly accessible: the base class
+        fetches the source as ARGB32 rows with moHidd_BitMap_GetImage and
+        blends them into the destination with moHidd_BitMap_PutAlphaImage,
+        so a driver that accelerates either of those accelerates this too.
+        Drivers with a native blit-with-blend can override it.
+
+    INPUTS
+        gfxHidd - a display driver object that you are going to use for blending
+        src     - a pointer to source bitmap object
+        srcX    - an X coordinate of the source rectangle
+        srcY    - a Y coordinate of the source rectangle
+        dest    - a pointer to destination bitmap object
+        destX   - an X coordinate of the destination rectangle
+        destY   - a Y coordinate of the destination rectangle
+        width   - width of the rectangle to blend
+        height  - height of the rectangle to blend
+        opacity - constant alpha applied on top of the source's alpha channel,
+                  0 (invisible) to 255 (the source's own alpha only)
+        gc      - graphics context. Only passed on to moHidd_BitMap_PutAlphaImage,
+                  which needs it for drivers that draw through a GC
+
+    RESULT
+        None.
+
+    NOTES
+        You must specify valid coordinates (non-negative and inside the actual bitmap
+        area), no checks are done.
+
+        Source and destination must not overlap.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        moHidd_Gfx_CopyBox, moHidd_BitMap_PutAlphaImage
+
+    INTERNALS
+
+*****************************************************************************************/
+
+#define COPYBOXALPHA_BUFSIZE 65536
+
+VOID GFXHIDD__Hidd_Gfx__CopyBoxAlpha(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_CopyBoxAlpha *msg)
+{
+    ULONG  modulo = (ULONG)msg->width * 4;
+    ULONG  rows, bufsize;
+    UBYTE *buf;
+    WORD   y;
+
+    if ((msg->width == 0) || (msg->height == 0) || (msg->opacity == 0))
+        return;
+
+    /* Work in chunks of whole rows so large blends don't need a large buffer */
+    rows = COPYBOXALPHA_BUFSIZE / modulo;
+    if (rows == 0)
+        rows = 1;
+    if (rows > msg->height)
+        rows = msg->height;
+    bufsize = rows * modulo;
+
+    buf = AllocMem(bufsize, MEMF_ANY);
+    if (!buf)
+    {
+        rows = 1;
+        bufsize = modulo;
+        buf = AllocMem(bufsize, MEMF_ANY);
+        if (!buf)
+            return;
+    }
+
+    for (y = 0; y < msg->height; y += rows)
+    {
+        UWORD n = msg->height - y;
+
+        if (n > rows)
+            n = rows;
+
+        /*
+         * ARGB32 here is the standard pixel format, i.e. the bytes A, R, G, B in
+         * memory order, which is also what PutAlphaImage() takes.
+         */
+        HIDD_BM_GetImage(msg->src, buf, modulo, msg->srcX, msg->srcY + y, msg->width, n, vHidd_StdPixFmt_ARGB32);
+
+        if (msg->opacity != 255)
+        {
+            UBYTE *a = buf;
+            ULONG  i;
+
+            for (i = (ULONG)msg->width * n; i; i--, a += 4)
+            {
+                ULONG v = *a * msg->opacity + 127;
+
+                *a = (v + (v >> 8)) >> 8;
+            }
+        }
+
+        HIDD_BM_PutAlphaImage(msg->dest, msg->gc, buf, modulo, msg->destX, msg->destY + y, msg->width, n);
+    }
+
+    FreeMem(buf, bufsize);
+}
+
+
 
 
 /****************************************************************************************/

@@ -25,7 +25,12 @@ static int __posixc_open(struct PosixCIntBase *PosixCBase)
 {
     D(bug("[posixc] %s(0x%p)\n", __func__, PosixCBase));
 
-    PosixCBase->internalpool = CreatePool(MEMF_PUBLIC|MEMF_CLEAR, 256, 256);
+    /* Tasks sharing this base (pthreads) allocate descriptors from it */
+    PosixCBase->internalpool = CreatePool(MEMF_PUBLIC|MEMF_CLEAR|MEMF_SEM_PROTECTED, 256, 256);
+
+    PosixCBase->upath_task = FindTask(NULL);
+    NEWLIST((struct List *)&PosixCBase->upath_others);
+    InitSemaphore(&PosixCBase->upath_sem);
 
     return PosixCBase->internalpool != NULL;
 }
@@ -33,6 +38,7 @@ static int __posixc_open(struct PosixCIntBase *PosixCBase)
 static void __posixc_close(struct PosixCIntBase *PosixCBase)
 {
     D(bug("[posixc] %s(0x%p)\n", __func__, PosixCBase));
+    __upath_free_others(PosixCBase);
     DeletePool(PosixCBase->internalpool);
 }
 

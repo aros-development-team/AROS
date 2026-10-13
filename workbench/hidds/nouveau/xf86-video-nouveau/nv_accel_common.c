@@ -647,11 +647,14 @@ NVAccelCommonInit(ScrnInfoPtr pScrn)
 	struct nv04_fifo nv04_data = { .vram = NvDmaFB,
 				       .gart = NvDmaTT };
 	struct nvc0_fifo nvc0_data = { };
+	/* Kepler and later take an engine mask; the library reads it from an
+	 * nve0_fifo unconditionally now, so pass a real one. */
+	struct nve0_fifo nve0_data = { .engine = NVE0_FIFO_ENGINE_GR };
 	struct nouveau_object *device = &pNv->dev->object;
 	int size, ret;
 	void *data;
 
-	if (pNv->dev->drm_version < 0x01000000 && pNv->dev->chipset >= 0xc0) {
+	if (NOUVEAU_DEV_DRM_VERSION(pNv->dev) < 0x01000000 && pNv->dev->chipset >= 0xc0) {
 		xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
 			   "Fermi acceleration not supported on old kernel\n");
 		return FALSE;
@@ -660,9 +663,12 @@ NVAccelCommonInit(ScrnInfoPtr pScrn)
 	if (pNv->Architecture < NV_FERMI) {
 		data = &nv04_data;
 		size = sizeof(nv04_data);
-	} else {
+	} else if (pNv->Architecture < NV_KEPLER) {
 		data = &nvc0_data;
 		size = sizeof(nvc0_data);
+	} else {
+		data = &nve0_data;
+		size = sizeof(nve0_data);
 	}
 
 	ret = nouveau_object_new(device, 0, NOUVEAU_FIFO_CHANNEL_CLASS,
@@ -674,7 +680,7 @@ NVAccelCommonInit(ScrnInfoPtr pScrn)
 	}
 
 	ret = nouveau_pushbuf_new(pNv->client, pNv->channel, 4, 32 * 1024,
-				  true, &pNv->pushbuf);
+				  &pNv->pushbuf);
 	if (ret) {
 		xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
 			   "Error allocating DMA push buffer: %d\n",ret);
@@ -726,8 +732,16 @@ NVAccelCommonInit(ScrnInfoPtr pScrn)
 	} else
 	if (pNv->Architecture < NV_FERMI) {
 		INIT_CONTEXT_OBJECT(2D_NV50);
-	} else {
+	} else
+	if (pNv->Architecture < NV_BLACKWELL) {
 		INIT_CONTEXT_OBJECT(2D_NVC0);
+	} else {
+		/*
+		 * The 2D class is gone from this generation - its ops fall
+		 * back to software until they are redone on the copy engine.
+		 */
+		xf86DrvMsg(pScrn->scrnIndex, X_INFO,
+			   "no 2D engine on this GPU, 2D ops in software\n");
 	}
 
 	if (pNv->Architecture < NV_TESLA)
@@ -774,6 +788,27 @@ NVAccelCommonInit(ScrnInfoPtr pScrn)
 
 /* AROS CODE */
 #include "nouveau_copy.h"
+
+/* Shutdown, in the order a driver unload takes: every channel is
+ * drained and freed (the kernel idles each one as it is freed) before
+ * GSP-RM is told the driver is leaving. The engine lock is taken and
+ * never released - nothing may submit again. */
+VOID HIDDNouveauAccelShutdown(struct CardData *carddata)
+{
+    ObtainSemaphore(&globalLock);
+
+    if (carddata->ce_enabled)
+    {
+        carddata->ce_enabled = FALSE;
+        nouveau_pushbuf_kick(carddata->ce_pushbuf);
+        nouveau_copy_fini(carddata);
+    }
+    if (carddata->channel)
+    {
+        nouveau_pushbuf_kick(carddata->pushbuf);
+        NVAccelCommonFini(carddata);
+    }
+}
 
 BOOL HIDDNouveauAccelCommonInit(struct CardData *carddata)
 {

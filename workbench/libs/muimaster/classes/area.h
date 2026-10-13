@@ -588,28 +588,27 @@ struct MUI_AreaData
 
 
 // offset 94 (byte) (frame << 1) (lsb is SETUP_DONE flag)
-enum
-{
-    MUIV_Frame_None = 0,
-    MUIV_Frame_Button,
-    MUIV_Frame_ImageButton,
-    MUIV_Frame_Text,
-    MUIV_Frame_String,
-    MUIV_Frame_ReadList,
-    MUIV_Frame_InputList,
-    MUIV_Frame_Prop,
-    MUIV_Frame_Gauge,
-    MUIV_Frame_Group,
-    MUIV_Frame_PopUp,
-    MUIV_Frame_Virtual,
-    MUIV_Frame_Slider,
-    MUIV_Frame_Knob,
-    MUIV_Frame_Drag,
-    /* Values reserved for existing MUI4/MUI5 types*/
-    MUIV_Frame_Register = 21,
-    /* Values reserved for existing MUI4/MUI5 types*/
-    MUIV_Frame_Count = 24
-};
+/* Unsigned long like the MUII_ values: a frame passed as an int in a
+   varargs tag list gets garbage in its upper half on 64-bit targets. */
+#define MUIV_Frame_None        0UL
+#define MUIV_Frame_Button      1UL
+#define MUIV_Frame_ImageButton 2UL
+#define MUIV_Frame_Text        3UL
+#define MUIV_Frame_String      4UL
+#define MUIV_Frame_ReadList    5UL
+#define MUIV_Frame_InputList   6UL
+#define MUIV_Frame_Prop        7UL
+#define MUIV_Frame_Gauge       8UL
+#define MUIV_Frame_Group       9UL
+#define MUIV_Frame_PopUp       10UL
+#define MUIV_Frame_Virtual     11UL
+#define MUIV_Frame_Slider      12UL
+#define MUIV_Frame_Knob        13UL
+#define MUIV_Frame_Drag        14UL
+/* Values reserved for existing MUI4/MUI5 types*/
+#define MUIV_Frame_Register    21UL
+/* Values reserved for existing MUI4/MUI5 types*/
+#define MUIV_Frame_Count       24UL
 
 // offset 95
 enum

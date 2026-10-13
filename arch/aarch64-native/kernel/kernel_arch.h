@@ -6,11 +6,12 @@
 #include <kernel_irqtypes.h>   /* irqid_t - this header may be reached without kernel_base.h */
 
 /* Number of IRQs used in the machine. Needed by kernel_base.h.
-   A GIC presents shared peripheral interrupts well above the range of the
-   earlier Broadcom controller: the SD host lands at 158 and PCIe legacy
-   interrupts at 175, and a handler for anything beyond this count is
-   silently refused. */
-#define IRQ_COUNT 256
+   A GIC presents SPIs well above the earlier Broadcom controller's range
+   (BCM2712: SD host at 305, RP1/PCIe higher still), and KrnAddIRQHandler
+   silently refuses anything at or above the count - HW_IRQ_COUNT must be
+   set explicitly, or kernel_base.h defaults it to 256 - INTB_KERNEL. */
+#define IRQ_COUNT       384
+#define HW_IRQ_COUNT    IRQ_COUNT
 
 /*
  * Interrupt controller functions.

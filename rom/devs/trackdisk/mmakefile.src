@@ -9,6 +9,10 @@ USER_CPPFLAGS := \
 USER_INCLUDES := -I$(TOP)/rom/devs
 USER_LDFLAGS := -static
 
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
 %build_module mmake=kernel-devs-trackdisk \
   modname=trackdisk modtype=device \
   files="trackdisk_device trackdisk_hw" \

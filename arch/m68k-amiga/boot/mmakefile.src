@@ -12,6 +12,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-amiga-m68k-amigavideo-kobj \
 #MM     kernel-amiga-m68k-audio-kobj \
 #MM     kernel-amiga-m68k-cd-kobj \
+#MM     kernel-amiga-m68k-cd32mpeg-kobj \
 #MM     kernel-amiga-m68k-devs \
 #MM     kernel-amiga-m68k-kbd-kobj \
 #MM     kernel-amiga-m68k-mouse-kobj \
@@ -83,6 +84,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     workbench-libs-nonvolatile-kobj \
 #MM     workbench-libs-nvdisk-kobj \
 #MM     workbench-libs-workbench-kobj \
+#MM     workbench-devs-ramdrive-kobj \
 #MM     linklibs-loadseg \
 #MM     compiler-stdc \
 #MM     compiler-stdcio \
@@ -105,7 +107,7 @@ PRIV_KERNEL_INCLUDES = \
 	-I$(SRCDIR)/rom/exec
 	
 # Make sure we optimize this code for size ..
-OPTIMIZATION_CFLAGS := -Os
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
 
 USELIBS := amiga arossupport autoinit libinit stdc.static
 LIBS    := -L$(GENDIR)/lib -lloadseg $(addprefix -l,$(USELIBS))
@@ -137,8 +139,21 @@ ROMLOC_rom := 0x0f80000
 FILES=start early debug mmu
 AFILES=rom_entry rom_init cpu_detect superstack_swap
 
+# Every module linked into the ROM is also linked as an ordinary file into the
+# AROS tree by its own %build_module rule (rom/mmakefile.src's kernel-objs and
+# the workbench metatargets pull those targets in), and the ISO would ship that
+# copy next to the ROM. Map each bank's module list back to the files' paths in
+# the tree (plain and $(AROS_DIR_BOOTARCH) locations - only existing ones are
+# removed) so the distfiles stage can drop them, see %prune_kickstart_modules.
+kick_modfiles = \
+	$(addprefix $(AROS_DIR_LIBRARIES)/,$(addsuffix .library,$(1))) \
+	$(addprefix $(AROS_DIR_DEVS)/,$(addsuffix .device,$(2))) \
+	$(addprefix $(AROS_DIR_FS)/,$(addsuffix -handler,$(3))) \
+	$(addprefix $(AROS_DIR_DEVS)/$(AROS_DIR_DRIVERS)/,$(addsuffix .hidd,$(4))) \
+	$(addprefix $(AROS_DIR_DEVS)/,$(addsuffix .resource,$(5)))
+
 KLIBS   := exec aros dos utility oop expansion partition debug \
-           keymap lowlevel
+           keymap
 KDEVS   := timer input keyboard console trackdisk gameport audio
 KHNDLRS := con afs ram
 KHIDDS  := amigakbd amigamouse amigavideo ata_gayle gfx hiddclass inputclass keyboard mouse
@@ -158,15 +173,19 @@ OBJS_rom := $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(AFILES))) \
 
 $(GENDIR)/boot/aros-amiga-m68k-rom.elf: $(KOBJS_rom) $(OBJS_rom)
 
+KMODS_rom := $(call kick_modfiles,$(KLIBS),$(KDEVS),$(KHNDLRS),$(KHIDDS),$(KRSRCS))
+
 # Expansion ROM (0xe00000-0xe7ffff)
+# lowlevel.library already needs graphics.library and potgo.resource from
+# this bank. Keep it here to leave room for growth in the main ROM bank.
 FILES   := 
 AFILES  := ext_entry
 
 KLIBS   :=  graphics layers intuition gadtools icon workbench \
             freeanim nonvolatile nvdisk \
             mathffp mathieeesingbas \
-            setpatch
-KDEVS   := cd ata
+            setpatch lowlevel
+KDEVS   := cd cd32mpeg ata ramdrive
 KHNDLRS := cdrom
 KHIDDS  := bus storage system p96gfx
 KRSRCS  := battclock battmem potgo misc shellcommands workbook wbtag
@@ -187,11 +206,22 @@ OBJS_ext := $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(AFILES))) \
 
 $(GENDIR)/boot/aros-amiga-m68k-ext.elf: $(KOBJS_ext) $(OBJS_ext)
 
+KMODS_ext := $(call kick_modfiles,$(KLIBS),$(KDEVS),$(KHNDLRS),$(KHIDDS),$(KRSRCS))
+
+KMODS_PRUNELIST := $(PRUNELISTDIR)/aros-amiga-m68k.rom.prune
+
+$(KMODS_PRUNELIST) : PRUNEFILES := $(KMODS_rom) $(KMODS_ext) $(addprefix $(AROS_DIR_BOOTARCH)/,$(KMODS_rom) $(KMODS_ext))
+$(KMODS_PRUNELIST) : $(SRCDIR)/$(CURDIR)/mmakefile.src
+	$(Q)$(RM) $@
+	$(Q){ $(FOR) f in $(PRUNEFILES) ; do $(ECHO) $$f ; done ; } > $@
+
+%rule_makedirs dirs="$(PRUNELISTDIR)" setuptarget="$(KMODS_PRUNELIST)"
+
 #MM kernel-link-amiga-m68k:
-kernel-link-amiga-m68k : $(GENDIR)/boot/aros-amiga-m68k-rom.bin $(GENDIR)/boot/aros-amiga-m68k-ext.bin
+kernel-link-amiga-m68k : $(GENDIR)/boot/aros-amiga-m68k-rom.bin $(GENDIR)/boot/aros-amiga-m68k-ext.bin $(KMODS_PRUNELIST)
 
 #MM kernel-link-amiga-m68k-quick: 
-kernel-link-amiga-m68k-quick : $(GENDIR)/boot/aros-amiga-m68k-rom.bin $(GENDIR)/boot/aros-amiga-m68k-ext.bin
+kernel-link-amiga-m68k-quick : $(GENDIR)/boot/aros-amiga-m68k-rom.bin $(GENDIR)/boot/aros-amiga-m68k-ext.bin $(KMODS_PRUNELIST)
 
 $(HOSTGENDIR)/tools/romcheck: romcheck.c
 	$(Q)$(HOST_CC) $(DEBUG_CFLAGS) -o $@ $<

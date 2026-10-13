@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Timer startup and device commands
 */
@@ -167,8 +167,14 @@ static int hw_Init(struct TimerBase *LIBBASE)
         return FALSE;
     LIBBASE->tb_Platform.tb_Flags |= PCTIMER_FLAGF_ENABLED;
 
-    /* Install a reset handler */
-    LIBBASE->tb_ResetHandler.is_Node.ln_Pri = -63;
+    /*
+     * Install a reset handler. This must run immediately before the handlers
+     * that actually reset or power off the machine and after everything else:
+     * stopping the timer also stops the reset chain's own timeout, so any
+     * handler that runs after this point can no longer be abandoned if it
+     * fails to return.
+     */
+    LIBBASE->tb_ResetHandler.is_Node.ln_Pri = -100;
     LIBBASE->tb_ResetHandler.is_Node.ln_Name =
         LIBBASE->tb_Device.dd_Library.lib_Node.ln_Name;
     LIBBASE->tb_ResetHandler.is_Code = (VOID_FUNC)ResetHandler;

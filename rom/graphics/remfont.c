@@ -53,6 +53,7 @@
 
     ASSERT_VALID_PTR(textFont);
 
+    ObtainSemaphore(&PrivGBase(GfxBase)->fontsem);
     Forbid();
     tfe = (struct TextFontExtension *)textFont->tf_Extension;
     if(tfe) {
@@ -80,6 +81,7 @@
     }
 
     Permit();
+    ReleaseSemaphore(&PrivGBase(GfxBase)->fontsem);
 
     AROS_LIBFUNC_EXIT
 

@@ -89,16 +89,18 @@ endif
 	$(Q)$(eval LINKTARGET=%(to))
 	$(Q)$(ECHO) "Linking    $(subst $(TARGETDIR)/,,$(LINKTARGET))..."
 	$(Q)$(eval LINKTMPFILE=%(objdir)/$(notdir $(LINKTARGET)))
-	$(Q)$(IF) %(cmd) %(ldopts) %(from) -o $(LINKTMPFILE) %(ldflags) $(strip %(libs) %(archlibs)) 2>&1 > $(GENDIR)/cerrors 2>&1 ; then \
+	$(Q)$(eval LINKRSPFILE=$(LINKTMPFILE).rsp)
+	$(file >$(LINKRSPFILE),%(from))
+	$(Q)$(IF) %(cmd) %(ldopts) -Wl,@$(LINKRSPFILE) -o $(LINKTMPFILE) %(ldflags) $(strip %(libs) %(archlibs)) 2>&1 > $(GENDIR)/cerrors 2>&1 ; then \
 		$(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
-				$(ECHO) "$(LINKTARGET): %(cmd) %(ldopts) %(from) -o $(LINKTARGET) %(ldflags) $(strip %(libs) %(archlibs))" >> $(GENDIR)/errors ; \
+				$(ECHO) "$(LINKTARGET): %(cmd) %(ldopts) -Wl,@$(LINKRSPFILE) -o $(LINKTARGET) %(ldflags) $(strip %(libs) %(archlibs))" >> $(GENDIR)/errors ; \
 				$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
 		else \
 			$(NOP) ; \
 		fi ; \
-		$(CP) $(LINKTMPFILE) $(LINKTARGET) ; \
+		$(CP) $(LINKTMPFILE) $(LINKTARGET) && $(RM) $(LINKRSPFILE) ; \
 	else \
-		$(ECHO) "Link failed: %(cmd) %(ldopts) %(from) -o $(LINKTARGET) %(ldflags) $(strip %(libs) %(archlibs))" 1>&2 ; \
+		$(ECHO) "Link failed: %(cmd) %(ldopts) -Wl,@$(LINKRSPFILE) -o $(LINKTARGET) %(ldflags) $(strip %(libs) %(archlibs))" 1>&2 ; \
 		tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
 		exit 1 ; \
 	fi
@@ -124,13 +126,15 @@ endif
 #
 %define link_module_q cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" ldopts="$(strip $(TARGET_ISA_LDFLAGS) $(NOSTARTUP_LDFLAGS))" err="$(notdir $@).err" strip="$(STRIP)" stripdebug="$(DEBUG)" objs=/A endtag= module="$(MODULE)" ldflags="$(LDFLAGS)" libs="$(LIBS)" archlibs= objdir="$(OBJDIR)"
 	$(Q)$(ECHO) "Building Module  $(subst $(TARGETDIR)/,,$@) ..."
+	$(Q)$(eval LINKRSPFILE=%(objdir)/%(module).link.rsp)
+	$(file >$(LINKRSPFILE),%(objs))
 	$(Q)$(IF) %(cmd) %(ldopts) $(NOSTARTUP_OBJECTS) \
 		$(GENMAP) %(objdir)/%(module).map \
-		%(objs) %(endtag) -o $@ %(ldflags) -Wl,--start-group $(strip %(libs) %(archlibs)) -Wl,--end-group 2>&1 > %(objdir)/%(err) 2>&1 ; \
+		-Wl,@$(LINKRSPFILE) %(endtag) -o $@ %(ldflags) -Wl,--start-group $(strip %(libs) %(archlibs)) -Wl,--end-group 2>&1 > %(objdir)/%(err) 2>&1 ; \
 	then \
-		cat %(objdir)/%(err); \
+		cat %(objdir)/%(err) && $(RM) $(LINKRSPFILE); \
 	else \
-		$(ECHO) "%(cmd) $(strip %(ldopts) $(GENMAP) %(objdir)/%(module).map %(objs) %(endtag) -o $@ %(ldflags) -Wl,--start-group $(strip %(libs) %(archlibs)) -Wl,--end-group)"; \
+		$(ECHO) "%(cmd) $(strip %(ldopts) $(GENMAP) %(objdir)/%(module).map -Wl,@$(LINKRSPFILE) %(endtag) -o $@ %(ldflags) -Wl,--start-group $(strip %(libs) %(archlibs)) -Wl,--end-group)"; \
 		cat %(objdir)/%(err); \
 		exit 1; \
 	fi
@@ -144,8 +148,10 @@ endif
 # Create the library
 %define mklib_q ar=$(AR) ranlib=$(RANLIB) to=$@ from=$(OBJS)
 	$(Q)$(ECHO) "Creating   $(subst $(TARGETDIR)/,,%(to))..."
-	$(Q)%(ar) %(to) %(from)
+	$(file >%(to).ar.rsp,%(from))
+	$(Q)%(ar) %(to) @%(to).ar.rsp
 	$(Q)%(ranlib) %(to)
+	$(Q)$(RM) %(to).ar.rsp
 %end
 #------------------------------------------------------------------------------
 
@@ -2165,7 +2171,8 @@ $(%(mmake)_KOBJ) : FILTBASES:=$(addprefix -L ,$(%(mmake)_SYMBOLS))
 $(%(mmake)_KOBJ) : USER_LDFLAGS := $(USER_LDFLAGS)
 $(%(mmake)_KOBJ) : $(%(mmake)_OBJS) $(%(mmake)_ENDOBJS)
 	$(Q)$(ECHO) "Linking    $(subst $(TARGETDIR)/,,$@)"
-	$(Q)$(AROS_LD) -Ur $(KOBJ_LDFLAGS) $(KERNEL_KOBJ_LDSCRIPT) -o $@ $^ $(USER_LDFLAGS) -L$(AROS_LIB) $(addprefix -l,$(LINKLIBS))
+	$(file >$@.rsp,$^)
+	$(Q)$(AROS_LD) -Ur $(KOBJ_LDFLAGS) $(KERNEL_KOBJ_LDSCRIPT) -o $@ @$@.rsp $(USER_LDFLAGS) -L$(AROS_LIB) $(addprefix -l,$(LINKLIBS)) && $(RM) $@.rsp
 	$(Q)$(OBJCOPY) $@ $(FILTBASES) `$(NM_PLAIN) $@ | $(AWK) '($$3 ~ /^__.*_(LIST|END)__\r?$$/) || ($$3 ~ /^__aros_lib.*\r?$$/) {print "-L " $$3;}'`
 
 ## Dependency fine-tuning
@@ -2755,7 +2762,8 @@ $(%(mmake)%(flavour)_KOBJ) : FILTBASES:=$(addprefix -L ,$(%(mmake)%(flavour)_SYM
 $(%(mmake)%(flavour)_KOBJ) : USER_LDFLAGS:=$(USER_LDFLAGS)
 $(%(mmake)%(flavour)_KOBJ) : $(%(mmake)%(flavour)_OBJS) $(USER_OBJS) $(%(mmake)%(flavour)_ENDOBJS)
 	$(Q)$(ECHO) "Linking    $(subst $(TARGETDIR)/,,$@)"
-	$(Q)$(AROS_LD) -Ur $(KOBJ_LDFLAGS) $(KERNEL_KOBJ_LDSCRIPT) -o $@ $^ $(USER_LDFLAGS) -L$(AROS_LIB) $(addprefix -l,$(LINKLIBS))
+	$(file >$@.rsp,$^)
+	$(Q)$(AROS_LD) -Ur $(KOBJ_LDFLAGS) $(KERNEL_KOBJ_LDSCRIPT) -o $@ @$@.rsp $(USER_LDFLAGS) -L$(AROS_LIB) $(addprefix -l,$(LINKLIBS)) && $(RM) $@.rsp
 	$(Q)$(OBJCOPY) $@ $(FILTBASES) `$(NM_PLAIN) $@ | $(AWK) '($$3 ~ /^__.*_(LIST|END)__\r?$$/) || ($$3 ~ /^__aros_lib.*\r?$$/) {print "-L " $$3;}'`
 endif
 
@@ -3273,7 +3281,7 @@ ifneq (%(cxxfiles),)
     $(error cxx support is TODO)
 endif
 
-%buildid targets="%(mainmmake)-%(arch)"
+%buildid targets="%(mainmmake)-%(arch) %(mainmmake)-%(arch)-quick %(mainmmake)-%(arch)-linklib"
 
 #MM %(mainmmake)-%(arch) : %(mainmmake)-%(arch)-includes
 #MM %(mainmmake)-%(arch)-linklib : %(mainmmake)-%(arch)-includes
@@ -3653,6 +3661,154 @@ endif
 
 
 #------------------------------------------------------------------------------
+# Fetch a crates.io crate into the shared Rust crate store ($(RUST_CRATESDIR),
+# see tools/crosstools/rust.cfg), patched for AROS when a patch is given. The
+# archive is kept in $(RUST_CRATES_SOURCEDIR); the patch is looked for next to
+# the mmakefile and applied with -p1 inside the unpacked crate.
+#
+# Arguments:
+#
+#     - mmake       = mmaketarget
+#     - crate       = the crate's name on crates.io
+#     - version     = its version
+#     - patch       = the patch file (default: none)
+#
+%define rust_crate mmake=/A crate=/A version=/A patch=
+
+ifneq (%(patch),)
+    %(mmake)-patchspec := %(patch):%(crate)-%(version):-p1
+else
+    %(mmake)-patchspec :=
+endif
+
+%fetch mmake=%(mmake) archive=%(crate)-%(version) suffixes="crate" \
+    archive_origins="$(CRATES_IO)/%(crate)" location=$(RUST_CRATES_SOURCEDIR) \
+    destination=$(RUST_CRATESDIR) patches_specs=$(%(mmake)-patchspec)
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Generate a cargo config file with a [patch.crates-io] table (and nothing
+# else), as the crate stores do. Cargo merges the tables of all the files
+# given with --config, so a program's cargo run takes the stores' files and
+# its own.
+#
+# Arguments:
+#
+#     - mmake       = mmaketarget
+#     - file        = the file to write
+#     - patches     = the entries, "name=path" or "alias:package=path"
+#                     (the second form for a renamed dependency, as in
+#                     "getrandom03:getrandom=...")
+#     - deps        = extra prerequisites of the file
+#
+%define rust_patches_config mmake=/A file=/A patches= deps=
+
+#MM
+%(mmake) : %(file)
+
+%(file) : $(TOP)/$(CURDIR)/mmakefile $(SRCDIR)/tools/crosstools/rust.cfg %(deps)
+	%mkdirs_q $(dir %(file))
+	@$(ECHO) "Writing    $(subst $(TOP)/,,$@)"
+	@( \
+	    $(ECHO) '# Generated by $(CURDIR) for $(RUST_TARGET_TRIPLE)' ; \
+	    $(ECHO) '[patch.crates-io]' ; \
+	    for p in x %(patches) ; do if [ "$$p" != x ] ; then \
+	        n="$${p%%=*}" ; d="$${p#*=}" ; \
+	        case "$$n" in \
+	            *:*) $(ECHO) "$${n%%:*} = { package = \"$${n#*:}\", path = \"$$d\" }" ;; \
+	            *) $(ECHO) "$$n = { path = \"$$d\" }" ;; \
+	        esac ; \
+	    fi ; done ; \
+	) > $@
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Generate the cargo config of a program built for the target: its own
+# [patch.crates-io] entries (the stores' come from their own files), the
+# target linker, the build directory, and the AROS_CC/AROS_AR environment
+# build scripts compile C files with.
+#
+# Arguments:
+#
+#     - mmake       = mmaketarget
+#     - file        = the file to write
+#     - targetdir   = cargo's target directory for the program
+#     - patches     = the program's own entries, as for %rust_patches_config
+#     - deps        = extra prerequisites of the file
+#
+%define rust_cargo_config mmake=/A file=/A targetdir=/A patches= deps=
+
+#MM
+%(mmake) : %(file)
+
+%(file) : $(TOP)/$(CURDIR)/mmakefile $(SRCDIR)/tools/crosstools/rust.cfg %(deps)
+	%mkdirs_q $(dir %(file))
+	@$(ECHO) "Writing    $(subst $(TOP)/,,$@)"
+	@( \
+	    $(ECHO) '# Generated by $(CURDIR) for $(RUST_TARGET_TRIPLE)' ; \
+	    $(ECHO) '[patch.crates-io]' ; \
+	    for p in x %(patches) ; do if [ "$$p" != x ] ; then \
+	        n="$${p%%=*}" ; d="$${p#*=}" ; \
+	        case "$$n" in \
+	            *:*) $(ECHO) "$${n%%:*} = { package = \"$${n#*:}\", path = \"$$d\" }" ;; \
+	            *) $(ECHO) "$$n = { path = \"$$d\" }" ;; \
+	        esac ; \
+	    fi ; done ; \
+	    $(ECHO) '' ; \
+	    $(ECHO) '[target.$(RUST_TARGET_TRIPLE)]' ; \
+	    $(ECHO) 'linker = "$(TARGET_RUST_LINKER)"' ; \
+	    $(ECHO) '' ; \
+	    $(ECHO) '[build]' ; \
+	    $(ECHO) 'target-dir = "%(targetdir)"' ; \
+	    $(ECHO) '' ; \
+	    $(ECHO) '[env]' ; \
+	    $(ECHO) 'AROS_CC = "$(TARGET_RUST_LINKER)"' ; \
+	    $(ECHO) 'AROS_AR = "$(RUST_TARGET_AR)"' ; \
+	) > $@
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Resolve and download a Rust program's dependencies into the shared cargo
+# home ($(RUST_CARGO_HOME)) - the one step of a Rust build that needs network
+# access - once per snapshot (a stamp file records it). Before that, the
+# program's Cargo.lock is moved to the crate stores' versions: cargo only
+# takes a [patch] entry whose version is the locked one. Builds then run
+# with --offline.
+#
+# Arguments:
+#
+#     - mmake       = mmaketarget
+#     - cargo       = the cargo command line to use (with its --config options)
+#     - manifest    = the --manifest-path option
+#     - stamp       = the stamp file
+#     - locks       = "<name>@<locked prefix>:<version>" entries, usually
+#                     $(RUST_CRATES_LOCK) $(CONTRIB_RUST_CRATES_LOCK)
+#     - name        = what to call the program in messages
+#
+%define rust_cargo_fetch mmake=/A cargo=/A manifest=/A stamp=/A locks= name=
+
+#MM
+%(mmake) :
+	@$(IF) ! $(TEST) -f %(stamp) ; then \
+	    $(ECHO) "Fetching   %(name) crates into $(RUST_CARGO_HOME)" ; \
+	    $(MKDIR) -p $(RUST_CARGO_HOME) ; \
+	    for c in x %(locks) ; do if [ "$$c" != x ] ; then \
+	        %(cargo) update %(manifest) -p "$${c%%:*}" --precise "$${c#*:}" >/dev/null 2>&1 || true ; \
+	    fi ; done ; \
+	    %(cargo) fetch %(manifest) \
+	    && $(TOUCH) %(stamp) ; \
+	fi
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
 # This macro can aid in patch creation for fetched ports. It temporarily creates another
 # unpatched source tree and runs diff against this and a previously fetched and possibly
 # patched tree. Depending on what happens after patching during a normal build it might
@@ -3740,7 +3896,7 @@ endif
 # Other arguments are self-explanatory
 
 %define make_package mmake=/A file=/A classes= devs= handlers= hidds= libs= res= \
-    arch_classes= arch_devs= arch_handlers= arch_hidds= arch_libs= arch_res= misc= packfmt=
+    arch_classes= arch_devs= arch_handlers= arch_hidds= arch_libs= arch_res= misc= packfmt= prune=yes
 
 PKG_CLASSES        := $(addprefix $(AROS_CLASSES)/,$(addsuffix .class, %(classes)))
 PKG_DEVICES        := $(addprefix $(AROS_DEVS)/,$(addsuffix .device, %(devs)))
@@ -3760,11 +3916,29 @@ PKG_FILES          := $(PKG_CLASSES) $(PKG_DEVICES) $(PKG_HANDLERS) $(PKG_HIDD) 
     $(PKG_CLASSES_ARCH) $(PKG_DEVICES_ARCH) $(PKG_HANDLERS_ARCH) $(PKG_HIDD_ARCH) $(PKG_LIBRARIES_ARCH) $(PKG_RESOURCES_ARCH) %(misc)
 PKG_DIR            := $(dir %(file))
 
-#MM
-%(mmake) : %(file)
+# The package is built from the modules' files in the AROS tree, so those
+# files are also shipped by anything that packages the whole tree - duplicates
+# of what the kickstart already carries. Record their tree-relative paths so
+# the distfiles stage can drop them (%prune_kickstart_modules). A package that
+# is only loaded optionally (an alternative boot menu entry) passes prune=no,
+# since its modules must stay on disk for the boot paths that don't load it.
+ifeq (%(prune),yes)
+%(mmake)_PRUNELIST := $(PRUNELISTDIR)/$(notdir %(file)).prune
+$(%(mmake)_PRUNELIST) : PRUNEFILES := $(subst $(AROSDIR)/,,$(PKG_FILES))
+$(%(mmake)_PRUNELIST) : $(SRCDIR)/$(CURDIR)/mmakefile.src
+	$(Q)$(RM) $@
+	$(Q){ $(FOR) f in $(PRUNEFILES) ; do $(ECHO) $$f ; done ; } > $@
+
+%rule_makedirs dirs="$(PRUNELISTDIR)" setuptarget="$(%(mmake)_PRUNELIST)"
+else
+%(mmake)_PRUNELIST :=
+endif
 
 #MM
-%(mmake)-quick : %(file)
+%(mmake) : %(file) $(%(mmake)_PRUNELIST)
+
+#MM
+%(mmake)-quick : %(file) $(%(mmake)_PRUNELIST)
 
 %(file): $(PKG_FILES) | $(PKG_DIR)
 	$(Q)$(ECHO) Packaging $@...
@@ -3774,6 +3948,30 @@ PKG_DIR            := $(dir %(file))
 
 %rule_makedirs dirs="$(PKG_DIR)"
 
+%end
+
+#------------------------------------------------------------------------------
+# Remove the kickstart-resident modules recorded in $(PRUNELISTDIR) (by
+# %make_package and the ROM link rules) from a distribution tree.
+#
+# %(dir) is the root of the tree being packaged for distribution. It must be
+# a copy, never $(AROSDIR) itself: the files there are build outputs (and the
+# inputs of the packages), and make would only regenerate them. Only paths
+# that exist are removed, so a list may name the arch-specific location of a
+# module as well as the generic one.
+#
+# Used as a recipe line, e.g.
+#	%prune_kickstart_modules dir="$(AROSDIR).HUNK"
+
+%define prune_kickstart_modules dir=/A lists="$(PRUNELISTDIR)/*.prune"
+	$(Q)$(ECHO) "Pruning kickstart-resident modules from $(subst $(TARGETDIR)/,,%(dir))..."
+	$(Q)$(FOR) l in %(lists) ; do \
+	    $(IF) $(TEST) -f "$$l" ; then \
+	        while read -r f ; do \
+	            $(IF) $(TEST) -n "$$f" -a -e "%(dir)/$$f" ; then $(RM) "%(dir)/$$f" ; else $(NOP) ; fi ; \
+	        done < "$$l" ; \
+	    else $(NOP) ; fi ; \
+	done
 %end
 
 #------------------------------------------------------------------------------

@@ -84,7 +84,7 @@ BOOL X11BM_InitFB(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList)
 
     /* Listen for all sorts of events */
     winattr.event_mask = ButtonPressMask | ButtonReleaseMask | PointerMotionMask
-            | KeyPressMask | KeyReleaseMask | StructureNotifyMask
+            | KeyPressMask | KeyReleaseMask | KeymapStateMask | StructureNotifyMask
             | SubstructureNotifyMask | FocusChangeMask | ExposureMask;
 
     if (XSD(cl)->options & OPTION_BACKINGSTORE)

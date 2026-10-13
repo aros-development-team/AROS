@@ -105,7 +105,9 @@ LONG LockFileByName(struct ExtFileLock *fl, UBYTE *name, LONG namelen, LONG acce
     } else {
         dh->ioh.mft.mftrec_no = fl->dir->ioh.mft.mftrec_no;
     }
-    InitDirHandle(glob->data, dh, FALSE);
+    err = InitDirHandle(glob->data, dh, FALSE);
+    if (err != 0)
+        return err;
 
     D(bug("[NTFS] %s: looking in directory MFT #%u\n", __func__, (IPTR)dh->ioh.mft.mftrec_no));
 
@@ -114,6 +116,7 @@ LONG LockFileByName(struct ExtFileLock *fl, UBYTE *name, LONG namelen, LONG acce
     /* look for the entry */
     if ((err = GetDirEntryByPath(dh, name, namelen, &de)) != 0) {
         D(bug("[NTFS] %s: couldn't get lock\n", __func__));
+        ReleaseDirHandle(dh);
         return err;
     }
 
@@ -132,6 +135,7 @@ LONG LockFile(struct DirEntry *de, LONG access, struct ExtFileLock **lock)
 {
     struct GlobalLock *node, *gl;
     struct ExtFileLock *fl;
+    LONG err;
 
     D(bug("[NTFS]: %s(entry @ 0x%p) (%s)\n", __func__, de, access == SHARED_LOCK ? "shared" : "exclusive"));
 
@@ -172,7 +176,12 @@ LONG LockFile(struct DirEntry *de, LONG access, struct ExtFileLock **lock)
     fl->data = glob->data;
 
     fl->dir->ioh.mft.mftrec_no = de->cluster / glob->data->mft_size;
-    InitDirHandle(glob->data, fl->dir, FALSE);
+    if ((err = InitDirHandle(glob->data, fl->dir, FALSE)) != 0) {
+        _FreeVecPooled(glob->data->info->mem_pool, fl->entry);
+        _FreeVecPooled(glob->data->info->mem_pool, fl->dir);
+        _FreeVecPooled(glob->data->info->mem_pool, fl);
+        return err;
+    }
 
     fl->entry->data = de->data;		/* filesystem data */
     if (de->entryname) {
@@ -184,7 +193,15 @@ LONG LockFile(struct DirEntry *de, LONG access, struct ExtFileLock **lock)
     fl->entry->no = de->no;
 
     if ((fl->entry->entry = de->entry) == NULL) {
-        GetDirEntry(fl->dir, de->no, fl->entry);
+        err = GetDirEntry(fl->dir, de->no, fl->entry);
+        if (err != 0) {
+            FreeVec(fl->entry->entryname);
+            ReleaseDirHandle(fl->dir);
+            _FreeVecPooled(glob->data->info->mem_pool, fl->entry);
+            _FreeVecPooled(glob->data->info->mem_pool, fl->dir);
+            _FreeVecPooled(glob->data->info->mem_pool, fl);
+            return err;
+        }
     }
     de->entry = NULL;
 
@@ -250,6 +267,7 @@ LONG LockFile(struct DirEntry *de, LONG access, struct ExtFileLock **lock)
 LONG LockRoot(LONG access, struct ExtFileLock **lock)
 {
     struct ExtFileLock *fl;
+    LONG err;
 
     D(bug("[NTFS]: %s()\n", __func__));
 
@@ -285,7 +303,12 @@ LONG LockRoot(LONG access, struct ExtFileLock **lock)
     fl->dir->ioh.mft.data = glob->data;
 
     fl->dir->ioh.mft.mftrec_no = FILE_ROOT;
-    InitDirHandle(glob->data, fl->dir, FALSE);
+    if ((err = InitDirHandle(glob->data, fl->dir, FALSE)) != 0) {
+        _FreeVecPooled(glob->data->info->mem_pool, fl->entry);
+        _FreeVecPooled(glob->data->info->mem_pool, fl->dir);
+        _FreeVecPooled(glob->data->info->mem_pool, fl);
+        return err;
+    }
 
     fl->pos = 0;
 
@@ -331,8 +354,12 @@ LONG CopyLock(struct ExtFileLock *fl, struct ExtFileLock **lock)
         struct DirHandle dh;
         dh.ioh.mft.mftrec_no = fl->gl->dir_cluster / glob->data->mft_size;
         dh.ioh.mft.buf = NULL;
-        InitDirHandle(glob->data, &dh, FALSE);
-        GetDirEntry(&dh, fl->gl->dir_entry, &de);
+        if ((ret = InitDirHandle(glob->data, &dh, FALSE)) != 0)
+            return ret;
+        ret = GetDirEntry(&dh, fl->gl->dir_entry, &de);
+        ReleaseDirHandle(&dh);
+        if (ret != 0)
+            return ret;
     }
     if ((ret = LockFile(&de, SHARED_LOCK, lock)) == 0) {
         fl = *lock;
@@ -353,7 +380,12 @@ LONG CopyLock(struct ExtFileLock *fl, struct ExtFileLock **lock)
             fl->dir->parent_mft = fl->dir->ioh.mft.mftrec_no;
             fl->dir->ioh.mft.mftrec_no = fl->gl->first_cluster / glob->data->mft_size;
             ReleaseDirHandle(fl->dir);
-            InitDirHandle(glob->data, fl->dir, FALSE);
+            ret = InitDirHandle(glob->data, fl->dir, FALSE);
+            if (ret != 0) {
+                FreeLock(fl);
+                *lock = NULL;
+                return ret;
+            }
         }
     }
     return ret;
@@ -422,19 +454,7 @@ void FreeLock(struct ExtFileLock *fl)
     }
 
     if (fl->dir) {
-        if (fl->dir->ioh.mft.cblock != NULL) {
-            Cache_FreeBlock(fl->data->cache, fl->dir->ioh.mft.cblock);
-            fl->dir->ioh.mft.cblock = NULL;
-
-            if (fl->dir->ioh.mft.buf) {
-                FreeMem(fl->dir->ioh.mft.buf, glob->data->mft_size << SECTORSIZE_SHIFT);
-                fl->dir->ioh.mft.buf = NULL;
-            }
-        }
-        if (!(fl->dir->ioh.bitmap)) {
-            FreeVec(fl->dir->ioh.bitmap);
-            fl->dir->ioh.bitmap = NULL;
-        }
+        ReleaseDirHandle(fl->dir);
         _FreeVecPooled(glob->data->info->mem_pool, fl->dir);
         fl->dir = NULL;
     }
@@ -444,4 +464,3 @@ void FreeLock(struct ExtFileLock *fl)
 
     _FreeVecPooled(glob->data->info->mem_pool, fl);
 }
-

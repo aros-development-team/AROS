@@ -59,13 +59,73 @@ static int rtas_init(struct RTASBase *RTASBase)
 extern void return_entry();
 extern void return_2();
 
-AROS_LH5(int32_t, RTASCall,
-                AROS_LHA(const char *,  name,   A0),
-                AROS_LHA(uint32_t,              nargs,  D0),
-                AROS_LHA(uint32_t,              nrets,  D1),
-                AROS_LHA(uint32_t *,    output, A1),
-                AROS_LHA(va_list,               args,   A2),
-                struct RTASBase *, RTASBase, 1, Rtas)
+/*****************************************************************************
+
+    NAME */
+        AROS_LH5(int32_t, RTASCall,
+
+/*  SYNOPSIS */
+                        AROS_LHA(const char *,  name,   A0),
+                        AROS_LHA(uint32_t,              nargs,  D0),
+                        AROS_LHA(uint32_t,              nrets,  D1),
+                        AROS_LHA(uint32_t *,    output, A1),
+                        AROS_LHA(va_list,               args,   A2),
+
+/*  LOCATION */
+                        struct RTASBase *, RTASBase, 1, Rtas)
+/*  FUNCTION
+        Invoke an Open Firmware RTAS service through the PowerPC kernel.
+
+    INPUTS
+        name - Non-NULL, NUL-terminated property name beneath /rtas.
+        nargs - Number of uint32_t argument cells to consume from args.
+        nrets - Number of return cells, including the primary status/result.
+                nargs must be at most 16; nrets must be at most 16 - nargs.
+        output - Writable array of at least nrets - 1 uint32_t cells when
+                 nrets exceeds 1, or NULL to discard secondary results.
+        args - Initialized va_list containing nargs arguments of type
+               uint32_t, in the order required by the selected service.
+               It is not read when nargs is zero.
+
+    RESULT
+        The first firmware return cell, interpreted as int32_t, or 0
+        after a call requesting no return cells. Returns -1 without calling
+        firmware if the property cannot be found or its token is zero.
+        Firmware may itself return -1; the two cases are not distinguished.
+
+        When nrets exceeds 1 and output is non-NULL, secondary cells are
+        copied even if the primary status indicates failure. Their meaning
+        depends on the service. output is unchanged when no call is made.
+
+    NOTES
+        Open rtas.resource before calling. The selected service defines
+        argument values, return codes and effects. Services may change the
+        clock, reboot or power off the machine and need not return.
+
+        The wrapper uses one shared 16-cell argument/return area. Serialize
+        all callers externally, including argument preparation. Interrupts
+        are disabled only after that shared area has been filled and remain
+        disabled through firmware execution and result copying. There is no
+        timeout, cancellation or retry for a busy firmware status.
+
+        Argument cells are passed unchanged. Addresses embedded in them must
+        already meet the service's physical-address and lifetime requirements;
+        only the wrapper's own call area is translated. output is used by
+        the wrapper after firmware returns and is not retained. Treat args
+        as consumed; use a separate va_copy when its state must be preserved,
+        and perform the matching va_end in the caller.
+
+    BUGS
+        Counts, pointers and firmware property sizes are not validated.
+        Exceeding the combined 16-cell capacity corrupts resource state.
+        Resource initialization does not require a valid RTAS entry point.
+        The result-copy path dereferences a physical return-area address
+        after the kernel call and assumes that address is directly accessible.
+
+    SEE ALSO
+        openfirmware.resource/OF_FindProperty(), exec.library/ShutdownA()
+
+*****************************************************************************/
 {
         AROS_LIBFUNC_INIT
 

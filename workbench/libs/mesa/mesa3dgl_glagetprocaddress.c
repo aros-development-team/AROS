@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2014-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -7,6 +7,7 @@
 #include <proto/exec.h>
 
 #include "mesa3dgl_types.h"
+#include "mesa/glapi/glapi/glapi.h"
 
 /*****************************************************************************
 
@@ -35,5 +36,5 @@
 {
     D(bug("[MESA3DGL] %s()\n", __func__));
 
-    return _glapi_get_proc_address(procname);
+    return (GLAProc)_mesa_glapi_get_proc_address(procname);
 }

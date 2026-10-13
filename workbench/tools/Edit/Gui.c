@@ -8,6 +8,9 @@
 #include <intuition/screens.h>
 #include <intuition/imageclass.h>
 #include <intuition/gadgetclass.h>
+#ifdef __AROS__
+#include <intuition/extensions.h>
+#endif
 #include <libraries/gadtools.h>
 #include <dos/dos.h>
 #include <exec/memory.h>
@@ -194,8 +197,14 @@ struct gv gui;
 void recalc_sigbits(void)
 {
 	extern ULONG sigbits, swinsig, sigport;
+#ifdef __AROS__
+	extern ULONG sigappicon;
+#endif
 	sigmainwnd = 1 << Wnd->UserPort->mp_SigBit;
 	sigbits = SIGBREAKF_CTRL_C | sigmainwnd | swinsig | sigport;
+#ifdef __AROS__
+	sigbits |= sigappicon;
+#endif
 }
 
 /*** Search for text in the newmenu table ***/
@@ -507,6 +516,12 @@ void load_pens( void )
 /*** Init main window returning 0, if all is OK ***/
 long setup( void )
 {
+#ifdef __AROS__
+	struct TagItem win_tags[] = {
+		{ TAG_IGNORE, 0 },
+		{ TAG_DONE,   0 }
+	};
+#endif
 	/* Setup pos/dim */
 	
 	if (prefs.width && prefs.height)
@@ -544,7 +559,14 @@ long setup( void )
 					Template.Title = WinTitle;
 
 				/* Open our main window */
+#ifdef __AROS__
+				if(iconify_available() && !(Template.Flags & WFLG_BORDERLESS))
+					win_tags[0].ti_Tag = WA_ExtraGadget_Iconify,
+					win_tags[0].ti_Data = TRUE;
+				if(Wnd || (Wnd = (void *) OpenWindowTagList( &Template, win_tags )))
+#else
 				if(Wnd || (Wnd = (void *) OpenWindow( &Template )))
+#endif
 				{
 					/* Init temporary rastport, for font measurement */
 					CopyMem(RP = Wnd->RPort, &RPT, sizeof(RPT));
@@ -580,6 +602,9 @@ void CloseMainWnd(BOOL CloseScr)
 {
 	send_pref(&prefs, CMD_KILL);
 	close_searchwnd(FALSE);
+#ifdef __AROS__
+	reset_iconify();
+#endif
 	if(Wnd)
 	{
 		if( Menu ) ClearMenuStrip(Wnd);

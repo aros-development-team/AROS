@@ -92,6 +92,7 @@
     };
 #endif
     D(BOOL injected;)
+    APTR seccookie = NULL;
 
     ASSERT_VALID_PROCESS(me);
 
@@ -123,10 +124,15 @@
      * (e.g. internal/ROM resident command) - allow execution. */
 #endif
 
-    if(stacksize < AROS_STACKSIZE)
-        stacksize = AROS_STACKSIZE;
+    if(stacksize < PROC_STACKSIZE)
+        stacksize = PROC_STACKSIZE;
 
+#ifdef __mc68000
+    /* Keep temporary command stacks out of the low-address free region. */
+    stack=(UBYTE *)AllocMem(stacksize,MEMF_ANY | MEMF_REVERSE);
+#else
     stack=(UBYTE *)AllocMem(stacksize,MEMF_ANY);
+#endif
     if(stack==NULL)
         return -1;
 
@@ -153,7 +159,14 @@
     args.Args[2] = (IPTR)BADDR(segList) + sizeof(BPTR);
     args.Args[3] = (IPTR)me;
 
+    /* Multi-user: a setuid executable runs with the owner of its file */
+    if (SECURITY_ACTIVE)
+        seccookie = secSetUIDBegin(segList);
+
     ret = NewStackSwap(&sss, CallEntry, &args);
+
+    if (seccookie)
+        secSetUIDEnd(seccookie);
 
     me->pr_ReturnAddr = oldReturnAddr;
     me->pr_Arguments  = oldargs;

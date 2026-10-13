@@ -60,6 +60,7 @@
 
     struct TraceLocation tp = CURRENT_LOCATION("ReleaseSemaphore");
     struct Task *ThisTask = GET_THIS_TASK;
+    BOOL corrupt = FALSE;
 
     /* We can be called from within exec's pre-init code. It's okay. */
     if (!ThisTask)
@@ -71,8 +72,14 @@
     if (!CheckSemaphore(sigSem, &tp, SysBase))
         return;
 
-    /* Protect the semaphore structure from multiple access. */
+    /*
+     * Forbid() only holds off this core, so the lock is what keeps the
+     * wait-queue walk and the grant atomic against other cores.
+     */
     Forbid();
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_LOCK(&sigSem->ss_MultipleLink.sr_SpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
 
     /* Release one on the nest count */
     sigSem->ss_NestCount--;
@@ -93,7 +100,7 @@
                 If it is not, there is a chance that the semaphore
                 is corrupt. It will be afterwards anyway :-)
             */
-            Alert( AN_SemCorrupt );
+            corrupt = TRUE;
         }
 #endif
 
@@ -195,11 +202,18 @@
             This can't happen. It means that somebody has released
             more times than they have obtained.
         */
-        Alert( AN_SemCorrupt );
+        corrupt = TRUE;
     }
 
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(&sigSem->ss_MultipleLink.sr_SpinLock);
+#endif
     /* All done. */
     Permit();
+
+    /* Not under the lock: the alert path may itself obtain this semaphore */
+    if (corrupt)
+        Alert( AN_SemCorrupt );
 
     AROS_LIBFUNC_EXIT
 } /* ReleaseSemaphore */

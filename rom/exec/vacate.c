@@ -53,6 +53,7 @@
 
     /* Arbitrate for the semaphore structure */
     Forbid();
+    SEM_LOCK(sigSem);
     bidMsg->ssm_Semaphore = NULL;
 
     /*
@@ -72,12 +73,15 @@
             ReplyMsg(&bidMsg->ssm_Message);
 
             /* All done */
+            SEM_UNLOCK(sigSem);
             Permit();
             return;
         }
     }
 
-    /* No, it must have been fulfilled. Release the semaphore and done. */
+    /* Fulfilled - release it. Drop our lock first: ReleaseSemaphore()
+     * takes the same one. */
+    SEM_UNLOCK(sigSem);
     ReleaseSemaphore(sigSem);
 
     /* All done. */

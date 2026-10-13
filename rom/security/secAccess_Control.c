@@ -1,13 +1,28 @@
 /*
-    Copyright (C) 2002-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
-#include <aros/debug.h>
-
 #include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/utility.h>
+#include <proto/intuition.h>
+
+#include <proto/security.h>
 
 #include "security_intern.h"
+#include "security_task.h"
+#include "security_server.h"
+#include "security_segment.h"
+#include "security_monitor.h"
+#include "security_memory.h"
+#include "security_plugins.h"
+#include "security_crypto.h"
 #include "security_enforce.h"
+#include "security_packetio.h"
+#include "security_userinfo.h"
+#include "security_groupinfo.h"
+#include "security_login.h"
+#include "security_support.h"
 
 /*****************************************************************************
 
@@ -15,7 +30,6 @@
         AROS_LH6(LONG, secAccess_Control,
 
 /*  SYNOPSIS */
-        /* (fs, task, owner, prot) */
         AROS_LHA(ULONG, contextflags, D1),
         AROS_LHA(APTR, context, A1),
         AROS_LHA(struct secExtOwner *, task, A2),
@@ -26,62 +40,43 @@
 /*  LOCATION */
         struct SecurityBase *, secBase, 33, Security)
 
-/*  FUNCTION
+/*
+    FUNCTION
+        Filesystem API: decide whether a task may access an object.
 
     INPUTS
-
+        contextflags - secAC_IGNORE_CONTEXT or secAC_FILESYSTEM_CONTEXT.
+        context      - the filesystem's MsgPort for secAC_FILESYSTEM_CONTEXT.
+        task         - the requesting task's owner (see secGetPktOwner()),
+                       NULL for nobody.
+        objectowner  - owner of the object (uid<<16 | gid).
+        objectprot   - protection bits of the object.
+        access_type  - secAt_#? flags.
 
     RESULT
+        secAC_PERMISSION_GRANTED, or secAC_PERMISSION_DENIED with secAC_#?
+        detail flags.
 
-
-    NOTES
-
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-
-    INTERNALS
-
-    HISTORY
-
-*****************************************************************************/
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
     struct secVolume *vol = NULL;
 
-    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
+    if (contextflags == secAC_FILESYSTEM_CONTEXT && context)
+    {
+        struct secVolume *v;
 
-    switch (contextflags)       {
-        case secAC_FILESYSTEM_CONTEXT:
+        ObtainSemaphoreShared(&secBase->VolumesSem);
+        for (v = secBase->Volumes; v; v = v->Next)
+            if (v->Process == (struct MsgPort *)context || v->OrigProc == (struct MsgPort *)context)
             {
-                /* Context the a msgport of a filesystem */
-                if (context != NULL)    {
-                    /* Find the secVolume for the FileSystem */
-                    ObtainSemaphore(&secBase->VolumesSem);
-                    vol = secBase->Volumes;
-                    while(vol)  {
-                        if (vol->Process == (struct MsgPort*)context)
-                            break;
-                        vol = vol->Next;
-                    }
-                    ReleaseSemaphore(&secBase->VolumesSem);
-                }
+                vol = v;
+                break;
             }
-            break;
-        case secAC_IGNORE_CONTEXT:
-        default:
-            /* Allow tasks other than filesystems to use this function */
-            vol = NULL;
+        ReleaseSemaphore(&secBase->VolumesSem);
     }
-    /* Pass it on to the workhorse */
     return IsAllowed(secBase, vol, task, objectowner, objectprot, access_type);
 
     AROS_LIBFUNC_EXIT
-
 } /* secAccess_Control */
-

@@ -68,6 +68,10 @@ ifeq ($(USE_MMU),1)
     FILES += $(MMU_FILES) $(ALLOCATOR)
 endif
 
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
 %build_module mmake=kernel-kernel \
   modname=kernel modtype=resource version=$(AROS_TARGET_PLATFORM) \
   files="$(FILES) $(FUNCS)" nostartup=no archspecific=yes

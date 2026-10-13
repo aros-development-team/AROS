@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -49,6 +49,26 @@
 
     if (screen)
     {
+        struct ViewPortExtra *vpe = (struct ViewPortExtra *)GfxLookUp(&screen->ViewPort);
+
+        /* Classic applications update Screen's dimensions directly before
+         * rebuilding its display. The backing bitmap can remain larger than
+         * the visible screen; displaying its full height exposes old pixels. */
+        screen->ViewPort.DxOffset = screen->LeftEdge;
+        screen->ViewPort.DyOffset = screen->TopEdge;
+        screen->ViewPort.DWidth = screen->Width;
+        screen->ViewPort.DHeight = screen->Height;
+        if (vpe)
+        {
+            WORD width = vpe->DisplayClip.MaxX - vpe->DisplayClip.MinX + 1;
+            WORD height = vpe->DisplayClip.MaxY - vpe->DisplayClip.MinY + 1;
+
+            if (screen->ViewPort.DWidth > width)
+                screen->ViewPort.DWidth = width;
+            if (screen->ViewPort.DHeight > height)
+                screen->ViewPort.DHeight = height;
+        }
+
         if ((screen->ViewPort.Modes ^ IntuitionBase->ViewLord.Modes) & LACE)
         {
             failure = RemakeDisplay();

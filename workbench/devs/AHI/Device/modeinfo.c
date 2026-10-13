@@ -297,6 +297,8 @@ BOOL TestAudioID(ULONG id, struct TagItem *tags)
 *
 *       AHIDB_Frequency (ULONG *) - Return the frequency associated with the
 *           index number specified with AHIDB_FrequencyArg (see above).
+*           Without AHIDB_FrequencyArg this is the frequency at index 0,
+*           not the current mixing frequency (see AHIC_MixFreq_Query).
 *
 *       AHIDB_IndexArg (ULONG) - AHIDB_Index will return the index which
 *           gives the closest frequency to AHIDB_IndexArg

@@ -99,21 +99,25 @@
 */
 BOOL InitLRU (globaldata *g, UWORD reserved_blksize)
 {
+	/* Media probes must keep pending metadata until its volume is committed. */
+	if (g->glob_lrudata.LRUarray)
+	{
+		if (g->glob_lrudata.reserved_blksize == reserved_blksize)
+			return TRUE;
+		if (g->currentvolume && g->dirty)
+			return FALSE;
+	}
+	return ResizeLRU(g, reserved_blksize);
+}
+
+BOOL ResizeLRU (globaldata *g, UWORD reserved_blksize)
+{
   int i, j;
   BOOL warned = FALSE;
-  UBYTE *array;
+  struct lru_cachedblock **array;
+  struct lru_cachedblock *node, *next;
 
 	ENTER("InitLRU");
-
-	if (g->glob_lrudata.LRUarray && g->glob_lrudata.reserved_blksize == reserved_blksize)
-		return TRUE;
-
-	DeallocLRU(g);
-
-	g->glob_lrudata.reserved_blksize = reserved_blksize;
-
-	NewList((struct List *)&g->glob_lrudata.LRUqueue);
-	NewList((struct List *)&g->glob_lrudata.LRUpool);
 
 	i = g->dosenvec->de_NumBuffers;
 
@@ -123,29 +127,53 @@ BOOL InitLRU (globaldata *g, UWORD reserved_blksize)
 	if (i==30) i=150;
 	if (i<MIN_BUFFERS) i = MIN_BUFFERS;
 	if (i>MAX_BUFFERS) i = MAX_BUFFERS;
-	g->dosenvec->de_NumBuffers = g->glob_lrudata.poolsize = i;
-	g->uip = FALSE;
-	g->locknr = 1;
+	if (g->glob_lrudata.LRUarray &&
+	    g->glob_lrudata.reserved_blksize == reserved_blksize &&
+	    g->glob_lrudata.poolsize == i)
+	{
+		g->dosenvec->de_NumBuffers = i;
+		return TRUE;
+	}
 
-	g->glob_lrudata.LRUarray = AllocVec(sizeof(struct lru_cachedblock*) * g->glob_lrudata.poolsize, 0);
-	if (!g->glob_lrudata.LRUarray)
+	array = AllocVec(sizeof(*array) * i, MEMF_CLEAR);
+	if (!array)
 		return FALSE;
-	for(j = 0; j < g->glob_lrudata.poolsize; j++) {
-		g->glob_lrudata.LRUarray[j] = AllocVec((sizeof(struct lru_cachedblock) + reserved_blksize), g->dosenvec->de_BufMemType | MEMF_CLEAR);
-		if (!g->glob_lrudata.LRUarray[j]) {
-			DeallocLRU(g);
+	for(j = 0; j < i; j++) {
+		array[j] = AllocVec((sizeof(struct lru_cachedblock) + reserved_blksize), g->dosenvec->de_BufMemType | MEMF_CLEAR);
+		if (!array[j]) {
+			while (j-- > 0)
+				FreeVec(array[j]);
+			FreeVec(array);
 			return FALSE;
 		}
 		/* check memory against mask */
-		if (!warned && (((ULONG)g->glob_lrudata.LRUarray) & ~g->dosenvec->de_Mask)) {
+		if (!warned && PFS3_MASKFAIL(array[j])) {
 			ErrorMsg (AFS_WARNING_MEMORY_MASK, NULL, g);
 			warned = TRUE;
 		}
 	}
 
-	array = (UBYTE *)g->glob_lrudata.LRUarray;
-	for(i=0;i<g->glob_lrudata.poolsize;i++) {
-		MinAddHead(&g->glob_lrudata.LRUpool, g->glob_lrudata.LRUarray[i]);
+	/* Only discard the old cache once the replacement is complete. */
+	if (g->glob_lrudata.LRUarray)
+	{
+		for (node = (struct lru_cachedblock *)g->glob_lrudata.LRUqueue.mlh_Head;
+		     node->next; node = next)
+		{
+			next = node->next;
+			FlushBlock(&node->cblk, g);
+		}
+	}
+	DeallocLRU(g);
+	g->glob_lrudata.LRUarray = array;
+	g->glob_lrudata.reserved_blksize = reserved_blksize;
+	g->glob_lrudata.poolsize = i;
+	g->dosenvec->de_NumBuffers = i;
+	g->uip = FALSE;
+	g->locknr = 1;
+	NewList((struct List *)&g->glob_lrudata.LRUqueue);
+	NewList((struct List *)&g->glob_lrudata.LRUpool);
+	for(j = 0; j < i; j++) {
+		MinAddHead(&g->glob_lrudata.LRUpool, array[j]);
 	}
 
 	return TRUE;
@@ -194,8 +222,12 @@ retry:
 
 			if (lrunode->cblk.changeflag)
 			{
+				/* Protected volumes cannot accept the write. Keep dirty
+				 * metadata without retrying it or repeating requesters. */
+				if (g->softprotect)
+					continue;
+
 				DB(Trace(1,"AllocLRU","ResToBeFreed %lx\n",&lrunode->cblk));
-				ResToBeFreed(lrunode->cblk.oldblocknr, g);
 				UpdateDatestamp(&lrunode->cblk, g);
 				error = WriteReservedBlocks ((UBYTE *)&lrunode->cblk.data, RESCLUSTER, lrunode->cblk.blocknr, g);
 				if (error) {
@@ -203,7 +235,9 @@ retry:
 					args[0] = lrunode->cblk.blocknr;
 					args[1] = error;
 					ErrorMsg (AFS_ERROR_LRU_UPDATE_FAIL, args, g);
+					continue;
 				}
+				ResToBeFreed(lrunode->cblk.oldblocknr, g);
 			}
 
 			FlushBlock(&lrunode->cblk, g);

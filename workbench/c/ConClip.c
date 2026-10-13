@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Conclip CLI command
 */
@@ -87,7 +87,7 @@
 #define CODE_COPY       'C'
 #define CODE_PASTE      'V'
 
-const TEXT version[] = "$VER: Conclip 42.2 (27.5.2018)\n";
+const TEXT version[] = "$VER: Conclip 42.3 (27.09.2026)\n";
 
 struct MyEditHookMsg
 {
@@ -151,7 +151,14 @@ static BOOL getarguments(void)
 
 /*****************************************************************************************/
 
-static BOOL checkport(void)
+enum CheckPortResult
+{
+    CHECKPORT_FAIL = -1,
+    CHECKPORT_DONE = 0,
+    CHECKPORT_RUN  = 1
+};
+
+static int checkport(void)
 {
     Forbid();
     progport = FindPort(CONCLIP_PORTNAME);
@@ -161,7 +168,7 @@ static BOOL checkport(void)
         Permit();
         progport = NULL;
         cleanup(NULL);
-        return FALSE;
+        return CHECKPORT_DONE;
     }
     progport = CreatePort(CONCLIP_PORTNAME, 1);
     Permit();
@@ -169,11 +176,11 @@ static BOOL checkport(void)
     if (!progport)
     {
         cleanup("Could not create MsgPort!");
-        return FALSE;
+        return CHECKPORT_FAIL;
     }
     
     portmask = 1L << progport->mp_SigBit;
-    return TRUE;
+    return CHECKPORT_RUN;
 }
 
 /*****************************************************************************************/
@@ -429,18 +436,24 @@ static void handleall(void)
 
 int main(void)
 {
+    int portResult;
+
     init();
 
     if (!getarguments())
-        return 0;
-    if (!checkport())
-        return 0;
+        return RETURN_FAIL;
+
+    portResult = checkport();
+    if (portResult == CHECKPORT_FAIL)
+        return RETURN_FAIL;
+    if (portResult == CHECKPORT_DONE)
+        return RETURN_OK;
 
     installedithook();
     handleall();
 
     cleanup(NULL);
-    return 0;
+    return RETURN_OK;
 }
 
 /*****************************************************************************************/

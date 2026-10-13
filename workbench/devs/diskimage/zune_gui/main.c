@@ -39,6 +39,7 @@
 #include "rev/DiskImageGUI_rev.h"
 
 #ifdef __AROS__
+#include "catalogs/catalog_version.h"
 #define DEBUG 0
 #include <aros/debug.h>
 #else
@@ -69,7 +70,13 @@ int main (void) {
 	struct Hook *ReloadPluginsHook = NULL;
 	ULONG sigs = 0;
 
-    InitLocaleInfo((struct Library *)SysBase, &LocaleInfo, "System/System/"PROGNAME".catalog");
+#ifdef __AROS__
+    InitLocaleInfoVersion((struct Library *)SysBase, &LocaleInfo,
+        "System/System/"PROGNAME".catalog", CATALOG_VERSION);
+#else
+    InitLocaleInfo((struct Library *)SysBase, &LocaleInfo,
+        "System/System/"PROGNAME".catalog");
+#endif
 
 	DiskChangeSignal = AllocSignal(-1);
 	if (DiskChangeSignal == -1) {

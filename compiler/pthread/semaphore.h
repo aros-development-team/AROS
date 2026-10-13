@@ -39,7 +39,7 @@
 
 struct sema
 {
-    struct Node node;
+    __pthread_exec_node_t node;
     int value;
     int waiters_count;
     pthread_mutex_t lock;

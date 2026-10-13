@@ -3,6 +3,8 @@ include $(SRCDIR)/config/aros.cfg
 
 FILES := audio audio_hardware
 
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+
 %build_module mmake=kernel-amiga-m68k-audio \
     modname=audio modtype=device \
     files="$(FILES)" uselibs="hiddstubs"

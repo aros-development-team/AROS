@@ -14,6 +14,7 @@
 
 extern const char Dosboot_LibID[];
 extern const int Dosboot_End;
+extern void CloseNoBootMediaScreen(struct DOSBootBase *DOSBootBase);
 
 AROS_UFP3(static APTR, dosboot_Cleanup,
           AROS_UFPA(void *, dummy, D0),
@@ -50,12 +51,8 @@ AROS_UFH3(static APTR, dosboot_Cleanup,
     }
 
     D(bug("[dosboot cleanup] Boot screen 0x%p\n", base->bm_Screen));
-    if (base->bm_Screen)
-    {
-        /* Close "No boot media" screen. This is actually what we are here for. */
-        CloseBootScreen(base->bm_Screen, base);
-    }
-    anim_Stop(base);
+    /* Close "No boot media" screen. This is actually what we are here for. */
+    CloseNoBootMediaScreen(base);
 
     /* Well, since we are here, let's completely expunge. :) */
     CloseLibrary(&base->bm_ExpansionBase->LibNode);

@@ -29,10 +29,8 @@
 
     INPUTS
 
-    RESULTS
-
-    Frees memory occupied by 'db'; ('db' may be NULL, in that case nothing
-    is done).
+    db - DBufInfo structure allocated by AllocDBufInfo(), or NULL.
+         Passing NULL has no effect.
 
     NOTES
 

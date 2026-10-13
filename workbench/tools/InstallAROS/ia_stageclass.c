@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2024, The AROS Development Team. All rights reserved.
+    Copyright (C) 2018-2026, The AROS Development Team. All rights reserved.
 */
 
 #define INTUITION_NO_INLINE_STDARG
@@ -2079,8 +2079,8 @@ IPTR InstallStage__MUIM_Reboot(Class * CLASS, Object * self, Msg message)
     GET(data->instc_options_main->opt_reboot, MUIA_Selected, &option);
     if (option && (data->inst_success == MUIV_Inst_InProgress))
     {
-        D(bug("[InstallAROS:Stage] Cold rebooting...\n"));
-        ShutdownA(SD_ACTION_COLDREBOOT);
+        D(bug("[InstallAROS:Stage] Rebooting...\n"));
+        ShutdownA(SD_ACTION_REBOOT);
     }
     else
     {

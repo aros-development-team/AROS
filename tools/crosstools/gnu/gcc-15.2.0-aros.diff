@@ -351,7 +351,7 @@ diff -ruN gcc-15.2.0/gcc/config/arm/aros.h gcc-15.2.0.aros/gcc/config/arm/aros.h
 +
 +#undef	STARTFILE_SPEC
 +#define STARTFILE_SPEC \
-+  "startup%O%s %{detach:detach%O%s} %{nix:nixmain%O%s} %{static-stdc++:static-cxx-ops%O%s static-cxx-personality%O%s static-cxx-cxa-pure-virtual%O%s}"
++  "startup%O%s cxx-startup%O%s %{detach:detach%O%s} %{nix:nixmain%O%s} %{static-stdc++:static-cxx-ops%O%s static-cxx-personality%O%s static-cxx-cxa-pure-virtual%O%s}"
 +
 +#undef ENDFILE_SPEC
 +#define ENDFILE_SPEC "-lautoinit arm-exidx-unwind%O%s"
@@ -511,7 +511,7 @@ diff -ruN gcc-15.2.0/gcc/config/aros.h gcc-15.2.0.aros/gcc/config/aros.h
 +
 +#undef	STARTFILE_SPEC
 +#define STARTFILE_SPEC \
-+  "startup%O%s %{detach:detach%O%s} %{nix:nixmain%O%s}"
++  "startup%O%s cxx-startup%O%s %{detach:detach%O%s} %{nix:nixmain%O%s}"
 +
 +/* Provide a ENDFILE_SPEC appropriate for AROS. */
 +
@@ -1043,7 +1043,7 @@ diff -ruN gcc-15.2.0/gcc/config.build gcc-15.2.0.aros/gcc/config.build
 diff -ruN gcc-15.2.0/gcc/config.gcc gcc-15.2.0.aros/gcc/config.gcc
 --- gcc-15.2.0/gcc/config.gcc	2025-08-08 06:51:40.435347488 +0000
 +++ gcc-15.2.0.aros/gcc/config.gcc	2020-12-27 16:58:14.310000000 +0000
-@@ -993,6 +993,16 @@
+@@ -993,6 +993,17 @@
    rust_target_objs="${rust_target_objs} netbsd-rust.o"
    target_has_targetrustm=yes
    ;;
@@ -1055,6 +1055,7 @@ diff -ruN gcc-15.2.0/gcc/config.gcc gcc-15.2.0.aros/gcc/config.gcc
 +  use_collect2=no
 +  xm_defines='STDC_HEADERS=1'
 +  extra_options="${extra_options} aros.opt"
++  default_use_cxa_atexit=yes
 +  ;;
 +
  *-*-openbsd*)
@@ -1732,19 +1733,6 @@ diff -ruN gcc-15.2.0/libgcc/gthr.h gcc-15.2.0.aros/libgcc/gthr.h
  #ifndef GTHREAD_USE_WEAK
  #define GTHREAD_USE_WEAK 1
  #endif
-diff -ruN gcc-15.2.0/libgcc/unwind-dw2.c gcc-15.2.0.aros/libgcc/unwind-dw2.c
---- gcc-15.2.0/libgcc/unwind-dw2.c	2025-08-08 06:51:44.926422406 +0000
-+++ gcc-15.2.0.aros/libgcc/unwind-dw2.c	2020-12-27 16:58:14.310000000 +0000
-@@ -1322,7 +1322,9 @@
- static inline void
- init_dwarf_reg_size_table (void)
- {
-+#ifdef MD_FALLBACK_FRAME_STATE_FOR
-   __builtin_init_dwarf_reg_size_table (dwarf_reg_size_table);
-+#endif
- }
- 
- static void __attribute__((noinline))
 diff -ruN gcc-15.2.0/libgcc/unwind-dw2-fde.c gcc-15.2.0.aros/libgcc/unwind-dw2-fde.c
 --- gcc-15.2.0/libgcc/unwind-dw2-fde.c	2025-08-08 06:51:44.926422406 +0000
 +++ gcc-15.2.0.aros/libgcc/unwind-dw2-fde.c	2020-12-27 16:58:14.310000000 +0000
@@ -2787,3 +2775,28 @@ diff -ruN gcc-15.2.0/libstdc++-v3/include/std/ratio gcc-15.2.0.aros/libstdc++-v3
        static constexpr int __shift = __builtin_clzll(__d);
        static constexpr int __coshift_ = sizeof(uintmax_t) * 8 - __shift;
        static constexpr int __coshift = (__shift != 0) ? __coshift_ : 0;
+diff -ruN gcc-15.2.0/libstdc++-v3/src/filesystem/ops-common.h gcc-15.2.0.aros/libstdc++-v3/src/filesystem/ops-common.h
+--- gcc-15.2.0/libstdc++-v3/src/filesystem/ops-common.h
++++ gcc-15.2.0.aros/libstdc++-v3/src/filesystem/ops-common.h
+@@ -27,6 +27,9 @@
+ 
+ #include <chrono>
+ #include <bits/move.h> // std::__exchange
++#ifdef __AROS__
++# include <cstdio> // P_tmpdir
++#endif
+ 
+ #ifdef _GLIBCXX_HAVE_UNISTD_H
+ # include <unistd.h>
+@@ -746,7 +749,11 @@
+ 	if (tmpdir)
+ 	  return tmpdir;
+       }
++#if defined(__AROS__) && defined(P_tmpdir)
++    return P_tmpdir; // "T:" on AROS
++#else
+     return "/tmp";
++#endif
+   }
+ #endif
+ 

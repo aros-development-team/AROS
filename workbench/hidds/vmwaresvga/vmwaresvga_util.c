@@ -1,5 +1,5 @@
 /*
-    Copyright 2025, The AROS Development Team. All rights reserved.
+    Copyright 2025-2026, The AROS Development Team. All rights reserved.
 */
 
 //#define DEBUG 1
@@ -47,14 +47,3 @@ void os_free_aligned(void *ptr)
     free(ptr);
 }
 
-const char *
-os_get_option(const char *name)
-{
-    D(bug("[VMWareSVGA:util] %s()\n", __func__));
-    if (!strcmp(name, "SVGA_NO_LOGGING"))
-    {
-        D(bug("[VMWareSVGA:util] %s: returning 'no'\n", __func__));
-        return opt_no;
-    }
-    return NULL;
-}

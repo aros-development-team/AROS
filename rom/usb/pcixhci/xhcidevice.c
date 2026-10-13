@@ -253,8 +253,14 @@ _xhci_setaddr_complete:
      * on that port may have disappeared. Build the child route string and
      * drop any matching xHCI device context to release slot/resources.
      */
-    if((txtype == UHCMD_CONTROLXFER) &&
-            (ioreq->iouh_Flags & UHFF_HUB)) {
+    /*
+     * Not gated on UHFF_HUB: that flag is set on the pipe enumeration used
+     * to identify the device, not on the EP0 pipe the hub class later opens
+     * to run its ports, so the requests that matter here never carry it.
+     * The request identifies itself anyway - a class/OTHER CLEAR_FEATURE of
+     * C_PORT_CONNECTION is a hub port request and nothing else issues one.
+     */
+    if(txtype == UHCMD_CONTROLXFER) {
         if((bmRequestType == (URTF_CLASS | URTF_OTHER)) &&
                 (bRequest == USR_CLEAR_FEATURE) &&
                 (wValue == UFS_C_PORT_CONNECTION)) {

@@ -9,7 +9,11 @@ struct HostInterface;
 
 struct CocoaGfx_staticdata {
     OOP_Class         *gfxclass;
+    OOP_Class         *displayclass;
     OOP_Class         *bmclass;
+
+    OOP_Object        *display;
+    OOP_Object        *dmenum;
 
     OOP_AttrBase       hiddBitMapAttrBase;
     OOP_AttrBase       hiddGfxAttrBase;
@@ -39,6 +43,8 @@ struct CocoaBMData {
 extern OOP_AttrBase __IHidd;
 extern OOP_AttrBase __IHidd_BitMap;
 extern OOP_AttrBase __IHidd_Gfx;
+extern OOP_AttrBase __IHidd_Display;
+extern OOP_AttrBase __IHidd_DMEnum;
 extern OOP_AttrBase __IHidd_Sync;
 extern OOP_AttrBase __IHidd_PixFmt;
 extern OOP_AttrBase __IHidd_ChunkyBM;
@@ -46,6 +52,8 @@ extern OOP_AttrBase __IHidd_ChunkyBM;
 /* Attribute base shortcuts used by IS_GFX_ATTR etc. */
 #define HiddBitMapAttrBase  __IHidd_BitMap
 #define HiddGfxAttrBase     __IHidd_Gfx
+#define HiddDisplayAttrBase __IHidd_Display
+#define HiddDMEnumAttrBase  __IHidd_DMEnum
 #define HiddSyncAttrBase    __IHidd_Sync
 #define HiddPixFmtAttrBase  __IHidd_PixFmt
 #define HiddChunkyBMAttrBase __IHidd_ChunkyBM

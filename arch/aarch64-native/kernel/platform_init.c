@@ -82,12 +82,39 @@ static int platform_PostInit(struct KernelBase *KernelBase)
 
     D(bug("[Kernel] platform_PostInit: Performing Post Init..\n"));
 
+#if defined(__AROSEXEC_SMP__)
+    /* Pin the boot task before ARMI_Init wakes the secondaries:
+     * Exec_ARMCPUSMPInit runs too late to stop one dispatching it
+     * mid-coldstart. */
+    {
+        struct Task *bootTask = FindTask(NULL);
+        struct IntETask *iet = bootTask ? (struct IntETask *)GetETask(bootTask) : NULL;
+
+        if (iet && !iet->iet_CpuAffinity)
+        {
+            void *bootAff = KrnAllocCPUMask();
+            if (bootAff)
+            {
+                KrnGetCPUMask(0, bootAff);
+                iet->iet_CpuAffinity = bootAff;
+                iet->iet_CpuNumber = 0;
+            }
+        }
+    }
+#endif
+
     if (__arm_arosintern.ARMI_Init)
         __arm_arosintern.ARMI_Init(KernelBase, SysBase);
-    
+
     D(bug("[Kernel] platform_PostInit: Registering Heartbeat timer..\n"));
 
     KrnAddSysTimerHandler(KernelBase);
+
+#if defined(__AROSEXEC_SMP__)
+    /* Boot CPU's own heartbeat; secondaries arm theirs in cpu_Register. */
+    if (__arm_arosintern.ARMI_InitTimerCore)
+        __arm_arosintern.ARMI_InitTimerCore();
+#endif
 
     D(bug("[Kernel] platform_PostInit: Done..\n"));
 

@@ -698,7 +698,7 @@ ULONG NL_List_Insert(struct NLData *data,APTR *entries,LONG count,LONG pos,LONG 
           data->NList_Entries = ent;
           count -= count2;
 
-          /* TODO: This stuff here can be merged with the stuff below */
+          /* TODO: Post-insert image/selection/redraw updates are duplicated below. */
           GetNImage_End(data);
           GetNImage_Sizes(data);
           if (count > 0)

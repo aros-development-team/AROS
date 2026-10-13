@@ -210,10 +210,16 @@ int Do_Filenote(struct AnchorPath *a,
             {
                 do
                 {
+                    int Current_Value;
+
                     if (All == NOT_SET)
                     {
-                        Return_Value = SafeSetFileComment(a, Comment);
-                        if ((Quiet == NOT_SET) && (Return_Value == RETURN_OK))
+                        Current_Value = SafeSetFileComment(a, Comment);
+                        if (Current_Value > Return_Value)
+                        {
+                            Return_Value = Current_Value;
+                        }
+                        if ((Quiet == NOT_SET) && (Current_Value == RETURN_OK))
                         {
                             PrintFileName(a, TabValue);
                         }
@@ -231,9 +237,13 @@ int Do_Filenote(struct AnchorPath *a,
                             {
                                 a->ap_Flags |= APF_DODIR;
 
-                                Return_Value = SafeSetFileComment(a, Comment);
+                                Current_Value = SafeSetFileComment(a, Comment);
+                                if (Current_Value > Return_Value)
+                                {
+                                    Return_Value = Current_Value;
+                                }
 
-                                if ((Quiet == NOT_SET) && (Return_Value == RETURN_OK))
+                                if ((Quiet == NOT_SET) && (Current_Value == RETURN_OK))
                                 {
                                     PrintFileName(a, TabValue);
                                 }
@@ -249,9 +259,13 @@ int Do_Filenote(struct AnchorPath *a,
                         }
                         else
                         {
-                            Return_Value = SafeSetFileComment(a, Comment);
+                            Current_Value = SafeSetFileComment(a, Comment);
+                            if (Current_Value > Return_Value)
+                            {
+                                Return_Value = Current_Value;
+                            }
 
-                            if ((Quiet == NOT_SET) && (Return_Value == RETURN_OK))
+                            if ((Quiet == NOT_SET) && (Current_Value == RETURN_OK))
                             {
                                 PrintFileName(a, TabValue);
                             }
@@ -264,6 +278,15 @@ int Do_Filenote(struct AnchorPath *a,
                 &&
                     Return_Value != RETURN_FAIL
                 );
+
+                if (Result != ERROR_NO_MORE_ENTRIES)
+                {
+                    PrintFault(Result, ERROR_HEADER);
+                    if (Return_Value < RETURN_ERROR)
+                    {
+                        Return_Value = RETURN_ERROR;
+                    }
+                }
             }
             else
             {

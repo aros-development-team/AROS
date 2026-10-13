@@ -341,7 +341,7 @@ nouveau_ttm_init(struct nouveau_drm *drm)
 	INIT_LIST_HEAD(&drm->ttm.io_reserve_lru);
 
 	NV_INFO(drm, "VRAM: %d MiB\n", (u32)(drm->gem.vram_available >> 20));
-	NV_INFO(drm, "GART: %d MiB\n", (u32)(drm->gem.gart_available >> 20));
+	NV_INFO(drm, "GART: %llu MiB\n", (unsigned long long)(drm->gem.gart_available >> 20));
 	return 0;
 }
 

@@ -623,7 +623,6 @@ struct HIDD_ViewPortData *display_FindViewPorts(struct monitor_displaydata *mdd,
 	if (!(vp->Modes & VP_HIDE))
 	{
 	    struct ViewPortExtra *vpe = (struct ViewPortExtra *)GfxLookUp(vp);
-
 	    if (VPE_DRIVER(vpe) == (APTR)mdd)
 	    	return VPE_DATA(vpe);
 	}

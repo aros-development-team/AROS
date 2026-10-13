@@ -2,7 +2,7 @@
  * fat-handler - FAT12/16/32 filesystem handler
  *
  * Copyright (C) 2006 Marek Szyprowski
- * Copyright (C) 2007-2015 The AROS Development Team
+ * Copyright (C) 2007-2026 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -60,6 +60,10 @@ static APTR GetFatEntryPtr(struct FSSuper *sb, ULONG offset, APTR *rb,
             {
                 while (i-- != 0)
                     Cache_FreeBlock(sb->cache, sb->fat_blocks[i]);
+
+                /* The callers hand back a zero entry, which reads as a free
+                 * cluster. Let those that care tell the difference. */
+                sb->fat_io_error = TRUE;
                 return NULL;
             }
         }
@@ -333,12 +337,19 @@ void CountFreeClusters(struct FSSuper *sb)
     ULONG cluster = 0;
     ULONG free = 0;
 
-    /* Loop over all the data clusters */
+    /* Loop over all the data clusters. An unreadable FAT ends the count:
+     * every further entry would only fail the same way, and what could not
+     * be read must not be reported as free space. */
+    sb->fat_io_error = FALSE;
     for (cluster = 2; cluster < sb->clusters_count + 2; cluster++)
     {
         /* Record the free ones */
         if (GET_NEXT_CLUSTER(sb, cluster) == 0)
+        {
+            if (sb->fat_io_error)
+                break;
             free++;
+        }
     }
 
     /* Put the value away for later */
@@ -347,9 +358,10 @@ void CountFreeClusters(struct FSSuper *sb)
     D(bug("\tfree clusters: %ld\n", free));
 }
 
-void AllocCluster(struct FSSuper *sb, ULONG cluster)
+BOOL AllocCluster(struct FSSuper *sb, ULONG cluster)
 {
-    SET_NEXT_CLUSTER(sb, cluster, sb->eoc_mark);
+    if (!SET_NEXT_CLUSTER(sb, cluster, sb->eoc_mark))
+        return FALSE;
     sb->free_clusters--;
     if (sb->fsinfo_buffer != NULL)
     {
@@ -357,15 +369,18 @@ void AllocCluster(struct FSSuper *sb, ULONG cluster)
         sb->fsinfo_buffer->next_free = AROS_LONG2LE(sb->next_cluster);
         Cache_MarkBlockDirty(sb->cache, sb->fsinfo_block);
     }
+    return TRUE;
 }
 
-void FreeCluster(struct FSSuper *sb, ULONG cluster)
+BOOL FreeCluster(struct FSSuper *sb, ULONG cluster)
 {
-    SET_NEXT_CLUSTER(sb, cluster, 0);
+    if (!SET_NEXT_CLUSTER(sb, cluster, 0))
+        return FALSE;
     sb->free_clusters++;
     if (sb->fsinfo_buffer != NULL)
     {
         sb->fsinfo_buffer->free_count = AROS_LONG2LE(sb->free_clusters);
         Cache_MarkBlockDirty(sb->cache, sb->fsinfo_block);
     }
+    return TRUE;
 }

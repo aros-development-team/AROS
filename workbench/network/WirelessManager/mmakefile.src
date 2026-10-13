@@ -6,16 +6,22 @@ WMSUBDIRS :=	patches				\
 
 .PHONY : wirelessmanager-copydirs
 
+# The copy is what gets compiled, so the stamp has to track the sources it was
+# made from - guarded only by "does the stamp exist", an edit under src/ never
+# reaches the build tree and silently does nothing.
+WMSRCFILES := $(shell find $(addprefix $(SRCDIR)/$(CURDIR)/, $(WMSUBDIRS)) -type f 2>/dev/null)
+
 #MM
-wirelessmanager-copydirs :
-	@$(IF) ! $(TEST) -f $(GENDIR)/$(CURDIR)/.dirs-copied ; then \
-	       $(MKDIR) -p "$(GENDIR)/$(CURDIR)" ; \
-	       $(FOR) dir in $(WMSUBDIRS) ; do \
-	           $(ECHO) "Copying   \`$$dir' from \`$(SRCDIR)/$(CURDIR)/' to \`$(GENDIR)/$(CURDIR)/'" ; \
-	           $(CP) -Rf $(addprefix $(SRCDIR)/$(CURDIR)/, $$dir) $(addprefix $(GENDIR)/$(CURDIR)/, $$dir) ; \
-	       done ; \
-	       $(TOUCH) $(GENDIR)/$(CURDIR)/.dirs-copied ; \
-	fi
+wirelessmanager-copydirs : $(GENDIR)/$(CURDIR)/.dirs-copied
+
+$(GENDIR)/$(CURDIR)/.dirs-copied : $(WMSRCFILES)
+	@$(MKDIR) -p "$(GENDIR)/$(CURDIR)"
+	@$(FOR) dir in $(WMSUBDIRS) ; do \
+	       $(ECHO) "Copying   \`$$dir' from \`$(SRCDIR)/$(CURDIR)/' to \`$(GENDIR)/$(CURDIR)/'" ; \
+	       $(MKDIR) -p "$(GENDIR)/$(CURDIR)/$$dir" ; \
+	       $(CP) -Rf $(SRCDIR)/$(CURDIR)/$$dir/. $(GENDIR)/$(CURDIR)/$$dir/ ; \
+	done
+	@$(TOUCH) $@
 
 #MM- workbench-network-wirelessmanager-setup : wirelessmanager-copydirs
 

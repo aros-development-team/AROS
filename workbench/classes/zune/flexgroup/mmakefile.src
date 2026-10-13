@@ -1,0 +1,20 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES         := flexgroup
+INCLUDE_FILES := flexgroup.h
+
+#MM- workbench-classes-zune : workbench-classes-zune-flexgroup
+#MM workbench-classes-zune-flexgroup
+%build_module \
+    mmake=workbench-classes-zune-flexgroup \
+    modname=Flexgroup modtype=mcc \
+    conffile=flexgroup.conf
+
+%copy_includes path=zune
+
+%common
+%include_deps

@@ -3,6 +3,7 @@
 File: handler.h
 Author: Neil Cafferkey
 Copyright (C) 2001-2008 Neil Cafferkey
+Copyright (C) 2011-2026 The AROS Development Team
 
 This file is free software; you can redistribute it and/or modify it
 under the terms of the GNU Lesser General Public License as
@@ -105,6 +106,7 @@ struct Object
    struct Object *parent;
    struct DateStamp date;
    ULONG protection;
+   ULONG owner;             /* uid<<16 | gid (multi-user), secOWNER_NOBODY if unowned */
    TEXT *comment;
    struct MinNode hard_link;
    struct MinList notifications;
@@ -160,6 +162,14 @@ struct Handler
    struct DosLibrary *DOSBase;
    struct UtilityBase *UtilityBase;
    struct LocaleBase *LocaleBase;
+
+   /* multi-user support (ram_security.c) */
+   struct Library *sec_base;
+   BOOL sec_checked;        /* library known not to be resident */
+   BOOL sec_active;         /* enforcing for the current packet */
+   APTR sec_owner;          /* struct secExtOwner of the packet's sender */
+   ULONG sec_ownerid;
+   LONG sec_defprot;
 };
 
 /* FIXME: Remove these #define xxxBase hacks

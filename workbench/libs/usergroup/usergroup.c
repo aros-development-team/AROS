@@ -3,7 +3,7 @@
  *
  * Based upon usergroup.library from AmiTCP/IP.
  *
- * Copyright © 2025 The AROS Dev Team.
+ * Copyright © 2025-2026 The AROS Dev Team.
  * Copyright © 1993 AmiTCP/IP Group, <AmiTCP-Group@hut.fi>
  *                  Helsinki University of Technology, Finland.
  */
@@ -207,11 +207,25 @@ static int UserGroup__Expunge(LIBBASETYPEPTR LIBBASE)
     CleanupUTMP((struct Library *)LIBBASE);
     CleanupNIO((struct Library *)LIBBASE);
     TimeCleanup((struct Library *)LIBBASE);
+    ugSecCleanup((struct Library *)LIBBASE);
     if (DOSBase)
         CloseLibrary((void *)DOSBase);
     if (UtilityBase)
         CloseLibrary((struct Library *)UtilityBase);
 
+    return TRUE;
+}
+
+/*
+ * The base is per task: when a task's last CloseLibrary() happens, release
+ * what it opened on its behalf (netinfo.device unit, port, request), or the
+ * port's signal is lost with the task.
+ */
+static int UserGroup__Close(LIBBASETYPEPTR LIBBASE)
+{
+    D(bug("[UserGroup] %s()\n", __func__));
+
+    CleanupNIO((struct Library *)LIBBASE);
     return TRUE;
 }
 
@@ -239,6 +253,7 @@ static int UserGroup__Init(LIBBASETYPEPTR LIBBASE)
 
 ADD2INITLIB(UserGroup__Init, 0)
 ADD2EXPUNGELIB(UserGroup__Expunge, 0)
+ADD2CLOSELIB(UserGroup__Close, 0)
 #endif
 
 /*

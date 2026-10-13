@@ -214,9 +214,10 @@ BOOL  PCIDT_Map(struct pcidt_staticdata *psd, IPTR base, IPTR size);
 BOOL  PCIDT_MapAt(struct pcidt_staticdata *psd, IPTR va, IPTR pa, IPTR size);
 
 /*
- * Sv39 identity mapping only reaches the lower 256GB; windows above it
- * are remapped at this canonical base, matching the kernel's boot
- * framebuffer convention (see krnFBAddr() in kernel_startup.c).
+ * Sv39 identity mapping only reaches the lower 256GB; addresses above
+ * it are remapped linearly from this canonical base, the same rule the
+ * kernel applies to the boot framebuffer (see krnFBAddr() in
+ * kernel_startup.c), so both name one address for the same aperture.
  */
 #define PCIDT_SV39_IDENTITY_LIMIT   (1UL << 38)
 #define PCIDT_HIGH_WINDOW           0x2000000000UL

@@ -5,8 +5,12 @@
 #include <aros/symbolsets.h>
 #include <proto/exec.h>
 #include <proto/oop.h>
+#include <proto/dos.h>
 
+#include <dos/var.h>
 #include <hidd/gfx.h>
+
+#include <string.h>
 
 #include LC_LIBDEFS_FILE
 #include "gallium_intern.h"
@@ -31,6 +35,24 @@ static int Init(LIBBASETYPEPTR LIBBASE)
     LIBBASE->fallback = (char *)softpipe_str;
     LIBBASE->fallbackmodule = NULL;
 
+    /* Which software rasteriser to use when the display has no gallium
+       driver of its own. (llvmpipe, softpipe) */
+    {
+        char buf[64];
+
+        if (GetVar("SYS/Gallium.default", buf, sizeof(buf),
+                   GVF_GLOBAL_ONLY | LV_VAR) > 0)
+        {
+            char *sel = AllocVec(strlen(buf) + 1, MEMF_PUBLIC);
+
+            if (sel)
+            {
+                strcpy(sel, buf);
+                LIBBASE->fallback = sel;
+            }
+        }
+    }
+
     /* cache method id's that we use ..  */
     LIBBASE->galliumMId_UpdateRect = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_UpdateRect);
     LIBBASE->galliumMId_DisplayResource = OOP_GetMethodID(IID_Hidd_Gallium, moHidd_Gallium_DisplayResource);
@@ -54,6 +76,9 @@ static int Expunge(LIBBASETYPEPTR LIBBASE)
     if (LIBBASE->fallbackmodule)
         CloseLibrary(LIBBASE->fallbackmodule);
 
+    if ((CONST_STRPTR)LIBBASE->fallback != softpipe_str)
+        FreeVec(LIBBASE->fallback);
+
     return TRUE;
 }
 
@@ -61,3 +86,4 @@ ADD2INITLIB(Init, 0);
 ADD2EXPUNGELIB(Expunge, 0);
 
 ADD2LIBS((STRPTR)"gallium.hidd", 0, static struct Library *, GalliumHiddBase);
+ADD2LIBS((STRPTR)"dos.library", 0, struct DosLibrary *, DOSBase);

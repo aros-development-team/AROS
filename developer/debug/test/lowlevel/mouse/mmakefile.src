@@ -1,0 +1,11 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+USER_LDFLAGS := -static
+
+#MM test-lowlevel-mouse : includes linklibs
+
+%build_progs mmake=test-lowlevel-mouse \
+    files=mouse targetdir=$(AROS_TESTS)/lowlevel/mouse
+
+%common

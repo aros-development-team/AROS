@@ -47,6 +47,10 @@
 #define BMDEPTH_COMPATIBILITY	1
 #define SIZERECTBUF		128
 
+void internal_SetRGB32Colors(struct ViewPort *vp, HIDDT_Color *colors,
+                             ULONG first, ULONG count,
+                             struct GfxBase *GfxBase);
+
 struct RegionRectangleExt {
     struct RegionRectangle     RR;
     IPTR                       Counter;
@@ -142,6 +146,7 @@ struct monitor_displaydata {
 #define DF_SoftCursor   (1 << 1)	/* Software cursor used				*/
 #define DF_SoftComposit (1 << 2)	/* Software screen composition requested	*/
 #define DF_DirectFB     (1 << 3)	/* Driver uses a direct-mode framebuffer	*/
+#define DF_ExternalPlanar (1 << 4) /* Displays caller-owned Chip RAM planar BitMaps */
 #define DF_BootSurvive  (1 << 15)	/* Boot mode driver that shouldnt be flushed	*/
 #define DF_BootMode     (1 << 14)	/* Boot mode driver				*/
 #define DF_KeepBoot     (1 << 13)	/* Driver asked not to be given the handover	*/
@@ -245,7 +250,13 @@ struct GfxBase_intern {
 
     /* baseclass for CreateObject */
     OOP_Class                   *basebm;
+
+    /* ChangeVPBitMap() replies due after the display's next vertical blank. */
+    struct DBufInfo             *dbuf_pending;
+    struct SimpleSprite         *simple_sprites[8];
 };
+
+void internal_QueueDBufInfo(struct DBufInfo *db, struct GfxBase *GfxBase);
 
 
 /* Macros */

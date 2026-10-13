@@ -141,20 +141,20 @@ MUIA_Application_Commands [ISG]           done
 MUIA_Application_Copyright [I.G]          done
 MUIA_Application_Description [I.G]        done
 MUIA_Application_DiskObject [ISG]         done
-MUIA_Application_DoubleStart [..G]        not triggered yet (todo)
+MUIA_Application_DoubleStart [..G]        triggered; OM_GET value todo
 MUIA_Application_DropObject [IS.]         todo
 MUIA_Application_ForceQuit [..G]          not triggered yet
-MUIA_Application_HelpFile [ISG]           unused/dummy
+MUIA_Application_HelpFile [ISG]           stored; otherwise unused
 MUIA_Application_Iconified [.SG]          done
 MUIA_Application_Menu [I.G]               unimplemented (OBSOLETE)
 MUIA_Application_MenuAction [..G]         done
-MUIA_Application_MenuHelp [..G]           todo (ditto)
+MUIA_Application_MenuHelp [..G]           not triggered yet
 MUIA_Application_Menustrip [I..]          done
-MUIA_Application_RexxHook [ISG]           todo
+MUIA_Application_RexxHook [ISG]           stored; not invoked
 MUIA_Application_RexxMsg [..G]            done
 MUIA_Application_RexxString [.S.]         done
 MUIA_Application_SingleTask [I..]         done
-MUIA_Application_Sleep [.S.]              todo
+MUIA_Application_Sleep [.S.]              done
 MUIA_Application_Title [I.G]              done
 MUIA_Application_UseCommodities [I..]     done
 MUIA_Application_UseRexx [I..]            done
@@ -164,13 +164,13 @@ MUIA_Application_WindowList [..G]         done
 
 OM_ADDMEMBER                              done
 OM_REMMEMBER                              done
-MUIM_Application_AboutMUI                 todo
+MUIM_Application_AboutMUI                 done
 MUIM_Application_AddInputHandler          done ?
 MUIM_Application_CheckRefresh             done
 MUIM_Application_GetMenuCheck             OBSOLETE
 MUIM_Application_GetMenuState             OBSOLETE
 MUIM_Application_Input                    OBSOLETE
-MUIM_Application_InputBuffered            todo
+MUIM_Application_InputBuffered            todo: drain all pending window messages
 MUIM_Application_Load
 MUIM_Application_NewInput                 done
 MUIM_Application_OpenConfigWindow
@@ -452,8 +452,8 @@ static IPTR Application__OM_NEW(struct IClass *cl, Object *obj,
         ObtainSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
         if ((other_app = find_application_by_base(cl, obj, data->app_Base)))
         {
-            //FIXME "Is calling MUIM_Application_PushMethod on an alien
-            //application object safe?"
+            // FIXME: Lifetime of other_app until the queued PushMethod
+            // executes is not established here.
             DoMethod(other_app, MUIM_Application_PushMethod,
                 (IPTR) other_app, 3, MUIM_Set, MUIA_Application_DoubleStart,
                 TRUE);

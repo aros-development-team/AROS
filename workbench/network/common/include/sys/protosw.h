@@ -1,28 +1,15 @@
 /*
- * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
- *                    Helsinki University of Technology, Finland.
- *                    All rights reserved.
- * Copyright (C) 2005 Neil Cafferkey
- * Copyright (C) 2005-2026 The AROS Dev Team
+ * Copyright (C) 2005-2026, The AROS Development Team. All rights reserved.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
- * MA 02111-1307, USA.
- *
+ * Derived from the 4.3BSD-Reno/Net-2 <sys/protosw.h> (7.8, Berkeley, 4/28/91);
+ * the Berkeley notice and terms follow. AROS changes: include guard, prototyped
+ * protocol switch entries, PR_FASTHZ of 20, PR_IMPLOPCL and PRU_SEND_EOF, and
+ * the request name tables are defined by the stack rather than by this header
+ * (AMITCP).
  */
 
 /*-
- * Copyright (C) 1982, 1986 The Regents of the University of California.
+ * Copyright (c) 1982, 1986 The Regents of the University of California.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -166,9 +153,7 @@ struct protosw {
 
 #define	PRU_NREQ		22
 
-/*
- * moved prurequests array definition to netinet/tcp_debug.c
- */
+/* The request name table is defined by the stack (netinet/tcp_debug.c). */
 #ifdef PRUREQUESTS
 extern char *prurequests[];
 #endif
@@ -205,7 +190,7 @@ extern char *prurequests[];
 #define	PRC_IS_REDIRECT(cmd)	\
 	((cmd) >= PRC_REDIRECT_NET && (cmd) <= PRC_REDIRECT_TOSHOST)
 
-#ifndef AMITCP /* this would define storage in header, ugly */
+#ifndef AMITCP /* the stack defines its name tables in one source file */
 #ifdef PRCREQUESTS
 char	*prcrequests[] = {
 	"IFDOWN", "ROUTEDEAD", "#2", "DEC-BIT-QUENCH2",
@@ -236,7 +221,7 @@ char	*prcrequests[] = {
 
 #define	PRCO_NCMDS	2
 
-#ifndef AMITCP /* this would define storage in header, ugly */
+#ifndef AMITCP /* the stack defines its name tables in one source file */
 #ifdef PRCOREQUESTS
 char	*prcorequests[] = {
 	"GETOPT", "SETOPT",

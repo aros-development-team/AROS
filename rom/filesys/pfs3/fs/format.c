@@ -145,7 +145,7 @@ static void ShowVersion (globaldata *g);
 static ULONG MakeBootBlock(globaldata *g);
 static rootblock_t *MakeRootBlock (DSTR diskname, BOOL showrequesters, globaldata *g);
 static void MakeBitmap (globaldata *g);
-static void MakeRootDir (globaldata *g);
+static BOOL MakeRootDir (globaldata *g);
 static ULONG CalcNumReserved (globaldata *g, ULONG resblocksize);
 static void MakeReservedBitmap (struct rootblock **rbl, ULONG numreserved, globaldata *g);
 static crootblockextension_t *MakeFormatRBlkExtension (struct rootblock *rbl, globaldata *g);
@@ -164,6 +164,7 @@ BOOL FDSFormat (DSTR diskname, LONG disktype, SIPTR *error, BOOL showrequesters,
   struct crootblockextension *rext;
   ULONG err;
   ULONG i;
+  BOOL committed;
 
 	ENTER("FDSFormat");
 
@@ -221,7 +222,14 @@ BOOL FDSFormat (DSTR diskname, LONG disktype, SIPTR *error, BOOL showrequesters,
 		i = AllocAnode (0, g);
 	} while (i<ANODE_ROOTDIR-1);
 
-	MakeRootDir (g);
+	if (!MakeRootDir (g))
+	{
+		*error = ERROR_NO_FREE_STORE;
+		FreeVolumeResources (volume, g);
+		g->currentvolume = NULL;
+		g->dirty = FALSE;
+		return DOSFALSE;
+	}
 
 #if DELDIR
 	/* add deldir */
@@ -230,10 +238,15 @@ BOOL FDSFormat (DSTR diskname, LONG disktype, SIPTR *error, BOOL showrequesters,
 	g->dirty = TRUE;
 #endif
 
-	UpdateDisk (g);
+	committed = UpdateDisk(g);
 	FreeVolumeResources (volume, g);
 	g->currentvolume = NULL;
-
+	g->dirty = FALSE;
+	if (!committed)
+	{
+		*error = g->softprotect ? ERROR_DISK_WRITE_PROTECTED : ERROR_NOT_A_DOS_DISK;
+		return DOSFALSE;
+	}
 	return DOSTRUE;
 }
 
@@ -267,7 +280,7 @@ static void ShowVersion (globaldata *g)
 	 * Show  copyright message
 	 */
 	tick = 0;
-	window = BuildEasyRequestArgs (NULL, &req, iflags, &regnr);
+	window = BuildEasyRequestArgs (NULL, (struct EasyStruct *)&req, iflags, (RAWARG)&regnr);
 	while ( (retval = SysReqHandler (window, &rec_idcmp, TRUE )) != 0 )
 	{
 		if (retval == -1)
@@ -459,14 +472,28 @@ static void MakeBitmap (globaldata *g)
 		NewBitmapBlock (i,g);
 }
 
-static void MakeRootDir (globaldata *g)
+static BOOL MakeRootDir (globaldata *g)
 {
   struct cdirblock *blk;
   ULONG blocknr, anodenr;
 
 	blocknr = AllocReservedBlock (g);
+	if (!blocknr)
+		return FALSE;
 	anodenr = AllocAnode (0, g);
+	if (!anodenr)
+	{
+		FreeReservedBlock(blocknr, g);
+		return FALSE;
+	}
 	blk = MakeDirBlock (blocknr, anodenr, anodenr, 0, g);
+	if (!blk)
+	{
+		FreeAnode(anodenr, g);
+		FreeReservedBlock(blocknr, g);
+		return FALSE;
+	}
+	return TRUE;
 }
 
 static const ULONG schijf[][2] =

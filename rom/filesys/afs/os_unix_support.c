@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 /*
@@ -18,6 +18,7 @@
 #include "error.h"
 #include "errstrings.h"
 #include "volumes.h"
+#include "cache.h"
 
 void showPtrArgsText(struct AFSBase *afsbase, const char *const string, va_list args)
 {
@@ -130,9 +131,16 @@ void closeBlockDevice(struct AFSBase *afsbase, struct IOHandle *ioh) {
 }
 
 BOOL flush(struct AFSBase *afsbase, struct Volume *volume) {
-        flushCache(afsbase, volume);
-        clearCache(afsbase, volume->blockcache);
-        return DOSFALSE;
+        clearerr(volume->ioh.fh); /* An explicit flush also retries earlier errors. */
+        if (!flushBlocks(afsbase, volume))
+                return DOSFALSE;
+        if (fflush(volume->ioh.fh) != 0)
+        {
+                volume->writefailed = TRUE;
+                return DOSFALSE;
+        }
+        volume->writefailed = FALSE;
+        return DOSTRUE;
 }
 
 /****************************************************************************
@@ -141,7 +149,7 @@ BOOL flush(struct AFSBase *afsbase, struct Volume *volume) {
  * so the functions are no-ops.
  ****************************************************************************/
 
-LONG attemptAddDosVolume(struct AFSBase *afsbase, struct Volume *volume) {
+LONG addDosVolume(struct AFSBase *afsbase, struct Volume *volume) {
         return 0;
 }
 LONG osMediumInit(struct AFSBase *afsbase, struct Volume *volume, struct BlockCache *blockbuffer) {

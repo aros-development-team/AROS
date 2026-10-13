@@ -1,0 +1,22 @@
+#
+#   echo.service: the test service. A service is an ordinary shared library
+#   with the xxx.service function table; genmodule's modsuffix gives it the
+#   .service name, and it is installed where the Services Manager's
+#   configuration points: SYS:System/Network/Envoy/Services/.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := echo_init echo_service
+
+USER_INCLUDES := -I$(SRCDIR)/workbench/network/envoy/include
+USER_LDFLAGS  := -static
+#USER_CPPFLAGS := -DDEBUG=1
+
+#MM- workbench-network-envoy : workbench-network-envoy-echo
+#MM workbench-network-envoy-echo : includes linklibs includes-copy-envoy workbench-network-envoy-nipc-includes
+
+%build_module mmake=workbench-network-envoy-echo modname=echo \
+  modtype=library modsuffix=service moduledir=System/Network/Envoy/Services \
+  files="$(FILES)" uselibs=""
+
+%common

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -29,7 +29,8 @@
 #define AROS_VERSION_MAJOR      1
 #define AROS_VERSION_MINOR      12
 #define AROS_ABI_VERSION_MAJOR  -1      /* Change only value, name is used in external script */
-#define AROS_RELEASE_DATE       7560    /* in days since 1978-01-01 */
+#define AROS_RELEASE_DATE       7874    /* AROS 1.12b (1999-07-24), days since 1978-01-01 */
+/* TODO: Define maintenance of release metadata for future official releases. */
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
 /* Amiga hardware support functions */

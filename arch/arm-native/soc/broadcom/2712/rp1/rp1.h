@@ -10,6 +10,7 @@
 
 #include <exec/types.h>
 #include <exec/libraries.h>
+#include <oop/oop.h>
 
 #define RP1_PCIE_VENDOR_ID      0x1DE4
 #define RP1_PCIE_DEVICE_ID      0x0001
@@ -22,14 +23,26 @@
 #define RP1_I2C1_OFFSET         0x074000
 #define RP1_I2C2_OFFSET         0x078000
 #define RP1_GPIO_OFFSET         0x0D0000
-#define RP1_USB0_OFFSET         0x100000
-#define RP1_USB1_OFFSET         0x110000
+#define RP1_USB0_OFFSET         0x200000
+#define RP1_USB1_OFFSET         0x300000
+/* Per-controller wrapper config (datasheet 5.1) */
+#define RP1_USB0_CFG_OFFSET     0x160000
+#define RP1_USB1_CFG_OFFSET     0x164000
 #define RP1_ETH_OFFSET          0x180000
 
 struct RP1Base {
     struct Library  rp1_Lib;
     BOOL            rp1_Present;
     IPTR            rp1_BAR1;       /* PCIe BAR1 base address */
+
+    /* RP1 as pci.hidd sees it, and the root complex it hangs off - which
+       is what translates DMA addresses for anything behind RP1. */
+    OOP_Object     *rp1_PCIDevice;
+    OOP_Object     *rp1_PCIDriver;
+
+    /* GIC INTIDs the xHCI controllers signal on, 0 if MSI is not up. */
+    ULONG           rp1_USBIrq0;
+    ULONG           rp1_USBIrq1;
 
     /* Pre-computed peripheral base addresses */
     IPTR            rp1_USB0;

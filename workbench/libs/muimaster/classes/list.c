@@ -740,7 +740,7 @@ static BOOL ParseListFormat(struct MUI_ListData *data, STRPTR format,
         if (!IncreaseColumns(data, new_columns))
         {
             bug("[Zune:List] not enough memory for new columns!!\n");
-            /* FIXME: proper handling? */
+            /* FIXME: failure can leave list entries with mixed allocation sizes. */
             return FALSE;
         }
         data->columns_allocated = new_columns;
@@ -1450,7 +1450,7 @@ IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
         case MUIA_List_Format:
             data->format = (STRPTR) tag->ti_Data;
             ParseListFormat(data, data->format, FALSE);
-            // FIXME: should we check for errors?
+            // FIXME: ParseListFormat() failure is ignored.
             DoMethod(obj, MUIM_List_Redraw, MUIV_List_Redraw_All);
             break;
 
@@ -2910,7 +2910,8 @@ IPTR List__MUIM_Insert(struct IClass *cl, Object *obj,
             FreeListEntry(data, lentry);
             RemoveListEntries(data, pos, until - pos);
 
-            /* TODO: Also check for visible stuff like below */
+            /* TODO: Update visible-entry state before returning on
+             * MUIM_List_Construct failure. */
             if (data->entries_num != data->confirm_entries_num)
                 set(obj, MUIA_List_Entries, data->confirm_entries_num);
             return ~0;
@@ -2956,7 +2957,8 @@ IPTR List__MUIM_Insert(struct IClass *cl, Object *obj,
      */
     if (sort)
     {
-        /* TODO: which pos to return here !?        */
+        /* TODO: define which position to return after
+           MUIV_List_Insert_Sorted reorders the list. */
         DoMethod(obj, MUIM_List_Sort);
 
         if ((adjusted) && (data->flags & LIST_QUIET))

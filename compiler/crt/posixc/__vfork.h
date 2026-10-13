@@ -2,7 +2,7 @@
 #define __VFORK_H
 
 /*
-    Copyright © 2008-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2026, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -37,6 +37,7 @@ struct vfork_data
     APTR parent_internalpool;
     int parent_numslots;
     fdesc **parent_fd_array;
+    struct PosixCIntBase *parent_fd_owner;
     int parent_flags;
     char *parent_upathbuf;
 

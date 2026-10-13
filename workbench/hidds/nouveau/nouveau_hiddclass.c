@@ -2,6 +2,10 @@
     Copyright (C) 2010-2026, The AROS Development Team. All rights reserved.
 */
 
+#include <aros/asmcall.h>
+#include <exec/interrupts.h>
+#include <exec/pm.h>
+#include <proto/exec.h>
 #include "nouveau_intern.h"
 #include "compositor.h"
 
@@ -326,6 +330,59 @@ static BOOL HIDDNouveauReleaseBootDisplays(struct pci_dev *pdev,
     return TRUE;
 }
 
+/*
+ * Just before the platform reset performer runs (EFI reset sits at
+ * priority -56), shut the driver down the way every other port of this
+ * stack does on module unload: stop display work, then tell GSP-RM the
+ * driver is going away and let it halt, tearing its protected region
+ * down so the next boot's GSP-FMC starts cleanly. A power-off skips all
+ * of it: the card needs no unload across a power cycle, and a machine
+ * without a power-off mechanism still needs the driver alive to render
+ * intuition's final screen.
+ */
+volatile int nouveau_shutting_down;
+
+static struct CardData *nouveau_shutdown_carddata;
+
+static AROS_INTH1(HIDDNouveauShutdownHandler, struct Interrupt *, handler)
+{
+    AROS_INTFUNC_INIT
+
+    UBYTE action = handler->is_Node.ln_Type & SD_ACTION_MASK;
+
+    /* Bitwise: covers cold, warm and the combined SD_ACTION_REBOOT */
+    if (action & SD_ACTION_REBOOT)
+    {
+        nouveau_shutting_down = 1;
+        if (nouveau_shutdown_carddata)
+        {
+            bug("[nouveau] shutting down: draining and freeing channels\n");
+            HIDDNouveauAccelShutdown(nouveau_shutdown_carddata);
+        }
+        nouveau_shutdown();
+    }
+
+    return FALSE;
+
+    AROS_INTFUNC_EXIT
+}
+
+static struct Interrupt nouveau_shutdown_interrupt;
+
+static void HIDDNouveauInstallShutdownHandler(struct CardData *carddata)
+{
+    nouveau_shutdown_carddata = carddata;
+    if (nouveau_shutdown_interrupt.is_Code)
+        return;
+
+    nouveau_shutdown_interrupt.is_Node.ln_Type = NT_INTERRUPT;
+    nouveau_shutdown_interrupt.is_Node.ln_Pri  = -48;
+    nouveau_shutdown_interrupt.is_Node.ln_Name = "nouveau.hidd";
+    nouveau_shutdown_interrupt.is_Code         = (VOID_FUNC)HIDDNouveauShutdownHandler;
+    nouveau_shutdown_interrupt.is_Data         = &nouveau_shutdown_interrupt;
+    AddResetCallback(&nouveau_shutdown_interrupt);
+}
+
 /* PUBLIC METHODS */
 /* DRM connector type -> vHidd_ConnectorType_* (0 = unknown) */
 static ULONG HIDDNouveauConnectorType(uint32_t drmtype)
@@ -387,15 +444,31 @@ OOP_Object * METHOD(Nouveau, Root, New)
     if (nouveau_init_probe(pdev) < 0)
         return NULL;
 
+    HIDDNouveauInstallShutdownHandler(&(SD(cl)->carddata));
+
     LOCK_ENGINE
 
-    nouveau_device_open("", &nvdev);
+    {
+        struct nouveau_drm *nvdrm = NULL;
+        int drmfd = drmOpen("nouveau", "");
+
+        if (drmfd < 0 || nouveau_drm_new(drmfd, &nvdrm) || nouveau_device_new(&nvdrm->client, &nvdev))
+        {
+            nvlog("[Nouveau] Not able to open the drm device\n");
+            if (nvdrm)
+                nouveau_drm_del(&nvdrm);
+            if (drmfd >= 0)
+                drmClose(drmfd);
+            UNLOCK_ENGINE
+            return NULL;
+        }
+    }
 
     nouveau_client_new(nvdev, &nvclient);
 
 
     /* Select crtc and connector */
-    if (!HIDDNouveauSelectConnectorCrtc(nvdev->fd, &selectedconnector, &selectedcrtc))
+    if (!HIDDNouveauSelectConnectorCrtc(NOUVEAU_DEV_FD(nvdev), &selectedconnector, &selectedcrtc))
     {
         nvlog("[Nouveau] Not able to select connector and crtc\n");
 
@@ -495,7 +568,7 @@ OOP_Object * METHOD(Nouveau, Root, New)
                 family = NULL; break;
             }
 
-            if (!drmGetChipName(nvdev->fd, chip, sizeof(chip)))
+            if (!drmGetChipName(NOUVEAU_DEV_FD(nvdev), chip, sizeof(chip)))
                 sprintf(chip, "NV%X", (unsigned)nvdev->chipset);
 
             if (family)
@@ -643,6 +716,12 @@ OOP_Object * METHOD(Nouveau, Root, New)
 
             /* This can fail */
             nouveau_bo_new(carddata->dev, NOUVEAU_BO_GART | NOUVEAU_BO_MAP, 0, gartsize, NULL, &carddata->GART);
+            /* The driver's cache maintenance walks the whole buffer on
+               every access (12MiB a time); the rows a transfer exchanges
+               are maintained where they are exchanged instead
+               (nouveau_staging_to_gpu / _from_gpu). */
+            if (carddata->GART)
+                drmNouveauBoSelfSync(NOUVEAU_DEV_FD(carddata->dev), carddata->GART->handle);
 
             InitSemaphore(&carddata->gartsemaphore);
             
@@ -674,6 +753,7 @@ OOP_Object * METHOD(Nouveau, Root, New)
                 break;
             }
 
+#if NOUVEAU_PRIVATE_COMPOSITOR
             /* Create compositor object */
             {
                 struct TagItem comptags [] =
@@ -685,6 +765,10 @@ OOP_Object * METHOD(Nouveau, Root, New)
                 SD(cl)->compositor = gfxdata->compositor;
                 /* TODO: Check if object was created, how to handle ? */
             }
+#else
+            gfxdata->compositor = NULL;
+            SD(cl)->compositor = NULL;
+#endif
 
         }
         UNLOCK_ENGINE
@@ -756,7 +840,6 @@ VOID METHOD(Nouveau, Hidd_Gfx, CopyBox)
             break;
         }
 
-nouveau_bo_wait(destdata->bo, NOUVEAU_BO_RD, carddata->client);
 
         UNLOCK_BITMAP_BM(destdata);
         UNLOCK_BITMAP_BM(srcdata);

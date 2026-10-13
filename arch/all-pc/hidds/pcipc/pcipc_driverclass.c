@@ -608,6 +608,7 @@ static int PCIPC_InitClass(LIBBASETYPEPTR LIBBASE)
         D(bug("[PCIPC:Driver] %s: PCI base class @ 0x%p\n", __func__, pci));
         msg.driverClass = _psd->pcipcDriverClass;
         msg.mID = OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_AddHardwareDriver);
+        msg.instanceTags = NULL;
         if (!ACPICABase || IsListEmpty(&acpiHBridges))
         {
             D(bug("[PCIPC:Driver] %s: Registering legacy Driver Instance with PCI base class...\n", __func__));

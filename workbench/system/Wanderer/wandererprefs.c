@@ -1011,7 +1011,7 @@ IPTR WandererPrefs__MUIM_WandererPrefs_ReloadHiddenVolumes
     D(bug("[Wanderer:Prefs] %s()\n", __func__));
 
     len = GetVar((STRPTR)wandererPrefs_HiddenVolumesVar, buffer, sizeof(buffer) - 1,
-        GVF_GLOBAL_ONLY);
+        GVF_GLOBAL_ONLY | GVF_BINARY_VAR);
 
     if (len < 0)
         len = 0;

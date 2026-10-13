@@ -1,0 +1,42 @@
+:Per-directory license information:
+
+(a)--ROOT, drm-aros, libdrm/arosdrm.c, include (except where noted)
+(b)----drm/vmwgfx, include/uapi/drm/vmwgfx_drm.h
+(d)----libdrm/arosdrmmode.c, include/libdrm
+(e)----include/asm/vmware.h
+(f)----drm (core subset, display/, ttm/), include/drm, include/uapi
+(g)----drm-compat, include/linux, include/asm*, include/acpi, include/soc, include/video, include/trace, include/kunit, include/sys
+
+(a)
+All files in *these directories* are licensed under APL license.
+
+(b)
+Linux 6.18.44 drivers/gpu/drm/vmwgfx and include/uapi/drm/vmwgfx_drm.h.
+Every file is dual GPL-2.0/MIT with MIT selected for the AROS port. Local
+changes are recorded in patches/vmwgfx-aros.diff.
+
+(c)
+(Mesa's svga gallium driver and its winsys/svga/drm are compiled from the
+Mesa port; their AROS changes are in workbench/libs/mesa/mesa-26.0.0-aros.diff.)
+
+(d)
+libdrm's KMS wrappers (MIT), from the nouveau hidd, with additions.
+
+(e)
+Linux arch/x86/include/asm/vmware.h, GPL-2.0 or MIT (MIT selected),
+reduced to the I/O port hypercall method.
+
+(f)
+Linux 6.18.44 drivers/gpu/drm (core subset, display/, ttm/), include/drm
+and include/uapi/drm, the same base the nouveau hidd carries, kept here as
+a copy of its own. Files are MIT, or dual GPL-2.0/MIT with MIT selected;
+GPL-only headers were replaced by APL versions. See the nouveau hidd's
+LEGAL and patches for the origin of the local changes.
+
+(g)
+The Linux compatibility layer, as in the nouveau hidd: APL, except
+linux_dma_fence.c, linux_dma_fence_array.c (BSD-2-Clause, FreeBSD
+drm-kmod), linux_dma_resv.c (MIT), linux_idr.c and linux_compat.c
+(BSD-2-Clause, FreeBSD linuxkpi), linux_hdmi.c (MIT), and the headers
+copied from FreeBSD linuxkpi (BSD-2-Clause). Check each file for its
+notice.

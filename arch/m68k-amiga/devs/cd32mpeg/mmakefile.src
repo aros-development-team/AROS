@@ -1,0 +1,5 @@
+include $(SRCDIR)/config/aros.cfg
+
+%build_module mmake=kernel-amiga-m68k-cd32mpeg \
+    modname=cd32mpeg modtype=device \
+    files="cd32mpeg"

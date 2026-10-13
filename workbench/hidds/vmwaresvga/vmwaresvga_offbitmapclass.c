@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Offscreen bitmap class for VMWare hidd.
 */
@@ -101,14 +101,12 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         else if (depth>8)
             multi = 2;
         data->bytesperpix = multi;
+        data->pitch = width * multi;
 
         data->VideoData = AllocVec(width*height*multi, MEMF_PUBLIC | MEMF_CLEAR);
         if (data->VideoData)
         {
             InitSemaphore(&data->bmsem);
-            data->data = &XSD(cl)->data;
-            if (XSD(cl)->activecallback)
-                XSD(cl)->activecallback(XSD(cl)->callbackdata, o, TRUE);
         } /* if got data->VideoData */
         else
         {

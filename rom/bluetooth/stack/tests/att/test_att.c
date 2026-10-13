@@ -147,6 +147,12 @@ static void test_read_and_write_requests(void)
     BT_CHECK(bt_buf_writer_len(&w) == 3 + sizeof(value));
     BT_CHECK(buf[0] == BT_ATT_OPCODE_WRITE_REQUEST);
     BT_CHECK(memcmp(buf + 3, value, sizeof(value)) == 0);
+
+    bt_buf_writer_init(&w, buf, sizeof(buf));
+    BT_CHECK(bt_att_encode_write_command(&w, 0x0003, value, sizeof(value)) == BT_OK);
+    BT_CHECK(bt_buf_writer_len(&w) == 3 + sizeof(value));
+    BT_CHECK(buf[0] == BT_ATT_OPCODE_WRITE_COMMAND);
+    BT_CHECK(memcmp(buf + 3, value, sizeof(value)) == 0);
 }
 
 static void test_handle_value_notification(void)

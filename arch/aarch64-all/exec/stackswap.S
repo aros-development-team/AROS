@@ -7,9 +7,8 @@
     offsets from <aros/aarch64/asm.h> (Disable, Enable, tc_SPLower, tc_SPUpper,
     stk_Lower, stk_Upper, stk_Pointer, ThisTask) -- no magic numbers.
 
-    FindTask(NULL)'s vector offset (-49*8 = -392) is out of AArch64's load
-    immediate range, and on a non-SMP build it simply returns SysBase->ThisTask,
-    so we read ThisTask directly.
+    FindTask(NULL)'s vector offset is out of the load immediate range, so
+    its address is formed with a sub first.
 */
 
 	#include <aros/aarch64/asm.h>
@@ -28,7 +27,18 @@ AROS_SLIB_ENTRY(StackSwap,Exec,122):
 	// frame that spans the SP swap (it would move with the stack).
 
 	mov	x3, x0			// x3 = newStack
-	ldr	x2, [x1, #ThisTask]	// x2 = current task
+
+	// FindTask(NULL), not SysBase->ThisTask: on an SMP build the running
+	// task is per-CPU and asm.h has no ThisTask at all.
+	stp	x1, x3, [sp, #-32]!
+	str	x30, [sp, #16]
+	mov	x0, #0
+	sub	x16, x1, #(0 - FindTask)
+	ldr	x16, [x16]
+	blr	x16
+	mov	x2, x0
+	ldr	x30, [sp, #16]
+	ldp	x1, x3, [sp], #32
 
 	// Disable() -- arg0 = SysBase. Preserve x1,x2,x3,x30 across the call.
 	stp	x1, x2, [sp, #-32]!

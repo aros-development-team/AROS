@@ -120,6 +120,13 @@ struct bt_l2cap_listener
     void *user_data;
 };
 
+/* LE Connection Parameter Update. The central decides: return true to accept
+ * a peripheral's request (and then apply it with HCI LE Connection Update).
+ * The response handler reports whether the central accepted our request. */
+typedef bool (*bt_l2cap_conn_param_request_fn)(void *user_data,
+                                               const struct bt_l2cap_conn_params *params);
+typedef void (*bt_l2cap_conn_param_response_fn)(void *user_data, bool accepted);
+
 struct bt_l2cap_channel_manager
 {
     struct bt_hci_transport *transport;
@@ -132,6 +139,11 @@ struct bt_l2cap_channel_manager
     struct bt_l2cap_listener listeners[BT_L2CAP_CHANNEL_MANAGER_MAX_LISTENERS];
     uint16_t next_local_cid;
     uint8_t next_identifier;
+    bt_l2cap_conn_param_request_fn conn_param_request;
+    bt_l2cap_conn_param_response_fn conn_param_response;
+    void *conn_param_user_data;
+    uint8_t conn_param_identifier; /* nonzero while our request is outstanding */
+    uint64_t conn_param_deadline_us; /* when it is given up (0: from the next tick on) */
 };
 
 /* signaling_cid is BT_L2CAP_CID_SIGNALING_CLASSIC or BT_L2CAP_CID_SIGNALING_LE
@@ -155,6 +167,24 @@ bt_status_t bt_l2cap_channel_manager_open(struct bt_l2cap_channel_manager *mgr, 
  * CLOSED on on_event/user_data. Fails when the listener table is full. A
  * Connection Request for a PSM nobody listens on is refused
  * (BT_L2CAP_CONN_RESULT_REFUSED_PSM). */
+/* Central role: without a request handler, a peripheral's request is
+ * answered with Command Reject, as a peripheral must do. */
+void bt_l2cap_channel_manager_set_conn_param_handlers(struct bt_l2cap_channel_manager *mgr,
+                                                      bt_l2cap_conn_param_request_fn on_request,
+                                                      bt_l2cap_conn_param_response_fn on_response,
+                                                      void *user_data);
+
+/* Peripheral role, LE links only: asks the central for new connection
+ * parameters. Fails while an earlier request is unanswered. A request the
+ * central does not answer within BT_L2CAP_CONN_PARAM_RTX_US (counted by
+ * bt_l2cap_channel_manager_tick()) is reported as refused, and the next one
+ * may go. */
+#ifndef BT_L2CAP_CONN_PARAM_RTX_US
+#define BT_L2CAP_CONN_PARAM_RTX_US 30000000ull /* the signaling RTX, 1..60 s */
+#endif
+bt_status_t bt_l2cap_channel_manager_request_conn_params(struct bt_l2cap_channel_manager *mgr,
+                                                         const struct bt_l2cap_conn_params *params);
+
 bt_status_t bt_l2cap_channel_manager_listen(struct bt_l2cap_channel_manager *mgr, uint16_t psm,
                                              uint16_t local_mtu, bt_l2cap_channel_event_fn on_event,
                                              void *user_data);

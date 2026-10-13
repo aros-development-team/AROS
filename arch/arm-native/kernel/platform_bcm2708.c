@@ -18,10 +18,14 @@
 
 #include "kernel_intern.h"
 #include "kernel_debug.h"
+#include "of_intern.h"
 #include "kernel_cpu.h"
 #include "kernel_interrupts.h"
 #include "kernel_intr.h"
 #include "kernel_fb.h"
+#if defined(__AROSEXEC_SMP__)
+#include "kernel_ipi.h"
+#endif
 #include "tls.h"
 #include "io.h"
 
@@ -68,6 +72,10 @@ static void bcm2708_init(APTR _kernelBase, APTR _sysBase)
 
     KrnSpinInit(&startup_lock);
 
+#if defined(__AROSEXEC_SMP__)
+    core_IPIInit();
+#endif
+
     D(bug("[Kernel:BCM2708] %s()\n", __PRETTY_FUNCTION__));
 
     if (__arm_arosintern.ARMI_PeripheralBase == (APTR)BCM2836_PERIPHYSBASE)
@@ -81,6 +89,17 @@ static void bcm2708_init(APTR _kernelBase, APTR _sysBase)
         uint32_t *cpu_fiq_stack;
         uint32_t tmp;
         tls_t   *__tls;
+
+        /* Firmware leaves the prescaler at its 1MHz default; run the
+         * generic timer off the crystal so CNTPCT matches CNTFRQ. */
+        wr32le(BCM2836_CTRL, 0);
+        wr32le(BCM2836_PRESCALER, 0x80000000);
+
+        /* Register the boot CPU as an IPI receiver before waking the
+         * secondaries (they do it themselves in cpu_Register), or
+         * bcm2708_cpuipid[0] stays NULL and IPIs to it are dropped. */
+        if (__arm_arosintern.ARMI_InitCore)
+            __arm_arosintern.ARMI_InitCore(_kernelBase, _sysBase);
 
         bug("[Kernel:BCM2708] Initialising Multicore System\n");
         D(bug("[Kernel:BCM2708] %s: Copy SMP trampoline from %p to %p (%d bytes)\n", __PRETTY_FUNCTION__, trampoline_src, trampoline_dst, trampoline_length));
@@ -102,7 +121,7 @@ static void bcm2708_init(APTR _kernelBase, APTR _sysBase)
             ((uint32_t *)(trampoline_dst + trampoline_data_offset))[4] = (uint32_t)&cpu_fiq_stack[1024-sizeof(IPTR)];
 
 
-#if defined(__AROSEXEC_SMP)
+#if defined(__AROSEXEC_SMP__)
             __tls =  (tls_t *)AllocMem(sizeof(tls_t) + sizeof(struct cpu_ipidata),  MEMF_CLEAR); /* MEMF_PRIVATE */
 #else
             __tls =  (tls_t *)AllocMem(sizeof(tls_t),  MEMF_CLEAR); /* MEMF_PRIVATE */
@@ -110,6 +129,7 @@ static void bcm2708_init(APTR _kernelBase, APTR _sysBase)
             __tls->SysBase = _sysBase;
             __tls->KernelBase = _kernelBase;
             __tls->ThisTask = NULL;
+            __tls->CPUNumber = cpu;     /* logical id - GetCPUNumber reads this */
             arm_flush_cache(((uint32_t)__tls) & ~63, 512);
             ((uint32_t *)(trampoline_dst + trampoline_data_offset))[3] = (uint32_t)__tls;
 
@@ -160,18 +180,143 @@ static void bcm2708_init_cpu(APTR _kernelBase, APTR _sysBase)
     wr32le(BCM2836_MAILBOX3_CLR0 + (16 * cpunum), 0xffffffff);
 
 #if defined(__AROSEXEC_SMP__)
-    bcm2708_cpuipid[cpunum] = (unsigned int)__tls + sizeof(tls_t);
+    bcm2708_cpuipid[cpunum] = (struct cpu_ipidata *)(__tls + 1);
     D(bug("[Kernel:BCM2708] %s: CPU #%02d IPI data @ 0x%p\n", __PRETTY_FUNCTION__, cpunum, bcm2708_cpuipid[cpunum]));
 
-    // enable FIQ mailbox interupt
-    wr32le(BCM2836_MAILBOX_INT_CTRL0 + (0x4 * cpunum), 0x10);
+    /* FIQ on all 4 mailboxes - senders index by source CPU number, so
+     * they never OR-collide in the SET register. */
+    wr32le(BCM2836_MAILBOX_INT_CTRL0 + (0x4 * cpunum), 0xf0);
 #endif
 }
 
-static unsigned int bcm2708_get_time(void)
+static uint64_t bcm2708_get_time(void)
 {
-    return rd32le(SYSTIMER_CLO);
+    uint32_t hi, lo;
+
+    /* 64-bit 1MHz counter split over CHI:CLO - re-read CHI to close the
+     * carry window (CLO alone wraps every ~71min). */
+    do
+    {
+        hi = rd32le(SYSTIMER_CHI);
+        lo = rd32le(SYSTIMER_CLO);
+    } while (rd32le(SYSTIMER_CHI) != hi);
+
+    return ((uint64_t)hi << 32) | lo;
 }
+
+#if defined(__AROSEXEC_SMP__)
+/*
+ * Per-core scheduler heartbeat on the generic timer (CNTP). The BCM2708
+ * system timer only reaches core 0, so every core arms its own CNTP and
+ * takes the tick as an FIQ. CNTP_* are PL1-banked, so arming has to run
+ * on the target core (ARMI_InitTimerCore, from cpu_Register).
+ */
+#define CNTP_CTL_ENABLE         (1 << 0)
+#define CNTP_CTL_IMASK          (1 << 1)
+#define CNTP_CTL_ISTATUS        (1 << 2)
+
+#define BCM2836_TIMER_CNTPNS_FIQ (1 << 5)       /* TIMER_INT_CTRLx: route CNTPNS as FIQ */
+#define BCM2836_FIQ_CNTPNS       (1 << 1)       /* FIQ_PENDx: CNTPNS pending */
+
+/* CNTP reload value (counter ticks per heartbeat). Same on every core. */
+static uint32_t bcm2708_cntp_interval = 0;
+
+static inline uint32_t bcm2708_cntfrq_get(void)
+{
+    uint32_t v;
+    asm volatile ("mrc p15, 0, %0, c14, c0, 0" : "=r"(v));
+    return v;
+}
+
+static inline uint32_t bcm2708_cntpct_get(void)
+{
+    uint32_t lo, hi;
+    asm volatile ("mrrc p15, 0, %0, %1, c14" : "=r"(lo), "=r"(hi));
+    (void)hi;
+    return lo;
+}
+
+/* CNTFRQ is firmware-programmed and not always true - QEMU reports
+ * 19.2MHz while counting at 1MHz - so measure against the system timer
+ * and keep CNTFRQ as the fallback. */
+static uint32_t bcm2708_cntp_measure(void)
+{
+    const uint32_t window = 10000;      /* microseconds */
+    uint32_t s0, c0, c1;
+
+    s0 = rd32le(SYSTIMER_CLO);
+    c0 = bcm2708_cntpct_get();
+    while ((rd32le(SYSTIMER_CLO) - s0) < window)
+        ;
+    c1 = bcm2708_cntpct_get();
+
+    return (c1 - c0) * (1000000 / window);
+}
+
+static inline void bcm2708_cntp_tval_set(uint32_t v)
+{
+    asm volatile ("mcr p15, 0, %0, c14, c2, 0" :: "r"(v));
+}
+
+static inline void bcm2708_cntp_ctl_set(uint32_t v)
+{
+    asm volatile ("mcr p15, 0, %0, c14, c2, 1" :: "r"(v));
+}
+
+static void bcm2708_cntp_tick(void)
+{
+    tls_t *__tls;
+
+    /* Rearm for the next tick - writing TVAL clears the pending condition */
+    bcm2708_cntp_tval_set(bcm2708_cntp_interval);
+
+    /* The first tick can land before Exec is up on this core; keep
+     * rearming regardless. Deliberately not gated on IDNESTCOUNT - a task
+     * busy-looping in short Disable windows must still expire. */
+    if (!SysBase || !KernelBase)
+        return;
+
+    /* Mirror of VBlankServer, minus the INTB_VERTB chain. Per-CPU TLS,
+     * touched only by the owning core, so no atomics. */
+    asm volatile ("mrc p15, 0, %0, c13, c0, 3" : "=r"(__tls));
+    if (__tls->Elapsed)
+        __tls->Elapsed--;
+    if (__tls->Elapsed == 0)
+        __tls->ScheduleFlags |= (TLSSF_Quantum | TLSSF_Switch);
+}
+
+static void bcm2708_init_cntp_timer(void)
+{
+    int cpunum = GetCPUNumber();
+
+    if (!bcm2708_cntp_interval)
+    {
+        uint32_t hz = bcm2708_cntp_measure();
+
+        /* Sanity-bound the measurement before trusting it over CNTFRQ. */
+        if (hz < 100000 || hz > 100000000)
+            hz = bcm2708_cntfrq_get();
+
+        bcm2708_cntp_interval = hz / 50;
+    }
+
+    DTIMER(bug("[Kernel:BCM2708] %s: CPU #%02d CNTP interval %u\n", __PRETTY_FUNCTION__, cpunum, bcm2708_cntp_interval));
+
+    /* PrepareExecBase calls SCHEDQUANTUM_SET once, but on arm that macro
+     * writes per-CPU TLS, not the SysBase field the generic code assumes,
+     * so no core ends up with a usable quantum. Set it per core, before
+     * the heartbeat starts consuming it. */
+    SCHEDQUANTUM_SET(SCHEDQUANTUM_VALUE);
+    SCHEDELAPSED_SET(SCHEDQUANTUM_VALUE);
+
+    /* Route this core's non-secure physical timer interrupt as an FIQ */
+    wr32le(BCM2836_TIMER_INT_CTRL0 + (0x4 * cpunum), BCM2836_TIMER_CNTPNS_FIQ);
+
+    /* Arm: fire one interval from now, enabled and unmasked */
+    bcm2708_cntp_tval_set(bcm2708_cntp_interval);
+    bcm2708_cntp_ctl_set(CNTP_CTL_ENABLE);
+}
+#endif
 
 static void bcm2708_irq_init(void)
 {
@@ -181,24 +326,47 @@ static void bcm2708_irq_init(void)
     wr32le(ARMIRQ_DIBL, ~0);
     wr32le(GPUIRQ_DIBL0, ~0);
     wr32le(GPUIRQ_DIBL1, ~0);
+
+    /* BCM2836/2837 puts a local interrupt controller in front of the
+     * legacy GPU IRQ controller. Route the shared GPU IRQ to core 0
+     * ([1:0] IRQ target, [3:2] FIQ target), or enabled sources go
+     * pending without ever reaching the ARM dispatcher. */
+    if (__arm_arosintern.ARMI_PeripheralBase == (APTR)BCM2836_PERIPHYSBASE)
+        wr32le(BCM2836_GPU_INT_ROUTING, 0);
 }
 
 static void bcm2708_send_ipi(uint32_t ipi, uint32_t ipi_data, uint32_t cpumask)
 {
     int cpu;
+#if defined(__AROSEXEC_SMP__)
+    /*
+     * Index the mailbox by source CPU, so every (sender, target) pair
+     * gets its own slot and never OR-collides in the SET register.
+     * Back-to-back IPIs from the same sender coalesce by OR, which is
+     * lossless: ipi_msg values are bit flags, and the only payload
+     * carrier (IPI_CALL_HOOK) keeps its data on the ipi_call_queue.
+     * Disable() keeps an interrupt-driven Signal from re-entering and
+     * overwriting the slot mid-write.
+     */
+    int mbno = GetCPUNumber();
+    Disable();
+#endif
 
     for (cpu = 0; cpu < 4; cpu++)
     {
 #if defined(__AROSEXEC_SMP__)
-        int mbno = 0;
         if ((cpumask & (1 << cpu)) && bcm2708_cpuipid[cpu])
         {
-            /* TODO:  check which mailbox is available and use it */
             bcm2708_cpuipid[cpu]->ipi_data[mbno] = ipi_data;
+            dsb();
             wr32le(BCM2836_MAILBOX0_SET0 + 4 * mbno + (0x10 * cpu), ipi);
         }
 #endif
     }
+
+#if defined(__AROSEXEC_SMP__)
+    Enable();
+#endif
 }
 
 static void bcm2708_irq_enable(int irq)
@@ -298,6 +466,11 @@ static void bcm2708_fiq_process()
 
     if (fiq)
     {
+#if defined(__AROSEXEC_SMP__)
+        /* Per-core scheduler heartbeat (CNTP) - expire the local quantum */
+        if (fiq & BCM2836_FIQ_CNTPNS)
+            bcm2708_cntp_tick();
+#endif
         for (mbno=0; mbno < 4; mbno++)
         {
             if (fiq & (0x10 << mbno))
@@ -306,38 +479,81 @@ static void bcm2708_fiq_process()
                 (void)fiq_data;
                 DFIQ(bug("[Kernel:BCM2708] %s: Mailbox%d: FIQ Data %08x\n", __PRETTY_FUNCTION__, mbno, fiq_data));
 #if defined(__AROSEXEC_SMP__)
+                /* Pairs with the sender's dsb; ipi_data is indexed by
+                 * mailbox because senders index by source CPU. */
+                dsb();
                 if (bcm2708_cpuipid[cpunum])
-                    handle_ipi(fiq_data, bcm2708_cpuipid[cpunum]->ipi_data[0]);
+                    handle_ipi(fiq_data, bcm2708_cpuipid[cpunum]->ipi_data[mbno]);
 #endif
-                wr32le(BCM2836_MAILBOX0_CLR0 + 4 * mbno + (16 * cpunum), 0xffffffff);
+                /* Clear only the bits read - a bit set between the read
+                 * and this write must stay pending, or the IPI is lost. */
+                wr32le(BCM2836_MAILBOX0_CLR0 + 4 * mbno + (16 * cpunum), fiq_data);
             }
         }
     }
 }
 
+/*
+ * A Pi 2 puts PWR on GPIO 35, a Pi 400 on 42. The Pi 3B and 4B hand theirs to 
+ * firmware controllers (expgpio, virtgpio) this code cannot reach - those keep 
+ * the state firmware left, which for the power light is lit.
+ */
+static struct
+{
+    int pin;                    /* < 0: not ours to drive */
+    int active_low;
+} bcm2708_led[2] = { { -2, 0 }, { -2, 0 } };    /* -2: not looked up yet */
+
+static int bcm2708_led_on_soc(const char *name)
+{
+    return name && name[0] == 'g' && name[1] == 'p' && name[2] == 'i' &&
+           name[3] == 'o' && (name[4] == '@' || name[4] == 0);
+}
+
+static void bcm2708_led_query(int LED)
+{
+    void *node = dt_find_node((LED == ARM_LED_ACTIVITY) ? "/leds/led-act"
+                                                        : "/leds/led-pwr");
+    void *gprop = node ? dt_find_property(node, "gpios") : NULL;
+    void *sprop = node ? dt_find_property(node, "status") : NULL;
+    uint32_t *cells;
+    of_node_t *ctrl;
+
+    bcm2708_led[LED].pin = -1;
+
+    if (!gprop || dt_get_prop_len(gprop) < 8)
+        return;
+
+    /* A node for a light the board does not have is marked disabled */
+    if (sprop && ((char *)dt_get_prop_value(sprop))[0] == 'd')
+        return;
+
+    cells = dt_get_prop_value(gprop);
+    ctrl = dt_find_node_by_phandle(AROS_BE2LONG(cells[0]));
+    if (!ctrl || !bcm2708_led_on_soc(ctrl->on_name))
+        return;
+
+    bcm2708_led[LED].pin = AROS_BE2LONG(cells[1]);
+    bcm2708_led[LED].active_low = (dt_get_prop_len(gprop) >= 12) &&
+                                  (AROS_BE2LONG(cells[2]) & 1);
+}
+
 static void bcm2708_toggle_led(int LED, int state)
 {
-    if (__arm_arosintern.ARMI_PeripheralBase == (APTR)BCM2836_PERIPHYSBASE)
-    {
-        int pin = 35;
-        IPTR gpiofunc = GPCLR1;
+    int pin, lit;
 
-        if (LED == ARM_LED_ACTIVITY)
-            pin = 47;
+    if (LED != ARM_LED_POWER && LED != ARM_LED_ACTIVITY)
+        return;
 
-        if (state == ARM_LED_ON)
-            gpiofunc = GPSET1;
+    if (bcm2708_led[LED].pin == -2)
+        bcm2708_led_query(LED);
 
-        wr32le(gpiofunc, (1 << (pin-32)));
-    }
-    else
-    {
-        // RasPi 1 only allows us to toggle the activity LED
-        if (state)
-            wr32le(GPCLR0, (1 << 16));
-        else
-            wr32le(GPSET0, (1 << 16));
-    }
+    if ((pin = bcm2708_led[LED].pin) < 0)
+        return;
+
+    lit = (state == ARM_LED_ON) != (bcm2708_led[LED].active_low != 0);
+
+    wr32le((lit ? GPSET0 : GPCLR0) + 4 * (pin / 32), 1 << (pin % 32));
 }
 
 /* Use system timer 3 for our scheduling heartbeat */
@@ -357,6 +573,9 @@ static void bcm2708_gputimer_handler(unsigned int timerno, void *unused1)
     if (SysBase && (IDNESTCOUNT_GET /*SysBase->IDNestCnt*/ < 0)) {
         core_Cause(INTB_VERTB, 1L << INTB_VERTB);
     }
+
+    /* Close a per-task CPU-usage window if one is due */
+    core_TaskCPUUsage();
 
     /* Refresh our timer interrupt */
     stc = rd32le(SYSTIMER_CLO);
@@ -404,9 +623,11 @@ static APTR bcm2708_init_gputimer(APTR _kernelBase)
 
 static inline void bcm2708_ser_waitout()
 {
+    unsigned int spins = 0;
     while(1)
     {
        if ((rd32le(PL011_0_BASE + PL011_FR) & PL011_FR_TXFF) == 0) break;
+       if (++spins > 1000000) return;
     }
 }
 
@@ -433,6 +654,7 @@ static int bcm2708_ser_getc(void)
 static IPTR bcm2708_probe(struct ARM_Implementation *krnARMImpl, struct TagItem *msg)
 {
     void *bootPutC = NULL;
+    APTR bootPeriBase = NULL;
 
     while(msg->ti_Tag != TAG_DONE)
     {
@@ -440,6 +662,9 @@ static IPTR bcm2708_probe(struct ARM_Implementation *krnARMImpl, struct TagItem 
         {
         case KRN_FuncPutC:
             bootPutC = (void *)msg->ti_Data;
+            break;
+        case KRN_PeripheralBase:
+            bootPeriBase = (APTR)msg->ti_Data;
             break;
         }
         msg++;
@@ -455,9 +680,15 @@ static IPTR bcm2708_probe(struct ARM_Implementation *krnARMImpl, struct TagItem 
         krnARMImpl->ARMI_InitCore = &bcm2708_init_cpu;
         krnARMImpl->ARMI_FIQProcess = &bcm2708_fiq_process;
         krnARMImpl->ARMI_SendIPI = &bcm2708_send_ipi;
+#if defined(__AROSEXEC_SMP__)
+        krnARMImpl->ARMI_InitTimerCore = &bcm2708_init_cntp_timer;
+#endif
     }
     else
         krnARMImpl->ARMI_PeripheralBase = (APTR)BCM2835_PERIPHYSBASE;
+
+    if (bootPeriBase)
+        krnARMImpl->ARMI_PeripheralBase = bootPeriBase;
 
     krnARMImpl->ARMI_GetTime = &bcm2708_get_time;
     krnARMImpl->ARMI_InitTimer = &bcm2708_init_gputimer;

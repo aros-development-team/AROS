@@ -3,6 +3,10 @@
 
 #include "dosboot_intern.h"
 
+#define BOOT_POINTER_HEIGHT 16
+#define BOOT_POINTER_SIZE \
+    ((BOOT_POINTER_HEIGHT + 2) * 2 * sizeof(UWORD))
+
 struct AnimData
 {
     struct Library      *OOPBase;

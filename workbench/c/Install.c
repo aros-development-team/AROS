@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Install CLI command
 */
@@ -75,7 +75,7 @@
 #define AROS_BSTR_ADDR(s) (((STRPTR)BADDR(s))+1)
 #endif
 
-const TEXT version[] = "$VER: Install 42.1 (19.2.2015)\n";
+const TEXT version[] = "$VER: Install 42.3 (28.09.2026)\n";
 
 struct Volume {
         STRPTR drivename;
@@ -150,6 +150,11 @@ UWORD i;
                         volume, block, volume->blockbuffer, volume->SizeBlock*4,
                         volume->readcommand
                 );
+        if (retval)
+        {
+                Printf("ReadError %lu\n", (long)retval);
+                return 0;
+        }
         i = volume->SizeBlock - 52;
         first_block = AROS_BE2LONG(volume->blockbuffer[volume->SizeBlock-51]);
         blk_count=0;
@@ -215,13 +220,14 @@ UWORD i;
          use_mbr      - flag to use MBR
          stage2_drive - the unit stage2 is located
 **************************************/
-void installStageFiles(struct Volume *volume, LONG use_mbr, UBYTE stage2_drive) {
+BOOL installStageFiles(struct Volume *volume, LONG use_mbr, UBYTE stage2_drive) {
 char stagename[256];
 struct FileInfoBlock fib;
 BPTR fh, fh2;
 ULONG block,retval;
 ULONG error=0;
 STRPTR errstr=NULL;
+BOOL success=FALSE;
 
         
         strcpy(stagename, (char *)volume->drivename);
@@ -235,11 +241,17 @@ STRPTR errstr=NULL;
                         {
                                 if ((volume->flags & VF_MOVE_BB) && !use_mbr)
                                 {
-                                        readwriteBlock
+                                        retval = readwriteBlock
                                                 (
                                                         volume, 1, volume->blockbuffer, 512,
                                                         volume->writecommand
                                                 );
+                                        if (retval)
+                                        {
+                                                Printf("WriteError %lu\n", (long)retval);
+                                                Close(fh);
+                                                return FALSE;
+                                        }
                                 }
                                 if (
                                                 (
@@ -299,9 +311,11 @@ STRPTR errstr=NULL;
                                                                                         );
                                                                                 if (retval)
                                                                                         Printf("WriteError %lu\n", (long)retval);
+                                                                                else
+                                                                                        success = TRUE;
                                                                         }
                                                                         else
-                                                                                Printf("WriteErrro %lu\n", (long)retval);
+                                                                                Printf("ReadError %lu\n", (long)retval);
                                                                 }
                                                                 else
                                                                         error = IoErr();
@@ -340,6 +354,7 @@ STRPTR errstr=NULL;
         }
         if (error)
                 PrintFault(error, errstr);
+        return success;
 }
 
 void nsdCheck(struct Volume *volume) {
@@ -557,11 +572,12 @@ void uninitVolume(struct Volume *volume) {
         FreeVec(volume);
 }
 
-void checkBootCode(struct Volume *volume) {
+BOOL checkBootCode(struct Volume *volume) {
         Printf("CHECK not implemented yet\n");
+        return FALSE;
 }
 
-void removeBootCode(struct Volume *volume) {
+BOOL removeBootCode(struct Volume *volume) {
 ULONG retval;
 
         retval = readwriteBlock
@@ -570,7 +586,10 @@ ULONG retval;
                         volume->blockbuffer, 512, volume->readcommand
                 );
         if (retval)
+        {
                 Printf("ReadError %lu\n", (long)retval);
+                return FALSE;
+        }
         else
         {
                 if ((AROS_BE2LONG(volume->blockbuffer[0]) & 0xFFFFFF00)==0x444F5300)
@@ -581,34 +600,45 @@ ULONG retval;
                                         volume->blockbuffer, 512, volume->writecommand
                                 );
                         if (retval)
+                        {
                                 Printf("WriteError %lu\n", (long)retval);
+                                return FALSE;
+                        }
                 }
         }
+        return TRUE;
 }
 
 int main(void) {
 IPTR myargs[5]={0,0,0,0,0};
 struct RDArgs *rdargs;
 struct Volume *volume;
+BOOL success;
 
         rdargs = ReadArgs("DRIVE/A,NOBOOT/S,CHECK/S,FFS/S,MBR/S",myargs,NULL);
-        if (rdargs)
+        if (!rdargs)
         {
-                volume = initVolume((STRPTR)myargs[0], myargs[4]);
-                if (volume)
-                {
-                        if (myargs[1])
-                                removeBootCode(volume);
-                        else if (myargs[2])
-                                checkBootCode(volume);
-                        else
-                                installStageFiles(volume, myargs[4], volume->fssm->fssm_Unit);
-                        uninitVolume(volume);
-                }
-                FreeArgs(rdargs);
-        }
-        else
                 PrintFault(IoErr(), NULL);
-        return 0;
+                return RETURN_FAIL;
+        }
+
+        volume = initVolume((STRPTR)myargs[0], myargs[4]);
+        if (!volume)
+        {
+                FreeArgs(rdargs);
+                return RETURN_FAIL;
+        }
+
+        if (myargs[1])
+                success = removeBootCode(volume);
+        else if (myargs[2])
+                success = checkBootCode(volume);
+        else
+                success = installStageFiles(volume, myargs[4], volume->fssm->fssm_Unit);
+
+        uninitVolume(volume);
+        FreeArgs(rdargs);
+
+        return success ? RETURN_OK : RETURN_FAIL;
 }
 

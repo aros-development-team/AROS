@@ -82,27 +82,28 @@ void schedule(void)
     Wait(SIGF_SINGLE);
 }
 
-signed long schedule_timeout(signed long timeout)
+/*
+ * Sleep for usecs, or until woken (SIGF_SINGLE). The platform timer is a
+ * one-shot with microsecond resolution, so short sleeps are real: a
+ * fence wait can nap for a fraction of a millisecond instead of a whole
+ * one. Returns the microseconds left when woken early, 0 when the time
+ * ran out.
+ */
+unsigned long compat_sleep_usecs(unsigned long usecs)
 {
     struct timerequest req;
     struct MsgPort port;
-    unsigned long usecs;
     ULONG sigs;
-    unsigned long start;
+    ktime_t start;
 
-    if (timeout == MAX_SCHEDULE_TIMEOUT) {
-        Wait(SIGF_SINGLE);
-        return timeout;
-    }
-    if (timeout <= 0)
+    if (!usecs)
         return 0;
     if (!TimerBase) {
         Wait(SIGF_SINGLE);
-        return timeout;
+        return usecs;
     }
 
-    start = jiffies;
-    usecs = jiffies_to_usecs(timeout);
+    start = ktime_get();
 
     memset(&port, 0, sizeof(port));
     port.mp_Node.ln_Type = NT_MSGPORT;
@@ -112,7 +113,7 @@ signed long schedule_timeout(signed long timeout)
     NEWLIST(&port.mp_MsgList);
     if (port.mp_SigBit == (UBYTE)-1) {
         Wait(SIGF_SINGLE);
-        return timeout;
+        return usecs;
     }
 
     req = *compat_timer_template();
@@ -124,16 +125,32 @@ signed long schedule_timeout(signed long timeout)
     SendIO((struct IORequest *)&req);
 
     sigs = Wait(SIGF_SINGLE | (1UL << port.mp_SigBit));
+
     if (!CheckIO((struct IORequest *)&req))
         AbortIO((struct IORequest *)&req);
     WaitIO((struct IORequest *)&req);
     FreeSignal(port.mp_SigBit);
 
     if (sigs & SIGF_SINGLE) {
-        unsigned long spent = jiffies - start;
-        return spent < (unsigned long)timeout ? timeout - spent : 1;
+        s64 spent = (ktime_get() - start) / NSEC_PER_USEC;
+        return spent < (s64)usecs ? usecs - spent : 1;
     }
     return 0;
+}
+
+signed long schedule_timeout(signed long timeout)
+{
+    unsigned long left;
+
+    if (timeout == MAX_SCHEDULE_TIMEOUT) {
+        Wait(SIGF_SINGLE);
+        return timeout;
+    }
+    if (timeout <= 0)
+        return 0;
+
+    left = compat_sleep_usecs(jiffies_to_usecs(timeout));
+    return left ? (signed long)(usecs_to_jiffies(left) ?: 1) : 0;
 }
 
 signed long schedule_timeout_interruptible(signed long timeout)
@@ -165,7 +182,7 @@ int schedule_hrtimeout_range(ktime_t *expires, u64 delta, const enum hrtimer_mod
     delta_ns = exp - now;
     if (delta_ns <= 0)
         return 0;
-    schedule_timeout(nsecs_to_jiffies(delta_ns) ?: 1);
+    compat_sleep_usecs((delta_ns + 999) / 1000 ?: 1);
     return 0;
 }
 

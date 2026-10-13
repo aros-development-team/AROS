@@ -32,6 +32,7 @@ void con_InitVESA(unsigned short version, struct vbe_mode *mode);
 void con_InitVESAEx(unsigned short version, struct vbe_mode *mode, void *fb_override);
 void con_InitVGA(void);
 void con_InitSerial(char *cmdline);
+void con_Enable(void);
 
 /* Common output */
 void con_Clear(void);

@@ -124,17 +124,36 @@ static void __attribute__((used)) __clear_bss(struct TagItem *msg)
     }
 }
 
-/* PL011 base for the early bring-up prints. The Pi 2/3 puts it at
-   0x3f201000, the Pi 4 (BCM2711) at 0xfe201000; it is selected from the
-   platform id before the first character goes out. */
-static uintptr_t dbg_uart = 0x3f201000;
+/* PL011 base for the early bring-up prints. The bootstrap passes the address
+   it printed through itself in KRN_DebugUartBase; the platform id only serves
+   as a fallback for a bootstrap that predates that tag. Either way it is
+   settled before the first character goes out. */
+uintptr_t krn_dbg_uart = 0x3f201000;
+
+/* On a Pi 3 with its Bluetooth radio on the PL011 the bootstrap prints
+   through the AUX mini-UART instead (see serialdebug.c), at 0x...215040:
+   data at +0x00, line status at +0x14, bit 5 = transmitter empty. The wait
+   is bounded in case the firmware left the mini-UART disabled. */
+#define DBG_UART_IS_MINI(base)  (((base) & 0xfff) == 0x040)
+
+static inline void uart_rawputc(volatile uint32_t *uart, char c)
+{
+    if (DBG_UART_IS_MINI(krn_dbg_uart))
+    {
+        unsigned int timeout = 100000;
+        while (timeout-- && !(uart[0x14/4] & (1 << 5))) ;
+    }
+    else
+        while (uart[0x18/4] & (1 << 5)) ; /* wait for TXFF clear */
+    uart[0] = c;
+}
 
 static inline void uart_putc(char c)
 {
-    volatile uint32_t *uart = (volatile uint32_t *)dbg_uart;
-    while (uart[0x18/4] & (1 << 5)) ; /* wait for TXFF clear */
-    if (c == '\n') { uart[0] = '\r'; while (uart[0x18/4] & (1 << 5)) ; }
-    uart[0] = c;
+    volatile uint32_t *uart = (volatile uint32_t *)krn_dbg_uart;
+    if (c == '\n')
+        uart_rawputc(uart, '\r');
+    uart_rawputc(uart, c);
 }
 static void uart_puts(const char *s) { while (*s) uart_putc(*s++); }
 
@@ -153,9 +172,24 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     uint64_t fb_base = 0;
     uint32_t fb_w = 0, fb_h = 0, fb_depth = 0, fb_pitch = 0;
 
-    for (struct TagItem *t = msg; t->ti_Tag != TAG_DONE; t++)
-        if (t->ti_Tag == KRN_Platform && t->ti_Data == 0xc44)
-            dbg_uart = 0xfe201000;
+    {
+        IPTR uartbase = 0, plat = 0;
+
+        for (struct TagItem *t = msg; t->ti_Tag != TAG_DONE; t++)
+        {
+            if (t->ti_Tag == KRN_DebugUartBase)
+                uartbase = t->ti_Data;
+            else if (t->ti_Tag == KRN_Platform)
+                plat = t->ti_Data;
+        }
+
+        if (uartbase)
+            krn_dbg_uart = uartbase;
+        else if (plat == 0xc44)
+            krn_dbg_uart = 0xfe201000;      /* BCM2711 PL011 */
+        else if (plat == 0x2712)
+            krn_dbg_uart = 0x1c00030000;    /* BCM2712: RP1 UART0 */
+    }
 
     uart_puts("[Kernel] kernel_cstart entered\n");
     BootMsg = msg;
@@ -201,15 +235,8 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
         __arm_arosintern.ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_OFF);
     }
 
-    cpu_Init(&__arm_arosintern, msg);
-
-    if (__arm_arosintern.ARMI_LED_Toggle)
-    {
-        if (__arm_arosintern.ARMI_Delay)
-            __arm_arosintern.ARMI_Delay(100000);
-        __arm_arosintern.ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_ON);
-    }
-
+    /* Tags and TLS before cpu_Init: it calls GetCPUNumber(), which
+     * dereferences TPIDR_EL1 - UNKNOWN out of reset on real silicon. */
     while (msg->ti_Tag != TAG_DONE)
     {
         switch (msg->ti_Tag)
@@ -273,6 +300,18 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 
     /* Set TPIDR_EL1 for TLS access BEFORE any bug() calls */
     asm volatile("msr tpidr_el1, %0" : : "r"(__tls));
+
+    /* Boot CPU is always logical 0. */
+    __tls->CPUNumber = 0;
+
+    cpu_Init(&__arm_arosintern, msg);
+
+    if (__arm_arosintern.ARMI_LED_Toggle)
+    {
+        if (__arm_arosintern.ARMI_Delay)
+            __arm_arosintern.ARMI_Delay(100000);
+        __arm_arosintern.ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_ON);
+    }
 
     /* Bring-up diagnostic: verify the relocated stack layout */
     bug("[Kernel] stack @ %p, stack_super @ %p..%p (SP_EL1 start %p)\n",

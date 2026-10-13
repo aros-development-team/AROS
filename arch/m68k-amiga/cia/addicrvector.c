@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 2010-2026, The AROS Development Team. All rights reserved.
 
     Desc: AddICRVector() function.
 */
@@ -30,7 +30,7 @@ AROS_LH2(struct Interrupt *, AddICRVector,
     /* 68k lowlevel library calls have garbage in upper word */
     iCRBit = (WORD)iCRBit;
     Disable();
-    old = CiaBase->Vectors[iCRBit];
+    old = CiaBase->Vectors[iCRBit].iv_Node;
     if (old) {
         /* timer.device move out of our way hack.
          * Check timer.device for details
@@ -40,11 +40,13 @@ AROS_LH2(struct Interrupt *, AddICRVector,
             CiaBase->hook_func = NULL;
             hook(CiaBase, CiaBase->hook_data, iCRBit);
             CiaBase->hook_func = hook;
-            old = CiaBase->Vectors[iCRBit];
+            old = CiaBase->Vectors[iCRBit].iv_Node;
         }
     }
     if (old == NULL) {
-        CiaBase->Vectors[iCRBit] = interrupt;
+        CiaBase->Vectors[iCRBit].iv_Data = interrupt->is_Data;
+        CiaBase->Vectors[iCRBit].iv_Code = interrupt->is_Code;
+        CiaBase->Vectors[iCRBit].iv_Node = interrupt;
         AbleICR(resource, 0x80 | (1 << iCRBit));
     }
     Enable();

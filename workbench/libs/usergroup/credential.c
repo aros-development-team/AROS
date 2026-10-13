@@ -5,7 +5,7 @@
  *
  * Based upon usergroup.library from AmiTCP/IP.
  *
- * Copyright © 2025 The AROS Dev Team.
+ * Copyright © 2025-2026 The AROS Dev Team.
  * Copyright © 1993 AmiTCP/IP Group, <AmiTCP-Group@hut.fi>
  *                  Helsinki University of Technology, Finland.
  */
@@ -264,10 +264,11 @@ static struct pcred *crfind(pid_t pid)
 ******************************************************************************
 */
 
-AROS_LH0I(uid_t, getuid,
+AROS_LH0(uid_t, getuid,
           struct Library *, UserGroupBase, 8, Usergroup)
 {
     AROS_LIBFUNC_INIT
+    if (ugSecActive((struct Library *)UserGroupBase)) return ugSecGetUid((struct Library *)UserGroupBase, FALSE);
 
     D(bug("[UserGroup] %s()\n", __func__));
 
@@ -276,10 +277,11 @@ AROS_LH0I(uid_t, getuid,
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH0I(uid_t, geteuid,
+AROS_LH0(uid_t, geteuid,
           struct Library *, UserGroupBase, 9, Usergroup)
 {
     AROS_LIBFUNC_INIT
+    if (ugSecActive((struct Library *)UserGroupBase)) return ugSecGetUid((struct Library *)UserGroupBase, TRUE);
 
     D(bug("[UserGroup] %s()\n", __func__));
 
@@ -288,10 +290,11 @@ AROS_LH0I(uid_t, geteuid,
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH0I(gid_t, getgid,
+AROS_LH0(gid_t, getgid,
           struct Library *, UserGroupBase, 12, Usergroup)
 {
     AROS_LIBFUNC_INIT
+    if (ugSecActive((struct Library *)UserGroupBase)) return ugSecGetGid((struct Library *)UserGroupBase, FALSE);
 
     D(bug("[UserGroup] %s()\n", __func__));
 
@@ -300,10 +303,11 @@ AROS_LH0I(gid_t, getgid,
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH0I(gid_t, getegid,
+AROS_LH0(gid_t, getegid,
           struct Library *, UserGroupBase, 13, Usergroup)
 {
     AROS_LIBFUNC_INIT
+    if (ugSecActive((struct Library *)UserGroupBase)) return ugSecGetGid((struct Library *)UserGroupBase, TRUE);
 
     D(bug("[UserGroup] %s()\n", __func__));
 
@@ -353,6 +357,7 @@ AROS_LH0I(gid_t, getegid,
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+    if (ugSecActive((struct Library *)UserGroupBase)) return ugSecGetGroups((struct Library *)UserGroupBase, ngroups, groups);
 
     struct pcred *pc = crfind((pid_t)NULL);
     gid_t *getgroups;
@@ -388,6 +393,7 @@ AROS_LH2 (int, setreuid,
           struct UserGroupBase *, UserGroupBase, 10, Usergroup)
 {
     AROS_LIBFUNC_INIT
+    if (ugSecActive((struct Library *)UserGroupBase)) return ugSecSetReUid((struct Library *)UserGroupBase, ruid, euid);
 
     struct pcred *pc = crfind((pid_t)NULL);
     short error;
@@ -499,6 +505,7 @@ AROS_LH1 (int, setuid,
           struct UserGroupBase *, UserGroupBase, 11, Usergroup)
 {
     AROS_LIBFUNC_INIT
+    if (ugSecActive((struct Library *)UserGroupBase)) return ugSecSetUid((struct Library *)UserGroupBase, uid);
 
     D(bug("[UserGroup] %s()\n", __func__));
 
@@ -513,6 +520,7 @@ AROS_LH2 (int, setregid,
           struct UserGroupBase *, UserGroupBase, 14, Usergroup)
 {
     AROS_LIBFUNC_INIT
+    if (ugSecActive((struct Library *)UserGroupBase)) return ugSecSetReGid((struct Library *)UserGroupBase, rgid, egid);
 
     struct pcred *pc = crfind((pid_t)NULL);
     short error;
@@ -557,6 +565,7 @@ AROS_LH1 (int, setgid,
           struct UserGroupBase *, UserGroupBase, 15, Usergroup)
 {
     AROS_LIBFUNC_INIT
+    if (ugSecActive((struct Library *)UserGroupBase)) return ugSecSetGid((struct Library *)UserGroupBase, gid);
 
     D(bug("[UserGroup] %s()\n", __func__));
 
@@ -606,6 +615,7 @@ AROS_LH1 (int, setgid,
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+    if (ugSecActive((struct Library *)UserGroupBase)) return ugSecSetGroups((struct Library *)UserGroupBase, ngrp, groups);
 
     register struct pcred *pc = crfind((pid_t)NULL);
     register gid_t *gp;
@@ -698,7 +708,7 @@ ASM UWORD R_ug_id2mu(REG(d0) uid_t id)
 /*****************************************************************************
 
     NAME */
-        AROS_LH1I(mode_t, umask,
+        AROS_LH1(mode_t, umask,
 
 /*  SYNOPSIS */
         AROS_LHA(mode_t, newmask, D0),
@@ -729,6 +739,7 @@ ASM UWORD R_ug_id2mu(REG(d0) uid_t id)
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+    if (ugSecActive((struct Library *)UserGroupBase)) return ugSecUmask((struct Library *)UserGroupBase, newmask);
 
     struct proc *p = procfind((pid_t)NULL);
 
@@ -746,7 +757,7 @@ ASM UWORD R_ug_id2mu(REG(d0) uid_t id)
 /*****************************************************************************
 
     NAME */
-        AROS_LH0I(mode_t, getumask,
+        AROS_LH0(mode_t, getumask,
 
 /*  SYNOPSIS */
 
@@ -772,6 +783,7 @@ ASM UWORD R_ug_id2mu(REG(d0) uid_t id)
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+    if (ugSecActive((struct Library *)UserGroupBase)) return ugSecGetUmask((struct Library *)UserGroupBase);
 
     struct proc *p = procfind((pid_t)NULL);
 
@@ -785,7 +797,7 @@ ASM UWORD R_ug_id2mu(REG(d0) uid_t id)
 /*****************************************************************************
 
     NAME */
-        AROS_LH1I(struct UserGroupCredentials *, getcredentials,
+        AROS_LH1(struct UserGroupCredentials *, getcredentials,
 
 /*  SYNOPSIS */
         AROS_LHA(struct Task *, task, A0),
@@ -817,6 +829,7 @@ ASM UWORD R_ug_id2mu(REG(d0) uid_t id)
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+    if (ugSecActive((struct Library *)UserGroupBase)) return ugSecGetCredentials((struct Library *)UserGroupBase, task, creds);
 
     register struct proc *p = procfind((pid_t)task);
 

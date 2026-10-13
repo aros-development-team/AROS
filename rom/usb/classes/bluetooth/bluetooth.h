@@ -76,6 +76,8 @@ struct NepClassBT
 
     struct IOBTHCIReq  *ncp_ReadPending;  /* read IORequest pending */
     struct IOBTHCIReq  *ncp_WritePending; /* write IORequest pending */
+    struct IOBTHCIReq  *ncp_CmdPending;   /* HCI command IORequest pending */
+    struct List         ncp_CmdQueue;     /* List of HCI command requests */
     struct List         ncp_ReadQueue;    /* List of read requests */
     struct List         ncp_WriteQueue;   /* List of write requests */
 

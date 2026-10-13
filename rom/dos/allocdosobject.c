@@ -160,7 +160,16 @@ enomem:
 /* Internal routines for packet allocation. Does not require DOSBase. */
 struct DosPacket *allocdospacket(void)
 {
-    struct StandardPacket *sp = AllocVec(sizeof(struct StandardPacket), MEMF_CLEAR);
+    struct StandardPacket *sp;
+    ULONG requirements = MEMF_CLEAR;
+
+#ifdef __mc68000
+    /* DOS packets are short-lived and otherwise punch small holes into the
+     * low-address free region.  Keep that region contiguous for legacy m68k
+     * software which uses 16-bit copper pointer updates within a 64 KiB bank. */
+    requirements |= MEMF_REVERSE;
+#endif
+    sp = AllocVec(sizeof(struct StandardPacket), requirements);
 
     if (sp == NULL)
         return NULL;

@@ -126,41 +126,49 @@ struct AutoBindData ClassBinds[] =
     { 0, 0 }
 };
 
-/* /// "usbAttemptDeviceBinding()" */
-struct NepClassEth * usbAttemptDeviceBinding(struct NepEthBase *nh, struct PsdDevice *pd)
+/* /// "usbAttemptInterfaceBinding()" */
+struct NepClassEth * usbAttemptInterfaceBinding(struct NepEthBase *nh, struct PsdInterface *pif)
 {
     struct Library *ps;
     struct AutoBindData *abd = ClassBinds;
-    struct PsdInterface *pif;
-    IPTR prodid;
-    IPTR vendid;
-    IPTR ifclass;
-    IPTR subclass;
-    IPTR proto;
+    struct PsdConfig *pc = NULL;
+    struct PsdDevice *pd = NULL;
+    IPTR prodid = 0;
+    IPTR vendid = 0;
+    IPTR ifclass = 0;
+    IPTR subclass = 0;
+    IPTR proto = 0;
 
-    KPRINTF(1, ("nepEthAttemptDeviceBinding(%08lx)\n", pd));
+    KPRINTF(1, ("nepEthAttemptInterfaceBinding(%08lx)\n", pif));
 
     if((ps = OpenLibrary("poseidon.library", 4)))
     {
-        psdGetAttrs(PGA_DEVICE, pd,
-                    DA_VendorID, &vendid,
-                    DA_ProductID, &prodid,
-                    TAG_END);
+        psdGetAttrs(PGA_INTERFACE, pif,
+                    IFA_Class, &ifclass,
+                    IFA_SubClass, &subclass,
+                    IFA_Protocol, &proto,
+                    IFA_Config, &pc,
+                    TAG_DONE);
+        if(pc)
+            psdGetAttrs(PGA_CONFIG, pc, CA_Device, &pd, TAG_END);
+        if(pd)
+            psdGetAttrs(PGA_DEVICE, pd,
+                        DA_VendorID, &vendid,
+                        DA_ProductID, &prodid,
+                        TAG_END);
 
-        if( (pif = psdFindInterface(pd, NULL,TAG_END)) ){
-            psdGetAttrs(PGA_INTERFACE, pif,
-                        IFA_Class, &ifclass,
-                        IFA_SubClass, &subclass,
-                        IFA_Protocol, &proto,
-                        TAG_DONE);
-
-            if (ifclass == 224 &&  // WIRELESS
-                subclass == 1 &&   // RF
-                proto == 3)        // RNDIS
-            {
-                CloseLibrary(ps);
-                return(usbForceDeviceBinding(nh, pd));
-            }
+        /* RNDIS control interface — two encodings seen in the wild:
+         *  - CDC-ACM RNDIS: class 2 (Comm) / subclass 2 (ACM) / proto 255 (RNDIS)
+         *    (Microsoft/Linux g_ether RNDIS, e.g. the Sipeed NanoKVM gadget), or
+         *  - Wireless RNDIS: class 224 (Wireless) / subclass 1 (RF) / proto 3.
+         * The paired CDC-Data interface (class 10) carries the bulk endpoints and is
+         * located by nEthTask (constrained to class 10 so a composite device's mass
+         * storage bulk interface is not mistaken for it). */
+        if(((ifclass == 2)   && (subclass == 2) && (proto == 255)) ||
+           ((ifclass == 224) && (subclass == 1) && (proto == 3)))
+        {
+            CloseLibrary(ps);
+            return(usbForceInterfaceBinding(nh, pif));
         }
 
         while(abd->abd_VendID)
@@ -168,7 +176,7 @@ struct NepClassEth * usbAttemptDeviceBinding(struct NepEthBase *nh, struct PsdDe
             if((vendid == abd->abd_VendID) && (prodid == abd->abd_ProdID))
             {
                 CloseLibrary(ps);
-                return(usbForceDeviceBinding(nh, pd));
+                return(usbForceInterfaceBinding(nh, pif));
             }
             abd++;
         }
@@ -178,10 +186,12 @@ struct NepClassEth * usbAttemptDeviceBinding(struct NepEthBase *nh, struct PsdDe
 }
 /* \\\ */
 
-/* /// "usbForceDeviceBinding()" */
-struct NepClassEth * usbForceDeviceBinding(struct NepEthBase *nh, struct PsdDevice *pd)
+/* /// "usbForceInterfaceBinding()" */
+struct NepClassEth * usbForceInterfaceBinding(struct NepEthBase *nh, struct PsdInterface *pif)
 {
     struct Library *ps;
+    struct PsdConfig *pc = NULL;
+    struct PsdDevice *pd = NULL;
     struct NepClassEth *ncp;
     struct NepClassEth *tmpncp;
     struct ClsDevCfg *cdc;
@@ -193,10 +203,19 @@ struct NepClassEth * usbForceDeviceBinding(struct NepEthBase *nh, struct PsdDevi
     BOOL  unitfound;
     UBYTE buf[64];
 
-    KPRINTF(1, ("nepEthForceDeviceBinding(%08lx)\n", pd));
+    KPRINTF(1, ("nepEthForceInterfaceBinding(%08lx)\n", pif));
 
     if((ps = OpenLibrary("poseidon.library", 4)))
     {
+        /* Resolve the parent device from the (control) interface we were handed. */
+        psdGetAttrs(PGA_INTERFACE, pif, IFA_Config, &pc, TAG_END);
+        if(pc)
+            psdGetAttrs(PGA_CONFIG, pc, CA_Device, &pd, TAG_END);
+        if(!pd)
+        {
+            CloseLibrary(ps);
+            return(NULL);
+        }
         psdGetAttrs(PGA_DEVICE, pd,
                     DA_ProductID, &prodid,
                     DA_VendorID, &vendid,
@@ -424,13 +443,18 @@ AROS_LH2(IPTR, usbDoMethodA,
     KPRINTF(10, ("Do Method %ld\n", methodid));
     switch(methodid)
     {
-        case UCM_AttemptDeviceBinding:
-            return((IPTR) usbAttemptDeviceBinding(nh, (struct PsdDevice *) methoddata[0]));
+        /* INTERFACE-level binding (not device-level): RNDIS gadgets are usually
+         * COMPOSITE (the Sipeed NanoKVM presents RNDIS control+data alongside HID
+         * keyboard/mouse + mass storage on ONE device). Claiming the whole device
+         * would steal the HID/storage from their classes; we claim only the RNDIS
+         * control interface (and use its paired CDC-Data interface). Mirrors cdcacm. */
+        case UCM_AttemptInterfaceBinding:
+            return((IPTR) usbAttemptInterfaceBinding(nh, (struct PsdInterface *) methoddata[0]));
 
-        case UCM_ForceDeviceBinding:
-            return((IPTR) usbForceDeviceBinding(nh, (struct PsdDevice *) methoddata[0]));
+        case UCM_ForceInterfaceBinding:
+            return((IPTR) usbForceInterfaceBinding(nh, (struct PsdInterface *) methoddata[0]));
 
-        case UCM_ReleaseDeviceBinding:
+        case UCM_ReleaseInterfaceBinding:
             usbReleaseDeviceBinding(nh, (struct NepClassEth *) methoddata[0]);
             return(TRUE);
 
@@ -645,7 +669,11 @@ struct NepClassEth * nAllocEth(void)
         ncp->ncp_Interface = NULL;
         do
         {
+            /* The RNDIS data interface is CDC-Data (class 10). Constrain the search
+             * to it so a COMPOSITE device's other bulk interface (e.g. the NanoKVM's
+             * Mass Storage, class 8) is never mistaken for the ethernet data pipe. */
             ncp->ncp_Interface = psdFindInterface(ncp->ncp_Device, ncp->ncp_Interface,
+                                               IFA_Class, 10,   /* USB CDC Data */
                                                TAG_END);
             if(!ncp->ncp_Interface)
             {

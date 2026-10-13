@@ -37,7 +37,7 @@ struct timerequest *gui_timerio = NULL;
 ULONG InternalProc = 0;
 
 extern struct ifnet *ifnet;
-extern struct Task *AmiTCP_Task;
+extern struct Task *AROSTCP_Task;
 extern TEXT panels_path[];
 
 STRPTR strings[] = {
@@ -122,7 +122,7 @@ long callback(long code, long count, va_list args)
         }
         break;
     case MIAMIPANELV_CallBack_Code_QuitMiami:
-        Signal(AmiTCP_Task, SIGBREAKF_CTRL_C);
+        Signal(AROSTCP_Task, SIGBREAKF_CTRL_C);
         break;
     default:
         DGUI(KPrintF("Bad callback code %ld from panel\n", code));
@@ -391,3 +391,42 @@ void error_request(STRPTR Text, ...)
     AROS_SLOWSTACKFORMAT_POST(Text);
 }
 
+/*
+ * An interface could not be started (its device or unit did not open): say
+ * so and let the user decide between trying again, going on without it, and
+ * shutting the stack down.
+ */
+LONG iface_fail_request(CONST_STRPTR name, CONST_STRPTR device, LONG unit)
+{
+    struct EasyStruct es = {
+        sizeof(struct EasyStruct),
+        0,
+        "AROSTCP",
+        "%s",
+        "Retry|Skip|Shutdown"
+    };
+    TEXT text[256];
+    IPTR args[1];
+    struct Window *win;
+    LONG choice;
+
+    snprintf(text, sizeof(text),
+             "Interface %s failed to start.\n%s unit %ld could not be opened.",
+             name, device ? (const char *)device : "(no device)", (long)unit);
+    args[0] = (IPTR)text;
+
+    win = BuildEasyRequestArgs(NULL, &es, 0, (RAWARG)args);
+    if(win == NULL || win == (struct Window *)1)
+        return IFFAIL_SKIP;         /* nothing to ask on: do not hold the stack up */
+
+    while((choice = SysReqHandler(win, NULL, TRUE)) < 0)
+        ;
+    FreeSysRequest(win);
+
+    /* gadgets answer 1, 2, ... from the left, the rightmost 0 */
+    if(choice == 1)
+        return IFFAIL_RETRY;
+    if(choice == 2)
+        return IFFAIL_SKIP;
+    return IFFAIL_SHUTDOWN;
+}

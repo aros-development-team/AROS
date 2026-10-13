@@ -3,7 +3,7 @@
 File: handler.c
 Author: Neil Cafferkey
 Copyright (C) 2001-2008 Neil Cafferkey
-Copyright (C) 2011 The AROS Development Team
+Copyright (C) 2011-2026 The AROS Development Team
 
 This file is free software; you can redistribute it and/or modify it
 under the terms of the GNU Lesser General Public License as
@@ -117,6 +117,9 @@ LONG RAMMain(void)
       {
          result = DOSTRUE;
          SetIoErr(0);
+
+         /* multi-user: who sent this packet? (no-op without security.library) */
+         ramSecBeginPacket(handler, packet);
 
          switch(packet->dp_Type)
          {
@@ -381,11 +384,36 @@ LONG RAMMain(void)
                result = DOSFALSE;
             break;
 
+         case ACTION_SET_OWNER:
+
+            /* Only exists on a multi-user system (security.library resident) */
+            if(!ramSecIsPresent(handler))
+            {
+               result = DOSFALSE;
+               SetIoErr(ERROR_ACTION_NOT_KNOWN);
+            }
+            else if(!CmdSetOwner(handler, BADDR(packet->dp_Arg2),
+               BStr(handler, BADDR(packet->dp_Arg3)), packet->dp_Arg4))
+               result = DOSFALSE;
+            break;
+
+         case ACTION_IS_SECFS:
+
+            if(!ramSecIsPresent(handler))
+            {
+               result = DOSFALSE;
+               SetIoErr(ERROR_ACTION_NOT_KNOWN);
+            }
+            else
+               result = ramSecIsActive(handler) ? DOSTRUE : DOSFALSE;
+            break;
+
          default:
             result = DOSFALSE;
             SetIoErr(ERROR_ACTION_NOT_KNOWN);
          }
 
+         ramSecEndPacket(handler);
          ReplyPacket(proc_port, packet, result, IoErr());
       }
 

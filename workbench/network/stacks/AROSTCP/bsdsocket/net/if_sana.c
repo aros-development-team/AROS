@@ -37,11 +37,13 @@
 #include <kern/amiga_includes.h>
 #include <kern/amiga_gui.h>
 #include <kern/amiga_dhcp.h>
+#include <kern/amiga_netdb.h>
 
 #include <sys/synch.h>
 
 #include <net/if.h>
 #include <net/netisr.h>
+#include <net/route.h>
 
 #define NDEBUG
 #include <assert.h>
@@ -97,6 +99,7 @@ struct sana_softc *ssq = NULL;
  * Local prototypes
  */
 struct ifnet *iface_make(struct ssconfig *ifc);
+extern void if_detach(struct ifnet *ifp);       /* net/if.c */
 static void sana_run(struct sana_softc *ssc, int requests, struct ifaddr *ifa);
 static void sana_unrun(struct sana_softc *ssc);
 static void sana_up(struct sana_softc *ssc);
@@ -185,6 +188,177 @@ sana_deinit(void)
         SetSignal(1 << SanaPort->mp_SigBit, 0L);
         DeleteMsgPort(SanaPort);
         SanaPort = NULL;
+    }
+}
+
+/*
+ * Drop all of an interface's live layer-3 configuration - DNS, autoip, every
+ * route, and every address (IPv6 then IPv4) - WITHOUT closing the device or
+ * freeing the ifnet.  Shared by the reload teardown (which re-applies the
+ * config afterwards) and the dropped-interface path (which leaves it bare).
+ *
+ * rt_purgeif() removes every route that resolves through the interface first -
+ * including the IPv6 RTF_CLONING prefix route that in6_ifscrub() alone did not
+ * reliably delete.  With the routes already gone, in6_purgeaddr() can free each
+ * IPv6 address without leaving a route's rt_ifa dangling.
+ *
+ * Returns the number of addresses removed (for logging).
+ */
+static int
+sana_if_deconfigure(struct ifnet *ifp)
+{
+    struct sana_softc *ssc = (struct sana_softc *)ifp;
+    struct ifreq ifr;
+    int deleted = 0;
+
+    ifnet_clear_dns(ifp);
+    if(ssc->ss_autoip.state != AUTOIP_DISABLED)
+        autoip_stop(ifp);
+
+    /* Flush all routes on the interface before dropping its addresses, so no
+     * live route is left referencing an ifaddr we are about to free. */
+    rt_purgeif(ifp);
+
+#if INET6
+    {
+        struct ifaddr *ifa, *nifa;
+        for(ifa = ifp->if_addrlist; ifa; ifa = nifa) {
+            nifa = ifa->ifa_next;       /* in6_purgeaddr() unlinks+frees ifa */
+            if(ifa->ifa_addr &&
+                    ifa->ifa_addr->sa_family == AF_INET6) {
+                in6_purgeaddr(ifa);
+                deleted++;
+            }
+        }
+    }
+#endif
+    while(1) {
+        bzero(&ifr, sizeof(ifr));
+        if(in_control(NULL, SIOCDIFADDR, (caddr_t)&ifr, ifp) != 0)
+            break;
+        deleted++;
+    }
+    return deleted;
+}
+
+/*
+ * Tear down every interface's live configuration for an in-place reload.  The
+ * config is re-applied afterwards by re-reading the interface database
+ * (addifent), so an interface is reconfigured without a link bounce - and
+ * because the routes/addresses are fully dropped first, an IPv6 address can
+ * change across a reload (addifent() re-adds the new address and its route; an
+ * unchanged one is simply re-added identically).  DHCP is stopped separately
+ * (dhcp service) before this runs.
+ */
+void
+sana_reconfig_teardown(void)
+{
+    struct sana_softc *ssc;
+
+    for(ssc = ssq; ssc; ssc = ssc->ss_next) {
+        struct ifnet *ifp = (struct ifnet *)ssc;
+        int deleted = sana_if_deconfigure(ifp);
+
+        D(bug("[AROSTCP](if_sana.c) sana_reconfig_teardown: %s%d dropped %d address(es)\n",
+              ifp->if_name, ifp->if_unit, deleted));
+    }
+}
+
+/*
+ * In-place reload: handle interfaces dropped from the new configuration.
+ *
+ * sana_reload_begin() bumps a generation; addifent() marks each interface it
+ * (re)configures via sana_mark_seen(); sana_remove_unseen() then disables any
+ * interface still carrying an older generation (i.e. no longer in the config).
+ *
+ * Removal is a full teardown: stop DHCP, release DNS/autoip, flush routes and
+ * delete every address (sana_if_deconfigure()), take the device offline and
+ * drain all its I/O requests (sana_down() + sana_unrun() - every request buffer
+ * is chained in ss_reqs, so this clears SanaPort of anything that references the
+ * softc), detach the per-interface nd6 state, unlink the ifnet from the global
+ * list and free its link-level ifaddr (if_detach()), unlink from ssq,
+ * CloseDevice() and finally free the softc.  Order mirrors sana_deinit(), with
+ * the list-unlink + free added for a single live interface.
+ */
+static ULONG sana_reload_gen = 0;
+
+void sana_reload_begin(void)
+{
+    sana_reload_gen++;
+}
+
+void sana_mark_seen(struct ifnet *ifp)
+{
+    struct sana_softc *ssc;
+
+    /* Only SANA interfaces (those in ssq) are tracked; a tunnel/pseudo ifnet
+     * is not a sana_softc and must not be cast/written as one. */
+    for(ssc = ssq; ssc; ssc = ssc->ss_next) {
+        if((struct ifnet *)ssc == ifp) {
+            ssc->ss_reloadseen = sana_reload_gen;
+            return;
+        }
+    }
+}
+
+void sana_remove_unseen(void)
+{
+    struct sana_softc *ssc, *next;
+    struct sana_softc **prev = &ssq;
+
+    for(ssc = ssq; ssc; ssc = next) {
+        struct ifnet *ifp = (struct ifnet *)ssc;
+        struct IOSana2Req *req;
+
+        next = ssc->ss_next;
+
+        if(ssc->ss_reloadseen == sana_reload_gen) {
+            prev = &ssc->ss_next;       /* kept: advance the unlink cursor */
+            continue;
+        }
+
+        /* interface no longer in the config: full teardown and free */
+        ifp->if_data.ifi_aros_usedhcp = 0;
+#if INET6 && DHCP6
+        ifp->if_data.ifi_aros_usedhcp6 = 0;
+#endif
+        kill_dhclient(ifp);
+#if INET6 && DHCP6
+        kill_dhclient6(ifp);
+#endif
+        sana_if_deconfigure(ifp);       /* DNS, autoip, routes, all addresses */
+
+        /* take the device offline and drain/free all of its I/O requests
+         * before anything that references the softc is torn down.  (A compliant
+         * SANA-II driver must return parked CMD_READs on AbortIO; tap.device
+         * now does.) */
+        sana_down(ssc);
+        if(ssc->ss_if.if_flags & IFF_DRV_RUNNING)
+            sana_unrun(ssc);
+        ifp->if_flags &= ~IFF_UP;
+
+#if INET6
+        nd6_ifdetach(ifp);
+#endif
+        if_detach(ifp);                 /* global-list unlink + free link ifaddr */
+
+        *prev = next;                   /* unlink from ssq (prev still points here) */
+
+        /* close the device (ss_dev/ss_unit are still valid in the softc) */
+        req = CreateIOSana2Req(ssc);
+        if(req) {
+            CloseDevice((struct IORequest *)req);
+            DeleteIOSana2Req(req);
+        } else {
+            __log(LOG_ERR, "sana_remove_unseen: couldn't close device %s\n",
+                  ssc->ss_name);
+        }
+
+        __log(LOG_NOTICE, "%s%d: removed from configuration, interface detached",
+              ifp->if_name, ifp->if_unit);
+
+        bsd_free((caddr_t)ssc, M_IFNET);
+        /* prev is unchanged: it now holds `next`, the new current node */
     }
 }
 
@@ -541,7 +715,8 @@ sana_run(struct sana_softc *ssc, int requests, struct ifaddr *ifa)
                 req->ioip_if = ssc;
                 req->ioip_next = NULL;
                 req->ioip_s2.ios2_Req.io_Command = S2_ONEVENT;
-                req->ioip_s2.ios2_WireError = S2EVENT_OFFLINE | S2EVENT_CONNECT;
+                req->ioip_s2.ios2_WireError = S2EVENT_OFFLINE | S2EVENT_CONNECT
+                                              | S2EVENT_DISCONNECT;
                 req->ioip_dispatch = sana_connect;
                 BeginIO((struct IORequest *)req);
                 ssc->ss_connectreq = req;
@@ -550,6 +725,26 @@ sana_run(struct sana_softc *ssc, int requests, struct ifaddr *ifa)
     }
     splx(s);
 }
+
+#if __SASC
+/*
+ * "Fix" for numerous sana2 drivers, which expect to get Unit * in the
+ * register A3 when their AbortIO function is called.
+ * Note that Exec AbortIO() does NOT put it there.
+ */
+extern VOID _AbortSanaIO(struct IORequest *, struct Unit *);
+#pragma libcall DeviceBase _AbortSanaIO 24 B902
+
+static inline __asm VOID
+AbortSanaIO(register __a1 struct IORequest *ioRequest)
+{
+#define DeviceBase ioRequest->io_Device
+    _AbortSanaIO(ioRequest, ioRequest->io_Unit);
+#undef DeviceBase
+}
+#else /* implement later for other compilers */
+#define AbortSanaIO AbortIO
+#endif
 
 /*
  * Free Sana-II IO Requests
@@ -568,6 +763,15 @@ sana_unrun(struct sana_softc *ssc)
     ssc->ss_reqs = next;
 
     if(ssc->ss_connectreq) {
+        /*
+         * Abort before waiting. sana_down() only issues S2_OFFLINE when we are
+         * the device's last opener, so with a wireless device - where
+         * WirelessManager holds it open too - nothing ever replies this parked
+         * S2_ONEVENT and the wait never returns, taking the whole stack
+         * shutdown with it.
+         */
+        if(!CheckIO((struct IORequest *)ssc->ss_connectreq))
+            AbortSanaIO((struct IORequest *)ssc->ss_connectreq);
         WaitIO((struct IORequest *)ssc->ss_connectreq);
         DeleteIORequest((struct IORequest *)ssc->ss_connectreq);
     }
@@ -654,9 +858,9 @@ sana_ioctl(register struct ifnet *ifp, int cmd, caddr_t data)
          * does not mean sana_up() (CmdOnline + CmdRead) has been called.
          */
         if((ssc->ss_if.if_flags & IFF_DRV_RUNNING) && (ssc->ss_ip.sent == 0)) {
-            if(ssc->ss_if.if_flags & IFF_NOUP) {
+            if(ssc->ss_cflags & SSF_NOUP) {
                 D(bug("[AROSTCP:SANA] %s: SIFADDR Clearing interface NOUP flag .. \n", __func__));
-                ssc->ss_if.if_flags &= ~IFF_NOUP;
+                ssc->ss_cflags &= ~SSF_NOUP;
             } else {
                 D(bug("[AROSTCP:SANA] %s: SIFADDR bringing interface UP .. \n", __func__));
                 sana_up(ssc);
@@ -687,9 +891,9 @@ sana_ioctl(register struct ifnet *ifp, int cmd, caddr_t data)
             sana_run(ssc, ssc->ss_reqno, ifa);
         }
         if((ssc->ss_if.if_flags & IFF_DRV_RUNNING) && (ssc->ss_ip.sent == 0)) {
-            if(ssc->ss_if.if_flags & IFF_NOUP) {
+            if(ssc->ss_cflags & SSF_NOUP) {
                 D(bug("[AROSTCP:SANA] %s: SIOCAIFADDR_IN6 Clearing interface NOUP flag ..\n", __func__));
-                ssc->ss_if.if_flags &= ~IFF_NOUP;
+                ssc->ss_cflags &= ~SSF_NOUP;
             } else {
                 D(bug("[AROSTCP:SANA] %s: SIOCAIFADDR_IN6 bringing interface UP ..\n", __func__));
                 sana_up(ssc);
@@ -840,26 +1044,6 @@ sana_up(struct sana_softc *ssc)
         DeleteIOSana2Req(req);
     }
 }
-
-#if __SASC
-/*
- * "Fix" for numerous sana2 drivers, which expect to get Unit * in the
- * register A3 when their AbortIO function is called.
- * Note that Exec AbortIO() does NOT put it there.
- */
-extern VOID _AbortSanaIO(struct IORequest *, struct Unit *);
-#pragma libcall DeviceBase _AbortSanaIO 24 B902
-
-static inline __asm VOID
-AbortSanaIO(register __a1 struct IORequest *ioRequest)
-{
-#define DeviceBase ioRequest->io_Device
-    _AbortSanaIO(ioRequest, ioRequest->io_Unit);
-#undef DeviceBase
-}
-#else /* implement later for other compilers */
-#define AbortSanaIO AbortIO
-#endif
 
 /*
  * sana_down(): Mark interface as down, abort all pending requests
@@ -1143,6 +1327,41 @@ sana_online(struct sana_softc *ssc, struct IOIPReq *req)
 }
 
 /*
+ * sana_linkdown(): the link went away under an interface that is still online,
+ * as happens when a wireless device loses its association. The lease and the
+ * routes belonged to that network, so give them up instead of leaving a stale
+ * address behind. IFF_UP is deliberately left alone: sana_output() refuses to
+ * transmit without it, and the DHCP client needs to send when the link returns.
+ */
+static void
+sana_linkdown(struct sana_softc *ssc)
+{
+    struct ifnet *ifp = (struct ifnet *)ssc;
+    struct ifreq ifr;
+    int deleted = 0;
+
+    kill_dhclient(ifp);
+    ifnet_clear_dns(ifp);       /* drop this interface's DNS servers with its addresses */
+    if(ssc->ss_autoip.state != AUTOIP_DISABLED)
+        autoip_stop(ifp);
+
+    /*
+     * A request naming no address means "the first one on this interface", so
+     * this deletes them all; in_control() scrubs their routes on the way out.
+     */
+    while(1) {
+        bzero(&ifr, sizeof(ifr));
+        if(in_control(NULL, SIOCDIFADDR, (caddr_t)&ifr, ifp) != 0)
+            break;
+        deleted++;
+    }
+
+    __log(LOG_NOTICE, "%s%d: link lost, dropped %d address(es).",
+          ifp->if_name, ifp->if_unit, deleted);
+    gui_set_interface_state(ifp, MIAMIPANELV_AddInterface_State_Offline);
+}
+
+/*
  * sana_online(): process a CONNECT event
  */
 static void
@@ -1158,12 +1377,16 @@ sana_connect(struct sana_softc *ssc, struct IOIPReq *req)
         run_dhclient((struct ifnet *) ssc);
         if(ssc->ss_autoip.state != AUTOIP_DISABLED)
             autoip_start((struct ifnet *) ssc);
+    } else if(req->ioip_s2.ios2_Req.io_Error == 0 &&
+              (events & S2EVENT_DISCONNECT)) {
+        sana_linkdown(ssc);
     }
 
     /* Send request back for next event */
     if(req->ioip_s2.ios2_Req.io_Error == 0 && !(events & S2EVENT_OFFLINE)) {
         req->ioip_s2.ios2_Req.io_Command = S2_ONEVENT;
-        req->ioip_s2.ios2_WireError =  S2EVENT_OFFLINE | S2EVENT_CONNECT;
+        req->ioip_s2.ios2_WireError =  S2EVENT_OFFLINE | S2EVENT_CONNECT
+                                       | S2EVENT_DISCONNECT;
         BeginIO((struct IORequest *)req);
     } else {
         ssc->ss_eventsent--;
@@ -1198,7 +1421,9 @@ sana_start(struct sana_softc *ssc)
         req->ioip_s2.ios2_PacketType     = st->st_type;
         bcopy(st->st_dstaddr, req->ioip_s2.ios2_DstAddr, ifp->if_addrlen);
         req->ioip_s2.ios2_Req.io_Message.mn_Node.ln_Pri = st->st_pri;
-        req->ioip_Command  = (m->m_flags & M_BCAST) ? S2_BROADCAST : CMD_WRITE;
+        /* a group's frame is not an ordinary write to a SANA-II driver */
+        req->ioip_Command  = (m->m_flags & M_BCAST) ? S2_BROADCAST :
+                             (m->m_flags & M_MCAST) ? S2_MULTICAST : CMD_WRITE;
         req->ioip_dispatch = free_written_packet;
         req->ioip_packet   = m;
         req->ioip_s2.ios2_DataLength = m->m_pkthdr.len;
@@ -1206,7 +1431,7 @@ sana_start(struct sana_softc *ssc)
         m_free(tag);			/* metadata consumed; the packet lives on */
 
         ifp->if_obytes += m->m_pkthdr.len;
-        if(m->m_flags & M_BCAST)
+        if(m->m_flags & (M_BCAST | M_MCAST))
             ifp->if_omcasts++;
 
         BeginIO((struct IORequest *)req);

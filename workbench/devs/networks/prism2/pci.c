@@ -22,6 +22,7 @@ MA 02111-1307, USA.
 
 #include <exec/types.h>
 #include <utility/tagitem.h>
+#include <asm/io.h>
 
 #include <proto/exec.h>
 #include <proto/expansion.h>
@@ -617,11 +618,11 @@ UWORD GetBusType(UWORD product_id, struct DevBase *base)
 static VOID WordsInHook(struct BusContext *context, ULONG offset,
    UWORD *buffer, ULONG count)
 {
-   volatile UWORD *reg;
+   APTR reg;
 
-   reg = (volatile UWORD *)(context->io_base + (offset << 1));
+   reg = (APTR)(context->io_base + (offset << 1));
    while(count-- > 0)
-      *buffer++ = *reg;
+      *buffer++ = mmio_inw(reg);
 
    return;
 }
@@ -645,11 +646,11 @@ static VOID WordsInHook(struct BusContext *context, ULONG offset,
 static VOID WordsOutHook(struct BusContext *context, ULONG offset,
    const UWORD *buffer, ULONG count)
 {
-   volatile UWORD *reg;
+   APTR reg;
 
-   reg = (volatile UWORD *)(context->io_base + (offset << 1));
+   reg = (APTR)(context->io_base + (offset << 1));
    while(count-- > 0)
-      *reg = *buffer++;
+      mmio_outw(*buffer++, reg);
 
    return;
 }
@@ -673,8 +674,7 @@ static VOID WordsOutHook(struct BusContext *context, ULONG offset,
 static VOID BEWordOutHook(struct BusContext *context, ULONG offset,
    UWORD value)
 {
-   *(volatile UWORD *)(context->io_base + (offset << 1)) =
-      MakeBEWord(value);
+   mmio_outw(MakeBEWord(value), (APTR)(context->io_base + (offset << 1)));
 
    return;
 }
@@ -697,7 +697,7 @@ static VOID BEWordOutHook(struct BusContext *context, ULONG offset,
 
 static UWORD LEWordInHook(struct BusContext *context, ULONG offset)
 {
-   return LEWord(*(volatile UWORD *)(context->io_base + (offset << 1)));
+   return LEWord(mmio_inw((APTR)(context->io_base + (offset << 1))));
 }
 
 
@@ -719,8 +719,7 @@ static UWORD LEWordInHook(struct BusContext *context, ULONG offset)
 static VOID LEWordOutHook(struct BusContext *context, ULONG offset,
    UWORD value)
 {
-   *(volatile UWORD *)(context->io_base + (offset << 1)) =
-      MakeLEWord(value);
+   mmio_outw(MakeLEWord(value), (APTR)(context->io_base + (offset << 1)));
 
    return;
 }

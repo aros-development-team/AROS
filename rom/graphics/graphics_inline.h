@@ -39,10 +39,42 @@ static inline OOP_Object *SelectDriverObject(struct BitMap *srcbm, OOP_Object *d
     if (!gfxhidd)
         gfxhidd = driver->display_gfxhidd;
 
+    /* A caller-owned planar screen has no HIDD display attribute, even when
+     * MakeVPort() displays it through AmigaVideo.  Its generic wrapper must
+     * not force BltBitMapRastPort() into the pixel-by-pixel software CopyBox.
+     * The native driver checks whether the particular planes can be blitted
+     * and falls back to the generic method when they cannot. */
+    if (gfxhidd == ((struct gfxdisplay_data *)CDD(GfxBase))->display_gfxhidd &&
+        GfxBase->ActiView && GfxBase->ActiView->ViewPort)
+    {
+        struct gfxdisplay_data *active =
+            GET_VP_DRIVERDATA(GfxBase->ActiView->ViewPort);
+        struct BitMap *planar = NULL;
+
+        if (active && (active->display_flags & DF_ExternalPlanar))
+            OOP_GetAttr(dstbm_obj, aHidd_PlanarBM_BitMap, (IPTR *)&planar);
+
+        if (planar)
+            gfxhidd = active->display_gfxhidd;
+    }
+
     return gfxhidd;
 }
 
+/*
+ * On m68k this body is inlined into enough callers to matter for the 512 KiB
+ * ROM bank, so it is compiled once, out of line, in gfxfuncsupport.c (which
+ * defines GFX_GETDRIVERDATA_IMPL). It is called once per drawing operation,
+ * ahead of the far costlier driver method call. Other targets keep it inline.
+ */
+#if defined(__mc68000__) && !defined(GFX_GETDRIVERDATA_IMPL)
+OOP_Object *GetDriverData(struct RastPort *rp, struct GfxBase *GfxBase);
+#else
+#if defined(__mc68000__)
+OOP_Object *GetDriverData(struct RastPort *rp, struct GfxBase *GfxBase)
+#else
 static inline OOP_Object *GetDriverData(struct RastPort *rp, struct GfxBase *GfxBase)
+#endif
 {
     /*
      * Here we do a little bit of hacky-wacky magic.
@@ -107,6 +139,7 @@ static inline OOP_Object *GetDriverData(struct RastPort *rp, struct GfxBase *Gfx
     OOP_OCLASS(gc) = CDD(GfxBase)->gcClass;	/* Set class pointer			*/
     return gc;					/* Our handmade object is ready to use!	*/
 }
+#endif /* __mc68000__ && !GFX_GETDRIVERDATA_IMPL */
 
 static inline BOOL GetRPClipRectangleForLayer(struct RastPort *rp, struct Layer *lay, struct Rectangle *r, struct GfxBase *GfxBase)
 {

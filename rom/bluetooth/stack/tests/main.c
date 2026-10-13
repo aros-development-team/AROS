@@ -20,6 +20,7 @@
 #include "sdp/test_sdp_server.h"
 #include "att/test_att.h"
 #include "gatt/test_gatt_client.h"
+#include "gatt/test_gatt_server.h"
 #include "smp/test_smp.h"
 #include "security/test_bond_store.h"
 #include "security/test_smp_crypto.h"
@@ -56,6 +57,7 @@ int main(void)
     run_sdp_client_tests();
     run_att_tests();
     run_gatt_client_tests();
+    run_gatt_server_tests();
     run_smp_tests();
     run_bond_store_tests();
     run_smp_crypto_tests();

@@ -1,7 +1,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-#MM- kernel-ata-includes : kernel-scsi-includes
+#MM- kernel-ata-includes : kernel-scsi-includes kernel-hidd-bus-includes kernel-hidd-storage-includes
 #MM- kernel-ata-kobj-includes : kernel-scsi--kobj-includes
 
 USER_CPPFLAGS := \
@@ -34,6 +34,10 @@ ATA_CLASSFILES := \
     ata_controllerclass \
     ata_busclass \
     ata_unitclass
+
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
 
 %build_module mmake=kernel-ata \
   modname=ata modtype=device version=$(AROS_TARGET_PLATFORM) \

@@ -98,11 +98,13 @@ static inline int round_up_pow2(int x)
    return r;
 }
 
+#ifndef SWAP /* Mesa's util/macros.h defines the same */
 #define SWAP(x, y) do {			\
 		typeof(x) __z = (x);	\
 		(x) = (y);		\
 		(y) = __z;		\
 	} while (0)
+#endif
 
 static inline uint32_t
 PUSH_AVAIL(struct nouveau_pushbuf *push)
@@ -141,7 +143,7 @@ PUSH_RELOC(struct nouveau_pushbuf *push, struct nouveau_bo *bo, uint32_t offset,
 static inline void
 PUSH_KICK(struct nouveau_pushbuf *push)
 {
-	nouveau_pushbuf_kick(push, push->channel);
+	nouveau_pushbuf_kick(push);
 }
 
 static inline struct nouveau_bufctx *

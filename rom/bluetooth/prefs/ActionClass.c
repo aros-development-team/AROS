@@ -1556,6 +1556,7 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
     DoMethod(data->bt_clscfg,     MUIM_Notify, MUIA_Pressed, FALSE, obj, 1, MUIM_BtA_ClsConfigure);
     DoMethod(data->devlist,       MUIM_Notify, MUIA_List_Active, MUIV_EveryTime, obj, 1, MUIM_BtA_DevActive);
     DoMethod(data->clslist,       MUIM_Notify, MUIA_List_Active, MUIV_EveryTime, obj, 1, MUIM_BtA_ClsActive);
+    DoMethod(data->clslist,       MUIM_Notify, MUIA_Listview_DoubleClick, TRUE, obj, 1, MUIM_BtA_ClsConfigure);
     set(data->bt_devsettings, MUIA_Disabled, TRUE);
     set(data->bt_clscfg, MUIA_Disabled, TRUE);
 

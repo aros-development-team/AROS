@@ -26,13 +26,28 @@
 
 #include "support.h"
 
-void InitLocaleInfo (APTR SysBase, struct LocaleInfo *li, CONST_STRPTR catalog) {
+static void InitLocaleInfoTags (APTR SysBase, struct LocaleInfo *li,
+	CONST_STRPTR catalog, struct TagItem *tags) {
 	struct Library *LocaleBase;
 	li->li_LocaleBase =
 	LocaleBase = OpenLibrary("locale.library", MIN_OS_VERSION);
 	if (LocaleBase) {
-		li->li_Catalog = OpenCatalogA(NULL, (STRPTR)catalog, NULL);
+		li->li_Catalog = OpenCatalogA(NULL, (STRPTR)catalog, tags);
 	}
+}
+
+void InitLocaleInfo (APTR SysBase, struct LocaleInfo *li, CONST_STRPTR catalog) {
+	InitLocaleInfoTags(SysBase, li, catalog, NULL);
+}
+
+void InitLocaleInfoVersion (APTR SysBase, struct LocaleInfo *li,
+	CONST_STRPTR catalog, ULONG version) {
+	struct TagItem tags[] = {
+		{ OC_Version, version },
+		{ TAG_DONE, 0 }
+	};
+
+	InitLocaleInfoTags(SysBase, li, catalog, tags);
 }
 
 void FreeLocaleInfo (APTR SysBase, struct LocaleInfo *li) {

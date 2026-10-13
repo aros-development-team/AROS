@@ -1,13 +1,28 @@
 /*
-    Copyright (C) 2002-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
-#include <aros/debug.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/utility.h>
+#include <proto/intuition.h>
 
-#include <stdio.h>
+#include <proto/security.h>
 
 #include "security_intern.h"
+#include "security_task.h"
 #include "security_server.h"
+#include "security_segment.h"
+#include "security_monitor.h"
+#include "security_memory.h"
+#include "security_plugins.h"
+#include "security_crypto.h"
+#include "security_enforce.h"
+#include "security_packetio.h"
+#include "security_userinfo.h"
+#include "security_groupinfo.h"
+#include "security_login.h"
+#include "security_support.h"
 
 /*****************************************************************************
 
@@ -15,49 +30,22 @@
         AROS_LH0(BPTR, secGetConfigDirLock,
 
 /*  SYNOPSIS */
-        /* void */
 
 /*  LOCATION */
         struct SecurityBase *, secBase, 20, Security)
 
-/*  FUNCTION
-              Get a Shared Lock on the Directory of the Configuration File
-
-    INPUTS
-
+/*
+    FUNCTION
+        Get a shared lock on the configuration directory.
 
     RESULT
+        lock, or BNULL. UnLock() it when done.
 
-
-    NOTES
-
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-
-    INTERNALS
-
-    HISTORY
-
-*****************************************************************************/
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    BPTR dirLock;
-
-    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
-
-    dirLock = ((BPTR)SendServerPacket(
-            secBase, secSAction_ConfigDirLock,
-            (SIPTR)NULL, (SIPTR)NULL, (SIPTR)NULL, (SIPTR)NULL));
-
-    return dirLock;
+    return (BPTR)SendServerPacket(secBase, secSAction_ConfigDirLock, 0, 0, 0, 0);
 
     AROS_LIBFUNC_EXIT
-
 } /* secGetConfigDirLock */
-

@@ -2,10 +2,18 @@
 include $(SRCDIR)/config/aros.cfg
 
 #MM- hidd-i2c-raspi : hidd-i2c-bcm2708
+#MM hidd-i2c-bcm2708 : hidd-i2c-includes kernel-gpio-bcm2708-includes kernel-mbox-bcm2708-includes
+
+USER_CPPFLAGS := \
+               -D__OOP_NOLIBBASE__ \
+               -D__OOP_NOATTRBASES__ \
+               -D__OOP_NOMETHODBASES__
+
+INCLUDE_FILES := i2cbcm2708.h
+%copy_includes path=hidd
 
 %build_module mmake=hidd-i2c-bcm2708 \
   modname=i2c-bcm2708 modtype=hidd \
   files="i2c-bcm2708"
 
 %common
-  

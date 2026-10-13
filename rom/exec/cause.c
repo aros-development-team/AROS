@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Cause() - Cause a software interrupt.
 */
@@ -102,7 +102,7 @@
     }
 
     /* Signal pending software interrupt condition */
-#if defined(__AROSEXEC_SMP__)
+#ifndef AROS_NO_ATOMIC_OPERATIONS
     __AROS_ATOMIC_OR_W(SysBase->SysFlags, SFF_SoftInt);
 #else
     SysBase->SysFlags |= SFF_SoftInt;
@@ -150,8 +150,10 @@ AROS_INTH0(SoftIntDispatch)
     /* Don't bother if there are no software ints queued. */
     if( SysBase->SysFlags & SFF_SoftInt )
     {
-        /* Clear Software interrupt pending flag. */
-#if defined(__AROSEXEC_SMP__)
+        /* Clear Software interrupt pending flag. The scheduler's attention
+         * flags share this word and can be set from higher interrupt levels,
+         * so the update should not be a load/modify/store sequence. */
+#ifndef AROS_NO_ATOMIC_OPERATIONS
         __AROS_ATOMIC_AND_W(SysBase->SysFlags, ~SFF_SoftInt);
 #else
         SysBase->SysFlags &= ~(SFF_SoftInt);

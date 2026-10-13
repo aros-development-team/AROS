@@ -22,6 +22,7 @@ MA 02111-1307, USA.
 
 #include <exec/types.h>
 #include <utility/tagitem.h>
+#include <asm/io.h>
 #include <libraries/prometheus.h>
 
 #include <proto/exec.h>
@@ -599,7 +600,7 @@ BOOL IsCardCompatible(UWORD vendor_id, UWORD product_id,
 
 static UWORD LEWordInHook(struct BusContext *context, ULONG offset)
 {
-   return LEWord(*(volatile UWORD *)(context->io_base + offset));
+   return LEWord(mmio_inw((APTR)(context->io_base + offset)));
 }
 
 
@@ -620,7 +621,7 @@ static UWORD LEWordInHook(struct BusContext *context, ULONG offset)
 
 static ULONG LELongInHook(struct BusContext *context, ULONG offset)
 {
-   return LELong(*(volatile ULONG *)(context->io_base + offset));
+   return LELong(mmio_inl((APTR)(context->io_base + offset)));
 }
 
 
@@ -642,7 +643,7 @@ static ULONG LELongInHook(struct BusContext *context, ULONG offset)
 static VOID LELongOutHook(struct BusContext *context, ULONG offset,
    ULONG value)
 {
-   *(volatile ULONG *)(context->io_base + offset) = MakeLELong(value);
+   mmio_outl(MakeLELong(value), (APTR)(context->io_base + offset));
 
    return;
 }

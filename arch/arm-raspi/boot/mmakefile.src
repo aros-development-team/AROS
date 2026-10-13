@@ -82,6 +82,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-sdio-bcm2708-quick \
 #MM kernel-bwfm-bcm2708-quick \
 #MM hidd-i2c-quick \
+#MM hidd-i2c-bcm2708-quick \
 #MM kernel-hidd-gfx-quick \
 #MM hidd-vcgfx-quick \
 #MM kernel-sdcard-quick \

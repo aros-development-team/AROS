@@ -8,6 +8,7 @@
 #include <proto/dos.h>
 #include <proto/iffparse.h>
 #include "locale_intern.h"
+#include "catalog_version.h"
 #include <libraries/iffparse.h>
 #include <prefs/prefhdr.h>
 #include <prefs/locale.h>
@@ -241,7 +242,8 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
 
     /* Open dos.catalog (needed for DosGetLocalizedString patch) */
     il->il_DosCatalog =
-        OpenCatalogA((struct Locale *)il, "System/Libs/dos.catalog", NULL);
+        OpenCatalog((struct Locale *)il, "System/Libs/dos.catalog",
+            OC_Version, CATALOG_VERSION, TAG_DONE);
 
     DEBUG_INITLOCALE(dprintf("SetLocaleLanguage: DosCatalog 0x%lx\n",
             il->il_DosCatalog));

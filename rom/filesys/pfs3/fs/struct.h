@@ -115,7 +115,7 @@
 #endif
 #if MULTIUSER
 #ifndef LIBRARIES_MULTIUSER_H
-#include <libraries/multiuser.h>
+#include <libraries/mufs.h>
 #endif
 #endif
 #ifndef DEVICES_SCSIDISK_H
@@ -255,8 +255,11 @@ int stcu_d(char *out, unsigned int val);
 #define MUFS(x)
 #endif
 
-/* flags that allow SetProtect, SetOwner, SetDate, SetComment etc */
+/* flags that allow SetProtect, SetOwner, SetDate, SetComment etc
+ * (AROS' <libraries/mufs.h> already provides this one) */
+#ifndef muRel_PROPERTY_ACCESS
 #define muRel_PROPERTY_ACCESS (muRelF_ROOT_UID|muRelF_UID_MATCH|muRelF_NO_OWNER)
+#endif
 
 /****************************************************************************/
 /* CACHE related defines                                                    */
@@ -500,7 +503,7 @@ struct globaldata
 	struct IntuitionBase *g_IntuitionBase;
 	struct Library *g_UtilityBase;
 	struct DosLibrary *g_DOSBase;
-	struct muBase *g_muBase;
+	struct Library *g_muBase;         /* security.library (multiuser API) */
 	struct MsgPort  *msgport;           /* communication port to DOS (normally == g->devnode->dn_Task) */
 	struct MsgPort  *port;              /* for communication with diskdevice    */
 	struct IOExtTD  *request;           /* request structure for diskdevice     */
@@ -632,6 +635,13 @@ typedef struct globaldata globaldata;
 #define UtilityBase   g->g_UtilityBase
 #define DOSBase       g->g_DOSBase
 #define muBase        g->g_muBase
+
+/* de_Mask is a 32-bit value. On 64-bit systems it cannot describe the address
+ * space (AROS hands out 0x7ffffffe, which rejects every address >= 2 GB), so
+ * there the mask is taken as satisfied: memory is DMA-capable as far as the
+ * mask is concerned. Also keeps the (soft-protecting) warning quiet. */
+#define PFS3_MASKFAIL(p)   ((sizeof(IPTR) > 4) ? 0 : (((IPTR)(p)) & ~g->dosenvec->de_Mask))
+#define secBase       g->g_muBase
 
 /*****************************************************************************/
 /* defined function macros                                                   */
@@ -851,20 +861,20 @@ struct fileinfo
 
 struct volumeinfo
 {
-	ULONG   root;                   // 0 =>it's a volumeinfo; <>0 => it's a fileinfo
+	IPTR    root;                   // 0 =>it's a volumeinfo; <>0 => it's a fileinfo (pointer sized: overlaps fileinfo.direntry on 64-bit)
 	struct volumedata *volume;
 };
 
 #if DELDIR
 struct deldirinfo
 {
-	ULONG special;                  // 0 => volumeinfo; 1 => deldirinfo; 2 => delfile; >2 => fileinfo
+	IPTR  special;                  // 0 => volumeinfo; 1 => deldirinfo; 2 => delfile; >2 => fileinfo
 	struct volumedata *volume;
 };
 
 struct delfileinfo
 {
-	ULONG special;					// 2
+	IPTR  special;					// 2
 	ULONG slotnr;					// het slotnr voor deze deldirentry
 };
 

@@ -8,6 +8,7 @@
 #include <utility/tagitem.h>
 
 #include "objects.h"
+#include "sfs_security.h"
 #include "objects_protos.h"
 
 #include "adminspaces_protos.h"
@@ -1239,6 +1240,8 @@ LONG findcreate(struct ExtFileLock **returned_lock, UBYTE *path, LONG packettype
             		{ CO_HASHOBJECT, TRUE },
             		{ CO_SOFTLINK, (IPTR)softlink },
             		{ CO_UPDATEPARENT, TRUE },
+            		{ sfsSecIsActive() ? CO_OWNER : TAG_IGNORE, sfsSecNewOwner() },
+            		{ sfsSecIsActive() ? CO_PROTECTION : TAG_IGNORE, sfsSecNewStoredProtection(0) },
             		{ TAG_DONE, 0 }
             };
 

@@ -154,13 +154,13 @@ int fstat(int fd, struct stat *sb);
 #endif
 int fstat64(int fd, struct stat64 *sb);
 
-int fstatat(int, const char *restrict, struct stat *restrict, int);
+int fstatat(int, const char *__restrict, struct stat *__restrict, int);
 /* NOTIMPL int futimens(int, const struct timespec [2]); */
-int lstat64(const char * restrict path, struct stat64 * restrict sb);
+int lstat64(const char * __restrict path, struct stat64 * __restrict sb);
 #if defined(__USE_FILE_OFFSET64)
-int lstat(const char * restrict path, struct stat * restrict sb) __asm__("lstat64");
+int lstat(const char * __restrict path, struct stat * __restrict sb) __asm__("lstat64");
 #else
-int lstat(const char * restrict path, struct stat * restrict sb);
+int lstat(const char * __restrict path, struct stat * __restrict sb);
 #endif
 
 int mkdir(const char *path, mode_t mode);
@@ -170,11 +170,11 @@ int mkdir(const char *path, mode_t mode);
 int mknod(const char *path, mode_t mode, dev_t dev);
 /* NOTIMPL int mknodat(int, const char *, mode_t, dev_t); */
 #if defined(__USE_FILE_OFFSET64)
-int stat(const char * restrict path, struct stat * restrict sb) __asm__("stat64");
+int stat(const char * __restrict path, struct stat * __restrict sb) __asm__("stat64");
 #else
-int stat(const char * restrict path, struct stat * restrict sb);
+int stat(const char * __restrict path, struct stat * __restrict sb);
 #endif
-int stat64(const char * restrict path, struct stat64 * restrict sb);
+int stat64(const char * __restrict path, struct stat64 * __restrict sb);
 mode_t umask(mode_t numask);
 /* NOTIMPL int utimensat(int, const char *, const struct timespec [2], int); */
 

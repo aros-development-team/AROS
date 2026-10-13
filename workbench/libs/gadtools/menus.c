@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: GadTools menu creation functions
 */
@@ -25,7 +25,9 @@
 #include <libraries/gadtools.h>
 
 #define SDEBUG 1
-#define DEBUG 1
+#ifndef DEBUG
+#define DEBUG 0
+#endif
 #include <aros/debug.h>
 
 #include "gadtools_intern.h"

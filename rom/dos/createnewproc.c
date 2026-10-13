@@ -60,6 +60,13 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
         Pointer to the new process or NULL on error.
 
     NOTES
+        NP_Affinity places the process on a set of CPUs. It only does
+        anything on an SMP build; elsewhere it is accepted and ignored.
+        Without it the process inherits its parent's affinity. The
+        mask comes from KrnAllocCPUMask() and becomes the system's to
+        free, as for TASKTAG_AFFINITY. SetTaskAffinity() changes it
+        afterwards.
+
         It is possible to supply NP_Input, NP_Output and NP_Error tags
         with BNULL values. This is equal to NIL: handle, however if NP_Input
         is set to BNULL, NP_Arguments tag will not work. Arguments are
@@ -88,6 +95,15 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     struct Process              *me = (struct Process *)FindTask(NULL);
     ULONG                        old_sig = 0;
     APTR                         entry;
+    BOOL                         added;
+#if defined(__AROSEXEC_SMP__)
+    IPTR                         affinity;
+    struct TagItem               addTaskTags[] =
+    {
+        { TASKTAG_AFFINITY, (IPTR)NULL },
+        { TAG_DONE        , 0          }
+    };
+#endif
 
     /* TODO: NP_CommandName */
 
@@ -104,7 +120,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     /* 6 */    { NP_Error         , TAGDATA_NOT_SPECIFIED       },
     /* 7 */    { NP_CloseError    , 1                           },
     /* 8 */    { NP_CurrentDir    , TAGDATA_NOT_SPECIFIED       },
-    /* 9 */    { NP_StackSize     , AROS_STACKSIZE              },
+    /* 9 */    { NP_StackSize     , PROC_STACKSIZE              },
     /*10 */    { NP_Name          , (IPTR)"New Process"         },
     /*11 */    { NP_Priority      , me->pr_Task.tc_Node.ln_Pri  },
     /*12 */    { NP_Arguments     , TAGDATA_NOT_SPECIFIED       },
@@ -120,6 +136,9 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     /*22 */    { NP_Path          , TAGDATA_NOT_SPECIFIED       }, /* Default: copy path from parent */
     /*23 */    { NP_NotifyOnDeath , (IPTR)FALSE                 },
     /*24 */    { NP_ConsoleTask   , TAGDATA_NOT_SPECIFIED       },
+#if defined(__AROSEXEC_SMP__)
+    /*25 */    { NP_Affinity      , (IPTR)NULL                  },
+#endif
                { TAG_END          , 0                           }
     };
 
@@ -139,7 +158,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
             LONG parentstack = cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT;
 
             D(bug("[createnewproc] Parent stack: %u (0x%08X)\n", parentstack, parentstack));
-            if (parentstack > AROS_STACKSIZE)
+            if (parentstack > PROC_STACKSIZE)
             {
                 defaults[9].ti_Data = parentstack;
             }
@@ -150,6 +169,11 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     }
 
     ApplyTagChanges(defaults, (struct TagItem *)tags);
+
+#if defined(__AROSEXEC_SMP__)
+    affinity = defaults[25].ti_Data;
+    addTaskTags[0].ti_Data = affinity;
+#endif
 
     D({
         int i;
@@ -220,10 +244,10 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
      * Yes, 64-bit systems appear to be strictly typed in such places.
      */
     process->pr_StackSize = defaults[9].ti_Data;
-    /* We need a minimum stack to handle interrupt contexts */
-    if (process->pr_StackSize < AROS_STACKSIZE)
+    /* Enforce the platform's minimum process stack. */
+    if (process->pr_StackSize < PROC_MINSTACKSIZE)
     {
-        process->pr_StackSize = AROS_STACKSIZE;
+        process->pr_StackSize = PROC_MINSTACKSIZE;
     }
 
     stack = AllocMem(process->pr_StackSize, MEMF_PUBLIC);
@@ -498,9 +522,29 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     /* Use AddTask() instead of NewAddTask().
      * Blizzard SCSI Kit boot ROM plays SetFunction() tricks with
      * AddTask() and assumes it is called by a process early enough!
+     *
+     * On an SMP build NP_Affinity is the exception: it must reach
+     * PrepareContext(), which only sees a tag list, before the task is
+     * queued. Only a caller that asked for a placement takes that path.
      */
-    if (AddTask(&process->pr_Task, DosEntry, NULL))
+    /*
+     * Multi-user: the owner of a setuid executable must be applied before
+     * the new process gets to run, so hold Forbid() across AddTask().
+     */
+    Forbid();
+#if defined(__AROSEXEC_SMP__)
+    if (affinity)
+        added = (NewAddTask(&process->pr_Task, DosEntry, NULL, addTaskTags) != NULL);
+    else
+        added = (AddTask(&process->pr_Task, DosEntry, NULL) != NULL);
+#else
+    added = (AddTask(&process->pr_Task, DosEntry, NULL) != NULL);
+#endif
+    if (added)
     {
+        if (SECURITY_ACTIVE && segList)
+            secSetTaskOwnerFromSegment(&process->pr_Task, segList);
+        Permit();
         /* Use defaults[19].ti_Data instead of testing against
          * (process->pr_Flags & PRF_SYNCHRONOUS).
          *
@@ -535,6 +579,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 
         goto end;
     }
+    Permit();
 
     /* Fall through */
 enomem:

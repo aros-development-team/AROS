@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -128,7 +128,7 @@ static const IPTR FileDataTypeHeaderDesc[] =
 struct StackVars;               /* forward declaration */
 
 BOOL DateScan(struct StackVars *sv);
-void ScanDirectory(struct StackVars *sv, STRPTR pattern);
+int ScanDirectory(struct StackVars *sv, STRPTR pattern);
 struct DataTypesList *CreateDTList(struct StackVars *sv);
 struct CompoundDataType *CreateBasicType(struct StackVars *sv,
                                          struct List *list,
@@ -165,7 +165,7 @@ AROS_UFP3(void, AROS_SLIB_ENTRY(FreeFunc, AddDataTypes, 0),
 
 /********************************* CONSTANTS *********************************/
 
-const TEXT Version[] = "$VER: AddDataTypes 42.2 (20.02.2019)\n";
+const TEXT Version[] = "$VER: AddDataTypes 42.3 (27.09.2026)\n";
 
 #define EXCL_LEN 18
 UBYTE ExcludePattern[] = "#?.(info|dbg|backdrop|ppc|arm|i386|x86_64)";
@@ -292,11 +292,19 @@ int main(void)
             }
             else
             {
+                int currentResult;
+
+                result = RETURN_OK;
+
                 if(AA.aa_Refresh)
                 {
                     if(DateScan(sv))
                     {
-                        ScanDirectory(sv, "DEVS:DataTypes");
+                        currentResult = ScanDirectory(sv, "DEVS:DataTypes");
+                        if(currentResult > result)
+                        {
+                            result = currentResult;
+                        }
                     }
                 }
                 else
@@ -307,7 +315,11 @@ int main(void)
                     {
                         while(*files)
                         {
-                            ScanDirectory(sv, *files);
+                            currentResult = ScanDirectory(sv, *files);
+                            if(currentResult > result)
+                            {
+                                result = currentResult;
+                            }
                             files++;
                         }
                     }
@@ -333,7 +345,14 @@ int main(void)
                                 if(CheckSignal(SIGBREAKF_CTRL_C))
                                 {
                                         Flush(Output());
-                                        PrintFault(ERROR_BREAK,0);
+                                        if(!AA.aa_Quiet)
+                                        {
+                                            PrintFault(ERROR_BREAK, 0);
+                                        }
+                                        if(result < RETURN_WARN)
+                                        {
+                                            result = RETURN_WARN;
+                                        }
                                         break;
                                 }
                                 cdt=(struct CompoundDataType *)(node-1);
@@ -345,7 +364,6 @@ int main(void)
                         }
                     }
                 }
-                result = RETURN_OK;
                 FreeArgs(RDArgs);
             }
         }
@@ -433,31 +451,28 @@ BOOL DateScan(struct StackVars *sv)
 *
 */
 
-void ScanDirectory(struct StackVars *sv, STRPTR pattern)
+int ScanDirectory(struct StackVars *sv, STRPTR pattern)
 {
     struct AnchorPath *AnchorPath;
     LONG               RetVal;
     BPTR               OldDir;
-        
+    int                result = RETURN_OK;
+
     if((AnchorPath = (struct AnchorPath *)AllocVec(sizeof(struct AnchorPath),
                                                   MEMF_CLEAR)))
     {
         AnchorPath->ap_BreakBits = SIGBREAKF_CTRL_C;
-        
+
         RetVal = MatchFirst(pattern, AnchorPath);
 
         while(!RetVal)
         {
             if(CheckSignal(SIGBREAKF_CTRL_C))
             {
-                if(!AA.aa_Quiet)
-                {
-                    PrintFault(ERROR_BREAK, NULL);
-                }
-
+                RetVal = ERROR_BREAK;
                 break;
             }
-            
+
             if(AnchorPath->ap_Info.fib_DirEntryType > 0L)
             {
                 if(!(AnchorPath->ap_Flags & APF_DIDDIR))
@@ -473,9 +488,9 @@ void ScanDirectory(struct StackVars *sv, STRPTR pattern)
                                        AnchorPath->ap_Info.fib_FileName))
                 {
                     OldDir = CurrentDir(AnchorPath->ap_Current->an_Lock);
-                    
+
                     LoadDataType(sv, AnchorPath->ap_Info.fib_FileName);
-                    
+
                     CurrentDir(OldDir);
                 }
             }
@@ -489,14 +504,33 @@ void ScanDirectory(struct StackVars *sv, STRPTR pattern)
             {
                 PrintFault(RetVal, NULL);
             }
+
+            if(RetVal == ERROR_BREAK)
+            {
+                result = RETURN_WARN;
+            }
+            else
+            {
+                result = RETURN_FAIL;
+            }
         }
 
         MatchEnd(AnchorPath);
-        
+
         FreeVec((APTR)AnchorPath);
     }
-}
+    else
+    {
+        SetIoErr(ERROR_NO_FREE_STORE);
+        if(!AA.aa_Quiet)
+        {
+            PrintFault(ERROR_NO_FREE_STORE, NULL);
+        }
+        result = RETURN_FAIL;
+    }
 
+    return result;
+}
 
 /****** AddDataTypes/CreateDTList *********************************************
 *

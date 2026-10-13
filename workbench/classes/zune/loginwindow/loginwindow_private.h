@@ -2,7 +2,7 @@
 #define _PREFSWINDOW_PRIVATE_H_
 
 /*
-    Copyright © 2003-2004, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2026, The AROS Development Team. All rights reserved.
     
     $Id$
 */
@@ -19,7 +19,10 @@ struct LoginWindow_DATA
     /*- Protected ----------------------------------------------------------*/
 
     Object          *lwd_OKButton,
-                    *lwd_CancelButton;
+                    *lwd_CancelButton,
+                    *lwd_ShutdownButton,
+                    *lwd_RebootButton;
+    BOOL             lwd_SystemMode;
     Object          *lwd_LogonLogo,
                     *lwd_LogonHeader,
                     *lwd_UNInput,
@@ -29,7 +32,9 @@ struct LoginWindow_DATA
                     lwd_UserName,
                     lwd_UserPass,
                     lwd_DoMethod;
-    Object          *lwd_Method;
+    Object          *lwd_Method,
+                    *lwd_MethodString;   /* the popstring's string object */
+    ULONG            lwd_NameType;
 };
 
 #endif /* _PREFSWINDOW_PRIVATE_H_ */

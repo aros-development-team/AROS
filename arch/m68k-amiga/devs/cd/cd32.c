@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013, The AROS Development Team
+ * Copyright (C) 2013-2026, The AROS Development Team
  * All right reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
@@ -65,6 +65,28 @@ struct CD32Mode1 {
     UBYTE cs_ECC[276];
 };
 
+struct CD32XLTransfer {
+    struct IOStdReq *io;
+    struct CDXL *node;
+    ULONG remaining;
+    ULONG sectorOffset;
+    BOOL limited;
+    BOOL nodeStarted;
+};
+
+struct CD32Unit;
+
+struct CD32FrameInt {
+    struct MinNode node;
+    struct IOStdReq *io;
+    struct Interrupt *interrupt;
+};
+
+static VOID CD32_CompleteXLNode(struct CDXL *node);
+static BOOL CD32_CopyXL(struct CD32Unit *cu, APTR frame, ULONG sectorSize);
+static VOID CD32_ProcessXL(struct CD32Unit *cu);
+static ULONG CD32_XLSectorPosition(const UBYTE *frame);
+
 struct CD32Unit {
     LIBBASETYPE *cu_CDBase;
     struct CD32Data {
@@ -78,6 +100,7 @@ struct CD32Unit {
         UBYTE Reserved[0x100];
     } *cu_Misc;
     struct Interrupt cu_Interrupt;
+    struct Interrupt cu_XLInterrupt;
     UBYTE cu_TxHead, cu_RxHead;
     struct Task *cu_Task;
     struct CDInfo cu_CDInfo;
@@ -88,6 +111,22 @@ struct CD32Unit {
     union CDTOC cu_CDTOC[100];
     ULONG cu_IntEnable;
     ULONG cu_ChangeNum;
+    BOOL cu_MediaKnown;
+    BOOL cu_MediaPresent;
+    struct CD32XLTransfer cu_XL;
+    struct CDXL *cu_XLCallbackNode;
+    volatile ULONG cu_XLProgress;
+    BOOL cu_ReadXLActive;
+    ULONG cu_ReadNext;
+    ULONG cu_ReadEnd;
+    struct IOStdReq *cu_PlayRequest;
+    LONG cu_PlayError;
+    BOOL cu_PlayDone;
+    struct MinList cu_FrameInts;
+};
+
+static const UBYTE CD32_ResponseLength[16] = {
+    1, 2, 2, 2, 2, 2, 15, 20, 0, 0, 2, 0, 0, 0, 0, 0
 };
 
 static inline void CD32_Mute(struct CD32Unit *cu, int muted)
@@ -115,7 +154,12 @@ UBYTE dec2bcd(UBYTE dec)
     return ((dec / 10) << 4) | (dec % 10);
 }
 
-static void sec2msf(LONG sec, UBYTE *msf)
+static UBYTE bcd2dec(UBYTE bcd)
+{
+    return (bcd & 0xf) + ((bcd >> 4) & 0xf) * 10;
+}
+
+static void sec2bcdmsf(LONG sec, UBYTE *msf)
 {
     msf[0] = dec2bcd(sec / (60 * 75));
     sec = sec % (60 * 75);
@@ -123,9 +167,29 @@ static void sec2msf(LONG sec, UBYTE *msf)
     msf[2] = dec2bcd(sec % 75);
 }
 
-static ULONG msf2sec(struct RMSF *msf)
+static ULONG bcdmsf2sec(const struct RMSF *msf)
+{
+    return ((bcd2dec(msf->Minute) * 60) + bcd2dec(msf->Second)) * 75 +
+           bcd2dec(msf->Frame);
+}
+
+static ULONG binarymsf2sec(const struct RMSF *msf)
 {
     return ((msf->Minute * 60) + msf->Second) * 75 + msf->Frame;
+}
+
+static VOID bcdmsf2binary(struct RMSF *msf)
+{
+    msf->Minute = bcd2dec(msf->Minute);
+    msf->Second = bcd2dec(msf->Second);
+    msf->Frame = bcd2dec(msf->Frame);
+}
+
+static ULONG msf2lsn(struct RMSF *msf)
+{
+    ULONG sectors = bcdmsf2sec(msf);
+
+    return sectors >= 150 ? sectors - 150 : 0;
 }
 
 static VOID CD32_IntEnable(struct CD32Unit *cu, ULONG mask)
@@ -140,11 +204,75 @@ static VOID CD32_IntDisable(struct CD32Unit *cu, ULONG mask)
     writel(cu->cu_IntEnable, AKIKO_CDINTENA);
 }
 
+static AROS_INTH1(CD32_XLCallbackInterrupt, struct CD32Unit *, cu)
+{
+    struct CDXL *node;
+
+    AROS_INTFUNC_INIT
+
+    node = cu->cu_XLCallbackNode;
+    cu->cu_XLCallbackNode = NULL;
+    if (node != NULL)
+        CD32_CompleteXLNode(node);
+
+    return FALSE;
+
+    AROS_INTFUNC_EXIT
+}
+
+static int CD32_FirstSectorSlot(struct CD32Unit *cu, UWORD pending)
+{
+    ULONG firstPosition = ~0UL;
+    int first = -1;
+    int i;
+
+    for (i = 15; i >= 0; i--) {
+        ULONG position;
+        UWORD mask = (UWORD)(1U << i);
+
+        if ((pending & mask) == 0)
+            continue;
+        position = CD32_XLSectorPosition(cu->cu_Data[i].Data);
+        if (first < 0 || position < firstPosition) {
+            first = i;
+            firstPosition = position;
+        }
+    }
+
+    return first;
+}
+
+static VOID CD32_ProcessXL(struct CD32Unit *cu)
+{
+    UWORD pbx = readw(AKIKO_CDPBX);
+    UWORD pending = (UWORD)~pbx;
+    UWORD consumed = 0;
+
+    while (pending != 0 && cu->cu_ReadXLActive) {
+        UWORD mask;
+        int first;
+
+        /* Akiko always chooses the highest armed PBX slot.  A slot can be
+         * re-armed while an older sector remains in a lower slot, so slot
+         * order alone is not arrival order. */
+        first = CD32_FirstSectorSlot(cu, pending);
+        mask = (UWORD)(1U << first);
+        pending &= ~mask;
+        consumed |= mask;
+        cu->cu_XLProgress++;
+        if (!CD32_CopyXL(cu, &cu->cu_Data[first],
+                cu->cu_CDInfo.SectorSize))
+            cu->cu_ReadXLActive = FALSE;
+    }
+
+    writew(consumed, AKIKO_CDPBX);
+
+    if (cu->cu_ReadXLActive)
+        CD32_IntEnable(cu, AKIKO_CDINT_PBX);
+}
+
 static AROS_INTH1(CD32_Interrupt, struct CD32Unit *, cu)
 {
-    const UBYTE resp_len[16] = {
-        1, 2, 2, 2, 2, 2, 15, 20, 0, 0, 2, 0, 0, 0, 0, 0
-    };
     ULONG status;
     UBYTE rxtail;
     BOOL claimed = FALSE;
@@ -169,11 +297,25 @@ static AROS_INTH1(CD32_Interrupt, struct CD32Unit *, cu)
         claimed = TRUE;
     }
 
+    if (status & AKIKO_CDINT_SUBCODE) {
+        struct CD32FrameInt *frame;
+
+        /* Writing the subcode index acknowledges the filled DMA buffer. */
+        writeb(0, AKIKO_CDSUBINX);
+        if ((cu->cu_CDInfo.Status & (CDSTSF_PLAYING | CDSTSF_PAUSED)) ==
+            CDSTSF_PLAYING) {
+            ForeachNode(&cu->cu_FrameInts, frame)
+                Cause(frame->interrupt);
+        }
+        claimed = TRUE;
+    }
+
     if (status & AKIKO_CDINT_RXDMA) {
         rxtail = readb(AKIKO_CDRXINX);
         if (((cu->cu_RxHead+1)&0xff) == rxtail) {
             /* Add the correct length for the full response */
-            UBYTE len = resp_len[cu->cu_Misc->Response[cu->cu_RxHead] & 0xf];
+            UBYTE len = CD32_ResponseLength[
+                cu->cu_Misc->Response[cu->cu_RxHead] & 0xf];
             if (len == 0) {
                 D(bug("%s: Insane response byte 0x%02x\n", cu->cu_Misc->Response[cu->cu_RxHead]));
             }
@@ -196,20 +338,32 @@ static AROS_INTH1(CD32_Interrupt, struct CD32Unit *, cu)
 
     if (status & AKIKO_CDINT_PBX) {
         UWORD pbx = readw(AKIKO_CDPBX);
-        writew(0, AKIKO_CDPBX);
-        if (pbx < 0x000f && cu->cu_Task)
-            Signal(cu->cu_Task, SIGF_SINGLE);
+
+        if (cu->cu_ReadXLActive) {
+            if (cu->cu_XL.io->io_Flags & IOF_ABORT) {
+                cu->cu_ReadXLActive = FALSE;
+                CD32_IntDisable(cu, AKIKO_CDINT_PBX);
+                if (cu->cu_Task)
+                    Signal(cu->cu_Task, SIGF_SINGLE);
+            } else {
+                /* Match the standard CD32 cd.device scheduling boundary:
+                 * copy PBX sectors in the device task and use Cause() only
+                 * for completed-node callbacks. */
+                CD32_IntDisable(cu, AKIKO_CDINT_PBX);
+                if (cu->cu_Task)
+                    Signal(cu->cu_Task, SIGF_SINGLE);
+            }
+        } else {
+            writew(0, AKIKO_CDPBX);
+            if (cu->cu_Task)
+                Signal(cu->cu_Task, SIGF_SINGLE);
+        }
         claimed = TRUE;
     }
 
     return claimed;
 
     AROS_INTFUNC_EXIT
-}
-
-static UBYTE bcd2dec(UBYTE bcd)
-{
-    return (bcd & 0xf) + ((bcd >> 4) & 0xf) * 10;
 }
 
 static VOID CD32_UpdateTOC(struct CD32Unit *cu)
@@ -243,6 +397,97 @@ static VOID CD32_UpdateTOC(struct CD32Unit *cu)
         }
         break;
     }
+}
+
+static BOOL CD32_HandleUnsolicited(struct CD32Unit *cu, UBYTE RxHead)
+{
+    switch (cu->cu_Misc->Response[RxHead]) {
+    case CHCD_MEDIA:
+        cu->cu_ReadEnd = 0;
+        RxHead++;
+        if (cu->cu_Misc->Response[RxHead] == 0x83) {
+            if (!cu->cu_MediaPresent)
+                cu->cu_ChangeNum++;
+            cu->cu_CDInfo.Status = CDSTSF_CLOSED | CDSTSF_DISK |
+                CDSTSF_SPIN;
+            cu->cu_MediaKnown = FALSE;
+            cu->cu_MediaPresent = FALSE;
+        } else {
+            if (cu->cu_MediaPresent)
+                cu->cu_ChangeNum++;
+            cu->cu_CDInfo.Status = 0;
+            cu->cu_MediaKnown = TRUE;
+            cu->cu_MediaPresent = FALSE;
+        }
+        return TRUE;
+
+    case CHCD_SUBQ:
+        RxHead += 3;
+        cu->cu_QCode.CtlAdr  = cu->cu_Misc->Response[RxHead++];
+        cu->cu_QCode.Track   = cu->cu_Misc->Response[RxHead++];
+        cu->cu_QCode.Index   = cu->cu_Misc->Response[RxHead++];
+        cu->cu_QCode.Zero    = 0;
+        cu->cu_QCode.TrackPosition.MSF.Reserved = 0;
+        cu->cu_QCode.TrackPosition.MSF.Minute =
+            cu->cu_Misc->Response[RxHead++];
+        cu->cu_QCode.TrackPosition.MSF.Second =
+            cu->cu_Misc->Response[RxHead++];
+        cu->cu_QCode.TrackPosition.MSF.Frame =
+            cu->cu_Misc->Response[RxHead++];
+        cu->cu_QCode.DiskPosition.MSF.Reserved =
+            cu->cu_Misc->Response[RxHead++];
+        cu->cu_QCode.DiskPosition.MSF.Minute =
+            cu->cu_Misc->Response[RxHead++];
+        cu->cu_QCode.DiskPosition.MSF.Second =
+            cu->cu_Misc->Response[RxHead++];
+        cu->cu_QCode.DiskPosition.MSF.Frame =
+            cu->cu_Misc->Response[RxHead];
+        if (!(cu->cu_CDInfo.Status & CDSTSF_TOC))
+            CD32_UpdateTOC(cu);
+        return TRUE;
+
+    case CHCD_MULTI:
+        if (cu->cu_Misc->Response[(UBYTE)(RxHead + 1)] & CHERR_PLAYING) {
+            cu->cu_CDInfo.Status |= CDSTSF_PLAYING;
+        } else {
+            cu->cu_CDInfo.Status &= ~(CDSTSF_PLAYING | CDSTSF_PAUSED);
+            if (cu->cu_PlayRequest != NULL)
+                cu->cu_PlayDone = TRUE;
+        }
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+static VOID CD32_ArmAsyncResponse(struct CD32Unit *cu)
+{
+    writeb((cu->cu_RxHead + 1) & 0xff, AKIKO_CDRXCMP);
+    CD32_IntEnable(cu, AKIKO_CDINT_RXDMA);
+}
+
+static VOID CD32_DrainAsyncResponse(struct CD32Unit *cu)
+{
+    UBYTE RxHead = cu->cu_RxHead;
+    UBYTE RxTail = readb(AKIKO_CDRXINX);
+    UBYTE csum = 0;
+
+    if (RxHead == RxTail)
+        return;
+
+    while (RxHead != RxTail)
+        csum += cu->cu_Misc->Response[RxHead++];
+
+    if (csum == 0xff) {
+        if (!CD32_HandleUnsolicited(cu, cu->cu_RxHead))
+            D(bug("%s: unexpected packet 0x%02x\n", __func__,
+                cu->cu_Misc->Response[cu->cu_RxHead]));
+    } else if (cu->cu_PlayRequest != NULL) {
+        cu->cu_PlayError = CDERR_NotSpecified;
+        cu->cu_PlayDone = TRUE;
+    }
+
+    cu->cu_RxHead = RxTail;
 }
 
 /* Command/response timeout, in milliseconds. Unsolicited traffic
@@ -319,7 +564,12 @@ static LONG CD32_Cmd(struct CD32Unit *cu, UBYTE *cmd, LONG cmd_len, UBYTE *resp,
     CD32_IntEnable(cu, AKIKO_CDINT_RXDMA | AKIKO_CDINT_TXDMA);
 
     /* Let the transfers run; this triggers the command */
-    writel(AKIKO_CDFLAG_TXD | AKIKO_CDFLAG_RXD | AKIKO_CDFLAG_CAS | AKIKO_CDFLAG_PBX | AKIKO_CDFLAG_MSB, AKIKO_CDFLAG);
+    /* Command exchanges reset the data DMA window, but registered frame
+     * listeners still need subcode DMA during the ensuing audio playback. */
+    writel(AKIKO_CDFLAG_TXD | AKIKO_CDFLAG_RXD | AKIKO_CDFLAG_CAS |
+        AKIKO_CDFLAG_PBX | AKIKO_CDFLAG_MSB |
+        (IsListEmpty((struct List *)&cu->cu_FrameInts) ? 0 : AKIKO_CDFLAG_SUBCODE),
+        AKIKO_CDFLAG);
 
     cd32TimeoutStart(cu, CD32_CMD_TIMEOUT_MS);
 
@@ -358,54 +608,7 @@ static LONG CD32_Cmd(struct CD32Unit *cu, UBYTE *cmd, LONG cmd_len, UBYTE *resp,
         RxHead = cu->cu_RxHead;
         cu->cu_RxHead = RxTail;
 
-        switch (cu->cu_Misc->Response[RxHead]) {
-        case CHCD_MEDIA:
-            RxHead++;
-            if (cu->cu_Misc->Response[RxHead] == 0x83) {
-                if (!(cu->cu_CDInfo.Status & CDSTSF_DISK)) {
-                    cu->cu_ChangeNum++;
-                     cu->cu_CDInfo.Status |= CDSTSF_CLOSED | CDSTSF_DISK | CDSTSF_SPIN;
-                }
-            } else {
-                if (cu->cu_CDInfo.Status & CDSTSF_DISK) {
-                    cu->cu_ChangeNum++;
-                    cu->cu_CDInfo.Status = 0;
-                }
-            }
-            break;
-        case CHCD_SUBQ:
-            RxHead++;
-            RxHead++;
-            RxHead++;
-            cu->cu_QCode.CtlAdr  = cu->cu_Misc->Response[RxHead++];
-            cu->cu_QCode.Track   = cu->cu_Misc->Response[RxHead++];
-            cu->cu_QCode.Index   = cu->cu_Misc->Response[RxHead++];
-            cu->cu_QCode.Zero    = 0;
-            cu->cu_QCode.TrackPosition.MSF.Reserved = 0;
-            cu->cu_QCode.TrackPosition.MSF.Minute   = cu->cu_Misc->Response[RxHead++];
-            cu->cu_QCode.TrackPosition.MSF.Second   = cu->cu_Misc->Response[RxHead++];
-            cu->cu_QCode.TrackPosition.MSF.Frame    = cu->cu_Misc->Response[RxHead++];
-            cu->cu_QCode.DiskPosition.MSF.Reserved = cu->cu_Misc->Response[RxHead++];
-            cu->cu_QCode.DiskPosition.MSF.Minute   = cu->cu_Misc->Response[RxHead++];
-            cu->cu_QCode.DiskPosition.MSF.Second   = cu->cu_Misc->Response[RxHead++];
-            cu->cu_QCode.DiskPosition.MSF.Frame    = cu->cu_Misc->Response[RxHead++];
-            if (!(cu->cu_CDInfo.Status & CDSTSF_TOC))
-                CD32_UpdateTOC(cu);
-                
-            break;
-
-        default:
-            /* The drive volunteers play status with the MULTI command
-             * nibble and a zero sequence nibble: byte 1 carries the
-             * CHERR_PLAYING state (play started / play finished).
-             */
-            if (cu->cu_Misc->Response[RxHead] == CHCD_MULTI) {
-                if (cu->cu_Misc->Response[(UBYTE)(RxHead + 1)] & CHERR_PLAYING)
-                    cu->cu_CDInfo.Status |= CDSTSF_PLAYING;
-                else
-                    cu->cu_CDInfo.Status &= ~(CDSTSF_PLAYING | CDSTSF_PAUSED);
-                break;
-            }
+        if (!CD32_HandleUnsolicited(cu, RxHead)) {
             /* Anything else that passed the checksum is drive chatter
              * this driver does not know; skip it and keep waiting.
              * Aborting the in-flight command here desynchronises the
@@ -414,7 +617,6 @@ static LONG CD32_Cmd(struct CD32Unit *cu, UBYTE *cmd, LONG cmd_len, UBYTE *resp,
              */
             D(bug("%s: skipping unexpected packet 0x%02x\n", __func__,
                   cu->cu_Misc->Response[RxHead]));
-            break;
         }
 
         /* Re-open the receive window and re-enable RXDMA for the next
@@ -456,6 +658,63 @@ out:
     return err;
 }
 
+static VOID CD32_RemoveFrameInt(struct CD32Unit *cu, struct CD32FrameInt *frame)
+{
+    Disable();
+    Remove((struct Node *)&frame->node);
+    if (IsListEmpty((struct List *)&cu->cu_FrameInts)) {
+        CD32_IntDisable(cu, AKIKO_CDINT_SUBCODE);
+        writel(readl(AKIKO_CDFLAG) & ~AKIKO_CDFLAG_SUBCODE, AKIKO_CDFLAG);
+        writeb(0, AKIKO_CDSUBINX);
+    }
+    Enable();
+    FreeMem(frame, sizeof(*frame));
+}
+
+static struct IOStdReq *CD32_Service(APTR priv)
+{
+    struct CD32Unit *cu = priv;
+    struct IOStdReq *io;
+    struct CD32FrameInt *frame;
+
+    CD32_DrainAsyncResponse(cu);
+
+    ForeachNode(&cu->cu_FrameInts, frame) {
+        if (frame->io->io_Flags & IOF_ABORT) {
+            io = frame->io;
+            CD32_RemoveFrameInt(cu, frame);
+            io->io_Error = CDERR_ABORTED;
+            return io;
+        }
+    }
+
+    io = cu->cu_PlayRequest;
+    if (io == NULL)
+        return NULL;
+
+    if (io->io_Flags & IOF_ABORT) {
+        UBYTE cmd[2] = { CHCD_STOP, 0 };
+        UBYTE res[2];
+
+        CD32_Cmd(cu, cmd, sizeof(cmd), res, sizeof(res));
+        cu->cu_CDInfo.Status &= ~(CDSTSF_PLAYING | CDSTSF_PAUSED |
+            CDSTSF_SEARCH | CDSTSF_DIRECTION);
+        cu->cu_PlayError = CDERR_ABORTED;
+        cu->cu_PlayDone = TRUE;
+    }
+
+    if (!cu->cu_PlayDone) {
+        CD32_ArmAsyncResponse(cu);
+        return NULL;
+    }
+
+    cu->cu_PlayRequest = NULL;
+    cu->cu_PlayDone = FALSE;
+    io->io_Error = cu->cu_PlayError;
+    cu->cu_PlayError = 0;
+    return io;
+}
+
 static VOID CD32_Led(struct CD32Unit *cu, BOOL led_on)
 {
     UBYTE cmd[2] = { CHCD_LED, (led_on ? 1 : 0) | 0x80 };
@@ -464,82 +723,376 @@ static VOID CD32_Led(struct CD32Unit *cu, BOOL led_on)
     CD32_Cmd(cu, cmd, 2, resp, 2);
 }
 
-static LONG CD32_CmdRead(struct CD32Unit *cu, LONG sect_start, LONG sectors, void (*copy_sector)(APTR sector, APTR priv), APTR priv)
+static LONG CD32_PauseDrive(struct CD32Unit *cu)
+{
+    UBYTE cmd = CHCD_PAUSE;
+    UBYTE resp[2];
+
+    return CD32_Cmd(cu, &cmd, 1, resp, sizeof(resp));
+}
+
+static VOID CD32_CompleteSupersededPlay(struct CD32Unit *cu)
+{
+    if (cu->cu_PlayRequest != NULL) {
+        cu->cu_PlayError = 0;
+        cu->cu_PlayDone = TRUE;
+    }
+}
+
+static LONG CD32_StartPlay(struct CD32Unit *cu, struct IOStdReq *io,
+    ULONG start, ULONG length)
+{
+    BOOL paused;
+    UBYTE cmd[12], res[2];
+    LONG err;
+
+    if (cu->cu_PlayRequest != NULL)
+        return CDERR_UNITBUSY;
+    if (length == 0 || start + length < start)
+        return CDERR_BADLENGTH;
+
+    paused = (cu->cu_CDInfo.Status & CDSTSF_PAUSED) != 0;
+    cmd[0] = CHCD_MULTI;
+    sec2bcdmsf(start, &cmd[1]);
+    sec2bcdmsf(start + length, &cmd[4]);
+    cmd[7] = 0x00;
+    cmd[8] = (cu->cu_CDInfo.ReadSpeed >= 150) ? 0x40 : 0x00;
+    cmd[9] = 0x00;
+    cmd[10] = 0x04;
+    cmd[11] = 0x00;
+
+    err = CD32_Cmd(cu, cmd, sizeof(cmd), res, sizeof(res));
+    if (err)
+        return err;
+    if (res[1] & 0x80)
+        return CDERR_NotSpecified;
+
+    cu->cu_CDInfo.Status &= ~(CDSTSF_PLAYING |
+        CDSTSF_SEARCH | CDSTSF_DIRECTION);
+    cu->cu_CDInfo.Status |= CDSTSF_PLAYING;
+
+    /* CD_PAUSE is persistent across subsequent play commands. */
+    if (paused) {
+        err = CD32_PauseDrive(cu);
+        if (err)
+            return err;
+        cu->cu_CDInfo.Status |= CDSTSF_PAUSED;
+    } else {
+        cu->cu_CDInfo.Status &= ~CDSTSF_PAUSED;
+    }
+
+    cu->cu_PlayRequest = io;
+    cu->cu_PlayError = 0;
+    cu->cu_PlayDone = FALSE;
+    CD32_ArmAsyncResponse(cu);
+    return CDIO_PENDING;
+}
+
+static LONG CD32_CmdRead(struct CD32Unit *cu, LONG sect_start, LONG sectors,
+    void (*copy_sector)(APTR sector, APTR priv), APTR priv)
 {
     LONG err;
     UBYTE cmd[12], resp[2];
-    UBYTE cmd_pause[1] = { CHCD_PAUSE };
     UBYTE cmd_unpause[1] = { CHCD_UNPAUSE };
-    int i;
-    UWORD pbx;
+    int first;
+    LONG track_end;
+    UWORD consumed;
+    UWORD pending;
 
-    while (sectors > 0) {
-        cu->cu_CDInfo.Status &= ~(CDSTSF_PLAYING | CDSTSF_PAUSED | CDSTSF_SEARCH | CDSTSF_DIRECTION);
+    cu->cu_CDInfo.Status &= ~(CDSTSF_PLAYING | CDSTSF_PAUSED |
+        CDSTSF_SEARCH | CDSTSF_DIRECTION);
+
+    if (sect_start != cu->cu_ReadNext ||
+        sect_start + sectors > cu->cu_ReadEnd) {
+        if (cu->cu_ReadEnd != 0)
+            CD32_PauseDrive(cu);
+
+        track_end = bcdmsf2sec(&cu->cu_CDTOC[1].Entry.Position.MSF) +
+            cu->cu_TotalSectors;
+        cu->cu_ReadEnd = sect_start + sectors + 16;
+        if (cu->cu_ReadEnd > track_end)
+            cu->cu_ReadEnd = track_end;
+        cu->cu_ReadNext = sect_start;
 
         cmd[0] = CHCD_MULTI;
-        sec2msf(sect_start, &cmd[1]);
-        sec2msf(sect_start + 16, &cmd[4]);
+        sec2bcdmsf(sect_start, &cmd[1]);
+        /* The drive command's end MSF is exclusive. */
+        sec2bcdmsf(cu->cu_ReadEnd, &cmd[4]);
         cmd[7] = 0x80;  /* Data read */
-        cmd[8] = (cu->cu_CDInfo.PlaySpeed >= 150) ? 0x40 : 0x00;
-        cmd[8] = 0x00;
+        cmd[8] = (cu->cu_CDInfo.ReadSpeed >= 150) ? 0x40 : 0x00;
         cmd[9] = 0x00;
         cmd[10] = 0x04;  /* 0x04 to enable the motor */
         cmd[11] = 0x00;
 
         writew(0xffff, AKIKO_CDPBX);
-
-        /* Start the read */
         CD32_Led(cu, TRUE);
         CD32_Cmd(cu, cmd_unpause, 1, resp, sizeof(resp));
         err = CD32_Cmd(cu, cmd, sizeof(cmd), resp, sizeof(resp));
         if (err)
-            return err;
+            goto failed;
+        if ((resp[1] & 2) != 2) {
+            err = CDERR_SeekError;
+            goto failed;
+        }
 
-        if ((resp[1] & 2) != 2)
-            return CDERR_SeekError;
-
-
-        /* Wait for (most) sectors to come in */
-        CD32_IntEnable(cu, AKIKO_CDINT_PBX);
-
+        /* A data transfer supersedes an active audio play command in the
+         * drive. Complete its retained request as well, otherwise its caller
+         * waits forever for an end-of-play packet that can no longer arrive. */
+        CD32_CompleteSupersededPlay(cu);
         writel(readl(AKIKO_CDFLAG) | AKIKO_CDFLAG_ENABLE, AKIKO_CDFLAG);
-        cd32TimeoutStart(cu, CD32_CMD_TIMEOUT_MS);
-        Wait(SIGF_SINGLE);
-        cd32TimeoutEnd(cu);
-        /* Nobody waits for sectors past this point: a late PBX
-         * interrupt must not signal the task under some later Wait().
-         */
-        CD32_IntDisable(cu, AKIKO_CDINT_PBX);
+    }
 
-        CD32_Cmd(cu, cmd_pause, 1, resp, sizeof(resp));
-        CD32_Led(cu, FALSE);
-        pbx = readw(AKIKO_CDPBX);
-
-        if (pbx == 0) {
-            D(bug("%s: Overflow during read\n", __func__));
-            break;
-        }
-
-        if (pbx == 0xffff) {
-            /* Not a single sector arrived before the timeout */
-            D(bug("%s: No sectors delivered\n", __func__));
-            return CDERR_NotSpecified;
-        }
-
-        for (i = 15; i >= 0; i--) {
-            if (!(pbx & (1 << i))) {
-                D(bug("%s: SECTOR: %d\n", __func__, *(ULONG *)(&cu->cu_Data[i])));
-                copy_sector(&cu->cu_Data[i], priv);
-                sectors--;
-                sect_start++;
-                if (sectors <= 0)
-                    return 0;
+    do {
+        pending = (UWORD)~readw(AKIKO_CDPBX);
+        if (pending == 0) {
+            CD32_IntEnable(cu, AKIKO_CDINT_PBX);
+            cd32TimeoutStart(cu, CD32_CMD_TIMEOUT_MS);
+            Wait(SIGF_SINGLE);
+            cd32TimeoutEnd(cu);
+            CD32_IntDisable(cu, AKIKO_CDINT_PBX);
+            pending = (UWORD)~readw(AKIKO_CDPBX);
+            if (pending == 0) {
+                err = CDERR_NotSpecified;
+                goto failed;
             }
         }
 
+        consumed = 0;
+        while (pending != 0 && sectors > 0) {
+            UWORD mask;
+
+            first = CD32_FirstSectorSlot(cu, pending);
+            if (CD32_XLSectorPosition(cu->cu_Data[first].Data) !=
+                cu->cu_ReadNext) {
+                err = CDERR_SeekError;
+                goto failed;
+            }
+            mask = (UWORD)(1U << first);
+            pending &= ~mask;
+            consumed |= mask;
+            copy_sector(&cu->cu_Data[first], priv);
+            sectors--;
+            cu->cu_ReadNext++;
+        }
+
+        /* Re-arm only consumed slots. This lets the current command fill
+         * the next sequential cache chunk while preserving any unread
+         * sectors already present in the Akiko ring. */
+        if (cu->cu_ReadNext < cu->cu_ReadEnd)
+            writew(consumed, AKIKO_CDPBX);
+    } while (sectors > 0);
+
+    if (cu->cu_ReadNext == cu->cu_ReadEnd) {
+        CD32_Led(cu, FALSE);
+        cu->cu_ReadEnd = 0;
+    }
+    return 0;
+
+failed:
+    CD32_PauseDrive(cu);
+    CD32_Led(cu, FALSE);
+    cu->cu_ReadEnd = 0;
+    return err;
+}
+
+static BOOL CD32_IsXLListTail(const struct CDXL *node)
+{
+    /* Exec MinLists end in a tail sentinel whose successor is NULL and
+     * predecessor is the final real node.  Manually linked CDXL lists only
+     * need to set mln_Succ, so a cleared final node remains valid. */
+    return node != NULL && node->Node.mln_Succ == NULL &&
+        node->Node.mln_Pred != NULL;
+}
+
+/* CDXL callbacks use the documented register ABI, not the compiler's C ABI.
+ * In particular, applications may clobber registers such as A5.  Preserve
+ * every C nonvolatile register so callers implemented in C keep valid frame
+ * and local-variable state after the callback returns. */
+extern VOID CD32_CallXLCallbackAsm(VOID);
+asm (
+    "       .text\n"
+    "       .globl CD32_CallXLCallbackAsm\n"
+    "CD32_CallXLCallbackAsm:\n"
+    "       movem.l %d2-%d7/%a2-%a6,%sp@-\n"
+    "       jsr (%a0)\n"
+    "       movem.l %sp@+,%d2-%d7/%a2-%a6\n"
+    "       rts\n"
+);
+
+static VOID CD32_CompleteXLNode(struct CDXL *node)
+{
+    if (node->IntCode != NULL) {
+        AROS_UFC4NR(void, CD32_CallXLCallbackAsm,
+            AROS_UFCA(VOID_FUNC, node->IntCode, A0),
+            AROS_UFCA(APTR, node->IntData, A1),
+            AROS_UFCA(struct CDXL *, node, A2),
+            AROS_UFCA(struct ExecBase *, SysBase, A6));
+    }
+}
+
+static BOOL CD32_StartXLNode(struct CD32XLTransfer *xl)
+{
+    if (xl->node == NULL || CD32_IsXLListTail(xl->node))
+        goto finished;
+
+    if (!xl->nodeStarted) {
+        xl->node->Actual = 0;
+        xl->nodeStarted = TRUE;
     }
 
-    return -1;
+    /* Per cd.device/CD_READXL, encountering a zero-length node terminates
+     * the transfer.  Do not complete it or follow its successor: circular
+     * clients use this to stop an otherwise unlimited stream from inside
+     * the preceding node's callback. */
+    if (xl->node->Length == 0)
+        goto finished;
+
+    return TRUE;
+
+finished:
+    xl->node = NULL;
+    return FALSE;
+}
+
+static BOOL CD32_CopyXL(struct CD32Unit *cu, APTR frame, ULONG sectorSize)
+{
+    struct CD32XLTransfer *xl = &cu->cu_XL;
+    const UBYTE *source = (const UBYTE *)frame +
+        (sectorSize == 2328 ? 24 : 16) + xl->sectorOffset;
+    ULONG available = sectorSize - xl->sectorOffset;
+
+    xl->sectorOffset = 0;
+    if (xl->limited && available > xl->remaining)
+        available = xl->remaining;
+
+    while (available != 0 && CD32_StartXLNode(xl)) {
+        ULONG nodeRemaining = xl->node->Length - xl->node->Actual;
+        ULONG length = available < nodeRemaining ? available : nodeRemaining;
+
+        if (xl->node->Buffer != NULL)
+            CopyMem(source, xl->node->Buffer + xl->node->Actual, length);
+
+        source += length;
+        available -= length;
+        xl->node->Actual += length;
+        xl->io->io_Actual += length;
+        if (xl->limited)
+            xl->remaining -= length;
+
+        if (xl->node->Actual == xl->node->Length) {
+            cu->cu_XLCallbackNode = xl->node;
+            Cause(&cu->cu_XLInterrupt);
+            xl->node = (struct CDXL *)xl->node->Node.mln_Succ;
+            xl->nodeStarted = FALSE;
+        }
+
+        if (xl->limited && xl->remaining == 0)
+            return FALSE;
+    }
+
+    return xl->node != NULL && (!xl->limited || xl->remaining != 0);
+}
+
+static ULONG CD32_XLSectorPosition(const UBYTE *frame)
+{
+    return ((bcd2dec(frame[12]) * 60) + bcd2dec(frame[13])) * 75 +
+        bcd2dec(frame[14]);
+}
+
+static LONG CD32_CmdReadXL(struct CD32Unit *cu, struct IOStdReq *io,
+    LONG sect_start, LONG sectors, ULONG sectorOffset)
+{
+    struct CD32XLTransfer *xl = &cu->cu_XL;
+    struct MinList *list = io->io_Data;
+    UBYTE cmd[12], resp[2];
+    UBYTE cmd_unpause[1] = { CHCD_UNPAUSE };
+    ULONG watchdogProgress = 0;
+    BOOL watchdogActive = FALSE;
+    LONG err;
+
+    xl->io = io;
+    /* CD_READXL takes a MinList containing CDXL nodes.  Starting at
+     * io_Data itself corrupts the list header and sends sector data to its
+     * tail predecessor instead of to the first node's buffer. */
+    xl->node = (struct CDXL *)list->mlh_Head;
+    xl->remaining = io->io_Length;
+    xl->sectorOffset = sectorOffset;
+    xl->limited = io->io_Length != 0;
+    xl->nodeStarted = FALSE;
+
+    if (!CD32_StartXLNode(xl))
+        return 0;
+
+    cu->cu_CDInfo.Status &= ~(CDSTSF_PLAYING | CDSTSF_PAUSED |
+        CDSTSF_SEARCH | CDSTSF_DIRECTION);
+
+    cmd[0] = CHCD_MULTI;
+    sec2bcdmsf(sect_start, &cmd[1]);
+    sec2bcdmsf(sect_start + sectors, &cmd[4]);
+    cmd[7] = 0x80;
+    cmd[8] = (cu->cu_CDInfo.ReadXLSpeed >= 150) ? 0x40 : 0x00;
+    cmd[9] = 0;
+    cmd[10] = 0x04;
+    cmd[11] = 0;
+
+    writew(0xffff, AKIKO_CDPBX);
+    CD32_Led(cu, TRUE);
+    CD32_Cmd(cu, cmd_unpause, 1, resp, sizeof(resp));
+    err = CD32_Cmd(cu, cmd, sizeof(cmd), resp, sizeof(resp));
+    if (err != 0)
+        goto out;
+    if ((resp[1] & 2) != 2) {
+        err = CDERR_SeekError;
+        goto out;
+    }
+
+    CD32_CompleteSupersededPlay(cu);
+
+    cu->cu_XLProgress = 0;
+    cu->cu_ReadXLActive = TRUE;
+    CD32_IntEnable(cu, AKIKO_CDINT_PBX);
+    writel(readl(AKIKO_CDFLAG) | AKIKO_CDFLAG_ENABLE, AKIKO_CDFLAG);
+    cd32TimeoutStart(cu, CD32_CMD_TIMEOUT_MS);
+    watchdogActive = TRUE;
+    err = 0;
+
+    while (cu->cu_ReadXLActive && !(io->io_Flags & IOF_ABORT)) {
+        Wait(SIGF_SINGLE);
+
+        if (cu->cu_ReadXLActive)
+            CD32_ProcessXL(cu);
+
+        if (CheckIO((struct IORequest *)&cu->cu_CDBase->cb_TimerRequest)) {
+            ULONG progress = cu->cu_XLProgress;
+
+            WaitIO((struct IORequest *)&cu->cu_CDBase->cb_TimerRequest);
+            watchdogActive = FALSE;
+            if (progress == watchdogProgress) {
+                D(bug("%s: no sectors delivered\n", __func__));
+                err = CDERR_NotSpecified;
+                break;
+            }
+
+            watchdogProgress = progress;
+            cd32TimeoutStart(cu, CD32_CMD_TIMEOUT_MS);
+            watchdogActive = TRUE;
+        }
+    }
+
+    if (io->io_Flags & IOF_ABORT)
+        err = CDERR_ABORTED;
+
+    CD32_IntDisable(cu, AKIKO_CDINT_PBX);
+    cu->cu_ReadXLActive = FALSE;
+    if (watchdogActive)
+        cd32TimeoutEnd(cu);
+    D(bug("[CDXL] bytes=%lu sectors=%lu error=%ld\n",
+        io->io_Actual, cu->cu_XLProgress, err));
+
+out:
+    CD32_PauseDrive(cu);
+    CD32_Led(cu, FALSE);
+    return err;
 }
 
 static UBYTE CD32_Status(struct CD32Unit *cu)
@@ -550,7 +1103,8 @@ static UBYTE CD32_Status(struct CD32Unit *cu)
     D(bug("%s: %p\n", __func__, cu));
     cmd[0] = CHCD_STATUS;
     res[1] = 0x80;
-    CD32_Cmd(cu, cmd, 1, res, 20);
+    if (CD32_Cmd(cu, cmd, 1, res, 20) != 0)
+        return cu->cu_CDInfo.Status;
     res[20] = 0;
     D(bug("%s: Drive \"%s\", state 0x%02x\n", __func__, &res[2], res[1]));
 
@@ -559,6 +1113,8 @@ static UBYTE CD32_Status(struct CD32Unit *cu)
             cu->cu_ChangeNum++;
             cu->cu_CDInfo.Status = 0;
         }
+        cu->cu_MediaKnown = TRUE;
+        cu->cu_MediaPresent = FALSE;
     } else if (res[1] & CHERR_DISKPRESENT) {
         if (!(cu->cu_CDInfo.Status & CDSTSF_DISK)) {
             cu->cu_ChangeNum++;
@@ -594,11 +1150,11 @@ static VOID CD32_ReadTOC(struct CD32Unit *cu)
 
     if (cu->cu_CDInfo.Status & CDSTSF_CDROM) {
         if (cu->cu_CDTOC[0].Summary.LastTrack == 1) {
-            cu->cu_TotalSectors = msf2sec(&cu->cu_CDTOC[0].Summary.LeadOut.MSF) -
-                                  msf2sec(&cu->cu_CDTOC[1].Entry.Position.MSF);
+            cu->cu_TotalSectors = bcdmsf2sec(&cu->cu_CDTOC[0].Summary.LeadOut.MSF) -
+                                  bcdmsf2sec(&cu->cu_CDTOC[1].Entry.Position.MSF);
         } else {
-            cu->cu_TotalSectors = msf2sec(&cu->cu_CDTOC[2].Entry.Position.MSF) -
-                                  msf2sec(&cu->cu_CDTOC[1].Entry.Position.MSF);
+            cu->cu_TotalSectors = bcdmsf2sec(&cu->cu_CDTOC[2].Entry.Position.MSF) -
+                                  bcdmsf2sec(&cu->cu_CDTOC[1].Entry.Position.MSF);
         }
     } else {
         cu->cu_TotalSectors = 0;
@@ -607,16 +1163,31 @@ static VOID CD32_ReadTOC(struct CD32Unit *cu)
     D(bug("%s: TotalSectors = %d\n", __func__, cu->cu_TotalSectors));
 }
 
-static LONG CD32_IsCDROM(struct CD32Unit *cu)
+static BOOL CD32_RefreshMedia(struct CD32Unit *cu)
 {
+    if (cu->cu_MediaKnown)
+        return cu->cu_MediaPresent;
+
     if ((cu->cu_CDInfo.Status & CDSTSF_DISK) == 0) {
         if ((CD32_Status(cu) & CDSTSF_DISK) == 0)
-            return CDERR_NoDisk;
+            goto done;
     }
 
-    if ((cu->cu_CDInfo.Status & CDSTSF_TOC) == 0) {
+    if ((cu->cu_CDInfo.Status & CDSTSF_TOC) == 0)
         CD32_ReadTOC(cu);
-    }
+
+done:
+    cu->cu_MediaPresent =
+        (cu->cu_CDInfo.Status & CDSTSF_TOC) != 0;
+    cu->cu_MediaKnown = TRUE;
+    CD32_ArmAsyncResponse(cu);
+    return cu->cu_MediaPresent;
+}
+
+static LONG CD32_IsCDROM(struct CD32Unit *cu)
+{
+    if (!CD32_RefreshMedia(cu))
+        return CDERR_NoDisk;
 
     if ((cu->cu_CDInfo.Status & CDSTSF_CDROM) == 0) {
         return CDERR_SeekError;
@@ -630,20 +1201,34 @@ struct CopyREAD {
     LONG offset;
     UBYTE *buffer;
     LONG length;
+    UWORD sectorSize;
 };
 
 static VOID CD32_CopyREAD(APTR frame, APTR priv)
 {
-    struct CD32Mode1 *mode1 = frame;
     struct CopyREAD *cr = priv;
+    UBYTE *data;
     LONG tocopy;
 
-    tocopy = 2048 - cr->offset;
+    /*
+     * Akiko stores the raw sector in each 0xc00-byte DMA slot (with its
+     * first four sync bytes occupied by the slot's sector number).  The
+     * documented cd.device formats select different portions of it:
+     *
+     *   2048: Mode-1 user data, raw bytes 16..2063
+     *   2328: Mode-2 Form-2 payload and EDC, raw bytes 24..2351
+     *
+     * The latter layout matches Commodore's FMV cartridge cd.device and
+     * starts directly with the MPEG pack header, not either copy of the
+     * Mode-2 subheader.
+     */
+    data = (UBYTE *)frame + (cr->sectorSize == 2328 ? 24 : 16);
+    tocopy = cr->sectorSize - cr->offset;
     if (tocopy > cr->length)
         tocopy = cr->length;
 
-    D(bug("%s: Copy from 0x%08x to 0x%08x, %d\n", __func__, &mode1->cs_Data[cr->offset], cr->buffer, tocopy));
-    CopyMem(&mode1->cs_Data[cr->offset], cr->buffer, tocopy);
+    D(bug("%s: Copy from 0x%08x to 0x%08x, %d\n", __func__, &data[cr->offset], cr->buffer, tocopy));
+    CopyMem(&data[cr->offset], cr->buffer, tocopy);
     if (0) { int i ;
     for (i = 0; i < tocopy; i++) {
         int mod = i % 16;
@@ -671,15 +1256,64 @@ static LONG CD32_DoIO(struct IOStdReq *io, APTR priv)
 
     D(bug("%s:%p io_Command=%d\n", __func__, io, io->io_Command));
 
-    cu->cu_Task = FindTask(NULL);
+    if (io->io_Command != CD_READ && io->io_Command != CD_INFO &&
+        io->io_Command != CD_ADDFRAMEINT && io->io_Command != CD_REMFRAMEINT)
+        cu->cu_ReadEnd = 0;
 
     switch (io->io_Command) {
+    case CD_ADDFRAMEINT:
+        {
+            struct CD32FrameInt *frame;
+
+            if (io->io_Length != sizeof(struct Interrupt)) {
+                err = CDERR_BADLENGTH;
+                break;
+            }
+            if (!io->io_Data || !((struct Interrupt *)io->io_Data)->is_Code) {
+                err = CDERR_BADADDRESS;
+                break;
+            }
+            frame = AllocMem(sizeof(*frame), MEMF_PUBLIC);
+            if (!frame) {
+                err = CDERR_NoMem;
+                break;
+            }
+            frame->io = io;
+            frame->interrupt = io->io_Data;
+            /* Keep the request pending. Its Message node must remain free
+             * for the caller to send REMFRAMEINT with this same request. */
+            Disable();
+            AddTail((struct List *)&cu->cu_FrameInts, (struct Node *)&frame->node);
+            writeb(0, AKIKO_CDSUBINX);
+            writel(readl(AKIKO_CDFLAG) | AKIKO_CDFLAG_SUBCODE, AKIKO_CDFLAG);
+            CD32_IntEnable(cu, AKIKO_CDINT_SUBCODE);
+            Enable();
+            return CDIO_PENDING;
+        }
+    case CD_REMFRAMEINT:
+        {
+            struct CD32FrameInt *frame;
+
+            ForeachNode(&cu->cu_FrameInts, frame) {
+                if (frame->io == io) {
+                    CD32_RemoveFrameInt(cu, frame);
+                    err = 0;
+                    break;
+                }
+            }
+        }
+        break;
     case CD_CHANGENUM:
         io->io_Actual = cu->cu_ChangeNum;
         err = 0;
         break;
     case CD_CHANGESTATE:
-        io->io_Actual = (cu->cu_CDInfo.Status & CDSTSF_TOC) ? 0 : 1;
+        /* Report current media state, not the state cached by the last
+         * command.  In particular, dosboot polls this command while the
+         * no-media screen is open; a disc inserted after power-on must
+         * cause the drive status and TOC to be refreshed here. */
+        io->io_Actual = CD32_RefreshMedia(cu) ? 0 : 1;
+        CD32_ArmAsyncResponse(cu);
         D(bug("CD_CHANGESTATE: %d\n", io->io_Actual));
         err = 0;
         break;
@@ -762,16 +1396,46 @@ static LONG CD32_DoIO(struct IOStdReq *io, APTR priv)
         if (io->io_Data != NULL && (cu->cu_CDInfo.Status & CDSTSF_TOC)) {
             ULONG i, actual = 0;
             ULONG track = io->io_Offset;
-            APTR buff = io->io_Data;
+            union CDTOC *buff = io->io_Data;
             for (i = 0; i < io->io_Length && track <= cu->cu_CDTOC[0].Summary.LastTrack; i++, track++) {
-                CopyMem(&cu->cu_CDTOC[track], buff, sizeof(union CDTOC));
+                CopyMem(&cu->cu_CDTOC[track], buff, sizeof(*buff));
+                if (track == 0)
+                    bcdmsf2binary(&buff->Summary.LeadOut.MSF);
+                else
+                    bcdmsf2binary(&buff->Entry.Position.MSF);
                 actual++;
-                buff+=sizeof(union CDTOC);
+                buff++;
             }
             io->io_Actual = actual;
             err = 0;
         }
         D(bug("CD_TOCMSF: err %d\n", err));
+        break;
+    case CD_TOCLSN:
+        D(bug("CD_TOCLSN: %d\n", io->io_Length));
+        err = CD32_IsCDROM(cu);
+        if (io->io_Data != NULL && (cu->cu_CDInfo.Status & CDSTSF_TOC)) {
+            ULONG i, actual = 0;
+            ULONG track = io->io_Offset;
+            union CDTOC *buff = io->io_Data;
+
+            for (i = 0; i < io->io_Length &&
+                 track <= cu->cu_CDTOC[0].Summary.LastTrack;
+                 i++, track++, buff++) {
+                CopyMem(&cu->cu_CDTOC[track], buff, sizeof(*buff));
+                if (track == 0) {
+                    buff->Summary.LeadOut.LSN =
+                        msf2lsn(&cu->cu_CDTOC[0].Summary.LeadOut.MSF);
+                } else {
+                    buff->Entry.Position.LSN =
+                        msf2lsn(&cu->cu_CDTOC[track].Entry.Position.MSF);
+                }
+                actual++;
+            }
+            io->io_Actual = actual;
+            err = 0;
+        }
+        D(bug("CD_TOCLSN: err %d\n", err));
         break;
     case CD_EJECT:
         io->io_Actual = 0;
@@ -825,6 +1489,15 @@ static LONG CD32_DoIO(struct IOStdReq *io, APTR priv)
             }
         }
         break;
+    case CD_SEARCH:
+        /* Titles reset the search mode before starting ordinary playback.
+         * Fast search modes still need a drive-command implementation. */
+        if (io->io_Length == CDMODE_NORMAL) {
+            io->io_Actual = CDMODE_NORMAL;
+            cu->cu_CDInfo.Status &= ~(CDSTSF_SEARCH | CDSTSF_DIRECTION);
+            err = 0;
+        }
+        break;
     case CD_MOTOR:
         err = 0;
         io->io_Actual = (cu->cu_CDInfo.Status & CDSTSF_SPIN);
@@ -839,36 +1512,38 @@ static LONG CD32_DoIO(struct IOStdReq *io, APTR priv)
         }
         break;
     case CD_PLAYTRACK:
-        if (io->io_Offset <= cu->cu_CDTOC[0].Summary.LastTrack) {
+        if (io->io_Length == 0) {
+            err = CDERR_BADLENGTH;
+        } else if (io->io_Offset <= cu->cu_CDTOC[0].Summary.LastTrack) {
+            ULONG start;
+            ULONG end;
             ULONG last = io->io_Offset + io->io_Length;
-            UBYTE cmd[12], res[2];
-            cmd[0] = CHCD_MULTI;
-            cmd[1] = cu->cu_CDTOC[io->io_Offset].Entry.Position.MSF.Minute;
-            cmd[2] = cu->cu_CDTOC[io->io_Offset].Entry.Position.MSF.Second;
-            cmd[3] = cu->cu_CDTOC[io->io_Offset].Entry.Position.MSF.Frame;
+
+            start = bcdmsf2sec(&cu->cu_CDTOC[io->io_Offset].Entry.Position.MSF);
             if (last > cu->cu_CDTOC[0].Summary.LastTrack) {
-                cmd[4] = cu->cu_CDTOC[0].Summary.LeadOut.MSF.Minute;
-                cmd[5] = cu->cu_CDTOC[0].Summary.LeadOut.MSF.Second;
-                cmd[6] = cu->cu_CDTOC[0].Summary.LeadOut.MSF.Frame;
+                end = bcdmsf2sec(&cu->cu_CDTOC[0].Summary.LeadOut.MSF);
             } else {
-                cmd[4] = cu->cu_CDTOC[last].Entry.Position.MSF.Minute;
-                cmd[5] = cu->cu_CDTOC[last].Entry.Position.MSF.Second;
-                cmd[6] = cu->cu_CDTOC[last].Entry.Position.MSF.Frame;
+                end = bcdmsf2sec(&cu->cu_CDTOC[last].Entry.Position.MSF);
             }
-            cmd[7] = 0x00;
-            cmd[8] = (cu->cu_CDInfo.ReadSpeed >= 150) ? 0x40 : 0x00;
-            cmd[9] = 0x00;
-            cmd[10] = 0x04;
-            cmd[11] = 0x00;
-            err = CD32_Cmd(cu, cmd, 12, res, 2);
-            D(bug("CD_PLAYTRACK: err=%d, res[1]=0x%02x\n", err, res[1]));
-            if (!err && (res[1] & 0x80) == 0) {
-                cu->cu_CDInfo.Status &= ~(CDSTSF_PLAYING | CDSTSF_PAUSED | CDSTSF_SEARCH | CDSTSF_DIRECTION);
-                cu->cu_CDInfo.Status |= CDSTSF_PLAYING;
-                D(bug("CD_PLAYTRACK: Playing tracks %d-%d\n", io->io_Offset, last-1));
-                err = 0;
-            }
+            err = end > start ?
+                CD32_StartPlay(cu, io, start, end - start) :
+                CDERR_BADLENGTH;
         }
+        break;
+    case CD_PLAYMSF:
+        {
+            union LSNMSF start, length;
+
+            start.LSN = io->io_Offset;
+            length.LSN = io->io_Length;
+            err = CD32_StartPlay(cu, io, binarymsf2sec(&start.MSF),
+                binarymsf2sec(&length.MSF));
+        }
+        break;
+    case CD_PLAYLSN:
+        /* LSN zero is physical frame 00:02:00. */
+        err = CD32_StartPlay(cu, io, io->io_Offset + 150,
+            io->io_Length);
         break;
     case CD_READ:
         err = CD32_IsCDROM(cu);
@@ -876,12 +1551,10 @@ static LONG CD32_DoIO(struct IOStdReq *io, APTR priv)
             break;
 
         /* Convert offset and length to MSF */
-        CD32_Led(cu, TRUE);
-
         io->io_Error = 0;
         io->io_Actual = 0;
 
-        origin = msf2sec(&cu->cu_CDTOC[1].Entry.Position.MSF);
+        origin = bcdmsf2sec(&cu->cu_CDTOC[1].Entry.Position.MSF);
         sect_start = io->io_Offset / cu->cu_CDInfo.SectorSize;
         sect_end = (io->io_Offset + io->io_Length + cu->cu_CDInfo.SectorSize - 1) / cu->cu_CDInfo.SectorSize;
 
@@ -889,8 +1562,42 @@ static LONG CD32_DoIO(struct IOStdReq *io, APTR priv)
         cr.buffer = io->io_Data;
         cr.offset = io->io_Offset % cu->cu_CDInfo.SectorSize;
         cr.length = io->io_Length;
+        cr.sectorSize = cu->cu_CDInfo.SectorSize;
        
         err = CD32_CmdRead(cu, sect_start + origin, sect_end - sect_start, CD32_CopyREAD, &cr);
+        break;
+    case CD_READXL:
+        err = CD32_IsCDROM(cu);
+        if (err)
+            break;
+        if (io->io_Data == NULL || ((IPTR)io->io_Data & 1) != 0) {
+            err = CDERR_BADADDRESS;
+            break;
+        }
+
+        io->io_Error = 0;
+        io->io_Actual = 0;
+        origin = bcdmsf2sec(&cu->cu_CDTOC[1].Entry.Position.MSF);
+        sect_start = io->io_Offset / cu->cu_CDInfo.SectorSize;
+        if (io->io_Length != 0) {
+            ULONG span = io->io_Offset % cu->cu_CDInfo.SectorSize;
+
+            span += io->io_Length;
+            sect_end = sect_start +
+                (span + cu->cu_CDInfo.SectorSize - 1) /
+                cu->cu_CDInfo.SectorSize;
+        } else {
+            sect_end = bcdmsf2sec(&cu->cu_CDTOC[0].Summary.LeadOut.MSF) -
+                origin;
+        }
+
+        if (sect_end <= sect_start) {
+            err = 0;
+            break;
+        }
+        err = CD32_CmdReadXL(cu, io, sect_start + origin,
+            sect_end - sect_start,
+            io->io_Offset % cu->cu_CDInfo.SectorSize);
         break;
     case CD_RESET:
         cmd[0] = CHCD_RESET;
@@ -915,6 +1622,16 @@ static LONG CD32_DoIO(struct IOStdReq *io, APTR priv)
     return err;
 }
 
+static BOOL CD32_CanQuick(const struct IOStdReq *io, APTR priv)
+{
+    const struct CD32Unit *cu = priv;
+
+    /* CD_INFO only consults cached state once media discovery has completed.
+     * Keeping it quick matches callers which issue this query from an
+     * interrupt server; an uncached query still belongs on the unit task. */
+    return io->io_Command == CD_INFO && cu->cu_MediaKnown;
+}
+
 static VOID CD32_Expunge(APTR priv)
 {
     struct CD32Unit *cu = priv;
@@ -929,18 +1646,20 @@ static VOID CD32_UnitInit(APTR priv)
     struct CD32Unit *cu = priv;
 
     cu->cu_Task = FindTask(NULL);
-    CD32_IsCDROM(cu);
 }
 
 static const struct cdUnitOps CD32Ops = {
     .uo_Name = "CD32 (Akiko)",
     .uo_Expunge = CD32_Expunge,
     .uo_DoIO = CD32_DoIO,
+    .uo_CanQuick = CD32_CanQuick,
+    .uo_Service = CD32_Service,
+    .uo_SignalMask = SIGF_SINGLE,
     .uo_Init = CD32_UnitInit,
 };
 
 static const struct DosEnvec CD32Envec = {
-    .de_TableSize = DE_MASK,
+    .de_TableSize = DE_DOSTYPE,
     .de_SizeBlock = 2048 >> 2,
     .de_Surfaces  = 1,
     .de_SectorPerBlock = 1,
@@ -952,18 +1671,18 @@ static const struct DosEnvec CD32Envec = {
     .de_HighCyl = 0,
     /*
      * CDVDFS sizes its sector cache as de_NumBuffers 16-sector (32 KB)
-     * prefetch chunks, so 32 here cost a full megabyte of BufMemType
-     * memory the moment CD0: mounts. A CD32 without expansion RAM backs
-     * MEMF_24BITDMA with its only 2 MB of chip RAM, and half the machine
-     * disappearing before the boot handoff is what forced fast RAM onto
-     * titles that run chip-only under the CD32 Kickstart (whose
-     * CDFileSystem treats a buffer as one 2 KB block). Four chunks
-     * (128 KB) keep sequential streaming ahead of the drive.
+     * prefetch chunks. A CD32 without expansion RAM backs MEMF_24BITDMA
+     * with its only 2 MB of chip RAM, so keep a single readahead chunk.  Some
+     * CD32 titles require a contiguous block just over 1 MiB at startup; a
+     * second chunk consumes the last 32 KiB of headroom they need.
+     * The Akiko data ring already buffers incoming sectors below this
+     * filesystem cache.
      */
-    .de_NumBuffers = 4,
+    .de_NumBuffers = 1,
     .de_BufMemType = MEMF_24BITDMA,
     .de_MaxTransfer = 32 * 2048,
     .de_Mask = 0x00fffffe,
+    .de_DosType = AROS_MAKE_ID('C', 'D', 'V', 'D'),
 };
 
 
@@ -985,9 +1704,12 @@ static int CD32_InitLib(LIBBASETYPE *cb)
     priv = AllocVec(sizeof(*priv), MEMF_ANY | MEMF_CLEAR);
     if (priv) {
         priv->cu_CDBase = cb;
-        priv->cu_Misc = LibAllocAligned(sizeof(struct CD32Misc), MEMF_24BITDMA | MEMF_CLEAR, 1024);
+        NEWLIST(&priv->cu_FrameInts);
+        priv->cu_Misc = LibAllocAligned(sizeof(struct CD32Misc),
+            MEMF_24BITDMA | MEMF_CLEAR, 1024);
         if (priv->cu_Misc) {
-            priv->cu_Data = LibAllocAligned(sizeof(struct CD32Data) * 16, MEMF_24BITDMA | MEMF_CLEAR, 4096);
+            priv->cu_Data = LibAllocAligned(sizeof(struct CD32Data) * 16,
+                MEMF_24BITDMA | MEMF_CLEAR, 4096);
             if (priv->cu_Data) {
                 priv->cu_Interrupt.is_Node.ln_Pri = 0;
                 priv->cu_Interrupt.is_Node.ln_Name = (STRPTR)CD32Ops.uo_Name;
@@ -995,6 +1717,14 @@ static int CD32_InitLib(LIBBASETYPE *cb)
                 priv->cu_Interrupt.is_Data = priv;
                 priv->cu_Interrupt.is_Code = (VOID_FUNC)CD32_Interrupt;
                 AddIntServer(INTB_PORTS, &priv->cu_Interrupt);
+
+                priv->cu_XLInterrupt.is_Node.ln_Pri = 0;
+                priv->cu_XLInterrupt.is_Node.ln_Name =
+                    (STRPTR)CD32Ops.uo_Name;
+                priv->cu_XLInterrupt.is_Node.ln_Type = NT_INTERRUPT;
+                priv->cu_XLInterrupt.is_Data = priv;
+                priv->cu_XLInterrupt.is_Code =
+                    (VOID_FUNC)CD32_XLCallbackInterrupt;
 
                 writel((IPTR)priv->cu_Data, AKIKO_CDADRDATA);
                 writel((IPTR)priv->cu_Misc,  AKIKO_CDADRMISC);
@@ -1012,12 +1742,11 @@ static int CD32_InitLib(LIBBASETYPE *cb)
 
                 unit = cdAddUnit(cb, &CD32Ops, priv, &CD32Envec);
                 if (unit >= 0) {
+                    /* CIA-A PA0 gates the CD audio path. */
+                    CD32_Mute(priv, 0);
                     D(bug("%s: Akiko as CD Unit %d\n", __func__, unit));
                     return 1;
                 }
-
-                /* Unmute the CDROM */
-                CD32_Mute(priv, 0);
 
                 RemIntServer(INTB_PORTS, &priv->cu_Interrupt);
 

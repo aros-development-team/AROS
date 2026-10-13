@@ -1,8 +1,8 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
-#define DEBUG 1
+#define DEBUG 0
 
 #include <aros/debug.h>
 #include <exec/types.h>
@@ -23,6 +23,9 @@
 #define NAME "diag init"
 #define VERSION 41
 #define REVISION 1
+
+#define CD32_FMV_MANUFACTURER 514
+#define CD32_FMV_PRODUCT      106
 
 static AROS_UFP3 (APTR, Init,
                   AROS_UFPA(struct Library *, lh, D0),
@@ -173,6 +176,15 @@ static void callroms(struct ExpansionBase *ExpansionBase)
         D(bug("callroms\n"));
         ForeachNode(&ExpansionBase->BoardList, node) {
                 struct ConfigDev *configDev = (struct ConfigDev*)node;
+                /* The replacement cd32mpeg.device needs the configured FMV
+                 * hardware, not the proprietary driver initialized by the
+                 * cartridge's diagnostic ROM.
+                 */
+                if (configDev->cd_Rom.er_Manufacturer == CD32_FMV_MANUFACTURER &&
+                    configDev->cd_Rom.er_Product == CD32_FMV_PRODUCT) {
+                        D(bug("Skipping CD32 FMV cartridge diagnostic ROM\n"));
+                        continue;
+                }
                 if (diagrom(ExpansionBase, configDev)) {
                         if (!calldiagrom(ExpansionBase, configDev)) {
                                 FreeMem(configDev->cd_Rom.er_DiagArea, configDev->cd_Rom.er_DiagArea->da_Size);

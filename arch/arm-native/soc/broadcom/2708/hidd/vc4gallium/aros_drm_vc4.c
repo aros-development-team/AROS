@@ -51,9 +51,11 @@
 /* Shared dispatch handle, defined in aros_drm_shim.c. */
 extern struct vc4_aros_bridge *aros_drm_bridge;
 
-/* The Mesa vc4 driver's screen entry, statically linked into mesa3dgl. */
-struct renderonly;
-extern struct pipe_screen *vc4_screen_create(int fd, struct renderonly *ro);
+/* Mesa 26 renamed the wait-forever value; the vc4 code still takes it. */
+#include "util/os_time.h"
+#ifndef PIPE_TIMEOUT_INFINITE
+#define PIPE_TIMEOUT_INFINITE OS_TIMEOUT_INFINITE
+#endif
 
 /* renderonly_* stubs to satisfy the linker (renderonly.c isn't in our
  * linklib). Never called at runtime — we pass NULL renderonly to
@@ -484,14 +486,42 @@ BOOL aros_drm_blit_resource(struct pipe_resource *src_pres,
                 /* Display the PREVIOUS frame; its jobs ran while this
                  * frame was being built, so this wait is normally a
                  * no-op. The just-rendered frame goes into the queue. */
+                /* VC4G_PROFILE: present-path timing, 1 line / 128 frames. */
+#if VC4G_PROFILE
+                static ULONG _pp_n, _pp_wait, _pp_ovl, _pp_wait_max, _pp_ovl_max;
+#endif
+                int64_t _pp_t0 = os_time_get();
+
                 vc4_wait_seqno(vscreen, aros_ovl.queued_seqno,
                                PIPE_TIMEOUT_INFINITE, "ovl-present");
 
-                if (aros_drm_bridge->set_overlay(aros_drm_bridge->ctx,
+                int64_t _pp_t1 = os_time_get();
+                int oret = aros_drm_bridge->set_overlay(aros_drm_bridge->ctx,
                         scr_bm_obj, aros_ovl.queued->handle, stride,
                         absX, absY, xSize, ySize,
                         xSize * mesa3dgl_render_scale,
-                        ySize * mesa3dgl_render_scale) == 0)
+                        ySize * mesa3dgl_render_scale);
+                int64_t _pp_t2 = os_time_get();
+
+#if VC4G_PROFILE
+                _pp_wait += (ULONG)(_pp_t1 - _pp_t0);
+                _pp_ovl  += (ULONG)(_pp_t2 - _pp_t1);
+                if ((ULONG)(_pp_t1 - _pp_t0) > _pp_wait_max) _pp_wait_max = (ULONG)(_pp_t1 - _pp_t0);
+                if ((ULONG)(_pp_t2 - _pp_t1) > _pp_ovl_max)  _pp_ovl_max  = (ULONG)(_pp_t2 - _pp_t1);
+                if (++_pp_n >= 128)
+                {
+                    bug("[vc4ovl] present diag %lu: wait_seqno=%lu us avg/%lu max "
+                        "set_overlay=%lu us avg/%lu max\n",
+                        (unsigned long)_pp_n,
+                        (unsigned long)(_pp_wait / _pp_n), (unsigned long)_pp_wait_max,
+                        (unsigned long)(_pp_ovl / _pp_n), (unsigned long)_pp_ovl_max);
+                    _pp_n = _pp_wait = _pp_ovl = _pp_wait_max = _pp_ovl_max = 0;
+                }
+#else
+                (void)_pp_t0; (void)_pp_t1; (void)_pp_t2;
+#endif
+
+                if (oret == 0)
                 {
                     /* Rotate: queued -> on plane; the page leaving the
                      * plane becomes the next render target (the GPU
@@ -655,9 +685,17 @@ BOOL aros_drm_blit_resource(struct pipe_resource *src_pres,
  * fails cleanly instead of corrupting.
  * Single screen at a time, matching the in-hidd single-fd model.
  */
-/* Private util_cpu_caps copy (u_cpu_detect.o is linked into this module;
- * the provider's caps live in mesa3dgl and are a different object). */
+/* Private cpu caps copy (u_cpu_detect.o is linked into this module; the
+ * provider's caps live in mesa3dgl and are a different object). Mesa 26
+ * put them behind util_get_cpu_caps(), whose once-init this calls: the
+ * accessor itself is ATTRIBUTE_CONST and would be optimised away. */
+#if AROS_MESA_MAJOR >= 26
+extern void _util_cpu_detect_once(void);
+#define aros_util_cpu_detect() _util_cpu_detect_once()
+#else
 extern void util_cpu_detect(void);
+#define aros_util_cpu_detect() util_cpu_detect()
+#endif
 
 /* Live screens created through the bridge. An app toggling between
  * fullscreen and windowed mode may create the new context before
@@ -697,7 +735,7 @@ struct pipe_screen *vc4_aros_create_screen(struct vc4_aros_bridge *bridge,
 
     /* Fill this module's private util_cpu_caps (has_neon selects the
      * tiling path) — the trampolined core never touches our copy. */
-    util_cpu_detect();
+    aros_util_cpu_detect();
 
     /* Same env/tooltype read mesa3dgl does when sizing the drawable;
      * runs on the app's process, so the values agree. */
@@ -740,7 +778,12 @@ struct pipe_screen *vc4_aros_create_screen(struct vc4_aros_bridge *bridge,
     switch (bridge->driver_id)
     {
     case AROS_GALLIUM_DRIVER_VC4:
+        /* vc4_screen.h declares it; Mesa 26 takes a screen config too. */
+#if AROS_MESA_MAJOR >= 26
+        pscreen = vc4_screen_create(1, NULL, NULL);
+#else
         pscreen = vc4_screen_create(1, NULL);
+#endif
         if (!pscreen)
             bug("[aros_drm_vc4] vc4_screen_create FAILED (bridge ok, falling back)\n");
         break;
@@ -783,6 +826,11 @@ IPTR vc4_aros_display_rp(APTR resource, LONG srcx, LONG srcy,
  * mid-render. */
 BOOL aros_drm_release_bridge(void)
 {
+    /* Take the plane down first: the BO sweep below frees the page the HVS
+     * scans out. clear_overlay only touches hidd state, so it is safe here. */
+    if (aros_drm_bridge && aros_ovl.shown)
+        aros_drm_bridge->clear_overlay(aros_drm_bridge->ctx, NULL);
+
     /* Just drop our in-lib bookkeeping pointers — the underlying firmware
      * BOs are freed by the hidd sweep below, not here (unreferencing the
      * vc4_bo structs would touch the just-freed in-lib screen). */

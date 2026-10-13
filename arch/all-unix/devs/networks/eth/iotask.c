@@ -11,6 +11,8 @@
 
 #include "eth.h"
 
+#include <string.h>
+
 #include <signal.h>
 
 /* this fires whenever data is waiting to be read on the eth descriptor */
@@ -70,10 +72,27 @@ static void eth_receive(struct eth_base *ETHBase, struct eth_unit *unit)
         mcast = TRUE;
     }
 
-    /* drop multicast packets (until we have support for them) */
+    /* a multicast packet is wanted only if a client asked for its address:
+     * the host interface is promiscuous and has no filter of its own */
     if (mcast) {
-        D(bug("[eth] [io:%d] no support for multicast packets, dropping it\n", unit->num));
-        return;
+        struct eth_mcast *wanted;
+        BOOL found = FALSE;
+
+        Disable();
+        for (wanted = (struct eth_mcast *) unit->mcasts.mlh_Head;
+             wanted->node.mln_Succ != NULL;
+             wanted = (struct eth_mcast *) wanted->node.mln_Succ) {
+            if (memcmp(wanted->addr, eth->h_dest, sizeof(wanted->addr)) == 0) {
+                found = TRUE;
+                break;
+            }
+        }
+        Enable();
+
+        if (!found) {
+            D(bug("[eth] [io:%d] multicast address nobody asked for, dropping it\n", unit->num));
+            return;
+        }
     }
 
     /* now we loop through our openers, seeing if anyone wants the packet */
@@ -379,8 +398,14 @@ void eth_iotask(struct eth_base *ETHBase, struct eth_unit *unit)
 
     DeleteMsgPort(unit->write_queue);
 
+    /* wait for the closer's reply before freeing the message */
+    reply_port = CreateMsgPort();
     msg = (struct Message *) AllocVec(sizeof(struct Message), MEMF_PUBLIC | MEMF_CLEAR);
-    // FIXME: message may be freed before receiver gets it!
+    msg->mn_ReplyPort = reply_port;
+    msg->mn_Length = sizeof(struct Message);
     PutMsg(unit->iosyncport, msg);
+    WaitPort(reply_port);
+    GetMsg(reply_port);
     FreeVec(msg);
+    DeleteMsgPort(reply_port);
 }

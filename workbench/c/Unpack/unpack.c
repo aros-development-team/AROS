@@ -79,6 +79,7 @@ AROS_SH2
     BPTR oldDir           = BNULL,
          newDir           = BNULL;
     APTR pkg              = NULL;
+    LONG result             = RETURN_ERROR;
     
     if( SHArg(FILE) == NULL ) goto cleanup;
     if( SHArg(TO) == NULL ) goto cleanup;
@@ -98,7 +99,9 @@ AROS_SH2
     
     if( !GUI_Open() ) goto cleanup;
     
-    PKG_ExtractEverything( pkg );
+    if( PKG_ExtractEverything( pkg ) != 0 ) goto cleanup;
+
+    result = RETURN_OK;
     
 cleanup:
     GUI_Close();
@@ -111,7 +114,7 @@ cleanup:
     if( IntuitionBase != NULL ) CloseLibrary( (struct Library *) IntuitionBase );
     if( GfxBase != NULL ) CloseLibrary( (struct Library *) GfxBase );
     
-    return 0;
+    return result;
 
     AROS_SHCOMMAND_EXIT
 }

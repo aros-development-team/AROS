@@ -39,6 +39,9 @@ struct charmap_line *charmap_newline(struct charmap_line *next,
     struct charmap_line *newline =
         (struct charmap_line *)AllocMem(sizeof(struct charmap_line),
         MEMF_ANY);
+    if (!newline)
+        return NULL;
+
     newline->next = next;
     newline->prev = prev;
     if (next)

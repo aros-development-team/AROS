@@ -20,6 +20,8 @@
 #define HAS_CPU_SPECIFIC
 #endif
 
+void PrintCPUFeatures(const char * const *features, const BOOL *flags, ULONG count);
+
 #ifdef HAS_CPU_SPECIFIC
 void PrintCPUSpecificInfo(ULONG i, APTR ProcessorBase);
 #else

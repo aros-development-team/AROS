@@ -606,7 +606,7 @@ execute (struct Project * prj,
 
 #define VOUT(x)
 
-void
+int
 maketarget (FILE * deplogfh, struct Project * prj, char * tname, unsigned int depth, unsigned int offset)
 {
     struct Target * target, * subtarget;
@@ -639,7 +639,7 @@ maketarget (FILE * deplogfh, struct Project * prj, char * tname, unsigned int de
             fputs(tname, mm_faillogfh);
             fputs("\n", mm_faillogfh);
         }
-        return;
+        return 0;
     }
 
     target->updated = 1;
@@ -777,4 +777,5 @@ maketarget (FILE * deplogfh, struct Project * prj, char * tname, unsigned int de
             }
         }
     }
+    return 1;
 }

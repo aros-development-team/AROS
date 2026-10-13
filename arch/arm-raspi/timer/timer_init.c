@@ -21,6 +21,7 @@
 #include <proto/arossupport.h>
 #include <proto/bootloader.h>
 #include <proto/exec.h>
+#include <proto/execlock.h>
 #include <proto/kernel.h>
 
 
@@ -86,6 +87,20 @@ int vblank_Init(struct TimerBase *LIBBASE);
 static int Timer_Init(struct TimerBase *TimerBase)
 {
     D(bug("[Timer] Timer_Init: kernel.resource @ 0x%p\n", KernelBase));
+
+#if defined(__AROSEXEC_SMP__)
+    /* tb_Lists is walked from the boot CPU's IRQ and mutated by BeginIO
+     * from any CPU. lowlevel.c only locks when tb_ExecLockBase is set,
+     * and this Init replaces the generic one that would set it. */
+    {
+        struct ExecLockBase *ExecLockBase;
+        if ((ExecLockBase = OpenResource("execlock.resource")) != NULL)
+        {
+            TimerBase->tb_ExecLockBase = ExecLockBase;
+            TimerBase->tb_ListLock = AllocLock();
+        }
+    }
+#endif
 
     TimerBase->tb_Platform.tbp_periiobase = KrnGetSystemAttr(KATTR_PeripheralBase);
 

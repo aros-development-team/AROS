@@ -25,7 +25,7 @@ static void writefuncstub(struct config *cfg, int is_rel, FILE *out, struct func
 void writestubs(struct config *cfg, int is_rel)
 {
     FILE *out;
-    char line[256];
+    char *line;
     struct functionhead *funclistit;
 
     /* Build STACKCALL - each stub in separate object file */
@@ -37,7 +37,7 @@ void writestubs(struct config *cfg, int is_rel)
         if (funclistit->lvo >= cfg->firstlvo && funclistit->libcall == STACK)
         {
 
-            snprintf(line, 255, "%s/%s_%s_%sstub.c", cfg->libgendir, cfg->modulename, funclistit->name, is_rel ? "rel" : "");
+            line = make_output_path("%s/%s_%s_%sstub.c", cfg->libgendir, cfg->modulename, funclistit->name, is_rel ? "rel" : "");
             out = fopen(line, "w");
 
             if (out == NULL)
@@ -50,11 +50,12 @@ void writestubs(struct config *cfg, int is_rel)
             writefuncstub(cfg, is_rel, out, funclistit);
 
             fclose(out);
+            free(line);
         }
     }
 
     /* Build REGCALL - all stubs in one object file */
-    snprintf(line, 255, "%s/%s_regcall_%sstubs.c", cfg->libgendir, cfg->modulename, is_rel ? "rel" : "");
+    line = make_output_path("%s/%s_regcall_%sstubs.c", cfg->libgendir, cfg->modulename, is_rel ? "rel" : "");
     out = fopen(line, "w");
 
     if (out == NULL)
@@ -76,6 +77,7 @@ void writestubs(struct config *cfg, int is_rel)
         }
     }
     fclose(out);
+    free(line);
 
 }
 

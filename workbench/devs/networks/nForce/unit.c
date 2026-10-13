@@ -28,6 +28,7 @@
 #include <exec/errors.h>
 
 #include <aros/debug.h>
+#include <asm/io.h>
 
 #include <devices/sana2.h>
 #include <devices/sana2specialstats.h>
@@ -143,12 +144,12 @@ void FlushUnit(LIBBASETYPEPTR LIBBASE, struct NFUnit *unit, UBYTE last_queue, BY
 
 static inline ULONG readl(APTR base)
 {
-    return *((volatile ULONG*)base);
+    return mmio_inl(base);
 }
 
 static inline void writel(ULONG val, APTR base)
 {
-    *((volatile ULONG*)base) = val;
+    mmio_outl(val, base);
 }
 
 static inline void pci_push(UBYTE *base)

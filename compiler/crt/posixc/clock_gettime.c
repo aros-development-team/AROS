@@ -5,6 +5,8 @@
 
 #include <proto/exec.h>
 #include <proto/timer.h>
+#include <proto/task.h>
+#include <resources/task.h>
 #include <errno.h>
 
 #include "__posixc_time.h"
@@ -92,6 +94,25 @@
             break;
         }
 
+        case CLOCK_THREAD_CPUTIME_ID:
+        {
+            /* Exec accounts CPU time at task switches */
+            APTR TaskResBase = OpenResource("task.resource");
+            struct timeval tv = { 0 };
+
+            if (TaskResBase)
+            {
+                QueryTaskTags(FindTask(NULL), TaskTag_CPUTime, (IPTR)&tv, TAG_DONE);
+                tp->tv_sec  = tv.tv_sec;
+                tp->tv_nsec = tv.tv_usec * 1000;
+                retval = 0;
+            }
+            else
+            {
+                errno = EINVAL;
+            }
+            break;
+        }
         default:
             errno = EINVAL;
             break;

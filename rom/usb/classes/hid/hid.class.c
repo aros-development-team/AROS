@@ -9,6 +9,7 @@
 
 #include "numtostr.h"
 #include "hid.class.h"
+#include "hidcontroller.h"
 
 #if defined(__AROS__)
 #include <hidd/hidd.h>
@@ -30,6 +31,9 @@ static LONG _rand(struct NepHidBase *nh)
 /* /// "Lib Stuff" */
 const STRPTR GM_UNIQUENAME(libname) = MOD_NAME_STRING;
 
+/* One shutdown requester at a time, however many keyboards are attached */
+BOOL GM_UNIQUENAME(powerkeybusy) = FALSE;
+
 //#define LowLevelBase nh->nh_LowLevelBase
 
 static int GM_UNIQUENAME(libInit)(LIBBASETYPEPTR nh)
@@ -46,6 +50,7 @@ static int GM_UNIQUENAME(libInit)(LIBBASETYPEPTR nh)
     if(UtilityBase)
     {
         NewList(&nh->nh_Interfaces);
+        InitSemaphore(&nh->nh_CtrlLock);
         nch = &nh->nh_DummyNCH;
         nch->nch_ClsBase = nh;
         nch->nch_Interface = NULL;
@@ -98,6 +103,7 @@ static int GM_UNIQUENAME(libClose)(LIBBASETYPEPTR nh)
 
 static int GM_UNIQUENAME(libExpunge)(LIBBASETYPEPTR nh)
 {
+    nCtrlExit(nh);
     KPRINTF(10, ("libExpunge nh: 0x%08lx\n", nh));
 
     if(nh->nh_LowLevelBase)
@@ -428,6 +434,7 @@ AROS_LH2(IPTR, usbDoMethodA,
 
         case UCM_DOSAvailableEvent:
             nInstallLLPatch(nh);
+            nCtrlDOSAvailable(nh);
             return(TRUE);
 
         case UCM_ConfigChangedEvent:
@@ -943,6 +950,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nHidTask))
                                         } else {
                                             KPRINTF(10, ("Huh? count or nhiptr == NULL!\n"));
                                         }
+                                        nCtrlHandleReport(nch, nhr, bufreal, buflen - (nch->nch_UsesReportID ? 1 : 0));
 
                                     } else {
                                         KPRINTF(10, ("Illegal report ID %ld received!\n", reportid));
@@ -986,6 +994,11 @@ AROS_UFH0(void, GM_UNIQUENAME(nHidTask))
                 }
             }
             nFlushEvents(nch);
+            if(nch->nch_CtrlWanted)
+            {
+                nch->nch_CtrlWanted = FALSE;
+                nCtrlAttach(nch);
+            }
             if(nch->nch_TrackEvents || nch->nch_TrackKeyEvents || (nch->nch_ReportValues && nch->nch_ItemChanged))
             {
                 if(nch->nch_GUITask)
@@ -1025,6 +1038,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nHidTask))
                     Wait(1L<<nch->nch_ReadySignal);
                 }
                 //FreeSignal(nch->nch_ReadySignal);
+                nCtrlDetach(nch);
                 Forbid();
                 nhr = (struct NepHidReport *) nch->nch_HidReports.lh_Head;
                 while(nhr->nhr_Node.ln_Succ)
@@ -1041,6 +1055,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nHidTask))
                 {
                     nAddExtraReport(nch);
                     nDetectWacom(nch);
+                    nCtrlAttach(nch);
                 } else {
                     psdAddErrorMsg(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "Error parsing report descriptors!");
                     sigs |= SIGBREAKF_CTRL_C;
@@ -1244,6 +1259,15 @@ struct NepClassHid * GM_UNIQUENAME(nAllocHid)(void)
                                 BOOL fail = FALSE;
                                 nAddExtraReport(nch);
                                 nDetectWacom(nch);
+                                if(nCtrlDeferBinding(nch))
+                                {
+                                    psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                                   "Game controller '%s' deferred until controller.hidd is available.",
+                                                   nch->nch_DevIDString);
+                                    fail = TRUE;
+                                } else {
+                                    nCtrlAttach(nch);
+                                }
                                 if(!nch->nch_EPInPipe)
                                 {
                                     if(nch->nch_HasInItems)
@@ -1318,6 +1342,7 @@ struct NepClassHid * GM_UNIQUENAME(nAllocHid)(void)
 /* /// "nFreeHid()" */
 void GM_UNIQUENAME(nFreeHid)(struct NepClassHid *nch)
 {
+    nCtrlDetach(nch);
     struct NepHidReport *nhr;
     nhr = (struct NepHidReport *) nch->nch_HidReports.lh_Head;
     while(nhr->nhr_Node.ln_Succ)
@@ -6310,6 +6335,20 @@ BOOL nDoAction(struct NepClassHid *nch, struct NepHidAction *nha, struct NepHidI
         }
 
         case HUA_EXTRAWKEY:
+            /*
+             * The power key, whichever page it came in on - the map sends
+             * System Power Down, Keyboard Power and Consumer Power all to
+             * 0x5e.
+             */
+            if((nha->nha_RawKey == 0x5e) && !GM_UNIQUENAME(powerkeybusy))
+            {
+                GM_UNIQUENAME(powerkeybusy) = TRUE;
+                if(!psdSpawnSubTask(MOD_NAME_STRING " Power Key",
+                                    GM_UNIQUENAME(nPowerKeyTask), NULL))
+                {
+                    GM_UNIQUENAME(powerkeybusy) = FALSE;
+                }
+            }
 #if 0 // FIXME looks like AROS does not support this (yet?)
             nch->nch_FakeEvent.ie_Class = IECLASS_EXTRAWKEY;
             nch->nch_FakeEvent.ie_SubClass = 0;
@@ -6589,7 +6628,7 @@ void nCheckReset(struct NepClassHid *nch)
         nch->nch_FakeEvent.ie_Code == RAWKEY_DELETE)
     {
         KPRINTF(20, ("Reboot!\n"));
-        ShutdownA(SD_ACTION_COLDREBOOT);
+        ShutdownA(SD_ACTION_REBOOT);
     }
 }
 /* \\\ */
@@ -7466,4 +7505,39 @@ LONG nEasyRequestA(struct NepHidBase *nh, STRPTR body, STRPTR gadgets, RAWARG pa
     es.es_GadgetFormat = gadgets;
     return(EasyRequestArgs(NULL, &es, NULL, params));
 }
+/* \\\ */
+
+/* /// "nPowerKeyTask()" */
+#undef IntuitionBase
+#define IntuitionBase pwrIntBase
+
+AROS_UFH0(void, GM_UNIQUENAME(nPowerKeyTask))
+{
+    AROS_USERFUNC_INIT
+
+    struct Library *pwrIntBase;
+    struct EasyStruct es;
+    LONG res = 0;
+
+    if((pwrIntBase = OpenLibrary("intuition.library", 39)))
+    {
+        es.es_StructSize = sizeof(struct EasyStruct);
+        es.es_Flags = 0;
+        es.es_Title = GM_UNIQUENAME(libname);
+        es.es_TextFormat = "Shut down the system?";
+        es.es_GadgetFormat = "Shut Down|Cancel";
+
+        res = EasyRequestArgs(NULL, &es, NULL, NULL);
+        CloseLibrary(pwrIntBase);
+    }
+
+    GM_UNIQUENAME(powerkeybusy) = FALSE;
+
+    if(res)
+        ShutdownA(SD_ACTION_POWEROFF);
+
+    AROS_USERFUNC_EXIT
+}
+
+#undef IntuitionBase
 /* \\\ */

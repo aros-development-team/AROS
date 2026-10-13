@@ -55,6 +55,24 @@
  *
  * Returns 0 on success or an errno.
  * ------------------------------------------------------------------ */
+/*
+ * The interface a source address belongs to, or NULL (unspecified source, or
+ * not one of ours).
+ */
+static struct ifnet *
+ip6_srcifp(struct ip6_hdr *ip6)
+{
+    struct in6_addr src = ip6->ip6_src;     /* the header is packed */
+    struct in6_ifaddr *ia6;
+
+    if(IN6_IS_ADDR_UNSPECIFIED(&src))
+        return NULL;
+    for(ia6 = in6_ifaddr; ia6; ia6 = ia6->ia_next)
+        if(IN6_ARE_ADDR_EQUAL(&ia6->ia_addr.sin6_addr, &src))
+            return ia6->ia6_ifp;
+    return NULL;
+}
+
 int
 ip6_output(void *args, ...)
 {
@@ -94,6 +112,10 @@ ip6_output(void *args, ...)
     if(IN6_IS_ADDR_MULTICAST(&ip6->ip6_dst)) {
         if(im6o && im6o->im6o_multicast_ifp) {
             ifp = im6o->im6o_multicast_ifp;
+        } else if((ifp = ip6_srcifp(ip6)) != NULL) {
+            /* a sender that has picked its source address has picked the
+             * link: a DHCPv6 client bound to an interface's link-local
+             * address means that interface, not the first one that is up */
         } else {
             /* pick first non-loopback, up interface */
             extern struct ifnet *ifnet;
@@ -120,6 +142,43 @@ ip6_output(void *args, ...)
             ip6->ip6_hlim = im6o ? im6o->im6o_multicast_hlim
                             : IP6_DEFAULT_MULTICAST_HLIM;
         goto multicast_output;
+    }
+
+    /*
+     * A link-local destination is a neighbour on one particular link, but
+     * every interface has the same fe80::/64 prefix and the routing table
+     * holds it once - so a lookup sends all link-local traffic to whichever
+     * interface registered first (neighbour advertisements for a router on
+     * one interface going out of another). The link is the one the caller
+     * names, or the one the source address lives on. Our own addresses
+     * still take the normal path below, which loops them back.
+     */
+    if(IN6_IS_ADDR_LINKLOCAL(&ip6->ip6_dst)) {
+        struct ifnet *lifp = (im6o && im6o->im6o_multicast_ifp) ?
+                             im6o->im6o_multicast_ifp : ip6_srcifp(ip6);
+        struct in6_ifaddr *ia6;
+
+        for(ia6 = in6_ifaddr; lifp && ia6; ia6 = ia6->ia_next)
+            if(IN6_ARE_ADDR_EQUAL(&ia6->ia_addr.sin6_addr, &ip6->ip6_dst))
+                lifp = NULL;
+        if(lifp != NULL && !(lifp->if_flags & (IFF_LOOPBACK | IFF_POINTOPOINT))) {
+            struct in6_addr nbr = ip6->ip6_dst;     /* the header is packed */
+            struct rtentry *nrt;
+
+            /* the neighbour's cache entry, on that link (nd6_lookup() moves
+             * it there if it was cloned for another interface) */
+            if((nrt = nd6_lookup(&nbr, 1, lifp)) != NULL) {
+                if(ro->ro_rt)
+                    RTFREE(ro->ro_rt);
+                ro->ro_rt = nrt;
+                dst->sin6_family = AF_INET6;
+                dst->sin6_len    = sizeof(*dst);
+                dst->sin6_addr   = nbr;
+                rt  = nrt;
+                ifp = lifp;
+                goto multicast_output;
+            }
+        }
     }
 
     if(ro->ro_rt == NULL ||

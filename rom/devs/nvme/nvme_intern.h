@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2025, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2020-2026, The AROS Development Team.  All rights reserved.
  */
 
 #ifndef NVME_INTERN_H
@@ -149,6 +149,7 @@ typedef struct {
     ULONG              	dev_HostID;
 
     UBYTE               dev_mdts;
+    ULONG               dev_MaxXfer;    /* MDTS as a byte count, 0 = controller imposes no limit */
     ULONG               dev_Features;
 
     int                 db_stride;
@@ -156,7 +157,7 @@ typedef struct {
     volatile ULONG *dbs;
 
     UWORD               pageshift;
-    UWORD               pagesize;
+    ULONG               pagesize;
     ULONG               ctrl_config;
     ULONG               queuecnt;
     struct nvme_queue   **dev_Queues;
@@ -351,6 +352,7 @@ struct nvme_Unit
 
     ULONG               au_SecShift;
     UQUAD               au_SecCnt;
+    ULONG               au_MaxTransfer; /* largest single transfer in bytes */
 
     UQUAD               au_Low;
     UQUAD               au_High;

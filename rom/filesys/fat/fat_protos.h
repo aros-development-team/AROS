@@ -2,7 +2,7 @@
  * fat-handler - FAT12/16/32 filesystem handler
  *
  * Copyright (C) 2006 Marek Szyprowski
- * Copyright (C) 2007-2015 The AROS Development Team
+ * Copyright (C) 2007-2026 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -24,7 +24,7 @@ void ReplyPacket(struct DosPacket *pkt, struct ExecBase *sysbase);
 
 /* direntry.c */
 void InitDir(struct FSSuper *sb, ULONG cluster, struct DirEntry *de);
-LONG InitDirHandle(struct FSSuper *sb, ULONG cluster, struct DirHandle *dh,
+void InitDirHandle(struct FSSuper *sb, ULONG cluster, struct DirHandle *dh,
     BOOL reuse, struct Globals *glob);
 LONG ReleaseDirHandle(struct DirHandle *dh, struct Globals *glob);
 LONG GetDirEntry(struct DirHandle *dh, ULONG index, struct DirEntry *de,
@@ -54,6 +54,8 @@ LONG FillFIB(struct ExtFileLock *fl, struct FileInfoBlock *fib,
 LONG GetDirEntryShortName(struct DirEntry *de, STRPTR name, ULONG *len,
     struct Globals *glob);
 LONG GetDirEntryLongName(struct DirEntry *de, STRPTR name, ULONG *len);
+LONG GetDirEntryLongNameFrom(struct DirHandle *dh, struct DirEntry *de,
+    STRPTR name, ULONG *len);
 LONG SetDirEntryName(struct DirEntry *de, STRPTR name, ULONG len);
 ULONG NumLongNameEntries(STRPTR name, ULONG len);
 
@@ -66,8 +68,8 @@ BOOL SetFat16Entry(struct FSSuper *sb, ULONG n, ULONG val);
 BOOL SetFat32Entry(struct FSSuper *sb, ULONG n, ULONG val);
 LONG FindFreeCluster(struct FSSuper *sb, ULONG *rcluster);
 void CountFreeClusters(struct FSSuper *sb);
-void AllocCluster(struct FSSuper *sb, ULONG cluster);
-void FreeCluster(struct FSSuper *sb, ULONG cluster);
+BOOL AllocCluster(struct FSSuper *sb, ULONG cluster);
+BOOL FreeCluster(struct FSSuper *sb, ULONG cluster);
 
 /* volume.c */
 LONG ReadFATSuper(struct FSSuper *s);
@@ -138,6 +140,11 @@ void SendNotifyByLock(struct FSSuper *sb, struct GlobalLock *gl);
 void SendNotifyByDirEntry(struct FSSuper *sb, struct DirEntry *de);
 void ProcessNotify(struct Globals *glob);
 
+/* validate.c */
+LONG ValidateVolume(struct FSSuper *sb, BOOL *changed, BOOL *complete);
+BOOL IsVolumeClean(struct FSSuper *sb);
+void MarkVolumeDirty(struct Globals *glob);
+BOOL MarkVolumeClean(struct Globals *glob);
 /* timer.c */
 LONG InitTimer(struct Globals *glob);
 void CleanupTimer(struct Globals *glob);

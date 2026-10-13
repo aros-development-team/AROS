@@ -9,6 +9,10 @@ typedef struct tls
     ULONG               ScheduleFlags;
     BYTE                IDNestCnt;
     BYTE                TDNestCnt;
+    UWORD               Quantum;
+    UWORD               Elapsed;
+    ULONG               CPUNumber;      /* Logical id, set by the boot CPU;
+                                         * MPIDR_EL1 is unreliable on Pi 3 */
 } tls_t;
 
 #define TLSSF_Quantum   (1 << 0)

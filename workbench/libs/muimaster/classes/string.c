@@ -2243,7 +2243,7 @@ IPTR String__MUIM_FileNameStart(struct IClass *cl, Object *obj,
 
     buf = data->Buffer;
 
-    // TODO: Implement String_FileNameStart correctly!
+    // TODO: Return the partial filename start position, not the buffer pointer.
 
     return (IPTR) buf;
 }

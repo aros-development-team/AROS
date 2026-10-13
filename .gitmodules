@@ -223,3 +223,6 @@
 [submodule "rom/m68kemu/Moira"]
 	path = rom/m68kemu/Moira
 	url = https://github.com/dirkwhoffmann/Moira.git
+[submodule "workbench/prefs/wifi/catalogs"]
+	path = workbench/prefs/wifi/catalogs
+	url = https://github.com/aros-translation-team/wifi-prefs.git

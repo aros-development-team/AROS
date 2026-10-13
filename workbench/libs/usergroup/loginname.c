@@ -5,7 +5,7 @@
  *
  * Based upon usergroup.library from AmiTCP/IP.
  *
- * Copyright © 2025 The AROS Dev Team.
+ * Copyright © 2025-2026 The AROS Dev Team.
  * Copyright © 1993 AmiTCP/IP Group, <AmiTCP-Group@hut.fi>
  *                  Helsinki University of Technology, Finland.
  */
@@ -61,6 +61,9 @@ AROS_LH0(char *, getlogin,
 
     static char buffer[MAXLOGNAME];
     struct proc *p;
+
+    if (ugSecActive((struct Library *)UserGroupBase))
+        return ugSecGetLogin((struct Library *)UserGroupBase, buffer, MAXLOGNAME);
 
     D(bug("[UserGroup] %s()\n", __func__));
 
@@ -120,6 +123,7 @@ AROS_LH1(int, setlogin,
          struct UserGroupBase *, UserGroupBase, 37, Usergroup)
 {
     AROS_LIBFUNC_INIT
+    if (ugSecActive((struct Library *)UserGroupBase)) { ug_SetErrno((struct Library *)UserGroupBase, EPERM); return -1; }   /* use Login */
 
     struct proc *p;
     int error;

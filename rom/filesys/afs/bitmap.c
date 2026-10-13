@@ -355,8 +355,15 @@ ULONG i, blocks, maxinbitmap;
 
         /* initialize a block as a bitmap block */
         extensionblock = getFreeCacheBlock(afsbase, volume, -1);
+        if (extensionblock == NULL)
+                return DOSFALSE;
         extensionblock->flags |= BCF_USED;
         bitmapblock = getFreeCacheBlock(afsbase, volume, volume->rootblock+1);
+        if (bitmapblock == NULL)
+        {
+                extensionblock->flags &= ~BCF_USED;
+                return DOSFALSE;
+        }
         /* all blocks are free */
         for (i=1;i<volume->SizeBlock;i++)
                 bitmapblock->buffer[i] = 0xFFFFFFFF;
@@ -372,7 +379,11 @@ ULONG i, blocks, maxinbitmap;
                 if (maxinbitmap > blocks)
                         maxinbitmap = blocks;
                 volume->bitmapblockpointers[i] = bitmapblock->blocknum;
-                writeBlock(afsbase, volume, bitmapblock, -1);
+                if (!writeBlock(afsbase, volume, bitmapblock, -1))
+                {
+                        extensionblock->flags &= ~BCF_USED;
+                        return DOSFALSE;
+                }
                 bitmapblock->blocknum += 1;
                 blocks = blocks - maxinbitmap;
                 if (blocks == 0)
@@ -399,7 +410,11 @@ ULONG i, blocks, maxinbitmap;
                                         maxinbitmap = blocks;
                                 bitmapblock->blocknum += 1;
                                 extensionblock->buffer[i] = OS_LONG2BE(bitmapblock->blocknum);
-                                writeBlock(afsbase, volume, bitmapblock, -1);
+                                if (!writeBlock(afsbase, volume, bitmapblock, -1))
+                                {
+                                        extensionblock->flags &= ~BCF_USED;
+                                        return DOSFALSE;
+                                }
                                 blocks = blocks-maxinbitmap;
                                 if (blocks == 0)
                                         break;
@@ -409,7 +424,11 @@ ULONG i, blocks, maxinbitmap;
                                 /* fill next extension */
                                 extensionblock->buffer[volume->SizeBlock-1]=OS_LONG2BE(bitmapblock->blocknum+1);
                         }
-                        writeBlock(afsbase, volume, extensionblock, -1);
+                        if (!writeBlock(afsbase, volume, extensionblock, -1))
+                        {
+                                extensionblock->flags &= ~BCF_USED;
+                                return DOSFALSE;
+                        }
                         bitmapblock->blocknum += 1;
                 } while (blocks != 0);
         }
@@ -427,9 +446,10 @@ struct BlockCache *blockbuffer;
         if (blockbuffer == NULL)
                 return DOSFALSE;
         blockbuffer->buffer[BLK_BITMAP_VALID_FLAG(volume)] = flag;
-        if ((blockbuffer->flags & BCF_WRITE) == 0)
+        if (flag == 0 && !volume->bitmapinvalid && !volume->writefailed)
         {
-                writeBlock(afsbase, volume, blockbuffer, BLK_CHECKSUM);
+                if (!writeBlock(afsbase, volume, blockbuffer, BLK_CHECKSUM))
+                        return DOSFALSE;
                 blockbuffer->flags |= BCF_WRITE;
         }
         else
@@ -439,6 +459,8 @@ struct BlockCache *blockbuffer;
 
 LONG invalidBitmap(struct AFSBase *afsbase, struct Volume *volume) {
 
+        if (volume->writefailed || volume->cachepending)
+                return DOSFALSE;
         volume->lastextensionblock = 0;
         volume->lastposition = 0;
         volume->bstartblock = volume->bootblocks;       /* reserved */
@@ -455,15 +477,28 @@ LONG invalidBitmap(struct AFSBase *afsbase, struct Volume *volume) {
         return DOSFALSE;
 }
 
+void releaseBitmap(struct Volume *volume)
+{
+        if (volume->bitmapblock != NULL)
+                volume->bitmapblock->flags &= ~BCF_USED;
+}
+
 LONG validBitmap(struct AFSBase *afsbase, struct Volume *volume) {
 
+        if (volume->bitmapblock == NULL)
+        {
+                volume->writefailed = TRUE;
+                volume->state = ID_VALIDATING;
+                setBitmapFlag(afsbase, volume, 0);
+                return DOSFALSE;
+        }
         if (volume->bitmapblock->flags & BCF_WRITE)
         {
                 writeBlockDeferred(afsbase, volume, volume->bitmapblock, 0);
         }
         volume->bitmapblock->flags &= ~BCF_USED;
-        setBitmapFlag(afsbase, volume, -1);
-        return DOSTRUE;
+        return setBitmapFlag(afsbase, volume, volume->writefailed ? 0 : -1)
+                && !volume->writefailed;
 }
 
 /*************************************************
@@ -494,16 +529,18 @@ ULONG bblock,togo,maxinbitmap;
         *bitnr = *bitnr % 32;         /* in the bit-th bit of LONG "longnr" "block" is marked */
         /* load new block ? */
         if (
+                        (volume->bitmapblock == NULL) ||
                         (block<volume->bstartblock) ||
                         (block>=(volume->bstartblock+maxinbitmap))
                 )
         {
                 bblock = block/maxinbitmap; /* in the bblock-th bitmap block is "block" marked */
-                if (volume->bitmapblock->flags & BCF_WRITE)
+                if (volume->bitmapblock != NULL && (volume->bitmapblock->flags & BCF_WRITE))
                 {
                         writeBlockDeferred(afsbase, volume, volume->bitmapblock, 0);
                 }
-                volume->bitmapblock->flags &= ~BCF_USED;
+                releaseBitmap(volume);
+                volume->bitmapblock = NULL;
                 /* load new block */
                 if (bblock<=24)
                 {
@@ -542,7 +579,7 @@ ULONG bblock,togo,maxinbitmap;
                                                 );
                                 if (extensionblock == NULL)
                                 {
-                                        showText(afsbase, "Could not read bitmap extension block %lu!", OS_BE2LONG(extensionblock->buffer[volume->SizeBlock-1]));
+                                        showText(afsbase, "Could not read bitmap extension block after %lu!", volume->lastextensionblock);
                                         return FALSE;
                                 }
                                 volume->lastextensionblock = extensionblock->blocknum;
@@ -570,6 +607,8 @@ ULONG bblock,togo,maxinbitmap;
 LONG markBlock(struct AFSBase *afsbase, struct Volume *volume, ULONG block, ULONG mode) {
 ULONG bitnr, longnr;
 
+        if (volume->cachepending || volume->writefailed)
+                return DOSFALSE;
         D(bug("[afs]    markBlock: block=%u mode=%u\n",block,mode));
         if (block>=volume->countblocks)
         {
@@ -577,7 +616,11 @@ ULONG bitnr, longnr;
             return 0;
         }
         if (!gotoBitmapBlock(afsbase, volume, block, &longnr, &bitnr))
+        {
+                volume->writefailed = TRUE;
+                volume->state = ID_VALIDATING;
                 return 0;
+        }
         if (mode)
         {
                 /* free a block */

@@ -2,11 +2,12 @@
 include $(SRCDIR)/config/aros.cfg
 
 USER_LDFLAGS := -static
+USER_INCLUDES := -I$(SRCDIR)/arch/arm-native/soc/broadcom/2712/rp1
 
 #MM- hidd-i2c-dw-bcm2712 : hidd-i2c-dw-bcm2712-module
 
 %build_module mmake=hidd-i2c-dw-bcm2712-module \
-    modname=i2cdw modtype=hidd \
+    modname=i2cdw modtype=hidd conffile=i2c-dw.conf \
     files="i2c_dw"
 
 %common

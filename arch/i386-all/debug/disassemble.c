@@ -71,9 +71,9 @@ AROS_LH3(APTR, InitDisassembleCtx,
     ud_t * ud_obj = AllocVec(sizeof(ud_t), MEMF_CLEAR);
     if (ud_obj)
     {
-        struct DisData *disData = AllocVec(sizeof(struct DisData), MEMF_ANY);
+        struct DisData *disData = AllocVec(sizeof(struct DisData), MEMF_CLEAR);
         if (disData) {
-            const char *symname;
+            const char *symname = NULL;
             struct TagItem locTags[] =
             {
                 { DL_SymbolName,    (IPTR)&symname  },

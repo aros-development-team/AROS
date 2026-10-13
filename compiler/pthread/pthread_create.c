@@ -22,6 +22,8 @@
 
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <exec/semaphores.h>
+#include <exec/lists.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -29,9 +31,70 @@
 #include "pthread_intern.h"
 #include "debug.h"
 
+/*
+ * Loosely-coupled C-runtime per-thread hook registry.  Kept in sync with the
+ * identical declarations in compiler/crt/posixc/__threadhook.c and found by
+ * name in the public semaphore list.
+ *
+ * A C runtime that uses per-task library bases (e.g. posixc.library, which is
+ * "pertaskbase") reads the calling Task's own base out of per-task storage and
+ * jumps through it directly.  A worker we create never runs the program's C
+ * startup, so its slot is NULL and the first CRT call would bus-fault.  The
+ * CRT registers enter/leave hooks here; we run them in every worker so it
+ * acquires a valid CRT base of its own.  pthread stays C-runtime agnostic - it
+ * neither knows nor names any CRT.
+ */
+#define CRT_THREADHOOKS_SEMNAME "crt.thread-hooks.v1"
+#define CRT_MAX_THREADHOOKS     8
+
+struct CRTThreadHook
+{
+    struct MinNode  th_Node;
+    void          (*th_Enter)(void);
+    void          (*th_Leave)(void);
+};
+
+struct CRTThreadHooks
+{
+    struct SignalSemaphore th_Sem;
+    struct MinList         th_Hooks;
+};
+
+static void RunCRTThreadHooks(BOOL enter)
+{
+    struct CRTThreadHooks *reg;
+    struct CRTThreadHook *h;
+    void (*fns[CRT_MAX_THREADHOOKS])(void);
+    int n = 0, i;
+
+    reg = (struct CRTThreadHooks *)FindSemaphore((STRPTR)CRT_THREADHOOKS_SEMNAME);
+    if (!reg)
+        return;
+
+    /* Snapshot the hook pointers under the lock, then call them unlocked: an
+       enter hook opens a library and must not run under our semaphore. */
+    ObtainSemaphoreShared(&reg->th_Sem);
+    for (h = (struct CRTThreadHook *)reg->th_Hooks.mlh_Head;
+         h->th_Node.mln_Succ != NULL && n < CRT_MAX_THREADHOOKS;
+         h = (struct CRTThreadHook *)h->th_Node.mln_Succ)
+    {
+        void (*fn)(void) = enter ? h->th_Enter : h->th_Leave;
+        if (fn)
+            fns[n++] = fn;
+    }
+    ReleaseSemaphore(&reg->th_Sem);
+
+    /* Leave hooks run in the reverse order of the enter hooks. */
+    if (enter)
+        for (i = 0; i < n; i++) fns[i]();
+    else
+        for (i = n - 1; i >= 0; i--) fns[i]();
+}
+
 static void StarterFunc(void)
 {
     ThreadInfo *inf;
+    struct Task *waiter;
     int i, j;
     int foundkey = TRUE;
 #ifdef USE_ASYNC_CANCEL
@@ -48,7 +111,10 @@ static void StarterFunc(void)
     inf = (ThreadInfo *)FindTask(NULL)->tc_UserData;
 #endif
 
-    Wait(SIGF_SINGLE);
+    // wait until the parent has set inf->task. Not by signal: a SIGF_SINGLE
+    // arriving while DosEntry waits in ObtainSemaphore ends that wait unowned
+    ObtainSemaphore(&thread_sem);
+    ReleaseSemaphore(&thread_sem);
 
     // trim the name
     //inf->task->tc_Node.ln_Name[inf->oldlen];
@@ -66,6 +132,10 @@ static void StarterFunc(void)
 #endif
     SetExcept(SIGBREAKF_CTRL_C, SIGBREAKF_CTRL_C);
 #endif
+
+    // give this worker its own C runtime base(s) before running any user or
+    // CRT code; run once, before the pthread_exit jump point
+    RunCRTThreadHooks(TRUE);
 
     // set a jump point for pthread_exit
     if (!setjmp(inf->jmp))
@@ -113,8 +183,10 @@ static void StarterFunc(void)
 
     // destroy all non-NULL TLS key values
     // since the destructors can set the keys themselves, we have to do multiple iterations
+    // (not when cancelled by the program's exit: as with POSIX exit() the thread
+    // just ends, its destructors may wait for the code it was cancelled in)
     ObtainSemaphoreShared(&tls_sem);
-    for (j = 0; foundkey && j < PTHREAD_DESTRUCTOR_ITERATIONS; j++)
+    for (j = 0; !__pthread_exiting && foundkey && j < PTHREAD_DESTRUCTOR_ITERATIONS; j++)
     {
         foundkey = FALSE;
         for (i = 0; i < PTHREAD_KEYS_MAX; i++)
@@ -130,23 +202,91 @@ static void StarterFunc(void)
     }
     ReleaseSemaphore(&tls_sem);
 
+    // release the C runtime base(s) acquired above, after all user code
+    // (including TLS destructors) has run
+    RunCRTThreadHooks(FALSE);
+
+    // decide under thread_sem: pthread_detach() and pthread_join() may run
+    // concurrently. A joiner is woken even if we were detached meanwhile.
+    ObtainSemaphore(&thread_sem);
+    waiter = inf->waiter;
     if (!inf->detached)
-    {
-        // tell the parent thread that we are done
-        Forbid();
         inf->finished = TRUE;
-        Signal(inf->waiter, SIGF_PARENT);
-    }
     else
-    {
-        // no one is waiting for us, do the clean up
-        ObtainSemaphore(&thread_sem);
         memset(inf, 0, sizeof(ThreadInfo));
-        ReleaseSemaphore(&thread_sem);
-    }
+    ReleaseSemaphore(&thread_sem);
+    // the joiner may unload our code: let it run once we are gone
+    Forbid();
+    if (waiter)
+        Signal(waiter, SIGF_PARENT);
 }
 
-int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start)(void *), void *arg)
+/****************************************************************************
+    NAME */
+        int pthread_create(
+
+/*  SYNOPSIS */
+        pthread_t *thread,
+        const pthread_attr_t *attr,
+        void *(*start)(void *),
+        void *arg)
+
+/*  FUNCTION
+        Start a worker running start(arg). The worker may execute before this
+        call returns. A normal return from start stores its pointer result for
+        pthread_join(); pthread_exit() also runs registered cleanup handlers.
+
+        The attributes are copied. With NULL attributes, the worker is joinable,
+        uses the creator's priority and stack extent, and starts with deferred
+        cancellation enabled. A joinable worker retains its slot until joined;
+        a detached worker releases its slot when it finishes.
+
+    INPUTS
+        thread - Non-NULL writable output for the new thread identifier.
+        attr - Initialized attributes, or NULL for defaults. May be destroyed
+            after this call. A supplied stack remains caller-owned and must
+            remain valid until the worker has finished using it.
+        start - Non-NULL worker entry point. Receives arg unchanged.
+        arg - Borrowed argument pointer, which may be NULL. Its storage and
+            everything reachable through it must outlive the worker's use.
+
+    RESULT
+        0 on success; *thread receives the identifier. EINVAL if thread or start
+        is NULL. EAGAIN if no slot is available, a thread record cannot be
+        allocated, or the process-creation result is observed as NULL.
+        On error, *thread is unchanged. Errors are returned directly.
+
+    NOTES
+        Include <pthread.h> and link with the pthread link library. Call from
+        task context with its runtime initialized. Creation can wait for the
+        internal thread semaphore and system allocation; it has no timeout.
+
+        The worker runs in a DOS process and applies attr's scheduling priority.
+        Scheduling inheritance and contention-scope fields are not implemented
+        by this creation path. The start routine must return a pointer whose
+        lifetime permits its eventual use by the joiner, not worker-stack data.
+
+        Worker exit runs non-NULL thread-specific destructors before releasing
+        its C runtime. Destructors are skipped during program-wide teardown.
+        Join or detach every successfully created joinable worker. Identifiers
+        are reused; they are not permanent handles.
+
+    BUGS
+        An immediately finishing detached worker can clear its record before
+        the creator tests inf->task after releasing the thread semaphore. Thus
+        an EAGAIN result does not establish that the entry point never ran.
+
+        Returning from start bypasses the cleanup-handler list in this
+        implementation. Use balanced cleanup operations or pthread_exit()
+        when those handlers must run.
+
+    SEE ALSO
+        pthread_join(),
+        pthread_exit(),
+        pthread_attr_init(),
+        pthread_cancel()
+
+*****************************************************************************/
 {
     ThreadInfo *inf;
     char name[NAMELEN];
@@ -168,13 +308,23 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start)
         return EAGAIN;
     }
 
+    if (threadnew == threads_used)
+    {
+        // AllocVec: memory from a thread's C runtime goes away with the thread
+        if (!(threads[threadnew] = AllocVec(sizeof(ThreadInfo), MEMF_ANY)))
+        {
+            ReleaseSemaphore(&thread_sem);
+            return EAGAIN;
+        }
+        __atomic_store_n(&threads_used, threadnew + 1, __ATOMIC_RELEASE);
+    }
+
     // prepare the ThreadInfo structure
     inf = GetThreadInfo(threadnew);
     memset(inf, 0, sizeof(ThreadInfo));
     inf->start = start;
     inf->arg = arg;
     inf->parent = GET_THIS_TASK;
-    inf->waiter = inf->parent;
     if (attr)
         inf->attr = *attr;
     else
@@ -214,8 +364,6 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start)
         inf->parent = NULL;
         return EAGAIN;
     }
-
-    Signal(inf->task, SIGF_SINGLE);
 
     *thread = threadnew;
 

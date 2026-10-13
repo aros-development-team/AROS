@@ -2,7 +2,7 @@
 #define VOLUMES_H
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -15,10 +15,12 @@ struct Volume {
 	struct Device *device;       /* the handler this volume uses */
 	struct DeviceList devicelist __attribute__((aligned(4))); /* BPTR compatible */
 	struct DosList *volumenode;
+	BOOL volumenodeadded;        /* volumenode is in the system DosList */
 
 	ULONG SizeBlock;             /* Block size in words */
 	ULONG blocksectors;          /* nr of sectors per block */
 	ULONG sectorsize;            /* nr of bytes per sector */
+	ULONG maxtransfer;           /* max bytes per device request (DE_MAXTRANSFER) */
 
         ULONG FNameMax;
 
@@ -28,6 +30,11 @@ struct Volume {
 	struct IOHandle ioh;
 	struct BlockCache *blockcache;
 	LONG numbuffers;
+	APTR bulkbuffer;             /* bounce buffer for multi-block reads */
+	ULONG bulkblocks;            /* blocks it holds (0 = none) */
+	BOOL cachepending;           /* dirty cache belongs to the removed medium */
+	BOOL bitmapinvalid;          /* last successful root write cleared its valid flag */
+	BOOL writefailed;            /* pause mutations/background retries after an I/O error */
 	ULONG cachecounter;           /* Keeps track of cache usage */
 	ULONG state;                 /* Read-only, read/write or validating */
         ULONG key;                   /* Lock key */

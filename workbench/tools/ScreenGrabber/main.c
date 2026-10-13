@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2026, The AROS Development Team. All rights reserved.
 */
 
 //#define DEBUG 1
@@ -44,6 +44,166 @@ static struct Hook refresh_hook;
 static struct Hook select_hook;
 static struct Hook grab_hook;
 static struct Hook save_hook;
+
+static LONG CaptureScreenToFile(CONST_STRPTR screenname, CONST_STRPTR filename)
+{
+    struct Screen *screen;
+    Object *image = NULL;
+    APTR row = NULL;
+    UBYTE *rgb = NULL;
+    BPTR fh = BNULL;
+    LONG result = RETURN_FAIL;
+    BOOL ppm;
+
+    ppm = strlen((const char *)filename) > 4 &&
+        strcasecmp((const char *)filename + strlen((const char *)filename) - 4,
+            ".ppm") == 0;
+    screen = LockPubScreen(screenname);
+    if (!screen)
+    {
+        fprintf(stderr, "%s: unable to lock public screen '%s'\n",
+            APPNAME, screenname ? (const char *)screenname : "<default>");
+        return result;
+    }
+
+    row = AllocVec(4 * screen->Width, MEMF_ANY);
+    if (!row)
+    {
+        fprintf(stderr, "%s: unable to allocate capture row\n", APPNAME);
+        goto out;
+    }
+
+    if (ppm)
+    {
+        ULONG y;
+
+        rgb = AllocVec(3 * screen->Width, MEMF_ANY);
+        if (!rgb)
+        {
+            fprintf(stderr, "%s: unable to allocate PPM row\n", APPNAME);
+            goto out;
+        }
+
+        fh = Open(filename, MODE_NEWFILE);
+        if (!fh)
+        {
+            fprintf(stderr, "%s: unable to open %s (IoErr=%ld)\n",
+                APPNAME, filename, IoErr());
+            goto out;
+        }
+
+        FPrintf(fh, "P6\n%ld %ld\n255\n",
+            (LONG)screen->Width, (LONG)screen->Height);
+        for (y = 0; y < screen->Height; y++)
+        {
+            ULONG x;
+            UBYTE *argb = row;
+
+            ReadPixelArray(row, 0, 0, 4 * screen->Width,
+                &screen->RastPort, 0, y, screen->Width, 1,
+                RECTFMT_ARGB);
+            for (x = 0; x < screen->Width; x++)
+            {
+                rgb[x * 3] = argb[x * 4 + 1];
+                rgb[x * 3 + 1] = argb[x * 4 + 2];
+                rgb[x * 3 + 2] = argb[x * 4 + 3];
+            }
+            if (Write(fh, rgb, 3 * screen->Width) != 3 * screen->Width)
+            {
+                fprintf(stderr, "%s: failed while writing %s (IoErr=%ld)\n",
+                    APPNAME, filename, IoErr());
+                goto out;
+            }
+        }
+        printf("%s: captured %ux%u public screen to %s\n",
+            APPNAME, screen->Width, screen->Height, filename);
+        result = RETURN_OK;
+        goto out;
+    }
+
+    image = NewDTObject((APTR)NULL,
+        DTA_SourceType, DTST_RAM,
+        DTA_BaseName, (IPTR)"png",
+        PDTA_DestMode, PMODE_V43,
+        TAG_DONE);
+    if (image)
+    {
+        struct BitMapHeader *bmhd = NULL;
+
+        GetDTAttrs(image, PDTA_BitMapHeader, (IPTR)&bmhd, TAG_DONE);
+        if (bmhd)
+        {
+            ULONG y;
+            struct pdtBlitPixelArray dtb;
+
+            dtb.MethodID = PDTM_WRITEPIXELARRAY;
+            dtb.pbpa_PixelData = row;
+            dtb.pbpa_PixelFormat = PBPAFMT_ARGB;
+            dtb.pbpa_PixelArrayMod = screen->Width;
+            dtb.pbpa_Left = 0;
+            dtb.pbpa_Width = screen->Width;
+            dtb.pbpa_Height = 1;
+
+            bmhd->bmh_Width = screen->Width;
+            bmhd->bmh_Height = screen->Height;
+            bmhd->bmh_Depth = 24;
+            bmhd->bmh_PageWidth = screen->Width;
+            bmhd->bmh_PageHeight = screen->Height;
+
+            for (y = 0; y < screen->Height; y++)
+            {
+                ReadPixelArray(row, 0, 0, 4 * screen->Width,
+                    &screen->RastPort, 0, y, screen->Width, 1,
+                    RECTFMT_ARGB);
+                dtb.pbpa_Top = y;
+                DoMethodA(image, (Msg)&dtb);
+            }
+
+            fh = Open(filename, MODE_NEWFILE);
+            if (fh)
+            {
+                struct dtWrite dtw;
+
+                dtw.MethodID = DTM_WRITE;
+                dtw.dtw_GInfo = NULL;
+                dtw.dtw_FileHandle = fh;
+                dtw.dtw_Mode = DTWM_RAW;
+                dtw.dtw_AttrList = NULL;
+
+                SetIoErr(0);
+                DoMethodA(image, (Msg)&dtw);
+                if (IoErr() == 0)
+                {
+                    printf("%s: captured %ux%u public screen to %s\n",
+                        APPNAME, screen->Width, screen->Height, filename);
+                    result = RETURN_OK;
+                }
+                else
+                {
+                    fprintf(stderr, "%s: failed to write %s (IoErr=%ld)\n",
+                        APPNAME, filename, IoErr());
+                }
+            }
+            else
+            {
+                fprintf(stderr, "%s: unable to open %s (IoErr=%ld)\n",
+                    APPNAME, filename, IoErr());
+            }
+        }
+    }
+    else
+    {
+        fprintf(stderr, "%s: unable to create PNG datatype object\n", APPNAME);
+    }
+
+out:
+    if (fh) Close(fh);
+    if (image) DisposeDTObject(image);
+    if (rgb) FreeVec(rgb);
+    if (row) FreeVec(row);
+    UnlockPubScreen(NULL, screen);
+    return result;
+}
 
 AROS_UFH3(void, display_function,
     AROS_UFHA(struct Hook *, h, A0),
@@ -435,6 +595,13 @@ int main(int argc, char **argv)
     static struct WBArg *wb_arg;
     static STRPTR cxname;
     int result = RETURN_OK;
+    if (argc > 1)
+    {
+        CONST_STRPTR screenname = argc > 2 ? argv[2] : NULL;
+
+        return CaptureScreenToFile(screenname, argv[1]);
+    }
+
     if (argc)
     {
         cxname=argv[0];

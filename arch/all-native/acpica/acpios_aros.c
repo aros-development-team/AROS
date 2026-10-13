@@ -20,6 +20,8 @@
 #include "acpica_intern.h"
 
 #include <hardware/efi/config.h>
+#include <hardware/smbios.h>
+#include "smbioslib.h"
 
 #include <proto/exec.h>
 #include <proto/timer.h>
@@ -83,11 +85,13 @@ static AROS_INTH1(ACPICAResetHandler, struct ACPICABase *, ACPICABase)
 
     D(bug("[ACPI] %s()\n", __func__);)
 
-    if (ACPICABase->ab_ResetInt.is_Node.ln_Type != SD_ACTION_WARMREBOOT)
+    /* Mask the supervisor/emergency bits out, and test the warm bit
+       bitwise so the combined SD_ACTION_REBOOT is accepted too */
+    if (!((ACPICABase->ab_ResetInt.is_Node.ln_Type & SD_ACTION_MASK) & SD_ACTION_WARMREBOOT))
     {
         D(bug("[ACPI] %s: Skipping ACPI shutdown (Not WARMREBOOT)\n", __func__);)
         return FALSE;
-    }            
+    }
     else
     {
         /* Install libbase into storage so that __aros_getbase_ACPICABase works on all architectures */
@@ -936,113 +940,27 @@ ExecuteOSI (
     return (AE_OK);
 }
 
-struct SMBIOSHeader
-{
-    UBYTE sm_Type;
-    UBYTE sm_Length;
-    UWORD sm_Handle;
-};
-
-static struct SMBIOSHeader * SMBIOS_GetNextTable(struct SMBIOSHeader *table)
-{
-    UBYTE *ptr = (UBYTE *)((IPTR)table + table->sm_Length);
-
-    while (1)
-    {
-        if (ptr[0] == 0 && ptr[1] == 0)
-            return (struct SMBIOSHeader *) (ptr + 2);
-        ptr++;
-    }
-
-    return NULL;
-}
-
 static char * SMBIOS_GetProductName()
 {
     /* Use SMBIOS to find out system model */
-    BOOL smbiosver = 0;
-    IPTR eps = 0;
-    struct Library *EFIBase = OpenResource("efi.resource");
+    struct SMBIOSTable st;
+    const struct SMBIOSHeader *table;
+    const char *product;
 
-    /* On a UEFI machine the entry point is a configuration table */
-    if (EFIBase)
-    {
-        const uuid_t smbios3_guid = SMBIOS3_TABLE_GUID;
-        const uuid_t smbios_guid = SMBIOS_TABLE_GUID;
+    if (!SMBIOS_Locate(&st))
+        return NULL;
 
-        eps = (IPTR)EFI_FindConfigTable(&smbios3_guid);
-        if (eps)
-            smbiosver = 3;
-        else if ((eps = (IPTR)EFI_FindConfigTable(&smbios_guid)) != 0)
-            smbiosver = 2;
-    }
+    D(bug("[SMBIOS] EPS found @ %p, first table %p\n", st.st_EntryPoint, st.st_Table));
 
-    /*
-     * Otherwise scan the ROM area for it. Only the PC has one - the
-     * 0xF0000-0xFFFFF window does not exist elsewhere, and on riscv64
-     * reading it faults.
-     */
-#if defined(__i386__) || defined(__x86_64__)
-    if (!eps)
-    {
-        char *ptr = (char *)0x000F0000;
+    table = SMBIOS_FindStructure(&st, SMBIOS_TYPE_SYSTEM, NULL);
+    if (!table || table->sm_Length < 0x06)
+        return NULL;
 
-        while (ptr <= (char *)0x000FFFFF)
-        {
-            if (ptr[0] == '_' && ptr[1] == 'S' && ptr[2] == 'M')
-            {
-                if (ptr[3] == '_') smbiosver = 2;
-                if (ptr[3] == '3' && ptr[4] == '_') smbiosver = 3;
-                if (smbiosver != 0)
-                {
-                    eps = (IPTR)ptr;
-                    break;
-                }
-            }
-            ptr += 16;
-        }
-    }
-#endif
+    /* Offset 0x05 is the string number of the product name */
+    product = SMBIOS_GetString(&st, table, ((const UBYTE *)table)[0x05]);
+    D(bug("[SMBIOS] System information table @ %p, product '%s'\n", table, product ? product : ""));
 
-    if (eps != 0)
-    {
-        IPTR firsttb = 0;
-        if (smbiosver == 2) firsttb = *((ULONG *)(eps + 0x18));
-        if (smbiosver == 3) firsttb = *((UQUAD *)(eps + 0x10));
-
-        D(bug("[SMBIOS] EPS found @ %p, first table %p\n", (APTR)eps, (APTR)(firsttb)));
-        struct SMBIOSHeader *table = (struct SMBIOSHeader *)firsttb;
-        while (table->sm_Type != 0x1) /* System information table */
-            table = SMBIOS_GetNextTable(table);
-
-        UBYTE productidx = *(UBYTE *)((IPTR)table + 0x5);
-        D(bug("[SMBIOS] System information table @ %p, product idx %d\n",(APTR)table, productidx));
-        char *string = (char *)((IPTR)table + table->sm_Length);
-        char *ptr = (char *)string;
-        UBYTE stridx = 1;
-        while(1)
-        {
-            if (ptr[0] == 0 && ptr[1] == 0) break;
-
-            if (ptr[0] == 0)
-            {
-                stridx++;
-                ptr++;
-                string = ptr;
-                continue;
-            }
-
-            if (stridx == productidx)
-            {
-                D(bug("[SMBIOS] Product '%s'\n", string));
-                return string;
-            }
-
-            ptr++;
-        }
-    }
-
-    return NULL;
+    return (char *)product;
 }
 
 static int ACPICA_CheckBlacklistedHardware()

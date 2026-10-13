@@ -27,5 +27,6 @@
 #define SC_GETCPUNUMBER 0x00C
 #define SC_USERSTATE    0x00D
 #define SC_REBOOT	    0x100
+#define SC_POWEROFF	    0x101
 
 #endif

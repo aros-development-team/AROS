@@ -36,7 +36,8 @@
 #include <dos/filehandler.h>
 #include <dos/notify.h>
 #if MULTIUSER
-#include <proto/multiuser.h>
+#include <libraries/mufs.h>
+#include <proto/security.h>
 #endif
 #include <string.h>
 #include <math.h>
@@ -398,7 +399,6 @@ void InhibitedCommands(struct DosPacket *action, globaldata *g)
 			break;
 
 		case ACTION_DIE:            // <sendpkt only>
-			g->dieing = TRUE;
 			action->dp_Res1 = dd_Quit(action, g);
 			break;
 

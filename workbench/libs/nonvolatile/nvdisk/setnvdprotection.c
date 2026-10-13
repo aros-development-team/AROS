@@ -9,6 +9,7 @@
     NAME */
 
 #include "nvdisk_intern.h"
+#include <nvdisk_arch.h>
 #include <dos/dos.h>
 #include <proto/dos.h>
 #include <libraries/nonvolatile.h>
@@ -58,6 +59,9 @@ AROS_LH3(BOOL, SetNVDProtection,
 
 {
     AROS_LIBFUNC_INIT
+
+    if (NVDisk_ArchActive(GPB(nvdBase)))
+        return NVDisk_ArchProtect(GPB(nvdBase), appName, itemName, mask);
 
     BPTR lock;
     BOOL result = FALSE;

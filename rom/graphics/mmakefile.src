@@ -222,6 +222,10 @@ FUNCTIONS := \
 #MM kernel-graphics     : includes-compositor-copy
 #MM kernel-graphics-kobj: includes-compositor-copy
 
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
 %build_module mmake=kernel-graphics \
   modname=graphics modtype=library \
   files="graphics_init $(FUNCTIONS) $(FILES)"

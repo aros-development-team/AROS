@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2025, The AROS Development Team.
+    Copyright (C) 2002-2026, The AROS Development Team.
     Copyright (C) 1999, David Le Corfec.
     All rights reserved.
 
@@ -714,7 +714,7 @@ void zune_text_draw(ZText * text, Object * obj, WORD left, WORD right,
                 top_im += (line_node->lheight - chunk_node->cheight) / 2;
                 WritePixelArrayAlpha(alpha_data->data, 0, 0,
                     alpha_data->width * 4, rp, x, top_im, alpha_data->width,
-                    alpha_data->height, 0);
+                    alpha_data->height, 0xFFFFFFFF);
             }
             else if (chunk_node->str)
             {

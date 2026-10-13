@@ -47,26 +47,6 @@
 #define MAIR_IDX_NORMAL_WB  1   /* Normal, Write-Back Cacheable */
 #define MAIR_IDX_NORMAL_NC  2   /* Normal, Non-Cacheable */
 
-/* MAIR register value */
-#define MAIR_VALUE  ( \
-    (0x00UL << (MAIR_IDX_DEVICE * 8))    | \
-    (0xFFUL << (MAIR_IDX_NORMAL_WB * 8)) | \
-    (0x44UL << (MAIR_IDX_NORMAL_NC * 8))   \
-)
-
-/* TCR_EL1 configuration: 4KB granule, 35-bit VA (T0SZ=29), 36-bit PA.
-   Must match the boot MMU setup. */
-#define TCR_VALUE ( \
-    (29UL << 0)      | /* T0SZ = 29 (32GB VA space) */ \
-    (0UL  << 7)      | /* EPD0 = 0 (TTBR0 enabled) */ \
-    (1UL  << 8)      | /* IRGN0 = Write-Back */ \
-    (1UL  << 10)     | /* ORGN0 = Write-Back */ \
-    (3UL  << 12)     | /* SH0 = Inner Shareable */ \
-    (0UL  << 14)     | /* TG0 = 4KB granule */ \
-    (1UL  << 23)     | /* EPD1 = 1 (TTBR1 disabled) */ \
-    (1UL  << 31)       /* RES1 */ \
-)
-
 /* Translation levels for a 4KB granule. The VA size is read from TCR_EL1
    at runtime, since boot picks it. */
 #define MMU_L1_SHIFT        30

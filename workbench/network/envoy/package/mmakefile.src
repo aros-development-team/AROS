@@ -1,0 +1,25 @@
+#
+#   The Envoy package: started at boot through ENV:SYS/Packages/Envoy, which
+#   runs SYS:System/Network/Envoy/S/Package-Startup after the network stack.
+#   ENVARC:Envoy/AutoRun ("True"/"False") decides whether the servers start.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-network-envoy : workbench-network-envoy-package
+#MM- workbench-network-envoy-package : workbench-network-envoy-package-s \
+#MM  workbench-network-envoy-package-env workbench-network-envoy-package-register
+
+%copy_files_q mmake=workbench-network-envoy-package-s \
+    files="Package-Startup services.default" dst=$(AROS_SYSTEM)/Network/Envoy/S
+
+%copy_files_q mmake=workbench-network-envoy-package-env \
+    files="AutoRun" dst=$(AROS_ENVARC)/Envoy
+
+$(AROS_PACKAGES)/Envoy:
+	%fileactionmsg msg="Creating" file="$(AROS_PACKAGES)/Envoy"
+	%mkdirs_q $(AROS_PACKAGES)
+	@$(ECHO) "SYS:System/Network/Envoy" >$(AROS_PACKAGES)/Envoy
+
+#MM
+workbench-network-envoy-package-register : $(AROS_PACKAGES)/Envoy
+	@$(NOP)

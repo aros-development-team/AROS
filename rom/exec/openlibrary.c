@@ -59,6 +59,15 @@
 
     struct Library * library;
 
+#ifdef __mc68000__
+    /*
+     * Classic m68k callers may only initialize the low word of D0. The
+     * original implementation ignores the undefined upper word when
+     * checking the requested library version.
+     */
+    version = (UWORD)version;
+#endif
+
     DRAMLIB("OpenLibrary(\"%s\", %ld)", libName, version);
 
     /* Arbitrate for the library list */

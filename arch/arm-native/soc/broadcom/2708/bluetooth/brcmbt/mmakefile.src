@@ -1,0 +1,31 @@
+include $(SRCDIR)/config/aros.cfg
+
+#
+# The Broadcom Bluetooth firmware loader.
+#
+# AROS ships two firmware loaders, rtlv1 and rtlv2, and both are Realtek. The
+# loader *mechanism* is generic -- bluetooth.library offers each controller to
+# every registered loader and runs the best match -- but the upload protocol
+# is per-vendor, so a Broadcom part needs a Broadcom loader. This is it.
+#
+# It goes in DEVS:Bluetooth/FWLoaders/ like the Realtek ones and reads its
+# blob from DEVS:Firmware/brcm/ at runtime, so changing controllers is
+# changing a file rather than rebuilding.
+#
+FILES := brcmbt
+
+USER_LDFLAGS := -static
+USER_INCLUDES := -I$(SRCDIR)/rom/bluetooth/bluetooth/include \
+                 -I$(SRCDIR)/rom/bluetooth/stack/include
+
+#MM kernel-brcmbt-bcm2708 : kernel-bluetooth-library-includes
+
+# %build_module_library with modsuffix=fwl, exactly as the Realtek loaders do
+# -- the stack looks for *.fwl in that directory, so a .library there is not
+# found however correct it is.
+%build_module_library mmake=kernel-brcmbt-bcm2708 \
+    modname=brcmbt modtype=library modsuffix="fwl" \
+    moduledir=Devs/Bluetooth/FWLoaders \
+    files="$(FILES)"
+
+%common

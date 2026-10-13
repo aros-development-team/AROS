@@ -322,6 +322,9 @@ OBJDIR                        := $(GENDIR)/$(CURDIR)
 LIBDIR                        := $(AROS_LIB)
 OSGENDIR                      := $(GENDIR)/rom
 KOBJSDIR                      := $(GENDIR)/kobjs
+# Lists of kickstart-resident modules the distfiles stage drops from what it
+# ships (written by %make_package and the ROM link rules, see make.tmpl).
+PRUNELISTDIR                  := $(GENDIR)/prunelists
 
 # 
 # Add necessary directories to the system PATH, so that the build system can

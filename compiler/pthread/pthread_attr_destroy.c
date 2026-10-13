@@ -25,7 +25,36 @@
 #include "pthread_intern.h"
 #include "debug.h"
 
-int pthread_attr_destroy(pthread_attr_t *attr)
+/****************************************************************************
+    NAME */
+        int pthread_attr_destroy(
+
+/*  SYNOPSIS */
+        pthread_attr_t *attr)
+
+/*  FUNCTION
+        Clear a thread attribute object after its last use. This implementation
+        zeroes the object and does not free any memory.
+
+    INPUTS
+        attr - Non-NULL writable attribute object that is no longer in use.
+
+    RESULT
+        0 on success; EINVAL if attr is NULL. Errors are returned directly.
+
+    NOTES
+        Include <pthread.h>; link with pthread. The call does not block or
+        affect an existing worker, whose attributes were copied at creation.
+        A caller-supplied stack remains caller-owned and is not released.
+        Reinitialize the object before using it for another creation request;
+        a zeroed object is not equivalent to pthread_attr_init() defaults.
+        Exclude concurrent access while destroying it.
+
+    SEE ALSO
+        pthread_attr_init(),
+        pthread_create()
+
+*****************************************************************************/
 {
     D(bug("%s(%p)\n", __FUNCTION__, attr));
 

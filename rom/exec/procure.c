@@ -67,6 +67,7 @@
 
     /* Arbitrate for the semaphore structure - following like ObtainSema() */
     Forbid();
+    SEM_LOCK(sigSem);
 
     sigSem->ss_QueueCount++;
     /*
@@ -124,6 +125,7 @@
         AddTail((struct List *)&sigSem->ss_WaitQueue, (struct Node *)bidMsg);
     }
     /* All done. */
+    SEM_UNLOCK(sigSem);
     Permit();
 
     return 0;

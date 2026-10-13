@@ -1217,6 +1217,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nMSTask))
         }
 
         ncm->ncm_UnitReady = FALSE;
+        ncm->ncm_HasMounted = FALSE;
         ncm->ncm_Removable = TRUE;
         ncm->ncm_DenyRequests = FALSE;
 
@@ -1415,6 +1416,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nMSTask))
         ncm->ncm_DenyRequests = TRUE;
         /* Device ejected */
         ncm->ncm_UnitReady = FALSE;
+        ncm->ncm_HasMounted = FALSE;
         ncm->ncm_ChangeCount++;
         ioreq = (struct IOStdReq *) ncm->ncm_DCInts.lh_Head;
         while(((struct Node *) ioreq)->ln_Succ)
@@ -2061,6 +2063,9 @@ LONG nGetBlockSize(struct NepClassMS *ncm)
             ncm->ncm_Geometry.dg_SectorSize = ncm->ncm_BlockSize = 512;
             ncm->ncm_BlockShift = 9;
         }
+        /* Do not keep a stale sector count: nFakeGeometry() would build a
+           volume out of it. Zero sectors means no usable medium. */
+        ncm->ncm_Geometry.dg_TotalSectors = 0;
     } else {
         ncm->ncm_Geometry.dg_SectorSize = ncm->ncm_BlockSize = AROS_BE2LONG(capacity[1]);
         ncm->ncm_BlockShift = 0;
@@ -3975,6 +3980,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nRemovableTask))
                                     if(ncm->ncm_UnitReady)
                                     {
                                         ncm->ncm_UnitReady = FALSE;
+                                        ncm->ncm_HasMounted = FALSE;
                                         ncm->ncm_ChangeCount++;
                                         KPRINTF(10, ("Diskchange: Medium removed (count = %ld)!\n", ncm->ncm_ChangeCount));
                                         if(ncm->ncm_CDC->cdc_PatchFlags & PFF_DEBUG)
@@ -4039,21 +4045,36 @@ AROS_UFH0(void, GM_UNIQUENAME(nRemovableTask))
                                     nh->nh_IOReq.io_Length = sizeof(ncm->ncm_Geometry);
                                     nIOCmdTunnel(ncm, &nh->nh_IOReq);
                                 }
-                                ncm->ncm_HasMounted = TRUE;
+                                BOOL mounted = FALSE;
 
+                                if((ncm->ncm_DeviceType == PDT_CDROM) || (ncm->ncm_DeviceType == PDT_WORM))
+                                {
+                                    /* Optical media belong to the CD filesystem: mount it
+                                       and let it decide what the disc holds, as the
+                                       ATA/AHCI CD drives do. Probing here would only find
+                                       the partition table or FAT EFI system partition of
+                                       a hybrid ISO, and would keep CDFS from discs that
+                                       are not ISO9660. */
+                                    if(ncm->ncm_CUC->cuc_AutoMountCD && ncm->ncm_BlockSize)
+                                    {
+                                        mounted = AutoMountCD(ncm);
+                                    }
+                                }
                                 // find and mount partitions
-                                if(!CheckPartitions(ncm) && ncm->ncm_CUC->cuc_AutoMountFAT)
+                                else if(CheckPartitions(ncm))
+                                {
+                                    mounted = TRUE;
+                                }
+                                else if(ncm->ncm_CUC->cuc_AutoMountFAT)
                                 {
                                     // check for FAT volume with no partition table
-                                    CheckFATPartition(ncm, 0);
+                                    mounted = CheckFATPartition(ncm, 0);
                                 }
-                                if((ncm->ncm_BlockSize == 2048) &&
-                                   ((ncm->ncm_DeviceType == PDT_WORM) || (ncm->ncm_DeviceType == PDT_CDROM)))
+                                /* Only a medium that was actually mounted counts as
+                                   mounted; otherwise it is retried once DOS is up. */
+                                if(mounted)
                                 {
-                                    if(ncm->ncm_CUC->cuc_AutoMountCD)
-                                    {
-                                        CheckISO9660(ncm);
-                                    }
+                                    ncm->ncm_HasMounted = TRUE;
                                 }
                             }
                             ncm->ncm_LastChange = ncm->ncm_ChangeCount;
@@ -4082,8 +4103,13 @@ AROS_UFH0(void, GM_UNIQUENAME(nRemovableTask))
                     ncm = (struct NepClassMS *) nh->nh_Units.lh_Head;
                     while(ncm->ncm_Unit.unit_MsgPort.mp_Node.ln_Succ)
                     {
-                        ncm->ncm_ChangeCount++;
-                        ncm->ncm_ForceRTCheck = TRUE;
+                        /* Units mounted before DOS (the boot medium) keep their
+                           mount; forcing a change would mount them again. */
+                        if(!ncm->ncm_HasMounted)
+                        {
+                            ncm->ncm_ChangeCount++;
+                            ncm->ncm_ForceRTCheck = TRUE;
+                        }
                         ncm = (struct NepClassMS *) ncm->ncm_Unit.unit_MsgPort.mp_Node.ln_Succ;
                     }
 
@@ -4916,8 +4942,16 @@ BOOL MountPartition(struct NepClassMS *ncm, STRPTR dosDevice)
     BOOL fsFound = FALSE;
     BOOL result = FALSE;
     STRPTR devname = DEVNAME;
+    /* pb_Environment[] holds the environment as built by AutoMountCD() and
+     * CheckFATPartition(), which write it through a struct DosEnvec overlay,
+     * and MakeDosNode() below copies it as a struct DosEnvec too. On 64-bit
+     * the DosEnvec fields are IPTR-sized, so indexing pb_Environment[] as a
+     * ULONG array (DE_DOSTYPE, DE_BOOTPRI) reads the wrong slot: the DosType
+     * came back as 0, FindFileSystem() missed the resident CD filesystem and
+     * the CD never mounted. Read it through the same DosEnvec view. */
+    struct DosEnvec *envec = (struct DosEnvec *) rdsk->rdsk_PART.pb_Environment;
 
-    if((fse = FindFileSystem(ncm, rdsk->rdsk_PART.pb_Environment[DE_DOSTYPE])))
+    if((fse = FindFileSystem(ncm, envec->de_DosType)))
     {
         KPRINTF(10, ("fs found in filesys resource\n"));
         psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Found FS in filesystem.resource!");
@@ -4926,9 +4960,9 @@ BOOL MountPartition(struct NepClassMS *ncm, STRPTR dosDevice)
         fsFound = TRUE;
     } else {
         memset(&patch, 0x00, sizeof(struct FileSysEntry));
-        patch.fse_DosType = rdsk->rdsk_PART.pb_Environment[DE_DOSTYPE];
+        patch.fse_DosType = envec->de_DosType;
 
-        if((segList = LoadFileSystem(ncm, rdsk->rdsk_PART.pb_Environment[DE_DOSTYPE], &patch)))
+        if((segList = LoadFileSystem(ncm, envec->de_DosType, &patch)))
         {
             KPRINTF(10, ("fs loaded from RDB\n"));
 
@@ -5026,7 +5060,7 @@ BOOL MountPartition(struct NepClassMS *ncm, STRPTR dosDevice)
                     GM_UNIQUENAME(nStoreConfig)(ncm);
                 }
 
-                if(AddBootNode(nh->nh_RDsk.rdsk_PART.pb_Environment[DE_BOOTPRI], ADNF_STARTPROC, node, NULL))
+                if(AddBootNode(envec->de_BootPri, ADNF_STARTPROC, node, NULL))
                 {
                     KPRINTF(10, ("AddBootNode() succeeded\n"));
                     psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
@@ -5054,7 +5088,7 @@ BOOL MountPartition(struct NepClassMS *ncm, STRPTR dosDevice)
         psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
                        "Couldn't find/load filesystem for %s unit %ld as %s:",
                        devname, ncm->ncm_UnitNo, dosDevice);
-        KPRINTF(10, ("fs %08lx not found\n", rdsk->rdsk_PART.pb_Environment[DE_DOSTYPE]));
+        KPRINTF(10, ("fs %08lx not found\n", envec->de_DosType));
     }
 
     return(result);
@@ -5062,7 +5096,8 @@ BOOL MountPartition(struct NepClassMS *ncm, STRPTR dosDevice)
 /* \\\ */
 
 /* /// "CheckPartition()" */
-void CheckPartition(struct NepClassMS *ncm)
+/* Returns TRUE if the partition is mounted, either now or already before. */
+BOOL CheckPartition(struct NepClassMS *ncm)
 {
     struct NepMSBase *nh = ncm->ncm_ClsBase;
     struct RigidDisk *rdsk = &nh->nh_RDsk;
@@ -5084,6 +5119,7 @@ void CheckPartition(struct NepClassMS *ncm)
                        "Matching partition for %s unit %ld already found. No remount required.",
                        devname, ncm->ncm_UnitNo);
         doMount = FALSE;
+        done = TRUE;
     } else {
         spareNum = 0;
 
@@ -5154,13 +5190,14 @@ void CheckPartition(struct NepClassMS *ncm)
     {
         KPRINTF(10, ("mounting %s\n", dosDevice));
 
-        MountPartition(ncm, dosDevice);
+        return(MountPartition(ncm, dosDevice));
     }
+    return(done && !doMount);
 }
 /* \\\ */
 
 /* /// "CheckFATPartition()" */
-void CheckFATPartition(struct NepClassMS *ncm, ULONG startblock)
+BOOL CheckFATPartition(struct NepClassMS *ncm, ULONG startblock)
 {
     struct NepMSBase *nh = ncm->ncm_ClsBase;
     struct MasterBootRecord *mbr;
@@ -5173,7 +5210,7 @@ void CheckFATPartition(struct NepClassMS *ncm, ULONG startblock)
     mbr = (struct MasterBootRecord *) psdAllocVec(ncm->ncm_BlockSize<<1);
     if(!mbr)
     {
-        return;
+        return(FALSE);
     }
 
     stdIO->io_Command = TD_READ64;
@@ -5253,7 +5290,11 @@ void CheckFATPartition(struct NepClassMS *ncm, ULONG startblock)
             KPRINTF(5, ("building FAT95 style environment\n"));
 
             strncpy((char *) nh->nh_RDsk.rdsk_FSHD.fhb_FileSysName, ncm->ncm_CDC->cdc_FATFSName, 84);
-            CheckPartition(ncm);
+            if(CheckPartition(ncm))
+            {
+                psdFreeVec(mbr);
+                return(TRUE);
+            }
         }
         if(!isfat)
         {
@@ -5269,59 +5310,21 @@ void CheckFATPartition(struct NepClassMS *ncm, ULONG startblock)
         }
     }
     psdFreeVec(mbr);
-}
-/* \\\ */
-
-/* /// "CheckISO9660()" */
-void CheckISO9660(struct NepClassMS *ncm)
-{
-    struct NepMSBase *nh = ncm->ncm_ClsBase;
-    UBYTE *blockbuf;
-    struct IOStdReq *stdIO = &nh->nh_IOReq;
-
-    blockbuf = (UBYTE *) psdAllocVec(ncm->ncm_BlockSize);
-    if(!blockbuf)
-    {
-        return;
-    }
-    stdIO->io_Command = TD_READ64;
-    stdIO->io_Offset = 0x8000;
-    stdIO->io_Actual = 0;
-    stdIO->io_Length = ncm->ncm_BlockSize;
-    stdIO->io_Data = blockbuf;
-    if(!nIOCmdTunnel(ncm, stdIO))
-    {
-        if((((ULONG *) blockbuf)[0] == AROS_LONG2BE(0x01434430)) && (((ULONG *) blockbuf)[1] == AROS_LONG2BE(0x30310100)))
-        {
-            psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Media is ISO9660.");
-            AutoMountCD(ncm);
-        }
-    } else {
-        KPRINTF(10, ("failed to read ISO sector\n"));
-        if(ncm->ncm_CDC->cdc_PatchFlags & PFF_DEBUG)
-        {
-            psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
-                           "Failed to read block 16 for CDFS AutoMounting.");
-        }
-    }
-    psdFreeVec(blockbuf);
+    return(FALSE);
 }
 /* \\\ */
 
 /* /// "AutoMountCD()" */
-void AutoMountCD(struct NepClassMS *ncm)
+BOOL AutoMountCD(struct NepClassMS *ncm)
 {
     struct NepMSBase *nh = ncm->ncm_ClsBase;
     struct DosEnvec *envec;
 
     nh->nh_RDsk.rdsk_PART.pb_DevFlags = 0;
 
-    if(*(ncm->ncm_CUC->cuc_FATDOSName))
-    {
-        c2bstr(ncm->ncm_CUC->cuc_FATDOSName, nh->nh_RDsk.rdsk_PART.pb_DriveName);
-    } else {
-        c2bstr("UCD0", nh->nh_RDsk.rdsk_PART.pb_DriveName);
-    }
+    /* Do not reuse the FAT automount DOS name (UMSD by default) for CDs:
+       the CD and a FAT volume would be indistinguishable. */
+    c2bstr("UCD0", nh->nh_RDsk.rdsk_PART.pb_DriveName);
 
     envec = (struct DosEnvec *) nh->nh_RDsk.rdsk_PART.pb_Environment;
     memset(envec, 0x00, sizeof(struct DosEnvec));
@@ -5330,7 +5333,10 @@ void AutoMountCD(struct NepClassMS *ncm)
     envec->de_SizeBlock = ncm->ncm_BlockSize>>2;
     envec->de_Surfaces = 1;
     envec->de_SectorPerBlock = 1;
-    envec->de_Reserved = 0xffffffff;
+    /* The CD filesystem ignores this, but an AFS/FFS-family probe of the
+       same node computes its root block from it; 0xffffffff put that at
+       the 32-bit sign bit and raised a "block outside range" requester. */
+    envec->de_Reserved = 2;
     envec->de_NumBuffers = ncm->ncm_CUC->cuc_FATBuffers;
     envec->de_BufMemType = MEMF_PUBLIC;
     envec->de_MaxTransfer = (1UL<<(ncm->ncm_CDC->cdc_MaxTransfer+16))-1;
@@ -5356,12 +5362,19 @@ void AutoMountCD(struct NepClassMS *ncm)
 
     envec->de_BlocksPerTrack = 1;
     envec->de_Interleave = 0;
-    envec->de_DosType = ncm->ncm_CDC->cdc_CDDosType;
+    /* A saved class configuration can carry a zero CD DosType, which would
+       again make FindFileSystem() miss the resident CD filesystem. */
+    envec->de_DosType = ncm->ncm_CDC->cdc_CDDosType ? ncm->ncm_CDC->cdc_CDDosType : 0x43444653; /* CDFS, as the class default */
     envec->de_LowCyl = 0;
-    envec->de_HighCyl = 1;
+    /* With one surface and one block per track, HighCyl is the last block.
+       A fixed 1 described a two-block volume, on which an AFS/FFS-family
+       probe looped or raised read error requesters instead of rejecting
+       the CD. */
+    envec->de_HighCyl = (ncm->ncm_Geometry.dg_TotalSectors > 1) ?
+                        (ncm->ncm_Geometry.dg_TotalSectors - 1) : 1;
 
     strncpy((char *) nh->nh_RDsk.rdsk_FSHD.fhb_FileSysName, ncm->ncm_CDC->cdc_CDFSName, 84);
-    CheckPartition(ncm);
+    return(CheckPartition(ncm));
 }
 /* \\\ */
 

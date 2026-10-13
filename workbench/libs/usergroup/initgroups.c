@@ -5,7 +5,7 @@
  *
  * Based upon usergroup.library from AmiTCP/IP.
  *
- * Copyright © 2025 The AROS Dev Team.
+ * Copyright © 2025-2026 The AROS Dev Team.
  * Copyright © 1993 AmiTCP/IP Group, <AmiTCP-Group@hut.fi>
  *                  Helsinki University of Technology, Finland.
  */
@@ -21,13 +21,13 @@
 #include <sys/time.h>
 
 #include "base.h"
+#include <proto/usergroup.h>
 
 /****** usergroup.library/initgroups ***************************************
 
     NAME */
-#include <proto/usergroup.h>
 
-AROS_LH2(int, initgroups,
+        AROS_LH2(int, initgroups,
 
 /*  SYNOPSIS */
         AROS_LHA(const char *, name, A1),
@@ -40,17 +40,17 @@ AROS_LH2(int, initgroups,
         automatically included in the groups list.  Typically this value is
         given as the group number from the password file.
 
-     RESULT
+    RESULT
         The initgroups() function returns -1 if the process has got no
         necessary privileges, zero if the call is succesful.
 
-     FILES
+    NOTES
          AmiTCP:db/group
 
-     SEE ALSO
+    SEE ALSO
          setgroups()
 
-     HISTORY
+    HISTORY
          The initgroups function appeared in 4.2BSD.
 
 ******************************************************************************/

@@ -256,8 +256,7 @@ LONG LockFile(ULONG dir_cluster, ULONG dir_entry, LONG access,
                     D(bug("[fat] searching for notify name '%s'\n",
                         nn->nr->nr_FullName));
 
-                    if (InitDirHandle(glob->sb, 0, &dh, TRUE, glob) != 0)
-                        continue;
+                    InitDirHandle(glob->sb, 0, &dh, TRUE, glob);
 
                     if (GetDirEntryByPath(&dh, nn->nr->nr_FullName,
                         strlen(nn->nr->nr_FullName), &de, glob) != 0)

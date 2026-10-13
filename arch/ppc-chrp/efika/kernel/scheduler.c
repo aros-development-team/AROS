@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <asm/mpc5200b.h>
@@ -96,7 +96,7 @@ void core_Dispatch(regs_t *regs)
         while (IsListEmpty(&SysBase->TaskReady))
         {
 //            SysBase->IdleCount++;
-            SysBase->AttnResched |= ARF_AttnSwitch;
+            SysBase->SysFlags |= SFF_AttnSwitch;
 
             //D(bug("[KRN] TaskReady list empty. Sleeping for a while...\n"));
             /* Sleep almost forever ;) */
@@ -228,7 +228,7 @@ void core_Schedule(regs_t *regs)
         task = SysBase->ThisTask;
 
         /* Clear the pending switch flag. */
-        SysBase->AttnResched &= ~ARF_AttnSwitch;
+        SysBase->SysFlags &= ~SFF_AttnSwitch;
 
         /* If task has pending exception, reschedule it so that the dispatcher may handle the exception */
         if (!(task->tc_Flags & TF_EXCEPT))
@@ -314,7 +314,7 @@ void core_ExitInterrupt(regs_t *regs)
                  * Do not disturb task if it's not necessary.
                  * Reschedule only if switch pending flag is set. Exit otherwise.
                  */
-                if (SysBase->AttnResched & ARF_AttnSwitch)
+                if (SysBase->SysFlags & SFF_AttnSwitch)
                 {
                     core_Schedule(regs);
                 }

@@ -1187,6 +1187,19 @@ void MonitorClass__MM_GetDisplayBounds(Class *cl, Object *obj, struct msGetDispl
     msg->Bounds->MaxX = data->FBBounds.MaxX;
     msg->Bounds->MaxY = data->FBBounds.MaxY;
 
+#ifdef __mc68000__
+    {
+        struct Screen *scr = FindFirstScreen(obj, IntuitionBase);
+        UWORD sx = int_MouseScaleX(scr);
+        UWORD sy = int_MouseScaleY(scr);
+
+        msg->Bounds->MinX *= sx;
+        msg->Bounds->MinY *= sy;
+        msg->Bounds->MaxX = (msg->Bounds->MaxX + 1) * sx - 1;
+        msg->Bounds->MaxY = (msg->Bounds->MaxY + 1) * sy - 1;
+    }
+#endif
+
     D(bug("[Monitor] %s:   bounds %d,%d -> %d,%d\n", __func__, msg->Bounds->MinX, msg->Bounds->MinY, msg->Bounds->MaxX, msg->Bounds->MaxY));
 }
 
@@ -1255,8 +1268,8 @@ void MonitorClass__MM_DisplayToScreenCoords(Class *cl, Object *obj, struct msDis
     }
     else
     {
-        *msg->ScrX = msg->DispX;
-        *msg->ScrY = msg->DispY;
+        *msg->ScrX = msg->DispX / int_MouseScaleX(msg->Screen);
+        *msg->ScrY = msg->DispY / int_MouseScaleY(msg->Screen);
     }
     D(bug("[Monitor] %s: %d,%d -> %d,%d\n", __func__, msg->DispX, msg->DispY, *msg->ScrX, *msg->ScrY);)
 }
@@ -1325,8 +1338,8 @@ void MonitorClass__MM_ScreenToDisplayCoords(Class *cl, Object *obj, struct msScr
     }
     else
     {
-        *msg->DispX = msg->ScrX;
-        *msg->DispY = msg->ScrY;
+        *msg->DispX = msg->ScrX * int_MouseScaleX(msg->Screen);
+        *msg->DispY = msg->ScrY * int_MouseScaleY(msg->Screen);
     }
     D(bug("[Monitor] %s: %d,%d -> %d,%d\n", __func__, msg->ScrX, msg->ScrY, *msg->DispX, *msg->DispY);)
 }
@@ -1885,7 +1898,7 @@ ULONG MonitorClass__MM_GetCompositionFlags(Class *cl, Object *obj, struct msGetC
     struct IMonitorNode *data = INST_DATA(cl, obj);
     struct HIDD_ModeProperties modeprops;
 
-    HIDD_Display_ModeProperties(data->handle->display, msg->ModeID & (!data->handle->mask),
+    HIDD_Display_ModeProperties(data->handle->display, msg->ModeID & ~data->handle->mask,
                             &modeprops, sizeof(modeprops));
     return modeprops.CompositionFlags;
 }
@@ -1896,9 +1909,10 @@ void MonitorClass__MM_SetPointerPos(Class *cl, Object *obj, struct msSetPointerP
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct IMonitorNode *data = INST_DATA(cl, obj);
+    struct Screen *scr = FindFirstScreen(obj, IntuitionBase);
 
-    data->mouseX = msg->x;
-    data->mouseY = msg->y;
+    data->mouseX = msg->x / int_MouseScaleX(scr);
+    data->mouseY = msg->y / int_MouseScaleY(scr);
     SetPointerPos(data, IntuitionBase);
 }
 
@@ -1951,7 +1965,7 @@ IPTR MonitorClass__MM_SetPointerShape(Class *cl, Object *obj, struct msSetPointe
         bm = data->tmpPtr;
     }
 
-    res = HIDD_Display_SetCursorShape(data->handle->display, HIDD_BM_OBJ(bm), msg->pointer->xoffset, msg->pointer->yoffset);
+    res = SetDisplayPointerShape(data->handle->display, msg->pointer, bm, IntuitionBase);
     DEBUG_POINTER(bug("[Monitor] %s: SetCursorShape() returned %d\n", __func__, res));
     if (res) {
         data->pointer = msg->pointer;

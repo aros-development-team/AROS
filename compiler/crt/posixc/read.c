@@ -63,7 +63,7 @@
         if (hooks && hooks->fdh_read)
         {
             LONG err = 0;
-            cnt = (ssize_t)hooks->fdh_read(data, buf, count, &err);
+            cnt = (ssize_t)hooks->fdh_read(data, fd, buf, count, &err);
             if (cnt < 0)
                 errno = err;
             return cnt;

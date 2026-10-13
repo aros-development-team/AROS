@@ -1,0 +1,276 @@
+#
+#   Build target-side LLVM libraries for AROS.
+#
+#   Kalamatee's crosstools LLVM rules build a host clang/lld that can emit
+#   AROS binaries.  Mesa llvmpipe/lavapipe also needs LLVM libraries that run
+#   on AROS, so this target cross-builds LLVM itself as static target libs.
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+ifeq ($(OPT_LLVM),)
+ifneq ($(TARGET_LLVM_VER),)
+OPT_LLVM := $(TARGET_LLVM_VER)
+else
+OPT_LLVM := 11.0.0
+endif
+endif
+
+LLVM_VERSION_MAJOR := $(word 1,$(subst ., ,$(OPT_LLVM)))
+LLVM_VERSION_MINOR := $(word 2,$(subst ., ,$(OPT_LLVM)))
+
+LLVM_REPOSITORY := https://github.com/llvm/llvm-project/releases/download/llvmorg-$(OPT_LLVM)
+
+# From llvm 22 upstream stopped publishing the per component archives and
+# releases only the llvm-project monorepo. That tarball already has clang,
+# lld and the shared cmake/ modules sitting beside llvm/ - the layout this
+# build wants - so it is fetched once and built where it is unpacked, with
+# no component moved or copied.
+ifeq ($(shell test $(LLVM_VERSION_MAJOR) -gt 21; echo $$?),0)
+LLVM_MONOREPO := yes
+endif
+
+LLVM_ARCHBASE := llvm-$(OPT_LLVM).src
+LLVM_PROJECT_ARCHBASE := llvm-project-$(OPT_LLVM).src
+LLVM_PROJECT_SRCDIR := $(PORTSDIR)/llvm/llvm-project/$(LLVM_PROJECT_ARCHBASE)
+
+# One set of AROS patches serves both toolchains: the crosstools host build
+# and the target/native build here. The AROS specific parts are guarded by
+# __AROS__ (or CMAKE_SYSTEM_NAME), so the same diff builds a host cross
+# compiler and an AROS hosted one - which is what an AROS build host needs.
+LLVM_PATCH_ORIGIN := $(SRCDIR)/tools/crosstools/llvm
+LLVM_PATCH := $(LLVM_PATCH_ORIGIN)/$(LLVM_ARCHBASE)-aros.diff
+ifneq ($(wildcard $(LLVM_PATCH)),)
+LLVM_PATCHSPEC := $(LLVM_ARCHBASE)-aros.diff:$(LLVM_ARCHBASE):-p1
+else
+LLVM_PATCHSPEC := ::
+endif
+
+LLVM_NATIVE_BUILDDIR := $(GENDIR)/$(CURDIR)/target
+LLVM_TBLGEN_BUILDDIR := $(HOSTGENDIR)/$(CURDIR)/tblgen
+LLVM_TBLGEN := $(LLVM_TBLGEN_BUILDDIR)/bin/llvm-tblgen
+CLANG_TBLGEN := $(LLVM_TBLGEN_BUILDDIR)/bin/clang-tblgen
+
+# Native tools (clang/lld running ON AROS) reuse the crosstools AROS patches.
+CLANG_ARCHBASE := clang-$(OPT_LLVM).src
+LLD_ARCHBASE := lld-$(OPT_LLVM).src
+LLVM_XTOOLS_PATCH_ORIGIN := $(SRCDIR)/tools/crosstools/llvm
+LLVM_TOOLS_BUILDDIR := $(GENDIR)/$(CURDIR)/tools
+
+# Where each component is found: inside the monorepo, or in its own archive.
+ifeq ($(LLVM_MONOREPO),yes)
+LLVM_SRCDIR := $(LLVM_PROJECT_SRCDIR)/llvm
+CLANG_SRCDIR := $(LLVM_PROJECT_SRCDIR)/clang
+LLD_SRCDIR := $(LLVM_PROJECT_SRCDIR)/lld
+else
+LLVM_SRCDIR := $(PORTSDIR)/llvm/$(LLVM_ARCHBASE)
+CLANG_SRCDIR := $(PORTSDIR)/llvm/$(CLANG_ARCHBASE)
+LLD_SRCDIR := $(PORTSDIR)/llvm/$(LLD_ARCHBASE)
+endif
+
+# Apply the clang/lld patches only where they exist: %fetch treats a
+# named-but-missing patch as a hard error.
+CLANG_PATCH := $(LLVM_XTOOLS_PATCH_ORIGIN)/$(CLANG_ARCHBASE)-aros.diff
+ifneq ($(wildcard $(CLANG_PATCH)),)
+CLANG_PATCHSPEC := $(CLANG_ARCHBASE)-aros.diff:$(CLANG_ARCHBASE):-p1
+else
+CLANG_PATCHSPEC := ::
+endif
+
+LLD_PATCH := $(LLVM_XTOOLS_PATCH_ORIGIN)/$(LLD_ARCHBASE)-aros.diff
+ifneq ($(wildcard $(LLD_PATCH)),)
+LLD_PATCHSPEC := $(LLD_ARCHBASE)-aros.diff:$(LLD_ARCHBASE):-p1
+else
+LLD_PATCHSPEC := ::
+endif
+
+# One spec per component patch, all applied inside the extracted monorepo.
+LLVM_PROJECT_PATCHSPECS := \
+    $(if $(wildcard $(LLVM_PATCH)),$(LLVM_ARCHBASE)-aros.diff:$(LLVM_PROJECT_ARCHBASE):-p1) \
+    $(if $(wildcard $(CLANG_PATCH)),$(CLANG_ARCHBASE)-aros.diff:$(LLVM_PROJECT_ARCHBASE):-p1) \
+    $(if $(wildcard $(LLD_PATCH)),$(LLD_ARCHBASE)-aros.diff:$(LLVM_PROJECT_ARCHBASE):-p1)
+ifeq ($(strip $(LLVM_PROJECT_PATCHSPECS)),)
+LLVM_PROJECT_PATCHSPECS := ::
+endif
+
+# From LLVM 20 the shared cmake modules ship separately, and
+# llvm/CMakeLists.txt includes them as ../cmake/Modules - a sibling.
+ifeq ($(shell test $(LLVM_VERSION_MAJOR) -gt 19; echo $$?),0)
+LLVM_CMAKE_FILES := yes
+endif
+
+# The monorepo already carries cmake/ beside llvm/, so there is nothing to
+# place: the empty spelling routes the setup at the existing no-op rule.
+ifeq ($(LLVM_MONOREPO),yes)
+LLVM_CMAKE_FILES :=
+endif
+
+LLVM_CMAKE_ARCHBASE := cmake-$(OPT_LLVM).src
+LLVM_CMAKE_SRCDIR := $(PORTSDIR)/llvm/$(LLVM_CMAKE_ARCHBASE)
+LLVM_CMAKE_SIBLING := $(PORTSDIR)/llvm/cmake
+llvm-cmake-setupflag := $(GENDIR)/$(CURDIR)/.setupflag-llvmcmake-$(OPT_LLVM)
+
+#MM llvm-fetch : workbench-libs-llvm-fetch
+#MM llvm-host-tblgen : workbench-libs-llvm-fetch workbench-libs-llvm-clang-fetch workbench-libs-llvm-lld-fetch workbench-libs-llvm-setup
+#MM workbench-libs-llvm : llvm-host-tblgen
+
+#MM workbench-libs-llvm-tools : llvm-host-tblgen workbench-libs-llvm
+
+ifeq ($(LLVM_MONOREPO),yes)
+
+%fetch mmake=workbench-libs-llvm-project-fetch archive=$(LLVM_PROJECT_ARCHBASE) \
+    destination=$(PORTSDIR)/llvm/llvm-project \
+    location=$(PORTSSOURCEDIR) archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz" \
+    patches_specs=$(LLVM_PROJECT_PATCHSPECS) patches_origins="$(LLVM_PATCH_ORIGIN)"
+
+# The per component fetches the rules below depend on are all satisfied by
+# the single monorepo fetch above.
+workbench-libs-llvm-fetch workbench-libs-llvm-clang-fetch \
+workbench-libs-llvm-lld-fetch workbench-libs-llvm-cmakefiles-fetch : workbench-libs-llvm-project-fetch
+	$(Q)$(NOP)
+
+else
+
+%fetch mmake=workbench-libs-llvm-fetch archive=$(LLVM_ARCHBASE) destination=$(PORTSDIR)/llvm \
+    location=$(PORTSSOURCEDIR) archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz" \
+    patches_specs=$(LLVM_PATCHSPEC) patches_origins="$(LLVM_PATCH_ORIGIN)"
+
+%fetch mmake=workbench-libs-llvm-clang-fetch archive=$(CLANG_ARCHBASE) destination=$(PORTSDIR)/llvm \
+    location=$(PORTSSOURCEDIR) archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz" \
+    patches_specs=$(CLANG_PATCHSPEC) \
+    patches_origins="$(LLVM_XTOOLS_PATCH_ORIGIN)"
+
+%fetch mmake=workbench-libs-llvm-lld-fetch archive=$(LLD_ARCHBASE) destination=$(PORTSDIR)/llvm \
+    location=$(PORTSSOURCEDIR) archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz" \
+    patches_specs=$(LLD_PATCHSPEC) \
+    patches_origins="$(LLVM_XTOOLS_PATCH_ORIGIN)"
+
+%fetch mmake=workbench-libs-llvm-cmakefiles-fetch archive=$(LLVM_CMAKE_ARCHBASE) \
+    destination=$(PORTSDIR)/llvm \
+    location=$(PORTSSOURCEDIR) archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz"
+
+endif
+
+# The empty spelling below catches releases that ship the modules inside llvm.
+$(LLVM_CMAKE_SIBLING) $(GENDIR)/$(CURDIR):
+	%mkdir_q dir="$@"
+
+#MM
+workbench-libs-llvm-cmakefiles--setup:
+	$(Q)$(NOP)
+
+#MM
+workbench-libs-llvm-cmakefiles-yes-setup : workbench-libs-llvm-cmakefiles-fetch | $(LLVM_CMAKE_SIBLING) $(GENDIR)/$(CURDIR)
+	$(Q)$(IF) ! $(TEST) -f $(llvm-cmake-setupflag) ; then \
+	    $(ECHO) "Placing the LLVM cmake modules beside $(LLVM_ARCHBASE)" ; \
+	    cp -Rf $(LLVM_CMAKE_SRCDIR)/* $(LLVM_CMAKE_SIBLING)/ \
+	    && $(TOUCH) $(llvm-cmake-setupflag) ; \
+	fi
+
+#MM
+workbench-libs-llvm-setup : workbench-libs-llvm-cmakefiles-$(LLVM_CMAKE_FILES)-setup
+
+ifeq ($(LLVM_MONOREPO),yes)
+%create_patch mmake=workbench-libs-llvm-create-patch \
+    archive=$(LLVM_PROJECT_ARCHBASE) suffixes="tar.xz" \
+    destination=$(PORTSDIR)/llvm/llvm-project
+else
+%create_patch mmake=workbench-libs-llvm-create-patch \
+    archive=$(LLVM_ARCHBASE) suffixes="tar.xz" destination=$(PORTSDIR)/llvm
+endif
+
+LLVM_COMMON_CMAKEOPTIONS := \
+    -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+    -DLLVM_TARGETS_TO_BUILD=$(LLVM_TARGET_CPU) \
+    -DLLVM_DEFAULT_TARGET_TRIPLE=$(AROS_TARGET_CPU)-unknown-aros \
+    -DLLVM_ENABLE_PROJECTS="" \
+    -DLLVM_ENABLE_RUNTIMES="" \
+    -DLLVM_ENABLE_ASSERTIONS=OFF \
+    -DLLVM_ENABLE_BINDINGS=OFF \
+    -DLLVM_ENABLE_DOXYGEN=OFF \
+    -DLLVM_INCLUDE_DOCS=OFF \
+    -DLLVM_INCLUDE_TESTS=OFF \
+    -DLLVM_INCLUDE_EXAMPLES=OFF \
+    -DLLVM_INCLUDE_BENCHMARKS=OFF \
+    -DLLVM_ENABLE_TERMINFO=OFF \
+    -DLLVM_ENABLE_LIBXML2=OFF \
+    -DLLVM_ENABLE_ZLIB=OFF \
+    -DLLVM_ENABLE_ZSTD=OFF \
+    -DLLVM_ENABLE_CURL=OFF \
+    -DLLVM_NO_DEAD_STRIP=ON \
+    -DBUILD_SHARED_LIBS=OFF
+
+LLVM_TBLGEN_CMAKEOPTIONS := \
+    $(LLVM_COMMON_CMAKEOPTIONS) \
+    -DLLVM_BUILD_TOOLS=ON \
+    -DLLVM_INCLUDE_TOOLS=ON \
+    -DLLVM_INCLUDE_UTILS=OFF \
+    -DLLVM_EXTERNAL_PROJECTS="clang" \
+    -DLLVM_EXTERNAL_CLANG_SOURCE_DIR="$(CLANG_SRCDIR)"
+
+%build_with_cmake mmake=llvm-host-tblgen package=tblgen srcdir=$(LLVM_SRCDIR) \
+    gendir=$(HOSTGENDIR)/$(CURDIR) compiler=host usecrosstoolsdir=no \
+    cmakebuildcmd="$(CMAKE) --build $(LLVM_TBLGEN_BUILDDIR) --target llvm-tblgen --target clang-tblgen" \
+    cmakeinstallcmd="true" extraoptions="$(LLVM_TBLGEN_CMAKEOPTIONS)"
+
+# STATIC_LIBRARY try-compiles never link, so check_library_exists() always
+# says yes. AROS has no libdl/librt - answer them rather than probe.
+LLVM_NO_PROBE_LIBS := \
+    -DHAVE_LIBDL:INTERNAL=0 \
+    -DHAVE_LIBRT:INTERNAL=0
+
+LLVM_TARGET_CMAKEOPTIONS := \
+    $(LLVM_COMMON_CMAKEOPTIONS) \
+    $(LLVM_NO_PROBE_LIBS) \
+    -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
+    -DUNIX=ON \
+    -DCMAKE_POSITION_INDEPENDENT_CODE=OFF \
+    -DLLVM_ENABLE_PIC=OFF \
+    -DLLVM_BUILD_TOOLS=OFF \
+    -DLLVM_INCLUDE_TOOLS=OFF \
+    -DLLVM_INCLUDE_UTILS=OFF \
+    -DLLVM_BUILD_UTILS=OFF \
+    -DLLVM_TABLEGEN=$(LLVM_TBLGEN)
+
+%build_with_cmake mmake=workbench-libs-llvm package=target srcdir=$(LLVM_SRCDIR) \
+    gendir=$(GENDIR)/$(CURDIR) prefix="$(AROS_DEVELOPER)" \
+    cmakebuildcmd="$(CMAKE) --build $(LLVM_NATIVE_BUILDDIR)" \
+    cmakeinstallcmd="$(CMAKE) --install $(LLVM_NATIVE_BUILDDIR)" \
+    extracflags="-D_GNU_SOURCE" extracxxflags="-D_GNU_SOURCE" \
+    extraoptions="$(LLVM_TARGET_CMAKEOPTIONS)"
+
+# -------- Native tools: clang + lld as AROS executables --------
+#
+# Compilation on AROS uses clang's integrated cc1 in-process. Native linker
+# tools additionally depend on the AROS process-spawning implementation.
+
+LLVM_TOOLS_CMAKEOPTIONS := \
+    $(LLVM_COMMON_CMAKEOPTIONS) \
+    $(LLVM_NO_PROBE_LIBS) \
+    -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
+    -DUNIX=ON \
+    -DCMAKE_POSITION_INDEPENDENT_CODE=OFF \
+    -DLLVM_ENABLE_PIC=OFF \
+    -DLLVM_BUILD_TOOLS=ON \
+    -DLLVM_INCLUDE_TOOLS=ON \
+    -DLLVM_INCLUDE_UTILS=OFF \
+    -DLLVM_BUILD_UTILS=OFF \
+    -DLLVM_TABLEGEN=$(LLVM_TBLGEN) \
+    -DCLANG_TABLEGEN=$(CLANG_TBLGEN) \
+    -DLLVM_EXTERNAL_PROJECTS="clang;lld" \
+    -DLLVM_EXTERNAL_CLANG_SOURCE_DIR="$(CLANG_SRCDIR)" \
+    -DLLVM_EXTERNAL_LLD_SOURCE_DIR="$(LLD_SRCDIR)" \
+    -DCLANG_ENABLE_ARCMT=OFF \
+    -DCLANG_ENABLE_STATIC_ANALYZER=OFF \
+    -DCLANG_BUILD_EXAMPLES=OFF \
+    -DCLANG_INCLUDE_TESTS=OFF \
+    -DCMAKE_EXE_LINKER_FLAGS=-nix
+
+%build_with_cmake mmake=workbench-libs-llvm-tools package=tools srcdir=$(LLVM_SRCDIR) \
+    gendir=$(GENDIR)/$(CURDIR) prefix="$(AROS_DEVELOPER)" \
+    cmakebuildcmd="$(CMAKE) --build $(LLVM_TOOLS_BUILDDIR) --target clang --target lld --target llvm-ar --target llvm-nm --target llvm-objdump" \
+    cmakeinstallcmd="mkdir -p $(AROS_DEVELOPER)/bin && cp -a $(LLVM_TOOLS_BUILDDIR)/bin/. $(AROS_DEVELOPER)/bin/ && find $(AROS_DEVELOPER)/bin -maxdepth 1 -type f \( -name 'clang*' -o -name 'lld*' -o -name 'llvm-*' \) -exec $(STRIP) --strip-unneeded {} + && cp -a $(LLVM_TOOLS_BUILDDIR)/lib/clang $(AROS_DEVELOPER)/lib/" \
+    extracflags="-D_GNU_SOURCE" extracxxflags="-D_GNU_SOURCE" \
+    extraoptions="$(LLVM_TOOLS_CMAKEOPTIONS)"
+
+%common

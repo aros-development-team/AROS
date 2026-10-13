@@ -57,6 +57,7 @@ typedef enum
 	vr_BlockUsedTwice,
 	vr_Aborted,
 	vr_BlockOutsideDisk,
+	vr_WriteError,
 } ValidationResult;
 
 typedef enum
@@ -110,7 +111,7 @@ ValidationResult collect_directory_blocks(DiskStructure *ds, ULONG ext);
 /*
  * record bitmap back to disk
  */
-void record_bitmap(DiskStructure* ds);
+ValidationResult record_bitmap(DiskStructure* ds);
 
 /*
  * call to allocate bitmap in disk structure.

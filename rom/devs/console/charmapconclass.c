@@ -403,8 +403,11 @@ static struct charmap_line *charmapcon_find_line(Class *cl, Object *o,
     if (!line)
     {
         D(bug("Initializing charmap\n"));
-        data->top_of_window = data->top_of_scrollback = line =
-            charmap_newline(0, 0);
+        line = charmap_newline(0, 0);
+        if (!line)
+            return NULL;
+
+        data->top_of_window = data->top_of_scrollback = line;
         data->scrollback_size = 1;
     }
 
@@ -413,7 +416,8 @@ static struct charmap_line *charmapcon_find_line(Class *cl, Object *o,
     {
         if (!line->next)
         {
-            charmap_newline(0, line);
+            if (!charmap_newline(0, line))
+                return NULL;
             data->scrollback_size += 1;
         }
         line = line->next;
@@ -465,6 +469,9 @@ static VOID charmap_ascii(Class *cl, Object *o, ULONG xcp, ULONG ycp,
     char *str, ULONG len)
 {
     struct charmap_line *line = charmapcon_find_line(cl, o, ycp);
+    if (!line)
+        return;
+
     ULONG oldsize = line->size;
     ULONG newsize = xcp + len;
 
@@ -522,7 +529,8 @@ static VOID charmap_scroll_up(Class *cl, Object *o, ULONG y)
     {
         if (!data->top_of_window->next)
         {
-            charmap_newline(0, data->top_of_window);
+            if (!charmap_newline(0, data->top_of_window))
+                break;
             data->scrollback_size += 1;
         }
         data->top_of_window = data->top_of_window->next;
@@ -581,7 +589,8 @@ static VOID charmap_scroll_contents_down(Class *cl, Object *o, ULONG count)
     ULONG y;
 
     count = MIN(count, CHAR_YMAX(o) + 1);
-    charmapcon_find_line(cl, o, CHAR_YMAX(o));
+    if (!charmapcon_find_line(cl, o, CHAR_YMAX(o)))
+        return;
 
     while (count--)
     {
@@ -659,46 +668,57 @@ static VOID charmapcon_scroll_to(Class *cl, Object *o, ULONG y)
 }
 
 
-static VOID charmap_delete_char(Class *cl, Object *o, ULONG x, ULONG y)
+static VOID charmap_delete_chars(Class *cl, Object *o, ULONG x, ULONG y,
+    ULONG count)
 {
     struct charmap_line *line = charmapcon_find_line(cl, o, y);
+    ULONG remaining;
 
-    if (!line || x >= line->size)
+    if (!line || x >= line->size || count == 0)
         return;
 
-    // FIXME: Shrink the buffer, or keep track of capacity separately.
-    if (x + 1 >= line->size)
+    if (count > line->size - x)
+        count = line->size - x;
+
+    remaining = line->size - x - count;
+    if (remaining > 0)
     {
-        line->text[x] = 0;
-        return;
+        memmove(line->fgpen + x, line->fgpen + x + count, remaining);
+        memmove(line->bgpen + x, line->bgpen + x + count, remaining);
+        memmove(line->flags + x, line->flags + x + count, remaining);
+        memmove(line->text + x, line->text + x + count, remaining);
     }
 
-    memmove(line->fgpen + x, line->fgpen + x + 1, 1);
-    memmove(line->bgpen + x, line->bgpen + x + 1, 1);
-    memmove(line->flags + x, line->flags + x + 1, 1);
-    memmove(line->text + x, line->text + x + 1, 1);
+    charmap_resize(ConsoleDevice, line, line->size - count);
 }
 
-static VOID charmap_insert_char(Class *cl, Object *o, ULONG x, ULONG y)
+static VOID charmap_insert_chars(Class *cl, Object *o, ULONG x, ULONG y,
+    ULONG count)
 {
     struct charmap_line *line = charmapcon_find_line(cl, o, y);
+    ULONG oldsize, tail;
 
-    if (x >= line->size)
+    if (!line || x >= line->size || count == 0)
         return;
 
-    /* FIXME: This is wasteful, since it copies the buffers straight over,
-     * so we have to do memmove's further down. */
-    charmap_resize(ConsoleDevice, line, line->size + 1);
+    oldsize = line->size;
+    if (count > 0xffffUL - oldsize)
+        return;
 
-    memmove(line->fgpen + x + 1, line->fgpen + x, line->size - x - 1);
-    memmove(line->bgpen + x + 1, line->bgpen + x, line->size - x - 1);
-    memmove(line->flags + x + 1, line->flags + x, line->size - x - 1);
-    memmove(line->text + x + 1, line->text + x, line->size - x - 1);
+    charmap_resize(ConsoleDevice, line, oldsize + count);
+    if (line->size != oldsize + count)
+        return;
 
-    line->fgpen[x] = CU(o)->cu_FgPen;
-    line->bgpen[x] = CU(o)->cu_BgPen;
-    line->flags[x] = CU(o)->cu_TxFlags;
-    line->text[x] = ' ';
+    tail = oldsize - x;
+    memmove(line->fgpen + x + count, line->fgpen + x, tail);
+    memmove(line->bgpen + x + count, line->bgpen + x, tail);
+    memmove(line->flags + x + count, line->flags + x, tail);
+    memmove(line->text + x + count, line->text + x, tail);
+
+    SetMem(line->fgpen + x, CU(o)->cu_FgPen, count);
+    SetMem(line->bgpen + x, CU(o)->cu_BgPen, count);
+    SetMem(line->flags + x, CU(o)->cu_TxFlags, count);
+    SetMem(line->text + x, ' ', count);
 }
 
 static VOID charmap_formfeed(Class *cl, Object *o)
@@ -742,7 +762,8 @@ static VOID charmap_insert_lines(Class *cl, Object *o, ULONG count)
     ULONG y, first = YCP;
 
     count = MIN(count, CHAR_YMAX(o) - first + 1);
-    charmapcon_find_line(cl, o, CHAR_YMAX(o));
+    if (!charmapcon_find_line(cl, o, CHAR_YMAX(o)))
+        return;
 
     while (count--)
     {
@@ -763,7 +784,8 @@ static VOID charmap_delete_lines(Class *cl, Object *o, ULONG count)
     ULONG y, first = YCP;
 
     count = MIN(count, CHAR_YMAX(o) - first + 1);
-    charmapcon_find_line(cl, o, CHAR_YMAX(o));
+    if (!charmapcon_find_line(cl, o, CHAR_YMAX(o)))
+        return;
 
     while (count--)
     {
@@ -824,45 +846,85 @@ static VOID charmapcon_docommand(Class *cl, Object *o,
         DoSuperMethodA(cl, o, (Msg) msg);
         break;
 
-    case C_DELETE_CHAR:        /* FIXME: can it have params!? */
-        charmap_delete_char(cl, o, XCP, YCP);
-        DoSuperMethodA(cl, o, (Msg) msg);
+    case C_DELETE_CHAR:
+        {
+            IPTR count = params[0] ? params[0] : 1;
+            IPTR max_count = CHAR_XMAX(o) - XCP + 1;
+
+            if (count > max_count)
+                count = max_count;
+
+            charmap_delete_chars(cl, o, XCP, YCP, (ULONG) count);
+            DoSuperMethodA(cl, o, (Msg) msg);
+        }
         break;
 
     case C_INSERT_CHAR:
-        charmap_insert_char(cl, o, XCP, YCP);
-        DoSuperMethodA(cl, o, (Msg) msg);
+        {
+            IPTR count = params[0] ? params[0] : 1;
+            IPTR max_count = CHAR_XMAX(o) - XCP + 1;
+
+            if (count > max_count)
+                count = max_count;
+
+            charmap_insert_chars(cl, o, XCP, YCP, (ULONG) count);
+            DoSuperMethodA(cl, o, (Msg) msg);
+        }
         break;
 
     case C_SCROLL_UP:
         {
+            IPTR count = params[0];
+            IPTR max_count = CHAR_YMAX(o) + 1;
+
+            if (count > max_count)
+                count = max_count;
             D(bug("C_SCROLL_UP area (%d, %d) to (%d, %d), %d\n",
                     GFX_XMIN(o), GFX_YMIN(o), GFX_XMAX(o), GFX_YMAX(o),
-                    YRSIZE * params[0]));
-            charmap_scroll_up(cl, o, params[0]);
+                    YRSIZE * (ULONG)count));
+            charmap_scroll_up(cl, o, (ULONG)count);
             DoSuperMethodA(cl, o, (Msg) msg);
             break;
         }
 
     case C_SCROLL_DOWN:
         {
+            IPTR count = params[0];
+            IPTR max_count = CHAR_YMAX(o) + 1;
+
+            if (count > max_count)
+                count = max_count;
             D(bug("C_SCROLL_DOWN area (%d, %d) to (%d, %d), %d\n",
                     GFX_XMIN(o), GFX_YMIN(o), GFX_XMAX(o), GFX_YMAX(o),
-                    YRSIZE * params[0]));
-            charmap_scroll_contents_down(cl, o, params[0]);
+                    YRSIZE * (ULONG)count));
+            charmap_scroll_contents_down(cl, o, (ULONG)count);
             DoSuperMethodA(cl, o, (Msg) msg);
             break;
         }
 
     case C_INSERT_LINE:
-        charmap_insert_lines(cl, o, params[0]);
-        DoSuperMethodA(cl, o, (Msg) msg);
-        break;
+        {
+            IPTR count = params[0];
+            IPTR max_count = CHAR_YMAX(o) - YCP + 1;
+
+            if (count > max_count)
+                count = max_count;
+            charmap_insert_lines(cl, o, (ULONG)count);
+            DoSuperMethodA(cl, o, (Msg) msg);
+            break;
+        }
 
     case C_DELETE_LINE:
-        charmap_delete_lines(cl, o, params[0]);
-        DoSuperMethodA(cl, o, (Msg) msg);
-        break;
+        {
+            IPTR count = params[0];
+            IPTR max_count = CHAR_YMAX(o) - YCP + 1;
+
+            if (count > max_count)
+                count = max_count;
+            charmap_delete_lines(cl, o, (ULONG)count);
+            DoSuperMethodA(cl, o, (Msg) msg);
+            break;
+        }
 
     case C_SET_RAWEVENTS:
         {
@@ -1078,8 +1140,8 @@ static VOID charmapcon_refresh_lines(Class *cl, Object *o, LONG fromLine,
          */
         if (!line->next && yc <= toLine)
         {
-            line->next = charmap_newline(0, line);
-            data->scrollback_size += 1;
+            if (charmap_newline(0, line))
+                data->scrollback_size += 1;
         }
         line = line->next;
     }
@@ -1357,6 +1419,7 @@ static VOID charmapcon_newwindowsize(Class *cl, Object *o,
     struct charmapcondata *data = INST_DATA(cl, o);
 
     WORD old_ycp = YCP;
+    WORD old_ymax = CHAR_YMAX(o);
 
     DoSuperMethodA(cl, o, (Msg) msg);
     D(bug("CharMapCon::NewWindowSize(o=%p) x=%d, y=%d, ymax=%d\n",
@@ -1370,6 +1433,25 @@ static VOID charmapcon_newwindowsize(Class *cl, Object *o,
     if (old_ycp > CHAR_YMAX(o))
     {
         charmap_scroll_up(cl, o, old_ycp - CHAR_YMAX(o));
+    }
+    else if (!data->unrendered && old_ycp == old_ymax &&
+        CHAR_YMAX(o) > old_ymax)
+    {
+        WORD grow = CHAR_YMAX(o) - old_ymax;
+        WORD moved = 0;
+
+        while (grow-- > 0 && data->top_of_window->prev &&
+            data->scrollback_pos > 0)
+        {
+            data->top_of_window = data->top_of_window->prev;
+            data->scrollback_pos -= 1;
+            data->select_y_max += 1;
+            data->select_y_min += 1;
+            moved += 1;
+        }
+
+        YCP += moved;
+        YCCP += moved;
     }
 
     charmapcon_refresh(cl, o, 0);

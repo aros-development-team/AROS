@@ -59,6 +59,8 @@
 
 #include <hidd/pci.h>
 
+#include <asm/io.h>
+
 #include <devices/timer.h>
 #include <devices/sana2.h>
 #include <devices/sana2specialstats.h>
@@ -563,10 +565,11 @@ struct eth_frame {
 #define DUPLEX_FULL             0x01
 #endif
 
-/* write/read MMIO register */
-#define RTL_R8(addr)            (*((volatile UBYTE *)(addr)))
-#define RTL_R16(addr)           (*((volatile UWORD *)(addr)))
-#define RTL_R32(addr)           (*((volatile ULONG *)(addr)))
+/* write/read MMIO register - through <asm/io.h>, never a bare volatile
+ * dereference, so the access cannot be vectorised (see the note there) */
+#define RTL_R8(addr)            mmio_inb(addr)
+#define RTL_R16(addr)           mmio_inw(addr)
+#define RTL_R32(addr)           mmio_inl(addr)
 #define RTL_W8(addr, val8)      MMIO_W8(addr, val8)
 #define RTL_W16(addr, val16)    MMIO_W16(addr, val16)
 #define RTL_W32(addr, val32)    MMIO_W32(addr, val32)

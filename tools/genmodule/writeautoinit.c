@@ -9,10 +9,10 @@
 void writeautoinit(struct config *cfg, int is_rel)
 {
     FILE *out;
-    char line[256], *banner;
+    char *line, *banner;
     struct stringlist *linelistit;
 
-    snprintf(line, 255, "%s/%s_%sautoinit.c", cfg->libgendir, cfg->modulename, is_rel ? "rel" : "");
+    line = make_output_path("%s/%s_%sautoinit.c", cfg->libgendir, cfg->modulename, is_rel ? "rel" : "");
     out = fopen(line, "w");
 
     if (out==NULL)
@@ -69,4 +69,5 @@ void writeautoinit(struct config *cfg, int is_rel)
         }
     }
     fclose(out);
+    free(line);
 }

@@ -30,6 +30,10 @@ endif
 FUNCTIONS := readbattclock resetbattclock writebattclock \
 	     readbattclockmem writebattclockmem
 
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
 %build_module mmake=kernel-battclock \
     modname=battclock modtype=resource version=$(AROS_TARGET_PLATFORM) \
     files="$(FUNCTIONS)" archspecific=yes

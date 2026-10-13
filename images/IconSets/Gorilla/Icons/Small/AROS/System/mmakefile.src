@@ -3,7 +3,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 BASEICONS := About FixFonts Format FTManager WorkBook Shell
-ADDITIONALICONS := SysMon Snoopy Find
+ADDITIONALICONS := SysMon Snoopy Find VMM
 
 DISKIMAGESRCS := DiskImageGUI-1.png DiskImageGUI-2.png
 DISKIMAGEICON := DiskImageGUI

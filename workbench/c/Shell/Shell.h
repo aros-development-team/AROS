@@ -109,6 +109,7 @@ void Redirection_release(ShellState *ss);
  * Output:   LONG  --  DOS error code
  */
 LONG Redirection_init(ShellState *ss);
+LONG Redirection_activateError(ShellState *ss);
 
 /* Function: setPath
  *
@@ -138,6 +139,7 @@ void cliPrompt(ShellState *ss);
  * FIXME: some doc ?
  */
 void initDefaultInterpreterState(ShellState *ss);
+void freeInterpreterState(ShellState *ss);
 void popInterpreterState(ShellState *ss);
 LONG pushInterpreterState(ShellState *ss);
 

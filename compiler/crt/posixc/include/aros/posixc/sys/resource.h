@@ -38,12 +38,29 @@ struct rlimit {
 
 #include <aros/types/timeval_s.h>
 
-/* POSIX.1-2008 requires only the two time fields. Note: posixc.library
-   does not implement getrusage(); the structure and constants are
-   provided for code (e.g. gnulib) that supplies its own fallback. */
+/* POSIX.1-2008 requires only the two time fields; the extra fields below
+   follow BSD/Linux order and meaning. Note: posixc.library implements
+   getrusage() for RUSAGE_SELF (ru_utime is the calling task's CPU time,
+   ru_stime is 0 as AROS has no user/system split, the BSD fields are
+   zeroed as untracked); RUSAGE_CHILDREN is refused. Code with its own
+   fallback may still use the structure and constants directly. */
 struct rusage {
     struct timeval ru_utime; /* User time used */
     struct timeval ru_stime; /* System time used */
+    long ru_maxrss;          /* Maximum resident set size (kilobytes) */
+    long ru_ixrss;           /* Integral shared memory size (unused) */
+    long ru_idrss;           /* Integral unshared data size (unused) */
+    long ru_isrss;           /* Integral unshared stack size (unused) */
+    long ru_minflt;          /* Page reclaims (unused) */
+    long ru_majflt;          /* Page faults (unused) */
+    long ru_nswap;           /* Swaps (unused) */
+    long ru_inblock;         /* Block input operations (unused) */
+    long ru_oublock;         /* Block output operations (unused) */
+    long ru_msgsnd;          /* Messages sent (unused) */
+    long ru_msgrcv;          /* Messages received (unused) */
+    long ru_nsignals;        /* Signals received (unused) */
+    long ru_nvcsw;           /* Voluntary context switches (unused) */
+    long ru_nivcsw;          /* Involuntary context switches (unused) */
 };
 
 #define RLIMIT_CORE     0	/* Limit on size of core file */
@@ -61,7 +78,7 @@ __BEGIN_DECLS
 
 /* NOTIMPL int getpriority(int, id_t); */
 int getrlimit(int, struct rlimit *);
-/* NOTIMPL getrusage(int, struct rusage *); */
+int getrusage(int, struct rusage *);
 /* NOTIMPL setpriority(int, id_t, int); */
 int setrlimit(int, const struct rlimit *);
 

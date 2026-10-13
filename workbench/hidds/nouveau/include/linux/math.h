@@ -10,7 +10,9 @@
 #include <linux/compiler.h>
 #include <linux/const.h>
 
+#ifndef DIV_ROUND_UP /* Mesa util/macros.h has the same */
 #define DIV_ROUND_UP(n, d)          (((n) + (d) - 1) / (d))
+#endif
 #define __KERNEL_DIV_ROUND_UP(n, d) DIV_ROUND_UP(n, d)
 #define DIV_ROUND_UP_ULL(ll, d)     ({ unsigned long long _tmp = (ll) + (d) - 1; do_div_u64_by_u32(&_tmp, (d)); _tmp; })
 #define DIV_ROUND_DOWN_ULL(ll, d)   ({ unsigned long long _tmp = (ll); do_div_u64_by_u32(&_tmp, (d)); _tmp; })

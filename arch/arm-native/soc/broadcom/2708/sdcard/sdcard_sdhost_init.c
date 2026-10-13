@@ -139,10 +139,10 @@ static int FNAME_SDHOST(SDHostInit)(struct SDCardBase *SDCardBase)
     __arm_periiobase = KrnGetSystemAttr(KATTR_PeripheralBase);
 
     /*
-     * On the BCM2711 the card slot is wired to EMMC2, not to this controller.
+     * On the BCM2711/BCM2712 the card slot is wired to EMMC2, not to this controller.
      * Report success so the remaining init functions still run.
      */
-    if (__arm_periiobase == BCM2711_PERIIOBASE)
+    if (__arm_periiobase == BCM2711_PERIIOBASE || __arm_periiobase == BCM2712_PERIIOBASE)
     {
         D(bug("[SDHost] %s: not the card controller on this SoC\n", __PRETTY_FUNCTION__));
         if (MBoxMessage_)

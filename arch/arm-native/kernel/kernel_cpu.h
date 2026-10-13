@@ -68,6 +68,14 @@ static inline void SendIPIAll(uint32_t ipi, uint32_t ipi_param)
     __arm_arosintern.ARMI_SendIPI((ipi & 0x0fffffff) | (cpu << 28), ipi_param, 0xf);
 }
 
+/*
+ * Per-task CPU usage sweep, refreshing iet_CpuUsage for TaskTag_CPUUsage.
+ * Called from the platform VBlank timer IRQ once per window.
+ */
+#define TASKUSAGE_WINDOW        1000000 /* microseconds */
+
+void core_TaskCPUUsage(void);
+
 #if defined(__AROSEXEC_SMP__)
 /*
  * Per-core load accounting for KrnGetSystemAttr(KATTR_CPULoad + cpu),

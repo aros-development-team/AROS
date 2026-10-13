@@ -66,6 +66,8 @@
     case BMA_WIDTH:
         /* must return width in pixel! */
         retval = (IPTR)(bitmap->BytesPerRow * 8);
+        if((bitmap->Flags & BMF_INTERLEAVED) && bitmap->Depth)
+            retval /= bitmap->Depth;
         break;
 
     case BMA_DEPTH:

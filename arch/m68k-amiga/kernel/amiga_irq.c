@@ -142,6 +142,14 @@ static inline UWORD custom_r(ULONG reg)
 #define PAULA_IRQ_EXIT()	\
 	/* mask = custom_r(INTENAR) & custom_r(INTREQR) & (irq_mask); */ \
     } while (0); \
+    /* The master enable was set or we would not be here. A server that \
+     * takes a Disable()/Enable() section finds the interrupted task's \
+     * IDNestCnt >= 0 when that task has an outstanding Disable() but \
+     * re-enabled the hardware itself (demos do: Disable(), set INTENA, \
+     * AddIntServer(), spin on a VBL counter), and its Enable() then leaves \
+     * INTEN clear for good. Interrupt handling must be transparent to the \
+     * interrupted code, so put the bit back */ \
+    custom_w(INTENA, INTF_SETCLR | INTF_INTEN); \
     /* Call Exec/ExitIntr */	\
     return TRUE;
 
@@ -160,7 +168,14 @@ static inline UWORD custom_r(ULONG reg)
             "   jsr     " #handler "\n" \
             "   tst.w   %d0\n"          \
             "   beq     0f\n"           \
-            "   jmp     Exec_6_ExitIntr\n" \
+            /* Leave through the ExitIntr() vector, the way Kickstart's  \
+             * level handlers do: SysBase is pushed above the saved      \
+             * registers and ExitIntr() pops it. A program that          \
+             * SetFunction()s ExitIntr() is then called on every         \
+             * interrupt exit, with the stack it expects. */             \
+            "   move.l  (4).w,%a6\n"    \
+            "   move.l  %a6,%sp@-\n"    \
+            "   jmp     %a6@(-36)\n"    \
             "0:\n" \
             "   movem.l %sp@+,%d0/%d1/%a0/%a1/%a5/%a6\n" \
             "   rte\n" \

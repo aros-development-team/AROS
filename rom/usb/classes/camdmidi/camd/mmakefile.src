@@ -6,7 +6,6 @@ CAMDOBJDIR := $(OBJDIR)/../camdusbmidi/arch
 
 SRCFILE := poseidonusb
 
-USER_LDFLAGS := -static
 USER_INCLUDES := -I$(OBJDIR)/../include -iquote $(SRCDIR)/$(CURDIR)/..
 
 #MM kernel-usb-classes-camdusbmidi-object : kernel-usb-classes-camd-usbmidi-includes
@@ -15,16 +14,18 @@ USER_INCLUDES := -I$(OBJDIR)/../include -iquote $(SRCDIR)/$(CURDIR)/..
 $(OBJDIR)/%.o : $(SRCDIR)/$(CURDIR)/%.c | $(OBJDIR)
 	%compile_q
 
-ifeq ($(AROS_TOOLCHAIN),llvm)
-BINLDFLAGS := -m elf_$(AROS_TARGET_CPU)
-endif
-BINLDFLAGS += $(LDFLAGS)
- 
-%rule_link_binary ldflags=$(BINLDFLAGS) file=$(CAMDOBJDIR)/$(SRCFILE).bin.o name=$(SRCFILE) objs=$(OBJDIR)/$(SRCFILE).o
+# The class writes this blob to DEVS:Midi/ and camd.library LoadSeg()s it, so
+# it has to stay a relocatable ELF: OpenMidiDevice() only accepts the driver
+# if MidiDeviceData.Init points inside the loaded seglist, which needs the
+# relocations intact.
+$(CAMDOBJDIR)/$(SRCFILE).bin.o : $(OBJDIR)/$(SRCFILE).o | $(OBJDIR) $(CAMDOBJDIR)
+	$(Q)$(ECHO) "Embedding  $(SRCFILE)..."
+	$(Q)$(CP) $< $(OBJDIR)/$(SRCFILE)
+	$(Q)cd $(OBJDIR) && $(AROS_LD) -r --format binary $(SRCFILE) -o $@
 
 #MM
 kernel-usb-classes-camdusbmidi-object : $(CAMDOBJDIR)/$(SRCFILE).bin.o
 
-GLOB_MKDIRS += $(OBJDIR)
+GLOB_MKDIRS += $(OBJDIR) $(CAMDOBJDIR)
 
 %common

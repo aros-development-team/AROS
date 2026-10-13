@@ -16,6 +16,10 @@ USER_CPPFLAGS += \
                -DINTUITION_INLINE_NEWOBJECT
 USER_LDFLAGS := -static
 
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
 %build_module mmake=kernel-console \
   modname=console modtype=device \
   files="console $(FUNCS) $(FILES)"

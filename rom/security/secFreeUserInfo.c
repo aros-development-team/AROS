@@ -1,14 +1,28 @@
 /*
-    Copyright (C) 2002-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
-#include <aros/debug.h>
-#include <stdio.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/utility.h>
+#include <proto/intuition.h>
+
+#include <proto/security.h>
 
 #include "security_intern.h"
-#include "security_userinfo.h"
+#include "security_task.h"
+#include "security_server.h"
+#include "security_segment.h"
+#include "security_monitor.h"
 #include "security_memory.h"
-
+#include "security_plugins.h"
+#include "security_crypto.h"
+#include "security_enforce.h"
+#include "security_packetio.h"
+#include "security_userinfo.h"
+#include "security_groupinfo.h"
+#include "security_login.h"
+#include "security_support.h"
 
 /*****************************************************************************
 
@@ -16,51 +30,29 @@
         AROS_LH1(void, secFreeUserInfo,
 
 /*  SYNOPSIS */
-        /* void */
         AROS_LHA(struct secUserInfo *, info, A0),
 
 /*  LOCATION */
         struct SecurityBase *, secBase, 10, Security)
 
-/*  FUNCTION
+/*
+    FUNCTION
+        Free a structure allocated with secAllocUserInfo().
 
-    INPUTS
-
-
-    RESULT
-
-
-    NOTES
-
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-
-    INTERNALS
-
-    HISTORY
-
-*****************************************************************************/
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    struct secPrivUserInfo *_pinfo = (struct secPrivUserInfo *)info;
+    struct secPrivUserInfo *pinfo = (struct secPrivUserInfo *)info;
 
-    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
-
-    if (_pinfo) {
-        if (_pinfo->Pub.NumSecGroups)
-            Free(_pinfo->Pub.SecGroups, _pinfo->Pub.NumSecGroups*sizeof(UWORD));
-        if (_pinfo->Pattern)
-            FreeV(_pinfo->Pattern);
-        Free(_pinfo, sizeof(struct secPrivUserInfo));
+    if (pinfo)
+    {
+        if (pinfo->Pattern)
+            FreeV(pinfo->Pattern);
+        if (pinfo->Pub.NumSecGroups && pinfo->Pub.SecGroups)
+            Free(pinfo->Pub.SecGroups, pinfo->Pub.NumSecGroups * sizeof(UWORD));
+        Free(pinfo, sizeof(struct secPrivUserInfo));
     }
 
     AROS_LIBFUNC_EXIT
-
 } /* secFreeUserInfo */
-

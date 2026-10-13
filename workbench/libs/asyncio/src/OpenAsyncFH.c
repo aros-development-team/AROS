@@ -30,11 +30,14 @@ AS_OpenAsyncFH( BPTR handle, OpenModes mode, LONG bufferSize, BOOL closeIt )
 			{
 				if( Seek( handle, 0, OFFSET_END ) < 0 )
 				{
+					LONG error = IoErr();
+
 					if( closeIt )
 					{
 						Close( handle );
 					}
 
+					SetIoErr( error );
 					handle = BNULL;
 				}
 			}

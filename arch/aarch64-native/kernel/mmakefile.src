@@ -33,9 +33,15 @@ CFILES := \
         platform_init \
         kernel_debug \
         getsystemattr \
+        timestamp \
         getcpucount \
+        alloccpumask \
+        clearcpumask \
+        cpuinmask \
+        freecpumask \
         getcpumask \
         getcpunumber \
+        schedulecpu \
         maygetchar \
         tags \
         intr \
@@ -55,7 +61,7 @@ CFILES := \
         font8x14 \
         devicetree
 
-PLATFILES := platform_bcm27xx platform_bcm2708 platform_bcm2711 platform_bcm2712
+PLATFILES := platform_bcm27xx platform_bcm2708 platform_bcm2711 platform_bcm2712 gic400
 
 AFILES := vectors
 
@@ -68,7 +74,7 @@ kernel-raspi-aarch64-quick: $(OSGENDIR)/boot/core.elf
 $(OSGENDIR)/boot/core.elf: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o  $(KOBJSDIR)/task_resource.o
 		@$(ECHO) "Creating   $@"
 		%mkdirs_q $(OSGENDIR)/boot
-		@$(TARGET_LD) --emit-relocs -Map $(OSGENDIR)/boot/core.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds -o $@ $^ -L$(AROS_LIB) -larossupport -lautoinit -llibinit -lstdc.static $(TARGET_C_LIBS)
+		@$(TARGET_LD) --emit-relocs -Map $(OSGENDIR)/boot/core.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds -o $@ $^ -L$(AROS_LIB) -larossupport -lautoinit -lamiga -llibinit -lstdc.static $(TARGET_C_LIBS)
 		@$(TARGET_STRIP) --strip-debug -R .note -R .comment $@
 
 #MM kernel-kernel-raspi-aarch64 : includes

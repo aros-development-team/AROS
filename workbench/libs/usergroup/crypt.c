@@ -3,7 +3,7 @@
  *
  * Based upon usergroup.library from AmiTCP/IP.
  *
- * Copyright © 2025 The AROS Dev Team.
+ * Copyright © 2025-2026 The AROS Dev Team.
  * Copyright © 1993 AmiTCP/IP Group, <AmiTCP-Group@hut.fi>
  *                  Helsinki University of Technology, Finland.
  */
@@ -117,7 +117,7 @@
 ****************************************************************************
 */
 
-#ifdef DEBUG
+#if DEBUG
 #undef DEBUG
 #endif
 #define DEBUG 0
@@ -204,7 +204,7 @@
 #define	STATIC	static
 #endif
 
-#ifdef DEBUG
+#if DEBUG
 STATIC void prtab(char *s, unsigned char *t, int num_rows);
 #endif
 
@@ -922,7 +922,7 @@ void init_des(void)
         }
         perm[i] = k;
     }
-#ifdef DEBUG
+#if DEBUG
     prtab("pc1tab", perm, 8);
 #endif
     init_perm(PC1ROT, perm, 8, 8);
@@ -946,7 +946,7 @@ void init_des(void)
             if ((k%28) <= j) k -= 28;
             perm[i] = pc2inv[k];
         }
-#ifdef DEBUG
+#if DEBUG
         prtab("pc2tab", perm, 8);
 #endif
         init_perm(PC2ROT[j], perm, 8, 8);
@@ -970,7 +970,7 @@ void init_des(void)
             perm[i*8+j] = k;
         }
     }
-#ifdef DEBUG
+#if DEBUG
     prtab("ietab", perm, 8);
 #endif
     init_perm(IE3264, perm, 4, 8);
@@ -987,7 +987,7 @@ void init_des(void)
         }
         perm[k-1] = i+1;
     }
-#ifdef DEBUG
+#if DEBUG
     prtab("cftab", perm, 8);
 #endif
     init_perm(CF6464, perm, 8, 8);
@@ -1103,7 +1103,7 @@ int encrypt(register char *block, int flag)
 }
 #endif
 
-#ifdef DEBUG
+#if DEBUG
 STATIC void prtab(char *s, unsigned char *t, int num_rows)
 {
     register int i, j;

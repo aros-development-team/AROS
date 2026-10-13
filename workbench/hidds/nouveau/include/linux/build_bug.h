@@ -24,6 +24,8 @@
 #define BUILD_BUG()                 BUILD_BUG_ON_MSG(1, "BUILD_BUG failed")
 #define BUILD_BUG_ON_INVALID(e)     ((void)(sizeof((long)(e))))
 #define BUILD_BUG_ON_NOT_POWER_OF_2(n) BUILD_BUG_ON((n) == 0 || (((n) & ((n) - 1)) != 0))
+/* assert.h maps it straight to _Static_assert; this one takes the message as optional */
+#undef static_assert
 #define static_assert(expr, ...)    _Static_assert(expr, ##__VA_ARGS__ "static assertion failed")
 
 #endif /* _LINUX_BUILD_BUG_H_ */

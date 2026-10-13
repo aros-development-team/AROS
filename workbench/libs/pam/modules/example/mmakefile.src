@@ -1,0 +1,15 @@
+#
+#   Rules to build example.pam, a sample pam.library module (SYS:Libs/PAM/)
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+#MM workbench-libs-pam-modules-example : includes linklibs workbench-libs-pam-includes workbench-libs-pam-linklib
+#MM- workbench-libs-pam : workbench-libs-pam-modules-example
+
+%build_module mmake=workbench-libs-pam-modules-example modname=example \
+  modtype=library modsuffix=pam moduledir=Libs/PAM conffile=example.conf files="example" \
+  uselibs=""
+
+%common

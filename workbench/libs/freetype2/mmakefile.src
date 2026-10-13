@@ -127,11 +127,23 @@ FT2FILES := $(addprefix $(FT2AROSBUILDDIR)/,$(FT2BASEARCHFILES)) $(addprefix $(F
 #MM
 workbench-libs-freetype-pkgconfig : $(AROS_LIB)/pkgconfig/freetype2.pc
 
+#
+# NB: freetype2.pc must carry the LIBTOOL version, not the release
+# version: that is what upstream's freetype2.pc publishes and what
+# consumers compare against (cairo wants >= 23.0.17, our own
+# fontconfig.pc wants >= 21.0.15). Publishing $(FT2VERS) made every
+# such test fail, and meson ports then silently built a bundled
+# freetype instead. Read it from the source, as upstream's configure
+# does, so it stays right across version bumps.
+#
 $(AROS_LIB)/pkgconfig/freetype2.pc : $(FT2SRCDIR)/builds/unix/freetype2.in
 	@$(ECHO) "Generating /Developer/lib/pkgconfig/freetype2.pc ..."
 	%mkdir_q dir=$(AROS_LIB)/pkgconfig
-	@$(SED) -e 's|%exec_prefix%|$${prefix}|' \
-	       -e 's|%ft_version%|$(FT2VERS)|' \
+	@ft_vers=`$(SED) -n "s|^version_info='\([0-9:]*\)'.*|\1|p" \
+	             $(FT2SRCDIR)/builds/unix/configure.raw | tr ':' '.'`; \
+	 [ -n "$$ft_vers" ] || ft_vers=$(FT2VERS); \
+	 $(SED) -e 's|%exec_prefix%|$${prefix}|' \
+	       -e "s|%ft_version%|$$ft_vers|" \
 	       -e 's|%includedir%|$${prefix}/include|' \
 	       -e "s|includedir}/freetype2|includedir}/freetype|g" \
 	       -e 's|%libdir%|$${prefix}/lib|' \

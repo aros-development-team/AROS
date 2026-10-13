@@ -10,7 +10,7 @@
 #include "strings.h"
 
 #define CATALOG_NAME     "System/System/VMM.catalog"
-#define CATALOG_VERSION  1
+#include "cat/catalog_version.h"
 
 /*** Variables **************************************************************/
 struct Catalog *catalog;

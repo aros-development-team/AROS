@@ -669,10 +669,10 @@ int HFS_Read_From_File(CDROM_OBJ *p_file, char *p_buffer, int p_buffer_length)
 	pos = p_file->pos & 511;
 
 	/*
-	 * depending on logical block location, we will have up to 32kB of data here.
-	 * we always read in 32768bytes chunks, so the first of 16 sectors in group yields largest amount
+	 * The available data extends to the end of the current cache slot.
 	 */
-	remain_block = (SCSI_BUFSIZE << 4) - ((block << 9) & ((SCSI_BUFSIZE << 4) - 1)) - pos;
+	remain_block = SCSI_BUFSIZE * cd->buffer_sectors -
+		((block << 9) & (SCSI_BUFSIZE * cd->buffer_sectors - 1)) - pos;
 
 	/*
 	 * how much data left in a file do we have?
@@ -710,12 +710,11 @@ int HFS_Read_From_File(CDROM_OBJ *p_file, char *p_buffer, int p_buffer_length)
 	    break;
 
 	/*
-	 * here's the trick:
-	 * - HFS block size is 512bytes (so we have up to 64 such blocks in a chunk)
-	 * - block + 64 moves us to next chunk, while
-	 * - &~63 puts us at the beginning of it.
+	 * HFS uses four 512-byte blocks per cached 2048-byte sector.
+	 * Advance to the next cache-slot boundary.
 	 */
-	block = (block + 64) &~ 63 ;
+	block = (block + (cd->buffer_sectors << 2)) &
+		~((cd->buffer_sectors << 2) - 1);
     }
 
     return buf_pos;

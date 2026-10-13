@@ -117,9 +117,19 @@ static void handle_discover_services_response(struct bt_gatt_client *client, uin
             svc->start_handle = entry.handle;
             svc->end_handle = entry.end_group_handle;
             svc->uuid16 = bt_read_le16(entry.value);
+            memset(svc->uuid128, 0, sizeof(svc->uuid128));
         }
-        /* 128-bit service UUIDs (value_len == 16) are skipped -- see the
-         * scope reduction documented in btcore/gatt_client.h. */
+        else if (entry.value_len == 16 && client->result_count < BT_GATT_CLIENT_MAX_SERVICES)
+        {
+            /* a vendor's own service; left out rather than failing the
+             * discovery if there is no room for it */
+            struct bt_gatt_service *svc = &client->result.services[client->result_count++];
+
+            svc->start_handle = entry.handle;
+            svc->end_handle = entry.end_group_handle;
+            svc->uuid16 = 0;
+            memcpy(svc->uuid128, entry.value, 16);
+        }
     }
 
     if (!any)
@@ -173,9 +183,18 @@ static void handle_discover_characteristics_response(struct bt_gatt_client *clie
             ch->properties = entry.value[0];
             ch->value_handle = bt_read_le16(entry.value + 1);
             ch->uuid16 = bt_read_le16(entry.value + 3);
+            memset(ch->uuid128, 0, sizeof(ch->uuid128));
         }
-        /* 128-bit characteristic UUIDs (value_len == 19) skipped, same
-         * reduction as service discovery. */
+        else if (entry.value_len == 19 && client->result_count < BT_GATT_CLIENT_MAX_CHARACTERISTICS)
+        {
+            struct bt_gatt_characteristic *ch = &client->result.characteristics[client->result_count++];
+
+            ch->declaration_handle = entry.handle;
+            ch->properties = entry.value[0];
+            ch->value_handle = bt_read_le16(entry.value + 1);
+            ch->uuid16 = 0;
+            memcpy(ch->uuid128, entry.value + 3, 16);
+        }
     }
 
     if (!any)
@@ -305,6 +324,15 @@ static void handle_response(struct bt_gatt_client *client, const uint8_t *data, 
     opcode = data[0];
     params = data + 1;
     params_len = len - 1;
+
+    if (!(opcode & 0x01u))
+    {
+        /* a request, a command or a confirmation: the peer is talking to a
+         * server, not answering us */
+        if (client->on_request != NULL)
+            client->on_request(data, len, now_us, client->request_user_data);
+        return;
+    }
 
     if (opcode == BT_ATT_OPCODE_HANDLE_VALUE_NOTIFICATION ||
         opcode == BT_ATT_OPCODE_HANDLE_VALUE_INDICATION)
@@ -460,6 +488,8 @@ static void on_l2cap_event(struct bt_l2cap_channel_event_info *info, void *user_
     {
     case BT_L2CAP_CHANNEL_EVENT_OPENED:
         client->channel_ready = true;
+        if (client->listen_only)
+            break; /* bt_gatt_client_listen(): nothing to negotiate yet */
         client->busy = true;
         client->op = BT_GATT_CLIENT_OP_MTU;
         issue_current_request(client, client->connect_started_us);
@@ -501,8 +531,40 @@ bt_status_t bt_gatt_client_connect(struct bt_gatt_client *client, bt_gatt_client
     client->connect_user_data = user_data;
     client->connect_started_us = now_us;
 
+    if (client->channel_ready && client->listen_only)
+    {
+        /* the channel is already there (bt_gatt_client_listen()) */
+        client->listen_only = false;
+        client->busy = true;
+        client->op = BT_GATT_CLIENT_OP_MTU;
+        issue_current_request(client, now_us);
+        return BT_OK;
+    }
+    client->listen_only = false;
+
     return bt_l2cap_channel_manager_open_fixed(client->l2cap, BT_L2CAP_CID_ATT, on_l2cap_event,
                                                 client);
+}
+
+bt_status_t bt_gatt_client_listen(struct bt_gatt_client *client)
+{
+    bt_status_t status;
+
+    if (client->channel_ready)
+        return BT_OK;
+    client->listen_only = true;
+    status = bt_l2cap_channel_manager_open_fixed(client->l2cap, BT_L2CAP_CID_ATT, on_l2cap_event,
+                                                  client);
+    if (status != BT_OK)
+        client->listen_only = false;
+    return status;
+}
+
+void bt_gatt_client_set_request_handler(struct bt_gatt_client *client, bt_gatt_client_request_fn fn,
+                                         void *user_data)
+{
+    client->on_request = fn;
+    client->request_user_data = user_data;
 }
 
 void bt_gatt_client_disconnect(struct bt_gatt_client *client, uint64_t now_us)
@@ -618,6 +680,26 @@ bt_status_t bt_gatt_client_write(struct bt_gatt_client *client, uint16_t handle,
 
     issue_current_request(client, now_us);
     return BT_OK;
+}
+
+bt_status_t bt_gatt_client_write_without_response(struct bt_gatt_client *client,
+                                                   uint16_t handle, const uint8_t *value,
+                                                   size_t value_len)
+{
+    uint8_t buf[3 + BT_GATT_CLIENT_MAX_VALUE_LEN];
+    struct bt_buf_writer w;
+
+    if (!client->channel_ready || handle == 0 || (value_len > 0 && value == NULL) ||
+        client->mtu < 3 || value_len > (size_t)(client->mtu - 3) ||
+        value_len > BT_GATT_CLIENT_MAX_VALUE_LEN)
+        return BT_ERR_INVALID_ARGUMENT;
+
+    bt_buf_writer_init(&w, buf, sizeof(buf));
+    if (bt_att_encode_write_command(&w, handle, value, value_len) != BT_OK)
+        return BT_ERR_INVALID_ARGUMENT;
+
+    return bt_l2cap_channel_manager_send(client->l2cap, BT_L2CAP_CID_ATT, buf,
+                                          bt_buf_writer_len(&w), 0);
 }
 
 void bt_gatt_client_tick(struct bt_gatt_client *client, uint64_t now_us)

@@ -136,13 +136,13 @@ char *strerror(int code);
 char * inet_ntoa(struct in_addr addr);
 #endif
 #ifndef inet_makeaddr
-struct in_addr inet_makeaddr(int net, int host);
+struct in_addr inet_makeaddr(in_addr_t net, in_addr_t host);
 #endif
 #ifndef inet_lnaof
-unsigned long inet_lnaof(struct in_addr addr);
+in_addr_t inet_lnaof(struct in_addr addr);
 #endif
 #ifndef inet_netof
-unsigned long inet_netof(struct in_addr addr);
+in_addr_t inet_netof(struct in_addr addr);
 #endif
 #ifndef select
 int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exeptfds,

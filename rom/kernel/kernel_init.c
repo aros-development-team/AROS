@@ -104,8 +104,12 @@ AROS_UFH3S(struct KernelBase *, Kernel_Init,
 
     D(bug("[KRN] KernelBase 0x%p\n", KernelBase));
 
+#ifdef KERNEL_SPARSE_EXCEPTIONS
+    NEWLIST(&KernelBase->kb_Exceptions);
+#else
     for (i=0; i < EXCEPTIONS_COUNT; i++)
         NEWLIST(&KernelBase->kb_Exceptions[i]);
+#endif
 
     for (i=0; i < HW_IRQ_COUNT; i++)
         NEWLIST(&KERNELIRQ_LIST(i));

@@ -34,7 +34,7 @@ unsigned int uartdivint;
 unsigned int uartdivfrac;
 unsigned int uartbaud;
 
-inline void waitSerOUT()
+void waitSerOUT()
 {
     while(1)
     {
@@ -42,7 +42,7 @@ inline void waitSerOUT()
     }
 }
 
-inline void putByte(uint8_t chr)
+void putByte(uint8_t chr)
 {
     waitSerOUT();
 

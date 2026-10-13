@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <stdio.h>
@@ -94,19 +94,34 @@ void *xmalloc(size_t size)
 char *make_temp_file(char *suffix __attribute__((unused)))
 {
     int fd;
-    /* If you're unlucky enough to not have libiberty available, you'll have
-       to live with temporary files in /tmp and no suffix; it's ok for our own
-       purposes,  */
-    char template[] = "/tmp/catmpXXXXXX";
+    /* Without libiberty there is no suffix support, but the directory honors
+       $TMPDIR (POSIX convention, same as mkdtemp/Python tempfile): without it
+       (or when empty) we fall back to /tmp as before. A hardcoded /tmp breaks
+       large links for anyone whose /tmp is small, quota-limited, or mounted
+       noexec — collect-aros fails closed there with no recourse. */
+    const char *tmpdir = getenv("TMPDIR");
+    char *template;
+    size_t len;
+
+    if (tmpdir == NULL || tmpdir[0] == '\0')
+        tmpdir = "/tmp";
+    len = strlen(tmpdir) + sizeof("/catmpXXXXXX");
+    template = malloc(len);
+    if (template == NULL)
+        return NULL;
+    snprintf(template, len, "%s/catmpXXXXXX", tmpdir);
 
     fd = mkstemp(template);
     if (fd == -1)
+    {
+        free(template);
         return NULL;
+    }
 
     if (close(fd) != 0)
         fatal("make_temp_file()/close()", strerror(errno));
 
-    return strdup(template);
+    return template;
 }
 
 #endif

@@ -1,135 +1,108 @@
+/*
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 
-#include <aros/debug.h>
+    Desc: security.library support functions (warnings, fatal errors)
+*/
 
 #include <proto/exec.h>
-#include <proto/utility.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
-#include <proto/reqtools.h>
 
-#include <proto/security.h>
-
-#include <clib/alib_protos.h>
+#include <intuition/intuition.h>
 
 #include "security_intern.h"
+#include "security_support.h"
+
+struct FmtCtx
+{
+    STRPTR      dst;
+    ULONG       left;
+};
+
+AROS_UFH2(static void, FmtPutCh,
+    AROS_UFHA(UBYTE, ch, D0),
+    AROS_UFHA(struct FmtCtx *, ctx, A3))
+{
+    AROS_USERFUNC_INIT
+
+    if (ctx->left > 1 && ch)
+    {
+        *ctx->dst++ = ch;
+        ctx->left--;
+    }
+    *ctx->dst = '\0';
+
+    AROS_USERFUNC_EXIT
+}
+
+void FormatString(CONST_STRPTR fmt, SIPTR *args, STRPTR dst, ULONG dstsize)
+{
+    struct FmtCtx ctx = { dst, dstsize };
+    char fixed[256];
+
+    FixFormat(fmt, fixed, sizeof(fixed));
+    dst[0] = '\0';
+    RawDoFmt(fixed, (RAWARG)args, (VOID_FUNC)FmtPutCh, &ctx);
+}
 
 /*
- *      Post a warning
+ * Post a warning. The text is formatted from a RawDoFmt style format
+ * string and a mem stream of SIPTR arguments. An EasyRequest is used when a
+ * screen exists, otherwise the message only goes to the debug output.
  */
-
-void Warn(struct SecurityBase *secBase, STRPTR msg, ...)
+void Warn(struct SecurityBase *secBase, CONST_STRPTR fmt, SIPTR *args)
 {
-    struct rtHandlerInfo *hinfo;
-    struct MsgPort *timerport;
-    struct timerequest *timerequest;
+    char text[512];
     struct LocaleInfo li;
-    ULONG timersig, ret;
-    ULONG sigs=0;
-    D(
-        bug( DEBUG_NAME_STR " %s('%s')\n", __func__, msg);
-        bug( DEBUG_NAME_STR " %s: secBase @ %p\n", __func__, secBase);
-    )
 
-    if ((timerport = CreateMsgPort())!=NULL) {
-        if ((timerequest = CreateIORequest(timerport,
-                                             sizeof(struct timerequest)))!=NULL) {
-                D(bug( DEBUG_NAME_STR " %s: timerequest @ %p\n", __func__, timerequest);)
-                if (!OpenDevice(TIMERNAME, UNIT_VBLANK,
-                             (struct IORequest *)timerequest, 0)) {
-                     struct TagItem rtTags[] =
-                     {
-                        { RTEZ_ReqTitle,        0                       },
-                        { RTEZ_Flags,           EZREQF_CENTERTEXT       },
-                        { RT_ReqPos,            REQPOS_CENTERSCR        },
-                        { RT_ReqHandler,        (IPTR)&hinfo            },
-                        { TAG_DONE,             0                       }
-                    };
-                    D(bug( DEBUG_NAME_STR " %s: timer opened\n", __func__);)
-                    OpenLoc(secBase, &li);
-                    rtTags[0].ti_Data = (IPTR)GetLocS(secBase, &li, MSG_WARNING_GUI);
-                    D(bug( DEBUG_NAME_STR " %s: request title '%s'\n", __func__, (char *)rtTags[0].ti_Data);)
-                    D(bug( DEBUG_NAME_STR " %s: ReqToolsBase @ %p\n", __func__, ReqToolsBase);)
-                    D(bug( DEBUG_NAME_STR " %s: showing EZRequest...\n", __func__);)
-                    AROS_SLOWSTACKFORMAT_PRE(msg)
-                    ret = rtEZRequestA(msg, GetLocS(secBase, &li, MSG_RESUME), NULL, AROS_SLOWSTACKFORMAT_ARG(msg), rtTags);
-                    AROS_SLOWSTACKFORMAT_POST(msg)
-                    if (ret == CALL_HANDLER) {
-                        D(bug( DEBUG_NAME_STR " %s: adding timer request for 30secs...\n", __func__);)
-                        timerequest->tr_node.io_Command = TR_ADDREQUEST;
-                        timerequest->tr_time.tv_secs = 30;
-                        timerequest->tr_time.tv_micro = 0;
-                        SendIO((struct IORequest *)timerequest);
-                        timersig = 1<<timerport->mp_SigBit;
-                        do {
-                            if (!hinfo->DoNotWait)
-                            {
-                                D(bug( DEBUG_NAME_STR " %s: calling Wait...\n", __func__);)
-                                sigs = Wait(hinfo->WaitMask | timersig);
-                            }
-                            if (sigs & timersig)
-                            {
-                                 struct TagItem rtHandlerTags[] =
-                                 {
-                                    { RTRH_EndRequest,      TRUE        },
-                                    { TAG_DONE,             0           }
-                                };
-                                D(bug( DEBUG_NAME_STR " %s: calling rtReqHandler (EndRequest)...\n", __func__);)
-                                ret = rtReqHandlerA(hinfo, sigs, rtHandlerTags);
-                            }
-                            else
-                            {
-                                 struct TagItem rtHandlerTags[] =
-                                 {
-                                    { TAG_DONE,             0   }
-                                };
-                                D(bug( DEBUG_NAME_STR " %s: calling rtReqHandler...\n", __func__);)
-                                ret = rtReqHandlerA(hinfo, sigs, rtHandlerTags);
-                            }
-                            D(bug( DEBUG_NAME_STR " %s: calling ret = %x\n", __func__, ret);)
-                        } while (ret == CALL_HANDLER);
-                        AbortIO((struct IORequest *)timerequest);
-                        WaitIO((struct IORequest *)timerequest);
-                    }
-                    CloseLoc(&li);
-                    CloseDevice((struct IORequest*)timerequest);
-            }
-            DeleteIORequest(timerequest);
-        }
-        DeleteMsgPort(timerport);
+    FormatString(fmt, args, text, sizeof(text));
+
+    bug(DEBUG_NAME_STR " WARNING: %s\n", text);
+
+    if (secBase->sec_AfterDOSDone && IntuitionBase && IntuitionBase->FirstScreen)
+    {
+        struct EasyStruct es;
+        SIPTR eargs[1];
+
+        OpenLoc(secBase, &li);
+        es.es_StructSize = sizeof(struct EasyStruct);
+        es.es_Flags = 0;
+        es.es_Title = (STRPTR)GetLocS(secBase, &li, MSG_WARNING_GUI);
+        es.es_TextFormat = "%s";
+        es.es_GadgetFormat = (STRPTR)GetLocS(secBase, &li, MSG_RESUME);
+        eargs[0] = (SIPTR)text;
+        EasyRequestArgs(NULL, &es, NULL, (RAWARG)eargs);
+        CloseLoc(secBase, &li);
     }
 }
 
 /*
- *      Painless dead :-)
+ * Fatal error. Marks the library as violated so that all credential queries
+ * return "nobody", shows an alert and returns.
  */
-
-void Die(STRPTR msg, ULONG code)
+void Die(struct SecurityBase *secBase, CONST_STRPTR msg, ULONG alertcode)
 {
-    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
+    if (msg)
+        bug(DEBUG_NAME_STR " FATAL: %s\n", msg);
+    else
+        bug(DEBUG_NAME_STR " FATAL: alert 0x%08lx\n", (unsigned long)alertcode);
 
-    if (code)
-        Alert(code);
-    else {
-        static UBYTE string[] = {
-                0, 236, 19, 'S', 'e', 'c', 'u', 'r', 'i', 't', 'y', ' ',
-                                                'F', 'a', 't', 'a', 'l', ' ',
-                                                'E', 'r', 'r', 'o', 'r', 0, 1,
-                0, 0, 35, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-        };
-        int xpos;
+    if (secBase)
+        secBase->SecurityViolation = TRUE;
 
-        xpos = 320-4*strlen(msg);
-        string[25] = xpos>>8;
-        string[26] = xpos & 0xff;
-        strncpy(&string[28], msg, 78);
-        DisplayBeep(NULL);
-        Delay(20);
-        DisplayAlert(RECOVERY_ALERT, string, 51);
+    if (alertcode)
+        Alert(alertcode);
+    else if (msg && secBase && secBase->sec_AfterDOSDone && IntuitionBase && IntuitionBase->FirstScreen)
+    {
+        struct EasyStruct es;
+        SIPTR args[1];
+
+        es.es_StructSize = sizeof(struct EasyStruct);
+        es.es_Flags = 0;
+        es.es_Title = "Security Fatal Error";
+        es.es_TextFormat = "%s";
+        es.es_GadgetFormat = "OK";
+        args[0] = (SIPTR)msg;
+        EasyRequestArgs(NULL, &es, NULL, (RAWARG)args);
     }
-
-    for (;;)
-        Wait(0);
 }

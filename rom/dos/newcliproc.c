@@ -329,6 +329,8 @@ ULONG internal_CliInitAny(struct DosPacket *dp, APTR DOSBase)
                       break;
     default:          break;
     }
+    if (ea->ea_Flags & EAF_INITIALCOMMAND)
+        flags |= FNF_INITIALCOMMAND;
     D(bug("= flags:%p (Type %d)\n", flags, Type));
 
 exit:

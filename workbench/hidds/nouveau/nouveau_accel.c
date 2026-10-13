@@ -29,6 +29,15 @@
 #undef HiddBitMapAttrBase
 #define HiddBitMapAttrBase  (SD(cl)->bitMapAttrBase)
 
+/* The blend loops below run against ordinary memory (a staging copy of
+   the rectangle, or a mapped buffer read and written by this CPU only);
+   the per-access I/O fences of hidd_readl/hidd_writel are not needed
+   there and cost more than the arithmetic. */
+#define pix_readl(a)     (*(ULONG *)(IPTR)(a))
+#define pix_writel(v, a) (*(ULONG *)(IPTR)(a) = (v))
+#define pix_readw(a)     (*(UWORD *)(IPTR)(a))
+#define pix_writew(v, a) (*(UWORD *)(IPTR)(a) = (v))
+
 static inline int do_alpha(int a, int v)
 {
     int tmp = a*v;
@@ -36,8 +45,9 @@ static inline int do_alpha(int a, int v)
 }
 
 /* NOTE: Assumes lock on bitmap is already made */
-/* NOTE: Assumes buffer is mapped */
-VOID HIDDNouveauBitMapPutAlphaImage32(struct HIDDNouveauBitMapData * bmdata,
+/* NOTE: dstmap/dstpitch describe the destination pixels (a mapped
+   buffer or a staging copy of the rectangle) */
+VOID HIDDNouveauBitMapPutAlphaImage32(APTR dstmap, ULONG dstpitch,
     APTR srcbuff, ULONG srcpitch, LONG destX, LONG destY, LONG width, LONG height)
 {
     LONG x,y;
@@ -46,7 +56,7 @@ VOID HIDDNouveauBitMapPutAlphaImage32(struct HIDDNouveauBitMapData * bmdata,
     {
         /* Calculate line start addresses */
         IPTR srcaddr = (srcpitch * y) + (IPTR)srcbuff;
-        IPTR destaddr = (destX * 4) + (bmdata->pitch * (destY + y)) + (IPTR)bmdata->bo->map;
+        IPTR destaddr = (destX * 4) + (dstpitch * (destY + y)) + (IPTR)dstmap;
         
         for (x = 0; x < width; x++)
         {
@@ -91,7 +101,7 @@ VOID HIDDNouveauBitMapPutAlphaImage32(struct HIDDNouveauBitMapData * bmdata,
                     * Alpha blending with source and destination pixels.
                     * Get destination.
                     */
-                    destpix = hidd_readl(destaddr);
+                    destpix = pix_readl(destaddr);
 
                     dst_red   = (destpix & 0x00FF0000) >> 16;
                     dst_green = (destpix & 0x0000FF00) >> 8;
@@ -105,7 +115,7 @@ VOID HIDDNouveauBitMapPutAlphaImage32(struct HIDDNouveauBitMapData * bmdata,
                 destpix = (dst_red << 16) + (dst_green << 8) + (dst_blue);
 
                 /* Store the new pixel */
-                hidd_writel(destpix, destaddr);
+                pix_writel(destpix, destaddr);
             }
 
             /* Advance pointers */
@@ -116,8 +126,9 @@ VOID HIDDNouveauBitMapPutAlphaImage32(struct HIDDNouveauBitMapData * bmdata,
 }
 
 /* NOTE: Assumes lock on bitmap is already made */
-/* NOTE: Assumes buffer is mapped */
-VOID HIDDNouveauBitMapPutAlphaImage16(struct HIDDNouveauBitMapData * bmdata,
+/* NOTE: dstmap/dstpitch describe the destination pixels (a mapped
+   buffer or a staging copy of the rectangle) */
+VOID HIDDNouveauBitMapPutAlphaImage16(APTR dstmap, ULONG dstpitch,
     APTR srcbuff, ULONG srcpitch, LONG destX, LONG destY, LONG width, LONG height)
 {
     LONG x,y;
@@ -126,7 +137,7 @@ VOID HIDDNouveauBitMapPutAlphaImage16(struct HIDDNouveauBitMapData * bmdata,
     {
         /* Calculate line start addresses */
         IPTR srcaddr = (srcpitch * y) + (IPTR)srcbuff;
-        IPTR destaddr = (destX * 2) + (bmdata->pitch * (destY + y)) + (IPTR)bmdata->bo->map;
+        IPTR destaddr = (destX * 2) + (dstpitch * (destY + y)) + (IPTR)dstmap;
         
         for (x = 0; x < width; x++)
         {
@@ -172,7 +183,7 @@ VOID HIDDNouveauBitMapPutAlphaImage16(struct HIDDNouveauBitMapData * bmdata,
                     * Get destination.
                     */
 
-                    destpix = hidd_readw(destaddr);
+                    destpix = pix_readw(destaddr);
 
                     dst_red   = (destpix & 0x0000F800) >> 8;
                     dst_green = (destpix & 0x000007e0) >> 3;
@@ -185,7 +196,7 @@ VOID HIDDNouveauBitMapPutAlphaImage16(struct HIDDNouveauBitMapData * bmdata,
 
                 destpix = (((dst_red << 8) & 0xf800) | ((dst_green << 3) & 0x07e0) | ((dst_blue >> 3) & 0x001f));
 
-                hidd_writew(destpix, destaddr);
+                pix_writew(destpix, destaddr);
             }
 
             /* Advance pointers */
@@ -196,8 +207,9 @@ VOID HIDDNouveauBitMapPutAlphaImage16(struct HIDDNouveauBitMapData * bmdata,
 }
 
 /* NOTE: Assumes lock on bitmap is already made */
-/* NOTE: Assumes buffer is mapped */
-VOID HIDDNouveauBitMapPutAlphaTemplate32(struct HIDDNouveauBitMapData * bmdata,
+/* NOTE: dstmap/dstpitch describe the destination pixels (a mapped
+   buffer or a staging copy of the rectangle) */
+VOID HIDDNouveauBitMapPutAlphaTemplate32(APTR dstmap, ULONG dstpitch,
     OOP_Object * gc, OOP_Object * bm, BOOL invertalpha,
     UBYTE * srcalpha, ULONG srcpitch, LONG destX, LONG destY, LONG width, LONG height)
 {
@@ -240,7 +252,7 @@ VOID HIDDNouveauBitMapPutAlphaTemplate32(struct HIDDNouveauBitMapData * bmdata,
 
     for(y = 0; y < height; y++)
     {
-        IPTR destaddr = (destX * 4) + ((destY + y) * bmdata->pitch) + (IPTR)bmdata->bo->map;
+        IPTR destaddr = (destX * 4) + ((destY + y) * dstpitch) + (IPTR)dstmap;
 
         switch(type)
         {
@@ -263,7 +275,7 @@ VOID HIDDNouveauBitMapPutAlphaTemplate32(struct HIDDNouveauBitMapData * bmdata,
                     }
                     else
                     {
-                        destpix = hidd_readl(destaddr);
+                        destpix = pix_readl(destaddr);
 
                         dst_red   = (destpix & 0x00FF0000) >> 16;
                         dst_green = (destpix & 0x0000FF00) >> 8;
@@ -275,7 +287,7 @@ VOID HIDDNouveauBitMapPutAlphaTemplate32(struct HIDDNouveauBitMapData * bmdata,
                     }
 
                     destpix = (dst_red << 16) + (dst_green << 8) + (dst_blue);
-                    hidd_writel(destpix, destaddr);
+                    pix_writel(destpix, destaddr);
                 }
 
                 destaddr += 4;
@@ -302,7 +314,7 @@ VOID HIDDNouveauBitMapPutAlphaTemplate32(struct HIDDNouveauBitMapData * bmdata,
                     }
                     else
                     {
-                        destpix = hidd_readl(destaddr);
+                        destpix = pix_readl(destaddr);
 
                         dst_red   = (destpix & 0x00FF0000) >> 16;
                         dst_green = (destpix & 0x0000FF00) >> 8;
@@ -314,7 +326,7 @@ VOID HIDDNouveauBitMapPutAlphaTemplate32(struct HIDDNouveauBitMapData * bmdata,
                     }
 
                     destpix = (dst_red << 16) + (dst_green << 8) + (dst_blue);
-                    hidd_writel(destpix, destaddr);
+                    pix_writel(destpix, destaddr);
                 }
 
                 destaddr += 4;
@@ -333,9 +345,9 @@ VOID HIDDNouveauBitMapPutAlphaTemplate32(struct HIDDNouveauBitMapData * bmdata,
 
                 if (alpha >= 0x80) 
                 {
-                    destpix = hidd_readl(destaddr);
+                    destpix = pix_readl(destaddr);
                     destpix = ~destpix;
-                    hidd_writel(destpix, destaddr);
+                    pix_writel(destpix, destaddr);
                 }
 
                 destaddr += 4;
@@ -354,9 +366,9 @@ VOID HIDDNouveauBitMapPutAlphaTemplate32(struct HIDDNouveauBitMapData * bmdata,
 
                 if (alpha < 0x80)
                 {
-                    destpix = hidd_readl(destaddr);
+                    destpix = pix_readl(destaddr);
                     destpix = ~destpix;
-                    hidd_writel(destpix, destaddr);
+                    pix_writel(destpix, destaddr);
                 }
 
                 destaddr += 4;
@@ -379,7 +391,7 @@ VOID HIDDNouveauBitMapPutAlphaTemplate32(struct HIDDNouveauBitMapData * bmdata,
 
                 destpix = (dst_red << 16) + (dst_green << 8) + (dst_blue);
 
-                hidd_writel(destpix, destaddr);
+                pix_writel(destpix, destaddr);
                 destaddr += 4;
 
             } /* for(x = 0; x < width; x++) */
@@ -399,7 +411,7 @@ VOID HIDDNouveauBitMapPutAlphaTemplate32(struct HIDDNouveauBitMapData * bmdata,
                 dst_blue  = bg_blue  + ((fg_blue  - bg_blue)  * alpha) / 256;
 
                 destpix = (dst_red << 16) + (dst_green << 8) + (dst_blue);
-                hidd_writel(destpix, destaddr);
+                pix_writel(destpix, destaddr);
 
                 destaddr += 4;
 
@@ -414,8 +426,9 @@ VOID HIDDNouveauBitMapPutAlphaTemplate32(struct HIDDNouveauBitMapData * bmdata,
 }
 
 /* NOTE: Assumes lock on bitmap is already made */
-/* NOTE: Assumes buffer is mapped */
-VOID HIDDNouveauBitMapPutAlphaTemplate16(struct HIDDNouveauBitMapData * bmdata,
+/* NOTE: dstmap/dstpitch describe the destination pixels (a mapped
+   buffer or a staging copy of the rectangle) */
+VOID HIDDNouveauBitMapPutAlphaTemplate16(APTR dstmap, ULONG dstpitch,
     OOP_Object * gc, OOP_Object * bm, BOOL invertalpha,
     UBYTE * srcalpha, ULONG srcpitch, LONG destX, LONG destY, LONG width, LONG height)
 {
@@ -458,7 +471,7 @@ VOID HIDDNouveauBitMapPutAlphaTemplate16(struct HIDDNouveauBitMapData * bmdata,
 
     for(y = 0; y < height; y++)
     {
-        IPTR destaddr = (destX * 2) + ((destY + y) * bmdata->pitch) + (IPTR)bmdata->bo->map;
+        IPTR destaddr = (destX * 2) + ((destY + y) * dstpitch) + (IPTR)dstmap;
 
         switch(type)
         {
@@ -481,7 +494,7 @@ VOID HIDDNouveauBitMapPutAlphaTemplate16(struct HIDDNouveauBitMapData * bmdata,
                     }
                     else
                     {
-                        destpix = hidd_readw(destaddr);
+                        destpix = pix_readw(destaddr);
 
                         dst_red   = (destpix & 0x0000F800) >> 8;
                         dst_green = (destpix & 0x000007e0) >> 3;
@@ -493,7 +506,7 @@ VOID HIDDNouveauBitMapPutAlphaTemplate16(struct HIDDNouveauBitMapData * bmdata,
                     }
 
                     destpix = (((dst_red << 8) & 0xf800) | ((dst_green << 3) & 0x07e0) | ((dst_blue >> 3) & 0x001f));
-                    hidd_writew(destpix, destaddr);
+                    pix_writew(destpix, destaddr);
                 }
 
                 destaddr += 2;
@@ -520,7 +533,7 @@ VOID HIDDNouveauBitMapPutAlphaTemplate16(struct HIDDNouveauBitMapData * bmdata,
                     }
                     else
                     {
-                        destpix = hidd_readw(destaddr);
+                        destpix = pix_readw(destaddr);
 
                         dst_red   = (destpix & 0x0000F800) >> 8;
                         dst_green = (destpix & 0x000007e0) >> 3;
@@ -532,7 +545,7 @@ VOID HIDDNouveauBitMapPutAlphaTemplate16(struct HIDDNouveauBitMapData * bmdata,
                     }
 
                     destpix = (((dst_red << 8) & 0xf800) | ((dst_green << 3) & 0x07e0) | ((dst_blue >> 3) & 0x001f));
-                    hidd_writew(destpix, destaddr);
+                    pix_writew(destpix, destaddr);
                 }
 
                 destaddr += 2;
@@ -551,9 +564,9 @@ VOID HIDDNouveauBitMapPutAlphaTemplate16(struct HIDDNouveauBitMapData * bmdata,
 
                 if (alpha >= 0x80) 
                 {
-                    destpix = hidd_readw(destaddr);
+                    destpix = pix_readw(destaddr);
                     destpix = ~destpix;
-                    hidd_writew(destpix, destaddr);
+                    pix_writew(destpix, destaddr);
                 }
 
                 destaddr += 2;
@@ -572,9 +585,9 @@ VOID HIDDNouveauBitMapPutAlphaTemplate16(struct HIDDNouveauBitMapData * bmdata,
 
                 if (alpha < 0x80)
                 {
-                    destpix = hidd_readw(destaddr);
+                    destpix = pix_readw(destaddr);
                     destpix = ~destpix;
-                    hidd_writew(destpix, destaddr);
+                    pix_writew(destpix, destaddr);
                 }
 
                 destaddr += 2;
@@ -596,7 +609,7 @@ VOID HIDDNouveauBitMapPutAlphaTemplate16(struct HIDDNouveauBitMapData * bmdata,
                 dst_blue  = bg_blue  + ((fg_blue  - bg_blue)  * alpha) / 256;
 
                 destpix = (((dst_red << 8) & 0xf800) | ((dst_green << 3) & 0x07e0) | ((dst_blue >> 3) & 0x001f));
-                hidd_writew(destpix, destaddr);
+                pix_writew(destpix, destaddr);
 
                 destaddr += 2;
 
@@ -617,7 +630,7 @@ VOID HIDDNouveauBitMapPutAlphaTemplate16(struct HIDDNouveauBitMapData * bmdata,
                 dst_blue  = bg_blue  + ((fg_blue  - bg_blue)  * alpha) / 256;
 
                 destpix = (((dst_red << 8) & 0xf800) | ((dst_green << 3) & 0x07e0) | ((dst_blue >> 3) & 0x001f));
-                hidd_writew(destpix, destaddr);
+                pix_writew(destpix, destaddr);
 
                 destaddr += 2;
 

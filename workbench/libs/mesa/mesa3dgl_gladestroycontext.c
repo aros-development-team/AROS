@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2009-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2009-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -44,27 +44,25 @@
 
     if (_ctx)
     {
-        struct st_context_iface * st_ctx = _ctx->st;
+        struct st_context * st_ctx = _ctx->st;
 
         if (st_ctx)
         {
-            struct st_context_iface * cur_ctx = glstapi->get_current(glstapi);
+            struct st_context * cur_ctx = st_api_get_current();
 
             if (cur_ctx == st_ctx)
             {
-                _ctx->st->flush(_ctx->st, 0, NULL, NULL, NULL);
-                glstapi->make_current(glstapi, NULL, NULL, NULL);
+                st_context_flush(_ctx->st, 0, NULL, NULL, NULL);
+                st_api_make_current(NULL, NULL, NULL);
             }
 
-            _ctx->st->destroy(_ctx->st);
+            /* the state tracker keeps per-drawable state; drop it before
+             * the drawable memory goes away */
+            if (_ctx->framebuffer)
+                st_api_destroy_drawable(&_ctx->framebuffer->base);
+            st_destroy_context(_ctx->st);
             MESA3DGLFreeFrameBuffer(_ctx->framebuffer);
             MESA3DGLFreeStManager(_ctx->driver, _ctx->stmanager);
-            /* glstapi is library-global (created once in Init, freed in
-             * Expunge — mesa3dgl_init.c). Destroying it here left a
-             * dangling pointer, so the NEXT glACreateContext in the same
-             * session (fullscreen/window toggles, SDL's probe context)
-             * ran create_context on freed memory: grey screens or
-             * crashes depending on heap reuse. */
             MESA3DGLFreeContext(_ctx);
         }
     }

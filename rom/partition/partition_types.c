@@ -31,6 +31,7 @@ const struct TypeMapping PartTypes[] =
     { 0x2d, MAKE_ID('D','O','S','\1'), NULL                  }, /* AOS FFS */
     { 0x2e, MAKE_ID('D','O','S','\3'), NULL                  }, /* AOS FFS-I */
     { 0x2f, MAKE_ID('S','F','S','\0'), NULL                  }, /* AOS SFS */
+    { 0x30, MAKE_ID('P','F','S','\3'), NULL                  }, /* AOS PFS3 (AROS convention; the handler registers PFS\3) */
     { 0x80, MAKE_ID('M','N','X','\0'), NULL                  }, /* MINIX until 1.4a */
     { 0x81, MAKE_ID('M','N','X','\1'), NULL                  }, /* MINIX since 1.4b */
     { 0x83, MAKE_ID('E','X','T','\2'), NULL                  }, /* linux native partition */

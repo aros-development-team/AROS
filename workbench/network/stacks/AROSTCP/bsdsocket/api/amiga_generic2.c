@@ -323,7 +323,7 @@ static int getLastSockFd(struct SocketBase *libPtr)
 /*
  * Set size of descriptor tab|e
  */
-static LONG
+LONG
 setdtablesize(struct SocketBase *libPtr, UWORD size)
 {
 
@@ -724,6 +724,22 @@ AROS_LH1(ULONG, SocketBaseTagList,
 
                 CASE_LONG(SBTC_SIGEVENTMASK, sigEventMask);
 
+                CASE_LONG(SBTC_SIG_RECONFIG_MASK,       sigReconfigMask);
+
+                CASE_LONG(SBTC_SIG_ADDRESS_CHANGE_MASK, sigAddrChangeMask);
+
+            case(SBTC_RECONFIG_STATE << SBTB_CODE):  /* get */
+                *tagData = (IPTR)api_reconfig_state;
+                break;
+
+            case(SBTC_RECONFIG_GENERATION << SBTB_CODE):  /* get */
+                *tagData = (IPTR)api_reconfig_generation;
+                break;
+
+            case(SBTC_RECONFIG_ACK << SBTB_CODE) | SBTF_SET:  /* set: consumer quiesced */
+                api_reconfig_acked++;
+                break;
+
             case(SBTC_ERRNO << SBTB_CODE):  /* get */
                 *tagData = (IPTR)readErrnoValue(libPtr);
                 break;
@@ -742,8 +758,12 @@ AROS_LH1(ULONG, SocketBaseTagList,
                 *tagData = (IPTR)libPtr->dTableSize;
                 break;
             case(SBTC_DTABLESIZE << SBTB_CODE) | SBTF_SET:  /* set */
-                if((tmp = (WORD) * tagData) > 0)
+                if((tmp = (WORD) * tagData) > 0) {
+                    /* fd hooks of other tasks use the table under it */
+                    ObtainSyscallSemaphore(libPtr);
                     setdtablesize(libPtr, tmp);
+                    ReleaseSyscallSemaphore(libPtr);
+                }
                 break;
 
                 CASE_IPTR(SBTC_FDCALLBACK,   fdCallback);

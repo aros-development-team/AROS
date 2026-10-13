@@ -30,24 +30,29 @@ typedef UBYTE fd_owner_t;
     (left untouched on success) and returning -1 (or 0/NULL as appropriate).
     A NULL hook pointer means "operation not supported"; the caller then
     substitutes a sensible errno (e.g. ESPIPE/ENOTTY).
+
+    Every hook also gets the descriptor, fd. The caller read data without a
+    lock, so another task may have closed fd and freed the object meanwhile;
+    the owner checks fd still leads to data, under its own lock, before it
+    touches the object.
 */
 struct fd_hooks
 {
     ULONG   fdh_Version;                                             /* FD_HOOKS_VERSION */
-    SIPTR   (*fdh_read) (APTR data, APTR buf, IPTR nbytes, LONG *perror);
-    SIPTR   (*fdh_write)(APTR data, CONST_APTR buf, IPTR nbytes, LONG *perror);
+    SIPTR   (*fdh_read) (APTR data, LONG fd, APTR buf, IPTR nbytes, LONG *perror);
+    SIPTR   (*fdh_write)(APTR data, LONG fd, CONST_APTR buf, IPTR nbytes, LONG *perror);
     /* fd is the specific descriptor being closed - a single object (socket)
        may be referenced by several descriptors (dup()), so the owner must
        release exactly this one, not merely one that maps to the object. */
     LONG    (*fdh_close)(APTR data, LONG fd, LONG *perror);
-    QUAD    (*fdh_lseek)(APTR data, QUAD offset, LONG whence, LONG *perror);
-    LONG    (*fdh_ioctl)(APTR data, IPTR request, APTR arg, LONG *perror);
-    LONG    (*fdh_fcntl)(APTR data, LONG cmd, IPTR arg, LONG *perror);
-    LONG    (*fdh_fstat)(APTR data, APTR statbuf, LONG *perror);
+    QUAD    (*fdh_lseek)(APTR data, LONG fd, QUAD offset, LONG whence, LONG *perror);
+    LONG    (*fdh_ioctl)(APTR data, LONG fd, IPTR request, APTR arg, LONG *perror);
+    LONG    (*fdh_fcntl)(APTR data, LONG fd, LONG cmd, IPTR arg, LONG *perror);
+    LONG    (*fdh_fstat)(APTR data, LONG fd, APTR statbuf, LONG *perror);
     /* Duplicate the descriptor so that newfd refers to the same object.
        The hook reserves newfd with its owner in fd.library.  Returns 0 on
        success, -1 (with *perror) on failure. */
-    LONG    (*fdh_dup)(APTR data, LONG newfd, LONG *perror);
+    LONG    (*fdh_dup)(APTR data, LONG fd, LONG newfd, LONG *perror);
 };
 
 #define FD_HOOKS_VERSION 1

@@ -4,15 +4,18 @@ FILES := \
           ipmi_init \
           ipmi_class
 
+USER_INCLUDES := -I$(SRCDIR)/arch/all-native/smbios
 USER_CPPFLAGS := \
                -DUSE_EXEC_DEBUG \
                -D__OOP_NOMETHODBASES__ \
                -D__OOP_NOATTRBASES__
 #USER_CPPFLAGS += -DDEBUG
-USER_LDFLAGS := -static
+USER_LDFLAGS := -static -L$(GENDIR)/lib
+
+#MM kernel-hidd-ipmi-smbios : kernel-hidd-ipmi-includes
 
 %build_module mmake=kernel-hidd-ipmi-smbios \
     modname=smbios-ipmi modtype=hidd \
-    files="$(FILES)"
+    files="$(FILES)" uselibs="smbios acpica"
 
 %common

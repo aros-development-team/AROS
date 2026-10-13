@@ -178,6 +178,9 @@ static int GM_UNIQUENAME(open)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req, U
             /* and for the trackers */
             NEWLIST(&(unit->trackers));
 
+            /* and for the multicast addresses to receive */
+            NEWLIST(&(unit->mcasts));
+
             /* a port to sync actions with the iotask */
             unit->iosyncport = CreateMsgPort();
 
@@ -258,6 +261,7 @@ static int GM_UNIQUENAME(close)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req) 
     struct eth_unit *unit = (struct eth_unit *) req->ios2_Req.io_Unit;
     struct eth_opener *opener = (struct eth_opener *) req->ios2_BufferManagement;
     struct eth_tracker *tracker, *tracker_next;
+    struct eth_mcast *mcast, *mcast_next;
     ULONG unitnum = unit->num;
 
     D(bug("[eth] in close\n"));
@@ -288,6 +292,10 @@ static int GM_UNIQUENAME(close)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req) 
         /* kill trackers */
         ForeachNodeSafe(&(unit->trackers), tracker, tracker_next)
             FreeVec(tracker);
+
+        /* and the multicast addresses nobody removed */
+        ForeachNodeSafe(&(unit->mcasts), mcast, mcast_next)
+            FreeVec(mcast);
 
         /* fastest way to kill it */
         memset(unit, 0, sizeof(struct eth_unit));
@@ -325,9 +333,19 @@ AROS_LH1(void, begin_io, AROS_LHA(struct IOSana2Req *, req, A1), LIBBASETYPEPTR,
 AROS_LH1(long, abort_io, AROS_LHA(struct IOSana2Req *, req, A1), LIBBASETYPEPTR, LIBBASE, 6, eth_device) {
     AROS_LIBFUNC_INIT
 
-    /* XXX anything to do here? */
+    /* reads and writes wait on a list until the iotask replies them. take
+     * the request off and return it, unless it has already been replied */
+    Disable();
+    if (req->ios2_Req.io_Message.mn_Node.ln_Type == NT_MESSAGE &&
+        ! (req->ios2_Req.io_Flags & IOF_QUICK)) {
+        Remove((APTR) req);
+        req->ios2_Req.io_Error = IOERR_ABORTED;
+        req->ios2_WireError = S2WERR_GENERIC_ERROR;
+        ReplyMsg((APTR) req);
+    }
+    Enable();
 
-    return 1;
+    return 0;
 
     AROS_LIBFUNC_EXIT
 }

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -126,12 +126,16 @@ void int_RethinkDisplay(struct RethinkDisplayActionMsg *msg,struct IntuitionBase
 #ifdef __MORPHOS__
         GetPrivIBase(IntuitionBase)->ViewLordExtra->Monitor = GetPrivScreen(screen)->Monitor;
 #endif
-        /* Rebuild copper lists for screens needing a mode change */
+        /*
+         * Rebuild the copper lists of every visible screen, as AmigaOS does.
+         * Applications rely on this to get changes made behind Intuition's
+         * back merged in: the documented way to attach a user copper list to
+         * a screen is to set ViewPort.UCopIns and call RethinkDisplay().
+         */
 
         DEBUG_RETHINKDISPLAY(dprintf("RethinkDisplay: Making viewports\n"));
         for (viewport = IntuitionBase->ViewLord.ViewPort; viewport; viewport = viewport->Next)
         {
-            if ((viewport->Modes ^ modes) & LACE)
             {
                 LONG error;
                 

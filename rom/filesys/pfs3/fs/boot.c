@@ -126,8 +126,8 @@
 #include <proto/utility.h>
 #include <proto/intuition.h>
 #if MULTIUSER
-#include <libraries/multiuser.h>
-#include <proto/multiuser.h>
+#include <libraries/mufs.h>
+#include <proto/security.h>
 #endif
 #ifdef __MORPHOS__
 #define muFSRendezVous() \
@@ -189,9 +189,6 @@ CONST struct muExtOwner NOBODY = {0,0,0};
 /* proto */
 static void SetTimer(int, globaldata *);
 
-#if MULTIUSER
-static BOOL FindInLibraryList (CONST_STRPTR, globaldata *);
-#endif
 
 /**********************************************************************/
 /*                               DEBUG                                */
@@ -350,8 +347,10 @@ void __saveds EntryPoint (struct ExecBase *SysBase)
 #if MULTIUSER
 		if (!g->muFS_ready)
 		{
-			if (FindInLibraryList ((CONST_STRPTR) "multiuser.library", g) &&
-				(muBase = (APTR)OpenLibrary ("multiuser.library", 39)))
+			/* security.library is RTF_AFTERDOS: keep trying while it is
+			 * resident but not yet initialised */
+			if (FindResident ((CONST_STRPTR) SECURITYNAME) &&
+				(muBase = (APTR)OpenLibrary ((CONST_STRPTR) SECURITYNAME, 0)))
 			{
 				muFSRendezVous ();
 				g->muFS_ready = TRUE;
@@ -363,6 +362,8 @@ void __saveds EntryPoint (struct ExecBase *SysBase)
 		{
 			if ((msg = GetMsg(g->timeport)))
 			{
+				/* The request is available for reuse even while inhibited. */
+				g->timeron = FALSE;
 				if (g->inhibitcount == 0)
 				{
 					/* postpone until timeoutcounter 'timeout' is 0 */
@@ -385,7 +386,6 @@ void __saveds EntryPoint (struct ExecBase *SysBase)
 						else
 						{
 							UpdateAndMotorOff(g);
-							g->timeron = FALSE;
 							for (idle = HeadOf(&g->idlelist); idle->next; idle = idle->next)
 								Signal (idle->task, 1L<<idle->cleansignal);
 
@@ -427,7 +427,6 @@ void __saveds EntryPoint (struct ExecBase *SysBase)
 				{
 					/* set timer for first period (always extended) */
 					SetTimer(200000, g);
-					g->timeron = TRUE;
 				}
 
 				if (g->dieing) {
@@ -525,22 +524,9 @@ static void SetTimer (int micros, globaldata *g)
 	g->trequest->tr_time.tv_secs     = 0;
 	g->trequest->tr_time.tv_micro    = micros;
 	SendIO ((struct IORequest *)g->trequest);
+	g->timeron = TRUE;
 }
 
-#if MULTIUSER
-static BOOL FindInLibraryList (CONST_STRPTR name, globaldata *g)
-{
-  struct Node *n;
-#ifdef __MORPHOS__
-	n = FindExecNode(EXECLIST_LIBRARY, name);
-#else
-	Forbid();
-	n = FindName(&SysBase->LibList, (STRPTR)name);
-	Permit();
-#endif
-	return (BOOL)(n != 0);
-}
-#endif
 
 /* ACTION_DIE */
 
@@ -573,7 +559,7 @@ static void Quit (globaldata *g)
 		struct volumedata *v = g->currentvolume;
 		if (v) {
 			/* 'remove' disk */
-			if (SafeDiskRemoveSequence(g)) {
+			if (SafeDiskRemoveSequence(g, NULL)) {
 				volume = v;
 			} else {
 				Delay(5);

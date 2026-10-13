@@ -10,8 +10,10 @@
 #include <proto/arossupport.h>
 #include <proto/debug.h>
 #include <proto/exec.h>
+#include <proto/kernel.h>
 
 #include <aros/asmcall.h>
+#include <aros/kernel.h>
 #include <aros/macros.h>
 #include <exec/memory.h>
 #include <dos/elf.h>
@@ -39,7 +41,7 @@ struct hunk
     char  data[0];
 } __attribute__((packed));
 
-#define BPTR2HUNK(bptr) ((struct hunk *)((void *)bptr - offsetof(struct hunk, next)))
+#define BPTR2HUNK(bptr) ((struct hunk *)((char *)bptr - offsetof(struct hunk, next)))
 #define HUNK2BPTR(hunk) MKBADDR(&hunk->next)
 
 #define LOADSEG_SMALL_READ  4096 /* Size adjusted by profiling in Callgrind */
@@ -509,6 +511,20 @@ static int relocate
 
             case SHN_UNDEF:
                 /*
+                 * A weak reference that stayed undefined is not an error:
+                 * it resolves to zero, and the code using it tests for
+                 * NULL before calling it. g++ leaves such references
+                 * behind for the hooks libstdc++ lets a program override.
+                 */
+                if (ELF_ST_BIND(sym->info) == STB_WEAK)
+                {
+                    D(bug("[ELF Loader] Undefined weak symbol '%s', using 0\n",
+                          (STRPTR)sh[shsymtab->link].addr + sym->name));
+                    s = 0;
+                    break;
+                }
+
+                /*
                  * Symbol index 0 means "no symbol" and resolves to the
                  * null entry, which is SHN_UNDEF. RISC-V emits RELAX and
                  * ALIGN that way - they carry only an addend - so they
@@ -942,12 +958,25 @@ static int relocate
                 *p = (*p & 0xffe0001fu) | ((((s + rel->addend) >> 48) & 0xffff) << 5);
                 break;
 
-            /* ADRP: 21-bit page offset, split immlo (bits 29-30) / immhi (5-23) */
+            /*
+             * ADRP: 21-bit signed page offset, split immlo (bits 29-30) /
+             * immhi (5-23). The reach is +/-4GB; a PG_HI21 target outside
+             * that range must be refused rather than silently truncated.
+             * PG_HI21_NC has no overflow check by definition.
+             */
             case R_AARCH64_ADR_PREL_PG_HI21:
             case R_AARCH64_ADR_PREL_PG_HI21_NC:
             {
-                IPTR x = (((s + rel->addend) & ~(IPTR)0xfff) - ((IPTR)p & ~(IPTR)0xfff)) >> 12;
-                *p = (*p & 0x9f00001fu) | ((x & 0x3) << 29) | (((x >> 2) & 0x7ffff) << 5);
+                SIPTR x = (SIPTR)(((s + rel->addend) & ~(IPTR)0xfff) - ((IPTR)p & ~(IPTR)0xfff)) >> 12;
+
+                if (ELF_R_TYPE(rel->info) == R_AARCH64_ADR_PREL_PG_HI21
+                    && (x < -((SIPTR)1 << 20) || x > (((SIPTR)1 << 20) - 1))) {
+                    D(bug("[ELF Loader] ADR_PREL_PG_HI21 target out of range\n"));
+                    SetIoErr(ERROR_BAD_HUNK);
+                    return 0;
+                }
+
+                *p = (*p & 0x9f00001fu) | (((ULONG)x & 0x3) << 29) | ((((ULONG)(x >> 2)) & 0x7ffff) << 5);
                 break;
             }
 
@@ -1561,13 +1590,17 @@ static BPTR load_seg_elf_int
     struct sheader   *symtab_shndx = NULL;
     struct sheader   *strtab = NULL;
     BPTR   hunks         = 0;
-#if defined(DOCACHECLEAR)
+#if defined(DOCACHECLEAR) || defined(__AROSPLATFORM_WXSEG__)
     BPTR curr;
+#endif
+#if defined(__AROSPLATFORM_WXSEG__)
+    struct KernelBase *KernelBase = NULL;
 #endif
     BPTR  *next_hunk_ptr = &hunks;
     ULONG  i;
     BOOL   exec_hunk_seen = FALSE;
     ULONG  int_shnum;
+    ULONG  int_shstrndx;
     struct SRBuffer srb = { 0 };
     UBYTE *arena = NULL;
     UBYTE *arena_cursor = NULL;
@@ -1585,6 +1618,9 @@ static BPTR load_seg_elf_int
     /* load section headers */
     if (!(sh = load_block(file, eh.shoff, int_shnum * eh.shentsize, funcarray, &srb, DOSBase)))
         return 0;
+
+    /* with extended numbering the real index is in the first section header */
+    int_shstrndx = eh.shstrndx == SHN_XINDEX ? sh[0].link : eh.shstrndx;
 
 #ifdef __arm__
     for (i = 0; i < int_shnum; i++)
@@ -1627,7 +1663,7 @@ static BPTR load_seg_elf_int
             if (!sh[i].addr)
                 goto error;
 
-            if (sh[i].type == SHT_STRTAB && i == eh.shstrndx) {
+            if (sh[i].type == SHT_STRTAB && i == int_shstrndx) {
                 if (strtab == NULL) {
                     strtab = &sh[i];
                 } else {
@@ -1767,8 +1803,10 @@ static BPTR load_seg_elf_int
          * Accept both SHT_REL and SHT_RELA: the actual section type produced by
          * a given toolchain is not fixed (e.g. clang/lld emits SHT_REL for ARM
          * 32-bit while some gcc builds emit SHT_RELA).
+         * An empty relocation section is valid ELF and has nothing to apply;
+         * skip it, as load_block() can't allocate a block of size 0.
          */
-        if ((sh[i].type == SHT_REL || sh[i].type == SHT_RELA) && sh[sh[i].info].addr)
+        if ((sh[i].type == SHT_REL || sh[i].type == SHT_RELA) && sh[i].size && sh[sh[i].info].addr)
         {
             sh[i].addr = load_block(file, sh[i].offset, sh[i].size, funcarray, &srb, DOSBase);
             if (!sh[i].addr || !relocate(&eh, sh, i, symtab_shndx, reloc_out_of_range, DOSBase))
@@ -1801,15 +1839,33 @@ error:
 
 end:
 
-#if defined(DOCACHECLEAR)
-    /* Clear the caches to let the CPU see the new data and instructions. */
+#if defined(DOCACHECLEAR) || defined(__AROSPLATFORM_WXSEG__)
     curr = hunks;
 
     while (curr)
     {
         struct hunk *hunk = BPTR2HUNK(BADDR(curr));
 
+#if defined(DOCACHECLEAR)
+        /* Clear the caches to let the CPU see the new data and instructions. */
         ils_ClearCache(hunk->data, hunk->size, CACRF_ClearD | CACRF_ClearI);
+#endif
+#if defined(__AROSPLATFORM_WXSEG__)
+        /*
+         * Executable hunks were served by KrnAllocPages() as read/write pages
+         * outside any MemHeader (TypeOfMem() == 0, as in LoadSeg's FreeFunc
+         * and UnLoadSeg). Now that they are populated and relocated, flip
+         * them to read/execute. The base is the hunk itself, not hunk->data:
+         * the page-granular mapping starts at the struct.
+         */
+        if (hunk->size && TypeOfMem(hunk) == 0)
+        {
+            if (!KernelBase)
+                KernelBase = OpenResource("kernel.resource");
+            if (KernelBase)
+                KrnSetProtection(hunk, hunk->size, MAP_Readable | MAP_Executable);
+        }
+#endif
         curr = hunk->next;
     }
 #endif

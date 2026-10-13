@@ -101,6 +101,8 @@ struct KeymapCfg
     UBYTE kmc_Keymap[256];
 };
 
+struct BtHidCtrl;
+
 struct BtHidActionChunk
 {
     ULONG       nhac_ID;
@@ -618,6 +620,7 @@ struct BTHidBinding
 
     ULONG               nhb_TabTags[20];
 
+    struct BtHidCtrl   *nhb_Ctrl;         /* game controller device (bthidcontroller.c) */
     struct BtHidItem  *nhb_RumbleMotors[2]; /* Rumble motor item cache */
     ULONG               nhb_LLPortState[4]; /* Joypad port status */
     ULONG               nhb_LLHatswitch[4]; /* Hatswitch stuff */
@@ -848,6 +851,14 @@ struct BTHidBase
     struct BTHidBinding  nh_DefaultBinding;      /* Dummy NCH for default config */
 
     LONG                nh_Seed;          /* seed variable for random numbers */
+
+    /* game controller support (bthidcontroller.c) */
+    struct SignalSemaphore nh_CtrlLock;
+    struct Library     *nh_CtrlHiddBase;  /* controller.hidd */
+    APTR                nh_CtrlClass;     /* our CLID_Hidd_Controller subclass */
+    APTR                nh_CtrlHW;        /* CLID_HW_Controller singleton */
+    IPTR                nh_CtrlAB[3];     /* attr bases: Hidd, Hidd_Controller, HW */
+    IPTR                nh_CtrlMB[3];     /* method bases: HW, Hidd_Controller, HW_Controller */
 };
 
 #define WACOM_HASTILT    1

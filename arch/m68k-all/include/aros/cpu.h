@@ -24,6 +24,7 @@
 #define AROS_IPTRALIGN             2 /* Alignment for IPTR */
 #define AROS_DOUBLEALIGN           2 /* Alignment for double */
 #define AROS_WORSTALIGN            4 /* Worst case alignment */
+#define AROS_STACKALIGN            8 /* Required for aligned(8) stack objects */
 
 #define AROS_SLOWSTACKFORMAT 1
 

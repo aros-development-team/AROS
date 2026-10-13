@@ -283,14 +283,14 @@
 
 #define __Inet_NtoA_WB(__SocketBase, __arg1) \
         AROS_LC1(char *, Inet_NtoA, \
-                  AROS_LCA(unsigned long,(__arg1),D0), \
+                  AROS_LCA(ULONG,(__arg1),D0), \
         struct Library *, (__SocketBase), 29, BSDSocket)
 
 #define Inet_NtoA(arg1) \
     __Inet_NtoA_WB(SocketBase, (arg1))
 
 #define __inet_addr_WB(__SocketBase, __arg1) \
-        AROS_LC1(unsigned long, inet_addr, \
+        AROS_LC1(ULONG, inet_addr, \
                   AROS_LCA(const char *,(__arg1),A0), \
         struct Library *, (__SocketBase), 30, BSDSocket)
 
@@ -298,32 +298,32 @@
     __inet_addr_WB(SocketBase, (arg1))
 
 #define __Inet_LnaOf_WB(__SocketBase, __arg1) \
-        AROS_LC1(unsigned long, Inet_LnaOf, \
-                  AROS_LCA(unsigned long,(__arg1),D0), \
+        AROS_LC1(ULONG, Inet_LnaOf, \
+                  AROS_LCA(ULONG,(__arg1),D0), \
         struct Library *, (__SocketBase), 31, BSDSocket)
 
 #define Inet_LnaOf(arg1) \
     __Inet_LnaOf_WB(SocketBase, (arg1))
 
 #define __Inet_NetOf_WB(__SocketBase, __arg1) \
-        AROS_LC1(unsigned long, Inet_NetOf, \
-                  AROS_LCA(unsigned long,(__arg1),D0), \
+        AROS_LC1(ULONG, Inet_NetOf, \
+                  AROS_LCA(ULONG,(__arg1),D0), \
         struct Library *, (__SocketBase), 32, BSDSocket)
 
 #define Inet_NetOf(arg1) \
     __Inet_NetOf_WB(SocketBase, (arg1))
 
 #define __Inet_MakeAddr_WB(__SocketBase, __arg1, __arg2) \
-        AROS_LC2(unsigned long, Inet_MakeAddr, \
-                  AROS_LCA(int,(__arg1),D0), \
-                  AROS_LCA(int,(__arg2),D1), \
+        AROS_LC2(ULONG, Inet_MakeAddr, \
+                  AROS_LCA(ULONG,(__arg1),D0), \
+                  AROS_LCA(ULONG,(__arg2),D1), \
         struct Library *, (__SocketBase), 33, BSDSocket)
 
 #define Inet_MakeAddr(arg1, arg2) \
     __Inet_MakeAddr_WB(SocketBase, (arg1), (arg2))
 
 #define __inet_network_WB(__SocketBase, __arg1) \
-        AROS_LC1(unsigned long, inet_network, \
+        AROS_LC1(ULONG, inet_network, \
                   AROS_LCA(const char *,(__arg1),A0), \
         struct Library *, (__SocketBase), 34, BSDSocket)
 
@@ -826,6 +826,32 @@
 
 #define inet_aton(arg1, arg2) \
     __inet_aton_WB(SocketBase, (arg1), (arg2))
+
+#define __inet_ntop_WB(__SocketBase, __arg1, __arg2, __arg3, __arg4) \
+        AROS_LC4(STRPTR, RS_inet_ntop, \
+                  AROS_LCA(LONG,(__arg1),D0), \
+                  AROS_LCA(void *,(__arg2),A0), \
+                  AROS_LCA(char *,(__arg3),A1), \
+                  AROS_LCA(LONG,(__arg4),D1), \
+        struct Library *, (__SocketBase), 100, BSDSocket)
+
+/* defines/miami.h carries its own inet_ntop/inet_pton bindings */
+#ifndef inet_ntop
+#define inet_ntop(arg1, arg2, arg3, arg4) \
+    __inet_ntop_WB(SocketBase, (arg1), (void *)(arg2), (arg3), (arg4))
+#endif
+
+#define __inet_pton_WB(__SocketBase, __arg1, __arg2, __arg3) \
+        AROS_LC3(LONG, RS_inet_pton, \
+                  AROS_LCA(LONG,(__arg1),D0), \
+                  AROS_LCA(const char *,(__arg2),A0), \
+                  AROS_LCA(void *,(__arg3),A1), \
+        struct Library *, (__SocketBase), 101, BSDSocket)
+
+#ifndef inet_pton
+#define inet_pton(arg1, arg2, arg3) \
+    __inet_pton_WB(SocketBase, (arg1), (arg2), (arg3))
+#endif
 
 #define __gethostbyname_r_WB(__SocketBase, __arg1, __arg2, __arg3, __arg4, __arg5) \
         AROS_LC5(struct hostent *, RS_gethostbyname_r, \

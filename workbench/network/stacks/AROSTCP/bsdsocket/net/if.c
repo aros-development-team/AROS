@@ -101,6 +101,10 @@ struct ifnet *aifunit(register char *name);
 int aifconf(int cmd, caddr_t data);
 
 #include <kern/uipc_domain_protos.h>
+
+#ifdef ENABLE_MULTICAST
+void in_ifdetach(struct ifnet *ifp);    /* netinet/in.c */
+#endif
 #include <net/rtsock_protos.h>
 
 static char *sprint_d(u_int n, char *buf, int buflen);
@@ -220,6 +224,54 @@ struct ifnet *ifp;
     ifa->ifa_next = ifp->if_addrlist;
     ifa->ifa_rtrequest = link_rtrequest;
     ifp->if_addrlist = ifa;
+}
+
+/*
+ * if_detach - reverse of if_attach() for a live interface removal.
+ *
+ * Unlink ifp from the global interface list and free the link-level (AF_LINK)
+ * ifaddr that if_attach() created, clearing its ifnet_addrs[] slot.  The caller
+ * must already have removed every route that resolves through the interface
+ * (rt_purgeif) and every protocol (AF_INET/AF_INET6) address on it, so by the
+ * time we run if_addrlist holds only the link-level address.
+ *
+ * The if_index is deliberately not reclaimed: indices are handed out
+ * monotonically and never reused, so no later lookup can resolve the freed
+ * index back to this (now freed) ifaddr.
+ */
+void
+if_detach(ifp)
+struct ifnet *ifp;
+{
+    struct ifnet **p;
+    struct ifaddr *ifa, *nifa;
+    spl_t s = splimp();
+
+    /* unlink from the global interface list */
+    for(p = &ifnet; *p; p = &((*p)->if_next)) {
+        if(*p == ifp) {
+            *p = ifp->if_next;
+            break;
+        }
+    }
+
+    /* free whatever ifaddrs remain (the link-level one, plus any stragglers)
+     * and clear this interface's ifnet_addrs[] slot */
+    for(ifa = ifp->if_addrlist; ifa; ifa = nifa) {
+        nifa = ifa->ifa_next;
+        if(ifnet_addrs && ifp->if_index > 0 &&
+                ifnet_addrs[ifp->if_index - 1] == ifa)
+            ifnet_addrs[ifp->if_index - 1] = 0;
+        bsd_free((caddr_t)ifa, M_IFADDR);
+    }
+    ifp->if_addrlist = 0;
+
+#ifdef ENABLE_MULTICAST
+    /* no group membership may go on naming this interface */
+    in_ifdetach(ifp);
+#endif
+
+    splx(s);
 }
 
 /*
@@ -613,6 +665,13 @@ caddr_t data;
         ifr->ifr_metric = ifp->if_metric;
         break;
 
+    case SIOCGIFDHCP:
+        /* Expose the per-interface "wants DHCP" config so the external DHCP
+         * daemon can enumerate interfaces and act on the DHCP ones. */
+        ifr->ifr_metric = (ifp->if_data.ifi_aros_usedhcp  ? 1 : 0)
+                        | (ifp->if_data.ifi_aros_usedhcp6 ? 2 : 0);
+        break;
+
     case SIOCGIFMTU:
         ifr->ifr_mtu = ifp->if_mtu;
         break;
@@ -665,13 +724,13 @@ caddr_t data;
         break;
     }
 
-    case SIOCSIFFLAGS:
+    case SIOCSIFFLAGS: {
+        /* the daemon changes if_flags too, e.g. when the link comes up */
+        spl_t s = splimp();
+
         /* if_down() is kludged for Sana-II driver ioctl */
-        if(ifp->if_flags & IFF_UP && (ifr->ifr_flags & IFF_UP) == 0) {
-            spl_t s = splimp();
+        if(ifp->if_flags & IFF_UP && (ifr->ifr_flags & IFF_UP) == 0)
             if_down(ifp);
-            splx(s);
-        }
 
         if(ifp->if_ioctl)
             (void)(*ifp->if_ioctl)(ifp, cmd, data);
@@ -705,7 +764,9 @@ caddr_t data;
             }
 #endif
         }
+        splx(s);
         break;
+    }
 
     case SIOCSIFMETRIC:
 #ifndef AMITCP /* no protection on AmigaOS */
@@ -746,20 +807,19 @@ caddr_t data;
 void ifupdown(struct ifnet *ifp, int up)
 {
     struct ifreq ifr;
+    spl_t s = splimp();     /* as in SIOCSIFFLAGS */
 
     if(up) {
         ifr.ifr_flags = ifp->if_flags & ~IFF_UP;
-        if(ifp->if_flags & IFF_UP) {
-            spl_t s = splimp();
+        if(ifp->if_flags & IFF_UP)
             if_down(ifp);
-            splx(s);
-        }
     } else {
         ifr.ifr_flags = ifp->if_flags | IFF_UP;
     }
     if(ifp->if_ioctl)
         (void)(*ifp->if_ioctl)(ifp, SIOCSIFFLAGS, (caddr_t)&ifr);
     ifp->if_flags = ifr.ifr_flags;
+    splx(s);
 }
 
 /*

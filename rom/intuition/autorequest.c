@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -20,8 +20,8 @@
         AROS_LHA(struct IntuiText *, negText, A3),
         AROS_LHA(ULONG             , pFlag, D0),
         AROS_LHA(ULONG             , nFlag, D1),
-        AROS_LHA(ULONG             , width, D2),
-        AROS_LHA(ULONG             , height, D3),
+        AROS_LHA(WORD              , width, D2),
+        AROS_LHA(WORD              , height, D3),
 
 /*  LOCATION */
         struct IntuitionBase *, IntuitionBase, 58, Intuition)
@@ -50,7 +50,6 @@
     ULONG          idcmp;
     LONG           result;
 
-    EXTENDWORD(width);EXTENDWORD(height);
 
     req = BuildSysRequest(window,
                           body,

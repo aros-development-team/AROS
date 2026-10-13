@@ -9,6 +9,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <ctype.h>
+#include <stdarg.h>
 
 #define CHARSET_TABLE_SIZE 256
 #define CTBL_MAGIC "CTBL"
@@ -33,6 +34,37 @@ struct CharsetTables {
     uint8_t to_upper[CHARSET_TABLE_SIZE];
     uint8_t to_lower[CHARSET_TABLE_SIZE];
 };
+
+static char *make_path(const char *format, ...) {
+    va_list args;
+    char *path;
+    int length;
+    int written;
+    size_t size;
+
+    va_start(args, format);
+    length = vsnprintf(NULL, 0, format, args);
+    va_end(args);
+
+    if (length < 0)
+        return NULL;
+
+    size = (size_t)length + 1;
+    path = malloc(size);
+    if (!path)
+        return NULL;
+
+    va_start(args, format);
+    written = vsnprintf(path, size, format, args);
+    va_end(args);
+
+    if (written != length) {
+        free(path);
+        return NULL;
+    }
+
+    return path;
+}
 
 static uint16_t classification_flags_from_category(unsigned int cp, const char *cat) {
     uint16_t flags = 0;
@@ -186,7 +218,7 @@ int write_c_source_file(const char *path, const char *symbol_name, struct Charse
         "\n#if __WCHAR_MAX__ < 256\n"
         "    0x%02X\n"
         "#else\n"
-        "    0x%02X,\n", 
+        "    0x%02X,\n",
         tables->to_upper[127], tables->to_upper[127]);
 
     for (int i = 128; i < 256; ++i) {
@@ -259,12 +291,16 @@ int main(int argc, char **argv) {
     const char *iso_locale = argv[3];
 
     // Build full path to UnicodeData.txt
-    char unicode_data_path[512];
-    snprintf(unicode_data_path, sizeof(unicode_data_path), "%s/UnicodeData.txt", unicode_dir);
+    char *unicode_data_path = make_path("%s/UnicodeData.txt", unicode_dir);
+    if (!unicode_data_path) {
+        fprintf(stderr, "Failed to build UnicodeData.txt path\n");
+        return 1;
+    }
 
     FILE *f = fopen(unicode_data_path, "r");
     if (!f) {
         perror("fopen UnicodeData.txt");
+        free(unicode_data_path);
         return 1;
     }
     fclose(f);
@@ -279,12 +315,20 @@ int main(int argc, char **argv) {
     f = fopen(unicode_data_path, "r");
     if (!f) {
         perror("fopen UnicodeData.txt");
+        free(unicode_data_path);
         return 1;
     }
 
     char line[512];
     while (fgets(line, sizeof(line), f)) {
-        size_t len = strlen(line);
+        const char *line_end = memchr(line, '\0', sizeof(line));
+        if (!line_end) {
+            fprintf(stderr, "UnicodeData.txt line is not NUL-terminated\n");
+            fclose(f);
+            free(unicode_data_path);
+            return 1;
+        }
+        size_t len = (size_t)(line_end - line);
         if (len && (line[len - 1] == '\n' || line[len - 1] == '\r')) {
             line[len - 1] = '\0';
             if (len > 1 && line[len - 2] == '\r') {
@@ -302,24 +346,40 @@ int main(int argc, char **argv) {
         if (*p == '.' || *p == '/' || *p == '\\') *p = '_';
     }
 
-    char out_path[512];
+    char *out_path;
     if (emit_c_output) {
-        snprintf(out_path, sizeof(out_path), "%s/%s.c", target_dir, safe_locale);
+        out_path = make_path("%s/%s.c", target_dir, safe_locale);
+        if (!out_path) {
+            fprintf(stderr, "Failed to build output C path\n");
+            free(unicode_data_path);
+            return 1;
+        }
         if (write_c_source_file(out_path, safe_locale, &tables) != 0) {
             fprintf(stderr, "Failed to write output C file %s\n", out_path);
+            free(out_path);
+            free(unicode_data_path);
             return 1;
         }
         if (verbose)
             printf("Generated %s (C source) from %s\n", out_path, unicode_data_path);
     } else {
-        snprintf(out_path, sizeof(out_path), "%s/%s.ctbl", target_dir, safe_locale);
+        out_path = make_path("%s/%s.ctbl", target_dir, safe_locale);
+        if (!out_path) {
+            fprintf(stderr, "Failed to build output path\n");
+            free(unicode_data_path);
+            return 1;
+        }
         if (write_ctbl_file(out_path, &tables) != 0) {
             fprintf(stderr, "Failed to write output file %s\n", out_path);
+            free(out_path);
+            free(unicode_data_path);
             return 1;
         }
         if (verbose)
             printf("Generated %s (binary .ctbl) from %s\n", out_path, unicode_data_path);
     }
 
+    free(out_path);
+    free(unicode_data_path);
     return 0;
 }

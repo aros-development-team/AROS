@@ -73,75 +73,62 @@
 #define ATTR_NORMAL_NC  ATTR_IDX(2)
 
 /* Page table pointers */
-static uint64_t *pgd;
 static uint64_t *pud;
 static uint64_t *pmd;
-static uint64_t *pmd_hi;
 
 void mmu_init(void)
 {
     int i;
 
-    pgd = (uint64_t *)BOOTMEMADDR(bm_pgd);
-    pud = (uint64_t *)BOOTMEMADDR(bm_pud);
+    /* Level 0 is unused with T0SZ=25, so the level-1 table lives in bm_pgd */
+    pud = (uint64_t *)BOOTMEMADDR(bm_pgd);
     pmd = (uint64_t *)BOOTMEMADDR(bm_pmd);
-    pmd_hi = (uint64_t *)BOOTMEMADDR(bm_pmd_hi);
 
-    /* Clear all page table levels */
-    for (i = 0; i < 512; i++)
-        pgd[i] = 0;
-
+    /* Clear the tables; sentinel-fill the unused bm_pud page */
     for (i = 0; i < 512; i++)
         pud[i] = 0;
+
+    for (i = 0; i < 512; i++)
+        ((uint64_t *)BOOTMEMADDR(bm_pud))[i] = 0xDEADBEEF00000000UL | i;
 
     /* Clear PMD: 4 pages covering 4GB (4 * 512 = 2048 entries) */
     for (i = 0; i < 2048; i++)
         pmd[i] = 0;
 
-    for (i = 0; i < 512; i++)
-        pmd_hi[i] = 0;
-
     /*
      * Set up the page table hierarchy:
-     * PGD[0] -> PUD (covers first 512GB, only first entry used)
      * PUD[0] -> PMD page 0 (covers 0x00000000 - 0x3FFFFFFF, 1GB)
      * PUD[1] -> PMD page 1 (covers 0x40000000 - 0x7FFFFFFF, 1GB)
      * PUD[2] -> PMD page 2 (covers 0x80000000 - 0xBFFFFFFF, 1GB)
      * PUD[3] -> PMD page 3 (covers 0xC0000000 - 0xFFFFFFFF, 1GB)
-     * PUD[24] -> PMD high page (0x600000000 - 0x63FFFFFFF, the BCM2711
-     *            PCIe outbound window; unused and harmless on Pi 2/3)
+     * Entries >= 4 get 1GB blocks on demand (mmu_map_section high path).
      */
-    pgd[0] = (uint64_t)(uintptr_t)pud | DESC_TABLE;
-
     pud[0] = (uint64_t)(uintptr_t)&pmd[0 * 512] | DESC_TABLE;
     pud[1] = (uint64_t)(uintptr_t)&pmd[1 * 512] | DESC_TABLE;
     pud[2] = (uint64_t)(uintptr_t)&pmd[2 * 512] | DESC_TABLE;
     pud[3] = (uint64_t)(uintptr_t)&pmd[3 * 512] | DESC_TABLE;
-    pud[BCM2711_PCIE_WIN_BASE >> 30] = (uint64_t)(uintptr_t)pmd_hi | DESC_TABLE;
 
     /*
-     * Raspberry Pi 5 (BCM2712): Map BCM2712 peripheral space (0x107C000000)
-     * and RP1 PCIe peripheral window (0x1F00000000) as 1GB device blocks.
+     * The RP1 windows sit under /axi/pcie, which no DT walk touches, so
+     * they stay hardcoded. The boot UART lives behind them - without
+     * these, serial dies the moment the MMU loads.
      */
-    pud[0x107C000000UL >> 30] = DESC_BLOCK | (0x1040000000UL) |
-                                 ATTR_DEVICE | ATTR_AF | ATTR_AP_RW_EL1 |
-                                 ATTR_SH_NON | ATTR_PXN | ATTR_UXN;
-    pud[0x1F00000000UL >> 30] = DESC_BLOCK | (0x1F00000000UL) |
-                                 ATTR_DEVICE | ATTR_AF | ATTR_AP_RW_EL1 |
-                                 ATTR_SH_NON | ATTR_PXN | ATTR_UXN;
+    pud[0x1C00000000UL >> 30] = DESC_BLOCK | 0x1C00000000UL | ATTR_DEVICE |
+                                ATTR_AF | ATTR_AP_RW_EL1 | ATTR_SH_NON |
+                                ATTR_PXN | ATTR_UXN;   /* BCM2712 D0 */
+    pud[0x1F00000000UL >> 30] = DESC_BLOCK | 0x1F00000000UL | ATTR_DEVICE |
+                                ATTR_AF | ATTR_AP_RW_EL1 | ATTR_SH_NON |
+                                ATTR_PXN | ATTR_UXN;   /* BCM2712 C1 */
 }
 
 /*
  * Return the level-2 slot for a virtual address, or NULL if the address
- * is outside the translated ranges (first 4GB + the PCIe window).
+ * is outside the translated ranges (first 4GB).
  */
 static uint64_t *mmu_slot(uintptr_t virt)
 {
     if (virt < 0x100000000UL)
         return &pmd[virt >> 21];
-    if (virt >= BCM2711_PCIE_WIN_BASE &&
-        virt < BCM2711_PCIE_WIN_BASE + BCM2711_PCIE_WIN_SIZE)
-        return &pmd_hi[(virt - BCM2711_PCIE_WIN_BASE) >> 21];
     return (uint64_t *)0;
 }
 
@@ -149,10 +136,8 @@ void mmu_load(void)
 {
     uint64_t tmp;
 
-    aarch64_flush_cache((uintptr_t)pgd, PGD_SIZE);
     aarch64_flush_cache((uintptr_t)pud, PUD_SIZE);
     aarch64_flush_cache((uintptr_t)pmd, PMD_SIZE);
-    aarch64_flush_cache((uintptr_t)pmd_hi, PMD_HI_SIZE);
 
     /* Set MAIR_EL1 */
     tmp = MAIR_VALUE;
@@ -160,16 +145,20 @@ void mmu_load(void)
 
     /*
      * Set TCR_EL1:
-     *   T0SZ = 29  (35-bit VA space = 32GB, bits [5:0]; reaches the BCM2711
-     *               PCIe outbound window at 0x6_0000_0000. Lookup still
-     *               starts at level 1 for T0SZ 25-33 with a 4KB granule.)
+     *   T0SZ = 25  (39-bit VA space = 512GB, bits [5:0]; reaches the BCM2711
+     *               PCIe outbound window at 0x6_0000_0000 and the BCM2712
+     *               peripheral and RP1 windows at 0x10_7C00_0000 and
+     *               0x1F_0000_0000. Lookup still starts at level 1 for
+     *               T0SZ 25-33 with a 4KB granule, so TTBR0 holds the
+     *               level-1 table.)
      *   IRGN0 = 01 (Inner Write-Back Write-Allocate Cacheable, bits [9:8])
      *   ORGN0 = 01 (Outer Write-Back Write-Allocate Cacheable, bits [11:10])
      *   SH0 = 11   (Inner Shareable, bits [13:12])
      *   TG0 = 00   (4KB granule, bits [15:14])
-     *   IPS = 001   (36-bit physical address space, bits [34:32])
+     *   IPS = 010  (40-bit physical address space, bits [34:32]; the BCM2712
+     *               windows need 37 PA bits, and 40 is Cortex-A76's PARange)
      */
-    tmp = (29UL << 0)       /* T0SZ = 29 -> 32GB VA space */
+    tmp = (25UL << 0)       /* T0SZ = 25 -> 512GB VA space */
         | (0x1UL << 8)      /* IRGN0 = 01 */
         | (0x1UL << 10)     /* ORGN0 = 01 */
         | (0x3UL << 12)     /* SH0 = 11 (inner shareable) */
@@ -177,13 +166,13 @@ void mmu_load(void)
         | (0x1UL << 23)     /* EPD1 = 1: TTBR1 walks disabled (TTBR1 is
                              * never programmed; leaving it enabled with
                              * T1SZ=0 is CONSTRAINED UNPREDICTABLE) */
-        | (0x1UL << 32);    /* IPS = 001 (36-bit PA) */
+        | (0x2UL << 32);    /* IPS = 010 (40-bit PA) */
     asm volatile ("msr TCR_EL1, %0" :: "r"(tmp));
     asm volatile ("isb");
 
     /*
      * Set TTBR0_EL1 to the Level 1 (PUD) table.
-     * With T0SZ=29 (35-bit VA) and 4KB granule, the initial lookup
+     * With T0SZ=25 (39-bit VA) and 4KB granule, the initial lookup
      * level is 1, so TTBR0 must point to the Level 1 table directly.
      * Level 0 (PGD) is not used.
      */
@@ -245,6 +234,45 @@ void mmu_map_section(uintptr_t phys, uintptr_t virt, uintptr_t length, int norma
 
     DMMU(kprintf("[BOOT] MMU map %p:%p->%p:%p, normal=%d, cacheable=%d, ap=%x, tex=%x\n",
             phys, phys+length-1, virt, virt+length-1, normal, cacheable, ap, tex));
+
+    /*
+     * Above 4GB everything on these boards is large, uniform and
+     * GB-aligned (peripheral windows, high RAM), and the static boot
+     * tables have no PMD pages to spare - use 1GB PUD blocks. Below
+     * 4GB the 2MB PMD path stays: the first four PUD slots are table
+     * pointers and must not be clobbered.
+     */
+    if (virt >= 0x100000000UL)
+    {
+        if ((virt | phys) & ((1UL << 30) - 1))
+        {
+            kprintf("[BOOT] MMU: unaligned high mapping %p dropped\n", virt);
+            return;
+        }
+
+        while (length)
+        {
+            uint64_t *slot = &pud[virt >> 30];
+            uint64_t desc = DESC_BLOCK | ATTR_AF | (uint64_t)phys;
+
+            /* same attributelogic as the 2MB-way */
+            if (normal && (cacheable || tex))
+                desc |= ATTR_NORMAL | ATTR_SH_INNER;
+            else if (normal)
+                desc |= ATTR_NORMAL_NC | ATTR_SH_INNER;
+            else
+                desc |= ATTR_DEVICE | ATTR_SH_NON | ATTR_PXN | ATTR_UXN;
+            desc |= (ap == 2) ? ATTR_AP_RO_EL1 : ATTR_AP_RW_EL1;
+
+            if ((*slot & 3) != DESC_TABLE)     /* never overwrite a table */
+                *slot = desc;
+
+            virt   += (1UL << 30);
+            phys   += (1UL << 30);
+            length -= (length > (1UL << 30)) ? (1UL << 30) : length;
+        }
+        return;
+    }
 
     while (count--)
     {

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2015-2026, The AROS Development Team. All rights reserved.
 */
 
 #ifndef TASKRES_H
@@ -55,5 +55,28 @@ struct TaskList
 typedef int (*TaskResHookDispatcher)(struct Hook *);
 
 #define TASKHOOK_TYPE_LATEINIT          (1 << 0)
+
+/*
+ * Task lifecycle notifications (AddTaskNotifyHook()/RemTaskNotifyHook()).
+ *
+ * Registered hooks are called as CallHookPkt(hook, task, &msg) with a
+ * struct TaskNotifyMsg. TNA_ADDED is delivered in the context of the creating
+ * task BEFORE exec.library's NewAddTask() runs (the ETask does not exist yet);
+ * TNA_FAILED follows if NewAddTask() then fails. TNA_REMOVED is delivered in
+ * the context of the caller of RemTask() BEFORE exec removes the task. Hooks
+ * are not called under Forbid()/Disable() and may allocate memory or obtain
+ * semaphores, but must not Wait() for other tasks.
+ */
+struct TaskNotifyMsg
+{
+    ULONG               tnm_Action;             /* TNA_#?                                       */
+    struct Task         *tnm_Task;              /* The task being added/removed                 */
+    struct Task         *tnm_Parent;            /* Creator (TNA_ADDED/TNA_FAILED) or NULL       */
+    struct TagItem      *tnm_Tags;              /* NewAddTask() taglist (TNA_ADDED) or NULL     */
+};
+
+#define TNA_ADDED                       (1)
+#define TNA_REMOVED                     (2)
+#define TNA_FAILED                      (3)
 
 #endif /* TASKRES_H */

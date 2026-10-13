@@ -66,6 +66,18 @@
             /* Do driver-specific cleanup */
             HIDD_Display_DeinitViewPort(VPE_DRIVER(vpe)->display_obj, vpd);
 
+            if(vpe->Flags & VPXF_WRAPPED_BITMAP) {
+                OOP_DisposeObject(vpd->Bitmap);
+                vpe->Flags &= ~VPXF_WRAPPED_BITMAP;
+            }
+
+            if(vpd->PreviousBitmap) {
+                if(vpd->Flags & HIDD_VPDF_PREVIOUS_BITMAP_OWNED)
+                    OOP_DisposeObject(vpd->PreviousBitmap);
+                vpd->PreviousBitmap = NULL;
+                vpd->Flags &= ~HIDD_VPDF_PREVIOUS_BITMAP_OWNED;
+            }
+
             FreeMem(vpd, sizeof(struct HIDD_ViewPortData));
 
             vpe->DriverData[0] = NULL;

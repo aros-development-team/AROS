@@ -62,6 +62,28 @@ void VirtIOUnit__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     OOP_DoSuperMethod(cl, o, msg);
 }
 
+BOOL VirtIOUnit__Hidd_StorageUnit__GetCapacity(OOP_Class *cl, OOP_Object *o,
+    struct pHidd_StorageUnit_GetCapacity *msg)
+{
+    struct virtio_Unit *unit = OOP_INST_DATA(cl, o);
+
+    if (msg->blockCount)
+        *msg->blockCount = 0;
+    if (msg->blockSize)
+        *msg->blockSize = 0;
+
+    if (!msg->blockCount || !msg->blockSize ||
+        !unit->au_SecCnt ||
+        unit->au_SecShift < 9 ||
+        unit->au_SecShift >= 32)
+        return FALSE;
+
+    *msg->blockCount = unit->au_SecCnt;
+    *msg->blockSize = 1UL << unit->au_SecShift;
+
+    return TRUE;
+}
+
 void VirtIOUnit__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct VirtIOBase *VirtIOBase = (struct VirtIOBase *)cl->UserData;

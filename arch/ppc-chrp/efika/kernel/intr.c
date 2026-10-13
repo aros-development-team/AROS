@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2008-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 2008-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <inttypes.h>
@@ -367,7 +367,7 @@ void __attribute__((noreturn)) decrementer_handler(regs_t *ctx, uint8_t exceptio
         if (--SysBase->Elapsed == 0)
         {
                 SysBase->SysFlags |= 0x2000;
-                SysBase->AttnResched |= 0x80;
+                SysBase->SysFlags |= SFF_AttnSwitch;
         }
     }
 

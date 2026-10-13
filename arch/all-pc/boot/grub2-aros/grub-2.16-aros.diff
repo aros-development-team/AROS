@@ -1,0 +1,111 @@
+diff -ruN grub-2.16/grub-core/fs/affs.c grub-2.16.aros/grub-core/fs/affs.c
+--- grub-2.16/grub-core/fs/affs.c	2026-09-21 18:33:48.000000000 +0100
++++ grub-2.16.aros/grub-core/fs/affs.c	2026-09-25 13:04:08.809632205 +0100
+@@ -203,7 +203,9 @@
+ 	goto fail;
+ 
+       /* Make sure this is an affs filesystem.  */
+-      if (grub_strncmp ((char *) (data->bblock.type), "DOS", 3) != 0
++      if (((grub_strncmp ((char *) (data->bblock.type), "DOS", 3) != 0)
++	  /* Test if the filesystem is a muFS filesystem.  */
++	  && (grub_strncmp ((char *) (data->bblock.type), "muF", 3) != 0))
+ 	  /* Test if the filesystem is a OFS filesystem.  */
+ 	  || !(data->bblock.flags & GRUB_AFFS_FLAG_FFS))
+ 	continue;
+diff -ruN grub-2.16/grub-core/lib/gnulib/getprogname.c grub-2.16.aros/grub-core/lib/gnulib/getprogname.c
+--- grub-2.16/grub-core/lib/gnulib/getprogname.c	2026-09-21 18:34:54.000000000 +0100
++++ grub-2.16.aros/grub-core/lib/gnulib/getprogname.c	2026-09-25 13:04:08.809720905 +0100
+@@ -28,6 +28,10 @@
+ # include <string.h>
+ #endif
+ 
++#ifdef _AMIGA
++# include <proto/exec.h>
++#endif
++
+ #ifdef __MVS__
+ # ifndef _OPEN_SYS
+ #  define _OPEN_SYS
+@@ -287,6 +291,9 @@
+       close (fd);
+     }
+   return "?";
++# elif defined _AMIGA                                        /* AmigaOS-like */
++  struct Task *thisTask = FindTask(NULL);
++  return (thisTask->tc_Node.ln_Name);  
+ # else
+ #  error "getprogname module not ported to this OS"
+ # endif
+diff -ruN grub-2.16/grub-core/osdep/aros/getroot.c grub-2.16.aros/grub-core/osdep/aros/getroot.c
+--- grub-2.16/grub-core/osdep/aros/getroot.c	2026-09-21 18:33:48.000000000 +0100
++++ grub-2.16.aros/grub-core/osdep/aros/getroot.c	2026-09-25 13:04:08.809772005 +0100
+@@ -29,7 +29,6 @@
+ 
+ #include <string.h>
+ #include <dos/dos.h>
+-#include <dos/filesystem.h>
+ #include <dos/exall.h>
+ #include <proto/dos.h>
+ #include <proto/exec.h>
+diff -ruN grub-2.16/grub-core/osdep/aros/hostdisk.c grub-2.16.aros/grub-core/osdep/aros/hostdisk.c
+--- grub-2.16/grub-core/osdep/aros/hostdisk.c	2026-09-21 18:33:48.000000000 +0100
++++ grub-2.16.aros/grub-core/osdep/aros/hostdisk.c	2026-09-25 13:04:08.809823405 +0100
+@@ -45,7 +45,6 @@
+ 
+ #include <string.h>
+ #include <dos/dos.h>
+-#include <dos/filesystem.h>
+ #include <dos/exall.h>
+ #include <proto/dos.h>
+ #include <devices/hardblocks.h>
+diff -ruN grub-2.16/grub-core/osdep/aros/relpath.c grub-2.16.aros/grub-core/osdep/aros/relpath.c
+--- grub-2.16/grub-core/osdep/aros/relpath.c	2026-09-21 18:33:48.000000000 +0100
++++ grub-2.16.aros/grub-core/osdep/aros/relpath.c	2026-09-25 13:04:08.809868905 +0100
+@@ -29,7 +29,6 @@
+ 
+ #include <string.h>
+ #include <dos/dos.h>
+-#include <dos/filesystem.h>
+ #include <dos/exall.h>
+ #include <proto/dos.h>
+ #include <proto/exec.h>
+diff -ruN grub-2.16/grub-core/osdep/basic/no_platform.c grub-2.16.aros/grub-core/osdep/basic/no_platform.c
+--- grub-2.16/grub-core/osdep/basic/no_platform.c	2026-09-21 18:33:48.000000000 +0100
++++ grub-2.16.aros/grub-core/osdep/basic/no_platform.c	2026-09-25 13:04:08.809904705 +0100
+@@ -30,12 +30,13 @@
+   grub_util_error ("%s", _("no IEEE1275 routines are available for your platform"));
+ }
+ 
+-void
++int
+ grub_install_register_efi (grub_device_t efidir_grub_dev,
+ 			   const char *efifile_path,
+ 			   const char *efi_distributor)
+ {
+   grub_util_error ("%s", _("no EFI routines are available for your platform"));
++  return 0;
+ }
+ 
+ void
+diff -ruN grub-2.16/include/grub/gcrypt/gcrypt.h grub-2.16.aros/include/grub/gcrypt/gcrypt.h
+--- grub-2.16/include/grub/gcrypt/gcrypt.h	2026-09-21 18:35:02.000000000 +0100
++++ grub-2.16.aros/include/grub/gcrypt/gcrypt.h	2026-09-25 13:04:08.810248905 +0100
+@@ -2388,13 +2388,13 @@
+ gpg_err_code_t _gcry_kdf_open (gcry_kdf_hd_t *hd, int algo, int subalgo,
+                                const unsigned long *param,
+                                unsigned int paramlen,
+-                               const void *passphrase, size_t passphraselen,
+-                               const void *salt, size_t saltlen,
+-                               const void *key, size_t keylen,
+-                               const void *ad, size_t adlen);
++                               const void *passphrase, grub_size_t passphraselen,
++                               const void *salt, grub_size_t saltlen,
++                               const void *key, grub_size_t keylen,
++                               const void *ad, grub_size_t adlen);
+ gcry_err_code_t _gcry_kdf_compute (gcry_kdf_hd_t h,
+                                    const struct gcry_kdf_thread_ops *ops);
+-gpg_err_code_t _gcry_kdf_final (gcry_kdf_hd_t h, size_t resultlen, void *result);
++gpg_err_code_t _gcry_kdf_final (gcry_kdf_hd_t h, grub_size_t resultlen, void *result);
+ void _gcry_kdf_close (gcry_kdf_hd_t h);
+ 
+ 

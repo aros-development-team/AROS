@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012, The AROS Development Team
+ * Copyright (C) 2012-2026, The AROS Development Team
  * All right reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
@@ -31,7 +31,7 @@ BOOL core_ExitIntr(VOID)
          * Do not disturb task if it's not necessary.
          * Reschedule only if switch pending flag is set. Exit otherwise.
          */
-        if (SysBase->AttnResched & ARF_AttnSwitch)
+        if (FLAG_SCHEDSWITCH_ISSET)
         {
             /* Run task scheduling sequence */
             return TRUE;

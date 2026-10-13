@@ -1,5 +1,5 @@
 /*
-    Copyright 2010-2017, The AROS Development Team. All rights reserved.
+    Copyright 2010-2026, The AROS Development Team. All rights reserved.
 */
 
 #include "nouveau_intern.h"
@@ -169,6 +169,10 @@ APTR METHOD(NouveauGallium, Hidd_Gallium, CreatePipeScreen)
     case 0x110:
     case 0x120:
     case 0x130:
+    case 0x140:
+    case 0x160:
+    case 0x170:
+    case 0x190:
         init = nvc0_screen_create;
         break;
     default:
@@ -178,13 +182,18 @@ APTR METHOD(NouveauGallium, Hidd_Gallium, CreatePipeScreen)
     }
 
     LOCK_ENGINE
-
     screen = init(dev);
     if (!screen) {
         UNLOCK_ENGINE
         return NULL;
     }
-
+    if (!screen->base.context_create) {
+        screen->base.destroy(&screen->base);
+        UNLOCK_ENGINE
+        return NULL;
+    }
+    /* what the drm winsys would have done for us */
+    screen->initialized = true;
     UNLOCK_ENGINE
 
     return screen;

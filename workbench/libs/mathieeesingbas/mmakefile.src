@@ -18,6 +18,10 @@ FUNCS := \
     ieeespsub \
     ieeesptst
 
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
 %build_module mmake=workbench-libs-mathieeesingbas \
   modname=mathieeesingbas modtype=library \
   files=$(FUNCS)

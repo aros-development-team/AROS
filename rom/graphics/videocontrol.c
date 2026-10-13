@@ -55,12 +55,14 @@
     struct TagItem *tag, *tstate = tags;
     LONG *immediate = NULL;
     ULONG res = 0;
+    BOOL associate_vpe = FALSE;
 
     while((tag = NextTagItem(&tstate))) {
         switch(tag->ti_Tag) {
 
         case VTAG_ATTACH_CM_SET:
             cm->cm_vp = (struct ViewPort *)tag->ti_Data;
+            associate_vpe = TRUE;
             break;
 
         case VTAG_ATTACH_CM_GET:
@@ -70,7 +72,7 @@
 
         case VTAG_VIEWPORTEXTRA_SET:
             cm->cm_vpe = (struct ViewPortExtra *)tag->ti_Data;
-            GfxAssociate(cm->cm_vp, &cm->cm_vpe->n);
+            associate_vpe = TRUE;
             break;
 
         case VTAG_VIEWPORTEXTRA_GET:
@@ -381,6 +383,16 @@
             res = 1;
         }
     }
+
+    /*
+     * These two tags may be supplied in either order, or in separate calls.
+     * Associating the ViewPortExtra while cm_vp is still NULL leaves it in
+     * the wrong hash chain, so MakeVPort() creates a second extra and later
+     * SetRGB*() updates never reach the displayed bitmap.
+     */
+    if (associate_vpe && cm->cm_vp && cm->cm_vpe &&
+        cm->cm_vpe->ViewPort != cm->cm_vp)
+        GfxAssociate(cm->cm_vp, &cm->cm_vpe->n);
 
     if(immediate) {
 

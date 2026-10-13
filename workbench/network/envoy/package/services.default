@@ -1,0 +1,2 @@
+CLEARPREFS
+SERVICE "Filesystem" "SYS:System/Network/Envoy/Services/filesystem.service" Active

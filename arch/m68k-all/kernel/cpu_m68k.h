@@ -17,6 +17,9 @@
 /* Number of exceptions supported by the CPU. Needed by kernel_base.h */
 #define EXCEPTIONS_COUNT 256
 
+/* m68k has many exception vectors, but normally no registered raw handlers. */
+#define KERNEL_SPARSE_EXCEPTIONS
+
 /* CPU context stored in task's et_RegFrame. */
 struct AROSCPUContext
 {

@@ -285,7 +285,7 @@ static int AddDirectory(Object *list, STRPTR dir, LONG parent)
                     is_directory = 1;
                     if (ead->ed_Type == ST_SOFTLINK)
                     {
-                        /* TODO: Special handling */
+                        /* TODO: Determine whether ST_SOFTLINK targets a file or directory. */
                     }
                 }
                 else
@@ -319,7 +319,6 @@ static int AddDirectory(Object *list, STRPTR dir, LONG parent)
                             (IPTR) & ele, MUIV_List_Insert_Bottom);
                     }
                 }
-                // FIXME: where does num's value come from here?
                 if (num != -1 && is_directory)
                 {
                     AddDirectory(list, buf, num);

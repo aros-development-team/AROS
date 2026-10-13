@@ -12,6 +12,7 @@ struct PlatformTimer
     struct timeval tbp_TickRate;	/* Our periodic timer interval   */
     unsigned int tbp_CLO;
     unsigned int tbp_CHI;
+    UQUAD tbp_EClockLast;		/* counter value EClockUpdate has booked */
     struct Interrupt tbp_MicroHZInt;	/* BCM2711: microhz tick off VBlank */
 };
 
@@ -23,3 +24,8 @@ struct PlatformTimer
 
 #define ARM_PERIIOBASE TimerBase->tb_Platform.tbp_periiobase
 #include <hardware/bcm2708.h>
+
+/* Arm the tick compare for the earlier of the next periodic tick and the
+ * head MICROHZ request. Call with interrupts disabled or from the tick IRQ. */
+struct TimerBase;
+void Timer_Reprogram(struct TimerBase *TimerBase);

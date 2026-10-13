@@ -1,4 +1,45 @@
+#include <stdarg.h>
 #include "genmodule.h"
+
+char *make_output_path(const char *format, ...)
+{
+    va_list args;
+    char *path;
+    int length;
+    int written;
+    size_t size;
+
+    va_start(args, format);
+    length = vsnprintf(NULL, 0, format, args);
+    va_end(args);
+
+    if (length < 0)
+    {
+        fprintf(stderr, "Could not format output path\n");
+        exit(20);
+    }
+
+    size = (size_t)length + 1;
+    path = malloc(size);
+    if (path == NULL)
+    {
+        fprintf(stderr, "Out of memory\n");
+        exit(20);
+    }
+
+    va_start(args, format);
+    written = vsnprintf(path, size, format, args);
+    va_end(args);
+
+    if (written != length)
+    {
+        free(path);
+        fprintf(stderr, "Could not format output path\n");
+        exit(20);
+    }
+
+    return path;
+}
 
 void generate_argtype_name_part(FILE *out, int argtype, int consecutive_args)
 {

@@ -1,10 +1,10 @@
-# Copyright (C) 1995-2003, The AROS Development Team. All rights reserved.
+# Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 #
 # Makefile to make the Installer
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES := main misc procedure parse variables gui_zune locale execute cleanup
+FILES := main misc procedure parse variables gui_zune locale execute cleanup copyfiles
 
 EXEDIR := $(AROSDIR)/Utilities
 

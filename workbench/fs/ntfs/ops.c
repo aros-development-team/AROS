@@ -1,7 +1,7 @@
 /*
  * ntfs.handler - New Technology FileSystem handler
  *
- * Copyright (C) 2012-2025 The AROS Development Team
+ * Copyright (C) 2012-2026 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -104,14 +104,17 @@ LONG OpLockParent(struct ExtFileLock *lock, struct ExtFileLock **parent)
     // get the parent dir
     if (lock->gl->attr & ATTR_DIRECTORY) {
         dh.ioh.mft.mftrec_no = lock->dir->ioh.mft.mftrec_no;
-        InitDirHandle(glob->data, &dh, FALSE);
+        if ((err = InitDirHandle(glob->data, &dh, FALSE)) != 0)
+            return err;
 
         if ((err = GetDirEntryByPath(&dh, "/", 1, &de)) != 0) {
+            ReleaseDirHandle(&dh);
             return err;
         }
     } else {
         dh.ioh.mft.mftrec_no = lock->gl->dir_cluster / glob->data->mft_size;
-        InitDirHandle(glob->data, &dh, FALSE);
+        if ((err = InitDirHandle(glob->data, &dh, FALSE)) != 0)
+            return err;
 
         INIT_MFTATTRIB(&dirattr, &dh.ioh.mft);
         attrentry = FindMFTAttrib(&dirattr, AT_FILENAME);
@@ -124,15 +127,18 @@ LONG OpLockParent(struct ExtFileLock *lock, struct ExtFileLock **parent)
         dh.ioh.first_cluster = dh.ioh.mft.mftrec_no * glob->data->mft_size;
         D(bug("[NTFS] %s: parent_mft = %u [%u]\n", __func__, (IPTR)(dh.ioh.first_cluster / glob->data->mft_size), (IPTR)dh.ioh.mft.mftrec_no));
         ReleaseDirHandle(&dh);
-        InitDirHandle(dh.ioh.data, &dh, TRUE);
+        if ((err = InitDirHandle(dh.ioh.data, &dh, TRUE)) != 0)
+            return err;
 
         if ((err = GetDirEntryByCluster(&dh, lock->gl->dir_cluster, &de)) != 0) {
+            ReleaseDirHandle(&dh);
             return err;
         }
     }
 
     D(bug("[NTFS] %s: found parent!\n", __func__));
 
+    ReleaseDirHandle(&dh);
     err = LockFile(&de, SHARED_LOCK, parent);
 
     return err;
@@ -158,6 +164,11 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, LONG ac
         D(bug("[NTFS] %s: NULL filelock pointer\n", __func__));
         return ERROR_REQUIRED_ARG_MISSING;
     }
+
+#if defined(NTFS_READONLY)
+    if (action == ACTION_FINDOUTPUT)
+        return ERROR_DISK_WRITE_PROTECTED;
+#endif
 
     // no filename means they're trying to open whatever dirlock is (which
     // despite the name may not actually be a dir). since there's already an
@@ -308,23 +319,29 @@ LONG OpRead(struct ExtFileLock *lock, UBYTE *data, UQUAD want, UQUAD *read)
         return ERROR_REQUIRED_ARG_MISSING;
     }
 
-    if (want == 0)
+    *read = 0;
+    if (want == 0 || lock->pos >= lock->gl->size)
         return 0;
 
-    if (want + lock->pos > lock->gl->size) {
+    if (want > lock->gl->size - lock->pos) {
         want = lock->gl->size - lock->pos;
         D(bug("[NTFS] %s: full read would take us past end-of-file, adjusted want to %u bytes\n", __func__, (IPTR)want));
     }
 
     INIT_MFTATTRIB(&dataatrr, lock->entry->entry);
     if (MapMFTAttrib (&dataatrr, lock->entry->entry, AT_DATA)) {
-        if (ReadMFTAttrib(&dataatrr, data, lock->pos, want, 0) == 0) {
+        err = ReadMFTAttrib(&dataatrr, data, lock->pos, want, 0);
+        if (err < 0)
+            err = ERROR_OBJECT_WRONG_TYPE;
+        if (err == 0) {
             *read = want;
             lock->pos = lock->pos + want;
             D(bug("[NTFS] %s: read %u bytes, new file pos is %u\n", __func__, (IPTR)want, (IPTR)lock->pos));
         }
-        FreeMFTAttrib(&dataatrr);
+    } else {
+        err = ERROR_OBJECT_WRONG_TYPE;
     }
+    FreeMFTAttrib(&dataatrr);
     return err;
 }
 

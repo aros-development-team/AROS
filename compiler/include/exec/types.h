@@ -2,7 +2,7 @@
 #define EXEC_TYPES_H
 
 /*
-    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Data typing - must be included before any other file.
@@ -255,7 +255,12 @@
 #endif
 
 #ifndef RESTRICT
-#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
+#if defined(__cplusplus)
+/* No restrict keyword in C++: use the compiler keyword (clang/GCC accept
+ * __restrict in both languages). Matches aros/system.h, which no longer
+ * defines the bare spelling in C++ mode. */
+#define RESTRICT                                __restrict
+#elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
 #define RESTRICT                                restrict
 #else
 #define RESTRICT

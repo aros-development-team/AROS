@@ -58,7 +58,7 @@ int clock_gettime(clockid_t, struct timespec *);
 /* NOTIMPL int clock_settime(clockid_t, const struct timespec *); */
 /* NOTIMPL struct tm *getdate(const char *); */
 int nanosleep(const struct timespec *, struct timespec *);
-size_t strftime_l(char *restrict, size_t, const char *restrict, const struct tm *restrict, locale_t);
+size_t strftime_l(char *__restrict, size_t, const char *__restrict, const struct tm *__restrict, locale_t);
 char *strptime(const char *, const char *, struct tm *);
 /* NOTIMPL int timer_create(clockid_t, struct sigevent *, timer_t *); */
 /* NOTIMPL int timer_delete(timer_t); */

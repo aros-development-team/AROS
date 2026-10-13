@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -68,6 +68,7 @@
                                 0,
                                 FALSE,
                                 TRUE,
+                                FALSE,
                                 FALSE,
                                 LayersBase);
     else

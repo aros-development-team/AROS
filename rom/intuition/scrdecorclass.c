@@ -64,6 +64,10 @@
 
 /**************************************************************************************************/
 
+#if defined(__mc68000__)
+/* Defined in windecorclass.c on m68k */
+VOID getintframesizes(struct IntuitionBase *IntuitionBase, WORD *xsize, WORD *ysize);
+#else
 static inline VOID getintframesizes(struct IntuitionBase *IntuitionBase, WORD *xsize, WORD *ysize)
 {
     switch (FRAME_SIZE(IntuitionBase))
@@ -82,6 +86,7 @@ static inline VOID getintframesizes(struct IntuitionBase *IntuitionBase, WORD *x
             break;
     }
 }
+#endif
 
 static void renderimageframe(struct RastPort *rp, ULONG which, ULONG state, UWORD *pens,
                              WORD left, WORD top, WORD width, WORD height,

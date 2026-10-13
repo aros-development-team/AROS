@@ -19,7 +19,8 @@ FILES := \
 	startup \
 	cxx-startup \
 	detach  \
-	elf-startup
+	elf-startup \
+	relbases
 ifneq (,$(findstring arm,$(AROS_TARGET_CPU)))
 FILES += arm-exidx-unwind
 endif

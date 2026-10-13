@@ -7,6 +7,43 @@ SECTIONS
 {
   .ext                        : { _ext_start = .;
 INCLUDE ext_objs.ld
+  /* Static-lib code used ONLY by .ext modules. The catch-all in .rom below
+   * would otherwise pull these into the main bank, where nothing calls them.
+   * Keep this list to objects with no .rom-resident caller - a .rom module
+   * calling into .ext would make the main bank depend on the extended ROM.
+   */
+  *libamiga.a:andrectrect.o(.text .text.* .rodata .rodata.*)
+  *libamiga.a:callhook.o(.text .text.* .rodata .rodata.*)
+  *libamiga.a:coercemethod.o(.text .text.* .rodata .rodata.*)
+  *libamiga.a:createport.o(.text .text.* .rodata .rodata.*)
+  *libamiga.a:domethod.o(.text .text.* .rodata .rodata.*)
+  *libamiga.a:dosupermethod.o(.text .text.* .rodata .rodata.*)
+  *libamiga.a:hookentry.o(.text .text.* .rodata .rodata.*)
+  *libamiga.a:liballocaligned.o(.text .text.* .rodata .rodata.*)
+  *libamiga.a:sprintf.o(.text .text.* .rodata .rodata.*)
+  *libamiga.a:timedelay.o(.text .text.* .rodata .rodata.*)
+  *libarossupport.a:deinitrastport.o(.text .text.* .rodata .rodata.*)
+  *libarossupport.a:freestruct.o(.text .text.* .rodata .rodata.*)
+  *libarossupport.a:readbyte.o(.text .text.* .rodata .rodata.*)
+  *libarossupport.a:readdouble.o(.text .text.* .rodata .rodata.*)
+  *libarossupport.a:readfloat.o(.text .text.* .rodata .rodata.*)
+  *libarossupport.a:readlong.o(.text .text.* .rodata .rodata.*)
+  *libarossupport.a:readstring.o(.text .text.* .rodata .rodata.*)
+  *libarossupport.a:readstruct.o(.text .text.* .rodata .rodata.*)
+  *libarossupport.a:readword.o(.text .text.* .rodata .rodata.*)
+  *libarossupport.a:rkprintf.o(.text .text.* .rodata .rodata.*)
+  *libarossupport.a:writebyte.o(.text .text.* .rodata .rodata.*)
+  *libarossupport.a:writedouble.o(.text .text.* .rodata .rodata.*)
+  *libarossupport.a:writefloat.o(.text .text.* .rodata .rodata.*)
+  *libarossupport.a:writelong.o(.text .text.* .rodata .rodata.*)
+  *libarossupport.a:writestring.o(.text .text.* .rodata .rodata.*)
+  *libarossupport.a:writestruct.o(.text .text.* .rodata .rodata.*)
+  *libarossupport.a:writeword.o(.text .text.* .rodata .rodata.*)
+  *libstdc.static.a:abs.o(.text .text.* .rodata .rodata.*)
+  *libstdc.static.a:atol.o(.text .text.* .rodata .rodata.*)
+  *libstdc.static.a:strlcat.o(.text .text.* .rodata .rodata.*)
+  *libstdc.static.a:strlcpy.o(.text .text.* .rodata .rodata.*)
+  *libstdc.static.a:strncat.o(.text .text.* .rodata .rodata.*)
                                   _ext_end = .; 
                                 } >valid
   .rom                        : { _rom_start = .;

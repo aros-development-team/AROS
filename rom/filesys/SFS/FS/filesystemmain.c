@@ -99,6 +99,7 @@ struct DefragmentStep {
 /* global variables */
 
 #include "globals.h"
+#include "sfs_security.h"
 
 #ifndef __AROS__
 struct SFSBase *globals = NULL;
@@ -747,12 +748,19 @@ void mainloop(void) {
 
 
                 globals->packet = (struct DosPacket *)msg->mn_Node.ln_Name;
+sfsSecBeginPacket(globals->packet);
 
 #ifdef STARTDEBUG
                 dreq("Received packet 0x%08lx, %ld.", globals->packet, globals->packet->dp_Type);
 #endif
 
                 switch(globals->packet->dp_Type) {
+                case ACTION_IS_SECFS:
+                    returnpacket(sfsSecIsActive() ? DOSTRUE : DOSFALSE, 0);
+                    break;
+                case ACTION_GET_SECFS_VERSION:
+                    returnpacket(secFS_API_VERSION, 0);
+                    break;
                 case ACTION_SFS_SET: {
                     struct TagItem *taglist = (struct TagItem *)globals->packet->dp_Arg1;
                     struct TagItem *tag;
@@ -1560,7 +1568,9 @@ void mainloop(void) {
                                     lock = (struct ExtFileLock *)BADDR(globals->packet->dp_Arg1);
                                     copybstrasstr((BSTR)globals->packet->dp_Arg2, globals->string, 258);
 
-                                    if((errorcode = findcreate(&lock, globals->string, globals->packet->dp_Type, 0)) != 0) {
+                                    /* multi-user: write access to the parent directory */
+                                    if((errorcode = sfsSecCheckParentPath(lock, globals->string, SFS_ACCESS_WRITE)) != 0 ||
+                                       (errorcode = findcreate(&lock, globals->string, globals->packet->dp_Type, 0)) != 0) {
                                         returnpacket(0, errorcode);
                                     } else {
                                         returnpacket((SIPTR)TOBADDR(lock), 0);
@@ -1585,7 +1595,24 @@ void mainloop(void) {
                                     if(globals->packet->dp_Type != ACTION_FH_FROM_LOCK) {
                                         copybstrasstr((BSTR)globals->packet->dp_Arg3, globals->string, 258);
                                         _DEBUG("OPEN FILE: %s (mode = %ld)\n", globals->string, globals->packet->dp_Type);
-                                        errorcode = findcreate(&lock, globals->string, globals->packet->dp_Type, 0);
+                                        /* multi-user: check access before touching anything */
+                                        if(sfsSecIsActive()) {
+                                            if(globals->packet->dp_Type == ACTION_FINDINPUT) {
+                                                errorcode = sfsSecCheckPath(lock, globals->string, SFS_ACCESS_READ);
+                                            } else if(globals->packet->dp_Type == ACTION_FINDUPDATE) {
+                                                errorcode = sfsSecCheckPath(lock, globals->string, SFS_ACCESS_WRITE);
+                                                if(errorcode == ERROR_OBJECT_NOT_FOUND)
+                                                    errorcode = sfsSecCheckParentPath(lock, globals->string, SFS_ACCESS_WRITE);
+                                            } else {
+                                                errorcode = sfsSecCheckPath(lock, globals->string, SFS_ACCESS_WRITE | SFS_ACCESS_DELETE);
+                                                if(errorcode == ERROR_OBJECT_NOT_FOUND)
+                                                    errorcode = 0;
+                                                if(errorcode == 0)
+                                                    errorcode = sfsSecCheckParentPath(lock, globals->string, SFS_ACCESS_WRITE);
+                                            }
+                                        }
+                                        if(errorcode == 0)
+                                            errorcode = findcreate(&lock, globals->string, globals->packet->dp_Type, 0);
                                     }
 
                                     if(errorcode == 0) {
@@ -1675,7 +1702,10 @@ void mainloop(void) {
 
                                 _DEBUG("ACTION_DELETE_OBJECT(0x%08lx,'%s')\n", BADDR(globals->packet->dp_Arg1), globals->string);
 
-                                do {
+                                /* multi-user: delete access to the object, write access to its directory */
+                                if((errorcode = sfsSecCheckPath(BADDR(globals->packet->dp_Arg1), globals->string, SFS_ACCESS_DELETE)) == 0)
+                                    errorcode = sfsSecCheckParentPath(BADDR(globals->packet->dp_Arg1), globals->string, SFS_ACCESS_WRITE);
+                                if(errorcode == 0) do {
                                     newtransaction();
 
                                     if((errorcode = deleteobject(BADDR(globals->packet->dp_Arg1), validatepath(globals->string), TRUE)) == 0) {
@@ -1784,7 +1814,13 @@ void mainloop(void) {
                                         lock = BADDR(globals->packet->dp_Arg1);
                                         copybstrasstr((BSTR)globals->packet->dp_Arg2, globals->string, 258);
 
-                                        if((errorcode = locateobjectfromlock(lock, validatepath(globals->string), &cb, &o)) == 0) {
+                                        /* multi-user: property access to the object, write access to both directories */
+                                        if((errorcode = sfsSecCheckPropertyPath(lock, globals->string)) == 0 &&
+                                           (errorcode = sfsSecCheckParentPath(lock, globals->string, SFS_ACCESS_WRITE)) == 0) {
+                                            copybstrasstr((BSTR)globals->packet->dp_Arg4, globals->string2, 258);
+                                            errorcode = sfsSecCheckParentPath(BADDR(globals->packet->dp_Arg3), globals->string2, SFS_ACCESS_WRITE);
+                                        }
+                                        if(errorcode == 0 && (errorcode = locateobjectfromlock(lock, validatepath(globals->string), &cb, &o)) == 0) {
                                             copybstrasstr((BSTR)globals->packet->dp_Arg4, globals->string, 258);
 
                                             settemporarylock(BE2L(o->be_objectnode));
@@ -1823,6 +1859,8 @@ void mainloop(void) {
                                         copybstrasstr((BSTR)globals->packet->dp_Arg3, globals->string, 258);
                                         copybstrasstr((BSTR)globals->packet->dp_Arg4, globals->string2, 258);
 
+                                        if((errorcode = sfsSecCheckPropertyPath(BADDR(globals->packet->dp_Arg2), globals->string)) != 0)
+                                            break;
                                         newtransaction();
                                         if((errorcode = setcomment(BADDR(globals->packet->dp_Arg2), validatepath(globals->string), globals->string2)) != 0) {
                                             deletetransaction();
@@ -1858,7 +1896,14 @@ void mainloop(void) {
                                         if((errorcode = locatelockableobject(lock, validatepath(globals->string), &cb, &o)) == 0) {
                                             NODE objectnode = BE2L(o->be_objectnode);
 
-                                            if(objectnode != ROOTNODE) {
+                                            /* multi-user: property access (SET_OWNER: only root may give away) */
+                                            if(globals->packet->dp_Type == ACTION_SET_OWNER)
+                                                errorcode = sfsSecCheckSetOwner(o, (ULONG)globals->packet->dp_Arg4);
+                                            else
+                                                errorcode = sfsSecCheckProperty(o);
+                                            if(errorcode != 0) {
+                                                /* denied */
+                                            } else if(objectnode != ROOTNODE) {
 
                                                 settemporarylock(objectnode);
 
@@ -2680,7 +2725,14 @@ void mainloop(void) {
 
                                 _XDEBUG(DEBUG_LOCK, "ACTION_LOCATE_OBJECT(0x%08lx,'%s',0x%08lx)\n", BADDR(globals->packet->dp_Arg1), globals->string, globals->packet->dp_Arg3);
 
-                                if((errorcode = lockobject((struct ExtFileLock *)BADDR(globals->packet->dp_Arg1), validatepath(globals->string), globals->packet->dp_Arg3, &lock)) != 0) {
+                                /* multi-user: locking needs read access to the object */
+                                errorcode = sfsSecCheckPath((struct ExtFileLock *)BADDR(globals->packet->dp_Arg1), globals->string, SFS_ACCESS_READ);
+                                if(errorcode == ERROR_OBJECT_NOT_FOUND)
+                                    errorcode = 0;
+                                if(errorcode != 0) {
+                                    returnpacket(0, errorcode);
+                                }
+                                else if((errorcode = lockobject((struct ExtFileLock *)BADDR(globals->packet->dp_Arg1), validatepath(globals->string), globals->packet->dp_Arg3, &lock)) != 0) {
                                     returnpacket(0, errorcode);
                                 } else {
                                     returnpacket((SIPTR)TOBADDR(lock), 0);
@@ -2928,6 +2980,7 @@ static void returnpacket(SIPTR res1, SIPTR res2) {
     struct Message *msg;
     struct MsgPort *replyport;
 
+    sfsSecEndPacket();
     globals->packet->dp_Res1 = res1; /* set return codes */
     globals->packet->dp_Res2 = res2;
 
@@ -3247,6 +3300,7 @@ LONG initdisk() {
     */
 
     changegeometry(globals->dosenvec);
+    sfsSecVolumeOnline();
 
     if(globals->volumenode == 0) {
         struct CacheBuffer *cb;

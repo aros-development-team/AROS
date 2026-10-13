@@ -459,10 +459,13 @@ D(bug("[wave.dt] %s: Finished\n", __PRETTY_FUNCTION__));
 	    vhdr->vh_Compression = 0; // none
 	    vhdr->vh_Volume = 0x10000; // max volume
     } else {
-	    LONG i;
-	    for (i=0;i<fmt->numChannels && i<MAX_CHANNELS;i++) {
-		    FreeVec(ChannelsPtr[i]);
-		    ChannelsPtr[i] = NULL;
+	    /* nothing to free if we failed before the fmt chunk was read */
+	    if (fmt) {
+		    LONG i;
+		    for (i=0;i<fmt->numChannels && i<MAX_CHANNELS;i++) {
+			    FreeVec(ChannelsPtr[i]);
+			    ChannelsPtr[i] = NULL;
+		    }
 	    }
     }
 

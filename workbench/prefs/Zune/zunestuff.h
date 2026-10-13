@@ -2,7 +2,7 @@
 #define _ZUNE_ZUNESTUFF_H
 
 /*
-    Copyright  2002-2012, The AROS Development Team. All rights reserved.
+    Copyright  2002-2026, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -15,6 +15,17 @@
 extern struct MUI_CustomClass *ClassListview_CLASS;
 struct MUI_CustomClass *create_listview_class(void);
 void delete_listview_class(void);
+
+/* prefs window class */
+extern struct MUI_CustomClass *ClassPrefsWindow_CLASS;
+struct MUI_CustomClass *create_prefswindow_class(void);
+void delete_prefswindow_class(void);
+
+void main_test_pressed(void);
+void main_revert_pressed(void);
+void main_save_pressed(void);
+void main_use_pressed(void);
+void main_cancel_pressed(void);
 
 
 struct page_entry

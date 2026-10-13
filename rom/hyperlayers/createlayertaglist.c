@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/libcall.h>
@@ -88,10 +88,17 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
       
       if (priority != ROOTPRIORITY) /* avoid endless recursion */
       {
+        /*
+         * The root layer is what gets backfilled where no other layer
+         * is. Its backfill hook is the Layer_Info's BlankHook, which
+         * InstallLayerInfoHook() may already have set before any layer
+         * existed (Intuition installs SA_BackFill right after InitLayers()).
+         */
         struct TagItem tags[] =
         {
-            {LA_Hidden, TRUE            },
-            {TAG_DONE                   }
+            {LA_Hidden      , TRUE                  },
+            {LA_BackfillHook, (IPTR)li->BlankHook   },
+            {TAG_DONE                               }
         };
 
         if (!(CreateLayerTagList(li,
@@ -204,7 +211,15 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
     l->bounds.MaxY = y1;
     l->Width  = x1 - x0 + 1;
     l->Height = y1 - y0 + 1;
-
+#if LAYERS_BACKING_SURFACE
+    if (IS_SMARTREFRESH(l))
+    {
+      /* no surface (out of memory) means per ClipRect bitmaps as before */
+      IL(l)->surface = AllocBitMap(l->Width, l->Height, bm->Depth, 0, bm);
+      IL(l)->surfw = l->Width;
+      IL(l)->surfh = l->Height;
+    }
+#endif
     LockLayer(0, l);
     
     if (NULL == (l->DamageList = NewRegion()))
@@ -380,6 +395,10 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
 failexit:
   if (l)
   {
+#if LAYERS_BACKING_SURFACE
+    if (IL(l)->surface)
+      FreeBitMap(IL(l)->surface);
+#endif
     if (l->VisibleRegion)
       DisposeRegion(l->VisibleRegion);
     if (l->DamageList)

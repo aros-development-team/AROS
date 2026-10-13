@@ -22,7 +22,8 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-package-raspi-aarch64 \
 #MM workbench-devs-networks-bwfm \
 #MM distfiles-raspi-aarch64-fw \
-#MM distfiles-raspi-aarch64-wifi-fw
+#MM distfiles-raspi-aarch64-wifi-fw \
+#MM distfiles-raspi-aarch64-bt-fw
 
 #MM kernel-package-raspi-aarch64-quick: \
 #MM linklibs-stdc-static-quick \
@@ -64,16 +65,24 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-fs-sfs-quick \
 #MM kernel-fs-ram-quick \
 #MM kernel-processor-quick \
+#MM kernel-battclock-quick \
+#MM kernel-gpio-bcm2708-quick \
 #MM kernel-mbox-bcm2708-quick \
 #MM kernel-dma-bcm2708-quick \
 #MM kernel-sdio-bcm2708-quick \
 #MM kernel-bwfm-bcm2708-quick \
+#MM kernel-pl011bt-bcm2708-quick \
+#MM kernel-h4bthci-bcm2708-quick \
+#MM kernel-brcmbt-bcm2708-quick \
 #MM kernel-hidd-bus-quick \
+#MM kernel-hidd-storage-quick \
 #MM hidd-i2c-quick \
+#MM hidd-i2c-bcm2708-quick \
 #MM kernel-hidd-gfx-quick \
 #MM hidd-vcgfx-quick \
 #MM hidd-fbgfx-quick \
 #MM kernel-sdcard-quick \
+#MM kernel-nvme-quick \
 #MM kernel-hidd-input-quick \
 #MM kernel-hidd-kbd-quick \
 #MM kernel-hidd-mouse-quick \
@@ -83,6 +92,8 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-hidd-pci-quick \
 #MM kernel-pcie-bcm2711-quick \
 #MM kernel-pcie-bcm2712-quick \
+#MM kernel-rp1-bcm2712-quick \
+#MM kernel-rp1pci-bcm2712-quick \
 #MM kernel-usb-pcixhci-quick \
 #MM kernel-usb-classes-hubss-quick
 
@@ -126,12 +137,19 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-fs-sfs \
 #MM kernel-fs-ram \
 #MM kernel-processor \
+#MM kernel-battclock \
+#MM kernel-gpio-bcm2708 \
 #MM kernel-mbox-bcm2708 \
 #MM kernel-dma-bcm2708 \
 #MM kernel-sdio-bcm2708 \
 #MM kernel-bwfm-bcm2708 \
+#MM kernel-pl011bt-bcm2708 \
+#MM kernel-h4bthci-bcm2708 \
+#MM kernel-brcmbt-bcm2708 \
 #MM kernel-sdcard \
+#MM kernel-nvme \
 #MM kernel-hidd-bus \
+#MM kernel-hidd-storage \
 #MM hidd-i2c \
 #MM hidd-i2c-bcm2708 \
 #MM hidd-vcgfx \
@@ -146,11 +164,10 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-hidd-pci \
 #MM kernel-pcie-bcm2711 \
 #MM kernel-pcie-bcm2712 \
+#MM kernel-rp1-bcm2712 \
+#MM kernel-rp1pci-bcm2712 \
 #MM kernel-usb-pcixhci \
 #MM kernel-usb-classes-hubss
-
-#MM kernel-package-raspi-aarch64-missing: \
-#MM kernel-battclock
 
 # Pin to a specific firmware release tag, not the rolling 'master' branch:
 # start.elf and fixup.dat are a version-matched pair, and fetching them from
@@ -175,6 +192,15 @@ RASPIFW_FILES     := LICENCE.broadcom bootcode.bin fixup.dat start.elf \
                      bcm2712-rpi-5-b.dtb bcm2712-rpi-500.dtb \
                      bcm2712-d-rpi-5-b.dtb bcm2712d0-rpi-5-b.dtb
 
+# The Pi 500(+) has no D0-specific dtb; the firmware patches the base dtb at
+# boot with the bcm2712d0.dtbo overlay (selected via overlay_map.dtb). D0
+# boards use a different address map (RP1 PCIe window at 0x1c_0000_0000, not
+# 0x1f_...), so without these files the bootstrap sees C1 addresses on D0
+# hardware.
+# i2c-rtc describes an i2c RTC for battclock; inert until config.txt has
+# e.g. dtoverlay=i2c-rtc,ds3231.
+RASPIFW_OVERLAYS  := overlay_map.dtb bcm2712d0.dtbo i2c-rtc.dtbo
+
 RASPIWIFIFW_BRANCH := buster
 RASPIWIFIFW_URI    := https://github.com/RPi-Distro/firmware-nonfree/blob/$(RASPIWIFIFW_BRANCH)
 # 43455 and 43456 are both chip id 0x4345 and cannot share a blob: bwfm.device
@@ -189,16 +215,18 @@ RASPIWIFIFW_FILES  := brcm/brcmfmac43455-sdio.bin brcm/brcmfmac43455-sdio.txt \
 
 PKG_LIBS      := aros partition utility oop graphics layers intuition keymap dos dos64 poseidon cgxbootpic gadtools lowlevel fd
 PKG_LIBS_ARCH := expansion
-PKG_RSRC      := openfirmware misc bootloader dosboot lddemon usbromstartup FileSystem shell shellcommands entropy mbox dma sdio bwfm
-PKG_RSRC_ARCH := processor
-PKG_DEVS      := input gameport keyboard console sdcard USBHardware/usb2otg USBHardware/pcixhci
+PKG_RSRC      := openfirmware misc bootloader dosboot lddemon usbromstartup FileSystem shell shellcommands entropy gpio mbox dma sdio bwfm pl011bt rp1
+PKG_RSRC_ARCH := processor battclock
+PKG_DEVS      := input gameport keyboard console sdcard nvme USBHardware/usb2otg USBHardware/pcixhci
 PKG_DEVS_ARCH := timer
 PKG_HANDLERS  := con ram cdrom sfs fat afs
-# vcgfx drives the BCM283x VideoCore directly and bows out on BCM2711;
-# fbgfx takes over there, painting into the framebuffer the bootstrap set up.
+# vcgfx drives the BCM283x VideoCore directly; on BCM2711 and BCM2712 only
+# its mailbox half runs, since each carries a different compositor. fbgfx is
+# the fallback, painting into the framebuffer the bootstrap set up, and takes
+# the display whenever vcgfx declines it.
 # The PCIe bridge and its xHCI controller only exist on BCM2711; both drivers
 # find nothing on a Pi 2/3 and stay out of the way.
-PKG_HIDDS     := hiddclass inputclass gfx keyboard mouse bus i2c i2c-bcm2708 vcgfx fbgfx pci pcibcm2711
+PKG_HIDDS     := hiddclass inputclass gfx keyboard mouse bus storage i2c i2c-bcm2708 vcgfx fbgfx pci pcibcm2711 pcibcm2712 pcirp1
 PKG_CLASSES   := USB/hub USB/hubss USB/massstorage
 
 %make_package mmake=kernel-package-raspi-aarch64 file=$(AROSDIR)/$(ARM_BSP) \
@@ -209,6 +237,30 @@ PKG_CLASSES   := USB/hub USB/hubss USB/massstorage
 #MM
 distfiles-raspi-aarch64-fw:
 	$(foreach file, $(RASPIFW_FILES), $(shell wget -4 -t 5 -T 15 -c "$(addprefix $(RASPIFW_URI)/, $(file))" -O "$(addprefix $(AROSDIR)/, $(file))"))
+	@$(MKDIR) $(AROSDIR)/overlays
+	@for f in $(RASPIFW_OVERLAYS) ; do \
+	    wget -4 -t 5 -T 15 -c "$(RASPIFW_URI)/overlays/$$f" -O "$(AROSDIR)/overlays/$$f" \
+	        || $(ECHO) "WARNING: could not fetch overlay $$f" ; \
+	done
+
+# The on-board Bluetooth radios run from ROM until brcmbt.fwl sends them a
+# patchram from DEVS:Firmware/brcm/: without one a BCM43430A1 answers
+# HCI_Reset but reports the placeholder address AA:AA:AA:AA:AA:AA, which
+# pairing cannot use. BCM43430A1 is the Pi 3 and Zero W part, BCM4345C0 the
+# Pi 3B+, and BCM4345C5 the Pi 400 / CM4 (brcmbt picks the file by the
+# controller's LMP subversion). LICENSE.cypress carries the redistribution
+# terms for these firmware files and is installed beside them.
+RASPIBTFW_BRANCH := bookworm
+RASPIBTFW_URI    := https://github.com/RPi-Distro/bluez-firmware/raw/$(RASPIBTFW_BRANCH)/debian/firmware/broadcom
+RASPIBTFW_FILES  := BCM43430A1.hcd BCM4345C0.hcd BCM4345C5.hcd LICENSE.cypress
+
+#MM
+distfiles-raspi-aarch64-bt-fw:
+	@$(MKDIR) $(AROSDIR)/Devs/Firmware/brcm
+	@for f in $(RASPIBTFW_FILES) ; do \
+	    wget -4 -t 5 -T 15 -c "$(RASPIBTFW_URI)/$$f" -O "$(AROSDIR)/Devs/Firmware/brcm/$$f" \
+	        || $(ECHO) "WARNING: could not fetch Bluetooth firmware $$f" ; \
+	done
 
 #MM
 distfiles-raspi-aarch64-wifi-fw:
@@ -226,9 +278,11 @@ distfiles-raspi-aarch64le-bootimg-quick: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-rasp
 
 # gpu_mem: the vc4 GL stack needs headroom in VideoCore RAM (full-res
 # framebuffer + overlay page ring + BO pools); 64 (the firmware default)
-# runs out during a full-screen GL session. 128 is the working minimum.
+# runs out during a full-screen GL session. 128 is the bare minimum, but a
+# game's texture working set alone reaches ~90 MB, so 256 is the usable
+# size. All 64-bit Pis have at least 1 GB. (Pi 5 ignores this entirely.)
 $(AROSDIR)/config.txt: $(AROSDIR)/$(ARM_BSP)
-	@printf "kernel=aros-$(AROS_TARGET_CPU)-raspi.img\nkernel_address=0x80000\ninitramfs $(ARM_BSP) 0x00800000\nenable_uart=1\narm_64bit=1\ngpu_mem=128\n" > $@
+	@printf "kernel=aros-$(AROS_TARGET_CPU)-raspi.img\nkernel_address=0x80000\ninitramfs $(ARM_BSP) 0x00800000\narm_64bit=1\ngpu_mem=256\nenable_uart=1\nframebuffer_depth=32\nframebuffer_ignore_alpha=1\n[pi5]\nenable_rp1_uart=1\npciex4_reset=0\ndtparam=nvme\nframebuffer_swap=0\n" > $@
 
 # .d depfiles are only generated for C sources, not startup64.S
 $(AROSDIR)/aros-aarch64-raspi.img: $(TARGETDIR)/core.bin.o $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $(foreach f, $(filter-out startup64,$(FILES)), $(TARGETDIR)/$(f).d)

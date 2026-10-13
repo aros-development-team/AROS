@@ -318,10 +318,10 @@ int Exec_InitServices(struct ExecBase *SysBase)
                          * ServicePort messages; measured peak stack use is
                          * a few hundred bytes, and resident-task stacks
                          * come out of chip RAM on an unexpanded Amiga.
-                         * The guru task below keeps the default: it runs
-                         * the alert display path.
+                         * The guru task below keeps 4 KB: it runs the
+                         * alert display path.
                          */
-                        TASKTAG_STACKSIZE  , 4096,
+                        TASKTAG_STACKSIZE  , 2048,
 #endif
                         TASKTAG_PC         , ServiceTask,
                         TASKTAG_TASKMSGPORT, &((struct IntExecBase *)SysBase)->ServicePort,
@@ -339,11 +339,10 @@ int Exec_InitServices(struct ExecBase *SysBase)
                   TASKTAG_PRI        , 126,
 #ifdef __mc68000
                   /*
-                   * Idle until an alert fires; the alert display path
-                   * runs well within 8 KB and the stack is chip RAM on
-                   * an unexpanded machine.
+                   * Idle until an alert fires, then it opens an Intuition
+                   * requester, which needs more than its idle peak.
                    */
-                  TASKTAG_STACKSIZE  , 8192,
+                  TASKTAG_STACKSIZE  , 4096,
 #endif
                   TASKTAG_PC         , SupervisorAlertTask,
                   TASKTAG_ARG1       , SysBase,

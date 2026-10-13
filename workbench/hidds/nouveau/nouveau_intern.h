@@ -12,6 +12,12 @@
 
 #include <nouveau.h>
 
+/* The DRM file descriptor now lives in the nouveau_drm root object */
+#define NOUVEAU_DEV_FD(dev)         (nouveau_drm(&(dev)->object)->fd)
+/* drm-aros: the caller maintains this buffer's CPU cache for the ranges it exchanges */
+extern int drmNouveauBoSelfSync(int fd, uint32_t handle);
+#define NOUVEAU_DEV_DRM_VERSION(dev) (nouveau_drm(&(dev)->object)->version)
+
 #include LC_LIBDEFS_FILE
 
 #define CLID_Hidd_Gfx_Nouveau           "hidd.gfx.nouveau"
@@ -74,6 +80,9 @@ struct HIDDNouveauBitMapData
 
     ULONG   pitch;          /* Width of single data row in bytes */
     UBYTE   bytesperpixel;  /* In bytes, how many bytes to store a pixel */
+    BOOL    gpu_dirty;      /* Engine work targeting this bo has been queued
+                               and not yet waited for. Any CPU access via the
+                               mapping must sync first (MAP_BUFFER does). */
     struct
     {
         ULONG height;           /* Height of bitmap in pixels */
@@ -165,8 +174,13 @@ struct CardData
             int, int, int,
             struct nouveau_bo *, uint32_t, int, int, int, int, int,
             struct nouveau_bo *, uint32_t, int, int, int, int, int);
+    BOOL (*ce_fill)(struct nouveau_pushbuf *, struct nouveau_object *, int,
+            struct nouveau_bo *, uint32_t, int, int, int, int, int, int,
+            uint32_t);
 
     struct nouveau_bo       *GART;                  /* Buffer in GART for upload/download of images */
+    ULONG gart_pos;         /* Ring position in the GART buffer: uploads stream
+                               without waiting until the ring wraps */
     struct SignalSemaphore  gartsemaphore;
 };
 
@@ -252,7 +266,39 @@ LIBBASETYPE
 void nouveau_compat_log(const char *fmt, ...);
 #define nvlog nouveau_compat_log
 
-#define MAP_BUFFER                  { if (!bmdata->bo->map) nouveau_bo_map(bmdata->bo, NOUVEAU_BO_RDWR, carddata->client); }
+/* Engine work is submitted lazily; a result nobody syncs for (the
+   last operation on a visible bitmap) still has to reach the display,
+   so anything queued for a displayable bitmap is kicked right away.
+   Off-screen work is carried along by the on-screen blit that consumes
+   it, or by the sync of a CPU access. */
+static inline VOID HIDDNouveauFlushDisplayable(struct CardData *carddata,
+    struct HIDDNouveauBitMapData *bmdata)
+{
+    if (!bmdata->displayable)
+        return;
+    if (carddata->pushbuf)
+        nouveau_pushbuf_kick(carddata->pushbuf);
+    if (carddata->ce_enabled && carddata->ce_pushbuf)
+        nouveau_pushbuf_kick(carddata->ce_pushbuf);
+}
+
+/* The staging buffer's CPU mapping is cached; these keep the rows a
+   transfer exchanges coherent with the engine, and only those rows. */
+#include <proto/exec.h>
+#include <exec/memory.h>
+static inline VOID nouveau_staging_to_gpu(APTR p, ULONG len)
+{
+    ULONG l = len;
+    CachePreDMA(p, &l, DMA_ReadFromRAM);
+}
+static inline VOID nouveau_staging_from_gpu(APTR p, ULONG len)
+{
+    ULONG l = len;
+    CachePostDMA(p, &l, 0);
+}
+
+#define MAP_BUFFER                  { if (!bmdata->bo->map) nouveau_bo_map(bmdata->bo, NOUVEAU_BO_RDWR, carddata->client); \
+                                      if (bmdata->gpu_dirty) { nouveau_bo_wait(bmdata->bo, NOUVEAU_BO_RDWR, carddata->client); bmdata->gpu_dirty = FALSE; } }
 
 #define IS_NOUVEAU_BM_CLASS(x)      ((x) == SD(cl)->bmclass)
 
@@ -319,6 +365,7 @@ enum DMAObjects
 
 /* nv_accel_common.c */
 BOOL HIDDNouveauAccelCommonInit(struct CardData * carddata);
+VOID HIDDNouveauAccelShutdown(struct CardData *carddata);
 BOOL HIDDNouveauAccelAllocSurface(struct CardData *carddata, ULONG width, ULONG height, UBYTE bpp, ULONG *pitch,
     struct nouveau_bo **bo);
 
@@ -370,6 +417,11 @@ VOID HIDDNouveauNVC0SetPattern(struct CardData * carddata, LONG clr0, LONG clr1,
 BOOL HIDDNouveauNVC0FillSolidRect(struct CardData * carddata,
     struct HIDDNouveauBitMapData * bmdata, LONG minX, LONG minY, LONG maxX,
     LONG maxY, ULONG drawmode, ULONG color);
+typedef VOID (*HIDDNouveauStagingFn)(APTR rows, ULONG pitch, LONG line0,
+    LONG lines, APTR ctx);
+BOOL HIDDNouveauNVC0StagingRect(struct CardData *carddata,
+    struct HIDDNouveauBitMapData *bmdata, LONG x, LONG y, LONG w, LONG h,
+    HIDDNouveauStagingFn fn, APTR ctx);
 BOOL HIDDNouveauNVC0CopySameFormat(struct CardData * carddata,
     struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
     LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
@@ -394,14 +446,14 @@ BOOL HiddNouveauAccelAPENUpload3D(
     UBYTE * srcalpha, BOOL srcinvertalpha, ULONG srcpitch, ULONG srcpenrgb,
     LONG x, LONG y, LONG width, LONG height, 
     OOP_Class *cl, OOP_Object *o);
-VOID HIDDNouveauBitMapPutAlphaImage32(struct HIDDNouveauBitMapData * bmdata,
+VOID HIDDNouveauBitMapPutAlphaImage32(APTR dstmap, ULONG dstpitch,
     APTR srcbuff, ULONG srcpitch, LONG destX, LONG destY, LONG width, LONG height);
-VOID HIDDNouveauBitMapPutAlphaImage16(struct HIDDNouveauBitMapData * bmdata,
+VOID HIDDNouveauBitMapPutAlphaImage16(APTR dstmap, ULONG dstpitch,
     APTR srcbuff, ULONG srcpitch, LONG destX, LONG destY, LONG width, LONG height);
-VOID HIDDNouveauBitMapPutAlphaTemplate32(struct HIDDNouveauBitMapData * bmdata,
+VOID HIDDNouveauBitMapPutAlphaTemplate32(APTR dstmap, ULONG dstpitch,
     OOP_Object * gc, OOP_Object * bm, BOOL invertalpha,
     UBYTE * srcalpha, ULONG srcpitch, LONG destX, LONG destY, LONG width, LONG height);
-VOID HIDDNouveauBitMapPutAlphaTemplate16(struct HIDDNouveauBitMapData * bmdata,
+VOID HIDDNouveauBitMapPutAlphaTemplate16(APTR dstmap, ULONG dstpitch,
     OOP_Object * gc, OOP_Object * bm, BOOL invertalpha,
     UBYTE * srcalpha, ULONG srcpitch, LONG destX, LONG destY, LONG width, LONG height);
 VOID HIDDNouveauBitMapDrawSolidLine(struct HIDDNouveauBitMapData * bmdata,
@@ -418,6 +470,18 @@ BOOL HiddNouveauNVAccelDownloadM2MF(
     OOP_Class *cl, OOP_Object *o);
 
 VOID HIDDNouveauShowCursor(OOP_Object * gfx, BOOL visible);
+/*
+ * Nouveau used to compose screens itself (nouveau_compositorclass.c). That
+ * compositor stacks opaque screens only and has no alpha path, so the driver
+ * now leaves composition to graphics.library's compositor: ShowViewPorts()
+ * declines, ModeProperties reports no composition capability, and the
+ * compositor shows whatever it composes through Hidd_Display::Show().
+ * Set NOUVEAU_PRIVATE_COMPOSITOR to 1 to restore the old behaviour.
+ */
+#ifndef NOUVEAU_PRIVATE_COMPOSITOR
+#define NOUVEAU_PRIVATE_COMPOSITOR 0
+#endif
+
 BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm);
 VOID HIDDNouveauSetOffsets(OOP_Object * bm, LONG newxoffset, LONG newyoffset);
 
@@ -426,6 +490,8 @@ struct pci_dev;
 extern struct pci_dev *nouveau_init_findcard(void);
 extern int nouveau_init_probe(struct pci_dev *pdev);
 extern int nouveau_init(void);
+extern void nouveau_shutdown(void);
+extern volatile int nouveau_shutting_down;
 
 /* Commom memory allocation */
 APTR HIDDNouveauAlloc(ULONG size);

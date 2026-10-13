@@ -23,6 +23,10 @@ ifneq ($(AROS_TARGET_VARIANT),)
 endif
 
 
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
 %build_module mmake=kernel-hidd \
   modname=hiddclass modtype=hidd \
   files="initcode $(CLASSES)"

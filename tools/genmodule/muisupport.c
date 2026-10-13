@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Support functions for MUI classes. Part of genmodule.
 */
@@ -21,6 +21,8 @@ void writemccinit(struct config *cfg, FILE *out, int inclass, struct classinfo *
     struct functionhead *methlistit;
     struct functionarg *arglistit;
     unsigned int lvo;
+    const char *disp;
+    char *generated_disp = NULL;
 
     fprintf
     (
@@ -53,19 +55,31 @@ void writemccinit(struct config *cfg, FILE *out, int inclass, struct classinfo *
         cl->basename
     );
 
+    /* Has the class a provided dispatcher function ? */
+    if (cl->dispatcher == NULL)
+    {
+        /* Class base names come from NUL-terminated duplicated config strings. */
+        size_t size = strlen(cl->basename) + sizeof("_Dispatcher"); /* Flawfinder: ignore */
+
+        generated_disp = malloc(size);
+        if (generated_disp == NULL)
+        {
+            fprintf(stderr, "Out of memory\n");
+            exit(20);
+        }
+        snprintf(generated_disp, size, "%s_Dispatcher", cl->basename);
+        disp = generated_disp;
+    }
+    else
+        disp = cl->dispatcher;
+
     /* When classid is specified MakeClass will be used to make the class
      * otherwise MUI_CreateCustomClass. The former use is only needed for internal
      * muimaster use. Other use is deprecated.
      */
     if (cl->classid == NULL)
     {
-        char *base, disp[256];
-
-        /* Has the class a provided dispatcher function ? */
-        if (cl->dispatcher == NULL)
-            snprintf(disp, 256, "%s_Dispatcher", cl->basename);
-        else
-            strncpy(disp, cl->dispatcher, 256);
+        char *base;
 
         /* Is this class the main class then pass the libbase to MUI_CreateCustomClass
          * otherwise pass NULL
@@ -97,14 +111,6 @@ void writemccinit(struct config *cfg, FILE *out, int inclass, struct classinfo *
     }
     else
     {
-        char disp[256];
-
-        /* Has the class a provided dispatcher function ? */
-        if (cl->dispatcher == NULL)
-            snprintf(disp, 256, "%s_Dispatcher", cl->basename);
-        else
-            strncpy(disp, cl->dispatcher, 256);
-
         if (cl->superclass != NULL)
             fprintf
             (
@@ -140,6 +146,8 @@ void writemccinit(struct config *cfg, FILE *out, int inclass, struct classinfo *
             cl->basename
         );
     }
+
+    free(generated_disp);
 
     fprintf
     (

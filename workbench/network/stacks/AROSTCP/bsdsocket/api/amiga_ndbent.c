@@ -428,6 +428,8 @@ AROS_LH1(LONG, AddDynNameServ,
     }
 
     nsn->nsn_EntSize = sizeof(nsn->nsn_Ent);
+    nsn->nsn_Family = AF_INET;
+    nsn->nsn_Owner = NULL;	/* DHCP/global nameserver, not interface-tagged */
     nsn->nsn_Ent.ns_addr.s_addr = entry->sin_addr.s_addr;
 
     if(!MiamiBase->DynNameServ_Locked) {

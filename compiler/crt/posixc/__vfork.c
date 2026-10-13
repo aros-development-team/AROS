@@ -550,11 +550,21 @@ static void parent_enterpretendchild(struct vfork_data *udata)
     __posixc_set_envlistptr(udata->child_posixcbase->PosixCBase.StdCIOBase->env_list);
 #endif
 
-    /* Remember and switch fd descriptor table */
-    udata->parent_internalpool = PosixCBase->internalpool;
-    PosixCBase->internalpool = udata->child_posixcbase->internalpool;
-    __getfdarray((APTR *)&udata->parent_fd_array, &udata->parent_numslots);
-    __setfdarraybase(udata->child_posixcbase);
+    /* Redirect this base's descriptor-table OWNER to the child base for the
+       pretend-child window, rather than mutating this base's own fd_array/
+       fd_slots/internalpool in place.
+
+       pthread workers created by this Process (e.g. git's sideband-demux
+       thread) share our descriptor table by routing every access through
+       __fd_owner(worker)->fd_array, which is *our* fd_array.  If we mutated
+       our fields in place, a concurrently-running worker would momentarily see
+       the child's partial (copied) table and dereference a NULL slot -> crash.
+       Redirecting our fd_owner leaves our own fd_array/fd_slots/internalpool
+       fields untouched (so workers keep seeing the real table) while our own
+       pretend-child accesses, which resolve through __fd_owner(us), now see the
+       child's copied table. */
+    udata->parent_fd_owner = PosixCBase->fd_owner;
+    PosixCBase->fd_owner = udata->child_posixcbase;
     
     /* Remember and switch chdir fields */
     udata->parent_cd_changed = PosixCBase->cd_changed;
@@ -602,9 +612,8 @@ static void parent_leavepretendchild(struct vfork_data *udata)
     __posixc_set_envlistptr(udata->parent_env_list);
 #endif
 
-    /* Restore parent's old fd_array */
-    PosixCBase->internalpool = udata->parent_internalpool;
-    __setfdarray(udata->parent_fd_array, udata->parent_numslots);
+    /* Restore parent's descriptor-table owner (see parent_enterpretendchild) */
+    PosixCBase->fd_owner = udata->parent_fd_owner;
 
     /* Switch to currentdir from before vfork() call */
     PosixCBase->cd_changed = udata->parent_cd_changed;

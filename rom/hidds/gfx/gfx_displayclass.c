@@ -254,9 +254,14 @@ static void cursor_SetTarget(OOP_Class *cl, OOP_Object *o, OOP_Object *bm)
 
     if (data->cursor_bm == bm)
     {
-        /* Same target - just make sure the pointer is on top of the new content */
-        data->cursor_drawn = FALSE;
-        if (data->cursor_visible)
+        /*
+         * Same target. Drawing that reaches the framebuffer goes through the
+         * CursorFB wrapper, which lifts and re-renders the pointer around it,
+         * so a pointer that is drawn is already on top of the current content.
+         * Drawing it again here would save a backup that contains the pointer
+         * itself, leaving a copy behind on the next move (issue #999).
+         */
+        if (!data->cursor_drawn && data->cursor_visible)
             cursor_Draw(cl, o);
         return;
     }
@@ -1816,7 +1821,7 @@ BOOL Display__Hidd_Display__GetMaxSpriteSize(OOP_Class *cl, OOP_Object *o, struc
     SYNOPSIS
         ULONG OOP_DoMethod(OOP_Object *obj, struct pHidd_Display_MakeViewPort *msg);
 
-        ULONG HIDD_Display_MakeViewPort(OOP_Object *gfxHidd, struct HIDD_ViewPortData *data)
+        ULONG HIDD_Display_MakeViewPort(OOP_Object *gfxHidd, struct HIDD_ViewPortData *data, struct View *view)
 
     LOCATION
         hidd.gfx.display
@@ -1827,6 +1832,7 @@ BOOL Display__Hidd_Display__GetMaxSpriteSize(OOP_Class *cl, OOP_Object *o, struc
     INPUTS
         gfxHidd - A display driver object.
         data    - a pointer to a HIDD_ViewPortData structure.
+        view    - the View which contains the ViewPort.
 
     RESULT
         The same code as used as return value for graphics.library/MakeVPort().

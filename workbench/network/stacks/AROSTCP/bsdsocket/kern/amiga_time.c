@@ -35,6 +35,7 @@
 
 #include <kern/amiga_includes.h>
 #include <kern/amiga_time.h>
+#include <kern/amiga_netdb.h>           /* netdb_defer_timer() */
 
 /*
  * include prototypes for timeout functions
@@ -62,6 +63,7 @@ static struct timerequest *timerIORequest = NULL; /* template IORequest */
 static struct timeoutRequest *ifTimer = NULL,
                                   *arpTimer = NULL,
                                    *autoipTimer = NULL,
+                                   *deferTimer = NULL,
                                     *protoSlowTimer = NULL,
                                      *protoFastTimer = NULL;
 
@@ -135,9 +137,10 @@ timer_init(void)
                     ifTimer = createTimeoutRequest(if_slowtimo, 1 / IFNET_SLOWHZ, 0);
                     arpTimer = createTimeoutRequest(arptimer, ARPT_AGE, 0);
                     autoipTimer = createTimeoutRequest(autoip_timer, 1, 0);
+                    deferTimer = createTimeoutRequest(netdb_defer_timer, NETDB_DEFER_SECS, 0);
                     protoSlowTimer = createTimeoutRequest(pfslowtimo, 0, 1000000 / PR_SLOWHZ);
                     protoFastTimer = createTimeoutRequest(pffasttimo, 0, 1000000 / PR_FASTHZ);
-                    if(protoFastTimer && protoSlowTimer && arpTimer && ifTimer && autoipTimer) {
+                    if(protoFastTimer && protoSlowTimer && arpTimer && ifTimer && autoipTimer && deferTimer) {
                         can_send_timeouts = TRUE;
                         return (ULONG)(1 << timerport->mp_SigBit);
                     }
@@ -169,6 +172,8 @@ timer_deinit(void)
         deleteTimeoutRequest(protoFastTimer);
     if(protoSlowTimer)
         deleteTimeoutRequest(protoSlowTimer);
+    if(deferTimer)
+        deleteTimeoutRequest(deferTimer);
     if(autoipTimer)
         deleteTimeoutRequest(autoipTimer);
     if(arpTimer)
@@ -206,6 +211,7 @@ timer_send(void)
         sendTimeoutRequest(ifTimer);
         sendTimeoutRequest(arpTimer);
         sendTimeoutRequest(autoipTimer);
+        sendTimeoutRequest(deferTimer);
         sendTimeoutRequest(protoSlowTimer);
         sendTimeoutRequest(protoFastTimer);
 

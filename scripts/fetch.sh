@@ -150,6 +150,7 @@ curl_http() {
     local urlsrc
     local ret
     local state=0
+    local triedorig=0
 
     local protocol
 
@@ -193,6 +194,19 @@ curl_http() {
             continue
         fi
 
+        # The HEAD probe above resolved the redirect for us, but some hosts
+        # answer it with a signed, single use URL - GitLab serves package
+        # files from object storage that way, and the signature covers the
+        # probe request, so fetching it again with GET is refused. Retry the
+        # original URL once and let curl follow the redirect itself. Only on
+        # an HTTP error (22), so a stalled transfer still resumes instead.
+        if [ $ret -eq 22 ] && [ $triedorig -eq 0 ] && [ "$curlsrc" != "$tryurl$curlext" ]; then
+            triedorig=1
+            curlsrc="$tryurl$curlext"
+            rm -f "$curloutput"
+            continue
+        fi
+
         case $state in
             0)
                 # First failure, try with older TLS
@@ -216,6 +230,22 @@ curl_http() {
     done
 }
 
+# Mirrors often answer a missing file with an HTML page and HTTP 200, which
+# curl -f accepts as a successful download. Require an archive to start with
+# the magic bytes of the format its name claims.
+valid_archive()
+{
+    local path="$1" name="$2" magic
+    magic=$(od -An -tx1 -N6 "$path" 2>/dev/null | tr -d ' \n')
+    case "$name" in
+        *.tar.gz | *.tgz | *.crate) [ "${magic:0:4}" = "1f8b" ] ;;
+        *.tar.bz2)                  [ "${magic:0:6}" = "425a68" ] ;;
+        *.tar.xz)                   [ "$magic" = "fd377a585a00" ] ;;
+        *.zip)                      [ "${magic:0:8}" = "504b0304" ] ;;
+        *)                          true ;;
+    esac
+}
+
 fetch()
 {
     local origin="$1" file="$2" destination="$3"
@@ -234,6 +264,9 @@ fetch()
         https| http)
             if ! curl_http "$origin/$file" "$destination/$file.tmp"; then
                 ret=false
+            elif ! valid_archive "$destination/$file.tmp" "$file"; then
+                echo "fetch: $origin/$file is not a valid archive, ignoring it"
+                ret=false
             else
                 mv "$destination/$file.tmp" "$destination/$file"
             fi
@@ -241,6 +274,9 @@ fetch()
             ;;
         ftp)    
             if ! curl_ftp "$origin/$file" "$destination/$file.tmp"; then
+                ret=false
+            elif ! valid_archive "$destination/$file.tmp" "$file"; then
+                echo "fetch: $origin/$file is not a valid archive, ignoring it"
                 ret=false
             else
                 mv "$destination/$file.tmp" "$destination/$file"
@@ -352,7 +388,8 @@ unpack()
         *.tar.bz2)
 	    if ! tar xfj "$archivepath/$archive"; then ret=false; fi
 	    ;;
-        *.tar.gz | *.tgz)
+        *.tar.gz | *.tgz | *.crate)
+	    # .crate is what crates.io serves: a gzipped tar
 	    if ! tar xfz "$archivepath/$archive"; then ret=false; fi
 	    ;;
         *.zip)

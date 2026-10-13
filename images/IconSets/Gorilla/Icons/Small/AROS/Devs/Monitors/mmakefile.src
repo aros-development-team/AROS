@@ -3,14 +3,14 @@
 include $(SRCDIR)/config/aros.cfg
 
 STORAGEICONS := Wrapper
-DEVSICONS    := ATI IntelGMA NVidia VMWare SAGA Z3660 ZZ9000
+DEVSICONS    := ATI AMDGPU IntelGMA NVidia VMWare SAGA Z3660 ZZ9000
 
 #
 # The icon set itself carries an icon for every monitor. What gets installed
 # beside a program follows the same platform rules the program does, or the
 # target is left with an icon that opens nothing.
 #
-INSTDEVSICONS := ATI IntelGMA NVidia
+INSTDEVSICONS := ATI AMDGPU IntelGMA NVidia
 ifeq ($(AROS_TARGET_ARCH),pc)
 INSTDEVSICONS += VMWare
 endif

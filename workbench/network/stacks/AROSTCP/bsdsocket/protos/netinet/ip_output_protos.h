@@ -20,3 +20,6 @@ int ip_ctloutput(int op,
 int ip_pcbopts(struct mbuf ** pcbopt,
                register struct mbuf * m);
 
+struct ip_moptions;
+void ip_freemoptions(register struct ip_moptions * imo);
+

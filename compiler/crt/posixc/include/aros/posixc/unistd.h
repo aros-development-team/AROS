@@ -333,7 +333,12 @@ enum {
     _SC_XOPEN_STREAMS,
     _SC_XOPEN_UNIX,
     _SC_XOPEN_UUCP,
-    _SC_XOPEN_VERSION
+    _SC_XOPEN_VERSION,
+    /* Extensions (glibc/BSD), appended so the POSIX values above keep their
+       numbers. */
+    _SC_PHYS_PAGES,
+    _SC_NPROCESSORS_CONF,
+    _SC_NPROCESSORS_ONLN
 };
 /*
     Make the sysconf() name constants visible to the preprocessor
@@ -464,6 +469,9 @@ enum {
 #define _SC_XOPEN_UNIX _SC_XOPEN_UNIX
 #define _SC_XOPEN_UUCP _SC_XOPEN_UUCP
 #define _SC_XOPEN_VERSION _SC_XOPEN_VERSION
+#define _SC_PHYS_PAGES _SC_PHYS_PAGES
+#define _SC_NPROCESSORS_CONF _SC_NPROCESSORS_CONF
+#define _SC_NPROCESSORS_ONLN _SC_NPROCESSORS_ONLN
 
 #define STDIN_FILENO    0
 #define STDOUT_FILENO   1
@@ -485,7 +493,9 @@ int chdir(const char *path);
 int close(int fd);
 int dup(int oldfd);
 int dup2(int oldfd, int newfd);
-void _exit(int) __noreturn;
+/* posixc's _exit intercepts vfork() pretend-children; the asm rename routes
+   past stdc.library's weak _Exit alias of the same name. */
+void _exit(int) __asm__("__posixc__exit") __noreturn;
 int execl(const char *path, const char *arg, ...);
 int execv(const char *path, char *const argv[]);
 int execve(const char *path, char *const argv[], char *const envp[]);
@@ -504,6 +514,10 @@ off_t lseek(int filedes, off_t offset, int whence);
 __off64_t lseek64(int filedes, __off64_t offset, int whence);
 # endif
 int pipe(int filedes[2]);
+ssize_t pread(int d, void *buf, size_t nbytes, off_t offset);
+# if defined(__off64_t_defined)
+ssize_t pread64(int d, void *buf, size_t nbytes, __off64_t offset);
+# endif
 ssize_t read(int d, void *buf, size_t nbytes);
 int rmdir(const char *path);
 int setuid(uid_t uid);
@@ -529,6 +543,9 @@ extern int optind, opterr, optopt;
 #if defined(__cplusplus) || (!defined(__STRICT_ANSI__) && \
     (!defined(_POSIX_SOURCE) || defined(_XOPEN_SOURCE)))
 int ftruncate(int fd, off_t length);
+# if defined(__off64_t_defined)
+int ftruncate64(int fd, __off64_t length);
+# endif
 int truncate(const char *path, off_t length);
 void sync(void);
 pid_t setsid(void);
@@ -537,9 +554,9 @@ int seteuid(uid_t euid);
 char *getlogin(void);
 int chown(const char *path, uid_t owner, gid_t group);
 int fchown(int fd, uid_t owner, gid_t group);
-ssize_t readlink(const char *restrict path, char *restrict buf, size_t bufsize);
+ssize_t readlink(const char *__restrict path, char *__restrict buf, size_t bufsize);
 int symlink(const char *name1, const char *name2);
-void swab(const void *restrict src, void *restrict dst, size_t len);
+void swab(const void *__restrict src, void *__restrict dst, size_t len);
 pid_t tcgetpgrp(int fd);
 #endif
 

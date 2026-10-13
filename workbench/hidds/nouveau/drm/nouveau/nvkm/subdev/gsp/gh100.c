@@ -14,23 +14,35 @@
 
 #include <nvhw/drf.h>
 #include <nvhw/ref/gh100/dev_falcon_v4.h>
+#include <subdev/timer.h>
+
+#ifndef GSP_FW_FLAGS_RECOVERY_MARGIN_PRESENT
+#define GSP_FW_FLAGS_RECOVERY_MARGIN_PRESENT (1 << 1)
+#endif
 #include <nvhw/ref/gh100/dev_riscv_pri.h>
 
 int
 gh100_gsp_fini(struct nvkm_gsp *gsp, enum nvkm_suspend_state suspend)
 {
 	struct nvkm_falcon *falcon = &gsp->falcon;
-	int ret, time = 4000;
+	struct nvkm_device *device = gsp->subdev.device;
+	int ret, time = 2000;
 
 	/* Shutdown RM. */
 	ret = r535_gsp_fini(gsp, suspend);
 	if (ret && suspend)
 		return ret;
 
-	/* Wait for RISC-V to halt. */
+	/* Wait for RISC-V to halt, servicing display supervisors so RM's
+	   teardown can make progress on this card. */
 	do {
+		u32 sv = nvkm_rd32(device, 0x611860) & 7;
 		u32 data = nvkm_falcon_rd32(falcon, falcon->addr2 + NV_PRISCV_RISCV_CPUCTL);
 
+		if (sv) {
+			nvkm_wr32(device, 0x611860, sv);
+			nvkm_wr32(device, 0x6107a8, 0x80000000);
+		}
 		if (NVVAL_GET(data, NV_PRISCV, RISCV_CPUCTL, HALTED))
 			return 0;
 
@@ -96,6 +108,10 @@ gh100_gsp_aros_dump(struct nvkm_gsp *gsp, const char *when)
 		  nvkm_rd32(device, 0x118234), nvkm_rd32(device, 0x118238),
 		  nvkm_rd32(device, 0x11823c), nvkm_rd32(device, 0x118240),
 		  nvkm_rd32(device, 0x000000), nvkm_rd32(device, 0x101000));
+	nvkm_info(subdev, "wpr2 %08x/%08x frts in %08x @ %08x, riscv %s\n",
+		  nvkm_rd32(device, 0x1fa824), nvkm_rd32(device, 0x1fa828),
+		  nvkm_rd32(device, 0x118210), nvkm_rd32(device, 0x118214),
+		  nvkm_falcon_riscv_active(&gsp->falcon) ? "active" : "halted");
 }
 
 /*
@@ -141,6 +157,61 @@ gh100_gsp_aros_watch(struct nvkm_gsp *gsp, struct pci_dev *pdev, u32 *cfg, int m
 		}
 		msleep(5);
 	}
+}
+
+/*
+ * kgspResetHw_GH100: the resource manager resets the GSP falcon before
+ * every RISC-V bootstrap. A falcon left halted by a previous instance is
+ * refused by the FMC (mailbox 0xb) until it has been through this.
+ * NV_PGSP_FALCON_ENGINE: bit 0 RESET (1 assert), bits 10:8 RESET_STATUS
+ * (0 asserted, 2 deasserted).
+ */
+static void
+gh100_gsp_reset_hw(struct nvkm_gsp *gsp)
+{
+	struct nvkm_subdev *subdev = &gsp->subdev;
+	struct nvkm_falcon *falcon = &gsp->falcon;
+	u32 before, after, plm;
+	int i;
+
+	/* kgspResetHw_GB100: the reset register sits behind a priv level
+	 * mask that GSP-RM lowers on its way out; wait for level-0 access
+	 * (NV_PGSP_FALCON_RESET_PRIV_LEVEL_MASK read bit 0, write bit 4). */
+	for (i = 0; i < 500; i++) {
+		plm = nvkm_falcon_rd32(falcon, 0x3c4);
+		if ((plm & 0x00000011) == 0x00000011)
+			break;
+		/* Target still locked behind the BAR0 decoupler: nothing in
+		 * the falcon window can be reached yet, the reset is moot. */
+		if ((plm & 0xffffff00) == 0xbadf4100) {
+			nvkm_debug(subdev, "GSP target locked, reset not available\n");
+			return;
+		}
+		usleep_range(1000, 2000);
+	}
+	if (i == 500)
+		nvkm_warn(subdev, "GSP reset PLM not lowered (%08x)\n", plm);
+
+	before = nvkm_falcon_rd32(falcon, 0x3c0);
+	nvkm_falcon_mask(falcon, 0x3c0, 0x00000001, 0x00000001);
+	for (i = 0; i < 1000; i++) {
+		if (((nvkm_falcon_rd32(falcon, 0x3c0) >> 8) & 7) == 0)
+			break;
+		udelay(1);
+	}
+	if (i == 1000)
+		nvkm_warn(subdev, "GSP falcon reset did not assert\n");
+
+	nvkm_falcon_mask(falcon, 0x3c0, 0x00000001, 0x00000000);
+	for (i = 0; i < 1000; i++) {
+		if (((nvkm_falcon_rd32(falcon, 0x3c0) >> 8) & 7) == 2)
+			break;
+		udelay(1);
+	}
+	after = nvkm_falcon_rd32(falcon, 0x3c0);
+	if (i == 1000)
+		nvkm_warn(subdev, "GSP falcon reset did not deassert\n");
+	nvkm_debug(subdev, "GSP falcon reset: plm %08x engine %08x -> %08x\n", plm, before, after);
 }
 
 static void
@@ -633,14 +704,48 @@ gh100_gsp_init(struct nvkm_gsp *gsp)
 	/*
 	 * The FMC/ACR occasionally refuses the first boot on this platform
 	 * (mailbox 0xb) although a fresh attempt a moment later succeeds;
-	 * give it a few tries before giving up.
+	 * give it a few tries before giving up. Not when WPR2 is already up:
+	 * then a GSP-RM the previous driver instance never unloaded is still
+	 * running behind it and every attempt is refused the same way.
 	 */
 	{
 		int attempt;
 
 		for (attempt = 0; attempt < 4; attempt++) {
+			u32 wpr2_hi = nvkm_rd32(device, 0x1fa828);
+
+			if (wpr2_hi) {
+				nvkm_error(subdev, "WPR2 is up (0x%08x, RISC-V %s): a previous "
+					   "instance's GSP-RM is still loaded and GSP-FMC will "
+					   "refuse to boot another - the card needs a reset it "
+					   "takes as power-on\n", wpr2_hi,
+					   nvkm_falcon_riscv_active(&gsp->falcon) ? "active" : "halted");
+				ret = -EBUSY;
+				break;
+			}
+			u32 rsvd = rsvd_size;
+
 			if (attempt) {
-				nvkm_warn(subdev, "GSP-FMC boot retry %d\n", attempt);
+				u64 margin = 0;
+
+				if (!resume) {
+					/* kgspGetWprEndMargin: a retry puts the whole
+					 * firmware region further from the end of memory,
+					 * in case the first attempt failed on the memory it
+					 * was given - one region's worth per attempt. The
+					 * FMC lays the region out from that offset, so this
+					 * is the only place it has to change. */
+					GspFwWprMeta *wpr = gsp->wpr_meta.data;
+
+					margin = 4096 + wpr->pmuReservedSize + wpr->frtsSize +
+						 wpr->sizeOfBootloader + wpr->sizeOfRadix3Elf +
+						 wpr->gspFwHeapSize + wpr->nonWprHeapSize;
+					margin = ALIGN(margin * attempt, 0x200000);
+					wpr->flags |= GSP_FW_FLAGS_RECOVERY_MARGIN_PRESENT;
+					rsvd += margin;
+				}
+				nvkm_warn(subdev, "GSP-FMC boot retry %d, firmware region moved %llu MiB down\n",
+					  attempt, (unsigned long long)(margin >> 20));
 				/* the mailbox keeps the last verdict; clear it so a
 				   fresh answer (or none) is what we wait for */
 				nvkm_falcon_wr32(&gsp->falcon, NV_PFALCON_FALCON_MAILBOX0, 0);
@@ -648,7 +753,8 @@ gh100_gsp_init(struct nvkm_gsp *gsp)
 				msleep(1000);
 				compat_dma_sync_all_coherent();
 			}
-			ret = nvkm_fsp_boot_gsp_fmc(device->fsp, gsp->fmc.args.addr, rsvd_size, resume,
+			gh100_gsp_reset_hw(gsp);
+			ret = nvkm_fsp_boot_gsp_fmc(device->fsp, gsp->fmc.args.addr, rsvd, resume,
 						    gsp->fmc.fw.addr, gsp->fmc.hash, gsp->fmc.pkey, gsp->fmc.sig);
 			if (ret) {
 				nvkm_error(subdev, "GSP-FMC boot request failed: %d\n", ret);
@@ -669,17 +775,20 @@ gh100_gsp_init(struct nvkm_gsp *gsp)
 				continue;
 			}
 			if (mbox0) {
-				nvkm_error(subdev, "GSP-FMC boot failed (mbox: 0x%08x)\n", mbox0);
+				nvkm_error(subdev, "GSP-FMC boot failed (mbox: 0x%08x, mbox1 0x%08x, "
+					   "hwcfg2 0x%08x, reset plm 0x%08x, GPU up %llu ms)\n", mbox0,
+					   nvkm_falcon_rd32(&gsp->falcon, NV_PFALCON_FALCON_MAILBOX1),
+					   nvkm_falcon_rd32(&gsp->falcon, NV_PFALCON_FALCON_HWCFG2),
+					   nvkm_falcon_rd32(&gsp->falcon, 0x3c4),
+					   device->timer ? (unsigned long long)(nvkm_timer_read(device->timer) / 1000000) : 0ULL);
 				ret = -EIO;
 				continue;
 			}
 			ret = 0;
 			break;
 		}
-		if (ret) {
-			gh100_gsp_aros_dumpfiles(gsp);
+		if (ret)
 			return ret;
-		}
 	}
 #else
 	ret = nvkm_fsp_boot_gsp_fmc(device->fsp, gsp->fmc.args.addr, rsvd_size, resume,

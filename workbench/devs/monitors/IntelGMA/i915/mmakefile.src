@@ -6,7 +6,37 @@ CUR_MESADIR = src/gallium
 CUR_GALLIUMDIR = drivers/i915
 GALLIUM_PATH = $(top_srcdir)/$(CUR_MESADIR)
 
+ifneq ($(wildcard $(GALLIUM_PATH)/$(CUR_GALLIUMDIR)/Makefile.sources),)
 include $(GALLIUM_PATH)/$(CUR_GALLIUMDIR)/Makefile.sources
+else
+# Mesa >= 26 ships no Makefile.sources; this mirrors files_i915 in meson.build.
+C_SOURCES := \
+             i915_blit.c \
+             i915_clear.c \
+             i915_context.c \
+             i915_debug.c \
+             i915_debug_fp.c \
+             i915_flush.c \
+             i915_fpc_emit.c \
+             i915_fpc_optimize.c \
+             i915_fpc_translate.c \
+             i915_prim_emit.c \
+             i915_prim_vbuf.c \
+             i915_query.c \
+             i915_resource_buffer.c \
+             i915_resource.c \
+             i915_resource_texture.c \
+             i915_screen.c \
+             i915_state.c \
+             i915_state_derived.c \
+             i915_state_dynamic.c \
+             i915_state_emit.c \
+             i915_state_fpc.c \
+             i915_state_immediate.c \
+             i915_state_sampler.c \
+             i915_state_static.c \
+             i915_surface.c
+endif
 
 I915_C_SOURCES := $(filter %.c, $(C_SOURCES))
 
@@ -17,11 +47,22 @@ USER_INCLUDES := \
             $(USER_INCLUDES) \
             -iquote $(GALLIUM_PATH)/drivers \
             -iquote $(GALLIUM_PATH)/include \
-            -iquote $(GALLIUM_PATH)/auxiliary
+            -iquote $(GALLIUM_PATH)/auxiliary \
+            -iquote $(top_builddir)/src \
+            -iquote $(top_builddir)/src/compiler \
+            -iquote $(top_builddir)/src/compiler/glsl \
+            -iquote $(top_builddir)/src/compiler/nir \
+            -iquote $(top_builddir)/src/util \
+            -iquote $(top_builddir)/src/util/format \
+            -iquote $(top_srcdir)/src/compiler \
+            -iquote $(top_srcdir)/src/compiler/nir \
+            -iquote $(GENDIR)/workbench/libs/mesa/src/compiler/nir
 
 # disable necessary warnings
 NOWARN_FLAGS := -Wno-unused-value -Wno-unused-variable -Wno-strict-aliasing
 USER_CFLAGS += $(NOWARN_FLAGS)
+
+#MM intelgma-linklibs-gallium_i915 : mesa3dgl-linklibs
 
 %build_linklib mmake=intelgma-linklibs-gallium_i915 libname=gallium_i915 libdir=$(top_libdir) objdir=$(top_builddir)/$(CUR_MESADIR)/$(CUR_GALLIUMDIR) files="$(I915_SOURCES)"
 

@@ -14,18 +14,30 @@ PKG_FILE_DATALENGTH_FORMAT = '!I'
 def readHeader( file ):
     'readHeader( file ) -> version'
     
+    headerSize = struct.calcsize( PKG_HEADER_FORMAT )
+    headerData = file.read( headerSize )
+    if len( headerData ) != headerSize:
+        raise ValueError('Truncated package header')
     header = struct.unpack( 
         PKG_HEADER_FORMAT, 
-        file.read( struct.calcsize( PKG_HEADER_FORMAT ) ) 
+        headerData
     )
+    if header[:3] != (b'P', b'K', b'G'):
+        raise ValueError('Invalid package magic')
     version = header[3]
+    if version != PKG_VERSION:
+        raise ValueError('Unsupported package version: %d' % version)
     
+    sizeLength = struct.calcsize( PKG_FILE_DATALENGTH_FORMAT )
+    sizeData = file.read( sizeLength )
+    if len( sizeData ) != sizeLength:
+        raise ValueError('Truncated package size')
     size = struct.unpack(
         PKG_FILE_DATALENGTH_FORMAT,
-        file.read( struct.calcsize( PKG_FILE_DATALENGTH_FORMAT ) )
-    )
+        sizeData
+    )[0]
     
-    return version
+    return (version, size)
     
 
 def writeHeader( file, version ):
@@ -46,23 +58,46 @@ def writeHeader( file, version ):
     )
     
 
-def readFile( file ):
-    'readFile( file ) -> (path, data)'
+def readFile( file, packageEnd=None ):
+    'readFile( file, packageEnd=None ) -> (path, data)'
       
+    pathLengthSize = struct.calcsize( PKG_FILE_PATHLENGTH_FORMAT )
+    if packageEnd is not None and file.tell() + pathLengthSize > packageEnd:
+        raise ValueError('Package member exceeds declared package size')
+    pathLengthData = file.read( pathLengthSize )
+    if len( pathLengthData ) != pathLengthSize:
+        raise ValueError('Truncated package path length')
     pathLength = struct.unpack(
         PKG_FILE_PATHLENGTH_FORMAT,
-        file.read( struct.calcsize( PKG_FILE_PATHLENGTH_FORMAT ) )
+        pathLengthData
     )
     
-    path = file.read( pathLength[0] )
-    file.read(1)
-    
+    pathSize = pathLength[0] + 1
+    if packageEnd is not None and file.tell() + pathSize > packageEnd:
+        raise ValueError('Package member exceeds declared package size')
+    pathData = file.read( pathSize )
+    if len( pathData ) != pathSize:
+        raise ValueError('Truncated package path')
+    if pathData[-1:] != b'\0':
+        raise ValueError('Package path is not NUL-terminated')
+    path = pathData.split( b'\0', 1 )[0]
+
+    dataLengthSize = struct.calcsize( PKG_FILE_DATALENGTH_FORMAT )
+    if packageEnd is not None and file.tell() + dataLengthSize > packageEnd:
+        raise ValueError('Package member exceeds declared package size')
+    dataLengthData = file.read( dataLengthSize )
+    if len( dataLengthData ) != dataLengthSize:
+        raise ValueError('Truncated package data length')
     dataLength = struct.unpack(
         PKG_FILE_DATALENGTH_FORMAT,
-        file.read( struct.calcsize( PKG_FILE_DATALENGTH_FORMAT ) )
+        dataLengthData
     )
     
+    if packageEnd is not None and file.tell() + dataLength[0] > packageEnd:
+        raise ValueError('Package member exceeds declared package size')
     data = file.read( dataLength[0] )
+    if len( data ) != dataLength[0]:
+        raise ValueError('Truncated package member data')
     
     return (path, data)
     
@@ -78,9 +113,11 @@ def listFiles( path='.' ):
     'listFiles( path ) -> []'
     
     files = []
-    for name in os.listdir( path ):
+    for name in sorted(os.listdir( path )):
         name = os.path.join( path, name )
         
+        if os.path.islink( name ):
+            raise ValueError('Package input is a symbolic link: %s' % name)
         if os.path.isdir( name ):
             files.extend( listFiles( name ) )
         else:
@@ -98,69 +135,102 @@ def unpack( source, destination ):
     inputSize = os.path.getsize( source )
     input     = open( source, 'rb' )
     
-    oldwd = os.getcwd()
-    os.chdir( destination )
-    
-    version = readHeader( input )
-    
-    while input.tell() < inputSize:
-        (path, data) = readFile( input )
-        
-        print('« %s (%d bytes)' % (path, len( data )))
-        
-        directory = os.path.dirname( path )
-        if directory != '' and not os.path.exists( directory ):
-            os.makedirs( directory )
-            
-        output = open( path, 'wb' )
-        output.write( data )
-        output.close()
-        
-    os.chdir( oldwd )
+    try:
+        oldwd = os.getcwd()
+        try:
+            os.chdir( destination )
+            destinationRoot = os.path.realpath( os.getcwdb() )
+
+            (version, packageSize) = readHeader( input )
+            if packageSize < input.tell():
+                raise ValueError('Declared package size is smaller than package header')
+            if packageSize > inputSize:
+                raise ValueError('Declared package size exceeds input size')
+
+            while input.tell() < packageSize:
+                (path, data) = readFile( input, packageSize )
+
+                print('« %s (%d bytes)' % (path, len( data )))
+
+                target = os.path.realpath( os.path.abspath( path ) )
+                try:
+                    contained = os.path.commonpath((destinationRoot, target)) == destinationRoot
+                except ValueError:
+                    contained = False
+                if os.path.isabs( path ) or not contained:
+                    raise ValueError('Package member path escapes destination: %r' % path)
+
+                directory = os.path.dirname( path )
+                if directory and not os.path.exists( directory ):
+                    os.makedirs( directory )
+
+                output = open( path, 'wb' )
+                try:
+                    output.write( data )
+                finally:
+                    output.close()
+
+        finally:
+            os.chdir( oldwd )
+    finally:
+        input.close()
     
 
 def pack( destination, files ):
     'pack( source, destination ) -> None'
-    
-    output = open( destination, 'wb' )
 
-    oldwd = os.getcwd()
-    if os.path.isdir( files[0] ):
-        os.chdir( files[0] )
-        files = files[1:]
-    
-    if len(files) == 0:
-    	files = listFiles()   
+    outputFlags = os.O_RDWR | os.O_CREAT | getattr( os, 'O_BINARY', 0 )
+    output = os.fdopen( os.open( destination, outputFlags, 0o666 ), 'r+b' )
+    try:
 
-    writeHeader( output, PKG_VERSION )
-    
-    for path in files:
-        print('» %s (%d bytes)' % (path, os.path.getsize( path )))
-        
-        input = open( path, 'rb' )
-        # Record the name the file is known by, never the path it
-        # happened to be built at - an absolute path is a property of
-        # the build machine, not of the package.
-        name = os.path.basename( path ) if os.path.isabs( path ) else path
-        writeFile( output, name, input.read() )
-        input.close()
-    
-    os.chdir( oldwd )
-    
-    output.seek( struct.calcsize( PKG_HEADER_FORMAT ) )
-    st = os.fstat( output.fileno() )
-    
-    output.write(
-        struct.pack(
-            PKG_FILE_DATALENGTH_FORMAT,
-            st[ST_SIZE]
+        oldwd = os.getcwd()
+        try:
+            if files and os.path.isdir( files[0] ):
+                if os.path.islink( files[0] ):
+                    raise ValueError('Package input is a symbolic link: %s' % files[0])
+                os.chdir( files[0] )
+                files = files[1:]
+
+            if len(files) == 0:
+                outputStat = os.fstat( output.fileno() )
+                files = [path for path in listFiles()
+                         if not os.path.samestat( os.stat( path ), outputStat )]
+
+            output.seek( 0 )
+            output.truncate( 0 )
+            writeHeader( output, PKG_VERSION )
+
+            for path in files:
+                print('» %s (%d bytes)' % (path, os.path.getsize( path )))
+
+                input = open( path, 'rb' )
+                try:
+                    # Record the name the file is known by, never the path it
+                    # happened to be built at - an absolute path is a property of
+                    # the build machine, not of the package.
+                    name = os.path.basename( path ) if os.path.isabs( path ) else path
+                    writeFile( output, name, input.read() )
+                finally:
+                    input.close()
+
+        finally:
+            os.chdir( oldwd )
+
+        output.seek( struct.calcsize( PKG_HEADER_FORMAT ) )
+        st = os.fstat( output.fileno() )
+
+        output.write(
+            struct.pack(
+                PKG_FILE_DATALENGTH_FORMAT,
+                st[ST_SIZE]
+            )
         )
-    )
-    
-    
-    output.close()
-    
-    
+
+
+    finally:
+        output.close()
+
+
 if __name__ == '__main__':
     mode        = sys.argv[1]
     

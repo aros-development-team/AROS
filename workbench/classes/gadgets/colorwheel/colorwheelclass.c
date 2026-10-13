@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     AROS colorwheel gadget.
 */
@@ -124,6 +124,8 @@ IPTR ColorWheel__OM_SET(Class *cl, Object *o, struct opSet *msg)
         gradval = 0xFFFF - gradval;
         
         old_brightness = ((ULONG)gradval) * 0x10000 + (ULONG)gradval;
+        data->hsb.cw_Brightness = old_brightness;
+        ConvertHSBToRGB(&data->hsb, &data->rgb);
     }
     
     tstate = msg->ops_AttrList;
@@ -386,13 +388,15 @@ VOID ColorWheel__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     struct Hook                 *hook = NULL;
     struct IBox                 gbox;
     LONG                        redraw = msg->gpr_Redraw;
+    BOOL                        disabled = (EG(o)->Flags & GFLG_DISABLED) != 0;
     
     EnterFunc(bug("ColorWheel::Render()\n"));
 
     GetGadgetIBox(o, msg->gpr_GInfo, &gbox);
     data->dri = dri;
     
-    if (!data->bm || (data->bmwidth != gbox.Width) || (data->bmheight != gbox.Height))
+    if (!data->bm || (data->bmwidth != gbox.Width) || (data->bmheight != gbox.Height) ||
+        (data->disabled_drawn != disabled))
     {
         redraw = GREDRAW_REDRAW;
     }
@@ -413,10 +417,13 @@ VOID ColorWheel__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
             
     } /* switch (redraw method) */
     
-    if (EG(o)->Flags & GFLG_DISABLED)
+    if (data->wheeldrawn && disabled)
     {
         DrawDisabledPattern(data, rp, &gbox);
     }
+
+    if (data->wheeldrawn)
+        data->disabled_drawn = disabled;
 
     if( data->backfill ) InstallLayerHook( rp->Layer, hook );
                 
@@ -429,6 +436,9 @@ VOID ColorWheel__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
     struct ColorWheelData       *data = INST_DATA(cl, o);
     
+    if (data->frame)
+        DisposeObject(data->frame);
+
     if (data->rgblinebuffer)
         FreeVec(data->rgblinebuffer);
 

@@ -123,8 +123,15 @@ LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
             for (i = 0; i < cluster_offset - ioh->cluster_offset; i++)
             {
                 /* Get the next one */
+                ioh->sb->fat_io_error = FALSE;
                 ioh->cur_cluster =
                     GET_NEXT_CLUSTER(ioh->sb, ioh->cur_cluster);
+
+                if (ioh->sb->fat_io_error)
+                {
+                    RESET_HANDLE(ioh);
+                    return ERROR_UNKNOWN;
+                }
 
                 /* If it was free (shouldn't happen) or we hit the end of the
                  * chain, the requested data isn't here */
@@ -296,7 +303,11 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
                 }
 
                 /* Mark the cluster used */
-                AllocCluster(ioh->sb, cluster);
+                if (!AllocCluster(ioh->sb, cluster))
+                {
+                    RESET_HANDLE(ioh);
+                    return ERROR_UNKNOWN;
+                }
 
                 /* Now setup the ioh */
                 ioh->first_cluster = cluster;
@@ -318,8 +329,16 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
             for (i = 0; i < cluster_offset - ioh->cluster_offset; i++)
             {
                 /* Get the next one */
-                ULONG next_cluster =
-                    GET_NEXT_CLUSTER(ioh->sb, ioh->cur_cluster);
+                ULONG next_cluster;
+
+                ioh->sb->fat_io_error = FALSE;
+                next_cluster = GET_NEXT_CLUSTER(ioh->sb, ioh->cur_cluster);
+
+                if (ioh->sb->fat_io_error)
+                {
+                    RESET_HANDLE(ioh);
+                    return ERROR_UNKNOWN;
+                }
 
                 /* If it was free (shouldn't happen) or we hit the end of the
                  * chain, there is no next cluster, so we have to allocate a
@@ -336,12 +355,21 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
                         return err;
                     }
 
-                    /* Link the current cluster to the new one */
-                    SET_NEXT_CLUSTER(ioh->sb, ioh->cur_cluster,
-                        next_cluster);
-
-                    /* And mark the new one used */
-                    AllocCluster(ioh->sb, next_cluster);
+                    /* Reserve before linking it into the existing chain. */
+                    if (!AllocCluster(ioh->sb, next_cluster))
+                    {
+                        RESET_HANDLE(ioh);
+                        return ERROR_UNKNOWN;
+                    }
+                    if (!SET_NEXT_CLUSTER(ioh->sb, ioh->cur_cluster, next_cluster))
+                    {
+                        /* A mirror failure can have changed the first FAT. */
+                        if (SET_NEXT_CLUSTER(ioh->sb, ioh->cur_cluster,
+                            ioh->sb->eoc_mark))
+                            FreeCluster(ioh->sb, next_cluster);
+                        RESET_HANDLE(ioh);
+                        return ERROR_UNKNOWN;
+                    }
 
                     ioh->cur_cluster = next_cluster;
 

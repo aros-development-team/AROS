@@ -7,6 +7,7 @@
 #include <aros/macros.h>
 
 #include <hardware/bcm2708.h>
+#include <stdint.h>
 #undef ARM_PERIIOBASE
 
 #include <hardware/videocore.h>
@@ -20,6 +21,7 @@
 #undef ARM_PERIIOBASE
 #define ARM_PERIIOBASE (__arm_periiobase)
 extern uintptr_t __arm_periiobase;
+extern uintptr_t __vcmb_base;
 
 #define D(x) /* x */
 
@@ -27,7 +29,7 @@ extern uintptr_t __arm_periiobase;
 void *vcfb_base;
 unsigned int vcfb_width, vcfb_height, vcfb_depth, vcfb_pitch;
 
-int vcfb_init(void)
+int vcfb_init(int emulated)
 {
     unsigned int fb_width, fb_height, fb_depth, fb_pitch;
     unsigned int count;
@@ -49,13 +51,21 @@ int vcfb_init(void)
         vcmb_msg[6] = 0;
         vcmb_msg[7] = 0;                        // terminate tag
 
-        vcmb_write(VCMB_BASE, VCMB_PROPCHAN, (void *)vcmb_msg);
-        vcmb_msg = vcmb_read(VCMB_BASE, VCMB_PROPCHAN);
+        vcmb_write(__vcmb_base, VCMB_PROPCHAN, (void *)vcmb_msg);
+        vcmb_msg = vcmb_read(__vcmb_base, VCMB_PROPCHAN);
 
         if (!vcmb_msg || (vcmb_msg[1] != AROS_LONG2LE(VCTAG_RESP)))
             return 0;
 
         if (((fb_width = AROS_LE2LONG(vcmb_msg[5])) == 0) || ((fb_height = AROS_LE2LONG(vcmb_msg[6])) == 0))
+        {
+            fb_width = 1024;
+            fb_height = 768;
+        }
+
+        /* An emulator reports its model's default mode; unlike the Pi 5 it
+         * honours SETRES, so ask for 1024x768 there. */
+        if (emulated)
         {
             fb_width = 1024;
             fb_height = 768;
@@ -104,8 +114,8 @@ int vcfb_init(void)
 
         vcmb_msg[0] = AROS_LONG2LE((c << 2));                 // fill in request size
 
-        vcmb_write(VCMB_BASE, VCMB_PROPCHAN, (void *)vcmb_msg);
-        vcmb_msg = vcmb_read(VCMB_BASE, VCMB_PROPCHAN);
+        vcmb_write(__vcmb_base, VCMB_PROPCHAN, (void *)vcmb_msg);
+        vcmb_msg = vcmb_read(__vcmb_base, VCMB_PROPCHAN);
 
         if (!vcmb_msg || (vcmb_msg[1] != AROS_LONG2LE(VCTAG_RESP)))
             return 0;
@@ -142,6 +152,18 @@ int vcfb_init(void)
             D(kprintf("[VCFB] Buffer uncached\n"));
         }
         scr_FrameBuffer = (void*)((intptr_t)scr_FrameBuffer & ~0xc0000000);
+
+        /* The firmware echoes back what it actually configured, in place.
+         * Never trust the values we asked for: on the Pi 5 the surface is
+         * locked to the firmware's mode and SETRES acknowledges without
+         * reprogramming. TESTRES echoes the current mode, TESTVRES refuses
+         * a taller virtual surface and GETEDID is unimplemented. */
+        if (AROS_LE2LONG(vcmb_msg[5]))
+            fb_width  = AROS_LE2LONG(vcmb_msg[5]);
+        if (AROS_LE2LONG(vcmb_msg[6]))
+            fb_height = AROS_LE2LONG(vcmb_msg[6]);
+        if (AROS_LE2LONG(vcmb_msg[15]))
+            fb_depth  = AROS_LE2LONG(vcmb_msg[15]);
     }
 
     /* query the framebuffer pitch */
@@ -154,8 +176,8 @@ int vcfb_init(void)
         vcmb_msg[5] = 0;
         vcmb_msg[6] = 0;                        // terminate tag
 
-        vcmb_write(VCMB_BASE, VCMB_PROPCHAN, (void *)vcmb_msg);
-        vcmb_msg = vcmb_read(VCMB_BASE, VCMB_PROPCHAN);
+        vcmb_write(__vcmb_base, VCMB_PROPCHAN, (void *)vcmb_msg);
+        vcmb_msg = vcmb_read(__vcmb_base, VCMB_PROPCHAN);
 
         if (!vcmb_msg || (vcmb_msg[4] != AROS_LONG2LE(VCTAG_RESP + 4)))
             return 0;
@@ -173,6 +195,12 @@ int vcfb_init(void)
     vcfb_height = fb_height;
     vcfb_depth  = fb_depth;
     vcfb_pitch  = fb_pitch;
+
+    /* The firmware may place the fb outside both the reported VC region
+     * and the RAM ranges (Pi 5: carveout at 0x3f800000) - map it
+     * explicitly instead of relying on query_vmem()'s coverage.
+     * Normal-NC: framebuffer wants write-combining, not Device. */
+    mmu_map_section(vcfb_base, vcfb_base, vcfb_pitch * vcfb_height, 1, 0, 3, 0);
 
     fb_Init(fb_width, fb_height, fb_depth, fb_pitch);
 

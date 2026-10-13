@@ -68,7 +68,7 @@ endif
     files="$(addprefix $(ARCHSRCDIR)/,$(FILES))" linklibname="png"
 
 #MM- linklibs: linklibs-png-nostdio
-#MM linklibs-png-nostdio : workbench-libs-png-generated
+#MM linklibs-png-nostdio : workbench-libs-png-generated workbench-libs-z-includes-copy
 #MM workbench-libs-png-generated : libpng-fetch
 
 USER_CPPFLAGS += -DPNG_NO_STDIO -DPNG_NO_WRITE_TIME

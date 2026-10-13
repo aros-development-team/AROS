@@ -9,6 +9,7 @@
     NAME */
 
 #include "nvdisk_intern.h"
+#include <nvdisk_arch.h>
 #include <dos/dos.h>
 #include <proto/dos.h>
 #include <libraries/nonvolatile.h>
@@ -60,6 +61,9 @@ AROS_LH1(BOOL, MemInfoNVD,
 
 {
     AROS_LIBFUNC_INIT
+
+    if (NVDisk_ArchActive(GPB(nvdBase)))
+        return NVDisk_ArchInfo(GPB(nvdBase), nvInfo);
 
     struct InfoData info;
 

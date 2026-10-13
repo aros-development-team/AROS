@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Internal GadTools arrow class.
 */
@@ -27,6 +27,9 @@
 #if 0
 #define SDEBUG 1
 #define DEBUG 1
+#endif
+#ifndef DEBUG
+#define DEBUG 0
 #endif
 #include <aros/debug.h>
 

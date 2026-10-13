@@ -68,6 +68,9 @@ struct LowLevelBase
     APTR                        ll_EasyRequestOrig;
     LONG                        ll_SysReqNest;
 
+    struct Task                 *ll_InputOwner;
+    BYTE                        ll_InputNest;
+
     struct llArchData           ll_Arch;
 };
 
@@ -80,4 +83,3 @@ VOID llSysReq_Cleanup(struct LowLevelBase *LowLevelBase);
  */
 
 #endif /* __LOWLEVEL_INTERN_H__  */
-

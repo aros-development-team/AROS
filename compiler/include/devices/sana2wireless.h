@@ -34,6 +34,7 @@
 #define S2INFO_Band           (TAG_USER + 13)
 #define S2INFO_DefaultKeyNo   (TAG_USER + 14)
 #define S2INFO_Passphrase     (TAG_USER + 15)  /* PSK passphrase (driver-side 4-way) */
+#define S2INFO_Disassociate   (TAG_USER + 16)  /* S2_SETOPTIONS: leave the network */
 
 /* Wireless Commands */
 

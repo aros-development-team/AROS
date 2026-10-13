@@ -20,8 +20,6 @@ VOID X11BM_ExposeFB(APTR data, WORD x, WORD y, WORD width, WORD height);
 
 /****************************************************************************************/
 
-#define BETTER_REPEAT_HANDLING  1
-
 #define XTASK_NAME "x11hidd task"
 
 /* We need to have highest priority for this task, because we
@@ -45,11 +43,8 @@ VOID X11BM_ExposeFB(APTR data, WORD x, WORD y, WORD width, WORD height);
 
 struct KeyReleaseInfo
 {
-    BOOL f12_down;
-#if BETTER_REPEAT_HANDLING
     XEvent keyrelease_event;
     BOOL keyrelease_pending;
-#endif
 };
 
 /****************************************************************************************/
@@ -69,12 +64,39 @@ AROS_INTH1(x11VBlank, struct Task *, task)
 
 /****************************************************************************************/
 
+static VOID x11task_cancel_keys(struct x11_staticdata *xsd, struct KeyReleaseInfo *kri)
+{
+    XEvent event = {0};
+    event.type = FocusOut;
+    kri->keyrelease_pending = FALSE;
+    xsd->keyboard_window = None;
+    ObtainSemaphoreShared(&xsd->sema);
+    if (xsd->kbdhidd)
+        Hidd_Kbd_X11_HandleEvent(xsd->kbdhidd, &event);
+    ReleaseSemaphore(&xsd->sema);
+}
+
+static BOOL x11task_owns_focus(struct x11_staticdata *xsd, struct MinList *windows)
+{
+    Window focus;
+    int revert;
+    struct xwinnode *node;
+    LOCK_X11
+    XCALL(XGetInputFocus, xsd->display, &focus, &revert);
+    UNLOCK_X11
+    ForeachNode(windows, node)
+    {
+        if (focus == node->xwindow || focus == node->masterxwindow)
+            return TRUE;
+    }
+    return FALSE;
+}
+
 static VOID x11task_process_xevent(struct x11_staticdata *xsd, struct MinList *xwindowlist, XEvent *event,
         struct KeyReleaseInfo *kri, struct MinList *nmsg_list)
 {
     struct xwinnode *node;
     BOOL window_found = FALSE;
-    KeySym ks;
 
     ForeachNode(xwindowlist, node)
     {
@@ -167,69 +189,55 @@ static VOID x11task_process_xevent(struct x11_staticdata *xsd, struct MinList *x
             break;
 
         case FocusOut:
-#if !BETTER_REPEAT_HANDLING
-            LOCK_X11
-            XCALL(XAutoRepeatOn, xsd->display);
-            UNLOCK_X11
-#endif
+            /* An inner-to-outer/other AROS window transfer is not departure.
+             * A grab can divert keys without changing XGetInputFocus().
+             */
+            if (event->xfocus.detail != NotifyInferior &&
+                (event->xfocus.mode == NotifyGrab ||
+                 !x11task_owns_focus(xsd, xwindowlist)))
+                x11task_cancel_keys(xsd, kri);
             break;
 
         case FocusIn:
-            /* Call the user supplied callback func, if supplied */
-            if (NULL != xsd->activecallback)
-            {
+            /* XGetInputFocus may already see the final destination when a
+             * departure and return were queued together. A normal nonlinear
+             * re-entry to the same window still ends the old key lifetime.
+             */
+            if (xsd->keyboard_window == node->xwindow &&
+                event->xfocus.mode == NotifyNormal &&
+                event->xfocus.detail == NotifyNonlinear)
+                x11task_cancel_keys(xsd, kri);
+            xsd->keyboard_window = node->xwindow;
+            ObtainSemaphoreShared(&xsd->sema);
+            if (xsd->kbdhidd)
+                Hidd_Kbd_X11_HandleEvent(xsd->kbdhidd, event);
+            ReleaseSemaphore(&xsd->sema);
+            if (xsd->activecallback)
                 xsd->activecallback(xsd->callbackdata, NULL);
-            }
             break;
 
         case KeyPress:
             xsd->x_time = event->xkey.time;
-
-            LOCK_X11
-#if !BETTER_REPEAT_HANDLING
-            XCALL(XAutoRepeatOff, XSD(cl)->display);
-#endif
-            ks = XCALL(XLookupKeysym, (XKeyEvent *)event, 0);
-            if (ks == XK_F12)
-            {
-                kri->f12_down = TRUE;
-            }
-            else if (kri->f12_down && ((ks == XK_Q) || (ks == XK_q)))
-            {
-                CCALL(raise, SIGINT);
-            }
-            UNLOCK_X11
-
             ObtainSemaphoreShared(&xsd->sema);
             if (xsd->kbdhidd)
-            {
                 Hidd_Kbd_X11_HandleEvent(xsd->kbdhidd, event);
-            }
             ReleaseSemaphore(&xsd->sema);
             break;
 
         case KeyRelease:
             xsd->x_time = event->xkey.time;
-
-#if BETTER_REPEAT_HANDLING
-            kri->keyrelease_pending = TRUE;
-            kri->keyrelease_event = *event;
-#else
-            LOCK_X11
-            if (XCALL(XLookupKeysym, event, 0) == XK_F12)
+            if (xsd->detectable_repeat)
             {
-                kri->f12_down = FALSE;
+                ObtainSemaphoreShared(&xsd->sema);
+                if (xsd->kbdhidd)
+                    Hidd_Kbd_X11_HandleEvent(xsd->kbdhidd, event);
+                ReleaseSemaphore(&xsd->sema);
             }
-            XCALL(XAutoRepeatOn, XSD(cl)->display);
-            UNLOCK_X11
-
-            ObtainSemaphoreShared( &xsd->sema );
-            if (xsd->kbdhidd)
+            else
             {
-                Hidd_Kbd_X11_HandleEvent(xsd->kbdhidd, event);
+                kri->keyrelease_pending = TRUE;
+                kri->keyrelease_event = *event;
             }
-            ReleaseSemaphore( &xsd->sema );
-#endif
             break;
 
         case EnterNotify:
@@ -291,17 +299,8 @@ static VOID x11task_process_xevent(struct x11_staticdata *xsd, struct MinList *x
 
 static VOID x11task_keyrelease_pre(struct x11_staticdata *xsd, struct KeyReleaseInfo *kri)
 {
-#if BETTER_REPEAT_HANDLING
     if (kri->keyrelease_pending)
     {
-        LOCK_X11
-        if (XCALL(XLookupKeysym, (XKeyEvent *)&kri->keyrelease_event, 0)
-                == XK_F12)
-        {
-            kri->f12_down = FALSE;
-        }
-        UNLOCK_X11
-
         ObtainSemaphoreShared(&xsd->sema);
         if (xsd->kbdhidd)
         {
@@ -310,14 +309,12 @@ static VOID x11task_keyrelease_pre(struct x11_staticdata *xsd, struct KeyRelease
         ReleaseSemaphore(&xsd->sema);
         kri->keyrelease_pending = FALSE;
     }
-#endif
 }
 
 /****************************************************************************************/
 
 static BOOL x11task_keyrelease_post(struct x11_staticdata *xsd, struct KeyReleaseInfo *kri, XEvent *event)
 {
-#if BETTER_REPEAT_HANDLING
     if (kri->keyrelease_pending)
     {
         BOOL repeated_key = FALSE;
@@ -339,16 +336,8 @@ static BOOL x11task_keyrelease_post(struct x11_staticdata *xsd, struct KeyReleas
         if (repeated_key)
         {
             /* Drop both previous keyrelease and this keypress event. */
-            TRUE;
+            return TRUE;
         }
-
-        LOCK_X11
-        if (XCALL(XLookupKeysym, (XKeyEvent *)&kri->keyrelease_event, 0)
-                == XK_F12)
-        {
-            kri->f12_down = FALSE;
-        }
-        UNLOCK_X11
 
         ObtainSemaphoreShared(&xsd->sema);
         if (xsd->kbdhidd)
@@ -357,7 +346,6 @@ static BOOL x11task_keyrelease_post(struct x11_staticdata *xsd, struct KeyReleas
         }
         ReleaseSemaphore(&xsd->sema);
     }
-#endif
     return FALSE;
 }
 
@@ -370,7 +358,7 @@ VOID x11task_entry(struct x11task_params *xtpparam)
     struct MinList xwindowlist;
     ULONG hostclipboardmask;
     struct KeyReleaseInfo kri;
-    kri.f12_down = FALSE;
+    kri.keyrelease_pending = FALSE;
 
     /* copy needed parameter's because they are allocated on the parent's stack */
 
@@ -407,6 +395,15 @@ VOID x11task_entry(struct x11task_params *xtpparam)
 
     AddIntServer(INTB_VERTB, &myint);
 
+    if (x11_func.XkbSetDetectableAutoRepeat)
+    {
+        int supported = FALSE;
+        LOCK_X11
+        xsd->detectable_repeat = XCALL(XkbSetDetectableAutoRepeat, xsd->display,
+            TRUE, &supported) && supported;
+        UNLOCK_X11
+    }
+
     Signal(task_Parent, xtpparam->ok_signal);
 
     /* N.B : do not attempt to use xtpparam after this point! */
@@ -416,9 +413,7 @@ VOID x11task_entry(struct x11task_params *xtpparam)
     for (;;)
     {
         XEvent event;
-#if BETTER_REPEAT_HANDLING
         kri.keyrelease_pending = FALSE;
-#endif
         struct notify_msg *nmsg;
         ULONG sigs;
 
@@ -563,6 +558,8 @@ VOID x11task_entry(struct x11task_params *xtpparam)
                         {
                             if (node->xwindow == nmsg->xwindow)
                             {
+                                if (xsd->keyboard_window == node->xwindow)
+                                    x11task_cancel_keys(xsd, &kri);
                                 Remove((struct Node *) node);
                                 FreeMem(node, sizeof(struct xwinnode));
                             }
@@ -628,6 +625,15 @@ VOID x11task_entry(struct x11task_params *xtpparam)
             if (x11task_keyrelease_post(xsd, &kri, &event))
                 continue;
 
+            if (event.type == KeymapNotify)
+            {
+                ObtainSemaphoreShared(&xsd->sema);
+                if (xsd->kbdhidd)
+                    Hidd_Kbd_X11_HandleEvent(xsd->kbdhidd, &event);
+                ReleaseSemaphore(&xsd->sema);
+                continue;
+            }
+
             if (event.type == MappingNotify)
             {
                 LOCK_X11
@@ -670,6 +676,9 @@ VOID x11task_entry(struct x11task_params *xtpparam)
         } /* while (events from X)  */
 
     } /* Forever */
+
+    x11task_cancel_keys(xsd, &kri);
+    RemIntServer(INTB_VERTB, &myint);
 
     /* Also try to free window node list ? */
     if (xsd->x11task_notify_port)

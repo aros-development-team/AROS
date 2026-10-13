@@ -200,7 +200,11 @@ BOOL UpdateDisk (globaldata *g)
 
 		g->uip = TRUE;
 		updateok = TRUE;
-		UpdateDataCache (g);            /* flush DiskRead DiskWrite cache */
+		if (UpdateDataCache(g))           /* data must reach disk before metadata */
+		{
+			updateok = FALSE;
+			goto update_root;
+		}
 
 #if VERSION23
 		/* make sure rootblockextension is reallocated */
@@ -258,21 +262,26 @@ BOOL UpdateDisk (globaldata *g)
 		updateok &= UpdateList ((struct cachedblock *)HeadOf(&volume->bmindexblks), g);
 
 		/* update root (MUST be done last) */
+	update_root:
 		if (updateok)
 		{
-			WriteRootBlocks((UBYTE *)volume->rootblk, volume->rootblk->rblkcluster, ROOTBLOCK, g);
+			ULONG root_error = WriteRootBlocks((UBYTE *)volume->rootblk,
+				volume->rootblk->rblkcluster, ROOTBLOCK, g);
+			/* A failed write or update may still have put this generation's
+			 * root on disk. Never reuse its datestamp for the next attempt. */
 			volume->rootblk->datestamp++;
-			volume->rootblockchangeflag = FALSE;
-
-			/* make sure update is really done */
-			UpdateAndMotorOff(g);
-			success = TRUE;
+			if (!root_error && !UpdateAndMotorOff(g))
+			{
+				volume->rootblockchangeflag = FALSE;
+				success = TRUE;
+			}
+			else
+				success = FALSE;
 		}
 		else
-		{
-			ErrorMsg (AFS_ERROR_UPDATE_FAIL, NULL, g);
 			success = FALSE;
-		}
+		if (!success)
+			ErrorMsg (AFS_ERROR_UPDATE_FAIL, NULL, g);
 
 		g->uip = FALSE;
 
@@ -280,13 +289,13 @@ BOOL UpdateDisk (globaldata *g)
 	}
 	else
 	{
-		if (volume && g->dirty && g->softprotect)
-			ErrorMsg (AFS_ERROR_UPDATE_FAIL, NULL, g);
-
+		/* The failure that set softprotect already reported the error.
+		 * Keep pending changes without reopening a requester on each timer tick. */
 		success = FALSE;
 	}
 
-	g->dirty = FALSE;
+	if (success)
+		g->dirty = FALSE;
 
 	EXIT("UpdateDisk");
 	return success;
@@ -456,14 +465,14 @@ static BOOL UpdateList (struct cachedblock *blk, globaldata *g)
 	{
 		if (blk->changeflag)
 		{
-			FreeReservedBlock (blk->oldblocknr, g);
 			blk2 = (struct cbitmapblock *)blk;
 			blk2->blk.datestamp = blk2->volume->rootblk->datestamp;
-			blk->oldblocknr = 0;
 			error = WriteReservedBlocks ((UBYTE *)&blk->data, RESCLUSTER, blk->blocknr, g);
 			if (error)
 				goto update_error;
 
+			FreeReservedBlock (blk->oldblocknr, g);
+			blk->oldblocknr = 0;
 			blk->changeflag = FALSE;
 		}
 
@@ -486,14 +495,14 @@ static BOOL UpdateDirtyBlock (struct cachedblock *blk, globaldata *g)
 
 	if (blk->changeflag)
 	{
-		FreeReservedBlock (blk->oldblocknr, g);
-		blk->oldblocknr = 0;
 		error = WriteReservedBlocks ((UBYTE *)&blk->data, RESCLUSTER, blk->blocknr, g);
 		if (error)
 		{
 			ErrorMsg (AFS_ERROR_UPDATE_FAIL, NULL, g);
 			return FALSE;
 		}
+		FreeReservedBlock (blk->oldblocknr, g);
+		blk->oldblocknr = 0;
 	}
 
 	blk->changeflag = FALSE;

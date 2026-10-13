@@ -14,6 +14,7 @@
 #define IID_Hidd_VMWareSVGA  "hidd.gfx.vmwaresvga"
 #define CLID_Hidd_VMWareSVGA "hidd.gfx.vmwaresvga"
 #define CLID_Hidd_Display_VMWareSVGA "hidd.display.vmwaresvga"
+#define CLID_Hidd_Gallium_VMWareSVGA  "hidd.gallium.vmwaresvga"
 
 struct VMWareSVGAHiddData
 {
@@ -24,4 +25,4 @@ struct VMWareSVGADisplayData
 {
 };
 
-#endif /* VESAGFX_HIDD_H */
+#endif /* VMWARESVGA_HIDD_H */

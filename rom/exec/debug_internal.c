@@ -110,7 +110,7 @@ void InternalDebug(void *stack)
             ColdReboot();
         /* Restart command */
         else if (strcmp(comm, "RS") == 0 && strcmp(data, "FFFFFFFF") == 0)
-            ShutdownA(SD_ACTION_COLDREBOOT);
+            ShutdownA(SD_ACTION_REBOOT);
         /* Forbid command */
         else if (strcmp(comm, "FO") == 0)
             Forbid();

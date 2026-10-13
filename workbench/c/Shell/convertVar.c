@@ -18,7 +18,7 @@ LONG convertVar(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted)
     LONG bra = (*s == '{' ? 2 : 0);
     TEXT varName[257];
     TEXT varValue[256];
-    LONG i, len;
+    LONG i, len, error;
     struct Process *me;
     APTR orig_WindowPtr;
 
@@ -66,16 +66,19 @@ LONG convertVar(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted)
     if ((bra != 1) && (i > 0) && ((len = GetVar(varName, varValue, 256, LV_VAR)) != -1))
     {
         D(bug("[Shell] found var: %s = %s\n", varName, varValue));
-        bufferAppend(varValue, len, out, ss);
+        error = bufferAppend(varValue, len, out, ss);
     }
     else
     {
         D(bug("[Shell] var not found: %s\n", varName));
-        bufferAppend(p, ++i + bra, out, ss);
+        error = bufferAppend(p, ++i + bra, out, ss);
     }
 
     /* Restore original pr_WindowPtr */
     me->pr_WindowPtr = orig_WindowPtr;
+
+    if (error)
+        return error;
 
     in->cur = s - in->buf;
     return 0;

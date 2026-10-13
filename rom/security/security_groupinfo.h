@@ -1,23 +1,19 @@
-/************************************************************
-* MultiUser - MultiUser Task/File Support System				*
-* ---------------------------------------------------------	*
-* Group Information Management										*
-* ---------------------------------------------------------	*
-* © Copyright 1993-1994 Geert Uytterhoeven						*
-* All Rights Reserved.													*
-************************************************************/
-
-
-#include <libraries/mufs.h>
-
 /*
- *		Private Group Information Structure
- *
- *		This is a sub class of the Public Group Information Structure
- */
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 
-struct secPrivGroupInfo {
-	struct secGroupInfo Pub;					/* The public part */
-	STRPTR Pattern;                     /* Pattern matching temp */
-	ULONG Count;								/* last info */
+    Desc: security.library private group information
+*/
+#ifndef _SECURITY_GROUPINFO_H
+#define _SECURITY_GROUPINFO_H
+
+#include <libraries/security.h>
+
+/* Private Group Information: a sub class of the public structure */
+struct secPrivGroupInfo
+{
+    struct secGroupInfo Pub;            /* The public part          */
+    STRPTR              Pattern;        /* Pattern matching temp    */
+    ULONG               Count;          /* last info                */
 };
+
+#endif /* _SECURITY_GROUPINFO_H */

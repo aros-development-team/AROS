@@ -52,6 +52,12 @@ static AROS_UFH3(APTR, AllocFunc,
 {
     AROS_USERFUNC_INIT
 
+#ifdef __mc68000
+    /* Keep transient loader allocations and command hunks together at the
+     * high end, preserving a large low-address block for legacy programs. */
+    flags |= MEMF_REVERSE;
+#endif
+
     /*
      * Executable hunks must live in executable memory. On a W^X host the general
      * AllocMem() pool is read/write only, so route executable allocations to
@@ -164,6 +170,10 @@ static AROS_UFH3(void, FreeFunc,
         segs = InternalLoadSeg(file, BNULL, FunctionArray, NULL);
         /* We cache the IoErr(), since Close() will alter it */
         err = IoErr();
+
+        /* Multi-user: remember the owner of setuid executables */
+        if (segs && SECURITY_ACTIVE)
+            secRegisterSegment(segs, file);
 
         D(if (segs == BNULL)
             bug("[LoadSeg] Failed to load '%s'\n", name));

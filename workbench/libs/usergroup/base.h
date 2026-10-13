@@ -31,6 +31,7 @@ extern struct ExecBase *SysBase;
 #endif
 
 #include <errno.h>
+#include <libraries/security.h>
 #include <utmp.h>
 
 #ifndef MAXGRP
@@ -85,7 +86,21 @@ struct UserGroupBase {
     char                *u_members[MAXGRP];
 #endif
     char                cryptresult[1+4+4+11+1];
+
+    /* security.library forwarding (usergroup_security.c) */
+    struct Library      *ugSecBase;
+    BOOL                 ugSecChecked;      /* known not to be resident */
+    BOOL                 ugSecPwIter, ugSecGrIter;
+    struct secUserInfo  *ugSecUI;           /* lookup / getpwent() cursor */
+    struct secUserInfo  *ugSecUI2;          /* member scans, login name */
+    struct secGroupInfo *ugSecGI;
+    struct passwd        ugSecPw;
+    struct group         ugSecGr;
+    char                *ugSecGrMem[NGROUPS + 1];
+    char                 ugSecGrMemBuf[NGROUPS][32];   /* secUSERIDSIZE */
 };
+
+#include "usergroup_security.h"
 
 /*
  * errno handling

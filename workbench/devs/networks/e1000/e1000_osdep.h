@@ -165,44 +165,46 @@
 #define DEBUGOUT7 DEBUGOUT3
 #endif
 
+/* Register access goes through the mmio_* accessors from <asm/io.h>: on x86
+ * they are pinned to scalar moves, which a plain volatile dereference is not
+ * (see the note there). */
 static inline ULONG readl(u8 __iomem *base)
 {
-    return *((ULONG volatile *)base);
+    return mmio_inl(base);
 }
 static inline void writel(ULONG val, u8 __iomem *base)
 {
-    *((ULONG volatile *)base) = val;
+    mmio_outl(val, base);
 }
 
 static inline UBYTE MMIO_R8(u8 __iomem *base)
 {
-    return *((UBYTE volatile *)base);
+    return mmio_inb(base);
 }
 static inline UWORD MMIO_R16(u8 __iomem *base)
 {
-    return *((UWORD volatile *)base);
+    return mmio_inw(base);
 }
 static inline ULONG MMIO_R32(u8 __iomem *base)
 {
-    return *((ULONG volatile *)base);
+    return mmio_inl(base);
 }
 
 static inline void MMIO_W8(APTR addr, UBYTE val8)
 {
-    *((volatile UBYTE *)(addr)) = (val8);
+    mmio_outb(val8, addr);
 
     MMIO_R8(addr);
 }
 static inline void MMIO_W16(APTR addr, UWORD val16)
 {
-    *((volatile UWORD *)(addr)) = (val16);
+    mmio_outw(val16, addr);
 
     MMIO_R16(addr);
-    
 }
 static inline void MMIO_W32(APTR addr, ULONG val32)
 {
-    *((volatile ULONG *)(addr)) = (val32);
+    mmio_outl(val32, addr);
 
     MMIO_R32(addr);
 }

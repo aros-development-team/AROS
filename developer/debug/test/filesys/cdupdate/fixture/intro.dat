@@ -1,0 +1,3 @@
+AROS CD update-open regression fixture. This is ordinary test data,
+not executable game content. Opening it for update on read-only media
+must permit reading and seeking, while writes and truncation fail.

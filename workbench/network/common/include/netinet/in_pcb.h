@@ -65,6 +65,12 @@ struct inpcb {
 	struct	ip inp_ip;		/* header prototype; should have more */
 	struct	mbuf *inp_options;	/* IP options */
 	struct	ip_moptions *inp_moptions; /* IP multicast options */
+	/* SO_BINDTODEVICE: datagrams leave by, and are accepted from, this
+	 * interface only (NULL = not bound).  Must stay ahead of the INET6
+	 * members: not every file that uses this structure is built with
+	 * INET6 defined, and those that are not must still agree on where
+	 * this field is. */
+	struct	ifnet *inp_boundif;
 #if INET6
 	struct	ip6_moptions *in6p_moptions; /* IPv6 multicast options */
 	int	in6p_hops;		/* IPv6 unicast hop limit (-1=default) */

@@ -69,7 +69,7 @@ kernel-opensbi-riscv64: $(OSGENDIR)/boot/core.elf
 
 #MM- kernel-opensbi-riscv64-quick: kernel-kernel-kobj-quick kernel-exec-kobj-quick kernel-task-kobj-quick kernel-opensbi-riscv64
 
-ELFCORELIBS := -L$(AROS_LIB) -larossupport -lautoinit -llibinit -lstdc.static
+ELFCORELIBS := -L$(AROS_LIB) -larossupport -lautoinit -lamiga -llibinit -lstdc.static
 ifeq ("$(AROS_TOOLCHAIN)","gnu")
 ELFCORELIBS += -L$(CROSSTOOLSDIR)/lib/gcc/$(AROS_TARGET_CPU)-aros/$(TARGET_GCC_VER) -lgcc
 endif

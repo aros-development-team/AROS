@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2006, The AROS Development Team.
+    Copyright (C) 2002-2026, The AROS Development Team.
     All rights reserved.
 
 */
@@ -25,13 +25,14 @@
 
 Object *app;
 
-#define ARG_TEMPLATE    "LOCAL/S"
+#define ARG_TEMPLATE    "LOCAL/S,SYSTEM/S"
 #define ARG_LOCAL       0
-#define TOTAL_ARGS      1
+#define ARG_SYSTEM      1
+#define TOTAL_ARGS      2
 
 int main(void)
 {
-    IPTR                    argarray[TOTAL_ARGS] = { (IPTR)NULL };
+    IPTR                    argarray[TOTAL_ARGS] = { (IPTR)NULL, (IPTR)NULL };
     struct RDArgs           *args=NULL;
     Object                  *LoginWin=NULL;
     char                    *userName=NULL, *userPass=NULL, *loginMeth=NULL, *string=NULL;
@@ -51,6 +52,7 @@ int main(void)
     {
         app = ApplicationObject,
             SubWindow, LoginWin = LoginWindowObject,
+                MUIA_LoginWindow_SystemMode, argarray[ARG_SYSTEM] ? TRUE : FALSE,
             End,
             End;
     }
@@ -80,24 +82,30 @@ int main(void)
 
         set(LoginWin,MUIA_Window_Open,TRUE);
 
-        while (DoMethod(app, MUIM_Application_NewInput, (IPTR) &sigs) != MUIV_Application_ReturnID_Quit)
+        LONG id;
+
+        while ((id = DoMethod(app, MUIM_Application_NewInput, (IPTR) &sigs)) != LWA_RV_CANCEL)
         {
+            if (id == LWA_RV_OK)
+                break;
+            if (id == LWA_RV_SHUTDOWN || id == LWA_RV_REBOOT)
+            {
+                Printf("%s requested\n", id == LWA_RV_REBOOT ? "Reboot" : "Shutdown");
+                id = LWA_RV_CANCEL;
+                break;
+            }
             if (sigs)
             {
-                if (sigs == LWA_RV_OK)
-                    break;
-
                 sigs = Wait(sigs | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
-                
-                if (sigs & SIGBREAKF_CTRL_C)
+                if (sigs & (SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D))
+                {
+                    id = LWA_RV_CANCEL;
                     break;
-                if (sigs & SIGBREAKF_CTRL_D)
-                    break;
-
+                }
             }
         }
 
-        if (sigs == LWA_RV_OK)
+        if (id == LWA_RV_OK)
         {
             get(LoginWin, MUIA_LoginWindow_UserName, &string);
             userName = StrDup(string);

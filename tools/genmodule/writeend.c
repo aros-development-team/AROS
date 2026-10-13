@@ -8,9 +8,9 @@
 void writeend(struct config *cfg)
 {
     FILE *out;
-    char line[256];
+    char *line;
 
-    snprintf(line, 255, "%s/%s_end.c", cfg->gendir, cfg->modulename);
+    line = make_output_path("%s/%s_end.c", cfg->gendir, cfg->modulename);
     out = fopen(line, "w");
     if (out==NULL)
     {
@@ -45,4 +45,5 @@ void writeend(struct config *cfg)
             "__section(\".text.moduleend\") const char GM_UNIQUENAME(End)[] = { 0 };\n"
     );
     fclose(out);
+    free(line);
 }

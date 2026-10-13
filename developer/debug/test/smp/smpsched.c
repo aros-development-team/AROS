@@ -271,6 +271,7 @@ static int TestCrossSetPri(void)
     struct SchedWorker w;
     struct Task *t;
     ULONG before, after;
+    BYTE selfpri;
     int i;
 
     bug("[smpsched] phase 3: cross-core SetTaskPri while running...\n");
@@ -282,6 +283,11 @@ static int TestCrossSetPri(void)
         bug("[smpsched] phase 3: INVALID (worker did not start)\n");
         return -1;
     }
+
+    /* Stay above every priority we hand out. The worker never blocks, so
+     * if it outranks us on our own core it starves us for good - nothing
+     * migrates us to an idle one. */
+    selfpri = SetTaskPri(FindTask(NULL), 10);
 
     for (i = 0; i < SETPRI_LOOPS; i++)
     {
@@ -295,6 +301,7 @@ static int TestCrossSetPri(void)
     after = w.w_Count;
 
     w.w_Stop = 1;
+    SetTaskPri(FindTask(NULL), selfpri);
     if (!wait_flag(&w.w_Done, WAIT_TICKS))
     {
         bug("[smpsched] phase 3: *** FAIL *** worker lost after SetTaskPri storm\n");

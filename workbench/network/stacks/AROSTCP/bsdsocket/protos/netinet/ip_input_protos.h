@@ -6,15 +6,15 @@ void ip_init(void);
 
 void ipintr(void);
 
-struct ip * ip_reass(register struct ipasfrag * ip,
-                     register struct ipq * fp);
+struct ip * ip_reass(register struct ip * ip,
+                     register struct ipq * fp, int mff);
 
 void ip_freef(struct ipq * fp);
 
-void ip_enq(register struct ipasfrag * p,
-	    register struct ipasfrag * prev);
+void ip_enq(register struct ipqent * p,
+	    register struct ipqent * prev);
 
-void ip_deq(register struct ipasfrag * p);
+void ip_deq(register struct ipqent * p);
 
 void ip_slowtimo(void);
 

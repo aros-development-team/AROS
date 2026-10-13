@@ -61,7 +61,7 @@ void AddToFSResource(ULONG dostype, BPTR seglist, struct ExecBase *SysBase)
 			fse->fse_Version = ((LONG)VERNUM) << 16 | REVNUM;
 			fse->fse_PatchFlags = 0x180; // SegList and GlobalVec
 			fse->fse_SegList = seglist;
-			fse->fse_GlobalVec = -1;
+			fse->fse_GlobalVec = (BPTR)(SIPTR)-1;
 
 			AddHead(&FileSysResBase->fsr_FileSysEntries,&fse->fse_Node);
 		}

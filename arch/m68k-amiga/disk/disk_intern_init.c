@@ -19,6 +19,9 @@
 
 #define HAVE_NO_DF0_DISK_ID 1
 
+#define AKIKO_ID        0xb80002
+#define AKIKO_ID_MAGIC  0xcafe
+
 #define DEBUG 0
 #include <aros/debug.h>
 
@@ -43,7 +46,12 @@ void readunitid_internal (struct DiscResource *DiskBase, LONG unitNum)
                         id |= 1;
                 ciab->ciaprb |= unitmask; // SELX
         }
-        if (unitNum == 0 && HAVE_NO_DF0_DISK_ID && id == DRT_EMPTY)
+        /* A standard Amiga DF0: does not return an ID stream, so an empty
+         * response normally means a legacy drive.  A CD32 has no onboard
+         * floppy drive at all; Akiko lets us distinguish that machine from
+         * a legacy drive and avoid starting trackdisk.device needlessly. */
+        if (unitNum == 0 && HAVE_NO_DF0_DISK_ID && id == DRT_EMPTY &&
+            *((volatile UWORD *)AKIKO_ID) != AKIKO_ID_MAGIC)
                 id = DRT_AMIGA;
         DiskBase->dr_UnitID[unitNum] = id;
 }

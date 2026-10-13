@@ -482,6 +482,18 @@ LONG nOpenBindingCfgWindow(struct NepEthBase *nh, struct NepClassEth *ncp)
 #undef ps
 #define ps ncp->ncp_Base
 
+/* Which RX slot a completed pipe belongs to, or -1. */
+static int nRxSlot(struct NepClassEth *ncp, struct PsdPipe *pp)
+{
+    int i;
+
+    for (i = 0; i < LAN78XX_RX_QUEUE; i++) {
+        if (ncp->ncp_EPInPipe[i] == pp)
+            return (i);
+    }
+    return (-1);
+}
+
 AROS_UFH0(void, nEthTask)
 {
     struct NepClassEth *ncp;
@@ -493,10 +505,17 @@ AROS_UFH0(void, nEthTask)
     BOOL timerPending = FALSE;
     ULONG sigmask;
     ULONG sigs;
+    int rxbudget;
+    BOOL drainmore = FALSE;
+    BOOL idlepace = FALSE;
 
     AROS_USERFUNC_INIT
 
     ncp = nAllocEth();
+    if (!ncp) {
+        /* Nobody signals the opener here; say so rather than hang. */
+        KPrintF("[LAN78XX] nAllocEth failed - unit will not come up\n");
+    }
     if (ncp) {
         lan78xx_signal_ready(ncp);
 
@@ -528,20 +547,34 @@ AROS_UFH0(void, nEthTask)
             sigmask |= (1L << timerPort->mp_SigBit);
 
         do {
-            /* Keep the RX pipe armed whenever we're online. */
-            if ((ncp->ncp_StateFlags & DDF_ONLINE) && ncp->ncp_LinkUp && ncp->ncp_ReadPending == NULL &&
-                ncp->ncp_EPInPipe) {
-                ncp->ncp_ReadPending = ncp->ncp_ReadBuffer[ncp->ncp_ReadBufNum];
-                psdSendPipe(ncp->ncp_EPInPipe, ncp->ncp_ReadPending, LAN78XX_RX_BUFFER_SIZE);
-                ncp->ncp_ReadBufNum ^= 1;
+            /* Keep every slot armed so the chip fills one while we parse another. */
+            if ((ncp->ncp_StateFlags & DDF_ONLINE) && ncp->ncp_LinkUp) {
+                int slot;
+
+                for (slot = 0; slot < LAN78XX_RX_QUEUE; slot++) {
+                    if (!ncp->ncp_ReadArmed[slot] && ncp->ncp_EPInPipe[slot]) {
+                        ncp->ncp_ReadArmed[slot] = TRUE;
+                        psdSendPipe(ncp->ncp_EPInPipe[slot], ncp->ncp_ReadBuffer[slot],
+                                    LAN78XX_RX_BUFFER_SIZE);
+                    }
+                }
             }
 
+            /*
+             * Bound the drain: rearming inside the loop lets an idle
+             * chip feed it indefinitely, starving the TX drain below.
+             */
+            rxbudget = 16;
             while ((pp = (struct PsdPipe *)GetMsg(ncp->ncp_TaskMsgPort))) {
+                int rxslot;
+                if (--rxbudget <= 0)
+                    drainmore = TRUE;
                 if (pp == ncp->ncp_EPOutPipe) {
                     ioreq = ncp->ncp_WritePending;
                     ncp->ncp_WritePending = NULL;
                     if (ioreq) {
                         LONG txerr = psdGetPipeError(pp);
+                        if (txerr)
                         if (txerr) {
                             KPRINTF(5, ("lan78xx: TX err=%ld\n", (LONG)txerr));
                             nDoEvent(ncp, S2EVENT_ERROR | S2EVENT_TX);
@@ -559,32 +592,24 @@ AROS_UFH0(void, nEthTask)
                         }
                         ReplyMsg((struct Message *)ioreq);
                     }
-                } else if (pp == ncp->ncp_EPInPipe) {
-                    UBYTE *pktptr = ncp->ncp_ReadPending;
+                } else if ((rxslot = nRxSlot(ncp, pp)) >= 0) {
+                    UBYTE *pktptr = ncp->ncp_ReadBuffer[rxslot];
                     LONG rxerr = psdGetPipeError(pp);
                     ULONG actual = psdGetPipeActual(pp);
 
-                    /* Idle-rate gate: when the chip is returning empty
-                     * bulk-IN bursts (no traffic), throttle the rearm to
-                     * ~1 kHz so we don't monopolise the DWC2 scheduler
-                     * and starve HID polling / SDHOST PIO. Single
-                     * empties don't pay the cost — only sustained idle. */
+
+                    /* Throttle the rearm to ~1kHz on empty bursts, so we
+                     * do not monopolise the DWC2 scheduler. Only sustained
+                     * idle may pay it - the delay blocks the whole task. */
                     if (rxerr == 0 && actual == 0) {
-                        if (++ncp->ncp_RxIdleStreak > 1)
-                            psdDelayMS(1);
+                        if (++ncp->ncp_RxIdleStreak > LAN78XX_RX_IDLE_STREAK)
+                            idlepace = TRUE;
                     } else {
                         ncp->ncp_RxIdleStreak = 0;
                     }
 
-                    /* Rearm with the other buffer before processing this one
-                     * so the chip keeps feeding us packets while we parse. */
-                    if ((ncp->ncp_StateFlags & DDF_ONLINE) && ncp->ncp_LinkUp) {
-                        ncp->ncp_ReadPending = ncp->ncp_ReadBuffer[ncp->ncp_ReadBufNum];
-                        psdSendPipe(ncp->ncp_EPInPipe, ncp->ncp_ReadPending, LAN78XX_RX_BUFFER_SIZE);
-                        ncp->ncp_ReadBufNum ^= 1;
-                    } else {
-                        ncp->ncp_ReadPending = NULL;
-                    }
+                    /* Rearmed at the top of the loop. */
+                    ncp->ncp_ReadArmed[rxslot] = FALSE;
 
                     if (rxerr) {
                         KPRINTF(5, ("lan78xx: RX err=%ld actual=%lu\n", (LONG)rxerr, actual));
@@ -594,6 +619,8 @@ AROS_UFH0(void, nEthTask)
                         lan78xx_handle_rx_buffer(ncp, pktptr, actual);
                     }
                 }
+                if (drainmore)
+                    break;
             }
 
             /* Drain timer completions — each tick runs the link poll
@@ -655,6 +682,18 @@ AROS_UFH0(void, nEthTask)
             }
             Enable();
 
+            /* After the TX drain: pacing must not delay an outgoing packet. */
+            if (idlepace) {
+                idlepace = FALSE;
+                psdDelayMS(1);
+            }
+
+            /* Leftovers from a bounded drain: do not sleep on a full port. */
+            if (drainmore) {
+                drainmore = FALSE;
+                SetSignal(1L << ncp->ncp_TaskMsgPort->mp_SigBit, 1L << ncp->ncp_TaskMsgPort->mp_SigBit);
+            }
+
             sigs = Wait(sigmask);
         } while (!(sigs & SIGBREAKF_CTRL_C));
 
@@ -666,10 +705,16 @@ AROS_UFH0(void, nEthTask)
             ReplyMsg((struct Message *)ioreq);
             ncp->ncp_WritePending = NULL;
         }
-        if (ncp->ncp_ReadPending) {
-            psdAbortPipe(ncp->ncp_EPInPipe);
-            psdWaitPipe(ncp->ncp_EPInPipe);
-            ncp->ncp_ReadPending = NULL;
+        {
+            int slot;
+
+            for (slot = 0; slot < LAN78XX_RX_QUEUE; slot++) {
+                if (ncp->ncp_ReadArmed[slot]) {
+                    psdAbortPipe(ncp->ncp_EPInPipe[slot]);
+                    psdWaitPipe(ncp->ncp_EPInPipe[slot]);
+                    ncp->ncp_ReadArmed[slot] = FALSE;
+                }
+            }
         }
         Permit();
 
@@ -730,11 +775,21 @@ struct NepClassEth *nAllocEth(void)
     ncp->ncp_Unit.unit_MsgPort.mp_Node.ln_Type = NT_MSGPORT;
     ncp->ncp_Unit.unit_MsgPort.mp_Flags = PA_SIGNAL;
 
-    ncp->ncp_ReadBuffer[0] = AllocVec(LAN78XX_RX_BUFFER_SIZE, MEMF_PUBLIC | MEMF_CLEAR);
-    ncp->ncp_ReadBuffer[1] = AllocVec(LAN78XX_RX_BUFFER_SIZE, MEMF_PUBLIC | MEMF_CLEAR);
+    {
+        int slot;
+
+        for (slot = 0; slot < LAN78XX_RX_QUEUE; slot++) {
+            ncp->ncp_ReadBuffer[slot] = AllocVec(LAN78XX_RX_BUFFER_SIZE, MEMF_PUBLIC | MEMF_CLEAR);
+            if (!ncp->ncp_ReadBuffer[slot]) {
+                KPrintF("[LAN78XX] alloc: RX buffer %ld failed\n", (LONG)slot);
+                goto fail;
+            }
+        }
+    }
     ncp->ncp_WriteBuffer[0] = AllocVec(LAN78XX_TX_BUFFER_SIZE, MEMF_PUBLIC | MEMF_CLEAR);
     ncp->ncp_WriteBuffer[1] = AllocVec(LAN78XX_TX_BUFFER_SIZE, MEMF_PUBLIC | MEMF_CLEAR);
-    if (!ncp->ncp_ReadBuffer[0] || !ncp->ncp_ReadBuffer[1] || !ncp->ncp_WriteBuffer[0] || !ncp->ncp_WriteBuffer[1]) {
+    if (!ncp->ncp_WriteBuffer[0] || !ncp->ncp_WriteBuffer[1]) {
+        KPrintF("[LAN78XX] alloc: TX buffers failed\n");
         goto fail;
     }
 
@@ -756,13 +811,19 @@ struct NepClassEth *nAllocEth(void)
     psdSetAttrs(PGA_PIPE, ncp->ncp_EPOutPipe, PPA_NoShortPackets, FALSE, PPA_NakTimeout, FALSE, PPA_NakTimeoutTime,
                 5000, TAG_END);
 
-    ncp->ncp_EPInPipe = psdAllocPipe(ncp->ncp_Device, ncp->ncp_TaskMsgPort, ncp->ncp_EPIn);
-    if (!ncp->ncp_EPInPipe) {
-        goto fail;
-    }
+    {
+        int slot;
 
-    psdSetAttrs(PGA_PIPE, ncp->ncp_EPInPipe, PPA_NakTimeout, FALSE, PPA_NakTimeoutTime, 5000, PPA_AllowRuntPackets,
-                TRUE, TAG_END);
+        for (slot = 0; slot < LAN78XX_RX_QUEUE; slot++) {
+            ncp->ncp_EPInPipe[slot] = psdAllocPipe(ncp->ncp_Device, ncp->ncp_TaskMsgPort, ncp->ncp_EPIn);
+            if (!ncp->ncp_EPInPipe[slot]) {
+                KPrintF("[LAN78XX] alloc: RX pipe %ld failed\n", (LONG)slot);
+                goto fail;
+            }
+            psdSetAttrs(PGA_PIPE, ncp->ncp_EPInPipe[slot], PPA_NakTimeout, FALSE,
+                        PPA_NakTimeoutTime, 5000, PPA_AllowRuntPackets, TRUE, TAG_END);
+        }
+    }
 
     ncp->ncp_Task = thistask;
     return (ncp);
@@ -789,9 +850,15 @@ void nFreeEth(struct NepClassEth *ncp)
     }
     Permit();
 
-    if (ncp->ncp_EPInPipe) {
-        psdFreePipe(ncp->ncp_EPInPipe);
-        ncp->ncp_EPInPipe = NULL;
+    {
+        int slot;
+
+        for (slot = 0; slot < LAN78XX_RX_QUEUE; slot++) {
+            if (ncp->ncp_EPInPipe[slot]) {
+                psdFreePipe(ncp->ncp_EPInPipe[slot]);
+                ncp->ncp_EPInPipe[slot] = NULL;
+            }
+        }
     }
     if (ncp->ncp_EPOutPipe) {
         psdFreePipe(ncp->ncp_EPOutPipe);
@@ -807,13 +874,15 @@ void nFreeEth(struct NepClassEth *ncp)
         ncp->ncp_TaskMsgPort = NULL;
     }
 
-    if (ncp->ncp_ReadBuffer[0]) {
-        FreeVec(ncp->ncp_ReadBuffer[0]);
-        ncp->ncp_ReadBuffer[0] = NULL;
-    }
-    if (ncp->ncp_ReadBuffer[1]) {
-        FreeVec(ncp->ncp_ReadBuffer[1]);
-        ncp->ncp_ReadBuffer[1] = NULL;
+    {
+        int slot;
+
+        for (slot = 0; slot < LAN78XX_RX_QUEUE; slot++) {
+            if (ncp->ncp_ReadBuffer[slot]) {
+                FreeVec(ncp->ncp_ReadBuffer[slot]);
+                ncp->ncp_ReadBuffer[slot] = NULL;
+            }
+        }
     }
     if (ncp->ncp_WriteBuffer[0]) {
         FreeVec(ncp->ncp_WriteBuffer[0]);
@@ -1653,19 +1722,10 @@ static LONG lan78xx_chip_init(struct NepClassEth *ncp)
     }
 
     /*
-     * Do NOT set BIR.
-     *
-     * Leaving BIR clear is what makes the chip drive the bulk-IN
-     * endpoint in the "NAK-when-empty / DATA-when-ready" mode that DWC2
-     * expects. With BIR=1 the chip stops responding to IN tokens
-     * entirely on this silicon revision (no NAK, no ZLP — total
-     * silence), and DWC2's watchdog has to force-fail every read after
-     * 3 s, which surfaces as `act=0/18944 err=6 last_intr=0000` to the
-     * SANA-II layer.
-     *
-     * The "NAK until we're ready" hand-off this would otherwise enable
-     * is unnecessary: a normal LRST already keeps the bulk-IN silent
-     * until the chip's RX path is enabled below (FCT_RX_CTL + MAC_RX).
+     * BIR (Bulk In Empty Response): with it clear the chip completes
+     * every idle bulk-IN with a zero-length packet, one round trip per
+     * poll. Set, it NAKs instead and the DMA core retries the token.
+     * Needs USB2OTG_BULK_IN_NAK_LIVENESS on the host side.
      */
 
     /* Burst cap + bulk-in delay.  Pi3 is HS — use the high-speed sizing. */
@@ -1675,7 +1735,7 @@ static LONG lan78xx_chip_init(struct NepClassEth *ncp)
 
         if (lan78xx_read_reg(ncp, LAN78XX_REG_HW_CFG, &val))
             return (-1);
-        lan78xx_write_reg(ncp, LAN78XX_REG_HW_CFG, val | LAN78XX_HW_CFG_BCE | LAN78XX_HW_CFG_MEF);
+        lan78xx_write_reg(ncp, LAN78XX_REG_HW_CFG, val | LAN78XX_HW_CFG_BCE | LAN78XX_HW_CFG_MEF | LAN78XX_HW_CFG_BIR);
 
         /* Undocumented LAN7500 FIFO end markers. */
         lan78xx_write_reg(ncp, LAN78XX_REG_FCT_RX_FIFO_END, 0x27);
@@ -1686,7 +1746,7 @@ static LONG lan78xx_chip_init(struct NepClassEth *ncp)
 
         if (lan78xx_read_reg(ncp, LAN78XX_REG_HW_CFG, &val))
             return (-1);
-        lan78xx_write_reg(ncp, LAN78XX_REG_HW_CFG, val | LAN78XX_HW_CFG_MEF);
+        lan78xx_write_reg(ncp, LAN78XX_REG_HW_CFG, val | LAN78XX_HW_CFG_MEF | LAN78XX_HW_CFG_BIR);
 
         if (lan78xx_read_reg(ncp, LAN78XX_REG_USB_CFG0, &val))
             return (-1);
@@ -1860,6 +1920,18 @@ static void lan78xx_link_poll(struct NepClassEth *ncp)
 
     up = (bmsr & LAN78XX_BMSR_LSTATUS) ? TRUE : FALSE;
 
+    /* The driver never writes the PHY, so we run at whatever it defaults to. */
+    if (up && !ncp->ncp_LinkUp) {
+        UWORD bmcr = 0, anar = 0, anlpar = 0, stat1000 = 0;
+
+        lan78xx_phy_read(ncp, LAN78XX_MII_BMCR, &bmcr);
+        lan78xx_phy_read(ncp, LAN78XX_MII_ANAR, &anar);
+        lan78xx_phy_read(ncp, LAN78XX_MII_ANLPAR, &anlpar);
+        lan78xx_phy_read(ncp, LAN78XX_MII_STAT1000, &stat1000);
+        KPrintF("[LAN78XX] phy bmcr=%04lx bmsr=%04lx anar=%04lx anlpar=%04lx stat1000=%04lx\n",
+            (ULONG)bmcr, (ULONG)bmsr, (ULONG)anar, (ULONG)anlpar, (ULONG)stat1000);
+    }
+
     if (up && !ncp->ncp_LinkUp) {
         ncp->ncp_LinkUp = 1;
         KPRINTF(1, ("lan78xx: link UP (BMSR=%04lx)\n", (ULONG)bmsr));
@@ -1870,10 +1942,16 @@ static void lan78xx_link_poll(struct NepClassEth *ncp)
 
         /* Cancel any in-flight RX; the main loop will stop arming new
          * transfers while LinkUp is 0. */
-        if (ncp->ncp_ReadPending) {
-            psdAbortPipe(ncp->ncp_EPInPipe);
-            psdWaitPipe(ncp->ncp_EPInPipe);
-            ncp->ncp_ReadPending = NULL;
+        {
+            int slot;
+
+            for (slot = 0; slot < LAN78XX_RX_QUEUE; slot++) {
+                if (ncp->ncp_ReadArmed[slot]) {
+                    psdAbortPipe(ncp->ncp_EPInPipe[slot]);
+                    psdWaitPipe(ncp->ncp_EPInPipe[slot]);
+                    ncp->ncp_ReadArmed[slot] = FALSE;
+                }
+            }
         }
 
         nDoEvent(ncp, S2EVENT_DISCONNECT);

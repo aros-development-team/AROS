@@ -118,8 +118,6 @@ ULONG GetConfigItem(Object *obj, ULONG configitem, ULONG defaultsetting)
   if(DoMethod(obj, MUIM_GetConfigItem, configitem, &value))
     result = *(ULONG *)value;
 
-  /* XXX: On 64-bit AROS I'm getting for the line above the warning "cast to pointer from integer of different size". */
-
   RETURN(result);
   return result;
 }
@@ -225,7 +223,7 @@ static BOOL NBitmap_ExamineData(Object *dt_obj, uint32 item, struct IClass *cl, 
     else if(data->depth >=24)
     {
       #if defined(__MORPHOS__)
-      /* XXX: Check out is this needed in OS 3 and AROS */
+      /* TODO: establish the PDTA_AlphaChannel contract on OS 3 and AROS. */
       IPTR use_alpha;
 
       GetDTAttrs(dt_obj, PDTA_AlphaChannel, (IPTR)&use_alpha, TAG_DONE);

@@ -15,23 +15,23 @@
  * "no more results" signal, not treated as an error).
  *
  * Scope reductions, documented:
- *   - 16-bit UUIDs only for discovered services/characteristics (128-bit
- *     custom UUIDs are skipped during discovery, not reported).
  *   - Discovery results accumulate into fixed-size arrays
- *     (BT_GATT_CLIENT_MAX_SERVICES / _CHARACTERISTICS); a device with
- *     more doesn't get the rest.
- *   - GATT Server, and anything beyond Exchange MTU/discovery/Read/
- *     Write/notifications (e.g. Write Without Response, Reliable
- *     Writes and Long Write) aren't implemented. Read automatically
- *     continues with Read Blob up to the fixed result limit.
+ *     (BT_GATT_CLIENT_MAX_SERVICES / _CHARACTERISTICS). More services or
+ *     characteristics with a 16-bit UUID than fit fail the discovery;
+ *     ones with a 128-bit (vendor) UUID are left out once it is full.
+ *     Descriptors are still reported with 16-bit UUIDs only.
+ *   - The server side is btcore/gatt_server.h. Anything beyond Exchange
+ *     MTU/discovery/Read/Write/notifications (e.g. Write Without
+ *     Response, Reliable Writes and Long Write) isn't implemented. Read
+ *     automatically continues with Read Blob up to the fixed result limit.
  */
 
 #ifndef BT_GATT_CLIENT_MAX_SERVICES
-#define BT_GATT_CLIENT_MAX_SERVICES 16
+#define BT_GATT_CLIENT_MAX_SERVICES 24
 #endif
 
 #ifndef BT_GATT_CLIENT_MAX_CHARACTERISTICS
-#define BT_GATT_CLIENT_MAX_CHARACTERISTICS 16
+#define BT_GATT_CLIENT_MAX_CHARACTERISTICS 24
 #endif
 
 #ifndef BT_GATT_CLIENT_MAX_VALUE_LEN
@@ -54,7 +54,8 @@ struct bt_gatt_service
 {
     uint16_t start_handle;
     uint16_t end_handle;
-    uint16_t uuid16;
+    uint16_t uuid16;      /* 0: the service has a 128-bit UUID */
+    uint8_t uuid128[16];  /* that UUID, little-endian as on the wire */
 };
 
 struct bt_gatt_characteristic
@@ -62,7 +63,8 @@ struct bt_gatt_characteristic
     uint16_t declaration_handle;
     uint16_t value_handle;
     uint8_t properties;
-    uint16_t uuid16;
+    uint16_t uuid16;      /* 0: the characteristic has a 128-bit UUID */
+    uint8_t uuid128[16];  /* that UUID, little-endian as on the wire */
 };
 
 enum bt_gatt_client_op
@@ -115,6 +117,11 @@ typedef void (*bt_gatt_client_connect_fn)(bool success, void *user_data);
 typedef void (*bt_gatt_client_notify_fn)(uint16_t handle, const uint8_t *value, size_t value_len,
                                           bool is_indication, void *user_data);
 
+/* An ATT PDU for a GATT server on the same bearer: a request, a command or
+ * the Handle Value Confirmation (opcode bit 0 clear). */
+typedef void (*bt_gatt_client_request_fn)(const uint8_t *pdu, size_t len, uint64_t now_us,
+                                           void *user_data);
+
 struct bt_gatt_client
 {
     struct bt_l2cap_channel_manager *l2cap;
@@ -126,6 +133,11 @@ struct bt_gatt_client
 
     bt_gatt_client_notify_fn on_notify;
     void *notify_user_data;
+
+    /* the server's share of the bearer, see bt_gatt_client_set_request_handler() */
+    bt_gatt_client_request_fn on_request;
+    void *request_user_data;
+    bool listen_only;
 
     bool busy;
     enum bt_gatt_client_op op;
@@ -194,8 +206,25 @@ bt_status_t bt_gatt_client_write(struct bt_gatt_client *client, uint16_t handle,
                                   bt_gatt_client_complete_fn on_complete, void *user_data,
                                   uint64_t now_us);
 
+/* Sends an ATT Write Command without waiting for a response. BLE MIDI uses
+ * this operation. It may run alongside another GATT transaction. */
+bt_status_t bt_gatt_client_write_without_response(struct bt_gatt_client *client,
+                                                   uint16_t handle, const uint8_t *value,
+                                                   size_t value_len);
+
 /* Must be called by the owning event loop as time advances. Times out the
  * current ATT transaction; late responses are ignored. */
 void bt_gatt_client_tick(struct bt_gatt_client *client, uint64_t now_us);
+
+/* The ATT bearer carries both roles. PDUs meant for a server are handed to
+ * this handler instead of being dropped; it sends its answers itself on
+ * BT_L2CAP_CID_ATT. */
+void bt_gatt_client_set_request_handler(struct bt_gatt_client *client, bt_gatt_client_request_fn fn,
+                                         void *user_data);
+
+/* Opens the fixed ATT channel without negotiating anything, so the peer's
+ * requests are received even if we never act as a client on this link. A
+ * later bt_gatt_client_connect() takes it from there. */
+bt_status_t bt_gatt_client_listen(struct bt_gatt_client *client);
 
 #endif /* BTCORE_GATT_CLIENT_H */

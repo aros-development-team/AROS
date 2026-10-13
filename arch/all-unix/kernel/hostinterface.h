@@ -37,6 +37,7 @@ struct HostInterface
     #define COCOA_EVENT_KEY_RELEASE  5
     volatile int cocoa_event_write;
     volatile int cocoa_event_read;
+    /* button: the mouse button, or for key events the keyboard type (1 = ISO) */
     struct { int type; int x, y; int button; int keycode; } cocoa_events[COCOA_EVENT_RING_SIZE];
 };
 

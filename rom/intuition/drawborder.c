@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -20,8 +20,8 @@
 /*  SYNOPSIS */
         AROS_LHA(struct RastPort *, rp, A0),
         AROS_LHA(struct Border   *, border, A1),
-        AROS_LHA(LONG             , leftOffset, D0),
-        AROS_LHA(LONG             , topOffset, D1),
+        AROS_LHA(WORD             , leftOffset, D0),
+        AROS_LHA(WORD             , topOffset, D1),
 
 /*  LOCATION */
         struct IntuitionBase *, IntuitionBase, 18, Intuition)
@@ -91,8 +91,6 @@
     WORD   x, y;
     WORD   xoff, yoff;
     int    t;
-
-    EXTENDWORD(leftOffset);EXTENDWORD(topOffset);
 
     DEBUG_DRAWBORDER(dprintf("DrawBorder: rp %p border %p Left %ld Top %ld\n",
                              rp, border, leftOffset, topOffset));

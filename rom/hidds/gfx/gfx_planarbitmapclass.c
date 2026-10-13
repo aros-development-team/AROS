@@ -19,6 +19,11 @@
 
 #include <hidd/gfx.h>
 
+#ifdef __mc68000
+#include <hardware/custom.h>
+#include <proto/graphics.h>
+#endif
+
 #include <string.h>
 
 #include "gfx_intern.h"
@@ -114,6 +119,7 @@ OOP_Object *PBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     IPTR height, bytesperrow;
     UBYTE depth;
     IPTR displayable = FALSE;
+    BOOL interleaved;
     BOOL ok = FALSE;
     struct planarbm_data *data;
     struct TagItem *tag;
@@ -123,12 +129,17 @@ OOP_Object *PBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         return NULL;
 
     data = OOP_INST_DATA(cl, o);
+    data->cached_depth_plus_one = 0;
+    data->cache_pixfmt = FALSE;
 
     /* Check if we want to use existing bitmap */
 
     tag = FindTagItem(aHidd_PlanarBM_BitMap, msg->attrList);
     if (tag)
     {
+        /* graphics.library's reusable wrapper starts with no BitMap. It may
+         * retain the independent pixel-format reference while detached. */
+        data->cache_pixfmt = (tag->ti_Data == 0);
         /* It's not our own bitmap */
         data->planes_alloced = FALSE;
         /* Remember the bitmap. It can be NULL here. */
@@ -148,6 +159,8 @@ OOP_Object *PBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
     /* By default we create 1-plane bitmap */
     depth = GetTagData(aHidd_BitMap_Depth, 1, msg->attrList);
+    interleaved = GetTagData(aHidd_PlanarBM_Interleaved, FALSE,
+                             msg->attrList);
 
     /* Not late initialization. Get some info on the bitmap */
     OOP_GetAttr(o, aHidd_BitMap_Height, &height);
@@ -181,17 +194,41 @@ OOP_Object *PBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
          * clear saves a large memset at boot.)
          */
         ULONG planeflags = MEMF_CHIP | (displayable ? 0 : MEMF_CLEAR);
-        for (i = 0; i < depth; i++)
-        {
-            data->bitmap->Planes[i] = AllocMem(height * bytesperrow, planeflags);
+        ULONG planesize = height * bytesperrow;
 
-            if (NULL == data->bitmap->Planes[i])
+        if (interleaved && depth)
+        {
+            PLANEPTR planes = AllocMem(planesize * depth, planeflags);
+
+            if (planes)
             {
-                D(bug("[PlanarBM] %s: plane %d allocation failed (%lu bytes, flags 0x%lx)\n",
-                      __func__, i, (unsigned long)(height * bytesperrow),
-                      (unsigned long)planeflags));
-                ok = FALSE;
-                break;
+                for (i = 0; i < depth; i++)
+                    data->bitmap->Planes[i] = planes + i * bytesperrow;
+
+                data->bitmap->BytesPerRow *= depth;
+                data->bitmap->Flags |= BMF_INTERLEAVED;
+            }
+            else
+            {
+                /* AllocBitMap() permits falling back to separate planes. */
+                interleaved = FALSE;
+            }
+        }
+
+        if (!interleaved)
+        {
+            for (i = 0; i < depth; i++)
+            {
+                data->bitmap->Planes[i] = AllocMem(planesize, planeflags);
+
+                if (NULL == data->bitmap->Planes[i])
+                {
+                    D(bug("[PlanarBM] %s: plane %d allocation failed (%lu bytes, flags 0x%lx)\n",
+                          __func__, i, (unsigned long)planesize,
+                          (unsigned long)planeflags));
+                    ok = FALSE;
+                    break;
+                }
             }
         }
     }
@@ -219,11 +256,23 @@ static void PBM_FreeBitMap(struct planarbm_data *data)
         {
             UBYTE i;
 
-            for (i = 0; i < data->bitmap->Depth; i++)
+            if (data->bitmap->Flags & BMF_INTERLEAVED)
             {
-                if (data->bitmap->Planes[i])
+                if (data->bitmap->Planes[0])
                 {
-                    FreeMem(data->bitmap->Planes[i], data->bitmap->Rows * data->bitmap->BytesPerRow);
+                    FreeMem(data->bitmap->Planes[0],
+                            data->bitmap->Rows * data->bitmap->BytesPerRow);
+                }
+            }
+            else
+            {
+                for (i = 0; i < data->bitmap->Depth; i++)
+                {
+                    if (data->bitmap->Planes[i])
+                    {
+                        FreeMem(data->bitmap->Planes[i],
+                                data->bitmap->Rows * data->bitmap->BytesPerRow);
+                    }
                 }
             }
             FreeMem(data->bitmap, sizeof(struct BitMap));
@@ -279,26 +328,39 @@ static BOOL PBM_SetBitMap(OOP_Class *cl, OOP_Object *o, struct BitMap *bm)
         { aHidd_PixFmt_StdPixFmt    , vHidd_StdPixFmt_Plane     },
         { TAG_DONE                  , 0UL                       }
     };
-    struct TagItem      bmtags[] =
-    {
-        { aHidd_BitMap_Width        , 0 }, /* 0 */
-        { aHidd_BitMap_Height       , 0 }, /* 1 */
-        { aHidd_BitMap_BytesPerRow  , 0 }, /* 2 */
-        { TAG_DONE                  , 0 }
-    };
     struct planarbm_data *data = OOP_INST_DATA(cl, o);
-    OOP_Object *pf;
+    struct HIDDBitMapData *bmdata = OOP_INST_DATA(CSD(cl)->bitmapclass, o);
+    OOP_Object *pf = NULL;
+    BOOL reuse_pf;
 
-    /* First we attempt to register a pixelformat */
-    pftags[0].ti_Data = bm->Depth;      /* PixFmt_Depth */
-    pftags[1].ti_Data = bm->Depth;      /* PixFmt_BitsPerPixel */
-
-    pf = DMEnum__Internal__RegisterPixFmt(CSD(cl)->dmenumclass, pftags);
-
-    if (!pf)
+    /* Detach from the caller-owned bitmap. A graphics cache wrapper keeps
+     * only its own registered pixel format, never the BitMap or its planes. */
+    if (!bm)
     {
-        /* Fail is pixelformat registration failed */
-        return FALSE;
+        PBM_FreeBitMap(data);
+        data->bitmap = NULL;
+        data->planes_alloced = FALSE;
+
+        bmdata->width = 0;
+        bmdata->height = 0;
+        bmdata->bytesPerRow = 0;
+        if (!data->cache_pixfmt)
+        {
+            BM__Hidd_BitMap__SetPixFmt(CSD(cl)->bitmapclass, o, NULL);
+            data->cached_depth_plus_one = 0;
+        }
+        return TRUE;
+    }
+
+    reuse_pf = data->cache_pixfmt &&
+               data->cached_depth_plus_one == (UWORD)bm->Depth + 1;
+    if (!reuse_pf)
+    {
+        pftags[0].ti_Data = bm->Depth;
+        pftags[1].ti_Data = bm->Depth;
+        pf = DMEnum__Internal__RegisterPixFmt(CSD(cl)->dmenumclass, pftags);
+        if (!pf)
+            return FALSE;
     }
 
     /* Free old bitmap, if it was ours. */
@@ -308,13 +370,20 @@ static BOOL PBM_SetBitMap(OOP_Class *cl, OOP_Object *o, struct BitMap *bm)
     data->bitmap = bm;
     data->planes_alloced = FALSE;
 
-    /* Call private bitmap method to update superclass */
-    bmtags[0].ti_Data = bm->BytesPerRow * 8;
-    bmtags[1].ti_Data = bm->Rows;
-    bmtags[2].ti_Data = bm->BytesPerRow;
+    /* These are the only three attributes SetBitMapTags would update here;
+     * setting the superclass data directly avoids parsing a tag list twice
+     * for every short-lived render wrapper. */
+    bmdata->width = bm->BytesPerRow * 8;
+    if ((bm->Flags & BMF_INTERLEAVED) && bm->Depth)
+        bmdata->width /= bm->Depth;
+    bmdata->height = bm->Rows;
+    bmdata->bytesPerRow = bm->BytesPerRow;
 
-    BM__Hidd_BitMap__SetBitMapTags(CSD(cl)->bitmapclass, o, bmtags);
-    BM__Hidd_BitMap__SetPixFmt(CSD(cl)->bitmapclass, o, pf);
+    if (!reuse_pf)
+    {
+        BM__Hidd_BitMap__SetPixFmt(CSD(cl)->bitmapclass, o, pf);
+        data->cached_depth_plus_one = (UWORD)bm->Depth + 1;
+    }
 
     return TRUE;
 }
@@ -375,6 +444,161 @@ VOID PBM__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o,
             }
         }
     }
+}
+
+/****************************************************************************************/
+
+VOID PBM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o,
+                                   struct pHidd_BitMap_PutTemplate *msg)
+{
+#ifdef __mc68000
+    struct planarbm_data *data = OOP_INST_DATA(cl, o);
+    struct BitMap *bm = data->bitmap;
+    struct GfxBase *GfxBase = CSD(cl)->cs_GfxBase;
+    volatile struct Custom *custom = (struct Custom *)0xdff000;
+    ULONG src_offset, dst_offset, bitmap_width;
+    ULONG fg, bg, colmask;
+    WORD src_x2, dst_x2, src_width, dst_width, width;
+    WORD src_x, dst_x, shift;
+    UWORD first_mask, last_mask, shift_a, shift_b;
+    BOOL transparent, invert;
+    BOOL reverse;
+    UBYTE plane;
+
+    if (!bm || !msg->masktemplate || msg->width <= 0 || msg->height <= 0)
+        return;
+
+    bitmap_width = (ULONG)bm->BytesPerRow * 8;
+    if ((bm->Flags & BMF_INTERLEAVED) && bm->Depth)
+        bitmap_width /= bm->Depth;
+
+    /* Use the blitter only when every DMA source and destination is in Chip
+     * RAM. Leave other formats and out-of-range direct HIDD calls to the
+     * superclass implementation. */
+    if (msg->srcx < 0 || msg->x < 0 || msg->y < 0 ||
+        !bm->Depth || bm->Depth > 8 ||
+        (ULONG)msg->x + msg->width > bitmap_width ||
+        (ULONG)msg->y + msg->height > bm->Rows ||
+        !(TypeOfMem(msg->masktemplate) & MEMF_CHIP))
+        goto software;
+
+    for (plane = 0; plane < bm->Depth; plane++)
+    {
+        UBYTE *bits = bm->Planes[plane];
+        if (bits && bits != (UBYTE *)-1 && !(TypeOfMem(bits) & MEMF_CHIP))
+            goto software;
+    }
+
+    src_x = msg->srcx;
+    dst_x = msg->x;
+    src_x2 = src_x + msg->width - 1;
+    dst_x2 = dst_x + msg->width - 1;
+    src_width = src_x2 / 16 - src_x / 16 + 1;
+    dst_width = dst_x2 / 16 - dst_x / 16 + 1;
+    shift = (dst_x & 15) - (src_x & 15);
+    reverse = shift < 0;
+    if (reverse)
+        shift = -shift;
+
+    width = src_width > dst_width ? src_width : dst_width;
+    if (!(GfxBase->ChipRevBits0 & GFXF_BIG_BLITS) &&
+        (width > 64 || msg->height > 1024))
+        goto software;
+
+    src_offset = (src_x / 16) * 2;
+    dst_offset = bm->BytesPerRow * msg->y + (dst_x / 16) * 2;
+    src_x &= 15;
+    dst_x &= 15;
+    src_x2 &= 15;
+    dst_x2 &= 15;
+
+    if (reverse)
+    {
+        shift_a = dst_width >= src_width ? 0 : shift << 12;
+        first_mask = dst_width >= src_width
+            ? (UWORD)(0xffff << (15 - dst_x2))
+            : (UWORD)(0xffff << (15 - src_x2));
+        last_mask = dst_width >= src_width
+            ? (UWORD)(0xffff >> dst_x)
+            : (UWORD)(0xffff >> src_x);
+        src_offset += msg->modulo * (msg->height - 1) + (width - 1) * 2;
+        dst_offset += bm->BytesPerRow * (msg->height - 1) + (width - 1) * 2;
+    }
+    else
+    {
+        shift_a = dst_width >= src_width ? 0 : shift << 12;
+        first_mask = dst_width >= src_width
+            ? (UWORD)(0xffff >> dst_x)
+            : (UWORD)(0xffff >> src_x);
+        last_mask = dst_width >= src_width
+            ? (UWORD)(0xffff << (15 - dst_x2))
+            : (UWORD)(0xffff << (15 - src_x2));
+    }
+    shift_b = shift << 12;
+
+    fg = GC_FG(msg->gc);
+    bg = GC_BG(msg->gc);
+    colmask = GC_COLMASK(msg->gc);
+    transparent = GC_COLEXP(msg->gc) == vHidd_GC_ColExp_Transparent;
+    invert = !transparent && GC_DRMD(msg->gc) == vHidd_GC_DrawMode_Invert;
+
+    OwnBlitter();
+    WaitBlit();
+    custom->bltafwm = first_mask;
+    custom->bltalwm = last_mask;
+    custom->bltbmod = msg->modulo - width * 2;
+    custom->bltcmod = bm->BytesPerRow - width * 2;
+    custom->bltdmod = bm->BytesPerRow - width * 2;
+    custom->bltadat = 0xffff;
+
+    for (plane = 0; plane < bm->Depth; plane++)
+    {
+        UBYTE *bits = bm->Planes[plane];
+        ULONG plane_bit = 1UL << plane;
+        UBYTE minterm = 0x0a; /* Preserve C where the A edge mask is zero. */
+
+        if (!(colmask & plane_bit) || !bits || bits == (UBYTE *)-1)
+            continue;
+
+        if (transparent)
+        {
+            minterm |= msg->inverttemplate ? 0x80 : 0x20;
+            if (fg & plane_bit)
+                minterm |= msg->inverttemplate ? 0x30 : 0xc0;
+        }
+        else if (invert)
+            minterm |= msg->inverttemplate ? 0x90 : 0x60;
+        else
+        {
+            if ((msg->inverttemplate ? bg : fg) & plane_bit)
+                minterm |= 0xc0;
+            if ((msg->inverttemplate ? fg : bg) & plane_bit)
+                minterm |= 0x30;
+        }
+
+        WaitBlit();
+        custom->bltcon0 = shift_a | 0x0700 | minterm;
+        custom->bltcon1 = (reverse ? 2 : 0) | shift_b;
+        custom->bltbdat = 0xffff;
+        custom->bltbpt = msg->masktemplate + src_offset;
+        custom->bltcpt = bits + dst_offset;
+        custom->bltdpt = bits + dst_offset;
+        if (GfxBase->ChipRevBits0 & GFXF_BIG_BLITS)
+        {
+            custom->bltsizv = msg->height;
+            custom->bltsizh = width;
+        }
+        else
+            custom->bltsize = (msg->height << 6) | (width & 63);
+    }
+
+    WaitBlit();
+    DisownBlitter();
+    return;
+
+software:
+#endif
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
 /****************************************************************************************/
@@ -449,6 +673,74 @@ VOID PBM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o,
     fg = GC_FG(msg->gc);
     x1 = msg->minX; y1 = msg->minY;
     x2 = msg->maxX; y2 = msg->maxY;
+
+#ifdef __mc68000
+    /* RectFill on an off-screen Chip bitmap must not fall back to a CPU
+     * byte loop.  In particular, CD32 titles repeatedly clear narrow
+     * status bands before redrawing their text.  Keep the software path for
+     * non-Chip planes, clipped/out-of-range HIDD calls, and other modes. */
+    if (bm->Depth && bm->Depth <= 8 &&
+        (GC_COLMASK(msg->gc) & ((1UL << bm->Depth) - 1)) ==
+            ((1UL << bm->Depth) - 1) &&
+        x1 >= 0 && y1 >= 0 && x2 >= x1 && y2 >= y1 &&
+        y2 < bm->Rows)
+    {
+        ULONG bitmap_width = (ULONG)bm->BytesPerRow * 8;
+        UWORD words = x2 / 16 - x1 / 16 + 1;
+        UWORD lines = y2 - y1 + 1;
+        BOOL chip_planes = TRUE;
+
+        if (bm->Flags & BMF_INTERLEAVED)
+            bitmap_width /= bm->Depth;
+
+        if ((ULONG)x2 < bitmap_width && words <= 63 && lines <= 1023)
+        {
+            for (d = 0; d < bm->Depth; d++)
+            {
+                UBYTE *plane = bm->Planes[d];
+                if (plane && plane != (UBYTE *)-1 &&
+                    !(TypeOfMem(plane) & MEMF_CHIP))
+                {
+                    chip_planes = FALSE;
+                    break;
+                }
+            }
+
+            if (chip_planes)
+            {
+                struct GfxBase *GfxBase = CSD(cl)->cs_GfxBase;
+                volatile struct Custom *custom = (struct Custom *)0xdff000;
+                ULONG offset = (ULONG)y1 * bm->BytesPerRow + (x1 / 16) * 2;
+
+                OwnBlitter();
+                WaitBlit();
+                custom->bltafwm = (UWORD)(0xffff >> (x1 & 15));
+                custom->bltalwm = (UWORD)(0xffff << (15 - (x2 & 15)));
+                custom->bltcmod = bm->BytesPerRow - words * 2;
+                custom->bltdmod = bm->BytesPerRow - words * 2;
+                custom->bltcon1 = 0;
+                custom->bltcon0 = 0x0300 | 0xca; /* A ? B : C */
+                custom->bltadat = 0xffff;
+
+                for (d = 0; d < bm->Depth; d++)
+                {
+                    UBYTE *plane = bm->Planes[d];
+                    if (!plane || plane == (UBYTE *)-1)
+                        continue;
+
+                    WaitBlit();
+                    custom->bltbdat = (fg & (1UL << d)) ? 0xffff : 0;
+                    custom->bltcpt = plane + offset;
+                    custom->bltdpt = plane + offset;
+                    custom->bltsize = (lines << 6) | words;
+                }
+                WaitBlit();
+                DisownBlitter();
+                return;
+            }
+        }
+    }
+#endif
 
     firstbyte = x1 >> 3;
     lastbyte  = x2 >> 3;

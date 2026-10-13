@@ -120,7 +120,7 @@ nouveau_copy_init(ScreenPtr pScreen)
 	}
 
 	ret = nouveau_pushbuf_new(pNv->client, pNv->ce_channel, 4,
-				  32 * 1024, true, &pNv->ce_pushbuf);
+				  32 * 1024, &pNv->ce_pushbuf);
 	if (ret) {
 		xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
 			   "[COPY] error allocating pushbuf: %d\n", ret);

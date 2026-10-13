@@ -130,6 +130,13 @@ ifeq ($(AROS_TOOLCHAIN),llvm)
 # modules and ignores -Ttext, producing images grub-mkimage rejects
 # ("its start address is 0x0 instead of 0x9000"). Use a bare linux triple
 # so clang generates plain ELF and drives the system linker instead.
+
+# clang, unlike gcc, keeps dead calls at -O0: the DBG_CIPHER guarded
+# log_mpidump() in 2.16's rsa-common.c then leaves pubkey referencing
+# _gcry_log_printmpi, which no module defines, and genmoddep fails. The
+# flag reset above empties TARGET_CFLAGS, so restore grub's own -Os.
+export KERNEL_CFLAGS   := -Os
+
 GRUB2_LLVM_ISA_FLAGS   := --target=$(AROS_TARGET_CPU)-pc-linux-gnu
 GRUB2_LLVM_ISA32_FLAGS := --target=$(AROS_TARGET_CPU32)-pc-linux-gnu -march=i486 -m32
 ifneq ($(AROS_TARGET_CPU32),)

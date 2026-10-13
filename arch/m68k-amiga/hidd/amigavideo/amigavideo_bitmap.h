@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2019, The AROS Development Team. All rights reserved.
+    Copyright  1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #ifndef _AMIGABITMAP_H
@@ -58,12 +58,15 @@ struct amigabm_data
 
     /* old stuff.. */
     struct BitMap               *pbm;
+    struct BitMap               *displayed_pbm;
     WORD                        width;
     WORD                        height;
+    WORD                        viewportheight;
     WORD                        bytesperrow;
     UBYTE                       depth;
     UBYTE                       planebuf_size;
     WORD                        topedge, leftedge;
+    WORD                        diwstartx, diwstarty;
     WORD                        updtop, updleft;
     WORD                        align;
     WORD                        displaywidth;
@@ -75,6 +78,9 @@ struct amigabm_data
     /* flags */
     BOOL                        disp;               /* displayable ? */
     BOOL                        vis;                /* visible ? */
+    BOOL                        bitmap_changed;     /* pending copper plane update */
+    BOOL                        bitmap_set_in_place;/* MakeVPort rebuild not needed */
+    BOOL                        palette_changed;    /* pending copper palette update */
 };
 
 #define BMDATFROMCOPLD(x)    ((struct amigabm_data *)((IPTR)x - (offsetof(struct amigabm_data,copld))))

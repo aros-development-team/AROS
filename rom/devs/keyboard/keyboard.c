@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Keyboard device
 */
@@ -329,7 +329,7 @@ AROS_LH1(void, beginio,
             if(KBBase->kb_ResetPhase == TRUE)
             {
                 if(--(KBBase->kb_nHandlers) <= 0)
-                    ColdReboot();       /* Shut down system */
+                    ShutdownA(SD_ACTION_REBOOT);    /* Shut down system */
             }
             else
             {
@@ -513,7 +513,7 @@ static BOOL writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase)
         }
         else
         {
-            ColdReboot();       /* Bye bye AROS */
+            ShutdownA(SD_ACTION_REBOOT);    /* Bye bye AROS */
         }
     }
     

@@ -6,6 +6,7 @@
  */
 
 #import <Cocoa/Cocoa.h>
+#import <Carbon/Carbon.h>
 #import <IOSurface/IOSurface.h>
 #import <QuartzCore/QuartzCore.h>
 #include <pthread.h>
@@ -59,6 +60,39 @@ static void push_event(int type, int x, int y, int button, int keycode) {
     __atomic_store_n(&g_hiface->cocoa_event_write, next, __ATOMIC_RELEASE);
 }
 
+/*
+ * Modifier keys never arrive through keyDown:/keyUp:, only as flagsChanged:
+ * with the new modifier state, in which each key has its own device bit.
+ * Tell AROS about every key whose bit differs from what it last saw. While the
+ * window isn't key, the releases go to another app (Cmd+Tab would leave Left
+ * Amiga held), so release everything on resign and resync on becoming key.
+ * Caps Lock reports its lock state: down while locked, as on an Amiga.
+ */
+static const struct { unsigned short keycode; NSUInteger mask; } g_modkeys[] = {
+    { 0x38, NX_DEVICELSHIFTKEYMASK },
+    { 0x3C, NX_DEVICERSHIFTKEYMASK },
+    { 0x3B, NX_DEVICELCTLKEYMASK },
+    { 0x3E, NX_DEVICERCTLKEYMASK },
+    { 0x3A, NX_DEVICELALTKEYMASK },
+    { 0x3D, NX_DEVICERALTKEYMASK },
+    { 0x37, NX_DEVICELCMDKEYMASK },
+    { 0x36, NX_DEVICERCMDKEYMASK },
+    { 0x39, NSEventModifierFlagCapsLock },
+};
+static NSUInteger g_moddown;    /* g_modkeys masks AROS has seen go down */
+
+static void sync_modifiers(NSUInteger flags) {
+    for (size_t i = 0; i < sizeof(g_modkeys) / sizeof(g_modkeys[0]); i++) {
+        NSUInteger mask = g_modkeys[i].mask;
+
+        if ((flags ^ g_moddown) & mask) {
+            push_event((flags & mask) ? COCOA_EVENT_KEY_PRESS : COCOA_EVENT_KEY_RELEASE,
+                       0, 0, 0, g_modkeys[i].keycode);
+            g_moddown ^= mask;
+        }
+    }
+}
+
 /* ---------- View ---------- */
 
 @interface AROSView : NSView
@@ -68,11 +102,43 @@ static void push_event(int type, int x, int y, int button, int keycode) {
 
 - (BOOL)wantsUpdateLayer { return YES; }
 
+/*
+ * AROS renders into the surface as XRGB: graphics.library leaves the top
+ * byte of most pixels 0, and only alpha-blended images (icons) set it.
+ * Handing the BGRA IOSurface to the layer made Core Animation use that byte
+ * as alpha, so nearly everything came out transparent over the window
+ * background. Present the pixels as a CGImage that skips the byte instead
+ * (32-bit little-endian words, alpha in the most significant byte).
+ * The run loop asks for a redraw every step, so only build a new image when
+ * the frame differs from the last one presented.
+ */
 - (void)updateLayer {
+    static CGColorSpaceRef rgb;
+    static void *last;
+
     if (g_surface) {
-        IOSurfaceLock(g_surface, kIOSurfaceLockReadOnly, NULL);
-        self.layer.contents = (__bridge id)g_surface;
-        IOSurfaceUnlock(g_surface, kIOSurfaceLockReadOnly, NULL);
+        size_t size = (size_t)g_pitch * g_height;
+
+        if (!rgb)
+            rgb = CGColorSpaceCreateDeviceRGB();
+        if (!last)
+            last = calloc(1, size);
+
+        if (self.layer.contents && last && !memcmp(last, g_pixels, size))
+            return;
+        if (last)
+            memcpy(last, g_pixels, size);
+
+        CFDataRef frame = CFDataCreate(NULL, last ? last : g_pixels, size);
+        CGDataProviderRef data = CGDataProviderCreateWithCFData(frame);
+        CGImageRef image = CGImageCreate(g_width, g_height, 8, 32, g_pitch, rgb,
+            kCGImageAlphaNoneSkipFirst | kCGBitmapByteOrder32Little,
+            data, NULL, false, kCGRenderingIntentDefault);
+
+        self.layer.contents = (__bridge id)image;
+        CGImageRelease(image);
+        CGDataProviderRelease(data);
+        CFRelease(frame);
     }
 }
 
@@ -81,8 +147,20 @@ static void push_event(int type, int x, int y, int button, int keycode) {
 
 - (NSPoint)convertToFB:(NSEvent *)event {
     NSPoint p = [self convertPoint:[event locationInWindow] fromView:nil];
+    NSSize view = [self bounds].size;
+
     /* Flip Y (Cocoa is bottom-up, AROS is top-down) */
-    p.y = g_height - p.y;
+    p.y = view.height - p.y;
+
+    /* The layer stretches the framebuffer to the view when the window is resized */
+    if (view.width > 0 && view.height > 0) {
+        p.x = p.x * g_width / view.width;
+        p.y = p.y * g_height / view.height;
+    }
+
+    /* Drags keep reporting once the pointer leaves the view */
+    if (p.x < 0) p.x = 0; else if (p.x > g_width - 1) p.x = g_width - 1;
+    if (p.y < 0) p.y = 0; else if (p.y > g_height - 1) p.y = g_height - 1;
     return p;
 }
 
@@ -111,11 +189,20 @@ static void push_event(int type, int x, int y, int button, int keycode) {
     push_event(COCOA_EVENT_MOUSE_RELEASE, (int)p.x, (int)p.y, 2, 0);
 }
 
+/* Key events carry the keyboard type in button: some ISO keycodes differ */
+static int key_iso(void) {
+    return KBGetLayoutType(LMGetKbdType()) == kKeyboardISO;
+}
+
 - (void)keyDown:(NSEvent *)event {
-    push_event(COCOA_EVENT_KEY_PRESS, 0, 0, 0, [event keyCode]);
+    push_event(COCOA_EVENT_KEY_PRESS, 0, 0, key_iso(), [event keyCode]);
 }
 - (void)keyUp:(NSEvent *)event {
-    push_event(COCOA_EVENT_KEY_RELEASE, 0, 0, 0, [event keyCode]);
+    push_event(COCOA_EVENT_KEY_RELEASE, 0, 0, key_iso(), [event keyCode]);
+}
+
+- (void)flagsChanged:(NSEvent *)event {
+    sync_modifiers([event modifierFlags]);
 }
 
 @end
@@ -129,6 +216,14 @@ static void push_event(int type, int x, int y, int button, int keycode) {
 
 - (void)windowWillClose:(NSNotification *)notification {
     _exit(0);
+}
+
+- (void)windowDidResignKey:(NSNotification *)notification {
+    sync_modifiers(0);
+}
+
+- (void)windowDidBecomeKey:(NSNotification *)notification {
+    sync_modifiers([NSEvent modifierFlags]);
 }
 
 @end

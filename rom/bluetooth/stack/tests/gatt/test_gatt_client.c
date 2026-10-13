@@ -437,6 +437,43 @@ static void test_read_and_write(void)
     BT_CHECK(wlog.result == BT_GATT_CLIENT_OK);
 }
 
+static void test_write_without_response(void)
+{
+    struct fake_transport ft;
+    struct bt_l2cap_channel_manager mgr;
+    struct bt_gatt_client client;
+    struct complete_log read_log = {0};
+    const uint8_t *payload;
+    size_t payload_len;
+    static const uint8_t midi_packet[] = {0x80, 0x80, 0x90, 0x3c, 0x64};
+    static const uint8_t read_response[] = {BT_ATT_OPCODE_READ_RESPONSE, 0x41};
+    uint8_t oversized[98] = {0};
+
+    fake_transport_init(&ft);
+    bt_l2cap_channel_manager_init(&mgr, &ft.base, 0x0041, BT_L2CAP_CID_SIGNALING_LE, 200);
+    bt_gatt_client_init(&client, &mgr);
+    connect_client(&mgr, &ft, &client); /* negotiated MTU = 100 */
+
+    BT_CHECK(bt_gatt_client_write_without_response(&client, 3, midi_packet,
+                                                    sizeof(midi_packet)) == BT_OK);
+    BT_CHECK(take_last_att_pdu(&ft, &payload, &payload_len));
+    BT_CHECK(payload_len == sizeof(midi_packet) + 3);
+    BT_CHECK(payload[0] == BT_ATT_OPCODE_WRITE_COMMAND);
+    BT_CHECK(payload[1] == 3 && payload[2] == 0);
+    BT_CHECK(memcmp(payload + 3, midi_packet, sizeof(midi_packet)) == 0);
+    BT_CHECK(!client.busy);
+    BT_CHECK(bt_gatt_client_write_without_response(&client, 3, oversized,
+                                                    sizeof(oversized)) == BT_ERR_INVALID_ARGUMENT);
+    BT_CHECK(bt_gatt_client_write_without_response(&client, 0, midi_packet,
+                                                    sizeof(midi_packet)) == BT_ERR_INVALID_ARGUMENT);
+    BT_CHECK(bt_gatt_client_read(&client, 4, on_complete, &read_log, 10) == BT_OK);
+    BT_CHECK(bt_gatt_client_write_without_response(&client, 3, midi_packet,
+                                                    sizeof(midi_packet)) == BT_OK);
+    BT_CHECK(client.busy);
+    feed_att_pdu(&mgr, read_response, sizeof(read_response), 20);
+    BT_CHECK(read_log.count == 1 && read_log.result == BT_GATT_CLIENT_OK);
+}
+
 static void test_discover_descriptors(void)
 {
     struct fake_transport ft;
@@ -711,6 +748,7 @@ void run_gatt_client_tests(void)
     test_discover_services_multi_round_terminated_by_error();
     test_discover_characteristics();
     test_read_and_write();
+    test_write_without_response();
     test_discover_descriptors();
     test_read_att_error();
     test_long_read_uses_read_blob();

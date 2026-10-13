@@ -1,5 +1,5 @@
 /*
- *  Copyright © 2004-2025 The AROS Developmemt Team. All rights reserved.
+ *  Copyright © 2004-2026 The AROS Developmemt Team. All rights reserved.
  *  $Id$
  *
  *  C99 header file limits.h
@@ -41,10 +41,23 @@
 #define SCHAR_MAX	127
 /* maximum value for an object of type unsigned char */
 #define UCHAR_MAX	255
+/*
+ * The signedness of plain 'char' is implementation defined, so its limits
+ * cannot be hardcoded to the signed ones: of the ABIs AROS targets it is
+ * unsigned on ARM, AArch64, PowerPC and RISC-V, and signed on i386, x86_64
+ * and m68k. Both gcc and clang say which through __CHAR_UNSIGNED__.
+ */
+#if defined(__CHAR_UNSIGNED__)
+/* minimum value for an object of type char */
+#define CHAR_MIN	0
+/* maximum value for an object of type char */
+#define CHAR_MAX	UCHAR_MAX
+#else
 /* minimum value for an object of type char */
 #define CHAR_MIN	SCHAR_MIN
 /* maximum value for an object of type char */
 #define CHAR_MAX	SCHAR_MAX
+#endif
 
 /*
   maximum number of bytes in a multibyte character, for any supported locale

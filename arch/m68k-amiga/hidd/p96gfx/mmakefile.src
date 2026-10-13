@@ -10,6 +10,8 @@ USER_CPPFLAGS := \
                -D__GRAPHICS_NOHIDDBASE__
 USER_LDFLAGS := -static
 
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+
 %build_module mmake=kernel-amiga-m68k-p96gfx \
     modname=p96gfx modtype=hidd \
     files="p96gfx_startup p96gfx_hiddclass p96gfx_bitmapclass p96gfx_card p96gfx_rtg"

@@ -26,6 +26,7 @@
  */
 
 #include <exec/types.h>
+#include <asm/io.h>
 
 /* ===== PCI Identification ===== */
 
@@ -356,10 +357,10 @@ struct sli4_params {
 
 /* Register I/O macros */
 #define LPE_REG_READ32(base, off) \
-    (*(volatile ULONG *)((UBYTE *)(base) + (off)))
+    mmio_inl((UBYTE *)(base) + (off))
 
 #define LPE_REG_WRITE32(base, off, val) \
-    do { *(volatile ULONG *)((UBYTE *)(base) + (off)) = (val); } while(0)
+    do { mmio_outl((val), (UBYTE *)(base) + (off)); } while(0)
 
 #define LPE_WRITE_FLUSH(base) \
     do { (void)LPE_REG_READ32(base, SLI4_SLIPORT_STATUS); } while(0)

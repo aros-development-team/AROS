@@ -95,11 +95,11 @@ void udelay(LONG usec)
 
 static ULONG readl(APTR base)
 {
-    return *((volatile ULONG*)base);
+    return mmio_inl(base);
 }
 static void writel(ULONG val, APTR base)
 {
-    *((volatile ULONG*)base) = val;
+    mmio_outl(val, base);
 }
 
 static inline struct fe_priv *get_nvpriv(struct net_device *dev)

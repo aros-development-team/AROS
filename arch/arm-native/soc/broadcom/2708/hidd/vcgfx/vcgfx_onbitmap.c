@@ -25,6 +25,7 @@
 #include "vcgfx_bitmap.h"
 #include "vcgfx_hidd.h"
 #include "vcgfx_hvs.h"
+#include "vcgfx_hvs6.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -90,6 +91,7 @@ ULONG vc4_fb_backpage(struct VideoCoreGfx_staticdata *xsd)
 BOOL vc4_fb_flip(struct VideoCoreGfx_staticdata *xsd)
 {
     UBYTE nf;
+    BOOL  flipped;
 
     if (xsd->vcsd_FBPages < 2 || !xsd->vcsd_FBObj)
         return FALSE;
@@ -99,13 +101,18 @@ BOOL vc4_fb_flip(struct VideoCoreGfx_staticdata *xsd)
     VC4_MBOX_LOCK(xsd);
 
     nf = 1 - xsd->vcsd_FBFront;
-    if (!vc4_hvs_flip_page(xsd, xsd->vcsd_FBPage[nf])
-        && !vc4_set_voffset(xsd, nf * xsd->vcsd_FBPageHeight))
+    flipped = vc4_hvs_flip_page(xsd, xsd->vcsd_FBPage[nf]);
+
+    /* BCM2712 acks SETVOFFSET without moving, and display tags risk
+     * the firmware taking the list back. */
+    if (!flipped && (xsd->vcsd_HVSGen != VCGFX_HVS_HVS6))
+        flipped = vc4_set_voffset(xsd, nf * xsd->vcsd_FBPageHeight);
+
+    if (!flipped)
     {
-        /* Firmware refused — disable flipping for good. Loud: a GL
-         * client that already wrapped the scanout pages keeps rendering
-         * to the back page and the screen freezes on the front one. */
-        bug("[VideoCoreGfx] flip: SETVOFFSET refused, flipping disabled\n");
+        /* Refused - disable for good. Loud: a GL client that wrapped the
+         * scanout pages would leave the screen frozen. */
+        bug("[VideoCoreGfx] flip refused, flipping disabled\n");
         xsd->vcsd_FBPages = 1;
         VC4_MBOX_UNLOCK(xsd);
         return FALSE;
@@ -135,9 +142,30 @@ BOOL vc4_fb_flip(struct VideoCoreGfx_staticdata *xsd)
  * A double-height virtual framebuffer is requested first; the second page
  * enables SETVOFFSET flipping. Falls back to a single page if unavailable.
  */
+/* The rate a sync object asks for, for telling modes of one size apart;
+ * NULL when it cannot say. */
+static const struct vcgfx_timing *vc4_sync_timing(OOP_Class *cl, OOP_Object *sync,
+                                                   struct vcgfx_timing *t)
+{
+    IPTR clk = 0, htotal = 0, vtotal = 0;
+
+    if (!sync)
+        return NULL;
+    OOP_GetAttr(sync, aHidd_Sync_PixelClock, &clk);
+    OOP_GetAttr(sync, aHidd_Sync_HTotal, &htotal);
+    OOP_GetAttr(sync, aHidd_Sync_VTotal, &vtotal);
+    if (!clk || !htotal || !vtotal)
+        return NULL;
+
+    t->clock  = clk / 1000;
+    t->htotal = htotal;
+    t->vtotal = vtotal;
+    return t;
+}
+
 static BOOL vc4_program_fb(struct VideoCoreGfx_staticdata *xsd,
     ULONG aligned_width, ULONG height, UBYTE bytesperpix,
-    APTR *fb_ptr_out, ULONG *fb_pitch_out)
+    const struct vcgfx_timing *want, APTR *fb_ptr_out, ULONG *fb_pitch_out)
 {
     ULONG bitsperpixel = bytesperpix * 8;
     APTR fb_ptr = NULL;
@@ -151,8 +179,28 @@ static BOOL vc4_program_fb(struct VideoCoreGfx_staticdata *xsd,
     xsd->vcsd_HVS.hvs_Active = FALSE;
     VC4_MBOX_UNLOCK(xsd);
 
-    for (pages = 2; pages >= 1; pages--)
+    for (pages = (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6) ? 1 : 2; pages >= 1; pages--)
     {
+        /* BCM2712 FBFREE+FBALLOC returns a null base and loses the
+         * scanned surface, so adopt the boot framebuffer instead. */
+        if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
+        {
+            if ((aligned_width <= xsd->vcsd_BootFBWidth)
+                && (height <= xsd->vcsd_BootFBHeight))
+            {
+                fb_ptr   = (APTR)(IPTR)xsd->vcsd_BootFB;
+                fb_pitch = xsd->vcsd_BootFBPitch;
+            }
+            else
+            {
+                /* Larger than the boot surface: a framebuffer of our own. */
+                fb_pitch = aligned_width * bytesperpix;
+                if (!(fb_ptr = vc4_hvs6_alloc_fb(xsd, fb_pitch, height)))
+                    return FALSE;
+            }
+            break;
+        }
+
         /* Hold the mailbox lock across the whole multi-transaction sequence
          * (FBFREE -> batched mode/depth/pixfmt/FBALLOC -> GETPITCH). */
         VC4_MBOX_LOCK(xsd);
@@ -274,6 +322,19 @@ static BOOL vc4_program_fb(struct VideoCoreGfx_staticdata *xsd,
      * timing for this mode (read-only, self-skips on QEMU). */
     vc4_hvs_dump(xsd, (ULONG)(IPTR)fb_ptr, fb_pitch, aligned_width, height);
 
+    /* Unconditional report: on a black screen serial is all there is. */
+    if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
+    {
+        vc4_hvs6_report(xsd, (ULONG)(IPTR)fb_ptr, fb_pitch, aligned_width, height);
+
+        /* A mode set holds this ~100 ms; cursor updates must wait. */
+        VC4_MBOX_LOCK(xsd);
+        if (vc4_hvs6_takeover(xsd, (ULONG)(IPTR)fb_ptr, fb_pitch,
+                              aligned_width, height, want))
+            vc4_hvs6_add_backpage(xsd, fb_pitch, height);
+        VC4_MBOX_UNLOCK(xsd);
+    }
+
     /* Phase 2: own the display list from here on. Flips and cursor
      * updates become dlist repoints; falls back to the firmware paths
      * (and returns FALSE) if the live list can't be inherited. */
@@ -291,6 +352,13 @@ static VOID vc4_restore_cursor(struct VideoCoreGfx_staticdata *xsd)
 {
     if (!xsd->vcsd_CurBuf || !xsd->vcsd_CurWidth || !xsd->vcsd_CurHeight)
         return;
+
+    /* HVS6 has no firmware cursor; the takeover emptied the plane. */
+    if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
+    {
+        vc4_hvs_update_cursor(xsd);
+        return;
+    }
 
     /* Owning the display list: the takeover already baked the current
      * cursor state into our list, and the firmware cursor tags would
@@ -339,6 +407,8 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     APTR fb_ptr = NULL;
     UBYTE bytesperpix;
     HIDDT_ModeID modeid;
+    OOP_Object *sync = NULL, *modepf = NULL;
+    struct vcgfx_timing want;
 
     D(bug("[VideoCoreGfx] VideoCoreGfx.OnBitMap::New()\n"));
 
@@ -361,13 +431,13 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         return NULL;
     }
 
+    /* The mode's sync tells refresh rates of one size apart. */
+    if (!HIDD_DMEnum_GetMode(xsd->vcsd_DMEnum, modeid, &sync, &modepf))
+        sync = NULL;
+
     if (!width || !height || !pf)
     {
-        OOP_Object *sync = NULL;
-        OOP_Object *modepf = NULL;
-
-        if (!HIDD_DMEnum_GetMode(xsd->vcsd_DMEnum, modeid, &sync, &modepf)
-            || !sync || !modepf)
+        if (!sync || !modepf)
         {
             D(bug("[VideoCoreGfx] OnBitMap::New: GetMode(0x%08x) failed\n", (ULONG)modeid));
             return NULL;
@@ -407,7 +477,7 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     RawPutChar(0x03);
 
     if (!vc4_program_fb(xsd, aligned_width, height, bytesperpix,
-                        &fb_ptr, &fb_pitch))
+                        vc4_sync_timing(cl, sync, &want), &fb_ptr, &fb_pitch))
     {
         D(bug("[VideoCoreGfx] OnBitMap::New: FBALLOC failed\n"));
         return NULL;
@@ -461,6 +531,82 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     ReturnPtr("VideoCoreGfx.OnBitMap::New: Obj", OOP_Object *, o);
 }
 
+/*
+ * A draw is about to land inside the rectangle an overlay plane covers.
+ * Nothing draws there while the plane is up - the gallium driver renders
+ * straight onto it - so this is something opening over the GL window: a
+ * window, a menu, a requester. The HVS composites the plane above the fb,
+ * so it would hide that. Hand the area back to the fb instead: copy what the
+ * plane shows into the fb under it, then take the plane down. If the app is
+ * still presenting, its next present sees the window obscured and blits as it
+ * already does; if it has stopped, the fb now holds its last frame.
+ */
+void vcgfx_ovl_yield(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm,
+                     LONG x0, LONG y0, LONG x1, LONG y1)
+{
+    const struct vc4gfx_overlay *d = &xsd->vcsd_OvlDesc;
+    struct BitmapData *fb;
+    LONG ox, oy, ow, oh, cx0, cy0, cx1, cy1, y;
+
+    /* Unlocked first: this sits in front of every fb draw. */
+    if (!xsd->vcsd_OvlShown || bm != xsd->vcsd_OvlBM)
+        return;
+
+    ObtainSemaphore(&xsd->vcsd_OvlLock);
+    if (!xsd->vcsd_OvlShown || bm != xsd->vcsd_OvlBM)
+    {
+        ReleaseSemaphore(&xsd->vcsd_OvlLock);
+        return;
+    }
+
+    ox = d->ovl_X;
+    oy = d->ovl_Y;
+    ow = d->ovl_Width;
+    oh = d->ovl_Height;
+    if (x1 < ox || y1 < oy || x0 >= ox + ow || y0 >= oy + oh)
+    {
+        ReleaseSemaphore(&xsd->vcsd_OvlLock);
+        return;
+    }
+
+    /* Unscaled 32bpp only - both planes are XRGB, so rows copy as-is. A
+     * scaled plane is just taken down; the next present repaints it. The
+     * plane's address is a valid CPU address: V3D arenas are identity
+     * mapped, vc4gallium's bus address masks back to the vaddr. */
+    fb = xsd->vcsd_OvlBMData;
+    if (fb && fb->VideoData && fb->bytesperpix == 4
+        && (!d->ovl_DestW || d->ovl_DestW == d->ovl_Width)
+        && (!d->ovl_DestH || d->ovl_DestH == d->ovl_Height))
+    {
+        cx0 = ox > 0 ? ox : 0;
+        cy0 = oy > 0 ? oy : 0;
+        cx1 = ox + ow < (LONG)fb->width  ? ox + ow : (LONG)fb->width;
+        cy1 = oy + oh < (LONG)fb->height ? oy + oh : (LONG)fb->height;
+
+        if (cx1 > cx0 && cy1 > cy0)
+        {
+            UBYTE *src = (UBYTE *)(IPTR)d->ovl_Phys
+                       + (cy0 - oy) * d->ovl_Pitch + (cx0 - ox) * 4;
+            UBYTE *dst = fb->VideoData + cy0 * fb->bytesperrow + cx0 * 4;
+            ULONG bytes = (ULONG)(cx1 - cx0) * 4;
+
+            /* V3D pages are Normal-NC; vc4gallium's may be cached. */
+            CacheClearE(src, (ULONG)(cy1 - cy0 - 1) * d->ovl_Pitch + bytes,
+                        CACRF_InvalidateD);
+            for (y = cy0; y < cy1; y++)
+            {
+                neon_copyline(dst, src, bytes);
+                src += d->ovl_Pitch;
+                dst += fb->bytesperrow;
+            }
+        }
+    }
+
+    vc4_hvs_overlay(xsd, NULL);
+    xsd->vcsd_OvlShown = FALSE;
+    ReleaseSemaphore(&xsd->vcsd_OvlLock);
+}
+
 /**********  Bitmap::Set()  ***************************************/
 
 /* gfx.hidd's Show() switches the FB ModeID via SetAttrs on us. Left to the
@@ -506,7 +652,20 @@ IPTR MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
         {
             /* Zero-copy overlay plane (vc4gallium windowed GL). Success
              * is reported via a Get on the same attribute. */
-            vc4_hvs_overlay(xsd, (const struct vc4gfx_overlay *)tag->ti_Data);
+            const struct vc4gfx_overlay *ovl =
+                (const struct vc4gfx_overlay *)tag->ti_Data;
+            BOOL shown;
+
+            ObtainSemaphore(&xsd->vcsd_OvlLock);
+            shown = vc4_hvs_overlay(xsd, ovl) && ovl;
+            if (shown)
+            {
+                xsd->vcsd_OvlDesc   = *ovl;
+                xsd->vcsd_OvlBM     = o;
+                xsd->vcsd_OvlBMData = data;
+            }
+            xsd->vcsd_OvlShown = shown;
+            ReleaseSemaphore(&xsd->vcsd_OvlLock);
             return TRUE;
         }
     }
@@ -523,6 +682,7 @@ IPTR MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
         {
             IPTR width = 0, height = 0, bytesperpix_attr = 0;
             ULONG aligned_width, fb_pitch = 0;
+            struct vcgfx_timing want;
             APTR fb_ptr = NULL;
             UBYTE bytesperpix;
 
@@ -536,7 +696,8 @@ IPTR MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
                 bytesperpix   = (UBYTE)bytesperpix_attr;
 
                 if (vc4_program_fb(xsd, aligned_width, height, bytesperpix,
-                                   &fb_ptr, &fb_pitch) && fb_ptr)
+                                   vc4_sync_timing(cl, sync, &want), &fb_ptr, &fb_pitch)
+                    && fb_ptr)
                 {
                     struct TagItem extra_tags[] =
                     {
@@ -580,7 +741,16 @@ IPTR MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 
 VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
+    struct VideoCoreGfx_staticdata *xsd = XSD(cl);
+
     EnterFunc(bug("VideoCoreGfx.OnBitMap::Dispose()\n"));
+    ObtainSemaphore(&xsd->vcsd_OvlLock);
+    if (xsd->vcsd_OvlBM == o)
+    {
+        xsd->vcsd_OvlShown = FALSE;
+        xsd->vcsd_OvlBM    = NULL;
+    }
+    ReleaseSemaphore(&xsd->vcsd_OvlLock);
     OOP_DoSuperMethod(cl, o, msg);
     ReturnVoid("VideoCoreGfx.OnBitMap::Dispose");
 }

@@ -125,8 +125,10 @@ bug("[AllocSpriteData] Bitmap contents:\n");                    \
 #define SCALE_NORMAL  16
         BOOL have_OutputHeight = FALSE;
         BOOL have_OldDataFormat = FALSE;
+        BOOL direct_old = FALSE;
         ULONG height = 0;
         ULONG width = 16;
+        UWORD source_height = 0;
         struct TagItem *tag, * tstate = tagList;
         struct BitMap *friend_bm = NULL;
         ULONG pixfmt = BMF_SPECIALFMT | SHIFT_PIXFMT(PIXFMT_LUT8);
@@ -170,27 +172,32 @@ bug("[AllocSpriteData] Bitmap contents:\n");                    \
             /* A zero-width/height sprite is evidently legal on AOS */
             UWORD height2 = height == 0 ? 1 : height;
             UWORD *p, *q, *s = (UWORD *)bitmap + 2;
-            UWORD k, mask;
+            UWORD k;
 
-            InitBitMap(&old_bitmap, 2, 16, height2);
-            planes_size = height2 * sizeof(UWORD) * 2;
-            planes = AllocMem(planes_size, MEMF_CLEAR | MEMF_CHIP);
-            if(!planes)
-                return NULL;
-            p = planes;
-            q = &planes[height2];
-            mask = ~((1 << (16 - width)) - 1);
-            old_bitmap.Planes[0] = (PLANEPTR)p;
-            old_bitmap.Planes[1] = (PLANEPTR)q;
-            for(k = 0; k < height; ++k) {
-                *p++ = AROS_WORD2BE(*s++ & mask);
-                *q++ = AROS_WORD2BE(*s++ & mask);
+            source_height = height;
+            direct_old = xrep == 0 && yrep == 0;
+            if (!direct_old) {
+                InitBitMap(&old_bitmap, 2, 16, height2);
+                planes_size = height2 * sizeof(UWORD) * 2;
+                planes = AllocMem(planes_size, MEMF_CLEAR | MEMF_CHIP);
+                if(!planes)
+                    return NULL;
+                p = planes;
+                q = &planes[height2];
+                old_bitmap.Planes[0] = (PLANEPTR)p;
+                old_bitmap.Planes[1] = (PLANEPTR)q;
+                for(k = 0; k < height; ++k) {
+                    /* Old-format sprite rows are always 16 bits wide.  The
+                     * declared width does not mask source words on AmigaOS. */
+                    *p++ = AROS_WORD2BE(*s++);
+                    *q++ = AROS_WORD2BE(*s++);
+                }
+                bsa.bsa_SrcBitMap = &old_bitmap;
+                bsa.bsa_SrcWidth = 16;
+                bsa.bsa_SrcHeight = height2;
             }
             height = height2;
             width = 16;
-            bsa.bsa_SrcBitMap = &old_bitmap;
-            bsa.bsa_SrcWidth = width;
-            bsa.bsa_SrcHeight = height;
         } else {
             bsa.bsa_SrcBitMap   = bitmap;
             bsa.bsa_SrcWidth  = GetBitMapAttr(bitmap, BMA_WIDTH);
@@ -242,7 +249,39 @@ bug("[AllocSpriteData] Bitmap contents:\n");                    \
             /* Graphics drivers expect mouse pointer bitmap in LUT8 format, so we give it */
             bsa.bsa_DestBitMap  = AllocBitMap(width, height, 8, BMF_CLEAR | pixfmt, friend_bm);
             if(bsa.bsa_DestBitMap) {
-                BitMapScale(&bsa);
+                if (direct_old) {
+                    OOP_Object *gc = obtain_cache_object(CDD(GfxBase)->gc_cache, GfxBase);
+                    UWORD *source = (UWORD *)bitmap + 2;
+                    UWORD rownum;
+
+                    if (!gc) {
+                        FreeBitMap(bsa.bsa_DestBitMap);
+                        FreeVec(sprite);
+                        sprite = NULL;
+                        goto done;
+                    }
+
+                    /* A legacy sprite is already 16 pixels wide.  Convert
+                     * each pair of bitplane words directly to LUT8 pens,
+                     * avoiding BitMapScale's per-pixel HIDD calls. */
+                    for (rownum = 0; rownum < source_height; rownum++) {
+                        UBYTE row[16];
+                        UWORD plane0 = *source++;
+                        UWORD plane1 = *source++;
+                        UWORD x;
+
+                        for (x = 0; x < 16; x++) {
+                            UWORD bit = 0x8000 >> x;
+                            row[x] = ((plane0 & bit) != 0) |
+                                     (((plane1 & bit) != 0) << 1);
+                        }
+                        HIDD_BM_PutImage(HIDD_BM_OBJ(bsa.bsa_DestBitMap), gc,
+                                         row, sizeof(row), 0, rownum, 16, 1,
+                                         vHidd_StdPixFmt_Native);
+                    }
+                    release_cache_object(CDD(GfxBase)->gc_cache, gc, GfxBase);
+                } else
+                    BitMapScale(&bsa);
 
                 sprite->es_SimpleSprite.height = height;
                 sprite->es_SimpleSprite.x      = 0;
@@ -262,6 +301,7 @@ bug("[AllocSpriteData] Bitmap contents:\n");                    \
                 sprite = NULL;
             }
         }
+done:
         if(have_OldDataFormat && planes_size)
             FreeMem(planes, planes_size);
     }

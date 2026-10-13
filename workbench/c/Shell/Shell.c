@@ -75,6 +75,7 @@ LONG interact(ShellState *ss)
     struct CommandLineInterface *cli = Cli();
     Buffer in = {0}, out = {0};
     BOOL moreLeft = FALSE;
+    BOOL initialCommand = (ss->flags & FNF_INITIALCOMMAND) != 0;
     LONG error = 0;
 
     /* Executing a script marks the shell as background, so remember how the
@@ -85,14 +86,17 @@ LONG interact(ShellState *ss)
 
     setInteractive(cli, ss);
 
-    /* pre-allocate input buffer */
-    if ((error = bufferAppend("?", 1, &in, ss))) /* FIXME drop when readLine ok */
-        return error;
+    /* readLine() writes up to LINE_MAX bytes plus a terminator straight
+     * into in.buf. */
+    if (!bufferExpand(&in, LINE_MAX + 1, ss))
+        return ERROR_NO_FREE_STORE;
 
     do {
         if ((error = Redirection_init(ss)) == 0)
         {
-            cliPrompt(ss);
+            if (!initialCommand)
+                cliPrompt(ss);
+            initialCommand = FALSE;
 
             bufferReset(&in); /* reuse allocated buffers */
             bufferReset(&out);
@@ -242,7 +246,7 @@ LONG checkLine(ShellState *ss, Buffer *in, Buffer *out, BOOL echo)
                 tmpchr = out->buf[out->len - 1];
                 out->buf[out->len - 1] = 0;
             }
-            bug("[Shell] %s %s\n", ss->command + 2, out->buf);
+            D(bug("[Shell] %s %s\n", ss->command + 2, out->buf));
             if (out->len > 0)
                 out->buf[out->len - 1] = tmpchr;
         }
@@ -485,10 +489,16 @@ static LONG executeLine(ShellState *ss, STRPTR commandArgs)
     BPTR module, scriptLock = BNULL;
     LONG error = 0;
     TEXT *cmd;
+    ULONG cmdSize = (commandArgs ? strlen(commandArgs) : 0)
+        + FILE_MAX + 4;
 
     D(bug("[Shell] executeLine: %s %s\n", command, commandArgs));
 
-    cmd = AllocVec(4096 * sizeof(TEXT), MEMF_ANY);
+    /* Reserve only what can be written below: an optional quoted path
+     * (limited to FILE_MAX by NameFromLock), a separating space, the
+     * already parsed argument string, and the terminator.
+     */
+    cmd = AllocVec(cmdSize, MEMF_ANY);
     if (!cmd) {
         PrintFault(ERROR_NO_FREE_STORE, NULL);
         return ERROR_NO_FREE_STORE;
@@ -741,8 +751,7 @@ __startup AROS_CLI(ShellStart)
 
     D(bug("Shell %ld: exiting, error = %ld\n", ss->cliNumber, error));
 
-    if (ss->arg_rd)
-        FreeDosObject(DOS_RDARGS, ss->arg_rd);
+    freeInterpreterState(ss);
 
     FreeMem(ss, sizeof(ShellState));
 
@@ -757,4 +766,3 @@ __startup AROS_CLI(ShellStart)
 
     return error ? RETURN_FAIL : RETURN_OK;
 }
-

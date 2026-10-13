@@ -17,7 +17,7 @@ PRIV_EXEC_INCLUDES = \
     $(TARGET_KERNEL_INCLUDES) \
     -I$(SRCDIR)/rom/kernel
 
-CFILES          := coldreboot moveexecbase shutdowna exec_globals
+CFILES          := coldreboot moveexecbase shutdowna exec_globals bootstack
 AFILES		:= enable disable readgayle
 
 #MM kernel-exec-amiga-m68k : \
@@ -28,7 +28,7 @@ AFILES		:= enable disable readgayle
 
 USER_INCLUDES     := $(PRIV_EXEC_INCLUDES)
 USER_AFLAGS     := $(PRIV_EXEC_INCLUDES) -I$(GENINCDIR)
-OPTIMIZATION_CFLAGS := -Os
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
 
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec arch=amiga-m68k \

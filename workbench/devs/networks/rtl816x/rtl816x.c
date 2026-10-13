@@ -83,19 +83,19 @@ UBYTE *get_hwbase(struct net_device *unit)
 
 void MMIO_W8(APTR addr, UBYTE val8)
 {
-    *((volatile UBYTE *)(addr)) = (val8);
+    mmio_outb(val8, addr);
     RTL_R8(addr);
 }
 
 void MMIO_W16(APTR addr, UWORD val16)
 {
-    *((volatile UWORD *)(addr)) = (val16);
+    mmio_outw(val16, addr);
     RTL_R16(addr);
 }
 
 void MMIO_W32(APTR addr, ULONG val32)
 {
-    *((volatile ULONG *)(addr)) = (val32);
+    mmio_outl(val32, addr);
     RTL_R32(addr);
 }
 

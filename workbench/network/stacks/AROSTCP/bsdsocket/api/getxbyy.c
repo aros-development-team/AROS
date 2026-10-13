@@ -126,6 +126,33 @@ static struct hostent *makehostent(struct SocketBase *libPtr,
 }
 
 
+/*
+ * The host table holds entries of both address families (a HOST line may
+ * give an IPv4 or an IPv6 address); a lookup by name is for one of them.
+ */
+struct hostent *_gethtbyname2(struct SocketBase *libPtr,
+                              const char *name, int af)
+{
+    struct HostentNode *entNode;
+    struct hostent *host;
+
+    LOCK_R_NDB(NDB);
+
+    for(entNode = (struct HostentNode *)NDB->ndb_Hosts.mlh_Head;
+            entNode->hn_Node.mln_Succ;
+            entNode = (struct HostentNode *)entNode->hn_Node.mln_Succ)
+        if(entNode->hn_Ent.h_addrtype == af &&
+                (strcasecmp(entNode->hn_Ent.h_name, (char *)name) == 0 ||
+                 matchAlias(entNode->hn_Ent.h_aliases, name))) {
+            host = makehostent(libPtr, entNode);
+            UNLOCK_NDB(NDB);
+            return host;
+        }
+    UNLOCK_NDB(NDB);
+    writeErrnoValue(libPtr, 0);
+    return NULL;
+}
+
 struct hostent *_gethtbyname(struct SocketBase *libPtr,
                              const char *name)
 {
@@ -137,8 +164,9 @@ struct hostent *_gethtbyname(struct SocketBase *libPtr,
     for(entNode = (struct HostentNode *)NDB->ndb_Hosts.mlh_Head;
             entNode->hn_Node.mln_Succ;
             entNode = (struct HostentNode *)entNode->hn_Node.mln_Succ)
-        if(strcasecmp(entNode->hn_Ent.h_name, (char *)name) == 0 ||
-                matchAlias(entNode->hn_Ent.h_aliases, name)) {
+        if(entNode->hn_Ent.h_addrtype == AF_INET &&
+                (strcasecmp(entNode->hn_Ent.h_name, (char *)name) == 0 ||
+                 matchAlias(entNode->hn_Ent.h_aliases, name))) {
             host = makehostent(libPtr, entNode);
             UNLOCK_NDB(NDB);
             return host;

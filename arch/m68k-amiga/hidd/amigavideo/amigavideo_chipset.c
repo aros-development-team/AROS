@@ -14,6 +14,7 @@
 #include <hardware/cia.h>
 #include <hidd/gfx.h>
 #include <graphics/modeid.h>
+#include <graphics/sprite.h>
 
 #include "amigavideo_hidd.h"
 #include "amigavideo_bitmap.h"
@@ -26,6 +27,31 @@
 
 static const UBYTE fetchunits[] = { 3,3,3,0, 4,3,3,0, 5,4,3,0 };
 static const UBYTE fm_maxplanes[] = { 3,2,1,0, 3,3,2,0, 3,3,3,0 };
+
+/*
+ * Select the widest AGA bitplane fetch supported by BytesPerRow and every
+ * displayed plane address.  On standard AGA machines GfxBase->MemType is
+ * BANDWIDTH_4X, matching the layout-dependent part of the Kickstart 3.1
+ * selector.  The values used here are internal indices: 0, 1 and 2 map to
+ * 16-, 32- and 64-bit fetches; the latter is written to FMODE as 3 by
+ * setfmode().
+ */
+static BYTE bestbplfetchmode(struct amigabm_data *bm)
+{
+    IPTR alignment = bm->bytesperrow;
+    UBYTE i;
+
+    for (i = 0; i < bm->depth; i++)
+        alignment |= (IPTR)bm->pbm->Planes[i];
+
+    if (alignment & 1)
+        return -1;
+    if (!(alignment & 7))
+        return 2;
+    if (!(alignment & 3))
+        return 1;
+    return 0;
+}
 
 /* reset to OCS defaults */
 VOID resetcustom(struct amigavideo_staticdata *csd)
@@ -70,13 +96,6 @@ VOID resetcustom(struct amigavideo_staticdata *csd)
     custom->color[0] = DEFAULT_BORDER_GRAY;
 }
 
-static VOID waitvblank(struct amigavideo_staticdata *csd)
-{
-    // ugly busy loop for now..
-    UWORD fc = csd->framecounter;
-    while (fc == csd->framecounter);
-}
- 
 static VOID setnullsprite(struct amigavideo_staticdata *csd)
 {
     if (csd->copper1_spritept) {
@@ -220,12 +239,9 @@ VOID resetmode(struct amigavideo_staticdata *csd)
     csd->palmode = (GfxBase->DisplayFlags & NTSC) == 0;
     setpalntsc(csd);
 
+    GfxBase->LOFlist = GfxBase->SHFlist = csd->copper2_backup;
     custom->cop2lc = (ULONG)csd->copper2_backup;
     custom->copjmp2 = 0;
-
-    waitvblank(csd);
-
-    GfxBase->LOFlist = GfxBase->SHFlist = csd->copper2_backup;
 
     resetcustom(csd);
 }
@@ -246,6 +262,104 @@ static VOID setcopperplanes(struct amigavideo_staticdata *csd, struct amigabm_da
     }
 }
 
+static VOID changecopperplaneslist(struct amigabm_data *bm,
+                                   struct copper2data *c2d,
+                                   struct BitMap *oldbm,
+                                   struct BitMap *newbm)
+{
+    UWORD *copbpl = c2d->copper2_bpl;
+    WORD i;
+
+    if (!copbpl)
+        return;
+
+    for (i = 0; i < bm->depth; i++)
+    {
+        UBYTE plane = bm->bploffsets[i];
+        ULONG oldptr = (ULONG)oldbm->Planes[plane];
+        ULONG newptr = (ULONG)newbm->Planes[plane];
+        ULONG displayed = ((ULONG)copbpl[1] << 16) | copbpl[3];
+
+        displayed += newptr - oldptr;
+        copbpl[1] = displayed >> 16;
+        copbpl[3] = displayed;
+        copbpl += 4;
+    }
+}
+
+static UWORD currentvpos(VOID)
+{
+    volatile struct Custom *custom = (struct Custom *)0xdff000;
+    UWORD high, low;
+
+    do
+    {
+        low = custom->vhposr >> 8;
+        high = custom->vposr;
+    } while (low != (custom->vhposr >> 8));
+
+    return low | ((high & 7) << 8);
+}
+
+/*
+ * Worst-case time budget for publishing a complete palette and plane-pointer
+ * update before the copper reaches this viewport.  This is a relative beam
+ * distance, not a screen-mode coordinate.
+ */
+#define COPPER_CHANGE_GUARD_LINES 32
+
+static BOOL copperchangedanger(struct amigabm_data *bm)
+{
+    WORD displaystart = bm->diwstarty + (bm->topedge >> bm->interlace);
+    WORD distance = (WORD)currentvpos() - displaystart;
+
+    return distance < 0 && distance >= -COPPER_CHANGE_GUARD_LINES;
+}
+
+VOID commitcopperchanges(struct amigavideo_staticdata *csd,
+                         struct amigabm_data *bm, BOOL wait_for_safe)
+{
+    BOOL topmost = csd->compositedbms != NULL &&
+        (void *)bm == (void *)csd->compositedbms->lh_Head;
+
+    for (;;)
+    {
+        if (wait_for_safe)
+        {
+            while (copperchangedanger(bm))
+                ;
+        }
+
+        if (wait_for_safe)
+            Disable();
+        if (!wait_for_safe || !copperchangedanger(bm))
+        {
+            if (bm->palette_changed)
+            {
+                setcoppercolors(csd, bm, bm->palette, topmost);
+                bm->palette_changed = FALSE;
+            }
+
+            if (bm->bitmap_changed && bm->displayed_pbm && bm->pbm)
+            {
+                changecopperplaneslist(bm, &bm->copld,
+                                       bm->displayed_pbm, bm->pbm);
+                if (bm->interlace)
+                    changecopperplaneslist(bm, &bm->copsd,
+                                           bm->displayed_pbm, bm->pbm);
+                bm->displayed_pbm = bm->pbm;
+                bm->bitmap_changed = FALSE;
+            }
+
+            if (wait_for_safe)
+                Enable();
+            break;
+        }
+        if (wait_for_safe)
+            Enable();
+    }
+}
+
 static VOID setcopperscroll2(struct amigavideo_staticdata *csd, struct amigabm_data *bm, struct copper2data *c2d, UWORD *c2, BOOL odd)
 {
     UWORD *copptr = c2d->copper2_scroll;
@@ -259,19 +373,19 @@ static VOID setcopperscroll2(struct amigavideo_staticdata *csd, struct amigabm_d
 
     fmodewidth = 16 << csd->fmode_bpl;
     x = bm->leftedge;
-    y = csd->starty + (bm->topedge >> bm->interlace);
+    y = bm->diwstarty + (bm->topedge >> bm->interlace);
 
     /* A screen positioned above the view top is scrolled, not moved: pin the
        display window at the top and turn the surplus into a bitplane offset,
        so the lower part of an oversized bitmap comes into view. */
     yscroll = 0;
-    if (y < csd->starty) {
-        yscroll = y - csd->starty;
-        y = csd->starty;
+    if (y < bm->diwstarty) {
+        yscroll = y - bm->diwstarty;
+        y = bm->diwstarty;
     }
 
     xmaxscroll = 1 << (1 + csd->fmode_bpl);
-    xdelay = x & (fmodewidth - 1);
+    xdelay = (x + bm->diwstartx - csd->startx) & (fmodewidth - 1);
     xscroll = -x;
 
     yend = y + (bm->displayheight >> bm->interlace);
@@ -290,17 +404,18 @@ static VOID setcopperscroll2(struct amigavideo_staticdata *csd, struct amigabm_d
     offset -= (yscroll * bm->bytesperrow) << (bm->interlace ? 1 : 0);
 
     minearly = 1 << fetchunits[csd->fmode_bpl * 4 + bm->res];
-    if (xdelay) {
+    if (x & (fmodewidth - 1)) {
         ddfstrt -= minearly;
         modulo -= (minearly << bm->res) / 4;
         offset -= (minearly << bm->res) / 4;
     }
 
     // DIWSTRT
-    copptr[1] = (y << 8) | (csd->startx); //(y << 8) + (x + 1);
+    copptr[1] = (y << 8) | bm->diwstartx;
     // DIWSTOP
     copptr = c2d->copper2_diwstop;
-    copptr[1] = (yend << 8) | ((csd->startx + 0x140) & 0xff); //((y + (bm->rows >> bm->interlace)) << 8) + ((x + 1 + (bm->width >> bm->res)) & 0x00ff);
+    copptr[1] = (yend << 8) |
+                 ((bm->diwstartx + (bm->displaywidth >> bm->res)) & 0xff);
 
     /* update the bitmaps copper plane-pointers */
     setcopperplanes(csd, bm, c2d, offset, odd);
@@ -424,6 +539,7 @@ UWORD *populatebmcopperlist(struct amigavideo_staticdata *csd, struct amigabm_da
     UWORD *c = c2;
     UWORD i;
     UWORD bplcon0, bplcon0_res, bplcon0_null, bplcon3;
+    UWORD palette_bplcon3;
     ULONG pptr;
 
     D(bug("[AmigaVideo] %s()\n", __func__));
@@ -441,6 +557,7 @@ UWORD *populatebmcopperlist(struct amigavideo_staticdata *csd, struct amigabm_da
         bplcon0_res = 0;
 
     bplcon0_null = csd->bplcon0_null | (bm->interlace ? 4 : 0) | bplcon0_res;
+    palette_bplcon3 = csd->bplcon3 | bm->bplcon3;
     bplcon3 = csd->bplcon3 | bm->bplcon3 | ((bm->sprite_res + 1) << 6);
 
     D(bug("[AmigaVideo] %s: bplcon0_null = %04x\n", __func__, bplcon0_null));
@@ -474,7 +591,7 @@ UWORD *populatebmcopperlist(struct amigavideo_staticdata *csd, struct amigabm_da
         for (i = 0; i < bm->use_colors; i++) {
             UBYTE agac = i & 31;
             if (agac == 0) {
-                COPPEROUT(c, 0x0106, bm->bplcon3 | ((i / 32) << 13))
+                COPPEROUT(c, 0x0106, palette_bplcon3 | ((i / 32) << 13))
             }
             COPPEROUT(c, 0x0180 + agac * 2, 0x0000)
         }
@@ -483,11 +600,11 @@ UWORD *populatebmcopperlist(struct amigavideo_staticdata *csd, struct amigabm_da
         for (i = 0; i < bm->use_colors; i++) {
             UBYTE agac = i & 31;
             if (agac == 0) {
-                COPPEROUT(c, 0x0106, bm->bplcon3 | ((i / 32) << 13) | 0x0200)
+                COPPEROUT(c, 0x0106, palette_bplcon3 | ((i / 32) << 13) | 0x0200)
             }
             COPPEROUT(c, 0x0180 + agac * 2, 0x000)
         }
-        COPPEROUT(c, 0x106, bm->bplcon3)
+        COPPEROUT(c, 0x106, palette_bplcon3)
     } else {
         // ocs/ecs
         for (i = 0; i < bm->use_colors; i++) {
@@ -585,7 +702,9 @@ BOOL setbitmap(struct amigavideo_staticdata *csd, struct amigabm_data *bm)
     bm->modulo = bm->bytesperrow - bm->modulopre / (4 >> bm->res);
     bm->modulo &= ~((2 << csd->fmode_bpl) - 1);
 
-    setcopperscroll(csd, bm, ((csd->interlaced == TRUE) || (bm->interlace == TRUE)));
+    if (bm->bmcl && bm->bmcl->CopLStart)
+        setcopperscroll(csd, bm,
+                        ((csd->interlaced == TRUE) || (bm->interlace == TRUE)));
 
     D(bug("[AmigaVideo] %s: bm=%x mode=%08x w=%d h=%d d=%d bpr=%d\n",
         __func__, bm, bm->modeid, bm->width, bm->height, bm->depth, bm->bytesperrow));
@@ -599,12 +718,20 @@ BOOL setmode(struct amigavideo_staticdata *csd, struct amigabm_data *bm)
     UWORD *c;
     UWORD ddfstrt, ddfstop;
     UBYTE fetchunit, maxplanes;
-    UWORD bplwidth, viewwidth;
+    UWORD fetchpixels, fetchspan, viewwidth;
     UBYTE i;
+    BYTE bestmode;
 
     D(bug("[AmigaVideo] %s(0x%p)\n", __func__, bm));
 
-    csd->fmode_bpl = csd->aga && csd->aga_enabled ? 2 : 0;
+    csd->fmode_bpl = 0;
+    if (csd->aga && csd->aga_enabled)
+    {
+        bestmode = bestbplfetchmode(bm);
+        if (bestmode < 0)
+            return FALSE;
+        csd->fmode_bpl = bestmode;
+    }
 
     fetchunit = fetchunits[csd->fmode_bpl * 4 + bm->res];
     maxplanes = fm_maxplanes[csd->fmode_bpl * 4 + bm->res];
@@ -620,7 +747,10 @@ BOOL setmode(struct amigavideo_staticdata *csd, struct amigabm_data *bm)
             // is "disabled".
             GfxBase->ChipRevBits0 = SETCHIPREV_AA | GFXF_AA_MLISA;
             csd->aga_enabled = TRUE;
-            csd->fmode_bpl = 2;
+            bestmode = bestbplfetchmode(bm);
+            if (bestmode < 0)
+                return FALSE;
+            csd->fmode_bpl = bestmode;
             fetchunit = fetchunits[csd->fmode_bpl * 4 + bm->res];
             maxplanes = fm_maxplanes[csd->fmode_bpl * 4 + bm->res];
         }
@@ -636,11 +766,27 @@ BOOL setmode(struct amigavideo_staticdata *csd, struct amigabm_data *bm)
     D(bug("[AmigaVideo] %s:  mode %08x (%dx%dx%d) bpr=%d fu=%d\n",
         __func__, bm->modeid, bm->width, bm->height, bm->depth, bm->bytesperrow, fetchunit));
 
-    bplwidth = viewwidth >> (bm->res + 1);
-    ddfstrt = (csd->startx / 2) & ~((1 << fetchunit) - 1);
-    ddfstop = ddfstrt + ((bplwidth + ((1 << fetchunit) - 1) - 2 * (1 << fetchunit)) & ~((1 << fetchunit) - 1));
-    bm->modulopre = ddfstop + 2 * (1 << fetchunit) - ddfstrt;
+    fetchspan = 1 << fetchunit;
+    fetchpixels = fetchspan << (bm->res + 1);
+    ddfstrt = (bm->diwstartx / 2) & ~(fetchspan - 1);
     ddfstrt -= 1 << maxplanes;
+    /*
+     * DDFSTOP names the start of the last fetch unit, so it sits one unit
+     * short of the span's end: a 640 pixel hires line in FMODE 0 is 20 units
+     * of 8 colour clocks from $3c and stops at $d4, as Kickstart programs it.
+     * Placing it a unit further ($dc) is beyond the $d8 the hardware stops
+     * at, so that unit is never fetched while the modulo below still pays
+     * for it, shearing the display.
+     */
+    ddfstop = ddfstrt +
+        (((viewwidth + fetchpixels - 1) / fetchpixels) - 1) * fetchspan;
+
+    /*
+     * The fetched span includes the unit beginning at DDFSTOP.  Keep
+     * modulopre in colour-clock units for setbitmap(), which converts it
+     * back to bytes according to display resolution.
+     */
+    bm->modulopre = ddfstop - ddfstrt + fetchspan;
     bm->ddfstrt = ddfstrt;
     bm->ddfstop = ddfstop;
 
@@ -687,7 +833,8 @@ BOOL setsprite(OOP_Class *cl, OOP_Object *o, WORD width, WORD height, struct pHi
     struct amigabm_data *data = OOP_INST_DATA(cl, o);
     OOP_Object *bmPFObj = NULL;
     HIDDT_PixelFormat *bmPF;
-    IPTR pf, bmcmod;
+    IPTR pf, bmcmod, bytesperpixel = 0;
+    BOOL indexed8;
     UWORD fetchsize;
     UWORD bitmapwidth = width;
     UWORD y, *p;
@@ -696,6 +843,8 @@ BOOL setsprite(OOP_Class *cl, OOP_Object *o, WORD width, WORD height, struct pHi
 
     OOP_GetAttr(msg->shape, aHidd_BitMap_PixFmt, (IPTR*)&bmPFObj);
     OOP_GetAttr(bmPFObj, aHidd_PixFmt_ColorModel, &bmcmod);
+    OOP_GetAttr(bmPFObj, aHidd_PixFmt_BytesPerPixel, &bytesperpixel);
+    indexed8 = bmcmod != vHidd_ColorModel_TrueColor && bytesperpixel == 1;
     if (bmcmod == vHidd_ColorModel_TrueColor)
     {
         OOP_GetAttr(bmPFObj, aHidd_PixFmt_StdPixFmt, (IPTR*)&pf);
@@ -718,13 +867,21 @@ BOOL setsprite(OOP_Class *cl, OOP_Object *o, WORD width, WORD height, struct pHi
             return FALSE;
         csd->sprite_width = width;
         csd->sprite_height = height;
-        csd->sprite_offset_x = msg->xoffset;
-        csd->sprite_offset_y = msg->yoffset;
     }
+    /* Pointer shapes of the same dimensions can have different hot spots. */
+    csd->sprite_offset_x = msg->xoffset;
+    csd->sprite_offset_y = msg->yoffset;
     p = csd->sprite;
     p += fetchsize;
     for(y = 0; y < height; y++) {
+        UBYTE rowpixels[64];
         UWORD xx, xxx, x;
+
+        if (indexed8)
+            HIDD_BM_GetImage(msg->shape, rowpixels, sizeof(rowpixels),
+                             0, y, bitmapwidth < width ? bitmapwidth : width,
+                             1, vHidd_StdPixFmt_Native);
+
         for (xx = 0, xxx = 0; xx < width; xx += 16, xxx++) {
             UWORD pix1 = 0, pix2 = 0;
             for(x = 0; x < 16; x++) {
@@ -732,7 +889,8 @@ BOOL setsprite(OOP_Class *cl, OOP_Object *o, WORD width, WORD height, struct pHi
                 if (xx + x < bitmapwidth)
                 {
                     if (bmcmod != vHidd_ColorModel_TrueColor)
-                        c = HIDD_BM_GetPixel(msg->shape, xx + x, y);
+                        c = indexed8 ? rowpixels[xx + x] :
+                            HIDD_BM_GetPixel(msg->shape, xx + x, y);
                     else
                     {
                         HIDDT_Pixel pix = HIDD_BM_GetPixel(msg->shape, xx + x, y);
@@ -840,26 +998,34 @@ BOOL new_setsprite(OOP_Class *cl, OOP_Object *o, WORD width, WORD height, struct
 VOID setspritepos(struct amigavideo_staticdata *csd, WORD x, WORD y, UBYTE res, BOOL interlace)
 {
     UWORD ctl, pos;
+    WORD height = csd->classic_cursor_data ? csd->classic_cursor_height : csd->sprite_height;
+    WORD xoffset = csd->classic_cursor_data ? csd->classic_cursor_xoffset : csd->sprite_offset_x;
+    WORD yoffset = csd->classic_cursor_data ? csd->classic_cursor_yoffset : csd->sprite_offset_y;
 
     csd->spritex = x;
     csd->spritey = y;
-    if (!csd->sprite || csd->sprite_height == 0)
+    if ((!csd->sprite && !csd->classic_cursor_data) || height == 0)
         return;
 
-    x += csd->sprite_offset_x << res;
+    x += xoffset << res;
     x <<= (2 - res); // convert x to shres coordinates
-    x += (csd->startx - 1) << 2; // display left edge offset
+    x += csd->startx << 2; // sprite origin is not the bitplane fetch offset
  
     if (interlace)
         y >>= 1; // y is always in nonlaced
     y += csd->starty;
-    y += csd->sprite_offset_y;
+    y += yoffset;
 
     pos = (y << 8) | (x >> 3);
-    ctl = ((y + csd->sprite_height) << 8);
-    ctl |= ((y >> 8) << 2) | (((y + csd->sprite_height) >> 8) << 1) | ((x >> 2) & 1) | ((x & 3) << 3);
+    ctl = ((y + height) << 8);
+    ctl |= ((y >> 8) << 2) | (((y + height) >> 8) << 1) | ((x >> 2) & 1) | ((x & 3) << 3);
     csd->spritepos = pos;
     csd->spritectl = ctl;
+    if (csd->classic_cursor_data)
+    {
+        csd->classic_cursor_data[0] = pos;
+        csd->classic_cursor_data[1] = ctl;
+    }
 }
 
 VOID new_setspritepos(struct amigavideo_staticdata *csd, WORD x, WORD y, UBYTE res, BOOL interlace, int spritenum)
@@ -897,7 +1063,7 @@ VOID setspritevisible(struct amigavideo_staticdata *csd, BOOL visible)
     csd->cursorvisible = visible;
     if (visible) {
         if (csd->copper1_spritept) {
-            UWORD *p = csd->sprite;
+            UWORD *p = csd->classic_cursor_data ? csd->classic_cursor_data : csd->sprite;
             struct amigabm_data *bm;
             ForeachNode(csd->compositedbms, bm)
             {
@@ -964,6 +1130,7 @@ BOOL setcolors(struct amigavideo_staticdata *csd, struct amigabm_data *bm, struc
 
     UWORD i, j = 0;
 
+    Disable();
     for (i = msg->firstColor; j < msg->numColors; i++, j++) {
         UBYTE red, green, blue;
         red   = msg->colors[j].red   >> 8;
@@ -975,9 +1142,21 @@ BOOL setcolors(struct amigavideo_staticdata *csd, struct amigabm_data *bm, struc
         //bug("%d: %02x %02x %02x\n", i, red, green, blue);
     }
 
-    if ((bm->bmcl) && (bm->bmcl->CopLStart))
-        setcoppercolors(csd, bm, bm->palette,
-                        (void *)bm == (void *)csd->compositedbms->lh_Head);
+    /*
+     * CopLStart belongs to the preliminary DspIns and may be detached after
+     * MrgCop(), while copld continues to point at the active merged list.
+     * Late SetRGB*() calls must therefore key off the live palette pointer,
+     * not the lifetime of the preliminary list storage.
+     */
+    if (bm->copld.copper2_palette && bm->vis)
+        bm->palette_changed = TRUE;
+    Enable();
+
+    /* A detached bitmap has no live copper reader and can be updated now.
+     * Visible palettes are committed by ChangeVPBitMap(), or by VBlank when
+     * the application performs a palette-only change. */
+    if (bm->copld.copper2_palette && !bm->vis)
+        setcoppercolors(csd, bm, bm->palette, FALSE);
 
     return TRUE;
 }
@@ -1195,9 +1374,12 @@ static BOOL gfx_vblank_attachbm(struct amigavideo_staticdata *csd, struct amigab
     }
     else
     {
-        screen_finish = bm->height - 1;
+        /* screen_finish is an absolute display coordinate. */
+        screen_finish = bm->topedge + bm->viewportheight - 1;
     }
     bm->displayheight = limitheight(csd, (screen_finish - screen_start) + 1, bm->interlace, FALSE);
+    if (bm->displayheight > bm->viewportheight)
+        bm->displayheight = bm->viewportheight;
     D(bug("[AmigaVideo] %s: screen range = %d -> %d (%d rows)\n", __func__, screen_start, screen_finish, bm->displayheight);)
     /* sanity check .. */
     if (bm->displayheight <= 1)
@@ -1473,6 +1655,8 @@ static BOOL gfx_vblank_doupdatescroll(struct amigavideo_staticdata *csd)
                 bmend >>= 1;
 
             bm->displayheight = limitheight(csd, (bmend - bm->topedge), bm->interlace, FALSE);
+            if (bm->displayheight > bm->viewportheight)
+                bm->displayheight = bm->viewportheight;
 
             /* only adjust if enough is visible - otherwise it will be obscured, and hidden in the next case... */
             if ((bm->displayheight != olddisplayheight) && (bm->displayheight > 1))
@@ -1592,7 +1776,9 @@ static BOOL gfx_vblank_doupdatescroll(struct amigavideo_staticdata *csd)
                 bm->displayheight = limitheight(csd, (bmend - bm->topedge), bm->interlace, FALSE);
             }
             else
-                bm->displayheight = limitheight(csd, (bm->height - bm->topedge), bm->interlace, FALSE);
+                bm->displayheight = limitheight(csd, bm->viewportheight, bm->interlace, FALSE);
+            if (bm->displayheight > bm->viewportheight)
+                bm->displayheight = bm->viewportheight;
             if (bm->displayheight > 1)
             {
                 setcopperscroll(csd, csd->updatescroll, ((csd->interlaced == TRUE) || (csd->updatescroll->interlace == TRUE)));
@@ -1641,6 +1827,18 @@ static AROS_INTH1(gfx_vblank, struct amigavideo_staticdata*, csd)
     struct GfxBase *GfxBase = (APTR)csd->cs_GfxBase;
     volatile struct Custom *custom = (struct Custom*)0xdff000;
     BOOL lof = (custom->vposr & 0x8000) != 0;
+    struct amigabm_data *bm;
+
+    /* A palette-only update has no ChangeVPBitMap() call to publish it.
+     * Commit it here, before this field's copper list is selected. */
+    if (csd->compositedbms)
+    {
+        ForeachNode(csd->compositedbms, bm)
+        {
+            if (bm->palette_changed || bm->bitmap_changed)
+                commitcopperchanges(csd, bm, FALSE);
+        }
+    }
 
     /* handle updatescroll first, since it may change the LOFlist/SHFlist pointers */
     if (csd->updatescroll) {
@@ -1680,8 +1878,43 @@ static AROS_INTH1(gfx_vblank, struct amigavideo_staticdata*, csd)
       }
     }
 
-    if (bqvar & BQ_BEAMSYNC)
+    /* Classic applications retain and update their DMA streams directly,
+     * including chained sprite images. Publish the caller's stream rather
+     * than copying its pixels into the driver's cursor storage. */
+    for (int i = 0; i < 8; i++)
+    {
+        UBYTE mask = 1 << i;
+        struct SimpleSprite *sprite = GfxBase->SimpleSprites ?
+                                      GfxBase->SimpleSprites[i] : NULL;
+        if (sprite && (GfxBase->SpriteReserved & mask) &&
+            !(GfxBase->ExtSprites & mask))
+        {
+            ULONG ptr = (ULONG)(sprite->posctldata ? sprite->posctldata : csd->sprite_null);
+            UWORD *cop = csd->new_copper1_spritept[i];
+
+            cop[0] = ptr >> 16;
+            cop[2] = ptr;
+            csd->classic_sprite_mask |= mask;
+        }
+        else if (csd->classic_sprite_mask & mask)
+        {
+            csd->classic_sprite_mask &= ~mask;
+            if (i == 0)
+                setspritevisible(csd, csd->cursorvisible);
+            else
+                new_setspritevisible(csd, csd->spritevisible[i], i);
+        }
+    }
+
+    if (bqvar & BQ_BEAMSYNC) {
         bqvar |= BQ_MISSED;
+        /* A queued beam target may fall beyond this field. Once the beam
+         * wraps, restart the waiting queue rather than relying on an alarm
+         * for a position that the field could not reach.
+         */
+        if (bqvar & BQ_BEAMSYNCWAITING)
+            custom->intreq = INTF_SETCLR | INTF_BLIT;
+    }
 
     return FALSE;
 
@@ -1834,6 +2067,7 @@ VOID initcustom(struct amigavideo_staticdata *csd)
         COPPEROUT(c, 0x0120 + (i << 2), (UWORD)(((ULONG)csd->sprite_null) >> 16))
         if (i == 0)
             csd->copper1_spritept = &c[-1];
+        csd->new_copper1_spritept[i] = &c[-1];
         COPPEROUT(c, 0x0122 + (i << 2), (UWORD)(((ULONG)csd->sprite_null) >> 0))
     }
 
@@ -1857,7 +2091,12 @@ VOID initcustom(struct amigavideo_staticdata *csd)
     custom->cop1lc = (ULONG)csd->copper1;
     custom->cop2lc = (ULONG)csd->copper2_backup;
 
-    custom->dmacon = 0x8000 | 0x0080 | 0x0040 | 0x0020;
+    /*
+     * Keep raster DMA enabled even while the null view has no bitplanes,
+     * matching Kickstart.  Hardware-takeover programs may save DMACONR and
+     * restore it after installing their own bitplanes.
+     */
+    custom->dmacon = 0x8000 | 0x0100 | 0x0080 | 0x0040 | 0x0020;
     
     GfxBase->copinit = (struct copinit*)csd->copper1;
 

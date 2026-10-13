@@ -11,8 +11,8 @@
 
 /*
  * AArch64 boot memory layout.
- * On RPi3 in aarch64 mode, the firmware loads kernel.img at 0x80000.
- * We place our boot data structures in the low memory area (0x0 - 0x80000).
+ * The firmware loads kernel.img at 0x80000. Boot data lives in .bss, not
+ * below it: on the Pi 5, 0x1000-0x80000 is BL31.
  *
  * Page table structure for AArch64 with 4KB granule:
  *   Level 0 (PGD): 512 entries, each covering 512GB -> 1 page  (4KB)
@@ -32,11 +32,6 @@
 #define PGD_SIZE                        4096     /* Level 0: 512 entries x 8 bytes */
 #define PUD_SIZE                        4096     /* Level 1: 512 entries x 8 bytes */
 #define PMD_SIZE                        (4*4096) /* Level 2: 4 pages for 4GB coverage */
-#define PMD_HI_SIZE                     4096     /* Level 2: 1 page for the PCIe window at 24GB */
-
-/* CPU-side PCIe outbound window on BCM2711 (fixed in the SoC address map) */
-#define BCM2711_PCIE_WIN_BASE           0x600000000UL
-#define BCM2711_PCIE_WIN_SIZE           0x40000000UL
 
 struct bcm2708bootmem
 {
@@ -52,9 +47,10 @@ struct bcm2708bootmem
     uint8_t     bm_pgd[PGD_SIZE];                                        /* Level 0 page table */
     uint8_t     bm_pud[PUD_SIZE];                                        /* Level 1 page table */
     uint8_t     bm_pmd[PMD_SIZE];                                        /* Level 2 page tables (2MB blocks) */
-    uint8_t     bm_pmd_hi[PMD_HI_SIZE];                                  /* Level 2 page table for the PCIe window */
 }  __attribute__((packed));
 
-#define BOOTMEMADDR(offset) (&(((struct bcm2708bootmem *)0x0)->offset))
+extern struct bcm2708bootmem __bootmem;
+
+#define BOOTMEMADDR(offset) (&__bootmem.offset)
 
 #endif	/* _BCM2708_BOOT_H */

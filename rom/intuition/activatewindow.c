@@ -104,7 +104,7 @@ static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
     struct IntScreen    *scr = NULL;
     struct InputEvent   *ie;
 
-    if (!ResourceExisting(window, RESOURCE_WINDOW, IntuitionBase)) return;
+    if (window && !ResourceExisting(window, RESOURCE_WINDOW, IntuitionBase)) return;
 //    if (window->Flags & WFLG_TOOLBOX) return;
 
     if ((!iihdata->ActiveGadget) ||
@@ -113,8 +113,13 @@ static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
 
         lock = LockIBase(0UL);
 
-        if (window->Flags & WFLG_TOOLBOX) oldactive = NULL; else oldactive = IntuitionBase->ActiveWindow;
-        if ((window->Flags & WFLG_TOOLBOX) == 0) IntuitionBase->ActiveWindow = window;
+        if (window && (window->Flags & WFLG_TOOLBOX))
+            oldactive = NULL;
+        else
+            oldactive = IntuitionBase->ActiveWindow;
+
+        if (!window || ((window->Flags & WFLG_TOOLBOX) == 0))
+            IntuitionBase->ActiveWindow = window;
 
         DEBUG_ACTIVATEWINDOW(dprintf("IntActivateWindow: Window 0x%lx OldActive 0x%lx\n",
                          window, oldactive));
@@ -142,7 +147,6 @@ static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
                      set/clear WFLG_RMBTRAP. It is not certain that every
                      compiler on every machine produces an atomic instruction.
                 */
-                /* FIXME: check that window->Flags is atomically set everywhere */
                 AROS_ATOMIC_OR(window->Flags, WFLG_WINDOWACTIVE);
                 
                 pointer = IW(window)->pointer;
@@ -264,7 +268,7 @@ static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
                          IntuitionBase);
         }
     }
-    else
+    else if (window)
     {
         int_refreshwindowframe(window, REFRESHGAD_BORDER, 0, IntuitionBase);
     }

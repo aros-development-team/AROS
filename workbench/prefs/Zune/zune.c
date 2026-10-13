@@ -1,5 +1,5 @@
 /*
-    Copyright  2002-2025, The AROS Development Team.
+    Copyright  2002-2026, The AROS Development Team.
     All rights reserved.
 
 */
@@ -20,6 +20,8 @@
 #include <proto/utility.h>
 #include <proto/iffparse.h>
 #include <proto/muimaster.h>
+
+#include <zune/prefswindow.h>
 
 #include "systemp.h"
 #include "buttonsp.h"
@@ -74,10 +76,6 @@ void restore_prefs(CONST_STRPTR name);
 /************************************************************************/
 
 
-static struct Hook main_cancel_pressed_hook;
-static struct Hook main_save_pressed_hook;
-static struct Hook main_use_pressed_hook;
-static struct Hook main_test_pressed_hook;
 static struct Hook main_open_menu_hook;
 static struct Hook main_saveas_menu_hook;
 static struct Hook main_page_active_hook;
@@ -102,6 +100,7 @@ char titlebuf[255];
 
 void close_classes(void)
 {
+    delete_prefswindow_class();
     delete_listview_class();
 }
 
@@ -109,13 +108,12 @@ int open_classes(void)
 {
     if ((ClassListview_CLASS = create_listview_class()) != NULL)
     {
-        return 1;
+        if ((ClassPrefsWindow_CLASS = create_prefswindow_class()) != NULL)
+            return 1;
     }
-    else
-    {
-        close_classes();
-        return 0;
-    }
+
+    close_classes();
+    return 0;
 }
 
 
@@ -185,41 +183,6 @@ void main_page_active(void)
     DoMethod(main_page_group, OM_ADDMEMBER, (IPTR)new_group);
     DoMethod(main_page_group, MUIM_Group_ExitChange);
     main_page_group_displayed = new_group;
-}
-
-/****************************************************************
- Save pressed
-*****************************************************************/
-void main_save_pressed(void)
-{
-    save_prefs(appname, TRUE);
-    DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
-}
-
-/****************************************************************
- Use pressed
-*****************************************************************/
-void main_use_pressed(void)
-{
-    save_prefs(appname, FALSE);
-    DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
-}
-
-/****************************************************************
- Test pressed
-*****************************************************************/
-void main_test_pressed(void)
-{
-    test_prefs();
-}
-
-/****************************************************************
- Cancel pressed
-*****************************************************************/
-void main_cancel_pressed(void)
-{
-    restore_prefs(appname);
-    DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 }
 
 /****************************************************************
@@ -376,10 +339,6 @@ void deinit_gui(void)
 *****************************************************************/
 int init_gui(void)
 {
-    Object *save_button;
-    Object *use_button;
-    Object *test_button;
-    Object *cancel_button;
     STRPTR wintitle;
     
     main_page_entries[ 0].name = (char *)_(MSG_DSC_SYSTEM);
@@ -406,18 +365,6 @@ int init_gui(void)
     main_page_entries[10].mcp_icon = specialclass_get_icon();
     main_page_entries[11].name = (char *)_(MSG_DSC_FRAMES);
     main_page_entries[11].mcp_icon = framesclass_get_icon();
-
-    main_cancel_pressed_hook.h_Entry = HookEntry;
-    main_cancel_pressed_hook.h_SubEntry = (HOOKFUNC)main_cancel_pressed;
-
-    main_save_pressed_hook.h_Entry = HookEntry;
-    main_save_pressed_hook.h_SubEntry = (HOOKFUNC)main_save_pressed;
-
-    main_use_pressed_hook.h_Entry = HookEntry;
-    main_use_pressed_hook.h_SubEntry = (HOOKFUNC)main_use_pressed;
-
-    main_test_pressed_hook.h_Entry = HookEntry;
-    main_test_pressed_hook.h_SubEntry = (HOOKFUNC)main_test_pressed;
 
     main_open_menu_hook.h_Entry = HookEntry;
     main_open_menu_hook.h_SubEntry = (HOOKFUNC)main_open_menu;
@@ -466,10 +413,9 @@ int init_gui(void)
                 End,
             End,
         End,
-        SubWindow, main_wnd = WindowObject,
+        SubWindow, main_wnd = NewObject(ClassPrefsWindow_CLASS->mcc_Class, NULL,
             MUIA_Window_Title, (IPTR)wintitle,
             MUIA_Window_Activate, TRUE,
-            MUIA_Window_CloseGadget, FALSE,
             MUIA_Window_ID, MAKE_ID('Z','W','I','N'),
 
             WindowContents, VGroup,
@@ -506,13 +452,6 @@ int init_gui(void)
                             End,
                         End,
                     End,
-                Child, HGroup,
-                    Child, test_button = ImageButton(_(MSG_GAD_TEST), "THEME:Images/Gadgets/Test"),
-                    Child, HVSpace,
-                    Child, save_button = ImageButton(_(MSG_GAD_SAVE), "THEME:Images/Gadgets/Save"),
-                    Child, use_button = ImageButton(_(MSG_GAD_USE), "THEME:Images/Gadgets/Use"),
-                    Child, cancel_button = ImageButton(_(MSG_GAD_CANCEL), "THEME:Images/Gadgets/Cancel"),
-                    End,
                 End,
             End,
         End;
@@ -521,20 +460,9 @@ int init_gui(void)
     {
         int i;
 
-        DoMethod(main_wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
-                 (IPTR)app, 2, MUIM_CallHook, (IPTR)&main_cancel_pressed_hook);
-        DoMethod(cancel_button, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 2,
-                 MUIM_CallHook, (IPTR)&main_cancel_pressed_hook);
-        DoMethod(save_button, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 2,
-                 MUIM_CallHook, (IPTR)&main_save_pressed_hook);
-        DoMethod(use_button, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 2,
-                 MUIM_CallHook, (IPTR)&main_use_pressed_hook);
-        DoMethod(test_button, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 5,
-                 MUIM_Application_PushMethod, (IPTR)app, 2, MUIM_CallHook,
-                 (IPTR)&main_test_pressed_hook);
         DoMethod(quit_menuitem, MUIM_Notify, MUIA_Menuitem_Trigger,
-                 MUIV_EveryTime, (IPTR)app, 2, MUIM_CallHook,
-                 (IPTR)&main_cancel_pressed_hook);
+                 MUIV_EveryTime, (IPTR)main_wnd, 1,
+                 MUIM_PrefsWindow_Cancel);
         DoMethod(open_menuitem, MUIM_Notify, MUIA_Menuitem_Trigger,
                  MUIV_EveryTime, (IPTR)app, 2, MUIM_CallHook,
                  (IPTR)&main_open_menu_hook);
@@ -615,10 +543,61 @@ void test_prefs(void)
 
 void restore_prefs(CONST_STRPTR name)
 {
+    Object *cfg;
     char buf[255];
+    int i;
+
+    /* Restore the preferences which were active when the window opened. */
+    for (i = 0; main_page_entries[i].name; i++)
+    {
+        struct page_entry *p = &main_page_entries[i];
+
+        if (p->group)
+            DoMethod(p->group, MUIM_Settingsgroup_ConfigToGadgets,
+                     (IPTR)LastSavedConfigdata);
+    }
 
     snprintf(buf, 255, "ENV:zune/%s.prefs", name);
     DoMethod(LastSavedConfigdata, MUIM_Configdata_Save, (IPTR)buf);
+
+    /*
+     * MUIA_Application_Configdata transfers ownership to Application,
+     * therefore never pass LastSavedConfigdata itself here.
+     */
+    cfg = MUI_NewObject(MUIC_Configdata,
+                        MUIA_Configdata_Application, (IPTR)app,
+                        TAG_DONE);
+    if (cfg)
+        set(app, MUIA_Application_Configdata, (IPTR)cfg);
+}
+
+
+void main_test_pressed(void)
+{
+    test_prefs();
+}
+
+void main_revert_pressed(void)
+{
+    restore_prefs(appname);
+}
+
+void main_save_pressed(void)
+{
+    save_prefs(appname, TRUE);
+    DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+}
+
+void main_use_pressed(void)
+{
+    save_prefs(appname, FALSE);
+    DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+}
+
+void main_cancel_pressed(void)
+{
+    restore_prefs(appname);
+    DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 }
 
 

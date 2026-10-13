@@ -1,152 +1,107 @@
+/*
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 
-#include <aros/debug.h>
+    Desc: security.library private memory management (pooled, semaphore
+          protected). Derived from MultiUser Memory.c (c) Geert Uytterhoeven.
+*/
 
 #include <proto/exec.h>
 #include <proto/utility.h>
-#include <proto/dos.h>
-#include <proto/intuition.h>
-
-#include <proto/security.h>
 
 #include "security_intern.h"
 #include "security_memory.h"
 
-/*
- *      Memory Pool Characteristics
- */
+#define MEM_PUDDLESIZE  4096
+#define MEM_THRESHSIZE  4096
 
-#define MEM_PUDDLESIZE	4000
-#define MEM_THRESHSIZE	4000
+/* The library is a singleton, so the pool can be module static */
+static APTR                     Pool = NULL;
+static struct SignalSemaphore   MemSemaphore;
 
-/*
- *      Our Private Memory Pool
- */
-
-APTR Pool = NULL;
-
-/*
- *      Access Control Semaphore
- */
-
-struct SignalSemaphore Semaphore;
-
-/*
- *      Initialisation
- */
-
-BOOL InitMemory(void)
+BOOL InitMemory(struct SecurityBase *secBase)
 {
-    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
+    D(bug(DEBUG_NAME_STR " %s()\n", __func__);)
 
-    InitSemaphore(&Semaphore);
-    ObtainSemaphore(&Semaphore);
-    Pool = CreatePool(MEMF_PUBLIC, MEM_PUDDLESIZE, MEM_THRESHSIZE);
+    InitSemaphore(&MemSemaphore);
+    Pool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR, MEM_PUDDLESIZE, MEM_THRESHSIZE);
 
-    D(
-        if(Pool)
-            bug( DEBUG_NAME_STR " %s: Pool @ %p\n", __func__, Pool);
-      )
+    D(bug(DEBUG_NAME_STR " %s: Pool @ %p\n", __func__, Pool);)
 
-    ReleaseSemaphore(&Semaphore);
-    return((BOOL)(Pool ? TRUE : FALSE));
+    return (Pool != NULL);
 }
 
-/*
- *      Clean Up
- */
-
-void CleanUpMemory(void)
+void CleanUpMemory(struct SecurityBase *secBase)
 {
-    ObtainSemaphore(&Semaphore);
-    if (Pool) {
+    ObtainSemaphore(&MemSemaphore);
+    if (Pool)
+    {
         DeletePool(Pool);
         Pool = NULL;
     }
-    ReleaseSemaphore(&Semaphore);
+    ReleaseSemaphore(&MemSemaphore);
 }
 
-
-/*
- *      Private implementation for AllocMem()
- */
-
+/* AllocMem() replacement: cleared memory from the pool */
 APTR MAlloc(ULONG size)
 {
-    ULONG *block;
+    APTR block = NULL;
 
-    if (size==0)	{
-    D(bug( DEBUG_NAME_STR " %s: FAILED, size == 0!\n", __func__);)
-    return NULL;
-    }
+    if (size == 0)
+        return NULL;
 
-    ObtainSemaphore(&Semaphore);
-    if ((block = AllocPooled(Pool, size)))
-        SetMem(block, 0, size);
-    ReleaseSemaphore(&Semaphore);
-    D(
-        if (block==NULL)	{
-            bug( DEBUG_NAME_STR " %s: FAILED, size = %ld\n", __func__, size);
-        }
-      )
-    return(block);
+    ObtainSemaphore(&MemSemaphore);
+    if (Pool && (block = AllocPooled(Pool, size)))
+        memset(block, 0, size);
+    ReleaseSemaphore(&MemSemaphore);
+
+    D(if (!block) bug(DEBUG_NAME_STR " %s: FAILED, size = %lu\n", __func__, (unsigned long)size);)
+
+    return block;
 }
 
-
-/*
- *      Private implementation for FreeMem()
- */
-
+/* FreeMem() replacement */
 void Free(APTR block, ULONG size)
 {
-    if (block) {
-        ObtainSemaphore(&Semaphore);
-        FreePooled(Pool, block, size);
-        ReleaseSemaphore(&Semaphore);
+    if (block)
+    {
+        ObtainSemaphore(&MemSemaphore);
+        if (Pool)
+            FreePooled(Pool, block, size);
+        ReleaseSemaphore(&MemSemaphore);
     }
-    D(else
-        bug( DEBUG_NAME_STR " %s: FAILED, block == NULL (size%ld)\n", __func__, size);)
 }
 
-
-/*
-*       Private implementation for AllocVec()
-*/
-
+/* AllocVec() replacement: size is stored in front of the block */
 APTR MAllocV(ULONG size)
 {
-    IPTR *block;
+    IPTR *block = NULL;
 
-    if (size==0)	{
-        D(bug( DEBUG_NAME_STR " %s: FAILED, size == 0!\n", __func__);)
+    if (size == 0)
         return NULL;
-    }
 
-    ObtainSemaphore(&Semaphore);
-    if ((block = AllocPooled(Pool, size + sizeof(IPTR)))) {
+    ObtainSemaphore(&MemSemaphore);
+    if (Pool && (block = AllocPooled(Pool, size + sizeof(IPTR))))
+    {
         *(block++) = size + sizeof(IPTR);
-        SetMem(block, 0, size);
+        memset(block, 0, size);
     }
-    ReleaseSemaphore(&Semaphore);
-    D(
-        if (block==NULL)	{
-            bug( DEBUG_NAME_STR " %s: FAILED, size = %d!\n", __func__, size);
-        }
-      )
-    return(block);
+    ReleaseSemaphore(&MemSemaphore);
+
+    D(if (!block) bug(DEBUG_NAME_STR " %s: FAILED, size = %lu\n", __func__, (unsigned long)size);)
+
+    return block;
 }
 
-
-/*
-*      Private implementation for FreeVec()
-*/
-
+/* FreeVec() replacement */
 void FreeV(APTR block)
 {
-    if (block) {
-        ObtainSemaphore(&Semaphore);
-        FreePooled(Pool, (APTR)((IPTR)block-sizeof(IPTR)), *(IPTR *)((IPTR)block-sizeof(IPTR)));
-        ReleaseSemaphore(&Semaphore);
+    if (block)
+    {
+        IPTR *real = ((IPTR *)block) - 1;
+
+        ObtainSemaphore(&MemSemaphore);
+        if (Pool)
+            FreePooled(Pool, real, *real);
+        ReleaseSemaphore(&MemSemaphore);
     }
-    D(else
-        bug( DEBUG_NAME_STR " %s: FAILED, block == NULL!\n");)
 }

@@ -36,6 +36,7 @@
   "IP/K,NETMASK/K,UP/S," \
   "IP6/K,PREFIXLEN/N/K," \
   "GW/K,GW6/K," \
+  "DNS/K,DNS6/K," \
   "IPTYPE/N/K," \
   "ARPTYPE=IPARPTYPE/N/K," \
   "IPREQ=IPREQUESTS/N/K," \
@@ -45,7 +46,8 @@
   "NOARP/S," \
   "ARPHDR/N/K," \
   "P2P=POINT2POINT/S,NOSIMPLEX/S,LOOPBACK/S," \
-  "TUNNEL/S,TSRC/K,TDST/K,TTL/N/K"
+  "TUNNEL/S,TSRC/K,TDST/K,TTL/N/K," \
+  "DEFER/S"
 
 struct ssc_args {
   UBYTE *a_name;
@@ -58,6 +60,8 @@ struct ssc_args {
   LONG  *a_prefixlen;
   UBYTE *a_gw;
   UBYTE *a_gw6;
+  UBYTE *a_dns;			/* comma-separated DNS servers (IPv4 protocol)  */
+  UBYTE *a_dns6;		/* comma-separated DNS servers (IPv6 protocol)  */
   LONG  *a_iptype;
   LONG  *a_arptype;
   LONG  *a_ipno;
@@ -73,6 +77,7 @@ struct ssc_args {
   UBYTE  *a_tsrc;		/* tunnel outer IPv4 local endpoint */
   UBYTE  *a_tdst;		/* tunnel outer IPv4 remote endpoint */
   LONG   *a_ttl;		/* tunnel outer IPv4 TTL */
+  SIPTR   a_defer;		/* device may not be there yet: keep trying in the background */
 };
 
 struct ssconfig {

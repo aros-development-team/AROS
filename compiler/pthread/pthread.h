@@ -26,13 +26,145 @@
 #include <aros/posixc/sys/types.h>
 #include <aros/posixc/sys/time.h>
 #include <aros/posixc/errno.h>
+#include <aros/posixc/signal.h>
+#include <aros/posixc/time.h>
 #else
 #include <sys/types.h>
 #include <sys/time.h>
 #include <errno.h>
+#include <signal.h>
 #endif
 #include <exec/types.h>
+
+#ifdef __cplusplus
+/*
+ * This header is pulled into every C++ translation unit through libstdc++'s
+ * <thread>/<mutex> support.  The exec structures embedded in the pthread
+ * types below drag exec/nodes.h, lists.h, ports.h and tasks.h along, whose
+ * global struct names (Node, List, Task, Message, ...) collide with common
+ * C++ class names as soon as a "using namespace" directive is in effect.
+ *
+ * For C++, the exec headers that have not been included yet are therefore
+ * pulled in under private struct names, and their include guards are reset
+ * afterwards so that a later explicit include still declares the real
+ * types.  The private structs have the exact same layout, so the pthread
+ * types stay ABI compatible with the (C) pthread library.
+ */
+/*
+ * push_macro/pop_macro (rather than a plain #undef at the end) so that a
+ * caller-supplied command-line definition of any of these names - e.g. a C++
+ * port built with -DMessage=SomethingElse to dodge the very same collision -
+ * survives this header instead of being silently dropped.
+ */
+#ifndef EXEC_NODES_H
+#pragma push_macro("Node")
+#pragma push_macro("MinNode")
+#define Node                __pthread_exec_Node
+#define MinNode             __pthread_exec_MinNode
+#define __PTHREAD_PRIVATE_NODES
+#endif
+#ifndef EXEC_LISTS_H
+#pragma push_macro("List")
+#pragma push_macro("MinList")
+#define List                __pthread_exec_List
+#define MinList             __pthread_exec_MinList
+#define __PTHREAD_PRIVATE_LISTS
+#endif
+#ifndef EXEC_PORTS_H
+#pragma push_macro("Message")
+#pragma push_macro("MsgPort")
+#define Message             __pthread_exec_Message
+#define MsgPort             __pthread_exec_MsgPort
+#define __PTHREAD_PRIVATE_PORTS
+#endif
+#ifndef EXEC_TASKS_H
+#pragma push_macro("Task")
+#pragma push_macro("ETask")
+#pragma push_macro("StackSwapStruct")
+#pragma push_macro("StackSwapArgs")
+#define Task                __pthread_exec_Task
+#define ETask               __pthread_exec_ETask
+#define StackSwapStruct     __pthread_exec_StackSwapStruct
+#define StackSwapArgs       __pthread_exec_StackSwapArgs
+#define __PTHREAD_PRIVATE_TASKS
+#endif
+#ifndef EXEC_SEMAPHORES_H
+#pragma push_macro("SignalSemaphore")
+#pragma push_macro("SemaphoreRequest")
+#pragma push_macro("SemaphoreMessage")
+#define SignalSemaphore     __pthread_exec_SignalSemaphore
+#define SemaphoreRequest    __pthread_exec_SemaphoreRequest
+#define SemaphoreMessage    __pthread_exec_SemaphoreMessage
+#define __PTHREAD_PRIVATE_SEMAPHORES
+#endif
+
 #include <exec/semaphores.h>
+
+#ifdef __PTHREAD_PRIVATE_NODES
+#pragma pop_macro("Node")
+#pragma pop_macro("MinNode")
+#undef EXEC_NODES_H
+#undef __PTHREAD_PRIVATE_NODES
+typedef struct __pthread_exec_Node __pthread_exec_node_t;
+#else
+typedef struct Node __pthread_exec_node_t;
+#endif
+#ifdef __PTHREAD_PRIVATE_LISTS
+#pragma pop_macro("List")
+#pragma pop_macro("MinList")
+#undef EXEC_LISTS_H
+#undef __PTHREAD_PRIVATE_LISTS
+typedef struct __pthread_exec_MinList __pthread_exec_minlist_t;
+#else
+typedef struct MinList __pthread_exec_minlist_t;
+#endif
+#ifdef __PTHREAD_PRIVATE_PORTS
+#pragma pop_macro("Message")
+#pragma pop_macro("MsgPort")
+#undef EXEC_PORTS_H
+#undef __PTHREAD_PRIVATE_PORTS
+#endif
+#ifdef __PTHREAD_PRIVATE_TASKS
+#pragma pop_macro("Task")
+#pragma pop_macro("ETask")
+#pragma pop_macro("StackSwapStruct")
+#pragma pop_macro("StackSwapArgs")
+#undef EXEC_TASKS_H
+#undef __PTHREAD_PRIVATE_TASKS
+#endif
+#ifdef __PTHREAD_PRIVATE_SEMAPHORES
+#pragma pop_macro("SignalSemaphore")
+#pragma pop_macro("SemaphoreRequest")
+#pragma pop_macro("SemaphoreMessage")
+#undef EXEC_SEMAPHORES_H
+#undef __PTHREAD_PRIVATE_SEMAPHORES
+typedef struct __pthread_exec_SignalSemaphore __pthread_exec_sigsem_t;
+#else
+typedef struct SignalSemaphore __pthread_exec_sigsem_t;
+#endif
+
+/*
+ * exec/types.h also defines bare storage-class helper macros (STATIC, CONST,
+ * GLOBAL, ...) which routinely appear as enumerators and identifiers in C++
+ * code, so drop them again here.  Its include guard is reset as well, so a
+ * later explicit include of an AROS header brings them back for the AROS
+ * API declarations that rely on them.
+ */
+#undef GLOBAL
+#undef IMPORT
+#undef STATIC
+#undef REGISTER
+#undef CONST
+#undef VOLATILE
+#undef RESTRICT
+#undef EXEC_TYPES_H
+#else
+#include <exec/semaphores.h>
+typedef struct Node __pthread_exec_node_t;
+typedef struct SignalSemaphore __pthread_exec_sigsem_t;
+typedef struct MinList __pthread_exec_minlist_t;
+#endif
+
 #include <sched.h>
 
 //
@@ -153,7 +285,7 @@ typedef struct pthread_mutexattr pthread_mutexattr_t;
 struct pthread_mutex
 {
     int kind;
-    struct SignalSemaphore semaphore;
+    __pthread_exec_sigsem_t semaphore;
     int incond;
 };
 
@@ -180,20 +312,40 @@ typedef struct pthread_mutex pthread_mutex_t;
 struct pthread_condattr
 {
     int pshared;
+    /* Clock an absolute pthread_cond_timedwait() deadline is read against
+     * (CLOCK_REALTIME default per POSIX; CLOCK_MONOTONIC for Mesa's
+     * u_cnd_monotonic_*). Set with pthread_condattr_setclock(); always set
+     * by pthread_condattr_init(). A manually-zeroed attr reads 0, which is
+     * CLOCK_MONOTONIC on AROS - use pthread_condattr_init(). */
+    clockid_t cond_clock;
 };
 
 typedef struct pthread_condattr pthread_condattr_t;
 
 struct pthread_cond
 {
-    int pad1;
-    struct SignalSemaphore semaphore;
-    struct MinList waiters;
+    /* Copied from the attr by pthread_cond_init(); REALTIME when the cond
+     * was created with a NULL attr, a static initializer, or lazy init.
+     * Lives in the slot that was the unused `int pad1` so that
+     * sizeof(pthread_cond_t) is UNCHANGED: std::condition_variable embeds
+     * this struct, and libc++.a (toolchain, prebuilt) plus every object
+     * compiled before the field appeared lay out std::__assoc_sub_state
+     * (mutex, condition_variable, __state_) from that size. Appending a
+     * member instead moved __state_ for newly compiled code only, and
+     * std::future::get() (libc++.a's __sub_wait) then waited forever on a
+     * ready future - the LLVM MCJIT resolveExternalSymbols() stall. */
+    clockid_t cond_clock;
+    __pthread_exec_sigsem_t semaphore;
+    __pthread_exec_minlist_t waiters;
 };
 
 typedef struct pthread_cond pthread_cond_t;
 
+#ifdef CLOCK_REALTIME
+#define PTHREAD_COND_INITIALIZER {CLOCK_REALTIME, NULL_SEMAPHORE, NULL_MINLIST}
+#else
 #define PTHREAD_COND_INITIALIZER {0, NULL_SEMAPHORE, NULL_MINLIST}
+#endif
 
 //
 // Barriers
@@ -231,7 +383,7 @@ typedef struct pthread_rwlockattr pthread_rwlockattr_t;
 
 struct pthread_rwlock
 {
-    struct SignalSemaphore semaphore;
+    __pthread_exec_sigsem_t semaphore;
 };
 
 typedef struct pthread_rwlock pthread_rwlock_t;
@@ -290,6 +442,7 @@ int pthread_setcancelstate(int state, int *oldstate);
 int pthread_setcanceltype(int type, int *oldtype);
 void pthread_testcancel(void);
 int pthread_once(pthread_once_t *once_control, void (*init_routine)(void));
+int pthread_sigmask(int how, const sigset_t *set, sigset_t *oldset);
 
 //
 // Scheduling functions
@@ -340,6 +493,8 @@ int pthread_condattr_init(pthread_condattr_t *attr);
 int pthread_condattr_destroy(pthread_condattr_t *attr);
 int pthread_condattr_getpshared(const pthread_condattr_t *attr, int *pshared);
 int pthread_condattr_setpshared(pthread_condattr_t *attr, int pshared);
+int pthread_condattr_setclock(pthread_condattr_t *attr, clockid_t clock_id);
+int pthread_condattr_getclock(const pthread_condattr_t *attr, clockid_t *clock_id);
 
 //
 // Condition variable functions

@@ -1,0 +1,72 @@
+# lowlevel.library joyport bridge: the pad occupies a port and ReadJoyPort()/SetJoyPortAttrs()
+# reach it through the SetFunction patch installed by controller.hidd (x360 profile).
+expect reading mapped 1
+expect jp dev gamectlr
+# South/East/West/North -> RED/BLUE/GREEN/YELLOW, shoulders -> FORWARD/REVERSE, Start -> PLAY
+btn 0 1
+expect jp dev gamectlr red
+btn 1 1
+expect jp dev gamectlr red blue
+btn 0 0
+btn 1 0
+btn 2 1
+expect jp dev gamectlr green
+btn 2 0
+btn 3 1
+expect jp dev gamectlr yellow
+btn 3 0
+btn 5 1
+expect jp dev gamectlr forward
+btn 5 0
+btn 4 1
+expect jp dev gamectlr reverse
+btn 4 0
+btn 7 1
+expect jp dev gamectlr play
+btn 7 0
+# d-pad and left stick both drive the directions
+btn 11 1
+expect jp dev gamectlr up
+btn 11 0
+btn 14 1
+expect jp dev gamectlr right
+btn 14 0
+axis 0 -32768
+expect jp dev gamectlr left
+axis 0 32767
+expect jp dev gamectlr right
+axis 0 0
+axis 1 32767
+expect jp dev gamectlr up
+axis 1 0
+expect jp dev gamectlr
+# joystick type: two buttons only
+sja dev type joystk
+btn 2 1
+btn 0 1
+expect jp dev joystk red
+btn 0 0
+btn 2 0
+sja dev type gamectlr
+# analogue readout: stick as 0..255 axes, directions from the d-pad only
+axis 0 32767
+axis 1 -32768
+expect jpa dev 255 255
+expect jp dev gamectlr right down
+sja dev type analogue
+expect jp dev analogue 0xff 0xff00
+axis 0 0
+axis 1 0
+expect jpa dev 128 128
+btn 12 1
+expect jp dev analogue down 0x8080
+btn 12 0
+sja dev reinit
+expect jp dev gamectlr
+# rumble tags reach the driver: 0..255 scaled to 0..65535
+sja dev slow 255
+expect output rumble 65535 0
+sja dev fast 128
+expect output rumble 65535 32896
+sja dev off
+expect output rumble 0 0

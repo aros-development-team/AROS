@@ -48,7 +48,15 @@ int _pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, const 
 
     if (abstime)
     {
-        struct timeval tvabstime;
+        struct timeval tvrel;
+        struct timespec rel, now;
+        clockid_t clk;
+
+        // A garbage nanosecond field is invalid usage (POSIX: EINVAL),
+        // on both the absolute and the relative entry points.
+        if (abstime->tv_nsec < 0 || abstime->tv_nsec >= 1000000000)
+            return EINVAL;
+
         // open timer.device
         if (!OpenTimerDevice((struct IORequest *)&timerio, &timermp, task))
         {
@@ -56,25 +64,59 @@ int _pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, const 
             return EINVAL;
         }
 
+        if (!relative)
+        {
+            // Absolute deadlines are read against the clock the condvar
+            // was initialised with (CLOCK_REALTIME unless the attr asked
+            // for CLOCK_MONOTONIC, e.g. Mesa's u_cnd_monotonic_*). Reading
+            // a monotonic deadline against the realtime clock - as this
+            // code used to do unconditionally via gettimeofday() - puts the
+            // interval decades off and the wait never ends.
+            clk = cond->cond_clock;
+            if (clock_gettime(clk, &now) != 0)
+            {
+                CloseTimerDevice((struct IORequest *)&timerio);
+                return EINVAL;
+            }
+            // Signed 64-bit subtraction in the timespec domain: a deadline
+            // already past yields a negative rel, never a wrapped timeval.
+            rel.tv_sec = abstime->tv_sec - now.tv_sec;
+            rel.tv_nsec = abstime->tv_nsec - now.tv_nsec;
+            if (rel.tv_nsec < 0)
+            {
+                rel.tv_sec--;
+                rel.tv_nsec += 1000000000L;
+            }
+        }
+        else
+        {
+            rel = *abstime;
+        }
+
+        // Clamp non-positive intervals to a minimal wait instead of
+        // returning ETIMEDOUT up front or issuing a zero-length
+        // timer.device request (which would wait forever): the waiter is
+        // still enqueued below, so a concurrent signal wins and a timeout
+        // of "now" reports the condition if it is already signalled, per
+        // POSIX, while an unsignalled one still times out promptly.
+        if (rel.tv_sec < 0 || (rel.tv_sec == 0 && rel.tv_nsec <= 0))
+        {
+            rel.tv_sec = 0;
+            rel.tv_nsec = 1000000L; // 1 ms
+        }
+        tvrel.tv_sec = rel.tv_sec;
+        tvrel.tv_usec = rel.tv_nsec / 1000;
+        if (!timerisset(&tvrel))
+        {
+            tvrel.tv_sec = 0;
+            tvrel.tv_usec = 1; // never a zero-length request
+        }
+
         // prepare the device command and send it
         timerio.tr_node.io_Command = TR_ADDREQUEST;
         timerio.tr_node.io_Flags = 0;
-        TIMESPEC_TO_TIMEVAL(&tvabstime, abstime);
-        if (!relative)
-        {
-            struct timeval starttime;
-            // absolute time has to be converted to relative
-            // GetSysTime can't be used due to the timezone offset in abstime
-            gettimeofday(&starttime, NULL);
-            timersub(&tvabstime, &starttime, &tvabstime);
-            if (!timerisset(&tvabstime))
-            {
-                CloseTimerDevice((struct IORequest *)&timerio);
-                return ETIMEDOUT;
-            }
-        }
-        timerio.tr_time.tv_secs = tvabstime.tv_sec;
-        timerio.tr_time.tv_micro = tvabstime.tv_usec;
+        timerio.tr_time.tv_secs = tvrel.tv_sec;
+        timerio.tr_time.tv_micro = tvrel.tv_usec;
         sigs |= (1 << timermp.mp_SigBit);
         SendIO((struct IORequest *)&timerio);
     }
@@ -130,7 +172,66 @@ int _pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, const 
     return 0;
 }
 
-int pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, const struct timespec *abstime)
+/****************************************************************************
+    NAME */
+        int pthread_cond_timedwait(
+
+/*  SYNOPSIS */
+        pthread_cond_t *cond,
+        pthread_mutex_t *mutex,
+        const struct timespec *abstime)
+
+/*  FUNCTION
+        Wait on cond as pthread_cond_wait() does, with an absolute deadline
+        measured against the clock selected at condition initialization.
+        Reacquire mutex before returning from the wait, including on timeout.
+        Test the protected predicate after every return; a zero result does
+        not certify that a condition signal or predicate change occurred.
+
+    INPUTS
+        cond - Initialized condition variable. Defaults to CLOCK_REALTIME;
+            CLOCK_MONOTONIC is selected through condition attributes.
+        mutex - Initialized mutex owned exactly once by the caller. Use the
+            same mutex for the predicate and concurrent waits on cond.
+        abstime - Absolute deadline with tv_nsec in 0..999999999. This
+            implementation also accepts NULL for an untimed wait. The value
+            is read during setup and is not retained after the call.
+
+    RESULT
+        0 after a nontimeout wake; ETIMEDOUT if the timer signal was observed.
+        EINVAL for NULL cond/mutex, an invalid nanosecond field, failure to open
+        timer.device, or failure to read the selected clock. Setup errors occur
+        before releasing mutex. Errors are returned directly. Cancellation can
+        exit the worker after the mutex has been reacquired.
+
+    NOTES
+        Include <pthread.h>; link with pthread. Call from the initial program
+        task or a registered worker. Keep both objects valid through all waits.
+        The wait creates a timer request and closes it before returning. Reacquiring
+        mutex may block past the deadline; this is not a bound on return time.
+        Install cancellation cleanup that releases mutex.
+
+        The deadline is converted once to a relative timer interval. Later
+        changes to the realtime clock do not adjust it. Nonpositive intervals
+        are changed to 1 ms. Positive fractions are truncated to microseconds,
+        with a minimum timer request of 1 microsecond.
+
+    BUGS
+        If timeout, condition and cancellation signals arrive together, timeout
+        takes precedence and cancellation is not tested on that return.
+        Mutex lock/unlock failures are ignored. Multiple recursive acquisitions
+        do not fully release mutex. Signal-allocation failure uses CTRL_D for
+        the timer and CTRL_E for the condition; those bits are not cleared by
+        the fallback setup and can collide with application signal use.
+        Explicit initialization before sharing avoids unsynchronized lazy init.
+
+    SEE ALSO
+        pthread_cond_wait(),
+        pthread_cond_init(),
+        pthread_cond_signal(),
+        pthread_cond_broadcast()
+
+*****************************************************************************/
 {
     D(bug("%s(%p, %p, %p)\n", __FUNCTION__, cond, mutex, abstime));
 

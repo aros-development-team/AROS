@@ -1,316 +1,282 @@
-
-#if (0)
 /*
- *      Replacement for the dos.library LoadSeg() function
- */
-AROS_LH1(BPTR, NEWLoadSeg,
-        AROS_LHA(CONST_STRPTR, name, D1),
-        struct DosLibrary *, DOSBase, 25, Dos)
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
+
+    Desc: security.library functions called by dos.library to implement
+          setuid executables. dos.library only calls them when the library
+          is resident; nothing here is needed for a single-user system.
+
+          A file with the secFIBF_SET_UID protection bit set runs with the
+          effective uid of its owner: LoadSeg() records the owner of the
+          seglist, RunCommand() switches the caller's effective owner while
+          the segment runs, CreateNewProc() hands the owner to the child.
+*/
+
+#include <proto/exec.h>
+#include <proto/dos.h>
+
+#include <proto/security.h>
+
+#include "security_intern.h"
+#include "security_task.h"
+#include "security_segment.h"
+#include "security_memory.h"
+
+struct SetUIDCookie
+{
+    struct secTaskNode  *Node;
+    struct secExtOwner  *SavedOwner;
+    UWORD               SavedRealUID, SavedRealGID;
+    UWORD               SavedSavedUID, SavedSavedGID;
+};
+
+/*****************************************************************************
+
+    NAME */
+        AROS_LH2(BOOL, secRegisterSegment,
+
+/*  SYNOPSIS */
+        AROS_LHA(BPTR, seglist, D0),
+        AROS_LHA(BPTR, fh, D1),
+
+/*  LOCATION */
+        struct SecurityBase *, secBase, 53, Security)
+
+/*  FUNCTION
+        Called by dos.library after loading an executable. If the file has
+        the secFIBF_SET_UID bit set and a real owner, the seglist is
+        remembered as a setuid executable.
+
+    INPUTS
+        seglist - the loaded segment list
+        fh      - the file it was loaded from (still open)
+
+    RESULT
+        TRUE if the segment was registered as setuid.
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    BPTR fl;
     struct FileInfoBlock *fib;
-    ULONG owner = secOWNER_NOBODY;
-    BPTR seglist;
+    BOOL res = FALSE;
 
-    if (name && (fl = Lock(name, ACCESS_READ))) {
-        if (CheckmuFSVolume(((struct FileLock *)BADDR(fl))->fl_Task) &&
-             (fib = AllocDosObject(DOS_FIB, NULL))) {
-            if (Examine(fl, fib) && (fib->fib_Protection & muFIBF_SET_UID))
-                owner = (fib->fib_OwnerUID<<16) | fib->fib_OwnerGID;
-            FreeDosObject(DOS_FIB, fib);
+    if (!seglist || !fh || !secBase->sec_AfterDOSDone || !secBase->Configured)
+        return FALSE;
+
+    if ((fib = AllocDosObject(DOS_FIB, NULL)))
+    {
+        if (ExamineFH(fh, fib) && (fib->fib_Protection & secFIBF_SET_UID) &&
+            (fib->fib_OwnerUID != secNOBODY_UID))
+        {
+            res = AddSegNode(secBase, seglist, ((ULONG)fib->fib_OwnerUID << 16) | fib->fib_OwnerGID);
+            D(bug(DEBUG_NAME_STR " %s: seglist %p is setuid %u:%u\n", __func__, BADDR(seglist), fib->fib_OwnerUID, fib->fib_OwnerGID);)
         }
-        UnLock(fl);
-    }
-    seglist = secBase->OLDLoadSeg(name, dosbase);
-    if ((owner & secMASK_UID) != (secNOBODY_UID << 16)) {
-        ObtainSemaphore(&secBase->SegOwnerSem);
-        AddSegNode(seglist, owner);
-        ReleaseSemaphore(&secBase->SegOwnerSem);
-    }
-    return(seglist);
-
-    AROS_LIBFUNC_EXIT
-}
-
-/*
- *      Replacement for the dos.library NewLoadSeg() function
- */
-AROS_LH2(BPTR, NEWNewLoadSeg,
-        AROS_LHA(CONST_STRPTR, file, D1),
-        AROS_LHA(const struct TagItem *, tags, D2),
-        struct DosLibrary *, DOSBase, 128, Dos)
-{
-    AROS_LIBFUNC_INIT
-
-    BPTR fl;
-    struct FileInfoBlock *fib;
-    ULONG owner = secOWNER_NOBODY;
-    BPTR seglist;
-
-    if (name && (fl = Lock(name, ACCESS_READ))) {
-        if (CheckmuFSVolume(((struct FileLock *)BADDR(fl))->fl_Task) &&
-             (fib = AllocDosObject(DOS_FIB, NULL))) {
-            if (Examine(fl, fib) && (fib->fib_Protection & muFIBF_SET_UID))
-                owner = (fib->fib_OwnerUID<<16) | fib->fib_OwnerGID;
-            FreeDosObject(DOS_FIB, fib);
-        }
-        UnLock(fl);
-    }
-    seglist = secBase->OLDNewLoadSeg(name, tags, dosbase);
-    if ((owner & secMASK_UID) != (secNOBODY_UID << 16)) {
-        ObtainSemaphore(&secBase->SegOwnerSem);
-        AddSegNode(seglist, owner);
-        ReleaseSemaphore(&secBase->SegOwnerSem);
-    }
-    return(seglist);
-
-    AROS_LIBFUNC_EXIT
-}
-
-/*
- *      Replacement for the dos.library UnLoadSeg() function
- */
-AROS_LH1(BOOL, NEWUnLoadSeg,
-        AROS_LHA(BPTR, seglist, D1),
-        struct DosLibrary *, DOSBase, 26, Dos)
-{
-    AROS_LIBFUNC_INIT
-
-    struct muSegNode *snode;
-
-    ObtainSemaphoreShared(&secBase->SegOwnerSem);
-    if ((snode = FindSegNode(seglist)))
-        RemSegNode(snode);
-    ReleaseSemaphore(&secBase->SegOwnerSem);
-    return(secBase->OLDUnLoadSeg(seglist, dosbase));
-
-    AROS_LIBFUNC_EXIT
-}
-
-/*
- *      Replacement for the dos.library InternalLoadSeg() function
- */
-AROS_LH4(BPTR, NEWInternalLoadSeg,
-        AROS_LHA(BPTR       , fh           , D0),
-        AROS_LHA(BPTR       , table        , A0),
-        AROS_LHA(LONG_FUNC *, funcarray    , A1),
-        AROS_LHA(LONG *     , stack        , A2),
-        struct DosLibrary *, DOSBase, 126, Dos)
-{
-    AROS_LIBFUNC_INIT
-
-    struct FileInfoBlock *fib;
-    ULONG owner = secOWNER_NOBODY;
-    BPTR seglist;
-
-    D(kprintf("InternalLoadSeg()\n"));
-    if (fh && CheckmuFSVolume(((struct FileHandle *)BADDR(fh))->fh_Type) &&
-         (fib = AllocDosObject(DOS_FIB, NULL))) {
-        if (ExamineFH(fh, fib) && (fib->fib_Protection & muFIBF_SET_UID))
-            owner = (fib->fib_OwnerUID<<16) | fib->fib_OwnerGID;
         FreeDosObject(DOS_FIB, fib);
     }
-    seglist = secBase->OLDInternalLoadSeg(fh, table, functionarray, stack, dosbase);
-    if ((owner & secMASK_UID) != (secNOBODY_UID << 16)) {
-        ObtainSemaphore(&secBase->SegOwnerSem);
-        AddSegNode(seglist, owner);
-        ReleaseSemaphore(&secBase->SegOwnerSem);
-    }
-    D(kprintf("InternalLoadSeg() done\n"));
-    return(seglist);
+    return res;
 
     AROS_LIBFUNC_EXIT
 }
 
-/*
- *      Replacement for the dos.library InternalUnLoadSeg() function
- */
-AROS_LH2(BOOL, NEWInternalUnLoadSeg,
-        AROS_LHA(BPTR     , seglist , D1),
-        AROS_LHA(VOID_FUNC, freefunc, A1),
-        struct DosLibrary *, DOSBase, 127, Dos)
+/*****************************************************************************
+
+    NAME */
+        AROS_LH1(void, secUnregisterSegment,
+
+/*  SYNOPSIS */
+        AROS_LHA(BPTR, seglist, D0),
+
+/*  LOCATION */
+        struct SecurityBase *, secBase, 54, Security)
+
+/*  FUNCTION
+        Called by dos.library before a seglist is unloaded.
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    struct muSegNode *snode;
-
-    D(kprintf("InternalUnLoadSeg()\n"));
-    ObtainSemaphoreShared(&secBase->SegOwnerSem);
-    if ((snode = FindSegNode(seglist)))
-            RemSegNode(snode);
-    ReleaseSemaphore(&secBase->SegOwnerSem);
-    D(kprintf("InternalUnLoadSeg() done\n"));
-
-    return(secBase->OLDInternalUnLoadSeg(seglist, freefunc, dosbase));
+    if (seglist && !IsMinListEmpty(&secBase->SegOwnerList))
+        RemSegNode(secBase, seglist);
 
     AROS_LIBFUNC_EXIT
 }
 
-/*
- *      Replacement for the dos.library CreateProc() function
- */
-AROS_LH4(struct MsgPort *, NEWCreateProc,
-        AROS_LHA(CONST_STRPTR, name, D1),
-        AROS_LHA(LONG, pri, D2),
-        AROS_LHA(BPTR, segList, D3),
-        AROS_LHA(LONG, stackSize, D4),
-        struct DosLibrary *, DOSBase, 23, Dos)
+/*****************************************************************************
+
+    NAME */
+        AROS_LH1(APTR, secSetUIDBegin,
+
+/*  SYNOPSIS */
+        AROS_LHA(BPTR, seglist, D0),
+
+/*  LOCATION */
+        struct SecurityBase *, secBase, 55, Security)
+
+/*  FUNCTION
+        Called by dos.library's RunCommand() before running a seglist. If
+        the seglist is a setuid executable the calling task's effective
+        owner is switched to the owner of the executable.
+
+    RESULT
+        A cookie to pass to secSetUIDEnd() when the command returns, or
+        NULL if nothing was changed.
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    struct muExtOwner *owner;
-    struct muTaskNode *tasknode = NULL;
-    struct Process *proc;
+    struct secExtOwner segowner;
+    struct SetUIDCookie *cookie = NULL;
+    struct secTaskNode *node;
 
-    D(kprintf("CreateProc()\n"));
-    if ((owner = GetSegOwner(seglist)))
+    if (!GetSegOwner(secBase, seglist, &segowner))
+        return NULL;
+
+    if (!(cookie = MAlloc(sizeof(struct SetUIDCookie))))
+        return NULL;
+
+    ObtainSemaphore(&secBase->TaskOwnerSem);
+    if ((node = FindOrCreateTaskNode(secBase, FindTask(NULL))))
     {
-        ObtainSemaphore(&secBase->TaskOwnerSem);
-        if ( (tasknode = FindTaskNode(FindTask(NULL))) )
+        struct secExtOwner *newowner;
+
+        /* Keep the secondary groups of the caller, change uid (and gid) */
+        if (node->Owner)
+            newowner = CloneExtOwner(node->Owner);
+        else
+            newowner = CloneExtOwner(&RootExtOwner);
+        if (newowner)
         {
-            if (tasknode->Owner)
-            {
-                if (tasknode->Owner->uid != owner->uid)
-                {
-                    tasknode->SavedUID = tasknode->Owner->uid;
-                    tasknode->Owner->uid = owner->uid;
-                }
-            }
-            else
-            {
-                if ( (tasknode->Owner = CloneExtOwner(&RootExtOwner)) )
-                {
-                    tasknode->SavedUID = secNOBODY_UID;
-                    tasknode->Owner->uid = owner->uid;
-                    tasknode->Owner->gid = secNOBODY_UID;
-                }
-            }
+            newowner->uid = segowner.uid;
+            if (!node->Owner)
+                newowner->gid = segowner.gid;
+
+            cookie->Node = node;
+            cookie->SavedOwner = node->Owner;
+            cookie->SavedRealUID = node->RealUID;
+            cookie->SavedRealGID = node->RealGID;
+            cookie->SavedSavedUID = node->SavedUID;
+            cookie->SavedSavedGID = node->SavedGID;
+            node->Owner = newowner;
+            node->SavedUID = segowner.uid;
+            D(bug(DEBUG_NAME_STR " %s: task %p now runs as uid %u\n", __func__, node->Task, segowner.uid);)
+        }
+        else
+        {
+            Free(cookie, sizeof(struct SetUIDCookie));
+            cookie = NULL;
         }
     }
-    proc = secBase->OLDCreateProc(name, pri, seglist, stacksize, dosbase);
-    if (owner)
+    else
     {
-        if (tasknode && tasknode->Owner->uid != tasknode->SavedUID)
-            if (tasknode->SavedUID == secNOBODY_UID)
-                secFreeExtOwner(tasknode->Owner);
-            else
-                tasknode->Owner->uid = tasknode->SavedUID;
-        ReleaseSemaphore(&secBase->TaskOwnerSem);
+        Free(cookie, sizeof(struct SetUIDCookie));
+        cookie = NULL;
     }
-    D(kprintf("CreateProc() done\n"));
-    return proc;
+    ReleaseSemaphore(&secBase->TaskOwnerSem);
+
+    return cookie;
 
     AROS_LIBFUNC_EXIT
 }
 
-/*
- *      Replacement for the dos.library CreateNewProc() function
- */
-AROS_LH1(struct Process *, NEWCreateNewProc,
-        AROS_LHA(const struct TagItem *, tags, D1),
-        struct DosLibrary *, DOSBase, 83, Dos)
+/*****************************************************************************
+
+    NAME */
+        AROS_LH1(void, secSetUIDEnd,
+
+/*  SYNOPSIS */
+        AROS_LHA(APTR, cookie, A0),
+
+/*  LOCATION */
+        struct SecurityBase *, secBase, 56, Security)
+
+/*  FUNCTION
+        Restore the credentials saved by secSetUIDBegin().
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    struct muTaskNode *tasknode = NULL;
-    struct muExtOwner *owner = NULL;
-    struct Process *proc;
-    BPTR seglist;
+    struct SetUIDCookie *c = (struct SetUIDCookie *)cookie;
 
-    D(kprintf("CreateNewProc()\n"));
-    if (tags && (seglist = (BPTR)GetTagData(NP_Seglist, NULL, tags)) && (owner = GetSegOwner(seglist)))
+    if (!c)
+        return;
+
+    ObtainSemaphore(&secBase->TaskOwnerSem);
+    /* The node may have been freed if the task died meanwhile */
+    if (FindTaskNode(secBase, FindTask(NULL)) == c->Node)
     {
-        ObtainSemaphore(&secBase->TaskOwnerSem);
-        if ( (tasknode = FindTaskNode(FindTask(NULL))) )
-        {
-            if (tasknode->Owner)
-            {
-                if (tasknode->Owner->uid != owner->uid)
-                {
-                    tasknode->SavedUID = tasknode->Owner->uid;
-                    tasknode->Owner->uid = owner->uid;
-                }
-            }
-            else
-            {
-                tasknode->Owner = CloneExtOwner(&RootExtOwner);
-                tasknode->SavedUID = secNOBODY_UID;
-                tasknode->Owner->uid = owner->uid;
-                tasknode->Owner->gid = secNOBODY_UID;
-            }
-        }
+        if (c->Node->Owner)
+            Free(c->Node->Owner, ExtOwnerSize(c->Node->Owner));
+        c->Node->Owner = c->SavedOwner;
+        c->Node->RealUID = c->SavedRealUID;
+        c->Node->RealGID = c->SavedRealGID;
+        c->Node->SavedUID = c->SavedSavedUID;
+        c->Node->SavedGID = c->SavedSavedGID;
     }
-    proc = secBase->OLDCreateNewProc(tags, dosbase);
-    if (owner)
-    {
-        if (tasknode && tasknode->Owner->uid != tasknode->SavedUID)
-            if (tasknode->SavedUID == secNOBODY_UID)
-                secFreeExtOwner(tasknode->Owner);
-            else
-                tasknode->Owner->uid = tasknode->SavedUID;
-        ReleaseSemaphore(&secBase->TaskOwnerSem);
-    }
-    D(kprintf("CreateNewProc done()\n"));
-    return(proc);
+    else if (c->SavedOwner)
+        Free(c->SavedOwner, ExtOwnerSize(c->SavedOwner));
+    ReleaseSemaphore(&secBase->TaskOwnerSem);
+
+    Free(c, sizeof(struct SetUIDCookie));
 
     AROS_LIBFUNC_EXIT
 }
 
-/*
- *      Replacement for the dos.library RunCommand() function
- */
-AROS_LH4(LONG, NEWRunCommand,
-        AROS_LHA(BPTR,   segList,   D1),
-        AROS_LHA(ULONG,  stacksize, D2),
-        AROS_LHA(CONST_STRPTR, argptr,    D3),
-        AROS_LHA(ULONG,  argsize,   D4),
-        struct DosLibrary *, DOSBase, 84, Dos)
+/*****************************************************************************
+
+    NAME */
+        AROS_LH2(BOOL, secSetTaskOwnerFromSegment,
+
+/*  SYNOPSIS */
+        AROS_LHA(struct Task *, task, A0),
+        AROS_LHA(BPTR, seglist, D0),
+
+/*  LOCATION */
+        struct SecurityBase *, secBase, 57, Security)
+
+/*  FUNCTION
+        Called by dos.library's CreateNewProc() (under Forbid(), before the
+        new process runs) when the process is created from a seglist. If
+        the seglist is a setuid executable the new process gets the owner
+        of the executable.
+
+    RESULT
+        TRUE if the owner was changed.
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    struct muTaskNode *tasknode = NULL;
-    struct muExtOwner *owner;
-    LONG rc;
+    struct secExtOwner segowner;
+    struct secTaskNode *node;
+    BOOL res = FALSE;
 
-    D(kprintf("RunCommand()\n"));
-    if ((owner = GetSegOwner(seglist)))
+    if (!task || !GetSegOwner(secBase, seglist, &segowner))
+        return FALSE;
+
+    ObtainSemaphore(&secBase->TaskOwnerSem);
+    if ((node = FindOrCreateTaskNode(secBase, task)))
     {
-        D(kprintf("SegOwner found\n"));
-        ObtainSemaphore(&secBase->TaskOwnerSem);
-        if ( (tasknode = FindTaskNode(FindTask(NULL))) )
+        struct secExtOwner *newowner = CloneExtOwner(node->Owner ? node->Owner : &RootExtOwner);
+
+        if (newowner)
         {
-            if (tasknode->Owner)
-            {
-                if (tasknode->Owner->uid != owner->uid)
-                {
-                    tasknode->SavedUID = tasknode->Owner->uid;
-                    tasknode->Owner->uid = owner->uid;
-                }
-            }
-            else
-            {
-                tasknode->Owner = CloneExtOwner(&RootExtOwner);
-                tasknode->SavedUID = secNOBODY_UID;
-                tasknode->Owner->uid = owner->uid;
-                tasknode->Owner->gid = secNOBODY_UID;
-            }
+            newowner->uid = segowner.uid;
+            if (!node->Owner)
+                newowner->gid = segowner.gid;
+            if (node->Owner)
+                Free(node->Owner, ExtOwnerSize(node->Owner));
+            node->Owner = newowner;
+            node->SavedUID = segowner.uid;
+            res = TRUE;
+            D(bug(DEBUG_NAME_STR " %s: process %p runs as uid %u\n", __func__, task, segowner.uid);)
         }
     }
-    rc = secBase->OLDRunCommand(seglist, stacksize, argptr, argsize, dosbase);
-    if (owner)
-    {
-        if (tasknode && tasknode->Owner->uid != tasknode->SavedUID)
-            if (tasknode->SavedUID == secNOBODY_UID)
-                secFreeExtOwner(tasknode->Owner);
-            else
-                tasknode->Owner->uid = tasknode->SavedUID;
-        ReleaseSemaphore(&secBase->TaskOwnerSem);
-    }
-    D(kprintf("RunCommand() done\n"));
-    return(rc);
+    ReleaseSemaphore(&secBase->TaskOwnerSem);
+
+    return res;
 
     AROS_LIBFUNC_EXIT
 }
-#endif

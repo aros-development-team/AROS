@@ -263,7 +263,7 @@ BOOPSI_DISPATCHER(IPTR, Process_Dispatcher, cl, obj, msg)
     case OM_NEW:
         return Process__OM_NEW(cl, obj, (struct opSet *)msg);
     case OM_GET:
-        return Process__OM_SET(cl, obj, (struct opSet *)msg);
+        return Process__OM_GET(cl, obj, (struct opGet *)msg);
     case OM_DISPOSE:
         return Process__OM_DISPOSE(cl, obj, msg);
     case MUIM_Process_Kill:

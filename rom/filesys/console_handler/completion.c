@@ -109,10 +109,13 @@ static void CleanupCompletion(struct completioninfo *ci)
 
 /****************************************************************************************/
 
-static void PrepareCompletion(struct filehandle *fh, struct completioninfo *ci)
+static BOOL PrepareCompletion(struct filehandle *fh, struct completioninfo *ci)
 {
     WORD i;
+    ULONG len;
+    UBYTE c;
     BOOL in_quotes = FALSE;
+    BOOL escaped = FALSE;
 
     /* Find word start */
 
@@ -120,24 +123,39 @@ static void PrepareCompletion(struct filehandle *fh, struct completioninfo *ci)
 
     while (i != ci->fh->inputpos)
     {
-        switch (ci->fh->inputbuffer[i++])
+        c = ci->fh->inputbuffer[i++];
+
+        switch (c)
         {
         case '"':
-            in_quotes = !in_quotes;
-            if (in_quotes)
-                ci->wordstart = i;
+            if (!escaped)
+            {
+                in_quotes = !in_quotes;
+                if (in_quotes)
+                    ci->wordstart = i;
+            }
             break;
 
         case ' ':
         case '>':
         case '<':
-            if (!in_quotes)
+            if (!in_quotes && !escaped)
                 ci->wordstart = i;
             break;
         }
+
+        if (c == '*' && !escaped)
+            escaped = TRUE;
+        else
+            escaped = FALSE;
     }
 
-    strncpy(ci->dirpart, &ci->fh->inputbuffer[ci->wordstart], ci->fh->inputpos - ci->wordstart);
+    len = ci->fh->inputpos - ci->wordstart;
+    if (len >= sizeof(ci->dirpart))
+        return FALSE;
+
+    CopyMem(&ci->fh->inputbuffer[ci->wordstart], ci->dirpart, len);
+    ci->dirpart[len] = '\0';
     strcpy(ci->filepart, FilePart(ci->dirpart));
 
     *(PathPart(ci->dirpart)) = '\0';
@@ -145,33 +163,44 @@ static void PrepareCompletion(struct filehandle *fh, struct completioninfo *ci)
     ci->wordquoted = in_quotes;
 
     D(bug("[con:handler] %s: dirpart = \"%s\"  filepart = \"%s\"\n", __func__, ci->dirpart, ci->filepart));
+
+    return TRUE;
 }
 
 /****************************************************************************************/
 
-static void AddQuotes(struct completioninfo *ci, STRPTR s, LONG s_size)
+static BOOL AddQuotes(struct completioninfo *ci, STRPTR s, LONG s_size)
 {
-    LONG len = strlen(s);
+    size_t len;
+    BOOL closequote;
+    size_t needed;
+
+    if (s_size <= 0)
+        return FALSE;
+
+    len = strnlen(s, (size_t)s_size);
+    if ((len == 0) || (len == (size_t)s_size))
+        return FALSE;
+
+    closequote = (s[len - 1] != '/') && (s[len - 1] != ':');
+    needed = len + 1 + (ci->wordquoted ? 0 : 1) + (closequote ? 1 : 0);
+    if (needed > (size_t)s_size)
+        return FALSE;
 
     if (!ci->wordquoted)
     {
-        if (len < s_size - 1)
-            memmove(s + 1, s, len + 1);
+        memmove(s + 1, s, len + 1);
         s[0] = '"';
-    }
-    else
-    {
-        len--;
+        len++;
     }
 
-    if (len < s_size - 3)
+    if (closequote)
     {
-        if ((s[len] != '/') && (s[len] != ':'))
-        {
-            s[len + 1] = '"';
-            s[len + 2] = '\0';
-        }
+        s[len] = '"';
+        s[len + 1] = '\0';
     }
+
+    return TRUE;
 }
 
 /****************************************************************************************/
@@ -219,21 +248,24 @@ static void DoFileReq(struct filehandle *fh, struct completioninfo *ci)
                 {
                     UBYTE c;
 
-                    strcpy(ci->match, fr->fr_Drawer);
-                    AddPart(ci->match, fr->fr_File, sizeof(ci->match));
+                    if (Strlcpy(ci->match, fr->fr_Drawer, sizeof(ci->match)) >= sizeof(ci->match))
+                        ci->match[0] = '\0';
+                    else
+                        AddPart(ci->match, fr->fr_File, sizeof(ci->match));
 
                     if (ci->match[0])
                     {
-                        if (strchr(ci->match, ' '))
-                            AddQuotes(ci, ci->match, sizeof(ci->match));
-
-                        c = ci->match[strlen(ci->match) - 1];
-                        if ((c != '/') && (c != ':'))
+                        if (!strchr(ci->match, ' ') ||
+                            AddQuotes(ci, ci->match, sizeof(ci->match)))
                         {
-                            strncat(ci->match, " ", sizeof(ci->match));
-                        }
+                            c = ci->match[strlen(ci->match) - 1];
+                            if ((c != '/') && (c != ':'))
+                            {
+                                Strlcat(ci->match, " ", sizeof(ci->match));
+                            }
 
-                        InsertIntoConBuffer(ci, ci->match);
+                            InsertIntoConBuffer(ci, ci->match);
+                        }
                     }
 
                 }
@@ -260,14 +292,11 @@ static BOOL PreparePattern(struct filehandle *fh, struct completioninfo *ci)
     {
         if (parsecode == 0)
         {
-            if (ci->withinfo)
-            {
-                strncat(ci->filepart, "#?", sizeof(ci->filepart));
-            }
-            else
-            {
-                strncat(ci->filepart, "~(#?.info)", sizeof(ci->filepart));
-            }
+            CONST_STRPTR suffix = ci->withinfo ? "#?" : "~(#?.info)";
+
+            if (Strlcat(ci->filepart, suffix, sizeof(ci->filepart)) >= sizeof(ci->filepart))
+                return FALSE;
+
             parsecode = ParsePatternNoCase(ci->filepart, ci->pattern, sizeof(ci->pattern));
         }
     }
@@ -732,7 +761,11 @@ void Completion(struct filehandle *fh, BOOL withinfo)
 
     if ((ci = InitCompletion(fh, withinfo)))
     {
-        PrepareCompletion(fh, ci);
+        if (!PrepareCompletion(fh, ci))
+        {
+            CleanupCompletion(ci);
+            return;
+        }
 
         if (!ci->dirpart[0] && !ci->filepart[0])
         {
@@ -769,24 +802,37 @@ void Completion(struct filehandle *fh, BOOL withinfo)
                 if (doprint)
                 {
                     WORD backspaces;
+                    size_t matchlen;
                     UBYTE c;
 
-                    if (strchr(ci->match, ' '))
-                        AddQuotes(ci, ci->match, sizeof(ci->match));
+                    if ((ci->wordquoted || strchr(ci->match, ' ')) &&
+                        !AddQuotes(ci, ci->match, sizeof(ci->match)))
+                    {
+                        CleanupCompletion(ci);
+                        return;
+                    }
 
                     /* Insert as many backspaces in front of the string,
                      to erase whole "word" first (starting at ci->wordstart)
                      before reprinting expanded filename */
 
                     backspaces = ci->fh->inputpos - ci->wordstart;
+                    matchlen = strnlen(ci->match, sizeof(ci->match));
 
-                    memmove(ci->match + backspaces, ci->match, sizeof(ci->match) - backspaces);
+                    if ((matchlen == sizeof(ci->match)) ||
+                        ((size_t)backspaces + matchlen >= sizeof(ci->match)))
+                    {
+                        CleanupCompletion(ci);
+                        return;
+                    }
+
+                    memmove(ci->match + backspaces, ci->match, matchlen + 1);
                     SetMem(ci->match, 8, backspaces);
 
                     c = ci->match[strlen(ci->match) - 1];
                     if ((c != '/') && (c != ':'))
                     {
-                        strncat(ci->match, " ", sizeof(ci->match));
+                        Strlcat(ci->match, " ", sizeof(ci->match));
                     }
 
                     InsertIntoConBuffer(ci, ci->match);

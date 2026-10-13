@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2009-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2009-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -14,6 +14,7 @@
 #include <gallium/gallium.h>
 
 #include <proto/exec.h>
+#include <proto/utility.h>
 #include <proto/gallium.h>
 #include <proto/oop.h>
 
@@ -99,6 +100,15 @@ static inline const void *gallium_core_get_api(void) { return (const void *)0; }
 
         GLA_NoAccum - disables the accumulation buffer. Accumulation buffer is
                       enabled by default.
+
+        GLA_ContextProfile - GLA_PROFILE_COMPAT (default) or GLA_PROFILE_CORE.
+                     A core profile context can offer a newer OpenGL version
+                     than a compatibility profile one.
+
+        GLA_ContextMajorVersion, GLA_ContextMinorVersion - the lowest OpenGL
+                     version the context must provide (a core profile one is
+                     at least 3.2). Creation fails if it cannot be provided;
+                     otherwise the highest available version is used.
 
     RESULT
 
@@ -187,10 +197,32 @@ static inline const void *gallium_core_get_api(void) { return (const void *)0; }
         goto error_out;
     }
 
-    attribs.profile = ST_PROFILE_DEFAULT;
+    if (GetTagData(GLA_ContextProfile, GLA_PROFILE_COMPAT, tagList) == GLA_PROFILE_CORE)
+    {
+        attribs.profile = API_OPENGL_CORE;
+        attribs.major = GetTagData(GLA_ContextMajorVersion, 3, tagList);
+        attribs.minor = GetTagData(GLA_ContextMinorVersion, 2, tagList);
+        if (attribs.major < 3 || (attribs.major == 3 && attribs.minor < 2))
+        {
+            attribs.major = 3;
+            attribs.minor = 2;
+        }
+    }
+    else
+    {
+        attribs.profile = API_OPENGL_COMPAT;
+        attribs.major = GetTagData(GLA_ContextMajorVersion, 1, tagList);
+        attribs.minor = GetTagData(GLA_ContextMinorVersion, 0, tagList);
+    }
     attribs.visual = ctx->stvis;
 
-    ctx->st = glstapi->create_context(glstapi, ctx->stmanager, &attribs, &st_error, NULL);
+    /* driconf defaults (driinfo_gallium.h) - we have no driconf, so the
+     * options struct would otherwise be all-false. Without the compressed
+     * fallback a driver lacking RGTC (v3d) fails compute_version()'s GL 3.0
+     * test and gets pinned at GL 2.1. */
+    attribs.options.allow_compressed_fallback = TRUE;
+
+    ctx->st = st_api_create_context(ctx->stmanager, &attribs, &st_error, NULL);
     if (!ctx->st)
     {
         bug("%s: ERROR -  failed to create mesa state tracker context\n", __func__);

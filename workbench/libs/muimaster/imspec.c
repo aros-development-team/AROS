@@ -317,10 +317,8 @@ static const char *zune_imspec_to_string(struct MUI_ImageSpec_intern *spec)
 /**************************************************************************
  Create a image spec from a string or a magic value.
  in : contains magic or string
- obj: is a AreaObject. It is used to access the config data.
 
- TODO: merge this with zune_imspec_setup() because this function should
- be called in MUIM_Setup (configdata)
+ Called by zune_imspec_setup(); configuration images are resolved there.
 **************************************************************************/
 static struct MUI_ImageSpec_intern *zune_image_spec_to_structure(IPTR in)
 {

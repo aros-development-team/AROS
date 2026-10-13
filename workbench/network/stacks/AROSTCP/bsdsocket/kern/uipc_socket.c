@@ -105,6 +105,16 @@
 
 #include <sys/uio.h>
 
+/* SO_BINDTODEVICE */
+#include <net/if.h>
+#include <net/route.h>
+#include <netinet/in.h>
+#include <netinet/in_systm.h>
+#include <netinet/ip.h>
+#include <netinet/in_pcb.h>
+
+extern struct ifnet *ifunit(register char *);
+
 #ifndef SO_EVENTMASK
 #define SO_EVENTMASK	0x2001
 #endif
@@ -461,7 +471,10 @@ int flags;
 #define	snderr(errno)	{ error = errno; splx(s); goto release; }
 
 restart:
-    if(error = sblock(&so->so_snd, uio->uio_procp))
+    s = splnet();       /* sowakeup() changes sb_flags at splnet */
+    error = sblock(&so->so_snd, uio->uio_procp);
+    splx(s);
+    if(error)
         goto out;
     do {
         s = splnet();
@@ -601,7 +614,9 @@ nopages:
     } while(resid);
 
 release:
+    s = splnet();
     sbunlock(&so->so_snd);
+    splx(s);
 out:
     if(top)
         m_freem(top);
@@ -718,9 +733,11 @@ bad:
 
 
 restart:
-    if(error = sblock(&so->so_rcv, uio->uio_procp))
+    s = splnet();       /* sowakeup() changes sb_flags at splnet */
+    if(error = sblock(&so->so_rcv, uio->uio_procp)) {
+        splx(s);
         return (error);
-    s = splnet();
+    }
 
     m = so->so_rcv.sb_mb;
     /*
@@ -998,9 +1015,9 @@ register struct socket *so;
     struct sockbuf asb;
     struct SocketBase *sb_base = FindSocketBase(FindTask(NULL));
 
+    s = splimp();
     sb->sb_flags |= SB_NOINTR;
     (void) sblock(sb, sb_base);
-    s = splimp();
     socantrcvmore(so);
     sbunlock(sb);
     asb = *sb;
@@ -1040,9 +1057,15 @@ struct mbuf *m0;
     }
 #endif
     if(level != SOL_SOCKET) {
-        if(so->so_proto && so->so_proto->pr_ctloutput)
-            return ((*so->so_proto->pr_ctloutput)
-                    (PRCO_SETOPT, so, level, optname, &m0));
+        if(so->so_proto && so->so_proto->pr_ctloutput) {
+            /* the daemon uses the pcb's options and memberships at splnet */
+            spl_t s = splnet();
+
+            error = (*so->so_proto->pr_ctloutput)
+                    (PRCO_SETOPT, so, level, optname, &m0);
+            splx(s);
+            return (error);
+        }
         error = ENOPROTOOPT;
     } else {
         switch(optname) {
@@ -1075,6 +1098,7 @@ struct mbuf *m0;
         case SO_REUSEADDR:
         case SO_REUSEPORT:
         case SO_OOBINLINE:
+        case SO_NOSIGPIPE:  /* stack never raises SIGPIPE; just record it */
             if(m == NULL || m->m_len < sizeof(int)) {
                 error = EINVAL;
                 goto bad;
@@ -1084,6 +1108,38 @@ struct mbuf *m0;
             else
                 so->so_options &= ~optname;
             break;
+
+        case SO_BINDTODEVICE:
+            /*
+             * Tie the socket to one interface: what it sends leaves there
+             * whatever the routing table says, and it is only handed what
+             * arrived there. The argument is a struct ifreq or just the
+             * interface name; an empty name removes the binding. This is
+             * what lets a DHCP client run on several interfaces at once.
+             */
+        {
+            char ifname[IFNAMSIZ + 1];
+            struct ifnet *ifp = NULL;
+            int n;
+
+            if(so->so_proto == NULL || so->so_proto->pr_domain == NULL ||
+                    so->so_proto->pr_domain->dom_family != AF_INET || so->so_pcb == NULL) {
+                error = ENOPROTOOPT;
+                goto bad;
+            }
+            n = m ? m->m_len : 0;
+            if(n > IFNAMSIZ)
+                n = IFNAMSIZ;
+            if(n > 0)
+                bcopy(mtod(m, caddr_t), ifname, n);
+            ifname[n > 0 ? n : 0] = '\0';
+            if(ifname[0] != '\0' && (ifp = ifunit(ifname)) == NULL) {
+                error = ENXIO;
+                goto bad;
+            }
+            sotoinpcb(so)->inp_boundif = ifp;
+            break;
+        }
 
         case SO_SNDBUF:
         case SO_RCVBUF:
@@ -1112,11 +1168,15 @@ struct mbuf *m0;
             case SO_RCVLOWAT:
                 so->so_rcv.sb_lowat = *mtod(m, int *);
                 break;
-            case SO_EVENTMASK:
+            case SO_EVENTMASK: {
+                spl_t s = splnet();
+
                 so->so_eventmask = *mtod(m, int *);
                 so->so_state |= SS_ASYNC;
                 so->so_rcv.sb_flags |= SB_ASYNC;
                 so->so_snd.sb_flags |= SB_ASYNC;
+                splx(s);
+            }
                 DEVENTS(log(LOG_DEBUG, "Setting SO_EVENTMASK = 0x%08lx", so->so_eventmask);)
             }
             break;
@@ -1164,8 +1224,12 @@ struct mbuf **mp;
 
     if(level != SOL_SOCKET) {
         if(so->so_proto && so->so_proto->pr_ctloutput) {
-            return ((*so->so_proto->pr_ctloutput)
-                    (PRCO_GETOPT, so, level, optname, mp));
+            spl_t s = splnet();
+            int error = (*so->so_proto->pr_ctloutput)
+                        (PRCO_GETOPT, so, level, optname, mp);
+
+            splx(s);
+            return (error);
         } else
             return (ENOPROTOOPT);
     } else {
@@ -1200,6 +1264,7 @@ struct mbuf **mp;
         case SO_REUSEPORT:
         case SO_BROADCAST:
         case SO_OOBINLINE:
+        case SO_NOSIGPIPE:
             *mtod(m, int *) = so->so_options & optname;
             break;
 

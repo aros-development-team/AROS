@@ -3,9 +3,10 @@ include $(SRCDIR)/config/aros.cfg
 USER_LDFLAGS := -static
 USER_CPPFLAGS := -DMUIMASTER_YES_INLINE_STDARG
 
-FILES := bthid.class bthid.gui bthidctrl.gui numtostr debug
+FILES := bthid.class bthid.gui bthidctrl.gui bthidcontroller bthidctrl_map numtostr debug
 
-#MM- kernel-bluetooth-classes-bthid : kernel-bluetooth-btclass kernel-bluetooth-library-includes
+#MM- kernel-bluetooth-classes-bthid : kernel-bluetooth-btclass kernel-bluetooth-library-includes \
+#MM				workbench-hidds-controller-includes kernel-hidd-input-includes
 
 %build_module_library mmake=kernel-bluetooth-classes-bthid \
     modname=bthid modtype=btclass modsuffix="class" \

@@ -9,6 +9,7 @@
     NAME */
 
 #include "nvdisk_intern.h"
+#include <nvdisk_arch.h>
 #include <dos/dos.h>
 #include <proto/dos.h>
 #include <libraries/nonvolatile.h>
@@ -61,6 +62,10 @@ AROS_LH4(LONG, WriteNVDData,
 {
     AROS_LIBFUNC_INIT
 
+    if (NVDisk_ArchActive(GPB(nvdBase)))
+        return NVDisk_ArchWrite(GPB(nvdBase), appName, itemName, data,
+            length);
+
     LONG retval  = 0;
     BPTR oldCDir = CurrentDir(GPB(nvdBase)->nvd_location);
     BPTR lock    = Lock(appName, SHARED_LOCK);
@@ -107,4 +112,3 @@ AROS_LH4(LONG, WriteNVDData,
 
     AROS_LIBFUNC_EXIT
 } /* WriteData */
-

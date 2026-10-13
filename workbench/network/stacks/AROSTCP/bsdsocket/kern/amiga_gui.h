@@ -23,3 +23,9 @@ void gui_process_refresh(void);
 void gui_process_msg(struct SysLogPacket *msg);
 void gui_set_interface_state(struct ifnet *ifp, long state);
 void error_request(STRPTR Text, ...);
+
+/* what the user wants done about an interface that did not start */
+#define IFFAIL_SKIP     0   /* carry on without it (also when no requester can be shown) */
+#define IFFAIL_RETRY    1
+#define IFFAIL_SHUTDOWN 2
+LONG iface_fail_request(CONST_STRPTR name, CONST_STRPTR device, LONG unit);

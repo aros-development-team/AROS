@@ -13,6 +13,7 @@ LIBRARYFILES :=
 
 PTHREADFUNCS :=  \
     pthread_create \
+    pthread_sigmask \
     pthread_cancel \
     pthread_equal \
     pthread_join \

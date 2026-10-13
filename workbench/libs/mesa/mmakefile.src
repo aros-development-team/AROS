@@ -14,9 +14,7 @@ include $(SRCDIR)/$(CURDIR)/mesa.cfg
 #MM- ports-includes : mesa3d-includes-copy
 #MM mesa3d-includes-copy : mesa3d-fetch
 
-%fetch mmake=mesa3d-fetch archive=$(ARCHBASE) destination=$(PORTSDIR)/mesa \
-    location=$(PORTSSOURCEDIR) archive_origins=$(REPOSITORIES) suffixes="tar.xz tar.gz" \
-    patches_specs=$(PATCHSPEC)
+%fetch mmake=mesa3d-fetch archive=$(ARCHBASE) destination=$(PORTSDIR)/mesa location=$(PORTSSOURCEDIR) archive_origins=$(REPOSITORIES) suffixes="tar.xz tar.gz" patches_specs=$(PATCHSPEC)
 
 %create_patch mmake=mesa3d-create-patch \
     archive=$(ARCHBASE) suffixes="tar.xz tar.gz" \
@@ -28,6 +26,7 @@ include $(SRCDIR)/$(CURDIR)/mesa.cfg
 
 #MM- workbench-libs-complete : mesa3dgl-library-$(AROS_TARGET_TOOLCHAIN)
 #MM- mesa3dgl-library-yes : mesa3dgl-library
+#MM- workbench-libs-mesa : mesa3dgl-library
 
 #MM mesa3dgl-library : includes workbench-libs-dxtn-includes linklibs-galliumauxiliary workbench-libs-gallium-linklib mesa3dgl-linklibs mesa3dgl-library-env
 
@@ -79,6 +78,7 @@ MESA3DGL_SOURCES = \
 
 USER_INCLUDES += \
             -I$(top_srcdir)/src/mesa \
+            -iquote $(top_builddir)/src \
             -iquote $(top_builddir)/src/mesa \
             -iquote $(top_builddir)/src/mesa/main \
             -iquote $(top_builddir)/src/mapi \
@@ -95,6 +95,13 @@ MESAGL_LIBRARY_SOURCES_C := \
             $(SHARED_LIB_SOURCES) \
             $(MESA3DGL_SOURCES)
 
+# The generated module makefile forces a global `-include` of
+# `mesa3dgl$(MESAGLBUILD)_deflibdefs.h`. Make the dependency explicit to
+# avoid parallel build races where compilation starts before headers exist.
+$(OBJDIR)/$(MESAGLVERSION)/%.o: \
+            $(OBJDIR)/$(MESAGLVERSION)/include/mesa3dgl$(MESAGLBUILD)_libdefs.h \
+            $(OBJDIR)/$(MESAGLVERSION)/include/mesa3dgl$(MESAGLBUILD)_deflibdefs.h
+
 ifneq ($(mesa3dgl_ENTRYPOINTS),)
 MESA_COMPILEOPTIONS += $(CFLAGS_FUNCTION_SECTIONS)
 #USER_LDFLAGS := -Wl,--gc-sections $(mesa3dgl_ENTRYPOINTS)
@@ -107,7 +114,8 @@ USER_LDFLAGS += $(TARGET_CXX_LDFLAGS) -L$(top_libdir)
 %build_module_library mmake=mesa3dgl-library \
   modname="mesa3dgl$(MESAGLBUILD)" modtype=library \
   conffile="$(SRCDIR)/workbench/libs/gl/gl.conf" \
-  confoverride="$(top_srcdir)/mesa3dgl.conf" objdir="$(OBJDIR)/$(MESAGLVERSION)" \
+  confoverride="$(SRCDIR)/$(CURDIR)/mesa3dgl.conf" \
+  objdir="$(OBJDIR)/$(MESAGLVERSION)" \
   files="$(MESAGL_LIBRARY_SOURCES_C)" \
   alwayscxxlink=yes \
   uselibs="glapi mesa mesa-sse41 compiler galliumauxiliary gallium mesautil pthread $(MESA3DGL_GALLIUMCORE)"
@@ -115,11 +123,12 @@ USER_LDFLAGS += $(TARGET_CXX_LDFLAGS) -L$(top_libdir)
 $(AROS_ENVARC)/SYS:
 	%mkdir_q dir=$@
 
-$(AROS_ENVARC)/SYS/GL.default: | $(AROS_ENVARC)/SYS
-	@$(ECHO) "mesa3dgl$(MESAGLBUILD)" > $(AROS_ENVARC)/SYS/GL.default
-
+# Rewritten on every build: as a file target it would survive an
+# OPT_MESAGL change, and gl.library would keep opening the old
+# mesa3dgl against freshly built drivers.
 #MM
-mesa3dgl-library-env : $(AROS_ENVARC)/SYS/GL.default
+mesa3dgl-library-env : | $(AROS_ENVARC)/SYS
+	@$(ECHO) "mesa3dgl$(MESAGLBUILD)" > $(AROS_ENVARC)/SYS/GL.default
 
 #
 # mesa3d includes...
@@ -133,12 +142,32 @@ KHR_INCLUDE_FILES := khrplatform.h
 
 %copy_includes mmake=mesa3d-includes-copy path=KHR dir=$(top_srcdir)/include/KHR includes=$(KHR_INCLUDE_FILES)
 
-GL_INCLUDE_FILES := egl.h eglext.h eglplatform.h eglmesaext.h eglextchromium.h
+GL_INCLUDE_FILES := egl.h eglext.h eglplatform.h eglmesaext.h
+ifneq ($(wildcard $(top_srcdir)/include/EGL/eglextchromium.h),)
+GL_INCLUDE_FILES += eglextchromium.h
+endif
 
 %copy_includes mmake=mesa3d-includes-copy path=EGL dir=$(top_srcdir)/include/EGL includes=$(GL_INCLUDE_FILES)
 
 VK_INCLUDE_FILES := vulkan.h vulkan_core.h vk_icd.h vk_platform.h
 
 %copy_includes mmake=mesa3d-includes-copy path=vulkan dir=$(top_srcdir)/include/vulkan includes=$(VK_INCLUDE_FILES)
+
+# vulkan_core.h pulls these in unconditionally.
+VK_VIDEO_INCLUDE_FILES := \
+    vulkan_video_codecs_common.h \
+    vulkan_video_codec_h264std.h \
+    vulkan_video_codec_h264std_decode.h \
+    vulkan_video_codec_h264std_encode.h \
+    vulkan_video_codec_h265std.h \
+    vulkan_video_codec_h265std_decode.h \
+    vulkan_video_codec_h265std_encode.h \
+    vulkan_video_codec_av1std.h \
+    vulkan_video_codec_av1std_decode.h \
+    vulkan_video_codec_av1std_encode.h \
+    vulkan_video_codec_vp9std.h \
+    vulkan_video_codec_vp9std_decode.h
+
+%copy_includes mmake=mesa3d-includes-copy path=vk_video dir=$(top_srcdir)/include/vk_video includes=$(VK_VIDEO_INCLUDE_FILES)
 
 %common

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2005-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2005-2026, The AROS Development Team. All rights reserved.
 
     Code to write a Makefile with variables that provides the files
     and configuration for building the module
@@ -13,14 +13,30 @@
 
 static inline const char *upname(const char *s)
 {
-    static char name[512];
-    int i = 0;
+    static char *name;
+    static size_t size;
+    /* upname() is called only with NUL-terminated string-list entries. */
+    size_t len = s ? strlen(s) : 0; /* Flawfinder: ignore */
+    size_t i;
+    char *newname;
 
-    while (s && i < (sizeof(name)-1))
-        name[i++] = toupper(*(s++));
-    name[i] = 0;
+    if (len + 1 > size)
+    {
+        newname = realloc(name, len + 1);
+        if (newname == NULL)
+        {
+            fprintf(stderr, "Out of memory\n");
+            exit(20);
+        }
+        name = newname;
+        size = len + 1;
+    }
 
-    return &name[0];
+    for (i = 0; i < len; i++)
+        name[i] = toupper(s[i]);
+    name[len] = 0;
+
+    return name;
 }
 
 static inline void writemakefilestubs(struct config *cfg, int is_rel, FILE *out)
@@ -44,25 +60,27 @@ static inline void writemakefilestubs(struct config *cfg, int is_rel, FILE *out)
 void writemakefile(struct config *cfg)
 {
     FILE *out;
-    char moduleversname[256];
-    char name[512];
+    char *moduleversname;
+    char *name;
     struct stringlist *s;
 
     if (!cfg->flavour)
     {
-        snprintf(moduleversname, sizeof(moduleversname), "%s", cfg->modulename);
+        moduleversname = make_output_path("%s", cfg->modulename);
     }
     else
     {
-        snprintf(moduleversname, sizeof(moduleversname), "%s_%s", cfg->modulename, cfg->flavour);
+        moduleversname = make_output_path("%s_%s", cfg->modulename, cfg->flavour);
     }
 
-    snprintf(name, sizeof(name), "%s/Makefile.%s%s", cfg->gendir, moduleversname, cfg->modtypestr);
+    name = make_output_path("%s/Makefile.%s%s", cfg->gendir, moduleversname, cfg->modtypestr);
     out = fopen(name, "w");
 
     if (out == NULL)
     {
         perror(name);
+        free(name);
+        free(moduleversname);
         exit(20);
     }
 
@@ -151,8 +169,12 @@ void writemakefile(struct config *cfg)
     {
         perror("Error writing Makefile");
         fclose(out);
+        free(name);
+        free(moduleversname);
         exit(20);
     }
 
     fclose(out);
+    free(name);
+    free(moduleversname);
 }

@@ -1,4 +1,4 @@
-#   Copyright © 1995-2021, The AROS Development Team. All rights reserved.
+#   Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 #   $Id$
 #
 #   Desc: General rules included at the end of a generated mmakefile
@@ -13,6 +13,10 @@ endif
 include $(SRCDIR)/tools/genmodule/Makefile.deps
 
 # Rules for the AROS build tools
+# genmodule is only ever built as a prerequisite from whichever module's
+# mmakefile needs it first, so CURDIR would otherwise be inherited as that
+# module's directory.
+# Pin CURDIR to genmodule's own directory so it always builds in its own context.
 $(GENMODULE) : $(GENMODULE_DEPS)
-	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/genmodule TOP=$(TOP) SRCDIR=$(SRCDIR) $(GENMODULE)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/genmodule TOP=$(TOP) SRCDIR=$(SRCDIR) CURDIR=tools/genmodule $(GENMODULE)
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -87,6 +87,8 @@
 
   if (!damage_region)
   {
+      /* Not in update state: forget the saved list again */
+      l->cr2 = NULL;
       /* CHECKME: Should we really unlock on error? */
       UnlockLayer(l);
       return FALSE;
@@ -112,6 +114,8 @@
                                            l,
                                            FALSE,
                                            damage_region,
+                                           0,
+                                           l->cr2,
                                            LayersBase);
 
   if (IS_SMARTREFRESH(l))
@@ -124,6 +128,7 @@
                                 FALSE,
                                 FALSE,
                                 FALSE,
+                                TRUE,
                                 LayersBase);
 
   }

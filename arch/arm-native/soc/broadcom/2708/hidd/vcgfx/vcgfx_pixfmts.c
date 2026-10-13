@@ -161,6 +161,27 @@ IPTR pftags_8bpp[ARRAYSIZE_LUT] =
 };
 #endif
 
+#if defined(VC_FMT_32) && !AROS_BIG_ENDIAN
+/* BCM2712's adopted boot surface is R,G,B,X (no SETPIXFMT): the table
+ * above with red and blue exchanged. */
+IPTR pftags_32bpp_rgb[ARRAYSIZE_TRUECOLOR] =
+{
+    ARRAYSIZE_TRUECOLOR,
+    24,
+    16,
+    8,
+    0,
+    0x000000FF,
+    0x0000FF00,
+    0x00FF0000,
+    0x00000000,
+    32,
+    4,
+    32,
+    vHidd_StdPixFmt_RGB032
+};
+#endif
+
 IPTR vc_fmts[6] =
 {
 #if defined(VC_FMT_32)
@@ -184,8 +205,22 @@ IPTR vc_fmts[6] =
 APTR FNAME_SUPPORT(GenPixFmts)(OOP_Class *cl)
 {
     struct TagItem *pixfmtarray = NULL;
-    IPTR  **supportedfmts = (IPTR**)vc_fmts;
+    IPTR  *fmts[6];
+    IPTR  **supportedfmts = (IPTR**)fmts;
     int fmtcount = 0;
+
+    /* Local copy so the 32-bpp entry can follow the SoC. */
+    for (fmtcount = 0; fmtcount < 6; fmtcount++)
+        fmts[fmtcount] = (IPTR *)vc_fmts[fmtcount];
+#if defined(VC_FMT_32) && !AROS_BIG_ENDIAN
+    if (XSD(cl)->vcsd_HVSGen == VCGFX_HVS_HVS6)
+    {
+        for (fmtcount = 0; fmts[fmtcount]; fmtcount++)
+            if (fmts[fmtcount] == pftags_32bpp)
+                fmts[fmtcount] = pftags_32bpp_rgb;
+    }
+#endif
+    fmtcount = 0;
 
     while (supportedfmts[fmtcount] != 0)
         fmtcount++;

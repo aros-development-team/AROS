@@ -66,7 +66,7 @@
 
     UBYTE SearchMask;
 
-    if(pick > 7 && pick != -1) {
+    if(pick > 7 || pick < -1) {
         pick = -1;
     } else {
         /*  let nobody else interrupt us while we're looking for a free

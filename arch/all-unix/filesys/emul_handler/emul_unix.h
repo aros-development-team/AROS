@@ -28,6 +28,8 @@
 #include <sys/mount.h>
 #endif
 
+#include "../../include/host_vacall.h"
+
 /* Android is not a true Linux ;-) */
 #ifdef HOST_OS_android
 #undef HOST_OS_linux

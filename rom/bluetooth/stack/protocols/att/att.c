@@ -239,12 +239,12 @@ bt_status_t bt_att_encode_read_blob_request(struct bt_buf_writer *w, uint16_t ha
     return st == BT_OK ? bt_buf_writer_write_le16(w, value_offset) : st;
 }
 
-bt_status_t bt_att_encode_write_request(struct bt_buf_writer *w, uint16_t handle,
-                                         const uint8_t *value, size_t value_len)
+static bt_status_t encode_write(struct bt_buf_writer *w, uint8_t opcode,
+                                uint16_t handle, const uint8_t *value, size_t value_len)
 {
     bt_status_t st;
 
-    st = bt_buf_writer_write_u8(w, BT_ATT_OPCODE_WRITE_REQUEST);
+    st = bt_buf_writer_write_u8(w, opcode);
     if (st != BT_OK)
         return st;
     st = bt_buf_writer_write_le16(w, handle);
@@ -252,6 +252,18 @@ bt_status_t bt_att_encode_write_request(struct bt_buf_writer *w, uint16_t handle
         return st;
 
     return bt_buf_writer_write_bytes(w, value, value_len);
+}
+
+bt_status_t bt_att_encode_write_request(struct bt_buf_writer *w, uint16_t handle,
+                                         const uint8_t *value, size_t value_len)
+{
+    return encode_write(w, BT_ATT_OPCODE_WRITE_REQUEST, handle, value, value_len);
+}
+
+bt_status_t bt_att_encode_write_command(struct bt_buf_writer *w, uint16_t handle,
+                                         const uint8_t *value, size_t value_len)
+{
+    return encode_write(w, BT_ATT_OPCODE_WRITE_COMMAND, handle, value, value_len);
 }
 
 bt_status_t bt_att_parse_handle_value(const uint8_t *params, size_t params_len,

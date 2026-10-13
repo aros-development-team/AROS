@@ -22,21 +22,21 @@
 __BEGIN_DECLS
 
 /* Copying functions */
-void *memcpy (void * restrict dest, const void * restrict src, size_t n);
+void *memcpy (void * __restrict dest, const void * __restrict src, size_t n);
 void *memmove (void * dest, const void * src, size_t n);
-char *strcpy (char * restrict dest, const char * restrict src);
-char *strncpy (char * restrict dest, const char * restrict src, size_t n);
+char *strcpy (char * __restrict dest, const char * __restrict src);
+char *strncpy (char * __restrict dest, const char * __restrict src, size_t n);
 
 /* Concatenation functions */
-char *strcat (char * restrict dest, const char * restrict src);
-char *strncat (char * restrict dest, const char * restrict src, size_t n);
+char *strcat (char * __restrict dest, const char * __restrict src);
+char *strncat (char * __restrict dest, const char * __restrict src, size_t n);
 
 /* Comparison functions */
 int memcmp (const void * s1, const void * s2, size_t n);
 int strcmp (const char * s1, const char * s2);
 int strcoll (const char *s1, const char *s2);
 int strncmp (const char * s1, const char * s2, size_t n);
-size_t strxfrm (char * restrict s1, const char * restrict s2, size_t n);
+size_t strxfrm (char * __restrict s1, const char * __restrict s2, size_t n);
 
 /* Search functions */
 void *memchr (const void * dest, int c, size_t n);
@@ -67,10 +67,10 @@ __END_DECLS
 
 __BEGIN_DECLS
 
-void *memccpy(void *restrict, const void *restrict, int, size_t);
-char *stpcpy(char *restrict, const char *restrict);
+void *memccpy(void *__restrict, const void *__restrict, int, size_t);
+char *stpcpy(char *__restrict, const char *__restrict);
 STDC_STRING_NOTIMPL(
-char *stpncpy(char *restrict, const char *restrict, size_t);
+char *stpncpy(char *__restrict, const char *__restrict, size_t);
 int strcoll_l(const char *, const char *, locale_t);
 )
 char *strdup(const char *);
@@ -84,7 +84,7 @@ STDC_STRING_NOTIMPL(
 char *strsignal(int);
 )
 STDC_STRING_NOTIMPL(
-size_t strxfrm_l(char *restrict, const char *restrict,
+size_t strxfrm_l(char *__restrict, const char *__restrict,
        size_t, locale_t);
 )
 

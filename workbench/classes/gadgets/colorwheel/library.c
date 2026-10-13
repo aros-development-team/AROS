@@ -151,6 +151,8 @@ ULONG __saveds LibExpunge(REG(a6, struct ColorWheelBase_intern *ColorWheelBase) 
 {
  	if(!ColorWheelBase->library.lib_OpenCnt) 
  	{
+		ULONG seglist = ColorWheelBase->seglist;
+
 		if(ColorWheelBase->classptr) 
 		{
 			if( ! FreeClass(ColorWheelBase->classptr) )
@@ -167,7 +169,7 @@ ULONG __saveds LibExpunge(REG(a6, struct ColorWheelBase_intern *ColorWheelBase) 
   		FreeMem((BYTE *)ColorWheelBase-ColorWheelBase->library.lib_NegSize,
 	          ColorWheelBase->library.lib_NegSize + ColorWheelBase->library.lib_PosSize);
 
-		return( ColorWheelBase->seglist );
+		return( seglist );
  	} 
  	else 
 	{

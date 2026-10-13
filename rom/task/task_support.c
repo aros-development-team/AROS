@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2017-2026, The AROS Development Team. All rights reserved.
 */
 
 #define DEBUG 0
@@ -121,4 +121,26 @@ VOID TaskHookTypeDispose(struct TaskListHookEntry *task, ULONG type)
 VOID TaskHooksDispose(struct TaskListHookEntry *task)
 {
     D(bug("%s(0x%p)\n", __func__));
+}
+
+/*
+ * Deliver a task lifecycle notification to every registered hook.
+ * Called from the NewAddTask()/RemTask() wrappers, never under Forbid().
+ */
+void taskres_NotifyTasks(struct TaskResBase *TaskResBase, ULONG action, struct Task *task, struct Task *parent, struct TagItem *tags)
+{
+    struct TaskNotifyMsg msg;
+    struct Hook *hook;
+
+    msg.tnm_Action = action;
+    msg.tnm_Task = task;
+    msg.tnm_Parent = parent;
+    msg.tnm_Tags = tags;
+
+    ObtainSemaphoreShared(&TaskResBase->trb_NotifySem);
+    ForeachNode(&TaskResBase->trb_NotifyHooks, hook)
+    {
+        CALLHOOKPKT(hook, task, &msg);
+    }
+    ReleaseSemaphore(&TaskResBase->trb_NotifySem);
 }

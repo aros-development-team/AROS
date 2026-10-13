@@ -377,13 +377,19 @@ void aarch64_icache_invalidate(uintptr_t addr, uint32_t length)
 /*  Interrupt setup                                                   */
 /* ================================================================== */
 
+/* VBAR_EL1 is per-core and resets UNKNOWN, so every core sets it. The
+ * interrupt controller behind core_SetupIntr is global - hence split. */
+void core_SetupIntrCore(void)
+{
+    asm volatile("msr vbar_el1, %0" :: "r"(&__aarch64_vectors));
+    asm volatile("isb" ::: "memory");
+}
+
 void core_SetupIntr(void)
 {
     D(bug("[Kernel] Initializing AArch64 exception vectors\n"));
 
-    /* Set VBAR_EL1 to point to our vector table */
-    asm volatile("msr vbar_el1, %0" :: "r"(&__aarch64_vectors));
-    asm volatile("isb" ::: "memory");
+    core_SetupIntrCore();
 
     D(bug("[Kernel] VBAR_EL1 set to 0x%p\n", &__aarch64_vectors));
 

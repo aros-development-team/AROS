@@ -36,6 +36,10 @@
 #define BWFM_E_REASSOC          9
 #define BWFM_E_ROAM             19
 
+/* Firmware command for leaving the network; mirrors bwfm_sdio.h. */
+#define BWFM_C_DISASSOC         52
+#define BWFM_C_GET_RSSI         127
+
 /* Key slot algorithms for BWFMSetKey(); mirrors bwfm_sdio.h. */
 #define BWFM_CRYPTO_ALGO_OFF        0
 #define BWFM_CRYPTO_ALGO_WEP1       1
@@ -62,6 +66,17 @@ struct bwfm_tracker
     struct Sana2PacketTypeStats stats;
 };
 
+/* Multicast groups we ask the firmware to let through. The chip filters in
+ * hardware, so this list is the whole story for IPv6 neighbour discovery and
+ * mDNS; beyond it we fall back to allmulti. */
+#define BWFM_MAX_MCAST      16
+
+struct bwfm_mcast
+{
+    UBYTE               addr[ETHER_ADDR_LEN];
+    ULONG               refs;               /* the stack adds a group per user */
+};
+
 /* Per-unit state */
 struct bwfm_unit
 {
@@ -76,6 +91,9 @@ struct bwfm_unit
     struct SignalSemaphore lock;        /* guards openers/read_pending/
                                          * event_pending/trackers/assoc_* and
                                          * pending_events across tasks (SMP) */
+    struct bwfm_mcast   mcast[BWFM_MAX_MCAST];
+    ULONG               mcast_count;
+    ULONG               mcast_over;         /* groups that did not fit -> allmulti */
     struct MinList      openers;
     struct MinList      trackers;
     struct MinList      event_pending;      /* queued S2_ONEVENT requests */

@@ -9,6 +9,9 @@
 #define PRINT_LIST
 #define DEBUG 1
 #endif
+#ifndef DEBUG
+#define DEBUG 0
+#endif
 
 #include <aros/debug.h>
 #include <exec/rawfmt.h>

@@ -63,7 +63,8 @@ IPTR ReadMFTAttrib(struct NTFSMFTAttr *, UBYTE *, UQUAD, ULONG, int);
 struct MFTAttr *MapMFTAttrib (struct NTFSMFTAttr *, struct NTFSMFTEntry *, UBYTE);
 struct MFTAttr *FindMFTAttrib(struct NTFSMFTAttr *, UBYTE);
 void FreeMFTAttrib(struct NTFSMFTAttr *);
-LONG ProcessFSEntry(struct NTFSMFTEntry *, struct DirEntry *, ULONG **);
+LONG ProcessFSEntry(struct NTFSMFTEntry *, struct DirEntry *, ULONG **,
+    UBYTE *, ULONG);
 
 /* ops.c */
 LONG OpLockFile(struct ExtFileLock *, UBYTE *, ULONG, LONG, struct ExtFileLock **);

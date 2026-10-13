@@ -1,0 +1,107 @@
+#   Build libzink.a — Zink OpenGL-on-Vulkan Gallium driver
+#
+#   Zink translates OpenGL calls to Vulkan and can run on any supported Vulkan
+#   implementation.
+#   Generated files (zink_device_info, zink_instance, zink_nir_algebraic)
+#   must be pre-generated. See mesa3d-generate-zink target.
+
+include $(SRCDIR)/config/aros.cfg
+
+CUR_MESADIR := src/gallium/drivers/zink
+include $(SRCDIR)/$(CURDIR)/../mesa.cfg
+
+ZINK_GENDIR := $(top_builddir)/$(CUR_MESADIR)
+
+# Vulkan runtime generated paths (for headers)
+VK_RT_GENDIR := $(top_builddir)/src/vulkan/runtime
+VK_UTIL_GENDIR := $(top_builddir)/src/vulkan/util
+
+#MM mesa3d-linklib-zink : mesa3d-generate-zink includes \
+#MM     mesa3d-linklib-vulkan-runtime mesa3d-linklib-compiler \
+#MM     mesa3d-linklib-mesautil linklibs-galliumauxiliary
+
+# Zink sources (from meson.build, minus format_test)
+ZINK_SOURCES := \
+    $(top_srcdir)/$(CUR_MESADIR)/zink_batch \
+    $(top_srcdir)/$(CUR_MESADIR)/zink_blit \
+    $(top_srcdir)/$(CUR_MESADIR)/zink_bo \
+    $(top_srcdir)/$(CUR_MESADIR)/zink_clear \
+    $(top_srcdir)/$(CUR_MESADIR)/zink_compiler \
+    $(top_srcdir)/$(CUR_MESADIR)/zink_context \
+    $(top_srcdir)/$(CUR_MESADIR)/zink_descriptors \
+    $(top_srcdir)/$(CUR_MESADIR)/zink_fence \
+    $(top_srcdir)/$(CUR_MESADIR)/zink_format \
+    $(top_srcdir)/$(CUR_MESADIR)/zink_kopper \
+    $(top_srcdir)/$(CUR_MESADIR)/zink_lower_cubemap_to_array \
+    $(top_srcdir)/$(CUR_MESADIR)/zink_pipeline \
+    $(top_srcdir)/$(CUR_MESADIR)/zink_program \
+    $(top_srcdir)/$(CUR_MESADIR)/zink_query \
+    $(top_srcdir)/$(CUR_MESADIR)/zink_render_pass \
+    $(top_srcdir)/$(CUR_MESADIR)/zink_resource \
+    $(top_srcdir)/$(CUR_MESADIR)/zink_screen \
+    $(top_srcdir)/$(CUR_MESADIR)/zink_state \
+    $(top_srcdir)/$(CUR_MESADIR)/zink_surface
+
+# Generated sources
+ZINK_GEN_SOURCES := \
+    $(ZINK_GENDIR)/zink_device_info \
+    $(ZINK_GENDIR)/zink_instance \
+    $(ZINK_GENDIR)/zink_nir_algebraic
+
+USER_INCLUDES += \
+    -iquote $(SRCDIR)/$(CURDIR)/../aros_compat \
+    -iquote $(top_srcdir)/$(CUR_MESADIR) \
+    -iquote $(top_srcdir)/src \
+    -iquote $(top_srcdir)/src/gallium/include \
+    -iquote $(top_srcdir)/src/gallium/auxiliary \
+    -iquote $(top_srcdir)/src/gallium/auxiliary/util \
+    -iquote $(top_srcdir)/src/vulkan/util \
+    -iquote $(top_srcdir)/src/vulkan/runtime \
+    -iquote $(top_srcdir)/src/util \
+    -iquote $(top_srcdir)/src/compiler \
+    -iquote $(top_srcdir)/src/compiler/nir \
+    -iquote $(top_srcdir)/src/include \
+    -iquote $(top_srcdir)/include \
+    -iquote $(top_builddir)/src \
+    -iquote $(top_builddir)/src/util \
+    -iquote $(top_builddir)/src/compiler/nir \
+    -iquote $(ZINK_GENDIR) \
+    -iquote $(VK_RT_GENDIR) \
+    -iquote $(VK_UTIL_GENDIR) \
+    -I $(SRCDIR)/$(CURDIR)/../aros_compat \
+    -I $(top_srcdir)/src/gallium/include \
+    -I $(top_srcdir)/src/include \
+    -I $(ZINK_GENDIR) \
+    -I $(VK_RT_GENDIR) \
+    -I $(VK_UTIL_GENDIR)
+
+USER_CPPFLAGS += \
+    -DNO_AMIGA_LINKAGE_TYPES
+
+USER_CFLAGS += $(MESA_NOWARNFLAGS)
+
+%build_linklib mmake=mesa3d-linklib-zink \
+    libname=zink \
+    libdir=$(top_libdir) \
+    objdir=$(top_builddir)/$(CUR_MESADIR) \
+    files="$(ZINK_SOURCES) $(ZINK_GEN_SOURCES)"
+
+#MM
+mesa3d-generate-zink :
+	@$(ECHO) "Generating Zink headers..."
+	@$(MKDIR) -p $(ZINK_GENDIR)
+	@VK_XML=$(top_srcdir)/src/vulkan/registry/vk.xml && \
+	python3 $(top_srcdir)/$(CUR_MESADIR)/zink_device_info.py \
+	  "$$VK_XML" \
+	  $(ZINK_GENDIR)/zink_device_info.h \
+	  $(ZINK_GENDIR)/zink_device_info.c && \
+	python3 $(top_srcdir)/$(CUR_MESADIR)/zink_instance.py \
+	  "$$VK_XML" \
+	  $(ZINK_GENDIR)/zink_instance.h \
+	  $(ZINK_GENDIR)/zink_instance.c && \
+	python3 $(top_srcdir)/$(CUR_MESADIR)/zink_nir_algebraic.py \
+	  -p $(top_srcdir)/src/compiler/nir/ \
+	  > $(ZINK_GENDIR)/zink_nir_algebraic.c
+	@$(ECHO) "Zink headers generated."
+
+%common

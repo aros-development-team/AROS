@@ -18,7 +18,7 @@
         AROS_LHA(ULONG            , r     , D1),
         AROS_LHA(ULONG            , g     , D2),
         AROS_LHA(ULONG            , b     , D3),
-        AROS_LHA(ULONG            , maxpen, D4),
+        AROS_LHA(LONG             , maxpen, D4),
 
 /*  LOCATION */
         struct GfxBase *, GfxBase, 168, Graphics)

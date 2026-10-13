@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 2010-2026, The AROS Development Team. All rights reserved.
 
     Desc: RemICRVector() function.
 */
@@ -23,8 +23,11 @@ AROS_LH2(void, RemICRVector,
     iCRBit = (WORD)iCRBit;
     AbleICR(resource, 1 << iCRBit);
     Disable();
-    if (CiaBase->Vectors[iCRBit] == interrupt)
-        CiaBase->Vectors[iCRBit] = NULL;
+    if (CiaBase->Vectors[iCRBit].iv_Node == interrupt) {
+        CiaBase->Vectors[iCRBit].iv_Node = NULL;
+        CiaBase->Vectors[iCRBit].iv_Code = NULL;
+        CiaBase->Vectors[iCRBit].iv_Data = NULL;
+    }
     Enable();
     AROS_LIBFUNC_EXIT
 }

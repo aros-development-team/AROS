@@ -32,7 +32,7 @@ AROS_LH0(int, KrnObtainInput,
     /* Set our STDERR to non-blocking mode for RawMayGetChar() to work */
     res = KernelBase->kb_PlatformData->iface->fcntl(STDERR_FILENO, F_GETFL);
     AROS_HOST_BARRIER
-    res = KernelBase->kb_PlatformData->iface->fcntl(STDERR_FILENO, F_SETFL, res|O_NONBLOCK);
+    res = HOST_VACALL3(KernelBase->kb_PlatformData->iface->fcntl, STDERR_FILENO, F_SETFL, res|O_NONBLOCK);
     AROS_HOST_BARRIER
 
     return (res == -1) ? 0 : 1;

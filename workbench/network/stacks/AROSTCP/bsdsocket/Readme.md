@@ -53,10 +53,13 @@ Descriptors are also reachable through **`fd.library`**: `api/amiga_fdhooks.c` r
 `read`/`write`/`close`/`dup` hooks for `FD_OWNER_BSDSOCKET`, so a `posixc` program (or any other
 `fd.library` consumer) can operate on a socket descriptor without knowing it is a socket. Each
 descriptor's `fd.library` data is the `struct socket *`, and `so->so_pgid` records the owning
-`SocketBase`. A blocking hook invoked by a task that has **no** base of its own — e.g. a `posixc`
-worker thread using a socket descriptor another task created — gives that task its own base (via
-`OpenLibrary`) and uses it as the sleep context, so the operation sleeps on the **caller's** base
-rather than the socket owner's. §3.2 explains why that is required.
+`SocketBase`. The caller reads that data without a lock, so every hook also gets the descriptor
+and first checks, under `syscall_semaphore`, that it still leads to the socket; a descriptor holds
+a socket reference, so one that does keeps the socket alive. A blocking hook invoked by a task
+that has **no** base of its own — e.g. a `posixc` worker thread using a socket descriptor another
+task created — gives that task a minimal base for the call (`api_hookbase_open`: sleep state and
+timer, no descriptor table) and uses it as the sleep context, so the operation sleeps on the
+**caller's** base rather than the socket owner's. §3.2 explains why that is required.
 
 The API layer (`amiga_syscalls.c`) implements the Berkeley calls: each builds the necessary
 `mbuf`s (for example, an address `mbuf` with `m_len = addrlen` and `sa_len` set) and invokes the
@@ -65,10 +68,39 @@ to the protocol via `so->so_proto->pr_usrreq(so, PRU_*, …)`.
 
 ### 3.2 Concurrency and synchronization
 
-The stack uses a **single global lock** (`syscall_semaphore`, a `SignalSemaphore`). Every entry
-through the library API acquires it, so all protocol processing is serialized — there is no
-parallelism across sockets or tasks. This is the AmiTCP model; it is simple and correct, and much
-of the code's safety rests on this single-threaded assumption.
+The stack follows the AmiTCP model of **two serialising locks**. API calls take the global
+`syscall_semaphore` (a `SignalSemaphore`), so user-side socket work is serialized; there is no
+parallelism across sockets or tasks. The daemon task (SANA-II input, protocol timers) never takes
+it: it is serialized against the API only by the `spl` mutex below. So anything the daemon also
+touches — `so_state`, `sb_flags`, `so_pgid`, pcb options, address and ARP lists, `if_flags` —
+must be changed at `splnet`/`splimp` even when `syscall_semaphore` is held. On SMP the daemon runs
+on another CPU at the same time, so a missing `spl` there is a real race, not a theoretical one.
+
+`Forbid()` gives no exclusion on SMP (it only holds off the local CPU), so no shared state relies
+on it:
+
+- `socketBaseList` and the master bases' `lib_OpenCnt` — Exec calls `Open`/`Close` under
+  `Forbid()` only — are guarded by `baselist_semaphore` (`FindSocketBase` takes it shared).
+- `releasedSocketList`, the `ReleaseSocket` ids, `so_refcnt` and every base's descriptor table
+  (`dTable` and its bitmask) are guarded by `syscall_semaphore`. A table can be resized by another
+  task's `dup` through the `fd.library` hooks, so it is never read without the semaphore.
+- `SysBase->LibList` is changed under `execlock.resource`'s lock, as `OpenLibrary` does.
+
+Lock order, outermost first: `syscall_semaphore` → `spl` → `ARPTAB_LOCK`, `select_semaphore`,
+`sleep_semaphore`, `EventLock` → `baselist_semaphore`, `malloc_semaphore`. `baselist_semaphore` is a
+leaf. Code running under `spl` must not take `syscall_semaphore` (`tsleep` reacquires it before
+`spl`). A nested `ObtainSyscallSemaphore()` on the same base leaves the task at the raised priority,
+so internal paths that already hold it use the `*Locked` helpers (`closeSocketLocked`) or a plain
+`ObtainSemaphore(&syscall_semaphore)`; the hooks, which may run on another task's behalf, always
+use the plain form.
+
+A socket's `so_pgid` names the base that receives its signals and events. It is changed at
+`splnet` through `setSocketOwner`, which also drops the old owner's queued events for the socket,
+so events only ever sit on the current owner's list; the last reference clears it before
+`soclose`. `ObtainSocket` hands it to the new owner. `UL_Close` marks the base `closing` (no
+`FIOSETOWN` or `dup` into it from then on), closes its table and clears every socket's reference
+to it (walking `tcb`, `udb`, `rawcb`, every descriptor table and `releasedSocketList`) before the
+base is freed.
 
 BSD interrupt-priority levels are emulated in `kern_synch.c`: `splnet`/`splimp`/`splx` manipulate a
 single `spl_semaphore` mutex and a `spl_level` counter, so raising to any level effectively waits
@@ -88,7 +120,8 @@ nesting depth.
   then walks a bad link). A task therefore always sleeps on **its own** base, never one it merely
   borrowed: in particular the `fd.library` hooks (§3.1) use the caller's base for a blocking
   operation, not the socket owner's (`so->so_pgid`), so that `wakeup` also signals the task that is
-  actually waiting.
+  actually waiting. A caller without a base gets a temporary one for that call only, and the hook
+  holds a socket reference while it sleeps, so the owner closing it meanwhile cannot free it.
 - The daemon task itself never `tsleep`s (a `DIAGNOSTIC` guard enforces this).
 
 ### 3.3 Memory management
@@ -100,6 +133,12 @@ comes up advertising a large MTU, `mb_autosize` raises the cluster cap in propor
 a frame of that MTU needs — grow-only, and clamped to a fraction of free memory — so a jumbo
 interface has enough clusters to keep the pipe full. `m_valid` (a slot-alignment check against the
 pool chunks) and the length bounds on `m_prepend`/`m_adj` guard against malformed mbuf chains.
+`mbinit` starts the pool even on a memory-tight or fragmented machine: rather than demanding the
+whole initial pool (~512 KB) as one block, it halves the initial mbuf and cluster requests on
+failure down to a small floor (64 mbufs / 4 clusters), logging a one-line notice when the pool
+starts smaller than configured. The pool still grows on demand once running, a normal-memory boot is
+unchanged (the full pool succeeds first try), and a genuine allocation failure is still returned so
+the stack aborts cleanly instead of running with no mbufs.
 
 > **`M_WAIT` semantics.** The port does not honour the blocking `M_WAIT`/`M_WAITOK` flag —
 > allocation returns `NULL` once the mbuf cap or the general pool is exhausted, unlike stock BSD
@@ -320,12 +359,23 @@ the tunnel server.
   `addifent()` (`kern/amiga_netdb.c`) then creates the pseudo-interface instead of opening a device.
   Behind NAT the router must forward inbound protocol 41 to the AROS host (double-NAT cannot work).
 
+### 6.6 Scoped link-local and multicast output
+
+With more than one interface, link-local (`fe80::/64`) and multicast IPv6 output no longer follow the
+single shared `fe80::/64` route: the egress link is taken from the one the caller names — a
+`sin6_scope_id` on the destination, an `IPV6_PKTINFO` ancillary interface index, or the interface the
+chosen source address lives on — so a link-local send leaves the correct link on a multi-homed host.
+`HOST` database entries may also carry an IPv6 address.
+
 ---
 
 ## 7. IPv4, ICMP, and UDP
 
 - **IPv4** (`ip_input.c`/`ip_output.c`) provides input demux, forwarding, fragmentation and
-  reassembly, and options handling.
+  reassembly, and options handling. Incoming fragments are held on a reassembly queue
+  (`struct ipq`, bounded by `maxnipq`) and linked through separately allocated `struct ipqent`
+  nodes — the fragment chain is kept out of the packet rather than overlaid on the IP header, so it
+  is correct on 64-bit targets and a received fragment can no longer crash the stack (§10).
 - **ICMP** (`ip_icmp.c`) generates and processes error and informational messages. Error generation
   is rate-limited by a token bucket (`icmp_ratelimit`): a burst of 10 tokens refills at 5 tokens per
   500 ms slow-tick, keyed off the `tcp_now` clock; suppressed errors are counted in
@@ -333,7 +383,9 @@ the tunnel server.
 - **UDP** (`udp_usrreq.c`) is the standard datagram path over the shared `udb` table. The default
   UDP receive buffer (`udp_recvspace`, 256 datagrams) and the IP input queue depth
   (`ipqmaxlen = 4·IFQ_MAXLEN`, `ip_input.c`) are sized to absorb short high-rate receive bursts
-  before the owning task drains them, rather than dropping at the ~40-datagram default.
+  before the owning task drains them, rather than dropping at the ~40-datagram default. `SO_BINDTODEVICE`
+  pins a UDP socket to one interface, so a limited broadcast (`255.255.255.255`) or a reply can be
+  directed out a chosen link even on a multi-homed host with no default route.
 - **IPv4 multicast** (built under `-DENABLE_MULTICAST`) provides host-side group membership,
   mirroring the IPv6 path. `in_addmulti`/`in_delmulti` (`in.c`) maintain the reference-counted
   `in_multihead` list and program the NIC hardware filter over SANA-II (RFC 1112 class-D →
@@ -382,6 +434,17 @@ locals before summing rather than reading them through a `u_int16_t *` taken fro
 - **Tunnel pseudo-interface.** `if_stf.c` provides a deviceless 6in4 (SIT) interface that
   encapsulates IPv6 in IPv4 (protocol 41) over the existing IPv4 stack — no SANA-II device is bound.
   See §6.5.
+- **Interface bring-up is resilient.** An interface whose SANA-II device fails to open no longer
+  brings the whole stack down: with the `DEFER` keyword the open is retried in the background;
+  otherwise a requester offers retry / skip / shutdown. On a wireless link the stack requests
+  `S2EVENT_DISCONNECT` and, when the link drops, tears down the addresses and routes that belonged to
+  the old network; `sana_unrun` aborts the parked `S2_ONEVENT` before waiting on it, so another
+  opener keeping the device online can no longer hang shutdown.
+- **DHCP across several interfaces.** The DHCP client (`kern/amiga_dhcp.c` launching `dhclient`) runs
+  one socket per interface, each bound to its link, so a second interface (e.g. a Bluetooth PAN
+  alongside ethernet) also gets an address; the default route, name servers and search domain follow
+  the first bound interface rather than whichever lease arrived last. The unspecified DHCP
+  placeholder address installs no network route.
 
 ---
 
@@ -404,18 +467,30 @@ Properties the implementation provides:
 - **IPv6 fragmentation** builds each output fragment as a header mbuf with the fragment payload
   chained on via `m_copy`, so a fragment is not limited to one cluster and jumbo-MTU IPv6 fragments
   are emitted correctly; payload is never copied into a bare `MHLEN` mbuf.
+- **IPv4 reassembly** links held fragments through separately allocated `struct ipqent` nodes
+  (`ip_input.c`) rather than overlaying list pointers on the IP header as 4.3BSD did. Two 8-byte
+  pointers do not fit in the header's address fields on a 64-bit target, so the old overlay ran past
+  the header into the payload and mismatched `struct ipq` — one received fragment (e.g. a ping
+  larger than the MTU) crashed the stack, a remote one-packet denial of service on every 64-bit
+  AROS. The queue is bounded by `maxnipq` and each fragment's offset+length is range-checked against
+  `IP_MAXPACKET` (read unsigned), so a flood of distinct ids or a crafted overlap cannot exhaust
+  memory or wrap the trim arithmetic. 32-bit layout was unaffected.
+- **mbuf pool starts under memory pressure.** `mbinit` scales the initial pool down to a floor
+  rather than refusing to start when the full ~512 KB block will not fit on a tight or fragmented
+  machine (§3.3), so a low-memory boot still brings the stack up.
 
-> **Single-lock dependency.** Several data structures are safe only under the global
-> `syscall_semaphore` (§3.2) — for example `radix.c`'s shared `maskedKey` scratch and the cluster
-> reference count. Finer-grained locking would have to revisit these.
+> **Single-lock dependency.** Several data structures are safe only under the serialising locks
+> (§3.2) — for example `radix.c`'s shared `maskedKey` scratch, reached only at `splnet`. Finer-grained
+> locking would have to revisit these.
 
 ---
 
 ## 11. Current limitations
 
-- **No concurrency.** All API calls serialize on the global `syscall_semaphore` (§3.2); there is no
-  parallelism across sockets or CPUs and no SMP support. Throughput is bounded by single-threaded
-  protocol processing.
+- **No parallelism.** All API calls serialize on the global `syscall_semaphore`, and the daemon on
+  `spl` (§3.2); the stack is safe on SMP but gains no parallelism across sockets or CPUs. Throughput
+  is bounded by single-threaded protocol processing. `developer/debug/test/smp/SMP-Net` exercises
+  the SMP paths.
 - **Non-blocking allocation.** `M_WAIT`/`M_WAITOK` do not block (§3.3); allocations fail with
   `ENOBUFS` once the mbuf cap (4 MB; 1 MB on m68k) or the general pool is exhausted rather than
   waiting for memory to be freed.

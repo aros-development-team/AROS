@@ -10,6 +10,8 @@ USER_CPPFLAGS += \
     -D__OOP_NOMETHODBASES__ \
     -D__OOP_NOATTRBASES__
 
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+
 %build_module mmake=kernel-amiga-m68k-mouse \
     modname=amigamouse modtype=hidd \
     files="mouse_init mouseclass" uselibs=" hiddstubs"

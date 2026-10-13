@@ -134,15 +134,31 @@ LONG GetDirEntryLongName(struct DirEntry *short_de, STRPTR name,
     ULONG *len)
 {
     struct Globals *glob = short_de->sb->glob;
+    struct DirHandle dh;
+    LONG err;
+
+    InitDirHandle(short_de->sb, short_de->cluster, &dh, FALSE, glob);
+    err = GetDirEntryLongNameFrom(&dh, short_de, name, len);
+    ReleaseDirHandle(&dh, glob);
+
+    return err;
+}
+
+/* As GetDirEntryLongName(), reading through 'dh', a handle on the entry's
+ * directory. A fresh handle walks the cluster chain from the start of the
+ * directory; a scan that keeps one handle stays on the current cluster */
+LONG GetDirEntryLongNameFrom(struct DirHandle *dh, struct DirEntry *short_de,
+    STRPTR name, ULONG *len)
+{
+    struct Globals *glob = short_de->sb->glob;
     UBYTE buf[256];
     int i;
     UBYTE *raw, *c;
     UBYTE checksum;
-    struct DirHandle dh;
     struct DirEntry de;
     LONG index;
     UBYTE order;
-    LONG err;
+    LONG err = ERROR_OBJECT_NOT_FOUND;
 
     /* Make sure the entry is good */
     raw = short_de->e.entry.name;
@@ -151,7 +167,7 @@ LONG GetDirEntryLongName(struct DirEntry *short_de, STRPTR name,
         D(bug("[fat] entry name has first byte 0x%02x,"
             " returning empty long name\n", raw[0]));
         *name = '\0';
-        len = 0;
+        *len = 0;
         return 0;
     }
 
@@ -164,9 +180,6 @@ LONG GetDirEntryLongName(struct DirEntry *short_de, STRPTR name,
 
     D(bug("[fat] short name checksum is 0x%02x\n", checksum));
 
-    /* Get a handle on the directory */
-    InitDirHandle(short_de->sb, short_de->cluster, &dh, FALSE, glob);
-
     /* Loop over the long name entries */
     c = buf;
     order = 1;
@@ -176,7 +189,7 @@ LONG GetDirEntryLongName(struct DirEntry *short_de, STRPTR name,
         D(bug("[fat] looking for long name order 0x%02x in entry %ld\n",
             order, index));
 
-        if ((err = GetDirEntry(&dh, index, &de, glob)) != 0)
+        if ((err = GetDirEntry(dh, index, &de, glob)) != 0)
             break;
 
         /* Make sure it's valid */
@@ -244,8 +257,6 @@ LONG GetDirEntryLongName(struct DirEntry *short_de, STRPTR name,
             D(bug("[fat] extracted long name '%s' (len %lu)\n",
                 buf, (unsigned long)*len));
 
-            ReleaseDirHandle(&dh, glob);
-
             return 0;
         }
 
@@ -253,11 +264,9 @@ LONG GetDirEntryLongName(struct DirEntry *short_de, STRPTR name,
         order++;
     }
 
-    ReleaseDirHandle(&dh, glob);
-
     D(bug("[fat] long name construction failed\n"));
 
-    return ERROR_OBJECT_NOT_FOUND;
+    return err == 0 ? ERROR_OBJECT_NOT_FOUND : err;
 }
 
 /* Set the name of an entry. This will set the long name too. It assumes
@@ -557,7 +566,7 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len)
     D(bug("[fat] successfully wrote short & long names\n"));
 
     /* Set hidden flags on .info files */
-    if (strcmp(name + len - 5, ".info") == 0)
+    if (len >= 5 && memcmp(name + len - 5, ".info", 5) == 0)
         short_de->e.entry.attr |= ATTR_HIDDEN;
 
     return 0;

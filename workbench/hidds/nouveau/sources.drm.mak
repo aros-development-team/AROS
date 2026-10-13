@@ -4,11 +4,10 @@ AROS_LIBDRM_CORE_SOURCES = \
             libdrm/arosdrm \
             libdrm/arosdrmmode \
 
+# Mesa 26 carries the libdrm_nouveau API in one file; this is that copy with
+# the AROS mapping hooks applied.
 AROS_LIBDRM_NVIDIA_SOURCES = \
             libdrm/nouveau/nouveau \
-            libdrm/nouveau/pushbuf \
-            libdrm/nouveau/bufctx \
-            libdrm/nouveau/abi16 \
 
 AROS_DRM_CORE_SOURCES = \
             drm/display/drm_dp_helper \

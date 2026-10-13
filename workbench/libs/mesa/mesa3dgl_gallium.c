@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2009-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2009-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -138,7 +138,6 @@ BOOL MESA3DGLFillVisual(struct st_visual * stvis, struct pipe_screen * screen, i
     stvis->depth_stencil_format = PIPE_FORMAT_NONE;
     stvis->accum_format = PIPE_FORMAT_NONE;
     stvis->buffer_mask = ST_ATTACHMENT_FRONT_LEFT_MASK;
-    stvis->render_buffer = ST_ATTACHMENT_FRONT_LEFT;
     stvis->samples = 1;
 
     if (!MESA3DGLSelectColorFormat(&stvis->color_format, screen, bpp))
@@ -177,7 +176,7 @@ static VOID MESA3DGLFrameBufferCreateResource(struct mesa3dgl_framebuffer * amfb
 
     memset(&templ, 0, sizeof(templ));
 
-    if(amfb->screen->get_param(amfb->screen, PIPE_CAP_NPOT_TEXTURES))
+    if(amfb->screen->caps.npot_textures)
         templ.target = PIPE_TEXTURE_2D;
     else
         templ.target = PIPE_TEXTURE_RECT;
@@ -213,11 +212,12 @@ static VOID MESA3DGLFrameBufferCreateResource(struct mesa3dgl_framebuffer * amfb
     amfb->textures[statt] = amfb->screen->resource_create(amfb->screen, &templ);
 }
 
-static bool MESA3DGLFrameBufferValidate(struct st_context_iface *stctx,
-                       struct st_framebuffer_iface *stfbi,
+static bool MESA3DGLFrameBufferValidate(struct st_context *stctx,
+                       struct pipe_frontend_drawable *stfbi,
                        const enum st_attachment_type *statts,
                        unsigned count,
-                       struct pipe_resource **out)
+                       struct pipe_resource **out,
+                       struct pipe_resource **resolve)
 {
     struct mesa3dgl_framebuffer * amfb = (struct mesa3dgl_framebuffer *)stfbi;
     LONG i;
@@ -257,14 +257,16 @@ static bool MESA3DGLFrameBufferValidate(struct st_context_iface *stctx,
     return TRUE;
 }
 
-static bool MESA3DGLFrameBufferFlushFront(struct st_context_iface *stctx,
-                          struct st_framebuffer_iface *stfbi,
+static bool MESA3DGLFrameBufferFlushFront(struct st_context *stctx,
+                          struct pipe_frontend_drawable *stfbi,
                           enum st_attachment_type statt)
 {
     D(bug("[MESA3DGL] %s()\n", __func__));
 
     return TRUE;
 }
+
+static uint32_t mesa3dgl_fb_ID;
 
 struct mesa3dgl_framebuffer * MESA3DGLNewFrameBuffer(struct mesa3dgl_context * ctx, struct st_visual * stvis)
 {
@@ -281,11 +283,10 @@ struct mesa3dgl_framebuffer * MESA3DGLNewFrameBuffer(struct mesa3dgl_context * c
     framebuffer->base.visual = &framebuffer->stvis;
     framebuffer->base.flush_front = MESA3DGLFrameBufferFlushFront;
     framebuffer->base.validate = MESA3DGLFrameBufferValidate;
-    framebuffer->base.state_manager = ctx->stmanager;
-#if (0)
+    framebuffer->base.fscreen = ctx->stmanager;
+    /* the state tracker keys its per-drawable bookkeeping on ID */
+    framebuffer->base.ID = p_atomic_inc_return(&mesa3dgl_fb_ID);
     framebuffer->base.stamp = 1;
-    framebuffer->base.ID = 1; // p_atomic_inc_return(&osmesa_fb_ID);
-#endif
     framebuffer->screen = ctx->stmanager->screen;
 
     return framebuffer;
@@ -323,7 +324,7 @@ VOID MESA3DGLCheckAndUpdateBufferSize(struct mesa3dgl_context * ctx)
     }
 }
 
-static int MESA3DGLStManagerGetParam(struct st_manager *smapi,
+static int MESA3DGLStManagerGetParam(struct pipe_frontend_screen *smapi,
                 enum st_manager_param param)
 {
     D(bug("[MESA3DGL] %s()\n", __func__));
@@ -331,12 +332,12 @@ static int MESA3DGLStManagerGetParam(struct st_manager *smapi,
     return 0;
 }
 
-struct st_manager * MESA3DGLNewStManager(struct pipe_screen * pscreen)
+struct pipe_frontend_screen * MESA3DGLNewStManager(struct pipe_screen * pscreen)
 {
     D(bug("[MESA3DGL] %s()\n", __func__));
 
-    struct st_manager * stmanager =
-        (struct st_manager *)AllocVec(sizeof(struct st_manager), MEMF_PUBLIC | MEMF_CLEAR);
+    struct pipe_frontend_screen * stmanager =
+        (struct pipe_frontend_screen *)AllocVec(sizeof(struct pipe_frontend_screen), MEMF_PUBLIC | MEMF_CLEAR);
 
     if (stmanager)
     {
@@ -347,12 +348,14 @@ struct st_manager * MESA3DGLNewStManager(struct pipe_screen * pscreen)
     return stmanager;
 }
 
-VOID MESA3DGLFreeStManager(APTR pipe, struct st_manager * stmanager)
+VOID MESA3DGLFreeStManager(APTR pipe, struct pipe_frontend_screen * stmanager)
 {
     D(bug("[MESA3DGL] %s()\n", __func__));
 
     if (stmanager)
     {
+        /* drops the state tracker's per-screen data (shader cache etc.) */
+        st_screen_destroy(stmanager);
         if (stmanager->screen)
             DestroyPipeScreen(pipe, stmanager->screen);
         FreeVec(stmanager);

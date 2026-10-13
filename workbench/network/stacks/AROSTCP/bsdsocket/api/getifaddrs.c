@@ -37,9 +37,12 @@
 #include <sys/sockio.h>
 #include <sys/socket.h>
 #include <net/if.h>
-#ifndef ENABLE_SYSCTL
+/*
+ * AROSTCP's sysctl MIB (ENABLE_SYSCTL) covers only net.inet.{ip,tcp,udp};
+ * there is no PF_ROUTE NET_RT_IFLIST route-table dump, so getifaddrs() always
+ * enumerates interfaces via SIOCGIFCONF rather than the routing sysctl.
+ */
 #undef NET_RT_IFLIST
-#endif
 #ifdef	NET_RT_IFLIST
 #include <sys/param.h>
 #include <net/route.h>

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 /*
@@ -62,7 +62,7 @@ void core_ExitInterrupt(CONTEXT *regs)
          * Do not disturb task if it's not necessary.
          * Reschedule only if switch pending flag is set. Exit otherwise.
          */
-        if (SysBase->AttnResched & ARF_AttnSwitch)
+        if (SysBase->SysFlags & SFF_AttnSwitch)
         {
             D(bug("[Scheduler] Rescheduling\n"));
             if (core_Schedule())

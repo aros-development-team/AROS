@@ -18,10 +18,54 @@
 #include "bootconsole.h"
 #include "vc_mb.h"
 #include "io.h"
+#include "devicetree.h"
 
 #undef ARM_PERIIOBASE
 #define ARM_PERIIOBASE (__arm_periiobase)
 extern uintptr_t __arm_periiobase;
+extern unsigned int __arm_socid;
+extern uintptr_t __rp1_base;
+uintptr_t __uart_base = 0;
+
+/*
+ * BCM2712 has no BCM283x UART at +0x201000. The debug connector is uart10
+ * (/soc/serial@7d001000, a PL011), 0x7D001000 into the peripheral window.
+ */
+#define RP1_UART0_BASE (__rp1_base ? __rp1_base + 0x30000 : 0x1c00030000ULL)
+
+#define UART_BASE (__arm_socid == 0x2712 ? RP1_UART0_BASE : PL011_0_BASE)
+
+/*
+ * The BCM283x AUX mini-UART. On a Raspberry Pi 3, 3B+ and Zero 2 W the
+ * firmware gives the PL011 to the on-board Bluetooth radio and puts the
+ * mini-UART on the GPIO header instead; serial0 in the device tree's
+ * aliases says which. Only the data and line-status registers are used:
+ * with enable_uart=1 the firmware has set it up (115200, GPIO 14/15).
+ */
+#define MINIUART_BASE   (ARM_PERIIOBASE + 0x215040)
+#define MINIUART_IO     0x00
+#define MINIUART_LSR    0x14
+#define MINIUART_LSR_TXEMPTY    (1 << 5)
+#define MINIUART_WAIT   100000  /* never hang if the firmware left it off */
+
+static int uart_mini;
+
+/* serial0 -> "/soc/serial@7e215040" when the header carries the mini-UART */
+static int firmware_console_is_mini(void)
+{
+    of_node_t *aliases = dt_find_node("/aliases");
+    of_property_t *serial0 = aliases ? dt_find_property(aliases, "serial0") : NULL;
+    const char *path = serial0 ? (const char *)serial0->op_value : NULL;
+    const char *p;
+
+    if (!path)
+        return 0;
+    for (p = path; *p; p++)
+        if (p[0] == '2' && p[1] == '1' && p[2] == '5' && p[3] == '0' &&
+            p[4] == '4' && p[5] == '0' && p[6] == 0)
+            return 1;
+    return 0;
+}
 
 #define PL011_ICR_FLAGS (PL011_ICR_RXIC|PL011_ICR_TXIC|PL011_ICR_RTIC|PL011_ICR_FEIC|PL011_ICR_PEIC|PL011_ICR_BEIC|PL011_ICR_OEIC|PL011_ICR_RIMIC|PL011_ICR_CTSMIC|PL011_ICR_DSRMIC|PL011_ICR_DCDMIC)
 
@@ -38,10 +82,26 @@ unsigned int uartbaud;
 
 inline void waitSerOUT()
 {
+    if (uart_mini)
+    {
+        unsigned int timeout = MINIUART_WAIT;
+
+        while (timeout-- && !(rd32le(__uart_base + MINIUART_LSR) & MINIUART_LSR_TXEMPTY))
+            ;
+        return;
+    }
     while(1)
     {
-       if ((rd32le(PL011_0_BASE + PL011_FR) & PL011_FR_TXFF) == 0) break;
+       if ((rd32le(UART_BASE + PL011_FR) & PL011_FR_TXFF) == 0) break;
     }
+}
+
+static inline void writeSer(uint8_t chr)
+{
+    if (uart_mini)
+        wr32le(__uart_base + MINIUART_IO, chr);
+    else
+        wr32le(UART_BASE + PL011_DR, chr);
 }
 
 inline void putByte(uint8_t chr)
@@ -50,10 +110,10 @@ inline void putByte(uint8_t chr)
 
     if (chr == '\n')
     {
-        wr32le(PL011_0_BASE + PL011_DR, '\r');
+        writeSer('\r');
         waitSerOUT();
     }
-    wr32le(PL011_0_BASE + PL011_DR, chr);
+    writeSer(chr);
 }
 
 void serInit(void)
@@ -63,6 +123,42 @@ void serInit(void)
     volatile unsigned int *uart_msg = (unsigned int *) BOOTMEMADDR(bm_mboxmsg);
 
     uartbaud = DEF_BAUD;
+
+    __uart_base = UART_BASE;
+
+    /* BCM2712 has no BCM283x GPIO block, and uart10's pins are dedicated.
+     * Firmware has already set this up.
+     */
+    if (__arm_socid == 0x2712)
+    {
+        /*
+         * RP1 UART0 has already been initialised by firmware:
+         *
+         * config.txt:
+         *   enable_uart=1
+         *   enable_rp1_uart=1
+         *   pciex4_reset=0
+         *
+         * GPIO14 = TX
+         * GPIO15 = RX
+         * 115200 8N1
+         */
+        uartbaud = 115200;
+
+        return;
+    }
+
+    /* Leave the PL011 to the Bluetooth radio, and its pins alone: printing
+       through it, or muxing GPIO 14/15 to it as well, would talk over the
+       radio and share its receive line. */
+    if (firmware_console_is_mini())
+    {
+        uart_mini = 1;
+        __uart_base = MINIUART_BASE;
+        uartbaud = 115200;
+
+        return;
+    }
 
     uart_msg[0] = AROS_LONG2LE(8 * 4);
     uart_msg[1] = AROS_LONG2LE(VCTAG_REQ);
@@ -81,7 +177,7 @@ void serInit(void)
     else
         uartclock = 48000000;   /* firmware default UART clock */
 
-    wr32le(PL011_0_BASE + PL011_CR, 0);
+    wr32le(UART_BASE + PL011_CR, 0);
 
     uartvar = rd32le(GPFSEL1);
     uartvar &= ~(7<<12);                        // TX on GPIO14
@@ -101,13 +197,13 @@ void serInit(void)
 
     wr32le(GPPUDCLK0, 0);
 
-    wr32le(PL011_0_BASE + PL011_ICR, PL011_ICR_FLAGS);
+    wr32le(UART_BASE + PL011_ICR, PL011_ICR_FLAGS);
     uartdivint = PL011_BAUDINT(uartbaud, uartclock);
-    wr32le(PL011_0_BASE + PL011_IBRD, uartdivint);
+    wr32le(UART_BASE + PL011_IBRD, uartdivint);
     uartdivfrac = PL011_BAUDFRAC(uartbaud, uartclock);
-    wr32le(PL011_0_BASE + PL011_FBRD, uartdivfrac);
-    wr32le(PL011_0_BASE + PL011_LCRH, PL011_LCRH_WLEN8|PL011_LCRH_FEN);           // 8N1, Fifo enabled
-    wr32le(PL011_0_BASE + PL011_CR, PL011_CR_UARTEN|PL011_CR_TXE|PL011_CR_RXE);   // enable the uart, tx and rx
+    wr32le(UART_BASE + PL011_FBRD, uartdivfrac);
+    wr32le(UART_BASE + PL011_LCRH, PL011_LCRH_WLEN8|PL011_LCRH_FEN);           // 8N1, Fifo enabled
+    wr32le(UART_BASE + PL011_CR, PL011_CR_UARTEN|PL011_CR_TXE|PL011_CR_RXE);   // enable the uart, tx and rx
 
     for (uartvar = 0; uartvar < 150; uartvar++) asm volatile ("nop\n");
 }

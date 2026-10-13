@@ -11,6 +11,8 @@
 # pragma pack(2)
 #endif
 
+struct NepHidCtrl;
+
 struct ClsDevCfg
 {
     ULONG cdc_ChunkID;
@@ -740,6 +742,9 @@ struct NepClassHid
     Object             *nch_HCAboutMI;
     Object             *nch_HCCloseMI;
     Object             *nch_HCMUIPrefsMI;
+
+    struct NepHidCtrl  *nch_Ctrl;         /* game controller device (hidcontroller.c) */
+    BOOL                nch_CtrlWanted;   /* attach requested from another context */
 };
 
 struct NepHidBase
@@ -779,6 +784,15 @@ struct NepHidBase
     struct NepClassHid  nh_DummyNCH;      /* Dummy NCH for default config */
 
     LONG                nh_Seed;          /* seed variable for random numbers */
+
+    /* game controller support (hidcontroller.c) */
+    struct SignalSemaphore nh_CtrlLock;
+    BOOL                nh_DOSAvailable;  /* UCM_DOSAvailableEvent seen */
+    struct Library     *nh_CtrlHiddBase;  /* controller.hidd */
+    APTR                nh_CtrlClass;     /* our CLID_Hidd_Controller subclass */
+    APTR                nh_CtrlHW;        /* CLID_HW_Controller singleton */
+    IPTR                nh_CtrlAB[3];     /* attr bases: Hidd, Hidd_Controller, HW */
+    IPTR                nh_CtrlMB[3];     /* method bases: HW, Hidd_Controller, HW_Controller */
 };
 
 #define WACOM_HASTILT    1

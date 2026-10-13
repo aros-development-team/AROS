@@ -193,6 +193,8 @@ BOOL Initialize(DSTR mountname, struct FileSysStartupMsg *fssm,
 
 	/* allocate messageport for notify */
 	g->notifyport = CreateMsgPort();
+	if (!g->notifyport)
+		return FALSE;
 
 	g->myproc   = (struct Process *)FindTask(NULL);
 	g->msgport  = devnode->dn_Task;
@@ -223,14 +225,14 @@ BOOL Initialize(DSTR mountname, struct FileSysStartupMsg *fssm,
 Removed because of problems with Phase 5 boards
 
 		/* check if memory allocated is ok (First fail-over) */
-		if (((ULONG)LibAllocPooled(g->bufferPool, 8)) & ~g->dosenvec->de_Mask)
+		if PFS3_MASKFAIL(LibAllocPooled(g->bufferPool, 8))
 		{
 			g->dosenvec->de_BufMemType |= MEMF_24BITDMA;
 			LibDeletePool (g->bufferPool);
 			g->bufferPool = LibCreatePool (g->dosenvec->de_BufMemType, 20*1024, 16*1024);
 		}
 		/* check if memory allocated is ok (Second fail-over) */
-		if (((ULONG)LibAllocPooled(g->bufferPool, 8)) & ~g->dosenvec->de_Mask)
+		if PFS3_MASKFAIL(LibAllocPooled(g->bufferPool, 8))
 		{
 			g->dosenvec->de_BufMemType |= MEMF_LOCAL;
 			LibDeletePool (g->bufferPool);
@@ -294,7 +296,7 @@ Removed because of problems with Phase 5 boards
 		return FALSE;
 
 	/* check memory against mask */
-	if (((IPTR)g->dc.data) & ~g->dosenvec->de_Mask)
+	if PFS3_MASKFAIL(g->dc.data)
 		ErrorMsg (AFS_WARNING_MEMORY_MASK, NULL, g);
 
 	if (!OpenTimerDevice(&g->timeport, &g->trequest, UNIT_VBLANK, g) )
@@ -312,6 +314,8 @@ Removed because of problems with Phase 5 boards
 
 #if EXTRAPACKETS
 	g->sleepport = CreateMsgPort();
+	if (!g->sleepport)
+		return FALSE;
 #endif
 
 	DB(Trace(1,"Initialize","Removable = %ld", (ULONG)g->removable));
@@ -599,7 +603,7 @@ static BOOL init_device_unit_sema(struct FileSysStartupMsg *startup, globaldata 
 			sema->ss.ss_Link.ln_Type = NT_SIGNALSEM;
 			// Pre-2.x AddSemaphore() is broken.
 			if (g->g_SysBase->LibNode.lib_Version < 36) {
-				Enqueue(&g->g_SysBase->SemaphoreList, &sema->ss);
+				Enqueue(&g->g_SysBase->SemaphoreList, &sema->ss.ss_Link);
 			}  else {
 				AddSemaphore(&sema->ss);
 			}

@@ -2,7 +2,7 @@
 #define AROS_SYSTEM_H
 
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Analyse the current kind of system and compiler.
@@ -34,7 +34,12 @@
 
 #if defined(__GNUC__) || defined(__clang__)
 #if !defined(AROS_SAFE_HEADERINLINE)
-    #define __header_inline static inline __attribute__((__always_inline__, __unused__))
+    #if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
+        #define __header_inline static inline __attribute__((__always_inline__, __unused__))
+    #else
+        /* Versions before C99 don't define inline keyword */
+        #define __header_inline static
+    #endif
 #else
     #define __header_inline static inline
 #endif
@@ -123,7 +128,12 @@
     C99 defines a new keyword restrict that helps the compiler optimize pointer usage.
     Enable it if the C standard version is sufficient.
 */
-#  if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
+#  if defined(__cplusplus)
+/* C++ has no restrict keyword: leave the spelling usable as an identifier
+ * (Khronos glslang and similar). Restrict-qualified SDK prototypes
+ * spell __restrict instead, which clang and GCC accept as a keyword in
+ * both C and C++ — so nothing is defined here. */
+#  elif defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
 #    define __restrict__ restrict
 #  else
 #    define __restrict__
@@ -220,8 +230,14 @@
 #endif
 #endif
 
+/*
+    __mayalias is placed on struct definitions (exec Node/List/Resident).
+    gcc before 9 then rejects a function declared with the struct before its
+    definition was seen ("conflicting types"), which headers that use a type
+    before including its defining header do, so leave it out there.
+*/
 #ifndef __mayalias
-#if defined(__GNUC__) && __GNUC_PREREQ(3,3)
+#if defined(__clang__) || (defined(__GNUC__) && __GNUC_PREREQ(9,0))
 #    define __mayalias  __attribute__((__may_alias__))
 #else
 #    define __mayalias

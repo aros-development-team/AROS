@@ -28,6 +28,7 @@ const char devname[]    = MOD_NAME_STRING;
 
 AROS_INTP(FNAME_DEV(PendingInt));
 AROS_INTP(FNAME_DEV(NakTimeoutInt));
+AROS_INTP(FNAME_DEV(SofGateInt));
 
 IPTR    __arm_periiobase __attribute__((used)) = 0 ;
 
@@ -235,6 +236,9 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                     D(bug("[USB2OTG] %s: Unit Allocated at 0x%p\n",
                                                 __PRETTY_FUNCTION__, USB2OTGBase->hd_Unit));
 
+                                    /* INT-as-BULK works around the BCM2835 core; QEMU's emulated 2.94a core runs direct INT natively */
+                                    USB2OTGBase->hd_Unit->hu_IntAsBulk = (rd32le(USB2OTG_VENDORID) != 0x4F54294A);
+
                                     /* Heap memory (VC bus alias maps it), and 64-byte
                                      * aligned so DMA cache maintenance owns its lines. */
                                     USB2OTGBase->hd_Unit->hu_BounceRaw = AllocMem((8 * DMA_BOUNCE_SIZE) + 63,
@@ -255,7 +259,6 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                     NewList(&USB2OTGBase->hd_Unit->hu_CtrlXFerQueue);
                                     NewList(&USB2OTGBase->hd_Unit->hu_IntXFerQueue);
                                     NewList(&USB2OTGBase->hd_Unit->hu_IntXFerScheduled);
-                                    NewList(&USB2OTGBase->hd_Unit->hu_IsoXFerQueue);
                                     NewList(&USB2OTGBase->hd_Unit->hu_BulkXFerQueue);
                                     NewList(&USB2OTGBase->hd_Unit->hu_TDQueue);
                                     NewList(&USB2OTGBase->hd_Unit->hu_AbortQueue);
@@ -280,6 +283,12 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                     USB2OTGBase->hd_Unit->hu_WorkerTask = NewCreateTask(
                                         TASKTAG_NAME, "USB2OTG Worker",
                                         TASKTAG_AFFINITY, &USB2OTGBase->hd_Unit->hu_WorkerAffinity,
+                                        /* Stands in for the software
+                                         * interrupt the non-SMP build uses,
+                                         * so it must outrank application
+                                         * tasks: at priority 0 completions
+                                         * waited for quantum rotation. */
+                                        TASKTAG_PRI, 50,
                                         TASKTAG_PC, FNAME_DEV(WorkerTask),
                                         TASKTAG_TASKMSGPORT, &USB2OTGBase->hd_Unit->hu_WorkerPort,
                                         TASKTAG_ARG1, USB2OTGBase->hd_Unit,
@@ -289,6 +298,8 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                         bug("[USB2OTG] Failed to create CPU0 worker task\n");
                                         return FALSE;
                                     }
+                                    USB2OTGBase->hd_Unit->hu_SofGateWakeFrame = 0xffff;
+
                                     CopyMem(USB2OTGBase->hd_TimerReq, &USB2OTGBase->hd_Unit->hu_NakTimeoutReq, sizeof(struct timerequest));
                                     USB2OTGBase->hd_Unit->hu_NakTimeoutReq.tr_node.io_Message.mn_ReplyPort = USB2OTGBase->hd_Unit->hu_WorkerPort;
                                     USB2OTGBase->hd_Unit->hu_NakTimeoutReq.tr_time.tv_secs = 0;
@@ -311,6 +322,11 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                         USB2OTGBase->hd_Unit->hu_TTClearPending[i].tc_Hub = 0;
 
                                     USB2OTGBase->hd_Unit->hu_GlobalIRQHandle = KrnAddIRQHandler(IRQ_VC_USB, FNAME_DEV(GlobalIRQHandler), USB2OTGBase->hd_Unit, SysBase);
+
+                                    wr32le(SYSTIMER_CS, 1 << USB2OTG_SOF_GATE_TIMER);
+                                    USB2OTGBase->hd_Unit->hu_SofGateIRQHandle =
+                                        KrnAddIRQHandler(IRQ_TIMER0 + USB2OTG_SOF_GATE_TIMER,
+                                            FNAME_DEV(SofGateInt), USB2OTGBase->hd_Unit, SysBase);
                                     USB2OTGBase->hd_Unit->hu_USB2OTGBase = USB2OTGBase;
 
                                     D(bug("[USB2OTG] %s: Installed Global IRQ Handler [handle @ 0x%p] for IRQ #%ld\n",
@@ -374,6 +390,12 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                     otg_RegVal = rd32le(USB2OTG_AHB);
                                     otg_RegVal |= USB2OTG_AHB_INTENABLE;
                                     wr32le(USB2OTG_AHB, otg_RegVal);
+
+                                    /* Release the worker only now: it
+                                     * preempts us on the first port
+                                     * interrupt, and what it reads is only
+                                     * filled in by the init above. */
+                                    Signal(USB2OTGBase->hd_Unit->hu_WorkerTask, SIGF_SINGLE);
 
                                     bug("[USB2OTG] HS OTG USB Driver Initialised\n");
                                 }
@@ -584,10 +606,6 @@ AROS_LH1(void, FNAME_DEV(BeginIO),
 
             case UHCMD_INTXFER:
                 ret = FNAME_DEV(cmdIntXFer)(ioreq, otg_Unit, USB2OTGBase);
-                break;
-
-            case UHCMD_ISOXFER:
-                ret = FNAME_DEV(cmdIsoXFer)(ioreq, otg_Unit, USB2OTGBase);
                 break;
 
             default:

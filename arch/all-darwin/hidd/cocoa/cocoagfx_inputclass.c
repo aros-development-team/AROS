@@ -26,8 +26,12 @@ extern OOP_AttrBase __abHidd_Input;
 /*
  * macOS Virtual KeyCode -> Amiga RawKey Code Translation Table
  * (ISO/ANSI Apple Keyboard Layout mapping to Amiga RawKey values)
+ *
+ * On ISO keyboards macOS swaps the codes of the key top left (0x0A) and the
+ * one right of left Shift (0x32), and gives the key left of Return the ANSI
+ * backslash code, so those three depend on the keyboard type.
  */
-static UBYTE mac_keycode_to_rawkey(int keycode)
+static UBYTE mac_keycode_to_rawkey(int keycode, BOOL iso)
 {
     switch (keycode) {
     /* Letters */
@@ -75,13 +79,14 @@ static UBYTE mac_keycode_to_rawkey(int keycode)
     case 0x1B: return 0x0B; /* - / _ */
     case 0x1E: return 0x1B; /* ] / } */
     case 0x21: return 0x1A; /* [ / { */
-    case 0x27: return 0x2B; /* ' / " */
-    case 0x29: return 0x2A; /* ; / : */
-    case 0x2A: return 0x0D; /* \ / | */
+    case 0x27: return 0x2A; /* ' / " */
+    case 0x29: return 0x29; /* ; / : */
+    case 0x2A: return iso ? 0x2B : 0x0D; /* \ / | (ISO: key left of Return) */
     case 0x2B: return 0x38; /* , / < */
     case 0x2C: return 0x3A; /* / / ? */
     case 0x2F: return 0x39; /* . / > */
-    case 0x32: return 0x00; /* ` / ~ */
+    case 0x32: return iso ? 0x30 : 0x00; /* ` / ~ (ISO: key right of left Shift) */
+    case 0x0A: return iso ? 0x00 : 0x30; /* ISO: key top left */
 
     /* Control / Modifiers */
     case 0x24: return 0x44; /* Return */
@@ -122,6 +127,14 @@ static UBYTE mac_keycode_to_rawkey(int keycode)
     }
 }
 
+/*
+ * The driver objects, recorded by their own New() methods: the objects
+ * returned by HIDD_Input_AddHardwareDriver() can be subsystem proxies
+ * (the mouse subsystem wraps each driver in a DriverData object).
+ */
+static OOP_Object *g_mouseobj = NULL;
+static OOP_Object *g_kbdobj = NULL;
+
 /* ======== Mouse class ======== */
 
 struct CocoaMouseData {
@@ -135,7 +148,8 @@ OOP_Object *CocoaMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
     if (o) {
         struct CocoaMouseData *data = OOP_INST_DATA(cl, o);
         data->callback = (void *)GetTagData(aHidd_Input_IrqHandler, 0, msg->attrList);
-        data->callbackdata = (void *)GetTagData(aHidd_Input_IrqHandlerData, 0, msg->attrList);
+        OOP_GetAttr(o, aHidd_Input_IrqHandlerData, (IPTR *)&data->callbackdata);
+        g_mouseobj = o;
     }
     return o;
 }
@@ -153,7 +167,7 @@ struct OOP_InterfaceDescr CocoaMouse_ifdescr[] = {
 /* ======== Keyboard class ======== */
 
 struct CocoaKbdData {
-    void (*callback)(void *data, UWORD keycode);
+    void (*callback)(void *data, struct pHidd_Kbd_Event *ev);
     void *callbackdata;
 };
 
@@ -163,7 +177,9 @@ OOP_Object *CocoaKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     if (o) {
         struct CocoaKbdData *data = OOP_INST_DATA(cl, o);
         data->callback = (void *)GetTagData(aHidd_Input_IrqHandler, 0, msg->attrList);
-        data->callbackdata = (void *)GetTagData(aHidd_Input_IrqHandlerData, 0, msg->attrList);
+        /* The keyboard subsystem does not pass IrqHandlerData as a tag */
+        OOP_GetAttr(o, aHidd_Input_IrqHandlerData, (IPTR *)&data->callbackdata);
+        g_kbdobj = o;
     }
     return o;
 }
@@ -179,9 +195,6 @@ struct OOP_InterfaceDescr CocoaKbd_ifdescr[] = {
 };
 
 /* ======== Event polling with memory barriers ======== */
-
-static OOP_Object *g_mouseobj = NULL;
-static OOP_Object *g_kbdobj = NULL;
 
 void cocoa_input_poll(struct HostInterface *hif)
 {
@@ -219,12 +232,15 @@ void cocoa_input_poll(struct HostInterface *hif)
                          ev->type == COCOA_EVENT_KEY_RELEASE)) {
             struct CocoaKbdData *kd = OOP_INST_DATA(OOP_OCLASS(g_kbdobj), g_kbdobj);
             if (kd->callback) {
-                UBYTE rawkey = mac_keycode_to_rawkey(ev->keycode);
+                UBYTE rawkey = mac_keycode_to_rawkey(ev->keycode, ev->button == 1);
                 if (rawkey != 0xFF) {
-                    UWORD code = rawkey;
+                    struct pHidd_Kbd_Event kev;
+
+                    kev.flags = 0;
+                    kev.code = rawkey;
                     if (ev->type == COCOA_EVENT_KEY_RELEASE)
-                        code |= 0x80; /* IECODE_UP_PREFIX */
-                    kd->callback(kd->callbackdata, code);
+                        kev.code |= 0x80; /* IECODE_UP_PREFIX */
+                    kd->callback(kd->callbackdata, &kev);
                 }
             }
         }
@@ -233,10 +249,4 @@ void cocoa_input_poll(struct HostInterface *hif)
         __atomic_store_n(&hif->cocoa_event_read, rd, __ATOMIC_RELEASE);
         wr = __atomic_load_n(&hif->cocoa_event_write, __ATOMIC_ACQUIRE);
     }
-}
-
-void cocoa_input_set_objects(OOP_Object *mouse, OOP_Object *kbd)
-{
-    g_mouseobj = mouse;
-    g_kbdobj = kbd;
 }

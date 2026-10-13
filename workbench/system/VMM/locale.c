@@ -9,8 +9,8 @@
 #define CATCOMP_ARRAY
 #include "strings.h"
 
-#define CATALOG_NAME     "System/System/VMM.catalog"
-#define CATALOG_VERSION  1
+#define CATALOG_NAME     "System/System/VMM-Handler.catalog"
+#include "cat/catalog_version.h"
 
 extern struct Library *LocaleBase;
 

@@ -61,6 +61,10 @@ USER_LDFLAGS := -static
 
 #MM- core-linklibs : linklibs-utility
 
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
 %build_module mmake=kernel-utility \
   modname=utility modtype=library \
   files="utility_init $(FUNCTIONS) $(FILES)"

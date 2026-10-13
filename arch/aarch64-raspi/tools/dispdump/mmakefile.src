@@ -1,0 +1,11 @@
+include $(SRCDIR)/config/aros.cfg
+
+EXEDIR := $(AROS_TESTS)/raspi
+
+#MM raspi-dispdump : includes linklibs kernel-mbox-bcm2708-includes
+
+%build_prog mmake=raspi-dispdump \
+    progname=dispdump targetdir=$(EXEDIR) \
+    files=dispdump
+
+%common

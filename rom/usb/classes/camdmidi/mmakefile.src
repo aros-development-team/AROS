@@ -6,7 +6,8 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM- kernel-usb-classes-camdusbmidi-i386 : kernel-usb-classes-camd-usbmidi
 #MM- kernel-usb-classes-camdusbmidi-x86_64 : kernel-usb-classes-camd-usbmidi
-##MM- kernel-usb-classes-camdusbmidi-arm : kernel-usb-classes-camd-usbmidi
+#MM- kernel-usb-classes-camdusbmidi-arm : kernel-usb-classes-camd-usbmidi
+#MM- kernel-usb-classes-camdusbmidi-aarch64 : kernel-usb-classes-camd-usbmidi
 #MM- kernel-usb-classes-camdusbmidi-ppc : kernel-usb-classes-camd-usbmidi
 
 USER_CPPFLAGS := -DMUIMASTER_YES_INLINE_STDARG

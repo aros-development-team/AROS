@@ -62,6 +62,9 @@
                                 incoming native driver, which is the
                                 historical DDRV_BootMode behaviour.
                                 Defaults to NULL.
+            DDRV_ExternalPlanar - A boolean value indicating that the driver
+                                  can display caller-owned planar BitMaps in
+                                  Chip RAM. Defaults to FALSE.
             DDRV_MonitorID    - Starting monitor ID to assign to the driver.
                                 Use it with care. An attempt to add already
                                 existing ID will fail with a DD_ID_EXISTS
@@ -225,6 +228,13 @@
 
 	case DDRV_HWRanges:
 	    cfg->drv_ranges = (const struct DisplayRange *)tag->ti_Data;
+	    break;
+
+	case DDRV_ExternalPlanar:
+	    if (tag->ti_Data)
+	        cfg->drv_flags |= DF_ExternalPlanar;
+	    else
+	        cfg->drv_flags &= ~DF_ExternalPlanar;
 	    break;
 
 	case DDRV_ResultID:

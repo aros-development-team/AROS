@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2013-2026, The AROS Development Team. All rights reserved.
 
     Desc: A600/A1200/A4000 ATA HIDD hardware detection routine
 */
@@ -28,6 +28,9 @@
 #include "interface_pio.h"
 
 //#define ENABLE_ATAPOWERFLYER
+
+#define AKIKO_ID        0xb80002
+#define AKIKO_ID_MAGIC  0xcafe
 
 static BOOL custom_check(APTR addr)
 {
@@ -74,8 +77,11 @@ static UBYTE *getport(struct ata_ProbedBus *ddata)
         port = (UBYTE*)GAYLE_BASE_1200;
         ddata->gayleirqbase = (UBYTE*)GAYLE_IRQ_1200;
     } else {
+        /* A CD32 is AGA too but has no A4000 IDE: probing that unmapped
+         * space reads floating bus values that can fake a controller. */
         // AGA does not have custom mirror here but lets make sure..
-        if (!custom_check((APTR)0xdd4000) && (custom->vposr & 0x7f00) >= 0x2200) {
+        if (*(volatile UWORD *)AKIKO_ID != AKIKO_ID_MAGIC &&
+            !custom_check((APTR)0xdd4000) && (custom->vposr & 0x7f00) >= 0x2200) {
             port = (UBYTE*)GAYLE_BASE_4000;
             ddata->a4000 = TRUE;
             ddata->gayleirqbase = (UBYTE*)GAYLE_IRQ_4000;

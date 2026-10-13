@@ -26,7 +26,42 @@
 #include "pthread_intern.h"
 #include "debug.h"
 
-pthread_t pthread_self(void)
+/****************************************************************************
+    NAME */
+        pthread_t pthread_self(
+
+/*  SYNOPSIS */
+        void)
+
+/*  FUNCTION
+        Return the identifier associated with the calling task in this pthread
+        runtime's thread table.
+
+    INPUTS
+        None.
+
+    RESULT
+        The registered worker identifier, or 0 for the initial program task.
+        This implementation also returns 0 for an unregistered task; there is
+        no separate failure result.
+
+    NOTES
+        Include <pthread.h>; link with pthread. The call does not wait for a
+        worker to finish and transfers no ownership. Compare identifiers with
+        pthread_equal(). A worker identifier is valid only for that worker's
+        lifetime, including any joinable completion record.
+
+    BUGS
+        Tasks created outside this pthread runtime are not registered by this
+        call. Their fallback value aliases the initial task, so it must not be
+        used to access cancellation state or thread-specific storage from an
+        arbitrary Exec task.
+
+    SEE ALSO
+        pthread_equal(),
+        pthread_create()
+
+*****************************************************************************/
 {
     struct Task *task;
     pthread_t thread;

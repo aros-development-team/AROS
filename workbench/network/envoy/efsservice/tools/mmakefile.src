@@ -1,0 +1,19 @@
+#
+#   EfsConfig: writes ENV:Envoy/EFS.prefs from a text description, so that
+#   exports can be set up without the graphical editor.
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_INCLUDES := -I$(SRCDIR)/workbench/network/envoy/include
+USER_CFLAGS   := -noposixc
+USER_LDFLAGS  := -static
+
+EXEDIR := $(AROS_SYSTEM)/Network/Envoy
+
+#MM- workbench-network-envoy : workbench-network-envoy-efsservice-tools
+#MM workbench-network-envoy-efsservice-tools : includes linklibs includes-copy-envoy
+
+%build_prog mmake=workbench-network-envoy-efsservice-tools progname=EfsConfig \
+    files="EfsConfig" targetdir=$(EXEDIR)
+
+%common

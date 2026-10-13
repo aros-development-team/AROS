@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2012-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 2012-2026, The AROS Development Team. All rights reserved.
 
     Desc: Display an alert passed from supervisor mode.
 */
@@ -28,7 +28,12 @@ void Alert_DisplayKrnAlert(struct Task * task, ULONG alertNum, APTR location, AP
 void SupervisorAlertTask(struct ExecBase *SysBase)
 {
     struct IntExecBase * IntSysBase = PrivExecBase(SysBase);
+#ifdef AROS_ARCH_amiga
+    char * buffer;
+#else
+    /* Allocate while the system is healthy, rather than during a crash. */
     char * buffer = AllocMem(ALERT_BUFFER_SIZE, MEMF_ANY);
+#endif
     LONG res, i;
     struct Task * t = NULL;
     ULONG alertNum = 0;
@@ -47,7 +52,16 @@ void SupervisorAlertTask(struct ExecBase *SysBase)
         alertNum = IntSysBase->SAT.sat_Params[0];
         Enable();
 
-        res = Alert_AskSuspend(t, alertNum | AT_DeadEnd, buffer, SysBase);
+#ifdef AROS_ARCH_amiga
+        /* Save the idle buffer on memory-limited Amigas. Allocation failure
+         * falls back to the critical error path below.
+         */
+        buffer = AllocMem(ALERT_BUFFER_SIZE, MEMF_ANY);
+#endif
+        if (buffer)
+            res = Alert_AskSuspend(t, alertNum | AT_DeadEnd, buffer, SysBase);
+        else
+            res = -1;
 
         if (res == -1)
         {
@@ -63,19 +77,23 @@ void SupervisorAlertTask(struct ExecBase *SysBase)
             }
 
             Alert_DisplayKrnAlert(t, alertNum | AT_DeadEnd, iet->iet_AlertLocation, iet->iet_AlertStack,
-                    iet->iet_AlertType, (APTR)&iet->iet_AlertData, SysBase);
+                    iet->iet_AlertType, (APTR)ETaskAlertData(iet), SysBase);
 
             if (alertNum & AT_DeadEnd)
             {
                 /* Um, we have to do something here in order to prevent the
                    computer from continuing... */
                 PrivExecBase(SysBase)->SupervisorDeadEndCnt++;
-                ColdReboot();
-                ShutdownA(SD_ACTION_COLDREBOOT);
+                ShutdownA(SD_ACTION_REBOOT);
             }
 
             Enable();
         }
+
+#ifdef AROS_ARCH_amiga
+        if (buffer)
+            FreeMem(buffer, ALERT_BUFFER_SIZE);
+#endif
 
         switch (res)
         {
@@ -88,9 +106,7 @@ void SupervisorAlertTask(struct ExecBase *SysBase)
             break;
 
         case 3:
-            ColdReboot();
-            /* In case if ColdReboot() doesn't work */
-            ShutdownA(SD_ACTION_COLDREBOOT);
+            ShutdownA(SD_ACTION_REBOOT);
             break;
         }
 

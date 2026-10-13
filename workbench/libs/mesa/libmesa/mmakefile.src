@@ -8,16 +8,28 @@ include $(SRCDIR)/config/aros.cfg
 CUR_MESADIR := src/mesa
 include $(SRCDIR)/$(CURDIR)/../mesa.cfg
 -include $(GENDIR)/$(CURDIR)/../mesa3dgl/mesa3dgllibrary.entrypoints
+
+ifeq ($(wildcard $(top_srcdir)/$(CUR_MESADIR)/Makefile.sources),)
+MESA_MESA_LAYOUT := new
+else
+MESA_MESA_LAYOUT := old
+endif
+
+ifeq ($(MESA_MESA_LAYOUT),old)
 include $(top_srcdir)/$(CUR_MESADIR)/Makefile.sources
+endif
 
 #MM- mesa3dgl-linklibs : mesa3d-linklib-mesa mesa3d-linklib-mesa-sse41
 
 USER_INCLUDES += \
+            -iquote $(top_builddir)/src \
             -iquote $(top_builddir)/$(CUR_MESADIR) \
             -iquote $(top_builddir)/$(CUR_MESADIR)/main \
             -iquote $(top_srcdir)/src/mapi \
+            -iquote $(top_builddir)/src/compiler \
             -iquote $(top_builddir)/src/compiler/glsl \
-            -iquote $(top_srcdir)/compiler/glsl \
+            -iquote $(top_srcdir)/src/compiler \
+            -iquote $(top_srcdir)/src/compiler/glsl \
             -iquote $(top_builddir)/src/compiler/nir \
             -iquote $(top_srcdir)/src/compiler/nir \
             -iquote $(top_srcdir)/src/gallium/include \
@@ -39,6 +51,29 @@ USER_CPPFLAGS += \
 USER_CFLAGS += $(NOWARN_FLAGS)
 USER_CXXFLAGS += $(NOWARN_FLAGS)
 
+ifeq ($(AROS_TARGET_CPU),x86_64)
+MESA_PTR_SIZE := 8
+else
+MESA_PTR_SIZE := 4
+endif
+
+ifeq ($(MESA_MESA_LAYOUT),new)
+MESA_GENERATED_C_SOURCES := \
+            main/api_exec_init.c \
+            main/enums.c \
+            main/format_fallback.c \
+            main/unmarshal_table.c \
+            main/marshal_generated0.c \
+            main/marshal_generated1.c \
+            main/marshal_generated2.c \
+            main/marshal_generated3.c \
+            main/marshal_generated4.c \
+            main/marshal_generated5.c \
+            main/marshal_generated6.c \
+            main/marshal_generated7.c \
+            program/program_parse.tab.c \
+            program/lex.yy.c
+else
 MESA_GENERATED_C_SOURCES := \
             main/api_exec.c \
             main/enums.c \
@@ -68,7 +103,9 @@ MESA_GENERATED_C_SOURCES += \
             main/marshal_generated6.c \
             main/marshal_generated7.c
 endif
+endif
 
+ifeq ($(MESA_MESA_LAYOUT),old)
 MESA3D_SOURCES := $(filter-out $(MESA_GENERATED_C_SOURCES),$(PROGRAM_FILES) $(PROGRAM_NIR_FILES) $(MESA_GALLIUM_FILES))
 MESA3D_GALLIUM_CXX_SOURCES := $(filter %.cpp, $(MESA3D_SOURCES))
 MESA3D_GALLIUM_C_SOURCES := $(filter %.c, $(MESA3D_SOURCES))
@@ -82,11 +119,27 @@ OPTIMIZATION_CFLAGS := -O3
 MESA3D_GALLIUM_ASM_SOURCES := $(filter %.S, $(X86_64_FILES))
 MESA3D_GALLIUM_C_SOURCES += $(filter x86-64/%.c, $(ASM_C_FILES))
 endif
+else
+MESA3D_GALLIUM_C_SOURCES := $(patsubst $(top_srcdir)/$(CUR_MESADIR)/%,%,$(wildcard \
+            $(top_srcdir)/$(CUR_MESADIR)/main/*.c \
+            $(top_srcdir)/$(CUR_MESADIR)/math/*.c \
+            $(top_srcdir)/$(CUR_MESADIR)/program/*.c \
+            $(top_srcdir)/$(CUR_MESADIR)/state_tracker/*.c \
+            $(top_srcdir)/$(CUR_MESADIR)/vbo/*.c))
+MESA3D_GALLIUM_C_SOURCES := $(filter-out \
+            main/sse_minmax.c \
+            program/dummy_errors.c, \
+            $(MESA3D_GALLIUM_C_SOURCES))
+MESA3D_GALLIUM_CXX_SOURCES := $(patsubst $(top_srcdir)/$(CUR_MESADIR)/%,%,$(wildcard \
+            $(top_srcdir)/$(CUR_MESADIR)/main/*.cpp \
+            $(top_srcdir)/$(CUR_MESADIR)/state_tracker/*.cpp))
+MESA3D_GALLIUM_ASM_SOURCES :=
+endif
 
 define es-gen
 	%mkdir_q dir="$(dir $@)"
 	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
-	$(Q)$(PRIVATE_SCRIPT) $(1) $(PRIVATE_XML) > $@
+	$(Q)$(PRIVATE_SCRIPT) $(1) $(PRIVATE_XML) > $@.tmp && mv -f $@.tmp $@
 endef
 
 dispatch_deps := \
@@ -99,8 +152,98 @@ $(top_builddir)/$(CUR_MESADIR)/main/dispatch.h: PRIVATE_XML := -f $(glapi)/gl_an
 $(top_builddir)/$(CUR_MESADIR)/main/dispatch.h: $(dispatch_deps)
 	%mkdir_q dir="$(dir $@)"
 	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
-	$(PRIVATE_SCRIPT) -m remap_table $(PRIVATE_XML) > $@
+ifeq ($(MESA_MESA_LAYOUT),new)
+	$(PRIVATE_SCRIPT) -m dispatch $(PRIVATE_XML) > $@.tmp && mv -f $@.tmp $@
+else
+	$(PRIVATE_SCRIPT) -m remap_table $(PRIVATE_XML) > $@.tmp && mv -f $@.tmp $@
+endif
 
+ifeq ($(MESA_MESA_LAYOUT),new)
+$(top_builddir)/$(CUR_MESADIR)/main/enums.c: PRIVATE_SCRIPT := $(PYTHON) $(glapi)/gl_enums.py
+$(top_builddir)/$(CUR_MESADIR)/main/enums.c: PRIVATE_XML := -f $(top_srcdir)/$(CUR_MESADIR)/glapi/glapi/registry/gl.xml
+$(top_builddir)/$(CUR_MESADIR)/main/enums.c: $(dispatch_deps)
+	$(call es-gen)
+
+$(top_builddir)/$(CUR_MESADIR)/main/api_exec_init.c: PRIVATE_SCRIPT := $(PYTHON) $(glapi)/api_exec_init.py
+$(top_builddir)/$(CUR_MESADIR)/main/api_exec_init.c: PRIVATE_XML := -f $(glapi)/gl_and_es_API.xml
+$(top_builddir)/$(CUR_MESADIR)/main/api_exec_init.c: $(dispatch_deps)
+	$(call es-gen)
+
+$(top_builddir)/$(CUR_MESADIR)/main/api_exec_decl.h: PRIVATE_SCRIPT := $(PYTHON) $(glapi)/api_exec_decl_h.py
+$(top_builddir)/$(CUR_MESADIR)/main/api_exec_decl.h: PRIVATE_XML := -f $(glapi)/gl_and_es_API.xml
+$(top_builddir)/$(CUR_MESADIR)/main/api_exec_decl.h: $(dispatch_deps)
+	$(call es-gen)
+
+$(top_builddir)/$(CUR_MESADIR)/main/api_save_init.h: PRIVATE_SCRIPT := $(PYTHON) $(glapi)/api_save_init_h.py
+$(top_builddir)/$(CUR_MESADIR)/main/api_save_init.h: PRIVATE_XML := -f $(glapi)/gl_and_es_API.xml
+$(top_builddir)/$(CUR_MESADIR)/main/api_save_init.h: $(dispatch_deps)
+	$(call es-gen)
+
+$(top_builddir)/$(CUR_MESADIR)/main/api_save.h: PRIVATE_SCRIPT := $(PYTHON) $(glapi)/api_save_h.py
+$(top_builddir)/$(CUR_MESADIR)/main/api_save.h: PRIVATE_XML := -f $(glapi)/gl_and_es_API.xml
+$(top_builddir)/$(CUR_MESADIR)/main/api_save.h: $(dispatch_deps)
+	$(call es-gen)
+
+$(top_builddir)/$(CUR_MESADIR)/main/api_beginend_init.h: PRIVATE_SCRIPT := $(PYTHON) $(glapi)/api_beginend_init_h.py
+$(top_builddir)/$(CUR_MESADIR)/main/api_beginend_init.h: PRIVATE_XML := -f $(glapi)/gl_and_es_API.xml
+$(top_builddir)/$(CUR_MESADIR)/main/api_beginend_init.h: $(dispatch_deps)
+	$(call es-gen)
+
+$(top_builddir)/$(CUR_MESADIR)/main/api_hw_select_init.h: PRIVATE_SCRIPT := $(PYTHON) $(glapi)/api_hw_select_init_h.py
+$(top_builddir)/$(CUR_MESADIR)/main/api_hw_select_init.h: PRIVATE_XML := -f $(glapi)/gl_API.xml
+$(top_builddir)/$(CUR_MESADIR)/main/api_hw_select_init.h: $(dispatch_deps)
+	$(call es-gen)
+
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated.h: PRIVATE_SCRIPT := $(PYTHON) $(glapi)/marshal_generated_h.py
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated.h: PRIVATE_XML := $(glapi)/gl_and_es_API.xml $(MESA_PTR_SIZE)
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated.h: $(dispatch_deps)
+	$(call es-gen)
+
+$(top_builddir)/$(CUR_MESADIR)/main/unmarshal_table.c: PRIVATE_SCRIPT := $(PYTHON) $(glapi)/unmarshal_table_c.py
+$(top_builddir)/$(CUR_MESADIR)/main/unmarshal_table.c: PRIVATE_XML := $(glapi)/gl_and_es_API.xml $(MESA_PTR_SIZE)
+$(top_builddir)/$(CUR_MESADIR)/main/unmarshal_table.c: $(dispatch_deps)
+	$(call es-gen)
+
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated0.c: PRIVATE_SCRIPT := $(PYTHON) $(glapi)/marshal_generated_c.py
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated0.c: PRIVATE_XML := $(glapi)/gl_and_es_API.xml 0 8 $(MESA_PTR_SIZE)
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated0.c: $(dispatch_deps)
+	$(call es-gen)
+
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated1.c: PRIVATE_SCRIPT := $(PYTHON) $(glapi)/marshal_generated_c.py
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated1.c: PRIVATE_XML := $(glapi)/gl_and_es_API.xml 1 8 $(MESA_PTR_SIZE)
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated1.c: $(dispatch_deps)
+	$(call es-gen)
+
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated2.c: PRIVATE_SCRIPT := $(PYTHON) $(glapi)/marshal_generated_c.py
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated2.c: PRIVATE_XML := $(glapi)/gl_and_es_API.xml 2 8 $(MESA_PTR_SIZE)
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated2.c: $(dispatch_deps)
+	$(call es-gen)
+
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated3.c: PRIVATE_SCRIPT := $(PYTHON) $(glapi)/marshal_generated_c.py
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated3.c: PRIVATE_XML := $(glapi)/gl_and_es_API.xml 3 8 $(MESA_PTR_SIZE)
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated3.c: $(dispatch_deps)
+	$(call es-gen)
+
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated4.c: PRIVATE_SCRIPT := $(PYTHON) $(glapi)/marshal_generated_c.py
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated4.c: PRIVATE_XML := $(glapi)/gl_and_es_API.xml 4 8 $(MESA_PTR_SIZE)
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated4.c: $(dispatch_deps)
+	$(call es-gen)
+
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated5.c: PRIVATE_SCRIPT := $(PYTHON) $(glapi)/marshal_generated_c.py
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated5.c: PRIVATE_XML := $(glapi)/gl_and_es_API.xml 5 8 $(MESA_PTR_SIZE)
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated5.c: $(dispatch_deps)
+	$(call es-gen)
+
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated6.c: PRIVATE_SCRIPT := $(PYTHON) $(glapi)/marshal_generated_c.py
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated6.c: PRIVATE_XML := $(glapi)/gl_and_es_API.xml 6 8 $(MESA_PTR_SIZE)
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated6.c: $(dispatch_deps)
+	$(call es-gen)
+
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated7.c: PRIVATE_SCRIPT := $(PYTHON) $(glapi)/marshal_generated_c.py
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated7.c: PRIVATE_XML := $(glapi)/gl_and_es_API.xml 7 8 $(MESA_PTR_SIZE)
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated7.c: $(dispatch_deps)
+	$(call es-gen)
+else
 $(top_builddir)/$(CUR_MESADIR)/main/remap_helper.h: PRIVATE_SCRIPT := $(PYTHON) $(glapi)/remap_helper.py
 $(top_builddir)/$(CUR_MESADIR)/main/remap_helper.h: PRIVATE_XML := -f $(glapi)/gl_and_es_API.xml
 
@@ -172,6 +315,7 @@ $(top_builddir)/$(CUR_MESADIR)/main/marshal_generated7.c: PRIVATE_SCRIPT := $(PY
 $(top_builddir)/$(CUR_MESADIR)/main/marshal_generated7.c: PRIVATE_XML := -f $(glapi)/gl_and_es_API.xml -i 7 -n 8
 $(top_builddir)/$(CUR_MESADIR)/main/marshal_generated7.c: $(dispatch_deps)
 	$(call es-gen)
+endif
 
 GET_HASH_GEN := $(top_srcdir)/$(CUR_MESADIR)/main/get_hash_generator.py
 $(top_builddir)/$(CUR_MESADIR)/main/get_hash.h: PRIVATE_SCRIPT :=  $(PYTHON) $(GET_HASH_GEN)
@@ -259,16 +403,31 @@ $(top_builddir)/$(CUR_MESADIR)/program/program_parse.tab.c $(top_builddir)/$(CUR
 MESA3DGL_MESA_GENERATED_C_SOURCES := \
             $(addprefix $(top_builddir)/$(CUR_MESADIR)/,$(MESA_GENERATED_C_SOURCES))
 
+ifeq ($(MESA_MESA_LAYOUT),new)
+MESA3DGL_MESA_GENERATED_C_HEADERS := \
+            $(top_builddir)/$(CUR_MESADIR)/main/dispatch.h \
+            $(top_builddir)/$(CUR_MESADIR)/main/get_hash.h \
+            $(top_builddir)/$(CUR_MESADIR)/main/git_sha1.h \
+            $(top_builddir)/$(CUR_MESADIR)/main/format_info.h \
+            $(top_builddir)/$(CUR_MESADIR)/main/api_exec_decl.h \
+            $(top_builddir)/$(CUR_MESADIR)/main/api_save.h \
+            $(top_builddir)/$(CUR_MESADIR)/main/api_save_init.h \
+            $(top_builddir)/$(CUR_MESADIR)/main/api_beginend_init.h \
+            $(top_builddir)/$(CUR_MESADIR)/main/api_hw_select_init.h \
+            $(top_builddir)/$(CUR_MESADIR)/main/marshal_generated.h
+else
 MESA3DGL_MESA_GENERATED_C_HEADERS := \
             $(top_builddir)/$(CUR_MESADIR)/main/dispatch.h \
             $(top_builddir)/$(CUR_MESADIR)/main/remap_helper.h \
             $(top_builddir)/$(CUR_MESADIR)/main/get_hash.h \
             $(top_builddir)/$(CUR_MESADIR)/main/git_sha1.h \
             $(top_builddir)/$(CUR_MESADIR)/main/format_info.h
+endif
 
 MESA3DGL_MESA_C_SOURCES := \
             $(wildcard $(addprefix $(top_srcdir)/$(CUR_MESADIR)/, $(MESA3D_GALLIUM_C_SOURCES))) \
             $(MESA3DGL_MESA_GENERATED_C_SOURCES)
+MESA3DGL_MESA_C_SOURCES += $(SRCDIR)/$(CURDIR)/mesa_sse_minmax_fallback.c
 
 MESA3DGL_MESA_SOURCES_C := $(MESA3DGL_MESA_C_SOURCES:.c=)
 

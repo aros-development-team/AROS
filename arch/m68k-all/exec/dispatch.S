@@ -34,7 +34,8 @@ __Dispatch_this:
         addq.l  #1,DispCount(%a6)
         move.l  %a3,ThisTask(%a6)
         move.w  Quantum(%a6),Elapsed(%a6)
-        and.w   #SFF_QuantumClear,SysFlags(%a6)
+        /* SFF_QuantumOver is bit 14 of SysFlags: bit 6 of its first byte */
+        bclr.b  #6,SysFlags(%a6)
         move.b  #TS_RUN,tc_State(%a3)
         move.b  tc_IDNestCnt(%a3),IDNestCnt(%a6)
         move.l  tc_SPReg(%a3),%a5
@@ -43,6 +44,7 @@ __Dispatch_this:
 1:
         jsr     m68k_DispatchFrame
         move.l  %d0,%a5
+        move.l  ThisTask(%a6),%a3
 
 2:
         tst.b   IDNestCnt(%a6)
@@ -52,6 +54,22 @@ __Dispatch_this:
 3:
         move.w  #0xc000,0xdff09a
 4:
+        /*
+         * Enter the task through ex_LaunchPoint, as Kickstart's Dispatch()
+         * does: A3 is the task, A5 its saved frame and A6 SysBase. Programs
+         * hook the field to see each task being launched and chain to the
+         * address they found there, so the first dispatch publishes the
+         * default launch code below.
+         */
+        move.l  LaunchPoint(%a6),%d0
+        bne.s   5f
+        lea.l   %pc@(6f),%a4
+        move.l  %a4,LaunchPoint(%a6)
+        bra.s   6f
+5:
+        move.l  %d0,%a4
+        jmp     (%a4)
+6:
         lea.l   %a5@(66),%a2
         move.l  %a2,%usp
         move.l  %a5@+,%sp@-

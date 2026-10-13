@@ -52,12 +52,14 @@
 
     ASSERT_VALID_PTR(textFont);
 
+    ObtainSemaphore(&PrivGBase(GfxBase)->fontsem);
     Forbid();
     textFont->tf_Accessors--;
     if((textFont->tf_Accessors == 0) && !(textFont->tf_Flags & FPF_ROMFONT)) {
         RemFont(textFont);
     }
     Permit();
+    ReleaseSemaphore(&PrivGBase(GfxBase)->fontsem);
 
     AROS_LIBFUNC_EXIT
 

@@ -1,8 +1,10 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
-    Desc: BCM2712 (Raspberry Pi 5) PCIe Host Bridge Header
-          Supports PCIe RC0 (16-pin M.2 NVMe HAT connector) and PCIe RC1 (RP1).
+    Desc: BCM2712 PCIe host bridge driver, private state.
+
+    The register map is in <hardware/bcm2712_pcie.h>; configuration space
+    offsets and capability layouts come from <hardware/pci.h>.
 */
 
 #ifndef PCIE_BCM2712_H
@@ -13,65 +15,127 @@
 #include <exec/libraries.h>
 #include <oop/oop.h>
 
+#include <hardware/bcm2712_pcie.h>
+
 #include LC_LIBDEFS_FILE
 
+/* The x4 bridge's MSI block has 64 messages, and RP1 uses all of them. */
+#define MIP_MAX_VECTORS                 64
+
 /*
- * BCM2712 PCIe host bridge register bases in 40-bit ARM physical space.
- * RC0: External 16-pin FPC connector for M.2 NVMe HATs (Gen 2/3 x1).
- * RC1: Internal RP1 Southbridge connection (Gen 2 x4).
+ * Bring-up tracing. None of this can be exercised under emulation - QEMU's
+ * raspi models have no PCIe - so the first run on real hardware is also the
+ * first test. Leave this on until a controller has been seen to enumerate.
  */
-#define BCM2712_PCIE0_REG_BASE          0x1000100000ULL
-#define BCM2712_PCIE0_REG_SIZE          0x10000
-#define BCM2712_PCIE0_ECAM_BASE         0x1000000000ULL
-#define BCM2712_PCIE0_ECAM_SIZE         0x10000000ULL   /* 256MB standard ECAM space */
+#define PCIE_BRINGUP                    1
 
-#define BCM2712_PCIE1_REG_BASE          0x1000110000ULL
-#define BCM2712_PCIE1_REG_SIZE          0x10000
-#define BCM2712_PCIE1_ECAM_BASE         0x1000020000ULL
+#if PCIE_BRINGUP
+#define BRINGUP(x)                      x
+#else
+#define BRINGUP(x)
+#endif
 
-/* Outbound 32-bit/64-bit memory window */
-#define BCM2712_PCIE_CPU_WIN            0x1800000000ULL
-#define BCM2712_PCIE_PCI_WIN            0xC0000000UL
-#define BCM2712_PCIE_WIN_SIZE           0x40000000UL    /* 1GB window */
+/*
+ * A translation window, from either "ranges" (outbound) or "dma-ranges"
+ * (inbound). Both properties use the same cell layout on this bridge.
+ */
+struct pcie_range
+{
+    uint32_t        flags;
+    uint64_t        pci_base;
+    uint64_t        cpu_base;
+    uint64_t        size;
+};
 
-/* Inbound DMA mapping defaults */
-#define BCM2712_DMA_EXP                 36              /* 64GB max RAM window */
+/* Each bridge publishes two of each; leave room for a tree that grows one. */
+#define PCIE_MAX_RANGES                 4
 
-/* PCIe Controller Register Offsets */
-#define PCIE2712_MISC_CTRL              0x4008
-#define  PCIE2712_MISC_CTRL_SCB_EN      (1 << 12)
-#define  PCIE2712_MISC_CTRL_CFG_UR_MODE (1 << 13)
-#define PCIE2712_STATUS                 0x4068
-#define  PCIE2712_STATUS_PHYLINKUP      (1 << 4)
-#define  PCIE2712_STATUS_DL_ACTIVE      (1 << 5)
-#define PCIE2712_REVISION               0x406c
+/* Which bridge a driver object drives, handed to it via aHidd_DriverData. */
+struct pcie_bridge
+{
+    const char         *node;           /* device tree path */
+    uint64_t            reg_base;
+    const char         *name;
+};
 
-#define PCIE2712_EXT_CFG_INDEX          0x9000
-#define PCIE2712_EXT_CFG_DATA           0x8000
+/*
+ * Per bridge state, the instance data of one driver object.
+ *
+ * Everything here is read back out of the registers once the bridge is
+ * running, whether we programmed it or the firmware did - see BridgeAdopt().
+ * Nothing downstream needs to know which of the two happened.
+ */
+struct PCIBcm2712Data
+{
+    const struct pcie_bridge *bridge;
 
-/* Standard AROS OOP Driver Static Data */
+    volatile uint8_t   *regs;
+    volatile uint8_t   *rescal;
+    volatile uint8_t   *reset;
+
+    /* Which bit of the reset controller holds this bridge, from "resets". */
+    uint32_t            reset_cell;
+
+    struct pcie_range   ranges[PCIE_MAX_RANGES];
+    uint32_t            nranges;
+    struct pcie_range   dmaranges[PCIE_MAX_RANGES];
+    uint32_t            ndmaranges;
+
+    /* The MEM32 outbound window, which is where endpoint BARs are placed. */
+    uint64_t            mem_pci_base;
+    uint64_t            mem_cpu_base;
+    uint64_t            mem_size;
+    uint64_t            mem_next;       /* bump allocator over the window */
+
+    /* The bridge's secondary bus, read from its own config header rather
+       than assumed: on a firmware initialised bridge it is already set. */
+    UBYTE               secondary_bus;
+
+    /*
+     * The GIC INTID the bridge raises for the endpoint's INTA, from the
+     * node's interrupt-map. Config space carries no usable interrupt line
+     * on this bridge, so this is substituted when one is read.
+     */
+    uint32_t            intx_irq;
+
+    /*
+     * This bridge's MSI block. msi_first_intid already carries the message
+     * offset, so message n of ours raises msi_first_intid + n; msi_used is
+     * one bit per message handed out.
+     */
+    volatile uint8_t   *mip;
+    uint64_t            msi_target;     /* the PCI address a device writes */
+    uint32_t            msi_first_intid;
+    uint32_t            msi_count;
+    uint64_t            msi_used;
+
+    BOOL                link_up;
+    BOOL                trained;        /* we brought it up, firmware had not */
+};
+
+/*
+ * Per device vector bookkeeping. firstVector holds the first message plus
+ * one, so a freshly created device reads as holding none.
+ */
+struct PCIBcm2712DevData
+{
+    ULONG               firstVector;
+    ULONG               nvectors;
+    ULONG               cap;            /* config offset of the capability */
+    BOOL                msix;
+};
+
+/* Per module state. Only what genuinely has one instance lives here. */
 struct pci_staticdata
 {
     OOP_Class          *driverClass;
     OOP_Class          *deviceClass;
-    OOP_Class          *busClass;
-
-    OOP_Object         *driverObject;
-    OOP_Object         *busObject;
 
     OOP_AttrBase        hiddPCIDriverAB;
     OOP_AttrBase        hiddPCIDeviceAB;
     OOP_AttrBase        hiddAB;
 
     struct Library     *kernelBase;
-    struct Library     *openFirmwareBase;
-
-    volatile uint8_t   *regs;
-    volatile uint8_t   *ecam;
-    uint64_t            dma_offset;
-    uint32_t            dma_exp;
-    uint32_t            msi_irq;
-    BOOL                link_up;
 };
 
 struct pcibcm2712base
@@ -80,12 +144,11 @@ struct pcibcm2712base
     struct pci_staticdata psd;
 };
 
-struct PCIBcm2712DevData
-{
-    struct pci_staticdata *psd;
-    uint32_t               devfn;
-};
+#define PSD(cl) (&((struct pcibcm2712base *)(cl)->UserData)->psd)
 
-#define PSD(cl) ((struct pci_staticdata *)(cl)->UserData)
+/* Shared between the two source files. */
+ULONG PCIE_ReadConfig(struct PCIBcm2712Data *data, UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg);
+void  PCIE_WriteConfig(struct PCIBcm2712Data *data, UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg, ULONG val);
+BOOL  PCIE_BridgeSetup(struct pci_staticdata *psd, struct PCIBcm2712Data *data);
 
 #endif /* PCIE_BCM2712_H */

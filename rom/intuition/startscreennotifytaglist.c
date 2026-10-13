@@ -10,6 +10,7 @@
 #include <string.h>
 
 #include "intuition_intern.h"
+#include "screennotifytask.h"
 
 /*****************************************************************************
 
@@ -85,8 +86,18 @@
         notify->node.ln_Pri = (BYTE) GetTagData(SNA_Priority, 0, tags);
         notify->pubname = NULL;
 
+        /* Only asynchronous port notifications need the permanent reply
+         * task. Signal, hook, and synchronous notifications do not.
+         */
+        if (notify->port && !(notify->flags & SNOTIFY_WAIT_REPLY) &&
+            !EnsureDefaultScreennotifyHandler(IntuitionBase))
+        {
+            FreeVec(notify);
+            notify = NULL;
+        }
+
         char *pubname = (char *) GetTagData(SNA_PubName, 0, tags);
-        if (pubname)
+        if (notify && pubname)
         {
             notify->pubname = AllocVec(strlen(pubname) + 1, MEMF_CLEAR);
             if (notify->pubname)

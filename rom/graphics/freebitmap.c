@@ -86,7 +86,7 @@
         if(bm->Flags & BMF_INTERLEAVED) {
             if(bm->Planes[0]) {
                 ASSERT_VALID_PTR(bm->Planes[0]);
-                FreeRaster(bm->Planes[0], width * bm->Depth, bm->Rows);
+                FreeRaster(bm->Planes[0], width, bm->Rows);
             }
         } else {
             for(plane = 0; plane < bm->Depth; plane ++) {

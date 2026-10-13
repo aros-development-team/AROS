@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 
     Get info about a screen. *OBSOLETE*
@@ -19,8 +19,8 @@
 
 /*  SYNOPSIS */
         AROS_LHA(APTR           , buffer, A0),
-        AROS_LHA(ULONG          , size, D0),
-        AROS_LHA(ULONG          , type, D1),
+        AROS_LHA(UWORD          , size, D0),
+        AROS_LHA(UWORD          , type, D1),
         AROS_LHA(struct Screen *, screen, A1),
 
 /*  LOCATION */
@@ -64,9 +64,6 @@
     AROS_LIBFUNC_INIT
 
     DEBUG_GETSCREENDATA(dprintf("GetScreenData(buffer 0x%lx size 0x%lx type 0x%lx screen 0x%lx)\n",buffer,size,type,screen));
-
-    EXTENDUWORD(size);
-    EXTENDUWORD(type);
 
     if (type == WBENCHSCREEN)
     {

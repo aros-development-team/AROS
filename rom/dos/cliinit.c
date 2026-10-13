@@ -188,10 +188,9 @@ static void internalSetTimeFromBootVolume(BPTR lock, struct DosLibrary *DOSBase)
      * This process mounts the boot volume and then becomes the initial
      * shell; commands it launches run on their own cli_DefaultStack
      * stacks, so its own stack only carries mount packets and script
-     * parsing. 8 KB is double the classic shell budget, and the block
-     * is chip RAM on an unexpanded machine.
+     * parsing. Its measured peak during CD32 boot is below 2 KB.
      */
-    mp = CreateProc("Boot Mount", 0, seg, 8192);
+    mp = CreateProc("Boot Mount", 0, seg, 4096);
 #else
     mp = CreateProc("Boot Mount", 0, seg, AROS_STACKSIZE);
 #endif
@@ -722,8 +721,6 @@ static LONG internalBootCliHandler(void)
         mountBootNode(bn->bn_DeviceNode, fsr, DOSBase);
     }
 
-    CloseLibrary((APTR)ExpansionBase);
-
     /* Enable prompts to insert missing volumes again - unless this is an
      * appliance boot: __dos_Boot runs the Initial CLI synchronously in
      * THIS process, so the Startup-Sequence and whatever it starts
@@ -736,6 +733,25 @@ static LONG internalBootCliHandler(void)
     /* Init all the RTF_AFTERDOS code, since we now have SYS:, the dos devices, and all the other assigns */
     D(bug("Dos/CliInit: Calling InitCode(RTF_AFTERDOS, 0)\n"));
     InitCode(RTF_AFTERDOS, 0);
+
+    /*
+     * RTF_AFTERDOS residents may add boot flags: the hosted emul-handler
+     * loads the display drivers itself and sets BF_NO_DISPLAY_DRIVERS so
+     * that __dos_Boot() does not load them a second time.
+     */
+    BootFlags = IntExpBase(ExpansionBase)->BootFlags;
+    CloseLibrary((APTR)ExpansionBase);
+
+    /*
+     * Multi-user support: if security.library is part of the ROM it is
+     * up by now (its RTF_AFTERDOS part started the server). Open it once
+     * and keep it; without it dos behaves as a single-user system.
+     */
+    if (FindResident(SECURITYNAME))
+    {
+        IDosBase(DOSBase)->securityBase = OpenLibrary(SECURITYNAME, 0);
+        D(bug("Dos/CliInit: security.library @ 0x%p\n", IDosBase(DOSBase)->securityBase));
+    }
 
     /* Call the platform-overridable portions */
     D(bug("Dos/CliInit: Calling __dos_Boot(%p, 0x%lx, 0x%x)\n", DOSBase, BootFlags, Flags));

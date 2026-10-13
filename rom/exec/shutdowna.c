@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: ShutdownA() - Shut down the operating system.
 */
@@ -31,6 +31,9 @@
          * SD_ACTION_POWEROFF   - power off/halt the hardware.
          * SD_ACTION_COLDREBOOT - cold reboot the hardware.
          * SD_ACTION_WARMREBOOT - soft reboot the operating system.
+         * SD_ACTION_REBOOT     - reboot by whatever means the platform
+                                  supports; a cold reboot is preferred,
+                                  a warm reboot is the fallback.
 
     RESULT
         This function does not return in case of success. Otherwise it returns

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2011-2026, The AROS Development Team. All rights reserved.
 */
 
 
@@ -124,6 +124,8 @@ static void IntelGMA_BatchBufferReset(struct IntelGMABatchBuffer *batch)
     batch->base.ptr = batch->base.map;
     batch->base.size = batch->actual_size - BATCH_RESERVED;
     batch->base.relocs = 0;
+    batch->base.ptr_start = batch->base.map;
+    batch->base.reloc_count_start = 0;
 }
 
 static BOOL IntelGMA_StatusGet(ULONG i)
@@ -290,7 +292,7 @@ static struct i915_winsys_batchbuffer *IntelGMA_WS_BatchbufferCreate(struct i915
     return (struct i915_winsys_batchbuffer *)batch;
 }
 
-static  boolean IntelGMA_WS_ValidateBuffers(struct i915_winsys_batchbuffer *batch,
+static bool IntelGMA_WS_ValidateBuffers(struct i915_winsys_batchbuffer *batch,
                            struct i915_winsys_buffer **buffers,
                            int num_of_buffers)
 {
@@ -310,7 +312,7 @@ static  boolean IntelGMA_WS_ValidateBuffers(struct i915_winsys_batchbuffer *batc
 static int IntelGMA_WS_BatchbufferReloc(struct i915_winsys_batchbuffer *batch,
                         struct i915_winsys_buffer *reloc,
                         enum i915_winsys_buffer_usage usage,
-                        unsigned offset, boolean fenced)
+                        unsigned offset, bool fenced)
 {
     struct reloc *rl;
 
@@ -526,7 +528,7 @@ static struct i915_winsys_buffer * IntelGMA_WS_BufferFromHandle(struct i915_wins
     return NULL;
 }
 
-static boolean IntelGMA_WS_BufferGetHandle(struct i915_winsys *iws,
+static bool IntelGMA_WS_BufferGetHandle(struct i915_winsys *iws,
                             struct i915_winsys_buffer *buffer,
                             struct winsys_handle *whandle,
                             unsigned stride)
@@ -538,7 +540,7 @@ static boolean IntelGMA_WS_BufferGetHandle(struct i915_winsys *iws,
 
 static void * IntelGMA_WS_BufferMap(struct i915_winsys *iws,
                    struct i915_winsys_buffer *buffer,
-                   boolean write)
+                   bool write)
 {
     D(bug("[IntelGMA:Gallium] %s()\n", __func__));
 
@@ -597,7 +599,7 @@ static void IntelGMA_WS_BufferDestroy(struct i915_winsys *iws,
     }
 }
 
-static boolean IntelGMA_WS_BufferIsBusy(struct i915_winsys *iws,
+static bool IntelGMA_WS_BufferIsBusy(struct i915_winsys *iws,
                          struct i915_winsys_buffer *buffer)
 {
     int i;
@@ -663,6 +665,35 @@ static void IntelGMA_WS_Destroy(struct i915_winsys *iws)
     D(bug("[IntelGMA:Gallium] %s()\n", __func__));
 }
 
+/*
+ * The blitter records where a command sequence starts so that it can be
+ * rolled back if the buffers it references fail validation. Our relocation
+ * list is a simple counter, so save and restore that alongside the pointer.
+ */
+static void IntelGMA_WS_EmitStart(struct i915_winsys_batchbuffer *batch)
+{
+    D(bug("[IntelGMA:Gallium] %s()\n", __func__));
+
+    batch->ptr_start = batch->ptr;
+    batch->reloc_count_start = batch->relocs;
+}
+
+static void IntelGMA_WS_EmitRestart(struct i915_winsys_batchbuffer *batch)
+{
+    D(bug("[IntelGMA:Gallium] %s()\n", __func__));
+
+    batch->ptr = batch->ptr_start;
+    batch->relocs = batch->reloc_count_start;
+}
+
+/* There is no DRM file descriptor behind this winsys. */
+static int IntelGMA_WS_GetFd(struct i915_winsys *iws)
+{
+    D(bug("[IntelGMA:Gallium] %s()\n", __func__));
+
+    return -1;
+}
+
 // ****************************************************************************
 //                                                                Gallium Hidd Methods
 // ****************************************************************************
@@ -691,6 +722,8 @@ OOP_Object *METHOD(GalliumIntelGMA, Root, New)
         data->gma_winsys.batchbuffer_reloc          = IntelGMA_WS_BatchbufferReloc;
         data->gma_winsys.batchbuffer_flush          = IntelGMA_WS_BatchbufferFlush;
         data->gma_winsys.batchbuffer_destroy        = IntelGMA_WS_BatchbufferDestroy;
+        data->gma_winsys.emit_start                 = IntelGMA_WS_EmitStart;
+        data->gma_winsys.emit_restart               = IntelGMA_WS_EmitRestart;
         data->gma_winsys.buffer_create              = IntelGMA_WS_BufferCreate;
         data->gma_winsys.buffer_create_tiled        = IntelGMA_WS_BufferCreateTiled;
         data->gma_winsys.buffer_from_handle         = IntelGMA_WS_BufferFromHandle;
@@ -704,6 +737,7 @@ OOP_Object *METHOD(GalliumIntelGMA, Root, New)
         data->gma_winsys.fence_signalled            = IntelGMA_WS_FenceSignalled;
         data->gma_winsys.fence_finish               = IntelGMA_WS_FenceFinish;
         data->gma_winsys.aperture_size              = IntelGMA_WS_ApertureSize;
+        data->gma_winsys.get_fd                     = IntelGMA_WS_GetFd;
     }
 
     return o;

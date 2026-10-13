@@ -8,6 +8,8 @@
 #include <aros/libcall.h>
 #include <proto/exec.h>
 
+#include "exec_intern.h"
+
 /*****************************************************************************
 
     NAME */
@@ -44,16 +46,22 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* Arbitrate for the list of message ports.*/
+    /* AddPort and FindPort use PortListSpinLock, so removal must take
+     * that same lock. */
     Forbid();
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->PortListSpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
 
     /* Remove the current port. */
     Remove(&port->mp_Node);
 
     /* All done. */
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->PortListSpinLock);
+#endif
     Permit();
     AROS_LIBFUNC_EXIT
 } /* RemPort */
-
 
 
