@@ -184,6 +184,11 @@ struct VideoCoreGfx_staticdata {
 
         struct SignalSemaphore  vcsd_ScanoutLock;
         struct MinList          vcsd_Arenas;
+
+        /* The fb object's pixels when the firmware's framebuffer is a
+         * token one (HVS5 with screens as planes). */
+        struct vcgfx_scanbuf    vcsd_FBBuf;
+        ULONG                   vcsd_FBBufSize;
 };
 
 #define VCGFX_HVS_VC4   0       /* BCM283x, VideoCore IV */

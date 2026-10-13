@@ -165,49 +165,20 @@ static const struct vcgfx_timing *vc4_sync_timing(OOP_Class *cl, OOP_Object *syn
     return t;
 }
 
-static BOOL vc4_program_fb(struct VideoCoreGfx_staticdata *xsd,
-    ULONG aligned_width, ULONG height, UBYTE bytesperpix,
-    const struct vcgfx_timing *want, APTR *fb_ptr_out, ULONG *fb_pitch_out)
+/* FBFREE, then FBALLOC aligned_width x height, maxpages tall if the
+ * firmware will (the second page enables SETVOFFSET flipping), and
+ * GETPITCH. Not for BCM2712, which cannot allocate another. */
+static BOOL vc4_fballoc(struct VideoCoreGfx_staticdata *xsd,
+    ULONG aligned_width, ULONG height, UBYTE bytesperpix, int maxpages,
+    APTR *fb_ptr_out, ULONG *fb_pitch_out, int *pages_out)
 {
     ULONG bitsperpixel = bytesperpix * 8;
     APTR fb_ptr = NULL;
     ULONG fb_pitch = 0, fb_size = 0;
     int pages;
 
-    /* The firmware builds its lists for the mode it set itself, so a mode
-     * of ours goes back to that one first. */
-    if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS5)
-        vc4_hvs5_mode_restore(xsd);
-
-    /* Mode is changing: the FBALLOC sequence below makes the firmware
-     * rebuild its display list and repoint the channel, so give up list
-     * ownership first; it is re-taken once the new framebuffer is up. */
-    VC4_MBOX_LOCK(xsd);
-    xsd->vcsd_HVS.hvs_Active = FALSE;
-    VC4_MBOX_UNLOCK(xsd);
-
-    for (pages = (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6) ? 1 : 2; pages >= 1; pages--)
+    for (pages = maxpages; pages >= 1; pages--)
     {
-        /* BCM2712 FBFREE+FBALLOC returns a null base and loses the
-         * scanned surface, so adopt the boot framebuffer instead. */
-        if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
-        {
-            if ((aligned_width <= xsd->vcsd_BootFBWidth)
-                && (height <= xsd->vcsd_BootFBHeight))
-            {
-                fb_ptr   = (APTR)(IPTR)xsd->vcsd_BootFB;
-                fb_pitch = xsd->vcsd_BootFBPitch;
-            }
-            else
-            {
-                /* Larger than the boot surface: a framebuffer of our own. */
-                fb_pitch = aligned_width * bytesperpix;
-                if (!(fb_ptr = vc4_hvs6_alloc_fb(xsd, fb_pitch, height)))
-                    return FALSE;
-            }
-            break;
-        }
-
         /* Hold the mailbox lock across the whole multi-transaction sequence
          * (FBFREE -> batched mode/depth/pixfmt/FBALLOC -> GETPITCH). */
         VC4_MBOX_LOCK(xsd);
@@ -315,6 +286,137 @@ static BOOL vc4_program_fb(struct VideoCoreGfx_staticdata *xsd,
         }
         break;
     }
+
+    *fb_ptr_out   = fb_ptr;
+    *fb_pitch_out = fb_pitch;
+    *pages_out    = pages;
+    return TRUE;
+}
+
+/* The width of the firmware's framebuffer behind screens that are planes
+ * on a Pi 4. Nothing reads it once the list is ours, but it keeps the
+ * mode's shape: where the firmware keeps the timing it fits the plane to
+ * the display by aspect, and that rectangle is the one our planes fill. */
+#define VC4_TOKEN_FB    256
+
+/*
+ * Screens as planes on HVS5: a token framebuffer for the firmware - it
+ * still sets its mode and builds the list we take over - and the fb
+ * object's pixels in scanout memory of ours, so the VideoCore partition
+ * holds almost nothing. FALSE when no list of ours came of it.
+ */
+static BOOL vc4_program_token_fb(struct VideoCoreGfx_staticdata *xsd,
+    ULONG aligned_width, ULONG height, UBYTE bytesperpix,
+    const struct vcgfx_timing *want, APTR *fb_ptr_out, ULONG *fb_pitch_out)
+{
+    struct vc4_hvs_state *st = &xsd->vcsd_HVS;
+    struct vcgfx_scanbuf old = xsd->vcsd_FBBuf;
+    ULONG pitch = aligned_width * bytesperpix, size = pitch * height, tpitch;
+    ULONG th = (VC4_TOKEN_FB * height + aligned_width / 2) / aligned_width;
+    APTR tptr;
+    int pages;
+
+    if (th < 16)
+        th = 16;
+    if (!vc4_fballoc(xsd, VC4_TOKEN_FB, th, bytesperpix, 1, &tptr, &tpitch, &pages))
+        return FALSE;
+
+    if (!old.sb_Pixels || (xsd->vcsd_FBBufSize != size))
+    {
+        if (!vcgfx_scanout_alloc(xsd, &xsd->vcsd_FBBuf, size))
+        {
+            xsd->vcsd_FBBuf = old;
+            return FALSE;
+        }
+        xsd->vcsd_FBBufSize = size;
+    }
+    else
+        old.sb_Raw = NULL;
+
+    st->hvs_Tiny      = TRUE;
+    st->hvs_ShowPtr   = (ULONG)(IPTR)xsd->vcsd_FBBuf.sb_Pixels;
+    st->hvs_ShowPitch = pitch;
+    st->hvs_ShowW     = aligned_width;
+    st->hvs_ShowH     = height;
+
+    vc4_hvs_dump(xsd, (ULONG)(IPTR)tptr, tpitch, VC4_TOKEN_FB, th);
+    if (!vc4_hvs_takeover(xsd, (ULONG)(IPTR)tptr, tpitch))
+    {
+        st->hvs_Tiny = FALSE;
+        if (old.sb_Raw)
+        {
+            vcgfx_scanout_free(xsd, &xsd->vcsd_FBBuf);
+            xsd->vcsd_FBBuf = old;
+        }
+        return FALSE;
+    }
+    vc4_hvs5_mode_apply(xsd, aligned_width, height, pitch, want);
+
+    /* The list showing the old buffer has latched away. */
+    if (old.sb_Raw)
+        vcgfx_scanout_free(xsd, &old);
+
+    xsd->vcsd_FBPage[0]    = st->hvs_ShowPtr;
+    xsd->vcsd_FBPage[1]    = st->hvs_ShowPtr;
+    xsd->vcsd_FBPageHeight = height;
+    xsd->vcsd_FBFront      = 0;
+    xsd->vcsd_FBPages      = 1;
+
+    *fb_ptr_out   = xsd->vcsd_FBBuf.sb_Pixels;
+    *fb_pitch_out = pitch;
+    return TRUE;
+}
+
+static BOOL vc4_program_fb(struct VideoCoreGfx_staticdata *xsd,
+    ULONG aligned_width, ULONG height, UBYTE bytesperpix,
+    const struct vcgfx_timing *want, APTR *fb_ptr_out, ULONG *fb_pitch_out)
+{
+    APTR fb_ptr = NULL;
+    ULONG fb_pitch = 0;
+    int pages = 1;
+
+    /* The firmware builds its lists for the mode it set itself, so a mode
+     * of ours goes back to that one first. */
+    if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS5)
+        vc4_hvs5_mode_restore(xsd);
+
+    /* Mode is changing: the FBALLOC sequence below makes the firmware
+     * rebuild its display list and repoint the channel, so give up list
+     * ownership first; it is re-taken once the new framebuffer is up. */
+    VC4_MBOX_LOCK(xsd);
+    xsd->vcsd_HVS.hvs_Active = FALSE;
+    VC4_MBOX_UNLOCK(xsd);
+
+    if ((xsd->vcsd_HVSGen == VCGFX_HVS_HVS5) && vcgfx_planes_supported(xsd))
+    {
+        if (vc4_program_token_fb(xsd, aligned_width, height, bytesperpix, want,
+                                 fb_ptr_out, fb_pitch_out))
+            return TRUE;
+        bug("[VideoCoreGfx] no display list behind a token framebuffer,"
+            " asking the firmware for a full one\n");
+    }
+
+    if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
+    {
+        /* BCM2712 FBFREE+FBALLOC returns a null base and loses the
+         * scanned surface, so adopt the boot framebuffer instead. */
+        if ((aligned_width <= xsd->vcsd_BootFBWidth)
+            && (height <= xsd->vcsd_BootFBHeight))
+        {
+            fb_ptr   = (APTR)(IPTR)xsd->vcsd_BootFB;
+            fb_pitch = xsd->vcsd_BootFBPitch;
+        }
+        else
+        {
+            /* Larger than the boot surface: a framebuffer of our own. */
+            fb_pitch = aligned_width * bytesperpix;
+            if (!(fb_ptr = vc4_hvs6_alloc_fb(xsd, fb_pitch, height)))
+                return FALSE;
+        }
+    }
+    else if (!vc4_fballoc(xsd, aligned_width, height, bytesperpix, 2,
+                          &fb_ptr, &fb_pitch, &pages))
+        return FALSE;
 
     xsd->vcsd_FBPage[0]    = (ULONG)(IPTR)fb_ptr;
     xsd->vcsd_FBPage[1]    = (ULONG)(IPTR)fb_ptr + fb_pitch * height;

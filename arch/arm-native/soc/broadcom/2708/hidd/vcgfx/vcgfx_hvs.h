@@ -273,6 +273,13 @@ struct vc4_hvs_state
     ULONG       hvs_FBLBM;                  /* LBM ceiling left by the fb plane */
     OOP_Object *hvs_OvlOwner;               /* HVS5: screen bitmap ovl x/y are in */
 
+    /* HVS5 with screens as planes: the firmware's framebuffer is a token
+     * one, and the fb plane shows a buffer of ours, ShowW x ShowH. */
+    BOOL        hvs_Tiny;
+    ULONG       hvs_ShowPtr, hvs_ShowPitch;
+    ULONG       hvs_ShowW, hvs_ShowH;
+    ULONG       hvs_FBPitch;
+
     /* HVS5: a list waiting for the vblank interrupt to repoint at it, and
      * the last one written to DISPLIST - neither may be rewritten. */
     volatile ULONG  hvs_PendList;
