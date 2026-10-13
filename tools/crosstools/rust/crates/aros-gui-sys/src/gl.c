@@ -9,6 +9,15 @@
 
 #include "glue.h"
 
+/* For SDKs from before gl.library took these; it then ignores them. */
+#ifndef GLA_ContextProfile
+#define GLA_ContextProfile      (GLA_Dummy + 0x0040)
+#define GLA_ContextMajorVersion (GLA_Dummy + 0x0041)
+#define GLA_ContextMinorVersion (GLA_Dummy + 0x0042)
+#define GLA_PROFILE_COMPAT      0
+#define GLA_PROFILE_CORE        1
+#endif
+
 /* The window interior, which is what the context renders into. */
 static void set_rast_tags(struct TagItem *tags, struct Window *window)
 {
@@ -23,8 +32,14 @@ static void set_rast_tags(struct TagItem *tags, struct Window *window)
 
 uintptr_t aros_gui_gl_create(uintptr_t handle, int alpha, int depth, int stencil)
 {
+    return aros_gui_gl_create_profile(handle, alpha, depth, stencil, 0, 0, 0);
+}
+
+uintptr_t aros_gui_gl_create_profile(uintptr_t handle, int alpha, int depth, int stencil,
+    int core, int major, int minor)
+{
     struct Window *window = (struct Window *)handle;
-    struct TagItem tags[11];
+    struct TagItem tags[14];
 
     if (!window)
         return 0;
@@ -34,7 +49,13 @@ uintptr_t aros_gui_gl_create(uintptr_t handle, int alpha, int depth, int stencil
     tags[7].ti_Tag = GLA_AlphaFlag; tags[7].ti_Data = alpha ? GL_TRUE : GL_FALSE;
     tags[8].ti_Tag = GLA_NoDepth;   tags[8].ti_Data = depth ? GL_FALSE : GL_TRUE;
     tags[9].ti_Tag = GLA_NoStencil; tags[9].ti_Data = stencil ? GL_FALSE : GL_TRUE;
-    tags[10].ti_Tag = TAG_DONE;
+    tags[10].ti_Tag = GLA_ContextProfile;
+    tags[10].ti_Data = core ? GLA_PROFILE_CORE : GLA_PROFILE_COMPAT;
+    tags[11].ti_Tag = major > 0 ? GLA_ContextMajorVersion : TAG_IGNORE;
+    tags[11].ti_Data = major;
+    tags[12].ti_Tag = major > 0 ? GLA_ContextMinorVersion : TAG_IGNORE;
+    tags[12].ti_Data = minor;
+    tags[13].ti_Tag = TAG_DONE;
     return (uintptr_t)glACreateContext(tags);
 }
 
