@@ -635,6 +635,35 @@ void setiorequest(struct fsIORequest *fsi, UWORD action, UBYTE *buffer, ULONG bl
     }
 }
 
+/* A zero device error is only success when the whole request completed. */
+static LONG transferrequest(UWORD action, UBYTE *buffer, ULONG blockoffset, ULONG blocks)
+{
+    LONG errorcode;
+
+    starttimeout();
+    globals->retries=MAX_RETRIES;
+
+    setiorequest(&globals->fsioreq, action, buffer, blockoffset, blocks);
+    for(;;) {
+        globals->fsioreq.scsicmd.scsi_Actual=0;
+        errorcode=DoIO((struct IORequest *)globals->fsioreq.ioreq);
+
+        if(errorcode==0) {
+            ULONG actual=globals->scsidirect ? globals->fsioreq.scsicmd.scsi_Actual :
+                                             globals->fsioreq.ioreq->io_Actual;
+
+            if(actual==(blocks<<globals->shifts_block)) {
+                return(0);
+            }
+            errorcode=IOERR_BADLENGTH;
+        }
+
+        if((errorcode=handleioerror(errorcode, action, globals->fsioreq.ioreq))!=0) {
+            return(errorcode);
+        }
+    }
+}
+
 LONG transfer_buffered(UWORD action, UBYTE *buffer, ULONG blockoffset, ULONG blocklength)
 {
     UBYTE *tempbuffer;
@@ -669,28 +698,12 @@ LONG transfer_buffered(UWORD action, UBYTE *buffer, ULONG blockoffset, ULONG blo
     {
         ULONG blocks=blocklength>maxblocks ? maxblocks : blocklength;
 
-        setiorequest(&globals->fsioreq, action, tempbuffer, blockoffset, blocks);
-
         if (action==DIO_WRITE)
             CopyMemQuick(buffer, tempbuffer, blocks<<globals->shifts_block);
 
-      /* We're about to do a physical disk access.  (Re)set timeout.  Since
-         the drive's motor will be turned off with the timeout as well we
-         always (re)set the timeout even if doio() would return an error. */
-
-        starttimeout();
-        globals->retries=MAX_RETRIES;
-
-        while ((errorcode=DoIO((struct IORequest *)globals->fsioreq.ioreq)) != 0)
-        {
-	    _DEBUG("Buffered transfer: I/O error %d\n", errorcode);
-
-            if ((errorcode = handleioerror(errorcode, action, globals->fsioreq.ioreq)) != 0)
-            {
-                _DEBUG("Buffered transfer: SFS error %d\n", errorcode);
-                FreeVec(tempbuffer);
-                return(errorcode);
-            }
+        if((errorcode=transferrequest(action, tempbuffer, blockoffset, blocks))!=0) {
+            FreeVec(tempbuffer);
+            return(errorcode);
         }
 
         if (action==DIO_READ)
@@ -812,25 +825,8 @@ LONG transfer(UWORD action, UBYTE *buffer, ULONG blockoffset, ULONG blocklength)
         {
             ULONG blocks = (blocklength > maxblocks) ? maxblocks : blocklength;
 
-            setiorequest(&globals->fsioreq, action, buffer, blockoffset, blocks);
-
-            /* We're about to do a physical disk access.  (Re)set timeout.  Since
-               the drive's motor will be turned off with the timeout as well we
-               always (re)set the timeout even if doio() would return an error. */
-
-            starttimeout();
-            globals->retries=MAX_RETRIES;
-
-            while ((errorcode=DoIO((struct IORequest *)globals->fsioreq.ioreq)) != 0)
-            {
-            	_DEBUG("Direct transfer: I/O error %d\n", errorcode);
-
-                if ((errorcode=handleioerror(errorcode, action, globals->fsioreq.ioreq)) != 0)
-                {
-	            _DEBUG("Direct transfer: SFS error %d\n", errorcode);
-
-                    return errorcode;
-                }
+            if((errorcode=transferrequest(action, buffer, blockoffset, blocks))!=0) {
+                return(errorcode);
             }
 
             blocklength-=blocks;
