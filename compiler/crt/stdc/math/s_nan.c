@@ -104,8 +104,68 @@ nan(const char *s)
 	return (u.d);
 }
 
-float
-nanf(const char *s)
+/****************************************************************************
+    NAME */
+        float nanf(
+
+/*  SYNOPSIS */
+        const char *s)
+
+/*  FUNCTION
+        Construct a quiet float NaN from a hexadecimal tag string. The
+        implementation scans an optional leading 0x or 0X followed by
+        hexadecimal digits. Scanning stops at the first other character
+        or the terminating NUL. See BUGS before relying on tag bits.
+
+    INPUTS
+        s - Non-NULL pointer to a readable NUL-terminated ASCII string.
+            The string is read during the call and is not retained. An
+            empty string is permitted. No leading whitespace or sign is
+            skipped. NULL is not an empty-tag shorthand.
+
+    RESULT
+        A float NaN with its exponent and quiet bit forced on. An empty
+        string, or a string with no initial hexadecimal digits after the
+        optional prefix, supplies zero tag bits. Invalid trailing text
+        does not produce a separate error return.
+
+        On the little-endian path, the low 32 scanned bits are placed in
+        the float word, then ORed with 0x7fc00000. Only fraction bits not
+        forced by that mask can distinguish payloads. This construction
+        is subject to the scanner defects described below.
+
+    NOTES
+        Include <math.h>. Tags are interpreted as hexadecimal, including
+        without a 0x prefix. Different tags can produce the same NaN.
+        Do not use the result as a portable payload serialization format.
+
+        The scanner reads the complete initial digit sequence before
+        filling its fixed-size word array. Work therefore grows with
+        the digit-sequence length, even though only one word is retained.
+        No storage is allocated or retained, no I/O or wait occurs, and
+        the implementation does not set or clear errno.
+
+        The source constructs the value through integer representation
+        bits rather than invalid floating-point arithmetic. This is not
+        a guarantee about exception state across every target ABI.
+
+    BUGS
+        The shared scanner shifts the signed int returned by digittoint.
+        A digit of 8 through F shifted by 28 bits is not representable
+        as int on the supported 32-bit-int model and has undefined C
+        behavior. High tag digits therefore cannot be treated as a
+        portable source-level sign or payload guarantee.
+
+        The big-endian branch places the rightmost digit in the highest
+        nibble of the output word, reversing the little-endian nibble
+        placement. Tag-to-payload mapping differs between these paths.
+        The scan index is an int; digit sequences exceeding INT_MAX
+        characters are outside the supported input range.
+
+    SEE ALSO
+        nan(), nanl()
+
+*****************************************************************************/
 {
 	union {
 		float f;
