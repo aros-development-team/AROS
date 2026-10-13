@@ -1676,8 +1676,11 @@ static SIPTR dd_Format(struct DosPacket *pkt, globaldata * g)
 	/* if not inhibited then 'remove disk' */
 	if (g->inhibitcount == 0)
 	{
+		BOOL olddirty = g->dirty;
+
 		g->dirty = FALSE;
 		if (!SafeDiskRemoveSequence(g, &pkt->dp_Res2)) {
+			g->dirty = olddirty;
 			return DOSFALSE;
 		}
 	}
