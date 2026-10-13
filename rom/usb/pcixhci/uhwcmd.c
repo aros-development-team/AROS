@@ -1357,6 +1357,7 @@ WORD cmdFlush(struct IOUsbHWReq *ioreq,
             ReplyMsg(&cmpioreq->iouh_Req.io_Message);
             cmpioreq = (struct IOUsbHWReq *) hc->hc_BulkXFerQueue.lh_Head;
         }
+        cmpioreq = (struct IOUsbHWReq *) hc->hc_TDQueue.lh_Head;
         while(((struct Node *) cmpioreq)->ln_Succ) {
             xhciFreeAsyncContext(hc, unit, cmpioreq);
             cmpioreq->iouh_Req.io_Error = IOERR_ABORTED;
