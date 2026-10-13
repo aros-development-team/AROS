@@ -558,10 +558,27 @@ static ULONG hvs5_emit_src(struct vc4_hvs_state *st, ULONG base, ULONG n,
     return n + words;
 }
 
-/* The fb plane, verbatim but for its pointer. */
-static ULONG hvs5_emit_fb(struct vc4_hvs_state *st, ULONG base, ULONG n)
+/* The fb plane, verbatim but for its pointer - or, behind a token
+ * firmware framebuffer, our own buffer filling the fb plane's rectangle. */
+static ULONG hvs5_emit_fb(struct vc4_hvs_state *st, ULONG base, ULONG n, ULONG *lbm)
 {
     ULONG i;
+
+    if (st->hvs_Tiny)
+    {
+        struct hvs5_src s;
+
+        s.phys  = st->hvs_FBPtr;
+        s.pitch = st->hvs_FBPitch;
+        s.srcw  = s.w = s.cw = st->hvs_SrcW;
+        s.srch  = s.h = s.ch = st->hvs_SrcH;
+        s.x     = 0;
+        s.y     = 0;
+        return hvs5_emit_src(st, base, n, &s, lbm,
+                             (LONG)st->hvs_FBX, (LONG)st->hvs_FBY,
+                             (LONG)(st->hvs_FBX + st->hvs_DestW),
+                             (LONG)(st->hvs_FBY + st->hvs_DestH), NULL, NULL);
+    }
 
     for (i = 0; i < st->hvs_FBWords; i++)
         hvs5_dl_wr(base + n + i, st->hvs_FBEntry[i]);
@@ -614,7 +631,7 @@ static ULONG hvs5_emit_planes(struct VideoCoreGfx_staticdata *xsd,
     }
 
     if (bottom > top)
-        n = hvs5_emit_fb(st, base, n);
+        n = hvs5_emit_fb(st, base, n, lbm);
 
     for (i = 0; i < (LONG)xsd->vcsd_NumPlanes; i++)
     {
@@ -689,7 +706,7 @@ static ULONG hvs5_build_list(struct VideoCoreGfx_staticdata *xsd)
         n = hvs5_emit_planes(xsd, base, n, &lbm);
     else
     {
-        n = hvs5_emit_fb(st, base, n);
+        n = hvs5_emit_fb(st, base, n, &lbm);
         if (st->hvs_OvlActive)
         {
             struct hvs5_src s;
@@ -864,6 +881,18 @@ BOOL vc4_hvs5_takeover(struct VideoCoreGfx_staticdata *xsd,
                       ? st->hvs_FBEntry[HVS5_SC_LBM] : HVS5_LBM_TOP;
         st->hvs_OvlLBM = 0;
 
+        /* Behind a token framebuffer the firmware's plane only gives the
+         * rectangle; the mode's size and our buffer go in it. */
+        if (st->hvs_Tiny)
+        {
+            st->hvs_SrcW      = st->hvs_ShowW;
+            st->hvs_SrcH      = st->hvs_ShowH;
+            st->hvs_FBPtr     = st->hvs_ShowPtr;
+            st->hvs_FBPitch   = st->hvs_ShowPitch;
+            st->hvs_OvlUsable = TRUE;
+            st->hvs_FBLBM     = HVS5_LBM_TOP;
+        }
+
         /* Planes may be committing from another task. */
         VC4_MBOX_LOCK(xsd);
         base = hvs5_build_list(xsd);
@@ -960,6 +989,7 @@ BOOL vc4_hvs5_mode_apply(struct VideoCoreGfx_staticdata *xsd, ULONG w, ULONG h,
     st->hvs_SrcH       = st->hvs_DestH = h;
     st->hvs_OvlUsable  = TRUE;
     st->hvs_FBLBM      = HVS5_LBM_TOP;
+    st->hvs_FBPitch    = pitch;
 
     VC4_MBOX_LOCK(xsd);
     base = hvs5_build_list(xsd);
