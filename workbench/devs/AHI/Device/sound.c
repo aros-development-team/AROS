@@ -49,8 +49,7 @@
 /***** ahi.device/AHI_SetVol ***********************************************
 *
 *   NAME
-*       AHI_SetVol -- set volume and stereo panning for a channel
-*
+    AHI_SetVol()
 *   SYNOPSIS
 *       AHI_SetVol( channel, volume, pan, audioctrl, flags );
 *                   D0:16    D1      D2   A2         D3
@@ -59,6 +58,8 @@
 *                        ULONG );
 *
 *   FUNCTION
+        set volume and stereo panning for a channel
+
 *       Changes the volume and stereo panning for a channel.
 *
 *   INPUTS
@@ -346,8 +347,7 @@ _AHI_SetFreq(UWORD                    channel,
 /***** ahi.device/AHI_SetSound *********************************************
 *
 *   NAME
-*       AHI_SetSound -- set what sound to play for a channel
-*
+    AHI_SetSound()
 *   SYNOPSIS
 *       AHI_SetSound( channel, sound, offset, length, audioctrl, flags );
 *                      D0:16   D1:16   D2      D3      A2         D4
@@ -356,6 +356,8 @@ _AHI_SetFreq(UWORD                    channel,
 *                          struct AHIAudioCtrl *, ULONG );
 *
 *   FUNCTION
+        set what sound to play for a channel
+
 *       Sets a sound to be played on a channel.
 *
 *   INPUTS
@@ -790,8 +792,7 @@ _AHI_SetEffect(APTR                   effect,
 /****** ahi.device/AHI_LoadSound ********************************************
 *
 *   NAME
-*       AHI_LoadSound -- prepare a sound for playback
-*
+    AHI_LoadSound()
 *   SYNOPSIS
 *       error = AHI_LoadSound( sound, type, info, audioctrl );
 *       D0                     D0:16  D1    A0    A2
@@ -799,6 +800,8 @@ _AHI_SetEffect(APTR                   effect,
 *       ULONG AHI_LoadSound( UWORD, ULONG, APTR, struct AHIAudioCtrl * );
 *
 *   FUNCTION
+        prepare a sound for playback
+
 *       Defines an ID number for the sound and prepares it for playback.
 *
 *   INPUTS
@@ -944,8 +947,7 @@ _AHI_LoadSound(UWORD                    sound,
 /****** ahi.device/AHI_UnloadSound *****************************************
 *
 *   NAME
-*       AHI_UnloadSound -- discard a sound
-*
+    AHI_UnloadSound()
 *   SYNOPSIS
 *       AHI_UnloadSound( sound, audioctrl );
 *                        D0:16  A2
@@ -953,6 +955,8 @@ _AHI_LoadSound(UWORD                    sound,
 *       void AHI_UnloadSound( UWORD, struct AHIAudioCtrl * );
 *
 *   FUNCTION
+        discard a sound
+
 *       Tells 'ahi.device' that this sound will not be used anymore.
 *
 *   INPUTS
@@ -1008,9 +1012,7 @@ _AHI_UnloadSound(UWORD                    sound,
 /****** ahi.device/AHI_PlayA ************************************************
 *
 *   NAME
-*       AHI_PlayA -- Start multiple sounds in one call (V4)
-*       AHI_Play -- varargs stub for AHI_PlayA()
-*
+    AHI_PlayA()
 *   SYNOPSIS
 *       AHI_PlayA( audioctrl, tags );
 *                  A2         A1
@@ -1022,6 +1024,9 @@ _AHI_UnloadSound(UWORD                    sound,
 *       void AHI_Play( struct AHIAudioCtrl *, Tag, ... );
 *
 *   FUNCTION
+        Start multiple sounds in one call (V4)
+        AHI_Play: varargs stub for AHI_PlayA()
+
 *       This function performs the same actions as multiple calls to
 *       AHI_SetFreq(), AHI_SetSound() and AHI_SetVol(). The advantages
 *       of using only one call is that simple loops can be set without

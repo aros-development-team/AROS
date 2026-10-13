@@ -231,8 +231,7 @@ GetDBTagList(struct AHI_AudioDatabase *audiodb,
 /****** ahi.device/AHI_NextAudioID ******************************************
 *
 *   NAME
-*       AHI_NextAudioID -- iterate current audio mode identifiers
-*
+    AHI_NextAudioID()
 *   SYNOPSIS
 *       next_ID = AHI_NextAudioID( last_ID );
 *       D0                         D0
@@ -240,6 +239,8 @@ GetDBTagList(struct AHI_AudioDatabase *audiodb,
 *       ULONG AHI_NextAudioID( ULONG );
 *
 *   FUNCTION
+        iterate current audio mode identifiers
+
 *       This function is used to iterate through all current AudioIDs in
 *       the audio database.
 *
@@ -474,8 +475,7 @@ _AHI_AddAudioMode(struct TagItem *DBtags,
 /****i* ahi.device/AHI_RemoveAudioMode **************************************
 *
 *   NAME
-*       AHI_RemoveAudioMode -- remove a audio mode to the database (V4)
-*
+    AHI_RemoveAudioMode()
 *   SYNOPSIS
 *       success = AHI_RemoveAudioMode( ID );
 *       D0                             D0
@@ -483,6 +483,8 @@ _AHI_AddAudioMode(struct TagItem *DBtags,
 *       ULONG AHI_RemoveAudioMode( ULONG );
 *
 *   FUNCTION
+        remove a audio mode to the database (V4)
+
 *       Removes the audio mode from the audio mode database.
 *
 *   INPUTS
