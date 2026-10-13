@@ -13,8 +13,7 @@
 /****** usergroup.library/getpwent *******************************************
 
     NAME
-        getpwent, getpwnam, getpwuid, setpwent, endpwent
-         - password database operations
+        getpwent, getpwnam, getpwuid, setpwent, endpwent - password database operations
 
     SYNOPSIS
         #include <pwd.h>
