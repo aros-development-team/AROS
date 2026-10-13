@@ -4,10 +4,6 @@
     Desc:
 */
 
-/*****************************************************************************
-
-    NAME */
-
 #include "nvdisk_intern.h"
 #include <nvdisk_arch.h>
 #include <dos/dos.h>
@@ -15,7 +11,11 @@
 #include <libraries/nonvolatile.h>
 
 
-AROS_LH1(BOOL, MemInfoNVD,
+/*****************************************************************************
+
+    NAME */
+
+    AROS_LH1(BOOL, MemInfoNVD,
 
 /*  SYNOPSIS */
 
@@ -27,24 +27,30 @@ AROS_LH1(BOOL, MemInfoNVD,
 
 /*  FUNCTION
 
-    Return the information associated with the nonvolatile memory.
+    Retrieve the total and currently available nonvolatile storage capacity.
 
     INPUTS
 
-    nvInfo  --  information structure to be filled by this function
+    nvInfo  --  Pointer to an NVInfo structure that receives the capacity
+                values on success.
 
     RESULT
 
-    The 'nvInfo' structure will be filled with the appropriate values. In
-    case of failure, NULL will be returned.
+    TRUE if the storage information was retrieved; FALSE otherwise.
 
     NOTES
+
+    On success, nvi_MaxStorage and nvi_FreeStorage are set in bytes.
+    The reported free capacity may reserve space for filesystem metadata.
+    The caller must not rely on the output fields after a failure.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+
+    nonvolatile.library/GetNVInfo()
 
     INTERNALS
 
