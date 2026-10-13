@@ -425,7 +425,8 @@ static BOOL vc4_screen_scale(OOP_Class *cl, OOP_Object *bm, ULONG *mw, ULONG *mh
     struct VideoCoreGfx_staticdata *xsd = XSD(cl);
     struct BitmapData *data;
 
-    if (!xsd->vcsd_PlanesMode || !bm
+    /* Only HVS5 scales planes so far. */
+    if (!xsd->vcsd_PlanesMode || !bm || (xsd->vcsd_HVSGen != VCGFX_HVS_HVS5)
         || (OOP_OCLASS(bm) != xsd->vcsd_VideoCoreGfxOffBMClass))
         return FALSE;
 

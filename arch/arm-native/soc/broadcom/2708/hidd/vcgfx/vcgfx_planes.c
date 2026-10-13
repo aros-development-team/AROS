@@ -28,6 +28,7 @@
 
 #include "vcgfx_hidd.h"
 #include "vcgfx_hvs5.h"
+#include "vcgfx_hvs6.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -40,7 +41,8 @@
 #define SCANOUT_ARENA       (32UL << 20)
 #define SCANOUT_PAGE        4096UL
 
-/* The HVS5 0xC0000000 bus alias reaches the first 1GB only. */
+/* The HVS5 0xC0000000 bus alias reaches the first 1GB only; HVS6 sees
+ * 40 bits, but pixel addresses travel as ULONG to the GL drivers. */
 #define SCANOUT_LIMIT       0x40000000ULL
 
 #undef HiddBitMapAttrBase
@@ -50,8 +52,45 @@
 
 BOOL vcgfx_planes_supported(struct VideoCoreGfx_staticdata *xsd)
 {
-    return VCGFX_PLANES && (xsd->vcsd_HVSGen == VCGFX_HVS_HVS5)
-        && vc4_hvs5_planes_ok();
+    if (!VCGFX_PLANES)
+        return FALSE;
+    if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS5)
+        return vc4_hvs5_planes_ok();
+    if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
+        return vc4_hvs6_planes_ok();
+    return FALSE;
+}
+
+/* We own the display list. */
+static BOOL planes_active(struct VideoCoreGfx_staticdata *xsd)
+{
+    return (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6) ? xsd->vcsd_HVS6.h6_Active
+                                                : xsd->vcsd_HVS.hvs_Active;
+}
+
+/* Rebuild the list from vcsd_Plane[]; caller holds the mailbox lock. */
+static void planes_commit(struct VideoCoreGfx_staticdata *xsd)
+{
+    if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
+        vc4_hvs6_planes_commit(xsd);
+    else
+        vc4_hvs5_planes_commit(xsd);
+}
+
+/* A screen of this mode can fill the display without a mode set. */
+static BOOL plane_fits(struct VideoCoreGfx_staticdata *xsd, ULONG w, ULONG h)
+{
+    if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
+        return vc4_hvs6_plane_fits(xsd, w, h);
+    return vc4_hvs5_plane_fits(xsd, w, h);
+}
+
+/* The overlay is up over this screen. */
+BOOL vcgfx_plane_overlay_shown(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm)
+{
+    if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
+        return xsd->vcsd_HVS6.h6_Overlay && (xsd->vcsd_HVS6.h6_OvlOwner == bm);
+    return xsd->vcsd_HVS.hvs_OvlActive && (xsd->vcsd_HVS.hvs_OvlOwner == bm);
 }
 
 /*********** Scanout memory ******************************************/
@@ -231,7 +270,7 @@ ULONG vcgfx_show_viewports(struct VideoCoreGfx_staticdata *xsd,
     /* Decided at the first call, either way: graphics.library never takes
      * a framebuffer back out of a BitMap that Show() put it in. */
     if (!xsd->vcsd_PlanesMode
-        && (xsd->vcsd_PlanesRefused || !xsd->vcsd_HVS.hvs_Active))
+        && (xsd->vcsd_PlanesRefused || !planes_active(xsd)))
     {
         if (!xsd->vcsd_PlanesRefused)
             bug("[VideoCoreGfx] no display list of our own: screens stay on Show()\n");
@@ -262,8 +301,8 @@ ULONG vcgfx_show_viewports(struct VideoCoreGfx_staticdata *xsd,
     /* A mode set blanks the display, so the timing follows the front
      * screen only when it is alone, or too big to scale down into it. */
     if (n && xsd->vcsd_FBObj
-        && ((n == 1) || !vc4_hvs5_plane_fits(xsd, shown[0].pl_Data->modew,
-                                             shown[0].pl_Data->modeh)))
+        && ((n == 1) || !plane_fits(xsd, shown[0].pl_Data->modew,
+                                    shown[0].pl_Data->modeh)))
     {
         IPTR mode = vHidd_ModeID_Invalid, fbmode = vHidd_ModeID_Invalid;
 
@@ -286,7 +325,7 @@ ULONG vcgfx_show_viewports(struct VideoCoreGfx_staticdata *xsd,
         xsd->vcsd_Plane[i] = shown[n - 1 - i];
     xsd->vcsd_NumPlanes = n;
     backdrop_clear(xsd);
-    vc4_hvs5_planes_commit(xsd);
+    planes_commit(xsd);
     VC4_MBOX_UNLOCK(xsd);
 
     return TRUE;
@@ -309,7 +348,7 @@ void vcgfx_plane_moved(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm)
         {
             pl->pl_X = x;
             pl->pl_Y = y;
-            vc4_hvs5_planes_commit(xsd);
+            planes_commit(xsd);
         }
     }
     VC4_MBOX_UNLOCK(xsd);
@@ -333,6 +372,12 @@ void vcgfx_plane_forget(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm)
         xsd->vcsd_HVS.hvs_OvlOwner  = NULL;
         gone = TRUE;
     }
+    if (xsd->vcsd_HVS6.h6_OvlOwner == bm)
+    {
+        xsd->vcsd_HVS6.h6_Overlay  = FALSE;
+        xsd->vcsd_HVS6.h6_OvlOwner = NULL;
+        gone = TRUE;
+    }
     if ((pl = plane_find(xsd, bm)))
     {
         ULONG i = pl - xsd->vcsd_Plane;
@@ -343,7 +388,7 @@ void vcgfx_plane_forget(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm)
         gone = TRUE;
     }
     if (gone)
-        vc4_hvs5_planes_commit(xsd);
+        planes_commit(xsd);
     VC4_MBOX_UNLOCK(xsd);
 
     vc4_hvs_latch_wait(xsd);
@@ -396,7 +441,7 @@ BOOL vcgfx_plane_flip(OOP_Class *cl, OOP_Object *bm)
 
     shown = (plane_find(xsd, bm) != NULL);
     if (shown)
-        vc4_hvs5_planes_commit(xsd);
+        planes_commit(xsd);
     VC4_MBOX_UNLOCK(xsd);
 
     if (shown)

@@ -393,8 +393,7 @@ VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
             *msg->storage = (XSD(cl)->vcsd_HVS.hvs_OvlActive
                              || XSD(cl)->vcsd_HVS6.h6_Overlay) ? 1 : 0;
 #else
-            *msg->storage = (XSD(cl)->vcsd_HVS.hvs_OvlActive
-                             && XSD(cl)->vcsd_HVS.hvs_OvlOwner == o) ? 1 : 0;
+            *msg->storage = vcgfx_plane_overlay_shown(XSD(cl), o) ? 1 : 0;
 #endif
             break;
         case aoHidd_VideoCoreGfxBitMap_LatchWait:

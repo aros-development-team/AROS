@@ -7,6 +7,7 @@
 */
 
 #include <exec/types.h>
+#include <oop/oop.h>
 
 /* Only +0x0000-0x07ff and +0x4000-0x8dff read back without an abort */
 #define HVS6_BASE           (ARM_PERIIOBASE + 0x580000)
@@ -107,6 +108,20 @@ static inline void hvs6_wr(ULONG offset, ULONG value)
 /* Keeps the free-slot search inside the readable range */
 #define HVS6_FREE_LIMIT     0x1300
 
+/* Screens as planes: backdrop, four screens, overlay, cursor, END */
+#define HVS6_PL_SLOTS       8
+#define HVS6_PL_BACK        0
+#define HVS6_PL_SCREEN      1
+#define HVS6_PL_OVL         5
+#define HVS6_PL_CUR         6
+#define HVS6_PL_END         7
+#define HVS6_PL_LISTS       3
+#define HVS6_PL_HANDLE      26          /* screens take 26..29 */
+
+/* UPM below this is left to the firmware's own planes, which it
+ * allocates upwards from 0 */
+#define HVS6_UPM_FW_RESERVE 0x10000
+
 struct VideoCoreGfx_staticdata;
 
 void vc4_hvs6_report(struct VideoCoreGfx_staticdata *xsd, ULONG fb_phys,
@@ -121,9 +136,15 @@ BOOL vc4_hvs6_flip_page(struct VideoCoreGfx_staticdata *xsd, ULONG page_phys);
 void vc4_hvs6_latch_wait(struct VideoCoreGfx_staticdata *xsd);
 void vc4_hvs6_irq_init(struct VideoCoreGfx_staticdata *xsd);
 BOOL vc4_hvs6_overlay(struct VideoCoreGfx_staticdata *xsd,
-                      struct vc4gfx_overlay *ovl);
+                      const struct vc4gfx_overlay *ovl, OOP_Object *owner);
 BOOL vc4_hvs6_init_cursor(struct VideoCoreGfx_staticdata *xsd);
 void vc4_hvs6_cursor(struct VideoCoreGfx_staticdata *xsd);
+
+/* Screens as planes (vcsd_Plane[]), unscaled; the caller holds the
+ * mailbox lock for commit. */
+BOOL vc4_hvs6_planes_ok(void);
+void vc4_hvs6_planes_commit(struct VideoCoreGfx_staticdata *xsd);
+BOOL vc4_hvs6_plane_fits(struct VideoCoreGfx_staticdata *xsd, ULONG w, ULONG h);
 
 /* vcgfx_hvs6_mode.c */
 void vc4_hvs6_mode_capture(struct VideoCoreGfx_staticdata *xsd);
