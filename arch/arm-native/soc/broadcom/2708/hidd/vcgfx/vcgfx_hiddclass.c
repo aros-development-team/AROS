@@ -397,7 +397,8 @@ ULONG MNAME_DISPLAY(ShowViewPorts)(OOP_Class *cl, OOP_Object *o, struct pHidd_Di
 /* Screens that are planes compose; reporting it is also what keeps
  * graphics.library from setting up the software compositor. Above only,
  * as that compositor defaults to: a screen drags down to reveal the ones
- * behind, and its title bar can never leave the display. */
+ * behind, and its title bar can never leave the display. Where they also
+ * scale, Intuition asks DisplayToBMCoords for their own pixels. */
 ULONG MNAME_DISPLAY(ModeProperties)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_ModeProperties *msg)
 {
     struct HIDD_ModeProperties props = { 0, 0, 0 };
@@ -409,7 +410,12 @@ ULONG MNAME_DISPLAY(ModeProperties)(OOP_Class *cl, OOP_Object *o, struct pHidd_D
     OOP_DoSuperMethod(cl, o, (OOP_Msg)&supmsg);
 
     if (vcgfx_planes_supported(XSD(cl)))
+    {
         props.CompositionFlags = COMPF_ABOVE;
+        if ((XSD(cl)->vcsd_HVSGen == VCGFX_HVS_HVS5)
+            || ((XSD(cl)->vcsd_HVSGen == VCGFX_HVS_HVS6) && vc4_hvs6_scales(XSD(cl))))
+            props.CompositionFlags |= COMPF_SCALE;
+    }
 
     if (len > sizeof(props))
         len = sizeof(props);
