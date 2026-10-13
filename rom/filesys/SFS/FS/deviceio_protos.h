@@ -5,7 +5,7 @@
 #include <exec/tasks.h>
 #include <dos/filehandler.h>
 
-void update(void);
+LONG update(void);
 void motoroff(void);
 
 UBYTE isdiskpresent(void);
