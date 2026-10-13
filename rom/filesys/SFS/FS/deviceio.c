@@ -399,6 +399,20 @@ static struct fsIORequest *createiorequest(void)
 }
 #endif
 
+static void setscsi10(struct SCSI10Cmd *cmd, UBYTE opcode, ULONG sector, ULONG sectors)
+{
+    cmd->Opcode=opcode;
+    cmd->Lun=0;
+    cmd->LBA[0]=sector>>24;
+    cmd->LBA[1]=sector>>16;
+    cmd->LBA[2]=sector>>8;
+    cmd->LBA[3]=sector;
+    cmd->Reserved=0;
+    cmd->Length[0]=sectors>>8;
+    cmd->Length[1]=sectors;
+    cmd->Control=0;
+}
+
 LONG initdeviceio(UBYTE *devicename, IPTR unit, ULONG flags, struct DosEnvec *de)
 {
     LONG errorcode=ERROR_NO_FREE_STORE;
@@ -521,19 +535,11 @@ LONG initdeviceio(UBYTE *devicename, IPTR unit, ULONG flags, struct DosEnvec *de
                                         globals->scsicmd.scsi_SenseLength=0;
                                         globals->scsicmd.scsi_SenseActual=0;
                     
-                                        globals->scsi10cmd.Opcode=SCSICMD_READ10;
-                                        globals->scsi10cmd.Lun=0;
-                                        globals->scsi10cmd.LBA=globals->sector_low;
-                                        globals->scsi10cmd.Reserved=0;
-                                        globals->scsi10cmd.Control=0;
-    
-                                        {
-                                            UWORD *ptr=(UWORD *)&globals->scsi10cmd.Length[0];               
-                                            //  scsi10cmd.Length=blocks*sectors_block;       /* Odd aligned... */
-                                            *ptr=1;
-                                        }
-    
-                                        if((td64errorcode=DoIO((struct IORequest *)globals->ioreq))==0) {
+                                        setscsi10(&globals->scsi10cmd, SCSICMD_READ10, globals->sector_low, 1);
+                                        globals->scsicmd.scsi_Actual=0;
+
+                                        if((td64errorcode=DoIO((struct IORequest *)globals->ioreq))==0 &&
+                                           globals->scsicmd.scsi_Actual==globals->bytes_sector) {
     //                                      req("SCSI direct command returned no error.", "Ok");
     
                                             globals->does64bit=TRUE;
@@ -655,18 +661,9 @@ void setiorequest(struct fsIORequest *fsi, UWORD action, UBYTE *buffer, ULONG bl
         fsi->scsicmd.scsi_SenseLength = 0;
         fsi->scsicmd.scsi_SenseActual = 0;
 
-        fsi->scsi10cmd.Opcode   = action==DIO_WRITE ? globals->cmdwrite : globals->cmdread;       // SCSICMD_READ10 or SCSICMD_WRITE10;
-        fsi->scsi10cmd.Lun      = 0;
-        fsi->scsi10cmd.LBA      = globals->sector_low+blockoffset*globals->sectors_block;
-        fsi->scsi10cmd.Reserved = 0;
-        fsi->scsi10cmd.Control  = 0;
-
-        {
-            UWORD *ptr=(UWORD *)&fsi->scsi10cmd.Length[0];
-
-            //  scsi10cmd.Length=blocks*sectors_block;       /* Odd aligned... */
-            *ptr=blocks*globals->sectors_block;
-        }
+        setscsi10(&fsi->scsi10cmd, action==DIO_WRITE ? globals->cmdwrite : globals->cmdread,
+                  globals->sector_low+blockoffset*globals->sectors_block,
+                  blocks*globals->sectors_block);
     }
     else
     {

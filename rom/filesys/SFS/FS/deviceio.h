@@ -3,10 +3,11 @@
 
 #include <devices/scsidisk.h>
 
+/* READ/WRITE(10) wire layout; byte fields avoid padding and host endianness. */
 struct SCSI10Cmd {
   UBYTE Opcode;
   UBYTE Lun;
-  ULONG LBA;
+  UBYTE LBA[4];
   UBYTE Reserved;
   UBYTE Length[2];
   UBYTE Control;
