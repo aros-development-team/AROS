@@ -492,8 +492,34 @@ AROS_LH1(LONG, abortio,
 
 /****************************************************************************************/
 
-AROS_LH0(STRPTR, killrad0,
+/*****************************************************************************
+
+    NAME */
+        AROS_LH0(STRPTR, killrad0,
+
+/*  LOCATION */
            struct ramdrivebase *, ramdrivebase, 7, Ramdrive)
+/*  FUNCTION
+        RAM-drive removal entry point. The implementation is currently a
+        stub.
+
+    INPUTS
+        None.
+
+    RESULT
+        Always NULL. No drive name is returned.
+
+    NOTES
+        No RAM-drive state or storage is changed. NULL does not indicate
+        successful removal.
+
+    BUGS
+        RAM-drive removal is not implemented.
+
+    SEE ALSO
+        killrad()
+
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
@@ -506,9 +532,37 @@ AROS_LH0(STRPTR, killrad0,
 
 /****************************************************************************************/
 
-AROS_LH1(STRPTR, killrad,
- AROS_LHA(ULONG, unit, D0),
+/*****************************************************************************
+
+    NAME */
+        AROS_LH1(STRPTR, killrad,
+
+/*  SYNOPSIS */
+        AROS_LHA(ULONG, unit, D0),
+
+/*  LOCATION */
            struct ramdrivebase *, ramdrivebase, 8, Ramdrive)
+/*  FUNCTION
+        RAM-drive removal entry point. The implementation is currently a
+        stub.
+
+    INPUTS
+        unit - Unit number; currently ignored.
+
+    RESULT
+        Always NULL. No drive name is returned.
+
+    NOTES
+        No RAM-drive state or storage is changed. NULL does not indicate
+        successful removal.
+
+    BUGS
+        RAM-drive removal is not implemented.
+
+    SEE ALSO
+        killrad0()
+
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 

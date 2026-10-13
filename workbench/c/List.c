@@ -157,7 +157,7 @@ static BOOL listOwner = FALSE;
 static void formatOwner(UWORD uid, UWORD gid, STRPTR buf, ULONG size)
 {
     /* cache of the last resolved names; ~0 never matches a UWORD id */
-    static ULONG lastuid = ~0UL, lastgid = ~0UL;
+    static ULONG lastuid = ~0U, lastgid = ~0U;
     static char lastuser[secUSERIDSIZE], lastgroup[secGROUPIDSIZE];
     ULONG l;
 

@@ -65,6 +65,35 @@
 #define SBTC_SIGURGMASK		3
 #define SBTC_SIGEVENTMASK  4                 /* AMITCP v4.0 Stack Addition */
 
+/*
+ * Stack reconfigure/address-change notification (AROS additions).
+ *
+ * A consumer sets SBTC_SIG_RECONFIG_MASK to a signal mask; the stack signals
+ * it when an in-place reconfigure (reload) begins and again when it ends.  The
+ * consumer tells begin from end by reading SBTC_RECONFIG_STATE (NETRC_*), and
+ * can detect that a reload happened at all via SBTC_RECONFIG_GENERATION, which
+ * is bumped after each completed reload.  SBTC_SIG_ADDRESS_CHANGE_MASK (the
+ * Roadshow-defined code 57) is signalled when interface addresses change.
+ */
+#ifndef SBTC_SIG_ADDRESS_CHANGE_MASK
+#define SBTC_SIG_ADDRESS_CHANGE_MASK 57      /* set/get: signal on address change */
+#endif
+#define SBTC_SIG_RECONFIG_MASK   70          /* set/get: signal on reconfigure begin & end */
+#define SBTC_RECONFIG_STATE      71          /* get: NETRC_* current reconfigure state */
+#define SBTC_RECONFIG_GENERATION 72          /* get: ULONG, bumped after each reload */
+#define SBTC_RECONFIG_ACK        73          /* set: consumer acks reconfigure-begin (quiesced) */
+
+#define NETRC_ONLINE        0                /* stack configured and running */
+#define NETRC_RECONFIGURING 1                /* an in-place reload is in progress */
+
+/*
+ * The out-of-band control channel that drives the reconfigure reported by the
+ * SBTC_RECONFIG_* tags above (named MsgPort + NetControlMsg) lives in its own
+ * header, <bsdsocket/netcontrol.h> - it is NOT here because socketbasetags.h is
+ * pulled in by <netdb.h> for every networking program and must not force
+ * <exec/ports.h> (struct Message) on all of them.
+ */
+
 /* error code handling */
 #define SBTC_ERRNO		6
 #define SBTC_HERRNO		7

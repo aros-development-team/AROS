@@ -35,6 +35,7 @@ struct wbApp {
     struct MinList  Windows; /* Subwindows */
 };
 
+/* Open a drawer as a WBWindow and attach it to the application's window list. */
 static void wbOpenDrawer(Class *cl, Object *obj, CONST_STRPTR path)
 {
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
@@ -55,7 +56,9 @@ static void wbOpenDrawer(Class *cl, Object *obj, CONST_STRPTR path)
     }
 }
 
-// OM_NEW
+/* Initialize WBApp instance state and create the message ports required
+ * before Workbench registration. Visible Workbench state is created later.
+ */
 static IPTR WBAppNew(Class *cl, Object *obj, struct opSet *ops)
 {
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
@@ -90,23 +93,14 @@ static IPTR WBAppNew(Class *cl, Object *obj, struct opSet *ops)
     my->AppMask = (1UL << my->AppPort->mp_SigBit);
     my->WinMask = (1UL << my->WinPort->mp_SigBit);
 
-    /* Create our root window */
-    my->Root = NewObject(WBWindow, NULL,
-                         WBWA_Path, NULL,
-                         WBWA_UserPort, my->WinPort,
-                         TAG_END);
-
-    if (my->Root == NULL) {
-        DeleteMsgPort(my->WinPort);
-        DeleteMsgPort(my->AppPort);
-        DoSuperMethod(cl, (Object *)rc, OM_DISPOSE);
-        return 0;
-    }
+    my->Root = NULL;
 
     return rc;
 }
 
-// OM_DISPOSE
+/* Handle OM_DISPOSE for WBApp-owned window state and message ports.
+ * The root window may be absent when Workbench registration never succeeded.
+ */
 static IPTR WBAppDispose(Class *cl, Object *obj, Msg msg)
 {
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
@@ -123,7 +117,8 @@ static IPTR WBAppDispose(Class *cl, Object *obj, Msg msg)
     }
 
     /* Get rid of the main window */
-    DisposeObject(my->Root);
+    if (my->Root)
+        DisposeObject(my->Root);
 
     DeleteMsgPort(my->AppPort);
     DeleteMsgPort(my->WinPort);
@@ -131,7 +126,7 @@ static IPTR WBAppDispose(Class *cl, Object *obj, Msg msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
-// OM_ADDMEMBER
+/* Append a window object to the WBApp subwindow list. */
 static IPTR WBAppAddMember(Class *cl, Object *obj, struct opMember *opm)
 {
     struct opAddTail omatmsg;
@@ -143,7 +138,7 @@ static IPTR WBAppAddMember(Class *cl, Object *obj, struct opMember *opm)
     return DoMethodA(opm->opam_Object, &omatmsg);
 }
 
-// OM_REMMEMBER
+/* Remove a window object from its current list membership. */
 static IPTR WBAppRemMember(Class *cl, Object *obj, struct opMember *opm)
 {
     STACKED ULONG omrmethodID;
@@ -152,6 +147,9 @@ static IPTR WBAppRemMember(Class *cl, Object *obj, struct opMember *opm)
 }
 
 
+/* Return the WBWindow object that owns an Intuition window, or NULL if the
+ * window is not managed by this WBApp instance.
+ */
 static Object *wbLookupWindow(Class *cl, Object *obj, struct Window *win)
 {
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
@@ -175,6 +173,7 @@ static Object *wbLookupWindow(Class *cl, Object *obj, struct Window *win)
     return NULL;
 }
 
+/* Forward a refresh event to the WBWindow object that owns the window. */
 static void wbRefreshWindow(Class *cl, Object *obj, struct Window *win)
 {
     Object *owin;
@@ -186,6 +185,7 @@ static void wbRefreshWindow(Class *cl, Object *obj, struct Window *win)
     }
 }
 
+/* Forward a resize event to the WBWindow object that owns the window. */
 static void wbNewSizeWindow(Class *cl, Object *obj, struct Window *win)
 {
     Object *owin;
@@ -197,6 +197,7 @@ static void wbNewSizeWindow(Class *cl, Object *obj, struct Window *win)
     }
 }
 
+/* Detach and dispose the managed subwindow matching an Intuition window. */
 static void wbCloseWindow(Class *cl, Object *obj, struct Window *win)
 {
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
@@ -211,6 +212,9 @@ static void wbCloseWindow(Class *cl, Object *obj, struct Window *win)
     }
 }
 
+/* Process an Intuition menu-selection chain. Window-specific commands are
+ * offered to the owning WBWindow first; TRUE is returned when Quit is chosen.
+ */
 static BOOL wbMenuPick(Class *cl, Object *obj, struct Window *win, UWORD menuNumber)
 {
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
@@ -256,6 +260,7 @@ static BOOL wbMenuPick(Class *cl, Object *obj, struct Window *win, UWORD menuNum
     return quit;
 }
 
+/* Forward an Intuition tick to the WBWindow object that owns the window. */
 static void wbIntuiTick(Class *cl, Object *obj, struct Window *win)
 {
     Object *owin;
@@ -267,6 +272,7 @@ static void wbIntuiTick(Class *cl, Object *obj, struct Window *win)
     }
 }
 
+/* Send WBWM_HIDE to every tracked subwindow. */
 static void wbHideAllWindows(Class *cl, Object *obj)
 {
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
@@ -281,6 +287,7 @@ static void wbHideAllWindows(Class *cl, Object *obj)
     }
 }
 
+/* Send WBWM_SHOW to every tracked subwindow. */
 static void wbShowAllWindows(Class *cl, Object *obj)
 {
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
@@ -295,6 +302,7 @@ static void wbShowAllWindows(Class *cl, Object *obj)
     }
 }
 
+/* Remove and dispose every tracked subwindow. */
 static void wbCloseAllWindows(Class *cl, Object *obj)
 {
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
@@ -311,16 +319,30 @@ static void wbCloseAllWindows(Class *cl, Object *obj)
     }
 }
 
-// WBAM_WORKBENCH - Register and handle all workbench events
+/* Acquire the single Workbench-handler registration, create the root window
+ * only after registration succeeds, and service Workbench and Intuition events
+ * until Quit. Returns FALSE if registration or root-window creation fails.
+ */
 static IPTR WBAppWorkbench(Class *cl, Object *obj, Msg msg)
 {
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
     struct wbApp *my = INST_DATA(cl, obj);
     BOOL done = FALSE;
 
-    CurrentDir(BNULL);
-
     if (RegisterWorkbench(my->AppPort)) {
+        /* Do not create visible Workbench state until registration succeeds. */
+        my->Root = NewObject(WBWindow, NULL,
+                             WBWA_Path, NULL,
+                             WBWA_UserPort, my->WinPort,
+                             TAG_END);
+
+        if (my->Root == NULL) {
+            UnregisterWorkbench(my->AppPort);
+            return FALSE;
+        }
+
+        CurrentDir(BNULL);
+
         while (!done) {
             ULONG mask;
 
@@ -377,11 +399,29 @@ static IPTR WBAppWorkbench(Class *cl, Object *obj, Msg msg)
         wbCloseAllWindows(cl, obj);
 
         UnregisterWorkbench(my->AppPort);
+        return TRUE;
+    }
+
+    {
+        struct EasyStruct es =
+        {
+            sizeof(struct EasyStruct),
+            0,
+            "Workbook",
+            "Another Workbench application is already active.\n"
+            "Quit it before starting Workbook.",
+            "OK"
+        };
+
+        EasyRequestArgs(NULL, &es, NULL, NULL);
     }
 
     return FALSE;
 }
 
+/* Dispatch WBApp methods to their handlers and delegate unknown methods to
+ * the superclass.
+ */
 static IPTR dispatcher(Class *cl, Object *obj, Msg msg)
 {
     IPTR rc = 0;
@@ -398,6 +438,9 @@ static IPTR dispatcher(Class *cl, Object *obj, Msg msg)
     return rc;
 }
 
+/* Create the private WBApp BOOPSI class and bind it to the Workbook state.
+ * Returns NULL if the class cannot be created.
+ */
 Class *WBApp_MakeClass(struct WorkbookBase *wb)
 {
     Class *cl;

@@ -585,7 +585,7 @@ BOOL FNAME_DEV(SetupChannel)(struct USB2OTGUnit *otg_Unit, int chan)
              * handshake) and polling pace is software-driven anyway.
              * Splits keep EPTYPE_INT — that engine works.
              */
-            if (req->iouh_Flags & UHFF_SPLITTRANS)
+            if ((req->iouh_Flags & UHFF_SPLITTRANS) || !otg_Unit->hu_IntAsBulk)
                 reg |= USB2OTG_HOSTCHAR_EPTYPE(USB2OTG_TYPE_INT);
             else
                 reg |= USB2OTG_HOSTCHAR_EPTYPE(USB2OTG_TYPE_BULK);
@@ -1069,7 +1069,7 @@ int FNAME_DEV(AdvanceChannel)(struct USB2OTGUnit *otg_Unit, int chan)
                 break;
             case UHCMD_INTXFER:
                 /* Direct INT as BULK-type — see SetupChannel. */
-                if (req->iouh_Flags & UHFF_SPLITTRANS)
+                if ((req->iouh_Flags & UHFF_SPLITTRANS) || !otg_Unit->hu_IntAsBulk)
                     reg |= USB2OTG_HOSTCHAR_EPTYPE(USB2OTG_TYPE_INT);
                 else
                     reg |= USB2OTG_HOSTCHAR_EPTYPE(USB2OTG_TYPE_BULK);

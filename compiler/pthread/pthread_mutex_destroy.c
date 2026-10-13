@@ -25,7 +25,44 @@
 #include "pthread_intern.h"
 #include "debug.h"
 
-int pthread_mutex_destroy(pthread_mutex_t *mutex)
+/****************************************************************************
+    NAME */
+        int pthread_mutex_destroy(
+
+/*  SYNOPSIS */
+        pthread_mutex_t *mutex)
+
+/*  FUNCTION
+        Clear an unused mutex after checking that its semaphore can be acquired
+        and no condition wait is recorded. No caller-owned storage is freed.
+
+    INPUTS
+        mutex - Unlocked mutex with no users or waiters. Prevent new operations
+            for the entire destruction and storage-release interval.
+
+    RESULT
+        0 on success, including an uninitialized static semaphore (left as is).
+        EINVAL if mutex is NULL. EBUSY if AttemptSemaphore() fails or the
+        condition-wait count is nonzero. Errors are returned directly.
+
+    NOTES
+        Include <pthread.h>; link with pthread. The ownership probe does not
+        wait. An initialized mutex is zeroed after the probe is released.
+        Reinitialize before reuse. EBUSY is a diagnostic, not a substitute for
+        establishing that all potential users have finished.
+
+    BUGS
+        Exec permits recursive acquisition by the owner, so the probe does not
+        reject a mutex still held by the caller. It can report success and clear
+        that live lock. Concurrent acquisition after the probe is also not
+        excluded by the implementation. Destroy only after external quiescence.
+
+    SEE ALSO
+        pthread_mutex_init(),
+        pthread_mutex_unlock(),
+        pthread_cond_wait()
+
+*****************************************************************************/
 {
     D(bug("%s(%p)\n", __FUNCTION__, mutex));
 

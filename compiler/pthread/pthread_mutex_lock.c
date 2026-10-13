@@ -23,7 +23,46 @@
 #include "pthread_intern.h"
 #include "debug.h"
 
-int pthread_mutex_lock(pthread_mutex_t *mutex)
+/****************************************************************************
+    NAME */
+        int pthread_mutex_lock(
+
+/*  SYNOPSIS */
+        pthread_mutex_t *mutex)
+
+/*  FUNCTION
+        Acquire a mutex, waiting for its current owner to release it if needed.
+        A recursive mutex increments its nesting count when acquired by its
+        owner. Initialize a static mutex lazily if its semaphore is uninitialized.
+
+    INPUTS
+        mutex - Initialized mutex, or a supported static initializer. Its
+            storage must remain valid throughout all acquisition and use.
+
+    RESULT
+        0 with the mutex acquired. EINVAL if mutex is NULL. EDEADLK if the
+        calling task already owns an ERRORCHECK mutex. Errors are returned
+        directly; errno is not the result channel.
+
+    NOTES
+        Include <pthread.h>; link with pthread. Call from task context where
+        waiting is permitted. There is no timeout or cancellation check.
+        Pair every successful acquisition with pthread_mutex_unlock().
+        Explicitly initialize before concurrent use; the lazy path is not
+        protected against simultaneous first use.
+
+    BUGS
+        NORMAL uses the recursive Exec semaphore path without rejecting an
+        owner reacquisition. It therefore permits recursion here, although
+        pthread_mutex_trylock() rejects the same case with EBUSY. Use the
+        RECURSIVE kind when nested ownership is required.
+
+    SEE ALSO
+        pthread_mutex_init(),
+        pthread_mutex_trylock(),
+        pthread_mutex_unlock()
+
+*****************************************************************************/
 {
     struct SignalSemaphore *sem;
 

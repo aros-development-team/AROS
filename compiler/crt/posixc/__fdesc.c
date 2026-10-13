@@ -236,6 +236,9 @@ int __getfdslot(int wanted_fd)
        recursive SignalSemaphore permits. */
     FD_LOCK(PosixCBase);
 
+    if (wanted_fd == __FD_FIRSTFREE)
+        wanted_fd = __getfirstfd(0);
+
     if (wanted_fd>=FD_SLOTS(PosixCBase))
     {
         void *tmp;
@@ -278,7 +281,8 @@ int __getfdslot(int wanted_fd)
         close(wanted_fd);
     }
 
-    FD_UNLOCK(PosixCBase);
+    /* Still under the lock: until the number is reserved, __getfirstfd() in
+       another Task would pick it too. */
 
     /* Standard streams (0..2) stay process-local; do not reserve their
        numbers in the system-wide fd.library table (see __setfdesc()). */
@@ -292,12 +296,14 @@ int __getfdslot(int wanted_fd)
         if (FD_GetOwner(wanted_fd) != FD_OWNER_POSIXC) {
             error = FD_Reserve(wanted_fd, FD_OWNER_POSIXC, NULL);
             if (error) {
+                FD_UNLOCK(PosixCBase);
                 __set_errno(PosixCBase, error);
                 return -1;
             }
         }
     }
 
+    FD_UNLOCK(PosixCBase);
     return wanted_fd;
 }
 

@@ -61,7 +61,7 @@
         if (hooks && hooks->fdh_write)
         {
             LONG err = 0;
-            cnt = (ssize_t)hooks->fdh_write(data, buf, count, &err);
+            cnt = (ssize_t)hooks->fdh_write(data, fd, buf, count, &err);
             if (cnt < 0)
                 errno = err;
             return cnt;

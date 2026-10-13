@@ -137,6 +137,18 @@ nd6_ifattach(struct ifnet *ifp)
 }
 
 /* ------------------------------------------------------------------
+ * nd6_ifdetach - release the per-interface ND state when an interface is
+ * removed.  nd6_ndi holds only scalar config (no pointer back to ifp), so
+ * this just clears the slot; the if_index itself is never reused.
+ * ------------------------------------------------------------------ */
+void
+nd6_ifdetach(struct ifnet *ifp)
+{
+    if(ifp->if_index < ND6_MAXIFS)
+        bzero((caddr_t)&nd6_ndi[ifp->if_index], sizeof(nd6_ndi[ifp->if_index]));
+}
+
+/* ------------------------------------------------------------------
  * nd6_ifinfo - return per-interface ND info for ifp.
  * ------------------------------------------------------------------ */
 struct nd_ifinfo *

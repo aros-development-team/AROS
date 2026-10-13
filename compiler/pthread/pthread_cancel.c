@@ -23,7 +23,55 @@
 #include "pthread_intern.h"
 #include "debug.h"
 
-int pthread_cancel(pthread_t thread)
+/****************************************************************************
+    NAME */
+        int pthread_cancel(
+
+/*  SYNOPSIS */
+        pthread_t thread)
+
+/*  FUNCTION
+        Mark a live worker as having a pending cancellation request and signal
+        it with SIGBREAKF_CTRL_C. Cancellation takes effect when the worker
+        processes the request with cancellation enabled. Acceptance does not
+        wait for the worker to finish.
+
+    INPUTS
+        thread - Identifier of a live worker created by pthread_create().
+            Coordinate its lifetime with joining, detaching and other requests.
+
+    RESULT
+        0 if the request was recorded. ESRCH if no allocated record is found,
+        the record has no parent, or cancellation is already pending.
+        An enabled asynchronous request for the calling worker exits through
+        pthread_testcancel() and does not return. Errors are returned directly.
+
+    NOTES
+        Include <pthread.h>; link with pthread. A new worker uses enabled,
+        deferred cancellation. Disabled cancellation remains pending. Use
+        pthread_join() on a joinable worker to observe completion and obtain
+        PTHREAD_CANCELED; do not free worker-owned resources on request success.
+        Cleanup handlers run when cancellation reaches pthread_exit().
+
+    BUGS
+        The default build does not enable USE_ASYNC_CANCEL. Selecting
+        PTHREAD_CANCEL_ASYNCHRONOUS does not make a signal forcibly terminate
+        another worker. Deferred cancellation requires a reached cancellation
+        check; pthread_join() does not repeat that check while blocked.
+
+        Record access is not serialized here, and finished joinable workers
+        are not rejected by a finished-state check. Passing such an identifier
+        can signal a stale task pointer. Repeated requests return ESRCH even
+        while the target still exists. Do not target the initial program task:
+        it has no worker exit jump point.
+
+    SEE ALSO
+        pthread_setcancelstate(),
+        pthread_setcanceltype(),
+        pthread_join(),
+        pthread_exit()
+
+*****************************************************************************/
 {
     ThreadInfo *inf;
 

@@ -80,7 +80,7 @@
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
 #include <netinet/in_pcb.h>
-#include <netinet/in_var.h>
+#include "in_var.h"
 #include <netinet/ip_var.h>
 #include <netinet/ip_icmp.h>
 
@@ -335,6 +335,23 @@ next:
                 goto ours;
         }
     }
+#ifdef ENABLE_MULTICAST
+    if(IN_MULTICAST(ntohl(ip->ip_dst.s_addr))) {
+        struct in_multi *inm;
+
+        /*
+         * A group is ours if a socket joined it on the interface the
+         * packet arrived on. This host does not forward multicast.
+         */
+        IN_LOOKUP_MULTI(ip->ip_dst, m->m_pkthdr.rcvif, inm);
+        if(inm == NULL) {
+            ipstat.ips_cantforward++;
+            m_freem(m);
+            goto next;
+        }
+        goto ours;
+    }
+#endif
     if(ip->ip_dst.s_addr == (u_long)INADDR_BROADCAST)
         goto ours;
     if(ip->ip_dst.s_addr == INADDR_ANY)

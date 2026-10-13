@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -75,6 +75,12 @@
   InitRegion(&cutnewshape);
 
   LockLayers(l->LayerInfo);
+
+#if LAYERS_BACKING_SURFACE
+  /* a growing layer needs a bigger surface before anything is backed up */
+  if (dw > 0 || dh > 0)
+    _EnsureSurfaceSize(l, l->Width + dw, l->Height + dh, LayersBase);
+#endif
   
   clipregion = _InternalInstallClipRegion(l, NULL, 0, 0, LayersBase);
 
@@ -399,7 +405,7 @@ kprintf("\t\t%s: SHOWING parts of the layers behind the layer to be moved!\n",
    * If the size of the layer became larger clear the
    * new area where it is visible.
    */
-  if ((dw > 0 || dh > 0) && !IS_SUPERREFRESH(l))
+  if (dw > 0 || dh > 0)   /* a superbitmap layer shows the superbitmap there */
   {
     ClearRegion(&r);
     if (dw > 0)

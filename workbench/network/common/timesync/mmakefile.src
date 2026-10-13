@@ -1,0 +1,35 @@
+#   $Id$
+#
+# timesyncd - SNTP clock synchronisation as an AROSTCP network service.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-network-common : workbench-network-common-timesync
+
+#MM workbench-network-common-timesync : \
+#MM     network-includes-copy \
+#MM     workbench-network-common-timesync-svccfg \
+#MM     workbench-network-common-timesync-envarc
+
+# The daemon installs alongside the other managed network services (dhcpd,
+# sshd, firewalld) so the stack's service manager can launch it.
+FILES := timesyncd sntp
+
+USER_CFLAGS   := $(CFLAGS_GNU99)
+USER_CPPFLAGS := -D__BSD_VISIBLE=1
+
+%build_prog mmake=workbench-network-common-timesync \
+    progname=timesyncd files="$(FILES)" \
+    targetdir=$(AROS_SYSTEM)/Network/Services
+
+# The service manager script (db/services.d/timesync) ...
+%copy_files_q mmake=workbench-network-common-timesync-svccfg \
+    files="timesync" src=services.d \
+    dst=$(AROS_SYSTEM)/Network/AROSTCP/db/services.d
+
+# ... and the default configuration, which ENV: picks up from ENVARC:.
+%copy_files_q mmake=workbench-network-common-timesync-envarc \
+    files="timesync.conf" src=envarc \
+    dst=$(AROS_ENVARC)/AROSTCP
+
+%common

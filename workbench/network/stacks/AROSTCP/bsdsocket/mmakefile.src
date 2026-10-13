@@ -121,13 +121,14 @@ KERN_C= \
 	kern/uipc_domain kern/uipc_socket kern/uipc_socket2 \
 	kern/amiga_log kern/amiga_cstat kern/amiga_rexx \
 	kern/subr_prf kern/accesscontrol kern/config_var \
-	kern/kern_sysctl
+	kern/kern_sysctl kern/amiga_netsvc kern/amiga_svcmgr
 
 KERN_H= \
 	kern/amiga_includes.h kern/amiga_time.h kern/amiga_config.h \
 	kern/amiga_netdb.h kern/amiga_gui.h kern/amiga_log.h \
 	kern/amiga_cx.h kern/amiga_dhcp.h kern/amiga_rc.h \
-        kern/amiga_rexx.h kern/amiga_subr.h kern/accesscontrol.h
+        kern/amiga_rexx.h kern/amiga_subr.h kern/accesscontrol.h \
+        kern/amiga_netsvc.h kern/amiga_svcmgr.h
 
 # Application interface sources
 # Amiga "struct Library" interface, API functions,
@@ -141,6 +142,7 @@ API_C=\
 	api/res_comp api/res_debug api/res_init \
 	api/res_mkquery api/res_query api/res_send  \
 	api/amiga_roadshow api/miami_api api/miami_functable \
+	api/netservice_api api/netservice_functable \
         api/if_indextoname api/if_nametoindex api/if_nameindex \
         api/getifaddrs api/inet_pton api/inet_ntop
 
@@ -148,7 +150,7 @@ API_H=\
 	api/amiga_raf.h api/amiga_api.h api/amiga_libcallentry.h \
 	api/allocdatabuffer.h api/dns_cache.h api/gethtbynamadr.h \
 	api/resolv.h api/sockargs.h \
-	api/apicalls.h api/miami_api.h
+	api/apicalls.h api/miami_api.h api/netservice_api.h
 
 #
 # Misc headers

@@ -1,0 +1,10 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+include $(SRCDIR)/config/aros.cfg
+#MM- test : test-genmodule
+#MM- test-quick : test-genmodule-quick
+#MM- test-genmodule : test-genmodule-handlers
+#MM- test-genmodule-quick : test-genmodule-handlers-quick
+#MM test-genmodule-handlers : includes
+#MM test-genmodule-handlers-quick : includes
+test-genmodule-handlers test-genmodule-handlers-quick:
+	$(PYTHON) $(SRCDIR)/developer/debug/test/genmodule/handler-init-test.py --genmodule $(GENMODULE) --cc "$(HOST_CC)"

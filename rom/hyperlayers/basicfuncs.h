@@ -135,6 +135,7 @@ int _CopyClipRectsToClipRects(struct Layer * l,
                               int backupmode,
                               int freelist,
                               int addtodamagelist,
+                              int fresh,
 			      struct LayersBase *LayersBase);
 void UninstallClipRegionClipRects(struct Layer_Info * LI);
 void InstallClipRegionClipRects(struct Layer_Info * LI);
@@ -180,10 +181,17 @@ void _BackFillRegion(struct Layer * l,
                      int addtodamagelist,
                      struct LayersBase * LayersBase);
 
+BOOL _AllocClipRectBitMap(struct ClipRect *cr, struct BitMap *display_bm, int aligndx, struct LayersBase *LayersBase);
+BOOL _BackClipRect(struct ClipRect *cr, struct Layer *l, int aligndx, struct LayersBase *LayersBase);
+#if LAYERS_BACKING_SURFACE
+BOOL _EnsureSurfaceSize(struct Layer *l, WORD w, WORD h, struct LayersBase *LayersBase);
+#endif
 struct ClipRect * _CreateClipRectsFromRegion(struct Region *r,
                                              struct Layer * l,
                                              int invisible,
-                                             struct Region *inverter,
+                                             struct Region * inverter,
+                                             int aligndx,
+                                             struct ClipRect * viewsof,
 					     struct LayersBase *LayersBase);
 
 struct Region *_InternalInstallClipRegion(struct Layer *l, struct Region *region,

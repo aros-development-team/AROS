@@ -1,24 +1,56 @@
 #
-#   filesystem.service: the Envoy filesystem server (EFS). A service
-#   library in the xxx.service layout; the Services Manager opens it and
-#   StartServiceA() starts the one server process, which owns the public
-#   entity "Filesystem" and serves every client mount.
+#   The Envoy filesystem server (EFS), two builds:
+#
+#   envoyfs - the server as a standalone AROSTCP network service daemon
+#       (fs_main.c + the server body).  Managed by the stack's service
+#       manager via db/services.d/envoyfs; owns the public entity
+#       "Filesystem" and answers FindService() itself when Envoy's
+#       ServicesManager is not running.
+#
+#   filesystem.service - a THIN compatibility stub in the xxx.service
+#       layout for setups where the real ServicesManager owns the
+#       "Services Manager" entity: its StartServiceA() answers with the
+#       daemon's entity name when the daemon runs.
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES := fs_init fs_service fs_server fs_config fs_wire fs_auth fs_actions
+DAEMON_FILES := fs_main fs_server fs_config fs_wire fs_auth fs_actions
+STUB_FILES   := fs_init fs_service
 
 USER_INCLUDES := -I$(SRCDIR)/workbench/network/envoy/include
-USER_LDFLAGS  := -static
+USER_LDFLAGS  :=
 #USER_CPPFLAGS := -DDEBUG=1
 
-#MM- workbench-network-envoy : workbench-network-envoy-efsservice
+#MM- workbench-network-envoy : workbench-network-envoy-efsservice \
+#MM  workbench-network-envoy-efsdaemon workbench-network-envoy-efsdaemon-svccfg
+
+# --- the daemon ---
+
+#MM workbench-network-envoy-efsdaemon : includes linklibs includes-copy-envoy \
+#MM     workbench-network-envoy-nipc-includes workbench-network-envoy-accounts-includes \
+#MM     network-includes-copy \
+#MM     kernel-security-includes
+
+%build_prog mmake=workbench-network-envoy-efsdaemon \
+    progname=envoyfs targetdir=$(AROS_SYSTEM)/Network/Services \
+    files="$(DAEMON_FILES)"
+
+# Install the daemon's default service config into the AROSTCP
+# service-manager dir (db/services.d/), alongside the stack's own scripts.
+%copy_files_q mmake=workbench-network-envoy-efsdaemon-svccfg \
+    files="envoyfs" src=services.d \
+    dst=$(AROS_SYSTEM)/Network/AROSTCP/db/services.d
+
+# --- the compatibility stub ---
+
+USER_LDFLAGS  := -static
+
 #MM workbench-network-envoy-efsservice : includes linklibs includes-copy-envoy \
 #MM     workbench-network-envoy-nipc-includes workbench-network-envoy-accounts-includes \
 #MM     kernel-security-includes
 
 %build_module mmake=workbench-network-envoy-efsservice modname=filesystem \
   modtype=library modsuffix=service moduledir=System/Network/Envoy/Services \
-  files="$(FILES)" uselibs=""
+  files="$(STUB_FILES)" uselibs=""
 
 %common

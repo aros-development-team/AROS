@@ -1293,7 +1293,8 @@ struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHub *nch, UWORD 
                                 // inherit needs split from hub
                                 psdGetAttrs(PGA_DEVICE, nch->nch_Device, DA_NeedsSplitTrans, &needssplit, TAG_END);
                                 KPRINTF(2, ("    Needs split transfers: %ld\n", needssplit));
-                                if(nch->nch_IsUSB20) /* this is a low/full speed device connected to a 2.0 hub! */
+                                /* A root hub has no transaction translator: the controller talks to its own ports at full/low speed */
+                                if(nch->nch_IsUSB20 && !nch->nch_IsRootHub) /* this is a low/full speed device connected to a 2.0 hub! */
                                 {
 				    KPRINTF(2, ("    Enforcing split transfers\n"));
                                     needssplit = TRUE;

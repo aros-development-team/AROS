@@ -70,36 +70,23 @@ void PrintCPUSpecificInfo(ULONG i, APTR ProcessorBase)
     {
         if (vendors[i].id == vendor)
         {
-            printf("\t\t%s", vendors[i].name);
+            printf("    Vendor         %s\n", vendors[i].name);
             found = TRUE;
             break;
         }
     }
 
     if (!found)
-        printf("\t\tUnknown vendor (0x%X)", (unsigned int)vendor);
+        printf("    Vendor         Unknown (0x%X)\n", (unsigned int)vendor);
 
-    printf(" hart %u archid 0x%X impid 0x%X\n", (unsigned int)hartid,
-           (unsigned int)archid, (unsigned int)impid);
+    printf("    Hart           %u\n", (unsigned int)hartid);
+    printf("    Arch ID        0x%X\n", (unsigned int)archid);
+    printf("    Impl ID        0x%X\n", (unsigned int)impid);
 
     if (isastring)
-        printf("\t\tISA: %s\n", isastring);
+        printf("    ISA            %s\n", isastring);
 
-    printf("\t\tFeatures: ");
-
-    found = FALSE;
-    for (i = 0; i < FLAGS_NUM; i++)
-    {
-        if (flags[i])
-        {
-            found = TRUE;
-            printf("%s ", features[i]);
-        }
-    }
-
-    if (!found)
-        printf("None");
-    printf("\n");
+    PrintCPUFeatures(features, flags, FLAGS_NUM);
 }
 
 #endif

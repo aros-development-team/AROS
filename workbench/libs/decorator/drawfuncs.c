@@ -38,10 +38,8 @@
 struct ShadeData
 {
     struct DecorImage     *di;
-    struct BitMap     *rpBm;
     UWORD               offy;
     UWORD               fact;
-    WORD                startx, starty;
 };
 
 struct RectList
@@ -951,7 +949,8 @@ AROS_UFH3(void, RectShadeFunc,
     UWORD               height = 1 + msg->MaxY - msg->MinY;
     WORD                src_offset_x = 0;
     WORD                src_offset_y = 0;
-    struct RastPort     *dstRp;
+    struct RastPort     tmprp;
+    struct RastPort     *dstRp = &tmprp;
     ULONG               color;
 
     HIDDT_Color         col;
@@ -968,30 +967,25 @@ AROS_UFH3(void, RectShadeFunc,
        bug("[Decoration] %s:      Offset = %d,%d\n", __func__, msg->OffsetX, msg->OffsetY);
     )
 
-    if (data->rpBm == rp->BitMap)
-    {
-        startx = msg->MinX;
-        starty = msg->MinY;
-        src_offset_x = msg->OffsetX;
-        src_offset_y = msg->OffsetY;
-    }
-    else
-    {
-        struct ClipRect * CR;
+    /*
+     * msg->MinX/MinY-MaxX/MaxY is the area to paint in rp->BitMap, and
+     * msg->OffsetX/OffsetY is where that area lies in layer coordinates.
+     * layers.library provides both for visible ClipRects, for backed up
+     * (hidden) ClipRects of smart refresh layers, and for superbitmap
+     * layers, so the hook never needs to look at the layer's ClipRect
+     * list itself.
+     */
+    startx = msg->MinX;
+    starty = msg->MinY;
+    src_offset_x = msg->OffsetX;
+    src_offset_y = msg->OffsetY;
 
-        // Hidden cliprect..
-        startx = msg->MinX;
-        starty = msg->MinY;
-
-        for (CR=rp->Layer->ClipRect;CR;CR=CR->Next)
-        {
-            if (CR->BitMap == rp->BitMap)
-            {
-                src_offset_x = startx + (CR->bounds.MinX - rp->Layer->bounds.MinX) - ALIGN_OFFSET(CR->bounds.MinX);
-                src_offset_y = starty + (CR->bounds.MinY - rp->Layer->bounds.MinY);
-            }
-        }
-    }
+    /*
+     * The hook must render into rp->BitMap: use a copy of the RastPort
+     * without a layer for the RastPort based functions.
+     */
+    tmprp = *rp;
+    tmprp.Layer = NULL;
 
     D(
        bug("[Decoration] %s: Offset = %d,%d\n", __func__, src_offset_x, src_offset_y);
@@ -1020,12 +1014,6 @@ AROS_UFH3(void, RectShadeFunc,
         bm_handle = LockBitMapTags(rp->BitMap,
                     TAG_END);
 #endif
-        dstRp = rp;
-    }
-    else
-    {
-        dstRp = CloneRastPort(rp);
-        dstRp->Layer = NULL;
     }
 
     for (py = starty; py < (starty + height); py++)
@@ -1161,8 +1149,6 @@ AROS_UFH3(void, RectShadeFunc,
             UnLockBitMapTagList(bm_handle, bm_ultags);
         }
 
-    if (dstRp != rp)
-        FreeRastPort(dstRp);
 
     AROS_USERFUNC_EXIT
 }
@@ -1203,9 +1189,6 @@ void ShadeLine(LONG pen, BOOL tc, BOOL usegradients, struct RastPort *rp, struct
         D(bug("[Decoration] %s: SHADE > %d,%d -> %d,%d\n", __func__, x0, y0, x1, y1);)
 
         shadeParams.di = di;
-        shadeParams.rpBm = rp->BitMap;
-        shadeParams.startx = x0,
-        shadeParams.starty = y0;
         shadeParams.offy = _offy;
         shadeParams.fact = fact;
 

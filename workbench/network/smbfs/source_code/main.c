@@ -80,6 +80,11 @@ CONST TEXT HandlerName[] = "smb-handler";
 #define UNIX_TIME_OFFSET 252460800
 #define MAX_FILENAME_LEN 256
 
+/* DOS rebuilds volume paths from fib_FileName, so a volume label
+ * must fit in there (counted string: size - 1 characters).
+ */
+#define FIB_NAME_SIZE sizeof(((struct FileInfoBlock *)0)->fib_FileName)
+
 /****************************************************************************/
 
 #define SMB_ROOT_DIR_NAME	"\\"
@@ -89,7 +94,8 @@ CONST TEXT HandlerName[] = "smb-handler";
 
 typedef STRPTR	KEY;
 typedef LONG *	NUMBER;
-typedef LONG	SWITCH;
+/* ReadArgs writes one pointer-sized slot for every template item. */
+typedef IPTR	SWITCH;
 
 /****************************************************************************/
 
@@ -192,7 +198,7 @@ STATIC VOID TranslateBName(UBYTE *name, UBYTE *map);
 STATIC VOID Cleanup(VOID);
 STATIC BOOL Setup(STRPTR opt_password, BOOL opt_changecase, LONG *opt_time_zone_offset, LONG *opt_dst_offset, STRPTR translation_file);
 STATIC BOOL AddVolume(STRPTR device_name, STRPTR volume_name, STRPTR service, STRPTR workgroup, STRPTR username, STRPTR opt_password, STRPTR opt_clientname, STRPTR opt_servername, int opt_cachesize, int opt_max_transmit, BOOL opt_raw_smb);
-STATIC VOID ConvertBString(LONG max_len, STRPTR cstring, APTR bstring);
+STATIC BOOL ConvertBString(LONG max_len, STRPTR cstring, APTR bstring);
 STATIC BOOL Action_Startup(struct FileSysStartupMsg *fssm, struct DosList *device_node, SIPTR *error_ptr);
 STATIC BPTR Action_Parent(struct FileLock *parent, SIPTR *error_ptr);
 STATIC LONG Action_DeleteObject(struct FileLock *parent, APTR bcpl_name, SIPTR *error_ptr);
@@ -1516,7 +1522,8 @@ MapErrnoToIoErr(int error)
 /****************************************************************************/
 
 /* Translate a BCPL style file name (i.e. length is in the first byte)
- * via a mapping table.
+ * via a mapping table. FileInfoBlock names are counted even on fast-BSTR
+ * systems, see ConvertCString().
  */
 INLINE STATIC VOID
 TranslateBName(UBYTE * name,UBYTE * map)
@@ -1524,12 +1531,8 @@ TranslateBName(UBYTE * name,UBYTE * map)
 	LONG len;
 	UBYTE c;
 
-#if !defined(N__AROS__)
 	len = (*name++);
-#else
-		len = AROS_BSTR_strlen(name);
-		name = AROS_BSTR_ADDR(name);
-#endif
+
 	while(len-- > 0)
 	{
 		c = (*name);
@@ -2080,6 +2083,15 @@ AddVolume(
 		goto out;
 	}
 
+	/* DOS reconstructs volume paths from the root FileInfoBlock name. */
+	if(actual_volume_name_len >= FIB_NAME_SIZE)
+	{
+		UnLockDosList(LDF_WRITE|LDF_VOLUMES|LDF_DEVICES);
+		ReportError("Volume name must be at most %ld characters.",
+			(long)(FIB_NAME_SIZE-1));
+		goto out;
+	}
+
 	/* Now, finally, take care of the volume name. */
 	memcpy(name,actual_volume_name,actual_volume_name_len);
 	name[actual_volume_name_len] = '\0';
@@ -2132,24 +2144,32 @@ AddVolume(
 
 /****************************************************************************/
 
-/* Convert a BCPL string into a standard NUL terminated 'C' string. */
-INLINE STATIC VOID
+/* DOS packet names are C strings on fast-BSTR systems and counted strings
+ * elsewhere. Copy only bytes that belong to the source string.
+ */
+INLINE STATIC BOOL
 ConvertBString(LONG max_len,STRPTR cstring,APTR bstring)
 {
-	STRPTR from = bstring;
-	LONG len = 
-#if !defined(AROS_FAST_BSTR)
-		from[0];
+	STRPTR source = bstring;
+	LONG len;
+#if defined(AROS_FAST_BSTR)
+	for(len = 0; len < max_len-1 && source[len] != '\0'; len++)
+		;
 
+	if(source[len] != '\0')
+		return FALSE;
+#else
+	len = (UBYTE)source[0];
+	source++;
 	if(len > max_len-1)
-		len =
+		return FALSE;
 #endif
-			max_len-1;
 
 	if(len > 0)
-		memcpy(cstring,from+1,len);
+		memcpy(cstring,source,len);
 
 	cstring[len] = '\0';
+	return TRUE;
 }
 
 /* Convert a NUL terminated 'C' string into a BCPL string. */
@@ -2161,13 +2181,9 @@ ConvertCString(APTR bstring,LONG max_len,STRPTR cstring,LONG len)
 	if(len > max_len-1)
 		len = max_len-1;
 
-#if !defined(AROS_FAST_BSTR)
+	/* FileInfoBlock names are counted even on fast-BSTR systems. */
 	(*to++) = len;
-#endif
 	memcpy(to,cstring,len);
-#if defined(AROS_FAST_BSTR)
-	to[len] = '\0';
-#endif
 }
 
 /****************************************************************************/
@@ -2683,7 +2699,11 @@ Action_DeleteObject(
 	 * BCPL format and needs to be converted into
 	 * 'C' format.
 	 */
-	ConvertBString(sizeof(name),name,bcpl_name);
+	if(!ConvertBString(sizeof(name),name,bcpl_name))
+	{
+		error = ERROR_INVALID_COMPONENT_NAME;
+		goto out;
+	}
 
 	/* Translate the Amiga file name into UTF-8 encoded form? */
 	if (TranslateUTF8)
@@ -2886,7 +2906,11 @@ Action_CreateDir(
 		parent_name = NULL;
 	}
 
-	ConvertBString(sizeof(name),name,bcpl_name);
+	if(!ConvertBString(sizeof(name),name,bcpl_name))
+	{
+		error = ERROR_INVALID_COMPONENT_NAME;
+		goto out;
+	}
 
 	if (TranslateUTF8)
 	{
@@ -3043,7 +3067,11 @@ Action_LocateObject(
 		parent_name = NULL;
 	}
 
-	ConvertBString(sizeof(name),name,bcpl_name);
+	if(!ConvertBString(sizeof(name),name,bcpl_name))
+	{
+		error = ERROR_INVALID_COMPONENT_NAME;
+		goto out;
+	}
 
 	if (TranslateUTF8)
 	{
@@ -3348,7 +3376,11 @@ Action_SetProtect(
 		parent_name = NULL;
 	}
 
-	ConvertBString(sizeof(name),name,bcpl_name);
+	if(!ConvertBString(sizeof(name),name,bcpl_name))
+	{
+		error = ERROR_INVALID_COMPONENT_NAME;
+		goto out;
+	}
 
 	if (TranslateUTF8)
 	{
@@ -3485,7 +3517,11 @@ Action_RenameObject(
 		parent_name = NULL;
 	}
 
-	ConvertBString(sizeof(name),name,source_bcpl_name);
+	if(!ConvertBString(sizeof(name),name,source_bcpl_name))
+	{
+		error = ERROR_INVALID_COMPONENT_NAME;
+		goto out;
+	}
 
 	if (TranslateUTF8)
 	{
@@ -3531,7 +3567,11 @@ Action_RenameObject(
 		parent_name = NULL;
 	}
 
-	ConvertBString(sizeof(name),name,destination_bcpl_name);
+	if(!ConvertBString(sizeof(name),name,destination_bcpl_name))
+	{
+		error = ERROR_INVALID_COMPONENT_NAME;
+		goto out;
+	}
 
 	if (TranslateUTF8)
 	{
@@ -3714,6 +3754,30 @@ Action_Info(
 
 /****************************************************************************/
 
+/* ACTION_EXAMINE_OBJECT returns a counted name even with fast BSTRs. */
+STATIC VOID
+SetRootFileName(struct FileInfoBlock *fib)
+{
+#if !defined(__AROS__)
+	STRPTR volume_name = BADDR(VolumeNode->dol_Name);
+	LONG len = (UBYTE)volume_name[0];
+
+	volume_name++;
+#else
+	STRPTR volume_name = AROS_BSTR_ADDR(VolumeNode->dol_Name);
+	LONG len = AROS_BSTR_strlen(VolumeNode->dol_Name);
+#endif
+
+	/* Keep the full mounted label, but fit its examination result in the FIB. */
+	if(len > sizeof(fib->fib_FileName)-1)
+		len = sizeof(fib->fib_FileName)-1;
+
+	fib->fib_FileName[0] = len;
+	memcpy(fib->fib_FileName+1,volume_name,len);
+}
+
+/****************************************************************************/
+
 STATIC LONG
 Action_ExamineObject(
 	struct FileLock *		lock,
@@ -3731,19 +3795,7 @@ Action_ExamineObject(
 
 	if(lock == NULL)
 	{
-#if !defined(__AROS__)
-		STRPTR volume_name = BADDR(VolumeNode->dol_Name);
-		LONG len = volume_name[0];
-
-		memcpy(fib->fib_FileName+1,volume_name+1,len);
-		fib->fib_FileName[0] = len;
-#else
-		STRPTR volume_name = AROS_BSTR_ADDR(VolumeNode->dol_Name);
-		LONG len = AROS_BSTR_strlen(VolumeNode->dol_Name);
-
-		memcpy(fib->fib_FileName + 1, volume_name, len);
-		fib->fib_FileName[0] = len;
-#endif
+		SetRootFileName(fib);
 		SHOWMSG("ZERO root lock");
 
 		fib->fib_DirEntryType	= ST_ROOT;
@@ -3781,19 +3833,7 @@ Action_ExamineObject(
 
 		if(strcmp(ln->ln_FullName,SMB_ROOT_DIR_NAME) == SAME)
 		{
-#if !defined(__AROS__)
-			STRPTR volume_name = BADDR(VolumeNode->dol_Name);
-			LONG len = volume_name[0];
-
-			memcpy(fib->fib_FileName+1,volume_name+1,len);
-			fib->fib_FileName[0] = len;
-#else
-			STRPTR volume_name = AROS_BSTR_ADDR(VolumeNode->dol_Name);
-			LONG len = AROS_BSTR_strlen(VolumeNode->dol_Name);
-
-			memcpy(fib->fib_FileName + 1, volume_name, len);
-			fib->fib_FileName[0] = len;
-#endif
+			SetRootFileName(fib);
 			SHOWMSG("root lock");
 
 			fib->fib_DirEntryType	= ST_ROOT;
@@ -3819,6 +3859,8 @@ Action_ExamineObject(
 					break;
 				}
 			}
+
+			name_len = strlen(name);
 
 			/* Just checking: will the name fit? */
 			if(name_len >= sizeof(fib->fib_FileName))
@@ -4584,7 +4626,11 @@ Action_Find(
 		parent_name = NULL;
 	}
 
-	ConvertBString(sizeof(name),name,bcpl_name);
+	if(!ConvertBString(sizeof(name),name,bcpl_name))
+	{
+		error = ERROR_INVALID_COMPONENT_NAME;
+		goto out;
+	}
 
 	if (TranslateUTF8)
 	{
@@ -5175,7 +5221,11 @@ Action_SetDate(
 		parent_name = NULL;
 	}
 
-	ConvertBString(sizeof(name),name,bcpl_name);
+	if(!ConvertBString(sizeof(name),name,bcpl_name))
+	{
+		error = ERROR_INVALID_COMPONENT_NAME;
+		goto out;
+	}
 
 	if (TranslateUTF8)
 	{
@@ -5291,6 +5341,8 @@ Action_ExamineFH(
 			break;
 		}
 	}
+
+	name_len = strlen(name);
 
 	/* Just checking: will the name fit? */
 	if(name_len >= sizeof(fib->fib_FileName))
@@ -5587,7 +5639,7 @@ Action_RenameDisk(
 	LONG error = OK;
 	STRPTR old_name;
 	STRPTR new_name;
-	UBYTE * name;
+	UBYTE name[FIB_NAME_SIZE];
 	LONG len;
 
 	ENTER();
@@ -5604,16 +5656,31 @@ Action_RenameDisk(
 		goto out;
 	}
 
-	/* Now for the really interesting part; the new name
-	 * is to be a NUL-terminated BCPL string, and as such
-	 * must be allocated via AllocVec().
+	/* The new label arrives in the DOS packet name format; it has to
+	 * fit the root FileInfoBlock name like any other volume name.
 	 */
+	if(!ConvertBString(sizeof(name),name,bcpl_name))
+	{
+		error = ERROR_INVALID_COMPONENT_NAME;
+		goto out;
+	}
 
-	name = bcpl_name;
+	len = strlen(name);
 
-	len = name[0];
+	/* Match the DosList name representation: a C string on fast-BSTR
+	 * systems, a NUL terminated counted string elsewhere.
+	 */
+#if defined(AROS_FAST_BSTR)
+	new_name = AllocVec(len+1,MEMF_ANY|MEMF_PUBLIC);
+	if(new_name == NULL)
+	{
+		error = ERROR_NO_FREE_STORE;
+		goto out;
+	}
 
-	new_name = AllocVec(1 + len + 1,MEMF_ANY|MEMF_PUBLIC);
+	memcpy(new_name,name,len+1);
+#else
+	new_name = AllocVec(1+len+1,MEMF_ANY|MEMF_PUBLIC);
 	if(new_name == NULL)
 	{
 		error = ERROR_NO_FREE_STORE;
@@ -5621,8 +5688,8 @@ Action_RenameDisk(
 	}
 
 	new_name[0] = len;
-	memcpy(&new_name[1],&name[1],len);
-	new_name[len+1] = '\0';
+	memcpy(&new_name[1],name,len+1);
+#endif
 
 	Forbid();
 
@@ -5880,7 +5947,11 @@ Action_SetComment(
 		parent_name = NULL;
 	}
 
-	ConvertBString(sizeof(name),name,bcpl_name);
+	if(!ConvertBString(sizeof(name),name,bcpl_name))
+	{
+		error = ERROR_INVALID_COMPONENT_NAME;
+		goto out;
+	}
 
 	if (TranslateUTF8)
 	{
@@ -5924,7 +5995,11 @@ Action_SetComment(
 		goto out;
 	}
 
-	ConvertBString(sizeof(comment),comment,bcpl_comment);
+	if(!ConvertBString(sizeof(comment),comment,bcpl_comment))
+	{
+		error = ERROR_COMMENT_TOO_BIG;
+		goto out;
+	}
 
 	SHOWSTRING(comment);
 

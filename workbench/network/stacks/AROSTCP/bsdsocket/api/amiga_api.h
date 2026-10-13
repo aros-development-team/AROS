@@ -87,6 +87,7 @@ struct LibInitTable {
 
 extern struct LibInitTable Miami_initTable;
 extern struct Library *MasterMiamiBase;
+extern struct Library *MasterNetServicesBase;
 
 struct newselbuf;
 
@@ -124,6 +125,8 @@ struct SocketBase {
   ULONG			sigIOMask;
   ULONG			sigUrgMask;
   ULONG			sigEventMask;
+  ULONG			sigReconfigMask;   /* SBTC_SIG_RECONFIG_MASK: reload begin/end */
+  ULONG			sigAddrChangeMask; /* SBTC_SIG_ADDRESS_CHANGE_MASK: address change */
 /* -- these are used by tsleep()/wakeup() -- */
   const char *		p_wmesg;
   queue_chain_t 	p_sleep_link;
@@ -161,6 +164,9 @@ struct SocketBase {
   struct ProtoentNode *ProtoentNode;
   struct NetentNode *NetentNode;
   struct ServentNode *ServentNode;
+/* -- set under syscall_semaphore -- */
+  UBYTE			closing;      /* UL_Close is closing the table */
+  UBYTE			hookBase;     /* api_hookbase_open(), sleeping only */
 };
 
 /* 
@@ -177,17 +183,40 @@ struct SocketBase {
 int readErrnoValue(struct SocketBase *);
 
 extern struct SignalSemaphore syscall_semaphore;
+extern struct SignalSemaphore baselist_semaphore;
 extern struct List releasedSocketList;
+
+/* A releasedSocketList entry */
+struct SocketNode {
+    struct MinNode	sn_Node;
+    LONG			sn_Id;
+    struct socket 	*sn_Socket;
+};
 
 /*
  *  Functions to put and remove application library to/from exec library list
  */
 BOOL api_init(VOID);
+struct SocketBase *api_hookbase_open(VOID);
+VOID api_hookbase_close(struct SocketBase *);
 BOOL api_show(VOID);
 VOID api_hide(VOID);
 VOID api_setfunctions(VOID);
 VOID api_sendbreaktotasks(VOID);
 VOID api_logopeners(VOID);
+
+/*
+ * Reconfigure notification: signal every consumer that set
+ * SBTC_SIG_RECONFIG_MASK.  begin=TRUE marks the start of an in-place reload
+ * (state -> NETRC_RECONFIGURING); begin=FALSE marks the end (generation bumped,
+ * state -> NETRC_ONLINE).  State and generation are read via SocketBaseTagList.
+ */
+VOID api_sendreconfig(BOOL begin);
+VOID api_sendaddrchange(VOID);
+extern ULONG api_reconfig_state;        /* NETRC_ONLINE / NETRC_RECONFIGURING */
+extern ULONG api_reconfig_generation;   /* bumped after each completed reload  */
+extern ULONG api_reconfig_expected;     /* consumers signalled at reconfigure-begin */
+extern volatile ULONG api_reconfig_acked; /* consumers that acked (SBTC_RECONFIG_ACK) */
 VOID api_deinit(VOID);
 
 /* Function which sets Errno value */
@@ -225,15 +254,15 @@ static inline struct SocketBase *FindSocketBase(struct Task *task)
   extern struct List socketBaseList;
   struct Node *libNode;
 
-  Forbid();
+  ObtainSemaphoreShared(&baselist_semaphore);
   for (libNode = socketBaseList.lh_Head; libNode->ln_Succ;
        libNode = libNode->ln_Succ)
     if (((struct SocketBase *)libNode)->thisTask == task) {
-      Permit();
+      ReleaseSemaphore(&baselist_semaphore);
       return (struct SocketBase *)libNode;
     }
   /* here if Task wasn't in socketBaseList */
-  Permit();
+  ReleaseSemaphore(&baselist_semaphore);
   return NULL;
 }
 

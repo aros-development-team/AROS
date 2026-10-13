@@ -149,8 +149,8 @@ AROS_UFH3(BOOL, ScaleLayerCallback,
     if (NULL != cr->BitMap)
     {
       BltBitMap(cr->BitMap,
-                ALIGN_OFFSET(cr->bounds.MinX),
-                0,
+                CR_BMOFFX(cr),
+                CR_BMOFFY(cr),
                 srcbm,
                 cr->bounds.MinX - l->bounds.MinX + alignoff,
                 cr->bounds.MinY - l->bounds.MinY,
@@ -221,6 +221,8 @@ AROS_UFH3(BOOL, ScaleLayerCallback,
   newcr->Next   = NULL;
   newcr->lobs   = (struct Layer *)(IPTR)TRUE; /* hidden */
   newcr->BitMap = destbm;
+  CR_SETBMOFF(newcr, alignoff, 0);
+  newcr->Flags &= ~CR_SHAREDBITMAP;
   l->ClipRect   = newcr;
 
   slp->scaled = TRUE;

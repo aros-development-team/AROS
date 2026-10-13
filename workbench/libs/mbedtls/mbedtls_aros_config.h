@@ -55,6 +55,8 @@
 /* Public key */
 #define MBEDTLS_PK_C
 #define MBEDTLS_PK_PARSE_C
+#define MBEDTLS_PK_WRITE_C
+#define MBEDTLS_PEM_WRITE_C
 #define MBEDTLS_RSA_C
 #define MBEDTLS_BIGNUM_C
 #define MBEDTLS_ECDSA_C
@@ -62,6 +64,7 @@
 #define MBEDTLS_ECP_C
 #define MBEDTLS_ECP_DP_SECP256R1_ENABLED
 #define MBEDTLS_ECP_DP_SECP384R1_ENABLED
+#define MBEDTLS_ECP_DP_SECP521R1_ENABLED
 #define MBEDTLS_ECP_DP_CURVE25519_ENABLED
 
 /* Symmetric ciphers */
@@ -73,8 +76,16 @@
 #define MBEDTLS_CHACHAPOLY_C
 #define MBEDTLS_POLY1305_C
 
+/* Cipher modes needed by SSH (libssh: aes-cbc/aes-ctr, explicit padding) */
+#define MBEDTLS_CIPHER_MODE_CBC
+#define MBEDTLS_CIPHER_MODE_CTR
+#define MBEDTLS_CIPHER_PADDING_PKCS7
+#define MBEDTLS_DES_C
+
 /* Hashes */
 #define MBEDTLS_MD_C
+#define MBEDTLS_MD5_C
+#define MBEDTLS_SHA1_C
 #define MBEDTLS_SHA256_C
 #define MBEDTLS_SHA384_C
 #define MBEDTLS_SHA512_C
@@ -89,6 +100,9 @@
 /* AROS declares inet_pton() but does not expose it to a plain compile, and a
  * certificate parser should not need the network stack - use mbedTLS's own. */
 #define MBEDTLS_TEST_SW_INET_PTON
+
+/* RSA key generation (sshd host keys, ssh-keygen) */
+#define MBEDTLS_GENPRIME
 
 /* Misc */
 #define MBEDTLS_PKCS1_V15

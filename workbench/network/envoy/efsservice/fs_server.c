@@ -20,6 +20,7 @@
 #include <proto/nipc.h>
 #include <proto/security.h>
 #include <libraries/security.h>
+#include <envoy/errors.h>
 
 #define NIPCBase    (srv->NipcLib)
 #define UtilityBase (srv->UtilLib)
@@ -480,19 +481,61 @@ static void WatchPrefs(struct FSServer *srv)
     srv->PrefsWatched = StartNotify(&srv->PrefsNR);
 }
 
-void ServerProcess(void)
+/* ---- embedded Services Manager responder --------------------------------------
+ *
+ * Clients reach us through services.library FindService(): command 100 to the
+ * public "Services Manager" entity (name at +0/64, user at +64/32, password at
+ * +96/32; the 64-byte response carries the entity name - see
+ * re/spec/services-accounts.md Â§2).  When Envoy's real ServicesManager is not
+ * running, the daemon owns that entity itself and answers for its one service;
+ * when the real manager owns it, the thin filesystem.service stub answers
+ * StartServiceA() instead (fs_service.c).
+ */
+static void MgrHandleRequest(struct FSServer *srv, struct Transaction *t)
 {
-    struct Process *me = (struct Process *)FindTask(NULL);
-    struct FSServiceBase *FSServiceBase = (struct FSServiceBase *)me->pr_Task.tc_UserData;
+    ULONG err = 0;
+    UBYTE *req = t->trans_RequestData;
+    BOOL respok = t->trans_ResponseData && t->trans_RespDataLength >= 64;
+
+    if (respok)
+        memset(t->trans_ResponseData, 0, 64);
+    if (t->trans_Command != 100 || !req || t->trans_ReqDataActual < 128 || !respok)
+        err = ENVOYERR_BADSTARTSERVICE;
+    else
+    {
+        char name[64];
+        ULONG n = 0;
+
+        while (n < sizeof(name) - 1 && req[n])
+        {
+            name[n] = req[n];
+            n++;
+        }
+        name[n] = '\0';
+
+        if (!Stricmp(name, FS_SERVICE_NAME))
+            EfsPutCStr(t->trans_ResponseData, 64, FS_ENTITY_NAME);
+        else
+        {
+            FSLOG(srv, "manager request for unknown service '%s'\n", name);
+            err = ENVOYERR_UNKNOWNSERVICE;
+        }
+    }
+    t->trans_Error = err;
+    t->trans_RespDataActual = respok ? 64 : 0;
+    ReplyTransaction(t);
+}
+
+int ServerMain(ULONG stopmask, ULONG beginmask, ULONG endmask)
+{
     struct FSServer *srv;
     struct Mount *m;
     BOOL ok = FALSE, reload = FALSE;
-    ULONG notifysig = 0, timersig = 0;
+    ULONG notifysig = 0, timersig = 0, mgrsig = 0;
     char var[8];
 
     if ((srv = AllocVec(sizeof(struct FSServer), MEMF_CLEAR | MEMF_PUBLIC)))
     {
-        srv->Base = FSServiceBase;
         NEWLIST((struct List *)&srv->Exports);
         NEWLIST((struct List *)&srv->Mounts);
         NEWLIST((struct List *)&srv->Events);
@@ -521,15 +564,28 @@ void ServerProcess(void)
             srv->TimerOpen = TRUE;
             ok = TRUE;
         }
+        if (ok)
+        {
+            /* Self-sufficient discovery: own "Services Manager" unless the
+             * real manager already does (a second public entity of the same
+             * name cannot be created). */
+            srv->MgrEnt = CreateEntity(ENT_Name, (IPTR)FS_MANAGER_ENTITY,
+                                       ENT_Public, TRUE,
+                                       ENT_AllocSignal, (IPTR)&srv->MgrSig,
+                                       TAG_DONE);
+            if (srv->MgrEnt)
+                FSLOG(srv, "answering \"" FS_MANAGER_ENTITY "\" requests ourselves\n");
+            else
+                FSLOG(srv, "\"" FS_MANAGER_ENTITY "\" already served (ServicesManager runs)\n");
+        }
     }
-
-    FSServiceBase->fb_StartResult = ok;
-    Signal(FSServiceBase->fb_Starter, SIGF_SINGLE);
 
     if (ok)
     {
         notifysig = 1UL << srv->NotifyPort->mp_SigBit;
         timersig = 1UL << srv->TimerPort->mp_SigBit;
+        if (srv->MgrEnt)
+            mgrsig = 1UL << srv->MgrSig;
         WatchPrefs(srv);
         ConfigLoad(srv);
         StartTimer(srv);
@@ -539,25 +595,51 @@ void ServerProcess(void)
         {
             struct Transaction *t;
             struct NotifyMessage *nm;
-            ULONG got = Wait((1UL << srv->EntSig) | notifysig | timersig | SIGBREAKF_CTRL_C);
+            ULONG got = Wait((1UL << srv->EntSig) | mgrsig | notifysig | timersig
+                             | SIGBREAKF_CTRL_C | stopmask | beginmask | endmask);
 
-            if (got & SIGBREAKF_CTRL_C)
+            if (got & (SIGBREAKF_CTRL_C | stopmask))
                 break;
-            while ((t = GetTransaction(srv->Ent)))
+            if (got & beginmask)
             {
-                if (t->trans_Type == TYPE_SERVICING)
+                /* reconfigure fence: no nipc traffic until the end signal */
+                srv->Paused = TRUE;
+                FSLOG(srv, "stack reconfigure: paused\n");
+            }
+            if (got & endmask)
+            {
+                srv->Paused = FALSE;
+                reload = TRUE;              /* re-check exports, ping mounts */
+                FSLOG(srv, "stack reconfigure done: resuming\n");
+            }
+            if (!srv->Paused)
+            {
+                while ((t = GetTransaction(srv->Ent)))
                 {
-                    Dispatch(srv, t);
-                    ReplyTransaction(t);
+                    if (t->trans_Type == TYPE_SERVICING)
+                    {
+                        Dispatch(srv, t);
+                        ReplyTransaction(t);
+                    }
+                    else
+                        HandleEventResponse(srv, t);
                 }
-                else
-                    HandleEventResponse(srv, t);
+                if (srv->MgrEnt)
+                {
+                    while ((t = GetTransaction(srv->MgrEnt)))
+                    {
+                        if (t->trans_Type == TYPE_SERVICING)
+                            MgrHandleRequest(srv, t);
+                        else
+                            FreeTransaction(t);
+                    }
+                }
             }
             while ((nm = (struct NotifyMessage *)GetMsg(srv->NotifyPort)))
             {
                 if (nm->nm_NReq == &srv->PrefsNR)
                     reload = TRUE;
-                else if (nm->nm_NReq && nm->nm_NReq->nr_UserData)
+                else if (!srv->Paused && nm->nm_NReq && nm->nm_NReq->nr_UserData)
                 {
                     struct NotifyRec *n = (struct NotifyRec *)nm->nm_NReq->nr_UserData;
                     ServerSendEvent(srv, n->Mount, EFS_ACT_NOTIFYEVENT, n->ClientKey, FALSE);
@@ -569,14 +651,17 @@ void ServerProcess(void)
                 while (GetMsg(srv->TimerPort))
                     ;
                 srv->TimerPending = FALSE;
-                Tick(srv);
-                if (reload)
+                if (!srv->Paused)
                 {
-                    reload = FALSE;
-                    FSLOG(srv, "EFS.prefs changed: reloading\n");
-                    ConfigLoad(srv);
-                    ForeachNode(&srv->Mounts, m)
-                        m->Idle = 1800;
+                    Tick(srv);
+                    if (reload)
+                    {
+                        reload = FALSE;
+                        FSLOG(srv, "EFS.prefs changed: reloading\n");
+                        ConfigLoad(srv);
+                        ForeachNode(&srv->Mounts, m)
+                            m->Idle = 1800;
+                    }
                 }
                 StartTimer(srv);
             }
@@ -611,6 +696,8 @@ void ServerProcess(void)
             DeleteMsgPort(srv->TimerPort);
         if (srv->NotifyPort)
             DeleteMsgPort(srv->NotifyPort);
+        if (srv->MgrEnt)
+            DeleteEntity(srv->MgrEnt);
         if (srv->Ent)
             DeleteEntity(srv->Ent);
         if (srv->SecLib)
@@ -623,7 +710,5 @@ void ServerProcess(void)
             CloseLibrary(srv->UtilLib);
         FreeVec(srv);
     }
-    Forbid();
-    FSServiceBase->fb_Server = NULL;
-    FSServiceBase->fb_Lib.lib_OpenCnt--;
+    return ok ? 0 : RETURN_FAIL;
 }

@@ -206,9 +206,69 @@ static BOOL dma_channel_reset(struct DMABase *DMABase, int channel)
     return dma_channel_quiesce(DMABase, channel);
 }
 
-AROS_LH1(int, DMAAllocChannel,
-                AROS_LHA(unsigned int, flags, D0),
-                struct DMABase *, DMABase, 1, Dma)
+/*****************************************************************************
+
+    NAME */
+        AROS_LH1(int, DMAAllocChannel,
+
+/*  SYNOPSIS */
+                        AROS_LHA(unsigned int, flags, D0),
+
+/*  LOCATION */
+                        struct DMABase *, DMABase, 1, Dma)
+/*  FUNCTION
+        Reserve a DMA channel and reset its engine before returning it.
+
+    INPUTS
+        flags - Combination of flags from <hardware/bcm2708_dma.h>:
+                DMACHF_TDMODE requests a full legacy engine.
+                DMACHF_DMA4 requests a DMA4 engine and takes precedence
+                over DMACHF_TDMODE. There is no legacy-engine fallback.
+                DMACHF_IRQ requests the resource's completion interrupt
+                handler for DMAWaitChannel(). Leave it clear when installing
+                a driver-owned handler. Unknown flag bits are ignored.
+
+    RESULT
+        An allocated channel number from 0 through 14, or -1 if the
+        selected pool has no free channel that can be reset. A nonnegative
+        result does not guarantee that the optional IRQ handler was installed.
+
+    NOTES
+        Call from task context where waiting is permitted. Allocation and
+        reset run under the resource semaphore. Reset polling has a finite
+        iteration count, not a specified wall-clock deadline.
+
+        Without DMACHF_DMA4 or DMACHF_TDMODE, free lite channels are preferred.
+        The full pool is selected only when no lite channel is free. If
+        all free lite channels fail reset, this call does not then try the
+        full pool. Within the selected pool, the lowest usable number wins.
+
+        The configured pools are:
+            BCM283x: full 2, 4, 5; lite 8 through 12; no DMA4.
+            BCM2711: full 2, 4; lite 8 through 10; DMA4 11 through 14.
+            BCM2712: full 0 through 5; no lite; DMA4 6 through 10.
+        These are fixed resource policy, not a live firmware reservation query.
+
+        The caller owns the channel until DMAFreeChannel(). Allocation does
+        not create control blocks, map buffers, maintain caches or start a
+        transfer. Use the programming model and bus addresses of the returned
+        engine. Keep transfer storage valid until the engine is stopped.
+
+        The resource IRQ handler clears ACTIVE and priority fields when
+        acknowledging an interrupt. It is intended for DMAWaitChannel(),
+        not a running chain with per-control-block interrupts. Do not share
+        its interrupt line with a competing acknowledgement handler.
+
+    BUGS
+        IRQ-handler installation failure is not returned to the caller;
+        DMAWaitChannel() then uses polling. Failed reset attempts can leave
+        channels enabled. The allocator does not quarantine those channels.
+        The BCM2712 legacy pool is explicitly unverified in this implementation.
+
+    SEE ALSO
+        DMAFreeChannel(), DMAStopChannel(), DMAWaitChannel()
+
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
@@ -288,9 +348,53 @@ AROS_LH1(int, DMAAllocChannel,
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH1(void, DMAFreeChannel,
-                AROS_LHA(int, channel, D0),
-                struct DMABase *, DMABase, 2, Dma)
+/*****************************************************************************
+
+    NAME */
+        AROS_LH1(void, DMAFreeChannel,
+
+/*  SYNOPSIS */
+                        AROS_LHA(int, channel, D0),
+
+/*  LOCATION */
+                        struct DMABase *, DMABase, 2, Dma)
+/*  FUNCTION
+        Release a channel reservation and remove its resource-owned IRQ handler.
+
+    INPUTS
+        channel - Channel returned by DMAAllocChannel() and still owned
+                  by the caller. Values outside 0 through 14 are ignored.
+
+    RESULT
+        None. An unallocated channel has no effect. Hardware-stop failure
+        is not returned to the caller.
+
+    NOTES
+        Call from task context where waiting is permitted. Under the
+        resource semaphore, this call attempts to stop/reset the engine,
+        clears its global enable bit where that register exists, releases
+        the reservation and removes the optional resource IRQ handler.
+        It does not free caller-owned buffers or control blocks.
+
+        Finish or cancel any DMAWaitChannel() call and coordinate all users
+        before release. No waiter is explicitly notified. Ownership is not
+        tracked by task; a valid channel number is not proof of ownership.
+
+        Use DMAStopChannel() and check its result before releasing transfer
+        storage. If stopping fails, retain the reservation and storage until
+        the hardware is known to be quiescent; this function cannot certify
+        that condition.
+
+    BUGS
+        The result of the internal stop/reset operation is ignored. The
+        reservation and handler are released even if the engine did not
+        stop. On controllers without a global enable register, this path
+        does not provide a second hardware-disable operation.
+
+    SEE ALSO
+        DMAAllocChannel(), DMAStopChannel(), DMAWaitChannel()
+
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
@@ -498,9 +602,50 @@ AROS_LH2(int, DMAWaitChannel,
 }
 
 /* Stop the channel without freeing it. 0, or -1 if it would not stop. */
-AROS_LH1(int, DMAStopChannel,
-                AROS_LHA(int, channel, D0),
-                struct DMABase *, DMABase, 4, Dma)
+/*****************************************************************************
+
+    NAME */
+        AROS_LH1(int, DMAStopChannel,
+
+/*  SYNOPSIS */
+                        AROS_LHA(int, channel, D0),
+
+/*  LOCATION */
+                        struct DMABase *, DMABase, 4, Dma)
+/*  FUNCTION
+        Stop and reset an allocated DMA engine without releasing its reservation.
+
+    INPUTS
+        channel - Channel returned by DMAAllocChannel(), still allocated
+                  and exclusively controlled by the caller.
+
+    RESULT
+        0 if the engine passes the implementation's idle/reset checks;
+        -1 for an out-of-range or unallocated channel, or if those checks
+        fail. A -1 result does not establish that bus activity has ceased.
+
+    NOTES
+        The legacy path requests RESET, polls for its completion and
+        clears the interrupt/end flags. The DMA4 path halts an active engine,
+        checks for outstanding transactions, resets through DEBUG and checks
+        for remaining activity. Reading DMA4 DEBUG clears its error latches.
+        The operation discards transfer state; 0 does not mean that the
+        requested transfer completed successfully.
+
+        The reservation and resource IRQ handler remain installed. No buffer
+        or control block is freed, and no cache maintenance is performed.
+        The reset loop polls at most 10000 iterations; this is not a duration
+        in microseconds and does not bound a stalled register access.
+
+        This function does not acquire the allocation semaphore or notify
+        a waiting task. Serialize it with channel programming, waiting,
+        release and driver interrupt handling. Do not resume or free transfer
+        storage on a -1 result without establishing hardware quiescence.
+
+    SEE ALSO
+        DMAAllocChannel(), DMAFreeChannel(), DMAWaitChannel()
+
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 

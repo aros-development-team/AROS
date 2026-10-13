@@ -52,7 +52,9 @@
 *
 *   INPUTS
 *        id       - a key value given by the socket donator.
-*        domain   - see documentation of socket().
+*        domain   - see documentation of socket(). With a unique id
+*                   (above 65535) it may be 0, and then type and
+*                   protocol are ignored: the id alone names the socket.
 *        type     - see documentation of socket().
 *        protocol - see documentation of socket().
 *

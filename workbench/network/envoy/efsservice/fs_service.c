@@ -1,17 +1,25 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
-    Desc: filesystem.service - the xxx.service function table (devkit
-          svc_lib.fd). StartServiceA() starts the one server process on
-          first use and always answers with the entity name "Filesystem"
-          (re/spec/efs-protocol.md §1.3, §5.1); credentials travel in the
-          mount transaction, not here.
+    Desc: filesystem.service - THIN compatibility stub (devkit svc_lib.fd
+          layout).  The EFS server itself now runs as the standalone envoyfs
+          daemon, managed by the AROSTCP service framework
+          (db/services.d/envoyfs); it owns the public entity "Filesystem"
+          and, when Envoy's ServicesManager is not running, answers
+          FindService() requests itself.
+
+          This stub keeps the original discovery path working when the REAL
+          ServicesManager owns the "Services Manager" entity: its
+          StartServiceA() no longer starts a server process - it answers
+          with the entity name "Filesystem" when the daemon is running and
+          fails otherwise (start the daemon via the service framework).
 */
 
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/utility.h>
-#include <dos/dostags.h>
+#include <proto/nipc.h>
+#include <envoy/nipc.h>
 #include <envoy/services.h>
 #include <envoy/errors.h>
 #include <string.h>
@@ -48,65 +56,60 @@
 
 /*  FUNCTION
         Called by the Services Manager for every FindService() client.
-        Starts the EFS server process if it is not running and writes
-        "Filesystem" into the SSVC_EntityName buffer. SSVC_UserName,
-        SSVC_Password and SSVC_HostName are ignored: the mount transaction
-        carries the credentials.
+        Writes "Filesystem" into the SSVC_EntityName buffer when the envoyfs
+        daemon's public entity exists.  SSVC_UserName, SSVC_Password and
+        SSVC_HostName are ignored: the mount transaction carries the
+        credentials.
 
     RESULT
-        0, or ENVOYERR_NORESOURCES (the original answers 103) when the
-        server could not be started.
+        0, or ENVOYERR_UNKNOWNSERVICE when the daemon is not running
+        (enable it in the AROSTCP service manager: db/services.d/envoyfs).
 
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    STRPTR entname = (STRPTR)GetTagData(SSVC_EntityName, 0, tagList);
-    ULONG err = 0;
+    struct Library *UtilityBase = OpenLibrary("utility.library", 36);
+    struct Library *NIPCBase = OpenLibrary(NIPCNAME, 50);
+    STRPTR entname = NULL;
+    ULONG err = ENVOYERR_UNKNOWNSERVICE;
 
-    ObtainSemaphore(&FSServiceBase->fb_Sem);
-    if (!FSServiceBase->fb_Server)
+    if (UtilityBase != NULL)
+        entname = (STRPTR)GetTagData(SSVC_EntityName, 0, tagList);
+
+    if (NIPCBase != NULL)
     {
-        struct TagItem ptags[] =
-        {
-            { NP_Entry,     (IPTR)ServerProcess      },
-            { NP_Name,      (IPTR)"EFS_Server"       },
-            { NP_Priority,  0                        },
-            { NP_StackSize, 131072                   },
-            { NP_UserData,  (IPTR)FSServiceBase      },
-            { TAG_DONE,     0                        }
-        };
+        struct Entity *me;
 
-        FSServiceBase->fb_Starter = FindTask(NULL);
-        FSServiceBase->fb_StartResult = 0;
-        SetSignal(0, SIGF_SINGLE);
-        Forbid();
-        FSServiceBase->fb_Lib.lib_OpenCnt++;         /* held by the server process */
-        FSServiceBase->fb_Server = CreateNewProc(ptags);
-        Permit();
-        if (FSServiceBase->fb_Server)
-            Wait(SIGF_SINGLE);
+        if ((me = CreateEntity(ENT_AllocSignal, 0, TAG_DONE)))
+        {
+            ULONG finderr = 0;
+            struct Entity *daemon =
+                FindEntity(NULL, (STRPTR)FS_ENTITY_NAME, me, &finderr);
+
+            if (daemon != NULL)
+            {
+                LoseEntity(daemon);
+                err = 0;
+            }
+            DeleteEntity(me);
+        }
         else
-        {
-            Forbid();
-            FSServiceBase->fb_Lib.lib_OpenCnt--;
-            Permit();
-        }
-        if (!FSServiceBase->fb_Server || !FSServiceBase->fb_StartResult)
-        {
-            FSServiceBase->fb_Server = NULL;
             err = ENVOYERR_NORESOURCES;
-        }
     }
-    if (!err)
-        FSServiceBase->fb_Clients++;
-    ReleaseSemaphore(&FSServiceBase->fb_Sem);
+    else
+        err = ENVOYERR_NORESOURCES;
 
     if (!err && entname)
     {
         strncpy(entname, FS_ENTITY_NAME, 63);
         entname[63] = '\0';
     }
+
+    if (NIPCBase)
+        CloseLibrary(NIPCBase);
+    if (UtilityBase)
+        CloseLibrary(UtilityBase);
     return err;
 
     AROS_LIBFUNC_EXIT
@@ -131,8 +134,11 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct Library *UtilityBase = OpenLibrary("utility.library", 36);
     struct TagItem *tag, *tstate = tagList;
 
+    if (UtilityBase == NULL)
+        return;
     while ((tag = NextTagItem(&tstate)))
     {
         if (!tag->ti_Data)
@@ -143,6 +149,7 @@
         case SVCAttrs_FullService:  *(BOOL *)tag->ti_Data = TRUE; break;
         }
     }
+    CloseLibrary(UtilityBase);
 
     AROS_LIBFUNC_EXIT
 }
@@ -180,17 +187,20 @@
         struct FSServiceBase *, FSServiceBase, 9, FSService)
 
 /*  FUNCTION
-        Advisory shutdown request: stops the server process, which releases
-        every mount's locks and file handles.
+        Advisory shutdown request: stops the envoyfs daemon (found by its
+        public marker port), which releases every mount's locks and file
+        handles.
 
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    ObtainSemaphore(&FSServiceBase->fb_Sem);
-    if (FSServiceBase->fb_Server)
-        Signal(&FSServiceBase->fb_Server->pr_Task, SIGBREAKF_CTRL_C);
-    ReleaseSemaphore(&FSServiceBase->fb_Sem);
+    struct MsgPort *port;
+
+    Forbid();
+    if ((port = FindPort(FS_DAEMON_PORT)))
+        Signal(port->mp_SigTask, SIGBREAKF_CTRL_C);
+    Permit();
 
     AROS_LIBFUNC_EXIT
 }

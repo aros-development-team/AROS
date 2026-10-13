@@ -25,7 +25,39 @@
 #include "pthread_intern.h"
 #include "debug.h"
 
-int pthread_attr_init(pthread_attr_t *attr)
+/****************************************************************************
+    NAME */
+        int pthread_attr_init(
+
+/*  SYNOPSIS */
+        pthread_attr_t *attr)
+
+/*  FUNCTION
+        Initialize a caller-provided thread attribute object. Clear its fields,
+        select a joinable worker with no supplied stack, copy the current task
+        priority, and set the stack size to the current task's stack extent.
+
+    INPUTS
+        attr - Non-NULL writable attribute object to initialize.
+
+    RESULT
+        0 on success; EINVAL if attr is NULL. Errors are returned directly.
+
+    NOTES
+        Include <pthread.h>; link with pthread. Call in task context. No stack
+        or thread is allocated. The default size comes from tc_SPUpper minus
+        tc_SPLower; it is not a fixed PTHREAD_STACK_MIN allocation. Set an
+        appropriate size explicitly when the new worker needs a different one.
+        pthread_create() copies the object, so it need not outlive creation.
+        Destroy it with pthread_attr_destroy() when no longer needed.
+        Do not modify an object concurrently with a reader.
+
+    SEE ALSO
+        pthread_attr_destroy(),
+        pthread_attr_setstacksize(),
+        pthread_create()
+
+*****************************************************************************/
 {
     struct Task *task;
 

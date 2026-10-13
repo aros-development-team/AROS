@@ -205,7 +205,34 @@ void CloseTimerDevice(struct IORequest *io)
 // Thread specific data functions
 //
 
-int pthread_key_delete(pthread_key_t key)
+/****************************************************************************
+    NAME */
+        int pthread_key_delete(
+
+/*  SYNOPSIS */
+        pthread_key_t key)
+
+/*  FUNCTION
+        Release a thread-specific storage key for future reuse.
+
+    INPUTS
+        key - Previously allocated key below PTHREAD_KEYS_MAX.
+
+    RESULT
+        0 if a used key is marked free; EINVAL if the key is out of range or
+        already unused.
+
+    NOTES
+        The key table is protected by its internal semaphore. Deletion clears
+        the registered destructor but does not invoke it or free values stored
+        by individual threads.
+
+    SEE ALSO
+        pthread_key_create()
+        pthread_setspecific()
+        pthread_getspecific()
+
+*****************************************************************************/
 {
     TLSKey *tls;
 
@@ -236,7 +263,32 @@ int pthread_key_delete(pthread_key_t key)
 // Mutex attribute functions
 //
 
-int pthread_mutexattr_gettype(pthread_mutexattr_t *attr, int *kind)
+/****************************************************************************
+    NAME */
+        int pthread_mutexattr_gettype(
+
+/*  SYNOPSIS */
+        pthread_mutexattr_t *attr, int *kind)
+
+/*  FUNCTION
+        Read the mutex type stored in a mutex attribute object.
+
+    INPUTS
+        attr - Initialized mutex attributes.
+        kind - Optional output receiving the stored mutex type.
+
+    RESULT
+        0 on success; EINVAL if attr is NULL.
+
+    NOTES
+        A NULL kind pointer is accepted. The function does not validate the
+        current stored value.
+
+    SEE ALSO
+        pthread_mutexattr_settype()
+        pthread_mutex_init()
+
+*****************************************************************************/
 {
     D(bug("%s(%p, %p)\n", __FUNCTION__, attr, kind));
 
@@ -334,7 +386,46 @@ static int _obtain_sema_timed(struct SignalSemaphore *sema, const struct timespe
     return 0;
 }
 
-int pthread_mutex_timedlock(pthread_mutex_t *mutex, const struct timespec *abstime)
+/****************************************************************************
+    NAME */
+        int pthread_mutex_timedlock(
+
+/*  SYNOPSIS */
+        pthread_mutex_t *mutex, const struct timespec *abstime)
+
+/*  FUNCTION
+        Try to acquire an exclusive mutex until an absolute deadline.
+
+    INPUTS
+        mutex - Mutex to acquire.
+        abstime - Absolute realtime deadline; NULL takes the ordinary
+                  pthread_mutex_lock() path.
+
+    RESULT
+        0 when the timed helper reports success; EINVAL for NULL mutex,
+        invalid nanoseconds, or timer-device failure; EDEADLK for detected
+        nonrecursive self-lock; ETIMEDOUT if the deadline has passed. Other
+        try-lock errors propagate.
+
+    NOTES
+        First attempts immediate acquisition. If busy, opens timer.device,
+        converts the absolute timestamp against gettimeofday(), and waits for
+        a semaphore acquisition or timer reply. Errors are returned directly.
+
+    BUGS
+        A NULL deadline is treated as an unbounded lock rather than rejected.
+        An immediately successful pthread_mutex_trylock() is followed by
+        another timed semaphore acquisition instead of an immediate return.
+        This can increase the Exec semaphore nest count twice, so one
+        pthread_mutex_unlock() may not fully release the mutex. No
+        independently selected clock is supported.
+
+    SEE ALSO
+        pthread_mutex_lock()
+        pthread_mutex_trylock()
+        pthread_mutex_unlock()
+
+*****************************************************************************/
 {
     int result;
 
@@ -365,7 +456,33 @@ int pthread_mutex_timedlock(pthread_mutex_t *mutex, const struct timespec *absti
 // Condition variable attribute functions
 //
 
-int pthread_condattr_init(pthread_condattr_t *attr)
+/****************************************************************************
+    NAME */
+        int pthread_condattr_init(
+
+/*  SYNOPSIS */
+        pthread_condattr_t *attr)
+
+/*  FUNCTION
+        Initialize condition-variable attributes with the default realtime
+        clock.
+
+    INPUTS
+        attr - Writable condition attribute object.
+
+    RESULT
+        0 on success; EINVAL if attr is NULL.
+
+    NOTES
+        Clears the object and sets cond_clock to CLOCK_REALTIME when the
+        symbol is available. Initialize attributes before passing them to
+        pthread_cond_init().
+
+    SEE ALSO
+        pthread_condattr_setclock()
+        pthread_cond_init()
+
+*****************************************************************************/
 {
     D(bug("%s(%p)\n", __FUNCTION__, attr));
 
@@ -381,7 +498,34 @@ int pthread_condattr_init(pthread_condattr_t *attr)
     return 0;
 }
 
-int pthread_condattr_setclock(pthread_condattr_t *attr, clockid_t clock_id)
+/****************************************************************************
+    NAME */
+        int pthread_condattr_setclock(
+
+/*  SYNOPSIS */
+        pthread_condattr_t *attr, clockid_t clock_id)
+
+/*  FUNCTION
+        Select the clock used to interpret an absolute condition-wait
+        deadline.
+
+    INPUTS
+        attr - Initialized condition attribute object.
+        clock_id - CLOCK_REALTIME or CLOCK_MONOTONIC.
+
+    RESULT
+        0 on success; EINVAL if attr is NULL or clock_id is unsupported.
+
+    NOTES
+        Stores the chosen clock. pthread_cond_init() copies it into the
+        condition variable; changing attributes later does not change existing
+        conditions.
+
+    SEE ALSO
+        pthread_condattr_getclock()
+        pthread_cond_timedwait()
+
+*****************************************************************************/
 {
     D(bug("%s(%p, %d)\n", __FUNCTION__, attr, (int)clock_id));
 
@@ -399,7 +543,32 @@ int pthread_condattr_setclock(pthread_condattr_t *attr, clockid_t clock_id)
     return 0;
 }
 
-int pthread_condattr_getclock(const pthread_condattr_t *attr, clockid_t *clock_id)
+/****************************************************************************
+    NAME */
+        int pthread_condattr_getclock(
+
+/*  SYNOPSIS */
+        const pthread_condattr_t *attr, clockid_t *clock_id)
+
+/*  FUNCTION
+        Read the deadline clock selected in condition attributes.
+
+    INPUTS
+        attr - Initialized condition attributes.
+        clock_id - Non-NULL writable output for the clock ID.
+
+    RESULT
+        0 on success; EINVAL if either pointer is NULL.
+
+    NOTES
+        Reports the stored field. It does not query timer.device or the clock
+        currently used by a running wait.
+
+    SEE ALSO
+        pthread_condattr_setclock()
+        pthread_cond_timedwait()
+
+*****************************************************************************/
 {
     D(bug("%s(%p, %p)\n", __FUNCTION__, attr, clock_id));
 
@@ -411,7 +580,31 @@ int pthread_condattr_getclock(const pthread_condattr_t *attr, clockid_t *clock_i
     return 0;
 }
 
-int pthread_condattr_destroy(pthread_condattr_t *attr)
+/****************************************************************************
+    NAME */
+        int pthread_condattr_destroy(
+
+/*  SYNOPSIS */
+        pthread_condattr_t *attr)
+
+/*  FUNCTION
+        Clear a condition-variable attribute object after use.
+
+    INPUTS
+        attr - Initialized condition attribute object no longer needed.
+
+    RESULT
+        0 on success; EINVAL if attr is NULL.
+
+    NOTES
+        Zeros the attribute storage. It does not deallocate the caller-owned
+        object or affect condition variables already initialized from it.
+
+    SEE ALSO
+        pthread_condattr_init()
+        pthread_cond_init()
+
+*****************************************************************************/
 {
     D(bug("%s(%p)\n", __FUNCTION__, attr));
 
@@ -427,7 +620,37 @@ int pthread_condattr_destroy(pthread_condattr_t *attr)
 // Condition variable functions
 //
 
-int pthread_cond_timedwait_relative_np(pthread_cond_t *cond, pthread_mutex_t *mutex, const struct timespec *reltime)
+/****************************************************************************
+    NAME */
+        int pthread_cond_timedwait_relative_np(
+
+/*  SYNOPSIS */
+        pthread_cond_t *cond, pthread_mutex_t *mutex, const struct timespec *reltime)
+
+/*  FUNCTION
+        Wait on a condition variable using a relative time interval.
+
+    INPUTS
+        cond - Initialized condition variable.
+        mutex - Locked mutex associated with the condition.
+        reltime - Relative duration passed to the shared condition-wait
+                  implementation.
+
+    RESULT
+        Returns the status of _pthread_cond_timedwait(), including timeout and
+        argument errors established by that implementation.
+
+    NOTES
+        Calls the existing condition-wait helper with relative mode enabled.
+        The caller must hold the mutex and recheck its shared predicate after
+        waking; cancellation can exit the worker.
+
+    SEE ALSO
+        pthread_cond_timedwait()
+        pthread_cond_wait()
+        pthread_condattr_setclock()
+
+*****************************************************************************/
 {
     D(bug("%s(%p, %p, %p)\n", __FUNCTION__, cond, mutex, reltime));
 
@@ -439,7 +662,41 @@ int pthread_cond_timedwait_relative_np(pthread_cond_t *cond, pthread_mutex_t *mu
 // Barrier functions
 //
 
-int pthread_barrier_init(pthread_barrier_t *barrier, const pthread_barrierattr_t *attr, unsigned int count)
+/****************************************************************************
+    NAME */
+        int pthread_barrier_init(
+
+/*  SYNOPSIS */
+        pthread_barrier_t *barrier, const pthread_barrierattr_t *attr, unsigned int count)
+
+/*  FUNCTION
+        Initialize a reusable barrier for a fixed number of participating
+        threads.
+
+    INPUTS
+        barrier - Writable barrier storage not currently in use.
+        attr - Barrier attributes; currently ignored.
+        count - Number of arrivals required to complete each generation; must
+                be nonzero.
+
+    RESULT
+        0 on success; EINVAL if barrier is NULL or count is zero.
+
+    NOTES
+        Stores count and initializes an embedded condition variable and mutex.
+        All participants must reach the barrier before they can proceed.
+        Caller owns the barrier storage.
+
+    BUGS
+        The return values of the embedded mutex and condition initializers are
+        not checked. No maximum participant count or overflow guard is
+        enforced.
+
+    SEE ALSO
+        pthread_barrier_wait()
+        pthread_barrier_destroy()
+
+*****************************************************************************/
 {
     D(bug("%s(%p, %p, %u)\n", __FUNCTION__, barrier, attr, count));
 
@@ -454,7 +711,38 @@ int pthread_barrier_init(pthread_barrier_t *barrier, const pthread_barrierattr_t
     return 0;
 }
 
-int pthread_barrier_destroy(pthread_barrier_t *barrier)
+/****************************************************************************
+    NAME */
+        int pthread_barrier_destroy(
+
+/*  SYNOPSIS */
+        pthread_barrier_t *barrier)
+
+/*  FUNCTION
+        Destroy a barrier that has no arriving or departing participants.
+
+    INPUTS
+        barrier - Initialized, externally quiescent barrier.
+
+    RESULT
+        0 if destruction proceeds; EINVAL for NULL; EBUSY if the mutex cannot
+        be acquired, a generation is active, or the condition destroy fails.
+
+    NOTES
+        Attempts a nonblocking lock and checks internal generation state
+        before destroying the embedded condition and mutex. Do not reuse the
+        storage without initialization.
+
+    BUGS
+        A successful probe does not exclude new arrivals; external quiescence
+        is required. The return value from the final mutex destruction is
+        ignored.
+
+    SEE ALSO
+        pthread_barrier_init()
+        pthread_barrier_wait()
+
+*****************************************************************************/
 {
     D(bug("%s(%p)\n", __FUNCTION__, barrier));
 
@@ -481,7 +769,39 @@ int pthread_barrier_destroy(pthread_barrier_t *barrier)
     return 0;
 }
 
-int pthread_barrier_wait(pthread_barrier_t *barrier)
+/****************************************************************************
+    NAME */
+        int pthread_barrier_wait(
+
+/*  SYNOPSIS */
+        pthread_barrier_t *barrier)
+
+/*  FUNCTION
+        Wait for all members of a barrier generation and release them
+        together.
+
+    INPUTS
+        barrier - Initialized barrier shared by the participating threads.
+
+    RESULT
+        PTHREAD_BARRIER_SERIAL_THREAD for the final arrival; 0 for other
+        arrivals after the generation completes; EINVAL for NULL.
+
+    NOTES
+        Uses an embedded mutex and condition variable. The last arrival
+        broadcasts to waiting peers. A departing generation must finish before
+        the next generation is admitted.
+
+    BUGS
+        The implementation does not propagate embedded mutex/condition
+        failures. If a participant exits or never arrives, other participants
+        may wait indefinitely.
+
+    SEE ALSO
+        pthread_barrier_init()
+        pthread_barrier_destroy()
+
+*****************************************************************************/
 {
     D(bug("%s(%p)\n", __FUNCTION__, barrier));
 
@@ -530,7 +850,31 @@ int pthread_barrier_wait(pthread_barrier_t *barrier)
 // Read-write lock attribute functions
 //
 
-int pthread_rwlockattr_init(pthread_rwlockattr_t *attr)
+/****************************************************************************
+    NAME */
+        int pthread_rwlockattr_init(
+
+/*  SYNOPSIS */
+        pthread_rwlockattr_t *attr)
+
+/*  FUNCTION
+        Initialize attributes for a reader-writer lock.
+
+    INPUTS
+        attr - Writable reader-writer lock attributes.
+
+    RESULT
+        0 on success; EINVAL if attr is NULL.
+
+    NOTES
+        Clears the attribute structure. No process-sharing policy is applied
+        by pthread_rwlock_init().
+
+    SEE ALSO
+        pthread_rwlock_init()
+        pthread_rwlockattr_destroy()
+
+*****************************************************************************/
 {
     D(bug("%s(%p)\n", __FUNCTION__, attr));
 
@@ -542,7 +886,30 @@ int pthread_rwlockattr_init(pthread_rwlockattr_t *attr)
     return 0;
 }
 
-int pthread_rwlockattr_destroy(pthread_rwlockattr_t *attr)
+/****************************************************************************
+    NAME */
+        int pthread_rwlockattr_destroy(
+
+/*  SYNOPSIS */
+        pthread_rwlockattr_t *attr)
+
+/*  FUNCTION
+        Clear an unused reader-writer lock attribute object.
+
+    INPUTS
+        attr - Initialized attributes to invalidate.
+
+    RESULT
+        0 on success; EINVAL if attr is NULL.
+
+    NOTES
+        Zeros the caller-owned structure; existing locks are unaffected.
+
+    SEE ALSO
+        pthread_rwlockattr_init()
+        pthread_rwlock_init()
+
+*****************************************************************************/
 {
     D(bug("%s(%p)\n", __FUNCTION__, attr));
 
@@ -558,7 +925,38 @@ int pthread_rwlockattr_destroy(pthread_rwlockattr_t *attr)
 // Read-write lock functions
 //
 
-int pthread_rwlock_init(pthread_rwlock_t *lock, const pthread_rwlockattr_t *attr)
+/****************************************************************************
+    NAME */
+        int pthread_rwlock_init(
+
+/*  SYNOPSIS */
+        pthread_rwlock_t *lock, const pthread_rwlockattr_t *attr)
+
+/*  FUNCTION
+        Initialize the Exec shared/exclusive semaphore used by a reader-writer
+        lock.
+
+    INPUTS
+        lock - Writable lock storage not currently used by another task.
+        attr - Attributes; accepted but ignored.
+
+    RESULT
+        0 on success; EINVAL if lock is NULL.
+
+    NOTES
+        Initializes the embedded Exec SignalSemaphore. The caller owns the
+        lock storage; destroy only when no holders or waiters remain.
+
+    BUGS
+        No process-sharing attributes, fairness policy, or other optional lock
+        attributes are consumed.
+
+    SEE ALSO
+        pthread_rwlock_rdlock()
+        pthread_rwlock_wrlock()
+        pthread_rwlock_destroy()
+
+*****************************************************************************/
 {
     D(bug("%s(%p, %p)\n", __FUNCTION__, lock, attr));
 
@@ -570,7 +968,38 @@ int pthread_rwlock_init(pthread_rwlock_t *lock, const pthread_rwlockattr_t *attr
     return 0;
 }
 
-int pthread_rwlock_destroy(pthread_rwlock_t *lock)
+/****************************************************************************
+    NAME */
+        int pthread_rwlock_destroy(
+
+/*  SYNOPSIS */
+        pthread_rwlock_t *lock)
+
+/*  FUNCTION
+        Clear an unused reader-writer lock after a nonblocking semaphore
+        probe.
+
+    INPUTS
+        lock - Initialized, idle lock that no task can acquire concurrently.
+
+    RESULT
+        0 if the semaphore is uninitialized or the probe succeeds; EINVAL if
+        lock is NULL; EBUSY if the exclusive probe fails.
+
+    NOTES
+        If the semaphore is initialized, attempts exclusive acquisition,
+        releases it, and zeros the lock storage.
+
+    BUGS
+        The probe is not a synchronization barrier against subsequent
+        acquisitions. A lock held by the calling owner may pass Exec recursive
+        acquisition checks. External quiescence is required.
+
+    SEE ALSO
+        pthread_rwlock_init()
+        pthread_rwlock_unlock()
+
+*****************************************************************************/
 {
     D(bug("%s(%p)\n", __FUNCTION__, lock));
 
@@ -590,7 +1019,37 @@ int pthread_rwlock_destroy(pthread_rwlock_t *lock)
     return 0;
 }
 
-int pthread_rwlock_tryrdlock(pthread_rwlock_t *lock)
+/****************************************************************************
+    NAME */
+        int pthread_rwlock_tryrdlock(
+
+/*  SYNOPSIS */
+        pthread_rwlock_t *lock)
+
+/*  FUNCTION
+        Attempt a shared reader lock without waiting.
+
+    INPUTS
+        lock - Reader-writer lock to acquire.
+
+    RESULT
+        0 on acquisition; EINVAL if lock is NULL; EBUSY if the shared attempt
+        fails.
+
+    NOTES
+        Lazily initializes a statically initialized lock and calls
+        AttemptSemaphoreShared(). Unlock once for each successful acquisition.
+
+    BUGS
+        Lazy initialization is not serialized; initialize explicitly before
+        concurrent first use. Deadlock checks for a caller already holding the
+        write lock are absent.
+
+    SEE ALSO
+        pthread_rwlock_rdlock()
+        pthread_rwlock_unlock()
+
+*****************************************************************************/
 {
     ULONG ret;
 
@@ -608,7 +1067,37 @@ int pthread_rwlock_tryrdlock(pthread_rwlock_t *lock)
     return (ret == TRUE) ? 0 : EBUSY;
 }
 
-int pthread_rwlock_trywrlock(pthread_rwlock_t *lock)
+/****************************************************************************
+    NAME */
+        int pthread_rwlock_trywrlock(
+
+/*  SYNOPSIS */
+        pthread_rwlock_t *lock)
+
+/*  FUNCTION
+        Attempt exclusive writer acquisition without blocking.
+
+    INPUTS
+        lock - Reader-writer lock to acquire.
+
+    RESULT
+        0 on acquisition; EINVAL for NULL; EBUSY if exclusive acquisition
+        fails.
+
+    NOTES
+        Initializes a static semaphore lazily, then uses Exec
+        AttemptSemaphore().
+
+    BUGS
+        Exec semaphore ownership can make recursive acquisition succeed; this
+        wrapper does not explicitly reject a writer already owning the lock.
+        Concurrent lazy initialization is also unguarded.
+
+    SEE ALSO
+        pthread_rwlock_wrlock()
+        pthread_rwlock_unlock()
+
+*****************************************************************************/
 {
     ULONG ret;
 
@@ -626,7 +1115,40 @@ int pthread_rwlock_trywrlock(pthread_rwlock_t *lock)
     return (ret == TRUE) ? 0 : EBUSY;
 }
 
-int pthread_rwlock_rdlock(pthread_rwlock_t *lock)
+/****************************************************************************
+    NAME */
+        int pthread_rwlock_rdlock(
+
+/*  SYNOPSIS */
+        pthread_rwlock_t *lock)
+
+/*  FUNCTION
+        Acquire a shared reader lock, waiting if exclusive ownership prevents
+        it.
+
+    INPUTS
+        lock - Reader-writer lock to acquire.
+
+    RESULT
+        0 after acquisition; EINVAL if lock is NULL. Cancellation at the
+        initial check may terminate the calling thread.
+
+    NOTES
+        Calls pthread_testcancel(), lazily initializes static locks, then
+        blocks in ObtainSemaphoreShared(). Release with
+        pthread_rwlock_unlock().
+
+    BUGS
+        No explicit deadlock test is active for a caller already holding a
+        write lock; the source contains a disabled ownership check. Concurrent
+        lazy initialization is unguarded.
+
+    SEE ALSO
+        pthread_rwlock_tryrdlock()
+        pthread_rwlock_timedrdlock()
+        pthread_rwlock_unlock()
+
+*****************************************************************************/
 {
     D(bug("%s(%p)\n", __FUNCTION__, lock));
 
@@ -651,7 +1173,40 @@ int pthread_rwlock_rdlock(pthread_rwlock_t *lock)
     return 0;
 }
 
-int pthread_rwlock_timedrdlock(pthread_rwlock_t *lock, const struct timespec *abstime)
+/****************************************************************************
+    NAME */
+        int pthread_rwlock_timedrdlock(
+
+/*  SYNOPSIS */
+        pthread_rwlock_t *lock, const struct timespec *abstime)
+
+/*  FUNCTION
+        Acquire a shared reader lock subject to an absolute deadline.
+
+    INPUTS
+        lock - Reader-writer lock to acquire.
+        abstime - Absolute realtime deadline; NULL selects an unbounded read
+                  lock.
+
+    RESULT
+        0 on success; EINVAL for NULL lock, malformed nanoseconds, or
+        timer-device failure; ETIMEDOUT after the deadline; other try-lock
+        errors propagate.
+
+    NOTES
+        Checks cancellation, tries immediate shared acquisition, then waits
+        using _obtain_sema_timed() and the Exec shared-semaphore mode.
+
+    BUGS
+        NULL abstime is accepted as an unbounded operation. The timed helper
+        uses gettimeofday(), not a condition-variable clock attribute.
+        Concurrent lazy initialization is unguarded.
+
+    SEE ALSO
+        pthread_rwlock_rdlock()
+        pthread_rwlock_tryrdlock()
+
+*****************************************************************************/
 {
     int result;
 
@@ -674,7 +1229,37 @@ int pthread_rwlock_timedrdlock(pthread_rwlock_t *lock, const struct timespec *ab
     return _obtain_sema_timed(&lock->semaphore, abstime, SM_SHARED);
 }
 
-int pthread_rwlock_wrlock(pthread_rwlock_t *lock)
+/****************************************************************************
+    NAME */
+        int pthread_rwlock_wrlock(
+
+/*  SYNOPSIS */
+        pthread_rwlock_t *lock)
+
+/*  FUNCTION
+        Acquire an exclusive writer lock on a reader-writer semaphore.
+
+    INPUTS
+        lock - Reader-writer lock to acquire.
+
+    RESULT
+        0 after exclusive acquisition; EINVAL if lock is NULL; EDEADLK if the
+        calling task already owns the semaphore.
+
+    NOTES
+        Checks cancellation, initializes static locks lazily, and waits in
+        ObtainSemaphore(). Release with pthread_rwlock_unlock().
+
+    BUGS
+        No fairness, writer-preference, or lock-upgrade guarantee is
+        established. Concurrent lazy initialization is unguarded.
+
+    SEE ALSO
+        pthread_rwlock_trywrlock()
+        pthread_rwlock_timedwrlock()
+        pthread_rwlock_unlock()
+
+*****************************************************************************/
 {
     D(bug("%s(%p)\n", __FUNCTION__, lock));
 
@@ -695,7 +1280,40 @@ int pthread_rwlock_wrlock(pthread_rwlock_t *lock)
     return 0;
 }
 
-int pthread_rwlock_timedwrlock(pthread_rwlock_t *lock, const struct timespec *abstime)
+/****************************************************************************
+    NAME */
+        int pthread_rwlock_timedwrlock(
+
+/*  SYNOPSIS */
+        pthread_rwlock_t *lock, const struct timespec *abstime)
+
+/*  FUNCTION
+        Attempt exclusive writer acquisition until an absolute deadline.
+
+    INPUTS
+        lock - Reader-writer lock to acquire.
+        abstime - Absolute realtime deadline; NULL takes the ordinary
+                  writer-lock path.
+
+    RESULT
+        0 on success; EINVAL for NULL lock, invalid nanoseconds, or timer
+        setup failure; ETIMEDOUT on expiry; immediate try-lock errors
+        propagate.
+
+    NOTES
+        Checks cancellation, first attempts a nonblocking exclusive lock, and
+        waits through the timer/semaphore helper only on EBUSY.
+
+    BUGS
+        A NULL deadline is not rejected. Unlike pthread_rwlock_wrlock(), this
+        path does not explicitly detect a self-owned write lock before
+        entering timed acquisition.
+
+    SEE ALSO
+        pthread_rwlock_wrlock()
+        pthread_rwlock_trywrlock()
+
+*****************************************************************************/
 {
     int result;
 
@@ -718,7 +1336,38 @@ int pthread_rwlock_timedwrlock(pthread_rwlock_t *lock, const struct timespec *ab
     return _obtain_sema_timed(&lock->semaphore, abstime, SM_EXCLUSIVE);
 }
 
-int pthread_rwlock_unlock(pthread_rwlock_t *lock)
+/****************************************************************************
+    NAME */
+        int pthread_rwlock_unlock(
+
+/*  SYNOPSIS */
+        pthread_rwlock_t *lock)
+
+/*  FUNCTION
+        Release a reader or writer acquisition of a reader-writer lock.
+
+    INPUTS
+        lock - Reader-writer lock previously acquired by the calling task.
+
+    RESULT
+        0 if ReleaseSemaphore() is called; EINVAL for NULL; EPERM if the
+        semaphore nest count is below one.
+
+    NOTES
+        Lazily initializes an invalid static semaphore and uses Exec
+        ReleaseSemaphore() to release one acquisition.
+
+    BUGS
+        The check examines only ss_NestCount, not a reader ownership list. It
+        cannot reliably reject a thread that does not own a shared
+        acquisition; unlocking from the wrong thread has undefined effects.
+
+    SEE ALSO
+        pthread_rwlock_rdlock()
+        pthread_rwlock_wrlock()
+        pthread_rwlock_destroy()
+
+*****************************************************************************/
 {
     D(bug("%s(%p)\n", __FUNCTION__, lock));
 
@@ -744,7 +1393,36 @@ int pthread_rwlock_unlock(pthread_rwlock_t *lock)
 // Spinlock functions
 //
 
-int pthread_spin_init(pthread_spinlock_t *lock, int pshared)
+/****************************************************************************
+    NAME */
+        int pthread_spin_init(
+
+/*  SYNOPSIS */
+        pthread_spinlock_t *lock, int pshared)
+
+/*  FUNCTION
+        Initialize a spinlock in its unlocked state.
+
+    INPUTS
+        lock - Writable pthread_spinlock_t storage.
+        pshared - Process-sharing request; ignored.
+
+    RESULT
+        0 on success; EINVAL if lock is NULL.
+
+    NOTES
+        Stores zero in the lock word. Storage is caller-owned and must remain
+        valid while any thread uses it.
+
+    BUGS
+        No interprocess sharing policy is enforced; reinitializing a held or
+        contended lock is not detected.
+
+    SEE ALSO
+        pthread_spin_lock()
+        pthread_spin_destroy()
+
+*****************************************************************************/
 {
     D(bug("%s(%p, %d)\n", __FUNCTION__, lock, pshared));
 
@@ -756,14 +1434,73 @@ int pthread_spin_init(pthread_spinlock_t *lock, int pshared)
     return 0;
 }
 
-int pthread_spin_destroy(pthread_spinlock_t *lock)
+/****************************************************************************
+    NAME */
+        int pthread_spin_destroy(
+
+/*  SYNOPSIS */
+        pthread_spinlock_t *lock)
+
+/*  FUNCTION
+        Finish using a spinlock after all users have stopped accessing it.
+
+    INPUTS
+        lock - Previously initialized, externally quiescent spinlock.
+
+    RESULT
+        Always returns 0, including for a NULL pointer.
+
+    NOTES
+        The implementation does not read or modify the lock word and allocates
+        no memory to release.
+
+    BUGS
+        No busy, validity, or NULL-pointer check is performed. A successful
+        result does not prove the lock was idle.
+
+    SEE ALSO
+        pthread_spin_init()
+        pthread_spin_unlock()
+
+*****************************************************************************/
 {
     D(bug("%s(%p)\n", __FUNCTION__, lock));
 
     return 0;
 }
 
-int pthread_spin_lock(pthread_spinlock_t *lock)
+/****************************************************************************
+    NAME */
+        int pthread_spin_lock(
+
+/*  SYNOPSIS */
+        pthread_spinlock_t *lock)
+
+/*  FUNCTION
+        Acquire a spinlock using an atomic test-and-set loop.
+
+    INPUTS
+        lock - Initialized spinlock to acquire.
+
+    RESULT
+        0 once the lock is acquired; EINVAL if lock is NULL.
+
+    NOTES
+        Uses __sync_lock_test_and_set(). On AROS the contended loop yields the
+        processor with sched_yield(); the call can wait indefinitely.
+
+    BUGS
+        Non-recursive ownership is not tracked. Acquiring a lock already held
+        by the same task can deadlock. The source contains an explicit TODO
+        concerning yield frequency. The __mc68000__ replacement for
+        test-and-set returns the newly written value, so this loop cannot
+        observe an unlocked value through that replacement.
+
+    SEE ALSO
+        pthread_spin_trylock()
+        pthread_spin_unlock()
+
+*****************************************************************************/
 {
     D(bug("%s(%p)\n", __FUNCTION__, lock));
 
@@ -789,7 +1526,37 @@ int pthread_spin_lock(pthread_spinlock_t *lock)
     return 0;
 }
 
-int pthread_spin_trylock(pthread_spinlock_t *lock)
+/****************************************************************************
+    NAME */
+        int pthread_spin_trylock(
+
+/*  SYNOPSIS */
+        pthread_spinlock_t *lock)
+
+/*  FUNCTION
+        Attempt an atomic spinlock acquisition without waiting.
+
+    INPUTS
+        lock - Initialized spinlock to acquire.
+
+    RESULT
+        0 on acquisition; EINVAL for NULL; EBUSY if test-and-set finds the
+        lock already held.
+
+    NOTES
+        Does not yield, sleep, or queue a waiter. Each successful acquisition
+        requires a matching unlock.
+
+    BUGS
+        The __mc68000__ replacement for test-and-set returns the written value
+        instead of the old value; with a nonzero lock request this path
+        reports EBUSY even on an initially clear lock.
+
+    SEE ALSO
+        pthread_spin_lock()
+        pthread_spin_unlock()
+
+*****************************************************************************/
 {
     D(bug("%s(%p)\n", __FUNCTION__, lock));
 
@@ -802,7 +1569,35 @@ int pthread_spin_trylock(pthread_spinlock_t *lock)
     return 0;
 }
 
-int pthread_spin_unlock(pthread_spinlock_t *lock)
+/****************************************************************************
+    NAME */
+        int pthread_spin_unlock(
+
+/*  SYNOPSIS */
+        pthread_spinlock_t *lock)
+
+/*  FUNCTION
+        Clear an acquired spinlock using an atomic release operation.
+
+    INPUTS
+        lock - Lock held by the calling thread.
+
+    RESULT
+        0 after the atomic release; EINVAL if lock is NULL.
+
+    NOTES
+        Uses __sync_lock_release(). The caller must establish ownership and
+        the lifetime of the lock word.
+
+    BUGS
+        No ownership or held-state check is performed. Unlocking an unowned or
+        unlocked spinlock may break mutual exclusion.
+
+    SEE ALSO
+        pthread_spin_lock()
+        pthread_spin_trylock()
+
+*****************************************************************************/
 {
     D(bug("%s(%p)\n", __FUNCTION__, lock));
 
@@ -818,7 +1613,33 @@ int pthread_spin_unlock(pthread_spinlock_t *lock)
 // Thread attribute functions
 //
 
-int pthread_attr_getdetachstate(const pthread_attr_t *attr, int *detachstate)
+/****************************************************************************
+    NAME */
+        int pthread_attr_getdetachstate(
+
+/*  SYNOPSIS */
+        const pthread_attr_t *attr, int *detachstate)
+
+/*  FUNCTION
+        Read the detach state stored in a thread attribute object.
+
+    INPUTS
+        attr - Initialized thread attributes.
+        detachstate - Optional output for PTHREAD_CREATE_JOINABLE or
+                      PTHREAD_CREATE_DETACHED; NULL suppresses the write.
+
+    RESULT
+        0 on success; EINVAL if attr is NULL.
+
+    NOTES
+        Reads the stored field; it does not inspect any running thread. Errors
+        are returned directly.
+
+    SEE ALSO
+        pthread_attr_setdetachstate()
+        pthread_create()
+
+*****************************************************************************/
 {
     D(bug("%s(%p, %p)\n", __FUNCTION__, attr, detachstate));
 
@@ -831,7 +1652,34 @@ int pthread_attr_getdetachstate(const pthread_attr_t *attr, int *detachstate)
     return 0;
 }
 
-int pthread_attr_setdetachstate(pthread_attr_t *attr, int detachstate)
+/****************************************************************************
+    NAME */
+        int pthread_attr_setdetachstate(
+
+/*  SYNOPSIS */
+        pthread_attr_t *attr, int detachstate)
+
+/*  FUNCTION
+        Choose whether new threads are joinable or detached.
+
+    INPUTS
+        attr - Initialized attributes to update.
+        detachstate - PTHREAD_CREATE_JOINABLE or PTHREAD_CREATE_DETACHED.
+
+    RESULT
+        0 on success; EINVAL for a NULL attr or any other detach state.
+
+    NOTES
+        The selection takes effect when pthread_create() copies these
+        attributes. Changing an attribute object does not detach an existing
+        thread.
+
+    SEE ALSO
+        pthread_attr_getdetachstate()
+        pthread_detach()
+        pthread_create()
+
+*****************************************************************************/
 {
     D(bug("%s(%p, %d)\n", __FUNCTION__, attr, detachstate));
 
@@ -843,7 +1691,35 @@ int pthread_attr_setdetachstate(pthread_attr_t *attr, int detachstate)
     return 0;
 }
 
-int pthread_attr_getstack(const pthread_attr_t *attr, void **stackaddr, size_t *stacksize)
+/****************************************************************************
+    NAME */
+        int pthread_attr_getstack(
+
+/*  SYNOPSIS */
+        const pthread_attr_t *attr, void **stackaddr, size_t *stacksize)
+
+/*  FUNCTION
+        Read the requested stack address and size from thread attributes.
+
+    INPUTS
+        attr - Initialized attributes.
+        stackaddr - Optional output receiving the stored stack pointer; may be
+                    NULL.
+        stacksize - Optional output receiving the stored size in bytes; may be
+                    NULL.
+
+    RESULT
+        0 on success; EINVAL if attr is NULL.
+
+    NOTES
+        The values describe an attribute object, not the current stack of a
+        live thread. No allocation or validation occurs.
+
+    SEE ALSO
+        pthread_attr_setstack()
+        pthread_getattr_np()
+
+*****************************************************************************/
 {
     D(bug("%s(%p, %p, %p)\n", __FUNCTION__, attr, stackaddr, stacksize));
 
@@ -859,7 +1735,44 @@ int pthread_attr_getstack(const pthread_attr_t *attr, void **stackaddr, size_t *
     return 0;
 }
 
-int pthread_attr_setstack(pthread_attr_t *attr, void *stackaddr, size_t stacksize)
+/****************************************************************************
+    NAME */
+        int pthread_attr_setstack(
+
+/*  SYNOPSIS */
+        pthread_attr_t *attr, void *stackaddr, size_t stacksize)
+
+/*  FUNCTION
+        Store a stack buffer address and requested size for future thread
+        creation.
+
+    INPUTS
+        attr - Attributes to modify.
+        stackaddr - Caller-owned stack pointer; NULL selects the
+                    runtime-provided stack.
+        stacksize - Stack extent in bytes. With a non-NULL stackaddr this must
+                    be nonzero.
+
+    RESULT
+        0 on success; EINVAL if attr is NULL or a non-NULL stackaddr is paired
+        with zero size.
+
+    NOTES
+        The function stores the two values without allocating, checking
+        alignment, enforcing PTHREAD_STACK_MIN, or checking actual accessible
+        memory. Keep a supplied buffer valid throughout the worker lifetime.
+
+    BUGS
+        Not all invalid stack sizes and pointers are rejected by the setter. A
+        successful result does not establish that subsequent thread creation
+        can use the buffer.
+
+    SEE ALSO
+        pthread_attr_getstack()
+        pthread_attr_setstacksize()
+        pthread_create()
+
+*****************************************************************************/
 {
     D(bug("%s(%p, %p, %u)\n", __FUNCTION__, attr, stackaddr, stacksize));
 
@@ -872,7 +1785,34 @@ int pthread_attr_setstack(pthread_attr_t *attr, void *stackaddr, size_t stacksiz
     return 0;
 }
 
-int pthread_attr_getstacksize(const pthread_attr_t *attr, size_t *stacksize)
+/****************************************************************************
+    NAME */
+        int pthread_attr_getstacksize(
+
+/*  SYNOPSIS */
+        const pthread_attr_t *attr, size_t *stacksize)
+
+/*  FUNCTION
+        Read the stack size stored in thread attributes.
+
+    INPUTS
+        attr - Initialized attributes.
+        stacksize - Optional output for the stored byte count; NULL is
+                    accepted.
+
+    RESULT
+        The result of pthread_attr_getstack(attr, NULL, stacksize): 0 or
+        EINVAL.
+
+    NOTES
+        This function does not query a running task or determine a minimum
+        usable stack size.
+
+    SEE ALSO
+        pthread_attr_getstack()
+        pthread_attr_setstacksize()
+
+*****************************************************************************/
 {
     D(bug("%s(%p, %p)\n", __FUNCTION__, attr, stacksize));
 
@@ -886,7 +1826,33 @@ int pthread_attr_setstacksize(pthread_attr_t *attr, size_t stacksize)
     return pthread_attr_setstack(attr, NULL, stacksize);
 }
 
-int pthread_attr_getschedparam(const pthread_attr_t *attr, struct sched_param *param)
+/****************************************************************************
+    NAME */
+        int pthread_attr_getschedparam(
+
+/*  SYNOPSIS */
+        const pthread_attr_t *attr, struct sched_param *param)
+
+/*  FUNCTION
+        Read the scheduling parameters stored in a thread attribute object.
+
+    INPUTS
+        attr - Initialized thread attributes.
+        param - Optional writable struct sched_param receiving a copy of the
+                stored parameters.
+
+    RESULT
+        0 on success; EINVAL if attr is NULL.
+
+    NOTES
+        This is a copy of the attribute field, not a query of the task
+        scheduler. A NULL output pointer is accepted.
+
+    SEE ALSO
+        pthread_attr_setschedparam()
+        pthread_getschedparam()
+
+*****************************************************************************/
 {
     D(bug("%s(%p, %p)\n", __FUNCTION__, attr, param));
 
@@ -899,7 +1865,37 @@ int pthread_attr_getschedparam(const pthread_attr_t *attr, struct sched_param *p
     return 0;
 }
 
-int pthread_attr_setschedparam(pthread_attr_t *attr, const struct sched_param *param)
+/****************************************************************************
+    NAME */
+        int pthread_attr_setschedparam(
+
+/*  SYNOPSIS */
+        pthread_attr_t *attr, const struct sched_param *param)
+
+/*  FUNCTION
+        Store scheduling parameters for a subsequently created thread.
+
+    INPUTS
+        attr - Initialized attributes to update.
+        param - Non-NULL scheduling parameters to copy.
+
+    RESULT
+        0 on success; EINVAL if attr or param is NULL.
+
+    NOTES
+        The entire struct sched_param is copied. The setter does not validate
+        its priority; thread creation uses the stored priority.
+
+    BUGS
+        The pthread_create() path does not implement scheduling inheritance or
+        contention-scope controls.
+
+    SEE ALSO
+        pthread_attr_getschedparam()
+        pthread_create()
+        pthread_setschedparam()
+
+*****************************************************************************/
 {
     D(bug("%s(%p, %p)\n", __FUNCTION__, attr, param));
 
@@ -947,7 +1943,40 @@ AROS_UFH3S(ULONG, CancelHandler,
 }
 #endif
 
-int pthread_detach(pthread_t thread)
+/****************************************************************************
+    NAME */
+        int pthread_detach(
+
+/*  SYNOPSIS */
+        pthread_t thread)
+
+/*  FUNCTION
+        Detach a thread so that its identifier slot can be released without
+        joining.
+
+    INPUTS
+        thread - Identifier of the worker to detach.
+
+    RESULT
+        0 on success; ESRCH if the slot or its task is unavailable; EINVAL if
+        the thread is already detached.
+
+    NOTES
+        A running detached worker releases its slot on exit. An
+        already-finished joinable worker has its slot cleared immediately. No
+        implicit pthread_join() is performed.
+
+    BUGS
+        Identifier records may be reused, and the initial program task is not
+        excluded by an explicit worker-only check. Synchronize lifecycle
+        operations and avoid stale identifiers.
+
+    SEE ALSO
+        pthread_create()
+        pthread_join()
+        pthread_attr_setdetachstate()
+
+*****************************************************************************/
 {
     ThreadInfo *inf;
 
@@ -976,7 +2005,36 @@ int pthread_detach(pthread_t thread)
     return 0;
 }
 
-void pthread_testcancel(void)
+/****************************************************************************
+    NAME */
+        void pthread_testcancel(
+
+/*  SYNOPSIS */
+        void)
+
+/*  FUNCTION
+        Act on a pending cancellation request at an explicit cancellation
+        point.
+
+    RESULT
+        Returns no value if cancellation is absent or disabled. If pending and
+        enabled, calls pthread_exit(PTHREAD_CANCELED) and does not return.
+
+    NOTES
+        A disabled request remains pending; its cancellation wake-up signal is
+        cleared. Use from a task registered with the pthread runtime.
+
+    BUGS
+        This path dereferences the result of thread lookup without checking
+        for an unregistered caller. It cannot safely provide cancellation for
+        arbitrary Exec tasks.
+
+    SEE ALSO
+        pthread_cancel()
+        pthread_setcancelstate()
+        pthread_exit()
+
+*****************************************************************************/
 {
     pthread_t thread;
     ThreadInfo *inf;
@@ -1006,7 +2064,44 @@ static void OnceCleanup(void *arg)
     pthread_spin_unlock(&once_control->lock);
 }
 
-int pthread_once(pthread_once_t *once_control, void (*init_routine)(void))
+/****************************************************************************
+    NAME */
+        int pthread_once(
+
+/*  SYNOPSIS */
+        pthread_once_t *once_control, void (*init_routine)(void))
+
+/*  FUNCTION
+        Execute an initialization routine at most once per correctly
+        initialized control object.
+
+    INPUTS
+        once_control - Shared control object initialized with
+                       PTHREAD_ONCE_INIT.
+        init_routine - Non-NULL callback invoked without arguments when
+                       initialization is required.
+
+    RESULT
+        0 on the implemented paths; EINVAL if either pointer is NULL.
+
+    NOTES
+        Competing callers synchronize through the control object spinlock. The
+        initializer must be valid for the lifetime of concurrent callers.
+
+    BUGS
+        A zero-initialized control object is not equivalent to
+        PTHREAD_ONCE_INIT: the initial compare-and-swap path can skip
+        initialization. Cancellation during the callback also has nontrivial
+        state and cleanup implications; do not assume a POSIX retry guarantee
+        without testing. On __mc68000__, its spin-lock helper also uses the
+        problematic test-and-set replacement.
+
+    SEE ALSO
+        pthread_spin_lock()
+        pthread_cleanup_push()
+        pthread_cleanup_pop()
+
+*****************************************************************************/
 {
     D(bug("%s(%p, %p)\n", __FUNCTION__, once_control, init_routine));
 
@@ -1033,7 +2128,39 @@ int pthread_once(pthread_once_t *once_control, void (*init_routine)(void))
 // Scheduling functions
 //
 
-int pthread_setschedprio(pthread_t thread, int prio)
+/****************************************************************************
+    NAME */
+        int pthread_setschedprio(
+
+/*  SYNOPSIS */
+        pthread_t thread, int prio)
+
+/*  FUNCTION
+        Set the Exec task priority associated with a pthread identifier.
+
+    INPUTS
+        thread - Existing pthread identifier.
+        prio - Requested task priority.
+
+    RESULT
+        0 when SetTaskPri() is called; EINVAL if the range comparison rejects
+        prio; ESRCH if the identifier is outside the allocated record range.
+
+    NOTES
+        The implementation evaluates the value against
+        sched_get_priority_max/min(SCHED_NORMAL), then calls SetTaskPri(). It
+        does not negotiate a distinct POSIX scheduling class.
+
+    BUGS
+        The comparison uses prio < max or prio > min, so actual accepted
+        values depend on the ordering returned by those helpers. A record
+        within range is not checked for a live task pointer.
+
+    SEE ALSO
+        pthread_setschedparam()
+        pthread_getschedparam()
+
+*****************************************************************************/
 {
     ThreadInfo *inf;
 
@@ -1052,7 +2179,40 @@ int pthread_setschedprio(pthread_t thread, int prio)
     return 0;
 }
 
-int pthread_setschedparam(pthread_t thread, int policy, const struct sched_param *param)
+/****************************************************************************
+    NAME */
+        int pthread_setschedparam(
+
+/*  SYNOPSIS */
+        pthread_t thread, int policy, const struct sched_param *param)
+
+/*  FUNCTION
+        Apply a scheduling priority to the Exec task named by a pthread
+        identifier.
+
+    INPUTS
+        thread - Allocated pthread identifier.
+        policy - Requested POSIX policy; accepted but ignored by this
+                 implementation.
+        param - Non-NULL struct sched_param containing sched_priority.
+
+    RESULT
+        0 after calling SetTaskPri(); EINVAL if param is NULL; ESRCH if thread
+        lookup fails.
+
+    NOTES
+        Only param->sched_priority is passed to Exec. The function does not
+        validate policy or the requested priority.
+
+    BUGS
+        A record may exist without a live task. No NULL task check protects
+        the SetTaskPri() call.
+
+    SEE ALSO
+        pthread_getschedparam()
+        pthread_setschedprio()
+
+*****************************************************************************/
 {
     ThreadInfo *inf;
 
@@ -1071,7 +2231,41 @@ int pthread_setschedparam(pthread_t thread, int policy, const struct sched_param
     return 0;
 }
 
-int pthread_getschedparam(pthread_t thread, int *policy, struct sched_param *param)
+/****************************************************************************
+    NAME */
+        int pthread_getschedparam(
+
+/*  SYNOPSIS */
+        pthread_t thread, int *policy, struct sched_param *param)
+
+/*  FUNCTION
+        Report the current Exec priority for a pthread and a fixed scheduling
+        policy.
+
+    INPUTS
+        thread - Allocated pthread identifier.
+        policy - Non-NULL output; receives SCHED_NORMAL.
+        param - Non-NULL output; sched_priority receives the Exec task
+                priority.
+
+    RESULT
+        0 on success; EINVAL if either output is NULL; ESRCH if thread lookup
+        fails.
+
+    NOTES
+        Reads tc_Node.ln_Pri directly from the associated task. Other fields
+        of *param are not initialized by this function.
+
+    BUGS
+        The task pointer is not checked for NULL before dereference. A
+        finished or invalidated slot can therefore cause invalid memory
+        access.
+
+    SEE ALSO
+        pthread_setschedparam()
+        pthread_setschedprio()
+
+*****************************************************************************/
 {
     ThreadInfo *inf;
 
@@ -1094,7 +2288,39 @@ int pthread_getschedparam(pthread_t thread, int *policy, struct sched_param *par
 //
 // Non-portable functions
 //
-int pthread_setname_np(pthread_t thread, const char *name)
+/****************************************************************************
+    NAME */
+        int pthread_setname_np(
+
+/*  SYNOPSIS */
+        pthread_t thread, const char *name)
+
+/*  FUNCTION
+        Replace the Exec task name associated with a pthread identifier.
+
+    INPUTS
+        thread - Registered pthread identifier.
+        name - Non-NULL NUL-terminated replacement name.
+
+    RESULT
+        0 on success; ERANGE if name is NULL, the identifier cannot be
+        located, or the replacement exceeds the available name space.
+
+    NOTES
+        For a worker, the name must fit NAMELEN including its terminator. For
+        the initial task, the destination capacity is taken from the length of
+        its existing name plus one.
+
+    BUGS
+        Writes into the existing Exec task name storage rather than allocating
+        a new buffer. No thread-lifetime or concurrent name-access
+        synchronization is provided.
+
+    SEE ALSO
+        pthread_getname_np()
+        pthread_self()
+
+*****************************************************************************/
 {
     ThreadInfo *inf;
     char *currentname;
@@ -1125,7 +2351,40 @@ int pthread_setname_np(pthread_t thread, const char *name)
     return 0;
 }
 
-int pthread_getname_np(pthread_t thread, char *name, size_t len)
+/****************************************************************************
+    NAME */
+        int pthread_getname_np(
+
+/*  SYNOPSIS */
+        pthread_t thread, char *name, size_t len)
+
+/*  FUNCTION
+        Copy the current Exec task name for a pthread into a caller-owned
+        buffer.
+
+    INPUTS
+        thread - Registered pthread identifier.
+        name - Non-NULL writable output buffer.
+        len - Capacity of name in bytes, including the trailing NUL.
+
+    RESULT
+        0 on success; ERANGE if name is NULL, len is zero, the identifier
+        cannot be located, or the destination is too small.
+
+    NOTES
+        Copies the NUL-terminated task name after comparing strlen(name)+1
+        against len. No destination bytes are written when that size check
+        fails.
+
+    BUGS
+        The task pointer and source string are not protected against
+        concurrent task completion or renaming.
+
+    SEE ALSO
+        pthread_setname_np()
+        pthread_self()
+
+*****************************************************************************/
 {
     ThreadInfo *inf;
     char *currentname;
@@ -1151,7 +2410,39 @@ int pthread_getname_np(pthread_t thread, char *name, size_t len)
     return 0;
 }
 
-int pthread_getattr_np(pthread_t thread, pthread_attr_t *attr)
+/****************************************************************************
+    NAME */
+        int pthread_getattr_np(
+
+/*  SYNOPSIS */
+        pthread_t thread, pthread_attr_t *attr)
+
+/*  FUNCTION
+        Snapshot the attributes of a registered pthread and its current stack
+        extent.
+
+    INPUTS
+        thread - Registered pthread identifier.
+        attr - Non-NULL writable output attributes.
+
+    RESULT
+        0 on success; EINVAL if attr is NULL; ESRCH if thread lookup fails.
+
+    NOTES
+        Copies the attributes captured at creation, then replaces stackaddr
+        with tc_SPLower and stacksize with tc_SPUpper - tc_SPLower from the
+        current Exec task. The result is a snapshot, not a live object.
+
+    BUGS
+        No live-task guard or synchronization protects the task stack fields.
+        A stale identifier can dereference an invalid task. No atomic snapshot
+        against an in-progress stack swap is guaranteed.
+
+    SEE ALSO
+        pthread_attr_getstack()
+        pthread_create()
+
+*****************************************************************************/
 {
     ThreadInfo *inf;
 
@@ -1179,7 +2470,44 @@ int pthread_getattr_np(pthread_t thread, pthread_attr_t *attr)
 // Cancellation cleanup
 //
 
-void pthread_cleanup_push(void (*routine)(void *), void *arg)
+/****************************************************************************
+    NAME */
+        void pthread_cleanup_push(
+
+/*  SYNOPSIS */
+        void (*routine)(void *), void *arg)
+
+/*  FUNCTION
+        Register a callback to run when the current pthread unwinds its
+        cleanup stack.
+
+    INPUTS
+        routine - Callback that accepts one void * argument; NULL is silently
+                  ignored.
+        arg - Pointer passed to the callback; must remain valid until
+              invocation or removal.
+
+    RESULT
+        No return value. On allocation failure the handler is silently not
+        registered.
+
+    NOTES
+        Allocates a cleanup record and appends it to the calling thread's
+        list. A matching pthread_cleanup_pop() normally removes the most
+        recently pushed record. These are implemented as callable functions,
+        not lexical pairing macros.
+
+    BUGS
+        Allocation failure is not reported. If registration fails, a later pop
+        may remove an older handler. Normal return from the thread start
+        routine does not run the cleanup list in this implementation.
+
+    SEE ALSO
+        pthread_cleanup_pop()
+        pthread_exit()
+        pthread_testcancel()
+
+*****************************************************************************/
 {
     pthread_t thread;
     ThreadInfo *inf;
@@ -1203,7 +2531,38 @@ void pthread_cleanup_push(void (*routine)(void *), void *arg)
     AddTail((struct List *)&inf->cleanup, (struct Node *)handler);
 }
 
-void pthread_cleanup_pop(int execute)
+/****************************************************************************
+    NAME */
+        void pthread_cleanup_pop(
+
+/*  SYNOPSIS */
+        int execute)
+
+/*  FUNCTION
+        Remove the most recently registered cancellation cleanup handler.
+
+    INPUTS
+        execute - Nonzero to invoke the removed handler immediately; zero to
+                  discard it without invocation.
+
+    RESULT
+        No return value. A missing handler is treated as an empty pop.
+
+    NOTES
+        Removes the tail record from the current pthread cleanup list,
+        optionally invokes its callback with the stored argument, then frees
+        the record.
+
+    BUGS
+        No dynamic balancing or thread-identity validation is performed. A
+        previous failed push can leave the pop operating on another registered
+        handler.
+
+    SEE ALSO
+        pthread_cleanup_push()
+        pthread_exit()
+
+*****************************************************************************/
 {
     pthread_t thread;
     ThreadInfo *inf;
@@ -1225,7 +2584,36 @@ void pthread_cleanup_pop(int execute)
 // Signalling
 //
 
-int pthread_kill(pthread_t thread, int sig)
+/****************************************************************************
+    NAME */
+        int pthread_kill(
+
+/*  SYNOPSIS */
+        pthread_t thread, int sig)
+
+/*  FUNCTION
+        Provide the pthread_kill entry point without signal delivery support.
+
+    INPUTS
+        thread - Thread identifier; ignored.
+        sig - Signal number; ignored.
+
+    RESULT
+        Always returns EINVAL. No signal is delivered.
+
+    NOTES
+        The present implementation contains only a diagnostic trace and the
+        EINVAL return. Do not use it to probe thread existence or deliver
+        POSIX signals.
+
+    BUGS
+        Signal delivery is not implemented for this entry point.
+
+    SEE ALSO
+        pthread_cancel()
+        pthread_self()
+
+*****************************************************************************/
 {
     D(bug("%s(%u, %d) not implemented\n", __FUNCTION__, thread, sig));
 
