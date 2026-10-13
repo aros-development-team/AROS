@@ -3,6 +3,9 @@
 */
 
 /****************************************************************************************/
+/* Compile the out-of-line m68k GetDriverData() here, see graphics_inline.h */
+#define GFX_GETDRIVERDATA_IMPL
+
 #include <aros/debug.h>
 
 #include <cybergraphx/cybergraphics.h>
