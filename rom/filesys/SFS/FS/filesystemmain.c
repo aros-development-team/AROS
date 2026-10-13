@@ -1287,8 +1287,13 @@ sfsSecBeginPacket(globals->packet);
                             }
                         }
 
-                        flushiocache();
-                        update();
+                        {
+                            LONG flusherrorcode = flushiocache();
+
+                            if(errorcode == 0) {
+                                errorcode = flusherrorcode;
+                            }
+                        }
                         motoroff();
 
                         if(errorcode != 0) {
