@@ -143,8 +143,8 @@
 #define HVS5_PPF(src, dst)      ((1UL << 30) \
                                  | ((((ULONG)(src) << 16) / (ULONG)(dst)) << 8) \
                                  | 0x60)
-/* Measured lists only ever upscaled. Shrinking to 2/3 assumes the ratio
- * field runs up to bit 24, as on VideoCore IV - unverified on HVS5. */
+/* The firmware's lists only ever upscaled. Shrinking to 2/3 takes the
+ * ratio field up to bit 24; a 1280 to 1024 shrink showed right on a Pi 4. */
 #define HVS5_PPF_FITS(src, dst) ((((ULONG)(src) << 16) / (ULONG)(dst)) <= 0x18000)
 
 #define HVS5_LBM_TOP            0xbc00

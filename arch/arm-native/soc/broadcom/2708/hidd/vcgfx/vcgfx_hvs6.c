@@ -941,24 +941,61 @@ hide:
 /* Screens as planes                                                   */
 /* ------------------------------------------------------------------ */
 
+/*
+ * No firmware list shows a scaled HVS6 entry, so this one is DISPLAY-SPEC
+ * 5.3's word order filled in the way HVS5's measured entry is. It ran on
+ * a BCM2712 D0 (1024x768 to 1280x720): the HVS wrote [5] and [12] as context,
+ * and a 1.067 shrink used the ratio field's bit 24. The first list that
+ * uses one is still checked to latch and run; if not, scaling turns off.
+ */
+#define VC4_HVS6_SCALE      1
+
+#define HVS6_LBM_SIZE       0x0008
+#define HVS6_FETCHER_STATUS 0x0024
+#define HVS6_HANDLE_ERROR   0x002c
+#define HVS6_KERNEL_WORD    1           /* firmware's kernel at +0x4004 */
+#define HVS6_SC_WORDS       17
+#define HVS6_PTR0_LINES4    (1UL << 8)
+#define HVS6_SCL_MASK       ((7UL << 8) | (7UL << 5))
+#define HVS6_PPF(src, dst)  ((1UL << 30) | ((((ULONG)(src) << 16) / (ULONG)(dst)) << 8) | 0x60)
+#define HVS6_PPF_FITS(src, dst) ((((ULONG)(src) << 16) / (ULONG)(dst)) <= 0x18000)
+#define HVS6_SCALE_MAX      2           /* scaled planes per list */
+#define HVS6_VERIFY_US      100000
+
 BOOL vc4_hvs6_planes_ok(void)
 {
     return VC4_HVS6_TAKEOVER;
 }
 
-/* No scaling yet: only a screen of the output's size fills it. */
-BOOL vc4_hvs6_plane_fits(struct VideoCoreGfx_staticdata *xsd, ULONG w, ULONG h)
+BOOL vc4_hvs6_scales(struct VideoCoreGfx_staticdata *xsd)
 {
-    struct vc4_hvs6_state *st = &xsd->vcsd_HVS6;
-    ULONG out = hvs6_rd(HVS6_CHAN(st->h6_Chan) + HVS6_DISPCTRL);
-
-    return (HVS6_DISPCTRL_W(out) == w) && (HVS6_DISPCTRL_H(out) == h);
+    return VC4_HVS6_SCALE && !xsd->vcsd_HVS6.h6_ScaleOff;
 }
 
-/* Two lines of prefetch for a plane of this pitch */
-static ULONG hvs6_upm_size(ULONG pitch)
+void vc4_hvs6_out_size(struct VideoCoreGfx_staticdata *xsd, ULONG *w, ULONG *h)
 {
-    return ((((pitch + 62) / 32) * 32 * HVS6_UPM_LINES) + HVS6_UPM_GRAN - 1)
+    ULONG out = hvs6_rd(HVS6_CHAN(xsd->vcsd_HVS6.h6_Chan) + HVS6_DISPCTRL);
+
+    *w = HVS6_DISPCTRL_W(out);
+    *h = HVS6_DISPCTRL_H(out);
+}
+
+/* Can a screen of a w x h mode fill the output without a mode set? */
+BOOL vc4_hvs6_plane_fits(struct VideoCoreGfx_staticdata *xsd, ULONG w, ULONG h)
+{
+    ULONG ow, oh;
+
+    vc4_hvs6_out_size(xsd, &ow, &oh);
+    if ((ow == w) && (oh == h))
+        return TRUE;
+    return vc4_hvs6_scales(xsd) && ow && oh
+        && HVS6_PPF_FITS(w, ow) && HVS6_PPF_FITS(h, oh);
+}
+
+/* Prefetch for a plane of this pitch, lines deep */
+static ULONG hvs6_upm_size(ULONG pitch, ULONG lines)
+{
+    return ((((pitch + 62) / 32) * 32 * lines) + HVS6_UPM_GRAN - 1)
            & ~(HVS6_UPM_GRAN - 1);
 }
 
@@ -987,22 +1024,70 @@ static BOOL hvs6_planes_lists(struct vc4_hvs6_state *st)
     return TRUE;
 }
 
+/* A screen's rectangle on the output: from its own mode's coordinates
+ * when scaling, so it fills the output as that mode would. */
+static void hvs6_plane_rect(struct VideoCoreGfx_staticdata *xsd, struct vcgfx_plane *pl,
+                            LONG out_w, LONG out_h, LONG *dx, LONG *dy, ULONG *dw, ULONG *dh)
+{
+    struct BitmapData *d = pl->pl_Data;
+    LONG cw = out_w, ch = out_h;
+
+    if (vc4_hvs6_scales(xsd) && d->modew && d->modeh)
+    {
+        cw = (LONG)d->modew;
+        ch = (LONG)d->modeh;
+    }
+    *dx = pl->pl_X * out_w / cw;
+    *dy = pl->pl_Y * out_h / ch;
+    *dw = d->width * (ULONG)out_w / (ULONG)cw;
+    *dh = d->height * (ULONG)out_h / (ULONG)ch;
+}
+
+/* A scaled entry, after the fb entry's CTL0/CTL2; CTL0 goes in last. */
+static void hvs6_scaled(ULONG dst, ULONG fb, UQUAD addr, ULONG pitch, ULONG ptr0,
+                        LONG dx, LONG dy, ULONG dw, ULONG dh, ULONG sw, ULONG sh,
+                        ULONG lbm)
+{
+    ULONG ctl0 = hvs6_rd(fb + HVS6_ENT_CTL0 * 4) & ~(HVS6_CTL0_UNITY | HVS6_SCL_MASK);
+    ULONG i;
+
+    hvs6_wr(dst, HVS6_CTL0_EMPTY);
+    hvs6_wr(dst + 1 * 4, HVS6_POS0((ULONG)dx, (ULONG)dy));
+    hvs6_wr(dst + 2 * 4, hvs6_rd(fb + HVS6_ENT_CTL2 * 4));
+    hvs6_wr(dst + 3 * 4, ((dh - 1) << 16) | ((dw - 1) & 0x1fff));
+    hvs6_wr(dst + 4 * 4, ((sh - 1) << 16) | ((sw - 1) & 0x1fff));
+    hvs6_wr(dst + 5 * 4, 0xc0c0c0c0);
+    hvs6_wr(dst + 6 * 4, ptr0 | HVS6_PTR0_UPPER(addr));
+    hvs6_wr(dst + 7 * 4, (ULONG)(addr & 0xffffffffULL));
+    hvs6_wr(dst + 8 * 4, pitch);
+    hvs6_wr(dst + 9 * 4, lbm);
+    hvs6_wr(dst + 10 * 4, HVS6_PPF(sw, dw));
+    hvs6_wr(dst + 11 * 4, HVS6_PPF(sh, dh));
+    hvs6_wr(dst + 12 * 4, 0xc0c0c0c0);
+    for (i = 13; i < HVS6_SC_WORDS; i++)
+        hvs6_wr(dst + i * 4, HVS6_KERNEL_WORD);
+    hvs6_wr(dst, ctl0);
+}
+
 /*
  * One list: the screens back to front, each cut off where a screen in
  * front spans the output's width down to the bottom of what is still
  * visible; the fb, kept black, as backdrop where none covers; the overlay
  * over the front screen it belongs to; the cursor. UPM goes to the front
- * screens first, and a screen left without any is not shown.
+ * screens first, and a screen left without any is not shown. Returns the
+ * number of scaled planes.
  */
-static void hvs6_build_planes(struct VideoCoreGfx_staticdata *xsd, ULONG list)
+static ULONG hvs6_build_planes(struct VideoCoreGfx_staticdata *xsd, ULONG list)
 {
     struct vc4_hvs6_state *st = &xsd->vcsd_HVS6;
     ULONG fb = hvs6_slot(st, 0, HVS6_SLOT_FB);
     ULONG out = hvs6_rd(HVS6_CHAN(st->h6_Chan) + HVS6_DISPCTRL);
     LONG out_w = (LONG)HVS6_DISPCTRL_W(out), out_h = (LONG)HVS6_DISPCTRL_H(out);
     LONG limit[VCGFX_MAX_PLANES], bottom = out_h, front = (LONG)xsd->vcsd_NumPlanes - 1;
+    LONG px[VCGFX_MAX_PLANES], py[VCGFX_MAX_PLANES];
+    ULONG pw[VCGFX_MAX_PLANES], ph[VCGFX_MAX_PLANES];
     ULONG ptr0[VCGFX_MAX_PLANES] = { 0 };
-    ULONG upm = st->h6_UpmTop, i, pitch, w, h, ent;
+    ULONG upm = st->h6_UpmTop, lbm = 0, scaled = 0, i, pitch, w, h, ent;
     UQUAD phys;
     LONG x, y, j;
 
@@ -1010,19 +1095,26 @@ static void hvs6_build_planes(struct VideoCoreGfx_staticdata *xsd, ULONG list)
     {
         struct vcgfx_plane *pl = &xsd->vcsd_Plane[j];
         struct BitmapData *d = pl->pl_Data;
-        ULONG size = hvs6_upm_size(d->bytesperrow);
+        BOOL sc;
+        ULONG size;
+
+        hvs6_plane_rect(xsd, pl, out_w, out_h, &px[j], &py[j], &pw[j], &ph[j]);
+        sc = (pw[j] != d->width) || (ph[j] != d->height);
+        size = hvs6_upm_size(d->bytesperrow, sc ? 4 : HVS6_UPM_LINES);
 
         limit[j] = bottom;
-        if ((limit[j] <= pl->pl_Y) || (limit[j] <= 0) || (upm < st->h6_UpmFloor + size))
+        if (!pw[j] || !ph[j] || (limit[j] <= py[j]) || (limit[j] <= 0)
+            || (upm < st->h6_UpmFloor + size))
             continue;
 
         upm -= size;
         ptr0[j] = HVS6_PTR0_BASE(upm / HVS6_UPM_GRAN)
-                | HVS6_PTR0_HANDLE(HVS6_PL_HANDLE + j) | HVS6_PTR0_LINES2;
+                | HVS6_PTR0_HANDLE(HVS6_PL_HANDLE + j)
+                | (sc ? HVS6_PTR0_LINES4 : HVS6_PTR0_LINES2);
 
-        if ((pl->pl_X <= 0) && (pl->pl_X + (LONG)d->width >= out_w)
-            && (pl->pl_Y < bottom) && (pl->pl_Y + (LONG)d->height >= bottom))
-            bottom = (pl->pl_Y > 0) ? pl->pl_Y : 0;
+        if ((px[j] <= 0) && (px[j] + (LONG)pw[j] >= out_w)
+            && (py[j] < bottom) && (py[j] + (LONG)ph[j] >= bottom))
+            bottom = (py[j] > 0) ? py[j] : 0;
     }
 
     ent = hvs6_pslot(st, list, HVS6_PL_BACK);
@@ -1037,6 +1129,9 @@ static void hvs6_build_planes(struct VideoCoreGfx_staticdata *xsd, ULONG list)
     for (i = 0; i < VCGFX_MAX_PLANES; i++)
     {
         struct vcgfx_plane *pl = &xsd->vcsd_Plane[i];
+        struct BitmapData *d;
+        ULONG ow, oh, sw, sh;
+        LONG ox, oy;
 
         ent = hvs6_pslot(st, list, HVS6_PL_SCREEN + i);
         if ((i >= xsd->vcsd_NumPlanes) || !ptr0[i])
@@ -1045,23 +1140,70 @@ static void hvs6_build_planes(struct VideoCoreGfx_staticdata *xsd, ULONG list)
             continue;
         }
 
-        x = pl->pl_X;
-        y = pl->pl_Y;
-        w = pl->pl_Data->width;
-        h = pl->pl_Data->height;
-        pitch = pl->pl_Data->bytesperrow;
-        phys = (UQUAD)(IPTR)pl->pl_Data->VideoData;
-        if (hvs6_clip(&x, &y, &w, &h, &phys, pitch, 0, 0, out_w, limit[i]))
-            hvs6_plane(ent, fb, phys, pitch, ptr0[i], (ULONG)x, (ULONG)y, w, h);
-        else
+        d = pl->pl_Data;
+        pitch = d->bytesperrow;
+        phys = (UQUAD)(IPTR)d->VideoData;
+
+        if ((pw[i] == d->width) && (ph[i] == d->height))
+        {
+            x = px[i];
+            y = py[i];
+            w = pw[i];
+            h = ph[i];
+            if (hvs6_clip(&x, &y, &w, &h, &phys, pitch, 0, 0, out_w, limit[i]))
+                hvs6_plane(ent, fb, phys, pitch, ptr0[i], (ULONG)x, (ULONG)y, w, h);
+            else
+                hvs6_wr(ent, HVS6_CTL0_EMPTY);
+            continue;
+        }
+
+        /* Clip on screen and trim the source in proportion. */
+        ox = px[i]; oy = py[i]; ow = pw[i]; oh = ph[i];
+        sw = d->width; sh = d->height;
+        if (ox < 0)
+        {
+            ULONG skip = (ULONG)-ox, ssk = skip * sw / ow;
+
+            phys += ssk * 4; sw -= ssk; ow -= skip; ox = 0;
+        }
+        if (oy < 0)
+        {
+            ULONG skip = (ULONG)-oy, ssk = skip * sh / oh;
+
+            phys += (UQUAD)ssk * pitch; sh -= ssk; oh -= skip; oy = 0;
+        }
+        if (ox + (LONG)ow > out_w)
+        {
+            ULONG keep = (out_w > ox) ? (ULONG)(out_w - ox) : 0;
+
+            sw = sw * keep / ow; ow = keep;
+        }
+        if (oy + (LONG)oh > limit[i])
+        {
+            ULONG keep = (limit[i] > oy) ? (ULONG)(limit[i] - oy) : 0;
+
+            sh = sh * keep / oh; oh = keep;
+        }
+
+        if (!ow || !oh || !sw || !sh || (scaled >= HVS6_SCALE_MAX)
+            || !HVS6_PPF_FITS(sw, ow) || !HVS6_PPF_FITS(sh, oh))
+        {
             hvs6_wr(ent, HVS6_CTL0_EMPTY);
+            continue;
+        }
+
+        hvs6_scaled(ent, fb, phys, pitch, ptr0[i], ox, oy, ow, oh, sw, sh, lbm);
+        lbm += d->width * 8;
+        scaled++;
     }
 
-    /* The overlay slot is above every screen: the front one only, and no
-     * further out than it. */
+    /* The overlay slot is above every screen: the front one only, unscaled,
+     * and no further out than it. */
     ent = hvs6_pslot(st, list, HVS6_PL_OVL);
     if (st->h6_Overlay && (front >= 0) && ptr0[front]
-        && (st->h6_OvlOwner == xsd->vcsd_Plane[front].pl_BM))
+        && (st->h6_OvlOwner == xsd->vcsd_Plane[front].pl_BM)
+        && (pw[front] == xsd->vcsd_Plane[front].pl_Data->width)
+        && (ph[front] == xsd->vcsd_Plane[front].pl_Data->height))
     {
         struct vcgfx_plane *pl = &xsd->vcsd_Plane[front];
         LONG r = pl->pl_X + (LONG)pl->pl_Data->width;
@@ -1102,6 +1244,46 @@ static void hvs6_build_planes(struct VideoCoreGfx_staticdata *xsd, ULONG list)
         hvs6_wr(ent, HVS6_CTL0_EMPTY);
 
     hvs6_wr(hvs6_pslot(st, list, HVS6_PL_END), HVS6_CTL0_END);
+    return scaled;
+}
+
+/* The list with the first scaled plane: it must latch, and the frame
+ * counter must keep going. FALSE when the HVS did not take it. */
+static BOOL hvs6_scale_verify(struct vc4_hvs6_state *st, ULONG list)
+{
+    ULONG chan = HVS6_CHAN(st->h6_Chan), start = hvs6_now_us(), f0 = 0, i, slot;
+    BOOL latched = FALSE, ran = FALSE;
+
+    while ((hvs6_now_us() - start) < HVS6_VERIFY_US)
+    {
+        if (!latched && (hvs6_rd(chan + HVS6_DISPLACT) == list))
+        {
+            latched = TRUE;
+            f0 = HVS6_DISPSTAT_FRCNT(hvs6_rd(chan + HVS6_DISPSTAT));
+        }
+        if (latched && (HVS6_DISPSTAT_FRCNT(hvs6_rd(chan + HVS6_DISPSTAT)) != f0))
+        {
+            ran = TRUE;
+            break;
+        }
+    }
+
+    bug("[VC4HVS6] scaled planes: %s, status %08x, fetcher %08x, handle error %08x,"
+        " lbm %u\n", ran ? "running" : (latched ? "latched, no frames" : "never latched"),
+        hvs6_rd(chan + HVS6_DISPSTAT), hvs6_rd(HVS6_FETCHER_STATUS),
+        hvs6_rd(HVS6_HANDLE_ERROR), hvs6_rd(HVS6_LBM_SIZE));
+    for (slot = HVS6_PL_SCREEN; slot < HVS6_PL_OVL; slot++)
+    {
+        ULONG ent = hvs6_pslot(st, list, slot);
+
+        if (hvs6_rd(ent) & HVS6_CTL0_UNITY || !(hvs6_rd(ent) & HVS6_CTL0_VALID))
+            continue;
+        bug("[VC4HVS6]   slot %u:", slot);
+        for (i = 0; i < HVS6_SC_WORDS; i++)
+            bug(" %08x", hvs6_rd(ent + i * 4));
+        bug("\n");
+    }
+    return ran;
 }
 
 /* Build into the list neither latched nor last written, and repoint: the
@@ -1126,9 +1308,22 @@ void vc4_hvs6_planes_commit(struct VideoCoreGfx_staticdata *xsd)
             break;
     }
 
-    hvs6_build_planes(xsd, list);
+    i = hvs6_build_planes(xsd, list);
     hvs6_wr(HVS6_CHAN(st->h6_Chan) + HVS6_DISPLIST, list);
     st->h6_PlLast = list;
+
+    if (i && !st->h6_ScaleOK)
+    {
+        if (hvs6_scale_verify(st, list))
+            st->h6_ScaleOK = TRUE;
+        else
+        {
+            bug("[VC4HVS6] scaled planes refused - scaling off, showing screens 1:1\n");
+            st->h6_ScaleOff = TRUE;
+            vc4_hvs6_planes_commit(xsd);
+            return;
+        }
+    }
     hvs6_ovl_arm(st);
 }
 

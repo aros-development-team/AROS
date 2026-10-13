@@ -60,6 +60,8 @@ struct vc4_hvs6_state
     ULONG   h6_PlLast;          /* the one last written to DISPLIST */
     ULONG   h6_UpmTop;
     ULONG   h6_UpmFloor;
+    BOOL    h6_ScaleOK;         /* a scaled plane has been seen to run */
+    BOOL    h6_ScaleOff;        /* one did not: screens stay 1:1 */
 
     /* The firmware's boot mode on HDMI0, captured before anything was
      * touched (vcgfx_hvs6_mode.c). Switching back to its size restores

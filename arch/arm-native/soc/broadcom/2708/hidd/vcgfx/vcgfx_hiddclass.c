@@ -425,16 +425,22 @@ static BOOL vc4_screen_scale(OOP_Class *cl, OOP_Object *bm, ULONG *mw, ULONG *mh
     struct VideoCoreGfx_staticdata *xsd = XSD(cl);
     struct BitmapData *data;
 
-    /* Only HVS5 scales planes so far. */
-    if (!xsd->vcsd_PlanesMode || !bm || (xsd->vcsd_HVSGen != VCGFX_HVS_HVS5)
+    if (!xsd->vcsd_PlanesMode || !bm
         || (OOP_OCLASS(bm) != xsd->vcsd_VideoCoreGfxOffBMClass))
         return FALSE;
 
     data = OOP_INST_DATA(xsd->vcsd_VideoCoreGfxOffBMClass, bm);
     *mw = data->modew;
     *mh = data->modeh;
-    *dw = xsd->vcsd_HVS.hvs_SrcW;
-    *dh = xsd->vcsd_HVS.hvs_SrcH;
+    if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS5)
+    {
+        *dw = xsd->vcsd_HVS.hvs_SrcW;
+        *dh = xsd->vcsd_HVS.hvs_SrcH;
+    }
+    else if ((xsd->vcsd_HVSGen == VCGFX_HVS_HVS6) && vc4_hvs6_scales(xsd))
+        vc4_hvs6_out_size(xsd, dw, dh);
+    else
+        return FALSE;
     return *mw && *mh && *dw && *dh;
 }
 
