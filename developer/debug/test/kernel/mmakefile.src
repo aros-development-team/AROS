@@ -3,7 +3,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES := mmap stackcheck
+FILES := mmap stackcheck mmio
 
 EXEDIR := $(AROS_TESTS)/kernel
 
@@ -11,5 +11,16 @@ EXEDIR := $(AROS_TESTS)/kernel
 
 %build_progs mmake=test-kernel \
     files=$(FILES) targetdir=$(EXEDIR)
+
+# fdtprobe reads the firmware's device tree, so it needs the parser the
+# riscv port keeps as a linklib - and the parser uses strcmp(), hence
+# the static link.
+USER_INCLUDES := -I$(SRCDIR)/arch/riscv-all/linklibs/fdt/include
+
+#MM test-kernel : linklibs-fdt
+
+%build_prog mmake=test-kernel \
+    files=fdtprobe targetdir=$(EXEDIR) progname=FDTProbe \
+    uselibs="fdt"
 
 %common

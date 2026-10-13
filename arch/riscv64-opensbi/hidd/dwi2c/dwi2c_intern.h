@@ -99,6 +99,17 @@
 #define DWI2C_ABRT_UNKNOWN      0xffffffff
 
 /*
+ * Why a transfer failed, when it did not fail by the controller
+ * aborting it. These sit above anything IC_TX_ABRT_SOURCE can produce,
+ * so one field carries either.
+ */
+#define DWI2C_FAIL_NONE         0x00000000
+#define DWI2C_FAIL_NOTENABLED   0x10000000  /* IC_ENABLE never took      */
+#define DWI2C_FAIL_TXSTUCK      0x20000000  /* tx FIFO never drained     */
+#define DWI2C_FAIL_RXSTALL      0x30000000  /* queued reads never arrived*/
+#define DWI2C_FAIL_NOSTOP       0x40000000  /* the STOP never went out   */
+
+/*
  * How long to spin before declaring the bus wedged. This counts polls
  * of a memory mapped register rather than time, which is all a driver
  * that must work before timer.device exists can measure. A byte at
@@ -143,6 +154,7 @@ struct dwi2c_ctrl
     ULONG                   sdaHold;    /* in input clock cycles        */
     ULONG                   rxDepth;
     ULONG                   txDepth;
+    ULONG                   lastFail;   /* why the last transfer failed */
     char                    name[12];
 };
 
