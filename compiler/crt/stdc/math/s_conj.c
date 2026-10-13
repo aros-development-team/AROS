@@ -31,8 +31,38 @@
 
 #include "math_private.h"
 
-double complex
-conj(double complex z)
+/****************************************************************************
+    NAME */
+        double complex conj(
+
+/*  SYNOPSIS */
+        double complex z)
+
+/*  FUNCTION
+        Return the complex conjugate of z. Keep the real component and
+        negate the imaginary component. The result is constructed from
+        these two components without a complex multiplication.
+
+    INPUTS
+        z - Complex value passed by value. Zero, infinite and NaN components
+            are accepted.
+
+    RESULT
+        A complex value with real part equal to that of z and imaginary
+        part equal to the negated imaginary part of z. The sign of an
+        imaginary zero or infinity is reversed. A NaN component remains
+        a NaN. There is no error sentinel.
+
+    NOTES
+        Include <complex.h>. The argument and result are values: no storage
+        is retained or allocated, and the call performs no I/O or waiting.
+        The implementation does not set errno. Floating-point exception
+        flags and NaN payload preservation are not specified here.
+
+    SEE ALSO
+        creal(), cimag(), cproj()
+
+*****************************************************************************/
 {
 	return (CMPLX(creal(z), -cimag(z)));
 }
