@@ -853,10 +853,14 @@ LONG transfer(UWORD action, UBYTE *buffer, ULONG blockoffset, ULONG blocklength)
 {
     _TDEBUG("TRANSFER: %ld, buf=0x%p, block=%ld, blocks=%ld...\n", action, buffer, blockoffset, blocklength);
 
-    if ((blockoffset < globals->blocks_total) && (blocklength <= globals->blocks_total - blockoffset))
+    if ((blockoffset <= globals->blocks_total) && (blocklength <= globals->blocks_total - blockoffset))
     {
         ULONG maxblocks = globals->blocks_maxtransfer;
         LONG errorcode;
+
+        if(blocklength==0) {
+            return(0);
+        }
 
         if(globals->scsidirect && maxblocks>65535/globals->sectors_block) {
             maxblocks=65535/globals->sectors_block;
