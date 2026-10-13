@@ -51,12 +51,15 @@ extern void starttimeout(void);
    - Makes sure no accesses outside the partition are allowed. */
 
 
-void update(void)
+LONG update(void)
 {
     _TDEBUG("UPDATE\n");
     globals->ioreq->io_Command=CMD_UPDATE;
     globals->ioreq->io_Length=0;
-    DoIO((struct IORequest *)globals->ioreq);
+    LONG errorcode=DoIO((struct IORequest *)globals->ioreq);
+
+    /* Older devices may not implement an update command. */
+    return(errorcode==IOERR_NOCMD ? 0 : errorcode);
 }
 
 void motoroff(void)

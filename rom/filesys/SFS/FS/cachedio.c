@@ -559,7 +559,7 @@ LONG flushiocache(void) {
   }
 
   if(errorcode==0) {
-    update();
+    errorcode=update();
   }
 
 //  _DEBUG("flushiocache: errorcode = %ld\n", errorcode);
