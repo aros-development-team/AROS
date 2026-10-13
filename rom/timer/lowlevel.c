@@ -327,7 +327,7 @@ void TimerProcessMicroHZ(struct TimerBase *TimerBase, struct ExecBase *SysBase, 
             tr->tr_time.tv_micro = 0;
             tr->tr_node.io_Error = 0;
             tr->tr_node.io_Flags |= TIMERF_REPLYING;
-            ADDTAIL(&replies, tr);
+            AddTail((struct List *)&replies, (struct Node *)tr);
         }
         else
         {
@@ -341,7 +341,7 @@ void TimerProcessMicroHZ(struct TimerBase *TimerBase, struct ExecBase *SysBase, 
 #if defined(__AROSEXEC_SMP__)
     if (ExecLockBase && !locked) ReleaseLock(TimerBase->tb_ListLock, 0);
 #endif
-    while ((tr = (struct timerequest *)REMHEAD(&replies)))
+    while ((tr = (struct timerequest *)RemHead((struct List *)&replies)))
         ReplyMsg(&tr->tr_node.io_Message);
 }
 
@@ -380,7 +380,7 @@ void TimerProcessVBlank(struct TimerBase *TimerBase, struct ExecBase *SysBase, B
             tr->tr_time.tv_secs = tr->tr_time.tv_micro = 0;
             tr->tr_node.io_Error = 0;
             tr->tr_node.io_Flags |= TIMERF_REPLYING;
-            ADDTAIL(&replies, tr);
+            AddTail((struct List *)&replies, (struct Node *)tr);
         }
         else
             break;
@@ -400,7 +400,7 @@ void TimerProcessVBlank(struct TimerBase *TimerBase, struct ExecBase *SysBase, B
             tr->tr_time.tv_secs = tr->tr_time.tv_micro = 0;
             tr->tr_node.io_Error = 0;
             tr->tr_node.io_Flags |= TIMERF_REPLYING;
-            ADDTAIL(&replies, tr);
+            AddTail((struct List *)&replies, (struct Node *)tr);
         }
         else
             break;
@@ -408,7 +408,7 @@ void TimerProcessVBlank(struct TimerBase *TimerBase, struct ExecBase *SysBase, B
 #if defined(__AROSEXEC_SMP__)
     if (ExecLockBase && !locked) ReleaseLock(TimerBase->tb_ListLock, 0);
 #endif
-    while ((tr = (struct timerequest *)REMHEAD(&replies)))
+    while ((tr = (struct timerequest *)RemHead((struct List *)&replies)))
         ReplyMsg(&tr->tr_node.io_Message);
 }
 
