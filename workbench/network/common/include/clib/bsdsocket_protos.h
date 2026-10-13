@@ -167,28 +167,33 @@ AROS_LP2(void, SetErrnoPtr,
          AROS_LPA(int, size, D0),
          LIBBASETYPEPTR, SocketBase, 28, BSDSocket
 );
+/*
+ * IPv4 addresses and network numbers are 32 bits: ULONG here, as in the
+ * AmiTCP SDK, and in_addr_t (uint32_t) in BSD and POSIX. These were declared
+ * unsigned long, the 4.4BSD spelling from when long was 32 bits;
+ */
 AROS_LP1(char *, Inet_NtoA,
-         AROS_LPA(unsigned long, in, D0),
+         AROS_LPA(ULONG, in, D0),
          LIBBASETYPEPTR, SocketBase, 29, BSDSocket
 );
-AROS_LP1(unsigned long, inet_addr,
+AROS_LP1(ULONG, inet_addr,
          AROS_LPA(const char *, cp, A0),
          LIBBASETYPEPTR, SocketBase, 30, BSDSocket
 );
-AROS_LP1(unsigned long, Inet_LnaOf,
-         AROS_LPA(unsigned long, in, D0),
+AROS_LP1(ULONG, Inet_LnaOf,
+         AROS_LPA(ULONG, in, D0),
          LIBBASETYPEPTR, SocketBase, 31, BSDSocket
 );
-AROS_LP1(unsigned long, Inet_NetOf,
-         AROS_LPA(unsigned long, in, D0),
+AROS_LP1(ULONG, Inet_NetOf,
+         AROS_LPA(ULONG, in, D0),
          LIBBASETYPEPTR, SocketBase, 32, BSDSocket
 );
-AROS_LP2(unsigned long, Inet_MakeAddr,
-         AROS_LPA(int, net, D0),
-         AROS_LPA(int, lna, D1),
+AROS_LP2(ULONG, Inet_MakeAddr,
+         AROS_LPA(ULONG, net, D0),
+         AROS_LPA(ULONG, lna, D1),
          LIBBASETYPEPTR, SocketBase, 33, BSDSocket
 );
-AROS_LP1(unsigned long, inet_network,
+AROS_LP1(ULONG, inet_network,
          AROS_LPA(const char *, cp, A0),
          LIBBASETYPEPTR, SocketBase, 34, BSDSocket
 );

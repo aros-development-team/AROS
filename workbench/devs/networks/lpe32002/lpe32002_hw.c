@@ -127,7 +127,7 @@ int lpe_bmbx_command(struct LPe32002Unit *unit, struct sli4_mbox_cmd *cmd)
     LPE_REG_WRITE32(unit->lpeu_bar1, SLI4_BOOTSTRAP_MBOX_DB, reg);
 
     /* Write high address (BMBX_HI=1) */
-    reg = ((ULONG)((dma_addr >> 32) & 0xFFFFFFFC)) | SLI4_BMBX_HI;
+    reg = ((ULONG)(((UQUAD)dma_addr >> 32) & 0xFFFFFFFC)) | SLI4_BMBX_HI;
     LPE_REG_WRITE32(unit->lpeu_bar1, SLI4_BOOTSTRAP_MBOX_DB, reg);
 
     /* Poll for completion */
@@ -406,7 +406,7 @@ int lpe_queue_create_eq(struct LPe32002Unit *unit, struct sli4_queue *eq)
     cmd.payload[0] = 1;                        /* number of pages */
     cmd.payload[1] = 1 | (5 << 13) | (7 << 29); /* valid, delay=5us, count=256 */
     cmd.payload[4] = (ULONG)(IPTR)eq->base_dma; /* page address low */
-    cmd.payload[5] = (ULONG)((IPTR)eq->base_dma >> 32); /* page address high */
+    cmd.payload[5] = (ULONG)((UQUAD)(IPTR)eq->base_dma >> 32); /* page address high */
 
     if (lpe_bmbx_command(unit, &cmd) != 0) {
         lpe_free_queue_mem(eq);
@@ -435,7 +435,7 @@ int lpe_queue_create_cq(struct LPe32002Unit *unit, struct sli4_queue *cq, struct
     cmd.payload[0] = 1;                        /* number of pages */
     cmd.payload[1] = 1 | (0 << 12) | ((ULONG)eq->id << 22); /* valid, CQ count=256, assoc EQ */
     cmd.payload[4] = (ULONG)(IPTR)cq->base_dma;
-    cmd.payload[5] = (ULONG)((IPTR)cq->base_dma >> 32);
+    cmd.payload[5] = (ULONG)((UQUAD)(IPTR)cq->base_dma >> 32);
 
     if (lpe_bmbx_command(unit, &cmd) != 0) {
         lpe_free_queue_mem(cq);
@@ -464,7 +464,7 @@ int lpe_queue_create_wq(struct LPe32002Unit *unit, struct sli4_queue *wq, struct
     cmd.payload[0] = 1;                        /* page count */
     cmd.payload[1] = (ULONG)cq->id;           /* associated CQ ID */
     cmd.payload[4] = (ULONG)(IPTR)wq->base_dma;
-    cmd.payload[5] = (ULONG)((IPTR)wq->base_dma >> 32);
+    cmd.payload[5] = (ULONG)((UQUAD)(IPTR)wq->base_dma >> 32);
 
     if (lpe_bmbx_command(unit, &cmd) != 0) {
         lpe_free_queue_mem(wq);
@@ -503,9 +503,9 @@ int lpe_queue_create_rq(struct LPe32002Unit *unit,
     cmd.payload[1] = (ULONG)cq->id | (1 << 16);       /* CQ ID, dual buffer */
     cmd.payload[2] = LPE_RQ_DEPTH;                    /* buffer size / entry count */
     cmd.payload[4] = (ULONG)(IPTR)rq_hdr->base_dma;   /* header RQ page */
-    cmd.payload[5] = (ULONG)((IPTR)rq_hdr->base_dma >> 32);
+    cmd.payload[5] = (ULONG)((UQUAD)(IPTR)rq_hdr->base_dma >> 32);
     cmd.payload[6] = (ULONG)(IPTR)rq_data->base_dma;  /* data RQ page */
-    cmd.payload[7] = (ULONG)((IPTR)rq_data->base_dma >> 32);
+    cmd.payload[7] = (ULONG)((UQUAD)(IPTR)rq_data->base_dma >> 32);
 
     if (lpe_bmbx_command(unit, &cmd) != 0) {
         lpe_free_queue_mem(rq_hdr);
@@ -538,7 +538,7 @@ int lpe_queue_create_mq(struct LPe32002Unit *unit, struct sli4_queue *mq, struct
     cmd.payload[0] = 1;
     cmd.payload[1] = 1 | ((ULONG)cq->id << 16);  /* valid, associated CQ */
     cmd.payload[4] = (ULONG)(IPTR)mq->base_dma;
-    cmd.payload[5] = (ULONG)((IPTR)mq->base_dma >> 32);
+    cmd.payload[5] = (ULONG)((UQUAD)(IPTR)mq->base_dma >> 32);
 
     if (lpe_bmbx_command(unit, &cmd) != 0) {
         lpe_free_queue_mem(mq);
@@ -826,7 +826,7 @@ int lpe_tx_frame(struct LPe32002Unit *unit, APTR data, ULONG len)
     /* Build the Work Queue Entry (SEND_FRAME) */
     memset(wqe, 0, sizeof(*wqe));
     wqe->words[0] = (ULONG)(IPTR)txd->buf.dma;              /* BDE address low */
-    wqe->words[1] = (ULONG)((IPTR)txd->buf.dma >> 32);      /* BDE address high */
+    wqe->words[1] = (ULONG)((UQUAD)(IPTR)txd->buf.dma >> 32);      /* BDE address high */
     wqe->words[2] = len;                                      /* BDE length */
     wqe->words[3] = 0;
     wqe->words[4] = 0;

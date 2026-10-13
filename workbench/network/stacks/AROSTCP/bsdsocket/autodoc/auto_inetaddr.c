@@ -13,32 +13,32 @@
 *        addr = inet_addr(cp)
 *        D0               A0
 *
-*        unsigned long inet_addr(char *);
+*        ULONG inet_addr(const char *);
 *
 *        net = inet_network(cp)
 *        D0                 A0
 *
-*        unsigned long inet_network(char *);
+*        ULONG inet_network(const char *);
 *
 *        in_addr = Inet_MakeAddr(net, lna)
 *        D0                      D0   D1
 *
-*        unsigned long Inet_MakeAddr(long, long);
+*        ULONG Inet_MakeAddr(ULONG, ULONG);
 *
 *        lna = Inet_LnaOf(in)
 *        D0               D0
 *
-*        long Inet_LnaOf(unsigned long);
+*        ULONG Inet_LnaOf(ULONG);
 *
 *        net = Inet_NetOf(in)
 *        D0               D0
 *
-*        long Inet_NetOf(unsigned long);
+*        ULONG Inet_NetOf(ULONG);
 *
 *        addr = Inet_NtoA(in)
 *        DO               D0
 *
-*        char * Inet_NtoA(unsigned long);
+*        char * Inet_NtoA(ULONG);
 *
 *
 *        in_addr = inet_makeaddr(net, lna)

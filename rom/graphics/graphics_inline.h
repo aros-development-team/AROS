@@ -61,7 +61,20 @@ static inline OOP_Object *SelectDriverObject(struct BitMap *srcbm, OOP_Object *d
     return gfxhidd;
 }
 
+/*
+ * On m68k this body is inlined into enough callers to matter for the 512 KiB
+ * ROM bank, so it is compiled once, out of line, in gfxfuncsupport.c (which
+ * defines GFX_GETDRIVERDATA_IMPL). It is called once per drawing operation,
+ * ahead of the far costlier driver method call. Other targets keep it inline.
+ */
+#if defined(__mc68000__) && !defined(GFX_GETDRIVERDATA_IMPL)
+OOP_Object *GetDriverData(struct RastPort *rp, struct GfxBase *GfxBase);
+#else
+#if defined(__mc68000__)
+OOP_Object *GetDriverData(struct RastPort *rp, struct GfxBase *GfxBase)
+#else
 static inline OOP_Object *GetDriverData(struct RastPort *rp, struct GfxBase *GfxBase)
+#endif
 {
     /*
      * Here we do a little bit of hacky-wacky magic.
@@ -126,6 +139,7 @@ static inline OOP_Object *GetDriverData(struct RastPort *rp, struct GfxBase *Gfx
     OOP_OCLASS(gc) = CDD(GfxBase)->gcClass;	/* Set class pointer			*/
     return gc;					/* Our handmade object is ready to use!	*/
 }
+#endif /* __mc68000__ && !GFX_GETDRIVERDATA_IMPL */
 
 static inline BOOL GetRPClipRectangleForLayer(struct RastPort *rp, struct Layer *lay, struct Rectangle *r, struct GfxBase *GfxBase)
 {

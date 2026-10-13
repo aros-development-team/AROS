@@ -467,7 +467,7 @@ static int sync_server(const struct TSConfig *c, const char *server,
     sntp_ts t1, t4, sent;
     LONG corr, n, sock = -1;
     int rc = SYNC_FAILED, err;
-    unsigned long ip;
+    ULONG ip;                   /* in_addr_t: inet_addr() returns 32 bits */
 
     memset(res, 0, sizeof(*res));
     strncpy(res->server, server, TSD_NAMELEN - 1);
@@ -476,7 +476,7 @@ static int sync_server(const struct TSConfig *c, const char *server,
     sin.sin_family = AF_INET;
     sin.sin_port   = htons(SNTP_PORT);
 
-    ip = inet_addr((STRPTR)server);
+    ip = inet_addr(server);
     if (ip != INADDR_NONE)
         sin.sin_addr.s_addr = ip;
     else {

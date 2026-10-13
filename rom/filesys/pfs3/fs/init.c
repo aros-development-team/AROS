@@ -193,6 +193,8 @@ BOOL Initialize(DSTR mountname, struct FileSysStartupMsg *fssm,
 
 	/* allocate messageport for notify */
 	g->notifyport = CreateMsgPort();
+	if (!g->notifyport)
+		return FALSE;
 
 	g->myproc   = (struct Process *)FindTask(NULL);
 	g->msgport  = devnode->dn_Task;
@@ -312,6 +314,8 @@ Removed because of problems with Phase 5 boards
 
 #if EXTRAPACKETS
 	g->sleepport = CreateMsgPort();
+	if (!g->sleepport)
+		return FALSE;
 #endif
 
 	DB(Trace(1,"Initialize","Removable = %ld", (ULONG)g->removable));

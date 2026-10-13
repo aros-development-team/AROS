@@ -1,8 +1,6 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-#MM- workbench-devs-networks-lpe32002-i386 : workbench-devs-networks-lpe32002
-#MM- workbench-devs-networks-lpe32002-x86_64 : workbench-devs-networks-lpe32002
 
 FILES := handler unit lpe32002_hw
 
@@ -13,7 +11,15 @@ USER_CPPFLAGS := \
         -D__OOP_NOATTRBASES__
 USER_CFLAGS := $(CFLAGS_GNU99)
 
-#MM- workbench-devs-networks-lpe32002 : workbench-devs-networks-lpe32002-normal
+#
+# Little-endian CPUs only: the SLI-4 mailbox, queue and work-queue entries
+# and the registers are all written in host byte order.
+#
+#MM- workbench-devs-networks-lpe32002 : workbench-devs-networks-lpe32002-$(AROS_TARGET_CPU)
+#MM- workbench-devs-networks-lpe32002-i386 : workbench-devs-networks-lpe32002-normal
+#MM- workbench-devs-networks-lpe32002-x86_64 : workbench-devs-networks-lpe32002-normal
+#MM- workbench-devs-networks-lpe32002-riscv : workbench-devs-networks-lpe32002-normal
+#MM- workbench-devs-networks-lpe32002-riscv64 : workbench-devs-networks-lpe32002-normal
 
 #MM- workbench-devs-networks-lpe32002-quick : workbench-devs-networks-lpe32002-normal-quick
 

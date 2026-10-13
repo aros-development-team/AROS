@@ -1793,12 +1793,12 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
         DoMethod
         (
-            hostString, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
+            hostString, MUIM_Notify, MUIA_String_Contents, MUIV_EveryTime,
             (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
         );
         DoMethod
         (
-            domainString, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
+            domainString, MUIM_Notify, MUIA_String_Contents, MUIV_EveryTime,
             (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
         );
         DoMethod
@@ -1839,6 +1839,11 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             removeButton, MUIM_Notify, MUIA_Pressed, FALSE,
             (IPTR)interfaceList, 2, MUIM_List_Remove, MUIV_List_Remove_Active
         );
+        DoMethod
+        (
+            removeButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
 
         DoMethod
         (
@@ -1865,6 +1870,11 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         (
             hostRemoveButton, MUIM_Notify, MUIA_Pressed, FALSE,
             (IPTR)hostList, 2, MUIM_List_Remove, MUIV_List_Remove_Active
+        );
+        DoMethod
+        (
+            hostRemoveButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
         );
 
         DoMethod
@@ -1893,10 +1903,15 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             netRemoveButton, MUIM_Notify, MUIA_Pressed, FALSE,
             (IPTR)networkList, 2, MUIM_List_Remove, MUIV_List_Remove_Active
         );
+        DoMethod
+        (
+            netRemoveButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
 
         DoMethod
         (
-            MBBDeviceString, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
+            MBBDeviceString, MUIM_Notify, MUIA_String_Contents, MUIV_EveryTime,
             (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
         );
 
@@ -1907,19 +1922,19 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         );
          DoMethod
         (
-            MBBUsername, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
+            MBBUsername, MUIM_Notify, MUIA_String_Contents, MUIV_EveryTime,
             (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
         );
          DoMethod
         (
-            MBBPassword, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
+            MBBPassword, MUIM_Notify, MUIA_String_Contents, MUIV_EveryTime,
             (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
         );
         LONG i;
         for(i=0;i<MAXATCOMMANDS;i++)
             DoMethod
             (
-                MBBInitString[i], MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
+                MBBInitString[i], MUIM_Notify, MUIA_String_Contents, MUIV_EveryTime,
                 (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
             );
 
@@ -1970,6 +1985,11 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         (
             shareRemoveButton, MUIM_Notify, MUIA_Pressed, FALSE,
             (IPTR)shareList, 2, MUIM_List_Remove, MUIV_List_Remove_Active
+        );
+        DoMethod
+        (
+            shareRemoveButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
         );
 
         DoMethod

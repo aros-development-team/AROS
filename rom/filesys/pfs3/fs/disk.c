@@ -209,9 +209,9 @@ enum vctype {read, write};
 static int CheckDataCache(ULONG blocknr, globaldata *g);
 static int CachedRead(ULONG blocknr, SIPTR *error, BOOL fake, globaldata *g);
 static UBYTE *CachedReadD(ULONG blknr, SIPTR *err, globaldata *g);
-static int CachedWrite(UBYTE *data, ULONG blocknr, globaldata *g);
-static void ValidateCache(ULONG blocknr, ULONG numblocks, enum vctype, globaldata *g);
-static void UpdateSlot(int slotnr, globaldata *g);
+static int CachedWrite(UBYTE *data, ULONG blocknr, SIPTR *error, globaldata *g);
+static ULONG ValidateCache(ULONG blocknr, ULONG numblocks, enum vctype, globaldata *g);
+static ULONG UpdateSlot(int slotnr, globaldata *g);
 static ULONG ReadFromRollover(fileentry_t *file, UBYTE *buffer, ULONG size, SIPTR *error, globaldata *g);
 static ULONG WriteToRollover(fileentry_t *file, UBYTE *buffer, ULONG size, SIPTR *error, globaldata *g);
 static SFSIZE SeekInRollover(fileentry_t *file, SFSIZE offset, LONG mode, SIPTR *error, globaldata *g);
@@ -452,9 +452,10 @@ static ULONG WriteToRollover(fileentry_t *file, UBYTE *buffer, ULONG size,
 
 	/* commit changes */
 	if (!GetParent(&file->le.info, &directory, error, g))
-		return DOSFALSE;
-	else
-		ChangeDirEntry(file->le.info.file, destentry, &directory, &fi, g);
+		return (ULONG)-1;
+	*error = ChangeDirEntry(file->le.info.file, destentry, &directory, &fi, g);
+	if (*error)
+		return (ULONG)-1;
 
 	return (ULONG)written;
 
@@ -581,9 +582,10 @@ static SFSIZE ChangeRolloverSize(fileentry_t *file, SFSIZE releof, LONG mode,
 
 	/* commit changes */
 	if (!GetParent(&file->le.info, &directory, error, g))
-		return DOSFALSE;
-	else
-		ChangeDirEntry(file->le.info.file, destentry, &directory, &fi, g);
+		return -1;
+	*error = ChangeDirEntry(file->le.info.file, destentry, &directory, &fi, g);
+	if (*error)
+		return -1;
 
 	return virtualeof;
 
@@ -870,6 +872,8 @@ static ULONG WriteToFile(fileentry_t *file, UBYTE *buffer, ULONG size,
 				/* for one block no offset growing file */
 				slotnr = CachedRead(chnode->an.blocknr + anodeoffset, error, TRUE, g);
 			}
+			if (*error)
+				goto wtf_error;
 
 			/* copy data to cache and mark block as dirty */
 			firstblock = &g->dc.data[slotnr<<BLOCKSHIFT];
@@ -1221,7 +1225,11 @@ static int CachedRead(ULONG blocknr, SIPTR *error, BOOL fake, globaldata *g)
 	if (i != -1) return i;
 	i = g->dc.roving;
 	if (g->dc.ref[i].dirty && g->dc.ref[i].blocknr)
-		UpdateSlot(i, g);
+	{
+		*error = UpdateSlot(i, g);
+		if (*error)
+			return i;
+	}
 
 	if (fake)
 		memset(&g->dc.data[i<<BLOCKSHIFT], 0xAA, BLOCKSIZE);
@@ -1229,7 +1237,8 @@ static int CachedRead(ULONG blocknr, SIPTR *error, BOOL fake, globaldata *g)
 		*error = RawRead(&g->dc.data[i<<BLOCKSHIFT], 1, blocknr, g);
 	g->dc.roving = (g->dc.roving+1)&g->dc.mask;
 	g->dc.ref[i].dirty = 0;
-	g->dc.ref[i].blocknr = blocknr;
+	/* Do not turn a failed read into a successful cache hit. */
+	g->dc.ref[i].blocknr = *error ? 0 : blocknr;
 	return i;
 }
 
@@ -1244,20 +1253,23 @@ static UBYTE *CachedReadD(ULONG blknr, SIPTR *err, globaldata *g)
 		return &g->dc.data[i<<BLOCKSHIFT];
 }
 
-/* write block in cache. if block was already cached,
- * overwrite it. return slotnr (never fails).
- */
-static int CachedWrite(UBYTE *data, ULONG blocknr, globaldata *g)
+/* Write a block in cache, preserving an old dirty slot if eviction fails. */
+static int CachedWrite(UBYTE *data, ULONG blocknr, SIPTR *error, globaldata *g)
 {
 	int i;
 
+	*error = 0;
 	i = CheckDataCache(blocknr, g);
 	if (i == -1)
 	{
 		i = g->dc.roving;
-		g->dc.roving = (g->dc.roving+1)&g->dc.mask;
 		if (g->dc.ref[i].dirty && g->dc.ref[i].blocknr)
-			UpdateSlot(i, g);
+		{
+			*error = UpdateSlot(i, g);
+			if (*error)
+				return -1;
+		}
+		g->dc.roving = (g->dc.roving+1)&g->dc.mask;
 	}
 	memcpy(&g->dc.data[i<<BLOCKSHIFT], data, BLOCKSIZE);
 	g->dc.ref[i].dirty = 1;
@@ -1278,43 +1290,54 @@ void FlushDataCache(globaldata *g)
 
 /* write all dirty blocks to disk
  */
-void UpdateDataCache(globaldata *g)
+ULONG UpdateDataCache(globaldata *g)
 {
 	int i;
+	ULONG error;
 
 	for (i=0; i<g->dc.size; i++)
 		if (g->dc.ref[i].dirty && g->dc.ref[i].blocknr)
-			UpdateSlot (i, g);
+		{
+			error = UpdateSlot(i, g);
+			if (error)
+				return error;
+		}
+	return 0;
 }
 
 
 /* update a data cache slot, and any adjacent blocks
  */
-static void UpdateSlot(int slotnr, globaldata *g)
+static ULONG UpdateSlot(int slotnr, globaldata *g)
 {
 	ULONG blocknr;
-	int i;
-	
+	ULONG error;
+	int i, end;
+
 	blocknr = g->dc.ref[slotnr].blocknr;
 
-	/* find out how many adjacent blocks can be written */
-	for (i=slotnr; i<g->dc.size; i++)
+	/* Gather adjacent dirty slots, but keep them dirty until the write succeeds. */
+	for (end=slotnr; end<g->dc.size; end++)
 	{
-		if (g->dc.ref[i].blocknr != blocknr++)
+		if (!g->dc.ref[end].dirty || g->dc.ref[end].blocknr != blocknr++)
 			break;
-		g->dc.ref[i].dirty = 0;
 	}
 
-	/* write them */
-	RawWrite(&g->dc.data[slotnr<<BLOCKSHIFT], i-slotnr, g->dc.ref[slotnr].blocknr, g);
+	error = RawWrite(&g->dc.data[slotnr<<BLOCKSHIFT], end-slotnr,
+		g->dc.ref[slotnr].blocknr, g);
+	if (!error)
+		for (i=slotnr; i<end; i++)
+			g->dc.ref[i].dirty = 0;
+	return error;
 }
 
 /* update cache to reflect blocks read to or written
  * from disk. to be called before disk is accessed.
  */
-static void ValidateCache(ULONG blocknr, ULONG numblocks, enum vctype vctype, globaldata *g)
+static ULONG ValidateCache(ULONG blocknr, ULONG numblocks, enum vctype vctype, globaldata *g)
 {
 	int i;
+	ULONG error;
 
 	ENTER("ValidateCache");
 	for (i=0; i<g->dc.size; i++)
@@ -1325,12 +1348,17 @@ static void ValidateCache(ULONG blocknr, ULONG numblocks, enum vctype vctype, gl
 			if (vctype == read)
 			{
 				if (g->dc.ref[i].dirty)
-					UpdateSlot(i, g);
+				{
+					error = UpdateSlot(i, g);
+					if (error)
+						return error;
+				}
 			}
 			else    // flush
 				g->dc.ref[i].blocknr = 0;
 		}
 	}
+	return 0;
 }
 
 
@@ -1369,10 +1397,13 @@ ULONG DiskRead(UBYTE *buffer, ULONG blockstoread, ULONG blocknr, globaldata *g)
 	if (blockstoread == 1)
 	{
 		slotnr = CachedRead(blocknr, &error, FALSE, g);
-		memcpy(buffer, &g->dc.data[slotnr<<BLOCKSHIFT], BLOCKSIZE);
+		if (!error)
+			memcpy(buffer, &g->dc.data[slotnr<<BLOCKSHIFT], BLOCKSIZE);
 		return error;
 	}
-	ValidateCache(blocknr, blockstoread, read, g);
+	error = ValidateCache(blocknr, blockstoread, read, g);
+	if (error)
+		return error;
 	return RawRead(buffer, blockstoread, blocknr, g);
 }
 
@@ -1391,7 +1422,8 @@ ULONG DiskRead(UBYTE *buffer, ULONG blockstoread, ULONG blocknr, globaldata *g)
 */
 ULONG DiskWrite(UBYTE *buffer, ULONG blockstowrite, ULONG blocknr, globaldata *g)
 {
-	ULONG slotnr;
+	int slotnr;
+	SIPTR cache_error;
 	ULONG error = 0;
 
 	DB(Trace(1, "DiskWrite", "%ld blocks from %ld + %ld\n", blockstowrite, blocknr,
@@ -1404,20 +1436,29 @@ ULONG DiskWrite(UBYTE *buffer, ULONG blockstowrite, ULONG blocknr, globaldata *g
 
 	if (blockstowrite == 1)
 	{
-		CachedWrite(buffer, blocknr, g);
-		return 0;
+		CachedWrite(buffer, blocknr, &cache_error, g);
+		return cache_error;
+	}
+	error = RawWrite(buffer, blockstowrite, blocknr, g);
+	if (error)
+	{
+		/* A partial write can leave clean cached copies stale. Keep dirty
+		 * copies: they still represent the last successfully buffered write. */
+		for (slotnr = 0; slotnr < g->dc.size; slotnr++)
+			if (!g->dc.ref[slotnr].dirty &&
+			    g->dc.ref[slotnr].blocknr >= blocknr &&
+			    g->dc.ref[slotnr].blocknr - blocknr < blockstowrite)
+				g->dc.ref[slotnr].blocknr = 0;
+		return error;
 	}
 	ValidateCache(blocknr, blockstowrite, write, g);
-	error = RawWrite(buffer, blockstowrite, blocknr, g);
 
-	/* cache last block written */
-	if (!error)
-	{
-		buffer += ((blockstowrite-1)<<BLOCKSHIFT);
-		slotnr = CachedWrite(buffer, blocknr+blockstowrite-1, g);
-		g->dc.ref[slotnr].dirty = 0;    // we just wrote it
-	}
-	return error;
+	/* The write succeeded; caching the last block is optional. */
+	buffer += ((blockstowrite-1)<<BLOCKSHIFT);
+	slotnr = CachedWrite(buffer, blocknr+blockstowrite-1, &cache_error, g);
+	if (!cache_error)
+		g->dc.ref[slotnr].dirty = 0;
+	return 0;
 }
 
 /*
@@ -1542,14 +1583,24 @@ retry:
 	/* chop in maxtransfer chunks */
 	maxtransfer = min(g->maxtransfermax, g->dosenvec->de_MaxTransfer) >> BLOCKSHIFT;
 	maxtransfer = min(65535, maxtransfer); // SCSI READ/WRITE(10) max transfer
+	if (blocks && !maxtransfer)
+		return ERROR_BAD_NUMBER;
 	while (blocks > 0)
 	{
 		transfer = min(blocks,maxtransfer);
-		*((UWORD *)&cmdbuf[0]) = write ? 0x2a00 : 0x2800;
-		*((ULONG *)&cmdbuf[2]) = blocknr;
-		*((ULONG *)&cmdbuf[6]) = transfer << 8;
+		cmdbuf[0] = write ? 0x2a : 0x28;
+		cmdbuf[1] = 0;
+		cmdbuf[2] = blocknr >> 24;
+		cmdbuf[3] = blocknr >> 16;
+		cmdbuf[4] = blocknr >> 8;
+		cmdbuf[5] = blocknr;
+		cmdbuf[6] = 0;
+		cmdbuf[7] = transfer >> 8;
+		cmdbuf[8] = transfer;
+		cmdbuf[9] = 0;
 		PROFILE_OFF();
-		if (!DoSCSICommand(buffer, transfer << BLOCKSHIFT, 0, cmdbuf, 10, write ? SCSIF_WRITE : SCSIF_READ, g))
+		if (!DoSCSICommand(buffer, transfer << BLOCKSHIFT, transfer << BLOCKSHIFT,
+			cmdbuf, 10, write ? SCSIF_WRITE : SCSIF_READ, g))
 		{
 			PROFILE_ON();
 			if (ErrorRequest(write, g->scsicmd.scsi_Status, blocknr, transfer, g))
@@ -1582,6 +1633,7 @@ static ULONG RawReadWrite_TD(BOOL write, UBYTE *buffer, ULONG blocks, ULONG bloc
 	ULONG realblocknr;
 	ULONG io_length, io_transfer, io_offset, io_actual = 0, io_startblock = 0;
 	UBYTE *io_buffer;
+	BYTE io_error;
 
 	DB(Trace(1, write ? "RawWrite" : "RawRead", "%ld blocks from %ld + %ld\n", blocks, blocknr, g->firstblock));
 
@@ -1609,6 +1661,8 @@ retry:
 	{
 		io_transfer = min(io_length, min(g->maxtransfermax, g->dosenvec->de_MaxTransfer));
 		io_transfer &= ~BLOCKSIZEMASK;
+		if (!io_transfer)
+			return ERROR_BAD_NUMBER;
 		request = g->request;
 		request->iotd_Req.io_Command = write ? CMD_WRITE : CMD_READ;
 		request->iotd_Req.io_Length  = io_transfer;
@@ -1619,7 +1673,10 @@ retry:
 			request->iotd_Req.io_Command = g->tdmode == ACCESS_NSD ? (write ? NSCMD_TD_WRITE64 : NSCMD_TD_READ64) : (write ? TD_WRITE64 : TD_READ64);
 		}
 		PROFILE_OFF();
-		if (DoIO((struct IORequest*)request) != 0)
+		io_error = DoIO((struct IORequest*)request);
+		if (!io_error && request->iotd_Req.io_Actual != io_transfer)
+			request->iotd_Req.io_Error = TDERR_TooFewSecs;
+		if (io_error || request->iotd_Req.io_Actual != io_transfer)
 		{
 			PROFILE_ON();
 			if (ErrorRequest(write, request->iotd_Req.io_Error, realblocknr, io_transfer >> BLOCKSHIFT, g))
@@ -1841,6 +1898,17 @@ struct SCSIBlockDescriptor
 	ULONG scbd_BlockLength;
 };
 
+static ULONG SCSIReadBE24(const UBYTE *bytes)
+{
+	return ((ULONG)bytes[0] << 16) | ((ULONG)bytes[1] << 8) | bytes[2];
+}
+
+static ULONG SCSIReadBE32(const UBYTE *bytes)
+{
+	return ((ULONG)bytes[0] << 24) | ((ULONG)bytes[1] << 16) |
+		((ULONG)bytes[2] << 8) | bytes[3];
+}
+
 /* Simulate TD_GETGEOMETRY using SCSI commands */
 BOOL get_scsi_geometry(globaldata *g)
 {
@@ -1881,11 +1949,11 @@ BOOL get_scsi_geometry(globaldata *g)
 	if (DoSCSICommand(buffer, cmdbuf[4], sizeof(struct SCSIPageHeader) + sizeof(struct SCSIBlockDescriptor), cmdbuf, 6, SCSIF_READ, g)) {
 		struct SCSIPageHeader *ph = (struct SCSIPageHeader*)buffer;
 		if (ph->spch_BlockDescriptorLength >= sizeof(struct SCSIBlockDescriptor) && ph->spch_ModeDataLength >= sizeof(struct SCSIPageHeader) - 1) {
-			struct SCSIBlockDescriptor *bd = (struct SCSIBlockDescriptor*)(ph + 1);
-			ULONG blocks = bd->scbd_NumberOfBlocks & 0x00ffffff;
+			const UBYTE *bd = buffer + sizeof(*ph);
+			ULONG blocks = SCSIReadBE24(bd + 1);
 			if (blocks != 0x00ffffff)
 				geom->dg_TotalSectors = blocks;
-			geom->dg_SectorSize = bd->scbd_BlockLength & 0x00ffffff;
+			geom->dg_SectorSize = SCSIReadBE24(bd + 5);
 		}
 	}
 
@@ -1893,10 +1961,11 @@ BOOL get_scsi_geometry(globaldata *g)
 	memset(cmdbuf, 0, sizeof(cmdbuf));
 	cmdbuf[0] = 0x25;
 	if (DoSCSICommand(buffer, 8, sizeof(struct SCSICapacity), cmdbuf, 10, SCSIF_READ, g)) {
-		struct SCSICapacity *scc = (struct SCSICapacity*)buffer;
-		geom->dg_SectorSize = scc->scc_BlockLength ? scc->scc_BlockLength : 512;
-		if (scc->scc_Block + 1 != 0)
-			geom->dg_TotalSectors = scc->scc_Block + 1;
+		ULONG last_lba = SCSIReadBE32(buffer);
+		ULONG sector_size = SCSIReadBE32(buffer + 4);
+		geom->dg_SectorSize = sector_size ? sector_size : 512;
+		if (last_lba != 0xffffffffUL)
+			geom->dg_TotalSectors = last_lba + 1;
 	}
 	
 	if (!geom->dg_TotalSectors || !geom->dg_SectorSize)
@@ -1912,9 +1981,8 @@ BOOL get_scsi_geometry(globaldata *g)
 		struct SCSIPageHeader *ph = (struct SCSIPageHeader*)buffer;
 		struct RigidDiskPage *rdp = (struct RigidDiskPage*)(buffer + sizeof(struct SCSIPageHeader));
 		if (ph->spch_ModeDataLength >= sizeof(struct SCSIPageHeader) + 2 + 4 - 1 && ph->spch_BlockDescriptorLength == 0 && (rdp->rgp_PageCode & 0x3f) == 4 && rdp->rgp_PageLength >= 5 - 1) {
-			ULONG cylhead = *((ULONG*)(&rdp->rgp_NumberOfCylinders[0]));
-			geom->dg_Heads = cylhead & 255;
-			geom->dg_Cylinders = cylhead >> 8;
+			geom->dg_Heads = rdp->rgp_NumberOfHeads;
+			geom->dg_Cylinders = SCSIReadBE24(rdp->rgp_NumberOfCylinders);
 		}
 	}
 
@@ -1961,9 +2029,7 @@ static BOOL testread_ds2(UBYTE *buffer, globaldata *g)
 
 		fillbuffer(buffer, 0xfe, g);
 
-		*((UWORD *)&cmdbuf[0]) = 0;
-		*((ULONG *)&cmdbuf[2]) = 0;
-		*((ULONG *)&cmdbuf[6]) = 0;
+		memset(cmdbuf, 0, sizeof(cmdbuf));
 		if (!DoSCSICommand(buffer, 0, 0, cmdbuf, 6, SCSIF_READ, g)) {
 #if DETECTDEBUG
 			DebugPutStr("DoSCSICommand TUR failed\n");
@@ -1972,14 +2038,14 @@ static BOOL testread_ds2(UBYTE *buffer, globaldata *g)
 		}
 
 		/* Read Capacity */
-		*((UWORD *)&cmdbuf[0]) = 0x2500;
+		cmdbuf[0] = 0x25;
 		if (!DoSCSICommand(buffer, sizeof(struct SCSICapacity), sizeof(struct SCSICapacity), cmdbuf, 10, SCSIF_READ, g)) {
 #if DETECTDEBUG
 			DebugPutStr("DoSCSICommand Read Capacity failed\n");
 #endif
 			return FALSE;
 		}
-		capacity = *((ULONG*)buffer);
+		capacity = SCSIReadBE32(buffer);
 
 #if DETECTDEBUG
 		ULONG args[2];
@@ -1997,9 +2063,13 @@ static BOOL testread_ds2(UBYTE *buffer, globaldata *g)
 		}
 		fillbuffer(buffer, cnt, g);
 		/* Read(10) */
-		*((UWORD *)&cmdbuf[0]) = 0x2800;
-		*((ULONG *)&cmdbuf[2]) = g->lastblock;
-		*((ULONG *)&cmdbuf[6]) = 1 << 8;
+		memset(cmdbuf, 0, sizeof(cmdbuf));
+		cmdbuf[0] = 0x28;
+		cmdbuf[2] = g->lastblock >> 24;
+		cmdbuf[3] = g->lastblock >> 16;
+		cmdbuf[4] = g->lastblock >> 8;
+		cmdbuf[5] = g->lastblock;
+		cmdbuf[8] = 1;
 		if (!DoSCSICommand(buffer, 1 << BLOCKSHIFT, 1 << BLOCKSHIFT, cmdbuf, 10, SCSIF_READ, g)) {
 #if DETECTDEBUG
 			DebugPutStr("DoSCSICommand Read(10) failed\n");
@@ -2235,14 +2305,20 @@ BOOL detectaccessmode(UBYTE *buffer, globaldata *g)
 
 /*************************************************************************/
 
-void UpdateAndMotorOff(globaldata *g)
+ULONG UpdateAndMotorOff(globaldata *g)
 {
 	struct IOExtTD *request = g->request;
+	ULONG error;
 
 	request->iotd_Req.io_Command = CMD_UPDATE;
-	DoIO((struct IORequest *)request);
+	error = DoIO((struct IORequest *)request);
+	/* Some block devices have no update command or hardware write cache.
+	 * Preserve the old successful-commit behaviour for that case. */
+	if ((LONG)error == IOERR_NOCMD)
+		error = 0;
 
 	request->iotd_Req.io_Command = TD_MOTOR;
 	request->iotd_Req.io_Length  = 0;
 	DoIO((struct IORequest*)request);
+	return error;
 }

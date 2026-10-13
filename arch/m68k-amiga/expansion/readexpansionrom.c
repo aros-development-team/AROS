@@ -1,10 +1,10 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 #include <proto/expansion.h>
 #include <exec/memory.h>

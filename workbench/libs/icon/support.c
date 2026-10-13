@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Miscellaneous support functions.
 */
@@ -551,5 +551,14 @@ struct NativeIcon *GetNativeIcon(struct DiskObject *dobj, struct IconBase *IconB
     return reticon;
 }
 
+//TODO: Move to arch specific files.
+#if defined(__mc68000__)
+/* Out of line on m68k, see icon_intern.h */
+APTR DemandOpenLibrary(struct Library **libp, CONST_STRPTR libname, ULONG version)
+{
+    if (*libp == NULL)
+        *libp = OpenLibrary(libname, version);
 
-
+    return *libp;
+}
+#endif

@@ -31,11 +31,11 @@ ULONG ReadReservedBlocks(UBYTE *, ULONG, ULONG, globaldata *);
 
 ULONG WriteReservedBlocks(UBYTE *, ULONG, ULONG, globaldata *);
 
-void UpdateAndMotorOff(globaldata * );
+ULONG UpdateAndMotorOff(globaldata * );
 
 void UpdateCache (globaldata *g);
 void FlushDataCache (globaldata *g);
-void UpdateDataCache (globaldata *g);
+ULONG UpdateDataCache (globaldata *g);
 
 BOOL detectaccessmode(UBYTE *buffer, globaldata *g);
 BOOL get_scsi_geometry(globaldata *g);

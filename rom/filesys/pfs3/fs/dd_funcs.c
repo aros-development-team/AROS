@@ -148,23 +148,23 @@ static SIPTR dd_IsFileSystem(struct DosPacket *pkt, globaldata * g)
  */
 static SIPTR dd_Quit(struct DosPacket *pkt, globaldata * g)
 {
-#if UNSAFEQUIT
-	g->dieing = TRUE;
-	return DOSTRUE;
-#else
+#if !UNSAFEQUIT
 	struct volumedata *volume = g->currentvolume;
 
-	if (!volume || (IsMinListEmpty(&volume->fileentries) && IsMinListEmpty(&volume->notifylist)))
-	{
-		g->dieing = TRUE;
-		return DOSTRUE;
-	}
-	else
+	if (volume && (!IsMinListEmpty(&volume->fileentries) || !IsMinListEmpty(&volume->notifylist)))
 	{
 		pkt->dp_Res2 = ERROR_OBJECT_IN_USE;
 		return DOSFALSE;
 	}
 #endif
+	/* Reject shutdown before Quit removes handlers or drains pending packets. */
+	if (g->dirty && !UpdateDisk(g))
+	{
+		pkt->dp_Res2 = g->softprotect ? ERROR_DISK_WRITE_PROTECTED : ERROR_SEEK_ERROR;
+		return DOSFALSE;
+	}
+	g->dieing = TRUE;
+	return DOSTRUE;
 }
 
 static SIPTR dd_CurrentVolume(struct DosPacket *pkt, globaldata * g)
@@ -907,8 +907,8 @@ static SIPTR dd_Relabel(struct DosPacket *pkt, globaldata * g)
 	// ARG1 = BSTR new disk name
 	// RES1 = BOOL Success/failure (DOSTRUE/DOSFALSE)
 
-	UBYTE newlabel[FNSIZE], *newname;
-	UBYTE newnamelen;
+	UBYTE newlabel[FNSIZE];
+	struct DosList *newentry;
 
 #if MULTIUSER
 	if (g->user->uid != muROOT_UID)
@@ -923,24 +923,22 @@ static SIPTR dd_Relabel(struct DosPacket *pkt, globaldata * g)
 	if (!CheckVolume(g->currentvolume, 1, &pkt->dp_Res2, g))
 		return DOSFALSE;
 
-	newnamelen = strlen(newlabel) + 2;
-	newname = AllocMem(newnamelen, MEMF_CLEAR | MEMF_PUBLIC);
-	if (newname) {
+	/* Let DOS allocate the name using the active BSTR representation. */
+	newentry = MakeDosEntry(newlabel, DLT_VOLUME);
+	if (newentry) {
 		/* change rootblock */
-		if (RenameDisk(newlabel, g))
+		if (RenameDisk(newlabel, &pkt->dp_Res2, g))
 		{
 				// change volume name
 				struct DeviceList *devlist = g->currentvolume->devlist;
-				UBYTE *oldname = BADDR(devlist->dl_Name);
-				strcpy(newname + 1, newlabel);
-				newname[0] = newnamelen;
-				devlist->dl_Name = MKBADDR(newname);
-				FreeMem(oldname, oldname[0] + 2);
+				BSTR oldname = devlist->dl_Name;
+				devlist->dl_Name = newentry->dol_Name;
+				newentry->dol_Name = oldname;
+				FreeDosEntry(newentry);
 		}
 		else
 		{
-			FreeMem(newname, newnamelen);
-			pkt->dp_Res2 = ERROR_INVALID_COMPONENT_NAME;
+			FreeDosEntry(newentry);
 			return DOSFALSE;
 		}
 	}
@@ -960,27 +958,25 @@ static SIPTR dd_AddBuffers(struct DosPacket *pkt, globaldata * g)
 	// RES1 = BOOL Success/failure (DOSTRUE/DOSFALSE)
 	// RES2 = new total number of cache buffers or failurecode (if res1 = DOSFALSE)
 
-	struct lru_cachedblock *lrunode, *nextnode;
-	LONG numbuffers;
+	LONG numbuffers, oldbuffers;
 
-	/* kill old cache */
-	UpdateDisk(g);
-
-	for (lrunode = (struct lru_cachedblock *)g->glob_lrudata.LRUqueue.mlh_Head; lrunode->next;
-		 lrunode = nextnode)
+	/* Keep the old cache if dirty metadata could not be committed. */
+	if (g->dirty && !UpdateDisk(g))
 	{
-		FlushBlock(&lrunode->cblk, g);
-		nextnode = lrunode->next;
-		MinRemove(lrunode);
+		pkt->dp_Res2 = g->softprotect ? ERROR_DISK_WRITE_PROTECTED : ERROR_NOT_A_DOS_DISK;
+		return DOSFALSE;
 	}
 
-	DeallocLRU(g);
-	numbuffers = g->dosenvec->de_NumBuffers;
-	numbuffers = max(0, numbuffers + (LONG)pkt->dp_Arg1);
+	oldbuffers = g->dosenvec->de_NumBuffers;
+	numbuffers = max(0, oldbuffers + (LONG)pkt->dp_Arg1);
 	g->dosenvec->de_NumBuffers = numbuffers;
 
-	while (!InitLRU(g, SIZEOF_RESBLOCK))
-		g->dosenvec->de_NumBuffers--;
+	if (!ResizeLRU(g, SIZEOF_RESBLOCK))
+	{
+		g->dosenvec->de_NumBuffers = oldbuffers;
+		pkt->dp_Res2 = ERROR_NO_FREE_STORE;
+		return DOSFALSE;
+	}
 
 	pkt->dp_Res2 = g->dosenvec->de_NumBuffers;
 	return (LONG)g->dosenvec->de_NumBuffers;
@@ -1062,7 +1058,11 @@ static SIPTR dd_Info(struct DosPacket *pkt, globaldata * g)
 /* flush cache (BTW: doesn't actually flush the cache right now) */
 static SIPTR dd_Flush(struct DosPacket *pkt, globaldata * g)
 {
-	UpdateDisk(g);
+	if (g->dirty && !UpdateDisk(g))
+	{
+		pkt->dp_Res2 = g->softprotect ? ERROR_DISK_WRITE_PROTECTED : ERROR_NOT_A_DOS_DISK;
+		return DOSFALSE;
+	}
 	FreeUnusedResources(g->currentvolume, g);
 	g->timeout = 0;
 	return DOSTRUE;
@@ -1079,7 +1079,11 @@ static SIPTR dd_WriteProtect(struct DosPacket *pkt, globaldata * g)
 	{
 		if (g->softprotect)     /* already protected */
 			return DOSFALSE;
-		UpdateDisk(g);
+		if (g->dirty && !UpdateDisk(g))
+		{
+			pkt->dp_Res2 = g->softprotect ? ERROR_DISK_WRITE_PROTECTED : ERROR_NOT_A_DOS_DISK;
+			return DOSFALSE;
+		}
 		/* updatedisk can cause a softprotect, so check again */
 		if (!g->softprotect)
 		{
@@ -1597,12 +1601,10 @@ static SIPTR dd_InhibitOn(struct DosPacket *pkt, globaldata * g)
 
 	if (pkt->dp_Arg1 != DOSFALSE)   /* don't check for DOSTRUE (Holger Kruse!) */
 	{
-		if (!SafeDiskRemoveSequence(g)) {
-			pkt->dp_Res2 = ERROR_OBJECT_IN_USE;
+		if (!SafeDiskRemoveSequence(g, &pkt->dp_Res2)) {
 			return DOSFALSE;
 		}
 		g->inhibitcount++;
-		g->timeron = FALSE;
 		g->timeout = 0;
 		g->DoCommand = InhibitedCommands;
 		g->disktype = ID_BUSY;
@@ -1635,7 +1637,6 @@ static SIPTR dd_InhibitOff(struct DosPacket *pkt, globaldata * g)
 			}
 
 			g->DoCommand = NormalCommands;
-			g->timeron = FALSE;
 			g->newvolumepending = TRUE;
 		}
 	}
@@ -1675,9 +1676,11 @@ static SIPTR dd_Format(struct DosPacket *pkt, globaldata * g)
 	/* if not inhibited then 'remove disk' */
 	if (g->inhibitcount == 0)
 	{
+		BOOL olddirty = g->dirty;
+
 		g->dirty = FALSE;
-		if (!SafeDiskRemoveSequence(g)) {
-			pkt->dp_Res2 = ERROR_OBJECT_IN_USE;
+		if (!SafeDiskRemoveSequence(g, &pkt->dp_Res2)) {
+			g->dirty = olddirty;
 			return DOSFALSE;
 		}
 	}
