@@ -30,8 +30,52 @@ __FBSDID("$FreeBSD: src/lib/msun/src/s_roundf.c,v 1.4 2005/12/02 13:45:06 bde Ex
 
 #include "math_private.h"
 
-float
-roundf(float x)
+/****************************************************************************
+    NAME */
+        float roundf(
+
+/*  SYNOPSIS */
+        float x)
+
+/*  FUNCTION
+        Round x to the nearest integral value. When x is exactly halfway
+        between two integers, choose the integer farther from zero. The
+        value rule is independent of the current rounding direction.
+
+    INPUTS
+        x - Float value to round. Finite values, signed zeros,
+            infinities and NaNs are accepted.
+
+    RESULT
+        The rounded value, returned as float, not as an integer type.
+        For example, 0.5 becomes 1 and -0.5 becomes -1; 1.5 becomes 2
+        and -1.5 becomes -2. Values with magnitude less than 0.5 produce
+        a zero with the input sign. Signed zeros and infinities retain
+        their signs. A NaN input produces a NaN result.
+
+        An already integral finite value is unchanged. There is no integer
+        conversion overflow or separate error sentinel.
+
+    NOTES
+        Include <math.h>. The implementation rounds the magnitude using
+        floorf(), applies the half-unit test and restores the sign.
+        It does not set or clear errno, allocate or retain application
+        storage, perform I/O, or wait.
+
+        Floating-point exception flags need not remain unchanged. The
+        floor path contains arithmetic intended to raise inexact for
+        nonintegral inputs. Signaling-NaN behavior and enabled traps
+        depend on the target and its floating-point environment; no NaN
+        payload preservation guarantee is made.
+
+        Do not use this call to obtain the current rounding-direction
+        behavior of rintf(). A later cast to an integer type still needs
+        a separate range check.
+
+    SEE ALSO
+        floorf(), rintf(), lroundf(), llroundf()
+
+*****************************************************************************/
 {
 	float t;
 	uint32_t hx;
