@@ -421,7 +421,9 @@ LONG initdeviceio(UBYTE *devicename, IPTR unit, ULONG flags, struct DosEnvec *de
         if((globals->ioreq=(struct IOStdReq *)CreateIORequest(globals->msgport, sizeof(struct IOStdReq)))!=0) {
             if((globals->ioreq2=(struct IOStdReq *)CreateIORequest(globals->msgport, sizeof(struct IOStdReq)))!=0) {
                 if((globals->ioreqchangeint=(struct IOStdReq *)CreateIORequest(globals->msgport, sizeof(struct IOStdReq)))!=0) {
-                    if((errorcode=OpenDevice(devicename, unit, (struct IORequest *)globals->ioreq, flags))==0) {
+                    /* OpenDevice returns device errors, not DOS packet errors. */
+                    errorcode=ERROR_DEVICE_NOT_MOUNTED;
+                    if(OpenDevice(devicename, unit, (struct IORequest *)globals->ioreq, flags)==0) {
                         globals->deviceopened=TRUE;
 
                         globals->fsioreq.ioreq=globals->ioreq;
