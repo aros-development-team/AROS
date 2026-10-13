@@ -14,6 +14,7 @@
 #include <gallium/gallium.h>
 
 #include <proto/exec.h>
+#include <proto/utility.h>
 #include <proto/gallium.h>
 #include <proto/oop.h>
 
@@ -99,6 +100,15 @@ static inline const void *gallium_core_get_api(void) { return (const void *)0; }
 
         GLA_NoAccum - disables the accumulation buffer. Accumulation buffer is
                       enabled by default.
+
+        GLA_ContextProfile - GLA_PROFILE_COMPAT (default) or GLA_PROFILE_CORE.
+                     A core profile context can offer a newer OpenGL version
+                     than a compatibility profile one.
+
+        GLA_ContextMajorVersion, GLA_ContextMinorVersion - the lowest OpenGL
+                     version the context must provide (a core profile one is
+                     at least 3.2). Creation fails if it cannot be provided;
+                     otherwise the highest available version is used.
 
     RESULT
 
@@ -187,7 +197,23 @@ static inline const void *gallium_core_get_api(void) { return (const void *)0; }
         goto error_out;
     }
 
-    attribs.profile = API_OPENGL_COMPAT;
+    if (GetTagData(GLA_ContextProfile, GLA_PROFILE_COMPAT, tagList) == GLA_PROFILE_CORE)
+    {
+        attribs.profile = API_OPENGL_CORE;
+        attribs.major = GetTagData(GLA_ContextMajorVersion, 3, tagList);
+        attribs.minor = GetTagData(GLA_ContextMinorVersion, 2, tagList);
+        if (attribs.major < 3 || (attribs.major == 3 && attribs.minor < 2))
+        {
+            attribs.major = 3;
+            attribs.minor = 2;
+        }
+    }
+    else
+    {
+        attribs.profile = API_OPENGL_COMPAT;
+        attribs.major = GetTagData(GLA_ContextMajorVersion, 1, tagList);
+        attribs.minor = GetTagData(GLA_ContextMinorVersion, 0, tagList);
+    }
     attribs.visual = ctx->stvis;
 
     /* driconf defaults (driinfo_gallium.h) - we have no driconf, so the

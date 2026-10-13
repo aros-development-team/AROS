@@ -53,6 +53,11 @@ void aros_gui_window_set_pointer_visible(uintptr_t window, int visible);
 void aros_gui_window_focus(uintptr_t window);
 int aros_gui_window_is_active(uintptr_t window);
 int aros_gui_window_next_message(uintptr_t window, struct aros_gui_message *out);
+/* Relative mouse mode (IDCMP_DELTAMOVE): mouse_x/mouse_y of IDCMP_MOUSEMOVE
+   messages become the movement since the last one, and the pointer may sit at
+   a screen edge. */
+void aros_gui_window_set_delta_move(uintptr_t window, int on);
+int aros_gui_window_delta_move(uintptr_t window);
 
 /* Text for a raw key through the current keymap, in ISO-8859-1. */
 int aros_gui_map_rawkey(uint16_t code, uint16_t qualifier, char *buf, int len);
@@ -78,6 +83,11 @@ void aros_gui_clip_free(uint8_t *text);
 
 /* A context bound to the window's interior. Returns 0 on failure. */
 uintptr_t aros_gui_gl_create(uintptr_t window, int alpha, int depth, int stencil);
+/* The same with a profile (core != 0: core profile) and the lowest GL version
+   the context must offer (major 0: no minimum). Needs a gl.library with the
+   GLA_ContextProfile tags; older ones ignore them (and give compatibility). */
+uintptr_t aros_gui_gl_create_profile(uintptr_t window, int alpha, int depth, int stencil,
+    int core, int major, int minor);
 void aros_gui_gl_destroy(uintptr_t ctx);
 /* 0 detaches the current context. */
 void aros_gui_gl_make_current(uintptr_t ctx);
