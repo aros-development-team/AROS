@@ -31,8 +31,39 @@
 
 #include "math_private.h"
 
-float complex
-cprojf(float complex z)
+/****************************************************************************
+    NAME */
+        float complex cprojf(
+
+/*  SYNOPSIS */
+        float complex z)
+
+/*  FUNCTION
+        Project z onto the Riemann sphere. If either component is infinite,
+        return positive real infinity and an imaginary zero with the sign
+        of the original imaginary component. Otherwise return z unchanged.
+        This operation does not normalize a finite value to unit magnitude.
+
+    INPUTS
+        z - Complex value passed by value. Both signs of infinity and zero,
+            and NaN components, are accepted.
+
+    RESULT
+        z if neither component is infinite, including values containing a
+        NaN but no infinity. If either component is infinite, the result is
+        positive real infinity plus a signed imaginary zero, even when the
+        other component is NaN. There is no error sentinel.
+
+    NOTES
+        Include <complex.h>. The argument and result are values: no storage
+        is retained or allocated, and the call performs no I/O or waiting.
+        The implementation does not set errno. Floating-point exception
+        flags and NaN payload preservation are not specified here.
+
+    SEE ALSO
+        crealf(), cimagf(), conjf()
+
+*****************************************************************************/
 {
 
 	if (!isinf(crealf(z)) && !isinf(cimagf(z)))

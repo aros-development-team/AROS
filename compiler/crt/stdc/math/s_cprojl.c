@@ -31,8 +31,45 @@
 
 #include "math_private.h"
 
-long double complex
-cprojl(long double complex z)
+/****************************************************************************
+    NAME */
+        long double complex cprojl(
+
+/*  SYNOPSIS */
+        long double complex z)
+
+/*  FUNCTION
+        Project z onto the Riemann sphere. If either component is infinite,
+        return positive real infinity and an imaginary zero with the sign
+        of the original imaginary component. Otherwise return z unchanged.
+        This operation does not normalize a finite value to unit magnitude.
+
+    INPUTS
+        z - Complex value passed by value. Both signs of infinity and zero,
+            and NaN components, are accepted.
+
+    RESULT
+        z if neither component is infinite, including values containing a
+        NaN but no infinity. If either component is infinite, the result is
+        positive real infinity plus a signed imaginary zero, even when the
+        other component is NaN. There is no error sentinel.
+
+    NOTES
+        Include <complex.h>. The argument and result are values: no storage
+        is retained or allocated, and the call performs no I/O or waiting.
+        The implementation does not set errno. Floating-point exception
+        flags and NaN payload preservation are not specified here.
+
+        The AROS build selects separate long double implementations for
+        i386, x86_64 and m68k (80-bit format), and for aarch64, riscv and
+        riscv64 (128-bit format). Where long double has the same precision
+        as double, the double implementation supplies a symbol alias.
+        The l suffix alone does not promise extra precision on every target.
+
+    SEE ALSO
+        creall(), cimagl(), conjl()
+
+*****************************************************************************/
 {
 
 	if (!isinf(creall(z)) && !isinf(cimagl(z)))

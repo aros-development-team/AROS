@@ -29,8 +29,42 @@
 #include <complex.h>
 #undef creall
 
-long double
-creall(long double complex z)
+/****************************************************************************
+    NAME */
+        long double creall(
+
+/*  SYNOPSIS */
+        long double complex z)
+
+/*  FUNCTION
+        Return the real component of z in long double precision.
+        The other component is discarded; no magnitude or phase is computed.
+
+    INPUTS
+        z - Complex value passed by value. Zero, infinite and NaN components
+            are accepted.
+
+    RESULT
+        The real component of z. The component's sign is retained,
+        including the sign of zero. An infinite component remains infinite;
+        a NaN component produces a NaN. There is no error sentinel.
+
+    NOTES
+        Include <complex.h>. The argument and result are values: no storage
+        is retained or allocated, and the call performs no I/O or waiting.
+        The implementation does not set errno. Floating-point exception
+        flags and NaN payload preservation are not specified here.
+
+        The AROS build selects separate long double implementations for
+        i386, x86_64 and m68k (80-bit format), and for aarch64, riscv and
+        riscv64 (128-bit format). Where long double has the same precision
+        as double, the double implementation supplies a symbol alias.
+        The l suffix alone does not promise extra precision on every target.
+
+    SEE ALSO
+        cimagl(), conjl(), cprojl()
+
+*****************************************************************************/
 {
 	return z;
 }

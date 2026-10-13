@@ -30,8 +30,36 @@
 #include <complex.h>
 #include "math_private.h"
 
-double
-cimag(double complex z)
+/****************************************************************************
+    NAME */
+        double cimag(
+
+/*  SYNOPSIS */
+        double complex z)
+
+/*  FUNCTION
+        Return the imaginary component of z in double precision.
+        The other component is discarded; no magnitude or phase is computed.
+
+    INPUTS
+        z - Complex value passed by value. Zero, infinite and NaN components
+            are accepted.
+
+    RESULT
+        The imaginary component of z. The component's sign is retained,
+        including the sign of zero. An infinite component remains infinite;
+        a NaN component produces a NaN. There is no error sentinel.
+
+    NOTES
+        Include <complex.h>. The argument and result are values: no storage
+        is retained or allocated, and the call performs no I/O or waiting.
+        The implementation does not set errno. Floating-point exception
+        flags and NaN payload preservation are not specified here.
+
+    SEE ALSO
+        creal(), conj(), cproj()
+
+*****************************************************************************/
 {
 	const double_complex z1 = { .f = z };
 
