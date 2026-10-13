@@ -111,13 +111,13 @@ struct protosw inet6sw[] = {
         udp6_usrreq,
         NULL,         NULL,           NULL,           NULL,
     },
-    /* TCP over IPv6 */
+    /* TCP over IPv6. It shares tcb with IPv4, whose entry runs the timers */
     {
         SOCK_STREAM,  &inet6domain,   IPPROTO_TCP,
         PR_CONNREQUIRED | PR_IMPLOPCL | PR_WANTRCVD,
         tcp_input,    NULL,           tcp_ctlinput,   tcp_ctloutput,
         tcp_usrreq,
-        NULL,         tcp_fasttimo,   tcp_slowtimo,   tcp_drain,
+        NULL,         NULL,           NULL,           tcp_drain,
     },
     /* ICMPv6 */
     {

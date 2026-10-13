@@ -37,7 +37,7 @@ struct timerequest *gui_timerio = NULL;
 ULONG InternalProc = 0;
 
 extern struct ifnet *ifnet;
-extern struct Task *AmiTCP_Task;
+extern struct Task *AROSTCP_Task;
 extern TEXT panels_path[];
 
 STRPTR strings[] = {
@@ -122,7 +122,7 @@ long callback(long code, long count, va_list args)
         }
         break;
     case MIAMIPANELV_CallBack_Code_QuitMiami:
-        Signal(AmiTCP_Task, SIGBREAKF_CTRL_C);
+        Signal(AROSTCP_Task, SIGBREAKF_CTRL_C);
         break;
     default:
         DGUI(KPrintF("Bad callback code %ld from panel\n", code));

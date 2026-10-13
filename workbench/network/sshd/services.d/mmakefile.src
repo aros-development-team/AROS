@@ -1,0 +1,9 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-network-sshd : workbench-network-sshd-svccfg
+
+# Install sshd's default service config into the AROSTCP service-manager dir
+# (db/services.d/), alongside the stack's own service scripts.
+%copy_files_q mmake=workbench-network-sshd-svccfg files="$(filter-out mmakefile.src mmakefile, $(call WILDCARD, *))" \
+    dst=$(AROS_SYSTEM)/Network/AROSTCP/db/services.d

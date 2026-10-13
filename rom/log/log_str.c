@@ -52,12 +52,43 @@ AROS_UFH2(void, GM_UNIQUENAME(CountChars),
     AROS_USERFUNC_EXIT
 }
 
-AROS_LH4(void, logRawDoFmtA,
-         AROS_LHA(STRPTR, buf, A0),
-         AROS_LHA(ULONG, len, D0),
-         AROS_LHA(CONST_STRPTR, fmtstr, A1),
-         AROS_LHA(RAWARG, fmtdata, A2),
-         LIBBASETYPEPTR, LIBBASE, 5, log)
+/*****************************************************************************
+
+    NAME */
+        AROS_LH4(void, logRawDoFmtA,
+
+/*  SYNOPSIS */
+                 AROS_LHA(STRPTR, buf, A0),
+                 AROS_LHA(ULONG, len, D0),
+                 AROS_LHA(CONST_STRPTR, fmtstr, A1),
+                 AROS_LHA(RAWARG, fmtdata, A2),
+
+/*  LOCATION */
+                 LIBBASETYPEPTR, LIBBASE, 5, log)
+/*  FUNCTION
+        Format RawDoFmt() arguments into a bounded character buffer.
+
+    INPUTS
+        buf - Writable buffer of at least len bytes.
+        len - Buffer capacity, including the terminator.
+        fmtstr - NUL-terminated RawDoFmt() format string.
+        fmtdata - RAWARG data matching fmtstr and the target ABI.
+
+    RESULT
+        None. With non-NULL buf and fmtstr and len greater than zero,
+        output is NUL-terminated and truncated to at most len - 1 bytes.
+        Otherwise the buffer is unchanged.
+
+    NOTES
+        The formatter still processes the complete format after the buffer
+        fills. No required-length or truncation result is returned. The
+        buffer is caller-owned; no storage is allocated. Use RawDoFmt()
+        format and argument conventions, not a printf() va_list.
+
+    SEE ALSO
+        logRawDoFmtCBA(), logCopyStrFmtA(), exec.library/RawDoFmt()
+
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
@@ -74,14 +105,49 @@ AROS_LH4(void, logRawDoFmtA,
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH6(void, logRawDoFmtCBA,
-         AROS_LHA(STRPTR, buf, A0),
-         AROS_LHA(ULONG, len, D0),
-         AROS_LHA(VOID_FUNC, cbfunc, A1),
-         AROS_LHA(void *, cbdata, A2),
-         AROS_LHA(CONST_STRPTR, fmtstr, A3),
-         AROS_LHA(RAWARG, fmtdata, A4),
-         LIBBASETYPEPTR, LIBBASE, 6, log)
+/*****************************************************************************
+
+    NAME */
+        AROS_LH6(void, logRawDoFmtCBA,
+
+/*  SYNOPSIS */
+                 AROS_LHA(STRPTR, buf, A0),
+                 AROS_LHA(ULONG, len, D0),
+                 AROS_LHA(VOID_FUNC, cbfunc, A1),
+                 AROS_LHA(void *, cbdata, A2),
+                 AROS_LHA(CONST_STRPTR, fmtstr, A3),
+                 AROS_LHA(RAWARG, fmtdata, A4),
+
+/*  LOCATION */
+                 LIBBASETYPEPTR, LIBBASE, 6, log)
+/*  FUNCTION
+        Run RawDoFmt() with a caller-supplied output routine.
+
+    INPUTS
+        buf - Writable buffer of at least len bytes.
+        len - Capacity of buf; must be greater than zero to invoke output.
+        cbfunc - RawDoFmt()-compatible output routine.
+        cbdata - Output routine's context, passed unchanged to RawDoFmt().
+        fmtstr - NUL-terminated RawDoFmt() format string.
+        fmtdata - RAWARG data matching fmtstr and the target ABI.
+
+    RESULT
+        None. After formatting, buf[len - 1] is set to NUL. NULL buf,
+        NULL fmtstr or zero len suppresses the call and leaves buf unchanged.
+
+    NOTES
+        buf and len are not passed to the output routine and do not bound
+        its writes. The routine must implement its own capacity checks
+        through cbdata. It receives RawDoFmt() output, including the final
+        NUL, using the RawDoFmt callback ABI. Execution is synchronous;
+        context and output storage must remain valid until return.
+        Any allocation, waiting or side effects of the callback are the
+        callback's responsibility.
+
+    SEE ALSO
+        logRawDoFmtA(), exec.library/RawDoFmt()
+
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
@@ -94,9 +160,34 @@ AROS_LH6(void, logRawDoFmtCBA,
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH1(STRPTR, logCopyStr,
-         AROS_LHA(CONST_STRPTR, name, A0),
-         LIBBASETYPEPTR, LIBBASE, 4, log)
+/*****************************************************************************
+
+    NAME */
+        AROS_LH1(STRPTR, logCopyStr,
+
+/*  SYNOPSIS */
+                 AROS_LHA(CONST_STRPTR, name, A0),
+
+/*  LOCATION */
+                 LIBBASETYPEPTR, LIBBASE, 4, log)
+/*  FUNCTION
+        Allocate a copy of a NUL-terminated string.
+
+    INPUTS
+        name - Source string, or NULL.
+
+    RESULT
+        A caller-owned copy including the terminating NUL, or NULL for a
+        NULL source or allocation failure. Release the copy with FreeVec().
+
+    NOTES
+        The source is not modified or retained. An empty source produces
+        an allocated empty string. Call from task context.
+
+    SEE ALSO
+        logCopyStrFmtA(), exec.library/FreeVec()
+
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
@@ -113,10 +204,42 @@ AROS_LH1(STRPTR, logCopyStr,
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH2(STRPTR, logCopyStrFmtA,
-         AROS_LHA(CONST_STRPTR, fmtstr, A0),
-         AROS_LHA(RAWARG, fmtdata, A1),
-         LIBBASETYPEPTR, LIBBASE, 7, log)
+/*****************************************************************************
+
+    NAME */
+        AROS_LH2(STRPTR, logCopyStrFmtA,
+
+/*  SYNOPSIS */
+                 AROS_LHA(CONST_STRPTR, fmtstr, A0),
+                 AROS_LHA(RAWARG, fmtdata, A1),
+
+/*  LOCATION */
+                 LIBBASETYPEPTR, LIBBASE, 7, log)
+/*  FUNCTION
+        Allocate a string formatted with RawDoFmt().
+
+    INPUTS
+        fmtstr - NUL-terminated RawDoFmt() format string, or NULL.
+        fmtdata - RAWARG data matching fmtstr and the target ABI.
+
+    RESULT
+        A caller-owned NUL-terminated string, or NULL for a NULL format
+        or allocation failure. Release the string with FreeVec().
+
+    NOTES
+        Formatting runs twice: once to calculate capacity and once to
+        write the result. Keep the format, argument data and referenced
+        strings unchanged across both passes. Call from task context.
+
+    BUGS
+        The counting pass excludes newline characters, but the output
+        pass writes them. Output containing newlines is therefore truncated;
+        newlines are not simply removed. No truncation status is returned.
+
+    SEE ALSO
+        logRawDoFmtA(), logCopyStr(), exec.library/FreeVec()
+
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
@@ -138,10 +261,37 @@ AROS_LH2(STRPTR, logCopyStrFmtA,
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH2(int, logCmpStr,
-         AROS_LHA(CONST_STRPTR, str1, A0),
-         AROS_LHA(CONST_STRPTR, str2, A1),
-         LIBBASETYPEPTR, LIBBASE, 8, log)
+/*****************************************************************************
+
+    NAME */
+        AROS_LH2(int, logCmpStr,
+
+/*  SYNOPSIS */
+                 AROS_LHA(CONST_STRPTR, str1, A0),
+                 AROS_LHA(CONST_STRPTR, str2, A1),
+
+/*  LOCATION */
+                 LIBBASETYPEPTR, LIBBASE, 8, log)
+/*  FUNCTION
+        Compare two NUL-terminated strings using strcmp().
+
+    INPUTS
+        str1 - Non-NULL first string.
+        str2 - Non-NULL second string.
+
+    RESULT
+        Zero if equal, a negative value if str1 sorts before str2, or a
+        positive value if it sorts after str2. Only the sign is specified.
+
+    NOTES
+        Comparison is case-sensitive and stops at the first unequal byte
+        or terminator. Neither string is modified or retained. NULL is not
+        accepted.
+
+    SEE ALSO
+        logCopyStr()
+
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 

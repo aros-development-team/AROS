@@ -23,8 +23,8 @@
 #ifndef NET_SANA2TAGS_H
 #define NET_SANA2TAGS_H
 
-#define	ETHERTYPE_IP	0x0800		/* IP protocol */
-#define ETHERTYPE_ARP	0x0806		/* Addr. resolution protocol */
+#define ETHERTYPE_IP	0x0800		/* Internet Protocol, RFC 894 */
+#define ETHERTYPE_ARP	0x0806		/* Address Resolution Protocol, RFC 826 */
 #define ETHERTYPE_IPV6	0x86DD		/* IPv6 protocol */
 
 #define SLIPTYPE_IP ETHERTYPE_IP

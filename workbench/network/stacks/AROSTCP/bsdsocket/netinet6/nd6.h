@@ -183,6 +183,7 @@ extern struct nd6stat nd6stat;
 /* --- nd6.c: core neighbor cache and NUD --- */
 void nd6_init(void);
 void nd6_ifattach(struct ifnet *);
+void nd6_ifdetach(struct ifnet *);
 struct nd_ifinfo *nd6_ifinfo(struct ifnet *);
 int  nd6_is_addr_neighbor(struct sockaddr_in6 *, struct ifnet *);
 void nd6_option_init(void *, int, union nd_opts *);

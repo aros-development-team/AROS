@@ -8,7 +8,34 @@
 
 #include "console_gcc.h"
 
-AROS_LH0(APTR, GetConSnip, struct ConsoleBase *, ConsoleDevice, 9, Console)
+/*****************************************************************************
+
+    NAME */
+        AROS_LH0(APTR, GetConSnip,
+
+/*  LOCATION */
+        struct ConsoleBase *, ConsoleDevice, 9, Console)
+/*  FUNCTION
+        Obtain a private, NUL-terminated copy of the console selection
+        buffer.
+
+    INPUTS
+        None.
+
+    RESULT
+        A newly allocated copy, or NULL if there is no stored buffer or
+        memory could not be allocated. Release a non-NULL result with
+        FreeVec(), not FreeMem().
+
+    NOTES
+        The returned memory belongs to the caller and remains valid across
+        later changes to the console selection. No length is returned.
+        This function takes the copy-buffer semaphore and may block.
+
+    SEE ALSO
+        SetConSnip(), AddConSnipHook(), exec.library/FreeVec()
+
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 

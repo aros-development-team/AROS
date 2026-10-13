@@ -41,10 +41,50 @@ static int gpio_init(struct GPIOBase *GPIOBase)
     return retval;
 }
 
-AROS_LH2(void, GPIOSet,
-                AROS_LHA( unsigned int, pin, D0),
-                AROS_LHA( unsigned int, val, D1),
-                struct GPIOBase *, GPIOBase, 1, Gpio)
+/*****************************************************************************
+
+    NAME */
+        AROS_LH2(void, GPIOSet,
+
+/*  SYNOPSIS */
+                        AROS_LHA( unsigned int, pin, D0),
+                        AROS_LHA( unsigned int, val, D1),
+
+/*  LOCATION */
+                        struct GPIOBase *, GPIOBase, 1, Gpio)
+/*  FUNCTION
+        Write the output latch for a GPIO pin.
+
+    INPUTS
+        pin - GPIO controller number, not a connector pin number. The
+              legacy controller path accepts 0 through 53.
+        val - Zero requests low; any nonzero value requests high.
+
+    RESULT
+        None. A pin above 53 is ignored. No hardware or range error is
+        reported, and the requested level is not read back.
+
+    NOTES
+        Open gpio.resource before calling. The caller must coordinate use
+        of the pin with other drivers; this resource does not reserve pins.
+        Changing the latch does not select output mode or configure pulls.
+        The resulting electrical level also depends on the pin's function
+        and attached hardware.
+
+        Call from task context where waiting is permitted. The write is
+        protected by the resource semaphore; a sequence of GPIO calls is
+        not one atomic operation. There is no pulse-width or timing guarantee.
+
+    BUGS
+        BCM2712/RP1 operation is not supported correctly in this version.
+        The peripheral base is stored in a 32-bit field, so comparison with
+        the BCM2712 base cannot select the RP1 path. GPIOSetFunc() describes
+        the shared platform limitation. Do not use this call on BCM2712.
+
+    SEE ALSO
+        GPIOSetFunc(), GPIOGet(), GPIOSetPull()
+
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
@@ -81,10 +121,53 @@ AROS_LH2(void, GPIOSet,
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH2(void, GPIOSetFunc,
-                AROS_LHA( unsigned int, pin, D0),
-                AROS_LHA( unsigned int, func, D1),
-                struct GPIOBase *, GPIOBase, 2, Gpio)
+/*****************************************************************************
+
+    NAME */
+        AROS_LH2(void, GPIOSetFunc,
+
+/*  SYNOPSIS */
+                        AROS_LHA( unsigned int, pin, D0),
+                        AROS_LHA( unsigned int, func, D1),
+
+/*  LOCATION */
+                        struct GPIOBase *, GPIOBase, 2, Gpio)
+/*  FUNCTION
+        Select the hardware function assigned to a GPIO pin.
+
+    INPUTS
+        pin - GPIO controller number from 0 through 53 on the legacy path.
+        func - Legacy function code: 0 input, 1 output, 4 ALT0, 5 ALT1,
+               6 ALT2, 7 ALT3, 3 ALT4 or 2 ALT5. Only the low three bits
+               are used. Select an alternate function valid for this pin.
+
+    RESULT
+        None. A pin above 53 is ignored. Unsupported function/pin
+        combinations are not detected or reported.
+
+    NOTES
+        Open gpio.resource before calling. Function selection changes
+        hardware routing and may disconnect a peripheral already using
+        the pin. The caller must own or otherwise coordinate that pin;
+        there is no resource-level pin allocation.
+
+        The legacy path preserves the other pins in the shared function
+        register by a semaphore-protected read-modify-write. It does not
+        change the output latch or pull configuration. Call from task
+        context where waiting is permitted. Direct register writers must
+        be coordinated separately.
+
+    BUGS
+        The 32-bit saved peripheral base truncates the BCM2712 address
+        before RP1 detection. All GPIO calls consequently take the wrong
+        controller path on that platform. The dormant RP1 code also uses
+        a different function model without translating these legacy codes.
+        Its presence must not be taken as working BCM2712/RP1 support.
+
+    SEE ALSO
+        GPIOSet(), GPIOGet(), GPIOSetPull()
+
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
@@ -139,9 +222,44 @@ AROS_LH2(void, GPIOSetFunc,
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH1(unsigned int, GPIOGet,
-                AROS_LHA( unsigned int, pin, D0),
-                struct GPIOBase *, GPIOBase, 3, Gpio)
+/*****************************************************************************
+
+    NAME */
+        AROS_LH1(unsigned int, GPIOGet,
+
+/*  SYNOPSIS */
+                        AROS_LHA( unsigned int, pin, D0),
+
+/*  LOCATION */
+                        struct GPIOBase *, GPIOBase, 3, Gpio)
+/*  FUNCTION
+        Read the sampled level of a GPIO pin on the legacy controller.
+
+    INPUTS
+        pin - GPIO controller number from 0 through 53, not a connector
+              pin number.
+
+    RESULT
+        1 for a high sampled level or 0 for a low sampled level. A pin
+        above 53, or a missing peripheral base, also returns 0; the result
+        does not distinguish an invalid request from a low level.
+
+    NOTES
+        Open gpio.resource before calling. The call does not select a
+        function, reserve the pin, change its latch or configure its pulls.
+        It performs a single register read without acquiring the resource
+        semaphore. Concurrent function changes are not excluded. The value
+        is a sample, not an edge count, debounced state or future guarantee.
+
+    BUGS
+        The BCM2712 peripheral base is truncated before RP1 detection.
+        Do not use the returned value as a GPIO measurement on BCM2712.
+        See GPIOSetFunc() for the platform limitation.
+
+    SEE ALSO
+        GPIOSet(), GPIOSetFunc(), GPIOSetPull()
+
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
@@ -168,10 +286,51 @@ AROS_LH1(unsigned int, GPIOGet,
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH2(void, GPIOSetPull,
-                AROS_LHA( unsigned int, pin, D0),
-                AROS_LHA( unsigned int, pull, D1),
-                struct GPIOBase *, GPIOBase, 4, Gpio)
+/*****************************************************************************
+
+    NAME */
+        AROS_LH2(void, GPIOSetPull,
+
+/*  SYNOPSIS */
+                        AROS_LHA( unsigned int, pin, D0),
+                        AROS_LHA( unsigned int, pull, D1),
+
+/*  LOCATION */
+                        struct GPIOBase *, GPIOBase, 4, Gpio)
+/*  FUNCTION
+        Configure the internal pull resistor using the BCM2711 register layout.
+
+    INPUTS
+        pin - GPIO controller number from 0 through 53.
+        pull - 0 disables both pulls, 1 selects pull-up, and 2 selects
+               pull-down on BCM2711. Other values also disable both pulls.
+
+    RESULT
+        None. A pin above 53 is ignored. The function does not report
+        unsupported hardware or verify the resulting pin level.
+
+    NOTES
+        Open gpio.resource before calling. Coordinate pin ownership with
+        other drivers. Pull selection does not change the output latch or
+        function. On BCM2711, the function updates the selected two-bit
+        field while preserving other pins in the same register.
+
+        Call from task context where waiting is permitted. The BCM2711
+        read-modify-write is protected by the resource semaphore.
+
+    BUGS
+        The legacy branch always uses the BCM2711 pull-register layout.
+        It does not implement the GPPUD/GPPUDCLK sequence required by
+        BCM2835-class controllers. Do not use it to configure their pulls.
+
+        BCM2712/RP1 selection is broken as described in GPIOSetFunc(). The
+        dormant RP1 branch also reverses the pull-up and pull-down bits and
+        reads the pad register before acquiring the semaphore.
+
+    SEE ALSO
+        GPIOSetFunc(), GPIOSet(), GPIOGet()
+
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 

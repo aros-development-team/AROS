@@ -38,6 +38,9 @@
 #define TL_WAITVBL	2
 #define NUM_LISTS	3
 
+/* io_Flags: completed, ReplyMsg() pending outside the list lock */
+#define TIMERF_REPLYING	0x40
+
 struct TimerBase
 {
     /* Required by the system */

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -28,14 +28,18 @@
         struct LayersBase *, LayersBase, 12, Layers)
 
 /*  FUNCTION
-        For superbitmapped layers this function work like this:.
+        For superbitmapped layers this function works like this:
         It updates the contents of the superbitmap with what is
-        visible on the display, repositions the superbitmap
-        and redraws the display.
+        visible on the display, repositions the layer on the
+        superbitmap and redraws the display. Afterwards the layer
+        shows the superbitmap from (Scroll_X, Scroll_Y); rastport
+        coordinates are superbitmap coordinates.
         For non-superbitmapped layers, all subsequent (x,y) pairs
         are adjusted by the scroll(x,y) value in the layer. If
         ScrollLayer(-10,-3) was called and (0,0) is drawn it will
-        finally end up at coordinates (10, 3) in the superbitmap.
+        finally end up at coordinates (10, 3) in the layer.
+        In both cases dx and dy are added to the layer's current
+        scroll values.
 
     INPUTS
         l  - pointer to layer
@@ -75,8 +79,10 @@
     /* store the visible "stuff" to the superbitmap */
     SyncSBitMap(l);
     
-    l->Scroll_X -= dx;
-    l->Scroll_Y -= dy;
+    /* Scroll_X/Y are the superbitmap coordinates of the layer\'s top left
+       corner: rastport coordinates are superbitmap coordinates */
+    l->Scroll_X += dx;
+    l->Scroll_Y += dy;
 
     /* show what's in the superbitmap */
     CopySBitMap(l);

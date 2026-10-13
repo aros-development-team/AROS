@@ -46,7 +46,6 @@ static const char *features[] =
 
 void PrintCPUSpecificInfo(ULONG i, APTR ProcessorBase)
 {
-    BOOL nothing = TRUE;
     BOOL flags[FLAGS_NUM];
     struct TagItem tags [FLAGS_NUM + 1] =
     {
@@ -87,21 +86,7 @@ void PrintCPUSpecificInfo(ULONG i, APTR ProcessorBase)
     if (!GetCoreInfo(i, tags))
         return;
 
-    printf("\t\tFeatures: ");
-
-    for (i = 0; i < FLAGS_NUM; i++)
-    {
-    	
-        if (flags[i])
-        {
-            nothing = FALSE;
-            printf("%s ", features[i]);
-        }
-    }
-    
-    if (nothing)
-        printf("None");
-    printf("\n");
+    PrintCPUFeatures(features, flags, FLAGS_NUM);
 }
 
 #endif

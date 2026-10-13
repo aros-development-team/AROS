@@ -127,6 +127,34 @@ struct ProtoHandlerNode *ProtoHandler_ByID(UBYTE id)
     return NULL;
 }
 
+/* Find a registered mounted-share handler by its session ID, or NULL. */
+struct FSHandlerNode *FSHandler_ByID(UBYTE id)
+{
+    struct NetPrefsBase *npb = NetPrefs_GetBase();
+    struct FSHandlerNode *fsh;
+
+    if (!npb)
+        return NULL;
+    ForeachNode(&npb->npb_FSHandlers, fsh)
+        if (fsh->fsh_ID == id)
+            return fsh;
+    return NULL;
+}
+
+/* The n'th registered mounted-share handler (priority order), or NULL. */
+struct FSHandlerNode *FSHandler_ByIndex(ULONG n)
+{
+    struct NetPrefsBase *npb = NetPrefs_GetBase();
+    struct FSHandlerNode *fsh;
+
+    if (!npb)
+        return NULL;
+    ForeachNode(&npb->npb_FSHandlers, fsh)
+        if (n-- == 0)
+            return fsh;
+    return NULL;
+}
+
 /* Find an interface's protocol object of the given id, or NULL. */
 struct ProtocolAddress *ProtoAddr_Find(struct List *list, UBYTE id)
 {
@@ -210,7 +238,12 @@ static IPTR PAWin__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
                                             (IPTR)"", msg->ops_AttrList);
     Object  *content   = (Object *)GetTagData(MUIA_PAWin_Content,
                                               (IPTR)NULL, msg->ops_AttrList);
+    STRPTR   typeLabel = (STRPTR)GetTagData(MUIA_PAWin_TypeLabel,
+                                            (IPTR)NULL, msg->ops_AttrList);
     Object  *useBtn, *cancelBtn;
+
+    if (typeLabel == NULL)
+        typeLabel = (STRPTR)_(MSG_PROTO_LABEL);
 
     obj = (Object *)DoSuperNewTags(cl, obj, NULL,
         MUIA_Window_Title,       (IPTR)_(MSG_CFG_ADDR),
@@ -234,7 +267,7 @@ static IPTR PAWin__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
                 Child, (IPTR)HVSpace,
             End,
             Child, (IPTR)ColGroup(2),
-                Child, (IPTR)Label2(__(MSG_PROTO_LABEL)),
+                Child, (IPTR)Label2(typeLabel),
                 Child, (IPTR)TextObject,
                     MUIA_Text_Contents, (IPTR)protoName,
                 End,

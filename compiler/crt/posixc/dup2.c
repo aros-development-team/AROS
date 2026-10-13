@@ -86,7 +86,7 @@
             /* Vacate newfd first (close a posixc file or free a reservation). */
             if (__getfdesc(newfd))
                 close(newfd);
-            if (hooks->fdh_dup(data, newfd, &err) < 0)
+            if (hooks->fdh_dup(data, oldfd, newfd, &err) < 0)
             {
                 errno = err;
                 return -1;

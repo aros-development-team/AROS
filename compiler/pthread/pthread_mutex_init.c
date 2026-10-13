@@ -40,7 +40,44 @@ int _pthread_mutex_init(pthread_mutex_t *mutex, const pthread_mutexattr_t *attr,
     return 0;
 }
 
-int pthread_mutex_init(pthread_mutex_t *mutex, const pthread_mutexattr_t *attr)
+/****************************************************************************
+    NAME */
+        int pthread_mutex_init(
+
+/*  SYNOPSIS */
+        pthread_mutex_t *mutex,
+        const pthread_mutexattr_t *attr)
+
+/*  FUNCTION
+        Initialize a mutex's embedded Exec semaphore, copy its kind from attr
+        (or use PTHREAD_MUTEX_DEFAULT), and clear its condition-wait count.
+
+    INPUTS
+        mutex - Non-NULL writable mutex storage that is not already in use.
+        attr - Initialized mutex attributes, or NULL for the default kind.
+
+    RESULT
+        0 on success; EINVAL if mutex is NULL. Errors are returned directly.
+
+    NOTES
+        Include <pthread.h>; link with pthread. The caller owns the storage and
+        must retain it until the unlocked, unused mutex has been destroyed.
+        No heap storage is allocated. Initialize before publishing the mutex
+        to other tasks. Attributes are copied and may then be destroyed.
+        Reinitializing a live mutex is invalid; no busy check is performed.
+
+    BUGS
+        The supplied kind is not validated here. Process-sharing attributes are
+        ignored. Lazy initialization of static mutexes is not serialized, so
+        explicit initialization before concurrent use avoids that race.
+
+    SEE ALSO
+        pthread_mutex_lock(),
+        pthread_mutex_unlock(),
+        pthread_mutex_destroy(),
+        pthread_mutexattr_settype()
+
+*****************************************************************************/
 {
     D(bug("%s(%p, %p)\n", __FUNCTION__, mutex, attr));
 

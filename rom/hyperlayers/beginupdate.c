@@ -114,6 +114,8 @@
                                            l,
                                            FALSE,
                                            damage_region,
+                                           0,
+                                           l->cr2,
                                            LayersBase);
 
   if (IS_SMARTREFRESH(l))
@@ -126,6 +128,7 @@
                                 FALSE,
                                 FALSE,
                                 FALSE,
+                                TRUE,
                                 LayersBase);
 
   }

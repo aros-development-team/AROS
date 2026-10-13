@@ -160,14 +160,14 @@ static const struct wire_defaults {
     WORD  wd_arphdr;		/* ARP hardware type */
     LONG  wd_ip6type;		/* IPv6 packet type (0 = no IPv6) */
     WORD  wd_ip6no;		/* minimum IPv6 read requests */
-    WORD  wd_ifflags;		/* Interface flags */
+    UWORD wd_ifflags;		/* Interface flags */
 } wire_defaults[] = {
     {
         S2WireType_Ethernet,
         ETHERTYPE_IP, 16, SANA2_DEF_WRITENO,
         ETHERTYPE_ARP, 4, 1,
         ETHERTYPE_IPV6, 16,
-        IFF_BROADCAST | IFF_SIMPLEX,
+        IFF_BROADCAST | IFF_SIMPLEX | IFF_MULTICAST,
     },
     {
         S2WireType_Arcnet,
@@ -197,7 +197,7 @@ static const struct wire_defaults {
         0, 0,
         IFF_POINTOPOINT | IFF_NOARP,
     },
-    /* Use ethernet as default */
+    /* Use ethernet as default; no IFF_MULTICAST, see sana_ether_mcast() */
     {
         0,
         ETHERTYPE_IP, 16, SANA2_DEF_WRITENO,

@@ -23,7 +23,57 @@
 #include "pthread_intern.h"
 #include "debug.h"
 
-int pthread_key_create(pthread_key_t *key, void (*destructor)(void *))
+/****************************************************************************
+    NAME */
+        int pthread_key_create(
+
+/*  SYNOPSIS */
+        pthread_key_t *key,
+        void (*destructor)(void *))
+
+/*  FUNCTION
+        Reserve the lowest free thread-specific key and associate an optional
+        destructor with it. Each registered thread has a separate pointer slot
+        for the key. Allocation is limited to PTHREAD_KEYS_MAX (64) keys shared
+        by this pthread runtime.
+
+    INPUTS
+        key - Non-NULL writable output for the allocated key.
+        destructor - Callback for non-NULL values at worker exit, or NULL.
+            Keep the callback code valid for every possible invocation.
+
+    RESULT
+        0 on success, with *key set. EINVAL if key is NULL; EAGAIN if every key
+        is in use. The output is unchanged on failure. Errors are returned
+        directly.
+
+    NOTES
+        Include <pthread.h>; link with pthread. Allocation can wait for the TLS
+        semaphore. Creating a key does not allocate or take ownership of values.
+        Set each thread's value with pthread_setspecific(). The application
+        must eventually delete the key after its users have finished.
+
+        At normal worker exit, a non-NULL value is cleared before its destructor
+        is called in the exiting worker. A destructor may install another value;
+        at most PTHREAD_DESTRUCTOR_ITERATIONS passes are made. Values without a
+        destructor are not freed. Program-wide teardown skips destructors.
+
+    BUGS
+        Reusing a deleted key does not clear old per-thread values. A thread
+        can read a stale pointer, and the new destructor can receive it. Avoid
+        reuse while any surviving thread may retain a value for that slot.
+
+        Destructors execute under the shared TLS semaphore. Key creation and
+        deletion require exclusive acquisition; do not rely on those operations
+        from a destructor. Initial-task exit does not use the worker destructor
+        path.
+
+    SEE ALSO
+        pthread_setspecific(),
+        pthread_getspecific(),
+        pthread_exit()
+
+*****************************************************************************/
 {
     TLSKey *tls;
     int i;

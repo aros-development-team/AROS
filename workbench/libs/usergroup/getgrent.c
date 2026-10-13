@@ -13,8 +13,7 @@
 /****** usergroup.library/getgrent *******************************************
 
     NAME
-        getgrgid, getgrnam, getgrent, setgrent, endgrent
-         - group database operations
+        getgrgid, getgrnam, getgrent, setgrent, endgrent - group database operations
 
     SYNOPSIS
         #include <grp.h>
@@ -75,19 +74,25 @@
         recommended to call endgrent() if the program won't access group
         database any more.
 
-    RESULTS
+    RESULT
         The functions getgrent(), getgrnam(), and getgrgid(), return a
         pointer to the group entry if successful; if the end of database is
         reached or an error occurs a null pointer is returned.  The
         functions endgrent() and setgrent() have no return value.
 
-    ERRORS
+    NOTES
+        Errors:
         [ENOENT] -- the netinfo.device could not be opened.
 
         Other netinfo.device IO errors can be retrieved by ug_GetErr().
 
-    FILES
+        Files:
         AmiTCP:db/group     The group database file
+
+        Compatibility:
+        The BSD passwd database handling routines setgrfile() and
+        setgroupent() are fairly useless in a networked environment and they
+        are not implemented.
 
     SEE ALSO
 
@@ -105,15 +110,7 @@
         function will modify the same object. If you need re-entrant
         operation, you can use directly the netinfo.device commands.
 
-    COMPATIBILITY
-
-        The BSD passwd database handling routines setgrfile() and
-        setgroupent() are fairly useless in a networked environment and they
-        are not implemented.
-
-*****************************************************************************
-*
-*/
+******************************************************************************/
 
 #ifdef DEBUG
 #undef DEBUG

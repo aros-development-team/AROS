@@ -23,7 +23,42 @@
 #include "pthread_intern.h"
 #include "debug.h"
 
-int pthread_setcancelstate(int state, int *oldstate)
+/****************************************************************************
+    NAME */
+        int pthread_setcancelstate(
+
+/*  SYNOPSIS */
+        int state,
+        int *oldstate)
+
+/*  FUNCTION
+        Set the calling thread's cancellation state, optionally saving the
+        previous value. A newly created worker starts with PTHREAD_CANCEL_ENABLE.
+
+    INPUTS
+        state - PTHREAD_CANCEL_ENABLE or PTHREAD_CANCEL_DISABLE.
+        oldstate - Writable output for the previous value, or NULL.
+
+    RESULT
+        0 on success. EINVAL for any other state; neither the setting nor the
+        optional output is changed on that error. Errors are returned directly.
+
+    NOTES
+        Include <pthread.h>; link with pthread. The call updates only the current
+        thread record and does not wait. It neither clears a pending request
+        nor tests it. Arrange cleanup before enabling cancellation and use
+        pthread_testcancel() when an immediate deferred check is required.
+
+    BUGS
+        Re-enabling cancellation does not itself act on a pending request.
+        Only registered workers have the exit context needed to process it;
+        an unregistered task aliases the initial task's state.
+
+    SEE ALSO
+        pthread_cancel(),
+        pthread_setcanceltype()
+
+*****************************************************************************/
 {
     pthread_t thread;
     ThreadInfo *inf;

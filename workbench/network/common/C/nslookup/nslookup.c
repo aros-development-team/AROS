@@ -13,6 +13,9 @@ static const char version[] __attribute__((used)) =
     "$VER: nslookup 1.1 (05.03.2026)\n"
     "Copyright (C) 2026 The AROS Dev Team";
 
+/* expose the Roadshow-compatible DNS list API (ObtainDomainNameServerList) */
+#define BSDSOCKET_ROADSHOW_DNS
+
 #include <proto/socket.h>
 #include <proto/miami.h>
 #include <proto/exec.h>
@@ -29,6 +32,8 @@ static const char version[] __attribute__((used)) =
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#include <libraries/bsdsocket.h>
+
 enum {
     QTYPE_A    = 1,
     QTYPE_AAAA = 2,
@@ -38,17 +43,25 @@ enum {
 };
 
 static char default_server[128] = "";
+static int server_overridden = 0;   /* user named a server (informational) */
+
 static int query_type = 0;  /* 0 = auto */
 
-/* Read the nameserver address from AROSTCP:db/netdb */
-static int get_nameserver(char *buf, int buflen)
+/* Fallback: read the first NAMESERVER line from AROSTCP:db/netdb (the
+ * resolver's static configuration) when the stack cannot be asked. */
+static int get_nameserver_netdb(char *buf, int buflen)
 {
     FILE *fp;
     char line[256];
+    struct Process *pr = (struct Process *)FindTask(NULL);
+    APTR old_window = pr->pr_WindowPtr;
 
+    /* Suppress "Please insert volume AROSTCP:" requesters */
+    pr->pr_WindowPtr = (APTR)-1;
     fp = fopen("AROSTCP:db/netdb", "r");
     if (!fp)
         fp = fopen("ENV:AROSTCP/netdb", "r");
+    pr->pr_WindowPtr = old_window;
     if (!fp)
         return 0;
 
@@ -77,24 +90,62 @@ static int get_nameserver(char *buf, int buflen)
     return 0;
 }
 
+/* Ask the stack which nameserver its resolver actually uses: the first
+ * entry of the live list (static netdb/per-interface DNS= plus dynamic
+ * DHCP-supplied servers), which is the one the resolver tries first.
+ * Falls back to scanning the netdb file. */
+static int get_nameserver(char *buf, int buflen)
+{
+    struct List *nslist;
+    int found = 0;
+
+    nslist = ObtainDomainNameServerList();
+    if (nslist) {
+        struct DomainNameServerNode *dnsn =
+            (struct DomainNameServerNode *)nslist->lh_Head;
+
+        if (dnsn->dnsn_MinNode.mln_Succ && dnsn->dnsn_Address) {
+            strncpy(buf, (char *)dnsn->dnsn_Address, buflen - 1);
+            buf[buflen - 1] = '\0';
+            found = 1;
+        }
+        ReleaseDomainNameServerList(nslist);
+    }
+    if (!found)
+        found = get_nameserver_netdb(buf, buflen);
+    return found;
+}
+
 static void print_server_info(void)
 {
+    /* Refresh from the stack unless the user named a server himself, so
+     * the header reports the server the resolver will actually ask. */
+    if (!server_overridden)
+        get_nameserver(default_server, sizeof(default_server));
+
     if (default_server[0]) {
         struct hostent *nshp = NULL;
         struct in_addr nsaddr;
         struct in6_addr nsaddr6;
+        int numeric = 0;
 
-        if (inet_pton(AF_INET, default_server, &nsaddr) == 1)
+        if (inet_pton(AF_INET, default_server, &nsaddr) == 1) {
+            numeric = 1;
             nshp = gethostbyaddr(
                 (caddr_t)&nsaddr, sizeof(nsaddr), AF_INET);
-        else if (inet_pton(AF_INET6, default_server, &nsaddr6) == 1)
+        } else if (inet_pton(AF_INET6, default_server, &nsaddr6) == 1) {
+            numeric = 1;
             nshp = gethostbyaddr(
                 (caddr_t)&nsaddr6, sizeof(nsaddr6), AF_INET6);
+        }
 
-        printf("Server:\t\t%s\n", default_server);
-        if (nshp && nshp->h_name)
-            printf("Name:\t\t%s\n", nshp->h_name);
+        printf("Server:\t\t%s\n",
+            (nshp && nshp->h_name) ? nshp->h_name : default_server);
+        if (numeric)
+            printf("Address:\t%s#53\n", default_server);
         printf("\n");
+    } else {
+        printf("Server:\t\t(none configured)\n\n");
     }
 }
 
@@ -242,7 +293,9 @@ static int handle_command(char *line)
         if (*arg) {
             strncpy(default_server, arg, sizeof(default_server) - 1);
             default_server[sizeof(default_server) - 1] = '\0';
-            printf("Default server changed to %s\n\n", default_server);
+            server_overridden = 1;
+            printf("Default server changed to %s\n", default_server);
+            printf("(note: queries still go through the stack's configured resolver)\n\n");
         } else {
             print_server_info();
         }
@@ -254,7 +307,9 @@ static int handle_command(char *line)
         if (*arg) {
             strncpy(default_server, arg, sizeof(default_server) - 1);
             default_server[sizeof(default_server) - 1] = '\0';
-            printf("Default server changed to %s\n\n", default_server);
+            server_overridden = 1;
+            printf("Default server changed to %s\n", default_server);
+            printf("(note: queries still go through the stack's configured resolver)\n\n");
         }
         return 0;
     }
@@ -324,16 +379,7 @@ static void interactive_mode(void)
 
 int main(int argc, char *argv[])
 {
-    struct Process *pr = (struct Process *)FindTask(NULL);
-    APTR old_window = pr->pr_WindowPtr;
-
-    /* Suppress "Please insert volume AROSTCP:" requesters */
-    pr->pr_WindowPtr = (APTR)-1;
-
     get_nameserver(default_server, sizeof(default_server));
-
-    /* Restore original window pointer */
-    pr->pr_WindowPtr = old_window;
 
     if (argc < 2) {
         /* No arguments: interactive mode */
@@ -344,6 +390,8 @@ int main(int argc, char *argv[])
             strncpy(default_server, argv[2],
                 sizeof(default_server) - 1);
             default_server[sizeof(default_server) - 1] = '\0';
+            server_overridden = 1;
+            printf("(note: queries still go through the stack's configured resolver)\n");
         }
 
         print_server_info();

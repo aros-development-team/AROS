@@ -99,6 +99,8 @@ void core_SysCall(int sig, regs_t *regs)
 
     /* Special state is used for returning from exception */
     case TS_EXCEPT:
+        /* The task carries on running, so it must not stay TS_EXCEPT */
+        task->tc_State = TS_RUN;
         cpu_DispatchContext(task, regs, KernelBase->kb_PlatformData);
         break;
     }

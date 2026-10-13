@@ -230,8 +230,14 @@
 #endif
 #endif
 
+/*
+    __mayalias is placed on struct definitions (exec Node/List/Resident).
+    gcc before 9 then rejects a function declared with the struct before its
+    definition was seen ("conflicting types"), which headers that use a type
+    before including its defining header do, so leave it out there.
+*/
 #ifndef __mayalias
-#if defined(__GNUC__) && __GNUC_PREREQ(3,3)
+#if defined(__clang__) || (defined(__GNUC__) && __GNUC_PREREQ(9,0))
 #    define __mayalias  __attribute__((__may_alias__))
 #else
 #    define __mayalias

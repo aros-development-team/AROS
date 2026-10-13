@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 2018-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -141,7 +141,7 @@ void AHCIUnit__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
             {
                 case ATA_PORT_T_DISK:
                     {
-                        if (at->at_identify.support_dsm & ATA_SUPPORT_DSM_TRIM)
+                        if (le16toh(at->at_identify.nomrota_rate) == 0x0001)
                             *msg->storage = vHidd_StorageUnit_Type_SolidStateDisk;
                         else
                             *msg->storage = vHidd_StorageUnit_Type_FixedDisk;

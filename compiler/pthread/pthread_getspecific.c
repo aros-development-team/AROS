@@ -23,7 +23,43 @@
 #include "pthread_intern.h"
 #include "debug.h"
 
-void *pthread_getspecific(pthread_key_t key)
+/****************************************************************************
+    NAME */
+        void *pthread_getspecific(
+
+/*  SYNOPSIS */
+        pthread_key_t key)
+
+/*  FUNCTION
+        Read the calling thread's pointer slot for key. The pointer is returned
+        unchanged; the call neither copies nor frees the pointed-to data.
+
+    INPUTS
+        key - Live key allocated by pthread_key_create(), with its lifetime
+            protected against concurrent deletion and reuse.
+
+    RESULT
+        The stored pointer, or NULL if the slot is NULL or key is outside
+        0..PTHREAD_KEYS_MAX-1. There is no separate error result.
+
+    NOTES
+        Include <pthread.h>; link with pthread. Call from the initial program
+        task or a registered worker. This is a nonblocking slot read. A new
+        worker's slots start as NULL. Values belong to the application and
+        remain valid only for the lifetime established by that application.
+
+    BUGS
+        The call does not check whether an in-range key is allocated. Deleting
+        or recreating a key does not clear old slot contents, so it can return
+        a stale pointer. An unregistered task maps to the initial task's record
+        instead of receiving independent thread-specific storage.
+
+    SEE ALSO
+        pthread_key_create(),
+        pthread_setspecific(),
+        pthread_self()
+
+*****************************************************************************/
 {
     pthread_t thread;
     ThreadInfo *inf;

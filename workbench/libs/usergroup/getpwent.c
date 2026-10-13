@@ -12,11 +12,10 @@
 
 /****** usergroup.library/getpwent *******************************************
 
-   NAME
-        getpwent, getpwnam, getpwuid, setpwent, endpwent
-         - password database operations
+    NAME
+        getpwent, getpwnam, getpwuid, setpwent, endpwent - password database operations
 
-   SYNOPSIS
+    SYNOPSIS
         #include <pwd.h>
 
         pw = getpwuid(uid)
@@ -38,7 +37,7 @@
         endpwent()
         void endpwent(void);
 
-   FUNCTION
+    FUNCTION
         These functions operate on the user database via netinfo.device
         interface. They provide convenient unix-compatible interface to the
         password unit of the netinfo.device.
@@ -75,41 +74,40 @@
         It is recommended to call endpwent() if the program won't access
         password database any more.
 
-   RESULTS
+    RESULT
         The functions getpwent(), getpwnam() and getpwuid() return a valid
         pointer to a passwd structure on success and a null pointer if end
         of database is reached or an error occurs. The functions endpwent()
         and setpwent() have no return value.
 
-    ERRORS
+    NOTES
+        Errors:
         [ENOENT] -- the netinfo.device could not be opened.
 
         Other netinfo.device IO errors can be retrieved by ug_GetErr().
 
-   FILES
+        Files:
         AmiTCP:db/passwd    The password database file
 
-   SEE ALSO
+        Compatibility:
+        The BSD passwd database handling routines setpwfile() and
+        setpassent() are fairly useless in a networked environment and they
+        are not implemented.
+
+    SEE ALSO
         getgrent(), netinfo.device/passwd
 
-   HISTORY
+    HISTORY
         The functions getpwent(), getpwnam(), getpwuid(), setpwent() and
         endpwent() functions appeared in Version 7 AT&T UNIX.
 
-   BUGS
+    BUGS
         These functions leave their results in an internal static object and
         return a pointer to that object. Subsequent calls to these function
         will modify the same object. If you need re-entrant operation, you
         should use directly the netinfo.device.
 
-   COMPATIBILITY
-        The BSD passwd database handling routines setpwfile() and
-        setpassent() are fairly useless in a networked environment and they
-        are not implemented.
-
-*****************************************************************************
-*
-*/
+******************************************************************************/
 
 #ifdef DEBUG
 #undef DEBUG

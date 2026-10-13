@@ -36,6 +36,8 @@
 #include <sys/syslog.h>
 
 #include <kern/amiga_includes.h>
+#include <bsdsocket/socketbasetags.h>
+#include <libraries/netservice.h>
 
 #include <api/amiga_api.h>
 #include <api/allocdatabuffer.h>
@@ -44,6 +46,20 @@
 
 #include <kern/amiga_subr.h>
 #include <kern/amiga_log.h>
+
+#include <api/dns_cache.h>
+
+#if defined(__AROSPLATFORM_SMP__)
+#include <aros/types/spinlock_s.h>
+#include <proto/execlock.h>
+#include <resources/execlock.h>
+#endif
+
+#include <sys/synch.h>
+#include <sys/socketvar.h>
+#include <netinet/in.h>
+#include <netinet/in_pcb.h>
+#include <net/raw_cb.h>
 
 #if 0
 /*#if sizeof (fd_mask) != 4 || sizeof (long) != 4*/
@@ -56,10 +72,18 @@
 struct SignalSemaphore syscall_semaphore = { {0} };
 
 /*
+ *  Protects socketBaseList and the master bases' lib_OpenCnt. Exec only
+ *  Forbid()s around Open/Close, which does not exclude other CPUs.
+ *  Leaf lock: take nothing else while holding it.
+ */
+struct SignalSemaphore baselist_semaphore = { {0} };
+
+/*
  *  some globals.
  */
 struct Library *MasterSocketBase = NULL;
 struct Library *MasterMiamiBase = NULL;
+struct Library *MasterNetServicesBase = NULL;
 struct List	socketBaseList;	     /* list of opened socket library bases */
 struct List	garbageSocketBaseList; /* list of libray bases not active
 				      anymore (NOT YET IMPLEMENTED) */
@@ -141,6 +165,54 @@ BOOL AROSTCP_FLAG_CANEXPUNGE = FALSE;
 
 BOOL SB_Expunged = FALSE; /* boolean value set by ELL_Expunge */
 
+/* The timer tsleep() uses for timeouts */
+static BOOL openSleepTimer(struct SocketBase *p)
+{
+    /*
+     * allocate and initialize the timer message reply port
+     */
+    p->timerPort = CreateMsgPort();
+    if(p->timerPort == NULL)
+        return FALSE;
+    /*
+     * Disable signalling for now
+     */
+    p->timerPort->mp_Flags = PA_IGNORE;
+    /*
+     * allocate and initialize the timerequest
+     */
+    p->tsleep_timer = (struct timerequest *)
+                      CreateIORequest(p->timerPort, sizeof(struct timerequest));
+    if(p->tsleep_timer == NULL)
+        return FALSE;
+    if(OpenDevice(TIMERNAME, UNIT_VBLANK,
+                  (struct IORequest *)p->tsleep_timer, 0) != 0)
+        return FALSE;
+    /*
+     * Initialize some fields of the IO request to common values
+     */
+    p->tsleep_timer->tr_node.io_Command = TR_ADDREQUEST;
+    p->tsleep_timer->tr_node.io_Message.mn_Node.ln_Type = NT_UNKNOWN;
+    return TRUE;
+}
+
+static void closeSleepTimer(struct SocketBase *p)
+{
+    if(p->tsleep_timer) {
+        if(p->tsleep_timer->tr_node.io_Device != NULL) {
+            if(p->tsleep_timer->tr_node.io_Message.mn_Node.ln_Type != NT_UNKNOWN) {
+                /* NC: must check if request has been used */
+                AbortIO((struct IORequest *)(p->tsleep_timer));
+                WaitIO((struct IORequest *)(p->tsleep_timer));
+            }
+            CloseDevice((struct IORequest *)p->tsleep_timer);
+        }
+        DeleteIORequest((struct IORequest *)p->tsleep_timer);
+    }
+    if(p->timerPort)
+        DeleteMsgPort(p->timerPort);
+}
+
 
 AROS_LH1(struct Library *, Open,
          AROS_LHA(ULONG, version, D0),
@@ -148,7 +220,6 @@ AROS_LH1(struct Library *, Open,
 {
     AROS_LIBFUNC_INIT
     struct SocketBase *newBase;
-    LONG error;
     WORD *i;
 
 #if defined(__AROS__)
@@ -200,18 +271,6 @@ AROS_LH1(struct Library *, Open,
         return NULL;
 
     /*
-     * add this newly allocated library base to our list of opened
-     * socket libraries
-     */
-    AddTail(&socketBaseList, (struct Node *)newBase);
-
-    /*
-     * Modify some MASTER library base fields
-     */
-    libPtr->lib_OpenCnt++;		/* mark us as having another opener */
-    libPtr->lib_Flags &= ~LIBF_DELEXP;	/* prevent delayed expunges */
-
-    /*
      * Initialize new library base
      */
     for(i = (WORD *)((struct Library *)newBase + 1);
@@ -223,6 +282,16 @@ AROS_LH1(struct Library *, Open,
     newBase->errnoSize = sizeof newBase->defErrno;
     newBase->thisTask = FindTask(NULL);
     newBase->sigIntrMask = SIGBREAKF_CTRL_C;
+
+    /*
+     * add this newly allocated library base to our list of opened
+     * socket libraries, and modify some MASTER library base fields
+     */
+    ObtainSemaphore(&baselist_semaphore);
+    AddTail(&socketBaseList, (struct Node *)newBase);
+    libPtr->lib_OpenCnt++;		/* mark us as having another opener */
+    libPtr->lib_Flags &= ~LIBF_DELEXP;	/* prevent delayed expunges */
+    ReleaseSemaphore(&baselist_semaphore);
 
     /* initialize syslog variables */
 #if 0 /* initialization to zero is implicit */
@@ -248,35 +317,9 @@ AROS_LH1(struct Library *, Open,
     if((newBase->dTable =
                 AllocMem(newBase->dTableSize * sizeof(struct socket *) +
                          ((newBase->dTableSize - 1) / NFDBITS + 1) * sizeof(fd_mask),
-                         MEMF_CLEAR | MEMF_PUBLIC)) != NULL) {
-        /*
-         * allocate and initialize the timer message reply port
-         */
-        newBase->timerPort = CreateMsgPort();
-        if(newBase->timerPort != NULL) {
-            /*
-             * Disable signalling for now
-             */
-            newBase->timerPort->mp_Flags = PA_IGNORE;
-            /*
-             * allocate and initialize the timerequest
-             */
-            newBase->tsleep_timer = (struct timerequest *)
-                                    CreateIORequest(newBase->timerPort, sizeof(struct timerequest));
-            if(newBase->tsleep_timer != NULL) {
-                error = OpenDevice(TIMERNAME, UNIT_VBLANK,
-                                   (struct IORequest *)newBase->tsleep_timer, 0);
-                if(error == 0) {
-                    /*
-                     * Initialize some fields of the IO request to common values
-                     */
-                    newBase->tsleep_timer->tr_node.io_Command = TR_ADDREQUEST;
-                    newBase->tsleep_timer->tr_node.io_Message.mn_Node.ln_Type = NT_UNKNOWN;
-                    return (struct Library *)newBase;
-                }
-            }
-        }
-    }
+                         MEMF_CLEAR | MEMF_PUBLIC)) != NULL &&
+            openSleepTimer(newBase))
+        return (struct Library *)newBase;
     /*
      * There was some error if we reached here. Call Close to clean up.
      */
@@ -345,11 +388,57 @@ AROS_LH0I(LONG, Null, struct Library *, libPtr, 0, LIB)
     AROS_LIBFUNC_EXIT
 }
 
+/*
+ * A socket can name a base whose table it is not in (FIOSETOWN), and the
+ * daemon signals so_pgid, so every socket forgets a base before it is freed.
+ * Caller holds syscall_semaphore, which FIOGETOWN reads it under.
+ */
+static void forgetSocketOwner(struct SocketBase *libPtr)
+{
+    extern struct inpcbhead tcb, udb;
+    extern struct rawcb rawcb;
+    struct inpcb *inp;
+    struct rawcb *rp;
+    struct Node *n;
+    int i;
+    spl_t s;
+
+    s = splnet();
+    /* Sockets with a pcb, those not accepted yet included */
+    for(inp = tcb.lh_first; inp; inp = inp->inp_list.le_next)
+        if(inp->inp_socket && inp->inp_socket->so_pgid == libPtr)
+            inp->inp_socket->so_pgid = NULL;
+    for(inp = udb.lh_first; inp; inp = inp->inp_list.le_next)
+        if(inp->inp_socket && inp->inp_socket->so_pgid == libPtr)
+            inp->inp_socket->so_pgid = NULL;
+    for(rp = rawcb.rcb_next; rp && rp != &rawcb; rp = rp->rcb_next)
+        if(rp->rcb_socket && rp->rcb_socket->so_pgid == libPtr)
+            rp->rcb_socket->so_pgid = NULL;
+
+    /* Open or released sockets whose pcb is gone (a reset connection) */
+    ObtainSemaphoreShared(&baselist_semaphore);
+    for(n = socketBaseList.lh_Head; n->ln_Succ; n = n->ln_Succ) {
+        struct SocketBase *b = (struct SocketBase *)n;
+
+        if(b->dTable == NULL)
+            continue;
+        for(i = 0; i < b->dTableSize; i++)
+            if(b->dTable[i] && b->dTable[i]->so_pgid == libPtr)
+                b->dTable[i]->so_pgid = NULL;
+    }
+    ReleaseSemaphore(&baselist_semaphore);
+    for(n = releasedSocketList.lh_Head; n->ln_Succ; n = n->ln_Succ)
+        if(((struct SocketNode *)n)->sn_Socket->so_pgid == libPtr)
+            ((struct SocketNode *)n)->sn_Socket->so_pgid = NULL;
+    splx(s);
+}
+
 ULONG *__UL_Close(struct SocketBase *libPtr)
 {
     VOID *freestart;
     ULONG  size;
     int	 i;
+    BOOL expunge;
 
     /*
      * one task may have SocketLibrary opened more than once.
@@ -378,31 +467,30 @@ ULONG *__UL_Close(struct SocketBase *libPtr)
      * waited. The linger may be interrupted by any signal in sigIntrMask.
      */
     libPtr->fdCallback = NULL; /* don't call the callback any more */
+    ObtainSyscallSemaphore(libPtr);
+    /*
+     * From here no other task can name the base (FIOSETOWN) or dup into
+     * its table. It stays listed: a lingering close finds it for tsleep().
+     */
+    libPtr->closing = TRUE;
     /*
      * dTable may be NULL if Open() failed before allocating it and called
      * us to clean up (dTableSize is set before dTable is allocated).
+     * A linger drops the semaphore, so re-read the table every round.
      */
     if(libPtr->dTable)
         for(i = 0; i < libPtr->dTableSize; i++)
-            if(libPtr->dTable[i] != NULL)
-                __CloseSocket(i, libPtr);
+            if(FD_ISSET(i, (fd_set *)(libPtr->dTable + libPtr->dTableSize)))
+                closeSocketLocked(i, libPtr);
+    forgetSocketOwner(libPtr);
+    ReleaseSyscallSemaphore(libPtr);
 
+    ObtainSemaphore(&baselist_semaphore);
     Remove((struct Node *)libPtr); /* remove this librarybase from our list
 				    of opened library bases */
+    ReleaseSemaphore(&baselist_semaphore);
 
-    if(libPtr->tsleep_timer) {
-        if(libPtr->tsleep_timer->tr_node.io_Device != NULL) {
-            if(libPtr->tsleep_timer->tr_node.io_Message.mn_Node.ln_Type != NT_UNKNOWN) {
-                /* NC: must check if request has been used */
-                AbortIO((struct IORequest *)(libPtr->tsleep_timer));
-                WaitIO((struct IORequest *)(libPtr->tsleep_timer));
-            }
-            CloseDevice((struct IORequest *)libPtr->tsleep_timer);
-        }
-        DeleteIORequest((struct IORequest *)libPtr->tsleep_timer);
-    }
-    if(libPtr->timerPort)
-        DeleteMsgPort(libPtr->timerPort);
+    closeSleepTimer(libPtr);
 
     freeDataBuffer(&libPtr->selitems);
     freeDataBuffer(&libPtr->hostents);
@@ -421,15 +509,17 @@ ULONG *__UL_Close(struct SocketBase *libPtr)
     bzero(freestart, size);
     FreeMem(freestart, size);
 
+    ObtainSemaphore(&baselist_semaphore);
     MasterSocketBase->lib_OpenCnt--;
     /*
      * If no more libraries are open and delayed expunge is asked,
      * ELL_expunge() is called.
      */
-    if(MasterSocketBase->lib_OpenCnt == 0 &&
-            (MasterSocketBase->lib_Flags & LIBF_DELEXP)) {
+    expunge = MasterSocketBase->lib_OpenCnt == 0 &&
+            (MasterSocketBase->lib_Flags & LIBF_DELEXP);
+    ReleaseSemaphore(&baselist_semaphore);
+    if(expunge)
         return __ELL_Expunge(MasterSocketBase);
-    }
 
     return NULL; /* always return null */
 }
@@ -444,6 +534,65 @@ AROS_LH0(ULONG *, Close, struct SocketBase *, libPtr, 2, UL)
     AROS_LIBFUNC_EXIT
 }
 
+/*
+ * A base for an fd.library hook caller that has none, for one call. It only
+ * sleeps: no library vectors, no descriptor table, and FIOSETOWN will not
+ * name it, so closing it needs no socket or owner sweep. It is listed so the
+ * socket code finds it (FindSocketBase) and a stack shutdown breaks it.
+ */
+struct SocketBase *api_hookbase_open(VOID)
+{
+    struct SocketBase *p;
+    BOOL ok;
+
+    if((p = AllocMem(sizeof(*p), MEMF_CLEAR | MEMF_PUBLIC)) == NULL)
+        return NULL;
+    p->errnoPtr = (VOID *)&p->defErrno;
+    p->errnoSize = sizeof p->defErrno;
+    p->thisTask = FindTask(NULL);
+    p->sigIntrMask = SIGBREAKF_CTRL_C;
+    p->hErrnoPtr = &p->defHErrno;
+    p->res_socket = -1;
+    p->hookBase = TRUE;
+    InitSemaphore(&p->EventLock);
+    NewList((struct List *)&p->EventList);
+
+    ok = openSleepTimer(p);
+    if(ok) {
+        ObtainSemaphore(&baselist_semaphore);
+        ok = MasterSocketBase != NULL &&
+             (api_state == API_SHOWN || api_state == API_HIDDEN);
+        if(ok) {
+            AddTail(&socketBaseList, (struct Node *)p);
+            MasterSocketBase->lib_OpenCnt++;	/* holds off the expunge */
+        }
+        ReleaseSemaphore(&baselist_semaphore);
+    }
+    if(!ok) {
+        closeSleepTimer(p);
+        FreeMem(p, sizeof(*p));
+        return NULL;
+    }
+    return p;
+}
+
+VOID api_hookbase_close(struct SocketBase *p)
+{
+    BOOL expunge;
+
+    ObtainSemaphore(&baselist_semaphore);
+    Remove((struct Node *)p);
+    MasterSocketBase->lib_OpenCnt--;
+    expunge = MasterSocketBase->lib_OpenCnt == 0 &&
+            (MasterSocketBase->lib_Flags & LIBF_DELEXP);
+    ReleaseSemaphore(&baselist_semaphore);
+
+    closeSleepTimer(p);
+    FreeMem(p, sizeof(*p));
+    if(expunge)
+        __ELL_Expunge(MasterSocketBase);
+}
+
 
 #if defined(ENABLE_FDLIBRARY)
 extern BOOL fdhooks_setup(void);        /* amiga_fdhooks.c */
@@ -455,6 +604,7 @@ BOOL api_init()
     extern void select_init(void);
     extern f_void ExecLibraryList_funcTable[];
     extern ULONG Miami_InitFuncTable[];
+    extern ULONG NetServices_InitFuncTable[];
 
 #if defined(__AROS__)
     D(bug("[AROSTCP](amiga_api.c) api_init()\n"));
@@ -515,7 +665,28 @@ BOOL api_init()
     if(MasterMiamiBase == NULL)
         return FALSE;
 
+    /* netservices.library: the managed-service registry.  A conventional
+     * single shared base (no per-opener MakeLibrary in its Open), holding no
+     * SocketBase.  The registry data was already initialised by
+     * netservice_registry_init() in init_all(). */
+    MasterNetServicesBase = MakeLibrary(NetServices_InitFuncTable,
+                                        NULL,
+                                        NULL,
+                                        sizeof(struct NetServicesBase),
+                                        BNULL);
+    if(MasterNetServicesBase == NULL)
+        return FALSE;
+    ((struct Library *)MasterNetServicesBase)->lib_Node.ln_Type = NT_LIBRARY;
+    ((struct Library *)MasterNetServicesBase)->lib_Node.ln_Name = (APTR)NETSERVICESNAME;
+    ((struct Library *)MasterNetServicesBase)->lib_Flags = (LIBF_SUMUSED | LIBF_CHANGED);
+    ((struct Library *)MasterNetServicesBase)->lib_Version = NETSERVICES_VERSION;
+    ((struct Library *)MasterNetServicesBase)->lib_Revision = NETSERVICES_REVISION;
+    ((struct Library *)MasterNetServicesBase)->lib_IdString = (APTR)RELEASESTRING VSTRING;
+    D(bug("[AROSTCP](amiga_api.c) api_init: Created netservices.library base: 0x%p\n", MasterNetServicesBase));
+
     InitSemaphore(&syscall_semaphore);
+    InitSemaphore(&baselist_semaphore);
+    dns_cache_init();   /* before any base exists to look names up */
     select_init(); /* initializes data Select() needs */
     NewList(&socketBaseList);
     NewList(&garbageSocketBaseList);
@@ -533,10 +704,41 @@ BOOL api_init()
 
 LONG nthLibrary = 0;
 
+/*
+ * Forbid() does not keep other CPUs out of SysBase->LibList: OpenLibrary()
+ * takes execlock.resource's lock for it, so take that one too.
+ */
+static APTR liblist_lock(BOOL write)
+{
+#if defined(__AROSPLATFORM_SMP__)
+    APTR ExecLockBase = OpenResource("execlock.resource");
+
+    if(ExecLockBase) {
+        ObtainSystemLock(&SysBase->LibList,
+                         write ? SPINLOCK_MODE_WRITE : SPINLOCK_MODE_READ, LOCKF_FORBID);
+        return ExecLockBase;
+    }
+#endif
+    Forbid();
+    return NULL;
+}
+
+static void liblist_unlock(APTR ExecLockBase)
+{
+#if defined(__AROSPLATFORM_SMP__)
+    if(ExecLockBase) {
+        ReleaseSystemLock(&SysBase->LibList, LOCKF_FORBID);
+        return;
+    }
+#endif
+    Permit();
+}
+
 BOOL api_show()
 {
     struct Node *libNode;
     STRPTR libName = SOCLIBNAME;
+    APTR lock;
 
 #if defined(__AROS__)
     D(bug("[AROSTCP](amiga_api.c) api_show()\n"));
@@ -547,7 +749,7 @@ BOOL api_show()
     if(api_state == API_SCRATCH)
         return FALSE;
 
-    Forbid();
+    lock = liblist_lock(FALSE);
     for(libNode = SysBase->LibList.lh_Head; libNode->ln_Succ;
             libNode = libNode->ln_Succ) {
         if(!strncmp(libNode->ln_Name, libName, sizeof(SOCLIBNAME) - 3)) {
@@ -560,12 +762,12 @@ BOOL api_show()
             if(nthLibrary < i)
                 nthLibrary = i;
 #else
-            Permit();
+            liblist_unlock(lock);
             return FALSE;
 #endif
         }
     }
-    Permit();
+    liblist_unlock(lock);
 #ifdef DEBUG
     if(nthLibrary > 8)
         return FALSE;
@@ -578,6 +780,7 @@ BOOL api_show()
 #endif
     AddLibrary(MasterSocketBase);
     AddLibrary(MasterMiamiBase);
+    AddLibrary(MasterNetServicesBase);
     api_state = API_SHOWN;
 
     return TRUE;
@@ -585,17 +788,20 @@ BOOL api_show()
 
 VOID api_hide()
 {
+    APTR lock;
+
 #if defined(__AROS__)
     D(bug("[AROSTCP](amiga_api.c) api_hide()\n"));
 #endif
 
     if(api_state != API_SHOWN)
         return;
-    Forbid();
+    lock = liblist_lock(TRUE);
     /* unlink Master SocketBase from System Library list */
     Remove((struct Node *)MasterSocketBase);
     Remove((struct Node *)MasterMiamiBase);
-    Permit();
+    Remove((struct Node *)MasterNetServicesBase);
+    liblist_unlock(lock);
     api_state = API_HIDDEN;
 }
 
@@ -611,10 +817,11 @@ VOID api_setfunctions() /* DOES NOTHING NOW */
         return;
     if(api_state == API_SHOWN) {
         /* unlink Master SocketBase from System Library list */
-        Forbid();
+        APTR lock = liblist_lock(TRUE);
+        Remove((struct Node *)MasterNetServicesBase);
         Remove((struct Node *)MasterMiamiBase);
         Remove((struct Node *)MasterSocketBase);
-        Permit();
+        liblist_unlock(lock);
     }
 
     /* here SetFunction()s to patch libray calls (forbid()/permit()) */
@@ -635,12 +842,83 @@ VOID api_sendbreaktotasks()
     D(bug("[AROSTCP](amiga_api.c) api_sendbreaktotask()\n"));
 #endif
 
-    Forbid();
+    ObtainSemaphoreShared(&baselist_semaphore);
     for(libNode = socketBaseList.lh_Head; libNode->ln_Succ;
             libNode = libNode->ln_Succ)
         if(((struct SocketBase *)libNode)->thisTask != Nettrace_Task)
             Signal(((struct SocketBase *)libNode)->thisTask, SIGBREAKF_CTRL_C);
 
+    ReleaseSemaphore(&baselist_semaphore);
+}
+
+ULONG api_reconfig_state = NETRC_ONLINE;
+ULONG api_reconfig_generation = 0;
+ULONG api_reconfig_expected = 0;          /* subscribers signalled at reconfigure-begin */
+volatile ULONG api_reconfig_acked = 0;    /* how many have acked (SBTC_RECONFIG_ACK) */
+
+/*
+ * Reconfigure notification.  Signals every open consumer that set
+ * SBTC_SIG_RECONFIG_MASK (the NETTRACE task is skipped; the Master base is not
+ * on socketBaseList).  begin=TRUE marks the start of an in-place reload and
+ * sets the state to NETRC_RECONFIGURING; begin=FALSE marks the end, bumps the
+ * generation and returns the state to NETRC_ONLINE.  A woken consumer reads
+ * SBTC_RECONFIG_STATE/SBTC_RECONFIG_GENERATION to tell begin from end.
+ */
+VOID api_sendreconfig(BOOL begin)
+{
+    extern struct List socketBaseList; /* :/ */
+    struct Node *libNode;
+
+#if defined(__AROS__)
+    D(bug("[AROSTCP](amiga_api.c) api_sendreconfig(begin=%ld)\n", (long)begin));
+#endif
+
+    ULONG count = 0;
+
+    if(begin) {
+        api_reconfig_state = NETRC_RECONFIGURING;
+        api_reconfig_acked = 0;         /* reset the ack tally for this begin */
+    } else {
+        api_reconfig_generation++;
+        api_reconfig_state = NETRC_ONLINE;
+    }
+
+    Forbid();
+    for(libNode = socketBaseList.lh_Head; libNode->ln_Succ;
+            libNode = libNode->ln_Succ) {
+        struct SocketBase *sb = (struct SocketBase *)libNode;
+        if(sb->thisTask != Nettrace_Task && sb->sigReconfigMask) {
+            Signal(sb->thisTask, sb->sigReconfigMask);
+            count++;
+        }
+    }
+    Permit();
+
+    if(begin)
+        api_reconfig_expected = count;  /* how many acks to wait for (net_reload) */
+}
+
+/*
+ * Signal every consumer subscribed to SBTC_SIG_ADDRESS_CHANGE_MASK that an
+ * interface address was added or removed.  Fired centrally from rt_newaddrmsg()
+ * on RTM_NEWADDR/RTM_DELADDR, so it covers both IPv4 and IPv6.  A woken consumer
+ * re-reads interface addresses (e.g. SIOCGIFCONF).
+ */
+VOID api_sendaddrchange(VOID)
+{
+    extern struct List socketBaseList; /* :/ */
+    struct Node *libNode;
+
+    if(api_state != API_SHOWN)
+        return;         /* no external consumers before the API is visible */
+
+    Forbid();
+    for(libNode = socketBaseList.lh_Head; libNode->ln_Succ;
+            libNode = libNode->ln_Succ) {
+        struct SocketBase *sb = (struct SocketBase *)libNode;
+        if(sb->thisTask != Nettrace_Task && sb->sigAddrChangeMask)
+            Signal(sb->thisTask, sb->sigAddrChangeMask);
+    }
     Permit();
 }
 

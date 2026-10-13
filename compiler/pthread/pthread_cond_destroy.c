@@ -24,7 +24,43 @@
 #include "pthread_intern.h"
 #include "debug.h"
 
-int pthread_cond_destroy(pthread_cond_t *cond)
+/****************************************************************************
+    NAME */
+        int pthread_cond_destroy(
+
+/*  SYNOPSIS */
+        pthread_cond_t *cond)
+
+/*  FUNCTION
+        Clear a condition variable after checking that its internal semaphore
+        is available and its waiter list is empty.
+
+    INPUTS
+        cond - Unused condition variable. Prevent all new waits and signals
+            before destruction and until its storage has been released.
+
+    RESULT
+        0 on success, including an uninitialized static condition (left as is).
+        EINVAL if cond is NULL. EBUSY if its semaphore cannot be acquired
+        immediately or its waiter list is nonempty. Errors are returned directly.
+
+    NOTES
+        Include <pthread.h>; link with pthread. The probe does not wait. No
+        caller storage is freed. Reinitialize before reuse. A waiter remains
+        on the internal list until it has reacquired its application mutex,
+        so a signalled waiter can still make this call report EBUSY.
+
+    BUGS
+        The implementation releases its semaphore before zeroing the object.
+        The empty-list probe cannot make concurrent destruction safe. Establish
+        that all potential users have finished outside this call.
+
+    SEE ALSO
+        pthread_cond_init(),
+        pthread_cond_wait(),
+        pthread_cond_signal()
+
+*****************************************************************************/
 {
     D(bug("%s(%p)\n", __FUNCTION__, cond));
 
