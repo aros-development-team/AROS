@@ -3304,7 +3304,14 @@ LONG initdisk() {
 
     */
 
-    changegeometry(globals->dosenvec);
+    {
+        LONG errorcode=changegeometry(globals->dosenvec);
+
+        if(errorcode!=0) {
+            globals->disktype=ID_UNREADABLE_DISK;
+            return(errorcode);
+        }
+    }
     sfsSecVolumeOnline();
 
     if(globals->volumenode == 0) {

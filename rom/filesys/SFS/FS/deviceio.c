@@ -261,28 +261,53 @@ LONG getgeometry(ULONG *sectors, ULONG *sectorsize)
     return(errorcode);
 }
 
-void changegeometry(struct DosEnvec *de)
+LONG changegeometry(struct DosEnvec *de)
 {
     ULONG sectorspercilinder;
-    UWORD bs;
+    ULONG bs;
+    ULONG sectors_block, bytes_sector, bytes_block, shifts_block, mask_block;
+    ULONG sector_low, sector_high, sectors_total, blocks_total;
+    UQUAD byte_low, byte_high;
+    UQUAD cylindersectors;
+    UQUAD endsector;
+    UQUAD blockbytes;
 
-    globals->sectors_block = de->de_SectorPerBlock;
-    globals->bytes_sector  = de->de_SizeBlock<<2;
-    globals->bytes_block   = globals->bytes_sector * de->de_SectorPerBlock;
-
-    _DEBUG("%u sectors per block, %u bytes per sector, %u bytes per block\n", globals->sectors_block, globals->bytes_sector, globals->bytes_block);
-
-    bs = globals->bytes_block;
-
-    globals->shifts_block = 0;
-    while ((bs >>= 1) !=0 )
-    {
-        globals->shifts_block++;
+    /* I/O uses shifts and masks, so only power-of-two block sizes supported
+       by the handler can be accepted.  Check before any division or shift. */
+    if(de->de_SizeBlock==0 || de->de_SizeBlock>8192 || de->de_SectorPerBlock==0) {
+        return(ERROR_BAD_NUMBER);
+    }
+    if(de->de_Surfaces==0 || de->de_BlocksPerTrack==0 ||
+       de->de_Surfaces>0xFFFFFFFFUL/de->de_BlocksPerTrack ||
+       de->de_HighCyl>=0xFFFFFFFFUL || de->de_LowCyl>de->de_HighCyl ||
+       de->de_SectorPerBlock>32768/(de->de_SizeBlock*4)) {
+        return(ERROR_BAD_NUMBER);
+    }
+    cylindersectors=(UQUAD)de->de_Surfaces*de->de_BlocksPerTrack;
+    endsector=cylindersectors*((UQUAD)de->de_HighCyl+1);
+    blockbytes=(UQUAD)de->de_SizeBlock*4*de->de_SectorPerBlock;
+    if(blockbytes<512 || blockbytes>32768 || (blockbytes & (blockbytes-1))!=0 ||
+       cylindersectors==0 || endsector>0xFFFFFFFFULL || de->de_LowCyl>de->de_HighCyl) {
+        return(ERROR_BAD_NUMBER);
     }
 
-    globals->mask_block = globals->bytes_block-1;
+    sectors_block = de->de_SectorPerBlock;
+    bytes_sector  = de->de_SizeBlock<<2;
+    bytes_block   = bytes_sector * de->de_SectorPerBlock;
+
+    _DEBUG("%u sectors per block, %u bytes per sector, %u bytes per block\n", sectors_block, bytes_sector, bytes_block);
+
+    bs = bytes_block;
+
+    shifts_block = 0;
+    while ((bs >>= 1) !=0 )
+    {
+        shifts_block++;
+    }
+
+    mask_block = bytes_block-1;
     
-    _DEBUG("Block shift: %u, mask: 0x%08X\n", globals->shifts_block, globals->mask_block);
+    _DEBUG("Block shift: %u, mask: 0x%08X\n", shifts_block, mask_block);
 
     /* Absolute offset on the entire disk are expressed in Sectors;
        Offset relative to the start of the partition are expressed in Blocks */
@@ -290,10 +315,10 @@ void changegeometry(struct DosEnvec *de)
     sectorspercilinder = de->de_Surfaces*de->de_BlocksPerTrack;           // 32 bit
 
     /* Get bounds of our device */
-    globals->sector_low  = sectorspercilinder * de->de_LowCyl;
-    globals->sector_high = sectorspercilinder * (de->de_HighCyl+1);
+    sector_low  = sectorspercilinder * de->de_LowCyl;
+    sector_high = sectorspercilinder * (de->de_HighCyl+1);
 
-    _DEBUG("%u sectors per cylinder, start sector %u, end sector %u\n", sectorspercilinder, globals->sector_low, globals->sector_high);
+    _DEBUG("%u sectors per cylinder, start sector %u, end sector %u\n", sectorspercilinder, sector_low, sector_high);
 
     /*
      * If our device starts from sector 0, we assume we are serving the whole device.
@@ -301,7 +326,7 @@ void changegeometry(struct DosEnvec *de)
      * about its current geometry (this way we can support floppies where geometry may
      * vary (DD or HD)
      */
-    if (globals->sector_low == 0)
+    if (sector_low == 0)
     {
         ULONG totalsectors=0,sectorsize=0;
 
@@ -311,27 +336,45 @@ void changegeometry(struct DosEnvec *de)
 
         if(totalsectors!=0)
         {
-            D(bug("[SFS] Given Sector size %lu, detected %lu\n", sectorsize, globals->bytes_sector));
-            if(sectorsize==globals->bytes_sector) {
-                globals->sector_high=totalsectors;
+            D(bug("[SFS] Given Sector size %lu, detected %lu\n", sectorsize, bytes_sector));
+            if(sectorsize==bytes_sector) {
+                sector_high=totalsectors;
             }
             else {
                 req("Geometry could not be used because\n"\
                     "sectorsize does not match that of the\n"\
                     "mountlist (%ld<>%ld).\n"\
-                    "Please notify the author.", "Continue", sectorsize, globals->bytes_sector);
+                    "Please notify the author.", "Continue", sectorsize, bytes_sector);
             }
         }
     }
 
-    /* Set some more characteristics */
-    globals->sectors_total = globals->sector_high - globals->sector_low;
-    globals->blocks_total  = globals->sectors_total / globals->sectors_block;
-    globals->byte_low      = (UQUAD)globals->sector_low  * globals->bytes_sector;
-    globals->byte_high     = (UQUAD)globals->sector_high * globals->bytes_sector;
+    if(sector_high<=sector_low ||
+       sector_high-sector_low<sectors_block) {
+        return(ERROR_BAD_NUMBER);
+    }
 
-    _DEBUG("Total: %u sectors, %u blocks\n", globals->sectors_total, globals->blocks_total);
-    _DEBUG("Start offset 0x%llu, end offset 0x%llu\n", globals->byte_low, globals->byte_high);
+    /* Set some more characteristics */
+    sectors_total = sector_high - sector_low;
+    blocks_total  = sectors_total / sectors_block;
+    byte_low      = (UQUAD)sector_low  * bytes_sector;
+    byte_high     = (UQUAD)sector_high * bytes_sector;
+
+    _DEBUG("Total: %u sectors, %u blocks\n", sectors_total, blocks_total);
+    _DEBUG("Start offset 0x%llu, end offset 0x%llu\n", byte_low, byte_high);
+    /* Publish a complete, validated geometry together. */
+    globals->sectors_block=sectors_block;
+    globals->bytes_sector=bytes_sector;
+    globals->bytes_block=bytes_block;
+    globals->shifts_block=shifts_block;
+    globals->mask_block=mask_block;
+    globals->sector_low=sector_low;
+    globals->sector_high=sector_high;
+    globals->sectors_total=sectors_total;
+    globals->blocks_total=blocks_total;
+    globals->byte_low=byte_low;
+    globals->byte_high=byte_high;
+    return(0);
 }
 
 #ifdef DEBUGCODE
@@ -375,7 +418,10 @@ LONG initdeviceio(UBYTE *devicename, IPTR unit, ULONG flags, struct DosEnvec *de
                         globals->ioreqchangeint->io_Device=globals->ioreq->io_Device;
                         globals->ioreqchangeint->io_Unit=globals->ioreq->io_Unit;
 
-                        changegeometry(de);
+                        if((errorcode=changegeometry(de))!=0) {
+                            cleanupdeviceio();
+                            return(errorcode);
+                        }
 
                         if(de->de_TableSize>=12) {
                             globals->bufmemtype=de->de_BufMemType;
