@@ -1,5 +1,8 @@
 # Copyright (C) 2026, The AROS Development Team. All rights reserved.
 #MM- test : test-filesys
 #MM- test-quick : test-filesys-quick
-#MM- test-filesys : test-filesys-cdupdate
-#MM- test-filesys-quick : test-filesys-cdupdate-quick
+#MM- test-filesys : test-filesys-cdupdate test-filesys-afs
+#MM- test-filesys-quick : test-filesys-cdupdate-quick test-filesys-afs-quick
+
+#MM- test-filesys-afs : test-filesys-afs-requesters test-filesys-afs-requesters-inline test-filesys-afs-io
+#MM- test-filesys-afs-quick : test-filesys-afs-requesters-quick test-filesys-afs-requesters-inline-quick test-filesys-afs-io-quick

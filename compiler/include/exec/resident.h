@@ -2,7 +2,7 @@
 #define EXEC_RESIDENT_H
 
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Resident modules.
@@ -16,8 +16,7 @@
 #   include <utility/tagitem.h>
 #endif
 
-struct __mayalias Resident;
-struct Resident
+struct __mayalias Resident
 {
     UWORD                  rt_MatchWord; /* equal to RTC_MATCHWORD (see below) */
     const struct Resident *rt_MatchTag;  /* Pointer to this struct */
