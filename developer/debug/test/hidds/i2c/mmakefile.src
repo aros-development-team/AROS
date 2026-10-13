@@ -13,4 +13,14 @@ EXEDIR := $(AROS_TESTS)/hidds/i2c
     files=i2cbcm2708 targetdir=$(EXEDIR) \
     progname=I2C-BCM2708
 
+# and only the opensbi port the DesignWare one
+#MM- test-opensbi : test-hidd-i2c-dw
+#MM- test-opensbi-quick : test-hidd-i2c-dw-quick
+
+#MM test-hidd-i2c-dw : includes includes-copy linklibs kernel-hidd-dwi2c-includes
+
+%build_prog mmake=test-hidd-i2c-dw \
+    files=i2cdw targetdir=$(EXEDIR) \
+    progname=I2C-DW
+
 %common
