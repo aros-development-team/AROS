@@ -244,6 +244,7 @@ void request2(UBYTE *text);
 // #define STARTDEBUG
 
 LONG mainprogram(struct ExecBase *SysBase) {
+    LONG startuperror = ERROR_NO_FREE_STORE;
 #ifndef __AROS__
     ULONG reslen;
     APTR old_a4;
@@ -331,7 +332,8 @@ LONG mainprogram(struct ExecBase *SysBase) {
                                                 dreq("(3) Timer.device opened");
 #endif
 
-                                                if(initcachedio(AROS_BSTR_ADDR(globals->startupmsg->fssm_Device), globals->startupmsg->fssm_Unit, globals->startupmsg->fssm_Flags, globals->dosenvec) == 0) {
+                                                if((startuperror = initcachedio(AROS_BSTR_ADDR(globals->startupmsg->fssm_Device), globals->startupmsg->fssm_Unit, globals->startupmsg->fssm_Flags, globals->dosenvec)) == 0) {
+                                                    startuperror = ERROR_NO_FREE_STORE;
 #ifdef STARTDEBUG
                                                     dreq("(4) Cached IO layer started");
 #endif
@@ -472,7 +474,7 @@ LONG mainprogram(struct ExecBase *SysBase) {
 
         _DEBUG("Returning startup packet with DOSFALSE\n");
 
-        returnpacket(DOSFALSE, ERROR_NO_FREE_STORE);
+        returnpacket(DOSFALSE, startuperror);
 
         CloseLibrary((struct Library *)DOSBase);
     }
@@ -480,7 +482,7 @@ LONG mainprogram(struct ExecBase *SysBase) {
     FreeMem(globals, sizeof(struct SFSBase));
     _DEBUG("Exiting filesystem\n");
 
-    return(ERROR_NO_FREE_STORE);
+    return(startuperror);
 }
 
 /* Helper to make sure BSTR's are copied and NULL terminated,
