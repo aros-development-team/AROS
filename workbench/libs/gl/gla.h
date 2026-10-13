@@ -1,5 +1,5 @@
 /*
-    Copyright 2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 2014-2026, The AROS Development Team. All rights reserved.
 */
 
 
@@ -80,6 +80,23 @@ typedef APTR GLAContext;
 #define GLA_NoDepth             (GLA_Dummy + 0x0039)
 #define GLA_NoStencil           (GLA_Dummy + 0x003a)
 #define GLA_NoAccum             (GLA_Dummy + 0x003b)
+
+/*
+ * GLA_ContextProfile:      GLA_PROFILE_COMPAT (the default) or GLA_PROFILE_CORE.
+ *                          A core profile context can offer a newer GL than a
+ *                          compatibility one (Mesa only raises compatibility
+ *                          contexts as far as the driver allows).
+ * GLA_ContextMajorVersion,
+ * GLA_ContextMinorVersion: the lowest GL version the context must support;
+ *                          creation fails if it cannot. The context gets the
+ *                          highest version available. Core needs 3.2 at least.
+ */
+#define GLA_ContextProfile      (GLA_Dummy + 0x0040)
+#define GLA_ContextMajorVersion (GLA_Dummy + 0x0041)
+#define GLA_ContextMinorVersion (GLA_Dummy + 0x0042)
+
+#define GLA_PROFILE_COMPAT      0
+#define GLA_PROFILE_CORE        1
 
 /*
  * GLA API calls
