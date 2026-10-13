@@ -1145,6 +1145,8 @@ IPTR MonitorClass__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 
 *****************************************************************************/
 
+void MonitorClass__MM_ScreenToDisplayCoords(Class *cl, Object *obj, struct msScreenToDisplayCoords *msg);
+
 void MonitorClass__MM_GetDisplayBounds(Class *cl, Object *obj, struct msGetDisplayBounds *msg)
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
@@ -1166,6 +1168,26 @@ void MonitorClass__MM_GetDisplayBounds(Class *cl, Object *obj, struct msGetDispl
             data->FBBounds.MaxX = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxX;
             data->FBBounds.MinY = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinY;
             data->FBBounds.MaxY = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxY;
+
+            /* The clip is in the screen's pixels; a driver may scale the
+             * screen into a display of another mode. */
+            if (IS_HIDD_BM(scr->RastPort.BitMap))
+            {
+                UWORD w, h;
+                struct msScreenToDisplayCoords coordmsg =
+                {
+                    .MethodID   = MM_ScreenToDisplayCoords,
+                    .Screen     = scr,
+                    .ScrX       = data->FBBounds.MaxX - data->FBBounds.MinX + 1,
+                    .ScrY       = data->FBBounds.MaxY - data->FBBounds.MinY + 1,
+                    .DispX      = &w,
+                    .DispY      = &h
+                };
+
+                MonitorClass__MM_ScreenToDisplayCoords(cl, obj, &coordmsg);
+                data->FBBounds.MaxX = data->FBBounds.MinX + w - 1;
+                data->FBBounds.MaxY = data->FBBounds.MinY + h - 1;
+            }
         }
         else if (GetPrivIBase(IntuitionBase)->ScreenModePrefs)
         {
@@ -1246,7 +1268,9 @@ void MonitorClass__MM_DisplayToScreenCoords(Class *cl, Object *obj, struct msDis
     struct IMonitorNode *data = INST_DATA(cl, obj);
     D(bug("[Monitor] %s(0x%p, %d, %d)\n", __func__, msg->Screen, msg->DispX, msg->DispY);)
 
-    if ((data->dcsupported) && IS_HIDD_BM(msg->Screen->RastPort.BitMap))
+    /* The base class hook is the identity; a driver composing screens of
+     * different modes scales here. */
+    if (IS_HIDD_BM(msg->Screen->RastPort.BitMap))
     {
         struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
         OOP_MethodID HiddDisplayBase = GetPrivIBase(IntuitionBase)->ib_HiddDisplayBase;
@@ -1316,7 +1340,7 @@ void MonitorClass__MM_ScreenToDisplayCoords(Class *cl, Object *obj, struct msScr
     struct IMonitorNode *data = INST_DATA(cl, obj);
     D(bug("[Monitor] %s(0x%p, %d, %d)\n", __func__, msg->Screen, msg->DispX, msg->DispY);)
 
-    if ((data->dcsupported) && IS_HIDD_BM(msg->Screen->RastPort.BitMap))
+    if (IS_HIDD_BM(msg->Screen->RastPort.BitMap))
     {
         struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
         OOP_MethodID HiddDisplayBase = GetPrivIBase(IntuitionBase)->ib_HiddDisplayBase;
