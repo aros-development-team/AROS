@@ -201,6 +201,66 @@ BOOL FDT_HasProp(fdt_node_t node, CONST_STRPTR name)
     return FDT_GetProp(node, name, NULL) ? TRUE : FALSE;
 }
 
+/*
+ * A property handle is the offset of its FDT_PROP token, so this is the
+ * walk FDT_GetProp() does - stopping at the first child node or at the
+ * end of this one.
+ */
+static fdt_prop_t fdt_propfrom(LONG off)
+{
+    for (; off >= 0 && off < (LONG)fdt_structlen; off = next_token(off))
+    {
+        ULONG tok = be32(CELL(off));
+
+        if (tok == FDT_PROP)
+            return (fdt_prop_t)off;
+
+        if (tok != FDT_NOP)
+            break;
+    }
+
+    return FDT_PROPNONE;
+}
+
+fdt_prop_t FDT_FirstProp(fdt_node_t node)
+{
+    if (!fdt_base || node == FDT_NONE ||
+        be32(CELL(node)) != FDT_BEGIN_NODE)
+        return FDT_PROPNONE;
+
+    return fdt_propfrom(next_token(node));
+}
+
+fdt_prop_t FDT_NextProp(fdt_prop_t prop)
+{
+    if (!fdt_base || prop == FDT_PROPNONE ||
+        be32(CELL(prop)) != FDT_PROP)
+        return FDT_PROPNONE;
+
+    return fdt_propfrom(next_token((LONG)prop));
+}
+
+CONST_STRPTR FDT_PropName(fdt_prop_t prop)
+{
+    if (!fdt_base || prop == FDT_PROPNONE ||
+        be32(CELL(prop)) != FDT_PROP)
+        return NULL;
+
+    return (CONST_STRPTR)(fdt_strings + be32(CELL(prop + 2)));
+}
+
+CONST_APTR FDT_PropData(fdt_prop_t prop, ULONG *len)
+{
+    if (!fdt_base || prop == FDT_PROPNONE ||
+        be32(CELL(prop)) != FDT_PROP)
+        return NULL;
+
+    if (len)
+        *len = be32(CELL(prop + 1));
+
+    return (CONST_APTR)&CELL(prop + 3);
+}
+
 ULONG FDT_GetPropU32(fdt_node_t node, CONST_STRPTR name, ULONG def)
 {
     ULONG len = 0;

@@ -129,10 +129,24 @@ void DWI2C__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         return;
     }
 
-    if (IS_I2CDW_ATTR(msg->attrID, idx) && idx == aoHidd_I2C_DW_Unit)
+    if (IS_I2CDW_ATTR(msg->attrID, idx))
     {
-        *msg->storage = (IPTR)(data->ctrl - PSD(cl)->ctrl);
-        return;
+        switch (idx)
+        {
+        case aoHidd_I2C_DW_Unit:
+            *msg->storage = (IPTR)(data->ctrl - PSD(cl)->ctrl);
+            return;
+
+        /* Both come from the controller record, which New() guarantees
+           but which Get can still be reached without during disposal */
+        case aoHidd_I2C_DW_MMIOBase:
+            *msg->storage = data->ctrl ? (IPTR)data->ctrl->base : 0;
+            return;
+
+        case aoHidd_I2C_DW_LastFail:
+            *msg->storage = data->ctrl ? (IPTR)data->ctrl->lastFail : 0;
+            return;
+        }
     }
 
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
