@@ -1,0 +1,21 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+# The RTP-MIDI payload (RFC 6295) as a link library: the command section,
+# the recovery journal, a sender's and a receiver's state, and the timing
+# of delivery. Portable C that calls nothing of the system: whoever links
+# it owns the sockets and the clock.
+
+FILES := rtpmidi sender receiver timing
+
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include
+
+#MM- workbench-network : workbench-network-netmidi
+#MM- workbench-network-netmidi : linklibs-rtpmidi
+#MM linklibs-rtpmidi : includes
+
+%build_linklib mmake=linklibs-rtpmidi \
+    libname=rtpmidi \
+    files="$(FILES)"
+
+%common
