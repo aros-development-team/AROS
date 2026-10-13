@@ -15,6 +15,7 @@
 */
 
 #include <exec/types.h>
+#include <oop/oop.h>
 
 /* hvs@7e400000, "brcm,bcm2711-hvs": same base as VideoCore IV, but a
  * 0x8000 register window instead of 0x6000. */
@@ -196,10 +197,12 @@ void vc4_hvs5_dump(struct VideoCoreGfx_staticdata *xsd,
 
 /* Our own lists live high in list RAM, clear of the firmware's (which
  * ran from word 4 to about word 840) and of the filter kernel at 0xff4.
- * Two slots so a mode switch never rewrites the list being scanned. */
-#define HVS5_OWN_SLOTS      2
+ * Four slots: the one scanned, the last repointed at, the one waiting for
+ * vblank, and the one being written. A slot holds the backdrop, four
+ * scaled screens, a scaled overlay and the cursor (100 words). */
+#define HVS5_OWN_SLOTS      4
 #define HVS5_OWN_SLOT_BASE  3584
-#define HVS5_OWN_SLOT_STRIDE 128
+#define HVS5_OWN_SLOT_STRIDE 120
 
 /* Take the HDMI channel: copy the firmware's live list into a slot of
  * our own, retarget the framebuffer plane and repoint the channel. The
@@ -226,7 +229,13 @@ void vc4_hvs5_latch_wait(struct VideoCoreGfx_staticdata *xsd);
  * neither of which is decoded on HVS5 yet. */
 struct vc4gfx_overlay;
 BOOL vc4_hvs5_overlay(struct VideoCoreGfx_staticdata *xsd,
-                      const struct vc4gfx_overlay *ovl);
+                      const struct vc4gfx_overlay *ovl, OOP_Object *owner);
+
+/* Screens as planes (vcsd_Plane[]). planes_ok says whether the list can
+ * be owned at all; commit rebuilds it and hands it to the next vblank.
+ * The caller holds the mailbox lock. */
+BOOL vc4_hvs5_planes_ok(void);
+void vc4_hvs5_planes_commit(struct VideoCoreGfx_staticdata *xsd);
 
 /* HDMI0 mode setting (vcgfx_hvs5_mode.c). Capture records the firmware's
  * boot mode and decides whether any other can be set; restore puts it

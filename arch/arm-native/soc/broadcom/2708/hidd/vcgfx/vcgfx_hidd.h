@@ -47,6 +47,28 @@ struct VideoCoreGfxDisplayData
 {
 };
 
+/* Screens shown as HVS planes (ShowViewPorts). x/y are the bitmap's
+ * LeftEdge/TopEdge in display coordinates. */
+#define VCGFX_MAX_PLANES        4
+
+struct vcgfx_plane
+{
+    OOP_Object          *pl_BM;
+    struct BitmapData   *pl_Data;       /* VideoData = page on scanout */
+    LONG                 pl_X, pl_Y;
+};
+
+/* Normal-NC arena the screen bitmaps are carved from. */
+struct vcgfx_arena
+{
+    struct MinNode       ar_Node;
+    APTR                 ar_Raw;
+    ULONG                ar_RawSize;
+    APTR                 ar_Base;       /* 2MB aligned, remapped */
+    ULONG                ar_Size;
+    struct MemHeader     ar_MH;
+};
+
 struct VideoCoreGfx_staticdata {
         APTR                    vcsd_MBoxBase;
         unsigned int            *vcsd_MBoxMessage;
@@ -149,6 +171,19 @@ struct VideoCoreGfx_staticdata {
         struct BitmapData      *vcsd_OvlBMData;
         struct vc4gfx_overlay   vcsd_OvlDesc;
         BOOL                    vcsd_OvlShown;
+
+        /* Hardware screen composition (ShowViewPorts): every screen is its
+         * own plane and the fb is only the backdrop. Sticky once set, as a
+         * fall back to Show() would leave the fb installed in a screen's
+         * BitMap. Guarded by the mailbox lock, like the display list. */
+        BOOL                    vcsd_PlanesMode;
+        BOOL                    vcsd_PlanesRefused;
+        ULONG                   vcsd_NumPlanes;
+        struct vcgfx_plane      vcsd_Plane[VCGFX_MAX_PLANES];   /* back to front */
+        UBYTE                  *vcsd_Backdrop;      /* fb page known to be black */
+
+        struct SignalSemaphore  vcsd_ScanoutLock;
+        struct MinList          vcsd_Arenas;
 };
 
 #define VCGFX_HVS_VC4   0       /* BCM283x, VideoCore IV */
@@ -254,5 +289,19 @@ BOOL    vc4_dma_get(struct VideoCoreGfx_staticdata *xsd,
 
 ULONG   vc4_fb_backpage(struct VideoCoreGfx_staticdata *xsd);
 BOOL    vc4_fb_flip(struct VideoCoreGfx_staticdata *xsd);
+
+/* vcgfx_planes.c */
+BOOL    vcgfx_planes_supported(struct VideoCoreGfx_staticdata *xsd);
+BOOL    vcgfx_scanout_alloc(struct VideoCoreGfx_staticdata *xsd,
+                            struct vcgfx_scanbuf *sb, ULONG size);
+void    vcgfx_scanout_free(struct VideoCoreGfx_staticdata *xsd,
+                           struct vcgfx_scanbuf *sb);
+ULONG   vcgfx_show_viewports(struct VideoCoreGfx_staticdata *xsd,
+                             struct HIDD_ViewPortData *vpd);
+void    vcgfx_plane_moved(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm);
+void    vcgfx_plane_forget(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm);
+ULONG   vcgfx_plane_backpage(struct VideoCoreGfx_staticdata *xsd,
+                             struct BitmapData *data);
+BOOL    vcgfx_plane_flip(OOP_Class *cl, OOP_Object *bm);
 
 #endif /* _VIDEOCOREGFX_CLASS_H */

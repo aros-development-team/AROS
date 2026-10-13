@@ -389,6 +389,34 @@ VOID MNAME_DISPLAY(NominalDimensions)(OOP_Class *cl, OOP_Object *o, struct pHidd
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
+ULONG MNAME_DISPLAY(ShowViewPorts)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_ShowViewPorts *msg)
+{
+    return vcgfx_show_viewports(XSD(cl), msg->Data);
+}
+
+/* Screens that are planes compose; reporting it is also what keeps
+ * graphics.library from setting up the software compositor. Above only,
+ * as that compositor defaults to: a screen drags down to reveal the ones
+ * behind, and its title bar can never leave the display. */
+ULONG MNAME_DISPLAY(ModeProperties)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_ModeProperties *msg)
+{
+    struct HIDD_ModeProperties props = { 0, 0, 0 };
+    struct pHidd_Display_ModeProperties supmsg = *msg;
+    ULONG len = msg->propsLen;
+
+    supmsg.props    = &props;
+    supmsg.propsLen = sizeof(props);
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)&supmsg);
+
+    if (vcgfx_planes_supported(XSD(cl)))
+        props.CompositionFlags = COMPF_ABOVE;
+
+    if (len > sizeof(props))
+        len = sizeof(props);
+    CopyMem(&props, msg->props, len);
+    return len;
+}
+
 BOOL MNAME_DISPLAY(SetCursorShape)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_SetCursorShape *msg)
 {
     struct VideoCoreGfx_staticdata *xsd = XSD(cl);

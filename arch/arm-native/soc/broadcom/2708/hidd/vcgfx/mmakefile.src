@@ -22,7 +22,8 @@ FILES	:=	\
 	vcgfx_hvs6_mode \
 	vcgfx_pixfmts \
 	vcgfx_onbitmap \
-	vcgfx_offbitmap
+	vcgfx_offbitmap \
+	vcgfx_planes
 
 %build_module mmake=hidd-vcgfx \
   modname=vcgfx modtype=hidd \

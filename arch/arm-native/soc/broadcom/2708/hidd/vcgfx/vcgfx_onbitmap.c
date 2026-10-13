@@ -94,7 +94,8 @@ BOOL vc4_fb_flip(struct VideoCoreGfx_staticdata *xsd)
     UBYTE nf;
     BOOL  flipped;
 
-    if (xsd->vcsd_FBPages < 2 || !xsd->vcsd_FBObj)
+    /* Screens as planes leave the fb a backdrop only. */
+    if (xsd->vcsd_FBPages < 2 || !xsd->vcsd_FBObj || xsd->vcsd_PlanesMode)
         return FALSE;
 
     /* The mailbox lock also serializes concurrent flippers; the nested
@@ -625,7 +626,7 @@ void vcgfx_ovl_yield(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm,
         }
     }
 
-    vc4_hvs_overlay(xsd, NULL);
+    vc4_hvs_overlay(xsd, NULL, NULL);
     xsd->vcsd_OvlShown = FALSE;
     ReleaseSemaphore(&xsd->vcsd_OvlLock);
 }
@@ -662,42 +663,8 @@ IPTR MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
             has_modeid = TRUE;
         }
         else if (IS_VideoCoreGfxBM_ATTR(tag->ti_Tag, idx)
-                 && idx == aoHidd_VideoCoreGfxBitMap_Flip)
-        {
-            /* Page-flip request (e.g. from vc4gallium after a full-frame
-             * blit to the back page). */
-            if (tag->ti_Data)
-                vc4_fb_flip(xsd);
+                 && vcbm_set_private(cl, o, idx, tag->ti_Data))
             return TRUE;
-        }
-        else if (IS_VideoCoreGfxBM_ATTR(tag->ti_Tag, idx)
-                 && idx == aoHidd_VideoCoreGfxBitMap_Overlay)
-        {
-            /* Zero-copy overlay plane (vc4gallium windowed GL). Success
-             * is reported via a Get on the same attribute. */
-            const struct vc4gfx_overlay *ovl =
-                (const struct vc4gfx_overlay *)tag->ti_Data;
-            BOOL shown;
-
-            ObtainSemaphore(&xsd->vcsd_OvlLock);
-            shown = vc4_hvs_overlay(xsd, ovl) && ovl;
-            if (shown)
-            {
-                xsd->vcsd_OvlDesc   = *ovl;
-                xsd->vcsd_OvlBM     = o;
-                xsd->vcsd_OvlBMData = data;
-            }
-            xsd->vcsd_OvlShown = shown;
-            ReleaseSemaphore(&xsd->vcsd_OvlLock);
-            return TRUE;
-        }
-        else if (IS_VideoCoreGfxBM_ATTR(tag->ti_Tag, idx)
-                 && idx == aoHidd_VideoCoreGfxBitMap_VBlank)
-        {
-            xsd->vcsd_HVS.hvs_VBlank   = (struct vc4gfx_vblank *)tag->ti_Data;
-            xsd->vcsd_HVS6.h6_VBlank = (struct vc4gfx_vblank *)tag->ti_Data;
-            return TRUE;
-        }
     }
 
     D(bug("[VideoCoreGfx] OnBitMap::Set: has_modeid=%d, newmodeid=0x%08lx\n",
