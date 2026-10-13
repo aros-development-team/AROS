@@ -1,8 +1,6 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-#MM- workbench-devs-networks-e1000-i386 : workbench-devs-networks-e1000
-#MM- workbench-devs-networks-e1000-x86_64 : workbench-devs-networks-e1000
 
 FILES := handler unit e1000
 INTELCOREFILES := e1000_api e1000_phy e1000_mac e1000_nvm e1000_manage
@@ -15,7 +13,16 @@ USER_CPPFLAGS :=  \
         -D__OOP_NOATTRBASES__
 USER_CFLAGS := $(CFLAGS_GNU99)
 
-#MM- workbench-devs-networks-e1000 : workbench-devs-networks-e1000-normal
+#
+# Little-endian CPUs only: the registers are read and written raw (readl and
+# writel in e1000_osdep.h are plain mmio_inl/mmio_outl), and only some of the
+# descriptor fields are converted to little-endian.
+#
+#MM- workbench-devs-networks-e1000 : workbench-devs-networks-e1000-$(AROS_TARGET_CPU)
+#MM- workbench-devs-networks-e1000-i386 : workbench-devs-networks-e1000-normal
+#MM- workbench-devs-networks-e1000-x86_64 : workbench-devs-networks-e1000-normal
+#MM- workbench-devs-networks-e1000-riscv : workbench-devs-networks-e1000-normal
+#MM- workbench-devs-networks-e1000-riscv64 : workbench-devs-networks-e1000-normal
 
 #MM- workbench-devs-networks-e1000-quick : workbench-devs-networks-e1000-normal-quick
 
