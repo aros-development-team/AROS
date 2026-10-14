@@ -8,6 +8,7 @@
 
 #include  <exec/types.h>
 #include  <exec/nodes.h>
+#include  <exec/lists.h>
 
 
 struct NVInfo
