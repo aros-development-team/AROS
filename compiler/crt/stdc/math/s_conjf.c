@@ -38,25 +38,18 @@
         float complex z)
 
 /*  FUNCTION
-        Return the complex conjugate of z. Keep the real component and
-        negate the imaginary component. The result is constructed from
-        these two components without a complex multiplication.
+        Return the complex conjugate of z.
 
     INPUTS
-        z - Complex value passed by value. Zero, infinite and NaN components
-            are accepted.
+        z - Complex input value.
 
     RESULT
-        A complex value with real part equal to that of z and imaginary
-        part equal to the negated imaginary part of z. The sign of an
-        imaginary zero or infinity is reversed. A NaN component remains
-        a NaN. There is no error sentinel.
+        A complex value with the real component unchanged and the
+        sign of the imaginary component reversed, including signed
+        zero and infinity. NaN components remain NaNs.
 
     NOTES
-        Include <complex.h>. The argument and result are values: no storage
-        is retained or allocated, and the call performs no I/O or waiting.
-        The implementation does not set errno. Floating-point exception
-        flags and NaN payload preservation are not specified here.
+        Include <complex.h>.
 
     SEE ALSO
         crealf(), cimagf(), cprojf()

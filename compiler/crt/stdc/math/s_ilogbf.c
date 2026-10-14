@@ -30,45 +30,26 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_ilogbf.c,v 1.8 2008/02/22 02
         float x)
 
 /*  FUNCTION
-        Extract the binary exponent of x as an int. For finite nonzero
-        x, the exponent e satisfies 2^e <= |x| < 2^(e+1). The sign of x
-        does not affect e. Subnormal inputs require a significand scan;
-        see BUGS for implementation limitations on that path.
+        Return the binary exponent of |x| as an integer.
 
     INPUTS
-        x - Float value whose exponent is required.
+        x - Float value to classify.
 
     RESULT
-        For a finite nonzero value, the binary exponent. For example,
-        12 and -12 yield 3; 0.5 yields -1. Both signs of zero return
-        FP_ILOGB0. NaN returns FP_ILOGBNAN; either infinity returns
-        INT_MAX. These are integer sentinels, not valid finite exponents.
-
-        AROS defines FP_ILOGB0 as -INT_MAX and FP_ILOGBNAN as INT_MAX.
-        The return value alone cannot distinguish NaN from infinity.
+        The integer exponent e such that 2^e <= |x| < 2^(e+1)
+        for finite nonzero x. Zero returns FP_ILOGB0; NaN returns
+        FP_ILOGBNAN; infinity returns INT_MAX. In AROS,
+        FP_ILOGBNAN equals INT_MAX, so these results are ambiguous.
 
     NOTES
-        Include <math.h>; <limits.h> declares INT_MAX. This function
-        returns an integer exponent, not the logarithm of x. It differs
-        from frexpf(): for finite nonzero x, its exponent is one less
-        than the exponent of the fraction returned by that function.
-
-        The implementation reads the floating-point representation and
-        uses integer operations. It does not set or clear errno and has
-        no explicit floating-point exception-raising operation. Do not
-        use errno or an assumed FE_INVALID signal to distinguish the
-        special return cases. Classify x when that distinction matters.
-        Signaling-NaN handling and trap behavior are target-dependent.
-
-        No application storage is modified or retained. The function
-        allocates nothing and performs no I/O or waiting.
+        Include <math.h>. Use isnan() or isinf() on the input to
+        distinguish NaN from infinity. Unlike logbf(), the
+        result is an integer sentinel for exceptional inputs.
 
     BUGS
-        The subnormal scan left-shifts a signed int32_t until its sign
-        bit becomes set. Such a shift has undefined behavior in C when
-        the result is not representable. Consequently, the mathematical
-        subnormal result is not a portable guarantee of this source;
-        compiler optimization may affect the observed behavior.
+        The subnormal scan shifts a signed 32-bit integer into its
+        sign bit, an operation with undefined behavior in C.
+        Subnormal results may depend on the compiler.
 
     SEE ALSO
         ilogb(), ilogbl(), logbf(), frexpf()

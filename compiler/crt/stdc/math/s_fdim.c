@@ -49,44 +49,24 @@ fn(type x, type y)			\
         double y)
 
     FUNCTION
-        Return the positive difference of x and y. Test for NaNs first.
-        If neither operand is NaN, subtract y from x only when x > y;
-        otherwise return positive zero.
+        Return the positive difference between x and y.
 
     INPUTS
-        x - First double operand; the minuend when subtraction occurs.
-        y - Second double operand; the subtrahend when subtraction occurs.
+        x - First double operand.
+        y - Second double operand.
 
     RESULT
-        The difference x - y, rounded to double, when x > y.
-        Otherwise positive zero, including equal values, every pair of
-        signed zeros, and two infinities with the same sign.
-
-        If x is NaN, return x. Otherwise, if y is NaN, return y. When
-        both are NaNs, x is selected. No payload or signaling-state
-        preservation is guaranteed across the target ABI.
-
-        Positive infinity minus a finite value, or a finite value minus
-        negative infinity, produces positive infinity. The pair
-        (+infinity, -infinity) also produces positive infinity.
+        Return x - y when x is greater than y; otherwise return +0.
+        If x is NaN, return x; otherwise if y is NaN, return y.
+        The subtraction may overflow to infinity or round to a finite
+        result according to the floating-point environment.
 
     NOTES
-        Include <math.h>. This is not the absolute difference: reversing
-        the operands can change a positive result to zero. It is also
-        not equivalent to fmax(x - y, 0), which evaluates the subtraction
-        unconditionally and treats a single NaN differently.
-
-        The subtraction can overflow or round. Its result and exception
-        flags depend on the target floating-point environment. With
-        IEEE arithmetic, finite overflow may yield positive infinity or
-        the largest finite value according to the rounding direction.
-        An enabled trap may prevent return. NaN classification and
-        signaling-NaN handling can also affect exception state.
-
-        The implementation does not set or clear errno, including on
-        overflow. It allocates nothing, retains no application storage,
-        and performs no I/O or waiting. No target-independent guarantee
-        is made that floating-point exception flags remain unchanged.
+        Include <math.h>. This is not an absolute difference. Unlike
+        fmax(x - y, 0), the subtraction is evaluated only when x > y.
+        Subtraction may raise floating-point exceptions, but this
+        implementation does not set errno on overflow.
+        NaN payload and signaling behavior are not guaranteed.
 
     SEE ALSO
         fmax(), fabs(), fdimf(), fdiml()
@@ -102,44 +82,24 @@ DECL(double, fdim)
         float y)
 
     FUNCTION
-        Return the positive difference of x and y. Test for NaNs first.
-        If neither operand is NaN, subtract y from x only when x > y;
-        otherwise return positive zero.
+        Return the positive difference between x and y.
 
     INPUTS
-        x - First float operand; the minuend when subtraction occurs.
-        y - Second float operand; the subtrahend when subtraction occurs.
+        x - First float operand.
+        y - Second float operand.
 
     RESULT
-        The difference x - y, rounded to float, when x > y.
-        Otherwise positive zero, including equal values, every pair of
-        signed zeros, and two infinities with the same sign.
-
-        If x is NaN, return x. Otherwise, if y is NaN, return y. When
-        both are NaNs, x is selected. No payload or signaling-state
-        preservation is guaranteed across the target ABI.
-
-        Positive infinity minus a finite value, or a finite value minus
-        negative infinity, produces positive infinity. The pair
-        (+infinity, -infinity) also produces positive infinity.
+        Return x - y when x is greater than y; otherwise return +0.
+        If x is NaN, return x; otherwise if y is NaN, return y.
+        The subtraction may overflow to infinity or round to a finite
+        result according to the floating-point environment.
 
     NOTES
-        Include <math.h>. This is not the absolute difference: reversing
-        the operands can change a positive result to zero. It is also
-        not equivalent to fmax(x - y, 0), which evaluates the subtraction
-        unconditionally and treats a single NaN differently.
-
-        The subtraction can overflow or round. Its result and exception
-        flags depend on the target floating-point environment. With
-        IEEE arithmetic, finite overflow may yield positive infinity or
-        the largest finite value according to the rounding direction.
-        An enabled trap may prevent return. NaN classification and
-        signaling-NaN handling can also affect exception state.
-
-        The implementation does not set or clear errno, including on
-        overflow. It allocates nothing, retains no application storage,
-        and performs no I/O or waiting. No target-independent guarantee
-        is made that floating-point exception flags remain unchanged.
+        Include <math.h>. This is not an absolute difference. Unlike
+        fmax(x - y, 0), the subtraction is evaluated only when x > y.
+        Subtraction may raise floating-point exceptions, but this
+        implementation does not set errno on overflow.
+        NaN payload and signaling behavior are not guaranteed.
 
     SEE ALSO
         fmaxf(), fabsf(), fdim(), fdiml()
@@ -155,48 +115,24 @@ DECL(float, fdimf)
         long double y)
 
     FUNCTION
-        Return the positive difference of x and y. Test for NaNs first.
-        If neither operand is NaN, subtract y from x only when x > y;
-        otherwise return positive zero.
+        Return the positive difference between x and y.
 
     INPUTS
-        x - First long double operand; the minuend when subtraction occurs.
-        y - Second long double operand; the subtrahend when subtraction occurs.
+        x - First long double operand.
+        y - Second long double operand.
 
     RESULT
-        The difference x - y, rounded to long double, when x > y.
-        Otherwise positive zero, including equal values, every pair of
-        signed zeros, and two infinities with the same sign.
-
-        If x is NaN, return x. Otherwise, if y is NaN, return y. When
-        both are NaNs, x is selected. No payload or signaling-state
-        preservation is guaranteed across the target ABI.
-
-        Positive infinity minus a finite value, or a finite value minus
-        negative infinity, produces positive infinity. The pair
-        (+infinity, -infinity) also produces positive infinity.
+        Return x - y when x is greater than y; otherwise return +0.
+        If x is NaN, return x; otherwise if y is NaN, return y.
+        The subtraction may overflow to infinity or round to a finite
+        result according to the floating-point environment.
 
     NOTES
-        Include <math.h>. This is not the absolute difference: reversing
-        the operands can change a positive result to zero. It is also
-        not equivalent to fmax(x - y, 0), which evaluates the subtraction
-        unconditionally and treats a single NaN differently.
-
-        The subtraction can overflow or round. Its result and exception
-        flags depend on the target floating-point environment. With
-        IEEE arithmetic, finite overflow may yield positive infinity or
-        the largest finite value according to the rounding direction.
-        An enabled trap may prevent return. NaN classification and
-        signaling-NaN handling can also affect exception state.
-
-        The implementation does not set or clear errno, including on
-        overflow. It allocates nothing, retains no application storage,
-        and performs no I/O or waiting. No target-independent guarantee
-        is made that floating-point exception flags remain unchanged.
-
-        The common source instantiates a long double body directly; it
-        does not use a double-symbol alias. The available precision is
-        still determined by the target's long double representation.
+        Include <math.h>. This is not an absolute difference. Unlike
+        fmax(x - y, 0), the subtraction is evaluated only when x > y.
+        Subtraction may raise floating-point exceptions, but this
+        implementation does not set errno on overflow.
+        NaN payload and signaling behavior are not guaranteed.
 
     SEE ALSO
         fmaxl(), fabsl(), fdim(), fdimf()

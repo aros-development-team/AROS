@@ -39,38 +39,23 @@ __FBSDID("$FreeBSD: src/lib/msun/src/s_fmaxf.c,v 1.1 2004/06/30 07:04:01 das Exp
         float y)
 
 /*  FUNCTION
-        Return the greater of x and y. A single NaN is treated as missing
-        data: return the other argument. The implementation classifies
-        NaNs before comparing values and handles opposite signs explicitly.
+        Return the larger numeric operand, ignoring a lone NaN.
 
     INPUTS
-        x - First float value.
-        y - Second float value.
-            Finite values, signed zeros, infinities and NaNs are accepted.
+        x - First float operand.
+        y - Second float operand.
 
     RESULT
-        The greater numerical value when neither argument is NaN.
-        For a pair containing +0 and -0, return +0, regardless of argument
-        order. Equal non-NaN arguments with the same sign select y.
-        If exactly one argument is NaN, return the non-NaN argument.
-        If both arguments are NaN, return a NaN. There is no error sentinel.
+        The larger value for numeric operands. For opposite-signed
+        zeros, return +0. If one operand is NaN, return the other.
+        If both are NaNs, return a NaN.
 
     NOTES
-        Include <math.h>. Arguments and results are values; no application
-        storage is retained or allocated. The call performs no I/O or
-        waiting and does not set or clear errno.
+        Include <math.h>. For two NaNs, the second argument is returned.
 
-        This operation is not interchangeable with a comparison expression
-        such as x > y ? x : y: that expression has different behavior for
-        NaNs and opposite-signed zeros.
-
-        When both inputs are NaNs, this implementation returns y without
-        an arithmetic combination. This is not a guarantee of NaN payload
-        preservation or unchanged exception state across the target ABI.
-
-        Signaling-NaN handling and enabled floating-point traps depend on
-        the target and its floating-point environment. A NaN result alone
-        is not evidence of an errno error.
+        The sign of zero and NaN handling differ from a simple conditional
+        comparison. Signaling NaNs may affect the floating-point exception
+        state; NaN payloads are not guaranteed.
 
     SEE ALSO
         fminf(), fmax(), fmaxl()

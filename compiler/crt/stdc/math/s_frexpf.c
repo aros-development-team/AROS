@@ -32,38 +32,21 @@ two25 =  3.3554432000e+07; /* 0x4c000000 */
         int *eptr)
 
 /*  FUNCTION
-        Split x into a signed binary fraction and an integer exponent.
-        For finite nonzero x, the returned fraction m and stored exponent e
-        satisfy x = m * 2^e, with 0.5 <= |m| < 1. Subnormal inputs are
-        normalized before the fraction and exponent are extracted.
+        Decompose x into a normalized binary fraction and exponent.
+        For finite nonzero x, return m and store e such that
+        x = m * 2^e and 0.5 <= |m| < 1.
 
     INPUTS
-        x - Float value to decompose.
-        eptr - Non-NULL pointer to a writable int for the exponent. Required
-            even when x is zero or nonfinite. The pointer is not retained.
+        x - Value to decompose.
+        eptr - Writable pointer receiving the integer exponent.
 
     RESULT
-        The signed fraction in float precision. A zero input returns
-        the same signed zero and stores exponent 0. An infinite or NaN
-        input returns that value; see NOTES for the exponent output.
-        There is no separate error sentinel.
+        The signed fraction m. For zero, return the signed zero and
+        store 0 in *eptr. For infinity or NaN, return x and store 0.
 
     NOTES
-        Include <math.h>. The exponent is a power of two, not a decimal
-        exponent. For example, x = 12 yields fraction 0.75 and exponent 4.
-
-        The call writes through eptr but retains no application storage,
-        allocates nothing, performs no I/O or waiting, and does not set
-        or clear errno. NULL is not a supported exponent output: this
-        function does not provide a discard-output or size-query mode.
-
-        This implementation initializes *eptr to 0 before checking for
-        zero, infinity or NaN. Thus a nonfinite input also leaves exponent
-        0. That value does not make a NaN or infinity a finite decomposition.
-
-        No NaN payload, signaling-NaN or trap-behavior guarantee is made
-        here. The value contract assumes the target's supported floating-
-        point representation and ordinary subnormal handling.
+        Include <math.h>. eptr must not be NULL. For example, an
+        input of 12 yields a fraction of 0.75 and an exponent of 4.
 
     SEE ALSO
         frexp(), frexpl(), ldexpf()
