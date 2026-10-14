@@ -97,7 +97,7 @@ void *bsearch(const void * key, const void * base, size_t count, size_t size,
               int (*comparefunction)(const void *, const void *));
 void qsort(void * array, size_t count, size_t elementsize,
            int (*comparefunction)(const void *, const void *));
-#if !defined(__STRICT_ANSI__)
+#if !defined(__STRICT_ANSI__) || defined(_GNU_SOURCE) || defined(_BSD_SOURCE)
 /* GNU/BSD extension (POSIX.1-2024); context pointer is passed last, matching
    glibc.  The comparison function is compar(a, b, arg). */
 void qsort_r(void * array, size_t count, size_t elementsize,
@@ -105,7 +105,7 @@ void qsort_r(void * array, size_t count, size_t elementsize,
              void * arg);
 #endif
 
-#if !defined(__STRICT_ANSI__)
+#if !defined(__STRICT_ANSI__) || defined(_GNU_SOURCE) || defined(_BSD_SOURCE)
 /* BSD cryptographically-strong random number generator, backed by
    entropy.resource.  Unlike rand(), it needs no seeding and has no
    reproducible sequence. */
