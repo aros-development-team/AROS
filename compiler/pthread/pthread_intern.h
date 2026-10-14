@@ -134,6 +134,7 @@ extern int SemaphoreIsInvalid(struct SignalSemaphore *sem);
 extern int SemaphoreIsMine(struct SignalSemaphore *sem);
 extern ThreadInfo *GetThreadInfo(pthread_t thread);
 extern pthread_t GetThreadId(struct Task *task);
+extern void **GetTLSValues(BOOL create);
 
 /* .c */
 extern int _pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, const struct timespec *abstime, BOOL relative);

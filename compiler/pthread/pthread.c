@@ -36,6 +36,10 @@
 #include "pthread_intern.h"
 #include "debug.h"
 
+#if defined(__AROS__)
+#include <proto/task.h>
+#endif
+
 
 //#define USE_ASYNC_CANCEL
 
@@ -49,6 +53,16 @@ TLSKey tlskeys[PTHREAD_KEYS_MAX];
 struct SignalSemaphore tls_sem;
 // set once the program exits: remaining threads end without TLS destructors
 volatile BOOL __pthread_exiting;
+
+#if defined(__AROS__)
+// Tasks that are not pthreads keep their thread-specific values in a task
+// storage slot: other programs calling into a shared library that links
+// this, or a program's raw subtasks. The slot dies with the task, so a new
+// task at the same address starts empty. Taken on first use only, so a
+// program whose threads all come from pthread_create() never needs one.
+static struct Library *tlstaskres;
+static LONG tlsslot;
+#endif
 
 //
 // Helper functions
@@ -81,6 +95,51 @@ ThreadInfo *GetThreadInfo(pthread_t thread)
         return threads[thread];
 
     return 0;
+}
+
+// The calling task's thread-specific values; NULL if it has none yet and
+// create is FALSE, or if they cannot be allocated.
+void **GetTLSValues(BOOL create)
+{
+    struct Task *task = GET_THIS_TASK;
+    pthread_t thread = GetThreadId(task);
+
+    if (thread != PTHREAD_THREADS_MAX)
+        return GetThreadInfo(thread)->tlsvalues;
+
+#if defined(__AROS__)
+    {
+        struct Library *TaskResBase;
+        void **values = NULL;
+
+        if (!tlsslot)
+        {
+            if (!create)
+                return NULL;
+            ObtainSemaphore(&tls_sem);
+            if (!tlsslot && (TaskResBase = tlstaskres = OpenResource("task.resource")))
+                tlsslot = AllocTaskStorageSlot();
+            ReleaseSemaphore(&tls_sem);
+            if (!tlsslot)
+                return NULL;
+        }
+
+        TaskResBase = tlstaskres;
+        values = (void **)GetTaskStorageSlot(tlsslot);
+        if (!values && create)
+        {
+            values = AllocVec(PTHREAD_KEYS_MAX * sizeof(void *), MEMF_ANY | MEMF_CLEAR);
+            if (values && !SetTaskStorageSlot(tlsslot, (IPTR)values))
+            {
+                FreeVec(values);
+                values = NULL;
+            }
+        }
+        return values;
+    }
+#else
+    return GetThreadInfo(0)->tlsvalues;
+#endif
 }
 
 pthread_t GetThreadId(struct Task *task)
@@ -2678,6 +2737,24 @@ void __pthread_Exit_Func(void)
         FreeVec(threads[i]);
     threads_used = 1;
     ReleaseSemaphore(&thread_sem);
+
+#if defined(__AROS__)
+    // Freed slots are not cleared in the tasks that used them, so give
+    // back what this task holds before the slot can be handed out again.
+    if (tlsslot)
+    {
+        struct Library *TaskResBase = tlstaskres;
+        void **values = (void **)GetTaskStorageSlot(tlsslot);
+
+        if (values)
+        {
+            SetTaskStorageSlot(tlsslot, 0);
+            FreeVec(values);
+        }
+        FreeTaskStorageSlot(tlsslot);
+        tlsslot = 0;
+    }
+#endif
 }
 
 #if defined(__AROS__) || (defined(__AMIGA__) && !defined(__MORPHOS__))
