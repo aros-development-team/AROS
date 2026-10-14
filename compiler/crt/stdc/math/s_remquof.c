@@ -25,6 +25,47 @@ static const float Zero[] = {0.0, -0.0,};
  * method.  In practice, this is far more bits than are needed to use
  * remquo in reduction algorithms.
  */
+/****************************************************************************
+    NAME
+        float remquof(
+
+    SYNOPSIS
+        float x, float y, int *quo)
+
+    FUNCTION
+        Compute the floating-point remainder and low quotient bits.
+        For finite x and nonzero finite y, the remainder is x - n * y,
+        where n is the integer nearest to x / y; ties select the even
+        integer. The current rounding direction does not select n.
+
+    INPUTS
+        x - Dividend.
+        y - Divisor.
+        quo - Pointer to a writable int that receives the low 31 bits
+              of the magnitude of n, with the sign of x / y. If those
+              bits are all zero, the stored value is zero.
+
+    RESULT
+        Return the remainder, whose magnitude is at most half of |y|.
+        A zero result has the sign of x. With finite x and infinite y,
+        return x and store zero in *quo.
+
+        If x is infinite, y is zero, or either argument is NaN, return
+        NaN and leave *quo unchanged.
+
+    NOTES
+        Include <math.h>. A zero divisor or infinite dividend raises
+        FE_INVALID unless a quiet NaN operand suppresses the exception.
+        Enabled traps may prevent return. This function does not set errno.
+
+    BUGS
+        Results are not reliable when finite operands satisfy |x| > |y|
+        and y is subnormal.
+
+    SEE ALSO
+        remquo(), remquol(), remainderf(), fmodf()
+
+*****************************************************************************/
 float
 remquof(float x, float y, int *quo)
 {
