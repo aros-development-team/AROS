@@ -1,18 +1,18 @@
 /*
-    Copyright (C) 2002, The AROS Development Team.
+    Copyright (C) 2002-2026, The AROS Development Team.
     All rights reserved.
     
 */
 
 #include <stdarg.h>
 
-/*****************************************************************************
-
-    NAME */
 #define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/muimaster.h>
 extern struct Library * MUIMasterBase;
 
+/*****************************************************************************
+
+    NAME */
         Object * MUI_MakeObject (
 
 /*  SYNOPSIS */
@@ -20,22 +20,23 @@ extern struct Library * MUIMasterBase;
         ...)
 
 /*  FUNCTION
+        Create a predefined MUI object from positional arguments.
+        Collect the arguments in an IPTR array and pass them to
+        MUI_MakeObjectA().
 
     INPUTS
+        type - MUIO_* object type, determining the number and meaning
+               of the arguments. See <libraries/mui.h>.
+        ...  - Arguments required by the selected object type, in order.
 
     RESULT
+        Pointer to the object, or NULL if the type is unsupported or
+        object creation fails.
 
     NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-    HISTORY
+        This function does not accept a tag list. It consumes one to
+        four IPTR-sized arguments according to the object type.
+        Dispose of the returned object with MUI_DisposeObject().
 
 *****************************************************************************/
 {

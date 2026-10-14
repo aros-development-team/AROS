@@ -45,6 +45,7 @@ static OOP_AttrBase HiddPCIDeviceAttrBase;
 #define RP1_PCIE_REG_SET        (RP1_PCIE_BASE + 0x800)
 #define RP1_PCIE_MSIX_CFG(irq)  (0x008 + ((irq) * 4))
 #define  RP1_MSIX_CFG_ENABLE    (1 << 0)
+#define RP1_INT_ETH             6
 #define RP1_INT_USBHOST0_0      31
 #define RP1_INT_USBHOST1_0      36
 
@@ -126,7 +127,7 @@ static void setup_msi(OOP_Object *dev, IPTR win, LIBBASETYPEPTR LIBBASE)
         .mID          = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ObtainVectors),
         .requirements = req,
     };
-    volatile uint32_t *set0, *set1;
+    volatile uint32_t *set0, *set1, *seteth;
 
     if (!OOP_DoMethod(dev, (OOP_Msg)&msg))
     {
@@ -136,14 +137,18 @@ static void setup_msi(OOP_Object *dev, IPTR win, LIBBASETYPEPTR LIBBASE)
 
     LIBBASE->rp1_USBIrq0 = vector_intid(dev, RP1_INT_USBHOST0_0);
     LIBBASE->rp1_USBIrq1 = vector_intid(dev, RP1_INT_USBHOST1_0);
+    LIBBASE->rp1_EthIrq  = vector_intid(dev, RP1_INT_ETH);
 
     set0 = (volatile uint32_t *)(win + RP1_PCIE_REG_SET + RP1_PCIE_MSIX_CFG(RP1_INT_USBHOST0_0));
     set1 = (volatile uint32_t *)(win + RP1_PCIE_REG_SET + RP1_PCIE_MSIX_CFG(RP1_INT_USBHOST1_0));
+    seteth = (volatile uint32_t *)(win + RP1_PCIE_REG_SET + RP1_PCIE_MSIX_CFG(RP1_INT_ETH));
     *set0 = RP1_MSIX_CFG_ENABLE;
     *set1 = RP1_MSIX_CFG_ENABLE;
+    *seteth = RP1_MSIX_CFG_ENABLE;
 
-    D(bug("[RP1MSI] usb irqs: host0 INTID %u, host1 INTID %u\n",
-          (unsigned)LIBBASE->rp1_USBIrq0, (unsigned)LIBBASE->rp1_USBIrq1));
+    D(bug("[RP1MSI] usb irqs: host0 INTID %u, host1 INTID %u; eth INTID %u\n",
+          (unsigned)LIBBASE->rp1_USBIrq0, (unsigned)LIBBASE->rp1_USBIrq1,
+          (unsigned)LIBBASE->rp1_EthIrq));
 
     /* MSIX_CFG.TEST is avoided: it latches through the set alias and
        leaves no rising edge for real interrupts. */

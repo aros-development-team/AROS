@@ -28,7 +28,7 @@
 /* Per-controller wrapper config (datasheet 5.1) */
 #define RP1_USB0_CFG_OFFSET     0x160000
 #define RP1_USB1_CFG_OFFSET     0x164000
-#define RP1_ETH_OFFSET          0x180000
+#define RP1_ETH_OFFSET          0x100000
 
 struct RP1Base {
     struct Library  rp1_Lib;
@@ -40,9 +40,10 @@ struct RP1Base {
     OOP_Object     *rp1_PCIDevice;
     OOP_Object     *rp1_PCIDriver;
 
-    /* GIC INTIDs the xHCI controllers signal on, 0 if MSI is not up. */
+    /* GIC INTIDs of the xHCIs and the GEM, 0 if MSI is not up. */
     ULONG           rp1_USBIrq0;
     ULONG           rp1_USBIrq1;
+    ULONG           rp1_EthIrq;
 
     /* Pre-computed peripheral base addresses */
     IPTR            rp1_USB0;

@@ -4,9 +4,7 @@
     Desc:
 */
 
-/*****************************************************************************
 
-    NAME */
 
 #include "nvdisk_intern.h"
 #include <nvdisk_arch.h>
@@ -15,7 +13,11 @@
 #include <libraries/nonvolatile.h>
 
 
-AROS_LH4(LONG, WriteNVDData,
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH4(LONG, WriteNVDData,
 
 /*  SYNOPSIS */
 
@@ -30,32 +32,41 @@ AROS_LH4(LONG, WriteNVDData,
 
 /*  FUNCTION
 
-    Write data to the nonvolatile memory.
+    Store an application's nonvolatile data item.
 
     INPUTS
 
-    appName   --  the name of the application owning the data
-    itemName  --  the name of the data to write
-    data      --  the data to write
-    length    --  the size of the data in bytes
+    appName   --  name of the application owning the item
+    itemName  --  name of the item to write
+    data      --  pointer to the bytes to store
+    length    --  number of bytes to write
 
     RESULT
 
+    Zero if the filesystem-backed implementation does not detect an
+    error. NVERR_WRITEPROT indicates a write-protected storage volume
+    when application-directory creation fails. NVERR_FAIL indicates
+    other directory-creation or file-open failures. NVERR_FATAL
+    indicates a Write() result of -1.
+
     NOTES
 
-    EXAMPLE
+    The filesystem-backed implementation creates the application
+    directory if necessary and opens the item with MODE_NEWFILE.
+    A positive short write is not treated as an error by this
+    implementation. An active native backend returns the status from
+    NVDisk_ArchWrite(), which may have different failure conditions.
 
-    BUGS
+    The public StoreNV() interface provides the application-facing
+    operation and performs its own validation.
 
     SEE ALSO
 
-    nonvolatile.library/StoreNV()
-
-    INTERNALS
+    nonvolatile.library/StoreNV(), <libraries/nonvolatile.h>
 
     HISTORY
 
-    November 2000,  SDuvan  --  implemeneted
+    November 2000, SDuvan -- implemented
 
 ******************************************************************************/
 
