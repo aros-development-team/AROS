@@ -19,6 +19,8 @@
 #include <proto/oop.h>
 #include <proto/kernel.h>
 #include <proto/mbox.h>
+#include <proto/task.h>
+#include <resources/task.h>
 
 #include <hidd/gallium.h>
 #include <hidd/gfx.h>
@@ -191,6 +193,35 @@ BOOL v3d_block_reset(void)
         && v3d_asb_enable(V3D_ASB_V3D_S_CTRL, "V3D_S");
 }
 
+/* A task ending without destroying its GL screens leaves their sessions
+ * behind: mark them, and the next screen created or destroyed sweeps
+ * them. Called for every task in the system, so compare and go. */
+AROS_UFH3(static IPTR, v3d_task_notify,
+    AROS_UFHA(struct Hook *, hook, A0),
+    AROS_UFHA(struct Task *, task, A2),
+    AROS_UFHA(struct TaskNotifyMsg *, msg, A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct V3DData *sd = hook->h_Data;
+    ULONG i;
+
+    (void)task;
+    if (msg->tnm_Action == TNA_REMOVED)
+    {
+        for (i = 0; i < V3D_MAX_SESSIONS; i++)
+        {
+            if (sd->sessions[i].vs_Used && (sd->sessions[i].vs_Task == msg->tnm_Task))
+            {
+                sd->sessions[i].vs_Dead = TRUE;
+            }
+        }
+    }
+    return 0;
+
+    AROS_USERFUNC_EXIT
+}
+
 static int V3D_Init(LIBBASETYPEPTR LIBBASE)
 {
     struct V3DData *sd = &LIBBASE->sd;
@@ -259,6 +290,18 @@ static int V3D_Init(LIBBASETYPEPTR LIBBASE)
     else
         bug("[V3D] power-up failed - GL falls back to softpipe\n");
 
+    if ((sd->task_res = OpenResource("task.resource")))
+    {
+        struct Library *TaskResBase = sd->task_res;
+
+        sd->task_hook.h_Entry = (HOOKFUNC)v3d_task_notify;
+        sd->task_hook.h_Data  = sd;
+        if (!AddTaskNotifyHook(&sd->task_hook))
+            sd->task_res = NULL;
+    }
+    if (!sd->task_res)
+        bug("[V3D] no task notifications - a GL app that dies keeps its buffers\n");
+
     return TRUE;
 }
 
@@ -266,6 +309,12 @@ static int V3D_Expunge(LIBBASETYPEPTR LIBBASE)
 {
     struct V3DData *sd = &LIBBASE->sd;
 
+    if (sd->task_res)
+    {
+        struct Library *TaskResBase = sd->task_res;
+
+        RemTaskNotifyHook(&sd->task_hook);
+    }
     if (sd->powered)
         v3d_hw_shutdown(sd);
     if (sd->hiddBitMapAB)

@@ -110,7 +110,7 @@ static void bo_unref(struct V3DData *sd, ULONG handle)
 }
 
 /*
- * Session sweep, called when the last pipe screen goes: whatever Mesa
+ * Final sweep, called when the last pipe screen goes: whatever Mesa
  * leaked would otherwise keep its arena pinned, and the driver's share of
  * system RAM would grow with every GL session. The driver's own
  * allocations (page table, scratch, overflow, landing zone) never sit in
@@ -133,6 +133,7 @@ void v3d_release_all_bos(struct V3DData *sd)
         bo->gpu_handle = 0;
         bo->refcount = 0;
         bo->external = FALSE;
+        bo->owner = 0;
         leaked++;
     }
     sd->bo_next_handle = 0;
@@ -147,13 +148,45 @@ void v3d_release_all_bos(struct V3DData *sd)
      * the next texture load. DestroyPipeScreen releases them. */
 }
 
+static void v3d_syncobj_release(ULONG sid);
+
+/* One session's leftovers: what Mesa did not close before its screen went,
+ * or everything of a session whose task died. The GPU must be idle. */
+void v3d_release_session(struct V3DData *sd, ULONG sid)
+{
+    ULONG h, leaked = 0;
+
+    ObtainSemaphore(&sd->bo_lock);
+    for (h = 1; h < V3D_MAX_BOS; h++)
+    {
+        struct V3DBO *bo = &sd->bo_table[h];
+
+        if (!bo->refcount || (bo->owner != sid))
+            continue;
+        v3d_mmu_unmap(sd, bo->gpu_va, bo->size);
+        if (!bo->external)
+            v3d_gpu_mem_free(sd, bo->gpu_handle, bo->size);
+        bo->gpu_handle = 0;
+        bo->refcount = 0;
+        bo->external = FALSE;
+        bo->owner = 0;
+        leaked++;
+    }
+    v3d_syncobj_release(sid);
+    ReleaseSemaphore(&sd->bo_lock);
+
+    if (leaked)
+        bug("[V3D] session %u: released %u leaked BOs\n",
+            (unsigned)sid, (unsigned)leaked);
+}
+
 /* ---- the dispatch ---- */
 
 static void v3d_syncobj_signal(uint32_t handle, ULONG seqno);
 static ULONG v3d_syncobj_seqno(uint32_t handle);
 
-static int v3d_ioctl_dispatch(struct V3DData *sd, unsigned long request,
-                              void *arg)
+static int v3d_ioctl_dispatch(struct V3DData *sd, ULONG sid,
+                              unsigned long request, void *arg)
 {
     switch (request)
     {
@@ -187,6 +220,7 @@ static int v3d_ioctl_dispatch(struct V3DData *sd, unsigned long request,
         sd->bo_table[h].refcount   = 1;
         sd->bo_table[h].external   = FALSE;
         sd->bo_table[h].last_seqno = 0;
+        sd->bo_table[h].owner      = sid;
         ReleaseSemaphore(&sd->bo_lock);
 
         create->handle = h;
@@ -238,6 +272,7 @@ static int v3d_ioctl_dispatch(struct V3DData *sd, unsigned long request,
             sd->bo_table[h].size       = sd->scanout_size;
             sd->bo_table[h].refcount   = 1;
             sd->bo_table[h].last_seqno = 0;
+            sd->bo_table[h].owner      = 0;
         }
         open->handle = h;
         open->size = sd->bo_table[h].size;
@@ -504,7 +539,7 @@ static struct
 } v3d_prof;
 #endif
 
-int v3d_ioctl_aros(struct V3DData *sd, unsigned long request, void *arg)
+int v3d_ioctl_aros(struct V3DData *sd, int fd, unsigned long request, void *arg)
 {
     int ret;
 #if V3D_PROFILE
@@ -520,7 +555,7 @@ int v3d_ioctl_aros(struct V3DData *sd, unsigned long request, void *arg)
         v3d_prof.mesa += t0 - v3d_prof.last_exit;
 #endif
 
-    ret = v3d_ioctl_dispatch(sd, request, arg);
+    ret = v3d_ioctl_dispatch(sd, v3d_fd_session(fd), request, arg);
 
 #if V3D_PROFILE
     t1 = V3D_NOW_US();
@@ -693,11 +728,24 @@ unsigned char driQueryOptionb(const void *cache, const char *name)
  * Mesa close()s it and that must not hit an open file. */
 #define V3D_SYNCFILE_TAG    0x40000000
 #define V3D_SYNCFILE_MASK   0x3fffffff
-#define V3D_SYNCOBJS        16
+#define V3D_SYNCOBJS        64
 
-/* 0 = free slot, else seqno + 1. Guarded by bo_lock: contexts can live
- * in different tasks. */
+/* 0 = free slot, else seqno + 1, and the session it belongs to. Guarded
+ * by bo_lock: contexts can live in different tasks. */
 static ULONG v3d_syncobj[V3D_SYNCOBJS];
+static UBYTE v3d_syncobj_owner[V3D_SYNCOBJS];
+
+/* Caller holds bo_lock. */
+static void v3d_syncobj_release(ULONG sid)
+{
+    ULONG i;
+
+    for (i = 0; i < V3D_SYNCOBJS; i++)
+    {
+        if (v3d_syncobj_owner[i] == sid)
+            v3d_syncobj[i] = 0;
+    }
+}
 
 int drmSyncobjCreate(int fd, uint32_t flags, uint32_t *handle)
 {
@@ -705,7 +753,7 @@ int drmSyncobjCreate(int fd, uint32_t flags, uint32_t *handle)
     ULONG i;
     int ret = -1;
 
-    (void)fd; (void)flags;
+    (void)flags;
     if (!sd)
         return -1;
 
@@ -715,6 +763,7 @@ int drmSyncobjCreate(int fd, uint32_t flags, uint32_t *handle)
         if (v3d_syncobj[i])
             continue;
         v3d_syncobj[i] = 1;             /* seqno 0: already signalled */
+        v3d_syncobj_owner[i] = (UBYTE)v3d_fd_session(fd);
         *handle = (uint32_t)(i + 1);
         ret = 0;
         break;

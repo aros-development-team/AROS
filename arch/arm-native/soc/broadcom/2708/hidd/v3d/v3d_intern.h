@@ -18,6 +18,7 @@
 #include <exec/libraries.h>
 #include <exec/memory.h>
 #include <exec/semaphores.h>
+#include <utility/hooks.h>
 #include <devices/timer.h>
 #include <oop/oop.h>
 #include <hidd/gallium.h>
@@ -333,7 +334,31 @@ struct V3DBO
     ULONG   external;       /* wraps memory we do not own (a scanout
                              * page): unmap on close, never FREEMEM */
     ULONG   last_seqno;     /* newest submission using it, 0 = none */
+    ULONG   owner;          /* session id, 0 = shared (scanout pages) */
 };
+
+/* One GL pipe screen. Mesa passes the fd a screen was created with to
+ * every ioctl, so a tagged fd tells the shim whose objects are whose. */
+#define V3D_MAX_SESSIONS    16
+#define V3D_SCREENFD_TAG    0x20000000
+
+struct V3DSession
+{
+    BOOL                vs_Used;
+    volatile BOOL       vs_Dead;    /* its task ended without a teardown */
+    APTR                vs_Screen;  /* struct pipe_screen * */
+    struct Task        *vs_Task;    /* the one that created it */
+};
+
+/* The session id an fd stands for, 0 for none. */
+static inline ULONG v3d_fd_session(int fd)
+{
+    ULONG v = (ULONG)fd, id = v & 0xff;
+
+    if (((v & ~0xffUL) != V3D_SCREENFD_TAG) || !id || (id > V3D_MAX_SESSIONS))
+        return 0;
+    return id;
+}
 
 /* One BO per texture and per vertex buffer; Doom 3 keeps a few thousand
  * live, and Mesa answers a refused CREATE_BO by dropping its whole BO
@@ -460,13 +485,13 @@ struct V3DData
     APTR            coreapi;        /* GalliumCoreAPI table from mesa3dgl */
     BOOL            powered;
 
-    /* A GL app makes more than one, so the BO sweep and state reset only
-     * run when the last goes. */
-    LONG            screen_count;
-    ULONG           recoveries;     /* hang-recovery fuse, per session */
-
-    ULONG           last_submit_us;
-    BOOL            session_swept;
+    /* Every GL screen in the system, id = index + 1; under bo_lock. The
+     * task hook marks a session dead when its task ends without tearing
+     * it down, and the next screen created or destroyed sweeps it. */
+    struct V3DSession sessions[V3D_MAX_SESSIONS];
+    struct Hook     task_hook;
+    APTR            task_res;
+    ULONG           recoveries;     /* hang-recovery fuse */
 
     /* The supply is pre-armed per bin job, so OUTOMEM means even that
      * ran out and the binner has stopped until BPOA/BPOS are refilled. */
@@ -518,8 +543,9 @@ void v3d_gpu_mem_free(struct V3DData *sd, ULONG gpu_handle, ULONG size);
 void v3d_mem_release(struct V3DData *sd);
 
 /* v3d_drm_shim.c */
-int v3d_ioctl_aros(struct V3DData *sd, unsigned long request, void *arg);
+int v3d_ioctl_aros(struct V3DData *sd, int fd, unsigned long request, void *arg);
 void v3d_release_all_bos(struct V3DData *sd);
+void v3d_release_session(struct V3DData *sd, ULONG sid);
 
 /* v3d_dt.c */
 extern IPTR v3d_pm_base;

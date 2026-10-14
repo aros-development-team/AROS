@@ -16,10 +16,11 @@
 /* Forward declaration of our shim */
 struct V3DData;
 extern struct V3DData *g_v3d_data;
-extern int v3d_ioctl_aros(struct V3DData *sd, unsigned long request, void *arg);
+extern int v3d_ioctl_aros(struct V3DData *sd, int fd, unsigned long request, void *arg);
 
-/* Override the inline v3d_ioctl that Mesa defines in v3d_context.h */
-#define drmIoctl(fd, request, arg) v3d_ioctl_aros(g_v3d_data, request, arg)
+/* Override the inline v3d_ioctl that Mesa defines in v3d_context.h. The
+ * fd names the screen's session, so it goes along. */
+#define drmIoctl(fd, request, arg) v3d_ioctl_aros(g_v3d_data, fd, request, arg)
 
 /* Suppress the simulator path */
 #define using_v3d_simulator 0
