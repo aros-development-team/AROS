@@ -32,6 +32,50 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_nextafterl.c,v 1.2 2008/02/2
 #error "Unsupported long double format"
 #endif
 
+/****************************************************************************
+    NAME
+        long double nextafterl(
+
+    SYNOPSIS
+        long double x, long double y)
+
+    FUNCTION
+        Return the adjacent long double value in the direction of y.
+
+    INPUTS
+        x - Starting value.
+        y - Value that determines the direction.
+
+    RESULT
+        If x and y compare equal, return y, including its zero sign.
+        A zero starting value and nonzero direction select the smallest
+        subnormal with the sign of y. If either argument is NaN, the
+        result is NaN.
+
+        An inward step from infinity returns the largest finite value
+        with the same sign. See BUGS for outward steps at the finite limit.
+
+    NOTES
+        Include <math.h>. This function has the same behavior as
+        nexttowardl().
+
+        Subnormal results can raise FE_UNDERFLOW and FE_INEXACT. Outward
+        steps at the finite limit can raise FE_OVERFLOW and FE_INEXACT.
+        Enabled traps may prevent return. This function does not set errno.
+
+    BUGS
+        An outward step from the largest positive or negative finite
+        value can return that same finite value under directed rounding,
+        instead of the corresponding infinity.
+
+        Where long double has greater precision than double, a step from
+        the smallest subnormal to zero does not raise FE_UNDERFLOW or
+        FE_INEXACT. Existing exception flags are not cleared.
+
+    SEE ALSO
+        nexttowardl(), nextafter(), nexttoward()
+
+*****************************************************************************/
 long double
 nextafterl(long double x, long double y)
 {
@@ -79,4 +123,48 @@ nextafterl(long double x, long double y)
 	return ux.e;
 }
 
+/****************************************************************************
+    NAME
+        long double nexttowardl(
+
+    SYNOPSIS
+        long double x, long double y)
+
+    FUNCTION
+        Return the adjacent long double value in the direction of y.
+
+    INPUTS
+        x - Starting value.
+        y - Value that determines the direction.
+
+    RESULT
+        If x and y compare equal, return y, including its zero sign.
+        A zero starting value and nonzero direction select the smallest
+        subnormal with the sign of y. If either argument is NaN, the
+        result is NaN.
+
+        An inward step from infinity returns the largest finite value
+        with the same sign. See BUGS for outward steps at the finite limit.
+
+    NOTES
+        Include <math.h>. This function has the same behavior as
+        nextafterl().
+
+        Subnormal results can raise FE_UNDERFLOW and FE_INEXACT. Outward
+        steps at the finite limit can raise FE_OVERFLOW and FE_INEXACT.
+        Enabled traps may prevent return. This function does not set errno.
+
+    BUGS
+        An outward step from the largest positive or negative finite
+        value can return that same finite value under directed rounding,
+        instead of the corresponding infinity.
+
+        Where long double has greater precision than double, a step from
+        the smallest subnormal to zero does not raise FE_UNDERFLOW or
+        FE_INEXACT. Existing exception flags are not cleared.
+
+    SEE ALSO
+        nextafterl(), nextafter(), nexttoward()
+
+*****************************************************************************/
 AROS_MAKE_ALIAS(nextafterl, nexttowardl);
