@@ -136,6 +136,7 @@ static struct
     struct v3d_bo  *page_bo[2];     /* held refs: rebinding must not close
                                      * and reopen a page (with its MMU
                                      * unmap/map and TLB flushes) per frame */
+    ULONG           owner;          /* session id of rsc's screen */
 } v3d_scan;
 
 /* Four pages, not two: the present shows the PREVIOUS frame, whose jobs
@@ -166,7 +167,22 @@ static struct
     volatile ULONG  vbl_gen;        /* gen at the last vblank */
     volatile ULONG  flush_gen;      /* gen the task was woken for */
     BOOL            flushed;        /* the task emptied the queue */
+    ULONG           owner;          /* session id of rsc's screen */
+    BOOL            stale;          /* plane still up for a dead session */
 } v3d_ovl;
+
+/* The session a pipe screen belongs to, 0 for none. */
+static ULONG v3d_session_of(struct V3DData *sd, APTR screen)
+{
+    ULONG i;
+
+    for (i = 0; i < V3D_MAX_SESSIONS; i++)
+    {
+        if (sd->sessions[i].vs_Used && (sd->sessions[i].vs_Screen == screen))
+            return i + 1;
+    }
+    return 0;
+}
 
 /* Raw drop, for the dirty-exit reset where the Mesa objects are gone. */
 static void v3d_scan_forget(void)
@@ -282,6 +298,7 @@ static BOOL v3d_scan_bind_back(struct V3DData *sd, struct v3d_resource *rsc,
     rsc->slices[0].offset = 0;
 
     v3d_scan.rsc = &rsc->base;
+    v3d_scan.owner = v3d_session_of(sd, rsc->base.screen);
     v3d_scan.page_handle = nb->handle;
     v3d_scan.name[0] = so.name[0];
     v3d_scan.name[1] = so.name[1];
@@ -412,6 +429,38 @@ static void v3d_ovl_set_vblank(struct V3DData *sd, OOP_Object *bmobj,
     OOP_SetAttrs(bmobj, vbltags);
 }
 
+/* Raw drop, for a session whose Mesa objects are gone: its pages are
+ * swept with its BOs, and the plane is left for the next present. */
+static void v3d_ovl_forget(void)
+{
+    v3d_ovl.rsc = NULL;
+    v3d_ovl.onplane = NULL;
+    v3d_ovl.queued = NULL;
+    v3d_ovl.freep = NULL;
+    v3d_ovl.retiring = NULL;
+    v3d_ovl.queued_seqno = 0;
+    v3d_ovl.latch_due = FALSE;
+    v3d_ovl.page_handle = 0;
+    v3d_ovl.shown = FALSE;
+    v3d_ovl.refused = NULL;
+    v3d_ovl.bm = NULL;
+    v3d_ovl.stale = TRUE;
+}
+
+/* Take down a plane nobody owns any more, through a bitmap that is alive. */
+static void v3d_ovl_hide(struct V3DData *sd, OOP_Object *bmobj)
+{
+    struct TagItem ovltags[] =
+    {
+        { sd->hiddVCGfxBMAB + aoVCGfxBM_Overlay, 0 },
+        { TAG_DONE, 0 }
+    };
+
+    v3d_ovl_set_vblank(sd, bmobj, NULL);
+    OOP_SetAttrs(bmobj, ovltags);
+    v3d_ovl.stale = FALSE;
+}
+
 /* Full teardown: resource changed or the session is going away. */
 static void v3d_ovl_exit(struct V3DData *sd)
 {
@@ -498,6 +547,61 @@ static void v3d_ovl_task(struct V3DData *sd)
     }
 }
 
+/* Forget every job in flight. Caller holds job_lock, the GPU is idle or
+ * about to be reset. */
+static void v3d_pipeline_reset(struct V3DData *sd)
+{
+    sd->recoveries = 0;
+    sd->bin_running = FALSE;
+    sd->render_running = FALSE;
+    sd->rcl_head = 0;
+    sd->rcl_count = 0;
+    sd->bin_flushed_seqno = sd->seqno;
+    sd->finished_seqno = sd->seqno;
+    sd->bin_end = 0;
+    sd->render_end = 0;
+}
+
+/* Sessions whose task died without destroying its screen: their Mesa
+ * objects are gone, so the present state they own is dropped, not
+ * released, and then their BOs go. */
+static void v3d_sweep_dead(struct V3DData *sd)
+{
+    ULONG i;
+
+    for (i = 0; i < V3D_MAX_SESSIONS; i++)
+    {
+        if (sd->sessions[i].vs_Used && sd->sessions[i].vs_Dead)
+            break;
+    }
+    if (i == V3D_MAX_SESSIONS)
+        return;
+
+    v3d_wait_idle(sd);
+
+    for (i = 0; i < V3D_MAX_SESSIONS; i++)
+    {
+        if (!sd->sessions[i].vs_Used || !sd->sessions[i].vs_Dead)
+            continue;
+
+        ObtainSemaphore(&sd->ovl_lock);
+        if (v3d_scan.rsc && (v3d_scan.owner == i + 1))
+            v3d_scan_forget();
+        if (v3d_ovl.rsc && (v3d_ovl.owner == i + 1))
+            v3d_ovl_forget();
+        ReleaseSemaphore(&sd->ovl_lock);
+
+        v3d_release_session(sd, i + 1);
+        bug("[V3D] session %u: its task ended without a GL teardown, swept\n",
+            (unsigned)(i + 1));
+
+        ObtainSemaphore(&sd->bo_lock);
+        sd->sessions[i].vs_Used = FALSE;
+        sd->sessions[i].vs_Dead = FALSE;
+        ReleaseSemaphore(&sd->bo_lock);
+    }
+}
+
 OOP_Object *HiddV3D__Root__New(OOP_Class *cl, OOP_Object *o,
                                struct pRoot_New *msg)
 {
@@ -513,21 +617,16 @@ APTR HiddV3D__Hidd_Gallium__CreatePipeScreen(OOP_Class *cl, OOP_Object *o,
 {
     struct V3DData *sd = SD(cl);
     struct pipe_screen *screen;
+    ULONG i;
     int bres;
 
     /* The teardown that resets the recovery fuse rarely runs, so a new
      * session revives a fused-off GPU itself. */
     if (!sd->powered)
     {
-        sd->recoveries = 0;
-        sd->bin_running = FALSE;
-        sd->render_running = FALSE;
-        sd->rcl_head = 0;
-        sd->rcl_count = 0;
-        sd->bin_flushed_seqno = sd->seqno;
-        sd->finished_seqno = sd->seqno;
-        sd->bin_end = 0;
-        sd->render_end = 0;
+        ObtainSemaphore(&sd->job_lock);
+        v3d_pipeline_reset(sd);
+        ReleaseSemaphore(&sd->job_lock);
         if (v3d_block_reset() && v3d_hw_init(sd))
             bug("[V3D] GPU revived for this session\n");
     }
@@ -560,62 +659,45 @@ APTR HiddV3D__Hidd_Gallium__CreatePipeScreen(OOP_Class *cl, OOP_Object *o,
 
     g_v3d_data = sd;
 
-    /* Sweep a previous session that exited without GL teardown. The test
-     * is a gap since the last submission, as screen_count cannot tell a new
-     * session from an app's second screen; session_swept keeps the screen
-     * this call creates from being swept. One GL session at a time. */
-    if (!sd->session_swept && sd->screen_count > 0
-        && (v3d_now_us() - sd->last_submit_us) > 1000000)
+    v3d_sweep_dead(sd);
+
+    /* A session per screen, named to the shim by the fd. */
+    ObtainSemaphore(&sd->bo_lock);
+    for (i = 0; (i < V3D_MAX_SESSIONS) && sd->sessions[i].vs_Used; i++)
+        ;
+    if (i < V3D_MAX_SESSIONS)
     {
-        sd->session_swept = TRUE;
-
-        ObtainSemaphore(&sd->ovl_lock);
-        ObtainSemaphore(&sd->bo_lock);
-        /* Pointers into freed Mesa objects: drop, never dereference. */
-        v3d_scan_forget();
-        v3d_ovl.rsc = NULL;
-        v3d_ovl.onplane = NULL;
-        v3d_ovl.queued = NULL;
-        v3d_ovl.freep = NULL;
-        v3d_ovl.retiring = NULL;
-        v3d_ovl.queued_seqno = 0;
-        v3d_ovl.latch_due = FALSE;
-        v3d_ovl.page_handle = 0;
-        v3d_ovl.shown = FALSE;
-        v3d_ovl.refused = NULL;
-        v3d_ovl.bm = NULL;
-        ReleaseSemaphore(&sd->bo_lock);
-        ReleaseSemaphore(&sd->ovl_lock);
-
-        v3d_release_all_bos(sd);
-        sd->screen_count = 0;
-        sd->recoveries = 0;
-        sd->bin_running = FALSE;
-        sd->render_running = FALSE;
-        sd->rcl_head = 0;
-        sd->rcl_count = 0;
-        sd->bin_flushed_seqno = sd->seqno;
-        sd->finished_seqno = sd->seqno;
-        sd->bin_end = 0;
-        sd->render_end = 0;
+        sd->sessions[i].vs_Used   = TRUE;
+        sd->sessions[i].vs_Dead   = FALSE;
+        sd->sessions[i].vs_Screen = NULL;
+        sd->sessions[i].vs_Task   = FindTask(NULL);
+    }
+    ReleaseSemaphore(&sd->bo_lock);
+    if (i == V3D_MAX_SESSIONS)
+    {
+        bug("[V3D] %u GL screens open already - GL falls back to softpipe\n",
+            (unsigned)V3D_MAX_SESSIONS);
+        return NULL;
     }
 
-    /* fd is a dummy and there is no renderonly - we present ourselves. The
-     * config must be a real object: v3d_screen_create derefs it for driconf. */
+    /* There is no renderonly - we present ourselves. The config must be a
+     * real object: v3d_screen_create derefs it for driconf. */
     {
         static const struct pipe_screen_config v3d_no_config = { 0 };
 
-        screen = v3d_screen_create(0, &v3d_no_config, NULL);
+        screen = v3d_screen_create((int)(V3D_SCREENFD_TAG | (i + 1)),
+                                   &v3d_no_config, NULL);
     }
     if (!screen)
     {
         bug("[V3D] v3d_screen_create failed\n");
+        v3d_release_session(sd, i + 1);
+        ObtainSemaphore(&sd->bo_lock);
+        sd->sessions[i].vs_Used = FALSE;
+        ReleaseSemaphore(&sd->bo_lock);
         return NULL;
     }
-
-    ObtainSemaphore(&sd->bo_lock);
-    sd->screen_count++;
-    ReleaseSemaphore(&sd->bo_lock);
+    sd->sessions[i].vs_Screen = screen;
 
     D(bug("[V3D] pipe_screen at %p\n", screen));
     return screen;
@@ -625,54 +707,54 @@ VOID HiddV3D__Hidd_Gallium__DestroyPipeScreen(OOP_Class *cl, OOP_Object *o,
     struct pHidd_Gallium_DestroyPipeScreen *msg)
 {
     struct V3DData *sd = SD(cl);
-    BOOL last;
+    struct pipe_screen *screen = (struct pipe_screen *)msg->screen;
+    ULONG sid, i;
 
-    if (msg->screen)
-    {
-        struct pipe_screen *screen = (struct pipe_screen *)msg->screen;
-
-        /* Quiesce first: context teardown can flush a trailing job, and
-         * the screen is about to free the memory it renders from. */
-        v3d_wait_idle(sd);
-
-        /* Drop the present state while every screen is still alive - the
-         * overlay page and the scanout wrap belong to one of them, and
-         * which one cannot be told from here. Re-entry is one blitted
-         * frame for a survivor. */
-        ObtainSemaphore(&sd->ovl_lock);
-        v3d_ovl_exit(sd);
-        ReleaseSemaphore(&sd->ovl_lock);
-        v3d_scan_release();
-
-        screen->destroy(screen);
-    }
-
-    /* Session teardown only with the LAST screen gone - a GL app holds
-     * more than one (the capability probe's, then the real one), and a
-     * sweep under a live screen would free its BOs mid-render. */
-    ObtainSemaphore(&sd->bo_lock);
-    last = (--sd->screen_count <= 0);
-    if (last)
-        sd->screen_count = 0;
-    ReleaseSemaphore(&sd->bo_lock);
-    if (!last)
+    if (!screen)
         return;
 
-    /* Sweep what Mesa leaked and drop the per-session state, so the next
-     * GL session starts clean instead of inheriting a stale latch or a
-     * blown recovery fuse - and give a fuse-disabled GPU a fresh chance. */
+    sid = v3d_session_of(sd, screen);
+
+    /* Quiesce first: context teardown can flush a trailing job, and
+     * the screen is about to free the memory it renders from. */
+    v3d_wait_idle(sd);
+
+    /* Only the present state this screen owns: another app keeps its
+     * overlay or its scanout pages. */
+    ObtainSemaphore(&sd->ovl_lock);
+    if (v3d_ovl.rsc && (v3d_ovl.owner == sid))
+        v3d_ovl_exit(sd);
+    if (v3d_scan.rsc && (v3d_scan.owner == sid))
+        v3d_scan_release();
+    ReleaseSemaphore(&sd->ovl_lock);
+
+    screen->destroy(screen);
+
+    if (sid)
+    {
+        v3d_release_session(sd, sid);
+        ObtainSemaphore(&sd->bo_lock);
+        sd->sessions[sid - 1].vs_Used = FALSE;
+        ReleaseSemaphore(&sd->bo_lock);
+    }
+    v3d_sweep_dead(sd);
+
+    ObtainSemaphore(&sd->bo_lock);
+    for (i = 0; (i < V3D_MAX_SESSIONS) && !sd->sessions[i].vs_Used; i++)
+        ;
+    ReleaseSemaphore(&sd->bo_lock);
+    if (i < V3D_MAX_SESSIONS)
+        return;
+
+    /* The last GL screen is gone: sweep what is left, and start the next
+     * one clean instead of inheriting a stale latch or a blown recovery
+     * fuse - and give a fuse-disabled GPU a fresh chance. */
     v3d_release_all_bos(sd);
     /* Only a real teardown frees the arenas: nothing uses them now. */
     v3d_mem_release(sd);
-    sd->bin_running = FALSE;
-    sd->render_running = FALSE;
-    sd->rcl_head = 0;
-    sd->rcl_count = 0;
-    sd->bin_flushed_seqno = sd->seqno;
-    sd->finished_seqno = sd->seqno;
-    sd->bin_end = 0;
-    sd->render_end = 0;
-    sd->recoveries = 0;
+    ObtainSemaphore(&sd->job_lock);
+    v3d_pipeline_reset(sd);
+    ReleaseSemaphore(&sd->job_lock);
     if (sd->powered)
     {
         /* W1C any leftover completion latches so the next session's
@@ -823,7 +905,8 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
     struct ClipRect *CR;
     OOP_Object *scr_bm_obj;
     ULONG stride;
-    BOOL fullscreen, bound, windowed;
+    BOOL fullscreen, bound, windowed, scan_free, multi = FALSE;
+    ULONG sid;
     BOOL enter_scanout = FALSE, detach_after_blit = FALSE;
     BOOL copied = FALSE;
     UBYTE *base;
@@ -856,14 +939,40 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
     LockLayerRom(L);
     ObtainSemaphore(&sd->ovl_lock);
     scr_bm_obj = HIDD_BM_OBJ(rp->BitMap);
+    sid = v3d_session_of(sd, rsc->base.screen);
 
-    /* Drop stale state when the bound resource went away (resize). */
-    if (v3d_scan.rsc && v3d_scan.rsc != &rsc->base)
+    if (v3d_ovl.stale && !v3d_ovl.rsc)
+        v3d_ovl_hide(sd, scr_bm_obj);
+
+    /* Drop this session's stale state when its bound resource went away
+     * (resize). Another session's binding stays: it keeps the plane or
+     * the pages, and this one blits. */
+    if (v3d_scan.rsc && (v3d_scan.owner == sid) && v3d_scan.rsc != &rsc->base)
         v3d_scan_release();
-    if (v3d_ovl.rsc && v3d_ovl.rsc != &rsc->base)
+    if (v3d_ovl.rsc && (v3d_ovl.owner == sid) && v3d_ovl.rsc != &rsc->base)
         v3d_ovl_exit(sd);
     if (v3d_ovl.refused && v3d_ovl.refused != &rsc->base)
         v3d_ovl.refused = NULL;
+    scan_free = !v3d_scan.rsc || (v3d_scan.owner == sid);
+
+    /* One plane, several sessions: everyone blits, and whoever holds
+     * the plane gives it up. */
+    {
+        ULONG i, live = 0;
+
+        for (i = 0; i < V3D_MAX_SESSIONS; i++)
+        {
+            if (sd->sessions[i].vs_Used && !sd->sessions[i].vs_Dead)
+                live++;
+        }
+        multi = (live > 1);
+    }
+    if (multi)
+    {
+        if (v3d_ovl.rsc && (v3d_ovl.owner == sid))
+            v3d_ovl_exit(sd);
+        scan_free = FALSE;
+    }
 
     fullscreen = (xSrc == 0 && ySrc == 0 && xDest == 0 && yDest == 0 &&
                   L->bounds.MinX == 0 && L->bounds.MinY == 0 &&
@@ -874,7 +983,7 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
     /* Flip is tried first only when the overlay is not preferred, or
      * when the overlay has already refused this resource - so a display
      * the HVS plane cannot serve still gets a zero-copy path. */
-    if (fullscreen
+    if (fullscreen && scan_free
         && (!V3D_OVERLAY_ENABLE || !V3D_PREFER_OVERLAY
             || v3d_ovl.refused == &rsc->base))
     {
@@ -1152,7 +1261,7 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
                 v3d_ovl_exit(sd);
             }
         }
-        else if (V3D_OVERLAY_ENABLE && windowed && !v3d_ovl.rsc
+        else if (V3D_OVERLAY_ENABLE && windowed && !v3d_ovl.rsc && !multi
                  && rsc->slices[0].size && v3d_ovl.refused != &rsc->base)
         {
             /* Three more pages: the next render target, a parked spare,
@@ -1180,6 +1289,7 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
                     bug("[V3D] present: overlay mode %ldx%ld at %ld,%ld\n",
                         (long)xSize, (long)ySize, (long)absX, (long)absY);
                     v3d_ovl.rsc = &rsc->base;
+                    v3d_ovl.owner = sid;
                     v3d_ovl.onplane = rsc->bo;
                     v3d_ovl.queued = NULL;
                     v3d_ovl.queued_seqno = 0;
