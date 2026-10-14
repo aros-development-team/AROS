@@ -753,6 +753,9 @@ VOID PBM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o,
         UBYTE *plane = bm->Planes[d];
         UBYTE  planefill;
 
+        if (!(GC_COLMASK(msg->gc) & ((HIDDT_Pixel)1 << d)))
+            continue;
+
         if (plane == NULL || plane == (UBYTE *)-1)
             continue;
 

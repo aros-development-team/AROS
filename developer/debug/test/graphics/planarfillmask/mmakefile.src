@@ -1,0 +1,7 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+include $(SRCDIR)/config/aros.cfg
+USER_LDFLAGS := -static
+#MM test-graphics-planarfillmask : includes linklibs
+%build_progs mmake=test-graphics-planarfillmask \
+    files=planarfillmask targetdir=$(AROS_TESTS)/graphics/planarfillmask
+%common
