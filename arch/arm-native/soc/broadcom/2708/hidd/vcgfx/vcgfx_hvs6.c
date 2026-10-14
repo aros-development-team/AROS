@@ -1069,6 +1069,44 @@ static void hvs6_scaled(ULONG dst, ULONG fb, UQUAD addr, ULONG pitch, ULONG ptr0
     hvs6_wr(dst, ctl0);
 }
 
+/* hvs6_clip for a scaled plane: trims the source in proportion. */
+static BOOL hvs6_clip_scaled(LONG *ox, LONG *oy, ULONG *ow, ULONG *oh,
+                             ULONG *sw, ULONG *sh, UQUAD *phys, ULONG pitch,
+                             LONG l, LONG t, LONG r, LONG b)
+{
+    if (*ox < l)
+    {
+        ULONG skip = (ULONG)(l - *ox), ssk;
+
+        if (skip >= *ow)
+            return FALSE;
+        ssk = skip * *sw / *ow;
+        *phys += ssk * 4; *sw -= ssk; *ow -= skip; *ox = l;
+    }
+    if (*oy < t)
+    {
+        ULONG skip = (ULONG)(t - *oy), ssk;
+
+        if (skip >= *oh)
+            return FALSE;
+        ssk = skip * *sh / *oh;
+        *phys += (UQUAD)ssk * pitch; *sh -= ssk; *oh -= skip; *oy = t;
+    }
+    if (*ox + (LONG)*ow > r)
+    {
+        ULONG keep = (r > *ox) ? (ULONG)(r - *ox) : 0;
+
+        *sw = *sw * keep / *ow; *ow = keep;
+    }
+    if (*oy + (LONG)*oh > b)
+    {
+        ULONG keep = (b > *oy) ? (ULONG)(b - *oy) : 0;
+
+        *sh = *sh * keep / *oh; *oh = keep;
+    }
+    return *ow && *oh && *sw && *sh;
+}
+
 /*
  * One list: the screens back to front, each cut off where a screen in
  * front spans the output's width down to the bottom of what is still
@@ -1157,35 +1195,11 @@ static ULONG hvs6_build_planes(struct VideoCoreGfx_staticdata *xsd, ULONG list)
             continue;
         }
 
-        /* Clip on screen and trim the source in proportion. */
         ox = px[i]; oy = py[i]; ow = pw[i]; oh = ph[i];
         sw = d->width; sh = d->height;
-        if (ox < 0)
-        {
-            ULONG skip = (ULONG)-ox, ssk = skip * sw / ow;
-
-            phys += ssk * 4; sw -= ssk; ow -= skip; ox = 0;
-        }
-        if (oy < 0)
-        {
-            ULONG skip = (ULONG)-oy, ssk = skip * sh / oh;
-
-            phys += (UQUAD)ssk * pitch; sh -= ssk; oh -= skip; oy = 0;
-        }
-        if (ox + (LONG)ow > out_w)
-        {
-            ULONG keep = (out_w > ox) ? (ULONG)(out_w - ox) : 0;
-
-            sw = sw * keep / ow; ow = keep;
-        }
-        if (oy + (LONG)oh > limit[i])
-        {
-            ULONG keep = (limit[i] > oy) ? (ULONG)(limit[i] - oy) : 0;
-
-            sh = sh * keep / oh; oh = keep;
-        }
-
-        if (!ow || !oh || !sw || !sh || (scaled >= HVS6_SCALE_MAX)
+        if (!hvs6_clip_scaled(&ox, &oy, &ow, &oh, &sw, &sh, &phys, pitch,
+                              0, 0, out_w, limit[i])
+            || (scaled >= HVS6_SCALE_MAX)
             || !HVS6_PPF_FITS(sw, ow) || !HVS6_PPF_FITS(sh, oh))
         {
             hvs6_wr(ent, HVS6_CTL0_EMPTY);
@@ -1197,32 +1211,62 @@ static ULONG hvs6_build_planes(struct VideoCoreGfx_staticdata *xsd, ULONG list)
         scaled++;
     }
 
-    /* The overlay slot is above every screen: the front one only, unscaled,
-     * and no further out than it. */
+    /* The overlay slot is above every screen: the front one only, scaled
+     * like it, and no further out than it. */
     ent = hvs6_pslot(st, list, HVS6_PL_OVL);
     if (st->h6_Overlay && (front >= 0) && ptr0[front]
-        && (st->h6_OvlOwner == xsd->vcsd_Plane[front].pl_BM)
-        && (pw[front] == xsd->vcsd_Plane[front].pl_Data->width)
-        && (ph[front] == xsd->vcsd_Plane[front].pl_Data->height))
+        && (st->h6_OvlOwner == xsd->vcsd_Plane[front].pl_BM))
     {
-        struct vcgfx_plane *pl = &xsd->vcsd_Plane[front];
-        LONG r = pl->pl_X + (LONG)pl->pl_Data->width;
-        LONG b = pl->pl_Y + (LONG)pl->pl_Data->height;
+        struct BitmapData *d = xsd->vcsd_Plane[front].pl_Data;
+        LONG l = (px[front] > 0) ? px[front] : 0, t = (py[front] > 0) ? py[front] : 0;
+        LONG r = px[front] + (LONG)pw[front], b = py[front] + (LONG)ph[front];
+        BOOL shown = FALSE;
 
-        x = pl->pl_X + st->h6_OvlX;
-        y = pl->pl_Y + st->h6_OvlY;
-        w = st->h6_OvlW;
-        h = st->h6_OvlH;
+        if (r > out_w)
+            r = out_w;
+        if (b > limit[front])
+            b = limit[front];
         phys = st->h6_OvlPhys;
-        if (hvs6_clip(&x, &y, &w, &h, &phys, st->h6_OvlPitch,
-                      (pl->pl_X > 0) ? pl->pl_X : 0, (pl->pl_Y > 0) ? pl->pl_Y : 0,
-                      (r < out_w) ? r : out_w, (b < limit[front]) ? b : limit[front]))
+
+        if ((pw[front] == d->width) && (ph[front] == d->height))
         {
-            hvs6_plane(ent, fb, phys, st->h6_OvlPitch, st->h6_OvlPTR0,
-                       (ULONG)x, (ULONG)y, w, h);
+            x = px[front] + st->h6_OvlX;
+            y = py[front] + st->h6_OvlY;
+            w = st->h6_OvlW;
+            h = st->h6_OvlH;
+            if (hvs6_clip(&x, &y, &w, &h, &phys, st->h6_OvlPitch, l, t, r, b))
+            {
+                hvs6_plane(ent, fb, phys, st->h6_OvlPitch, st->h6_OvlPTR0,
+                           (ULONG)x, (ULONG)y, w, h);
+                shown = TRUE;
+            }
+        }
+        else
+        {
+            LONG ox = px[front] + st->h6_OvlX * (LONG)pw[front] / (LONG)d->width;
+            LONG oy = py[front] + st->h6_OvlY * (LONG)ph[front] / (LONG)d->height;
+            ULONG ow = st->h6_OvlW * pw[front] / d->width;
+            ULONG oh = st->h6_OvlH * ph[front] / d->height;
+            ULONG sw = st->h6_OvlW, sh = st->h6_OvlH;
+
+            /* The overlay's slice is two lines of the widest pitch */
+            if (hvs6_clip_scaled(&ox, &oy, &ow, &oh, &sw, &sh, &phys, st->h6_OvlPitch,
+                                 l, t, r, b)
+                && (scaled < HVS6_SCALE_MAX)
+                && (hvs6_upm_size(st->h6_OvlPitch, 4) <= HVS6_UPM_SLICE)
+                && HVS6_PPF_FITS(sw, ow) && HVS6_PPF_FITS(sh, oh))
+            {
+                hvs6_scaled(ent, fb, phys, st->h6_OvlPitch,
+                            st->h6_OvlPTR0 | HVS6_PTR0_LINES4,
+                            ox, oy, ow, oh, sw, sh, lbm);
+                scaled++;
+                shown = TRUE;
+            }
+        }
+
+        if (shown)
             hvs6_wr(ent + HVS6_ENT_CTL0 * 4,
                     (hvs6_rd(ent + HVS6_ENT_CTL0 * 4) & ~HVS6_CTL0_ORDER) | HVS6_ORDER_BGRA);
-        }
         else
             hvs6_wr(ent, HVS6_CTL0_EMPTY);
     }
