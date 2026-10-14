@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010, The AROS Development Team.
+    Copyright (C) 2010-2026, The AROS Development Team.
     All rights reserved.
     
 */
@@ -7,13 +7,13 @@
 #include <utility/tagitem.h>
 #include <proto/alib.h>
 
-/*****************************************************************************
-
-    NAME */
 #define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/popupmenu.h>
 extern struct PopupMenuBase * PopupMenuBase;
 
+/*****************************************************************************
+
+    NAME */
         LONG PM_LayoutMenu(
 
 /*  SYNOPSIS */
@@ -23,22 +23,17 @@ extern struct PopupMenuBase * PopupMenuBase;
         ...)
 
 /*  FUNCTION
+        Reserved layout entry point. The current PM_LayoutMenuA()
+        implementation does not perform a layout operation.
 
     INPUTS
+        window - Window argument, currently unused.
+        pm     - Menu argument, currently unused.
+        tag1   - First tag/value pair, terminated by TAG_DONE;
+                 currently unused by the implementation.
 
     RESULT
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-    HISTORY
+        Always returns zero.
 
 *****************************************************************************/
 {

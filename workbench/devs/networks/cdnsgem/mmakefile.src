@@ -1,0 +1,14 @@
+include $(SRCDIR)/config/aros.cfg
+
+#
+# SANA-II driver for the Cadence GEM Ethernet MAC (Raspberry Pi 5, inside
+# RP1). Found through pci.hidd, as the synthetic function pcirp1.hidd
+# presents it, so only built for a target that has one.
+#
+
+FILES := cdnsgem_hw cdnsgem_unit cdnsgem_handler
+
+%build_module mmake=workbench-devs-networks-cdnsgem \
+    modname=cdnsgem modtype=device \
+    files="cdnsgem_init $(FILES)" \
+    moduledir=Devs/Networks

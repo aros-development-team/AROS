@@ -365,13 +365,17 @@ PerformIO(struct AHIRequest *ioreq,
 /****** ahi.device/NSCMD_DEVICEQUERY  ***************************************
 *
 *   NAME
-*       NSCMD_DEVICEQUERY -- Query the device for its capabilities (V4)
-*
+    NSCMD_DEVICEQUERY
+    SYNOPSIS
+        io_Command = NSCMD_DEVICEQUERY
+
 *   FUNCTION
+        Query the device for its capabilities (V4)
+
 *       Fills an initialized NSDeviceQueryResult structure with
 *       information about the device.
 *
-*   IO REQUEST INPUT
+*   INPUTS
 *       io_Device       Preset by the call to OpenDevice().
 *       io_Unit         Preset by the call to OpenDevice().
 *       io_Command      NSCMD_DEVICEQUERY
@@ -383,7 +387,7 @@ PerformIO(struct AHIRequest *ioreq,
 *                       fields as well.
 *       io_Length       Size of the NSDeviceQueryResult structure.
 *
-*   IO REQUEST RESULT
+*   RESULT
 *       io_Error        0 for success, or an error code as defined in
 *                       <ahi/devices.h> and <exec/errors.h>.
 *       io_Actual       If io_Error is 0, the value in
@@ -449,19 +453,23 @@ Devicequery(struct AHIRequest *ioreq,
 /****** ahi.device/CMD_STOP ************************************************
 *
 *   NAME
-*       CMD_STOP -- stop device processing (like ^S) (V4)
-*
+    CMD_STOP
+    SYNOPSIS
+        io_Command = CMD_STOP
+
 *   FUNCTION
+        stop device processing (like ^S) (V4)
+
 *       Stops all CMD_WRITE processing. All writes will be queued, and
 *       are not processed until CMD_START. This is useful for synchronizing
 *       two or more CMD_WRITE's.
 *
-*   IO REQUEST INPUT
+*   INPUTS
 *       io_Device       Preset by the call to OpenDevice().
 *       io_Unit         Preset by the call to OpenDevice().
 *       io_Command      CMD_STOP
 *
-*   IO REQUEST RESULT
+*   RESULT
 *       io_Error        0 for success, or an error code as defined in
 *                       <ahi/devices.h> and <exec/errors.h>.
 *
@@ -516,18 +524,22 @@ StopCmd(struct AHIRequest *ioreq,
 /****** ahi.device/CMD_FLUSH ************************************************
 *
 *   NAME
-*       CMD_FLUSH -- Cancel all I/O requests (V4)
-*
+    CMD_FLUSH
+    SYNOPSIS
+        io_Command = CMD_FLUSH
+
 *   FUNCTION
+        Cancel all I/O requests (V4)
+
 *       Aborts ALL current requests, both active and waiting, even
 *       other programs requests!
 *
-*   IO REQUEST INPUT
+*   INPUTS
 *       io_Device       Preset by the call to OpenDevice().
 *       io_Unit         Preset by the call to OpenDevice().
 *       io_Command      CMD_FLUSH
 *
-*   IO REQUEST RESULT
+*   RESULT
 *       io_Error        0 for success, or an error code as defined in
 *                       <ahi/devices.h> and <exec/errors.h>.
 *       io_Actual       If io_Error is 0, number of requests actually
@@ -598,20 +610,24 @@ FlushCmd(struct AHIRequest *ioreq,
 /****** ahi.device/CMD_RESET ************************************************
 *
 *   NAME
-*       CMD_RESET -- Restore device to a known state (V4)
-*
+    CMD_RESET
+    SYNOPSIS
+        io_Command = CMD_RESET
+
 *   FUNCTION
+        Restore device to a known state (V4)
+
 *       Aborts all current requests, even other programs requests
 *       (CMD_FLUSH), rereads the configuration file and resets the hardware
 *       to its initial state
 *
 *
-*   IO REQUEST INPUT
+*   INPUTS
 *       io_Device       Preset by the call to OpenDevice().
 *       io_Unit         Preset by the call to OpenDevice().
 *       io_Command      CMD_RESET
 *
-*   IO REQUEST RESULT
+*   RESULT
 *       io_Error        0 for success, or an error code as defined in
 *                       <ahi/devices.h> and <exec/errors.h>.
 *
@@ -663,13 +679,17 @@ ResetCmd(struct AHIRequest *ioreq,
 /****** ahi.device/CMD_READ *************************************************
 *
 *   NAME
-*       CMD_READ -- Read raw samples from audio input (V4)
-*
+    CMD_READ
+    SYNOPSIS
+        io_Command = CMD_READ
+
 *   FUNCTION
+        Read raw samples from audio input (V4)
+
 *       Reads samples from the users prefered input to memory. The sample
 *       format and frequency will be converted on the fly.
 *
-*   IO REQUEST INPUT
+*   INPUTS
 *       io_Device       Preset by the call to OpenDevice().
 *       io_Unit         Preset by the call to OpenDevice().
 *       io_Command      CMD_READ
@@ -681,7 +701,7 @@ ResetCmd(struct AHIRequest *ioreq,
 *       ahir_Type       The desired sample format, see <ahi/devices.h>.
 *       ahir_Frequency  The desired sample frequency in Hertz.
 *
-*   IO REQUEST RESULT
+*   RESULT
 *       io_Error        0 for success, or an error code as defined in
 *                       <ahi/devices.h> and <exec/errors.h>.
 *       io_Actual       If io_Error is 0, number of bytes actually
@@ -770,12 +790,16 @@ ReadCmd(struct AHIRequest *ioreq,
 /****** ahi.device/CMD_WRITE ************************************************
 *
 *   NAME
-*       CMD_WRITE -- Write raw samples to audio output (V4)
-*
+    CMD_WRITE
+    SYNOPSIS
+        io_Command = CMD_WRITE
+
 *   FUNCTION
+        Write raw samples to audio output (V4)
+
 *       Plays the samples to the users prefered audio output.
 *
-*   IO REQUEST INPUT
+*   INPUTS
 *       io_Device       Preset by the call to OpenDevice().
 *       io_Unit         Preset by the call to OpenDevice().
 *       io_Command      CMD_WRITE
@@ -795,7 +819,7 @@ ReadCmd(struct AHIRequest *ioreq,
 *                       finished (used for double buffering). Must be set
 *                       to NULL if not used.
 *
-*   IO REQUEST RESULT
+*   RESULT
 *       io_Error        0 for success, or an error code as defined in
 *                       <ahi/devices.h> and <exec/errors.h>.
 *       io_Actual       If io_Error is 0, number of bytes actually
@@ -882,18 +906,22 @@ WriteCmd(struct AHIRequest *ioreq,
 /****** ahi.device/CMD_START ************************************************
 *
 *   NAME
-*       CMD_START -- start device processing (like ^Q) (V4)
-*
+    CMD_START
+    SYNOPSIS
+        io_Command = CMD_START
+
 *   FUNCTION
+        start device processing (like ^Q) (V4)
+
 *       All CMD_WRITE's that has been sent to the device since CMD_STOP
 *       will be started at once, synchronized.
 *
-*   IO REQUEST INPUT
+*   INPUTS
 *       io_Device       Preset by the call to OpenDevice().
 *       io_Unit         Preset by the call to OpenDevice().
 *       io_Command      CMD_START
 *
-*   IO REQUEST RESULT
+*   RESULT
 *       io_Error        0 for success, or an error code as defined in
 *                       <ahi/devices.h> and <exec/errors.h>.
 *

@@ -4,9 +4,7 @@
     Desc:
 */
 
-/*****************************************************************************
 
-    NAME */
 
 #include "nvdisk_intern.h"
 #include <nvdisk_arch.h>
@@ -24,7 +22,11 @@
 void FreeAll(struct MinList *ml, struct Library *nvdBase);
 
 
-AROS_LH1(struct MinList *, GetNVDItemList,
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(struct MinList *, GetNVDItemList,
 
 /*  SYNOPSIS */
 
@@ -36,24 +38,28 @@ AROS_LH1(struct MinList *, GetNVDItemList,
 
 /*  FUNCTION
 
-    Get a list of the data stored in the nonvolatile memory by the
-    'appName' application.
+    Return the nonvolatile items belonging to an application.
 
     INPUTS
 
-    appName  --  the application the data of which to query about
+    appName  --  name of the application whose items are to be listed
 
     RESULT
 
-    A list of the data items saved by application 'appName'.
+    A pointer to a MinList containing NVEntry records, or NULL if the
+    list cannot be created. A successful result may contain no entries.
 
     NOTES
 
-    EXAMPLE
-
-    BUGS
+    The returned list and its entries occupy a single allocated block.
+    Release the block with nonvolatile.library/FreeNVData() when it is
+    no longer needed. The public GetNVList() function calls this entry
+    point after validating the application name.
 
     SEE ALSO
+
+    nonvolatile.library/GetNVList(), nonvolatile.library/FreeNVData(),
+    <libraries/nonvolatile.h>
 
     INTERNALS
 
