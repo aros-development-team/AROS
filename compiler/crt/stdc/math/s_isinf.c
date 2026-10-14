@@ -34,6 +34,30 @@
 #include "fpmath.h"
 #include "math_private.h"
 
+/****************************************************************************
+    NAME
+        int __isinf(
+
+    SYNOPSIS
+        double d)
+
+    FUNCTION
+        Determine whether d is infinite.
+
+    INPUTS
+        d - Value to examine.
+
+    RESULT
+        Return 1 for positive or negative infinity; return 0 for finite
+        values and NaN.
+
+    NOTES
+        Include <math.h>. Use isinf() for type-generic calls.
+
+    SEE ALSO
+        isinf(), __isfinite(), __isnan()
+
+*****************************************************************************/
 int
 __isinf(double d)
 {
@@ -43,6 +67,30 @@ __isinf(double d)
 	return (u.bits.exp == 2047 && u.bits.manl == 0 && u.bits.manh == 0);
 }
 
+/****************************************************************************
+    NAME
+        int __isinff(
+
+    SYNOPSIS
+        float f)
+
+    FUNCTION
+        Determine whether f is infinite.
+
+    INPUTS
+        f - Value to examine.
+
+    RESULT
+        Return 1 for positive or negative infinity; return 0 for finite
+        values and NaN.
+
+    NOTES
+        Include <math.h>. Use isinf() for type-generic calls.
+
+    SEE ALSO
+        isinf(), __isfinitef(), __isnanf()
+
+*****************************************************************************/
 int
 __isinff(float f)
 {
@@ -52,6 +100,34 @@ __isinff(float f)
 	return (u.bits.exp == 255 && u.bits.man == 0);
 }
 
+/****************************************************************************
+    NAME
+        int __isinfl(
+
+    SYNOPSIS
+        long double e)
+
+    FUNCTION
+        Determine whether e is infinite.
+
+    INPUTS
+        e - Value to examine.
+
+    RESULT
+        Return 1 for positive or negative infinity; return 0 for finite
+        values and NaN.
+
+    NOTES
+        Include <math.h>. Use isinf() for type-generic calls.
+
+    BUGS
+        On ARM and PowerPC builds with an 11-bit long-double exponent,
+        this function always returns 0.
+
+    SEE ALSO
+        isinf(), __isfinitel(), __isnanl()
+
+*****************************************************************************/
 int
 __isinfl(long double e)
 {
