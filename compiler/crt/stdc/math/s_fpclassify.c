@@ -31,6 +31,37 @@
 
 #include "fpmath.h"
 
+/****************************************************************************
+    NAME
+        int __fpclassifyf(
+
+    SYNOPSIS
+        float f)
+
+    FUNCTION
+        Classify f as zero, subnormal, normal, infinite or NaN.
+
+    INPUTS
+        f - Value to classify.
+
+    RESULT
+        Return one of the following constants from <math.h>:
+
+        FP_ZERO      - Zero.
+        FP_SUBNORMAL - A finite, nonzero subnormal value.
+        FP_NORMAL    - A finite, nonzero value that is not subnormal.
+        FP_INFINITE  - Infinity.
+        FP_NAN       - Not a number.
+
+        The sign does not affect the result.
+
+    NOTES
+        Use fpclassify() for type-generic classification.
+
+    SEE ALSO
+        fpclassify(), isfinite(), isnormal(), isinf(), isnan()
+
+*****************************************************************************/
 int
 __fpclassifyf(float f)
 {
@@ -52,6 +83,37 @@ __fpclassifyf(float f)
 	}
 }
 
+/****************************************************************************
+    NAME
+        int __fpclassifyd(
+
+    SYNOPSIS
+        double d)
+
+    FUNCTION
+        Classify d as zero, subnormal, normal, infinite or NaN.
+
+    INPUTS
+        d - Value to classify.
+
+    RESULT
+        Return one of the following constants from <math.h>:
+
+        FP_ZERO      - Zero.
+        FP_SUBNORMAL - A finite, nonzero subnormal value.
+        FP_NORMAL    - A finite, nonzero value that is not subnormal.
+        FP_INFINITE  - Infinity.
+        FP_NAN       - Not a number.
+
+        The sign does not affect the result.
+
+    NOTES
+        Use fpclassify() for type-generic classification.
+
+    SEE ALSO
+        fpclassify(), isfinite(), isnormal(), isinf(), isnan()
+
+*****************************************************************************/
 int
 __fpclassifyd(double d)
 {
@@ -73,6 +135,41 @@ __fpclassifyd(double d)
 	}
 }
 
+/****************************************************************************
+    NAME
+        int __fpclassifyl(
+
+    SYNOPSIS
+        long double e)
+
+    FUNCTION
+        Classify e as zero, subnormal, normal, infinite or NaN.
+
+    INPUTS
+        e - Value to classify.
+
+    RESULT
+        Return one of the following constants from <math.h>:
+
+        FP_ZERO      - Zero.
+        FP_SUBNORMAL - A finite, nonzero subnormal value.
+        FP_NORMAL    - A finite, nonzero value that is not subnormal.
+        FP_INFINITE  - Infinity.
+        FP_NAN       - Not a number.
+
+        The sign does not affect the result.
+
+    NOTES
+        Use fpclassify() for type-generic classification.
+
+    BUGS
+        On ARM and PowerPC builds with an 11-bit long-double exponent,
+        infinity and NaN incorrectly return FP_NORMAL.
+
+    SEE ALSO
+        fpclassify(), isfinite(), isnormal(), isinf(), isnan()
+
+*****************************************************************************/
 int
 __fpclassifyl(long double e)
 {
