@@ -20,6 +20,45 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_nextafterf.c,v 1.11 2008/02/
 #include "math.h"
 #include "math_private.h"
 
+/****************************************************************************
+    NAME
+        float nextafterf(
+
+    SYNOPSIS
+        float x, float y)
+
+    FUNCTION
+        Return the adjacent float value in the direction of y.
+
+    INPUTS
+        x - Starting value.
+        y - Direction value, supplied as float.
+
+    RESULT
+        The adjacent value toward y, or y converted to float when
+        x and y compare equal. Equal zeros return the sign of y.
+        A zero starting value and nonzero direction select the smallest
+        subnormal with the sign of y.
+
+        If either argument is NaN, the result is NaN. Stepping from
+        infinity toward a finite value returns the largest finite value
+        with the same sign. See BUGS for outward steps at the finite limit.
+
+    NOTES
+        Include <math.h>. Subnormal results and steps to zero can raise
+        FE_UNDERFLOW and FE_INEXACT. Outward steps at the finite limit
+        can raise FE_OVERFLOW and FE_INEXACT. Enabled traps may prevent
+        return. This function does not set errno.
+
+    BUGS
+        An outward step from the largest positive or negative finite
+        value can return that same finite value under directed rounding,
+        instead of the corresponding infinity.
+
+    SEE ALSO
+        nexttowardf(), nextafter()
+
+*****************************************************************************/
 float
 nextafterf(float x, float y)
 {
