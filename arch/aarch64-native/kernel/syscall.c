@@ -157,6 +157,14 @@ void cache_clear_e(void *addr, uint64_t length, uint64_t flags)
     }
 }
 
+/* PM watchdog block: BCM2712 has it at /soc/watchdog@7d200000 */
+static uintptr_t pm_base(void)
+{
+    uintptr_t base = (uintptr_t)__arm_arosintern.ARMI_PeripheralBase;
+
+    return base + ((__arm_arosintern.ARMI_Platform == 0x2712) ? 0x1200000 : 0x100000);
+}
+
 void handle_syscall(void *regs)
 {
     uint64_t esr;
@@ -243,7 +251,7 @@ void handle_syscall(void *regs)
                  * not work here: 0 is ordinary boot memory on AArch64,
                  * not a reset vector.
                  */
-                uintptr_t pm = (uintptr_t)__arm_arosintern.ARMI_PeripheralBase + 0x100000;
+                uintptr_t pm = pm_base();
                 uint32_t rstc = rd32le(pm + 0x1c);          /* PM_RSTC */
                 wr32le(pm + 0x24, 0x5a000000 | 10);         /* PM_WDOG: short timeout */
                 wr32le(pm + 0x1c, 0x5a000000 | (rstc & ~0x30) | 0x20); /* full reset */
@@ -262,7 +270,7 @@ void handle_syscall(void *regs)
                  * low-power state instead. The partition number lives in
                  * the even bits of PM_RSTS, so 63 is 0x555.
                  */
-                uintptr_t pm = (uintptr_t)__arm_arosintern.ARMI_PeripheralBase + 0x100000;
+                uintptr_t pm = pm_base();
                 uint32_t rsts = rd32le(pm + 0x20);          /* PM_RSTS */
                 uint32_t rstc;
 
