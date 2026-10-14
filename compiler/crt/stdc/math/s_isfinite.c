@@ -30,6 +30,30 @@
 
 #include "fpmath.h"
 
+/****************************************************************************
+    NAME
+        int __isfinite(
+
+    SYNOPSIS
+        double d)
+
+    FUNCTION
+        Determine whether d is finite.
+
+    INPUTS
+        d - Value to classify.
+
+    RESULT
+        Return 1 for zero, subnormal and normal values; return 0 for
+        infinity and NaN. The sign does not affect the result.
+
+    NOTES
+        Include <math.h>. Use isfinite() for type-generic classification.
+
+    SEE ALSO
+        isfinite(), isnormal(), fpclassify()
+
+*****************************************************************************/
 int
 __isfinite(double d)
 {
@@ -39,6 +63,30 @@ __isfinite(double d)
 	return (u.bits.exp != 2047);
 }
 
+/****************************************************************************
+    NAME
+        int __isfinitef(
+
+    SYNOPSIS
+        float f)
+
+    FUNCTION
+        Determine whether f is finite.
+
+    INPUTS
+        f - Value to classify.
+
+    RESULT
+        Return 1 for zero, subnormal and normal values; return 0 for
+        infinity and NaN. The sign does not affect the result.
+
+    NOTES
+        Include <math.h>. Use isfinite() for type-generic classification.
+
+    SEE ALSO
+        isfinite(), isnormal(), fpclassify()
+
+*****************************************************************************/
 int
 __isfinitef(float f)
 {
@@ -48,6 +96,34 @@ __isfinitef(float f)
 	return (u.bits.exp != 255);
 }
 
+/****************************************************************************
+    NAME
+        int __isfinitel(
+
+    SYNOPSIS
+        long double e)
+
+    FUNCTION
+        Determine whether e is finite.
+
+    INPUTS
+        e - Value to classify.
+
+    RESULT
+        Return 1 for zero, subnormal and normal values; return 0 for
+        infinity and NaN. The sign does not affect the result.
+
+    NOTES
+        Include <math.h>. Use isfinite() for type-generic classification.
+
+    BUGS
+        On ARM and PowerPC builds with an 11-bit long-double exponent,
+        infinity and NaN incorrectly return 1.
+
+    SEE ALSO
+        isfinite(), isnormal(), fpclassify()
+
+*****************************************************************************/
 int
 __isfinitel(long double e)
 {
