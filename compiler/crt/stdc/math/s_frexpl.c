@@ -44,45 +44,23 @@
         int *ex)
 
 /*  FUNCTION
-        Split x into a signed binary fraction and an integer exponent.
-        For finite nonzero x, the returned fraction m and stored exponent e
-        satisfy x = m * 2^e, with 0.5 <= |m| < 1. Subnormal inputs are
-        normalized before the fraction and exponent are extracted.
+        Decompose x into a normalized binary fraction and exponent.
+        For finite nonzero x, return m and store e such that
+        x = m * 2^e and 0.5 <= |m| < 1.
 
     INPUTS
-        x - Long double value to decompose.
-        ex - Non-NULL pointer to a writable int for the exponent. Required
-            even when x is zero or nonfinite. The pointer is not retained.
+        x - Value to decompose.
+        ex - Writable pointer receiving the integer exponent.
 
     RESULT
-        The signed fraction in long double precision. A zero input returns
-        the same signed zero and stores exponent 0. An infinite or NaN
-        input returns that value; see NOTES for the exponent output.
-        There is no separate error sentinel.
+        The signed fraction m. For zero, return the signed zero and
+        store 0 in *ex. For infinity or NaN, return x; the separate
+        long double implementation leaves *ex unchanged.
 
     NOTES
-        Include <math.h>. The exponent is a power of two, not a decimal
-        exponent. For example, x = 12 yields fraction 0.75 and exponent 4.
-
-        The call writes through ex but retains no application storage,
-        allocates nothing, performs no I/O or waiting, and does not set
-        or clear errno. NULL is not a supported exponent output: this
-        function does not provide a discard-output or size-query mode.
-
-        For infinity or NaN, the separate long double implementation does
-        not write *ex. The previous int value remains; it must not be used
-        as an exponent for the nonfinite result. Initialize the output if
-        its unchanged value will be inspected after such a call.
-
-        The separate source requires LDBL_MAX_EXP == 0x4000 and is selected
-        by the build for supported extended-precision targets. Where long
-        double and double have equal precision, the double source supplies
-        the frexpl alias. That alias stores exponent 0 for nonfinite inputs.
-        Do not rely on one nonfinite exponent value across AROS targets.
-
-        No NaN payload, signaling-NaN or trap-behavior guarantee is made
-        here. The value contract assumes the target's supported floating-
-        point representation and ordinary subnormal handling.
+        Include <math.h>. ex must not be NULL. On targets where
+        frexpl() aliases frexp(), nonfinite inputs instead store 0.
+        Do not use the exponent output for a nonfinite input.
 
     SEE ALSO
         frexp(), frexpf(), ldexpl()

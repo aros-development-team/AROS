@@ -37,29 +37,18 @@
         long double complex z)
 
 /*  FUNCTION
-        Return the real component of z in long double precision.
-        The other component is discarded; no magnitude or phase is computed.
+        Return the real component of z.
 
     INPUTS
-        z - Complex value passed by value. Zero, infinite and NaN components
-            are accepted.
+        z - Complex input value.
 
     RESULT
-        The real component of z. The component's sign is retained,
-        including the sign of zero. An infinite component remains infinite;
-        a NaN component produces a NaN. There is no error sentinel.
+        The real component of z, including its sign. Signed zero,
+        infinity and NaN retain their respective classifications.
 
     NOTES
-        Include <complex.h>. The argument and result are values: no storage
-        is retained or allocated, and the call performs no I/O or waiting.
-        The implementation does not set errno. Floating-point exception
-        flags and NaN payload preservation are not specified here.
-
-        The AROS build selects separate long double implementations for
-        i386, x86_64 and m68k (80-bit format), and for aarch64, riscv and
-        riscv64 (128-bit format). Where long double has the same precision
-        as double, the double implementation supplies a symbol alias.
-        The l suffix alone does not promise extra precision on every target.
+        Include <complex.h>.
+        When LDBL_MANT_DIG is 53, creall() aliases creal().
 
     SEE ALSO
         cimagl(), conjl(), cprojl()

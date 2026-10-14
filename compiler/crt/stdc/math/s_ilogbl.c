@@ -28,54 +28,29 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_ilogbl.c,v 1.2 2008/02/22 02
         long double x)
 
 /*  FUNCTION
-        Extract the binary exponent of x as an int. For finite nonzero
-        x, the exponent e satisfies 2^e <= |x| < 2^(e+1). The sign of x
-        does not affect e. Subnormal inputs require a significand scan;
-        see BUGS for implementation limitations on that path.
+        Return the binary exponent of |x| as an integer.
 
     INPUTS
-        x - Long double value whose exponent is required.
+        x - Long double value to classify.
 
     RESULT
-        For a finite nonzero value, the binary exponent. For example,
-        12 and -12 yield 3; 0.5 yields -1. Both signs of zero return
-        FP_ILOGB0. NaN returns FP_ILOGBNAN; either infinity returns
-        INT_MAX. These are integer sentinels, not valid finite exponents.
-
-        AROS defines FP_ILOGB0 as -INT_MAX and FP_ILOGBNAN as INT_MAX.
-        The return value alone cannot distinguish NaN from infinity.
+        The integer exponent e such that 2^e <= |x| < 2^(e+1)
+        for finite nonzero x. Zero returns FP_ILOGB0; NaN returns
+        FP_ILOGBNAN; infinity returns INT_MAX. In AROS,
+        FP_ILOGBNAN equals INT_MAX, so these results are ambiguous.
 
     NOTES
-        Include <math.h>; <limits.h> declares INT_MAX. This function
-        returns an integer exponent, not the logarithm of x. It differs
-        from frexpl(): for finite nonzero x, its exponent is one less
-        than the exponent of the fraction returned by that function.
-
-        The implementation reads the floating-point representation and
-        uses integer operations. It does not set or clear errno and has
-        no explicit floating-point exception-raising operation. Do not
-        use errno or an assumed FE_INVALID signal to distinguish the
-        special return cases. Classify x when that distinction matters.
-        Signaling-NaN handling and trap behavior are target-dependent.
-
-        No application storage is modified or retained. The function
-        allocates nothing and performs no I/O or waiting.
-
-        The separate long double implementation uses the target's
-        IEEEl2bits layout. Where long double and double have equal
-        precision, s_ilogb.c supplies the ilogbl alias instead.
+        Include <math.h>. Use isnan() or isinf() on the input to
+        distinguish NaN from infinity. Unlike logbl(), the
+        result is an integer sentinel for exceptional inputs.
+        Where long double equals double, ilogbl() aliases ilogb().
 
     BUGS
-        The separate implementation uses an unsigned long scan mask.
-        Its shifts require that type to hold each significand field.
-        For the RISC-V binary128 layout, those fields have 64 and 48
-        bits. On a target with 32-bit unsigned long, the initial shifts
-        by 63 or 47 have undefined behavior for subnormal inputs.
-
-        The equal-precision double alias has a separate limitation: its
-        subnormal scan left-shifts signed int32_t values into the sign
-        bit. That also has undefined behavior in C. Subnormal results
-        on these affected paths are not a portable source guarantee.
+        The separate long double subnormal scan assumes unsigned
+        long can hold the significand field. On 32-bit-long
+        targets using binary128, shifts by 63 or 47 bits
+        are undefined. The equal-precision double alias has
+        its own signed-shift defect for subnormal inputs.
 
     SEE ALSO
         ilogb(), ilogbf(), logbl(), frexpl()

@@ -62,49 +62,28 @@ static const float zero[2] = { 0.0, -0.0 };
         long double x)
 
 /*  FUNCTION
-        Round x to an integral floating-point value using the current
-        rounding direction. Nearest rounding selects the even integer
-        at a tie; upward, downward and toward-zero rounding use their
-        respective directions. See BUGS for implementation limitations.
+        Round x to an integral floating-point value using the
+        current rounding direction.
 
     INPUTS
         x - Long double value to round.
 
     RESULT
-        The rounded value in long double, not a C integer conversion.
-        Signed zeros retain their sign. Infinities remain infinite and
-        NaNs produce NaNs. An enabled trap may prevent return.
-        Already integral finite values are unchanged. There is no
-        separate error sentinel.
+        The rounded long double value. Nearest ties select the even
+        integer; other modes follow the current rounding direction.
+        Signed zeros and infinities keep their sign; NaNs remain NaNs.
 
     NOTES
-        Include <math.h>; use <fenv.h> to configure rounding. Halfway
-        cases differ from roundl(), which rounds away from zero. A
-        later integer conversion still needs its own range check.
-
-        Unlike nearbyintl(), this function does not save and restore
-        the floating-point environment. Its rounding arithmetic can
-        raise FE_INEXACT for nonintegral inputs under IEEE execution.
-        Existing exception flags are not deliberately cleared. Enabled
-        traps, signaling NaNs and payload handling are target-dependent.
-
-        The implementation does not set or clear errno, allocate or
-        retain application storage, perform I/O, or wait.
-
-        The separate source requires LDBL_MAX_EXP == 0x4000 and a 64- or
-        113-bit significand. It adds and subtracts a signed 2^63 or 2^112
-        and corrects zero signs. The double source supplies the alias
-        when long double and double have equal precision.
+        Include <math.h> and <fenv.h>. Unlike nearbyintl(),
+        rounding may raise FE_INEXACT. Unlike roundl(), ties are
+        not always rounded away from zero.
 
     BUGS
-        The separate source assumes intermediate evaluation in exactly
-        long double precision. It does not select x87 extended precision.
-        A reduced x87 precision setting can produce incorrect results;
-        greater intermediate precision can cause double rounding.
-
-        The equal-precision double alias has an additional limitation:
-        its small negative-input path left-shifts a signed sign bit into
-        bit 31, which has undefined behavior in C.
+        The separate implementation requires intermediate arithmetic
+        evaluated in long double precision. A narrower x87 precision
+        setting can give incorrect results; wider evaluation can
+        double-round. Equal-precision aliases inherit the rint()
+        signed-shift defect for small negative inputs.
 
     SEE ALSO
         rint(), rintf(), nearbyintl(), roundl()

@@ -37,23 +37,17 @@
         float complex z)
 
 /*  FUNCTION
-        Return the real component of z in float precision.
-        The other component is discarded; no magnitude or phase is computed.
+        Return the real component of z.
 
     INPUTS
-        z - Complex value passed by value. Zero, infinite and NaN components
-            are accepted.
+        z - Complex input value.
 
     RESULT
-        The real component of z. The component's sign is retained,
-        including the sign of zero. An infinite component remains infinite;
-        a NaN component produces a NaN. There is no error sentinel.
+        The real component of z, including its sign. Signed zero,
+        infinity and NaN retain their respective classifications.
 
     NOTES
-        Include <complex.h>. The argument and result are values: no storage
-        is retained or allocated, and the call performs no I/O or waiting.
-        The implementation does not set errno. Floating-point exception
-        flags and NaN payload preservation are not specified here.
+        Include <complex.h>.
 
     SEE ALSO
         cimagf(), conjf(), cprojf()

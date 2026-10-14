@@ -37,45 +37,26 @@ TWO23[2]={
         float x)
 
 /*  FUNCTION
-        Round x to an integral floating-point value using the current
-        rounding direction. Nearest rounding selects the even integer
-        at a tie; upward, downward and toward-zero rounding use their
-        respective directions. See BUGS for implementation limitations.
+        Round x to an integral floating-point value using the
+        current rounding direction.
 
     INPUTS
         x - Float value to round.
 
     RESULT
-        The rounded value in float, not a C integer conversion.
-        Signed zeros retain their sign. Infinities remain infinite and
-        NaNs produce NaNs. An enabled trap may prevent return.
-        Already integral finite values are unchanged. There is no
-        separate error sentinel.
+        The rounded float value. Nearest ties select the even
+        integer; other modes follow the current rounding direction.
+        Signed zeros and infinities keep their sign; NaNs remain NaNs.
 
     NOTES
-        Include <math.h>; use <fenv.h> to configure rounding. Halfway
-        cases differ from roundf(), which rounds away from zero. A
-        later integer conversion still needs its own range check.
-
-        Unlike nearbyintf(), this function does not save and restore
-        the floating-point environment. Its rounding arithmetic can
-        raise FE_INEXACT for nonintegral inputs under IEEE execution.
-        Existing exception flags are not deliberately cleared. Enabled
-        traps, signaling NaNs and payload handling are target-dependent.
-
-        The implementation does not set or clear errno, allocate or
-        retain application storage, perform I/O, or wait.
-
-        The source adds and subtracts a signed 2^23 to round fractional
-        values. STRICT_ASSIGN controls the precision of the intermediate
-        sum. Values with magnitude below one receive an explicit sign
-        correction so a rounded zero keeps the input sign.
+        Include <math.h> and <fenv.h>. Unlike nearbyintf(),
+        rounding may raise FE_INEXACT. Unlike roundf(), ties are
+        not always rounded away from zero.
 
     BUGS
-        The small negative-input path evaluates sx << 31 with sx a
-        signed int32_t equal to one. The shifted value is not representable
-        in that type, so this is undefined C behavior. Observed results
-        on one compiler do not establish portable behavior for that path.
+        The small negative-input path shifts a signed integer into
+        its sign bit, which is undefined behavior in C. Results
+        for that path may depend on the compiler.
 
     SEE ALSO
         rint(), rintl(), nearbyintf(), roundf()

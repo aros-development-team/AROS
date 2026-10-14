@@ -39,47 +39,23 @@
         float complex z)
 
 /*  FUNCTION
-        Return the principal phase angle of z in radians, using
-        atan2f(cimagf(z), crealf(z)). The signs of both components
-        select the quadrant. The branch cut lies on the negative real axis.
+        Return the principal argument of z, in radians, with a branch cut
+        along the negative real axis. The angle is calculated by
+        atan2f(cimagf(z), crealf(z)).
 
     INPUTS
-        z - Complex value passed by value. Write x for its real component
-            and y for its imaginary component. Both signs of zero, infinities
-            and NaNs are significant.
+        z - Complex input value.
 
     RESULT
-        The principal angle, conventionally in [-pi, pi], represented in
-        float precision. Constants such as pi and pi/2 below denote
-        the corresponding floating-point approximations. A NaN component
-        produces a NaN result, even if the other component is infinite.
-
-        For a nonzero z with neither component NaN:
-            y = +/-0, x > 0: return the same signed zero as y.
-            y = +/-0, x < 0: return +/-pi, with the sign of y.
-            x = +/-0, y != 0: return +/-pi/2, with the sign of y.
-            x = +infinity, y finite: return a zero with the sign of y.
-            x = -infinity, y finite: return +/-pi, with the sign of y.
-            y = +/-infinity, x finite: return +/-pi/2.
-            x = +infinity, y = +/-infinity: return +/-pi/4.
-            x = -infinity, y = +/-infinity: return +/-3*pi/4.
-
-        When both components are zero, a positive real zero gives the
-        signed imaginary zero; a negative real zero gives +/-pi with
-        the sign of the imaginary zero. This is not an errno error.
+        An angle in the interval [-pi, pi]. The signs of zero select
+        the side of the branch cut. With a negative real component,
+        imaginary +0 gives +pi and imaginary -0 gives -pi.
+        An imaginary zero with positive real part is preserved.
+        Infinite components select the corresponding axis or
+        quadrant angle; a NaN component produces NaN.
 
     NOTES
-        Include <complex.h>. The input is copied by value; no application
-        storage is retained or allocated. The function returns an angle,
-        not a magnitude, and does not modify z.
-
-        The arithmetic can affect floating-point exception flags, including
-        inexact. No correct-rounding or NaN-payload guarantee is made here.
-        Behavior with enabled floating-point traps depends on the target
-        and its floating-point environment.
-
-        The reviewed implementation does not set or clear errno. A NaN
-        result from a NaN input does not establish an errno error.
+        Include <complex.h>.
 
     SEE ALSO
         atan2f(), crealf(), cimagf(), carg(), cargl()
