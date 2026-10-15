@@ -161,43 +161,72 @@ void updateBitmap(ULONG first, ULONG last)
     DoMethod(Bmp, MUIM_Draw);
 }
 
-void getDeviceData(STRPTR device)
+void clearDeviceData(void)
+{
+    if(bitmap != NULL)
+        FreeVec(bitmap);
+    bitmap = NULL;
+    mp = NULL;
+    blocks_total = 0;
+    blocks_inone = 0;
+}
+
+BOOL getDeviceData(STRPTR device)
 {
     struct DosList *dl;
+    struct MsgPort *port = NULL;
+    struct TagItem tags[] = {
+        { ASQ_TOTAL_BLOCKS, 0},
+        { TAG_DONE,         0}
+    };
 
-    dl=LockDosList(LDF_DEVICES|LDF_READ);
-
-    if((dl=FindDosEntry(dl,device,LDF_DEVICES))!=0)
+    clearDeviceData();
+    set(StartButton, MUIA_Disabled, TRUE);
+    dl = LockDosList(LDF_DEVICES|LDF_READ);
+    if(dl != NULL)
     {
-        struct TagItem tags[] = {
-            { ASQ_TOTAL_BLOCKS, 0},
-            { TAG_DONE,         0}
-        };
-        
-        mp = dl->dol_Task;
-        
+        dl = FindDosEntry(dl, device, LDF_DEVICES);
+        if(dl != NULL)
+            port = dl->dol_Task;
         UnLockDosList(LDF_DEVICES|LDF_READ);
-        
-        if(DoPkt(mp, ACTION_SFS_QUERY, (SIPTR)tags, 0, 0, 0, 0)!=DOSFALSE)
-        {
-            blocks_total=tags[0].ti_Data;
-            blocks_inone=(blocks_total + 19255)/19256;
-            bug("blocks_total=%d\nblocks_inone=%d\n",blocks_total,blocks_inone);
-            
-            if (bitmap)
-                FreeVec(bitmap);
-            
-            if ((bitmap = AllocVec(blocks_total / 8 + 32, MEMF_CLEAR))!=0)
-            {
-                if(DoPkt(mp, ACTION_SFS_READ_BITMAP, (SIPTR)bitmap, 0, blocks_total, 0, 0)!=DOSFALSE)
-                {
-                    updateBitmap(0, blocks_total);
-                }
-            }
-        }
     }
-    else
-        UnLockDosList(LDF_DEVICES|LDF_READ);
+    if(port == NULL)
+    {
+        SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
+        ShowError(app, NULL, "Could not find the selected device", TRUE);
+        return FALSE;
+    }
+    if(DoPkt(port, ACTION_SFS_QUERY, (SIPTR)tags, 0, 0, 0, 0) == DOSFALSE)
+    {
+        ShowError(app, NULL, "Could not query the selected device", TRUE);
+        return FALSE;
+    }
+    if(tags[0].ti_Data == 0 || tags[0].ti_Data > 0xffffffffUL)
+    {
+        SetIoErr(ERROR_BAD_NUMBER);
+        ShowError(app, NULL, "Invalid volume size", TRUE);
+        return FALSE;
+    }
+    blocks_total = tags[0].ti_Data;
+    blocks_inone = blocks_total / 19256 + (blocks_total % 19256 != 0);
+    bitmap = AllocVec(blocks_total / 8 + 32, MEMF_CLEAR);
+    if(bitmap == NULL)
+    {
+        SetIoErr(ERROR_NO_FREE_STORE);
+        ShowError(app, NULL, "Could not allocate the volume bitmap", TRUE);
+        clearDeviceData();
+        return FALSE;
+    }
+    if(DoPkt(port, ACTION_SFS_READ_BITMAP, (SIPTR)bitmap, 0, blocks_total, 0, 0) == DOSFALSE)
+    {
+        ShowError(app, NULL, "Could not read the volume bitmap", TRUE);
+        clearDeviceData();
+        return FALSE;
+    }
+    mp = port;
+    updateBitmap(0, blocks_total);
+    set(StartButton, MUIA_Disabled, FALSE);
+    return TRUE;
 }
 
 AROS_UFH3(void, start_function,
@@ -208,6 +237,9 @@ AROS_UFH3(void, start_function,
     AROS_USERFUNC_INIT
     ULONG sigs;
     BOOL defragmented = FALSE;
+
+    if(mp == NULL || bitmap == NULL)
+        return;
     
     set(StartButton, MUIA_Disabled, TRUE);
     set(RefreshButton, MUIA_Disabled, TRUE);
@@ -289,7 +321,7 @@ AROS_UFH3(void, refresh_function,
     
     ULONG active = xget(DevList, MUIA_List_Active);
     
-    if (active != MUIV_List_Active_Off)
+    if (active != MUIV_List_Active_Off && bitmap != NULL && mp != NULL)
     {
         if(DoPkt(mp, ACTION_SFS_READ_BITMAP, (SIPTR)bitmap, 0, blocks_total, 0, 0)!=DOSFALSE)
         {
@@ -319,7 +351,6 @@ AROS_UFH3(void, select_function,
             SetAPen(rp, pen1);
             RectFill(rp, 0, 0, 497, 347);
             getDeviceData(name);
-            set(StartButton, MUIA_Disabled, FALSE);
             set(RefreshButton, MUIA_Disabled, FALSE);
         }
     }
@@ -328,6 +359,7 @@ AROS_UFH3(void, select_function,
         set(StartButton, MUIA_Disabled, TRUE);
         set(RefreshButton, MUIA_Disabled, TRUE);
         oldname = NULL;
+        clearDeviceData();
     }
     
     AROS_USERFUNC_EXIT
