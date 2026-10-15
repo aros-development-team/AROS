@@ -1,7 +1,8 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
-    Desc: Accounts - the account database, whichever the system uses
+    Desc: Accounts - the account and group databases, whichever the
+          system uses
 */
 #ifndef _ACCOUNTS_ACCOUNTS_H
 #define _ACCOUNTS_ACCOUNTS_H
@@ -25,7 +26,9 @@ struct Account
 struct GroupEntry
 {
     char    Name[ACC_NAMESIZE];
+    char    Description[ACC_TEXTSIZE];  /* multi-user only */
     LONG    gid;
+    STRPTR  *Members;                   /* NULL-terminated user names (one block) */
 };
 
 struct AccountsState
@@ -63,5 +66,18 @@ BOOL  Acc_LoginRoot(struct AccountsState *st);
 
 CONST_STRPTR Acc_GroupName(struct AccountsState *st, LONG gid);
 LONG  Acc_NextFreeUID(struct AccountsState *st);
+LONG  Acc_NextFreeGID(struct AccountsState *st);
+
+/* Is the account in the group: its primary group, or listed as a member? */
+BOOL  Acc_InGroup(struct GroupEntry *g, struct Account *a);
+/* Listed as a member (not just through the primary group) */
+BOOL  Acc_Listed(struct GroupEntry *g, CONST_STRPTR name);
+
+/* Groups; members: NULL-terminated user names besides those whose
+ * primary group it is (replaces the list), NULL to keep it */
+LONG  Acc_GroupAdd(struct AccountsState *st, CONST_STRPTR name, LONG gid, CONST_STRPTR desc, STRPTR *members);
+LONG  Acc_GroupModify(struct AccountsState *st, CONST_STRPTR name, CONST_STRPTR newname, LONG gid,
+                      CONST_STRPTR desc, STRPTR *members);
+LONG  Acc_GroupDelete(struct AccountsState *st, CONST_STRPTR name);
 
 #endif /* _ACCOUNTS_ACCOUNTS_H */

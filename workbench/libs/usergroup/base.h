@@ -100,8 +100,9 @@ struct UserGroupBase {
     struct secGroupInfo *ugSecGI;
     struct passwd        ugSecPw;
     struct group         ugSecGr;
-    char                *ugSecGrMem[NGROUPS + 1];
-    char                 ugSecGrMemBuf[NGROUPS][32];   /* secUSERIDSIZE */
+    char               **ugSecGrMem;        /* gr_mem: pointers, then the names */
+    ULONG                ugSecGrMemSize;
+    char                *ugSecGrMemNone[1];  /* without memory */
 };
 
 #include "usergroup_security.h"
