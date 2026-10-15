@@ -89,6 +89,10 @@ void ugSecCleanup(struct Library *ugBase)
         if (UGB(ugBase)->ugSecGI)  secFreeGroupInfo(UGB(ugBase)->ugSecGI);
         UGB(ugBase)->ugSecUI = UGB(ugBase)->ugSecUI2 = NULL;
         UGB(ugBase)->ugSecGI = NULL;
+        if (UGB(ugBase)->ugSecGrMem)
+            FreeVec(UGB(ugBase)->ugSecGrMem);
+        UGB(ugBase)->ugSecGrMem = NULL;
+        UGB(ugBase)->ugSecGrMemSize = 0;
         CloseLibrary(secBase);
         secBase = NULL;
     }
@@ -357,31 +361,54 @@ void ugSecEndPwEnt(struct Library *ugBase)
 /* ---- group database ---------------------------------------------------- */
 
 /* Members: users whose primary or secondary group is gid */
-static void CollectMembers(struct Library *ugBase, UWORD gid)
+static BOOL IsMember(struct secUserInfo *ui, UWORD gid)
+{
+    int i;
+
+    if (ui->gid == gid)
+        return TRUE;
+    for (i = 0; i < ui->NumSecGroups; i++)
+        if (ui->SecGroups[i] == gid)
+            return TRUE;
+    return FALSE;
+}
+
+/* gr_mem: every user whose primary or secondary group it is */
+static char **CollectMembers(struct Library *ugBase, UWORD gid)
 {
     struct UserGroupBase *b = UGB(ugBase);
     struct secUserInfo *ui = UserInfo2(ugBase);
-    ULONG key = secKeyType_First;
-    int n = 0;
+    ULONG key, n = 0, size, i = 0;
+    char *s;
 
-    while (ui != NULL && n < NGROUPS && secGetUserInfo(ui, key) != NULL)
-    {
-        BOOL member = (ui->gid == gid);
-        int i;
-
-        for (i = 0; !member && i < ui->NumSecGroups; i++)
-            if (ui->SecGroups[i] == gid)
-                member = TRUE;
-        if (member)
-        {
-            strncpy(b->ugSecGrMemBuf[n], ui->UserID, secUSERIDSIZE - 1);
-            b->ugSecGrMemBuf[n][secUSERIDSIZE - 1] = '\0';
-            b->ugSecGrMem[n] = b->ugSecGrMemBuf[n];
+    if (ui == NULL)
+        return b->ugSecGrMemNone;
+    for (key = secKeyType_First; secGetUserInfo(ui, key) != NULL; key = secKeyType_Next)
+        if (IsMember(ui, gid))
             n++;
-        }
-        key = secKeyType_Next;
+    size = (n + 1) * sizeof(char *) + n * secUSERIDSIZE;
+    if (size > b->ugSecGrMemSize)
+    {
+        if (b->ugSecGrMem)
+            FreeVec(b->ugSecGrMem);
+        b->ugSecGrMemSize = 0;
+        if ((b->ugSecGrMem = AllocVec(size, MEMF_ANY)) == NULL)
+            return b->ugSecGrMemNone;
+        b->ugSecGrMemSize = size;
     }
-    b->ugSecGrMem[n] = NULL;
+    s = (char *)(b->ugSecGrMem + n + 1);
+    for (key = secKeyType_First; i < n && secGetUserInfo(ui, key) != NULL; key = secKeyType_Next)
+    {
+        if (IsMember(ui, gid))
+        {
+            strncpy(s, ui->UserID, secUSERIDSIZE - 1);
+            s[secUSERIDSIZE - 1] = '\0';
+            b->ugSecGrMem[i++] = s;
+            s += secUSERIDSIZE;
+        }
+    }
+    b->ugSecGrMem[i] = NULL;
+    return b->ugSecGrMem;
 }
 
 static struct group *MakeGroup(struct Library *ugBase, struct secGroupInfo *gi)
@@ -391,8 +418,7 @@ static struct group *MakeGroup(struct Library *ugBase, struct secGroupInfo *gi)
     gr->gr_name   = gi->GroupID;
     gr->gr_gid    = sec2ug_gid(gi->gid);
     gr->gr_passwd = "*";
-    CollectMembers(ugBase, gi->gid);
-    gr->gr_mem    = UGB(ugBase)->ugSecGrMem;
+    gr->gr_mem    = CollectMembers(ugBase, gi->gid);
     return gr;
 }
 

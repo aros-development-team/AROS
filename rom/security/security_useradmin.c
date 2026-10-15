@@ -2,13 +2,18 @@
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
     Desc: security.library - secUserAdminA(): adding, changing and removing
-          accounts (Security.server context)
+          accounts and groups (Security.server context)
 
           The server owns the user database, so the change is made to its
-          definitions and written with UpdateUserDefs() (new file, size
-          check, rename - the old file stays if anything fails). On a
-          failed write the definitions are dropped and read again, so that
-          memory and disk agree.
+          definitions and written with UpdateUserDefs() / UpdateGroupDefs()
+          (new file, size check, rename - the old file stays if anything
+          fails). On a failed write the definitions are dropped and read
+          again, so that memory and disk agree.
+
+          The group file holds the groups and, after an empty line, the
+          secondary groups of the users by uid; it is rewritten when a
+          group changes, and when a user who has secondary groups is
+          removed or renumbered.
 */
 
 #include <proto/exec.h>
@@ -119,31 +124,305 @@ static void FreeDef(struct secUserDef *def)
     FreeV(def);
 }
 
-static ULONG Commit(struct SecurityBase *secBase, CONST_STRPTR what, CONST_STRPTR userid)
+/* Memory no longer matches the disk: read the files again */
+static void Reload(struct SecurityBase *secBase)
+{
+    FreeDefs(secBase);
+    GetUserDefs(secBase);
+}
+
+/* groups: the group file too - when a user with secondary groups went
+ * away or got another uid */
+static ULONG Commit(struct SecurityBase *secBase, CONST_STRPTR what, CONST_STRPTR userid, BOOL groups)
 {
     SIPTR args[2] = { (SIPTR)what, (SIPTR)userid };
 
     if (!UpdateUserDefs(secBase))
     {
-        /* read the file again: memory must not differ from the disk */
-        FreeDefs(secBase);
-        GetUserDefs(secBase);
+        Reload(secBase);
         return secUAERR_WRITE;
     }
     VLogF(secBase, LOGF_Flag_Type_Information, SECLOG_SUB_SERVER, "account %s: '%s'", args);
+    if (groups && !UpdateGroupDefs(secBase))
+    {
+        /* the account changed; its secondary groups are as before */
+        VLogF(secBase, LOGF_Flag_Type_Error, SECLOG_SUB_SERVER, "account %s: '%s', but its groups could not be updated", args);
+        Reload(secBase);
+    }
     return secUAERR_OK;
+}
+
+/* ------------------------------------------------------------------------ */
+/* Groups                                                                   */
+
+static BOOL GroupIDOK(CONST_STRPTR s)
+{
+    return FieldOK(s, secGROUPIDSIZE, FALSE) && !strchr(s, ':') && !strchr(s, ' ');
+}
+
+static struct secGroupDef *FindGroup(struct SecurityBase *secBase, CONST_STRPTR groupid, struct secGroupDef **prev)
+{
+    struct secGroupDef *def, *p = NULL;
+
+    for (def = GetGroupDefs(secBase); def; p = def, def = def->Next)
+    {
+        if (!strcmp(def->GroupID, groupid))
+        {
+            if (prev)
+                *prev = p;
+            return def;
+        }
+    }
+    return NULL;
+}
+
+/* Another group than 'self' with this ID (case-insensitive) or gid? */
+static BOOL GroupTaken(struct SecurityBase *secBase, struct secGroupDef *self, CONST_STRPTR groupid, LONG gid)
+{
+    struct secGroupDef *def;
+
+    for (def = GetGroupDefs(secBase); def; def = def->Next)
+    {
+        if (def == self)
+            continue;
+        if (groupid && !Stricmp(def->GroupID, groupid))
+            return TRUE;
+        if (gid >= 0 && def->gid == (UWORD)gid)
+            return TRUE;
+    }
+    return FALSE;
+}
+
+/* Somebody's primary group? */
+static BOOL PrimaryGroup(struct SecurityBase *secBase, UWORD gid)
+{
+    struct secUserDef *def;
+
+    for (def = GetUserDefs(secBase); def; def = def->Next)
+        if (def->gid == gid)
+            return TRUE;
+    return FALSE;
+}
+
+static struct secGroupDef *BuildGroupDef(CONST_STRPTR groupid, UWORD gid, UWORD mgr, CONST_STRPTR name)
+{
+    struct secGroupDef *def;
+    STRPTR ptr;
+
+    if ((def = MAllocV(sizeof(struct secGroupDef) + strlen(groupid) + strlen(name) + 2)))
+    {
+        ptr = &((STRPTR)def)[sizeof(struct secGroupDef)];
+        def->GroupID = ptr;
+        strcpy(ptr, groupid);
+        ptr += strlen(groupid) + 1;
+        def->GroupName = ptr;
+        strcpy(ptr, name);
+        def->gid = gid;
+        def->MgrUid = mgr;
+    }
+    return def;
+}
+
+/* Add gid to a user's secondary groups (or remove it); FALSE without memory */
+static BOOL SetSecGroup(struct secUserDef *def, UWORD gid, BOOL member)
+{
+    UWORD *groups;
+    ULONG i, n = 0;
+    BOOL is = FALSE;
+
+    for (i = 0; i < def->NumSecGroups; i++)
+        if (def->SecGroups[i] == gid)
+            is = TRUE;
+    if (is == member)
+        return TRUE;
+
+    if (member)
+    {
+        if (def->NumSecGroups == 65535 || !(groups = MAlloc((def->NumSecGroups + 1) * sizeof(UWORD))))
+            return FALSE;
+        if (def->NumSecGroups)
+            CopyMem(def->SecGroups, groups, def->NumSecGroups * sizeof(UWORD));
+        groups[def->NumSecGroups] = gid;
+        n = def->NumSecGroups + 1;
+    }
+    else
+    {
+        groups = NULL;
+        if (def->NumSecGroups > 1)
+        {
+            if (!(groups = MAlloc((def->NumSecGroups - 1) * sizeof(UWORD))))
+                return FALSE;
+            for (i = 0; i < def->NumSecGroups; i++)
+                if (def->SecGroups[i] != gid)
+                    groups[n++] = def->SecGroups[i];
+        }
+    }
+    if (def->NumSecGroups)
+        Free(def->SecGroups, def->NumSecGroups * sizeof(UWORD));
+    def->SecGroups = groups;
+    def->NumSecGroups = n;
+    return TRUE;
+}
+
+static BOOL Listed(CONST_STRPTR *members, CONST_STRPTR userid)
+{
+    if (members)
+        for (; *members; members++)
+            if (!strcmp(*members, userid))
+                return TRUE;
+    return FALSE;
+}
+
+/* Every listed member must be a user */
+static BOOL MembersOK(struct SecurityBase *secBase, CONST_STRPTR *members)
+{
+    if (members)
+        for (; *members; members++)
+            if (!FindUser(secBase, *members, NULL))
+                return FALSE;
+    return TRUE;
+}
+
+/* The users in 'members' (and nobody else) get gid as a secondary group;
+ * a user whose primary group it is needs no entry */
+static BOOL SetMembers(struct SecurityBase *secBase, UWORD gid, CONST_STRPTR *members)
+{
+    struct secUserDef *def;
+
+    for (def = GetUserDefs(secBase); def; def = def->Next)
+        if (!SetSecGroup(def, gid, def->gid != gid && Listed(members, def->UserID)))
+            return FALSE;
+    return TRUE;
+}
+
+static ULONG CommitGroups(struct SecurityBase *secBase, CONST_STRPTR what, CONST_STRPTR groupid)
+{
+    SIPTR args[2] = { (SIPTR)what, (SIPTR)groupid };
+
+    if (!UpdateGroupDefs(secBase))
+    {
+        Reload(secBase);
+        return secUAERR_WRITE;
+    }
+    VLogF(secBase, LOGF_Flag_Type_Information, SECLOG_SUB_SERVER, "group %s: '%s'", args);
+    return secUAERR_OK;
+}
+
+static ULONG GroupAdmin(struct SecurityBase *secBase, struct secUARequest *req)
+{
+    struct secGroupDef *def, *prev = NULL, *nd;
+    struct secUserDef *udef;
+    ULONG i;
+
+    if (!req->GroupID || !req->GroupID[0])
+        return secUAERR_BADARGS;
+
+    switch (req->Operation)
+    {
+    case secUA_GROUPADD:
+        if (!GroupIDOK(req->GroupID) || req->gid < 0 || req->gid > 65535 || req->MgrUid > 65535 ||
+            !FieldOK(req->GroupName, secGROUPNAMESIZE, TRUE))
+            return secUAERR_BADARGS;
+        if (GroupTaken(secBase, NULL, req->GroupID, req->gid))
+            return secUAERR_EXISTS;
+        if (req->HasMembers && !MembersOK(secBase, req->Members))
+            return secUAERR_NOTFOUND;
+        if (!(nd = BuildGroupDef(req->GroupID, (UWORD)req->gid, req->MgrUid >= 0 ? (UWORD)req->MgrUid : secROOT_UID,
+                                 req->GroupName ? req->GroupName : (CONST_STRPTR)"")))
+            return secUAERR_WRITE;
+        for (def = GetGroupDefs(secBase); def->Next; def = def->Next)
+            ;
+        def->Next = nd;
+        if (req->HasMembers && !SetMembers(secBase, nd->gid, req->Members))
+        {
+            Reload(secBase);
+            return secUAERR_WRITE;
+        }
+        return CommitGroups(secBase, "added", req->GroupID);
+
+    case secUA_GROUPMODIFY:
+        if (!(def = FindGroup(secBase, req->GroupID, &prev)))
+            return secUAERR_NOTFOUND;
+        if ((req->NewGroupID && !GroupIDOK(req->NewGroupID)) || req->gid > 65535 || req->MgrUid > 65535 ||
+            (req->GroupName && !FieldOK(req->GroupName, secGROUPNAMESIZE, TRUE)))
+            return secUAERR_BADARGS;
+        if (req->gid >= 0 && req->gid != def->gid)
+        {
+            /* root's group, and the groups of users, keep their numbers */
+            if (def->gid == secROOT_GID)
+                return secUAERR_PROTECTED;
+            if (PrimaryGroup(secBase, def->gid))
+                return secUAERR_INUSE;
+        }
+        if (def->gid == secROOT_GID && req->NewGroupID && strcmp(req->NewGroupID, def->GroupID))
+            return secUAERR_PROTECTED;
+        if (GroupTaken(secBase, def, req->NewGroupID, req->gid))
+            return secUAERR_EXISTS;
+        if (req->HasMembers && !MembersOK(secBase, req->Members))
+            return secUAERR_NOTFOUND;
+        if (!(nd = BuildGroupDef(req->NewGroupID ? req->NewGroupID : def->GroupID,
+                                 req->gid >= 0 ? (UWORD)req->gid : def->gid,
+                                 req->MgrUid >= 0 ? (UWORD)req->MgrUid : def->MgrUid,
+                                 req->GroupName ? req->GroupName : def->GroupName)))
+            return secUAERR_WRITE;
+        nd->Next = def->Next;
+        if (prev)
+            prev->Next = nd;
+        else
+            secBase->GroupDefs = nd;
+        /* renumbered: the members follow */
+        if (nd->gid != def->gid)
+        {
+            for (udef = GetUserDefs(secBase); udef; udef = udef->Next)
+                for (i = 0; i < udef->NumSecGroups; i++)
+                    if (udef->SecGroups[i] == def->gid)
+                        udef->SecGroups[i] = nd->gid;
+        }
+        FreeV(def);
+        if (req->HasMembers && !SetMembers(secBase, nd->gid, req->Members))
+        {
+            Reload(secBase);
+            return secUAERR_WRITE;
+        }
+        return CommitGroups(secBase, "changed", nd->GroupID);
+
+    case secUA_GROUPDELETE:
+        if (!(def = FindGroup(secBase, req->GroupID, &prev)))
+            return secUAERR_NOTFOUND;
+        if (def->gid == secROOT_GID)
+            return secUAERR_PROTECTED;
+        if (PrimaryGroup(secBase, def->gid))
+            return secUAERR_INUSE;
+        if (!SetMembers(secBase, def->gid, NULL))
+        {
+            Reload(secBase);
+            return secUAERR_WRITE;
+        }
+        if (prev)
+            prev->Next = def->Next;
+        else
+            secBase->GroupDefs = def->Next;
+        FreeV(def);
+        return CommitGroups(secBase, "deleted", req->GroupID);
+    }
+    return secUAERR_BADARGS;
 }
 
 ULONG UserAdmin(struct SecurityBase *secBase, struct Task *client, struct secUARequest *req)
 {
     struct secUserDef *def, *prev = NULL, *nd;
     char hash[secHASHBUFSIZE];
+    BOOL groups;
 
     if (!client || (GetTaskOwner(secBase, client) >> 16) != secROOT_UID)
         return secUAERR_NOTROOT;
-    if (!secBase->Configured || !GetUserDefs(secBase))
+    if (!secBase->Configured || !GetUserDefs(secBase) || !GetGroupDefs(secBase))
         return secUAERR_UNAVAILABLE;
-    if (!req || !req->UserID || !req->UserID[0])
+    if (!req)
+        return secUAERR_BADARGS;
+    if (req->Operation >= secUA_GROUPADD && req->Operation <= secUA_GROUPDELETE)
+        return GroupAdmin(secBase, req);
+    if (!req->UserID || !req->UserID[0])
         return secUAERR_BADARGS;
 
     switch (req->Operation)
@@ -170,7 +449,7 @@ ULONG UserAdmin(struct SecurityBase *secBase, struct Task *client, struct secUAR
         for (def = GetUserDefs(secBase); def->Next; def = def->Next)
             ;
         def->Next = nd;
-        return Commit(secBase, "added", req->UserID);
+        return Commit(secBase, "added", req->UserID, FALSE);
 
     case secUA_MODIFY:
         if (!(def = FindUser(secBase, req->UserID, &prev)))
@@ -220,8 +499,9 @@ ULONG UserAdmin(struct SecurityBase *secBase, struct Task *client, struct secUAR
             prev->Next = nd;
         else
             secBase->UserDefs = nd;
+        groups = (nd->NumSecGroups && nd->uid != def->uid);
         FreeDef(def);
-        return Commit(secBase, "changed", req->NewUserID ? req->NewUserID : req->UserID);
+        return Commit(secBase, "changed", req->NewUserID ? req->NewUserID : req->UserID, groups);
 
     case secUA_DELETE:
         if (!(def = FindUser(secBase, req->UserID, &prev)))
@@ -232,8 +512,9 @@ ULONG UserAdmin(struct SecurityBase *secBase, struct Task *client, struct secUAR
             prev->Next = def->Next;
         else
             secBase->UserDefs = def->Next;
+        groups = (def->NumSecGroups != 0);
         FreeDef(def);
-        return Commit(secBase, "deleted", req->UserID);
+        return Commit(secBase, "deleted", req->UserID, groups);
 
     case secUA_PASSWORD:
         if (!(def = FindUser(secBase, req->UserID, NULL)))
@@ -244,7 +525,7 @@ ULONG UserAdmin(struct SecurityBase *secBase, struct Task *client, struct secUAR
             def->Password[0] = '\0';
         else if (!EncryptPassword(secBase, def->Password, def->UserID, req->Password))
             return secUAERR_BADARGS;
-        return Commit(secBase, "password set", req->UserID);
+        return Commit(secBase, "password set", req->UserID, FALSE);
     }
     return secUAERR_BADARGS;
 }
