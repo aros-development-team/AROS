@@ -11,13 +11,13 @@
 #include <proto/exec.h>
 #include <dos/rdargs.h>
 #include <dos/dosextens.h>
+#include <proto/dos.h>
 
 /*****************************************************************************
 
     NAME */
-#include <proto/dos.h>
 
-AROS_UFH2(ULONG, Dos_BCPL_putpkt,
+        AROS_UFH2(ULONG, Dos_BCPL_putpkt,
 /*  SYNOPSIS */
         AROS_UFHA(BSTR, bdospacket, D1),
         AROS_UFHA(struct DosLibrary *, DOSBase, A6))
@@ -26,12 +26,27 @@ AROS_UFH2(ULONG, Dos_BCPL_putpkt,
         BCPL Vector offset 0xa8
 
     FUNCTION
+        Send a DOS packet to the message port specified in the packet's
+        dp_Port field without waiting for a reply. The sending process's
+        pr_MsgPort becomes the reply destination.
 
     INPUTS
+        bdospacket - BCPL pointer to an initialized DosPacket. Its dp_Port
+                     identifies the destination, and dp_Link points to a
+                     valid message. The caller must be a process.
+        DOSBase    - DOS library base supplied by the BCPL calling convention.
 
     RESULT
+        DOSTRUE after the packet has been submitted. This does not indicate
+        that the destination has processed it.
+
+    NOTES
+        The function sets dp_Link->mn_Node.ln_Name to the packet address
+        and dp_Link->mn_Length to the message size before calling SendPkt().
+        SendPkt() replaces dp_Port with the sender's reply port.
 
     SEE ALSO
+        dos.library/SendPkt(), dos.library/WaitPkt()
 
 *****************************************************************************/
 {

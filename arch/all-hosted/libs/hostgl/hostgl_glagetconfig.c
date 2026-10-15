@@ -21,17 +21,17 @@
 
 /*  FUNCTION
 
-        Gets value of selected parameter
+        Query a framebuffer configuration attribute.
  
     INPUTS
 
-        pname - enum value of parameter
-
-        params - pointer to integer where the value is to be put
+        ctx    - Rendering context to query.
+        pname  - Configuration attribute to query.
+        params - Receives the attribute value. Must point to a writable GLint.
 
     RESULT
 
-        None
+        None. An invalid context or unsupported attribute sets *params to -1.
  
     BUGS
 
