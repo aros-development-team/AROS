@@ -238,7 +238,7 @@ AROS_UFH3(void, start_function,
     ULONG sigs;
     BOOL defragmented = FALSE;
 
-    if(mp == NULL || bitmap == NULL)
+    if(oldname == NULL || !getDeviceData((STRPTR)oldname))
         return;
     
     set(StartButton, MUIA_Disabled, TRUE);
@@ -321,14 +321,10 @@ AROS_UFH3(void, refresh_function,
     
     ULONG active = xget(DevList, MUIA_List_Active);
     
-    if (active != MUIV_List_Active_Off && bitmap != NULL && mp != NULL)
-    {
-        if(DoPkt(mp, ACTION_SFS_READ_BITMAP, (SIPTR)bitmap, 0, blocks_total, 0, 0)!=DOSFALSE)
-        {
-            updateBitmap(0, blocks_total);
-        }
-    }
+    if (active != MUIV_List_Active_Off && oldname != NULL)
+        getDeviceData((STRPTR)oldname);
     
+
     AROS_USERFUNC_EXIT
 }
 
