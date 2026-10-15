@@ -199,7 +199,7 @@ struct __dummyXFC3__
 
 #define muiWindowData(obj)   (&(((struct __dummyXFC3__ *)(obj))->mwd))
 
-/****** List.mui/MUIA_Window_DragBar *****************************************
+/****** Window.mui/MUIA_Window_DragBar *****************************************
 *
 *   NAME
 *       MUIA_Window_DragBar -- (V4) [I..], BOOL
@@ -214,7 +214,7 @@ struct __dummyXFC3__
 *
 */
 
-/****** List.mui/MUIA_Window_ScreenTitle *************************************
+/****** Window.mui/MUIA_Window_ScreenTitle *************************************
 *
 *   NAME
 *       MUIA_Window_ScreenTitle -- (V5) [ISG], STRPTR
@@ -231,7 +231,7 @@ struct __dummyXFC3__
 *
 */
 
-/****** List.mui/MUIA_Window_Title *******************************************
+/****** Window.mui/MUIA_Window_Title *******************************************
 *
 *   NAME
 *       MUIA_Window_Title -- (V4) [ISG], STRPTR

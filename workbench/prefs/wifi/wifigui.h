@@ -35,6 +35,7 @@ enum
     WCMD_SCAN,          /* list what is on the air (takes seconds) */
     WCMD_CONNECT,       /* remember wc_SSID/wc_Key and hand it to the supplicant */
     WCMD_DISCONNECT,    /* stop the supplicant and leave the network */
+    WCMD_AUTORUN,       /* start wm_Device with the network at boot, or not */
     WCMD_QUIT
 };
 
@@ -76,6 +77,9 @@ struct WifiMsg
     TEXT            wm_Key[WIFI_KEY_MAX];
     LONG            wm_Protected;
 
+    /* AUTORUN input, STATUS and AUTORUN output */
+    LONG            wm_AutoRun;
+
     /* STATUS output. Everything the details window shows is gathered here, so
      * what it displays is never older than the last status request. */
     LONG            wm_Wireless;                /* device can do S2_GETNETWORKS */
@@ -87,6 +91,7 @@ struct WifiMsg
     TEXT            wm_DNS[64];
     TEXT            wm_MAC[20];
     TEXT            wm_BSSID[20];
+    TEXT            wm_Signal[16];              /* "-58 dBm", "" if unknown */
     TEXT            wm_Interface[16];
 
     /* SCAN output */
