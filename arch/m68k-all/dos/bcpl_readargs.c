@@ -11,15 +11,15 @@
 #include <proto/exec.h>
 #include <dos/rdargs.h>
 #include <dos/dosextens.h>
+#include <proto/dos.h>
 
 #include <string.h>
 
 /*****************************************************************************
 
     NAME */
-#include <proto/dos.h>
 
-AROS_UFH4(ULONG, BCPL_ReadArgs,
+        AROS_UFH4(ULONG, BCPL_ReadArgs,
 /*  SYNOPSIS */
         AROS_UFHA(BSTR, btemplate, D1),
         AROS_UFHA(BPTR, bvec, D2),
@@ -30,56 +30,30 @@ AROS_UFH4(ULONG, BCPL_ReadArgs,
         BCPL Vector offset 0x138
 
     FUNCTION
-        Parses the commandline, a given string or Input() and fills
-        an argument array according to the options template given.
-        The array must be initialized to the wanted defaults before
-        each call to ReadArgs().
-        ReadArgs() tries to parse the commandline and continues
-        on the input channel if it just consists of a single '?',
-        prompting the user for input.
+        Parse command-line arguments according to a BCPL template and
+        return their values in a caller-provided BCPL vector. String
+        results are copied into the unused portion of that vector and
+        represented by BCPL pointers.
 
     INPUTS
-        template - Template string. The template string is given as
-                   a number of options separated by ',' and modified
-                   by '/' modifiers, e.g. 'NAME,WIDTH/N,HEIGHT/N'
-                   means get a name string and two numbers (width and
-                   height). The possible modifiers are:
-                   /S Option is a switch. It may be either set or
-                      left out.
-                   /T Option is a boolean value. Requires an argument
-                      which may be "ON", "YES" (setting the respective
-                      argument to 1), "OFF" or "NO" (setting the
-                      respective argument to 0).
-                   /N Option is a number. Strings are not allowed.
-                      If the option is optional, a pointer to the
-                      actual number is returned. This is how you know
-                      if it was really given. The number is always of type
-                      LONG.
-                   /A Argument is required. If it is left out ReadArgs()
-                      fails.
-                   /K The keyword must be given when filling the option.
-                      Normally it's skipped.
-                   /M Multiple strings or, when used in combination with /N,
-                      numbers. The result is returned as an array of pointers
-                      to strings or LONGs, and is terminated with NULL. /M
-                      eats all strings that don't fit into any other option.
-                      If there are unfilled /A arguments after parsing they
-                      steal strings from /M. This makes it possible to, for
-                      example, write a Copy command template like
-                      'FROM/A/M,TO/A'. There may be only one /M option in a
-                      template.
-                   /F Eats the rest of the line even if there are option
-                      keywords in it.
-        array    - Array to be filled with the result values. The array must
-                   be intialized to the default values before calling
-                   ReadArgs().
-        array_wl - Maximum size of input
+        btemplate - BCPL string containing the ReadArgs() option template.
+        bvec      - BCPL pointer to writable vector storage. The vector is
+                    cleared before parsing and also holds converted strings.
+        upb       - Number of IPTR-sized units available in the vector.
+        DOSBase   - DOS library base supplied by the BCPL calling convention.
 
     RESULT
-        Number of words used in argv
+        Number of vector units occupied by the parsed arguments and their
+        converted strings, or zero if parsing, allocation or string storage
+        fails. On success IoErr() is cleared.
+
+    NOTES
+        The function uses ReadArgs() for template parsing. BCPL string
+        results occupy additional vector storage, so the caller must
+        provide room beyond the argument slots.
 
     SEE ALSO
-        Input()
+        dos.library/ReadArgs(), dos.library/FreeArgs()
 
 *****************************************************************************/
 {
