@@ -26,24 +26,28 @@ extern struct ReqToolsBase * ReqToolsBase;
 	...)
 
 /*  FUNCTION
+        Request a filename, directory, or multiple file selections.
 
     INPUTS
+        filereq - File requester allocated with rtAllocRequest().
+        file    - Initial filename and destination for the selected name;
+                  provide a buffer of at least 108 bytes.
+        title   - Requester window title.
+        tag1    - First requester tag; terminate with TAG_DONE.
 
     RESULT
+        Result from rtFileRequestA(): nonzero for an accepted single
+        selection, zero on cancellation, or an rtFileList pointer when
+        multiple selection is enabled.
 
     NOTES
-
-    EXAMPLE
-
-    BUGS
+        The file list returned for multiple selection is released with
+        rtFreeFileList(). The requester requires a process with DOS access.
 
     SEE ALSO
+        rtFileRequestA(), rtAllocRequest(), rtFreeFileList()
 
-    INTERNALS
-
-    HISTORY
-
-*****************************************************************************/
+***************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
 

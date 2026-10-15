@@ -26,24 +26,26 @@ extern struct ReqToolsBase * ReqToolsBase;
 	...)
 
 /*  FUNCTION
+        Request a signed 32-bit integer.
 
     INPUTS
+        longptr - Address of the value to edit.
+        title   - Requester window title.
+        reqinfo - Optional requester information.
+        tag1    - First requester tag; terminate with TAG_DONE.
 
     RESULT
+        Response code from rtGetLongA().
 
     NOTES
-
-    EXAMPLE
-
-    BUGS
+        An empty numeric field can cause the leftmost gadget to return
+        zero without changing *longptr. See rtGetLongA() for the
+        complete response and validation contract.
 
     SEE ALSO
+        rtGetLongA()
 
-    INTERNALS
-
-    HISTORY
-
-*****************************************************************************/
+***************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
 
