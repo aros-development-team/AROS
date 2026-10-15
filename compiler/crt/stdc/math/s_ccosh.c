@@ -44,6 +44,33 @@
 
 static const double huge = 0x1p1023;
 
+/****************************************************************************
+    NAME
+        double complex ccosh(
+
+    SYNOPSIS
+        double complex z)
+
+    FUNCTION
+        Compute the complex hyperbolic cosine of z.
+
+    INPUTS
+        z - Complex argument.
+
+    RESULT
+        Return the complex hyperbolic cosine. For finite z = x + i*y, the real and
+        imaginary components are cosh(x)*cos(y) and sinh(x)*sin(y).
+        Infinite or NaN components follow the complex exceptional-value
+        rules, producing infinities, NaNs or signed zeros as applicable.
+
+    NOTES
+        Include <complex.h>. Large finite real components can overflow.
+        Exceptional arguments can raise floating-point exceptions.
+
+    SEE ALSO
+        csinh(), ctanh(), cexp()
+
+*****************************************************************************/
 double complex
 ccosh(double complex z)
 {

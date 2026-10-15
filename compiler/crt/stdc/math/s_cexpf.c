@@ -35,6 +35,33 @@ static const uint32_t
 exp_ovfl  = 0x42b17218,		/* MAX_EXP * ln2 ~= 88.722839355 */
 cexp_ovfl = 0x43400074;		/* (MAX_EXP - MIN_DENORM_EXP) * ln2 */
 
+/****************************************************************************
+    NAME
+        float complex cexpf(
+
+    SYNOPSIS
+        float complex z)
+
+    FUNCTION
+        Compute the float complex exponential of z.
+
+    INPUTS
+        z - Complex exponent.
+
+    RESULT
+        Return the complex exponential. For finite z = x + i*y, the real and
+        imaginary components are expf(x)*cosf(y) and expf(x)*sinf(y).
+        When the imaginary component is zero, the result retains
+        its sign in the imaginary component.
+
+    NOTES
+        Include <complex.h>. Components can overflow or underflow;
+        infinite or NaN inputs have corresponding exceptional results.
+
+    SEE ALSO
+        cexp(), ccoshf(), csinhf()
+
+*****************************************************************************/
 float complex
 cexpf(float complex z)
 {

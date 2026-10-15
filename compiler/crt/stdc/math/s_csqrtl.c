@@ -52,6 +52,36 @@
 #define	THRESH	0x1p16382L
 #endif
 
+/****************************************************************************
+    NAME
+        long double complex csqrtl(
+
+    SYNOPSIS
+        long double complex z)
+
+    FUNCTION
+        Compute the principal complex square root of z.
+
+    INPUTS
+        z - Complex radicand.
+
+    RESULT
+        Return the principal square root of z. For finite nonzero z,
+        the real component is nonnegative, and the imaginary
+        component has the sign of the imaginary component of z.
+        For a zero argument, the result has a positive real zero
+        and preserves the imaginary zero's sign.
+
+    NOTES
+        Include <complex.h>. A negative real input uses the sign of
+        its imaginary zero to select the side of the branch cut.
+        Infinite and NaN components follow the exceptional-value
+        rules for the principal complex square root.
+
+    SEE ALSO
+        csqrt(), csqrtf(), creall(), cimagl()
+
+*****************************************************************************/
 long double complex
 csqrtl(long double complex z)
 {
