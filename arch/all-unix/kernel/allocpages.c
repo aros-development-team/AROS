@@ -43,18 +43,20 @@
         struct KernelBase *, KernelBase, 27, Kernel)
 
 /*  FUNCTION
-        Allocate page-granular memory from the host. The region is always
-        mapped readable/writable; pass it to KrnSetProtection() afterwards to
-        make it executable or read-only.
+        Allocate page-granular memory from the host. Mappings are writable
+        and may also be executable when requested and permitted by the host.
+        Use KrnSetProtection() to change the protection afterwards.
 
     INPUTS
         addr   - Preferred start address, or NULL to let the host choose.
         length - Size in bytes (rounded up to the host page size).
-        flags  - exec.library/AllocMem() style MEMF_* flags. Honoured for
-                 intent only; the mapping itself is always R/W (see W^X note).
+        flags  - exec.library/AllocMem() style MEMF_* flags. On non-Darwin
+                 hosts, MEMF_EXECUTABLE requests are declined so that the
+                 caller can use its ordinary executable-memory allocator.
 
     RESULT
-        Start address of the allocated region, or NULL on failure.
+        Start address of the allocated region, or NULL on failure or
+        when an executable allocation is delegated to the caller.
 
 ******************************************************************************/
 {
