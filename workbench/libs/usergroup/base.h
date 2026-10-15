@@ -87,6 +87,10 @@ struct UserGroupBase {
 #endif
     char                cryptresult[1+4+4+11+1];
 
+    /* netinfo.device entries converted to <pwd.h>/<grp.h> (getpwent.c, getgrent.c) */
+    struct passwd       niPasswd;
+    struct group        niGroup;
+
     /* security.library forwarding (usergroup_security.c) */
     struct Library      *ugSecBase;
     BOOL                 ugSecChecked;      /* known not to be resident */

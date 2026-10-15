@@ -36,7 +36,8 @@ enum {
 #define NI_GETBYID              (CMD_NONSTD + 0)
 #define NI_GETBYNAME            (CMD_NONSTD + 1)
 #define NI_MEMBERS              (CMD_NONSTD + 2)
-#define NI_END                  (CMD_NONSTD + 3)
+#define NI_REMOVE               (CMD_NONSTD + 3)    /* remove the entry named in io_Data */
+#define NI_END                  (CMD_NONSTD + 4)
 
 /* Non-standard error codes (matching BSD errno) */
 #define NIERR_NOTFOUND          2

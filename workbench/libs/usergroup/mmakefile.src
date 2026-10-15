@@ -19,7 +19,8 @@ FILES := \
         crypt \
         console \
         random \
-        usergroup_security
+        usergroup_security \
+        useradmin
 
 #USER_CPPFLAGS := -DDEBUG=1
 USER_LDFLAGS := -static

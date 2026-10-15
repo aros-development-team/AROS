@@ -5,7 +5,7 @@ include $(SRCDIR)/config/aros.cfg
 EXEDIR := $(AROS_TESTS)/security
 
 FILES   := sectest fsformat authtest
-UGFILES := ugtest
+UGFILES := ugtest uatest
 PAMFILES := pamtest
 
 #MM- test : test-security

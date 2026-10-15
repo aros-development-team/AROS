@@ -105,6 +105,7 @@ extern BOOL ProbeKeyFile(struct SecurityBase *secBase, struct MsgPort *fs);
 extern struct secUserDef *GetUserDefs(struct SecurityBase *secBase);
 extern struct secGroupDef *GetGroupDefs(struct SecurityBase *secBase);
 extern void FreeDefs(struct SecurityBase *secBase);
+extern struct secUserDef *MakeUserDef(struct SecurityBase *secBase, STRPTR line);
 extern BOOL UpdateUserDefs(struct SecurityBase *secBase);
 
 extern BOOL ClearBuffer(struct SecurityBase *secBase);

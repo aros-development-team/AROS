@@ -657,6 +657,10 @@ static void ServerProcess(void)
                     pkt->Res1 = LockUser(secBase, client, (STRPTR)pkt->Arg1, (BOOL)pkt->Arg2);
                     break;
 
+                case secSAction_UserAdmin:
+                    pkt->Res1 = UserAdmin(secBase, client, (struct secUARequest *)pkt->Arg1);
+                    break;
+
                 case secSAction_GetUserHash:
                     /* Security.auth only. Arg1: STRPTR userid, Arg2: STRPTR hash buffer
                      * (secHASHBUFSIZE), Arg3: struct secPrivUserInfo * to fill. Res1: BOOL found */

@@ -75,6 +75,11 @@ BOOL ugSecActive(struct Library *ugBase)
     return secBase != NULL;
 }
 
+BOOL ugSecDbActive(struct Library *ugBase)
+{
+    return ugSecActive(ugBase) && secIsConfigured();
+}
+
 void ugSecCleanup(struct Library *ugBase)
 {
     if (secBase != NULL)

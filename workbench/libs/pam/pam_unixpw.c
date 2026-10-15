@@ -11,8 +11,9 @@
           setcred:  success: without security.library there are no
                     credentials to establish.
           session:  success, nothing to do.
-          password: refused with a message; usergroup.library cannot
-                    write the network password file.
+          password: the old password is checked like for auth, the new
+                    one is set with ug_UserAdminA() (usergroup.library 4.11),
+                    which saves it through netinfo.device.
 */
 
 #include <proto/exec.h>
@@ -35,6 +36,25 @@ static struct passwd *ug_getpwnam(struct Library *UserGroupBase, const char *nam
 static char *ug_crypt(struct Library *UserGroupBase, const char *key, const char *setting)
 {
     return AROS_LC2(char *, crypt, AROS_LCA(const char *, key, A0), AROS_LCA(const char *, setting, A1), struct Library *, UserGroupBase, 29, Usergroup);
+}
+
+static int ug_UserAdmin(struct Library *UserGroupBase, struct TagItem *tags)
+{
+    return AROS_LC1(int, ug_UserAdminA, AROS_LCA(struct TagItem *, tags, A0), struct Library *, UserGroupBase, 44, Usergroup);
+}
+
+/* Is tok the password of the entry? */
+static BOOL CheckPw(struct Library *UserGroupBase, struct passwd *pw, CONST_STRPTR tok, BOOL nullok)
+{
+    CONST_STRPTR stored = pw->pw_passwd ? (CONST_STRPTR)pw->pw_passwd : (CONST_STRPTR)"";
+    STRPTR c;
+
+    if (!stored[0])
+        return !tok[0] && nullok;
+    if (stored[0] == '*' || stored[0] == '!')
+        return FALSE;
+    c = (STRPTR)ug_crypt(UserGroupBase, (const char *)tok, (const char *)stored);
+    return c && !strcmp(c, stored);
 }
 
 static LONG UgAuthenticate(struct PamBase *PamBase, struct PamHandle *h, ULONG flags, LONG argc, CONST_STRPTR *argv)
@@ -96,13 +116,45 @@ static LONG UgNothing(struct PamBase *PamBase, struct PamHandle *h, ULONG flags,
 
 static LONG UgChAuthTok(struct PamBase *PamBase, struct PamHandle *h, ULONG flags, LONG argc, CONST_STRPTR *argv)
 {
-    struct pam_message m = { PAM_ERROR_MSG, "Passwords in the network password file cannot be changed here." };
-    const struct pam_message *mp = &m;
-    struct pam_response *r = NULL;
+    struct Library *UserGroupBase;
+    CONST_STRPTR user, oldtok, newtok;
+    struct passwd *pw;
+    LONG res;
 
-    if (!(flags & PAM_SILENT) && PamConverse(h, 1, &mp, &r) == PAM_SUCCESS)
-        PamFreeResponses(PamBase, 1, r);
-    return PAM_AUTHTOK_ERR;
+    if ((res = PamGetUser(h, &user, NULL)) != PAM_SUCCESS)
+        return res;
+    if (!(UserGroupBase = OpenLibrary(USERGROUPNAME, 4)))
+        return PAM_AUTHTOK_ERR;
+    if (UserGroupBase->lib_Version == 4 && UserGroupBase->lib_Revision < 11)
+    {
+        CloseLibrary(UserGroupBase);
+        return PAM_AUTHTOK_ERR;
+    }
+
+    res = PAM_USER_UNKNOWN;
+    if ((pw = ug_getpwnam(UserGroupBase, (const char *)user)))
+    {
+        if ((res = PamGetAuthTok(h, PAM_OLDAUTHTOK, &oldtok, "Old password: ")) == PAM_SUCCESS)
+        {
+            if (flags & PAM_PRELIM_CHECK)
+                res = CheckPw(UserGroupBase, pw, oldtok, TRUE) ? PAM_SUCCESS : PAM_AUTHTOK_RECOVERY_ERR;
+            else if (!CheckPw(UserGroupBase, pw, oldtok, TRUE))
+                res = PAM_AUTHTOK_RECOVERY_ERR;
+            else if ((res = PamGetAuthTok(h, PAM_AUTHTOK, &newtok, "New password: ")) == PAM_SUCCESS)
+            {
+                struct TagItem tags[] =
+                {
+                    { UGA_Operation,    UGOP_PASSWORD   },
+                    { UGA_Name,         (IPTR)user      },
+                    { UGA_Password,     (IPTR)newtok    },
+                    { TAG_DONE,         0               }
+                };
+                res = (ug_UserAdmin(UserGroupBase, tags) == 0) ? PAM_SUCCESS : PAM_AUTHTOK_ERR;
+            }
+        }
+    }
+    CloseLibrary(UserGroupBase);
+    return res;
 }
 
 const struct PamBuiltin PamBuiltinUnixPw =

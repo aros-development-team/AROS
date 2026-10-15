@@ -43,6 +43,22 @@ struct secSPacket
 #define secSAction_Log                  12      /* Append a line to the log file                */
 #define secSAction_GetUserHash          13      /* Security.auth only: user record + stored hash*/
 #define secSAction_LockUser             14      /* root: lock (Arg2 TRUE) / unlock an account   */
+#define secSAction_UserAdmin            15      /* root: secUserAdminA() (Arg1 struct secUARequest *) */
+
+/* secUserAdminA() request (security_useradmin.c) */
+struct secUARequest
+{
+    ULONG           Operation;      /* secUA_#?                                  */
+    CONST_STRPTR    UserID;         /* the user (ADD: the new one)               */
+    CONST_STRPTR    NewUserID;      /* MODIFY: rename, or NULL                   */
+    LONG            uid, gid;       /* -1 = unchanged / not given                */
+    CONST_STRPTR    UserName;       /* NULL = unchanged                          */
+    CONST_STRPTR    HomeDir;
+    CONST_STRPTR    Shell;
+    CONST_STRPTR    Password;       /* ADD, PASSWORD: clear text, "" = none      */
+};
+
+extern ULONG UserAdmin(struct SecurityBase *secBase, struct Task *client, struct secUARequest *req);
 
 extern struct Process *CreateServer(struct SecurityBase *secBase);
 extern BOOL StartServer(struct SecurityBase *secBase);

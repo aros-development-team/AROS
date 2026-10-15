@@ -91,6 +91,15 @@
           * io_Error contains possaible error code or 0 if command was
             successfull
 
+    NI_REMOVE - remove an entry
+        Inputs:
+          * io_Data contains a database entry structure whose name member
+            (pw_name, gr_name) names the entry to remove
+        Results:
+          * io_Error contains NIERR_NOTFOUND if there is no such entry, or
+            0 if command was successfull. The change is written to the
+            file with CMD_UPDATE, as for CMD_WRITE.
+
     NI_MEMBERS - find out memberships
         This command is implemented only for group unit.  It collects
         the IDs of groups which have a given user as member.

@@ -187,6 +187,31 @@ struct secGroupInfo
 #define secT_LockAccount        (TAG_USER+29)   /* secAuthControlA(): (STRPTR) lock this user's account            */
 #define secT_UnlockAccount      (TAG_USER+30)   /* secAuthControlA(): (STRPTR) unlock it                           */
 #define secT_AccountLocked      (TAG_USER+31)   /* secQueryUserA(): (BOOL *) the account is locked                 */
+/* secUserAdminA() (root only); also secT_UserID, secT_Password */
+#define secT_UAOperation        (TAG_USER+32)   /* (ULONG) secUA_#?                                                */
+#define secT_NewUserID          (TAG_USER+33)   /* (STRPTR) MODIFY: new user ID                                    */
+#define secT_UID                (TAG_USER+34)   /* (ULONG) user number 1..65535                                    */
+#define secT_GID                (TAG_USER+35)   /* (ULONG) primary group number, must exist                        */
+#define secT_UserName           (TAG_USER+36)   /* (STRPTR) the full name                                          */
+#define secT_HomeDir            (TAG_USER+37)   /* (STRPTR) home directory                                         */
+#define secT_Shell              (TAG_USER+38)   /* (STRPTR) shell (may be empty)                                   */
+
+/* secUserAdminA() operations */
+#define secUA_ADD               (1)             /* new user: secT_UserID, secT_UID, secT_GID [, others]            */
+#define secUA_MODIFY            (2)             /* change the given fields of secT_UserID                          */
+#define secUA_DELETE            (3)             /* remove secT_UserID                                              */
+#define secUA_PASSWORD          (4)             /* set secT_UserID's password to secT_Password ("" = none)         */
+
+/* secUserAdminA() results */
+#define secUAERR_OK             (0)
+#define secUAERR_NOTROOT        (1)             /* only root may change accounts                                   */
+#define secUAERR_NOTFOUND       (2)             /* no such user                                                    */
+#define secUAERR_EXISTS         (3)             /* the user ID or the uid is taken                                 */
+#define secUAERR_BADARGS        (4)             /* a field is missing, too long or holds '|', ':' or a control char */
+#define secUAERR_NOGROUP        (5)             /* no group with that gid                                          */
+#define secUAERR_PROTECTED      (6)             /* root cannot be deleted, renamed or given another uid            */
+#define secUAERR_WRITE          (7)             /* the password file could not be written; nothing changed         */
+#define secUAERR_UNAVAILABLE    (8)             /* unconfigured system or no server                                */
 
 /* What secAuthControlA() reports */
 #define secAUTHREC_DELAY        (0)             /* failures for a user name: requests are held back                */

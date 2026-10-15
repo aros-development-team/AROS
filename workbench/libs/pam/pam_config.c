@@ -252,7 +252,7 @@ static BOOL ParseLine(struct PamBase *PamBase, struct PamHandle *h, STRPTR line,
  *
  *   state          auth      account   session   password
  *   configured     security  security  security  security
- *   unconfigured   deny      deny      permit    deny
+ *   unconfigured   deny      deny      permit    unixpw
  *   absent         unixpw    unixpw    unixpw    unixpw
  */
 static BOOL DefaultStack(struct PamBase *PamBase, struct PamHandle *h)
@@ -260,7 +260,7 @@ static BOOL DefaultStack(struct PamBase *PamBase, struct PamHandle *h)
     static CONST_STRPTR const table[3][PAM_NUM_GROUPS] =
     {
         { "unixpw",   "unixpw",   "unixpw",   "unixpw"   },     /* PAM_STATE_ABSENT       */
-        { "deny",     "deny",     "permit",   "deny"     },     /* PAM_STATE_UNCONFIGURED */
+        { "deny",     "deny",     "permit",   "unixpw"   },     /* PAM_STATE_UNCONFIGURED: netinfo's database is the one in use */
         { "security", "security", "security", "security" }      /* PAM_STATE_CONFIGURED   */
     };
     LONG state = PamSecurityState(PamBase), g;

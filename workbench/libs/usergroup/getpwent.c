@@ -118,12 +118,31 @@
 #include "base.h"
 #include <proto/usergroup.h>
 
+/*
+ * netinfo.device fills its own (AmiTCP) struct NetInfoPasswd, whose layout
+ * is not that of the struct passwd of <pwd.h> this library hands out:
+ * convert into the per-task copy.
+ */
+static struct passwd *NiPasswd(struct UserGroupBase *UserGroupBase, struct NetInfoPasswd *np)
+{
+    struct passwd *pw = &UserGroupBase->niPasswd;
+
+    pw->pw_name   = (char *)np->pw_name;
+    pw->pw_passwd = (char *)np->pw_passwd;
+    pw->pw_uid    = np->pw_uid;
+    pw->pw_gid    = np->pw_gid;
+    pw->pw_gecos  = (char *)np->pw_gecos;
+    pw->pw_dir    = (char *)np->pw_dir;
+    pw->pw_shell  = (char *)np->pw_shell;
+    return pw;
+}
+
 AROS_LH1(struct passwd *, getpwnam,
          AROS_LHA(const char *, name, A1),
          struct UserGroupBase *, UserGroupBase, 19, Usergroup)
 {
     AROS_LIBFUNC_INIT
-    if (ugSecActive((struct Library *)UserGroupBase)) return ugSecGetPwNam((struct Library *)UserGroupBase, name);
+    if (ugSecDbActive((struct Library *)UserGroupBase)) return ugSecGetPwNam((struct Library *)UserGroupBase, name);
 
     struct NetInfoReq *nreq;
     struct passwd *pw = NULL;
@@ -137,11 +156,11 @@ AROS_LH1(struct passwd *, getpwnam,
 
     ObtainSemaphore(&UserGroupBase->ni_lock);
     if (nreq = ug_OpenUnit((struct Library *)UserGroupBase, NETINFO_PASSWD_UNIT)) {
-        pw = (struct passwd *)nreq->io_Data;
-        pw->pw_name = (char *)name;
+        ((struct NetInfoPasswd *)nreq->io_Data)->pw_name = (UBYTE *)name;
         nreq->io_Command = NI_GETBYNAME;
         D(bug("[UserGroup] %s: sending NI_GETBYNAME to netinfo.device/%d...\n", __func__, NETINFO_PASSWD_UNIT));
         if (ug_DoIO(nreq) == 0) {
+            pw = NiPasswd(UserGroupBase, (struct NetInfoPasswd *)nreq->io_Data);
             D(bug("[UserGroup] %s:  -> %d\n", __func__, pw->pw_uid));
         } else {
             pw = NULL;
@@ -163,7 +182,7 @@ AROS_LH1(struct passwd *, getpwuid,
          struct UserGroupBase *, UserGroupBase, 20, Usergroup)
 {
     AROS_LIBFUNC_INIT
-    if (ugSecActive((struct Library *)UserGroupBase)) return ugSecGetPwUid((struct Library *)UserGroupBase, uid);
+    if (ugSecDbActive((struct Library *)UserGroupBase)) return ugSecGetPwUid((struct Library *)UserGroupBase, uid);
 
     struct NetInfoReq *nreq;
     struct passwd *pw = NULL;
@@ -172,11 +191,11 @@ AROS_LH1(struct passwd *, getpwuid,
 
     ObtainSemaphore(&UserGroupBase->ni_lock);
     if (nreq = ug_OpenUnit((struct Library *)UserGroupBase, NETINFO_PASSWD_UNIT)) {
-        pw = (struct passwd *)nreq->io_Data;            
-        pw->pw_uid = uid;
+        ((struct NetInfoPasswd *)nreq->io_Data)->pw_uid = uid;
         nreq->io_Command = NI_GETBYID;
         D(bug("[UserGroup] %s: sending NI_GETBYID to netinfo.device/%d...\n", __func__, NETINFO_PASSWD_UNIT));
         if (ug_DoIO(nreq) == 0) {
+            pw = NiPasswd(UserGroupBase, (struct NetInfoPasswd *)nreq->io_Data);
             D(bug("[UserGroup] %s:  -> '%s'\n", __func__, pw->pw_name));
         } else {
             pw = NULL;
@@ -199,7 +218,7 @@ AROS_LH0(void, setpwent,
          struct UserGroupBase *, UserGroupBase, 21, Usergroup)
 {
     AROS_LIBFUNC_INIT
-    if (ugSecActive((struct Library *)UserGroupBase)) { ugSecSetPwEnt((struct Library *)UserGroupBase); return; }
+    if (ugSecDbActive((struct Library *)UserGroupBase)) { ugSecSetPwEnt((struct Library *)UserGroupBase); return; }
 
     struct NetInfoReq *nreq;
 
@@ -225,7 +244,7 @@ AROS_LH0(struct passwd *, getpwent,
          struct UserGroupBase *, UserGroupBase, 22, Usergroup)
 {
     AROS_LIBFUNC_INIT
-    if (ugSecActive((struct Library *)UserGroupBase)) return ugSecGetPwEnt((struct Library *)UserGroupBase);
+    if (ugSecDbActive((struct Library *)UserGroupBase)) return ugSecGetPwEnt((struct Library *)UserGroupBase);
 
     struct NetInfoReq *nreq;
     struct passwd *pw = NULL;
@@ -244,7 +263,7 @@ AROS_LH0(struct passwd *, getpwent,
         D(bug("[UserGroup] %s: sending CMD_READ to netinfo.device/%d...\n", __func__, NETINFO_PASSWD_UNIT));
         nreq->io_Command = CMD_READ;
         if (ug_DoIO(nreq) == 0) {
-            pw = (struct passwd *)nreq->io_Data;
+            pw = NiPasswd(UserGroupBase, (struct NetInfoPasswd *)nreq->io_Data);
         } else {
             SetDeviceErr((struct Library *)UserGroupBase);
         }
@@ -264,7 +283,7 @@ AROS_LH0(void, endpwent,
          struct UserGroupBase *, UserGroupBase, 23, Usergroup)
 {
     AROS_LIBFUNC_INIT
-    if (ugSecActive((struct Library *)UserGroupBase)) { ugSecEndPwEnt((struct Library *)UserGroupBase); return; }
+    if (ugSecDbActive((struct Library *)UserGroupBase)) { ugSecEndPwEnt((struct Library *)UserGroupBase); return; }
 
     D(bug("[UserGroup] %s()\n", __func__));
 

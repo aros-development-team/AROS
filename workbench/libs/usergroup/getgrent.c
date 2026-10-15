@@ -126,12 +126,24 @@
 
 #include <proto/usergroup.h>
 
+/* netinfo.device's struct NetInfoGroup -> the struct group of <grp.h> */
+static struct group *NiGroup(struct UserGroupBase *UserGroupBase, struct NetInfoGroup *ng)
+{
+    struct group *gr = &UserGroupBase->niGroup;
+
+    gr->gr_name   = (char *)ng->gr_name;
+    gr->gr_passwd = (char *)ng->gr_passwd;
+    gr->gr_gid    = ng->gr_gid;
+    gr->gr_mem    = (char **)ng->gr_mem;
+    return gr;
+}
+
 AROS_LH1(struct group *, getgrnam,
          AROS_LHA(const char *, name, A1),
          struct UserGroupBase *, UserGroupBase, 24, Usergroup)
 {
     AROS_LIBFUNC_INIT
-    if (ugSecActive((struct Library *)UserGroupBase)) return ugSecGetGrNam((struct Library *)UserGroupBase, name);
+    if (ugSecDbActive((struct Library *)UserGroupBase)) return ugSecGetGrNam((struct Library *)UserGroupBase, name);
 
     struct NetInfoReq *nreq;
     struct group *gr = NULL;
@@ -145,12 +157,12 @@ AROS_LH1(struct group *, getgrnam,
 
     ObtainSemaphore(&UserGroupBase->ni_lock);
     if (nreq = ug_OpenUnit((struct Library *)UserGroupBase, NETINFO_GROUP_UNIT)) {
-        gr = (struct group *)nreq->io_Data;
-        gr->gr_name = (char *)name;
+        ((struct NetInfoGroup *)nreq->io_Data)->gr_name = (UBYTE *)name;
         nreq->io_Command = NI_GETBYNAME;
         D(bug("[UserGroup] %s: sending NI_GETBYNAME to netinfo.device/%d...\n", __func__, NETINFO_GROUP_UNIT));
         if (ug_DoIO(nreq) == 0) {
-            D(bug("[UserGroup] %s:  -> '%s'\n", __func__, gr->gr_gid));
+            gr = NiGroup(UserGroupBase, (struct NetInfoGroup *)nreq->io_Data);
+            D(bug("[UserGroup] %s:  -> %ld\n", __func__, (long)gr->gr_gid));
         } else {
             gr = NULL;
             SetDeviceErr((struct Library *)UserGroupBase);
@@ -171,7 +183,7 @@ AROS_LH1(struct group *, getgrgid,
          struct UserGroupBase *, UserGroupBase, 25, Usergroup)
 {
     AROS_LIBFUNC_INIT
-    if (ugSecActive((struct Library *)UserGroupBase)) return ugSecGetGrGid((struct Library *)UserGroupBase, gid);
+    if (ugSecDbActive((struct Library *)UserGroupBase)) return ugSecGetGrGid((struct Library *)UserGroupBase, gid);
 
     struct NetInfoReq *nreq;
     struct group *gr = NULL;
@@ -180,11 +192,11 @@ AROS_LH1(struct group *, getgrgid,
 
     ObtainSemaphore(&UserGroupBase->ni_lock);
     if (nreq = ug_OpenUnit((struct Library *)UserGroupBase, NETINFO_GROUP_UNIT)) {
-        gr = (struct group *)nreq->io_Data;
-        gr->gr_gid = gid;
+        ((struct NetInfoGroup *)nreq->io_Data)->gr_gid = gid;
         nreq->io_Command = NI_GETBYID;
         D(bug("[UserGroup] %s: sending NI_GETBYID to netinfo.device/%d...\n", __func__, NETINFO_GROUP_UNIT));
         if (ug_DoIO(nreq) == 0) {
+            gr = NiGroup(UserGroupBase, (struct NetInfoGroup *)nreq->io_Data);
             D(bug("[UserGroup] %s:  -> '%s'\n", __func__, gr->gr_name));
         } else {
             gr = NULL;
@@ -206,7 +218,7 @@ AROS_LH0(void, setgrent,
          struct UserGroupBase *, UserGroupBase, 26, Usergroup)
 {
     AROS_LIBFUNC_INIT
-    if (ugSecActive((struct Library *)UserGroupBase)) { ugSecSetGrEnt((struct Library *)UserGroupBase); return; }
+    if (ugSecDbActive((struct Library *)UserGroupBase)) { ugSecSetGrEnt((struct Library *)UserGroupBase); return; }
 
     struct NetInfoReq *nreq;
 
@@ -232,7 +244,7 @@ AROS_LH0(struct group *, getgrent,
          struct UserGroupBase *, UserGroupBase, 27, Usergroup)
 {
     AROS_LIBFUNC_INIT
-    if (ugSecActive((struct Library *)UserGroupBase)) return ugSecGetGrEnt((struct Library *)UserGroupBase);
+    if (ugSecDbActive((struct Library *)UserGroupBase)) return ugSecGetGrEnt((struct Library *)UserGroupBase);
 
     struct NetInfoReq *nreq;
     struct group *gr = NULL;
@@ -251,7 +263,7 @@ AROS_LH0(struct group *, getgrent,
         D(bug("[UserGroup] %s: sending CMD_READ to netinfo.device/%d...\n", __func__, NETINFO_GROUP_UNIT));
         nreq->io_Command = CMD_READ;
         if (ug_DoIO(nreq) == 0) {
-            gr = (struct group *)nreq->io_Data;
+            gr = NiGroup(UserGroupBase, (struct NetInfoGroup *)nreq->io_Data);
         } else {
             SetDeviceErr((struct Library *)UserGroupBase);
         }
@@ -271,7 +283,7 @@ AROS_LH0(void, endgrent,
          struct UserGroupBase *, UserGroupBase, 28, Usergroup)
 {
     AROS_LIBFUNC_INIT
-    if (ugSecActive((struct Library *)UserGroupBase)) { ugSecEndGrEnt((struct Library *)UserGroupBase); return; }
+    if (ugSecDbActive((struct Library *)UserGroupBase)) { ugSecEndGrEnt((struct Library *)UserGroupBase); return; }
 
     D(bug("[UserGroup] %s()\n", __func__));
 

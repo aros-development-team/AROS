@@ -406,6 +406,13 @@ static void InitDefs(struct SecurityBase *secBase)
     CheckDatabaseProtection(secBase);
 }
 
+/* A user definition from a password file line (modified in place); for
+ * secUserAdminA(), which has checked the fields already */
+struct secUserDef *MakeUserDef(struct SecurityBase *secBase, STRPTR line)
+{
+    return ParseUserLine(secBase, line, 0);
+}
+
 void FreeDefs(struct SecurityBase *secBase)
 {
     struct secUserDef *udef = secBase->UserDefs;
