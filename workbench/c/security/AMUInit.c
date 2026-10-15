@@ -17,8 +17,7 @@
         C:
 
     FUNCTION
-        Prepares a (boot) volume for the multi-user system provided by
-        security.library, or turns it off again.
+        Enables, disables, or upgrades multi-user startup on a volume.
 
         ENABLE creates the security database directory <VOLUME>Security
         with a user database (passwd), group database (group) and
@@ -38,13 +37,9 @@
         security.library is part of the ROM; it shows the login prompt, and
         the Startup-Sequence then runs as the user who logged in.
 
-        Existing database files are never touched (use FORCE to rewrite the
-        startup script). Log in as root after the reboot and run Passwd to
-        give root a password, and add users to the database.
-
-        DISABLE renames <VOLUME>S/Security-Startup to Security-Startup.disabled
-        so that the volume boots as a single-user system again; the databases
-        are kept. ENABLE restores a disabled script.
+        DISABLE renames S/Security-Startup to
+        S/Security-Startup.disabled. User and group databases are retained.
+        The change takes effect when booting from that volume again.
 
         UPGRADE brings a volume enabled by an earlier version up to date:
         an installed Security-Startup older than this AMUInit's is saved
@@ -61,12 +56,14 @@
         FORCE    -- ENABLE, UPGRADE: rewrite an existing Security-Startup.
 
     RESULT
-        Standard DOS return codes.
+        RETURN_OK if the requested operation succeeds.
+        RETURN_WARN if DISABLE or UPGRADE finds no active startup script.
+        RETURN_FAIL if the request is invalid or the operation fails.
 
     NOTES
-        The change takes effect at the next boot of that volume. Only the
-        booting volume's Security directory (SYS:Security) is used by the
-        library.
+        The volume must support file ownership. ENABLE preserves a disabled
+        startup script by restoring it unless FORCE is specified.
+        Set a password for root after the first multi-user boot.
 
     EXAMPLE
         AMUInit ENABLE SYS:
@@ -74,7 +71,7 @@
         AMUInit UPGRADE SYS:
 
     SEE ALSO
-        Login, Logout, Passwd, Who, SetOwner
+        Login, Logout, Passwd, SetOwner, Who
 
 ******************************************************************************/
 

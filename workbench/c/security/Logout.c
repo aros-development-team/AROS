@@ -16,14 +16,19 @@
         C:
 
     FUNCTION
-        Logs out and restores the user that was logged in before. If there
-        is no previous user a login prompt appears, unless QUIET is given.
+        Ends the current login and restores a preceding login when one is
+        available. Otherwise, a new login may be requested.
 
     INPUTS
-        ALL       -- log out all previous users.
-        QUIET     -- never prompt for a new login, just log out.
-        GLOBAL    -- also apply to all tasks started from this shell.
-        GRAPHICAL -- use a requester for the login prompt.
+        ALL       -- End all preceding logins.
+        QUIET     -- Do not prompt for another login.
+        GLOBAL    -- Also restore the prior identity of descendant tasks.
+        GRAPHICAL -- Request a graphical login prompt when needed.
+
+    RESULT
+        RETURN_OK if arguments are accepted.
+        RETURN_FAIL if the security library is unavailable or arguments
+        cannot be parsed.
 
     SEE ALSO
         Login, Who
