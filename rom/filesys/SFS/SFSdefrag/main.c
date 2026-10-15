@@ -252,8 +252,8 @@ AROS_UFH3(void, start_function,
                 {
                     if(ds->id==AROS_BE2LONG(MAKE_ID('M','O','V','E')) && ds->length==3)
                     {
-                        bmclr(bitmap, (blocks_total+31)/32, ds->data[2], ds->data[0]);
-                        bmset(bitmap, (blocks_total+31)/32, ds->data[1], ds->data[0]);
+                        bmclr(bitmap, blocks_total/32 + (blocks_total%32 != 0), ds->data[2], ds->data[0]);
+                        bmset(bitmap, blocks_total/32 + (blocks_total%32 != 0), ds->data[1], ds->data[0]);
                         
                         clrlo = MIN(clrlo, ds->data[2]);
                         clrhi = MAX(clrhi, (ds->data[2]+ds->data[0]));
