@@ -5,7 +5,7 @@ MSG_TITLE (//)
 Accounts
 ;
 MSG_DESCRIPTION (//)
-Manage user accounts
+Manage user accounts and groups
 ;
 MSG_MODE_SECURITY (//)
 Multi-user system (security.library)
@@ -170,5 +170,77 @@ MSG_ERR_NOMUI (//)
 Accounts needs muimaster.library.
 ;
 MSG_ERR_NOUSERGROUP (//)
-Accounts needs usergroup.library 4.11.
+Accounts needs usergroup.library 4.12.
+;
+MSG_PAGE_USERS (//)
+Users
+;
+MSG_PAGE_GROUPS (//)
+Groups
+;
+MSG_COL_GROUPNAME (//)
+\33bGroup
+;
+MSG_COL_GID (//)
+\33bGID
+;
+MSG_COL_MEMBERS (//)
+\33bMembers
+;
+MSG_COL_DESCRIPTION (//)
+\33bDescription
+;
+MSG_BUTTON_GADD (//)
+A_dd...
+;
+MSG_BUTTON_GEDIT (//)
+Ed_it...
+;
+MSG_BUTTON_GDELETE (//)
+Dele_te...
+;
+MSG_GROUP_TITLE_ADD (//)
+New Group
+;
+MSG_GROUP_TITLE_EDIT (//)
+Edit Group
+;
+MSG_LABEL_GROUPNAME (//)
+Group name:
+;
+MSG_LABEL_GID (//)
+Group ID:
+;
+MSG_LABEL_DESCRIPTION (//)
+Description:
+;
+MSG_LABEL_MEMBERS (//)
+Members
+;
+MSG_GROUP_PRIMARY (//)
+Members through their primary group: %s
+;
+MSG_REQ_DELETE_GROUP (//)
+Delete the group '%s'?
+;
+MSG_ERR_GROUPNAME (//)
+Please enter a group name (no spaces, ':', ',' or '|').
+;
+MSG_ERR_GID (//)
+Please enter a group ID between 1 and 65535.
+;
+MSG_ERR_BUSY (//)
+This group is the primary group of a user:\nit cannot be deleted or renumbered.
+;
+MSG_ERR_GROUP_PERM (//)
+You are not allowed to do this, or the super user's group\ncannot be renamed or renumbered.
+;
+MSG_ERR_GROUP_NOENT (//)
+There is no such group, or a member does not exist.
+;
+MSG_ERR_GROUP_EXIST (//)
+The group name or group ID is already used.
+;
+MSG_ERR_GROUP_IO (//)
+The group database could not be written. Nothing was changed.
 ;
