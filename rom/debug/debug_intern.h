@@ -5,6 +5,8 @@
 */
 
 #include <aros/config.h>
+#include <aros/kernel.h>
+#include <aros/types/spinlock_s.h>
 #include <dos/bptr.h>
 #include <exec/libraries.h>
 #include <exec/semaphores.h>
@@ -55,6 +57,8 @@ struct DebugBase
     struct Library          db_Lib;
     struct MinList          db_Modules;
     struct SignalSemaphore  db_ModSem;
+    spinlock_t              db_ResolverSpin;
+    SIPTR                   db_SymResolverABI;
     APTR                    db_KernelBase;
     IPTR                    db_Flags;
 };
@@ -67,9 +71,13 @@ struct DebugBase
 #define DBFB_DISASSEMBLE        1
 #define DBFF_DISASSEMBLE        (1 << DBFB_DISASSEMBLE)
 
+
 void RegisterModule_ELF(const char *name, BPTR segList, struct elfheader *eh, struct sheader *sections,
         struct Library *DebugBase);
 
-/* Trap-context symbol resolver registered with kernel.resource (symresolver.c) */
+/* Trap-context symbol resolvers registered with kernel.resource (symresolver.c) */
 struct KrnSymInfo;
+int Debug_DecodeLocationAInternal(void *addr, struct TagItem *tags,
+        struct Library *DebugBase);
 LONG Debug_SymResolver(APTR priv, APTR addr, struct KrnSymInfo *out);
+LONG Debug_SymResolverLegacy(APTR priv, APTR addr, struct KrnSymInfo *out);

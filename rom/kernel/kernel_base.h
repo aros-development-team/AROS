@@ -25,9 +25,7 @@
 #include <aros/kernel.h>
 #endif
 
-#if defined(__AROSEXEC_SMP__)
 #include <aros/types/spinlock_s.h>
-#endif
 
 /* Early declaration for ictl functions */
 struct KernelBase;
@@ -112,6 +110,7 @@ struct KernelBase
 #endif
     KrnSymResolver_t    kb_gResolver;
     APTR                kb_gResolvPrivate;
+    spinlock_t          kb_gResolverSpinLock;
 };
 
 #ifdef KERNEL_SPARSE_EXCEPTIONS

@@ -31,6 +31,7 @@
         The resolver is used by the kernel when printing diagnostic backtraces
         or exception dumps. Only one resolver can be active at any time. The
         function fails if a resolver is already registered.
+            -3 - resolver registry is busy
 
     INPUTS
         resolver - Pointer to the resolver callback function. This function will
@@ -52,6 +53,8 @@
         the kernel crash handler.
 
         The function is safe to call from user or supervisor context.
+        On guarded targets it never waits for an active resolver reader;
+        -3 is returned instead and the caller may retry later.
 
     EXAMPLE
         static LONG MyResolver(APTR addr, struct KrnSymResolve *out, APTR priv)
@@ -70,9 +73,8 @@
         KrnUnregisterSymResolver(), KrnPrintBacktrace(), KrnBacktraceFromFrame()
 
     INTERNALS
-        The resolver and private pointer are stored in KernelBase global fields
-        (kb_gResolver and kb_gResolvPrivate). Calls are made directly from
-        kernel diagnostic paths without synchronization.
+        The resolver/private pair is published under a non-blocking kernel
+        spinlock guard. Diagnostic readers use the matching read guard.
 
 ******************************************************************************/
 {
@@ -81,12 +83,20 @@
     if (!resolver)
         return -1;
 
-    if (KernelBase->kb_gResolver != NULL) {
+    if (!KrnSpinTryLock(&KernelBase->kb_gResolverSpinLock, SPINLOCK_MODE_WRITE))
+        return -3;
+
+    if (KernelBase->kb_gResolver != NULL)
+    {
+        KrnSpinUnLock(&KernelBase->kb_gResolverSpinLock);
         return -2; /* already installed */
     }
 
-    KernelBase->kb_gResolver = resolver;
+    /* Publish the private context before making the callback visible. */
     KernelBase->kb_gResolvPrivate = priv;
+    KernelBase->kb_gResolver = resolver;
+
+    KrnSpinUnLock(&KernelBase->kb_gResolverSpinLock);
     return 0;
 
     AROS_LIBFUNC_EXIT

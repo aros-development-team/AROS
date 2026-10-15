@@ -9,42 +9,71 @@
 #include <aros/libcall.h>
 
 #include <kernel_base.h>
+#include <proto/kernel.h>
 
 /* Internal: pretty-print one PC using resolver if present */
-static VOID krnBacktraceSingle(APTR priv, APTR pc, KrnSymResolver_t resolver)
+static VOID krnBacktraceSingle(struct KernelBase *KernelBase, APTR pc)
 {
-    if (!resolver) {
+    struct KrnSymInfo info = {0};
+    KrnSymResolver_t resolver;
+    APTR priv;
+    LONG resolved = 0;
+
+    /*
+     * Trap paths must not wait behind resolver registration changes.
+     * If the pair is being updated, print the raw address instead.
+     */
+    if (!KrnSpinTryLock(&KernelBase->kb_gResolverSpinLock, SPINLOCK_MODE_READ))
+    {
         bug("[Kernel]  %p\n", pc);
         return;
     }
 
-    struct KrnSymInfo info = {0};
-    if (resolver(priv, pc, &info)) {
+    resolver = KernelBase->kb_gResolver;
+    priv = KernelBase->kb_gResolvPrivate;
+
+    if (resolver)
+        resolved = resolver(priv, pc, &info);
+
+    if (resolved)
+    {
         IPTR off = 0;
+
         if (info.sym_start)
             off = (IPTR)pc - (IPTR)info.sym_start;
 
-        if (info.sym_name) {
+        if (info.sym_name)
+        {
             bug("[Kernel]  %p  %s+0x%lx (%s%s%s)\n",
                 pc,
                 info.sym_name, (ULONG)off,
                 info.mod_name ? (char *)info.mod_name : "",
                 info.seg_name ? ":" : "",
                 info.seg_name ? (char *)info.seg_name : "");
-        } else if (info.mod_name) {
-            /* No symbol - the segment offset is what addr2line needs */
+        }
+        else if (info.mod_name)
+        {
             bug("[Kernel]  %p  (%s%s%s+0x%lx)\n",
                 pc,
                 info.mod_name,
                 info.seg_name ? ":" : "",
                 info.seg_name ? (char *)info.seg_name : "",
                 info.seg_start ? (ULONG)((IPTR)pc - (IPTR)info.seg_start) : 0);
-        } else {
+        }
+        else
+        {
             bug("[Kernel]  %p\n", pc);
         }
-    } else {
+    }
+    else
+    {
         bug("[Kernel]  %p\n", pc);
     }
+
+    if (info.release)
+        info.release(info.release_cookie);
+
+    KrnSpinUnLock(&KernelBase->kb_gResolverSpinLock);
 }
 
 /*****************************************************************************
@@ -99,21 +128,18 @@ static VOID krnBacktraceSingle(APTR priv, APTR pc, KrnSymResolver_t resolver)
         KrnBacktraceFromFrame(), KrnRegisterSymResolver(), KrnUnregisterSymResolver()
 
     INTERNALS
-        The resolver is stored in a global kernel variable and accessed without
-        locking. This function does not perform symbol resolution itself, but
-        delegates to the resolver when available.
+        The resolver/private pair is consumed under a non-blocking read guard.
+        If a resolver returns a result lease, it is released only after the
+        returned pointers have been consumed.
 
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    /* Read once; ok if resolver changes during print. */
-    KrnSymResolver_t resolver = KernelBase->kb_gResolver;
-
     bug("%sBacktrace (%lu frames):\n",
         prefix ? (char *)prefix : "[Kernel] ", (ULONG)depth);
 
     for (ULONG i = 0; i < depth; ++i)
-        krnBacktraceSingle(KernelBase->kb_gResolvPrivate, pcs[i], resolver);
+        krnBacktraceSingle(KernelBase, pcs[i]);
     AROS_LIBFUNC_EXIT
 }

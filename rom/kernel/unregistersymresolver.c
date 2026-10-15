@@ -36,19 +36,20 @@
                    the currently active resolver, no action is taken.
 
     RESULT
-        Returns non-zero (TRUE) if the resolver was successfully unregistered,
-        or zero (FALSE) if no resolver was active or the supplied resolver did
-        not match the currently registered one.
+        Returns 0 if the supplied resolver matches the currently registered
+        resolver and is unregistered, -1 if it does not match, or -3 if
+        the resolver registry is currently in use.
 
     NOTES
         The resolver is typically implemented by debug.library and used by the
         kernel to produce symbolic backtraces when handling traps or exceptions.
 
-        The function performs no locking and is safe to call from within the
-        resolver itself, or from kernel exception context.
+        The function never waits for an active resolver reader. If called
+        from a resolver that is currently in use on a guarded target, it
+        returns -3; the caller may retry after the callback has returned.
 
     EXAMPLE
-        if (KrnUnregisterSymResolver(old_resolver))
+        if (KrnUnregisterSymResolver(old_resolver) == 0)
             KrnBug("Symbol resolver removed.\n");
 
     BUGS
@@ -58,20 +59,26 @@
         KrnRegisterSymResolver(), KrnPrintBacktrace(), KrnBacktraceFromFrame()
 
     INTERNALS
-        The kernel maintains a single global pointer to the resolver function.
-        This function simply clears the pointer if it matches the one provided.
+        The resolver/private pair is removed under the same non-blocking
+        registry guard used by diagnostic readers.
 
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    if (KernelBase->kb_gResolver != resolver) {
+    if (!KrnSpinTryLock(&KernelBase->kb_gResolverSpinLock, SPINLOCK_MODE_WRITE))
+        return -3;
+
+    if (KernelBase->kb_gResolver != resolver)
+    {
+        KrnSpinUnLock(&KernelBase->kb_gResolverSpinLock);
         return -1;
     }
 
     KernelBase->kb_gResolver = NULL;
     KernelBase->kb_gResolvPrivate = NULL;
 
+    KrnSpinUnLock(&KernelBase->kb_gResolverSpinLock);
     return 0;
 
     AROS_LIBFUNC_EXIT

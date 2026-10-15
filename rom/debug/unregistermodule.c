@@ -9,6 +9,7 @@
 #include <aros/libcall.h>
 #include <exec/lists.h>
 #include <proto/exec.h>
+#include <proto/kernel.h>
 
 #include "debug_intern.h"
 
@@ -60,6 +61,8 @@ static BOOL RemoveSegmentRange(module_t * mod, LONG firstidx, LONG count);
 
     D(bug("[Debug] UnregisterModule(0x%p)\n", segList));
     ObtainSemaphore(&DBGBASE(DebugBase)->db_ModSem);
+    if (DBGBASE(DebugBase)->db_SymResolverABI >= KRN_SYMRESOLVER_ABI_LEASE)
+        KrnSpinLock(&DBGBASE(DebugBase)->db_ResolverSpin, NULL, SPINLOCK_MODE_WRITE);
 
     while (segList)
     {
@@ -118,6 +121,8 @@ static BOOL RemoveSegmentRange(module_t * mod, LONG firstidx, LONG count);
     if (mod != NULL && rangestart > -1)
         RemoveSegmentRange(mod, rangestart, (i - rangestart));
 
+    if (DBGBASE(DebugBase)->db_SymResolverABI >= KRN_SYMRESOLVER_ABI_LEASE)
+        KrnSpinUnLock(&DBGBASE(DebugBase)->db_ResolverSpin);
     ReleaseSemaphore(&DBGBASE(DebugBase)->db_ModSem);
 
     AROS_LIBFUNC_EXIT
