@@ -116,6 +116,7 @@ struct Hook stop_hook;
 struct Hook refresh_hook;
 
 BOOL stop_me;
+BOOL quit_me;
 
 struct BitMap *bm;
 struct RastPort *rp;
@@ -288,7 +289,11 @@ AROS_UFH3(void, start_function,
             }
             updateBitmap(clrlo, clrhi);
             updateBitmap(setlo, sethi);
-            DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs);
+            if((LONG)DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs) == MUIV_Application_ReturnID_Quit)
+            {
+                quit_me = TRUE;
+                stop_me = TRUE;
+            }
         }while(!stop_me && !defragmented);
     }
 
@@ -462,7 +467,7 @@ void loop(void)
 {
     ULONG sigs = 0;
 
-    while((LONG) DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs) != MUIV_Application_ReturnID_Quit)
+    while(!quit_me && (LONG) DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs) != MUIV_Application_ReturnID_Quit && !quit_me)
     {
         if (sigs)
         {
