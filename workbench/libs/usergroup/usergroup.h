@@ -78,9 +78,11 @@ struct UserGroupCredentials {
 #define UGT_OWNER     0x80000011
 
 /*
- * ug_UserAdminA(): add, change or remove an account, or set a password.
- * With security.library the change is made by it (root only); without,
- * in the netinfo.device password database (AmiTCP:db/passwd).
+ * ug_UserAdminA(): add, change or remove an account or a group, or set a
+ * password. With security.library the change is made by it (root only);
+ * without, in the netinfo.device databases (AmiTCP:db/passwd, group).
+ * For the group operations UGA_Name is the group, UGA_RealName its
+ * description (security.library only).
  */
 #define UGA_Operation 0x80000100    /* (ULONG) UGOP_#?, required                   */
 #define UGA_Name      0x80000101    /* (char *) the account, required              */
@@ -92,11 +94,16 @@ struct UserGroupCredentials {
 #define UGA_Shell     0x80000107    /* (char *)                                    */
 #define UGA_Password  0x80000108    /* (char *) clear text, "" = none              */
 #define UGA_Lock      0x80000109    /* (BOOL) UGOP_MODIFY: lock / unlock           */
+#define UGA_Members   0x8000010A    /* (char **) NULL-terminated user names: the   */
+                                    /* group's members; replaces the list          */
 
 #define UGOP_ADD      1
 #define UGOP_MODIFY   2
 #define UGOP_DELETE   3
 #define UGOP_PASSWORD 4
+#define UGOP_GROUPADD    5
+#define UGOP_GROUPMODIFY 6
+#define UGOP_GROUPDELETE 7
 #define UGT_INTRMASK  0x80000010
 
 
