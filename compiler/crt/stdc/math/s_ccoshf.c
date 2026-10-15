@@ -37,6 +37,33 @@
 
 static const float huge = 0x1p127;
 
+/****************************************************************************
+    NAME
+        float complex ccoshf(
+
+    SYNOPSIS
+        float complex z)
+
+    FUNCTION
+        Compute the float complex hyperbolic cosine of z.
+
+    INPUTS
+        z - Complex argument.
+
+    RESULT
+        Return the complex hyperbolic cosine. For finite z = x + i*y, the real and
+        imaginary components are coshf(x)*cosf(y) and sinhf(x)*sinf(y).
+        Infinite or NaN components follow the complex exceptional-value
+        rules, producing infinities, NaNs or signed zeros as applicable.
+
+    NOTES
+        Include <complex.h>. Large finite real components can overflow.
+        Exceptional arguments can raise floating-point exceptions.
+
+    SEE ALSO
+        csinhf(), ctanhf(), cexpf()
+
+*****************************************************************************/
 float complex
 ccoshf(float complex z)
 {

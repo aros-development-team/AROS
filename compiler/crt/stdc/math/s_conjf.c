@@ -30,8 +30,31 @@
 
 #include "math_private.h"
 
-float complex
-conjf(float complex z)
+/****************************************************************************
+    NAME */
+        float complex conjf(
+
+/*  SYNOPSIS */
+        float complex z)
+
+/*  FUNCTION
+        Return the complex conjugate of z.
+
+    INPUTS
+        z - Complex input value.
+
+    RESULT
+        A complex value with the real component unchanged and the
+        sign of the imaginary component reversed, including signed
+        zero and infinity. NaN components remain NaNs.
+
+    NOTES
+        Include <complex.h>.
+
+    SEE ALSO
+        crealf(), cimagf(), cprojf()
+
+*****************************************************************************/
 {
 	return (CMPLXF(crealf(z), -cimagf(z)));
 }

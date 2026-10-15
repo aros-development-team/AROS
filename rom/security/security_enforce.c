@@ -151,9 +151,11 @@ BOOL BootStrapRendezvous(struct SecurityBase *secBase)
         if (secBase->_pwdLock && secBase->_cfgLock)
             return TRUE;
 
+        ObtainSemaphore(&secBase->LogSem);
         if (secBase->_pwdLock) UnLock(secBase->_pwdLock);
         if (secBase->_cfgLock) UnLock(secBase->_cfgLock);
         secBase->_pwdLock = secBase->_cfgLock = BNULL;
+        ReleaseSemaphore(&secBase->LogSem);
     }
     return FALSE;
 }

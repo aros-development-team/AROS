@@ -31,6 +31,42 @@
 #error "Unsupported long double format"
 #endif
 
+/****************************************************************************
+    NAME
+        void sincosl(
+
+    SYNOPSIS
+        long double x, long double *sn, long double *cs)
+
+    FUNCTION
+        Compute the sine and cosine of x.
+
+    INPUTS
+        x - Angle in radians.
+        sn - Pointer to a writable long double for the sine.
+        cs - Pointer to a separate writable long double for the cosine.
+
+    RESULT
+        Store sin(x) in *sn and cos(x) in *cs. No value is returned.
+        For positive or negative zero, store x in *sn and 1 in *cs.
+        For infinity or NaN, both outputs are NaN.
+
+    NOTES
+        Include <math.h>. An infinite argument raises FE_INVALID.
+        Enabled floating-point traps may prevent completion.
+
+    BUGS
+        Argument reduction assumes round-to-nearest. Other rounding
+        modes can produce inaccurate results.
+
+        With a 113-bit long-double significand, calls that require
+        argument reduction may leave one output unwritten or negate
+        its previous value instead of producing the requested result.
+
+    SEE ALSO
+        sinl(), cosl()
+
+*****************************************************************************/
 void
 sincosl(long double x, long double *sn, long double *cs)
 {

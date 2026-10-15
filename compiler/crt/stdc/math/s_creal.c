@@ -30,8 +30,31 @@
 #include <complex.h>
 #undef creal
 
-double
-creal(double complex z)
+/****************************************************************************
+    NAME */
+        double creal(
+
+/*  SYNOPSIS */
+        double complex z)
+
+/*  FUNCTION
+        Return the real component of z.
+
+    INPUTS
+        z - Complex input value.
+
+    RESULT
+        The real component of z, including its sign. Signed zero,
+        infinity and NaN retain their respective classifications.
+
+    NOTES
+        Include <complex.h>.
+        When LDBL_MANT_DIG is 53, creal() aliases creal().
+
+    SEE ALSO
+        cimag(), conj(), cproj()
+
+*****************************************************************************/
 {
 	return z;
 }

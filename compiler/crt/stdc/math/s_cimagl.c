@@ -30,8 +30,32 @@
 #include "math_private.h"
 
 #if LDBL_MANT_DIG != DBL_MANT_DIG
-long double
-cimagl(long double complex z)
+/****************************************************************************
+    NAME */
+        long double cimagl(
+
+/*  SYNOPSIS */
+        long double complex z)
+
+/*  FUNCTION
+        Return the imaginary component of z.
+
+    INPUTS
+        z - Complex input value.
+
+    RESULT
+        The imaginary component of z, including its sign. Signed zero,
+        infinity and NaN retain their respective classifications.
+
+    NOTES
+        Include <complex.h>.
+        When LDBL_MANT_DIG equals DBL_MANT_DIG, cimagl() aliases
+        cimag().
+
+    SEE ALSO
+        creall(), conjl(), cprojl()
+
+*****************************************************************************/
 {
 	const long_double_complex z1 = { .f = z };
 

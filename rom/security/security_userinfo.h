@@ -13,6 +13,7 @@ struct secPrivUserInfo
 {
     struct secUserInfo  Pub;            /* The public part                      */
     BOOL                Password;       /* TRUE if the User has a password      */
+    BOOL                Locked;         /* the account is locked ('!' hash)     */
     STRPTR              Pattern;        /* Pattern matching temp                */
     ULONG               Count;          /* last info                            */
     UWORD               Tgid;           /* gid for secKeyType_gidNext           */

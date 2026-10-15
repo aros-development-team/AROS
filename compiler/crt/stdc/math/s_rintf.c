@@ -29,8 +29,39 @@ TWO23[2]={
  -8.3886080000e+06, /* 0xcb000000 */
 };
 
-float
-rintf(float x)
+/****************************************************************************
+    NAME */
+        float rintf(
+
+/*  SYNOPSIS */
+        float x)
+
+/*  FUNCTION
+        Round x to an integral floating-point value using the
+        current rounding direction.
+
+    INPUTS
+        x - Float value to round.
+
+    RESULT
+        The rounded float value. Nearest ties select the even
+        integer; other modes follow the current rounding direction.
+        Signed zeros and infinities keep their sign; NaNs remain NaNs.
+
+    NOTES
+        Include <math.h> and <fenv.h>. Unlike nearbyintf(),
+        rounding may raise FE_INEXACT. Unlike roundf(), ties are
+        not always rounded away from zero.
+
+    BUGS
+        The small negative-input path shifts a signed integer into
+        its sign bit, which is undefined behavior in C. Results
+        for that path may depend on the compiler.
+
+    SEE ALSO
+        rint(), rintl(), nearbyintf(), roundf()
+
+*****************************************************************************/
 {
 	int32_t i0,j0,sx;
 	float w,t;

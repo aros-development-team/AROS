@@ -25,11 +25,10 @@
 
         DEVICE --  Device name (e.g. ata.device)
         UNIT  --  Unit number
-        PN  --  Specifies a partition number. If specified, GRUB is installed
-            to this partition's boot block. Otherwise, GRUB is installed to
-            the disk's boot block.
+        PN  --  Reserved for partition selection. Specifying this option
+            is not supported and causes the command to fail.
         GRUB -- Path to GRUB directory.
-        FORCELBA --  Force use of LBA mode.
+        FORCELBA --  Accepted for compatibility but ignored.
 
     RESULT
 

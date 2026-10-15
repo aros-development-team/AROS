@@ -76,6 +76,27 @@ struct UserGroupCredentials {
    (size == 2) ? UGT_ERRNOWPTR :\
    (size == 1) ? UGT_ERRNOBPTR : 1L)
 #define UGT_OWNER     0x80000011
+
+/*
+ * ug_UserAdminA(): add, change or remove an account, or set a password.
+ * With security.library the change is made by it (root only); without,
+ * in the netinfo.device password database (AmiTCP:db/passwd).
+ */
+#define UGA_Operation 0x80000100    /* (ULONG) UGOP_#?, required                   */
+#define UGA_Name      0x80000101    /* (char *) the account, required              */
+#define UGA_NewName   0x80000102    /* (char *) UGOP_MODIFY: rename                */
+#define UGA_UID       0x80000103    /* (uid_t)                                     */
+#define UGA_GID       0x80000104    /* (gid_t) primary group, must exist           */
+#define UGA_RealName  0x80000105    /* (char *) full name (gecos)                  */
+#define UGA_HomeDir   0x80000106    /* (char *)                                    */
+#define UGA_Shell     0x80000107    /* (char *)                                    */
+#define UGA_Password  0x80000108    /* (char *) clear text, "" = none              */
+#define UGA_Lock      0x80000109    /* (BOOL) UGOP_MODIFY: lock / unlock           */
+
+#define UGOP_ADD      1
+#define UGOP_MODIFY   2
+#define UGOP_DELETE   3
+#define UGOP_PASSWORD 4
 #define UGT_INTRMASK  0x80000010
 
 

@@ -31,8 +31,31 @@
 
 #include "math_private.h"
 
-double complex
-conj(double complex z)
+/****************************************************************************
+    NAME */
+        double complex conj(
+
+/*  SYNOPSIS */
+        double complex z)
+
+/*  FUNCTION
+        Return the complex conjugate of z.
+
+    INPUTS
+        z - Complex input value.
+
+    RESULT
+        A complex value with the real component unchanged and the
+        sign of the imaginary component reversed, including signed
+        zero and infinity. NaN components remain NaNs.
+
+    NOTES
+        Include <complex.h>.
+
+    SEE ALSO
+        creal(), cimag(), cproj()
+
+*****************************************************************************/
 {
 	return (CMPLX(creal(z), -cimag(z)));
 }

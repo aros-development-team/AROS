@@ -97,6 +97,20 @@ int main(void)
         printf("owner after: %08lx\n", (unsigned long)Owner());
         if (r != PAM_SUCCESS)
             rc = RETURN_WARN;
+        else
+        {
+            /* the whole sequence of a login program, then back out:
+             * PamTest runs in the shell's process */
+            LONG s = PamOpenSession(h, 0);
+            printf("PamOpenSession: %ld (%s)\n", (long)s, PamStrError(h, s));
+            s = PamCloseSession(h, 0);
+            printf("PamCloseSession: %ld (%s)\n", (long)s, PamStrError(h, s));
+            s = PamSetCred(h, PAM_DELETE_CRED);
+            printf("PamSetCred(DELETE): %ld (%s)\n", (long)s, PamStrError(h, s));
+            printf("owner at the end: %08lx\n", (unsigned long)Owner());
+            if (s != PAM_SUCCESS)
+                rc = RETURN_WARN;
+        }
     }
     if (args[8])
     {

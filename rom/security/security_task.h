@@ -28,6 +28,7 @@ struct secSession
     struct secTaskNode  *Leader;                /* Task that created the session            */
     STRPTR              LoginName;              /* UserID used to log in (owned copy)       */
     int                 sid;                    /* Session ID number                        */
+    APTR                PamHandle;              /* pam.library session of the login, or NULL */
     ULONG               MemberCount;
 };
 

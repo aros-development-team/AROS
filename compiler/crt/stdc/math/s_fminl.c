@@ -31,8 +31,39 @@ __FBSDID("$FreeBSD: src/lib/msun/src/s_fminl.c,v 1.1 2004/06/30 07:04:01 das Exp
 #include "fpmath.h"
 
 #if LDBL_MANT_DIG != DBL_MANT_DIG
-long double
-fminl(long double x, long double y)
+/****************************************************************************
+    NAME */
+        long double fminl(
+
+/*  SYNOPSIS */
+        long double x,
+        long double y)
+
+/*  FUNCTION
+        Return the smaller numeric operand, ignoring a lone NaN.
+
+    INPUTS
+        x - First long double operand.
+        y - Second long double operand.
+
+    RESULT
+        The smaller value for numeric operands. For opposite-signed
+        zeros, return -0. If one operand is NaN, return the other.
+        If both are NaNs, return a NaN.
+
+    NOTES
+        Include <math.h>. For two NaNs, the second argument is returned.
+
+        The sign of zero and NaN handling differ from a simple conditional
+        comparison. Signaling NaNs may affect the floating-point exception
+        state; NaN payloads are not guaranteed.
+        Where long double has double precision, the double implementation
+        supplies the long double symbol.
+
+    SEE ALSO
+        fmaxl(), fmin(), fminf()
+
+*****************************************************************************/
 {
 	union IEEEl2bits u[2];
 

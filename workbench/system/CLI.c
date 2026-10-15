@@ -68,7 +68,8 @@
                     operations. If nothing is specified S:Shell-Startup
                     is used.
 
-        STACK   --  Stack size in Bytes.
+        STACK   --  Stack size in bytes. Values below the system minimum
+                    are raised to that minimum.
 
     RESULT
 

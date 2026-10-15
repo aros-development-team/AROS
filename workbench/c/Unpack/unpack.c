@@ -22,7 +22,7 @@
 
     INPUTS
 
-        NAME    - The name of the file to unpack.
+        FILE    - The .pkg archive to unpack.
         TO – The drive or path to be unpacked.
 
 

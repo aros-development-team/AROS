@@ -11,11 +11,13 @@
 
 #include "base.h"
 
+/* The common head of struct NetInfoPasswd / NetInfoGroup (both packed):
+ * the name, a pointer (password), then the id - also on 64-bit targets */
 struct NetInfoEnt {
   UBYTE *nie_name;
-  ULONG  nie_fill;
-  ULONG  nie_id;
-};
+  UBYTE *nie_fill;
+  LONG   nie_id;
+} __packed;
 
 /*
  * Common values are represented with this structure
@@ -24,8 +26,8 @@ struct Ent {
   struct Node e_node;
   UWORD       e_tlen;		/* size of text data */
   UBYTE      *e_name;
-  LONG        e_pwd;
-  LONG        e_id;
+  UBYTE      *e_pwd;		/* overlays pw_passwd / gr_passwd: a pointer, */
+  LONG        e_id;		/* so that e_id is the uid / gid on 64-bit too */
 } __packed;
 
 struct PasswdEnt {

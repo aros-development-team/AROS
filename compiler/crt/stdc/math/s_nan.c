@@ -104,8 +104,40 @@ nan(const char *s)
 	return (u.d);
 }
 
-float
-nanf(const char *s)
+/****************************************************************************
+    NAME */
+        float nanf(
+
+/*  SYNOPSIS */
+        const char *s)
+
+/*  FUNCTION
+        Construct a quiet NaN from a hexadecimal payload string.
+
+    INPUTS
+        s - Non-NULL, NUL-terminated string of hexadecimal digits,
+            optionally prefixed with 0x or 0X.
+
+    RESULT
+        A quiet float NaN. Digits after the first nonhexadecimal
+        character are ignored; an empty tag supplies zero payload
+        bits. Different tags can produce the same NaN.
+
+    NOTES
+        Include <math.h>. Payload encoding is target-dependent and
+        is not suitable as a portable serialized representation.
+
+    BUGS
+        Payload assembly shifts signed digits into the high nibble;
+        digits 8 through F can cause undefined C behavior. The
+        big-endian scanner uses a different nibble order from the
+        little-endian scanner, so equal tags need not give matching
+        payload bits across these targets.
+
+    SEE ALSO
+        nan(), nanl()
+
+*****************************************************************************/
 {
 	union {
 		float f;

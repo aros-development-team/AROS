@@ -14,6 +14,7 @@ static int Pam_Init(struct PamBase *PamBase)
 {
     InitSemaphore(&PamBase->ModuleSem);
     NEWLIST(&PamBase->Modules);
+    PamInitLog(PamBase);
 
     if (!(PamBase->pam_DOSBase = OpenLibrary("dos.library", 36)))
         return FALSE;

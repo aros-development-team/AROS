@@ -265,7 +265,7 @@ static BOOL IncreaseColumns(struct MUI_ListData *data, int new_columns);
 /****** List.mui/MUIA_List_AutoVisible ***************************************
 *
 *   NAME
-*       MUIA_List_Visible -- (V11) [ISG], BOOL
+*       MUIA_List_AutoVisible -- (V11) [ISG], BOOL
 *
 *   FUNCTION
 *       When this attribute is set to true, the active entry will be in the

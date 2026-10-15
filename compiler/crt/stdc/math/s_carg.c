@@ -32,8 +32,36 @@
 
 #include "math_private.h"
 
-double
-carg(double complex z)
+/****************************************************************************
+    NAME */
+        double carg(
+
+/*  SYNOPSIS */
+        double complex z)
+
+/*  FUNCTION
+        Return the principal argument of z, in radians, with a branch cut
+        along the negative real axis. The angle is calculated by
+        atan2(cimag(z), creal(z)).
+
+    INPUTS
+        z - Complex input value.
+
+    RESULT
+        An angle in the interval [-pi, pi]. The signs of zero select
+        the side of the branch cut. With a negative real component,
+        imaginary +0 gives +pi and imaginary -0 gives -pi.
+        An imaginary zero with positive real part is preserved.
+        Infinite components select the corresponding axis or
+        quadrant angle; a NaN component produces NaN.
+
+    NOTES
+        Include <complex.h>.
+
+    SEE ALSO
+        atan2(), creal(), cimag(), cargf(), cargl()
+
+*****************************************************************************/
 {
 
 	return (atan2(cimag(z), creal(z)));

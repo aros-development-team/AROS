@@ -35,6 +35,7 @@ void ReadCmd(struct NetInfoDevice *nid, struct NetInfoReq *req, struct NetInfoMa
 void WriteCmd(struct NetInfoDevice *nid, struct NetInfoReq *req, struct NetInfoMap *nim);
 void UpdateCmd(struct NetInfoDevice *nid, struct NetInfoReq *req, struct NetInfoMap *nim);
 void MembersCmd(struct NetInfoDevice *nid, struct NetInfoReq *req, struct NetInfoMap *nim);
+void RemoveCmd(struct NetInfoDevice *nid, struct NetInfoReq *req, struct NetInfoMap *nim);
 
 const static DeviceCmd_t map_cmds[NI_END] = {
     /* Standard commands */
@@ -51,6 +52,7 @@ const static DeviceCmd_t map_cmds[NI_END] = {
     GetByIDCmd,			/* NI_GETBYID */
     GetByNameCmd,			/* NI_GETBYNAME */
     MembersCmd,			/* NI_MEMBERS */
+    RemoveCmd,			/* NI_REMOVE */
 };
 
 static const init_map_func_t initMapFuncs[NETINFO_UNITS] = {
@@ -258,6 +260,52 @@ void WriteCmd(struct NetInfoDevice *nid, struct NetInfoReq *req, struct NetInfoM
 }
 
 /*
+ * NI_REMOVE: remove the entry whose name is the first member of the
+ * structure in io_Data (pw_name, gr_name). Like CMD_WRITE, the change
+ * reaches the file with CMD_UPDATE.
+ */
+void RemoveCmd(struct NetInfoDevice *nid, struct NetInfoReq *req, struct NetInfoMap *nim)
+{
+    struct Ent *e;
+    const UBYTE *name = req->io_Data ? ((struct NetInfoPasswd *)req->io_Data)->pw_name : NULL;
+
+    D(bug("[NetInfo] %s()\n", __func__));
+
+    req->io_Error = NIERR_NOTFOUND;
+    if (name == NULL) {
+        req->io_Error = NIERR_NULL_POINTER;
+        TermIO(req);
+        return;
+    }
+
+    DbMapLock(nim);
+    e = InternalSetEnts(nid, nim);
+    while (e = GetNextEnt(e)) {
+        if (strcmp(e->e_name, name) == 0) {
+            /* sequential readers positioned on it go on from its predecessor */
+            ObtainSemaphore(nim->nim_PointerLock);
+            {
+                struct NetInfoPointer *nip;
+                if (nip = FindPointer(nim->nim_Pointer, e)) {
+                    nip->nip_Ent = (void *)e->e_node.ln_Pred;
+                }
+            }
+            ReleaseSemaphore(nim->nim_PointerLock);
+
+            Remove((struct Node *)e);
+            FreeVec(e);
+            nim->nim_Flags |= NIMF_CHANGED;
+            req->io_Error = 0;
+            break;
+        }
+    }
+    InternalEndEnts(nid, nim);
+    DbMapUnlock(nim);
+
+    TermIO(req);
+}
+
+/*
  * CMD_UPDATE
  */
 void UpdateCmd(struct NetInfoDevice *nid, struct NetInfoReq *req, struct NetInfoMap *nim)
@@ -300,7 +348,7 @@ void UpdateCmd(struct NetInfoDevice *nid, struct NetInfoReq *req, struct NetInfo
                 DeleteFile(oldname);
                 Rename(nim->nim_Filename, oldname);
                 if (Rename(newname, nim->nim_Filename))
-                    nim->nim_Flags &= NIMF_CHANGED;
+                    nim->nim_Flags &= ~NIMF_CHANGED;
                 else
                     retval = NIERR_ACCESS;
             }

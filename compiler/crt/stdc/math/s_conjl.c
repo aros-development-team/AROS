@@ -30,8 +30,32 @@
 
 #include "math_private.h"
 
-long double complex
-conjl(long double complex z)
+/****************************************************************************
+    NAME */
+        long double complex conjl(
+
+/*  SYNOPSIS */
+        long double complex z)
+
+/*  FUNCTION
+        Return the complex conjugate of z.
+
+    INPUTS
+        z - Complex input value.
+
+    RESULT
+        A complex value with the real component unchanged and the
+        sign of the imaginary component reversed, including signed
+        zero and infinity. NaN components remain NaNs.
+
+    NOTES
+        Include <complex.h>.
+        When LDBL_MANT_DIG is 53, conjl() aliases conj().
+
+    SEE ALSO
+        creall(), cimagl(), cprojl()
+
+*****************************************************************************/
 {
 	return (CMPLXL(creall(z), -cimagl(z)));
 }

@@ -51,12 +51,15 @@ extern void starttimeout(void);
    - Makes sure no accesses outside the partition are allowed. */
 
 
-void update(void)
+LONG update(void)
 {
     _TDEBUG("UPDATE\n");
     globals->ioreq->io_Command=CMD_UPDATE;
     globals->ioreq->io_Length=0;
-    DoIO((struct IORequest *)globals->ioreq);
+    LONG errorcode=DoIO((struct IORequest *)globals->ioreq);
+
+    /* Older devices may not implement an update command. */
+    return(errorcode==IOERR_NOCMD ? 0 : errorcode);
 }
 
 void motoroff(void)
@@ -258,28 +261,53 @@ LONG getgeometry(ULONG *sectors, ULONG *sectorsize)
     return(errorcode);
 }
 
-void changegeometry(struct DosEnvec *de)
+LONG changegeometry(struct DosEnvec *de)
 {
     ULONG sectorspercilinder;
-    UWORD bs;
+    ULONG bs;
+    ULONG sectors_block, bytes_sector, bytes_block, shifts_block, mask_block;
+    ULONG sector_low, sector_high, sectors_total, blocks_total;
+    UQUAD byte_low, byte_high;
+    UQUAD cylindersectors;
+    UQUAD endsector;
+    UQUAD blockbytes;
 
-    globals->sectors_block = de->de_SectorPerBlock;
-    globals->bytes_sector  = de->de_SizeBlock<<2;
-    globals->bytes_block   = globals->bytes_sector * de->de_SectorPerBlock;
-
-    _DEBUG("%u sectors per block, %u bytes per sector, %u bytes per block\n", globals->sectors_block, globals->bytes_sector, globals->bytes_block);
-
-    bs = globals->bytes_block;
-
-    globals->shifts_block = 0;
-    while ((bs >>= 1) !=0 )
-    {
-        globals->shifts_block++;
+    /* I/O uses shifts and masks, so only power-of-two block sizes supported
+       by the handler can be accepted.  Check before any division or shift. */
+    if(de->de_SizeBlock==0 || de->de_SizeBlock>8192 || de->de_SectorPerBlock==0) {
+        return(ERROR_BAD_NUMBER);
+    }
+    if(de->de_Surfaces==0 || de->de_BlocksPerTrack==0 ||
+       de->de_Surfaces>0xFFFFFFFFUL/de->de_BlocksPerTrack ||
+       de->de_HighCyl>=0xFFFFFFFFUL || de->de_LowCyl>de->de_HighCyl ||
+       de->de_SectorPerBlock>32768/(de->de_SizeBlock*4)) {
+        return(ERROR_BAD_NUMBER);
+    }
+    cylindersectors=(UQUAD)de->de_Surfaces*de->de_BlocksPerTrack;
+    endsector=cylindersectors*((UQUAD)de->de_HighCyl+1);
+    blockbytes=(UQUAD)de->de_SizeBlock*4*de->de_SectorPerBlock;
+    if(blockbytes<512 || blockbytes>32768 || (blockbytes & (blockbytes-1))!=0 ||
+       cylindersectors==0 || endsector>0xFFFFFFFFULL || de->de_LowCyl>de->de_HighCyl) {
+        return(ERROR_BAD_NUMBER);
     }
 
-    globals->mask_block = globals->bytes_block-1;
+    sectors_block = de->de_SectorPerBlock;
+    bytes_sector  = de->de_SizeBlock<<2;
+    bytes_block   = bytes_sector * de->de_SectorPerBlock;
+
+    _DEBUG("%u sectors per block, %u bytes per sector, %u bytes per block\n", sectors_block, bytes_sector, bytes_block);
+
+    bs = bytes_block;
+
+    shifts_block = 0;
+    while ((bs >>= 1) !=0 )
+    {
+        shifts_block++;
+    }
+
+    mask_block = bytes_block-1;
     
-    _DEBUG("Block shift: %u, mask: 0x%08X\n", globals->shifts_block, globals->mask_block);
+    _DEBUG("Block shift: %u, mask: 0x%08X\n", shifts_block, mask_block);
 
     /* Absolute offset on the entire disk are expressed in Sectors;
        Offset relative to the start of the partition are expressed in Blocks */
@@ -287,10 +315,10 @@ void changegeometry(struct DosEnvec *de)
     sectorspercilinder = de->de_Surfaces*de->de_BlocksPerTrack;           // 32 bit
 
     /* Get bounds of our device */
-    globals->sector_low  = sectorspercilinder * de->de_LowCyl;
-    globals->sector_high = sectorspercilinder * (de->de_HighCyl+1);
+    sector_low  = sectorspercilinder * de->de_LowCyl;
+    sector_high = sectorspercilinder * (de->de_HighCyl+1);
 
-    _DEBUG("%u sectors per cylinder, start sector %u, end sector %u\n", sectorspercilinder, globals->sector_low, globals->sector_high);
+    _DEBUG("%u sectors per cylinder, start sector %u, end sector %u\n", sectorspercilinder, sector_low, sector_high);
 
     /*
      * If our device starts from sector 0, we assume we are serving the whole device.
@@ -298,7 +326,7 @@ void changegeometry(struct DosEnvec *de)
      * about its current geometry (this way we can support floppies where geometry may
      * vary (DD or HD)
      */
-    if (globals->sector_low == 0)
+    if (sector_low == 0)
     {
         ULONG totalsectors=0,sectorsize=0;
 
@@ -308,27 +336,45 @@ void changegeometry(struct DosEnvec *de)
 
         if(totalsectors!=0)
         {
-            D(bug("[SFS] Given Sector size %lu, detected %lu\n", sectorsize, globals->bytes_sector));
-            if(sectorsize==globals->bytes_sector) {
-                globals->sector_high=totalsectors;
+            D(bug("[SFS] Given Sector size %lu, detected %lu\n", sectorsize, bytes_sector));
+            if(sectorsize==bytes_sector) {
+                sector_high=totalsectors;
             }
             else {
                 req("Geometry could not be used because\n"\
                     "sectorsize does not match that of the\n"\
                     "mountlist (%ld<>%ld).\n"\
-                    "Please notify the author.", "Continue", sectorsize, globals->bytes_sector);
+                    "Please notify the author.", "Continue", sectorsize, bytes_sector);
             }
         }
     }
 
-    /* Set some more characteristics */
-    globals->sectors_total = globals->sector_high - globals->sector_low;
-    globals->blocks_total  = globals->sectors_total / globals->sectors_block;
-    globals->byte_low      = (UQUAD)globals->sector_low  * globals->bytes_sector;
-    globals->byte_high     = (UQUAD)globals->sector_high * globals->bytes_sector;
+    if(sector_high<=sector_low ||
+       sector_high-sector_low<sectors_block) {
+        return(ERROR_BAD_NUMBER);
+    }
 
-    _DEBUG("Total: %u sectors, %u blocks\n", globals->sectors_total, globals->blocks_total);
-    _DEBUG("Start offset 0x%llu, end offset 0x%llu\n", globals->byte_low, globals->byte_high);
+    /* Set some more characteristics */
+    sectors_total = sector_high - sector_low;
+    blocks_total  = sectors_total / sectors_block;
+    byte_low      = (UQUAD)sector_low  * bytes_sector;
+    byte_high     = (UQUAD)sector_high * bytes_sector;
+
+    _DEBUG("Total: %u sectors, %u blocks\n", sectors_total, blocks_total);
+    _DEBUG("Start offset 0x%llu, end offset 0x%llu\n", byte_low, byte_high);
+    /* Publish a complete, validated geometry together. */
+    globals->sectors_block=sectors_block;
+    globals->bytes_sector=bytes_sector;
+    globals->bytes_block=bytes_block;
+    globals->shifts_block=shifts_block;
+    globals->mask_block=mask_block;
+    globals->sector_low=sector_low;
+    globals->sector_high=sector_high;
+    globals->sectors_total=sectors_total;
+    globals->blocks_total=blocks_total;
+    globals->byte_low=byte_low;
+    globals->byte_high=byte_high;
+    return(0);
 }
 
 #ifdef DEBUGCODE
@@ -353,6 +399,20 @@ static struct fsIORequest *createiorequest(void)
 }
 #endif
 
+static void setscsi10(struct SCSI10Cmd *cmd, UBYTE opcode, ULONG sector, ULONG sectors)
+{
+    cmd->Opcode=opcode;
+    cmd->Lun=0;
+    cmd->LBA[0]=sector>>24;
+    cmd->LBA[1]=sector>>16;
+    cmd->LBA[2]=sector>>8;
+    cmd->LBA[3]=sector;
+    cmd->Reserved=0;
+    cmd->Length[0]=sectors>>8;
+    cmd->Length[1]=sectors;
+    cmd->Control=0;
+}
+
 LONG initdeviceio(UBYTE *devicename, IPTR unit, ULONG flags, struct DosEnvec *de)
 {
     LONG errorcode=ERROR_NO_FREE_STORE;
@@ -361,7 +421,9 @@ LONG initdeviceio(UBYTE *devicename, IPTR unit, ULONG flags, struct DosEnvec *de
         if((globals->ioreq=(struct IOStdReq *)CreateIORequest(globals->msgport, sizeof(struct IOStdReq)))!=0) {
             if((globals->ioreq2=(struct IOStdReq *)CreateIORequest(globals->msgport, sizeof(struct IOStdReq)))!=0) {
                 if((globals->ioreqchangeint=(struct IOStdReq *)CreateIORequest(globals->msgport, sizeof(struct IOStdReq)))!=0) {
-                    if((errorcode=OpenDevice(devicename, unit, (struct IORequest *)globals->ioreq, flags))==0) {
+                    /* OpenDevice returns device errors, not DOS packet errors. */
+                    errorcode=ERROR_DEVICE_NOT_MOUNTED;
+                    if(OpenDevice(devicename, unit, (struct IORequest *)globals->ioreq, flags)==0) {
                         globals->deviceopened=TRUE;
 
                         globals->fsioreq.ioreq=globals->ioreq;
@@ -372,7 +434,10 @@ LONG initdeviceio(UBYTE *devicename, IPTR unit, ULONG flags, struct DosEnvec *de
                         globals->ioreqchangeint->io_Device=globals->ioreq->io_Device;
                         globals->ioreqchangeint->io_Unit=globals->ioreq->io_Unit;
 
-                        changegeometry(de);
+                        if((errorcode=changegeometry(de))!=0) {
+                            cleanupdeviceio();
+                            return(errorcode);
+                        }
 
                         if(de->de_TableSize>=12) {
                             globals->bufmemtype=de->de_BufMemType;
@@ -472,19 +537,11 @@ LONG initdeviceio(UBYTE *devicename, IPTR unit, ULONG flags, struct DosEnvec *de
                                         globals->scsicmd.scsi_SenseLength=0;
                                         globals->scsicmd.scsi_SenseActual=0;
                     
-                                        globals->scsi10cmd.Opcode=SCSICMD_READ10;
-                                        globals->scsi10cmd.Lun=0;
-                                        globals->scsi10cmd.LBA=globals->sector_low;
-                                        globals->scsi10cmd.Reserved=0;
-                                        globals->scsi10cmd.Control=0;
-    
-                                        {
-                                            UWORD *ptr=(UWORD *)&globals->scsi10cmd.Length[0];               
-                                            //  scsi10cmd.Length=blocks*sectors_block;       /* Odd aligned... */
-                                            *ptr=1;
-                                        }
-    
-                                        if((td64errorcode=DoIO((struct IORequest *)globals->ioreq))==0) {
+                                        setscsi10(&globals->scsi10cmd, SCSICMD_READ10, globals->sector_low, 1);
+                                        globals->scsicmd.scsi_Actual=0;
+
+                                        if((td64errorcode=DoIO((struct IORequest *)globals->ioreq))==0 &&
+                                           globals->scsicmd.scsi_Actual==globals->bytes_sector) {
     //                                      req("SCSI direct command returned no error.", "Ok");
     
                                             globals->does64bit=TRUE;
@@ -606,18 +663,9 @@ void setiorequest(struct fsIORequest *fsi, UWORD action, UBYTE *buffer, ULONG bl
         fsi->scsicmd.scsi_SenseLength = 0;
         fsi->scsicmd.scsi_SenseActual = 0;
 
-        fsi->scsi10cmd.Opcode   = action==DIO_WRITE ? globals->cmdwrite : globals->cmdread;       // SCSICMD_READ10 or SCSICMD_WRITE10;
-        fsi->scsi10cmd.Lun      = 0;
-        fsi->scsi10cmd.LBA      = globals->sector_low+blockoffset*globals->sectors_block;
-        fsi->scsi10cmd.Reserved = 0;
-        fsi->scsi10cmd.Control  = 0;
-
-        {
-            UWORD *ptr=(UWORD *)&fsi->scsi10cmd.Length[0];
-
-            //  scsi10cmd.Length=blocks*sectors_block;       /* Odd aligned... */
-            *ptr=blocks*globals->sectors_block;
-        }
+        setscsi10(&fsi->scsi10cmd, action==DIO_WRITE ? globals->cmdwrite : globals->cmdread,
+                  globals->sector_low+blockoffset*globals->sectors_block,
+                  blocks*globals->sectors_block);
     }
     else
     {
@@ -629,6 +677,36 @@ void setiorequest(struct fsIORequest *fsi, UWORD action, UBYTE *buffer, ULONG bl
         ioreq->io_Length  = blocks<<globals->shifts_block;
         ioreq->io_Offset  = startoffset;
         ioreq->io_Actual  = startoffset >> 32;
+    }
+}
+
+/* Rebuild each request before retrying: io_Actual is also the high offset
+   input for TD64/NSD and is overwritten by the device on completion. */
+static LONG transferrequest(UWORD action, UBYTE *buffer, ULONG blockoffset, ULONG blocks)
+{
+    LONG errorcode;
+
+    starttimeout();
+    globals->retries=MAX_RETRIES;
+
+    for(;;) {
+        setiorequest(&globals->fsioreq, action, buffer, blockoffset, blocks);
+        globals->fsioreq.scsicmd.scsi_Actual=0;
+        errorcode=DoIO((struct IORequest *)globals->fsioreq.ioreq);
+
+        if(errorcode==0) {
+            ULONG actual=globals->scsidirect ? globals->fsioreq.scsicmd.scsi_Actual :
+                                             globals->fsioreq.ioreq->io_Actual;
+
+            if(actual==(blocks<<globals->shifts_block)) {
+                return(0);
+            }
+            errorcode=IOERR_BADLENGTH;
+        }
+
+        if((errorcode=handleioerror(errorcode, action, globals->fsioreq.ioreq))!=0) {
+            return(errorcode);
+        }
     }
 }
 
@@ -649,6 +727,12 @@ LONG transfer_buffered(UWORD action, UBYTE *buffer, ULONG blockoffset, ULONG blo
        line, and asking the cache for another line there recurses through
        lruiocache() until the stack is exhausted. Use a private DMA-able
        allocation for the duration of the transfer instead. */
+    if(maxblocks>(0xFFFFFFFFUL>>globals->shifts_block)) {
+        maxblocks=0xFFFFFFFFUL>>globals->shifts_block;
+    }
+    if(globals->scsidirect && maxblocks>65535/globals->sectors_block) {
+        maxblocks=65535/globals->sectors_block;
+    }
     if (bouncelimit == 0)
         bouncelimit = 1;
     if (maxblocks > bouncelimit)
@@ -666,28 +750,12 @@ LONG transfer_buffered(UWORD action, UBYTE *buffer, ULONG blockoffset, ULONG blo
     {
         ULONG blocks=blocklength>maxblocks ? maxblocks : blocklength;
 
-        setiorequest(&globals->fsioreq, action, tempbuffer, blockoffset, blocks);
-
         if (action==DIO_WRITE)
             CopyMemQuick(buffer, tempbuffer, blocks<<globals->shifts_block);
 
-      /* We're about to do a physical disk access.  (Re)set timeout.  Since
-         the drive's motor will be turned off with the timeout as well we
-         always (re)set the timeout even if doio() would return an error. */
-
-        starttimeout();
-        globals->retries=MAX_RETRIES;
-
-        while ((errorcode=DoIO((struct IORequest *)globals->fsioreq.ioreq)) != 0)
-        {
-	    _DEBUG("Buffered transfer: I/O error %d\n", errorcode);
-
-            if ((errorcode = handleioerror(errorcode, action, globals->fsioreq.ioreq)) != 0)
-            {
-                _DEBUG("Buffered transfer: SFS error %d\n", errorcode);
-                FreeVec(tempbuffer);
-                return(errorcode);
-            }
+        if((errorcode=transferrequest(action, tempbuffer, blockoffset, blocks))!=0) {
+            FreeVec(tempbuffer);
+            return(errorcode);
         }
 
         if (action==DIO_READ)
@@ -790,10 +858,21 @@ LONG transfer(UWORD action, UBYTE *buffer, ULONG blockoffset, ULONG blocklength)
 {
     _TDEBUG("TRANSFER: %ld, buf=0x%p, block=%ld, blocks=%ld...\n", action, buffer, blockoffset, blocklength);
 
-    if ((blockoffset < globals->blocks_total) && (blockoffset + blocklength <= globals->blocks_total))
+    if ((blockoffset <= globals->blocks_total) && (blocklength <= globals->blocks_total - blockoffset))
     {
         ULONG maxblocks = globals->blocks_maxtransfer;
         LONG errorcode;
+
+        if(blocklength==0) {
+            return(0);
+        }
+
+        if(maxblocks>(0xFFFFFFFFUL>>globals->shifts_block)) {
+            maxblocks=0xFFFFFFFFUL>>globals->shifts_block;
+        }
+        if(globals->scsidirect && maxblocks>65535/globals->sectors_block) {
+            maxblocks=65535/globals->sectors_block;
+        }
 
 	_DEBUG("MaxTransfer: %d\n", maxblocks);
 
@@ -809,25 +888,8 @@ LONG transfer(UWORD action, UBYTE *buffer, ULONG blockoffset, ULONG blocklength)
         {
             ULONG blocks = (blocklength > maxblocks) ? maxblocks : blocklength;
 
-            setiorequest(&globals->fsioreq, action, buffer, blockoffset, blocks);
-
-            /* We're about to do a physical disk access.  (Re)set timeout.  Since
-               the drive's motor will be turned off with the timeout as well we
-               always (re)set the timeout even if doio() would return an error. */
-
-            starttimeout();
-            globals->retries=MAX_RETRIES;
-
-            while ((errorcode=DoIO((struct IORequest *)globals->fsioreq.ioreq)) != 0)
-            {
-            	_DEBUG("Direct transfer: I/O error %d\n", errorcode);
-
-                if ((errorcode=handleioerror(errorcode, action, globals->fsioreq.ioreq)) != 0)
-                {
-	            _DEBUG("Direct transfer: SFS error %d\n", errorcode);
-
-                    return errorcode;
-                }
+            if((errorcode=transferrequest(action, buffer, blockoffset, blocks))!=0) {
+                return(errorcode);
             }
 
             blocklength-=blocks;

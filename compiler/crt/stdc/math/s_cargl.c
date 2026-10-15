@@ -31,8 +31,46 @@
 
 #include "math_private.h"
 
-long double
-cargl(long double complex z)
+/****************************************************************************
+    NAME */
+        long double cargl(
+
+/*  SYNOPSIS */
+        long double complex z)
+
+/*  FUNCTION
+        Return the principal argument of z, in radians, with a branch cut
+        along the negative real axis. The angle is calculated by
+        atan2l(cimagl(z), creall(z)).
+
+    INPUTS
+        z - Complex input value.
+
+    RESULT
+        An angle in the interval [-pi, pi]. The signs of zero select
+        the side of the branch cut. With a negative real component,
+        imaginary +0 gives +pi and imaginary -0 gives -pi.
+        An imaginary zero with positive real part is preserved.
+        Infinite components select the corresponding axis or
+        quadrant angle; a NaN component produces NaN.
+        Signed-zero pairs differ on targets using the separate long
+        double implementation; see BUGS.
+
+    NOTES
+        Include <complex.h>.
+
+    BUGS
+        On targets with a separate long double implementation,
+        atan2l() treats both signed-zero components as a domain
+        error, sets errno to EDOM and returns NaN if execution
+        continues. It requests FE_INVALID, but the exception
+        may not be raised by every AROS target. Where cargl()
+        aliases carg(), the double behavior applies.
+
+    SEE ALSO
+        atan2l(), creall(), cimagl(), carg(), cargf()
+
+*****************************************************************************/
 {
 
 	return (atan2l(cimagl(z), creall(z)));

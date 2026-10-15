@@ -31,8 +31,33 @@
 
 #include "math_private.h"
 
-long double complex
-cprojl(long double complex z)
+/****************************************************************************
+    NAME */
+        long double complex cprojl(
+
+/*  SYNOPSIS */
+        long double complex z)
+
+/*  FUNCTION
+        Project z onto the Riemann sphere.
+
+    INPUTS
+        z - Complex input value.
+
+    RESULT
+        If either component is infinite, positive real infinity
+        with an imaginary zero carrying the sign of the original
+        imaginary component. Otherwise z is returned unchanged,
+        including a NaN component when neither part is infinite.
+
+    NOTES
+        Include <complex.h>.
+        When LDBL_MANT_DIG is 53, cprojl() aliases cproj().
+
+    SEE ALSO
+        creall(), cimagl(), conjl()
+
+*****************************************************************************/
 {
 
 	if (!isinf(creall(z)) && !isinf(cimagl(z)))

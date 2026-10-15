@@ -24,6 +24,10 @@ struct group;
 struct UserGroupCredentials;
 
 BOOL  ugSecActive(struct Library *ugBase);
+/* The user and group databases come from security.library only once it is
+ * configured; before that the system is single-user and netinfo.device's
+ * databases are the ones in use, as without the library */
+BOOL  ugSecDbActive(struct Library *ugBase);
 void  ugSecCleanup(struct Library *ugBase);
 
 uid_t ugSecGetUid(struct Library *ugBase, BOOL effective);

@@ -77,7 +77,17 @@ struct SecurityBase
     struct Process              *Auth;
     struct MsgPort              *AuthPort;
     LONG                        AuthPending;            /* requests queued, bounded */
+    struct { UWORD Uid; UWORD Count; } AuthQueue[8];    /* per calling user (secAUTH_QUEUEUIDS) */
+    LONG                        AuthTickets;            /* outstanding login tickets */
     struct SignalSemaphore      LogSem;                 /* VLogF() from server and auth */
+
+    /* pam.library, opened on first use and kept (sessions hold handles) */
+    struct Library              *sec_PamBase;
+
+    /* log.resource provider (security_log.c), handle created on first use */
+    APTR                        sec_LogResBase;
+    APTR                        sec_LogHandle;
+    struct Node                 sec_LogNode;
 
     /* List of sessions */
     struct MinList              SessionsList;

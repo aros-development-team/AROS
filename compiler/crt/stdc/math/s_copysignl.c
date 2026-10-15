@@ -30,8 +30,34 @@
 
 #include "fpmath.h"
 
-long double
-copysignl(long double x, long double y)
+/****************************************************************************
+    NAME */
+        long double copysignl(
+
+/*  SYNOPSIS */
+        long double x, long double y)
+
+/*  FUNCTION
+        Return the magnitude of x with the sign bit of y.
+
+    INPUTS
+        x - Value supplying the magnitude.
+        y - Value supplying the sign bit.
+
+    RESULT
+        The magnitude of x with the sign of y, including the sign of
+        zero, infinity or NaN. No numerical comparison with y is made.
+
+    NOTES
+        Include <math.h>. A NaN input retains its NaN classification;
+        NaN payload behavior depends on the target representation.
+        On equal-precision long double targets, copysignl() aliases
+        copysign().
+
+    SEE ALSO
+        copysign(), copysignf(), fabsl()
+
+*****************************************************************************/
 {
 	union IEEEl2bits ux, uy;
 

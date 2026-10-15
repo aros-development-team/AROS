@@ -9,6 +9,8 @@
 #include <exec/types.h>
 #include <libraries/security.h>
 
+#include "security_log.h"
+
 struct SecurityBase;
 
 /* Size of the general purpose line buffer */
@@ -25,6 +27,7 @@ struct secConfig
     UWORD               PasswdgidLevel;         /* Highest gid for users who can change passwd  */
     UWORD               MaxTries;               /* Security.auth: failures before a lock-out    */
     UWORD               LockTime;               /* Security.auth: lock-out time in seconds      */
+    UWORD               LoginDelayMax;          /* Security.auth: longest hold-back, seconds    */
 };
 
 #define secCFGB_LimitDOSSetProtection   (0)     /* LimitDOSSetProtection                */
@@ -102,6 +105,7 @@ extern BOOL ProbeKeyFile(struct SecurityBase *secBase, struct MsgPort *fs);
 extern struct secUserDef *GetUserDefs(struct SecurityBase *secBase);
 extern struct secGroupDef *GetGroupDefs(struct SecurityBase *secBase);
 extern void FreeDefs(struct SecurityBase *secBase);
+extern struct secUserDef *MakeUserDef(struct SecurityBase *secBase, STRPTR line);
 extern BOOL UpdateUserDefs(struct SecurityBase *secBase);
 
 extern BOOL ClearBuffer(struct SecurityBase *secBase);
@@ -109,8 +113,9 @@ extern void FreeBuffer(struct SecurityBase *secBase);
 extern void PurgeKeyBuffer(struct SecurityBase *secBase);
 
 /* Logging: VLogF takes a RawDoFmt style mem stream of SIPTRs, formats
- * written for 32-bit MuFS ("%ld") are converted on the fly */
-extern void VLogF(struct SecurityBase *secBase, CONST_STRPTR fmt, SIPTR *argv);
+ * written for 32-bit MuFS ("%ld") are converted on the fly. type is a
+ * LOGF_Flag_Type_#? value and sub a SECLOG_SUB_#? name (security_log.h). */
+extern void VLogF(struct SecurityBase *secBase, ULONG type, CONST_STRPTR sub, CONST_STRPTR fmt, SIPTR *argv);
 extern void FixFormat(CONST_STRPTR src, STRPTR dst, ULONG dstsize);
 
 #endif /* _SECURITY_CONFIG_H */

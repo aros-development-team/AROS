@@ -31,6 +31,30 @@
 
 #include "fpmath.h"
 
+/****************************************************************************
+    NAME
+        int __isnan(
+
+    SYNOPSIS
+        double d)
+
+    FUNCTION
+        Determine whether d is NaN.
+
+    INPUTS
+        d - Value to examine.
+
+    RESULT
+        Return 1 for NaN; return 0 for finite values and infinity.
+        The sign does not affect the result.
+
+    NOTES
+        Include <math.h>. Use isnan() for type-generic calls.
+
+    SEE ALSO
+        isnan(), __isinf(), __isfinite()
+
+*****************************************************************************/
 int
 __isnan(double d)
 {
@@ -40,6 +64,30 @@ __isnan(double d)
 	return (u.bits.exp == 2047 && (u.bits.manl != 0 || u.bits.manh != 0));
 }
 
+/****************************************************************************
+    NAME
+        int __isnanf(
+
+    SYNOPSIS
+        float f)
+
+    FUNCTION
+        Determine whether f is NaN.
+
+    INPUTS
+        f - Value to examine.
+
+    RESULT
+        Return 1 for NaN; return 0 for finite values and infinity.
+        The sign does not affect the result.
+
+    NOTES
+        Include <math.h>. Use isnan() for type-generic calls.
+
+    SEE ALSO
+        isnan(), __isinff(), __isfinitef()
+
+*****************************************************************************/
 int
 __isnanf(float f)
 {
@@ -49,6 +97,34 @@ __isnanf(float f)
 	return (u.bits.exp == 255 && u.bits.man != 0);
 }
 
+/****************************************************************************
+    NAME
+        int __isnanl(
+
+    SYNOPSIS
+        long double e)
+
+    FUNCTION
+        Determine whether e is NaN.
+
+    INPUTS
+        e - Value to examine.
+
+    RESULT
+        Return 1 for NaN; return 0 for finite values and infinity.
+        The sign does not affect the result.
+
+    NOTES
+        Include <math.h>. Use isnan() for type-generic calls.
+
+    BUGS
+        On ARM and PowerPC builds with an 11-bit long-double exponent,
+        this function always returns 0.
+
+    SEE ALSO
+        isnan(), __isinfl(), __isfinitel()
+
+*****************************************************************************/
 int
 __isnanl(long double e)
 {

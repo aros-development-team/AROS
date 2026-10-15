@@ -244,6 +244,7 @@ void request2(UBYTE *text);
 // #define STARTDEBUG
 
 LONG mainprogram(struct ExecBase *SysBase) {
+    LONG startuperror = ERROR_NO_FREE_STORE;
 #ifndef __AROS__
     ULONG reslen;
     APTR old_a4;
@@ -251,6 +252,22 @@ LONG mainprogram(struct ExecBase *SysBase) {
 #endif
 
     globals = AllocMem(sizeof(struct SFSBase), MEMF_PUBLIC | MEMF_CLEAR);
+    if(globals == NULL) {
+        struct Process *task = (struct Process *)FindTask(NULL);
+        struct DosPacket *packet = waitpacket(task);
+        struct MsgPort *replyport = packet->dp_Port;
+        struct Message *msg = packet->dp_Link;
+
+        packet->dp_Res1 = DOSFALSE;
+        packet->dp_Res2 = ERROR_NO_FREE_STORE;
+        packet->dp_Port = &task->pr_MsgPort;
+        msg->mn_Node.ln_Name = (char *)packet;
+        msg->mn_Node.ln_Succ = NULL;
+        msg->mn_Node.ln_Pred = NULL;
+        PutMsg(replyport, msg);
+        return(ERROR_NO_FREE_STORE);
+    }
+
 #ifndef __AROS__
     globals->sysBase = SysBase;
 #endif
@@ -331,7 +348,8 @@ LONG mainprogram(struct ExecBase *SysBase) {
                                                 dreq("(3) Timer.device opened");
 #endif
 
-                                                if(initcachedio(AROS_BSTR_ADDR(globals->startupmsg->fssm_Device), globals->startupmsg->fssm_Unit, globals->startupmsg->fssm_Flags, globals->dosenvec) == 0) {
+                                                if((startuperror = initcachedio(AROS_BSTR_ADDR(globals->startupmsg->fssm_Device), globals->startupmsg->fssm_Unit, globals->startupmsg->fssm_Flags, globals->dosenvec)) == 0) {
+                                                    startuperror = ERROR_NO_FREE_STORE;
 #ifdef STARTDEBUG
                                                     dreq("(4) Cached IO layer started");
 #endif
@@ -472,7 +490,7 @@ LONG mainprogram(struct ExecBase *SysBase) {
 
         _DEBUG("Returning startup packet with DOSFALSE\n");
 
-        returnpacket(DOSFALSE, ERROR_NO_FREE_STORE);
+        returnpacket(DOSFALSE, startuperror);
 
         CloseLibrary((struct Library *)DOSBase);
     }
@@ -480,7 +498,7 @@ LONG mainprogram(struct ExecBase *SysBase) {
     FreeMem(globals, sizeof(struct SFSBase));
     _DEBUG("Exiting filesystem\n");
 
-    return(ERROR_NO_FREE_STORE);
+    return(startuperror);
 }
 
 /* Helper to make sure BSTR's are copied and NULL terminated,
@@ -1287,8 +1305,13 @@ sfsSecBeginPacket(globals->packet);
                             }
                         }
 
-                        flushiocache();
-                        update();
+                        {
+                            LONG flusherrorcode = flushiocache();
+
+                            if(errorcode == 0) {
+                                errorcode = flusherrorcode;
+                            }
+                        }
                         motoroff();
 
                         if(errorcode != 0) {
@@ -1490,57 +1513,73 @@ sfsSecBeginPacket(globals->packet);
                                                 UBYTE *src = sl->string, ch;
                                                 UBYTE *s = globals->string;
 
-                                                while((*s++ = *path++) != 0) {    // Work-around for bug in ixemul, which sometimes provides the same pointer for dp_Arg2 (path) and dp_Arg3 (soft-link buffer)
-                                                }
+                                                ULONG capacity = globals->bytes_block - sizeof(struct fsSoftLink);
+                                                ULONG suffixlength = 0;
 
-                                                s = globals->string;
-
-                                                _DEBUG("ACTION_READ_LINK: length = %ld, sl->string = '%s', path = '%s'\n", length, sl->string, s);
-
-                                                /* cb is no longer valid at this point. */
-
-                                                /* Check if link target is an absolute path */
-
-                                                while((ch = *src++) != '\0') {
-                                                    if(ch == ':')
-                                                        break;
-                                                }
-                                                src = sl->string;
-
-                                                /* If target is a relative path, put path preceding
-                                                   link into buffer so that result is relative to
-                                                   lock passed in */
-
-                                                if(ch != ':') {
-                                                    while(prefix != p && length-- > 0) {
-                                                        *dest++ = *prefix++;
-                                                    }
-                                                }
-
-                                                /* Copy link target to buffer */
-
-                                                while(length-- > 0 && (*dest++ = *src++) != 0) {
-                                                }
-                                                dest--;
-                                                length++;
-
-                                                /* Ensure we don't insert an extraneous slash */
-
-                                                if(length != globals->packet->dp_Arg4 && *(dest - 1) == '/') {
-                                                    *--dest = '\0';
-                                                    length++;
-                                                }
-                                                if(*(dest - 1) == ':' && *s == '/') {
-                                                    s++;
-                                                }
-
-                                                /* Append remainder of original path */
-
-                                                while(length-- > 0 && (*dest++ = *s++) != 0) {
-                                                }
-
-                                                if(length < 0) {
+                                                if(length <= 0) {
                                                     errorcode = ERROR_LINE_TOO_LONG;
+                                                } else if(memchr(src, 0, capacity) == 0) {
+                                                    errorcode = ERROR_NOT_A_DOS_DISK;
+                                                }
+                                                while(suffixlength < sizeof(globals->string) && path[suffixlength] != 0) {
+                                                    suffixlength++;
+                                                }
+                                                if(suffixlength == sizeof(globals->string)) {
+                                                    errorcode = ERROR_LINE_TOO_LONG;
+                                                }
+                                                if(errorcode == 0) {
+                                                    /* The path and output may alias, as with ixemul. */
+                                                    CopyMem(path, s, suffixlength + 1);
+
+                                                    s = globals->string;
+
+                                                    _DEBUG("ACTION_READ_LINK: length = %ld, sl->string = '%s', path = '%s'\n", length, sl->string, s);
+
+                                                    /* cb is no longer valid at this point. */
+
+                                                    /* Check if link target is an absolute path */
+
+                                                    while((ch = *src++) != '\0') {
+                                                        if(ch == ':')
+                                                            break;
+                                                    }
+                                                    src = sl->string;
+
+                                                    /* If target is a relative path, put path preceding
+                                                       link into buffer so that result is relative to
+                                                       lock passed in */
+
+                                                    if(ch != ':') {
+                                                        while(prefix != p && length-- > 0) {
+                                                            *dest++ = *prefix++;
+                                                        }
+                                                    }
+
+                                                    /* Copy link target to buffer */
+
+                                                    while(length-- > 0 && (*dest++ = *src++) != 0) {
+                                                    }
+                                                    dest--;
+                                                    length++;
+
+                                                    /* Ensure we don't insert an extraneous slash */
+
+                                                    if(dest > (UBYTE *)globals->packet->dp_Arg3 && length != globals->packet->dp_Arg4 && *(dest - 1) == '/') {
+                                                        *--dest = '\0';
+                                                        length++;
+                                                    }
+                                                    if(dest > (UBYTE *)globals->packet->dp_Arg3 && *(dest - 1) == ':' && *s == '/') {
+                                                        s++;
+                                                    }
+
+                                                    /* Append remainder of original path */
+
+                                                    while(length-- > 0 && (*dest++ = *s++) != 0) {
+                                                    }
+
+                                                    if(length < 0) {
+                                                        errorcode = ERROR_LINE_TOO_LONG;
+                                                    }
                                                 }
                                             }
                                         }
@@ -3299,7 +3338,14 @@ LONG initdisk() {
 
     */
 
-    changegeometry(globals->dosenvec);
+    {
+        LONG errorcode=changegeometry(globals->dosenvec);
+
+        if(errorcode!=0) {
+            globals->disktype=ID_UNREADABLE_DISK;
+            return(errorcode);
+        }
+    }
     sfsSecVolumeOnline();
 
     if(globals->volumenode == 0) {

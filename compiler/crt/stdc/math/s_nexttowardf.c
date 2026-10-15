@@ -21,6 +21,50 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_nexttowardf.c,v 1.3 2011/02/
 
 #define	LDBL_INFNAN_EXP	(LDBL_MAX_EXP * 2 - 1)
 
+/****************************************************************************
+    NAME
+        float nexttowardf(
+
+    SYNOPSIS
+        float x, long double y)
+
+    FUNCTION
+        Return the adjacent float value in the direction of y. The direction
+        is determined using the full long double value of y, even when
+        y would round to x if converted to float.
+
+    INPUTS
+        x - Starting value.
+        y - Direction value, supplied as long double.
+
+    RESULT
+        The adjacent value toward y, or y converted to float when
+        x and y compare equal. Equal zeros return the sign of y.
+        A zero starting value and nonzero direction select the smallest
+        subnormal with the sign of y.
+
+        If either argument is NaN, the result is NaN. Stepping from
+        infinity toward a finite value returns the largest finite value
+        with the same sign. See BUGS for outward steps at the finite limit.
+
+    NOTES
+        Include <math.h>. Subnormal results and steps to zero can raise
+        FE_UNDERFLOW and FE_INEXACT. Outward steps at the finite limit
+        can raise FE_OVERFLOW and FE_INEXACT. Enabled traps may prevent
+        return. This function does not set errno.
+
+    BUGS
+        An outward step from the largest positive or negative finite
+        value can return that same finite value under directed rounding,
+        instead of the corresponding infinity.
+
+        Stepping from zero toward a negative value is affected by
+        undefined C behavior in this implementation.
+
+    SEE ALSO
+        nextafterf(), nexttoward()
+
+*****************************************************************************/
 float
 nexttowardf(float x, long double y)
 {

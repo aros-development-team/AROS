@@ -30,8 +30,37 @@ __FBSDID("$FreeBSD: src/lib/msun/src/s_fmax.c,v 1.1 2004/06/30 07:04:01 das Exp 
 
 #include "fpmath.h"
 
-double
-fmax(double x, double y)
+/****************************************************************************
+    NAME */
+        double fmax(
+
+/*  SYNOPSIS */
+        double x,
+        double y)
+
+/*  FUNCTION
+        Return the larger numeric operand, ignoring a lone NaN.
+
+    INPUTS
+        x - First double operand.
+        y - Second double operand.
+
+    RESULT
+        The larger value for numeric operands. For opposite-signed
+        zeros, return +0. If one operand is NaN, return the other.
+        If both are NaNs, return a NaN.
+
+    NOTES
+        Include <math.h>. For two NaNs, this implementation evaluates x + y, which may raise
+        FE_INVALID.
+
+        The sign of zero and NaN handling differ from a simple conditional
+        comparison. NaN payloads are not guaranteed.
+
+    SEE ALSO
+        fmin(), fmaxf(), fmaxl()
+
+*****************************************************************************/
 {
 	union IEEEd2bits u[2];
 	int x_is_nan, y_is_nan;
