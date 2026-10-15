@@ -159,7 +159,7 @@ void updateBitmap(ULONG first, ULONG last)
         SetAPen(rp, pen);
         RectFill(rp, x, y, x+1, y+1);
     }
-    DoMethod(Bmp, MUIM_Draw);
+    MUI_Redraw(Bmp, MADF_DRAWOBJECT);
 }
 
 void clearDeviceData(void)
@@ -182,6 +182,9 @@ BOOL getDeviceData(STRPTR device)
     };
 
     clearDeviceData();
+    SetAPen(rp, pen1);
+    RectFill(rp, 0, 0, 497, 347);
+    MUI_Redraw(Bmp, MADF_DRAWOBJECT);
     set(StartButton, MUIA_Disabled, TRUE);
     dl = LockDosList(LDF_DEVICES|LDF_READ);
     if(dl != NULL)
@@ -354,8 +357,6 @@ AROS_UFH3(void, select_function,
         if (name != oldname)
         {
             oldname = name;
-            SetAPen(rp, pen1);
-            RectFill(rp, 0, 0, 497, 347);
             getDeviceData(name);
             set(RefreshButton, MUIA_Disabled, FALSE);
         }
@@ -508,7 +509,7 @@ int main(int argc, char *argv[])
             RectFill(rp, 0, 0, 499, 349);
             
             set(Bmp, MUIA_Bitmap_Bitmap, bm);
-            DoMethod(Bmp, MUIM_Draw);
+            MUI_Redraw(Bmp, MADF_DRAWOBJECT);
 
             if(xget(MainWindow, MUIA_Window_Open))
             {
