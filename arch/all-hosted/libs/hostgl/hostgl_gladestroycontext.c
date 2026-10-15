@@ -23,14 +23,14 @@
       GLAContext ctx)
 
 /*  FUNCTION
-        Destroys the GL rendering context and frees all resoureces.
+        Destroy a rendering context and release its resources.
  
     INPUTS
         ctx - pointer to GL rendering context. A NULL pointer will be
                 ignored.
  
     RESULT
-        The GL context is destroyed. Do no use it anymore.
+        None. The context must not be used after this call.
  
     BUGS
 
