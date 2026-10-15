@@ -29,8 +29,30 @@
 #include <complex.h>
 #undef crealf
 
-float
-crealf(float complex z)
+/****************************************************************************
+    NAME */
+        float crealf(
+
+/*  SYNOPSIS */
+        float complex z)
+
+/*  FUNCTION
+        Return the real component of z.
+
+    INPUTS
+        z - Complex input value.
+
+    RESULT
+        The real component of z, including its sign. Signed zero,
+        infinity and NaN retain their respective classifications.
+
+    NOTES
+        Include <complex.h>.
+
+    SEE ALSO
+        cimagf(), conjf(), cprojf()
+
+*****************************************************************************/
 {
 	return z;
 }

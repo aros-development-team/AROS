@@ -30,6 +30,31 @@
 
 #include "fpmath.h"
 
+/****************************************************************************
+    NAME
+        int __signbit(
+
+    SYNOPSIS
+        double d)
+
+    FUNCTION
+        Test the sign bit of d.
+
+    INPUTS
+        d - Value to examine.
+
+    RESULT
+        Return 1 if the sign bit is set; otherwise return 0.
+        This distinguishes negative zero from positive zero and also
+        applies to infinities and NaNs.
+
+    NOTES
+        Include <math.h>. Use signbit() for type-generic calls.
+
+    SEE ALSO
+        signbit(), copysign()
+
+*****************************************************************************/
 int
 __signbit(double d)
 {
@@ -39,6 +64,31 @@ __signbit(double d)
 	return (u.bits.sign);
 }
 
+/****************************************************************************
+    NAME
+        int __signbitf(
+
+    SYNOPSIS
+        float f)
+
+    FUNCTION
+        Test the sign bit of f.
+
+    INPUTS
+        f - Value to examine.
+
+    RESULT
+        Return 1 if the sign bit is set; otherwise return 0.
+        This distinguishes negative zero from positive zero and also
+        applies to infinities and NaNs.
+
+    NOTES
+        Include <math.h>. Use signbit() for type-generic calls.
+
+    SEE ALSO
+        signbit(), copysignf()
+
+*****************************************************************************/
 int
 __signbitf(float f)
 {
@@ -48,6 +98,31 @@ __signbitf(float f)
 	return (u.bits.sign);
 }
 
+/****************************************************************************
+    NAME
+        int __signbitl(
+
+    SYNOPSIS
+        long double e)
+
+    FUNCTION
+        Test the sign bit of e.
+
+    INPUTS
+        e - Value to examine.
+
+    RESULT
+        Return 1 if the sign bit is set; otherwise return 0.
+        This distinguishes negative zero from positive zero and also
+        applies to infinities and NaNs.
+
+    NOTES
+        Include <math.h>. Use signbit() for type-generic calls.
+
+    SEE ALSO
+        signbit(), copysignl()
+
+*****************************************************************************/
 int
 __signbitl(long double e)
 {

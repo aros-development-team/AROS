@@ -32,6 +32,8 @@
         secT_MayChangePassword - (BOOL *) set to TRUE if secPasswd() would
                                  be allowed for this user (PASSWDUIDLEVEL /
                                  PASSWDGIDLEVEL in Security.config).
+        secT_AccountLocked     - (BOOL *) set to TRUE if the account is
+                                 locked (secAuthControlA(), Passwd LOCK).
 
     RESULT
         TRUE if the user exists, FALSE otherwise (or on an unconfigured
@@ -44,17 +46,26 @@
 {
     AROS_LIBFUNC_INIT
 
-    CONST_STRPTR userid = (CONST_STRPTR)GetTagData(secT_UserID, 0, taglist);
-    BOOL *haspw = (BOOL *)GetTagData(secT_HasPassword, 0, taglist);
-    BOOL *maychange = (BOOL *)GetTagData(secT_MayChangePassword, 0, taglist);
+    CONST_STRPTR userid;
+    BOOL *haspw, *maychange, *locked;
     struct secPrivUserInfo *info;
     BOOL found = FALSE;
 
+    /* utility.library is not there before the after-DOS stage */
+    if (!secBase->sec_AfterDOSDone)
+        return FALSE;
+
+    userid = (CONST_STRPTR)GetTagData(secT_UserID, 0, taglist);
+    haspw = (BOOL *)GetTagData(secT_HasPassword, 0, taglist);
+    maychange = (BOOL *)GetTagData(secT_MayChangePassword, 0, taglist);
+    locked = (BOOL *)GetTagData(secT_AccountLocked, 0, taglist);
     if (haspw)
         *haspw = FALSE;
     if (maychange)
         *maychange = FALSE;
-    if (!userid || !userid[0] || !secBase->sec_AfterDOSDone || !secBase->Configured)
+    if (locked)
+        *locked = FALSE;
+    if (!userid || !userid[0] || !secBase->Configured)
         return FALSE;
 
     if ((info = (struct secPrivUserInfo *)secAllocUserInfo()))
@@ -65,6 +76,8 @@
             found = TRUE;
             if (haspw)
                 *haspw = info->Password;
+            if (locked)
+                *locked = info->Locked;
             if (maychange)
                 *maychange = (info->Pub.uid <= secBase->Config.PasswduidLevel) ||
                              (info->Pub.gid <= secBase->Config.PasswdgidLevel);

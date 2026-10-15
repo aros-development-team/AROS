@@ -30,6 +30,7 @@
 #include "security_monitor.h"
 #include "security_memory.h"
 #include "security_plugins.h"
+#include "security_log.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -58,6 +59,7 @@ static int Security_Init(LIBBASETYPEPTR secBase)
     InitSemaphore(&secBase->MonitorSem);
     InitSemaphore(&secBase->PluginModuleSem);
     InitSemaphore(&secBase->LogSem);
+    InitLogging(secBase);
 
     NEWLIST((struct List *)&secBase->PluginModuleList);
     NEWLIST((struct List *)&secBase->NativeVolumes);
@@ -122,7 +124,7 @@ static AROS_UFP3(APTR, SecurityBoot,
                  AROS_UFPA(struct ExecBase *, SysBase, A6));
 
 static const TEXT securityboot_namestring[] = "security.boot";
-static const TEXT securityboot_versionstring[] = "security.boot 45.11\n";
+static const TEXT securityboot_versionstring[] = "security.boot " MOD_VERS_STRING "\n";
 
 const struct Resident securityboot_romtag =
 {

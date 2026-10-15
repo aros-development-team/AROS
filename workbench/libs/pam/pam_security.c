@@ -8,13 +8,19 @@
                     library's authentication process; this module never
                     sees a hash. Argument "hashed" allows a PAMTOK_ENVOY
                     token (which the library still accepts only with
-                    HASHEDLOGIN=1 in Security.config). A login ticket is
-                    kept for setcred.
+                    HASHEDLOGIN=1 in Security.config, and only from root).
+                    A login ticket is kept for setcred (module data
+                    PAM_SECURITY_TICKET_DATA) and given back at PamEnd()
+                    if nothing used it.
           setcred:  secLoginA() with the ticket on PAM_AROS_TASK
                     (PAM_ESTABLISH_CRED); secLogoutA() for PAM_DELETE_CRED.
-          account:  the user must exist.
+          account:  the user must exist, the account must not be locked
+                    (Passwd LOCK) and not have expired: SYS:Security/Expiry
+                    holds lines "<user> <yyyy-mm-dd>", the last day the
+                    account may be used.
           password: secPasswd() for the caller's own account.
-          session:  nothing yet.
+          session:  success; the per-login work (profile, last login,
+                    $Home) is still done by secLoginA().
 */
 
 #include <proto/exec.h>
@@ -22,23 +28,41 @@
 #include <proto/utility.h>
 #include <proto/security.h>
 #include <proto/pam.h>
+#include <resources/log.h>
 #include <string.h>
 
 #include "pam_intern.h"
 
-#define DATA_TICKET     "security.ticket"
+#define DATA_TICKET     PAM_SECURITY_TICKET_DATA
 #define DATA_LOGGEDIN   "security.loggedin"
 
 static struct Library *OpenSec(void)
 {
     struct Library *base = OpenLibrary(SECURITYNAME, 45);
 
-    if (base && base->lib_Version == 45 && base->lib_Revision < 13)
+    if (base && base->lib_Version == 45 && base->lib_Revision < 14)
     {
         CloseLibrary(base);
         base = NULL;
     }
     return base;
+}
+
+/* PamEnd() or replacement: give an unused ticket back */
+static void TicketCleanup(struct PamHandle *handle, APTR data, LONG status)
+{
+    struct Library *secBase;
+
+    if (!data)
+        return;
+    if ((secBase = OpenSec()))
+    {
+        struct TagItem tags[] = { { secT_DiscardTicket, (IPTR)data }, { TAG_DONE, 0 } };
+        secVerifyUserA(tags);
+        CloseLibrary(secBase);
+    }
+    memset(data, 0, sizeof(struct secLoginTicket));
+    FreeVec(data);
 }
 
 static LONG MapVerify(ULONG r)
@@ -60,11 +84,25 @@ static LONG SecAuthenticate(struct PamBase *PamBase, struct PamHandle *h, ULONG 
     struct Library *secBase;
     CONST_STRPTR user, tok;
     struct secUserInfo *info;
-    ULONG ticket = 0, r;
+    struct secLoginTicket *ticket;
+    ULONG r;
     LONG res;
 
     if ((res = PamGetUser(h, &user, NULL)) != PAM_SUCCESS)
         return res;
+    /* A local login to an account without a password is not asked for
+     * one, as with the built-in login request (not from the network, and
+     * not with PAM_DISALLOW_NULL_AUTHTOK: the empty token then fails) */
+    if (!h->AuthTok && !h->RHost && !(flags & PAM_DISALLOW_NULL_AUTHTOK) && h->AuthTokFormat == PAMTOK_CLEAR &&
+        (secBase = OpenSec()))
+    {
+        BOOL haspw = TRUE;
+        struct TagItem q[] = { { secT_UserID, (IPTR)user }, { secT_HasPassword, (IPTR)&haspw }, { TAG_DONE, 0 } };
+
+        if (secQueryUserA(q) && !haspw)
+            PamSetString(PamBase, &h->AuthTok, "", TRUE);
+        CloseLibrary(secBase);
+    }
     if ((res = PamGetAuthTok(h, PAM_AUTHTOK, &tok, NULL)) != PAM_SUCCESS)
         return res;
     if ((flags & PAM_DISALLOW_NULL_AUTHTOK) && !tok[0])
@@ -74,8 +112,14 @@ static LONG SecAuthenticate(struct PamBase *PamBase, struct PamHandle *h, ULONG 
 
     if (!(secBase = OpenSec()))
         return PAM_AUTHINFO_UNAVAIL;
+    if (!(ticket = AllocVec(sizeof(struct secLoginTicket), MEMF_PUBLIC | MEMF_CLEAR)))
+    {
+        CloseLibrary(secBase);
+        return PAM_BUF_ERR;
+    }
     if (!(info = secAllocUserInfo()))
     {
+        FreeVec(ticket);
         CloseLibrary(secBase);
         return PAM_BUF_ERR;
     }
@@ -88,7 +132,7 @@ static LONG SecAuthenticate(struct PamBase *PamBase, struct PamHandle *h, ULONG 
             { secT_Service,     (IPTR)h->Service },
             { secT_RemoteHost,  (IPTR)h->RHost  },
             { secT_UserInfo,    (IPTR)info      },
-            { secT_Ticket,      (IPTR)&ticket   },
+            { secT_Ticket,      (IPTR)ticket    },
             { TAG_DONE,         0               }
         };
         r = secVerifyUserA(tags);
@@ -98,8 +142,12 @@ static LONG SecAuthenticate(struct PamBase *PamBase, struct PamHandle *h, ULONG 
     {
         /* the stored spelling of the user ID */
         PamSetItem(h, PAM_USER, info->UserID);
-        PamSetData(h, DATA_TICKET, (APTR)(IPTR)ticket, NULL);
+        /* replaces (and gives back) a ticket from an earlier pass */
+        if (PamSetData(h, DATA_TICKET, ticket, TicketCleanup) != PAM_SUCCESS)
+            TicketCleanup(h, ticket, PAM_BUF_ERR);
     }
+    else
+        FreeVec(ticket);
     secFreeUserInfo(info);
     CloseLibrary(secBase);
     return res;
@@ -139,11 +187,66 @@ static LONG SecSetCred(struct PamBase *PamBase, struct PamHandle *h, ULONG flags
                 res = PAM_CRED_ERR;
             else
                 PamSetData(h, DATA_LOGGEDIN, (APTR)1, NULL);
-            PamSetData(h, DATA_TICKET, NULL, NULL);     /* one use */
+            PamSetData(h, DATA_TICKET, NULL, NULL);     /* one use: gives it back if unused */
         }
     }
     CloseLibrary(secBase);
     return res;
+}
+
+/* Days since 1978-01-01 of a yyyy-mm-dd date, -1 if malformed */
+static LONG DateDays(CONST_STRPTR d)
+{
+    static const UWORD cum[12] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
+    LONG y, m, day, days;
+
+    if (strlen(d) < 10 || d[4] != '-' || d[7] != '-')
+        return -1;
+    y = (d[0] - '0') * 1000 + (d[1] - '0') * 100 + (d[2] - '0') * 10 + (d[3] - '0');
+    m = (d[5] - '0') * 10 + (d[6] - '0');
+    day = (d[8] - '0') * 10 + (d[9] - '0');
+    if (y < 1978 || m < 1 || m > 12 || day < 1 || day > 31)
+        return -1;
+    /* leap days between 1978 and the start of year y */
+    days = (y - 1978) * 365 + ((y - 1) / 4 - 1977 / 4) - ((y - 1) / 100 - 1977 / 100) + ((y - 1) / 400 - 1977 / 400);
+    days += cum[m - 1] + day - 1;
+    if (m > 2 && ((y % 4 == 0 && y % 100 != 0) || y % 400 == 0))
+        days++;
+    return days;
+}
+
+/* Has the account's last day (SYS:Security/Expiry) passed? */
+static BOOL Expired(struct PamBase *PamBase, CONST_STRPTR user)
+{
+    char line[128];
+    struct DateStamp ds;
+    BPTR fh;
+    BOOL expired = FALSE;
+    ULONG ulen = strlen(user);
+
+    if (!(fh = Open("SYS:Security/Expiry", MODE_OLDFILE)))
+        return FALSE;
+    DateStamp(&ds);
+    while (FGets(fh, line, sizeof(line) - 1))
+    {
+        STRPTR p = line;
+
+        while (*p == ' ' || *p == '\t')
+            p++;
+        if (*p == ';' || *p == '#' || Strnicmp(p, user, ulen) || (p[ulen] != ' ' && p[ulen] != '\t'))
+            continue;
+        p += ulen;
+        while (*p == ' ' || *p == '\t')
+            p++;
+        {
+            LONG last = DateDays(p);
+            /* a malformed date counts as expired: fail closed */
+            expired = (last < 0) || (ds.ds_Days > last);
+        }
+        break;
+    }
+    Close(fh);
+    return expired;
 }
 
 static LONG SecAcctMgmt(struct PamBase *PamBase, struct PamHandle *h, ULONG flags, LONG argc, CONST_STRPTR *argv)
@@ -151,7 +254,7 @@ static LONG SecAcctMgmt(struct PamBase *PamBase, struct PamHandle *h, ULONG flag
     struct Library *secBase;
     CONST_STRPTR user;
     LONG res;
-    BOOL found;
+    BOOL found, locked = FALSE;
 
     if ((res = PamGetUser(h, &user, NULL)) != PAM_SUCCESS)
         return res;
@@ -163,11 +266,23 @@ static LONG SecAcctMgmt(struct PamBase *PamBase, struct PamHandle *h, ULONG flag
         return PAM_AUTHINFO_UNAVAIL;
     }
     {
-        struct TagItem tags[] = { { secT_UserID, (IPTR)user }, { TAG_DONE, 0 } };
+        struct TagItem tags[] = { { secT_UserID, (IPTR)user }, { secT_AccountLocked, (IPTR)&locked }, { TAG_DONE, 0 } };
         found = secQueryUserA(tags);
     }
     CloseLibrary(secBase);
-    return found ? PAM_SUCCESS : PAM_USER_UNKNOWN;
+    if (!found)
+        return PAM_USER_UNKNOWN;
+    if (locked)
+    {
+        PamLogA(PamBase, h, LOGF_Flag_Type_Warn, "account %s is locked", (IPTR []){ (IPTR)user });
+        return PAM_PERM_DENIED;
+    }
+    if (Expired(PamBase, user))
+    {
+        PamLogA(PamBase, h, LOGF_Flag_Type_Warn, "account %s has expired", (IPTR []){ (IPTR)user });
+        return PAM_ACCT_EXPIRED;
+    }
+    return PAM_SUCCESS;
 }
 
 static LONG SecChAuthTok(struct PamBase *PamBase, struct PamHandle *h, ULONG flags, LONG argc, CONST_STRPTR *argv)
@@ -220,7 +335,12 @@ static LONG SecChAuthTok(struct PamBase *PamBase, struct PamHandle *h, ULONG fla
     return res;
 }
 
+static LONG SecSession(struct PamBase *PamBase, struct PamHandle *h, ULONG flags, LONG argc, CONST_STRPTR *argv)
+{
+    return PAM_SUCCESS;
+}
+
 const struct PamBuiltin PamBuiltinSecurity =
 {
-    "security", { SecAuthenticate, SecSetCred, SecAcctMgmt, NULL, NULL, SecChAuthTok }
+    "security", { SecAuthenticate, SecSetCred, SecAcctMgmt, SecSession, SecSession, SecChAuthTok }
 };

@@ -16,8 +16,42 @@
 #include "fpmath.h"
 #include "math_private.h"
 
-long double
-logbl(long double x)
+/****************************************************************************
+    NAME */
+        long double logbl(
+
+/*  SYNOPSIS */
+        long double x)
+
+/*  FUNCTION
+        Return the base-two exponent of the magnitude of x
+        as a floating-point value.
+
+    INPUTS
+        x - Long double value to examine.
+
+    RESULT
+        For finite nonzero x, e such that 2^e <= |x| < 2^(e+1).
+        Zero returns negative infinity, infinity returns positive
+        infinity, and NaN returns NaN.
+
+    NOTES
+        Include <math.h>. The zero path divides by zero and can
+        raise FE_DIVBYZERO. A floating-point trap may prevent
+        return. Unlike ilogbl(), special inputs produce
+        floating-point values rather than integer sentinels.
+        Where long double equals double, logbl() aliases logb().
+
+    BUGS
+        The separate long double subnormal scan requires an
+        unsigned long wide enough for the significand field.
+        Binary128 on a 32-bit-long target can shift by 63
+        or 47 bits, which is undefined behavior in C.
+
+    SEE ALSO
+        logb(), logbf(), ilogbl(), frexpl()
+
+*****************************************************************************/
 {
 	union IEEEl2bits u;
 	unsigned long m;

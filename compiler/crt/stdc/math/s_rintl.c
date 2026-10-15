@@ -54,8 +54,41 @@ shift[2] = {
 };
 static const float zero[2] = { 0.0, -0.0 };
 
-long double
-rintl(long double x)
+/****************************************************************************
+    NAME */
+        long double rintl(
+
+/*  SYNOPSIS */
+        long double x)
+
+/*  FUNCTION
+        Round x to an integral floating-point value using the
+        current rounding direction.
+
+    INPUTS
+        x - Long double value to round.
+
+    RESULT
+        The rounded long double value. Nearest ties select the even
+        integer; other modes follow the current rounding direction.
+        Signed zeros and infinities keep their sign; NaNs remain NaNs.
+
+    NOTES
+        Include <math.h> and <fenv.h>. Unlike nearbyintl(),
+        rounding may raise FE_INEXACT. Unlike roundl(), ties are
+        not always rounded away from zero.
+
+    BUGS
+        The separate implementation requires intermediate arithmetic
+        evaluated in long double precision. A narrower x87 precision
+        setting can give incorrect results; wider evaluation can
+        double-round. Equal-precision aliases inherit the rint()
+        signed-shift defect for small negative inputs.
+
+    SEE ALSO
+        rint(), rintf(), nearbyintl(), roundl()
+
+*****************************************************************************/
 {
 	union IEEEl2bits u;
 	uint32_t expsign;

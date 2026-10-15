@@ -29,8 +29,31 @@
 #include <complex.h>
 #undef creall
 
-long double
-creall(long double complex z)
+/****************************************************************************
+    NAME */
+        long double creall(
+
+/*  SYNOPSIS */
+        long double complex z)
+
+/*  FUNCTION
+        Return the real component of z.
+
+    INPUTS
+        z - Complex input value.
+
+    RESULT
+        The real component of z, including its sign. Signed zero,
+        infinity and NaN retain their respective classifications.
+
+    NOTES
+        Include <complex.h>.
+        When LDBL_MANT_DIG is 53, creall() aliases creal().
+
+    SEE ALSO
+        cimagl(), conjl(), cprojl()
+
+*****************************************************************************/
 {
 	return z;
 }

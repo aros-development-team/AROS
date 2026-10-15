@@ -20,6 +20,7 @@
 #include "security_enforce.h"
 #include "security_memory.h"
 #include "security_support.h"
+#include "security_protect.h"
 
 const char KeyFileName[]    = secKey_FileName;
 const char PasswdFileName[] = secPasswd_FileName;
@@ -132,8 +133,11 @@ static struct secUserDef *ParseUserLine(struct SecurityBase *secBase, STRPTR lin
             break;
 
         case UPART_PASSWORD:
-            /* Any hash the crypto layer understands; empty = no password */
-            if (len && !IsValidPasswordHash(secBase, part[j]))
+            /* Any hash the crypto layer understands; empty = no password;
+             * a leading '!' locks the account (secAuthControlA()) */
+            if (part[j][0] == '!' && len > 1 && !IsValidPasswordHash(secBase, part[j] + 1))
+                goto Fail;
+            if (part[j][0] != '!' && len && !IsValidPasswordHash(secBase, part[j]))
                 goto Fail;
             break;
 
@@ -168,15 +172,16 @@ static struct secUserDef *ParseUserLine(struct SecurityBase *secBase, STRPTR lin
 
     if ((def = (struct secUserDef *)MAllocV(sizeof(struct secUserDef) + strlen(part[UPART_USERID]) +
                     strlen(part[UPART_USERNAME]) + strlen(part[UPART_HOMEDIR]) +
-                    strlen(part[UPART_SHELL]) + (pwdlen + 1) + 4)))
+                    strlen(part[UPART_SHELL]) + (pwdlen + 2) + 4)))
     {
         ptr = &((STRPTR)def)[sizeof(struct secUserDef)];
         def->UserID = ptr;
         strcpy(ptr, part[UPART_USERID]);
         ptr = &ptr[strlen(part[UPART_USERID]) + 1];
+        /* room for the hash and a '!' that locks the account */
         def->Password = ptr;
         strcpy(ptr, part[UPART_PASSWORD]);
-        ptr = &ptr[pwdlen + 1];
+        ptr = &ptr[pwdlen + 2];
         def->uid = (UWORD)uid;
         def->gid = (UWORD)gid;
         def->UserName = ptr;
@@ -347,6 +352,7 @@ static void InitDefs(struct SecurityBase *secBase)
     Buffer = secBase->Buffer;
 
     olddir = CurrentDir(secBase->_pwdLock);
+    RecoverPasswdFile(secBase);
     if ((file = Open(PasswdFileName, MODE_OLDFILE)))
     {
         struct secUserDef *def1, *def2 = NULL;
@@ -396,6 +402,8 @@ static void InitDefs(struct SecurityBase *secBase)
 
     secBase->Configured = (secBase->UserDefs != NULL);
     D(bug(DEBUG_NAME_STR " %s: system is %sconfigured\n", __func__, secBase->Configured ? "" : "NOT ");)
+
+    CheckDatabaseProtection(secBase);
 }
 
 void FreeDefs(struct SecurityBase *secBase)
@@ -578,7 +586,7 @@ BOOL ReadKeyFiles(struct SecurityBase *secBase)
 void LoadConfig(struct SecurityBase *secBase)
 {
     BPTR file, olddir;
-    SIPTR *argarray[18];
+    SIPTR *argarray[19];
 
 #define argLIMITDOSSETPROTECTION    0
 #define argPROFILE                  1
@@ -598,6 +606,7 @@ void LoadConfig(struct SecurityBase *secBase)
 #define argHASHEDLOGIN              15
 #define argMAXTRIES                 16
 #define argLOCKTIME                 17
+#define argLOGINDELAYMAX            18
 
     struct RDArgs *rdargs;
     ULONG line;
@@ -612,6 +621,7 @@ void LoadConfig(struct SecurityBase *secBase)
     config.PasswdgidLevel = secNOBODY_UID;
     config.MaxTries = secAUTH_DEFMAXTRIES;
     config.LockTime = secAUTH_DEFLOCKTIME;
+    config.LoginDelayMax = secAUTH_DEFDELAYMAX;
 
     if (secBase->_cfgLock && ClearBuffer(secBase) && (rdargs = AllocDosObject(DOS_RDARGS, NULL)))
     {
@@ -637,7 +647,7 @@ void LoadConfig(struct SecurityBase *secBase)
                              "LOGLOGIN/K/N,LOGLOGINFAIL/K/N,LOGPASSWD/K/N,LOGPASSWDFAIL/K/N,"
                              "LOGCHECKPASSWD/K/N,LOGCHECKPASSWDFAIL/K/N,PASSWDUIDLEVEL/K/N,"
                              "PASSWDGIDLEVEL/K/N,FSTAB/K/N,RESOURCETRACKING/K/N,LOADPLUGIN/K,"
-                             "HASHEDLOGIN/K/N,MAXTRIES/K/N,LOCKTIME/K/N",
+                             "HASHEDLOGIN/K/N,MAXTRIES/K/N,LOCKTIME/K/N,LOGINDELAYMAX/K/N",
                              (SIPTR *)argarray, rdargs))
                 {
 #define BOOLOPT(idx, var, flag) \
@@ -675,6 +685,8 @@ void LoadConfig(struct SecurityBase *secBase)
                         config.MaxTries = (*argarray[argMAXTRIES] < 0 || *argarray[argMAXTRIES] > 65535) ? secAUTH_DEFMAXTRIES : *argarray[argMAXTRIES];
                     if (argarray[argLOCKTIME])
                         config.LockTime = (*argarray[argLOCKTIME] < 0 || *argarray[argLOCKTIME] > 65535) ? secAUTH_DEFLOCKTIME : *argarray[argLOCKTIME];
+                    if (argarray[argLOGINDELAYMAX])
+                        config.LoginDelayMax = (*argarray[argLOGINDELAYMAX] < 0 || *argarray[argLOGINDELAYMAX] > 3600) ? secAUTH_DEFDELAYMAX : *argarray[argLOGINDELAYMAX];
                     if (argarray[argLOADPLUGIN])
                     {
                         /* LOADPLUGIN name: the plugin file, WITHOUT the suffix */
@@ -704,7 +716,8 @@ void LoadConfig(struct SecurityBase *secBase)
     {
         secBase->FirstStartup = FALSE;
         if (secBase->Config.LogFlags & secLogF_Startup)
-            VLogF(secBase, GetLogStr(secBase, MSG_LOG_STARTUP), NULL);
+            VLogF(secBase, LOGF_Flag_Type_Information, SECLOG_SUB_SERVER, GetLogStr(secBase, MSG_LOG_STARTUP), NULL);
+        CheckStartupScript(secBase);
     }
 }
 
@@ -722,8 +735,18 @@ BOOL UpdateUserDefs(struct SecurityBase *secBase)
         return FALSE;
 
     olddir = CurrentDir(secBase->_pwdLock);
-    if ((file = Open(PasswdFileName, MODE_NEWFILE)))
+    /* Written to a new file, which is protected as soon as it exists, and
+     * renamed into place only once it is known to be complete; an
+     * interrupted rename is completed by RecoverPasswdFile(). The old file
+     * is never touched if anything goes wrong before that. */
+    DeleteFile(secPasswd_NewName);
+    if ((file = Open(secPasswd_NewName, MODE_NEWFILE)))
     {
+        LONG written = 0, len;
+        BPTR lock;
+        struct FileInfoBlock *fib;
+
+        ProtectRootOnly(secBase, secPasswd_NewName);
         res = TRUE;
         while (def && res)
         {
@@ -734,13 +757,44 @@ BOOL UpdateUserDefs(struct SecurityBase *secBase)
             args[4] = (SIPTR)def->UserName;
             args[5] = (SIPTR)def->HomeDir;
             args[6] = (SIPTR)def->Shell;
-            res = (VFPrintf(file, "%s|%s|%iu|%iu|%s|%s|%s\n", (RAWARG)args) != -1);
+            len = VFPrintf(file, "%s|%s|%iu|%iu|%s|%s|%s\n", (RAWARG)args);
+            res = (len >= 0);
+            written += len;
             def = def->Next;
         }
         res = Close(file) && res;
-        /* A rewrite may recreate the file (SFS, afs); it holds the password
-         * hashes, so make sure only the owner (root) can read it. */
-        SetProtection(PasswdFileName, FIBF_EXECUTE);
+
+        /* the file on disk must hold all of it */
+        if (res)
+        {
+            res = FALSE;
+            if ((lock = Lock(secPasswd_NewName, SHARED_LOCK)))
+            {
+                if ((fib = AllocDosObject(DOS_FIB, NULL)))
+                {
+                    if (Examine(lock, fib))
+                        res = (fib->fib_Size == written && written > 0);
+                    FreeDosObject(DOS_FIB, fib);
+                }
+                UnLock(lock);
+            }
+        }
+        if (res)
+        {
+            DeleteFile(secPasswd_OldName);
+            res = Rename(PasswdFileName, secPasswd_OldName) && Rename(secPasswd_NewName, PasswdFileName);
+            if (res)
+                DeleteFile(secPasswd_OldName);
+            else
+                RecoverPasswdFile(secBase);
+            /* some filesystems recreate on rename; make sure */
+            ProtectRootOnly(secBase, PasswdFileName);
+        }
+        else
+        {
+            DeleteFile(secPasswd_NewName);
+            VLogF(secBase, LOGF_Flag_Type_Error, SECLOG_SUB_SERVER, "the password file could not be rewritten; it is unchanged", NULL);
+        }
     }
     CurrentDir(olddir);
 
@@ -748,42 +802,56 @@ BOOL UpdateUserDefs(struct SecurityBase *secBase)
 }
 
 /*
- * Format and append a line to the log file
+ * Format a log line and record it: in log.resource (if present) and
+ * appended to the log file in the configuration directory (if that is
+ * known yet). User IDs, service and host names come from callers, so
+ * control characters are replaced: a name cannot forge further lines.
  */
-void VLogF(struct SecurityBase *secBase, CONST_STRPTR fmt, SIPTR *argv)
+void VLogF(struct SecurityBase *secBase, ULONG type, CONST_STRPTR sub, CONST_STRPTR fmt, SIPTR *argv)
 {
     BPTR file, olddir;
     char date[LEN_DATSTRING];
     char time[LEN_DATSTRING];
     char fixed[256];
+    char text[512];
     struct DateTime dt;
-    SIPTR args[2];
+    SIPTR args[3];
+    UBYTE *p;
 
-    if (!secBase->_cfgLock)
-        return;
+    FixFormat(fmt, fixed, sizeof(fixed));
+    FormatString(fixed, argv, text, sizeof(text));
+    for (p = (UBYTE *)text; *p; p++)
+    {
+        if (*p < 0x20 || (*p >= 0x7f && *p < 0xa0))
+            *p = '?';
+    }
+    args[0] = (SIPTR)text;
+    VSecLog(secBase, type, sub, "%s", args);
 
     ObtainSemaphore(&secBase->LogSem);
-    olddir = CurrentDir(secBase->_cfgLock);
-    if ((file = Open(LogFileName, MODE_READWRITE)))
+    /* checked under LogSem: the server drops the lock under it too */
+    if (secBase->_cfgLock && secBase->sec_AfterDOSDone)
     {
-        if (Seek(file, 0, OFFSET_END) != -1)
+        olddir = CurrentDir(secBase->_cfgLock);
+        if ((file = Open(LogFileName, MODE_READWRITE)))
         {
-            DateStamp(&dt.dat_Stamp);
-            dt.dat_Format = FORMAT_DOS;
-            dt.dat_Flags = 0;
-            dt.dat_StrDay = NULL;
-            dt.dat_StrDate = date;
-            dt.dat_StrTime = time;
-            DateToStr(&dt);
-            args[0] = (SIPTR)date;
-            args[1] = (SIPTR)time;
-            VFPrintf(file, "%s, %s: ", (RAWARG)args);
-            FixFormat(fmt, fixed, sizeof(fixed));
-            VFPrintf(file, fixed, (RAWARG)argv);
-            FPutC(file, '\n');
+            if (Seek(file, 0, OFFSET_END) != -1)
+            {
+                DateStamp(&dt.dat_Stamp);
+                dt.dat_Format = FORMAT_DOS;
+                dt.dat_Flags = 0;
+                dt.dat_StrDay = NULL;
+                dt.dat_StrDate = date;
+                dt.dat_StrTime = time;
+                DateToStr(&dt);
+                args[0] = (SIPTR)date;
+                args[1] = (SIPTR)time;
+                args[2] = (SIPTR)text;
+                VFPrintf(file, "%s, %s: %s\n", (RAWARG)args);
+            }
+            Close(file);
         }
-        Close(file);
+        CurrentDir(olddir);
     }
-    CurrentDir(olddir);
     ReleaseSemaphore(&secBase->LogSem);
 }

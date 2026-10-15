@@ -22,7 +22,39 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_ilogbf.c,v 1.8 2008/02/22 02
 #include "math.h"
 #include "math_private.h"
 
-	int ilogbf(float x)
+/****************************************************************************
+    NAME */
+        int ilogbf(
+
+/*  SYNOPSIS */
+        float x)
+
+/*  FUNCTION
+        Return the binary exponent of |x| as an integer.
+
+    INPUTS
+        x - Float value to classify.
+
+    RESULT
+        The integer exponent e such that 2^e <= |x| < 2^(e+1)
+        for finite nonzero x. Zero returns FP_ILOGB0; NaN returns
+        FP_ILOGBNAN; infinity returns INT_MAX. In AROS,
+        FP_ILOGBNAN equals INT_MAX, so these results are ambiguous.
+
+    NOTES
+        Include <math.h>. Use isnan() or isinf() on the input to
+        distinguish NaN from infinity. Unlike logbf(), the
+        result is an integer sentinel for exceptional inputs.
+
+    BUGS
+        The subnormal scan shifts a signed 32-bit integer into its
+        sign bit, an operation with undefined behavior in C.
+        Subnormal results may depend on the compiler.
+
+    SEE ALSO
+        ilogb(), ilogbl(), logbf(), frexpf()
+
+*****************************************************************************/
 {
 	int32_t hx,ix;
 

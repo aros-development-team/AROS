@@ -30,7 +30,8 @@ struct secTags
     BOOL                All;
     BOOL                NoLog;
     BOOL                System;         /* secT_System: boot login */
-    ULONG               Ticket;         /* secT_Ticket: login ticket from secVerifyUserA() */
+    struct secLoginTicket *Ticket;      /* secT_Ticket: login ticket from secVerifyUserA() */
+    APTR                PamHandle;      /* out: the pam.library transaction of the login */
 };
 
 extern BOOL InterpretTagList(struct SecurityBase *secBase, struct TagItem *taglist, struct secTags *tags);

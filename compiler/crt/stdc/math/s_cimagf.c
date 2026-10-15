@@ -29,8 +29,30 @@
 #include <complex.h>
 #include "math_private.h"
 
-float
-cimagf(float complex z)
+/****************************************************************************
+    NAME */
+        float cimagf(
+
+/*  SYNOPSIS */
+        float complex z)
+
+/*  FUNCTION
+        Return the imaginary component of z.
+
+    INPUTS
+        z - Complex input value.
+
+    RESULT
+        The imaginary component of z, including its sign. Signed zero,
+        infinity and NaN retain their respective classifications.
+
+    NOTES
+        Include <complex.h>.
+
+    SEE ALSO
+        crealf(), conjf(), cprojf()
+
+*****************************************************************************/
 {
 	const float_complex z1 = { .f = z };
 

@@ -6,7 +6,14 @@
           auth: succeeds when the user name equals the "user=" argument on
           the configuration line (any password), otherwise PAM_AUTH_ERR.
           Everything else: PAM_IGNORE. Shows the shape of a module; an
-          ordinary AROS shared library installed as SYS:Libs/PAM/example.pam.
+          ordinary AROS shared library that would be installed as
+          SYS:Libs/PAM/example.pam.
+
+          It lets a user in without a password, so it is a test aid only:
+          it is not installed, and it refuses (PAM_AUTH_ERR) unless the
+          service line also carries the argument "insecure-test", e.g.
+
+              auth sufficient example user=guest insecure-test
 */
 
 #include <proto/exec.h>
@@ -16,6 +23,16 @@
 #include <string.h>
 
 struct Library *PamBase;
+
+static BOOL ArgPresent(LONG argc, CONST_STRPTR *argv, CONST_STRPTR word)
+{
+    LONG i;
+
+    for (i = 0; i < argc; i++)
+        if (!strcmp(argv[i], word))
+            return TRUE;
+    return FALSE;
+}
 
 static CONST_STRPTR ArgValue(LONG argc, CONST_STRPTR *argv, CONST_STRPTR key)
 {
@@ -39,6 +56,8 @@ AROS_LH4(LONG, PAMM_Authenticate,
     CONST_STRPTR user, want = ArgValue(argc, argv, "user");
     LONG r;
 
+    if (!ArgPresent(argc, argv, "insecure-test"))
+        return PAM_AUTH_ERR;
     if (!(PamBase = OpenLibrary(PAMNAME, PAMVERSION)))
         return PAM_SYSTEM_ERR;
     r = PamGetUser(handle, &user, NULL);

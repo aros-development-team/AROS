@@ -35,8 +35,37 @@
 #error "Unsupported long double format"
 #endif
 
-long double
-frexpl(long double x, int *ex)
+/****************************************************************************
+    NAME */
+        long double frexpl(
+
+/*  SYNOPSIS */
+        long double x,
+        int *ex)
+
+/*  FUNCTION
+        Decompose x into a normalized binary fraction and exponent.
+        For finite nonzero x, return m and store e such that
+        x = m * 2^e and 0.5 <= |m| < 1.
+
+    INPUTS
+        x - Value to decompose.
+        ex - Writable pointer receiving the integer exponent.
+
+    RESULT
+        The signed fraction m. For zero, return the signed zero and
+        store 0 in *ex. For infinity or NaN, return x; the separate
+        long double implementation leaves *ex unchanged.
+
+    NOTES
+        Include <math.h>. ex must not be NULL. On targets where
+        frexpl() aliases frexp(), nonfinite inputs instead store 0.
+        Do not use the exponent output for a nonfinite input.
+
+    SEE ALSO
+        frexp(), frexpf(), ldexpl()
+
+*****************************************************************************/
 {
 	union IEEEl2bits u;
 

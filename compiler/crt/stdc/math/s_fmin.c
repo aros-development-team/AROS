@@ -30,8 +30,37 @@ __FBSDID("$FreeBSD: src/lib/msun/src/s_fmin.c,v 1.1 2004/06/30 07:04:01 das Exp 
 
 #include "fpmath.h"
 
-double
-fmin(double x, double y)
+/****************************************************************************
+    NAME */
+        double fmin(
+
+/*  SYNOPSIS */
+        double x,
+        double y)
+
+/*  FUNCTION
+        Return the smaller numeric operand, ignoring a lone NaN.
+
+    INPUTS
+        x - First double operand.
+        y - Second double operand.
+
+    RESULT
+        The smaller value for numeric operands. For opposite-signed
+        zeros, return -0. If one operand is NaN, return the other.
+        If both are NaNs, return a NaN.
+
+    NOTES
+        Include <math.h>. For two NaNs, the second argument is returned.
+
+        The sign of zero and NaN handling differ from a simple conditional
+        comparison. Signaling NaNs may affect the floating-point exception
+        state; NaN payloads are not guaranteed.
+
+    SEE ALSO
+        fmax(), fminf(), fminl()
+
+*****************************************************************************/
 {
 	union IEEEd2bits u[2];
 

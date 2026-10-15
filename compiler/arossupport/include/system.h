@@ -233,11 +233,11 @@
 /*
     __mayalias is placed on struct definitions (exec Node/List/Resident).
     gcc before 9 then rejects a function declared with the struct before its
-    definition was seen ("conflicting types"), which headers that use a type
-    before including its defining header do, so leave it out there.
+    definition was seen ("conflicting types"), so a header that uses one of
+    these types in a prototype must include its defining header first.
 */
 #ifndef __mayalias
-#if defined(__clang__) || (defined(__GNUC__) && __GNUC_PREREQ(9,0))
+#if defined(__GNUC__) && __GNUC_PREREQ(3,3)
 #    define __mayalias  __attribute__((__may_alias__))
 #else
 #    define __mayalias

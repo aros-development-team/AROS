@@ -285,11 +285,14 @@ void FreeVolumes(struct SecurityBase *secBase)
         UnLock(secBase->_pwdLock);
         secBase->_pwdLock = BNULL;
     }
+    /* VLogF() uses the configuration directory under LogSem */
+    ObtainSemaphore(&secBase->LogSem);
     if (secBase->_cfgLock)
     {
         UnLock(secBase->_cfgLock);
         secBase->_cfgLock = BNULL;
     }
+    ReleaseSemaphore(&secBase->LogSem);
     ObtainSemaphore(&secBase->VolumesSem);
     {
         struct secNativeVolume *nv;

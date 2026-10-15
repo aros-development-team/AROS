@@ -70,4 +70,45 @@ scalbnl (long double x, int n)
         return u.e*0x1p-128;
 }
 
+/****************************************************************************
+    NAME
+        long double ldexpl(
+
+    SYNOPSIS
+        long double x, int n)
+
+    FUNCTION
+        Multiply x by 2 raised to n.
+
+    INPUTS
+        x - Value to scale.
+        n - Base-two exponent.
+
+    RESULT
+        The scaled long double value, subject to the limitations
+        described in BUGS. Inexact results depend on the current
+        floating-point rounding direction. Signed zero and infinity
+        retain their signs; NaN produces NaN.
+
+    NOTES
+        Include <math.h>. ldexpl() aliases scalbnl() where long double
+        has a separate implementation, or scalbn() where double and
+        long double have equal precision. Neither path sets errno.
+        Overflow and underflow may raise floating-point exceptions.
+
+    BUGS
+        The scaling implementations add n to a signed exponent without
+        checking for overflow. For x = 1 and n = INT_MAX, this causes
+        undefined signed integer arithmetic before the range check.
+
+        The separate long double implementation narrows its underflow
+        constant through double-precision copysign(). Under downward
+        rounding, a negative input can yield negative zero where a
+        negative subnormal is required. The equal-precision alias does
+        not use this implementation.
+
+    SEE ALSO
+        scalblnl(), frexpl()
+
+*****************************************************************************/
 AROS_MAKE_ALIAS(scalbnl, ldexpl);

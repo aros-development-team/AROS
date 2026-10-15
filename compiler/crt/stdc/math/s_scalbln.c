@@ -32,18 +32,110 @@ __FBSDID("$FreeBSD: src/lib/msun/src/s_scalbln.c,v 1.2 2005/03/07 04:57:50 das E
 #define	NMAX	65536
 #define	NMIN	-65536
 
+/****************************************************************************
+    NAME
+        double scalbln(
+
+    SYNOPSIS
+        double x, long n)
+
+    FUNCTION
+        Scale x by an integral power of two. The exponent is clamped
+        to [-65536, 65536] before calling scalbn().
+
+    INPUTS
+        x - Double value to scale.
+        n - Base-two exponent. Values outside the clamp interval are
+            treated as the nearest endpoint.
+
+    RESULT
+        The scaled double value. An exact result is returned without
+        rounding; otherwise the current rounding mode applies.
+        Signed zero retains its sign. Infinities and NaNs propagate.
+
+    NOTES
+        Include <math.h>. Overflow and underflow may raise floating-point
+        exceptions. Enabled traps may prevent the function from returning.
+
+*****************************************************************************/
 double
 scalbln (double x, long n)
 {
 	return (scalbn(x, (n > NMAX) ? NMAX : (n < NMIN) ? NMIN : (int)n));
 }
 
+/****************************************************************************
+    NAME
+        float scalblnf(
+
+    SYNOPSIS
+        float x, long n)
+
+    FUNCTION
+        Scale x by an integral power of two. The exponent is clamped
+        to [-65536, 65536] before calling scalbnf().
+
+    INPUTS
+        x - Float value to scale.
+        n - Base-two exponent. Values outside the clamp interval are
+            treated as the nearest endpoint.
+
+    RESULT
+        The scaled float value. An exact result is returned without
+        rounding; otherwise the current rounding mode applies.
+        Signed zero retains its sign. Infinities and NaNs propagate.
+
+    NOTES
+        Include <math.h>. Overflow and underflow may raise floating-point
+        exceptions. Enabled traps may prevent the function from returning.
+
+    SEE ALSO
+        frexpf()
+
+*****************************************************************************/
 float
 scalblnf (float x, long n)
 {
 	return (scalbnf(x, (n > NMAX) ? NMAX : (n < NMIN) ? NMIN : (int)n));
 }
 
+/****************************************************************************
+    NAME
+        long double scalblnl(
+
+    SYNOPSIS
+        long double x, long n)
+
+    FUNCTION
+        Scale x by an integral power of two. The exponent is clamped
+        to [-65536, 65536] before calling scalbnl().
+
+    INPUTS
+        x - Long double value to scale.
+        n - Base-two exponent. Values outside the clamp interval are
+            treated as the nearest endpoint.
+
+    RESULT
+        The scaled long double value, subject to the current rounding
+        mode and the limitation described in BUGS. Signed zero retains
+        its sign. Infinities and NaNs propagate.
+
+    NOTES
+        Include <math.h>. Overflow and underflow may raise floating-point
+        exceptions. Enabled traps may prevent the function from returning.
+
+    BUGS
+        When long double has a separate extended-precision implementation,
+        scalbnl() narrows a long double underflow constant through the
+        double-precision copysign() function. Under downward rounding,
+        a negative input can produce negative zero when a negative
+        subnormal result is required. The equal-precision double alias
+        does not use this implementation path.
+
+    SEE ALSO
+        frexpl()
+
+*****************************************************************************/
 long double
 scalblnl (long double x, long n)
 {

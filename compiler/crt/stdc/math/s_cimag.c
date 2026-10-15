@@ -30,8 +30,30 @@
 #include <complex.h>
 #include "math_private.h"
 
-double
-cimag(double complex z)
+/****************************************************************************
+    NAME */
+        double cimag(
+
+/*  SYNOPSIS */
+        double complex z)
+
+/*  FUNCTION
+        Return the imaginary component of z.
+
+    INPUTS
+        z - Complex input value.
+
+    RESULT
+        The imaginary component of z, including its sign. Signed zero,
+        infinity and NaN retain their respective classifications.
+
+    NOTES
+        Include <complex.h>.
+
+    SEE ALSO
+        creal(), conj(), cproj()
+
+*****************************************************************************/
 {
 	const double_complex z1 = { .f = z };
 

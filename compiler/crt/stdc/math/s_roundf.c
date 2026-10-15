@@ -30,8 +30,34 @@ __FBSDID("$FreeBSD: src/lib/msun/src/s_roundf.c,v 1.4 2005/12/02 13:45:06 bde Ex
 
 #include "math_private.h"
 
-float
-roundf(float x)
+/****************************************************************************
+    NAME */
+        float roundf(
+
+/*  SYNOPSIS */
+        float x)
+
+/*  FUNCTION
+        Round x to the nearest integral floating-point value,
+        with halfway cases rounded away from zero.
+
+    INPUTS
+        x - Float value to round.
+
+    RESULT
+        For finite x, an integral-valued float result. For example,
+        0.5 rounds to 1 and -0.5 rounds to -1. The sign of zero
+        is preserved; infinities remain infinite and NaNs remain NaNs.
+
+    NOTES
+        Include <math.h>. Rounding is independent of the current
+        rounding direction; unlike rintf(), halfway values
+        round away from zero. Exception flags may change.
+
+    SEE ALSO
+        floorf(), rintf(), lroundf(), llroundf()
+
+*****************************************************************************/
 {
 	float t;
 	uint32_t hx;

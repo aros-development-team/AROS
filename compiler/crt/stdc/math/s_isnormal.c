@@ -30,6 +30,31 @@
 
 #include "fpmath.h"
 
+/****************************************************************************
+    NAME
+        int __isnormal(
+
+    SYNOPSIS
+        double d)
+
+    FUNCTION
+        Determine whether d is a normal floating-point value.
+
+    INPUTS
+        d - Value to classify.
+
+    RESULT
+        Return 1 for a finite, nonzero value that is not subnormal;
+        return 0 for zero, subnormal values, infinity and NaN.
+        The sign does not affect the result.
+
+    NOTES
+        Include <math.h>. Use isnormal() for type-generic classification.
+
+    SEE ALSO
+        isfinite(), isnormal(), fpclassify()
+
+*****************************************************************************/
 int
 __isnormal(double d)
 {
@@ -39,6 +64,31 @@ __isnormal(double d)
 	return (u.bits.exp != 0 && u.bits.exp != 2047);
 }
 
+/****************************************************************************
+    NAME
+        int __isnormalf(
+
+    SYNOPSIS
+        float f)
+
+    FUNCTION
+        Determine whether f is a normal floating-point value.
+
+    INPUTS
+        f - Value to classify.
+
+    RESULT
+        Return 1 for a finite, nonzero value that is not subnormal;
+        return 0 for zero, subnormal values, infinity and NaN.
+        The sign does not affect the result.
+
+    NOTES
+        Include <math.h>. Use isnormal() for type-generic classification.
+
+    SEE ALSO
+        isfinite(), isnormal(), fpclassify()
+
+*****************************************************************************/
 int
 __isnormalf(float f)
 {
@@ -48,6 +98,35 @@ __isnormalf(float f)
 	return (u.bits.exp != 0 && u.bits.exp != 255);
 }
 
+/****************************************************************************
+    NAME
+        int __isnormall(
+
+    SYNOPSIS
+        long double e)
+
+    FUNCTION
+        Determine whether e is a normal floating-point value.
+
+    INPUTS
+        e - Value to classify.
+
+    RESULT
+        Return 1 for a finite, nonzero value that is not subnormal;
+        return 0 for zero, subnormal values, infinity and NaN.
+        The sign does not affect the result.
+
+    NOTES
+        Include <math.h>. Use isnormal() for type-generic classification.
+
+    BUGS
+        On ARM and PowerPC builds with an 11-bit long-double exponent,
+        infinity and NaN incorrectly return 1.
+
+    SEE ALSO
+        isfinite(), isnormal(), fpclassify()
+
+*****************************************************************************/
 int
 __isnormall(long double e)
 {

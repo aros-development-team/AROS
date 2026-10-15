@@ -28,6 +28,7 @@
 #include "security_userinfo.h"
 #include "security_memory.h"
 #include "security_support.h"
+#include "security_monitor.h"
 
 /*
  * Tag parsing
@@ -38,6 +39,10 @@ BOOL InterpretTagList(struct SecurityBase *secBase, struct TagItem *taglist, str
     struct TagItem *tag;
     struct Task *me = FindTask(NULL);
     BOOL isproc = (me->tc_Node.ln_Type == NT_PROCESS);
+
+    /* dos and utility are not there before the after-DOS stage */
+    if (!secBase->sec_AfterDOSDone)
+        return FALSE;
 
     tags->Input = isproc ? Input() : BNULL;
     tags->Output = isproc ? Output() : BNULL;
@@ -52,7 +57,9 @@ BOOL InterpretTagList(struct SecurityBase *secBase, struct TagItem *taglist, str
     tags->Quiet = FALSE;
     tags->All = FALSE;
     tags->NoLog = FALSE;
-    tags->Ticket = 0;
+    tags->System = FALSE;
+    tags->Ticket = NULL;
+    tags->PamHandle = NULL;
 
     while ((tag = NextTagItem(&tstate)))
     {
@@ -72,7 +79,7 @@ BOOL InterpretTagList(struct SecurityBase *secBase, struct TagItem *taglist, str
         case secT_All:           tags->All = tag->ti_Data ? TRUE : FALSE;       break;
         case secT_NoLog:         tags->NoLog = tag->ti_Data ? TRUE : FALSE;     break;
         case secT_System:        tags->System = tag->ti_Data ? TRUE : FALSE;    break;
-        case secT_Ticket:        tags->Ticket = (ULONG)tag->ti_Data;             break;
+        case secT_Ticket:        tags->Ticket = (struct secLoginTicket *)tag->ti_Data; break;
         }
     }
 
@@ -197,6 +204,64 @@ static BOOL UserHasPassword(struct SecurityBase *secBase, CONST_STRPTR userid)
  */
 static void CreateUserProfile(struct SecurityBase *secBase, struct secPrivUserInfo *info);
 
+/*
+ * A login succeeded: the monitors and the log line. (Security.server's
+ * CheckUser() does the same for the logins it decides itself.)
+ */
+static void RecordLogin(struct SecurityBase *secBase, struct secTags *tags, struct secPrivUserInfo *info)
+{
+    UWORD from = (UWORD)(GetTaskOwner(secBase, FindTask(NULL)) >> 16);
+
+    CallMonitors(secBase, secTrgB_Login, from, info->Pub.uid, info->Pub.UserID);
+    if (!tags->NoLog && (secBase->Config.LogFlags & secLogF_Login))
+    {
+        SIPTR args[2];
+        args[0] = from;
+        args[1] = (SIPTR)info->Pub.UserID;
+        VLogF(secBase, LOGF_Flag_Type_Information, SECLOG_SUB_LIBRARY, GetLogStr(secBase, MSG_LOG_LOGIN), args);
+    }
+}
+
+/*
+ * The password check of a login request. It goes to the authentication
+ * process like every other verification (failure hold-back, lock-out,
+ * log); only root switching to another user without a password (MuFS
+ * rule) is decided by the server. Should the authentication process not
+ * run, the server checks the password and a failure costs two seconds.
+ */
+static struct secPrivUserInfo *CheckLogin(struct SecurityBase *secBase, struct secTags *tags, STRPTR userid, STRPTR password, BOOL nopasswd)
+{
+    struct secPrivUserInfo *info;
+    struct secAPacket pkt;
+
+    if (nopasswd || !secBase->AuthPort)
+    {
+        info = (struct secPrivUserInfo *)SendServerPacket(secBase, secSAction_CheckUser, (SIPTR)userid,
+                                                          (SIPTR)password, nopasswd, tags->NoLog);
+        if (!info && !nopasswd)
+            Delay(2 * TICKS_PER_SECOND);
+        return info;
+    }
+
+    if (!(info = (struct secPrivUserInfo *)secAllocUserInfo()))
+        return NULL;
+    memset(&pkt, 0, sizeof(pkt));
+    pkt.Type = secAAction_Verify;
+    pkt.UserID = userid;
+    pkt.Token = password;
+    pkt.TokenType = secHASH_NONE;
+    pkt.Service = (CONST_STRPTR)"login";
+    pkt.Info = info;
+    pkt.NoLog = tags->NoLog;
+    if (SendAuthPacket(secBase, &pkt) == secVERIFY_OK)
+    {
+        RecordLogin(secBase, tags, info);
+        return info;
+    }
+    secFreeUserInfo((struct secUserInfo *)info);
+    return NULL;
+}
+
 static struct secPrivUserInfo *LoginRequest(struct SecurityBase *secBase, struct secTags *tags, BOOL failallowed, BOOL nopasswd, struct LocaleInfo *li)
 {
     char version[16];
@@ -309,8 +374,7 @@ static struct secPrivUserInfo *LoginRequest(struct SecurityBase *secBase, struct
 
         if (userid && password)
         {
-            info = (struct secPrivUserInfo *)SendServerPacket(secBase, secSAction_CheckUser, (SIPTR)userid,
-                                                              (SIPTR)password, nopasswd, tags->NoLog);
+            info = CheckLogin(secBase, tags, userid, password, nopasswd);
             memset(pwdbuf, 0, sizeof(pwdbuf));
             guipwd = FALSE;
             if (!info)
@@ -575,13 +639,202 @@ static void PostLogin(struct SecurityBase *secBase, struct secTags *tags, struct
  * SYS:Security/PAM/login.
  *
  * Returns PAMLOGIN_FALLBACK when pam.library cannot be used for this
- * request (not on disk, graphical login, root logging in without a
- * password): the caller then uses LoginRequest().
+ * request (not on disk, no authentication process, root logging in without
+ * a password): the caller then uses LoginRequest(). A graphical login
+ * runs the stack too, with the LoginWindow as its conversation.
  */
 #define PAMLOGIN_FALLBACK   ((struct secPrivUserInfo *)-1)
+#define PAMLOGIN_BROKEN     ((struct secPrivUserInfo *)-2)
 
 #include <libraries/pam.h>
 #include <proto/pam.h>
+
+/* Results that mean the stack itself is unusable, not that it refused */
+static BOOL IsBrokenStack(LONG r)
+{
+    switch (r)
+    {
+    case PAM_OPEN_ERR:
+    case PAM_SYMBOL_ERR:
+    case PAM_SERVICE_ERR:
+    case PAM_SYSTEM_ERR:
+    case PAM_BUF_ERR:
+    case PAM_AUTHINFO_UNAVAIL:
+    case PAM_ABORT:
+    case PAM_MODULE_UNKNOWN:
+        return TRUE;
+    }
+    return FALSE;
+}
+
+/* pam.library, once it can be opened; kept open */
+static struct Library *GetPam(struct SecurityBase *secBase)
+{
+    if (!secBase->sec_PamBase)
+    {
+        struct Library *base = OpenLibrary(PAMNAME, PAMVERSION);
+
+        Forbid();
+        if (!secBase->sec_PamBase)
+        {
+            secBase->sec_PamBase = base;
+            base = NULL;
+        }
+        Permit();
+        if (base)
+            CloseLibrary(base);
+    }
+    return secBase->sec_PamBase;
+}
+
+/*
+ * The graphical conversation of a pam.library login: the LoginWindow asks
+ * for the user ID and the password at once and answers the stack's first
+ * user and password prompts; a further question (another token, a new
+ * password) gets a window of its own with the user ID filled in, and
+ * messages a requester. Without MUI the questions go to the console.
+ */
+struct GuiConv
+{
+    struct SecurityBase *secBase;
+    struct secTags      *tags;
+    struct LocaleInfo   *li;
+    CONST_STRPTR        Prompt;         /* the login window's text */
+    BOOL                CancelOK;
+    BOOL                Asked;          /* the window has been shown */
+    BOOL                PwdPending;     /* its password not handed out yet */
+    char                uid[secUSERIDSIZE];
+    char                pwd[secPASSWORDSIZE];
+};
+
+static STRPTR ConvDup(CONST_STRPTR s)
+{
+    ULONG len = strlen(s) + 1;
+    STRPTR d = AllocVec(len, MEMF_ANY);
+
+    if (d)
+        CopyMem((APTR)s, d, len);
+    return d;
+}
+
+AROS_UFH3(static IPTR, GuiConvFunc,
+    AROS_UFHA(struct Hook *, hook, A0),
+    AROS_UFHA(struct PamHandle *, handle, A2),
+    AROS_UFHA(struct PamConvMsg *, cm, A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct GuiConv *gc = (struct GuiConv *)hook->h_Data;
+    struct SecurityBase *secBase = gc->secBase;
+    struct secTags *tags = gc->tags;
+    struct pam_response *resp;
+    LONG i, g;
+    char buf[secPASSWORDSIZE];
+
+    if (!(resp = AllocVec(cm->NumMsg * sizeof(struct pam_response), MEMF_CLEAR)))
+        return PAM_BUF_ERR;
+
+    for (i = 0; i < cm->NumMsg; i++)
+    {
+        const struct pam_message *m = cm->Messages[i];
+        BOOL ok = TRUE;
+
+        switch (m->msg_style)
+        {
+        case PAM_PROMPT_ECHO_ON:
+            if (!gc->Asked && tags->Graphical)
+            {
+                memset(gc->pwd, 0, sizeof(gc->pwd));
+                g = LoginGUI(secBase, tags->PubScrName, gc->Prompt, gc->CancelOK, tags->System,
+                             gc->uid, sizeof(gc->uid), gc->pwd, sizeof(gc->pwd));
+                if (g == LOGINGUI_UNAVAILABLE)
+                    tags->Graphical = FALSE;
+                else
+                {
+                    gc->Asked = TRUE;
+                    gc->PwdPending = (g == LOGINGUI_OK);
+                    ok = (g == LOGINGUI_OK);
+                }
+            }
+            if (ok && !tags->Graphical && !gc->Asked)
+            {
+                myfputs(secBase, tags->Output, m->msg);
+                ok = ReadLineCon(secBase, tags->Input, gc->uid, sizeof(gc->uid));
+                gc->Asked = TRUE;
+            }
+            ok = ok && (resp[i].resp = ConvDup(gc->uid));
+            break;
+
+        case PAM_PROMPT_ECHO_OFF:
+            if (gc->PwdPending)
+            {
+                gc->PwdPending = FALSE;
+                ok = (resp[i].resp = ConvDup(gc->pwd)) != NULL;
+                memset(gc->pwd, 0, sizeof(gc->pwd));
+                break;
+            }
+            memset(buf, 0, sizeof(buf));
+            if (tags->Graphical)
+            {
+                /* the user ID is known: the window asks for this token only */
+                if (!gc->uid[0] && tags->UserID)
+                    strncpy(gc->uid, tags->UserID, sizeof(gc->uid) - 1);
+                g = LoginGUI(secBase, tags->PubScrName, m->msg ? m->msg : gc->Prompt, gc->CancelOK, tags->System,
+                             gc->uid, sizeof(gc->uid), buf, sizeof(buf));
+                if (g == LOGINGUI_UNAVAILABLE)
+                    tags->Graphical = FALSE;
+                else
+                    ok = (g == LOGINGUI_OK);
+                gc->Asked = TRUE;
+            }
+            if (ok && !tags->Graphical)
+            {
+                myfputs(secBase, tags->Output, m->msg);
+                ok = ReadPasswordCon(secBase, tags->Input, tags->Output, buf, sizeof(buf), NULL);
+            }
+            ok = ok && (resp[i].resp = ConvDup(buf));
+            memset(buf, 0, sizeof(buf));
+            break;
+
+        case PAM_ERROR_MSG:
+        case PAM_TEXT_INFO:
+            if (m->msg)
+            {
+                if (tags->Graphical)
+                    LoginMessageGUI(secBase, GetLocS(secBase, gc->li, MSG_LOGINREQ_GUI), m->msg, GetLocS(secBase, gc->li, MSG_OK));
+                else
+                {
+                    myfputs(secBase, tags->Output, m->msg);
+                    myfputs(secBase, tags->Output, "\n");
+                }
+            }
+            break;
+
+        default:
+            ok = FALSE;
+            break;
+        }
+        if (!ok)
+        {
+            LONG j;
+            for (j = 0; j <= i; j++)
+            {
+                if (resp[j].resp)
+                {
+                    memset(resp[j].resp, 0, strlen(resp[j].resp));
+                    FreeVec(resp[j].resp);
+                }
+            }
+            FreeVec(resp);
+            memset(gc->pwd, 0, sizeof(gc->pwd));
+            return PAM_CONV_ERR;
+        }
+    }
+    cm->Responses = resp;
+    return PAM_SUCCESS;
+
+    AROS_USERFUNC_EXIT
+}
 
 static struct secPrivUserInfo *PamLoginRequest(struct SecurityBase *secBase, struct secTags *tags, BOOL failallowed, BOOL nopasswd, struct LocaleInfo *li)
 {
@@ -591,10 +844,32 @@ static struct secPrivUserInfo *PamLoginRequest(struct SecurityBase *secBase, str
     CONST_STRPTR user;
     LONG r;
 
-    if (tags->Graphical || nopasswd || !secBase->sec_AfterDOSDone)
+    struct GuiConv gc;
+    struct Hook convhook;
+    char text[256];
+
+    if (nopasswd || !secBase->sec_AfterDOSDone || !secBase->AuthPort)
         return PAMLOGIN_FALLBACK;
-    if (!(PamBase = OpenLibrary(PAMNAME, PAMVERSION)))
+    if (!(PamBase = GetPam(secBase)))
         return PAMLOGIN_FALLBACK;
+
+    if (tags->Graphical)
+    {
+        char version[16], hostname[32];
+        SIPTR args[2];
+        int i;
+
+        if (GetVar("Kickstart", version, sizeof(version), GVF_GLOBAL_ONLY) == -1)
+            strcpy(version, "?");
+        if (GetVar("HostName", hostname, sizeof(hostname), GVF_GLOBAL_ONLY) == -1)
+            strcpy(hostname, "?");
+        for (i = 0; hostname[i] && hostname[i] != '.'; i++)
+            ;
+        hostname[i] = '\0';
+        args[0] = (SIPTR)version;
+        args[1] = (SIPTR)hostname;
+        FormatString(GetLocS(secBase, li, MSG_LOGINPROMPT_GUI), args, text, sizeof(text));
+    }
 
     for (;;)
     {
@@ -608,36 +883,139 @@ static struct secPrivUserInfo *PamLoginRequest(struct SecurityBase *secBase, str
             { TAG_DONE,         0                      }
         };
 
-        if (!(h = PamStartA("login", tags->UserID, NULL, ptags)))
+        memset(&gc, 0, sizeof(gc));
+        gc.secBase = secBase;
+        gc.tags = tags;
+        gc.li = li;
+        gc.Prompt = text;
+        gc.CancelOK = failallowed;
+        convhook.h_Entry = (HOOKFUNC)GuiConvFunc;
+        convhook.h_SubEntry = NULL;
+        convhook.h_Data = &gc;
+
+        if (!(h = PamStartA("login", tags->UserID, (tags->Graphical && !(tags->UserID && tags->Password)) ? &convhook : NULL, ptags)))
             break;
         r = PamAuthenticate(h, 0);
         if (r == PAM_SUCCESS)
             r = PamAcctMgmt(h, 0);
-        if (r == PAM_SUCCESS && PamGetItem(h, PAM_USER, (APTR *)&user) == PAM_SUCCESS && user)
+        if (r == PAM_SUCCESS)
         {
-            if ((info = (struct secPrivUserInfo *)secAllocUserInfo()))
+            APTR ticket = NULL;
+
+            /* The security module's ticket: the record the authentication
+             * process verified, and the ticket is used up with it */
+            if (PamGetData(h, PAM_SECURITY_TICKET_DATA, &ticket) == PAM_SUCCESS && ticket)
+                info = RedeemTicket(secBase, (struct secLoginTicket *)ticket);
+            /* Another module authenticated: the user it settled on */
+            if (!info && PamGetItem(h, PAM_USER, (APTR *)&user) == PAM_SUCCESS && user &&
+                (info = (struct secPrivUserInfo *)secAllocUserInfo()))
             {
                 strncpy(info->Pub.UserID, user, secUSERIDSIZE - 1);
-                if (secGetUserInfo(&info->Pub, secKeyType_UserID))
-                    CreateUserProfile(secBase, info);
-                else
+                if (!secGetUserInfo(&info->Pub, secKeyType_UserID))
                 {
                     secFreeUserInfo((struct secUserInfo *)info);
                     info = NULL;
                     r = PAM_USER_UNKNOWN;
                 }
             }
+            if (info)
+            {
+                CreateUserProfile(secBase, info);
+                RecordLogin(secBase, tags, info);
+            }
         }
-        PamEnd(h, r);
+        if (info)
+            tags->PamHandle = h;    /* the session stage follows */
+        else
+            PamEnd(h, r);
 
+        if (!info && IsBrokenStack(r))
+        {
+            /* Not a refusal but a broken or unreachable stack (a bad
+             * service file, a missing module). Asking again would loop
+             * forever, and the built-in request would ignore whatever
+             * policy the stack holds: only root may log in until the
+             * configuration is repaired. */
+            SIPTR args[1] = { r };
+            VLogF(secBase, LOGF_Flag_Type_Error, SECLOG_SUB_LIBRARY, "pam.library login stack failed (%ld), root-only login", args);
+            info = PAMLOGIN_BROKEN;
+            break;
+        }
         if (info || r == PAM_CONV_ERR || failallowed)
             break;
         /* secLogoutA(): ask again until somebody logs in */
-        myfputs(secBase, tags->Output, GetLocS(secBase, li, MSG_LOGINFAIL_CON));
-        if (!tags->Input)
+        if (tags->Graphical)
+            LoginMessageGUI(secBase, GetLocS(secBase, li, MSG_LOGINREQ_GUI),
+                            GetLocS(secBase, li, MSG_LOGINFAIL_GUI), GetLocS(secBase, li, MSG_OK));
+        else
+        {
+            myfputs(secBase, tags->Output, GetLocS(secBase, li, MSG_LOGINFAIL_CON));
+            if (!tags->Input)
+                break;
+        }
+        if (tags->UserID && tags->Password)
             break;
     }
-    CloseLibrary(PamBase);
+    return info;
+}
+
+/*
+ * The "login" stack's session modules run when the login has been
+ * decided but before the task changes owner, so in the still privileged
+ * context. If they refuse, the login fails. The transaction then stays
+ * open with the security session and is closed with it (EndPamSession()).
+ */
+static BOOL OpenPamSession(struct SecurityBase *secBase, struct secTags *tags)
+{
+    struct Library *PamBase = secBase->sec_PamBase;
+    LONG r;
+
+    if (!tags->PamHandle)
+        return TRUE;
+    if ((r = PamOpenSession(tags->PamHandle, 0)) == PAM_SUCCESS)
+        return TRUE;
+    {
+        SIPTR args[1] = { r };
+        VLogF(secBase, LOGF_Flag_Type_Warn, SECLOG_SUB_LIBRARY, "login refused by the session stack (%ld)", args);
+    }
+    PamEnd(tags->PamHandle, r);
+    tags->PamHandle = NULL;
+    return FALSE;
+}
+
+/* TaskOwnerSem held: hand the open transaction to the session, or end it */
+static void KeepPamSession(struct SecurityBase *secBase, struct secTags *tags, struct secSession *session)
+{
+    if (!tags->PamHandle)
+        return;
+    if (session)
+        session->PamHandle = tags->PamHandle;
+    else
+        EndPamSession(secBase, tags->PamHandle);
+    tags->PamHandle = NULL;
+}
+
+/*
+ * The login request: through pam.library's "login" stack when it can be
+ * used, the built-in request otherwise. A broken stack leaves a root-only
+ * built-in request, so that the administrator can repair it.
+ */
+static struct secPrivUserInfo *AnyLoginRequest(struct SecurityBase *secBase, struct secTags *tags, BOOL failallowed, BOOL nopasswd, struct LocaleInfo *li)
+{
+    struct secPrivUserInfo *info = PamLoginRequest(secBase, tags, failallowed, nopasswd, li);
+
+    if (info == PAMLOGIN_FALLBACK)
+        info = LoginRequest(secBase, tags, failallowed, nopasswd, li);
+    else if (info == PAMLOGIN_BROKEN)
+    {
+        myfputs(secBase, tags->Output, "The login configuration is damaged: only root can log in.\n");
+        info = LoginRequest(secBase, tags, failallowed, nopasswd, li);
+        if (info && info->Pub.uid != secROOT_UID)
+        {
+            secFreeUserInfo((struct secUserInfo *)info);
+            info = NULL;
+        }
+    }
     return info;
 }
 
@@ -710,14 +1088,17 @@ static struct secPrivUserInfo *PamLoginRequest(struct SecurityBase *secBase, str
     if (nobody && !tags.Quiet && secBase->Configured)
     {
         OpenLoc(secBase, &li);
-        info = PamLoginRequest(secBase, &tags, FALSE, FALSE, &li);
-        if (info == PAMLOGIN_FALLBACK)
-            info = LoginRequest(secBase, &tags, FALSE, FALSE, &li);
+        info = AnyLoginRequest(secBase, &tags, FALSE, FALSE, &li);
+        if (info && !OpenPamSession(secBase, &tags))
+        {
+            secFreeUserInfo((struct secUserInfo *)info);
+            info = NULL;
+        }
         if (info)
         {
             if ((xuser = secUserInfo2ExtOwner((struct secUserInfo *)info)))
             {
-                struct secSession *session;
+                struct secSession *session = NULL;
 
                 ObtainSemaphore(&secBase->TaskOwnerSem);
                 if ((node = FindOrCreateTaskNode(secBase, tags.Task)))
@@ -727,12 +1108,18 @@ static struct secPrivUserInfo *PamLoginRequest(struct SecurityBase *secBase, str
                         session->Leader = node;
                     ApplyOwner(secBase, node, xuser, session, FALSE, tags.Global);
                 }
+                KeepPamSession(secBase, &tags, session);
                 ReleaseSemaphore(&secBase->TaskOwnerSem);
                 user = secExtOwner2ULONG(xuser);
                 secFreeExtOwner(xuser);
                 PostLogin(secBase, &tags, info, &li);
             }
             secFreeUserInfo((struct secUserInfo *)info);
+        }
+        if (tags.PamHandle)
+        {
+            EndPamSession(secBase, tags.PamHandle);
+            tags.PamHandle = NULL;
         }
         CloseLoc(secBase, &li);
     }
@@ -770,7 +1157,8 @@ static struct secPrivUserInfo *PamLoginRequest(struct SecurityBase *secBase, str
         secT_UserID     - (STRPTR) do not ask for a UserID.
         secT_Password   - (STRPTR) do not ask for a password (needs secT_UserID).
         secT_NoLog      - (BOOL) do not log this action (root only).
-        secT_Ticket     - (ULONG) a ticket from secVerifyUserA(): log in the
+        secT_Ticket     - (struct secLoginTicket *) a ticket from
+                          secVerifyUserA() for this task: log in the
                           user it was issued for, without prompting.
 
     RESULT
@@ -826,20 +1214,22 @@ static struct secPrivUserInfo *PamLoginRequest(struct SecurityBase *secBase, str
                 secFreeUserInfo((struct secUserInfo *)info);
             return secOWNER_NOBODY;
         }
+        CreateUserProfile(secBase, info);
+        RecordLogin(secBase, &tags, info);
     }
     else
     {
         OpenLoc(secBase, &li);
-        info = PamLoginRequest(secBase, &tags, TRUE, isroot, &li);
-        if (info == PAMLOGIN_FALLBACK)
-            info = LoginRequest(secBase, &tags, TRUE, isroot, &li);
-        if (info)
+        info = AnyLoginRequest(secBase, &tags, TRUE, isroot, &li);
+        if (info && OpenPamSession(secBase, &tags))
             xuser = secUserInfo2ExtOwner((struct secUserInfo *)info);
         CloseLoc(secBase, &li);
         if (!xuser)
         {
             if (info)
                 secFreeUserInfo((struct secUserInfo *)info);
+            if (tags.PamHandle)
+                EndPamSession(secBase, tags.PamHandle);
             return secOWNER_NOBODY;
         }
     }
@@ -851,6 +1241,7 @@ static struct secPrivUserInfo *PamLoginRequest(struct SecurityBase *secBase, str
             session->Leader = node;
         ApplyOwner(secBase, node, xuser, session, TRUE, tags.Global);
     }
+    KeepPamSession(secBase, &tags, session);
     ReleaseSemaphore(&secBase->TaskOwnerSem);
 
     /* $Home for the shell that logged in (Security-Startup: Login PARENT) */

@@ -31,6 +31,43 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_remainderl.c,v 1.1 2008/03/3
 #include "math.h"
 #include "math_private.h"
 
+/****************************************************************************
+    NAME
+        long double remainderl(
+
+    SYNOPSIS
+        long double x, long double y)
+
+    FUNCTION
+        Compute x - n * y, where n is the integer nearest to the exact
+        quotient x / y. Ties select the even integer, independently of
+        the current rounding direction.
+
+    INPUTS
+        x - Dividend.
+        y - Divisor.
+
+    RESULT
+        For finite operands and nonzero y, return a remainder with
+        magnitude at most half of |y|. A zero result has the sign of x.
+        With finite x and infinite y, return x.
+
+        If x is infinite, y is zero, or either argument is NaN, return NaN.
+
+    NOTES
+        Include <math.h>. A zero divisor or infinite dividend raises
+        FE_INVALID unless a quiet NaN operand suppresses the exception.
+        Enabled traps may prevent return. This function does not set errno.
+
+    BUGS
+        Where long double has greater precision than double, results
+        are not reliable when the nearest integer quotient has magnitude
+        2^31 or greater.
+
+    SEE ALSO
+        remainder(), remainderf(), remquol(), fmodl()
+
+*****************************************************************************/
 long double
 remainderl(long double x, long double y)
 {

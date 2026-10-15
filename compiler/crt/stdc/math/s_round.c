@@ -31,8 +31,34 @@ __FBSDID("$FreeBSD: src/lib/msun/src/s_round.c,v 1.4 2005/12/02 13:45:06 bde Exp
 
 #include "math_private.h"
 
-double
-round(double x)
+/****************************************************************************
+    NAME */
+        double round(
+
+/*  SYNOPSIS */
+        double x)
+
+/*  FUNCTION
+        Round x to the nearest integral floating-point value,
+        with halfway cases rounded away from zero.
+
+    INPUTS
+        x - Double value to round.
+
+    RESULT
+        For finite x, an integral-valued double result. For example,
+        0.5 rounds to 1 and -0.5 rounds to -1. The sign of zero
+        is preserved; infinities remain infinite and NaNs remain NaNs.
+
+    NOTES
+        Include <math.h>. Rounding is independent of the current
+        rounding direction; unlike rint(), halfway values
+        round away from zero. Exception flags may change.
+
+    SEE ALSO
+        floor(), rint(), lround(), llround()
+
+*****************************************************************************/
 {
 	double t;
 	uint32_t hx;

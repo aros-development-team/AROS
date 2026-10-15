@@ -23,8 +23,35 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_frexpf.c,v 1.10 2008/02/22 0
 static const float
 two25 =  3.3554432000e+07; /* 0x4c000000 */
 
-float
-frexpf(float x, int *eptr)
+/****************************************************************************
+    NAME */
+        float frexpf(
+
+/*  SYNOPSIS */
+        float x,
+        int *eptr)
+
+/*  FUNCTION
+        Decompose x into a normalized binary fraction and exponent.
+        For finite nonzero x, return m and store e such that
+        x = m * 2^e and 0.5 <= |m| < 1.
+
+    INPUTS
+        x - Value to decompose.
+        eptr - Writable pointer receiving the integer exponent.
+
+    RESULT
+        The signed fraction m. For zero, return the signed zero and
+        store 0 in *eptr. For infinity or NaN, return x and store 0.
+
+    NOTES
+        Include <math.h>. eptr must not be NULL. For example, an
+        input of 12 yields a fraction of 0.75 and an exponent of 4.
+
+    SEE ALSO
+        frexp(), frexpl(), ldexpf()
+
+*****************************************************************************/
 {
 	int32_t hx,ix;
 	GET_FLOAT_WORD(hx,x);

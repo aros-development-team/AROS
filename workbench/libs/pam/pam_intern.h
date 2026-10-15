@@ -29,6 +29,12 @@ struct PamBase
     struct SignalSemaphore      ModuleSem;
     struct MinList              Modules;            /* loaded external modules (struct PamModule) */
     STRPTR                      ModuleDir;          /* volume-based path of PAM_MODULE_DIR, or NULL */
+
+    /* log.resource provider (pam_log.c), handle created on first use */
+    struct SignalSemaphore      LogSem;
+    APTR                        LogResBase;
+    APTR                        LogHandle;
+    struct Node                 LogNode;
 };
 
 #define DOSBase                 ((struct DosLibrary *)PamBase->pam_DOSBase)
@@ -79,6 +85,7 @@ struct PamEntry
     struct MinNode      Node;
     UBYTE               Group;
     UBYTE               Control;
+    BOOL                Ran;            /* called in the last authenticate / prelim pass */
     const struct PamBuiltin *Builtin;   /* one of the two is set */
     struct PamModule    *Module;
     LONG                Argc;
@@ -121,6 +128,12 @@ struct PamHandle
     struct MinList      Data;
     struct MinList      Stack[PAM_NUM_GROUPS];
     BOOL                StackLoaded;
+    UWORD               Running;            /* stack runs in progress (modules may nest) */
+    BOOL                ReloadPending;      /* PAM_SERVICE changed during a run          */
+    BOOL                Authenticated;      /* the auth path below is frozen for setcred */
+    BOOL                PrelimDone;         /* the password path is frozen for update    */
+    BOOL                AuthTokFromAuth;    /* PAM_AUTHTOK is the one authenticated with */
+    BOOL                InUpdate;           /* PamChAuthTok(): the update pass           */
     LONG                LastStatus;
     STRPTR              ErrorText;          /* PamStrError() scratch */
 };
@@ -132,10 +145,15 @@ extern BOOL PamSetString(struct PamBase *PamBase, STRPTR *slot, CONST_STRPTR s, 
 
 /* pam_config.c */
 extern BOOL PamLoadStack(struct PamBase *PamBase, struct PamHandle *h);
+extern BOOL PamTrusted(struct PamBase *PamBase, BPTR lock, BOOL file);
 extern void PamFreeStack(struct PamBase *PamBase, struct PamHandle *h);
 
 /* pam_stack.c */
 extern LONG PamRunStack(struct PamBase *PamBase, struct PamHandle *h, ULONG group, ULONG op, ULONG flags);
+
+/* pam_log.c - type is a LOGF_Flag_Type_#? value */
+extern void PamInitLog(struct PamBase *PamBase);
+extern void PamLogA(struct PamBase *PamBase, struct PamHandle *h, ULONG type, CONST_STRPTR fmt, IPTR *args);
 
 /* pam_conv.c */
 extern LONG PamDoConverse(struct PamBase *PamBase, struct PamHandle *h, LONG nmsg, const struct pam_message **msgs, struct pam_response **resp);
@@ -148,7 +166,7 @@ extern void PamExpungeModules(struct PamBase *PamBase);
 
 /* pam_builtin.c */
 extern const struct PamBuiltin *PamFindBuiltin(CONST_STRPTR name);
-extern const struct PamBuiltin PamBuiltinPermit, PamBuiltinDeny, PamBuiltinSecurity, PamBuiltinUnixPw;
+extern const struct PamBuiltin PamBuiltinPermit, PamBuiltinDeny, PamBuiltinSecurity, PamBuiltinUnixPw, PamBuiltinAccess;
 
 /* machine state, for the default stacks and the modules */
 #define PAM_STATE_ABSENT        0   /* no security.library                       */

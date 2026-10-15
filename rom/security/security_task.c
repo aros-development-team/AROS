@@ -18,6 +18,7 @@
 #include <proto/security.h>
 
 #include "security_intern.h"
+#include "security_auth.h"
 #include "security_task.h"
 #include "security_plugins.h"
 #include "security_memory.h"
@@ -78,6 +79,8 @@ void FreeSession(struct SecurityBase *secBase, struct secSession *session)
 {
     D(bug(DEBUG_NAME_STR " %s: session %d @ %p\n", __func__, session->sid, session);)
     Remove((struct Node *)&session->Node);
+    if (session->PamHandle)
+        EndPamSession(secBase, session->PamHandle);
     if (session->LoginName)
         FreeV(session->LoginName);
     Free(session, sizeof(struct secSession));
@@ -306,6 +309,8 @@ AROS_UFH3(static IPTR, secTaskNotify,
 
     case TNA_REMOVED:
     case TNA_FAILED:
+        /* its login tickets go with it */
+        AuthTaskGone(secBase, task);
         ObtainSemaphore(&secBase->TaskOwnerSem);
         if ((node = FindTaskNode(secBase, task)))
         {

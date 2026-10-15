@@ -31,8 +31,39 @@ __FBSDID("$FreeBSD: src/lib/msun/src/s_fmaxl.c,v 1.1 2004/06/30 07:04:01 das Exp
 #include "fpmath.h"
 
 #if LDBL_MANT_DIG != DBL_MANT_DIG
-long double
-fmaxl(long double x, long double y)
+/****************************************************************************
+    NAME */
+        long double fmaxl(
+
+/*  SYNOPSIS */
+        long double x,
+        long double y)
+
+/*  FUNCTION
+        Return the larger numeric operand, ignoring a lone NaN.
+
+    INPUTS
+        x - First long double operand.
+        y - Second long double operand.
+
+    RESULT
+        The larger value for numeric operands. For opposite-signed
+        zeros, return +0. If one operand is NaN, return the other.
+        If both are NaNs, return a NaN.
+
+    NOTES
+        Include <math.h>. For two NaNs, this implementation evaluates x + y, which may raise
+        FE_INVALID.
+
+        The sign of zero and NaN handling differ from a simple conditional
+        comparison. NaN payloads are not guaranteed.
+        Where long double has double precision, the double implementation
+        supplies the long double symbol.
+
+    SEE ALSO
+        fminl(), fmax(), fmaxf()
+
+*****************************************************************************/
 {
 	union IEEEl2bits u[2];
 	int x_is_nan, y_is_nan;

@@ -37,6 +37,34 @@
 
 static const float huge = 0x1p127;
 
+/****************************************************************************
+    NAME
+        float complex csinhf(
+
+    SYNOPSIS
+        float complex z)
+
+    FUNCTION
+        Compute the float complex hyperbolic sine of z.
+
+    INPUTS
+        z - Complex argument.
+
+    RESULT
+        Return the complex hyperbolic sine. For finite z = x + i*y, the real and
+        imaginary components are sinhf(x)*cosf(y) and coshf(x)*sinf(y).
+        When the imaginary component is zero, its sign is preserved
+        in the result.
+
+    NOTES
+        Include <complex.h>. Large finite real components can overflow.
+        Exceptional arguments can produce infinities or NaNs and raise
+        floating-point exceptions.
+
+    SEE ALSO
+        ccoshf(), ctanhf(), cexpf()
+
+*****************************************************************************/
 float complex
 csinhf(float complex z)
 {

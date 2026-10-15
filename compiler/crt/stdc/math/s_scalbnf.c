@@ -28,6 +28,39 @@ twom25  =  2.9802322388e-08,	/* 0x33000000 */
 huge   = 1.0e+30,
 tiny   = 1.0e-30;
 
+/****************************************************************************
+    NAME
+        float scalbnf(
+
+    SYNOPSIS
+        float x, int n)
+
+    FUNCTION
+        Scale x by an integral power of two.
+
+    INPUTS
+        x - Value to scale.
+        n - Base-two exponent.
+
+    RESULT
+        The scaled float value. Inexact results are rounded according
+        to the current floating-point rounding direction. Signed zero
+        and infinity retain their signs; NaN produces NaN.
+
+    NOTES
+        Include <math.h>. Overflow and underflow may raise floating-point
+        exceptions. This implementation does not set errno.
+        ldexpf() is an alias of scalbnf().
+
+    BUGS
+        The implementation adds n to a signed exponent without checking
+        for overflow. For x = 1 and n = INT_MAX, this causes undefined
+        signed integer arithmetic before the range check.
+
+    SEE ALSO
+        ldexpf(), scalblnf(), frexpf()
+
+*****************************************************************************/
 float
 scalbnf (float x, int n)
 {
@@ -57,4 +90,38 @@ scalbnf (float x, int n)
         return x*twom25;
 }
 
+/****************************************************************************
+    NAME
+        float ldexpf(
+
+    SYNOPSIS
+        float x, int n)
+
+    FUNCTION
+        Multiply x by 2 raised to n.
+
+    INPUTS
+        x - Value to scale.
+        n - Base-two exponent.
+
+    RESULT
+        The scaled float value. Inexact results are rounded according
+        to the current floating-point rounding direction. Signed zero
+        and infinity retain their signs; NaN produces NaN.
+
+    NOTES
+        Include <math.h>. ldexpf() is a symbol alias of scalbnf(),
+        with identical numerical and exception behavior. This
+        implementation does not set errno. Overflow and underflow may
+        raise floating-point exceptions.
+
+    BUGS
+        The shared implementation adds n to a signed exponent without
+        checking for overflow. For x = 1 and n = INT_MAX, this causes
+        undefined signed integer arithmetic before the range check.
+
+    SEE ALSO
+        scalbnf(), scalblnf(), frexpf()
+
+*****************************************************************************/
 AROS_MAKE_ALIAS(scalbnf, ldexpf);

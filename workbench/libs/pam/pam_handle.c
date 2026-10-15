@@ -7,6 +7,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/utility.h>
+#include <proto/pam.h>
 #include <string.h>
 
 #include "pam_intern.h"
@@ -135,33 +136,38 @@ static void FreeData(struct PamBase *PamBase, struct PamHandle *h, LONG status)
     h->Input = isproc ? Input() : BNULL;
     h->Output = isproc ? Output() : BNULL;
 
-    if (!PamSetString(PamBase, &h->Service, service, FALSE) ||
-        !PamSetString(PamBase, &h->User, user, FALSE))
-    {
-        FreeVec(h);
-        return NULL;
-    }
-
     if (tags)
     {
         struct TagItem *tag, *tstate = tags;
+        BOOL ok = TRUE;
 
-        while ((tag = NextTagItem(&tstate)))
+        while (ok && (tag = NextTagItem(&tstate)))
         {
             switch (tag->ti_Tag)
             {
             case PAMT_Interactive:   h->Interactive = tag->ti_Data ? TRUE : FALSE;      break;
             case PAMT_Input:         h->Input = (BPTR)tag->ti_Data;                     break;
             case PAMT_Output:        h->Output = (BPTR)tag->ti_Data;                    break;
-            case PAMT_PubScreen:     PamSetString(PamBase, &h->PubScreen, (STRPTR)tag->ti_Data, FALSE); break;
-            case PAMT_RemoteHost:    PamSetString(PamBase, &h->RHost, (STRPTR)tag->ti_Data, FALSE);     break;
-            case PAMT_RemoteUser:    PamSetString(PamBase, &h->RUser, (STRPTR)tag->ti_Data, FALSE);     break;
-            case PAMT_AuthTok:       PamSetString(PamBase, &h->AuthTok, (STRPTR)tag->ti_Data, TRUE);    break;
-            case PAMT_AuthTokFormat: h->AuthTokFormat = tag->ti_Data;                                  break;
-            case PAMT_Task:          if (tag->ti_Data) h->Task = (struct Task *)tag->ti_Data;          break;
-            case PAMT_ConvData:      h->ConvData = (APTR)tag->ti_Data;                                 break;
+            case PAMT_PubScreen:     ok = PamSetString(PamBase, &h->PubScreen, (STRPTR)tag->ti_Data, FALSE); break;
+            case PAMT_RemoteHost:    ok = PamSetString(PamBase, &h->RHost, (STRPTR)tag->ti_Data, FALSE);     break;
+            case PAMT_RemoteUser:    ok = PamSetString(PamBase, &h->RUser, (STRPTR)tag->ti_Data, FALSE);     break;
+            case PAMT_AuthTok:       ok = PamSetString(PamBase, &h->AuthTok, (STRPTR)tag->ti_Data, TRUE);    break;
+            case PAMT_AuthTokFormat: h->AuthTokFormat = tag->ti_Data;                                       break;
+            case PAMT_Task:          if (tag->ti_Data) h->Task = (struct Task *)tag->ti_Data;               break;
+            case PAMT_ConvData:      h->ConvData = (APTR)tag->ti_Data;                                      break;
             }
         }
+        if (!ok)
+        {
+            PamEnd(h, PAM_BUF_ERR);
+            return NULL;
+        }
+    }
+    if (!PamSetString(PamBase, &h->Service, service, FALSE) ||
+        !PamSetString(PamBase, &h->User, user, FALSE))
+    {
+        PamEnd(h, PAM_BUF_ERR);
+        return NULL;
     }
     return h;
 
@@ -246,14 +252,27 @@ static void FreeData(struct PamBase *PamBase, struct PamHandle *h, LONG status)
 
     switch (item)
     {
-    case PAM_SERVICE:       ok = PamSetString(PamBase, &h->Service, value, FALSE); PamFreeStack(PamBase, h); break;
+    case PAM_SERVICE:
+        if (!value || !((CONST_STRPTR)value)[0])
+            return PAM_BAD_ITEM;
+        ok = PamSetString(PamBase, &h->Service, value, FALSE);
+        /* A module or the conversation may do this while the stack runs:
+         * the stack is replaced at the next call, not under its feet */
+        if (h->Running)
+            h->ReloadPending = TRUE;
+        else
+        {
+            PamFreeStack(PamBase, h);
+            h->Authenticated = h->PrelimDone = FALSE;
+        }
+        break;
     case PAM_USER:          ok = PamSetString(PamBase, &h->User, value, FALSE);         break;
     case PAM_USER_PROMPT:   ok = PamSetString(PamBase, &h->UserPrompt, value, FALSE);   break;
     case PAM_TTY:           ok = PamSetString(PamBase, &h->Tty, value, FALSE);          break;
     case PAM_RHOST:         ok = PamSetString(PamBase, &h->RHost, value, FALSE);        break;
     case PAM_RUSER:         ok = PamSetString(PamBase, &h->RUser, value, FALSE);        break;
     case PAM_AUTHTOK_TYPE:  ok = PamSetString(PamBase, &h->AuthTokType, value, FALSE);  break;
-    case PAM_AUTHTOK:       ok = PamSetString(PamBase, &h->AuthTok, value, TRUE);       break;
+    case PAM_AUTHTOK:       ok = PamSetString(PamBase, &h->AuthTok, value, TRUE); h->AuthTokFromAuth = FALSE; break;
     case PAM_OLDAUTHTOK:    ok = PamSetString(PamBase, &h->OldAuthTok, value, TRUE);    break;
     case PAM_CONV:          h->Conv = (struct Hook *)value;                             break;
     case PAM_AROS_INPUT:    h->Input = (BPTR)value;                                     break;
@@ -490,34 +509,6 @@ static const char * const ErrorTexts[] =
     if (usec > h->FailDelay)
         h->FailDelay = usec;
     return PAM_SUCCESS;
-
-    AROS_LIBFUNC_EXIT
-}
-
-/*****************************************************************************
-
-    NAME */
-        AROS_LH3(void, PamLog,
-
-/*  SYNOPSIS */
-        AROS_LHA(struct PamHandle *, handle, A0),
-        AROS_LHA(LONG, level, D0),
-        AROS_LHA(CONST_STRPTR, text, A1),
-
-/*  LOCATION */
-        struct PamBase *, PamBase, 22, Pam)
-
-/*  FUNCTION
-        Module side: record a message. Goes to the debug log; a file or
-        syslog destination may be added later.
-
-******************************************************************************/
-{
-    AROS_LIBFUNC_INIT
-
-    struct PamHandle *h = handle;
-
-    bug(DEBUG_NAME_STR " %s/%s: [%ld] %s\n", h ? h->Service : (STRPTR)"?", (h && h->User) ? h->User : (STRPTR)"?", (long)level, text ? text : (CONST_STRPTR)"");
 
     AROS_LIBFUNC_EXIT
 }

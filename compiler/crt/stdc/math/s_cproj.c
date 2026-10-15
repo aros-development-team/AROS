@@ -32,8 +32,32 @@
 
 #include "math_private.h"
 
-double complex
-cproj(double complex z)
+/****************************************************************************
+    NAME */
+        double complex cproj(
+
+/*  SYNOPSIS */
+        double complex z)
+
+/*  FUNCTION
+        Project z onto the Riemann sphere.
+
+    INPUTS
+        z - Complex input value.
+
+    RESULT
+        If either component is infinite, positive real infinity
+        with an imaginary zero carrying the sign of the original
+        imaginary component. Otherwise z is returned unchanged,
+        including a NaN component when neither part is infinite.
+
+    NOTES
+        Include <complex.h>.
+
+    SEE ALSO
+        creal(), cimag(), conj()
+
+*****************************************************************************/
 {
 
 	if (!isinf(creal(z)) && !isinf(cimag(z)))

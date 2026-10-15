@@ -30,8 +30,37 @@ __FBSDID("$FreeBSD: src/lib/msun/src/s_fmaxf.c,v 1.1 2004/06/30 07:04:01 das Exp
 
 #include "fpmath.h"
 
-float
-fmaxf(float x, float y)
+/****************************************************************************
+    NAME */
+        float fmaxf(
+
+/*  SYNOPSIS */
+        float x,
+        float y)
+
+/*  FUNCTION
+        Return the larger numeric operand, ignoring a lone NaN.
+
+    INPUTS
+        x - First float operand.
+        y - Second float operand.
+
+    RESULT
+        The larger value for numeric operands. For opposite-signed
+        zeros, return +0. If one operand is NaN, return the other.
+        If both are NaNs, return a NaN.
+
+    NOTES
+        Include <math.h>. For two NaNs, the second argument is returned.
+
+        The sign of zero and NaN handling differ from a simple conditional
+        comparison. Signaling NaNs may affect the floating-point exception
+        state; NaN payloads are not guaranteed.
+
+    SEE ALSO
+        fminf(), fmax(), fmaxl()
+
+*****************************************************************************/
 {
 	union IEEEf2bits u[2];
 

@@ -11,7 +11,7 @@
         AMUInit
 
     SYNOPSIS
-        ENABLE/S,DISABLE/S,VOLUME/A,FORCE/S
+        ENABLE/S,DISABLE/S,UPGRADE/S,VOLUME/A,FORCE/S
 
     LOCATION
         C:
@@ -36,11 +36,19 @@
         so that the volume boots as a single-user system again; the databases
         are kept. ENABLE restores a disabled script.
 
+        UPGRADE brings a volume enabled by an earlier version up to date:
+        an installed Security-Startup older than this AMUInit's is saved
+        as Security-Startup.old and replaced (FORCE replaces it whatever
+        its version), and the directories pam.library uses are created.
+        The databases are not touched; security.library itself corrects
+        their owner and protection when it starts.
+
     INPUTS
         ENABLE   -- set the volume up for multi-user boots.
         DISABLE  -- boot single-user again.
+        UPGRADE  -- update the startup script of an enabled volume.
         VOLUME   -- the volume (or any path on it), e.g. SYS: or DH0:.
-        FORCE    -- ENABLE: rewrite an existing Security-Startup.
+        FORCE    -- ENABLE, UPGRADE: rewrite an existing Security-Startup.
 
     RESULT
         Standard DOS return codes.
@@ -53,6 +61,7 @@
     EXAMPLE
         AMUInit ENABLE SYS:
         AMUInit DISABLE SYS:
+        AMUInit UPGRADE SYS:
 
     SEE ALSO
         Login, Logout, Passwd, Who, SetOwner
@@ -65,17 +74,21 @@
 #include <libraries/security.h>
 #include <string.h>
 
-const TEXT version[] = "$VER: AMUInit 45.4 (06.10.2026)";
+const TEXT version[] = "$VER: AMUInit 45.5 (15.10.2026)";
 
-#define TEMPLATE "ENABLE/S,DISABLE/S,VOLUME/A,FORCE/S"
-enum { ARG_ENABLE, ARG_DISABLE, ARG_VOLUME, ARG_FORCE, ARG_COUNT };
+#define TEMPLATE "ENABLE/S,DISABLE/S,UPGRADE/S,VOLUME/A,FORCE/S"
+enum { ARG_ENABLE, ARG_DISABLE, ARG_UPGRADE, ARG_VOLUME, ARG_FORCE, ARG_COUNT };
+
+/* The version of the script below (its $VER line) */
+#define STARTUP_VERSION     secSTARTUP_VERSION
+#define STARTUP_REVISION    secSTARTUP_REVISION
 
 #define SEC_DIR         "Security"
 #define STARTUP         "S/Security-Startup"
 #define STARTUP_OFF     "S/Security-Startup.disabled"
 
 static const char StartupScript[] =
-    "; $VER: Security-Startup 45.9 (06.10.2026)\n"
+    "; $VER: Security-Startup 45.10 (15.10.2026)\n"
     ";\n"
     "FailAt 21\n"
     "Assign LIBS: SYS:Classes ADD\n"
@@ -139,6 +152,19 @@ static const char StartupScript[] =
     "    MakeDir \"SYS:Security/Profiles\" >NIL:\n"
     "    SetOwner \"SYS:Security/Profiles\" UID=65535 GID=65535 >NIL:\n"
     "    Protect \"SYS:Security/Profiles\" rwed GROUP=re OTHER=re QUIET\n"
+    "EndIf\n"
+    ";\n"
+    "; pam.library's service files and modules: root's, and nobody else may\n"
+    "; write there (security.library also checks this at every start).\n"
+    "If NOT EXISTS \"SYS:Security/PAM\"\n"
+    "    MakeDir \"SYS:Security/PAM\" >NIL:\n"
+    "    SetOwner \"SYS:Security/PAM\" UID=65535 GID=65535 >NIL:\n"
+    "    Protect \"SYS:Security/PAM\" rwed GROUP=re OTHER=re QUIET\n"
+    "EndIf\n"
+    "If NOT EXISTS \"SYS:Libs/PAM\"\n"
+    "    MakeDir \"SYS:Libs/PAM\" >NIL:\n"
+    "    SetOwner \"SYS:Libs/PAM\" UID=65535 GID=65535 >NIL:\n"
+    "    Protect \"SYS:Libs/PAM\" rwed GROUP=re OTHER=re QUIET\n"
     "EndIf\n"
     ";\n"
     "; Keep asking until somebody logs in (Login returns WARN when the login\n"
@@ -320,6 +346,8 @@ static int MUEnable(CONST_STRPTR vol, BOOL force)
         return RETURN_FAIL;
     if (!MakePath(p, sizeof(p), vol, SEC_DIR "/Security.log") || !EnsureFile(p, "", "log file"))
         return RETURN_FAIL;
+    if (!MakePath(p, sizeof(p), vol, SEC_DIR "/PAM") || !EnsureDir(p))
+        return RETURN_FAIL;
 
     /* the startup script */
     if (!MakePath(p, sizeof(p), vol, "S") || !EnsureDir(p))
@@ -341,6 +369,74 @@ static int MUEnable(CONST_STRPTR vol, BOOL force)
     Printf("\nMulti-user support is enabled on %s: the next boot from it shows the login\n"
            "prompt. The super user is \"root\" and has no password yet: log in as root\n"
            "and run Passwd, then add users to %s%s/passwd.\n", vol, vol, SEC_DIR);
+    return RETURN_OK;
+}
+
+/* The version in a script's "$VER: Security-Startup v.r" line; 0 if none */
+static ULONG ScriptVersion(CONST_STRPTR path)
+{
+    char line[160];
+    BPTR fh;
+    ULONG v = 0, r = 0;
+
+    if (!(fh = Open(path, MODE_OLDFILE)))
+        return 0;
+    while (FGets(fh, line, sizeof(line) - 1))
+    {
+        char *p = strstr(line, "$VER: Security-Startup ");
+        if (p)
+        {
+            p += strlen("$VER: Security-Startup ");
+            while (*p >= '0' && *p <= '9')
+                v = v * 10 + (*p++ - '0');
+            if (*p == '.')
+                for (p++; *p >= '0' && *p <= '9'; p++)
+                    r = r * 10 + (*p - '0');
+            break;
+        }
+    }
+    Close(fh);
+    return (v << 16) | (r & 0xffff);
+}
+
+static int MUUpgrade(CONST_STRPTR vol, BOOL force)
+{
+    char p[256], p2[256];
+    ULONG have, want = ((ULONG)STARTUP_VERSION << 16) | STARTUP_REVISION;
+
+    MakePath(p, sizeof(p), vol, STARTUP);
+    if (!Exists(p))
+    {
+        Printf("AMUInit: %s is not enabled for multi-user boots (no %s)\n", vol, p);
+        return RETURN_WARN;
+    }
+    if (MakePath(p2, sizeof(p2), vol, SEC_DIR "/PAM"))
+        EnsureDir(p2);
+    if (MakePath(p2, sizeof(p2), vol, "Libs/PAM"))
+        EnsureDir(p2);
+
+    have = ScriptVersion(p);
+    if (have >= want && !force)
+    {
+        Printf("AMUInit: %s is up to date (%lu.%lu)\n", p, (unsigned long)(have >> 16), (unsigned long)(have & 0xffff));
+        return RETURN_OK;
+    }
+    MakePath(p2, sizeof(p2), vol, STARTUP ".old");
+    if (Exists(p2))
+        DeleteFile(p2);
+    if (!Rename(p, p2))
+    {
+        Printf("AMUInit: cannot rename %s: ", p);
+        PrintFault(IoErr(), NULL);
+        return RETURN_FAIL;
+    }
+    if (!WriteFile(p, StartupScript, "startup script"))
+    {
+        Rename(p2, p);
+        return RETURN_FAIL;
+    }
+    Printf("AMUInit: the previous script is kept as %s; carry any changes of your own over to\n"
+           "the new one.\n", p2);
     return RETURN_OK;
 }
 
@@ -381,8 +477,8 @@ int main(void)
         return RETURN_FAIL;
     }
 
-    if ((args[ARG_ENABLE] && args[ARG_DISABLE]) || (!args[ARG_ENABLE] && !args[ARG_DISABLE]))
-        PutStr("AMUInit: give either ENABLE or DISABLE\n");
+    if ((args[ARG_ENABLE] ? 1 : 0) + (args[ARG_DISABLE] ? 1 : 0) + (args[ARG_UPGRADE] ? 1 : 0) != 1)
+        PutStr("AMUInit: give one of ENABLE, DISABLE or UPGRADE\n");
     else
     {
         /* normalise the volume: "SYS", "SYS:" or "SYS:anything" -> "SYS:" */
@@ -402,6 +498,8 @@ int main(void)
         }
         else if (args[ARG_ENABLE])
             rc = MUEnable(vol, args[ARG_FORCE] ? TRUE : FALSE);
+        else if (args[ARG_UPGRADE])
+            rc = MUUpgrade(vol, args[ARG_FORCE] ? TRUE : FALSE);
         else
             rc = MUDisable(vol);
     }
