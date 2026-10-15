@@ -44,6 +44,34 @@
 
 static const double huge = 0x1p1023;
 
+/****************************************************************************
+    NAME
+        double complex csinh(
+
+    SYNOPSIS
+        double complex z)
+
+    FUNCTION
+        Compute the complex hyperbolic sine of z.
+
+    INPUTS
+        z - Complex argument.
+
+    RESULT
+        Return the complex hyperbolic sine. For finite z = x + i*y, the real and
+        imaginary components are sinh(x)*cos(y) and cosh(x)*sin(y).
+        When the imaginary component is zero, its sign is preserved
+        in the result.
+
+    NOTES
+        Include <complex.h>. Large finite real components can overflow.
+        Exceptional arguments can produce infinities or NaNs and raise
+        floating-point exceptions.
+
+    SEE ALSO
+        ccosh(), ctanh(), cexp()
+
+*****************************************************************************/
 double complex
 csinh(double complex z)
 {

@@ -35,6 +35,35 @@
 
 #include "math_private.h"
 
+/****************************************************************************
+    NAME
+        float complex ctanhf(
+
+    SYNOPSIS
+        float complex z)
+
+    FUNCTION
+        Compute the float complex hyperbolic tangent of z.
+
+    INPUTS
+        z - Complex argument.
+
+    RESULT
+        Return the complex hyperbolic tangent. For finite z away from
+        a pole, the result
+        represents sinhf(z)/coshf(z). For a sufficiently large
+        finite real component, the real part approaches its sign,
+        and the imaginary part approaches zero.
+
+    NOTES
+        Include <complex.h>. Poles occur on the imaginary axis at
+        odd multiples of pi/2. Exceptional arguments can produce
+        infinities or NaNs and raise floating-point exceptions.
+
+    SEE ALSO
+        ctanh(), csinhf(), ccoshf()
+
+*****************************************************************************/
 float complex
 ctanhf(float complex z)
 {

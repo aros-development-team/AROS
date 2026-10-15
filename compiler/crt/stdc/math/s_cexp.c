@@ -36,6 +36,33 @@ static const uint32_t
 exp_ovfl  = 0x40862e42,			/* high bits of MAX_EXP * ln2 ~= 710 */
 cexp_ovfl = 0x4096b8e4;			/* (MAX_EXP - MIN_DENORM_EXP) * ln2 */
 
+/****************************************************************************
+    NAME
+        double complex cexp(
+
+    SYNOPSIS
+        double complex z)
+
+    FUNCTION
+        Compute the complex exponential of z.
+
+    INPUTS
+        z - Complex exponent.
+
+    RESULT
+        Return the complex exponential. For finite z = x + i*y, the real and
+        imaginary components are exp(x)*cos(y) and exp(x)*sin(y).
+        When the imaginary component is zero, the result retains
+        its sign in the imaginary component.
+
+    NOTES
+        Include <complex.h>. Components can overflow or underflow;
+        infinite or NaN inputs have corresponding exceptional results.
+
+    SEE ALSO
+        cexpf(), exp(), ccosh(), csinh()
+
+*****************************************************************************/
 double complex
 cexp(double complex z)
 {
