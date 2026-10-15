@@ -1,12 +1,14 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
-    Desc: Accounts - the account database, whichever the system uses
+    Desc: Accounts - the account and group databases, whichever the
+          system uses
 
-          Accounts are read with usergroup.library (getpwent(), getgrent()),
-          which shows security.library's users on a multi-user system and
-          the netinfo.device password database on a single-user one, and
-          changed with ug_UserAdminA(), which writes to the same place.
+          Accounts and groups are read with usergroup.library (getpwent(),
+          getgrent()), which shows security.library's users and groups on
+          a multi-user system and the netinfo.device databases on a
+          single-user one, and changed with ug_UserAdminA(), which writes
+          to the same place.
           security.library, when present, is used only for what has no
           usergroup.library equivalent: whether an account is locked, and
           logging in as root. A user changes his own password through
@@ -31,6 +33,8 @@
 
 struct Library *secBase;
 struct Library *PamBase;
+
+static void FreeGroups(struct AccountsState *st);
 
 static void Copy(STRPTR to, CONST_STRPTR from, ULONG size)
 {
@@ -76,10 +80,8 @@ void Acc_Cleanup(struct AccountsState *st)
     }
     if (st->Accounts)
         FreeVec(st->Accounts);
-    if (st->Groups)
-        FreeVec(st->Groups);
+    FreeGroups(st);
     st->Accounts = NULL;
-    st->Groups = NULL;
     if (PamBase)
         CloseLibrary(PamBase);
     if (secBase)
@@ -87,15 +89,51 @@ void Acc_Cleanup(struct AccountsState *st)
     PamBase = secBase = NULL;
 }
 
-void Acc_LoadGroups(struct AccountsState *st)
+/* A copy of a member list in one block */
+static STRPTR *CopyMembers(char **from)
 {
-    struct group *gr;
-    ULONG n = 0, max = 0;
+    ULONG n = 0, size = 0;
+    char **m;
+    STRPTR *to, s;
 
+    for (m = from; m && *m; m++)
+    {
+        n++;
+        size += strlen(*m) + 1;
+    }
+    if (!(to = AllocVec((n + 1) * sizeof(STRPTR) + size, MEMF_CLEAR)))
+        return NULL;
+    s = (STRPTR)(to + n + 1);
+    for (n = 0, m = from; m && *m; m++)
+    {
+        strcpy(s, *m);
+        to[n++] = s;
+        s += strlen(s) + 1;
+    }
+    to[n] = NULL;
+    return to;
+}
+
+static void FreeGroups(struct AccountsState *st)
+{
+    ULONG i;
+
+    for (i = 0; i < st->NumGroups; i++)
+        if (st->Groups[i].Members)
+            FreeVec(st->Groups[i].Members);
     if (st->Groups)
         FreeVec(st->Groups);
     st->Groups = NULL;
     st->NumGroups = 0;
+}
+
+void Acc_LoadGroups(struct AccountsState *st)
+{
+    struct group *gr;
+    struct secGroupInfo *gi = NULL;
+    ULONG n = 0, max = 0;
+
+    FreeGroups(st);
 
     setgrent();
     while ((gr = getgrent()))
@@ -103,15 +141,48 @@ void Acc_LoadGroups(struct AccountsState *st)
     endgrent();
     if (!max || !(st->Groups = AllocVec(max * sizeof(struct GroupEntry), MEMF_CLEAR)))
         return;
+    if (st->Multi)
+        gi = secAllocGroupInfo();
     setgrent();
     while (n < max && (gr = getgrent()))
     {
-        Copy(st->Groups[n].Name, gr->gr_name, ACC_NAMESIZE);
-        st->Groups[n].gid = gr->gr_gid;
-        n++;
+        struct GroupEntry *g = &st->Groups[n++];
+
+        /* gid -1: AROSTCP's group file carries its version string that way */
+        if (gr->gr_gid == (gid_t)-1)
+        {
+            n--;
+            continue;
+        }
+        Copy(g->Name, gr->gr_name, ACC_NAMESIZE);
+        g->gid = gr->gr_gid;
+        g->Members = CopyMembers(gr->gr_mem);
+        if (gi)
+        {
+            Copy(gi->GroupID, g->Name, secGROUPIDSIZE);
+            if (secGetGroupInfo(gi, secKeyType_GroupID))
+                Copy(g->Description, gi->GroupName, ACC_TEXTSIZE);
+        }
     }
     endgrent();
+    if (gi)
+        secFreeGroupInfo(gi);
     st->NumGroups = n;
+}
+
+BOOL Acc_Listed(struct GroupEntry *g, CONST_STRPTR name)
+{
+    STRPTR *m;
+
+    for (m = g->Members; m && *m; m++)
+        if (!strcmp(*m, name))
+            return TRUE;
+    return FALSE;
+}
+
+BOOL Acc_InGroup(struct GroupEntry *g, struct Account *a)
+{
+    return a->gid == g->gid || Acc_Listed(g, a->Name);
 }
 
 BOOL Acc_Load(struct AccountsState *st)
@@ -136,7 +207,12 @@ BOOL Acc_Load(struct AccountsState *st)
     setpwent();
     while (n < max && (pw = getpwent()))
     {
-        struct Account *a = &st->Accounts[n++];
+        struct Account *a;
+
+        /* uid -1 is not an account: AROSTCP's passwd carries its version string that way */
+        if (pw->pw_uid == (uid_t)-1)
+            continue;
+        a = &st->Accounts[n++];
 
         Copy(a->Name, pw->pw_name, sizeof(a->Name));
         Copy(a->RealName, pw->pw_gecos, sizeof(a->RealName));
@@ -201,6 +277,22 @@ LONG Acc_NextFreeUID(struct AccountsState *st)
     return 0;
 }
 
+LONG Acc_NextFreeGID(struct AccountsState *st)
+{
+    LONG gid;
+    ULONG i;
+
+    for (gid = 100; gid < 65535; gid++)
+    {
+        for (i = 0; i < st->NumGroups; i++)
+            if (st->Groups[i].gid == gid)
+                break;
+        if (i == st->NumGroups)
+            return gid;
+    }
+    return 0;
+}
+
 static LONG Result(int r)
 {
     return r ? (LONG)ug_GetErr() : 0;
@@ -258,6 +350,43 @@ LONG Acc_SetPassword(struct AccountsState *st, CONST_STRPTR name, CONST_STRPTR p
 LONG Acc_Lock(struct AccountsState *st, CONST_STRPTR name, BOOL lock)
 {
     struct TagItem tags[] = { { UGA_Operation, UGOP_MODIFY }, { UGA_Name, (IPTR)name }, { UGA_Lock, lock }, { TAG_DONE, 0 } };
+    return Result(ug_UserAdminA(tags));
+}
+
+LONG Acc_GroupAdd(struct AccountsState *st, CONST_STRPTR name, LONG gid, CONST_STRPTR desc, STRPTR *members)
+{
+    STRPTR none[1] = { NULL };
+    struct TagItem tags[] =
+    {
+        { UGA_Operation,                        UGOP_GROUPADD   },
+        { UGA_Name,                             (IPTR)name      },
+        { UGA_GID,                              gid             },
+        { st->Multi ? UGA_RealName : TAG_IGNORE, (IPTR)desc     },
+        { UGA_Members,                          (IPTR)(members ? members : none) },
+        { TAG_DONE,                             0               }
+    };
+    return Result(ug_UserAdminA(tags));
+}
+
+LONG Acc_GroupModify(struct AccountsState *st, CONST_STRPTR name, CONST_STRPTR newname, LONG gid,
+                     CONST_STRPTR desc, STRPTR *members)
+{
+    struct TagItem tags[] =
+    {
+        { UGA_Operation,                                UGOP_GROUPMODIFY },
+        { UGA_Name,                                     (IPTR)name      },
+        { newname ? UGA_NewName : TAG_IGNORE,           (IPTR)newname   },
+        { UGA_GID,                                      gid             },
+        { (st->Multi && desc) ? UGA_RealName : TAG_IGNORE, (IPTR)desc   },
+        { members ? UGA_Members : TAG_IGNORE,           (IPTR)members   },
+        { TAG_DONE,                                     0               }
+    };
+    return Result(ug_UserAdminA(tags));
+}
+
+LONG Acc_GroupDelete(struct AccountsState *st, CONST_STRPTR name)
+{
+    struct TagItem tags[] = { { UGA_Operation, UGOP_GROUPDELETE }, { UGA_Name, (IPTR)name }, { TAG_DONE, 0 } };
     return Result(ug_UserAdminA(tags));
 }
 
