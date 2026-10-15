@@ -32,25 +32,18 @@ static BOOL  matchstr(STRPTR, STRPTR);
 *       preferences
 *
 *   DESCRIPTION
-*       The "ENV:Classes/DataTypes/animation.prefs" file contains global
-*       settings for the datatype.
-*       The preferences file is an ASCII file containing one line where the
-*       preferences can be set.
-*       It can be superset by a local variable with the same name.
+*       The ENV:Classes/DataTypes/animation.prefs environment variable
+*       provides settings for the datatype. Its value contains
+*       newline-separated preference entries.
 *
-*       Each line can contain settings, special settings for some projects
-*       can be set using the MATCHPROJECT option.
+*       MATCHPROJECT restricts an entry to matching projects.
 *       Lines beginning with a '#' or ';' chars are treated as comments.
 *       Lines are limitted to 256 chars.
 *
 *   TEMPLATE
 *       MATCHCLASS/K,MATCHPROJECT/K,STACK/K/N,BUFFERTIME/K/N,BUFFERSTEP/K/N,NOSKIP/S
 *
-*       MATCHCLASS -- settings in this line will only affect matching
-*           classes, e.g. if the case-insensitive pattern does not match,
-*           this line is ignored.
-*           The maximum length of the pattern is 128 chars.
-*           Defaults to #?, which matches any class.
+*       MATCHCLASS -- accepted by the parser but currently ignored.
 *
 *       MATCHPROJECT -- settings in this line will only affect matching
 *           projects, e.g. if the case-insensitive pattern does not match,
