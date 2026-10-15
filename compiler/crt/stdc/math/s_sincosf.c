@@ -26,6 +26,38 @@ p2pio2 = 2*M_PI_2,			/* 0x400921FB, 0x54442D18 */
 p3pio2 = 3*M_PI_2,			/* 0x4012D97C, 0x7F3321D2 */
 p4pio2 = 4*M_PI_2;			/* 0x401921FB, 0x54442D18 */
 
+/****************************************************************************
+    NAME
+        void sincosf(
+
+    SYNOPSIS
+        float x, float *sn, float *cs)
+
+    FUNCTION
+        Compute the sine and cosine of x.
+
+    INPUTS
+        x - Angle in radians.
+        sn - Pointer to a writable float for the sine.
+        cs - Pointer to a separate writable float for the cosine.
+
+    RESULT
+        Store sin(x) in *sn and cos(x) in *cs. No value is returned.
+        For positive or negative zero, store x in *sn and 1 in *cs.
+        For infinity or NaN, both outputs are NaN.
+
+    NOTES
+        Include <math.h>. An infinite argument raises FE_INVALID.
+        Enabled floating-point traps may prevent completion.
+
+    BUGS
+        Argument reduction assumes round-to-nearest. Other rounding
+        modes can produce inaccurate results.
+
+    SEE ALSO
+        sinf(), cosf()
+
+*****************************************************************************/
 void
 sincosf(float x, float *sn, float *cs)
 {
