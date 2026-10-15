@@ -24,10 +24,13 @@
         struct KernelBase *, KernelBase, 50, Kernel)
 
 /*  FUNCTION
+        Report whether a spinlock is locked.
 
     INPUTS
+        lock - Pointer to the spinlock to inspect.
 
     RESULT
+        Nonzero if the spinlock is locked; zero if it is unlocked.
 
     NOTES
 
