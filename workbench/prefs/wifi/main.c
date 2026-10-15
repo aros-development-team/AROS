@@ -13,6 +13,7 @@
 
 #include <exec/types.h>
 #include <libraries/mui.h>
+#include <mui/Lamp_mcc.h>
 #include <utility/hooks.h>
 #include <dos/dos.h>
 #include <dos/dostags.h>
@@ -33,7 +34,11 @@
 #define VERSION "$VER: WiFi 1.0 (20.08.2026) AROS Dev Team"
 
 static Object *app, *window, *list, *scanbtn, *connectbtn, *statustext;
-static Object *detailsbtn, *disconnectbtn, *devcycle;
+static Object *detailsbtn, *disconnectbtn, *devcycle, *autorunchk;
+static Object *lampobj;                 /* green lamp: connected, signal bar */
+static APTR lampimg;                    /* ... as a list image */
+static Object *lampoffobj;              /* unlit signal bar */
+static APTR lampoffimg;
 
 /* Entries for the device chooser. MUI keeps the array, so it has to outlive
  * the object; the strings themselves live in the shared message. */
@@ -41,7 +46,7 @@ static CONST_STRPTR devnames[WIFI_MAX_DEVS + 1];
 static TEXT devlabels[WIFI_MAX_DEVS][WIFI_DEV_MAX + 16];
 static Object *keywindow, *keystring, *keytext, *keyok, *keycancel;
 static Object *detailswindow, *detailsok;
-static Object *dv_network, *dv_security, *dv_ap, *dv_iface, *dv_mac;
+static Object *dv_network, *dv_security, *dv_ap, *dv_signal, *dv_iface, *dv_mac;
 static Object *dv_address, *dv_netmask, *dv_broadcast, *dv_gateway, *dv_dns;
 
 /* Set while a status request is made only to fill the details window. */
@@ -51,6 +56,7 @@ static struct MsgPort *replyport;
 static struct WifiMsg *msg;
 static struct Process *worker;
 static BOOL busy;                       /* a command is in flight */
+static BOOL scan_on_open = TRUE;        /* scan once the first status is in */
 
 /* The network the pending CONNECT is for, so a passphrase can be asked for
  * and the same request sent again. */
@@ -73,6 +79,7 @@ static void UpdateButtons(void)
     SET(scanbtn, MUIA_Disabled, busy || !wireless);
     SET(connectbtn, MUIA_Disabled, busy || !wireless);
     SET(disconnectbtn, MUIA_Disabled, busy || !wireless);
+    SET(autorunchk, MUIA_Disabled, busy || !wireless);
     SET(detailsbtn, MUIA_Disabled, busy);
 }
 
@@ -99,9 +106,15 @@ static void Send(ULONG cmd)
 /* ------------------------------------------------------------------------- */
 /* The list                                                                  */
 
+/* Lit lamps out of four for a signal level, on the usual dBm steps. */
+static LONG SignalBars(LONG dbm)
+{
+    return dbm >= -55 ? 4 : dbm >= -65 ? 3 : dbm >= -75 ? 2 : dbm >= -85 ? 1 : 0;
+}
+
 static IPTR DisplayFunc(struct Hook *hook, STRPTR *columns, struct WifiNet *net)
 {
-    static TEXT signal[8], channel[8];
+    static TEXT signal[4 * 24], channel[8], lamp[24];
 
     if (net == NULL)
     {
@@ -113,13 +126,31 @@ static IPTR DisplayFunc(struct Hook *hook, STRPTR *columns, struct WifiNet *net)
         return 0;
     }
 
-    snprintf(signal, sizeof(signal), "%ld", (long)net->wn_Signal);
+    if (lampimg != NULL && lampoffimg != NULL)
+    {
+        LONG i, bars = SignalBars(net->wn_Signal), len = 0;
+
+        for (i = 0; i < 4; i++)
+            len += snprintf(signal + len, sizeof(signal) - len, "\33O[%p]",
+                i < bars ? lampimg : lampoffimg);
+    }
+    else
+        snprintf(signal, sizeof(signal), "%ld", (long)net->wn_Signal);
     snprintf(channel, sizeof(channel), "%ld", (long)net->wn_Channel);
 
-    /* A tick for the network we are on, a dot for one we have a key for. */
-    columns[0] = (msg->wm_Associated &&
-                  strcmp(msg->wm_SSID, net->wn_SSID) == 0) ? "\xBB" :
-                 (net->wn_Known ? "\xB7" : " ");
+    /* A lamp for the network we are on, a dot for one we have a key for. */
+    if (msg->wm_Associated && strcmp(msg->wm_SSID, net->wn_SSID) == 0)
+    {
+        if (lampimg != NULL)
+        {
+            snprintf(lamp, sizeof(lamp), "\33O[%p]", lampimg);
+            columns[0] = lamp;
+        }
+        else
+            columns[0] = "\xBB";
+    }
+    else
+        columns[0] = net->wn_Known ? "\xB7" : " ";
     columns[1] = net->wn_SSID;
     columns[2] = net->wn_Protection;
     columns[3] = signal;
@@ -268,6 +299,7 @@ static void ShowDetails(void)
                                             : (CONST_STRPTR)"");
     SetField(dv_security, msg->wm_Associated ? security : (CONST_STRPTR)"");
     SetField(dv_ap, (CONST_STRPTR)msg->wm_BSSID);
+    SetField(dv_signal, (CONST_STRPTR)msg->wm_Signal);
     SetField(dv_iface, (CONST_STRPTR)msg->wm_Interface);
     SetField(dv_mac, (CONST_STRPTR)msg->wm_MAC);
     SetField(dv_address, (CONST_STRPTR)msg->wm_Address);
@@ -297,6 +329,13 @@ static IPTR DisconnectFunc(struct Hook *hook, Object *caller, void *data)
 {
     SetStatus(_(MSG_DISCONNECTING));
     Send(WCMD_DISCONNECT);
+    return 0;
+}
+
+static IPTR AutoRunFunc(struct Hook *hook, Object *caller, IPTR *args)
+{
+    msg->wm_AutoRun = (LONG)args[0];
+    Send(WCMD_AUTORUN);
     return 0;
 }
 
@@ -332,6 +371,7 @@ static void HandleReply(void)
         case WCMD_STATUS:
             wireless = m->wm_Wireless;
             UpdateButtons();
+            nnset(autorunchk, MUIA_Selected, m->wm_AutoRun);
             SetStatus(m->wm_Status);
             DoMethod(list, MUIM_List_Redraw, MUIV_List_Redraw_All);
             if (details_pending)
@@ -339,11 +379,27 @@ static void HandleReply(void)
                 details_pending = FALSE;
                 ShowDetails();
             }
+            /* Only one command is in flight, so the scan waits for this. */
+            if (scan_on_open)
+            {
+                scan_on_open = FALSE;
+                if (wireless)
+                {
+                    SetStatus(_(MSG_SCANNING));
+                    Send(WCMD_SCAN);
+                }
+            }
             break;
 
         case WCMD_DISCONNECT:
             SetStatus(m->wm_Status);
             DoMethod(list, MUIM_List_Redraw, MUIV_List_Redraw_All);
+            break;
+
+        case WCMD_AUTORUN:
+            /* Show what was stored, which a failure leaves unchanged. */
+            nnset(autorunchk, MUIA_Selected, m->wm_AutoRun);
+            SetStatus(m->wm_Status);
             break;
         }
     }
@@ -355,6 +411,7 @@ int main(void)
 {
     struct Hook scan_hook, connect_hook, display_hook, keyok_hook, keycancel_hook;
     struct Hook details_hook, detailsok_hook, disconnect_hook, device_hook;
+    struct Hook autorun_hook;
     TEXT configured[WIFI_DEV_MAX];
     LONG i, preselect = 0;
     ULONG sigs = 0, replysig;
@@ -467,6 +524,8 @@ int main(void)
     detailsok_hook.h_SubEntry = (HOOKFUNC)DetailsOkFunc;
     disconnect_hook.h_Entry = HookEntry;
     disconnect_hook.h_SubEntry = (HOOKFUNC)DisconnectFunc;
+    autorun_hook.h_Entry = HookEntry;
+    autorun_hook.h_SubEntry = (HOOKFUNC)AutoRunFunc;
     device_hook.h_Entry = HookEntry;
     device_hook.h_SubEntry = (HOOKFUNC)DeviceFunc;
 
@@ -506,6 +565,12 @@ int main(void)
                     MUIA_Text_Contents, __(MSG_STARTING),
                 End),
                 Child, (IPTR)(HGroup,
+                    Child, (IPTR)(autorunchk = MUI_MakeObject(MUIO_Checkmark,
+                        NULL)),
+                    Child, (IPTR)LLabel1((char *)_(MSG_CHK_AUTORUN)),
+                    Child, (IPTR)HSpace(0),
+                End),
+                Child, (IPTR)(HGroup,
                     Child, (IPTR)(scanbtn = SimpleButton((char *)_(MSG_BTN_SCAN))),
                     Child, (IPTR)(detailsbtn = SimpleButton((char *)_(MSG_BTN_DETAILS))),
                     Child, (IPTR)HVSpace,
@@ -527,6 +592,8 @@ int main(void)
                     Child, (IPTR)(dv_security = TextObject, End),
                     Child, (IPTR)Label((char *)_(MSG_LAB_AP)),
                     Child, (IPTR)(dv_ap = TextObject, End),
+                    Child, (IPTR)Label((char *)_(MSG_LAB_SIGNAL)),
+                    Child, (IPTR)(dv_signal = TextObject, End),
                     Child, (IPTR)Label((char *)_(MSG_LAB_MAC)),
                     Child, (IPTR)(dv_mac = TextObject, End),
                 End),
@@ -607,6 +674,10 @@ int main(void)
         (IPTR)detailsbtn, 3, MUIM_CallHook, (IPTR)&details_hook, NULL);
     DoMethod(disconnectbtn, MUIM_Notify, MUIA_Pressed, FALSE,
         (IPTR)disconnectbtn, 3, MUIM_CallHook, (IPTR)&disconnect_hook, NULL);
+    SET(autorunchk, MUIA_CycleChain, 1);
+    DoMethod(autorunchk, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+        (IPTR)autorunchk, 3, MUIM_CallHook, (IPTR)&autorun_hook,
+        MUIV_TriggerValue);
     DoMethod(detailsok, MUIM_Notify, MUIA_Pressed, FALSE,
         (IPTR)detailsok, 3, MUIM_CallHook, (IPTR)&detailsok_hook, NULL);
     DoMethod(detailswindow, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
@@ -618,6 +689,18 @@ int main(void)
         PutStr(_(MSG_ERR_WINDOW));
         goto cleanup;
     }
+
+    /* List images need a list that is set up, i.e. an open window. */
+    /* The inner spacing keeps a row of signal lamps apart. */
+    lampobj = LampObject, MUIA_Lamp_Color, MUIV_Lamp_Color_Ok,
+        MUIA_InnerLeft, 1, MUIA_InnerRight, 1, End;
+    if (lampobj != NULL)
+        lampimg = (APTR)DoMethod(list, MUIM_List_CreateImage, (IPTR)lampobj, 0);
+    lampoffobj = LampObject, MUIA_Lamp_Color, MUIV_Lamp_Color_Off,
+        MUIA_InnerLeft, 1, MUIA_InnerRight, 1, End;
+    if (lampoffobj != NULL)
+        lampoffimg = (APTR)DoMethod(list, MUIM_List_CreateImage,
+            (IPTR)lampoffobj, 0);
 
     /* Show where we stand, then look around. */
     Send(WCMD_STATUS);
@@ -638,16 +721,28 @@ int main(void)
     rc = RETURN_OK;
 
 cleanup:
+    if (lampimg != NULL)
+        DoMethod(list, MUIM_List_DeleteImage, (IPTR)lampimg);
+    lampimg = NULL;
+    if (lampobj != NULL)
+        MUI_DisposeObject(lampobj);
+    if (lampoffimg != NULL)
+        DoMethod(list, MUIM_List_DeleteImage, (IPTR)lampoffimg);
+    lampoffimg = NULL;
+    if (lampoffobj != NULL)
+        MUI_DisposeObject(lampoffobj);
     if (app != NULL)
         MUI_DisposeObject(app);
 
     if (WifiWorkerPort != NULL)
     {
-        /* Let any command in flight finish before taking the port away. */
+        /* Let any command in flight finish before taking the port away. The
+         * window is gone, so take the reply without HandleReply(). */
         while (busy)
         {
             WaitPort(replyport);
-            HandleReply();
+            if (GetMsg(replyport) != NULL)
+                busy = FALSE;
         }
         SetSignal(0, SIGF_SINGLE);
         msg->wm_Cmd = WCMD_QUIT;

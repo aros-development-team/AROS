@@ -11,14 +11,14 @@
       const GLubyte * procname)
 
 /*  FUNCTION
-        validate if the requested function is actually supported by
-        current configuration of 3D subsystem. 
+        Look up an OpenGL entry point in the host GLX implementation.
  
     INPUTS
+        procname - NUL-terminated name of the OpenGL entry point.
  
     RESULT
-        The return value is defined as APTR. If it is not NULL, the requested
-        GL function is supported by current configuration of 3D subsystem.
+        Function pointer returned by glXGetProcAddress(), or NULL when
+        no entry point is available.
  
     BUGS
 

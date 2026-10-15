@@ -299,9 +299,7 @@ SamplerFunc(struct Hook             *hook,
 /****** ahi.device/AHI_AllocAudioA ******************************************
 *
 *   NAME
-*       AHI_AllocAudioA -- allocates and initializes the audio hardware
-*       AHI_AllocAudio -- varargs stub for AHI_AllocAudioA()
-*
+    AHI_AllocAudioA()
 *   SYNOPSIS
 *       audioctrl = AHI_AllocAudioA( tags );
 *       D0                           A1
@@ -313,6 +311,9 @@ SamplerFunc(struct Hook             *hook,
 *       struct AHIAudioCtrl *AHI_AllocAudio( Tag, ... );
 *
 *   FUNCTION
+        allocates and initializes the audio hardware
+        AHI_AllocAudio: varargs stub for AHI_AllocAudioA()
+
 *       Allocates and initializes the audio hardware, selects the best
 *       mixing routine (if necessary) according to the supplied tags.
 *       To start playing you first need to call AHI_ControlAudioA().
@@ -667,8 +668,7 @@ error:
 /****** ahi.device/AHI_FreeAudio *******************************************
 *
 *   NAME
-*       AHI_FreeAudio -- deallocates the audio hardware
-*
+    AHI_FreeAudio()
 *   SYNOPSIS
 *       AHI_FreeAudio( audioctrl );
 *                      A2
@@ -676,6 +676,8 @@ error:
 *       void AHI_FreeAudio( struct AHIAudioCtrl * );
 *
 *   FUNCTION
+        deallocates the audio hardware
+
 *       Deallocates the AHIAudioCtrl structure and any other resources
 *       allocated by AHI_AllocAudioA(). After this call it must not be used
 *       by any other functions anymore. AHI_UnloadSound() is automatically

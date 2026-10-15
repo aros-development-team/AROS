@@ -184,8 +184,7 @@ ChannelInfoFunc(struct Hook              *hook,
 /****** ahi.device/OpenDevice **********************************************
 *
 *   NAME
-*       OpenDevice -- Open the device
-*
+    OpenDevice()
 *   SYNOPSIS
 *       error = OpenDevice(AHINAME, unit, ioRequest, flags)
 *       D0                 A0       D0    A1         D1
@@ -193,6 +192,8 @@ ChannelInfoFunc(struct Hook              *hook,
 *       BYTE OpenDevice(STRPTR, ULONG, struct AHIRequest *, ULONG);
 *
 *   FUNCTION
+        Open the device
+
 *       This is an exec call.  Exec will search for the ahi.device, and
 *       if found, will pass this call on to the device.
 *
@@ -344,8 +345,7 @@ _DevOpen(struct AHIRequest *ioreq,
 /****** ahi.device/CloseDevice *********************************************
 *
 *   NAME
-*       CloseDevice -- Close the device
-*
+    CloseDevice()
 *   SYNOPSIS
 *       CloseDevice(ioRequest)
 *                   A1
@@ -353,6 +353,8 @@ _DevOpen(struct AHIRequest *ioreq,
 *       void CloseDevice(struct IORequest *);
 *
 *   FUNCTION
+        Close the device
+
 *       This is an exec call that closes the device. Every OpenDevice()
 *       must be matched with a call to CloseDevice().
 *

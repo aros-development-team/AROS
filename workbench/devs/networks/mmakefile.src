@@ -78,4 +78,5 @@ include $(SRCDIR)/config/aros.cfg
 #
 #MM- workbench-devs-networks-soc-raspi: \
 #MM     workbench-devs-networks-bcmgenet \
-#MM     workbench-devs-networks-bwfm
+#MM     workbench-devs-networks-bwfm \
+#MM     workbench-devs-networks-cdnsgem

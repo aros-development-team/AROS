@@ -1,12 +1,8 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
-
-/*****************************************************************************
-
-    NAME */
 
 #include <aros/debug.h>
 
@@ -19,7 +15,10 @@
 
 //static int cxbug; /* For cxref bug */
 
-AROS_LH2(BOOL, DeleteNVDData,
+/*****************************************************************************
+
+    NAME */
+        AROS_LH2(BOOL, DeleteNVDData,
 
 /*  SYNOPSIS */
 
@@ -31,33 +30,34 @@ AROS_LH2(BOOL, DeleteNVDData,
         struct Library *, nvdBase, 7, NVDisk)
 
 /*  FUNCTION
-
-    Delete a piece of data in the nonvolatile memory.
+    Delete a stored item from an application's nonvolatile data area.
+    In the filesystem-backed implementation, locate the application's
+    directory beneath the configured storage root and delete the item file.
 
     INPUTS
-
-    appName   --  the application owning the data to be deleted
-    itemName  --  name of the data to be deleted
+        appName  - Name of the application directory relative to the
+                   nonvolatile storage root.
+        itemName - Name of the item file to delete from that directory.
 
     RESULT
-    
-    Success / failure indicator.
+        TRUE if the item was deleted; FALSE if the application directory
+        cannot be locked or the file cannot be deleted.
 
     NOTES
+        The filesystem-backed operation temporarily changes the current
+        directory and restores it before returning. An active native
+        storage backend, if present, handles deletion through its own
+        NVDisk_ArchDelete() implementation.
 
-    EXAMPLE
-
-    BUGS
+        The public DeleteNV() entry point validates item names and supports
+        suppression of system requesters. Callers should normally use it
+        instead of invoking the disk-backed interface directly.
 
     SEE ALSO
-
-    nonvolatile.library/DeleteNV()
-
-    INTERNALS
+        nonvolatile.library/DeleteNV()
 
     HISTORY
-    
-    November 2000,  SDuvan  --  implemented
+        November 2000, SDuvan -- implemented
 
 ******************************************************************************/
 

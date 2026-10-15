@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010-2021, The AROS Development Team.
+    Copyright (C) 2010-2026, The AROS Development Team.
     All rights reserved.
     
 */
@@ -10,13 +10,13 @@
 #include <utility/tagitem.h>
 #include <proto/alib.h>
 
-/*****************************************************************************
-
-    NAME */
 #define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/popupmenu.h>
 extern struct PopupMenuBase * PopupMenuBase;
 
+/*****************************************************************************
+
+    NAME */
         struct PM_IDLst *PM_ExLst(
 
 /*  SYNOPSIS */
@@ -24,22 +24,21 @@ extern struct PopupMenuBase * PopupMenuBase;
         ...)
 
 /*  FUNCTION
+        Build a list of excluded menu item IDs from a zero-terminated
+        sequence of ULONG identifiers. This is the variadic form of
+        PM_ExLstA().
 
     INPUTS
+        id  - First item ID; zero terminates the sequence.
+        ... - Further ULONG item IDs, followed by a terminating zero.
 
     RESULT
+        Pointer to an allocated PM_IDLst chain, or NULL if the sequence
+        is empty or an allocation fails.
 
     NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-    HISTORY
+        Zero cannot be included as an item ID. Release the returned
+        list with PM_FreeIDList().
 
 *****************************************************************************/
 {

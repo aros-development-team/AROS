@@ -27,24 +27,27 @@ extern struct ReqToolsBase * ReqToolsBase;
 	...)
 
 /*  FUNCTION
+        Request a line of text.
 
     INPUTS
+        buffer   - Input text and destination for the edited string.
+        maxchars - Maximum character count, excluding the terminator.
+        title    - Requester window title.
+        reqinfo  - Optional requester information.
+        tag1     - First requester tag; terminate with TAG_DONE.
 
     RESULT
+        Response code from rtGetStringA().
 
     NOTES
-
-    EXAMPLE
-
-    BUGS
+        The destination must accommodate maxchars characters and the
+        terminating NUL. Empty-input behavior depends on RTGS_AllowEmpty;
+        see rtGetStringA().
 
     SEE ALSO
+        rtGetStringA()
 
-    INTERNALS
-
-    HISTORY
-
-*****************************************************************************/
+***************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
 

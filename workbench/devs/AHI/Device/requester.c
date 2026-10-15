@@ -1011,9 +1011,7 @@ static void CloseInfoWindow(struct AHIAudioModeRequesterExt *req)
 /****** ahi.device/AHI_AllocAudioRequestA ***********************************
 *
 *   NAME
-*       AHI_AllocAudioRequestA -- allocate an audio mode requester.
-*       AHI_AllocAudioRequest -- varargs stub for AHI_AllocAudioRequestA()
-*
+    AHI_AllocAudioRequestA()
 *   SYNOPSIS
 *       requester = AHI_AllocAudioRequestA( tags );
 *       D0                                  A0
@@ -1026,6 +1024,9 @@ static void CloseInfoWindow(struct AHIAudioModeRequesterExt *req)
 *       struct AHIAudioModeRequester *AHI_AllocAudioRequest( Tag, ... );
 *
 *   FUNCTION
+        allocate an audio mode requester.
+        AHI_AllocAudioRequest: varargs stub for AHI_AllocAudioRequestA()
+
 *       Allocates an audio mode requester data structure.
 *
 *   INPUTS
@@ -1098,9 +1099,7 @@ _AHI_AllocAudioRequestA(struct TagItem *tags,
 /****** ahi.device/AHI_AudioRequestA ****************************************
 *
 *   NAME
-*       AHI_AudioRequestA -- get an audio mode from user using an requester.
-*       AHI_AudioRequest -- varargs stub for AHI_AudioRequestA()
-*
+    AHI_AudioRequestA()
 *   SYNOPSIS
 *       success = AHI_AudioRequestA( requester, tags );
 *       D0                           A0         A1
@@ -1113,6 +1112,9 @@ _AHI_AllocAudioRequestA(struct TagItem *tags,
 *       BOOL AHI_AudioRequest( struct AHIAudioModeRequester *, Tag, ... );
 *
 *   FUNCTION
+        get an audio mode from user using an requester.
+        AHI_AudioRequest: varargs stub for AHI_AudioRequestA()
+
 *       Prompts the user for an audio mode, based on the modifying tags.
 *       If the user cancels or the system aborts the request, FALSE is
 *       returned, otherwise the requester's data structure reflects the

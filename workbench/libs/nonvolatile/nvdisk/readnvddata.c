@@ -4,9 +4,7 @@
     Desc:
 */
 
-/*****************************************************************************
 
-    NAME */
 
 #include "nvdisk_intern.h"
 #include <nvdisk_arch.h>
@@ -17,7 +15,11 @@
 #include <exec/memory.h>
 
 
-AROS_LH2(APTR, ReadNVDData,
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH2(APTR, ReadNVDData,
 
 /*  SYNOPSIS */
 
@@ -30,30 +32,35 @@ AROS_LH2(APTR, ReadNVDData,
 
 /*  FUNCTION
 
-    Read the nv data corresponding to appname, itemname.
+    Retrieve an application's nonvolatile data item.
 
     INPUTS
 
-    appname   --  the name of the application owning the data
-    itemname  --  the name of the data to retrieve
+    appName   --  name of the application owning the item
+    itemName  --  name of the item to retrieve
 
     RESULT
 
-    A pointer to the data read. If something went wrong NULL is returned.
+    Pointer to an allocated data buffer, or NULL if the item cannot be
+    retrieved. The caller owns a successful result and must release it
+    using nonvolatile.library/FreeNVData().
 
     NOTES
 
-    EXAMPLE
+    The filesystem-backed implementation locates the item in the
+    application's directory beneath the configured storage root. An
+    active native backend handles the request through NVDisk_ArchRead().
 
-    BUGS
+    The public GetCopyNV() interface validates names and provides the
+    documented application-facing entry point.
 
     SEE ALSO
 
-    INTERNALS
+    nonvolatile.library/GetCopyNV(), nonvolatile.library/FreeNVData()
 
     HISTORY
 
-    November 2000,  SDuvan  --  implemented
+    November 2000, SDuvan -- implemented
 
 ******************************************************************************/
 

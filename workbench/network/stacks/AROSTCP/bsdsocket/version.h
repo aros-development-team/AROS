@@ -38,11 +38,11 @@
 #define MIAMILIBNAME    "miami.library"
 
 #define VERSION         5
-#define REVISION        11
-#define DATE            "09.10.2026"
-#define VERS            SOCLIBNAME "5.11"
+#define REVISION        12
+#define DATE            "15.10.2026"
+#define VERS            SOCLIBNAME "5.12"
 #define VSTRING         SOCLIBNAME STR(VERSION) "." STR(REVISION) "(" DATE ")"
-#define VERSTAG         "\0$VER: " SOCLIBNAME " 5.11 (" DATE ")"
+#define VERSTAG         "\0$VER: " SOCLIBNAME " 5.12 (" DATE ")"
 
 #define MIAMI_VERSION   13
 #define MIAMI_REVISION  12
@@ -54,5 +54,5 @@
 #define ROADSHOWSTR     ""
 #endif
 
-#define STACK_RELEASE   "AROSTCP " ROADSHOWSTR "kernel v0.50 " CPU_TYPE " (" DATE ")"
+#define STACK_RELEASE   "AROSTCP " ROADSHOWSTR "kernel v0.51 " CPU_TYPE " (" DATE ")"
 

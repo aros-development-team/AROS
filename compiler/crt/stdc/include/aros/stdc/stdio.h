@@ -84,7 +84,7 @@ int vsprintf(char * __restrict s, const char * __restrict format, va_list arg);
 int vsscanf(const char * __restrict s, const char * __restrict format, va_list arg);
 
 /* GNU extensions */
-#if defined(__cplusplus) || (!defined(__STRICT_ANSI__) && defined(_GNU_SOURCE))
+#if defined(__cplusplus) || defined(_GNU_SOURCE)
 int asprintf(char ** __restrict str, const char * __restrict format, ...);
 int vasprintf(char ** __restrict str, const char * __restrict format, va_list args);
 #endif

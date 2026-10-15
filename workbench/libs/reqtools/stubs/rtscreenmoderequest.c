@@ -25,24 +25,25 @@ extern struct ReqToolsBase * ReqToolsBase;
 	...)
 
 /*  FUNCTION
+        Request a screen mode and its display parameters.
 
     INPUTS
+        screenmodereq - Screen-mode requester allocated with
+                        rtAllocRequest().
+        title         - Requester window title.
+        tag1          - First requester tag; terminate with TAG_DONE.
 
     RESULT
+        Nonzero when the user accepts the selection; zero on cancellation.
 
     NOTES
-
-    EXAMPLE
-
-    BUGS
+        The chosen display mode, dimensions, and depth are stored in
+        the requester structure.
 
     SEE ALSO
+        rtScreenModeRequestA(), rtAllocRequest()
 
-    INTERNALS
-
-    HISTORY
-
-*****************************************************************************/
+***************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
 

@@ -75,6 +75,17 @@ static void bwfm_zero(UBYTE *p, ULONG n)
         *d++ = 0;
 }
 
+/* Compare, for the same reason: no memcmp()/bcmp() out of the loop. */
+static int bwfm_memeq(const UBYTE *a, const UBYTE *b, ULONG n)
+{
+    const volatile UBYTE *x = a;
+
+    while (n--)
+        if (*x++ != *b++)
+            return 0;
+    return 1;
+}
+
 /* ----------------------------------------------------------------------- */
 /* SDIO register access (ported from if_bwfm_sdio.c)                       */
 
@@ -2346,13 +2357,14 @@ out:
     *authp = auth;
 }
 
-AROS_LH6(int, BWFMJoin,
+AROS_LH7(int, BWFMJoin,
                 AROS_LHA(uint8_t *, ssid, A0),
                 AROS_LHA(uint32_t, ssidlen, D0),
                 AROS_LHA(uint8_t *, pass, A1),
                 AROS_LHA(uint32_t, passlen, D1),
                 AROS_LHA(uint8_t *, ie, A2),
                 AROS_LHA(uint32_t, ielen, D2),
+                AROS_LHA(uint8_t *, bssid, A3),
                 struct BWFMBase *, BWFMBase, 11, Bwfm)
 {
     AROS_LIBFUNC_INIT
@@ -2463,12 +2475,16 @@ AROS_LH6(int, BWFMJoin,
     bwfm_iovar_set_int(BWFMBase, "auth", BWFM_AUTH_OPEN);
     bwfm_iovar_set_int(BWFMBase, "mfp", BWFM_MFP_NONE);
 
-    /* Build the join request: SSID, any BSSID, any channel. */
+    /*
+     * Build the join request: SSID, any channel, and the BSSID the supplicant
+     * picked if it named one. In a mesh every node shares the SSID, and the
+     * supplicant checks the handshake against the IEs of the node it chose.
+     */
     bwfm_zero((UBYTE *)&jp, sizeof(jp));
     jp.ssid.len = AROS_LONG2LE(ssidlen);
     CopyMem(ssid, jp.ssid.ssid, ssidlen);
     for (i = 0; i < ETHER_ADDR_LEN; i++)
-        jp.assoc.bssid[i] = 0xff;
+        jp.assoc.bssid[i] = bssid ? bssid[i] : 0xff;
     jp.assoc.chanspec_num = 0;
     jp.scan.scan_type = 0xff;                   /* default scan */
     jp.scan.nprobes = AROS_LONG2LE(0xffffffff);
@@ -2508,7 +2524,7 @@ AROS_LH6(int, BWFMJoin,
                 jpp.ssid.len = AROS_LONG2LE(ssidlen);
                 CopyMem(ssid, jpp.ssid.ssid, ssidlen);
                 for (i = 0; i < ETHER_ADDR_LEN; i++)
-                    jpp.assoc.bssid[i] = 0xff;
+                    jpp.assoc.bssid[i] = jp.assoc.bssid[i];
                 serr = bwfm_dcmd(BWFMBase, BWFM_C_SET_SSID, 1, &jpp,
                                  sizeof(jpp) - sizeof(jpp.assoc.chanspec_list));
                 D(bug("[bwfm] join iovar err %d, SET_SSID fallback err %d\n", jerr, serr));
@@ -2562,13 +2578,14 @@ AROS_LH6(int, BWFMJoin,
              */
             if (result < 0 && (tries % 4) == 3)
             {
-                uint8_t bssid[ETHER_ADDR_LEN];
+                uint8_t cur[ETHER_ADDR_LEN];
 
-                bwfm_zero(bssid, sizeof(bssid));
+                /* Still on the old node is not the join we asked for. */
+                bwfm_zero(cur, sizeof(cur));
                 ObtainSemaphore(&BWFMBase->bwfm_Sem);
-                if (bwfm_dcmd(BWFMBase, BWFM_C_GET_BSSID, 0, bssid, sizeof(bssid)) == 0 &&
-                    (bssid[0] | bssid[1] | bssid[2] |
-                     bssid[3] | bssid[4] | bssid[5]) != 0)
+                if (bwfm_dcmd(BWFMBase, BWFM_C_GET_BSSID, 0, cur, sizeof(cur)) == 0 &&
+                    (cur[0] | cur[1] | cur[2] | cur[3] | cur[4] | cur[5]) != 0 &&
+                    (bssid == NULL || bwfm_memeq(cur, bssid, ETHER_ADDR_LEN)))
                     result = 0;
                 ReleaseSemaphore(&BWFMBase->bwfm_Sem);
             }

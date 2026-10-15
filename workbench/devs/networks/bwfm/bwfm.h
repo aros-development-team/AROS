@@ -35,6 +35,7 @@
 #define BWFM_E_DISASSOC_IND     12
 #define BWFM_E_REASSOC          9
 #define BWFM_E_ROAM             19
+#define BWFM_E_ESCAN_RESULT     69
 
 /* Firmware command for leaving the network; mirrors bwfm_sdio.h. */
 #define BWFM_C_DISASSOC         52
@@ -55,6 +56,9 @@ struct bwfm_opener
     BOOL                (*rx)(APTR, APTR, ULONG);   /* S2_CopyToBuff[16] */
     BOOL                (*tx)(APTR, APTR, ULONG);   /* S2_CopyFromBuff[16/32] */
     struct Hook        *filter;             /* S2_PacketFilter hook */
+    ULONG               pending_events;     /* CONNECT/DISCONNECT edge latched
+                                             * until this opener arms S2_ONEVENT */
+    ULONG               took;               /* report_events() scratch */
 };
 
 /* Per packet-type statistics tracker (SANA-II S2_TRACKTYPE) */
@@ -97,8 +101,6 @@ struct bwfm_unit
     struct MinList      openers;
     struct MinList      trackers;
     struct MinList      event_pending;      /* queued S2_ONEVENT requests */
-    ULONG               pending_events;     /* edge events (CONNECT/DISCONNECT)
-                                             * latched until a listener arms */
     /* Async associate job: S2_SETOPTIONS copies the params here and signals the
      * bwfm.ctrl worker, then replies at once, so BWFMJoin runs off the caller's
      * (wpa_supplicant's) event loop. */
@@ -109,6 +111,15 @@ struct bwfm_unit
     UBYTE               assoc_ssid[33];
     UBYTE               assoc_pass[64];
     UBYTE               assoc_ie[64];       /* WPA/RSN IE for the assoc request */
+    UBYTE               assoc_bssid[ETHER_ADDR_LEN];
+    int                 assoc_hasbssid;     /* the supplicant named the node */
+    /* Host handshake: the supplicant hears CONNECT on association, everyone
+     * else once its group key is in */
+    struct bwfm_opener *assoc_opener;
+    int                 keys_pending;
+    /* EAPOL that beat the CONNECT event; link_up() replays it */
+    ULONG               held_eapol_len;
+    UBYTE               held_eapol[512];
 };
 
 struct bwfm_base

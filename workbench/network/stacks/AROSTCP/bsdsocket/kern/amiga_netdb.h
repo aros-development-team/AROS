@@ -158,6 +158,13 @@ struct ServentNode * findServentNode(struct NetDataBase * ndb,
 /*
  * Read NetDB...
  */
+/*
+ * Stack-private flags for the netdb parsers, above the public NETDB_IFF_*
+ * of <netdb.h>.
+ */
+#define NETDB_IFF_NOASK  0x00010000  /* the stack is running: no requester when an interface fails to start */
+#define NETDB_IFF_REPORT 0x00020000  /* ARexx ADD: an interface that was not brought up is an error */
+
 LONG do_netdb(struct CSource *cs, UBYTE **errstrp, struct CSource *res);
 LONG reset_netdb(struct CSource *cs, UBYTE **errstrp, struct CSource *res);
 LONG init_netdb(void);
