@@ -267,6 +267,46 @@ int fesetround(int round) {
     return -1;
 }
 
+/****************************************************************************
+    NAME
+        int fegetenv(
+
+    SYNOPSIS
+        fenv_t *envp)
+
+    FUNCTION
+        Save the current floating-point environment.
+
+    INPUTS
+        envp - Non-NULL pointer to writable storage for a fenv_t.
+
+    RESULT
+        Zero on completion; -1 in the generic fallback. A supported
+        implementation writes the environment to *envp. See BUGS
+        before relying on the output after a zero return.
+
+    NOTES
+        Include <fenv.h>. Keep the saved representation unchanged
+        for a later fesetenv() or feupdateenv() call on the same
+        architecture and ABI. It is not a portable file format.
+
+        On x86, saves x87 state and available SSE control/status state.
+        The x87 control word is restored after the save, so its
+        exception-mask settings are preserved.
+
+    BUGS
+        On AArch64, ARM soft-float and RISC-V soft-float, returns zero
+        without writing *envp. The object retains its previous contents.
+
+        On m68k, saves only the software environment, not hardware
+        floating-point state.
+
+        The generic fallback returns -1 without writing *envp.
+
+    SEE ALSO
+        fesetenv(), feholdexcept(), feupdateenv()
+
+*****************************************************************************/
 int fegetenv(fenv_t *envp) {
     AROS_FUNCTION_NOT_IMPLEMENTED("stdc");
     return -1;
@@ -277,6 +317,50 @@ int feholdexcept(fenv_t *envp) {
     return -1;
 }
 
+/****************************************************************************
+    NAME
+        int fesetenv(
+
+    SYNOPSIS
+        const fenv_t *envp)
+
+    FUNCTION
+        Replace the floating-point environment with a saved or
+        default environment.
+
+    INPUTS
+        envp - Non-NULL pointer to an unchanged environment saved by
+               fegetenv() or feholdexcept() on the same architecture
+               and ABI, or FE_DFL_ENV where supported. See BUGS for m68k.
+
+    RESULT
+        Zero on completion; -1 in the generic fallback. See BUGS
+        for implementations that report success without changing state.
+
+    NOTES
+        Include <fenv.h>. Replaces the stored control settings and
+        exception flags; it does not merge current exception flags
+        into the saved state. Use feupdateenv() when that is required.
+
+        On x86, restores x87 state and available SSE control/status
+        state. The x87 tag word is also restored; floating-point
+        register values themselves are not restored.
+
+    BUGS
+        On m68k, only the software environment is replaced. Do not
+        pass FE_DFL_ENV or FE_NOMASK_ENV: these special pointer values
+        are dereferenced instead of recognized and may cause an
+        invalid memory access.
+
+        On AArch64, ARM soft-float and RISC-V soft-float, returns zero
+        without reading *envp or changing the environment.
+
+        The generic fallback is unimplemented and returns -1.
+
+    SEE ALSO
+        fegetenv(), feholdexcept(), feupdateenv()
+
+*****************************************************************************/
 int fesetenv(const fenv_t *envp) {
     AROS_FUNCTION_NOT_IMPLEMENTED("stdc");
     return -1;
