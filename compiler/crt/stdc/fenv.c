@@ -312,6 +312,49 @@ int fegetenv(fenv_t *envp) {
     return -1;
 }
 
+/****************************************************************************
+    NAME
+        int feholdexcept(
+
+    SYNOPSIS
+        fenv_t *envp)
+
+    FUNCTION
+        Save the floating-point environment, clear exception flags,
+        and disable exception traps where supported.
+
+    INPUTS
+        envp - Non-NULL pointer to writable storage for a fenv_t.
+
+    RESULT
+        Zero on completion; -1 on RISC-V hardware-float and in the
+        generic fallback. See BUGS before relying on a zero return.
+
+    NOTES
+        Include <fenv.h>. On x86 and ARM VFP, preserves the rounding
+        mode while clearing exception flags and disabling traps.
+
+        Use fesetenv() to restore the saved environment, or
+        feupdateenv() to retain exceptions raised in the meantime.
+
+    BUGS
+        On PowerPC, the saved value does not preserve the environment
+        representation. Do not use it to restore the previous state.
+
+        On m68k, copies only the software environment to *envp and
+        sets errno to zero. It neither clears exception flags nor
+        disables hardware traps.
+
+        On AArch64, ARM soft-float and RISC-V soft-float, writes zero
+        to *envp without saving or changing floating-point state.
+
+        On RISC-V hardware-float and in the generic fallback, returns
+        -1 without writing *envp or changing the environment.
+
+    SEE ALSO
+        fegetenv(), fesetenv(), feupdateenv()
+
+*****************************************************************************/
 int feholdexcept(fenv_t *envp) {
     AROS_FUNCTION_NOT_IMPLEMENTED("stdc");
     return -1;
@@ -366,6 +409,56 @@ int fesetenv(const fenv_t *envp) {
     return -1;
 }
 
+/****************************************************************************
+    NAME
+        int feupdateenv(
+
+    SYNOPSIS
+        const fenv_t *envp)
+
+    FUNCTION
+        Restore a floating-point environment and retain the
+        currently raised exception flags.
+
+    INPUTS
+        envp - Non-NULL pointer to an unchanged environment saved by
+               a working fegetenv() or feholdexcept() implementation
+               on the same architecture and ABI, or FE_DFL_ENV where
+               supported. See BUGS for m68k.
+
+    RESULT
+        Zero if the call returns; -1 in the generic fallback.
+        See BUGS for implementations that do not restore state
+        or retain current flags.
+
+    NOTES
+        Include <fenv.h>. Restores the saved control settings and
+        combines the saved and current exception flags. Restoring
+        enabled traps can cause an exception before the call returns.
+
+        On x86, combines current x87 and available SSE exception flags
+        and raises them through feraiseexcept() after restoring the
+        environment. The flags lose their original unit association.
+        See feraiseexcept() for exception-delivery limitations.
+
+    BUGS
+        On m68k, replaces only the software environment. Current
+        flags are not merged into the restored flags. Instead,
+        current overflow or underflow sets errno to ERANGE; any
+        other nonzero software status sets it to EDOM. A zero status
+        leaves errno unchanged. Do not pass FE_DFL_ENV or
+        FE_NOMASK_ENV: these values are dereferenced and may cause
+        an invalid memory access.
+
+        On AArch64, ARM soft-float and RISC-V soft-float, returns zero
+        without reading *envp or changing the environment.
+
+        The generic fallback is unimplemented and returns -1.
+
+    SEE ALSO
+        fegetenv(), feholdexcept(), fesetenv(), feraiseexcept()
+
+*****************************************************************************/
 int feupdateenv(const fenv_t *envp) {
     AROS_FUNCTION_NOT_IMPLEMENTED("stdc");
     return -1;
