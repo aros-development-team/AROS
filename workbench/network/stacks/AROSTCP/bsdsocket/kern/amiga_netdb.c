@@ -491,6 +491,11 @@ static void setprefixmask6(struct sockaddr_in6 *mask, int plen)
 #endif /* INET6 */
 
 static UBYTE ERR_IFSHUTDOWN[] = "Shut down because an interface failed to start";
+static UBYTE ERR_IFEXISTS[]   = "Interface already exists";
+static UBYTE ERR_IFNODEVICE[] = "Interface has no DEVICE";
+static UBYTE ERR_IFNOTDST[]   = "Tunnel interface needs a valid TDST";
+static UBYTE ERR_IFNOOPEN[]   = "Interface device did not open";
+static UBYTE ERR_IFDEFERRED[] = "Interface device not available yet, will keep trying";
 /* the user asked for the shutdown: the fatal-error requesters would only repeat it */
 static BOOL ndb_userquit = FALSE;
 
@@ -675,6 +680,11 @@ addifent(struct NetDataBase *ndb,
         ssc = ssconfig_parse(rdargs);
         if(ssc) {
             ifp = ifunit(ssc->args->a_name);
+            if(ifp && (flags & NETDB_IFF_REPORT) && !(flags & NETDB_IFF_MODIFYOLD)) {
+                /* ADD leaves an existing interface as it is, but says so */
+                *errstrp = ERR_IFEXISTS;
+                retval = RETURN_WARN;
+            }
             if((!ifp) && (flags & NETDB_IFF_ADDNEW)) {
                 DIFCONF(Printf("Adding new interface %s\n", ssc->args->a_name);) {
                     size_t nlen = strnlen(ssc->args->a_name, IFNAMSIZ - 1);
@@ -710,21 +720,28 @@ addifent(struct NetDataBase *ndb,
                     } else {
                         __log(LOG_ERR, "addifent: tunnel %s needs a valid TDST\n",
                               ssc->args->a_name);
-                        ifp = NULL;
+                        *errstrp = ERR_IFNOTDST;
+                        ssconfig_free(ssc);
+                        return RETURN_WARN;
                     }
                 } else
 #endif
                 if(!ssc->args->a_dev) {
                     __log(LOG_ERR, "addifent: interface %s has no DEVICE\n",
                           ssc->args->a_name);
-                    ifp = NULL;
+                    *errstrp = ERR_IFNODEVICE;
+                    ssconfig_free(ssc);
+                    return RETURN_WARN;
                 } else {
                     /*
                      * A device or unit that does not open - hardware that is
                      * absent or not ready yet - is that interface's problem,
                      * not a reason to quit. An interface marked DEFER is
                      * tried again in the background until it opens; for any
-                     * other the user is asked.
+                     * other the user is asked - while the stack starts. Once it
+                     * runs (NETDB_IFF_NOASK) there is nobody to hold it up
+                     * for: the interface is skipped, and an ADD says so
+                     * (NETDB_IFF_REPORT).
                      */
                     while(!(ifp = iface_make(ssc))) {
                         LONG choice;
@@ -737,22 +754,34 @@ addifent(struct NetDataBase *ndb,
                                 defer_remember(ssc->args->a_name, srcline, srclen)) {
                             __log(LOG_NOTICE, "%s: device %s not available yet, will keep trying.\n",
                                   ssc->args->a_name, ssc->args->a_dev);
+                            if(flags & NETDB_IFF_REPORT) {
+                                *errstrp = ERR_IFDEFERRED;
+                                retval = RETURN_WARN;
+                            }
                             break;
                         }
-                        choice = iface_fail_request(ssc->args->a_name, ssc->args->a_dev,
-                                                    ssc->args->a_unit ? *ssc->args->a_unit : 0);
+                        if(flags & NETDB_IFF_NOASK)
+                            choice = IFFAIL_SKIP;
+                        else
+                            choice = iface_fail_request(ssc->args->a_name, ssc->args->a_dev,
+                                                        ssc->args->a_unit ? *ssc->args->a_unit : 0);
                         if(choice == IFFAIL_RETRY)
                             continue;
                         if(choice == IFFAIL_SHUTDOWN)
                             ndb_userquit = TRUE;
-                        else
+                        else {
                             __log(LOG_ERR, "addifent: interface %s did not start, skipped\n",
                                   ssc->args->a_name);
+                            if(flags & NETDB_IFF_REPORT) {
+                                *errstrp = ERR_IFNOOPEN;
+                                retval = RETURN_ERROR;
+                            }
+                        }
                         break;
                     }
                     if(!ifp && !ndb_userquit) {
                         ssconfig_free(ssc);
-                        return RETURN_OK;
+                        return retval;
                     }
                 }
                 if(!ifp && ndb_userquit) {
@@ -1707,8 +1736,10 @@ do_netdb(struct CSource *csarg, UBYTE **errstrp, struct CSource *res)
         LOCK_W_NDB(NDB);
 
         /* An interface line names one to bring up now, as at start;
-         * an existing interface is left as it is. */
-        retval = addndbent(NDB, rdargs, errstrp, res, NETDB_IFF_ADDNEW);
+         * an existing interface is left as it is. The stack is running:
+         * a device that does not open is reported back, not asked about. */
+        retval = addndbent(NDB, rdargs, errstrp, res,
+                           NETDB_IFF_ADDNEW | NETDB_IFF_NOASK | NETDB_IFF_REPORT);
 
         UNLOCK_NDB(NDB);
 
@@ -1935,9 +1966,11 @@ LONG netdb_reload(void)
 
     /* ADDNEW creates interfaces that appeared in the new config; MODIFYOLD is
      * also needed so addifent re-applies config to interfaces that still exist
-     * (at boot ADDNEW alone suffices because every interface is new). */
+     * (at boot ADDNEW alone suffices because every interface is new).
+     * NOASK: the stack is running, so a device that does not open is
+     * skipped rather than stopping it for a requester. */
     retval = read_netdb(newndb, netdbname, &errstr, &res, -1,
-                        NETDB_IFF_ADDNEW | NETDB_IFF_MODIFYOLD);
+                        NETDB_IFF_ADDNEW | NETDB_IFF_MODIFYOLD | NETDB_IFF_NOASK);
     if(retval == RETURN_WARN)
         retval = RETURN_OK;
 
