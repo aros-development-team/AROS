@@ -155,13 +155,12 @@ enum
 /****** String.mui/MUIA_String_BufferPos *************************************
 *
 *   NAME
-*       MUIA_String_BufferPos -- (V4) [ISG], STRPTR
+*       MUIA_String_BufferPos -- (V4) [ISG], LONG
 *
 *   FUNCTION
 *       The cursor's position relative to the start of the string.
 *
 *   NOTES
-*       The MUI AutoDocs claim this attribute is not initialisable.
 *
 ******************************************************************************
 *
