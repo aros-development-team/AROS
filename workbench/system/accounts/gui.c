@@ -812,6 +812,19 @@ BOOL Gui_Run(struct AccountsState *state)
     Refresh(NULL, NULL);
     set(win, MUIA_Window_Open, TRUE);
 
+    /* a single-user system without accounts or groups: offer the
+     * standard ones of a network environment */
+    if (Acc_NeedsDefaults(st) &&
+        MUI_RequestA(app, win, 0, (STRPTR)MSG(MSG_TITLE), (STRPTR)MSG(MSG_REQ_DEFAULTS_BUTTONS),
+                     (STRPTR)MSG(MSG_REQ_DEFAULTS), NULL) == 1)
+    {
+        LONG err = Acc_AddDefaults(st);
+
+        Refresh(NULL, NULL);
+        if (err)
+            ErrorMessage(err, FALSE);
+    }
+
     while (running)
     {
         ULONG id = DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs);

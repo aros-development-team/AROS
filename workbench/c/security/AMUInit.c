@@ -21,9 +21,19 @@
         security.library, or turns it off again.
 
         ENABLE creates the security database directory <VOLUME>Security
-        with an initial user database (passwd: the super user "root" without
-        a password), group database (group: "root" and "users") and
-        configuration (Security.config), and installs <VOLUME>S/Security-Startup.
+        with a user database (passwd), group database (group) and
+        configuration (Security.config), and installs
+        <VOLUME>S/Security-Startup.
+
+        The databases are taken from what the system has: on a multi-user
+        system, the ones in use (run AMUInit as root); on a single-user
+        system, the network database (AROSTCP's db/passwd and db/group,
+        through usergroup.library) - accounts with a password are locked,
+        as their hashes cannot be converted, and root has none. Without
+        either, the defaults: the super user "root" without a password,
+        the locked system accounts a network environment expects (nobody,
+        daemon, bin, adm and guest, as in AROSTCP's db/passwd), and the
+        groups "root", "users" and those of AROSTCP's db/group.
         That script is run by dos.library before the Startup-Sequence when
         security.library is part of the ROM; it shows the login prompt, and
         the Startup-Sequence then runs as the user who logged in.
@@ -70,11 +80,17 @@
 
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <proto/security.h>
 #include <dos/dos.h>
+#include <aros/libcall.h>
 #include <libraries/security.h>
+#include <aros/posixc/pwd.h>
+#include <aros/posixc/grp.h>
 #include <string.h>
 
-const TEXT version[] = "$VER: AMUInit 45.5 (15.10.2026)";
+struct Library *secBase;
+
+const TEXT version[] = "$VER: AMUInit 45.6 (15.10.2026)";
 
 #define TEMPLATE "ENABLE/S,DISABLE/S,UPGRADE/S,VOLUME/A,FORCE/S"
 enum { ARG_ENABLE, ARG_DISABLE, ARG_UPGRADE, ARG_VOLUME, ARG_FORCE, ARG_COUNT };
@@ -218,15 +234,47 @@ static const char StartupScript[] =
     "EndIf\n"
     "EndCLI >NIL:\n";
 
-/* UserID|Password|uid|gid|UserName|HomeDir|Shell  (root: 65535, no password) */
+/*
+ * UserID|Password|uid|gid|UserName|HomeDir|Shell
+ *
+ * root (65535) without a password, and the system accounts a network
+ * environment expects - those of AROSTCP's db/passwd, in security.library
+ * numbers: its root (0) is 65535 and its nobody (-2) is 0, as
+ * usergroup.library maps them; guest, which shares uid 1 with daemon
+ * there, gets 99 (its group). The system accounts are locked ('!'): nobody
+ * can log in as them until root gives them a password.
+ */
 static const char PasswdFile[] =
-    "root||65535|65535|Super User|SYS:|\n";
+    "root||65535|65535|Super User|SYS:|\n"
+    "nobody|!|0|0|System User|SYS:|\n"
+    "daemon|!|1|5||SYS:|\n"
+    "bin|!|2|2||C:|\n"
+    "adm|!|4|4||SYS:|\n"
+    "guest|!|99|99|Anonymous Guest|SYS:|\n";
 
-/* GroupID|gid|MgrUid|GroupName ... blank line ... uid:gid secondary memberships */
+/*
+ * GroupID|gid|MgrUid|GroupName ... blank line ... uid:gid secondary memberships
+ *
+ * root's group, users, and the groups of AROSTCP's db/group (its wheel, 0,
+ * is root's group; nobody, -2, is 0), with its memberships: root in kmem,
+ * sys and tty, daemon in daemon.
+ */
 static const char GroupFile[] =
     "root|65535|65535|Root Group\n"
     "users|100|65535|Users\n"
-    "\n";
+    "nobody|0|65535|Nobody\n"
+    "daemon|1|65535|Daemons\n"
+    "kmem|2|65535|Kernel Memory\n"
+    "sys|3|65535|System\n"
+    "tty|4|65535|Terminals\n"
+    "operator|5|65535|Operators\n"
+    "news|6|65535|News\n"
+    "mail|7|65535|Mail\n"
+    "anon|8|65535|Anonymous\n"
+    "guest|99|65535|Guests\n"
+    "\n"
+    "65535:2,3,4\n"
+    "1:1\n";
 
 static const char ConfigFile[] =
     "; security.library configuration, see <libraries/security.h>\n"
@@ -325,9 +373,292 @@ static BOOL VolumeSupportsOwners(CONST_STRPTR vol)
     return ok;
 }
 
+/* ------------------------------------------------------------------------ */
+/* Where the databases come from                                            */
+
+/* A growing text buffer */
+struct Text
+{
+    STRPTR  buf;
+    ULONG   len, size;
+};
+
+static BOOL Add(struct Text *t, CONST_STRPTR s, ULONG max)
+{
+    ULONG n = strlen(s);
+
+    if (n > max)
+        n = max;
+    if (t->len + n + 1 > t->size)
+    {
+        ULONG size = (t->size ? t->size * 2 : 1024) + n;
+        STRPTR b = AllocVec(size, MEMF_ANY);
+
+        if (!b)
+            return FALSE;
+        if (t->buf)
+        {
+            CopyMem(t->buf, b, t->len);
+            FreeVec(t->buf);
+        }
+        t->buf = b;
+        t->size = size;
+    }
+    CopyMem((APTR)s, t->buf + t->len, n);
+    t->len += n;
+    t->buf[t->len] = '\0';
+    return TRUE;
+}
+
+static BOOL AddNum(struct Text *t, ULONG v)
+{
+    char d[12];
+    int i = sizeof(d) - 1;
+
+    d[i] = '\0';
+    do
+        d[--i] = '0' + (v % 10);
+    while ((v /= 10) && i);
+    return Add(t, &d[i], sizeof(d));
+}
+
+/* A field without '|' and control characters */
+static BOOL AddField(struct Text *t, CONST_STRPTR s, ULONG size)
+{
+    char f[256];
+    ULONG i;
+
+    for (i = 0; s && s[i] && i < size - 1 && i < sizeof(f) - 1; i++)
+        f[i] = ((UBYTE)s[i] < 0x20 || s[i] == '|') ? '_' : s[i];
+    f[i] = '\0';
+    return Add(t, f, sizeof(f));
+}
+
+/* usergroup.library by vector: its stubs need a per-task base */
+static void ug_setpwent(struct Library *UserGroupBase) { AROS_LC0NR(void, setpwent, struct Library *, UserGroupBase, 21, Usergroup); }
+static struct passwd *ug_getpwent(struct Library *UserGroupBase) { return AROS_LC0(struct passwd *, getpwent, struct Library *, UserGroupBase, 22, Usergroup); }
+static void ug_endpwent(struct Library *UserGroupBase) { AROS_LC0NR(void, endpwent, struct Library *, UserGroupBase, 23, Usergroup); }
+static void ug_setgrent(struct Library *UserGroupBase) { AROS_LC0NR(void, setgrent, struct Library *, UserGroupBase, 26, Usergroup); }
+static struct group *ug_getgrent(struct Library *UserGroupBase) { return AROS_LC0(struct group *, getgrent, struct Library *, UserGroupBase, 27, Usergroup); }
+static void ug_endgrent(struct Library *UserGroupBase) { AROS_LC0NR(void, endgrent, struct Library *, UserGroupBase, 28, Usergroup); }
+
+/* network ids are POSIX ones: root is 0 and nobody -2 */
+static LONG SecId(LONG id, LONG root, LONG nobody)
+{
+    if (id == 0)
+        return root;
+    if (id == -2)
+        return nobody;
+    return id;
+}
+
+#define MAXCONV     1024    /* accounts and groups converted */
+#define MAXSEC      32      /* secondary groups per account */
+
+struct ConvUser
+{
+    char    name[secUSERIDSIZE];
+    UWORD   uid, gid;
+    UWORD   ngroups;
+    UWORD   groups[MAXSEC];
+};
+
+/*
+ * A single-user system: the network database of usergroup.library
+ * (netinfo.device: AROSTCP's db/passwd and db/group) becomes the multi-user
+ * one. Its crypt() hashes mean nothing to security.library, so an account
+ * that has a password is locked ('!'), as are those that cannot log in
+ * there ('*'); root gets none, so that it can log in and set them with
+ * Passwd. Ids become security.library's (root 65535, nobody 0); an id
+ * that is taken (AROSTCP's guest shares uid 1 with daemon) becomes the
+ * account's group id if that is free. FALSE if there is nothing to convert.
+ */
+static BOOL ConvertNetwork(struct Text *pw, struct Text *gr)
+{
+    struct Library *UserGroupBase;
+    struct ConvUser *users;
+    struct passwd *p;
+    struct group *g;
+    ULONG nusers = 0, ngroups = 0, i, j;
+    BOOL ok = FALSE, haveroot = FALSE, haverootgroup = FALSE, locked = FALSE;
+
+    if (!(UserGroupBase = OpenLibrary("usergroup.library", 4)))
+        return FALSE;
+    if (!(users = AllocVec(MAXCONV * sizeof(struct ConvUser), MEMF_CLEAR)))
+    {
+        CloseLibrary(UserGroupBase);
+        return FALSE;
+    }
+
+    ug_setpwent(UserGroupBase);
+    while ((p = ug_getpwent(UserGroupBase)) && nusers < MAXCONV)
+    {
+        LONG uid, gid = SecId((LONG)p->pw_gid, secROOT_GID, secNOBODY_GID);
+        BOOL taken;
+
+        /* uid -1: AROSTCP's version string */
+        if (!p->pw_name || !p->pw_name[0] || (LONG)p->pw_uid == -1 || strchr(p->pw_name, '|') ||
+            strchr(p->pw_name, ':') || strlen(p->pw_name) >= secUSERIDSIZE)
+            continue;
+        uid = SecId((LONG)p->pw_uid, secROOT_UID, secNOBODY_UID);
+        for (taken = FALSE, j = 0; j < nusers; j++)
+            if (users[j].uid == uid)
+                taken = TRUE;
+        if (taken)
+        {
+            for (taken = FALSE, j = 0; j < nusers; j++)
+                if (users[j].uid == gid)
+                    taken = TRUE;
+            if (taken || gid == secROOT_UID)
+            {
+                Printf("AMUInit: '%s' shares its user id with another account: left out\n", p->pw_name);
+                continue;
+            }
+            uid = gid;
+        }
+        if (uid < 0 || uid > 65535 || gid < 0 || gid > 65535)
+            continue;
+
+        strcpy(users[nusers].name, p->pw_name);
+        users[nusers].uid = uid;
+        users[nusers].gid = gid;
+        if (uid == secROOT_UID)
+            haveroot = TRUE;
+
+        ok = AddField(pw, p->pw_name, secUSERIDSIZE) && Add(pw, "|", 1);
+        if (uid != secROOT_UID)
+        {
+            /* no password stays none; anything else is locked */
+            if (p->pw_passwd && p->pw_passwd[0])
+            {
+                ok = ok && Add(pw, "!", 1);
+                if (p->pw_passwd[0] != '*' && p->pw_passwd[0] != '!')
+                {
+                    Printf("AMUInit: '%s' has a password, which cannot be converted: the account is locked\n", p->pw_name);
+                    locked = TRUE;
+                }
+            }
+        }
+        ok = ok && Add(pw, "|", 1) && AddNum(pw, uid) && Add(pw, "|", 1) && AddNum(pw, gid) && Add(pw, "|", 1) &&
+             AddField(pw, p->pw_gecos, secUSERNAMESIZE) && Add(pw, "|", 1) &&
+             AddField(pw, (p->pw_dir && p->pw_dir[0]) ? p->pw_dir : "SYS:", secHOMEDIRSIZE) && Add(pw, "|", 1) &&
+             AddField(pw, p->pw_shell, secSHELLSIZE) && Add(pw, "\n", 1);
+        if (!ok)
+            break;
+        nusers++;
+    }
+    ug_endpwent(UserGroupBase);
+
+    if (ok && nusers)
+    {
+        if (!haveroot)
+            ok = Add(pw, "root||65535|65535|Super User|SYS:|\n", 64);
+
+        ug_setgrent(UserGroupBase);
+        while (ok && (g = ug_getgrent(UserGroupBase)))
+        {
+            LONG gid;
+            char **m;
+
+            if (!g->gr_name || !g->gr_name[0] || (LONG)g->gr_gid == -1 || strchr(g->gr_name, '|') ||
+                strchr(g->gr_name, ':') || strlen(g->gr_name) >= secGROUPIDSIZE)
+                continue;
+            gid = SecId((LONG)g->gr_gid, secROOT_GID, secNOBODY_GID);
+            if (gid < 0 || gid > 65535)
+                continue;
+            if (gid == secROOT_GID)
+                haverootgroup = TRUE;
+            ok = AddField(gr, g->gr_name, secGROUPIDSIZE) && Add(gr, "|", 1) && AddNum(gr, gid) &&
+                 Add(gr, "|65535|", 7) && Add(gr, "\n", 1);
+            ngroups++;
+            /* the members: secondary groups of the accounts */
+            for (m = g->gr_mem; ok && m && *m; m++)
+                for (j = 0; j < nusers; j++)
+                    if (!strcmp(users[j].name, *m) && users[j].gid != gid && users[j].ngroups < MAXSEC)
+                        users[j].groups[users[j].ngroups++] = gid;
+        }
+        ug_endgrent(UserGroupBase);
+        if (ok && !haverootgroup)
+            ok = Add(gr, "root|65535|65535|Root Group\n", 64);
+        if (ok)
+            ok = Add(gr, "\n", 1);
+        for (i = 0; ok && i < nusers; i++)
+        {
+            if (!users[i].ngroups)
+                continue;
+            ok = AddNum(gr, users[i].uid) && Add(gr, ":", 1);
+            for (j = 0; ok && j < users[i].ngroups; j++)
+                ok = (j == 0 || Add(gr, ",", 1)) && AddNum(gr, users[i].groups[j]);
+            ok = ok && Add(gr, "\n", 1);
+        }
+        if (ok)
+        {
+            Printf("AMUInit: the databases are made from the network database (%lu accounts, %lu groups)\n",
+                   (unsigned long)nusers, (unsigned long)ngroups);
+            if (locked)
+                PutStr("AMUInit: log in as root after the reboot and give the locked accounts passwords with Passwd\n");
+        }
+    }
+    else
+        ok = FALSE;
+
+    FreeVec(users);
+    CloseLibrary(UserGroupBase);
+    return ok;
+}
+
+/* Read a whole file into t; FALSE if it cannot be read */
+static BOOL ReadAll(CONST_STRPTR path, struct Text *t)
+{
+    char buf[512];
+    BPTR fh;
+    LONG n;
+    BOOL ok = TRUE;
+
+    if (!(fh = Open(path, MODE_OLDFILE)))
+        return FALSE;
+    while (ok && (n = Read(fh, buf, sizeof(buf) - 1)) > 0)
+    {
+        buf[n] = '\0';
+        ok = Add(t, buf, n);
+    }
+    if (n < 0)
+        ok = FALSE;
+    Close(fh);
+    return ok && t->len > 0;
+}
+
+/* A multi-user system: the databases in use (only root can read the
+ * password file). FALSE if they cannot be read. */
+static BOOL CopyCurrent(struct Text *pw, struct Text *gr)
+{
+    char p[256];
+    BPTR lock;
+    BOOL ok = FALSE;
+
+    if ((lock = secGetPasswdDirLock()))
+    {
+        ok = NameFromLock(lock, p, sizeof(p)) && AddPart(p, secPasswd_FileName, sizeof(p)) && ReadAll(p, pw);
+        UnLock(lock);
+    }
+    if (ok && (lock = secGetConfigDirLock()))
+    {
+        ok = NameFromLock(lock, p, sizeof(p)) && AddPart(p, secGroup_FileName, sizeof(p)) && ReadAll(p, gr);
+        UnLock(lock);
+    }
+    else
+        ok = FALSE;
+    if (ok)
+        PutStr("AMUInit: the databases are copied from the ones in use\n");
+    else
+        PutStr("AMUInit: the databases in use cannot be read (log in as root): the defaults are used\n");
+    return ok;
+}
+
 static int MUEnable(CONST_STRPTR vol, BOOL force)
 {
     char p[256], p2[256];
+    BOOL copied = FALSE;
 
     if (!VolumeSupportsOwners(vol))
     {
@@ -338,10 +669,42 @@ static int MUEnable(CONST_STRPTR vol, BOOL force)
     /* the database directory and its files */
     if (!MakePath(p, sizeof(p), vol, SEC_DIR) || !EnsureDir(p))
         return RETURN_FAIL;
-    if (!MakePath(p, sizeof(p), vol, SEC_DIR "/passwd") || !EnsureFile(p, PasswdFile, "user database"))
-        return RETURN_FAIL;
-    if (!MakePath(p, sizeof(p), vol, SEC_DIR "/group") || !EnsureFile(p, GroupFile, "group database"))
-        return RETURN_FAIL;
+    /* The databases: those in use on a multi-user system, the network
+     * database's on a single-user one, the defaults when there is none */
+    {
+        struct Text pw = { NULL, 0, 0 }, gr = { NULL, 0, 0 };
+        CONST_STRPTR pwtext = PasswdFile, grtext = GroupFile;
+        char p2[256];
+        BOOL ok;
+
+        MakePath(p, sizeof(p), vol, SEC_DIR "/passwd");
+        MakePath(p2, sizeof(p2), vol, SEC_DIR "/group");
+        if (!Exists(p) || !Exists(p2))
+        {
+            BOOL multi = FALSE;
+
+            if (FindResident(SECURITYNAME) && (secBase = OpenLibrary(SECURITYNAME, 45)))
+                multi = secIsConfigured();
+            if (multi ? CopyCurrent(&pw, &gr) : ConvertNetwork(&pw, &gr))
+            {
+                pwtext = pw.buf;
+                grtext = gr.buf;
+                copied = multi;
+            }
+            else if (!multi)
+                PutStr("AMUInit: there is no network database to take the accounts from: the defaults are used\n");
+            if (secBase)
+                CloseLibrary(secBase);
+            secBase = NULL;
+        }
+        ok = EnsureFile(p, pwtext, "user database") && EnsureFile(p2, grtext, "group database");
+        if (pw.buf)
+            FreeVec(pw.buf);
+        if (gr.buf)
+            FreeVec(gr.buf);
+        if (!ok)
+            return RETURN_FAIL;
+    }
     if (!MakePath(p, sizeof(p), vol, SEC_DIR "/" secConfig_FileName) || !EnsureFile(p, ConfigFile, "configuration"))
         return RETURN_FAIL;
     if (!MakePath(p, sizeof(p), vol, SEC_DIR "/Security.log") || !EnsureFile(p, "", "log file"))
@@ -366,9 +729,13 @@ static int MUEnable(CONST_STRPTR vol, BOOL force)
             return RETURN_FAIL;
     }
 
-    Printf("\nMulti-user support is enabled on %s: the next boot from it shows the login\n"
-           "prompt. The super user is \"root\" and has no password yet: log in as root\n"
-           "and run Passwd, then add users to %s%s/passwd.\n", vol, vol, SEC_DIR);
+    if (copied)
+        Printf("\nMulti-user support is enabled on %s: the next boot from it shows the login\n"
+               "prompt, for the accounts of this system.\n", vol);
+    else
+        Printf("\nMulti-user support is enabled on %s: the next boot from it shows the login\n"
+               "prompt. The super user is \"root\" and has no password yet: log in as root\n"
+               "and run Passwd, then add users with SYS:System/Accounts.\n", vol);
     return RETURN_OK;
 }
 

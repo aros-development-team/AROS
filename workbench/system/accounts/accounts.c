@@ -390,6 +390,114 @@ LONG Acc_GroupDelete(struct AccountsState *st, CONST_STRPTR name)
     return Result(ug_UserAdminA(tags));
 }
 
+/*
+ * The standard accounts and groups of a network environment, as AROSTCP's
+ * db/passwd and db/group define them. Their accounts cannot log in
+ * (locked, as '*' does there); guest, which shares uid 1 with daemon
+ * there, gets 99 (its group), as ids must be unique here.
+ */
+static const struct { CONST_STRPTR name; LONG uid, gid; CONST_STRPTR real, home, shell; } DefUsers[] =
+{
+    { "root",   0,  0,  "System Account",  "SYS:",         "shell" },
+    { "nobody", -2, -2, "System User",     "SYS:",         "cli"   },
+    { "daemon", 1,  5,  "",                "SYS:",         "cli"   },
+    { "bin",    2,  2,  "",                "C:",           "cli"   },
+    { "adm",    4,  4,  "",                "SYS:",         "cli"   },
+    { "guest",  99, 99, "Anonymous Guest", "SYS:",         "cli"   },
+};
+
+static const struct { CONST_STRPTR name; LONG gid; CONST_STRPTR member; } DefGroups[] =
+{
+    { "wheel",    0,   NULL     },
+    { "nobody",   -2,  NULL     },
+    { "daemon",   1,   "daemon" },
+    { "kmem",     2,   "root"   },
+    { "sys",      3,   "root"   },
+    { "tty",      4,   "root"   },
+    { "operator", 5,   NULL     },
+    { "news",     6,   NULL     },
+    { "mail",     7,   NULL     },
+    { "anon",     8,   NULL     },
+    { "guest",    99,  NULL     },
+    { "users",    100, NULL     },
+};
+
+BOOL Acc_NeedsDefaults(struct AccountsState *st)
+{
+    return !st->Multi && st->Admin && (st->NumAccounts == 0 || st->NumGroups == 0);
+}
+
+LONG Acc_AddDefaults(struct AccountsState *st)
+{
+    LONG err = 0, e;
+    ULONG i;
+
+    /* the groups first (users need their primary group), members last
+     * (they must exist) */
+    for (i = 0; i < sizeof(DefGroups) / sizeof(DefGroups[0]); i++)
+    {
+        if (getgrnam((char *)DefGroups[i].name) || getgrgid((gid_t)DefGroups[i].gid))
+            continue;
+        if ((e = Acc_GroupAdd(st, DefGroups[i].name, DefGroups[i].gid, NULL, NULL)) && !err)
+            err = e;
+    }
+    for (i = 0; i < sizeof(DefUsers) / sizeof(DefUsers[0]); i++)
+    {
+        if (getpwnam((char *)DefUsers[i].name) || getpwuid((uid_t)DefUsers[i].uid))
+            continue;
+        if ((e = Acc_Add(st, DefUsers[i].name, DefUsers[i].uid, DefUsers[i].gid, DefUsers[i].real,
+                         DefUsers[i].home, DefUsers[i].shell, "")) ||
+            (e = Acc_Lock(st, DefUsers[i].name, TRUE)))
+        {
+            if (!err)
+                err = e;
+        }
+    }
+    for (i = 0; i < sizeof(DefGroups) / sizeof(DefGroups[0]); i++)
+    {
+        struct group *gr;
+        STRPTR mem[2];
+        char **m;
+
+        if (!DefGroups[i].member || !getpwnam((char *)DefGroups[i].member) ||
+            !(gr = getgrnam((char *)DefGroups[i].name)))
+            continue;
+        for (m = gr->gr_mem; m && *m; m++)
+            if (!strcmp(*m, DefGroups[i].member))
+                break;
+        if (m && *m)
+            continue;
+        /* the existing members stay; copied, as gr_mem lives in
+         * usergroup.library's buffer, which the change reuses */
+        mem[0] = (STRPTR)DefGroups[i].member;
+        mem[1] = NULL;
+        {
+            STRPTR *all, *old = CopyMembers(gr->gr_mem);
+            ULONG n = 0, k;
+            gid_t gid = gr->gr_gid;
+
+            if (!old)
+                return err ? err : ENOMEM;
+            while (old[n])
+                n++;
+            if (!(all = AllocVec((n + 2) * sizeof(STRPTR), MEMF_CLEAR)))
+            {
+                FreeVec(old);
+                return err ? err : ENOMEM;
+            }
+            for (k = 0; k < n; k++)
+                all[k] = old[k];
+            all[n] = mem[0];
+            e = Acc_GroupModify(st, DefGroups[i].name, NULL, gid, NULL, all);
+            FreeVec(all);
+            FreeVec(old);
+            if (e && !err)
+                err = e;
+        }
+    }
+    return err;
+}
+
 BOOL Acc_ChangeMyPassword(struct AccountsState *st, CONST_STRPTR oldpwd, CONST_STRPTR newpwd, STRPTR msg, ULONG msgsize)
 {
     struct PamHandle *h;

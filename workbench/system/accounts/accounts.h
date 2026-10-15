@@ -80,4 +80,10 @@ LONG  Acc_GroupModify(struct AccountsState *st, CONST_STRPTR name, CONST_STRPTR 
                       CONST_STRPTR desc, STRPTR *members);
 LONG  Acc_GroupDelete(struct AccountsState *st, CONST_STRPTR name);
 
+/* Single-user: nothing defined yet? Then the standard accounts and groups
+ * of a network environment (AROSTCP's db/passwd and db/group) can be
+ * created; those that exist already are left alone. 0 or the first error. */
+BOOL  Acc_NeedsDefaults(struct AccountsState *st);
+LONG  Acc_AddDefaults(struct AccountsState *st);
+
 #endif /* _ACCOUNTS_ACCOUNTS_H */

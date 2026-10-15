@@ -6,9 +6,11 @@
           security.library's, or the netinfo.device password and group
           files - accounts and groups.
 
-    Usage: UATest REPORT/A,EXPECT/K
+    Usage: UATest REPORT/A,EXPECT/K,FIRST/S
         EXPECT=DENIED: the caller may not change accounts (a user on a
         multi-user system); every change must fail with EPERM.
+        FIRST: an empty database - add a first group and a first user,
+        as Accounts does.
 */
 
 #include <proto/exec.h>
@@ -53,14 +55,14 @@ static BOOL GroupHas(CONST_STRPTR group, LONG gid, CONST_STRPTR user)
 
 int main(void)
 {
-    IPTR args[2] = { 0 };
+    IPTR args[3] = { 0 };
     struct RDArgs *rda;
     struct passwd *pw;
     BOOL denied;
     LONG e, gid = 100;
     struct group *gr;
 
-    if (!(rda = ReadArgs("REPORT/A,EXPECT/K", args, NULL)))
+    if (!(rda = ReadArgs("REPORT/A,EXPECT/K,FIRST/S", args, NULL)))
         return RETURN_FAIL;
     if (!(report = Open((STRPTR)args[0], MODE_NEWFILE)))
     {
@@ -68,6 +70,28 @@ int main(void)
         return RETURN_FAIL;
     }
     denied = args[1] && !strcmp((char *)args[1], "DENIED");
+
+    if (args[2])
+    {
+        char *none[] = { NULL };
+        struct TagItem g[] = { { UGA_Operation, UGOP_GROUPADD }, { UGA_Name, (IPTR)"first" }, { UGA_GID, 100 },
+                               { TAG_IGNORE, 0 }, { UGA_Members, (IPTR)none }, { TAG_DONE, 0 } };
+        struct TagItem u[] = { { UGA_Operation, UGOP_ADD }, { UGA_Name, (IPTR)"firstuser" }, { UGA_UID, 100 },
+                               { UGA_GID, 100 }, { UGA_RealName, (IPTR)"" }, { UGA_HomeDir, (IPTR)"SYS:" },
+                               { UGA_Shell, (IPTR)"" }, { UGA_Password, (IPTR)"" }, { TAG_DONE, 0 } };
+
+        setgrent();
+        gr = getgrent();
+        endgrent();
+        FPrintf(report, "--- UATest FIRST: a group before: %s ---\n", gr ? (CONST_STRPTR)"yes" : (CONST_STRPTR)"no");
+        e = Admin(g);
+        gr = getgrnam("first");
+        Report("add a first group", e == 0 && gr && gr->gr_gid == 100, e);
+        e = Admin(u);
+        pw = getpwnam("firstuser");
+        Report("add a first user", e == 0 && pw && pw->pw_uid == 100, e);
+        goto done;
+    }
 
     /* a group that exists */
     setgrent();
