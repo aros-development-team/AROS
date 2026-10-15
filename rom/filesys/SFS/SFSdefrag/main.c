@@ -292,6 +292,11 @@ AROS_UFH3(void, start_function,
         }while(!stop_me && !defragmented);
     }
 
+    else
+    {
+        ShowError(app, NULL, "Could not initialize defragmentation", TRUE);
+    }
+
     set(StartButton, MUIA_Disabled, FALSE);
     set(StopButton, MUIA_Disabled, TRUE);
     set(RefreshButton, MUIA_Disabled, FALSE);
