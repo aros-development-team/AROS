@@ -84,19 +84,6 @@ void closeLibs()
     UtilityBase = NULL;
 }
 
-void cleanup(CONST_STRPTR message)
-{
-    if (message != NULL)
-    {
-        ShowError(NULL, NULL, message, TRUE);
-        exit(RETURN_FAIL);
-    }
-    else
-    {
-        exit(RETURN_OK);
-    }
-}
-
 Object *MakeLabel(STRPTR str)
 {
   return (MUI_MakeObject(MUIO_Label, str, 0));
@@ -120,7 +107,6 @@ BOOL quit_me;
 
 struct BitMap *bm;
 struct RastPort *rp;
-struct DrawInfo *dri;
 
 ULONG pen1, pen2, pen3;
 
@@ -479,56 +465,66 @@ void loop(void)
 
 int main(int argc, char *argv[])
 {
+    LONG result = RETURN_FAIL;
+    struct Window *window;
+    struct DrawInfo *dri;
+
     select_hook.h_Entry = (APTR)select_function;
     start_hook.h_Entry = (APTR)start_function;
     stop_hook.h_Entry = (APTR)stop_function;
     refresh_hook.h_Entry = (APTR)refresh_function;
 
     Locale_Initialize();
-
-    if(openLibs())
+    if(!openLibs())
+        goto done;
+    if(!GUIinit())
     {
-        if(GUIinit())
-        {
-            set(MainWindow, MUIA_Window_Open, TRUE);
-
-            struct Window *window = (struct Window *)xget(MainWindow, MUIA_Window_Window);
-
-            bm = AllocBitMap(500, 350,
-                 GetBitMapAttr(window->RPort->BitMap, BMA_DEPTH), BMF_CLEAR,
-                 window->RPort->BitMap);
-            rp = CreateRastPort();
-            rp->BitMap = bm;
-            dri = GetScreenDrawInfo(window->WScreen);
-            pen1 = dri->dri_Pens[BACKGROUNDPEN];
-            pen2 = dri->dri_Pens[TEXTPEN];
-            pen3 = dri->dri_Pens[SHINEPEN];
-            FreeScreenDrawInfo(window->WScreen, dri);
-            
-            SetAPen(rp, pen1);
-            RectFill(rp, 0, 0, 499, 349);
-            
-            set(Bmp, MUIA_Bitmap_Bitmap, bm);
-            MUI_Redraw(Bmp, MADF_DRAWOBJECT);
-
-            if(xget(MainWindow, MUIA_Window_Open))
-            {
-                loop();
-            }
-
-            FreeRastPort(rp);
-            FreeBitMap(bm);
-
-            set(MainWindow, MUIA_Window_Open, FALSE);
-            DisposeObject(app);
-
-//          deinit_gui();
-        }
-        closeLibs();
+        ShowError(NULL, NULL, "Could not create the application", FALSE);
+        goto libraries;
     }
-    cleanup(NULL);
 
+    set(MainWindow, MUIA_Window_Open, TRUE);
+    window = (struct Window *)xget(MainWindow, MUIA_Window_Window);
+    if(!xget(MainWindow, MUIA_Window_Open) || window == NULL)
+        goto application;
+
+    bm = AllocBitMap(500, 350,
+        GetBitMapAttr(window->RPort->BitMap, BMA_DEPTH), BMF_CLEAR,
+        window->RPort->BitMap);
+    if(bm == NULL)
+        goto application;
+    rp = CreateRastPort();
+    if(rp == NULL)
+        goto application;
+    rp->BitMap = bm;
+    dri = GetScreenDrawInfo(window->WScreen);
+    if(dri == NULL)
+        goto application;
+    pen1 = dri->dri_Pens[BACKGROUNDPEN];
+    pen2 = dri->dri_Pens[TEXTPEN];
+    pen3 = dri->dri_Pens[SHINEPEN];
+    FreeScreenDrawInfo(window->WScreen, dri);
+
+    SetAPen(rp, pen1);
+    RectFill(rp, 0, 0, 499, 349);
+    set(Bmp, MUIA_Bitmap_Bitmap, bm);
+    MUI_Redraw(Bmp, MADF_DRAWOBJECT);
+    loop();
+    result = RETURN_OK;
+
+application:
+    if(result != RETURN_OK)
+        ShowError(app, NULL, "Could not create the window or graphics resources", FALSE);
+    set(MainWindow, MUIA_Window_Open, FALSE);
+    DisposeObject(app);
+    if(rp != NULL)
+        FreeRastPort(rp);
+    if(bm != NULL)
+        FreeBitMap(bm);
+    clearDeviceData();
+libraries:
+    closeLibs();
+done:
     Locale_Deinitialize();
-
-    return 0;
-} /* main(int argc, char *argv[]) */
+    return result;
+}
