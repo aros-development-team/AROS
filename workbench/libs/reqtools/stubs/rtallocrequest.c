@@ -23,24 +23,24 @@ extern struct ReqToolsBase * ReqToolsBase;
 	...)
 
 /*  FUNCTION
+        Allocate and initialize a ReqTools requester structure.
 
     INPUTS
+        type - Requester type (RT_REQINFO, RT_FILEREQ, RT_FONTREQ,
+               or RT_SCREENMODEREQ).
+        tag1 - First tag; terminate the tag/value sequence with TAG_DONE.
 
     RESULT
+        Initialized requester structure, or NULL if allocation fails.
 
     NOTES
-
-    EXAMPLE
-
-    BUGS
+        No allocation tags are currently defined. Release the structure
+        with rtFreeRequest().
 
     SEE ALSO
+        rtAllocRequestA(), rtFreeRequest()
 
-    INTERNALS
-
-    HISTORY
-
-*****************************************************************************/
+***************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
 

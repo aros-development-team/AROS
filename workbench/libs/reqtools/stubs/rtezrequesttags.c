@@ -27,24 +27,26 @@ extern struct ReqToolsBase * ReqToolsBase;
 	...)
 
 /*  FUNCTION
+        Display a formatted requester using a variadic tag list.
 
     INPUTS
+        bodyfmt - Message format string.
+        gadfmt  - Gadget-label format string.
+        reqinfo - Optional requester information.
+        argarray - Formatting arguments for bodyfmt and gadfmt.
+        tag1    - First requester tag; terminate with TAG_DONE.
 
     RESULT
+        Response code from rtEZRequestA().
 
     NOTES
-
-    EXAMPLE
-
-    BUGS
+        This is the tag-varargs form of rtEZRequestA(). Formatting
+        arguments are supplied separately through argarray.
 
     SEE ALSO
+        rtEZRequestA(), rtEZRequest()
 
-    INTERNALS
-
-    HISTORY
-
-*****************************************************************************/
+***************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
 

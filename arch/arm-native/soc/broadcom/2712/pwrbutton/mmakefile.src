@@ -1,0 +1,10 @@
+#   AROS metamakefile for the Raspberry Pi 5/500 power button
+include $(SRCDIR)/config/aros.cfg
+
+#MM kernel-pwrbutton-bcm2712 : kernel-openfirmware-includes
+
+%build_module mmake=kernel-pwrbutton-bcm2712 \
+    modname=pwrbutton modtype=resource \
+    files="pwrbutton_init"
+
+%common

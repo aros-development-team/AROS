@@ -25,24 +25,26 @@ extern struct ReqToolsBase * ReqToolsBase;
 	...)
 
 /*  FUNCTION
+        Continue processing a requester started with RT_ReqHandler.
 
     INPUTS
+        handlerinfo - Handler state returned by the requester.
+        sigs        - Signals received since the previous call.
+        tag1        - First handler tag; terminate with TAG_DONE.
 
     RESULT
+        CALL_HANDLER while additional handling is required; otherwise
+        the requester's normal completion result.
 
     NOTES
-
-    EXAMPLE
-
-    BUGS
+        Check handlerinfo->DoNotWait and handlerinfo->WaitMask before
+        waiting for signals. Continue calling this function while it
+        returns CALL_HANDLER.
 
     SEE ALSO
+        rtReqHandlerA(), rtEZRequestA()
 
-    INTERNALS
-
-    HISTORY
-
-*****************************************************************************/
+***************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
 

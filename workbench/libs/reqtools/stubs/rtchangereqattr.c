@@ -23,24 +23,24 @@ extern struct ReqToolsBase * ReqToolsBase;
 	...)
 
 /*  FUNCTION
+        Change the attributes of an existing requester.
 
     INPUTS
+        req  - Requester whose attributes are to be changed.
+        tag1 - First attribute tag; terminate the sequence with TAG_DONE.
 
     RESULT
+        Return value from rtChangeReqAttrA(). It is meaningful for tags
+        that explicitly define a result, including RTFI_AddEntry.
 
     NOTES
-
-    EXAMPLE
-
-    BUGS
+        Attribute applicability, ordering constraints, and tag-specific
+        results are defined by rtChangeReqAttrA().
 
     SEE ALSO
+        rtChangeReqAttrA()
 
-    INTERNALS
-
-    HISTORY
-
-*****************************************************************************/
+***************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
 
