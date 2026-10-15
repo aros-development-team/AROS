@@ -236,7 +236,7 @@ AROS_UFH3(void, start_function,
     AROS_UFHA(APTR,          msg,    A1))
 {
     AROS_USERFUNC_INIT
-    ULONG sigs;
+    ULONG sigs = 0;
     BOOL defragmented = FALSE;
 
     if(oldname == NULL || !getDeviceData((STRPTR)oldname))
