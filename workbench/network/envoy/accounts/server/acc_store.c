@@ -20,9 +20,8 @@
 #include <proto/alib.h>
 #include <libraries/security.h>
 #include <libraries/pam.h>
-/* usergroup.library hands out netinfo.device's records, in the AmiTCP layout
-   (name, password, uid, gid, gecos, home, shell) - not POSIX's struct passwd */
-#include <devices/netinfo.h>
+#include <pwd.h>
+#include <grp.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,10 +33,10 @@
 
 /* usergroup.library by vector (its stubs need a global base) */
 static void ug_setpwent(struct Library *UserGroupBase) { AROS_LC0NR(void, setpwent, struct Library *, UserGroupBase, 21, Usergroup); }
-static struct NetInfoPasswd *ug_getpwent(struct Library *UserGroupBase) { return AROS_LC0(struct NetInfoPasswd *, getpwent, struct Library *, UserGroupBase, 22, Usergroup); }
+static struct passwd *ug_getpwent(struct Library *UserGroupBase) { return AROS_LC0(struct passwd *, getpwent, struct Library *, UserGroupBase, 22, Usergroup); }
 static void ug_endpwent(struct Library *UserGroupBase) { AROS_LC0NR(void, endpwent, struct Library *, UserGroupBase, 23, Usergroup); }
 static void ug_setgrent(struct Library *UserGroupBase) { AROS_LC0NR(void, setgrent, struct Library *, UserGroupBase, 26, Usergroup); }
-static struct NetInfoGroup *ug_getgrent(struct Library *UserGroupBase) { return AROS_LC0(struct NetInfoGroup *, getgrent, struct Library *, UserGroupBase, 27, Usergroup); }
+static struct group *ug_getgrent(struct Library *UserGroupBase) { return AROS_LC0(struct group *, getgrent, struct Library *, UserGroupBase, 27, Usergroup); }
 static void ug_endgrent(struct Library *UserGroupBase) { AROS_LC0NR(void, endgrent, struct Library *, UserGroupBase, 28, Usergroup); }
 
 /*------------------------------------------------------------------------*/
@@ -450,8 +449,8 @@ static void SaveFiles(struct AccStore *s)
 static void LoadUserGroup(struct AccStore *s)
 {
     struct Library *UserGroupBase = s->UserGroupBase;
-    struct NetInfoPasswd *pw;
-    struct NetInfoGroup *gr;
+    struct passwd *pw;
+    struct group *gr;
 
     FreeLists(s);
     ug_setpwent(UserGroupBase);
@@ -459,7 +458,7 @@ static void LoadUserGroup(struct AccStore *s)
     {
         struct AccUser *u;
         /* uid -1 is not an account: AROSTCP's passwd carries its version string that way */
-        if (!pw->pw_name || pw->pw_uid == -1)
+        if (!pw->pw_name || pw->pw_uid == (uid_t)-1)
             continue;
         if (!(u = AllocVec(sizeof(struct AccUser), MEMF_CLEAR | MEMF_PUBLIC)))
             break;
@@ -480,8 +479,8 @@ static void LoadUserGroup(struct AccStore *s)
     while ((gr = ug_getgrent(UserGroupBase)))
     {
         struct AccGroup *g;
-        UBYTE **m;
-        if (!gr->gr_name || gr->gr_gid == -1)
+        char **m;
+        if (!gr->gr_name || gr->gr_gid == (gid_t)-1)
             continue;
         if (!(g = AllocVec(sizeof(struct AccGroup), MEMF_CLEAR | MEMF_PUBLIC)))
             break;
