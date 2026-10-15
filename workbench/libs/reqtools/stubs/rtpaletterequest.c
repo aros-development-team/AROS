@@ -25,24 +25,23 @@ extern struct ReqToolsBase * ReqToolsBase;
 	...)
 
 /*  FUNCTION
+        Display a requester for editing or choosing a screen color.
 
     INPUTS
+        title   - Requester window title.
+        reqinfo - Optional requester information.
+        tag1    - First requester tag; terminate with TAG_DONE.
 
     RESULT
+        Selected palette index, or -1 on cancellation.
 
     NOTES
-
-    EXAMPLE
-
-    BUGS
+        The requester changes colors in the selected screen's viewport.
 
     SEE ALSO
+        rtPaletteRequestA()
 
-    INTERNALS
-
-    HISTORY
-
-*****************************************************************************/
+***************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
 

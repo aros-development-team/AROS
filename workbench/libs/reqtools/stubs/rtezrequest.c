@@ -27,24 +27,33 @@ extern struct ReqToolsBase * ReqToolsBase;
 	...)
 
 /*  FUNCTION
+        Display a formatted requester and obtain a user response.
 
     INPUTS
+        bodyfmt - Message format string.
+        gadfmt  - Gadget-label format string; separate choices with '|'.
+        reqinfo - Optional requester information.
+        taglist - Optional TagItem array controlling the requester.
+        ...     - Formatting arguments for bodyfmt followed by gadfmt.
 
     RESULT
+        Response code from rtEZRequestA(); the rightmost choice returns
+        zero. Other choices return their assigned positive values, or
+        an IDCMP value may be returned.
 
     NOTES
-
-    EXAMPLE
+        Formatting uses RawDoFmt conventions. This wrapper counts percent
+        conversions in both format strings to collect formatting arguments;
+        '%%' is treated as a literal percent sign.
 
     BUGS
+        If allocation of the temporary argument array fails, the wrapper
+        writes through the NULL pointer when formatting arguments exist.
 
     SEE ALSO
+        rtEZRequestA(), rtEZRequestTags()
 
-    INTERNALS
-
-    HISTORY
-
-*****************************************************************************/
+***************************************************************************/
 {
     va_list args;
     ULONG   rc;
