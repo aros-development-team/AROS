@@ -19,6 +19,38 @@
 #include "e_rem_pio2.c"
 #include "k_sincos.h"
 
+/****************************************************************************
+    NAME
+        void sincos(
+
+    SYNOPSIS
+        double x, double *sn, double *cs)
+
+    FUNCTION
+        Compute the sine and cosine of x.
+
+    INPUTS
+        x - Angle in radians.
+        sn - Pointer to a writable double for the sine.
+        cs - Pointer to a separate writable double for the cosine.
+
+    RESULT
+        Store sin(x) in *sn and cos(x) in *cs. No value is returned.
+        For positive or negative zero, store x in *sn and 1 in *cs.
+        For infinity or NaN, both outputs are NaN.
+
+    NOTES
+        Include <math.h>. An infinite argument raises FE_INVALID.
+        Enabled floating-point traps may prevent completion.
+
+    BUGS
+        Argument reduction assumes round-to-nearest. Other rounding
+        modes can produce inaccurate results.
+
+    SEE ALSO
+        sin(), cos()
+
+*****************************************************************************/
 void
 sincos(double x, double *sn, double *cs)
 {
