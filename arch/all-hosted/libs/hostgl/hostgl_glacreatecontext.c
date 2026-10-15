@@ -28,9 +28,7 @@
 
 /*  FUNCTION
 
-        Crates a GL rendering context. Whether the rendering will be software
-        or hardware based depends on the gallium.library returning a module
-        best suited.
+        Create a rendering context using the hosted OpenGL backend.
  
     INPUTS
 
@@ -90,7 +88,7 @@
 
     RESULT
 
-        A valid GL context or NULL of creation was not successful.
+        A rendering context, or NULL if creation fails.
  
     BUGS
 
