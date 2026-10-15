@@ -387,6 +387,8 @@ BOOL GUIinit()
                     Child, VGroup,
                         Child, VGroup, GroupFrameT(_(MSG_SELECTION)),
                             Child, DevList = ListObject,
+                                MUIA_List_ConstructHook, MUIV_List_ConstructHook_String,
+                                MUIA_List_DestructHook, MUIV_List_DestructHook_String,
                                 InputListFrame,
 //                                MUIA_List_AdjustWidth, TRUE,
                             End, // ListObject
