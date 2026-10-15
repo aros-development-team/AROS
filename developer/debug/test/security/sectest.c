@@ -105,8 +105,9 @@ int main(void)
     bug("[SecTest] --- as %s in %s (secfs: %s) ---\n", who, dir,
         secBase ? (secIsConfigured() ? "configured" : "unconfigured") : "no library");
 
-    /* per-user names so that a previous run as another user does not interfere */
-    snprintf(mine, sizeof(mine), "sectest-%s-rootdir.txt", who);
+    /* per-user names so that a previous run as another user does not interfere;
+     * at most 30 characters (FFS/OFS) even for root, "65535-65535" */
+    snprintf(mine, sizeof(mine), "sectest-%s-root.txt", who);
     ok = TryWrite(Join(dir, mine), "written by sectest\n");
     Report("create file in volume root", ok, IoErr());
     ok = TryRead(Join(dir, "rootfile.txt"));

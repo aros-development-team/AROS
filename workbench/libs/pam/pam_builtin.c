@@ -32,7 +32,7 @@ const struct PamBuiltin PamBuiltinDeny   = { "deny",   { DenyAuth, AlwaysDeny, A
 
 static const struct PamBuiltin * const Builtins[] =
 {
-    &PamBuiltinPermit, &PamBuiltinDeny, &PamBuiltinSecurity, &PamBuiltinUnixPw, NULL
+    &PamBuiltinPermit, &PamBuiltinDeny, &PamBuiltinSecurity, &PamBuiltinUnixPw, &PamBuiltinAccess, NULL
 };
 
 const struct PamBuiltin *PamFindBuiltin(CONST_STRPTR name)
@@ -55,7 +55,7 @@ LONG PamSecurityState(struct PamBase *PamBase)
     state = PAM_STATE_UNCONFIGURED;
     if ((secBase = OpenLibrary(SECURITYNAME, 0)))
     {
-        if (secBase->lib_Version > 45 || (secBase->lib_Version == 45 && secBase->lib_Revision >= 13))
+        if (secBase->lib_Version > 45 || (secBase->lib_Version == 45 && secBase->lib_Revision >= 14))
         {
             if (secIsConfigured())
                 state = PAM_STATE_CONFIGURED;

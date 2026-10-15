@@ -6,6 +6,8 @@
 
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <proto/pam.h>
+#include <resources/log.h>
 #include <string.h>
 
 #include "pam_intern.h"
@@ -31,31 +33,44 @@ static LONG CallEntry(struct PamBase *PamBase, struct PamHandle *h, struct PamEn
 }
 
 /*
- * The simple PAM control words:
- *   required   - a failure is remembered (first one wins) but the rest of
- *                the stack still runs, so a caller cannot tell which module
- *                refused;
+ * The control words, with the usual PAM meaning:
+ *   required   - a failure is remembered (the first one wins) but the rest
+ *                of the stack still runs, so a caller cannot tell which
+ *                module refused;
  *   requisite  - a failure ends the stack at once;
- *   sufficient - a success ends the stack with success unless a required
- *                module failed earlier; a failure is ignored;
+ *   sufficient - a success ends the stack: with success, or with the
+ *                failure a required module gave before it; a failure is
+ *                ignored. PAM_NEW_AUTHTOK_REQD ends it too;
  *   optional   - counts only if nothing else in the stack gave a result.
- * An empty stack, or one in which nothing answered, denies.
+ * PAM_NEW_AUTHTOK_REQD from a required or requisite module lets the stack
+ * go on and is the result if nothing fails. An empty stack, or one in
+ * which nothing answered, denies.
+ *
+ * replay: only the entries that ran in the pass the stack is frozen at
+ * (PamSetCred() after PamAuthenticate(), the update pass of
+ * PamChAuthTok() after the preliminary one); record: mark the entries
+ * that run now.
  */
-LONG PamRunStack(struct PamBase *PamBase, struct PamHandle *h, ULONG group, ULONG op, ULONG flags)
+static LONG RunEntries(struct PamBase *PamBase, struct PamHandle *h, ULONG group, ULONG op, ULONG flags, BOOL replay, BOOL record)
 {
     struct PamEntry *e;
     LONG required_fail = PAM_SUCCESS;
     LONG optional_res = PAM_IGNORE;
-    BOOL any = FALSE;
+    BOOL any = FALSE, newtok = FALSE;
     LONG r;
 
-    if (!h)
-        return PAM_SYSTEM_ERR;
-    if (!PamLoadStack(PamBase, h))
-        return PAM_SERVICE_ERR;
+    if (record)
+    {
+        ForeachNode(&h->Stack[group], e)
+            e->Ran = FALSE;
+    }
 
     ForeachNode(&h->Stack[group], e)
     {
+        if (replay && !e->Ran)
+            continue;
+        if (record)
+            e->Ran = TRUE;
         r = CallEntry(PamBase, h, e, op, flags);
         D(bug(DEBUG_NAME_STR " %s: %s %s -> %ld\n", __func__, e->Builtin ? e->Builtin->Name : e->Module->Name, (char *[]){"required","requisite","sufficient","optional"}[e->Control], (long)r);)
         if (r == PAM_IGNORE)
@@ -63,20 +78,24 @@ LONG PamRunStack(struct PamBase *PamBase, struct PamHandle *h, ULONG group, ULON
         switch (e->Control)
         {
         case PAM_CTL_REQUIRED:
-            any = TRUE;
-            if (r != PAM_SUCCESS && required_fail == PAM_SUCCESS)
-                required_fail = r;
-            break;
         case PAM_CTL_REQUISITE:
             any = TRUE;
-            if (r != PAM_SUCCESS)
-                return (required_fail != PAM_SUCCESS) ? required_fail : r;
-            break;
-        case PAM_CTL_SUFFICIENT:
-            if (r == PAM_SUCCESS)
+            if (r == PAM_NEW_AUTHTOK_REQD)
+                newtok = TRUE;
+            else if (r != PAM_SUCCESS)
             {
                 if (required_fail == PAM_SUCCESS)
-                    return PAM_SUCCESS;
+                    required_fail = r;
+                if (e->Control == PAM_CTL_REQUISITE)
+                    return required_fail;
+            }
+            break;
+        case PAM_CTL_SUFFICIENT:
+            if (r == PAM_SUCCESS || r == PAM_NEW_AUTHTOK_REQD)
+            {
+                if (required_fail != PAM_SUCCESS)
+                    return required_fail;
+                return (r == PAM_NEW_AUTHTOK_REQD || newtok) ? PAM_NEW_AUTHTOK_REQD : PAM_SUCCESS;
             }
             break;
         case PAM_CTL_OPTIONAL:
@@ -88,10 +107,54 @@ LONG PamRunStack(struct PamBase *PamBase, struct PamHandle *h, ULONG group, ULON
     if (required_fail != PAM_SUCCESS)
         return required_fail;
     if (any)
-        return PAM_SUCCESS;
+        return newtok ? PAM_NEW_AUTHTOK_REQD : PAM_SUCCESS;
     if (optional_res != PAM_IGNORE)
         return optional_res;
     return (op == PAM_OP_AUTHENTICATE) ? PAM_AUTH_ERR : PAM_PERM_DENIED;
+}
+
+LONG PamRunStack(struct PamBase *PamBase, struct PamHandle *h, ULONG group, ULONG op, ULONG flags)
+{
+    BOOL replay = FALSE, record = FALSE;
+    LONG r;
+
+    if (!h)
+        return PAM_SYSTEM_ERR;
+    /* A service change made during an earlier run takes effect now */
+    if (h->ReloadPending && !h->Running)
+    {
+        PamFreeStack(PamBase, h);
+        h->ReloadPending = FALSE;
+        h->Authenticated = h->PrelimDone = FALSE;
+    }
+    if (!PamLoadStack(PamBase, h))
+        return PAM_SERVICE_ERR;
+
+    switch (op)
+    {
+    case PAM_OP_AUTHENTICATE:
+        record = TRUE;
+        break;
+    case PAM_OP_SETCRED:
+        replay = h->Authenticated;
+        break;
+    case PAM_OP_CHAUTHTOK:
+        if (flags & PAM_PRELIM_CHECK)
+            record = TRUE;
+        else
+            replay = h->PrelimDone;
+        break;
+    }
+
+    h->Running++;
+    r = RunEntries(PamBase, h, group, op, flags, replay, record);
+    h->Running--;
+
+    if (op == PAM_OP_AUTHENTICATE)
+        h->Authenticated = (r == PAM_SUCCESS || r == PAM_NEW_AUTHTOK_REQD);
+    else if (op == PAM_OP_CHAUTHTOK && (flags & PAM_PRELIM_CHECK))
+        h->PrelimDone = (r == PAM_SUCCESS);
+    return r;
 }
 
 static void ApplyFailDelay(struct PamBase *PamBase, struct PamHandle *h)
@@ -135,12 +198,22 @@ static void ApplyFailDelay(struct PamBase *PamBase, struct PamHandle *h)
 {
     AROS_LIBFUNC_INIT
 
-    LONG r = PamRunStack(PamBase, handle, PAM_GROUP_AUTH, PAM_OP_AUTHENTICATE, flags);
+    LONG r;
 
-    if (r != PAM_SUCCESS)
+    if (!handle)
+        return PAM_SYSTEM_ERR;
+    r = PamRunStack(PamBase, handle, PAM_GROUP_AUTH, PAM_OP_AUTHENTICATE, flags);
+    if (r != PAM_SUCCESS && r != PAM_NEW_AUTHTOK_REQD)
+    {
         ApplyFailDelay(PamBase, handle);
+        PamLogA(PamBase, handle, LOGF_Flag_Type_Warn, "authentication of %s failed: %s",
+                (IPTR []){ (IPTR)(handle->User ? handle->User : (STRPTR)"?"), (IPTR)PamStrError(handle, r) });
+    }
     else
         handle->FailDelay = 0;
+    /* the token now belongs to the authentication; a password change on
+     * this handle must not take it for the new one */
+    handle->AuthTokFromAuth = (handle->AuthTok != NULL);
     handle->LastStatus = r;
     return r;
 
@@ -169,7 +242,11 @@ static void ApplyFailDelay(struct PamBase *PamBase, struct PamHandle *h)
 {
     AROS_LIBFUNC_INIT
 
-    LONG r = PamRunStack(PamBase, handle, PAM_GROUP_AUTH, PAM_OP_SETCRED, flags);
+    LONG r;
+
+    if (!handle)
+        return PAM_SYSTEM_ERR;
+    r = PamRunStack(PamBase, handle, PAM_GROUP_AUTH, PAM_OP_SETCRED, flags);
     handle->LastStatus = r;
     return r;
 
@@ -196,7 +273,11 @@ static void ApplyFailDelay(struct PamBase *PamBase, struct PamHandle *h)
 {
     AROS_LIBFUNC_INIT
 
-    LONG r = PamRunStack(PamBase, handle, PAM_GROUP_ACCOUNT, PAM_OP_ACCT_MGMT, flags);
+    LONG r;
+
+    if (!handle)
+        return PAM_SYSTEM_ERR;
+    r = PamRunStack(PamBase, handle, PAM_GROUP_ACCOUNT, PAM_OP_ACCT_MGMT, flags);
     handle->LastStatus = r;
     return r;
 
@@ -223,7 +304,11 @@ static void ApplyFailDelay(struct PamBase *PamBase, struct PamHandle *h)
 {
     AROS_LIBFUNC_INIT
 
-    LONG r = PamRunStack(PamBase, handle, PAM_GROUP_SESSION, PAM_OP_OPEN_SESSION, flags);
+    LONG r;
+
+    if (!handle)
+        return PAM_SYSTEM_ERR;
+    r = PamRunStack(PamBase, handle, PAM_GROUP_SESSION, PAM_OP_OPEN_SESSION, flags);
     handle->LastStatus = r;
     return r;
 
@@ -249,7 +334,11 @@ static void ApplyFailDelay(struct PamBase *PamBase, struct PamHandle *h)
 {
     AROS_LIBFUNC_INIT
 
-    LONG r = PamRunStack(PamBase, handle, PAM_GROUP_SESSION, PAM_OP_CLOSE_SESSION, flags);
+    LONG r;
+
+    if (!handle)
+        return PAM_SYSTEM_ERR;
+    r = PamRunStack(PamBase, handle, PAM_GROUP_SESSION, PAM_OP_CLOSE_SESSION, flags);
     handle->LastStatus = r;
     return r;
 
@@ -271,23 +360,48 @@ static void ApplyFailDelay(struct PamBase *PamBase, struct PamHandle *h)
 /*  FUNCTION
         Change the user's password: the "password" stack is run twice, with
         PAM_PRELIM_CHECK (may it be changed, is the old one right) and then
-        with PAM_UPDATE_AUTHTOK. Either flag alone runs one pass.
+        with PAM_UPDATE_AUTHTOK, which replays the modules of the first
+        pass. Applications may not pass either flag themselves. A token
+        that was used to authenticate on the same handle is taken as the
+        old password; the new one is asked for twice when the
+        conversation is interactive.
 
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    LONG r = PAM_SUCCESS;
-    ULONG passes = flags & (PAM_PRELIM_CHECK | PAM_UPDATE_AUTHTOK);
+    struct PamHandle *h = handle;
+    LONG r;
 
-    if (!passes)
-        passes = PAM_PRELIM_CHECK | PAM_UPDATE_AUTHTOK;
-    flags &= ~(PAM_PRELIM_CHECK | PAM_UPDATE_AUTHTOK);
-    if (passes & PAM_PRELIM_CHECK)
-        r = PamRunStack(PamBase, handle, PAM_GROUP_PASSWORD, PAM_OP_CHAUTHTOK, flags | PAM_PRELIM_CHECK);
-    if (r == PAM_SUCCESS && (passes & PAM_UPDATE_AUTHTOK))
-        r = PamRunStack(PamBase, handle, PAM_GROUP_PASSWORD, PAM_OP_CHAUTHTOK, flags | PAM_UPDATE_AUTHTOK);
-    handle->LastStatus = r;
+    if (!h)
+        return PAM_SYSTEM_ERR;
+    /* The passes are the library's business */
+    if (flags & (PAM_PRELIM_CHECK | PAM_UPDATE_AUTHTOK))
+        return PAM_SYSTEM_ERR;
+
+    /* A token left from authentication is the old password, never the new */
+    if (h->AuthTokFromAuth)
+    {
+        if (!h->OldAuthTok)
+        {
+            h->OldAuthTok = h->AuthTok;
+            h->AuthTok = NULL;
+        }
+        else
+            PamSetString(PamBase, &h->AuthTok, NULL, TRUE);
+        h->AuthTokFromAuth = FALSE;
+    }
+
+    r = PamRunStack(PamBase, h, PAM_GROUP_PASSWORD, PAM_OP_CHAUTHTOK, flags | PAM_PRELIM_CHECK);
+    if (r == PAM_SUCCESS)
+    {
+        h->InUpdate = TRUE;
+        r = PamRunStack(PamBase, h, PAM_GROUP_PASSWORD, PAM_OP_CHAUTHTOK, flags | PAM_UPDATE_AUTHTOK);
+        h->InUpdate = FALSE;
+    }
+    PamLogA(PamBase, h, (r == PAM_SUCCESS) ? LOGF_Flag_Type_Information : LOGF_Flag_Type_Warn,
+            "password change for %s: %s", (IPTR []){ (IPTR)(h->User ? h->User : (STRPTR)"?"), (IPTR)PamStrError(h, r) });
+    h->LastStatus = r;
     return r;
 
     AROS_LIBFUNC_EXIT

@@ -8,7 +8,11 @@
 
           auth:     getpwnam() + crypt() comparison.
           account:  the user must exist.
-          others:   nothing (password change is a later addition).
+          setcred:  success: without security.library there are no
+                    credentials to establish.
+          session:  success, nothing to do.
+          password: refused with a message; usergroup.library cannot
+                    write the network password file.
 */
 
 #include <proto/exec.h>
@@ -85,7 +89,23 @@ static LONG UgAcctMgmt(struct PamBase *PamBase, struct PamHandle *h, ULONG flags
     return res;
 }
 
+static LONG UgNothing(struct PamBase *PamBase, struct PamHandle *h, ULONG flags, LONG argc, CONST_STRPTR *argv)
+{
+    return PAM_SUCCESS;
+}
+
+static LONG UgChAuthTok(struct PamBase *PamBase, struct PamHandle *h, ULONG flags, LONG argc, CONST_STRPTR *argv)
+{
+    struct pam_message m = { PAM_ERROR_MSG, "Passwords in the network password file cannot be changed here." };
+    const struct pam_message *mp = &m;
+    struct pam_response *r = NULL;
+
+    if (!(flags & PAM_SILENT) && PamConverse(h, 1, &mp, &r) == PAM_SUCCESS)
+        PamFreeResponses(PamBase, 1, r);
+    return PAM_AUTHTOK_ERR;
+}
+
 const struct PamBuiltin PamBuiltinUnixPw =
 {
-    "unixpw", { UgAuthenticate, NULL, UgAcctMgmt, NULL, NULL, NULL }
+    "unixpw", { UgAuthenticate, UgNothing, UgAcctMgmt, UgNothing, UgNothing, UgChAuthTok }
 };

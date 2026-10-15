@@ -58,6 +58,10 @@ void Warn(struct SecurityBase *secBase, CONST_STRPTR fmt, SIPTR *args)
     FormatString(fmt, args, text, sizeof(text));
 
     bug(DEBUG_NAME_STR " WARNING: %s\n", text);
+    {
+        SIPTR largs[1] = { (SIPTR)text };
+        VSecLog(secBase, LOGF_Flag_Type_Warn, SECLOG_SUB_LIBRARY, "%s", largs);
+    }
 
     if (secBase->sec_AfterDOSDone && IntuitionBase && IntuitionBase->FirstScreen)
     {
@@ -88,7 +92,11 @@ void Die(struct SecurityBase *secBase, CONST_STRPTR msg, ULONG alertcode)
         bug(DEBUG_NAME_STR " FATAL: alert 0x%08lx\n", (unsigned long)alertcode);
 
     if (secBase)
+    {
+        SIPTR largs[1] = { (SIPTR)(msg ? msg : (CONST_STRPTR)"alert") };
         secBase->SecurityViolation = TRUE;
+        VSecLog(secBase, LOGF_Flag_Type_Crit, SECLOG_SUB_LIBRARY, "%s", largs);
+    }
 
     if (alertcode)
         Alert(alertcode);

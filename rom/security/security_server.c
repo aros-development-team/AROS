@@ -106,6 +106,7 @@ static void FillUserInfo(struct secUserDef *def, struct secPrivUserInfo *info)
     strncpy(info->Pub.Shell, def->Shell, secSHELLSIZE - 1);
     info->Pub.Shell[secSHELLSIZE - 1] = '\0';
     info->Password = (def->Password[0] != '\0');
+    info->Locked = (def->Password[0] == '!');
 }
 
 /*
@@ -119,6 +120,43 @@ static void FillGroupInfo(struct secGroupDef *def, struct secPrivGroupInfo *info
     info->Pub.MgrUid = def->MgrUid;
     strncpy(info->Pub.GroupName, def->GroupName, secGROUPNAMESIZE - 1);
     info->Pub.GroupName[secGROUPNAMESIZE - 1] = '\0';
+}
+
+/*
+ * Lock or unlock an account (root only)
+ */
+static BOOL LockUser(struct SecurityBase *secBase, struct Task *client, STRPTR userid, BOOL lock)
+{
+    struct secUserDef *def;
+    BOOL res = FALSE;
+
+    if (!client || (GetTaskOwner(secBase, client) >> 16) != secROOT_UID || !userid)
+        return FALSE;
+    for (def = GetUserDefs(secBase); def; def = def->Next)
+    {
+        if (!strcmp(userid, def->UserID))
+        {
+            ULONG len = strlen(def->Password);
+
+            if (lock == (def->Password[0] == '!'))
+                return TRUE;
+            /* ParseUserLine() leaves a byte for the '!' */
+            if (lock)
+            {
+                memmove(def->Password + 1, def->Password, len + 1);
+                def->Password[0] = '!';
+            }
+            else
+                memmove(def->Password, def->Password + 1, len);
+            res = UpdateUserDefs(secBase);
+            {
+                SIPTR args[2] = { (SIPTR)userid, (SIPTR)(lock ? "locked" : "unlocked") };
+                VLogF(secBase, LOGF_Flag_Type_Information, SECLOG_SUB_SERVER, "account '%s' %s", args);
+            }
+            break;
+        }
+    }
+    return res;
 }
 
 /*
@@ -155,7 +193,7 @@ static struct secPrivUserInfo *CheckUser(struct SecurityBase *secBase, ULONG use
         SIPTR args[2];
         args[0] = uid;
         args[1] = (SIPTR)userid;
-        VLogF(secBase, GetLogStr(secBase, info ? MSG_LOG_LOGIN : MSG_LOG_LOGINFAIL), args);
+        VLogF(secBase, info ? LOGF_Flag_Type_Information : LOGF_Flag_Type_Warn, SECLOG_SUB_SERVER, GetLogStr(secBase, info ? MSG_LOG_LOGIN : MSG_LOG_LOGINFAIL), args);
     }
 
     return info;
@@ -186,7 +224,7 @@ static BOOL CheckPasswd(struct SecurityBase *secBase, ULONG user, STRPTR pwd)
     {
         SIPTR args[1];
         args[0] = uid;
-        VLogF(secBase, GetLogStr(secBase, valid ? MSG_LOG_CHECKPASSWD : MSG_LOG_CHECKPASSWDFAIL), args);
+        VLogF(secBase, valid ? LOGF_Flag_Type_Verbose : LOGF_Flag_Type_Warn, SECLOG_SUB_SERVER, GetLogStr(secBase, valid ? MSG_LOG_CHECKPASSWD : MSG_LOG_CHECKPASSWDFAIL), args);
     }
 
     return valid;
@@ -223,7 +261,7 @@ static BOOL Passwd(struct SecurityBase *secBase, ULONG user, STRPTR oldpwd, STRP
     {
         SIPTR args[1];
         args[0] = uid;
-        VLogF(secBase, GetLogStr(secBase, changed ? MSG_LOG_PASSWD : MSG_LOG_PASSWDFAIL), args);
+        VLogF(secBase, changed ? LOGF_Flag_Type_Information : LOGF_Flag_Type_Warn, SECLOG_SUB_SERVER, GetLogStr(secBase, changed ? MSG_LOG_PASSWD : MSG_LOG_PASSWDFAIL), args);
     }
 
     return changed;
@@ -609,8 +647,14 @@ static void ServerProcess(void)
 
                 case secSAction_Log:
                     /* Arg1: fmt, Arg2: SIPTR *args */
-                    VLogF(secBase, (CONST_STRPTR)pkt->Arg1, (SIPTR *)pkt->Arg2);
+                    VLogF(secBase, LOGF_Flag_Type_Information, SECLOG_SUB_SERVER, (CONST_STRPTR)pkt->Arg1, (SIPTR *)pkt->Arg2);
                     pkt->Res1 = TRUE;
+                    break;
+
+                case secSAction_LockUser:
+                    /* Arg1: STRPTR userid, Arg2: BOOL lock. Res1: BOOL. Locked = the
+                     * stored hash prefixed with '!', which no password matches */
+                    pkt->Res1 = LockUser(secBase, client, (STRPTR)pkt->Arg1, (BOOL)pkt->Arg2);
                     break;
 
                 case secSAction_GetUserHash:

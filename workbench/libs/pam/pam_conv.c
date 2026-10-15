@@ -27,8 +27,8 @@ void PamFreeResponses(struct PamBase *PamBase, LONG nmsg, struct pam_response *r
 static BOOL ReadLine(struct PamBase *PamBase, BPTR in, BPTR out, STRPTR buf, ULONG size, BOOL echo)
 {
     ULONG n = 0;
-    char c;
-    BOOL ok = TRUE;
+    UBYTE c;
+    BOOL ok = TRUE, csi = FALSE;
 
     if (!in)
         return FALSE;
@@ -40,6 +40,18 @@ static BOOL ReadLine(struct PamBase *PamBase, BPTR in, BPTR out, STRPTR buf, ULO
         {
             ok = (n > 0);
             break;
+        }
+        /* A control sequence (cursor keys...): skip up to its final byte */
+        if (csi)
+        {
+            if (c >= 0x40 && c <= 0x7e)
+                csi = FALSE;
+            continue;
+        }
+        if (c == 0x9b)
+        {
+            csi = TRUE;
+            continue;
         }
         if (c == '\r' || c == '\n')
             break;
@@ -54,7 +66,8 @@ static BOOL ReadLine(struct PamBase *PamBase, BPTR in, BPTR out, STRPTR buf, ULO
                 n--;
             continue;
         }
-        if (n < size - 1 && c >= ' ')
+        /* printable ASCII and Latin-1; not the C1 controls */
+        if (n < size - 1 && c >= 0x20 && c != 0x7f && (c < 0x80 || c >= 0xa0))
             buf[n++] = c;
     }
     buf[n] = '\0';
@@ -113,7 +126,11 @@ static LONG ConsoleConv(struct PamBase *PamBase, struct PamHandle *h, LONG nmsg,
     return PAM_SUCCESS;
 }
 
-/* The preset conversation: answers only from what the application set */
+/* The preset conversation: never answers a question itself. The items an
+ * application preset (PAM_USER, PAM_AUTHTOK, PAM_OLDAUTHTOK) are handed
+ * to modules by PamGetUser()/PamGetAuthTok() without a conversation, so
+ * any question that gets here - another token, a second factor - fails
+ * rather than receive an answer meant for something else. */
 static LONG PresetConv(struct PamBase *PamBase, struct PamHandle *h, LONG nmsg, const struct pam_message **msgs, struct pam_response *resp)
 {
     LONG i;
@@ -122,18 +139,6 @@ static LONG PresetConv(struct PamBase *PamBase, struct PamHandle *h, LONG nmsg, 
     {
         switch (msgs[i]->msg_style)
         {
-        case PAM_PROMPT_ECHO_OFF:
-            if (!h->AuthTok)
-                return PAM_CONV_ERR;
-            if (!(resp[i].resp = PamStrDup(PamBase, h->AuthTok)))
-                return PAM_BUF_ERR;
-            break;
-        case PAM_PROMPT_ECHO_ON:
-            if (!h->User)
-                return PAM_CONV_ERR;
-            if (!(resp[i].resp = PamStrDup(PamBase, h->User)))
-                return PAM_BUF_ERR;
-            break;
         case PAM_ERROR_MSG:
         case PAM_TEXT_INFO:
             break;
@@ -168,6 +173,8 @@ LONG PamDoConverse(struct PamBase *PamBase, struct PamHandle *h, LONG nmsg, cons
                 return PAM_CONV_ERR;
             *resp = cm.Responses;
         }
+        else if (cm.Responses)
+            PamFreeResponses(PamBase, nmsg, cm.Responses);
         return res;
     }
 
@@ -293,7 +300,9 @@ static LONG AskOne(struct PamBase *PamBase, struct PamHandle *h, LONG style, CON
 
 /*  FUNCTION
         Module side: the token (PAM_AUTHTOK or PAM_OLDAUTHTOK), asking for
-        it unechoed through the conversation if it is not set yet.
+        it unechoed through the conversation if it is not set yet. In the
+        update pass of PamChAuthTok() a new PAM_AUTHTOK is asked for twice
+        and PAM_AUTHTOK_ERR returned if the two differ.
 
 ******************************************************************************/
 {
@@ -317,6 +326,29 @@ static LONG AskOne(struct PamBase *PamBase, struct PamHandle *h, LONG style, CON
         res = AskOne(PamBase, h, PAM_PROMPT_ECHO_OFF, prompt ? prompt : (CONST_STRPTR)"Password: ", &answer);
         if (res != PAM_SUCCESS)
             return res;
+        if (item == PAM_AUTHTOK && h->InUpdate)
+        {
+            /* A new password is typed blind: ask for it twice */
+            STRPTR again = NULL;
+
+            res = AskOne(PamBase, h, PAM_PROMPT_ECHO_OFF, "Retype new password: ", &again);
+            if (res == PAM_SUCCESS && strcmp(answer, again))
+            {
+                struct pam_message m = { PAM_ERROR_MSG, "The passwords do not match." };
+                const struct pam_message *mp = &m;
+                struct pam_response *r = NULL;
+
+                if (PamDoConverse(PamBase, h, 1, &mp, &r) == PAM_SUCCESS)
+                    PamFreeResponses(PamBase, 1, r);
+                res = PAM_AUTHTOK_ERR;
+            }
+            PamStrFree(PamBase, again, TRUE);
+            if (res != PAM_SUCCESS)
+            {
+                PamStrFree(PamBase, answer, TRUE);
+                return res;
+            }
+        }
         *slot = answer;
     }
     *tok = *slot;
