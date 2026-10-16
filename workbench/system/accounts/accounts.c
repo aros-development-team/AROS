@@ -391,35 +391,27 @@ LONG Acc_GroupDelete(struct AccountsState *st, CONST_STRPTR name)
 }
 
 /*
- * The standard accounts and groups of a network environment, as AROSTCP's
- * db/passwd and db/group define them. Their accounts cannot log in
- * (locked, as '*' does there); guest, which shares uid 1 with daemon
- * there, gets 99 (its group), as ids must be unique here.
+ * The standard accounts and groups, as AROSTCP's db/passwd and db/group
+ * define them: the super user and its group (admin), the unprivileged
+ * nobody, the network services and a guest. Except for root, the accounts
+ * cannot log in (locked, as '*' does there); root is the owner of a
+ * single-user system anyway.
  */
 static const struct { CONST_STRPTR name; LONG uid, gid; CONST_STRPTR real, home, shell; } DefUsers[] =
 {
-    { "root",   0,  0,  "System Account",  "SYS:",         "shell" },
-    { "nobody", -2, -2, "System User",     "SYS:",         "cli"   },
-    { "daemon", 1,  5,  "",                "SYS:",         "cli"   },
-    { "bin",    2,  2,  "",                "C:",           "cli"   },
-    { "adm",    4,  4,  "",                "SYS:",         "cli"   },
-    { "guest",  99, 99, "Anonymous Guest", "SYS:",         "cli"   },
+    { "root",     0,  0,  "Super User",       "SYS:", "shell" },
+    { "nobody",   -2, -2, "Unprivileged",     "SYS:", "cli"   },
+    { "services", 1,  1,  "Network Services", "SYS:", "cli"   },
+    { "guest",    99, 99, "Guest",            "SYS:", "cli"   },
 };
 
-static const struct { CONST_STRPTR name; LONG gid; CONST_STRPTR member; } DefGroups[] =
+static const struct { CONST_STRPTR name; LONG gid; } DefGroups[] =
 {
-    { "wheel",    0,   NULL     },
-    { "nobody",   -2,  NULL     },
-    { "daemon",   1,   "daemon" },
-    { "kmem",     2,   "root"   },
-    { "sys",      3,   "root"   },
-    { "tty",      4,   "root"   },
-    { "operator", 5,   NULL     },
-    { "news",     6,   NULL     },
-    { "mail",     7,   NULL     },
-    { "anon",     8,   NULL     },
-    { "guest",    99,  NULL     },
-    { "users",    100, NULL     },
+    { "admin",    0   },
+    { "nobody",   -2  },
+    { "services", 1   },
+    { "guests",   99  },
+    { "users",    100 },
 };
 
 BOOL Acc_NeedsDefaults(struct AccountsState *st)
@@ -432,8 +424,7 @@ LONG Acc_AddDefaults(struct AccountsState *st)
     LONG err = 0, e;
     ULONG i;
 
-    /* the groups first (users need their primary group), members last
-     * (they must exist) */
+    /* the groups first: the accounts need their primary group */
     for (i = 0; i < sizeof(DefGroups) / sizeof(DefGroups[0]); i++)
     {
         if (getgrnam((char *)DefGroups[i].name) || getgrgid((gid_t)DefGroups[i].gid))
@@ -447,51 +438,9 @@ LONG Acc_AddDefaults(struct AccountsState *st)
             continue;
         if ((e = Acc_Add(st, DefUsers[i].name, DefUsers[i].uid, DefUsers[i].gid, DefUsers[i].real,
                          DefUsers[i].home, DefUsers[i].shell, "")) ||
-            (e = Acc_Lock(st, DefUsers[i].name, TRUE)))
+            (DefUsers[i].uid != 0 && (e = Acc_Lock(st, DefUsers[i].name, TRUE))))
         {
             if (!err)
-                err = e;
-        }
-    }
-    for (i = 0; i < sizeof(DefGroups) / sizeof(DefGroups[0]); i++)
-    {
-        struct group *gr;
-        STRPTR mem[2];
-        char **m;
-
-        if (!DefGroups[i].member || !getpwnam((char *)DefGroups[i].member) ||
-            !(gr = getgrnam((char *)DefGroups[i].name)))
-            continue;
-        for (m = gr->gr_mem; m && *m; m++)
-            if (!strcmp(*m, DefGroups[i].member))
-                break;
-        if (m && *m)
-            continue;
-        /* the existing members stay; copied, as gr_mem lives in
-         * usergroup.library's buffer, which the change reuses */
-        mem[0] = (STRPTR)DefGroups[i].member;
-        mem[1] = NULL;
-        {
-            STRPTR *all, *old = CopyMembers(gr->gr_mem);
-            ULONG n = 0, k;
-            gid_t gid = gr->gr_gid;
-
-            if (!old)
-                return err ? err : ENOMEM;
-            while (old[n])
-                n++;
-            if (!(all = AllocVec((n + 2) * sizeof(STRPTR), MEMF_CLEAR)))
-            {
-                FreeVec(old);
-                return err ? err : ENOMEM;
-            }
-            for (k = 0; k < n; k++)
-                all[k] = old[k];
-            all[n] = mem[0];
-            e = Acc_GroupModify(st, DefGroups[i].name, NULL, gid, NULL, all);
-            FreeVec(all);
-            FreeVec(old);
-            if (e && !err)
                 err = e;
         }
     }

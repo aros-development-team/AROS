@@ -245,7 +245,7 @@ MSG_ERR_GROUP_IO (//)
 The group database could not be written. Nothing was changed.
 ;
 MSG_REQ_DEFAULTS (//)
-No user accounts or groups are defined yet.\n\nCreate the standard accounts and groups of a network\nenvironment (root, nobody, daemon, bin, adm, guest and\ntheir groups, as AROSTCP defines them)? Their accounts\nare locked.
+No user accounts or groups are defined yet.\n\nCreate the standard accounts (root, nobody, services and\nguest) and groups (admin, nobody, services, guests and\nusers)? All accounts but root are locked.
 ;
 MSG_REQ_DEFAULTS_BUTTONS (//)
 _Create|_Not now

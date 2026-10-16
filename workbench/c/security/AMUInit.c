@@ -30,10 +30,10 @@
         system, the network database (AROSTCP's db/passwd and db/group,
         through usergroup.library) - accounts with a password are locked,
         as their hashes cannot be converted, and root has none. Without
-        either, the defaults: the super user "root" without a password,
-        the locked system accounts a network environment expects (nobody,
-        daemon, bin, adm and guest, as in AROSTCP's db/passwd), and the
-        groups "root", "users" and those of AROSTCP's db/group.
+        either, the standard accounts and groups of AROSTCP's db/passwd and
+        db/group: the super user "root" without a password, the locked
+        accounts "nobody", "services" and "guest", and the groups "admin"
+        (root's), "nobody", "services", "guests" and "users".
         That script is run by dos.library before the Startup-Sequence when
         security.library is part of the ROM; it shows the login prompt, and
         the Startup-Sequence then runs as the user who logged in.
@@ -237,44 +237,31 @@ static const char StartupScript[] =
 /*
  * UserID|Password|uid|gid|UserName|HomeDir|Shell
  *
- * root (65535) without a password, and the system accounts a network
- * environment expects - those of AROSTCP's db/passwd, in security.library
- * numbers: its root (0) is 65535 and its nobody (-2) is 0, as
- * usergroup.library maps them; guest, which shares uid 1 with daemon
- * there, gets 99 (its group). The system accounts are locked ('!'): nobody
- * can log in as them until root gives them a password.
+ * The standard accounts, as AROSTCP's db/passwd has them, in
+ * security.library numbers (its root, 0, is 65535 and its nobody, -2, is
+ * 0, as usergroup.library maps them): root without a password, and the
+ * locked ('!') nobody, services and guest - nobody can log in as them
+ * until root gives them a password.
  */
 static const char PasswdFile[] =
     "root||65535|65535|Super User|SYS:|\n"
-    "nobody|!|0|0|System User|SYS:|\n"
-    "daemon|!|1|5||SYS:|\n"
-    "bin|!|2|2||C:|\n"
-    "adm|!|4|4||SYS:|\n"
-    "guest|!|99|99|Anonymous Guest|SYS:|\n";
+    "nobody|!|0|0|Unprivileged|SYS:|\n"
+    "services|!|1|1|Network Services|SYS:|\n"
+    "guest|!|99|99|Guest|SYS:|\n";
 
 /*
  * GroupID|gid|MgrUid|GroupName ... blank line ... uid:gid secondary memberships
  *
- * root's group, users, and the groups of AROSTCP's db/group (its wheel, 0,
- * is root's group; nobody, -2, is 0), with its memberships: root in kmem,
- * sys and tty, daemon in daemon.
+ * The standard groups, as AROSTCP's db/group has them: admin (root's
+ * group), nobody, services, guests and users.
  */
 static const char GroupFile[] =
-    "root|65535|65535|Root Group\n"
+    "admin|65535|65535|Administrators\n"
+    "nobody|0|65535|Unprivileged\n"
+    "services|1|65535|Network Services\n"
+    "guests|99|65535|Guests\n"
     "users|100|65535|Users\n"
-    "nobody|0|65535|Nobody\n"
-    "daemon|1|65535|Daemons\n"
-    "kmem|2|65535|Kernel Memory\n"
-    "sys|3|65535|System\n"
-    "tty|4|65535|Terminals\n"
-    "operator|5|65535|Operators\n"
-    "news|6|65535|News\n"
-    "mail|7|65535|Mail\n"
-    "anon|8|65535|Anonymous\n"
-    "guest|99|65535|Guests\n"
-    "\n"
-    "65535:2,3,4\n"
-    "1:1\n";
+    "\n";
 
 static const char ConfigFile[] =
     "; security.library configuration, see <libraries/security.h>\n"
