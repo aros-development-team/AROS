@@ -40,7 +40,7 @@ struct sdhost_private {
 
     /* Bounce buffer used for DMA reads into possibly mis-aligned caller buffers. */
     APTR    dma_bounce_raw;     /* Unaligned bounce buffer alloc */
-    APTR    dma_bounce;         /* 32-byte aligned bounce buffer */
+    APTR    dma_bounce;         /* 64-byte aligned bounce buffer */
     ULONG   dma_bounce_size;    /* Bounce buffer size */
 
     /* Transient transfer bookkeeping (set in SendCmd). */

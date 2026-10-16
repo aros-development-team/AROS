@@ -257,41 +257,19 @@ static inline void sdhost_dma_kick(struct sdcard_Bus *bus)
 
 static int sdhost_dma_wait(struct sdcard_Bus *bus, ULONG timeout_us)
 {
-    /* Deliberately a bounded poll, NOT DMAWaitChannel: sleeping here
-     * lets other tasks run mid-transfer, which both (a) speculatively
-     * refetches destination cache lines during direct-to-buffer reads
-     * and (b) lets shared edge lines go dirty, so the post-DMA ClearD
-     * writes stale data over the DMA result — random disk corruption.
-     * The tight poll keeps the window closed, as it always did. */
+    /* Sleep on the completion IRQ: a busy poll here made the mouse jerk
+     * under disk load.  Sleeping is safe because DMA only ever targets
+     * the line-aligned bounce buffer, never a caller's buffer. */
     struct sdhost_private *priv = SDHOST_PRIV(bus);
-    volatile ULONG *dma_cs = (volatile ULONG *)DMA_CS(priv->dma_channel);
-    const ULONG poll_step = 50;
 
-    while (timeout_us > 0)
+    if (DMAWaitChannel(priv->dma_channel, timeout_us) != 0)
     {
-        ULONG cs = AROS_LE2LONG(*dma_cs);
-        if (cs & DMA_CS_END)
-        {
-            *dma_cs = AROS_LONG2LE(DMA_CS_INT | DMA_CS_END);
-            sdhost_dsb();
-            return 0;
-        }
-        if (!(cs & DMA_CS_ACTIVE))
-        {
-            bug("[SDHost%02u] DMA stopped early: CS=%08x SDHSTS=%08x\n",
-                bus->sdcb_BusNum, cs, sdhost_read(bus, SDHSTS));
-            *dma_cs = AROS_LONG2LE(DMA_CS_RESET);
-            sdhost_dsb();
-            return -1;
-        }
-        sdcard_Udelay(poll_step);
-        timeout_us = (timeout_us > poll_step) ? timeout_us - poll_step : 0;
+        bug("[SDHost%02u] DMA failed: SDHSTS=%08x\n",
+            bus->sdcb_BusNum, sdhost_read(bus, SDHSTS));
+        return -1;
     }
-    bug("[SDHost%02u] DMA timeout: SDHSTS=%08x\n",
-        bus->sdcb_BusNum, sdhost_read(bus, SDHSTS));
-    *dma_cs = AROS_LONG2LE(DMA_CS_RESET);
     sdhost_dsb();
-    return -1;
+    return 0;
 }
 
 
