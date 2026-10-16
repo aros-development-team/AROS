@@ -93,7 +93,10 @@ AROS_UFH3(static IPTR, usbromstartup_init,
         psdAddClass("hub.class", 0);
         psdAddClass("hubss.class", 0);
         msdclass = psdAddClass("massstorage.class", 0);
-        /* hid/bootmouse/bootkeyboard are loaded from disk by AddUSBClasses in Startup-Sequence */
+        /* Keyboard and mouse for requesters before Startup-Sequence; poseidon
+           hands them to hid.class once AddUSBClasses loads it from disk */
+        psdAddClass("bootkeyboard.class", 0);
+        psdAddClass("bootmouse.class", 0);
 
         D(bug("[USBROMStartup] Added chipset drivers...\n"));
 

@@ -229,7 +229,7 @@ PKG_HANDLERS  := con ram cdrom sfs fat afs
 # The PCIe bridge and its xHCI controller only exist on BCM2711; both drivers
 # find nothing on a Pi 2/3 and stay out of the way.
 PKG_HIDDS     := hiddclass inputclass gfx keyboard mouse bus storage i2c i2c-bcm2708 vcgfx fbgfx pci pcibcm2711 pcibcm2712 pcirp1
-PKG_CLASSES   := USB/hub USB/hubss USB/massstorage
+PKG_CLASSES   := USB/hub USB/hubss USB/massstorage USB/bootkeyboard USB/bootmouse
 
 %make_package mmake=kernel-package-raspi-aarch64 file=$(AROSDIR)/$(ARM_BSP) \
     libs=$(PKG_LIBS) arch_libs=$(PKG_LIBS_ARCH) res=$(PKG_RSRC) \
