@@ -389,17 +389,18 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                     HIDD_PCIDevice_GetVectorAttribs(data->ab_Dev->dev_Object, data->ab_Dev->dev_Queues[nn + 1]->cq_vector, vecAttribs);
 
                 if ((AdminIntLine == PCIIntLine) || ((vecAttribs[0].ti_Data != (IPTR)-1) && (vecAttribs[1].ti_Data != (IPTR)-1))) {
-                    UBYTE qIRQ, qVect;
+                    /* GIC INTIDs go past 255 (BCM2712 MSIs are 287 on) */
+                    IPTR qIRQ, qVect;
                     if (AdminIntLine != PCIIntLine) {
-                        qIRQ = (UBYTE)vecAttribs[0].ti_Data;
-                        qVect = (UBYTE)vecAttribs[1].ti_Data;
+                        qIRQ = vecAttribs[0].ti_Data;
+                        qVect = vecAttribs[1].ti_Data;
                     } else {
-                        qIRQ = (UBYTE)AdminIntLine;
-                        qVect = (UBYTE)AdminIntLine;
+                        qIRQ = AdminIntLine;
+                        qVect = AdminIntLine;
                     }
 
-                    D(bug ("[NVME:Bus] NVMEBus_Start:     IRQ #%u (vect:%u)\n", qIRQ, qVect);)
-                    data->ab_Dev->dev_Queues[0]->q_irq = qIRQ;
+                    D(bug ("[NVME:Bus] NVMEBus_Start:     IRQ #%u (vect:%u)\n", (unsigned)qIRQ, (unsigned)qVect);)
+                    data->ab_Dev->dev_Queues[nn + 1]->q_irq = qIRQ;
 #else
                 {
                     UBYTE qIRQ = (UBYTE)AdminIntLine, qVect = (UBYTE)AdminIntLine;
