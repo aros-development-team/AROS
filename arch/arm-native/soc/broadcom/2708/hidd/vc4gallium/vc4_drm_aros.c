@@ -1011,7 +1011,8 @@ static void cached_bo_free(struct vc4_bo_entry *be)
 }
 #endif
 
-static int ioctl_create_bo(struct vc4galliumstaticdata *sd, struct drm_vc4_create_bo *args)
+static int ioctl_create_bo(struct vc4galliumstaticdata *sd, ULONG sid,
+                           struct drm_vc4_create_bo *args)
 {
     ULONG handle;
     APTR vaddr;
@@ -1066,6 +1067,7 @@ static int ioctl_create_bo(struct vc4galliumstaticdata *sd, struct drm_vc4_creat
     sd->bo_table[handle].gpu_handle = gpu_handle;
     sd->bo_table[handle].size = args->size;
     sd->bo_table[handle].refcount = 1;
+    sd->bo_table[handle].owner = sid;
     sd->bo_table[handle].seqno = 0;
     sd->bo_table[handle].is_shader = FALSE;
     sd->bo_table[handle].cpu_mapped = FALSE;
@@ -1081,7 +1083,8 @@ static int ioctl_create_bo(struct vc4galliumstaticdata *sd, struct drm_vc4_creat
     return 0;
 }
 
-static int ioctl_create_shader_bo(struct vc4galliumstaticdata *sd, struct drm_vc4_create_shader_bo *args)
+static int ioctl_create_shader_bo(struct vc4galliumstaticdata *sd, ULONG sid,
+                                  struct drm_vc4_create_shader_bo *args)
 {
     ULONG handle;
     APTR vaddr;
@@ -1128,6 +1131,7 @@ static int ioctl_create_shader_bo(struct vc4galliumstaticdata *sd, struct drm_vc
     sd->bo_table[handle].gpu_handle = gpu_handle;
     sd->bo_table[handle].size = args->size;
     sd->bo_table[handle].refcount = 1;
+    sd->bo_table[handle].owner = sid;
     sd->bo_table[handle].seqno = 0;
     sd->bo_table[handle].is_shader = TRUE;
     sd->bo_table[handle].cpu_mapped = FALSE;
@@ -1194,6 +1198,7 @@ void vc4_aros_bo_unref_locked(struct vc4galliumstaticdata *sd, ULONG handle)
         sd->bo_table[handle].tiling_modifier = 0;
         sd->bo_table[handle].is_shader = FALSE;
         sd->bo_table[handle].external = FALSE;
+        sd->bo_table[handle].owner = 0;
         sd->bo_table[handle].cpu_mapped = FALSE;
         sd->bo_table[handle].uniforms_size = 0;
         sd->bo_table[handle].num_texture_samples = 0;
@@ -1246,6 +1251,7 @@ static int ioctl_gem_open(struct vc4galliumstaticdata *sd, struct drm_gem_open *
     sd->bo_table[handle].gpu_handle = 0;
     sd->bo_table[handle].size = sd->scanout_size;
     sd->bo_table[handle].refcount = 1;
+    sd->bo_table[handle].owner = 0;
     sd->bo_table[handle].seqno = 0;
     sd->bo_table[handle].is_shader = FALSE;
     sd->bo_table[handle].external = TRUE;
@@ -3057,7 +3063,7 @@ static int ioctl_gem_madvise(struct vc4galliumstaticdata *sd, struct drm_vc4_gem
 
 /* ---- Main ioctl dispatcher ---- */
 
-static int vc4_aros_ioctl_dispatch(struct vc4galliumstaticdata *sd,
+static int vc4_aros_ioctl_dispatch(struct vc4galliumstaticdata *sd, ULONG sid,
                                    unsigned long cmd, void *arg)
 {
     switch (cmd)
@@ -3066,10 +3072,10 @@ static int vc4_aros_ioctl_dispatch(struct vc4galliumstaticdata *sd,
         return ioctl_get_param(sd, (struct drm_vc4_get_param *)arg);
 
     case DRM_VC4_CREATE_BO:
-        return ioctl_create_bo(sd, (struct drm_vc4_create_bo *)arg);
+        return ioctl_create_bo(sd, sid, (struct drm_vc4_create_bo *)arg);
 
     case DRM_VC4_CREATE_SHADER_BO:
-        return ioctl_create_shader_bo(sd, (struct drm_vc4_create_shader_bo *)arg);
+        return ioctl_create_shader_bo(sd, sid, (struct drm_vc4_create_shader_bo *)arg);
 
     case DRM_VC4_MMAP_BO:
         return ioctl_mmap_bo(sd, (struct drm_vc4_mmap_bo *)arg);
@@ -3229,7 +3235,8 @@ int vc4_aros_ioctl(int fd, unsigned long request, void *arg)
         fp_mesa += fp_t0 - fp_last_exit;
 #endif
 
-    ret = vc4_aros_ioctl_dispatch(sd, request, arg);
+    ret = vc4_aros_ioctl_dispatch(sd, ((struct vc4_aros_fd *)(IPTR)fd)->sid,
+                                  request, arg);
 
 #if VC4G_PROFILE
     {
@@ -3285,6 +3292,38 @@ void *vc4_aros_mmap(int fd, ULONG handle)
  * GPU-locked SDRAM until reboot if the module unloads while Mesa
  * still holds resources.
  */
+void vc4_aros_release_session(struct vc4galliumstaticdata *sd, ULONG sid)
+{
+    ULONG i;
+
+    if (!sid)
+        return;
+
+    /* An async display blit may still be reading one of them. */
+    vc4_aros_dma_wait_idle(sd);
+
+    ObtainSemaphore(&sd->bo_lock);
+    /* Pins on them die with them. A live session took its plane down
+     * already; a dead one's comes down at the next present. */
+    if (sd->dma_pinned_handle && (sd->bo_table[sd->dma_pinned_handle].owner == sid))
+        sd->dma_pinned_handle = 0;
+    if (sd->overlay_pinned_handle
+        && (sd->bo_table[sd->overlay_pinned_handle].owner == sid))
+        sd->overlay_pinned_handle = 0;
+    if (sd->overlay_displaced_handle
+        && (sd->bo_table[sd->overlay_displaced_handle].owner == sid))
+        sd->overlay_displaced_handle = 0;
+    for (i = 1; i < VC4_MAX_BOS; i++)
+    {
+        if ((sd->bo_table[i].refcount > 0) && (sd->bo_table[i].owner == sid))
+        {
+            sd->bo_table[i].refcount = 1;
+            vc4_aros_bo_unref_locked(sd, i);
+        }
+    }
+    ReleaseSemaphore(&sd->bo_lock);
+}
+
 void vc4_aros_release_all_bos(struct vc4galliumstaticdata *sd)
 {
     ULONG i;
@@ -3337,6 +3376,7 @@ void vc4_aros_release_all_bos(struct vc4galliumstaticdata *sd)
             sd->bo_table[i].tiling_modifier = 0;
             sd->bo_table[i].is_shader = FALSE;
             sd->bo_table[i].external = FALSE;
+            sd->bo_table[i].owner = 0;
             sd->bo_table[i].cpu_mapped = FALSE;
         }
     }

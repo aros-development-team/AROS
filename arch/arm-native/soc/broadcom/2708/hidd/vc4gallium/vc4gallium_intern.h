@@ -18,6 +18,7 @@
 #include <devices/timer.h>
 #include <oop/oop.h>
 #include <hidd/gallium.h>
+#include <utility/hooks.h>
 
 #include LC_LIBDEFS_FILE
 
@@ -47,6 +48,19 @@ struct vc4_texture_sample_info
     ULONG   p_offset[4];   /* Offsets to P0, P1, P2, P3 in uniform stream */
 };
 
+/* One GL pipe screen. Mesa passes the fd a screen was created with to
+ * every ioctl, so a tagged fd tells the shim whose objects are whose. */
+#define VC4_MAX_SESSIONS    16
+#define VC4_SCREENFD_TAG    0x20000000
+
+struct vc4_session
+{
+    BOOL                vs_Used;
+    volatile BOOL       vs_Dead;    /* its task ended without a teardown */
+    APTR                vs_Screen;  /* struct pipe_screen * */
+    struct Task        *vs_Task;    /* the one that created it */
+};
+
 struct vc4_bo_entry
 {
     APTR    vaddr;          /* CPU virtual address (= physical on RPi) */
@@ -54,6 +68,7 @@ struct vc4_bo_entry
     ULONG   gpu_handle;     /* Mailbox memory handle for free */
     ULONG   size;
     ULONG   refcount;
+    ULONG   owner;          /* session that created it, 0 = shared (scanout) */
     ULONG   seqno;          /* Last submission that referenced this BO (0 = never) */
     BOOL    is_shader;      /* Immutable shader BO */
     BOOL    external;       /* Wraps memory we don't own (scanout page) */
@@ -269,7 +284,24 @@ struct vc4galliumstaticdata
     /* mesa3dgl's GalliumCoreAPI table (aHidd_Gallium_CoreAPI attr at New).
      * The driver's Mesa-core trampolines bind to it at CreatePipeScreen. */
     APTR                    coreapi;
+
+    /* Every GL screen in the system, id = index + 1; under bo_lock. The
+     * task hook marks a session dead when its task ends without tearing
+     * it down, and the next screen created or destroyed sweeps it. */
+    struct vc4_session      sessions[VC4_MAX_SESSIONS];
+    struct Hook             task_hook;
+    APTR                    task_res;
 };
+
+/* The session an fd stands for, 0 for none. */
+static inline ULONG vc4_fd_session(int fd)
+{
+    ULONG v = (ULONG)fd, id = v & 0xff;
+
+    if (((v & ~0xffUL) != VC4_SCREENFD_TAG) || !id || (id > VC4_MAX_SESSIONS))
+        return 0;
+    return id;
+}
 
 LIBBASETYPE
 {
@@ -309,11 +341,12 @@ LIBBASETYPE
 struct pipe_screen;
 struct RastPort;
 struct pipe_screen *vc4_aros_create_screen(struct vc4_aros_bridge *bridge,
-                                           APTR coreapi);
+                                           APTR coreapi, int fd);
 IPTR vc4_aros_display_rp(APTR resource, LONG srcx, LONG srcy,
                          struct RastPort *rp, LONG dstx, LONG dsty,
                          LONG width, LONG height);
-BOOL aros_drm_release_bridge(void);
+void aros_drm_screen_gone(APTR screen, BOOL dead);
+void aros_drm_release_bridge(void);
 
 /* Drain any in-flight display-blit DMA. Defined in vc4_galliumclass.c. */
 void vc4_aros_dma_wait_idle(struct vc4galliumstaticdata *sd);

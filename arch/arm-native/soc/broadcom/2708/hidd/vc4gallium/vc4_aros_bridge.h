@@ -56,8 +56,9 @@ struct vc4_aros_bridge
 
     /* DRM ioctl entry. request is a DRM_VC4_* command (DRM_COMMAND_BASE +
      * cmd) or plain DRM_GEM_CLOSE etc; arg is the matching drm_vc4_*
-     * struct. Returns 0 / negative errno. */
-    int    (*ioctl)(void *ctx, unsigned long request, void *arg);
+     * struct. fd is the screen's, which names its session. Returns 0 /
+     * negative errno. */
+    int    (*ioctl)(void *ctx, int fd, unsigned long request, void *arg);
 
     /* Map a BO (handle from DRM_VC4_CREATE_BO) and return a CPU pointer,
      * NULL on failure. Mapping is identity (CPU == physical) on AROS, so
