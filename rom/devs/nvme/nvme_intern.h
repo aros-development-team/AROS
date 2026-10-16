@@ -287,6 +287,7 @@ typedef void (*_NVMEQUEUE_CE_HOOK)(struct nvme_queue *, struct nvme_completion *
 struct nvme_queue {
     device_t dev;
     struct Task *q_IOTask;
+    struct Task *q_IOStopper;                       /* waits for q_IOTask to exit */
     
 #if defined(__AROSEXEC_SMP__)
     spinlock_t q_lock;
