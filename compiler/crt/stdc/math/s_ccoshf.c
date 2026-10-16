@@ -45,23 +45,46 @@ static const float huge = 0x1p127;
         float complex z)
 
     FUNCTION
-        Compute the float complex hyperbolic cosine of z.
+        Return the complex hyperbolic cosine of z.
 
     INPUTS
-        z - Complex argument.
+        z - Float complex value x + i*y, with y in radians.
 
     RESULT
-        Return the complex hyperbolic cosine. For finite z = x + i*y, the real and
-        imaginary components are coshf(x)*cosf(y) and sinhf(x)*sinf(y).
-        Infinite or NaN components follow the complex exceptional-value
-        rules, producing infinities, NaNs or signed zeros as applicable.
+        An approximation to cosh(x) * cos(y) + i*sinh(x) * sin(y)
+        in float complex.
+
+        For finite x and signed-zero y, returns cosh(x) with
+        imaginary zero x*y. For infinite x and signed-zero y,
+        returns positive infinity with a zero whose sign is the
+        product of the signs of x and y. NaN x with signed-zero
+        y returns NaN with the same zero-sign rule.
+
+        For zero x and infinite or NaN y, returns NaN with an
+        imaginary zero whose sign is the product of the input
+        signs. For finite nonzero x and infinite or NaN y, both
+        components are NaN.
+
+        For infinite x and finite nonzero y, evaluates
+        infinity*cos(y) + i*x*sin(y). For infinite x and
+        infinite or NaN y, returns positive infinity + i*NaN.
+        For NaN x and nonzero y, both components are NaN.
 
     NOTES
-        Include <complex.h>. Large finite real components can overflow.
-        Exceptional arguments can raise floating-point exceptions.
+        Include <complex.h>. Each component can overflow or
+        underflow independently. Use round-to-nearest mode for
+        trigonometric argument reduction. Floating-point
+        exceptions can occur; enabled traps may prevent return.
+
+        The function does not assign errno.
+
+    BUGS
+        Large finite real parts can reach undefined signed-shift
+        arithmetic in expf(). Results on those paths are not
+        portable.
 
     SEE ALSO
-        csinhf(), ctanhf(), cexpf()
+        csinhf(), ctanhf(), ccosf()
 
 *****************************************************************************/
 float complex
