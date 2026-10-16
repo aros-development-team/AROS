@@ -32,6 +32,53 @@ one   =  1.0000000000e+00; /* 0x3F800000 */
 
 static const float zero  =  0.0000000000e+00;
 
+/****************************************************************************
+    NAME
+        float jnf(
+
+    SYNOPSIS
+        int n, float x)
+
+    FUNCTION
+        Evaluate the Bessel function of the first kind, J_n(x),
+        for integer order n.
+
+    INPUTS
+        n - Integer order; see BUGS for unsupported extreme orders.
+        x - Real argument. Negative arguments are accepted.
+
+    RESULT
+        An approximation to J_n(x) as a float. NaN returns NaN.
+        For n = 0, either sign of zero returns 1 and either
+        infinity returns positive zero. For other supported orders,
+        zero and infinite arguments return zero, with the sign
+        determined by the parity of n and the signs of n and x.
+
+    NOTES
+        Include <math.h>. This is a BSD extension. The function
+        does not assign errno. Floating-point exceptions may occur;
+        enabled traps may prevent return.
+
+        Use round-to-nearest. The trigonometric argument reduction
+        used for large arguments assumes this rounding mode.
+        Evaluation time can grow with the magnitude of n.
+
+        For positive integer m, J_-m(x) = (-1)^m J_m(x) and
+        J_m(-x) = (-1)^m J_m(x).
+
+    BUGS
+        INT_MIN is not supported: negating this order overflows
+        signed int for non-NaN arguments. Large orders can also
+        overflow integer recurrence calculations; for example,
+        n = 1073741824 and x = 1 are unsafe with 32-bit int.
+
+        For |x| < 2^-29 and |n| > 33, the function returns zero
+        without raising underflow for the discarded result.
+
+    SEE ALSO
+        j0f(), j1f(), jn(), ynf()
+
+*****************************************************************************/
 float
 __ieee754_jnf(int n, float x)
 {
@@ -170,6 +217,57 @@ __ieee754_jnf(int n, float x)
 	if(sgn==1) return -b; else return b;
 }
 
+/****************************************************************************
+    NAME
+        float ynf(
+
+    SYNOPSIS
+        int n, float x)
+
+    FUNCTION
+        Evaluate the Bessel function of the second kind, Y_n(x),
+        for integer order n.
+
+    INPUTS
+        n - Integer order; see BUGS for unsupported extreme orders.
+        x - Positive real argument.
+
+    RESULT
+        An approximation to Y_n(x) as a float. Negative arguments,
+        including negative infinity, return NaN. NaN returns NaN.
+        Both signs of zero return negative infinity for every n,
+        subject to the negative-order defect below.
+
+        Positive infinity returns negative zero for n = -1 and
+        positive zero for other supported orders.
+
+    NOTES
+        Include <math.h>. This is a BSD extension. The function
+        does not assign errno. Floating-point exceptions may occur;
+        enabled traps may prevent return.
+
+        Use round-to-nearest. The trigonometric argument reduction
+        used for large arguments assumes this rounding mode.
+        Evaluation time can grow with the magnitude of n.
+
+        For positive integer m and finite positive x,
+        Y_-m(x) = (-1)^m Y_m(x). Zero arguments can raise
+        divide-by-zero; negative arguments can raise invalid.
+
+    BUGS
+        INT_MIN is not supported for positive arguments: negating
+        this order overflows signed int. Recurrence arithmetic
+        is not protected against overflow for very large orders.
+
+        For negative odd orders at zero, the returned negative
+        infinity disagrees with the positive-side limit, which
+        is positive infinity. The zero check bypasses the
+        negative-order sign correction.
+
+    SEE ALSO
+        y0f(), y1f(), yn(), jnf()
+
+*****************************************************************************/
 float
 __ieee754_ynf(int n, float x)
 {
