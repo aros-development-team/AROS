@@ -59,4 +59,11 @@ void netservice_stop_all(BOOL force);
  */
 void netservice_signal_external(ULONG phase);
 
+/*
+ * Give one external service its reconfigure-end signal outside a reload, for
+ * a change it has to pick up (a link that came up). Skipped during a reload,
+ * whose own end signal follows.
+ */
+void netservice_resume(CONST_STRPTR name);
+
 #endif /* API_NETSERVICE_API_H */

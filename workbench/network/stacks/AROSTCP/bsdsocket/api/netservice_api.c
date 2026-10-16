@@ -43,6 +43,7 @@
 static struct List            NetServiceList;
 static struct SignalSemaphore NetServiceLock;
 static BOOL                   NetServicesReady = FALSE;
+static BOOL                   NetServicesReconfiguring = FALSE;
 
 /* -------------------------------------------------------------------------
  * Registry lifecycle
@@ -182,6 +183,7 @@ void netservice_signal_external(ULONG phase)
     D(bug("[netservices] signal_external(phase=%ld)\n", (long)phase));
 
     ObtainSemaphoreShared(&NetServiceLock);
+    NetServicesReconfiguring = (phase == NSPHASE_BEGIN);
     if(phase == NSPHASE_END) {
         /* bring-up order: head->tail */
         for(node = NetServiceList.lh_Head; node->ln_Succ; node = node->ln_Succ) {
@@ -203,6 +205,22 @@ void netservice_signal_external(ULONG phase)
                 Signal(svc->ns_Task, sig);
         }
     }
+    ReleaseSemaphore(&NetServiceLock);
+}
+
+void netservice_resume(CONST_STRPTR name)
+{
+    struct NetService *svc;
+
+    if(!NetServicesReady)
+        return;
+
+    /* the node is the daemon's: only touch it under the lock */
+    ObtainSemaphoreShared(&NetServiceLock);
+    svc = (struct NetService *)FindName(&NetServiceList, name);
+    if(!NetServicesReconfiguring && svc != NULL &&
+            (svc->ns_Flags & NSF_EXTERNAL) && svc->ns_Task && svc->ns_SigEnd)
+        Signal(svc->ns_Task, svc->ns_SigEnd);
     ReleaseSemaphore(&NetServiceLock);
 }
 
