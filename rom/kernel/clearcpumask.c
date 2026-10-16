@@ -23,11 +23,13 @@
         struct KernelBase *, KernelBase, 44, Kernel)
 
 /*  FUNCTION
-        Clear the affinity mask for (re)use.
+        Clear all CPU selections in an affinity mask.
 
     INPUTS
+        mask - CPU affinity mask allocated by KrnAllocCPUMask().
 
     RESULT
+        None.
 
     NOTES
 
@@ -36,7 +38,8 @@
     BUGS
 
     SEE ALSO
-        KrnGetCPUNumber(), KrnAllocCPUMask(), KrnGetCPUMask(), KrnCPUInMask()
+        KrnGetCPUNumber(), KrnAllocCPUMask(), KrnFreeCPUMask(),
+        KrnGetCPUMask(), KrnCPUInMask()
 
     INTERNALS
 
