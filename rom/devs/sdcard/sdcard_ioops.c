@@ -114,13 +114,12 @@ BOOL __used sdcard_WaitBusyTO(struct sdcard_Unit *unit, UWORD tout, BOOL irq, UB
 /*
  * Maximum number of sectors per SD transfer chunk.
  * Smaller values give USB more bus time (less mouse jitter)
- * but increase per-transfer overhead.  32 sectors = 16KB: sdhost (Pi 1-3)
- * reports FIFO errors on far longer reads, and its lite DMA engine's 16-bit
- * length cannot express 64 KB at all.
+ * but increase per-transfer overhead.  127 sectors is as far as sdhost
+ * (Pi 1-3) goes: its lite DMA engine's 16-bit length cannot express 64 KB.
  * DMA leaves the CPU free, so there the card gets 512 KB at a time, which
  * it writes several times faster than small pieces.
  */
-#define SD_CHUNK_BLOCKS 32
+#define SD_CHUNK_BLOCKS 127
 #define SD_CHUNK_BLOCKS_DMA 1024
 #define SD_CHUNK(bus) (((bus)->sdcb_BusFlags & AF_Bus_DMA) ? SD_CHUNK_BLOCKS_DMA : SD_CHUNK_BLOCKS)
 
