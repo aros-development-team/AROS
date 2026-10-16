@@ -286,22 +286,24 @@ LONG availablespace(BLCK block,ULONG maxneeded,ULONG *returned_blocks) {
 
 
 
-LONG allocatedspace(BLCK block,ULONG maxneeded) {
+LONG allocatedspace(BLCK block,ULONG maxneeded,ULONG *returned_blocks) {
   struct CacheBuffer *cb;
   struct fsBitmap *b;
   ULONG longs=globals->blocks_inbitmap>>5;
   ULONG maxbitmapblock=globals->block_bitmapbase+globals->blocks_bitmap;
-  LONG blocksfound=0;
+  ULONG blocksfound=0;
   ULONG bitstart;
   LONG bitend;
   LONG errorcode=0;
   BLCK nextblock=globals->block_bitmapbase+block/globals->blocks_inbitmap;
 
-  /* Determines the amount of free blocks starting from block /block/.
-     If there are no blocks found or if there was an error -1 is returned,
-     otherwise this function will count the number of free blocks until
-     an allocated block is encountered or until maxneeded has been
-     exceeded. */
+  /* Count allocated blocks from /block/.  Return zero on success and
+     store the count in /returned_blocks/, or return the bitmap read error.
+     A free starting block is a successful result with count zero.
+     The count may exceed /maxneeded/; scanning stops at a free block
+     or once enough allocated blocks have been found.  On error the count is zero. */
+
+  *returned_blocks=0;
 
   bitstart=block % globals->blocks_inbitmap;
 
@@ -310,22 +312,25 @@ LONG allocatedspace(BLCK block,ULONG maxneeded) {
 
     if((bitend=bmffo(b->bitmap,longs,bitstart))<((LONG)(32*longs))) {
       blocksfound+=bitend-bitstart;
-      return(blocksfound);
+      *returned_blocks=blocksfound;
+      return(0);
     }
 
     blocksfound+=globals->blocks_inbitmap-bitstart;
     if((ULONG)blocksfound>=maxneeded) {
-      return(blocksfound);
+      *returned_blocks=blocksfound;
+      return(0);
     }
 
     bitstart=0;
   }
 
   if(errorcode!=0) {
-    return(-1);
+    return(errorcode);
   }
 
-  return(blocksfound);
+  *returned_blocks=blocksfound;
+  return(0);
 }
 
 
@@ -542,8 +547,7 @@ LONG findandmarkspace(ULONG blocksneeded, BLCK *returned_block) {
 
 
 LONG smartfindandmarkspace(BLCK startblock,ULONG blocksneeded) {
-  ULONG freeblocks;
-  LONG allocblocks;
+  ULONG freeblocks,allocblocks;
   BLCK block=startblock;
   ULONG blocksfound=0;
   UWORD entry=0;
@@ -609,14 +613,12 @@ LONG smartfindandmarkspace(BLCK startblock,ULONG blocksneeded) {
         block=0;
       }
 
-      allocblocks=allocatedspace(block,globals->blocks_inbitmap*2);
+      if((errorcode=allocatedspace(block,globals->blocks_inbitmap*2,&allocblocks))!=0) {
+        return(errorcode);
+      }
       _XDEBUG(DEBUG_BITMAP,"sfams: allocatedspace returned %ld for block %ld while we needed %ld blocks\n",allocblocks,block,globals->blocks_inbitmap*2);
 
-      if(allocblocks<0) {
-        _DEBUG("sfams: disk full 1\n");
-        return(ERROR_DISK_FULL);
-      }
-      else if(block<startblock && block+allocblocks>=startblock) {
+      if(block<startblock && block+allocblocks>=startblock) {
         break;
       }
 
