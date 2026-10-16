@@ -32,6 +32,8 @@
 #include <utility/tagitem.h>
 
 #include <string.h>
+#include <libraries/security.h>
+#include <proto/security.h>
 
 #define DEBUG_ASSIGN(x)
 
@@ -41,12 +43,12 @@
     NAME
  
         Assign [(name):] [{(target)}] [LIST] [EXISTS] [DISMOUNT] [DEFER]
-               [PATH] [ADD] [PREPEND] [REMOVE] [VOLS] [DIRS] [DEVICES]
+               [PATH] [ADD] [PREPEND] [REMOVE] [VOLS] [DIRS] [DEVICES] [USER]
  
     SYNOPSIS
  
         NAME, TARGET/M, LIST/S, EXISTS/S, DISMOUNT/S, DEFER/S, PATH/S, ADD/S,
-        PREPEND/S, REMOVE/S, VOLS/S, DIRS/S, DEVICES/S
+        PREPEND/S, REMOVE/S, VOLS/S, DIRS/S, DEVICES/S, USER/S
  
     LOCATION
  
@@ -89,6 +91,13 @@
         VOLS      --  show assigned volumes if in LIST mode
         DIRS      --  show assigned directories if in LIST mode
         DEVICES   --  show assigned devices if in LIST mode
+        USER      --  (multi-user systems only) a per-user assign: like
+                      PATH, and the target may hold %u (the user ID), %h
+                      (the home directory), %g (the primary group ID) and
+                      %% (a '%'), which are expanded for the owner of the
+                      task that uses the assign, each time. Its last
+                      directory is created on first use, belonging to that
+                      user. Example: Assign T: RAM:T/%u USER
  
  
     RESULT
@@ -132,9 +141,9 @@ struct UtilityBase *UtilityBase;
 #define AROS_ASMSYMNAME(s) (&s)
 
 static const int __abox__ = 1;
-static const char version[] = "\0$VER: Assign unofficial 50.15 (05.10.2026) " ISOASCII_COPYRIGHT " The AROS Dev Team" ;
+static const char version[] = "\0$VER: Assign unofficial 50.16 (16.10.2026) " ISOASCII_COPYRIGHT " The AROS Dev Team" ;
 #else
-static const char version[] __attribute__((used)) = "\0$VER: Assign 50.15 (05.10.2026) " ISOASCII_COPYRIGHT " The AROS Dev Team" ;
+static const char version[] __attribute__((used)) = "\0$VER: Assign 50.16 (16.10.2026) " ISOASCII_COPYRIGHT " The AROS Dev Team" ;
 #endif
 
 struct localdata
@@ -187,7 +196,8 @@ const UBYTE argtemplate[] =
 "REMOVE/S,"
 "VOLS/S,"
 "DIRS/S,"
-"DEVICES/S";
+"DEVICES/S,"
+"USER/S";
 
 static const char exthelp[] =
 	"Assign : List, or control the assignment of logical device names to filesystem directories\n"
@@ -209,7 +219,23 @@ struct ArgList
     IPTR vols;
     IPTR dirs;
     IPTR devices;
+    IPTR user;
 };
+
+/* USER: per-user assigns exist only on a multi-user system (security.library
+ * 45.16, configured) - nowhere else does dos.library expand them */
+static BOOL MultiUser(struct localdata *ld)
+{
+    struct Library *secBase;
+    BOOL multi = FALSE;
+
+    if (FindResident(SECURITYNAME) && (secBase = OpenLibrary(SECURITYNAME, 45)))
+    {
+        multi = (secBase->lib_Version > 45 || secBase->lib_Revision >= 16) && secIsConfigured();
+        CloseLibrary(secBase);
+    }
+    return multi;
+}
 
 __startup AROS_PROCH(Start, argstr, argsize, sBase)
 {
@@ -247,14 +273,30 @@ static int Main(struct ExecBase *sBase)
 
                             /* Verify mutually exclusive args
                              */
-                            if ((MyArgList->add!=0) + (MyArgList->prepend!=0) + (MyArgList->remove!=0) + (MyArgList->path!=0) + (MyArgList->defer!=0) > 1)
+                            if ((MyArgList->add!=0) + (MyArgList->prepend!=0) + (MyArgList->remove!=0) + ((MyArgList->path || MyArgList->user)!=0) + (MyArgList->defer!=0) > 1)
                             {
-                                    PutStr("Only one of ADD/APPEND, PREPEND, REMOVE, PATH or DEFER is allowed\n");
+                                    PutStr("Only one of ADD/APPEND, PREPEND, REMOVE, PATH/USER or DEFER is allowed\n");
                                     FreeArgs(readarg);
                                     if (rd)
                                         FreeDosObject(DOS_RDARGS, rd);
                                     CloseLibrary((struct Library *) DOSBase);
                                     return RETURN_FAIL;
+                            }
+
+                            /* A per-user assign is a non-binding one that
+                             * dos.library expands - on multi-user systems */
+                            if (MyArgList->user)
+                            {
+                                    if (!MultiUser(ld))
+                                    {
+                                            PutStr("Assign: USER needs a multi-user system (security.library)\n");
+                                            FreeArgs(readarg);
+                                            if (rd)
+                                                FreeDosObject(DOS_RDARGS, rd);
+                                            CloseLibrary((struct Library *) DOSBase);
+                                            return RETURN_FAIL;
+                                    }
+                                    MyArgList->path = TRUE;
                             }
 
                             /* Check device name

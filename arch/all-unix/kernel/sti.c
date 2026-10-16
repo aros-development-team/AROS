@@ -19,7 +19,7 @@ AROS_LH0(void, KrnSti,
     {
         if (KernelBase->kb_PlatformData->iface)
         {
-            KernelBase->kb_PlatformData->iface->sigprocmask(SIG_UNBLOCK, &KernelBase->kb_PlatformData->sig_int_mask, NULL);
+            KernelBase->kb_PlatformData->iface->KRN_SIGMASK(SIG_UNBLOCK, &KernelBase->kb_PlatformData->sig_int_mask, NULL);
             AROS_HOST_BARRIER
         }
     }

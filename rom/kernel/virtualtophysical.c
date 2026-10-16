@@ -23,10 +23,14 @@
         struct KernelBase *, KernelBase, 20, Kernel)
 
 /*  FUNCTION
+        Translate a virtual address to a physical address.
 
     INPUTS
+        virtual - Virtual address to translate.
 
     RESULT
+        Translated address, or the original address when the target's
+        translation rules leave it unchanged.
 
     NOTES
 

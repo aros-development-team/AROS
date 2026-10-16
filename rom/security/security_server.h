@@ -56,6 +56,12 @@ struct secUARequest
     CONST_STRPTR    HomeDir;
     CONST_STRPTR    Shell;
     CONST_STRPTR    Password;       /* ADD, PASSWORD: clear text, "" = none      */
+    CONST_STRPTR    GroupID;        /* GROUP#?: the group (GROUPADD: the new one)*/
+    CONST_STRPTR    NewGroupID;     /* GROUPMODIFY: rename, or NULL              */
+    CONST_STRPTR    GroupName;      /* NULL = unchanged                          */
+    LONG            MgrUid;         /* -1 = unchanged / root for a new group     */
+    BOOL            HasMembers;     /* Members given (NULL = none)               */
+    CONST_STRPTR   *Members;        /* NULL-terminated user IDs                  */
 };
 
 extern ULONG UserAdmin(struct SecurityBase *secBase, struct Task *client, struct secUARequest *req);

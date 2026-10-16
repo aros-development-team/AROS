@@ -13,8 +13,15 @@ If NOT EXISTS "RAM:ENV"
     Assign "ENV:" "RAM:ENV"
 EndIf
 
-Assign "T:"       "RAM:T"
-Assign "CLIPS:"   "RAM:Clipboards"
+; Multi-user: S:Security-Startup has made T: and CLIPS: per-user assigns
+Assign >NIL: "T:" EXISTS
+If WARN
+    Assign "T:"       "RAM:T"
+EndIf
+Assign >NIL: "CLIPS:" EXISTS
+If WARN
+    Assign "CLIPS:"   "RAM:Clipboards"
+EndIf
 
 Assign "KEYMAPS:" "DEVS:Keymaps"
 Assign "LOCALE:"  "SYS:Locale"

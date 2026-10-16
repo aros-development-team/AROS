@@ -25,24 +25,23 @@
         LIBBASETYPEPTR, LIBBASE, 7, FELSunxi)
 
 /*  FUNCTION
+        Dispatch a USB class method to the FELSunxi device-binding handler.
 
     INPUTS
+        methodid   - USB class method identifier.
+        methoddata - Method arguments. The supported device-binding methods
+                     take the device or binding pointer in methoddata[0].
 
     RESULT
+        UCM_AttemptDeviceBinding and UCM_ForceDeviceBinding return the
+        corresponding binding result. UCM_ReleaseDeviceBinding returns TRUE
+        after releasing the binding. Other method identifiers return 0.
 
     NOTES
+        The interface-binding, configuration-window, and configuration-change
+        methods have no implementation in this class.
 
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-    HISTORY
-
-*****************************************************************************/
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
