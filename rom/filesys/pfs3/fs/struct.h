@@ -643,6 +643,15 @@ typedef struct globaldata globaldata;
 #define PFS3_MASKFAIL(p)   ((sizeof(IPTR) > 4) ? 0 : (((IPTR)(p)) & ~g->dosenvec->de_Mask))
 #define secBase       g->g_muBase
 
+#if MULTIUSER
+/* Users only exist once security.library runs and has users set up */
+#define IsMultiUser()  (g->muFS_ready && secIsConfigured())
+#define IsPrivileged() (!IsMultiUser() || (g->user && g->user->uid == muROOT_UID))
+/* On a single-user system the caller owns every object */
+#define muRelationship(uid, gid) (IsMultiUser() ? \
+	muGetRelationshipA(g->user, ((uid) << 16) + (gid), NULL) : muRelF_UID_MATCH)
+#endif
+
 /*****************************************************************************/
 /* defined function macros                                                   */
 /*****************************************************************************/

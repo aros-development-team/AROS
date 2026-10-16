@@ -546,7 +546,7 @@ static void Quit (globaldata *g)
 	UpdateDisk (g);
 
 #if MULTIUSER
-	if (g->user->uid != muROOT_UID)
+	if (!IsPrivileged())
 		return;
 #endif
 

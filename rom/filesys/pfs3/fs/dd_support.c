@@ -78,18 +78,13 @@ do {                                                                   \
 } while (0)
 
 #define muGetRelationship(extrafields)                              \
-	((g->muFS_ready) ?                                              \
-	(muGetRelationshipA (g->user, ((extrafields).uid << 16) + (extrafields).gid, NULL)) :   \
-	((((extrafields).uid == muNOBODY_UID) << muRelB_NO_OWNER) | muRelF_NOBODY))
+	muRelationship((extrafields).uid, (extrafields).gid)
 
 #if DELDIR
 #define CheckPropertyAccess(objectfi,extrafields,flags, error)      \
 do {                                                                   \
 	GetExtraFieldsOI (&(objectfi), &(extrafields), g);                  \
-	if (g->muFS_ready)                                              \
-		flags = muGetRelationshipA (g->user, ((extrafields).uid << 16) + (extrafields).gid, NULL);  \
-	else                                                                                        \
-		flags = (((extrafields).uid == muNOBODY_UID) << muRelB_NO_OWNER) | muRelF_NOBODY;         \
+	flags = muGetRelationship(extrafields);                         \
 																	\
 	if (!(flags & muRel_PROPERTY_ACCESS))                           \
 	{                                                               \
@@ -101,10 +96,7 @@ do {                                                                   \
 #define CheckPropertyAccess(objectfi,extrafields,flags, error)      \
 do {                                                                   \
 	GetExtraFields ((objectfi).file.direntry, &(extrafields));          \
-	if (g->muFS_ready)                                              \
-		flags = muGetRelationshipA (g->user, ((extrafields).uid << 16) + (extrafields).gid, NULL);  \
-	else                                                                                        \
-		flags = (((extrafields).uid == muNOBODY_UID) << muRelB_NO_OWNER) | muRelF_NOBODY;         \
+	flags = muGetRelationship(extrafields);                         \
 																	\
 	if (!(flags & muRel_PROPERTY_ACCESS))                           \
 	{                                                               \
