@@ -24,13 +24,14 @@
         struct KernelBase *, KernelBase, 45, Kernel)
 
 /*  FUNCTION
-        Set the CPU number's bit in the mask.
+        Add a CPU to an affinity mask.
 
     INPUTS
-        CPU number (as returned by KrnGetCPUNumber())
-        Affinity Mask (as returned by KrnAllocCPUMask())
+        id   - CPU number to select.
+        mask - CPU affinity mask allocated by KrnAllocCPUMask().
 
     RESULT
+        None.
 
     NOTES
 
