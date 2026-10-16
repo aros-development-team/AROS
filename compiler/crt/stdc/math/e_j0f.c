@@ -45,6 +45,39 @@ S04  =  1.1661400734e-09; /* 0x30a045e8 */
 
 static const float zero = 0.0;
 
+/****************************************************************************
+    NAME
+        float j0f(
+
+    SYNOPSIS
+        float x)
+
+    FUNCTION
+        Evaluate the Bessel function of the first kind,
+        J_0(x), of order zero.
+
+    INPUTS
+        x - Real argument. Negative arguments are accepted.
+
+    RESULT
+        An approximation to J_0(x) as a float. Both signs of zero
+        return 1. Both infinities return positive zero. NaN returns
+        NaN.
+
+    NOTES
+        Include <math.h>. This is a BSD extension. The function
+        does not assign errno. Floating-point exceptions may occur;
+        enabled traps may prevent return.
+
+        Use round-to-nearest. The trigonometric argument reduction
+        used for large arguments assumes this rounding mode.
+
+        J_0 is even: J_0(-x) = J_0(x).
+
+    SEE ALSO
+        j1f(), jnf(), y0f()
+
+*****************************************************************************/
 float
 __ieee754_j0f(float x)
 {
@@ -106,6 +139,41 @@ v02  =  7.6006865129e-05, /* 0x389f65e0 */
 v03  =  2.5915085189e-07, /* 0x348b216c */
 v04  =  4.4111031494e-10; /* 0x2ff280c2 */
 
+/****************************************************************************
+    NAME
+        float y0f(
+
+    SYNOPSIS
+        float x)
+
+    FUNCTION
+        Evaluate the Bessel function of the second kind,
+        Y_0(x), of order zero.
+
+    INPUTS
+        x - Positive real argument.
+
+    RESULT
+        An approximation to Y_0(x) as a float. Both signs of zero
+        return negative infinity. Negative values, including
+        negative infinity, return NaN. Positive infinity returns
+        positive zero. NaN returns NaN.
+
+    NOTES
+        Include <math.h>. This is a BSD extension. The function
+        does not assign errno. Floating-point exceptions may occur;
+        enabled traps may prevent return.
+
+        Use round-to-nearest. The trigonometric argument reduction
+        used for large arguments assumes this rounding mode.
+
+        Zero arguments can raise divide-by-zero; negative
+        arguments can raise invalid.
+
+    SEE ALSO
+        y1f(), ynf(), j0f()
+
+*****************************************************************************/
 float
 __ieee754_y0f(float x)
 {
@@ -230,6 +298,10 @@ static const float pS2[5] = {
   1.4657617569e+01, /* 0x416a859a */
 };
 
+/* Return the P_0(x) correction used by j0f() and y0f()
+ * in their large-argument approximations. Requires finite 2 <= x <= 2^49.
+ * Selects a rational approximation by x; does not validate the input.
+ */
 	static float pzerof(float x)
 {
 	const float *p,*q;
@@ -325,6 +397,10 @@ static const float qS2[6] = {
  -5.3109550476e+00, /* 0xc0a9f358 */
 };
 
+/* Return the Q_0(x) correction used by j0f() and y0f()
+ * in their large-argument approximations. Requires finite 2 <= x <= 2^49.
+ * Selects a rational approximation by x; does not validate the input.
+ */
 	static float qzerof(float x)
 {
 	const float *p,*q;
