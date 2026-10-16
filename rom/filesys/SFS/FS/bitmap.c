@@ -63,21 +63,22 @@ LONG setfreeblocks(ULONG freeblocks) {
 
 
 
-static BOOL enoughspace(ULONG blocks) {
+static LONG checkspace(ULONG blocks) {
   ULONG blocksfree;
   ULONG reserved;
+  LONG errorcode;
 
-  if(getfreeblocks(&blocksfree)!=0) {
-    return(FALSE);
+  if((errorcode=getfreeblocks(&blocksfree))!=0) {
+    return(errorcode);
   }
 
   reserved=transactionspace();
   if(reserved>blocksfree || blocks>blocksfree-reserved ||
      blocksfree-reserved-blocks<ALWAYSFREE) {
-    return(FALSE);
+    return(ERROR_DISK_FULL);
   }
 
-  return(TRUE);
+  return(0);
 }
 
 
@@ -529,16 +530,13 @@ LONG findandmarkspace(ULONG blocksneeded, BLCK *returned_block) {
 
   // This function is currently only used by AdminSpace allocation. */
 
-  if(enoughspace(blocksneeded)!=FALSE) {
+  if((errorcode=checkspace(blocksneeded))==0) {
 
 //  if((errorcode=findspace(blocksneeded, block_rovingblockptr, block_rovingblockptr, returned_block))==0)
 
     if((errorcode=findspace(blocksneeded, 0, globals->blocks_total, returned_block))==0) {
       errorcode=markspace(*returned_block,blocksneeded);
     }
-  }
-  else {
-    errorcode=ERROR_DISK_FULL;
   }
 
   return(errorcode);
@@ -574,7 +572,7 @@ LONG smartfindandmarkspace(BLCK startblock,ULONG blocksneeded) {
         half the bitmap has been scanned, then return immediately.
      d) Otherwise scan the bitmap completely (expensive!). */
 
-  if(enoughspace(blocksneeded)!=FALSE) {
+  if((errorcode=checkspace(blocksneeded))==0) {
 
     while(entry<SPACELIST_MAX) {
       if((errorcode=availablespace(block,blocksneeded,&freeblocks))!=0) {
@@ -691,8 +689,7 @@ LONG smartfindandmarkspace(BLCK startblock,ULONG blocksneeded) {
     }
   }
   else {
-    _DEBUG("sfams: disk full 3\n");
-    return(ERROR_DISK_FULL);
+    return(errorcode);
   }
 
   return(0);
