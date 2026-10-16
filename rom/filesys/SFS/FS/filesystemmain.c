@@ -5742,6 +5742,10 @@ static LONG fillgap(BLCK key) {
                 key += blocks;
             } else {
                 unlockcachebuffer(cb);
+                if(free < 0) {
+                    errorcode = -1;
+                }
+                break;
             }
         }
     }
