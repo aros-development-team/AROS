@@ -5657,8 +5657,12 @@ LONG moveextent(struct fsExtentBNode *ebn, BLCK dest, UWORD blocks) {
         BLCK next = BE2L(ebn->be_next);
         BLCK prev = BE2L(ebn->be_prev);
         UWORD blocksinextent = BE2W(ebn->be_blocks);
+        LONG available = availablespace(dest, blocks);
 
-        if((errorcode = copy(key, dest, blocks, buf)) == 0) {   // This functions knows that OPTBUFSIZE is the size of the buffer!
+        /* Check before copying: transaction rollback cannot undo data writes. */
+        if(available < 0 || (ULONG)available < blocks) {
+            errorcode = -1;
+        } else if((errorcode = copy(key, dest, blocks, buf)) == 0) {   // This functions knows that OPTBUFSIZE is the size of the buffer!
 
             /* Data has been physically moved -- nothing has been
                permanently altered yet. */
