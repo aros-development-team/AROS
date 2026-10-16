@@ -42,7 +42,8 @@ PUBLICFUNCS := \
 	secVerifyUserA \
 	secQueryUserA \
 	secAuthControlA \
-	secUserAdminA
+	secUserAdminA \
+	secExpandPathA
 
 CRTPUBLICFUNCS := \
 	secgetgid \

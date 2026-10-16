@@ -41,6 +41,52 @@ __FBSDID("$FreeBSD: src/lib/msun/src/s_fmaf.c,v 1.3 2011/10/15 04:16:58 das Exp 
  * direct double-precision arithmetic suffices, except where double
  * rounding occurs.
  */
+/****************************************************************************
+    NAME
+        float fmaf(
+
+    SYNOPSIS
+        float x, float y, float z)
+
+    FUNCTION
+        Multiply x by y and add z without rounding the product
+        to float first.
+
+    INPUTS
+        x - First factor.
+        y - Second factor.
+        z - Value to add to the product.
+
+    RESULT
+        The value of x*y + z as a float, subject to the rounding
+        limitations below.
+
+        A zero multiplied by infinity, or an infinite product
+        added to an infinity of the opposite sign, produces NaN.
+        NaN operands produce NaN.
+
+    NOTES
+        Include <math.h>. The calculation uses the current
+        rounding mode. A correction in round-to-nearest mode
+        temporarily selects round-toward-zero, then requests
+        round-to-nearest again before returning.
+
+        The function does not assign errno. Floating-point
+        exceptions can occur; enabled traps may prevent return.
+
+    BUGS
+        Correct rounding requires working floating-point
+        environment support and compiler support for dynamic
+        rounding. Failed rounding-mode changes are not reported.
+
+        On m68k and AArch64, fegetround() returns -1, so the
+        correction for double rounding is skipped. Some results
+        can differ from a single correctly rounded operation.
+
+    SEE ALSO
+        fma(), fmal(), fegetround(), fesetround()
+
+*****************************************************************************/
 float
 fmaf(float x, float y, float z)
 {

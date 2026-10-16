@@ -103,7 +103,8 @@ LONG bmflo(ULONG *bitmap, LONG bitoffset)
 
     bitoffset = bitoffset & 0x1F;
 
-    if (bitoffset != 0) {
+    /* Only offset 31 includes the whole word when scanning backwards. */
+    if (bitoffset != 31) {
         if ((bit = bfflo(AROS_BE2LONG(*scan), bitoffset)) >= 0) {
             return (bit + ((scan - bitmap) << 5));
         }
@@ -133,7 +134,8 @@ LONG bmflz(ULONG *bitmap, LONG bitoffset)
 
     bitoffset = bitoffset & 0x1F;
 
-    if (bitoffset != 0) {
+    /* Only offset 31 includes the whole word when scanning backwards. */
+    if (bitoffset != 31) {
         if ((bit = bfflz(AROS_BE2LONG(*scan), bitoffset)) >= 0) {
             return (bit + ((scan - bitmap) << 5));
         }

@@ -1,7 +1,0 @@
-# Copyright (C) 2026, The AROS Development Team. All rights reserved.
-
-include $(SRCDIR)/config/aros.cfg
-
-# Translations (*.ct) are picked up when they are added
-%build_catalogs mmake=workbench-system-accounts-catalogs \
-    name=Accounts subdir=System/System
