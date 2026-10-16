@@ -16,29 +16,28 @@
         C:
 
     FUNCTION
-        Logs a user into the system. Without USERID the user is asked for a
-        user id and password on the console (or in a requester with
-        GRAPHICAL). The shell running Login becomes owned by the user; all
-        commands started from it inherit that owner.
+        Authenticates a user and establishes that user's security identity
+        for the current task. Without USERID, prompts for login credentials.
 
     INPUTS
-        USERID    -- the user to log in as; asked for if omitted.
-        PASSWORD  -- the password (only useful in scripts, requires USERID).
-        GLOBAL    -- also apply the login to all tasks started from this
-                     shell.
-        PARENT    -- also apply the login to the parent process of this
-                     shell. S:Security-Startup uses this so that the
-                     Startup-Sequence, which the boot process runs afterwards,
-                     inherits the login.
-        GRAPHICAL -- use a requester instead of the console.
-        QUIET     -- do not print who you are after logging in.
+        USERID    -- User name. If omitted, prompt for credentials.
+        PASSWORD  -- Password supplied with USERID.
+        GLOBAL    -- Also apply the login to descendant tasks.
+        PARENT    -- Apply the authenticated identity to the parent task.
+        GRAPHICAL -- Request a graphical login prompt.
+        QUIET     -- Suppress the login confirmation.
+        SYSTEM    -- At a graphical login prompt, offer Shutdown and Reboot
+                     instead of Cancel.
 
     RESULT
-        Standard DOS return codes; RETURN_WARN if the login failed.
+        RETURN_OK if authentication and the requested parent login succeed.
+        RETURN_WARN if authentication or the parent login fails.
+        RETURN_FAIL if the security library is unavailable or arguments
+        cannot be parsed.
 
     NOTES
-        On a system without a password file (SYS:Security/passwd) the login
-        always succeeds as root.
+        If no user database is configured, all login attempts succeed as
+        root without password authentication.
 
     SEE ALSO
         Logout, Passwd, Who

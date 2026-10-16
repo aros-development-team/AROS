@@ -36,9 +36,7 @@
                    the currently active resolver, no action is taken.
 
     RESULT
-        Returns non-zero (TRUE) if the resolver was successfully unregistered,
-        or zero (FALSE) if no resolver was active or the supplied resolver did
-        not match the currently registered one.
+        0 if resolver matches the stored callback; -1 otherwise.
 
     NOTES
         The resolver is typically implemented by debug.library and used by the
@@ -48,7 +46,7 @@
         resolver itself, or from kernel exception context.
 
     EXAMPLE
-        if (KrnUnregisterSymResolver(old_resolver))
+        if (old_resolver && KrnUnregisterSymResolver(old_resolver) == 0)
             KrnBug("Symbol resolver removed.\n");
 
     BUGS

@@ -16,17 +16,27 @@
         C:
 
     FUNCTION
-        Changes the owner (and group) of a file or directory. The user and
-        group may be given by name or by number. Only root or the current
-        owner may change the owner; only root may give an object to
-        somebody else.
+        Changes the user and group ownership of a file or directory.
+        Both a valid user ID and a valid group ID are required.
 
     INPUTS
-        FILE  -- the file or directory.
-        USER  -- the new owner's user id (name).
-        GROUP -- the new group id (name); defaults to the user's primary group.
-        UID   -- the new owner's uid (number).
-        GID   -- the new gid (number).
+        FILE  -- File or directory to modify.
+        USER  -- New owner by user name.
+        GROUP -- New group by group name.
+        UID   -- Numeric user ID, from 0 through 65535.
+        GID   -- Numeric group ID, from 0 through 65535.
+
+    NOTES
+        When USER is supplied without GROUP or GID, the user's primary
+        group is selected. When UID is supplied without USER, provide
+        GROUP or GID explicitly. A successful name lookup takes precedence
+        over a numeric ID for the same field.
+
+    RESULT
+        RETURN_OK if ownership is changed.
+        RETURN_ERROR if the ownership operation is rejected.
+        RETURN_FAIL if input is invalid, the security library is unavailable,
+        or arguments cannot be parsed.
 
     SEE ALSO
         Protect, Who

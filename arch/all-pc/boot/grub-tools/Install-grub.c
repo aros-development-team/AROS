@@ -18,7 +18,8 @@
 
     FUNCTION
 
-        Installs the GRUB bootloader to the bootblock of the specified disk.
+        Installs the GRUB bootloader to the boot block of the specified disk
+        or partition.
 
     INPUTS
 

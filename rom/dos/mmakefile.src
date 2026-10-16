@@ -72,12 +72,13 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
 	     vprintf waitforchar waitpkt write writechars runhandler
 
 #MM kernel-dos-linklib : workbench-libs-dos-catalogs
-#MM kernel-dos-kobj : workbench-libs-dos-catalogs
-#MM kernel-dos : workbench-libs-dos-catalogs
+# dos.library calls security.library (setuid executables, per-user assigns):
+# its objects need security.library's current includes
+#MM kernel-dos-kobj : workbench-libs-dos-catalogs kernel-security-includes
+#MM kernel-dos : workbench-libs-dos-catalogs kernel-security-includes
 
 #MM kernel-dos-includes : \
 #MM     kernel-utility-includes \
-#MM     kernel-security-includes \
 #MM     kernel-exec-includes \
 #MM     kernel-timer-includes \
 #MM     kernel-intuition-includes \
