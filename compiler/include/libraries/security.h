@@ -202,6 +202,8 @@ struct secGroupInfo
 #define secT_GroupMgr           (TAG_USER+42)   /* (ULONG) uid of the group's manager (default root)               */
 #define secT_GroupMembers       (TAG_USER+43)   /* (STRPTR *) NULL-terminated user IDs: the group's members        */
                                                 /* (besides those whose primary group it is); replaces the list     */
+/* secExpandPathA() */
+#define secT_BufferSize         (TAG_USER+44)   /* (ULONG) size of the buffer that receives the path               */
 
 /* secUserAdminA() operations */
 #define secUA_ADD               (1)             /* new user: secT_UserID, secT_UID, secT_GID [, others]            */
@@ -478,7 +480,7 @@ struct secPointers
 /* The current S:Security-Startup that AMUInit installs; security.library
  * logs a hint at start-up when the installed one is older */
 #define secSTARTUP_VERSION      (45)
-#define secSTARTUP_REVISION     (10)
+#define secSTARTUP_REVISION     (11)
 
 /*==========================================================================*/
 /*                      FileSystem Authors' API                             */

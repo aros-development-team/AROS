@@ -90,7 +90,7 @@
 
 struct Library *secBase;
 
-const TEXT version[] = "$VER: AMUInit 45.6 (15.10.2026)";
+const TEXT version[] = "$VER: AMUInit 45.7 (16.10.2026)";
 
 #define TEMPLATE "ENABLE/S,DISABLE/S,UPGRADE/S,VOLUME/A,FORCE/S"
 enum { ARG_ENABLE, ARG_DISABLE, ARG_UPGRADE, ARG_VOLUME, ARG_FORCE, ARG_COUNT };
@@ -104,7 +104,7 @@ enum { ARG_ENABLE, ARG_DISABLE, ARG_UPGRADE, ARG_VOLUME, ARG_FORCE, ARG_COUNT };
 #define STARTUP_OFF     "S/Security-Startup.disabled"
 
 static const char StartupScript[] =
-    "; $VER: Security-Startup 45.10 (15.10.2026)\n"
+    "; $VER: Security-Startup 45.11 (16.10.2026)\n"
     ";\n"
     "FailAt 21\n"
     "Assign LIBS: SYS:Classes ADD\n"
@@ -183,6 +183,19 @@ static const char StartupScript[] =
     "    Protect \"SYS:Libs/PAM\" rwed GROUP=re OTHER=re QUIET\n"
     "EndIf\n"
     ";\n"
+    "; T: and CLIPS: are per-user assigns: every user gets a directory of his\n"
+    "; own in RAM:T and RAM:Clipboards, created for him on first use\n"
+    "; (dos.library expands %u for the task that uses the assign). Anybody\n"
+    "; may create his directory there; nobody may remove the parents.\n"
+    "; The Startup-Sequence keeps these assigns.\n"
+    "If NOT EXISTS \"RAM:Clipboards\"\n"
+    "    MakeDir \"RAM:Clipboards\" >NIL:\n"
+    "EndIf\n"
+    "Protect \"RAM:T\" rwed GROUP=rwe OTHER=rwe QUIET\n"
+    "Protect \"RAM:Clipboards\" rwed GROUP=rwe OTHER=rwe QUIET\n"
+    "Assign T: \"RAM:T/%u\" USER >NIL:\n"
+    "Assign CLIPS: \"RAM:Clipboards/%u\" USER >NIL:\n"
+    ";\n"
     "; Keep asking until somebody logs in (Login returns WARN when the login\n"
     "; failed or was cancelled); the Startup-Sequence never runs as nobody.\n"
     "; SYSTEM offers Shutdown/Reboot instead of Cancel; without GRAPHICAL (or\n"
@@ -206,17 +219,15 @@ static const char StartupScript[] =
     "Assign THEME: REMOVE\n"
     "Assign THEMES: REMOVE\n"
     "Assign ENV: REMOVE\n"
-    "Assign T: REMOVE\n"
-    "If EXISTS \"RAM:T\"\n"
-    "    Delete \"RAM:T\" FORCE QUIET ALL\n"
-    "EndIf\n"
     "Assign LIBS: SYS:Classes REMOVE\n"
     "\n"
     ";\n"
     "; Per-user settings: Login sets $Home and $User from the user database.\n"
+    "; HOME: is the home directory of whoever uses it (a per-user assign).\n"
     "If \"$Home\" NOT EQ \"\"\n"
     "    Assign HOME: \"$Home\"\n"
     "EndIf\n"
+    "Assign HOME: \"%h\" USER >NIL:\n"
     ";\n"
     "If \"$User\" NOT EQ \"\"\n"
     "    If EXISTS \"SYS:Security/Profiles/$User\"\n"
