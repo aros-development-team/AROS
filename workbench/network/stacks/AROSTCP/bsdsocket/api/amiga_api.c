@@ -883,7 +883,7 @@ VOID api_sendreconfig(BOOL begin)
         api_reconfig_state = NETRC_ONLINE;
     }
 
-    Forbid();
+    ObtainSemaphoreShared(&baselist_semaphore);
     for(libNode = socketBaseList.lh_Head; libNode->ln_Succ;
             libNode = libNode->ln_Succ) {
         struct SocketBase *sb = (struct SocketBase *)libNode;
@@ -892,7 +892,7 @@ VOID api_sendreconfig(BOOL begin)
             count++;
         }
     }
-    Permit();
+    ReleaseSemaphore(&baselist_semaphore);
 
     if(begin)
         api_reconfig_expected = count;  /* how many acks to wait for (net_reload) */
@@ -912,14 +912,14 @@ VOID api_sendaddrchange(VOID)
     if(api_state != API_SHOWN)
         return;         /* no external consumers before the API is visible */
 
-    Forbid();
+    ObtainSemaphoreShared(&baselist_semaphore);
     for(libNode = socketBaseList.lh_Head; libNode->ln_Succ;
             libNode = libNode->ln_Succ) {
         struct SocketBase *sb = (struct SocketBase *)libNode;
         if(sb->thisTask != Nettrace_Task && sb->sigAddrChangeMask)
             Signal(sb->thisTask, sb->sigAddrChangeMask);
     }
-    Permit();
+    ReleaseSemaphore(&baselist_semaphore);
 }
 
 /*
@@ -935,7 +935,7 @@ VOID api_logopeners(VOID)
     struct { struct Task *task; char name[48]; } held[8];
     int n = 0, i;
 
-    Forbid();
+    ObtainSemaphoreShared(&baselist_semaphore);
     for(libNode = socketBaseList.lh_Head; libNode->ln_Succ && n < 8;
             libNode = libNode->ln_Succ)
     {
@@ -954,7 +954,7 @@ VOID api_logopeners(VOID)
         held[n].name[j] = '\0';
         n++;
     }
-    Permit();
+    ReleaseSemaphore(&baselist_semaphore);
 
     for(i = 0; i < n; i++)
         __log(LOG_ERR, "bsdsocket.library still held by task '%s' (0x%p)",
