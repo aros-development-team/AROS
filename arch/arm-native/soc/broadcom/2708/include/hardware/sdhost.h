@@ -73,6 +73,9 @@
 #define  SDEDM_WR_FIFO_MASK             (0x1fU << SDEDM_WR_FIFO_SHIFT)
 #define  SDEDM_FIFO_LEVEL_SHIFT          4    /* Current FIFO occupancy, 0..16 */
 #define  SDEDM_FIFO_LEVEL_MASK          (0x1fU << SDEDM_FIFO_LEVEL_SHIFT)
+#define  SDEDM_FSM_MASK                 0xfU
+#define  SDEDM_FSM_DATAMODE             0x1
+#define  SDEDM_FSM_WRITESTART1          0xa
 #define SDHCFG                          0x38
 #define  SDHCFG_BUSY_EN                 (1U << 10)
 #define  SDHCFG_BLOCK_EN                (1U <<  8)

@@ -138,6 +138,27 @@ static void sdhost_flush_fifo(struct sdcard_Bus *bus)
     }
 }
 
+/* A write's DMA ends once the last word is in the FIFO, not on the card.
+ * Wait for the data FSM to finish the last block before anything else -
+ * a CMD12 sent earlier makes the card drop that block. */
+static int sdhost_wait_write_done(struct sdcard_Bus *bus, int timeout_us)
+{
+    ULONG edm, fsm;
+
+    while (timeout_us-- > 0)
+    {
+        edm = sdhost_read(bus, SDEDM);
+        fsm = edm & SDEDM_FSM_MASK;
+        if (!(edm & SDEDM_FIFO_LEVEL_MASK) &&
+            (fsm == SDEDM_FSM_DATAMODE || fsm == SDEDM_FSM_WRITESTART1))
+            return 0;
+        sdcard_Udelay(1);
+    }
+    bug("[SDHost%02u] write did not finish: SDEDM=%08x SDHSTS=%08x\n",
+        bus->sdcb_BusNum, sdhost_read(bus, SDEDM), sdhost_read(bus, SDHSTS));
+    return -1;
+}
+
 /* Write-1-to-clear any sticky error bits before issuing a new command. */
 static void sdhost_clear_errors(struct sdcard_Bus *bus)
 {
@@ -493,6 +514,11 @@ ULONG FNAME_SDHOSTBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
             if (used_bounce)
                 sdhost_neon_copy((APTR)priv->dma_data_addr,
                                   priv->dma_bounce, sdDataLen);
+        }
+        else if (sdhost_wait_write_done(bus, 500000) != 0)
+        {
+            retval = -1;
+            goto done;
         }
 
         priv->xfer_active = FALSE;
