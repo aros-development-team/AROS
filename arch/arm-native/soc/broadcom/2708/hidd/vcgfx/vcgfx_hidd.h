@@ -56,6 +56,8 @@ struct vcgfx_plane
     OOP_Object          *pl_BM;
     struct BitmapData   *pl_Data;       /* VideoData = page on scanout */
     LONG                 pl_X, pl_Y;
+    ULONG                pl_PtrWord;    /* VC4: its PTR0 in the newest list, 0 = none */
+    ULONG                pl_PtrSkip;    /* and the bytes clipped off in front */
 };
 
 /* Normal-NC arena the screen bitmaps are carved from. */

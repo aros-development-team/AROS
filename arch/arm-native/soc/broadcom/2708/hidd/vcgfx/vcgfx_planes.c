@@ -305,8 +305,9 @@ ULONG vcgfx_show_viewports(struct VideoCoreGfx_staticdata *xsd,
             continue;
         }
 
-        shown[n].pl_BM   = v->Bitmap;
-        shown[n].pl_Data = data;
+        shown[n].pl_BM      = v->Bitmap;
+        shown[n].pl_Data    = data;
+        shown[n].pl_PtrWord = 0;
         plane_pos(xsd, v->Bitmap, &shown[n].pl_X, &shown[n].pl_Y);
         n++;
     }
@@ -439,6 +440,7 @@ BOOL vcgfx_plane_flip(OOP_Class *cl, OOP_Object *bm)
         { TAG_DONE,              0 }
     };
     struct pRoot_Set setmsg;
+    struct vcgfx_plane *pl;
     BOOL shown;
 
     if (!data->scan[1].sb_Pixels)
@@ -453,8 +455,9 @@ BOOL vcgfx_plane_flip(OOP_Class *cl, OOP_Object *bm)
     setmsg.attrList = tags;
     OOP_DoSuperMethod(cl, bm, (OOP_Msg)&setmsg);
 
-    shown = (plane_find(xsd, bm) != NULL);
-    if (shown)
+    pl = plane_find(xsd, bm);
+    shown = (pl != NULL);
+    if (shown && !((xsd->vcsd_HVSGen == VCGFX_HVS_VC4) && vc4_hvs_plane_flip(xsd, pl)))
         planes_commit(xsd);
     VC4_MBOX_UNLOCK(xsd);
 
