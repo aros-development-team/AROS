@@ -26,24 +26,20 @@
         LIBBASETYPEPTR, FELSunxiBase, 5, FELSunxi)
 
 /*  FUNCTION
+        Query attributes exposed by the FELSunxi USB class.
 
     INPUTS
+        type      - Attribute scope. Only UGA_CLASS provides a value.
+        usbstruct - Scope-specific USB object; not used by the implemented
+                    class attribute.
+        taglist   - Tag list containing writable result destinations.
 
     RESULT
+        Number of attributes written. UGA_CLASS supports UCCA_Description,
+        which writes a string identifying the Allwinner FEL-mode class.
+        Other tags and scopes return no attributes.
 
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-    HISTORY
-
-*****************************************************************************/
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 

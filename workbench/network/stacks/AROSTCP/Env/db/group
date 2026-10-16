@@ -1,13 +1,6 @@
-wheel|*|0|
-rcsid|*|-1|$Id: group,v 1.2 2025/10/06 15:00:00 The AROS Dev Team $
+admin|*|0|
+rcsid|*|-1|$Id: group,v 1.3 2026/10/16 12:00:00 The AROS Dev Team $
 nobody|*|-2|
-daemon|*|1|daemon
-kmem|*|2|root
-sys|*|3|root
-tty|*|4|root
-operator|*|5|operator
-news|*|6|news
-mail|*|7|mail
-anon|*|8|
-guest|*|99|
+services|*|1|
+guests|*|99|
 users|*|100|

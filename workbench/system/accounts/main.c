@@ -1,7 +1,7 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
-    Desc: Accounts - manage the user accounts of the system
+    Desc: Accounts - manage the user accounts and groups of the system
 
           Works on both kinds of system: with security.library (multi-user;
           only root may change other accounts, anybody may change his own
@@ -18,7 +18,7 @@
 #include "gui.h"
 #include "locale.h"
 
-const TEXT version[] = "$VER: Accounts 1.0 (15.10.2026)";
+const TEXT version[] = "$VER: Accounts 1.1 (15.10.2026)";
 
 static void Fail(CONST_STRPTR text)
 {
@@ -38,8 +38,8 @@ int main(void)
 
     Locale_Initialize();
 
-    /* ug_UserAdminA() arrived with usergroup.library 4.11 */
-    if (!(ug = OpenLibrary("usergroup.library", 4)) || (ug->lib_Version == 4 && ug->lib_Revision < 11))
+    /* ug_UserAdminA() arrived with usergroup.library 4.11, its groups with 4.12 */
+    if (!(ug = OpenLibrary("usergroup.library", 4)) || (ug->lib_Version == 4 && ug->lib_Revision < 12))
         Fail(MSG(MSG_ERR_NOUSERGROUP));
     else if (Acc_Init(&st))
     {

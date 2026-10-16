@@ -251,7 +251,24 @@ static int UserGroup__Init(LIBBASETYPEPTR LIBBASE)
     return FALSE;
 }
 
+/*
+ * Every task gets a base of its own: a copy of the root base, made by
+ * OpenLib - UserGroup__Init() ran only once, in the task that loaded the
+ * library. What belongs to the opening task is set up here: it owns its
+ * base (ug_OpenUnit() serves only the owner), and its netinfo semaphore
+ * must not be a copy of the root base's (whose list it would point into).
+ */
+static int UserGroup__Open(LIBBASETYPEPTR LIBBASE)
+{
+    D(bug("[UserGroup] %s()\n", __func__));
+
+    LIBBASE->owner = FindTask(NULL);
+    InitSemaphore(&LIBBASE->ni_lock);
+    return TRUE;
+}
+
 ADD2INITLIB(UserGroup__Init, 0)
+ADD2OPENLIB(UserGroup__Open, 0)
 ADD2EXPUNGELIB(UserGroup__Expunge, 0)
 ADD2CLOSELIB(UserGroup__Close, 0)
 #endif

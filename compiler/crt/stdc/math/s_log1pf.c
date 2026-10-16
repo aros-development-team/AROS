@@ -37,6 +37,40 @@ Lp7 = 1.4798198640e-01; /* 3E178897 */
 static const float zero = 0.0;
 static const volatile float vzero __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) = 0.0;
 
+/****************************************************************************
+    NAME
+        float log1pf(
+
+    SYNOPSIS
+        float x)
+
+    FUNCTION
+        Return the natural logarithm of 1 + x without losing
+        small x to rounding in the addition.
+
+    INPUTS
+        x - Float value greater than -1 for a finite result.
+
+    RESULT
+        An approximation to log(1 + x) in float. Signed zero
+        retains its sign. At x = -1, returns negative infinity.
+        For x < -1, including negative infinity, returns NaN.
+        Positive infinity returns positive infinity; NaN returns NaN.
+
+    NOTES
+        Include <math.h>. Prefer log1pf(x) to logf(1.0f + x) when
+        x is close to zero. The latter can lose x before the
+        logarithm is evaluated.
+
+        The function does not assign errno. The pole at -1 can
+        raise divide-by-zero; arguments below -1 can raise invalid.
+        Other arithmetic can raise inexact. Enabled traps may
+        prevent return.
+
+    SEE ALSO
+        logf(), log10f(), log2f()
+
+*****************************************************************************/
 float
 log1pf(float x)
 {

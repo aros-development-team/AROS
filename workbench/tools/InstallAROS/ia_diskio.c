@@ -41,6 +41,7 @@
 #include "ia_option.h"
 #include "ia_bootloader.h"
 #include "ia_diskio.h"
+#include "ia_log.h"
 
 extern struct ExpansionBase *ExpansionBase;
 
@@ -378,7 +379,11 @@ LONG CountFiles(CONST_STRPTR directory, struct List *SkipList, CONST_STRPTR file
         loop = ExAll(dirLock, ead, kExallBufSize, ED_COMMENT, eac);
 
         if (!loop && IoErr() != ERROR_NO_MORE_ENTRIES)
+        {
+            LOG_Printf("WARNING: cannot count '%s' [ioerr=%ld]", directory,
+                (LONG)IoErr());
             break;
+        }
 
         if (eac->eac_Entries != 0)
         {
@@ -476,6 +481,15 @@ LONG InternalCopyFiles(Class * CLASS, Object * self, CONST_STRPTR srcDir, CONST_
             UnLock(dstDirLock);
         else
         {
+            /* Without this the whole drawer is skipped and the install
+               still reports success */
+            LOG_Printf("ERROR: cannot create '%s' [ioerr=%ld]", dstDir,
+                (LONG)IoErr());
+
+            if (AskRetry(CLASS, self, _(MSG_COULDNTWRITE), dstDir,
+                    _(MSG_RETRY), _(MSG_SKIP), _(MSG_CANCEL)) == 2)
+                DoMethod(self, MUIM_IC_QuitInstall);
+
             UnLock(srcDirLock);
             return -1;
         }
@@ -512,7 +526,16 @@ LONG InternalCopyFiles(Class * CLASS, Object * self, CONST_STRPTR srcDir, CONST_
         loop = ExAll(srcDirLock, ead, kExallBufSize, ED_COMMENT, eac);
 
         if (!loop && IoErr() != ERROR_NO_MORE_ENTRIES)
+        {
+            /* Anything left in this directory is silently lost otherwise */
+            LOG_Printf("ERROR: cannot scan '%s' [ioerr=%ld]", srcDir,
+                (LONG)IoErr());
+
+            if (AskRetry(CLASS, self, _(MSG_SCANRETRY), srcDir,
+                    _(MSG_YES), _(MSG_SKIP), _(MSG_QUIT)) == 2)
+                DoMethod(self, MUIM_IC_QuitInstall);
             break;
+        }
 
         if (eac->eac_Entries != 0)
         {
