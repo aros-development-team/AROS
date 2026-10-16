@@ -626,6 +626,36 @@ static void hvs_plane_src(struct vcgfx_plane *pl, struct hvs_src *s)
     s->ch    = d->modeh;
 }
 
+/* The fb plane, verbatim but for its pointer - or, behind a token
+ * firmware framebuffer, our own buffer filling the fb plane's rectangle. */
+static ULONG hvs_emit_fb(struct vc4_hvs_state *st, ULONG *w, ULONG n, ULONG *lbm)
+{
+    ULONG i, got;
+
+    if (st->hvs_Tiny)
+    {
+        struct hvs_src s;
+
+        s.phys  = st->hvs_FBPtr;
+        s.pitch = st->hvs_FBPitch;
+        s.srcw  = s.w = s.cw = st->hvs_SrcW;
+        s.srch  = s.h = s.ch = st->hvs_SrcH;
+        s.x     = 0;
+        s.y     = 0;
+        n = hvs_emit_src(st, w, n, &s, lbm,
+                         (LONG)st->hvs_FBX, (LONG)st->hvs_FBY,
+                         (LONG)(st->hvs_FBX + st->hvs_DestW),
+                         (LONG)(st->hvs_FBY + st->hvs_DestH), &got);
+        st->hvs_FBPtrOff = (got == HVS_SCALED_WORDS) ? HVS_SC_PTR0 : 4;
+        return n;
+    }
+
+    for (i = 0; i < st->hvs_FBWords; i++)
+        w[n + i] = st->hvs_FBEntry[i];
+    w[n + st->hvs_FBPtrOff] = HVS_PTR_BUS_ALIAS | st->hvs_FBPtr;
+    return n + st->hvs_FBWords;
+}
+
 /*
  * The screens, back to front, each cut off where the screens in front
  * hide it: one spanning the display's width down to the bottom of what is
@@ -655,12 +685,7 @@ static ULONG hvs_emit_planes(struct VideoCoreGfx_staticdata *xsd, ULONG *w,
     }
 
     if (bottom > top)
-    {
-        for (i = 0; i < (LONG)st->hvs_FBWords; i++)
-            w[n + i] = st->hvs_FBEntry[i];
-        w[n + st->hvs_FBPtrOff] = HVS_PTR_BUS_ALIAS | st->hvs_FBPtr;
-        n += st->hvs_FBWords;
-    }
+        n = hvs_emit_fb(st, w, n, lbm);
 
     for (i = 0; i < (LONG)xsd->vcsd_NumPlanes; i++)
     {
@@ -790,9 +815,7 @@ static ULONG hvs_build_list(struct VideoCoreGfx_staticdata *xsd)
         n = hvs_emit_planes(xsd, w, n, &lbm);
     else
     {
-        for (i = 0; i < st->hvs_FBWords; i++)
-            w[n++] = st->hvs_FBEntry[i];
-        w[st->hvs_FBPtrOff] = HVS_PTR_BUS_ALIAS | st->hvs_FBPtr;
+        n = hvs_emit_fb(st, w, n, &lbm);
 
         ovlw = hvs_overlay_entry(xsd, &w[n]);
         if (ovlw)
@@ -1122,6 +1145,17 @@ BOOL vc4_hvs_takeover(struct VideoCoreGfx_staticdata *xsd,
         st->hvs_OutW  = (ctrl >> HVS_DISPCTRLX_W_SHIFT) & 0xfff;
         st->hvs_OutH  = (ctrl >> HVS_DISPCTRLX_H_SHIFT) & 0xfff;
         st->hvs_FBPtr = fb_phys & ~HVS_PTR_BUS_ALIAS;
+
+        /* Behind a token framebuffer only its plane's rectangle counts:
+         * the fb is ours, as large as the mode, and so is its entry. */
+        if (st->hvs_Tiny)
+        {
+            st->hvs_SrcW    = st->hvs_ShowW;
+            st->hvs_SrcH    = st->hvs_ShowH;
+            st->hvs_FBPtr   = st->hvs_ShowPtr & ~HVS_PTR_BUS_ALIAS;
+            st->hvs_FBPitch = st->hvs_ShowPitch;
+            st->hvs_FBLBM   = HVS_LBM_TOP;
+        }
         st->hvs_Slot  = 0;
         st->hvs_FlipArmed = st->hvs_VSyncCount;     /* no flip pending */
         st->hvs_OvlActive = FALSE;                  /* fresh mode, no overlay */

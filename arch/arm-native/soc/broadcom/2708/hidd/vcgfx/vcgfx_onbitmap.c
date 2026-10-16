@@ -294,13 +294,13 @@ static BOOL vc4_fballoc(struct VideoCoreGfx_staticdata *xsd,
 }
 
 /* The width of the firmware's framebuffer behind screens that are planes
- * on a Pi 4. Nothing reads it once the list is ours, but it keeps the
+ * (Pi 1-4). Nothing reads it once the list is ours, but it keeps the
  * mode's shape: where the firmware keeps the timing it fits the plane to
  * the display by aspect, and that rectangle is the one our planes fill. */
 #define VC4_TOKEN_FB    256
 
 /*
- * Screens as planes on HVS5: a token framebuffer for the firmware - it
+ * Screens as planes on VC4 and HVS5: a token framebuffer for the firmware - it
  * still sets its mode and builds the list we take over - and the fb
  * object's pixels in scanout memory of ours, so the VideoCore partition
  * holds almost nothing. FALSE when no list of ours came of it.
@@ -350,7 +350,8 @@ static BOOL vc4_program_token_fb(struct VideoCoreGfx_staticdata *xsd,
         }
         return FALSE;
     }
-    vc4_hvs5_mode_apply(xsd, aligned_width, height, pitch, want);
+    if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS5)
+        vc4_hvs5_mode_apply(xsd, aligned_width, height, pitch, want);
 
     /* The list showing the old buffer has latched away. */
     if (old.sb_Raw)
@@ -387,7 +388,7 @@ static BOOL vc4_program_fb(struct VideoCoreGfx_staticdata *xsd,
     xsd->vcsd_HVS.hvs_Active = FALSE;
     VC4_MBOX_UNLOCK(xsd);
 
-    if ((xsd->vcsd_HVSGen == VCGFX_HVS_HVS5) && vcgfx_planes_supported(xsd))
+    if ((xsd->vcsd_HVSGen != VCGFX_HVS_HVS6) && vcgfx_planes_supported(xsd))
     {
         if (vc4_program_token_fb(xsd, aligned_width, height, bytesperpix, want,
                                  fb_ptr_out, fb_pitch_out))
