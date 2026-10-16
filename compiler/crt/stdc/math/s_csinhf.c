@@ -45,24 +45,41 @@ static const float huge = 0x1p127;
         float complex z)
 
     FUNCTION
-        Compute the float complex hyperbolic sine of z.
+        Return the complex hyperbolic sine of z.
 
     INPUTS
-        z - Complex argument.
+        z - Float complex value x + i*y, with y in radians.
 
     RESULT
-        Return the complex hyperbolic sine. For finite z = x + i*y, the real and
-        imaginary components are sinhf(x)*cosf(y) and coshf(x)*sinf(y).
-        When the imaginary component is zero, its sign is preserved
-        in the result.
+        An approximation to sinh(x) * cos(y) + i*cosh(x) * sin(y)
+        in float complex.
+
+        For signed-zero y, returns sinh(x) with that same
+        imaginary zero; infinite or NaN x is retained in the
+        real component. For zero x and infinite or NaN y,
+        returns x + i*NaN.
+
+        For finite nonzero x and infinite or NaN y, both
+        components are NaN. For infinite x and finite nonzero y,
+        evaluates x*cos(y) + i*infinity*sin(y). For infinite x
+        and infinite or NaN y, returns x + i*NaN. For NaN x and
+        nonzero y, both components are NaN.
 
     NOTES
-        Include <complex.h>. Large finite real components can overflow.
-        Exceptional arguments can produce infinities or NaNs and raise
-        floating-point exceptions.
+        Include <complex.h>. Each component can overflow or
+        underflow independently. Use round-to-nearest mode for
+        trigonometric argument reduction. Floating-point
+        exceptions can occur; enabled traps may prevent return.
+
+        The function does not assign errno.
+
+    BUGS
+        Large finite real parts can reach undefined signed-shift
+        arithmetic in expf(). Results on those paths are not
+        portable.
 
     SEE ALSO
-        ccoshf(), ctanhf(), cexpf()
+        ccoshf(), ctanhf(), csinf()
 
 *****************************************************************************/
 float complex
@@ -120,6 +137,51 @@ csinhf(float complex z)
 	return (CMPLXF((x + x) * (y - y), (x * x) * (y - y)));
 }
 
+/****************************************************************************
+    NAME
+        float complex csinf(
+
+    SYNOPSIS
+        float complex z)
+
+    FUNCTION
+        Return the complex sine of z.
+
+    INPUTS
+        z - Float complex value x + i*y, with x in radians.
+
+    RESULT
+        An approximation to sin(x) * cosh(y) + i*cos(x) * sinh(y)
+        in float complex.
+
+        For signed-zero x and infinite or NaN y, retains x as
+        the real component. The imaginary component is infinity
+        with the sign of y, or NaN, respectively.
+        For infinite or NaN x and signed-zero y,
+        returns NaN with that same imaginary zero.
+
+        For infinite or NaN x and finite nonzero y, both
+        components are NaN. For finite nonzero x and infinite y,
+        evaluates infinity*sin(x) + i*y*cos(x). For infinite or
+        NaN x and infinite y, returns NaN + i*y. For nonzero x
+        and NaN y, both components are NaN.
+
+    NOTES
+        Include <complex.h>. Each component can overflow or
+        underflow independently. Use round-to-nearest mode for
+        trigonometric argument reduction. Floating-point
+        exceptions can occur; enabled traps may prevent return.
+        The function does not assign errno.
+
+    BUGS
+        Large finite imaginary parts can reach undefined
+        signed-shift arithmetic in expf(). Results on those
+        paths are not portable.
+
+    SEE ALSO
+        csin(), csinl(), ccosf(), csinhf()
+
+*****************************************************************************/
 float complex
 csinf(float complex z)
 {
