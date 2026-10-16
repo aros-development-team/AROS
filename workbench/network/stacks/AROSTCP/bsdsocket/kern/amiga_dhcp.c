@@ -7,6 +7,7 @@
 #include <net/if.h>
 #include <net/if_sana.h>
 #include <net/sana2arp.h>   /* for autoip_start() */
+#include <api/netservice_api.h>
 
 extern struct ifnet *ifnet;
 
@@ -21,14 +22,16 @@ extern struct ifnet *ifnet;
  * teardown still call run_dhclient()/kill_dhclient() etc. to mark intent, but
  * the actual process management is the daemon's job - the stack only records
  * the per-interface ifi_aros_usedhcp flag (set by addifent), which the daemon
- * reads back through SIOCGIFDHCP.  These remain as no-ops so existing callers
- * are undisturbed; autoip (IPv4LL) stays in the stack.
+ * reads back through SIOCGIFDHCP.  run_dhclient() only tells the daemon to
+ * relaunch its clients - a link that came up (S2EVENT_CONNECT) or an
+ * interface added at run time needs a new lease; the kill calls stay no-ops.
+ * autoip (IPv4LL) stays in the stack.
  */
 
-void run_dhclient(struct ifnet *ifp)        { (void)ifp; }
+void run_dhclient(struct ifnet *ifp)        { (void)ifp; netservice_resume("dhcp"); }
 void kill_dhclient(struct ifnet *ifp)       { (void)ifp; }
 #if INET6 && DHCP6
-void run_dhclient6(struct ifnet *ifp)       { (void)ifp; }
+void run_dhclient6(struct ifnet *ifp)       { (void)ifp; netservice_resume("dhcp"); }
 void kill_dhclient6(struct ifnet *ifp)      { (void)ifp; }
 #endif
 void dhcp_stop_all(void)                    { }
