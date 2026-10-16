@@ -63,6 +63,7 @@
      */
     BOOL res;
     BPTR lock2;
+    LONG err;
 
     if (lock == BNULL) {
         if (length > 5) {
@@ -77,7 +78,9 @@
     
     lock2 = DupLock(lock);
     res = namefrom_internal(DOSBase, lock2, buffer, length);
+    err = IoErr(); /* UnLock() clears pr_Result2 */
     UnLock(lock2);
+    SetIoErr(err);
 
     return res;
 
