@@ -5666,7 +5666,7 @@ LONG moveextent(struct fsExtentBNode *ebn, BLCK dest, UWORD blocks) {
 
         /* Check before copying: transaction rollback cannot undo data writes. */
         if(available < blocks) {
-            errorcode = -1;
+            errorcode = ERROR_DISK_NOT_VALIDATED;
         } else if((errorcode = copy(key, dest, blocks, buf)) == 0) {   // This functions knows that OPTBUFSIZE is the size of the buffer!
 
             /* Data has been physically moved -- nothing has been
