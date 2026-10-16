@@ -97,7 +97,7 @@ LONG markspace(BLCK block,ULONG blocks) {
 
   if(available<blocks) {
     req_unusual("Attempted to mark %ld blocks from block %ld,\n but some of them were already full.", blocks, block);
-    return(-1);
+    return(ERROR_DISK_NOT_VALIDATED);
   }
 
   if((errorcode=getfreeblocks(&freeblocks))==0) {
