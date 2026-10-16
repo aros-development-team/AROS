@@ -27,6 +27,8 @@
 
 #include <exec/types.h>
 #include <exec/libraries.h>
+#include <exec/memory.h>
+#include <exec/semaphores.h>
 #include <utility/tagitem.h>
 #include <libraries/netservice.h>
 #include <dos/dos.h>
@@ -53,6 +55,8 @@ struct Library *NetServicesBase;
 #define DHCLIENT_FALLBACK  "SYS:System/Network/AROSTCP/C/dhclient"
 #define ARGS_LEN        256
 #define IFBUF_SIZE      (64 * sizeof(struct ifreq))
+#define STOP_WAIT_STEP  5       /* ticks between exit polls */
+#define STOP_WAIT_MAX   250     /* ~5s for a client to exit */
 
 /* Resolved once at startup from ENV:AROSTCP/dhclient (published by the stack). */
 static char dhclient_path[256];
@@ -61,8 +65,19 @@ static const TEXT dhcpv4_name[] = "AROSTCP DHCP client";
 static const TEXT dhcpv6_name[] = "AROSTCP DHCPv6 client";
 static const TEXT dhclient_cmd[] = "dhclient";
 
-static pid_t dhcpv4_pid;
-static pid_t dhcpv6_pid;
+/*
+ * A launched dhclient. It can exit on its own (log_fatal), and DOS frees the
+ * process after its exit hook: only signal it under client_lock, which the
+ * hook takes, while it has not exited.
+ */
+struct dhcp_client {
+    struct Process *proc;
+    volatile BOOL   exited;
+};
+
+static struct SignalSemaphore client_lock;
+static struct dhcp_client *dhcpv4_client;
+static struct dhcp_client *dhcpv6_client;
 static char  dhcpv4_args[ARGS_LEN];
 static char  dhcpv6_args[ARGS_LEN];
 
@@ -132,27 +147,74 @@ static int build_args(int sock, char *buf, size_t len, int v6)
     return count;
 }
 
-static pid_t launch(const char *args, const char *procname)
+/* NP_ExitCode hook - runs in the client's context as it exits. */
+static void client_exited(IPTR rc, IPTR data)
+{
+    struct dhcp_client *c = (struct dhcp_client *)data;
+
+    (void)rc;
+    ObtainSemaphore(&client_lock);
+    c->exited = TRUE;
+    ReleaseSemaphore(&client_lock);
+}
+
+static struct dhcp_client *launch(const char *args, const char *procname)
 {
     BPTR seg = LoadSeg((STRPTR)dhclient_path);
-    pid_t pid;
+    struct dhcp_client *c;
 
     if(seg == BNULL) {
         logln("dhcpd: cannot load dhclient");
-        return 0;
+        return NULL;
     }
-    pid = (pid_t)CreateNewProcTags(NP_Seglist,    (IPTR)seg,
-                                   NP_Arguments,  (IPTR)args,
-                                   NP_Cli,        TRUE,
-                                   NP_Name,       (IPTR)procname,
-                                   NP_CommandName,(IPTR)dhclient_cmd,
-                                   NP_ConsoleTask,(IPTR)NULL,
-                                   TAG_DONE);
-    if(!pid) {
+    c = AllocMem(sizeof(*c), MEMF_PUBLIC | MEMF_CLEAR);
+    if(c == NULL) {
         UnLoadSeg(seg);
-        logln("dhcpd: cannot start dhclient");
+        return NULL;
     }
-    return pid;
+    c->proc = CreateNewProcTags(NP_Seglist,    (IPTR)seg,
+                                NP_Arguments,  (IPTR)args,
+                                NP_Cli,        TRUE,
+                                NP_Name,       (IPTR)procname,
+                                NP_CommandName,(IPTR)dhclient_cmd,
+                                NP_ConsoleTask,(IPTR)NULL,
+                                NP_ExitCode,   (IPTR)client_exited,
+                                NP_ExitData,   (IPTR)c,
+                                TAG_DONE);
+    if(c->proc == NULL) {
+        UnLoadSeg(seg);
+        FreeMem(c, sizeof(*c));
+        logln("dhcpd: cannot start dhclient");
+        return NULL;
+    }
+    return c;
+}
+
+/*
+ * Stop a client and wait for it: the next one binds the same port, and fails
+ * and exits if this one still holds it.
+ */
+static void client_stop(struct dhcp_client **cp)
+{
+    struct dhcp_client *c = *cp;
+    int waited;
+
+    if(c == NULL)
+        return;
+    *cp = NULL;
+
+    ObtainSemaphore(&client_lock);
+    if(!c->exited)
+        Signal((struct Task *)c->proc, SIGBREAKF_CTRL_C);
+    ReleaseSemaphore(&client_lock);
+
+    for(waited = 0; !c->exited && waited < STOP_WAIT_MAX; waited += STOP_WAIT_STEP)
+        Delay(STOP_WAIT_STEP);
+
+    if(c->exited)
+        FreeMem(c, sizeof(*c));
+    else
+        logln("dhcpd: dhclient did not exit");  /* its hook still has c */
 }
 
 /* (Re)launch dhclient for the current DHCP interface set. */
@@ -163,19 +225,19 @@ static void dhcp_start(int sock)
     int n6;
 #endif
 
-    if(dhcpv4_pid) { Signal((struct Task *)dhcpv4_pid, SIGBREAKF_CTRL_C); dhcpv4_pid = 0; }
+    client_stop(&dhcpv4_client);
     n4 = build_args(sock, dhcpv4_args, sizeof(dhcpv4_args), 0);
     if(n4 > 0) {
-        dhcpv4_pid = launch(dhcpv4_args, dhcpv4_name);
-        if(dhcpv4_pid) logln("dhcpd: started DHCPv4 client");
+        dhcpv4_client = launch(dhcpv4_args, dhcpv4_name);
+        if(dhcpv4_client) logln("dhcpd: started DHCPv4 client");
     }
 
 #if INET6
-    if(dhcpv6_pid) { Signal((struct Task *)dhcpv6_pid, SIGBREAKF_CTRL_C); dhcpv6_pid = 0; }
+    client_stop(&dhcpv6_client);
     n6 = build_args(sock, dhcpv6_args, sizeof(dhcpv6_args), 1);
     if(n6 > 0) {
-        dhcpv6_pid = launch(dhcpv6_args, dhcpv6_name);
-        if(dhcpv6_pid) logln("dhcpd: started DHCPv6 client");
+        dhcpv6_client = launch(dhcpv6_args, dhcpv6_name);
+        if(dhcpv6_client) logln("dhcpd: started DHCPv6 client");
     }
 #endif
 }
@@ -187,8 +249,8 @@ static void dhcp_start(int sock)
  */
 static void dhcp_stop(void)
 {
-    if(dhcpv4_pid) { Signal((struct Task *)dhcpv4_pid, SIGBREAKF_CTRL_C); dhcpv4_pid = 0; }
-    if(dhcpv6_pid) { Signal((struct Task *)dhcpv6_pid, SIGBREAKF_CTRL_C); dhcpv6_pid = 0; }
+    client_stop(&dhcpv4_client);
+    client_stop(&dhcpv6_client);
     dhcpv4_args[0] = dhcpv6_args[0] = '\0';
 }
 
@@ -198,6 +260,8 @@ int main(void)
     BYTE sStop, sBegin, sEnd;
     ULONG mStop, mBegin, mEnd, got;
     int sock, running = 1;
+
+    InitSemaphore(&client_lock);
 
     NetServicesBase = OpenLibrary(NETSERVICESNAME, 0);
     if(!NetServicesBase) { logln("dhcpd: no netservices.library"); return 20; }
