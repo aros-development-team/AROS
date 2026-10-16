@@ -151,7 +151,7 @@ struct sdcard_ADMADesc
 /* Kept well under the 65536 a descriptor can hold, and a multiple of any sector size */
 #define ADMA2_MAX_XFER                  32768
 #define ADMA2_MAX_DESC                  32
-#define ADMA2_BOUNCE_SIZE               (128 * 1024)
+#define ADMA2_BOUNCE_SIZE               (512 * 1024)    /* one DMA chunk */
 
 BOOL FNAME_SDCBUS(RegisterUnit)(struct sdcard_Bus *);
 BOOL FNAME_SDCBUS(StartUnit)(struct sdcard_Unit *);

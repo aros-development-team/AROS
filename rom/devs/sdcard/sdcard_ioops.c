@@ -114,9 +114,15 @@ BOOL __used sdcard_WaitBusyTO(struct sdcard_Unit *unit, UWORD tout, BOOL irq, UB
 /*
  * Maximum number of sectors per SD transfer chunk.
  * Smaller values give USB more bus time (less mouse jitter)
- * but increase per-transfer overhead.  128 sectors = 64KB.
+ * but increase per-transfer overhead.  32 sectors = 16KB: sdhost (Pi 1-3)
+ * reports FIFO errors on far longer reads, and its lite DMA engine's 16-bit
+ * length cannot express 64 KB at all.
+ * DMA leaves the CPU free, so there the card gets 512 KB at a time, which
+ * it writes several times faster than small pieces.
  */
-#define SD_CHUNK_BLOCKS 128
+#define SD_CHUNK_BLOCKS 32
+#define SD_CHUNK_BLOCKS_DMA 1024
+#define SD_CHUNK(bus) (((bus)->sdcb_BusFlags & AF_Bus_DMA) ? SD_CHUNK_BLOCKS_DMA : SD_CHUNK_BLOCKS)
 
 /*
  * 32bit Read operations
@@ -137,7 +143,7 @@ BYTE FNAME_SDCIO(ReadSector32)(struct sdcard_Unit *unit, ULONG block,
 
     while (remaining > 0 && retVal == 0)
     {
-        ULONG chunk = (remaining > SD_CHUNK_BLOCKS) ? SD_CHUNK_BLOCKS : remaining;
+        ULONG chunk = (remaining > SD_CHUNK(bus)) ? SD_CHUNK(bus) : remaining;
         ULONG chunkArg = curBlock;
         struct TagItem sdcReadTags[] =
         {
@@ -250,7 +256,7 @@ BYTE FNAME_SDCIO(ReadSector64)(struct sdcard_Unit *unit, UQUAD block,
 
     while (remaining > 0 && retVal == 0)
     {
-        ULONG chunk = (remaining > SD_CHUNK_BLOCKS) ? SD_CHUNK_BLOCKS : remaining;
+        ULONG chunk = (remaining > SD_CHUNK(bus)) ? SD_CHUNK(bus) : remaining;
         struct TagItem sdcReadTags[] =
         {
             {SDCARD_TAG_CMD,         (chunk > 1) ? MMC_CMD_READ_MULTIPLE_BLOCK : MMC_CMD_READ_SINGLE_BLOCK},
@@ -354,7 +360,7 @@ BYTE FNAME_SDCIO(WriteSector32)(struct sdcard_Unit *unit, ULONG block,
 
     while (remaining > 0 && retVal == 0)
     {
-        ULONG chunk = (remaining > SD_CHUNK_BLOCKS) ? SD_CHUNK_BLOCKS : remaining;
+        ULONG chunk = (remaining > SD_CHUNK(bus)) ? SD_CHUNK(bus) : remaining;
         ULONG chunkArg = curBlock;
         struct TagItem sdcWriteTags[] =
         {
@@ -465,7 +471,7 @@ BYTE FNAME_SDCIO(WriteSector64)(struct sdcard_Unit *unit, UQUAD block,
 
     while (remaining > 0 && retVal == 0)
     {
-        ULONG chunk = (remaining > SD_CHUNK_BLOCKS) ? SD_CHUNK_BLOCKS : remaining;
+        ULONG chunk = (remaining > SD_CHUNK(bus)) ? SD_CHUNK(bus) : remaining;
         struct TagItem sdcWriteTags[] =
         {
             {SDCARD_TAG_CMD,         (chunk > 1) ? MMC_CMD_WRITE_MULTIPLE_BLOCK : MMC_CMD_WRITE_SINGLE_BLOCK},
