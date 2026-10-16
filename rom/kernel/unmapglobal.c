@@ -24,8 +24,11 @@
         struct KernelBase *, KernelBase, 17, Kernel)
 
 /*  FUNCTION
+        Unmap a region of virtual address space.
 
     INPUTS
+        virt   - Starting virtual address of the region.
+        length - Length of the region in bytes.
 
     RESULT
 
@@ -36,6 +39,7 @@
     BUGS
 
     SEE ALSO
+        KrnMapGlobal()
 
     INTERNALS
 
