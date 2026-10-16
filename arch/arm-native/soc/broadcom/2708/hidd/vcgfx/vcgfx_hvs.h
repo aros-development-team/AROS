@@ -374,5 +374,7 @@ void vc4_hvs_latch_wait(struct VideoCoreGfx_staticdata *xsd);
 BOOL vc4_hvs_planes_ok(void);
 BOOL vc4_hvs_plane_fits(struct VideoCoreGfx_staticdata *xsd, ULONG w, ULONG h);
 void vc4_hvs_planes_commit(struct VideoCoreGfx_staticdata *xsd);
+struct vcgfx_plane;
+BOOL vc4_hvs_plane_flip(struct VideoCoreGfx_staticdata *xsd, struct vcgfx_plane *pl);
 
 #endif /* _VIDEOCOREGFX_HVS_H */

@@ -667,11 +667,22 @@ static ULONG hvs_emit_planes(struct VideoCoreGfx_staticdata *xsd, ULONG *w,
         struct vcgfx_plane *pl = &xsd->vcsd_Plane[i];
         LONG cb = limit[i];
 
+        pl->pl_PtrWord = 0;
         hvs_plane_src(pl, &s);
         if (!hvs_src_rect(st, &s, &px, &py, &pw, &ph) || cb <= py || cb <= top)
             continue;
 
-        n = hvs_emit_src(st, w, n, &s, lbm, left, top, right, cb, NULL);
+        {
+            ULONG at = n, got;
+
+            n = hvs_emit_src(st, w, n, &s, lbm, left, top, right, cb, &got);
+            if (got)
+            {
+                pl->pl_PtrWord = at + ((got == HVS_SCALED_WORDS) ? HVS_SC_PTR0 : 4);
+                pl->pl_PtrSkip = (w[pl->pl_PtrWord] & ~HVS_PTR_BUS_ALIAS)
+                               - (s.phys & ~HVS_PTR_BUS_ALIAS);
+            }
+        }
 
         if (!st->hvs_OvlActive || st->hvs_OvlOwner != pl->pl_BM)
             continue;
@@ -1606,4 +1617,23 @@ void vc4_hvs_planes_commit(struct VideoCoreGfx_staticdata *xsd)
 
     hvs_commit(st, hvs_build_list(xsd));
     st->hvs_FlipArmed = st->hvs_VSyncCount + 1;
+}
+
+/* A GL flip of a screen that is a plane: only its pointer changes, and
+ * the HVS reloads that at frame start. A repoint instead lands mid-frame,
+ * which a scaled entry shows as a band of garbage. Caller holds the
+ * mailbox lock and has moved VideoData to the new front page. */
+BOOL vc4_hvs_plane_flip(struct VideoCoreGfx_staticdata *xsd, struct vcgfx_plane *pl)
+{
+    struct vc4_hvs_state *st = &xsd->vcsd_HVS;
+    ULONG phys = (ULONG)(IPTR)pl->pl_Data->VideoData & ~HVS_PTR_BUS_ALIAS;
+
+    if (!st->hvs_Active || !pl->pl_PtrWord
+        || __atomic_load_n(&st->hvs_PendList, __ATOMIC_ACQUIRE))
+        return FALSE;
+
+    hvs_wr(HVS_DLIST_START + 4 * (st->hvs_ListBase + pl->pl_PtrWord),
+           HVS_PTR_BUS_ALIAS | (phys + pl->pl_PtrSkip));
+    st->hvs_FlipArmed = st->hvs_VSyncCount + 1;
+    return TRUE;
 }
