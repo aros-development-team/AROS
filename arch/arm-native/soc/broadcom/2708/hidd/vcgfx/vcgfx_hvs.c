@@ -455,38 +455,341 @@ static ULONG hvs_overlay_entry(struct VideoCoreGfx_staticdata *xsd, ULONG *w)
     return HVS_UNITY_WORDS;
 }
 
-/* Author our display list (fb plane + overlay + cursor plane) into the
- * next round-robin slot and return its head index. The fb plane entry
- * is the verbatim words inherited from the firmware at takeover (unity
- * or scaled — the scaling words stay opaque), with only PTR0
- * retargeted; the cursor plane mirrors the firmware's own cursor
- * (per-pixel alpha) reading vcsd_CurBuf directly.
- * Caller holds the mailbox lock and must write the returned head to
- * HVS_DISPLIST — the HVS applies a repoint MID-SCANOUT (observed on
- * HW as lower-screen corruption), so this is only for structural
- * changes; steady-state flips and cursor moves patch the live list
- * in place instead. */
+/* A plane to place: source pixels and where they go. x/y/w/h are in a
+ * cw x ch space that fills the fb plane's rectangle - a screen's own mode
+ * size, so every screen fills the display as its own mode would. */
+struct hvs_src
+{
+    ULONG phys, pitch;
+    ULONG srcw, srch;
+    LONG  x, y;
+    ULONG w, h;
+    ULONG cw, ch;
+};
+
+/* The plane's rectangle in output pixels. FALSE when empty. */
+static BOOL hvs_src_rect(struct vc4_hvs_state *st, const struct hvs_src *s,
+                         LONG *dx, LONG *dy, ULONG *dw, ULONG *dh)
+{
+    if (!s->cw || !s->ch || !s->w || !s->h)
+        return FALSE;
+
+    *dx = (LONG)st->hvs_FBX + s->x * (LONG)st->hvs_DestW / (LONG)s->cw;
+    *dy = (LONG)st->hvs_FBY + s->y * (LONG)st->hvs_DestH / (LONG)s->ch;
+    *dw = s->w * st->hvs_DestW / s->cw;
+    *dh = s->h * st->hvs_DestH / s->ch;
+
+    return (*dw != 0) && (*dh != 0);
+}
+
+/* Unity or scaled. lbm is the line buffer handed out so far this list; a
+ * plane that cannot be scaled shows unscaled instead. */
+static ULONG hvs_src_words(struct vc4_hvs_state *st, const struct hvs_src *s,
+                           ULONG lbm)
+{
+    LONG dx, dy;
+    ULONG dw, dh;
+
+    if (!hvs_src_rect(st, s, &dx, &dy, &dw, &dh))
+        return HVS_UNITY_WORDS;
+    if ((dw == s->srcw) && (dh == s->srch))
+        return HVS_UNITY_WORDS;
+    if (!st->hvs_KernelOK || (dw > 0xfff) || (dh > 0xfff)
+        || !HVS_PPF_FITS(s->srcw, dw) || !HVS_PPF_FITS(s->srch, dh)
+        || (lbm + HVS_LBM_BYTES(s->srcw) > st->hvs_FBLBM))
+        return HVS_UNITY_WORDS;
+    return HVS_SCALED_WORDS;
+}
+
+/* Compose an entry at w, clipped to [left,right) x [top,bottom) with the
+ * source trimmed in proportion. Returns its length, 0 when nothing of it
+ * is left. Fixed alpha: what GL and screens leave in alpha is undefined. */
+static ULONG hvs_put_src(struct vc4_hvs_state *st, ULONG *w, ULONG words,
+                         ULONG lbm, const struct hvs_src *s,
+                         LONG left, LONG top, LONG right, LONG bottom)
+{
+    ULONG ptr = s->phys & ~HVS_PTR_BUS_ALIAS;
+    ULONG srcw = s->srcw, srch = s->srch;
+    LONG ox, oy;
+    ULONG ow, oh;
+
+    if (!hvs_src_rect(st, s, &ox, &oy, &ow, &oh))
+        return 0;
+
+    if (words == HVS_UNITY_WORDS)
+    {
+        /* Unscaled: the source is as large as it lands. */
+        ow = srcw;
+        oh = srch;
+    }
+
+    if (ox < left)
+    {
+        ULONG skip = (ULONG)(left - ox);
+        ULONG ssk = skip * srcw / ow;
+
+        ptr += ssk * 4;
+        srcw -= ssk;
+        ow -= skip;
+        ox = left;
+    }
+    if (oy < top)
+    {
+        ULONG skip = (ULONG)(top - oy);
+        ULONG ssk = skip * srch / oh;
+
+        ptr += ssk * s->pitch;
+        srch -= ssk;
+        oh -= skip;
+        oy = top;
+    }
+    if (ox + (LONG)ow > right)
+    {
+        ULONG keep = (right > ox) ? (ULONG)(right - ox) : 0;
+
+        srcw = srcw * keep / ow;
+        ow = keep;
+    }
+    if (oy + (LONG)oh > bottom)
+    {
+        ULONG keep = (bottom > oy) ? (ULONG)(bottom - oy) : 0;
+
+        srch = srch * keep / oh;
+        oh = keep;
+    }
+    if ((LONG)ow <= 0 || (LONG)oh <= 0 || !srcw || !srch)
+        return 0;
+
+    w[1] = (0xffUL << HVS_POS0_ALPHA_SHIFT)
+         | ((ULONG)oy << HVS_POS0_Y_SHIFT)
+         | ((ULONG)ox << HVS_POS0_X_SHIFT);
+
+    if (words == HVS_UNITY_WORDS)
+    {
+        w[0] = HVS_CTL0_XRGB_UNITY;
+        w[2] = (1UL << HVS_POS2_AMODE_SHIFT)
+             | (oh << HVS_POS2_H_SHIFT)
+             | (ow << HVS_POS2_W_SHIFT);
+        w[3] = 0;
+        w[4] = HVS_PTR_BUS_ALIAS | ptr;
+        w[5] = 0;
+        w[6] = s->pitch;
+        return HVS_UNITY_WORDS;
+    }
+
+    w[0]            = HVS_CTL0_XRGB_SCALED;
+    w[HVS_SC_POS1]  = (oh << HVS_POS2_H_SHIFT) | (ow << HVS_POS2_W_SHIFT);
+    w[HVS_SC_POS2]  = (1UL << HVS_POS2_AMODE_SHIFT)
+                    | (srch << HVS_POS2_H_SHIFT)
+                    | (srcw << HVS_POS2_W_SHIFT);
+    w[4]            = 0;
+    w[HVS_SC_PTR0]  = HVS_PTR_BUS_ALIAS | ptr;
+    w[6]            = 0;
+    w[HVS_SC_PITCH] = s->pitch;
+    w[HVS_SC_LBM]   = lbm;
+    w[HVS_SC_PPFX]  = HVS_PPF(srcw, ow);
+    w[HVS_SC_PPFY]  = HVS_PPF(srch, oh);
+    w[11]           = 0;
+    w[HVS_SC_KRN0]  = HVS_OWN_KERNEL;
+    w[HVS_SC_KRN1]  = HVS_OWN_KERNEL;
+    return HVS_SCALED_WORDS;
+}
+
+/* Append a plane at w[n]; returns the new length. */
+static ULONG hvs_emit_src(struct vc4_hvs_state *st, ULONG *w, ULONG n,
+                          const struct hvs_src *s, ULONG *lbm,
+                          LONG left, LONG top, LONG right, LONG bottom,
+                          ULONG *words_out)
+{
+    ULONG words = hvs_src_words(st, s, *lbm);
+    ULONG got = hvs_put_src(st, &w[n], words, *lbm, s, left, top, right, bottom);
+
+    if (got == HVS_SCALED_WORDS)
+        *lbm += HVS_LBM_BYTES(s->srcw);
+    if (words_out)
+        *words_out = got;
+    return n + got;
+}
+
+/* A screen as a plane, in its own mode's coordinates. */
+static void hvs_plane_src(struct vcgfx_plane *pl, struct hvs_src *s)
+{
+    struct BitmapData *d = pl->pl_Data;
+
+    s->phys  = (ULONG)(IPTR)d->VideoData;
+    s->pitch = d->bytesperrow;
+    s->srcw  = s->w = d->width;
+    s->srch  = s->h = d->height;
+    s->x     = pl->pl_X;
+    s->y     = pl->pl_Y;
+    s->cw    = d->modew;
+    s->ch    = d->modeh;
+}
+
+/*
+ * The screens, back to front, each cut off where the screens in front
+ * hide it: one spanning the display's width down to the bottom of what is
+ * still visible covers everything behind it below its top edge. The fb,
+ * kept black, is the backdrop where no screen covers. The overlay sits
+ * right above the screen it belongs to.
+ */
+static ULONG hvs_emit_planes(struct VideoCoreGfx_staticdata *xsd, ULONG *w,
+                             ULONG n, ULONG *lbm)
+{
+    struct vc4_hvs_state *st = &xsd->vcsd_HVS;
+    LONG limit[VCGFX_MAX_PLANES];
+    LONG left = (LONG)st->hvs_FBX, right = left + (LONG)st->hvs_DestW;
+    LONG top = (LONG)st->hvs_FBY, bottom = top + (LONG)st->hvs_DestH;
+    struct hvs_src s;
+    LONG i, px, py;
+    ULONG pw, ph;
+
+    for (i = (LONG)xsd->vcsd_NumPlanes - 1; i >= 0; i--)
+    {
+        limit[i] = bottom;
+        hvs_plane_src(&xsd->vcsd_Plane[i], &s);
+        if (hvs_src_rect(st, &s, &px, &py, &pw, &ph)
+            && px <= left && px + (LONG)pw >= right
+            && py < bottom && py + (LONG)ph >= bottom)
+            bottom = (py > top) ? py : top;
+    }
+
+    if (bottom > top)
+    {
+        for (i = 0; i < (LONG)st->hvs_FBWords; i++)
+            w[n + i] = st->hvs_FBEntry[i];
+        w[n + st->hvs_FBPtrOff] = HVS_PTR_BUS_ALIAS | st->hvs_FBPtr;
+        n += st->hvs_FBWords;
+    }
+
+    for (i = 0; i < (LONG)xsd->vcsd_NumPlanes; i++)
+    {
+        struct vcgfx_plane *pl = &xsd->vcsd_Plane[i];
+        LONG cb = limit[i];
+
+        hvs_plane_src(pl, &s);
+        if (!hvs_src_rect(st, &s, &px, &py, &pw, &ph) || cb <= py || cb <= top)
+            continue;
+
+        n = hvs_emit_src(st, w, n, &s, lbm, left, top, right, cb, NULL);
+
+        if (!st->hvs_OvlActive || st->hvs_OvlOwner != pl->pl_BM)
+            continue;
+
+        /* No further out than the screen itself. */
+        {
+            LONG ol = (px > left) ? px : left;
+            LONG ot = (py > top) ? py : top;
+            LONG orr = (px + (LONG)pw < right) ? px + (LONG)pw : right;
+            LONG ob = (py + (LONG)ph < cb) ? py + (LONG)ph : cb;
+            struct hvs_src o;
+
+            o.phys  = st->hvs_OvlPhys;
+            o.pitch = st->hvs_OvlPitch;
+            o.srcw  = o.w = st->hvs_OvlW;
+            o.srch  = o.h = st->hvs_OvlH;
+            o.x     = pl->pl_X + st->hvs_OvlX;
+            o.y     = pl->pl_Y + st->hvs_OvlY;
+            o.cw    = s.cw;
+            o.ch    = s.ch;
+            st->hvs_OvlOff = n;
+            n = hvs_emit_src(st, w, n, &o, lbm, ol, ot, orr, ob,
+                             &st->hvs_OvlWords);
+            if (!st->hvs_OvlWords)
+                st->hvs_OvlOff = 0;
+        }
+    }
+    return n;
+}
+
+static inline ULONG hvs_now_us(void)
+{
+    return AROS_LE2LONG(*(volatile ULONG *)SYSTIMER_CLO);
+}
+
+/* IRQ seen this recently: repoints may wait for it. */
+#define HVS_LIVE_US     40000
+
+/* The vsync interrupt is armed and has ticked within the last frames. */
+static BOOL hvs_vsync_live(struct vc4_hvs_state *st)
+{
+    return st->hvs_VSyncIrq && st->hvs_VSyncMask
+        && (pv_rd(VC4_PV2_BASE, PV_INTEN) & st->hvs_VSyncMask)
+        && (hvs_now_us() - st->hvs_VSyncStamp) < HVS_LIVE_US;
+}
+
+/* A slot nothing can be reading: not the one scanned, not the last one
+ * repointed at, not the one waiting for vblank. The pending list is read
+ * first - the interrupt records it as the last before it lets go of it. */
+static ULONG hvs_free_slot(struct vc4_hvs_state *st)
+{
+    ULONG pend = __atomic_load_n(&st->hvs_PendList, __ATOMIC_ACQUIRE);
+    ULONG last = __atomic_load_n(&st->hvs_LastList, __ATOMIC_ACQUIRE);
+    ULONG act  = hvs_rd(HVS_DISPLACT(HVS_CHANNEL_HDMI));
+    ULONG i, base = HVS_OWN_SLOT_BASE;
+
+    for (i = 0; i < HVS_OWN_SLOTS; i++)
+    {
+        base = HVS_OWN_SLOT_BASE + HVS_OWN_SLOT_STRIDE * st->hvs_Slot;
+        st->hvs_Slot = (st->hvs_Slot + 1) % HVS_OWN_SLOTS;
+        if (base != pend && base != last && base != act)
+            break;
+    }
+    return base;
+}
+
+/* DISPLIST is about to be written directly: nothing may stay queued. */
+static void hvs_note_list(struct vc4_hvs_state *st, ULONG base)
+{
+    __atomic_store_n(&st->hvs_PendList, 0, __ATOMIC_RELEASE);
+    __atomic_store_n(&st->hvs_LastList, base, __ATOMIC_RELEASE);
+}
+
+/* Repoint at a built list. A repoint takes effect mid-scanout, so while
+ * the vsync interrupt runs it does the write; otherwise now, torn. */
+static void hvs_commit(struct vc4_hvs_state *st, ULONG base)
+{
+    if (hvs_vsync_live(st))
+    {
+        __atomic_store_n(&st->hvs_PendList, base, __ATOMIC_RELEASE);
+        return;
+    }
+    hvs_note_list(st, base);
+    hvs_wr(HVS_DISPLIST(HVS_CHANNEL_HDMI), base);
+}
+
+/* Author our display list into a free slot and return its head: the fb
+ * plane (or the screens, once they are planes), the overlay, the cursor,
+ * END. The fb entry is the firmware's, verbatim but for PTR0; the cursor
+ * mirrors the firmware's own (per-pixel alpha) reading vcsd_CurBuf.
+ * Caller holds the mailbox lock and hands the head to hvs_commit(), or
+ * writes DISPLIST itself at takeover. Steady-state flips and cursor moves
+ * patch the newest list in place instead. */
 static ULONG hvs_build_list(struct VideoCoreGfx_staticdata *xsd)
 {
     struct vc4_hvs_state *st = &xsd->vcsd_HVS;
-    ULONG base = HVS_OWN_SLOT_BASE + HVS_OWN_SLOT_STRIDE * st->hvs_Slot;
-    ULONG w[HVS_FB_ENTRY_MAX + HVS_SCALED_WORDS + HVS_UNITY_WORDS + 1];
-    ULONG n = 0, i, ovlw;
-
-    st->hvs_Slot = (st->hvs_Slot + 1) % HVS_OWN_SLOTS;
-
-    for (i = 0; i < st->hvs_FBWords; i++)
-        w[n++] = st->hvs_FBEntry[i];
-    w[st->hvs_FBPtrOff] = HVS_PTR_BUS_ALIAS | st->hvs_FBPtr;
+    ULONG base = hvs_free_slot(st);
+    ULONG w[HVS_OWN_SLOT_STRIDE];
+    ULONG n = 0, i, ovlw, lbm = 0;
 
     st->hvs_OvlOff = 0;
     st->hvs_OvlWords = 0;
-    ovlw = hvs_overlay_entry(xsd, &w[n]);
-    if (ovlw)
+
+    if (xsd->vcsd_PlanesMode)
+        n = hvs_emit_planes(xsd, w, n, &lbm);
+    else
     {
-        st->hvs_OvlOff = n;
-        st->hvs_OvlWords = ovlw;
-        n += ovlw;
+        for (i = 0; i < st->hvs_FBWords; i++)
+            w[n++] = st->hvs_FBEntry[i];
+        w[st->hvs_FBPtrOff] = HVS_PTR_BUS_ALIAS | st->hvs_FBPtr;
+
+        ovlw = hvs_overlay_entry(xsd, &w[n]);
+        if (ovlw)
+        {
+            st->hvs_OvlOff = n;
+            st->hvs_OvlWords = ovlw;
+            n += ovlw;
+        }
     }
 
     st->hvs_CurOff = 0;
@@ -529,7 +832,20 @@ static void hvs_vsync_irq(struct vc4_hvs_state *st, struct ExecBase *sysBase)
         pv_wr(VC4_PV2_BASE, PV_INTSTAT, stat);      /* W1C */
         if (stat & st->hvs_VSyncMask)
         {
+            ULONG pend = __atomic_load_n(&st->hvs_PendList, __ATOMIC_ACQUIRE);
+
+            /* Recorded as the last list before it stops being pending, so
+             * hvs_free_slot() never sees it as neither. */
+            if (pend && st->hvs_Active)
+            {
+                __atomic_store_n(&st->hvs_LastList, pend, __ATOMIC_RELEASE);
+                hvs_wr(HVS_DISPLIST(HVS_CHANNEL_HDMI), pend);
+                __atomic_compare_exchange_n(&st->hvs_PendList, &pend, 0, FALSE,
+                                            __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
+            }
+
             st->hvs_VSyncCount++;
+            st->hvs_VSyncStamp = hvs_now_us();
             if ((vbl = st->hvs_VBlank))
                 vbl->vbl_Func(vbl->vbl_Data);
         }
@@ -786,6 +1102,12 @@ BOOL vc4_hvs_takeover(struct VideoCoreGfx_staticdata *xsd,
             return FALSE;
         }
 
+        /* A scaled fb plane holds the line buffer from its LBM word up. */
+        st->hvs_FBLBM = (st->hvs_FBWords == HVS_SCALED_WORDS)
+                      ? st->hvs_FBEntry[HVS_SC_LBM] : HVS_LBM_TOP;
+        if (st->hvs_FBLBM > HVS_LBM_TOP)
+            st->hvs_FBLBM = HVS_LBM_TOP;
+
         st->hvs_OutW  = (ctrl >> HVS_DISPCTRLX_W_SHIFT) & 0xfff;
         st->hvs_OutH  = (ctrl >> HVS_DISPCTRLX_H_SHIFT) & 0xfff;
         st->hvs_FBPtr = fb_phys & ~HVS_PTR_BUS_ALIAS;
@@ -820,7 +1142,9 @@ BOOL vc4_hvs_takeover(struct VideoCoreGfx_staticdata *xsd,
         }
 
         VC4_MBOX_LOCK(xsd);
+        hvs_note_list(st, head);
         our = hvs_build_list(xsd);
+        hvs_note_list(st, our);
         hvs_wr(HVS_DISPLIST(HVS_CHANNEL_HDMI), our);
         for (i = 0; i < HVS_SPIN_LATCH; i++)
         {
@@ -832,7 +1156,10 @@ BOOL vc4_hvs_takeover(struct VideoCoreGfx_staticdata *xsd,
             st->hvs_Active = TRUE;
         }
         else
+        {
+            hvs_note_list(st, head);
             hvs_wr(HVS_DISPLIST(HVS_CHANNEL_HDMI), head);
+        }
         VC4_MBOX_UNLOCK(xsd);
 
         if (st->hvs_Active)
@@ -965,8 +1292,47 @@ BOOL vc4_hvs_overlay(struct VideoCoreGfx_staticdata *xsd,
         if (st->hvs_OvlActive)
         {
             st->hvs_OvlActive = FALSE;
-            hvs_wr(HVS_DISPLIST(HVS_CHANNEL_HDMI), hvs_build_list(xsd));
+            hvs_commit(st, hvs_build_list(xsd));
+            /* The hidden buffer scans until this latches. */
+            st->hvs_FlipArmed = st->hvs_VSyncCount + 1;
         }
+        VC4_MBOX_UNLOCK(xsd);
+        return TRUE;
+    }
+
+    /* Planes: x/y are in the owner screen, which has to be on display,
+     * and the list places it over that screen. */
+    if (xsd->vcsd_PlanesMode)
+    {
+        ULONG i;
+
+        for (i = 0; i < xsd->vcsd_NumPlanes; i++)
+        {
+            if (xsd->vcsd_Plane[i].pl_BM == owner)
+                break;
+        }
+        if (i == xsd->vcsd_NumPlanes)
+        {
+            st->hvs_OvlActive = FALSE;
+            VC4_MBOX_UNLOCK(xsd);
+            return FALSE;
+        }
+
+        st->hvs_OvlActive = TRUE;
+        st->hvs_OvlOwner  = owner;
+        st->hvs_OvlPhys   = ovl->ovl_Phys & ~HVS_PTR_BUS_ALIAS;
+        st->hvs_OvlPitch  = ovl->ovl_Pitch;
+        st->hvs_OvlW      = ovl->ovl_Width;
+        st->hvs_OvlH      = ovl->ovl_Height;
+        st->hvs_OvlDestW  = ovl->ovl_Width;
+        st->hvs_OvlDestH  = ovl->ovl_Height;
+        st->hvs_OvlX      = ovl->ovl_X;
+        st->hvs_OvlY      = ovl->ovl_Y;
+        hvs_commit(st, hvs_build_list(xsd));
+
+        st->hvs_FlipArmed = st->hvs_VSyncCount + 1;
+        if (!(ovl->ovl_Flags & VC4GFX_OVL_NOWAIT))
+            hvs_latch_wait(st);
         VC4_MBOX_UNLOCK(xsd);
         return TRUE;
     }
@@ -1030,7 +1396,7 @@ BOOL vc4_hvs_overlay(struct VideoCoreGfx_staticdata *xsd,
 
     if (structural)
     {
-        hvs_wr(HVS_DISPLIST(HVS_CHANNEL_HDMI), hvs_build_list(xsd));
+        hvs_commit(st, hvs_build_list(xsd));
         if (!st->hvs_OvlOff)
         {
             /* Clipped away entirely (fully offscreen) — report shown
@@ -1062,7 +1428,7 @@ BOOL vc4_hvs_overlay(struct VideoCoreGfx_staticdata *xsd,
         {
             /* Entry shape changed after clipping (or moved fully
              * offscreen): the stale entry must go. */
-            hvs_wr(HVS_DISPLIST(HVS_CHANNEL_HDMI), hvs_build_list(xsd));
+            hvs_commit(st, hvs_build_list(xsd));
         }
     }
 
@@ -1131,7 +1497,7 @@ void vc4_hvs_update_cursor(struct VideoCoreGfx_staticdata *xsd)
         /* Cursor appeared or disappeared: the list changes shape, so
          * rebuild + repoint. Rare (show/hide/shape), and a mid-scanout
          * repoint here is at worst a single-frame artifact. */
-        hvs_wr(HVS_DISPLIST(HVS_CHANNEL_HDMI), hvs_build_list(xsd));
+        hvs_commit(st, hvs_build_list(xsd));
     }
     VC4_MBOX_UNLOCK(xsd);
 }
@@ -1202,4 +1568,42 @@ void vc4_hvs_dump(struct VideoCoreGfx_staticdata *xsd,
     vc4_hvs_probe();
 #endif
 #endif
+}
+
+/* ------------------------------------------------------------------ */
+/* Screens as planes                                                   */
+/* ------------------------------------------------------------------ */
+
+/* The arenas are remapped with 2MB blocks, which only the aarch64 kernel
+ * does for us. */
+BOOL vc4_hvs_planes_ok(void)
+{
+#if defined(__aarch64__)
+    return VC4_HVS_TAKEOVER;
+#else
+    return FALSE;
+#endif
+}
+
+/* The firmware scales the fb to a display mode it never changes, so a
+ * screen fits whenever the HVS can scale it up to the fb plane. */
+BOOL vc4_hvs_plane_fits(struct VideoCoreGfx_staticdata *xsd, ULONG w, ULONG h)
+{
+    struct vc4_hvs_state *st = &xsd->vcsd_HVS;
+
+    return st->hvs_DestW && st->hvs_DestH
+        && HVS_PPF_FITS(w, st->hvs_DestW) && HVS_PPF_FITS(h, st->hvs_DestH);
+}
+
+/* Caller holds the mailbox lock. Armed like a flip, so LatchWait tells
+ * when the previous list - and the pages it showed - are out of use. */
+void vc4_hvs_planes_commit(struct VideoCoreGfx_staticdata *xsd)
+{
+    struct vc4_hvs_state *st = &xsd->vcsd_HVS;
+
+    if (!st->hvs_Active)
+        return;
+
+    hvs_commit(st, hvs_build_list(xsd));
+    st->hvs_FlipArmed = st->hvs_VSyncCount + 1;
 }
