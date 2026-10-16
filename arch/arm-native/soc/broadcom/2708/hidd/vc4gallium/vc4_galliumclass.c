@@ -380,9 +380,72 @@ VOID METHOD(HiddVC4Gallium, Root, Get)
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
+/* The session a pipe screen belongs to, 0 for none. */
+static ULONG vc4_session_of(struct vc4galliumstaticdata *sd, APTR screen)
+{
+    ULONG i;
+
+    for (i = 0; i < VC4_MAX_SESSIONS; i++)
+    {
+        if (sd->sessions[i].vs_Used && (sd->sessions[i].vs_Screen == screen))
+            return i + 1;
+    }
+    return 0;
+}
+
+/* For the present half: is a screen not the only live one? */
+BOOL vc4_aros_shared_gpu(void *ctx)
+{
+    struct vc4galliumstaticdata *sd = ctx;
+    ULONG i, live = 0;
+
+    for (i = 0; i < VC4_MAX_SESSIONS; i++)
+    {
+        if (sd->sessions[i].vs_Used && !sd->sessions[i].vs_Dead)
+            live++;
+    }
+    return live > 1;
+}
+
+/* Sessions whose task died without destroying its screen: their Mesa
+ * objects are gone, so the present state they own is dropped, not
+ * released, and then their BOs go. */
+static void vc4_sweep_dead(struct vc4galliumstaticdata *sd)
+{
+    ULONG i;
+
+    for (i = 0; i < VC4_MAX_SESSIONS; i++)
+    {
+        if (sd->sessions[i].vs_Used && sd->sessions[i].vs_Dead)
+            break;
+    }
+    if (i == VC4_MAX_SESSIONS)
+        return;
+
+    vc4_aros_wait_idle(sd);
+
+    for (i = 0; i < VC4_MAX_SESSIONS; i++)
+    {
+        if (!sd->sessions[i].vs_Used || !sd->sessions[i].vs_Dead)
+            continue;
+
+        aros_drm_screen_gone(sd->sessions[i].vs_Screen, TRUE);
+        vc4_aros_release_session(sd, i + 1);
+        bug("[VC4Gallium] session %u: its task ended without a GL teardown, swept\n",
+            (unsigned)(i + 1));
+
+        ObtainSemaphore(&sd->bo_lock);
+        sd->sessions[i].vs_Used = FALSE;
+        sd->sessions[i].vs_Dead = FALSE;
+        ReleaseSemaphore(&sd->bo_lock);
+    }
+}
+
 APTR METHOD(HiddVC4Gallium, Hidd_Gallium, CreatePipeScreen)
 {
     struct vc4galliumstaticdata *sd = SD(cl);
+    struct pipe_screen *screen;
+    ULONG i;
 
     /* Diagnostic: has the firmware governor re-clocked anything since
      * InitLib forced V3D to max? Logged once per GL context start. */
@@ -400,7 +463,39 @@ APTR METHOD(HiddVC4Gallium, Hidd_Gallium, CreatePipeScreen)
         sd->bridge_inited = TRUE;
     }
 
-    return vc4_aros_create_screen(&sd->bridge, sd->coreapi);
+    vc4_sweep_dead(sd);
+
+    /* A session per screen, named to the shim by the fd. */
+    ObtainSemaphore(&sd->bo_lock);
+    for (i = 0; (i < VC4_MAX_SESSIONS) && sd->sessions[i].vs_Used; i++)
+        ;
+    if (i < VC4_MAX_SESSIONS)
+    {
+        sd->sessions[i].vs_Used   = TRUE;
+        sd->sessions[i].vs_Dead   = FALSE;
+        sd->sessions[i].vs_Screen = NULL;
+        sd->sessions[i].vs_Task   = FindTask(NULL);
+    }
+    ReleaseSemaphore(&sd->bo_lock);
+    if (i == VC4_MAX_SESSIONS)
+    {
+        bug("[VC4Gallium] %u GL screens open already - GL falls back to softpipe\n",
+            (unsigned)VC4_MAX_SESSIONS);
+        return NULL;
+    }
+
+    screen = vc4_aros_create_screen(&sd->bridge, sd->coreapi,
+                                    (int)(VC4_SCREENFD_TAG | (i + 1)));
+    if (!screen)
+    {
+        vc4_aros_release_session(sd, i + 1);
+        ObtainSemaphore(&sd->bo_lock);
+        sd->sessions[i].vs_Used = FALSE;
+        ReleaseSemaphore(&sd->bo_lock);
+        return NULL;
+    }
+    sd->sessions[i].vs_Screen = screen;
+    return screen;
 }
 
 IPTR METHOD(HiddVC4Gallium, Hidd_Gallium, DisplayResourceRP)
@@ -414,6 +509,7 @@ VOID METHOD(HiddVC4Gallium, Hidd_Gallium, DestroyPipeScreen)
 {
     struct vc4galliumstaticdata *sd = SD(cl);
     struct vc4_v3d_state *v3d = &sd->v3d;
+    ULONG sid, i;
 
     /* The direct path builds the pipe_screen in mesa3dgl via
      * vc4_screen_create(), so the base class's no-op DestroyPipeScreen
@@ -421,7 +517,11 @@ VOID METHOD(HiddVC4Gallium, Hidd_Gallium, DestroyPipeScreen)
      * Dispatch into the screen's own destroy fn here. */
     D(bug("[VC4Gallium] %s(screen=%p)\n", __PRETTY_FUNCTION__, msg->screen));
 
-    if (msg->screen)
+    if (!msg->screen)
+        return;
+
+    sid = vc4_session_of(sd, msg->screen);
+
     {
         struct pipe_screen *screen = (struct pipe_screen *)msg->screen;
 
@@ -433,16 +533,32 @@ VOID METHOD(HiddVC4Gallium, Hidd_Gallium, DestroyPipeScreen)
         vc4_aros_wait_idle(sd);
         vc4_aros_dma_wait_idle(sd);
 
+        /* Only the present state this screen owns: another app keeps its
+         * overlay or its scanout pages. */
+        aros_drm_screen_gone(screen, FALSE);
         screen->destroy(screen);
     }
 
-    /* Drop the winsys bookkeeping for this screen. TRUE means it was the
-     * last one, so the hardware reset below is safe; with a second screen
-     * still live (a capability-probe context, or a fullscreen toggle
-     * building the new context before dropping the old) it would free the
-     * survivor's BOs and clear V3D state under its rendering. */
-    if (!aros_drm_release_bridge())
+    if (sid)
+    {
+        vc4_aros_release_session(sd, sid);
+        ObtainSemaphore(&sd->bo_lock);
+        sd->sessions[sid - 1].vs_Used = FALSE;
+        ReleaseSemaphore(&sd->bo_lock);
+    }
+    vc4_sweep_dead(sd);
+
+    /* With another screen live (another app, a capability-probe context,
+     * or a fullscreen toggle building the new context before dropping the
+     * old) the reset below would free the survivor's BOs and clear V3D
+     * state under its rendering. */
+    ObtainSemaphore(&sd->bo_lock);
+    for (i = 0; (i < VC4_MAX_SESSIONS) && !sd->sessions[i].vs_Used; i++)
+        ;
+    ReleaseSemaphore(&sd->bo_lock);
+    if (i < VC4_MAX_SESSIONS)
         return;
+    aros_drm_release_bridge();
 
     /* Return the driver to a clean, idle, empty state for the next GL
      * session: sweep whatever Mesa leaked (plus the async-DMA pin and the

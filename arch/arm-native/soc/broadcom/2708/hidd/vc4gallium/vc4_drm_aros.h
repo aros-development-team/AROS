@@ -23,6 +23,7 @@ struct vc4_aros_fd
 {
     ULONG                       magic;      /* VC4_AROS_FD_MAGIC */
     struct vc4galliumstaticdata  *sd;
+    ULONG                       sid;        /* session, 0 = none */
 };
 
 #define VC4_AROS_FD_MAGIC   0x56433444  /* "VC4D" */
@@ -233,5 +234,8 @@ void vc4_aros_bo_unref_locked(struct vc4galliumstaticdata *sd, ULONG handle);
  * Called from Expunge.
  */
 void vc4_aros_release_all_bos(struct vc4galliumstaticdata *sd);
+
+/* Free the BOs one session created. */
+void vc4_aros_release_session(struct vc4galliumstaticdata *sd, ULONG sid);
 
 #endif /* _VC4_DRM_AROS_H */

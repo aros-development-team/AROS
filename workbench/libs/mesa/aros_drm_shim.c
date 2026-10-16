@@ -192,7 +192,7 @@ int drmIoctl(int fd, unsigned long request, void *arg)
      * anything else, so a wait timeout MUST arrive as ETIME here.
      * (errno set inside the hidd never reaches us: each side has its
      * own stdc errno.) */
-    ret = aros_drm_bridge->ioctl(aros_drm_bridge->ctx, nr, arg);
+    ret = aros_drm_bridge->ioctl(aros_drm_bridge->ctx, fd, nr, arg);
     if (ret != 0)
     {
         errno = (ret < -1) ? -ret : EINVAL;
