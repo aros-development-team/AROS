@@ -412,8 +412,7 @@ ULONG MNAME_DISPLAY(ModeProperties)(OOP_Class *cl, OOP_Object *o, struct pHidd_D
     if (vcgfx_planes_supported(XSD(cl)))
     {
         props.CompositionFlags = COMPF_ABOVE;
-        if ((XSD(cl)->vcsd_HVSGen == VCGFX_HVS_HVS5)
-            || ((XSD(cl)->vcsd_HVSGen == VCGFX_HVS_HVS6) && vc4_hvs6_scales(XSD(cl))))
+        if ((XSD(cl)->vcsd_HVSGen != VCGFX_HVS_HVS6) || vc4_hvs6_scales(XSD(cl)))
             props.CompositionFlags |= COMPF_SCALE;
     }
 
@@ -438,12 +437,12 @@ static BOOL vc4_screen_scale(OOP_Class *cl, OOP_Object *bm, ULONG *mw, ULONG *mh
     data = OOP_INST_DATA(xsd->vcsd_VideoCoreGfxOffBMClass, bm);
     *mw = data->modew;
     *mh = data->modeh;
-    if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS5)
+    if (xsd->vcsd_HVSGen != VCGFX_HVS_HVS6)
     {
         *dw = xsd->vcsd_HVS.hvs_SrcW;
         *dh = xsd->vcsd_HVS.hvs_SrcH;
     }
-    else if ((xsd->vcsd_HVSGen == VCGFX_HVS_HVS6) && vc4_hvs6_scales(xsd))
+    else if (vc4_hvs6_scales(xsd))
         vc4_hvs6_out_size(xsd, dw, dh);
     else
         return FALSE;

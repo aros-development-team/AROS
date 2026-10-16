@@ -106,6 +106,26 @@
  * if real HW disagrees. */
 #define HVS_OVL_LBM             0
 
+/* LBM as on HVS5: the firmware hands it out downwards from 0xbc00 at 8
+ * bytes per source pixel of width (its scaled fb planes sit at 0x9400 for
+ * 1280 wide and 0xa300 for 800). Our planes take it upwards from 0. */
+#define HVS_LBM_TOP             0xbc00
+#define HVS_LBM_BYTES(w)        ((ULONG)(w) * 8)
+
+/* HVS_PPF() keeps 16 bits of ratio: upscale only. */
+#define HVS_PPF_FITS(src, dst)  ((((ULONG)(src) << 16) / (ULONG)(dst)) <= 0xffff)
+
+/* Word offsets in a scaled entry; the ones not listed are context. */
+#define HVS_SC_POS1             2
+#define HVS_SC_POS2             3
+#define HVS_SC_PTR0             5
+#define HVS_SC_PITCH            7
+#define HVS_SC_LBM              8
+#define HVS_SC_PPFX             9
+#define HVS_SC_PPFY             10
+#define HVS_SC_KRN0             12
+#define HVS_SC_KRN1             13
+
 /* Our copy of the firmware's 11-word Mitchell/Netravali filter kernel.
  * The firmware parks its own at word 0xff4 (4084); ours lives below it,
  * above the list slots (slots end at 4061). Copied at takeover, with
@@ -218,18 +238,16 @@
 
 /* Our own display lists live high in the known-readable dlist RAM,
  * clear of the firmware allocator's observed range (~word 2500), in a
- * round-robin of slots so a list being written is never the one the
- * HVS is scanning (it holds at most LACT plus one pending LIST).
+ * set of slots, so a list being written is never one the HVS is scanning
+ * or about to (see hvs_free_slot()).
  *
- * NOTE: 7 slots, not 8. Slot 7 would start at 3584+7*64=4032 and a full
- * scaled dlist (fb + scaled overlay + cursor + end, ~36 words) reaches
- * 4068 — clobbering HVS_OWN_KERNEL at 4064. That corrupts the PPF filter
- * kernel a scaled overlay scanout reads, wedging the HVS a few frames
- * later (the ~2-3s delay = time to round-robin up to slot 7). Slot 6 ends
- * at 3968+64=4032, clear of the kernel. */
-#define HVS_OWN_SLOTS           7
+ * The slots must end at or below HVS_OWN_KERNEL: a list running into the
+ * kernel corrupts every scaled plane and wedges the HVS a few frames
+ * later. Four of 120 words end exactly there and hold four scaled screen
+ * planes, a scaled overlay, the fb entry, the cursor and END. */
+#define HVS_OWN_SLOTS           4
 #define HVS_OWN_SLOT_BASE       3584
-#define HVS_OWN_SLOT_STRIDE     64
+#define HVS_OWN_SLOT_STRIDE     120
 
 /* Takeover state, embedded in VideoCoreGfx_staticdata. hvs_Active FALSE
  * means the firmware owns the display and all callers must use the
@@ -351,5 +369,10 @@ BOOL vc4_hvs_overlay(struct VideoCoreGfx_staticdata *xsd,
 
 /* Wait for the last armed flip/overlay to latch (VC4GFX_OVL_NOWAIT). */
 void vc4_hvs_latch_wait(struct VideoCoreGfx_staticdata *xsd);
+
+/* Screens as planes (vcgfx_planes.c), VideoCore IV. */
+BOOL vc4_hvs_planes_ok(void);
+BOOL vc4_hvs_plane_fits(struct VideoCoreGfx_staticdata *xsd, ULONG w, ULONG h);
+void vc4_hvs_planes_commit(struct VideoCoreGfx_staticdata *xsd);
 
 #endif /* _VIDEOCOREGFX_HVS_H */

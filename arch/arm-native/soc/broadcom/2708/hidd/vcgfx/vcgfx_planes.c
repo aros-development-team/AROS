@@ -58,6 +58,8 @@ BOOL vcgfx_planes_supported(struct VideoCoreGfx_staticdata *xsd)
         return vc4_hvs5_planes_ok();
     if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
         return vc4_hvs6_planes_ok();
+    if (xsd->vcsd_HVSGen == VCGFX_HVS_VC4)
+        return vc4_hvs_planes_ok();
     return FALSE;
 }
 
@@ -73,8 +75,10 @@ static void planes_commit(struct VideoCoreGfx_staticdata *xsd)
 {
     if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
         vc4_hvs6_planes_commit(xsd);
-    else
+    else if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS5)
         vc4_hvs5_planes_commit(xsd);
+    else
+        vc4_hvs_planes_commit(xsd);
 }
 
 /* A screen of this mode can fill the display without a mode set. */
@@ -82,7 +86,16 @@ static BOOL plane_fits(struct VideoCoreGfx_staticdata *xsd, ULONG w, ULONG h)
 {
     if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
         return vc4_hvs6_plane_fits(xsd, w, h);
-    return vc4_hvs5_plane_fits(xsd, w, h);
+    if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS5)
+        return vc4_hvs5_plane_fits(xsd, w, h);
+    return vc4_hvs_plane_fits(xsd, w, h);
+}
+
+/* A lone screen gets its own timing. Not on VideoCore IV, where the
+ * firmware keeps the display mode and a mode set only blanks it. */
+static BOOL timing_follows_front(struct VideoCoreGfx_staticdata *xsd)
+{
+    return xsd->vcsd_HVSGen != VCGFX_HVS_VC4;
 }
 
 /* The overlay is up over this screen. */
@@ -301,8 +314,9 @@ ULONG vcgfx_show_viewports(struct VideoCoreGfx_staticdata *xsd,
     /* A mode set blanks the display, so the timing follows the front
      * screen only when it is alone, or too big to scale down into it. */
     if (n && xsd->vcsd_FBObj
-        && ((n == 1) || !plane_fits(xsd, shown[0].pl_Data->modew,
-                                    shown[0].pl_Data->modeh)))
+        && (((n == 1) && timing_follows_front(xsd))
+            || !plane_fits(xsd, shown[0].pl_Data->modew,
+                           shown[0].pl_Data->modeh)))
     {
         IPTR mode = vHidd_ModeID_Invalid, fbmode = vHidd_ModeID_Invalid;
 
