@@ -157,6 +157,14 @@ int main(void)
         struct TagItem t[] = { { UGA_Operation, UGOP_PASSWORD }, { UGA_Name, (IPTR)"uatest" }, { UGA_Password, (IPTR)"secret2" }, { TAG_DONE, 0 } };
         e = Admin(t);
         Report("set the password", e == 0, e);
+        t[2].ti_Data = (IPTR)"";
+        e = Admin(t);
+        pw = getpwnam("uatest");
+        /* usergroup.library shows the hash only from the network database */
+        Report("remove the password", e == 0 && pw && (getuid() == 0 || !pw->pw_passwd || !pw->pw_passwd[0]), e);
+        t[2].ti_Data = (IPTR)"secret2";
+        e = Admin(t);
+        Report("set it again", e == 0, e);
     }
     {
         struct TagItem t[] = { { UGA_Operation, UGOP_MODIFY }, { UGA_Name, (IPTR)"uatest" }, { UGA_NewName, (IPTR)"uatest3" },

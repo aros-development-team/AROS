@@ -23,6 +23,7 @@
 #include <proto/security.h>
 #include <proto/pam.h>
 
+#include <dos/var.h>
 #include <libraries/usergroup.h>
 #include <libraries/security.h>
 #include <libraries/pam.h>
@@ -40,6 +41,77 @@ static void Copy(STRPTR to, CONST_STRPTR from, ULONG size)
 {
     strncpy((char *)to, from ? (const char *)from : "", size - 1);
     to[size - 1] = '\0';
+}
+
+/* Is the volume a directory lives on writable? (unknown: yes) */
+static BOOL LockWritable(BPTR lock)
+{
+    struct InfoData *id;
+    BOOL ok = TRUE;
+
+    if (lock && (id = AllocVec(sizeof(struct InfoData), MEMF_ANY)))
+    {
+        if (Info(lock, id))
+            ok = (id->id_DiskState == ID_VALIDATED);
+        FreeVec(id);
+    }
+    return ok;
+}
+
+/* The directory of a database file (a path) */
+static BOOL FileDirWritable(CONST_STRPTR file)
+{
+    char dir[256];
+    BPTR lock;
+    BOOL ok = TRUE;
+
+    strncpy(dir, file, sizeof(dir) - 1);
+    dir[sizeof(dir) - 1] = '\0';
+    *PathPart(dir) = '\0';
+    if ((lock = Lock(dir, SHARED_LOCK)))
+    {
+        ok = LockWritable(lock);
+        UnLock(lock);
+    }
+    return ok;
+}
+
+/* netinfo.device's database files: ENV:SYS/userdb and groupdb, or its defaults */
+static BOOL NetworkDbWritable(void)
+{
+    char path[256];
+
+    if (GetVar("SYS/userdb", path, sizeof(path), GVF_GLOBAL_ONLY) <= 0)
+        strcpy(path, "SYS:System/Network/AROSTCP/db/passwd");
+    if (!FileDirWritable(path))
+        return FALSE;
+    if (GetVar("SYS/groupdb", path, sizeof(path), GVF_GLOBAL_ONLY) <= 0)
+        strcpy(path, "SYS:System/Network/AROSTCP/db/group");
+    return FileDirWritable(path);
+}
+
+/* security.library's password and configuration (group file) directories */
+static BOOL SecurityDbWritable(void)
+{
+    BPTR lock;
+    BOOL ok = TRUE;
+
+    if ((lock = secGetPasswdDirLock()))
+    {
+        ok = LockWritable(lock);
+        UnLock(lock);
+    }
+    if (ok && (lock = secGetConfigDirLock()))
+    {
+        ok = LockWritable(lock);
+        UnLock(lock);
+    }
+    return ok;
+}
+
+BOOL Acc_CanEdit(struct AccountsState *st)
+{
+    return st->Admin && !st->ReadOnly;
 }
 
 BOOL Acc_Init(struct AccountsState *st)
@@ -63,6 +135,7 @@ BOOL Acc_Init(struct AccountsState *st)
         st->Admin = ((secGetTaskOwner(NULL) >> 16) == secROOT_UID);
     else
         st->Admin = TRUE;   /* one user owns the machine */
+    st->ReadOnly = !(st->Multi ? SecurityDbWritable() : NetworkDbWritable());
 
     if ((pw = getpwuid(geteuid())))
         Copy(st->Me, pw->pw_name, sizeof(st->Me));
@@ -416,7 +489,7 @@ static const struct { CONST_STRPTR name; LONG gid; } DefGroups[] =
 
 BOOL Acc_NeedsDefaults(struct AccountsState *st)
 {
-    return !st->Multi && st->Admin && (st->NumAccounts == 0 || st->NumGroups == 0);
+    return !st->Multi && Acc_CanEdit(st) && (st->NumAccounts == 0 || st->NumGroups == 0);
 }
 
 LONG Acc_AddDefaults(struct AccountsState *st)

@@ -35,6 +35,7 @@ struct AccountsState
 {
     BOOL                Multi;          /* security.library is resident and configured */
     BOOL                Admin;          /* may change other accounts */
+    BOOL                ReadOnly;       /* the database is on read-only media */
     BOOL                LoggedIn;       /* we logged this task in as root */
     char                Me[ACC_NAMESIZE];
     struct Account      *Accounts;
@@ -63,6 +64,9 @@ BOOL  Acc_ChangeMyPassword(struct AccountsState *st, CONST_STRPTR oldpwd, CONST_
 
 /* Multi-user: log this task in as root (the graphical login asks) */
 BOOL  Acc_LoginRoot(struct AccountsState *st);
+
+/* May the accounts and groups be changed (by this user, on this media)? */
+BOOL  Acc_CanEdit(struct AccountsState *st);
 
 CONST_STRPTR Acc_GroupName(struct AccountsState *st, LONG gid);
 LONG  Acc_NextFreeUID(struct AccountsState *st);

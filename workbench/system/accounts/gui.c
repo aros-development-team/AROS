@@ -25,7 +25,7 @@ enum
 {
     ID_ADD = 1, ID_EDIT, ID_PASSWORD, ID_LOCK, ID_DELETE, ID_MYPW, ID_LOGIN, ID_REFRESH, ID_SELECT,
     ID_EDIT_SAVE, ID_EDIT_CANCEL, ID_PW_SAVE, ID_PW_CANCEL, ID_MYPW_SAVE, ID_MYPW_CANCEL,
-    ID_GADD, ID_GEDIT, ID_GDELETE, ID_GSELECT, ID_GEDIT_SAVE, ID_GEDIT_CANCEL
+    ID_GADD, ID_GEDIT, ID_GDELETE, ID_GSELECT, ID_GEDIT_SAVE, ID_GEDIT_CANCEL, ID_PW_REMOVE
 };
 
 static struct AccountsState *st;
@@ -33,15 +33,19 @@ static struct AccountsState *st;
 static Object *app, *win, *status, *list, *glist;
 static Object *bt_add, *bt_edit, *bt_pw, *bt_lock, *bt_del, *bt_mypw, *bt_login, *bt_refresh;
 static Object *bt_gadd, *bt_gedit, *bt_gdel;
+static Object *u_buttons, *u_mine, *g_buttons;     /* hidden when nothing may be changed */
+static Object *umenu, *um_edit, *um_pw, *um_lock, *um_unlock, *um_del, *um_add;
+static Object *gmenu, *gm_edit, *gm_del, *gm_add;
+static struct MUI_CustomClass *listclass;
 static Object *ewin, *e_name, *e_real, *e_uid, *e_group, *e_home, *e_shell, *e_pw, *e_pw2, *e_hint;
 static Object *gwin, *g_name, *g_gid, *g_desc, *g_desclabel, *g_members, *g_primary;
-static Object *pwin, *p_pw, *p_pw2;
+static Object *pwin, *p_pw, *p_pw2, *p_who, *p_remove;
 static Object *mwin, *m_old, *m_pw, *m_pw2;
 static Object *e_save, *e_cancel, *g_save, *g_cancel, *p_save, *p_cancel, *m_save, *m_cancel;
 
 static STRPTR *groupnames;          /* cycle entries */
 static struct Account *editing;     /* NULL: a new account */
-static struct Account *pwtarget;
+static char pwname[ACC_NAMESIZE];  /* the account in the password window */
 static char geditname[ACC_NAMESIZE];/* the group being edited, "" for a new one */
 static LONG geditgid;
 static CONST_STRPTR pages[3];
@@ -185,32 +189,76 @@ static struct GroupEntry *SelectedGroup(void)
     return g;
 }
 
+/* Without the right to change anything the lists are only shown: the
+ * editing buttons are hidden and the lists have no context menus */
 static void UpdateButtons(void)
 {
     struct Account *a = Selected();
-    BOOL sel = (a != NULL), admin = st->Admin, gsel = (SelectedGroup() != NULL);
+    BOOL sel = (a != NULL), edit = Acc_CanEdit(st), gsel = (SelectedGroup() != NULL);
 
-    set(bt_gadd, MUIA_Disabled, !admin);
-    set(bt_gedit, MUIA_Disabled, !(admin && gsel));
-    set(bt_gdel, MUIA_Disabled, !(admin && gsel));
+    set(u_buttons, MUIA_ShowMe, edit);
+    set(g_buttons, MUIA_ShowMe, edit);
+    set(u_mine, MUIA_ShowMe, !st->ReadOnly && st->Me[0] != '\0');
+    set(bt_login, MUIA_ShowMe, st->Multi && !st->Admin && !st->ReadOnly);
 
-    set(bt_add, MUIA_Disabled, !admin);
-    set(bt_edit, MUIA_Disabled, !(admin && sel));
-    set(bt_pw, MUIA_Disabled, !(admin && sel));
-    set(bt_lock, MUIA_Disabled, !(admin && sel));
-    set(bt_del, MUIA_Disabled, !(admin && sel));
+    set(bt_gedit, MUIA_Disabled, !gsel);
+    set(bt_gdel, MUIA_Disabled, !gsel);
+    set(bt_edit, MUIA_Disabled, !sel);
+    set(bt_pw, MUIA_Disabled, !sel);
+    set(bt_lock, MUIA_Disabled, !sel);
+    set(bt_del, MUIA_Disabled, !sel);
     set(bt_lock, MUIA_Text_Contents, (IPTR)((sel && a->Locked) ? MSG(MSG_BUTTON_UNLOCK) : MSG(MSG_BUTTON_LOCK)));
-    set(bt_login, MUIA_ShowMe, st->Multi && !admin);
-    set(bt_mypw, MUIA_Disabled, st->Me[0] == '\0');
+
+    /* the context menus act on the entry under the pointer */
+    set(um_edit, MUIA_Menuitem_Enabled, sel);
+    set(um_pw, MUIA_Menuitem_Enabled, sel);
+    set(um_lock, MUIA_Menuitem_Enabled, sel && !a->Locked);
+    set(um_unlock, MUIA_Menuitem_Enabled, sel && a->Locked);
+    set(um_del, MUIA_Menuitem_Enabled, sel);
+    set(gm_edit, MUIA_Menuitem_Enabled, gsel);
+    set(gm_del, MUIA_Menuitem_Enabled, gsel);
 }
 
 static void UpdateStatus(void)
 {
     char buf[256];
+    CONST_STRPTR why = st->ReadOnly ? MSG(MSG_READONLY_MEDIA) : (!st->Admin ? MSG(MSG_NOT_ADMIN) : NULL);
 
     snprintf(buf, sizeof(buf), "%s%s%s", MSG(st->Multi ? MSG_MODE_SECURITY : MSG_MODE_SINGLE),
-             st->Admin ? "" : "\n", st->Admin ? "" : (const char *)MSG(MSG_NOT_ADMIN));
+             why ? "\n" : "", why ? (const char *)why : "");
     set(status, MUIA_Text_Contents, (IPTR)buf);
+}
+
+/*
+ * The lists: a right click selects the entry under the pointer (or none)
+ * and opens the list's context menu - only when something may be changed.
+ */
+BOOPSI_DISPATCHER(IPTR, ListDispatcher, cl, obj, msg)
+{
+    if (msg->MethodID == MUIM_ContextMenuBuild)
+    {
+        struct MUIP_ContextMenuBuild *m = (struct MUIP_ContextMenuBuild *)msg;
+        struct MUI_List_TestPos_Result pos;
+
+        if (!Acc_CanEdit(st))
+            return 0;
+        pos.entry = -1;
+        DoMethod(obj, MUIM_List_TestPos, m->mx, m->my, (IPTR)&pos);
+        set(obj, MUIA_List_Active, pos.entry >= 0 ? pos.entry : MUIV_List_Active_Off);
+        UpdateButtons();
+    }
+    return DoSuperMethodA(cl, obj, msg);
+}
+BOOPSI_DISPATCHER_END
+
+static Object *MenuItem(ULONG id)
+{
+    return MenuitemObject, MUIA_Menuitem_Title, (IPTR)MSG(id), End;
+}
+
+static Object *MenuBar(void)
+{
+    return MenuitemObject, MUIA_Menuitem_Title, (IPTR)NM_BARLABEL, End;
 }
 
 /* The entries of the primary group cycle, from st->Groups */
@@ -392,18 +440,44 @@ static void SaveEdit(void)
     Refresh(keep, NULL);
 }
 
+static void OpenPassword(struct Account *a)
+{
+    char text[ACC_NAMESIZE + 64];
+
+    strncpy(pwname, a->Name, sizeof(pwname) - 1);
+    pwname[sizeof(pwname) - 1] = '\0';
+    snprintf(text, sizeof(text), MSG(MSG_PASSWORD_FOR), a->Name);
+    set(p_who, MUIA_Text_Contents, (IPTR)text);
+    set(p_remove, MUIA_Disabled, a->NoPassword && !a->Locked);
+    set(pwin, MUIA_Window_Open, TRUE);
+    set(pwin, MUIA_Window_ActiveObject, (IPTR)p_pw);
+}
+
+static void ClosePassword(void)
+{
+    set(p_pw, MUIA_String_Contents, (IPTR)"");
+    set(p_pw2, MUIA_String_Contents, (IPTR)"");
+    set(pwin, MUIA_Window_Open, FALSE);
+}
+
 static void SavePassword(void)
 {
     STRPTR pw = (STRPTR)XGET(p_pw, MUIA_String_Contents);
     STRPTR pw2 = (STRPTR)XGET(p_pw2, MUIA_String_Contents);
     LONG err;
 
+    /* an empty password is removed with its own button, on purpose */
+    if (!pw[0])
+    {
+        Message(MSG(MSG_ERR_EMPTY_PASSWORD));
+        return;
+    }
     if (strcmp(pw, pw2))
     {
         Message(MSG(MSG_ERR_MISMATCH));
         return;
     }
-    err = Acc_SetPassword(st, pwtarget->Name, pw);
+    err = Acc_SetPassword(st, pwname, pw);
     set(p_pw, MUIA_String_Contents, (IPTR)"");
     set(p_pw2, MUIA_String_Contents, (IPTR)"");
     if (err)
@@ -411,9 +485,27 @@ static void SavePassword(void)
         ErrorMessage(err, FALSE);
         return;
     }
-    set(pwin, MUIA_Window_Open, FALSE);
+    ClosePassword();
     Message(MSG(MSG_DONE_PASSWORD));
-    Refresh(pwtarget->Name, NULL);
+    Refresh(pwname, NULL);
+}
+
+static void RemovePassword(void)
+{
+    char text[ACC_NAMESIZE + 256];
+    LONG err;
+
+    snprintf(text, sizeof(text), MSG(MSG_REQ_REMOVE_PASSWORD), pwname);
+    if (MUI_RequestA(app, pwin, 0, (STRPTR)MSG(MSG_TITLE), (STRPTR)MSG(MSG_REQ_REMOVE_BUTTONS), text, NULL) != 1)
+        return;
+    if ((err = Acc_SetPassword(st, pwname, "")))
+    {
+        ErrorMessage(err, FALSE);
+        return;
+    }
+    ClosePassword();
+    Message(MSG(MSG_DONE_REMOVED));
+    Refresh(pwname, NULL);
 }
 
 static void SaveMyPassword(void)
@@ -607,6 +699,31 @@ BOOL Gui_Run(struct AccountsState *state)
     pages[1] = MSG(MSG_PAGE_GROUPS);
     pages[2] = NULL;
 
+    if (!(listclass = MUI_CreateCustomClass(NULL, MUIC_List, NULL, 0, ListDispatcher)))
+    {
+        FreeVec(groupnames);
+        return FALSE;
+    }
+    umenu = MenustripObject,
+        MUIA_Family_Child, MenuObjectT((IPTR)MSG(MSG_MENU_ACCOUNT)),
+            MUIA_Family_Child, um_edit = MenuItem(MSG_MENU_EDIT),
+            MUIA_Family_Child, um_pw = MenuItem(MSG_MENU_PASSWORD),
+            MUIA_Family_Child, um_lock = MenuItem(MSG_MENU_LOCK),
+            MUIA_Family_Child, um_unlock = MenuItem(MSG_MENU_UNLOCK),
+            MUIA_Family_Child, um_del = MenuItem(MSG_MENU_DELETE),
+            MUIA_Family_Child, MenuBar(),
+            MUIA_Family_Child, um_add = MenuItem(MSG_MENU_ADD_ACCOUNT),
+        End,
+    End;
+    gmenu = MenustripObject,
+        MUIA_Family_Child, MenuObjectT((IPTR)MSG(MSG_MENU_GROUP)),
+            MUIA_Family_Child, gm_edit = MenuItem(MSG_MENU_EDIT),
+            MUIA_Family_Child, gm_del = MenuItem(MSG_MENU_DELETE),
+            MUIA_Family_Child, MenuBar(),
+            MUIA_Family_Child, gm_add = MenuItem(MSG_MENU_ADD_GROUP),
+        End,
+    End;
+
     app = ApplicationObject,
         MUIA_Application_Title,       (IPTR)"Accounts",
         MUIA_Application_Version,     (IPTR)"$VER: Accounts 1.1 (15.10.2026)",
@@ -623,29 +740,35 @@ BOOL Gui_Run(struct AccountsState *state)
                     MUIA_Register_Frame, TRUE,
                     Child, VGroup,
                         Child, ListviewObject,
-                            MUIA_Listview_List, list = ListObject, InputListFrame,
+                            MUIA_Listview_List, list = NewObject(listclass->mcc_Class, NULL, InputListFrame,
+                                MUIA_ContextMenu, (IPTR)umenu,
                                 MUIA_List_Format, (IPTR)"BAR,P=\33r BAR,BAR,BAR,BAR,",
                                 MUIA_List_Title, TRUE,
                                 MUIA_List_DisplayHook, (IPTR)&displayhook,
-                            End,
+                            TAG_DONE),
                         End,
-                        Child, HGroup,
+                        Child, u_buttons = HGroup,
                             Child, bt_add = SimpleButton(MSG(MSG_BUTTON_ADD)),
                             Child, bt_edit = SimpleButton(MSG(MSG_BUTTON_EDIT)),
                             Child, bt_pw = SimpleButton(MSG(MSG_BUTTON_PASSWORD)),
                             Child, bt_lock = SimpleButton(MSG(MSG_BUTTON_LOCK)),
                             Child, bt_del = SimpleButton(MSG(MSG_BUTTON_DELETE)),
                         End,
+                        Child, u_mine = HGroup,
+                            Child, bt_mypw = SimpleButton(MSG(MSG_BUTTON_MYPASSWORD)),
+                            Child, HSpace(0),
+                        End,
                     End,
                     Child, VGroup,
                         Child, ListviewObject,
-                            MUIA_Listview_List, glist = ListObject, InputListFrame,
+                            MUIA_Listview_List, glist = NewObject(listclass->mcc_Class, NULL, InputListFrame,
+                                MUIA_ContextMenu, (IPTR)gmenu,
                                 MUIA_List_Format, (IPTR)"BAR,P=\33r BAR,BAR,",
                                 MUIA_List_Title, TRUE,
                                 MUIA_List_DisplayHook, (IPTR)&gdisplayhook,
-                            End,
+                            TAG_DONE),
                         End,
-                        Child, HGroup,
+                        Child, g_buttons = HGroup,
                             Child, bt_gadd = SimpleButton(MSG(MSG_BUTTON_GADD)),
                             Child, bt_gedit = SimpleButton(MSG(MSG_BUTTON_GEDIT)),
                             Child, bt_gdel = SimpleButton(MSG(MSG_BUTTON_GDELETE)),
@@ -654,7 +777,6 @@ BOOL Gui_Run(struct AccountsState *state)
                     End,
                 End,
                 Child, HGroup,
-                    Child, bt_mypw = SimpleButton(MSG(MSG_BUTTON_MYPASSWORD)),
                     Child, bt_login = SimpleButton(MSG(MSG_BUTTON_LOGIN)),
                     Child, HSpace(0),
                     Child, bt_refresh = SimpleButton(MSG(MSG_BUTTON_REFRESH)),
@@ -731,6 +853,7 @@ BOOL Gui_Run(struct AccountsState *state)
             MUIA_Window_Title, (IPTR)MSG(MSG_PASSWORD_TITLE),
             MUIA_Window_ID, MAKE_ID('A','C','P','W'),
             WindowContents, VGroup,
+                Child, p_who = TextObject, MUIA_Text_Contents, (IPTR)"", End,
                 Child, ColGroup(2),
                     Child, Label2Obj(MSG_LABEL_NEWPASSWORD),
                     Child, p_pw = Secret(),
@@ -739,6 +862,7 @@ BOOL Gui_Run(struct AccountsState *state)
                 End,
                 Child, HGroup,
                     Child, p_save = SimpleButton(MSG(MSG_BUTTON_SAVE)),
+                    Child, p_remove = SimpleButton(MSG(MSG_BUTTON_REMOVEPW)),
                     Child, HSpace(0),
                     Child, p_cancel = SimpleButton(MSG(MSG_BUTTON_CANCEL)),
                 End,
@@ -768,8 +892,26 @@ BOOL Gui_Run(struct AccountsState *state)
 
     if (!app)
     {
+        if (umenu)
+            MUI_DisposeObject(umenu);
+        if (gmenu)
+            MUI_DisposeObject(gmenu);
+        MUI_DeleteCustomClass(listclass);
         FreeVec(groupnames);
         return FALSE;
+    }
+
+    /* the context menus: the same actions as the buttons */
+    {
+        struct { Object *item; ULONG id; } menuids[] =
+        {
+            { um_edit, ID_EDIT }, { um_pw, ID_PASSWORD }, { um_lock, ID_LOCK }, { um_unlock, ID_LOCK },
+            { um_del, ID_DELETE }, { um_add, ID_ADD },
+            { gm_edit, ID_GEDIT }, { gm_del, ID_GDELETE }, { gm_add, ID_GADD }
+        };
+        for (i = 0; i < sizeof(menuids) / sizeof(menuids[0]); i++)
+            DoMethod(menuids[i].item, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
+                     (IPTR)app, 2, MUIM_Application_ReturnID, menuids[i].id);
     }
 
     {
@@ -795,6 +937,7 @@ BOOL Gui_Run(struct AccountsState *state)
     DoMethod(bt_lock, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 2, MUIM_Application_ReturnID, ID_LOCK);
     DoMethod(bt_del, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 2, MUIM_Application_ReturnID, ID_DELETE);
     DoMethod(bt_mypw, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 2, MUIM_Application_ReturnID, ID_MYPW);
+    DoMethod(p_remove, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 2, MUIM_Application_ReturnID, ID_PW_REMOVE);
     DoMethod(bt_login, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 2, MUIM_Application_ReturnID, ID_LOGIN);
     DoMethod(bt_refresh, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 2, MUIM_Application_ReturnID, ID_REFRESH);
     DoMethod(list, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime, (IPTR)app, 2, MUIM_Application_ReturnID, ID_SELECT);
@@ -840,23 +983,19 @@ BOOL Gui_Run(struct AccountsState *state)
             UpdateButtons();
             break;
         case ID_ADD:
-            if (st->Admin)
+            if (Acc_CanEdit(st))
                 OpenEdit(NULL);
             break;
         case ID_EDIT:
-            if (st->Admin && a)
+            if (Acc_CanEdit(st) && a)
                 OpenEdit(a);
             break;
         case ID_PASSWORD:
-            if (st->Admin && a)
-            {
-                pwtarget = a;
-                set(pwin, MUIA_Window_Open, TRUE);
-                set(pwin, MUIA_Window_ActiveObject, (IPTR)p_pw);
-            }
+            if (Acc_CanEdit(st) && a)
+                OpenPassword(a);
             break;
         case ID_LOCK:
-            if (st->Admin && a)
+            if (Acc_CanEdit(st) && a)
             {
                 char keep[ACC_NAMESIZE];
                 LONG err;
@@ -869,7 +1008,7 @@ BOOL Gui_Run(struct AccountsState *state)
             }
             break;
         case ID_DELETE:
-            if (st->Admin && a)
+            if (Acc_CanEdit(st) && a)
             {
                 char text[256];
                 LONG err;
@@ -898,15 +1037,15 @@ BOOL Gui_Run(struct AccountsState *state)
             UpdateButtons();
             break;
         case ID_GADD:
-            if (st->Admin)
+            if (Acc_CanEdit(st))
                 OpenGroupEdit(NULL);
             break;
         case ID_GEDIT:
-            if (st->Admin && g)
+            if (Acc_CanEdit(st) && g)
                 OpenGroupEdit(g);
             break;
         case ID_GDELETE:
-            if (st->Admin && g)
+            if (Acc_CanEdit(st) && g)
             {
                 char text[256];
                 LONG err;
@@ -938,9 +1077,10 @@ BOOL Gui_Run(struct AccountsState *state)
             SavePassword();
             break;
         case ID_PW_CANCEL:
-            set(p_pw, MUIA_String_Contents, (IPTR)"");
-            set(p_pw2, MUIA_String_Contents, (IPTR)"");
-            set(pwin, MUIA_Window_Open, FALSE);
+            ClosePassword();
+            break;
+        case ID_PW_REMOVE:
+            RemovePassword();
             break;
         case ID_MYPW_SAVE:
             SaveMyPassword();
@@ -961,6 +1101,11 @@ BOOL Gui_Run(struct AccountsState *state)
     }
 
     MUI_DisposeObject(app);
+    /* not disposed with the lists */
+    MUI_DisposeObject(umenu);
+    MUI_DisposeObject(gmenu);
+    MUI_DeleteCustomClass(listclass);
     FreeVec(groupnames);
+    groupnames = NULL;
     return TRUE;
 }
