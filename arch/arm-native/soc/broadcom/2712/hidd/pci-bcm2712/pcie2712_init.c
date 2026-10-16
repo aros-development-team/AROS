@@ -644,9 +644,13 @@ static void AdoptMSI(struct pci_staticdata *psd, struct PCIBcm2712Data *data)
     data->msi_count = AROS_BE2LONG(r[4]);
     data->msi_first_intid = AROS_BE2LONG(r[2]) + GIC_SPI_BASE;
 
+    /* The offset applies to both ends: pcie1's block only has inputs 8..15
+       wired, to SPIs base + 8.. - so message n is data and SPI offset + n */
+    data->msi_offset = 0;
     prop = OF_FindProperty(node, "brcm,msi-offset");
     if (prop && (OF_GetPropLen(prop) >= 4))
-        data->msi_first_intid += AROS_BE2LONG(*(const uint32_t *)OF_GetPropValue(prop));
+        data->msi_offset = AROS_BE2LONG(*(const uint32_t *)OF_GetPropValue(prop));
+    data->msi_first_intid += data->msi_offset;
 
     if (data->msi_count > MIP_MAX_VECTORS)
         data->msi_count = MIP_MAX_VECTORS;

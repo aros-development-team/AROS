@@ -507,7 +507,7 @@ static BOOL SetupMSIX(OOP_Class *cl, OOP_Object *o, struct PCIBcm2712Data *bridg
 
         e[0] = (uint32_t)bridge->msi_target;
         e[1] = (uint32_t)(bridge->msi_target >> 32);
-        e[2] = first + i;               /* the message number is the data */
+        e[2] = bridge->msi_offset + first + i;
         e[3] = 0;                       /* unmasked */
     }
 
@@ -543,7 +543,7 @@ static BOOL SetupMSI(OOP_Class *cl, OOP_Object *o, struct PCIBcm2712Data *bridge
     if (ctrl & PCIMSIF_64BIT)
         PCIE_WriteConfig(bridge, bus, dev, sub, cap + PCIMSI_ADDRESSHI,
                          (ULONG)(bridge->msi_target >> 32));
-    PCIE_WriteConfig(bridge, bus, dev, sub, cap + datareg, first);
+    PCIE_WriteConfig(bridge, bus, dev, sub, cap + datareg, bridge->msi_offset + first);
 
     /* One message, enabled. */
     /* One message, enabled: 6:4 is ours to set, 3:1 is read only. */
