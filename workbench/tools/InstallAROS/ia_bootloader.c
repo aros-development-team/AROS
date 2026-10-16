@@ -25,6 +25,7 @@
 
 #include <devices/trackdisk.h>
 #include <devices/scsidisk.h>
+#include <dos/filehandler.h>
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -41,6 +42,7 @@
 #include "ia_stage_intern.h"
 #include "ia_bootloader.h"
 #include "ia_diskio.h"
+#include "ia_log.h"
 
 extern char *source_Path;
 
@@ -107,6 +109,15 @@ struct BootLoaderInfo BootLoaderData[] = {
     },
 #endif
 #endif
+#if defined(INSTALL_BL_EFI)
+    {
+        "EFI",
+        "SYS:",
+        "EFI/BOOT/" EFI_STUB_FILE,
+        NULL,
+        NULL
+    },
+#endif
     {
         (CONST_STRPTR)-1,
         (CONST_STRPTR)-1,
@@ -152,7 +163,10 @@ void BOOTLOADER_InitSupport(void)
         if (BootLoaderData[i].match && _matchPath(&BootLoaderData[i].match))
         {
             D(bug("[InstallAROS] %s: bootloader files found\n", __func__));
-            if (BootLoaderData[i].match2 && _matchPath(&BootLoaderData[i].match2))
+            /* A NULL match2 means the backend needs no installer command
+               of its own - the stub is the whole bootloader */
+            if ((BootLoaderData[i].match2 == NULL)
+                || _matchPath(&BootLoaderData[i].match2))
             {
                 D(bug("[InstallAROS] %s: bootloader installer found\n", __func__));
 #if defined(INSTALL_BL_GRUB)
@@ -266,6 +280,201 @@ static LONG FindWindowsPartition(STRPTR device, LONG unit)
     return partition_no;
 }
 
+#if defined(INSTALL_BL_EFI)
+
+/* The ESP holds no AROS filesystem, so it is identified by its DOS type on
+   the drive being installed to rather than by a volume name */
+/* ID_FAT_DISK, ID_FAT32_DISK and friends come from dos/filesystemids.h;
+   FAT12, FAT16 and FAT32 differ only in the last byte */
+#define ID_FAT_MASK     0xffffff00
+
+extern Object *optObjDestDevice;
+extern Object *optObjDestUnit;
+extern Object *optObjCheckFormatESP;
+extern Object *optObjCheckCopyESP;
+
+extern BOOL FormatPartition(CONST_STRPTR device, CONST_STRPTR name,
+    ULONG dostype);
+
+#define EFI_MAXDEVS     64
+#define EFI_DEVNAMELEN  34
+
+static BOOL EFI_FindESP(CONST_STRPTR devName, ULONG unit, STRPTR buf,
+    ULONG bufLen)
+{
+    TEXT names[EFI_MAXDEVS][EFI_DEVNAMELEN];
+    ULONG devNameLen = strlen(devName);
+    ULONG count = 0, i;
+    struct DosList *dl;
+    BOOL found = FALSE;
+
+    /* CON:, RAW: and friends keep something else entirely in dol_Startup,
+       so each entry has to be asked whether it is a filesystem first - and
+       that cannot be done while the list is locked */
+    dl = LockDosList(LDF_DEVICES | LDF_READ);
+    while (((dl = NextDosEntry(dl, LDF_DEVICES)) != NULL)
+        && (count < EFI_MAXDEVS))
+    {
+        ULONG len = AROS_BSTR_strlen(dl->dol_Name);
+
+        if ((len == 0) || (len > EFI_DEVNAMELEN - 2))
+            continue;
+        CopyMem(AROS_BSTR_ADDR(dl->dol_Name), names[count], len);
+        names[count][len] = '\0';
+        count++;
+    }
+    UnLockDosList(LDF_DEVICES | LDF_READ);
+
+    for (i = 0; (i < count) && !found; i++)
+    {
+        struct FileSysStartupMsg *fssm;
+        struct DeviceNode *dn;
+        struct DosEnvec *de;
+        TEXT devPath[EFI_DEVNAMELEN + 1];
+
+        sprintf(devPath, "%s:", names[i]);
+        if (!IsFileSystem(devPath))
+            continue;
+
+        dl = LockDosList(LDF_DEVICES | LDF_READ);
+        dn = (struct DeviceNode *)FindDosEntry(dl, names[i], LDF_DEVICES);
+        if (dn != NULL)
+        {
+            fssm = (struct FileSysStartupMsg *)BADDR(dn->dn_Startup);
+            if ((fssm != NULL) && (fssm->fssm_Device != BNULL)
+                && ((de = (struct DosEnvec *)BADDR(fssm->fssm_Environ)) != NULL)
+                && (AROS_BSTR_strlen(fssm->fssm_Device) == devNameLen)
+                && (Strnicmp(AROS_BSTR_ADDR(fssm->fssm_Device), devName,
+                        devNameLen) == 0)
+                && (fssm->fssm_Unit == unit)
+                && ((de->de_DosType & ID_FAT_MASK) == ID_FAT_DISK)
+                && (strlen(names[i]) < bufLen))
+            {
+                strcpy(buf, names[i]);
+                found = TRUE;
+            }
+        }
+        UnLockDosList(LDF_DEVICES | LDF_READ);
+    }
+
+    return found;
+}
+
+BOOL BOOTLOADER_ESPInfo(STRPTR buf, ULONG bufLen, BOOL *formatted)
+{
+    IPTR devName = 0, unit = 0;
+    TEXT espDev[66];
+    BPTR lock;
+
+    GET(optObjDestDevice, MUIA_InstallOption_Value, &devName);
+    GET(optObjDestUnit, MUIA_InstallOption_Value, &unit);
+
+    if ((devName == 0)
+        || !EFI_FindESP((CONST_STRPTR)devName, (ULONG)unit, buf, bufLen))
+        return FALSE;
+
+    sprintf(espDev, "%s:", buf);
+    if ((lock = Lock(espDev, SHARED_LOCK)) != BNULL)
+    {
+        UnLock(lock);
+        *formatted = TRUE;
+    }
+    else
+        *formatted = FALSE;
+
+    return TRUE;
+}
+
+static void EFI_DoInstall(Class * CLASS, Object * self)
+{
+    struct InstallStage_DATA *data = INST_DATA(CLASS, self);
+    CONST_STRPTR efi_dirs[] = {
+        "boot", "boot",
+        "EFI", "EFI",
+        NULL
+    };
+    /* The stub reads these from the root of the volume it was loaded from */
+    CONST_STRPTR efi_files[] = {
+        "aros-bsp.pkg",
+        "aros.cmd",
+        "startup.nsh",
+        NULL
+    };
+    TEXT espName[64], espDev[66];
+    TEXT srcFile[256], dstFile[256];
+    BOOL formatted = FALSE;
+    IPTR option = FALSE;
+    BPTR lock;
+    int i;
+
+    if (!BOOTLOADER_ESPInfo(espName, sizeof(espName), &formatted))
+    {
+        LOG_Printf("ERROR: no EFI system partition on the destination drive"
+            " - the installed system will not boot");
+        data->inst_success = MUIV_Inst_Failed;
+        return;
+    }
+
+    sprintf(espDev, "%s:", espName);
+    LOG_Printf("EFI: system partition is %s (%s)", espDev,
+        formatted ? "formatted" : "unformatted");
+
+    OPTOGET(optObjCheckFormatESP, MUIA_Selected, &option);
+    if (option)
+    {
+        LOG_Printf("EFI: formatting %s", espDev);
+        SET(data->label, MUIA_Text_Contents, __(MSG_FORMATTING));
+
+        if (!FormatPartition(espDev, EFI_VOL_NAME, ID_FAT32_DISK))
+        {
+            LOG_Printf("ERROR: could not format %s [ioerr=%ld]", espDev,
+                (LONG)IoErr());
+            data->inst_success = MUIV_Inst_Failed;
+            return;
+        }
+        formatted = TRUE;
+    }
+
+    OPTOGET(optObjCheckCopyESP, MUIA_Selected, &option);
+    if (!option)
+    {
+        LOG_Printf("EFI: not copying the boot files (not requested)");
+        return;
+    }
+
+    if (!formatted)
+    {
+        LOG_Printf("ERROR: %s holds no filesystem and was not formatted,"
+            " so the boot files cannot be written to it", espDev);
+        data->inst_success = MUIV_Inst_Failed;
+        return;
+    }
+
+    SET(data->label, MUIA_Text_Contents, __(MSG_COPYBOOT));
+    CopyDirArray(CLASS, self, source_Path, espDev, efi_dirs, NULL);
+
+    for (i = 0; efi_files[i]
+        && (data->inst_success == MUIV_Inst_InProgress); i++)
+    {
+        strcpy(srcFile, source_Path);
+        AddPart(srcFile, efi_files[i], sizeof(srcFile));
+        sprintf(dstFile, "%s%s", espDev, efi_files[i]);
+
+        if ((lock = Lock(srcFile, SHARED_LOCK)) == BNULL)
+        {
+            LOG_Printf("EFI: '%s' is not on the install medium - skipped",
+                srcFile);
+            continue;
+        }
+        UnLock(lock);
+
+        LOG_Printf("EFI: %s -> %s", srcFile, dstFile);
+        DoMethod(self, MUIM_IC_CopyFile, srcFile, dstFile);
+    }
+}
+
+#endif /* INSTALL_BL_EFI */
+
 void BOOTLOADER_DoInstall(Class * CLASS, Object * self)
 {
     struct InstallStage_DATA *data = INST_DATA(CLASS, self);
@@ -298,6 +507,11 @@ void BOOTLOADER_DoInstall(Class * CLASS, Object * self)
 
     switch (BootLoaderType)
     {
+#if defined(INSTALL_BL_EFI)
+    case BOOTLOADER_EFI:
+        EFI_DoInstall(CLASS, self);
+        break;
+#endif
 #if defined(INSTALL_BL_GRUB2)
     case BOOTLOADER_GRUB2:
         {
