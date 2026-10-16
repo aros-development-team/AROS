@@ -20,6 +20,52 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_scalbf.c,v 1.12 2006/07/05 1
 #include "math.h"
 #include "math_private.h"
 
+/****************************************************************************
+    NAME
+        float scalbf(
+
+    SYNOPSIS
+        float x, float fn)
+
+    FUNCTION
+        Scale x by 2 raised to the integral value fn.
+
+    INPUTS
+        x - Float value to scale.
+        fn - Exponent, supplied as a float. Finite values must be
+             integral. See BUGS for negative fractional exponents.
+
+    RESULT
+        The scaled value in float. Exact representable results
+        require no rounding; inexact subnormal results and range
+        limits depend on the current rounding direction.
+
+        For finite integral fn, signed zero and infinity retain
+        the sign of x. A NaN argument produces a NaN. A finite
+        nonintegral fn produces a NaN, subject to BUGS.
+
+        For fn equal to positive infinity, returns x * infinity.
+        For fn equal to negative infinity, returns x / infinity.
+        Thus zero with positive infinity, or infinite x with
+        negative infinity, produces a NaN.
+
+    NOTES
+        Include <math.h>. Prefer scalbnf() for an int exponent
+        or scalblnf() for a long exponent.
+
+        The function does not assign errno. Invalid arguments and
+        range errors can raise floating-point exceptions; the
+        integrality check can also raise inexact. Enabled traps
+        may prevent return.
+
+    BUGS
+        For -1 < fn < 0, the integrality check invokes undefined
+        C behavior. Do not rely on a NaN result for these inputs.
+
+    SEE ALSO
+        scalb(), scalbnf(), scalblnf(), ldexpf()
+
+*****************************************************************************/
 #ifdef _SCALB_INT
 float
 __ieee754_scalbf(float x, int fn)
