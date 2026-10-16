@@ -47,11 +47,12 @@ BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LON
     *--name = 0;
     
     origlock = lock;
-    parentlock = BNULL;
 
     /* Loop over path */
     do
     {
+        /* Reset each round, so a failed Examine leaves no lock to unlock below */
+        parentlock = BNULL;
         error = dopacket2(DOSBase, NULL, port, ACTION_EXAMINE_OBJECT, lock, MKBADDR(fib)) == 0;
         //bug("name='%s'\n", fib->fib_FileName);
         if (!error) {
@@ -121,6 +122,10 @@ BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LON
 
     }
     while(!error && parentlock);
+
+    /* An error can end the loop still holding the parent's lock */
+    if (lock)
+        UnLock(lock);
 
     /* Move the name from the top to the bottom of the buffer. */
     if ((!error) && (name != buffer))

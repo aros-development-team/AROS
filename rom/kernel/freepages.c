@@ -24,10 +24,14 @@
         struct KernelBase *, KernelBase, 28, Kernel)
 
 /*  FUNCTION
+        Release a region allocated by KrnAllocPages().
 
     INPUTS
+        addr   - Starting address returned by KrnAllocPages().
+        length - Length of the region in bytes.
 
     RESULT
+        None.
 
     NOTES
         This function works only on systems with MMU support.

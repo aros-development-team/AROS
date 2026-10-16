@@ -11,6 +11,11 @@
 
 #include "dos_intern.h"
 
+#include <string.h>
+
+/* room for a per-user assign's target once its tokens are expanded */
+#define USERPATH_MAX    512
+
 extern struct Process *r(struct DeviceNode *dn, struct DosLibrary *DOSBase);
 static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STRPTR name, struct DevProc *dp);
 
@@ -267,6 +272,59 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
 
     /* nonbinding assign. like a late assign, but with no doslist promotion */
     if (dl->dol_Type == DLT_NONBINDING) {
+        CONST_STRPTR target = dl->dol_misc.dol_assign.dol_AssignName;
+
+        /*
+         * Multi-user: a per-user assign ("Assign T: RAM:T/%u USER") holds
+         * user tokens, which security.library expands for the owner of
+         * this task - each time, so every user gets his own directory. Its
+         * last directory is created on first use, here in the user's
+         * task, so it is his. Without security.library (or on a system
+         * that is not multi-user) the target is used as it is written.
+         */
+        if (SECURITY_ACTIVE && strchr((const char *)target, '%')) {
+            ULONG tlen = strlen((const char *)target) + 1;
+            STRPTR copy = AllocVec(tlen + USERPATH_MAX, MEMF_ANY);
+            STRPTR path = copy ? copy + tlen : NULL;
+            struct TagItem tags[] = { { secT_BufferSize, USERPATH_MAX }, { TAG_DONE, 0 } };
+
+            if (copy == NULL) {
+                UnLockDosList(LDF_ALL | LDF_READ);
+                FreeMem(dp, sizeof(struct DevProc));
+                SetIoErr(ERROR_NO_FREE_STORE);
+                return NULL;
+            }
+            /* the expansion asks the security server: not with the list held */
+            CopyMem((APTR)target, copy, tlen);
+            UnLockDosList(LDF_ALL | LDF_READ);
+
+            if (secExpandPathA(copy, path, tags)) {
+                lock = Lock(path, SHARED_LOCK);
+                if (lock == BNULL && IoErr() == ERROR_OBJECT_NOT_FOUND) {
+                    BPTR dir = CreateDir(path);
+
+                    if (dir != BNULL) {
+                        UnLock(dir);
+                        lock = Lock(path, SHARED_LOCK);
+                    }
+                }
+            } else if (IoErr() == ERROR_NOT_IMPLEMENTED)
+                lock = Lock(copy, SHARED_LOCK);
+            else
+                lock = BNULL;
+            FreeVec(copy);
+
+            if (lock == BNULL) {
+                FreeMem(dp, sizeof(struct DevProc));
+                return NULL;
+            }
+            dp->dvp_Port = ((struct FileLock *) BADDR(lock))->fl_Task;
+            dp->dvp_Lock = lock;
+            dp->dvp_Flags = DVPF_UNLOCK;
+            dp->dvp_DevNode = dl;
+            return dp;
+        }
+
         lock = Lock(dl->dol_misc.dol_assign.dol_AssignName, SHARED_LOCK);
 
         /* didn't find the target; Lock() has set IoErr() */
