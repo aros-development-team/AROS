@@ -24,24 +24,24 @@
         struct KernelBase *, KernelBase, 55, Kernel)
 
 /*  FUNCTION
-        Release allocated arch specific IRQ's.
+        Release a range of interrupt identifiers allocated by KrnAllocIRQ().
 
     INPUTS
-        start - First IRQ ID.
-        count   - The number of sequential IRQ's to release.
+        start - First interrupt identifier in the allocated range.
+        count - Number of consecutive identifiers to release.
 
     RESULT
+        None.
 
     NOTES
+        Release support depends on the target.
 
     EXAMPLE
-        ULONG msiIRQBase = KrnAllocIRQ(IRQTYPE_MSI, 7);
-        KrnFreeIRQ(msiIRQBase, 7);
 
     BUGS
 
     SEE ALSO
-        KrnAllocIRQ();
+        KrnAllocIRQ()
 
     INTERNALS
 
