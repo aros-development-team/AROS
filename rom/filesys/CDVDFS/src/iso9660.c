@@ -441,7 +441,15 @@ directory_record *Get_Directory_Record
     len = p_volume->cd->buffer[p_offset & 2047];
     if (len)
     {
-        CopyMem(p_volume->cd->buffer + (p_offset & 2047), p_volume->buffer, len);
+        /* A directory record, including its identifier, stays in this sector. */
+        unsigned char *record = p_volume->cd->buffer + (p_offset & 2047);
+        if (len < 34 || (unsigned int)len > 2048 - (p_offset & 2047) ||
+            record[32] == 0 || 33 + record[32] > len)
+        {
+            global->iso_errno = ISOERR_INTERNAL;
+            return NULL;
+        }
+        CopyMem(record, p_volume->buffer, len);
         D({
             int x;
             directory_record *dr = (directory_record*)p_volume->buffer;
