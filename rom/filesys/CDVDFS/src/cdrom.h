@@ -92,7 +92,7 @@ CDROM *Open_CDROM
 	(
 		struct CDVDBase *global,
 		char *p_device,
-		int p_scsi_id,
+		IPTR p_scsi_id,
 		uint32_t p_memory_type,
 		int p_std_buffers,
 		int p_file_buffers
