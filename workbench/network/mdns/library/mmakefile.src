@@ -1,0 +1,17 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+# mdns_ipc.h, the messages the library and mdnsd exchange, is the daemon's
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/..
+
+#MM- workbench-network-mdns : workbench-network-mdns-bonami
+
+#MM workbench-network-mdns-bonami : \
+#MM      includes linklibs \
+#MM      workbench-network-mdns-includes
+
+%build_module mmake=workbench-network-mdns-bonami \
+    modname=bonami modtype=library \
+    files="bonami_init bonami_api bonami_ipc"
+
+%common

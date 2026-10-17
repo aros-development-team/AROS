@@ -11,11 +11,14 @@
 
 #include <exec/types.h>
 #include <exec/libraries.h>
+#include <exec/lists.h>
+#include <exec/ports.h>
+#include <exec/tasks.h>
+
+#include <bonami/mdns.h>
 
 #include "mdns_dns.h"
-
-#define MDNS_DOMAIN_LOCAL       "local"
-#define MDNS_MAX_HOST           64
+#include "mdns_ipc.h"
 
 /* An interface mdnsd speaks on, with its own socket. */
 #define MDNS_IFS_MAX            8
@@ -34,6 +37,39 @@ struct MDNSInterface
 #define MDNS_PROBE_COUNT        3
 #define MDNS_PROBE_TICKS        13      /* 250 ms in 1/50 s */
 #define MDNS_ANNOUNCE_COUNT     2
+
+/* a record that went to the group this many seconds ago or less may be
+ * answered to the asker alone when the question allows it: a quarter of
+ * the life of the shortest-lived records, the host's */
+#define MDNS_UNICAST_SECONDS    (MDNS_TTL_HOST / 4)
+
+/* A service a client registered through bonami.library. */
+struct MDNSRegisteredService
+{
+    struct Node     rs_Node;
+    char            rs_Instance[MDNS_MAX_NAME + 1];
+    char            rs_Type[MDNS_MAX_TYPE + 1];
+    char            rs_Domain[MDNS_MAX_DOMAIN + 1];
+    char            rs_TXT[MDNS_MAX_TXT + 1];
+    UWORD           rs_Port;
+    UWORD           rs_State;       /* MDNS_NAME_* */
+    UWORD           rs_Step;        /* probes or announcements sent */
+    BOOL            rs_Proxy;       /* for another host: its name and
+                                     * address were given by the client */
+    char            rs_HostTarget[MDNS_MAX_HOST + 8];
+                                    /* that host, "name.local" */
+    ULONG           rs_HostAddr;    /* and its address */
+    ULONG           rs_TTL;         /* of its records, 0 for the defaults */
+    APTR            rs_ClientRef;   /* the handle the client has */
+    struct Task    *rs_Task;        /* the client that registered it */
+    ULONG           rs_NextTick;    /* mdnsTicks() of the next step */
+    ULONG           rs_Answered;    /* md_PacketSerial it last answered */
+    ULONG           rs_Multicast;   /* mdnsNow() when its records last went
+                                     * to the group */
+    ULONG           rs_AnswerTick;  /* when an answer to a browse question
+                                     * is due, or 0 for none */
+    LONG            rs_AnswerIf;    /* to which interface, or -1 for all */
+};
 
 /* The daemon has one task and one of these. */
 struct MDNSDaemon
@@ -79,6 +115,12 @@ struct MDNSDaemon
     struct MDNSQuestion    *md_ReplyQuestion;
     ULONG                   md_QueryAddr;   /* who sent the query in hand */
     UWORD                   md_QueryPort;
+
+    struct MsgPort         *md_Port;        /* MDNS_IPC_PORT, the clients' */
+    struct List             md_Services;    /* MDNSRegisteredService */
+    ULONG                   md_NextHandle;
+    ULONG                   md_PacketSerial; /* counts received queries */
+    BOOL                    md_AnswerPending; /* an rs_AnswerTick is set */
 };
 
 /* Text of at most max characters: its length, and a copy that always ends
@@ -128,6 +170,7 @@ void mdnsNetClose(struct MDNSDaemon *md);
 BOOL mdnsNetIsOwn(struct MDNSDaemon *md, ULONG addr);
 BOOL mdnsNetSendOn(struct MDNSDaemon *md, LONG index, const UBYTE *pkt,
     LONG pktlen);
+void mdnsNetSendAll(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen);
 void mdnsNetNameHost(struct MDNSDaemon *md);
 
 /* mdns_host.c */
@@ -138,6 +181,30 @@ void mdnsHostHandleQuery(struct MDNSDaemon *md, struct MDNSQuestion *q);
 void mdnsHostHandleProbe(struct MDNSDaemon *md,
     const struct MDNSRecord *theirs, LONG count);
 void mdnsHostHandleRecord(struct MDNSDaemon *md, const struct MDNSRecord *r);
+void mdnsHostFqdn(const struct MDNSDaemon *md, char *buf, LONG buflen);
+void mdnsAddrData(ULONG addr, UBYTE *data);
+LONG mdnsResponseBegin(struct MDNSDaemon *md, UBYTE *pkt);
+
+/* mdns_reg.c */
+LONG mdnsRegAdd(struct MDNSDaemon *md, struct MDNSIPCMsg *msg);
+LONG mdnsRegUpdate(struct MDNSDaemon *md, const struct MDNSIPCMsg *msg);
+void mdnsRegRemove(struct MDNSDaemon *md, const struct MDNSIPCMsg *msg);
+void mdnsRegRelease(struct MDNSDaemon *md, const struct Task *task);
+void mdnsRegFree(struct MDNSDaemon *md);
+BOOL mdnsRegTick(struct MDNSDaemon *md);
+void mdnsRegAnnounceAll(struct MDNSDaemon *md);
+void mdnsRegGoodbyeAll(struct MDNSDaemon *md);
+void mdnsRegHandleQuery(struct MDNSDaemon *md, struct MDNSQuestion *q,
+    char (*known)[256], LONG knownCount);
+void mdnsRegHandleProbe(const struct MDNSDaemon *md,
+    const struct MDNSRecord *theirs, LONG count, const UBYTE *pkt,
+    LONG pktlen);
+void mdnsRegHandleRecord(const struct MDNSDaemon *md,
+    const struct MDNSRecord *r);
+
+/* mdns_client.c */
+void mdnsClientMessage(struct MDNSDaemon *md, struct MDNSIPCMsg *msg);
+void mdnsClientReap(struct MDNSDaemon *md);
 
 /* mdns_packet.c */
 void mdnsHandlePacket(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
