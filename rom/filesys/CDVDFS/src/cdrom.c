@@ -407,7 +407,8 @@ int Read_From_Drive
 
     D(bug("[CDVDFS]\tAccessing sectors %ld:%ld\n", (long)p_sector, (long)p_number_of_sectors));
 
-    if (0 != DoIO((struct IORequest*) p_cd->scsireq))
+    if (0 != DoIO((struct IORequest*) p_cd->scsireq) ||
+        p_cd->scsireq->io_Actual != p_cd->scsireq->io_Length)
     {
         D(bug("[CDVDFS]\tTransfer failed: %ld\n", (long)p_cd->scsireq->io_Error));
         Clear_Sector_Buffers(p_cd);
