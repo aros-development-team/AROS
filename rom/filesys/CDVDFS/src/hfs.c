@@ -223,81 +223,95 @@ t_node_descr *HFS_Node(VOLUME *p_volume, t_ulong p_node) {
   		       &VOL(p_volume,mdb), p_node);
 }
 
-void HFS_Load_Catalog_Record
-	(t_catalog_record *p_cat_rec, char *p_node, int p_record)
+/* HFS catalog nodes are 512 bytes. Their trailing offset table contains
+ * one entry per record plus the end of the final record. */
+static t_bool HFS_Record_Bounds(char *node, int record, int *start, int *end)
 {
-short *sp = (short *) p_node;
-int len;
-int start;
+    t_node_descr *descr = (t_node_descr *)node;
+    unsigned short *offsets = (unsigned short *)node;
+    int count = descr->NRecs;
+    int table;
 
-	start = sp[255-p_record];
-	start += p_node[start] + 1;
-	if (start & 1)
-		start++;
-
-	len = sp[254-p_record] - start;
-	CopyMem(p_node + start, p_cat_rec, len);
+    if (count < 1 || count > (512 - 14) / 2 - 1 ||
+        record < 0 || record >= count)
+        return FALSE;
+    table = 512 - 2 * (count + 1);
+    *start = offsets[255 - record];
+    *end = offsets[254 - record];
+    return *start >= 14 && *start < *end && *end <= table;
 }
 
+static t_bool HFS_Load_Leaf(t_leaf_record_pos *leaf, t_node_descr *node)
+{
+    int start, end, keylen, data, len;
+    unsigned char *bytes = (unsigned char *)node;
 
-t_bool HFS_Find_Next_Leaf(VOLUME *p_volume, t_leaf_record_pos *p_leaf) {
-t_node_descr *node;
-short *sp;
-int pos;
+    if (node->Type != 0xff ||
+        !HFS_Record_Bounds((char *)node, leaf->record, &start, &end))
+        return FALSE;
+    keylen = bytes[start] + 1;
+    if (keylen < 7 || keylen > end - start ||
+        keylen > (int)(sizeof(leaf->leaf_rec) + sizeof(leaf->pad)) ||
+        bytes[start + 6] > 31 || bytes[start + 6] > keylen - 7)
+        return FALSE;
+    data = (start + keylen + 1) & ~1;
+    len = end - data;
+    if (len < 2 || len > (int)sizeof(leaf->cat_rec))
+        return FALSE;
+    /* Require the fields consumed by each supported catalog record type. */
+    switch (bytes[data])
+    {
+        case 1: if (len < (int)sizeof(t_dir_record)) return FALSE; break;
+        case 2: if (len < (int)sizeof(t_file_record)) return FALSE; break;
+        case 3: if (len < (int)sizeof(t_dir_thread_record)) return FALSE; break;
+        case 4: if (len < (int)sizeof(t_file_thread_record)) return FALSE; break;
+        default: return FALSE;
+    }
+    memset(&leaf->cat_rec, 0, sizeof(leaf->cat_rec));
+    memset(&leaf->leaf_rec, 0, sizeof(leaf->leaf_rec) + sizeof(leaf->pad));
+    CopyMem(node, &leaf->node_descr, sizeof(leaf->node_descr));
+    CopyMem(bytes + start, &leaf->leaf_rec, keylen);
+    CopyMem(bytes + data, &leaf->cat_rec, len);
+    if ((leaf->cat_rec.d.type == 3 || leaf->cat_rec.d.type == 4) &&
+        leaf->cat_rec.dt.CNameLen > 31)
+        return FALSE;
+    return TRUE;
+}
 
-	node = HFS_Node(p_volume, p_leaf->node);
-	if (!node)
-		return FALSE;
-
-	p_leaf->record++;
-	if (p_leaf->record == node->NRecs)
-	{
-		if (node->FLink)
-		{
-			node = HFS_Node(p_volume, p_leaf->node = node->FLink);
-			if (!node)
-				return FALSE;
-			p_leaf->record = 0;
-		}
-		else
-			return FALSE;
-	}
-
-	sp = (short *) node;
-	pos = sp[255-p_leaf->record];
-	CopyMem(node, &p_leaf->node_descr, sizeof (t_node_descr));
-	CopyMem((char *)node+pos, &p_leaf->leaf_rec, ((char *) node)[pos] + 1);
-	HFS_Load_Catalog_Record(&p_leaf->cat_rec, (char *) node, p_leaf->record);
-
-	if (p_leaf->leaf_rec.name_length > 30)
-	{
-		p_leaf->leaf_rec.name_length = 30;
-		*((char *)&p_leaf->leaf_rec.name[0] + 30) = '\0';
-	}
-
-	return TRUE;
+t_bool HFS_Find_Next_Leaf(VOLUME *p_volume, t_leaf_record_pos *p_leaf)
+{
+    t_node_descr *node = HFS_Node(p_volume, p_leaf->node);
+    if (!node || p_leaf->record >= node->NRecs)
+        return FALSE;
+    p_leaf->record++;
+    if (p_leaf->record == node->NRecs)
+    {
+        if (!node->FLink || node->FLink == p_leaf->node)
+            return FALSE;
+        p_leaf->node = node->FLink;
+        node = HFS_Node(p_volume, p_leaf->node);
+        if (!node)
+            return FALSE;
+        p_leaf->record = 0;
+    }
+    if (!HFS_Load_Leaf(p_leaf, node))
+        return FALSE;
+    if (p_leaf->leaf_rec.name_length > 30)
+    {
+        p_leaf->leaf_rec.name_length = 30;
+        *((char *)&p_leaf->leaf_rec.name[0] + 30) = '\0';
+    }
+    return TRUE;
 }
 
 /* Find leaf record p_leaf->record in node p_leaf->node.
  * Store the result in *p_leaf.
  */
 
-t_bool HFS_Find_This_Leaf(VOLUME *p_volume, t_leaf_record_pos *p_leaf) {
-t_node_descr *node;
-short *sp;
-int pos;
-
-	node = HFS_Node(p_volume, p_leaf->node);
-	if (!node)
-		return FALSE;
-
-	sp = (short *) node;
-	pos = sp[255-p_leaf->record];
-	CopyMem(node, &p_leaf->node_descr, sizeof (t_node_descr));
-	CopyMem((char *)node+pos, &p_leaf->leaf_rec, ((char *) node)[pos] + 1);
-	HFS_Load_Catalog_Record(&p_leaf->cat_rec, (char *) node, p_leaf->record);
-
-	return TRUE;
+t_bool HFS_Find_This_Leaf(VOLUME *p_volume, t_leaf_record_pos *p_leaf)
+{
+    t_node_descr *node = HFS_Node(p_volume, p_leaf->node);
+    return node != NULL && HFS_Load_Leaf(p_leaf, node);
 }
 
 /* Find the first leaf record with parent ID p_parent_id.
@@ -310,7 +324,6 @@ t_bool HFS_Find_Leaf_Record
 {
 struct CDVDBase *global = p_volume->global;
 t_node_descr *node;
-short *sp;
 int i;
 t_ulong this_node = VOL(p_volume,root_node);
 t_ulong next_node;
@@ -327,11 +340,22 @@ t_ulong next_node;
 		if (node->Type == 0)
 		{
 			 /* index node */
-			sp = (short *) node;
 			next_node = -1;
 			for (i=0; i<node->NRecs; i++)
 			{
-				t_idx_record *idx = (t_idx_record *) ((char *) node + sp[255-i]);
+                int start, end;
+                t_idx_record *idx;
+                if (!HFS_Record_Bounds((char *)node, i, &start, &end))
+                {
+                    global->iso_errno = ISOERR_INTERNAL;
+                    return FALSE;
+                }
+                idx = (t_idx_record *)((char *)node + start);
+                if (idx->length != 0 && end - start < (int)sizeof(t_idx_record))
+                {
+                    global->iso_errno = ISOERR_INTERNAL;
+                    return FALSE;
+                }
 				if (idx->length != 0)
 				{
 					if (idx->parent_id >= p_parent_id)
@@ -368,9 +392,11 @@ t_ulong next_node;
 
 	p_leaf->node = this_node;
 	p_leaf->record = 0;
-	CopyMem(node, &p_leaf->node_descr, sizeof (t_node_descr));
-	CopyMem((char *)node +0xE, &p_leaf->leaf_rec, ((char *) node)[0xe] + 1);
-	HFS_Load_Catalog_Record(&p_leaf->cat_rec, (char *) node, 0);
+    if (!HFS_Load_Leaf(p_leaf, node))
+    {
+        global->iso_errno = ISOERR_INTERNAL;
+        return FALSE;
+    }
 
 	/* walk forwards until the same key is found: */
 	for (;;)
