@@ -90,6 +90,9 @@ struct secAuthTicket
     struct Task             *Task;          /* the task it was issued to */
     ULONG                   TaskUnique;     /* and its et_UniqueID */
     struct secPrivUserInfo  *Info;
+    BOOL                    Incomplete;     /* a challenge token must still answer (not redeemable) */
+    BOOL                    PwdOK;          /* ... and the password was right */
+    UBYTE                   Challenge[secKEYCHALLENGESIZE];
 };
 
 /* Tasks that tried tickets that did not exist */
@@ -270,7 +273,7 @@ static BOOL SameTicket(const struct secLoginTicket *a, const struct secLoginTick
     return diff == 0;
 }
 
-static BOOL IssueTicket(struct SecurityBase *secBase, struct AuthState *st, struct Task *task, struct secPrivUserInfo *src, ULONG now, struct secLoginTicket *out)
+static struct secAuthTicket *IssueTicket(struct SecurityBase *secBase, struct AuthState *st, struct Task *task, struct secPrivUserInfo *src, ULONG now, struct secLoginTicket *out)
 {
     struct Library *EntropyBase = st->EntropyBase;
     struct secAuthTicket *t;
@@ -278,7 +281,7 @@ static BOOL IssueTicket(struct SecurityBase *secBase, struct AuthState *st, stru
     ULONG mine = 0, unique = TaskUnique(task);
 
     if (!EntropyBase)
-        return FALSE;
+        return NULL;
     ExpireTickets(secBase, st, now);
     ForeachNode(&st->Tickets, t)
     {
@@ -286,10 +289,10 @@ static BOOL IssueTicket(struct SecurityBase *secBase, struct AuthState *st, stru
             mine++;
     }
     if (mine >= secAUTH_TICKETSPERTASK || st->NumTickets >= secAUTH_TICKETSMAX)
-        return FALSE;
+        return NULL;
 
     if (!(copy = (struct secPrivUserInfo *)secAllocUserInfo()))
-        return FALSE;
+        return NULL;
     CopyMem(src, copy, sizeof(struct secPrivUserInfo));
     copy->Pattern = NULL;
     copy->Pub.SecGroups = NULL;
@@ -302,13 +305,14 @@ static BOOL IssueTicket(struct SecurityBase *secBase, struct AuthState *st, stru
     if (!(t = MAlloc(sizeof(struct secAuthTicket))))
     {
         secFreeUserInfo((struct secUserInfo *)copy);
-        return FALSE;
+        return NULL;
     }
+    memset(t, 0, sizeof(*t));
     if (GetEntropy(t->Id.Id, secTICKETSIZE) != secTICKETSIZE)
     {
         Free(t, sizeof(struct secAuthTicket));
         secFreeUserInfo((struct secUserInfo *)copy);
-        return FALSE;
+        return NULL;
     }
     t->Expires = now + secAUTH_TICKETLIFE;
     t->Task = task;
@@ -317,8 +321,24 @@ static BOOL IssueTicket(struct SecurityBase *secBase, struct AuthState *st, stru
     AddTail((struct List *)&st->Tickets, (struct Node *)t);
     st->NumTickets++;
     secBase->AuthTickets = st->NumTickets;
-    CopyMem(&t->Id, out, sizeof(*out));
-    return TRUE;
+    if (out)
+        CopyMem(&t->Id, out, sizeof(*out));
+    return t;
+}
+
+/* The task's ticket that still waits for a challenge token's answer */
+static struct secAuthTicket *FindChallengeTicket(struct SecurityBase *secBase, struct AuthState *st, const struct secLoginTicket *id, struct Task *task, ULONG now)
+{
+    struct secAuthTicket *t;
+    ULONG unique = TaskUnique(task);
+
+    ExpireTickets(secBase, st, now);
+    ForeachNode(&st->Tickets, t)
+    {
+        if (SameTicket(&t->Id, id) && t->Task == task && t->TaskUnique == unique)
+            return t->Incomplete ? t : NULL;
+    }
+    return NULL;
 }
 
 static struct secRedeemFail *FindRedeemFail(struct AuthState *st, struct Task *task, ULONG unique)
@@ -352,6 +372,12 @@ static struct secPrivUserInfo *TakeTicket(struct SecurityBase *secBase, struct A
     {
         if (SameTicket(&t->Id, id) && t->Task == task && t->TaskUnique == unique)
         {
+            if (t->Incomplete)
+            {
+                SIPTR args[1] = { (SIPTR)t->Info->Pub.UserID };
+                VLogF(secBase, LOGF_Flag_Type_Warn, SECLOG_SUB_AUTH, "a login ticket of '%s' was used before its token answered", args);
+                return NULL;
+            }
             info = t->Info;
             t->Info = NULL;
             FreeTicket(secBase, st, t);
@@ -504,18 +530,73 @@ static BOOL CheckKeyCode(struct SecurityBase *secBase, struct secAPacket *pkt, s
 
 static LONG Verify(struct SecurityBase *secBase, struct AuthState *st, struct secAPacket *pkt, struct Task *client)
 {
+    struct Library *EntropyBase = st->EntropyBase;
     char hash[secHASHBUFSIZE];
-    struct secPrivUserInfo *info;
+    struct secPrivUserInfo *info = NULL;
     struct secTally *tally = NULL;
+    struct secAuthTicket *chal = NULL;      /* second phase: the ticket that waited for a token */
     CONST_STRPTR host = pkt->RemoteHost ? pkt->RemoteHost : (CONST_STRPTR)"";
     CONST_STRPTR service = pkt->Service ? pkt->Service : (CONST_STRPTR)"";
+    CONST_STRPTR userid = pkt->UserID;
     ULONG now = NowSeconds(st);
     UWORD from = client ? (UWORD)(GetTaskOwner(secBase, client) >> 16) : secNOBODY_UID;
     LONG res = secVERIFY_FAILED;
-    BOOL found, ok = FALSE;
+    BOOL found = FALSE, ok = FALSE;
 
     if (!secBase->Configured)
         return secVERIFY_UNAVAILABLE;
+
+    /*
+     * Second phase: a challenge token answered. The ticket (bound to the
+     * task) carries the challenge and whether the password was right; the
+     * scheme plugin checks the answer, the counter must grow, and only
+     * then the ticket can be redeemed.
+     */
+    if (pkt->Assertion)
+    {
+        struct secKeyRec *keys = NULL, *rec = NULL;
+        ULONG counter = 0;
+
+        if (!client || !(chal = FindChallengeTicket(secBase, st, &pkt->Ticket, client, now)))
+        {
+            SIPTR args[1] = { (SIPTR)(client && client->tc_Node.ln_Name ? client->tc_Node.ln_Name : "?") };
+            VLogF(secBase, LOGF_Flag_Type_Warn, SECLOG_SUB_AUTH, "a token answer without its challenge ticket from '%s'", args);
+            return secVERIFY_FAILED;
+        }
+        info = chal->Info;
+        userid = info->Pub.UserID;
+        found = TRUE;
+        if (pkt->UserID && pkt->UserID[0] && Stricmp(pkt->UserID, userid))
+            return secVERIFY_BADARGS;
+        if (pkt->KeyPublicID && pkt->AssertionLen && pkt->AssertionLen <= secKEYASSERTIONMAX)
+        {
+            SendServerPacket(secBase, secSAction_GetUserKeys, (SIPTR)userid, (SIPTR)&keys, 0, 0);
+            for (rec = keys; rec; rec = rec->Next)
+                if (rec->Type == secKEY_CHALLENGE && !strcmp(rec->PublicID, pkt->KeyPublicID))
+                    break;
+            if (rec)
+            {
+                ULONG r = KeyVerifyAssertion(secBase, rec, chal->Challenge, secKEYCHALLENGESIZE, pkt->Assertion, pkt->AssertionLen, &counter);
+                SIPTR args[2] = { (SIPTR)userid, (SIPTR)rec->Label };
+
+                if (r == secpiTRUE)
+                {
+                    if (counter <= rec->Counter)
+                        VLogF(secBase, LOGF_Flag_Type_Warn, SECLOG_SUB_AUTH, "'%s': the answer of token '%s' did not advance its counter (replay or clone)", args);
+                    else if (!SendServerPacket(secBase, secSAction_KeyCounter, (SIPTR)userid, (SIPTR)rec->PublicID, (SIPTR)counter, 0))
+                        VLogF(secBase, LOGF_Flag_Type_Error, SECLOG_SUB_AUTH, "'%s': the counter of token '%s' could not be saved; the answer is refused", args);
+                    else
+                        ok = TRUE;
+                }
+                else if (r == secpiNOTSUPP)
+                    VLogF(secBase, LOGF_Flag_Type_Error, SECLOG_SUB_AUTH, "'%s': the scheme of token '%s' has no plugin loaded", args);
+            }
+            FreeKeys(keys);
+        }
+        ok = ok && chal->PwdOK;
+    }
+    else
+    {
     if (!pkt->UserID || !pkt->UserID[0] || !pkt->Token)
         return secVERIFY_BADARGS;
 
@@ -550,19 +631,36 @@ static LONG Verify(struct SecurityBase *secBase, struct AuthState *st, struct se
     {
         if (pkt->TokenType == secHASH_NONE)
         {
-            struct secKeyRec *keys = NULL;
+            struct secKeyRec *keys = NULL, *rec;
             STRPTR pwdpart = NULL;
             CONST_STRPTR token = pkt->Token;
-            BOOL keyok = TRUE;
+            BOOL keyok = TRUE, needchal = FALSE;
 
-            /* registered hardware tokens: the typed token must end with a code from one */
+            /* registered hardware tokens: a code typed after the password, or a
+             * challenge a token must answer in a second phase (not from the
+             * network, where no token can be reached) */
             if (secBase->Config.Flags & secCFGF_KeyLogin)
                 SendServerPacket(secBase, secSAction_GetUserKeys, (SIPTR)pkt->UserID, (SIPTR)&keys, 0, 0);
             if (keys)
             {
-                keyok = CheckKeyCode(secBase, pkt, keys, &pwdpart);
+                BOOL anyotp = FALSE, anychal = FALSE;
+
+                for (rec = keys; rec; rec = rec->Next)
+                {
+                    if (rec->Type == secKEY_OTP)
+                        anyotp = TRUE;
+                    if (rec->Type == secKEY_CHALLENGE && !pkt->RemoteHost)
+                        anychal = TRUE;
+                }
+                keyok = anyotp && CheckKeyCode(secBase, pkt, keys, &pwdpart);
                 if (pwdpart)
                     token = pwdpart;
+                else if (!keyok && anychal)
+                {
+                    /* no code typed: a challenge token must answer */
+                    needchal = TRUE;
+                    keyok = TRUE;
+                }
             }
             else if ((secBase->Config.Flags & secCFGF_KeyRequired) && !pkt->RemoteHost)
             {
@@ -579,6 +677,43 @@ static LONG Verify(struct SecurityBase *secBase, struct AuthState *st, struct se
                 memset(pwdpart, 0, strlen(pwdpart));
                 FreeV(pwdpart);
             }
+            if (needchal)
+            {
+                /* First phase done: a ticket keeps the challenge and the
+                 * password's result until the answer comes. Nothing about
+                 * the password is told yet. */
+                struct secAuthTicket *t = NULL;
+
+                res = secVERIFY_FAILED;
+                if (pkt->WantTicket && client && (t = IssueTicket(secBase, st, client, info, now, NULL)))
+                {
+                    if (GetEntropy(t->Challenge, secKEYCHALLENGESIZE) == secKEYCHALLENGESIZE)
+                    {
+                        t->Incomplete = TRUE;
+                        t->PwdOK = ok;
+                        t->Expires = now + secBase->Config.KeyTimeout + 15;
+                        CopyMem(&t->Id, &pkt->Ticket, sizeof(pkt->Ticket));
+                        if (pkt->Challenge)
+                            CopyMem(t->Challenge, pkt->Challenge, secKEYCHALLENGESIZE);
+                        pkt->KeyCount = 0;
+                        for (rec = keys; rec; rec = rec->Next)
+                        {
+                            if (rec->Type != secKEY_CHALLENGE)
+                                continue;
+                            if (pkt->KeyList && pkt->KeyCount < pkt->KeyListSize)
+                                KeyFillInfo(rec, &pkt->KeyList[pkt->KeyCount]);
+                            pkt->KeyCount++;
+                        }
+                        res = secVERIFY_KEYNEEDED;
+                    }
+                    else
+                        FreeTicket(secBase, st, t);
+                }
+                FreeKeys(keys);
+                memset(hash, 0, sizeof(hash));
+                secFreeUserInfo((struct secUserInfo *)info);
+                return res;
+            }
             FreeKeys(keys);
         }
         else if (strlen(hash) == secACRYPT_LEN && LowerCaseID(secBase, info->Pub.UserID))
@@ -590,13 +725,14 @@ static LONG Verify(struct SecurityBase *secBase, struct AuthState *st, struct se
         verifypass(secBase, pkt->UserID, "AAAAAAAAAAA", pkt->Token);
     }
     memset(hash, 0, sizeof(hash));
+    }
     D(bug(DEBUG_NAME_STR " %s: user '%s' type %lu service '%s' host '%s': found %d ok %d\n", __func__, pkt->UserID, (unsigned long)pkt->TokenType, service, host, found, ok);)
 
     if (ok)
     {
         res = secVERIFY_OK;
-        ThrottleFor(secBase, st, pkt->UserID)->Fails = 0;
-        ThrottleFor(secBase, st, pkt->UserID)->NextAllowed = 0;
+        ThrottleFor(secBase, st, userid)->Fails = 0;
+        ThrottleFor(secBase, st, userid)->NextAllowed = 0;
         if (tally)
             DropTally(st, tally);
         if (pkt->Info)
@@ -618,7 +754,15 @@ static LONG Verify(struct SecurityBase *secBase, struct AuthState *st, struct se
             }
             pkt->Info->Password = info->Password;
         }
-        if (pkt->WantTicket && client)
+        if (chal)
+        {
+            /* the challenge ticket becomes the login ticket */
+            chal->Incomplete = FALSE;
+            chal->Expires = now + secAUTH_TICKETLIFE;
+            if (pkt->WantTicket)
+                CopyMem(&chal->Id, &pkt->Ticket, sizeof(pkt->Ticket));
+        }
+        else if (pkt->WantTicket && client)
         {
             if (!IssueTicket(secBase, st, client, info, now, &pkt->Ticket))
                 memset(&pkt->Ticket, 0, sizeof(pkt->Ticket));
@@ -626,11 +770,11 @@ static LONG Verify(struct SecurityBase *secBase, struct AuthState *st, struct se
     }
     else
     {
-        struct secThrottle *t = ThrottleFor(secBase, st, pkt->UserID);
+        struct secThrottle *t = ThrottleFor(secBase, st, userid);
 
         ThrottleFail(secBase, t, now);
-        strncpy(t->UserID, pkt->UserID, sizeof(t->UserID) - 1);
-        if (pkt->RemoteHost && (tally = FindTally(st, pkt->UserID, host, TRUE, now)))
+        strncpy(t->UserID, userid, sizeof(t->UserID) - 1);
+        if (pkt->RemoteHost && (tally = FindTally(st, userid, host, TRUE, now)))
         {
             tally->Fails++;
             tally->LastFail = now;
@@ -640,7 +784,7 @@ static LONG Verify(struct SecurityBase *secBase, struct AuthState *st, struct se
                 tally->Fails = 0;
             }
         }
-        CallMonitors(secBase, secTrgB_LoginFail, from, 0, pkt->UserID);
+        CallMonitors(secBase, secTrgB_LoginFail, from, 0, userid);
     }
 
     if (!pkt->NoLog &&
@@ -648,14 +792,21 @@ static LONG Verify(struct SecurityBase *secBase, struct AuthState *st, struct se
          (!ok && (secBase->Config.LogFlags & secLogF_LoginFail))))
     {
         SIPTR args[3];
-        args[0] = (SIPTR)pkt->UserID;
+        args[0] = (SIPTR)userid;
         args[1] = (SIPTR)service;
         args[2] = (SIPTR)(pkt->RemoteHost ? host : (CONST_STRPTR)"local");
         VLogF(secBase, ok ? LOGF_Flag_Type_Verbose : LOGF_Flag_Type_Warn, SECLOG_SUB_AUTH,
               ok ? "verified '%s' for %s from %s" : "verification of '%s' for %s from %s failed", args);
     }
 
-    secFreeUserInfo((struct secUserInfo *)info);
+    if (chal)
+    {
+        /* the ticket owns the user record; a failed answer ends it */
+        if (!ok)
+            FreeTicket(secBase, st, chal);
+    }
+    else
+        secFreeUserInfo((struct secUserInfo *)info);
     return res;
 }
 

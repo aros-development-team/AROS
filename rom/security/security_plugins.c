@@ -123,6 +123,7 @@ BOOL loadPlugin(struct SecurityBase *secBase, CONST_STRPTR name)
     mod->SegList = seglist;
     mod->header = hdr;
     mod->reference_count = 0;
+    mod->SysBase = SysBase;
     strncpy((char *)mod->modulename, name, sizeof(mod->modulename) - 1);
 
     ObtainSemaphore(&secBase->PluginModuleSem);

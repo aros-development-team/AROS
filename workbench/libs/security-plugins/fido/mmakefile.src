@@ -1,0 +1,20 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+#
+# fido.secplugin: FIDO U2F security keys for security.library (ID_PLUGIN_HWAUTH, scheme "u2f",
+# tokens of type secKEY_CHALLENGE), reached through fido.device. A plugin is a LoadSeg()'d file
+# without start-up code: no C runtime; libmbedcrypto's few runtime needs come from shims.c.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-libs : workbench-libs-security-plugins-fido
+#MM workbench-libs-security-plugins-fido : includes kernel-security-includes linklibs linklibs-mbedcrypto workbench-libs-mbedtls-includes
+
+USER_CFLAGS := -ffreestanding -fno-builtin -fno-tree-loop-distribute-patterns
+USER_INCLUDES := -I$(SRCDIR)/workbench/libs/mbedtls
+USER_CPPFLAGS := -DMBEDTLS_CONFIG_FILE='"mbedtls_aros_config.h"'
+
+%build_prog mmake=workbench-libs-security-plugins-fido \
+    progname=fido.secplugin targetdir=$(AROS_LIBRARIES)/Security \
+    files="fido shims" usestartup=no coverageinstr=no uselibs="mbedcrypto"
+
+%common

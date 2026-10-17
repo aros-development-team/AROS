@@ -20,6 +20,7 @@
 #include <proto/dos.h>
 #include <proto/utility.h>
 #include <proto/security.h>
+#include <utility/hooks.h>
 #include <proto/log.h>
 #include <resources/log.h>
 
@@ -192,6 +193,257 @@ static void KeyTestsRoot(void)
     Report("key: removing it again: not found", r == secKAERR_NOTFOUND, r);
 }
 
+/* ---- challenge tokens (FIDO U2F through fidosim.device, LOADPLUGIN fido) ---- */
+
+#define CHAL_LIST   4
+
+AROS_UFH3(static IPTR, ChalStatusFunc,
+    AROS_UFHA(struct Hook *, hook, A0),
+    AROS_UFHA(struct secKeyStatus *, ks, A2),
+    AROS_UFHA(APTR, unused, A1))
+{
+    AROS_USERFUNC_INIT
+
+    ULONG *seen = (ULONG *)hook->h_Data;
+
+    *seen |= 1UL << ks->Type;
+    return TRUE;
+
+    AROS_USERFUNC_EXIT
+}
+
+/* The first pass: the challenge and the user's tokens, if secVERIFY_KEYNEEDED */
+static ULONG VerifyChal(CONST_STRPTR user, CONST_STRPTR pwd, CONST_STRPTR host, struct secLoginTicket *ticket,
+                        UBYTE *challenge, struct secKeyInfo *list, ULONG *count)
+{
+    struct TagItem tags[] =
+    {
+        { secT_UserID,      (IPTR)user      },
+        { secT_Password,    (IPTR)pwd       },
+        { secT_Service,     (IPTR)"authtest" },
+        { host ? secT_RemoteHost : TAG_IGNORE, (IPTR)host },
+        { secT_Ticket,      (IPTR)ticket    },
+        { secT_KeyChallenge,(IPTR)challenge },
+        { secT_KeyList,     (IPTR)list      },
+        { secT_KeyListSize, CHAL_LIST       },
+        { secT_KeyCount,    (IPTR)count     },
+        { TAG_DONE,         0               }
+    };
+    return secVerifyUserA(tags);
+}
+
+/* The token's answer (secKeyClientA) */
+static ULONG Assert(struct secKeyInfo *list, ULONG count, UBYTE *challenge, UBYTE *assertion, ULONG *size, ULONG *which, ULONG *seen)
+{
+    struct Hook hook;
+    struct TagItem tags[] =
+    {
+        { secT_KCOperation,     secKC_ASSERT        },
+        { secT_KeyList,         (IPTR)list          },
+        { secT_KeyListSize,     count               },
+        { secT_KeyChallenge,    (IPTR)challenge     },
+        { secT_KeyAssertion,    (IPTR)assertion     },
+        { secT_KeyAssertionSize,(IPTR)size          },
+        { secT_KeyIndex,        (IPTR)which         },
+        { secT_StatusHook,      (IPTR)&hook         },
+        { secT_KeyTimeout,      5                   },
+        { TAG_DONE,             0                   }
+    };
+
+    memset(&hook, 0, sizeof(hook));
+    hook.h_Entry = (HOOKFUNC)ChalStatusFunc;
+    hook.h_Data = seen;
+    *size = secKEYASSERTIONMAX;
+    return secKeyClientA(tags);
+}
+
+/* The second pass: the answer with the ticket */
+static ULONG VerifyAnswer(CONST_STRPTR user, struct secLoginTicket *ticket, const UBYTE *assertion, ULONG size, CONST_STRPTR publicid)
+{
+    struct TagItem tags[] =
+    {
+        { secT_UserID,          (IPTR)user      },
+        { secT_Ticket,          (IPTR)ticket    },
+        { secT_KeyAssertion,    (IPTR)assertion },
+        { secT_KeyAssertionSize,size            },
+        { secT_KeyPublicID,     (IPTR)publicid  },
+        { secT_Service,         (IPTR)"authtest" },
+        { TAG_DONE,             0               }
+    };
+    return secVerifyUserA(tags);
+}
+
+static ULONG EnrolChal(CONST_STRPTR user, CONST_STRPTR label, struct secLoginTicket *ticket)
+{
+    ULONG seen = 0;
+    struct Hook hook;
+    struct TagItem tags[] =
+    {
+        { secT_KAOperation,     secKA_ADD               },
+        { secT_UserID,          (IPTR)user              },
+        { ticket ? secT_Ticket : TAG_IGNORE, (IPTR)ticket },
+        { secT_KeyType,         secKEY_CHALLENGE        },
+        { secT_KeyScheme,       (IPTR)"u2f"             },
+        { secT_KeyLabel,        (IPTR)label             },
+        { secT_KeyEnrol,        TRUE                    },
+        { secT_StatusHook,      (IPTR)&hook             },
+        { secT_KeyTimeout,      5                       },
+        { TAG_DONE,             0                       }
+    };
+
+    memset(&hook, 0, sizeof(hook));
+    hook.h_Entry = (HOOKFUNC)ChalStatusFunc;
+    hook.h_Data = &seen;
+    return secKeyAdminA(tags);
+}
+
+/* A full two-pass verification; the ticket is the login ticket on secVERIFY_OK */
+static ULONG LoginChal(CONST_STRPTR user, CONST_STRPTR pwd, struct secLoginTicket *ticket)
+{
+    static struct secKeyInfo list[CHAL_LIST];
+    static UBYTE assertion[secKEYASSERTIONMAX];
+    UBYTE challenge[secKEYCHALLENGESIZE];
+    ULONG r, count = 0, size, which = 0, seen = 0;
+
+    r = VerifyChal(user, pwd, NULL, ticket, challenge, list, &count);
+    if (r != secVERIFY_KEYNEEDED)
+        return r;
+    if (Assert(list, count, challenge, assertion, &size, &which, &seen) != secKCERR_OK)
+        return secVERIFY_FAILED;
+    return VerifyAnswer(user, ticket, assertion, size, list[which].PublicID);
+}
+
+static void ChalTestsRoot(void)
+{
+    static struct secKeyInfo list[CHAL_LIST];
+    static UBYTE assertion[secKEYASSERTIONMAX], old[secKEYASSERTIONMAX];
+    struct secLoginTicket ticket;
+    UBYTE challenge[secKEYCHALLENGESIZE];
+    ULONG r, count = 0, size = 0, oldsize, which = 0, seen = 0, counter;
+
+    r = EnrolChal(testuser, "u2f", NULL);
+    Report("chal: enrol a U2F token for the user (fidosim.device)", r == secKAERR_OK, r);
+    if (r != secKAERR_OK)
+        return;
+    r = KeyAdmin(secKA_LIST, testuser, NULL, NULL, &count);
+    Report("chal: listed", r == secKAERR_OK && count == 1, count);
+
+    r = Verify(testuser, "", NULL, NULL);
+    Report("chal: a verification without a ticket fails (no second pass possible)", r == secVERIFY_FAILED, r);
+    r = VerifyChal(testuser, "", NULL, &ticket, challenge, list, &count);
+    Report("chal: the first pass asks for the token (KEYNEEDED)", r == secVERIFY_KEYNEEDED && count == 1, r);
+    Report("chal: ... and lists it", count == 1 && list[0].Type == secKEY_CHALLENGE && !strcmp(list[0].Scheme, "u2f"), list[0].Type);
+    r = Assert(list, count, challenge, assertion, &size, &which, &seen);
+    Report("chal: the token answers (secKeyClientA)", r == secKCERR_OK && size > 5 && which == 0, r);
+    Report("chal: the status hook saw 'touch'", (seen & (1UL << secKS_TOUCH)) != 0, seen);
+    counter = ((ULONG)assertion[1] << 24) | ((ULONG)assertion[2] << 16) | ((ULONG)assertion[3] << 8) | assertion[4];
+    r = VerifyAnswer(testuser, &ticket, assertion, size, list[0].PublicID);
+    Report("chal: the answer completes the verification", r == secVERIFY_OK, r);
+    {
+        struct TagItem tags[] = { { secT_DiscardTicket, (IPTR)&ticket }, { TAG_DONE, 0 } };
+        Report("chal: the ticket became a login ticket (discard ok)", secVerifyUserA(tags) == secVERIFY_OK, 0);
+    }
+    r = KeyAdmin(secKA_LIST, testuser, NULL, NULL, &count);
+    {
+        static struct secKeyInfo l2[1];
+        struct TagItem tags[] = { { secT_KAOperation, secKA_LIST }, { secT_UserID, (IPTR)testuser }, { secT_KeyList, (IPTR)l2 },
+                                  { secT_KeyListSize, 1 }, { secT_KeyCount, (IPTR)&count }, { TAG_DONE, 0 } };
+        r = secKeyAdminA(tags);
+        Report("chal: the token's counter was saved", r == secKAERR_OK && l2[0].Counter == counter, l2[0].Counter);
+    }
+
+    /* replay: the old answer against a new challenge */
+    memcpy(old, assertion, size);
+    oldsize = size;
+    r = VerifyChal(testuser, "", NULL, &ticket, challenge, list, &count);
+    if (r == secVERIFY_KEYNEEDED)
+        r = VerifyAnswer(testuser, &ticket, old, oldsize, list[0].PublicID);
+    Report("chal: an old answer is refused", r == secVERIFY_FAILED, r);
+    r = VerifyAnswer(testuser, &ticket, old, oldsize, list[0].PublicID);
+    Report("chal: ... and the ticket is gone after that", r == secVERIFY_FAILED, r);
+
+    /* a wrong password is not told until the token answered */
+    r = VerifyChal(testuser, "wrong", NULL, &ticket, challenge, list, &count);
+    Report("chal: a wrong password still asks for the token", r == secVERIFY_KEYNEEDED, r);
+    r = Assert(list, count, challenge, assertion, &size, &which, &seen);
+    if (r == secKCERR_OK)
+        r = VerifyAnswer(testuser, &ticket, assertion, size, list[0].PublicID);
+    Report("chal: ... and fails with the token's answer", r == secVERIFY_FAILED, r);
+
+    /* an answer to somebody else's challenge: a fresh first pass, then an answer made for another */
+    r = VerifyChal(testuser, "", NULL, &ticket, challenge, list, &count);
+    if (r == secVERIFY_KEYNEEDED)
+    {
+        challenge[0] ^= 0xff;
+        r = Assert(list, count, challenge, assertion, &size, &which, &seen);
+        if (r == secKCERR_OK)
+            r = VerifyAnswer(testuser, &ticket, assertion, size, list[0].PublicID);
+    }
+    Report("chal: an answer to a different challenge is refused", r == secVERIFY_FAILED, r);
+
+    /* a damaged answer */
+    r = VerifyChal(testuser, "", NULL, &ticket, challenge, list, &count);
+    if (r == secVERIFY_KEYNEEDED)
+    {
+        r = Assert(list, count, challenge, assertion, &size, &which, &seen);
+        if (r == secKCERR_OK)
+        {
+            assertion[size - 1] ^= 0x55;
+            r = VerifyAnswer(testuser, &ticket, assertion, size, list[0].PublicID);
+        }
+    }
+    Report("chal: a damaged answer is refused", r == secVERIFY_FAILED, r);
+
+    /* the incomplete ticket cannot be redeemed */
+    r = VerifyChal(testuser, "", NULL, &ticket, challenge, list, &count);
+    if (r == secVERIFY_KEYNEEDED)
+    {
+        struct TagItem lt[] = { { secT_Ticket, (IPTR)&ticket }, { secT_Quiet, TRUE }, { TAG_DONE, 0 } };
+        r = secLoginA(lt);
+        Report("chal: a ticket still waiting for the token cannot log in", r == secOWNER_NOBODY, r);
+        {
+            struct TagItem tags[] = { { secT_DiscardTicket, (IPTR)&ticket }, { TAG_DONE, 0 } };
+            secVerifyUserA(tags);
+        }
+    }
+    else
+        Report("chal: a ticket still waiting for the token cannot log in", FALSE, r);
+
+    r = Verify(testuser, "", "somehost", NULL);
+    Report("chal: from the network the token cannot be used: refused", r == secVERIFY_FAILED, r);
+
+    r = LoginChal(testuser, "", &ticket);
+    Report("chal: a full two-pass verification", r == secVERIFY_OK, r);
+    {
+        struct TagItem tags[] = { { secT_DiscardTicket, (IPTR)&ticket }, { TAG_DONE, 0 } };
+        secVerifyUserA(tags);
+    }
+    r = KeyAdmin(secKA_REMOVE, testuser, "u2f", NULL, NULL);
+    Report("chal: removed", r == secKAERR_OK, r);
+    r = Verify(testuser, "", NULL, NULL);
+    Report("chal: the password alone verifies again", r == secVERIFY_OK, r);
+}
+
+static void ChalTestsUser(void)
+{
+    struct secLoginTicket ticket;
+    ULONG r, count = 0;
+
+    r = Verify(testuser, "", NULL, &ticket);
+    if (r == secVERIFY_OK)
+        r = EnrolChal(testuser, "myu2f", &ticket);
+    Report("chal: a user enrols their own token with a ticket", r == secKAERR_OK, r);
+    if (r != secKAERR_OK)
+        return;
+    r = LoginChal(testuser, "", &ticket);
+    Report("chal: the user's two-pass verification", r == secVERIFY_OK, r);
+    if (r == secVERIFY_OK)
+        r = KeyAdmin(secKA_REMOVE, testuser, "myu2f", &ticket, NULL);
+    Report("chal: ... whose ticket removes the token again", r == secKAERR_OK, r);
+    r = KeyAdmin(secKA_LIST, testuser, NULL, NULL, &count);
+    Report("chal: none left", r == secKAERR_OK && count == 0, count);
+}
+
 static void KeyTestsUser(void)
 {
     struct secLoginTicket ticket;
@@ -335,6 +587,7 @@ static void RootPhase(void)
     }
 
     KeyTestsRoot();
+    ChalTestsRoot();
 
     /* account locking */
     {
@@ -384,6 +637,7 @@ static void UserPhase(void)
     }
 
     KeyTestsUser();
+    ChalTestsUser();
 }
 
 static void LogPhase(void)

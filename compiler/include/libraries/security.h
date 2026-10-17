@@ -216,6 +216,20 @@ struct secGroupInfo
 #define secT_KeyListSize        (TAG_USER+52)   /* secKA_LIST: (ULONG) entries in that array                       */
 #define secT_KeyCount           (TAG_USER+53)   /* secKA_LIST: (ULONG *) receives the number of keys               */
 #define secT_HasKeys            (TAG_USER+54)   /* secQueryUserA(): (BOOL *) the user has security keys registered */
+/* secVerifyUserA() with secKEY_CHALLENGE tokens, secKeyClientA(), secKeyAdminA() enrolment */
+#define secT_KeyChallenge       (TAG_USER+55)   /* (UBYTE *) secKEYCHALLENGESIZE bytes: receives the challenge      */
+                                                /* (secVERIFY_KEYNEEDED), or is the challenge to answer             */
+#define secT_KeyAssertion       (TAG_USER+56)   /* (UBYTE *) the token's answer: given to secVerifyUserA() with    */
+                                                /* secT_Ticket, received from secKeyClientA()                      */
+#define secT_KeyAssertionSize   (TAG_USER+57)   /* secVerifyUserA(): (ULONG) its size; secKeyClientA(): (ULONG *)  */
+                                                /* the buffer's size, then the answer's                            */
+#define secT_KCOperation        (TAG_USER+58)   /* secKeyClientA(): (ULONG) secKC_#?                                */
+#define secT_StatusHook         (TAG_USER+59)   /* (struct Hook *) told what to show while a token is waited for   */
+                                                /* (struct secKeyStatus *); returns FALSE to give up               */
+#define secT_KeyTimeout         (TAG_USER+60)   /* (ULONG) seconds to wait for a token and a touch [KEYTIMEOUT]    */
+#define secT_KeyEnrol           (TAG_USER+61)   /* secKeyAdminA(secKA_ADD): (BOOL) enrol a present secKEY_CHALLENGE */
+                                                /* token instead of giving secT_KeyPublicID / secT_KeySecret        */
+#define secT_KeyIndex           (TAG_USER+62)   /* secKeyClientA(): (ULONG *) which entry of secT_KeyList answered  */
 
 /* secUserAdminA() operations */
 #define secUA_ADD               (1)             /* new user: secT_UserID, secT_UID, secT_GID [, others]            */
@@ -239,6 +253,7 @@ struct secGroupInfo
 #define secKAERR_BADARGS        (4)             /* a field is missing or malformed                                 */
 #define secKAERR_WRITE          (5)             /* the key file could not be written; nothing changed              */
 #define secKAERR_UNAVAILABLE    (6)             /* unconfigured system, no server, or no keys plugin               */
+#define secKAERR_NOTOKEN        (7)             /* enrolment: no token answered, or the user gave up               */
 
 /*
  * Hardware authentication tokens ("security keys", secT_KeyType)
@@ -251,11 +266,52 @@ struct secGroupInfo
  */
 #define secKEY_OTP              (1)             /* the token types a one-time code directly after the password;    */
                                                 /* schemes: "yubico" (Yubico OTP, yubikey.secplugin)               */
+#define secKEY_CHALLENGE        (2)             /* the token answers a challenge the system makes; the login talks  */
+                                                /* to it (secKeyClientA()); schemes: "u2f" (FIDO U2F, fido.secplugin) */
 
 #define secKEYLABELSIZE         (32)
 #define secKEYSCHEMESIZE        (16)
-#define secKEYPUBIDSIZE         (36)
-#define secKEYSECRETMAX         (64)            /* bytes                                                           */
+#define secKEYPUBIDSIZE         (512)           /* the id a token presents (U2F: the key handle, up to 255 bytes, hex) */
+#define secKEYSECRETMAX         (96)            /* bytes of key material (a secret, or a public key)               */
+#define secKEYCHALLENGESIZE     (32)
+#define secKEYASSERTIONMAX      (512)           /* bytes a token's answer may have                                 */
+#define secKEYAPPIDSIZE         (64)
+
+/* secKeyClientA() operations and results */
+#define secKC_ASSERT            (1)             /* have a present token answer a challenge (secT_KeyList, ...)     */
+#define secKC_ENROL             (2)             /* enrol a present token: secT_KeyPublicID and secT_KeySecret out  */
+
+#define secKCERR_OK             (0)
+#define secKCERR_NOTOKEN        (1)             /* no token, or none of the listed ones, within the timeout        */
+#define secKCERR_CANCELLED      (2)             /* the status hook gave up                                         */
+#define secKCERR_UNAVAILABLE    (3)             /* no plugin for the scheme, or not a multi-user system            */
+#define secKCERR_BADARGS        (4)
+#define secKCERR_FAILED         (5)             /* the token refused or failed                                     */
+
+/* What a status hook (secT_StatusHook) is shown: CallHookPkt(hook, struct secKeyStatus *, NULL),
+ * returning TRUE to go on, FALSE to give up */
+struct secKeyStatus
+{
+    ULONG               Type;                   /* secKS_#?                         */
+    CONST_STRPTR        Text;                   /* for the user                     */
+};
+#define secKS_INSERT            (1)             /* no token is present: plug one in */
+#define secKS_TOUCH             (2)             /* touch the token                  */
+#define secKS_WAIT              (3)             /* working                          */
+#define secKS_DONE              (4)             /* finished (show nothing)          */
+
+/* What a plugin gets for its client-side operations (the login's context) */
+struct secKeyClient
+{
+    ULONG               Size;                   /* sizeof(struct secKeyClient)      */
+    struct ExecBase     *Exec;                  /* the library bases, for a plugin   */
+    struct Library      *Dos;                   /* that opened none itself           */
+    struct Library      *Utility;
+    struct Hook         *StatusHook;            /* may be NULL                      */
+    CONST_STRPTR        DeviceName;             /* the tokens' exec device (KEYDEVICE, "fido.device") */
+    ULONG               Timeout;                /* seconds                          */
+    CONST_STRPTR        AppID;                  /* KEYAPPID                         */
+};
 
 /* One registered token, as secKeyAdminA(secKA_LIST) reports it (no secret) */
 struct secKeyInfo
@@ -319,6 +375,9 @@ struct secLoginTicket
 #define secVERIFY_NOTSUPPORTED  (4)             /* this token form is not accepted on this system                   */
 #define secVERIFY_UNAVAILABLE   (5)             /* no password database (unconfigured) or no authentication process */
 #define secVERIFY_BADARGS       (6)             /* missing user ID or token                                         */
+#define secVERIFY_KEYNEEDED     (7)             /* the user has a secKEY_CHALLENGE token: answer the challenge in   */
+                                                /* secT_KeyChallenge (secKeyClientA()) and call again with          */
+                                                /* secT_Ticket, secT_KeyAssertion and secT_KeyPublicID              */
 
 /*
  * Protection bits (see also <dos/dos.h>)
@@ -507,6 +566,9 @@ struct secPointers
  *   LOGINDELAYMAX          longest hold-back after failed verifications, seconds [30]
  *   KEYLOGIN               hardware tokens (secKeyAdminA()) are checked when a user has some [1]
  *   KEYREQUIRED            a user without a registered token cannot log in locally [0]
+ *   KEYTIMEOUT             seconds a login waits for a challenge token and its touch [30]
+ *   KEYAPPID               the application id challenge tokens are registered for [aros:login]
+ *   KEYDEVICE              the exec device challenge tokens are reached through [fido.device]
  *
  * Each token scheme needs its plugin, e.g. LOADPLUGIN yubikey
  * (SYS:Libs/Security/yubikey.secplugin) for Yubico OTP.
@@ -616,6 +678,7 @@ typedef struct
     BPTR                        SegList;
     struct secPluginHeader      *header;                /* For locating the init/fini functions */
     UBYTE                       modulename[64];         /* For displaying */
+    struct ExecBase             *SysBase;               /* exec, for a plugin without start-up code */
 } secPluginModule;
 
 /*
@@ -686,6 +749,21 @@ struct plugin_hwauth_ops
     /* Check such a code. On secpiTRUE *counter holds the code's counter, which the
      * library requires to be greater than the last one accepted. secpiFALSE otherwise */
     ULONG                       (*VerifyCode)(CONST_STRPTR publicid, const UBYTE *secret, ULONG secretlen, CONST_STRPTR code, ULONG *counter);
+    /* secKEY_CHALLENGE, in the authentication process: is 'assertion' the token's valid answer
+     * to 'challenge' for the application id? keydata is what was registered (a public key).
+     * secpiTRUE with the answer's counter in *counter (must grow), secpiFALSE otherwise. */
+    ULONG                       (*VerifyAssertion)(CONST_STRPTR publicid, const UBYTE *keydata, ULONG keylen, CONST_STRPTR appid,
+                                                   const UBYTE *challenge, ULONG challengelen, const UBYTE *assertion, ULONG assertionlen,
+                                                   ULONG *counter);
+    /* secKEY_CHALLENGE, in the login's context: have a present token that holds one of the
+     * 'count' ids answer the challenge (waiting ctx->Timeout seconds for it and its touch, telling
+     * ctx->StatusHook what to show). *assertionlen: the buffer's size, then the answer's; *which:
+     * the id that answered. secKCERR_#? */
+    ULONG                       (*GetAssertion)(struct secKeyClient *ctx, CONST_STRPTR *publicids, ULONG count,
+                                                const UBYTE *challenge, ULONG challengelen, UBYTE *assertion, ULONG *assertionlen, ULONG *which);
+    /* secKEY_CHALLENGE, in the login's context: enrol a present token: its id (a string of at most
+     * publicidsize) and key material (*keylen: the buffer's size, then the data's). secKCERR_#? */
+    ULONG                       (*Enrol)(struct secKeyClient *ctx, STRPTR publicid, ULONG publicidsize, UBYTE *keydata, ULONG *keylen);
 };
 
 /* User DataBase Operations Plugin - interface to be defined */

@@ -288,7 +288,10 @@ static const char ConfigFile[] =
     "LOGLOGINFAIL 1\n"
     "LOGSTARTUP 1\n"
     "; hardware authentication tokens (AuthKey): one plugin per scheme\n"
-    "LOADPLUGIN yubikey\n";
+    "LOADPLUGIN yubikey\n"
+    "LOADPLUGIN fido\n"
+    "; seconds a login waits for a plugged-in token and its touch\n"
+    "KEYTIMEOUT 30\n";
 
 static BOOL Exists(CONST_STRPTR path)
 {

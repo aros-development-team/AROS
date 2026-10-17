@@ -28,6 +28,9 @@ struct secConfig
     UWORD               MaxTries;               /* Security.auth: failures before a lock-out    */
     UWORD               LockTime;               /* Security.auth: lock-out time in seconds      */
     UWORD               LoginDelayMax;          /* Security.auth: longest hold-back, seconds    */
+    UWORD               KeyTimeout;             /* seconds to wait for a challenge token        */
+    char                KeyAppID[secKEYAPPIDSIZE];   /* application id of challenge tokens      */
+    char                KeyDevice[32];          /* their exec device                            */
 };
 
 #define secCFGB_LimitDOSSetProtection   (0)     /* LimitDOSSetProtection                */

@@ -68,9 +68,23 @@
                             ticket back. Nothing else is done; the result
                             is secVERIFY_OK.
 
+        Challenge tokens (secKEY_CHALLENGE, see secKeyAdminA()): a user who
+        has one is verified in two calls. The first, with the password and
+        secT_Ticket, returns secVERIFY_KEYNEEDED, the ticket, the challenge
+        in secT_KeyChallenge (UBYTE[secKEYCHALLENGESIZE]) and the tokens in
+        secT_KeyList / secT_KeyListSize / secT_KeyCount (struct secKeyInfo
+        array, the number filled in). secKeyClientA() obtains a token's
+        answer; the second call gives it back with the same secT_Ticket,
+        secT_KeyAssertion / secT_KeyAssertionSize and the answering token's
+        secT_KeyPublicID, and returns secVERIFY_OK (the ticket is then a
+        login ticket) or a failure. Nothing is said about the password
+        until then. Tokens of that kind are not asked for from the
+        network (secT_RemoteHost).
+
     RESULT
-        secVERIFY_OK, or one of the secVERIFY_#? failure codes. Unknown user
-        and wrong token both give secVERIFY_FAILED.
+        secVERIFY_OK, secVERIFY_KEYNEEDED (see above), or one of the
+        secVERIFY_#? failure codes. Unknown user and wrong token both give
+        secVERIFY_FAILED.
 
     NOTES
         On an unconfigured system (no password file) the result is
@@ -86,6 +100,7 @@
 
     struct secAPacket pkt;
     struct secLoginTicket *ticketp, *discard;
+    ULONG *countp;
     LONG res;
     BOOL isroot;
 
@@ -126,15 +141,36 @@
     pkt.Info = (struct secPrivUserInfo *)GetTagData(secT_UserInfo, 0, taglist);
     ticketp = (struct secLoginTicket *)GetTagData(secT_Ticket, 0, taglist);
     pkt.WantTicket = (ticketp != NULL);
-    if (ticketp)
+    /* challenge tokens: the first phase hands out the challenge and the
+     * tokens; the second brings the answer with the ticket */
+    pkt.Challenge = (UBYTE *)GetTagData(secT_KeyChallenge, 0, taglist);
+    pkt.Assertion = (const UBYTE *)GetTagData(secT_KeyAssertion, 0, taglist);
+    pkt.AssertionLen = GetTagData(secT_KeyAssertionSize, 0, taglist);
+    pkt.KeyPublicID = (CONST_STRPTR)GetTagData(secT_KeyPublicID, 0, taglist);
+    pkt.KeyList = (struct secKeyInfo *)GetTagData(secT_KeyList, 0, taglist);
+    pkt.KeyListSize = GetTagData(secT_KeyListSize, 0, taglist);
+    countp = (ULONG *)GetTagData(secT_KeyCount, 0, taglist);
+    if (pkt.Assertion)
+    {
+        if (!ticketp)
+            return secVERIFY_BADARGS;
+        CopyMem(ticketp, &pkt.Ticket, sizeof(pkt.Ticket));
+        if (!pkt.Token)
+            pkt.Token = "";
+    }
+    else if (ticketp)
         memset(ticketp, 0, sizeof(*ticketp));
 
     if (!pkt.UserID || !pkt.Token)
         return secVERIFY_BADARGS;
 
     res = SendAuthPacket(secBase, &pkt);
-    if (ticketp && res == secVERIFY_OK)
+    if (ticketp && (res == secVERIFY_OK || res == secVERIFY_KEYNEEDED))
         CopyMem(&pkt.Ticket, ticketp, sizeof(*ticketp));
+    else if (ticketp && pkt.Assertion)
+        memset(ticketp, 0, sizeof(*ticketp));
+    if (countp)
+        *countp = pkt.KeyCount;
     memset(&pkt.Ticket, 0, sizeof(pkt.Ticket));
     return (ULONG)res;
 

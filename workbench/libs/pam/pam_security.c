@@ -40,12 +40,131 @@ static struct Library *OpenSec(void)
 {
     struct Library *base = OpenLibrary(SECURITYNAME, 45);
 
-    if (base && base->lib_Version == 45 && base->lib_Revision < 14)
+    if (base && base->lib_Version == 45 && base->lib_Revision < 19)
     {
         CloseLibrary(base);
         base = NULL;
     }
     return base;
+}
+
+/*
+ * While a challenge token is waited for, the library tells this hook what
+ * to show; it goes to the conversation as PAM_AROS_STATUS (repeatedly, so a
+ * graphical conversation can poll its Cancel button). The conversation
+ * gives up with PAM_CONV_ERR.
+ */
+static LONG MapVerify(ULONG r);
+
+struct StatusConv
+{
+    struct PamBase      *PamBase;
+    struct PamHandle    *Handle;
+};
+
+static CONST_STRPTR StatusText(const struct secKeyStatus *ks)
+{
+    switch (ks->Type)
+    {
+    case secKS_INSERT:  return "Insert your security key";
+    case secKS_TOUCH:   return "Touch your security key";
+    case secKS_WAIT:    return "Waiting for the security key...";
+    case secKS_DONE:    return NULL;
+    }
+    return ks->Text;
+}
+
+AROS_UFH3(static IPTR, StatusHookFunc,
+    AROS_UFHA(struct Hook *, hook, A0),
+    AROS_UFHA(struct secKeyStatus *, ks, A2),
+    AROS_UFHA(APTR, unused, A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct StatusConv *sc = (struct StatusConv *)hook->h_Data;
+    struct PamBase *PamBase = sc->PamBase;
+    struct pam_message m;
+    const struct pam_message *mp = &m;
+    struct pam_response *r = NULL;
+    LONG res;
+
+    m.msg_style = PAM_AROS_STATUS;
+    m.msg = StatusText(ks);
+    res = PamDoConverse(PamBase, sc->Handle, 1, &mp, &r);
+    if (r)
+        PamFreeResponses(PamBase, 1, r);
+    return (res == PAM_SUCCESS) ? TRUE : FALSE;
+
+    AROS_USERFUNC_EXIT
+}
+
+#define KEYLIST_MAX     8
+
+/*
+ * secVERIFY_KEYNEEDED: the user has a challenge token. The library's
+ * client side has the token answer (the user plugs it in and touches it),
+ * and the answer completes the verification with the same ticket.
+ */
+static ULONG AnswerChallenge(struct PamBase *PamBase, struct PamHandle *h, struct Library *secBase, CONST_STRPTR user,
+                             struct secLoginTicket *ticket, UBYTE *challenge, struct secKeyInfo *list, ULONG count,
+                             struct secUserInfo *info, LONG *pamres)
+{
+    struct StatusConv sc = { PamBase, h };
+    struct Hook hook;
+    UBYTE *assertion;
+    ULONG size = secKEYASSERTIONMAX, which = 0, r;
+
+    if (count > KEYLIST_MAX)
+        count = KEYLIST_MAX;
+    if (!(assertion = AllocVec(secKEYASSERTIONMAX, MEMF_ANY | MEMF_CLEAR)))
+    {
+        *pamres = PAM_BUF_ERR;
+        return secVERIFY_FAILED;
+    }
+    memset(&hook, 0, sizeof(hook));
+    hook.h_Entry = (HOOKFUNC)StatusHookFunc;
+    hook.h_Data = &sc;
+    {
+        struct TagItem ctags[] =
+        {
+            { secT_KCOperation,     secKC_ASSERT        },
+            { secT_KeyList,         (IPTR)list          },
+            { secT_KeyListSize,     count               },
+            { secT_KeyChallenge,    (IPTR)challenge     },
+            { secT_KeyAssertion,    (IPTR)assertion     },
+            { secT_KeyAssertionSize,(IPTR)&size         },
+            { secT_KeyIndex,        (IPTR)&which        },
+            { secT_StatusHook,      (IPTR)&hook         },
+            { TAG_DONE,             0                   }
+        };
+        r = secKeyClientA(ctags);
+    }
+    if (r != secKCERR_OK)
+    {
+        struct TagItem dtags[] = { { secT_DiscardTicket, (IPTR)ticket }, { TAG_DONE, 0 } };
+
+        secVerifyUserA(dtags);
+        FreeVec(assertion);
+        *pamres = (r == secKCERR_CANCELLED) ? PAM_CONV_ERR : PAM_AUTH_ERR;
+        return secVERIFY_FAILED;
+    }
+    {
+        struct TagItem tags[] =
+        {
+            { secT_UserID,          (IPTR)user                      },
+            { secT_Ticket,          (IPTR)ticket                    },
+            { secT_KeyAssertion,    (IPTR)assertion                 },
+            { secT_KeyAssertionSize,size                            },
+            { secT_KeyPublicID,     (IPTR)list[which < count ? which : 0].PublicID },
+            { secT_Service,         (IPTR)h->Service                },
+            { secT_UserInfo,        (IPTR)info                      },
+            { TAG_DONE,             0                               }
+        };
+        r = secVerifyUserA(tags);
+    }
+    FreeVec(assertion);
+    *pamres = MapVerify(r);
+    return r;
 }
 
 /* PamEnd() or replacement: give an unused ticket back */
@@ -126,20 +245,48 @@ static LONG SecAuthenticate(struct PamBase *PamBase, struct PamHandle *h, ULONG 
         return PAM_BUF_ERR;
     }
     {
-        struct TagItem tags[] =
+        struct secKeyInfo *list = NULL;
+        UBYTE challenge[secKEYCHALLENGESIZE];
+        ULONG count = 0;
+
+        /* a local login may have to be completed by a challenge token */
+        if (!h->RHost)
+            list = AllocVec(KEYLIST_MAX * sizeof(struct secKeyInfo), MEMF_ANY | MEMF_CLEAR);
         {
-            { secT_UserID,      (IPTR)user      },
-            { h->AuthTokFormat == PAMTOK_ENVOY ? secT_PasswordHash : secT_Password, (IPTR)tok },
-            { secT_HashType,    secHASH_ACRYPT_LC },
-            { secT_Service,     (IPTR)h->Service },
-            { secT_RemoteHost,  (IPTR)h->RHost  },
-            { secT_UserInfo,    (IPTR)info      },
-            { secT_Ticket,      (IPTR)ticket    },
-            { TAG_DONE,         0               }
-        };
-        r = secVerifyUserA(tags);
+            struct TagItem tags[] =
+            {
+                { secT_UserID,      (IPTR)user      },
+                { h->AuthTokFormat == PAMTOK_ENVOY ? secT_PasswordHash : secT_Password, (IPTR)tok },
+                { secT_HashType,    secHASH_ACRYPT_LC },
+                { secT_Service,     (IPTR)h->Service },
+                { secT_RemoteHost,  (IPTR)h->RHost  },
+                { secT_UserInfo,    (IPTR)info      },
+                { secT_Ticket,      (IPTR)ticket    },
+                { list ? secT_KeyChallenge : TAG_IGNORE, (IPTR)challenge },
+                { list ? secT_KeyList : TAG_IGNORE,      (IPTR)list      },
+                { secT_KeyListSize, KEYLIST_MAX     },
+                { secT_KeyCount,    (IPTR)&count    },
+                { TAG_DONE,         0               }
+            };
+            r = secVerifyUserA(tags);
+        }
+        res = MapVerify(r);
+        if (r == secVERIFY_KEYNEEDED)
+        {
+            if (list && count)
+                r = AnswerChallenge(PamBase, h, secBase, user, ticket, challenge, list, count, info, &res);
+            else
+            {
+                struct TagItem dtags[] = { { secT_DiscardTicket, (IPTR)ticket }, { TAG_DONE, 0 } };
+
+                secVerifyUserA(dtags);
+                res = PAM_AUTHINFO_UNAVAIL;
+            }
+        }
+        if (list)
+            FreeVec(list);
+        memset(challenge, 0, sizeof(challenge));
     }
-    res = MapVerify(r);
     if (res == PAM_SUCCESS)
     {
         /* the stored spelling of the user ID */

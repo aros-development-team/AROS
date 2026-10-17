@@ -119,10 +119,14 @@ struct PamHandle;
 #define PAM_PROMPT_ECHO_ON          2   /* ask, echo (a user name)             */
 #define PAM_ERROR_MSG               3   /* show an error                       */
 #define PAM_TEXT_INFO               4   /* show a message                      */
+#define PAM_AROS_STATUS             5   /* progress while a hardware token is waited for:
+                                         * msg is what to show (NULL: done); sent again and
+                                         * again while waiting, so it must return at once,
+                                         * with no answer; PAM_CONV_ERR gives up           */
 
 struct pam_message
 {
-    LONG                msg_style;      /* PAM_PROMPT_#?, PAM_ERROR_MSG, PAM_TEXT_INFO */
+    LONG                msg_style;      /* PAM_PROMPT_#?, PAM_ERROR_MSG, PAM_TEXT_INFO, PAM_AROS_STATUS */
     CONST_STRPTR        msg;
 };
 

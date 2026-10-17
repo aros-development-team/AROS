@@ -195,3 +195,149 @@ void LoginMessageGUI(struct SecurityBase *secBase, CONST_STRPTR title, CONST_STR
         EasyRequestArgs(NULL, &es, NULL, (RAWARG)args);
     }
 }
+
+/*
+ * While a hardware token is waited for: a window with the status text and
+ * a Cancel button, in the login's look. The status hook calls this again
+ * and again, so the window's input is handled here one round at a time.
+ */
+BOOL StatusGUIShow(struct SecurityBase *secBase, struct LoginStatusGUI *s, CONST_STRPTR pubscreen, BOOL systemmode,
+                   CONST_STRPTR title, CONST_STRPTR text, CONST_STRPTR cancel, BOOL *unavailable)
+{
+    struct Library *MUIMasterBase = s->MUIMasterBase;
+    ULONG sigs = 0;
+    LONG id;
+
+    *unavailable = FALSE;
+    if (s->Cancelled)
+        return FALSE;
+    if (!MUIMasterBase)
+    {
+        if (!(MUIMasterBase = s->MUIMasterBase = OpenMUIMaster(secBase)))
+        {
+            *unavailable = TRUE;
+            return TRUE;
+        }
+    }
+    if (!s->Win)
+    {
+        /* the varargs MUI_NewObject() is a link-library stub that would make
+         * this ROM module autoopen muimaster.library: tag arrays, as above */
+        Object *btn, *group = NULL, *space;
+        struct TagItem texttags[] =
+        {
+            { MUIA_Text_Contents,       (IPTR)text      },
+            { MUIA_Text_PreParse,       (IPTR)"\33c"    },
+            { MUIA_Text_SetMax,         FALSE           },
+            { TAG_DONE,                 0               }
+        };
+        struct TagItem buttontags[] = { { MUIA_Text_Contents, (IPTR)cancel }, { TAG_DONE, 0 } };
+        struct TagItem spacetags[] = { { MUIA_FixHeight, 8 }, { TAG_DONE, 0 } };
+        struct TagItem grouptags[] =
+        {
+            { MUIA_Frame,               MUIV_Frame_None },
+            { MUIA_Group_Child,         0               },
+            { MUIA_Group_Child,         0               },
+            { MUIA_Group_Child,         0               },
+            { TAG_DONE,                 0               }
+        };
+        struct TagItem wintags[] =
+        {
+            { MUIA_Window_Title,        (IPTR)title     },
+            { MUIA_Window_CloseGadget,  FALSE           },
+            { MUIA_Window_SizeGadget,   FALSE           },
+            { MUIA_Window_DepthGadget,  FALSE           },
+            { TAG_IGNORE,               0               },
+            { MUIA_Window_RootObject,   0               },
+            { TAG_DONE,                 0               }
+        };
+        struct TagItem apptags[] =
+        {
+            { MUIA_Application_Title,       (IPTR)"Login"   },
+            { MUIA_Application_Base,        (IPTR)"LOGIN"   },
+            { MUIA_Application_SingleTask,  FALSE           },
+            { MUIA_Application_Window,      0               },
+            { TAG_DONE,                     0               }
+        };
+
+        if (systemmode && pubscreen == NULL && SystemScreenPresent(secBase))
+            pubscreen = SYSTEM_SCREEN_NAME;
+        s->Text = MUI_NewObjectA(MUIC_Text, texttags);
+        btn = MUI_MakeObjectA(MUIO_Button, (IPTR *)&buttontags[0].ti_Data);
+        space = MUI_NewObjectA(MUIC_Rectangle, spacetags);
+        if (s->Text && btn && space)
+        {
+            grouptags[1].ti_Data = (IPTR)s->Text;
+            grouptags[2].ti_Data = (IPTR)space;
+            grouptags[3].ti_Data = (IPTR)btn;
+            group = MUI_NewObjectA(MUIC_Group, grouptags);
+        }
+        if (group)
+        {
+            wintags[4].ti_Tag = pubscreen ? MUIA_Window_PublicScreen : TAG_IGNORE;
+            wintags[4].ti_Data = (IPTR)pubscreen;
+            wintags[5].ti_Data = (IPTR)group;
+            s->Win = MUI_NewObjectA(MUIC_Window, wintags);
+        }
+        if (s->Win)
+        {
+            apptags[3].ti_Data = (IPTR)s->Win;
+            s->App = MUI_NewObjectA(MUIC_Application, apptags);
+        }
+        if (!s->App)
+        {
+            if (s->Win)
+                MUI_DisposeObject(s->Win);
+            else if (group)
+                MUI_DisposeObject(group);
+            else
+            {
+                if (s->Text)
+                    MUI_DisposeObject(s->Text);
+                if (btn)
+                    MUI_DisposeObject(btn);
+                if (space)
+                    MUI_DisposeObject(space);
+            }
+            s->Win = s->Text = NULL;
+            *unavailable = TRUE;
+            return TRUE;
+        }
+        DoMethod(btn, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)s->App, 2, MUIM_Application_ReturnID, 1);
+        set(s->Win, MUIA_Window_Open, TRUE);
+        if (!XGET(s->Win, MUIA_Window_Open))
+        {
+            MUI_DisposeObject(s->App);
+            s->App = s->Win = s->Text = NULL;
+            *unavailable = TRUE;
+            return TRUE;
+        }
+        strncpy(s->Shown, text, sizeof(s->Shown) - 1);
+    }
+    else if (strcmp(text, s->Shown))
+    {
+        strncpy(s->Shown, text, sizeof(s->Shown) - 1);
+        set(s->Text, MUIA_Text_Contents, (IPTR)text);
+    }
+    /* one round of input: the button, or the window being closed */
+    id = DoMethod(s->App, MUIM_Application_NewInput, (IPTR)&sigs);
+    if (id == 1 || id == MUIV_Application_ReturnID_Quit || (SetSignal(0, 0) & SIGBREAKF_CTRL_C))
+        s->Cancelled = TRUE;
+    return !s->Cancelled;
+}
+
+void StatusGUIEnd(struct SecurityBase *secBase, struct LoginStatusGUI *s)
+{
+    struct Library *MUIMasterBase = s->MUIMasterBase;
+
+    if (s->App)
+    {
+        set(s->Win, MUIA_Window_Open, FALSE);
+        MUI_DisposeObject(s->App);
+    }
+    if (MUIMasterBase)
+        CloseLibrary(MUIMasterBase);
+    s->App = s->Win = s->Text = NULL;
+    s->MUIMasterBase = NULL;
+    s->Shown[0] = '\0';
+}

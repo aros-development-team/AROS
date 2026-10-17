@@ -9,7 +9,7 @@ UGFILES := ugtest uatest
 PAMFILES := pamtest
 
 #MM- test : test-security
-#MM test-security : includes linklibs kernel-security-includes kernel-log-includes test-security-usergroup test-security-pam
+#MM test-security : includes linklibs kernel-security-includes kernel-log-includes test-security-usergroup test-security-pam test-security-fidosim
 #MM test-security-pam : includes linklibs kernel-security-includes workbench-libs-pam-includes workbench-libs-pam-linklib
 #MM test-security-usergroup : includes linklibs kernel-security-includes \
 #MM     workbench-libs-usergroup-includes workbench-libs-usergroup-linklib

@@ -12,6 +12,7 @@
 #include "security_server.h"
 #include "security_auth.h"
 #include "security_task.h"
+#include "security_keys.h"
 
 /*****************************************************************************
 
@@ -57,6 +58,12 @@
                             up to secKEYSECRETMAX bytes; the layout is the
                             scheme's (yubico: the AES-128 key followed by
                             the 6-byte private id, 44 digits).
+        secT_KeyEnrol     - (BOOL) ADD, secKEY_CHALLENGE: enrol the token
+                            that is plugged in instead of giving
+                            secT_KeyPublicID and secT_KeySecret: the scheme
+                            plugin talks to it (a touch) and returns them.
+                            secT_StatusHook and secT_KeyTimeout as for
+                            secKeyClientA().
         secT_KeyList      - (struct secKeyInfo *) LIST: array to fill.
         secT_KeyListSize  - (ULONG) LIST: entries in that array.
         secT_KeyCount     - (ULONG *) LIST: receives the number of tokens,
@@ -82,6 +89,7 @@
     struct secLoginTicket *ticket;
     ULONG *countp;
     ULONG res;
+    char enrolid[secKEYPUBIDSIZE], enrolsecret[2 * secKEYSECRETMAX + 1];
 
     if (!secBase->sec_AfterDOSDone)
         return secKAERR_UNAVAILABLE;
@@ -98,6 +106,18 @@
     req.ListSize = GetTagData(secT_KeyListSize, 0, taglist);
     countp = (ULONG *)GetTagData(secT_KeyCount, 0, taglist);
     ticket = (struct secLoginTicket *)GetTagData(secT_Ticket, 0, taglist);
+
+    /* a challenge token is enrolled by talking to it first (the caller's context) */
+    if (req.Operation == secKA_ADD && req.Type == secKEY_CHALLENGE && GetTagData(secT_KeyEnrol, FALSE, taglist))
+    {
+        ULONG r = KeyClientEnrol(secBase, req.Scheme, enrolid, sizeof(enrolid), enrolsecret, sizeof(enrolsecret),
+                                 (struct Hook *)GetTagData(secT_StatusHook, 0, taglist), GetTagData(secT_KeyTimeout, 0, taglist));
+
+        if (r != secKCERR_OK)
+            return (r == secKCERR_UNAVAILABLE) ? secKAERR_UNAVAILABLE : (r == secKCERR_BADARGS ? secKAERR_BADARGS : secKAERR_NOTOKEN);
+        req.PublicID = enrolid;
+        req.SecretHex = enrolsecret;
+    }
 
     if (CallerIsRoot(secBase) || req.Operation == secKA_LIST)
     {
@@ -128,6 +148,7 @@
 
     if (countp)
         *countp = req.Count;
+    memset(enrolsecret, 0, sizeof(enrolsecret));
     return res;
 
     AROS_LIBFUNC_EXIT

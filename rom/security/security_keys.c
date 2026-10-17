@@ -39,7 +39,7 @@
 #include "security_support.h"
 
 #define KEYS_DIRNAME    "Keys"
-#define KEYLINE_MAX     256
+#define KEYLINE_MAX     1024
 
 /* ------------------------------------------------------------------------ */
 /* The plugins: one per scheme                                              */
@@ -48,14 +48,25 @@
 
 static struct plugin_hwauth_ops *schemes[MAXSCHEMES];
 
+static void HexEncode(const UBYTE *in, ULONG n, STRPTR out);
+
 static CONST_STRPTR TypeName(ULONG type)
 {
-    return (type == secKEY_OTP) ? "OTP" : NULL;
+    switch (type)
+    {
+    case secKEY_OTP:        return "OTP";
+    case secKEY_CHALLENGE:  return "CHALLENGE";
+    }
+    return NULL;
 }
 
 static ULONG TypeFromName(CONST_STRPTR name)
 {
-    return !strcmp(name, "OTP") ? secKEY_OTP : 0;
+    if (!strcmp(name, "OTP"))
+        return secKEY_OTP;
+    if (!strcmp(name, "CHALLENGE"))
+        return secKEY_CHALLENGE;
+    return 0;
 }
 
 ULONG RegisterHwAuthHandler(struct SecurityBase *secBase, struct plugin_ops *ops)
@@ -63,8 +74,11 @@ ULONG RegisterHwAuthHandler(struct SecurityBase *secBase, struct plugin_ops *ops
     struct plugin_hwauth_ops *h = (struct plugin_hwauth_ops *)ops;
     int i, slot = -1;
 
-    if (!h->Scheme || !h->Scheme[0] || strlen(h->Scheme) >= secKEYSCHEMESIZE || !TypeName(h->Type) ||
-        !h->CheckRegistration || !h->MatchCode || !h->VerifyCode)
+    if (!h->Scheme || !h->Scheme[0] || strlen(h->Scheme) >= secKEYSCHEMESIZE || !TypeName(h->Type) || !h->CheckRegistration)
+        return secpiFALSE;
+    if (h->Type == secKEY_OTP && (!h->MatchCode || !h->VerifyCode))
+        return secpiFALSE;
+    if (h->Type == secKEY_CHALLENGE && (!h->VerifyAssertion || !h->GetAssertion || !h->Enrol))
         return secpiFALSE;
     for (i = 0; i < MAXSCHEMES; i++)
     {
@@ -123,11 +137,148 @@ ULONG KeyVerifyCode(struct SecurityBase *secBase, const struct secKeyRec *rec, C
     struct plugin_hwauth_ops *h = KeyScheme(secBase, rec->Type, rec->Scheme);
     ULONG res;
 
-    if (!h)
+    if (!h || rec->Type != secKEY_OTP)
         return secpiNOTSUPP;
     UseModule(secBase, h->ops.module);
     res = h->VerifyCode(rec->PublicID, rec->Secret, rec->SecretLen, code, counter);
     ReleaseModule(secBase, h->ops.module);
+    return res;
+}
+
+ULONG KeyVerifyAssertion(struct SecurityBase *secBase, const struct secKeyRec *rec, const UBYTE *challenge, ULONG challengelen,
+                         const UBYTE *assertion, ULONG assertionlen, ULONG *counter)
+{
+    struct plugin_hwauth_ops *h = KeyScheme(secBase, rec->Type, rec->Scheme);
+    ULONG res;
+
+    if (!h || rec->Type != secKEY_CHALLENGE)
+        return secpiNOTSUPP;
+    UseModule(secBase, h->ops.module);
+    res = h->VerifyAssertion(rec->PublicID, rec->Secret, rec->SecretLen, secBase->Config.KeyAppID, challenge, challengelen,
+                             assertion, assertionlen, counter);
+    ReleaseModule(secBase, h->ops.module);
+    return res;
+}
+
+void KeyFillInfo(const struct secKeyRec *rec, struct secKeyInfo *ki)
+{
+    memset(ki, 0, sizeof(*ki));
+    ki->Type = rec->Type;
+    strcpy(ki->Scheme, rec->Scheme);
+    strcpy(ki->Label, rec->Label);
+    strcpy(ki->PublicID, rec->PublicID);
+    ki->Counter = rec->Counter;
+    strcpy(ki->Registered, rec->Registered);
+}
+
+/* ------------------------------------------------------------------------ */
+/* The client side: talking to a present token (the caller's context)       */
+
+static void MakeClient(struct SecurityBase *secBase, struct secKeyClient *ctx, struct Hook *hook, ULONG timeout)
+{
+    memset(ctx, 0, sizeof(*ctx));
+    ctx->Size = sizeof(*ctx);
+    ctx->Exec = SysBase;
+    ctx->Dos = (struct Library *)DOSBase;
+    ctx->Utility = (struct Library *)UtilityBase;
+    ctx->StatusHook = hook;
+    ctx->DeviceName = secBase->Config.KeyDevice;
+    ctx->Timeout = timeout ? timeout : secBase->Config.KeyTimeout;
+    ctx->AppID = secBase->Config.KeyAppID;
+}
+
+/* Whatever the plugin told the hook, the hook always hears that it is over */
+static void StatusDone(struct SecurityBase *secBase, struct Hook *hook)
+{
+    struct secKeyStatus ks = { secKS_DONE, NULL };
+
+    if (hook)
+        CallHookPkt(hook, &ks, NULL);
+}
+
+/* Each scheme among the listed challenge tokens is asked for an answer in turn */
+ULONG KeyClientAssert(struct SecurityBase *secBase, struct secKeyInfo *list, ULONG count, const UBYTE *challenge,
+                      UBYTE *assertion, ULONG *assertionlen, ULONG *which, struct Hook *hook, ULONG timeout)
+{
+    struct secKeyClient ctx;
+    CONST_STRPTR ids[16];
+    ULONG map[16];
+    ULONG i, j, n, res = secKCERR_NOTOKEN;
+    BOOL anyscheme = FALSE;
+
+    if (!list || !count || !challenge || !assertion || !assertionlen || !which)
+        return secKCERR_BADARGS;
+    if (!secBase->Configured)
+        return secKCERR_UNAVAILABLE;
+    MakeClient(secBase, &ctx, hook, timeout);
+
+    for (i = 0; i < count; i++)
+    {
+        struct plugin_hwauth_ops *h;
+        ULONG size = *assertionlen, w = 0;
+
+        if (list[i].Type != secKEY_CHALLENGE)
+            continue;
+        /* the first entry of each scheme collects that scheme's ids */
+        for (j = 0; j < i; j++)
+            if (list[j].Type == secKEY_CHALLENGE && !Stricmp(list[j].Scheme, list[i].Scheme))
+                break;
+        if (j < i)
+            continue;
+        if (!(h = KeyScheme(secBase, secKEY_CHALLENGE, list[i].Scheme)))
+            continue;
+        anyscheme = TRUE;
+        for (n = 0, j = i; j < count && n < 16; j++)
+        {
+            if (list[j].Type == secKEY_CHALLENGE && !Stricmp(list[j].Scheme, list[i].Scheme))
+            {
+                ids[n] = list[j].PublicID;
+                map[n++] = j;
+            }
+        }
+        UseModule(secBase, h->ops.module);
+        res = h->GetAssertion(&ctx, ids, n, challenge, secKEYCHALLENGESIZE, assertion, &size, &w);
+        ReleaseModule(secBase, h->ops.module);
+        StatusDone(secBase, hook);
+        if (res == secKCERR_OK)
+        {
+            *assertionlen = size;
+            *which = (w < n) ? map[w] : map[0];
+            return secKCERR_OK;
+        }
+        if (res == secKCERR_CANCELLED)
+            return res;
+    }
+    return anyscheme ? res : secKCERR_UNAVAILABLE;
+}
+
+ULONG KeyClientEnrol(struct SecurityBase *secBase, CONST_STRPTR scheme, STRPTR publicid, ULONG publicidsize,
+                     STRPTR secrethex, ULONG secrethexsize, struct Hook *hook, ULONG timeout)
+{
+    struct secKeyClient ctx;
+    struct plugin_hwauth_ops *h;
+    UBYTE keydata[secKEYSECRETMAX];
+    ULONG keylen = sizeof(keydata), res;
+
+    if (!scheme || !publicid || !secrethex || publicidsize < 2 || secrethexsize < 3)
+        return secKCERR_BADARGS;
+    if (!secBase->Configured || !(h = KeyScheme(secBase, secKEY_CHALLENGE, scheme)))
+        return secKCERR_UNAVAILABLE;
+    MakeClient(secBase, &ctx, hook, timeout);
+    publicid[0] = '\0';
+    secrethex[0] = '\0';
+    UseModule(secBase, h->ops.module);
+    res = h->Enrol(&ctx, publicid, publicidsize, keydata, &keylen);
+    ReleaseModule(secBase, h->ops.module);
+    StatusDone(secBase, hook);
+    if (res == secKCERR_OK)
+    {
+        if (keylen > secKEYSECRETMAX || 2 * keylen + 1 > secrethexsize || !publicid[0])
+            res = secKCERR_FAILED;
+        else
+            HexEncode(keydata, keylen, secrethex);
+    }
+    memset(keydata, 0, sizeof(keydata));
     return res;
 }
 
@@ -514,17 +665,7 @@ ULONG KeyAdmin(struct SecurityBase *secBase, struct Task *client, struct secKARe
         for (rec = list; rec; rec = rec->Next)
         {
             if (req->List && n < req->ListSize)
-            {
-                struct secKeyInfo *ki = &req->List[n];
-
-                memset(ki, 0, sizeof(*ki));
-                ki->Type = rec->Type;
-                strcpy(ki->Scheme, rec->Scheme);
-                strcpy(ki->Label, rec->Label);
-                strcpy(ki->PublicID, rec->PublicID);
-                ki->Counter = rec->Counter;
-                strcpy(ki->Registered, rec->Registered);
-            }
+                KeyFillInfo(rec, &req->List[n]);
             n++;
         }
         req->Count = n;

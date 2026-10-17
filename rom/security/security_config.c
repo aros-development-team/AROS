@@ -594,7 +594,7 @@ BOOL ReadKeyFiles(struct SecurityBase *secBase)
 void LoadConfig(struct SecurityBase *secBase)
 {
     BPTR file, olddir;
-    SIPTR *argarray[21];
+    SIPTR *argarray[24];
 
 #define argLIMITDOSSETPROTECTION    0
 #define argPROFILE                  1
@@ -617,6 +617,9 @@ void LoadConfig(struct SecurityBase *secBase)
 #define argLOGINDELAYMAX            18
 #define argKEYLOGIN                 19
 #define argKEYREQUIRED              20
+#define argKEYTIMEOUT               21
+#define argKEYAPPID                 22
+#define argKEYDEVICE                23
 
     struct RDArgs *rdargs;
     ULONG line;
@@ -632,6 +635,9 @@ void LoadConfig(struct SecurityBase *secBase)
     config.MaxTries = secAUTH_DEFMAXTRIES;
     config.LockTime = secAUTH_DEFLOCKTIME;
     config.LoginDelayMax = secAUTH_DEFDELAYMAX;
+    config.KeyTimeout = secAUTH_DEFKEYTIMEOUT;
+    strcpy(config.KeyAppID, secAUTH_DEFKEYAPPID);
+    strcpy(config.KeyDevice, secAUTH_DEFKEYDEVICE);
 
     if (secBase->_cfgLock && ClearBuffer(secBase) && (rdargs = AllocDosObject(DOS_RDARGS, NULL)))
     {
@@ -658,7 +664,7 @@ void LoadConfig(struct SecurityBase *secBase)
                              "LOGCHECKPASSWD/K/N,LOGCHECKPASSWDFAIL/K/N,PASSWDUIDLEVEL/K/N,"
                              "PASSWDGIDLEVEL/K/N,FSTAB/K/N,RESOURCETRACKING/K/N,LOADPLUGIN/K,"
                              "HASHEDLOGIN/K/N,MAXTRIES/K/N,LOCKTIME/K/N,LOGINDELAYMAX/K/N,"
-                             "KEYLOGIN/K/N,KEYREQUIRED/K/N",
+                             "KEYLOGIN/K/N,KEYREQUIRED/K/N,KEYTIMEOUT/K/N,KEYAPPID/K,KEYDEVICE/K",
                              (SIPTR *)argarray, rdargs))
                 {
 #define BOOLOPT(idx, var, flag) \
@@ -672,6 +678,12 @@ void LoadConfig(struct SecurityBase *secBase)
                     BOOLOPT(argHASHEDLOGIN, config.Flags, secCFGF_HashedLogin);
                     BOOLOPT(argKEYLOGIN, config.Flags, secCFGF_KeyLogin);
                     BOOLOPT(argKEYREQUIRED, config.Flags, secCFGF_KeyRequired);
+                    if (argarray[argKEYTIMEOUT])
+                        config.KeyTimeout = (*argarray[argKEYTIMEOUT] < 1 || *argarray[argKEYTIMEOUT] > 600) ? secAUTH_DEFKEYTIMEOUT : *argarray[argKEYTIMEOUT];
+                    if (argarray[argKEYAPPID] && strlen((STRPTR)argarray[argKEYAPPID]) < sizeof(config.KeyAppID))
+                        strcpy(config.KeyAppID, (STRPTR)argarray[argKEYAPPID]);
+                    if (argarray[argKEYDEVICE] && strlen((STRPTR)argarray[argKEYDEVICE]) < sizeof(config.KeyDevice))
+                        strcpy(config.KeyDevice, (STRPTR)argarray[argKEYDEVICE]);
                     BOOLOPT(argLOGSTARTUP, config.LogFlags, secLogF_Startup);
                     BOOLOPT(argLOGLOGIN, config.LogFlags, secLogF_Login);
                     BOOLOPT(argLOGLOGINFAIL, config.LogFlags, secLogF_LoginFail);

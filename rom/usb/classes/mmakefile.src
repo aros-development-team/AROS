@@ -25,6 +25,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-usb-classes-printer              \
 #MM     kernel-usb-classes-ptp                  \
 #MM     kernel-usb-classes-rawwrap              \
+#MM     kernel-usb-classes-fido                 \
 #MM     kernel-usb-classes-serialcp210x         \
 #MM     kernel-usb-classes-serialpl2303         \
 #MM     kernel-usb-classes-simplemidi           \
@@ -75,6 +76,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-usb-classes-printer-clean        \
 #MM     kernel-usb-classes-ptp-clean            \
 #MM     kernel-usb-classes-rawwrap-clean        \
+#MM     kernel-usb-classes-fido-clean           \
 #MM     kernel-usb-classes-serialcp210x-clean   \
 #MM     kernel-usb-classes-serialpl2303-clean   \
 #MM     kernel-usb-classes-simplemidi-clean     \

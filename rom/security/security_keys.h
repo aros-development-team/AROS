@@ -36,11 +36,24 @@ extern BOOL UpdateKeyCounter(struct SecurityBase *secBase, CONST_STRPTR userid, 
 /* Server context: secKeyAdminA() */
 extern ULONG KeyAdmin(struct SecurityBase *secBase, struct Task *client, struct secKARequest *req);
 
+/* One secKeyInfo from a record (no secret) */
+extern void KeyFillInfo(const struct secKeyRec *rec, struct secKeyInfo *ki);
+
 /* Any context: the plugin of a record's scheme (NULL if none is loaded) */
 extern struct plugin_hwauth_ops *KeyScheme(struct SecurityBase *secBase, ULONG type, CONST_STRPTR scheme);
 /* Any context: the plugin calls for a record; secpiNOTSUPP without a plugin */
 extern ULONG KeyMatchCode(struct SecurityBase *secBase, const struct secKeyRec *rec, CONST_STRPTR typed, ULONG *codelen);
 extern ULONG KeyVerifyCode(struct SecurityBase *secBase, const struct secKeyRec *rec, CONST_STRPTR code, ULONG *counter);
+/* Security.auth: a challenge token's answer; secpiNOTSUPP without a plugin */
+extern ULONG KeyVerifyAssertion(struct SecurityBase *secBase, const struct secKeyRec *rec, const UBYTE *challenge, ULONG challengelen,
+                                const UBYTE *assertion, ULONG assertionlen, ULONG *counter);
+/* The caller's context: secKeyClientA() - an answer from a present token of the listed ones,
+ * or the enrolment of a present token of 'scheme' */
+extern ULONG KeyClientAssert(struct SecurityBase *secBase, struct secKeyInfo *list, ULONG count, const UBYTE *challenge,
+                             UBYTE *assertion, ULONG *assertionlen, ULONG *which, struct Hook *hook, ULONG timeout);
+extern ULONG KeyClientEnrol(struct SecurityBase *secBase, CONST_STRPTR scheme, STRPTR publicid, ULONG publicidsize,
+                            STRPTR secrethex, ULONG secrethexsize, struct Hook *hook, ULONG timeout);
+
 extern ULONG RegisterHwAuthHandler(struct SecurityBase *secBase, struct plugin_ops *ops);
 extern ULONG UnRegisterHwAuthHandler(struct SecurityBase *secBase, struct plugin_ops *ops);
 

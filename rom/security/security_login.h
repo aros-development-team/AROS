@@ -44,6 +44,23 @@ extern LONG LoginGUI(struct SecurityBase *secBase, CONST_STRPTR pubscreen, CONST
                      STRPTR uid, ULONG uidsize, STRPTR pwd, ULONG pwdsize);
 extern void LoginMessageGUI(struct SecurityBase *secBase, CONST_STRPTR title, CONST_STRPTR text, CONST_STRPTR gadgets);
 
+/* A small window that shows what a hardware token is waited for, with a
+ * Cancel button; shown and refreshed by every call, ended when done */
+struct LoginStatusGUI
+{
+    struct Library  *MUIMasterBase;
+    APTR            App;
+    APTR            Win;
+    APTR            Text;
+    BOOL            Cancelled;
+    char            Shown[96];
+};
+#define STATUSGUI_INIT(s)   memset((s), 0, sizeof(struct LoginStatusGUI))
+/* FALSE: cancelled, or no MUI (the caller falls back to the console) */
+extern BOOL StatusGUIShow(struct SecurityBase *secBase, struct LoginStatusGUI *s, CONST_STRPTR pubscreen, BOOL systemmode,
+                          CONST_STRPTR title, CONST_STRPTR text, CONST_STRPTR cancel, BOOL *unavailable);
+extern void StatusGUIEnd(struct SecurityBase *secBase, struct LoginStatusGUI *s);
+
 /* Console helpers: read a line / a hidden password from a filehandle */
 extern BOOL ReadLineCon(struct SecurityBase *secBase, BPTR input, STRPTR buf, ULONG size);
 extern BOOL ReadPasswordCon(struct SecurityBase *secBase, BPTR input, BPTR output, STRPTR buf, ULONG size, struct LocaleInfo *li);

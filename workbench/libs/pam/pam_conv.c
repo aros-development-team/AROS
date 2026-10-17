@@ -119,6 +119,21 @@ static LONG ConsoleConv(struct PamBase *PamBase, struct PamHandle *h, LONG nmsg,
                 Flush(h->Output);
             }
             break;
+        case PAM_AROS_STATUS:
+            /* repeated while a token is waited for: a line per change */
+            if (!msgs[i]->msg)
+                h->StatusShown[0] = '\0';
+            else if (strcmp(msgs[i]->msg, h->StatusShown))
+            {
+                strncpy(h->StatusShown, msgs[i]->msg, sizeof(h->StatusShown) - 1);
+                if (h->Output)
+                {
+                    FPuts(h->Output, msgs[i]->msg);
+                    FPutC(h->Output, '\n');
+                    Flush(h->Output);
+                }
+            }
+            break;
         default:
             return PAM_CONV_ERR;
         }
@@ -141,6 +156,7 @@ static LONG PresetConv(struct PamBase *PamBase, struct PamHandle *h, LONG nmsg, 
         {
         case PAM_ERROR_MSG:
         case PAM_TEXT_INFO:
+        case PAM_AROS_STATUS:
             break;
         default:
             return PAM_CONV_ERR;
