@@ -4,6 +4,7 @@
     Desc: 
 */
 
+#include <aros/macros.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #ifdef __amigaos4__
@@ -91,11 +92,13 @@ BOOL isPointerInSeglist(APTR pointer,BPTR seglist,ULONG minsize);
 		size-=sizeof(BPTR)+sizeof(ULONG);
 
 		/* MidiDeviceData is aligned in memory, but a hunk's data need not
-		   start aligned: the hunk header is 12 bytes on 64-bit targets,
-		   and the arena container's data holds sections placed at aligned
-		   addresses. Stepping from an unaligned start would never meet
-		   the structure, so start at the first aligned address. */
-		skip=(AROS_PTRALIGN-((IPTR)addr&(AROS_PTRALIGN-1)))&(AROS_PTRALIGN-1);
+		   start aligned: the hunk header is sizeof(ULONG) + sizeof(BPTR),
+		   which is not a multiple of the pointer alignment on 64-bit
+		   targets, and the arena container's data holds sections placed
+		   at aligned addresses. Stepping from an unaligned start would
+		   never meet the structure, so start at the first aligned
+		   address. */
+		skip=AROS_ROUNDUP2((IPTR)addr,AROS_PTRALIGN)-(IPTR)addr;
 		if(size<skip){
 			seg=*(BPTR *)BADDR(seg);
 			continue;
@@ -103,11 +106,7 @@ BOOL isPointerInSeglist(APTR pointer,BPTR seglist,ULONG minsize);
 		addr+=skip;
 		size-=skip;
 
-		for(
-			;
-			size>=sizeof(struct MidiDeviceData);
-			size-=AROS_PTRALIGN,addr+=AROS_PTRALIGN
-		){
+		while(size>=sizeof(struct MidiDeviceData)){
 			mididevicedata=(struct MidiDeviceData *)addr;
 			if
 			  (
@@ -177,6 +176,8 @@ BOOL isPointerInSeglist(APTR pointer,BPTR seglist,ULONG minsize);
 			    ReleaseSemaphore(CB(CamdBase)->CLSemaphore);
 			    return mididevicedata;
 			  }
+			size-=AROS_PTRALIGN;
+			addr+=AROS_PTRALIGN;
 		}
 		seg=*(BPTR *)BADDR(seg);
 	}
