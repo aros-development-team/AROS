@@ -72,6 +72,7 @@ struct secAPacket
     ULONG                   Count;          /* Control: number of records                   */
     BOOL                    Clear;          /* Control: clear UserID / RemoteHost / all     */
     APTR                    PamHandle;      /* EndSession                                   */
+    struct secKARequest     *KeyReq;        /* KeyAdmin: the request; Res = secKAERR_#?     */
     LONG                    Res;            /* secVERIFY_#? (Verify), BOOL (others)         */
 };
 
@@ -84,6 +85,8 @@ struct secAPacket
 #define secAAction_Control      5           /* secAuthControlA(): list / clear the records  */
 #define secAAction_EndSession   6           /* close a pam.library session (PamHandle).     */
                                             /* Sent without a reply port, like TaskGone     */
+#define secAAction_KeyAdmin     7           /* secKeyAdminA() by a user: redeem their       */
+                                            /* ticket, then let the server change their keys*/
 
 extern struct Process *CreateAuthServer(struct SecurityBase *secBase);
 extern BOOL StartAuthServer(struct SecurityBase *secBase);

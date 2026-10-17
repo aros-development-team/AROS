@@ -29,6 +29,9 @@
 
 #include <string.h>
 
+/* the Yubico OTP maker of the yubikey plugin, to make codes for a test token */
+#include "yubiotp.h"
+
 #define DEBUG 1
 #include <aros/debug.h>
 
@@ -83,6 +86,139 @@ static void ChildEntry(void)
 
     childresult = secLoginA(tags);
     Signal(parent, SIGBREAKF_CTRL_F);
+}
+
+/* ------------------------------------------------------------------------ */
+/* Hardware tokens: a Yubico OTP token registered for the test user         */
+
+static const UBYTE KeyAES[16]  = { 0x10,0x21,0x32,0x43,0x54,0x65,0x76,0x87,0x98,0xa9,0xba,0xcb,0xdc,0xed,0xfe,0x0f };
+static const UBYTE KeyPriv[6]  = { 0x01,0x02,0x03,0x04,0x05,0x06 };
+static const UBYTE OtherPriv[6] = { 0x06,0x05,0x04,0x03,0x02,0x01 };
+#define KEYPUB      "cccccccccccb"
+#define KEYSECRET   "102132435465768798a9bacbdcedfe0f" "010203040506"   /* AES key, private id */
+
+/* password + the code the key would type (public id + token) */
+static void MakeOTP(CONST_STRPTR password, CONST_STRPTR pubid, const UBYTE *priv, ULONG counter, STRPTR out)
+{
+    strcpy(out, password);
+    strcat(out, pubid);
+    yubiotp_make(KeyAES, priv, counter, 1234, 0x4242, out + strlen(out));
+}
+
+static ULONG KeyAdmin(ULONG op, CONST_STRPTR user, CONST_STRPTR label, struct secLoginTicket *ticket, ULONG *count)
+{
+    static struct secKeyInfo list[4];
+    struct TagItem tags[] =
+    {
+        { secT_KAOperation,     op                      },
+        { secT_UserID,          (IPTR)user              },
+        { ticket ? secT_Ticket : TAG_IGNORE, (IPTR)ticket },
+        { secT_KeyType,         secKEY_OTP              },
+        { secT_KeyScheme,       (IPTR)"yubico"          },
+        { secT_KeyLabel,        (IPTR)label             },
+        { secT_KeyPublicID,     (IPTR)KEYPUB            },
+        { secT_KeySecret,       (IPTR)KEYSECRET         },
+        { secT_KeyList,         (IPTR)list              },
+        { secT_KeyListSize,     4                       },
+        { count ? secT_KeyCount : TAG_IGNORE, (IPTR)count },
+        { TAG_DONE,             0                       }
+    };
+    return secKeyAdminA(tags);
+}
+
+static BOOL HasKeys(CONST_STRPTR user)
+{
+    BOOL has = FALSE;
+    struct TagItem tags[] = { { secT_UserID, (IPTR)user }, { secT_HasKeys, (IPTR)&has }, { TAG_DONE, 0 } };
+
+    secQueryUserA(tags);
+    return has;
+}
+
+static void KeyTestsRoot(void)
+{
+    char otp[128];
+    ULONG r, count = 0;
+
+    r = KeyAdmin(secKA_ADD, testuser, "test", NULL, NULL);
+    Report("key: register a Yubico OTP token for the user", r == secKAERR_OK, r);
+    if (r != secKAERR_OK)
+        return;
+    Report("key: secQueryUserA() reports keys", HasKeys(testuser), 0);
+    r = KeyAdmin(secKA_LIST, testuser, NULL, NULL, &count);
+    Report("key: listed", r == secKAERR_OK && count == 1, count);
+    r = KeyAdmin(secKA_ADD, testuser, "test", NULL, NULL);
+    Report("key: the same label again refused", r == secKAERR_EXISTS, r);
+
+    r = Verify(testuser, "", NULL, NULL);
+    Report("key: the password alone no longer verifies", r == secVERIFY_FAILED, r);
+    MakeOTP("", KEYPUB, KeyPriv, 0x0100, otp);
+    r = Verify(testuser, otp, NULL, NULL);
+    Report("key: password + a code from the key verifies", r == secVERIFY_OK, r);
+    r = Verify(testuser, otp, NULL, NULL);
+    Report("key: the same code again refused (replay)", r == secVERIFY_FAILED, r);
+    MakeOTP("", KEYPUB, KeyPriv, 0x0101, otp);
+    r = Verify(testuser, otp, NULL, NULL);
+    Report("key: the next code (session counter) verifies", r == secVERIFY_OK, r);
+    MakeOTP("", KEYPUB, KeyPriv, 0x0050, otp);
+    r = Verify(testuser, otp, NULL, NULL);
+    Report("key: a code with a lower counter refused", r == secVERIFY_FAILED, r);
+    MakeOTP("", KEYPUB, KeyPriv, 0x0200, otp);
+    otp[strlen(otp) - 3] = (otp[strlen(otp) - 3] == 'c') ? 'b' : 'c';
+    r = Verify(testuser, otp, NULL, NULL);
+    Report("key: a damaged code refused", r == secVERIFY_FAILED, r);
+    MakeOTP("", "cccccccccccd", KeyPriv, 0x0200, otp);
+    r = Verify(testuser, otp, NULL, NULL);
+    Report("key: a code of an unregistered key refused", r == secVERIFY_FAILED, r);
+    MakeOTP("", KEYPUB, OtherPriv, 0x0200, otp);
+    r = Verify(testuser, otp, NULL, NULL);
+    Report("key: a code with the wrong private id refused", r == secVERIFY_FAILED, r);
+    MakeOTP("", KEYPUB, KeyPriv, 0x0200, otp);
+    r = Verify(testuser, otp, NULL, NULL);
+    Report("key: a good code verifies again", r == secVERIFY_OK, r);
+    {
+        static struct secKeyInfo list[1];
+        struct TagItem tags[] = { { secT_KAOperation, secKA_LIST }, { secT_UserID, (IPTR)testuser }, { secT_KeyList, (IPTR)list },
+                                  { secT_KeyListSize, 1 }, { secT_KeyCount, (IPTR)&count }, { TAG_DONE, 0 } };
+        r = secKeyAdminA(tags);
+        Report("key: the counter was saved", r == secKAERR_OK && count == 1 && list[0].Counter == 0x0200, list[0].Counter);
+    }
+    r = KeyAdmin(secKA_REMOVE, testuser, "test", NULL, NULL);
+    Report("key: removed", r == secKAERR_OK, r);
+    Report("key: secQueryUserA() reports none", !HasKeys(testuser), 0);
+    r = Verify(testuser, "", NULL, NULL);
+    Report("key: the password alone verifies again", r == secVERIFY_OK, r);
+    r = KeyAdmin(secKA_REMOVE, testuser, "test", NULL, NULL);
+    Report("key: removing it again: not found", r == secKAERR_NOTFOUND, r);
+}
+
+static void KeyTestsUser(void)
+{
+    struct secLoginTicket ticket;
+    char otp[128];
+    ULONG r, count = 0;
+
+    r = KeyAdmin(secKA_ADD, testuser, "mine", NULL, NULL);
+    Report("key: a user cannot register without a ticket", r == secKAERR_NOTALLOWED, r);
+    r = Verify(testuser, "", NULL, &ticket);
+    if (r == secVERIFY_OK)
+        r = KeyAdmin(secKA_ADD, testuser, "mine", &ticket, NULL);
+    Report("key: a user registers their own key with a ticket", r == secKAERR_OK, r);
+    if (r != secKAERR_OK)
+        return;
+    r = KeyAdmin(secKA_LIST, testuser, NULL, NULL, &count);
+    Report("key: a user lists their own keys", r == secKAERR_OK && count == 1, count);
+    MakeOTP("", KEYPUB, KeyPriv, 0x0300, otp);
+    r = Verify(testuser, otp, NULL, &ticket);
+    if (r == secVERIFY_OK)
+        r = KeyAdmin(secKA_ADD, "root", "mine", &ticket, NULL);
+    Report("key: their ticket does not let them change root's keys", r == secKAERR_NOTALLOWED, r);
+    MakeOTP("", KEYPUB, KeyPriv, 0x0301, otp);
+    r = Verify(testuser, otp, NULL, &ticket);
+    if (r == secVERIFY_OK)
+        r = KeyAdmin(secKA_REMOVE, testuser, "mine", &ticket, NULL);
+    Report("key: a user removes their own key with a ticket", r == secKAERR_OK, r);
+    Report("key: none left", !HasKeys(testuser), 0);
 }
 
 static void RootPhase(void)
@@ -198,6 +334,8 @@ static void RootPhase(void)
         Report("discard a ticket", secVerifyUserA(tags) == secVERIFY_OK, 0);
     }
 
+    KeyTestsRoot();
+
     /* account locking */
     {
         struct TagItem lock[] = { { secT_LockAccount, (IPTR)testuser }, { TAG_DONE, 0 } };
@@ -244,6 +382,8 @@ static void UserPhase(void)
         struct TagItem lock[] = { { secT_LockAccount, (IPTR)"root" }, { TAG_DONE, 0 } };
         Report("a user may not lock accounts", !secAuthControlA(lock), 0);
     }
+
+    KeyTestsUser();
 }
 
 static void LogPhase(void)

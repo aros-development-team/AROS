@@ -204,6 +204,18 @@ struct secGroupInfo
                                                 /* (besides those whose primary group it is); replaces the list     */
 /* secExpandPathA() */
 #define secT_BufferSize         (TAG_USER+44)   /* (ULONG) size of the buffer that receives the path               */
+/* secKeyAdminA() (root, or the user in person with a ticket); also secT_UserID, secT_Ticket */
+#define secT_KAOperation        (TAG_USER+45)   /* (ULONG) secKA_#?                                                */
+#define secT_KeyType            (TAG_USER+46)   /* (ULONG) secKEY_#?                                               */
+#define secT_KeyLabel           (TAG_USER+47)   /* (STRPTR) a name for the key (no spaces)                         */
+#define secT_KeyScheme          (TAG_USER+48)   /* (STRPTR) the scheme a plugin implements, e.g. "yubico"          */
+#define secT_KeyPublicID        (TAG_USER+49)   /* (STRPTR) the id the token presents with every code              */
+#define secT_KeySecret          (TAG_USER+50)   /* (STRPTR) the token's secret as hex digits; its layout is the    */
+                                                /* scheme's                                                        */
+#define secT_KeyList            (TAG_USER+51)   /* secKA_LIST: (struct secKeyInfo *) array to fill                 */
+#define secT_KeyListSize        (TAG_USER+52)   /* secKA_LIST: (ULONG) entries in that array                       */
+#define secT_KeyCount           (TAG_USER+53)   /* secKA_LIST: (ULONG *) receives the number of keys               */
+#define secT_HasKeys            (TAG_USER+54)   /* secQueryUserA(): (BOOL *) the user has security keys registered */
 
 /* secUserAdminA() operations */
 #define secUA_ADD               (1)             /* new user: secT_UserID, secT_UID, secT_GID [, others]            */
@@ -213,6 +225,48 @@ struct secGroupInfo
 #define secUA_GROUPADD          (5)             /* new group: secT_GroupID, secT_GID [, others]                    */
 #define secUA_GROUPMODIFY       (6)             /* change the given fields of secT_GroupID                         */
 #define secUA_GROUPDELETE       (7)             /* remove secT_GroupID (not while it is a user's primary group)    */
+
+/* secKeyAdminA() operations */
+#define secKA_ADD               (1)             /* register a key: secT_KeyType, secT_KeyLabel and its data        */
+#define secKA_LIST              (2)             /* list the user's keys (secT_KeyList...); secrets are not listed  */
+#define secKA_REMOVE            (3)             /* remove the key secT_KeyLabel                                    */
+
+/* secKeyAdminA() results */
+#define secKAERR_OK             (0)
+#define secKAERR_NOTALLOWED     (1)             /* not root, and not the user with a fresh ticket                  */
+#define secKAERR_NOTFOUND       (2)             /* no such user, or no such key                                    */
+#define secKAERR_EXISTS         (3)             /* a key with that label is registered already                     */
+#define secKAERR_BADARGS        (4)             /* a field is missing or malformed                                 */
+#define secKAERR_WRITE          (5)             /* the key file could not be written; nothing changed              */
+#define secKAERR_UNAVAILABLE    (6)             /* unconfigured system, no server, or no keys plugin               */
+
+/*
+ * Hardware authentication tokens ("security keys", secT_KeyType)
+ *
+ * A registered token belongs to a type (how it takes part in a login) and
+ * a scheme (whose codes it produces; a plugin implements each scheme).
+ * The library keeps the token's public id, its secret and a counter that
+ * every accepted code must advance (replay protection); the plugin
+ * recognises and checks the codes.
+ */
+#define secKEY_OTP              (1)             /* the token types a one-time code directly after the password;    */
+                                                /* schemes: "yubico" (Yubico OTP, yubikey.secplugin)               */
+
+#define secKEYLABELSIZE         (32)
+#define secKEYSCHEMESIZE        (16)
+#define secKEYPUBIDSIZE         (36)
+#define secKEYSECRETMAX         (64)            /* bytes                                                           */
+
+/* One registered token, as secKeyAdminA(secKA_LIST) reports it (no secret) */
+struct secKeyInfo
+{
+    ULONG               Type;                   /* secKEY_#?                        */
+    char                Scheme[secKEYSCHEMESIZE];
+    char                Label[secKEYLABELSIZE];
+    char                PublicID[secKEYPUBIDSIZE];
+    ULONG               Counter;                /* last accepted counter            */
+    char                Registered[12];         /* yyyy-mm-dd                       */
+};
 
 /* secUserAdminA() results */
 #define secUAERR_OK             (0)
@@ -450,6 +504,12 @@ struct secPointers
  *   HASHEDLOGIN            secVerifyUserA() accepts pre-hashed tokens (secHASH_#?) [0]
  *   MAXTRIES               failed verifications per user and host before a lock-out, 0 = none [5]
  *   LOCKTIME               seconds a lock-out lasts [300]
+ *   LOGINDELAYMAX          longest hold-back after failed verifications, seconds [30]
+ *   KEYLOGIN               hardware tokens (secKeyAdminA()) are checked when a user has some [1]
+ *   KEYREQUIRED            a user without a registered token cannot log in locally [0]
+ *
+ * Each token scheme needs its plugin, e.g. LOADPLUGIN yubikey
+ * (SYS:Libs/Security/yubikey.secplugin) for Yubico OTP.
  */
 #define secConfig_FileName      "Security.config"
 
@@ -480,7 +540,7 @@ struct secPointers
 /* The current S:Security-Startup that AMUInit installs; security.library
  * logs a hint at start-up when the installed one is older */
 #define secSTARTUP_VERSION      (45)
-#define secSTARTUP_REVISION     (11)
+#define secSTARTUP_REVISION     (12)
 
 /*==========================================================================*/
 /*                      FileSystem Authors' API                             */
@@ -531,6 +591,7 @@ struct secFSEnforceRendezvous
 
 /* All plugins have this suffix and live in the configuration directory */
 #define secPLUGIN_SUFFIX                ".secplugin"
+#define secPLUGIN_DIRNAME               "SYS:Libs/Security"     /* where plugins are looked for after SECURITY: */
 
 /* Return values for plugin functions */
 #define secpiTRUE                       (0UL)   /* operation completed with success                           */
@@ -603,6 +664,28 @@ struct plugin_crypt_ops
     ULONG                       (*CheckPassword)(STRPTR userid, STRPTR thepass, STRPTR suppliedpass);
     /* Encrypt Password for storing in a userdb */
     ULONG                       (*EncryptPassword)(STRPTR buffer, STRPTR userid, STRPTR thepass);
+};
+
+/*
+ * Hardware authentication plugin: one scheme of tokens (secKEY_#? type).
+ * Several plugins may register, one per scheme. The library stores the
+ * records and enforces the counter; the plugin knows the codes.
+ */
+#define ID_PLUGIN_HWAUTH                MAKE_ID('h', 'w', 'a', 'u')
+
+struct plugin_hwauth_ops
+{
+    struct plugin_ops           ops;
+    ULONG                       Type;           /* secKEY_#? the scheme belongs to                              */
+    CONST_STRPTR                Scheme;         /* its name (secKEYSCHEMESIZE), e.g. "yubico"                   */
+    /* Registration: is this public id / secret well formed for the scheme? secpiTRUE / secpiFALSE */
+    ULONG                       (*CheckRegistration)(CONST_STRPTR publicid, const UBYTE *secret, ULONG secretlen);
+    /* secKEY_OTP: how many characters at the end of what the user typed are a code of
+     * the token with this public id? 0 if none */
+    ULONG                       (*MatchCode)(CONST_STRPTR publicid, CONST_STRPTR typed);
+    /* Check such a code. On secpiTRUE *counter holds the code's counter, which the
+     * library requires to be greater than the last one accepted. secpiFALSE otherwise */
+    ULONG                       (*VerifyCode)(CONST_STRPTR publicid, const UBYTE *secret, ULONG secretlen, CONST_STRPTR code, ULONG *counter);
 };
 
 /* User DataBase Operations Plugin - interface to be defined */

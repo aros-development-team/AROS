@@ -14,6 +14,9 @@ PAMFILES := pamtest
 #MM test-security-usergroup : includes linklibs kernel-security-includes \
 #MM     workbench-libs-usergroup-includes workbench-libs-usergroup-linklib
 
+# AuthTest makes Yubico OTPs with the yubikey plugin's header
+USER_INCLUDES := -I$(SRCDIR)/workbench/libs/security-plugins/yubikey
+
 %build_progs mmake=test-security \
     files=$(FILES) targetdir=$(EXEDIR)
 

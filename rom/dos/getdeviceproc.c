@@ -277,9 +277,9 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
         /*
          * Multi-user: a per-user assign ("Assign T: RAM:T/%u USER") holds
          * user tokens, which security.library expands for the owner of
-         * this task - each time, so every user gets his own directory. Its
+         * this task - each time, so every user gets their own directory. Its
          * last directory is created on first use, here in the user's
-         * task, so it is his. Without security.library (or on a system
+         * task, so it is theirs. Without security.library (or on a system
          * that is not multi-user) the target is used as it is written.
          */
         if (SECURITY_ACTIVE && strchr((const char *)target, '%')) {

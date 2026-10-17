@@ -138,6 +138,11 @@ void CheckDatabaseProtection(struct SecurityBase *secBase)
     SecureDir(secBase, &ps, PAM_CONFIG_DIR, GO_WRITE);
     SecureDir(secBase, &ps, PAM_MODULE_DIR, GO_WRITE);
 
+    /* the users' security keys (root only), and the plugins */
+    if (PathIn(secBase, secBase->_cfgLock, "Keys", path, sizeof(path)))
+        SecureDir(secBase, &ps, path, GO_ALL);
+    SecureDir(secBase, &ps, secPLUGIN_DIRNAME, GO_WRITE);
+
     FreeDosObject(DOS_FIB, ps.fib);
 }
 

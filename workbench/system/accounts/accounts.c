@@ -11,7 +11,7 @@
           to the same place.
           security.library, when present, is used only for what has no
           usergroup.library equivalent: whether an account is locked, and
-          logging in as root. A user changes his own password through
+          logging in as root. Users change their own password through
           pam.library's "passwd" service, so that the system's password
           policy applies.
 */

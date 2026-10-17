@@ -96,10 +96,12 @@ static LONG SecAuthenticate(struct PamBase *PamBase, struct PamHandle *h, ULONG 
     if (!h->AuthTok && !h->RHost && !(flags & PAM_DISALLOW_NULL_AUTHTOK) && h->AuthTokFormat == PAMTOK_CLEAR &&
         (secBase = OpenSec()))
     {
-        BOOL haspw = TRUE;
-        struct TagItem q[] = { { secT_UserID, (IPTR)user }, { secT_HasPassword, (IPTR)&haspw }, { TAG_DONE, 0 } };
+        BOOL haspw = TRUE, haskeys = FALSE;
+        struct TagItem q[] = { { secT_UserID, (IPTR)user }, { secT_HasPassword, (IPTR)&haspw },
+                               { secT_HasKeys, (IPTR)&haskeys }, { TAG_DONE, 0 } };
 
-        if (secQueryUserA(q) && !haspw)
+        /* a security key's code is typed into the password prompt */
+        if (secQueryUserA(q) && !haspw && !haskeys)
             PamSetString(PamBase, &h->AuthTok, "", TRUE);
         CloseLibrary(secBase);
     }

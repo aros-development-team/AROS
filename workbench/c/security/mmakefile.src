@@ -4,7 +4,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES := Login Logout Passwd Who SetOwner AMUInit Lockouts
+FILES := Login Logout Passwd Who SetOwner AMUInit Lockouts AuthKey
 
 USER_CFLAGS  := -noposixc
 USER_LDFLAGS := -static

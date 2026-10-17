@@ -17,6 +17,8 @@
 #include "security_server.h"
 #include "security_memory.h"
 #include "security_crypto.h"
+#include "security_keys.h"
+#include "security_support.h"
 
 void UseModule(struct SecurityBase *secBase, secPluginModule *mod)
 {
@@ -34,8 +36,11 @@ void ReleaseModule(struct SecurityBase *secBase, secPluginModule *mod)
 
 /*
  * Locate the plugin header in a loaded seglist: scan the first 4KB of
- * every segment for the magic, IPTR aligned. On 64-bit hosts the magic and
- * the version share one IPTR sized slot, so only the first ULONG is compared.
+ * every segment for the magic. The ELF loader's hunk head (size, next
+ * pointer) is packed, and a section's data is then rounded up to the
+ * section's alignment, so where the data starts after the next pointer
+ * depends on the target: scan in ULONG steps, which lands on the header
+ * (whose own alignment the loader honours) wherever it is.
  */
 static struct secPluginHeader *FindPluginHeader(BPTR seglist)
 {
@@ -43,29 +48,41 @@ static struct secPluginHeader *FindPluginHeader(BPTR seglist)
 
     for (thisseg = seglist; thisseg != BNULL; thisseg = *(BPTR *)BADDR(thisseg))
     {
-        IPTR *addr = (IPTR *)BADDR(thisseg);
-        IPTR *end = (IPTR *)((UBYTE *)addr + 4096);
-        IPTR *pos;
+        ULONG *addr = (ULONG *)BADDR(thisseg);
+        ULONG *end = (ULONG *)((UBYTE *)addr + 4096);
+        ULONG *pos;
 
-        for (pos = addr + 1; pos < end; pos++)
+        for (pos = addr + sizeof(BPTR) / sizeof(ULONG); pos < end; pos++)
         {
             struct secPluginHeader *hdr = (struct secPluginHeader *)pos;
 
-            if (hdr->plugin_magic == secPLUGIN_RECOGNITION && hdr->Version == secPLUGIN_INTERFACE &&
-                hdr->Initialize && hdr->Terminate)
+            if (pos[0] == secPLUGIN_RECOGNITION && pos[1] == secPLUGIN_INTERFACE && hdr->Initialize && hdr->Terminate)
                 return hdr;
         }
     }
     return NULL;
 }
 
-/* Build the plugin path: SECURITY:<name>.secplugin (fall back to <name>) */
+/* Build the plugin path: a plain name is looked for as SECURITY:<name>.secplugin,
+ * then as SYS:Libs/Security/<name>.secplugin (where the distribution puts
+ * its plugins); a path is used as given, plus the suffix */
 static BOOL BuildPluginName(struct SecurityBase *secBase, CONST_STRPTR name, STRPTR fullname, ULONG size)
 {
+    BPTR lock;
+
     fullname[0] = '\0';
     if (strchr(name, ':') == NULL && strchr(name, '/') == NULL)
     {
         strncpy(fullname, secConfig_AssignName ":", size - 1);
+        fullname[size - 1] = '\0';
+        strncat(fullname, name, size - strlen(fullname) - 1);
+        strncat(fullname, secPLUGIN_SUFFIX, size - strlen(fullname) - 1);
+        if ((lock = Lock(fullname, SHARED_LOCK)))
+        {
+            UnLock(lock);
+            return TRUE;
+        }
+        strncpy(fullname, secPLUGIN_DIRNAME "/", size - 1);
         fullname[size - 1] = '\0';
     }
     strncat(fullname, name, size - strlen(fullname) - 1);
@@ -84,11 +101,16 @@ BOOL loadPlugin(struct SecurityBase *secBase, CONST_STRPTR name)
     D(bug(DEBUG_NAME_STR " %s(%s)\n", __func__, fullname);)
 
     if (!(seglist = LoadSeg(fullname)))
+    {
+        SIPTR args[2] = { (SIPTR)fullname, IoErr() };
+        VLogF(secBase, LOGF_Flag_Type_Error, SECLOG_SUB_SERVER, "plugin '%s' could not be loaded (DOS error %ld)", args);
         return FALSE;
+    }
 
     if (!(hdr = FindPluginHeader(seglist)))
     {
-        D(bug(DEBUG_NAME_STR " %s: no plugin header found\n", __func__);)
+        SIPTR args[1] = { (SIPTR)fullname };
+        VLogF(secBase, LOGF_Flag_Type_Error, SECLOG_SUB_SERVER, "'%s' is not a security.library plugin (no header)", args);
         UnLoadSeg(seglist);
         return FALSE;
     }
@@ -116,7 +138,10 @@ BOOL loadPlugin(struct SecurityBase *secBase, CONST_STRPTR name)
     else if (SendServerPacket(secBase, secSAction_InitModule, (SIPTR)mod, 0, 0, 0))
         return TRUE;
 
-    D(bug(DEBUG_NAME_STR " %s: plugin initialisation failed\n", __func__);)
+    {
+        SIPTR args[1] = { (SIPTR)fullname };
+        VLogF(secBase, LOGF_Flag_Type_Error, SECLOG_SUB_SERVER, "plugin '%s' failed to initialise", args);
+    }
     unloadPlugin(secBase, mod);
     return FALSE;
 }
@@ -176,6 +201,8 @@ ULONG regHandler(struct SecurityBase *secBase, BOOL reg, struct plugin_ops *ops)
     {
     case ID_PLUGIN_ENCRYPTION:
         return reg ? RegisterEncryptionHandler(secBase, ops) : UnRegisterEncryptionHandler(secBase, ops);
+    case ID_PLUGIN_HWAUTH:
+        return reg ? RegisterHwAuthHandler(secBase, ops) : UnRegisterHwAuthHandler(secBase, ops);
     default:
         return secpiNOTSUPP;
     }

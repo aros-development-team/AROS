@@ -50,6 +50,7 @@
 
 #include "security_intern.h"
 #include "security_auth.h"
+#include "security_keys.h"
 #include "security_server.h"
 #include "security_task.h"
 #include "security_monitor.h"
@@ -443,6 +444,64 @@ static ULONG HoldUntil(struct SecurityBase *secBase, struct AuthState *st, struc
     return ((LONG)(t->NextAllowed - now) > 0) ? t->NextAllowed : 0;
 }
 
+/*
+ * A user with registered hardware tokens types a code from one of them
+ * after the password: find the token whose code ends what was typed (its
+ * scheme's plugin recognises it), have the plugin check the code, refuse
+ * a replay (the counter must grow) and remember the new counter.
+ * *pwdpart receives the password part (freed by the caller with
+ * FreeV()). FALSE if no token accepted the code.
+ */
+static BOOL CheckKeyCode(struct SecurityBase *secBase, struct secAPacket *pkt, struct secKeyRec *keys, STRPTR *pwdpart)
+{
+    struct secKeyRec *rec;
+    ULONG toklen = strlen(pkt->Token), counter = 0, codelen = 0;
+    SIPTR args[2] = { (SIPTR)pkt->UserID, 0 };
+    BOOL noplugin = FALSE;
+
+    *pwdpart = NULL;
+    for (rec = keys; rec; rec = rec->Next)
+    {
+        ULONG r;
+
+        if (rec->Type != secKEY_OTP)
+            continue;
+        r = KeyMatchCode(secBase, rec, pkt->Token, &codelen);
+        if (r == secpiNOTSUPP)
+        {
+            noplugin = TRUE;
+            continue;
+        }
+        if (r != secpiTRUE || codelen == 0 || codelen > toklen)
+            continue;
+
+        /* the password is what comes before the code */
+        if ((*pwdpart = MAllocV(toklen - codelen + 1)))
+        {
+            CopyMem((APTR)pkt->Token, *pwdpart, toklen - codelen);
+            (*pwdpart)[toklen - codelen] = '\0';
+        }
+        r = KeyVerifyCode(secBase, rec, pkt->Token + toklen - codelen, &counter);
+        if (r != secpiTRUE)
+            return FALSE;
+        if (counter <= rec->Counter)
+        {
+            args[1] = (SIPTR)rec->Label;
+            VLogF(secBase, LOGF_Flag_Type_Warn, SECLOG_SUB_AUTH, "'%s': a code of token '%s' was used again (replay)", args);
+            return FALSE;
+        }
+        if (!SendServerPacket(secBase, secSAction_KeyCounter, (SIPTR)pkt->UserID, (SIPTR)rec->PublicID, (SIPTR)counter, 0))
+        {
+            VLogF(secBase, LOGF_Flag_Type_Error, SECLOG_SUB_AUTH, "'%s': the token counter could not be saved; the code is refused", args);
+            return FALSE;
+        }
+        return TRUE;
+    }
+    if (noplugin)
+        VLogF(secBase, LOGF_Flag_Type_Error, SECLOG_SUB_AUTH, "'%s' has a hardware token whose scheme has no plugin loaded", args);
+    return FALSE;
+}
+
 static LONG Verify(struct SecurityBase *secBase, struct AuthState *st, struct secAPacket *pkt, struct Task *client)
 {
     char hash[secHASHBUFSIZE];
@@ -491,9 +550,36 @@ static LONG Verify(struct SecurityBase *secBase, struct AuthState *st, struct se
     {
         if (pkt->TokenType == secHASH_NONE)
         {
+            struct secKeyRec *keys = NULL;
+            STRPTR pwdpart = NULL;
+            CONST_STRPTR token = pkt->Token;
+            BOOL keyok = TRUE;
+
+            /* registered hardware tokens: the typed token must end with a code from one */
+            if (secBase->Config.Flags & secCFGF_KeyLogin)
+                SendServerPacket(secBase, secSAction_GetUserKeys, (SIPTR)pkt->UserID, (SIPTR)&keys, 0, 0);
+            if (keys)
+            {
+                keyok = CheckKeyCode(secBase, pkt, keys, &pwdpart);
+                if (pwdpart)
+                    token = pwdpart;
+            }
+            else if ((secBase->Config.Flags & secCFGF_KeyRequired) && !pkt->RemoteHost)
+            {
+                SIPTR args[1] = { (SIPTR)pkt->UserID };
+                VLogF(secBase, LOGF_Flag_Type_Warn, SECLOG_SUB_AUTH, "'%s' has no hardware token, and KEYREQUIRED is set", args);
+                keyok = FALSE;
+            }
             /* An empty password from the network is never accepted */
-            if (!(pkt->RemoteHost && !pkt->Token[0]))
-                ok = verifypass(secBase, info->Pub.UserID, hash, pkt->Token);
+            if (!(pkt->RemoteHost && !token[0]))
+                ok = verifypass(secBase, info->Pub.UserID, hash, token);
+            ok = ok && keyok;
+            if (pwdpart)
+            {
+                memset(pwdpart, 0, strlen(pwdpart));
+                FreeV(pwdpart);
+            }
+            FreeKeys(keys);
         }
         else if (strlen(hash) == secACRYPT_LEN && LowerCaseID(secBase, info->Pub.UserID))
             ok = !strcmp(hash, pkt->Token);
@@ -723,6 +809,25 @@ static BOOL Handle(struct SecurityBase *secBase, struct AuthState *st, struct se
     case secAAction_Control:
         Control(secBase, st, pkt);
         pkt->Res = TRUE;
+        break;
+
+    case secAAction_KeyAdmin:
+        /* a user changes their own keys: their ticket proves the password,
+         * and is used up; the server does the rest */
+        pkt->Res = secKAERR_NOTALLOWED;
+        if (pkt->KeyReq && pkt->KeyReq->HasTicket && client)
+        {
+            struct secPrivUserInfo *info = TakeTicket(secBase, st, &pkt->Ticket, client, NowSeconds(st));
+
+            if (info)
+            {
+                pkt->KeyReq->Verified = (pkt->KeyReq->UserID && !strcmp(info->Pub.UserID, pkt->KeyReq->UserID));
+                pkt->KeyReq->CallerUid = info->Pub.uid;
+                secFreeUserInfo(&info->Pub);
+                if (pkt->KeyReq->Verified)
+                    pkt->Res = (LONG)SendServerPacket(secBase, secSAction_KeyAdmin, (SIPTR)pkt->KeyReq, 0, 0, 0);
+            }
+        }
         break;
 
     case secAAction_TaskGone:

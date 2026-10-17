@@ -87,7 +87,7 @@
 
 struct Library *secBase;
 
-const TEXT version[] = "$VER: AMUInit 45.7 (16.10.2026)";
+const TEXT version[] = "$VER: AMUInit 45.8 (17.10.2026)";
 
 #define TEMPLATE "ENABLE/S,DISABLE/S,UPGRADE/S,VOLUME/A,FORCE/S"
 enum { ARG_ENABLE, ARG_DISABLE, ARG_UPGRADE, ARG_VOLUME, ARG_FORCE, ARG_COUNT };
@@ -101,7 +101,7 @@ enum { ARG_ENABLE, ARG_DISABLE, ARG_UPGRADE, ARG_VOLUME, ARG_FORCE, ARG_COUNT };
 #define STARTUP_OFF     "S/Security-Startup.disabled"
 
 static const char StartupScript[] =
-    "; $VER: Security-Startup 45.11 (16.10.2026)\n"
+    "; $VER: Security-Startup 45.12 (17.10.2026)\n"
     ";\n"
     "FailAt 21\n"
     "Assign LIBS: SYS:Classes ADD\n"
@@ -180,10 +180,21 @@ static const char StartupScript[] =
     "    Protect \"SYS:Libs/PAM\" rwed GROUP=re OTHER=re QUIET\n"
     "EndIf\n"
     ";\n"
-    "; T: and CLIPS: are per-user assigns: every user gets a directory of his\n"
-    "; own in RAM:T and RAM:Clipboards, created for him on first use\n"
+    "; The users' security keys (root only) and security.library's plugins.\n"
+    "If NOT EXISTS \"SYS:Security/Keys\"\n"
+    "    MakeDir \"SYS:Security/Keys\" >NIL:\n"
+    "EndIf\n"
+    "SetOwner \"SYS:Security/Keys\" UID=65535 GID=65535 >NIL:\n"
+    "Protect \"SYS:Security/Keys\" rwed QUIET\n"
+    "If EXISTS \"SYS:Libs/Security\"\n"
+    "    SetOwner \"SYS:Libs/Security\" UID=65535 GID=65535 >NIL:\n"
+    "    Protect \"SYS:Libs/Security\" rwed GROUP=re OTHER=re QUIET\n"
+    "EndIf\n"
+    ";\n"
+    "; T: and CLIPS: are per-user assigns: every user gets a directory of their\n"
+    "; own in RAM:T and RAM:Clipboards, created for them on first use\n"
     "; (dos.library expands %u for the task that uses the assign). Anybody\n"
-    "; may create his directory there; nobody may remove the parents.\n"
+    "; may create their directory there; nobody may remove the parents.\n"
     "; The Startup-Sequence keeps these assigns.\n"
     "If NOT EXISTS \"RAM:Clipboards\"\n"
     "    MakeDir \"RAM:Clipboards\" >NIL:\n"
@@ -275,7 +286,9 @@ static const char ConfigFile[] =
     "; security.library configuration, see <libraries/security.h>\n"
     "LOGLOGIN 1\n"
     "LOGLOGINFAIL 1\n"
-    "LOGSTARTUP 1\n";
+    "LOGSTARTUP 1\n"
+    "; hardware authentication tokens (AuthKey): one plugin per scheme\n"
+    "LOADPLUGIN yubikey\n";
 
 static BOOL Exists(CONST_STRPTR path)
 {
@@ -706,6 +719,8 @@ static int MUEnable(CONST_STRPTR vol, BOOL force)
         return RETURN_FAIL;
     if (!MakePath(p, sizeof(p), vol, SEC_DIR "/PAM") || !EnsureDir(p))
         return RETURN_FAIL;
+    if (!MakePath(p, sizeof(p), vol, SEC_DIR "/Keys") || !EnsureDir(p))
+        return RETURN_FAIL;
 
     /* the startup script */
     if (!MakePath(p, sizeof(p), vol, "S") || !EnsureDir(p))
@@ -775,6 +790,8 @@ static int MUUpgrade(CONST_STRPTR vol, BOOL force)
     if (MakePath(p2, sizeof(p2), vol, SEC_DIR "/PAM"))
         EnsureDir(p2);
     if (MakePath(p2, sizeof(p2), vol, "Libs/PAM"))
+        EnsureDir(p2);
+    if (MakePath(p2, sizeof(p2), vol, SEC_DIR "/Keys"))
         EnsureDir(p2);
 
     have = ScriptVersion(p);

@@ -4,7 +4,7 @@
     Desc: Accounts - manage the user accounts and groups of the system
 
           Works on both kinds of system: with security.library (multi-user;
-          only root may change other accounts, anybody may change his own
+          only root may change other accounts, anybody may change their own
           password) and without it (single-user; the network password
           database of usergroup.library / netinfo.device). See accounts.c.
 */

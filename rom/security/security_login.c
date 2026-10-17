@@ -190,6 +190,9 @@ static BOOL UserHasPassword(struct SecurityBase *secBase, CONST_STRPTR userid)
             pwd = info->Password;
         secFreeUserInfo((struct secUserInfo *)info);
     }
+    /* a security key is typed into the password field too */
+    if (!pwd && SendServerPacket(secBase, secSAction_UserHasKeys, (SIPTR)userid, 0, 0, 0))
+        pwd = TRUE;
     return pwd;
 }
 

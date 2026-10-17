@@ -15,6 +15,7 @@
 #include "security_intern.h"
 #include "security_task.h"
 #include "security_server.h"
+#include "security_keys.h"
 #include "security_groupinfo.h"
 #include "security_userinfo.h"
 #include "security_monitor.h"
@@ -173,6 +174,13 @@ static struct secPrivUserInfo *CheckUser(struct SecurityBase *secBase, ULONG use
     {
         if (!strcmp(userid, def->UserID))
         {
+            /* a security key can only be checked by Security.auth */
+            if (!nopasswd && (secBase->Config.Flags & secCFGF_KeyLogin) && UserHasKeys(secBase, def->UserID))
+            {
+                SIPTR args[1] = { (SIPTR)userid };
+                VLogF(secBase, LOGF_Flag_Type_Warn, SECLOG_SUB_SERVER, "'%s' has hardware tokens, which cannot be checked without the authentication process", args);
+                break;
+            }
             if (nopasswd || verifypass(secBase, def->UserID, def->Password, pwd ? pwd : (STRPTR)""))
             {
                 if ((info = (struct secPrivUserInfo *)secAllocUserInfo()))
@@ -659,6 +667,33 @@ static void ServerProcess(void)
 
                 case secSAction_UserAdmin:
                     pkt->Res1 = UserAdmin(secBase, client, (struct secUARequest *)pkt->Arg1);
+                    break;
+
+                case secSAction_KeyAdmin:
+                    pkt->Res1 = KeyAdmin(secBase, client, (struct secKARequest *)pkt->Arg1);
+                    break;
+
+                case secSAction_GetUserKeys:
+                    /* Security.auth only. Arg1: STRPTR userid, Arg2: struct secKeyRec ** (the
+                     * list, to free with FreeKeys()). Res1: BOOL any */
+                    pkt->Res1 = FALSE;
+                    if (client && client == (struct Task *)secBase->Auth && pkt->Arg2)
+                    {
+                        *(struct secKeyRec **)pkt->Arg2 = LoadKeys(secBase, (STRPTR)pkt->Arg1);
+                        pkt->Res1 = (*(struct secKeyRec **)pkt->Arg2 != NULL);
+                    }
+                    break;
+
+                case secSAction_KeyCounter:
+                    /* Security.auth only. Arg1: userid, Arg2: public id, Arg3: counter. Res1: BOOL */
+                    pkt->Res1 = FALSE;
+                    if (client && client == (struct Task *)secBase->Auth)
+                        pkt->Res1 = UpdateKeyCounter(secBase, (STRPTR)pkt->Arg1, (STRPTR)pkt->Arg2, (ULONG)pkt->Arg3);
+                    break;
+
+                case secSAction_UserHasKeys:
+                    /* Arg1: STRPTR userid. Res1: BOOL */
+                    pkt->Res1 = UserHasKeys(secBase, (STRPTR)pkt->Arg1);
                     break;
 
                 case secSAction_GetUserHash:
