@@ -84,7 +84,7 @@ int Get_Volume_Name(VOLUME *p_volume, char *buf, int buflen)
 
     D(bug("[CDVDFS]\tGet_Volume_Name()\n"));
     if (p_volume->protocol == PRO_JOLIET)
-        return Get_Joliet_Name(p_volume->global, iso_name, buf, 32);
+        return Get_Joliet_Name(p_volume->global, iso_name, buf, 32, buflen - 1);
     else {
         CopyMem(iso_name, buf, 32);
         return 32;
@@ -100,7 +100,7 @@ int Get_File_Name(VOLUME *volume, directory_record *dir, char *buf, int buflen)
     switch (volume->protocol)
     {
         case PRO_JOLIET:
-            len = Get_Joliet_Name(volume->global, dir->file_id, buf, dir->file_id_length);
+            len = Get_Joliet_Name(volume->global, dir->file_id, buf, dir->file_id_length, buflen - 1);
             break;
 
         case PRO_ROCK:

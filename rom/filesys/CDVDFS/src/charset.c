@@ -27,9 +27,20 @@ void InitCharset(struct CDVDBase *global)
     }
 }
 
-int UTF16ToSystem(struct CDVDBase *global, char *from, char *to, unsigned char len)
+int UTF16ToSystem(struct CDVDBase *global, char *from, char *to, unsigned char len, int to_len)
 {
     ULONG l = -1;
+    UWORD source[128];
+    unsigned int i;
+
+    if ((len & 1) || to_len < 0)
+        return -1;
+    /* Joliet stores big-endian UCS-2. codesets.library consumes aligned,
+     * native-endian UTF-16 and may scan for a terminator before using len. */
+    for (i = 0; i < len / 2; i++)
+        source[i] = ((unsigned char)from[2*i] << 8) |
+            (unsigned char)from[2*i + 1];
+    source[i] = 0;
 
     if (global->uniCodeset)
     {
@@ -47,7 +58,7 @@ int UTF16ToSystem(struct CDVDBase *global, char *from, char *to, unsigned char l
 	tags[0].ti_Tag  = CSA_SourceCodeset;
 	tags[0].ti_Data = (IPTR)global->uniCodeset;
 	tags[1].ti_Tag  = CSA_Source;
-	tags[1].ti_Data = (IPTR)from;
+	tags[1].ti_Data = (IPTR)source;
 	tags[2].ti_Tag  = CSA_SourceLen;
 	tags[2].ti_Data = len;
 	tags[3].ti_Tag  = CSA_DestLenPtr;
@@ -63,9 +74,14 @@ int UTF16ToSystem(struct CDVDBase *global, char *from, char *to, unsigned char l
 	str = CodesetsConvertStrA(tags);
 	if (str)
 	{
-	    CopyMem(str, to, l);
+            if (l <= (ULONG)to_len)
+                CopyMem(str, to, l);
+            else
+                l = -1;
 	    CodesetsFreeA(str, NULL);
 	}
+        else
+            l = -1;
     }
 
     return l;
