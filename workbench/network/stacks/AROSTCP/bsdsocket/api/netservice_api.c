@@ -43,6 +43,7 @@
 static struct List            NetServiceList;
 static struct SignalSemaphore NetServiceLock;
 static BOOL                   NetServicesReady = FALSE;
+/* Written under NetServiceLock held exclusively, read under it shared. */
 static BOOL                   NetServicesReconfiguring = FALSE;
 
 /* -------------------------------------------------------------------------
@@ -182,7 +183,8 @@ void netservice_signal_external(ULONG phase)
 
     D(bug("[netservices] signal_external(phase=%ld)\n", (long)phase));
 
-    ObtainSemaphoreShared(&NetServiceLock);
+    /* exclusive: netservice_resume() may read the flag from another task */
+    ObtainSemaphore(&NetServiceLock);
     NetServicesReconfiguring = (phase == NSPHASE_BEGIN);
     if(phase == NSPHASE_END) {
         /* bring-up order: head->tail */
