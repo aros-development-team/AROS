@@ -1468,7 +1468,12 @@ ifneq ($(%(mmake)_TARGETDIRS),)
 $(%(mmake)_TARGETS) : | $(%(mmake)_TARGETDIRS)
 endif
 
+# The generated files get an (empty) recipe so make re-reads their time stamps
+# after the flag rule above has rewritten them: without one, make keeps the
+# times it saw before generation, and rules that copy or compile them (such as
+# the copy of the includes to $(GENINCDIR)) see nothing new.
 $(%(mmake)_TARGETS) : $(%(mmake)_DEPS) $(%(mmake)_GENFILEFLAG)
+	$(Q)$(NOP)
 
 $(%(mmake)_GENFILEFLAG) : OPTS := $(%(mmake)_OPTS)
 $(%(mmake)_GENFILEFLAG) : MODNAME := %(modname)
@@ -1538,7 +1543,10 @@ else
     %(mmake)_GENINCFLAG=$(GENDIR)/$(CURDIR)/.%(modname).%(modtype)-includes
 endif
 
+# Empty recipe: make must re-read the includes' time stamps after generation,
+# or the copy to $(GENINCDIR) below sees nothing new (see rule_genmodule_files).
 $(%(mmake)_TARGETS) : $(%(mmake)_DEPS) $(%(mmake)_GENINCFLAG)
+	$(Q)$(NOP)
 
 $(%(mmake)_GENINCFLAG) : OPTS := $(%(mmake)_OPTS)
 $(%(mmake)_GENINCFLAG) : MODNAME := %(modname)
