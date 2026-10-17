@@ -144,8 +144,12 @@ steps:
 - script: |
     cd $(AROSLOGSDIR)
     if [ -f $(arosbuild.package)-$(arosbuild.name).log ]; then
-      bzip2 $(arosbuild.package)-$(arosbuild.name).log
-      md5sum $(arosbuild.package)-$(arosbuild.name).log.bz2 >$(arosbuild.package)-$(arosbuild.name).log.bz2.md5
+      # Rename the log to the name it is published under BEFORE computing
+      # its md5: the filename recorded inside the .md5 must match the
+      # uploaded file, or the nightlies update ("md5sum -c") rejects it.
+      mv $(arosbuild.package)-$(arosbuild.name).log contrib-$(arosbuild.name).log
+      bzip2 contrib-$(arosbuild.name).log
+      md5sum contrib-$(arosbuild.name).log.bz2 >contrib-$(arosbuild.name).log.bz2.md5
     fi
   workingDirectory: '$(AROSBUILDSDIR)'
   displayName: 'Preparing $(arosbuild.name) contrib log(s)'
@@ -160,8 +164,8 @@ steps:
     mkdir -p '$(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries'
     mkdir -p '$(Build.BinariesDirectory)/Upload/$(arosbuilddate)/logs/azure'
     mv $(AROSBUILDBINDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib* $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/ 2>/dev/null || true
-    mv $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log.bz2 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/logs/azure/contrib-$(arosbuild.name).log.bz2 2>/dev/null || true
-    mv $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log.bz2.md5 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/logs/azure/contrib-$(arosbuild.name).log.bz2.md5 2>/dev/null || true
+    mv $(AROSLOGSDIR)/contrib-$(arosbuild.name).log.bz2 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/logs/azure/ 2>/dev/null || true
+    mv $(AROSLOGSDIR)/contrib-$(arosbuild.name).log.bz2.md5 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/logs/azure/ 2>/dev/null || true
   env:
     MAPPED_USER: $(SF_RSYNC_USER)
   condition: ne( variables['SF_RSYNC_USER'], '' )
