@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Function to write module stubs. Part of genmodule.
 
@@ -22,6 +22,18 @@
 static void writeheader(struct config *cfg, int is_rel, FILE *out);
 static void writefuncstub(struct config *cfg, int is_rel, FILE *out, struct functionhead *funclistit);
 
+/* Modules with the noresident option (exec, dos, expansion) list their own
+   Open/Close/Expunge/Null vectors (LVO 1-4) as private functions. These are
+   only ever called through OpenLibrary()/CloseLibrary(), so they get no stubs:
+   a C stub would put their names in the link library, and exec's open() and
+   close() would then silently replace the C library's. */
+static int needsstub(struct config *cfg, struct functionhead *funclistit)
+{
+    if (funclistit->lvo < cfg->firstlvo)
+        return 0;
+    return !(funclistit->priv && funclistit->lvo < 5);
+}
+
 void writestubs(struct config *cfg, int is_rel)
 {
     FILE *out;
@@ -34,7 +46,7 @@ void writestubs(struct config *cfg, int is_rel)
          funclistit = funclistit->next
     )
     {
-        if (funclistit->lvo >= cfg->firstlvo && funclistit->libcall == STACK)
+        if (needsstub(cfg, funclistit) && funclistit->libcall == STACK)
         {
 
             line = make_output_path("%s/%s_%s_%sstub.c", cfg->libgendir, cfg->modulename, funclistit->name, is_rel ? "rel" : "");
@@ -71,7 +83,7 @@ void writestubs(struct config *cfg, int is_rel)
          funclistit = funclistit->next
     )
     {
-        if (funclistit->lvo >= cfg->firstlvo && funclistit->libcall != STACK)
+        if (needsstub(cfg, funclistit) && funclistit->libcall != STACK)
         {
             writefuncstub(cfg, is_rel, out, funclistit);
         }
