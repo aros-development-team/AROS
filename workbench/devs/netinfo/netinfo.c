@@ -243,16 +243,21 @@ static int NetInfo__DevClose(LIBBASETYPEPTR LIBBASE,
  */
 static int NetInfo__DevExpunge(LIBBASETYPEPTR LIBBASE)
 {
+    int ready = FALSE;
+
     D(bug("[NetInfo] %s()\n", __func__));
 
     if (AttemptSemaphore(LIBBASE->nid_Lock)) {
         if (LIBBASE->nid_Task) {
             if (LIBBASE->nid_Death && LIBBASE->nid_Death->mn_Node.ln_Type == NT_MESSAGE)
                 ReplyMsg(LIBBASE->nid_Death);
+        } else {
+            ready = TRUE;
         }
         ReleaseSemaphore(LIBBASE->nid_Lock);
     }
-    return TRUE;
+    /* The worker still needs this module and its auto-opened libraries. */
+    return ready;
 }
 
 ADD2OPENDEV(NetInfo__DevOpen, 0)

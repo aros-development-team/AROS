@@ -204,6 +204,9 @@ static void NetInfoPoll(struct NetInfoDevice *nid)
         if (nid->nid_Death)
             DeleteIORequest(nid->nid_Death), nid->nid_Death = NULL;
 
+        /* Do not let an expunger run until we return to DOS exit code.
+         * The device can be unloaded once nid_Task is cleared. */
+        Forbid();
         nid->nid_Task = NULL;
 
         ReleaseSemaphore(nid->nid_Lock);
