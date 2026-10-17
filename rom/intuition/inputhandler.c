@@ -510,6 +510,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
             iihdata->ScreenDrag = screen;
             iihdata->ScreenDragPointX = screen->MouseX;
             iihdata->ScreenDragPointY = screen->MouseY;
+            iihdata->ScreenDragRemX = iihdata->ScreenDragRemY = 0;
             *keep_event = FALSE;
             break;
         }
@@ -579,6 +580,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
             iihdata->ScreenDrag = screen;
             iihdata->ScreenDragPointX = screen->MouseX;
             iihdata->ScreenDragPointY = screen->MouseY;
+            iihdata->ScreenDragRemX = iihdata->ScreenDragRemY = 0;
             *keep_event = FALSE;
             break;
         }
@@ -1401,6 +1403,23 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 
                 DoMethodA(GetPrivIBase(IntuitionBase)->ActiveMonitor, (Msg)&coordmsg);
 
+                /* The pointer moves in display pixels, a scaled screen in
+                 * its own; keep what the division drops for the next move. */
+                if ((spFlags & SF_ScaledCoords) && (DSWidth != DWidth) && DWidth)
+                {
+                    LONG v = (LONG)dx * DSWidth + iihdata->ScreenDragRemX;
+
+                    dx = v / DWidth;
+                    iihdata->ScreenDragRemX = v - (LONG)dx * DWidth;
+                }
+                if ((spFlags & SF_ScaledCoords) && (DSHeight != DHeight) && DHeight)
+                {
+                    LONG v = (LONG)dy * DSHeight + iihdata->ScreenDragRemY;
+
+                    dy = v / DHeight;
+                    iihdata->ScreenDragRemY = v - (LONG)dy * DHeight;
+                }
+
                 DEBUG_DRAG(
                   bug("[InputHandler] = %dx%d in screen co-ords\n", DSWidth, DSHeight);
                   bug("[InputHandler] Screen drag, delta = %d, %d\n", dx, dy);
@@ -1583,7 +1602,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
             /* Prevent mouse going above all screens */
             scr = FindHighestScreen(IntuitionBase);
             if (scr) {
-                WORD top = scr->TopEdge * int_MouseScaleY(scr);
+                WORD top = ScreenTopInDisplay(scr, IntuitionBase);
                 if (ie->ie_Y < top)
                     ie->ie_Y = top;
             }
