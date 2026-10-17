@@ -217,7 +217,7 @@ sana_if_deconfigure(struct ifnet *ifp)
 
     /* Flush all routes on the interface before dropping its addresses, so no
      * live route is left referencing an ifaddr we are about to free. */
-    rt_purgeif(ifp);
+    rt_purgeif(ifp, AF_UNSPEC);
 
 #if INET6
     {
@@ -1345,9 +1345,13 @@ sana_linkdown(struct sana_softc *ssc)
     if(ssc->ss_autoip.state != AUTOIP_DISABLED)
         autoip_stop(ifp);
 
+    /* in_control() scrubs only each address's interface route: a gateway
+     * route (the DHCP default) would keep rt_ifa on the freed address. */
+    rt_purgeif(ifp, AF_INET);
+
     /*
      * A request naming no address means "the first one on this interface", so
-     * this deletes them all; in_control() scrubs their routes on the way out.
+     * this deletes them all.
      */
     while(1) {
         bzero(&ifr, sizeof(ifr));
