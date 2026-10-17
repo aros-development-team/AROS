@@ -272,6 +272,11 @@ struct rtpmidi_sysex_assembler {
 void rtpmidi_sysex_buffer(struct rtpmidi_sysex_assembler *assembler,
                           uint8_t *buffer, size_t capacity);
 void rtpmidi_sysex_reset(struct rtpmidi_sysex_assembler *assembler);
+/* Observe every validated, fresh RTP packet before feeding its commands,
+ * including packets without SysEx. A sequence gap abandons partial SysEx.
+ * The caller must filter duplicate and older packets first. */
+void rtpmidi_sysex_packet(struct rtpmidi_sysex_assembler *assembler,
+                         uint16_t sequence);
 int rtpmidi_sysex_feed(struct rtpmidi_sysex_assembler *assembler,
                   const struct rtpmidi_event *event, uint16_t sequence,
                   const uint8_t **message, size_t *length);

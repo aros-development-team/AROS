@@ -1090,6 +1090,19 @@ void rtpmidi_sysex_reset(struct rtpmidi_sysex_assembler *assembler)
     assembler->active = 0;
 }
 
+void rtpmidi_sysex_packet(struct rtpmidi_sysex_assembler *assembler,
+                         uint16_t sequence)
+{
+    if (!assembler->active)
+        return;
+    if (sequence != assembler->last_sequence &&
+        sequence != (uint16_t)(assembler->last_sequence + 1)) {
+        rtpmidi_sysex_reset(assembler);
+        return;
+    }
+    assembler->last_sequence = sequence;
+}
+
 int rtpmidi_sysex_feed(struct rtpmidi_sysex_assembler *assembler,
                   const struct rtpmidi_event *event, uint16_t sequence,
                   const uint8_t **message, size_t *length)
