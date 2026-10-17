@@ -989,9 +989,9 @@ diff -ruN -x .cargo-checksum.json -x Cargo.toml.orig -x .cargo_vcs_info.json -x 
 +pub const EAI_SYSTEM: c_int = 11;
 +pub const FIOCLEX: c_ulong = 0x20006601;
 +pub const FIONCLEX: c_ulong = 0x20006602;
-+pub const _SC_HOST_NAME_MAX: c_int = 72;
-+pub const _SC_NPROCESSORS_ONLN: c_int = 1000;
-+pub const _SC_NPROCESSORS_CONF: c_int = 1001;
++pub const _SC_HOST_NAME_MAX: c_int = 37;
++pub const _SC_NPROCESSORS_ONLN: c_int = 127;
++pub const _SC_NPROCESSORS_CONF: c_int = 126;
 +
 +pub struct linger {
 +    pub l_onoff: c_int,

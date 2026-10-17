@@ -598,6 +598,22 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
          self
      }
  
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/library/std/src/path.rs rustc-1.98.1-src/library/std/src/path.rs
+--- rustc-1.98.1-src.orig/library/std/src/path.rs	2026-09-01 06:56:03.000000000 +0000
++++ rustc-1.98.1-src/library/std/src/path.rs	2026-10-17 10:51:43.692191466 +0000
+@@ -1343,6 +1343,12 @@
+         let buf = self.inner.as_encoded_bytes();
+         let mut need_sep = buf.last().map(|c| !is_sep_byte(*c)).unwrap_or(false);
+ 
++        // on AROS, a name follows `VOLUME:` directly: `T:` and `x` make `T:x`
++        #[cfg(target_os = "aros")]
++        if buf.last() == Some(&b':') {
++            need_sep = false;
++        }
++
+         // in the special case of `C:` on Windows, do *not* add a separator
+         let comps = self.components();
+ 
 diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/library/std/src/sys/args/unix.rs rustc-1.98.1-src/library/std/src/sys/args/unix.rs
 --- rustc-1.98.1-src.orig/library/std/src/sys/args/unix.rs	2026-09-01 06:56:03.000000000 +0000
 +++ rustc-1.98.1-src/library/std/src/sys/args/unix.rs	2026-09-14 11:47:36.283641402 +0000
@@ -611,19 +627,22 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
      target_os = "fuchsia",
 diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/library/std/src/sys/env/unix.rs rustc-1.98.1-src/library/std/src/sys/env/unix.rs
 --- rustc-1.98.1-src.orig/library/std/src/sys/env/unix.rs	2026-09-01 06:56:03.000000000 +0000
-+++ rustc-1.98.1-src/library/std/src/sys/env/unix.rs	2026-09-14 11:59:16.661298580 +0000
-@@ -55,8 +55,18 @@
++++ rustc-1.98.1-src/library/std/src/sys/env/unix.rs	2026-10-17 10:50:27.540194207 +0000
+@@ -55,8 +55,21 @@
      ENVIRON.0
  }
  
-+// AROS keeps the process environment behind stdcio.library: the C start-up
-+// registers the address of its `environ` with it, and programs that never did
-+// so get a null pointer back.
++// AROS emulates `environ` only in programs that reference it: the reference
++// links libstdcio.a's definition, whose auto-init registers it with
++// stdcio.library and fills it from the local variables (setenv() keeps it
++// current). Asking stdcio.library for the registered pointer instead would get
++// null, because nothing in std references the symbol.
 +#[cfg(target_os = "aros")]
 +pub unsafe fn environ() -> *mut *const *const c_char {
-+    static mut EMPTY_ENVIRON: *const *const c_char = crate::ptr::null();
-+    let environ = unsafe { libc::__stdcio_get_environptr() } as *mut *const *const c_char;
-+    if environ.is_null() { &raw mut EMPTY_ENVIRON } else { environ }
++    unsafe extern "C" {
++        static mut environ: *const *const c_char;
++    }
++    &raw mut environ
 +}
 +
  // Use the `environ` static which is part of POSIX.
@@ -898,6 +917,20 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
      target_os = "nto",
      target_os = "qnx",
      target_os = "vxworks",
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/library/std/src/sys/helpers/small_c_string.rs rustc-1.98.1-src/library/std/src/sys/helpers/small_c_string.rs
+--- rustc-1.98.1-src.orig/library/std/src/sys/helpers/small_c_string.rs	2026-09-01 06:56:03.000000000 +0000
++++ rustc-1.98.1-src/library/std/src/sys/helpers/small_c_string.rs	2026-10-17 10:51:43.504191467 +0000
+@@ -15,6 +15,10 @@
+ 
+ #[inline]
+ pub fn run_path_with_cstr<T>(path: &Path, f: &dyn Fn(&CStr) -> io::Result<T>) -> io::Result<T> {
++    #[cfg(target_os = "aros")]
++    if let Some(dos) = crate::sys::path::to_dos_path(path.as_os_str().as_encoded_bytes()) {
++        return run_with_cstr(&dos, f);
++    }
+     run_with_cstr(path.as_os_str().as_encoded_bytes(), f)
+ }
+ 
 diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/library/std/src/sys/io/error/unix.rs rustc-1.98.1-src/library/std/src/sys/io/error/unix.rs
 --- rustc-1.98.1-src.orig/library/std/src/sys/io/error/unix.rs	2026-09-01 06:56:03.000000000 +0000
 +++ rustc-1.98.1-src/library/std/src/sys/io/error/unix.rs	2026-09-14 11:47:36.283397602 +0000
@@ -939,6 +972,67 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
      target_os = "redox",
      target_os = "teeos",
  ))]
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/library/std/src/sys/path/unix.rs rustc-1.98.1-src/library/std/src/sys/path/unix.rs
+--- rustc-1.98.1-src.orig/library/std/src/sys/path/unix.rs	2026-09-01 06:56:03.000000000 +0000
++++ rustc-1.98.1-src/library/std/src/sys/path/unix.rs	2026-10-17 10:51:43.304191469 +0000
+@@ -57,8 +57,57 @@
+     Ok(normalized)
+ }
+ 
++/// Whether an AmigaDOS path starts with a volume or assign (`SYS:`, `T:x`):
++/// a `:` in its first component.
++#[cfg(target_os = "aros")]
++pub(crate) fn has_volume(path: &[u8]) -> bool {
++    path.iter().take_while(|&&b| b != b'/').any(|&b| b == b':')
++}
++
++/// Rewrites the POSIX constructs AmigaDOS does not understand into its own
++/// forms, or returns `None` when the path needs no change. DOS has no `.` or
++/// `..` names: an empty component is the parent step, and so is a separator
++/// right after `VOLUME:`. So `./x` becomes `x`, `a/../b` becomes `a//b`,
++/// `a/..` becomes `a//`, and `T:/x` (what joining onto `T:` used to give)
++/// becomes `T:x`. Native forms such as `a//b` or `/x` pass through unchanged.
++#[cfg(target_os = "aros")]
++pub(crate) fn to_dos_path(path: &[u8]) -> Option<crate::vec::Vec<u8>> {
++    let is_dot = |s: &[u8]| s == b"." || s == b"..";
++    let vol_sep = has_volume(path)
++        && path.iter().position(|&b| b == b'/').is_some_and(|i| path[i - 1] == b':');
++    if !vol_sep && !path.split(|&b| b == b'/').any(is_dot) {
++        return None;
++    }
++
++    let mut out: crate::vec::Vec<&[u8]> = crate::vec::Vec::new();
++    let mut ends_in_parent = false;
++    for seg in path.split(|&b| b == b'/') {
++        ends_in_parent = seg == b"..";
++        match seg {
++            b"." => {}
++            b".." => out.push(b""),
++            _ => out.push(seg),
++        }
++    }
++    // An empty last component is ignored by DOS, so a final parent step needs
++    // its own separator: `a/..` is `a//`, `..` is `/`.
++    if ends_in_parent {
++        out.push(b"");
++    }
++
++    let mut dos = out.join(&b'/');
++    if vol_sep && out.len() > 1 {
++        dos.remove(out[0].len());
++    }
++    Some(dos)
++}
++
+ pub(crate) fn is_absolute(path: &Path) -> bool {
+     if cfg!(any(unix, target_os = "hermit", target_os = "wasi", target_os = "motor")) {
++        #[cfg(target_os = "aros")]
++        if has_volume(path.as_os_str().as_encoded_bytes()) {
++            return true;
++        }
+         path.has_root()
+     } else {
+         path.has_root() && path.prefix().is_some()
 diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/library/std/src/sys/paths/unix.rs rustc-1.98.1-src/library/std/src/sys/paths/unix.rs
 --- rustc-1.98.1-src.orig/library/std/src/sys/paths/unix.rs	2026-09-01 06:56:03.000000000 +0000
 +++ rustc-1.98.1-src/library/std/src/sys/paths/unix.rs	2026-09-14 11:47:36.286722102 +0000
@@ -1006,8 +1100,16 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
          target_os = "openbsd",
 diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/library/std/src/sys/thread/unix.rs rustc-1.98.1-src/library/std/src/sys/thread/unix.rs
 --- rustc-1.98.1-src.orig/library/std/src/sys/thread/unix.rs	2026-09-01 06:56:03.000000000 +0000
-+++ rustc-1.98.1-src/library/std/src/sys/thread/unix.rs	2026-09-14 11:47:36.287290202 +0000
-@@ -428,7 +428,8 @@
++++ rustc-1.98.1-src/library/std/src/sys/thread/unix.rs	2026-10-17 10:49:30.483414406 +0000
+@@ -162,6 +162,7 @@
+             target_os = "cygwin",
+             target_os = "redox",
+             target_os = "wasi",
++            target_os = "aros",
+         ) => {
+             #[allow(unused_assignments)]
+             #[allow(unused_mut)]
+@@ -428,7 +429,8 @@
      target_os = "freebsd",
      target_os = "dragonfly",
      target_os = "nuttx",
@@ -1083,7 +1185,7 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
          // pub(crate) use hermit_abi::*;
 diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/vendor/libc-0.2.185/src/unix/aros/mod.rs rustc-1.98.1-src/vendor/libc-0.2.185/src/unix/aros/mod.rs
 --- rustc-1.98.1-src.orig/vendor/libc-0.2.185/src/unix/aros/mod.rs	1970-01-01 00:00:00.000000000 +0000
-+++ rustc-1.98.1-src/vendor/libc-0.2.185/src/unix/aros/mod.rs	2026-09-14 12:04:46.271565016 +0000
++++ rustc-1.98.1-src/vendor/libc-0.2.185/src/unix/aros/mod.rs	2026-10-17 10:49:30.456408206 +0000
 @@ -0,0 +1,1064 @@
 +//! Bindings for the AROS C library (posixc.library / stdc.library) and
 +//! pthread.library, as shipped in the AROS SDK.
@@ -2036,9 +2138,9 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
 +pub const EAI_SYSTEM: c_int = 11;
 +pub const FIOCLEX: c_ulong = 0x20006601;
 +pub const FIONCLEX: c_ulong = 0x20006602;
-+pub const _SC_HOST_NAME_MAX: c_int = 72;
-+pub const _SC_NPROCESSORS_ONLN: c_int = 1000;
-+pub const _SC_NPROCESSORS_CONF: c_int = 1001;
++pub const _SC_HOST_NAME_MAX: c_int = 37;
++pub const _SC_NPROCESSORS_ONLN: c_int = 127;
++pub const _SC_NPROCESSORS_CONF: c_int = 126;
 +
 +pub struct linger {
 +    pub l_onoff: c_int,
