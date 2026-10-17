@@ -197,9 +197,44 @@ void LoginMessageGUI(struct SecurityBase *secBase, CONST_STRPTR title, CONST_STR
 }
 
 /*
- * While a hardware token is waited for: a window with the status text and
- * a Cancel button, in the login's look. The status hook calls this again
- * and again, so the window's input is handled here one round at a time.
+ * The key icon of the status window is the password image of the system
+ * gadgets, shipped with the user image LoginWindow.mcc shows next to the
+ * name input. IMAGES: is made by the Startup-Sequence, which has not run
+ * yet at the boot login, so fall back to where the images really are.
+ */
+#define IMAGES_ASSIGN   "IMAGES:"
+#define IMAGES_SYSPATH  "SYS:System/Images/"
+#define KEY_IMAGE       "Gadgets/System/sys_pass"
+#define IMAGESPEC_MAX   (2 + sizeof(IMAGES_SYSPATH) + sizeof(KEY_IMAGE))
+
+/* The key icon as an Image object, or NULL when the image is not there */
+static Object *KeyImageObject(struct SecurityBase *secBase, struct Library *MUIMasterBase)
+{
+    char spec[IMAGESPEC_MAX];
+    struct DosList *dl;
+    BOOL assigned;
+    BPTR lock;
+    struct TagItem imgtags[] = { { MUIA_Image_Spec, (IPTR)spec }, { TAG_DONE, 0 } };
+
+    dl = LockDosList(LDF_ASSIGNS | LDF_READ);
+    assigned = (FindDosEntry(dl, "IMAGES", LDF_ASSIGNS) != NULL);
+    UnLockDosList(LDF_ASSIGNS | LDF_READ);
+
+    /* a MUI external-image spec: "3:<path>" (the Image object copies it) */
+    strcpy(spec, "3:");
+    strcat(spec, assigned ? IMAGES_ASSIGN : IMAGES_SYSPATH);
+    strcat(spec, KEY_IMAGE);
+    if (!(lock = Lock(spec + 2, ACCESS_READ)))
+        return NULL;
+    UnLock(lock);
+    return MUI_NewObjectA(MUIC_Image, imgtags);
+}
+
+/*
+ * While a hardware token is waited for: a window with a key icon and the
+ * status text beside it, and a Cancel button, in the login's look. The
+ * status hook calls this again and again, so the window's input is handled
+ * here one round at a time.
  */
 BOOL StatusGUIShow(struct SecurityBase *secBase, struct LoginStatusGUI *s, CONST_STRPTR pubscreen, BOOL systemmode,
                    CONST_STRPTR title, CONST_STRPTR text, CONST_STRPTR cancel, BOOL *unavailable)
@@ -223,12 +258,19 @@ BOOL StatusGUIShow(struct SecurityBase *secBase, struct LoginStatusGUI *s, CONST
     {
         /* the varargs MUI_NewObject() is a link-library stub that would make
          * this ROM module autoopen muimaster.library: tag arrays, as above */
-        Object *btn, *group = NULL, *space;
+        Object *btn, *group = NULL, *space, *img, *row = NULL;
         struct TagItem texttags[] =
         {
             { MUIA_Text_Contents,       (IPTR)text      },
             { MUIA_Text_PreParse,       (IPTR)"\33c"    },
             { MUIA_Text_SetMax,         FALSE           },
+            { TAG_DONE,                 0               }
+        };
+        struct TagItem rowtags[] =
+        {
+            { MUIA_Group_Horiz,         TRUE            },
+            { MUIA_Group_Child,         0               },
+            { MUIA_Group_Child,         0               },
             { TAG_DONE,                 0               }
         };
         struct TagItem buttontags[] = { { MUIA_Text_Contents, (IPTR)cancel }, { TAG_DONE, 0 } };
@@ -263,11 +305,21 @@ BOOL StatusGUIShow(struct SecurityBase *secBase, struct LoginStatusGUI *s, CONST
         if (systemmode && pubscreen == NULL && SystemScreenPresent(secBase))
             pubscreen = SYSTEM_SCREEN_NAME;
         s->Text = MUI_NewObjectA(MUIC_Text, texttags);
+        img = KeyImageObject(secBase, MUIMasterBase);
+        if (img && s->Text)
+        {
+            /* the key icon to the left of the status text */
+            rowtags[1].ti_Data = (IPTR)img;
+            rowtags[2].ti_Data = (IPTR)s->Text;
+            row = MUI_NewObjectA(MUIC_Group, rowtags);
+        }
+        if (img && !row)
+            MUI_DisposeObject(img);     /* no icon then: the text alone */
         btn = MUI_MakeObjectA(MUIO_Button, (IPTR *)&buttontags[0].ti_Data);
         space = MUI_NewObjectA(MUIC_Rectangle, spacetags);
         if (s->Text && btn && space)
         {
-            grouptags[1].ti_Data = (IPTR)s->Text;
+            grouptags[1].ti_Data = row ? (IPTR)row : (IPTR)s->Text;
             grouptags[2].ti_Data = (IPTR)space;
             grouptags[3].ti_Data = (IPTR)btn;
             group = MUI_NewObjectA(MUIC_Group, grouptags);
@@ -292,7 +344,9 @@ BOOL StatusGUIShow(struct SecurityBase *secBase, struct LoginStatusGUI *s, CONST
                 MUI_DisposeObject(group);
             else
             {
-                if (s->Text)
+                if (row)
+                    MUI_DisposeObject(row); /* takes the icon and the text with it */
+                else if (s->Text)
                     MUI_DisposeObject(s->Text);
                 if (btn)
                     MUI_DisposeObject(btn);
