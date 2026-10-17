@@ -1183,10 +1183,206 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
      } else if #[cfg(target_os = "hermit")] {
          mod hermit_abi;
          // pub(crate) use hermit_abi::*;
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/vendor/libc-0.2.185/src/unix/aros/mman.rs rustc-1.98.1-src/vendor/libc-0.2.185/src/unix/aros/mman.rs
+--- rustc-1.98.1-src.orig/vendor/libc-0.2.185/src/unix/aros/mman.rs	1970-01-01 00:00:00.000000000 +0000
++++ rustc-1.98.1-src/vendor/libc-0.2.185/src/unix/aros/mman.rs	2026-10-17 19:47:23.721433814 +0000
+@@ -0,0 +1,192 @@
++//! mmap() and friends for AROS, which has no virtual memory to map with.
++//!
++//! A mapping is page-aligned memory from posix_memalign(): anonymous ones are
++//! zeroed, private file mappings and read-only shared ones are read in with
++//! pread64() (later changes to the file are not seen). What memory cannot
++//! stand in for fails with ENOTSUP: writable shared file mappings, MAP_FIXED
++//! and PROT_NONE. munmap() releases whole mappings only.
++
++use core::ops::Drop;
++use core::option::Option::Some;
++use core::ptr;
++use core::sync::atomic::{AtomicBool, AtomicPtr, Ordering};
++
++use crate::*;
++
++pub const PROT_NONE: c_int = 0;
++pub const PROT_READ: c_int = 1;
++pub const PROT_WRITE: c_int = 2;
++pub const PROT_EXEC: c_int = 4;
++pub const MAP_SHARED: c_int = 0x01;
++pub const MAP_PRIVATE: c_int = 0x02;
++pub const MAP_FIXED: c_int = 0x10;
++pub const MAP_ANON: c_int = 0x1000;
++pub const MAP_ANONYMOUS: c_int = MAP_ANON;
++pub const MAP_FAILED: *mut c_void = !0 as *mut c_void;
++pub const MS_ASYNC: c_int = 1;
++pub const MS_INVALIDATE: c_int = 2;
++pub const MS_SYNC: c_int = 4;
++pub const MADV_NORMAL: c_int = 0;
++pub const MADV_RANDOM: c_int = 1;
++pub const MADV_SEQUENTIAL: c_int = 2;
++pub const MADV_WILLNEED: c_int = 3;
++pub const MADV_DONTNEED: c_int = 4;
++
++const PAGE: usize = 4096;
++
++extern "C" {
++    fn pread64(fd: c_int, buf: *mut c_void, count: size_t, offset: i64) -> isize;
++}
++
++/// One mapping, in a list kept for munmap().
++struct Mapping {
++    addr: *mut u8,
++    len: usize,
++    next: *mut Mapping,
++}
++
++static MAPPINGS: AtomicPtr<Mapping> = AtomicPtr::new(ptr::null_mut());
++static LOCKED: AtomicBool = AtomicBool::new(false);
++
++struct Guard;
++
++impl Guard {
++    fn lock() -> Guard {
++        while LOCKED
++            .compare_exchange_weak(false, true, Ordering::Acquire, Ordering::Relaxed)
++            .is_err()
++        {
++            unsafe { sched_yield() };
++        }
++        Guard
++    }
++}
++
++impl Drop for Guard {
++    fn drop(&mut self) {
++        LOCKED.store(false, Ordering::Release);
++    }
++}
++
++unsafe fn fail(errno: c_int) -> *mut c_void {
++    *__stdc_geterrnoptr() = errno;
++    MAP_FAILED
++}
++
++#[no_mangle]
++pub unsafe extern "C" fn mmap(
++    _addr: *mut c_void,
++    len: size_t,
++    prot: c_int,
++    flags: c_int,
++    fd: c_int,
++    offset: off_t,
++) -> *mut c_void {
++    let anon = flags & MAP_ANON != 0;
++    if len == 0 || offset < 0 || offset as usize % PAGE != 0 {
++        return fail(EINVAL);
++    }
++    if flags & (MAP_SHARED | MAP_PRIVATE) == 0 {
++        return fail(EINVAL);
++    }
++    if flags & MAP_FIXED != 0
++        || prot == PROT_NONE
++        || (!anon && flags & MAP_SHARED != 0 && prot & PROT_WRITE != 0)
++    {
++        return fail(ENOTSUP);
++    }
++    let Some(size) = len.checked_add(PAGE - 1).map(|n| n & !(PAGE - 1)) else {
++        return fail(ENOMEM);
++    };
++    let node = malloc(core::mem::size_of::<Mapping>()) as *mut Mapping;
++    if node.is_null() {
++        return fail(ENOMEM);
++    }
++    let mut mem: *mut c_void = ptr::null_mut();
++    if posix_memalign(&mut mem, PAGE, size) != 0 {
++        free(node as *mut c_void);
++        return fail(ENOMEM);
++    }
++    ptr::write_bytes(mem as *mut u8, 0, size);
++    if !anon {
++        let mut done = 0;
++        while done < len {
++            let n = pread64(fd, (mem as *mut u8).add(done) as *mut c_void, len - done,
++                offset as i64 + done as i64);
++            if n < 0 {
++                let errno = *__stdc_geterrnoptr();
++                free(mem);
++                free(node as *mut c_void);
++                return fail(errno);
++            }
++            if n == 0 {
++                // past the end of the file: the rest stays zero
++                break;
++            }
++            done += n as usize;
++        }
++    }
++    let _guard = Guard::lock();
++    *node = Mapping { addr: mem as *mut u8, len: size, next: MAPPINGS.load(Ordering::Relaxed) };
++    MAPPINGS.store(node, Ordering::Relaxed);
++    mem
++}
++
++/// Releases the mappings inside the pages of [addr, addr + len). A range that
++/// cuts through a mapping fails with EINVAL and releases nothing.
++#[no_mangle]
++pub unsafe extern "C" fn munmap(addr: *mut c_void, len: size_t) -> c_int {
++    let start = addr as usize;
++    if len == 0 || start % PAGE != 0 {
++        *__stdc_geterrnoptr() = EINVAL;
++        return -1;
++    }
++    // whole pages: the mappings are page multiples
++    let end = start.saturating_add(len).saturating_add(PAGE - 1) & !(PAGE - 1);
++    let _guard = Guard::lock();
++    let mut m = MAPPINGS.load(Ordering::Relaxed);
++    while !m.is_null() {
++        let (ms, me) = ((*m).addr as usize, (*m).addr as usize + (*m).len);
++        let overlaps = ms < end && start < me;
++        if overlaps && !(start <= ms && me <= end) {
++            *__stdc_geterrnoptr() = EINVAL;
++            return -1;
++        }
++        m = (*m).next;
++    }
++    let mut link: *mut *mut Mapping = MAPPINGS.as_ptr();
++    while !(*link).is_null() {
++        let m = *link;
++        let ms = (*m).addr as usize;
++        if start <= ms && ms < end {
++            *link = (*m).next;
++            free((*m).addr as *mut c_void);
++            free(m as *mut c_void);
++        } else {
++            link = &mut (*m).next;
++        }
++    }
++    0
++}
++
++/// Memory is always readable, writable and executable; access cannot be
++/// taken away.
++#[no_mangle]
++pub unsafe extern "C" fn mprotect(_addr: *mut c_void, _len: size_t, prot: c_int) -> c_int {
++    if prot == PROT_NONE {
++        *__stdc_geterrnoptr() = ENOTSUP;
++        return -1;
++    }
++    0
++}
++
++/// No mapping writes back to a file, so there is nothing to synchronise.
++#[no_mangle]
++pub unsafe extern "C" fn msync(_addr: *mut c_void, _len: size_t, _flags: c_int) -> c_int {
++    0
++}
++
++#[no_mangle]
++pub unsafe extern "C" fn madvise(_addr: *mut c_void, _len: size_t, _advice: c_int) -> c_int {
++    0
++}
 diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/vendor/libc-0.2.185/src/unix/aros/mod.rs rustc-1.98.1-src/vendor/libc-0.2.185/src/unix/aros/mod.rs
 --- rustc-1.98.1-src.orig/vendor/libc-0.2.185/src/unix/aros/mod.rs	1970-01-01 00:00:00.000000000 +0000
-+++ rustc-1.98.1-src/vendor/libc-0.2.185/src/unix/aros/mod.rs	2026-10-17 10:49:30.456408206 +0000
-@@ -0,0 +1,1064 @@
++++ rustc-1.98.1-src/vendor/libc-0.2.185/src/unix/aros/mod.rs	2026-10-17 19:49:42.423695110 +0000
+@@ -0,0 +1,1136 @@
 +//! Bindings for the AROS C library (posixc.library / stdc.library) and
 +//! pthread.library, as shipped in the AROS SDK.
 +//!
@@ -2136,6 +2332,21 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
 +pub const IPV6_LEAVE_GROUP: c_int = 13;
 +pub const MSG_NOSIGNAL: c_int = 0x400;
 +pub const EAI_SYSTEM: c_int = 11;
++pub const AI_PASSIVE: c_int = 1;
++pub const AI_CANONNAME: c_int = 2;
++pub const AI_NUMERICHOST: c_int = 4;
++pub const AI_NUMERICSERV: c_int = 0x10;
++pub const AI_ADDRCONFIG: c_int = 0x400;
++pub const AI_V4MAPPED: c_int = 0x800;
++pub const AI_ALL: c_int = 0x100;
++pub const EAI_AGAIN: c_int = 2;
++pub const EAI_BADFLAGS: c_int = 3;
++pub const EAI_FAIL: c_int = 4;
++pub const EAI_FAMILY: c_int = 5;
++pub const EAI_MEMORY: c_int = 6;
++pub const EAI_NONAME: c_int = 8;
++pub const EAI_SERVICE: c_int = 9;
++pub const EAI_SOCKTYPE: c_int = 10;
 +pub const FIOCLEX: c_ulong = 0x20006601;
 +pub const FIONCLEX: c_ulong = 0x20006602;
 +pub const _SC_HOST_NAME_MAX: c_int = 37;
@@ -2150,8 +2361,9 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
 +// POSIX functions the AROS C library does not provide. They are defined
 +// here, with the C symbol names, so that std's shared unix code links and
 +// reports ENOSYS at run time instead of leaving undefined symbols behind
-+// (the AROS loader refuses those). Sockets live in bsdsocket.library and
-+// need its library base, so they are not reachable from here either.
++// (the AROS loader refuses those). Sockets, poll() and mmap() are emulated
++// in net.rs and mman.rs. This crate is the one copy of these definitions in
++// a program: the libc crate that programs build against declares them.
 +macro_rules! aros_enosys {
 +    ($($(#[$attr:meta])* $vis:vis fn $name:ident($($arg:ident: $ty:ty),* $(,)?) -> $ret:ty;)*) => {$(
 +        $(#[$attr])*
@@ -2166,29 +2378,13 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
 +
 +aros_enosys! {
 +    pub fn fork() -> crate::pid_t;
-+    pub fn socket(domain: c_int, ty: c_int, protocol: c_int) -> c_int;
 +    pub fn socketpair(domain: c_int, ty: c_int, protocol: c_int, sv: *mut c_int) -> c_int;
-+    pub fn bind(socket: c_int, address: *const sockaddr, address_len: socklen_t) -> c_int;
-+    pub fn listen(socket: c_int, backlog: c_int) -> c_int;
-+    pub fn accept(socket: c_int, address: *mut sockaddr, address_len: *mut socklen_t) -> c_int;
-+    pub fn connect(socket: c_int, address: *const sockaddr, len: socklen_t) -> c_int;
-+    pub fn getpeername(socket: c_int, address: *mut sockaddr, address_len: *mut socklen_t) -> c_int;
-+    pub fn getsockname(socket: c_int, address: *mut sockaddr, address_len: *mut socklen_t) -> c_int;
-+    pub fn setsockopt(socket: c_int, level: c_int, name: c_int, value: *const c_void, option_len: socklen_t) -> c_int;
-+    pub fn getsockopt(sockfd: c_int, level: c_int, optname: c_int, optval: *mut c_void, optlen: *mut socklen_t) -> c_int;
-+    pub fn shutdown(socket: c_int, how: c_int) -> c_int;
-+    pub fn send(socket: c_int, buf: *const c_void, len: size_t, flags: c_int) -> isize;
-+    pub fn recv(socket: c_int, buf: *mut c_void, len: size_t, flags: c_int) -> isize;
-+    pub fn sendto(socket: c_int, buf: *const c_void, len: size_t, flags: c_int, addr: *const sockaddr, addrlen: socklen_t) -> isize;
-+    pub fn recvfrom(socket: c_int, buf: *mut c_void, len: size_t, flags: c_int, addr: *mut sockaddr, addrlen: *mut socklen_t) -> isize;
-+    pub fn sendmsg(fd: c_int, msg: *const msghdr, flags: c_int) -> isize;
-+    pub fn recvmsg(fd: c_int, msg: *mut msghdr, flags: c_int) -> isize;
-+    pub fn getaddrinfo(node: *const c_char, service: *const c_char, hints: *const addrinfo, res: *mut *mut addrinfo) -> c_int;
-+    pub fn poll(fds: *mut crate::pollfd, nfds: nfds_t, timeout: c_int) -> c_int;
++    pub fn accept4(socket: c_int, address: *mut sockaddr, address_len: *mut socklen_t, flags: c_int) -> c_int;
++    pub fn shm_open(name: *const c_char, oflag: c_int, mode: mode_t) -> c_int;
++    pub fn shm_unlink(name: *const c_char) -> c_int;
 +    pub fn mkfifo(path: *const c_char, mode: mode_t) -> c_int;
 +    pub fn lchown(path: *const c_char, uid: crate::uid_t, gid: crate::gid_t) -> c_int;
 +    pub fn chroot(name: *const c_char) -> c_int;
-+    pub fn pread(fd: c_int, buf: *mut c_void, count: size_t, offset: off_t) -> isize;
 +    pub fn pwrite(fd: c_int, buf: *const c_void, count: size_t, offset: off_t) -> isize;
 +    pub fn setpgid(pid: crate::pid_t, pgid: crate::pid_t) -> c_int;
 +    pub fn setgroups(ngroups: c_int, ptr: *const crate::gid_t) -> c_int;
@@ -2196,7 +2392,6 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
 +    pub fn munlock(addr: *const c_void, len: size_t) -> c_int;
 +    pub fn mlockall(flags: c_int) -> c_int;
 +    pub fn munlockall() -> c_int;
-+    pub fn munmap(addr: *mut c_void, len: size_t) -> c_int;
 +    pub fn setreuid(ruid: crate::uid_t, euid: crate::uid_t) -> c_int;
 +    pub fn setregid(rgid: crate::gid_t, egid: crate::gid_t) -> c_int;
 +    pub fn alarm(seconds: c_uint) -> c_uint;
@@ -2205,7 +2400,6 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
 +    pub fn getrusage(resource: c_int, usage: *mut crate::rusage) -> c_int;
 +    pub fn if_nametoindex(ifname: *const c_char) -> c_uint;
 +    pub fn res_init() -> c_int;
-+    pub fn gethostname(name: *mut c_char, len: size_t) -> c_int;
 +    pub fn execvpe(file: *const c_char, argv: *const *const c_char, envp: *const *const c_char) -> c_int;
 +    pub fn execle(path: *const c_char, arg0: *const c_char) -> c_int;
 +    pub fn linkat(olddirfd: c_int, oldpath: *const c_char, newdirfd: c_int, newpath: *const c_char, flags: c_int) -> c_int;
@@ -2218,27 +2412,101 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
 +    pub fn mkdtemp(template: *mut c_char) -> *mut c_char;
 +}
 +
++/// AROS has no `fork()`, so there is nothing for fork handlers to do; the
++/// registration succeeds and the handlers are dropped (rand's thread_rng
++/// registers one).
 +#[no_mangle]
-+#[allow(dead_code)]
-+unsafe extern "C" fn mmap(_addr: *mut c_void, _len: size_t, _prot: c_int, _flags: c_int, _fd: c_int, _offset: off_t) -> *mut c_void {
-+    *__stdc_geterrnoptr() = ENOSYS;
-+    !0 as *mut c_void
++pub unsafe extern "C" fn pthread_atfork(
++    prepare: Option<unsafe extern "C" fn()>,
++    parent: Option<unsafe extern "C" fn()>,
++    child: Option<unsafe extern "C" fn()>,
++) -> c_int {
++    let _ = (prepare, parent, child);
++    0
++}
++
++// Dynamic loading: AROS has no dlopen(); plug-in hosts built around it
++// (libloading) link, and get "not available" at run time.
++#[no_mangle]
++pub unsafe extern "C" fn dlopen(_filename: *const c_char, _flag: c_int) -> *mut c_void {
++    core::ptr::null_mut()
 +}
 +
 +#[no_mangle]
-+#[allow(dead_code)]
-+unsafe extern "C" fn freeaddrinfo(_res: *mut addrinfo) {}
-+
-+#[no_mangle]
-+#[allow(dead_code)]
-+unsafe extern "C" fn gai_strerror(_errcode: c_int) -> *const c_char {
-+    c"name resolution is not available".as_ptr()
++pub unsafe extern "C" fn dlsym(_handle: *mut c_void, _symbol: *const c_char) -> *mut c_void {
++    core::ptr::null_mut()
 +}
 +
 +#[no_mangle]
-+#[allow(dead_code)]
-+unsafe extern "C" fn hstrerror(_errcode: c_int) -> *const c_char {
-+    c"name resolution is not available".as_ptr()
++pub unsafe extern "C" fn dlclose(_handle: *mut c_void) -> c_int {
++    0
++}
++
++#[no_mangle]
++pub unsafe extern "C" fn dlerror() -> *mut c_char {
++    c"dynamic loading is not available on AROS".as_ptr() as *mut c_char
++}
++
++/// posixc has pread64() but no pread().
++#[no_mangle]
++pub unsafe extern "C" fn pread(fd: c_int, buf: *mut c_void, count: size_t, offset: off_t) -> isize {
++    pread64(fd, buf, count, offset as i64)
++}
++
++extern "C" {
++    fn pread64(fd: c_int, buf: *mut c_void, count: size_t, offset: i64) -> isize;
++}
++
++mod mman;
++pub use self::mman::*;
++
++// bsdsocket.library is called through its jump table, with the base as the
++// last argument: the library ABI of these CPUs. The others keep stubs.
++cfg_if! {
++    if #[cfg(any(target_arch = "x86_64", target_arch = "riscv64"))] {
++        mod net;
++        pub use self::net::*;
++    } else {
++        mod nonet {
++            use super::*;
++
++            aros_enosys! {
++                pub fn socket(domain: c_int, ty: c_int, protocol: c_int) -> c_int;
++                pub fn bind(socket: c_int, address: *const sockaddr, address_len: socklen_t) -> c_int;
++                pub fn listen(socket: c_int, backlog: c_int) -> c_int;
++                pub fn accept(socket: c_int, address: *mut sockaddr, address_len: *mut socklen_t) -> c_int;
++                pub fn connect(socket: c_int, address: *const sockaddr, len: socklen_t) -> c_int;
++                pub fn getpeername(socket: c_int, address: *mut sockaddr, address_len: *mut socklen_t) -> c_int;
++                pub fn getsockname(socket: c_int, address: *mut sockaddr, address_len: *mut socklen_t) -> c_int;
++                pub fn setsockopt(socket: c_int, level: c_int, name: c_int, value: *const c_void, option_len: socklen_t) -> c_int;
++                pub fn getsockopt(sockfd: c_int, level: c_int, optname: c_int, optval: *mut c_void, optlen: *mut socklen_t) -> c_int;
++                pub fn shutdown(socket: c_int, how: c_int) -> c_int;
++                pub fn send(socket: c_int, buf: *const c_void, len: size_t, flags: c_int) -> isize;
++                pub fn recv(socket: c_int, buf: *mut c_void, len: size_t, flags: c_int) -> isize;
++                pub fn sendto(socket: c_int, buf: *const c_void, len: size_t, flags: c_int, addr: *const sockaddr, addrlen: socklen_t) -> isize;
++                pub fn recvfrom(socket: c_int, buf: *mut c_void, len: size_t, flags: c_int, addr: *mut sockaddr, addrlen: *mut socklen_t) -> isize;
++                pub fn sendmsg(fd: c_int, msg: *const msghdr, flags: c_int) -> isize;
++                pub fn recvmsg(fd: c_int, msg: *mut msghdr, flags: c_int) -> isize;
++                pub fn getaddrinfo(node: *const c_char, service: *const c_char, hints: *const addrinfo, res: *mut *mut addrinfo) -> c_int;
++                pub fn poll(fds: *mut crate::pollfd, nfds: nfds_t, timeout: c_int) -> c_int;
++                pub fn gethostname(name: *mut c_char, len: size_t) -> c_int;
++            }
++
++            #[no_mangle]
++            pub unsafe extern "C" fn freeaddrinfo(_res: *mut addrinfo) {}
++
++            #[no_mangle]
++            pub unsafe extern "C" fn gai_strerror(_errcode: c_int) -> *const c_char {
++                c"name resolution is not available".as_ptr()
++            }
++
++            #[no_mangle]
++            pub unsafe extern "C" fn hstrerror(_errcode: c_int) -> *const c_char {
++                c"name resolution is not available".as_ptr()
++            }
++        }
++        pub use self::nonet::*;
++    }
 +}
 +
 +pub const IPV6_ADD_MEMBERSHIP: c_int = IPV6_JOIN_GROUP;
@@ -2250,6 +2518,543 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
 +    pub const fn WIFCONTINUED(status: c_int) -> bool {
 +        status == 0xffff
 +    }
++}
+diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/vendor/libc-0.2.185/src/unix/aros/net.rs rustc-1.98.1-src/vendor/libc-0.2.185/src/unix/aros/net.rs
+--- rustc-1.98.1-src.orig/vendor/libc-0.2.185/src/unix/aros/net.rs	1970-01-01 00:00:00.000000000 +0000
++++ rustc-1.98.1-src/vendor/libc-0.2.185/src/unix/aros/net.rs	2026-10-17 19:43:03.347364047 +0000
+@@ -0,0 +1,533 @@
++//! Sockets, `poll()` and name resolution through bsdsocket.library.
++//!
++//! bsdsocket accepts calls on a library base only from the task that opened
++//! it, and a socket is reachable only through the base whose descriptor table
++//! holds it. So every thread opens a base of its own on first use (closed
++//! again when the thread ends), and a socket works on the thread that created
++//! or accepted it; another thread gets EBADF from the socket calls. The
++//! descriptors are fd.library numbers shared with posixc, so close(), read(),
++//! write(), fcntl() and ioctl() on a socket are posixc's as for any file.
++//!
++//! The calls go through the base's jump table with the base as the last
++//! argument, which is the AROS library ABI of x86_64 and riscv64; the other
++//! CPUs pass arguments in m68k registers and keep the ENOSYS stubs.
++
++use core::cmp::Ord;
++use core::ops::Drop;
++use core::option::Option::{self, None, Some};
++use core::ptr;
++use core::sync::atomic::{AtomicU32, Ordering};
++
++use crate::*;
++
++extern "C" {
++    /// exec.library's base, set up by the C start-up code.
++    static SysBase: *mut c_void;
++}
++
++/// The address of library function `lvo` in the jump table of `base`.
++#[inline(always)]
++unsafe fn vector(base: *mut c_void, lvo: isize) -> *const c_void {
++    *(base as *const *const c_void).offset(-lvo)
++}
++
++/// Calls library function `$lvo` of `$base` with `$args` and the base as the
++/// last argument.
++macro_rules! libcall {
++    ($base:expr, $lvo:expr, fn($($ty:ty),*) -> $ret:ty, $($arg:expr),*) => {{
++        let base: *mut c_void = $base;
++        let f: unsafe extern "C" fn($($ty,)* *mut c_void) -> $ret =
++            core::mem::transmute(vector(base, $lvo));
++        f($($arg,)* base)
++    }};
++}
++
++const BSDSOCKET_NAME: &[u8] = b"bsdsocket.library\0";
++const BSDSOCKET_VERSION: u32 = 4;
++
++/// The thread-specific-data key holding each thread's base; 0 while unset,
++/// key + 1 once created, `u32::MAX` while being created.
++static BASE_KEY: AtomicU32 = AtomicU32::new(0);
++
++unsafe fn close_base(base: *mut c_void) {
++    // exec CloseLibrary(), LVO 69
++    libcall!(SysBase, 69, fn(*mut c_void) -> (), base);
++}
++
++unsafe extern "C" fn thread_base_dtor(base: *mut c_void) {
++    if !base.is_null() {
++        close_base(base);
++    }
++}
++
++/// No key destructor runs for the main task, which is the one calling exit().
++extern "C" fn close_exiting_base() {
++    unsafe {
++        let base = current_base();
++        if !base.is_null() {
++            pthread_setspecific((BASE_KEY.load(Ordering::Acquire) - 1) as pthread_key_t, ptr::null());
++            close_base(base);
++        }
++    }
++}
++
++unsafe fn base_key() -> Option<pthread_key_t> {
++    loop {
++        match BASE_KEY.load(Ordering::Acquire) {
++            0 => {
++                if BASE_KEY
++                    .compare_exchange(0, u32::MAX, Ordering::AcqRel, Ordering::Acquire)
++                    .is_ok()
++                {
++                    let mut key: pthread_key_t = 0;
++                    if pthread_key_create(&mut key, Some(thread_base_dtor)) != 0 {
++                        BASE_KEY.store(0, Ordering::Release);
++                        return None;
++                    }
++                    atexit(close_exiting_base);
++                    BASE_KEY.store(key as u32 + 1, Ordering::Release);
++                    return Some(key);
++                }
++            }
++            u32::MAX => {
++                sched_yield();
++            }
++            k => return Some((k - 1) as pthread_key_t),
++        }
++    }
++}
++
++/// This thread's base, if it has opened one.
++unsafe fn current_base() -> *mut c_void {
++    match BASE_KEY.load(Ordering::Acquire) {
++        0 | u32::MAX => ptr::null_mut(),
++        k => pthread_getspecific((k - 1) as pthread_key_t),
++    }
++}
++
++/// This thread's base, opened on first use. Errors set errno and give null.
++unsafe fn thread_base() -> *mut c_void {
++    let base = current_base();
++    if !base.is_null() {
++        return base;
++    }
++    let Some(key) = base_key() else {
++        *__stdc_geterrnoptr() = ENOMEM;
++        return ptr::null_mut();
++    };
++    // exec OpenLibrary(), LVO 92
++    let base = libcall!(
++        SysBase,
++        92,
++        fn(*const c_char, u32) -> *mut c_void,
++        BSDSOCKET_NAME.as_ptr() as *const c_char,
++        BSDSOCKET_VERSION
++    );
++    if base.is_null() {
++        // no TCP/IP stack running
++        *__stdc_geterrnoptr() = ENETDOWN;
++        return ptr::null_mut();
++    }
++    // SetErrnoPtr(), LVO 28: the stack's errno numbers are posixc's
++    libcall!(
++        base,
++        28,
++        fn(*mut c_void, c_int) -> (),
++        __stdc_geterrnoptr() as *mut c_void,
++        core::mem::size_of::<c_int>() as c_int
++    );
++    pthread_setspecific(key, base);
++    if pthread_getspecific(key) != base {
++        close_base(base);
++        *__stdc_geterrnoptr() = ENOMEM;
++        return ptr::null_mut();
++    }
++    base
++}
++
++/// Defines socket functions as calls of bsdsocket function `$lvo` on this
++/// thread's base, returning -1 when there is none.
++macro_rules! bsdsocket_fns {
++    ($(pub fn $name:ident($($arg:ident: $ty:ty),* $(,)?) -> $ret:ty = $lvo:literal;)*) => {$(
++        #[no_mangle]
++        pub unsafe extern "C" fn $name($($arg: $ty),*) -> $ret {
++            let base = thread_base();
++            if base.is_null() {
++                return -1;
++            }
++            libcall!(base, $lvo, fn($($ty),*) -> c_int, $($arg),*) as $ret
++        }
++    )*};
++}
++
++bsdsocket_fns! {
++    pub fn socket(domain: c_int, ty: c_int, protocol: c_int) -> c_int = 5;
++    pub fn bind(socket: c_int, address: *const sockaddr, address_len: socklen_t) -> c_int = 6;
++    pub fn listen(socket: c_int, backlog: c_int) -> c_int = 7;
++    pub fn accept(socket: c_int, address: *mut sockaddr, address_len: *mut socklen_t) -> c_int = 8;
++    pub fn connect(socket: c_int, address: *const sockaddr, len: socklen_t) -> c_int = 9;
++    pub fn shutdown(socket: c_int, how: c_int) -> c_int = 14;
++    pub fn setsockopt(socket: c_int, level: c_int, name: c_int, value: *const c_void, option_len: socklen_t) -> c_int = 15;
++    pub fn getsockopt(sockfd: c_int, level: c_int, optname: c_int, optval: *mut c_void, optlen: *mut socklen_t) -> c_int = 16;
++    pub fn getsockname(socket: c_int, address: *mut sockaddr, address_len: *mut socklen_t) -> c_int = 17;
++    pub fn getpeername(socket: c_int, address: *mut sockaddr, address_len: *mut socklen_t) -> c_int = 18;
++    pub fn sendmsg(fd: c_int, msg: *const msghdr, flags: c_int) -> isize = 45;
++    pub fn recvmsg(fd: c_int, msg: *mut msghdr, flags: c_int) -> isize = 46;
++    pub fn gethostname(name: *mut c_char, len: size_t) -> c_int = 47;
++}
++
++/// bsdsocket takes buffer lengths as int: longer transfers are cut to the
++/// largest int, which a stream socket reports as a short transfer.
++#[inline]
++fn int_len(len: size_t) -> c_int {
++    if len > c_int::MAX as size_t {
++        c_int::MAX
++    } else {
++        len as c_int
++    }
++}
++
++#[no_mangle]
++pub unsafe extern "C" fn send(socket: c_int, buf: *const c_void, len: size_t, flags: c_int) -> isize {
++    let base = thread_base();
++    if base.is_null() {
++        return -1;
++    }
++    libcall!(base, 11, fn(c_int, *const c_void, c_int, c_int) -> c_int,
++        socket, buf, int_len(len), flags) as isize
++}
++
++#[no_mangle]
++pub unsafe extern "C" fn recv(socket: c_int, buf: *mut c_void, len: size_t, flags: c_int) -> isize {
++    let base = thread_base();
++    if base.is_null() {
++        return -1;
++    }
++    libcall!(base, 13, fn(c_int, *mut c_void, c_int, c_int) -> c_int,
++        socket, buf, int_len(len), flags) as isize
++}
++
++#[no_mangle]
++pub unsafe extern "C" fn sendto(
++    socket: c_int,
++    buf: *const c_void,
++    len: size_t,
++    flags: c_int,
++    addr: *const sockaddr,
++    addrlen: socklen_t,
++) -> isize {
++    let base = thread_base();
++    if base.is_null() {
++        return -1;
++    }
++    libcall!(base, 10, fn(c_int, *const c_void, c_int, c_int, *const sockaddr, socklen_t) -> c_int,
++        socket, buf, int_len(len), flags, addr, addrlen) as isize
++}
++
++#[no_mangle]
++pub unsafe extern "C" fn recvfrom(
++    socket: c_int,
++    buf: *mut c_void,
++    len: size_t,
++    flags: c_int,
++    addr: *mut sockaddr,
++    addrlen: *mut socklen_t,
++) -> isize {
++    let base = thread_base();
++    if base.is_null() {
++        return -1;
++    }
++    libcall!(base, 12, fn(c_int, *mut c_void, c_int, c_int, *mut sockaddr, *mut socklen_t) -> c_int,
++        socket, buf, int_len(len), flags, addr, addrlen) as isize
++}
++
++/// bsdsocket's `struct addrinfo` (netdb.h), whose integer fields are longs.
++#[repr(C)]
++struct stack_addrinfo {
++    ai_flags: c_long,
++    ai_family: c_long,
++    ai_socktype: c_long,
++    ai_protocol: c_long,
++    ai_addrlen: size_t,
++    ai_canonname: *mut c_char,
++    ai_addr: *mut sockaddr,
++    ai_next: *mut stack_addrinfo,
++}
++
++/// Frees a list made by `getaddrinfo()`: each entry is one allocation holding
++/// the entry, its address and its canonical name.
++#[no_mangle]
++pub unsafe extern "C" fn freeaddrinfo(mut res: *mut addrinfo) {
++    while !res.is_null() {
++        let next = (*res).ai_next;
++        free(res as *mut c_void);
++        res = next;
++    }
++}
++
++/// Copies one entry of the stack's list into a single allocation.
++unsafe fn copy_addrinfo(ai: *const stack_addrinfo) -> *mut addrinfo {
++    let addrlen = (*ai).ai_addrlen;
++    let namelen = if (*ai).ai_canonname.is_null() {
++        0
++    } else {
++        strlen((*ai).ai_canonname) + 1
++    };
++    let size = core::mem::size_of::<addrinfo>() + addrlen + namelen;
++    let new = malloc(size) as *mut addrinfo;
++    if new.is_null() {
++        return new;
++    }
++    let addr = (new as *mut u8).add(core::mem::size_of::<addrinfo>());
++    let name = addr.add(addrlen);
++    ptr::copy_nonoverlapping((*ai).ai_addr as *const u8, addr, addrlen);
++    if namelen != 0 {
++        ptr::copy_nonoverlapping((*ai).ai_canonname as *const u8, name, namelen);
++    }
++    *new = addrinfo {
++        ai_flags: (*ai).ai_flags as c_int,
++        ai_family: (*ai).ai_family as c_int,
++        ai_socktype: (*ai).ai_socktype as c_int,
++        ai_protocol: (*ai).ai_protocol as c_int,
++        ai_addrlen: addrlen as socklen_t,
++        ai_canonname: if namelen != 0 { name as *mut c_char } else { ptr::null_mut() },
++        ai_addr: if addrlen != 0 { addr as *mut sockaddr } else { ptr::null_mut() },
++        ai_next: ptr::null_mut(),
++    };
++    new
++}
++
++/// Resolves through the stack's getaddrinfo() and returns the result in this
++/// crate's `struct addrinfo` layout.
++#[no_mangle]
++pub unsafe extern "C" fn getaddrinfo(
++    node: *const c_char,
++    service: *const c_char,
++    hints: *const addrinfo,
++    res: *mut *mut addrinfo,
++) -> c_int {
++    *res = ptr::null_mut();
++    let base = thread_base();
++    if base.is_null() {
++        return EAI_SYSTEM;
++    }
++    let stack_hints;
++    let hints_ptr = if hints.is_null() {
++        ptr::null()
++    } else {
++        stack_hints = stack_addrinfo {
++            ai_flags: (*hints).ai_flags as c_long,
++            ai_family: (*hints).ai_family as c_long,
++            ai_socktype: (*hints).ai_socktype as c_long,
++            ai_protocol: (*hints).ai_protocol as c_long,
++            ai_addrlen: 0,
++            ai_canonname: ptr::null_mut(),
++            ai_addr: ptr::null_mut(),
++            ai_next: ptr::null_mut(),
++        };
++        &stack_hints as *const stack_addrinfo
++    };
++    let mut list: *mut stack_addrinfo = ptr::null_mut();
++    // RS_getaddrinfo(), LVO 136
++    let err = libcall!(base, 136,
++        fn(*const c_char, *const c_char, *const stack_addrinfo, *mut *mut stack_addrinfo) -> c_long,
++        node, service, hints_ptr, &mut list) as c_int;
++    if err != 0 {
++        return err;
++    }
++    let mut head: *mut addrinfo = ptr::null_mut();
++    let mut tail: *mut *mut addrinfo = &mut head;
++    let mut ai = list as *const stack_addrinfo;
++    let mut result = 0;
++    while !ai.is_null() {
++        let new = copy_addrinfo(ai);
++        if new.is_null() {
++            result = EAI_MEMORY;
++            break;
++        }
++        *tail = new;
++        tail = &mut (*new).ai_next;
++        ai = (*ai).ai_next;
++    }
++    // RS_freeaddrinfo(), LVO 135
++    libcall!(base, 135, fn(*mut stack_addrinfo) -> (), list);
++    if result != 0 {
++        freeaddrinfo(head);
++        return result;
++    }
++    *res = head;
++    0
++}
++
++#[no_mangle]
++pub unsafe extern "C" fn gai_strerror(errcode: c_int) -> *const c_char {
++    let base = thread_base();
++    if base.is_null() {
++        return c"name resolution is not available".as_ptr();
++    }
++    // RS_gai_strerror(), LVO 137
++    let msg = libcall!(base, 137, fn(c_long) -> *const c_char, errcode as c_long);
++    if msg.is_null() {
++        c"unknown name resolution error".as_ptr()
++    } else {
++        msg
++    }
++}
++
++#[no_mangle]
++pub unsafe extern "C" fn hstrerror(_errcode: c_int) -> *const c_char {
++    c"host name lookup failure".as_ptr()
++}
++
++/// Whether `fd` is a socket in this thread's descriptor table.
++unsafe fn is_thread_socket(base: *mut c_void, fd: c_int) -> bool {
++    let mut ty: c_int = 0;
++    let mut len = core::mem::size_of::<c_int>() as socklen_t;
++    let errno = *__stdc_geterrnoptr();
++    let ok = libcall!(base, 16, fn(c_int, c_int, c_int, *mut c_void, *mut socklen_t) -> c_int,
++        fd, SOL_SOCKET, SO_TYPE, &mut ty as *mut c_int as *mut c_void, &mut len) == 0;
++    *__stdc_geterrnoptr() = errno;
++    ok
++}
++
++/// fd_sets for WaitSelect(): arrays of 32-bit words, `NWORDS` on the stack,
++/// larger ones allocated.
++const NWORDS: usize = 64;
++
++struct FdSets {
++    words: usize,
++    heap: *mut u32,
++    stack: [[u32; NWORDS]; 3],
++}
++
++impl FdSets {
++    unsafe fn new(maxfd: c_int) -> Option<FdSets> {
++        let words = maxfd as usize / 32 + 1;
++        let mut sets = FdSets { words, heap: ptr::null_mut(), stack: [[0; NWORDS]; 3] };
++        if words > NWORDS {
++            sets.heap = malloc(3 * words * 4) as *mut u32;
++            if sets.heap.is_null() {
++                return None;
++            }
++            ptr::write_bytes(sets.heap, 0, 3 * words);
++        }
++        Some(sets)
++    }
++
++    fn set(&mut self, which: usize) -> *mut u32 {
++        if self.heap.is_null() {
++            self.stack[which].as_mut_ptr()
++        } else {
++            unsafe { self.heap.add(which * self.words) }
++        }
++    }
++
++    unsafe fn add(&mut self, which: usize, fd: c_int) {
++        *self.set(which).add(fd as usize / 32) |= 1 << (fd as u32 % 32);
++    }
++
++    unsafe fn has(&mut self, which: usize, fd: c_int) -> bool {
++        *self.set(which).add(fd as usize / 32) & (1 << (fd as u32 % 32)) != 0
++    }
++}
++
++impl Drop for FdSets {
++    fn drop(&mut self) {
++        if !self.heap.is_null() {
++            unsafe { free(self.heap as *mut c_void) };
++        }
++    }
++}
++
++/// poll() over WaitSelect(). Descriptors that are not sockets of this thread
++/// (posixc files, consoles, pipes) are reported ready for what was asked, as
++/// select() would for a regular file; with any of them ready the sockets are
++/// only checked, not waited for.
++#[no_mangle]
++pub unsafe extern "C" fn poll(fds: *mut pollfd, nfds: nfds_t, timeout: c_int) -> c_int {
++    let fds = core::slice::from_raw_parts_mut(fds, nfds as usize);
++    let base = current_base();
++    let mut ready = 0;
++    let mut maxfd = -1;
++    for p in fds.iter_mut() {
++        p.revents = 0;
++        if p.fd < 0 {
++            continue;
++        }
++        if !base.is_null() && is_thread_socket(base, p.fd) {
++            maxfd = maxfd.max(p.fd);
++        } else {
++            p.revents = p.events & (POLLIN | POLLOUT);
++            if p.revents != 0 {
++                ready += 1;
++            }
++        }
++    }
++    if maxfd < 0 {
++        // nothing to wait for but the timeout
++        if ready == 0 && timeout != 0 {
++            loop {
++                usleep(if timeout < 0 { 1_000_000 } else { timeout as c_uint * 1000 });
++                if timeout >= 0 {
++                    break;
++                }
++            }
++        }
++        return ready;
++    }
++
++    let Some(mut sets) = FdSets::new(maxfd) else {
++        *__stdc_geterrnoptr() = ENOMEM;
++        return -1;
++    };
++    for p in fds.iter() {
++        if p.fd < 0 || p.fd > maxfd || p.revents != 0 {
++            continue;
++        }
++        if p.events & POLLIN != 0 {
++            sets.add(0, p.fd);
++        }
++        if p.events & POLLOUT != 0 {
++            sets.add(1, p.fd);
++        }
++        if p.events & POLLPRI != 0 {
++            sets.add(2, p.fd);
++        }
++    }
++    let mut tv = timeval { tv_sec: 0, tv_usec: 0 };
++    let tvp = if ready != 0 {
++        &mut tv as *mut timeval
++    } else if timeout < 0 {
++        ptr::null_mut()
++    } else {
++        tv.tv_sec = (timeout / 1000) as time_t;
++        tv.tv_usec = ((timeout % 1000) * 1000) as suseconds_t;
++        &mut tv as *mut timeval
++    };
++    let (r, w, e) = (sets.set(0), sets.set(1), sets.set(2));
++    // WaitSelect(), LVO 21
++    let n = libcall!(base, 21,
++        fn(c_int, *mut u32, *mut u32, *mut u32, *mut timeval, *mut u32) -> c_int,
++        maxfd + 1, r, w, e, tvp, ptr::null_mut());
++    if n < 0 {
++        return -1;
++    }
++    for p in fds.iter_mut() {
++        if p.fd < 0 || p.fd > maxfd || p.revents != 0 {
++            continue;
++        }
++        if p.events & POLLIN != 0 && sets.has(0, p.fd) {
++            p.revents |= POLLIN;
++        }
++        if p.events & POLLOUT != 0 && sets.has(1, p.fd) {
++            p.revents |= POLLOUT;
++        }
++        if p.events & POLLPRI != 0 && sets.has(2, p.fd) {
++            p.revents |= POLLPRI;
++        }
++        if p.revents != 0 {
++            ready += 1;
++        }
++    }
++    ready
 +}
 diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/vendor/libc-0.2.185/src/unix/mod.rs rustc-1.98.1-src/vendor/libc-0.2.185/src/unix/mod.rs
 --- rustc-1.98.1-src.orig/vendor/libc-0.2.185/src/unix/mod.rs	2026-09-01 06:56:03.000000000 +0000

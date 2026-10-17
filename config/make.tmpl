@@ -3737,8 +3737,9 @@ endif
 #------------------------------------------------------------------------------
 # Generate the cargo config of a program built for the target: its own
 # [patch.crates-io] entries (the stores' come from their own files), the
-# target linker, the build directory, and the AROS_CC/AROS_AR environment
-# build scripts compile C files with.
+# target linker, the path remapping of $(RUST_REMAP_FLAGS), the build
+# directory, and the AROS_CC/AROS_AR environment build scripts compile C
+# files with.
 #
 # Arguments:
 #
@@ -3769,6 +3770,9 @@ endif
 	    $(ECHO) '' ; \
 	    $(ECHO) '[target.$(RUST_TARGET_TRIPLE)]' ; \
 	    $(ECHO) 'linker = "$(TARGET_RUST_LINKER)"' ; \
+	    $(ECHO) 'rustflags = [' ; \
+	    for f in $(RUST_REMAP_FLAGS) ; do $(ECHO) "    \"$$f\"," ; done ; \
+	    $(ECHO) ']' ; \
 	    $(ECHO) '' ; \
 	    $(ECHO) '[build]' ; \
 	    $(ECHO) 'target-dir = "%(targetdir)"' ; \
