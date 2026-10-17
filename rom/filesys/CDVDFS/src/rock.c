@@ -155,7 +155,7 @@ int Get_System_Use_Field
                 p_index--;
             else
             {
-                unsigned int len = slen < p_buf_len ? slen : p_buf_len;
+                unsigned int len = slen < (unsigned int)p_buf_len ? slen : (unsigned int)p_buf_len;
                 if (len != 0)
                     CopyMem(field, p_buf, len);
                 return 1;
@@ -175,7 +175,7 @@ int Get_System_Use_Field
             offset = AROS_BE2LONG(encoded[1]);
             length = AROS_BE2LONG(encoded[2]);
             if (offset >= 2048 || length < 4 || length > 0xffffffffUL - offset ||
-                newsector > 0xffffffffUL - ((offset + length - 1) >> 11))
+                newsector > 0x7fffffffUL - ((offset + length - 1) >> 11))
                 return 0;
 
             /* Brent's cycle check: constant space, no limit on valid chains. */
@@ -353,7 +353,9 @@ int Is_A_Symbolic_Link(VOLUME *p_volume, directory_record *p_dir, uint32_t *amig
 	if (!Get_System_Use_Field(p_volume,p_dir,"PX",(char *)&px,sizeof(px),0))
 		return 0;
     if (px.length < 12)
+    {
         return 0;
+    }
 	*amiga_mode = 0;
 	if (!(px.mode & S_IXUSR))
 		*amiga_mode |= FIBF_EXECUTE;
@@ -383,8 +385,13 @@ char out[530];
 int index = 0;
 int len;
 int offs;
+int continued = 0;
 char c;
 
+    if (p_buf_len <= 0)
+    {
+        return 0;
+    }
 	out[0] = 0;
 	for (;;)
 	{
@@ -393,13 +400,17 @@ char c;
 					(p_obj->volume,OBJ(p_obj,dir),"SL",(char *)buf,sizeof(buf),index)
 			)
 		{
-			return (index == 0) ? 0 : 1;
+            return 0;
 		}
 
+        if (buf[2] < 7)
+            return 0;
 		offs = 5;
 		for (;;)
 		{
 
+            if (offs + 2 > buf[2] || buf[offs+1] > buf[2] - offs - 2)
+                return 0;
 			if (StrLen (out) > 256)
 				return 0;
 
@@ -415,10 +426,17 @@ char c;
 					if (!parent1)
 						return 0;
 					parent2 = Find_Parent(parent1);
-					if (!parent2)
-						return 0;
-					if (!Full_Path_Name(parent2, fullpath, sizeof (fullpath)))
-						return 0;
+                    if (!parent2)
+                    {
+                        Close_Object(parent1);
+                        return 0;
+                    }
+                    if (!Full_Path_Name(parent2, fullpath, sizeof(fullpath)))
+                    {
+                        Close_Object(parent1);
+                        Close_Object(parent2);
+                        return 0;
+                    }
 					Close_Object(parent1);
 					Close_Object(parent2);
 					StrCat (out, fullpath);
@@ -436,8 +454,11 @@ char c;
 				char fullpath[256];
 					if (!parent)
 						return 0;
-					if (!Full_Path_Name(parent, fullpath, sizeof (fullpath)))
-						return 0;
+                    if (!Full_Path_Name(parent, fullpath, sizeof(fullpath)))
+                    {
+                        Close_Object(parent);
+                        return 0;
+                    }
 					Close_Object(parent);
 					StrCat (out, fullpath);
 					if (out[1] != 0)
@@ -445,26 +466,36 @@ char c;
 				}
 			}
 
-			if (out[0] && (c = out[StrLen(out)-1]) != ':' && c != '/')
+            if (!continued && !(buf[offs] & 2) &&
+                out[0] && (c = out[StrLen(out)-1]) != ':' && c != '/')
 				StrCat (out, "/");
 
+            if ((buf[offs] & 4) && !(index == 0 && offs == 5))
+                StrCat(out, "/"); /* AmigaDOS parent component */
 			if (buf[offs] & 32) /* host name */
 				StrCat (out, "AMIGA");
 
 			len = StrLen (out);
-			CopyMem(buf + offs, out + len, buf[offs+1]);
+			CopyMem(buf + offs + 2, out + len, buf[offs+1]);
 			out[len + buf[offs+1]] = 0;
 
+            continued = buf[offs] & 1;
 			offs += 2 + buf[offs+1];
 			if (offs >= buf[2])
 			break;
 		}
 		if (!(buf[4] & 1)) /* continue flag */
+        {
+            if (continued)
+                return 0;
 			break;
+        }
 		index++;
 	}
-	CopyMem(out, p_buf, p_buf_len-1);
-	p_buf[p_buf_len-1] = 0;
+    len = StrLen(out);
+    if (len >= p_buf_len)
+        return 0;
+    CopyMem(out, p_buf, len + 1);
 	return 1;
 }
 
@@ -491,7 +522,7 @@ struct cl {
 
 	if (!Get_System_Use_Field(p_volume, p_dir,"CL",(char *)&buf,sizeof(buf),0))
 		return -1;
-    else if (buf.length[0] < 12)
+    else if ((unsigned char)buf.length[0] < 12)
         return -1;
 	else
 #if AROS_BIG_ENDIAN
@@ -516,7 +547,7 @@ struct pl {
 
 	if (!Get_System_Use_Field(p_volume,p_dir,"PL",(char *)&buf,sizeof(buf),0))
 		return -1;
-    else if (buf.length[0] < 12)
+    else if ((unsigned char)buf.length[0] < 12)
         return -1;
 	else
 #if AROS_BIG_ENDIAN
