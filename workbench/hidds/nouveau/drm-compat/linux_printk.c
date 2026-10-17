@@ -7,6 +7,7 @@
 #include <proto/dos.h>
 #include <dos/dostags.h>
 #include <dos/var.h>
+#include <dos/dos.h>
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -452,10 +453,47 @@ static void nlog_flusher(void)
         if (!created)
         {
             char full[160];
+            char stamp[112];
+            struct DateStamp ds;
+            int    n;
 
             if (!NameFromFH(fh, full, sizeof(full)))
                 strcpy(full, "?");
-            bug("[nouveau] logging to %s (%s)\n", name, full);
+
+            /*
+             * Stamp the boot.  A stale log is otherwise indistinguishable from a fresh
+             * one: the file on disk is the previous boot's, unchanged, and reads happily.
+             * This is not hypothetical -- the driver announces which file it opened on
+             * serial, and a reader who has just rebooted finds that announcement in a
+             * log written by the boot before, which reads as this boot's output.
+             *
+             * The token is a DOS DateStamp, printed raw in its own units rather than
+             * converted to a calendar date: converting it would mean ~20 lines of civil
+             * date arithmetic, which a driver log header does not justify.  ds_Tick runs
+             * at 1/50 s inside the current minute, so two boots cannot produce the same
+             * stamp.  The clock does not need to be CORRECT -- the stamp only has to be
+             * the same on serial and in the file within one boot, and different between
+             * boots.
+             *
+             * EClock() would be the obvious choice and is NOT available on x86_64: it is
+             * absent from the SDK (no declaration, no clib definition, no inline
+             * wrapper), so it does not link.  ReadEClock() does exist but needs
+             * timer.device opened, which would be a new dependency here.
+             *
+             * This write is the first one after the MODE_NEWFILE truncate above, so the
+             * stamp is line 1 of the file for this boot.
+             */
+            memset(&ds, 0, sizeof(ds));
+            DateStamp(&ds);
+            n = snprintf(stamp, sizeof(stamp),
+                         "--- nouveau log, boot %ld/%ld/%ld"
+                         "  (d=days since 1978-01-01, m=minute, t=1/50s) ---\n",
+                         (long)ds.ds_Days, (long)ds.ds_Minute, (long)ds.ds_Tick);
+            if (n > 0)
+                Write(fh, stamp, n);
+            bug("[nouveau] logging to %s (%s) [boot %ld/%ld/%ld]\n",
+                name, full,
+                (long)ds.ds_Days, (long)ds.ds_Minute, (long)ds.ds_Tick);
             created = TRUE;
         }
         else
