@@ -666,13 +666,13 @@ struct ifnet *ifp;
 }
 
 /*
- * rt_purgeif - delete every route that resolves through ifp, across all
- * address families.  Because it matches on rt_ifp it catches cloning prefix
- * routes, their cloned host children and ARP/NDP llinfo entries alike - each
- * carries rt_ifp == ifp - so no stale route is left pointing at an interface
- * whose addresses are about to be removed (such a dangling route otherwise
- * makes re-adding the prefix fail EEXIST, or leaves rt_ifa pointing at freed
- * ifaddr storage).
+ * rt_purgeif - delete every route that resolves through ifp, in family af
+ * (AF_UNSPEC: all families).  Because it matches on rt_ifp it catches cloning
+ * prefix routes, their cloned host children and ARP/NDP llinfo entries alike -
+ * each carries rt_ifp == ifp - so no stale route is left pointing at an
+ * interface whose addresses are about to be removed (such a dangling route
+ * otherwise makes re-adding the prefix fail EEXIST, or leaves rt_ifa pointing
+ * at freed ifaddr storage).
  *
  * One route is removed per radix-tree scan and the tree is then rescanned, so
  * it is never walked while rtrequest()/rn_delete() is mutating it.  The work
@@ -680,8 +680,9 @@ struct ifnet *ifp;
  * stops the loop if a route cannot be removed rather than spinning on it.
  */
 void
-rt_purgeif(ifp)
+rt_purgeif(ifp, af)
 struct ifnet *ifp;
+int af;
 {
     register struct radix_node_head *rnh;
     spl_t s = splnet();
@@ -691,6 +692,8 @@ struct ifnet *ifp;
     for(rnh = radix_node_head; rnh; rnh = rnh->rnh_next) {
         struct rtentry *rt, *last = 0;
 
+        if(af != AF_UNSPEC && rnh->rnh_af != af)
+            continue;
         while((rt = rt_find_ifroute(rnh->rnh_treetop, ifp)) != 0
                 && rt != last) {
             last = rt;
