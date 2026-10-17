@@ -258,7 +258,7 @@ struct route_cb {
 		(rt)->rt_refcnt--;
 
 struct ifnet;
-void	rt_purgeif __P((struct ifnet *));
+void	rt_purgeif __P((struct ifnet *, int));
 
 #endif
 #endif
