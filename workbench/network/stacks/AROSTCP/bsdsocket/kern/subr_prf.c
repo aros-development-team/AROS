@@ -137,7 +137,10 @@ panic(const char *fmt, ...)
          * Open a local IntuitionBase for the EasyRequest()
          */
         if((IntuitionBase = OpenLibrary("intuition.library", 37L)) != NULL) {
-            EasyRequest(NULL, &panicES, NULL, (IPTR)buffer);
+            IPTR args[] = {(IPTR)buffer};
+            /* Use the local base; the varargs wrapper references a global
+             * IntuitionBase and would make the library mandatory at startup. */
+            EasyRequestArgs(NULL, &panicES, NULL, args);
             CloseLibrary(IntuitionBase);
             IntuitionBase = NULL;
         }
