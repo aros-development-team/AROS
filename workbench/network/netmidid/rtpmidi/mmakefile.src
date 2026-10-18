@@ -10,8 +10,6 @@ FILES := rtpmidi sender receiver timing
 
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include
 
-#MM- workbench-network : workbench-network-netmidi
-#MM- workbench-network-netmidi : linklibs-rtpmidi
 #MM linklibs-rtpmidi : includes
 
 %build_linklib mmake=linklibs-rtpmidi \
