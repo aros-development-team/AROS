@@ -171,7 +171,8 @@ int netmidi2_identity(const struct netmidi2_command_packet *command,
 {
     size_t name_words = command->csd1;
 
-    if (name_words > command->payload_words)
+    if (!name || !product_id || !name_size || !id_size ||
+        name_words > command->payload_words)
         return -1;
     copy_text(name, name_size, command->payload, name_words * 4);
     copy_text(product_id, id_size, command->payload + name_words * 4,
@@ -587,9 +588,19 @@ int netmidi2_receive_from(struct netmidi2_session *session, uint64_t peer,
             if (session->host)
                 (void)netmidi2_add_nak(out, NETMIDI2_NAK_NOT_EXPECTED, c);
             else if (session->state == NETMIDI2_INVITING) {
-                (void)netmidi2_identity(c, session->peer_name, sizeof(session->peer_name),
-                                      session->peer_product_id,
-                                      sizeof(session->peer_product_id));
+                char peer_name[sizeof(session->peer_name)];
+                char peer_product_id[sizeof(session->peer_product_id)];
+
+                if (netmidi2_identity(c, peer_name, sizeof(peer_name),
+                                     peer_product_id, sizeof(peer_product_id)) ||
+                    !peer_name[0] || !peer_product_id[0]) {
+                    (void)netmidi2_add_nak(out, NETMIDI2_NAK_MALFORMED, c);
+                    break;
+                }
+                copy_text(session->peer_name, sizeof(session->peer_name),
+                          (const uint8_t *)peer_name, sizeof(peer_name));
+                copy_text(session->peer_product_id, sizeof(session->peer_product_id),
+                          (const uint8_t *)peer_product_id, sizeof(peer_product_id));
                 start_session(session);
             } else if (!active) {
                 bye(out, NETMIDI2_BYE_NO_PENDING_SESSION);
