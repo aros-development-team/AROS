@@ -92,7 +92,7 @@ BonamiClose(struct BonamiIntern *base)
 static int
 BonamiExpunge(struct BonamiIntern *base)
 {
-    return IsListEmpty((struct List *)&base->bi_Openers);
+    return base->bi_Openers.mlh_Head->mln_Succ == NULL;
 }
 
 ADD2INITLIB(BonamiInit, 0);

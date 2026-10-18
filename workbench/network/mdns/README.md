@@ -61,7 +61,9 @@ other hosts' services and names (browse, resolve, lookup) is to follow.
   mdnsd then answers for that name too.
 - **Clients that go away.** With a task's last `CloseLibrary()` what it
   registered is withdrawn. A task that ends without closing is noticed
-  within a few seconds, by its absence from the system's task lists.
+  within a few seconds through its stable Exec task ID. `FindTaskByPID()`
+  checks running/spinning tasks on SMP as well as ready/waiting tasks;
+  a new task reusing an old task's address does not inherit its services.
 
 ## bonami.library
 
@@ -76,6 +78,44 @@ and the reply is waited for. Without mdnsd the calls return
 | `RegisterServiceA(tags)` | offers a service; returns at once |
 | `UpdateServiceA(ref, tags)` | changes its text or port |
 | `DeregisterService(ref)` | withdraws it |
+
+The remaining upstream ABI slots are present as compatibility stubs.
+`BrowseServiceTypeA`, `ResolveServiceA`, `MakeTXTRecordA`, `GetMDNSStatusA`,
+`InquiryFromNIPCTagsA` and `PublishNIPCEntitiesA` return `MDNSERR_NOTREADY`.
+`StopBrowse`, `StopResolve`, `FreeTXTRecord` and `UnpublishNIPCEntitiesA`
+do nothing. They invoke no callbacks, change no output buffers and take
+ownership of no memory. Public headers include the upstream handles,
+events, flags, service snapshots, tags and Envoy definitions. These
+definitions preserve source compatibility; only the registration tags
+documented by the implemented functions are acted on in this release.
+
+### Task lifetime and compatibility
+
+The first fifteen slots, their order/registers and existing tag/error values
+follow upstream Bonami. The AROS implementation is version 41.1. Its daemon
+and library must be installed together: their private IPC is now version 2.
+
+Registration lifetime deliberately differs from upstream Bonami:
+
+- `CloseMDNSEngine()` withdraws the calling task's registrations; it does
+  not merely drop an engine reference and does not stop the system daemon.
+- Only the registering task can update or deregister its service. Another
+  task's update returns `MDNSERR_BADPARAM`; its deregister call does nothing.
+  Passing a reference to a main task does not transfer ownership.
+- A duplicate local instance name/type returns `MDNSERR_DUPLICATE`.
+- The registering task's final library close or termination withdraws its
+  services, even while other tasks of the program still have the library
+  open. Keep the registering task alive for as long as publication is wanted.
+
+Instance names are one DNS label (at most 63 bytes). Literal dots are
+rejected with `MDNSERR_BADPARAM` until presentation escaping is supported.
+Host names supplied for proxies must be a single label or a .local name,
+and must differ from this host's current and base names. Proxy host names
+are not independently probed; the client supplies a name/address it may
+advertise. A proxy name and address must be supplied together.
+
+`MDNS_TimeToLive` is accepted on registration and update in the range
+1..4500 seconds. An invalid TTL rejects the update before applying changes.
 
 ```c
 #include <proto/bonami.h>
@@ -117,7 +157,7 @@ Started by hand it runs until Ctrl-C.
 - The number after a name that was lost is not remembered when mdnsd
   restarts: it starts from the system's name again.
 - At most eight interfaces.
-- A service's text is at most 256 characters, its instance name 64.
+- A service's text is at most 256 characters, its instance name 63 bytes.
 - A question for the service types is not delayed, known answers that
   come in a second packet are not waited for, and a record that went to
   the group less than a second ago is sent again all the same.

@@ -70,7 +70,11 @@
         None.
 
     NOTES
-        The task's last CloseLibrary() does the same.
+        This differs from upstream Bonami, where the call only dropped an
+        engine reference. Here it releases the calling task's registrations.
+        The task's last CloseLibrary() does the same. A registration is also
+        withdrawn when its registering task ends, even if another task of
+        the program still has the library open.
 
     SEE ALSO
         OpenMDNSEngine(), DeregisterService()
@@ -123,6 +127,18 @@
         which takes about a second, and announced when no other host has
         it; when one has, the service is announced as "Name (2)", then
         "Name (3)".
+
+        An instance is one DNS label, at most 63 bytes. This release rejects
+        literal dots with MDNSERR_BADPARAM instead of escaping them. Local
+        duplicate name/type registrations are rejected with MDNSERR_DUPLICATE,
+        unlike upstream Bonami. Register from a task that stays alive for
+        the desired lifetime; another task keeping the library open does
+        not keep this registration alive.
+
+        A proxy target is a single host label or a name in .local, with an
+        address. It must differ from this host's current and base names.
+        The proxy host name itself is not probed by this implementation;
+        the caller must provide a name it is entitled to advertise.
 
     SEE ALSO
         UpdateServiceA(), DeregisterService()
@@ -178,6 +194,7 @@
         ref  - the handle RegisterServiceA() gave.
         tags - MDNS_TXTRecord (STRPTR): the new text, in place of the old.
                MDNS_Port (UWORD): the new port.
+               MDNS_TimeToLive (ULONG): seconds, 1 to 4500.
                A tag that is not given leaves its value alone; the others
                of RegisterServiceA() are not looked at.
 
@@ -185,7 +202,10 @@
         MDNS_OK, or MDNSERR_BADPARAM, MDNSERR_NOTFOUND, MDNSERR_NOENGINE.
 
     NOTES
-        Only the task that registered a service may change it.
+        Only the task that registered a service may change it; a call from
+        another task returns MDNSERR_BADPARAM. This differs from upstream
+        Bonami. The registration remains owned by its original task even
+        if its handle is passed to another task.
 
     SEE ALSO
         RegisterServiceA()
@@ -236,6 +256,11 @@
 
     RESULT
         None.
+
+    NOTES
+        Unlike upstream Bonami, a call from a task other than the registering
+        task is ignored. CloseMDNSEngine(), that task's final CloseLibrary(),
+        or its termination withdraws its registrations as well.
 
     SEE ALSO
         RegisterServiceA(), CloseMDNSEngine()
