@@ -213,8 +213,9 @@ static int FNAME_SDHOST(SDHostInit)(struct SDCardBase *SDCardBase)
                 priv->dma_cb_raw_size = cb_alloc_size;
                 priv->dma_cb = (struct BCM2708DMACB *)(((IPTR)cb_raw + 31) & ~31);
 
-                /* A lite channel is sufficient — SDHOST is DREQ-paced. */
-                priv->dma_channel = DMAAllocChannel(0);
+                /* A lite channel is sufficient — SDHOST is DREQ-paced.
+                 * The IRQ lets the bus task sleep through each transfer. */
+                priv->dma_channel = DMAAllocChannel(DMACHF_IRQ);
                 if (priv->dma_channel < 0)
                 {
                     bug("[SDHost] %s: No DMA channel available — driver requires DMA\n",
@@ -223,17 +224,18 @@ static int FNAME_SDHOST(SDHostInit)(struct SDCardBase *SDCardBase)
                 }
 
                 /* Allocate cache-line-aligned bounce buffer for DMA reads.
-                 * CacheClearE on unaligned buffers corrupts adjacent memory. */
+                 * CacheClearE on unaligned buffers corrupts adjacent memory,
+                 * and lines are 64 bytes on Cortex-A7/A53. */
                 {
                     /* Sized to hold one full SD_CHUNK_BLOCKS transfer
                      * (128 sectors * 512 B = 64 KB).  Caller buffers in
                      * high virtual memory must bounce through here. */
-                    ULONG bounce_alloc = 65536 + 31;
+                    ULONG bounce_alloc = 65536 + 63;
                     APTR bounce_raw = AllocMem(bounce_alloc, MEMF_PUBLIC | MEMF_CLEAR);
                     if (bounce_raw)
                     {
                         priv->dma_bounce_raw = bounce_raw;
-                        priv->dma_bounce = (APTR)(((IPTR)bounce_raw + 31) & ~31);
+                        priv->dma_bounce = (APTR)(((IPTR)bounce_raw + 63) & ~63);
                         priv->dma_bounce_size = 65536;
                     }
                     else
