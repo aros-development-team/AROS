@@ -28,7 +28,7 @@
 /* Library identity (subsystem name, not API prefix) */
 
 #define BONAMI_LIB_VERSION   41
-#define BONAMI_LIB_REVISION  1
+#define BONAMI_LIB_REVISION  2
 
 /*------------------------------------------------------------------------*/
 /* DNS-SD well-known values */

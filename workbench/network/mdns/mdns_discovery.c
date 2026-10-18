@@ -268,7 +268,7 @@ static BOOL valid_instance(const UBYTE *key)
     const UBYTE *suffix;
     LONG n;
 
-    if (key[0] == 0 || key[0] > 63) {
+    if (key[0] == 0 || key[0] > 63 || memchr(key + 1, 0, key[0]) != NULL) {
         return FALSE;
     }
     suffix = key + key[0] + 1;
@@ -318,7 +318,7 @@ void mdnsDiscoveryRecord(struct MDNSDaemon *md, const struct MDNSRecord *record,
     } else if (record->type == DNS_TYPE_TXT) {
         LONG at = 0;
 
-        if (!valid_instance(key) || size > MDNS_DISCOVERY_TXT_MAX) {
+        if (!valid_instance(key) || size == 0 || size > MDNS_DISCOVERY_TXT_MAX) {
             return;
         }
         while (at < size) {
@@ -339,7 +339,15 @@ void mdnsDiscoveryRecord(struct MDNSDaemon *md, const struct MDNSRecord *record,
     for (i = 0; i < DISC_RECORDS; i++) {
         struct DiscoveryRecord *r = &d->records[i];
         BOOL match = r->type == record->type && r->link == link && same_key(r->key, key);
-        BOOL identical = match && r->length == size && memcmp(r->data, data, size) == 0;
+        BOOL equalData = r->length == size && memcmp(r->data, data, size) == 0;
+        BOOL identical;
+
+        if (record->type == DNS_TYPE_PTR) {
+            equalData = same_key(r->data, data);
+        } else if (record->type == DNS_TYPE_SRV) {
+            equalData = memcmp(r->data, data, 6) == 0 && same_key(r->data + 6, data + 6);
+        }
+        identical = match && equalData;
 
         if (identical) {
             slot = r;
@@ -387,6 +395,12 @@ static void send_question(struct MDNSDaemon *md, const UBYTE *key, UWORD type, U
     ULONG now = mdnsTicks();
     struct MDNSDiscovery *d = md->md_Discovery;
 
+    if (link == 0) {
+        for (i = 0; i < md->md_IfCount; i++) {
+            send_question(md, key, type, md->md_Ifs[i].mi_Addr);
+        }
+        return;
+    }
     memset(pkt, 0, sizeof(struct MDNSHeader));
     pkt[5] = 1;
     memcpy(pkt + 12, key, n);
@@ -500,6 +514,7 @@ void mdnsDiscoveryTick(struct MDNSDaemon *md)
     struct MDNSDiscovery *d = md->md_Discovery;
     ULONG now = mdnsTicks();
     LONG i, j;
+    BOOL interested = FALSE;
 
     if (d == NULL) {
         return;
@@ -533,6 +548,9 @@ void mdnsDiscoveryTick(struct MDNSDaemon *md)
                 s->resolved = TRUE;
             }
         }
+        if (!s->failed && (!s->resolve || !s->resolved)) {
+            interested = TRUE;
+        }
         if (s->failed || (s->resolve && s->resolved) || md->md_IfCount == 0 ||
             md->md_Socket < 0 || !due(now, s->nextQuery)) {
             continue;
@@ -551,7 +569,7 @@ void mdnsDiscoveryTick(struct MDNSDaemon *md)
     }
     /* Resolve missing components at most once per second; independently
      * refresh records at 80/85/90/95 percent of their own TTL. */
-    if (!due(now, d->lastRefresh + 50) || md->md_IfCount == 0 || md->md_Socket < 0) {
+    if (!interested || !due(now, d->lastRefresh + 50) || md->md_IfCount == 0 || md->md_Socket < 0) {
         return;
     }
     d->lastRefresh = now;
@@ -565,7 +583,7 @@ void mdnsDiscoveryTick(struct MDNSDaemon *md)
             send_question(md, r->key, r->type, r->link);
             r->refreshStep++;
             r->refresh = r->received + r->ttl * (40 + 2 * r->refreshStep) +
-                (r->ttl * r->refreshStep) / 2;
+                (r->ttl * r->refreshStep) / 2 + r->ttl * (r->received % 2);
         }
         if (r->type == DNS_TYPE_PTR) {
             if (find_record(d, r->data, r->link, DNS_TYPE_SRV, now) == NULL) {
@@ -603,6 +621,16 @@ LONG mdnsDiscoveryMessage(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
         return MDNSERR_BADPARAM;
     }
     if (create) {
+        LONG owned = 0;
+
+        for (i = 0; i < DISC_SESSIONS; i++) {
+            if (d->sessions[i].handle != NULL && d->sessions[i].owner == msg->mi_TaskID) {
+                owned++;
+            }
+        }
+        if (owned >= 4) {
+            return MDNSERR_BUSY;
+        }
         for (i = 0; i < DISC_SESSIONS; i++) {
             if (d->sessions[i].handle == NULL) {
                 s = &d->sessions[i];
@@ -631,7 +659,7 @@ LONG mdnsDiscoveryMessage(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
         s->owner = msg->mi_TaskID;
         s->handle = (APTR)d->nextHandle++;
         s->interval = 50;
-        s->nextQuery = mdnsTicks() + 1 + (mdnsTicks() + s->owner) % 5;
+        s->nextQuery = mdnsTicks() + 1 + (mdnsTicks() + s->owner) % 6;
         s->deadline = mdnsTicks() + 250; /* bounded asynchronous resolution */
         msg->mi_Handle = s->handle;
         msg->mi_DaemonID = md->md_DaemonID;
