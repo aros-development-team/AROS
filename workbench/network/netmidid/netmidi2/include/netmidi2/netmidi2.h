@@ -106,7 +106,9 @@ int netmidi2_add_nak(struct netmidi2_writer *writer, uint8_t reason,
                    const struct netmidi2_command_packet *original);
 
 /* Reads the UMP Endpoint Name and Product Instance Id of an Invitation or
- * Invitation Reply into NUL-terminated buffers. Returns -1 if malformed. */
+ * Invitation Reply into NUL-terminated buffers. Both outputs must be
+ * non-NULL with nonzero capacity. Returns -1 without changing either
+ * output if the capacities/pointers or the encoded lengths are invalid. */
 int netmidi2_identity(const struct netmidi2_command_packet *command,
                     char *name, size_t name_size, char *product_id, size_t id_size);
 
