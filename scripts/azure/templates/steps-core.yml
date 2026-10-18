@@ -214,6 +214,7 @@ steps:
     fi
     rm -Rf $(AROSPACKAGEDIR)
   workingDirectory: '$(AROSBUILDSDIR)'
+  condition: ne( variables['SF_RSYNC_USER'], '' )
   displayName: 'Creating $(arosbuild.name) base package(s)'
 
 - script: |

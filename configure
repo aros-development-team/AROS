@@ -641,10 +641,10 @@ KERNEL_DBUS_INCLUDES
 KERNEL_DBUS_KOBJ
 DBUS_LIBFLAGS
 DBUS_CFLAGS
-jpegxl_toolchainsupport
 nouveau_toolchainsupport
-aros_enable_rust
+jpegxl_toolchainsupport
 target_rust_version
+aros_enable_rust
 java_target
 objc_target
 llvm_target_cpu
@@ -1024,10 +1024,10 @@ with_aros_toolchain_install
 with_binutils_version
 with_gcc_version
 with_llvm_version
-with_rust_version
 enable_objc
 enable_java
 enable_rust
+with_rust_version
 with_cpu
 with_fpu
 with_float
@@ -1822,7 +1822,8 @@ Optional Packages:
   --with-llvm-version=VERSION
                           Compile llvm-VERSION for AROS
   --with-rust-version=VERSION
-                          Compile rust-VERSION for AROS (default=1.98.1)
+                          Compile rust-VERSION for AROS
+                          (default=$default_rust_version)
   --with-cpu=<spec>       Specify minumum CPU (default=$gcc_default_cpu).
   --with-fpu=<spec>       Specify minumum FPU (default=$gcc_float_fpu).
   --with-float=<spec>     Specify floating point ABI
@@ -19875,12 +19876,23 @@ aros_kernel_cflags="$aros_kernel_cflags $aros_kernel_export_cflags"
 if test "$aros_target_variant" = ""; then
     aros_target_platform="$aros_target_arch-$aros_target_cpu"
 else
-    case "$target_os" in
-        pc)
+    case "$aros_target_variant" in
+        smp)
+            # SMP is a build flavour of the platform, not a platform of its
+            # own: keep the real platform name so that distfiles-$(platform)
+            # and AROS_ARCHITECTURE resolve exactly as for the non-SMP build
+            # (e.g. raspi-aarch64, not smp-aarch64).
             aros_target_platform="$aros_target_arch-$aros_target_cpu"
             ;;
         *)
-            aros_target_platform="$aros_target_variant-$aros_target_cpu"
+            case "$target_os" in
+                pc)
+                    aros_target_platform="$aros_target_arch-$aros_target_cpu"
+                    ;;
+                *)
+                    aros_target_platform="$aros_target_variant-$aros_target_cpu"
+                    ;;
+            esac
             ;;
     esac
 fi
@@ -20194,7 +20206,9 @@ host_has_libelf=$have_libelf
 #Rust related
 
 
+
 # jpegxl.datatype toolchain support (libjxl requires gcc >= 8)
+
 
 
 # DBUS related
@@ -21774,3 +21788,4 @@ if test -n "$aros_shared_cflags" ; then
     echo "SHARED_CFLAGS := $aros_shared_cflags" >> ${aros_hostcfg_dir}/host.cfg
     echo "SHARED_AR := $aros_shared_ar" >> ${aros_hostcfg_dir}/host.cfg
 fi
+
