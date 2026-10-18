@@ -1,4 +1,6 @@
 include $(SRCDIR)/config/aros.cfg
 
 #MM- workbench-devs-complete : workbench-devs-camd
-#MM- workbench-devs-camd : workbench-devs-camd-debugdriver
+#MM- workbench-devs-camd : workbench-devs-camd-debugdriver \
+#MM      workbench-devs-camd-applemidi \
+#MM      workbench-devs-camd-networkmidi2

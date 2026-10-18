@@ -3068,3 +3068,8 @@
 # Tracked, hand-written mmakefiles that predate mmakefile.src are unaffected,
 # since .gitignore does not untrack already-committed files.
 mmakefile
+
+# CAMD subsystem build files
+/workbench/devs/camd/mmakefile
+/workbench/devs/camd/applemidi/mmakefile
+/workbench/devs/camd/networkmidi2/mmakefile

@@ -1,0 +1,10 @@
+include $(SRCDIR)/config/aros.cfg
+
+#MM workbench-devs-camd-networkmidi2 : includes linklibs
+
+%build_prog mmake=workbench-devs-camd-networkmidi2 \
+    progname=networkmidi2 targetdir=$(AROS_DEVS)/Midi \
+    files=../common/netmididriver \
+    cppflags="-DNETMIDI_DRIVER_NETWORKMIDI2"
+
+%common
