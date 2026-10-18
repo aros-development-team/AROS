@@ -19,12 +19,12 @@
 #include <bonami/mdns.h>
 
 #define MDNS_IPC_PORT       "BonAmi"
-#define MDNS_IPC_VERSION    1
+#define MDNS_IPC_VERSION    2
 
 #define MDNS_IPC_REGISTER   1
 #define MDNS_IPC_UNREGISTER 2
 #define MDNS_IPC_UPDATE     3
-#define MDNS_IPC_RELEASE    12      /* drop everything mi_Task owns */
+#define MDNS_IPC_RELEASE    12      /* drop everything mi_TaskID owns */
 
 /* mi_Flags of MDNS_IPC_UPDATE: mi_TXT replaces the service's text. */
 #define MDNS_IPC_UPDF_TXT   0x00000001UL
@@ -50,7 +50,7 @@ struct MDNSIPCMsg
     UWORD           mi_Pad;
     ULONG           mi_HostAddr;    /* 0xAABBCCDD == A.B.C.D */
     ULONG           mi_TTL;         /* seconds, 0 for the defaults */
-    struct Task    *mi_Task;        /* the calling task */
+    ULONG           mi_TaskID;      /* GetETaskID() of the calling task */
 };
 
 #endif /* MDNSD_MDNS_IPC_H */

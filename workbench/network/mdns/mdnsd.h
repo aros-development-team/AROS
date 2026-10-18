@@ -61,7 +61,7 @@ struct MDNSRegisteredService
     ULONG           rs_HostAddr;    /* and its address */
     ULONG           rs_TTL;         /* of its records, 0 for the defaults */
     APTR            rs_ClientRef;   /* the handle the client has */
-    struct Task    *rs_Task;        /* the client that registered it */
+    ULONG           rs_TaskID;      /* stable ID of the registering task */
     ULONG           rs_NextTick;    /* mdnsTicks() of the next step */
     ULONG           rs_Answered;    /* md_PacketSerial it last answered */
     ULONG           rs_Multicast;   /* mdnsNow() when its records last went
@@ -189,7 +189,7 @@ LONG mdnsResponseBegin(struct MDNSDaemon *md, UBYTE *pkt);
 LONG mdnsRegAdd(struct MDNSDaemon *md, struct MDNSIPCMsg *msg);
 LONG mdnsRegUpdate(struct MDNSDaemon *md, const struct MDNSIPCMsg *msg);
 void mdnsRegRemove(struct MDNSDaemon *md, const struct MDNSIPCMsg *msg);
-void mdnsRegRelease(struct MDNSDaemon *md, const struct Task *task);
+void mdnsRegRelease(struct MDNSDaemon *md, ULONG taskID);
 void mdnsRegFree(struct MDNSDaemon *md);
 BOOL mdnsRegTick(struct MDNSDaemon *md);
 void mdnsRegAnnounceAll(struct MDNSDaemon *md);

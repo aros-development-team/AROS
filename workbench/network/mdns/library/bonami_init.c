@@ -17,20 +17,20 @@
 struct BonamiOpener
 {
     struct MinNode  bo_Node;
-    struct Task    *bo_Task;
+    ULONG           bo_TaskID;
     ULONG           bo_Count;
 };
 
 static struct BonamiOpener *
 find_opener(const struct BonamiIntern *base)
 {
-    const struct Task *me = FindTask(NULL);
+    ULONG me = GetETaskID(FindTask(NULL));
     struct BonamiOpener *opener;
 
     for (opener = (struct BonamiOpener *)base->bi_Openers.mlh_Head;
          opener->bo_Node.mln_Succ != NULL;
          opener = (struct BonamiOpener *)opener->bo_Node.mln_Succ) {
-        if (opener->bo_Task == me) {
+        if (opener->bo_TaskID == me) {
             return opener;
         }
     }
@@ -55,7 +55,7 @@ BonamiOpen(struct BonamiIntern *base)
     if (opener == NULL) {
         opener = AllocMem(sizeof(*opener), MEMF_CLEAR);
         if (opener != NULL) {
-            opener->bo_Task = FindTask(NULL);
+            opener->bo_TaskID = GetETaskID(FindTask(NULL));
             AddTail((struct List *)&base->bi_Openers,
                 (struct Node *)opener);
         }

@@ -874,7 +874,7 @@ mdnsRegAdd(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
     mdnsTextCopy(rs->rs_TXT, (LONG)sizeof(rs->rs_TXT), msg->mi_TXT);
     rs->rs_Port = msg->mi_Port;
     rs->rs_TTL = msg->mi_TTL;
-    rs->rs_Task = msg->mi_Task;
+    rs->rs_TaskID = msg->mi_TaskID;
     if (msg->mi_HostName[0] != '\0' && msg->mi_HostAddr != 0) {
         LONG at = 0;
 
@@ -909,7 +909,7 @@ mdnsRegUpdate(struct MDNSDaemon *md, const struct MDNSIPCMsg *msg)
     if (rs == NULL) {
         return MDNSERR_NOTFOUND;
     }
-    if (rs->rs_Task != msg->mi_Task) {
+    if (rs->rs_TaskID != msg->mi_TaskID) {
         return MDNSERR_BADPARAM;
     }
     if (msg->mi_Flags & MDNS_IPC_UPDF_TXT) {
@@ -940,20 +940,20 @@ mdnsRegRemove(struct MDNSDaemon *md, const struct MDNSIPCMsg *msg)
 {
     struct MDNSRegisteredService *rs = service_find(md, msg->mi_Handle);
 
-    if (rs != NULL && rs->rs_Task == msg->mi_Task) {
+    if (rs != NULL && rs->rs_TaskID == msg->mi_TaskID) {
         service_remove(md, rs);
     }
 }
 
 /* Withdraws every service a client registered. */
 void
-mdnsRegRelease(struct MDNSDaemon *md, const struct Task *task)
+mdnsRegRelease(struct MDNSDaemon *md, ULONG taskID)
 {
     struct Node *n, *next;
 
     for (n = md->md_Services.lh_Head; n->ln_Succ != NULL; n = next) {
         next = n->ln_Succ;
-        if (((struct MDNSRegisteredService *)n)->rs_Task == task) {
+        if (((struct MDNSRegisteredService *)n)->rs_TaskID == taskID) {
             service_remove(md, (struct MDNSRegisteredService *)n);
         }
     }

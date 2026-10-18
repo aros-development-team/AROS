@@ -140,7 +140,12 @@ bonamiSend(struct MDNSIPCMsg *msg)
     copy->mi_Msg.mn_ReplyPort = replyPort;
     copy->mi_Version = MDNS_IPC_VERSION;
     copy->mi_Result = MDNSERR_NOTREADY;
-    copy->mi_Task = FindTask(NULL);
+    copy->mi_TaskID = GetETaskID(FindTask(NULL));
+    if (copy->mi_TaskID == 0) {
+        FreeMem(copy, sizeof(*copy));
+        DeleteMsgPort(replyPort);
+        return MDNSERR_BADPARAM;
+    }
 
     /* mdnsd removes its port before it stops reading it, so a message sent
      * to a port found here is always answered. */

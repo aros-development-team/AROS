@@ -21,7 +21,8 @@
 void
 mdnsClientMessage(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
 {
-    if (msg->mi_Version != MDNS_IPC_VERSION) {
+    if (msg->mi_Version != MDNS_IPC_VERSION ||
+        msg->mi_Msg.mn_Length != sizeof(*msg) || msg->mi_TaskID == 0) {
         msg->mi_Result = MDNSERR_BADPARAM;
         return;
     }
@@ -45,7 +46,7 @@ mdnsClientMessage(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
         break;
     case MDNS_IPC_RELEASE:
         /* A client is gone: nothing of its may be announced any more. */
-        mdnsRegRelease(md, msg->mi_Task);
+        mdnsRegRelease(md, msg->mi_TaskID);
         msg->mi_Result = MDNS_OK;
         break;
     default:
@@ -54,47 +55,28 @@ mdnsClientMessage(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
     }
 }
 
-static BOOL
-task_alive(const struct Task *task)
-{
-    const struct Node *n;
-    BOOL alive = FALSE;
-
-    Disable();
-    for (n = SysBase->TaskReady.lh_Head; n->ln_Succ != NULL && !alive;
-        n = n->ln_Succ) {
-        alive = n == &task->tc_Node;
-    }
-    for (n = SysBase->TaskWait.lh_Head; n->ln_Succ != NULL && !alive;
-        n = n->ln_Succ) {
-        alive = n == &task->tc_Node;
-    }
-    Enable();
-    return alive;
-}
-
 /*
  * A client that ends without closing bonami.library sends no release, and
  * what it registered would be announced for ever. So the owners are
- * checked against the system's task lists now and then. A task that
- * started at the same address as one that ended is taken for it; nothing
- * here can tell them apart.
+ * checked by their stable Exec task IDs. FindTaskByPID() includes running
+ * and spinning tasks on SMP, with the appropriate Exec list locks. The
+ * returned pointer is only tested for NULL, never dereferenced here.
  */
 void
 mdnsClientReap(struct MDNSDaemon *md)
 {
-    struct Task *dead[MDNS_REAP_MAX];
+    ULONG dead[MDNS_REAP_MAX];
     const struct Node *n;
     LONG count = 0, i;
 
     for (n = md->md_Services.lh_Head; n->ln_Succ != NULL; n = n->ln_Succ) {
-        struct Task *task = ((const struct MDNSRegisteredService *)n)->rs_Task;
+        ULONG taskID = ((const struct MDNSRegisteredService *)n)->rs_TaskID;
 
-        for (i = 0; i < count && dead[i] != task; i++) {
+        for (i = 0; i < count && dead[i] != taskID; i++) {
         }
-        if (i == count && count < MDNS_REAP_MAX && task != NULL &&
-            !task_alive(task)) {
-            dead[count++] = task;
+        if (i == count && count < MDNS_REAP_MAX && taskID != 0 &&
+            FindTaskByPID(taskID) == NULL) {
+            dead[count++] = taskID;
         }
     }
     for (i = 0; i < count; i++) {
