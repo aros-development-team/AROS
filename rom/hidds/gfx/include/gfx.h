@@ -112,6 +112,10 @@ struct HIDD_ModeProperties
 #define COMPF_LEFT              (1 << COMPB_LEFT)        /* ... to the left of ...         */
 #define COMPB_RIGHT             3
 #define COMPF_RIGHT             (1 << COMPB_RIGHT)      /* ... and to the right of ...     */
+#define COMPB_SCALE             4
+#define COMPF_SCALE             (1 << COMPB_SCALE)      /* screens scale to the display:   */
+                                                        /* DisplayToBMCoords gives their   */
+                                                        /* own pixels                      */
 #define COMPB_ALPHA             7
 #define COMPF_ALPHA             (1 << COMPB_ALPHA)
 #define COMPB_SAME              8

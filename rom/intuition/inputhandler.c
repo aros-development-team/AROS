@@ -203,6 +203,20 @@ VOID CleanupIIH(struct Interrupt *iihandler, struct IntuitionBase *IntuitionBase
 
 /****************************************************************************************/
 
+/* A pointer move in display pixels as a move in a scaled screen's own
+ * pixels; what the division drops is kept for the next move. */
+static WORD ScaledDelta(WORD d, UWORD scrsize, UWORD dispsize, LONG *rem)
+{
+    LONG v;
+
+    if ((scrsize == dispsize) || !dispsize)
+        return d;
+    v = (LONG)d * scrsize + *rem;
+    d = v / dispsize;
+    *rem = v - (LONG)d * dispsize;
+    return d;
+}
+
 static void HandleIntuiReplyPort(struct IIHData *iihdata, struct IntuitionBase *IntuitionBase)
 {
     struct Library *TimerBase = GetPrivIBase(IntuitionBase)->TimerBase;
@@ -510,6 +524,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
             iihdata->ScreenDrag = screen;
             iihdata->ScreenDragPointX = screen->MouseX;
             iihdata->ScreenDragPointY = screen->MouseY;
+            iihdata->ScreenDragRemX = iihdata->ScreenDragRemY = 0;
             *keep_event = FALSE;
             break;
         }
@@ -579,6 +594,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
             iihdata->ScreenDrag = screen;
             iihdata->ScreenDragPointX = screen->MouseX;
             iihdata->ScreenDragPointY = screen->MouseY;
+            iihdata->ScreenDragRemX = iihdata->ScreenDragRemY = 0;
             *keep_event = FALSE;
             break;
         }
@@ -1401,6 +1417,14 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 
                 DoMethodA(GetPrivIBase(IntuitionBase)->ActiveMonitor, (Msg)&coordmsg);
 
+                /* The pointer moves in display pixels, a scaled screen in
+                 * its own. */
+                if (spFlags & SF_ScaledCoords)
+                {
+                    dx = ScaledDelta(dx, DSWidth, DWidth, &iihdata->ScreenDragRemX);
+                    dy = ScaledDelta(dy, DSHeight, DHeight, &iihdata->ScreenDragRemY);
+                }
+
                 DEBUG_DRAG(
                   bug("[InputHandler] = %dx%d in screen co-ords\n", DSWidth, DSHeight);
                   bug("[InputHandler] Screen drag, delta = %d, %d\n", dx, dy);
@@ -1485,9 +1509,11 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
             if (scr && (scr->Flags & AUTOSCROLL) &&
                (GetPrivScreen(scr)->IMonitorNode == GetPrivIBase(IntuitionBase)->ActiveMonitor))
             {
-                UWORD DSWidth, DSHeight;
+                UWORD DSWidth, DSHeight, limx, limy;
                 WORD xval = scr->LeftEdge;
                 WORD yval = scr->TopEdge;
+                WORD sdx = iihdata->DeltaMouseX;
+                WORD sdy = iihdata->DeltaMouseY;
                 WORD min;
 
                 coordmsg.Screen = scr;
@@ -1498,28 +1524,41 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 
                 DoMethodA(GetPrivIBase(IntuitionBase)->ActiveMonitor, (Msg)&coordmsg);
 
+                /* The pointer is in display pixels, which a scaled screen
+                 * does not use: test it against the display's edges, and
+                 * scroll by the move in the screen's pixels. */
+                limx = DSWidth;
+                limy = DSHeight;
+                if (GetPrivScreen(scr)->SpecialFlags & SF_ScaledCoords)
+                {
+                    limx = DWidth;
+                    limy = DHeight;
+                    sdx = ScaledDelta(sdx, DSWidth, DWidth, &iihdata->ScrollRemX);
+                    sdy = ScaledDelta(sdy, DSHeight, DHeight, &iihdata->ScrollRemY);
+                }
+
                 DEBUG_AUTOSCROLL(
                   bug("[InputHandler] = %dx%d in screen co-ords\n", DSWidth, DSHeight);
                   bug("[Inputhandler] Autoscroll screen 0x%p, event at (%d, %d)\n",
                              scr, ie->ie_X, ie->ie_Y);
                 )
 
-                if ((ie->ie_X < 0) || (ie->ie_X >= DSWidth)) {
-                    DEBUG_AUTOSCROLL(bug("[InputHandler] X delta: %d pixels\n", iihdata->DeltaMouseX));
-                    xval -= iihdata->DeltaMouseX;
+                if ((ie->ie_X < 0) || (ie->ie_X >= limx)) {
+                    DEBUG_AUTOSCROLL(bug("[InputHandler] X delta: %d pixels\n", sdx));
+                    xval -= sdx;
 
                     if (ie->ie_X < 0) {
                         if (xval > 0)
                             xval = 0;
-                    } else if (ie->ie_X >= DSWidth) {
+                    } else if (ie->ie_X >= limx) {
                         min = DSWidth - scr->Width;
                         if (xval < min)
                             xval = min;
                     }
                 }
 
-                if ((ie->ie_Y < 0) || (ie->ie_Y >= DSHeight)) {
-                    yval -= iihdata->DeltaMouseY;
+                if ((ie->ie_Y < 0) || (ie->ie_Y >= limy)) {
+                    yval -= sdy;
 
                     if (ie->ie_Y < 0) {
                         /* If screen is dragged down and user touched upper screen
@@ -1531,7 +1570,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
                                does not go over 0 */
                             if (yval > 0)
                                 yval = 0;
-                    } else if (ie->ie_Y >= DSHeight) {
+                    } else if (ie->ie_Y >= limy) {
                         min = DSHeight - scr->Height;
                         if (yval < min)
                             yval = min;
@@ -1583,7 +1622,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
             /* Prevent mouse going above all screens */
             scr = FindHighestScreen(IntuitionBase);
             if (scr) {
-                WORD top = scr->TopEdge * int_MouseScaleY(scr);
+                WORD top = ScreenTopInDisplay(scr, IntuitionBase);
                 if (ie->ie_Y < top)
                     ie->ie_Y = top;
             }

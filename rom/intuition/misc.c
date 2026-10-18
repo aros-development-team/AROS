@@ -92,12 +92,34 @@ void ActivateMonitor(Object *newmonitor, WORD x, WORD y, struct IntuitionBase *I
         /* A crude copy from inputhandler.c. We should really handle this in monitorclass */
         if (scr)
         {
-            DWidth = (scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxX -
-                      scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinX + 1) *
-                     int_MouseScaleX(scr) - 1;
-            DHeight = (scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxY -
-                       scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinY + 1) *
-                      int_MouseScaleY(scr) - 1;
+            UWORD cw = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxX -
+                       scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinX + 1;
+            UWORD ch = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxY -
+                       scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinY + 1;
+
+            /* The clip is in the screen's pixels, the pointer in the
+             * display's, which a scaled screen does not share. */
+            if (GetPrivScreen(scr)->SpecialFlags & SF_ScaledCoords)
+            {
+                struct msScreenToDisplayCoords coordmsg =
+                {
+                    .MethodID   = MM_ScreenToDisplayCoords,
+                    .Screen     = scr,
+                    .ScrX       = cw,
+                    .ScrY       = ch,
+                    .DispX      = &DWidth,
+                    .DispY      = &DHeight
+                };
+
+                DoMethodA(newmonitor, (Msg)&coordmsg);
+                DWidth--;
+                DHeight--;
+            }
+            else
+            {
+                DWidth = cw * int_MouseScaleX(scr) - 1;
+                DHeight = ch * int_MouseScaleY(scr) - 1;
+            }
         }
         else
         {

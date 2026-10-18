@@ -1111,7 +1111,7 @@ static const char THIS_FILE[] = __FILE__;
        )
     {
         success = TRUE;
-#ifdef __AROS__ /* AROS: Get HIDD composition flags */
+#ifdef __AROS__ /* AROS: Get HIDD composition flags, as SF_Compose* and SF_ScaledCoords */
         screen->SpecialFlags = ((compflags & (dimensions.reserved[0] >> 16)) | (dimensions.reserved[0] & 0xFFFF)) << 8;
         screen->preAlphaCompHook = compalphahook;
 
