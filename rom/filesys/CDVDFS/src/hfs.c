@@ -169,7 +169,7 @@ void HFS_Decode_Node(const t_uchar *p, t_node_descr *node)
     node->Reserved = HFS_Get16(p + 12);
 }
 
-int HFS_Find_Master_Directory_Block(CDROM *p_cd, t_mdb *p_mdb) {
+static int HFS_Find_MDB(CDROM *p_cd, t_mdb *p_mdb, uint64_t *read_end) {
 t_uchar *block;
 int i, entries;
 int result;
@@ -192,6 +192,10 @@ int result;
 					) == 0
 			)
 		{
+			uint64_t end = (uint64_t)HFS_Get32(block + 8) +
+				HFS_Get32(block + 12);
+			if (read_end)
+				*read_end = (end + 3) / 4;
 			result = HFS_Get32(block + 8) + 2;
 			block = Read_Block(p_cd, result);
 			if (!block || block[0] != 0x42 || block[1] != 0x44)
@@ -205,6 +209,11 @@ int result;
 	}
 
 	return -1;
+}
+
+int HFS_Find_Master_Directory_Block(CDROM *p_cd, t_mdb *p_mdb)
+{
+    return HFS_Find_MDB(p_cd, p_mdb, NULL);
 }
 
 t_bool Uses_HFS_Protocol(CDROM *p_cd, int *p_skip) {
@@ -515,7 +524,6 @@ static t_handler const g_hfs_handler;
 t_bool HFS_Init_Vol_Info
 	(VOLUME *p_volume, int p_start_block) {
 struct CDVDBase *global = p_volume->global;
-t_uchar *block;
 t_hdr_node hdr;
 
 	/*
@@ -544,14 +552,13 @@ t_hdr_node hdr;
 
 	VOL(p_volume,start_block) = p_start_block;
 
-	if (!(block = Read_Block(p_volume->cd, p_start_block + 2)))
-	{
-		global->iso_errno = ISOERR_SCSI_ERROR;
-		FreeMem (p_volume->vol_info, sizeof (t_hfs_vol_info));
-		return FALSE;
-	}
-
-	HFS_Decode_MDB(block, &VOL(p_volume,mdb));
+    if (HFS_Find_MDB(p_volume->cd, &VOL(p_volume,mdb),
+            &p_volume->read_end) != p_start_block + 2)
+    {
+        global->iso_errno = ISOERR_SCSI_ERROR;
+        FreeMem(p_volume->vol_info, sizeof(t_hfs_vol_info));
+        return FALSE;
+    }
 
 	if (
 			!HFS_Get_Header_Node
@@ -870,8 +877,7 @@ int HFS_Read_From_File(CDROM_OBJ *p_file, char *p_buffer, int p_buffer_length)
         offset &= 511;
         if (!Read_File_Chunk(cd, block >> 2))
             goto read_error;
-        available = SCSI_BUFSIZE * cd->buffer_sectors -
-            ((block & ((cd->buffer_sectors << 2) - 1)) << 9) - offset;
+        available = cd->buffer_bytes - ((block & 3) << 9) - offset;
         len = data_length - p_file->pos;
         if (len > (t_ulong)(p_buffer_length - done))
             len = p_buffer_length - done;
@@ -1061,7 +1067,7 @@ t_ulong HFS_Creation_Date(VOLUME *p_volume)
 	return VOL(p_volume,mdb).CrDate - TIME_DIFF;
 }
 
-/* Return volume size in 2048 byte blocks:
+/* Return allocation capacity in 512 byte blocks (not an absolute disc end):
  */
 
 t_ulong HFS_Volume_Size (VOLUME *p_volume)

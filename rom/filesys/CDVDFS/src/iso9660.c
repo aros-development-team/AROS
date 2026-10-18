@@ -265,6 +265,8 @@ t_bool Iso_Init_Vol_Info(VOLUME *p_volume, int p_skip, t_ulong p_offset, t_ulong
         loc++;
     }
 
+    p_volume->read_end = ((uint64_t)VOL(p_volume,pvd).space_size *
+        VOL(p_volume,pvd).block_size + SCSI_BUFSIZE - 1) / SCSI_BUFSIZE;
     VOL(p_volume,skip) = p_skip;
 
     switch (VOL(p_volume,pvd).block_size)
@@ -703,12 +705,6 @@ int Iso_Read_From_File(CDROM_OBJ *p_file, char *p_buffer, int p_buffer_length)
     offset += p_file->pos;
     offset &= 2047; // this is the offset in first block;
 
-    /*
-     * how much data available in next read chunk?
-     */
-    remain_block = SCSI_BUFSIZE * cd->buffer_sectors -
-        ((loc << 11) & (SCSI_BUFSIZE * cd->buffer_sectors - 1)) - offset;
-
     while (todo)
     {
         D(bug("[CDVDFS]\tRead: BPos: %6ld; FPos: %6ld; Ofst: %6ld; Blck: %6ld;\n", buf_pos, p_file->pos, offset, loc));
@@ -719,6 +715,7 @@ int Iso_Read_From_File(CDROM_OBJ *p_file, char *p_buffer, int p_buffer_length)
             return -1;
         }
 
+        remain_block = cd->buffer_bytes - offset;
         /*
          * how much data left in a file?
          */
@@ -753,11 +750,8 @@ int Iso_Read_From_File(CDROM_OBJ *p_file, char *p_buffer, int p_buffer_length)
         if (p_file->pos >= OBJ(p_file,dir)->data_length)
             break;
 
-        remain_block = SCSI_BUFSIZE * cd->buffer_sectors;
+        loc += cd->buffer_bytes / SCSI_BUFSIZE;
         offset = 0;
-
-        loc = (loc + cd->buffer_sectors) &
-            ~(cd->buffer_sectors - 1);
     }
 
     return buf_pos;

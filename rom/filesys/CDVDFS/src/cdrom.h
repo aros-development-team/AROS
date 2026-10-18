@@ -27,12 +27,14 @@ typedef struct SectorCacheSlot {
   long current_sector;
   uint32_t last_used;
   unsigned short buffer_sector;
-  unsigned short sector_count;
+  unsigned short sector_count; /* Allocated capacity and alignment */
+  unsigned short valid_sectors;
 } SectorCacheSlot;
 
 typedef struct CDROM {
   struct CDVDBase *global;
   unsigned char 	*buffer;
+  uint32_t buffer_bytes; /* Valid bytes starting at buffer */
   unsigned char 	*buffer_data;
   unsigned char 	*buffer_file2;
   unsigned char 	*buffer_metadata;

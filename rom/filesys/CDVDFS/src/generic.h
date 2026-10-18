@@ -27,6 +27,7 @@ typedef struct VOLUME {
   t_protocol	 protocol;		/* Protocol used		*/
   const struct handler *handler;		/* Pointer to handler struct	*/
   void		 *vol_info;		/* Depends on protocol		*/
+  uint64_t	 read_end;		/* Exclusive absolute 2048-byte sector end; 0 if unknown */
   size_t	 vol_info_size;		/* Size of vol_info structure	*/
   t_bool	 mixed_char_filenames;	/* Filenames may contain upper
   					   and lower case characters    */
