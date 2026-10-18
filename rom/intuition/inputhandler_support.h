@@ -105,6 +105,7 @@ void FixWindowCoords(struct Window *win, LONG *left, LONG *top, LONG *width, LON
 void WindowNeedsRefresh(struct Window * w, struct IntuitionBase * IntuitionBase );
 
 struct Screen *FindHighestScreen(struct IntuitionBase *IntuitionBase);
+WORD ScreenTopInDisplay(struct Screen *scr, struct IntuitionBase *IntuitionBase);
 
 struct Screen *FindActiveScreen(struct IntuitionBase *IntuitionBase);
 

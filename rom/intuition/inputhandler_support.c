@@ -39,6 +39,7 @@
 #include "inputhandler_actions.h"
 #include "inputhandler_support.h"
 #include "menus.h"
+#include "monitorclass_private.h"
 
 #ifdef SKINS
 #   include "mosmisc.h"
@@ -79,8 +80,30 @@ void notify_mousemove_screensandwindows(struct IntuitionBase * IntuitionBase)
         if (GetPrivScreen(scr)->IMonitorNode != GetPrivIBase(IntuitionBase)->ActiveMonitor)
             continue;
 
-        scr->MouseX = IntuitionBase->MouseX / int_MouseScaleX(scr) - scr->LeftEdge;
-        scr->MouseY = IntuitionBase->MouseY / int_MouseScaleY(scr) - scr->TopEdge;
+        if ((GetPrivScreen(scr)->SpecialFlags & SF_ScaledCoords)
+            && GetPrivScreen(scr)->IMonitorNode)
+        {
+            /* In the screen's own pixels, which need not be the display's. */
+            UWORD sx, sy;
+            struct msDisplayToScreenCoords coordmsg =
+            {
+                .MethodID   = MM_DisplayToScreenCoords,
+                .Screen     = scr,
+                .DispX      = IntuitionBase->MouseX,
+                .DispY      = IntuitionBase->MouseY,
+                .ScrX       = &sx,
+                .ScrY       = &sy
+            };
+
+            DoMethodA(GetPrivScreen(scr)->IMonitorNode, (Msg)&coordmsg);
+            scr->MouseX = sx - scr->LeftEdge;
+            scr->MouseY = sy - scr->TopEdge;
+        }
+        else
+        {
+            scr->MouseX = IntuitionBase->MouseX / int_MouseScaleX(scr) - scr->LeftEdge;
+            scr->MouseY = IntuitionBase->MouseY / int_MouseScaleY(scr) - scr->TopEdge;
+        }
 
         /* update windows belonging to this screen */
         for (win = scr->FirstWindow; win; win = win->NextWindow)
@@ -1426,6 +1449,30 @@ void WindowNeedsRefresh(struct Window * w,
 
 /****************************************************************************************/
 
+/* A screen's top edge in display coordinates. */
+WORD ScreenTopInDisplay(struct Screen *scr, struct IntuitionBase *IntuitionBase)
+{
+    UWORD dx, dy;
+    struct msScreenToDisplayCoords coordmsg =
+    {
+        .MethodID   = MM_ScreenToDisplayCoords,
+        .Screen     = scr,
+        .ScrX       = 0,
+        .ScrY       = (scr->TopEdge < 0) ? -scr->TopEdge : scr->TopEdge,
+        .DispX      = &dx,
+        .DispY      = &dy
+    };
+
+    if (!(GetPrivScreen(scr)->SpecialFlags & SF_ScaledCoords)
+        || !GetPrivScreen(scr)->IMonitorNode)
+        return scr->TopEdge * int_MouseScaleY(scr);
+
+    /* The method takes unsigned coordinates; above the display top the
+     * edge is converted as a distance and mirrored back. */
+    DoMethodA(GetPrivScreen(scr)->IMonitorNode, (Msg)&coordmsg);
+    return (scr->TopEdge < 0) ? -(WORD)dy : (WORD)dy;
+}
+
 struct Screen *FindHighestScreen(struct IntuitionBase *IntuitionBase)
 {
     struct Screen *scr, *highest = IntuitionBase->FirstScreen;
@@ -1437,8 +1484,8 @@ struct Screen *FindHighestScreen(struct IntuitionBase *IntuitionBase)
             continue;
 
         /* Check if top of screen is highest so far */
-        if (scr->TopEdge * int_MouseScaleY(scr) <
-            highest->TopEdge * int_MouseScaleY(highest))
+        if (ScreenTopInDisplay(scr, IntuitionBase) <
+            ScreenTopInDisplay(highest, IntuitionBase))
             highest = scr;
     }
     return highest;
