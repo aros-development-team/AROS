@@ -8,6 +8,10 @@ USER_LDFLAGS := -static
 #MM- test-quick : test-devices-cd-quick
 #MM test-devices-cd : includes linklibs
 
+# Native CD32 sector-DMA regression, selected through the target test group.
+#MM- test-devices-cd-amiga-m68k : test-devices-cd-readahead
+#MM- test-devices-cd-amiga-m68k-quick : test-devices-cd-readahead-quick
+
 %build_progs mmake=test-devices-cd \
     files=cdframeinttest targetdir=$(AROS_TESTS)/devices/cd
 
