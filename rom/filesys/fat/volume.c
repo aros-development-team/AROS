@@ -76,7 +76,7 @@ LONG ReadFATSuper(struct FSSuper *sb)
     struct Globals *glob = sb->glob;
     struct DosEnvec *de = BADDR(glob->fssm->fssm_Environ);
     LONG err = 0, td_err;
-    ULONG bsize = de->de_SizeBlock * 4, id, ranges;
+    ULONG bsize = de->de_SizeBlock * 4, id, ranges, range_shift;
     struct FATBootSector *boot;
     struct FATBPBInfo bpb;
     struct FATEBPB *ebpb;
@@ -197,9 +197,9 @@ LONG ReadFATSuper(struct FSSuper *sb)
      * over many ranges, and a lookup misses on every one of them once they
      * do not all fit (LRU against a sequential scan) */
     ranges = Cache_RangeCount((UQUAD)sb->total_sectors * bsize,
-        sb->sectorsize);
+        sb->sectorsize, &range_shift);
     sb->cache = Cache_CreateCache(glob, ranges, ranges, sb->sectorsize,
-        SysBase, DOSBase);
+        range_shift, SysBase, DOSBase);
     if (sb->cache == NULL)
     {
         err = IoErr();

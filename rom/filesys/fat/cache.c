@@ -62,9 +62,20 @@ void MarkVolumeDirty(struct Globals *glob);
 #define SysBase (c->sys_base)
 #define DOSBase (c->dos_base)
 
-#define RANGE_SHIFT 5
-#define RANGE_SIZE (1 << RANGE_SHIFT)
+/* 64 KB ranges: smaller requests cost an SD card a third of its read speed */
+#define RANGE_BYTES 65536
+#define RANGE_SIZE (1 << c->range_shift)
 #define RANGE_MASK (RANGE_SIZE - 1)
+
+/* Every open file holds a range, so a small cache gets smaller ranges
+ * rather than fewer of them */
+#define MIN_RANGES 16
+#define MIN_CACHE_BYTES (256 * 1024)
+#define MAX_CACHE_BYTES (4 << 20)
+
+/* Dirty ranges that follow each other on disk are written together, as one
+ * request of up to this many ranges, buffered in at most 1/8 of the cache */
+#define FLUSH_RANGES 8
 
 #define NODE2(A) \
    ((struct BlockRange *)(((A) != NULL) ? \
@@ -72,25 +83,33 @@ void MarkVolumeDirty(struct Globals *glob);
 
 
 /* Ranges to cache for a volume: 1/1024 of its size (the size of its FAT at
- * 4 KB clusters), from 16 ranges up to 4 MB. A power of two, as the hash
+ * 4 KB clusters), from 256 KB up to 4 MB. A power of two, as the hash
  * table needs */
-ULONG Cache_RangeCount(UQUAD volume_size, ULONG block_size)
+ULONG Cache_RangeCount(UQUAD volume_size, ULONG block_size,
+    ULONG *range_shift)
 {
-    UQUAD range_size = (UQUAD)block_size << RANGE_SHIFT;
-    UQUAD budget = volume_size >> 10;
-    ULONG count = 16;
+    UQUAD budget = volume_size >> 10, range_size;
+    ULONG count = MIN_RANGES, shift = 0;
 
-    if(budget > (4 << 20))
-        budget = 4 << 20;
+    if(budget < MIN_CACHE_BYTES)
+        budget = MIN_CACHE_BYTES;
+    if(budget > MAX_CACHE_BYTES)
+        budget = MAX_CACHE_BYTES;
+    while(((UQUAD)block_size << (shift + 1)) <= RANGE_BYTES
+        && ((UQUAD)block_size << (shift + 1)) * MIN_RANGES <= budget)
+        shift++;
+    range_size = (UQUAD)block_size << shift;
     while((UQUAD)count * 2 * range_size <= budget)
         count <<= 1;
 
+    *range_shift = shift;
     return count;
 }
 
 
 APTR Cache_CreateCache(APTR priv, ULONG hash_size, ULONG block_count,
-    ULONG block_size, struct ExecBase *sys_base, struct DosLibrary *dos_base)
+    ULONG block_size, ULONG range_shift, struct ExecBase *sys_base,
+    struct DosLibrary *dos_base)
 {
     struct Cache _c, *c = &_c;
     ULONG i;
@@ -110,6 +129,7 @@ APTR Cache_CreateCache(APTR priv, ULONG hash_size, ULONG block_count,
         c->dos_base = dos_base;
         c->block_size = block_size;
         c->block_count = block_count;
+        c->range_shift = range_shift;
         c->hash_size = hash_size;
 
         /* Allocate hash table */
@@ -136,7 +156,7 @@ APTR Cache_CreateCache(APTR priv, ULONG hash_size, ULONG block_count,
         for(i = 0; i < block_count && success; i++)
         {
             b = AllocVec(sizeof(struct BlockRange)
-                + (c->block_size << RANGE_SHIFT), MEMF_PUBLIC);
+                + (c->block_size << c->range_shift), MEMF_PUBLIC);
             if(b != NULL)
             {
                 b->use_count = 0;
@@ -150,6 +170,13 @@ APTR Cache_CreateCache(APTR priv, ULONG hash_size, ULONG block_count,
             else
                 success = FALSE;
         }
+
+        /* Optional: without it every range is written on its own */
+        c->flush_ranges = (block_count / 8 < FLUSH_RANGES)
+            ? block_count / 8 : FLUSH_RANGES;
+        if(success && c->flush_ranges > 1)
+            c->flush_buf = AllocVec((c->block_size << c->range_shift)
+                * c->flush_ranges, MEMF_PUBLIC);
     }
 
     if(!success && c != NULL)
@@ -171,6 +198,7 @@ VOID Cache_DestroyCache(APTR cache)
 
     for(i = 0; c->blocks != NULL && i < c->block_count; i++)
         FreeVec(c->blocks[i]);
+    FreeVec(c->flush_buf);
     FreeVec(c->blocks);
     FreeVec(c->hash_table);
     FreeVec(c);
@@ -183,7 +211,7 @@ APTR Cache_GetBlock(APTR cache, ULONG blockNum, UBYTE **data)
     struct BlockRange *b = NULL, *b2;
     LONG error = 0, data_offset;
     struct MinList *l =
-        &c->hash_table[(blockNum >> RANGE_SHIFT) & (c->hash_size - 1)];
+        &c->hash_table[(blockNum >> c->range_shift) & (c->hash_size - 1)];
     struct MinNode *n;
 
     /* Change block number to the start block of a range and get byte offset
@@ -312,40 +340,81 @@ VOID Cache_MarkBlockDirty(APTR cache, APTR block)
 }
 
 
+/* The dirty range starting at block num, if there is one */
+static struct BlockRange *FindDirtyRange(struct Cache *c, ULONG num)
+{
+    struct BlockRange *b;
+
+    ForeachNode(&c->hash_table[(num >> c->range_shift) & (c->hash_size - 1)], b)
+    {
+        if(b->num == num && b->state == BS_DIRTY)
+            return b;
+    }
+
+    return NULL;
+}
+
+
 BOOL Cache_Flush(APTR cache)
 {
     struct Cache *c = cache;
     LONG error = 0, td_error;
     struct MinNode *n;
-    struct BlockRange *b;
+    struct BlockRange *b, *group[FLUSH_RANGES];
+    ULONG count, i, range_bytes = c->block_size << c->range_shift;
+    UBYTE *data;
 
     /* A failed range is put back at the head. Do not remove it again while
      * evaluating the next iteration: the caller must be able to retry it. */
     while(error == 0 &&
         (n = (struct MinNode *)RemHead((struct List *)&c->dirty_list)) != NULL)
     {
-        /* Write dirty block range to disk */
+        /* Take along the dirty ranges that follow this one on disk */
         b = NODE2(n);
         if (b)
         {
-            td_error = AccessDisk(TRUE, b->num, RANGE_SIZE, c->block_size,
-                b->data, c->priv);
-
-            /* Transfer block range to free list if unused, or put back on dirty
-             * list upon an error */
-
-            if(td_error == 0)
+            group[0] = b;
+            count = 1;
+            data = b->data;
+            if(c->flush_buf != NULL)
             {
-                b->state = BS_VALID;
-                if(b->use_count == 0)
-                    AddTail((struct List *)&c->free_list,
-                        (struct Node *)&b->node2);
+                while(count < c->flush_ranges && (group[count] =
+                    FindDirtyRange(c, b->num + count * RANGE_SIZE)) != NULL)
+                {
+                    Remove((struct Node *)&group[count]->node2);
+                    count++;
+                }
+                if(count > 1)
+                {
+                    for(i = 0; i < count; i++)
+                        CopyMem(group[i]->data, c->flush_buf + i * range_bytes,
+                            range_bytes);
+                    data = c->flush_buf;
+                }
             }
-            else
+
+            /* Write dirty block ranges to disk */
+            td_error = AccessDisk(TRUE, b->num, count * RANGE_SIZE,
+                c->block_size, data, c->priv);
+
+            /* Transfer block ranges to free list if unused, or put them back
+             * on the dirty list upon an error, first range first */
+
+            for(i = count; i-- > 0;)
             {
-                AddHead((struct List *)&c->dirty_list, (struct Node *)&b->node2);
+                if(td_error == 0)
+                {
+                    group[i]->state = BS_VALID;
+                    if(group[i]->use_count == 0)
+                        AddTail((struct List *)&c->free_list,
+                            (struct Node *)&group[i]->node2);
+                }
+                else
+                    AddHead((struct List *)&c->dirty_list,
+                        (struct Node *)&group[i]->node2);
+            }
+            if(td_error != 0)
                 error = ERROR_UNKNOWN;
-            }
         }
     }
 

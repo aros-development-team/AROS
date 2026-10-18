@@ -32,6 +32,9 @@ struct Cache
     struct MinList *hash_table;    /* hash table of all valid cache blocks */
     struct MinList dirty_list;    /* the dirty list */
     struct MinList free_list;    /* the free list */
+    ULONG range_shift;  /* blocks per range, as a power of two */
+    ULONG flush_ranges; /* most ranges flush_buf holds */
+    UBYTE *flush_buf;    /* adjacent dirty ranges are gathered here */
 };
 
 /* Block states */
@@ -42,9 +45,11 @@ struct Cache
 
 /* Prototypes */
 
-ULONG Cache_RangeCount(UQUAD volume_size, ULONG block_size);
+ULONG Cache_RangeCount(UQUAD volume_size, ULONG block_size,
+    ULONG *range_shift);
 APTR Cache_CreateCache(APTR priv, ULONG hash_size, ULONG block_count,
-    ULONG block_size, struct ExecBase *sys_base, struct DosLibrary *dos_base);
+    ULONG block_size, ULONG range_shift, struct ExecBase *sys_base,
+    struct DosLibrary *dos_base);
 VOID Cache_DestroyCache(APTR cache);
 APTR Cache_GetBlock(APTR cache, ULONG blockNum, UBYTE **data);
 VOID Cache_FreeBlock(APTR cache, APTR block);
