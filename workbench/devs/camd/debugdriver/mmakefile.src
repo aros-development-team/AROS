@@ -4,10 +4,9 @@ include $(SRCDIR)/config/aros.cfg
 FILES  := debugdriver
 EXEDIR := $(AROS_DEVS)/Midi
 
-#MM- workbench-devs-complete : workbench-devs-midi
-#MM workbench-devs-midi : includes linklibs 
+#MM workbench-devs-camd-debugdriver : includes linklibs
 
-%build_prog mmake=workbench-devs-midi \
+%build_prog mmake=workbench-devs-camd-debugdriver \
     progname=debugdriver targetdir=$(EXEDIR) \
     files=$(FILES)
 
