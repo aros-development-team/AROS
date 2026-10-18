@@ -763,7 +763,7 @@ int HFS_Read_From_File(CDROM_OBJ *p_file, char *p_buffer, int p_buffer_length)
     {
 	t_uchar *data;
 
-	if (0 == Read_Chunk(cd, block >> 2))
+	if (0 == Read_File_Chunk(cd, block >> 2))
 	{
 	    global->iso_errno = ISOERR_SCSI_ERROR;
 	    return -1;
