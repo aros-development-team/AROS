@@ -21,10 +21,12 @@
         struct KernelBase *, KernelBase, 1, Kernel)
 
 /*  FUNCTION
+        Return the kernel scheduling policy.
 
     INPUTS
 
     RESULT
+        SCHED_RR (round-robin scheduling).
 
     NOTES
 

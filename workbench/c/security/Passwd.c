@@ -16,8 +16,9 @@
         C:
 
     FUNCTION
-        Changes the password of the user owning the current shell. The old
-        and new passwords are asked for on the console unless given.
+        Changes the password of the user logged into the current task.
+        Missing passwords are requested without echoing their characters.
+        An interactively entered new password must be confirmed.
 
         LOCK and UNLOCK (root only) lock a user's account - no password
         is accepted for it any more, the stored one is kept - or unlock it.
@@ -29,7 +30,14 @@
         UNLOCK -- user ID of the account to unlock.
 
     RESULT
-        RETURN_WARN if the password could not be changed.
+        RETURN_OK if a password change, lock, or unlock succeeds.
+        RETURN_WARN if no user is logged in or the requested operation fails.
+        RETURN_FAIL if the security library is unavailable or arguments
+        cannot be parsed.
+
+    NOTES
+        Password changes use the configured PAM password service when
+        available, or security.library otherwise.
 
     SEE ALSO
         Login

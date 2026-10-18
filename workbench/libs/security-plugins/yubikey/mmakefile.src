@@ -1,0 +1,17 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+#
+# yubikey.secplugin: Yubico OTP for security.library (ID_PLUGIN_HWAUTH, scheme "yubico"). A plugin is
+# a LoadSeg()'d file without start-up code; it must not need a C runtime.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-libs : workbench-libs-security-plugins-yubikey
+#MM workbench-libs-security-plugins-yubikey : includes kernel-security-includes linklibs
+
+USER_CFLAGS := -ffreestanding -fno-builtin -fno-tree-loop-distribute-patterns
+
+%build_prog mmake=workbench-libs-security-plugins-yubikey \
+    progname=yubikey.secplugin targetdir=$(AROS_LIBRARIES)/Security \
+    files="yubikey" usestartup=no coverageinstr=no
+
+%common

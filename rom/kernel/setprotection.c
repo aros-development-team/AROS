@@ -25,10 +25,16 @@
         struct KernelBase *, KernelBase, 21, Kernel)
 
 /*  FUNCTION
+        Set the access permissions of a memory region.
 
     INPUTS
+        address - Start of the region.
+        length  - Length of the region in bytes.
+        flags   - Requested access permissions, expressed as KRN_MapAttr
+                  attributes.
 
     RESULT
+        None.
 
     NOTES
 

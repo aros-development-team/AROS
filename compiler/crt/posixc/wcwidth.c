@@ -17,7 +17,12 @@ struct __wcw_interval
     int last;
 };
 
-/* Binary search in a sorted table of non-overlapping intervals. */
+/* Return 1 if ucs lies in an interval, or 0 if no interval contains it.
+ * table must contain max + 1 readable intervals, with max >= 0, sorted
+ * by increasing first value and without overlap. Each first must be <=
+ * its last. The search indices must fit in int, including min + max.
+ * The table is neither modified nor retained.
+ */
 static int __wcw_bisearch(wchar_t ucs, const struct __wcw_interval *table, int max)
 {
     int min = 0;
@@ -39,6 +44,44 @@ static int __wcw_bisearch(wchar_t ucs, const struct __wcw_interval *table, int m
     return 0;
 }
 
+/****************************************************************************
+    NAME
+        int wcwidth(
+
+    SYNOPSIS
+        wchar_t wc)
+
+    FUNCTION
+        Estimate the number of terminal columns occupied by one
+        wide character.
+
+    INPUTS
+        wc - Character value to classify.
+
+    RESULT
+        0 for the null character or a value in the built-in
+        zero-width table; -1 for C0 controls other than null and
+        for values 0x7F through 0x9F. Negative values also return
+        -1 when wchar_t is signed. Otherwise, returns 2 for the
+        built-in wide ranges and 1 for all remaining values.
+
+    NOTES
+        Include <wchar.h>. Classification uses fixed ranges
+        identified in the source as Unicode 5.0 data. It does not
+        consult the current locale, terminal or font. The function
+        does not change errno.
+
+    BUGS
+        The result does not validate a Unicode scalar value or
+        establish that a character is printable. Surrogate values
+        and values above U+10FFFF are not rejected as such. The
+        fixed ranges do not account for newer character assignments
+        or terminal-specific rendering.
+
+    SEE ALSO
+        wcswidth()
+
+*****************************************************************************/
 int wcwidth(wchar_t wc)
 {
     /* Sorted list of non-overlapping intervals of non-spacing characters,

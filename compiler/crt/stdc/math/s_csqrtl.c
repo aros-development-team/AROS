@@ -60,26 +60,58 @@
         long double complex z)
 
     FUNCTION
-        Compute the principal complex square root of z.
+        Return the principal square root of a complex number.
 
     INPUTS
-        z - Complex radicand.
+        z - Complex argument with long double components.
 
     RESULT
-        Return the principal square root of z. For finite nonzero z,
-        the real component is nonnegative, and the imaginary
-        component has the sign of the imaginary component of z.
-        For a zero argument, the result has a positive real zero
-        and preserves the imaginary zero's sign.
+        An approximation to the square root of z, with a
+        nonnegative real part. For finite inputs, the imaginary
+        part has the sign of the input imaginary part, subject
+        to the limitations below.
+
+        At complex zero, the real part is positive zero and the
+        imaginary part retains its sign. On the negative real
+        axis, the sign of the imaginary zero selects the side
+        of the branch cut.
+
+        An infinite imaginary part returns positive infinity
+        plus the original imaginary infinity, even when the real
+        part is NaN. For a finite imaginary part, positive real
+        infinity returns positive infinity and a signed imaginary
+        zero; negative real infinity returns positive real zero
+        and a signed imaginary infinity.
+
+        Other NaN inputs return two NaNs, except that a positive
+        infinite real part remains positive infinity, and a
+        negative infinite real part produces an imaginary
+        infinity with the sign of the input imaginary NaN.
 
     NOTES
-        Include <complex.h>. A negative real input uses the sign of
-        its imaginary zero to select the side of the branch cut.
-        Infinite and NaN components follow the exceptional-value
-        rules for the principal complex square root.
+        Include <complex.h>. Extended-precision targets use
+        sqrtl() and hypotl(). Where long double has the same
+        precision as double, csqrtl() aliases csqrt().
+
+        Floating-point exceptions may occur, and enabled traps
+        may prevent return. The extended-precision path relies
+        on the floating-point environment support used by sqrtl().
+        On m68k, that dependency can clear or change errno.
+
+    BUGS
+        Very small finite components can underflow internally
+        before the square root is taken. A purely imaginary
+        argument whose magnitude is the smallest positive
+        subnormal can produce an infinite imaginary result
+        in round-to-nearest mode.
+
+        The m68k and AArch64 floating-point environment stubs
+        do not provide the rounding and exception control
+        required by sqrtl(). Correct rounding and environment
+        preservation are not assured on those paths.
 
     SEE ALSO
-        csqrt(), csqrtf(), creall(), cimagl()
+        csqrt(), csqrtf(), sqrtl(), hypotl()
 
 *****************************************************************************/
 long double complex

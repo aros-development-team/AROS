@@ -518,12 +518,28 @@ static BOOL ScanInterfaces(CONST_STRPTR path, CONST_STRPTR device,
  * a wireless device that is right here, add the line ourselves - keyed on the
  * device, so a device that already has an interface keeps it untouched.
  */
-static BOOL EnsureInterface(struct WifiMsg *m, BOOL *created)
+/* Appending keeps whatever else is configured, including the commented-out
+ * examples the file ships with. */
+static BOOL AppendLine(CONST_STRPTR path, CONST_STRPTR line)
 {
-    TEXT db[192], path[224], line[288];
+    BPTR fh;
+    BOOL ok;
+
+    if ((fh = Open(path, MODE_READWRITE)) == BNULL)
+        return FALSE;
+    Seek(fh, 0, OFFSET_END);
+    ok = (FPuts(fh, line) == 0);
+    Close(fh);
+    return ok;
+}
+
+/* save: also keep the line across a reboot, for starting at boot. */
+static BOOL EnsureInterface(struct WifiMsg *m, BOOL *created, BOOL save)
+{
+    TEXT db[192], path[224], arcpath[232], line[288], arcname[16];
     ULONG usednames = 0;
     LONG index;
-    BPTR fh;
+    BPTR lock;
 
     *created = FALSE;
     if (!StackDBDir(db, sizeof(db)))
@@ -531,34 +547,42 @@ static BOOL EnsureInterface(struct WifiMsg *m, BOOL *created)
     snprintf((char *)path, sizeof(path), "%s/interfaces", (const char *)db);
 
     if (ScanInterfaces(path, m->wm_Device, m->wm_Interface,
-            sizeof(m->wm_Interface), &usednames, NULL, 0))
-        return TRUE;
-
-    for (index = 0; index < 32; index++)
+            sizeof(m->wm_Interface), &usednames, line + 1, sizeof(line) - 2))
     {
-        if (!(usednames & (1UL << index)))
-            break;
+        line[0] = '\n';
+        strcat((char *)line, "\n");
     }
-    if (index == 32)
-        return FALSE;
-
-    snprintf((char *)m->wm_Interface, sizeof(m->wm_Interface), "net%d", index);
-    snprintf((char *)line, sizeof(line), "\n%s DEV=%s UNIT=%d IP=DHCP UP\n",
-        (const char *)m->wm_Interface, (const char *)m->wm_Device, m->wm_Unit);
-
-    /* Appending keeps whatever else is configured, including the commented-out
-     * examples the file ships with. */
-    if ((fh = Open(path, MODE_READWRITE)) == BNULL)
-        return FALSE;
-    Seek(fh, 0, OFFSET_END);
-    if (FPuts(fh, line) != 0)
+    else
     {
-        Close(fh);
-        return FALSE;
-    }
-    Close(fh);
+        for (index = 0; index < 32; index++)
+        {
+            if (!(usednames & (1UL << index)))
+                break;
+        }
+        if (index == 32)
+            return FALSE;
 
-    *created = TRUE;
+        snprintf((char *)m->wm_Interface, sizeof(m->wm_Interface), "net%d", index);
+        snprintf((char *)line, sizeof(line), "\n%s DEV=%s UNIT=%d IP=DHCP UP\n",
+            (const char *)m->wm_Interface, (const char *)m->wm_Device, m->wm_Unit);
+        if (!AppendLine(path, line))
+            return FALSE;
+        *created = TRUE;
+    }
+
+    /* The network preferences point the stack at ENV:, which is rebuilt from
+     * ENVARC: at boot - a line only in ENV: is gone by then. */
+    if (save && Strnicmp(db, (STRPTR)"ENV:", 4) == 0)
+    {
+        snprintf((char *)arcpath, sizeof(arcpath), "ENVARC:%s/interfaces",
+            (const char *)db + 4);
+        if ((lock = Lock(arcpath, ACCESS_READ)) == BNULL)
+            return FALSE;
+        UnLock(lock);
+        if (!ScanInterfaces(arcpath, m->wm_Device, arcname, sizeof(arcname),
+                NULL, NULL, 0) && !AppendLine(arcpath, line))
+            return FALSE;
+    }
     return TRUE;
 }
 
@@ -1271,7 +1295,7 @@ static void RunConnect(struct WifiMsg *m, CONST_STRPTR wanted,
 
             m->wm_Result = WRES_OK;
 
-            if (!EnsureInterface(m, &created))
+            if (!EnsureInterface(m, &created, FALSE))
             {
                 snprintf(m->wm_Status, sizeof(m->wm_Status),
                     (const char *)_(MSG_ST_CONNECTED_NO_IFACE), wanted,
@@ -1429,7 +1453,7 @@ static void DoAutoRun(struct WifiMsg *m)
         /* The stack only runs DHCP on an interface it knows about. */
         snprintf((char *)dev, sizeof(dev), "%s UNIT %ld",
             (const char *)m->wm_Device, (long)m->wm_Unit);
-        ok = EnsureInterface(m, &created) &&
+        ok = EnsureInterface(m, &created, TRUE) &&
              SetVar(WIRELESS_VAR, dev, -1, SAVE_VAR_FLAGS) &&
              SetVar(WIRELESS_AUTORUN_VAR, "True", -1, SAVE_VAR_FLAGS) &&
              SetVar(AUTORUN_VAR, "True", -1, SAVE_VAR_FLAGS);

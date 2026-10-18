@@ -5657,8 +5657,17 @@ LONG moveextent(struct fsExtentBNode *ebn, BLCK dest, UWORD blocks) {
         BLCK next = BE2L(ebn->be_next);
         BLCK prev = BE2L(ebn->be_prev);
         UWORD blocksinextent = BE2W(ebn->be_blocks);
+        ULONG available;
 
-        if((errorcode = copy(key, dest, blocks, buf)) == 0) {   // This functions knows that OPTBUFSIZE is the size of the buffer!
+        if((errorcode = availablespace(dest, blocks, &available)) != 0) {
+            FreeVec(buf);
+            return(errorcode);
+        }
+
+        /* Check before copying: transaction rollback cannot undo data writes. */
+        if(available < blocks) {
+            errorcode = ERROR_DISK_NOT_VALIDATED;
+        } else if((errorcode = copy(key, dest, blocks, buf)) == 0) {   // This functions knows that OPTBUFSIZE is the size of the buffer!
 
             /* Data has been physically moved -- nothing has been
                permanently altered yet. */
@@ -5717,11 +5726,12 @@ static LONG fillgap(BLCK key) {
 
         while(next != 0 && (errorcode = findextentbnode(next, &cb, &ebn)) == 0) {    //      !! failed !!
             UWORD blocks = BE2W(ebn->be_blocks);
-            LONG free;
+            ULONG free;
 
             lockcachebuffer(cb);
 
-            if((free = availablespace(key, 1024)) > 0) {
+            errorcode = availablespace(key, 1024, &free);
+            if(errorcode == 0 && free > 0) {
 
                 unlockcachebuffer(cb);
 
@@ -5742,6 +5752,7 @@ static LONG fillgap(BLCK key) {
                 key += blocks;
             } else {
                 unlockcachebuffer(cb);
+                break;
             }
         }
     }
@@ -5871,46 +5882,51 @@ LONG makefreespace(BLCK block) {
 
 
 
-LONG skipunmoveable(BLCK block) {
+LONG skipunmoveable(BLCK block, BLCK *returned_block) {
     struct CacheBuffer *cb;
     struct fsExtentBNode *ebn;
+    LONG errorcode;
 
-    /* This function looks for moveable data or free space starting
-       from the given block.  It returns -1 in case of failure, or
-       the first moveable block it finds.  If there ain't no more
-       moveable blocks, then blocks_total is returned. */
+    /* Find moveable data or free space at or after /block/.
+       Return zero on success and store its location in /returned_block/,
+       or blocks_total if none remains.  Preserve lookup and bitmap errors. */
 
-    if((findbnode(globals->block_extentbnoderoot, block, &cb, (struct BNode **)&ebn)) == 0) {
+    *returned_block = 0;
+
+    if((errorcode = findbnode(globals->block_extentbnoderoot, block, &cb, (struct BNode **)&ebn)) == 0) {
         if(ebn != 0 && ebn->be_key == L2BE(block)) {
-            return((LONG)block);
-        } else if(ebn == 0 || BE2L(ebn->be_key) >= block || nextbnode(globals->block_extentbnoderoot, &cb, (struct BNode **)&ebn) == 0) {
+            *returned_block = block;
+            return(0);
+        } else if(ebn == 0 || BE2L(ebn->be_key) >= block || (errorcode = nextbnode(globals->block_extentbnoderoot, &cb, (struct BNode **)&ebn)) == 0) {
             if(ebn != 0) {
                 BLCK key = BE2L(ebn->be_key);
-                LONG used;
+                ULONG used;
 
                 /* Found something moveable, but maybe there was some free space before the
                    moveable Extent. */
 
-                if((used = allocatedspace(block, key - block)) != -1) {
+                if((errorcode = allocatedspace(block, key - block, &used)) == 0) {
                     if(block + used < key) {
-                        return((LONG)block + used);
+                        *returned_block = block + used;
+                        return(0);
                     } else {
-                        return((LONG)key);
+                        *returned_block = key;
+                        return(0);
                     }
                 }
             } else {
-                LONG errorcode;
-
                 if((errorcode = findspace(1, block, globals->blocks_total, &block)) == 0) {
-                    return((LONG)block);
+                    *returned_block = block;
+                    return(0);
                 } else if(errorcode == ERROR_DISK_FULL) {
-                    return((LONG)globals->blocks_total);
+                    *returned_block = globals->blocks_total;
+                    return(0);
                 }
             }
         }
     }
 
-    return(-1);
+    return(errorcode);
 }
 
 
@@ -6325,9 +6341,9 @@ LONG findmatch_fromend(BLCK startblock, ULONG blocks, ULONG *bestkey) {
 
 LONG step(void) {
     LONG errorcode;
-    LONG free;
+    ULONG free;
 
-    if((free = availablespace(globals->block_defragptr, 256)) != -1) {
+    if((errorcode = availablespace(globals->block_defragptr, 256, &free)) == 0) {
 
         _DEBUG("Defragmenter: Found %ld blocks of free space at block %ld.\n", free, globals->block_defragptr);
 
@@ -6345,10 +6361,8 @@ LONG step(void) {
 
                     /* Skip unmoveable data */
 
-                    if((block = (BLCK)skipunmoveable(globals->block_defragptr)) != (BLCK) - 1) {
+                    if((errorcode = skipunmoveable(globals->block_defragptr, &block)) == 0) {
                         globals->block_defragptr = block;
-                    } else {
-                        errorcode = INTERR_DEFRAGMENTER;
                     }
                 } else if((BE2L(ebn->be_prev) & 0x80000000) != 0 || BE2L(ebn->be_prev) < globals->block_defragptr) {
 
@@ -6362,14 +6376,14 @@ LONG step(void) {
 
                         globals->block_defragptr += BE2W(ebn->be_blocks);
                     } else {
-                        LONG freeafter;
+                        ULONG freeafter;
                         BLCK key = BE2L(ebn->be_key);
                         BLCK next = BE2L(ebn->be_next);
                         UWORD blocks = BE2W(ebn->be_blocks);
 
                         _DEBUG("Defragmenter: Extent has a next extent.\n");
 
-                        if((freeafter = availablespace(key + blocks, 256)) != -1) {
+                        if((errorcode = availablespace(key + blocks, 256, &freeafter)) == 0) {
 
                             _DEBUG("Defragmenter: There are %ld blocks of free space after the extent at block %ld.\n", freeafter, key);
 
@@ -6388,7 +6402,7 @@ LONG step(void) {
 
                                 /* Determine which extent it is which is located directly after the current extent. */
 
-                                if((block = (BLCK)skipunmoveable(key + blocks)) != (BLCK) - 1) {
+                                if((errorcode = skipunmoveable(key + blocks, &block)) == 0) {
                                     if(block == key + blocks) {
 
                                         _DEBUG("Defragmenter: There was a moveable extent after the extent at block %ld.\n", key);
@@ -6397,7 +6411,7 @@ LONG step(void) {
 
                                         errorcode = makefreespace(block);
                                     } else {
-                                        LONG freeafter;
+                                        ULONG freeafter;
 
                                         _DEBUG("Defragmenter: Skipped %ld blocks of unmoveable data.\n", block - (key + blocks));
 
@@ -6405,7 +6419,7 @@ LONG step(void) {
 
                                         if(block != next) { // Mar 20 1999: Check to see if the extent after the unmoveable data is not already the correct one.
 
-                                            if((freeafter = availablespace(block, 256)) != -1) {
+                                            if((errorcode = availablespace(block, 256, &freeafter)) == 0) {
 
                                                 _DEBUG("Defragmenter: There are %ld blocks of free space after the unmoveable data.\n", freeafter);
 
@@ -6414,9 +6428,7 @@ LONG step(void) {
                                                     _DEBUG("Defragmenter: Clearing some space at block %ld.\n", block);
 
                                                     if((errorcode = makefreespace(block)) == 0) {
-                                                        if((freeafter = availablespace(block, 256)) == -1) {
-                                                            errorcode = INTERR_DEFRAGMENTER;
-                                                        }
+                                                        errorcode = availablespace(block, 256, &freeafter);
 
                                                         _DEBUG("Defragmenter: There are now %ld blocks of cleared space after the unmoveable data.\n", freeafter);
                                                     }
@@ -6435,8 +6447,6 @@ LONG step(void) {
                                                         }
                                                     }
                                                 }
-                                            } else {
-                                                errorcode = INTERR_DEFRAGMENTER;
                                             }
                                         } else {
 
@@ -6445,12 +6455,8 @@ LONG step(void) {
                                             globals->block_defragptr = block;
                                         }
                                     }
-                                } else {
-                                    errorcode = INTERR_DEFRAGMENTER;
                                 }
                             }
-                        } else {
-                            errorcode = INTERR_DEFRAGMENTER;
                         }
                     }
                 } else {
@@ -6481,8 +6487,6 @@ LONG step(void) {
                 }
             }
         }
-    } else {
-        errorcode = INTERR_DEFRAGMENTER;
     }
 
     _DEBUG("Defragmenter: Exiting with errorcode %ld\n\n", errorcode);

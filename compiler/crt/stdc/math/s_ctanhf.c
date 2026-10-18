@@ -43,25 +43,41 @@
         float complex z)
 
     FUNCTION
-        Compute the float complex hyperbolic tangent of z.
+        Return the complex hyperbolic tangent of z.
 
     INPUTS
-        z - Complex argument.
+        z - Float complex value x + i*y, with y in radians.
 
     RESULT
-        Return the complex hyperbolic tangent. For finite z away from
-        a pole, the result
-        represents sinhf(z)/coshf(z). For a sufficiently large
-        finite real component, the real part approaches its sign,
-        and the imaginary part approaches zero.
+        An approximation to sinh(z) / cosh(z) in float complex.
+
+        For infinite x, the real part is 1 with the sign of x
+        and the imaginary part is zero. For finite y, that zero
+        has the sign of sin(y) * cos(y); for infinite y, it has
+        the sign of y. Its sign is unspecified when y is NaN.
+
+        For NaN x and a signed-zero y, returns NaN with that
+        same imaginary zero. For NaN x and nonzero y, both
+        components are NaN. For finite x and infinite or NaN y,
+        both components are NaN.
 
     NOTES
-        Include <complex.h>. Poles occur on the imaginary axis at
-        odd multiples of pi/2. Exceptional arguments can produce
-        infinities or NaNs and raise floating-point exceptions.
+        Include <complex.h>. The mathematical function has poles
+        at x = 0 and y = (k + 1/2) * pi for integer k. Rounded
+        arguments near these poles can produce large results.
+
+        Use round-to-nearest mode for argument reduction.
+        Floating-point arithmetic can raise exceptions; enabled
+        traps may prevent return. The function does not assign
+        errno.
+
+    BUGS
+        Large finite real parts can reach undefined signed-shift
+        arithmetic in expf(). Results on those paths are not
+        portable.
 
     SEE ALSO
-        ctanh(), csinhf(), ccoshf()
+        ctanh(), ctanhl(), csinhf(), ccoshf(), tanhf()
 
 *****************************************************************************/
 float complex

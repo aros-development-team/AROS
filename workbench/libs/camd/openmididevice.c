@@ -4,6 +4,7 @@
     Desc: 
 */
 
+#include <aros/macros.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #ifdef __amigaos4__
@@ -66,6 +67,7 @@ BOOL isPointerInSeglist(APTR pointer,BPTR seglist,ULONG minsize);
 
 	STRPTR addr;
 	ULONG size;
+	ULONG skip;
 
 	seg=seglist=LoadSeg(name);
 
@@ -86,12 +88,25 @@ BOOL isPointerInSeglist(APTR pointer,BPTR seglist,ULONG minsize);
 			continue;
 		}
 
-		for(
-			addr+=sizeof(BPTR)+sizeof(ULONG),
-			  size-=sizeof(BPTR)+sizeof(ULONG);		// Is this a bug? (- -> + ?)
-			size>=sizeof(struct MidiDeviceData);
-			size-=AROS_PTRALIGN,addr+=AROS_PTRALIGN
-		){
+		addr+=sizeof(BPTR)+sizeof(ULONG);
+		size-=sizeof(BPTR)+sizeof(ULONG);
+
+		/* MidiDeviceData is aligned in memory, but a hunk's data need not
+		   start aligned: the hunk header is sizeof(ULONG) + sizeof(BPTR),
+		   which is not a multiple of the pointer alignment on 64-bit
+		   targets, and the arena container's data holds sections placed
+		   at aligned addresses. Stepping from an unaligned start would
+		   never meet the structure, so start at the first aligned
+		   address. */
+		skip=AROS_ROUNDUP2((IPTR)addr,AROS_PTRALIGN)-(IPTR)addr;
+		if(size<skip){
+			seg=*(BPTR *)BADDR(seg);
+			continue;
+		}
+		addr+=skip;
+		size-=skip;
+
+		while(size>=sizeof(struct MidiDeviceData)){
 			mididevicedata=(struct MidiDeviceData *)addr;
 			if
 			  (
@@ -161,6 +176,8 @@ BOOL isPointerInSeglist(APTR pointer,BPTR seglist,ULONG minsize);
 			    ReleaseSemaphore(CB(CamdBase)->CLSemaphore);
 			    return mididevicedata;
 			  }
+			size-=AROS_PTRALIGN;
+			addr+=AROS_PTRALIGN;
 		}
 		seg=*(BPTR *)BADDR(seg);
 	}

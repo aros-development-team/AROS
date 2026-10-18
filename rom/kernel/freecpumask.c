@@ -23,9 +23,10 @@
         struct KernelBase *, KernelBase, 43, Kernel)
 
 /*  FUNCTION
-        Free the mask.
+        Release storage used by a CPU affinity mask.
 
     INPUTS
+        mask - CPU affinity mask returned by KrnAllocCPUMask().
 
     RESULT
 

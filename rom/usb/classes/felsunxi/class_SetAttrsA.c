@@ -26,24 +26,17 @@
         LIBBASETYPEPTR, FELSunxiBase, 6, FELSunxi)
 
 /*  FUNCTION
+        Set attributes on the FELSunxi USB class.
 
     INPUTS
+        type      - Attribute scope; currently ignored.
+        usbstruct - USB object; currently ignored.
+        taglist   - Requested attributes; currently ignored.
 
     RESULT
+        Always 0. No attributes are changed.
 
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-    HISTORY
-
-*****************************************************************************/
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 

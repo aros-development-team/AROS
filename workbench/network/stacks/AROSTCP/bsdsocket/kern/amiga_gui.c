@@ -338,21 +338,14 @@ void gui_process_msg(struct SysLogPacket *msg)
          * which must run regardless of whether the GUI is up. */
         ifp = (struct ifnet *)msg->Time;
         state = (long)msg->Tag;
-        if(ifp && state & (MIAMIPANELV_AddInterface_State_Online | MIAMIPANELV_AddInterface_State_GoingOffline)) {
-            if(state == MIAMIPANELV_AddInterface_State_Online) {
-                if(ifp->if_data.ifi_aros_usedhcp)
-                    run_dhclient(ifp);
+        /* No run_dhclient() on Online: dhclient's own ifup sends it, and it
+         * is handled late, after a reload's end. sana_connect() covers a
+         * link that came up. */
+        if(ifp && state == MIAMIPANELV_AddInterface_State_GoingOffline) {
+            kill_dhclient(ifp);
 #if INET6 && DHCP6
-                if(ifp->if_data.ifi_aros_usedhcp6)
-                    run_dhclient6(ifp);
+            kill_dhclient6(ifp);
 #endif
-            }
-            if(state == MIAMIPANELV_AddInterface_State_GoingOffline) {
-                kill_dhclient(ifp);
-#if INET6 && DHCP6
-                kill_dhclient6(ifp);
-#endif
-            }
         }
     }
 }

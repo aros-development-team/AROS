@@ -33,6 +33,36 @@ Lg4 =      0xf89e26.0p-26;	/* 0.24279078841 */
 static const float zero   =  0.0;
 static const volatile float vzero __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) = 0.0;
 
+/****************************************************************************
+    NAME
+        float logf(
+
+    SYNOPSIS
+        float x)
+
+    FUNCTION
+        Return the natural logarithm of x.
+
+    INPUTS
+        x - Positive float value, including positive subnormal values.
+
+    RESULT
+        An approximation to the natural logarithm in float.
+        Returns positive zero for x = 1. Both signs of zero return
+        negative infinity. Negative values, including negative
+        infinity, return NaN. Positive infinity returns positive
+        infinity; NaN returns NaN.
+
+    NOTES
+        Include <math.h>. The function does not assign errno.
+        Zero arguments can raise divide-by-zero; negative arguments
+        can raise invalid. Other arithmetic can raise inexact.
+        Enabled traps may prevent return.
+
+    SEE ALSO
+        log10f(), log1pf(), log2f()
+
+*****************************************************************************/
 float
 __ieee754_logf(float x)
 {

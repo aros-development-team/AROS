@@ -26,8 +26,13 @@
         struct KernelBase *, KernelBase, 16, Kernel)
 
 /*  FUNCTION
+        Map a physical memory region into the virtual address space.
 
     INPUTS
+        virt   - Starting virtual address of the mapping.
+        phys   - Starting physical address of the region.
+        length - Length of the mapping in bytes.
+        flags  - Mapping attributes specified by KRN_MapAttr.
 
     RESULT
 

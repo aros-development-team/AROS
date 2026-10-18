@@ -26,6 +26,46 @@
 
 #include "debug.h"
 
+/*****i**********************************************************************
+    NAME
+        struct signal_func_data * __stdc_sig_getfuncdata(
+
+    SYNOPSIS
+        int signum)
+
+    FUNCTION
+        Return the mutable signal record in the current stdc.library
+        base, allocating the signal table on first use.
+
+    INPUTS
+        signum - Signal number from SIGHUP through _SIGMAX, inclusive
+                 (1 through 64). Requires a valid current stdc.library
+                 base with its memory pool initialized.
+
+    RESULT
+        A borrowed pointer to the record for signum, or NULL with
+        errno set to EINVAL for an out-of-range number or ENOMEM
+        if table allocation fails. Success does not clear errno.
+
+    NOTES
+        Internal signal support, not an application API. First use
+        initializes every record with SIG_DFL, a NULL sigaction
+        handler, and zeroed mask, action flags, and delivery flags.
+        Subsequent calls preserve the records.
+
+        The record is shared by signal(), sigaction(), and raise()
+        using the same library base. Do not free it. Its storage is
+        reclaimed when that base's memory pool is destroyed.
+
+        Access is not synchronized. Serialize first use and record
+        updates when sharing a base. This lookup accepts every
+        number in range; it does not enforce sigaction() restrictions
+        on SIGKILL and SIGSTOP or establish signal delivery support.
+
+    SEE ALSO
+        signal(), sigaction(), raise()
+
+*****************************************************************************/
 struct signal_func_data *__stdc_sig_getfuncdata(int signum)
 {
     struct StdCIntBase *StdCBase =
@@ -67,6 +107,51 @@ struct signal_func_data *__stdc_sig_getfuncdata(int signum)
    can be overloaded by libraries. For example by stdcio.library or posixc.library
    so they can use stdio for presenting the caught signal
 */
+/*****i**********************************************************************
+    NAME
+        void __sig_default(
+
+    SYNOPSIS
+        int signum)
+
+    FUNCTION
+        Report a signal and leave the program through the abnormal
+        exit path with return code 20.
+
+    INPUTS
+        signum - Signal number used in the diagnostic. SIGABRT and
+                 SIGTERM select dedicated messages. Other values
+                 are printed numerically.
+
+        Requires initialized stdc startup exit state and a current
+        task with a valid, null-terminated name.
+
+    RESULT
+        Does not return during normal operation. Registered atexit()
+        functions are not called.
+
+    NOTES
+        Internal handler selected by raise() for SIG_DFL. All
+        signals reaching this handler take the same termination
+        path; signal-specific POSIX default actions are not provided.
+
+        Displays an Intuition requester if intuition.library is
+        available; otherwise writes through kprintf(). The requester
+        may wait for user input. This is not an async-signal-safe
+        termination path.
+
+        Calling without initialized startup exit state invokes a
+        fatal system alert.
+
+    BUGS
+        The diagnostic uses an unbounded task name in a 50-byte
+        stack buffer. A long name can corrupt the stack before
+        the program reaches the exit path.
+
+    SEE ALSO
+        raise(), signal(), __stdc_jmp2exit()
+
+*****************************************************************************/
 void __sig_default(int signum)
 {
     struct StdCIntBase *StdCBase =

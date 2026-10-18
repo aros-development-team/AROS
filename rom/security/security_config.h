@@ -28,6 +28,9 @@ struct secConfig
     UWORD               MaxTries;               /* Security.auth: failures before a lock-out    */
     UWORD               LockTime;               /* Security.auth: lock-out time in seconds      */
     UWORD               LoginDelayMax;          /* Security.auth: longest hold-back, seconds    */
+    UWORD               KeyTimeout;             /* seconds to wait for a challenge token        */
+    char                KeyAppID[secKEYAPPIDSIZE];   /* application id of challenge tokens      */
+    char                KeyDevice[32];          /* their exec device                            */
 };
 
 #define secCFGB_LimitDOSSetProtection   (0)     /* LimitDOSSetProtection                */
@@ -43,6 +46,10 @@ struct secConfig
 #define secCFGF_UseFSTab                (1 << secCFGB_UseFSTab)
 #define secCFGF_RT                      (1 << secCFGB_RT)
 #define secCFGF_HashedLogin             (1 << secCFGB_HashedLogin)
+#define secCFGB_KeyLogin                (6)    /* KEYLOGIN: check registered security keys  */
+#define secCFGB_KeyRequired             (7)    /* KEYREQUIRED: no local login without a key */
+#define secCFGF_KeyLogin                (1 << secCFGB_KeyLogin)
+#define secCFGF_KeyRequired             (1 << secCFGB_KeyRequired)
 
 #define secLogB_Startup                 (0)     /* Startup Information                  */
 #define secLogB_Login                   (1)     /* Log successful Login/Logout          */
@@ -107,6 +114,13 @@ extern struct secGroupDef *GetGroupDefs(struct SecurityBase *secBase);
 extern void FreeDefs(struct SecurityBase *secBase);
 extern struct secUserDef *MakeUserDef(struct SecurityBase *secBase, STRPTR line);
 extern BOOL UpdateUserDefs(struct SecurityBase *secBase);
+extern BOOL UpdateGroupDefs(struct SecurityBase *secBase);
+
+/* Rewrite a database file in 'dir' safely (new file, size check, rename);
+ * 'write' returns the bytes it wrote or -1, 'ctx' is handed to it */
+typedef LONG (*DbWriter)(struct SecurityBase *secBase, BPTR file, APTR ctx);
+extern BOOL RewriteDbFile(struct SecurityBase *secBase, BPTR dir, CONST_STRPTR name, CONST_STRPTR newname,
+                          CONST_STRPTR oldname, BOOL readable, DbWriter write, APTR ctx);
 
 extern BOOL ClearBuffer(struct SecurityBase *secBase);
 extern void FreeBuffer(struct SecurityBase *secBase);
