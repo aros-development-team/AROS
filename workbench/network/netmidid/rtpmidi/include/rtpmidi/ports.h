@@ -25,7 +25,9 @@ struct applemidi_ports {
 
 void applemidi_ports_init(struct applemidi_ports *ports, int count);
 /* Keeps port for the peer called name. Returns -1 for a port that is not
- * there or is kept already, a name kept elsewhere, or one too long. */
+ * there or is kept already, a name kept elsewhere, or one too long.
+ * name must terminate within MAX + 1 readable bytes, or provide that many
+ * bytes so an overlong name can be rejected. */
 int applemidi_ports_keep(struct applemidi_ports *ports, int port,
                          const char *name);
 /* A peer has connected: owner is whatever the caller knows it by, not 0.

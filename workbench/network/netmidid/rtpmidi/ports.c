@@ -21,6 +21,7 @@ static int kept_for(const struct applemidi_ports *ports, const uint8_t *name,
 
     if (!name || !length)
         return -1;
+    /* kept[port] has MAX + 1 bytes: text_length also reads text[MAX]. */
     for (port = 0; port < ports->count; ++port)
         if (applemidi_text_length(ports->kept[port],
                                   APPLEMIDI_PORT_NAME_MAX) == length &&
@@ -36,6 +37,7 @@ int applemidi_ports_keep(struct applemidi_ports *ports, int port,
 
     if (!ports || !name || port < 0 || port >= ports->count)
         return -1;
+    /* name must include a readable byte at MAX unless terminated earlier. */
     length = applemidi_text_length(name, APPLEMIDI_PORT_NAME_MAX);
     if (!length || length > APPLEMIDI_PORT_NAME_MAX || ports->kept[port][0] ||
         kept_for(ports, (const uint8_t *)name, length) >= 0)

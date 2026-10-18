@@ -73,7 +73,7 @@ static int find(const struct applemidi_peers *peers, uint32_t address, uint16_t 
 }
 
 static int allocate(struct applemidi_peers *peers, uint32_t address, uint16_t control_port,
-                    uint32_t now_ms)
+                    uint32_t now)
 {
     int i;
     int used = 0;
@@ -92,7 +92,7 @@ static int allocate(struct applemidi_peers *peers, uint32_t address, uint16_t co
         peer->used = 1;
         peer->address = address;
         peer->control_port = control_port;
-        peer->last_seen_ms = now_ms;
+        peer->last_seen = now;
         return i;
     }
     return -1;
@@ -115,7 +115,7 @@ static void remember_name(struct applemidi_peer *peer, const struct applemidi_pa
 
 int applemidi_peers_receive(struct applemidi_peers *peers, uint32_t address, uint16_t port,
                      int on_data_port, const struct applemidi_packet *in,
-                     uint32_t now_ms, struct applemidi_packet *out,
+                     uint32_t now, struct applemidi_packet *out,
                      int *out_data_port, int *index, enum applemidi_peer_event *event)
 {
     uint16_t control_port;
@@ -137,7 +137,7 @@ int applemidi_peers_receive(struct applemidi_peers *peers, uint32_t address, uin
         if (in->command != APPLEMIDI_IN || on_data_port)
             return 0;
         if (!may_connect(peers, address, in) ||
-            (i = allocate(peers, address, control_port, now_ms)) < 0) {
+            (i = allocate(peers, address, control_port, now)) < 0) {
             ++peers->refused;
             memset(out, 0, sizeof(*out));
             out->command = APPLEMIDI_NO;
@@ -148,7 +148,7 @@ int applemidi_peers_receive(struct applemidi_peers *peers, uint32_t address, uin
     }
     peer = &peers->peer[i];
     *index = i;
-    peer->last_seen_ms = now_ms;
+    peer->last_seen = now;
     if (in->command == APPLEMIDI_IN || in->command == APPLEMIDI_OK)
         remember_name(peer, in);
 
@@ -177,23 +177,20 @@ int applemidi_peers_receive(struct applemidi_peers *peers, uint32_t address, uin
         *event = APPLEMIDI_PEER_CONNECTED;
     } else if (peer->session.phase == APPLEMIDI_SESSION_IDLE &&
                (in->command == APPLEMIDI_BY || in->command == APPLEMIDI_NO)) {
-        *event = peer->connected_reported || in->command == APPLEMIDI_NO ?
-                 APPLEMIDI_PEER_LEFT : APPLEMIDI_PEER_NONE;
+        *event = APPLEMIDI_PEER_LEFT;
         release(peers, i);
-        if (*event == APPLEMIDI_PEER_NONE)
-            *event = APPLEMIDI_PEER_LEFT;
     }
     return result;
 }
 
 int applemidi_peers_invite(struct applemidi_peers *peers, uint32_t address, uint16_t control_port,
-                    uint32_t token, uint32_t now_ms, struct applemidi_packet *out)
+                    uint32_t token, uint32_t now, struct applemidi_packet *out)
 {
     int i;
 
     if (!peers || !out || find(peers, address, control_port) >= 0)
         return -1;
-    i = allocate(peers, address, control_port, now_ms);
+    i = allocate(peers, address, control_port, now);
     if (i < 0)
         return -1;
     if (applemidi_session_invite(&peers->peer[i].session, token, out)) {
@@ -252,10 +249,10 @@ int applemidi_peers_find_ssrc(const struct applemidi_peers *peers, uint32_t ssrc
     return -1;
 }
 
-void applemidi_peers_seen(struct applemidi_peers *peers, int index, uint32_t now_ms)
+void applemidi_peers_seen(struct applemidi_peers *peers, int index, uint32_t now)
 {
     if (peers && index >= 0 && index < APPLEMIDI_PEERS_MAX && peers->peer[index].used)
-        peers->peer[index].last_seen_ms = now_ms;
+        peers->peer[index].last_seen = now;
 }
 
 int applemidi_peers_end(struct applemidi_peers *peers, int index, struct applemidi_packet *out)
@@ -271,12 +268,17 @@ int applemidi_peers_end(struct applemidi_peers *peers, int index, struct applemi
     return result;
 }
 
-int applemidi_peers_expired(const struct applemidi_peers *peers, uint32_t now_ms,
-                     uint32_t timeout_ms)
+int applemidi_peers_expired(const struct applemidi_peers *peers, uint32_t now,
+                     uint32_t timeout)
 {
     int i;
-    for (i = 0; peers && i < APPLEMIDI_PEERS_MAX; ++i)
-        if (peers->peer[i].used && now_ms - peers->peer[i].last_seen_ms >= timeout_ms)
+    for (i = 0; peers && i < APPLEMIDI_PEERS_MAX; ++i) {
+        uint32_t elapsed = now - peers->peer[i].last_seen;
+
+        /* The half-range test distinguishes a stale sample from forward
+         * progress across the low 32-bit clock's wrap. */
+        if (peers->peer[i].used && elapsed <= INT32_MAX && elapsed >= timeout)
             return i;
+    }
     return -1;
 }

@@ -48,7 +48,7 @@ int applemidi_clock_poll(struct applemidi_clock *clock, uint32_t local_ssrc,
         return 0;
     interval = clock->early < APPLEMIDI_CLOCK_FIRST_EXCHANGES ?
                APPLEMIDI_CLOCK_FIRST_INTERVAL : APPLEMIDI_CLOCK_INTERVAL;
-    if (clock->started && now - clock->sent < interval)
+    if (clock->started && (now < clock->sent || now - clock->sent < interval))
         return 0;
     memset(out, 0, sizeof(*out));
     out->command = APPLEMIDI_CK;
@@ -114,6 +114,6 @@ int applemidi_clock_receive(struct applemidi_clock *clock,
 int applemidi_clock_expired(const struct applemidi_clock *clock,
                             uint64_t now)
 {
-    return clock && !clock->initiator &&
+    return clock && !clock->initiator && now >= clock->heard &&
            now - clock->heard >= APPLEMIDI_CLOCK_TIMEOUT;
 }

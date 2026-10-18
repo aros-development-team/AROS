@@ -77,7 +77,8 @@ int applemidi_clock_receive(struct applemidi_clock *clock,
                             const struct applemidi_packet *in, uint64_t now,
                             struct applemidi_packet *out);
 
-/* Whether the peer that should be starting exchanges has gone silent. */
+/* Whether the peer that should be starting exchanges has gone silent.
+ * A now sample older than heard is not evidence of silence. */
 int applemidi_clock_expired(const struct applemidi_clock *clock,
                             uint64_t now);
 

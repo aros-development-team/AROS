@@ -14,7 +14,10 @@
  * iPad can both be connected. Each peer is one session (session.h) found
  * by its address: the peer's control port, its data port being the next
  * one. The caller owns the sockets and the clock and decodes and encodes
- * the packets; no OS calls occur here. */
+ * the packets; no OS calls occur here.
+ * All times and intervals use 1/10000 second ticks from one monotonic
+ * clock, reduced to 32 bits. Elapsed intervals must not exceed INT32_MAX
+ * ticks (about 59.7 hours); older now samples are ignored for expiry. */
 
 #define APPLEMIDI_PEERS_MAX 8
 #define APPLEMIDI_PEER_NAME_MAX 63
@@ -42,7 +45,7 @@ struct applemidi_peer {
     uint16_t control_port;      /* the peer's; data is control_port + 1 */
     struct applemidi_session session;
     char name[APPLEMIDI_PEER_NAME_MAX + 1];
-    uint32_t last_seen_ms;
+    uint32_t last_seen;
     int connected_reported;
 };
 
@@ -72,9 +75,9 @@ struct applemidi_peers {
                                    with NO and counted in refused */
 };
 
-/* How long a caller waits, in the session's unit, a ten-thousandth of a
- * second. The table keeps no time itself; these are for whoever runs it,
- * so that every runtime waits alike.
+/* How long a caller waits, in the tick unit defined above. The table
+ * keeps no time itself; these are for whoever runs it, so every runtime
+ * waits alike.
  *
  * An invitation is sent again every second, twelve times, and then given
  * up: what Benoit Bouchez's RTP-MIDI class does (RTP_MIDI.cpp), and close
@@ -109,14 +112,14 @@ int applemidi_peers_allow(struct applemidi_peers *peers, uint32_t address,
  * and accept is set; otherwise its invitation is answered with NO. */
 int applemidi_peers_receive(struct applemidi_peers *peers, uint32_t address, uint16_t port,
                      int on_data_port, const struct applemidi_packet *in,
-                     uint32_t now_ms, struct applemidi_packet *out,
+                     uint32_t now, struct applemidi_packet *out,
                      int *out_data_port, int *index, enum applemidi_peer_event *event);
 
 /* Invites address:control_port. Returns the peer index, -1 when the table
  * is full or the peer is already known. out is the IN to send on the
  * local control port. */
 int applemidi_peers_invite(struct applemidi_peers *peers, uint32_t address, uint16_t control_port,
-                    uint32_t token, uint32_t now_ms, struct applemidi_packet *out);
+                    uint32_t token, uint32_t now, struct applemidi_packet *out);
 
 /* Rebuilds the outstanding IN for a peer whose invitation timed out.
  * out_data_port identifies whether it belongs on the data socket. */
@@ -137,15 +140,15 @@ int applemidi_peers_find_data(const struct applemidi_peers *peers, uint32_t addr
 int applemidi_peers_find_ssrc(const struct applemidi_peers *peers, uint32_t ssrc);
 
 /* Records that the peer was heard from (CK, RTP). */
-void applemidi_peers_seen(struct applemidi_peers *peers, int index, uint32_t now_ms);
+void applemidi_peers_seen(struct applemidi_peers *peers, int index, uint32_t now);
 
 /* Ends one peer: out is the BY to send on the local control port.
  * Returns -1 when the index is not in use. */
 int applemidi_peers_end(struct applemidi_peers *peers, int index, struct applemidi_packet *out);
 
-/* The first peer silent for timeout_ms, which the caller then ends with
+/* The first peer silent for timeout, which the caller then ends with
  * applemidi_peers_end(), or -1. */
-int applemidi_peers_expired(const struct applemidi_peers *peers, uint32_t now_ms,
-                     uint32_t timeout_ms);
+int applemidi_peers_expired(const struct applemidi_peers *peers, uint32_t now,
+                     uint32_t timeout);
 
 #endif
