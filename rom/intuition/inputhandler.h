@@ -77,6 +77,8 @@ struct IIHData
     WORD                     ScreenDragPointY;
     LONG                     ScreenDragRemX;     /* drag left over by screen scaling */
     LONG                     ScreenDragRemY;
+    LONG                     ScrollRemX;         /* the same for autoscroll */
+    LONG                     ScrollRemY;
     BOOL		     SwitchedMonitor;
 };
 

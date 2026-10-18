@@ -1458,17 +1458,19 @@ WORD ScreenTopInDisplay(struct Screen *scr, struct IntuitionBase *IntuitionBase)
         .MethodID   = MM_ScreenToDisplayCoords,
         .Screen     = scr,
         .ScrX       = 0,
-        .ScrY       = scr->TopEdge,
+        .ScrY       = (scr->TopEdge < 0) ? -scr->TopEdge : scr->TopEdge,
         .DispX      = &dx,
         .DispY      = &dy
     };
 
     if (!(GetPrivScreen(scr)->SpecialFlags & SF_ScaledCoords)
-        || (scr->TopEdge < 0) || !GetPrivScreen(scr)->IMonitorNode)
+        || !GetPrivScreen(scr)->IMonitorNode)
         return scr->TopEdge * int_MouseScaleY(scr);
 
+    /* The method takes unsigned coordinates; above the display top the
+     * edge is converted as a distance and mirrored back. */
     DoMethodA(GetPrivScreen(scr)->IMonitorNode, (Msg)&coordmsg);
-    return dy;
+    return (scr->TopEdge < 0) ? -(WORD)dy : (WORD)dy;
 }
 
 struct Screen *FindHighestScreen(struct IntuitionBase *IntuitionBase)
