@@ -20,6 +20,36 @@
  * have this stub here for posixc.library compatability with
  * dos.library v30..v39.
  */
+/*****i**********************************************************************
+    NAME
+        LONG v30_ScanVars(
+
+    SYNOPSIS
+        struct Hook *hook, ULONG flags, APTR userdata)
+
+    FUNCTION
+        Invoke hook for each LV_VAR in the current process local
+        variable list, stopping at its first nonzero result.
+
+    INPUTS
+        hook - Valid synchronous callback hook.
+        flags - Copied into each message; does not filter the list.
+        userdata - Opaque callback argument.
+        Requires process context and stable local variables during
+        the scan. Intended for GVF_LOCAL_ONLY callers.
+
+    RESULT
+        The first nonzero hook result, or zero after a complete
+        scan. Failure to open utility.library also returns zero.
+
+    NOTES
+        Compatibility implementation selected when
+        AROS_AMIGAOS_COMPLIANCE is at least 30. Opens and closes
+        utility.library around the scan. Message storage is valid
+        only during the call; names and values are borrowed from
+        the process list. sv_GDir is an empty string.
+
+*****************************************************************************/
 static LONG v30_ScanVars(struct Hook *hook, ULONG flags, APTR userdata)
 {
     /* We scan through the process->pr_LocalVars list */
@@ -63,6 +93,31 @@ static LONG v30_ScanVars(struct Hook *hook, ULONG flags, APTR userdata)
 #define ScanVars(a,b,c) v30_ScanVars(a,b,c)
 #endif
 
+/*****i**********************************************************************
+    NAME
+        __env_item * __env_newvar(
+
+    SYNOPSIS
+        const char *name, int valuesize)
+
+    FUNCTION
+        Allocate a detached environment cache entry with a copied
+        name, uninitialized value storage and a NULL next link.
+
+    INPUTS
+        name - Readable, null-terminated name.
+        valuesize - Positive allocation size in bytes; not checked.
+
+    RESULT
+        The new entry, owned by the caller, or NULL on allocation
+        failure. Partial allocations are freed on failure.
+
+    NOTES
+        Initialize and terminate the value before exposing the
+        entry to cache lookup. Release name, value and entry with
+        free() when ownership is not transferred to the cache.
+
+*****************************************************************************/
 static __env_item *__env_newvar(const char *name, int valuesize)
 {
     __env_item *item;
@@ -88,6 +143,31 @@ err1:
     return NULL;
 }
 
+/*****i**********************************************************************
+    NAME
+        __env_item ** internal_findvar(
+
+    SYNOPSIS
+        register const char *name)
+
+    FUNCTION
+        Locate the link holding a named entry in the current
+        stdcio cache, or the NULL link where it can be appended.
+
+    INPUTS
+        name - Readable, null-terminated key. Requires initialized
+               stdcio base state and a well-formed cache list.
+
+    RESULT
+        A borrowed pointer to the matching entry link or terminal
+        NULL link. Comparison is case-sensitive. No allocation
+        or list modification occurs.
+
+    NOTES
+        Use the link only while the cache remains unchanged.
+        The function does not synchronize access.
+
+*****************************************************************************/
 static __env_item **internal_findvar(register const char *name)
 {
     struct StdCIOIntBase *StdCIOBase =
@@ -111,6 +191,44 @@ static __env_item **internal_findvar(register const char *name)
 
   Returns NULL on error.
 */
+/*****i**********************************************************************
+    NAME
+        __env_item * __stdcio_env_getvar(
+
+    SYNOPSIS
+        const char *name, int valuesize)
+
+    FUNCTION
+        Find or create an entry in the current stdcio environment
+        cache. This function does not read a DOS variable.
+
+    INPUTS
+        name - Readable, null-terminated, case-sensitive cache key.
+        valuesize - Positive number of bytes required for the value,
+                    including space for its terminator.
+        Existing cached values must be valid null-terminated strings.
+        Serialize access to a shared cache.
+
+    RESULT
+        A borrowed cache entry, or NULL when creation fails or a
+        failed replacement removes the last entry. Newly allocated
+        value storage is uninitialized; fill and terminate it before
+        another lookup. Do not free the returned entry directly.
+
+    NOTES
+        Existing storage is replaced when strlen(value) is less
+        than valuesize. Its old contents and address are then lost.
+        The comparison uses string length, not allocated capacity.
+        No arguments or size arithmetic are validated.
+
+    BUGS
+        If replacement allocation fails, the old value and entry
+        are freed, the name leaks, and the entry is unlinked. The
+        return value is then the next entry, if any, which can belong
+        to a different name. A non-NULL result does not reliably
+        identify the requested variable after allocation failure.
+
+*****************************************************************************/
 __env_item *__stdcio_env_getvar(const char *name, int valuesize)
 {
     register __env_item **curr;
@@ -141,6 +259,29 @@ __env_item *__stdcio_env_getvar(const char *name, int valuesize)
     return *curr;
 }
 
+/*****i**********************************************************************
+    NAME
+        void __env_delvar(
+
+    SYNOPSIS
+        const char *name)
+
+    FUNCTION
+        Remove the first matching entry from the current stdcio
+        environment cache and free its name, value and node.
+
+    INPUTS
+        name - Readable, null-terminated, case-sensitive key.
+               Serialize access to a shared cache.
+
+    RESULT
+        No return value. A missing key leaves the list unchanged.
+
+    NOTES
+        Invalidates borrowed pointers into the removed entry.
+        Does not delete or change the corresponding DOS variable.
+
+*****************************************************************************/
 void __env_delvar(const char *name)
 {
     register __env_item **curr;
@@ -168,6 +309,32 @@ struct EnvData
 
 /* Hook function counting the number of variables and computing the buffer size
    needed for name=value character buffer. */
+/*****i**********************************************************************
+    NAME
+        LONG get_var_len(
+
+    SYNOPSIS
+        struct Hook *hook, APTR userdata, struct ScanVarsMsg *message)
+
+    FUNCTION
+        Count one variable and add its name=value string storage
+        requirement to an EnvData accumulator.
+
+    INPUTS
+        hook - Unused.
+        userdata - Writable, initialized EnvData accumulator.
+        message - Valid scan message with a terminated name and
+                  a nonnegative value length.
+
+    RESULT
+        Always zero, allowing the scan to continue.
+
+    NOTES
+        Adds one to envcount and name length plus sv_VarLen plus
+        two to varbufsize. Counts use int without overflow checks.
+        No value bytes are read or retained.
+
+*****************************************************************************/
 LONG get_var_len(struct Hook *hook, APTR userdata, struct ScanVarsMsg *message)
 {
     struct EnvData *data = (struct EnvData *) userdata;
@@ -179,6 +346,33 @@ LONG get_var_len(struct Hook *hook, APTR userdata, struct ScanVarsMsg *message)
 }
 
 /* Hook function storing name=value strings in buffer */
+/*****i**********************************************************************
+    NAME
+        LONG get_var(
+
+    SYNOPSIS
+        struct Hook *hook, APTR userdata, struct ScanVarsMsg *message)
+
+    FUNCTION
+        Append one null-terminated name=value string at the
+        current EnvData buffer cursor and advance the cursor.
+
+    INPUTS
+        hook - Unused.
+        userdata - EnvData with a writable varbufptr and enough
+                   remaining storage for the complete string.
+        message - Valid name and value data from the scan.
+
+    RESULT
+        Always zero. The cursor points just past the stored NUL.
+
+    NOTES
+        Copies at most sv_VarLen value bytes, stopping at an
+        embedded NUL. Binary values are therefore truncated.
+        No destination bound is checked; message storage is not
+        retained.
+
+*****************************************************************************/
 LONG get_var(struct Hook *hook, APTR userdata, struct ScanVarsMsg *message)
 {
     struct EnvData *data = userdata;
@@ -193,6 +387,44 @@ LONG get_var(struct Hook *hook, APTR userdata, struct ScanVarsMsg *message)
 /* Function storing name=value strings in given environ buffer. When buffer is
    null, it returns minimal necessary size of the buffer needed to store all
    name=value strings. */
+/*****i**********************************************************************
+    NAME
+        int __env_get_environ(
+
+    SYNOPSIS
+        char **environ, int size)
+
+    FUNCTION
+        Measure or write a snapshot of DOS local variables as a
+        NULL-terminated pointer array followed by name=value
+        strings in the same allocation.
+
+    INPUTS
+        environ - NULL to measure, or suitably aligned writable
+                  storage for the pointer array and string data.
+        size - Available bytes when environ is non-NULL.
+        Requires process context and an unchanged local-variable
+        list throughout both scans.
+
+    RESULT
+        With NULL environ, the calculated size in bytes. Otherwise
+        returns -1 before writing when size is too small, or zero
+        after constructing the snapshot. No storage is allocated.
+
+    NOTES
+        Array entries point inside the supplied block. The final
+        entry is NULL. The caller owns the block and must keep it
+        alive while using those pointers. Scan results and integer
+        size overflow are not checked.
+
+    BUGS
+        For an empty environment, the calculated size covers only
+        one pointer, but the write path also writes a NUL byte
+        immediately after it. The advertised minimum is too small.
+        Changes between scans can invalidate both capacity and
+        entry counts. Embedded NULs truncate variable values.
+
+*****************************************************************************/
 int __env_get_environ(char **environ, int size)
 {
     int i;
