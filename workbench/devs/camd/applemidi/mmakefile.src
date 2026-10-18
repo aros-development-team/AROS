@@ -4,6 +4,6 @@ include $(SRCDIR)/config/aros.cfg
 
 %build_prog mmake=workbench-devs-camd-applemidi \
     progname=applemidi targetdir=$(AROS_DEVS)/Midi \
-    files=../common/netmididriver
+    files=../networkmidi2/netmididriver
 
 %common
