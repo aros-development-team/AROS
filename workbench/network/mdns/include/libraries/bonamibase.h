@@ -19,5 +19,7 @@ struct BonamiBase
 };
 
 typedef APTR MDNSRegisterRef;
+typedef APTR MDNSBrowseRef;
+typedef APTR MDNSResolveRef;
 
 #endif /* LIBRARIES_BONAMIBASE_H */
