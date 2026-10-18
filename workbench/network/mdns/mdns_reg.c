@@ -771,9 +771,6 @@ mdnsRegTick(struct MDNSDaemon *md)
                 rs->rs_NextTick = now + MDNS_PROBE_TICKS;
                 continue;
             }
-            if (!hostReady && !rs->rs_Proxy) {
-                continue;       /* waits for the host's name */
-            }
             /* Nobody objected: the name is this host's. */
             rs->rs_State = MDNS_NAME_ANNOUNCED;
             rs->rs_Step = 1;
