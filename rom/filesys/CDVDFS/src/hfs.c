@@ -153,6 +153,8 @@ static void HFS_Decode_MDB(const t_uchar *p, t_mdb *mdb)
     CopyMem(p + 37, mdb->VolName, sizeof(mdb->VolName));
     mdb->FilCnt = HFS_Get32(p + 84);
     mdb->DirCnt = HFS_Get32(p + 88);
+    mdb->XTFlSize = HFS_Get32(p + 130);
+    HFS_Decode_Extents(p + 134, mdb->XTExtRec);
     mdb->CTFlSize = HFS_Get32(p + 146);
     HFS_Decode_Extents(p + 150, mdb->CTExtRec);
 }
@@ -730,105 +732,162 @@ void HFS_Close_Obj(CDROM_OBJ *p_obj)
 	FreeMem (p_obj, sizeof (CDROM_OBJ));
 }
 
+/* Resolve a block within an extent record. The returned run never crosses
+ * an extent boundary. Allocation block numbers are relative to the volume. */
+static t_bool HFS_Map_Extents(const t_extdatarec extents, t_ulong logical,
+    t_ulong *physical, t_ulong *count)
+{
+    int i;
+    for (i = 0; i < 3; i++)
+    {
+        if (logical < extents[i].NumABlks)
+        {
+            *physical = extents[i].StABN + logical;
+            *count = extents[i].NumABlks - logical;
+            return TRUE;
+        }
+        logical -= extents[i].NumABlks;
+    }
+    return FALSE;
+}
+
+/* The overflow tree itself is addressed using its MDB extents. If a node
+ * is outside those extents, fail instead of treating the file as contiguous. */
+static t_uchar *HFS_Extent_Node(VOLUME *volume, t_ulong node)
+{
+    t_mdb *mdb = &VOL(volume,mdb);
+    t_ulong sectors = mdb->AlBlkSiz >> 9, physical, count;
+    if (!sectors || node >= mdb->XTFlSize / 512 ||
+        !HFS_Map_Extents(mdb->XTExtRec, node / sectors, &physical, &count))
+        return NULL;
+    return Read_Block(volume->cd, AB_to_Block(volume, physical) + node % sectors);
+}
+
+static t_bool HFS_Find_Extent(CDROM_OBJ *obj, t_ulong logical,
+    t_ulong *physical, t_ulong *count)
+{
+    t_uchar *node = HFS_Extent_Node(obj->volume, 0);
+    t_ulong next, nodes, file_id = OBJ(obj,cat_rec).f.FlNum;
+    unsigned int height;
+    int fork = OBJ(obj,data_fork) ? 0 : 255;
+
+    if (!node || node[8] != 1 || HFS_Get16(node + 32) != 512)
+        return FALSE;
+    height = HFS_Get16(node + 14);
+    next = HFS_Get32(node + 16);
+    nodes = HFS_Get32(node + 36);
+    /* Each level must decrease the node height, bounding traversal. */
+    while (height && next && next < nodes)
+    {
+        int i, chosen = -1, chosen_end = 0;
+        node = HFS_Extent_Node(obj->volume, next);
+        if (!node || node[9] != height ||
+            node[8] != (height == 1 ? 255 : 0))
+            return FALSE;
+        for (i = 0; i < HFS_Get16(node + 10); i++)
+        {
+            int start, end;
+            t_ulong id;
+            if (!HFS_Record_Bounds(node, i, &start, &end) ||
+                end - start < 8 || node[start] != 7)
+                return FALSE;
+            id = HFS_Get32(node + start + 2);
+            if (id > file_id || (id == file_id &&
+                (node[start + 1] > fork || (node[start + 1] == fork &&
+                HFS_Get16(node + start + 6) > logical))))
+                break;
+            chosen = start;
+            chosen_end = end;
+        }
+        if (chosen < 0)
+            return FALSE;
+        if (height == 1)
+        {
+            t_extdatarec extents;
+            if (chosen_end - chosen < 20 ||
+                HFS_Get32(node + chosen + 2) != file_id ||
+                node[chosen + 1] != fork)
+                return FALSE;
+            HFS_Decode_Extents(node + chosen + 8, extents);
+            return HFS_Map_Extents(extents,
+                logical - HFS_Get16(node + chosen + 6), physical, count);
+        }
+        if (chosen_end - chosen < 12)
+            return FALSE;
+        next = HFS_Get32(node + chosen + 8);
+        height--;
+    }
+    return FALSE;
+}
+
+static t_bool HFS_File_Extent(CDROM_OBJ *obj, t_ulong logical,
+    t_ulong *physical, t_ulong *count)
+{
+    t_hfs_obj_info *info = obj->obj_info;
+    t_mdb *mdb = &VOL(obj->volume,mdb);
+    if (logical >= info->extent_start &&
+        logical - info->extent_start < info->extent_count)
+    {
+        *physical = info->extent_block + logical - info->extent_start;
+        *count = info->extent_count - (logical - info->extent_start);
+        return TRUE;
+    }
+    if (!HFS_Map_Extents(info->data_fork ? info->cat_rec.f.ExtRec :
+            info->cat_rec.f.RExtRec, logical, physical, count) &&
+        !HFS_Find_Extent(obj, logical, physical, count))
+        return FALSE;
+    if (*physical >= mdb->NmAlBlks || *count > mdb->NmAlBlks - *physical)
+        return FALSE;
+    info->extent_start = logical;
+    info->extent_block = *physical;
+    info->extent_count = *count;
+    return TRUE;
+}
+
 int HFS_Read_From_File(CDROM_OBJ *p_file, char *p_buffer, int p_buffer_length)
 {
     struct CDVDBase *global = p_file->global;
-    uint32_t block;
-    int remain_block, remain_file, remain;
-    int len;
-    CDROM *cd;
-    int pos;
-    int buf_pos = 0;
-    int todo;
-    t_bool data_fork = OBJ(p_file,data_fork);
-    t_ulong first_block;
-    t_ulong data_length = (data_fork ? OBJ(p_file,cat_rec).f.LgLen :
-	    OBJ(p_file,cat_rec).f.RLgLen);
+    CDROM *cd = p_file->volume->cd;
+    t_ulong allocation_size = VOL(p_file->volume,mdb).AlBlkSiz;
+    t_ulong data_length = OBJ(p_file,data_fork) ?
+        OBJ(p_file,cat_rec).f.LgLen : OBJ(p_file,cat_rec).f.RLgLen;
+    int done = 0;
 
-    if (p_file->pos == data_length)
+    if (p_buffer_length <= 0 || p_file->pos >= data_length)
+        return 0;
+    if (!allocation_size || (allocation_size & 511))
+        goto read_error;
+    while (done < p_buffer_length && p_file->pos < data_length)
     {
-	/* at end of file: */
-	return 0;
+        t_ulong physical, count, block, offset, available, len;
+        uint64_t extent_bytes;
+        if (!HFS_File_Extent(p_file, p_file->pos / allocation_size,
+                &physical, &count))
+            goto read_error;
+        offset = p_file->pos % allocation_size;
+        block = AB_to_Block(p_file->volume, physical) + (offset >> 9);
+        extent_bytes = (uint64_t)count * allocation_size - offset;
+        offset &= 511;
+        if (!Read_File_Chunk(cd, block >> 2))
+            goto read_error;
+        available = SCSI_BUFSIZE * cd->buffer_sectors -
+            ((block & ((cd->buffer_sectors << 2) - 1)) << 9) - offset;
+        len = data_length - p_file->pos;
+        if (len > (t_ulong)(p_buffer_length - done))
+            len = p_buffer_length - done;
+        if (len > available)
+            len = available;
+        if (len > extent_bytes)
+            len = extent_bytes;
+        CopyMem(cd->buffer + ((block & 3) << 9) + offset, p_buffer + done, len);
+        p_file->pos += len;
+        done += len;
     }
+    return done;
 
-    cd = p_file->volume->cd;
-    first_block = AB_to_Block
-	(
-	 p_file->volume,
-	 data_fork ?
-	 OBJ(p_file,cat_rec).f.ExtRec[0].StABN :
-	 OBJ(p_file,cat_rec).f.RExtRec[0].StABN
-	);
-    block = first_block + (p_file->pos >> 9);
-    todo = p_buffer_length;
-
-    while (todo)
-    {
-	t_uchar *data;
-
-	if (0 == Read_File_Chunk(cd, block >> 2))
-	{
-	    global->iso_errno = ISOERR_SCSI_ERROR;
-	    return -1;
-	}
-
-	data = cd->buffer + ((block & 3) << 9);
-
-	/*
-	 * this is offset within first block
-	 */
-	pos = p_file->pos & 511;
-
-	/*
-	 * The available data extends to the end of the current cache slot.
-	 */
-	remain_block = SCSI_BUFSIZE * cd->buffer_sectors -
-		((block << 9) & (SCSI_BUFSIZE * cd->buffer_sectors - 1)) - pos;
-
-	/*
-	 * how much data left in a file do we have?
-	 */
-	remain_file = data_length - p_file->pos;
-
-	/*
-	 * and how much can we read (file vs block)
-	 */
-	remain = (remain_block < remain_file) ? remain_block : remain_file;
-
-	/*
-	 * last: how much the *user* wants to read?
-	 */
-	len = (todo < remain) ? todo : remain;
-
-	/*
-	 * copy memory block
-	 */
-	CopyMem ((APTR) (data + pos), (APTR) (p_buffer + buf_pos), len);
-
-	/*
-	 * update position in user buffer
-	 * and file offset
-	 * reduce amount of bytes to be read
-	 */
-	buf_pos += len;
-	p_file->pos += len;
-	todo -= len;
-
-	/*
-	 * fin?
-	 */
-	if (p_file->pos >= data_length)
-	    break;
-
-	/*
-	 * HFS uses four 512-byte blocks per cached 2048-byte sector.
-	 * Advance to the next cache-slot boundary.
-	 */
-	block = (block + (cd->buffer_sectors << 2)) &
-		~((cd->buffer_sectors << 2) - 1);
-    }
-
-    return buf_pos;
+read_error:
+    global->iso_errno = ISOERR_SCSI_ERROR;
+    return -1;
 }
 
 t_bool HFS_Cdrom_Info(CDROM_OBJ *p_obj, CDROM_INFO *p_info) {

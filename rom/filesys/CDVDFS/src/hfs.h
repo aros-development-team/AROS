@@ -153,6 +153,9 @@ typedef struct hfs_obj_info {
   t_ulong		parent_id;
   char			name[50];
   t_catalog_record	cat_rec;
+  t_ulong		extent_start;
+  t_ulong		extent_block;
+  t_ulong		extent_count;
 } t_hfs_obj_info;
 
 typedef struct leaf_record_pos {
