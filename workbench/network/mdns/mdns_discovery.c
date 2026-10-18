@@ -26,6 +26,7 @@ struct DiscoveryRecord
     UBYTE data[512];
     UWORD type, length;
     ULONG link, expires, received, refresh, ttl, serial;
+    ULONG nextMissing, missingInterval;
     UWORD refreshStep;
 };
 struct DiscoveryView
@@ -290,6 +291,7 @@ void mdnsDiscoveryRecord(struct MDNSDaemon *md, const struct MDNSRecord *record,
     UBYTE key[256] = {0}, data[512] = {0};
     LONG i, size = record->rdlength, consumed;
     struct DiscoveryRecord *slot = NULL;
+    ULONG missingAt = 0, missingInterval = 50;
     ULONG now = mdnsTicks();
     ULONG link = md->md_SendIf >= 0 ? md->md_Ifs[md->md_SendIf].mi_Addr : 0;
 
@@ -363,6 +365,10 @@ void mdnsDiscoveryRecord(struct MDNSDaemon *md, const struct MDNSRecord *record,
         }
         return;
     }
+    if (slot != NULL) {
+        missingAt = slot->nextMissing;
+        missingInterval = slot->missingInterval;
+    }
     if (slot == NULL) {
         for (i = 0; i < DISC_RECORDS; i++) {
             if (d->records[i].type == 0 || due(now, d->records[i].expires)) {
@@ -384,6 +390,8 @@ void mdnsDiscoveryRecord(struct MDNSDaemon *md, const struct MDNSRecord *record,
     slot->ttl = record->ttl > DISC_TTL_MAX ? DISC_TTL_MAX : record->ttl;
     slot->received = now;
     slot->serial = ++d->serial;
+    slot->nextMissing = missingAt;
+    slot->missingInterval = missingInterval;
     slot->expires = now + slot->ttl * 50;
     slot->refresh = now + slot->ttl * (40 + now % 2); /* 80–82 percent */
 }
@@ -576,6 +584,7 @@ void mdnsDiscoveryTick(struct MDNSDaemon *md)
     d->lastRefresh = now;
     for (i = 0; i < DISC_RECORDS; i++) {
         struct DiscoveryRecord *r = &d->records[i];
+        BOOL missing = FALSE;
 
         if (r->type == 0 || due(now, r->expires)) {
             continue;
@@ -586,16 +595,32 @@ void mdnsDiscoveryTick(struct MDNSDaemon *md)
             r->refresh = r->received + r->ttl * (40 + 2 * r->refreshStep) +
                 (r->ttl * r->refreshStep) / 2 + r->ttl * (r->received % 2);
         }
+        if (!due(now, r->nextMissing)) {
+            continue;
+        }
         if (r->type == DNS_TYPE_PTR) {
             if (find_record(d, r->data, r->link, DNS_TYPE_SRV, now) == NULL) {
                 send_question(md, r->data, DNS_TYPE_SRV, r->link);
+                missing = TRUE;
             }
             if (find_record(d, r->data, r->link, DNS_TYPE_TXT, now) == NULL) {
                 send_question(md, r->data, DNS_TYPE_TXT, r->link);
+                missing = TRUE;
             }
         } else if (r->type == DNS_TYPE_SRV &&
             find_record(d, r->data + 6, r->link, DNS_TYPE_A, now) == NULL) {
             send_question(md, r->data + 6, DNS_TYPE_A, r->link);
+            missing = TRUE;
+        }
+        if (!missing) {
+            r->missingInterval = 50;
+        }
+        r->nextMissing = now + r->missingInterval;
+        if (missing && r->missingInterval < 180000) {
+            r->missingInterval *= 2;
+        }
+        if (r->missingInterval > 180000) {
+            r->missingInterval = 180000;
         }
     }
 }
