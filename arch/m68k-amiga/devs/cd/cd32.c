@@ -1256,7 +1256,11 @@ static LONG CD32_DoIO(struct IOStdReq *io, APTR priv)
 
     D(bug("%s:%p io_Command=%d\n", __func__, io, io->io_Command));
 
+    /* Cached media queries leave the data stream running. Retain its range
+     * so the next seek pauses it before releasing the sector DMA slots.
+     * Actual media-change responses invalidate the range themselves. */
     if (io->io_Command != CD_READ && io->io_Command != CD_INFO &&
+        io->io_Command != CD_CHANGENUM && io->io_Command != CD_CHANGESTATE &&
         io->io_Command != CD_ADDFRAMEINT && io->io_Command != CD_REMFRAMEINT)
         cu->cu_ReadEnd = 0;
 
