@@ -813,13 +813,13 @@ void Show_Table_Of_Contents (CDROM *p_cd)
 void Show_Catalog_Node (CDROM *p_cd, t_ulong p_node)
 {
   t_mdb mdb;
-  t_node_descr *node;
-  t_hdr_node *hdr;
-  t_idx_record *idx;
+  t_node_descr descriptor, *node = &descriptor;
+  t_uchar *bytes;
+  t_leaf_record_pos decoded;
+  t_hdr_node header, *hdr = &header;
   t_leaf_record *leaf;
   t_file_record *file;
   t_dir_thread_record *thread;
-  char *cp;
   int blk;
   int i;
   char buf[100];
@@ -830,29 +830,37 @@ void Show_Catalog_Node (CDROM *p_cd, t_ulong p_node)
     return;
   }
 
-  node = HFS_Get_Node (p_cd, blk, &mdb, p_node);
-  if (!node) {
+  bytes = HFS_Get_Node (p_cd, blk, &mdb, p_node);
+  if (!bytes) {
     fprintf (stderr, "cannot find node %lu\n", (unsigned long)p_node);
     return;
   }
 
+  HFS_Decode_Node(bytes, node);
   switch (node->Type) {
   case 0:
     printf ("Index node:\n");
     printf ("Fwd=%lu Bwd=%lu Level=%d\n", (unsigned long)node->FLink, (unsigned long)node->BLink,
     	    (int) node->NHeight);
-    idx = (t_idx_record *) ((char *) node + 0xe);
-    for (i=0; i<node->NRecs; i++, idx++) {
-      printf ("Parent ID = 0x%08lx, '", (unsigned long)idx->parent_id);
-      fwrite (idx->name, idx->name_length, 1, stdout);
-      printf ("', pointer = %lu\n", (unsigned long)idx->pointer);
+    for (i=0; i<node->NRecs; i++) {
+      int start, end;
+      const t_uchar *idx;
+      if (!HFS_Record_Bounds(bytes, i, &start, &end) || end - start < 42)
+        return;
+      idx = bytes + start;
+      if (idx[6] > 31)
+        return;
+      printf ("Parent ID = 0x%08lx, '", (unsigned long)HFS_Get32(idx + 2));
+      fwrite (idx + 7, idx[6], 1, stdout);
+      printf ("', pointer = %lu\n", (unsigned long)HFS_Get32(idx + 38));
     }
     break;
   case 1:
     printf ("Header node:\n");
     printf ("Fwd=%lu Bwd=%lu Level=%d\n", (unsigned long)node->FLink, (unsigned long)node->BLink,
     	    (int) node->NHeight);
-    hdr = (t_hdr_node *) node;
+    if (!HFS_Get_Header_Node(p_cd, blk, &mdb, hdr))
+      return;
     printf ("Depth of tree:                  %u\n", (unsigned)hdr->Depth);
     printf ("Number of root node:            %lu\n", (unsigned long)hdr->Root);
     printf ("Number of leaf records in tree: %lu\n", (unsigned long)hdr->NRecs);
@@ -869,21 +877,21 @@ void Show_Catalog_Node (CDROM *p_cd, t_ulong p_node)
     printf ("Fwd=%lu Bwd=%lu Level=%d\n", (unsigned long)node->FLink, (unsigned long)node->BLink,
     	    (int) node->NHeight);
     for (i=0; i<node->NRecs; i++) {
-      leaf = (t_leaf_record *) ((char *) node + ((short *) node)[255-i]);
-      cp = (char *) leaf + leaf->length + 1;
-      if ((leaf->length & 1) == 0)
-	cp++;
+      decoded.record = i;
+      if (!HFS_Load_Leaf(&decoded, bytes))
+        return;
+      leaf = &decoded.leaf_rec;
       printf ("Parent ID = 0x%08lx, '", (unsigned long)leaf->parent_id);
       CopyMem (leaf->name, buf, leaf->name_length);
       Convert_Mac_Characters (buf, leaf->name_length);
       fwrite (buf, leaf->name_length, 1, stdout);
       printf ("'  (");
-      switch (*cp) {
+      switch (decoded.cat_rec.d.type) {
       case 1:
-	printf ("directory 0x%08lx)\n", (unsigned long)*(t_ulong *)(cp+6));
+	printf ("directory 0x%08lx)\n", (unsigned long)decoded.cat_rec.d.DirID);
 	break;
       case 2:
-	file = (t_file_record *) cp;
+	file = &decoded.cat_rec.f;
 	printf ("file 0x%08lx)\n\tdata length %lu, "
 		"data extents %u-%u/%u-%u/%u-%u\n",
 		(unsigned long)file->FlNum,
@@ -900,7 +908,7 @@ void Show_Catalog_Node (CDROM *p_cd, t_ulong p_node)
 	printf ("\tfirst alloc blk for resource fork: %u\n", file->RStBlk);
 	break;
       case 3:
-	thread = (t_dir_thread_record *) cp;
+	thread = &decoded.cat_rec.dt;
 	printf ("directory thread 0x%08lu '", (unsigned long)thread->ParID);
 	fwrite (thread->CName, thread->CNameLen, 1, stdout);
 	printf ("')\n");

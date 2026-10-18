@@ -112,18 +112,63 @@ t_ulong AB_to_Block (VOLUME *p_volume, t_ulong p_alloc_block)
   	 VOL(p_volume,mdb).AlBlSt + VOL(p_volume,start_block);
 }
 
+/* HFS disk integers are big-endian and may only be word-aligned.
+ * Decode into native values without modifying the shared sector cache. */
+t_ushort HFS_Get16(const void *data)
+{
+    const t_uchar *p = data;
+    return ((t_ushort)p[0] << 8) | p[1];
+}
+
+t_ulong HFS_Get32(const void *data)
+{
+    const t_uchar *p = data;
+    return ((t_ulong)p[0] << 24) | ((t_ulong)p[1] << 16) |
+        ((t_ulong)p[2] << 8) | p[3];
+}
+
+static void HFS_Decode_Extents(const t_uchar *p, t_extdatarec extents)
+{
+    int i;
+    for (i = 0; i < 3; i++, p += 4)
+    {
+        extents[i].StABN = HFS_Get16(p);
+        extents[i].NumABlks = HFS_Get16(p + 2);
+    }
+}
+
+/* Decode the fields used by the reader and the CD-ROM diagnostic tool. */
+static void HFS_Decode_MDB(const t_uchar *p, t_mdb *mdb)
+{
+    memset(mdb, 0, sizeof(*mdb));
+    mdb->SigWord = HFS_Get16(p);
+    mdb->CrDate = HFS_Get32(p + 2);
+    mdb->LsMod = HFS_Get32(p + 6);
+    mdb->Atrb = HFS_Get16(p + 10);
+    mdb->NmFls = HFS_Get16(p + 12);
+    mdb->NmAlBlks = HFS_Get16(p + 18);
+    mdb->AlBlkSiz = HFS_Get32(p + 20);
+    mdb->AlBlSt = HFS_Get16(p + 28);
+    mdb->VolNameLen = p[36];
+    CopyMem(p + 37, mdb->VolName, sizeof(mdb->VolName));
+    mdb->FilCnt = HFS_Get32(p + 84);
+    mdb->DirCnt = HFS_Get32(p + 88);
+    mdb->CTFlSize = HFS_Get32(p + 146);
+    HFS_Decode_Extents(p + 150, mdb->CTExtRec);
+}
+
+void HFS_Decode_Node(const t_uchar *p, t_node_descr *node)
+{
+    node->FLink = HFS_Get32(p);
+    node->BLink = HFS_Get32(p + 4);
+    node->Type = p[8];
+    node->NHeight = p[9];
+    node->NRecs = HFS_Get16(p + 10);
+    node->Reserved = HFS_Get16(p + 12);
+}
+
 int HFS_Find_Master_Directory_Block(CDROM *p_cd, t_mdb *p_mdb) {
 t_uchar *block;
-typedef struct partition_map
-{
-	t_ushort	pmSig;
-	t_ushort	reSigPad;
-	t_ulong	pmMapBlkCnt;
-	t_ulong	pmPyPartStart;
-	t_ulong	pmPartBlkCnt;
-	char	pmPartName[32];
-	char	pmPartType[32];
-} t_partition_map;
 int i, entries;
 int result;
 
@@ -131,7 +176,7 @@ int result;
 	if (!block || block[0] != 0x50 || block[1] != 0x4D)
 		return -1;
 
-	entries = ((t_partition_map *) block)->pmMapBlkCnt;
+	entries = HFS_Get32(block + 4);
 	for (i=0; i<entries; i++)
 	{
 		block = Read_Block(p_cd, i+1);
@@ -140,18 +185,18 @@ int result;
 		if (
 				MemCmp
 					(
-						((t_partition_map *) block)->pmPartType,
+						block + 48,
 						"Apple_HFS", 9
 					) == 0
 			)
 		{
-			result = ((t_partition_map *) block)->pmPyPartStart + 2;
+			result = HFS_Get32(block + 8) + 2;
 			block = Read_Block(p_cd, result);
 			if (!block || block[0] != 0x42 || block[1] != 0x44)
 				return -1;
 			else
 			{
-				CopyMem(block, p_mdb, sizeof (*p_mdb));
+				HFS_Decode_MDB(block, p_mdb);
 				return result;
 			}
 		}
@@ -180,17 +225,30 @@ t_ulong pos =
 		p_mdb_pos - 2 + p_mdb->AlBlSt +
  		p_mdb->CTExtRec[0].StABN * (p_mdb->AlBlkSiz >> 9)
 	);
-t_hdr_node *hdr;
+t_uchar *hdr;
 
-	hdr = (t_hdr_node *) Read_Block(p_cd, pos);
+	hdr = Read_Block(p_cd, pos);
 	if (!hdr)
 		return FALSE;
 
-	CopyMem(hdr, p_hdr_node, sizeof (t_hdr_node));
+	/* This reader addresses catalog nodes as 512-byte blocks. */
+    if (HFS_Get16(hdr + 32) != 512)
+        return FALSE;
+    memset(p_hdr_node, 0, sizeof(*p_hdr_node));
+    HFS_Decode_Node(hdr, &p_hdr_node->node_descr);
+    p_hdr_node->Depth = HFS_Get16(hdr + 14);
+    p_hdr_node->Root = HFS_Get32(hdr + 16);
+    p_hdr_node->NRecs = HFS_Get32(hdr + 20);
+    p_hdr_node->FNode = HFS_Get32(hdr + 24);
+    p_hdr_node->LNode = HFS_Get32(hdr + 28);
+    p_hdr_node->NodeSize = HFS_Get16(hdr + 32);
+    p_hdr_node->KeyLen = HFS_Get16(hdr + 34);
+    p_hdr_node->NNodes = HFS_Get32(hdr + 36);
+    p_hdr_node->Free = HFS_Get32(hdr + 40);
 	return TRUE;
 }
 
-t_node_descr *HFS_Get_Node
+t_uchar *HFS_Get_Node
 	(CDROM *p_cd, t_ulong p_mdb_pos, t_mdb *p_mdb, t_ulong p_node)
 {
 t_ulong first_node;
@@ -215,63 +273,87 @@ int i;
 
 	pos = first_node + (p_node - sub);
 
-	return (t_node_descr *) Read_Block(p_cd, pos);
+	return Read_Block(p_cd, pos);
 }
 
-t_node_descr *HFS_Node(VOLUME *p_volume, t_ulong p_node) {
+t_uchar *HFS_Node(VOLUME *p_volume, t_ulong p_node) {
   return HFS_Get_Node (p_volume->cd, VOL(p_volume,start_block) + 2,
   		       &VOL(p_volume,mdb), p_node);
 }
 
 /* HFS catalog nodes are 512 bytes. Their trailing offset table contains
  * one entry per record plus the end of the final record. */
-static t_bool HFS_Record_Bounds(char *node, int record, int *start, int *end)
+t_bool HFS_Record_Bounds(const t_uchar *node, int record, int *start, int *end)
 {
-    t_node_descr *descr = (t_node_descr *)node;
-    unsigned short *offsets = (unsigned short *)node;
-    int count = descr->NRecs;
+    int count = HFS_Get16(node + 10);
     int table;
 
     if (count < 1 || count > (512 - 14) / 2 - 1 ||
         record < 0 || record >= count)
         return FALSE;
     table = 512 - 2 * (count + 1);
-    *start = offsets[255 - record];
-    *end = offsets[254 - record];
+    *start = HFS_Get16(node + 510 - 2 * record);
+    *end = HFS_Get16(node + 508 - 2 * record);
     return *start >= 14 && *start < *end && *end <= table;
 }
 
-static t_bool HFS_Load_Leaf(t_leaf_record_pos *leaf, t_node_descr *node)
+t_bool HFS_Load_Leaf(t_leaf_record_pos *leaf, const t_uchar *node)
 {
     int start, end, keylen, data, len;
-    unsigned char *bytes = (unsigned char *)node;
+    const t_uchar *bytes = node;
 
-    if (node->Type != 0xff ||
-        !HFS_Record_Bounds((char *)node, leaf->record, &start, &end))
+    if (node[8] != 0xff ||
+        !HFS_Record_Bounds(node, leaf->record, &start, &end))
         return FALSE;
     keylen = bytes[start] + 1;
     if (keylen < 7 || keylen > end - start ||
-        keylen > (int)(sizeof(leaf->leaf_rec) + sizeof(leaf->pad)) ||
         bytes[start + 6] > 31 || bytes[start + 6] > keylen - 7)
         return FALSE;
     data = (start + keylen + 1) & ~1;
     len = end - data;
-    if (len < 2 || len > (int)sizeof(leaf->cat_rec))
+    if (len < 2 || len > 102)
         return FALSE;
     /* Require the fields consumed by each supported catalog record type. */
     switch (bytes[data])
     {
-        case 1: if (len < (int)sizeof(t_dir_record)) return FALSE; break;
-        case 2: if (len < (int)sizeof(t_file_record)) return FALSE; break;
-        case 3: if (len < (int)sizeof(t_dir_thread_record)) return FALSE; break;
-        case 4: if (len < (int)sizeof(t_file_thread_record)) return FALSE; break;
+        case 1: if (len < 22) return FALSE; break;
+        case 2: if (len < 102) return FALSE; break;
+        case 3: if (len < 46) return FALSE; break;
+        case 4: if (len < 46) return FALSE; break;
         default: return FALSE;
     }
     memset(&leaf->cat_rec, 0, sizeof(leaf->cat_rec));
-    memset(&leaf->leaf_rec, 0, sizeof(leaf->leaf_rec) + sizeof(leaf->pad));
-    CopyMem(node, &leaf->node_descr, sizeof(leaf->node_descr));
-    CopyMem(bytes + start, &leaf->leaf_rec, keylen);
-    CopyMem(bytes + data, &leaf->cat_rec, len);
+    memset(&leaf->leaf_rec, 0, sizeof(leaf->leaf_rec));
+    HFS_Decode_Node(node, &leaf->node_descr);
+    leaf->leaf_rec.length = bytes[start];
+    leaf->leaf_rec.parent_id = HFS_Get32(bytes + start + 2);
+    leaf->leaf_rec.name_length = bytes[start + 6];
+    CopyMem(bytes + start + 7, leaf->leaf_rec.name, leaf->leaf_rec.name_length);
+    bytes += data;
+    leaf->cat_rec.d.type = bytes[0];
+    switch (bytes[0])
+    {
+        case 1:
+            leaf->cat_rec.d.DirID = HFS_Get32(bytes + 6);
+            leaf->cat_rec.d.CrDat = HFS_Get32(bytes + 10);
+            break;
+        case 2:
+            leaf->cat_rec.f.StBlk = HFS_Get16(bytes + 24);
+            leaf->cat_rec.f.RStBlk = HFS_Get16(bytes + 34);
+            leaf->cat_rec.f.FlNum = HFS_Get32(bytes + 20);
+            leaf->cat_rec.f.LgLen = HFS_Get32(bytes + 26);
+            leaf->cat_rec.f.RLgLen = HFS_Get32(bytes + 36);
+            leaf->cat_rec.f.CrDat = HFS_Get32(bytes + 44);
+            HFS_Decode_Extents(bytes + 74, leaf->cat_rec.f.ExtRec);
+            HFS_Decode_Extents(bytes + 86, leaf->cat_rec.f.RExtRec);
+            break;
+        case 3:
+        case 4:
+            leaf->cat_rec.dt.ParID = HFS_Get32(bytes + 10);
+            leaf->cat_rec.dt.CNameLen = bytes[14];
+            CopyMem(bytes + 15, leaf->cat_rec.dt.CName, 31);
+            break;
+    }
     if ((leaf->cat_rec.d.type == 3 || leaf->cat_rec.d.type == 4) &&
         leaf->cat_rec.dt.CNameLen > 31)
         return FALSE;
@@ -280,15 +362,15 @@ static t_bool HFS_Load_Leaf(t_leaf_record_pos *leaf, t_node_descr *node)
 
 t_bool HFS_Find_Next_Leaf(VOLUME *p_volume, t_leaf_record_pos *p_leaf)
 {
-    t_node_descr *node = HFS_Node(p_volume, p_leaf->node);
-    if (!node || p_leaf->record >= node->NRecs)
+    t_uchar *node = HFS_Node(p_volume, p_leaf->node);
+    if (!node || p_leaf->record >= HFS_Get16(node + 10))
         return FALSE;
     p_leaf->record++;
-    if (p_leaf->record == node->NRecs)
+    if (p_leaf->record == HFS_Get16(node + 10))
     {
-        if (!node->FLink || node->FLink == p_leaf->node)
+        if (!HFS_Get32(node) || HFS_Get32(node) == p_leaf->node)
             return FALSE;
-        p_leaf->node = node->FLink;
+        p_leaf->node = HFS_Get32(node);
         node = HFS_Node(p_volume, p_leaf->node);
         if (!node)
             return FALSE;
@@ -310,7 +392,7 @@ t_bool HFS_Find_Next_Leaf(VOLUME *p_volume, t_leaf_record_pos *p_leaf)
 
 t_bool HFS_Find_This_Leaf(VOLUME *p_volume, t_leaf_record_pos *p_leaf)
 {
-    t_node_descr *node = HFS_Node(p_volume, p_leaf->node);
+    t_uchar *node = HFS_Node(p_volume, p_leaf->node);
     return node != NULL && HFS_Load_Leaf(p_leaf, node);
 }
 
@@ -323,7 +405,7 @@ t_bool HFS_Find_Leaf_Record
 	(VOLUME *p_volume, t_leaf_record_pos *p_leaf, t_ulong p_parent_id)
 {
 struct CDVDBase *global = p_volume->global;
-t_node_descr *node;
+t_uchar *node;
 int i;
 t_ulong this_node = VOL(p_volume,root_node);
 t_ulong next_node;
@@ -337,34 +419,34 @@ t_ulong next_node;
 
 	for (;;)
 	{
-		if (node->Type == 0)
+		if (node[8] == 0)
 		{
 			 /* index node */
 			next_node = -1;
-			for (i=0; i<node->NRecs; i++)
+			for (i=0; i<HFS_Get16(node + 10); i++)
 			{
                 int start, end;
-                t_idx_record *idx;
-                if (!HFS_Record_Bounds((char *)node, i, &start, &end))
+                const t_uchar *idx;
+                if (!HFS_Record_Bounds(node, i, &start, &end))
                 {
                     global->iso_errno = ISOERR_INTERNAL;
                     return FALSE;
                 }
-                idx = (t_idx_record *)((char *)node + start);
-                if (idx->length != 0 && end - start < (int)sizeof(t_idx_record))
+                idx = node + start;
+                if (idx[0] != 0 && end - start < 42)
                 {
                     global->iso_errno = ISOERR_INTERNAL;
                     return FALSE;
                 }
-				if (idx->length != 0)
+				if (idx[0] != 0)
 				{
-					if (idx->parent_id >= p_parent_id)
+					if (HFS_Get32(idx + 2) >= p_parent_id)
 						break;
-					next_node = idx->pointer;
+					next_node = HFS_Get32(idx + 38);
 				}
 			}
 		}
-		else if (node->Type == 0xff)
+		else if (node[8] == 0xff)
 		{
 			/* leaf node */
 			break;
@@ -467,7 +549,7 @@ t_hdr_node hdr;
 		return FALSE;
 	}
 
-	CopyMem(block, &VOL(p_volume,mdb), sizeof (t_mdb));
+	HFS_Decode_MDB(block, &VOL(p_volume,mdb));
 
 	if (
 			!HFS_Get_Header_Node
