@@ -4,7 +4,7 @@ AssRoutines.asm
 void InitStack(void);
 void AfsDie(void);
 void myStackSwap (struct StackSwapStruct *);
-ULONG divide(UWORD, UWORD);
+ULONG divide(ULONG, UWORD);
 void ctodstr(void *, void *);
 void intltoupper(void *);
 BOOL intlcmp(void*, void *);
