@@ -1116,7 +1116,8 @@ openbreak:
                         {
                                 D(bug("ERR=%ld\n", error);)
                                 packet->dp_Res1 = (packet->dp_Type == ACTION_WRITE ||
-                                    packet->dp_Type == ACTION_READ) ? -1 : DOSFALSE;
+                                    packet->dp_Type == ACTION_READ ||
+                                    packet->dp_Type == ACTION_SEEK) ? -1 : DOSFALSE;
                                 packet->dp_Res2 = error;
                         }
                         else
