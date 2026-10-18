@@ -95,6 +95,7 @@ net_up(struct MDNSDaemon *md)
      * for again with the addresses as they are now. */
     if (mdnsNetRescan(md)) {
         mdnsHostRestart(md);
+        mdnsRegRestartAll(md);
     }
 }
 

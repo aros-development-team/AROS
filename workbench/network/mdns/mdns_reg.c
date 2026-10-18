@@ -396,6 +396,24 @@ mdnsRegAnnounceAll(struct MDNSDaemon *md)
     }
 }
 
+/* An interface came up or changed: claim each service name again before
+ * announcing it on the new link (RFC 6762 section 8.1). */
+void
+mdnsRegRestartAll(struct MDNSDaemon *md)
+{
+    struct Node *n;
+
+    FOR_SERVICES(md, n) {
+        struct MDNSRegisteredService *rs = (struct MDNSRegisteredService *)n;
+
+        rs->rs_State = MDNS_NAME_PROBING;
+        rs->rs_Step = 0;
+        rs->rs_NextTick = mdnsTicks();
+        rs->rs_AnswerTick = 0;
+    }
+    md->md_AnswerPending = FALSE;
+}
+
 /*
  * Asks whether anyone already has the instance's name, with the SRV record
  * this host would publish in the authority section (RFC 6762 section 8.1).
@@ -428,7 +446,7 @@ service_probe(struct MDNSDaemon *md, const struct MDNSRegisteredService *rs)
 
 /* "Name" becomes "Name (2)", "Name (2)" becomes "Name (3)". */
 static void
-service_rename(struct MDNSRegisteredService *rs)
+service_rename_next(struct MDNSRegisteredService *rs)
 {
     char *name = rs->rs_Instance;
     LONG len = mdnsTextLength(name, MDNS_MAX_NAME);
@@ -455,8 +473,8 @@ service_rename(struct MDNSRegisteredService *rs)
     }
     number++;
     /* room for " (4294967295)" */
-    if (open > MDNS_MAX_NAME - 13) {
-        open = MDNS_MAX_NAME - 13;
+    if (open > 63 - 13) {
+        open = 63 - 13;
     }
     do {
         digits[n++] = (char)('0' + number % 10);
@@ -471,6 +489,31 @@ service_rename(struct MDNSRegisteredService *rs)
     name[open] = '\0';
 }
 
+/* Do not rename into a name another local service already owns. */
+static void
+service_rename(const struct MDNSDaemon *md, struct MDNSRegisteredService *rs)
+{
+    BOOL used;
+
+    do {
+        struct Node *n;
+
+        service_rename_next(rs);
+        used = FALSE;
+        FOR_SERVICES(md, n) {
+            const struct MDNSRegisteredService *other =
+                (const struct MDNSRegisteredService *)n;
+
+            if (other != rs && Stricmp(other->rs_Instance, rs->rs_Instance) == 0 &&
+                Stricmp(other->rs_Type, rs->rs_Type) == 0 &&
+                Stricmp(other->rs_Domain, rs->rs_Domain) == 0) {
+                used = TRUE;
+                break;
+            }
+        }
+    } while (used);
+}
+
 /*
  * A record in a response from another host is owned by "name". If one of
  * this host's services has that name, the name is contested: the service
@@ -479,23 +522,50 @@ service_rename(struct MDNSRegisteredService *rs)
  * for it: the records under that name now are the other host's.
  */
 void
-mdnsRegHandleRecord(const struct MDNSDaemon *md, const struct MDNSRecord *r)
+mdnsRegHandleRecord(const struct MDNSDaemon *md, const struct MDNSRecord *r,
+    const UBYTE *pkt, LONG pktlen)
 {
     struct Node *n;
 
+    if (r->ttl == 0 || (r->rclass & 0x7fff) != DNS_CLASS_IN ||
+        (r->type != DNS_TYPE_SRV && r->type != DNS_TYPE_TXT)) {
+        return;
+    }
     FOR_SERVICES(md, n) {
         struct MDNSRegisteredService *rs = (struct MDNSRegisteredService *)n;
         char instance[256];
-
-        if (rs->rs_State == MDNS_NAME_ANNOUNCED && r->type != DNS_TYPE_SRV &&
-            r->type != DNS_TYPE_TXT) {
-            continue;
-        }
         instance_fqdn(rs, instance, (LONG)sizeof(instance));
         if (Stricmp(instance, r->name) != 0) {
             continue;
         }
-        service_rename(rs);
+        if (r->type == DNS_TYPE_SRV) {
+            char target[256], theirs[256];
+
+            if (r->rdlength < 7 ||
+                mdnsSkipName(pkt, pktlen, r->rdoffset + 6) !=
+                    r->rdoffset + r->rdlength ||
+                mdnsWireToName(pkt, pktlen, r->rdoffset + 6, pkt, pktlen,
+                    theirs, (LONG)sizeof(theirs)) < 0) {
+                continue;
+            }
+            target_fqdn(md, rs, target, (LONG)sizeof(target));
+            if (r->rdata[0] == 0 && r->rdata[1] == 0 &&
+                r->rdata[2] == 0 && r->rdata[3] == 0 &&
+                r->rdata[4] == (UBYTE)(rs->rs_Port >> 8) &&
+                r->rdata[5] == (UBYTE)rs->rs_Port &&
+                Stricmp(target, theirs) == 0) {
+                continue;
+            }
+        } else {
+            UBYTE expected[512];
+            LONG length = txt_data(rs, expected, (LONG)sizeof(expected));
+
+            if (length == r->rdlength &&
+                memcmp(expected, r->rdata, (size_t)length) == 0) {
+                continue;
+            }
+        }
+        service_rename(md, rs);
         rs->rs_State = MDNS_NAME_PROBING;
         rs->rs_Step = 0;
         rs->rs_NextTick = mdnsTicks() + MDNS_PROBE_TICKS;
@@ -638,6 +708,9 @@ mdnsRegTick(struct MDNSDaemon *md)
      * so none is announced before the name is this host's. */
     BOOL hostReady = md->md_HostState == MDNS_NAME_ANNOUNCED;
 
+    if (md->md_IfCount == 0 || md->md_Socket < 0) {
+        return FALSE;
+    }
     if (md->md_AnswerPending) {
         answers_flush(md, now);
     }
@@ -647,7 +720,7 @@ mdnsRegTick(struct MDNSDaemon *md)
 
         if (rs->rs_State == MDNS_NAME_PROBING) {
             probing = TRUE;
-            if ((LONG)(now - rs->rs_NextTick) < 0) {
+            if (!hostReady || (LONG)(now - rs->rs_NextTick) < 0) {
                 continue;
             }
             if (rs->rs_Step < MDNS_PROBE_COUNT) {
@@ -849,7 +922,10 @@ mdnsRegAdd(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
     struct Node *n;
 
     if (msg->mi_Name[0] == '\0' || msg->mi_ServiceType[0] == '\0' ||
-        msg->mi_Port == 0 || msg->mi_TTL > MDNS_MAX_TTL) {
+        msg->mi_Port == 0 || msg->mi_TTL > MDNS_MAX_TTL ||
+        mdnsTextLength(msg->mi_Name, MDNS_MAX_NAME) > 63 ||
+        strchr(msg->mi_Name, '.') != NULL ||
+        ((msg->mi_HostName[0] != '\0') != (msg->mi_HostAddr != 0))) {
         return MDNSERR_BADPARAM;
     }
     /* One instance name per type on this host. */
@@ -877,6 +953,7 @@ mdnsRegAdd(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
     rs->rs_TaskID = msg->mi_TaskID;
     if (msg->mi_HostName[0] != '\0' && msg->mi_HostAddr != 0) {
         LONG at = 0;
+        char own[256];
 
         /* Announced on behalf of a host that does not speak mDNS itself:
          * its first label, in the mDNS domain. */
@@ -887,8 +964,23 @@ mdnsRegAdd(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
             rs->rs_HostTarget[at] = msg->mi_HostName[at];
             at++;
         }
+        if (at == 0 || at > 63 ||
+            (msg->mi_HostName[at] != '\0' &&
+             Stricmp(msg->mi_HostName + at, ".local") != 0 &&
+             Stricmp(msg->mi_HostName + at, ".local.") != 0)) {
+            FreeMem(rs, sizeof(*rs));
+            return MDNSERR_BADPARAM;
+        }
         mdnsTextCopy(rs->rs_HostTarget + at,
             (LONG)sizeof(rs->rs_HostTarget) - at, "." MDNS_DOMAIN_LOCAL);
+        mdnsHostFqdn(md, own, (LONG)sizeof(own));
+        if (Stricmp(rs->rs_HostTarget, own) == 0 ||
+            (md->md_HostBase[0] != '\0' &&
+             Strnicmp(rs->rs_HostTarget, md->md_HostBase, at) == 0 &&
+             mdnsTextLength(md->md_HostBase, MDNS_MAX_HOST) == at)) {
+            FreeMem(rs, sizeof(*rs));
+            return MDNSERR_BADPARAM;
+        }
     }
     rs->rs_ClientRef = (APTR)(IPTR)md->md_NextHandle++;
     rs->rs_State = MDNS_NAME_PROBING;
@@ -912,11 +1004,17 @@ mdnsRegUpdate(struct MDNSDaemon *md, const struct MDNSIPCMsg *msg)
     if (rs->rs_TaskID != msg->mi_TaskID) {
         return MDNSERR_BADPARAM;
     }
+    if (msg->mi_TTL > MDNS_MAX_TTL) {
+        return MDNSERR_BADPARAM;
+    }
     if (msg->mi_Flags & MDNS_IPC_UPDF_TXT) {
         mdnsTextCopy(rs->rs_TXT, (LONG)sizeof(rs->rs_TXT), msg->mi_TXT);
     }
     if (msg->mi_Port != 0) {
         rs->rs_Port = msg->mi_Port;
+    }
+    if (msg->mi_TTL != 0) {
+        rs->rs_TTL = msg->mi_TTL;
     }
     if (rs->rs_State == MDNS_NAME_ANNOUNCED) {
         service_send(md, rs, FALSE);

@@ -131,7 +131,7 @@ mdnsHandlePacket(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
         }
         mdnsHostHandleRecord(md, &record);
         if (i < answers || i >= (UWORD)(answers + authorities)) {
-            mdnsRegHandleRecord(md, &record);
+            mdnsRegHandleRecord(md, &record, pkt, pktlen);
         }
         offset += consumed;
     }

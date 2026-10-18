@@ -200,7 +200,13 @@
         return MDNSERR_BADPARAM;
     }
     memset(&msg, 0, sizeof(msg));
-    bonamiTagsToMsg(tags, &msg);
+    {
+        LONG rc = bonamiTagsToMsg(tags, &msg);
+
+        if (rc != MDNS_OK) {
+            return rc;
+        }
+    }
     msg.mi_Command = MDNS_IPC_UPDATE;
     msg.mi_Handle = ref;
     msg.mi_Flags = FindTagItem(MDNS_TXTRecord, tags) != NULL ?

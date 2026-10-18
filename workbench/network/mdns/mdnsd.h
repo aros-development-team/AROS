@@ -193,6 +193,7 @@ void mdnsRegRelease(struct MDNSDaemon *md, ULONG taskID);
 void mdnsRegFree(struct MDNSDaemon *md);
 BOOL mdnsRegTick(struct MDNSDaemon *md);
 void mdnsRegAnnounceAll(struct MDNSDaemon *md);
+void mdnsRegRestartAll(struct MDNSDaemon *md);
 void mdnsRegGoodbyeAll(struct MDNSDaemon *md);
 void mdnsRegHandleQuery(struct MDNSDaemon *md, struct MDNSQuestion *q,
     char (*known)[256], LONG knownCount);
@@ -200,7 +201,7 @@ void mdnsRegHandleProbe(const struct MDNSDaemon *md,
     const struct MDNSRecord *theirs, LONG count, const UBYTE *pkt,
     LONG pktlen);
 void mdnsRegHandleRecord(const struct MDNSDaemon *md,
-    const struct MDNSRecord *r);
+    const struct MDNSRecord *r, const UBYTE *pkt, LONG pktlen);
 
 /* mdns_client.c */
 void mdnsClientMessage(struct MDNSDaemon *md, struct MDNSIPCMsg *msg);
