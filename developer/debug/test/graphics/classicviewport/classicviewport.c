@@ -12,6 +12,7 @@
 #include <proto/graphics.h>
 #include <intuition/screens.h>
 #include <graphics/copper.h>
+#include <exec/memory.h>
 #include <string.h>
 
 static ULONG failures;
@@ -60,6 +61,40 @@ static void rebuild(struct Screen *screen, struct BitMap *bitmap)
     }
 }
 
+static void lazy_user_copper(struct Screen *screen)
+{
+    struct UCopList *ucl = AllocMem(sizeof(*ucl), MEMF_PUBLIC | MEMF_CLEAR);
+
+    check(ucl != NULL, "allocate user copper header");
+    if (!ucl)
+        return;
+    CWait(ucl, 0, 0);
+    check(ucl->FirstCopList && ucl->CopList && ucl->CopList->CopIns,
+          "initialize user copper without CINIT");
+    if (!ucl->FirstCopList || !ucl->CopList || !ucl->CopList->CopIns)
+    {
+        FreeCopList(ucl->FirstCopList);
+        FreeMem(ucl, sizeof(*ucl));
+        return;
+    }
+    CBump(ucl);
+    CWait(ucl, screen->Height / 2, 0);
+    CBump(ucl);
+    CMove(ucl, (APTR)0x00dff09c, 0x8010);
+    CBump(ucl);
+    CWait(ucl, 10000, 0xff);
+    CBump(ucl);
+
+    Forbid();
+    screen->ViewPort.UCopIns = ucl;
+    Permit();
+    check(MakeScreen(screen) == 0 && RethinkDisplay() == 0,
+          "rebuild display with lazily initialized user copper");
+    check(coppermove(&screen->ViewPort, 0x9c) == 0x8010,
+          "display copper retains the requested interrupt");
+    /* FreeVPortCopLists during CloseScreen owns the attached header/lists. */
+}
+
 int main(void)
 {
     struct Screen *screen = NULL;
@@ -100,6 +135,7 @@ int main(void)
     check(screen->RastPort.BitMap == display,
           "raw custom drawing uses the embedded bitmap header");
     rebuild(screen, display);
+    lazy_user_copper(screen);
 
     /* Legacy drawing code may replace plane pointers through RastPort.
      * That must change the displayed bitmap without changing the caller's

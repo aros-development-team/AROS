@@ -48,6 +48,9 @@
 {
     AROS_LIBFUNC_INIT
 
+    /* A preceding CWait/CMove can fail to allocate the backing list. */
+    if (!ucl || !ucl->CopList || !ucl->CopList->CopPtr)
+        return;
 
 #define NewCopListSize 10
 
