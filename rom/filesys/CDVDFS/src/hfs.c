@@ -586,6 +586,7 @@ CDROM_OBJ *obj = AllocMem (sizeof (CDROM_OBJ), MEMF_PUBLIC | MEMF_CLEAR);
 	obj->obj_info = AllocMem (sizeof (t_hfs_obj_info), MEMF_PUBLIC | MEMF_CLEAR);
 	if (!obj->obj_info)
 	{
+		global->iso_errno = ISOERR_NO_MEMORY;
 		FreeMem (obj, sizeof (CDROM_OBJ));
 		return NULL;
 	}
@@ -669,6 +670,8 @@ t_bool data_fork = FALSE;
 	}
 
 	obj = HFS_Alloc_Obj(global);
+	if (!obj)
+		return NULL;
 	obj->directory_f = (type == 1);
 	obj->volume = p_volume;
 
