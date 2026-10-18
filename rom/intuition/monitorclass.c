@@ -1145,8 +1145,6 @@ IPTR MonitorClass__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 
 *****************************************************************************/
 
-void MonitorClass__MM_ScreenToDisplayCoords(Class *cl, Object *obj, struct msScreenToDisplayCoords *msg);
-
 void MonitorClass__MM_GetDisplayBounds(Class *cl, Object *obj, struct msGetDisplayBounds *msg)
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
@@ -1184,7 +1182,7 @@ void MonitorClass__MM_GetDisplayBounds(Class *cl, Object *obj, struct msGetDispl
                     .DispY      = &h
                 };
 
-                MonitorClass__MM_ScreenToDisplayCoords(cl, obj, &coordmsg);
+                DoMethodA(obj, (Msg)&coordmsg);
                 data->FBBounds.MaxX = data->FBBounds.MinX + w - 1;
                 data->FBBounds.MaxY = data->FBBounds.MinY + h - 1;
             }
