@@ -13,8 +13,6 @@ FILES := ump netmidi2
 
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include
 
-#MM- workbench-network : workbench-network-netmidi
-#MM- workbench-network-netmidi : linklibs-netmidi2
 #MM linklibs-netmidi2 : includes
 
 %build_linklib mmake=linklibs-netmidi2 \
