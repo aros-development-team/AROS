@@ -208,12 +208,12 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct BitMap *srcbm, stru
     custom->bltbmod = srcbm->BytesPerRow - width * 2;
     custom->bltcmod = dstbm->BytesPerRow - width * 2;
     custom->bltdmod = dstbm->BytesPerRow - width * 2;
-    custom->bltcon1 = (reverse ? 0x0002 : 0x0000) | shiftb;
     bltcon0 = USEB | USEC | USED | copy_minterm[mode] | shifta;
     custom->bltadat = 0xffff;
     
     for (i = 0; i < dstbm->Depth; i++) {
         UWORD bltcon0b = bltcon0;
+        PLANEPTR source = i < srcbm->Depth ? srcbm->Planes[i] : NULL;
         /* The write mask protects the planes it clears. It is a UBYTE, so it
            says nothing about a ninth plane and beyond: leave those writable. */
         if (i < 8 && !(mask & (1 << i)))
@@ -221,15 +221,17 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct BitMap *srcbm, stru
         if (dstbm->Planes[i] == (UBYTE*)0x00000000 || dstbm->Planes[i] == (UBYTE*)0xffffffff)
             continue;
         WaitBlit();
-        if (i >= srcbm->Depth || srcbm->Planes[i] == (UBYTE*)0x00000000) {
+        if (!source || source == (PLANEPTR)-1) {
             bltcon0b &= ~USEB;
-            custom->bltbdat = 0x0000;
-        } else if (srcbm->Planes[i] == (UBYTE*)0xffffffff) {
-            bltcon0b &= ~USEB;
-            custom->bltbdat = 0xffff;
+            custom->bltcon1 = reverse ? 0x0002 : 0x0000;
+            custom->bltbdat = source ? 0xffff : 0x0000;
         } else {
-            custom->bltbpt = (APTR)(srcbm->Planes[i] + srcoffset);
+            custom->bltcon1 = (reverse ? 0x0002 : 0x0000) | shiftb;
+            custom->bltbpt = (APTR)(source + srcoffset);
         }
+        /* A disabled B channel uses BLTBDAT repeatedly. Shifting that
+           constant would drop bits at each word boundary instead of
+           carrying them from the preceding DMA word. */
         custom->bltcon0 = bltcon0b;
         custom->bltcpt = (APTR)(dstbm->Planes[i] + dstoffset);
         custom->bltdpt = (APTR)(dstbm->Planes[i] + dstoffset);
@@ -394,23 +396,26 @@ BOOL blit_copybox_mask(struct amigavideo_staticdata *data, struct BitMap *srcbm,
     custom->bltbmod = srcbm->BytesPerRow - width * 2;
     custom->bltcmod = dstbm->BytesPerRow - width * 2;
     custom->bltdmod = dstbm->BytesPerRow - width * 2;
-    custom->bltcon1 = (reverse ? 0x0002 : 0x0000) | bltshift;
+    /* CopyBoxMasked's Or mode represents BltMaskBitMapRastPort's 0xe0:
+       replacement through the mask, rather than OR with old destination bits.
+       Both supported API modes therefore use the hardware cookie cut. */
     bltcon0 = USEA | USEB | USEC | USED | 0xca | bltshift;
     
     for (i = 0; i < dstbm->Depth; i++) {
         UWORD bltcon0b = bltcon0;
+        PLANEPTR source = i < srcbm->Depth ? srcbm->Planes[i] : NULL;
         if (dstbm->Planes[i] == (UBYTE*)0x00000000 || dstbm->Planes[i] == (UBYTE*)0xffffffff)
             continue;
         WaitBlit();
-        if (i >= srcbm->Depth || srcbm->Planes[i] == (UBYTE*)0x00000000) {
+        if (!source || source == (PLANEPTR)-1) {
             bltcon0b &= ~USEB;
-            custom->bltbdat = 0x0000;
-        } else if (srcbm->Planes[i] == (UBYTE*)0xffffffff) {
-            bltcon0b &= ~USEB;
-            custom->bltbdat = 0xffff;
+            custom->bltcon1 = reverse ? 0x0002 : 0x0000;
+            custom->bltbdat = source ? 0xffff : 0x0000;
         } else {
-            custom->bltbpt = (APTR)(srcbm->Planes[i] + srcoffset);
+            custom->bltcon1 = (reverse ? 0x0002 : 0x0000) | bltshift;
+            custom->bltbpt = (APTR)(source + srcoffset);
         }
+        /* Keep the mask's A shift, but do not shift a constant B plane. */
         custom->bltcon0 = bltcon0b;
         custom->bltapt = (APTR)maskplane;
         custom->bltcpt = (APTR)(dstbm->Planes[i] + dstoffset);
