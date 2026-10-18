@@ -452,8 +452,8 @@
 # /arch/all-unix/devs/hostdisk/
 /arch/all-unix/devs/hostdisk/mmakefile
 
-# /arch/all-unix/devs/midi/
-/arch/all-unix/devs/midi/mmakefile
+# /arch/all-unix/devs/camd/hostmidi/
+/arch/all-unix/devs/camd/hostmidi/mmakefile
 
 # /arch/all-unix/devs/networks/tap/
 /arch/all-unix/devs/networks/tap/mmakefile
@@ -2090,9 +2090,9 @@
 # /workbench/devs/keymaps/
 /workbench/devs/keymaps/mmakefile
 
-# /workbench/devs/midi/
-/workbench/devs/midi/mmakefile
-/workbench/devs/midi/*.o
+# /workbench/devs/camd/debugdriver/
+/workbench/devs/camd/debugdriver/mmakefile
+/workbench/devs/camd/debugdriver/*.o
 
 # /workbench/devs/monitors/Compositor/
 /workbench/devs/monitors/Compositor/mmakefile
@@ -3068,3 +3068,8 @@
 # Tracked, hand-written mmakefiles that predate mmakefile.src are unaffected,
 # since .gitignore does not untrack already-committed files.
 mmakefile
+
+# CAMD subsystem build files
+/workbench/devs/camd/mmakefile
+/workbench/devs/camd/applemidi/mmakefile
+/workbench/devs/camd/networkmidi2/mmakefile
