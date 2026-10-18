@@ -519,6 +519,7 @@ register struct ifnet *ifp;
     case SIOCDIFADDR:
         rt_newaddrmsg(RTM_DELADDR, (struct ifaddr *)ia, 0, NULL);
         in_ifscrub(ifp, ia);
+        rt_purgeifa((struct ifaddr *)ia);   /* gateway routes, ARP entries */
         if((ifa = ifp->if_addrlist) == (struct ifaddr *)ia)
             ifp->if_addrlist = ifa->ifa_next;
         else {
