@@ -37,6 +37,7 @@ struct MDNSInterface
 #define MDNS_PROBE_COUNT        3
 #define MDNS_PROBE_TICKS        13      /* 250 ms in 1/50 s */
 #define MDNS_ANNOUNCE_COUNT     2
+#define MDNS_PROPOSED_MAX       8
 
 /* a record that went to the group this many seconds ago or less may be
  * answered to the asker alone when the question allows it: a quarter of
@@ -69,6 +70,14 @@ struct MDNSRegisteredService
     ULONG           rs_AnswerTick;  /* when an answer to a browse question
                                      * is due, or 0 for none */
     LONG            rs_AnswerIf;    /* to which interface, or -1 for all */
+};
+
+/* Known PTR answers retain their owner and remaining lifetime. */
+struct MDNSKnownAnswer
+{
+    char owner[256];
+    char target[256];
+    ULONG ttl;
 };
 
 /* The daemon has one task and one of these. */
@@ -196,7 +205,7 @@ void mdnsRegAnnounceAll(struct MDNSDaemon *md);
 void mdnsRegRestartAll(struct MDNSDaemon *md);
 void mdnsRegGoodbyeAll(struct MDNSDaemon *md);
 void mdnsRegHandleQuery(struct MDNSDaemon *md, struct MDNSQuestion *q,
-    char (*known)[256], LONG knownCount);
+    const struct MDNSKnownAnswer *known, LONG knownCount);
 void mdnsRegHandleProbe(const struct MDNSDaemon *md,
     const struct MDNSRecord *theirs, LONG count, const UBYTE *pkt,
     LONG pktlen);

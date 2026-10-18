@@ -16,12 +16,11 @@
 
 #define MDNS_QUESTIONS_MAX  8
 #define MDNS_KNOWN_MAX      16
-#define MDNS_PROPOSED_MAX   8
 
 /* One packet at a time is taken apart, in mdnsd's only task. */
 static struct MDNSQuestion questions[MDNS_QUESTIONS_MAX];
 /* the instances the asker says it already knows */
-static char known[MDNS_KNOWN_MAX][256];
+static struct MDNSKnownAnswer known[MDNS_KNOWN_MAX];
 static struct MDNSRecord record;
 /* what the sender of a probe says it is about to publish */
 static struct MDNSRecord proposed[MDNS_PROPOSED_MAX];
@@ -45,13 +44,19 @@ mdnsHandlePacket(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
 
     hdr = (const struct MDNSHeader *)pkt;
     flags = ntohs(hdr->flags);
+    /* mDNS uses standard queries/responses with no DNS error code. */
+    if ((flags & 0x780f) != 0) {
+        return;
+    }
     offset = (LONG)sizeof(struct MDNSHeader);
 
     for (i = 0; i < ntohs(hdr->qdcount); i++) {
         if (mdnsParseQuestion(pkt, pktlen, offset, &q, &consumed) != 0) {
             return;
         }
-        if (nq < MDNS_QUESTIONS_MAX) {
+        if (nq < MDNS_QUESTIONS_MAX &&
+            ((q.qclass & 0x7fff) == DNS_CLASS_IN ||
+             (q.qclass & 0x7fff) == 255)) {
             questions[nq++] = q;
         }
         offset += consumed;
@@ -71,10 +76,14 @@ mdnsHandlePacket(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
                 break;
             }
             if (record.type == DNS_TYPE_PTR &&
-                record.ttl >= MDNS_TTL_OTHER / 2 &&
+                (record.rclass & 0x7fff) == DNS_CLASS_IN &&
                 nknown < MDNS_KNOWN_MAX &&
                 mdnsWireToName(pkt, pktlen, record.rdoffset, pkt, pktlen,
-                    known[nknown], (LONG)sizeof(known[nknown])) >= 0) {
+                    known[nknown].target,
+                    (LONG)sizeof(known[nknown].target)) >= 0) {
+                mdnsTextCopy(known[nknown].owner,
+                    (LONG)sizeof(known[nknown].owner), record.name);
+                known[nknown].ttl = record.ttl;
                 nknown++;
             }
             offset += consumed;
@@ -86,18 +95,21 @@ mdnsHandlePacket(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
          */
         if (i == ntohs(hdr->ancount)) {
             LONG nproposed = 0;
+            BOOL overflow = FALSE;
 
             for (i = 0; i < ntohs(hdr->nscount); i++) {
                 if (mdnsParseRecord(pkt, pktlen, offset,
-                        &proposed[nproposed], &consumed) != 0) {
+                        &record, &consumed) != 0) {
                     break;
                 }
                 offset += consumed;
-                if (nproposed < MDNS_PROPOSED_MAX - 1) {
-                    nproposed++;
+                if (nproposed < MDNS_PROPOSED_MAX) {
+                    proposed[nproposed++] = record;
+                } else {
+                    overflow = TRUE;
                 }
             }
-            if (nproposed > 0) {
+            if (nproposed > 0 && !overflow && i == ntohs(hdr->nscount)) {
                 mdnsHostHandleProbe(md, proposed, nproposed);
                 mdnsRegHandleProbe(md, proposed, nproposed, pkt, pktlen);
             }

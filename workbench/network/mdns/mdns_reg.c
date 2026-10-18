@@ -217,7 +217,7 @@ service_append(struct MDNSDaemon *md, const struct MDNSRegisteredService *rs,
 
     /* The address of the SRV record's host, so that whoever receives this
      * need not ask for it. */
-    if (addr != 0 && withAddr) {
+    if (addr != 0 && withAddr && (!goodbye || rs->rs_Proxy)) {
         char target[256];
 
         target_fqdn(md, rs, target, (LONG)sizeof(target));
@@ -441,6 +441,14 @@ service_probe(struct MDNSDaemon *md, const struct MDNSRegisteredService *rs)
         return;
     }
     hdr->nscount = htons(nscount);
+    length = txt_data(rs, data, (LONG)sizeof(data));
+    if (mdnsAppendRecord(pkt, (LONG)MDNS_MAX_PACKET, &pos, &nscount,
+            instance, DNS_TYPE_TXT, DNS_CLASS_IN,
+            rs->rs_TTL != 0 ? rs->rs_TTL : MDNS_TTL_OTHER, data,
+            (UWORD)length) != 0) {
+        return;
+    }
+    hdr->nscount = htons(nscount);
     mdnsNetSendAll(md, pkt, pos);
 }
 
@@ -582,7 +590,7 @@ probe_rdata(const struct MDNSRecord *r, const UBYTE *pkt, LONG pktlen,
     UBYTE *out, LONG outmax)
 {
     char target[256];
-    LONG wirelen;
+    LONG wirelen, i;
 
     if (r->type != DNS_TYPE_SRV) {
         if ((LONG)r->rdlength > outmax) {
@@ -593,9 +601,17 @@ probe_rdata(const struct MDNSRecord *r, const UBYTE *pkt, LONG pktlen,
     }
     /* priority, weight and port, then a name that may be compressed */
     if (r->rdlength < 7 || outmax < 6 ||
+        mdnsSkipName(pkt, pktlen, r->rdoffset + 6) != r->rdoffset + r->rdlength ||
         mdnsWireToName(pkt, pktlen, r->rdoffset + 6, pkt, pktlen, target,
-            (LONG)sizeof(target)) < 0 ||
-        mdnsNameToWire(target, out + 6, outmax - 6, &wirelen) != 0) {
+            (LONG)sizeof(target)) < 0) {
+        return -1;
+    }
+    for (i = 0; target[i] != '\0'; i++) {
+        if (target[i] >= 'A' && target[i] <= 'Z') {
+            target[i] = (char)(target[i] + ('a' - 'A'));
+        }
+    }
+    if (mdnsNameToWire(target, out + 6, outmax - 6, &wirelen) != 0) {
         return -1;
     }
     memcpy(out, r->rdata, 6);
@@ -631,62 +647,88 @@ probe_compare(UWORD classA, UWORD typeA, const UBYTE *a, LONG lenA,
  * are compared and the host whose set is lexicographically later keeps
  * going; the other waits a second and probes again, by which time the
  * winner has announced and the usual conflict gives the loser another name
- * (RFC 6762 section 8.2). This host proposes one record for a service, its
- * SRV, so the other host's set is compared from its earliest record: an
- * equal first record and more behind it makes the other set the later one.
+ * (RFC 6762 section 8.2). Both the TXT and SRV are proposed and compared in sorted order; when
+ * all common records match, the longer set is the later one.
  */
 void
 mdnsRegHandleProbe(const struct MDNSDaemon *md,
     const struct MDNSRecord *theirs, LONG count, const UBYTE *pkt,
     LONG pktlen)
 {
-    /* mdnsd has one task */
-    static UBYTE mine[6 + 256], other[512], first[512];
+    /* Canonical RDATA stays in static storage: mdnsd has one task. */
+    static UBYTE mine[2][512], data[MDNS_PROPOSED_MAX][512], other[512];
     struct Node *n;
 
     FOR_SERVICES(md, n) {
         struct MDNSRegisteredService *rs = (struct MDNSRegisteredService *)n;
         char instance[256];
-        LONG minelen, firstlen = 0, matches = 0, i, d;
-        UWORD firstclass = 0, firsttype = 0;
+        LONG lengths[MDNS_PROPOSED_MAX], order[MDNS_PROPOSED_MAX];
+        UWORD classes[MDNS_PROPOSED_MAX], types[MDNS_PROPOSED_MAX];
+        LONG minelen[2], matches = 0, i, j, d = 0;
 
         if (rs->rs_State != MDNS_NAME_PROBING || rs->rs_Step == 0) {
-            continue;       /* not probing, or has not asked yet */
+            continue;
         }
         instance_fqdn(rs, instance, (LONG)sizeof(instance));
-        /* the earliest of the other host's records for this name */
-        for (i = 0; i < count; i++) {
-            LONG otherlen;
+        minelen[0] = txt_data(rs, mine[0], (LONG)sizeof(mine[0]));
+        minelen[1] = srv_data(md, rs, mine[1], (LONG)sizeof(mine[1]));
+        if (minelen[1] < 0) {
+            continue;
+        }
+        for (i = 6; i < minelen[1]; i++) {
+            if (mine[1][i] >= 'A' && mine[1][i] <= 'Z') {
+                mine[1][i] += 'a' - 'A';
+            }
+        }
+        for (i = 0; i < count && matches < MDNS_PROPOSED_MAX; i++) {
+            LONG length;
 
             if (Stricmp(theirs[i].name, instance) != 0) {
                 continue;
             }
-            otherlen = probe_rdata(&theirs[i], pkt, pktlen, other,
+            length = probe_rdata(&theirs[i], pkt, pktlen, other,
                 (LONG)sizeof(other));
-            if (otherlen < 0) {
+            if (length < 0) {
                 continue;
             }
-            if (matches == 0 ||
-                probe_compare(theirs[i].rclass, theirs[i].type, other,
-                    otherlen, firstclass, firsttype, first, firstlen) < 0) {
-                memcpy(first, other, (size_t)otherlen);
-                firstlen = otherlen;
-                firstclass = theirs[i].rclass;
-                firsttype = theirs[i].type;
+            for (j = 0; j < matches; j++) {
+                if (probe_compare(theirs[i].rclass, theirs[i].type, other,
+                        length, classes[j], types[j], data[j], lengths[j]) == 0) {
+                    break;
+                }
             }
-            matches++;
+            if (j < matches) {
+                continue;       /* duplicates do not add to a record set */
+            }
+            memcpy(data[matches], other, (size_t)length);
+            lengths[matches] = length;
+            classes[matches] = theirs[i].rclass;
+            types[matches] = theirs[i].type;
+            j = matches;
+            while (j > 0 && probe_compare(classes[matches], types[matches],
+                    data[matches], lengths[matches], classes[order[j - 1]],
+                    types[order[j - 1]], data[order[j - 1]],
+                    lengths[order[j - 1]]) < 0) {
+                order[j] = order[j - 1];
+                j--;
+            }
+            order[j] = matches++;
         }
         if (matches == 0) {
             continue;
         }
-        minelen = srv_data(md, rs, mine, (LONG)sizeof(mine));
-        if (minelen < 0) {
-            continue;
+        for (i = 0; i < 2 && i < matches; i++) {
+            j = order[i];
+            d = probe_compare(DNS_CLASS_IN, i == 0 ? DNS_TYPE_TXT : DNS_TYPE_SRV,
+                mine[i], minelen[i], classes[j], types[j], data[j], lengths[j]);
+            if (d != 0) {
+                break;
+            }
         }
-        d = probe_compare(DNS_CLASS_IN, DNS_TYPE_SRV, mine, minelen,
-            firstclass, firsttype, first, firstlen);
-        if (d < 0 || (d == 0 && matches > 1)) {
-            /* theirs is later: give way for a second, then ask again */
+        if (d == 0) {
+            d = 2 - matches;
+        }
+        if (d < 0) {
             rs->rs_Step = 0;
             rs->rs_NextTick = mdnsTicks() + 50;
         }
@@ -809,7 +851,7 @@ types_send(struct MDNSDaemon *md)
  */
 void
 mdnsRegHandleQuery(struct MDNSDaemon *md, struct MDNSQuestion *q,
-    char (*known)[256], LONG knownCount)
+    const struct MDNSKnownAnswer *known, LONG knownCount)
 {
     struct Node *n;
     BOOL any = q->qtype == DNS_TYPE_ANY;
@@ -860,7 +902,11 @@ mdnsRegHandleQuery(struct MDNSDaemon *md, struct MDNSQuestion *q,
                 answer = TRUE;
                 shared = TRUE;
                 for (k = 0; k < knownCount; k++) {
-                    if (Stricmp(known[k], fqdn) == 0) {
+                    ULONG ttl = rs->rs_TTL != 0 ? rs->rs_TTL : MDNS_TTL_OTHER;
+
+                    if (Stricmp(known[k].owner, type) == 0 &&
+                        Stricmp(known[k].target, fqdn) == 0 &&
+                        known[k].ttl >= (ttl + 1) / 2) {
                         answer = FALSE;
                         break;
                     }
@@ -1018,6 +1064,8 @@ mdnsRegUpdate(struct MDNSDaemon *md, const struct MDNSIPCMsg *msg)
     }
     if (rs->rs_State == MDNS_NAME_ANNOUNCED) {
         service_send(md, rs, FALSE);
+        rs->rs_Step = 1;
+        rs->rs_NextTick = mdnsTicks() + 50;
     }
     return MDNS_OK;
 }
