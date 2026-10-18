@@ -910,7 +910,10 @@ short fork = 3;
 			fork = 2;
 		else if (leaf.cat_rec.d.type != 2)
 			fork = 3;
-		else if (fork != 0 && leaf.cat_rec.f.LgLen > 0)
+		/* Show an empty file through its data fork, but do not invent an
+		 * empty data entry for a resource-only file. */
+		else if (fork != 0 &&
+		    (leaf.cat_rec.f.LgLen > 0 || leaf.cat_rec.f.RLgLen == 0))
 			fork = 0;
 		else if (leaf.cat_rec.f.RLgLen > 0)
 			fork = 1;
