@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1998-2009, The AROS Development Team. All rights reserved.
+    Copyright (C) 1998-2026, The AROS Development Team. All rights reserved.
 
     Clipboard device.
 */
@@ -65,6 +65,25 @@ static const UWORD SupportedCommands[] =
 
 /****************************************************************************************/
 
+/****i* clipboard.device/Init ***********************************************
+*
+*   NAME
+*       Init - Initialize clipboard.device global state.
+*
+*   FUNCTION
+*       Initializes the global signal semaphore and the lists that track
+*       clipboard units and change hooks.
+*
+*   INPUTS
+*       CBBase - Clipboard device base to initialize.
+*
+*   RESULT
+*       TRUE.
+*
+****************************************************************************
+*
+*/
+
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR CBBase)
 {
     InitSemaphore(&CBBase->cb_SignalSemaphore);
@@ -77,7 +96,29 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR CBBase)
 /****************************************************************************************/
 #ifndef __MORPHOS__
 
-/* Putchar procedure needed by RawDoFmt() */
+/****i* clipboard.device/putchr ********************************************
+*
+*   NAME
+*       putchr - Append one RawDoFmt() character to an output buffer.
+*
+*   FUNCTION
+*       Stores chr at the current output position and advances the output
+*       pointer by one byte.
+*
+*   INPUTS
+*       chr - Character supplied by RawDoFmt().
+*       p   - Address of the current output pointer.
+*
+*   RESULT
+*       None.
+*
+*   NOTES
+*       This callback is used only by non-MorphOS builds and performs no
+*       bounds checking.
+*
+****************************************************************************
+*
+*/
 
 AROS_UFH2(void, putchr,
     AROS_UFHA(UBYTE,    chr, D0),
@@ -89,6 +130,31 @@ AROS_UFH2(void, putchr,
 }
 
 /****************************************************************************************/
+
+/****i* clipboard.device/cb_sprintf ***************************************
+*
+*   NAME
+*       cb_sprintf - Format text into a caller-supplied buffer.
+*
+*   FUNCTION
+*       Formats the supplied arguments with RawDoFmt() using putchr() as the
+*       output callback.
+*
+*   INPUTS
+*       CBBase - Clipboard device base; not otherwise inspected here.
+*       buffer - Destination buffer.
+*       format - RawDoFmt() format string followed by its arguments.
+*
+*   RESULT
+*       None.
+*
+*   NOTES
+*       This helper is used only by non-MorphOS builds. The caller must
+*       provide enough storage for the formatted result.
+*
+****************************************************************************
+*
+*/
 
 static inline void cb_sprintf(LIBBASETYPEPTR CBBase, char *buffer, const char *format, ...)
 {
@@ -109,6 +175,35 @@ static const UWORD putch[] = {0x16c0, 0x4e75};
 
 
 /****************************************************************************************/
+
+/****i* clipboard.device/Open **********************************************
+*
+*   NAME
+*       Open - Open a clipboard unit and initialize its per-unit state.
+*
+*   FUNCTION
+*       Validates the requested unit, selects the backing-store directory on
+*       the first open, reuses or allocates the unit state, records an
+*       existing clip when present, and increments the unit open count.
+*
+*   INPUTS
+*       CBBase  - Clipboard device base.
+*       ioreq   - Request that receives the opened unit and any open error.
+*       unitnum - Clipboard unit number in the range 0 through 255.
+*       flags   - Open flags; currently not inspected.
+*
+*   RESULT
+*       Returns FALSE when validation or initial backing-store setup rejects
+*       the open. Otherwise returns TRUE; ioreq->io_Error contains the final
+*       open status.
+*
+*   NOTES
+*       The first open uses CLIPS: when that assignment is available.
+*       Otherwise RAM:Clipboards/ is used or created.
+*
+****************************************************************************
+*
+*/
 
 static int GM_UNIQUENAME(Open)
 (
@@ -291,6 +386,30 @@ static int GM_UNIQUENAME(Open)
 
 /****************************************************************************************/
 
+/****i* clipboard.device/Close *********************************************
+*
+*   NAME
+*       Close - Close a clipboard unit reference.
+*
+*   FUNCTION
+*       Invalidates the request's device reference, decrements the unit open
+*       count, and removes and frees the unit state after the last close.
+*
+*   INPUTS
+*       CBBase - Clipboard device base.
+*       ioreq  - Request associated with the unit being closed.
+*
+*   RESULT
+*       TRUE.
+*
+*   NOTES
+*       On the last close, ioreq->io_Unit is invalidated after the unit state
+*       has been removed.
+*
+****************************************************************************
+*
+*/
+
 static int GM_UNIQUENAME(Close)
 (
     LIBBASETYPEPTR CBBase,
@@ -330,6 +449,32 @@ ADD2OPENDEV(GM_UNIQUENAME(Open), 0)
 ADD2CLOSEDEV(GM_UNIQUENAME(Close), 0)
 
 /****************************************************************************************/
+
+/****i* clipboard.device/beginio *******************************************
+*
+*   NAME
+*       beginio - Execute a clipboard.device I/O request.
+*
+*   FUNCTION
+*       Dispatches a supported clipboard command against the opened unit and
+*       completes the request in the caller's context. A CMD_READ may wait for
+*       a posted clip to be supplied. Requests without IOF_QUICK are replied
+*       after command processing completes.
+*
+*   INPUTS
+*       ioreq - I/O request containing the command and command-specific
+*               IOClipReq fields.
+*
+*   RESULT
+*       None. Command results are returned in the request fields.
+*
+*   NOTES
+*       Unsupported commands set io_Error to IOERR_NOCMD. An undersized
+*       NSCMD_DEVICEQUERY request sets io_Error to IOERR_BADLENGTH.
+*
+****************************************************************************
+*
+*/
 
 AROS_LH1(void, beginio,
          AROS_LHA(struct IORequest *, ioreq, A1),
@@ -589,6 +734,25 @@ AROS_LH1(void, beginio,
 
 /****************************************************************************************/
 
+/****i* clipboard.device/abortio *******************************************
+*
+*   NAME
+*       abortio - Handle an AbortIO() request for clipboard.device.
+*
+*   FUNCTION
+*       Performs no cancellation because clipboard.device does not queue a
+*       separate asynchronous operation for these requests.
+*
+*   INPUTS
+*       ioreq - Request passed to AbortIO(); not modified here.
+*
+*   RESULT
+*       0.
+*
+****************************************************************************
+*
+*/
+
 AROS_LH1(LONG, abortio,
  AROS_LHA(struct IORequest *,      ioreq, A1),
           struct ClipboardBase *, CBBase, 6, Clipboard)
@@ -607,6 +771,33 @@ AROS_LH1(LONG, abortio,
 }
 
 /****************************************************************************************/
+
+/****i* clipboard.device/readCb ********************************************
+*
+*   NAME
+*       readCb - Transfer data for the current clipboard read transaction.
+*
+*   FUNCTION
+*       Reads from the unit backing file at io_Offset, or advances the logical
+*       read position without copying when io_Data is NULL. Updates io_Actual
+*       and io_Offset, and ends the read transaction at end of clip.
+*
+*   INPUTS
+*       ioreq  - Active CMD_READ request for the current unit.
+*       CBBase - Clipboard device base; not otherwise inspected here.
+*
+*   RESULT
+*       None. io_Actual reports the bytes transferred or logically consumed.
+*       End of clip returns io_Actual as 0 and invalidates io_ClipID.
+*
+*   NOTES
+*       A backing-file Seek() or Read() failure aborts the request with
+*       IOERR_ABORTED, closes the backing file, releases the unit lock, sets
+*       io_Actual to 0, and invalidates io_ClipID.
+*
+****************************************************************************
+*
+*/
 
 static void readCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
 {
@@ -660,10 +851,32 @@ static void readCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
         D(bug("clipboard.device/readCb: Doing read Seek() at offset %d.\n",
               ioClip(ioreq)->io_Offset));
 
-        Seek(CBUn->cu_clipFile, ioClip(ioreq)->io_Offset, OFFSET_BEGINNING);
+        if (Seek(CBUn->cu_clipFile, ioClip(ioreq)->io_Offset, OFFSET_BEGINNING) == -1)
+        {
+            D(bug("clipboard.device/readCb: seek failed\n"));
+            Close(CBUn->cu_clipFile);
+            CBUn->cu_clipFile = 0;
+            ReleaseSemaphore(&CBUn->cu_UnitLock);
+            ioClip(ioreq)->io_Error = IOERR_ABORTED;
+            ioClip(ioreq)->io_Actual = 0;
+            ioClip(ioreq)->io_ClipID = -1;
+            return;
+        }
 
         ioClip(ioreq)->io_Actual = Read(CBUn->cu_clipFile, ioClip(ioreq)->io_Data,
                                         ioClip(ioreq)->io_Length);
+
+        if ((LONG)ioClip(ioreq)->io_Actual == -1)
+        {
+            D(bug("clipboard.device/readCb: read failed\n"));
+            Close(CBUn->cu_clipFile);
+            CBUn->cu_clipFile = 0;
+            ReleaseSemaphore(&CBUn->cu_UnitLock);
+            ioClip(ioreq)->io_Error = IOERR_ABORTED;
+            ioClip(ioreq)->io_Actual = 0;
+            ioClip(ioreq)->io_ClipID = -1;
+            return;
+        }
 
         if (ioClip(ioreq)->io_Length >= 4)
         {
@@ -719,6 +932,35 @@ static void readCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
 }
 
 /****************************************************************************************/
+
+/****i* clipboard.device/writeCb *******************************************
+*
+*   NAME
+*       writeCb - Transfer data for the current clipboard write transaction.
+*
+*   FUNCTION
+*       Starts or continues a clipboard write, creates the backing file for a
+*       new transaction, zero-fills a gap when io_Offset is beyond the current
+*       clip size, writes the requested data, and updates the offset and clip
+*       size from the completed transfer.
+*
+*   INPUTS
+*       ioreq  - Active CMD_WRITE request for the current unit.
+*       CBBase - Clipboard device base; not otherwise inspected here.
+*
+*   RESULT
+*       None. io_Actual contains the result of the requested data write.
+*
+*   NOTES
+*       Invalid clip IDs, backing-file open failures, gap-buffer allocation
+*       failures, failed seeks, short or failed gap writes, and failed data
+*       writes abort the request with IOERR_ABORTED and io_Actual set to 0.
+*       Error cleanup closes the backing file when open, releases the unit
+*       lock, and invalidates io_ClipID where the transaction was established.
+*
+****************************************************************************
+*
+*/
 
 static void writeCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
 {
@@ -778,21 +1020,64 @@ static void writeCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
         ULONG buflen = len > WRITEBUFSIZE ? WRITEBUFSIZE : len;
         UBYTE *buf = AllocMem(buflen, MEMF_CLEAR | MEMF_PUBLIC);
 
-        Seek(CBUn->cu_clipFile, 0, OFFSET_END);
-
-        if (buf)
+        if (!buf)
         {
-            while(len)
-            {
-                ULONG size = len > WRITEBUFSIZE ? WRITEBUFSIZE : len;
-
-                Write(CBUn->cu_clipFile, buf, size);
-                len -= size;
-            }
-            FreeMem(buf, buflen);
+            D(bug("clipboard.device/writeCb: gap buffer allocation failed\n"));
+            Close(CBUn->cu_clipFile);
+            CBUn->cu_clipFile = 0;
+            ReleaseSemaphore(&CBUn->cu_UnitLock);
+            ioClip(ioreq)->io_Error = IOERR_ABORTED;
+            ioClip(ioreq)->io_Actual = 0;
+            ioClip(ioreq)->io_ClipID = -1;
+            return;
         }
+
+        if (Seek(CBUn->cu_clipFile, 0, OFFSET_END) == -1)
+        {
+            D(bug("clipboard.device/writeCb: end seek failed\n"));
+            FreeMem(buf, buflen);
+            Close(CBUn->cu_clipFile);
+            CBUn->cu_clipFile = 0;
+            ReleaseSemaphore(&CBUn->cu_UnitLock);
+            ioClip(ioreq)->io_Error = IOERR_ABORTED;
+            ioClip(ioreq)->io_Actual = 0;
+            ioClip(ioreq)->io_ClipID = -1;
+            return;
+        }
+
+        while(len)
+        {
+            ULONG size = len > WRITEBUFSIZE ? WRITEBUFSIZE : len;
+            LONG written = Write(CBUn->cu_clipFile, buf, size);
+
+            if (written != (LONG)size)
+            {
+                D(bug("clipboard.device/writeCb: gap write failed\n"));
+                FreeMem(buf, buflen);
+                Close(CBUn->cu_clipFile);
+                CBUn->cu_clipFile = 0;
+                ReleaseSemaphore(&CBUn->cu_UnitLock);
+                ioClip(ioreq)->io_Error = IOERR_ABORTED;
+                ioClip(ioreq)->io_Actual = 0;
+                ioClip(ioreq)->io_ClipID = -1;
+                return;
+            }
+            len -= size;
+        }
+        FreeMem(buf, buflen);
     }
-    Seek(CBUn->cu_clipFile, ioClip(ioreq)->io_Offset, OFFSET_BEGINNING);
+
+    if (Seek(CBUn->cu_clipFile, ioClip(ioreq)->io_Offset, OFFSET_BEGINNING) == -1)
+    {
+        D(bug("clipboard.device/writeCb: seek failed\n"));
+        Close(CBUn->cu_clipFile);
+        CBUn->cu_clipFile = 0;
+        ReleaseSemaphore(&CBUn->cu_UnitLock);
+        ioClip(ioreq)->io_Error = IOERR_ABORTED;
+        ioClip(ioreq)->io_Actual = 0;
+        ioClip(ioreq)->io_ClipID = -1;
+        return;
+    }
 
     D(bug("clipboard.device/writeCb: Did Seek(), offset = %d\n", ioClip(ioreq)->io_Offset));
 
@@ -863,6 +1148,31 @@ static void writeCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
 }
 
 /****************************************************************************************/
+
+/****i* clipboard.device/updateCb ******************************************
+*
+*   NAME
+*       updateCb - Finalize the current clipboard write transaction.
+*
+*   FUNCTION
+*       For the current write ID, closes the backing file, wakes a waiting
+*       posted-data reader, releases the unit lock, and notifies registered
+*       change hooks that CMD_UPDATE completed.
+*
+*   INPUTS
+*       ioreq  - CMD_UPDATE request identifying the write transaction.
+*       CBBase - Clipboard device base.
+*
+*   RESULT
+*       None. io_ClipID is invalidated before return.
+*
+*   NOTES
+*       A missing or mismatched write ID sets io_Error to IOERR_ABORTED and
+*       io_Actual to 0.
+*
+****************************************************************************
+*
+*/
 
 static void updateCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
 {
