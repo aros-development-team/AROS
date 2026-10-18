@@ -25,7 +25,7 @@ struct DiscoveryRecord
     UBYTE key[256];
     UBYTE data[512];
     UWORD type, length;
-    ULONG link, expires, received, refresh, ttl;
+    ULONG link, expires, received, refresh, ttl, serial;
     UWORD refreshStep;
 };
 struct DiscoveryView
@@ -51,7 +51,7 @@ struct MDNSDiscovery
     struct DiscoveryView views[DISC_VIEWS];
     struct DiscoverySession sessions[DISC_SESSIONS];
     IPTR nextHandle;
-    ULONG lastRefresh;
+    ULONG lastRefresh, serial;
 };
 
 static BOOL due(ULONG now, ULONG deadline)
@@ -221,7 +221,7 @@ static struct DiscoveryRecord *find_record(struct MDNSDiscovery *d,
 
         if (r->type == type && r->link == link && !due(now, r->expires) &&
             same_key(key, r->key) &&
-            (found == NULL || (LONG)(r->received - found->received) > 0)) {
+            (found == NULL || (LONG)(r->serial - found->serial) > 0)) {
             found = r;
         }
     }
@@ -383,6 +383,7 @@ void mdnsDiscoveryRecord(struct MDNSDaemon *md, const struct MDNSRecord *record,
     slot->type = record->type;
     slot->ttl = record->ttl > DISC_TTL_MAX ? DISC_TTL_MAX : record->ttl;
     slot->received = now;
+    slot->serial = ++d->serial;
     slot->expires = now + slot->ttl * 50;
     slot->refresh = now + slot->ttl * (40 + now % 2); /* 80–82 percent */
 }

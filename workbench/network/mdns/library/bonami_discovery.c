@@ -82,10 +82,16 @@ static LONG start(struct BonamiIntern *base, STRPTR name, STRPTR type,
     struct BonamiDiscovery *op, *next;
     struct TagItem *output = FindTagItem(resolve ? MDNS_ResolveRef : MDNS_BrowseRef, tags);
     ULONG count = 0;
+    CONST_STRPTR domain = (CONST_STRPTR)GetTagData(MDNS_Domain, (IPTR)"local", tags);
     LONG rc;
 
     if (hook != NULL || GetTagData(MDNS_EventMode, 0, tags) != MDNS_EVENT_POLL) {
         return MDNSERR_NOTREADY;   /* callback delivery is not implemented */
+    }
+    if (domain == NULL || Stricmp(domain, "local") != 0 ||
+        GetTagData(MDNS_Flags, 0, tags) != 0 ||
+        FindTagItem(MDNS_InterfaceName, tags) != NULL) {
+        return MDNSERR_BADPARAM;
     }
     if (output == NULL || output->ti_Data == 0) {
         return MDNSERR_BADPARAM;
