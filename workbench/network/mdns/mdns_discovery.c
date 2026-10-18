@@ -231,9 +231,9 @@ static struct DiscoveryRecord *find_record(struct MDNSDiscovery *d,
 static BOOL snapshot(struct MDNSDiscovery *d, const UBYTE *key, ULONG link,
     struct MDNSDiscoveryEvent *out, ULONG now)
 {
-    struct DiscoveryRecord *srv = find_record(d, key, link, DNS_TYPE_SRV, now);
-    struct DiscoveryRecord *txt = find_record(d, key, link, DNS_TYPE_TXT, now);
-    struct DiscoveryRecord *addr;
+    const struct DiscoveryRecord *srv = find_record(d, key, link, DNS_TYPE_SRV, now);
+    const struct DiscoveryRecord *txt = find_record(d, key, link, DNS_TYPE_TXT, now);
+    const struct DiscoveryRecord *addr;
     const UBYTE *type = key + key[0] + 1;
     LONG n;
 
@@ -664,7 +664,7 @@ LONG mdnsDiscoveryMessage(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
         msg->mi_Handle = s->handle;
         msg->mi_DaemonID = md->md_DaemonID;
         for (i = 0; i < DISC_VIEWS; i++) {
-            struct DiscoveryView *v = &d->views[i];
+            const struct DiscoveryView *v = &d->views[i];
 
             if (!s->resolve && v->present && same_key(s->key, v->key + v->key[0] + 1)) {
                 struct MDNSDiscoveryEvent event = v->event;
