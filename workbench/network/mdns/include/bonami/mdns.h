@@ -75,6 +75,25 @@
 #define MDNS_HostAddr           (MDNS_Dummy + 14)  /* ULONG IPv4, network order */
 #define MDNS_TimeToLive         (MDNS_Dummy + 17)  /* ULONG seconds, 1..4500 */
 
+/* AROS discovery proposal: explicitly polled, never daemon callbacks. */
+#define MDNS_EventMode         (MDNS_Dummy + 18)
+#define MDNS_EVENT_POLL        1
+#define MDNS_DISCOVERY_TXT_MAX 512
+
+/* Counted wire TXT strings; names are individual labels, without escaping.
+ * Address and interface are network byte order. No embedded pointers. */
+struct MDNSDiscoveryEvent
+{
+    ULONG de_Code;
+    ULONG de_Address;
+    ULONG de_Interface;
+    UWORD de_Port;
+    UWORD de_TXTLength;
+    char de_Name[64];
+    char de_Type[MDNS_MAX_TYPE + 1];
+    UBYTE de_TXT[MDNS_DISCOVERY_TXT_MAX];
+};
+
 /* GetMDNSStatusA output counters (ti_Data = ULONG *) */
 #define MDNS_StatusRxPackets    (MDNS_Dummy + 20)  /* ULONG * RX datagram count */
 #define MDNS_StatusTxPackets    (MDNS_Dummy + 21)  /* ULONG * TX datagram count */

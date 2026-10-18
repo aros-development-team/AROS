@@ -144,6 +144,9 @@ mdnsHandlePacket(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
         mdnsHostHandleRecord(md, &record);
         if (i < answers || i >= (UWORD)(answers + authorities)) {
             mdnsRegHandleRecord(md, &record, pkt, pktlen);
+            if (srcport == MDNS_DNS_PORT && ntohs(hdr->id) == 0) {
+                mdnsDiscoveryRecord(md, &record, pkt, pktlen, offset);
+            }
         }
         offset += consumed;
     }

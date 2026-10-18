@@ -65,6 +65,7 @@ mdnsTicks(void)
 static void
 net_down(struct MDNSDaemon *md)
 {
+    mdnsDiscoveryReset(md);
     mdnsRegGoodbyeAll(md);
     mdnsHostGoodbye(md);
     mdnsNetClose(md);
@@ -94,6 +95,7 @@ net_up(struct MDNSDaemon *md)
     /* An interface came, went or changed its address: the name is asked
      * for again with the addresses as they are now. */
     if (mdnsNetRescan(md)) {
+        mdnsDiscoveryReset(md);
         mdnsHostRestart(md);
         mdnsRegRestartAll(md);
     }
@@ -178,6 +180,7 @@ main(void)
     md->md_Socket = -1;
     md->md_SendIf = -1;
     md->md_NextHandle = 1;
+    md->md_DaemonID = GetETaskID(FindTask(NULL));
     NEWLIST(&md->md_Services);
     md->md_RxBuf = (UBYTE *)AllocMem(MDNS_MAX_PACKET, MEMF_CLEAR);
     md->md_TxBuf = (UBYTE *)AllocMem(MDNS_MAX_PACKET, MEMF_CLEAR);
@@ -239,6 +242,7 @@ main(void)
             mdnsClientReap(md);
         }
 
+        mdnsDiscoveryTick(md);
         probing = FALSE;
         if (running && md->md_Socket >= 0) {
             /* the host's name first: no service is announced before it */
@@ -261,6 +265,7 @@ main(void)
 
     net_down(md);
     mdnsRegFree(md);
+    mdnsDiscoveryFree(md);
     mdnsdServiceClose();
     FreeMem(md->md_RxBuf, MDNS_MAX_PACKET);
     FreeMem(md->md_TxBuf, MDNS_MAX_PACKET);

@@ -27,7 +27,11 @@ struct BonamiIntern
     struct BonamiBase       bi_Base;    /* first: this is the library base */
     struct SignalSemaphore  bi_Lock;
     struct MinList          bi_Openers;
+    struct List             bi_Discovery;
+    IPTR                    bi_NextDiscovery;
 };
+
+void bonamiDiscoveryRelease(struct BonamiIntern *base);
 
 /* bonami_ipc.c */
 LONG bonamiEngineThere(void);
