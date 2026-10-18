@@ -701,6 +701,8 @@ openbreak:
                         }
                         actual = Read_From_File (obj, ptr, length);
                         packet->dp_Res1 = actual;
+                        if (actual < 0)
+                                error = ERROR_SEEK_ERROR;
                 }
                 break;
                 case ACTION_END: /* FHArg1      Bool:TRUE */
@@ -1113,7 +1115,8 @@ openbreak:
                         if (error)
                         {
                                 D(bug("ERR=%ld\n", error);)
-                                packet->dp_Res1 = packet->dp_Type == ACTION_WRITE ? -1 : DOSFALSE;
+                                packet->dp_Res1 = (packet->dp_Type == ACTION_WRITE ||
+                                    packet->dp_Type == ACTION_READ) ? -1 : DOSFALSE;
                                 packet->dp_Res2 = error;
                         }
                         else
