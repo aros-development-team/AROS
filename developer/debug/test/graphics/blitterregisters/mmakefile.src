@@ -1,0 +1,13 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+USER_LDFLAGS := -static
+USER_CFLAGS := -fomit-frame-pointer
+
+# Selected by the native Amiga graphics test group, normal and quick.
+#MM test-graphics-blitterregisters : includes linklibs
+
+%build_progs mmake=test-graphics-blitterregisters \
+    files=blitterregisters targetdir=$(AROS_TESTS)/graphics/blitterregisters
+
+%common
