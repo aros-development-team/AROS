@@ -41,6 +41,9 @@ SAVEDS ASM LONG NetInfoStartup(void)
         LONG len;
 
         dev = (struct NetInfoDevice *) ok_message->mn_Node.ln_Name;
+        /* Before anything else: until this task is gone it may run code of
+         * this module, so expunge waits for this ID to disappear. */
+        dev->nid_WorkerID = GetETaskID(FindTask(NULL));
         D(bug("[NetInfo:Server] %s: device @ 0x%p\n", __func__, dev));
 
         len = GetVar("SYS/userdb", buf, sizeof(buf), GVF_GLOBAL_ONLY);
@@ -204,9 +207,8 @@ static void NetInfoPoll(struct NetInfoDevice *nid)
         if (nid->nid_Death)
             DeleteIORequest(nid->nid_Death), nid->nid_Death = NULL;
 
-        /* Do not let an expunger run until we return to DOS exit code.
-         * The device can be unloaded once nid_Task is cleared. */
-        Forbid();
+        /* Still running code of this module: expunge also waits for this
+         * task to be gone (nid_WorkerID), on any CPU. */
         nid->nid_Task = NULL;
 
         ReleaseSemaphore(nid->nid_Lock);
