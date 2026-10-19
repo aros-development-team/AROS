@@ -234,10 +234,10 @@ LONG validate(struct AFSBase *afsbase, struct Volume *vol)
  */
 LONG check_block_range(DiskStructure *ds, ULONG num)
 {
-        if ((num < ds->vol->bstartblock) || (num >= ds->vol->countblocks))
+        if ((num < ds->vol->bootblocks) || (num >= ds->vol->countblocks))
         {
                 D(bug("[afs validate]: Block located outside volume range. Condition %lu <= %lu < %lu not met.\n",
-                        ds->vol->bstartblock,
+                        (ULONG)ds->vol->bootblocks,
                         num,
                         ds->vol->countblocks));
                 showError(ds->afs, ERR_BLOCK_OUTSIDE_RANGE, num);
@@ -949,7 +949,7 @@ void bm_free_bitmap(DiskStructure* ds)
 
 BitmapResult bm_mark_block(DiskStructure *ds, ULONG block)
 {
-        if ((block < ds->vol->bstartblock) || (block >= ds->vol->countblocks))
+        if ((block < ds->vol->bootblocks) || (block >= ds->vol->countblocks))
         {
                 D(bug("block %ld is out of disk area range\n", block));
                 return st_OutOfRange;
@@ -963,7 +963,7 @@ BitmapResult bm_mark_block(DiskStructure *ds, ULONG block)
         if ((((ULONG*)ds->bitmap)[block >> 5] & (1 << ((block & 31)^24))) == 0)
 #endif
         {
-                D(bug("Duplicate block allocation for block %ld! Overlapping files?\n", (block+ds->vol->bstartblock)));
+                D(bug("Duplicate block allocation for block %ld! Overlapping files?\n", (block+ds->vol->bootblocks)));
                 return st_AlreadyInUse;
         }
         
