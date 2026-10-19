@@ -62,6 +62,7 @@
 	struct MyMidiCluster *mycluster=(struct MyMidiCluster *)midilink->ml_Location;
 	BOOL driversuccess=TRUE;
 	UBYTE *buffer2;
+	ULONG sysexlen=GetSysXLen(buffer);
 
 	ObtainSemaphoreShared(&mycluster->semaphore);
 
@@ -82,9 +83,15 @@
 				driversuccess=SysEx2Driver(driverdata,buffer);
 
 			}else{
-				buffer2=buffer;
-				while(PutSysEx2Link((struct MidiLink *)node,*buffer2)==TRUE){
-					buffer2++;
+				struct MidiLink *receiver=(struct MidiLink *)node;
+				struct MyMidiNode *mymidinode=(struct MyMidiNode *)receiver->ml_MidiNode;
+				if(sysexlen>mymidinode->midinode.mi_SysExQueueSize){
+					SetMidiError(mymidinode,CMEF_SysExTooBig);
+				}else{
+					buffer2=buffer;
+					while(PutSysEx2Link(receiver,*buffer2)==TRUE){
+						buffer2++;
+					}
 				}
 			}
 			node=node->ln_Succ;

@@ -164,8 +164,13 @@
 				}
 				mymidinode->sysex_start=temp2;
 				mymidinode->sysex_write=mymidinode->sysex_start;
-				mymidinode->sysex_end=mymidinode->sysex_start+midinode->mi_SysExQueueSize;
+				mymidinode->sysex_end=mymidinode->sysex_start+midinode->mi_SysExQueueSize+1;
 				mymidinode->sysex_read=mymidinode->sysex_start;
+				mymidinode->sysex_laststart=NULL;
+				mymidinode->sysex_started_empty=TRUE;
+				mymidinode->sysex_discarding=FALSE;
+				mymidinode->sysex_nextis0=TRUE;
+				mymidinode->lastreadstatus=0;
 				ReleaseSemaphore(&mymidinode->sysexsemaphore2);
 				ReleaseSemaphore(&mymidinode->sysexsemaphore);
 				ObtainSemaphore(CB(CamdBase)->CLSemaphore);
