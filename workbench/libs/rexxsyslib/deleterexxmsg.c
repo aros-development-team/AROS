@@ -19,25 +19,24 @@
         struct RxsLib *, RexxSysBase, 25, RexxSys)
 
 /*  FUNCTION
-         Deletes a RexxMsg structure
+        Frees the storage of a RexxMsg created with CreateRexxMsg().
+        Referenced argument strings and other resources are not freed.
 
     INPUTS
-         packet - The RexxMsg to delete.
+        packet - Non-NULL RexxMsg returned by CreateRexxMsg(). The
+                 message must no longer be in use.
 
     RESULT
-         void
+        None.
 
     NOTES
-
-    EXAMPLE
-
-    BUGS
+        Wait for any outstanding reply before deleting a sent message.
+        Release argument strings owned by the caller with ClearRexxMsg()
+        before deleting the message. The function does not free strings
+        referenced by rm_CommAddr or rm_FileExt.
 
     SEE ALSO
-         CreateRexxMsg()
-
-    INTERNALS
-
+        CreateRexxMsg(), ClearRexxMsg(), DeleteArgstring()
 
 *****************************************************************************/
 {
