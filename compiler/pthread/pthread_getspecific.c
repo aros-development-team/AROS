@@ -43,16 +43,17 @@
         0..PTHREAD_KEYS_MAX-1. There is no separate error result.
 
     NOTES
-        Include <pthread.h>; link with pthread. Call from the initial program
-        task or a registered worker. This is a nonblocking slot read. A new
-        worker's slots start as NULL. Values belong to the application and
-        remain valid only for the lifetime established by that application.
+        Include <pthread.h>; link with pthread. This is a nonblocking slot
+        read. A new worker's slots start as NULL. A task that is not a pthread
+        (another program calling into a shared library, a raw subtask) has
+        slots of its own, and its destructors never run. Values belong to the
+        application and remain valid only for the lifetime established by
+        that application.
 
     BUGS
         The call does not check whether an in-range key is allocated. Deleting
         or recreating a key does not clear old slot contents, so it can return
-        a stale pointer. An unregistered task maps to the initial task's record
-        instead of receiving independent thread-specific storage.
+        a stale pointer.
 
     SEE ALSO
         pthread_key_create(),
@@ -61,18 +62,14 @@
 
 *****************************************************************************/
 {
-    pthread_t thread;
-    ThreadInfo *inf;
-    void *value = NULL;
+    void **values;
 
     D(bug("%s(%u)\n", __FUNCTION__, key));
 
     if (key >= PTHREAD_KEYS_MAX)
         return NULL;
 
-    thread = pthread_self();
-    inf = GetThreadInfo(thread);
-    value = inf->tlsvalues[key];
+    values = GetTLSValues(FALSE);
 
-    return value;
+    return values ? values[key] : NULL;
 }
