@@ -1,5 +1,12 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
 include $(SRCDIR)/config/aros.cfg
+
+# Native Paula tests are grouped beneath the audio device component.
+#MM- test-amiga-m68k : test-devices-audio
+#MM- test-amiga-m68k-quick : test-devices-audio-quick
+#MM- test-devices-audio : test-devices-audio-flush
+#MM- test-devices-audio-quick : test-devices-audio-flush-quick
 
 FILES := audio audio_hardware
 
