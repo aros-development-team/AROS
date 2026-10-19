@@ -7,7 +7,10 @@
  *
  * It answers for the host's name in the mDNS domain, "<hostname>.local", on
  * every interface that can multicast, so that other machines on the link
- * find this one by name without a DNS server.
+ * find this one by name without a DNS server, and for the services that
+ * programs on this host register through bonami.library (RFC 6763). The
+ * library reaches it through the public message port MDNS_IPC_PORT; no
+ * client shares memory with it.
  *
  * The AROSTCP service manager starts it from db/services.d/mdns and stops
  * it with the stack. Started by hand it runs until Ctrl-C.
@@ -15,6 +18,7 @@
 
 #include <exec/types.h>
 #include <exec/memory.h>
+#include <exec/ports.h>
 #include <dos/dos.h>
 #include <string.h>
 
@@ -29,6 +33,9 @@
 
 /* Seconds between looks at the stack's interfaces. */
 #define MDNSD_RESCAN_SECONDS 3
+/* Seconds between looks for clients that ended without closing the
+ * library. */
+#define MDNSD_REAP_SECONDS 5
 
 static LONG daemonErrno;
 
@@ -58,6 +65,7 @@ mdnsTicks(void)
 static void
 net_down(struct MDNSDaemon *md)
 {
+    mdnsRegGoodbyeAll(md);
     mdnsHostGoodbye(md);
     mdnsNetClose(md);
     if (md->md_SocketBase != NULL) {
@@ -87,11 +95,13 @@ net_up(struct MDNSDaemon *md)
      * for again with the addresses as they are now. */
     if (mdnsNetRescan(md)) {
         mdnsHostRestart(md);
+        mdnsRegRestartAll(md);
     }
 }
 
 /* Waits for a signal, a datagram on any interface, or a second to pass: a
- * quarter of one while the name is being probed. */
+ * quarter of one while a name is being probed, and a fiftieth while an
+ * answer is waiting to be sent. */
 static ULONG
 wait_and_receive(struct MDNSDaemon *md, ULONG sigmask, BOOL probing)
 {
@@ -109,8 +119,8 @@ wait_and_receive(struct MDNSDaemon *md, ULONG sigmask, BOOL probing)
     }
 
     FD_ZERO(&readfds);
-    tv.tv_sec = probing ? 0 : 1;
-    tv.tv_usec = probing ? 250000 : 0;
+    tv.tv_sec = (probing || md->md_AnswerPending) ? 0 : 1;
+    tv.tv_usec = md->md_AnswerPending ? 20000 : probing ? 250000 : 0;
     for (i = 0; i < md->md_IfCount; i++) {
         sock = md->md_Ifs[i].mi_Socket;
         FD_SET(sock, &readfds);
@@ -150,32 +160,54 @@ main(void)
     static struct MDNSDaemon daemon;
     struct MDNSDaemon *md = &daemon;
     struct MDNSDSignals sig;
-    ULONG lastScan = 0;
+    struct MDNSIPCMsg *msg;
+    struct MsgPort *port;
+    ULONG portmask;
+    ULONG lastScan = 0, lastReap = 0;
     BOOL running = TRUE, probing = FALSE;
+
+    /* One responder owns the host's names. */
+    Forbid();
+    port = FindPort((STRPTR)MDNS_IPC_PORT);
+    Permit();
+    if (port != NULL) {
+        PutStr("mdnsd: already running\n");
+        return RETURN_WARN;
+    }
 
     md->md_Socket = -1;
     md->md_SendIf = -1;
+    md->md_NextHandle = 1;
+    NEWLIST(&md->md_Services);
     md->md_RxBuf = (UBYTE *)AllocMem(MDNS_MAX_PACKET, MEMF_CLEAR);
     md->md_TxBuf = (UBYTE *)AllocMem(MDNS_MAX_PACKET, MEMF_CLEAR);
-    if (md->md_RxBuf == NULL || md->md_TxBuf == NULL) {
+    port = CreateMsgPort();
+    if (md->md_RxBuf == NULL || md->md_TxBuf == NULL || port == NULL) {
         if (md->md_RxBuf != NULL) {
             FreeMem(md->md_RxBuf, MDNS_MAX_PACKET);
         }
         if (md->md_TxBuf != NULL) {
             FreeMem(md->md_TxBuf, MDNS_MAX_PACKET);
         }
+        if (port != NULL) {
+            DeleteMsgPort(port);
+        }
         return RETURN_FAIL;
     }
+    md->md_Port = port;
+    portmask = 1UL << port->mp_SigBit;
 
     /* Without the service registry, for example when started by hand, it
      * still runs and Ctrl-C stops it. */
     mdnsdServiceOpen(&sig);
     net_up(md);
+    port->mp_Node.ln_Name = (STRPTR)MDNS_IPC_PORT;
+    AddPort(port);
 
     while (running) {
         ULONG got = wait_and_receive(md,
-            sig.ms_Stop | sig.ms_Begin | sig.ms_End | SIGBREAKF_CTRL_C,
-            probing);
+            portmask | sig.ms_Stop | sig.ms_Begin | sig.ms_End |
+            SIGBREAKF_CTRL_C, probing);
 
         if (got & (sig.ms_Stop | SIGBREAKF_CTRL_C)) {
             running = FALSE;
@@ -198,10 +230,37 @@ main(void)
             }
         }
 
-        probing = running && md->md_Socket >= 0 && mdnsHostTick(md);
+        while ((msg = (struct MDNSIPCMsg *)GetMsg(port)) != NULL) {
+            mdnsClientMessage(md, msg);
+            ReplyMsg(&msg->mi_Msg);
+        }
+        if (running && mdnsNow() - lastReap >= MDNSD_REAP_SECONDS) {
+            lastReap = mdnsNow();
+            mdnsClientReap(md);
+        }
+
+        probing = FALSE;
+        if (running && md->md_Socket >= 0) {
+            /* the host's name first: no service is announced before it */
+            probing = mdnsHostTick(md);
+            if (mdnsRegTick(md)) {
+                probing = TRUE;
+            }
+        }
     }
 
+    /* No client may find the port any more; whoever already sent is told
+     * that mdnsd is gone. */
+    RemPort(port);
+    while ((msg = (struct MDNSIPCMsg *)GetMsg(port)) != NULL) {
+        msg->mi_Result = MDNSERR_NOENGINE;
+        ReplyMsg(&msg->mi_Msg);
+    }
+    DeleteMsgPort(port);
+    md->md_Port = NULL;
+
     net_down(md);
+    mdnsRegFree(md);
     mdnsdServiceClose();
     FreeMem(md->md_RxBuf, MDNS_MAX_PACKET);
     FreeMem(md->md_TxBuf, MDNS_MAX_PACKET);

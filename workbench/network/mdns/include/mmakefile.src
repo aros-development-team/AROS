@@ -1,0 +1,14 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-network-mdns-includes : \
+#MM      workbench-network-mdns-includes-bonami \
+#MM      workbench-network-mdns-includes-libraries
+
+%copy_includes mmake=workbench-network-mdns-includes-bonami \
+    path=bonami dir=bonami includes="mdns.h"
+
+%copy_includes mmake=workbench-network-mdns-includes-libraries \
+    path=libraries dir=libraries includes="bonamibase.h"
+
+%common
