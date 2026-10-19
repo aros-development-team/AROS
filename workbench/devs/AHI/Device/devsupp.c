@@ -58,7 +58,7 @@ RecM8S(ULONG  size,
         offs += step;
     }
 
-    *offset += (offs >> 32) * sizeof(struct sample *);
+    *offset += (offs >> 32) * sizeof(struct sample);
     *dest   = to;
 }
 
@@ -82,7 +82,7 @@ RecS8S(ULONG  size,
         offs += step;
     }
 
-    *offset += (offs >> 32) * sizeof(struct sample *);
+    *offset += (offs >> 32) * sizeof(struct sample);
     *dest   = to;
 }
 
@@ -105,7 +105,7 @@ RecM16S(ULONG  size,
         offs += step;
     }
 
-    *offset += (offs >> 32) * sizeof(struct sample *);
+    *offset += (offs >> 32) * sizeof(struct sample);
     *dest   = to;
 }
 
@@ -129,7 +129,7 @@ RecS16S(ULONG  size,
         offs += step;
     }
 
-    *offset += (offs >> 32) * sizeof(struct sample *);
+    *offset += (offs >> 32) * sizeof(struct sample);
     *dest   = to;
 }
 
@@ -152,7 +152,7 @@ RecM32S(ULONG  size,
         offs += step;
     }
 
-    *offset += (offs >> 32) * sizeof(struct sample *);
+    *offset += (offs >> 32) * sizeof(struct sample);
     *dest   = to;
 }
 
@@ -176,6 +176,6 @@ RecS32S(ULONG  size,
         offs += step;
     }
 
-    *offset += (offs >> 32) * sizeof(struct sample *);
+    *offset += (offs >> 32) * sizeof(struct sample);
     *dest   = to;
 }
