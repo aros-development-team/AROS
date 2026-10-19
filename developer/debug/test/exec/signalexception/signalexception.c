@@ -5,9 +5,22 @@
 */
 #include <aros/debug.h>
 #include <aros/asmcall.h>
+#include <aros/config.h>
 #include <exec/execbase.h>
 #include <exec/tasks.h>
 #include <proto/exec.h>
+
+#if defined(__AROSEXEC_SMP__)
+
+/* SMP keeps the live Disable() count in private per-CPU scheduler state;
+ * ExecBase has no IDNestCnt there, so this check cannot be made. */
+int main(void)
+{
+    bug("SIGNAL EXCEPTION TEST: skipped (SMP nesting count is private)\n");
+    return 0;
+}
+
+#else
 
 struct Context
 {
@@ -94,3 +107,5 @@ end:
     bug("SIGNAL EXCEPTION TEST: %lu failures\n", (unsigned long)failures);
     return failures ? 20 : 0;
 }
+
+#endif /* !__AROSEXEC_SMP__ */
