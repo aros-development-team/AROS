@@ -23,44 +23,40 @@
         struct RxsLib *, RexxSysBase, 27, RexxSys)
 
 /*  FUNCTION
-        This function will convert the value(s) provided in rm_Args of the
-        RexxMsg. The input can be either a string or a number.
+        Converts the first count entries of msgptr->rm_Args into allocated
+        Rexx argument strings. For entry i, bit i of mask selects the
+        input type: a set bit treats the field as a signed long integer;
+        a clear bit treats it as a pointer to a NUL-terminated C string.
 
     INPUTS
-        msgptr - RexxMsg to create the RexxArgs for.
-        count  - The number of ARGs in the rm_Args structure field that is
-                 filled with a value and has to be converted.
-        mask   - Bits 0 to 'count' from this mask indicate whether the
-                 corresponding value in rm_Args is a string or a number. When
-                 the bit is cleared the value is a pointer to a string. When
-                 it is set it is treated as a signed integer.
+        msgptr - RexxMsg whose rm_Args entries contain input values.
+        count  - Number of entries to convert, from 0 through MAXRMARG.
+        mask   - Type-selection bits for the first count entries. Bit i
+                 selects integer conversion when set and string copying
+                 when clear.
 
     RESULT
-        Returns TRUE if succeeded, FALSE otherwise. When FALSE is returned all
-        memory already allocated will be freed before returning.
+        TRUE if every selected entry is converted. FALSE if memory
+        allocation fails; newly allocated strings are then released and
+        the original rm_Args entries remain unchanged.
 
     NOTES
-
-    EXAMPLE
-        This code will convert a string and a number to RexxArgs:
-
-        struct RexxMsg *rm;
-
-        ...
-
-        rm->rm_Args[0] = "Test";
-        rm->rm_Args[1] = (UBYTE *)5;
-
-        if (!FillRexxMsg(rm, 2, 1<<1))
-        ...
+        On success, the converted entries contain pointers to newly
+        allocated Rexx argument strings. A NULL string input remains
+        NULL. Original C strings are copied, not freed. Use
+        ClearRexxMsg() to release the converted argument strings.
+        Do not call this function again on already converted entries:
+        replacing their pointers does not release the previous strings.
+        Only the characters preceding the first NUL byte of a source C
+        string are copied.
 
     BUGS
+        count is not checked against the rm_Args array or the local
+        conversion array. Values beyond their capacity cause
+        out-of-bounds accesses.
 
     SEE ALSO
         ClearRexxMsg(), CreateRexxMsg(), CreateArgstring()
-
-    INTERNALS
-
 
 *****************************************************************************/
 {

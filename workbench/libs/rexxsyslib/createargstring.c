@@ -21,29 +21,30 @@
         struct RxsLib *, RexxSysBase, 21, RexxSys)
 
 /*  FUNCTION
-        This function will create a RexxArg structure and copy the supplied
-        string into it.
+        Allocates a Rexx argument string and copies exactly length bytes from
+        string. The copied data is terminated with a NUL byte; its length
+        is stored separately.
 
     INPUTS
-        string - String to copy into the RexxArg structure
-        length - Length of the string to copy.
+        string - Source buffer containing at least length readable bytes.
+        length - Number of bytes to copy, from 0 through 65535.
 
     RESULT
-        A pointer to the string part of the allocated RexxArg structure.
+        Pointer to the copied argument data, or NULL if allocation fails.
 
     NOTES
-        Pointer to the string returned by this function may be used as a
-        null terminated C string but should be considered read-only.
-
-    EXAMPLE
+        The caller owns the returned argument string and must release it
+        with DeleteArgstring(). Treat the returned data as read-only.
+        Embedded NUL bytes count toward the stored length. Use
+        LengthArgstring() rather than strlen() to obtain that length.
 
     BUGS
+        The function does not reject lengths above 65535, although the
+        RexxArg length field is only 16 bits. LengthArgstring() cannot
+        report such lengths correctly.
 
     SEE ALSO
         DeleteArgstring(), LengthArgstring()
-
-    INTERNALS
-
 
 *****************************************************************************/
 {

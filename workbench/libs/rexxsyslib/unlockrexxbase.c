@@ -19,21 +19,21 @@
         struct RxsLib *, RexxSysBase, 76, RexxSys)
 
 /*  FUNCTION
+        Releases the RexxSys library semaphore acquired with
+        LockRexxBase().
 
     INPUTS
+        resource - Ignored by this implementation.
 
     RESULT
+        None.
 
     NOTES
-
-    EXAMPLE
-
-    BUGS
+        The calling task must hold the corresponding lock acquired with
+        LockRexxBase(). Pair every successful acquisition with a release.
 
     SEE ALSO
-
-    INTERNALS
-
+        LockRexxBase()
 
 *****************************************************************************/
 {
