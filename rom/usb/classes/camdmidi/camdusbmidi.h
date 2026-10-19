@@ -9,6 +9,12 @@
 #define ID_ABOUT        0x55555555
 #define ID_STORE_CONFIG 0xaaaaaaaa
 
+/* Precedes the 32-byte driver name in the poseidonusb driver's data. The
+   class writes one copy of the driver per device and puts the device's
+   name after it; CAMD only loads a driver whose name is its file name. */
+#define CAMDUSB_NAMEMARKER      "CAMDUSBMIDINAME"
+#define CAMDUSB_NAMEMARKERSIZE  16
+
 struct ClsGlobalCfg
 {
     ULONG cgc_ChunkID;
@@ -50,7 +56,7 @@ struct NepHidBase
     struct ClsGlobalCfg nh_CurrentCGC;
     BOOL                nh_UsingDefaultCfg;
 
-    struct CAMDAdapter  nh_CAMDAdapters[16];
+    struct List         nh_PortSets;      /* CAMDPortSets, one per driver name */
 
     Object             *nh_App;
     Object             *nh_MainWindow;
@@ -83,6 +89,20 @@ struct NepClassHid
     struct MsgPort     *nch_TaskMsgPort;  /* Message Port of Subtask */
     IPTR                nch_IfNum;        /* Interface Number */
     UBYTE               nch_ShortID[32];  /* generated ID string for driver */
+    struct CAMDPortSet *nch_Ports;        /* the driver's ports */
+};
+
+/* The 16 ports of one CAMD driver in DEVS:Midi, named after the device it
+   was written for. It outlives the device's binding: CAMD keeps the driver
+   and its open ports when the device is unplugged, and the ports carry
+   MIDI again when it is plugged back in. Port sets are freed only when the
+   class is expunged. */
+struct CAMDPortSet
+{
+    struct Node         cps_Node;         /* ln_Name = cps_ID */
+    UBYTE               cps_ID[32];       /* driver name = nch_ShortID */
+    struct NepClassHid *cps_Binding;      /* the device, NULL while away */
+    struct CAMDAdapter  cps_Adapters[16];
 };
 
 #endif /* CAMDUSBMIDI_H */
