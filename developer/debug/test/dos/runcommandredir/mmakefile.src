@@ -6,7 +6,7 @@ USER_LDFLAGS := -static
 #MM test-dos-runcommandredir : includes linklibs
 
 %build_progs mmake=test-dos-runcommandredir \
-    files="runcommandredir runcommandchild" \
+    files="runcommandredir runcommandchild runquotedcommand" \
     targetdir=$(AROS_TESTS)/dos/runcommandredir
 
 %common

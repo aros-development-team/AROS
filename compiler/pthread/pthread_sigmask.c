@@ -37,21 +37,19 @@
 	sigset_t *oldset)
 
 /*  FUNCTION
+        Reject a request to inspect or modify the calling thread's signal
+        mask because this operation is not implemented.
 
     INPUTS
+        how - Requested signal-mask operation; ignored.
+        set - Pointer to the requested signal set; ignored.
+        oldset - Pointer for the previous signal mask; not written.
 
     RESULT
+        Always returns -1 and sets errno to ENOSYS.
 
     NOTES
-        Not implemented.
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
+        The thread's signal mask remains unchanged.
 
 ******************************************************************************/
 {

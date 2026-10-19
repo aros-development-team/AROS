@@ -20,12 +20,18 @@ failed asynchronous launches retain evidence rather than reuse their paths.
 
 Expected result: RUN COMMAND REDIR TEST: 0 failures.
 
-Independent quoting limitation
-------------------------------
-The existing Run COMMAND/F argument handling cannot launch a quoted child
-filename containing spaces, even without nested redirections. This also fails
-with the unchanged ROM. It is outside this redirection regression's default
-coverage. To reproduce that separate issue, pass such a child's path followed
-by PLAIN; this runs only the ordinary Run control and is expected to fail.
+Quoted command regression
+-------------------------
+Run runquotedcommand beside runcommandchild. It copies the child into its own
+RAM: directory under names containing spaces, stars and double quotes, then
+checks the child's completion file and redirected output. Its argument and
+redirection paths also contain spaces. Coverage includes QUIET, mixed case,
+the COMMAND keyword (with and without '='), and outer Run redirections.
+An additional check keeps commands entered after Run's '?' help prompt working.
+The unchanged Run loses the child filename's quoting and fails the first case.
+Expected result: RUN QUOTED TEST: 0 failures.
+
+For a focused external probe, runcommandredir still accepts a child's path
+followed by PLAIN to exercise only the ordinary Run control.
 
 Copyright (C) 2026, The AROS Development Team. All rights reserved.

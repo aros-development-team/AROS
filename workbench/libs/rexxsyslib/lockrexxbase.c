@@ -19,21 +19,22 @@
         struct RxsLib *, RexxSysBase, 75, RexxSys)
 
 /*  FUNCTION
+        Acquires the RexxSys library semaphore, waiting until it becomes
+        available.
 
     INPUTS
+        resource - Ignored by this implementation.
 
     RESULT
+        None.
 
     NOTES
-
-    EXAMPLE
-
-    BUGS
+        Release the semaphore with UnlockRexxBase() after accessing the
+        shared RexxSys state. Synchronization applies only to code using
+        the same semaphore.
 
     SEE ALSO
-
-    INTERNALS
-
+        UnlockRexxBase()
 
 *****************************************************************************/
 {

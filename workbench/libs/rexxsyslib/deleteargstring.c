@@ -21,26 +21,23 @@
         struct RxsLib *, RexxSysBase, 22, RexxSys)
 
 /*  FUNCTION
-        Deletes a RexxArg structure previously created with CreateArgstring
+        Releases storage for a Rexx argument string using the allocation
+        information associated with its data pointer.
 
     INPUTS
-        Pointer to the string part of the RexxArg structure returned from
-        CreateArgstring
+        argstring - Non-NULL pointer to the data of an allocated RexxArg,
+                    such as one returned by CreateArgstring(). It must not
+                    have been freed already.
 
     RESULT
-        void
+        None.
 
     NOTES
-
-    EXAMPLE
-
-    BUGS
+        Do not pass an ordinary C string or a pointer into the middle of
+        an argument string. The pointer becomes invalid after this call.
 
     SEE ALSO
-        CreateArgstring()
-
-    INTERNALS
-
+        CreateArgstring(), LengthArgstring(), ClearRexxMsg()
 
 *****************************************************************************/
 {

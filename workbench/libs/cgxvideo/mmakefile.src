@@ -14,8 +14,12 @@ FUNCS := \
 	GetVLayerAttr \
 	LockVLayer \
 	UnLockVLayer \
-	SetVLayerAttrTagList
+	SetVLayerAttrTagList \
+	SwapVLayerBuffer \
+	WriteSPLine \
+	QueryVLayerAttr
 
+#MM- workbench-libs-complete : workbench-libs-cgxvideo
 #MM- workbench-libs-cgxvideo : linklibs
 #MM- workbench-libs-cgxvideo-kobj : linklibs
 
@@ -25,7 +29,7 @@ FUNCS := \
 
 %build_module mmake=workbench-libs-cgxvideo \
   modname=cgxvideo modtype=library \
-  files="cgxvideo_init $(FUNCS)"
+  files="cgxvideo_init nullbackend $(FUNCS)"
 
 #MM includes-copy
 
