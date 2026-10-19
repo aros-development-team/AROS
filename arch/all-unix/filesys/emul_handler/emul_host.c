@@ -199,7 +199,7 @@ static time_t datestamp2timestamp(struct emulbase *emulbase, struct DateStamp *d
                  datestamp->ds_Tick / TICKS_PER_SECOND;
     
     struct ClockData date;
-    struct tm tm;
+    struct tm tm = {0};
     time_t ret;
 
     Amiga2Date(secs, &date);
@@ -210,6 +210,8 @@ static time_t datestamp2timestamp(struct emulbase *emulbase, struct DateStamp *d
     tm.tm_hour = date.hour;
     tm.tm_min = date.min;
     tm.tm_sec = date.sec;
+    /* Wall-clock time, as localtime() returns it: let mktime() find daylight saving */
+    tm.tm_isdst = -1;
     
     ret = emulbase->pdata.SysIFace->mktime(&tm);
     AROS_HOST_BARRIER
