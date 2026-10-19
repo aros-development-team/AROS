@@ -17,7 +17,7 @@ the library and daemon must be installed together.
 MDNSBrowseRef ref = NULL;
 struct MDNSDiscoveryEvent event;
 struct TagItem tags[] = {
-    { MDNS_EventMode, MDNS_EVENT_POLL },
+    { MDNS_EventMode, MDNS_EVENT_QUEUE },
     { MDNS_BrowseRef, (IPTR)&ref },
     { TAG_DONE, 0 }
 };
@@ -35,7 +35,7 @@ require a prior browse/PTR. Stop the operation with `StopResolve()` after
 either result. Browse automatically resolves its instances and only emits
 complete snapshots, using `MEVENT_ADD` and `MEVENT_REMOVE`.
 
-The poll-mode tag and an output reference are required. Non-NULL hooks and
+The queue-mode tag and an output reference are required. Non-NULL hooks and
 calls without the mode return `MDNSERR_NOTREADY`; no hook is dereferenced.
 Only `.local` TCP/UDP service types are supported. Nondefault flags and
 interface selection are rejected. No generic host lookup, record query,

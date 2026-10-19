@@ -85,7 +85,7 @@ static LONG start(struct BonamiIntern *base, STRPTR name, STRPTR type,
     CONST_STRPTR domain = (CONST_STRPTR)GetTagData(MDNS_Domain, (IPTR)"local", tags);
     LONG rc;
 
-    if (hook != NULL || GetTagData(MDNS_EventMode, 0, tags) != MDNS_EVENT_POLL) {
+    if (hook != NULL || GetTagData(MDNS_EventMode, 0, tags) != MDNS_EVENT_QUEUE) {
         return MDNSERR_NOTREADY;   /* callback delivery is not implemented */
     }
     if (domain == NULL || Stricmp(domain, "local") != 0 ||

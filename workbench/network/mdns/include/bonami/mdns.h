@@ -75,9 +75,11 @@
 #define MDNS_HostAddr           (MDNS_Dummy + 14)  /* ULONG IPv4, network order */
 #define MDNS_TimeToLive         (MDNS_Dummy + 17)  /* ULONG seconds, 1..4500 */
 
-/* AROS discovery proposal: explicitly polled, never daemon callbacks. */
+/* AROS discovery proposal: each operation has one bounded event queue,
+ * read with ReadMDNSEvent() in the caller's own task. Nothing runs in mdnsd
+ * on the caller's behalf; there are no daemon callbacks. */
 #define MDNS_EventMode         (MDNS_Dummy + 18)
-#define MDNS_EVENT_POLL        1
+#define MDNS_EVENT_QUEUE       1
 #define MDNS_DISCOVERY_TXT_MAX 512
 
 /* Counted wire TXT strings; names are individual labels, without escaping.
