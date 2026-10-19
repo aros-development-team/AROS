@@ -16,22 +16,31 @@
 #endif
 
 /*
- *  CLSemaphore must be obtained and the clusters mutex must
- *  not be exclusive locked.
+ *  Signal every ClusterNotifyNode. CLSemaphore must be obtained.
  */
-void RemoveCluster(struct MidiCluster *cluster,struct CamdBase *CamdBase){
+void SignalClusterNotify(struct CamdBase *CamdBase){
   struct Node *node;
   struct ClusterNotifyNode *cn;
 
-  if(cluster==NULL) return;
-  
-  Remove(&cluster->mcl_Node);
-
+  ObtainSemaphore(&CB(CamdBase)->NotifySemaphore);
   for(node=CB(CamdBase)->clusnotifynodes.lh_Head; node->ln_Succ; node=node->ln_Succ)
     {                           // notify everyone
       cn=(struct ClusterNotifyNode *)node;
       Signal(cn->cnn_Task, 1L << cn->cnn_SigBit);
     }
+  ReleaseSemaphore(&CB(CamdBase)->NotifySemaphore);
+}
+
+/*
+ *  CLSemaphore must be obtained and the clusters mutex must
+ *  not be exclusive locked.
+ */
+void RemoveCluster(struct MidiCluster *cluster,struct CamdBase *CamdBase){
+  if(cluster==NULL) return;
+  
+  Remove(&cluster->mcl_Node);
+
+  SignalClusterNotify(CamdBase);
   
   
   if(cluster->mcl_Node.ln_Name!=NULL){
@@ -139,8 +148,6 @@ void LinkHasBeenRemovedFromCluster(struct MidiCluster *cluster,struct CamdBase *
 struct MidiCluster *NewCluster(char *name,struct CamdBase *CamdBase){
 	struct MyMidiCluster *mymidicluster;
 	struct MidiCluster *midicluster;
-	struct Node *node;
-	struct ClusterNotifyNode *cn;
 
 
 	mymidicluster=AllocMem(sizeof(struct MyMidiCluster),MEMF_ANY | MEMF_CLEAR | MEMF_PUBLIC);
@@ -168,11 +175,7 @@ struct MidiCluster *NewCluster(char *name,struct CamdBase *CamdBase){
 #endif
 	AddTail(&CB(CamdBase)->midiclusters,&midicluster->mcl_Node);
 
-	for(node=CB(CamdBase)->clusnotifynodes.lh_Head; node->ln_Succ; node=node->ln_Succ)
-	  {           // notify everyone
-	    cn=(struct ClusterNotifyNode *)node;
-	    Signal(cn->cnn_Task,1L<<cn->cnn_SigBit);
-	  }
+	SignalClusterNotify(CamdBase);
 
 
 	return midicluster;

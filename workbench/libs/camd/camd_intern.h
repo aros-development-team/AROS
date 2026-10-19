@@ -223,6 +223,11 @@ struct CamdBase_intern{
 
     struct SignalSemaphore *CLSemaphore;
 
+    /* Protects clusnotifynodes. Obtained after CLSemaphore, never before, so
+       that StartClusterNotify() and EndClusterNotify() work while the caller
+       holds LockCAMD(). */
+    struct SignalSemaphore NotifySemaphore;
+
 };
 
 #ifdef __AMIGAOS__
@@ -373,6 +378,7 @@ void CloseDriver(struct DriverData *driverdata,struct CamdBase *CamdBase);
 void FreeDriverData(struct Drivers *driver,
 	struct CamdBase *CamdBase
 );
+void SignalClusterNotify(struct CamdBase *CamdBase);
 void LoadDriver(char *name,
 	struct CamdBase *CamdBase
 );
