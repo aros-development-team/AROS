@@ -24,9 +24,11 @@
         struct KernelBase *, KernelBase, 39, Kernel)
 
 /*  FUNCTION
-        Modify an IRQ using the passed in tags.
+        Configure platform-specific attributes of an interrupt source.
 
     INPUTS
+        irq     - Interrupt identifier to configure.
+        attribs - Tag list of platform-specific interrupt attributes.
 
     RESULT
 
