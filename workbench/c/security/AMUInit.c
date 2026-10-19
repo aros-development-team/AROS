@@ -87,7 +87,7 @@
 
 struct Library *secBase;
 
-const TEXT version[] = "$VER: AMUInit 45.8 (17.10.2026)";
+const TEXT version[] = "$VER: AMUInit 45.9 (19.10.2026)";
 
 #define TEMPLATE "ENABLE/S,DISABLE/S,UPGRADE/S,VOLUME/A,FORCE/S"
 enum { ARG_ENABLE, ARG_DISABLE, ARG_UPGRADE, ARG_VOLUME, ARG_FORCE, ARG_COUNT };
@@ -260,13 +260,15 @@ static const char StartupScript[] =
  * security.library numbers (its root, 0, is 65535 and its nobody, -2, is
  * 0, as usergroup.library maps them): root without a password, and the
  * locked ('!') nobody, services and guest - nobody can log in as them
- * until root gives them a password.
+ * until root gives them a password. The same accounts, groups, names and
+ * shells as the Accounts program's defaults (workbench/system/accounts,
+ * DefUsers/DefGroups) in security.library's numbering: keep the two alike.
  */
 static const char PasswdFile[] =
-    "root||65535|65535|Super User|SYS:|\n"
-    "nobody|!|0|0|Unprivileged|SYS:|\n"
-    "services|!|1|1|Network Services|SYS:|\n"
-    "guest|!|99|99|Guest|SYS:|\n";
+    "root||65535|65535|Super User|SYS:|shell\n"
+    "nobody|!|0|0|Unprivileged|SYS:|cli\n"
+    "services|!|1|1|Network Services|SYS:|cli\n"
+    "guest|!|99|99|Guest|SYS:|cli\n";
 
 /*
  * GroupID|gid|MgrUid|GroupName ... blank line ... uid:gid secondary memberships
@@ -453,6 +455,26 @@ static void ug_setgrent(struct Library *UserGroupBase) { AROS_LC0NR(void, setgre
 static struct group *ug_getgrent(struct Library *UserGroupBase) { return AROS_LC0(struct group *, getgrent, struct Library *, UserGroupBase, 27, Usergroup); }
 static void ug_endgrent(struct Library *UserGroupBase) { AROS_LC0NR(void, endgrent, struct Library *, UserGroupBase, 28, Usergroup); }
 
+/* The network database has no group descriptions: the standard groups get
+ * the ones of the defaults above, any other its name */
+static CONST_STRPTR GroupDescription(CONST_STRPTR name)
+{
+    static const struct { CONST_STRPTR name, desc; } std[] =
+    {
+        { "admin",    "Administrators"   },
+        { "nobody",   "Unprivileged"     },
+        { "services", "Network Services" },
+        { "guests",   "Guests"           },
+        { "users",    "Users"            },
+    };
+    ULONG i;
+
+    for (i = 0; i < sizeof(std) / sizeof(std[0]); i++)
+        if (!strcmp(name, std[i].name))
+            return std[i].desc;
+    return name;
+}
+
 /* network ids are POSIX ones: root is 0 and nobody -2 */
 static LONG SecId(LONG id, LONG root, LONG nobody)
 {
@@ -563,7 +585,7 @@ static BOOL ConvertNetwork(struct Text *pw, struct Text *gr)
     if (ok && nusers)
     {
         if (!haveroot)
-            ok = Add(pw, "root||65535|65535|Super User|SYS:|\n", 64);
+            ok = Add(pw, "root||65535|65535|Super User|SYS:|shell\n", 64);
 
         ug_setgrent(UserGroupBase);
         while (ok && (g = ug_getgrent(UserGroupBase)))
@@ -580,7 +602,7 @@ static BOOL ConvertNetwork(struct Text *pw, struct Text *gr)
             if (gid == secROOT_GID)
                 haverootgroup = TRUE;
             ok = AddField(gr, g->gr_name, secGROUPIDSIZE) && Add(gr, "|", 1) && AddNum(gr, gid) &&
-                 Add(gr, "|65535|", 7) && Add(gr, "\n", 1);
+                 Add(gr, "|65535|", 7) && AddField(gr, GroupDescription(g->gr_name), secGROUPNAMESIZE) && Add(gr, "\n", 1);
             ngroups++;
             /* the members: secondary groups of the accounts */
             for (m = g->gr_mem; ok && m && *m; m++)
@@ -590,7 +612,7 @@ static BOOL ConvertNetwork(struct Text *pw, struct Text *gr)
         }
         ug_endgrent(UserGroupBase);
         if (ok && !haverootgroup)
-            ok = Add(gr, "root|65535|65535|Root Group\n", 64);
+            ok = Add(gr, "admin|65535|65535|Administrators\n", 64);
         if (ok)
             ok = Add(gr, "\n", 1);
         for (i = 0; ok && i < nusers; i++)
