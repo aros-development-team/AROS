@@ -1,0 +1,12 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+USER_LDFLAGS := -static
+
+#MM test-dos-runcommandredir : includes linklibs
+
+%build_progs mmake=test-dos-runcommandredir \
+    files="runcommandredir runcommandchild" \
+    targetdir=$(AROS_TESTS)/dos/runcommandredir
+
+%common

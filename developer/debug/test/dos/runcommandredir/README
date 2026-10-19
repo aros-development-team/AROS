@@ -1,0 +1,31 @@
+Run child-command redirection regression
+=======================================
+
+Build with test-dos-runcommandredir or test-dos-runcommandredir-quick.
+Both are selected beneath the DOS component's normal and quick test groups.
+Run runcommandredir beside runcommandchild, or pass the child's path as its
+first argument. Child paths are quoted in every launch case.
+
+The parent creates an owned directory in RAM:. The child reads its Input(),
+writes those exact bytes to Output(), and writes a separate completion file.
+This checks that the child really runs, independently of SystemTagList's return
+code. Before the fix, RunBack's repeated NIL form returns success without
+executing the child; the test fails on the missing completion file.
+
+Coverage includes RunBack's exact NIL form, distinct outer and child input/output
+files, case-insensitive Run with QUIET, a plain Run with child redirections,
+quoted child paths, failed outer input, ordinary duplicate redirections, and
+subsequent shell usability. Successful runs remove their temporary files;
+failed asynchronous launches retain evidence rather than reuse their paths.
+
+Expected result: RUN COMMAND REDIR TEST: 0 failures.
+
+Independent quoting limitation
+------------------------------
+The existing Run COMMAND/F argument handling cannot launch a quoted child
+filename containing spaces, even without nested redirections. This also fails
+with the unchanged ROM. It is outside this redirection regression's default
+coverage. To reproduce that separate issue, pass such a child's path followed
+by PLAIN; this runs only the ordinary Run control and is expected to fail.
+
+Copyright (C) 2026, The AROS Development Team. All rights reserved.
