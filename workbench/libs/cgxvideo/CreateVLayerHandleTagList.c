@@ -3,8 +3,7 @@
 */
 
 #include <aros/debug.h>
-#include <hidd/gfx.h>
-#include <proto/oop.h>
+#include <proto/exec.h>
 #include <proto/utility.h>
 
 #include "cgxvideo_intern.h"
@@ -68,9 +67,25 @@
                         option is only available if color keying is
                         enabled.
 
+                VOA_Modulo (ULONG) - bytes per source row (V43). Defaults to
+                        VOA_SrcWidth * 2.
+
+        Error codes:
+
+                VOERR_INVSRCFMT - unknown VOA_SrcType, zero dimensions or a
+                        modulo shorter than a source row
+
+                VOERR_INVSCRMODE - the screen has no video overlay
+
+                VOERR_NOMEMORY - out of memory
+
     EXAMPLE
 
     BUGS
+        No display driver provides an overlay yet. Setting the
+        CGXVideoNullBackend variable selects a backend that keeps the
+        source in system RAM and displays nothing. It does not accept
+        SRCFMT_YCbCr420.
 
     SEE ALSO
 
@@ -83,38 +98,42 @@
     AROS_LIBFUNC_INIT
 
     struct VLayerHandle *vh;
-    struct BitMap *bm = Screen->RastPort.BitMap;
     ULONG *errPtr = (ULONG *)GetTagData(VOA_Error, 0, TagItems);
+    ULONG srctype = GetTagData(VOA_SrcType, SRCFMT_YUV16, TagItems);
+    ULONG width   = GetTagData(VOA_SrcWidth , 0, TagItems);
+    ULONG height  = GetTagData(VOA_SrcHeight, 0, TagItems);
+    ULONG modulo  = GetTagData(VOA_Modulo, width * 2, TagItems);
 
-    vh = AllocMem(sizeof(struct VLayerHandle), MEMF_ANY);
-    if (!vh) {
+    if (srctype > SRCFMT_RGB16PC || !width || !height || modulo < width * 2)
+    {
+        setError(VOERR_INVSRCFMT);
+        return NULL;
+    }
+
+    if (!Screen || !cgxv_NullBackend())
+    {
+        setError(VOERR_INVSCRMODE);
+        return NULL;
+    }
+
+    vh = AllocMem(sizeof(struct VLayerHandle), MEMF_ANY | MEMF_CLEAR);
+    if (vh)
+        vh->buffer = AllocVec(modulo * height, MEMF_ANY | MEMF_CLEAR);
+    if (!vh || !vh->buffer)
+    {
+        if (vh)
+            FreeMem(vh, sizeof(struct VLayerHandle));
         setError(VOERR_NOMEMORY);
         return NULL;
     }
 
-    if (IS_HIDD_BM(bm))
-    {
-        /*
-         * Hardware video overlay support has been removed pending a rework of
-         * the overlay handling (the Hidd_Overlay interface no longer exists).
-         * Until the replacement mechanism is in place, fail gracefully.
-         */
-        vh->drv = NULL;
-        vh->obj = NULL;
-        setError(VOERR_INVSCRMODE);
-    }
-    else
-    {
-        vh->obj = NULL;
-        setError(VOERR_INVSCRMODE);
-    }
+    InitSemaphore(&vh->lock);
+    vh->width  = width;
+    vh->height = height;
+    vh->modulo = modulo;
+    setError(VOERR_OK);
 
-    if (vh->obj)
-        return vh;
-
-    FreeMem(vh, sizeof(struct VLayerHandle));
-
-    return NULL;
+    return vh;
 
     AROS_LIBFUNC_EXIT
 } /* CreateVLayerHandleTagList */

@@ -2,8 +2,7 @@
     Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 #include <aros/debug.h>
-#include <hidd/gfx.h>
-#include <proto/oop.h>
+#include <proto/exec.h>
 
 #include "cgxvideo_intern.h"
 
@@ -30,6 +29,7 @@
         none
 
     NOTES
+        The handle may still be locked or attached.
 
     EXAMPLE
 
@@ -45,8 +45,11 @@
 {
     AROS_LIBFUNC_INIT
 
-    if (VLayerHandle->obj)
-        OOP_DisposeObject(VLayerHandle->obj);
+    if (!VLayerHandle)
+        return;
+
+    FreeVec(VLayerHandle->buffer);
+    FreeMem(VLayerHandle, sizeof(struct VLayerHandle));
 
     AROS_LIBFUNC_EXIT
 } /* DeleteVLayerHandle */

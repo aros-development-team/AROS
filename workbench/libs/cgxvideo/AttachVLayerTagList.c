@@ -2,6 +2,7 @@
     Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
 */
 #include <aros/debug.h>
+#include <proto/exec.h>
 
 #include "cgxvideo_intern.h"
 
@@ -50,7 +51,8 @@
     EXAMPLE
 
     BUGS
-        This function is unimplemented.
+        Fails while the layer is locked or already attached. The indent
+        tags are ignored by the null backend.
 
     SEE ALSO
         DetachVLayer()
@@ -63,8 +65,20 @@
 {
     AROS_LIBFUNC_INIT
 
-    aros_print_not_implemented ("AttachVLayerTagList");
-    return TRUE;
+    ULONG result = TRUE;
+
+    if (!VLayerHandle || !Window)
+        return result;
+
+    ObtainSemaphore(&VLayerHandle->lock);
+    if (!VLayerHandle->locked && !VLayerHandle->window)
+    {
+        VLayerHandle->window = Window;
+        result = 0;
+    }
+    ReleaseSemaphore(&VLayerHandle->lock);
+
+    return result;
 
     AROS_LIBFUNC_EXIT
 } /* AttachVLayerTagList */

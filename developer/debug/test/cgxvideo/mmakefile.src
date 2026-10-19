@@ -1,0 +1,15 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+EXEDIR := $(AROS_TESTS)/cgxvideo
+
+#MM- test : test-cgxvideo
+#MM- test-quick : test-cgxvideo-quick
+
+#MM test-cgxvideo : includes linklibs workbench-libs-cgxvideo
+
+%build_progs mmake=test-cgxvideo \
+    files=vlayertest targetdir=$(EXEDIR)
+
+%common
