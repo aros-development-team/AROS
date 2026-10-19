@@ -239,9 +239,10 @@ BOOL AddClusterReceiver(
 				if(OpenDriver(driverdata,ErrorCode,CamdBase)==FALSE){
 					return FALSE;
 				}
-	  
-				driverdata->isInOpen=TRUE;
 			}
+			/* Also when the port is already open for output: the port
+			   must stay open while this receiver is linked. */
+			driverdata->isInOpen=TRUE;
 		}
 		midilink=(struct MidiLink *)node;
 		ObtainSemaphore(&mycluster->semaphore);
@@ -278,8 +279,8 @@ BOOL AddClusterSender(
 				if(OpenDriver(driverdata,ErrorCode,CamdBase)==FALSE){
 					return FALSE;
 				}
-				driverdata->isOutOpen=TRUE;
 			}
+			driverdata->isOutOpen=TRUE;
 		}
 		midilink=(struct MidiLink *)node;
 		midilink->ml_Location=cluster;
