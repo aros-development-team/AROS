@@ -390,6 +390,7 @@ void DetachDriverData(struct Drivers *driver,
 	struct CamdBase *CamdBase
 );
 void SignalClusterNotify(struct CamdBase *CamdBase);
+void ClusterParticipantsChanged(struct MidiCluster *cluster,struct MidiNode *changer,struct CamdBase *CamdBase);
 void LoadDriver(char *name,
 	struct CamdBase *CamdBase
 );

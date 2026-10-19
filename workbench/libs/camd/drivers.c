@@ -180,6 +180,7 @@ static void DetachPort(struct DriverData *driverdata,struct CamdBase *CamdBase){
 
 	if(incluster!=NULL){
 		Remove(&driverdata->innode);
+		ClusterParticipantsChanged(&incluster->cluster,NULL,CamdBase);
 		if(IsListEmpty(&incluster->cluster.mcl_Receivers) &&
 		   IsListEmpty(&incluster->cluster.mcl_Senders)){
 			RemoveCluster(&incluster->cluster,CamdBase);
@@ -189,6 +190,7 @@ static void DetachPort(struct DriverData *driverdata,struct CamdBase *CamdBase){
 		ObtainSemaphore(&outcluster->semaphore);
 		Remove(&driverdata->outnode);
 		ReleaseSemaphore(&outcluster->semaphore);
+		ClusterParticipantsChanged(&outcluster->cluster,NULL,CamdBase);
 		if(IsListEmpty(&outcluster->cluster.mcl_Receivers) &&
 		   IsListEmpty(&outcluster->cluster.mcl_Senders)){
 			RemoveCluster(&outcluster->cluster,CamdBase);

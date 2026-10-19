@@ -146,6 +146,13 @@
 		}
 	}
 
+	if(FindTagItem(MLINK_Private,tags)!=NULL && midilink->ml_Location!=NULL){
+		/* mcl_PublicParticipants counts the links that are not private. */
+		ObtainSemaphore(CB(CamdBase)->CLSemaphore);
+		ClusterParticipantsChanged(midilink->ml_Location,midilink->ml_MidiNode,CamdBase);
+		ReleaseSemaphore(CB(CamdBase)->CLSemaphore);
+	}
+
 	if(ret!=FALSE){
 		clustername = (char *) GetTagData(MLINK_Location, (IPTR) NULL, tags);
 		if(clustername!=NULL){
