@@ -4,9 +4,11 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM- test-graphics-amiga-m68k : test-graphics-spriteviewport
 #MM- test-graphics-amiga-m68k-quick : test-graphics-spriteviewport-quick
+#MM- test-graphics-amiga-m68k : test-graphics-blitterregisters
+#MM- test-graphics-amiga-m68k-quick : test-graphics-blitterregisters-quick
 
-CFILES  := bltclear changeextspritea movesprite setchiprev vbeampos
-AFILES  := attemptlocklayerrom locklayerrom unlocklayerrom waitblit
+CFILES  := bltclear blittercompat changeextspritea movesprite setchiprev vbeampos
+AFILES  := attemptlocklayerrom blitterabi locklayerrom unlocklayerrom waitblit
 
 #MM kernel-graphics-amiga-m68k : kernel-hidd-includes kernel-graphics-includes includes-asm_h kernel-hidd-graphics-includes
 #MM kernel-graphics-amiga-m68k-linklib : kernel-amiga-m68k-amigavideo-includes
