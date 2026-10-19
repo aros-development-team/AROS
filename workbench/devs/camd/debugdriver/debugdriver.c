@@ -146,7 +146,7 @@ SAVEDS ASM struct MidiPortData *OpenPort(
   /* We haven't got any receiver function, so we don't bother about storing the receiverfunc variable. */
 
   TransmitFunc=transmitfunc;
-  UserData[portnum-1]=userdata;
+  UserData[portnum]=userdata;
   return &midiportdata;
 }
 
