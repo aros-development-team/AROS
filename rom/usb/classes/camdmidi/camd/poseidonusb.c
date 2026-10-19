@@ -54,7 +54,7 @@ static struct MidiDeviceData MidiDeviceData __attribute__((used)) =
   (APTR)AROS_SLIB_ENTRY(OpenPort, PoseidonCAMDUSB, 0),
   (APTR)AROS_SLIB_ENTRY(ClosePort, PoseidonCAMDUSB, 0),
   CAMDPORTCOUNT,
-  0
+  1     /* the new driver format: AROS's camd.library loads no other */
 };
 
 char vers[] = "$VER: Poseidon USB camdusbmidi.class driver 1.2 (14.02.2020)";
@@ -115,12 +115,11 @@ AROS_UFH3S(void, SendToCAMD,
     AROS_USERFUNC_EXIT
 }
 
-AROS_UFH3S(void, GetFromCAMD,
-    AROS_UFHA(struct Hook * , hook, A0),
-    AROS_UFHA(Object * , obj, A2),
-    AROS_UFHA(struct CAMDAdapter *, port, A1))
+/* A software interrupt (ca_CAMDTXFunc), Cause()d by ActivateXmit(): it gets
+   is_Data as an interrupt handler does, not the arguments of a hook. */
+static AROS_INTH1(GetFromCAMD, struct CAMDAdapter *, port)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     ULONG val, pos, sent = 0;
     struct MsgPort *mp = port->ca_MsgPort;
@@ -133,7 +132,7 @@ AROS_UFH3S(void, GetFromCAMD,
            sending to the port would wait for room forever. */
         while (portTransmit(port->ca_UserData) <= 0xff)
             ;
-        return;
+        return FALSE;
     }
 
     do
@@ -153,7 +152,9 @@ AROS_UFH3S(void, GetFromCAMD,
 
     Signal(mp->mp_SigTask, (1 << mp->mp_SigBit));
 
-    AROS_USERFUNC_EXIT
+    return FALSE;
+
+    AROS_INTFUNC_EXIT
 }
 
 struct CAMDAdapter *CAMDPortBases[CAMDPORTCOUNT] = { NULL };
