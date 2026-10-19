@@ -27,6 +27,7 @@ BOOL InitCamd(struct CamdBase *CamdBase){
 		return FALSE;
 	}
 	InitSemaphore(CB(CamdBase)->CLSemaphore);
+	InitSemaphore(&CB(CamdBase)->DriverScanSemaphore);
 	InitSemaphore(&CB(CamdBase)->NotifySemaphore);
 #ifndef __amigaos4__
 	NEWLIST(&CB(CamdBase)->mymidinodes);
