@@ -5,7 +5,6 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-#MM- workbench-libs : workbench-libs-security-plugins-yubikey
 #MM workbench-libs-security-plugins-yubikey : includes kernel-security-includes linklibs
 
 USER_CFLAGS := -ffreestanding -fno-builtin -fno-tree-loop-distribute-patterns

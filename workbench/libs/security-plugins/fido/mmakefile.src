@@ -6,7 +6,6 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-#MM- workbench-libs : workbench-libs-security-plugins-fido
 #MM workbench-libs-security-plugins-fido : includes kernel-security-includes linklibs linklibs-mbedcrypto workbench-libs-mbedtls-includes
 
 USER_CFLAGS := -ffreestanding -fno-builtin -fno-tree-loop-distribute-patterns
