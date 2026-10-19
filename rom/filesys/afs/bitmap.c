@@ -463,7 +463,7 @@ LONG invalidBitmap(struct AFSBase *afsbase, struct Volume *volume) {
                 return DOSFALSE;
         volume->lastextensionblock = 0;
         volume->lastposition = 0;
-        volume->bstartblock = 0;        /* relative to the first bitmapped block, as gotoBitmapBlock() keeps it */
+        volume->bstartblock = 0;        /* relative, see volumes.h */
         volume->bitmapblock = getBlock(afsbase, volume, volume->bitmapblockpointers[volume->lastposition]);
         if (volume->bitmapblock != NULL)
         {

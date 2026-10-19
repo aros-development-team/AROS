@@ -50,7 +50,8 @@ struct Volume {
 	ULONG bitmapextensionblock;
 
 	struct BlockCache *bitmapblock; /* last bitmap block used for marking */
-	ULONG bstartblock;              /* first block marked in "bitmapblock" */
+	ULONG bstartblock;              /* first block covered by "bitmapblock", as block
+	                                   number minus bootblocks (0 = first bitmapped block) */
 	ULONG lastextensionblock; /* last used extensionblock (0=volume->bitmapblocks) */
 	ULONG lastposition;             /* last position in extensionblock */
 	ULONG lastaccess;               /* last marked block */
