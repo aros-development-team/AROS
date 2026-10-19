@@ -119,12 +119,14 @@ AROS_UFH3S(void, GetFromCAMD,
     do
     {
         pos = port->ca_TXWritePos;
+        if (((pos + 1) & (port->ca_TXBufSize - 1)) == port->ca_TXReadPos)
+            break;
         val = portTransmit(port->ca_UserData);
+        if (val > 0xff)
+            break;
         port->ca_TXBuffer[pos] = val;
         pos++;
-        pos &= port->ca_TXBufSize;
-        if (pos == port->ca_TXReadPos)
-            break;
+        pos &= port->ca_TXBufSize - 1;
         port->ca_TXWritePos = pos;
         sent++;
     } while (sent < 100); // TODO: Not sure what to do here??
@@ -155,7 +157,7 @@ AROS_UFH5(struct MidiPortData *, AROS_SLIB_ENTRY(OpenPort, PoseidonCAMDUSB, 0),
         CAMDPortBases[portnum]->ca_CAMDTXFunc.is_Data = CAMDPortBases[portnum];
         CAMDPortBases[portnum]->ca_IsOpen = TRUE;
     }
-    return (struct MidiPortData *)&CAMDPortBases[portnum]->ca_ActivateFunc;
+    return CAMDPortBases[portnum] ? (struct MidiPortData *)&CAMDPortBases[portnum]->ca_ActivateFunc : NULL;
 
     AROS_USERFUNC_EXIT
 }

@@ -739,6 +739,10 @@ void nParseMidi(struct NepClassHid *nch, UBYTE *buf, ULONG len)
     UWORD cmd;
     UWORD chan;
     struct CAMDAdapter *ca;
+    struct {
+        ULONG length;
+        UBYTE data[3];
+    } message;
 
     while(len > 3)
     {
@@ -756,14 +760,16 @@ void nParseMidi(struct NepClassHid *nch, UBYTE *buf, ULONG len)
 
                 case 0x5: // Single-byte System Common Message or SysEx ends with following single byte.
                 case 0xF: // Single Byte
-                    *buf = 1;
-                    CallHookA(&ca->ca_CAMDRXFunc, (Object *) buf, NULL);
+                    message.length = 1;
+                    CopyMem(buf + 1, message.data, 1);
+                    CallHookA(&ca->ca_CAMDRXFunc, (Object *) &message, NULL);
                     break;
 
                 case 0x2: // Two-byte System Common messages like MTC, SongSelect, etc.
                 case 0x6: // SysEx ends with following two bytes. *** FIXME? ***
-                    *buf = 2;
-                    CallHookA(&ca->ca_CAMDRXFunc, (Object *) buf, NULL);
+                    message.length = 2;
+                    CopyMem(buf + 1, message.data, 2);
+                    CallHookA(&ca->ca_CAMDRXFunc, (Object *) &message, NULL);
                     break;
 
                 case 0x3: // Three-byte System Common messages like SPP, etc.
@@ -774,14 +780,16 @@ void nParseMidi(struct NepClassHid *nch, UBYTE *buf, ULONG len)
                 case 0xA: // Poly-KeyPress
                 case 0xB: // Control Change
                 case 0xE: // PitchBend Change
-                    *buf = 3;
-                    CallHookA(&ca->ca_CAMDRXFunc, (Object *) buf, NULL);
+                    message.length = 3;
+                    CopyMem(buf + 1, message.data, 3);
+                    CallHookA(&ca->ca_CAMDRXFunc, (Object *) &message, NULL);
                     break;
 
                 case 0xC: // Program Change
                 case 0xD: // Channel Pressure
-                    *buf = 2;
-                    CallHookA(&ca->ca_CAMDRXFunc, (Object *) buf, NULL);
+                    message.length = 2;
+                    CopyMem(buf + 1, message.data, 2);
+                    CallHookA(&ca->ca_CAMDRXFunc, (Object *) &message, NULL);
                     break;
             }
         } else {
