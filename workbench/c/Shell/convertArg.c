@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
  */
 
 #include <string.h>
@@ -27,7 +27,7 @@ LONG convertArg(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted)
     }
 
     if (!*quoted && *p == '<' && *q == '>') /* Run <>NIL: ... */
-        return convertRedir(ss, in, out);
+        return bufferCopy(in, out, 1, ss); /* Defer I/O to the redirection pass. */
 
     for (; *q != ss->ket && *q != ss->dollar && *q != '\0'; ++q)
     {
@@ -37,7 +37,7 @@ LONG convertArg(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted)
             case '"':
             case ' ':
                 if (*p == '<') /* input redirection */
-                    return convertRedir(ss, in, out);
+                    return bufferCopy(in, out, 1, ss);
 
                 return bufferAppend(s, q - s, out, ss);
             }
