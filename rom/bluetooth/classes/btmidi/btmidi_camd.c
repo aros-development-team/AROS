@@ -26,9 +26,9 @@
 
 #include <string.h>
 
-/* The driver, built in camd/ and linked in as a blob. */
-extern const UBYTE _binary_btmididriver_start[];
-extern const UBYTE _binary_btmididriver_end[];
+/* The driver, built in camd/ and embedded as a byte array. */
+extern const UBYTE btmididriver_blob[];
+extern const ULONG btmididriver_blob_size;
 
 void btmidi_camd_init(struct BTMidiBase *base)
 {
@@ -77,8 +77,8 @@ void btmidi_camd_install(struct BTMidiBase *base)
     static const char path[] = BTMIDI_DRIVER_PATH "/" BTMIDI_DRIVER_NAME;
     struct Process *process = (struct Process *)FindTask(NULL);
     struct DosLibrary *DOSBase;
-    const UBYTE *driver = _binary_btmididriver_start;
-    LONG size = _binary_btmididriver_end - _binary_btmididriver_start;
+    const UBYTE *driver = btmididriver_blob;
+    LONG size = (LONG)btmididriver_blob_size;
     APTR window;
     BPTR fh, lock;
 
