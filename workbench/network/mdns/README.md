@@ -10,9 +10,10 @@ RFC 6763), which they register through `bonami.library`, so that other
 machines find a printer, a file share or a MIDI session without being told
 an address or a port.
 
-A third, draft slice adds explicitly polled browse and asynchronous service
-resolution. See [the discovery proposal](DISCOVERY.md) for the API, lifetime
-contract and limits. Generic host lookup and record queries remain separate.
+It also browses for services and resolves them asynchronously, through a
+queue per operation with an optional wakeup by a lent request message. See
+[DISCOVERY.md](DISCOVERY.md) for the API, lifetime contract and limits.
+Generic host lookup and record queries remain separate.
 
 ## What it does
 

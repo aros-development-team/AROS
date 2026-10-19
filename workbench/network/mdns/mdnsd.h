@@ -168,6 +168,7 @@ void mdnsDiscoveryRecord(struct MDNSDaemon *md, const struct MDNSRecord *r,
 void mdnsDiscoveryTick(struct MDNSDaemon *md);
 void mdnsDiscoveryReset(struct MDNSDaemon *md);
 void mdnsDiscoveryRelease(struct MDNSDaemon *md, ULONG taskID);
+void mdnsDiscoveryCancel(struct MDNSDaemon *md);
 void mdnsDiscoveryFree(struct MDNSDaemon *md);
 
 /* mdnsd.c */

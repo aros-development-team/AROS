@@ -2,10 +2,12 @@
  * SPDX-License-Identifier: BSD-2-Clause
  * Copyright 2026 Jaime Dias
  *
- * Bounded, daemon-owned DNS-SD cache and polling queues. DNS names remain
- * counted labels: dots/backslashes in an instance never become separators.
- * All entry points run in mdnsd's task; none calls client code or retains a
- * client event buffer, Hook, port or task pointer.
+ * Bounded, daemon-owned DNS-SD cache and per-operation event queues. DNS
+ * names remain counted labels: dots/backslashes in an instance never become
+ * separators. All entry points run in mdnsd's task and none calls client
+ * code. The one piece of client memory kept is a lent MDNSEventRequest,
+ * which is only given back: er_Result is set and the message is replied,
+ * once. No client event buffer, Hook or task pointer is retained.
  */
 #include <exec/memory.h>
 #include <proto/exec.h>
@@ -45,6 +47,7 @@ struct DiscoverySession
     ULONG nextQuery, interval, deadline;
     UWORD head, count;
     struct MDNSDiscoveryEvent queue[DISC_QUEUE];
+    struct MDNSEventRequest *request;   /* lent by the owner, or NULL */
 };
 struct MDNSDiscovery
 {
@@ -156,6 +159,27 @@ static BOOL type_key(const char *type, UBYTE *key)
     return TRUE;
 }
 
+/*
+ * Gives a lent request back, exactly once. A request whose owner has gone
+ * is dropped unread instead: that owner broke the contract, and its port
+ * may be gone too. This check narrows, but cannot close, the window in
+ * which an owner ends between it and ReplyMsg(); owners must stop first.
+ */
+static void wake(struct DiscoverySession *s, LONG result)
+{
+    struct MDNSEventRequest *request = s->request;
+
+    if (request == NULL) {
+        return;
+    }
+    s->request = NULL;
+    if (FindTaskByPID(s->owner) == NULL) {
+        return;
+    }
+    request->er_Result = result;
+    ReplyMsg(&request->er_Msg);
+}
+
 static void fail_all(struct MDNSDiscovery *d)
 {
     LONG i;
@@ -164,6 +188,7 @@ static void fail_all(struct MDNSDiscovery *d)
         if (d->sessions[i].handle != NULL) {
             d->sessions[i].failed = TRUE;
             d->sessions[i].count = 0;
+            wake(&d->sessions[i], MDNSERR_BUSY);
         }
     }
 }
@@ -184,15 +209,18 @@ static void enqueue(struct DiscoverySession *s, const struct MDNSDiscoveryEvent 
             Stricmp(old->de_Name, event->de_Name) == 0 &&
             Stricmp(old->de_Type, event->de_Type) == 0) {
             *old = *event;
+            wake(s, MDNS_OK);
             return;
         }
     }
     if (s->count == DISC_QUEUE) {
         s->count = 0;
         s->failed = TRUE;
+        wake(s, MDNSERR_BUSY);
         return;
     }
     s->queue[(s->head + s->count++) % DISC_QUEUE] = *event;
+    wake(s, MDNS_OK);
 }
 
 static void notify(struct MDNSDiscovery *d, const struct DiscoveryView *view, ULONG code)
@@ -536,6 +564,7 @@ void mdnsDiscoveryTick(struct MDNSDaemon *md)
             continue;
         }
         if (FindTaskByPID(s->owner) == NULL) {
+            /* also drops a lent request unread */
             memset(s, 0, sizeof(*s));
             continue;
         }
@@ -723,13 +752,46 @@ LONG mdnsDiscoveryMessage(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
         s->count--;
         return MDNS_OK;
     }
+    if (msg->mi_Command == MDNS_IPC_NOTIFY) {
+        /* One lent request per operation. What is already waiting
+         * answers it at once, before this call's own reply. */
+        if (msg->mi_Request == NULL || s->request != NULL) {
+            return MDNSERR_BADPARAM;
+        }
+        s->request = msg->mi_Request;
+        if (s->failed) {
+            wake(s, MDNSERR_BUSY);
+        } else if (s->count != 0) {
+            wake(s, MDNS_OK);
+        }
+        return MDNS_OK;
+    }
     if ((msg->mi_Command == MDNS_IPC_STOPRESOLVE) != s->resolve) {
         return MDNSERR_BADPARAM;
     }
+    /* The request goes back before the stop's own reply, so the owner has
+     * it again when StopBrowse()/StopResolve() returns. */
+    wake(s, MDNSERR_CANCELLED);
     memset(s, 0, sizeof(*s));
     return MDNS_OK;
 }
 
+/* mdnsd is ending: every lent request goes back with MDNSERR_NOENGINE. */
+void mdnsDiscoveryCancel(struct MDNSDaemon *md)
+{
+    LONG i;
+
+    if (md->md_Discovery == NULL) {
+        return;
+    }
+    for (i = 0; i < DISC_SESSIONS; i++) {
+        wake(&md->md_Discovery->sessions[i], MDNSERR_NOENGINE);
+    }
+}
+
+/* The owner's last close of the library. A request it still lent is
+ * dropped unread, like one of a vanished task: it should have stopped the
+ * operation first, and its reply port may already be gone. */
 void mdnsDiscoveryRelease(struct MDNSDaemon *md, ULONG owner)
 {
     LONG i;

@@ -2,7 +2,9 @@
  * SPDX-License-Identifier: BSD-2-Clause
  * Copyright 2026 Jaime Dias
  *
- * Explicitly polled discovery. No hook or client event pointer reaches mdnsd.
+ * Queued discovery. Events are read in the caller's task; no hook or client
+ * event pointer reaches mdnsd. A caller may lend mdnsd a request message to
+ * be woken, which comes back on the caller's own port exactly once.
  * Local references outlive daemon restarts, but cannot address a new daemon's
  * objects: every read/stop checks the daemon's stable Exec task ID.
  */
@@ -232,6 +234,31 @@ AROS_LH2(LONG, ReadMDNSEvent,
         if (rc == MDNS_OK) {
             *event = msg.mi_Event;
         }
+    }
+    return rc;
+    AROS_LIBFUNC_EXIT
+}
+AROS_LH2(LONG, RequestMDNSEvent,
+    AROS_LHA(APTR, ref, A0), AROS_LHA(struct MDNSEventRequest *, request, A1),
+    struct BonamiIntern *, BonamiBase, 21, Bonami)
+{
+    AROS_LIBFUNC_INIT
+    struct MDNSIPCMsg msg;
+    LONG rc;
+
+    /* Nothing is written to the request here: it may still be lent. */
+    if (request == NULL || request->er_Msg.mn_ReplyPort == NULL ||
+        request->er_Msg.mn_Length < sizeof(*request)) {
+        return MDNSERR_BADPARAM;
+    }
+    memset(&msg, 0, sizeof(msg));
+    msg.mi_Command = MDNS_IPC_NOTIFY;
+    msg.mi_Request = request;
+    ObtainSemaphore(&BonamiBase->bi_Lock);
+    rc = prepare(BonamiBase, ref, &msg, FALSE, FALSE);
+    ReleaseSemaphore(&BonamiBase->bi_Lock);
+    if (rc == MDNS_OK) {
+        rc = bonamiSend(&msg);
     }
     return rc;
     AROS_LIBFUNC_EXIT

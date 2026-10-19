@@ -253,6 +253,11 @@ main(void)
         }
     }
 
+    /* Every lent request for events goes back while the port is still
+     * public: a client that cannot find the port any more never waits for
+     * one. Messages still queued are not acted on, so none is lent again. */
+    mdnsDiscoveryCancel(md);
+
     /* No client may find the port any more; whoever already sent is told
      * that mdnsd is gone. */
     RemPort(port);
