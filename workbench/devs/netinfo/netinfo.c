@@ -162,6 +162,16 @@ static int NetInfo__DevOpen(LIBBASETYPEPTR LIBBASE,
     if (unit >= NETINFO_UNITS)
         goto zap;
 
+    /* Expunge may already have asked this worker to exit. Do not attach
+     * a unit to maps it is about to free. Drop the lock while waiting,
+     * since the worker needs it to finish its cleanup. */
+    while (LIBBASE->nid_Task != NULL && LIBBASE->nid_Death != NULL &&
+           LIBBASE->nid_Death->mn_Node.ln_Type != NT_MESSAGE) {
+        ReleaseSemaphore(LIBBASE->nid_Lock);
+        Delay(1);
+        ObtainSemaphore(LIBBASE->nid_Lock);
+    }
+
     /*
      * Create device task if necessary
      */
