@@ -38,6 +38,9 @@ BOOL InitCamd(struct CamdBase *CamdBase){
 	NEWLIST(CB(CamdBase)->midiclusters);
 	NEWLIST(CB(CamdBase)->clusnotifynodes);
 #endif
+#ifndef __amigaos4__
+	InitDriverWatch(CamdBase);
+#endif
 	if(InitCamdTimer()==FALSE) return FALSE;
 	lock=Lock("devs:Midi",ACCESS_READ);
 	if(lock==0){
@@ -69,6 +72,10 @@ void UninitCamd(struct CamdBase *CamdBase){
 	struct Node *node,*temp;
 	struct MidiCluster *midicluster;
 	struct DriverData *driverdata;
+
+#ifndef __amigaos4__
+	StopDriverWatch();
+#endif
 
 	if( ! IsListEmpty(&CB(CamdBase)->midiclusters)){
 		node=CB(CamdBase)->midiclusters.lh_Head;

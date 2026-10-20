@@ -390,6 +390,12 @@ void DetachDriverData(struct Drivers *driver,
 	struct CamdBase *CamdBase
 );
 void SignalClusterNotify(struct CamdBase *CamdBase);
+LONG ScanDrivers(struct CamdBase *CamdBase);
+#ifndef __amigaos4__
+void InitDriverWatch(struct CamdBase *CamdBase);
+void DriversChanged(void);
+void StopDriverWatch(void);
+#endif
 void ClusterParticipantsChanged(struct MidiCluster *cluster,struct MidiNode *changer,struct CamdBase *CamdBase);
 void LoadDriver(char *name,
 	struct CamdBase *CamdBase
