@@ -39,18 +39,20 @@ t_bool Uses_Joliet_Protocol(CDROM *p_cdrom, t_ulong offset, t_ulong *p_svdoffset
     }
 }
 
-int Get_Joliet_Name(struct CDVDBase *global, char *from, char *to, unsigned char len)
+int Get_Joliet_Name(struct CDVDBase *global, char *from, char *to, unsigned char len, int to_len)
 {
     int l;
 
-    l = UTF16ToSystem(global, from, to, len);
+    if ((len & 1) || to_len < 0)
+        return 0;
+    l = UTF16ToSystem(global, from, to, len, to_len);
 
     if (l == -1)
     {
 	int i;
 
 	l = 0;
-	for (i = 0; i < len; i+=2)
+	for (i = 0; i < len && l < to_len; i+=2)
 	    to[l++] = from[i] ? '_' : from[i+1];
     }
 

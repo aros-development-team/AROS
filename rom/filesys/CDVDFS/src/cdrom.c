@@ -192,7 +192,7 @@ CDROM *Open_CDROM
         (
                 struct CDVDBase *global,
                 char *p_device,
-                int p_scsi_id,
+                IPTR p_scsi_id,
                 uint32_t p_memory_type,
                 int p_std_buffers,
                 int p_file_buffers
@@ -407,7 +407,8 @@ int Read_From_Drive
 
     D(bug("[CDVDFS]\tAccessing sectors %ld:%ld\n", (long)p_sector, (long)p_number_of_sectors));
 
-    if (0 != DoIO((struct IORequest*) p_cd->scsireq))
+    if (0 != DoIO((struct IORequest*) p_cd->scsireq) ||
+        p_cd->scsireq->io_Actual != p_cd->scsireq->io_Length)
     {
         D(bug("[CDVDFS]\tTransfer failed: %ld\n", (long)p_cd->scsireq->io_Error));
         Clear_Sector_Buffers(p_cd);
@@ -420,8 +421,9 @@ int Read_From_Drive
 
 /*
  * USAGE NOTE >> VERY IMPORTANT <<
- * File reads use slots of p_cd->buffer_sectors sectors. Metadata reads only
- * require the requested sector to be valid.
+ * File slots have p_cd->buffer_sectors sectors of capacity, but a final
+ * read may fill less. Callers must use buffer_bytes for the valid length
+ * starting at buffer. Metadata reads require only the requested sector.
  */
 static int Find_Cache_Slot(CDROM *p_cd, int first, int last)
 {
@@ -453,7 +455,7 @@ static int Read_Chunk_Internal(CDROM *p_cd, long p_sector, int file_data)
     int status;
     int i;
     int loc;
-    long vol_size;
+    uint64_t read_end = global->g_volume ? global->g_volume->read_end : 0;
     long start;
     int count;
     int first;
@@ -461,12 +463,19 @@ static int Read_Chunk_Internal(CDROM *p_cd, long p_sector, int file_data)
 
     D(bug("[CDVDFS]\tClient requested sector %ld\n", p_sector));
 
-    if (p_cd->buffer_data == NULL ||
+    p_cd->buffer_bytes = 0;
+    if (p_sector < 0)
+        return 0;
+
+    /* A declared endpoint limits read-ahead, not access to an existing sector. */
+    if ((read_end && (uint64_t)p_sector >= read_end) ||
+        p_cd->buffer_data == NULL ||
         (!file_data && p_cd->split_cache && p_cd->buffer_metadata == NULL))
     {
         if (p_cd->io_sector == p_sector)
         {
             p_cd->buffer = p_cd->buffer_io;
+            p_cd->buffer_bytes = SCSI_BUFSIZE;
             return 1;
         }
 
@@ -478,6 +487,7 @@ static int Read_Chunk_Internal(CDROM *p_cd, long p_sector, int file_data)
         if (status)
         {
             p_cd->buffer = p_cd->buffer_io;
+            p_cd->buffer_bytes = SCSI_BUFSIZE;
             p_cd->io_sector = p_sector;
         }
         return status;
@@ -486,10 +496,10 @@ static int Read_Chunk_Internal(CDROM *p_cd, long p_sector, int file_data)
     for (i=0; i<p_cd->buffers_cnt; i++)
     {
         start = p_cd->cache_slots[i].current_sector;
-        count = p_cd->cache_slots[i].sector_count;
+        count = p_cd->cache_slots[i].valid_sectors;
         if (start == -1 || p_sector < start || p_sector >= start + count)
             continue;
-        if (file_data && count < p_cd->buffer_sectors)
+        if (file_data && p_cd->cache_slots[i].sector_count < p_cd->buffer_sectors)
             continue;
 
         /*
@@ -498,6 +508,10 @@ static int Read_Chunk_Internal(CDROM *p_cd, long p_sector, int file_data)
         D(bug("[CDVDFS]\tSector already cached\n"));
         p_cd->buffer = Sector_Buffer(p_cd, i) +
             ((p_sector - start) << 11);
+        p_cd->buffer_bytes = (count - (p_sector - start)) * SCSI_BUFSIZE;
+        /* A probe may have filled this slot before the volume was assigned. */
+        if (read_end && read_end - p_sector < count - (p_sector - start))
+            p_cd->buffer_bytes = (read_end - p_sector) * SCSI_BUFSIZE;
 
         /*
          * try most frequently used
@@ -541,12 +555,10 @@ static int Read_Chunk_Internal(CDROM *p_cd, long p_sector, int file_data)
      */
     count = p_cd->cache_slots[loc].sector_count;
     start = p_sector & ~(count - 1);
-    if (global->g_volume != NULL)
-        vol_size = Volume_Size(global->g_volume);
-    else
-        vol_size = 0;
-    if (vol_size != 0 && vol_size - start < count)
-        count = vol_size - start;
+    if (read_end && read_end - start < count)
+        count = read_end - start;
+    p_cd->cache_slots[loc].current_sector = -1;
+    p_cd->cache_slots[loc].valid_sectors = 0;
     p_cd->cache_io_busy = TRUE;
     status = Read_From_Drive(p_cd, Sector_Buffer(p_cd, loc), SCSI_BUFSIZE,
         start, count);
@@ -555,6 +567,8 @@ static int Read_Chunk_Internal(CDROM *p_cd, long p_sector, int file_data)
     if (status)
     {
         p_cd->cache_slots[loc].current_sector = start;
+        p_cd->cache_slots[loc].valid_sectors = count;
+        p_cd->buffer_bytes = (count - (p_sector - start)) * SCSI_BUFSIZE;
         p_cd->buffer = Sector_Buffer(p_cd, loc) +
             ((p_sector - start) << 11);
         p_cd->cache_slots[loc].last_used = 1000;
@@ -895,8 +909,12 @@ void Clear_Sector_Buffers (CDROM *p_cd)
     int i;
 
     p_cd->io_sector = -1;
+    p_cd->buffer_bytes = 0;
     for (i=0; i<p_cd->buffers_cnt; i++)
+    {
         p_cd->cache_slots[i].current_sector = -1;
+        p_cd->cache_slots[i].valid_sectors = 0;
+    }
 }
 
 /* Finds offset of last session. (Not supported by all CDROM drives)

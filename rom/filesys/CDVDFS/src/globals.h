@@ -49,7 +49,7 @@ struct CDVDBase
     int	g_time;          /* Current time	          */
 
     char    g_device[80];    /* SCSI device name	          */
-    short   g_unit;          /* SCSI unit		      */
+    IPTR    g_unit;          /* SCSI unit		      */
 
     int	g_inhibited;     /* Number of active INHIBIT(TRUE) packets    */
 

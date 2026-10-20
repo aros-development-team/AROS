@@ -9,17 +9,7 @@ typedef struct ext_descr {
 
 typedef t_ext_descr t_extdatarec[3];
 
-/* Force word alignment for MorphOS on PowerPC.
-   Note that there are a lot of words and longwords in these
-   structures and there are no endianess checking so MacHFS
-   support is probably broken in AROS on little-endian architectures.
-   Also note that all structures on MacHFS CD are word-aligned as required
-   by Motorola m68000 CPU.
-   All this needs to be fixed - Pavel Fedin <sonic_amiga@rambler.ru> */
-#ifdef __MORPHOS__
-#pragma pack(2)
-#endif
-
+/* Native in-memory values; hfs.c decodes the fixed disk layout explicitly. */
 typedef struct mdb {
   t_ushort	SigWord;
   t_ulong	CrDate;
@@ -90,7 +80,7 @@ typedef struct leaf_record {
   char		reserved;
   t_ulong	parent_id;
   t_uchar	name_length;
-  char		name[1];
+  char		name[32];
 } t_leaf_record;
 
 typedef struct dir_record {
@@ -156,6 +146,7 @@ typedef struct hfs_vol_info {
   t_mdb			mdb;
   int			start_block;
   t_ulong		root_node;
+  t_ulong		node_count;
 } t_hfs_vol_info;
 
 typedef struct hfs_obj_info {
@@ -163,26 +154,32 @@ typedef struct hfs_obj_info {
   t_ulong		parent_id;
   char			name[50];
   t_catalog_record	cat_rec;
+  t_ulong		extent_start;
+  t_ulong		extent_block;
+  t_ulong		extent_count;
 } t_hfs_obj_info;
 
 typedef struct leaf_record_pos {
   t_ulong		node;
+  t_ulong		nodes_left; /* Nodes remaining in this catalog walk */
+  t_ulong		cycle_node, cycle_power, cycle_length;
   t_ushort		record;
   t_node_descr		node_descr;
   t_catalog_record	cat_rec;
   t_leaf_record		leaf_rec;
-  char			pad[32]; /* space for name from t_leaf_record */
 } t_leaf_record_pos;
 
-#ifdef __MORPHOS__
-#pragma pack()
-#endif
+t_ushort HFS_Get16(const void *data);
+t_ulong HFS_Get32(const void *data);
+void HFS_Decode_Node(const t_uchar *p, t_node_descr *node);
+t_bool HFS_Record_Bounds(const t_uchar *node, int record, int *start, int *end);
+t_bool HFS_Load_Leaf(t_leaf_record_pos *leaf, const t_uchar *node);
 
 int HFS_Find_Master_Directory_Block(CDROM *p_cd, t_mdb *p_mdb);
 t_bool Uses_HFS_Protocol(CDROM *p_cd, int *p_skip);
 t_bool HFS_Get_Header_Node
 	(CDROM *p_cd,t_ulong p_mdb_pos,t_mdb *p_mdb,t_hdr_node *p_hdr_node);
-t_node_descr *HFS_Get_Node
+t_uchar *HFS_Get_Node
 	(CDROM *p_cd,t_ulong p_mdb_pos,t_mdb *p_mdb,t_ulong p_node);
 void Convert_Mac_Characters (char *p_buf, int p_buf_len);
 

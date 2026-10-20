@@ -84,7 +84,7 @@ int Get_Volume_Name(VOLUME *p_volume, char *buf, int buflen)
 
     D(bug("[CDVDFS]\tGet_Volume_Name()\n"));
     if (p_volume->protocol == PRO_JOLIET)
-        return Get_Joliet_Name(p_volume->global, iso_name, buf, 32);
+        return Get_Joliet_Name(p_volume->global, iso_name, buf, 32, buflen - 1);
     else {
         CopyMem(iso_name, buf, 32);
         return 32;
@@ -100,11 +100,11 @@ int Get_File_Name(VOLUME *volume, directory_record *dir, char *buf, int buflen)
     switch (volume->protocol)
     {
         case PRO_JOLIET:
-            len = Get_Joliet_Name(volume->global, dir->file_id, buf, dir->file_id_length);
+            len = Get_Joliet_Name(volume->global, dir->file_id, buf, dir->file_id_length, buflen - 1);
             break;
 
         case PRO_ROCK:
-            len = Get_RR_File_Name(volume, dir, buf, buflen);
+            len = Get_RR_File_Name(volume, dir, buf, buflen - 1);
             if (len > 0)
                 break;
 
@@ -265,6 +265,8 @@ t_bool Iso_Init_Vol_Info(VOLUME *p_volume, int p_skip, t_ulong p_offset, t_ulong
         loc++;
     }
 
+    p_volume->read_end = ((uint64_t)VOL(p_volume,pvd).space_size *
+        VOL(p_volume,pvd).block_size + SCSI_BUFSIZE - 1) / SCSI_BUFSIZE;
     VOL(p_volume,skip) = p_skip;
 
     switch (VOL(p_volume,pvd).block_size)
@@ -441,7 +443,15 @@ directory_record *Get_Directory_Record
     len = p_volume->cd->buffer[p_offset & 2047];
     if (len)
     {
-        CopyMem(p_volume->cd->buffer + (p_offset & 2047), p_volume->buffer, len);
+        /* A directory record, including its identifier, stays in this sector. */
+        unsigned char *record = p_volume->cd->buffer + (p_offset & 2047);
+        if (len < 34 || (unsigned int)len > 2048 - (p_offset & 2047) ||
+            record[32] == 0 || 33 + record[32] > len)
+        {
+            global->iso_errno = ISOERR_INTERNAL;
+            return NULL;
+        }
+        CopyMem(record, p_volume->buffer, len);
         D({
             int x;
             directory_record *dr = (directory_record*)p_volume->buffer;
@@ -695,12 +705,6 @@ int Iso_Read_From_File(CDROM_OBJ *p_file, char *p_buffer, int p_buffer_length)
     offset += p_file->pos;
     offset &= 2047; // this is the offset in first block;
 
-    /*
-     * how much data available in next read chunk?
-     */
-    remain_block = SCSI_BUFSIZE * cd->buffer_sectors -
-        ((loc << 11) & (SCSI_BUFSIZE * cd->buffer_sectors - 1)) - offset;
-
     while (todo)
     {
         D(bug("[CDVDFS]\tRead: BPos: %6ld; FPos: %6ld; Ofst: %6ld; Blck: %6ld;\n", buf_pos, p_file->pos, offset, loc));
@@ -711,6 +715,7 @@ int Iso_Read_From_File(CDROM_OBJ *p_file, char *p_buffer, int p_buffer_length)
             return -1;
         }
 
+        remain_block = cd->buffer_bytes - offset;
         /*
          * how much data left in a file?
          */
@@ -745,11 +750,8 @@ int Iso_Read_From_File(CDROM_OBJ *p_file, char *p_buffer, int p_buffer_length)
         if (p_file->pos >= OBJ(p_file,dir)->data_length)
             break;
 
-        remain_block = SCSI_BUFSIZE * cd->buffer_sectors;
+        loc += cd->buffer_bytes / SCSI_BUFSIZE;
         offset = 0;
-
-        loc = (loc + cd->buffer_sectors) &
-            ~(cd->buffer_sectors - 1);
     }
 
     return buf_pos;

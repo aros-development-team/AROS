@@ -112,18 +112,65 @@ t_ulong AB_to_Block (VOLUME *p_volume, t_ulong p_alloc_block)
   	 VOL(p_volume,mdb).AlBlSt + VOL(p_volume,start_block);
 }
 
-int HFS_Find_Master_Directory_Block(CDROM *p_cd, t_mdb *p_mdb) {
-t_uchar *block;
-typedef struct partition_map
+/* HFS disk integers are big-endian and may only be word-aligned.
+ * Decode into native values without modifying the shared sector cache. */
+t_ushort HFS_Get16(const void *data)
 {
-	t_ushort	pmSig;
-	t_ushort	reSigPad;
-	t_ulong	pmMapBlkCnt;
-	t_ulong	pmPyPartStart;
-	t_ulong	pmPartBlkCnt;
-	char	pmPartName[32];
-	char	pmPartType[32];
-} t_partition_map;
+	const t_uchar *p = data;
+	return ((t_ushort)p[0] << 8) | p[1];
+}
+
+t_ulong HFS_Get32(const void *data)
+{
+	const t_uchar *p = data;
+	return ((t_ulong)p[0] << 24) | ((t_ulong)p[1] << 16) |
+		((t_ulong)p[2] << 8) | p[3];
+}
+
+static void HFS_Decode_Extents(const t_uchar *p, t_extdatarec extents)
+{
+	int i;
+	for (i = 0; i < 3; i++, p += 4)
+	{
+		extents[i].StABN = HFS_Get16(p);
+		extents[i].NumABlks = HFS_Get16(p + 2);
+	}
+}
+
+/* Decode the fields used by the reader and the CD-ROM diagnostic tool. */
+static void HFS_Decode_MDB(const t_uchar *p, t_mdb *mdb)
+{
+	memset(mdb, 0, sizeof(*mdb));
+	mdb->SigWord = HFS_Get16(p);
+	mdb->CrDate = HFS_Get32(p + 2);
+	mdb->LsMod = HFS_Get32(p + 6);
+	mdb->Atrb = HFS_Get16(p + 10);
+	mdb->NmFls = HFS_Get16(p + 12);
+	mdb->NmAlBlks = HFS_Get16(p + 18);
+	mdb->AlBlkSiz = HFS_Get32(p + 20);
+	mdb->AlBlSt = HFS_Get16(p + 28);
+	mdb->VolNameLen = p[36];
+	CopyMem(p + 37, mdb->VolName, sizeof(mdb->VolName));
+	mdb->FilCnt = HFS_Get32(p + 84);
+	mdb->DirCnt = HFS_Get32(p + 88);
+	mdb->XTFlSize = HFS_Get32(p + 130);
+	HFS_Decode_Extents(p + 134, mdb->XTExtRec);
+	mdb->CTFlSize = HFS_Get32(p + 146);
+	HFS_Decode_Extents(p + 150, mdb->CTExtRec);
+}
+
+void HFS_Decode_Node(const t_uchar *p, t_node_descr *node)
+{
+	node->FLink = HFS_Get32(p);
+	node->BLink = HFS_Get32(p + 4);
+	node->Type = p[8];
+	node->NHeight = p[9];
+	node->NRecs = HFS_Get16(p + 10);
+	node->Reserved = HFS_Get16(p + 12);
+}
+
+static int HFS_Find_MDB(CDROM *p_cd, t_mdb *p_mdb, uint64_t *read_end) {
+t_uchar *block;
 int i, entries;
 int result;
 
@@ -131,7 +178,7 @@ int result;
 	if (!block || block[0] != 0x50 || block[1] != 0x4D)
 		return -1;
 
-	entries = ((t_partition_map *) block)->pmMapBlkCnt;
+	entries = HFS_Get32(block + 4);
 	for (i=0; i<entries; i++)
 	{
 		block = Read_Block(p_cd, i+1);
@@ -140,24 +187,33 @@ int result;
 		if (
 				MemCmp
 					(
-						((t_partition_map *) block)->pmPartType,
+						block + 48,
 						"Apple_HFS", 9
 					) == 0
 			)
 		{
-			result = ((t_partition_map *) block)->pmPyPartStart + 2;
+			uint64_t end = (uint64_t)HFS_Get32(block + 8) +
+				HFS_Get32(block + 12);
+			if (read_end)
+				*read_end = (end + 3) / 4;
+			result = HFS_Get32(block + 8) + 2;
 			block = Read_Block(p_cd, result);
 			if (!block || block[0] != 0x42 || block[1] != 0x44)
 				return -1;
 			else
 			{
-				CopyMem(block, p_mdb, sizeof (*p_mdb));
+				HFS_Decode_MDB(block, p_mdb);
 				return result;
 			}
 		}
 	}
 
 	return -1;
+}
+
+int HFS_Find_Master_Directory_Block(CDROM *p_cd, t_mdb *p_mdb)
+{
+	return HFS_Find_MDB(p_cd, p_mdb, NULL);
 }
 
 t_bool Uses_HFS_Protocol(CDROM *p_cd, int *p_skip) {
@@ -180,17 +236,30 @@ t_ulong pos =
 		p_mdb_pos - 2 + p_mdb->AlBlSt +
  		p_mdb->CTExtRec[0].StABN * (p_mdb->AlBlkSiz >> 9)
 	);
-t_hdr_node *hdr;
+t_uchar *hdr;
 
-	hdr = (t_hdr_node *) Read_Block(p_cd, pos);
+	hdr = Read_Block(p_cd, pos);
 	if (!hdr)
 		return FALSE;
 
-	CopyMem(hdr, p_hdr_node, sizeof (t_hdr_node));
+	/* This reader addresses catalog nodes as 512-byte blocks. */
+	if (HFS_Get16(hdr + 32) != 512)
+		return FALSE;
+	memset(p_hdr_node, 0, sizeof(*p_hdr_node));
+	HFS_Decode_Node(hdr, &p_hdr_node->node_descr);
+	p_hdr_node->Depth = HFS_Get16(hdr + 14);
+	p_hdr_node->Root = HFS_Get32(hdr + 16);
+	p_hdr_node->NRecs = HFS_Get32(hdr + 20);
+	p_hdr_node->FNode = HFS_Get32(hdr + 24);
+	p_hdr_node->LNode = HFS_Get32(hdr + 28);
+	p_hdr_node->NodeSize = HFS_Get16(hdr + 32);
+	p_hdr_node->KeyLen = HFS_Get16(hdr + 34);
+	p_hdr_node->NNodes = HFS_Get32(hdr + 36);
+	p_hdr_node->Free = HFS_Get32(hdr + 40);
 	return TRUE;
 }
 
-t_node_descr *HFS_Get_Node
+t_uchar *HFS_Get_Node
 	(CDROM *p_cd, t_ulong p_mdb_pos, t_mdb *p_mdb, t_ulong p_node)
 {
 t_ulong first_node;
@@ -215,66 +284,150 @@ int i;
 
 	pos = first_node + (p_node - sub);
 
-	return (t_node_descr *) Read_Block(p_cd, pos);
+	return Read_Block(p_cd, pos);
 }
 
-t_node_descr *HFS_Node(VOLUME *p_volume, t_ulong p_node) {
+t_uchar *HFS_Node(VOLUME *p_volume, t_ulong p_node) {
+  if (p_node >= VOL(p_volume,node_count))
+    return NULL;
   return HFS_Get_Node (p_volume->cd, VOL(p_volume,start_block) + 2,
   		       &VOL(p_volume,mdb), p_node);
 }
 
-void HFS_Load_Catalog_Record
-	(t_catalog_record *p_cat_rec, char *p_node, int p_record)
+/* HFS catalog nodes are 512 bytes. Their trailing offset table contains
+ * one entry per record plus the end of the final record. */
+t_bool HFS_Record_Bounds(const t_uchar *node, int record, int *start, int *end)
 {
-short *sp = (short *) p_node;
-int len;
-int start;
+	int count = HFS_Get16(node + 10);
+	int table;
 
-	start = sp[255-p_record];
-	start += p_node[start] + 1;
-	if (start & 1)
-		start++;
-
-	len = sp[254-p_record] - start;
-	CopyMem(p_node + start, p_cat_rec, len);
+	if (count < 1 || count > (512 - 14) / 2 - 1 ||
+		record < 0 || record >= count)
+		return FALSE;
+	table = 512 - 2 * (count + 1);
+	*start = HFS_Get16(node + 510 - 2 * record);
+	*end = HFS_Get16(node + 508 - 2 * record);
+	return *start >= 14 && *start < *end && *end <= table;
 }
 
+t_bool HFS_Load_Leaf(t_leaf_record_pos *leaf, const t_uchar *node)
+{
+	int start, end, keylen, data, len;
+	const t_uchar *bytes = node;
 
-t_bool HFS_Find_Next_Leaf(VOLUME *p_volume, t_leaf_record_pos *p_leaf) {
-t_node_descr *node;
-short *sp;
-int pos;
-
-	node = HFS_Node(p_volume, p_leaf->node);
-	if (!node)
+	if (node[8] != 0xff ||
+		!HFS_Record_Bounds(node, leaf->record, &start, &end))
 		return FALSE;
-
-	p_leaf->record++;
-	if (p_leaf->record == node->NRecs)
+	keylen = bytes[start] + 1;
+	if (keylen < 7 || keylen > end - start ||
+		bytes[start + 6] > 31 || bytes[start + 6] > keylen - 7)
+		return FALSE;
+	data = (start + keylen + 1) & ~1;
+	len = end - data;
+	if (len < 2 || len > 102)
+		return FALSE;
+	/* Require the fields consumed by each supported catalog record type. */
+	switch (bytes[data])
 	{
-		if (node->FLink)
-		{
-			node = HFS_Node(p_volume, p_leaf->node = node->FLink);
-			if (!node)
-				return FALSE;
-			p_leaf->record = 0;
-		}
-		else
-			return FALSE;
+		case 1: if (len < 22) return FALSE; break;
+		case 2: if (len < 102) return FALSE; break;
+		case 3: if (len < 46) return FALSE; break;
+		case 4: if (len < 46) return FALSE; break;
+		default: return FALSE;
 	}
+	memset(&leaf->cat_rec, 0, sizeof(leaf->cat_rec));
+	memset(&leaf->leaf_rec, 0, sizeof(leaf->leaf_rec));
+	HFS_Decode_Node(node, &leaf->node_descr);
+	leaf->leaf_rec.length = bytes[start];
+	leaf->leaf_rec.parent_id = HFS_Get32(bytes + start + 2);
+	leaf->leaf_rec.name_length = bytes[start + 6];
+	CopyMem(bytes + start + 7, leaf->leaf_rec.name, leaf->leaf_rec.name_length);
+	bytes += data;
+	leaf->cat_rec.d.type = bytes[0];
+	switch (bytes[0])
+	{
+		case 1:
+			leaf->cat_rec.d.DirID = HFS_Get32(bytes + 6);
+			leaf->cat_rec.d.CrDat = HFS_Get32(bytes + 10);
+			break;
+		case 2:
+			leaf->cat_rec.f.StBlk = HFS_Get16(bytes + 24);
+			leaf->cat_rec.f.RStBlk = HFS_Get16(bytes + 34);
+			leaf->cat_rec.f.FlNum = HFS_Get32(bytes + 20);
+			leaf->cat_rec.f.LgLen = HFS_Get32(bytes + 26);
+			leaf->cat_rec.f.RLgLen = HFS_Get32(bytes + 36);
+			leaf->cat_rec.f.CrDat = HFS_Get32(bytes + 44);
+			HFS_Decode_Extents(bytes + 74, leaf->cat_rec.f.ExtRec);
+			HFS_Decode_Extents(bytes + 86, leaf->cat_rec.f.RExtRec);
+			break;
+		case 3:
+		case 4:
+			leaf->cat_rec.dt.ParID = HFS_Get32(bytes + 10);
+			leaf->cat_rec.dt.CNameLen = bytes[14];
+			CopyMem(bytes + 15, leaf->cat_rec.dt.CName, 31);
+			break;
+	}
+	if ((leaf->cat_rec.d.type == 3 || leaf->cat_rec.d.type == 4) &&
+		leaf->cat_rec.dt.CNameLen > 31)
+		return FALSE;
+	return TRUE;
+}
 
-	sp = (short *) node;
-	pos = sp[255-p_leaf->record];
-	CopyMem(node, &p_leaf->node_descr, sizeof (t_node_descr));
-	CopyMem((char *)node+pos, &p_leaf->leaf_rec, ((char *) node)[pos] + 1);
-	HFS_Load_Catalog_Record(&p_leaf->cat_rec, (char *) node, p_leaf->record);
+/* Bound a catalog walk and detect cycles without allocating a visited set. */
+static void HFS_Start_Walk(VOLUME *volume, t_leaf_record_pos *leaf, t_ulong node)
+{
+	leaf->node = node;
+	leaf->nodes_left = VOL(volume,node_count);
+	leaf->cycle_node = node;
+	leaf->cycle_power = 1;
+	leaf->cycle_length = 0;
+}
 
+static t_bool HFS_Advance_Node(VOLUME *volume, t_leaf_record_pos *leaf, t_ulong node)
+{
+	if (leaf->nodes_left <= 1 || node >= VOL(volume,node_count) ||
+		node == leaf->cycle_node)
+	{
+		volume->global->iso_errno = ISOERR_INTERNAL;
+		return FALSE;
+	}
+	leaf->nodes_left--;
+	leaf->cycle_length++;
+	if (leaf->cycle_length == leaf->cycle_power)
+	{
+		leaf->cycle_node = node;
+		leaf->cycle_length = 0;
+		if (leaf->cycle_power <= 0x7fffffffUL)
+			leaf->cycle_power *= 2;
+	}
+	leaf->node = node;
+	return TRUE;
+}
+
+t_bool HFS_Find_Next_Leaf(VOLUME *p_volume, t_leaf_record_pos *p_leaf)
+{
+	t_uchar *node = HFS_Node(p_volume, p_leaf->node);
+	if (!node || p_leaf->record >= HFS_Get16(node + 10))
+		return FALSE;
+	p_leaf->record++;
+	if (p_leaf->record == HFS_Get16(node + 10))
+	{
+		if (!HFS_Get32(node))
+			return FALSE;
+		if (!HFS_Advance_Node(p_volume, p_leaf, HFS_Get32(node)))
+			return FALSE;
+		node = HFS_Node(p_volume, p_leaf->node);
+		if (!node)
+			return FALSE;
+		p_leaf->record = 0;
+	}
+	if (!HFS_Load_Leaf(p_leaf, node))
+		return FALSE;
 	if (p_leaf->leaf_rec.name_length > 30)
 	{
 		p_leaf->leaf_rec.name_length = 30;
 		*((char *)&p_leaf->leaf_rec.name[0] + 30) = '\0';
 	}
-
 	return TRUE;
 }
 
@@ -282,22 +435,10 @@ int pos;
  * Store the result in *p_leaf.
  */
 
-t_bool HFS_Find_This_Leaf(VOLUME *p_volume, t_leaf_record_pos *p_leaf) {
-t_node_descr *node;
-short *sp;
-int pos;
-
-	node = HFS_Node(p_volume, p_leaf->node);
-	if (!node)
-		return FALSE;
-
-	sp = (short *) node;
-	pos = sp[255-p_leaf->record];
-	CopyMem(node, &p_leaf->node_descr, sizeof (t_node_descr));
-	CopyMem((char *)node+pos, &p_leaf->leaf_rec, ((char *) node)[pos] + 1);
-	HFS_Load_Catalog_Record(&p_leaf->cat_rec, (char *) node, p_leaf->record);
-
-	return TRUE;
+t_bool HFS_Find_This_Leaf(VOLUME *p_volume, t_leaf_record_pos *p_leaf)
+{
+	t_uchar *node = HFS_Node(p_volume, p_leaf->node);
+	return node != NULL && HFS_Load_Leaf(p_leaf, node);
 }
 
 /* Find the first leaf record with parent ID p_parent_id.
@@ -309,12 +450,12 @@ t_bool HFS_Find_Leaf_Record
 	(VOLUME *p_volume, t_leaf_record_pos *p_leaf, t_ulong p_parent_id)
 {
 struct CDVDBase *global = p_volume->global;
-t_node_descr *node;
-short *sp;
+t_uchar *node;
 int i;
 t_ulong this_node = VOL(p_volume,root_node);
 t_ulong next_node;
 
+	HFS_Start_Walk(p_volume, p_leaf, this_node);
 	node = HFS_Node(p_volume, VOL(p_volume,root_node));
 	if (!node)
 	{
@@ -324,23 +465,34 @@ t_ulong next_node;
 
 	for (;;)
 	{
-		if (node->Type == 0)
+		if (node[8] == 0)
 		{
 			 /* index node */
-			sp = (short *) node;
 			next_node = -1;
-			for (i=0; i<node->NRecs; i++)
+			for (i=0; i<HFS_Get16(node + 10); i++)
 			{
-				t_idx_record *idx = (t_idx_record *) ((char *) node + sp[255-i]);
-				if (idx->length != 0)
+				int start, end;
+				const t_uchar *idx;
+				if (!HFS_Record_Bounds(node, i, &start, &end))
 				{
-					if (idx->parent_id >= p_parent_id)
+					global->iso_errno = ISOERR_INTERNAL;
+					return FALSE;
+				}
+				idx = node + start;
+				if (idx[0] != 0 && end - start < 42)
+				{
+					global->iso_errno = ISOERR_INTERNAL;
+					return FALSE;
+				}
+				if (idx[0] != 0)
+				{
+					if (HFS_Get32(idx + 2) >= p_parent_id)
 						break;
-					next_node = idx->pointer;
+					next_node = HFS_Get32(idx + 38);
 				}
 			}
 		}
-		else if (node->Type == 0xff)
+		else if (node[8] == 0xff)
 		{
 			/* leaf node */
 			break;
@@ -357,6 +509,8 @@ t_ulong next_node;
 			return FALSE;
 		}
 
+		if (!HFS_Advance_Node(p_volume, p_leaf, next_node))
+			return FALSE;
 		node = HFS_Node(p_volume, next_node);
 		if (!node)
 		{
@@ -368,9 +522,11 @@ t_ulong next_node;
 
 	p_leaf->node = this_node;
 	p_leaf->record = 0;
-	CopyMem(node, &p_leaf->node_descr, sizeof (t_node_descr));
-	CopyMem((char *)node +0xE, &p_leaf->leaf_rec, ((char *) node)[0xe] + 1);
-	HFS_Load_Catalog_Record(&p_leaf->cat_rec, (char *) node, 0);
+	if (!HFS_Load_Leaf(p_leaf, node))
+	{
+		global->iso_errno = ISOERR_INTERNAL;
+		return FALSE;
+	}
 
 	/* walk forwards until the same key is found: */
 	for (;;)
@@ -405,7 +561,6 @@ static t_handler const g_hfs_handler;
 t_bool HFS_Init_Vol_Info
 	(VOLUME *p_volume, int p_start_block) {
 struct CDVDBase *global = p_volume->global;
-t_uchar *block;
 t_hdr_node hdr;
 
 	/*
@@ -434,14 +589,13 @@ t_hdr_node hdr;
 
 	VOL(p_volume,start_block) = p_start_block;
 
-	if (!(block = Read_Block(p_volume->cd, p_start_block + 2)))
+	if (HFS_Find_MDB(p_volume->cd, &VOL(p_volume,mdb),
+			&p_volume->read_end) != p_start_block + 2)
 	{
 		global->iso_errno = ISOERR_SCSI_ERROR;
-		FreeMem (p_volume->vol_info, sizeof (t_hfs_vol_info));
+		FreeMem(p_volume->vol_info, sizeof(t_hfs_vol_info));
 		return FALSE;
 	}
-
-	CopyMem(block, &VOL(p_volume,mdb), sizeof (t_mdb));
 
 	if (
 			!HFS_Get_Header_Node
@@ -454,6 +608,7 @@ t_hdr_node hdr;
 	}
 
 	VOL(p_volume,root_node) = hdr.Root;
+	VOL(p_volume,node_count) = hdr.NNodes;
 
 	p_volume->mixed_char_filenames = TRUE;
 
@@ -478,6 +633,7 @@ CDROM_OBJ *obj = AllocMem (sizeof (CDROM_OBJ), MEMF_PUBLIC | MEMF_CLEAR);
 	obj->obj_info = AllocMem (sizeof (t_hfs_obj_info), MEMF_PUBLIC | MEMF_CLEAR);
 	if (!obj->obj_info)
 	{
+		global->iso_errno = ISOERR_NO_MEMORY;
 		FreeMem (obj, sizeof (CDROM_OBJ));
 		return NULL;
 	}
@@ -561,6 +717,8 @@ t_bool data_fork = FALSE;
 	}
 
 	obj = HFS_Alloc_Obj(global);
+	if (!obj)
+		return NULL;
 	obj->directory_f = (type == 1);
 	obj->volume = p_volume;
 
@@ -619,108 +777,165 @@ void HFS_Close_Obj(CDROM_OBJ *p_obj)
 	FreeMem (p_obj, sizeof (CDROM_OBJ));
 }
 
+/* Resolve a block within an extent record. The returned run never crosses
+ * an extent boundary. Allocation block numbers are relative to the volume. */
+static t_bool HFS_Map_Extents(const t_extdatarec extents, t_ulong logical,
+	t_ulong *physical, t_ulong *count)
+{
+	int i;
+	for (i = 0; i < 3; i++)
+	{
+		if (logical < extents[i].NumABlks)
+		{
+			*physical = extents[i].StABN + logical;
+			*count = extents[i].NumABlks - logical;
+			return TRUE;
+		}
+		logical -= extents[i].NumABlks;
+	}
+	return FALSE;
+}
+
+/* The overflow tree itself is addressed using its MDB extents. If a node
+ * is outside those extents, fail instead of treating the file as contiguous. */
+static t_uchar *HFS_Extent_Node(VOLUME *volume, t_ulong node)
+{
+	t_mdb *mdb = &VOL(volume,mdb);
+	t_ulong sectors = mdb->AlBlkSiz >> 9, physical, count;
+	if (!sectors || node >= mdb->XTFlSize / 512 ||
+		!HFS_Map_Extents(mdb->XTExtRec, node / sectors, &physical, &count))
+		return NULL;
+	return Read_Block(volume->cd, AB_to_Block(volume, physical) + node % sectors);
+}
+
+static t_bool HFS_Find_Extent(CDROM_OBJ *obj, t_ulong logical,
+	t_ulong *physical, t_ulong *count)
+{
+	t_uchar *node = HFS_Extent_Node(obj->volume, 0);
+	t_ulong next, nodes, file_id = OBJ(obj,cat_rec).f.FlNum;
+	unsigned int height;
+	int fork = OBJ(obj,data_fork) ? 0 : 255;
+
+	if (!node || node[8] != 1 || HFS_Get16(node + 32) != 512)
+		return FALSE;
+	height = HFS_Get16(node + 14);
+	next = HFS_Get32(node + 16);
+	nodes = HFS_Get32(node + 36);
+	/* Each level must decrease the node height, bounding traversal. */
+	while (height && next && next < nodes)
+	{
+		int i, chosen = -1, chosen_end = 0;
+		node = HFS_Extent_Node(obj->volume, next);
+		if (!node || node[9] != height ||
+			node[8] != (height == 1 ? 255 : 0))
+			return FALSE;
+		for (i = 0; i < HFS_Get16(node + 10); i++)
+		{
+			int start, end;
+			t_ulong id;
+			if (!HFS_Record_Bounds(node, i, &start, &end) ||
+				end - start < 8 || node[start] != 7)
+				return FALSE;
+			id = HFS_Get32(node + start + 2);
+			if (id > file_id || (id == file_id &&
+				(node[start + 1] > fork || (node[start + 1] == fork &&
+				HFS_Get16(node + start + 6) > logical))))
+				break;
+			chosen = start;
+			chosen_end = end;
+		}
+		if (chosen < 0)
+			return FALSE;
+		if (height == 1)
+		{
+			t_extdatarec extents;
+			if (chosen_end - chosen < 20 ||
+				HFS_Get32(node + chosen + 2) != file_id ||
+				node[chosen + 1] != fork)
+				return FALSE;
+			HFS_Decode_Extents(node + chosen + 8, extents);
+			return HFS_Map_Extents(extents,
+				logical - HFS_Get16(node + chosen + 6), physical, count);
+		}
+		if (chosen_end - chosen < 12)
+			return FALSE;
+		next = HFS_Get32(node + chosen + 8);
+		height--;
+	}
+	return FALSE;
+}
+
+static t_bool HFS_File_Extent(CDROM_OBJ *obj, t_ulong logical,
+	t_ulong *physical, t_ulong *count)
+{
+	t_hfs_obj_info *info = obj->obj_info;
+	t_mdb *mdb = &VOL(obj->volume,mdb);
+	if (logical >= info->extent_start &&
+		logical - info->extent_start < info->extent_count)
+	{
+		*physical = info->extent_block + logical - info->extent_start;
+		*count = info->extent_count - (logical - info->extent_start);
+		return TRUE;
+	}
+	if (!HFS_Map_Extents(info->data_fork ? info->cat_rec.f.ExtRec :
+			info->cat_rec.f.RExtRec, logical, physical, count) &&
+		!HFS_Find_Extent(obj, logical, physical, count))
+		return FALSE;
+	if (*physical >= mdb->NmAlBlks || *count > mdb->NmAlBlks - *physical)
+		return FALSE;
+	info->extent_start = logical;
+	info->extent_block = *physical;
+	info->extent_count = *count;
+	return TRUE;
+}
+
 int HFS_Read_From_File(CDROM_OBJ *p_file, char *p_buffer, int p_buffer_length)
 {
-    struct CDVDBase *global = p_file->global;
-    uint32_t block;
-    int remain_block, remain_file, remain;
-    int len;
-    CDROM *cd;
-    int pos;
-    int buf_pos = 0;
-    int todo;
-    t_bool data_fork = OBJ(p_file,data_fork);
-    t_ulong first_block;
-    t_ulong data_length = (data_fork ? OBJ(p_file,cat_rec).f.LgLen :
-	    OBJ(p_file,cat_rec).f.RLgLen);
+	struct CDVDBase *global = p_file->global;
+	CDROM *cd = p_file->volume->cd;
+	t_ulong allocation_size = VOL(p_file->volume,mdb).AlBlkSiz;
+	t_ulong data_length = OBJ(p_file,data_fork) ?
+		OBJ(p_file,cat_rec).f.LgLen : OBJ(p_file,cat_rec).f.RLgLen;
+	int done = 0;
 
-    if (p_file->pos == data_length)
-    {
-	/* at end of file: */
-	return 0;
-    }
-
-    cd = p_file->volume->cd;
-    first_block = AB_to_Block
-	(
-	 p_file->volume,
-	 data_fork ?
-	 OBJ(p_file,cat_rec).f.ExtRec[0].StABN :
-	 OBJ(p_file,cat_rec).f.RExtRec[0].StABN
-	);
-    block = first_block + (p_file->pos >> 9);
-    todo = p_buffer_length;
-
-    while (todo)
-    {
-	t_uchar *data;
-
-	if (0 == Read_Chunk(cd, block >> 2))
+	if (p_buffer_length <= 0 || p_file->pos >= data_length)
+		return 0;
+	if (!allocation_size || (allocation_size & 511))
+		goto read_error;
+	while (done < p_buffer_length && p_file->pos < data_length)
 	{
-	    global->iso_errno = ISOERR_SCSI_ERROR;
-	    return -1;
+		t_ulong physical, count, block, offset, available, len;
+		uint64_t extent_bytes;
+		if (!HFS_File_Extent(p_file, p_file->pos / allocation_size,
+				&physical, &count))
+			goto read_error;
+		offset = p_file->pos % allocation_size;
+		block = AB_to_Block(p_file->volume, physical) + (offset >> 9);
+		extent_bytes = (uint64_t)count * allocation_size - offset;
+		offset &= 511;
+		if (!Read_File_Chunk(cd, block >> 2))
+			goto read_error;
+		available = cd->buffer_bytes - ((block & 3) << 9) - offset;
+		len = data_length - p_file->pos;
+		if (len > (t_ulong)(p_buffer_length - done))
+			len = p_buffer_length - done;
+		if (len > available)
+			len = available;
+		if (len > extent_bytes)
+			len = extent_bytes;
+		CopyMem(cd->buffer + ((block & 3) << 9) + offset, p_buffer + done, len);
+		p_file->pos += len;
+		done += len;
 	}
+	return done;
 
-	data = cd->buffer + ((block & 3) << 9);
-
-	/*
-	 * this is offset within first block
-	 */
-	pos = p_file->pos & 511;
-
-	/*
-	 * The available data extends to the end of the current cache slot.
-	 */
-	remain_block = SCSI_BUFSIZE * cd->buffer_sectors -
-		((block << 9) & (SCSI_BUFSIZE * cd->buffer_sectors - 1)) - pos;
-
-	/*
-	 * how much data left in a file do we have?
-	 */
-	remain_file = data_length - p_file->pos;
-
-	/*
-	 * and how much can we read (file vs block)
-	 */
-	remain = (remain_block < remain_file) ? remain_block : remain_file;
-
-	/*
-	 * last: how much the *user* wants to read?
-	 */
-	len = (todo < remain) ? todo : remain;
-
-	/*
-	 * copy memory block
-	 */
-	CopyMem ((APTR) (data + pos), (APTR) (p_buffer + buf_pos), len);
-
-	/*
-	 * update position in user buffer
-	 * and file offset
-	 * reduce amount of bytes to be read
-	 */
-	buf_pos += len;
-	p_file->pos += len;
-	todo -= len;
-
-	/*
-	 * fin?
-	 */
-	if (p_file->pos >= data_length)
-	    break;
-
-	/*
-	 * HFS uses four 512-byte blocks per cached 2048-byte sector.
-	 * Advance to the next cache-slot boundary.
-	 */
-	block = (block + (cd->buffer_sectors << 2)) &
-		~((cd->buffer_sectors << 2) - 1);
-    }
-
-    return buf_pos;
+read_error:
+	global->iso_errno = ISOERR_SCSI_ERROR;
+	return -1;
 }
 
 t_bool HFS_Cdrom_Info(CDROM_OBJ *p_obj, CDROM_INFO *p_info) {
+	memset(p_info, 0, sizeof(*p_info));
 	p_info->symlink_f = 0;
 	p_info->directory_f = p_obj->directory_f;
 	p_info->name_length = StrLen (OBJ(p_obj,name));
@@ -763,6 +978,9 @@ struct CDVDBase *global = p_obj->global;
 t_leaf_record_pos leaf;
 short fork = 3;
 
+	HFS_Start_Walk(p_obj->volume, &leaf, *p_offset >> 8);
+	memset(p_info, 0, sizeof(*p_info));
+
 	while (fork == 3)
 	{
 		if (*p_offset == 0)
@@ -796,7 +1014,10 @@ short fork = 3;
 			fork = 2;
 		else if (leaf.cat_rec.d.type != 2)
 			fork = 3;
-		else if (fork != 0 && leaf.cat_rec.f.LgLen > 0)
+		/* Show an empty file through its data fork, but do not invent an
+		 * empty data entry for a resource-only file. */
+		else if (fork != 0 &&
+		    (leaf.cat_rec.f.LgLen > 0 || leaf.cat_rec.f.RLgLen == 0))
 			fork = 0;
 		else if (leaf.cat_rec.f.RLgLen > 0)
 			fork = 1;
@@ -885,7 +1106,7 @@ t_ulong HFS_Creation_Date(VOLUME *p_volume)
 	return VOL(p_volume,mdb).CrDate - TIME_DIFF;
 }
 
-/* Return volume size in 2048 byte blocks:
+/* Return allocation capacity in 512 byte blocks (not an absolute disc end):
  */
 
 t_ulong HFS_Volume_Size (VOLUME *p_volume)

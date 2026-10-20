@@ -423,6 +423,13 @@ ULONG signals;
     return 0;
 }
 
+/* Byte counts and seek positions use -1 for failure, not DOSFALSE. */
+static SIPTR packet_error_result(LONG type)
+{
+    return (type == ACTION_READ || type == ACTION_WRITE ||
+        type == ACTION_SEEK) ? -1 : DOSFALSE;
+}
+
 LONG handlemessage(struct CDVDBase *global, ULONG signals) {
 register PACKET *packet;
 MSG     *msg;
@@ -526,7 +533,7 @@ UBYTE   notdone = 1;
                                 break;
                         /* packets we cannot handle because the SCSI device is not yet open: */
                         default:
-                                packet->dp_Res1 = DOSFALSE;
+                                packet->dp_Res1 = packet_error_result(packet->dp_Type);
                                 /*
                                         some return codes cause the WB to pop a requester; we don't
                                         want this, though. Therefore we use this "exotic" return code:
@@ -549,7 +556,7 @@ UBYTE   notdone = 1;
                                 break;
                         /* packets we cannot handle because the handler is inhibited: */
                         default:
-                                packet->dp_Res1 = DOSFALSE;
+                                packet->dp_Res1 = packet_error_result(packet->dp_Type);
                                 packet->dp_Res2 = ERROR_NOT_A_DOS_DISK;
                                 D(bug("ERR=%ld\n", (LONG) packet->dp_Res2));
                                 returnpacket(global, packet);
@@ -572,7 +579,7 @@ UBYTE   notdone = 1;
                                 break;
                         /* packets we cannot handle because no disk is inserted: */
                         default:
-                                packet->dp_Res1 = DOSFALSE;
+                                packet->dp_Res1 = packet_error_result(packet->dp_Type);
                                 packet->dp_Res2 =
                                         (global->g_disk_inserted ?
                                                 ERROR_NOT_A_DOS_DISK :
@@ -701,6 +708,8 @@ openbreak:
                         }
                         actual = Read_From_File (obj, ptr, length);
                         packet->dp_Res1 = actual;
+                        if (actual < 0)
+                                error = ERROR_SEEK_ERROR;
                 }
                 break;
                 case ACTION_END: /* FHArg1      Bool:TRUE */
@@ -1113,7 +1122,7 @@ openbreak:
                         if (error)
                         {
                                 D(bug("ERR=%ld\n", error);)
-                                packet->dp_Res1 = packet->dp_Type == ACTION_WRITE ? -1 : DOSFALSE;
+                                packet->dp_Res1 = packet_error_result(packet->dp_Type);
                                 packet->dp_Res2 = error;
                         }
                         else
@@ -1427,6 +1436,8 @@ static void Mount (struct CDVDBase *global)
     global->g_top_level_obj = Open_Top_Level_Directory (global->g_volume);
     if (!global->g_top_level_obj) {
       D(bug("!!! cannot open top level directory !!!\n"));
+      Close_Volume(global->g_volume);
+      global->g_volume = NULL;
       return;
     }
   }
