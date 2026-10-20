@@ -43,6 +43,7 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 #  -fno-trapping-math
 #  -ffloat-store
 #  -ftree-vectorize
+#  -fno-tree-loop-distribute-patterns
 #  -flto
 #  -fwhole-program
 #  -floop-block
@@ -228,6 +229,16 @@ if test -n "$aros_cflags_no_vectorize" ; then
     AC_MSG_RESULT([$aros_cflags_no_vectorize])
 else
     AC_MSG_RESULT([no])
+fi
+
+dnl gcc turns loops that fill or copy memory into memset/memcpy calls; code built
+dnl without a C runtime (security.library's plugins, for one) must keep the loops.
+AC_MSG_CHECKING([whether ${CC} accepts -fno-tree-loop-distribute-patterns])
+CFLAGS="-fno-tree-loop-distribute-patterns -Werror"
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_no_tree_loop_distribute_patterns="yes"],[aros_no_tree_loop_distribute_patterns="no"])
+AC_MSG_RESULT($aros_no_tree_loop_distribute_patterns)
+if test "x-$aros_no_tree_loop_distribute_patterns" = "x-yes" ; then
+    aros_cflags_no_tree_loop_distribute_patterns=-fno-tree-loop-distribute-patterns
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -flto])
@@ -1776,6 +1787,7 @@ AC_SUBST(aros_cflags_float_store)
 AC_SUBST(aros_cflags_no_float_store)
 AC_SUBST(aros_cflags_tree_vectorize)
 AC_SUBST(aros_cflags_no_vectorize)
+AC_SUBST(aros_cflags_no_tree_loop_distribute_patterns)
 AC_SUBST(aros_cflags_lto)
 AC_SUBST(aros_cflags_nolto)
 AC_SUBST(aros_cflags_whole_program)

@@ -8,7 +8,7 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM workbench-libs-security-plugins-fido : includes kernel-security-includes linklibs linklibs-mbedcrypto workbench-libs-mbedtls-includes
 
-USER_CFLAGS := -ffreestanding -fno-builtin -fno-tree-loop-distribute-patterns
+USER_CFLAGS := $(CFLAGS_FREESTANDING) $(CFLAGS_NO_BUILTIN) $(CFLAGS_NO_TREE_LOOP_DISTRIBUTE_PATTERNS)
 USER_INCLUDES := -I$(SRCDIR)/workbench/libs/mbedtls
 USER_CPPFLAGS := -DMBEDTLS_CONFIG_FILE='"mbedtls_aros_config.h"'
 

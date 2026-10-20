@@ -834,6 +834,7 @@ aros_cflags_loop_block
 aros_cflags_whole_program
 aros_cflags_nolto
 aros_cflags_lto
+aros_cflags_no_tree_loop_distribute_patterns
 aros_cflags_no_vectorize
 aros_cflags_tree_vectorize
 aros_cflags_no_float_store
@@ -3752,6 +3753,7 @@ printf "%s\n" "$aros_targetcfg_dir" >&6; }
 #  -fno-trapping-math
 #  -ffloat-store
 #  -ftree-vectorize
+#  -fno-tree-loop-distribute-patterns
 #  -flto
 #  -fwhole-program
 #  -floop-block
@@ -4281,6 +4283,34 @@ printf "%s\n" "$aros_cflags_no_vectorize" >&6; }
 else
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
+fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fno-tree-loop-distribute-patterns" >&5
+printf %s "checking whether ${CC} accepts -fno-tree-loop-distribute-patterns... " >&6; }
+CFLAGS="-fno-tree-loop-distribute-patterns -Werror"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  aros_no_tree_loop_distribute_patterns="yes"
+else case e in #(
+  e) aros_no_tree_loop_distribute_patterns="no" ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_no_tree_loop_distribute_patterns" >&5
+printf "%s\n" "$aros_no_tree_loop_distribute_patterns" >&6; }
+if test "x-$aros_no_tree_loop_distribute_patterns" = "x-yes" ; then
+    aros_cflags_no_tree_loop_distribute_patterns=-fno-tree-loop-distribute-patterns
 fi
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -flto" >&5
@@ -9193,6 +9223,7 @@ rm -f $AROS_DEVELOPER/include/__testsincdir.h
 #
 # export the feature flags...
 #
+
 
 
 
