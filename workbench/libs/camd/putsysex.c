@@ -85,7 +85,10 @@
 			}else{
 				struct MidiLink *receiver=(struct MidiLink *)node;
 				struct MyMidiNode *mymidinode=(struct MyMidiNode *)receiver->ml_MidiNode;
-				if(sysexlen>mymidinode->midinode.mi_SysExQueueSize){
+				if(mymidinode->sysex_start==NULL ||
+				   !(receiver->ml_EventTypeMask & CMF_SysEx)){
+					/* This link does not receive SysEx; it cannot overflow. */
+				}else if(sysexlen>mymidinode->midinode.mi_SysExQueueSize){
 					SetMidiError(mymidinode,CMEF_SysExTooBig);
 				}else{
 					buffer2=buffer;

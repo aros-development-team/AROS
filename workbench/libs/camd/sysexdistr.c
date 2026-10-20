@@ -29,11 +29,13 @@ BOOL PutSysEx2Link(struct MidiLink *midilink,UBYTE data){
 	struct MyMidiNode *mymidinode=(struct MyMidiNode *)midilink->ml_MidiNode;
 
 	if(mymidinode->sysex_discarding){
-		if(data==0xf7 || data==0xff){
+		if(data==0xf0 || data==0xf7 || data==0xff){
 			mymidinode->sysex_discarding=FALSE;
 			mymidinode->sysex_laststart=NULL;
 		}
-		return FALSE;
+		/* PutSysEx stops on overflow, so its F7 may never reach us.
+		   A fresh F0 starts a new message rather than extending the drop. */
+		if(data!=0xf0) return FALSE;
 	}
 
 	if(mymidinode->sysex_laststart==NULL && data!=0xf0){

@@ -63,8 +63,10 @@
 	ObtainSemaphore(&mymidinode->sysexsemaphore2);
 	ObtainSemaphore(&mymidinode->sysexsemaphore);
 			mymidinode->sysex_read=mymidinode->sysex_start;
-			mymidinode->sysex_write=mymidinode->sysex_write;
-			mymidinode->sysex_laststart=mymidinode->sysex_write;
+			mymidinode->sysex_write=mymidinode->sysex_start;
+			mymidinode->sysex_laststart=NULL;
+			mymidinode->sysex_discarding=FALSE;
+			mymidinode->sysex_started_empty=TRUE;
 	ReleaseSemaphore(&mymidinode->sysexsemaphore);
 	ReleaseSemaphore(&mymidinode->sysexsemaphore2);
 
