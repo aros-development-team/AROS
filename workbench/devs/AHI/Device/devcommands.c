@@ -268,7 +268,8 @@ TermIO(struct AHIRequest *ioreq,
 
     if(ioreq->ahir_Std.io_Command == CMD_WRITE) {
         // Update master volume if we're terminating a write request
-        UpdateMasterVolume(iounit, AHIBase);
+        if(iounit->AudioCtrl)
+            UpdateMasterVolume(iounit, AHIBase);
 
         // Convert io_Actual to bytes
         ioreq->ahir_Std.io_Actual *= AHI_SampleFrameSize(ioreq->ahir_Type);
@@ -742,6 +743,14 @@ ReadCmd(struct AHIRequest *ioreq,
 
     ioreq->ahir_Std.io_Actual = 0;
 
+    /* An open unit can precede registration of its saved audio mode. */
+    if(!iounit->AudioCtrl && !AllocHardware(iounit, AHIBase)) {
+        FreeHardware(iounit, AHIBase);
+        ioreq->ahir_Std.io_Error = AHIE_UNKNOWN;
+        TermIO(ioreq, AHIBase);
+        return;
+    }
+
     /* Start recording if neccessary */
     if(! iounit->IsRecording) {
         if((! iounit->FullDuplex) && iounit->IsPlaying) {
@@ -859,6 +868,15 @@ WriteCmd(struct AHIRequest *ioreq,
 
     ioreq->ahir_Std.io_Actual = 0;
 
+    /* Retry on each request so the same open unit can use a mode which
+       appeared after OpenDevice(). Do not hold requests for absent hardware. */
+    if(!iounit->AudioCtrl && !AllocHardware(iounit, AHIBase)) {
+        FreeHardware(iounit, AHIBase);
+        ioreq->ahir_Std.io_Error = AHIE_UNKNOWN;
+        TermIO(ioreq, AHIBase);
+        return;
+    }
+
     /* Start playback if neccessary */
     if(! iounit->IsPlaying) {
         if((! iounit->FullDuplex) && iounit->IsRecording) {
@@ -963,7 +981,25 @@ StartCmd(struct AHIRequest *ioreq,
     if(iounit->StopCnt) {
         iounit->StopCnt--;
 
-        if((AHIsubBase = audioctrl->ahiac_SubLib)) {
+        if(iounit->StopCnt == 0 && !audioctrl) {
+            if(AllocHardware(iounit, AHIBase)) {
+                audioctrl = (struct AHIPrivAudioCtrl *) iounit->AudioCtrl;
+            } else {
+                struct AHIRequest *ior;
+
+                FreeHardware(iounit, AHIBase);
+                while((ior = (struct AHIRequest *) RemHead(
+                                 (struct List *) &iounit->RequestQueue))) {
+                    ior->ahir_Std.io_Actual = 0;
+                    ior->ahir_Std.io_Error = AHIE_UNKNOWN;
+                    TermIO(ior, AHIBase);
+                }
+                ioreq->ahir_Std.io_Error = AHIE_UNKNOWN;
+            }
+        }
+
+        AHIsubBase = audioctrl ? audioctrl->ahiac_SubLib : NULL;
+        if(AHIsubBase) {
             if(iounit->StopCnt == 0) {
                 struct AHIRequest *ior;
                 LONG               old_pri;

@@ -47,6 +47,7 @@
 
 #include "ahi_def.h"
 #include "debug.h"
+#include "database.h"
 #include "device.h"
 #include "devcommands.h"
 #include "gateway.h"
@@ -222,6 +223,10 @@ ChannelInfoFunc(struct Hook              *hook,
 *   EXAMPLE
 *
 *   NOTES
+*       A unit whose saved audio mode is not registered yet can be opened.
+*       Hardware allocation is retried on CMD_READ and CMD_WRITE. Requests
+*       made while the mode is unavailable return AHIE_UNKNOWN with zero
+*       bytes transferred; later requests can use the same open unit.
 *
 *   BUGS
 *
@@ -888,8 +893,18 @@ DevProc(void)
         iounit->Unit.unit_MsgPort.mp_SigTask = (struct Task *)proc;
         iounit->Unit.unit_MsgPort.mp_Flags = PA_SIGNAL;
 
-        /* Allocate the hardware */
-        if(AllocHardware(iounit, AHIBase)) {
+        /* A saved mode may be supplied later by a hot-plug class. Keep the
+           unit open in that case and allocate hardware on its first I/O. */
+        struct AHI_AudioDatabase *audiodb = LockDatabase();
+        BOOL missing = FALSE;
+
+        if(audiodb) {
+            missing = iounit->AudioMode != (ULONG) AHI_INVALID_ID
+                      && GetDBTagList(audiodb, iounit->AudioMode) == NULL;
+            UnlockDatabase(audiodb);
+        }
+
+        if(missing || AllocHardware(iounit, AHIBase)) {
 
             /* Set iounit->Process to pointer to our unit process.
                This will let the Unit init code know that were
