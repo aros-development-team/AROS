@@ -624,10 +624,8 @@ static ULONG hvs5_emit_planes(struct VideoCoreGfx_staticdata *xsd,
     {
         limit[i] = bottom;
         hvs5_plane_src(&xsd->vcsd_Plane[i], &s);
-        if (hvs5_src_rect(st, &s, &px, &py, &pw, &ph)
-            && px <= left && px + (LONG)pw >= right
-            && py < bottom && py + (LONG)ph >= bottom)
-            bottom = (py > top) ? py : top;
+        if (hvs5_src_rect(st, &s, &px, &py, &pw, &ph))
+            bottom = vcgfx_plane_occlude(px, py, pw, ph, left, top, right, bottom);
     }
 
     if (bottom > top)
