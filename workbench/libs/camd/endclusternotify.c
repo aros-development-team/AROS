@@ -53,7 +53,9 @@
 
     if(cn == NULL)   return;
 
+    ObtainSemaphore(&CB(CamdBase)->NotifySemaphore);
     Remove((struct Node *)&cn->cnn_Node);
+    ReleaseSemaphore(&CB(CamdBase)->NotifySemaphore);
 	return;
 
    AROS_LIBFUNC_EXIT

@@ -62,7 +62,9 @@
     AROS_LIBFUNC_INIT
 
     if(cn == NULL)    return;
+    ObtainSemaphore(&CB(CamdBase)->NotifySemaphore);
     AddTail(&CB(CamdBase)->clusnotifynodes,(struct Node *)&cn->cnn_Node);
+    ReleaseSemaphore(&CB(CamdBase)->NotifySemaphore);
 	return;
 
    AROS_LIBFUNC_EXIT

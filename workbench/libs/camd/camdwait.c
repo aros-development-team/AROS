@@ -5,6 +5,7 @@
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <dos/dostags.h>
+#include <dos/notify.h>
 
 #include "camd_intern.h"
 
@@ -28,6 +29,11 @@ SAVEDS void CamdTimerProc(void){
 	struct MsgPort  *TimerMP;
 	ULONG sig;
 	int error;
+#ifndef __amigaos4__
+	struct NotifyRequest *drivernotify=NULL;
+	BYTE notifysig;
+	BOOL notifying=FALSE;
+#endif
 
 	camdwaitsig=AllocSignal(-1);
 	if(camdwaitsig==-1){
@@ -36,15 +42,15 @@ SAVEDS void CamdTimerProc(void){
 	}
 	camdwaitsig2=AllocSignal(-1);
 	if(camdwaitsig2==-1){
-		FreeSignal(1L<<camdwaitsig);
+		FreeSignal(camdwaitsig);
 		camdwaitprocstatus=2;
 		return;
 	}
 
 	TimerMP=CreateMsgPort();
 	if(TimerMP==NULL){
-		FreeSignal(1L<<camdwaitsig2);
-		FreeSignal(1L<<camdwaitsig);
+		FreeSignal(camdwaitsig2);
+		FreeSignal(camdwaitsig);
 		camdwaitprocstatus=2;
 		return;
 	}
@@ -52,8 +58,8 @@ SAVEDS void CamdTimerProc(void){
 	TimerIO=(struct timerequest *)AllocMem(sizeof(struct timerequest),MEMF_ANY|MEMF_CLEAR|MEMF_PUBLIC);
 
 	if(TimerIO==NULL){
-		FreeSignal(1L<<camdwaitsig2);
-		FreeSignal(1L<<camdwaitsig);
+		FreeSignal(camdwaitsig2);
+		FreeSignal(camdwaitsig);
 		DeleteMsgPort(TimerMP);
 		camdwaitprocstatus=2;
 		return;
@@ -74,8 +80,8 @@ SAVEDS void CamdTimerProc(void){
 	))!=0){
 #endif
 
-		FreeSignal(1L<<camdwaitsig2);
-		FreeSignal(1L<<camdwaitsig);
+		FreeSignal(camdwaitsig2);
+		FreeSignal(camdwaitsig);
 		TimerIO->tr_node.io_Message.mn_Node.ln_Type=(UBYTE)-1;
 		TimerIO->tr_node.io_Device=(struct Device *)-1L;
 		TimerIO->tr_node.io_Unit=(struct Unit *)-1L;
@@ -89,14 +95,39 @@ SAVEDS void CamdTimerProc(void){
 
 	camdwaittask=FindTask(0L);
 
+#ifndef __amigaos4__
+	/* Tell CAMD when drivers are added to DEVS:Midi. Where the filesystem
+	   cannot notify, drivers are found when CAMD starts, as before. */
+	notifysig=AllocSignal(-1);
+	if(notifysig!=-1){
+		drivernotify=AllocMem(sizeof(struct NotifyRequest),MEMF_ANY|MEMF_CLEAR|MEMF_PUBLIC);
+	}
+	if(drivernotify!=NULL){
+		drivernotify->nr_Name=(STRPTR)"DEVS:Midi";
+		drivernotify->nr_Flags=NRF_SEND_SIGNAL;
+		drivernotify->nr_stuff.nr_Signal.nr_Task=camdwaittask;
+		drivernotify->nr_stuff.nr_Signal.nr_SignalNum=notifysig;
+		notifying=StartNotify(drivernotify);
+	}
+#endif
+
 	camdwaitprocstatus=1;
 
 	for(;;){
 		sig=Wait(
 			1L<<camdwaitsig |
+#ifndef __amigaos4__
+			(notifying ? 1L<<notifysig : 0) |
+#endif
 			SIGBREAKF_CTRL_C
 		);
 		if(sig&SIGBREAKF_CTRL_C) break;
+
+#ifndef __amigaos4__
+		if(notifying && (sig & 1L<<notifysig)){
+			DriversChanged();
+		}
+#endif
 
 		if(sig & 1L<<camdwaitsig){				// Someone wants to obtain the semaphore?
 			TimerIO->tr_node.io_Command=TR_ADDREQUEST;
@@ -115,8 +146,14 @@ SAVEDS void CamdTimerProc(void){
 
 	ReleaseSemaphore(&camdwaitsemaphore);
 
-	FreeSignal(1L<<camdwaitsig2);
-	FreeSignal(1L<<camdwaitsig);
+#ifndef __amigaos4__
+	if(notifying) EndNotify(drivernotify);
+	if(drivernotify!=NULL) FreeMem(drivernotify,sizeof(struct NotifyRequest));
+	if(notifysig!=-1) FreeSignal(notifysig);
+#endif
+
+	FreeSignal(camdwaitsig2);
+	FreeSignal(camdwaitsig);
 	CloseDevice((struct IORequest *)TimerIO);
 	TimerIO->tr_node.io_Message.mn_Node.ln_Type=(UBYTE)-1;
 	TimerIO->tr_node.io_Device=(struct Device *)-1L;

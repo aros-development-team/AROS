@@ -81,9 +81,6 @@ BOOL AllocDriverData(
 
 	struct DriverData *driverdata;
 
-	struct MidiCluster *cluster;
-	char nametemp[256];
-
 	nports=driver->numports;
 
 	driver->driverdatas=AllocMem((ULONG)(sizeof(struct DriverData *)*nports),MEMF_ANY|MEMF_CLEAR|MEMF_PUBLIC);
@@ -139,18 +136,6 @@ BOOL AllocDriverData(
 		driverdata->re_read=driverdata->re_start;
 
 
-		mysprintf(CamdBase,nametemp,"%s.in.%ld",mididevicedata->Name,lokke);
-		if((cluster=NewCluster(nametemp,CamdBase))==FALSE){
-			return FALSE;
-		}
-		driverdata->incluster=(struct MyMidiCluster *)cluster;
-
-		mysprintf(CamdBase,nametemp,"%s.out.%ld",mididevicedata->Name,lokke);
-		if((cluster=NewCluster(nametemp,CamdBase))==FALSE){
-			return FALSE;
-		}
-		driverdata->outcluster=(struct MyMidiCluster *)cluster;
-
 		InitSemaphore(&driverdata->sendsemaphore);
 		InitSemaphore(&driverdata->sysexsemaphore);
 
@@ -158,13 +143,145 @@ BOOL AllocDriverData(
 		driverdata->isInOpen=FALSE;
 	}
 
-	for(lokke=0;lokke<nports;lokke++){
+	return TRUE;
+}
+
+
+/*
+	Finds the cluster called name, or creates it.
+	CLSemaphore must be exclusive obtained.
+*/
+static struct MyMidiCluster *GetDriverCluster(char *name,struct CamdBase *CamdBase){
+	struct MidiCluster *cluster;
+
+	cluster=(struct MidiCluster *)FindName(&CB(CamdBase)->midiclusters,name);
+	if(cluster==NULL){
+		cluster=NewCluster(name,CamdBase);
+	}
+	return (struct MyMidiCluster *)cluster;
+}
+
+
+/*
+	Removes a port's nodes from its clusters, closes the port, and removes
+	the clusters no client is linked to any more. A client's link stays in
+	its cluster and waits there, as it would for any other cluster.
+	CLSemaphore must be exclusive obtained.
+*/
+static void DetachPort(struct DriverData *driverdata,struct CamdBase *CamdBase){
+	struct MyMidiCluster *incluster=driverdata->incluster;
+	struct MyMidiCluster *outcluster=driverdata->outcluster;
+
+	if(driverdata->isInOpen==TRUE || driverdata->isOutOpen==TRUE){
+		driverdata->isInOpen=FALSE;
+		driverdata->isOutOpen=FALSE;
+		CloseDriver(driverdata,CamdBase);
+	}
+
+	if(incluster!=NULL){
+		Remove(&driverdata->innode);
+		ClusterParticipantsChanged(&incluster->cluster,NULL,CamdBase);
+		if(IsListEmpty(&incluster->cluster.mcl_Receivers) &&
+		   IsListEmpty(&incluster->cluster.mcl_Senders)){
+			RemoveCluster(&incluster->cluster,CamdBase);
+		}
+	}
+	if(outcluster!=NULL){
+		ObtainSemaphore(&outcluster->semaphore);
+		Remove(&driverdata->outnode);
+		ReleaseSemaphore(&outcluster->semaphore);
+		ClusterParticipantsChanged(&outcluster->cluster,NULL,CamdBase);
+		if(IsListEmpty(&outcluster->cluster.mcl_Receivers) &&
+		   IsListEmpty(&outcluster->cluster.mcl_Senders)){
+			RemoveCluster(&outcluster->cluster,CamdBase);
+		}
+	}
+
+	driverdata->incluster=NULL;
+	driverdata->outcluster=NULL;
+	driverdata->isAttached=FALSE;
+}
+
+
+/*
+	Puts the driver's ports in their <name>.in.<n> and <name>.out.<n>
+	clusters. A driver loaded by RethinkCAMD() can find a cluster of that
+	name already there, made by a client that linked to it before the
+	driver was installed. The port joins that cluster, and is opened at
+	once if a client is linked to it: such a client does not link again.
+	CLSemaphore must be exclusive obtained.
+*/
+BOOL AttachDriverData(
+	struct Drivers *driver,
+	struct CamdBase *CamdBase
+){
+	struct DriverData *driverdata;
+	char nametemp[256];
+	ULONG lokke;
+
+	for(lokke=0;lokke<driver->numports;lokke++){
 		driverdata=driver->driverdatas[lokke];
+
+		mysprintf(CamdBase,nametemp,"%s.in.%ld",driver->mididevicedata->Name,lokke);
+		driverdata->incluster=GetDriverCluster(nametemp,CamdBase);
+		if(driverdata->incluster==NULL){
+			DetachDriverData(driver,CamdBase);
+			return FALSE;
+		}
 		AddClusterSender(&driverdata->incluster->cluster,&driverdata->innode,NULL,CamdBase);
+
+		mysprintf(CamdBase,nametemp,"%s.out.%ld",driver->mididevicedata->Name,lokke);
+		driverdata->outcluster=GetDriverCluster(nametemp,CamdBase);
+		if(driverdata->outcluster==NULL){
+			DetachPort(driverdata,CamdBase);
+			DetachDriverData(driver,CamdBase);
+			return FALSE;
+		}
 		AddClusterReceiver(&driverdata->outcluster->cluster,&driverdata->outnode,NULL,CamdBase);
+
+		driverdata->isAttached=TRUE;
+	}
+
+	for(lokke=0;lokke<driver->numports;lokke++){
+		driverdata=driver->driverdatas[lokke];
+
+		/* Receivers in the in cluster and senders in the out cluster can
+		   only be clients' links. If the port does not open now, they keep
+		   waiting, and the next link to the cluster tries again. */
+		if(IsListEmpty(&driverdata->incluster->cluster.mcl_Receivers)==FALSE ||
+		   IsListEmpty(&driverdata->outcluster->cluster.mcl_Senders)==FALSE){
+			if(OpenDriver(driverdata,NULL,CamdBase)==TRUE){
+				driverdata->isInOpen=!IsListEmpty(&driverdata->incluster->cluster.mcl_Receivers);
+				driverdata->isOutOpen=!IsListEmpty(&driverdata->outcluster->cluster.mcl_Senders);
+			}else{
+				D(bug("camd.library: %s port %ld did not open for its waiting links\n",
+				      driver->mididevicedata->Name,(long)lokke));
+			}
+		}
 	}
 
 	return TRUE;
+}
+
+
+/*
+	CLSemaphore must be exclusive obtained, or CAMD be expunging.
+*/
+void DetachDriverData(
+	struct Drivers *driver,
+	struct CamdBase *CamdBase
+){
+	struct DriverData *driverdata;
+	ULONG lokke;
+
+	if(driver->driverdatas==NULL) return;
+
+	for(lokke=0;lokke<driver->numports;lokke++){
+		driverdata=driver->driverdatas[lokke];
+		if(driverdata!=NULL && driverdata->isAttached==TRUE){
+			DetachPort(driverdata,CamdBase);
+		}
+	}
 }
 
 
@@ -174,13 +291,7 @@ void FreeDriverData(struct Drivers *driver,
 	struct DriverData *driverdata;
 	ULONG lokke;
 
-	if(driver->driverdatas!=NULL){
-		for(lokke=0;lokke<driver->numports;lokke++){
-			driverdata=driver->driverdatas[lokke];
-			RemoveCluster(&driverdata->incluster->cluster,CamdBase);
-			RemoveCluster(&driverdata->outcluster->cluster,CamdBase);
-		}
-	}
+	DetachDriverData(driver,CamdBase);
 
 	if(driver->driverdatas!=NULL){
 		for(lokke=0;lokke<driver->numports;lokke++){
@@ -195,9 +306,11 @@ void FreeDriverData(struct Drivers *driver,
 				if(driverdata->re_start!=NULL){
 					FreeVec(driverdata->re_start);
 				}
+				FreeMem(driverdata,sizeof(struct DriverData));
 			}
 		}
 		FreeMem(driver->driverdatas,sizeof(struct DriverData *)*driver->numports);
+		driver->driverdatas=NULL;
 	}
 }
 
@@ -257,21 +370,33 @@ void LoadDriver(char *name,
 
 	//D(bug("%s %s %u %u\n", mididevicedata->Name, mididevicedata->IDString, mididevicedata->NPorts,mididevicedata->Flags));
 
+	ObtainSemaphoreShared(CB(CamdBase)->CLSemaphore);
 	driver=FindPrevDriverForMidiDeviceData(mididevicedata,CamdBase);
 	if(driver==NULL){
 		driver=CB(CamdBase)->drivers;
 	}else{
 		driver=driver->next;
 	}
+	ReleaseSemaphore(CB(CamdBase)->CLSemaphore);
 
 	driver->numports=mididevicedata->NPorts;
 
-	if(AllocDriverData(driver,mididevicedata,CamdBase)==FALSE){
-		FreeDriverData(driver,CamdBase);
-		CloseMidiDevice(mididevicedata);
-		return;
+	/* Clients may be walking or changing the clusters while RethinkCAMD()
+	   loads a driver, so the ports join them under the lock. */
+	if(AllocDriverData(driver,mididevicedata,CamdBase)==TRUE){
+		BOOL attached;
+
+		ObtainSemaphore(CB(CamdBase)->CLSemaphore);
+		attached=AttachDriverData(driver,CamdBase);
+		ReleaseSemaphore(CB(CamdBase)->CLSemaphore);
+		if(attached==TRUE) return;
 	}
 
+	FreeDriverData(driver,CamdBase);
+#ifndef __amigaos4__
+	if(mididevicedata->Expunge!=NULL) (*mididevicedata->Expunge)();
+#endif
+	CloseMidiDevice(mididevicedata);
 }
 
 
