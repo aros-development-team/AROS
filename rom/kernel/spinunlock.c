@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2015-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -24,18 +24,23 @@
         struct KernelBase *, KernelBase, 53, Kernel)
 
 /*  FUNCTION
+        Release one read or write acquisition of a spinlock.
 
     INPUTS
+        lock - Spinlock to release.
 
     RESULT
 
     NOTES
+        Unlocking is architecture-specific; the generic fallback
+        does not modify the lock.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+        KrnSpinInit(), KrnSpinLock(), KrnSpinTryLock()
 
     INTERNALS
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2015-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -27,29 +27,28 @@
         struct KernelBase *, KernelBase, 52, Kernel)
 
 /*  FUNCTION
+        Acquire a spinlock in read or write mode, waiting if it is
+        held on supported architectures.
 
     INPUTS
-        lock      - spinlock to lock
-        failhook  - called if the lock is already held
-        mode      - type of lock to obtain.
+        lock     - Spinlock to acquire.
+        failhook - Optional contention callback on supported targets.
+        mode     - SPINLOCK_MODE_READ or SPINLOCK_MODE_WRITE.
 
     RESULT
-        returns a pointer to the spinlock "handle".
+        The supplied spinlock pointer.
 
     NOTES
-        The failhook is necessary, because it is not safe
-        for code running in user space to spin on a shared lock.
-        If a lower priority task holds the lock, it will never be released.
-           Because of  this, Exec uses a hook that puts the task on
-           a spinning list, to allow other code to run until the lock is
-           released.  At this point the "spinning" task will wake and
-           obtain the lock.
+        The all-pc implementation invokes failhook while waiting for a
+        contended lock. ARM implementations do not invoke it.
+        The generic fallback returns lock without acquiring it.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+        KrnSpinInit(), KrnSpinTryLock(), KrnSpinUnLock()
 
     INTERNALS
 

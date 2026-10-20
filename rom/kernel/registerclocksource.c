@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -36,12 +36,17 @@ const static struct Node KernCSNode =
         struct KernelBase *, KernelBase, 57, Kernel)
 
 /*  FUNCTION
+        Select a clock source for the kernel when none is registered.
 
     INPUTS
+        CSBase - ClockSource resource base to register.
+        tstags - Tag list; unused by this implementation.
 
     RESULT
 
     NOTES
+        A NULL CSBase or an existing clock source leaves the selection
+        unchanged. Registration also requires AllocCSUnit() to succeed.
 
     EXAMPLE
 

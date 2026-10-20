@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2023-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -24,18 +24,26 @@
         struct KernelBase *, KernelBase, 65, Kernel)
 
 /*  FUNCTION
+        Supply architecture-specific details for an alert message.
 
     INPUTS
+        TemplatePtr - Pointer to storage for an alert format string.
+        ParamPtr    - Pointer to storage for its format parameters.
 
     RESULT
 
     NOTES
+        The generic implementation leaves both outputs unchanged.
+        The all-pc implementation may replace the template and two
+        parameter entries when an interrupt context is available.
+        ParamPtr must provide space for at least two IPTR values.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+        KrnDisplayAlert()
 
     INTERNALS
 

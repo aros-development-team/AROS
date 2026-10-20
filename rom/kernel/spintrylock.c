@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2015-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -25,18 +25,27 @@
         struct KernelBase *, KernelBase, 51, Kernel)
 
 /*  FUNCTION
+        Attempt to acquire a spinlock in read or write mode without
+        waiting for a current lock holder to release it.
 
     INPUTS
+        lock - Spinlock to acquire.
+        mode - SPINLOCK_MODE_READ or SPINLOCK_MODE_WRITE.
 
     RESULT
+        Lock pointer if acquired; NULL if the requested mode cannot
+        be obtained on an implementation with spinlock support.
 
     NOTES
+        The generic fallback returns lock without acquiring it.
+        The implementation and availability are architecture-specific.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+        KrnSpinInit(), KrnSpinLock(), KrnSpinUnLock()
 
     INTERNALS
 

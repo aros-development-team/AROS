@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2015-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -24,18 +24,23 @@
         struct KernelBase *, KernelBase, 49, Kernel)
 
 /*  FUNCTION
+        Initialize a spinlock to its unlocked state.
 
     INPUTS
+        lock - Spinlock to initialize.
 
     RESULT
 
     NOTES
+        Initialization is architecture-specific; the generic fallback
+        does not modify the lock.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+        KrnSpinLock(), KrnSpinTryLock(), KrnSpinUnLock()
 
     INTERNALS
 
