@@ -603,6 +603,7 @@ AROS_LH5(APTR, usbCAMDOpenPort,
     ca->ca_RXFunc = recvfct;
     ca->ca_UserData = userdata;
     ca->ca_TXReadPos = 0;
+    ca->ca_TXPending = FALSE;
     ca->ca_TXWritePos = 0;
     ca->ca_SysExMode = 0;
     ca->ca_MsgPort = cps->cps_Binding ? cps->cps_Binding->nch_TaskMsgPort : NULL;
@@ -711,6 +712,7 @@ void nParseMidiOut(struct NepClassHid *nch)
     {
         if(ca->ca_IsOpen && ca->ca_TXReadPos != ca->ca_TXWritePos)
         {
+            ULONG before = ca->ca_TXReadPos;
             ULONG chan = ca->ca_PortNum<<4;
             ULONG mask = ca->ca_TXBufSize - 1;
             ULONG len = (ca->ca_TXWritePos + ca->ca_TXBufSize - ca->ca_TXReadPos) & mask;
@@ -906,6 +908,13 @@ void nParseMidiOut(struct NepClassHid *nch)
                     ca->ca_TXReadPos = (ca->ca_TXReadPos+1) & mask;
                 }
             } while(len && (goodpkt < 2040));
+            /* ActivateXmit is called once for a SysEx, not once per batch.
+               Pull another bounded batch after making room, including when
+               a partial short message remains at the end of this one. */
+            if(ca->ca_TXPending && ca->ca_TXReadPos != before)
+            {
+                Cause(&ca->ca_CAMDTXFunc);
+            }
         }
         ca++;
     }

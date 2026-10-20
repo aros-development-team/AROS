@@ -34,6 +34,7 @@ struct CAMDAdapter
     UBYTE              *ca_TXBuffer;      /* Ringbuffer to send data (to USB) */
     ULONG               ca_TXBufSize;     /* Size of ringbuffer */
     ULONG               ca_TXWritePos;    /* Writing position */
+    BOOL                ca_TXPending;     /* CAMD may have bytes beyond this batch */
     ULONG               ca_TXReadPos;     /* Bytes already sent */
     struct MsgPort     *ca_MsgPort;       /* Pointer to MsgPort to signal task for TX data ready */
     BOOL                ca_SysExMode;     /* is in SysEx sending mode */

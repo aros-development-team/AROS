@@ -132,9 +132,11 @@ static AROS_INTH1(GetFromCAMD, struct CAMDAdapter *, port)
            sending to the port would wait for room forever. */
         while (portTransmit(port->ca_UserData) <= 0xff)
             ;
+        port->ca_TXPending = FALSE;
         return FALSE;
     }
 
+    port->ca_TXPending = TRUE;
     do
     {
         pos = port->ca_TXWritePos;
@@ -142,13 +144,16 @@ static AROS_INTH1(GetFromCAMD, struct CAMDAdapter *, port)
             break;
         val = portTransmit(port->ca_UserData);
         if (val > 0xff)
+        {
+            port->ca_TXPending = FALSE;
             break;
+        }
         port->ca_TXBuffer[pos] = val;
         pos++;
         pos &= port->ca_TXBufSize - 1;
         port->ca_TXWritePos = pos;
         sent++;
-    } while (sent < 100); // TODO: Not sure what to do here??
+    } while (sent < 100); /* bound interrupt work; the consumer requests more */
 
     Signal(mp->mp_SigTask, (1 << mp->mp_SigBit));
 
