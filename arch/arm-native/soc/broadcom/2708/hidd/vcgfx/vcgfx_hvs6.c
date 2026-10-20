@@ -1151,7 +1151,7 @@ static ULONG hvs6_build_planes(struct VideoCoreGfx_staticdata *xsd, ULONG list)
                 | (sc ? HVS6_PTR0_LINES4 : HVS6_PTR0_LINES2);
 
         if ((px[j] <= 0) && (px[j] + (LONG)pw[j] >= out_w)
-            && (py[j] < bottom) && (py[j] + (LONG)ph[j] >= bottom))
+            && (py[j] + (LONG)ph[j] >= bottom))
             bottom = (py[j] > 0) ? py[j] : 0;
     }
 

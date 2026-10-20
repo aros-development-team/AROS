@@ -380,12 +380,15 @@ static void dump_dt_blocks(const char *compat)
     for (i = 0; i < count; i++)
     {
         ULONG bus = AROS_BE2LONG(r[i * 2]), size = AROS_BE2LONG(r[i * 2 + 1]);
+        LONG len = (nlen > 0) ? (LONG)strnlen(n, nlen) : 0;
 
-        snprintf(title, sizeof(title), "%s %s", compat, (nlen > 0) ? n : "reg");
+        /* reg-names comes from the device tree: stay inside the property */
+        snprintf(title, sizeof(title), "%s %.*s", compat,
+                 (nlen > 0) ? (int)len : 3, (nlen > 0) ? n : "reg");
         if (nlen > 0)
         {
-            nlen -= strlen(n) + 1;
-            n += strlen(n) + 1;
+            nlen -= len + 1;
+            n += len + 1;
         }
         if (bus < BCM2711_BUS_PERIIOBASE)
             continue;
