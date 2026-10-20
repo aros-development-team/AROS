@@ -32,8 +32,9 @@ struct HiddGalliumVC4Data
 };
 
 /* Buffer Object handle tracking. Entries are ~760 bytes (shader metadata
- * inline), so the table is ~760 KB of library-base memory at 1024. */
-#define VC4_MAX_BOS     1024
+ * inline), so the table is ~6 MB of library-base memory at 8192 - same
+ * count as v3d. 1024 ran out on texture-heavy apps (Widelands). */
+#define VC4_MAX_BOS     8192
 
 /* Max texture samples and uniform address offsets per shader */
 #define VC4_MAX_TEX_SAMPLES     32
