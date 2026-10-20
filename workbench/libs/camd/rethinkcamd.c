@@ -33,7 +33,11 @@ LONG ScanDrivers(struct CamdBase *CamdBase){
 	struct FileInfoBlock fib;
 	BPTR lock;
 	char path[256];
+	UBYTE ignored[40];
 	LONG result=0;
+
+	if(ParsePatternNoCase((CONST_STRPTR)"#?.(info|dbg)",ignored,sizeof(ignored))<0)
+		return -1;
 
 	ObtainSemaphore(&CB(CamdBase)->DriverScanSemaphore);
 	lock = Lock((CONST_STRPTR)"DEVS:Midi", ACCESS_READ);
@@ -47,7 +51,8 @@ LONG ScanDrivers(struct CamdBase *CamdBase){
 		return -1;
 	}
 	while(ExNext(lock, &fib)) {
-		if(fib.fib_DirEntryType > 0)
+		if(fib.fib_DirEntryType > 0 ||
+			MatchPatternNoCase(ignored,(CONST_STRPTR)fib.fib_FileName))
 			continue;
 		if(!DriverIsLoaded(CamdBase,(CONST_STRPTR)fib.fib_FileName)) {
 			mysprintf(CamdBase, path, "DEVS:Midi/%s", fib.fib_FileName);
@@ -165,6 +170,7 @@ void StopDriverWatch(void){
 
 /*  FUNCTION
 		Load newly installed drivers from DEVS:Midi.
+		Directories, icons (*.info) and debug files (*.dbg) are ignored.
 
     INPUTS
 
