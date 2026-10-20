@@ -11,10 +11,9 @@
 
 #include "camdusbmidi.class.h"
 
-#if !defined(__mc68000__)
-extern const void *_binary_poseidonusb_start;
-extern const void *_binary_poseidonusb_size;
-#endif
+/* The driver, built in camd/ for this target and embedded as a byte array. */
+extern const UBYTE poseidonusb_blob[];
+extern const ULONG poseidonusb_blob_size;
 
 /* /// "Lib Stuff" */
 static const STRPTR libname = MOD_NAME_STRING;
@@ -81,10 +80,6 @@ ADD2EXPUNGELIB(libExpunge, 0)
  * * Library functions                                                   *
  * ***********************************************************************
  */
-
-#if defined(__mc68000__)
-#include "CAMDDriver.c"
-#endif
 
 /* /// "nCopyID()" */
 /* Copies an ID into a field of size bytes, always NUL-terminated. */
@@ -207,23 +202,14 @@ static void nInstallDriver(struct NepHidBase *nh, struct NepClassHid *nch, struc
     {
         return;
     }
-#if !defined(__mc68000__)
-    binsize = (unsigned long)&_binary_poseidonusb_size;
-    binstart = (UBYTE *)&_binary_poseidonusb_start;
-#else
-    binsize = sizeof(CAMDDriver);
-    binstart = (UBYTE *)CAMDDriver;
-#endif
+    binsize = poseidonusb_blob_size;
+    binstart = (UBYTE *) poseidonusb_blob;
     if(!(tmpmem = psdAllocVec(binsize)))
     {
         CloseLibrary(DOSBase);
         return;
     }
     CopyMemQuick(binstart, tmpmem, binsize);
-#if defined(__mc68000__)
-    // fix name of driver -- position is hardcoded, but unlikely to move
-    strcpy((char *) &tmpmem[0x46], (char *) nch->nch_ShortID); // "poseidonusb"
-#else
     for(cnt = 0; cnt + CAMDUSB_NAMEMARKERSIZE + 32 <= binsize; cnt++)
     {
         if(!memcmp(&tmpmem[cnt], CAMDUSB_NAMEMARKER, CAMDUSB_NAMEMARKERSIZE))
@@ -233,7 +219,6 @@ static void nInstallDriver(struct NepHidBase *nh, struct NepClassHid *nch, struc
             break;
         }
     }
-#endif
 
     psdSafeRawDoFmt(buf, 64, "%s/%s", (STRPTR) "DEVS:Midi", nch->nch_ShortID);
     if((fh = Open(buf, MODE_OLDFILE)))
