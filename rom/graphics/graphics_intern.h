@@ -120,6 +120,10 @@ struct DisplayInfoHandle {
     struct gfxdisplay_data      *drv;	        /* Points back to display descriptor        */
 };
 
+BOOL internal_TryRawBlit(struct gfxdisplay_data *driver,
+    struct BitMap *src, struct BitMap *dst, WORD sx, WORD sy, WORD dx, WORD dy,
+    WORD width, WORD height, ULONG minterm, UBYTE mask, struct GfxBase *GfxBase);
+
 #define DIH(x) ((struct DisplayInfoHandle *)x)
 
 /* Describes a single physical display. */
@@ -457,9 +461,10 @@ struct ChunkExt {
 
 struct ChunkPool {
     struct MinNode  Node;
-    struct ChunkExt Chunks[SIZECHUNKBUF];
     struct MinList  ChunkList;
     LONG            NumChunkFree;
+    LONG            NumChunks;
+    struct ChunkExt Chunks[];
 };
 
 void __DisposeRegionRectangleExtChunk

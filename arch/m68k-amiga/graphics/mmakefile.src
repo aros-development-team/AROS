@@ -6,8 +6,18 @@ include $(SRCDIR)/config/aros.cfg
 #MM- test-graphics-amiga-m68k-quick : test-graphics-spriteviewport-quick
 #MM- test-graphics-amiga-m68k : test-graphics-blitterregisters
 #MM- test-graphics-amiga-m68k-quick : test-graphics-blitterregisters-quick
+#MM- test-graphics-amiga-m68k : test-graphics-gfxlookup
+#MM- test-graphics-amiga-m68k-quick : test-graphics-gfxlookup-quick
+#MM- test-graphics-amiga-m68k : test-graphics-planarand
+#MM- test-graphics-amiga-m68k-quick : test-graphics-planarand-quick
+#MM- test-graphics-amiga-m68k : test-graphics-axisline-native
+#MM- test-graphics-amiga-m68k-quick : test-graphics-axisline-native-quick
+#MM- test-graphics-amiga-m68k : test-graphics-interleavedblit
+#MM- test-graphics-amiga-m68k-quick : test-graphics-interleavedblit-quick
+#MM- test-graphics-amiga-m68k : test-graphics-regionpool
+#MM- test-graphics-amiga-m68k-quick : test-graphics-regionpool-quick
 
-CFILES  := bltclear blittercompat changeextspritea movesprite setchiprev vbeampos
+CFILES  := bltclear blittercompat changeextspritea gfxlookup movesprite rawblit setchiprev vbeampos
 AFILES  := attemptlocklayerrom blitterabi locklayerrom unlocklayerrom waitblit
 
 #MM kernel-graphics-amiga-m68k : kernel-hidd-includes kernel-graphics-includes includes-asm_h kernel-hidd-graphics-includes

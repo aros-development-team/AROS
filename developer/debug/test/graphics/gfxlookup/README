@@ -1,0 +1,13 @@
+GfxLookUp interrupt regression
+=============================
+
+Run gfxlookup on native Amiga AROS after a normal DOS boot. The program
+associates a ViewExtra, holds the graphics hash semaphore in its task, and
+looks up present and absent associations from a VBlank interrupt. It also
+checks task-context lookup and removal of the association.
+
+Expected: GFX LOOKUP TEST: 0 failures, return code 0, and no supervisor-mode
+semaphore diagnostic or alert. The previous implementation emits both
+ObtainSemaphoreShared and ReleaseSemaphore supervisor-mode diagnostics;
+the resulting alert is delivered asynchronously, so its return code alone
+is not sufficient to determine success.
