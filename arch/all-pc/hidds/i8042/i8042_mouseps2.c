@@ -176,7 +176,7 @@ static void i8042_mouse_irq_handler(struct mouse_data *data, void *unused)
  * It is safe to use functions that take the timer IORequest as input
  * from here on ....
  ****************************************************************************************/
-void i8042_mouse_init_task(OOP_Class *cl, OOP_Object *o)
+void i8042_mouse_init_task(OOP_Class *cl, OOP_Object *o, IPTR readyMask)
 {
     struct mouse_data *data = OOP_INST_DATA(cl, o);
     struct Task *thisTask = FindTask(NULL);
@@ -186,7 +186,7 @@ void i8042_mouse_init_task(OOP_Class *cl, OOP_Object *o)
     if (!p) {
         D(bug("[i8042:PS2Mouse] Failed to create Timer MsgPort..\n"));
         data->irq = 0;
-        Signal(thisTask->tc_UserData, SIGF_SINGLE);
+        Signal(thisTask->tc_UserData, (ULONG)readyMask);
         return;
     }
 
@@ -195,7 +195,7 @@ void i8042_mouse_init_task(OOP_Class *cl, OOP_Object *o)
         D(bug("[i8042:PS2Mouse] Failed to create Timer MsgPort..\n"));
         DeleteMsgPort(p);
         data->irq = 0;
-        Signal(thisTask->tc_UserData, SIGF_SINGLE);
+        Signal(thisTask->tc_UserData, (ULONG)readyMask);
         return;
     }
 
@@ -204,7 +204,7 @@ void i8042_mouse_init_task(OOP_Class *cl, OOP_Object *o)
         DeleteIORequest(data->hwdata.ioTimer);
         DeleteMsgPort(p);
         data->irq = 0;
-        Signal(thisTask->tc_UserData, SIGF_SINGLE);
+        Signal(thisTask->tc_UserData, (ULONG)readyMask);
         return;
     }
 
@@ -225,7 +225,7 @@ void i8042_mouse_init_task(OOP_Class *cl, OOP_Object *o)
 
     D(bug("[i8042:PS2Mouse] finished - signaling waiting task and cleaning up\n");)
     /* Signals the waiting task before we exit ... */
-    Signal(thisTask->tc_UserData, SIGF_SINGLE);
+    Signal(thisTask->tc_UserData, (ULONG)readyMask);
     /* Timer request is not freed as it is needed for reset handler */
 
     return ;

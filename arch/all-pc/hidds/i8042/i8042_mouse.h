@@ -70,6 +70,6 @@ struct mouse_data
 
 /* Prototypes */
 void i8042_mouse_get_state(OOP_Class *, OOP_Object *, struct pHidd_Mouse_Event *);
-extern void i8042_mouse_init_task(OOP_Class *, OOP_Object *);
+extern void i8042_mouse_init_task(OOP_Class *, OOP_Object *, IPTR);
 
 #endif /* I8042_MOUSE_H */

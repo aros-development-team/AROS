@@ -70,6 +70,8 @@ static void i8042_write_command_port(unsigned char val)
 
 /****************************************************************************************/
 
+BOOL i8042_start_task(APTR entry, OOP_Class *cl, OOP_Object *o, CONST_STRPTR name);
+
 void i8042_delay(struct IORequest* tmr, LONG usec);
 
 int i8042_read_data(void);
