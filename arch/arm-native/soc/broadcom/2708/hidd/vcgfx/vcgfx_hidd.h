@@ -48,7 +48,9 @@ struct VideoCoreGfxDisplayData
 };
 
 /* Screens shown as HVS planes (ShowViewPorts). x/y are the bitmap's
- * LeftEdge/TopEdge in display coordinates. */
+ * LeftEdge/TopEdge in display coordinates. Only the front screens get a
+ * plane, and only 32-bit ones in scanout memory: the rest are not shown
+ * until a compositor can blit them. Each such case is logged once. */
 #define VCGFX_MAX_PLANES        4
 
 struct vcgfx_plane
@@ -187,6 +189,7 @@ struct VideoCoreGfx_staticdata {
         struct SignalSemaphore  vcsd_ScanoutLock;
         struct MinList          vcsd_Arenas;
         BYTE                    vcsd_ScanoutOK;     /* 0 untried, 1 mappable, -1 not */
+        ULONG                   vcsd_PlanesWarned;  /* reasons already logged */
 
         /* The fb object's pixels when the firmware's framebuffer is a
          * token one (HVS5 with screens as planes). */
