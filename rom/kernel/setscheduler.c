@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -22,8 +22,10 @@
         struct KernelBase *, KernelBase, 2, Kernel)
 
 /*  FUNCTION
+        Currently leaves the kernel scheduling policy unchanged.
 
     INPUTS
+        sched - Requested scheduling policy (currently ignored).
 
     RESULT
 
@@ -34,6 +36,7 @@
     BUGS
 
     SEE ALSO
+        KrnGetScheduler()
 
     INTERNALS
 

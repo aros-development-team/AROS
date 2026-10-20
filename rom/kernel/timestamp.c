@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 2022-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -22,13 +22,16 @@
         struct KernelBase *, KernelBase, 64, Kernel)
 
 /*  FUNCTION
+        Read the architecture-specific timestamp counter.
 
     INPUTS
 
     RESULT
-        returns an arch specific timestamp.
+        Architecture-specific timestamp value.
 
     NOTES
+        The timestamp unit and frequency depend on the architecture.
+        The generic fallback returns zero. This is not wall-clock time.
 
     EXAMPLE
 

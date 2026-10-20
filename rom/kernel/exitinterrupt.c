@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -23,12 +23,16 @@
         struct KernelBase *, KernelBase, 62, Kernel)
 
 /*  FUNCTION
+        Leave an interrupt using an architecture-defined saved context.
 
     INPUTS
+        ctx - Saved interrupt context to restore.
 
     RESULT
 
     NOTES
+        The architecture-specific implementation owns context restoration.
+        The generic fallback performs no operation.
 
     EXAMPLE
 

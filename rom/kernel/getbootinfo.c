@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -25,10 +25,12 @@
         struct KernelBase *, KernelBase, 11, Kernel)
 
 /*  FUNCTION
+        Return the kernel boot-information tag list.
 
     INPUTS
 
     RESULT
+        Pointer to the boot-information TagItem list (BootMsg).
 
     NOTES
 
@@ -37,6 +39,7 @@
     BUGS
 
     SEE ALSO
+        aros/kernel.h
 
     INTERNALS
 
