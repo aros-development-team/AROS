@@ -11,6 +11,10 @@
 
 #include "camd_intern.h"
 
+void SetMidiError(struct MyMidiNode *mymidinode,ULONG errorcode){
+	mymidinode->error|=errorcode&~mymidinode->midinode.mi_ErrFilter;
+}
+
 
 void PutMidi2Link(
 	struct MidiLink *midilink,
@@ -142,7 +146,7 @@ outofhere:
 		}
 
 		if(mymidinode->unpicked+1==mymidinode->midinode.mi_MsgQueueSize-1){
-			mymidinode->error |= CMEF_BufferFull;
+			SetMidiError(mymidinode,CMEF_BufferFull);
 			return;
 		}
 

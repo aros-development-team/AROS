@@ -19,7 +19,7 @@ int GetSysXLen(UBYTE *buffer){
 		lokke++;
 	}
 
-	return lokke;
+	return lokke+1;
 }
 
 BOOL PutSysEx2Link(struct MidiLink *midilink,UBYTE data){
@@ -28,11 +28,21 @@ BOOL PutSysEx2Link(struct MidiLink *midilink,UBYTE data){
 
 	struct MyMidiNode *mymidinode=(struct MyMidiNode *)midilink->ml_MidiNode;
 
+	if(mymidinode->sysex_discarding){
+		if(data==0xf0 || data==0xf7 || data==0xff){
+			mymidinode->sysex_discarding=FALSE;
+			mymidinode->sysex_laststart=NULL;
+		}
+		/* PutSysEx stops on overflow, so its F7 may never reach us.
+		   A fresh F0 starts a new message rather than extending the drop. */
+		if(data!=0xf0) return FALSE;
+	}
+
 	if(mymidinode->sysex_laststart==NULL && data!=0xf0){
 		return TRUE;	// This midinode was created in the middle of receiving a sysex-string.
 	}
 
-	if(mymidinode->sysex_start!=NULL && (!(mymidinode->error&CMEF_SysExFull))){
+	if(mymidinode->sysex_start!=NULL){
 		if(data==0xff){	// Error in sysex-string. Sysex is cancelled.
 			mymidinode->sysex_write=mymidinode->sysex_laststart;
 			ReleaseSemaphore(&mymidinode->sysexsemaphore);
@@ -41,6 +51,8 @@ BOOL PutSysEx2Link(struct MidiLink *midilink,UBYTE data){
 				if(data==0xf0){
 					ObtainSemaphore(&mymidinode->sysexsemaphore);
 					ObtainSemaphore(&mymidinode->sysexsemaphore2);
+					mymidinode->sysex_started_empty=
+						mymidinode->sysex_write==mymidinode->sysex_read;
 					mymidinode->sysex_laststart=mymidinode->sysex_write;
 				}else{
 					ObtainSemaphore(&mymidinode->sysexsemaphore2);
@@ -51,8 +63,10 @@ BOOL PutSysEx2Link(struct MidiLink *midilink,UBYTE data){
 					mymidinode->sysex_write=mymidinode->sysex_start;
 				}
 				if(mymidinode->sysex_write==mymidinode->sysex_read){
-					mymidinode->error |= CMEF_SysExFull;
+					SetMidiError(mymidinode,mymidinode->sysex_started_empty ?
+						CMEF_SysExTooBig : CMEF_SysExFull);
 					mymidinode->sysex_write=mymidinode->sysex_laststart;
+					mymidinode->sysex_discarding=TRUE;
 					ReleaseSemaphore(&mymidinode->sysexsemaphore2);
 					ReleaseSemaphore(&mymidinode->sysexsemaphore);
 					return FALSE;

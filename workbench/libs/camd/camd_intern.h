@@ -204,6 +204,8 @@ struct MyMidiNode{
 	UBYTE *sysex_read;
 	UBYTE *sysex_laststart;
 	BOOL sysex_nextis0;
+	BOOL sysex_started_empty;
+	BOOL sysex_discarding;
 	UBYTE lastreadstatus;
 };
 
@@ -343,6 +345,7 @@ void Receiver_SysExSuperTreat(
 	UBYTE data
 );
 int GetSysXLen(UBYTE *buffer);
+void SetMidiError(struct MyMidiNode *mymidinode,ULONG errorcode);
 BOOL PutSysEx2Link(struct MidiLink *midilink,UBYTE data);
 void Receiver_SetError(
 	struct DriverData *driverdata,

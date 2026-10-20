@@ -32,7 +32,7 @@ void Receiver_SetError(
 				if(midilink->ml_Node.ln_Type!=NT_USER-MLTYPE_NTypes){
 					mymidinode=(struct MyMidiNode *)midilink->ml_MidiNode;
 					ObtainSemaphore(&mymidinode->receiversemaphore);
-						mymidinode->error |= errorcode;
+						SetMidiError(mymidinode,errorcode);
 					ReleaseSemaphore(&mymidinode->receiversemaphore);
 				}
 				midilink=(struct MidiLink *)midilink->ml_Node.ln_Succ;
