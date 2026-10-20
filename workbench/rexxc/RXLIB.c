@@ -60,6 +60,48 @@ void cleanup(void)
         DeletePort(replyport);
 }
 
+/*****************************************************************************
+
+    NAME
+        RXLIB
+
+    FORMAT
+    RXLIB
+    RXLIB name
+    RXLIB name priority
+    RXLIB name priority offset [argument]
+
+    FUNCTION
+    Lists, removes, or registers Rexx function hosts and libraries
+    through the REXX message port.
+
+    INPUTS
+    name     - Function host or library name.
+    priority - Decimal registration priority for a host or library.
+    offset   - Decimal function-library entry offset.
+    argument - Optional additional numeric registration argument.
+
+    RESULT
+    Without arguments, prints registered hosts and libraries and
+    returns RC_OK. Other invocations return the Rexx reply status.
+    Unsupported argument counts return RC_ERROR.
+
+    NOTES
+    A single name requests library removal. Name and priority register
+    a function host. Adding offset registers a function library; the
+    fourth supplied argument is forwarded as an additional numeric value.
+    RexxMast must already be running, as this command does not launch it.
+
+    BUGS
+    The program does not check whether its initialization succeeded before
+    accessing the Rexx message, so a missing interpreter service may cause
+    an invalid memory access instead of a clean command failure.
+
+    SEE ALSO
+    RX
+
+*****************************************************************************/
+
 int main(int argc, char **argv)
 {
     struct RexxMsg *reply;

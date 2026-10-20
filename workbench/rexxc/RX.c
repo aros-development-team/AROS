@@ -89,6 +89,38 @@ void cleanup(void)
         CurrentDir(olddir);
 }
 
+/*****************************************************************************
+
+    NAME
+        RX
+
+    FORMAT
+    RX <filename> [arguments]
+    RX "commands"
+
+    FUNCTION
+    Sends a Rexx command or script request to the REXX message port.
+    Attempts to start RexxMast when that port is not yet available.
+
+    INPUTS
+    filename  - Rexx program to execute, optionally followed by command
+                arguments in the same Shell command line.
+    commands  - Quoted Rexx source text to execute directly.
+
+    RESULT
+    Exits with the Rexx message's rm_Result1 code after a reply.
+    Returns RC_ERROR when initial setup or usage fails.
+
+    NOTES
+    The command requires a working RexxMast interpreter service. Its
+    script result string is not printed automatically. Reply errors
+    are reported using the returned Rexx status values.
+
+    SEE ALSO
+    RXLIB
+
+*****************************************************************************/
+
 int main(int argc, char **argv)
 {
     struct RexxMsg *reply;
