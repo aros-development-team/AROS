@@ -27,6 +27,7 @@
 #include <sys/errno.h>
 #include <sys/uio.h>
 #include <sys/ioctl.h>
+#include <limits.h>
 
 #include <aros/libcall.h>
 #include <exec/types.h>
@@ -129,7 +130,8 @@ static SIPTR fdh_sock_read(APTR data, LONG fd, APTR buf, IPTR nbytes, LONG *perr
     BOOL temp;
 
     if (so == NULL) { *perror = EBADF; return -1; }  /* fd without a socket */
-    if (nbytes < 0) { *perror = EINVAL; return -1; }
+    /* nbytes is unsigned; the uio count and the result are int */
+    if (nbytes > INT_MAX) { *perror = EINVAL; return -1; }
     if ((p = fdh_task_base(&temp)) == NULL) { *perror = ENOMEM; return -1; }
 
     aiov.iov_base = buf;
@@ -174,7 +176,8 @@ static SIPTR fdh_sock_write(APTR data, LONG fd, CONST_APTR buf, IPTR nbytes, LON
     BOOL temp;
 
     if (so == NULL) { *perror = EBADF; return -1; }  /* fd without a socket */
-    if (nbytes < 0) { *perror = EINVAL; return -1; }
+    /* nbytes is unsigned; the uio count and the result are int */
+    if (nbytes > INT_MAX) { *perror = EINVAL; return -1; }
     if ((p = fdh_task_base(&temp)) == NULL) { *perror = ENOMEM; return -1; }
 
     aiov.iov_base = (caddr_t)buf;
@@ -329,7 +332,12 @@ BOOL fdhooks_setup(void)
     if (FDBase == NULL)
         return FALSE;
 
-    FD_SetOwnerHooks(FD_OWNER_BSDSOCKET, &bsdsocket_fd_hooks);
+    if (FD_SetOwnerHooks(FD_OWNER_BSDSOCKET, &bsdsocket_fd_hooks) != 0)
+    {
+        CloseLibrary(FDBase);
+        FDBase = NULL;
+        return FALSE;
+    }
     return TRUE;
 }
 

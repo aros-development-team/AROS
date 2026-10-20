@@ -20,27 +20,29 @@
         struct Library *, RexxSysBase, 26, RexxSys)
 
 /*  FUNCTION
-        This function will clear a specified number of arguments by calling
-        DeleteArgstring on them.
+        Releases non-NULL Rexx argument strings in the first count entries
+        of msgptr->rm_Args and sets those entries to zero.
 
     INPUTS
-        msgptr - RexxMsg to clear the arguments from
-        count  - The number of arguments in the message to clear
+        msgptr - RexxMsg containing argument strings to release.
+        count  - Number of entries, starting at index 0; must not exceed
+                 MAXRMARG.
 
     RESULT
-        void
+        None.
 
     NOTES
-
-    EXAMPLE
+        Every non-NULL entry in the selected range must be a valid,
+        allocated Rexx argument string. Do not use this function on
+        unconverted string pointers or integer values prepared for
+        FillRexxMsg(). Entries beyond count are not changed.
 
     BUGS
+        The implementation does not validate count against the rm_Args
+        array capacity. Larger values can access memory outside the array.
 
     SEE ALSO
-         FillRexxMsg(), DeleteArgstring()
-
-    INTERNALS
-
+        FillRexxMsg(), DeleteArgstring(), DeleteRexxMsg()
 
 *****************************************************************************/
 {

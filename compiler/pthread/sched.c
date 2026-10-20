@@ -29,21 +29,93 @@
 #define PRIO_MAX 2
 #define PRIO_MIN -2
 
-int sched_get_priority_max(int policy)
+/****************************************************************************
+    NAME */
+        int sched_get_priority_max(
+
+/*  SYNOPSIS */
+        int policy)
+
+/*  FUNCTION
+        Return the upper bound of the library's fixed scheduling-priority
+        range.
+
+    INPUTS
+        policy - Scheduling policy identifier; not inspected.
+
+    RESULT
+        2 for every policy value.
+
+    NOTES
+        The result is a library constant, not a query of the current
+        Exec scheduler.
+
+    SEE ALSO
+        sched_get_priority_min(),
+        sched_yield()
+
+*****************************************************************************/
 {
     D(bug("%s(%d)\n", __FUNCTION__, policy));
 
     return PRIO_MAX;
 }
 
-int sched_get_priority_min(int policy)
+/****************************************************************************
+    NAME */
+        int sched_get_priority_min(
+
+/*  SYNOPSIS */
+        int policy)
+
+/*  FUNCTION
+        Return the lower bound of the library's fixed scheduling-priority
+        range.
+
+    INPUTS
+        policy - Scheduling policy identifier; not inspected.
+
+    RESULT
+        -2 for every policy value.
+
+    NOTES
+        The result is a library constant, not a query of the current
+        Exec scheduler.
+
+    SEE ALSO
+        sched_get_priority_max(),
+        sched_yield()
+
+*****************************************************************************/
 {
     D(bug("%s(%d)\n", __FUNCTION__, policy));
 
     return PRIO_MIN;
 }
 
-int sched_yield(void)
+/****************************************************************************
+    NAME */
+        int sched_yield(
+
+/*  SYNOPSIS */
+        void)
+
+/*  FUNCTION
+        Give the scheduler an opportunity to run another task.
+
+    RESULT
+        Always returns 0. No error is reported.
+
+    NOTES
+        On AROS, temporarily sets the calling Exec task's priority to -10
+        and then restores its previous priority. The call does not
+        guarantee that another task runs before it returns.
+
+    SEE ALSO
+        sched_get_priority_max(),
+        sched_get_priority_min()
+
+*****************************************************************************/
 {
 #if defined(__MORPHOS__) || defined(__AMIGA__)
     D(bug("%s()\n", __FUNCTION__));

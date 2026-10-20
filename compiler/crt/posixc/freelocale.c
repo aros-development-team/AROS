@@ -7,6 +7,34 @@
 */
 #include <locale.h>
 
+/****************************************************************************
+    NAME
+        void freelocale(
+
+    SYNOPSIS
+        locale_t loc)
+
+    FUNCTION
+        Accept a locale object for release. No storage is freed
+        by this implementation.
+
+    INPUTS
+        loc - Locale object returned by newlocale(). The argument
+              is not inspected or dereferenced.
+
+    RESULT
+        None. The function does not change errno.
+
+    NOTES
+        Include <locale.h>. newlocale() returns shared static
+        objects with no caller-owned allocation. This call neither
+        invalidates the object nor changes the active locale. Do
+        not release these objects with free().
+
+    SEE ALSO
+        newlocale(), uselocale()
+
+*****************************************************************************/
 void freelocale(locale_t loc)
 {
     (void)loc;

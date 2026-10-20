@@ -22,12 +22,12 @@
         struct KernelBase *, KernelBase, 42, Kernel)
 
 /*  FUNCTION
-        Allocate storage for a CPU mask
+        Allocate a zero-initialized CPU affinity mask.
 
     INPUTS
 
     RESULT
-        CPU affinity mask storage
+        Pointer to the allocated mask, or NULL if allocation fails.
 
     NOTES
 
@@ -36,7 +36,8 @@
     BUGS
 
     SEE ALSO
-        KrnGetCPUNumber(), KrnClearCPUMask(), KrnGetCPUMask(), KrnCPUInMask()
+        KrnFreeCPUMask(), KrnGetCPUNumber(), KrnClearCPUMask(),
+        KrnGetCPUMask(), KrnCPUInMask()
 
     INTERNALS
 

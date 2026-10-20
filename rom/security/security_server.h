@@ -44,6 +44,10 @@ struct secSPacket
 #define secSAction_GetUserHash          13      /* Security.auth only: user record + stored hash*/
 #define secSAction_LockUser             14      /* root: lock (Arg2 TRUE) / unlock an account   */
 #define secSAction_UserAdmin            15      /* root: secUserAdminA() (Arg1 struct secUARequest *) */
+#define secSAction_KeyAdmin             16      /* secKeyAdminA() (Arg1 struct secKARequest *)  */
+#define secSAction_GetUserKeys          17      /* Security.auth only: the user's keys (Arg1 userid, Arg2 struct secKeyRec **) */
+#define secSAction_KeyCounter           18      /* Security.auth only: an accepted OTP's counter (Arg1 userid, Arg2 publicid, Arg3 counter) */
+#define secSAction_UserHasKeys          19      /* Arg1 userid. Res1: BOOL                      */
 
 /* secUserAdminA() request (security_useradmin.c) */
 struct secUARequest
@@ -56,9 +60,34 @@ struct secUARequest
     CONST_STRPTR    HomeDir;
     CONST_STRPTR    Shell;
     CONST_STRPTR    Password;       /* ADD, PASSWORD: clear text, "" = none      */
+    CONST_STRPTR    GroupID;        /* GROUP#?: the group (GROUPADD: the new one)*/
+    CONST_STRPTR    NewGroupID;     /* GROUPMODIFY: rename, or NULL              */
+    CONST_STRPTR    GroupName;      /* NULL = unchanged                          */
+    LONG            MgrUid;         /* -1 = unchanged / root for a new group     */
+    BOOL            HasMembers;     /* Members given (NULL = none)               */
+    CONST_STRPTR   *Members;        /* NULL-terminated user IDs                  */
 };
 
 extern ULONG UserAdmin(struct SecurityBase *secBase, struct Task *client, struct secUARequest *req);
+
+/* secKeyAdminA() request (security_keys.c) */
+struct secKARequest
+{
+    ULONG                   Operation;      /* secKA_#?                                  */
+    CONST_STRPTR            UserID;
+    ULONG                   Type;           /* secKEY_#?                                 */
+    CONST_STRPTR            Label;
+    CONST_STRPTR            Scheme;         /* the plugin's scheme                       */
+    CONST_STRPTR            PublicID;
+    CONST_STRPTR            SecretHex;      /* the scheme's secret, hex digits           */
+    struct secKeyInfo       *List;          /* LIST: out                                 */
+    ULONG                   ListSize;
+    ULONG                   Count;          /* LIST: out                                 */
+    BOOL                    HasTicket;      /* the caller sent a ticket (secAPacket)     */
+    BOOL                    Verified;       /* set by Security.auth: the ticket was the  */
+                                            /* user's own                                */
+    UWORD                   CallerUid;      /* set by Security.auth: the caller's uid    */
+};
 
 extern struct Process *CreateServer(struct SecurityBase *secBase);
 extern BOOL StartServer(struct SecurityBase *secBase);

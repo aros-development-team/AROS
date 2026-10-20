@@ -944,15 +944,37 @@ BOOL AmigaVideoCl__Hidd_Gfx__CopyBoxMasked(OOP_Class *cl, OOP_Object *o, struct 
     struct amigavideo_staticdata *csd = CSD(cl);
     struct Library *OOPBase = csd->cs_OOPBase;
     HIDDT_DrawMode mode = GC_DRMD(msg->gc);
-    IPTR src, dst;
+    IPTR src = 0, dst = 0;
+    struct BitMap *srcpbm = NULL, *dstpbm = NULL;
     BOOL ok = FALSE;
  
     OOP_GetAttr(msg->src,  aHidd_BitMap_AmigaVideo_Drawable, &src);
     OOP_GetAttr(msg->dest, aHidd_BitMap_AmigaVideo_Drawable, &dst);
-    if (src && dst) {
+    if (src) {
         struct amigabm_data *sdata = OOP_INST_DATA(OOP_OCLASS(msg->src), msg->src);
+        srcpbm = sdata->pbm;
+    } else {
+        OOP_GetAttr(msg->src, aHidd_PlanarBM_BitMap, (IPTR *)&srcpbm);
+    }
+    if (dst) {
         struct amigabm_data *ddata = OOP_INST_DATA(OOP_OCLASS(msg->dest), msg->dest);
-        ok = blit_copybox_mask(csd, sdata->pbm, ddata->pbm, msg->srcX, msg->srcY, msg->width, msg->height, msg->destX, msg->destY, mode, msg->mask);
+        dstpbm = ddata->pbm;
+    } else {
+        OOP_GetAttr(msg->dest, aHidd_PlanarBM_BitMap, (IPTR *)&dstpbm);
+    }
+    /* Plain planar bitmaps can use the same native masked blit as display
+       bitmaps. Keep unsupported modes, partial plane masks and non-Chip mask
+       buffers on the superclass path. Copy and Or here both request masked
+       replacement (0xc0 and 0xe0 in BltMaskBitMapRastPort). */
+    if (srcpbm && dstpbm &&
+        (mode == vHidd_GC_DrawMode_Copy || mode == vHidd_GC_DrawMode_Or) &&
+        srcpbm->Depth == dstpbm->Depth && srcpbm->Depth <= 8 &&
+        (GC_COLMASK(msg->gc) & ((1UL << srcpbm->Depth) - 1)) ==
+            ((1UL << srcpbm->Depth) - 1) &&
+        msg->mask && (TypeOfMem(msg->mask) & MEMF_CHIP)) {
+        ok = blit_copybox_mask(csd, srcpbm, dstpbm, msg->srcX, msg->srcY,
+                              msg->width, msg->height, msg->destX, msg->destY,
+                              mode, msg->mask);
     }
     if (!ok)
         return OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);

@@ -54,8 +54,8 @@ CUNITEXECTESTFILES := \
 #MM- test-cunit : test-exec-cunit
 #MM- test-cunit-quick : test-exec-cunit-quick
 
-#MM- test-exec : test-exec-public test-exec-public-posixc test-exec-private test-exec-cunit
-#MM- test-exec-quick : test-exec-public-quick test-exec-public-posixc-quick test-exec-private-quick test-exec-cunit-quick
+#MM- test-exec : test-exec-public test-exec-public-posixc test-exec-private test-exec-cunit test-exec-signalexception
+#MM- test-exec-quick : test-exec-public-quick test-exec-public-posixc-quick test-exec-private-quick test-exec-cunit-quick test-exec-signalexception-quick
 
 #MM- test-exec-deps : includes includes-copy linklibs kernel
 #MM test-exec-public : test-exec-deps

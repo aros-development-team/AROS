@@ -47,6 +47,9 @@ static VOID ReplyPacket(struct MsgPort *proc_port, struct DosPacket *packet,
    PINT result1, PINT result2);
 static TEXT *BStr(struct Handler *h, UBYTE *b_str);
 static TEXT *BStr2(struct Handler *h, UBYTE *b_str);
+#ifdef AROS_FAST_BSTR
+static BOOL CheckNames(struct Handler *handler, struct DosPacket *packet);
+#endif
 
 #ifdef __AROS__
 LONG RAMMain(struct ExecBase *SysBase)
@@ -121,6 +124,11 @@ LONG RAMMain(void)
          /* multi-user: who sent this packet? (no-op without security.library) */
          ramSecBeginPacket(handler, packet);
 
+#ifdef AROS_FAST_BSTR
+         if(!CheckNames(handler, packet))
+            result = DOSFALSE;
+         else
+#endif
          switch(packet->dp_Type)
          {
          case ACTION_DIE:
@@ -465,7 +473,8 @@ static TEXT *BStr(struct Handler *h, UBYTE *b_str)
    UBYTE length;
 
 #ifdef AROS_FAST_BSTR
-   length = StrSize(b_str);
+   /* At most 255: CheckNames() refuses longer names */
+   length = StrLen(b_str);
    CopyMem(b_str, h->b_buffer, length);
 #else
    length = *b_str;
@@ -484,7 +493,8 @@ static TEXT *BStr2(struct Handler *h, UBYTE *b_str)
    UBYTE length;
 
 #ifdef AROS_FAST_BSTR
-   length = StrSize(b_str);
+   /* At most 255: CheckNames() refuses longer names */
+   length = StrLen(b_str);
    CopyMem(b_str, h->b_buffer2, length);
 #else
    length = *b_str;
@@ -495,6 +505,61 @@ static TEXT *BStr2(struct Handler *h, UBYTE *b_str)
 
    return h->b_buffer2;
 }
+
+
+
+#ifdef AROS_FAST_BSTR
+/* Names reach BStr() and BStr2() as C strings of any length, but their
+   buffers hold a BSTR's 255 bytes. Refuse a longer name before the packet
+   is handled, rather than act on a shortened one. */
+static BOOL CheckNames(struct Handler *handler, struct DosPacket *packet)
+{
+   SIPTR name = 0, name2 = 0, comment = 0;
+   LONG error = 0;
+
+   switch(packet->dp_Type)
+   {
+   case ACTION_RENAME_DISK:
+      name = packet->dp_Arg1;
+      break;
+
+   case ACTION_LOCATE_OBJECT:
+   case ACTION_CREATE_DIR:
+   case ACTION_DELETE_OBJECT:
+   case ACTION_MAKE_LINK:
+      name = packet->dp_Arg2;
+      break;
+
+   case ACTION_RENAME_OBJECT:
+      name = packet->dp_Arg2;
+      name2 = packet->dp_Arg4;
+      break;
+
+   case ACTION_FINDINPUT:
+   case ACTION_FINDOUTPUT:
+   case ACTION_FINDUPDATE:
+   case ACTION_SET_PROTECT:
+   case ACTION_SET_DATE:
+   case ACTION_SET_OWNER:
+      name = packet->dp_Arg3;
+      break;
+
+   case ACTION_SET_COMMENT:
+      name = packet->dp_Arg3;
+      comment = packet->dp_Arg4;
+      break;
+   }
+
+   if((name != 0 && StrLen(BADDR(name)) >= sizeof(handler->b_buffer))
+      || (name2 != 0 && StrLen(BADDR(name2)) >= sizeof(handler->b_buffer2)))
+      error = ERROR_INVALID_COMPONENT_NAME;
+   else if(comment != 0 && StrLen(BADDR(comment)) >= sizeof(handler->b_buffer2))
+      error = ERROR_COMMENT_TOO_BIG;
+
+   SetIoErr(error);
+   return error == 0;
+}
+#endif
 
 
 

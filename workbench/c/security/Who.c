@@ -16,9 +16,23 @@
         C:
 
     FUNCTION
-        Shows who you are. With ALL, lists every task with its owner. With
-        USERS or GROUPS, lists the user or group database. RESCAN asks the
-        security server to rescan the volumes for key files.
+        Displays the current task's security identity. Other options show
+        task ownership or entries from the user and group databases.
+
+    INPUTS
+        ALL    -- List tasks and their owners.
+        USERS  -- List users from the security database.
+        GROUPS -- List groups from the security database.
+        RESCAN -- Request a rescan of security-related volume information.
+
+    NOTES
+        USERS takes precedence over GROUPS, which takes precedence over ALL.
+        RESCAN can be combined with any display option.
+
+    RESULT
+        RETURN_OK if arguments are accepted.
+        RETURN_FAIL if the security library is unavailable or arguments
+        cannot be parsed.
 
     SEE ALSO
         Login, Logout

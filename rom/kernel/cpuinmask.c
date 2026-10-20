@@ -24,14 +24,14 @@
         struct KernelBase *, KernelBase, 46, Kernel)
 
 /*  FUNCTION
-        Test if the CPU number is enabled in the mask.
+        Determine whether a CPU is selected in an affinity mask.
 
     INPUTS
-        CPU number (as returned by KrnGetCPUNumber())
-        Affinity Mask (as returned by KrnAllocCPUMask())
+        id   - CPU number to test.
+        mask - CPU affinity mask allocated by KrnAllocCPUMask().
 
     RESULT
-        TRUE or FALSE if the CPU exists in the mask.
+        TRUE if the CPU is selected; FALSE otherwise.
 
     NOTES
 

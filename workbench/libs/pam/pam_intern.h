@@ -136,6 +136,7 @@ struct PamHandle
     BOOL                InUpdate;           /* PamChAuthTok(): the update pass           */
     LONG                LastStatus;
     STRPTR              ErrorText;          /* PamStrError() scratch */
+    char                StatusShown[96];    /* the PAM_AROS_STATUS line on the console */
 };
 
 /* pam_handle.c */

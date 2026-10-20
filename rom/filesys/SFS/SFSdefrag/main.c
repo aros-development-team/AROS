@@ -84,19 +84,6 @@ void closeLibs()
     UtilityBase = NULL;
 }
 
-void cleanup(CONST_STRPTR message)
-{
-    if (message != NULL)
-    {
-        ShowError(NULL, NULL, message, TRUE);
-        exit(RETURN_FAIL);
-    }
-    else
-    {
-        exit(RETURN_OK);
-    }
-}
-
 Object *MakeLabel(STRPTR str)
 {
   return (MUI_MakeObject(MUIO_Label, str, 0));
@@ -116,10 +103,10 @@ struct Hook stop_hook;
 struct Hook refresh_hook;
 
 BOOL stop_me;
+BOOL quit_me;
 
 struct BitMap *bm;
 struct RastPort *rp;
-struct DrawInfo *dri;
 
 ULONG pen1, pen2, pen3;
 
@@ -134,14 +121,23 @@ void updateBitmap(ULONG first, ULONG last)
 {
     ULONG cnt;
     ULONG blck = blocks_inone;
-    
-    for (cnt=first/blocks_inone; cnt <= (last+blocks_inone-1)/blocks_inone; cnt++)
+
+    if(bitmap == NULL || blocks_inone == 0)
+        return;
+
+    /* Ranges are [first,last), as supplied by the handler's MOVE steps. */
+    if(first >= last || first >= blocks_total)
+        return;
+    if(last > blocks_total)
+        last = blocks_total;
+
+    for (cnt=first/blocks_inone; cnt <= (last-1)/blocks_inone; cnt++)
     {
         ULONG x,y,pen=pen3;
         y = (cnt / 166) * 3;
         x = (cnt % 166) * 3;
         
-        if ((cnt+1) * blocks_inone > blocks_total) blck = blocks_total - cnt*blocks_inone;
+        blck = MIN(blocks_inone, blocks_total - cnt*blocks_inone);
         
         if (bmtstz(bitmap, cnt*blocks_inone, blck))
             pen=pen2;
@@ -149,46 +145,78 @@ void updateBitmap(ULONG first, ULONG last)
         SetAPen(rp, pen);
         RectFill(rp, x, y, x+1, y+1);
     }
-    DoMethod(Bmp, MUIM_Draw);
+    MUI_Redraw(Bmp, MADF_DRAWOBJECT);
 }
 
-void getDeviceData(STRPTR device)
+void clearDeviceData(void)
+{
+    if(bitmap != NULL)
+        FreeVec(bitmap);
+    bitmap = NULL;
+    mp = NULL;
+    blocks_total = 0;
+    blocks_inone = 0;
+}
+
+BOOL getDeviceData(STRPTR device)
 {
     struct DosList *dl;
+    struct MsgPort *port = NULL;
+    struct TagItem tags[] = {
+        { ASQ_TOTAL_BLOCKS, 0},
+        { TAG_DONE,         0}
+    };
 
-    dl=LockDosList(LDF_DEVICES|LDF_READ);
-
-    if((dl=FindDosEntry(dl,device,LDF_DEVICES))!=0)
+    clearDeviceData();
+    SetAPen(rp, pen1);
+    RectFill(rp, 0, 0, 497, 347);
+    MUI_Redraw(Bmp, MADF_DRAWOBJECT);
+    set(StartButton, MUIA_Disabled, TRUE);
+    dl = LockDosList(LDF_DEVICES|LDF_READ);
+    if(dl != NULL)
     {
-        struct TagItem tags[] = {
-            { ASQ_TOTAL_BLOCKS, 0},
-            { TAG_DONE,         0}
-        };
-        
-        mp = dl->dol_Task;
-        
+        dl = FindDosEntry(dl, device, LDF_DEVICES);
+        if(dl != NULL)
+            port = dl->dol_Task;
         UnLockDosList(LDF_DEVICES|LDF_READ);
-        
-        if(DoPkt(mp, ACTION_SFS_QUERY, (SIPTR)tags, 0, 0, 0, 0)!=DOSFALSE)
-        {
-            blocks_total=tags[0].ti_Data;
-            blocks_inone=(blocks_total + 19255)/19256;
-            bug("blocks_total=%d\nblocks_inone=%d\n",blocks_total,blocks_inone);
-            
-            if (bitmap)
-                FreeVec(bitmap);
-            
-            if ((bitmap = AllocVec(blocks_total / 8 + 32, MEMF_CLEAR))!=0)
-            {
-                if(DoPkt(mp, ACTION_SFS_READ_BITMAP, (SIPTR)bitmap, 0, blocks_total, 0, 0)!=DOSFALSE)
-                {
-                    updateBitmap(0, blocks_total);
-                }
-            }
-        }
     }
-    else
-        UnLockDosList(LDF_DEVICES|LDF_READ);
+    if(port == NULL)
+    {
+        SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
+        ShowError(app, NULL, "Could not find the selected device", TRUE);
+        return FALSE;
+    }
+    if(DoPkt(port, ACTION_SFS_QUERY, (SIPTR)tags, 0, 0, 0, 0) == DOSFALSE)
+    {
+        ShowError(app, NULL, "Could not query the selected device", TRUE);
+        return FALSE;
+    }
+    if(tags[0].ti_Data == 0 || tags[0].ti_Data > 0xffffffffUL)
+    {
+        SetIoErr(ERROR_BAD_NUMBER);
+        ShowError(app, NULL, "Invalid volume size", TRUE);
+        return FALSE;
+    }
+    blocks_total = tags[0].ti_Data;
+    blocks_inone = blocks_total / 19256 + (blocks_total % 19256 != 0);
+    bitmap = AllocVec(blocks_total / 8 + 32, MEMF_CLEAR);
+    if(bitmap == NULL)
+    {
+        SetIoErr(ERROR_NO_FREE_STORE);
+        ShowError(app, NULL, "Could not allocate the volume bitmap", TRUE);
+        clearDeviceData();
+        return FALSE;
+    }
+    if(DoPkt(port, ACTION_SFS_READ_BITMAP, (SIPTR)bitmap, 0, blocks_total, 0, 0) == DOSFALSE)
+    {
+        ShowError(app, NULL, "Could not read the volume bitmap", TRUE);
+        clearDeviceData();
+        return FALSE;
+    }
+    mp = port;
+    updateBitmap(0, blocks_total);
+    set(StartButton, MUIA_Disabled, FALSE);
+    return TRUE;
 }
 
 AROS_UFH3(void, start_function,
@@ -197,8 +225,11 @@ AROS_UFH3(void, start_function,
     AROS_UFHA(APTR,          msg,    A1))
 {
     AROS_USERFUNC_INIT
-    ULONG sigs;
+    ULONG sigs = 0;
     BOOL defragmented = FALSE;
+
+    if(oldname == NULL || !getDeviceData((STRPTR)oldname))
+        return;
     
     set(StartButton, MUIA_Disabled, TRUE);
     set(RefreshButton, MUIA_Disabled, TRUE);
@@ -221,8 +252,8 @@ AROS_UFH3(void, start_function,
                 {
                     if(ds->id==AROS_BE2LONG(MAKE_ID('M','O','V','E')) && ds->length==3)
                     {
-                        bmclr(bitmap, (blocks_total+31)/32, ds->data[2], ds->data[0]);
-                        bmset(bitmap, (blocks_total+31)/32, ds->data[1], ds->data[0]);
+                        bmclr(bitmap, blocks_total/32 + (blocks_total%32 != 0), ds->data[2], ds->data[0]);
+                        bmset(bitmap, blocks_total/32 + (blocks_total%32 != 0), ds->data[1], ds->data[0]);
                         
                         clrlo = MIN(clrlo, ds->data[2]);
                         clrhi = MAX(clrhi, (ds->data[2]+ds->data[0]));
@@ -239,10 +270,25 @@ AROS_UFH3(void, start_function,
                     ds=(struct DefragmentStep *)((ULONG *)ds + 2 + ds->length);
                 }
             }
+            else
+            {
+                /* Capture/report IoErr before UI calls can overwrite it. */
+                ShowError(app, NULL, "Defragmentation step failed", TRUE);
+                break;
+            }
             updateBitmap(clrlo, clrhi);
             updateBitmap(setlo, sethi);
-            DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs);
+            if((LONG)DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs) == MUIV_Application_ReturnID_Quit)
+            {
+                quit_me = TRUE;
+                stop_me = TRUE;
+            }
         }while(!stop_me && !defragmented);
+    }
+
+    else
+    {
+        ShowError(app, NULL, "Could not initialize defragmentation", TRUE);
     }
 
     set(StartButton, MUIA_Disabled, FALSE);
@@ -274,14 +320,10 @@ AROS_UFH3(void, refresh_function,
     
     ULONG active = xget(DevList, MUIA_List_Active);
     
-    if (active != MUIV_List_Active_Off)
-    {
-        if(DoPkt(mp, ACTION_SFS_READ_BITMAP, (SIPTR)bitmap, 0, blocks_total, 0, 0)!=DOSFALSE)
-        {
-            updateBitmap(0, blocks_total);
-        }
-    }
+    if (active != MUIV_List_Active_Off && oldname != NULL)
+        getDeviceData((STRPTR)oldname);
     
+
     AROS_USERFUNC_EXIT
 }
 
@@ -301,10 +343,7 @@ AROS_UFH3(void, select_function,
         if (name != oldname)
         {
             oldname = name;
-            SetAPen(rp, pen1);
-            RectFill(rp, 0, 0, 497, 347);
             getDeviceData(name);
-            set(StartButton, MUIA_Disabled, FALSE);
             set(RefreshButton, MUIA_Disabled, FALSE);
         }
     }
@@ -313,6 +352,7 @@ AROS_UFH3(void, select_function,
         set(StartButton, MUIA_Disabled, TRUE);
         set(RefreshButton, MUIA_Disabled, TRUE);
         oldname = NULL;
+        clearDeviceData();
     }
     
     AROS_USERFUNC_EXIT
@@ -347,6 +387,8 @@ BOOL GUIinit()
                     Child, VGroup,
                         Child, VGroup, GroupFrameT(_(MSG_SELECTION)),
                             Child, DevList = ListObject,
+                                MUIA_List_ConstructHook, MUIV_List_ConstructHook_String,
+                                MUIA_List_DestructHook, MUIV_List_DestructHook_String,
                                 InputListFrame,
 //                                MUIA_List_AdjustWidth, TRUE,
                             End, // ListObject
@@ -414,7 +456,7 @@ void loop(void)
 {
     ULONG sigs = 0;
 
-    while((LONG) DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs) != MUIV_Application_ReturnID_Quit)
+    while(!quit_me && (LONG) DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs) != MUIV_Application_ReturnID_Quit && !quit_me)
     {
         if (sigs)
         {
@@ -425,56 +467,66 @@ void loop(void)
 
 int main(int argc, char *argv[])
 {
+    LONG result = RETURN_FAIL;
+    struct Window *window;
+    struct DrawInfo *dri;
+
     select_hook.h_Entry = (APTR)select_function;
     start_hook.h_Entry = (APTR)start_function;
     stop_hook.h_Entry = (APTR)stop_function;
     refresh_hook.h_Entry = (APTR)refresh_function;
 
     Locale_Initialize();
-
-    if(openLibs())
+    if(!openLibs())
+        goto done;
+    if(!GUIinit())
     {
-        if(GUIinit())
-        {
-            set(MainWindow, MUIA_Window_Open, TRUE);
-
-            struct Window *window = (struct Window *)xget(MainWindow, MUIA_Window_Window);
-
-            bm = AllocBitMap(500, 350,
-                 GetBitMapAttr(window->RPort->BitMap, BMA_DEPTH), BMF_CLEAR,
-                 window->RPort->BitMap);
-            rp = CreateRastPort();
-            rp->BitMap = bm;
-            dri = GetScreenDrawInfo(window->WScreen);
-            pen1 = dri->dri_Pens[BACKGROUNDPEN];
-            pen2 = dri->dri_Pens[TEXTPEN];
-            pen3 = dri->dri_Pens[SHINEPEN];
-            FreeScreenDrawInfo(window->WScreen, dri);
-            
-            SetAPen(rp, pen1);
-            RectFill(rp, 0, 0, 499, 349);
-            
-            set(Bmp, MUIA_Bitmap_Bitmap, bm);
-            DoMethod(Bmp, MUIM_Draw);
-
-            if(xget(MainWindow, MUIA_Window_Open))
-            {
-                loop();
-            }
-
-            FreeRastPort(rp);
-            FreeBitMap(bm);
-
-            set(MainWindow, MUIA_Window_Open, FALSE);
-            DisposeObject(app);
-
-//          deinit_gui();
-        }
-        closeLibs();
+        ShowError(NULL, NULL, "Could not create the application", FALSE);
+        goto libraries;
     }
-    cleanup(NULL);
 
+    set(MainWindow, MUIA_Window_Open, TRUE);
+    window = (struct Window *)xget(MainWindow, MUIA_Window_Window);
+    if(!xget(MainWindow, MUIA_Window_Open) || window == NULL)
+        goto application;
+
+    bm = AllocBitMap(500, 350,
+        GetBitMapAttr(window->RPort->BitMap, BMA_DEPTH), BMF_CLEAR,
+        window->RPort->BitMap);
+    if(bm == NULL)
+        goto application;
+    rp = CreateRastPort();
+    if(rp == NULL)
+        goto application;
+    rp->BitMap = bm;
+    dri = GetScreenDrawInfo(window->WScreen);
+    if(dri == NULL)
+        goto application;
+    pen1 = dri->dri_Pens[BACKGROUNDPEN];
+    pen2 = dri->dri_Pens[TEXTPEN];
+    pen3 = dri->dri_Pens[SHINEPEN];
+    FreeScreenDrawInfo(window->WScreen, dri);
+
+    SetAPen(rp, pen1);
+    RectFill(rp, 0, 0, 499, 349);
+    set(Bmp, MUIA_Bitmap_Bitmap, bm);
+    MUI_Redraw(Bmp, MADF_DRAWOBJECT);
+    loop();
+    result = RETURN_OK;
+
+application:
+    if(result != RETURN_OK)
+        ShowError(app, NULL, "Could not create the window or graphics resources", FALSE);
+    set(MainWindow, MUIA_Window_Open, FALSE);
+    DisposeObject(app);
+    if(rp != NULL)
+        FreeRastPort(rp);
+    if(bm != NULL)
+        FreeBitMap(bm);
+    clearDeviceData();
+libraries:
+    closeLibs();
+done:
     Locale_Deinitialize();
-
-    return 0;
-} /* main(int argc, char *argv[]) */
+    return result;
+}

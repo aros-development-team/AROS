@@ -11,6 +11,41 @@
 
 #include "__fdesc.h"
 
+/****************************************************************************
+    NAME
+        int fstatvfs(
+
+    SYNOPSIS
+        int fd, struct statvfs *buf)
+
+    FUNCTION
+        Check a file descriptor for a filesystem-statistics query.
+        Retrieving the statistics is not implemented.
+
+    INPUTS
+        fd - Open posixc file descriptor.
+        buf - Pointer to caller-owned struct statvfs storage.
+
+    RESULT
+        -1 with errno set to EINVAL if buf is NULL, or EBADF if
+        fd is not recognized as a posixc file descriptor. The
+        NULL-buffer check takes precedence. Otherwise returns 0
+        without writing any part of *buf.
+
+    NOTES
+        Include <sys/statvfs.h>. The descriptor remains open.
+        After validation, the function emits a not-implemented
+        diagnostic through kprintf().
+
+    BUGS
+        A zero return does not indicate that filesystem statistics
+        were obtained. Do not read an uninitialized buffer after
+        this call. Use statvfs() with a suitable pathname instead.
+
+    SEE ALSO
+        statvfs()
+
+*****************************************************************************/
 int fstatvfs(int fd, struct statvfs *buf)
 {
     if (!buf) {

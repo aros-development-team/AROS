@@ -24,24 +24,23 @@
         struct KernelBase *, KernelBase, 38, Kernel)
 
 /*  FUNCTION
-        Allocate an arch specific IRQ type.
+        Allocate a consecutive range of interrupt identifiers.
 
     INPUTS
-        irq_tpe - The Arch specific Type of IRQ to allocate.
-        count   - The number of sequential IRQ's to allocate.
+        irq_type - Platform-defined interrupt type to allocate.
+        count    - Number of consecutive interrupt identifiers.
 
     RESULT
-        -1 on failure, or the first 32bit IRQ ID.
+        First allocated interrupt identifier, or (ULONG)-1 on failure.
 
     NOTES
 
     EXAMPLE
-        ULONG msiIRQBase = KrnAllocIRQ(IRQTYPE_MSI, 7);
 
     BUGS
 
     SEE ALSO
-        KrnAddIRQHandler();
+        KrnFreeIRQ(), KrnAddIRQHandler()
 
     INTERNALS
 

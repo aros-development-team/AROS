@@ -1,0 +1,37 @@
+Run child-command redirection regression
+=======================================
+
+Build with test-dos-runcommandredir or test-dos-runcommandredir-quick.
+Both are selected beneath the DOS component's normal and quick test groups.
+Run runcommandredir beside runcommandchild, or pass the child's path as its
+first argument. Child paths are quoted in every launch case.
+
+The parent creates an owned directory in RAM:. The child reads its Input(),
+writes those exact bytes to Output(), and writes a separate completion file.
+This checks that the child really runs, independently of SystemTagList's return
+code. Before the fix, RunBack's repeated NIL form returns success without
+executing the child; the test fails on the missing completion file.
+
+Coverage includes RunBack's exact NIL form, distinct outer and child input/output
+files, case-insensitive Run with QUIET, a plain Run with child redirections,
+quoted child paths, failed outer input, ordinary duplicate redirections, and
+subsequent shell usability. Successful runs remove their temporary files;
+failed asynchronous launches retain evidence rather than reuse their paths.
+
+Expected result: RUN COMMAND REDIR TEST: 0 failures.
+
+Quoted command regression
+-------------------------
+Run runquotedcommand beside runcommandchild. It copies the child into its own
+RAM: directory under names containing spaces, stars and double quotes, then
+checks the child's completion file and redirected output. Its argument and
+redirection paths also contain spaces. Coverage includes QUIET, mixed case,
+the COMMAND keyword (with and without '='), and outer Run redirections.
+An additional check keeps commands entered after Run's '?' help prompt working.
+The unchanged Run loses the child filename's quoting and fails the first case.
+Expected result: RUN QUOTED TEST: 0 failures.
+
+For a focused external probe, runcommandredir still accepts a child's path
+followed by PLAIN to exercise only the ordinary Run control.
+
+Copyright (C) 2026, The AROS Development Team. All rights reserved.

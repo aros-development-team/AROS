@@ -1,0 +1,12 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+EXEDIR := $(AROS_DEVS)/Midi
+
+#MM- workbench-unix : workbench-devs-camd-hostmidi-unix
+
+%build_prog mmake=workbench-devs-camd-hostmidi-unix \
+    progname=hostmidi targetdir=$(EXEDIR) \
+    files=hostmidi usestartup=no
+
+%common

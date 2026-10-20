@@ -1,0 +1,19 @@
+Native Amiga blitter ownership regression
+========================================
+
+Build with test-graphics-blitterregisters or its -quick target. The native
+Amiga graphics test group selects both; other targets do not select this test.
+
+The test keeps a blitter size and source/destination pointers in D0/D1/A0/A1
+across OwnBlitter and DisownBlitter. Classic Amiga callers use those registers
+after the ownership calls. An unchanged ROM overwrites D0 on both calls and
+clears A1 in OwnBlitter; the test reports failures without issuing an unsafe
+blit using the damaged size.
+
+When the registers are preserved, it copies 17 one-word rows between Chip RAM
+buffers and checks all copied bytes and the surrounding guards. This exercises
+the dimensions/pointers as hardware inputs, rather than checking wrapper code.
+
+Expected result: BLITTER REGISTERS TEST: 0 failures.
+
+Copyright (C) 2026, The AROS Development Team. All rights reserved.

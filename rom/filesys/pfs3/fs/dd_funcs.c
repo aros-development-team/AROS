@@ -609,22 +609,11 @@ static SIPTR dd_Open(struct DosPacket *pkt, globaldata * g)
 		GetExtraFields(filefi.file.direntry, &extrafields);
 #endif
 
-	if (g->muFS_ready)
-	{
 #if MU_CHECKDIR
-		path_flags = muGetRelationshipA(g->user, (path_extrafields.uid << 16) + path_extrafields.gid, NULL);
+	path_flags = muGetRelationship(path_extrafields);
 #endif
-		if (found)
-			flags = muGetRelationshipA(g->user, (extrafields.uid << 16) + extrafields.gid, NULL);
-	}
-	else
-	{
-#if MU_CHECKDIR
-		path_flags = ((path_extrafields.uid == muNOBODY_UID) << muRelB_NO_OWNER) | muRelF_NOBODY;
-#endif
-		if (found)
-			flags = ((extrafields.uid == muNOBODY_UID) << muRelB_NO_OWNER) | muRelF_NOBODY;
-	}
+	if (found)
+		flags = muGetRelationship(extrafields);
 #endif /* MULTIUSER */
 
 	switch (pkt->dp_Type)
@@ -911,7 +900,7 @@ static SIPTR dd_Relabel(struct DosPacket *pkt, globaldata * g)
 	struct DosList *newentry;
 
 #if MULTIUSER
-	if (g->user->uid != muROOT_UID)
+	if (!IsPrivileged())
 	{
 		pkt->dp_Res2 = ERROR_DISK_WRITE_PROTECTED;
 		return DOSFALSE;
@@ -1657,7 +1646,7 @@ static SIPTR dd_Format(struct DosPacket *pkt, globaldata * g)
 	// RES2 = failurecode (if res1 = DOSFALSE)
 
 #if MULTIUSER
-	if (g->user->uid != muROOT_UID)
+	if (!IsPrivileged())
 	{
 		pkt->dp_Res2 = ERROR_DISK_WRITE_PROTECTED;
 		return DOSFALSE;
@@ -2080,7 +2069,7 @@ static SIPTR dd_SetDeldir(struct DosPacket *pkt, globaldata *g)
 		return DOSFALSE;
 
 #if MULTIUSER
-	if (g->user->uid != muROOT_UID)
+	if (!IsPrivileged())
 	{
 		*error = ERROR_DISK_WRITE_PROTECTED;
 		return DOSFALSE;

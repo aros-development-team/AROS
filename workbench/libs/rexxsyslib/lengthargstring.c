@@ -19,26 +19,22 @@
         struct Library *, RexxSysBase, 23, RexxSys)
 
 /*  FUNCTION
-        This will return the length of a string created with CreateArgstring
+        Returns the stored byte length of a Rexx argument string. Unlike
+        strlen(), this function does not stop at an embedded NUL byte.
 
     INPUTS
-        argstring - Pointer to the string part of a RexxArg structure returned
-                    from CreateArgstring
+        argstring - Non-NULL pointer to the data of a valid RexxArg,
+                    such as one returned by CreateArgstring().
 
     RESULT
-        length of the argstring
+        Stored byte length, excluding the terminating NUL byte.
 
     NOTES
-
-    EXAMPLE
-
-    BUGS
+        The argument must be a valid Rexx argument string, not an
+        ordinary NUL-terminated C string.
 
     SEE ALSO
-        CreateArgstring()
-
-    INTERNALS
-
+        CreateArgstring(), DeleteArgstring()
 
 *****************************************************************************/
 {

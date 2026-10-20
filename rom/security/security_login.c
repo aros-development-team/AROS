@@ -29,6 +29,7 @@
 #include "security_memory.h"
 #include "security_support.h"
 #include "security_monitor.h"
+#include "security_keys.h"
 
 /*
  * Tag parsing
@@ -190,6 +191,9 @@ static BOOL UserHasPassword(struct SecurityBase *secBase, CONST_STRPTR userid)
             pwd = info->Password;
         secFreeUserInfo((struct secUserInfo *)info);
     }
+    /* a security key is typed into the password field too */
+    if (!pwd && SendServerPacket(secBase, secSAction_UserHasKeys, (SIPTR)userid, 0, 0, 0))
+        pwd = TRUE;
     return pwd;
 }
 
@@ -229,10 +233,85 @@ static void RecordLogin(struct SecurityBase *secBase, struct secTags *tags, stru
  * rule) is decided by the server. Should the authentication process not
  * run, the server checks the password and a failure costs two seconds.
  */
-static struct secPrivUserInfo *CheckLogin(struct SecurityBase *secBase, struct secTags *tags, STRPTR userid, STRPTR password, BOOL nopasswd)
+/*
+ * What the user is told while a hardware token is waited for: a line on the
+ * console, or the status window. The hook is called again and again by the
+ * token's plugin; FALSE gives up.
+ */
+struct LoginStatus
+{
+    struct SecurityBase     *secBase;
+    struct secTags          *tags;
+    struct LocaleInfo       *li;
+    struct LoginStatusGUI   gui;
+    char                    Shown[96];
+};
+
+static CONST_STRPTR KeyStatusText(struct SecurityBase *secBase, struct LocaleInfo *li, const struct secKeyStatus *ks)
+{
+    switch (ks->Type)
+    {
+    case secKS_INSERT:  return GetLocS(secBase, li, MSG_KEY_INSERT);
+    case secKS_TOUCH:   return GetLocS(secBase, li, MSG_KEY_TOUCH);
+    case secKS_WAIT:    return GetLocS(secBase, li, MSG_KEY_WAIT);
+    case secKS_DONE:    return NULL;
+    }
+    return ks->Text;
+}
+
+/* Shows one status; FALSE when the user gave up. 'gui' may be NULL (console only) */
+static BOOL ShowKeyStatus(struct SecurityBase *secBase, struct secTags *tags, struct LocaleInfo *li,
+                          struct LoginStatusGUI *gui, STRPTR shown, ULONG shownsize, CONST_STRPTR text)
+{
+    if (!text)
+    {
+        if (gui)
+            StatusGUIEnd(secBase, gui);
+        shown[0] = '\0';
+        return TRUE;
+    }
+    if (gui && tags->Graphical)
+    {
+        BOOL unavailable, go;
+
+        go = StatusGUIShow(secBase, gui, tags->PubScrName, tags->System, GetLocS(secBase, li, MSG_KEY_TITLE), text,
+                           GetLocS(secBase, li, MSG_CANCEL), &unavailable);
+        if (!unavailable)
+            return go;
+    }
+    if (strcmp(text, shown))
+    {
+        strncpy(shown, text, shownsize - 1);
+        myfputs(secBase, tags->Output, text);
+        myfputs(secBase, tags->Output, "\n");
+    }
+    return !(SetSignal(0, 0) & SIGBREAKF_CTRL_C);
+}
+
+AROS_UFH3(static IPTR, LoginStatusFunc,
+    AROS_UFHA(struct Hook *, hook, A0),
+    AROS_UFHA(struct secKeyStatus *, ks, A2),
+    AROS_UFHA(APTR, unused, A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct LoginStatus *ls = (struct LoginStatus *)hook->h_Data;
+
+    return ShowKeyStatus(ls->secBase, ls->tags, ls->li, &ls->gui, ls->Shown, sizeof(ls->Shown),
+                         KeyStatusText(ls->secBase, ls->li, ks));
+
+    AROS_USERFUNC_EXIT
+}
+
+#define KEYLIST_MAX     8
+
+static struct secPrivUserInfo *CheckLogin(struct SecurityBase *secBase, struct secTags *tags, STRPTR userid, STRPTR password, BOOL nopasswd, struct LocaleInfo *li)
 {
     struct secPrivUserInfo *info;
     struct secAPacket pkt;
+    struct secKeyInfo *list;
+    UBYTE challenge[secKEYCHALLENGESIZE];
+    LONG r;
 
     if (nopasswd || !secBase->AuthPort)
     {
@@ -245,6 +324,7 @@ static struct secPrivUserInfo *CheckLogin(struct SecurityBase *secBase, struct s
 
     if (!(info = (struct secPrivUserInfo *)secAllocUserInfo()))
         return NULL;
+    list = AllocVec(KEYLIST_MAX * sizeof(struct secKeyInfo), MEMF_ANY | MEMF_CLEAR);
     memset(&pkt, 0, sizeof(pkt));
     pkt.Type = secAAction_Verify;
     pkt.UserID = userid;
@@ -253,7 +333,71 @@ static struct secPrivUserInfo *CheckLogin(struct SecurityBase *secBase, struct s
     pkt.Service = (CONST_STRPTR)"login";
     pkt.Info = info;
     pkt.NoLog = tags->NoLog;
-    if (SendAuthPacket(secBase, &pkt) == secVERIFY_OK)
+    /* a challenge token may have to answer: the first pass then hands out
+     * a ticket, the challenge and the user's tokens */
+    pkt.WantTicket = (list != NULL);
+    pkt.Challenge = challenge;
+    pkt.KeyList = list;
+    pkt.KeyListSize = list ? KEYLIST_MAX : 0;
+    r = SendAuthPacket(secBase, &pkt);
+    if (r == secVERIFY_KEYNEEDED && list && pkt.KeyCount)
+    {
+        struct LoginStatus ls;
+        struct Hook hook;
+        UBYTE *assertion;
+        ULONG size = secKEYASSERTIONMAX, which = 0, kr = secKCERR_FAILED;
+
+        memset(&ls, 0, sizeof(ls));
+        ls.secBase = secBase;
+        ls.tags = tags;
+        ls.li = li;
+        memset(&hook, 0, sizeof(hook));
+        hook.h_Entry = (HOOKFUNC)LoginStatusFunc;
+        hook.h_Data = &ls;
+        if ((assertion = AllocVec(secKEYASSERTIONMAX, MEMF_ANY | MEMF_CLEAR)))
+        {
+            kr = KeyClientAssert(secBase, list, pkt.KeyCount > KEYLIST_MAX ? KEYLIST_MAX : pkt.KeyCount, challenge,
+                                 assertion, &size, &which, &hook, 0);
+        }
+        StatusGUIEnd(secBase, &ls.gui);
+        if (kr == secKCERR_OK)
+        {
+            /* second pass: the answer with the same ticket */
+            pkt.Type = secAAction_Verify;
+            pkt.Token = "";
+            pkt.Assertion = assertion;
+            pkt.AssertionLen = size;
+            pkt.KeyPublicID = list[which < KEYLIST_MAX ? which : 0].PublicID;
+            pkt.Challenge = NULL;
+            pkt.KeyList = NULL;
+            pkt.KeyListSize = 0;
+            r = SendAuthPacket(secBase, &pkt);
+        }
+        else
+        {
+            pkt.Type = secAAction_Discard;
+            SendAuthPacket(secBase, &pkt);
+            r = secVERIFY_FAILED;
+        }
+        if (assertion)
+            FreeVec(assertion);
+    }
+    else if (r == secVERIFY_KEYNEEDED)
+    {
+        pkt.Type = secAAction_Discard;
+        SendAuthPacket(secBase, &pkt);
+        r = secVERIFY_FAILED;
+    }
+    if (r == secVERIFY_OK && pkt.WantTicket)
+    {
+        /* the login goes on with the record itself; the ticket is not needed */
+        pkt.Type = secAAction_Discard;
+        SendAuthPacket(secBase, &pkt);
+    }
+    memset(challenge, 0, sizeof(challenge));
+    if (list)
+        FreeVec(list);
+    if (r == secVERIFY_OK)
     {
         RecordLogin(secBase, tags, info);
         return info;
@@ -374,7 +518,7 @@ static struct secPrivUserInfo *LoginRequest(struct SecurityBase *secBase, struct
 
         if (userid && password)
         {
-            info = CheckLogin(secBase, tags, userid, password, nopasswd);
+            info = CheckLogin(secBase, tags, userid, password, nopasswd, li);
             memset(pwdbuf, 0, sizeof(pwdbuf));
             guipwd = FALSE;
             if (!info)
@@ -705,6 +849,8 @@ struct GuiConv
     BOOL                PwdPending;     /* its password not handed out yet */
     char                uid[secUSERIDSIZE];
     char                pwd[secPASSWORDSIZE];
+    struct LoginStatusGUI StatusGUI;    /* while a hardware token is waited for */
+    char                StatusShown[96];
 };
 
 static STRPTR ConvDup(CONST_STRPTR s)
@@ -810,6 +956,11 @@ AROS_UFH3(static IPTR, GuiConvFunc,
             }
             break;
 
+        case PAM_AROS_STATUS:
+            /* a hardware token is waited for; the user may give up */
+            ok = ShowKeyStatus(secBase, tags, gc->li, &gc->StatusGUI, gc->StatusShown, sizeof(gc->StatusShown), m->msg);
+            break;
+
         default:
             ok = FALSE;
             break;
@@ -896,6 +1047,7 @@ static struct secPrivUserInfo *PamLoginRequest(struct SecurityBase *secBase, str
         if (!(h = PamStartA("login", tags->UserID, (tags->Graphical && !(tags->UserID && tags->Password)) ? &convhook : NULL, ptags)))
             break;
         r = PamAuthenticate(h, 0);
+        StatusGUIEnd(secBase, &gc.StatusGUI);
         if (r == PAM_SUCCESS)
             r = PamAcctMgmt(h, 0);
         if (r == PAM_SUCCESS)

@@ -48,6 +48,8 @@
 
     HISTORY
 
+        41.4: Preserve quoting and escapes in the child command line.
+
 ******************************************************************************/
 
 #include <exec/memory.h>
@@ -56,6 +58,7 @@
 #include <dos/dostags.h>
 #include <dos/cliinit.h>
 #include <dos/stdio.h>
+#include <dos/rdargs.h>
 #include <proto/dos.h>
 #include <utility/tagitem.h>
 #include <proto/alib.h>
@@ -66,10 +69,11 @@
 #include <aros/shcommands.h>
 
 #include <string.h>
+#include <strings.h>
 
 #include "run_handle.h"
 
-AROS_SH2H(Run, 41.3,                  "Start a program as a background process\n",
+AROS_SH2H(Run, 41.4,                  "Start a program as a background process\n",
 AROS_SHAH(BOOL  , ,QUIET  ,/S,FALSE,"\tDon't print the background CLI's number"),
 AROS_SHAH(STRPTR, ,COMMAND,/F,NULL ,  "The program (resp. script) to run (arguments allowed)\n") )
 {
@@ -84,7 +88,43 @@ AROS_SHAH(STRPTR, ,COMMAND,/F,NULL ,  "The program (resp. script) to run (argume
     STRPTR command = (STRPTR)SHArg(COMMAND);
     LONG cmdsize = 0;
 
-    if (!command)
+    if (command)
+    {
+        struct CSource source = { (STRPTR)SHArgLine(), strlen(SHArgLine()), 0 };
+        BOOL quiet = SHArg(QUIET), keyword = TRUE, equal = FALSE;
+        char item[8];
+        LONG start, type;
+
+        /* ReadArgs /F removes the first item's quotes and escapes. The child
+         * CLI needs the original text. Skip only Run's own parsed options. */
+        for (;;)
+        {
+            start = source.CS_CurChr;
+            type = ReadItem(item, sizeof item, &source);
+            if (type == ITEM_UNQUOTED && quiet && !strcasecmp(item, "QUIET"))
+            {
+                quiet = FALSE;
+                continue;
+            }
+            if (type == ITEM_UNQUOTED && keyword && !strcasecmp(item, "COMMAND"))
+            {
+                keyword = FALSE;
+                equal = TRUE;
+                continue;
+            }
+            if (type == ITEM_EQUAL && equal)
+            {
+                equal = FALSE;
+                continue;
+            }
+            /* A help prompt reads a new line; the original '?' is stale. */
+            if (type == ITEM_UNQUOTED && !strcmp(item, "?"))
+                break;
+            command = source.CS_Buffer + start;
+            break;
+        }
+    }
+    else
         command = "";
 
     cis = Open("NIL:", MODE_OLDFILE);
@@ -113,8 +153,8 @@ AROS_SHAH(STRPTR, ,COMMAND,/F,NULL ,  "The program (resp. script) to run (argume
 
         tmp = AllocMem(cmdsize+1+argsize+1, MEMF_ANY);
         if (tmp) {
+            CopyMem(command, tmp, cmdsize);
             command = tmp;
-            CopyMem(SHArg(COMMAND), command, cmdsize);
             command[cmdsize++]='\n';
             CopyMem(argbuff, &command[cmdsize], argsize);
             cmdsize += argsize;

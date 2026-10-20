@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Paula audio.device
 */
@@ -42,7 +42,7 @@ static const UBYTE masktoch[16] = { 0, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1,
 
 static BOOL isplaying(struct AudioBase *ab, struct IOAudio *io, UBYTE ch)
 {
-    return (struct IOAudio*)ab->writelist[ch].mlh_Head->mln_Succ == io && !(ab->stopmask & (1 << ch));
+    return (struct IOAudio*)ab->writelist[ch].mlh_Head == io && !(ab->stopmask & (1 << ch));
 }
 
 struct IOAudio *getnextwrite(struct AudioBase *ab, UBYTE ch, BOOL second)

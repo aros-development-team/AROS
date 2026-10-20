@@ -76,7 +76,7 @@ Boston, MA 02111-1307, USA.  */
 #endif
 
 /* globals */
-char * mflags[64];
+char ** mflags;
 int mflagc;
 int verbose = 0;
 int quiet = 0;
@@ -109,10 +109,15 @@ main (int argc, char ** argv)
 {
     char * currdir;
     int t;
-    char * targets[64];
+    char ** targets;
     int targetc;
     int doenv = 0;
     int retval = 0;
+
+    /* Every argument may be a target or a make flag, plus the default
+       target: size both lists from argc instead of a fixed bound. */
+    targets = xmalloc ((argc + 1) * sizeof (char *));
+    mflags = xmalloc ((argc + 1) * sizeof (char *));
 
     currdir = getcwd (NULL, 0);
     if (currdir == NULL)

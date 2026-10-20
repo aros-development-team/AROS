@@ -8,6 +8,9 @@
 # share this agent's disk with the core build.
 
 steps:
+# --- Free host disk up front - the full system package can exhaust it --------
+- template: steps-reclaim-disk.yml
+
 # --- Restore the prebuilt toolchain to the SAME absolute path ----------------
 - download: current
   artifact: 'toolchain-$(arosbuild.name)'
@@ -16,6 +19,8 @@ steps:
 - script: |
     mkdir -p '$(AROSBUILDTOOLCHAINDIR)'
     tar xjvf '$(Pipeline.Workspace)/toolchain-$(arosbuild.name)/$(AROSBUILDID)-$(Agent.OS)-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2' -C '$(AROSBUILDTOOLCHAINDIR)/..'
+    # The downloaded artifact tarball is dead weight once extracted.
+    rm -f '$(Pipeline.Workspace)/toolchain-$(arosbuild.name)/$(AROSBUILDID)-$(Agent.OS)-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2'
     echo '##vso[task.prependpath]$(AROSBUILDTOOLCHAINDIR)'
   displayName: 'Restore prebuilt toolchain'
 
@@ -158,6 +163,10 @@ steps:
 
 # --- Package the base (and boot) distribution --------------------------------
 - script: |
+    # Abort on the first error so a truncated archive (e.g. tar/bzip2 hitting
+    # "No space left on device") or a failed md5sum never reaches
+    # $(AROSBUILDBINDIR), and so is never staged and uploaded.
+    set -e
     if [ -d "$(AROSBUILDDIR)/distfiles-boot" ]; then
       if [ ! -f /tmp/_aros_boot_build_failed ]; then
         mkdir -p '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)'
@@ -205,6 +214,7 @@ steps:
     fi
     rm -Rf $(AROSPACKAGEDIR)
   workingDirectory: '$(AROSBUILDSDIR)'
+  condition: ne( variables['SF_RSYNC_USER'], '' )
   displayName: 'Creating $(arosbuild.name) base package(s)'
 
 - script: |

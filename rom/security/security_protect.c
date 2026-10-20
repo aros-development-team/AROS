@@ -30,9 +30,7 @@
 #define GO_WRITE        (FIBF_GRP_WRITE | FIBF_GRP_DELETE | FIBF_OTR_WRITE | FIBF_OTR_DELETE)
 #define GO_ALL          (GO_WRITE | FIBF_GRP_READ | FIBF_GRP_EXECUTE | FIBF_OTR_READ | FIBF_OTR_EXECUTE)
 
-extern const char PasswdFileName[];
 extern const char ConfigFileName[];
-extern const char GroupFileName[];
 extern const char LogFileName[];
 
 struct ProtectState
@@ -140,6 +138,11 @@ void CheckDatabaseProtection(struct SecurityBase *secBase)
     SecureDir(secBase, &ps, PAM_CONFIG_DIR, GO_WRITE);
     SecureDir(secBase, &ps, PAM_MODULE_DIR, GO_WRITE);
 
+    /* the users' security keys (root only), and the plugins */
+    if (PathIn(secBase, secBase->_cfgLock, "Keys", path, sizeof(path)))
+        SecureDir(secBase, &ps, path, GO_ALL);
+    SecureDir(secBase, &ps, secPLUGIN_DIRNAME, GO_WRITE);
+
     FreeDosObject(DOS_FIB, ps.fib);
 }
 
@@ -185,30 +188,37 @@ void ProtectRootOnly(struct SecurityBase *secBase, CONST_STRPTR name)
     SetProtection(name, FIBF_EXECUTE);
 }
 
+void ProtectRootWritable(struct SecurityBase *secBase, CONST_STRPTR name)
+{
+    SetOwner(name, ROOTOWNER);
+    /* owner rwd, group and other r */
+    SetProtection(name, FIBF_EXECUTE | FIBF_GRP_READ | FIBF_OTR_READ);
+}
+
 /*
- * The password file is rewritten as passwd.new, then passwd is renamed to
- * passwd.old, passwd.new to passwd, and passwd.old is deleted. A missing
- * passwd would make the system unconfigured - everybody root - so an
- * interruption is repaired before the file is read: passwd.new is only
+ * A database file is rewritten as <name>.new, then <name> is renamed to
+ * <name>.old, <name>.new to <name>, and <name>.old is deleted. A missing
+ * password file would make the system unconfigured - everybody root - so
+ * an interruption is repaired before the file is read: <name>.new is only
  * renamed once complete, so it is the newest full copy.
  */
-void RecoverPasswdFile(struct SecurityBase *secBase)
+void RecoverDbFile(struct SecurityBase *secBase, CONST_STRPTR name, CONST_STRPTR newname, CONST_STRPTR oldname)
 {
     BPTR lock;
 
-    if ((lock = Lock(PasswdFileName, SHARED_LOCK)))
+    if ((lock = Lock(name, SHARED_LOCK)))
     {
         UnLock(lock);
         /* leftovers of a rewrite that completed or never got far */
-        DeleteFile(secPasswd_NewName);
-        DeleteFile(secPasswd_OldName);
+        DeleteFile(newname);
+        DeleteFile(oldname);
         return;
     }
-    if (Rename(secPasswd_NewName, PasswdFileName))
+    if (Rename(newname, name))
     {
-        Report(secBase, "the password file was restored from '%s'", secPasswd_NewName);
-        DeleteFile(secPasswd_OldName);
+        Report(secBase, "'%s' was restored from its new copy", name);
+        DeleteFile(oldname);
     }
-    else if (Rename(secPasswd_OldName, PasswdFileName))
-        Report(secBase, "the password file was restored from '%s'", secPasswd_OldName);
+    else if (Rename(oldname, name))
+        Report(secBase, "'%s' was restored from its old copy", name);
 }

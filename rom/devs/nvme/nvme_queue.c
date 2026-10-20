@@ -3,6 +3,7 @@
 */
 
 #include <proto/exec.h>
+#include <dos/dos.h>
 
 #include <asm/io.h>
 #include <hidd/pci.h>
@@ -111,6 +112,17 @@ void nvme_free_queue(struct nvme_queue *nvmeq)
     }
 
     (void)NVMEBase;
+
+    /* The IO task polls this queue, so it has to be gone first */
+    if (nvmeq->q_IOTask) {
+        ULONG oldsig = SetSignal(0, SIGF_SINGLE) & SIGF_SINGLE;
+
+        nvmeq->q_IOStopper = FindTask(NULL);
+        Signal(nvmeq->q_IOTask, SIGBREAKF_CTRL_C);
+        Wait(SIGF_SINGLE);
+        SetSignal(oldsig, oldsig);
+        nvmeq->q_IOTask = NULL;
+    }
 
     if (nvmeq->sqba) {
         if (nvmeq->dev && nvmeq->dev->dev_PCIDriverObject && NVMEBase) {

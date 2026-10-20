@@ -4,15 +4,26 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES := Login Logout Passwd Who SetOwner AMUInit Lockouts
+FILES := Login Logout Passwd Who SetOwner AMUInit Lockouts AuthKey
 
 USER_CFLAGS  := -noposixc
 USER_LDFLAGS := -static
 
 #MM- workbench-c : workbench-c-security
-#MM workbench-c-security : includes kernel-security-includes kernel-task-includes linklibs workbench-libs-pam-includes
+#MM workbench-c-security : includes kernel-security-includes kernel-task-includes linklibs workbench-libs-pam-includes \
+#MM     workbench-libs-usergroup-includes
 
 %build_progs mmake=workbench-c-security \
     files="$(FILES)" targetdir=$(AROS_C) coverageinstr=no
+
+# FidoTool checks a key's signatures with libmbedcrypto
+#MM- workbench-c-security : workbench-c-security-fidotool
+#MM workbench-c-security-fidotool : includes linklibs linklibs-mbedcrypto workbench-libs-mbedtls-includes
+
+USER_INCLUDES := -I$(SRCDIR)/workbench/libs/mbedtls -I$(SRCDIR)/workbench/libs/security-plugins/fido
+USER_CPPFLAGS := -DMBEDTLS_CONFIG_FILE='"mbedtls_aros_config.h"'
+
+%build_prog mmake=workbench-c-security-fidotool \
+    progname=FidoTool files=FidoTool targetdir=$(AROS_C) uselibs="mbedcrypto stdc" coverageinstr=no
 
 %common

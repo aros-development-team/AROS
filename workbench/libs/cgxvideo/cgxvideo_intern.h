@@ -29,6 +29,8 @@
 #   include <graphics/view.h>
 #endif
 
+#include <exec/semaphores.h>
+#include <intuition/intuition.h>
 #include <oop/oop.h>
 
 #undef HiddBitMapAttrBase
@@ -48,8 +50,15 @@ struct IntCGXVBase
 
 struct VLayerHandle
 {
-    OOP_Object *obj;	/* Overlay object	  */
-    OOP_Object *drv;	/* Graphics driver object */
+    struct SignalSemaphore lock;	/* Guards window and locked */
+    struct Window *window;	/* NULL while detached	  */
+    BOOL           locked;	/* Source buffer is locked */
+    APTR           buffer;	/* Null backend source data */
+    ULONG          width;
+    ULONG          height;
+    ULONG          modulo;
 };
+
+BOOL cgxv_NullBackend(void);
 
 #endif /* CGXVIDEO_INTERN_H */

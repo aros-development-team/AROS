@@ -2,6 +2,7 @@
     Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
 */
 #include <aros/debug.h>
+#include <proto/exec.h>
 
 #include "cgxvideo_intern.h"
 
@@ -34,7 +35,8 @@
     EXAMPLE
 
     BUGS
-        This function is unimplemented.
+        The lock does not nest; a second LockVLayer() fails until
+        UnlockVLayer() is called.
 
     SEE ALSO
         UnlockVLayer()
@@ -47,8 +49,20 @@
 {
     AROS_LIBFUNC_INIT
 
-    aros_print_not_implemented ("LockVLayer");
-    return FALSE;
+    ULONG result = FALSE;
+
+    if (!VLayerHandle)
+        return result;
+
+    ObtainSemaphore(&VLayerHandle->lock);
+    if (!VLayerHandle->locked)
+    {
+        VLayerHandle->locked = TRUE;
+        result = TRUE;
+    }
+    ReleaseSemaphore(&VLayerHandle->lock);
+
+    return result;
 
     AROS_LIBFUNC_EXIT
 } /* LockVLayer */

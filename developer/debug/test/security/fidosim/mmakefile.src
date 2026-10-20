@@ -1,0 +1,17 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+#
+# fidosim.device: a simulated U2F security key (the fido.device interface) for the
+# security tests; the harness copies it to Devs: and sets KEYDEVICE fidosim.device.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM test-security-fidosim : includes linklibs linklibs-mbedcrypto workbench-libs-mbedtls-includes
+
+USER_INCLUDES := -I$(SRCDIR)/workbench/libs/mbedtls -I$(SRCDIR)/workbench/libs/security-plugins/fido
+USER_CPPFLAGS := -DMBEDTLS_CONFIG_FILE='"mbedtls_aros_config.h"'
+
+%build_module mmake=test-security-fidosim \
+    modname=fidosim modtype=device moduledir=Developer/Debug/Tests/security \
+    files="fidosim" uselibs="mbedcrypto stdc"
+
+%common

@@ -4224,12 +4224,23 @@ aros_kernel_cflags="$aros_kernel_cflags $aros_kernel_export_cflags"
 if test "$aros_target_variant" = ""; then
     aros_target_platform="$aros_target_arch-$aros_target_cpu"
 else
-    case "$target_os" in
-        pc)
+    case "$aros_target_variant" in
+        smp)
+            # SMP is a build flavour of the platform, not a platform of its
+            # own: keep the real platform name so that distfiles-$(platform)
+            # and AROS_ARCHITECTURE resolve exactly as for the non-SMP build
+            # (e.g. raspi-aarch64, not smp-aarch64).
             aros_target_platform="$aros_target_arch-$aros_target_cpu"
             ;;
         *)
-            aros_target_platform="$aros_target_variant-$aros_target_cpu"
+            case "$target_os" in
+                pc)
+                    aros_target_platform="$aros_target_arch-$aros_target_cpu"
+                    ;;
+                *)
+                    aros_target_platform="$aros_target_variant-$aros_target_cpu"
+                    ;;
+            esac
             ;;
     esac
 fi

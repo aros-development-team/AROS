@@ -18,6 +18,9 @@
 #define secAUTH_DEFMAXTRIES     (5)
 #define secAUTH_DEFLOCKTIME     (300)
 #define secAUTH_DEFDELAYMAX     (30)
+#define secAUTH_DEFKEYTIMEOUT   (30)
+#define secAUTH_DEFKEYAPPID     "aros:login"
+#define secAUTH_DEFKEYDEVICE    "fido.device"
 
 /* Requests queued at the authentication process: in all, and per calling
  * user (tasks owned by nobody - login prompts - count as one user) */
@@ -72,6 +75,14 @@ struct secAPacket
     ULONG                   Count;          /* Control: number of records                   */
     BOOL                    Clear;          /* Control: clear UserID / RemoteHost / all     */
     APTR                    PamHandle;      /* EndSession                                   */
+    struct secKARequest     *KeyReq;        /* KeyAdmin: the request; Res = secKAERR_#?     */
+    UBYTE                   *Challenge;     /* Verify: receives the challenge (KEYNEEDED)   */
+    const UBYTE             *Assertion;     /* Verify: a token's answer (with Ticket)       */
+    ULONG                   AssertionLen;
+    CONST_STRPTR            KeyPublicID;    /* Verify: the token that answered              */
+    struct secKeyInfo       *KeyList;       /* Verify: receives the challenge tokens        */
+    ULONG                   KeyListSize;
+    ULONG                   KeyCount;
     LONG                    Res;            /* secVERIFY_#? (Verify), BOOL (others)         */
 };
 
@@ -84,6 +95,8 @@ struct secAPacket
 #define secAAction_Control      5           /* secAuthControlA(): list / clear the records  */
 #define secAAction_EndSession   6           /* close a pam.library session (PamHandle).     */
                                             /* Sent without a reply port, like TaskGone     */
+#define secAAction_KeyAdmin     7           /* secKeyAdminA() by a user: redeem their       */
+                                            /* ticket, then let the server change their keys*/
 
 extern struct Process *CreateAuthServer(struct SecurityBase *secBase);
 extern BOOL StartAuthServer(struct SecurityBase *secBase);

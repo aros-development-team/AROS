@@ -25,16 +25,15 @@
 
 /****************************************************************************************/
 
-#ifndef __AROS__
+/* Expunge callbacks return success after releasing their resources. */
 static int Expunge(struct CamdBase *CamdBase)
 {
     UninitCamd(CamdBase);
     return TRUE;
 }
-#endif
 
 ADD2INITLIB(InitCamd, 0);
-ADD2EXPUNGELIB(UninitCamd, 0);
+ADD2EXPUNGELIB(Expunge, 0);
 
 #else
 #  include "camd_aos4_init.c"

@@ -99,13 +99,14 @@ struct PCIBcm2712Data
     uint32_t            intx_irq;
 
     /*
-     * This bridge's MSI block. msi_first_intid already carries the message
-     * offset, so message n of ours raises msi_first_intid + n; msi_used is
-     * one bit per message handed out.
+     * This bridge's MSI block. Message n of ours raises msi_first_intid + n
+     * (which already carries the offset), and a device asks for it by
+     * writing msi_offset + n; msi_used is one bit per message handed out.
      */
     volatile uint8_t   *mip;
     uint64_t            msi_target;     /* the PCI address a device writes */
     uint32_t            msi_first_intid;
+    uint32_t            msi_offset;     /* first MIP input wired to our SPIs */
     uint32_t            msi_count;
     uint64_t            msi_used;
 

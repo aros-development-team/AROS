@@ -195,23 +195,146 @@ struct secGroupInfo
 #define secT_UserName           (TAG_USER+36)   /* (STRPTR) the full name                                          */
 #define secT_HomeDir            (TAG_USER+37)   /* (STRPTR) home directory                                         */
 #define secT_Shell              (TAG_USER+38)   /* (STRPTR) shell (may be empty)                                   */
+/* secUserAdminA() groups (root only) */
+#define secT_GroupID            (TAG_USER+39)   /* (STRPTR) the group (GROUPADD: the new one)                      */
+#define secT_NewGroupID         (TAG_USER+40)   /* (STRPTR) GROUPMODIFY: new group ID                              */
+#define secT_GroupName          (TAG_USER+41)   /* (STRPTR) the group's description                                */
+#define secT_GroupMgr           (TAG_USER+42)   /* (ULONG) uid of the group's manager (default root)               */
+#define secT_GroupMembers       (TAG_USER+43)   /* (STRPTR *) NULL-terminated user IDs: the group's members        */
+                                                /* (besides those whose primary group it is); replaces the list     */
+/* secExpandPathA() */
+#define secT_BufferSize         (TAG_USER+44)   /* (ULONG) size of the buffer that receives the path               */
+/* secKeyAdminA() (root, or the user in person with a ticket); also secT_UserID, secT_Ticket */
+#define secT_KAOperation        (TAG_USER+45)   /* (ULONG) secKA_#?                                                */
+#define secT_KeyType            (TAG_USER+46)   /* (ULONG) secKEY_#?                                               */
+#define secT_KeyLabel           (TAG_USER+47)   /* (STRPTR) a name for the key (no spaces)                         */
+#define secT_KeyScheme          (TAG_USER+48)   /* (STRPTR) the scheme a plugin implements, e.g. "yubico"          */
+#define secT_KeyPublicID        (TAG_USER+49)   /* (STRPTR) the id the token presents with every code              */
+#define secT_KeySecret          (TAG_USER+50)   /* (STRPTR) the token's secret as hex digits; its layout is the    */
+                                                /* scheme's                                                        */
+#define secT_KeyList            (TAG_USER+51)   /* secKA_LIST: (struct secKeyInfo *) array to fill                 */
+#define secT_KeyListSize        (TAG_USER+52)   /* secKA_LIST: (ULONG) entries in that array                       */
+#define secT_KeyCount           (TAG_USER+53)   /* secKA_LIST: (ULONG *) receives the number of keys               */
+#define secT_HasKeys            (TAG_USER+54)   /* secQueryUserA(): (BOOL *) the user has security keys registered */
+/* secVerifyUserA() with secKEY_CHALLENGE tokens, secKeyClientA(), secKeyAdminA() enrolment */
+#define secT_KeyChallenge       (TAG_USER+55)   /* (UBYTE *) secKEYCHALLENGESIZE bytes: receives the challenge      */
+                                                /* (secVERIFY_KEYNEEDED), or is the challenge to answer             */
+#define secT_KeyAssertion       (TAG_USER+56)   /* (UBYTE *) the token's answer: given to secVerifyUserA() with    */
+                                                /* secT_Ticket, received from secKeyClientA()                      */
+#define secT_KeyAssertionSize   (TAG_USER+57)   /* secVerifyUserA(): (ULONG) its size; secKeyClientA(): (ULONG *)  */
+                                                /* the buffer's size, then the answer's                            */
+#define secT_KCOperation        (TAG_USER+58)   /* secKeyClientA(): (ULONG) secKC_#?                                */
+#define secT_StatusHook         (TAG_USER+59)   /* (struct Hook *) told what to show while a token is waited for   */
+                                                /* (struct secKeyStatus *); returns FALSE to give up               */
+#define secT_KeyTimeout         (TAG_USER+60)   /* (ULONG) seconds to wait for a token and a touch [KEYTIMEOUT]    */
+#define secT_KeyEnrol           (TAG_USER+61)   /* secKeyAdminA(secKA_ADD): (BOOL) enrol a present secKEY_CHALLENGE */
+                                                /* token instead of giving secT_KeyPublicID / secT_KeySecret        */
+#define secT_KeyIndex           (TAG_USER+62)   /* secKeyClientA(): (ULONG *) which entry of secT_KeyList answered  */
 
 /* secUserAdminA() operations */
 #define secUA_ADD               (1)             /* new user: secT_UserID, secT_UID, secT_GID [, others]            */
 #define secUA_MODIFY            (2)             /* change the given fields of secT_UserID                          */
 #define secUA_DELETE            (3)             /* remove secT_UserID                                              */
 #define secUA_PASSWORD          (4)             /* set secT_UserID's password to secT_Password ("" = none)         */
+#define secUA_GROUPADD          (5)             /* new group: secT_GroupID, secT_GID [, others]                    */
+#define secUA_GROUPMODIFY       (6)             /* change the given fields of secT_GroupID                         */
+#define secUA_GROUPDELETE       (7)             /* remove secT_GroupID (not while it is a user's primary group)    */
+
+/* secKeyAdminA() operations */
+#define secKA_ADD               (1)             /* register a key: secT_KeyType, secT_KeyLabel and its data        */
+#define secKA_LIST              (2)             /* list the user's keys (secT_KeyList...); secrets are not listed  */
+#define secKA_REMOVE            (3)             /* remove the key secT_KeyLabel                                    */
+
+/* secKeyAdminA() results */
+#define secKAERR_OK             (0)
+#define secKAERR_NOTALLOWED     (1)             /* not root, and not the user with a fresh ticket                  */
+#define secKAERR_NOTFOUND       (2)             /* no such user, or no such key                                    */
+#define secKAERR_EXISTS         (3)             /* a key with that label is registered already                     */
+#define secKAERR_BADARGS        (4)             /* a field is missing or malformed                                 */
+#define secKAERR_WRITE          (5)             /* the key file could not be written; nothing changed              */
+#define secKAERR_UNAVAILABLE    (6)             /* unconfigured system, no server, or no keys plugin               */
+#define secKAERR_NOTOKEN        (7)             /* enrolment: no token answered, or the user gave up               */
+
+/*
+ * Hardware authentication tokens ("security keys", secT_KeyType)
+ *
+ * A registered token belongs to a type (how it takes part in a login) and
+ * a scheme (whose codes it produces; a plugin implements each scheme).
+ * The library keeps the token's public id, its secret and a counter that
+ * every accepted code must advance (replay protection); the plugin
+ * recognises and checks the codes.
+ */
+#define secKEY_OTP              (1)             /* the token types a one-time code directly after the password;    */
+                                                /* schemes: "yubico" (Yubico OTP, yubikey.secplugin)               */
+#define secKEY_CHALLENGE        (2)             /* the token answers a challenge the system makes; the login talks  */
+                                                /* to it (secKeyClientA()); schemes: "u2f" (FIDO U2F, fido.secplugin) */
+
+#define secKEYLABELSIZE         (32)
+#define secKEYSCHEMESIZE        (16)
+#define secKEYPUBIDSIZE         (512)           /* the id a token presents (U2F: the key handle, up to 255 bytes, hex) */
+#define secKEYSECRETMAX         (96)            /* bytes of key material (a secret, or a public key)               */
+#define secKEYCHALLENGESIZE     (32)
+#define secKEYASSERTIONMAX      (512)           /* bytes a token's answer may have                                 */
+#define secKEYAPPIDSIZE         (64)
+
+/* secKeyClientA() operations and results */
+#define secKC_ASSERT            (1)             /* have a present token answer a challenge (secT_KeyList, ...)     */
+#define secKC_ENROL             (2)             /* enrol a present token: secT_KeyPublicID and secT_KeySecret out  */
+
+#define secKCERR_OK             (0)
+#define secKCERR_NOTOKEN        (1)             /* no token, or none of the listed ones, within the timeout        */
+#define secKCERR_CANCELLED      (2)             /* the status hook gave up                                         */
+#define secKCERR_UNAVAILABLE    (3)             /* no plugin for the scheme, or not a multi-user system            */
+#define secKCERR_BADARGS        (4)
+#define secKCERR_FAILED         (5)             /* the token refused or failed                                     */
+
+/* What a status hook (secT_StatusHook) is shown: CallHookPkt(hook, struct secKeyStatus *, NULL),
+ * returning TRUE to go on, FALSE to give up */
+struct secKeyStatus
+{
+    ULONG               Type;                   /* secKS_#?                         */
+    CONST_STRPTR        Text;                   /* for the user                     */
+};
+#define secKS_INSERT            (1)             /* no token is present: plug one in */
+#define secKS_TOUCH             (2)             /* touch the token                  */
+#define secKS_WAIT              (3)             /* working                          */
+#define secKS_DONE              (4)             /* finished (show nothing)          */
+
+/* What a plugin gets for its client-side operations (the login's context) */
+struct secKeyClient
+{
+    ULONG               Size;                   /* sizeof(struct secKeyClient)      */
+    struct ExecBase     *Exec;                  /* the library bases, for a plugin   */
+    struct Library      *Dos;                   /* that opened none itself           */
+    struct Library      *Utility;
+    struct Hook         *StatusHook;            /* may be NULL                      */
+    CONST_STRPTR        DeviceName;             /* the tokens' exec device (KEYDEVICE, "fido.device") */
+    ULONG               Timeout;                /* seconds                          */
+    CONST_STRPTR        AppID;                  /* KEYAPPID                         */
+};
+
+/* One registered token, as secKeyAdminA(secKA_LIST) reports it (no secret) */
+struct secKeyInfo
+{
+    ULONG               Type;                   /* secKEY_#?                        */
+    char                Scheme[secKEYSCHEMESIZE];
+    char                Label[secKEYLABELSIZE];
+    char                PublicID[secKEYPUBIDSIZE];
+    ULONG               Counter;                /* last accepted counter            */
+    char                Registered[12];         /* yyyy-mm-dd                       */
+};
 
 /* secUserAdminA() results */
 #define secUAERR_OK             (0)
 #define secUAERR_NOTROOT        (1)             /* only root may change accounts                                   */
-#define secUAERR_NOTFOUND       (2)             /* no such user                                                    */
-#define secUAERR_EXISTS         (3)             /* the user ID or the uid is taken                                 */
+#define secUAERR_NOTFOUND       (2)             /* no such user (or group, or member)                              */
+#define secUAERR_EXISTS         (3)             /* the user/group ID or the uid/gid is taken                       */
 #define secUAERR_BADARGS        (4)             /* a field is missing, too long or holds '|', ':' or a control char */
 #define secUAERR_NOGROUP        (5)             /* no group with that gid                                          */
-#define secUAERR_PROTECTED      (6)             /* root cannot be deleted, renamed or given another uid            */
-#define secUAERR_WRITE          (7)             /* the password file could not be written; nothing changed         */
+#define secUAERR_PROTECTED      (6)             /* root (and root's group) cannot be deleted, renamed or renumbered */
+#define secUAERR_WRITE          (7)             /* the password or group file could not be written; nothing changed */
 #define secUAERR_UNAVAILABLE    (8)             /* unconfigured system or no server                                */
+#define secUAERR_INUSE          (9)             /* the group is a user's primary group                             */
 
 /* What secAuthControlA() reports */
 #define secAUTHREC_DELAY        (0)             /* failures for a user name: requests are held back                */
@@ -252,6 +375,9 @@ struct secLoginTicket
 #define secVERIFY_NOTSUPPORTED  (4)             /* this token form is not accepted on this system                   */
 #define secVERIFY_UNAVAILABLE   (5)             /* no password database (unconfigured) or no authentication process */
 #define secVERIFY_BADARGS       (6)             /* missing user ID or token                                         */
+#define secVERIFY_KEYNEEDED     (7)             /* the user has a secKEY_CHALLENGE token: answer the challenge in   */
+                                                /* secT_KeyChallenge (secKeyClientA()) and call again with          */
+                                                /* secT_Ticket, secT_KeyAssertion and secT_KeyPublicID              */
 
 /*
  * Protection bits (see also <dos/dos.h>)
@@ -437,6 +563,15 @@ struct secPointers
  *   HASHEDLOGIN            secVerifyUserA() accepts pre-hashed tokens (secHASH_#?) [0]
  *   MAXTRIES               failed verifications per user and host before a lock-out, 0 = none [5]
  *   LOCKTIME               seconds a lock-out lasts [300]
+ *   LOGINDELAYMAX          longest hold-back after failed verifications, seconds [30]
+ *   KEYLOGIN               hardware tokens (secKeyAdminA()) are checked when a user has some [1]
+ *   KEYREQUIRED            a user without a registered token cannot log in locally [0]
+ *   KEYTIMEOUT             seconds a login waits for a challenge token and its touch [30]
+ *   KEYAPPID               the application id challenge tokens are registered for [aros:login]
+ *   KEYDEVICE              the exec device challenge tokens are reached through [fido.device]
+ *
+ * Each token scheme needs its plugin, e.g. LOADPLUGIN yubikey
+ * (SYS:Libs/Security/yubikey.secplugin) for Yubico OTP.
  */
 #define secConfig_FileName      "Security.config"
 
@@ -467,7 +602,7 @@ struct secPointers
 /* The current S:Security-Startup that AMUInit installs; security.library
  * logs a hint at start-up when the installed one is older */
 #define secSTARTUP_VERSION      (45)
-#define secSTARTUP_REVISION     (10)
+#define secSTARTUP_REVISION     (12)
 
 /*==========================================================================*/
 /*                      FileSystem Authors' API                             */
@@ -518,6 +653,7 @@ struct secFSEnforceRendezvous
 
 /* All plugins have this suffix and live in the configuration directory */
 #define secPLUGIN_SUFFIX                ".secplugin"
+#define secPLUGIN_DIRNAME               "SYS:Libs/Security"     /* where plugins are looked for after SECURITY: */
 
 /* Return values for plugin functions */
 #define secpiTRUE                       (0UL)   /* operation completed with success                           */
@@ -542,6 +678,7 @@ typedef struct
     BPTR                        SegList;
     struct secPluginHeader      *header;                /* For locating the init/fini functions */
     UBYTE                       modulename[64];         /* For displaying */
+    struct ExecBase             *SysBase;               /* exec, for a plugin without start-up code */
 } secPluginModule;
 
 /*
@@ -590,6 +727,43 @@ struct plugin_crypt_ops
     ULONG                       (*CheckPassword)(STRPTR userid, STRPTR thepass, STRPTR suppliedpass);
     /* Encrypt Password for storing in a userdb */
     ULONG                       (*EncryptPassword)(STRPTR buffer, STRPTR userid, STRPTR thepass);
+};
+
+/*
+ * Hardware authentication plugin: one scheme of tokens (secKEY_#? type).
+ * Several plugins may register, one per scheme. The library stores the
+ * records and enforces the counter; the plugin knows the codes.
+ */
+#define ID_PLUGIN_HWAUTH                MAKE_ID('h', 'w', 'a', 'u')
+
+struct plugin_hwauth_ops
+{
+    struct plugin_ops           ops;
+    ULONG                       Type;           /* secKEY_#? the scheme belongs to                              */
+    CONST_STRPTR                Scheme;         /* its name (secKEYSCHEMESIZE), e.g. "yubico"                   */
+    /* Registration: is this public id / secret well formed for the scheme? secpiTRUE / secpiFALSE */
+    ULONG                       (*CheckRegistration)(CONST_STRPTR publicid, const UBYTE *secret, ULONG secretlen);
+    /* secKEY_OTP: how many characters at the end of what the user typed are a code of
+     * the token with this public id? 0 if none */
+    ULONG                       (*MatchCode)(CONST_STRPTR publicid, CONST_STRPTR typed);
+    /* Check such a code. On secpiTRUE *counter holds the code's counter, which the
+     * library requires to be greater than the last one accepted. secpiFALSE otherwise */
+    ULONG                       (*VerifyCode)(CONST_STRPTR publicid, const UBYTE *secret, ULONG secretlen, CONST_STRPTR code, ULONG *counter);
+    /* secKEY_CHALLENGE, in the authentication process: is 'assertion' the token's valid answer
+     * to 'challenge' for the application id? keydata is what was registered (a public key).
+     * secpiTRUE with the answer's counter in *counter (must grow), secpiFALSE otherwise. */
+    ULONG                       (*VerifyAssertion)(CONST_STRPTR publicid, const UBYTE *keydata, ULONG keylen, CONST_STRPTR appid,
+                                                   const UBYTE *challenge, ULONG challengelen, const UBYTE *assertion, ULONG assertionlen,
+                                                   ULONG *counter);
+    /* secKEY_CHALLENGE, in the login's context: have a present token that holds one of the
+     * 'count' ids answer the challenge (waiting ctx->Timeout seconds for it and its touch, telling
+     * ctx->StatusHook what to show). *assertionlen: the buffer's size, then the answer's; *which:
+     * the id that answered. secKCERR_#? */
+    ULONG                       (*GetAssertion)(struct secKeyClient *ctx, CONST_STRPTR *publicids, ULONG count,
+                                                const UBYTE *challenge, ULONG challengelen, UBYTE *assertion, ULONG *assertionlen, ULONG *which);
+    /* secKEY_CHALLENGE, in the login's context: enrol a present token: its id (a string of at most
+     * publicidsize) and key material (*keylen: the buffer's size, then the data's). secKCERR_#? */
+    ULONG                       (*Enrol)(struct secKeyClient *ctx, STRPTR publicid, ULONG publicidsize, UBYTE *keydata, ULONG *keylen);
 };
 
 /* User DataBase Operations Plugin - interface to be defined */

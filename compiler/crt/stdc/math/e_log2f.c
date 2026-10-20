@@ -32,6 +32,36 @@ ivln2lo    = -1.7605285393e-04; /* 0xb9389ad4 */
 static const float zero   =  0.0;
 static const volatile float vzero __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) = 0.0;
 
+/****************************************************************************
+    NAME
+        float log2f(
+
+    SYNOPSIS
+        float x)
+
+    FUNCTION
+        Return the base-2 logarithm of x.
+
+    INPUTS
+        x - Positive float value, including positive subnormal values.
+
+    RESULT
+        An approximation to the base-2 logarithm in float.
+        Returns positive zero for x = 1. Both signs of zero return
+        negative infinity. Negative values, including negative
+        infinity, return NaN. Positive infinity returns positive
+        infinity; NaN returns NaN.
+
+    NOTES
+        Include <math.h>. The function does not assign errno.
+        Zero arguments can raise divide-by-zero; negative arguments
+        can raise invalid. Other arithmetic can raise inexact.
+        Enabled traps may prevent return.
+
+    SEE ALSO
+        logf(), log10f(), log1pf()
+
+*****************************************************************************/
 float
 __ieee754_log2f(float x)
 {

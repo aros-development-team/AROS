@@ -19,26 +19,22 @@
         struct Library *, RexxSysBase, 28, RexxSys)
 
 /*  FUNCTION
-        Test to see if given Message is a RexxMsg
+        Tests whether a message node carries the identity marker used by
+        this RexxSys library.
 
     INPUTS
-        msgptr - Message to test
+        msgptr - Non-NULL pointer to a readable message node.
 
     RESULT
-        TRUE if it is one, FALSE otherwise
+        TRUE if the node's ln_Name pointer matches the RexxSys marker;
+        FALSE otherwise.
 
     NOTES
-
-    EXAMPLE
-
-    BUGS
+        This is a pointer-identity test, not validation of an arbitrary
+        memory address or the contents of a complete RexxMsg structure.
 
     SEE ALSO
         CreateRexxMsg()
-
-    INTERNALS
-        The name of the Node part of the Message is used to see if this
-        is a RexxMsg.
 
 *****************************************************************************/
 {

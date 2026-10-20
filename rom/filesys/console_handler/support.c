@@ -571,6 +571,10 @@ WORD scan_input(struct filehandle *fh, UBYTE *buffer)
             result = INP_SHIFT_BACKSPACE;
             break;
 
+        case 23: /* CTRL-W */
+            result = INP_CONTROL_W;
+            break;
+
         case 24:
             result = INP_CONTROL_X;
             break;
@@ -935,6 +939,53 @@ BOOL process_input(struct filehandle *fh)
 
                     fh->inputsize -= (fh->inputpos - fh->inputstart);
                     fh->inputpos = fh->inputstart;
+                }
+            }
+            break;
+
+        case INP_CONTROL_W:
+            if (fh->inputpos > fh->inputstart)
+            {
+                WORD oldpos = fh->inputpos;
+                WORD newpos = oldpos;
+
+                while ((newpos > fh->inputstart) &&
+                    isspace(fh->inputbuffer[newpos - 1]))
+                {
+                    newpos--;
+                }
+
+                while ((newpos > fh->inputstart) &&
+                    !isspace(fh->inputbuffer[newpos - 1]))
+                {
+                    newpos--;
+                }
+
+                if (newpos != oldpos)
+                {
+                    WORD chars_deleted = oldpos - newpos;
+                    WORD chars_right = fh->inputsize - oldpos;
+
+                    do_movecursor(fh, CUR_LEFT, chars_deleted);
+
+                    if (chars_right > 0)
+                    {
+                        do_cursorvisible(fh, FALSE);
+                        do_write(fh, &fh->inputbuffer[oldpos], chars_right);
+                        do_eraseinline(fh);
+                        do_movecursor(fh, CUR_LEFT, chars_right);
+                        do_cursorvisible(fh, TRUE);
+
+                        memmove(&fh->inputbuffer[newpos],
+                            &fh->inputbuffer[oldpos], chars_right);
+                    }
+                    else
+                    {
+                        do_eraseinline(fh);
+                    }
+
+                    fh->inputsize -= chars_deleted;
+                    fh->inputpos = newpos;
                 }
             }
             break;

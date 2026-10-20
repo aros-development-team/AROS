@@ -23,32 +23,30 @@
         struct RxsLib *, RexxSysBase, 24, RexxSys)
 
 /*  FUNCTION
-        Creation and initialization of a RexxMsg structure
+        Allocates and initializes a RexxMsg for communication with an
+        ARexx interpreter or command host.
 
     INPUTS
-        port      - ReplyPort where the message is replied when it has been
-                    handled
-        extension - The filename extension to use when searching for macros
-        host      - Name of the port to use as the initial command host
-                    (e.g. as used in the ADDRESS Rexx statement). When NULL
-                    is given "REXX" will be used.
+        port      - Reply port to store in the new message. If the message
+                    is sent, the port must remain valid until its reply.
+        extension - Filename extension for macro lookup, or NULL if no
+                    extension is supplied.
+        host      - Initial command host name, or NULL if none is supplied.
 
     RESULT
-        Pointer to the freshly allocated RexxMsg.
+        Pointer to the new message, or NULL if allocation fails.
 
     NOTES
-
-    EXAMPLE
-
-    BUGS
+        The message fields are initially cleared. The function stores the
+        extension and host pointers without copying their strings. Any
+        referenced storage must remain valid while the message uses it.
+        Passing NULL for host leaves rm_CommAddr set to NULL; this
+        function does not substitute the name "REXX".
+        Delete the message with DeleteRexxMsg() after it is no longer in
+        use, including by any pending recipient.
 
     SEE ALSO
-        DeleteRexxMsg(), IsRexxMsg(), FillRexxMsg(), ClearRexxMsg()
-
-    INTERNALS
-        The name in the Node part of this RexxMsg is set to a unique value
-        that is used in IsRexxMsg to test if it is a RexxMsg.
-
+        DeleteRexxMsg(), FillRexxMsg(), IsRexxMsg()
 
 *****************************************************************************/
 {

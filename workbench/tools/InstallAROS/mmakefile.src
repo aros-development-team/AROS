@@ -12,6 +12,7 @@ FILES   := \
         ia_bootloader \
         ia_packages \
         ia_diskio \
+        ia_log \
         ia_env \
         ia_locale
 

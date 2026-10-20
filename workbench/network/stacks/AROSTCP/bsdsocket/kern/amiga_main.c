@@ -500,9 +500,11 @@ init_all(void)
     D(Printf("init_netdb() complete\n");)
 
     /*
-     * Make API visible
+     * Make API visible. Nothing may fail after this point: the error path
+     * would tear the stack down under clients that have already opened it,
+     * so the NETTRACE check comes first.
      */
-    if(api_show() == FALSE)
+    if(!Nettrace_Task || api_show() == FALSE)
         return FALSE;
     D(Printf("api_show() complete\n");)
 
@@ -518,11 +520,8 @@ init_all(void)
         D(Printf("control port '%s' up\n", AROSTCP_CTRLPORT_NAME);)
     }
 
-    if(Nettrace_Task) {
-        D(Printf("Initialization complete, signalling NETTRACE\n");)
-        Signal(Nettrace_Task, SIGBREAKF_CTRL_F);
-    } else
-        return FALSE;
+    D(Printf("Initialization complete, signalling NETTRACE\n");)
+    Signal(Nettrace_Task, SIGBREAKF_CTRL_F);
 
     rc_start();
     D(Printf("rc_start() complete, initialization finished\n");)

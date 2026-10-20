@@ -138,6 +138,27 @@ static void sdhost_flush_fifo(struct sdcard_Bus *bus)
     }
 }
 
+/* A write's DMA ends once the last word is in the FIFO, not on the card.
+ * Wait for the data FSM to finish the last block before anything else -
+ * a CMD12 sent earlier makes the card drop that block. */
+static int sdhost_wait_write_done(struct sdcard_Bus *bus, int timeout_us)
+{
+    ULONG edm, fsm;
+
+    while (timeout_us-- > 0)
+    {
+        edm = sdhost_read(bus, SDEDM);
+        fsm = edm & SDEDM_FSM_MASK;
+        if (!(edm & SDEDM_FIFO_LEVEL_MASK) &&
+            (fsm == SDEDM_FSM_DATAMODE || fsm == SDEDM_FSM_WRITESTART1))
+            return 0;
+        sdcard_Udelay(1);
+    }
+    bug("[SDHost%02u] write did not finish: SDEDM=%08x SDHSTS=%08x\n",
+        bus->sdcb_BusNum, sdhost_read(bus, SDEDM), sdhost_read(bus, SDHSTS));
+    return -1;
+}
+
 /* Write-1-to-clear any sticky error bits before issuing a new command. */
 static void sdhost_clear_errors(struct sdcard_Bus *bus)
 {
@@ -236,41 +257,19 @@ static inline void sdhost_dma_kick(struct sdcard_Bus *bus)
 
 static int sdhost_dma_wait(struct sdcard_Bus *bus, ULONG timeout_us)
 {
-    /* Deliberately a bounded poll, NOT DMAWaitChannel: sleeping here
-     * lets other tasks run mid-transfer, which both (a) speculatively
-     * refetches destination cache lines during direct-to-buffer reads
-     * and (b) lets shared edge lines go dirty, so the post-DMA ClearD
-     * writes stale data over the DMA result — random disk corruption.
-     * The tight poll keeps the window closed, as it always did. */
+    /* Sleep on the completion IRQ: a busy poll here made the mouse jerk
+     * under disk load.  Sleeping is safe because DMA only ever targets
+     * the line-aligned bounce buffer, never a caller's buffer. */
     struct sdhost_private *priv = SDHOST_PRIV(bus);
-    volatile ULONG *dma_cs = (volatile ULONG *)DMA_CS(priv->dma_channel);
-    const ULONG poll_step = 50;
 
-    while (timeout_us > 0)
+    if (DMAWaitChannel(priv->dma_channel, timeout_us) != 0)
     {
-        ULONG cs = AROS_LE2LONG(*dma_cs);
-        if (cs & DMA_CS_END)
-        {
-            *dma_cs = AROS_LONG2LE(DMA_CS_INT | DMA_CS_END);
-            sdhost_dsb();
-            return 0;
-        }
-        if (!(cs & DMA_CS_ACTIVE))
-        {
-            bug("[SDHost%02u] DMA stopped early: CS=%08x SDHSTS=%08x\n",
-                bus->sdcb_BusNum, cs, sdhost_read(bus, SDHSTS));
-            *dma_cs = AROS_LONG2LE(DMA_CS_RESET);
-            sdhost_dsb();
-            return -1;
-        }
-        sdcard_Udelay(poll_step);
-        timeout_us = (timeout_us > poll_step) ? timeout_us - poll_step : 0;
+        bug("[SDHost%02u] DMA failed: SDHSTS=%08x\n",
+            bus->sdcb_BusNum, sdhost_read(bus, SDHSTS));
+        return -1;
     }
-    bug("[SDHost%02u] DMA timeout: SDHSTS=%08x\n",
-        bus->sdcb_BusNum, sdhost_read(bus, SDHSTS));
-    *dma_cs = AROS_LONG2LE(DMA_CS_RESET);
     sdhost_dsb();
-    return -1;
+    return 0;
 }
 
 
@@ -493,6 +492,11 @@ ULONG FNAME_SDHOSTBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
             if (used_bounce)
                 sdhost_neon_copy((APTR)priv->dma_data_addr,
                                   priv->dma_bounce, sdDataLen);
+        }
+        else if (sdhost_wait_write_done(bus, 500000) != 0)
+        {
+            retval = -1;
+            goto done;
         }
 
         priv->xfer_active = FALSE;

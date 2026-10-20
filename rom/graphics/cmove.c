@@ -6,6 +6,7 @@
 #include <exec/types.h>
 #include <graphics/copper.h>
 #include "graphics_intern.h"
+#include "copper_intern.h"
 
 /*****************************************************************************
 
@@ -52,7 +53,9 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct CopIns *copIns = ucl->CopList->CopPtr;
+    struct CopIns *copIns = GetUserCopperInstruction(ucl, GfxBase);
+    if (!copIns)
+        return;
     copIns->OpCode = COPPER_MOVE;
     /* reg is normally the address of a custom chip register (the CMOVE()
        macro passes &custom.xxx): keep only the register offset. */
