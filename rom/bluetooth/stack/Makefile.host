@@ -23,7 +23,11 @@ TEST_SRC := tests/main.c tests/support/test.c tests/endian/test_endian.c \
             tests/security/test_smp_pairing.c tests/security/test_smp_manager.c \
             tests/hid/test_hid_report.c tests/hid/test_hid_input.c \
             tests/hid/test_hogp_client.c tests/hid/test_aros_input_bridge.c \
-            tests/vendor_init/test_vendor_init.c
+            tests/vendor_init/test_vendor_init.c \
+            tests/codec/test_sbc.c tests/a2dp/test_a2dp_source.c \
+            tests/l2cap/test_listener_pair.c tests/btaudio/test_clock.c
+
+TEST_HEADERS := $(wildcard tests/*/*.h) ../classes/btaudio/clock.h ../classes/btaudio/stream_state.h
 
 BUILD ?= build-host
 
@@ -32,7 +36,7 @@ BUILD ?= build-host
 test: $(BUILD)/test_runner
 	$(BUILD)/test_runner
 
-$(BUILD)/test_runner: $(addsuffix .c,$(BTCORE_FILES)) $(PORT_SRC) $(TEST_SRC) | $(BUILD)
+$(BUILD)/test_runner: $(addsuffix .c,$(BTCORE_FILES)) $(PORT_SRC) $(TEST_SRC) $(TEST_HEADERS) | $(BUILD)
 	$(CC) $(CFLAGS) $(SAN_CFLAGS) -o $@ $(addsuffix .c,$(BTCORE_FILES)) $(PORT_SRC) $(TEST_SRC)
 
 $(BUILD):

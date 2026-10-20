@@ -566,6 +566,7 @@ struct BtEndpoint
     UWORD               bep_DescDone;     /* descriptors have been looked at */
     UWORD               bep_EnumMark;     /* matched by the current re-enumeration (hwconn.c) */
     UWORD               bep_Incoming;     /* opened by the peer to our server channel: never initiated by us */
+    UWORD               bep_Secondary;    /* a further channel to a PSM another endpoint already has (AVDTP transport); not listened on */
     UBYTE               bep_UUID[16];
     STRPTR              bep_Name;
     struct BtHWEndpoint *bep_Chan;        /* open channel state (hwconn.c private) */
