@@ -1143,6 +1143,7 @@ static void bConnDown(struct BtHWConn *cn, LONG error, UBYTE reason)
         hc->hc_Connecting = NULL;
     }
     cn->cn_State = HCNS_FREE;
+    cn->cn_PeerIOCapValid = FALSE;
     cn->cn_Reason = reason;
     if(wasup && (cn->cn_LinkType == BDLT_LE)) {
         bGattSrvLinkDown(cn); /* its subscriptions end with it */
@@ -2379,6 +2380,7 @@ static void bPairingDone(struct BtHWConn *cn, LONG error, ULONG status)
     struct BtBase *BluetoothBase = hc->hc_Base;
     struct BtDevice *bd = cn->cn_Device;
 
+    cn->cn_PeerIOCapValid = FALSE;
     if(cn->cn_PairState == PAIR_IDLE) {
         /* nothing in progress - but never leave a submitted pair request
          * unanswered, or the caller waits on it forever. */
@@ -3512,6 +3514,16 @@ BOOL bConnHandleEvent(struct BtHWCore *hc, UBYTE code, const UBYTE *params, ULON
     }
 
     case HC_EVT_IO_CAP_RESPONSE:
+        if(len < 9) {
+            return(TRUE);
+        }
+        btLockReadBase();
+        bd = bFindDeviceByAddr(hc, params);
+        btUnlockBase();
+        if(bd && bd->bd_Conns[0]) {
+            bd->bd_Conns[0]->cn_PeerIOCap = params[6];
+            bd->bd_Conns[0]->cn_PeerIOCapValid = TRUE;
+        }
         return(TRUE);
 
     case HC_EVT_USER_CONFIRM_REQUEST: {
@@ -3524,8 +3536,19 @@ BOOL bConnHandleEvent(struct BtHWCore *hc, UBYTE code, const UBYTE *params, ULON
         bd = bFindDeviceByAddr(hc, params);
         btUnlockBase();
         if(bd && bd->bd_Conns[0]) {
-            if(BluetoothBase->bt_GlobalCfg->bgc_PopupPairing) {
-                bAskUser(bd->bd_Conns[0], BPRT_NUMERICCOMPARE, passkey);
+            /* A peer without a display or keyboard cannot show or confirm a
+               number, so this is Just Works: there is nothing to compare.
+               Pairing we started was already approved by whoever asked for
+               it; pairing the peer started only needs the user's consent. */
+            BOOL justworks;
+            cn = bd->bd_Conns[0];
+            justworks = cn->cn_PeerIOCapValid && (cn->cn_PeerIOCap == BPIO_NOINPUTNOOUTPUT);
+            if(justworks && cn->cn_PairReq) {
+                UBYTE reply[6];
+                CopyMem((APTR) params, reply, 6);
+                bSubmitCmd(hc, HC_OP_USER_CONFIRM_REPLY, reply, 6, bIgnoreCompletion, hc);
+            } else if(BluetoothBase->bt_GlobalCfg->bgc_PopupPairing) {
+                bAskUser(cn, justworks ? BPRT_CONSENT : BPRT_NUMERICCOMPARE, passkey);
             } else {
                 /* nobody to ask: accept (just works) */
                 UBYTE reply[6];
@@ -3572,6 +3595,9 @@ BOOL bConnHandleEvent(struct BtHWCore *hc, UBYTE code, const UBYTE *params, ULON
         btLockReadBase();
         bd = bFindDeviceByAddr(hc, &params[1]);
         btUnlockBase();
+        /* The response may precede our IO Capability Request when the
+           peer initiates pairing. Keep it until this exchange completes. */
+        if(bd && bd->bd_Conns[0]) bd->bd_Conns[0]->cn_PeerIOCapValid = FALSE;
         if(bd && bd->bd_Conns[0] && params[0] && (bd->bd_Conns[0]->cn_PairState != PAIR_IDLE)) {
             bPairingDone(bd->bd_Conns[0], BTIOERR_SECURITY, params[0]);
         }
