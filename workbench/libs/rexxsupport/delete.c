@@ -18,6 +18,32 @@
 #include "rexxsupport_intern.h"
 #include "rxfunctions.h"
 
+/*****************************************************************************
+
+    NAME
+        DELETE
+
+    SYNOPSIS
+    result = DELETE(path)
+
+    FUNCTION
+    Deletes a file or filesystem entry using DOS DeleteFile().
+
+    INPUTS
+    path - Path of the entry to delete.
+
+    RESULT
+    The string "1" if DeleteFile() succeeds, or "0" if it fails.
+
+    NOTES
+    A failed deletion is represented by the returned string, not by a
+    nonzero RexxSupport dispatch status.
+
+    SEE ALSO
+    MAKEDIR, RENAME
+
+*****************************************************************************/
+
 LONG rxsupp_delete(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE **argstring)
 {
     BOOL ok;

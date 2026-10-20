@@ -16,6 +16,37 @@
 #include "rexxsupport_intern.h"
 #include "rxfunctions.h"
 
+/*****************************************************************************
+
+    NAME
+        TYPEPKT
+
+    SYNOPSIS
+    result = TYPEPKT(message[, selector])
+
+    FUNCTION
+    Reads the action code from a Rexx message obtained through a
+    binary message pointer.
+
+    INPUTS
+    message  - Pointer-sized binary argument string naming a RexxMsg.
+    selector - Optional selector: A for argument count, C to test RXCOMM,
+               or F to test RXFUNC. The first character is used.
+
+    RESULT
+    Without selector, a binary LONG containing rm_Action. With A,
+    a single ASCII digit for the argument count. With C or F,
+    the string "1" when the action matches or "0" otherwise.
+
+    BUGS
+    No message-pointer validation is performed. Unrecognized selectors
+    leave the single-byte result uninitialized.
+
+    SEE ALSO
+    GETPKT, GETARG, REPLY
+
+*****************************************************************************/
+
 LONG rxsupp_typepkt(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE **argstring)
 {
     struct RexxMsg *msg2 = *(struct RexxMsg **)ARG1(msg);

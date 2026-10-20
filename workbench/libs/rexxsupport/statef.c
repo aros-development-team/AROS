@@ -38,6 +38,41 @@ void my_sprintf(struct Library *RexxSupportBase, UBYTE *buffer, UBYTE *format, .
     AROS_SLOWSTACKFORMAT_POST(format);
 }
 
+/*****************************************************************************
+
+    NAME
+        STATEF
+
+    SYNOPSIS
+    state = STATEF(path)
+
+    FUNCTION
+    Returns filesystem information for a path as a space-separated
+    sequence of textual fields.
+
+    INPUTS
+    path - Filesystem path to examine.
+
+    RESULT
+    The fields are type (FILE or DIR), size in bytes, block count,
+    eight protection characters (H, S, P, A, R, W, E, D, or '-'),
+    followed by datestamp days, minutes, and ticks. An inaccessible
+    path produces an empty string. Allocation failure for the file
+    information block produces ERR10_003.
+
+    NOTES
+    The protection letters correspond to the FileInfoBlock flags;
+    read, write, execute, and delete bits use the DOS inhibit polarity.
+
+    BUGS
+    The implementation does not release the filesystem lock, and it
+    does not consistently check other allocations or Examine() results.
+
+    SEE ALSO
+    SHOWDIR, SHOWLIST
+
+*****************************************************************************/
+
 LONG rxsupp_statef(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE **argstring)
 {
     BPTR lock;

@@ -18,6 +18,31 @@
 #include "rexxsupport_intern.h"
 #include "rxfunctions.h"
 
+/*****************************************************************************
+
+    NAME
+        MAKEDIR
+
+    SYNOPSIS
+    result = MAKEDIR(path)
+
+    FUNCTION
+    Creates a directory using DOS CreateDir().
+
+    INPUTS
+    path - Path of the directory to create.
+
+    RESULT
+    The string "1" if CreateDir() succeeds, or "0" otherwise.
+
+    NOTES
+    The temporary directory lock is released before the function returns.
+
+    SEE ALSO
+    DELETE, RENAME
+
+*****************************************************************************/
+
 LONG rxsupp_makedir(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE **argstring)
 {
     BPTR lock;

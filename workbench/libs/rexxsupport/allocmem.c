@@ -17,6 +17,43 @@
 #include "rexxsupport_intern.h"
 #include "rxfunctions.h"
 
+/*****************************************************************************
+
+    NAME
+        ALLOCMEM
+
+    SYNOPSIS
+    pointer = ALLOCMEM(size[, attributes])
+
+    FUNCTION
+    Allocates memory using Exec AllocMem(). Returns the allocated address
+    as a binary pointer value in a Rexx argument string.
+
+    INPUTS
+    size       - Allocation size expressed as a decimal string.
+    attributes - Optional four-byte binary Exec memory attribute mask.
+                 If omitted, MEMF_PUBLIC is used. Byte 0 supplies bits
+                 31-24; byte 3 supplies bits 7-0.
+
+    RESULT
+    A pointer-sized binary argument string on success. ERR10_018 is returned
+    for an invalid size string or attribute length, and ERR10_003 if Exec
+    allocation fails.
+
+    NOTES
+    The result is binary pointer data, not a printable decimal address.
+    The caller must eventually pass the same pointer and allocation size to
+    FREEMEM(). The pointer size depends on the target architecture.
+
+    BUGS
+    If memory allocation succeeds but creation of the result argument
+    string fails, the function does not release the allocated memory.
+
+    SEE ALSO
+    FREEMEM, NULL, OFFSET
+
+*****************************************************************************/
+
 LONG rxsupp_allocmem(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE **argstring)
 {
     char *end;

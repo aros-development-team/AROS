@@ -17,6 +17,35 @@
 #include "rexxsupport_intern.h"
 #include "rxfunctions.h"
 
+/*****************************************************************************
+
+    NAME
+        OFFSET
+
+    SYNOPSIS
+    pointer = OFFSET(pointer, displacement)
+
+    FUNCTION
+    Adds a signed byte displacement to a pointer value and returns the
+    resulting address in binary form.
+
+    INPUTS
+    pointer      - Pointer-sized binary argument string.
+    displacement - Signed decimal byte offset.
+
+    RESULT
+    Pointer-sized binary argument string containing the adjusted address.
+    ERR10_018 is returned for an invalid input length or offset string.
+
+    NOTES
+    The function performs pointer arithmetic only; it does not check the
+    adjusted address or access the memory it designates.
+
+    SEE ALSO
+    ALLOCMEM, NEXT, BADDR
+
+*****************************************************************************/
+
 LONG rxsupp_offset(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE **argstring)
 {
     char *ptr, *end;

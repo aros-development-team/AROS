@@ -30,6 +30,45 @@
 #include <resources/execlock.h>
 #endif
 
+/*****************************************************************************
+
+    NAME
+        SHOWLIST
+
+    SYNOPSIS
+    result = SHOWLIST(kind[, name[, separator]])
+
+    FUNCTION
+    Lists or searches a selected system list. Without name, returns list
+    member names separated by separator. With name, tests for membership.
+
+    INPUTS
+    kind      - First letter chooses A (assigns), D (Exec devices),
+                H (DOS devices), I (interrupts), L (libraries),
+                M (memory headers), P (ports), R (resources),
+                S (semaphores), T (ready tasks), V (volumes), or
+                W (waiting tasks).
+    name      - Optional name to test rather than listing all entries.
+    separator - Optional separator string; its first byte is used.
+                Defaults to one space.
+
+    RESULT
+    With no name, a separated list of names. With name, "1" if a
+    match is found or "0" otherwise. Invalid kind returns ERR10_018.
+
+    NOTES
+    Exec-list names use exact string comparison. DOS-list name matching
+    uses a length-limited prefix comparison in this implementation.
+
+    BUGS
+    Some branches assume successful memory allocation and non-NULL
+    list-entry names. Result strings are not escaped for separators.
+
+    SEE ALSO
+    SHOWDIR, STATEF
+
+*****************************************************************************/
+
 LONG rxsupp_showlist(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE **argstring)
 {
     UBYTE argc = msg->rm_Action & RXARGMASK;

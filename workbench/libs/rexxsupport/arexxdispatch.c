@@ -56,6 +56,39 @@ int comparefunc(const void *name, const void *func)
     return strcmp((const char *)name, ((const struct arexxfunc *)func)->commandname);
 }
 
+/*****************************************************************************
+
+    NAME
+        ArexxDispatch
+
+    SYNOPSIS
+    ULONG ArexxDispatch(struct RexxMsg *msg, STRPTR *_retargstringptr);
+
+    FUNCTION
+    Dispatches a RexxSupport library query to a named script function.
+    Matches the name in rm_Args[0], checks the argument count encoded in
+    rm_Action, and invokes the corresponding handler.
+
+    INPUTS
+    msg               - Rexx message containing the requested function
+                        name and its argument strings.
+    _retargstringptr  - Receives the result argument-string pointer, or
+                        NULL if the query does not produce a value.
+
+    RESULT
+    Handler status on a known function with valid argument count; 1 for
+    an unknown name; ERR10_018 for an unsupported argument count.
+
+    NOTES
+    This is the RexxSupport query entry point used by the Rexx runtime,
+    not a general-purpose C function-call interface. Non-NULL result
+    strings are Rexx argument strings managed by the message protocol.
+
+    SEE ALSO
+    rexxsyslib.library/CreateArgstring()
+
+*****************************************************************************/
+
 AROS_AREXXLIBQUERYFUNC(ArexxDispatch, msg,
                        struct Library *, RexxSupportBase, 5, RexxSupport)
 {

@@ -19,6 +19,33 @@
 #include "rexxsupport_intern.h"
 #include "rxfunctions.h"
 
+/*****************************************************************************
+
+    NAME
+        DELAY
+
+    SYNOPSIS
+    result = DELAY(ticks)
+
+    FUNCTION
+    Suspends the calling task for the specified number of DOS ticks.
+
+    INPUTS
+    ticks - Nonempty decimal string containing only digits.
+
+    RESULT
+    The string "0" after Delay() returns. Invalid input produces
+    ERR10_018.
+
+    NOTES
+    A DOS tick is the unit accepted by DOS Delay(); this function does
+    not accept a duration in milliseconds.
+
+    SEE ALSO
+    FORBID, PERMIT
+
+*****************************************************************************/
+
 LONG rxsupp_delay(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE **argstring)
 {
     int pos, len;
