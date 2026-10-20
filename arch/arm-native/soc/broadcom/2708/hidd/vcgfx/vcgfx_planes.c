@@ -50,17 +50,22 @@
 #define HiddBitMapAttrBase      (xsd->vcsd_attrBases[3])
 #define HiddChunkyBMAttrBase    (xsd->vcsd_attrBases[2])
 
+static BOOL scanout_ok(struct VideoCoreGfx_staticdata *xsd);
+
+/* Planes need the HVS taken over and scanout memory the kernel can remap. */
 BOOL vcgfx_planes_supported(struct VideoCoreGfx_staticdata *xsd)
 {
+    BOOL ok = FALSE;
+
     if (!VCGFX_PLANES)
         return FALSE;
     if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS5)
-        return vc4_hvs5_planes_ok();
-    if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
-        return vc4_hvs6_planes_ok();
-    if (xsd->vcsd_HVSGen == VCGFX_HVS_VC4)
-        return vc4_hvs_planes_ok();
-    return FALSE;
+        ok = vc4_hvs5_planes_ok();
+    else if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
+        ok = vc4_hvs6_planes_ok();
+    else if (xsd->vcsd_HVSGen == VCGFX_HVS_VC4)
+        ok = vc4_hvs_planes_ok();
+    return ok && scanout_ok(xsd);
 }
 
 /* We own the display list. */
@@ -166,6 +171,31 @@ static struct vcgfx_arena *arena_new(ULONG want)
     a->ar_MH.mh_Free  = want;
 
     return a;
+}
+
+/* Probed once by taking the first arena, which then serves the first
+ * screens. The arm32 kernel's KrnMapGlobal() is still a stub that maps
+ * nothing, so there the screens stay on Show() until it is implemented. */
+static BOOL scanout_ok(struct VideoCoreGfx_staticdata *xsd)
+{
+    struct vcgfx_arena *a;
+
+    if (!xsd->vcsd_ScanoutOK)
+    {
+        ObtainSemaphore(&xsd->vcsd_ScanoutLock);
+        if (!xsd->vcsd_ScanoutOK)
+        {
+            if ((a = arena_new(SCANOUT_ARENA)))
+            {
+                AddTail((struct List *)&xsd->vcsd_Arenas, (struct Node *)a);
+                xsd->vcsd_ScanoutOK = 1;
+            }
+            else
+                xsd->vcsd_ScanoutOK = -1;
+        }
+        ReleaseSemaphore(&xsd->vcsd_ScanoutLock);
+    }
+    return xsd->vcsd_ScanoutOK > 0;
 }
 
 /* Page aligned, cleared, physically contiguous and below SCANOUT_LIMIT. */

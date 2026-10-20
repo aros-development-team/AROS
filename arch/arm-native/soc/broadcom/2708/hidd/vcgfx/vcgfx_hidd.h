@@ -186,6 +186,7 @@ struct VideoCoreGfx_staticdata {
 
         struct SignalSemaphore  vcsd_ScanoutLock;
         struct MinList          vcsd_Arenas;
+        BYTE                    vcsd_ScanoutOK;     /* 0 untried, 1 mappable, -1 not */
 
         /* The fb object's pixels when the firmware's framebuffer is a
          * token one (HVS5 with screens as planes). */
