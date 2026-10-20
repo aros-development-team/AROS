@@ -529,7 +529,8 @@ static void i8042_kbd_process_irq_key(struct kbd_data *data, UBYTE keycode, stru
 
 static int i8042_kbd_reset(struct i8042base *i8042Base, struct kbd_data *data)
 {
-    UBYTE status;
+    int status;
+    unsigned int retries;
 
     D(
         bug("[i8042:Kbd] %s()\n", __func__);
@@ -558,7 +559,7 @@ static int i8042_kbd_reset(struct i8042base *i8042Base, struct kbd_data *data)
         bug("[i8042:Kbd] %s:     done!\n", __func__);
         bug("[i8042:Kbd] %s: starting reset cycle ..\n", __func__);
     )
-    do {
+    for (retries = 0; retries < 3; retries++) {
         D(bug("[i8042:Kbd] %s: sending reset...\n", __func__));
         i8042_write_data_with_wait(data->hwdata.ioTimer, KBD_OUTCMD_RESET);
 
@@ -571,7 +572,9 @@ static int i8042_kbd_reset(struct i8042base *i8042Base, struct kbd_data *data)
             DFAIL(bug("[i8042:Kbd] %s: Keyboard reset failed! (%x)\n", __func__, status));
             return FALSE;
         }
-    } while(1);
+    }
+    if (status != KBD_REPLY_ACK)
+        return FALSE;
 
 
     D(bug("[i8042:Kbd] %s: waiting for power-on-reset...\n", __func__);)
@@ -582,7 +585,7 @@ static int i8042_kbd_reset(struct i8042base *i8042Base, struct kbd_data *data)
     }
 
     D(bug("[i8042:Kbd] %s: starting disable cycle ..\n", __func__);)
-    do {
+    for (retries = 0; retries < 3; retries++) {
         D(bug("[i8042:Kbd] %s: sending disable...\n", __func__));
         i8042_write_data_with_wait(data->hwdata.ioTimer, KBD_OUTCMD_DISABLE);
         D(bug("[i8042:Kbd] %s:     done!, waiting for completion ..\n", __func__));
@@ -594,7 +597,9 @@ static int i8042_kbd_reset(struct i8042base *i8042Base, struct kbd_data *data)
             DFAIL(bug("[i8042:Kbd] %s: Keyboard disable failed! (%x)\n", __func__, status));
             return FALSE;
         }
-    } while (1);
+    }
+    if (status != KBD_REPLY_ACK)
+        return FALSE;
 
     D(bug("[i8042:Kbd] %s: sending write mode...\n", __func__);)
     i8042_write_command_with_wait(data->hwdata.ioTimer, KBD_CTRLCMD_WRITE_MODE);  /* Write mode */
