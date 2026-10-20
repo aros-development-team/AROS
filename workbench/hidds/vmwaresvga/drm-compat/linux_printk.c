@@ -408,6 +408,9 @@ static void nlog_flusher(void)
     if (!strcmp(name, "off"))
         return;
 
+    /* Delete last boot's log before the first Wait(); fails harmlessly when the media is not writable yet. */
+    DeleteFile(name[0] ? name : "SYS:vmwgfx.log");
+
     /*
      * The file is opened, appended to and closed for every burst: a
      * machine that is reset or powered off mid-session must still have
