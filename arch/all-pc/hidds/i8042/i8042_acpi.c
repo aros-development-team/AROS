@@ -85,4 +85,10 @@ static int i8042_acpi_probe(LIBBASETYPEPTR lh)
     ReturnInt("i8042::ACPIInit", int, TRUE);
 }
 
-ADD2INITLIB(i8042_acpi_probe, 20)
+/*
+ * Probe before i8042_Init (priority 10) creates objects and installs IRQs.
+ * A failed INITLIB entry unwinds the library, not HW_AddDriver's objects.
+ * Running this afterwards could therefore leave live IRQs using a freed base.
+ * The disable flags must also be available before either driver is created.
+ */
+ADD2INITLIB(i8042_acpi_probe, 5)
