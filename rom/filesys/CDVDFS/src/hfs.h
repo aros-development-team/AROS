@@ -146,6 +146,7 @@ typedef struct hfs_vol_info {
   t_mdb			mdb;
   int			start_block;
   t_ulong		root_node;
+  t_ulong		node_count;
 } t_hfs_vol_info;
 
 typedef struct hfs_obj_info {
@@ -160,6 +161,8 @@ typedef struct hfs_obj_info {
 
 typedef struct leaf_record_pos {
   t_ulong		node;
+  t_ulong		nodes_left; /* Nodes remaining in this catalog walk */
+  t_ulong		cycle_node, cycle_power, cycle_length;
   t_ushort		record;
   t_node_descr		node_descr;
   t_catalog_record	cat_rec;

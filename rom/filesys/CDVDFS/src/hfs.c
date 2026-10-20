@@ -288,6 +288,8 @@ int i;
 }
 
 t_uchar *HFS_Node(VOLUME *p_volume, t_ulong p_node) {
+  if (p_node >= VOL(p_volume,node_count))
+    return NULL;
   return HFS_Get_Node (p_volume->cd, VOL(p_volume,start_block) + 2,
   		       &VOL(p_volume,mdb), p_node);
 }
@@ -371,6 +373,37 @@ t_bool HFS_Load_Leaf(t_leaf_record_pos *leaf, const t_uchar *node)
     return TRUE;
 }
 
+/* Bound a catalog walk and detect cycles without allocating a visited set. */
+static void HFS_Start_Walk(VOLUME *volume, t_leaf_record_pos *leaf, t_ulong node)
+{
+	leaf->node = node;
+	leaf->nodes_left = VOL(volume,node_count);
+	leaf->cycle_node = node;
+	leaf->cycle_power = 1;
+	leaf->cycle_length = 0;
+}
+
+static t_bool HFS_Advance_Node(VOLUME *volume, t_leaf_record_pos *leaf, t_ulong node)
+{
+	if (leaf->nodes_left <= 1 || node >= VOL(volume,node_count) ||
+		node == leaf->cycle_node)
+	{
+		volume->global->iso_errno = ISOERR_INTERNAL;
+		return FALSE;
+	}
+	leaf->nodes_left--;
+	leaf->cycle_length++;
+	if (leaf->cycle_length == leaf->cycle_power)
+	{
+		leaf->cycle_node = node;
+		leaf->cycle_length = 0;
+		if (leaf->cycle_power <= 0x7fffffffUL)
+			leaf->cycle_power *= 2;
+	}
+	leaf->node = node;
+	return TRUE;
+}
+
 t_bool HFS_Find_Next_Leaf(VOLUME *p_volume, t_leaf_record_pos *p_leaf)
 {
     t_uchar *node = HFS_Node(p_volume, p_leaf->node);
@@ -379,9 +412,10 @@ t_bool HFS_Find_Next_Leaf(VOLUME *p_volume, t_leaf_record_pos *p_leaf)
     p_leaf->record++;
     if (p_leaf->record == HFS_Get16(node + 10))
     {
-        if (!HFS_Get32(node) || HFS_Get32(node) == p_leaf->node)
+		if (!HFS_Get32(node))
             return FALSE;
-        p_leaf->node = HFS_Get32(node);
+		if (!HFS_Advance_Node(p_volume, p_leaf, HFS_Get32(node)))
+			return FALSE;
         node = HFS_Node(p_volume, p_leaf->node);
         if (!node)
             return FALSE;
@@ -421,6 +455,7 @@ int i;
 t_ulong this_node = VOL(p_volume,root_node);
 t_ulong next_node;
 
+	HFS_Start_Walk(p_volume, p_leaf, this_node);
 	node = HFS_Node(p_volume, VOL(p_volume,root_node));
 	if (!node)
 	{
@@ -474,6 +509,8 @@ t_ulong next_node;
 			return FALSE;
 		}
 
+		if (!HFS_Advance_Node(p_volume, p_leaf, next_node))
+			return FALSE;
 		node = HFS_Node(p_volume, next_node);
 		if (!node)
 		{
@@ -571,6 +608,7 @@ t_hdr_node hdr;
 	}
 
 	VOL(p_volume,root_node) = hdr.Root;
+	VOL(p_volume,node_count) = hdr.NNodes;
 
 	p_volume->mixed_char_filenames = TRUE;
 
@@ -940,6 +978,7 @@ struct CDVDBase *global = p_obj->global;
 t_leaf_record_pos leaf;
 short fork = 3;
 
+	HFS_Start_Walk(p_obj->volume, &leaf, *p_offset >> 8);
     memset(p_info, 0, sizeof(*p_info));
 
 	while (fork == 3)
