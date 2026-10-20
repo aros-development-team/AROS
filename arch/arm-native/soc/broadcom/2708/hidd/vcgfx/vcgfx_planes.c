@@ -326,6 +326,20 @@ static void backdrop_clear(struct VideoCoreGfx_staticdata *xsd)
     }
 }
 
+#define PLANES_WARN_BUDGET  (1 << 0)
+#define PLANES_WARN_CLASS   (1 << 1)
+#define PLANES_WARN_SCANOUT (1 << 2)
+
+/* A screen that gets no plane is not shown at all: say so, once a reason. */
+static void planes_warn(struct VideoCoreGfx_staticdata *xsd, ULONG why,
+                        const char *msg)
+{
+    if (xsd->vcsd_PlanesWarned & why)
+        return;
+    xsd->vcsd_PlanesWarned |= why;
+    bug("[VideoCoreGfx] %s\n", msg);
+}
+
 /* Mode policy. A mode set blanks the display, so the timing follows the
  * front screen only when it is alone, or too big to scale down into it. */
 static void planes_set_timing(struct VideoCoreGfx_staticdata *xsd,
@@ -369,17 +383,27 @@ ULONG vcgfx_show_viewports(struct VideoCoreGfx_staticdata *xsd,
         return FALSE;
     }
 
-    for (v = vpd; v && (n < VCGFX_MAX_PLANES); v = v->Next)
+    for (v = vpd; v; v = v->Next)
     {
         struct BitmapData *data;
 
+        if (n == VCGFX_MAX_PLANES)
+        {
+            planes_warn(xsd, PLANES_WARN_BUDGET,
+                        "more screens than planes: those behind are not shown");
+            break;
+        }
         if (OOP_OCLASS(v->Bitmap) != offcl)
+        {
+            planes_warn(xsd, PLANES_WARN_CLASS,
+                        "a screen of another bitmap class is not shown");
             continue;
+        }
         data = OOP_INST_DATA(offcl, v->Bitmap);
         if (!data->VideoData || !data->scan[0].sb_Pixels)
         {
-            bug("[VideoCoreGfx] screen bitmap 0x%p is not in scanout memory\n",
-                v->Bitmap);
+            planes_warn(xsd, PLANES_WARN_SCANOUT,
+                        "a screen that is not 32-bit or not in scanout memory is not shown");
             continue;
         }
 
