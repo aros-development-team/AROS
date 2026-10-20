@@ -30,6 +30,7 @@
 #include <string.h>
 
 #include "i8042_mouse.h"
+#include "i8042_common.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -62,16 +63,8 @@ OOP_Object * i8042Mouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
         data->hwdata.self = mouse;
 
         /* Search for PS/2 mouse */
-        NewCreateTask(TASKTAG_PC,        i8042_mouse_init_task,
-                      TASKTAG_NAME,      (IPTR)i8042mpname,
-                      TASKTAG_STACKSIZE, 1024,
-                      TASKTAG_PRI,       100,
-                      TASKTAG_ARG1,      cl,
-                      TASKTAG_ARG2,      mouse,
-                      TASKTAG_USERDATA,  FindTask(NULL),
-                      TAG_DONE);
-        Wait(SIGF_SINGLE);
-        if (!data->irq) {
+        if (!i8042_start_task(i8042_mouse_init_task, cl, mouse, i8042mpname) ||
+            !data->irq) {
             D(bug("[i8042:Mouse] %s: Mouse initialization failed\n", __func__));
             /*
              * No mouse found. What we can do now is just Dispose() :(

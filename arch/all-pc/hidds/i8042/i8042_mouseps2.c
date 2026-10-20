@@ -75,6 +75,18 @@ static void i8042_mouse_irq_handler(struct mouse_data *data, void *unused)
 
         mouse_data = data->mouse_data;
 
+        /*
+         * The IRQ is installed before detection chooses a packet size.
+         * Never let an early byte (or a stale partial packet) index past
+         * the packet buffer while initialization is still in progress.
+         */
+        if (data->mouse_packetsize != 3 && data->mouse_packetsize != 4) {
+            data->mouse_collected_bytes = 0;
+            continue;
+        }
+        if (data->mouse_collected_bytes >= data->mouse_packetsize)
+            data->mouse_collected_bytes = 0;
+
         data->expected_mouse_acks = 0;
         mouse_data[data->mouse_collected_bytes] = mousecode;
 
@@ -157,12 +169,14 @@ static void i8042_mouse_irq_handler(struct mouse_data *data, void *unused)
 
 #if INTELLIMOUSE_SUPPORT
         /* mouse wheel */
-        e->y = (mouse_data[3] & 8) ? (mouse_data[3] & 15) - 16 : (mouse_data[3] & 15);
-        if (e->y) {
-            e->x = 0;
-            e->type  = vHidd_Mouse_WheelMotion;
-            e->button = vHidd_Mouse_NoButton;
-            MOUSEPUSHEVENT(OOP_OCLASS(data->hwdata.self), mousehw, data->hwdata.self, e);
+        if (data->mouse_packetsize == 4) {
+            e->y = (mouse_data[3] & 8) ? (mouse_data[3] & 15) - 16 : (mouse_data[3] & 15);
+            if (e->y) {
+                e->x = 0;
+                e->type  = vHidd_Mouse_WheelMotion;
+                e->button = vHidd_Mouse_NoButton;
+                MOUSEPUSHEVENT(OOP_OCLASS(data->hwdata.self), mousehw, data->hwdata.self, e);
+            }
         }
 #endif
 
@@ -176,7 +190,7 @@ static void i8042_mouse_irq_handler(struct mouse_data *data, void *unused)
  * It is safe to use functions that take the timer IORequest as input
  * from here on ....
  ****************************************************************************************/
-void i8042_mouse_init_task(OOP_Class *cl, OOP_Object *o)
+void i8042_mouse_init_task(OOP_Class *cl, OOP_Object *o, IPTR readyMask)
 {
     struct mouse_data *data = OOP_INST_DATA(cl, o);
     struct Task *thisTask = FindTask(NULL);
@@ -186,7 +200,7 @@ void i8042_mouse_init_task(OOP_Class *cl, OOP_Object *o)
     if (!p) {
         D(bug("[i8042:PS2Mouse] Failed to create Timer MsgPort..\n"));
         data->irq = 0;
-        Signal(thisTask->tc_UserData, SIGF_SINGLE);
+        Signal(thisTask->tc_UserData, (ULONG)readyMask);
         return;
     }
 
@@ -195,7 +209,7 @@ void i8042_mouse_init_task(OOP_Class *cl, OOP_Object *o)
         D(bug("[i8042:PS2Mouse] Failed to create Timer MsgPort..\n"));
         DeleteMsgPort(p);
         data->irq = 0;
-        Signal(thisTask->tc_UserData, SIGF_SINGLE);
+        Signal(thisTask->tc_UserData, (ULONG)readyMask);
         return;
     }
 
@@ -204,7 +218,7 @@ void i8042_mouse_init_task(OOP_Class *cl, OOP_Object *o)
         DeleteIORequest(data->hwdata.ioTimer);
         DeleteMsgPort(p);
         data->irq = 0;
-        Signal(thisTask->tc_UserData, SIGF_SINGLE);
+        Signal(thisTask->tc_UserData, (ULONG)readyMask);
         return;
     }
 
@@ -225,7 +239,7 @@ void i8042_mouse_init_task(OOP_Class *cl, OOP_Object *o)
 
     D(bug("[i8042:PS2Mouse] finished - signaling waiting task and cleaning up\n");)
     /* Signals the waiting task before we exit ... */
-    Signal(thisTask->tc_UserData, SIGF_SINGLE);
+    Signal(thisTask->tc_UserData, (ULONG)readyMask);
     /* Timer request is not freed as it is needed for reset handler */
 
     return ;

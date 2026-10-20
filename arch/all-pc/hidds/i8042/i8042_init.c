@@ -69,7 +69,7 @@ static int i8042Kbd_ExpungeAttrs(struct i8042base * LIBBASE)
 
     OOP_ReleaseAttrBases(attrbases);
 
-    if (!LIBBASE->csd.cs_UtilityBase)
+    if (LIBBASE->csd.cs_UtilityBase)
         CloseLibrary(LIBBASE->csd.cs_UtilityBase);
 
     ReturnInt("i8042Kbd_ExpungeAttrs", int, TRUE);

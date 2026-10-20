@@ -9,6 +9,33 @@
 #include "i8042_kbd.h"
 #include "i8042_common.h"
 
+/* The reserved SIGF_SINGLE may already be pending in the creating task.
+ * A private signal prevents an unrelated completion from releasing the
+ * constructor while its helper still owns the object. */
+BOOL i8042_start_task(APTR entry, OOP_Class *cl, OOP_Object *o, CONST_STRPTR name)
+{
+    BYTE readyBit = AllocSignal(-1);
+    struct Task *task;
+    ULONG readyMask;
+
+    if (readyBit == -1)
+        return FALSE;
+    readyMask = 1UL << readyBit;
+    task = NewCreateTask(TASKTAG_PC,        entry,
+                         TASKTAG_NAME,      (IPTR)name,
+                         TASKTAG_STACKSIZE, AROS_STACKSIZE,
+                         TASKTAG_PRI,       100,
+                         TASKTAG_ARG1,      cl,
+                         TASKTAG_ARG2,      o,
+                         TASKTAG_ARG3,      (IPTR)readyMask,
+                         TASKTAG_USERDATA,  FindTask(NULL),
+                         TAG_DONE);
+    if (task)
+        Wait(readyMask);
+    FreeSignal(readyBit);
+    return task != NULL;
+}
+
 void i8042_delay(struct IORequest* tmr, LONG usec)
 {
     tmr->io_Command = TR_ADDREQUEST;
