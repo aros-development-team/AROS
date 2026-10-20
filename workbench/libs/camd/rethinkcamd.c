@@ -10,16 +10,30 @@
 
 #include "camd_intern.h"
 
+static BOOL DriverIsLoaded(struct CamdBase *CamdBase, CONST_STRPTR name){
+	struct Drivers *driver;
+	BOOL loaded=FALSE;
+
+	ObtainSemaphoreShared(CB(CamdBase)->CLSemaphore);
+	for(driver=CB(CamdBase)->drivers;driver;driver=driver->next){
+		if(mystrcmp((char *)name,driver->mididevicedata->Name)){
+			loaded=TRUE;
+			break;
+		}
+	}
+	ReleaseSemaphore(CB(CamdBase)->CLSemaphore);
+	return loaded;
+}
+
 /*
 	Loads the drivers in DEVS:Midi that are not loaded yet.
 	Must run in a process.
 */
 LONG ScanDrivers(struct CamdBase *CamdBase){
 	struct FileInfoBlock fib;
-	struct Drivers *driver;
 	BPTR lock;
 	char path[256];
-	BOOL loaded;
+	LONG result=0;
 
 	ObtainSemaphore(&CB(CamdBase)->DriverScanSemaphore);
 	lock = Lock((CONST_STRPTR)"DEVS:Midi", ACCESS_READ);
@@ -35,25 +49,17 @@ LONG ScanDrivers(struct CamdBase *CamdBase){
 	while(ExNext(lock, &fib)) {
 		if(fib.fib_DirEntryType > 0)
 			continue;
-		loaded = FALSE;
-		ObtainSemaphoreShared(CB(CamdBase)->CLSemaphore);
-		for(driver = CB(CamdBase)->drivers; driver; driver = driver->next) {
-			if(mystrcmp((char *)fib.fib_FileName,
-			            driver->mididevicedata->Name)) {
-				loaded = TRUE;
-				break;
-			}
-		}
-		ReleaseSemaphore(CB(CamdBase)->CLSemaphore);
-		if(!loaded) {
+		if(!DriverIsLoaded(CamdBase,(CONST_STRPTR)fib.fib_FileName)) {
 			mysprintf(CamdBase, path, "DEVS:Midi/%s", fib.fib_FileName);
 			LoadDriver(path, CamdBase);
+			if(!DriverIsLoaded(CamdBase,(CONST_STRPTR)fib.fib_FileName))
+				result=-1;
 		}
 	}
 	UnLock(lock);
 	ReleaseSemaphore(&CB(CamdBase)->DriverScanSemaphore);
 
-	return 0;
+	return result;
 }
 
 #ifndef __amigaos4__
@@ -72,6 +78,8 @@ static volatile ULONG scannerid;
 static SAVEDS void ScannerProc(void){
 	struct CamdBase *CamdBase=scanbase;
 	BOOL again;
+	LONG result;
+	ULONG attempts=20;
 
 	ObtainSemaphore(&scansemaphore);
 	scannerid=GetETaskID(FindTask(NULL));
@@ -83,10 +91,16 @@ static SAVEDS void ScannerProc(void){
 		scanagain=FALSE;
 		ReleaseSemaphore(&scansemaphore);
 
-		ScanDrivers(CamdBase);
+		result=ScanDrivers(CamdBase);
 
 		ObtainSemaphore(&scansemaphore);
-		again=(scanagain && !scanclosing);
+		/* A creation notification may precede the last write, and not
+		   every handler sends a closing notification. Retry failures for
+		   ten seconds; a new notification starts a fresh retry window.
+		   Invalid files do not keep a scanner resident indefinitely. */
+		if(scanagain) attempts=20;
+		else attempts--;
+		again=(!scanclosing && (scanagain || (result!=0 && attempts!=0)));
 		if(!again) scanrunning=FALSE;
 		ReleaseSemaphore(&scansemaphore);
 	}while(again);
@@ -155,7 +169,8 @@ void StopDriverWatch(void){
     INPUTS
 
     RESULT
-		0 on success.
+		0 when the scan completed and every candidate loaded; -1 if a
+		directory scan or a driver load failed.
 
     NOTES
 		Must be called from a process.

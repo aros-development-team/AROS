@@ -42,15 +42,15 @@ SAVEDS void CamdTimerProc(void){
 	}
 	camdwaitsig2=AllocSignal(-1);
 	if(camdwaitsig2==-1){
-		FreeSignal(1L<<camdwaitsig);
+		FreeSignal(camdwaitsig);
 		camdwaitprocstatus=2;
 		return;
 	}
 
 	TimerMP=CreateMsgPort();
 	if(TimerMP==NULL){
-		FreeSignal(1L<<camdwaitsig2);
-		FreeSignal(1L<<camdwaitsig);
+		FreeSignal(camdwaitsig2);
+		FreeSignal(camdwaitsig);
 		camdwaitprocstatus=2;
 		return;
 	}
@@ -58,8 +58,8 @@ SAVEDS void CamdTimerProc(void){
 	TimerIO=(struct timerequest *)AllocMem(sizeof(struct timerequest),MEMF_ANY|MEMF_CLEAR|MEMF_PUBLIC);
 
 	if(TimerIO==NULL){
-		FreeSignal(1L<<camdwaitsig2);
-		FreeSignal(1L<<camdwaitsig);
+		FreeSignal(camdwaitsig2);
+		FreeSignal(camdwaitsig);
 		DeleteMsgPort(TimerMP);
 		camdwaitprocstatus=2;
 		return;
@@ -80,8 +80,8 @@ SAVEDS void CamdTimerProc(void){
 	))!=0){
 #endif
 
-		FreeSignal(1L<<camdwaitsig2);
-		FreeSignal(1L<<camdwaitsig);
+		FreeSignal(camdwaitsig2);
+		FreeSignal(camdwaitsig);
 		TimerIO->tr_node.io_Message.mn_Node.ln_Type=(UBYTE)-1;
 		TimerIO->tr_node.io_Device=(struct Device *)-1L;
 		TimerIO->tr_node.io_Unit=(struct Unit *)-1L;
@@ -152,8 +152,8 @@ SAVEDS void CamdTimerProc(void){
 	if(notifysig!=-1) FreeSignal(notifysig);
 #endif
 
-	FreeSignal(1L<<camdwaitsig2);
-	FreeSignal(1L<<camdwaitsig);
+	FreeSignal(camdwaitsig2);
+	FreeSignal(camdwaitsig);
 	CloseDevice((struct IORequest *)TimerIO);
 	TimerIO->tr_node.io_Message.mn_Node.ln_Type=(UBYTE)-1;
 	TimerIO->tr_node.io_Device=(struct Device *)-1L;

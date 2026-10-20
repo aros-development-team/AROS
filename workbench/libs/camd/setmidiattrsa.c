@@ -38,13 +38,27 @@
                                        You should get the midimessage as the first argument in the function,
 				       however, that has not yet been implemented. Default is NULL.
 
-    MIDI_PartHook (struct Hook *)   -- Don't really know what this one is for. Have to check amigos-autodocs.
-                                       It does not currently do anything.
+    MIDI_PartHook (struct Hook *)   -- Called when another node's link or a driver
+                                       port joins/leaves a cluster of this node,
+                                       or a participant's visibility changes.
+                                       Arguments are (hook, midinode, cluster):
+                                       Hook in A0, this node in A2, cluster in A1.
+                                       Runs in the changing task under exclusive
+                                       CLSemaphore, after participant counts are
+                                       updated. The hook must not add, remove or
+                                       move links, delete nodes, or wait for work
+                                       that needs CAMD's linkage lock. Do not keep
+                                       the cluster pointer beyond the call.
+                                       Each node is told once per change; the
+                                       changing node itself is not told.
+                                       Return value is ignored. Default is NULL.
 
     MIDI_RecvSignal (BYTE)          -- Signal bit to use when signalling a task whenever a midimessage is
                                        arriving at the node, or -1 to disable signalling. Default is -1.
 
-    MIDI_PartSignal (BYTE)          -- Signal bit to use when signalling a task when..... Default is -1.
+    MIDI_PartSignal (BYTE)          -- Signal bit (not a mask) sent to MIDI_SignalTask
+                                       on the same changes as MIDI_PartHook.
+                                       -1 disables signalling; default is -1.
 
     MIDI_MsgQueue (ULONG)           -- Number of messages the messagequeue is able to hold.
 
