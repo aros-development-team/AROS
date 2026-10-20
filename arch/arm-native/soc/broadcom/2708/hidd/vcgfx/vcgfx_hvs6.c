@@ -1150,9 +1150,7 @@ static ULONG hvs6_build_planes(struct VideoCoreGfx_staticdata *xsd, ULONG list)
                 | HVS6_PTR0_HANDLE(HVS6_PL_HANDLE + j)
                 | (sc ? HVS6_PTR0_LINES4 : HVS6_PTR0_LINES2);
 
-        if ((px[j] <= 0) && (px[j] + (LONG)pw[j] >= out_w)
-            && (py[j] + (LONG)ph[j] >= bottom))
-            bottom = (py[j] > 0) ? py[j] : 0;
+        bottom = vcgfx_plane_occlude(px[j], py[j], pw[j], ph[j], 0, 0, out_w, bottom);
     }
 
     ent = hvs6_pslot(st, list, HVS6_PL_BACK);

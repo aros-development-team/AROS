@@ -437,16 +437,7 @@ static BOOL vc4_screen_scale(OOP_Class *cl, OOP_Object *bm, ULONG *mw, ULONG *mh
     data = OOP_INST_DATA(xsd->vcsd_VideoCoreGfxOffBMClass, bm);
     *mw = data->modew;
     *mh = data->modeh;
-    if (xsd->vcsd_HVSGen != VCGFX_HVS_HVS6)
-    {
-        *dw = xsd->vcsd_HVS.hvs_SrcW;
-        *dh = xsd->vcsd_HVS.hvs_SrcH;
-    }
-    else if (vc4_hvs6_scales(xsd))
-        vc4_hvs6_out_size(xsd, dw, dh);
-    else
-        return FALSE;
-    return *mw && *mh && *dw && *dh;
+    return vcgfx_planes_out_size(xsd, dw, dh) && *mw && *mh && *dw && *dh;
 }
 
 VOID MNAME_DISPLAY(DisplayToBMCoords)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_DisplayToBMCoords *msg)

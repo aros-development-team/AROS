@@ -103,6 +103,33 @@ static BOOL timing_follows_front(struct VideoCoreGfx_staticdata *xsd)
     return xsd->vcsd_HVSGen != VCGFX_HVS_VC4;
 }
 
+/* The size every screen plane scales to; FALSE where planes do not scale. */
+BOOL vcgfx_planes_out_size(struct VideoCoreGfx_staticdata *xsd, ULONG *w, ULONG *h)
+{
+    if (xsd->vcsd_HVSGen != VCGFX_HVS_HVS6)
+    {
+        *w = xsd->vcsd_HVS.hvs_SrcW;
+        *h = xsd->vcsd_HVS.hvs_SrcH;
+        return TRUE;
+    }
+    if (!vc4_hvs6_scales(xsd))
+        return FALSE;
+    vc4_hvs6_out_size(xsd, w, h);
+    return TRUE;
+}
+
+/* Occlusion, applied front to back: a screen as wide as the display hides
+ * everything below its top edge. Returns how far down the screens behind
+ * it still show. Not a hardware fact, so shared by every HVS generation. */
+LONG vcgfx_plane_occlude(LONG px, LONG py, ULONG pw, ULONG ph,
+                         LONG left, LONG top, LONG right, LONG bottom)
+{
+    if ((px <= left) && (px + (LONG)pw >= right)
+        && (py < bottom) && (py + (LONG)ph >= bottom))
+        return (py > top) ? py : top;
+    return bottom;
+}
+
 /* The overlay is up over this screen. */
 BOOL vcgfx_plane_overlay_shown(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm)
 {
@@ -299,6 +326,27 @@ static void backdrop_clear(struct VideoCoreGfx_staticdata *xsd)
     }
 }
 
+/* Mode policy. A mode set blanks the display, so the timing follows the
+ * front screen only when it is alone, or too big to scale down into it. */
+static void planes_set_timing(struct VideoCoreGfx_staticdata *xsd,
+                              struct vcgfx_plane *front, ULONG n)
+{
+    IPTR mode = vHidd_ModeID_Invalid, fbmode = vHidd_ModeID_Invalid;
+
+    if (!xsd->vcsd_FBObj
+        || (!((n == 1) && timing_follows_front(xsd))
+            && plane_fits(xsd, front->pl_Data->modew, front->pl_Data->modeh)))
+        return;
+
+    OOP_GetAttr(front->pl_BM, aHidd_BitMap_ModeID, &mode);
+    OOP_GetAttr(xsd->vcsd_FBObj, aHidd_BitMap_ModeID, &fbmode);
+    if ((mode != vHidd_ModeID_Invalid) && (mode != fbmode))
+    {
+        OOP_SetAttrsTags(xsd->vcsd_FBObj, aHidd_BitMap_ModeID, mode, TAG_DONE);
+        xsd->vcsd_Backdrop = NULL;
+    }
+}
+
 ULONG vcgfx_show_viewports(struct VideoCoreGfx_staticdata *xsd,
                            struct HIDD_ViewPortData *vpd)
 {
@@ -342,23 +390,8 @@ ULONG vcgfx_show_viewports(struct VideoCoreGfx_staticdata *xsd,
         n++;
     }
 
-    /* A mode set blanks the display, so the timing follows the front
-     * screen only when it is alone, or too big to scale down into it. */
-    if (n && xsd->vcsd_FBObj
-        && (((n == 1) && timing_follows_front(xsd))
-            || !plane_fits(xsd, shown[0].pl_Data->modew,
-                           shown[0].pl_Data->modeh)))
-    {
-        IPTR mode = vHidd_ModeID_Invalid, fbmode = vHidd_ModeID_Invalid;
-
-        OOP_GetAttr(shown[0].pl_BM, aHidd_BitMap_ModeID, &mode);
-        OOP_GetAttr(xsd->vcsd_FBObj, aHidd_BitMap_ModeID, &fbmode);
-        if ((mode != vHidd_ModeID_Invalid) && (mode != fbmode))
-        {
-            OOP_SetAttrsTags(xsd->vcsd_FBObj, aHidd_BitMap_ModeID, mode, TAG_DONE);
-            xsd->vcsd_Backdrop = NULL;
-        }
-    }
+    if (n)
+        planes_set_timing(xsd, &shown[0], n);
 
     VC4_MBOX_LOCK(xsd);
     if (!xsd->vcsd_PlanesMode)
