@@ -143,6 +143,7 @@ static int NetInfo__DevInit(LIBBASETYPEPTR LIBBASE)
 
     LIBBASE->nid_Task = NULL;
     LIBBASE->nid_WorkerID = 0;
+    LIBBASE->nid_OpenWaiters = 0;
     InitSemaphore(LIBBASE->nid_Lock);
     return TRUE;
 }
@@ -167,9 +168,12 @@ static int NetInfo__DevOpen(LIBBASETYPEPTR LIBBASE,
      * since the worker needs it to finish its cleanup. */
     while (LIBBASE->nid_Task != NULL && LIBBASE->nid_Death != NULL &&
            LIBBASE->nid_Death->mn_Node.ln_Type != NT_MESSAGE) {
+        /* The generated open count is not incremented until we return. */
+        LIBBASE->nid_OpenWaiters++;
         ReleaseSemaphore(LIBBASE->nid_Lock);
         Delay(1);
         ObtainSemaphore(LIBBASE->nid_Lock);
+        LIBBASE->nid_OpenWaiters--;
     }
 
     /*
@@ -268,8 +272,9 @@ static int NetInfo__DevExpunge(LIBBASETYPEPTR LIBBASE)
         if (LIBBASE->nid_Task) {
             if (LIBBASE->nid_Death && LIBBASE->nid_Death->mn_Node.ln_Type == NT_MESSAGE)
                 ReplyMsg(LIBBASE->nid_Death);
-        } else if (LIBBASE->nid_WorkerID == 0 ||
-                   FindTaskByPID(LIBBASE->nid_WorkerID) == NULL) {
+        } else if (LIBBASE->nid_OpenWaiters == 0 &&
+                   (LIBBASE->nid_WorkerID == 0 ||
+                    FindTaskByPID(LIBBASE->nid_WorkerID) == NULL)) {
             /* Exec removes the worker only after it has left this module
              * for DOS's exit code. Forbid() alone would not stop it on
              * another CPU. */
