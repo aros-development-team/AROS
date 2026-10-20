@@ -343,7 +343,7 @@ static void i8042_kbd_process_irq_key(struct kbd_data *data, UBYTE keycode, stru
 
             if (downkeycode < NUM_E0KEYS) {
                 kevt.code = e0_keytable[downkeycode];
-                if (kevt.code != NOKEY) kevt.code |= releaseflag;
+                if (kevt.code != (UWORD)NOKEY) kevt.code |= releaseflag;
             }
         } /* if (data->prev_keycode == 0xE0) */
         else {
@@ -370,7 +370,7 @@ static void i8042_kbd_process_irq_key(struct kbd_data *data, UBYTE keycode, stru
         event = keycode;
         if (downkeycode < NUM_STDKEYS) {
             kevt.code = std_keytable[downkeycode];
-            if (kevt.code != NOKEY) kevt.code |= releaseflag;
+            if (kevt.code != (UWORD)NOKEY) kevt.code |= releaseflag;
         }
     }
 
@@ -494,7 +494,7 @@ static void i8042_kbd_process_irq_key(struct kbd_data *data, UBYTE keycode, stru
         ColdReboot();
 #endif
 
-    if (kevt.code == NOKEY)
+    if (kevt.code == (UWORD)NOKEY)
         return;
 
     if (kevt.code == data->prev_amigacode) {
