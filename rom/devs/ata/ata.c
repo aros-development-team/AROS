@@ -898,6 +898,29 @@ AROS_LH1(LONG, AbortIO,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+    NAME
+        ULONG GetRdskLba(
+
+    SYNOPSIS
+        struct IORequest *io)
+
+    FUNCTION
+        Return the fixed value zero. This entrypoint does not search
+        for or read a rigid disk block.
+
+    INPUTS
+        io - Unused. May be NULL.
+
+    RESULT
+        Always zero. The value does not establish that a rigid disk
+        block exists at logical block zero.
+
+    NOTES
+        No device I/O is issued. The request and its error field are
+        left unchanged. This entrypoint provides no discovery status.
+
+*****************************************************************************/
 AROS_LH1(ULONG, GetRdskLba,
     AROS_LHA(struct IORequest *, io, A1),
     LIBBASETYPEPTR, LIBBASE, 7, ata)
@@ -909,6 +932,35 @@ AROS_LH1(ULONG, GetRdskLba,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+    NAME
+        ULONG GetBlkSize(
+
+    SYNOPSIS
+        struct IORequest *io)
+
+    FUNCTION
+        Return the sector-size exponent stored for the opened unit.
+
+    INPUTS
+        io - Request for a successfully opened ata.device unit.
+             Both io and io_Unit must be valid. Keep the unit open
+             throughout the call.
+
+    RESULT
+        The stored base-two exponent of the sector size in bytes,
+        returned as ULONG. For example, 9 denotes 512-byte sectors
+        and 11 denotes 2048-byte sectors. This is not a byte count.
+
+    NOTES
+        The call reads the cached unit value without issuing device
+        I/O or checking media presence. It leaves the request and its
+        error field unchanged.
+
+        The request and unit pointers are not validated. No error
+        result is provided for an unopened, closed or invalid request.
+
+*****************************************************************************/
 AROS_LH1(ULONG, GetBlkSize,
     AROS_LHA(struct IORequest *, io, A1),
     LIBBASETYPEPTR, LIBBASE, 8, ata)
