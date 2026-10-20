@@ -18,6 +18,36 @@
 #include "rexxsupport_intern.h"
 #include "rxfunctions.h"
 
+/*****************************************************************************
+
+    NAME
+        NEXT
+
+    SYNOPSIS
+    value = NEXT(pointer[, offset])
+
+    FUNCTION
+    Copies a pointer-sized sequence of bytes from the supplied argument
+    string's own data buffer, starting at the specified byte offset.
+
+    INPUTS
+    pointer - Binary argument string of exactly sizeof(void *) bytes.
+    offset  - Optional signed decimal byte offset; defaults to zero.
+
+    RESULT
+    A pointer-sized binary argument string. ERR10_018 is returned for
+    an invalid pointer-string length or offset representation.
+
+    BUGS
+    Despite its name, the implementation does not dereference the pointer
+    encoded in pointer. A nonzero offset is not checked against the input
+    buffer size and can read outside the argument string.
+
+    SEE ALSO
+    OFFSET, BADDR
+
+*****************************************************************************/
+
 LONG rxsupp_next(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE **argstring)
 {
     char *ptr, *end;

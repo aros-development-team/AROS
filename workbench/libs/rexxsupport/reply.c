@@ -18,6 +18,40 @@
 #include "rexxsupport_intern.h"
 #include "portnode.h"
 
+/*****************************************************************************
+
+    NAME
+        REPLY
+
+    SYNOPSIS
+    result = REPLY(message[, code])
+
+    FUNCTION
+    Removes a received message from RexxSupport's tracking list and sends
+    an Exec reply to its reply port.
+
+    INPUTS
+    message - Binary pointer to a message obtained using GETPKT().
+    code    - Optional intended Rexx return code for a RexxMsg.
+
+    RESULT
+    The string "1" after sending the reply. ERR10_018 is returned if
+    the decoded message pointer is NULL or the parsed code is invalid.
+
+    NOTES
+    After REPLY(), do not use the message pointer; ownership has passed
+    back to the original sender.
+
+    BUGS
+    When code is supplied, the implementation parses the binary message
+    pointer argument instead of the second argument. It does not validate
+    the pointer argument's byte length or membership in the tracked list.
+
+    SEE ALSO
+    GETPKT, GETARG, TYPEPKT
+
+*****************************************************************************/
+
 LONG rxsupp_reply(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE **argstring)
 {
     struct RexxMsg *msg2 = *(struct RexxMsg **)ARG1(msg);

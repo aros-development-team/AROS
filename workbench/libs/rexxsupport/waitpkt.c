@@ -18,6 +18,34 @@
 #include "rexxsupport_intern.h"
 #include "portnode.h"
 
+/*****************************************************************************
+
+    NAME
+        WAITPKT
+
+    SYNOPSIS
+    result = WAITPKT(port)
+
+    FUNCTION
+    Waits until at least one message is available at a RexxSupport-
+    managed message port.
+
+    INPUTS
+    port - Name of a port created by OPENPORT().
+
+    RESULT
+    The string "1" when WaitPort() returns. Unknown port names
+    produce ERR10_018.
+
+    NOTES
+    WAITPKT() does not remove a message from the port. Call GETPKT()
+    afterward to retrieve it.
+
+    SEE ALSO
+    OPENPORT, GETPKT, REPLY
+
+*****************************************************************************/
+
 LONG rxsupp_waitpkt(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE **argstring)
 {
     struct PortNodeData *data;

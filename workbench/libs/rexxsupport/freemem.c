@@ -16,6 +16,35 @@
 #include "rexxsupport_intern.h"
 #include "rxfunctions.h"
 
+/*****************************************************************************
+
+    NAME
+        FREEMEM
+
+    SYNOPSIS
+    success = FREEMEM(pointer, size)
+
+    FUNCTION
+    Releases an Exec memory allocation using FreeMem().
+
+    INPUTS
+    pointer - Binary pointer argument string containing exactly
+              sizeof(void *) bytes, as returned by ALLOCMEM().
+    size    - Decimal allocation size supplied to the matching ALLOCMEM().
+
+    RESULT
+    The string "1" after FreeMem() is called. An invalid pointer-string
+    length or size representation produces ERR10_018.
+
+    NOTES
+    The allocation must still be live, and size must match its original
+    allocation. Do not use the address after the call.
+
+    SEE ALSO
+    ALLOCMEM
+
+*****************************************************************************/
+
 LONG rxsupp_freemem(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE **argstring)
 {
     char *end;

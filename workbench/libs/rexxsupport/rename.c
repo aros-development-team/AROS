@@ -18,6 +18,29 @@
 #include "rexxsupport_intern.h"
 #include "rxfunctions.h"
 
+/*****************************************************************************
+
+    NAME
+        RENAME
+
+    SYNOPSIS
+    result = RENAME(oldname, newname)
+
+    FUNCTION
+    Renames or moves a filesystem entry using DOS Rename().
+
+    INPUTS
+    oldname - Current path of the entry.
+    newname - Requested new path.
+
+    RESULT
+    The string "1" if Rename() succeeds, or "0" if it fails.
+
+    SEE ALSO
+    DELETE, MAKEDIR
+
+*****************************************************************************/
+
 LONG rxsupp_rename(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE **argstring)
 {
     BOOL ok;

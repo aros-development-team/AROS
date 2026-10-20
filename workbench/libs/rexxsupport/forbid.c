@@ -30,6 +30,35 @@ static int forbid_nest = 0;
 /* maximum size of a string that represents a signed decimal integer */
 #define REXXVAR_MAXSTR 11
 
+/*****************************************************************************
+
+    NAME
+        FORBID
+
+    SYNOPSIS
+    nesting = FORBID()
+
+    FUNCTION
+    Requests a nested task-switching prohibition through Exec Forbid().
+
+    RESULT
+    A decimal nesting count represented as a string. ERR10_012 is
+    returned if the script nesting variable cannot be updated.
+
+    NOTES
+    Match each successful FORBID() with PERMIT(). Avoid operations that
+    wait for other tasks while task switching is prohibited.
+
+    BUGS
+    The implementation also uses static process-wide nesting state;
+    concurrent or unrelated script invocations do not have independent
+    in-memory nesting counters.
+
+    SEE ALSO
+    PERMIT
+
+*****************************************************************************/
+
 LONG rxsupp_forbid(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE **argstring)
 {
     char val[REXXVAR_MAXSTR + 1];
@@ -69,6 +98,34 @@ LONG rxsupp_forbid(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE *
     *argstring = CreateArgstring(val, strlen(val));
     return RC_OK;
 }
+
+/*****************************************************************************
+
+    NAME
+        PERMIT
+
+    SYNOPSIS
+    nesting = PERMIT()
+
+    FUNCTION
+    Releases one nesting level of the task-switching prohibition managed
+    by RexxSupport, invoking Exec Permit() when its active level ends.
+
+    RESULT
+    A decimal nesting count represented as a string. ERR10_012 is
+    returned if the script nesting variable cannot be updated.
+
+    NOTES
+    Call PERMIT() once for each corresponding FORBID().
+
+    BUGS
+    The implementation relies partly on static process-wide state, so
+    unrelated script executions are not independently tracked.
+
+    SEE ALSO
+    FORBID
+
+*****************************************************************************/
 
 LONG rxsupp_permit(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE **argstring)
 {

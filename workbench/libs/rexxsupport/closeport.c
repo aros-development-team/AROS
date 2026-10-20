@@ -18,6 +18,39 @@
 #include "rexxsupport_intern.h"
 #include "portnode.h"
 
+/*****************************************************************************
+
+    NAME
+        CLOSEPORT
+
+    SYNOPSIS
+    result = CLOSEPORT(name)
+
+    FUNCTION
+    Unregisters a named message port previously opened by RexxSupport in
+    the current library instance. Replies to pending messages during cleanup.
+
+    INPUTS
+    name - Name of the managed message port to close.
+
+    RESULT
+    The string "1" if a managed port was found and closed, or "0" if
+    not found. ERR10_013 indicates a missing REXX port; ERR10_003 denotes
+    a failure to allocate the registration message or reply port.
+
+    NOTES
+    Only ports managed by RexxSupport are eligible. Port registration is
+    coordinated with RexxMast before cleanup.
+
+    BUGS
+    The implementation does not validate all intermediate allocation
+    results before using them.
+
+    SEE ALSO
+    OPENPORT, WAITPKT, GETPKT, REPLY
+
+*****************************************************************************/
+
 LONG rxsupp_closeport(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE **argstring)
 {
     struct PortNodeData *data;

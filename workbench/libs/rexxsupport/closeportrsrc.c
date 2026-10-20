@@ -21,25 +21,23 @@
         struct Library *, RexxSupportBase, 6, RexxSupport)
 
 /*  FUNCTION
-         Deletes a RexxMsg structure
+    Removes and releases a RexxSupport-managed message port resource.
+    Returns outstanding tracked or queued messages to their senders,
+    then releases the port and its tracking structures.
 
     INPUTS
-         packet - The RexxMsg to delete.
+    rsrc - Pointer to a RexxRsrc embedded in a PortNode registered by
+           RexxSupport. It must refer to a live managed resource.
 
     RESULT
-         void
+    None.
 
     NOTES
-
-    EXAMPLE
-
-    BUGS
+    This cleanup entry point is used for resource disposal. It must not
+    be passed an unrelated RexxRsrc or an arbitrary RexxMsg pointer.
 
     SEE ALSO
-         rexxsyslib.library/CreateRexxMsg()
-
-    INTERNALS
-
+    CLOSEPORT
 
 *****************************************************************************/
 {
@@ -49,4 +47,4 @@
   
     ReturnVoid("ClosePortRsrc");
     AROS_LIBFUNC_EXIT
-} /* DeleteRexxMsg */
+} /* ClosePortRsrc */

@@ -18,6 +18,41 @@
 #include "rexxsupport_intern.h"
 #include "portnode.h"
 
+/*****************************************************************************
+
+    NAME
+        GETARG
+
+    SYNOPSIS
+    value = GETARG(message[, index])
+
+    FUNCTION
+    Copies one Rexx argument from a message identified by its binary
+    pointer value into a new Rexx argument string.
+
+    INPUTS
+    message - Binary pointer to a RexxMsg, as returned by GETPKT().
+    index   - Optional argument index; when omitted, index 0 is selected.
+
+    RESULT
+    An allocated argument string on success. ERR10_018 is returned for
+    an invalid message identity or invalid parsed index.
+
+    NOTES
+    The message must remain valid until this call completes. Argument
+    indices refer to the rm_Args array, beginning at zero.
+
+    BUGS
+    When index is supplied, the implementation incorrectly parses the
+    binary message pointer argument as a decimal index instead of parsing
+    the second argument. It also does not validate the pointer argument's
+    byte length before dereferencing it.
+
+    SEE ALSO
+    GETPKT, TYPEPKT, REPLY
+
+*****************************************************************************/
+
 LONG rxsupp_getarg(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE **argstring)
 {
     struct RexxMsg *msg2 = *(struct RexxMsg **)ARG1(msg);

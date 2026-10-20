@@ -19,6 +19,46 @@
 #include "rexxsupport_intern.h"
 #include "rxfunctions.h"
 
+/*****************************************************************************
+
+    NAME
+        SHOWDIR
+
+    SYNOPSIS
+    entries = SHOWDIR(path[, type[, separator]])
+
+    FUNCTION
+    Lists the names of entries in a directory, optionally filtering
+    entries by filesystem type.
+
+    INPUTS
+    path      - Directory to enumerate.
+    type      - Optional filter: A for all entries, F for files, or D for
+                directories; only the first letter is interpreted.
+    separator - Optional string whose first character separates names;
+                the default separator is a space.
+
+    RESULT
+    An argument string containing separated names, or an empty string
+    when the path cannot be opened or does not name a directory.
+    ERR10_018 is returned for an unrecognized type selector.
+
+    NOTES
+    The names are not individually escaped or quoted. A separator that
+    occurs in a filename makes the output ambiguous.
+
+    BUGS
+    A NULL third argument is dereferenced because the separator check
+    uses an incorrect condition. The ExAll() loop tests its return value
+    in the opposite sense to its documented completion convention and
+    may fail to terminate. Some failure paths retain a DOS lock;
+    allocation failures are not consistently handled.
+
+    SEE ALSO
+    SHOWLIST, STATEF
+
+*****************************************************************************/
+
 LONG rxsupp_showdir(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE **argstring)
 {
     UBYTE argc = msg->rm_Action & RXARGMASK;

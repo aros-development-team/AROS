@@ -19,6 +19,41 @@
 #include "rexxsupport_intern.h"
 #include "portnode.h"
 
+/*****************************************************************************
+
+    NAME
+        OPENPORT
+
+    SYNOPSIS
+    result = OPENPORT(name)
+
+    FUNCTION
+    Creates a named Exec message port and registers its ownership with
+    the REXX message service for cleanup when the script finishes.
+
+    INPUTS
+    name - Requested public message-port name.
+
+    RESULT
+    The string "1" if a port was created and the registration exchange
+    completed, or "0" if the name is already in use or port creation
+    fails. ERR10_013 indicates that the REXX port is unavailable;
+    ERR10_003 indicates allocation failure during setup.
+
+    NOTES
+    The call waits for a reply to its resource-registration message.
+    Close a successfully created port with CLOSEPORT() when finished.
+
+    BUGS
+    The implementation does not check every allocation result and
+    can retain a partially created port when setup fails. It logs but
+    does not propagate a failed RexxMast registration response.
+
+    SEE ALSO
+    CLOSEPORT, WAITPKT, GETPKT
+
+*****************************************************************************/
+
 LONG rxsupp_openport(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE **argstring)
 {
     struct PortNode *node;

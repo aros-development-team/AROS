@@ -17,6 +17,26 @@
 #include "rexxsupport_intern.h"
 #include "rxfunctions.h"
 
+/*****************************************************************************
+
+    NAME
+        NULL
+
+    SYNOPSIS
+    pointer = NULL()
+
+    FUNCTION
+    Returns a binary representation of a native null pointer.
+
+    RESULT
+    An argument string containing sizeof(void *) zero-valued pointer
+    bytes. This is not the printable string "0".
+
+    SEE ALSO
+    ALLOCMEM, BADDR, OFFSET
+
+*****************************************************************************/
+
 LONG rxsupp_null(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE **argstring)
 {
     void *ptr = NULL;
