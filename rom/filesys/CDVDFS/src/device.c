@@ -1436,6 +1436,8 @@ static void Mount (struct CDVDBase *global)
     global->g_top_level_obj = Open_Top_Level_Directory (global->g_volume);
     if (!global->g_top_level_obj) {
       D(bug("!!! cannot open top level directory !!!\n"));
+      Close_Volume(global->g_volume);
+      global->g_volume = NULL;
       return;
     }
   }
