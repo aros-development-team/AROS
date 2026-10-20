@@ -18,9 +18,17 @@
 
 #include LC_LIBDEFS_FILE
 
-/* ACPI Hardware IDs for PS/2 devices */
-#define ACPI_HID_PS2_KEYBOARD   "PNP0303"
-#define ACPI_HID_PS2_MOUSE      "PNP0F03"
+/* Standard PNP keyboard and PS/2 pointing-device IDs. AcpiGetDevices
+ * also checks compatible IDs, so vendor-specific devices can match a CID. */
+static const char * const i8042_keyboard_ids[] = {
+    "PNP0300", "PNP0301", "PNP0302", "PNP0303", "PNP0304", "PNP0305",
+    "PNP0306", "PNP0309", "PNP030A", "PNP030B", "PNP0320", "PNP0343",
+    "PNP0344", "PNP0345", NULL
+};
+static const char * const i8042_mouse_ids[] = {
+    "PNP0F03", "PNP0F0B", "PNP0F0E", "PNP0F12", "PNP0F13",
+    "PNP0F19", "PNP0F1C", NULL
+};
 
 /* Bitmask flags for PS/2 device detection */
 #define ACPI_PS2DEV_KEYBOARD     (1 << 0)
@@ -39,6 +47,18 @@ static ACPI_STATUS i8042_acpi_devicecallback(ACPI_HANDLE handle, ULONG nesting_l
     return AE_OK;
 }
 
+static BOOL i8042_acpi_find_device(struct Library *ACPICABase,
+        const char * const *ids, IPTR mask, IPTR *found)
+{
+    for (; *ids; ids++) {
+        ACPI_STATUS status = AcpiGetDevices((char *)*ids, i8042_acpi_devicecallback,
+                (APTR)mask, (void **)found);
+        if (ACPI_SUCCESS(status) && (*found & mask))
+            return TRUE;
+    }
+    return FALSE;
+}
+
 static int i8042_acpi_probe(LIBBASETYPEPTR lh)
 {
     struct Library *ACPICABase;
@@ -51,24 +71,14 @@ static int i8042_acpi_probe(LIBBASETYPEPTR lh)
 
     ACPICABase = OpenLibrary("acpica.library", 0);
     if (ACPICABase) {
-        ACPI_STATUS status;
         IPTR devicesfound = 0;
 
-        status = AcpiGetDevices(ACPI_HID_PS2_KEYBOARD, i8042_acpi_devicecallback, (APTR)ACPI_PS2DEV_KEYBOARD, (void **)&devicesfound);
-        if (ACPI_FAILURE(status)) {
-            D(bug("[i8042:ACPI] %s: No PNP0303 PS/2 Keyboard found\n", __func__);)
-        }
-        if (!(devicesfound & ACPI_PS2DEV_KEYBOARD)) {
+        if (!i8042_acpi_find_device(ACPICABase, i8042_keyboard_ids,
+                ACPI_PS2DEV_KEYBOARD, &devicesfound))
             lh->csd.cs_Flags |= PS2F_DISABLEKEYB;
-        }
-
-        status = AcpiGetDevices(ACPI_HID_PS2_MOUSE, i8042_acpi_devicecallback, (APTR)ACPI_PS2DEV_MOUSE, (void **)&devicesfound);
-        if (ACPI_FAILURE(status)) {
-            D(bug("[i8042:ACPI] %s: No PNP0F03 PS/2 Mouse found\n", __func__);)
-        }
-        if (!(devicesfound & ACPI_PS2DEV_MOUSE)) {
+        if (!i8042_acpi_find_device(ACPICABase, i8042_mouse_ids,
+                ACPI_PS2DEV_MOUSE, &devicesfound))
             lh->csd.cs_Flags |= PS2F_DISABLEMOUSE;
-        }
 
         D(
             if (devicesfound & ACPI_PS2DEV_KEYBOARD)
