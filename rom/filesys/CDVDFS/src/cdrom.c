@@ -464,10 +464,12 @@ static int Read_Chunk_Internal(CDROM *p_cd, long p_sector, int file_data)
     D(bug("[CDVDFS]\tClient requested sector %ld\n", p_sector));
 
     p_cd->buffer_bytes = 0;
-    if (p_sector < 0 || (read_end && (uint64_t)p_sector >= read_end))
+    if (p_sector < 0)
         return 0;
 
-    if (p_cd->buffer_data == NULL ||
+    /* A declared endpoint limits read-ahead, not access to an existing sector. */
+    if ((read_end && (uint64_t)p_sector >= read_end) ||
+        p_cd->buffer_data == NULL ||
         (!file_data && p_cd->split_cache && p_cd->buffer_metadata == NULL))
     {
         if (p_cd->io_sector == p_sector)
