@@ -76,6 +76,8 @@ struct NetInfoDevice {
   struct NetInfoMap     *nid_Maps[NETINFO_UNITS];
   const char            *nid_dbuser;
   const char            *nid_dbgroup;
+  ULONG                  nid_WorkerID;	/* GetETaskID() of the last worker */
+  ULONG                  nid_OpenWaiters; /* DevOpen waiting with nid_Lock dropped */
 };
 
 #define nid_Task nid_Port->mp_SigTask
