@@ -11,10 +11,9 @@
 
 #include "camdusbmidi.class.h"
 
-#if !defined(__mc68000__)
-extern const void *_binary_poseidonusb_start;
-extern const void *_binary_poseidonusb_size;
-#endif
+/* The driver, built in camd/ for this target and embedded as a byte array. */
+extern const UBYTE poseidonusb_blob[];
+extern const ULONG poseidonusb_blob_size;
 
 /* /// "Lib Stuff" */
 static const STRPTR libname = MOD_NAME_STRING;
@@ -34,6 +33,7 @@ static int libInit(LIBBASETYPEPTR nh)
         nh->nh_CurrentCGC.cgc_Length = AROS_LONG2BE(sizeof(struct ClsGlobalCfg)-8);
 
         NewList(&nh->nh_Bindings);
+        NewList(&nh->nh_PortSets);
     } else {
         KPRINTF(20, ("libInit: OpenLibrary(\"utility.library\", 39) failed!\n"));
         nh = NULL;
@@ -52,7 +52,20 @@ static int libOpen(LIBBASETYPEPTR nh)
 
 static int libExpunge(LIBBASETYPEPTR nh)
 {
+    struct CAMDPortSet *cps;
+    UWORD cnt;
+
     KPRINTF(10, ("libExpunge nh: 0x%08lx\n", nh));
+    /* camd.library holds the class open while a driver is loaded, so no
+       port is in use here. */
+    while((cps = (struct CAMDPortSet *) RemHead(&nh->nh_PortSets)))
+    {
+        for(cnt = 0; cnt < 16; cnt++)
+        {
+            FreeVec(cps->cps_Adapters[cnt].ca_TXBuffer);
+        }
+        FreeVec(cps);
+    }
     CloseLibrary((struct Library *) UtilityBase);
     return(TRUE);
 }
@@ -68,9 +81,191 @@ ADD2EXPUNGELIB(libExpunge, 0)
  * ***********************************************************************
  */
 
-#if defined(__mc68000__)
-#include "CAMDDriver.c"
-#endif
+/* /// "nCopyID()" */
+/* Copies an ID into a field of size bytes, always NUL-terminated. */
+static void nCopyID(UBYTE *to, ULONG size, CONST_STRPTR from)
+{
+    ULONG len = 0;
+
+    while(len + 1 < size && from[len])
+    {
+        to[len] = from[len];
+        len++;
+    }
+    to[len] = 0;
+}
+/* \\\ */
+
+/* /// "nFindPortSet()" */
+/* Call under Forbid(). */
+static struct CAMDPortSet * nFindPortSet(struct NepHidBase *nh, STRPTR id)
+{
+    struct CAMDPortSet *cps;
+
+    for(cps = (struct CAMDPortSet *) nh->nh_PortSets.lh_Head;
+        cps->cps_Node.ln_Succ;
+        cps = (struct CAMDPortSet *) cps->cps_Node.ln_Succ)
+    {
+        if(!strcmp((char *) cps->cps_ID, (char *) id))
+        {
+            return(cps);
+        }
+    }
+    return(NULL);
+}
+/* \\\ */
+
+/* /// "nGetPortSet()" */
+static struct CAMDPortSet * nGetPortSet(struct NepHidBase *nh, STRPTR id)
+{
+    struct CAMDPortSet *cps;
+    struct CAMDPortSet *newcps;
+
+    Forbid();
+    cps = nFindPortSet(nh, id);
+    Permit();
+    if(cps)
+    {
+        return(cps);
+    }
+    if(!(newcps = AllocVec(sizeof(struct CAMDPortSet), MEMF_PUBLIC|MEMF_CLEAR)))
+    {
+        return(NULL);
+    }
+    nCopyID(newcps->cps_ID, sizeof(newcps->cps_ID), id);
+    newcps->cps_Node.ln_Name = (char *) newcps->cps_ID;
+    Forbid();
+    if(!(cps = nFindPortSet(nh, id)))
+    {
+        AddTail(&nh->nh_PortSets, &newcps->cps_Node);
+        cps = newcps;
+        newcps = NULL;
+    }
+    Permit();
+    FreeVec(newcps);
+    return(cps);
+}
+/* \\\ */
+
+/* /// "nAttachPorts()" */
+/* The device is there: the driver's ports, open or not, send to it. */
+static void nAttachPorts(struct NepClassHid *nch)
+{
+    struct CAMDPortSet *cps = nch->nch_Ports;
+    UWORD cnt;
+
+    /* GetFromCAMD() reads ca_MsgPort from a software interrupt. */
+    Disable();
+    cps->cps_Binding = nch;
+    for(cnt = 0; cnt < 16; cnt++)
+    {
+        cps->cps_Adapters[cnt].ca_MsgPort = nch->nch_TaskMsgPort;
+    }
+    Enable();
+}
+/* \\\ */
+
+/* /// "nDetachPorts()" */
+/* The device is gone. Ports stay open in CAMD; what they are sent is
+   dropped until it comes back. */
+static void nDetachPorts(struct NepClassHid *nch)
+{
+    struct CAMDPortSet *cps = nch->nch_Ports;
+    UWORD cnt;
+
+    Disable();
+    for(cnt = 0; cnt < 16; cnt++)
+    {
+        cps->cps_Adapters[cnt].ca_MsgPort = NULL;
+    }
+    cps->cps_Binding = NULL;
+    Enable();
+}
+/* \\\ */
+
+/* /// "nInstallDriver()" */
+/* Writes DEVS:Midi/<ShortID>, unless it is there already with the same
+   contents. CAMD requires the file name and the driver's name to match.
+   The class does not open camd.library: CAMD loads the driver, and the
+   driver opens this class. */
+static void nInstallDriver(struct NepHidBase *nh, struct NepClassHid *nch, struct Library *ps)
+{
+    struct Library *DOSBase;
+    UBYTE buf[64];
+    UBYTE *tmpmem, *binstart, *oldmem;
+    ULONG binsize, cnt;
+    BPTR fh;
+    BPTR lock;
+    BOOL same = FALSE;
+
+    if(!(DOSBase = OpenLibrary("dos.library", 37)))
+    {
+        return;
+    }
+    binsize = poseidonusb_blob_size;
+    binstart = (UBYTE *) poseidonusb_blob;
+    if(!(tmpmem = psdAllocVec(binsize)))
+    {
+        CloseLibrary(DOSBase);
+        return;
+    }
+    CopyMemQuick(binstart, tmpmem, binsize);
+    for(cnt = 0; cnt + CAMDUSB_NAMEMARKERSIZE + 32 <= binsize; cnt++)
+    {
+        if(!memcmp(&tmpmem[cnt], CAMDUSB_NAMEMARKER, CAMDUSB_NAMEMARKERSIZE))
+        {
+            memset(&tmpmem[cnt + CAMDUSB_NAMEMARKERSIZE], 0, 32);
+            nCopyID(&tmpmem[cnt + CAMDUSB_NAMEMARKERSIZE], 32, nch->nch_ShortID);
+            break;
+        }
+    }
+
+    psdSafeRawDoFmt(buf, 64, "%s/%s", (STRPTR) "DEVS:Midi", nch->nch_ShortID);
+    if((fh = Open(buf, MODE_OLDFILE)))
+    {
+        /* An older class wrote a driver CAMD would not load, named
+           "poseidonusb" inside: replace it. */
+        if((oldmem = psdAllocVec(binsize + 1)))
+        {
+            same = ((ULONG) Read(fh, oldmem, binsize + 1) == binsize) &&
+                   !memcmp(oldmem, tmpmem, binsize);
+            psdFreeVec(oldmem);
+        }
+        Close(fh);
+    }
+    if(!same)
+    {
+        if(!(fh = Open(buf, MODE_NEWFILE)))
+        {
+            if((lock = CreateDir("DEVS:Midi")))
+            {
+                UnLock(lock);
+                psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+                               "Created directory '%s'!",
+                               (STRPTR) "DEVS:Midi");
+            }
+            fh = Open(buf, MODE_NEWFILE);
+        }
+        if(!fh)
+        {
+            psdAddErrorMsg(RETURN_ERROR, (STRPTR) libname,
+                           "Couldn't generate CAMD MIDI driver '%s'!",
+                           buf);
+        } else {
+            same = ((ULONG) Write(fh, tmpmem, binsize) == binsize);
+            Close(fh);
+            if(same)
+            {
+                psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+                               "Generated CAMD MIDI driver '%s'!",
+                               buf);
+            }
+        }
+    }
+    psdFreeVec(tmpmem);
+    CloseLibrary(DOSBase);
+}
+/* \\\ */
 
 /* /// "usbAttemptInterfaceBinding()" */
 struct NepClassHid * usbAttemptInterfaceBinding(struct NepHidBase *nh, struct PsdInterface *pif)
@@ -102,7 +297,6 @@ struct NepClassHid * usbAttemptInterfaceBinding(struct NepHidBase *nh, struct Ps
 struct NepClassHid * usbForceInterfaceBinding(struct NepHidBase *nh, struct PsdInterface *pif)
 {
     struct Library *ps;
-    struct Library *DOSBase;
     struct NepClassHid *nch;
     struct PsdConfig *pc;
     struct PsdDevice *pd;
@@ -139,6 +333,41 @@ struct NepClassHid * usbForceInterfaceBinding(struct NepHidBase *nh, struct PsdI
                 srcpos++;
             }
             *tarpos = 0;
+            if(!nch->nch_ShortID[0])
+            {
+                nCopyID(nch->nch_ShortID, sizeof(nch->nch_ShortID), (CONST_STRPTR) "usbmidi");
+            }
+
+            /* Two devices of the same product get drivers of their own. */
+            Forbid();
+            for(cnt = 2; cnt <= 9; cnt++)
+            {
+                struct CAMDPortSet *cps = nFindPortSet(nh, nch->nch_ShortID);
+
+                if(!cps || !cps->cps_Binding)
+                {
+                    break;
+                }
+                for(tarpos = nch->nch_ShortID;
+                    *tarpos && tarpos < nch->nch_ShortID + sizeof(nch->nch_ShortID) - 1;
+                    tarpos++);
+                if(cnt > 2)
+                {
+                    tarpos--;
+                } else if(tarpos - nch->nch_ShortID > 30) {
+                    tarpos--;
+                }
+                *tarpos++ = '0' + cnt;
+                *tarpos = 0;
+            }
+            Permit();
+
+            if(!(nch->nch_Ports = nGetPortSet(nh, nch->nch_ShortID)))
+            {
+                psdFreeVec(nch);
+                CloseLibrary(ps);
+                return(NULL);
+            }
 
             nch->nch_ClsBase = nh;
             nch->nch_Device = NULL;
@@ -164,65 +393,7 @@ struct NepClassHid * usbForceInterfaceBinding(struct NepHidBase *nh, struct PsdI
                     psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
                                    "Play it again, '%s'!",
                                    devname);
-                    if((DOSBase = OpenLibrary("dos.library", 37)))
-                    {
-                        BPTR fh;
-                        BPTR lock;
-
-                        psdSafeRawDoFmt(buf, 64, "%s/%s", (STRPTR) "DEVS:Midi", nch->nch_ShortID);
-                        fh = Open(buf, MODE_OLDFILE);
-                        if(!fh)
-                        {
-                            fh = Open(buf, MODE_NEWFILE);
-                            if(!fh)
-                            {
-                                lock = CreateDir("DEVS:Midi");
-                                if(lock)
-                                {
-                                    UnLock(lock);
-                                    psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
-                                                   "Created directory '%s'!",
-                                                   (STRPTR) "DEVS:Midi");
-                                }
-                                fh = Open(buf, MODE_NEWFILE);
-                            }
-                            if(!fh)
-                            {
-                                psdAddErrorMsg(RETURN_ERROR, (STRPTR) libname,
-                                               "Couldn't generate CAMD MIDI driver '%s'!",
-                                               buf);
-                            } else {
-                                ULONG binsize;
-                                UBYTE *tmpmem, *binstart;
-#if !defined(__mc68000__)
-                                binsize = (unsigned long)&_binary_poseidonusb_size;
-                                binstart = (UBYTE *)&_binary_poseidonusb_start;
-#else
-                                binsize = sizeof(CAMDDriver);
-                                binstart = (UBYTE *)CAMDDriver;
-#endif
-                                tmpmem = psdAllocVec(binsize);
-                                if(tmpmem)
-                                {
-                                    CopyMemQuick(binstart, tmpmem, binsize);
-#if defined(__mc68000__)
-                                    // fix name of driver -- position is hardcoded, but unlikely to move
-                                    strcpy(&tmpmem[0x46], nch->nch_ShortID); // "poseidonusb"
-#endif
-                                    Write(fh, tmpmem, binsize);
-                                    psdFreeVec(tmpmem);
-                                    psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
-                                                   "Generated CAMD MIDI driver '%s'!",
-                                                   buf);
-                                }
-                                Close(fh);
-                            }
-
-                        } else {
-                            Close(fh);
-                        }
-                        CloseLibrary(DOSBase);
-                    }
+                    nInstallDriver(nh, nch, ps);
                     CloseLibrary(ps);
                     return(nch);
                 }
@@ -394,40 +565,49 @@ AROS_LH5(APTR, usbCAMDOpenPort,
          LIBBASETYPEPTR, nh, 15, nep)
 {
     AROS_LIBFUNC_INIT
-    
-    struct NepClassHid *nch;
+
+    struct CAMDPortSet *cps;
     struct CAMDAdapter *ca;
+    UBYTE *buffer;
 
     KPRINTF(10, ("Open Port %ld, ID=%s\n", port, idstr));
-    /* theoretically, we could allow multiple USB Midi devices to map
-       to different ports, but at the moment, this should suffice */
-    nch = (struct NepClassHid *) nh->nh_Bindings.lh_Head;
-    if(!nch->nch_Node.ln_Succ)
-    {
-        KPRINTF(20, ("No MIDI device available!\n"));
-        return(0);
-    }
     if(port > 15)
     {
         KPRINTF(20, ("Port %ld out of range!\n", port));
         return(0);
     }
-    /* fill adapter structure */
-    ca = &nh->nh_CAMDAdapters[port];
+    /* The port opens whether the device is plugged in or not, so CAMD
+       clients can link to it and wait. */
+    if(!(cps = nGetPortSet(nh, idstr)))
+    {
+        return(0);
+    }
+    ca = &cps->cps_Adapters[port];
+    /* Kept until the class is expunged: the device's task may be reading
+       it while CAMD closes the port. */
+    if(!ca->ca_TXBuffer)
+    {
+        if(!(buffer = AllocVec(4096, MEMF_PUBLIC|MEMF_CLEAR)))
+        {
+            KPRINTF(20, ("Out of memory!\n"));
+            return(0);
+        }
+        Disable();
+        ca->ca_TXBufSize = 4096;
+        ca->ca_TXBuffer = buffer;
+        Enable();
+    }
+    Disable();
     ca->ca_PortNum = port;
     ca->ca_TXFunc = xmitfct;
     ca->ca_RXFunc = recvfct;
     ca->ca_UserData = userdata;
-    ca->ca_MsgPort = nch->nch_TaskMsgPort;
-    ca->ca_TXBufSize = 4096;
-    ca->ca_TXBuffer = AllocVec(ca->ca_TXBufSize, MEMF_PUBLIC|MEMF_CLEAR);
     ca->ca_TXReadPos = 0;
+    ca->ca_TXPending = FALSE;
     ca->ca_TXWritePos = 0;
-    if(!ca->ca_TXBuffer)
-    {
-        KPRINTF(20, ("Out of memory!\n"));
-        return(0);
-    }
+    ca->ca_SysExMode = 0;
+    ca->ca_MsgPort = cps->cps_Binding ? cps->cps_Binding->nch_TaskMsgPort : NULL;
+    Enable();
     return(ca);
     
     AROS_LIBFUNC_EXIT
@@ -442,17 +622,21 @@ AROS_LH2(void, usbCAMDClosePort,
 {
     AROS_LIBFUNC_INIT
 
-    struct CAMDAdapter *ca;
+    struct CAMDPortSet *cps;
+
     KPRINTF(10, ("Close Port %ld, ID=%s\n", port, idstr));
     if(port > 15)
     {
         KPRINTF(10, ("Port %ld out of range!\n", port));
+        return;
     }
-    ca = &nh->nh_CAMDAdapters[port];
-    ca->ca_IsOpen = FALSE;
-    ca->ca_MsgPort = NULL;
-    FreeVec(ca->ca_TXBuffer);
-    ca->ca_TXBuffer = NULL;
+    Forbid();
+    cps = nFindPortSet(nh, idstr);
+    Permit();
+    if(cps)
+    {
+        cps->cps_Adapters[port].ca_IsOpen = FALSE;
+    }
     
     AROS_LIBFUNC_EXIT
 }
@@ -478,6 +662,7 @@ AROS_UFH0(void, nHidTask)
 
     if((nch = nAllocHid()))
     {
+        nAttachPorts(nch);
         Forbid();
         if(nch->nch_ReadySigTask)
         {
@@ -522,11 +707,12 @@ void nParseMidiOut(struct NepClassHid *nch)
     UWORD goodpkt = 0;
     UWORD cnt;
     struct CAMDAdapter *ca;
-    ca = nch->nch_ClsBase->nh_CAMDAdapters;
+    ca = nch->nch_Ports->cps_Adapters;
     for(cnt = 0; cnt < 16; cnt++)
     {
         if(ca->ca_IsOpen && ca->ca_TXReadPos != ca->ca_TXWritePos)
         {
+            ULONG before = ca->ca_TXReadPos;
             ULONG chan = ca->ca_PortNum<<4;
             ULONG mask = ca->ca_TXBufSize - 1;
             ULONG len = (ca->ca_TXWritePos + ca->ca_TXBufSize - ca->ca_TXReadPos) & mask;
@@ -722,6 +908,13 @@ void nParseMidiOut(struct NepClassHid *nch)
                     ca->ca_TXReadPos = (ca->ca_TXReadPos+1) & mask;
                 }
             } while(len && (goodpkt < 2040));
+            /* ActivateXmit is called once for a SysEx, not once per batch.
+               Pull another bounded batch after making room, including when
+               a partial short message remains at the end of this one. */
+            if(ca->ca_TXPending && ca->ca_TXReadPos != before)
+            {
+                Cause(&ca->ca_CAMDTXFunc);
+            }
         }
         ca++;
     }
@@ -739,12 +932,16 @@ void nParseMidi(struct NepClassHid *nch, UBYTE *buf, ULONG len)
     UWORD cmd;
     UWORD chan;
     struct CAMDAdapter *ca;
+    struct {
+        ULONG length;
+        UBYTE data[3];
+    } message;
 
     while(len > 3)
     {
         KPRINTF(1, ("Msg: %02lx %02lx %02lx %02lx\n", buf[0], buf[1], buf[2], buf[3]));
         chan = buf[0] >> 4;
-        ca = &nch->nch_ClsBase->nh_CAMDAdapters[chan];
+        ca = &nch->nch_Ports->cps_Adapters[chan];
         if(ca->ca_IsOpen)
         {
             cmd = buf[0] & 0x0f;
@@ -756,14 +953,16 @@ void nParseMidi(struct NepClassHid *nch, UBYTE *buf, ULONG len)
 
                 case 0x5: // Single-byte System Common Message or SysEx ends with following single byte.
                 case 0xF: // Single Byte
-                    *buf = 1;
-                    CallHookA(&ca->ca_CAMDRXFunc, (Object *) buf, NULL);
+                    message.length = 1;
+                    CopyMem(buf + 1, message.data, 1);
+                    CallHookA(&ca->ca_CAMDRXFunc, (Object *) &message, NULL);
                     break;
 
                 case 0x2: // Two-byte System Common messages like MTC, SongSelect, etc.
                 case 0x6: // SysEx ends with following two bytes. *** FIXME? ***
-                    *buf = 2;
-                    CallHookA(&ca->ca_CAMDRXFunc, (Object *) buf, NULL);
+                    message.length = 2;
+                    CopyMem(buf + 1, message.data, 2);
+                    CallHookA(&ca->ca_CAMDRXFunc, (Object *) &message, NULL);
                     break;
 
                 case 0x3: // Three-byte System Common messages like SPP, etc.
@@ -774,14 +973,16 @@ void nParseMidi(struct NepClassHid *nch, UBYTE *buf, ULONG len)
                 case 0xA: // Poly-KeyPress
                 case 0xB: // Control Change
                 case 0xE: // PitchBend Change
-                    *buf = 3;
-                    CallHookA(&ca->ca_CAMDRXFunc, (Object *) buf, NULL);
+                    message.length = 3;
+                    CopyMem(buf + 1, message.data, 3);
+                    CallHookA(&ca->ca_CAMDRXFunc, (Object *) &message, NULL);
                     break;
 
                 case 0xC: // Program Change
                 case 0xD: // Channel Pressure
-                    *buf = 2;
-                    CallHookA(&ca->ca_CAMDRXFunc, (Object *) buf, NULL);
+                    message.length = 2;
+                    CopyMem(buf + 1, message.data, 2);
+                    CallHookA(&ca->ca_CAMDRXFunc, (Object *) &message, NULL);
                     break;
             }
         } else {
@@ -883,14 +1084,8 @@ struct NepClassHid * nAllocHid(void)
 /* /// "nFreeHid()" */
 void nFreeHid(struct NepClassHid *nch)
 {
-    UWORD cnt;
     /* delete all msgport references to this instance, disabling all midi transmissions */
-    Forbid();
-    for(cnt = 0; cnt < 16; cnt++)
-    {
-        nch->nch_ClsBase->nh_CAMDAdapters[cnt].ca_MsgPort = NULL;
-    }
-    Permit();
+    nDetachPorts(nch);
     psdFreeVec(nch->nch_EPOutBuf);
     psdFreeVec(nch->nch_EPInBuf);
     psdFreePipe(nch->nch_EPOutPipe);

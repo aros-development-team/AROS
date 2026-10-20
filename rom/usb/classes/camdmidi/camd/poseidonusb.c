@@ -24,7 +24,18 @@ extern AROS_UFP2(VOID, AROS_SLIB_ENTRY(ClosePort, PoseidonCAMDUSB, 0),
 
 VOID ActivateXmit(APTR userdata, LONG portnum);
 
-char name[], vers[];
+char vers[];
+
+/* The class overwrites the name after the marker with the device's. */
+static struct
+{
+    char marker[CAMDUSB_NAMEMARKERSIZE];
+    char name[32];
+} drivername __attribute__((used)) =
+{
+    CAMDUSB_NAMEMARKER,
+    "poseidonusb"
+};
 
 /*** Identification data must follow directly *********************************/
 
@@ -35,7 +46,7 @@ char name[], vers[];
 static struct MidiDeviceData MidiDeviceData __attribute__((used)) =
 {
   MDD_Magic,
-  name,
+  drivername.name,
   vers,
   1, 2,
   (APTR)AROS_SLIB_ENTRY(Init, PoseidonCAMDUSB, 0),
@@ -43,10 +54,9 @@ static struct MidiDeviceData MidiDeviceData __attribute__((used)) =
   (APTR)AROS_SLIB_ENTRY(OpenPort, PoseidonCAMDUSB, 0),
   (APTR)AROS_SLIB_ENTRY(ClosePort, PoseidonCAMDUSB, 0),
   CAMDPORTCOUNT,
-  0
+  1     /* the new driver format: AROS's camd.library loads no other */
 };
 
-char name[] = "poseidonusb";
 char vers[] = "$VER: Poseidon USB camdusbmidi.class driver 1.2 (14.02.2020)";
 
 struct ExecBase *SysBase = NULL;
@@ -105,33 +115,51 @@ AROS_UFH3S(void, SendToCAMD,
     AROS_USERFUNC_EXIT
 }
 
-AROS_UFH3S(void, GetFromCAMD,
-    AROS_UFHA(struct Hook * , hook, A0),
-    AROS_UFHA(Object * , obj, A2),
-    AROS_UFHA(struct CAMDAdapter *, port, A1))
+/* A software interrupt (ca_CAMDTXFunc), Cause()d by ActivateXmit(): it gets
+   is_Data as an interrupt handler does, not the arguments of a hook. */
+static AROS_INTH1(GetFromCAMD, struct CAMDAdapter *, port)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     ULONG val, pos, sent = 0;
+    struct MsgPort *mp = port->ca_MsgPort;
 
     camdTransmitFunc portTransmit = (camdTransmitFunc)port->ca_TXFunc;
 
+    if (mp == NULL)
+    {
+        /* The device is unplugged. Drop what CAMD has queued, or a client
+           sending to the port would wait for room forever. */
+        while (portTransmit(port->ca_UserData) <= 0xff)
+            ;
+        port->ca_TXPending = FALSE;
+        return FALSE;
+    }
+
+    port->ca_TXPending = TRUE;
     do
     {
         pos = port->ca_TXWritePos;
+        if (((pos + 1) & (port->ca_TXBufSize - 1)) == port->ca_TXReadPos)
+            break;
         val = portTransmit(port->ca_UserData);
+        if (val > 0xff)
+        {
+            port->ca_TXPending = FALSE;
+            break;
+        }
         port->ca_TXBuffer[pos] = val;
         pos++;
-        pos &= port->ca_TXBufSize;
-        if (pos == port->ca_TXReadPos)
-            break;
+        pos &= port->ca_TXBufSize - 1;
         port->ca_TXWritePos = pos;
         sent++;
-    } while (sent < 100); // TODO: Not sure what to do here??
+    } while (sent < 100); /* bound interrupt work; the consumer requests more */
 
-    Signal(port->ca_MsgPort->mp_SigTask, (1 << port->ca_MsgPort->mp_SigBit));
+    Signal(mp->mp_SigTask, (1 << mp->mp_SigBit));
 
-    AROS_USERFUNC_EXIT
+    return FALSE;
+
+    AROS_INTFUNC_EXIT
 }
 
 struct CAMDAdapter *CAMDPortBases[CAMDPORTCOUNT] = { NULL };
@@ -145,7 +173,7 @@ AROS_UFH5(struct MidiPortData *, AROS_SLIB_ENTRY(OpenPort, PoseidonCAMDUSB, 0),
 {
     AROS_USERFUNC_INIT
 
-    CAMDPortBases[portnum] = usbCAMDOpenPort(transmitfunc, receivefunc, userdata, name, portnum);
+    CAMDPortBases[portnum] = usbCAMDOpenPort(transmitfunc, receivefunc, userdata, drivername.name, portnum);
     if (CAMDPortBases[portnum])
     {
         CAMDPortBases[portnum]->ca_ActivateFunc = ActivateXmit;
@@ -155,7 +183,7 @@ AROS_UFH5(struct MidiPortData *, AROS_SLIB_ENTRY(OpenPort, PoseidonCAMDUSB, 0),
         CAMDPortBases[portnum]->ca_CAMDTXFunc.is_Data = CAMDPortBases[portnum];
         CAMDPortBases[portnum]->ca_IsOpen = TRUE;
     }
-    return (struct MidiPortData *)&CAMDPortBases[portnum]->ca_ActivateFunc;
+    return CAMDPortBases[portnum] ? (struct MidiPortData *)&CAMDPortBases[portnum]->ca_ActivateFunc : NULL;
 
     AROS_USERFUNC_EXIT
 }
@@ -169,7 +197,7 @@ AROS_UFH2(VOID, AROS_SLIB_ENTRY(ClosePort, PoseidonCAMDUSB, 0),
     if (CAMDPortBases[portnum])
     {
         CAMDPortBases[portnum]->ca_IsOpen = FALSE;
-        usbCAMDClosePort(portnum, name);
+        usbCAMDClosePort(portnum, drivername.name);
     }
     CAMDPortBases[portnum] = NULL;
 
