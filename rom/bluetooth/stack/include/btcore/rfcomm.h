@@ -78,6 +78,10 @@ struct bt_rfcomm_session
     struct bt_rfcomm_dlc dlcs[BT_RFCOMM_MAX_DLCS];
 };
 
+/* forget a consumer that is going away: DLCs whose user_data is user_data
+ * stop reporting events (see bt_l2cap_channel_manager_detach()) */
+void bt_rfcomm_detach(struct bt_rfcomm_session *s, void *user_data);
+
 /* set up the session state; max_frame = largest RFCOMM frame that fits the
  * L2CAP channel (SDU size - 6), clamped to BT_RFCOMM_MAX_MTU */
 void bt_rfcomm_init(struct bt_rfcomm_session *s, uint16_t max_frame,

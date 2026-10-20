@@ -128,9 +128,22 @@ AROS_LH1(void, btRemHardware,
     bd = (struct BtDevice *) bth->bth_Devices.lh_Head;
     while(bd->bd_Node.ln_Succ) {
         bFreeBindings(BluetoothBase, bd);
-        bFreeDevice(BluetoothBase, bd);
         btSendEvent(BEHMB_REMDEVICE, bd, NULL);
         bd = (struct BtDevice *) bth->bth_Devices.lh_Head;
+    }
+    /* Connections still refer to device services and endpoints. Stop the
+       hardware task before freeing those records; bindings have already
+       drained their channels while the task could still service them. */
+    Forbid();
+    /* Note that the subtask unlinks the hardware! */
+    bth->bth_ReadySignal = SIGB_SINGLE;
+    bth->bth_ReadySigTask = FindTask(NULL);
+    if(bth->bth_Task) {
+        Signal(bth->bth_Task, SIGBREAKF_CTRL_C);
+    }
+    Permit();
+    while(bth->bth_Task) {
+        Wait(1L<<bth->bth_ReadySignal);
     }
     cnt = 0;
     bd = (struct BtDevice *) bth->bth_DeadDevices.lh_Head;
@@ -157,17 +170,6 @@ AROS_LH1(void, btRemHardware,
         bd = (struct BtDevice *) bth->bth_DeadDevices.lh_Head;
     }
 
-    Forbid();
-    /* Note that the subtask unlinks the hardware! */
-    bth->bth_ReadySignal = SIGB_SINGLE;
-    bth->bth_ReadySigTask = FindTask(NULL);
-    if(bth->bth_Task) {
-        Signal(bth->bth_Task, SIGBREAKF_CTRL_C);
-    }
-    Permit();
-    while(bth->bth_Task) {
-        Wait(1L<<bth->bth_ReadySignal);
-    }
     KPRINTF(1, ("FreeHardware(%p) freevec name\n", bth));
     btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
                    "Removed hardware %s/%ld. Bye bye!",

@@ -118,6 +118,7 @@ struct bt_l2cap_listener
     uint16_t local_mtu;
     bt_l2cap_channel_event_fn on_event;
     void *user_data;
+    void *secondary_user_data; /* optional second channel on the same PSM */
 };
 
 /* LE Connection Parameter Update. The central decides: return true to accept
@@ -188,6 +189,11 @@ bt_status_t bt_l2cap_channel_manager_request_conn_params(struct bt_l2cap_channel
 bt_status_t bt_l2cap_channel_manager_listen(struct bt_l2cap_channel_manager *mgr, uint16_t psm,
                                              uint16_t local_mtu, bt_l2cap_channel_event_fn on_event,
                                              void *user_data);
+/* Reserve distinct owners for the first and second channel (AVDTP signalling
+ * and media). Refuse further channels until one of those owners is free. */
+bt_status_t bt_l2cap_channel_manager_listen_pair(struct bt_l2cap_channel_manager *mgr,
+    uint16_t psm, uint16_t local_mtu, bt_l2cap_channel_event_fn on_event,
+    void *first, void *second);
 void bt_l2cap_channel_manager_unlisten(struct bt_l2cap_channel_manager *mgr, uint16_t psm);
 
 /* Registers a fixed channel (e.g. BT_L2CAP_CID_ATT) as immediately OPEN
@@ -208,6 +214,13 @@ bt_status_t bt_l2cap_channel_manager_open_fixed(struct bt_l2cap_channel_manager 
  * defined for a channel that never finished opening, so none is sent.
  * Either way the channel slot is freed and a CLOSED event fires (with
  * BT_L2CAP_CLOSE_LOCAL) unless it was already FREE. */
+/* Forget a consumer that is going away: every channel whose user_data is
+ * user_data stops reporting events (a channel still closing finishes
+ * silently) and every listener registered with it is removed. Call this
+ * before freeing the object passed as user_data, since a close completes
+ * asynchronously when the peer's Disconnection Response arrives. */
+void bt_l2cap_channel_manager_detach(struct bt_l2cap_channel_manager *mgr, void *user_data);
+
 void bt_l2cap_channel_manager_close(struct bt_l2cap_channel_manager *mgr, uint16_t local_cid,
                                      uint64_t now_us);
 

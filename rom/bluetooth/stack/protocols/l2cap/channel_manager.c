@@ -234,6 +234,8 @@ static void handle_connection_request(struct bt_l2cap_channel_manager *mgr, uint
     uint8_t buf[BT_L2CAP_SIG_HEADER_LEN + 8];
     struct bt_buf_writer w;
     size_t i;
+    void *owner = NULL;
+    bool available = true;
 
     if (bt_l2cap_sig_parse_connection_request(cmd_data, cmd_data_len, &req) != BT_OK)
         return;
@@ -246,7 +248,21 @@ static void handle_connection_request(struct bt_l2cap_channel_manager *mgr, uint
             break;
         }
     }
-    chan = (lst != NULL) ? find_free_channel(mgr) : NULL;
+    if (lst != NULL) {
+        owner = lst->user_data;
+        if (lst->secondary_user_data != NULL) {
+            bool first_busy = false, second_busy = false;
+            for (i = 0; i < BT_L2CAP_CHANNEL_MANAGER_MAX_CHANNELS; i++) {
+                const struct bt_l2cap_channel *c = &mgr->channels[i];
+                if (c->state == BT_L2CAP_CHAN_FREE) continue;
+                if (c->user_data == lst->user_data) first_busy = true;
+                if (c->user_data == lst->secondary_user_data) second_busy = true;
+            }
+            if (first_busy) owner = lst->secondary_user_data;
+            available = !first_busy || !second_busy;
+        }
+    }
+    chan = (lst != NULL && available) ? find_free_channel(mgr) : NULL;
     if (chan == NULL)
     {
         /* nobody listening (or no slot): refuse */
@@ -269,7 +285,7 @@ static void handle_connection_request(struct bt_l2cap_channel_manager *mgr, uint
     chan->outbound_config_done = false;
     chan->inbound_config_done = false;
     chan->on_event = lst->on_event;
-    chan->user_data = lst->user_data;
+    chan->user_data = owner;
     chan->pending_identifier = 0;
 
     bt_buf_writer_init(&w, buf, sizeof(buf));
@@ -694,6 +710,21 @@ bt_status_t bt_l2cap_channel_manager_listen(struct bt_l2cap_channel_manager *mgr
     free_slot->local_mtu = local_mtu;
     free_slot->on_event = on_event;
     free_slot->user_data = user_data;
+    free_slot->secondary_user_data = NULL;
+    return BT_OK;
+}
+
+bt_status_t bt_l2cap_channel_manager_listen_pair(struct bt_l2cap_channel_manager *mgr,
+    uint16_t psm, uint16_t local_mtu, bt_l2cap_channel_event_fn on_event,
+    void *first, void *second)
+{
+    size_t i;
+    bt_status_t status;
+    if (!first || !second || first == second) return BT_ERR_INVALID_ARGUMENT;
+    status = bt_l2cap_channel_manager_listen(mgr, psm, local_mtu, on_event, first);
+    if (status != BT_OK) return status;
+    for (i = 0; i < BT_L2CAP_CHANNEL_MANAGER_MAX_LISTENERS; i++)
+        if (mgr->listeners[i].psm == psm) mgr->listeners[i].secondary_user_data = second;
     return BT_OK;
 }
 
@@ -784,6 +815,31 @@ bt_status_t bt_l2cap_channel_manager_open_fixed(struct bt_l2cap_channel_manager 
 
     fire_opened(chan);
     return BT_OK;
+}
+
+void bt_l2cap_channel_manager_detach(struct bt_l2cap_channel_manager *mgr, void *user_data)
+{
+    size_t i;
+
+    for (i = 0; i < BT_L2CAP_CHANNEL_MANAGER_MAX_CHANNELS; i++)
+    {
+        struct bt_l2cap_channel *chan = &mgr->channels[i];
+
+        if (chan->state != BT_L2CAP_CHAN_FREE && chan->user_data == user_data)
+        {
+            chan->on_event = NULL;
+            chan->user_data = NULL;
+        }
+    }
+    for (i = 0; i < BT_L2CAP_CHANNEL_MANAGER_MAX_LISTENERS; i++)
+    {
+        if (mgr->listeners[i].psm != 0 && (mgr->listeners[i].user_data == user_data || mgr->listeners[i].secondary_user_data == user_data))
+        {
+            mgr->listeners[i].psm = 0;
+            mgr->listeners[i].on_event = NULL;
+            mgr->listeners[i].user_data = NULL;
+        }
+    }
 }
 
 void bt_l2cap_channel_manager_close(struct bt_l2cap_channel_manager *mgr, uint16_t local_cid,

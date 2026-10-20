@@ -204,6 +204,10 @@ static void bFreeHWEndpoint(struct BtHWEndpoint *hep, LONG error)
     struct BtBase *BluetoothBase = hep->hep_Conn->cn_Core->hc_Base;
     struct HCRxSDU *rx;
 
+    /* A channel being closed still reports CLOSED when the peer answers,
+       and listeners hold hep too: make btcore forget it before it goes. */
+    bt_l2cap_channel_manager_detach(&hep->hep_Conn->cn_L2CAP, hep);
+    bt_rfcomm_detach(&hep->hep_Conn->cn_RFCOMM, hep);
     bReqQueueFlush(BluetoothBase, &hep->hep_ReadReqs, error);
     bReqQueueFlush(BluetoothBase, &hep->hep_WriteReqs, error);
     while((rx = (struct HCRxSDU *) RemHead((struct List *) &hep->hep_RxQueue))) {
@@ -989,6 +993,46 @@ static void bConnAskParams(struct BtHWConn *cn)
 }
 /* \\\ */
 
+/* Restore listeners after endpoint replacement as well as link-up. */
+static void bListenServices(struct BtHWConn *cn)
+{
+    struct BtBase *BluetoothBase = cn->cn_Core->hc_Base;
+    struct BtDevice *bd = cn->cn_Device;
+    struct BtService *bsv;
+    struct BtEndpoint *bep;
+    /* listen on the known L2CAP PSMs so the device can open channels to us */
+    btLockReadDevice(bd);
+    for(bsv = (struct BtService *) bd->bd_Services.lh_Head; bsv->bsv_Node.ln_Succ; bsv = (struct BtService *) bsv->bsv_Node.ln_Succ) {
+        for(bep = (struct BtEndpoint *) bsv->bsv_Endpoints.lh_Head; bep->bep_Node.ln_Succ; bep = (struct BtEndpoint *) bep->bep_Node.ln_Succ) {
+            if((bep->bep_Type == BEPT_L2CAP) && (cn->cn_LinkType == BDLT_ACL) && !bep->bep_Secondary) {
+                struct BtHWEndpoint *hep = bFindHWEndpoint(cn, bep);
+                if(!hep) {
+                    hep = bAllocHWEndpoint(cn, bep);
+                }
+                if(hep) {
+                    struct BtEndpoint *second;
+                    struct BtHWEndpoint *media = NULL;
+                    for(second = (APTR)bsv->bsv_Endpoints.lh_Head; second->bep_Node.ln_Succ;
+                        second = (APTR)second->bep_Node.ln_Succ) {
+                        if(second->bep_Secondary && second->bep_PSM == bep->bep_PSM) {
+                            media = bFindHWEndpoint(cn, second);
+                            if(!media) media = bAllocHWEndpoint(cn, second);
+                            break;
+                        }
+                    }
+                    if(media)
+                        bt_l2cap_channel_manager_listen_pair(&cn->cn_L2CAP, bep->bep_PSM,
+                            BT_L2CAP_DEFAULT_MTU, bEndpointEvent, hep, media);
+                    else
+                        bt_l2cap_channel_manager_listen(&cn->cn_L2CAP, bep->bep_PSM,
+                            BT_L2CAP_DEFAULT_MTU, bEndpointEvent, hep);
+                }
+            }
+        }
+    }
+    btUnlockDevice(bd);
+}
+
 /* /// "bConnUp()" */
 static void bConnUp(struct BtHWConn *cn, UWORD handle, UBYTE role)
 {
@@ -996,8 +1040,6 @@ static void bConnUp(struct BtHWConn *cn, UWORD handle, UBYTE role)
     struct BtBase *BluetoothBase = hc->hc_Base;
     struct BtHardware *bth = hc->hc_Hardware;
     struct BtDevice *bd = cn->cn_Device;
-    struct BtService *bsv;
-    struct BtEndpoint *bep;
     ULONG fraglen;
 
     cn->cn_Handle = handle;
@@ -1037,22 +1079,7 @@ static void bConnUp(struct BtHWConn *cn, UWORD handle, UBYTE role)
         bt_l2cap_channel_manager_listen(&cn->cn_L2CAP, BT_SDP_PSM, BT_L2CAP_DEFAULT_MTU, bSDPServerEvent, cn);
         bt_l2cap_channel_manager_listen(&cn->cn_L2CAP, 0x0003, BT_L2CAP_DEFAULT_MTU, bRFCOMMListenEvent, cn);
     }
-    /* listen on the known L2CAP PSMs so the device can open channels to us */
-    btLockReadDevice(bd);
-    for(bsv = (struct BtService *) bd->bd_Services.lh_Head; bsv->bsv_Node.ln_Succ; bsv = (struct BtService *) bsv->bsv_Node.ln_Succ) {
-        for(bep = (struct BtEndpoint *) bsv->bsv_Endpoints.lh_Head; bep->bep_Node.ln_Succ; bep = (struct BtEndpoint *) bep->bep_Node.ln_Succ) {
-            if((bep->bep_Type == BEPT_L2CAP) && (cn->cn_LinkType == BDLT_ACL)) {
-                struct BtHWEndpoint *hep = bFindHWEndpoint(cn, bep);
-                if(!hep) {
-                    hep = bAllocHWEndpoint(cn, bep);
-                }
-                if(hep) {
-                    bt_l2cap_channel_manager_listen(&cn->cn_L2CAP, bep->bep_PSM, BT_L2CAP_DEFAULT_MTU, bEndpointEvent, hep);
-                }
-            }
-        }
-    }
-    btUnlockDevice(bd);
+    bListenServices(cn);
 
     btLockWriteDevice(bd);
     bd->bd_Flags &= ~BDFF_CONNECTING;
@@ -1802,6 +1829,24 @@ static void bParseSDPRecord(struct BtHWConn *cn, ULONG handle, const UBYTE *attr
                 bep->bep_Name = btCopyStrFmt("L2CAP PSM 0x%04lx", psms[n]);
                 bep->bep_Node.ln_Name = bep->bep_Name;
             }
+            /* AVDTP carries signalling and media on two separate L2CAP
+               channels to the same PSM, opened in that order. Each endpoint
+               owns one L2CAP channel, so give the media (transport) channel
+               its own endpoint after the signalling one; clients find it
+               with btFindEndpoint(bsv, signalling_endpoint, BEA_PSM, 0x19). */
+            if(psms[n] == 0x0019) {
+                bep = bAllocEndpoint(BluetoothBase, bsv);
+                if(bep) {
+                    bep->bep_Type = BEPT_L2CAP;
+                    bep->bep_CanRead = TRUE;
+                    bep->bep_CanWrite = TRUE;
+                    bep->bep_PSM = psms[n];
+                    bep->bep_MaxPktSize = BT_L2CAP_DEFAULT_MTU;
+                    bep->bep_Secondary = TRUE;
+                    bep->bep_Name = btCopyStr("AVDTP transport");
+                    bep->bep_Node.ln_Name = bep->bep_Name;
+                }
+            }
         }
         if(rfcomm) {
             struct BtEndpoint *bep = bAllocEndpoint(BluetoothBase, bsv);
@@ -1875,6 +1920,7 @@ static void bClearServices(struct BtHWConn *cn)
         bsv = nsv;
     }
     btUnlockDevice(bd);
+    bListenServices(cn);
 }
 /* \\\ */
 
@@ -2338,6 +2384,7 @@ static void bConnFinishEnum(struct BtHWConn *cn, LONG error)
     struct BtDevice *bd = cn->cn_Device;
 
     cn->cn_EnumState = ENUM_IDLE;
+    if(cn->cn_State == HCNS_CONNECTED) bListenServices(cn);
     if(!error) {
         cn->cn_Enumerated = TRUE;
         btLockWriteDevice(bd);

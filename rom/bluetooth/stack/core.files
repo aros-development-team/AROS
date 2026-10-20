@@ -16,6 +16,7 @@ BTCORE_FILES := \
     core/security/smp_manager \
     core/hid/report_parser \
     core/hid/input \
+    core/codec/sbc_encoder \
     protocols/hci/hci \
     protocols/l2cap/l2cap \
     protocols/l2cap/signaling \
@@ -30,4 +31,5 @@ BTCORE_FILES := \
     protocols/smp/smp \
     protocols/vendor_init/dummy/dummy_vendor_init \
     profiles/hogp/hogp_client \
+    profiles/a2dp/a2dp_source \
     aros/input_bridge

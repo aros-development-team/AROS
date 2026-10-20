@@ -644,3 +644,15 @@ void bt_rfcomm_on_data(struct bt_rfcomm_session *s, const uint8_t *data, size_t 
         len -= hlen + ilen + 1;
     }
 }
+
+void bt_rfcomm_detach(struct bt_rfcomm_session *s, void *user_data)
+{
+    size_t i;
+
+    for(i = 0; i < BT_RFCOMM_MAX_DLCS; i++) {
+        if(s->dlcs[i].user_data == user_data) {
+            s->dlcs[i].callback = NULL;
+            s->dlcs[i].user_data = NULL;
+        }
+    }
+}
