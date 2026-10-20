@@ -1619,15 +1619,11 @@ void vc4_hvs_dump(struct VideoCoreGfx_staticdata *xsd,
 /* Screens as planes                                                   */
 /* ------------------------------------------------------------------ */
 
-/* The arenas are remapped with 2MB blocks, which only the aarch64 kernel
- * does for us. */
+/* Whether scanout memory can be mapped is vcgfx_planes_supported()'s
+ * question, as for the other HVS generations. */
 BOOL vc4_hvs_planes_ok(void)
 {
-#if defined(__aarch64__)
     return VC4_HVS_TAKEOVER;
-#else
-    return FALSE;
-#endif
 }
 
 /* The firmware scales the fb to a display mode it never changes, so a
