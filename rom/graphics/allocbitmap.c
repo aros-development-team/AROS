@@ -231,6 +231,12 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] = {
     }
 
     ASSERT_VALID_PTR_OR_NULL(friend_bitmap);
+
+    /* A friend requests a compatible storage layout, including interleaved
+     * planes. Classic image loaders use that layout for their row data. */
+    if (friend_bitmap && (friend_bitmap->Flags & BMF_INTERLEAVED))
+        flags |= BMF_INTERLEAVED;
+
     D(bug("AllocBitMap(%u, %u, %u, 0x%08lX)\n", sizex, sizey, depth, flags));
     D(bug("[AllocBitMap] ModeID: 0x%08lX, friend_bitmap: 0x%p\n", hiddmode, friend_bitmap));
 

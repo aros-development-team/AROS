@@ -107,6 +107,7 @@ static void copyonepixel(PLANEPTR src, ULONG xsrc, PLANEPTR dest,
     INTERNALS
 
     HISTORY
+        20-Oct-26 Try native raw-bitmap copies before temporary wrappers.
 
 *****************************************************************************/
 {
@@ -220,6 +221,12 @@ static void copyonepixel(PLANEPTR src, ULONG xsrc, PLANEPTR dest,
         /*
          * Otherwise we use the source driver.
          */
+
+        /* Native planar drivers can consume caller-owned bitmaps directly.
+         * Try that path after clipping, before allocating temporary wrappers. */
+        if (planar_driver && internal_TryRawBlit(driver, srcBitMap, destBitMap,
+                xSrc, ySrc, xDest, yDest, xSize, ySize, minterm, mask, GfxBase))
+            return 8; /* Match the existing driver-path return value below. */
 
         tmp_gc = obtain_cache_object(CDD(GfxBase)->gc_cache, GfxBase);
         if(NULL != tmp_gc) {

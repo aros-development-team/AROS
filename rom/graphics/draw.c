@@ -89,6 +89,7 @@ static ULONG draw_render(APTR draw_rd, WORD srcx, WORD srcy,
     INTERNALS
 
     HISTORY
+        20-Oct-26 Use the rectangle renderer for solid axis-aligned lines.
         29-10-95    digulla automatically created from
                             graphics_lib.fd and clib/graphics_protos.h
 
@@ -139,7 +140,14 @@ static ULONG draw_render(APTR draw_rd, WORD srcx, WORD srcy,
     D(bug("[Draw] RastPort 0x%p, Flags 0x%04X, GC 0x%p, FG 0x%08lX, BG 0x%08lX\n", rp, rp->Flags, gc, GC_FG(gc),
           GC_BG(gc)));
 
-    do_render_with_gc(rp, NULL, &rr, draw_render, &drd, gc, TRUE, FALSE, GfxBase);
+    /* A solid horizontal or vertical line is a one-pixel-wide rectangle.
+     * Let the bitmap driver fill it in bulk instead of dispatching a pixel
+     * operation for every point. Keep patterned and diagonal lines on the
+     * line renderer, including its pattern direction and clipping rules. */
+    if (GC_LINEPAT(gc) == 0xffff && (x1 == x || y1 == y))
+        do_render_with_gc(rp, NULL, &rr, fillrect_render, NULL, gc, TRUE, FALSE, GfxBase);
+    else
+        do_render_with_gc(rp, NULL, &rr, draw_render, &drd, gc, TRUE, FALSE, GfxBase);
 
     /*
      * FRST_DOT clear means the starting point belongs to the segment before

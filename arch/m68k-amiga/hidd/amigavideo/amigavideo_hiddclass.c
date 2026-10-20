@@ -897,6 +897,14 @@ VOID AmigaVideoCl__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *m
     OOP_DoSuperMethod(cl, obj, (OOP_Msg)msg);
 }
 
+BOOL AmigaVideoCl__Hidd_AmigaGfx__CopyBitMap(OOP_Class *cl, OOP_Object *o,
+    struct pHidd_AmigaGfx_CopyBitMap *msg)
+{
+    return blit_copybox(CSD(cl), msg->src, msg->dest,
+        msg->sx, msg->sy, msg->width, msg->height, msg->dx, msg->dy,
+        msg->mode, msg->mask);
+}
+
 VOID AmigaVideoCl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
 {
     struct amigavideo_staticdata *csd = CSD(cl);

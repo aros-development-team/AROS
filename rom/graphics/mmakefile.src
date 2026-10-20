@@ -22,7 +22,8 @@ FILES	  := \
 	graphics_driver \
 	dispinfo \
 	gfxfuncsupport \
-	cgx_support
+	cgx_support \
+	rawblit
 
 
 FUNCTIONS := \
