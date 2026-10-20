@@ -1,4 +1,6 @@
 
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
 include $(SRCDIR)/config/aros.cfg
 
 %get_archincludes modname=dos \
@@ -32,7 +34,7 @@ DOS_CPPFLAGS += -DDOCACHECLEAR
 IMAGE_TYPES := aos elf
 
 FILES	  := bstr_helper errorlist \
-             boot banner isbootable \
+             boot bootconsole banner isbootable \
 	     match_misc newcliproc rootnode fs_driver \
 	     patternmatching internalseek internalflush \
 	     packethelper namefrom internalloadseg_support \

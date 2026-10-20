@@ -1,7 +1,20 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
 include $(SRCDIR)/config/aros.cfg
+
+#MM- test-dos-amiga-m68k : test-dos-cdbootconsole
+#MM- test-dos-amiga-m68k-quick : test-dos-cdbootconsole-quick
+#MM- test-dos-common-amiga-m68k : test-dos-amiga-m68k
+#MM- test-dos-common-amiga-m68k-quick : test-dos-amiga-m68k-quick
 
 %set_archincludes mainmmake=kernel-dos maindir=rom/dos \
   modname=dos pri=0 arch=amiga-m68k \
   includes="-I$(SRCDIR)/$(CURDIR)"
+
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/rom/dos
+USER_CPPFLAGS := -DUSE_EXEC_DEBUG -D__DOS_NOLIBBASE__ -D__DOS_NOLIBINLINE__
+
+%build_archspecific mainmmake=kernel-dos maindir=rom/dos \
+    arch=amiga-m68k modname=dos files=bootconsole
 
 %common

@@ -363,7 +363,11 @@
             { NP_Synchronous, FALSE                         }, /* 12 */
             { NP_Entry      , (IPTR)entry                   }, /* 13 */
             { NP_CurrentDir , (IPTR)BNULL                   }, /* 14 */
-            { NP_ConsoleTask, (IPTR)BNULL,                  }, /* 15 */
+            /* A synchronous command retains its caller's console even
+             * when its input stream is non-interactive. */
+            { NP_ConsoleTask, GetTagData(NP_ConsoleTask,
+                              isAsynch ? (IPTR)BNULL :
+                              (IPTR)me->pr_ConsoleTask, tags) }, /* 15 */
 #ifdef __mc68000
             /* Shell-seg itself peaks below 2 KB during CD32 boot. Commands
              * retain the conservative 8 KB m68k process default. */

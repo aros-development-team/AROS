@@ -201,7 +201,7 @@ ULONG internal_CliInitAny(struct DosPacket *dp, APTR DOSBase)
         D(bug("%s: No StandardOutput provided. Synthesize one.\n", __func__));
         if (GetConsoleTask()) {
             D(bug("%s: StandardOutput based on current console\n", __func__));
-            cos = Open("*", MODE_NEWFILE);
+            cos = internal_OpenConsoleOutput(DOSBase);
         } else {
             D(bug("%s: StandardOutput is NIL:\n", __func__));
             cos = Open("NIL:", MODE_NEWFILE);
@@ -217,7 +217,7 @@ ULONG internal_CliInitAny(struct DosPacket *dp, APTR DOSBase)
         D(bug("%s: No StandardError provided. Synthesize one.\n", __func__));
         if (GetConsoleTask()) {
             D(bug("%s: StandardError based on current console\n", __func__));
-            ces = Open("*", MODE_NEWFILE);
+            ces = internal_OpenConsoleOutput(DOSBase);
         } else {
             D(bug("%s: StandardError is NIL:\n", __func__));
             ces = Open("NIL:", MODE_NEWFILE);
