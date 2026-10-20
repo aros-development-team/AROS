@@ -461,9 +461,10 @@ struct ChunkExt {
 
 struct ChunkPool {
     struct MinNode  Node;
-    struct ChunkExt Chunks[SIZECHUNKBUF];
     struct MinList  ChunkList;
     LONG            NumChunkFree;
+    LONG            NumChunks;
+    struct ChunkExt Chunks[];
 };
 
 void __DisposeRegionRectangleExtChunk

@@ -1,0 +1,11 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+USER_LDFLAGS := -static
+
+# This pressure test is selected by the native Amiga graphics test group.
+#MM test-graphics-regionpool : includes linklibs
+%build_progs mmake=test-graphics-regionpool \
+    files=regionpool targetdir=$(AROS_TESTS)/graphics/regionpool
+
+%common

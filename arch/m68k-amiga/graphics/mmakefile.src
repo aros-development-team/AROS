@@ -14,6 +14,8 @@ include $(SRCDIR)/config/aros.cfg
 #MM- test-graphics-amiga-m68k-quick : test-graphics-axisline-native-quick
 #MM- test-graphics-amiga-m68k : test-graphics-interleavedblit
 #MM- test-graphics-amiga-m68k-quick : test-graphics-interleavedblit-quick
+#MM- test-graphics-amiga-m68k : test-graphics-regionpool
+#MM- test-graphics-amiga-m68k-quick : test-graphics-regionpool-quick
 
 CFILES  := bltclear blittercompat changeextspritea gfxlookup movesprite rawblit setchiprev vbeampos
 AFILES  := attemptlocklayerrom blitterabi locklayerrom unlocklayerrom waitblit
