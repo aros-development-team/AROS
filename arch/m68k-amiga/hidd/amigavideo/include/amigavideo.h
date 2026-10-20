@@ -2,6 +2,7 @@
 #define HIDD_AMIGAVIDEO_H
 
 /* Amiga Gfx hidd interface */
+#include <hidd/gfx.h>
 #include <interface/Hidd_AmigaGfx.h>
 
 #define CLID_Hidd_Gfx_AmigaVideo    "hidd.gfx.amigavideo"

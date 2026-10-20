@@ -1,5 +1,7 @@
 /* Copyright (C) 2026, The AROS Development Team. All rights reserved. */
 
+/* The native driver's public header must provide its own interface types. */
+#include <hidd/amigavideo.h>
 #include <aros/debug.h>
 #include <devices/timer.h>
 #include <graphics/gfx.h>
