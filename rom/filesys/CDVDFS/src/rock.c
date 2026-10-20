@@ -95,121 +95,121 @@ unsigned char *sys;
 /* Copy a field from a continuation area without retaining cache pointers
  * across reads. A field can straddle two sectors. */
 static int Read_Continuation(VOLUME *volume, ULONG sector, ULONG pos,
-    unsigned char *dest, unsigned int count)
+	unsigned char *dest, unsigned int count)
 {
-    while (count != 0)
-    {
-        unsigned int offset = pos & 2047;
-        unsigned int chunk = 2048 - offset;
-        if (chunk > count)
-            chunk = count;
-        if (!Read_Chunk(volume->cd, sector + (pos >> 11)))
-            return 0;
-        CopyMem(volume->cd->buffer + offset, dest, chunk);
-        dest += chunk;
-        pos += chunk;
-        count -= chunk;
-    }
-    return 1;
+	while (count != 0)
+	{
+		unsigned int offset = pos & 2047;
+		unsigned int chunk = 2048 - offset;
+		if (chunk > count)
+			chunk = count;
+		if (!Read_Chunk(volume->cd, sector + (pos >> 11)))
+			return 0;
+		CopyMem(volume->cd->buffer + offset, dest, chunk);
+		dest += chunk;
+		pos += chunk;
+		count -= chunk;
+	}
+	return 1;
 }
 
 int Get_System_Use_Field
-    (VOLUME *p_volume, directory_record *p_dir, char *p_name,
-     char *p_buf, int p_buf_len, int p_index)
+	(VOLUME *p_volume, directory_record *p_dir, char *p_name,
+	 char *p_buf, int p_buf_len, int p_index)
 {
-    ULONG pos = (33 + p_dir->file_id_length + 1) & ~1;
-    ULONG end = p_dir->length;
-    ULONG sector = 0;
-    ULONG saved_sector = 0, saved_pos = 0, saved_length = 0;
-    ULONG power = 1, distance = 0;
-    int continuation = 0;
-    unsigned char field[255];
+	ULONG pos = (33 + p_dir->file_id_length + 1) & ~1;
+	ULONG end = p_dir->length;
+	ULONG sector = 0;
+	ULONG saved_sector = 0, saved_pos = 0, saved_length = 0;
+	ULONG power = 1, distance = 0;
+	int continuation = 0;
+	unsigned char field[255];
 
-    if (p_buf_len < 0 || p_index < 0 || VOL(p_volume,skip) < 0)
-        return 0;
-    pos += VOL(p_volume,skip);
-    while (pos <= end && end - pos >= 4)
-    {
-        unsigned int slen;
-        if (continuation)
-        {
-            if (!Read_Continuation(p_volume, sector, pos, field, 4))
-                return 0;
-        }
-        else
-            CopyMem((unsigned char *)p_dir + pos, field, 4);
-        slen = field[2];
-        if (slen < 4 || slen > end - pos)
-            return 0;
-        if (continuation)
-        {
-            if (!Read_Continuation(p_volume, sector, pos, field, slen))
-                return 0;
-        }
-        else
-            CopyMem((unsigned char *)p_dir + pos, field, slen);
+	if (p_buf_len < 0 || p_index < 0 || VOL(p_volume,skip) < 0)
+		return 0;
+	pos += VOL(p_volume,skip);
+	while (pos <= end && end - pos >= 4)
+	{
+		unsigned int slen;
+		if (continuation)
+		{
+			if (!Read_Continuation(p_volume, sector, pos, field, 4))
+				return 0;
+		}
+		else
+			CopyMem((unsigned char *)p_dir + pos, field, 4);
+		slen = field[2];
+		if (slen < 4 || slen > end - pos)
+			return 0;
+		if (continuation)
+		{
+			if (!Read_Continuation(p_volume, sector, pos, field, slen))
+				return 0;
+		}
+		else
+			CopyMem((unsigned char *)p_dir + pos, field, slen);
 
-        if (field[0] == p_name[0] && field[1] == p_name[1])
-        {
-            if (p_index != 0)
-                p_index--;
-            else
-            {
-                unsigned int len = slen < (unsigned int)p_buf_len ? slen : (unsigned int)p_buf_len;
-                if (len != 0)
-                    CopyMem(field, p_buf, len);
-                return 1;
-            }
-        }
-        if (field[0] == 'S' && field[1] == 'T')
-            return 0;
-        if (field[0] == 'C' && field[1] == 'E')
-        {
-            ULONG encoded[3], newsector, offset, length;
-            if (slen != 28)
-                return 0;
-            CopyMem(field + 8, &encoded[0], 4);
-            CopyMem(field + 16, &encoded[1], 4);
-            CopyMem(field + 24, &encoded[2], 4);
-            newsector = AROS_BE2LONG(encoded[0]);
-            offset = AROS_BE2LONG(encoded[1]);
-            length = AROS_BE2LONG(encoded[2]);
-            if (offset >= 2048 || length < 4 || length > 0xffffffffUL - offset ||
-                newsector > 0x7fffffffUL - ((offset + length - 1) >> 11))
-                return 0;
+		if (field[0] == p_name[0] && field[1] == p_name[1])
+		{
+			if (p_index != 0)
+				p_index--;
+			else
+			{
+				unsigned int len = slen < (unsigned int)p_buf_len ? slen : (unsigned int)p_buf_len;
+				if (len != 0)
+					CopyMem(field, p_buf, len);
+				return 1;
+			}
+		}
+		if (field[0] == 'S' && field[1] == 'T')
+			return 0;
+		if (field[0] == 'C' && field[1] == 'E')
+		{
+			ULONG encoded[3], newsector, offset, length;
+			if (slen != 28)
+				return 0;
+			CopyMem(field + 8, &encoded[0], 4);
+			CopyMem(field + 16, &encoded[1], 4);
+			CopyMem(field + 24, &encoded[2], 4);
+			newsector = AROS_BE2LONG(encoded[0]);
+			offset = AROS_BE2LONG(encoded[1]);
+			length = AROS_BE2LONG(encoded[2]);
+			if (offset >= 2048 || length < 4 || length > 0xffffffffUL - offset ||
+				newsector > 0x7fffffffUL - ((offset + length - 1) >> 11))
+				return 0;
 
-            /* Brent's cycle check: constant space, no limit on valid chains. */
-            if (!continuation)
-            {
-                saved_sector = newsector;
-                saved_pos = offset;
-                saved_length = length;
-            }
-            else
-            {
-                distance++;
-                if (newsector == saved_sector && offset == saved_pos &&
-                    length == saved_length)
-                    return 0;
-                if (distance == power)
-                {
-                    saved_sector = newsector;
-                    saved_pos = offset;
-                    saved_length = length;
-                    distance = 0;
-                    if (power <= 0x7fffffffUL)
-                        power *= 2;
-                }
-            }
-            sector = newsector;
-            pos = offset;
-            end = offset + length;
-            continuation = 1;
-        }
-        else
-            pos += slen;
-    }
-    return 0;
+			/* Brent's cycle check: constant space, no limit on valid chains. */
+			if (!continuation)
+			{
+				saved_sector = newsector;
+				saved_pos = offset;
+				saved_length = length;
+			}
+			else
+			{
+				distance++;
+				if (newsector == saved_sector && offset == saved_pos &&
+					length == saved_length)
+					return 0;
+				if (distance == power)
+				{
+					saved_sector = newsector;
+					saved_pos = offset;
+					saved_length = length;
+					distance = 0;
+					if (power <= 0x7fffffffUL)
+						power *= 2;
+				}
+			}
+			sector = newsector;
+			pos = offset;
+			end = offset + length;
+			continuation = 1;
+		}
+		else
+			pos += slen;
+	}
+	return 0;
 }
 
 /* Determines the Rock Ridge file name of the CDROM object p_obj.
@@ -241,8 +241,8 @@ int total = 0;
 			)
 			return -1;
 
-        if (nm.length < 5 || p_buf_len < 0)
-            return -1;
+		if (nm.length < 5 || p_buf_len < 0)
+			return -1;
 		slen = nm.length-5;
 		len = (p_buf_len < slen) ? p_buf_len : slen;
 		if (len)
@@ -292,24 +292,24 @@ int Get_RR_File_Comment(VOLUME *p_volume, directory_record *p_dir, uint32_t *p_p
 		if (!Get_System_Use_Field(p_volume,p_dir,"AS",(char *)&as,sizeof(as),index))
 			return -1;
 
-        if (as.length < 5 || p_buf_len < 0)
-            return -1;
-        slen = as.length - 5;
+		if (as.length < 5 || p_buf_len < 0)
+			return -1;
+		slen = as.length - 5;
 		ptr = as.data;
 		if (as.flags & AS_PROTECTION) {
-            if (slen < 4)
-                return -1;
-            slen -= 4;
+			if (slen < 4)
+				return -1;
+			slen -= 4;
 			CopyMem(ptr, &pbuf, 4);
 			ptr += 4;
 			*p_prot = AROS_BE2LONG(pbuf) & ~(FIBF_WRITE | FIBF_DELETE);
 		}
 		if (!(as.flags & AS_COMMENT))
 			return -1;
-        if (slen < 1 || (unsigned char)*ptr < 1 ||
-            (unsigned char)*ptr > slen)
-            return -1;
-        slen = (unsigned char)*ptr++ - 1;
+		if (slen < 1 || (unsigned char)*ptr < 1 ||
+			(unsigned char)*ptr > slen)
+			return -1;
+		slen = (unsigned char)*ptr++ - 1;
 		len = (p_buf_len < slen) ? p_buf_len : slen;
 		if (len)
 			CopyMem(ptr, p_buf, len);
@@ -352,10 +352,10 @@ int Is_A_Symbolic_Link(VOLUME *p_volume, directory_record *p_dir, uint32_t *amig
 
 	if (!Get_System_Use_Field(p_volume,p_dir,"PX",(char *)&px,sizeof(px),0))
 		return 0;
-    if (px.length < 12)
-    {
-        return 0;
-    }
+	if (px.length < 12)
+	{
+		return 0;
+	}
 	*amiga_mode = 0;
 	if (!(px.mode & S_IXUSR))
 		*amiga_mode |= FIBF_EXECUTE;
@@ -388,10 +388,10 @@ int offs;
 int continued = 0;
 char c;
 
-    if (p_buf_len <= 0)
-    {
-        return 0;
-    }
+	if (p_buf_len <= 0)
+	{
+		return 0;
+	}
 	out[0] = 0;
 	for (;;)
 	{
@@ -400,17 +400,17 @@ char c;
 					(p_obj->volume,OBJ(p_obj,dir),"SL",(char *)buf,sizeof(buf),index)
 			)
 		{
-            return 0;
+			return 0;
 		}
 
-        if (buf[2] < 7)
-            return 0;
+		if (buf[2] < 7)
+			return 0;
 		offs = 5;
 		for (;;)
 		{
 
-            if (offs + 2 > buf[2] || buf[offs+1] > buf[2] - offs - 2)
-                return 0;
+			if (offs + 2 > buf[2] || buf[offs+1] > buf[2] - offs - 2)
+				return 0;
 			if (StrLen (out) > 256)
 				return 0;
 
@@ -426,17 +426,17 @@ char c;
 					if (!parent1)
 						return 0;
 					parent2 = Find_Parent(parent1);
-                    if (!parent2)
-                    {
-                        Close_Object(parent1);
-                        return 0;
-                    }
-                    if (!Full_Path_Name(parent2, fullpath, sizeof(fullpath)))
-                    {
-                        Close_Object(parent1);
-                        Close_Object(parent2);
-                        return 0;
-                    }
+					if (!parent2)
+					{
+						Close_Object(parent1);
+						return 0;
+					}
+					if (!Full_Path_Name(parent2, fullpath, sizeof(fullpath)))
+					{
+						Close_Object(parent1);
+						Close_Object(parent2);
+						return 0;
+					}
 					Close_Object(parent1);
 					Close_Object(parent2);
 					StrCat (out, fullpath);
@@ -454,11 +454,11 @@ char c;
 				char fullpath[256];
 					if (!parent)
 						return 0;
-                    if (!Full_Path_Name(parent, fullpath, sizeof(fullpath)))
-                    {
-                        Close_Object(parent);
-                        return 0;
-                    }
+					if (!Full_Path_Name(parent, fullpath, sizeof(fullpath)))
+					{
+						Close_Object(parent);
+						return 0;
+					}
 					Close_Object(parent);
 					StrCat (out, fullpath);
 					if (out[1] != 0)
@@ -466,12 +466,12 @@ char c;
 				}
 			}
 
-            if (!continued && !(buf[offs] & 2) &&
-                out[0] && (c = out[StrLen(out)-1]) != ':' && c != '/')
+			if (!continued && !(buf[offs] & 2) &&
+				out[0] && (c = out[StrLen(out)-1]) != ':' && c != '/')
 				StrCat (out, "/");
 
-            if ((buf[offs] & 4) && !(index == 0 && offs == 5))
-                StrCat(out, "/"); /* AmigaDOS parent component */
+			if ((buf[offs] & 4) && !(index == 0 && offs == 5))
+				StrCat(out, "/"); /* AmigaDOS parent component */
 			if (buf[offs] & 32) /* host name */
 				StrCat (out, "AMIGA");
 
@@ -479,23 +479,23 @@ char c;
 			CopyMem(buf + offs + 2, out + len, buf[offs+1]);
 			out[len + buf[offs+1]] = 0;
 
-            continued = buf[offs] & 1;
+			continued = buf[offs] & 1;
 			offs += 2 + buf[offs+1];
 			if (offs >= buf[2])
 			break;
 		}
 		if (!(buf[4] & 1)) /* continue flag */
-        {
-            if (continued)
-                return 0;
+		{
+			if (continued)
+				return 0;
 			break;
-        }
+		}
 		index++;
 	}
-    len = StrLen(out);
-    if (len >= p_buf_len)
-        return 0;
-    CopyMem(out, p_buf, len + 1);
+	len = StrLen(out);
+	if (len >= p_buf_len)
+		return 0;
+	CopyMem(out, p_buf, len + 1);
 	return 1;
 }
 
@@ -522,8 +522,8 @@ struct cl {
 
 	if (!Get_System_Use_Field(p_volume, p_dir,"CL",(char *)&buf,sizeof(buf),0))
 		return -1;
-    else if ((unsigned char)buf.length[0] < 12)
-        return -1;
+	else if ((unsigned char)buf.length[0] < 12)
+		return -1;
 	else
 #if AROS_BIG_ENDIAN
 		return buf.pos_m;
@@ -547,8 +547,8 @@ struct pl {
 
 	if (!Get_System_Use_Field(p_volume,p_dir,"PL",(char *)&buf,sizeof(buf),0))
 		return -1;
-    else if ((unsigned char)buf.length[0] < 12)
-        return -1;
+	else if ((unsigned char)buf.length[0] < 12)
+		return -1;
 	else
 #if AROS_BIG_ENDIAN
 		return buf.pos_m;
