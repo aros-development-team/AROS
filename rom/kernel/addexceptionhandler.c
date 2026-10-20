@@ -35,37 +35,26 @@
         struct KernelBase *, KernelBase, 14, Kernel)
 
 /*  FUNCTION
-        Add a raw CPU exception handler to the chain of handlers.
+        Register a CPU exception handler.
 
     INPUTS
-        num          - CPU-specific exception number
-        handler      - Pointer to a handler function
-        handlerData,
-        handlerData2 - User-defined data which is passed to the
-                       handler.
-        
-          Handler function uses a C calling convention and must be
-          declared as follows:
-          
-          int ExceptionHandler(void *ctx, void *handlerData, void *handlerData2)
-            
-          handlerData and handlerData2 will be values passed to the
-          KrnAddExceptionHandler() function. ctx is a CPU context handle.
-          Consider this parameter private and reserved for now.
-
-          Exception handler should return nonzero value if it processes the
-          exception and wants to continue program execution. Otherwise it should
-          return zero. If all exception handlers in the chain return zero, the
-          exception will be passed on to exec.library trap handler pointed to
-          by tc_TrapCode field of task structure.
+        num          - CPU-specific exception number.
+        handler      - Exception callback with the signature:
+                       int ExceptionHandler(void *ctx, void *handlerData,
+                                            void *handlerData2);
+        handlerData  - First user-defined callback argument.
+        handlerData2 - Second user-defined callback argument.
 
     RESULT
-        An opaque handle that can be used for handler removal or NULL in case
-        of failure (like unsupported exception number).
+        Opaque handler handle, or NULL if registration fails.
 
     NOTES
-        The specification of this function is preliminary and subject to change.
-        Consider it private for now.
+        The ctx callback argument is an opaque CPU context handle.
+        Return a nonzero value from the callback to handle the exception and
+        continue execution. If every handler returns zero, the exception is
+        passed to the task's tc_TrapCode handler.
+
+        This interface is preliminary and should be treated as private.
 
     EXAMPLE
 
@@ -94,6 +83,9 @@
     AROS_LIBFUNC_EXIT
 }
 
+/* Add a handler to the kernel exception chain. Return NULL if the
+ * exception number is unsupported or allocation fails.
+ */
 void *krnAddExceptionHandler(UBYTE num, APTR handler,  APTR handlerData, APTR handlerData2, struct KernelBase *KernelBase)
 {
     struct IntrNode *handle = NULL;
@@ -127,7 +119,7 @@ void *krnAddExceptionHandler(UBYTE num, APTR handler,  APTR handlerData, APTR ha
     return handle;
 }
 
-/* Run exception handlers and accumulate return value */
+/* Invoke matching exception callbacks and return their combined result. */
 int krnRunExceptionHandlers(struct KernelBase *KernelBase, uint8_t exception, void *ctx)
 {
     struct IntrNode *in, *in2;

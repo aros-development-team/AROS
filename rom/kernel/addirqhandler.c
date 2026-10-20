@@ -34,28 +34,17 @@
         struct KernelBase *, KernelBase, 7, Kernel)
 
 /*  FUNCTION
-        Add a raw hardware IRQ handler to the chain of handlers.
+        Register a hardware IRQ handler.
 
     INPUTS
-        num          - hardware-specific IRQ number
-        handler      - Pointer to a handler function
-        handlerData,
-        handlerData2 - User-defined data which is passed to the
-                       handler.
-        
-          Handler function uses a C calling convention and must be
-          declared as follows:
-
-          void IRQHandler(void *handlerData, void *handlerData2)
-
-          handlerData and handlerData2 will be values passed to the
-          KrnAddExceptionHandler() function.
-
-          There is no return code for the IRQ handler.
+        irq          - Hardware-specific interrupt number.
+        handler      - IRQ callback with the signature:
+                       void IRQHandler(void *handlerData, void *handlerData2);
+        handlerData  - First argument passed to the callback.
+        handlerData2 - Second argument passed to the callback.
 
     RESULT
-        An opaque handle that can be used for handler removal or NULL in case
-        of failure (like unsupported exception number).
+        Opaque handler handle, or NULL if registration fails.
 
     NOTES
 
@@ -64,7 +53,7 @@
     BUGS
 
     SEE ALSO
-        KrnRemIRQHandler()
+        KrnModifyIRQHandler(), KrnRemIRQHandler()
 
     INTERNALS
 
@@ -117,7 +106,7 @@
     AROS_LIBFUNC_EXIT
 }
 
-/* Run IRQ handlers */
+/* Invoke registered IRQ callbacks with their stored arguments. */
 void krnRunIRQHandlers(struct KernelBase *KernelBase, irqid_t irq)
 {
     struct IntrNode *in, *in2;
