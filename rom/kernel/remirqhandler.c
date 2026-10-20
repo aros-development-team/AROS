@@ -26,14 +26,13 @@
          struct KernelBase *, KernelBase, 8, Kernel)
 
 /*  FUNCTION
-        Remove previously installed hardware IRQ handler
+        Remove a registered hardware IRQ handler.
 
     INPUTS
-        handle - an opaque handler returned by KrnAddIRQHandler()
-                 function
+        handle - Handle returned by KrnAddIRQHandler().
 
     RESULT
-        None
+        None.
 
     NOTES
 
@@ -42,6 +41,7 @@
     BUGS
 
     SEE ALSO
+        KrnAddIRQHandler(), KrnModifyIRQHandler()
 
     INTERNALS
 

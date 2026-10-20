@@ -33,15 +33,15 @@
         struct KernelBase *, KernelBase, 37, Kernel)
 
 /*  FUNCTION
-        Modify the data passed to a raw hardware IRQ handler.
+        Update the arguments passed to a registered IRQ handler.
 
     INPUTS
-        handle       - Existing handle
-        handlerData,
-        handlerData2 - User-defined data which is passed to the
-                       handler.
-        
+        handle       - Handle returned by KrnAddIRQHandler().
+        handlerData  - First argument passed to the callback.
+        handlerData2 - Second argument passed to the callback.
+
     RESULT
+        None.
 
     NOTES
 

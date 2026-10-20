@@ -31,14 +31,13 @@
         struct KernelBase *, KernelBase, 15, Kernel)
 
 /*  FUNCTION
-        Remove previously installed CPU exception handler
+        Remove a registered CPU exception handler.
 
     INPUTS
-        handle - an opaque handler returned by KrnAddExceptionHandler()
-                 function
+        handle - Handle returned by KrnAddExceptionHandler().
 
     RESULT
-        None
+        None.
 
     NOTES
 
@@ -47,6 +46,7 @@
     BUGS
 
     SEE ALSO
+        KrnAddExceptionHandler()
 
     INTERNALS
 
