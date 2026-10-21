@@ -478,6 +478,7 @@ struct V3DData
      * that puts an idle app's last frame on at vblank. */
     struct SignalSemaphore ovl_lock;
     struct Task     *ovl_task;
+    struct Task     *ovl_waiter;    /* Expunge, waiting for ovl_task to end */
 
     /* timer.device (UNIT_MICROHZ) for the wait loops' microsleeps. Only
      * io_Device/io_Unit are kept - each nap clones them into a stack
@@ -546,6 +547,9 @@ ULONG v3d_gpu_mem_alloc(struct V3DData *sd, ULONG size, ULONG align,
                         ULONG *out_paddr);
 void v3d_gpu_mem_free(struct V3DData *sd, ULONG gpu_handle, ULONG size);
 void v3d_mem_release(struct V3DData *sd);
+
+/* v3d_galliumclass.c */
+BOOL v3d_ovl_shutdown(struct V3DData *sd);
 
 /* v3d_drm_shim.c */
 int v3d_ioctl_aros(struct V3DData *sd, int fd, unsigned long request, void *arg);

@@ -309,6 +309,10 @@ static int V3D_Expunge(LIBBASETYPEPTR LIBBASE)
 {
     struct V3DData *sd = &LIBBASE->sd;
 
+    /* First, as staying loaded must leave everything else as it is. */
+    if (!v3d_ovl_shutdown(sd))
+        return FALSE;
+
     if (sd->task_res)
     {
         struct Library *TaskResBase = sd->task_res;

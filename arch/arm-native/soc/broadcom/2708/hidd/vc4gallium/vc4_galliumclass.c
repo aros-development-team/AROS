@@ -989,6 +989,7 @@ void vc4_aros_set_vblank(void *ctx, OOP_Object *bm_obj,
         return;
     vbltags[0].ti_Tag = sd->hiddVC4GfxBMAB + aoHidd_VideoCoreGfxBitMap_VBlank;
     OOP_SetAttrs(bm_obj, vbltags);
+    sd->ovl_vbl_armed = (vbl != NULL);
 }
 
 void vc4_aros_overlay_latch_wait(struct vc4galliumstaticdata *sd)
