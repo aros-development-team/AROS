@@ -268,4 +268,15 @@ static inline struct SocketBase *FindSocketBase(struct Task *task)
   return NULL;
 }
 
+/* Snapshot only; it does not grant ownership of a base or an API call. */
+static inline ULONG api_open_count(void)
+{
+  extern struct Library *MasterSocketBase;
+  ULONG count;
+  ObtainSemaphore(&baselist_semaphore);
+  count = MasterSocketBase ? MasterSocketBase->lib_OpenCnt : 0;
+  ReleaseSemaphore(&baselist_semaphore);
+  return count;
+}
+
 #endif /* !AMIGA_API_H */
