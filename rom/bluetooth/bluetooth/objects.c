@@ -446,6 +446,39 @@ AROS_LH1(void, btFreeDevice,
 /* \\\ */
 
 /* /// "btLockReadDevice()" */
+/*****************************************************************************
+    NAME
+        VOID btLockReadDevice(
+
+    SYNOPSIS
+        APTR bd)
+
+    FUNCTION
+        Acquire shared access to a Bluetooth device. The calling task
+        may nest acquisitions.
+
+    INPUTS
+        bd - Live device object. NULL is invalid.
+
+    RESULT
+        None. Return indicates that access has been acquired.
+
+    NOTES
+        Call from task context. The call may wait indefinitely and uses
+        SIGB_SINGLE while waiting. Balance every acquisition with one
+        btUnlockDevice() in the same task. A read acquisition made by the
+        exclusive owner increases its exclusive nesting count.
+
+        If a reader record cannot be allocated, the call acquires exclusive
+        access instead. Do not depend on another reader entering while this
+        lock is held. No reader/writer fairness guarantee is provided.
+        Keep the device alive until the matching unlock; acquiring a lock
+        does not validate an expired device pointer.
+
+    SEE ALSO
+        btLockWriteDevice(), btUnlockDevice(), btBorrowLocksWait()
+
+*****************************************************************************/
 AROS_LH1(void, btLockReadDevice,
          AROS_LHA(struct BtDevice *, bd, A0),
          LIBBASETYPEPTR, BluetoothBase, 17, bt)
@@ -458,6 +491,40 @@ AROS_LH1(void, btLockReadDevice,
 /* \\\ */
 
 /* /// "btLockWriteDevice()" */
+/*****************************************************************************
+    NAME
+        VOID btLockWriteDevice(
+
+    SYNOPSIS
+        APTR bd)
+
+    FUNCTION
+        Acquire exclusive access to a Bluetooth device. Repeated
+        acquisitions by the owner increase the nesting count.
+
+    INPUTS
+        bd - Live device object. NULL is invalid.
+
+    RESULT
+        None. Return indicates that exclusive access has been acquired.
+
+    NOTES
+        Call from task context. The call may wait indefinitely and uses
+        SIGB_SINGLE while waiting. Balance every acquisition with one
+        btUnlockDevice() in the same task.
+
+        An existing read lock can be promoted when this task is the only
+        reader. The read acquisition remains and needs its own unlock after
+        the exclusive acquisition is released. Do not attempt concurrent
+        read-to-write upgrades: waiting while retaining shared access can
+        deadlock with another upgrading reader.
+        Keep the device alive until the matching unlock; acquiring a lock
+        does not validate an expired device pointer.
+
+    SEE ALSO
+        btLockReadDevice(), btUnlockDevice(), btBorrowLocksWait()
+
+*****************************************************************************/
 AROS_LH1(void, btLockWriteDevice,
          AROS_LHA(struct BtDevice *, bd, A0),
          LIBBASETYPEPTR, BluetoothBase, 18, bt)
@@ -470,6 +537,34 @@ AROS_LH1(void, btLockWriteDevice,
 /* \\\ */
 
 /* /// "btUnlockDevice()" */
+/*****************************************************************************
+    NAME
+        VOID btUnlockDevice(
+
+    SYNOPSIS
+        APTR bd)
+
+    FUNCTION
+        Release one lock acquisition held by the calling task on a Bluetooth device.
+
+    INPUTS
+        bd - Live device object. NULL is invalid.
+
+    RESULT
+        None. Ownership errors are logged, not returned.
+
+    NOTES
+        Release exclusive acquisitions before any underlying shared
+        acquisitions. The last acquisition of a mode releases that mode and
+        wakes waiting tasks; it does not guarantee which waiter proceeds.
+        An unlock by a non-owner or without an acquisition leaves the lock
+        unchanged and can add diagnostic messages. Do not use this call
+        as an ownership test. Call from task context.
+
+    SEE ALSO
+        btLockReadDevice(), btLockWriteDevice()
+
+*****************************************************************************/
 AROS_LH1(void, btUnlockDevice,
          AROS_LHA(struct BtDevice *, bd, A0),
          LIBBASETYPEPTR, BluetoothBase, 19, bt)
