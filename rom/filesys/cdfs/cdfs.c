@@ -40,36 +40,35 @@ static LONG CDFS_DeviceMount(struct CDFS *cdfs, struct CDFSDevice *dev)
             vol->cv_Ops = op;
 
             if (DOSBase) {
-                /* Look for an identical volume */
-                struct DosList *dl;
-                dl = LockDosList(LDF_VOLUMES | LDF_READ);
-                while (dl != BNULL) {
-                    dl = FindDosEntry(dl, AROS_BSTR_ADDR(vol->cv_DosVolume.dl_Name), LDF_VOLUMES | LDF_READ);
-                    if (dl && dl->dol_misc.dol_volume.dol_DiskType == vol->cv_DosVolume.dl_DiskType
-                           && memcmp(&vol->cv_DosVolume.dl_VolumeDate, &dl->dol_misc.dol_volume.dol_VolumeDate, sizeof(struct DateStamp)) == 0
-                           && dl->dol_misc.dol_volume.dol_LockList != BNULL  // Dismounted
-                       ) {
-                        /* Identical match found */
+                struct CDFSVolume *old = NULL, *candidate;
+
+                /* Locks belong to this handler. Do not take over a volume
+                 * retained by another device, or a foreign DOS handler. */
+                ObtainSemaphore(&cdfs->cb_Semaphore);
+                ForeachNode(&cdfs->cb_Volumes, candidate) {
+                    if (candidate->cv_Device == dev &&
+                        candidate->cv_DosVolume.dl_DiskType == vol->cv_DosVolume.dl_DiskType &&
+                        strcmp(AROS_BSTR_ADDR(candidate->cv_DosVolume.dl_Name),
+                               AROS_BSTR_ADDR(vol->cv_DosVolume.dl_Name)) == 0 &&
+                        memcmp(&candidate->cv_DosVolume.dl_VolumeDate,
+                               &vol->cv_DosVolume.dl_VolumeDate, sizeof(struct DateStamp)) == 0) {
+                        old = candidate;
+                        Remove((struct Node *)&old->cv_Node);
+                        old->cv_DosVolume.dl_Task = &((struct Process *)FindTask(NULL))->pr_MsgPort;
+                        old->cv_DosVolume.dl_LockList = BNULL;
                         break;
                     }
                 }
-                if (dl) {
-                    /* Dispose of the test volume */
+                ReleaseSemaphore(&cdfs->cb_Semaphore);
+
+                if (old) {
+                    /* Dispose of the test volume, keeping existing locks. */
                     vol->cv_Ops->op_Unmount(vol);
                     FreeVec(vol);
-
-                    /* Use the old volume */
-                    vol = dev->cd_Volume = B_VOLUME(MKBADDR(dl));
-                    D(bug("%s: Remounting '%b'\n", __func__, dl->dol_Name));
-
-                    /* Mark volume as online */
-                    vol->cv_DosVolume.dl_Task = &(((struct Process *)FindTask(NULL))->pr_MsgPort);
-                    vol->cv_DosVolume.dl_LockList = BNULL;
+                    vol = old;
                 } else {
-                    /* Insert the new volume */
                     AddDosEntry((struct DosList *)&vol->cv_DosVolume);
                 }
-                UnLockDosList(LDF_VOLUMES | LDF_READ);
                 CloseLibrary(DOSBase);
             }
             dev->cd_Volume = vol;
@@ -83,6 +82,18 @@ static LONG CDFS_DeviceMount(struct CDFS *cdfs, struct CDFSDevice *dev)
 }
 
 
+static VOID CDFS_SyncLockList(struct CDFSVolume *vol)
+{
+    struct CDFSLock *cl;
+    BPTR *flp = &vol->cv_DosVolume.dl_LockList;
+
+    ForeachNode(&vol->cv_FileLocks, cl) {
+        *flp = MKBADDR(&cl->cl_FileLock);
+        flp = &cl->cl_FileLock.fl_Link;
+    }
+    *flp = BNULL;
+}
+
 static VOID CDFS_DeviceUnmount(struct CDFS *cdfs, struct CDFSDevice *dev)
 {
     struct CDFSVolume *vol = dev->cd_Volume;
@@ -94,19 +105,10 @@ static VOID CDFS_DeviceUnmount(struct CDFS *cdfs, struct CDFSDevice *dev)
     dev->cd_Volume = NULL;
     /* Still has locks? */
     if (!IsListEmpty(&vol->cv_FileLocks)) {
-        struct CDFSLock *cl;
-        BPTR *flp;
-
         /* Mark the volume as dismounted  */
         vol->cv_DosVolume.dl_Task = NULL;
 
-        /* Make the dismounted filelock list */
-        flp = &vol->cv_DosVolume.dl_LockList;
-        ForeachNode(&vol->cv_FileLocks, cl) {
-            *flp = MKBADDR(&cl->cl_FileLock);
-            flp = &cl->cl_FileLock.fl_Link;
-        }
-        *flp = BNULL;
+        CDFS_SyncLockList(vol);
 
         /* Put the volume in the CDFS volume list */
         ObtainSemaphore(&cdfs->cb_Semaphore);
@@ -124,6 +126,25 @@ static VOID CDFS_DeviceUnmount(struct CDFS *cdfs, struct CDFSDevice *dev)
         /* Dispose of the volume */
         vol->cv_Ops->op_Unmount(vol);
         FreeVec(vol);
+    }
+}
+
+static VOID CDFS_CloseLock(struct CDFS *cdfs, struct CDFSLock *fl)
+{
+    struct CDFSVolume *vol = B_VOLUME(fl->cl_FileLock.fl_Volume);
+
+    Remove((struct Node *)&fl->cl_Node);
+    vol->cv_Ops->op_Close(vol, fl);
+    if (vol->cv_DosVolume.dl_Task == NULL) {
+        CDFS_SyncLockList(vol);
+        if (IsListEmpty(&vol->cv_FileLocks)) {
+            struct CDFSDevice detached = {0};
+            ObtainSemaphore(&cdfs->cb_Semaphore);
+            Remove((struct Node *)&vol->cv_Node);
+            ReleaseSemaphore(&cdfs->cb_Semaphore);
+            detached.cd_Volume = vol;
+            CDFS_DeviceUnmount(cdfs, &detached);
+        }
     }
 }
 
@@ -238,6 +259,7 @@ static struct CDFS *CDFS_Init(struct ExecBase *SysBase)
             /* Set up SysBase link */
             cdfs->cb_SysBase = SysBase;
             NEWLIST(&cdfs->cb_Devices);
+            NEWLIST(&cdfs->cb_Volumes);
             AddSemaphore(&cdfs->cb_Semaphore);
         }
     }
@@ -397,9 +419,7 @@ LONG CDFS_Handler(struct ExecBase *SysBase)
                     struct CDFSLock *fl = B_LOCK(dp->dp_Arg1);
 
                     if (fl != NULL) {
-                        struct CDFSVolume *vol = B_VOLUME(fl->cl_FileLock.fl_Volume);
-                        Remove((struct Node *)&fl->cl_Node);
-                        vol->cv_Ops->op_Close(vol, fl);
+                        CDFS_CloseLock(cdfs, fl);
                     }
                     res = DOSTRUE;
                 }
