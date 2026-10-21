@@ -21,9 +21,10 @@
 #include <exec/types.h>
 #include <oop/oop.h>
 
-/* ABI version. Bump on any field add/remove/reorder. mesa3dgl checks it
- * at screen-create and refuses an incompatible bridge. */
-#define VC4_AROS_BRIDGE_VERSION   5
+/* ABI version. Bump on any field add/remove/reorder, and on any change to
+ * a function pointer's signature: that breaks callers just the same.
+ * Screen-create refuses a bridge of another version. */
+#define VC4_AROS_BRIDGE_VERSION   6
 
 /* Which gallium driver this bridge fronts. mesa3dgl dispatches
  * screen-create on driver_id, so one mesa3dgl can carry several drivers
