@@ -116,6 +116,9 @@ static BOOL isoParseDir(struct CDFSVolume *vol, struct ISOLock *il, struct isoDi
     BOOL has_RockRidge = FALSE;
 
     if (dir) {
+        if (dir->DirectoryLength < 34 || dir->FileIdentifierLength == 0 ||
+            dir->FileIdentifierLength > dir->DirectoryLength - 33)
+            return FALSE;
         il->il_Extent = isoRead32LM(&dir->ExtentLocation);
         il->il_PathTable = NULL;
     } else {
@@ -317,36 +320,44 @@ static LONG isoReadDir(struct CDFSVolume *vol, struct ISOLock *ilock, ULONG exte
 {
     struct BCache *bcache = vol->cv_Device->cd_BCache;
     UBYTE *buff;
+    struct isoDirectory *dir;
+    ULONG within = offset % 2048;
+    ULONG length;
     LONG err;
-    D(struct CDFS *cdfs = vol->cv_CDFSBase;(void)cdfs;);
 
-    D(bug("%s: Extent @0x%08x, offset 0x%03x, parent 0x%08x\n", __func__, extent, offset, iparent));
-
-    err = BCache_Read(bcache, extent + (offset / 2048), &buff);
-    if (err == RETURN_OK) {
-        struct isoDirectory *dir = (APTR)&buff[offset];
-        if (!isoParseDir(vol, ilock, dir, iparent))
-            err = ERROR_OBJECT_WRONG_TYPE;
-        else {
-            if (dir->DirectoryLength == 0) {
-                err = ERROR_NO_MORE_ENTRIES;
-            } else {
-                if (size)
-                    *size = dir->DirectoryLength;
-                D(bug("%s: pe %d of %d dl %d\n", __func__, ilock->il_ParentExtent, offset, dir->DirectoryLength));
-                if (offset == 0 && dir->DirectoryLength) {
-                    offset = dir->DirectoryLength;
-                    D(bug("%s: Reading parent dir info at %d\n", __func__, offset));
-                    dir = (struct isoDirectory *)&buff[offset];
-                    ilock->il_ParentExtent = isoRead32LM(&dir->ExtentLocation);
-                    if (size)
-                        *size += dir->DirectoryLength;
-                }
-            }
-        }
+    if (size)
+        *size = 0;
+    err = BCache_Read(bcache, extent + offset / 2048, &buff);
+    if (err != RETURN_OK)
+        return err;
+    dir = (APTR)(buff + within);
+    length = dir->DirectoryLength;
+    if (length == 0) {
+        /* Padding ends this sector, not the directory. */
+        if (size)
+            *size = 2048 - within;
+        return ERROR_OBJECT_WRONG_TYPE;
     }
+    if (length < 34 || length > 2048 - within ||
+        dir->FileIdentifierLength == 0 || dir->FileIdentifierLength > length - 33)
+        return ERROR_NOT_A_DOS_DISK;
+    if (size)
+        *size = length;
+    if (!isoParseDir(vol, ilock, dir, iparent))
+        return ERROR_OBJECT_WRONG_TYPE;
 
-    return err;
+    if (offset == 0) {
+        /* The first two records describe this directory and its parent. */
+        dir = (APTR)(buff + length);
+        if (2048 - length < 34 || dir->DirectoryLength < 34 ||
+            dir->DirectoryLength > 2048 - length ||
+            dir->FileIdentifierLength != 1 || dir->FileIdentifier[0] != 1)
+            return ERROR_NOT_A_DOS_DISK;
+        ilock->il_ParentExtent = isoRead32LM(&dir->ExtentLocation);
+        if (size)
+            *size += dir->DirectoryLength;
+    }
+    return RETURN_OK;
 }
 
 static LONG isoFindCmp(struct CDFSVolume *vol, struct ISOLock *ifile, ULONG extent, BOOL (*cmp)(struct ISOLock *il, APTR data), APTR data)
@@ -397,11 +408,6 @@ static LONG isoFindCmp(struct CDFSVolume *vol, struct ISOLock *ifile, ULONG exte
 
         offset += size;
 
-        /* Move to next block */
-        if (err == ERROR_OBJECT_WRONG_TYPE || size == 0 ||
-            (2048 - (offset % 2048)) < sizeof(struct isoDirectory) + 2) {
-            offset = (offset + 2048 - 1) & ~(2048 - 1);
-        }
     }
 
     return RETURN_FAIL;
@@ -832,11 +838,6 @@ LONG ISO9660_ExamineNext(struct CDFSVolume *vol, struct CDFSLock *dl, struct Fil
         D(bug("%s: err=%d, size=%d\n", __func__, err, size));
         offset += size;
 
-        /* Move to next block */
-        if (err == ERROR_OBJECT_WRONG_TYPE || size == 0 ||
-            (2048 - (offset % 2048)) < sizeof(struct isoDirectory) + 2) {
-            offset = (offset + 2048 - 1) & ~(2048 - 1);
-        }
 
         if (err == RETURN_OK) {
             struct FileInfoBlock *tfib = &tl.il_Public.cl_FileInfoBlock;
