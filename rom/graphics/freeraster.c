@@ -5,7 +5,43 @@
 */
 #include <exec/memory.h>
 #include <proto/exec.h>
+#include <graphics/view.h>
 #include "graphics_intern.h"
+
+/*
+ * Compatibility: some Kickstart 1.x era tools ("add21k" and the like, found on
+ * many old game disks) free a plane of the displayed Workbench screen with
+ * FreeRaster() to gain chip memory. On AROS the planes of a displayed bitmap
+ * are part of a larger allocation owned by the display driver, and the display
+ * keeps using them, so freeing one of them corrupts the free memory list.
+ * FreeRaster() therefore leaves alone any plane of a bitmap in the active View.
+ */
+static BOOL IsDisplayedPlane(PLANEPTR p, struct GfxBase *GfxBase)
+{
+    struct ViewPort *vp;
+    BOOL found = FALSE;
+    UWORD i;
+
+    Forbid();
+    for (vp = GfxBase->ActiView ? GfxBase->ActiView->ViewPort : NULL; vp && !found; vp = vp->Next)
+    {
+        struct BitMap *bm = vp->RasInfo ? vp->RasInfo->BitMap : NULL;
+
+        if (bm == NULL)
+            continue;
+        for (i = 0; i < 8; i++)
+        {
+            if (bm->Planes[i] == p)
+            {
+                found = TRUE;
+                break;
+            }
+        }
+    }
+    Permit();
+
+    return found;
+}
 
 /*****************************************************************************
 
@@ -49,6 +85,9 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
+
+    if (IsDisplayedPlane(p, GfxBase))
+        return;
 
     FreeMem(p, RASSIZE(width, height));
 
