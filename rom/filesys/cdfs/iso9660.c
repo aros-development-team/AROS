@@ -301,6 +301,8 @@ static BOOL isoParseDir(struct CDFSVolume *vol, struct ISOLock *il, struct isoDi
     if (has_RockRidge && iv && iv->iv_PathTable.Size) {
         FreeVec(iv->iv_PathTable.Entry);
         FreeVec(iv->iv_PathTable.Data);
+        iv->iv_PathTable.Entry = NULL;
+        iv->iv_PathTable.Data = NULL;
         iv->iv_PathTable.Size = 0;
         iv->iv_PathTable.Entries = 0;
     }
@@ -640,8 +642,15 @@ LONG ISO9660_Unmount(struct CDFSVolume *vol)
 {
     struct CDFS *cdfs = vol->cv_CDFSBase;
 
-    FreeVec(vol->cv_Private);
-    return ERROR_NO_FREE_STORE;
+    struct ISOVolume *iv = vol->cv_Private;
+
+    if (iv) {
+        FreeVec(iv->iv_PathTable.Entry);
+        FreeVec(iv->iv_PathTable.Data);
+        FreeVec(iv);
+        vol->cv_Private = NULL;
+    }
+    return RETURN_OK;
 }
 
 LONG ISO9660_Locate(struct CDFSVolume *vol, struct CDFSLock *idir, CONST_STRPTR file, ULONG mode, struct CDFSLock **ifile)
