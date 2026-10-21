@@ -1,10 +1,11 @@
 /*
-    Copyright (C) 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Amigastyle device for trackdisk
 */
 
 #define DEBUG 0
+#include <stddef.h>
 #include <aros/debug.h>
 
 #include <devices/trackdisk.h>
@@ -558,6 +559,11 @@ static void TD_BootNode(
     if (devnode)
         AddBootNode(pp[DE_BOOTPRI + 4], 0, devnode, NULL);
 }
+/* Kickstart 1.x compatible offsets of the base pointers (see struct TrackDiskBase) */
+typedef char td_check_sysbase[(offsetof(struct TrackDiskBase, td_SysBase) == 0x34) ? 1 : -1];
+typedef char td_check_gfxbase[(offsetof(struct TrackDiskBase, td_GfxBase) == 0x38) ? 1 : -1];
+typedef char td_check_diskbase[(offsetof(struct TrackDiskBase, td_DiskBase) == 0x3C) ? 1 : -1];
+
 static int GM_UNIQUENAME(init)(LIBBASETYPEPTR TDBase)
 {
     ULONG i;
@@ -574,6 +580,9 @@ static int GM_UNIQUENAME(init)(LIBBASETYPEPTR TDBase)
         Alert(AT_DeadEnd | AO_TrackDiskDev | AG_OpenRes);
 
     TDBase->td_DiskBase = DiskBase;
+    /* Kickstart 1.x compatible layout, see struct TrackDiskBase */
+    TDBase->td_SysBase = SysBase;
+    TDBase->td_GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 0);
     TDBase->ciaa = (struct CIA*)0xbfe001;
     TDBase->ciab = (struct CIA*)0xbfd000;
     TDBase->custom = (struct Custom*)0xdff000;
