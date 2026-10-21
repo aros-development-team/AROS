@@ -114,6 +114,7 @@ static BOOL isoParseDir(struct CDFSVolume *vol, struct ISOLock *il, struct isoDi
     const strD *cp;
     BOOL has_Amiga_Protections = FALSE;
     BOOL has_RockRidge = FALSE;
+    BOOL has_name = FALSE, name_continues = FALSE;
 
     if (dir) {
         if (dir->DirectoryLength < 34 || dir->FileIdentifierLength == 0 ||
@@ -201,18 +202,21 @@ static BOOL isoParseDir(struct CDFSVolume *vol, struct ISOLock *il, struct isoDi
     while (i < (dir->DirectoryLength - 3)) {
         struct rrSystemUse *rr = (APTR)(((UBYTE *)dir) + i);
         D(bug("%s: RR @%d [%c%c] (%d)\n", __func__, i, (AROS_BE2WORD(rr->Signature) >> 8) & 0xff, AROS_BE2WORD(rr->Signature) & 0xff, rr->Length));
-        if (rr->Length == 0) {
-            D(bug("%s: Corrupted RR section detected (%d left)\n", __func__, dir->DirectoryLength - i));
-            break;
-        }
+        if (rr->Length < 4 || rr->Length > dir->DirectoryLength - i)
+            goto system_use_done;
         switch (AROS_BE2WORD(rr->Signature)) {
         case RR_SystemUse_AS:
             if (rr->Version == RR_SystemUse_AS_VERSION) {
                 UBYTE *data = &rr->AS.Data[0];
+                UBYTE *end = (UBYTE *)rr + rr->Length;
 
+                if (rr->Length < 5)
+                    goto system_use_done;
                 /* Amiga System Use area */
                 if (rr->AS.Flags & RR_AS_PROTECTION) {
                     struct SystemUseASProtection *ap = (APTR)data;
+                    if (end - data < sizeof(*ap))
+                        goto system_use_done;
                     fib->fib_Protection = (ap->User       << 24) |
                                           (ap->Zero       << 16) |
                                           (ap->MultiUser  << 8) |
@@ -222,16 +226,22 @@ static BOOL isoParseDir(struct CDFSVolume *vol, struct ISOLock *il, struct isoDi
                 }
                 if (rr->AS.Flags & RR_AS_COMMENT) {
                     struct SystemUseASComment *ac = (APTR)data;
-                    int len = ac->Length;
-                    if (len > (MAXCOMMENTLENGTH - fib->fib_Comment[0])-1) {
-                        len = (MAXCOMMENTLENGTH - fib->fib_Comment[0])-1;
-                        CopyMem(&ac->Comment[0], &fib->fib_Comment[fib->fib_Comment[0]+1], len);
-                        fib->fib_Comment[0] += len;
-                    }
+                    int len, available;
+                    if (data == end || ac->Length > end - data - 1)
+                        goto system_use_done;
+                    len = ac->Length;
+                    available = sizeof(fib->fib_Comment) - 2 - (UBYTE)fib->fib_Comment[0];
+                    if (len > available)
+                        len = available;
+                    CopyMem(ac->Comment, &fib->fib_Comment[(UBYTE)fib->fib_Comment[0]+1], len);
+                    fib->fib_Comment[0] += len;
+                    fib->fib_Comment[(UBYTE)fib->fib_Comment[0]+1] = 0;
                 }
             }
             break;
         case RR_SystemUse_PX:
+            if (rr->Length < 36)
+                goto system_use_done;
             /* This field is mandatory for Rock Ridge */
             has_RockRidge = TRUE;
 
@@ -258,20 +268,38 @@ static BOOL isoParseDir(struct CDFSVolume *vol, struct ISOLock *il, struct isoDi
             break;
         case RR_SystemUse_NM:
             if (rr->Version == RR_SystemUse_NM_VERSION) {
-                int len = rr->Length - ((UBYTE *)&rr->NM.Content[0] - (UBYTE *)rr);
-                if (len > (MAXCOMMENTLENGTH - fib->fib_FileName[0])-1) {
-                    len = (MAXCOMMENTLENGTH - fib->fib_FileName[0])-1;
-                    CopyMem(&rr->NM.Content[0], &fib->fib_FileName[fib->fib_FileName[0]+1], len);
-                    fib->fib_FileName[0] += len;
+                int len, available;
+                if (rr->Length < 5)
+                    goto system_use_done;
+                /* Current/parent and reserved names are not alternate filenames. */
+                if (rr->NM.Flags & ~1)
+                    break;
+                if (has_name && !name_continues)
+                    break;
+                if (!has_name) {
+                    fib->fib_FileName[0] = 0;
+                    has_name = TRUE;
                 }
+                len = rr->Length - 5;
+                available = sizeof(fib->fib_FileName) - 2 - (UBYTE)fib->fib_FileName[0];
+                if (len > available)
+                    len = available;
+                CopyMem(rr->NM.Content, &fib->fib_FileName[(UBYTE)fib->fib_FileName[0]+1], len);
+                fib->fib_FileName[0] += len;
+                fib->fib_FileName[(UBYTE)fib->fib_FileName[0]+1] = 0;
+                name_continues = (rr->NM.Flags & 1) != 0;
             }
             break;
         case RR_SystemUse_CL:
+            if (rr->Length < 12)
+                goto system_use_done;
             if (rr->Version == RR_SystemUse_CL_VERSION) {
                 il->il_Extent = isoRead32LM(&rr->CL.ChildDirectory);
             }
             break;
         case RR_SystemUse_PL:
+            if (rr->Length < 12)
+                goto system_use_done;
             if (rr->Version == RR_SystemUse_PL_VERSION) {
                 il->il_ParentExtent = isoRead32LM(&rr->PL.ParentDirectory);
             }
@@ -282,6 +310,9 @@ static BOOL isoParseDir(struct CDFSVolume *vol, struct ISOLock *il, struct isoDi
                 return FALSE;
             }
             break;
+        case RR_SystemUse_ST:
+            i = dir->DirectoryLength;
+            continue;
         case RR_SystemUse_TF:
             /* TF fields have no use under AROS */
             break;
@@ -295,6 +326,7 @@ static BOOL isoParseDir(struct CDFSVolume *vol, struct ISOLock *il, struct isoDi
         i += rr->Length;
     }
 
+system_use_done:
     /* If RockRidge is detected, the PathTable is
      * useless to us, due to re-arranged directories.
      */
