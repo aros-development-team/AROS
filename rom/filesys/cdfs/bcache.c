@@ -385,7 +385,7 @@ static LONG BCache_IO(struct BCache *bcache, ULONG cmd, ULONG block, ULONG block
     }
 
     /* Validate the offset + length */
-    if ((block + blocks) > bp->bp_Blocks) {
+    if (block > bp->bp_Blocks || blocks > bp->bp_Blocks - block) {
         D(bug("%s: Block 0x%08x exceeds max 0x%08x\n", __func__, (ULONG)(block + blocks), (ULONG)bp->bp_Blocks));
         return ERROR_SEEK_ERROR;
     }
@@ -437,7 +437,7 @@ LONG BCache_Read(struct BCache *bcache, ULONG block, UBYTE **bufferp)
     int i;
 
     D(bug("%s: Block %d\n", __func__, block));
-    if (block > bp->bp_Blocks)
+    if (block >= bp->bp_Blocks)
         return ERROR_SEEK_ERROR;
 
     /* Scan to see if this block was cached */
@@ -473,6 +473,8 @@ LONG BCache_Read(struct BCache *bcache, ULONG block, UBYTE **bufferp)
         index = XorshiftRNG(&bp->bp_RNG) % (bp->bp_NumBuffers - run);
     }
 
+    if (run > bp->bp_Blocks - block)
+        run = bp->bp_Blocks - block;
     ASSERT(run > 0);
     ASSERT(index + run <= bp->bp_NumBuffers);
     ASSERT(block + run <= bp->bp_Blocks);
@@ -544,7 +546,7 @@ LONG BCache_Write(struct BCache *bcache, ULONG block, CONST UBYTE *buffer)
     struct BCacheEntry *be;
     ULONG depth = 0;
 
-    if (block > bp->bp_Blocks)
+    if (block >= bp->bp_Blocks)
         return ERROR_SEEK_ERROR;
 
     /* Scan to see if this block was cached */
