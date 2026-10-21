@@ -8,12 +8,15 @@
 #include <netinet/in.h>
 #include <assert.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <stddef.h>
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
 int aros_rs_socket(int, int, int);
+int aros_rs_poll(struct aros_socket_pollfd *, unsigned int, int);
+_Static_assert(sizeof(struct aros_socket_pollfd)==8 && offsetof(struct aros_socket_pollfd,events)==4 && offsetof(struct aros_socket_pollfd,revents)==6, "pollfd C/libc ABI");
 int aros_rs_bind(int, const struct sockaddr *, uint32_t);
 int aros_rs_connect(int, const struct sockaddr *, uint32_t);
 int aros_rs_listen(int, int);
@@ -41,6 +44,12 @@ _Static_assert(offsetof(struct aros_socket_request, result) == 24, "native resul
 _Static_assert(offsetof(struct aros_socket_request, address_length) == 56, "native addrlen pointer offset");
 static struct aros_socket_request expected;
 static int calls, error_response, cases;
+static int fcntl_response=-1, fcntl_error=EBADF;
+int aros_fixture_fcntl(int fd,int command,...) {
+    assert(fd>=0 && fd<=2 && command==F_GETFD);
+    if(fcntl_response<0)errno=fcntl_error;
+    return fcntl_response;
+}
 static ssize_t return_value;
 static int address_copy;
 static const void *original_address;
@@ -246,6 +255,22 @@ int main(void) {
     assert(!memcmp(control, "control", sizeof(control)));
     reset(0); invalid(aros_rs_sendmsg(41, NULL, 0), EOPNOTSUPP);
     reset(0); invalid(aros_rs_recvmsg(41, NULL, 0), EOPNOTSUPP);
+    struct aros_socket_pollfd pollfds[2]={{41,AROS_POLL_IN,0},{42,AROS_POLL_OUT,0}};
+    reset(AROS_SOCKET_POLL_BATCH); expected.fd=0; expected.buffer=pollfds; expected.length=2;
+    expected.arg1=23; return_value=2; result(aros_rs_poll(pollfds,2,23));
+    reset(AROS_SOCKET_POLL_BATCH); expected.fd=0; expected.arg1=0; return_value=0;
+    result(aros_rs_poll(NULL,0,0));
+    reset(AROS_SOCKET_POLL_BATCH); expected.fd=0; expected.buffer=pollfds; expected.length=2;
+    expected.arg1=-1; error_response=EINTR; result(aros_rs_poll(pollfds,2,-1));
+    reset(0); invalid(aros_rs_poll(NULL,1,0),EFAULT);
+    reset(0); invalid(aros_rs_poll(NULL,0,-2),EINVAL);
+    struct aros_socket_pollfd local={0,AROS_POLL_IN,AROS_POLL_NVAL};
+    reset(AROS_SOCKET_POLL_BATCH); expected.fd=0; expected.buffer=&local; expected.length=1;return_value=1;
+    fcntl_response=0;assert(aros_rs_poll(&local,1,0)==-1 && errno==EOPNOTSUPP && calls==1);cases++;
+    reset(AROS_SOCKET_POLL_BATCH); expected.fd=0; expected.buffer=&local; expected.length=1;return_value=1;
+    fcntl_response=-1;fcntl_error=EBADF;result(aros_rs_poll(&local,1,0));
+    reset(AROS_SOCKET_POLL_BATCH); expected.fd=0; expected.buffer=&local; expected.length=1;return_value=1;
+    fcntl_error=ENOMEM;assert(aros_rs_poll(&local,1,0)==-1 && errno==ENOMEM && calls==1);cases++;
     printf("PASS %d socket bridge cases, exact dispatch records, AROS IPv4/IPv6, synchronous address copies\n", cases);
     return 0;
 }

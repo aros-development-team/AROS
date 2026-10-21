@@ -15,7 +15,6 @@
 #define REFUSE(type, name, args, failure) \
     type aros_rs_##name args { errno = ENOSYS; return (failure); }
 
-REFUSE(int, poll, (void *fds UNUSED, unsigned int nfds UNUSED, int timeout UNUSED), -1)
 REFUSE(intptr_t, fork, (void), (intptr_t)-1)
 REFUSE(int, mkfifo, (const char *path UNUSED, unsigned short mode UNUSED), -1)
 REFUSE(int, lchown, (const char *path UNUSED, unsigned int uid UNUSED, unsigned int gid UNUSED), -1)

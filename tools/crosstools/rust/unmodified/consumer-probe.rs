@@ -26,9 +26,8 @@ fn main() {
     let fd = unsafe { libc::socket(libc::AF_INET, libc::SOCK_DGRAM, 0) };
     assert!(fd >= 0);
     assert_eq!(unsafe { libc::close(fd) }, 0);
-    // Generic poll is explicitly unsupported by this native interface.
-    assert_eq!(unsafe { libc::poll(std::ptr::null_mut(), 0, 0) }, -1);
-    assert_eq!(std::io::Error::last_os_error().raw_os_error(), Some(libc::ENOSYS));
+    // Empty poll is a real native wait; sockets use batch readiness below.
+    assert_eq!(unsafe { libc::poll(std::ptr::null_mut(), 0, 0) }, 0);
     assert_eq!(unsafe { libc::if_nametoindex(c"unavailable".as_ptr()) }, 0);
     assert_eq!(std::io::Error::last_os_error().raw_os_error(), Some(libc::ENOSYS));
     let mut template = *b"RAM:unsupported-XXXXXX\0";
@@ -52,6 +51,9 @@ fn main() {
     let clone = file.try_clone().unwrap();
     trace(c"file-write-at");
     use std::os::fd::AsRawFd;
+    let mut unsupported = libc::pollfd { fd: file.as_raw_fd(), events: libc::POLLIN, revents: 0 };
+    assert_eq!(unsafe { libc::poll(&mut unsupported, 1, 0) }, -1);
+    assert_eq!(std::io::Error::last_os_error().raw_os_error(), Some(libc::EOPNOTSUPP));
     assert_ne!(unsafe { libc::fcntl(clone.as_raw_fd(), libc::F_GETFD) } & libc::FD_CLOEXEC, 0);
     let plain = unsafe { libc::fcntl(file.as_raw_fd(), libc::F_DUPFD, 20) };
     assert!(plain >= 20);
@@ -71,8 +73,7 @@ fn main() {
         // The application libc and std read the same native task-local errno.
         assert_eq!(unsafe { libc::fork() }, -1);
         assert_eq!(std::io::Error::last_os_error().raw_os_error(), Some(libc::ENOSYS));
-        assert_eq!(unsafe { libc::poll(std::ptr::null_mut(), 0, 0) }, -1);
-        assert_eq!(std::io::Error::last_os_error().raw_os_error(), Some(libc::ENOSYS));
+        assert_eq!(unsafe { libc::poll(std::ptr::null_mut(), 0, 0) }, 0);
         assert_eq!(unsafe { libc::mmap(std::ptr::null_mut(), 4096, 0, 0, -1, 0) }, (-1isize) as *mut libc::c_void);
         assert_eq!(std::io::Error::last_os_error().raw_os_error(), Some(libc::ENOSYS));
         for _ in 0..128 {

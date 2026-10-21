@@ -88,7 +88,11 @@ Socket duplication and nonblocking mode use AROS operations. Connection timeout
 uses single-socket native readiness followed by `SO_ERROR`, without depending
 on Linux poll event semantics. IPv4 multicast TTL/loop options use the native
 one-byte payload. Unsupported socketpair and message/ancillary transport report
-explicit errors. Generic POSIX poll and process execution retain their
+explicit errors. Socket-only batch poll uses native operation 17 with a single
+wait context and deadline; POSIX files, DOS pipes and legacy owners return
+EOPNOTSUPP. General POSIX readiness and pipe wakers remain unsupported. See
+`developer/debug/test/native-poll/README.md` at the core root for the exact
+ERR/HUP/invalid-fd and concurrent-close contract. Process execution retains its
 unsupported implementation. `FD_CLOEXEC` is stored metadata; an execution backend
 must consume it before inheritance can be qualified. Native `dup2` replacement
 and enabled `SO_LINGER` are outside the owned socket contract.
@@ -143,7 +147,8 @@ direct libc dependency. It checks the native ELF format, unresolved symbols,
 absence of allocated GOT relocations and unchanged input identities. Its
 runtime probe expects the arguments `alpha beta`; success requires its marker
 and a clean supervised return. It validates argc/argv, native UDP/options,
-application libc calls and the honest ENOSYS result of unsupported generic poll.
+application libc calls, a real empty native poll and explicit EOPNOTSUPP for
+regular-file poll. `poll-probe.rs` adds actual socket batch readiness diagnostics.
 It requires and prints the actual POSIX runtime revision. Its trace and panic
 messages use the native serial debug path independently of redirected logs.
 It also verifies `F_DUPFD`/`F_DUPFD_CLOEXEC` flags and minimum descriptor numbers,

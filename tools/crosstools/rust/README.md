@@ -98,8 +98,12 @@ a filesystem copy under `Libs/` cannot replace an already resident module.
 
 Socket duplication, nonblocking mode and single-socket readiness use native
 operations. Numeric resolver conversion, TCP/UDP loopback and RAM positioned
-I/O have guest diagnostics. Generic poll, process execution, Unix socket pairs
-and message/ancillary transport remain explicitly unavailable. FD_CLOEXEC
+I/O have guest diagnostics. Socket-only batch poll has native operation 17;
+its admission, event masks and shared wait engine have a coupled host fixture
+in `developer/debug/test/native-poll`. Valid regular files, DOS pipes and legacy
+owners report EOPNOTSUPP, so general POSIX poll and pipe wakers remain outside
+that contract. Process execution, Unix socket pairs and message/ancillary
+transport remain explicitly unavailable. FD_CLOEXEC
 metadata does not establish qualified process inheritance. Missing interface
 name lookup returns zero with ENOSYS; unsupported mkdtemp returns NULL with
 ENOSYS and does not modify its template.

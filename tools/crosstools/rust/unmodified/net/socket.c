@@ -8,6 +8,7 @@
 #include <netinet/in.h>
 #include <errno.h>
 #include <stdint.h>
+#include <fcntl.h>
 #include <string.h>
 
 static ssize_t invoke(struct aros_socket_request *request)
@@ -243,4 +244,28 @@ ssize_t aros_rs_recvfrom(int fd, void *buffer, size_t length, int flags,
         .arg0 = flags, .buffer = buffer, .length = length,
         .address = address, .address_length = address_length};
     return invoke(&request);
+}
+
+/* pollfd is kept as its exact C/libc scalar ABI, not an fd_set or host tag. */
+int aros_rs_poll(struct aros_socket_pollfd *fds, unsigned int count, int timeout)
+{
+    struct aros_socket_request request = {.operation = AROS_SOCKET_POLL_BATCH,
+        .arg1 = timeout, .buffer = fds, .length = count};
+    int result;
+    unsigned int i;
+    if (count && !fds) { errno = EFAULT; return -1; }
+    if (timeout < -1) { errno = EINVAL; return -1; }
+    result = (int)invoke(&request);
+    if (result < 0) return -1;
+    /* stdin/out/err are task-local POSIX slots, unlike global socket numbers.
+       The stack cannot identify them: refuse valid local slots explicitly. */
+    for (i = 0; i < count; i++) {
+        if ((fds[i].revents & AROS_POLL_NVAL) && fds[i].fd >= 0 && fds[i].fd <= 2) {
+            int saved_errno = errno;
+            if (fcntl(fds[i].fd, F_GETFD) >= 0) { errno = EOPNOTSUPP; return -1; }
+            if (errno != EBADF) return -1;
+            errno = saved_errno;
+        }
+    }
+    return result;
 }

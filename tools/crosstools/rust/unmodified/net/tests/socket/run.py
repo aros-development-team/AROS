@@ -46,7 +46,7 @@ def main():
         shutil.copy2(p, destination)
     native_include = snapshots / 'native-contract'
     common = [args.cc, '-std=c11', '-Wall', '-Wextra', '-Werror', '-g', '-O1',
-              '-fsanitize=address,undefined', '-fno-omit-frame-pointer',
+              '-fsanitize=address,undefined', '-fno-omit-frame-pointer', '-Dfcntl=aros_fixture_fcntl',
               '-I' + str(here / 'include'), '-I' + str(native_include), '-I' + str(net)]
     commands = [[args.cc, '--version']]
     for production, fixture, binary in [('socket.c', 'bridge_host.c', 'socket-host'),

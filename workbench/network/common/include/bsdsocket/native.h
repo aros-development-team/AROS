@@ -24,6 +24,16 @@
 #define AROS_SOCKET_CLOSE 14
 #define AROS_SOCKET_NONBLOCK 15
 #define AROS_SOCKET_POLL 16
+#define AROS_SOCKET_POLL_BATCH 17
+#define AROS_POLL_IN 0x01
+#define AROS_POLL_PRI 0x02
+#define AROS_POLL_OUT 0x04
+#define AROS_POLL_ERR 0x08
+#define AROS_POLL_HUP 0x10
+#define AROS_POLL_NVAL 0x20
+
+/* Exact libc pollfd scalar layout, independent of compiler pointer width. */
+struct aros_socket_pollfd { LONG fd; WORD events; WORD revents; };
 #define AROS_SOCKET_POLL_READ 1
 #define AROS_SOCKET_POLL_WRITE 2
 #define AROS_SOCKET_POLL_EXCEPTION 4
@@ -46,6 +56,15 @@
  * (-1 indefinite),result=ready mask; 0 means timeout. Mask4 denotes native
  * exceptional/urgent readiness, not SO_ERROR. Connection completion must use
  * GETOPT(SO_ERROR) after writable readiness. Errors use native errno.
+ * POLL_BATCH: buffer=aros_socket_pollfd[length], arg1=timeout milliseconds;
+ * result=number of entries with nonzero revents. Negative fd entries are
+ * ignored; invalid entries report NVAL. Only owned sockets are supported:
+ * other descriptor owners return EOPNOTSUPP, never synthetic readiness.
+ * ERR/HUP are reported regardless of requested events; PRI is urgent data.
+ * Leases keep the admitted socket identity alive during concurrent close and
+ * number reuse. Close does not cancel an already admitted wait. EINTR is
+ * returned on native task interruption. One timer spans all spurious wakes.
+ * A read half-close is readable EOF; HUP denotes a fully disconnected stream.
  * SO_LINGER with enabled linger is unsupported: deferred close cannot borrow
  * a caller's sleep context after that caller returns.
  */

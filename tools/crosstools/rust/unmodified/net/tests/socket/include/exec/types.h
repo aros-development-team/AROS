@@ -6,6 +6,8 @@
 #define TEST_EXEC_TYPES_H
 #include <stdint.h>
 typedef uint32_t ULONG;
+typedef uint16_t UWORD;
+typedef int16_t WORD;
 typedef int32_t LONG;
 typedef uintptr_t IPTR;
 typedef intptr_t SIPTR;

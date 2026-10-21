@@ -47,6 +47,7 @@
 #include <api/allocdatabuffer.h>
 
 #include <api/apicalls.h>
+#include <api/native_socket.h>
 
 #if defined(ENABLE_FDLIBRARY)
 #include <libraries/fd.h>
@@ -395,11 +396,13 @@ void select_init(void)
  * Althrough the fd_set is used as the type of the masks, the size
  * of the fd_set is not fixed, and is indeed calculated from nfds.
  */
-LONG __WaitSelect(ULONG nfds, fd_set *readfds, fd_set *writefds, fd_set *exeptfds,
-                  struct timeval *timeout, ULONG *sigmp, struct SocketBase *libPtr)
+static LONG wait_select(ULONG nfds, fd_set *readfds, fd_set *writefds, fd_set *exeptfds,
+                  struct timeval *timeout, ULONG *sigmp, struct SocketBase *libPtr,
+                  native_poll_scan_fn scan, APTR scan_data)
 {
     fd_mask *obits;
     u_int obitsize;  /* in bytes */
+    u_int select_offset;
     int error, retval;
     int selitemcount;
     ULONG sigmask = sigmp ? *sigmp : 0;
@@ -432,7 +435,11 @@ LONG __WaitSelect(ULONG nfds, fd_set *readfds, fd_set *writefds, fd_set *exeptfd
      */
 
     obitsize = howmany(nfds, NFDBITS) * sizeof(fd_mask);
-    if(allocDataBuffer(&libPtr->selitems, 3 * obitsize) == FALSE) {
+    /* Three 32-bit masks can end at an unaligned address on LP64. Keep
+       bitset strides unchanged while aligning the following pointer fields. */
+    select_offset = (3 * obitsize + __alignof__(struct newselbuf) - 1) &
+                    ~(__alignof__(struct newselbuf) - 1);
+    if(allocDataBuffer(&libPtr->selitems, obitsize ? 3 * obitsize : 1) == FALSE) {
         error = ENOMEM;
         goto Return;
     }
@@ -447,8 +454,9 @@ LONG __WaitSelect(ULONG nfds, fd_set *readfds, fd_set *writefds, fd_set *exeptfd
      */
     libPtr->p_sb = 0;
     ObtainSyscallSemaphore(libPtr);
-    error = selscan(libPtr, readfds, writefds, exeptfds,
-                    obits, nfds, &retval, &selitemcount);
+    error = scan ? scan(libPtr, scan_data, &retval, &selitemcount) :
+        selscan(libPtr, readfds, writefds, exeptfds,
+                obits, nfds, &retval, &selitemcount);
     ReleaseSyscallSemaphore(libPtr);
 
     /*
@@ -458,16 +466,10 @@ LONG __WaitSelect(ULONG nfds, fd_set *readfds, fd_set *writefds, fd_set *exeptfd
         if(timeout == NULL || timeout->tv_secs != 0L || timeout->tv_micro != 0L) {
 
             /*
-             * Send timeout if there is any.
-             */
-            if(timeout)
-                tsleep_send_timeout(libPtr, timeout);
-
-            /*
              * Now, make sure there is room for all the selitems...
              */
             if(allocDataBuffer(&libPtr->selitems,
-                               3 * obitsize + sizeof(struct newselbuf) +
+                               select_offset + sizeof(struct newselbuf) +
                                selitemcount * sizeof(struct newselitem)) == FALSE) {
                 error = ENOMEM;
                 goto Return;
@@ -480,7 +482,12 @@ LONG __WaitSelect(ULONG nfds, fd_set *readfds, fd_set *writefds, fd_set *exeptfd
                 obits = (fd_mask *)libPtr->selitems.db_Addr;
                 aligned_bzero((caddr_t)obits, 3 * obitsize);
             }
-            newselbuf = (struct newselbuf *)((caddr_t)obits + (3 * obitsize));
+            newselbuf = (struct newselbuf *)((caddr_t)obits + select_offset);
+
+            /* Arm once, after allocation succeeds. Spurious wakes retain
+               the same deadline; failed setup never leaves a timer armed. */
+            if(timeout)
+                tsleep_send_timeout(libPtr, timeout);
 
             while(TRUE) {
 
@@ -496,8 +503,9 @@ LONG __WaitSelect(ULONG nfds, fd_set *readfds, fd_set *writefds, fd_set *exeptfd
                 libPtr->p_sb = newselbuf;
 
                 ObtainSyscallSemaphore(libPtr);
-                error = selscan(libPtr, readfds, writefds, exeptfds,
-                                obits, nfds, &retval, &selitemcount);
+                error = scan ? scan(libPtr, scan_data, &retval, &selitemcount) :
+                    selscan(libPtr, readfds, writefds, exeptfds,
+                            obits, nfds, &retval, &selitemcount);
                 ReleaseSyscallSemaphore(libPtr);
                 if(error || retval) {
                     ObtainSemaphore(&select_semaphore);
@@ -538,7 +546,9 @@ LONG __WaitSelect(ULONG nfds, fd_set *readfds, fd_set *writefds, fd_set *exeptfd
                          * changed; it is now accepted to call it even after the timeout
                          * has expired.
                          */
-                        if(error == ERESTART || error == EWOULDBLOCK)
+                        if(error == ERESTART)
+                            error = scan ? EINTR : 0;
+                        else if(error == EWOULDBLOCK)
                             error = 0;
 
                         break;		/* do not scan now */
@@ -551,8 +561,9 @@ LONG __WaitSelect(ULONG nfds, fd_set *readfds, fd_set *writefds, fd_set *exeptfd
                  */
                 libPtr->p_sb = 0;
                 ObtainSyscallSemaphore(libPtr);
-                error = selscan(libPtr, readfds, writefds, exeptfds,
-                                obits, nfds, &retval, &selitemcount);
+                error = scan ? scan(libPtr, scan_data, &retval, &selitemcount) :
+                    selscan(libPtr, readfds, writefds, exeptfds,
+                            obits, nfds, &retval, &selitemcount);
                 ReleaseSyscallSemaphore(libPtr);
                 if(error || retval)
                     break;
@@ -587,6 +598,19 @@ Return:
 #undef putbits
 
     API_STD_RETURN(error, retval);
+}
+
+/* Keep the public select entry point and its bitset semantics unchanged. */
+LONG __WaitSelect(ULONG nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
+                  struct timeval *timeout, ULONG *sigmp, struct SocketBase *libPtr)
+{
+    return wait_select(nfds, readfds, writefds, exceptfds, timeout, sigmp, libPtr, NULL, NULL);
+}
+
+LONG __WaitNativePoll(ULONG nfds, struct timeval *timeout, struct SocketBase *libPtr,
+                       native_poll_scan_fn scan, APTR data)
+{
+    return wait_select(nfds, NULL, NULL, NULL, timeout, NULL, libPtr, scan, data);
 }
 
 AROS_LH6(LONG, WaitSelect,
