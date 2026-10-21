@@ -193,6 +193,8 @@ void AROS_SLIB_ENTRY(RS_gai_strerror, UL, 137)(void);
 void AROS_SLIB_ENTRY(RS_getnameinfo, UL, 138)(void);
 #endif
 
+void AROS_SLIB_ENTRY(NativeSocket, UL, 139)(void);
+
 /* TODO: following functions are not implemented yet */
 
 f_void UserLibrary_funcTable[] = {
@@ -350,6 +352,9 @@ f_void UserLibrary_funcTable[] = {
     AROS_SLIB_ENTRY(RS_getaddrinfo, UL, 136),
     AROS_SLIB_ENTRY(RS_gai_strerror, UL, 137),
     AROS_SLIB_ENTRY(RS_getnameinfo, UL, 138),
+#endif
+#if defined(__CONFIG_ROADSHOW__)
+    AROS_SLIB_ENTRY(NativeSocket, UL, 139),
 #endif
     /* TODO: Following functions are not implemented yet */
 

@@ -134,7 +134,7 @@ KERN_H= \
 # Amiga "struct Library" interface, API functions,
 API_C=\
 	api/amiga_api api/amiga_libtables api/amiga_syscalls \
-	api/amiga_fdhooks \
+	api/amiga_fdhooks api/native_socket \
 	api/amiga_sendrecv api/amiga_generic api/amiga_generic2 \
 	api/amiga_libcalls api/amiga_errlists api/amiga_kernvars \
         api/amiga_ndbent api/amiga_netstat \
@@ -147,7 +147,7 @@ API_C=\
         api/getifaddrs api/inet_pton api/inet_ntop
 
 API_H=\
-	api/amiga_raf.h api/amiga_api.h api/amiga_libcallentry.h \
+	api/native_socket.h api/amiga_raf.h api/amiga_api.h api/amiga_libcallentry.h \
 	api/allocdatabuffer.h api/dns_cache.h api/gethtbynamadr.h \
 	api/resolv.h api/sockargs.h \
 	api/apicalls.h api/miami_api.h api/netservice_api.h

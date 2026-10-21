@@ -56,20 +56,10 @@
 
     if (!fdesc)
     {
-        /* Not a local posixc file descriptor: it may be a socket or other
-           fd.library-owned descriptor.  Dispatch through its hooks. */
-        APTR data;
-        const struct fd_hooks *hooks = __getfdhooks(fd, &data);
-        if (hooks && hooks->fdh_read)
-        {
-            LONG err = 0;
-            cnt = (ssize_t)hooks->fdh_read(data, fd, buf, count, &err);
-            if (cnt < 0)
-                errno = err;
-            return cnt;
-        }
-        errno = EBADF;
-        return -1;
+        LONG err=0;
+        ssize_t result=(ssize_t)__fdhook(fd,__FDH_READ,(IPTR)buf,count,0,&err);
+        if (result<0) errno=err;
+        return result;
     }
 
     if(fdesc->fcb->privflags & _FCB_ISDIR)

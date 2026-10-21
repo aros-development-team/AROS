@@ -3,6 +3,7 @@
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
  * Copyright (C) 2005-2026 The AROS Dev Team
+ * Copyright (C) 2026 John KNIPPER <code@jkn.me>.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -306,6 +307,8 @@ main(int argc, char *argv[])
 
             if((sig & breakmask) || ctrl_shutdown) {
                 int i;
+                ULONG open_count;
+                BOOL fd_busy;
 
                 ctrl_shutdown = FALSE;      /* consume: one stop attempt per request */
 
@@ -329,20 +332,24 @@ main(int argc, char *argv[])
                  * was signalled to stop above and closes its own base as it
                  * shuts down, so the open count drops to the NETTRACE baseline
                  * without any special accounting here. */
-                for(i = 0; i < 3 && MasterSocketBase->lib_OpenCnt > 1; i++) {
+                for(i = 0; i < 3 && api_open_count() > 1; i++) {
                     Delay(50);		          /* give tasks time to close socket base */
                 }
 
-                if(MasterSocketBase->lib_OpenCnt > 1) {
+                open_count = api_open_count();
+                fd_busy = open_count <= 1 && !api_quiesce_fd();
+                if(open_count > 1 || fd_busy) {
 #if defined(__AROS__)
-                    D(bug("[AROSTCP](amiga_main.c) main: Got CTRL-C while %ld %s still open.\n",
-                          MasterSocketBase->lib_OpenCnt - 1,
-                          (MasterSocketBase->lib_OpenCnt == 2) ? "library" : "libraries"));
+                    D(bug("[AROSTCP](amiga_main.c) main: shutdown busy: open=%lu fd=%ld.\n",
+                          (unsigned long)open_count, (long)fd_busy));
 #endif
 
-                    __log(LOG_ERR, "Got CTRL-C while %d %s still open.\n",
-                          (MasterSocketBase->lib_OpenCnt - 1),
-                          (MasterSocketBase->lib_OpenCnt == 2) ? "library" : "libraries");
+                    if (fd_busy)
+                        __log(LOG_ERR, "Got CTRL-C while fd operations remain active.\n");
+                    else
+                        __log(LOG_ERR, "Got CTRL-C while %d %s still open.\n",
+                              (open_count - 1),
+                              (open_count == 2) ? "library" : "libraries");
 
                     api_logopeners(); /* name the task(s) still holding a base */
 
@@ -553,6 +560,12 @@ deinit_all(void)
 
     api_hide();			/* hides the API from users */
     D(Printf("api_hide() completed\n");)
+
+    /* Leased fd operations and their finalizers must drain before pool,
+       interface, timer or log teardown. Normal shutdown already passed this
+       gate before leaving its service loop. */
+    while (!api_quiesce_fd())
+        Delay(1);
 
     /*
      * Remove the control port so no new RELOAD/SHUTDOWN arrives during

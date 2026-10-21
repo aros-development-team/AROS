@@ -3,6 +3,7 @@
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
  * Copyright (C) 2005-2026 The AROS Dev Team
+ * Copyright (C) 2026 John KNIPPER <code@jkn.me>.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -218,6 +219,7 @@ extern ULONG api_reconfig_generation;   /* bumped after each completed reload  *
 extern ULONG api_reconfig_expected;     /* consumers signalled at reconfigure-begin */
 extern volatile ULONG api_reconfig_acked; /* consumers that acked (SBTC_RECONFIG_ACK) */
 VOID api_deinit(VOID);
+BOOL api_quiesce_fd(VOID);
 
 /* Function which sets Errno value */
 

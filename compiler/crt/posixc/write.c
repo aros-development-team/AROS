@@ -54,20 +54,10 @@
     fdesc *fdesc = __getfdesc(fd);
     if (!fdesc)
     {
-        /* Not a local posixc file descriptor: dispatch to the owning
-           subsystem's hooks (e.g. a bsdsocket socket). */
-        APTR data;
-        const struct fd_hooks *hooks = __getfdhooks(fd, &data);
-        if (hooks && hooks->fdh_write)
-        {
-            LONG err = 0;
-            cnt = (ssize_t)hooks->fdh_write(data, fd, buf, count, &err);
-            if (cnt < 0)
-                errno = err;
-            return cnt;
-        }
-        errno = EBADF;
-        return -1;
+        LONG err=0;
+        ssize_t result=(ssize_t)__fdhook(fd,__FDH_WRITE,(IPTR)buf,count,0,&err);
+        if (result<0) errno=err;
+        return result;
     }
 
     cnt = __dos64_write (fdesc->fcb, (void *)buf, count);

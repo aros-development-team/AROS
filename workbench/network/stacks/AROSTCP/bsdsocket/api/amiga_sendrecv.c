@@ -283,16 +283,8 @@ AROS_LH4(LONG, recv,
    REG(a1, caddr_t from),
    REG(a2, LONG * fromlenaddr),
    REG(a6, struct SocketBase *libPtr))*/
-AROS_LH6(LONG, recvfrom,
-         AROS_LHA(LONG, s, D0),
-         AROS_LHA(caddr_t, buf, A0),
-         AROS_LHA(LONG, len, D1),
-         AROS_LHA(LONG, flags, D2),
-         AROS_LHA(caddr_t, from, A1),
-         AROS_LHA(LONG *, fromlenaddr, A2),
-         struct SocketBase *, libPtr, 12, UL)
+LONG native_recvfrom(LONG s, caddr_t buf, LONG len, LONG flags, caddr_t from, LONG *fromlenaddr, struct SocketBase *libPtr)
 {
-    AROS_LIBFUNC_INIT
     struct msghdr	msg;
     struct iovec aiov;
     LONG error, retval;
@@ -316,6 +308,19 @@ AROS_LH6(LONG, recvfrom,
     ReleaseSyscallSemaphore(libPtr);
 
     API_STD_RETURN(error, retval);
+}
+
+AROS_LH6(LONG, recvfrom,
+         AROS_LHA(LONG, s, D0),
+         AROS_LHA(caddr_t, buf, A0),
+         AROS_LHA(LONG, len, D1),
+         AROS_LHA(LONG, flags, D2),
+         AROS_LHA(caddr_t, from, A1),
+         AROS_LHA(LONG *, fromlenaddr, A2),
+         struct SocketBase *, libPtr, 12, UL)
+{
+    AROS_LIBFUNC_INIT
+    return native_recvfrom(s, buf, len, flags, from, fromlenaddr, libPtr);
     AROS_LIBFUNC_EXIT
 }
 

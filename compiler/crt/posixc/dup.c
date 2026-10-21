@@ -1,10 +1,12 @@
 /*
+    Copyright (C) 2026 John KNIPPER <code@jkn.me>.
     Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
 
     POSIX.1-2008 function dup().
 */
 
 #include <errno.h>
+#include <fcntl.h>
 #include "__fdesc.h"
 
 /*****************************************************************************
@@ -55,6 +57,6 @@
 
 ******************************************************************************/
 {
-    return dup2(oldfd, __getfirstfd(0));
+    return fcntl(oldfd, F_DUPFD, 0);
 }
 

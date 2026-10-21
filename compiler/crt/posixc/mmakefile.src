@@ -167,6 +167,8 @@ POSIXC := \
     pipe \
     pread \
     pread64 \
+    pwrite \
+    pwrite64 \
     popen \
     posix_fadvise \
     posix_memalign \

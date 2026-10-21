@@ -146,13 +146,8 @@ AROS_LH3(LONG, socket,
    REG(a0, caddr_t name),
    REG(d1, LONG namelen),
    REG(a6, struct SocketBase *libPtr))*/
-AROS_LH3(LONG, bind,
-         AROS_LHA(LONG, s, D0),
-         AROS_LHA(caddr_t, name, A0),
-         AROS_LHA(LONG, namelen, D1),
-         struct SocketBase *, libPtr, 6, UL)
+LONG native_bind(LONG s, caddr_t name, LONG namelen, struct SocketBase *libPtr)
 {
-    AROS_LIBFUNC_INIT
     struct socket *so;
     struct mbuf *nam;
     LONG error;
@@ -176,6 +171,16 @@ AROS_LH3(LONG, bind,
 Return:
     ReleaseSyscallSemaphore(libPtr);
     API_STD_RETURN(error, 0);
+}
+
+AROS_LH3(LONG, bind,
+         AROS_LHA(LONG, s, D0),
+         AROS_LHA(caddr_t, name, A0),
+         AROS_LHA(LONG, namelen, D1),
+         struct SocketBase *, libPtr, 6, UL)
+{
+    AROS_LIBFUNC_INIT
+    return native_bind(s, name, namelen, libPtr);
     AROS_LIBFUNC_EXIT
 }
 
@@ -183,12 +188,8 @@ Return:
    REG(d0, LONG s),
    REG(d1, LONG backlog),
    REG(a6, struct SocketBase *libPtr))*/
-AROS_LH2(LONG, listen,
-         AROS_LHA(LONG, s, D0),
-         AROS_LHA(LONG, backlog, D1),
-         struct SocketBase *, libPtr, 7, UL)
+LONG native_listen(LONG s, LONG backlog, struct SocketBase *libPtr)
 {
-    AROS_LIBFUNC_INIT
     struct socket *so;
     LONG error;
 
@@ -207,6 +208,15 @@ AROS_LH2(LONG, listen,
 Return:
     ReleaseSyscallSemaphore(libPtr);
     API_STD_RETURN(error, 0);
+}
+
+AROS_LH2(LONG, listen,
+         AROS_LHA(LONG, s, D0),
+         AROS_LHA(LONG, backlog, D1),
+         struct SocketBase *, libPtr, 7, UL)
+{
+    AROS_LIBFUNC_INIT
+    return native_listen(s, backlog, libPtr);
     AROS_LIBFUNC_EXIT
 }
 
@@ -215,17 +225,12 @@ Return:
    REG(a0, caddr_t name),
    REG(a1, ULONG *anamelen),
    REG(a6, struct SocketBase *libPtr))*/
-AROS_LH3(LONG, accept,
-         AROS_LHA(LONG, s, D0),
-         AROS_LHA(caddr_t, name, A0),
-         AROS_LHA(socklen_t *, anamelen, A1),
-         struct SocketBase *, libPtr, 8, UL)
+LONG native_accept(LONG s, caddr_t name, socklen_t *anamelen, struct SocketBase *libPtr, struct socket **detached)
 {
-    AROS_LIBFUNC_INIT
     struct socket *so;
     struct mbuf *nam;
     spl_t old_spl;
-    LONG error, fd;
+    LONG error, fd = 0;
     D(int i;)
 
 #if defined(__AROS__)
@@ -270,6 +275,7 @@ AROS_LH3(LONG, accept,
         goto Return_spl;
     }
 
+    if (!detached) {
     if(error = sdFind(libPtr, &fd)) {
         m_freem(nam);
         goto Return_spl;
@@ -287,6 +293,8 @@ AROS_LH3(LONG, accept,
             goto Return_spl;
         }
 
+    }
+
     {
         struct socket *aso = so->so_q;
         if(soqremque(aso, 1) == 0)
@@ -294,6 +302,11 @@ AROS_LH3(LONG, accept,
         so = aso;
     }
 
+    if (detached) {
+        so->so_refcnt = 1;
+        setSocketOwner(so, NULL);
+        *detached = so;
+    } else {
     libPtr->dTable[fd] = so;
     FD_SET(fd, (fd_set *)(libPtr->dTable + libPtr->dTableSize));
     so->so_refcnt = 1;  /* pure AmiTCP addition */
@@ -303,6 +316,8 @@ AROS_LH3(LONG, accept,
         FD_SetData(fd, FD_OWNER_BSDSOCKET, so);
     }
 #endif
+
+    }
 
     (void)soaccept(so, nam);  /* is this always successful */
     if(name && anamelen) {
@@ -321,6 +336,16 @@ Return:
     DSYSCALLS(__log(LOG_DEBUG, "accept() executed");)
     DSYSCALLS(dump_sockaddr_in((struct sockaddr_in *)name, libPtr);)
     API_STD_RETURN(error, fd);
+}
+
+AROS_LH3(LONG, accept,
+         AROS_LHA(LONG, s, D0),
+         AROS_LHA(caddr_t, name, A0),
+         AROS_LHA(socklen_t *, anamelen, A1),
+         struct SocketBase *, libPtr, 8, UL)
+{
+    AROS_LIBFUNC_INIT
+    return native_accept(s, name, anamelen, libPtr, NULL);
     AROS_LIBFUNC_EXIT
 }
 
@@ -399,12 +424,8 @@ AROS_LH3(LONG, connect,
    REG(d0, LONG s),
    REG(d1, LONG how),
    REG(a6, struct SocketBase *libPtr))*/
-AROS_LH2(LONG, shutdown,
-         AROS_LHA(LONG, s, D0),
-         AROS_LHA(LONG, how, D1),
-         struct SocketBase *, libPtr, 14, UL)
+LONG native_shutdown(LONG s, LONG how, struct SocketBase *libPtr)
 {
-    AROS_LIBFUNC_INIT
     struct socket *so;
     LONG error;
 
@@ -424,6 +445,15 @@ AROS_LH2(LONG, shutdown,
 Return:
     ReleaseSyscallSemaphore(libPtr);
     API_STD_RETURN(error, 0);
+}
+
+AROS_LH2(LONG, shutdown,
+         AROS_LHA(LONG, s, D0),
+         AROS_LHA(LONG, how, D1),
+         struct SocketBase *, libPtr, 14, UL)
+{
+    AROS_LIBFUNC_INIT
+    return native_shutdown(s, how, libPtr);
     AROS_LIBFUNC_EXIT
 }
 
@@ -434,15 +464,8 @@ Return:
    REG(a0, caddr_t val),
    REG(d3, ULONG valsize),
    REG(a6, struct SocketBase *libPtr))*/
-AROS_LH5(LONG, setsockopt,
-         AROS_LHA(LONG, s, D0),
-         AROS_LHA(LONG, level, D1),
-         AROS_LHA(LONG, name, D2),
-         AROS_LHA(caddr_t, val, A0),
-         AROS_LHA(ULONG, valsize, D3),
-         struct SocketBase *, libPtr, 15, UL)
+LONG native_setsockopt(LONG s, LONG level, LONG name, caddr_t val, ULONG valsize, struct SocketBase *libPtr)
 {
-    AROS_LIBFUNC_INIT
     struct socket *so;
     struct mbuf *m = NULL;
     LONG error;
@@ -478,6 +501,18 @@ Return:
     ReleaseSyscallSemaphore(libPtr);
     DOPTERR(if(error) __log(LOG_ERR, "setsockopt(): error %ld on option 0x%08lx, level 0x%08lx", error, name, level);)
         API_STD_RETURN(error, 0);
+}
+
+AROS_LH5(LONG, setsockopt,
+         AROS_LHA(LONG, s, D0),
+         AROS_LHA(LONG, level, D1),
+         AROS_LHA(LONG, name, D2),
+         AROS_LHA(caddr_t, val, A0),
+         AROS_LHA(ULONG, valsize, D3),
+         struct SocketBase *, libPtr, 15, UL)
+{
+    AROS_LIBFUNC_INIT
+    return native_setsockopt(s, level, name, val, valsize, libPtr);
     AROS_LIBFUNC_EXIT
 }
 
@@ -489,15 +524,8 @@ Return:
    REG(a0, caddr_t val),
    REG(a1, ULONG * avalsize),
    REG(a6, struct SocketBase * libPtr))*/
-AROS_LH5(LONG, getsockopt,
-         AROS_LHA(LONG, s, D0),
-         AROS_LHA(LONG, level, D1),
-         AROS_LHA(LONG, name, D2),
-         AROS_LHA(caddr_t, val, A0),
-         AROS_LHA(ULONG *, avalsize, A1),
-         struct SocketBase *, libPtr, 16, UL)
+LONG native_getsockopt(LONG s, LONG level, LONG name, caddr_t val, ULONG *avalsize, struct SocketBase *libPtr)
 {
-    AROS_LIBFUNC_INIT
     struct socket *so;
     struct mbuf *m = NULL;
     ULONG valsize, error;
@@ -532,6 +560,18 @@ Return:
     ReleaseSyscallSemaphore(libPtr);
     DOPTERR(if(error) __log(LOG_ERR, "setsockopt(): error %ld on option 0x%08lx, level 0x%08lx", error, name, level);)
         API_STD_RETURN(error, 0);
+}
+
+AROS_LH5(LONG, getsockopt,
+         AROS_LHA(LONG, s, D0),
+         AROS_LHA(LONG, level, D1),
+         AROS_LHA(LONG, name, D2),
+         AROS_LHA(caddr_t, val, A0),
+         AROS_LHA(ULONG *, avalsize, A1),
+         struct SocketBase *, libPtr, 16, UL)
+{
+    AROS_LIBFUNC_INIT
+    return native_getsockopt(s, level, name, val, avalsize, libPtr);
     AROS_LIBFUNC_EXIT
 }
 
@@ -540,13 +580,8 @@ Return:
    REG(a0, caddr_t asa),
    REG(a1, ULONG * alen),
    REG(a6, struct SocketBase * libPtr))*/
-AROS_LH3(LONG, getsockname,
-         AROS_LHA(LONG, fdes, D0),
-         AROS_LHA(caddr_t, asa, A0),
-         AROS_LHA(ULONG *, alen, A1),
-         struct SocketBase *, libPtr, 17, UL)
+LONG native_getsockname(LONG fdes, caddr_t asa, ULONG *alen, struct SocketBase *libPtr)
 {
-    AROS_LIBFUNC_INIT
     /*register*/
     struct socket *so;
     struct mbuf *m;
@@ -580,6 +615,16 @@ bad:
 Return:
     ReleaseSyscallSemaphore(libPtr);
     API_STD_RETURN(error, 0);
+}
+
+AROS_LH3(LONG, getsockname,
+         AROS_LHA(LONG, fdes, D0),
+         AROS_LHA(caddr_t, asa, A0),
+         AROS_LHA(ULONG *, alen, A1),
+         struct SocketBase *, libPtr, 17, UL)
+{
+    AROS_LIBFUNC_INIT
+    return native_getsockname(fdes, asa, alen, libPtr);
     AROS_LIBFUNC_EXIT
 }
 
@@ -588,13 +633,8 @@ Return:
    REG(a0, caddr_t asa),
    REG(a1, ULONG * alen),
    REG(a6, struct SocketBase * libPtr))*/
-AROS_LH3(LONG, getpeername,
-         AROS_LHA(LONG, fdes, D0),
-         AROS_LHA(caddr_t, asa, A0),
-         AROS_LHA(ULONG *, alen, A1),
-         struct SocketBase *, libPtr, 18, UL)
+LONG native_getpeername(LONG fdes, caddr_t asa, ULONG *alen, struct SocketBase *libPtr)
 {
-    AROS_LIBFUNC_INIT
     struct socket *so;
     struct mbuf *m;
     LONG error;
@@ -633,6 +673,16 @@ bad:
 Return:
     ReleaseSyscallSemaphore(libPtr);
     API_STD_RETURN(error, 0);
+}
+
+AROS_LH3(LONG, getpeername,
+         AROS_LHA(LONG, fdes, D0),
+         AROS_LHA(caddr_t, asa, A0),
+         AROS_LHA(ULONG *, alen, A1),
+         struct SocketBase *, libPtr, 18, UL)
+{
+    AROS_LIBFUNC_INIT
+    return native_getpeername(fdes, asa, alen, libPtr);
     AROS_LIBFUNC_EXIT
 }
 
