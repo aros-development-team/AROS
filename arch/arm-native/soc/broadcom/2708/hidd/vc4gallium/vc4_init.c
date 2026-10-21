@@ -299,6 +299,7 @@ static int HiddVC4Gallium_InitLib(LIBBASETYPEPTR LIBBASE)
     InitSemaphore(&LIBBASE->sd.render_lock);
     InitSemaphore(&LIBBASE->sd.mem_lock);
     NEWLIST(&LIBBASE->sd.arenas);
+    vc4_aros_ovl_init();
 
     /* Install the vblank int server that wakes GPU waiters (~50 Hz). */
     LIBBASE->sd.vblank_waiter = NULL;

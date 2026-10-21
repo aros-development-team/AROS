@@ -227,6 +227,12 @@ static struct {
 static struct SignalSemaphore aros_ovl_lock;
 static struct Task *aros_ovl_task;
 
+/* From InitLib: every GL app runs create_screen, concurrently. */
+void vc4_aros_ovl_init(void)
+{
+    InitSemaphore(&aros_ovl_lock);
+}
+
 /* vcgfx's per-vblank callback, mirrored from vcgfx_bitmap.h */
 struct vc4gfx_vblank
 {
@@ -881,16 +887,6 @@ struct pipe_screen *vc4_aros_create_screen(struct vc4_aros_bridge *bridge,
     vc4_read_render_scale();
 
     aros_drm_bridge = bridge;
-
-    {
-        static BOOL aros_ovl_lock_ready;
-
-        if (!aros_ovl_lock_ready)
-        {
-            InitSemaphore(&aros_ovl_lock);
-            aros_ovl_lock_ready = TRUE;
-        }
-    }
 
     /* Dispatch on driver_id (one mesa3dgl can carry several drivers, one
      * per Pi GPU gen). Only VC4 today; V3D slots into the commented case.

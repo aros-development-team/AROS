@@ -238,4 +238,7 @@ void vc4_aros_release_all_bos(struct vc4galliumstaticdata *sd);
 /* Free the BOs one session created. */
 void vc4_aros_release_session(struct vc4galliumstaticdata *sd, ULONG sid);
 
+/* aros_drm_vc4.c: the overlay state's lock, set up once from InitLib. */
+void vc4_aros_ovl_init(void);
+
 #endif /* _VC4_DRM_AROS_H */
