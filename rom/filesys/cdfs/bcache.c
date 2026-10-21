@@ -408,11 +408,12 @@ static LONG BCache_IO(struct BCache *bcache, ULONG cmd, ULONG block, ULONG block
         /* Stir the RNG */
         XorshiftRNG(&bp->bp_RNG);
         D(bug("%s: io_Error %d\n", __func__, io->io_Error));
-        return io->io_Error ? RETURN_ERROR : RETURN_OK;
+        return (io->io_Error || io->io_Actual != io->io_Length) ?
+            ERROR_SEEK_ERROR : RETURN_OK;
     }
 
-    D(bug("%s: Invalid command?\n", __func__));
-    return RETURN_FAIL;
+    D(bug("%s: Device transfer failed\n", __func__));
+    return ERROR_SEEK_ERROR;
 }
 
 /* Read block from disk to the buffer
