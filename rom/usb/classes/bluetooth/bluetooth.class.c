@@ -701,6 +701,9 @@ AROS_UFH0(void, nBTTask)
     struct IOBTHCIReq *ioreq2;
     struct BTHCIEventMsg *bem;
     ULONG len;
+    LONG lasteventerr = 0;
+    ULONG eventerrors = 0;
+    BOOL eventretry = FALSE;
 
     if((ncp = nAllocBT()))
     {
@@ -745,22 +748,29 @@ AROS_UFH0(void, nBTTask)
                     ioerr = psdGetPipeError(pp);
                     if(ioerr)
                     {
-                        psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
-                                       "BT Event reception failed: %s (%ld)",
-                                       psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+                        if(ioerr != lasteventerr)
+                        {
+                            psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+                                           "BT Event reception failed: %s (%ld)",
+                                           psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+                        }
+                        lasteventerr = ioerr;
+                        eventerrors++;
+                        eventretry = TRUE;
+                        if(ncp->ncp_CurrEventMsg)
+                        {
+                            /* Discard a partial event before retrying. */
+                            ncp->ncp_CurrEventMsg->bem_Msg.mn_Length = 0;
+                        }
+                        /* All four pipes share this port. Drain command and
+                           ACL replies before retrying the interrupt read. */
+                        continue;
                     }
+                    lasteventerr = 0;
+                    eventerrors = 0;
                     if((bem = ncp->ncp_CurrEventMsg))
                     {
                         len = psdGetPipeActual(pp);
-                        if(ioerr)
-                        {
-                            /* The partial event cannot be trusted; restart
-                               reception at an event boundary. Leaving the
-                               request unissued would stop all event delivery. */
-                            bem->bem_Msg.mn_Length = 0;
-                            psdSendPipe(ncp->ncp_EPEventIntPipe, &bem->bem_Event, ncp->ncp_EPEventIntMaxPktSize);
-                            continue;
-                        }
                         bem->bem_Msg.mn_Length += len;
                         if(bem->bem_Msg.mn_Length < 2)
                         {
@@ -973,6 +983,54 @@ AROS_UFH0(void, nBTTask)
                 ncp->ncp_ReadPending = ioreq;
                 psdSendPipe(ncp->ncp_EPACLInPipe, ioreq->iobt_Data, ioreq->iobt_Length);
             }
+            if(eventretry)
+            {
+                if(eventerrors >= 20)
+                {
+                    psdAddErrorMsg(RETURN_FAIL, (STRPTR) libname,
+                                   "BT Event reception stopped after 20 consecutive failures.");
+                    break;
+                }
+                if(SetSignal(0, 0) & SIGBREAKF_CTRL_C)
+                {
+                    break;
+                }
+                if(lasteventerr == UHIOERR_STALL)
+                {
+                    /* Do not reuse the asynchronous HCI command pipe or its
+                       reply signal while clearing the interrupt endpoint. */
+                    struct MsgPort *port = CreateMsgPort();
+                    if(port)
+                    {
+                        struct PsdPipe *clearpipe = psdAllocPipe(ncp->ncp_Device, port, NULL);
+                        if(clearpipe)
+                        {
+                            IPTR epnum;
+                            psdGetAttrs(PGA_ENDPOINT, ncp->ncp_EPEventInt,
+                                        EA_EndpointNum, &epnum, TAG_END);
+                            psdSetAttrs(PGA_PIPE, clearpipe,
+                                        PPA_NakTimeout, TRUE,
+                                        PPA_NakTimeoutTime, 50, TAG_END);
+                            psdPipeSetup(clearpipe, URTF_STANDARD|URTF_ENDPOINT,
+                                         USR_CLEAR_FEATURE, UFS_ENDPOINT_HALT, (ULONG)epnum|URTF_IN);
+                            psdDoPipe(clearpipe, NULL, 0);
+                            psdFreePipe(clearpipe);
+                        }
+                        DeleteMsgPort(port);
+                    }
+                }
+                psdDelayMS(50);
+                if(SetSignal(0, 0) & SIGBREAKF_CTRL_C)
+                {
+                    break;
+                }
+                eventretry = FALSE;
+                if((bem = ncp->ncp_CurrEventMsg))
+                {
+                    psdSendPipe(ncp->ncp_EPEventIntPipe, &bem->bem_Event,
+                                ncp->ncp_EPEventIntMaxPktSize);
+                }
+            }
             sigs = Wait(sigmask);
         } while(!(sigs & SIGBREAKF_CTRL_C));
         Forbid();
@@ -1008,9 +1066,14 @@ AROS_UFH0(void, nBTTask)
         }
         if(ncp->ncp_CurrEventMsg)
         {
-            KPRINTF(1, ("Aborting pending int...\n"));
-            psdAbortPipe(ncp->ncp_EPEventIntPipe);
-            psdWaitPipe(ncp->ncp_EPEventIntPipe);
+            /* A pending retry means GetMsg already consumed the pipe reply
+               and no new read was submitted. Only the buffer remains. */
+            if(!eventretry)
+            {
+                KPRINTF(1, ("Aborting pending int...\n"));
+                psdAbortPipe(ncp->ncp_EPEventIntPipe);
+                psdWaitPipe(ncp->ncp_EPEventIntPipe);
+            }
             psdFreeVec(ncp->ncp_CurrEventMsg);
             ncp->ncp_CurrEventMsg = NULL;
         }
