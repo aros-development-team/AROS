@@ -347,7 +347,10 @@ struct V3DSession
     BOOL                vs_Used;
     volatile BOOL       vs_Dead;    /* its task ended without a teardown */
     APTR                vs_Screen;  /* struct pipe_screen * */
-    struct Task        *vs_Task;    /* the one that created it */
+    /* The one that created it. Assumes a screen is destroyed by the task
+     * that created it, as mesa3dgl does: its exit marks the session dead
+     * and the next sweep frees its objects. */
+    struct Task        *vs_Task;
 };
 
 /* The session id an fd stands for, 0 for none. */
