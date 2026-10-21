@@ -377,7 +377,9 @@ static struct vc4_arena *arena_new(struct vc4galliumstaticdata *sd, ULONG want)
     base = ((IPTR)raw + VC4_BLOCK_MASK) & ~(IPTR)VC4_BLOCK_MASK;
 
     /* Clean first, or a dirty line of the previous owner lands on GPU
-     * data once the range is non-cacheable. */
+     * data once the range is non-cacheable. This relies on the
+     * aarch64-native CacheClearE(), which has the kernel clean the lines;
+     * the aarch64-all one it overrides does nothing. */
     CacheClearE((APTR)base, want, CACRF_ClearD);
 
     if (((UQUAD)base + want > VC4_PA_LIMIT)
@@ -512,6 +514,9 @@ static APTR gpu_mem_alloc(struct vc4galliumstaticdata *sd, ULONG size, ULONG ali
     ULONG gpu_handle;
 
 #if VC4_ARM_MEM
+    /* Arena chunks are page aligned and no finer: refuse a wider align. */
+    if (align > 4096)
+        return NULL;
     return arm_mem_alloc(sd, size, flags, out_handle);
 #endif
 
