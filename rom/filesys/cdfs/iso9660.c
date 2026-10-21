@@ -122,6 +122,10 @@ static BOOL isoParseDir(struct CDFSVolume *vol, struct ISOLock *il, struct isoDi
         il->il_Extent = isoRead32LM(&dir->ExtentLocation);
         il->il_PathTable = NULL;
     } else {
+        if (!iv || !iv->iv_PathTable.Entry || !il->il_PathTable ||
+            il->il_PathTable->ParentDirectory == 0 ||
+            il->il_PathTable->ParentDirectory > iv->iv_PathTable.Entries)
+            return FALSE;
         il->il_Extent = il->il_PathTable->ExtentLocation;
         iparent = iv->iv_PathTable.Entry[il->il_PathTable->ParentDirectory-1]->ExtentLocation;
     }
@@ -458,84 +462,64 @@ static VOID isoReadPathTables(struct CDFSVolume *vol)
     struct CDFS *cdfs = vol->cv_CDFSBase;
     struct BCache *bcache = vol->cv_Device->cd_BCache;
     struct ISOVolume *iv = vol->cv_Private;
-    ULONG sector;
     UBYTE *data, *dp;
-    LONG size, err;
-    int i;
+    ULONG size = iv->iv_PathTable.Size;
+    ULONG sector = iv->iv_PathTable.Extent;
+    ULONG entries = 0, i;
+    struct isoPathTable **table;
 
-    if (iv->iv_PathTable.Size == 0)
+    if (size == 0)
         return;
-
-    sector = iv->iv_PathTable.Extent;
-    size   = iv->iv_PathTable.Size;
-
-    D(bug("%s: Reading path table @0x%08x, %d bytes\n", __func__, sector * 2048, size));
     data = AllocVec(size, MEMF_PUBLIC);
     if (!data)
         return;
-
-    /* Read in the path table */
     dp = data;
-    while (size > 0) {
-        ULONG tocopy = size;
+    while (size) {
         UBYTE *cp;
-
-        if (tocopy > bcache->bc_BlockSize)
-            tocopy = bcache->bc_BlockSize;
-
-        err = BCache_Read(bcache, sector, &cp);
-        if (err != RETURN_OK) {
-            FreeVec(data);
-            return;
-        }
-
-        CopyMem(cp, dp, tocopy);
+        ULONG count = size < 2048 ? size : 2048;
+        if (BCache_Read(bcache, sector, &cp) != RETURN_OK)
+            goto bad_table;
+        CopyMem(cp, dp, count);
         sector++;
-        dp += tocopy;
-        size -= tocopy;
+        dp += count;
+        size -= count;
     }
-
-    /* Count the number of entries in the PathTable */
     size = iv->iv_PathTable.Size;
-    iv->iv_PathTable.Entries = 0;
     dp = data;
-    while (size > 0) {
-        UWORD len = (dp[0] + 8);
-        if (len & 1)
-            len++;
-        dp += len;
-        size -= len;
-        iv->iv_PathTable.Entries++;
+    while (size) {
+        ULONG length;
+        if (size < 8 || dp[0] == 0)
+            goto bad_table;
+        length = (8 + dp[0] + 1) & ~1;
+        if (length > size)
+            goto bad_table;
+        entries++;
+        dp += length;
+        size -= length;
     }
-
-    D(bug("%s: %d entries\n", __func__, iv->iv_PathTable.Entries));
-
-    if (iv->iv_PathTable.Entries == 0) {
-        FreeVec(data);
-        iv->iv_PathTable.Size = 0;
-        return;
+    if (entries > ~(ULONG)0 / sizeof(*table))
+        goto bad_table;
+    table = AllocVec(entries * sizeof(*table), MEMF_PUBLIC);
+    if (!table)
+        goto bad_table;
+    dp = data;
+    for (i = 0; i < entries; i++) {
+        struct isoPathTable *pt = (APTR)dp;
+        if (pt->ParentDirectory == 0 || pt->ParentDirectory > entries) {
+            FreeVec(table);
+            goto bad_table;
+        }
+        table[i] = pt;
+        dp += (8 + dp[0] + 1) & ~1;
     }
-
-    iv->iv_PathTable.Entry = AllocVec(sizeof(struct isoPathTable *)*iv->iv_PathTable.Entries, MEMF_PUBLIC);
-    if (iv->iv_PathTable.Entry == NULL) {
-        FreeVec(data);
-        iv->iv_PathTable.Size = 0;
-        return;
-    }
-
     iv->iv_PathTable.Data = data;
-
-    /* Compute the pathtable offsets */
-    dp = iv->iv_PathTable.Data;
-    for (i = 0; i < iv->iv_PathTable.Entries; i++) {
-        UWORD len = (dp[0] + 8);
-        if (len & 1)
-            len++;
-        iv->iv_PathTable.Entry[i] = (struct isoPathTable *)dp;
-        dp += len;
-    }
-
+    iv->iv_PathTable.Entry = table;
+    iv->iv_PathTable.Entries = entries;
     return;
+
+bad_table:
+    FreeVec(data);
+    iv->iv_PathTable.Size = 0;
 }
 
 LONG ISO9660_Mount(struct CDFSVolume *vol)
