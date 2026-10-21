@@ -814,7 +814,7 @@ static inline BOOL is_tmu_submit(ULONG waddr)
 }
 
 static void scan_shader_qpu(APTR shader_data, ULONG shader_size,
-                             struct vc4_bo_entry *bo)
+                             struct vc4_shader_meta *m)
 {
     UQUAD *inst = (UQUAD *)shader_data;
     ULONG num_inst = shader_size / 8;
@@ -867,7 +867,7 @@ static void scan_shader_qpu(APTR shader_data, ULONG shader_size,
                  * is the slot the kernel patches with the stream's GPU
                  * address. Mirrors require_uniform_address_uniform(). */
                 if (num_uniform_addr < VC4_MAX_UNIFORM_ADDR)
-                    bo->uniform_addr_offsets[num_uniform_addr++] =
+                    m->uniform_addr_offsets[num_uniform_addr++] =
                         uniforms_size / 4;
                 continue;
             }
@@ -906,7 +906,7 @@ static void scan_shader_qpu(APTR shader_data, ULONG shader_size,
                 if (tex_samples < VC4_MAX_TEX_SAMPLES)
                 {
                     struct vc4_texture_sample_info *s =
-                        &bo->texture_samples[tex_samples];
+                        &m->texture_samples[tex_samples];
                     s->is_direct = tmu_setup[tmu].is_direct;
                     for (j = 0; j < 4; j++)
                         s->p_offset[j] = tmu_setup[tmu].p_offset[j];
@@ -936,9 +936,9 @@ static void scan_shader_qpu(APTR shader_data, ULONG shader_size,
             uniforms_size += 4;
     }
 
-    bo->uniforms_size = uniforms_size;
-    bo->num_texture_samples = tex_samples;
-    bo->num_uniform_addr_offsets = num_uniform_addr;
+    m->uniforms_size = uniforms_size;
+    m->num_texture_samples = tex_samples;
+    m->num_uniform_addr_offsets = num_uniform_addr;
 
 }
 
@@ -1075,6 +1075,7 @@ static int ioctl_create_bo(struct vc4galliumstaticdata *sd, ULONG sid,
     sd->bo_table[handle].owner = sid;
     sd->bo_table[handle].seqno = 0;
     sd->bo_table[handle].is_shader = FALSE;
+    sd->bo_table[handle].shader = NULL;
     sd->bo_table[handle].cpu_mapped = FALSE;
     sd->bo_table[handle].tiling_modifier = 0; /* DRM_FORMAT_MOD_LINEAR */
 
@@ -1094,12 +1095,17 @@ static int ioctl_create_shader_bo(struct vc4galliumstaticdata *sd, ULONG sid,
     ULONG handle;
     APTR vaddr;
     ULONG gpu_handle;
+    struct vc4_shader_meta *meta;
+
+    if (!(meta = AllocVec(sizeof(*meta), MEMF_ANY | MEMF_CLEAR)))
+        return -1;
 
     ObtainSemaphore(&sd->bo_lock);
     handle = bo_alloc_handle(sd);
     if (handle == 0)
     {
         ReleaseSemaphore(&sd->bo_lock);
+        FreeVec(meta);
         return -1;
     }
 
@@ -1119,6 +1125,7 @@ static int ioctl_create_shader_bo(struct vc4galliumstaticdata *sd, ULONG sid,
         {
             ReleaseSemaphore(&sd->bo_lock);
             bug("[VC4Gallium] create_shader_bo: allocation failed for %d bytes (even after reclaim)\n", args->size);
+            FreeVec(meta);
             return -1;
         }
     }
@@ -1139,10 +1146,11 @@ static int ioctl_create_shader_bo(struct vc4galliumstaticdata *sd, ULONG sid,
     sd->bo_table[handle].owner = sid;
     sd->bo_table[handle].seqno = 0;
     sd->bo_table[handle].is_shader = TRUE;
+    sd->bo_table[handle].shader = meta;
     sd->bo_table[handle].cpu_mapped = FALSE;
     sd->bo_table[handle].tiling_modifier = 0; /* DRM_FORMAT_MOD_LINEAR */
 
-    scan_shader_qpu(vaddr, args->size, &sd->bo_table[handle]);
+    scan_shader_qpu(vaddr, args->size, meta);
 
     ReleaseSemaphore(&sd->bo_lock);
 
@@ -1150,8 +1158,7 @@ static int ioctl_create_shader_bo(struct vc4galliumstaticdata *sd, ULONG sid,
 
     D(bug("[VC4Gallium] create_shader_bo: handle=%d size=%d uniforms=%d tex=%d\n",
         handle, args->size,
-        sd->bo_table[handle].uniforms_size,
-        sd->bo_table[handle].num_texture_samples));
+        meta->uniforms_size, meta->num_texture_samples));
 
     return 0;
 }
@@ -1205,9 +1212,11 @@ void vc4_aros_bo_unref_locked(struct vc4galliumstaticdata *sd, ULONG handle)
         sd->bo_table[handle].external = FALSE;
         sd->bo_table[handle].owner = 0;
         sd->bo_table[handle].cpu_mapped = FALSE;
-        sd->bo_table[handle].uniforms_size = 0;
-        sd->bo_table[handle].num_texture_samples = 0;
-        sd->bo_table[handle].num_uniform_addr_offsets = 0;
+        if (sd->bo_table[handle].shader)
+        {
+            FreeVec(sd->bo_table[handle].shader);
+            sd->bo_table[handle].shader = NULL;
+        }
         D(bug("[VC4Gallium] bo_unref: freed handle=%d\n", handle));
     }
 }
@@ -1259,6 +1268,7 @@ static int ioctl_gem_open(struct vc4galliumstaticdata *sd, struct drm_gem_open *
     sd->bo_table[handle].owner = 0;
     sd->bo_table[handle].seqno = 0;
     sd->bo_table[handle].is_shader = FALSE;
+    sd->bo_table[handle].shader = NULL;
     sd->bo_table[handle].external = TRUE;
     sd->bo_table[handle].cpu_mapped = FALSE;
     sd->bo_table[handle].tiling_modifier = 0; /* DRM_FORMAT_MOD_LINEAR */
@@ -1923,7 +1933,13 @@ static int relocate_shader_recs(struct exec_state *exec,
                     "invalid shader handle %d\n", rec, i, shader_handle);
                 return -1;
             }
-            struct vc4_bo_entry *shader_bo = &exec->sd->bo_table[shader_handle];
+            struct vc4_shader_meta *shader_bo = exec->sd->bo_table[shader_handle].shader;
+            if (!shader_bo)
+            {
+                bug("[VC4Gallium] relocate_shader_recs: rec %d stage %d "
+                    "handle %d is not a shader BO\n", rec, i, shader_handle);
+                return -1;
+            }
             ULONG num_tex = shader_bo->num_texture_samples;
             ULONG num_uniforms = shader_bo->uniforms_size / 4;  /* Data words the QPU reads */
             ULONG src_total = num_tex + num_uniforms;  /* Total words in source per shader */
@@ -3383,6 +3399,11 @@ void vc4_aros_release_all_bos(struct vc4galliumstaticdata *sd)
             sd->bo_table[i].external = FALSE;
             sd->bo_table[i].owner = 0;
             sd->bo_table[i].cpu_mapped = FALSE;
+            if (sd->bo_table[i].shader)
+            {
+                FreeVec(sd->bo_table[i].shader);
+                sd->bo_table[i].shader = NULL;
+            }
         }
     }
 
