@@ -1199,7 +1199,7 @@ struct Lock *CmdCreateDir(struct Handler *handler,
 
    /* Find parent directory and possible name clash */
 
-   dir = GetHardObject(handler, lock, name, &parent);
+   dir = GetObjectNoFollow(handler, lock, name, &parent);
    lock = NULL;
 
    /* Create a new directory */
@@ -1903,14 +1903,14 @@ BOOL CmdRenameObject(struct Handler *handler, struct Lock *old_lock,
 
    /* Get object to be moved */
 
-   object = GetHardObject(handler, old_lock, old_name, NULL);
+   object = GetObjectNoFollow(handler, old_lock, old_name, NULL);
    if(object == NULL)
       error = IoErr();
 
    /* Get destination directory and check if a different object already has
       the target name */
 
-   duplicate = GetHardObject(handler, new_lock, new_name, &parent);
+   duplicate = GetObjectNoFollow(handler, new_lock, new_name, &parent);
    if(duplicate && duplicate != object)
       error = ERROR_OBJECT_EXISTS;
    if(parent == NULL)
@@ -1971,7 +1971,7 @@ BOOL CmdRenameObject(struct Handler *handler, struct Lock *old_lock,
          /* Update notifications */
 
          NotifyAll(handler, object, FALSE);
-         if(object->node.ln_Pri > 0)
+         if(object->node.ln_Pri > 0 && object->node.ln_Pri != ST_SOFTLINK)
             RematchNotifyRequests(handler);
          else
          {
@@ -2342,7 +2342,7 @@ BOOL CmdMakeLink(struct Handler *handler, struct Lock *lock, STRPTR name,
 
    /* Find parent directory and possible name clash */
 
-   link = GetHardObject(handler, lock, name, &parent);
+   link = GetObjectNoFollow(handler, lock, name, &parent);
    if(link != NULL)
       error = ERROR_OBJECT_EXISTS;
    else if(parent == NULL)
