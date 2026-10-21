@@ -490,7 +490,9 @@ struct V3DData
 
     /* Every GL screen in the system, id = index + 1; under bo_lock. The
      * task hook marks a session dead when its task ends without tearing
-     * it down, and the next screen created or destroyed sweeps it. */
+     * it down, and the next screen created or destroyed sweeps it. That
+     * hook runs as the task is removed and cannot wait, so it sets the
+     * volatile vs_Dead without the lock. */
     struct V3DSession sessions[V3D_MAX_SESSIONS];
     struct Hook     task_hook;
     APTR            task_res;

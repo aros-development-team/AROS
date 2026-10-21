@@ -174,14 +174,43 @@ static struct
 /* The session a pipe screen belongs to, 0 for none. */
 static ULONG v3d_session_of(struct V3DData *sd, APTR screen)
 {
-    ULONG i;
+    ULONG i, sid = 0;
 
+    ObtainSemaphore(&sd->bo_lock);
     for (i = 0; i < V3D_MAX_SESSIONS; i++)
     {
         if (sd->sessions[i].vs_Used && (sd->sessions[i].vs_Screen == screen))
-            return i + 1;
+        {
+            sid = i + 1;
+            break;
+        }
     }
-    return 0;
+    ReleaseSemaphore(&sd->bo_lock);
+    return sid;
+}
+
+/* GL apps with a live session. An app can hold more than one screen, and
+ * contention is between apps, so each task counts once. */
+static ULONG v3d_live_apps(struct V3DData *sd)
+{
+    struct V3DSession *s = sd->sessions;
+    ULONG i, j, n = 0;
+
+    ObtainSemaphore(&sd->bo_lock);
+    for (i = 0; i < V3D_MAX_SESSIONS; i++)
+    {
+        if (!s[i].vs_Used || s[i].vs_Dead)
+            continue;
+        for (j = 0; j < i; j++)
+        {
+            if (s[j].vs_Used && !s[j].vs_Dead && (s[j].vs_Task == s[i].vs_Task))
+                break;
+        }
+        if (j == i)
+            n++;
+    }
+    ReleaseSemaphore(&sd->bo_lock);
+    return n;
 }
 
 /* Raw drop, for the dirty-exit reset where the Mesa objects are gone. */
@@ -568,20 +597,26 @@ static void v3d_pipeline_reset(struct V3DData *sd)
 static void v3d_sweep_dead(struct V3DData *sd)
 {
     ULONG i;
+    BOOL dead = FALSE;
 
-    for (i = 0; i < V3D_MAX_SESSIONS; i++)
-    {
-        if (sd->sessions[i].vs_Used && sd->sessions[i].vs_Dead)
-            break;
-    }
-    if (i == V3D_MAX_SESSIONS)
+    ObtainSemaphore(&sd->bo_lock);
+    for (i = 0; (i < V3D_MAX_SESSIONS) && !dead; i++)
+        dead = sd->sessions[i].vs_Used && sd->sessions[i].vs_Dead;
+    ReleaseSemaphore(&sd->bo_lock);
+    if (!dead)
         return;
 
     v3d_wait_idle(sd);
 
     for (i = 0; i < V3D_MAX_SESSIONS; i++)
     {
-        if (!sd->sessions[i].vs_Used || !sd->sessions[i].vs_Dead)
+        /* Claim it, so a concurrent sweep leaves it alone. */
+        ObtainSemaphore(&sd->bo_lock);
+        dead = sd->sessions[i].vs_Used && sd->sessions[i].vs_Dead;
+        if (dead)
+            sd->sessions[i].vs_Dead = FALSE;
+        ReleaseSemaphore(&sd->bo_lock);
+        if (!dead)
             continue;
 
         ObtainSemaphore(&sd->ovl_lock);
@@ -697,7 +732,9 @@ APTR HiddV3D__Hidd_Gallium__CreatePipeScreen(OOP_Class *cl, OOP_Object *o,
         ReleaseSemaphore(&sd->bo_lock);
         return NULL;
     }
+    ObtainSemaphore(&sd->bo_lock);
     sd->sessions[i].vs_Screen = screen;
+    ReleaseSemaphore(&sd->bo_lock);
 
     D(bug("[V3D] pipe_screen at %p\n", screen));
     return screen;
@@ -955,18 +992,9 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
         v3d_ovl.refused = NULL;
     scan_free = !v3d_scan.rsc || (v3d_scan.owner == sid);
 
-    /* One plane, several sessions: everyone blits, and whoever holds
-     * the plane gives it up. */
-    {
-        ULONG i, live = 0;
-
-        for (i = 0; i < V3D_MAX_SESSIONS; i++)
-        {
-            if (sd->sessions[i].vs_Used && !sd->sessions[i].vs_Dead)
-                live++;
-        }
-        multi = (live > 1);
-    }
+    /* One plane, several apps: everyone blits, and whoever holds the
+     * plane gives it up. */
+    multi = (v3d_live_apps(sd) > 1);
     if (multi)
     {
         if (v3d_ovl.rsc && (v3d_ovl.owner == sid))
