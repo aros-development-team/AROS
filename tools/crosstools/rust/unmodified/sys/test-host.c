@@ -25,6 +25,10 @@ static void *worker(void *arg)
         assert(aros_rs_gethostname(name, sizeof(name)) == -1 && errno == ENOSYS);
         assert(strcmp(name, "RAM:unchanged-XXXXXX") == 0);
         errno = EINVAL;
+        assert(aros_rs_ttyname_r(-1, name, sizeof(name)) == ENOSYS && errno == EINVAL);
+        assert(strcmp(name, "RAM:unchanged-XXXXXX") == 0);
+        assert(aros_rs_ttyname_r(-1, NULL, 0) == ENOSYS && errno == EINVAL);
+        errno = EINVAL;
         assert(aros_rs_mmap(NULL, 1, 0, 0, -1, 0) == (void *)(intptr_t)-1 && errno == ENOSYS);
     }
     return NULL;

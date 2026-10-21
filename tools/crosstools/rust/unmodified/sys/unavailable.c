@@ -47,7 +47,11 @@ REFUSE(int, symlinkat, (const char *target UNUSED, int fd UNUSED, const char *pa
 REFUSE(int, fchownat, (int fd UNUSED, const char *path UNUSED, unsigned int uid UNUSED,
                      unsigned int gid UNUSED, int flags UNUSED), -1)
 REFUSE(int, lockf, (int fd UNUSED, int command UNUSED, long size UNUSED), -1)
-REFUSE(int, ttyname_r, (int fd UNUSED, char *buffer UNUSED, size_t size UNUSED), -1)
+/* ttyname_r returns the error number directly; it has no errno result. */
+int aros_rs_ttyname_r(int fd UNUSED, char *buffer UNUSED, size_t size UNUSED)
+{
+    return ENOSYS;
+}
 REFUSE(int, tcsetpgrp, (int fd UNUSED, intptr_t group UNUSED), -1)
 REFUSE(char *, mkdtemp, (char *template UNUSED), NULL)
 REFUSE(void *, mmap, (void *addr UNUSED, size_t size UNUSED, int prot UNUSED,
