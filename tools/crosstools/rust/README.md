@@ -124,3 +124,5 @@ store and network/process limitations remain distinct from the native profile.
 A new compiler pin needs its source patch or external target and an explicit
 MetaMake backend entry. Reconfigure existing builds to select the native
 nightly profile; an explicit `--with-rust-version=1.98.1` retains that recipe.
+
+The native application libc0.2.190 profile includes SDK-derived socket, resource and wait constants plus ip_mreq_source. Named address families and protocols are declarations and do not establish their runtime availability. AArch64 CMSG buffer helpers follow the selected AROS header alignment and add no C symbols or providers. Their source-bound memory checks live in developer/debug/test/native-cmsg; other architecture CMSG layouts require separate qualification. The standard-library libc0.2.189 profile is unaffected by these application declarations.
