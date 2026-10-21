@@ -109,6 +109,8 @@ static void bo_unref(struct V3DData *sd, ULONG handle)
     }
 }
 
+static void v3d_syncobj_reset(void);
+
 /*
  * Final sweep, called when the last pipe screen goes: whatever Mesa
  * leaked would otherwise keep its arena pinned, and the driver's share of
@@ -139,6 +141,7 @@ void v3d_release_all_bos(struct V3DData *sd)
     sd->bo_next_handle = 0;
     sd->bo_full_reported = FALSE;
     sd->oom_reports = 0;
+    v3d_syncobj_reset();
     ReleaseSemaphore(&sd->bo_lock);
 
     if (leaked)
@@ -751,6 +754,20 @@ static void v3d_syncobj_release(ULONG sid)
     {
         if (v3d_syncobj_owner[i] == sid)
             v3d_syncobj[i] = 0;
+    }
+}
+
+/* The last screen is gone: every slot is free, including those made on an
+ * fd without a session, which no session release reaches. Caller holds
+ * bo_lock. */
+static void v3d_syncobj_reset(void)
+{
+    ULONG i;
+
+    for (i = 0; i < V3D_SYNCOBJS; i++)
+    {
+        v3d_syncobj[i] = 0;
+        v3d_syncobj_owner[i] = 0;
     }
 }
 
