@@ -6,6 +6,32 @@
 
 #include "card_intern.h"
 
+/*****************************************************************************
+    NAME
+        BOOL CardResetRemove(
+
+    SYNOPSIS
+        struct CardHandle *handle, ULONG flag)
+
+    FUNCTION
+        Enable or disable machine reset on m68k-Amiga card-detect changes.
+
+    INPUTS
+        handle - Current card owner.
+        flag - Zero disables reset; any nonzero value enables it.
+
+    RESULT
+        TRUE after applying the setting; FALSE if the ownership/presence
+        check fails.
+
+    NOTES
+        Requires a non-NULL handle that currently owns the inserted card.
+        The ownership test does not protect against subsequent removal.
+        Enabling this setting permits a card-detect change to reset the
+        machine. It is not a request to reset only the card. The bus-error
+        control bit is cleared when the setting is written.
+
+*****************************************************************************/
 AROS_LH2(ULONG, CardResetRemove,
         AROS_LHA(struct CardHandle*, handle, A1),
         AROS_LHA(ULONG, flag, D0),

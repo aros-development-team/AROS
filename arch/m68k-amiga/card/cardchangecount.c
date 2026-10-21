@@ -8,6 +8,27 @@
 
 #include "card_intern.h"
 
+/*****************************************************************************
+    NAME
+        ULONG CardChangeCount(
+
+    SYNOPSIS
+        )
+
+    FUNCTION
+        Read the m68k-Amiga resource's processed-change counter.
+
+    RESULT
+        The current ULONG counter value.
+
+    NOTES
+        The resource task increments the counter after waking for a change,
+        before debouncing and processing it. Multiple signals may coalesce.
+        CardForceChange() does not increment it directly, and counter
+        equality does not prove that the same card is still present. Use the
+        value as a change indicator; it can wrap.
+
+*****************************************************************************/
 AROS_LH0(ULONG, CardChangeCount,
         struct CardResource*, CardResource, 16, Card)
 {

@@ -6,6 +6,34 @@
 
 #include "card_intern.h"
 
+/*****************************************************************************
+    NAME
+        LONG CardProgramVoltage(
+
+    SYNOPSIS
+        struct CardHandle *handle, ULONG voltage)
+
+    FUNCTION
+        Set the m68k-Amiga card programming voltage.
+
+    INPUTS
+        handle - Current card owner.
+        voltage - CARD_VOLTAGE_0V or CARD_VOLTAGE_5V. These are selector
+        constants, not a numeric voltage.
+
+    RESULT
+        1 after applying a supported selector; -1 for an unsupported
+        selector, including CARD_VOLTAGE_12V; 0 if the ownership/presence
+        check fails.
+
+    NOTES
+        Requires a non-NULL handle that currently owns the inserted card.
+        The ownership test does not protect against subsequent removal.
+        Rejected requests leave the configuration unchanged. Access-timing
+        bits are preserved. Ownership failure takes precedence over selector
+        validation.
+
+*****************************************************************************/
 AROS_LH2(LONG, CardProgramVoltage,
         AROS_LHA(struct CardHandle*, handle, A1),
         AROS_LHA(ULONG, voltage, D0),
