@@ -60,6 +60,42 @@ int SetInstance(FT_GlyphEngine *ge)
     long yMin, yMax, alt_point, a, d;
 
     /* set instance characteristics */
+    if (!FT_IS_SCALABLE(ge->face) && ge->face->num_fixed_sizes > 0) {
+        int best = 0;
+        int i;
+        long best_delta = -1;
+
+        for (i = 0; i < ge->face->num_fixed_sizes; i++) {
+            long px = ge->face->available_sizes[i].y_ppem >> 6;
+            long delta;
+
+            if (px <= 0)
+                px = ge->face->available_sizes[i].height;
+            if (px <= 0)
+                px = ge->point_size;
+
+            delta = px > ge->point_size ? px - ge->point_size : ge->point_size - px;
+            if (best_delta < 0 || delta < best_delta) {
+                best = i;
+                best_delta = delta;
+            }
+        }
+        error = FT_Select_Size(ge->face, best);
+        if (error) {
+            return set_last_error(ge, OTERR_Failure);
+        }
+
+        ge->corrected_upem = ge->face->available_sizes[best].y_ppem >> 6;
+        if (ge->corrected_upem <= 0)
+            ge->corrected_upem = ge->face->available_sizes[best].height;
+        if (ge->corrected_upem <= 0)
+            ge->corrected_upem = ge->point_size;
+
+        set_transform(ge);
+        ge->instance_changed = FALSE;
+        return set_last_error(ge, OTERR_Success);
+    }
+
     error = FT_Set_Char_Size( ge->face, 0, ge->point_size * 64, ge->xres, ge->yres );
     if (error) {
         D(bug("Could not set resolution.\n"));
@@ -483,5 +519,198 @@ void switch_family(FT_GlyphEngine *engine)
         OpenFace(engine, engine->base_filename);
 
     return;
+}
+
+
+static BOOL bitmap_argb_at(const FT_Bitmap *bitmap, ULONG x, ULONG y, ULONG *argb)
+{
+    LONG pitch;
+    LONG abs_pitch;
+    const UBYTE *row;
+    const UBYTE *px;
+    UBYTE *dst;
+
+    if (!argb)
+        return FALSE;
+
+    *argb = 0;
+
+    if (!bitmap || !bitmap->buffer || x >= bitmap->width || y >= bitmap->rows)
+        return FALSE;
+
+    if (bitmap->pixel_mode != FT_PIXEL_MODE_BGRA)
+        return FALSE;
+
+    pitch = bitmap->pitch;
+    abs_pitch = (pitch < 0) ? -pitch : pitch;
+    row = bitmap->buffer + ((pitch < 0) ? (bitmap->rows - 1 - y) * abs_pitch : y * abs_pitch);
+    px = row + x * 4;
+    dst = (UBYTE *)argb;
+
+    /*
+     * FreeType CBDT/CBLC color strikes are BGRA bytes.  AROS
+     * WritePixelArrayAlpha/HIDD_BM_PutAlphaImage consume ARGB component
+     * bytes in memory, independent of host endian.
+     */
+    dst[0] = px[3];
+    /* FreeType BGRA is premultiplied; AROS alpha compositors accept straight
+     * ARGB. Undo premultiplication once, including transparent pixels. */
+    for (ULONG c = 0; c < 3; c++)
+    {
+        ULONG value = px[3] ? ((ULONG)px[2 - c] * 255 + px[3] / 2) / px[3] : 0;
+        dst[c + 1] = value > 255 ? 255 : value;
+    }
+
+    return TRUE;
+}
+
+static ULONG scale_bitmap_dim(ULONG value, ULONG src_base, ULONG dst_base)
+{
+    if (src_base == 0)
+        return value;
+    return (value * dst_base + (src_base / 2)) / src_base;
+}
+
+static void RenderBitmapColorGlyph(FT_GlyphEngine *ge, struct ColorGlyphMap *CMap)
+{
+    FT_GlyphSlot slot = ge->face->glyph;
+    FT_Bitmap *src = &slot->bitmap;
+    ULONG x;
+    ULONG y;
+    ULONG out_width;
+    ULONG out_rows;
+    ULONG out_pitch;
+    ULONG alloc_size;
+    ULONG *out;
+    LONG advance;
+    LONG bitmap_left;
+    LONG bitmap_top;
+    BOOL scale_bitmap;
+
+    CMap->cgm_Width = 0;
+    CMap->cgm_ARGBMap = NULL;
+
+    if (src->pixel_mode != FT_PIXEL_MODE_BGRA || src->width == 0 || src->rows == 0)
+        return;
+
+    advance = slot->advance.x >> 6;
+    if (advance <= 0)
+        advance = src->width > 0 ? (LONG)src->width : (LONG)ge->point_size;
+    if (advance <= 0)
+        advance = 1;
+
+    out_rows = src->rows;
+    out_width = src->width;
+    bitmap_left = slot->bitmap_left;
+    bitmap_top = slot->bitmap_top;
+
+    scale_bitmap = FALSE;
+    if (ge->point_size > 0 && src->rows > (ULONG)ge->point_size)
+    {
+        out_rows = ge->point_size;
+        if (out_rows == 0)
+            out_rows = 1;
+        out_width = scale_bitmap_dim(src->width, src->rows, out_rows);
+        if (out_width == 0)
+            out_width = 1;
+
+        advance = scale_bitmap_dim((ULONG)advance, src->rows, out_rows);
+        if (advance <= 0)
+            advance = out_width;
+        bitmap_left = scale_bitmap_dim((ULONG)((slot->bitmap_left < 0) ? -slot->bitmap_left : slot->bitmap_left), src->rows, out_rows);
+        if (slot->bitmap_left < 0)
+            bitmap_left = -bitmap_left;
+        bitmap_top = scale_bitmap_dim((ULONG)((slot->bitmap_top < 0) ? -slot->bitmap_top : slot->bitmap_top), src->rows, out_rows);
+        if (slot->bitmap_top < 0)
+            bitmap_top = -bitmap_top;
+        scale_bitmap = TRUE;
+    }
+
+    if (!out_width || !out_rows || out_width > 65535 || out_rows > 65535 ||
+        out_width > 0x7fffffffUL / sizeof(ULONG) / out_rows) return;
+    out_pitch = out_width * sizeof(ULONG);
+    alloc_size = out_rows * out_pitch;
+    out = AllocVec(alloc_size, MEMF_PUBLIC | MEMF_CLEAR);
+    if (!out)
+        return;
+
+    for (y = 0; y < out_rows; y++)
+    {
+        ULONG src_y = scale_bitmap ? ((y * src->rows) / out_rows) : y;
+
+        for (x = 0; x < out_width; x++)
+        {
+            ULONG src_x = scale_bitmap ? ((x * src->width) / out_width) : x;
+            ULONG argb;
+
+            if (bitmap_argb_at(src, src_x, src_y, &argb))
+                out[y * out_width + x] = argb;
+        }
+    }
+
+    CMap->cgm_BMModulo    = out_pitch;
+    CMap->cgm_BMRows      = out_rows;
+    CMap->cgm_BlackLeft   = 0;
+    CMap->cgm_BlackTop    = 0;
+    CMap->cgm_BlackWidth  = out_width;
+    CMap->cgm_BlackHeight = out_rows;
+    CMap->cgm_XOrigin     = ((LONG)-bitmap_left) * 65536;
+    CMap->cgm_YOrigin     = ((LONG) bitmap_top) * 65536;
+    CMap->cgm_X0          = bitmap_left;
+    CMap->cgm_Y0          = bitmap_top;
+    CMap->cgm_X1          = advance;
+    CMap->cgm_Y1          = 0;
+    CMap->cgm_Width       = advance << 16;
+    CMap->cgm_ARGBMap     = out;
+}
+
+static void RenderColorGlyph(FT_GlyphEngine *ge, struct ColorGlyphMap *CMap)
+{
+    FT_Error error;
+
+    CMap->cgm_Width = 0;
+    CMap->cgm_ARGBMap = NULL;
+
+    error = FT_Load_Glyph(ge->face, ge->glyph_code, FT_LOAD_DEFAULT | FT_LOAD_COLOR);
+
+    if (!error && ge->face->glyph->format != ft_glyph_format_bitmap)
+        error = FT_Render_Glyph(ge->face->glyph, FT_RENDER_MODE_NORMAL);
+
+    if (!error && ge->face->glyph->format == ft_glyph_format_bitmap)
+        RenderBitmapColorGlyph(ge, CMap);
+}
+
+struct ColorGlyphMap *GetColorGlyph(FT_GlyphEngine *ge)
+{
+    struct ColorGlyphMap *CMap;
+
+    if (ge->instance_changed) {
+        if (SetInstance(ge) != OTERR_Success)
+            return NULL;
+    }
+
+    UnicodeToGlyphIndex(ge);
+    if (!ge->glyph_code) {
+        set_last_error(ge, OTERR_UnknownGlyph);
+        return NULL;
+    }
+
+    CMap = AllocVec((ULONG)sizeof(struct ColorGlyphMap), MEMF_PUBLIC | MEMF_CLEAR);
+    if (!CMap) {
+        set_last_error(ge, OTERR_NoMemory);
+        return NULL;
+    }
+
+    RenderColorGlyph(ge, CMap);
+
+    if (CMap->cgm_Width == 0 || !CMap->cgm_ARGBMap) {
+        if (CMap->cgm_ARGBMap)
+            FreeVec(CMap->cgm_ARGBMap);
+        FreeVec(CMap);
+        set_last_error(ge, OTERR_UnknownGlyph);
+        return NULL;
+    }
+
+    return CMap;
 }
 

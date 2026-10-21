@@ -1,0 +1,14 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- fonts-truetype : fonts-truetype-notocjk
+#MM- fonts-truetype-quick : fonts-truetype-notocjk
+#MM- fonts-truetype-notocjk : fonts-truetype-notocjk-files
+
+# ConsoleNG opens this CJK collection as a fallback through FreeType.
+# Do not register .font/.otag primary-font wrappers without qualifying the
+# diskfont monochrome preload and fixed-width font requester paths separately.
+%copy_files_q mmake=fonts-truetype-notocjk-files \
+    files="NotoSansCJK-Regular.ttc LICENSE-NotoCJK.txt" \
+    dst=$(AROSDIR)/Fonts/TrueType

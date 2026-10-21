@@ -68,6 +68,7 @@ AROS_LH2(ULONG, ObtainInfoA,
 
     FT_GlyphEngine *engine = (FT_GlyphEngine *)ge;
     struct GlyphMap **gm_p;
+    struct ColorGlyphMap **cgm_p;
     struct MinList **gw_p;
     Tag   otagtag;
     IPTR otagdata;
@@ -110,6 +111,17 @@ AROS_LH2(ULONG, ObtainInfoA,
 
             if ((*gm_p = GetGlyph(engine, TRUE)) == NULL) {
                 D(bug("Could not obtain GlyphMap8Bit\n"));
+                rc = (ULONG) engine->last_error;
+            }
+            break;
+
+        case OT_ColorGlyphMap32:
+            D(bug("Obtain: OT_ColorGlyphMap32  Data=%lx\n", otagdata));
+
+            cgm_p = (struct ColorGlyphMap **)otagdata;
+
+            if ((*cgm_p = GetColorGlyph(engine)) == NULL) {
+                D(bug("Could not obtain ColorGlyphMap32\n"));
                 rc = (ULONG) engine->last_error;
             }
             break;

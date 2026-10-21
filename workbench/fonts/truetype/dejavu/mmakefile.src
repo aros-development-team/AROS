@@ -1,0 +1,14 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- fonts-truetype : fonts-truetype-dejavu
+#MM- fonts-truetype-quick : fonts-truetype-dejavu
+#MM- fonts-truetype-dejavu : fonts-truetype-dejavu-ttf fonts-truetype-dejavu-amifonts
+
+%copy_files_q mmake=fonts-truetype-dejavu-ttf files="$(call WILDCARD, *.ttf)" \
+    dst=$(AROSDIR)/Fonts/TrueType
+
+# Refresh descriptors when their metrics change, including existing build trees.
+%copy_files_q mmake=fonts-truetype-dejavu-amifonts files="$(call WILDCARD, *.font *.otag)" \
+    dst=$(AROSDIR)/Fonts

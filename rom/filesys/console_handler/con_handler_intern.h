@@ -67,6 +67,10 @@ struct filehandle
     struct NewWindow        nw;
     struct MsgPort          *timermp;
     struct timerequest      *timerreq;
+    struct MsgPort          *rawprefixmp;
+    struct timerequest      *rawprefixreq;
+    BOOL                    rawprefixpending;
+    BOOL                    rawprefixexpired;
     struct MsgPort          *appmsgport;
     struct AppMessage       *appmsg;
     struct AppWindow        *appwindow;
@@ -81,6 +85,7 @@ struct filehandle
 #endif
     WORD                    conbufferpos;
     WORD                    conbuffersize;
+    UBYTE                   rawpasteprefix; /* matched bytes of ConsoleNG paste request */
     WORD                    inputstart; /* usually 0, but needed for multi-lines (CONTROL RETURN) */
     WORD                    inputpos; /* cursor pos. inside line */
     WORD                    inputsize; /* length of input string */
@@ -98,8 +103,9 @@ struct filehandle
     UBYTE                   historybuffer[CMD_HISTORY_SIZE][INPUTBUFFER_SIZE + 1];
 
     /* If pastebuffer != 0, this contains data to paste from ConClip */
-    WORD                    pastebufferpos;
-    WORD                    pastebuffersize;
+    ULONG                   pastebufferpos;
+    ULONG                   pastebuffersize;
+    ULONG                   pastebuffercapacity;
     STRPTR                  pastebuffer;
     /* Device mode: what to open instead of console.device. Copied out of the
        startup FileSysStartupMsg, which may live on the caller's stack. */

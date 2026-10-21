@@ -47,6 +47,30 @@ struct GlyphMap
     UBYTE  *glm_BitMap;
 };
 
+/*
+ * 32-bit color glyph map for outline engines that can expose color bitmap
+ * strikes, such as CBDT/CBLC emoji fonts. cgm_BMModulo is in bytes and each
+ * pixel stores ARGB component bytes in the format WritePixelArrayAlpha()
+ * consumes.
+ */
+struct ColorGlyphMap
+{
+    ULONG   cgm_BMModulo;
+    UWORD   cgm_BMRows;
+    UWORD   cgm_BlackLeft;
+    UWORD   cgm_BlackTop;
+    UWORD   cgm_BlackWidth;
+    UWORD   cgm_BlackHeight;
+    FIXED   cgm_XOrigin;
+    FIXED   cgm_YOrigin;
+    WORD    cgm_X0;
+    WORD    cgm_Y0;
+    WORD    cgm_X1;
+    WORD    cgm_Y1;
+    FIXED   cgm_Width;
+    ULONG  *cgm_ARGBMap;
+};
+
 struct GlyphWidthEntry
 {
     struct MinNode  gwe_Node;
