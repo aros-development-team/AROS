@@ -482,6 +482,33 @@ AROS_LH1(void, btUnlockDevice,
 /* \\\ */
 
 /* /// "btGetNextDevice()" */
+/*****************************************************************************
+    NAME
+        APTR btGetNextDevice(
+
+    SYNOPSIS
+        APTR bd)
+
+    FUNCTION
+        Return the next device in hardware-list order, skipping empty radios.
+
+    INPUTS
+        bd - Previous device in the active device list, or NULL to start.
+
+    RESULT
+        Borrowed device handle, or NULL at the end of the list.
+
+    NOTES
+        This enumerates known devices, including disconnected devices; it
+        does not perform discovery. No lock is acquired and no reference is
+        retained. Exclude list changes throughout traversal and keep each
+        handle valid while using it. Do not pass a removed device as the
+        cursor or free a returned handle merely to end iteration.
+
+    SEE ALSO
+        btFindDeviceA(), btLockReadBase(), btUnlockBase()
+
+*****************************************************************************/
 AROS_LH1(struct BtDevice *, btGetNextDevice,
          AROS_LHA(struct BtDevice *, bd, A0),
          LIBBASETYPEPTR, BluetoothBase, 20, bt)
@@ -511,6 +538,53 @@ AROS_LH1(struct BtDevice *, btGetNextDevice,
 /* \\\ */
 
 /* /// "btFindDeviceA()" */
+/*****************************************************************************
+    NAME
+        APTR btFindDeviceA(
+
+    SYNOPSIS
+        APTR bd, struct TagItem *taglist)
+
+    FUNCTION
+        Find the next known device that satisfies all supplied supported filters.
+
+    INPUTS
+        bd - Previous active device, excluded from the search; NULL starts
+            at the first device across all radios.
+        taglist - Filter tags, or NULL for no filtering.
+
+    TAGS
+        BDA_Address - Pointer to six address bytes in BD_ADDR order.
+        BDA_AddressString - Address text in XX:XX:XX:XX:XX:XX form;
+            comparison ignores case.
+        BDA_AddressType, BDA_ClassOfDevice, BDA_VendorID, BDA_ProductID -
+            Exact numeric values.
+        BDA_Hardware, BDA_Binding - Exact handle values; NULL can match
+            an absent binding.
+        BDA_Name, BDA_IDString - NUL-terminated, case-sensitive strings.
+            A missing device string does not match.
+        BDA_IsRegistered, BDA_IsConnected - Boolean tests; nonzero means TRUE.
+        BDA_ConnHandle - Exact handle; the device must also be connected.
+
+    RESULT
+        Borrowed device handle, or NULL if no later device matches.
+
+    NOTES
+        This searches existing objects, not the air. Unknown filter tags
+        are ignored, including device attribute tags not listed above.
+        Only the first occurrence of each filter is used; standard TagItem
+        control tags are honored. Pointer-valued filter data must remain
+        valid throughout the call and is not retained.
+
+        No lock is acquired or lifetime extended. Exclude list and attribute
+        changes during the search and preserve the returned object's
+        lifetime while using it. Continue with the returned handle to find
+        later matches.
+
+    SEE ALSO
+        btGetNextDevice(), btFindServiceA(), btGetAttrsA()
+
+*****************************************************************************/
 AROS_LH2(struct BtDevice *, btFindDeviceA,
          AROS_LHA(struct BtDevice *, bd, A0),
          AROS_LHA(struct TagItem *, tags, A1),
@@ -597,6 +671,51 @@ AROS_LH2(struct BtDevice *, btFindDeviceA,
 /* \\\ */
 
 /* /// "btFindServiceA()" */
+/*****************************************************************************
+    NAME
+        APTR btFindServiceA(
+
+    SYNOPSIS
+        APTR bd, APTR bsv, struct TagItem *taglist)
+
+    FUNCTION
+        Find the next matching service already known for a device.
+
+    INPUTS
+        bd - Device whose service list is searched; NULL returns NULL.
+        bsv - Previous service in that device's list, excluded from the
+            search; NULL starts at the first service.
+        taglist - Filter tags, or NULL for no filtering.
+
+    TAGS
+        BSVA_UUID16 - Exact primary 16-bit UUID or an entry in the service's
+            zero-terminated service-class ID list.
+        BSVA_UUID - Pointer to 16 UUID bytes in big-endian order; exact match
+            against the primary UUID, without service-class ID expansion.
+        BSVA_Protocol, BSVA_PSM, BSVA_RFCOMMChannel, BSVA_RecordHandle -
+            Exact numeric values.
+        BSVA_Name, BSVA_IDString - NUL-terminated, case-sensitive strings;
+            a missing service string does not match.
+        BSVA_Binding - Exact binding handle; NULL matches no binding.
+
+    RESULT
+        Borrowed service handle, or NULL if no later service matches.
+
+    NOTES
+        All supplied supported filters must match. Unknown tags are ignored;
+        only the first occurrence of each filter is used. Standard TagItem
+        control tags are honored. Filter data is not retained.
+
+        This does not enumerate remote services or acquire a lock. Keep the
+        device and cursor valid and exclude service-list changes during
+        traversal. A device read lock protects traversal against service
+        replacement; it does not retain a service after unlocking. Service
+        refresh or device removal can invalidate returned handles.
+
+    SEE ALSO
+        btFindEndpointA(), btEnumerateServices(), btLockReadDevice()
+
+*****************************************************************************/
 AROS_LH3(struct BtService *, btFindServiceA,
          AROS_LHA(struct BtDevice *, bd, A0),
          AROS_LHA(struct BtService *, bsv, A2),
@@ -684,6 +803,48 @@ AROS_LH3(struct BtService *, btFindServiceA,
 /* \\\ */
 
 /* /// "btFindEndpointA()" */
+/*****************************************************************************
+    NAME
+        APTR btFindEndpointA(
+
+    SYNOPSIS
+        APTR bsv, APTR bep, struct TagItem *taglist)
+
+    FUNCTION
+        Find the next matching endpoint in a known service.
+
+    INPUTS
+        bsv - Service whose endpoints are searched; NULL returns NULL.
+        bep - Previous endpoint in that service, excluded from the search;
+            NULL starts at the first endpoint.
+        taglist - Filter tags, or NULL for no filtering.
+
+    TAGS
+        BEA_CanRead, BEA_CanWrite - Boolean tests; nonzero means TRUE.
+        BEA_Type, BEA_PSM, BEA_CID, BEA_RFCOMMChannel, BEA_Handle,
+        BEA_UUID16, BEA_ReportType, BEA_ReportID - Exact numeric values.
+        BEA_UUID - Pointer to 16 UUID bytes in big-endian order; exact match.
+        BEA_Properties - Required property bits. All supplied bits must be
+            present; extra endpoint bits are allowed. Zero matches any value.
+
+    RESULT
+        Borrowed endpoint handle, or NULL if no later endpoint matches.
+
+    NOTES
+        All supplied supported filters must match. Unknown tags are ignored;
+        only the first occurrence of each filter is used. Standard TagItem
+        control tags are honored. Filter data is not retained.
+
+        No channel is opened and no lock is acquired. Keep the service and
+        cursor valid and exclude endpoint changes during traversal, using
+        the owning device's read lock where required. The result is not a
+        retained reference: service refresh can free unbound endpoints.
+        A capability match does not establish a connection or guarantee I/O.
+
+    SEE ALSO
+        btFindServiceA(), btAllocChannel(), btLockReadDevice()
+
+*****************************************************************************/
 AROS_LH3(struct BtEndpoint *, btFindEndpointA,
          AROS_LHA(struct BtService *, bsv, A0),
          AROS_LHA(struct BtEndpoint *, bep, A2),
@@ -1051,6 +1212,43 @@ void bStoreDevConfig(LIBBASETYPEPTR BluetoothBase, struct BtDevice *bd, BOOL per
 /* *** Channels *** */
 
 /* /// "btAllocChannel()" */
+/*****************************************************************************
+    NAME
+        APTR btAllocChannel(
+
+    SYNOPSIS
+        APTR bd, struct MsgPort *mp, APTR bep)
+
+    FUNCTION
+        Allocate a reusable request channel for a device or one of its endpoints.
+
+    INPUTS
+        bd - Live device handle; NULL returns NULL.
+        mp - Initialized reply port; NULL returns NULL. Use a signal port
+            owned by the task that will call the channel wait functions.
+        bep - Endpoint belonging to bd, or NULL for device control requests.
+
+    RESULT
+        Channel handle, or NULL for invalid arguments or allocation failure.
+
+    NOTES
+        Call from task context. Keep the library, reply port, hardware and
+        endpoint valid until btFreeChannel(). The channel holds a device
+        usage count, but does not independently retain its endpoint across
+        service refresh. Coordinate refresh and removal with the channel
+        owner. Do not free the channel with btFreeVec().
+
+        An endpoint channel starts with BTPR_READ. Configure a control
+        channel with btChannelSetup() before submission. Auto-connect is
+        copied from the device policy; it is not a live link to that policy.
+        Allocation may wait for the hardware task using SIGB_SINGLE. A
+        returned handle does not establish that a remote channel is open;
+        the internal open request's error is not returned.
+
+    SEE ALSO
+        btChannelSetup(), btSendChannel(), btFreeChannel()
+
+*****************************************************************************/
 AROS_LH3(struct BtChannel *, btAllocChannel,
          AROS_LHA(struct BtDevice *, bd, A0),
          AROS_LHA(struct MsgPort *, mp, A1),
@@ -1095,6 +1293,43 @@ AROS_LH3(struct BtChannel *, btAllocChannel,
 /* \\\ */
 
 /* /// "btFreeChannel()" */
+/*****************************************************************************
+    NAME
+        APTR btFreeChannel(
+
+    SYNOPSIS
+        APTR pp)
+
+    FUNCTION
+        Release a channel and its device usage count.
+
+    INPUTS
+        pp - Channel handle, or NULL for no operation.
+
+    RESULT
+        No defined return value. Ignore the public APTR result.
+
+    NOTES
+        Call from the reply-port owner task. Complete and consume the last
+        reply before freeing the channel. Keep the library, port and hardware
+        valid through the call. No other task may use the channel afterward.
+        The reply port and caller's data buffer are not freed.
+
+        A pending request triggers an abort followed by a wait. Closing an
+        endpoint channel can also wait for the hardware task. There is no
+        bounded completion guarantee. Releasing the last device usage count
+        can finish deferred device cleanup.
+
+    BUGS
+        The public declaration returns APTR, but the implementation returns
+        void. It does not produce a valid pointer result. A reply already
+        queued on the port is not removed when freeing a completed channel;
+        consume it first to avoid leaving a freed message in the queue.
+
+    SEE ALSO
+        btAllocChannel(), btAbortChannel(), btWaitChannel()
+
+*****************************************************************************/
 AROS_LH1(void, btFreeChannel,
          AROS_LHA(struct BtChannel *, bch, A1),
          LIBBASETYPEPTR, BluetoothBase, 24, bt)
@@ -1135,6 +1370,53 @@ AROS_LH1(void, btFreeChannel,
 /* \\\ */
 
 /* /// "btChannelSetup()" */
+/*****************************************************************************
+    NAME
+        VOID btChannelSetup(
+
+    SYNOPSIS
+        APTR pp, UWORD rq, UWORD val, UWORD idx)
+
+    FUNCTION
+        Set the request and its two 16-bit parameters for the next submission.
+
+    INPUTS
+        pp - Idle channel whose preceding reply has been consumed.
+        rq - BTPR_* request from libraries/bluetooth.h.
+        val, idx - Request parameters described below; use zero when unused.
+
+    NOTES
+        Endpoint channels use BTPR_READ to receive one SDU or notification,
+        or BTPR_WRITE to send data. val and idx are unused. A GATT endpoint
+        read waits for a notification or indication; it is not an ATT read.
+
+        Control channels have no endpoint and support these requests:
+        BTPR_REMOTENAME - Receive a NUL-terminated remote name; buffer
+            capacity includes the terminator. Actual excludes that terminator.
+        BTPR_SDPSEARCH - val is the 16-bit service UUID. Receive consecutive
+            four-byte, big-endian record handles; Actual is a byte count.
+        BTPR_SDPATTRIBUTES - val is the low half and idx the high half of
+            a record handle. Receive the attribute sequence's nested bytes.
+        BTPR_GATTREAD - val is the remote attribute handle; receive its value.
+        BTPR_GATTWRITE - val is the handle; send a value with a response.
+        BTPR_GATTWRITENORSP - val is the handle; send without a response.
+        BTPR_READRSSI - Receive one signed BYTE from the cached inquiry or
+            advertising result; 127 means unknown.
+
+        Setup performs no I/O or validation. The settings remain until
+        changed. Keep the channel idle while changing them. Payload buffers
+        are supplied to btSendChannel() or btDoChannel().
+
+    RESULT
+        None.
+
+    BUGS
+        BTPR_L2CAPECHO is declared but is not handled; it returns BTIOERR_NOTSUPPORTED.
+
+    SEE ALSO
+        btDoChannel(), btSendChannel(), btGetChannelActual()
+
+*****************************************************************************/
 AROS_LH4(void, btChannelSetup,
          AROS_LHA(struct BtChannel *, bch, A1),
          AROS_LHA(UWORD, rq, D0),
@@ -1152,6 +1434,52 @@ AROS_LH4(void, btChannelSetup,
 /* \\\ */
 
 /* /// "btSendChannel()" */
+/*****************************************************************************
+    NAME
+        VOID btSendChannel(
+
+    SYNOPSIS
+        APTR pp, APTR data, ULONG len)
+
+    FUNCTION
+        Submit a channel request and return without waiting for its reply.
+
+    INPUTS
+        pp - Idle channel with no unconsumed previous reply.
+        data - Request buffer: writable for reads, readable for writes.
+            Supply storage for len bytes when the request transfers data.
+        len - Read capacity or write length in bytes.
+
+    RESULT
+        None. Obtain completion status with btWaitChannel() or after receiving the reply.
+
+    NOTES
+        Call from task context. The buffer is borrowed until completion;
+        do not modify a write buffer or inspect a read buffer while pending.
+        Keep the channel, endpoint, hardware, port and library valid. Submit
+        only one request at a time per channel. Submission clears Actual
+        and Error; neither zero value proves completion.
+
+        Completion replies the channel message to its allocation port, even
+        when submission immediately detects unavailable hardware. Consume
+        each reply once: use btWaitChannel(), or receive it with GetMsg()
+        and query the result. Do not call btWaitChannel() after GetMsg() has
+        removed that reply. Do not ReplyMsg() the returned channel message.
+
+        Endpoint reads consume one queued SDU or notification. An undersized
+        buffer receives a prefix with BTIOERR_OVERFLOW; the remainder is
+        discarded. Successful writes need not imply remote application
+        receipt. BCHA_NoWait does not bypass connection setup and is not
+        implemented for GATT notification reads.
+
+    BUGS
+        BCHA_Timeout is stored but not enforced by channel dispatch. Do not
+        rely on it to bound a pending request.
+
+    SEE ALSO
+        btChannelSetup(), btWaitChannel(), btCheckChannel(), btAbortChannel()
+
+*****************************************************************************/
 AROS_LH3(void, btSendChannel,
          AROS_LHA(struct BtChannel *, bch, A1),
          AROS_LHA(APTR, data, A0),
@@ -1183,6 +1511,39 @@ AROS_LH3(void, btSendChannel,
 /* \\\ */
 
 /* /// "btDoChannel()" */
+/*****************************************************************************
+    NAME
+        LONG btDoChannel(
+
+    SYNOPSIS
+        APTR pp, APTR data, ULONG len)
+
+    FUNCTION
+        Submit a channel request and wait for its reply.
+
+    INPUTS
+        pp - Idle channel with no unconsumed previous reply.
+        data - Request buffer, with the direction and lifetime required by
+            btSendChannel().
+        len - Read capacity or write length in bytes.
+
+    RESULT
+        Zero on success, or an IOERR_* or BTIOERR_* completion code.
+
+    NOTES
+        This combines btSendChannel() and btWaitChannel(). Call from the
+        reply-port owner task, never the hardware task servicing the channel.
+        The reply is consumed before return; do not wait for it again.
+        Use btGetChannelActual() for the byte count or request-specific
+        error detail. Keep all request storage valid until return.
+
+        No overall timeout is enforced. The call can wait indefinitely;
+        holding a lock needed by the hardware task can deadlock it.
+
+    SEE ALSO
+        btSendChannel(), btWaitChannel(), btGetChannelActual()
+
+*****************************************************************************/
 AROS_LH3(LONG, btDoChannel,
          AROS_LHA(struct BtChannel *, bch, A1),
          AROS_LHA(APTR, data, A0),
@@ -1198,6 +1559,42 @@ AROS_LH3(LONG, btDoChannel,
 /* \\\ */
 
 /* /// "btAbortChannel()" */
+/*****************************************************************************
+    NAME
+        VOID btAbortChannel(
+
+    SYNOPSIS
+        APTR pp)
+
+    FUNCTION
+        Ask the hardware task to cancel a pending channel request.
+
+    INPUTS
+        pp - Live channel. A channel that is not pending needs no action.
+
+    RESULT
+        None. The call does not report whether cancellation was requested or succeeded.
+
+    NOTES
+        Call from the reply-port owner task, never the hardware task.
+        The call waits for a separate cancellation reply, using the same
+        port, but does not consume the original request's reply. Finish
+        with btWaitChannel(pp), or receive that original reply through the
+        existing message loop, before reusing its buffer or channel.
+
+        Completion can win the race with cancellation; do not require
+        IOERR_ABORTED as the result. Cancellation does not undo remote
+        effects already performed. Keep the hardware task and port alive
+        through this operation; there is no timeout.
+
+    BUGS
+        If allocation of the cancellation message fails, the call returns
+        without requesting cancellation and without reporting failure.
+
+    SEE ALSO
+        btWaitChannel(), btCheckChannel(), btGetChannelError()
+
+*****************************************************************************/
 AROS_LH1(void, btAbortChannel,
          AROS_LHA(struct BtChannel *, bch, A1),
          LIBBASETYPEPTR, BluetoothBase, 28, bt)
@@ -1225,6 +1622,44 @@ AROS_LH1(void, btAbortChannel,
 /* \\\ */
 
 /* /// "btWaitChannel()" */
+/*****************************************************************************
+    NAME
+        LONG btWaitChannel(
+
+    SYNOPSIS
+        APTR pp)
+
+    FUNCTION
+        Wait until a channel is no longer pending and remove its queued reply.
+
+    INPUTS
+        pp - Live channel whose reply has not been removed by GetMsg()
+            or another waiter.
+
+    RESULT
+        Zero on success, or the stored IOERR_* or BTIOERR_* completion code.
+
+    NOTES
+        Call from the task signaled by the reply port. The call waits on
+        that port's signal and leaves other queued messages in place.
+        Signals observed while waiting are restored for other port users.
+        It neither frees the channel nor releases the caller's buffer.
+
+        No overall timeout or break-signal cancellation is provided. Do not
+        call from the hardware task or while holding a lock it needs.
+        For a newly allocated channel this returns its initial zero status
+        without submitting anything. A nonpending channel returns its
+        stored status; that is not evidence of a new operation.
+
+    BUGS
+        Every call updates the device's reachability history from the stored
+        error, including repeated calls after completion. Wait once per
+        submitted request; use btGetChannelError() for later inspection.
+
+    SEE ALSO
+        btSendChannel(), btAbortChannel(), btGetChannelActual(), btGetChannelError()
+
+*****************************************************************************/
 AROS_LH1(LONG, btWaitChannel,
          AROS_LHA(struct BtChannel *, bch, A1),
          LIBBASETYPEPTR, BluetoothBase, 29, bt)
@@ -1282,6 +1717,33 @@ AROS_LH1(LONG, btWaitChannel,
 /* \\\ */
 
 /* /// "btCheckChannel()" */
+/*****************************************************************************
+    NAME
+        APTR btCheckChannel(
+
+    SYNOPSIS
+        APTR pp)
+
+    FUNCTION
+        Check whether a channel is still pending without waiting.
+
+    INPUTS
+        pp - Live channel handle; NULL is invalid.
+
+    RESULT
+        NULL while pending; otherwise pp, including for a newly allocated channel.
+
+    NOTES
+        A non-NULL result is neither a success status nor proof that a
+        request was submitted. It does not remove a reply from the port.
+        Consume the reply before resubmitting or freeing the channel, then
+        inspect Error and Actual. Serialize access with submitters and
+        consumers; this call does not lock the channel.
+
+    SEE ALSO
+        btWaitChannel(), btGetChannelError(), btGetChannelActual()
+
+*****************************************************************************/
 AROS_LH1(struct BtChannel *, btCheckChannel,
          AROS_LHA(struct BtChannel *, bch, A1),
          LIBBASETYPEPTR, BluetoothBase, 32, bt)
@@ -1297,6 +1759,36 @@ AROS_LH1(struct BtChannel *, btCheckChannel,
 /* \\\ */
 
 /* /// "btGetChannelActual()" */
+/*****************************************************************************
+    NAME
+        ULONG btGetChannelActual(
+
+    SYNOPSIS
+        APTR pp)
+
+    FUNCTION
+        Read the channel's stored transfer count or request-specific error detail.
+
+    INPUTS
+        pp - Live channel handle; NULL is invalid.
+
+    RESULT
+        On successful data transfer, the number of bytes transferred.
+        For BTIOERR_OVERFLOW, the number of bytes copied, not the full
+        required capacity. For BTIOERR_REMOTEERROR, this may instead be
+        an HCI status, ATT error code or SDP client result.
+
+    NOTES
+        Check completion and Error before interpreting this value. A new
+        channel and each submission start with zero. This call neither
+        waits nor consumes a reply; a value read while pending is not a
+        completion indication. Remote-name counts exclude the terminating
+        NUL; SDP search counts are bytes, not record counts.
+
+    SEE ALSO
+        btGetChannelError(), btCheckChannel(), btChannelSetup()
+
+*****************************************************************************/
 AROS_LH1(ULONG, btGetChannelActual,
          AROS_LHA(struct BtChannel *, bch, A1),
          LIBBASETYPEPTR, BluetoothBase, 30, bt)
@@ -1308,6 +1800,34 @@ AROS_LH1(ULONG, btGetChannelActual,
 /* \\\ */
 
 /* /// "btGetChannelError()" */
+/*****************************************************************************
+    NAME
+        LONG btGetChannelError(
+
+    SYNOPSIS
+        APTR pp)
+
+    FUNCTION
+        Read the channel's stored error code without waiting or consuming a reply.
+
+    INPUTS
+        pp - Live channel handle; NULL is invalid.
+
+    RESULT
+        Zero for a successful completed request; otherwise an IOERR_* or
+        BTIOERR_* code from exec/errors.h, devices/bluetoothhci.h or
+        libraries/bluetooth.h.
+
+    NOTES
+        A new channel and each submission start with zero. Establish
+        completion before treating zero as success. btGetChannelActual()
+        can contain a partial byte count or remote error detail. Reading
+        the status does not update device reachability history.
+
+    SEE ALSO
+        btGetChannelActual(), btCheckChannel(), btWaitChannel()
+
+*****************************************************************************/
 AROS_LH1(LONG, btGetChannelError,
          AROS_LHA(struct BtChannel *, bch, A1),
          LIBBASETYPEPTR, BluetoothBase, 31, bt)
