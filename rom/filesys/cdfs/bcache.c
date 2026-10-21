@@ -353,8 +353,8 @@ LONG BCache_Invalidate(struct BCache *bcache)
     struct BCacheEntry *be;
     int i;
 
-    while ((be = (struct BCacheEntry *)REMHEAD(&bp->bp_CacheValid)))
-        ADDHEAD(&bp->bp_CacheInvalid, be);
+    while ((be = (struct BCacheEntry *)RemHead(&bp->bp_CacheValid)))
+        AddHead(&bp->bp_CacheInvalid, (struct Node *)be);
 
     if (BCache_Present(bcache) == ERROR_NO_DISK)
         return ERROR_NO_DISK;
