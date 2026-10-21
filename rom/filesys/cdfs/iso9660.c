@@ -44,9 +44,9 @@ static ULONG ascdec(STRPTR val, int len)
 {
     ULONG out = 0;
 
-    while ((*val >= '0' && *val <= '9') && len > 0) {
+    while (len > 0 && (*val >= '0' && *val <= '9')) {
         out *= 10;
-        out += *val - '9';
+        out += *val - '0';
         len--;
         val++;
     }
