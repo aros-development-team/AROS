@@ -855,6 +855,13 @@ struct pipe_screen *vc4_aros_create_screen(struct vc4_aros_bridge *bridge,
 
     if (!bridge)
         return NULL;
+    if (bridge->version != VC4_AROS_BRIDGE_VERSION)
+    {
+        bug("[aros_drm_vc4] bridge version %lu, expected %d - rebuild"
+            " mesa3dgl-library and this hidd together\n",
+            (unsigned long)bridge->version, VC4_AROS_BRIDGE_VERSION);
+        return NULL;
+    }
 
     /* Bind the driver's Mesa-core trampolines to mesa3dgl's
      * GalliumCoreAPI table before any driver code runs. Idempotent;
