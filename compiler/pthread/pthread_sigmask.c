@@ -53,9 +53,14 @@
 
 ******************************************************************************/
 {
-    /* TODO: Implement pthread_sigmask() */
-    AROS_FUNCTION_NOT_IMPLEMENTED("pthread");
-    errno = ENOSYS;
-    
-    return -1;
+    int saved_errno = errno;
+    int error = 0;
+
+    if (sigprocmask(how, set, oldset) != 0)
+        error = errno ? errno : EINVAL;
+
+    /* POSIX: pthread_sigmask() returns the error and leaves errno alone. */
+    errno = saved_errno;
+
+    return error;
 } /* pthread_sigmask */
