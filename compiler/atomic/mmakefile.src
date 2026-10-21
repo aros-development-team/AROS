@@ -10,6 +10,9 @@ include $(SRCDIR)/config/aros.cfg
 #MM- linklibs-llvm-libatomic : linklibs-atomic-helpers
 #MM linklibs-atomic-helpers : includes
 
+#MM- core-linklibs : core-linklibs-atomic-$(AROS_TOOLCHAIN)
+#MM- core-linklibs-atomic-llvm : linklibs-atomic-helpers
+
 # clang refuses definitions of its __atomic_* builtins otherwise
 USER_CFLAGS := -fno-builtin
 
