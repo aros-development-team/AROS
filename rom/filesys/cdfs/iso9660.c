@@ -31,6 +31,7 @@ struct ISOVolume {
     struct isoVolume iv_Volume;
     struct ISOLock   iv_RootLock;
     TEXT             iv_Name[1 + 32 + 1];
+    BOOL             iv_NoPathTable;
     struct {
         ULONG   Size;   /* In bytes */
         ULONG   Extent;
@@ -327,17 +328,10 @@ static BOOL isoParseDir(struct CDFSVolume *vol, struct ISOLock *il, struct isoDi
     }
 
 system_use_done:
-    /* If RockRidge is detected, the PathTable is
-     * useless to us, due to re-arranged directories.
-     */
-    if (has_RockRidge && iv && iv->iv_PathTable.Size) {
-        FreeVec(iv->iv_PathTable.Entry);
-        FreeVec(iv->iv_PathTable.Data);
-        iv->iv_PathTable.Entry = NULL;
-        iv->iv_PathTable.Data = NULL;
-        iv->iv_PathTable.Size = 0;
-        iv->iv_PathTable.Entries = 0;
-    }
+    /* Rock Ridge can relocate directories. Stop using the path-table shortcut,
+     * but retain its storage until unmount: existing locks may reference it. */
+    if (has_RockRidge && iv)
+        iv->iv_NoPathTable = TRUE;
 
 end:
 
@@ -408,7 +402,7 @@ static LONG isoFindCmp(struct CDFSVolume *vol, struct ISOLock *ifile, ULONG exte
     int i;
 
     /* Scan the path table first, if present */
-    for (i = 0; i < iv->iv_PathTable.Entries; i++) {
+    for (i = 0; !iv->iv_NoPathTable && i < iv->iv_PathTable.Entries; i++) {
         struct isoPathTable *pt = iv->iv_PathTable.Entry[i];
         if (pt->ExtentLocation == extent) {
             int j, parent = i;
@@ -738,7 +732,7 @@ LONG ISO9660_Locate(struct CDFSVolume *vol, struct CDFSLock *idir, CONST_STRPTR 
                 ASSERT(il->il_Public.cl_FileInfoBlock.fib_DirEntryType == ST_USERDIR);
 
                 /* Otherwise, move to parent */
-                if (il->il_PathTable) {
+                if (il->il_PathTable && !iv->iv_NoPathTable) {
                     /* Non-RockRidge */
                     tl.il_PathTable = iv->iv_PathTable.Entry[il->il_PathTable->ParentDirectory-1];
                     isoParseDir(vol, &tl, NULL, 0);
