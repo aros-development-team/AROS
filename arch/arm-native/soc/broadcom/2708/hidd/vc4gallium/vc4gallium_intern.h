@@ -31,9 +31,10 @@ struct HiddGalliumVC4Data
     OOP_Object              *vc4_obj;
 };
 
-/* Buffer Object handle tracking. Entries are ~760 bytes (shader metadata
- * inline), so the table is ~6 MB of library-base memory at 8192 - same
- * count as v3d. 1024 ran out on texture-heavy apps (Widelands). */
+/* Buffer Object handle tracking. Entries are 72 bytes, as a shader's
+ * metadata is allocated apart, so 8192 of them - v3d's count - take about
+ * 576 KB of library-base memory. 1024 ran out on texture-heavy apps
+ * (Widelands). */
 #define VC4_MAX_BOS     8192
 
 /* Max texture samples and uniform address offsets per shader */
@@ -65,6 +66,17 @@ struct vc4_session
     struct Task        *vs_Task;
 };
 
+/* Shader metadata (set by the QPU scanner on CREATE_SHADER_BO). Only
+ * shader BOs have it, so it is allocated apart from the table entry. */
+struct vc4_shader_meta
+{
+    ULONG   uniforms_size;          /* Bytes of uniform data GPU reads */
+    ULONG   num_texture_samples;    /* Number of texture lookups */
+    struct vc4_texture_sample_info texture_samples[VC4_MAX_TEX_SAMPLES];
+    ULONG   num_uniform_addr_offsets;
+    ULONG   uniform_addr_offsets[VC4_MAX_UNIFORM_ADDR]; /* Indices into uniform words */
+};
+
 struct vc4_bo_entry
 {
     APTR    vaddr;          /* CPU virtual address (= physical on RPi) */
@@ -80,12 +92,7 @@ struct vc4_bo_entry
     APTR    cached_base;    /* VC4_CACHED_BO: AllocMem base, NULL = VC pool */
     ULONG   cached_size;
     UQUAD   tiling_modifier;/* DRM_FORMAT_MOD_* — round-tripped via set/get_tiling */
-    /* Shader metadata (set by QPU scanner on CREATE_SHADER_BO) */
-    ULONG   uniforms_size;          /* Bytes of uniform data GPU reads */
-    ULONG   num_texture_samples;    /* Number of texture lookups */
-    struct vc4_texture_sample_info texture_samples[VC4_MAX_TEX_SAMPLES];
-    ULONG   num_uniform_addr_offsets;
-    ULONG   uniform_addr_offsets[VC4_MAX_UNIFORM_ADDR]; /* Indices into uniform words */
+    struct vc4_shader_meta *shader;     /* shader BOs only, else NULL */
 };
 
 /* V3D hardware state */
