@@ -433,7 +433,7 @@ static LONG isoFindCmp(struct CDFSVolume *vol, struct ISOLock *ifile, ULONG exte
 
         if (err != ERROR_OBJECT_WRONG_TYPE) {
             if (err != RETURN_OK)
-                break;
+                return err;
 
             if (cmp(ifile, data))
                 return RETURN_OK;
@@ -443,7 +443,7 @@ static LONG isoFindCmp(struct CDFSVolume *vol, struct ISOLock *ifile, ULONG exte
 
     }
 
-    return RETURN_FAIL;
+    return ERROR_OBJECT_NOT_FOUND;
 }
 
 struct namecmp {
