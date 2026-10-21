@@ -56,8 +56,11 @@ the JSON target, native linker and aborting panics. Cargo consumers use
 `%rust_cargo_config`, which selects the JSON target and enables Cargo's nightly
 JSON-target interface. `RUST_TARGET_TRIPLE` is an identifier for target tables
 and output directories; it is not a built-in rustc target in this profile.
-Loading the installed Cargo config selects AROS for all Cargo commands that
-load it. Run host tests without that config, or override `--target` with the
+`$(RUST_CARGO)` loads the installed Cargo config as well as the crate-store
+config, carrying the SDK generation into Cargo dependency fingerprints.
+Program-specific generated configs add their path remapping to those target
+flags. Loading the installed Cargo config selects AROS for all Cargo commands
+that load it. Run host tests without that config, or override `--target` with the
 host triple; host build scripts/proc macros are still compiled for the host.
 
 The shared native crate store is `$(PORTSDIR)/rust-crates-native`. Its libc
