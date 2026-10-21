@@ -604,6 +604,10 @@ LONG CDFS_Handler(struct ExecBase *SysBase)
                 break;
             }
 
+            /* Byte counts and seek positions use -1, not DOSFALSE, on failure. */
+            if (res2 && (dp->dp_Type == ACTION_READ ||
+                dp->dp_Type == ACTION_SEEK || dp->dp_Type == ACTION_WRITE))
+                res = -1;
             reply(SysBase, dp, res, res2);
         }
     }
