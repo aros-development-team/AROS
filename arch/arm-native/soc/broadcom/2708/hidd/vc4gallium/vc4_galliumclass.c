@@ -383,28 +383,45 @@ VOID METHOD(HiddVC4Gallium, Root, Get)
 /* The session a pipe screen belongs to, 0 for none. */
 static ULONG vc4_session_of(struct vc4galliumstaticdata *sd, APTR screen)
 {
-    ULONG i;
+    ULONG i, sid = 0;
 
+    ObtainSemaphore(&sd->bo_lock);
     for (i = 0; i < VC4_MAX_SESSIONS; i++)
     {
         if (sd->sessions[i].vs_Used && (sd->sessions[i].vs_Screen == screen))
-            return i + 1;
+        {
+            sid = i + 1;
+            break;
+        }
     }
-    return 0;
+    ReleaseSemaphore(&sd->bo_lock);
+    return sid;
 }
 
-/* For the present half: is a screen not the only live one? */
+/* For the present half: is another GL app live? An app can hold more
+ * than one screen, and contention is between apps, so each task counts
+ * once. */
 BOOL vc4_aros_shared_gpu(void *ctx)
 {
     struct vc4galliumstaticdata *sd = ctx;
-    ULONG i, live = 0;
+    struct vc4_session *s = sd->sessions;
+    ULONG i, j, n = 0;
 
+    ObtainSemaphore(&sd->bo_lock);
     for (i = 0; i < VC4_MAX_SESSIONS; i++)
     {
-        if (sd->sessions[i].vs_Used && !sd->sessions[i].vs_Dead)
-            live++;
+        if (!s[i].vs_Used || s[i].vs_Dead)
+            continue;
+        for (j = 0; j < i; j++)
+        {
+            if (s[j].vs_Used && !s[j].vs_Dead && (s[j].vs_Task == s[i].vs_Task))
+                break;
+        }
+        if (j == i)
+            n++;
     }
-    return live > 1;
+    ReleaseSemaphore(&sd->bo_lock);
+    return n > 1;
 }
 
 /* Sessions whose task died without destroying its screen: their Mesa
@@ -413,23 +430,33 @@ BOOL vc4_aros_shared_gpu(void *ctx)
 static void vc4_sweep_dead(struct vc4galliumstaticdata *sd)
 {
     ULONG i;
+    BOOL dead = FALSE;
+    APTR screen = NULL;
 
-    for (i = 0; i < VC4_MAX_SESSIONS; i++)
-    {
-        if (sd->sessions[i].vs_Used && sd->sessions[i].vs_Dead)
-            break;
-    }
-    if (i == VC4_MAX_SESSIONS)
+    ObtainSemaphore(&sd->bo_lock);
+    for (i = 0; (i < VC4_MAX_SESSIONS) && !dead; i++)
+        dead = sd->sessions[i].vs_Used && sd->sessions[i].vs_Dead;
+    ReleaseSemaphore(&sd->bo_lock);
+    if (!dead)
         return;
 
     vc4_aros_wait_idle(sd);
 
     for (i = 0; i < VC4_MAX_SESSIONS; i++)
     {
-        if (!sd->sessions[i].vs_Used || !sd->sessions[i].vs_Dead)
+        /* Claim it, so a concurrent sweep leaves it alone. */
+        ObtainSemaphore(&sd->bo_lock);
+        dead = sd->sessions[i].vs_Used && sd->sessions[i].vs_Dead;
+        if (dead)
+        {
+            sd->sessions[i].vs_Dead = FALSE;
+            screen = sd->sessions[i].vs_Screen;
+        }
+        ReleaseSemaphore(&sd->bo_lock);
+        if (!dead)
             continue;
 
-        aros_drm_screen_gone(sd->sessions[i].vs_Screen, TRUE);
+        aros_drm_screen_gone(screen, TRUE);
         vc4_aros_release_session(sd, i + 1);
         bug("[VC4Gallium] session %u: its task ended without a GL teardown, swept\n",
             (unsigned)(i + 1));
@@ -494,7 +521,9 @@ APTR METHOD(HiddVC4Gallium, Hidd_Gallium, CreatePipeScreen)
         ReleaseSemaphore(&sd->bo_lock);
         return NULL;
     }
+    ObtainSemaphore(&sd->bo_lock);
     sd->sessions[i].vs_Screen = screen;
+    ReleaseSemaphore(&sd->bo_lock);
     return screen;
 }
 
