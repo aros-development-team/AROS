@@ -14,6 +14,39 @@
 #include "graphics_intern.h"
 #include "gfxfuncsupport.h"
 
+/*
+ * Compatibility: on Kickstart the display runs the merged copper list built
+ * by MrgCop(), so FreeVPortCopLists() on a ViewPort of the displayed View does
+ * not change the picture until the next MrgCop()/LoadView(). Several old
+ * programs rely on this: they free and rebuild the copper lists of their
+ * displayed ViewPort (FreeVPortCopLists() + MakeVPort()) without loading the
+ * View again. Here the driver displays the ViewPort's own lists, so freeing
+ * them blanks the display. Keep the driver data of a displayed ViewPort;
+ * MakeVPort() then replaces its lists the safe way, and they are released
+ * when the ViewPort leaves the display.
+ */
+static BOOL IsDisplayedViewPort(struct ViewPort *vp, struct GfxBase *GfxBase)
+{
+    struct ViewPort *dvp;
+    BOOL found = FALSE;
+
+    ObtainSemaphoreShared(GfxBase->ActiViewCprSemaphore);
+    if (GfxBase->ActiView)
+    {
+        for (dvp = GfxBase->ActiView->ViewPort; dvp; dvp = dvp->Next)
+        {
+            if (dvp == vp)
+            {
+                found = !(vp->Modes & VP_HIDE);
+                break;
+            }
+        }
+    }
+    ReleaseSemaphore(GfxBase->ActiViewCprSemaphore);
+
+    return found;
+}
+
 /*****************************************************************************
 
     NAME */
@@ -58,6 +91,10 @@
 
     vpe = (struct ViewPortExtra *)GfxLookUp(vp);
     D(bug("[FreeVPortCopLists] ViewPort 0x%p, ViewPortExtra 0x%p\n", vp, vpe));
+    if(vpe && IsDisplayedViewPort(vp, GfxBase)) {
+        D(bug("[FreeVPortCopLists] ViewPort is displayed, keeping its driver data\n"));
+        return;
+    }
     if(vpe) {
         /* Free the associated DriverData */
         struct HIDD_ViewPortData *vpd = VPE_DATA(vpe);
