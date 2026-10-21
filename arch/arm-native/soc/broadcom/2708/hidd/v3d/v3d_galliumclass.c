@@ -445,6 +445,7 @@ static void v3d_ovl_suspend(struct V3DData *sd)
 }
 
 static struct vc4gfx_vblank v3d_ovl_vbl;
+static BOOL v3d_ovl_vbl_armed;      /* vcgfx may call v3d_ovl_vblank() */
 
 static void v3d_ovl_set_vblank(struct V3DData *sd, OOP_Object *bmobj,
                                struct vc4gfx_vblank *vbl)
@@ -456,10 +457,14 @@ static void v3d_ovl_set_vblank(struct V3DData *sd, OOP_Object *bmobj,
     };
 
     OOP_SetAttrs(bmobj, vbltags);
+    v3d_ovl_vbl_armed = (vbl != NULL);
 }
 
 /* Raw drop, for a session whose Mesa objects are gone: its pages are
- * swept with its BOs, and the plane is left for the next present. */
+ * swept with its BOs, and the plane is left for the next present. So is
+ * the vblank callback, as taking it off needs a live bitmap: with nothing
+ * queued it does nothing, and v3d_ovl_shutdown() keeps us loaded until a
+ * present has taken it off. */
 static void v3d_ovl_forget(void)
 {
     v3d_ovl.rsc = NULL;
@@ -569,11 +574,38 @@ static void v3d_ovl_task(struct V3DData *sd)
 {
     for (;;)
     {
-        Wait(SIGBREAKF_CTRL_F);
+        ULONG sigs = Wait(SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_F);
+
+        if (sigs & SIGBREAKF_CTRL_C)
+            break;
         ObtainSemaphore(&sd->ovl_lock);
         v3d_ovl_flush(sd);
         ReleaseSemaphore(&sd->ovl_lock);
     }
+
+    /* Forbid until exit: the stopper may unload this code once woken */
+    Forbid();
+    sd->ovl_task = NULL;
+    if (sd->ovl_waiter)
+        Signal(sd->ovl_waiter, SIGF_SINGLE);
+}
+
+/* For Expunge. While vcgfx may still call the vblank callback we stay;
+ * otherwise the overlay task goes. */
+BOOL v3d_ovl_shutdown(struct V3DData *sd)
+{
+    if (v3d_ovl_vbl_armed)
+        return FALSE;
+    if (sd->ovl_task)
+    {
+        sd->ovl_waiter = FindTask(NULL);
+        SetSignal(0, SIGF_SINGLE);
+        Signal(sd->ovl_task, SIGBREAKF_CTRL_C);
+        while (sd->ovl_task)
+            Wait(SIGF_SINGLE);
+        sd->ovl_waiter = NULL;
+    }
+    return TRUE;
 }
 
 /* Forget every job in flight. Caller holds job_lock, the GPU is idle or

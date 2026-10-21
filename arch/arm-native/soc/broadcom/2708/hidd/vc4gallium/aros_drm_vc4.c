@@ -406,15 +406,39 @@ static void aros_ovl_vblank(APTR data)
     }
 }
 
+static struct Task *aros_ovl_waiter;
+
 static void aros_ovl_task_entry(void)
 {
     for (;;)
     {
-        Wait(SIGBREAKF_CTRL_F);
+        ULONG sigs = Wait(SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_F);
+
+        if (sigs & SIGBREAKF_CTRL_C)
+            break;
         ObtainSemaphore(&aros_ovl_lock);
         aros_ovl_flush();
         ReleaseSemaphore(&aros_ovl_lock);
     }
+
+    /* Forbid until exit: the stopper may unload this code once woken */
+    Forbid();
+    aros_ovl_task = NULL;
+    if (aros_ovl_waiter)
+        Signal(aros_ovl_waiter, SIGF_SINGLE);
+}
+
+/* From Expunge, once vcgfx can no longer call aros_ovl_vblank(). */
+void vc4_aros_ovl_shutdown(void)
+{
+    if (!aros_ovl_task)
+        return;
+    aros_ovl_waiter = FindTask(NULL);
+    SetSignal(0, SIGF_SINGLE);
+    Signal(aros_ovl_task, SIGBREAKF_CTRL_C);
+    while (aros_ovl_task)
+        Wait(SIGF_SINGLE);
+    aros_ovl_waiter = NULL;
 }
 
 /*
@@ -940,7 +964,9 @@ IPTR vc4_aros_display_rp(APTR resource, LONG srcx, LONG srcy,
 /* A screen is going away: drop the present state it owns. A live one
  * (called before its destroy) releases its overlay pages; a dead one's
  * Mesa objects are gone, so its state is only forgotten, and the plane
- * comes down at the next present through a bitmap that is alive. */
+ * comes down at the next present through a bitmap that is alive. Until
+ * then the vblank callback stays too, doing nothing with nothing queued,
+ * and Expunge waits for it to be taken off. */
 void aros_drm_screen_gone(APTR screen, BOOL dead)
 {
     ObtainSemaphore(&aros_ovl_lock);
