@@ -465,6 +465,57 @@ static void bReleaseServiceBinding(struct BTBatBase *nh, struct BTBatBinding *bb
 /* \\\ */
 
 /* /// "btcGetAttrsA()" */
+/*****************************************************************************
+    NAME
+        LONG btcGetAttrsA(
+
+    SYNOPSIS
+        ULONG type, APTR btstruct, struct TagItem * tags)
+
+    FUNCTION
+        Read attributes of btbattery.class or one of its bindings.
+
+    INPUTS
+        type - BCGA_CLASS or BCGA_BINDING.
+        btstruct - Live binding returned by this class for BCGA_BINDING;
+            ignored for BCGA_CLASS.
+        tags - Terminated query tag list, or NULL. Each supported tag
+            supplies the address of writable storage of the stated type.
+
+    TAGS
+        For BCGA_CLASS:
+        BCCA_Priority (SIPTR *) - Binding priority; 0.
+        BCCA_Description (STRPTR *) - Borrowed description string.
+        BCCA_HasClassCfgGUI (IPTR *) - FALSE.
+        BCCA_HasBindingCfgGUI (IPTR *) - FALSE.
+        BCCA_AfterDOSRestart (IPTR *) - FALSE.
+        BCCA_UsingDefaultCfg (IPTR *) - TRUE.
+
+        For BCGA_BINDING:
+        BCBA_UsingDefaultCfg (IPTR *) - TRUE.
+        BCBA_Device (struct BtDevice **) - Borrowed device pointer.
+        BCBA_Service (struct BtService **) - Borrowed service pointer.
+        BCBA_Task (struct Task **) - Current binding task; may be NULL.
+
+    RESULT
+        Number of supported attributes written. Only the first occurrence
+        of each supported tag is used. Unknown tags and unsupported types,
+        including BCGA_CONFIG, leave destinations unchanged and add nothing
+        to the count.
+
+    NOTES
+        Boolean attributes require IPTR storage, not BOOL storage. The tag
+        list and output addresses are not retained. Do not modify or free
+        the description; its lifetime ends when the class is unloaded.
+
+        Queries do not retain returned objects or prevent binding teardown.
+        Serialize queries with release and keep the binding alive while
+        using its borrowed device, service or task pointers.
+
+    SEE ALSO
+        btcDoMethodA(), btcSetAttrsA()
+
+*****************************************************************************/
 AROS_LH3(LONG, btcGetAttrsA,
          AROS_LHA(ULONG, type, D0),
          AROS_LHA(APTR, btstruct, A0),
@@ -542,6 +593,26 @@ AROS_LH3(LONG, btcGetAttrsA,
 /* \\\ */
 
 /* /// "btcSetAttrsA()" */
+/*****************************************************************************
+    NAME
+        LONG btcSetAttrsA(
+
+    SYNOPSIS
+        ULONG type, APTR btstruct, struct TagItem * tags)
+
+    FUNCTION
+        No attributes can be set through this entry point in btbattery.class.
+
+    INPUTS
+        type, btstruct, tags - Ignored. Pointer arguments may be NULL.
+
+    RESULT
+        Always zero. No attributes are changed.
+
+    SEE ALSO
+        btcGetAttrsA()
+
+*****************************************************************************/
 AROS_LH3(LONG, btcSetAttrsA,
          AROS_LHA(ULONG, type, D0),
          AROS_LHA(APTR, btstruct, A0),
@@ -555,6 +626,56 @@ AROS_LH3(LONG, btcSetAttrsA,
 /* \\\ */
 
 /* /// "btcDoMethodA()" */
+/*****************************************************************************
+    NAME
+        SIPTR btcDoMethodA(
+
+    SYNOPSIS
+        ULONG methodid, IPTR * methoddata)
+
+    FUNCTION
+        Dispatch service-binding methods to btbattery.class.
+
+    INPUTS
+        methodid - One of the methods below.
+        methoddata - IPTR array with the payload required by the method.
+            Cast object pointers to IPTR. For methods without a payload,
+            this argument may be NULL.
+
+        BCM_AttemptServiceBinding - methoddata[0] is a live BtService *.
+            Accept ATT Battery Service (UUID 0x180f).
+            A match proceeds through BCM_ForceServiceBinding.
+        BCM_ForceServiceBinding - methoddata[0] is a live BtService *.
+            Require a device and a Battery Level endpoint (UUID 0x2a19).
+            The battery task observes connections; it does not connect the
+            device itself.
+            Return an opaque binding pointer cast to SIPTR after worker
+            initialization, or zero if binding cannot be established.
+        BCM_ReleaseServiceBinding - methoddata[0] is a live binding returned
+            by this class. Stop the battery task, wait for it to exit and
+            free the binding.
+            Return TRUE.
+        BCM_AttemptDeviceBinding, BCM_ForceDeviceBinding - Unsupported;
+            return zero without reading the payload.
+
+    RESULT
+        Method-specific result described above. Unsupported methods return
+        zero, including explicit close-window methods.
+
+    NOTES
+        Binding creation and release run in task context and may wait without
+        an application-selected timeout. They use SIGB_SINGLE in the calling
+        task; do not use that signal concurrently for another operation.
+        Keep the class open and the service, device and endpoints alive for
+        the binding lifetime. Serialize binding operations and queries.
+        The payload array is borrowed only for the duration of the call.
+        Release bindings through this class, never with FreeVec().
+        After release, the binding pointer is invalid.
+
+    SEE ALSO
+        btcGetAttrsA()
+
+*****************************************************************************/
 AROS_LH2(SIPTR, btcDoMethodA,
          AROS_LHA(ULONG, methodid, D0),
          AROS_LHA(IPTR *, methoddata, A1),
