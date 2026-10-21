@@ -239,6 +239,8 @@ static inline ULONG v3d_now_us(void)
 
 /* ovl_Flags: skip the latch wait; LatchWait before reusing the old page. */
 #define VC4GFX_OVL_NOWAIT       (1 << 0)
+/* Overlay Get: a video layer holds the plane, retry later */
+#define VC4GFX_OVL_BUSY         2
 
 /* Overlay descriptor (mirrored from vcgfx_bitmap.h, like the ids above):
  * a 32bpp plane the HVS scans straight from GPU memory, composited over

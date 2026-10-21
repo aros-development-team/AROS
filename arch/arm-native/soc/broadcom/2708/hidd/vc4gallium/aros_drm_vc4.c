@@ -209,6 +209,8 @@ static struct {
     struct pipe_resource *refused;  /* set_overlay said no for this
                                      * resource (e.g. scaled desktop):
                                      * don't retry every present */
+    ULONG           busy_skip;      /* presents before the next entry try
+                                     * while a video layer holds the plane */
     /* What the last present did with `queued`, for aros_ovl_flush */
     struct vc4_screen *screen;
     OOP_Object     *bm;
@@ -328,6 +330,15 @@ static void aros_ovl_suspend(void)
     if (aros_drm_bridge && aros_ovl.shown)
         aros_drm_bridge->clear_overlay(aros_drm_bridge->ctx, NULL);
     aros_ovl.shown = FALSE;
+}
+
+/* A video layer holds the plane: try entering again only now and then. */
+static BOOL aros_ovl_held(void)
+{
+    if (!aros_ovl.busy_skip)
+        return FALSE;
+    aros_ovl.busy_skip--;
+    return TRUE;
 }
 
 /* Full teardown: resource changed or the screen is going away. */
@@ -701,11 +712,20 @@ BOOL aros_drm_blit_resource(struct pipe_resource *src_pres,
                     ReleaseSemaphore(&aros_ovl_lock);
                     return TRUE;
                 }
-                /* The hidd refused a present that was fine before
-                 * (e.g. mode changed under us): tear down and don't
-                 * retry for this resource. */
-                aros_ovl_exit();
-                aros_ovl.refused = src_pres;
+                if (oret == -2)
+                {
+                    /* A video layer holds the plane: blit and keep the
+                     * pages, as when obscured. */
+                    aros_ovl_suspend();
+                }
+                else
+                {
+                    /* The hidd refused a present that was fine before
+                     * (e.g. mode changed under us): tear down and don't
+                     * retry for this resource. */
+                    aros_ovl_exit();
+                    aros_ovl.refused = src_pres;
+                }
             }
             else if (!windowed)
             {
@@ -723,7 +743,7 @@ BOOL aros_drm_blit_resource(struct pipe_resource *src_pres,
             }
         }
         else if (windowed && !multi && !aros_ovl.rsc && rsc->slices[0].size
-                 && aros_ovl.refused != src_pres)
+                 && aros_ovl.refused != src_pres && !aros_ovl_held())
         {
             struct vc4_screen *vscreen = vc4_screen(rsc->base.screen);
             struct vc4_bo *nb1, *nb2 = NULL;
@@ -787,8 +807,12 @@ BOOL aros_drm_blit_resource(struct pipe_resource *src_pres,
                 vc4_bo_unreference(&nb2);
             /* Refused (scaled desktop / no takeover): remember and stop
              * paying an alloc+refusal on every present. Cleared when
-             * the resource changes (resize/mode switch). */
-            aros_ovl.refused = src_pres;
+             * the resource changes (resize/mode switch). Held by a video
+             * layer: just wait a while. */
+            if (oret == -2)
+                aros_ovl.busy_skip = 30;
+            else
+                aros_ovl.refused = src_pres;
         }
     }
 

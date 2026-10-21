@@ -56,6 +56,7 @@ struct vc4gfx_overlay
     ULONG ovl_Flags;
 };
 #define VC4GFX_OVL_NOWAIT (1 << 0)
+#define VC4GFX_OVL_BUSY   2         /* Get: a video layer holds the plane */
 
 /* Per-vblank callback, interrupt context (mirrored from vcgfx_bitmap.h). */
 struct vc4gfx_vblank
@@ -878,7 +879,8 @@ int vc4_aros_flip_scanout(struct vc4galliumstaticdata *sd, OOP_Object *bm_obj)
  * the previous buffer (the hidd's overlay path waits for the vblank
  * latch before returning, so the old buffer is off-screen by then).
  * Returns 0 on success, -1 when the overlay is unavailable (firmware
- * owns the display / scaled desktop / bad handle) — caller blits.
+ * owns the display / scaled desktop / bad handle), -2 while a video
+ * layer holds the plane — caller blits either way.
  */
 int vc4_aros_set_overlay(struct vc4galliumstaticdata *sd,
                          OOP_Object *bm_obj,
@@ -951,7 +953,7 @@ int vc4_aros_set_overlay(struct vc4galliumstaticdata *sd,
     }
 
     ObtainSemaphore(&sd->bo_lock);
-    if (!active)
+    if (active != 1)
     {
         /* Rejected: nothing is on scanout — drop both pins. */
         vc4_aros_bo_unref_locked(sd, src_bo_handle);
@@ -960,7 +962,7 @@ int vc4_aros_set_overlay(struct vc4galliumstaticdata *sd,
         sd->overlay_pinned_handle = 0;
         sd->overlay_bm = NULL;
         ReleaseSemaphore(&sd->bo_lock);
-        return -1;
+        return (active == VC4GFX_OVL_BUSY) ? -2 : -1;
     }
     /* The displaced page keeps its pin until its latch is retired; a
      * repeat of the same BO drops the duplicate pin now. */

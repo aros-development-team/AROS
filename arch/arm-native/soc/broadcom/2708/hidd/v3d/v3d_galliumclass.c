@@ -160,6 +160,8 @@ static struct
     BOOL            shown;
     struct pipe_resource *refused;  /* overlay said no (scaled desktop /
                                      * no takeover): don't retry per frame */
+    ULONG           busy_skip;      /* presents before the next entry try
+                                     * while a video layer holds the plane */
     OOP_Object     *bm;
     LONG            x, y;           /* where the last present put it */
     ULONG           w, h, stride;
@@ -365,7 +367,7 @@ static void v3d_ovl_latch_wait(struct V3DData *sd)
 
 /* Show a BO on the HVS overlay plane at fb coords x,y. A NOWAIT Set
  * returns before the vblank latch. */
-static BOOL v3d_show_overlay(struct V3DData *sd, OOP_Object *bmobj,
+static ULONG v3d_show_overlay(struct V3DData *sd, OOP_Object *bmobj,
                              struct v3d_bo *bo, ULONG stride,
                              LONG x, LONG y, ULONG w, ULONG h)
 {
@@ -379,7 +381,7 @@ static BOOL v3d_show_overlay(struct V3DData *sd, OOP_Object *bmobj,
     ULONG paddr = 0;
 
     if (!bmobj || !sd->hiddVCGfxBMAB || !w || !h)
-        return FALSE;
+        return 0;
 
     ObtainSemaphore(&sd->bo_lock);
     if (bo->handle < V3D_MAX_BOS && sd->bo_table[bo->handle].refcount
@@ -387,7 +389,7 @@ static BOOL v3d_show_overlay(struct V3DData *sd, OOP_Object *bmobj,
         paddr = sd->bo_table[bo->handle].paddr;
     ReleaseSemaphore(&sd->bo_lock);
     if (!paddr)
-        return FALSE;
+        return 0;
 
     desc.ovl_Phys   = paddr;
     desc.ovl_Pitch  = stride;
@@ -404,7 +406,7 @@ static BOOL v3d_show_overlay(struct V3DData *sd, OOP_Object *bmobj,
 
     OOP_SetAttrs(bmobj, ovltags);
     OOP_GetAttr(bmobj, sd->hiddVCGfxBMAB + aoVCGfxBM_Overlay, &active);
-    return active != 0;
+    return (ULONG)active;
 }
 
 /* Hide the plane but keep the pages: obscure/reveal cycles must not
@@ -495,6 +497,15 @@ static void v3d_ovl_hide(struct V3DData *sd, OOP_Object *bmobj)
     v3d_ovl.stale = FALSE;
 }
 
+/* A video layer holds the plane: try entering again only now and then. */
+static BOOL v3d_ovl_held(void)
+{
+    if (!v3d_ovl.busy_skip)
+        return FALSE;
+    v3d_ovl.busy_skip--;
+    return TRUE;
+}
+
 /* Full teardown: resource changed or the session is going away. */
 static void v3d_ovl_exit(struct V3DData *sd)
 {
@@ -540,8 +551,8 @@ static void v3d_ovl_flush(struct V3DData *sd)
 
     v3d_hw_wait_seqno(sd, v3d_ovl.queued_seqno);
     v3d_ovl_latch_wait(sd);
-    if (!v3d_show_overlay(sd, v3d_ovl.bm, v3d_ovl.queued, v3d_ovl.stride,
-                          v3d_ovl.x, v3d_ovl.y, v3d_ovl.w, v3d_ovl.h))
+    if (v3d_show_overlay(sd, v3d_ovl.bm, v3d_ovl.queued, v3d_ovl.stride,
+                         v3d_ovl.x, v3d_ovl.y, v3d_ovl.w, v3d_ovl.h) != 1)
         return;
 
     /* `retiring` latched above: it becomes the spare the refill takes. */
@@ -1191,6 +1202,7 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
         {
             if (windowed && rsc->bo->handle == v3d_ovl.page_handle)
             {
+                ULONG shown;
 #if V3D_PROFILE
                 ULONG t0 = V3D_NOW_US(), t1;
 #endif
@@ -1236,8 +1248,9 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
 #if V3D_PROFILE
                 t1 = V3D_NOW_US();
 #endif
-                if (v3d_show_overlay(sd, scr_bm_obj, v3d_ovl.queued, stride,
-                                     absX, absY, xSize, ySize))
+                shown = v3d_show_overlay(sd, scr_bm_obj, v3d_ovl.queued, stride,
+                                         absX, absY, xSize, ySize);
+                if (shown == 1)
                 {
                     /* Rotate: the page leaving the plane parks in
                      * `retiring`; the one parked last time is rendered. */
@@ -1303,12 +1316,21 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
                     UnlockLayerRom(L);
                     return TRUE;
                 }
-                /* Refused a present that worked before (mode change):
-                 * tear down, don't retry for this resource. */
-                bug("[V3D] present: overlay refused mid-session, "
-                    "back to blitting\n");
-                v3d_ovl_exit(sd);
-                v3d_ovl.refused = &rsc->base;
+                if (shown == VC4GFX_OVL_BUSY)
+                {
+                    /* A video layer holds the plane: blit and keep the
+                     * pages, as when obscured. */
+                    v3d_ovl_suspend(sd);
+                }
+                else
+                {
+                    /* Refused a present that worked before (mode
+                     * change): tear down, don't retry for this resource. */
+                    bug("[V3D] present: overlay refused mid-session, "
+                        "back to blitting\n");
+                    v3d_ovl_exit(sd);
+                    v3d_ovl.refused = &rsc->base;
+                }
             }
             else if (!windowed)
             {
@@ -1322,7 +1344,8 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
             }
         }
         else if (V3D_OVERLAY_ENABLE && windowed && !v3d_ovl.rsc && !multi
-                 && rsc->slices[0].size && v3d_ovl.refused != &rsc->base)
+                 && rsc->slices[0].size && v3d_ovl.refused != &rsc->base
+                 && !v3d_ovl_held())
         {
             /* Three more pages: the next render target, a parked spare,
              * and a latch-free seed for `retiring`. */
@@ -1340,11 +1363,14 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
 
             if (nb && nb2 && nb3)
             {
+                ULONG shown;
+
                 /* Entry frame only: nothing is queued yet, so this one
                  * has to be waited for before it goes on the plane. */
                 v3d_wait_idle(sd);
-                if (v3d_show_overlay(sd, scr_bm_obj, rsc->bo, stride,
-                                     absX, absY, xSize, ySize))
+                shown = v3d_show_overlay(sd, scr_bm_obj, rsc->bo, stride,
+                                         absX, absY, xSize, ySize);
+                if (shown == 1)
                 {
                     bug("[V3D] present: overlay mode %ldx%ld at %ld,%ld\n",
                         (long)xSize, (long)ySize, (long)absX, (long)absY);
@@ -1378,10 +1404,18 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
                 v3d_bo_unreference(&nb);
                 v3d_bo_unreference(&nb2);
                 v3d_bo_unreference(&nb3);
-                /* Scaled desktop or no takeover: remember and stop
-                 * paying an alloc+refusal every present. */
-                bug("[V3D] present: overlay unavailable, blitting\n");
-                v3d_ovl.refused = &rsc->base;
+                if (shown == VC4GFX_OVL_BUSY)
+                {
+                    /* A video layer holds the plane: try again later */
+                    v3d_ovl.busy_skip = 30;
+                }
+                else
+                {
+                    /* Scaled desktop or no takeover: remember and stop
+                     * paying an alloc+refusal every present. */
+                    bug("[V3D] present: overlay unavailable, blitting\n");
+                    v3d_ovl.refused = &rsc->base;
+                }
             }
             else if (nb)
             {
