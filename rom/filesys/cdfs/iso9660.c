@@ -925,29 +925,28 @@ LONG ISO9660_Seek(struct CDFSVolume *vol, struct CDFSLock *fl, SIPTR pos, LONG m
 {
     struct ISOLock *il = (struct ISOLock *)fl;
     UQUAD size = fl->cl_FileInfoBlock.fib_Size;
+    UQUAD base, next;
 
     *oldpos = il->il_Offset;
     switch (mode) {
-    case OFFSET_BEGINNING:
-        if (pos < 0 || pos > size)
-            return ERROR_SEEK_ERROR;
-        il->il_Offset = pos;
-        break;
-    case OFFSET_CURRENT:
-        if (-pos > il->il_Offset ||
-            (il->il_Offset + pos) > size)
-            return ERROR_SEEK_ERROR;
-        il->il_Offset += pos;
-        break;
-    case OFFSET_END:
-        if (pos < 0 || -pos > size)
-            return ERROR_SEEK_ERROR;
-        il->il_Offset = size + pos;
-        break;
-    default:
-        return ERROR_SEEK_ERROR;
+    case OFFSET_BEGINNING: base = 0; break;
+    case OFFSET_CURRENT: base = il->il_Offset; break;
+    case OFFSET_END: base = size; break;
+    default: return ERROR_SEEK_ERROR;
     }
-
+    if (pos < 0) {
+        UQUAD distance = (UQUAD)(-(pos + 1)) + 1;
+        if (distance > base)
+            return ERROR_SEEK_ERROR;
+        next = base - distance;
+    } else {
+        if (base > size || (UQUAD)pos > size - base)
+            return ERROR_SEEK_ERROR;
+        next = base + pos;
+    }
+    if (next > size)
+        return ERROR_SEEK_ERROR;
+    il->il_Offset = next;
     return RETURN_OK;
 }
 
