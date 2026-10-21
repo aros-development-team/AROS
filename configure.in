@@ -2843,7 +2843,10 @@ fi
 AC_MSG_RESULT($aros_enable_rust)
 
 default_rust_version="1.98.1"
-AC_ARG_WITH(rust-version,AS_HELP_STRING([--with-rust-version=VERSION],[Compile rust-VERSION for AROS (default=$default_rust_version)]),use_rust_version="$withval",use_rust_version="")
+if test "$aros_target_cpu:$aros_toolchain" = "aarch64:llvm"; then
+    default_rust_version="nightly-2026-08-04"
+fi
+AC_ARG_WITH(rust-version,AS_HELP_STRING([--with-rust-version=VERSION],[Rust version (AArch64 LLVM: nightly-2026-08-04; other targets: 1.98.1)]),use_rust_version="$withval",use_rust_version="")
 if test "$use_rust_version" = ""; then
     target_rust_version="$default_rust_version"
 else

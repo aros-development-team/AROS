@@ -1,84 +1,119 @@
 # Rust cross compiler for AROS
 
-`tools-crosstools-rust` builds a host `rustc` (plus `cargo` and, on request,
-`bindgen`) with a Rust standard library for the AROS target of the current
-build, and installs it into `$(CROSSTOOLSDIR)/bin`. It is enabled with
-`configure --enable-rust` (`--with-rust-version=` picks the release, see
-`../rust.cfg`) and works with both the gnu and the llvm AROS toolchains: rustc
-only ever reaches the target C driver through the
-`$(CROSSTOOLSDIR)/bin/<cpu>-aros-cc` wrapper written here.
+`configure --enable-rust` selects an official, unmodified Rust compiler for
+AArch64 with the LLVM C toolchain. The default pin is
+`nightly-2026-08-04` (Rust 1.99). AROS support lives in an external JSON target,
+a library-only std/libc patch and native C adapters. The compiler, bootstrap
+and rustdoc sources are not patched.
 
-## How it is built
+AROS is a distinct operating system. The Unix-family cfg selects shared std
+implementations where their contracts fit AROS; it does not identify AROS as
+Linux. Networking uses AROS libraries and descriptor ownership, and file I/O
+uses native DOS handles. There is no macOS or hosted-service fallback.
 
-* The upstream source release `rustc-<ver>-src.tar.xz` is fetched from
-  static.rust-lang.org with the AROS fetch macro and patched with
-  `rustc-<ver>-src-aros.diff`.
-* A binary release of the same version (`rustc`, `rust-std`, `cargo` for the
-  build machine) is fetched the same way and used as the stage0 compiler:
-  rust's bootstrap accepts the same or the previous minor release, so no
-  network access beyond the fetches is needed (the source tarball vendors
-  every crate).
-* `x.py build --stage 1 compiler library` then `x.py install --stage 1`, with
-  a generated `bootstrap.toml`. LLVM is built from the bundled sources with
-  only the X86 and the target CPU backends.
-* `tools-crosstools-rust-bindgen` and `tools-crosstools-rust-cbindgen` install
-  bindgen-cli and cbindgen from crates.io with the freshly installed cargo
-  (these need network access, and bindgen needs a libclang at run time: the
-  llvm toolchain provides one, with the gnu toolchain the host's is used - see
-  `RUST_LIBCLANG_PATH` in `../rust.cfg`, or point `LIBCLANG_PATH` at one).
-* `workbench/libs/mesa/libnak` uses all of this to build mesa's NAK and NIL
-  (the Rust parts of the NVK Vulkan driver) as AROS link libraries.
-* `tools-crosstools-rust-check` links a std program for the target and fails
-  if the AROS executable has undefined symbols.
+## Native AArch64 recipe
 
-`crosstools-rust-create-patch` regenerates the diff from a patched source
-tree, as for the other crosstools.
+`tools-crosstools-rust` prepares official host `rustc`, host `rust-std`, Cargo
+and stock `rust-src` components. [The channel manifest](unmodified/channel.json)
+pins their archive hashes and compiler commit. The recipe requires Python
+3.12 or newer for filtered archive extraction. It does not require rustup.
+Downloads and extracted components belong to the build's private host work
+directory, outside the compiler and source SDK inputs.
 
-## What the patch adds
+The [native builder](unmodified/README.md) copies stock library sources, applies
+the AROS library patch, builds std offline with the official compiler, and
+installs the resulting target rlibs in a private sysroot. It compiles native
+platform adapters and links a diagnostic. Only the libraries are rebuilt.
+Generation keys include compiler/Cargo identities, patch and adapter inputs,
+and SDK headers and libraries. Verified target rlibs and the retained probe
+archive are the products; unused per-generation Cargo intermediates are removed. Compilation and installation do not qualify
+runtime execution.
 
-* Built-in targets `x86_64-unknown-aros`, `i686-unknown-aros`,
-  `arm-unknown-aros-eabihf`, `aarch64-unknown-aros`, `riscv64gc-unknown-aros`,
-  `m68k-unknown-aros` and `powerpc-unknown-aros`
-  (`compiler/rustc_target/src/spec/base/aros.rs`). AROS executables are
-  relocatable ELF objects, so: static relocation model, no PIC/PIE, no ELF
-  TLS (`thread_local!` uses pthread keys), `panic = abort` with no unwinder,
-  `-Wl,--no-gc-sections` after rustc's own flags, and `crt-static` is not
-  claimed (the AROS driver drops posixc.library's link library when it sees
-  `-static`). x86_64 uses the large code model and riscv64 the medium one,
-  like the C toolchain. Only x86_64 and riscv64 have been built here.
-* A `libc` crate module for AROS (`vendor/libc-0.2.185/src/unix/aros`):
-  types and structures from the SDK headers, constants generated from them
-  with the target compiler, and, with their C symbol names, what the AROS C
-  library does not have: sockets through bsdsocket.library (one library base
-  per thread, opened on first use), `poll()` over `WaitSelect()`,
-  `getaddrinfo()` through the stack's resolver, `mmap()` emulated with
-  allocated memory, and ENOSYS stubs for the rest (fork, pwrite, ...) so
-  that std's shared unix code links. This crate is the only one that
-  defines these symbols; the libc crate in `crates/`, which programs build
-  against, declares them.
-* std as a unix-family target: errno through `__stdc_geterrnoptr()`, the
-  environment through `__stdcio_get_environptr()`, `arc4random_buf` for
-  randomness, `pthread_setname_np` for thread names, `T:` as the temporary
-  directory, argv[0] as the current executable, positional reads emulated
-  with lseek, and the platform lists of `sys/fs` and `sys/fd` extended for
-  what the AROS C library lacks (`readdir_r`, `futimens`, vectored I/O, ...).
+The dedicated installation prefix is
+`$(CROSSTOOLSDIR)/rust-nightly-2026-08-04-aarch64`. It contains `rustc`, `rustdoc`
+and Cargo wrappers, the native C linker driver, a JSON target and Cargo config.
+Wrappers refer to the prepared official host tools and private std generation;
+they do not overwrite the existing C toolchain. Keep the host work directory
+with the installation. `aros-official-rust.json` records the generation and
+input/output hashes.
 
-## Known limitations
+Official component pins are provided for macOS AArch64/x86_64, Linux GNU
+AArch64/x86_64 and FreeBSD x86_64 hosts. The exercised host is macOS AArch64;
+the other download profiles require their own build qualification. The target
+qualification is generic AArch64 QEMU with one CPU, IPv4 loopback and RAM files.
+It makes no Apple hardware, SMP or physical-filesystem claim.
 
-* `std::process::Command` compiles but fails at run time (there is no
-  `fork`).
-* bsdsocket.library accepts calls on a base only from the task that opened
-  it, and finds a socket only through the base that holds it: a socket works
-  on the thread that created or accepted it, and another thread gets EBADF.
-  The sockets of x86_64 and riscv64 are implemented; the other CPUs have the
-  stubs. `poll()` reports descriptors that are not sockets of the calling
-  thread as ready.
-* `mmap()` cannot provide writable shared file mappings, `MAP_FIXED` or
-  `PROT_NONE` (ENOTSUP), and `munmap()` releases whole mappings only.
-* Binaries carry std and must not be fully stripped (the AROS loader needs
-  the relocations' symbols); `$(TARGET_STRIP)` (`--strip-unneeded`) is safe.
-* Build-machine paths are remapped (`RUST_REMAP_FLAGS` in `../rust.cfg`)
-  for the crates built in the tree.
-* Verified on hosted AROS x86_64: threads, channels, mutexes, time, HashMap,
-  files and directories, TCP and UDP over loopback, name resolution, and
-  `mmap()`.
+`tools-crosstools-rust-bindgen` and `tools-crosstools-rust-cbindgen` install the
+pinned crates.io tools in the same dedicated prefix. LLVM's libclang remains
+the C toolchain's dependency. `tools-crosstools-rust-check` builds a std program
+and rejects undefined symbols in the linked AROS command.
+
+## Build consumers
+
+Direct rustc consumers use `$(TARGET_RUSTC) $(TARGET_RUSTFLAGS)`; this supplies
+the JSON target, native linker and aborting panics. Cargo consumers use
+`$(RUST_CARGO_TARGET_FLAGS)` after the build subcommand, or the generated
+`%rust_cargo_config`, which selects the JSON target and enables Cargo's nightly
+JSON-target interface. `RUST_TARGET_TRIPLE` is an identifier for target tables
+and output directories; it is not a built-in rustc target in this profile.
+Loading the installed Cargo config selects AROS for all Cargo commands that
+load it. Run host tests without that config, or override `--target` with the
+host triple; host build scripts/proc macros are still compiled for the host.
+
+The shared native crate store is `$(PORTSDIR)/rust-crates-native`. Its libc
+0.2.190 patch uses the same AROS declarations and native adapter aliases as
+std's locked libc 0.2.189, with the macro spelling required by each release.
+Both libc versions contain FFI declarations for unavailable calls, rather than
+exporting replacement C bodies. Their shared `aros_rs_*` provider belongs to
+the native platform archive and reports ENOSYS with typed failure sentinels.
+This avoids duplicate C definitions and reliance on archive extraction order.
+The selected profile has one libc patch and a separate source-store directory.
+This avoids reusing a legacy patched tree after reconfiguration. Network and
+positioned-file operations resolve to the platform archive, rather than the
+legacy network ENOSYS definitions or successful no-op memory advice.
+
+AROS executables are relocatable ELF objects. The target uses static
+relocations, a large code model, pthread-key TLS and ordinary native x18.
+Automatic GDB script emission is disabled because its weak reference produces
+GOT relocations rejected by LoadSeg; ordinary DWARF remains available. Do not
+fully strip symbols needed by the AROS loader. Hosted x18 reservation belongs
+to a separate target profile.
+
+## Runtime requirements and limits
+
+The native profile requires the matching owned-socket interface in
+`bsdsocket.library` (vector 139) and its coherent POSIX descriptor dispatcher.
+See [native socket ownership](../../../developer/debug/test/native-socket/README.md).
+
+Atomic `FileExt::read_at`/`write_at` require posixc.library 0.41. The fcb semaphore
+covers capture, seek, transfer and restoration across duplicated descriptors.
+The native file handler controls offset and gap support. `pwrite` uses the
+requested offset even on an O_APPEND descriptor. An older library returns
+ENOSYS from the Rust adapter; there is no unlocked seek fallback.
+Replace the POSIX **boot component** when composing a test or installed bundle:
+a filesystem copy under `Libs/` cannot replace an already resident module.
+
+Socket duplication, nonblocking mode and single-socket readiness use native
+operations. Numeric resolver conversion, TCP/UDP loopback and RAM positioned
+I/O have guest diagnostics. Generic poll, process execution, Unix socket pairs
+and message/ancillary transport remain explicitly unavailable. FD_CLOEXEC
+metadata does not establish qualified process inheritance. Missing interface
+name lookup returns zero with ENOSYS; unsupported mkdtemp returns NULL with
+ENOSYS and does not modify its template.
+
+Routing, hostname DNS, IPv6, deadline expiry/cancellation, concurrent descriptor
+closure, physical filesystems and native SMP require separate qualification.
+These limits constrain application capabilities; they must not be hidden by
+host services or fake success results.
+
+## Other compiler profiles
+
+Other CPU/C-toolchain configurations retain the source-bootstrap Rust 1.98.1
+recipe and its existing patched built-in targets. That route fetches the source
+release plus binary stage0 components, applies `rustc-1.98.1-src-aros.diff`, and
+runs `x.py build/install --stage 1`. Its documented builds cover x86_64 and
+riscv64; it does not inherit native AArch64 runtime qualification. Its libc
+store and network/process limitations remain distinct from the native profile.
+A new compiler pin needs its source patch or external target and an explicit
+MetaMake backend entry. Reconfigure existing builds to select the native
+nightly profile; an explicit `--with-rust-version=1.98.1` retains that recipe.

@@ -30,7 +30,7 @@ rust-crates :
 ## Patched for AROS ###
 
 %rust_crate mmake=rust-crates-libc crate=libc version=$(RUST_LIBC_VERSION) \
-    patch=$(RUST_CRATE_LIBC)-aros.diff
+    patch=$(RUST_LIBC_PATCH)
 %rust_crate mmake=rust-crates-getrandom02 crate=getrandom version=$(RUST_GETRANDOM02_VERSION) \
     patch=$(RUST_CRATE_GETRANDOM02)-aros.diff
 %rust_crate mmake=rust-crates-getrandom03 crate=getrandom version=$(RUST_GETRANDOM03_VERSION) \
