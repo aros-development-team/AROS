@@ -433,7 +433,7 @@ LONG BCache_Read(struct BCache *bcache, ULONG block, UBYTE **bufferp)
     struct BCacheEntry *be;
     LONG err;
     ULONG depth = 0;
-    ULONG index, run;
+    ULONG index, run, loaded;
     int i;
 
     D(bug("%s: Block %d\n", __func__, block));
@@ -500,21 +500,27 @@ LONG BCache_Read(struct BCache *bcache, ULONG block, UBYTE **bufferp)
 
     be = &bp->bp_CacheEntries[index];
 
-    /* Read the run */
+    /* Read-ahead is optional: an unreadable following sector must not
+     * prevent access to the requested sector. */
+    loaded = run;
     err = BCache_IO(bcache, bp->bp_ReadCMD, block, run, be->be_Buffer);
-    if (err == RETURN_OK) {
-        D(bug("%s: Adding to Valid cache...\n", __func__));
-        for (i = 0; i < run; i++, be++) {
+    if (err == ERROR_SEEK_ERROR && run > 1) {
+        loaded = 1;
+        err = BCache_IO(bcache, bp->bp_ReadCMD, block, 1, be->be_Buffer);
+    }
+    if (err != RETURN_OK)
+        loaded = 0;
+
+    for (i = 0; i < run; i++, be++) {
+        if (i < loaded) {
             be->be_Block = block + i;
             ADDHEAD(&bp->bp_CacheValid, &be->be_Node);
-        }
-        *bufferp = bp->bp_CacheEntries[index].be_Buffer;
-    } else {
-        D(bug("%s: IO failed, returning %d (%d) to Invalid list\n", __func__, index, run));
-        for (i = 0; i < run; i++, be++) {
+        } else {
             ADDHEAD(&bp->bp_CacheInvalid, &be->be_Node);
         }
     }
+    if (err == RETURN_OK)
+        *bufferp = bp->bp_CacheEntries[index].be_Buffer;
 
     D(bug("Valid:"));
     ForeachNode(&bp->bp_CacheValid, be) {
