@@ -743,9 +743,11 @@ LONG ISO9660_Locate(struct CDFSVolume *vol, struct CDFSLock *idir, CONST_STRPTR 
                     if (err == RETURN_OK) {
                         /* .. and find its name in its parent */
                         if (tl.il_Public.cl_FileInfoBlock.fib_DirEntryType != ST_ROOT)
-                            isoFindExtent(vol, &tl, tl.il_Extent, tl.il_ParentExtent);
-                        il = &tl;
-                        continue;
+                            err = isoFindExtent(vol, &tl, tl.il_Extent, tl.il_ParentExtent);
+                        if (err == RETURN_OK) {
+                            il = &tl;
+                            continue;
+                        }
                     }
                 }
                 FreeVec(fl);
