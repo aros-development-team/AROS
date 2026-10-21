@@ -54,6 +54,32 @@ void PM_Prefs_Load(STRPTR file)
 	PM_Prefs = &LoadedPrefs;
 }
 
+/*****************************************************************************
+    NAME
+        void PM_ReloadPrefs(
+
+    SYNOPSIS
+        )
+
+    FUNCTION
+        Reload shared popup-menu preferences from ENV:sys/PopupMenu.prefs.
+        Use built-in defaults if the preference file cannot be loaded.
+
+    INPUTS
+        None.
+
+    RESULT
+        None. File and format failures are not reported to the caller.
+
+    NOTES
+        This operation can perform DOS I/O; call from task context. The
+        settings are shared by library users. Serialize reloads with menu
+        display. PM_OpenPopupMenuA() reloads preferences on each invocation.
+
+    SEE ALSO
+        PM_OpenPopupMenuA()
+
+*****************************************************************************/
 void __saveds __asm PM_ReloadPrefs(void)
 {
 	PM_Prefs_Load(PMP_PATH);
