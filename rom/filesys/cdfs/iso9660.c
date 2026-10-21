@@ -381,10 +381,11 @@ static LONG isoFindCmp(struct CDFSVolume *vol, struct ISOLock *ifile, ULONG exte
             /* Is the thing we're looking for a subdirectory?  */
             for (j = 0; j < iv->iv_PathTable.Entries; j++) {
                 pt = iv->iv_PathTable.Entry[j];
-                if (j == parent)
+                if (j == parent || pt->ParentDirectory != parent + 1)
                     continue;
                 ifile->il_PathTable = pt;
-                isoParseDir(vol, ifile, NULL, 0);
+                if (!isoParseDir(vol, ifile, NULL, 0))
+                    continue;
                 if (cmp(ifile, data))
                     return RETURN_OK;
             }
