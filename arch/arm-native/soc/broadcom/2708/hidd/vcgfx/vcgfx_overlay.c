@@ -3,11 +3,12 @@
 
     Desc: cgxvideo overlays on the HVS overlay plane.
 
-    The base class keeps the frame in our scanout memory, so the plane
-    scans it in place: the 16-bit RGB formats straight from what the
-    client writes, YUV after the base class has converted it. A layer
-    showing on the plane takes it from a gallium driver, which falls back
-    to blitting until the layer hides again.
+    The base class keeps the pages in our scanout memory, so the plane
+    scans them in place: the 16-bit RGB formats straight from what the
+    client writes, YUV after the base class has converted it. A new page
+    goes on at the next vblank; nothing writes into the page it replaced
+    until that has latched. A layer showing on the plane takes it from a
+    gallium driver, which falls back to blitting until the layer hides.
 */
 
 #define DEBUG 0
@@ -36,6 +37,32 @@ static void ovl_release(struct VideoCoreGfx_staticdata *xsd, OOP_Object *o)
         xsd->vcsd_OvlShown  = FALSE;
         xsd->vcsd_OvlClient = NULL;
     }
+}
+
+/* The page left by the last flip may still be on display until the
+ * vblank; Lock, Unlock and Swap may write into it next. */
+static void ovl_settle(struct VideoCoreGfx_staticdata *xsd, OOP_Object *o)
+{
+    if ((xsd->vcsd_OvlClient == o) && xsd->vcsd_OvlShown)
+        vc4_hvs_latch_wait(xsd);
+}
+
+APTR VideoCoreGfxOverlay__Hidd_Overlay__Lock(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+{
+    ovl_settle(XSD(cl), o);
+    return (APTR)OOP_DoSuperMethod(cl, o, msg);
+}
+
+VOID VideoCoreGfxOverlay__Hidd_Overlay__Unlock(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+{
+    ovl_settle(XSD(cl), o);
+    OOP_DoSuperMethod(cl, o, msg);
+}
+
+VOID VideoCoreGfxOverlay__Hidd_Overlay__Swap(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+{
+    ovl_settle(XSD(cl), o);
+    OOP_DoSuperMethod(cl, o, msg);
 }
 
 VOID VideoCoreGfxOverlay__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
@@ -131,16 +158,26 @@ APTR VideoCoreGfxOverlay__Hidd_Overlay__AllocScanout(OOP_Class *cl, OOP_Object *
                                                      struct pHidd_Overlay_AllocScanout *msg)
 {
     struct VideoCoreGfxOverlayData *data = OOP_INST_DATA(cl, o);
+    ULONG i;
 
-    if (data->sb.sb_Raw || !vcgfx_scanout_alloc(XSD(cl), &data->sb, msg->size))
-        return NULL;
-    return data->sb.sb_Pixels;
+    for (i = 0; i < 2; i++)
+    {
+        if (!data->sb[i].sb_Raw)
+            return vcgfx_scanout_alloc(XSD(cl), &data->sb[i], msg->size)
+                ? data->sb[i].sb_Pixels : NULL;
+    }
+    return NULL;
 }
 
 VOID VideoCoreGfxOverlay__Hidd_Overlay__FreeScanout(OOP_Class *cl, OOP_Object *o,
                                                     struct pHidd_Overlay_FreeScanout *msg)
 {
     struct VideoCoreGfxOverlayData *data = OOP_INST_DATA(cl, o);
+    ULONG i;
 
-    vcgfx_scanout_free(XSD(cl), &data->sb);
+    for (i = 0; i < 2; i++)
+    {
+        if (data->sb[i].sb_Raw && (data->sb[i].sb_Pixels == msg->memory))
+            vcgfx_scanout_free(XSD(cl), &data->sb[i]);
+    }
 }

@@ -47,10 +47,10 @@ struct VideoCoreGfxDisplayData
 {
 };
 
-/* A cgxvideo overlay: its frame lives in scanout memory. */
+/* A cgxvideo overlay: its pages live in scanout memory. */
 struct VideoCoreGfxOverlayData
 {
-    struct vcgfx_scanbuf    sb;
+    struct vcgfx_scanbuf    sb[2];
 };
 
 /* Screens shown as HVS planes (ShowViewPorts). x/y are the bitmap's
