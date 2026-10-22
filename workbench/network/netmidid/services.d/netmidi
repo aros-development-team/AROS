@@ -3,13 +3,15 @@
 #
 # AppleMIDI (RTP-MIDI) sessions on UDP 5004 and 5005, and Network MIDI 2.0
 # sessions on the port its configuration gives, if it gives one. It
-# answers invitations and invites the peers it is configured to. CAMD
-# clients reach its peers through the ports of the drivers
-# DEVS:Midi/applemidi and DEVS:Midi/networkmidi2. It takes no arguments:
-# what it does is in its configuration, ENV:NetMIDI.
+# answers invitations and invites the peers it is configured to, by address
+# or wherever one is advertised under the name given. CAMD clients reach
+# its peers through the ports of the drivers DEVS:Midi/applemidi and
+# DEVS:Midi/networkmidi2. It takes no arguments: what it does is in its
+# configuration, ENV:NetMIDI.
 #
-# The AppleMIDI session is advertised as _apple-midi._udp through mdnsd,
-# when it runs; without it the sessions work as before, by IPv4 address.
+# Its sessions are advertised through mdnsd, as _apple-midi._udp and
+# _midi2._udp, when it runs; without it the sessions work as before, by
+# IPv4 address.
 #
 #   Path    - the daemon executable
 #   Order   - bring-up priority hint (higher starts earlier): after mdnsd,

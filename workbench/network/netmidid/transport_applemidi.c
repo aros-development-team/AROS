@@ -73,6 +73,11 @@ struct applemidi_runtime {
     /* when it was last invited, and how long until it is again */
     uint64_t again_tried;
     uint64_t again_wait;
+    /* a peer to invite wherever it is advertised, by its session's name */
+    char wanted[64];
+    int wanted_present;
+    uint64_t wanted_tried;
+    uint64_t wanted_wait;
     struct applemidi_peers peers;
     struct stream stream[APPLEMIDI_PEERS_MAX];
     unsigned long unknown_commands; /* AppleMIDI commands not used */
@@ -840,6 +845,35 @@ static void periodic_peer(struct applemidi_runtime *rt, int index,
     }
 }
 
+static void applemidi_discovered(struct netmidid *d, void *self,
+                                 const struct netmidi_discovered *seen)
+{
+    struct applemidi_runtime *rt = self;
+    int wanted = rt->wanted[0] && strcmp(seen->name, rt->wanted) == 0;
+
+    (void)d;
+    if (seen->present)
+        printf(TAG "session \"%s\" found at %u.%u.%u.%u port %u\n",
+               seen->name, (unsigned int)(seen->address >> 24),
+               (unsigned int)((seen->address >> 16) & 255),
+               (unsigned int)((seen->address >> 8) & 255),
+               (unsigned int)(seen->address & 255),
+               (unsigned int)seen->port);
+    else
+        printf(TAG "session \"%s\" is gone\n", seen->name);
+    if (!wanted)
+        return;
+    if (seen->present) {
+        rt->configured = 1;
+        rt->configured_address = seen->address;
+        rt->configured_port = seen->port;
+        if (!rt->wanted_present) {
+            rt->wanted_wait = 0;        /* newly there: at once */
+            rt->wanted_tried = 0;
+        }
+    }
+    rt->wanted_present = seen->present;
+}
 
 static int applemidi_periodic(struct netmidid *d, void *self, uint64_t now)
 {
@@ -847,6 +881,29 @@ static int applemidi_periodic(struct netmidid *d, void *self, uint64_t now)
     int index;
 
     (void)d;
+    /* The peer we want is advertised and we have no session with it:
+       invite it, and again more slowly while it does not answer, up to
+       once a minute, and from the start again after a session. */
+    if (rt->wanted_present) {
+        int wanted = configured_index(rt);
+
+        if (wanted >= 0 && rt->peers.peer[wanted].session.phase ==
+                               APPLEMIDI_SESSION_CONNECTED) {
+            rt->wanted_tried = now ? now : 1;
+            rt->wanted_wait = NETMIDID_WANTED_FIRST_WAIT;
+        }
+    }
+    if (rt->wanted_present && configured_index(rt) < 0 &&
+        (!rt->wanted_tried ||
+         netmidid_elapsed(now, rt->wanted_tried) >= rt->wanted_wait)) {
+        printf(TAG "inviting \"%s\"\n", rt->wanted);
+        invite_configured(rt, now);
+        rt->wanted_tried = now ? now : 1;
+        rt->wanted_wait = rt->wanted_wait ? rt->wanted_wait * 2 :
+                          NETMIDID_WANTED_FIRST_WAIT;
+        if (rt->wanted_wait > NETMIDID_WANTED_LONGEST_WAIT)
+            rt->wanted_wait = NETMIDID_WANTED_LONGEST_WAIT;
+    }
     for (index = 0; index < APPLEMIDI_PEERS_MAX; ++index)
         if (rt->peers.peer[index].used)
             periodic_peer(rt, index, now);
@@ -859,6 +916,9 @@ static int applemidi_periodic(struct netmidid *d, void *self, uint64_t now)
         puts(TAG "peer timed out");
         drop_peer(rt, index, now);
     }
+    /* one wanted by name is invited when it is advertised */
+    if (rt->wanted[0])
+        return 0;
     /* The peer given by its address is invited again when there is no
        session with it, be it that it never answered or that it left:
        more slowly each time, up to once a minute, and from the start
@@ -1006,6 +1066,8 @@ static int applemidi_open(struct netmidid *d, void *self)
     /* An AppleMIDI session is found under its control port. */
     netmidi_discovery_add(d->discovery, d->session_name, "_apple-midi._udp",
                           rt->local_port);
+    netmidid_browse(d, &netmidid_applemidi, "_apple-midi._udp");
+    snprintf(rt->wanted, sizeof(rt->wanted), "%s", config->peer_name);
     return 0;
 }
 
@@ -1054,6 +1116,7 @@ const struct netmidid_transport netmidid_applemidi = {
     applemidi_receive,
     applemidi_next_due,
     applemidi_periodic,
+    applemidi_discovered,
     applemidi_send,
     applemidi_flush,
     applemidi_counts,

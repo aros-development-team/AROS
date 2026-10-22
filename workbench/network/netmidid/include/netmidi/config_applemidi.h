@@ -15,6 +15,9 @@ struct netmidi_applemidi_config {
     /* "peer_ip" and "peer_port": a peer to invite */
     uint16_t peer_port;
     char peer_ip[64];
+    /* "peer_name": a peer to invite wherever it is advertised under that
+     * session name. */
+    char peer_name[64];
     /* "applemidi.port.<n> = <name>": port n of the driver applemidi is
      * kept for the peer whose session has that name. */
     char port_name[16][64];

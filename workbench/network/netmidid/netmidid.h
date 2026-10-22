@@ -65,6 +65,8 @@ struct netmidid {
     /* what the system's mDNS service advertises for us: kept across a
        change of the configuration, which begins the rest anew */
     struct netmidi_discovery *discovery;
+    /* which transport is told what each search finds */
+    const struct netmidid_transport *browse_owner[NETMIDI_DISCOVERY_BROWSES];
     uint64_t published;         /* when the counts were last told */
 };
 
@@ -89,6 +91,9 @@ struct netmidid_transport {
     /* A turn of the loop: timers, retries and what is due. 1 when the
      * program has done what it was asked (never in the service). */
     int (*periodic)(struct netmidid *d, void *self, uint64_t now);
+    /* What one of its searches found or lost. */
+    void (*discovered)(struct netmidid *d, void *self,
+                       const struct netmidi_discovered *seen);
     /* A message a CAMD client sent to port (whole, SysEx checked): 0 when
      * it went to someone, or will at flush. */
     int (*send_midi)(struct netmidid *d, void *self, int port, const uint8_t *message,
@@ -131,5 +136,9 @@ int netmidid_port_take(struct netmidid *d, int driver, const uint8_t *name,
                        size_t name_length, int owner);
 void netmidid_port_release(struct netmidid *d, int driver, int owner);
 
+/* Looks for instances of type for the transport, which is told of each
+ * at discovered. What netmidi_discovery_browse returns. */
+int netmidid_browse(struct netmidid *d, const struct netmidid_transport *t,
+                    const char *type);
 
 #endif

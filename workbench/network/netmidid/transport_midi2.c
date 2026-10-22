@@ -54,6 +54,7 @@ struct midi2_runtime {
     /* A Host to invite, as its Client */
     int midi2_host;                 /* its address and port are known */
     uint64_t midi2_host_key;
+    char midi2_wanted[64];          /* or one advertised under this name */
     uint64_t midi2_tried;
     uint64_t midi2_wait;
     struct netmidi_port_counts midi2_count[NETMIDI2_SESSIONS_MAX];
@@ -438,6 +439,35 @@ static unsigned long midi2_counts(struct netmidid *d, void *self,
     return 0;
 }
 
+static void midi2_discovered(struct netmidid *d, void *self,
+                             const struct netmidi_discovered *seen)
+{
+    struct midi2_runtime *rt = self;
+
+    (void)d;
+    /* a Network MIDI 2.0 Host: known to its user by its endpoint's name,
+       to the network by its instance's */
+    if (seen->present)
+        printf(TAG "MIDI 2.0 host \"%s\" (\"%s\") found at %u.%u.%u.%u port %u\n",
+               seen->endpoint, seen->name,
+               (unsigned int)(seen->address >> 24),
+               (unsigned int)((seen->address >> 16) & 255),
+               (unsigned int)((seen->address >> 8) & 255),
+               (unsigned int)(seen->address & 255),
+               (unsigned int)seen->port);
+    else
+        printf(TAG "MIDI 2.0 host \"%s\" is gone\n", seen->name);
+    if (rt->midi2_wanted[0] &&
+        (strcmp(seen->endpoint, rt->midi2_wanted) == 0 ||
+         strcmp(seen->name, rt->midi2_wanted) == 0)) {
+        if (seen->present) {
+            rt->midi2_host_key = ((uint64_t)seen->address << 16) | seen->port;
+            if (!rt->midi2_host)
+                rt->midi2_tried = rt->midi2_wait = 0;
+        }
+        rt->midi2_host = seen->present;
+    }
+}
 
 /* The Product Instance Id tells one device from another and is how a
    system knows a device again (M2-124-UM section 4.4): it has to differ
@@ -524,6 +554,27 @@ static int midi2_open(struct netmidid *d, void *self)
                                config->port_name[index]) != 0)
             printf(TAG "networkmidi2 port %d cannot be kept for \"%s\"\n",
                    index, config->port_name[index]);
+    if (config->peer_name[0]) {
+        snprintf(rt->midi2_wanted, sizeof(rt->midi2_wanted), "%s",
+                 config->peer_name);
+        netmidid_browse(d, &netmidid_midi2, "_midi2._udp");
+    }
+    {
+        /* A Network MIDI 2.0 Host is found as _midi2._udp, with the two
+           strings it also gives in its Invitation Reply, and its records
+           live a minute at most, so that one that vanished is forgotten
+           (M2-124-UM sections 4.4 and 4.6). */
+        static char midi2_text[256];
+
+        midi2_text[0] = 0;
+
+        netmidi_discovery_item(midi2_text, sizeof(midi2_text),
+                               "UMPEndpointName", d->session_name);
+        netmidi_discovery_item(midi2_text, sizeof(midi2_text),
+                               "ProductInstanceId", rt->product_id);
+        netmidi_discovery_add_text(d->discovery, d->session_name,
+                                   "_midi2._udp", rt->port, midi2_text, 60);
+    }
     return 0;
 }
 
@@ -565,6 +616,7 @@ const struct netmidid_transport netmidid_midi2 = {
     midi2_receive,
     midi2_next_due,
     midi2_periodic,
+    midi2_discovered,
     midi2_send_midi,
     NULL,
     midi2_counts,
