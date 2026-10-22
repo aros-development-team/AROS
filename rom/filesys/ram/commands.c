@@ -215,12 +215,10 @@ BOOL CmdDie(struct Handler *handler)
    LONG error = 0;
 
    root_dir = handler->root_dir;
-   if(IsListEmpty(&root_dir->elements)
-      && IsListEmpty(&handler->notifications)
-      && IsListEmpty(&root_dir->notifications)
-      && root_dir->lock->lock_count == 1)
-      DeleteHandler(handler);
-   else
+   if(!IsListEmpty(&root_dir->elements)
+      || !IsListEmpty(&handler->notifications)
+      || !IsListEmpty(&root_dir->notifications)
+      || root_dir->lock->lock_count != 1)
       error = ERROR_OBJECT_IN_USE;
 
    /* Return success indicator */

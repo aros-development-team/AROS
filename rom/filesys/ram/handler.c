@@ -58,6 +58,7 @@ LONG RAMMain(void)
 #endif
 {
    struct Handler *handler;
+   struct DosLibrary *dos_base;
    struct MsgPort *proc_port;
    struct DosPacket *packet;
    PINT result;
@@ -423,13 +424,15 @@ LONG RAMMain(void)
 
          ramSecEndPacket(handler);
          ReplyPacket(proc_port, packet, result, IoErr());
+         if(exit)
+            break;
       }
 
    }
 
-   CloseLibrary((APTR)DOSBase);
-
+   dos_base = DOSBase;
    DeleteHandler(handler);
+   CloseLibrary((APTR)dos_base);
 
    return RETURN_OK;
 }
