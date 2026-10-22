@@ -117,15 +117,15 @@ BOOL CmdStartup(struct Handler *handler, STRPTR name, struct DeviceNode *dev_nod
       handler->clear_pool = CreatePool(MEMF_CLEAR, CLEAR_PUDDLE_SIZE,
          CLEAR_PUDDLE_THRESH);
       if(handler->clear_pool == NULL)
-         error = IoErr();
+         error = ERROR_NO_FREE_STORE;
       handler->muddy_pool = CreatePool(MEMF_ANY, MUDDY_PUDDLE_SIZE,
          MUDDY_PUDDLE_THRESH);
       if(handler->muddy_pool == NULL)
-         error = IoErr();
+         error = ERROR_NO_FREE_STORE;
       handler->public_pool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR,
          PUBLIC_PUDDLE_SIZE, PUBLIC_PUDDLE_THRESH);
       if(handler->public_pool == NULL)
-         error = IoErr();
+         error = ERROR_NO_FREE_STORE;
 
       /* Create a volume dos node */
 
@@ -155,7 +155,7 @@ BOOL CmdStartup(struct Handler *handler, STRPTR name, struct DeviceNode *dev_nod
       port = CreateMsgPort();
       handler->notify_port = port;
       if(port == NULL)
-         error = IoErr();
+         error = ERROR_NO_FREE_STORE;
    }
 
    /* Create the root directory and get a shared lock on it */
@@ -464,7 +464,7 @@ BOOL CmdFHFromLock(struct Handler *handler, struct FileHandle *handle,
          AddTail((struct List *)&lock->openings, (struct Node *)opening);
       }
       else
-         error = IoErr();
+         error = ERROR_NO_FREE_STORE;
    }
 
    /* Put address of opening in file handle */
@@ -1586,7 +1586,7 @@ BOOL CmdExamineAll(struct Handler *handler, struct Lock *lock,
       if(examination != NULL)
          AddTail((APTR)&handler->examinations, (APTR)examination);
       else
-         error = IoErr();
+         error = ERROR_NO_FREE_STORE;
    }
 
    if(error == 0)
@@ -2642,7 +2642,7 @@ BOOL CmdAddNotify(struct Handler *handler, struct NotifyRequest *request)
    notification = AllocPooled(handler->clear_pool,
       sizeof(struct Notification));
    if(notification == NULL)
-      error = IoErr();
+      error = ERROR_NO_FREE_STORE;
 
    if(error == 0)
    {

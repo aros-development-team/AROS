@@ -1011,7 +1011,7 @@ struct Lock *LockObject(struct Handler *handler, struct Object *object,
          NewList((struct List *)&lock->openings);
       }
       else
-         error = IoErr();
+         error = ERROR_NO_FREE_STORE;
    }
    else
    {
