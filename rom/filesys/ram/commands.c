@@ -533,12 +533,10 @@ BOOL CmdEnd(struct Handler *handler, struct Opening *opening)
          error = ERROR_DISK_WRITE_PROTECTED;
    }
 
-   if(error == 0)
-   {
-      Remove((APTR)opening);
-      CmdFreeLock(handler, lock);
-      FreePooled(handler->clear_pool, opening, sizeof(struct Opening));
-   }
+   /* Close releases the opening even if metadata updates are prohibited. */
+   Remove((APTR)opening);
+   CmdFreeLock(handler, lock);
+   FreePooled(handler->clear_pool, opening, sizeof(struct Opening));
 
    /* Return success indicator */
 
