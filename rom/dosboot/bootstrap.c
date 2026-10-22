@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Boot AROS
 */
@@ -233,7 +233,16 @@ static BOOL dosboot_BootBlock(struct IOStdReq **iop, struct MsgPort **portp, str
         io->io_Length = 0;
         DoIO((struct IORequest*)io);
 
-        FreeMem(buffer, bootblock_size);
+        /*
+         * Compatibility: Kickstart never frees the boot block buffer after a
+         * successful boot, it goes on with the returned init code. Old boot
+         * blocks rely on that: some free or reuse that memory themselves (it
+         * is the io_Data of the IORequest they get), and freeing it here then
+         * fails with "Memory freed twice" or corrupts the memory list. A
+         * successful bootblock owns its buffer; free it only on failure.
+         */
+        if (init == NULL)
+            FreeMem(buffer, bootblock_size);
     }
 
     if (init != NULL)
