@@ -1954,10 +1954,10 @@ BOOL CmdRenameObject(struct Handler *handler, struct Lock *old_lock,
       {
          /* Remove object from old parent and place it in new parent */
 
+         AdjustExaminations(handler, object);
          Remove((struct Node *)object);
          AddTail((struct List *)&parent->elements, (struct Node *)object);
          object->parent = parent;
-         AdjustExaminations(handler, object);
       }
 
       if(object != duplicate)
