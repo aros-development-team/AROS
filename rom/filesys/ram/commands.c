@@ -2386,6 +2386,8 @@ BOOL CmdMakeLink(struct Handler *handler, struct Lock *lock, STRPTR name,
             link->block_count += block_diff;
             handler->block_count += block_diff;
          }
+         else
+            AttemptDeleteObject(handler, link, FALSE);
       }
    }
 
