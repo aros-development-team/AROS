@@ -2468,9 +2468,13 @@ LONG CmdReadLink(struct Handler *handler, struct Lock *lock,
 
    if(error == 0)
    {
-      /* Add link target to link's parent path */
+      /* Add link target to link's parent path (SetString() stores an
+         empty target as NULL) */
 
-      if(AddPart(buffer, link->soft_link_target, buffer_size))
+      p = link->soft_link_target;
+      if(p == NULL)
+         p = "";
+      if(AddPart(buffer, p, buffer_size))
       {
          /* Add remainder of original path after link */
 
