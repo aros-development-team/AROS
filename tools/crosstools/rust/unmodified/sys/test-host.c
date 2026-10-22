@@ -13,8 +13,6 @@ static void *worker(void *arg)
     for (int i = 0; i < 512; ++i) {
         char name[] = "RAM:unchanged-XXXXXX";
         errno = EINVAL;
-        assert(aros_rs_poll(NULL, 0, 0) == -1 && errno == ENOSYS);
-        errno = EINVAL;
         assert(aros_rs_fork() == (intptr_t)-1 && errno == ENOSYS);
         errno = EINVAL;
         assert(aros_rs_if_nametoindex("unavailable") == 0 && errno == ENOSYS);

@@ -19,9 +19,14 @@ outside all three input trees. The tool records commands, diagnostics, generated
 C/Rust sources, objects, extracted bytes, and a JSON comparison. It fingerprints
 the consumed SDK headers and std/tool inputs and verifies them after compilation.
 
+The poll native contract header is copied from the source tree (or
+`--native-header`) into private output, allowing an ABI check before SDK
+installation without modifying shared headers.
+
 The records cover sizes, alignment, member offsets and member sizes for socket
 addresses, resolver records, scatter/gather messages, ancillary message headers,
-linger and timeout records, plus socket options, protocol identifiers and ioctl
+linger, timeout and pollfd records, plus nfds_t/short widths, poll event bits,
+socket options, protocol identifiers and ioctl
 values. `MSG_NOSIGNAL` is an optional capability: absence in both SDK and Rust is
 reported as unsupported. A Rust value with no native counterpart fails.
 
