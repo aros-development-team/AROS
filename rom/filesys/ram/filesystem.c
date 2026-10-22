@@ -626,7 +626,7 @@ PINT ChangeFileSize(struct Handler *handler, struct Opening *opening,
 {
    PINT length, new_length, remainder, end_length, full_length;
    UPINT diff, old_pos, block_count;
-   struct Block *block, *end_block;
+   struct Block *block, *end_block, *old_end_block;
    struct Object *file;
    LONG error = 0;
    struct MinList *openings;
@@ -663,7 +663,7 @@ PINT ChangeFileSize(struct Handler *handler, struct Opening *opening,
    full_length = length;
    end_length = file->end_length;
 
-   block = GetLastBlock(file);
+   block = old_end_block = GetLastBlock(file);
    full_length += block->length - end_length;
 
    /* Change size */
@@ -693,7 +693,11 @@ PINT ChangeFileSize(struct Handler *handler, struct Opening *opening,
       {
          new_length = -1;
          error = IoErr();
-         ChangeFileSize(handler, opening, length, OFFSET_BEGINNING);
+         while(GetLastBlock(file) != old_end_block)
+         {
+            block = (APTR)RemTail((APTR)&file->elements);
+            FreeDataBlock(handler, file, block);
+         }
       }
       else
          file->end_length = end_length;
