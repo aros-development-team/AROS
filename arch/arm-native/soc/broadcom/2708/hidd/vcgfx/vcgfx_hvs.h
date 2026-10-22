@@ -81,6 +81,8 @@
 #define HVS_CTL0_SIZE_MASK      0x3f
 #define HVS_CTL0_ORDER_SHIFT    13          /* pixel channel order; fb uses 3 */
 #define HVS_CTL0_ORDER_MASK     0x3
+/* The low order bit swaps R and B; the 16-bit formats need the fb's swapped */
+#define HVS_CTL0_ORDER_RB       (1UL << HVS_CTL0_ORDER_SHIFT)
 #define HVS_CTL0_UNITY          (1UL << 4)  /* no scaler pipeline (1:1) */
 #define HVS_CTL0_FORMAT_MASK    0xf         /* bits 3:0 */
 

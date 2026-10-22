@@ -576,7 +576,7 @@ static ULONG hvs_put_src(struct vc4_hvs_state *st, ULONG *w, ULONG words,
         w[5] = 0;
         w[6] = s->pitch;
         if (s->pxf)
-            w[0] = (w[0] & ~HVS_CTL0_FORMAT_MASK) | s->pxf;
+            w[0] = ((w[0] & ~HVS_CTL0_FORMAT_MASK) | s->pxf) ^ HVS_CTL0_ORDER_RB;
         return HVS_UNITY_WORDS;
     }
 
@@ -596,7 +596,7 @@ static ULONG hvs_put_src(struct vc4_hvs_state *st, ULONG *w, ULONG words,
     w[HVS_SC_KRN0]  = HVS_OWN_KERNEL;
     w[HVS_SC_KRN1]  = HVS_OWN_KERNEL;
     if (s->pxf)
-        w[0] = (w[0] & ~HVS_CTL0_FORMAT_MASK) | s->pxf;
+        w[0] = ((w[0] & ~HVS_CTL0_FORMAT_MASK) | s->pxf) ^ HVS_CTL0_ORDER_RB;
     return HVS_SCALED_WORDS;
 }
 
