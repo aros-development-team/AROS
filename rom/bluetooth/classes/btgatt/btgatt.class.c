@@ -301,6 +301,47 @@ ADD2EXPUNGELIB(GM_UNIQUENAME(libExpunge), 0)
 /* \\\ */
 
 /* /// "btcGetAttrsA()" */
+/*****************************************************************************
+    NAME
+        LONG btcGetAttrsA(
+
+    SYNOPSIS
+        ULONG type, APTR btstruct, struct TagItem * tags)
+
+    FUNCTION
+        Read attributes of btgatt.class.
+
+    INPUTS
+        type - BCGA_CLASS.
+        btstruct - Ignored; may be NULL.
+        tags - Terminated query tag list, or NULL. Each supported tag
+            supplies the address of writable storage of the stated type.
+
+    TAGS
+        For BCGA_CLASS:
+        BCCA_Priority (SIPTR *) - Binding priority; 0.
+        BCCA_Description (STRPTR *) - Borrowed description string.
+        BCCA_HasClassCfgGUI (IPTR *) - TRUE.
+        BCCA_HasBindingCfgGUI (IPTR *) - FALSE.
+        BCCA_AfterDOSRestart (IPTR *) - FALSE.
+        BCCA_UsingDefaultCfg (IPTR *) - Whether the class uses its default
+        configuration.
+
+    RESULT
+        Number of supported attributes written. Only the first occurrence
+        of each supported tag is used. Unknown tags and unsupported types,
+        including BCGA_CONFIG, leave destinations unchanged and add nothing
+        to the count.
+
+    NOTES
+        Boolean attributes require IPTR storage, not BOOL storage. The tag
+        list and output addresses are not retained. Do not modify or free
+        the description; its lifetime ends when the class is unloaded.
+
+    SEE ALSO
+        btcDoMethodA(), btcSetAttrsA()
+
+*****************************************************************************/
 AROS_LH3(LONG, btcGetAttrsA,
          AROS_LHA(ULONG, type, D0),
          AROS_LHA(APTR, btstruct, A0),
@@ -352,6 +393,26 @@ AROS_LH3(LONG, btcGetAttrsA,
 /* \\\ */
 
 /* /// "btcSetAttrsA()" */
+/*****************************************************************************
+    NAME
+        LONG btcSetAttrsA(
+
+    SYNOPSIS
+        ULONG type, APTR btstruct, struct TagItem * tags)
+
+    FUNCTION
+        No attributes can be set through this entry point in btgatt.class.
+
+    INPUTS
+        type, btstruct, tags - Ignored. Pointer arguments may be NULL.
+
+    RESULT
+        Always zero. No attributes are changed.
+
+    SEE ALSO
+        btcGetAttrsA()
+
+*****************************************************************************/
 AROS_LH3(LONG, btcSetAttrsA,
          AROS_LHA(ULONG, type, D0),
          AROS_LHA(APTR, btstruct, A0),
@@ -365,6 +426,51 @@ AROS_LH3(LONG, btcSetAttrsA,
 /* \\\ */
 
 /* /// "btcDoMethodA()" */
+/*****************************************************************************
+    NAME
+        SIPTR btcDoMethodA(
+
+    SYNOPSIS
+        ULONG methodid, IPTR * methoddata)
+
+    FUNCTION
+        Dispatch configuration and local service-record events to
+        btgatt.class.
+
+    INPUTS
+        methodid - One of the methods below.
+        methoddata - IPTR array for BCM_ServiceRecordEvent; otherwise
+        ignored.
+
+        BCM_OpenCfgWindow - Start the class configuration task. No payload.
+            Return TRUE if a task was spawned; FALSE if one already exists
+            or the library or task could not be opened. TRUE does not
+            guarantee that the task subsequently opens a window.
+        BCM_ConfigChangedEvent - Reload configuration unless its editor is
+            active. Apply the GATT service policy and LE advertising setting.
+            Generic Access and Generic Attribute remain enabled.
+            No payload. Return TRUE even if the reload could not run.
+        BCM_ServiceRecordEvent - methoddata[0] is the service-record pointer;
+            methoddata[1] is nonzero for addition, zero for removal. Apply
+            the current policy to an added record of the supported protocol.
+            A removed record is not dereferenced. Notify an active editor
+            to refresh its list. Return TRUE even if policy application
+            could not run.
+
+    RESULT
+        Method-specific result described above. Unsupported methods return
+        zero, including explicit close-window methods.
+
+    NOTES
+        Call from task context. Keep an added record valid until the call
+        returns. The payload array is not retained. Configuration loading
+        can allocate memory and access bluetooth.library. These methods
+        do not create remote-device or service bindings.
+
+    SEE ALSO
+        btcGetAttrsA()
+
+*****************************************************************************/
 AROS_LH2(SIPTR, btcDoMethodA,
          AROS_LHA(ULONG, methodid, D0),
          AROS_LHA(IPTR *, methoddata, A1),

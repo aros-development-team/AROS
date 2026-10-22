@@ -1239,6 +1239,37 @@ void DrawStatefulGadgetImageToRP(struct RastPort *rp, struct DecorImage *di, ULO
 /* AROS Library Function Wrappers                                             */
 /******************************************************************************/
 
+/*****************************************************************************
+    NAME
+        void DDrawPartImageToRP(
+
+    SYNOPSIS
+        struct RastPort *rp, struct DecorImage *di, UWORD x, UWORD y, UWORD sx, UWORD sy, UWORD sw, UWORD sh)
+
+    FUNCTION
+        Copy a rectangular part of an image to a RastPort.
+
+    INPUTS
+        rp - Non-NULL destination RastPort with a writable bitmap.
+        di - Non-NULL source image. An image with ok == FALSE is ignored.
+        x, y - Destination top-left coordinates, in pixels.
+        sx, sy - Source top-left coordinates, in pixels.
+        sw, sh - Positive rectangle dimensions, within the source image.
+
+    NOTES
+        Uses di->bitmap when present; otherwise reads packed ARGB bytes
+        from di->data, with a row stride of di->w * 4 bytes. The stride
+        must fit the pixel-array API's UWORD argument.
+
+        This is a copy, not alpha compositing. The mask and bitmap2 fields
+        are ignored. The source is neither modified nor consumed. Keep its
+        selected storage valid and exclude concurrent modification during use.
+        Source bounds are not checked.
+
+    SEE ALSO
+        DDrawPartToImage(), DDrawStatefulGadgetImageToRP(), WritePixelArray()
+
+*****************************************************************************/
 AROS_LH8(void, DDrawPartImageToRP,
     AROS_LHA(struct RastPort *, rp, A0),
     AROS_LHA(struct DecorImage *, di, A1),
@@ -1255,6 +1286,34 @@ AROS_LH8(void, DDrawPartImageToRP,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+    NAME
+        void DDrawPartToImage(
+
+    SYNOPSIS
+        struct DecorImage *src, struct DecorImage *dest, UWORD sx, UWORD sy, UWORD sw, UWORD sh, UWORD dx, UWORD dy)
+
+    FUNCTION
+        Copy a rectangle of ARGB pixels between image buffers.
+
+    INPUTS
+        src - Non-NULL image with readable packed ARGB pixel storage.
+        dest - Non-NULL image with writable packed ARGB pixel storage.
+        sx, sy - Source top-left coordinates, in pixels.
+        sw, sh - Positive rectangle dimensions, within both image buffers.
+        dx, dy - Destination top-left coordinates, in pixels.
+
+    NOTES
+        All four bytes of each pixel are copied unchanged. Source and
+        destination rows use their respective image widths as pixel strides.
+        The buffers must not overlap. Bounds and ok flags are not checked.
+        Neither image is consumed; metadata and bitmap caches are unchanged.
+        Exclude concurrent access to the destination while copying.
+
+    SEE ALSO
+        DDrawPartImageToRP(), DWriteAlphaPixelArray()
+
+*****************************************************************************/
 AROS_LH8(void, DDrawPartToImage,
     AROS_LHA(struct DecorImage *, src, A0),
     AROS_LHA(struct DecorImage *, dest, A1),
@@ -1271,6 +1330,42 @@ AROS_LH8(void, DDrawPartToImage,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+    NAME
+        void DDrawStatefulGadgetImageToRP(
+
+    SYNOPSIS
+        struct RastPort *rp, struct DecorImage *di, ULONG state, UWORD xp, UWORD yp)
+
+    FUNCTION
+        Draw the first-row image cell selected by a gadget state.
+
+    INPUTS
+        rp - Non-NULL destination RastPort with a writable bitmap.
+        di - Non-NULL image with nonzero subimagescols and subimagesrows.
+            Each grid cell must have positive dimensions.
+        state - IDS_SELECTED selects column 1; IDS_INACTIVENORMAL selects
+            column 2. IDS_NORMAL and all other values select column 0.
+        xp, yp - Destination top-left coordinates, in pixels.
+
+    NOTES
+        Draws at the cell's natural size: image width divided by column
+        count and image height divided by row count, rounded down. Does
+        nothing if ok is FALSE or the selected column is outside the grid.
+
+        Cells without a bitmap-cache marker are alpha-composited from packed
+        ARGB data. Marked cells use the available bitmap caches; bitmap uses
+        its mask when present, and bitmap2 is copied without a mask. Keep
+        the cache markers consistent with the available storage. ARGB row
+        strides must fit the pixel-array API's UWORD argument.
+
+        The image is borrowed. Keep its storage valid and exclude concurrent
+        modification during use.
+
+    SEE ALSO
+        DDrawScaledStatefulGadgetImageToRP(), DCreateDecorImageContainerMatchingScreen()
+
+*****************************************************************************/
 AROS_LH5(void, DDrawStatefulGadgetImageToRP,
     AROS_LHA(struct RastPort *, rp, A0),
     AROS_LHA(struct DecorImage *, di, A1),
@@ -1284,6 +1379,49 @@ AROS_LH5(void, DDrawStatefulGadgetImageToRP,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+    NAME
+        void DDrawScaledStatefulGadgetImageToRP(
+
+    SYNOPSIS
+        struct RastPort *rp, struct DecorImage *di, ULONG state, UWORD xp, UWORD yp, WORD scaledwidth, WORD scaledheight)
+
+    FUNCTION
+        Draw a gadget-state image cell at the requested size.
+
+    INPUTS
+        rp - Non-NULL destination RastPort with a writable bitmap.
+        di - Non-NULL image with nonzero subimagescols and subimagesrows.
+            Each grid cell must have positive dimensions.
+        state - IDS_SELECTED selects column 1; IDS_INACTIVENORMAL selects
+            column 2. IDS_NORMAL and all other values select column 0.
+        xp, yp - Destination top-left coordinates, in pixels.
+        scaledwidth, scaledheight - Positive destination dimensions, in pixels.
+            Use -1 for the natural cell size on either axis. Zero is invalid.
+
+    NOTES
+        Uses row 0. Natural cell dimensions are the image dimensions divided
+        by the grid dimensions, rounded down. Any negative size selects the
+        natural size on that axis. Does nothing if ok is FALSE or the selected
+        column is outside the grid.
+
+        A size change samples packed ARGB data without interpolation, then
+        alpha-composites the result. This requires di->data even if bitmap
+        caches exist. Keep dimensions and products within DScaleBuffer()'s
+        limits and all ARGB row strides within the pixel-array API's UWORD
+        range. At natural size, drawing follows DDrawStatefulGadgetImageToRP().
+
+        The image is borrowed. Keep its storage valid and exclude concurrent
+        modification during use.
+
+    BUGS
+        Scaling allocation failures are not checked and can cause invalid
+        memory access. The function provides no error result.
+
+    SEE ALSO
+        DDrawStatefulGadgetImageToRP(), DScaleBuffer()
+
+*****************************************************************************/
 AROS_LH7(void, DDrawScaledStatefulGadgetImageToRP,
     AROS_LHA(struct RastPort *, rp, A0),
     AROS_LHA(struct DecorImage *, di, A1),
@@ -1299,6 +1437,40 @@ AROS_LH7(void, DDrawScaledStatefulGadgetImageToRP,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+    NAME
+        void DHorizVertRepeatDecorImage(
+
+    SYNOPSIS
+        struct DecorImage *di, ULONG color, UWORD offx, UWORD offy, struct RastPort *rp, UWORD x, UWORD y, WORD w, WORD h)
+
+    FUNCTION
+        Fill a rectangle by repeating an image, or with a fallback color.
+
+    INPUTS
+        di - Non-NULL image. For image drawing, provide a nonempty image
+            with a 1-by-1 subimage grid and consistent pixel or bitmap storage.
+        color - Fallback color, as a numeric 0xAARRGGBB value.
+        offx, offy - Initial source offsets, reduced modulo the image size.
+        rp - Non-NULL destination RastPort with a writable bitmap.
+        x, y - Destination top-left coordinates, in pixels.
+        w, h - Destination dimensions, in pixels. Nonpositive values do nothing.
+
+    NOTES
+        If ok is FALSE, fills the rectangle with color using FillPixelArray().
+        Otherwise repeats the image in both directions, cropping tiles at the
+        rectangle edges. Tiles are not scaled. Transparency and bitmap-cache
+        selection follow DDrawStatefulGadgetImageToRP(). ARGB row strides must
+        fit the pixel-array API's UWORD argument.
+
+        The image is borrowed. Keep its storage valid and exclude concurrent
+        modification during use. Image dimensions and grid values are not
+        validated.
+
+    SEE ALSO
+        DDrawStatefulGadgetImageToRP(), FillPixelArray()
+
+*****************************************************************************/
 AROS_LH9(void, DHorizVertRepeatDecorImage,
     AROS_LHA(struct DecorImage *, di, A0),
     AROS_LHA(ULONG, color, D0),
@@ -1389,6 +1561,36 @@ AROS_LH9(void, DShadeLine,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+    NAME
+        void DSetImageTint(
+
+    SYNOPSIS
+        struct DecorImage *dst, UWORD ratio, ULONG argb)
+
+    FUNCTION
+        Mix a color into an image and make every pixel opaque.
+
+    INPUTS
+        dst - Image with writable packed ARGB storage, or NULL to do nothing.
+        ratio - Tint weight from 0 through 255. Values are not clamped.
+        argb - Numeric 0xAARRGGBB tint color. The alpha byte is ignored.
+
+    NOTES
+        For each RGB component, the result is:
+            floor(tint * ratio / 256) + floor(original * (255 - ratio) / 256)
+        Every output alpha byte is 255. Neither endpoint is an exact copy:
+        ratio 0 darkens nonzero source components, and ratio 255 darkens
+        nonzero tint components.
+
+        Only the pixel buffer changes. The ok flag is not checked, and bitmap
+        caches are not refreshed. The image remains owned by the caller.
+        Exclude concurrent reads or writes while tinting.
+
+    SEE ALSO
+        DWriteAlphaPixelArray(), DDrawPartToImage()
+
+*****************************************************************************/
 AROS_LH3(void, DSetImageTint,
     AROS_LHA(struct DecorImage *, dst, A0),
     AROS_LHA(UWORD, ratio, D0),
@@ -1400,6 +1602,43 @@ AROS_LH3(void, DSetImageTint,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+    NAME
+        void DTileMapToBitmap(
+
+    SYNOPSIS
+        struct DecorImage *src, struct TileInfo *srcti, struct BitMap *map, UWORD dw, UWORD dh)
+
+    FUNCTION
+        Fill a bitmap rectangle with a nine-part image tile map.
+
+    INPUTS
+        src - Source image with ok == TRUE and a valid bitmap field.
+        srcti - Border widths and heights in pixels. Left plus right must be
+            less than src->w; top plus bottom must be less than src->h.
+        map - Writable destination bitmap.
+        dw, dh - Destination dimensions, in pixels, within map. Border sums
+            must not exceed these dimensions.
+
+    NOTES
+        Draws at destination (0, 0). Corners retain their dimensions; edges
+        and the center repeat, with partial tiles cropped at the far edges.
+        The source mask is applied when present. Pixel data and bitmap2 are
+        not used as alternative sources.
+
+        NULL src, srcti or map, a false ok flag, or border sums larger than
+        the destination produce no drawing. Failure to allocate a RastPort
+        also produces no drawing and is not reported.
+
+        Source border geometry is not validated. A zero center-tile dimension
+        can prevent the tiling loop from terminating. All source rectangles
+        must lie within the source bitmap. Inputs are borrowed; keep their
+        storage valid and exclude concurrent modification during use.
+
+    SEE ALSO
+        DHorizVertRepeatDecorImage(), DCreateDecorImageContainerMatchingScreen()
+
+*****************************************************************************/
 AROS_LH5(void, DTileMapToBitmap,
     AROS_LHA(struct DecorImage *, src, A0),
     AROS_LHA(struct TileInfo *, srcti, A1),
@@ -1413,6 +1652,36 @@ AROS_LH5(void, DTileMapToBitmap,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+    NAME
+        void DWriteAlphaPixelArray(
+
+    SYNOPSIS
+        struct DecorImage *src, struct DecorImageLUT8 *dst, LONG sx, LONG sy, LONG dx, LONG dy, LONG w, LONG h)
+
+    FUNCTION
+        Copy an image rectangle's alpha bytes into an 8-bit image.
+
+    INPUTS
+        src - Non-NULL image with readable packed ARGB storage.
+        dst - Non-NULL 8-bit image with writable storage.
+        sx, sy - Nonnegative source top-left coordinates, in pixels.
+        dx, dy - Nonnegative destination top-left coordinates, in pixels.
+        w, h - Positive rectangle dimensions, within both image buffers.
+
+    NOTES
+        Writes one alpha byte per pixel, preserving its value from 0 through
+        255. No blending, thresholding or color conversion is performed.
+        Rows use src->w pixels and dst->w bytes as their respective strides.
+
+        The buffers must not overlap. Bounds, pointers and ok flags are not
+        checked. Images are borrowed; exclude concurrent source modification
+        and destination access while copying. Metadata is unchanged.
+
+    SEE ALSO
+        DNewLUT8ImageContainer(), DRegionFromLUT8Image(), DDrawPartToImage()
+
+*****************************************************************************/
 AROS_LH8(void, DWriteAlphaPixelArray,
     AROS_LHA(struct DecorImage *, src, A0),
     AROS_LHA(struct DecorImageLUT8 *, dst, A1),
@@ -1499,6 +1768,36 @@ AROS_LH10(LONG, DWriteVerticalScaledTiledImageHorizontal,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+    NAME
+        void DPutImageToRP(
+
+    SYNOPSIS
+        struct RastPort *rp, struct DecorImage *di, UWORD x, UWORD y)
+
+    FUNCTION
+        Copy an image to a RastPort and dispose of the image.
+
+    INPUTS
+        rp - Non-NULL destination RastPort with a writable bitmap.
+        di - Image owned by the caller, or NULL to do nothing. Its data, when
+            present, must contain di->w * di->h packed ARGB pixels. The row
+            stride di->w * 4 must fit the pixel-array API's UWORD argument.
+        x, y - Destination top-left coordinates, in pixels.
+
+    NOTES
+        Consumes di. Do not access or dispose of it after this call, and do
+        not pass a borrowed theme image. The image is disposed even when its
+        pixel buffer is absent or the pixel write fails. No status is returned.
+
+        Copies the full pixel buffer without alpha compositing or checking
+        ok. Bitmap caches are not used. The destination RastPort remains
+        owned by the caller.
+
+    SEE ALSO
+        DGetImageFromRP(), DDrawPartImageToRP(), DDisposeImageContainer()
+
+*****************************************************************************/
 AROS_LH4(void, DPutImageToRP,
     AROS_LHA(struct RastPort *, rp, A0),
     AROS_LHA(struct DecorImage *, di, A1),
@@ -1511,6 +1810,42 @@ AROS_LH4(void, DPutImageToRP,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+    NAME
+        struct DecorImage * DGetImageFromRP(
+
+    SYNOPSIS
+        struct RastPort *rp, UWORD x, UWORD y, UWORD w, UWORD h)
+
+    FUNCTION
+        Read a RastPort rectangle into a newly allocated ARGB image.
+
+    INPUTS
+        rp - Non-NULL source RastPort with a readable bitmap.
+        x, y - Source top-left coordinates, in pixels.
+        w, h - Positive rectangle dimensions, within the source. The byte
+            stride w * 4 must fit a UWORD, so w must not exceed 16383.
+            Allocation size must satisfy DNewDecorImageContainer()'s limits.
+
+    RESULT
+        New image owned by the caller, or NULL if container allocation fails.
+        Release it with DDisposeImageContainer(), or transfer it to
+        DPutImageToRP(). A non-NULL result does not confirm a complete read.
+
+    NOTES
+        The buffer contains packed ARGB pixels with a w * 4 byte row stride.
+        The container retains its initial 1-by-1 subimage grid, NULL filename
+        and FALSE ok flag. Consumers that require ok == TRUE will skip it.
+        The source RastPort is borrowed and is not modified by this function.
+
+    BUGS
+        The pixel-read result is ignored. An incomplete or failed read is not
+        reported, and the returned image is not marked valid.
+
+    SEE ALSO
+        DPutImageToRP(), DNewDecorImageContainer(), DDisposeImageContainer()
+
+*****************************************************************************/
 AROS_LH5(struct DecorImage *, DGetImageFromRP,
     AROS_LHA(struct RastPort *, rp, A0),
     AROS_LHA(UWORD, x, D0),

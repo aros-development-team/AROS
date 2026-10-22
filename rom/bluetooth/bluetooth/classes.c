@@ -32,6 +32,50 @@
 /* *** Classes *** */
 
 /* /// "btAddClass()" */
+/*****************************************************************************
+    NAME
+        APTR btAddClass(
+
+    SYNOPSIS
+        STRPTR name, ULONG version)
+
+    FUNCTION
+        Open a Bluetooth class library and register it in binding-priority order.
+
+    INPUTS
+        name - Non-NULL, NUL-terminated library name or path.
+        version - Minimum library version accepted by OpenLibrary().
+
+    RESULT
+        Class handle, or NULL if no library can be opened, the opened
+        library name is already registered, or class allocation fails.
+
+    NOTES
+        The exact name is tried first. On failure, leading path components
+        are removed at slash or colon boundaries and the remaining suffixes
+        are tried in turn. Supply a library implementing the btclass API;
+        opening an arbitrary library does not validate that interface.
+
+        The library remains open until btRemClass(). Higher class priorities
+        are offered bindings first; priority is stored as the node's signed
+        byte. Addition sends BEHMB_ADDCLASS, allowing the event handler to
+        schedule a scan; return does not mean any device has been bound.
+        Event allocation can fail independently.
+
+        Call from task context and serialize class addition, removal and
+        scans. Keep bluetooth.library open while the class is registered.
+        Release the handle with btRemClass(), not btFreeVec().
+
+    BUGS
+        Name and path copy failures are not checked before registration.
+        A non-NULL result can therefore contain missing metadata. Duplicate
+        checking and insertion are separate operations; concurrent additions
+        are not guaranteed to reject the same class.
+
+    SEE ALSO
+        btRemClass(), btClassScan()
+
+*****************************************************************************/
 AROS_LH2(struct BtClass *, btAddClass,
          AROS_LHA(STRPTR, name, A1),
          AROS_LHA(ULONG, vers, D0),
@@ -99,6 +143,42 @@ AROS_LH2(struct BtClass *, btAddClass,
 /* \\\ */
 
 /* /// "btRemClass()" */
+/*****************************************************************************
+    NAME
+        VOID btRemClass(
+
+    SYNOPSIS
+        APTR bc)
+
+    FUNCTION
+        Remove a class from binding selection, release its bindings and close its library.
+
+    INPUTS
+        bc - Live registered class handle. NULL is invalid.
+
+    RESULT
+        None. Binding-release failures are not returned.
+
+    NOTES
+        Call from task context. Quiesce scans, class callbacks and competing
+        class operations before removal. Release callbacks run synchronously
+        and can wait; do not call from a worker whose termination they await.
+        The class handle and copied metadata are invalid on return.
+
+        The removal event carries the freed handle as an identifier only.
+        Recipients must not dereference it. Removing a class does not remove
+        the Bluetooth devices or unload other registered classes.
+
+    BUGS
+        If the usage count remains nonzero after attempted release, the
+        function logs the condition but still closes the class library and
+        frees the class object. It does not refuse an unsafe unload; ensure
+        all bindings and in-flight class operations have ended first.
+
+    SEE ALSO
+        btAddClass(), btReleaseDevBinding(), btReleaseSvcBinding()
+
+*****************************************************************************/
 AROS_LH1(void, btRemClass,
          AROS_LHA(struct BtClass *, bc, A1),
          LIBBASETYPEPTR, BluetoothBase, 34, bt)
@@ -163,6 +243,47 @@ AROS_LH1(void, btRemClass,
 /* *** Error Msgs *** */
 
 /* /// "btAddErrorMsgA()" */
+/*****************************************************************************
+    NAME
+        APTR btAddErrorMsgA(
+
+    SYNOPSIS
+        UWORD level, STRPTR origin, STRPTR fmtstr, RAWARG fmtdata)
+
+    FUNCTION
+        Format and append a message to the Bluetooth error-message list,
+        subject to the configured severity filters.
+
+    INPUTS
+        level - Severity. Values below RETURN_WARN are informational;
+            RETURN_WARN to below RETURN_ERROR are warnings; RETURN_ERROR
+            to below RETURN_FAIL are errors; RETURN_FAIL and above are
+            failures.
+        origin - Non-NULL, NUL-terminated origin name; copied.
+        fmtstr - Non-NULL, NUL-terminated RawDoFmt format.
+        fmtdata - Matching RawDoFmt argument stream; referenced data must
+            remain unchanged while the message is formatted.
+
+    RESULT
+        Message handle, or NULL if filtered out or allocation fails. NULL
+        does not distinguish suppression from failure.
+
+    NOTES
+        The message and copied strings belong to the library list. Remove
+        the message with btRemErrorMsg(), not btFreeVec(). Coordinate with
+        other message-list users; the handle is not a retained reference.
+        Inputs are not retained after formatting.
+
+        Call from task context. A successful append sends BEHMB_ADDERRORMSG,
+        but event delivery can fail independently. With btdebug enabled,
+        output is also sent to the kernel log and, from a DOS process with
+        DOS available, appended to SYS:BluetoothLog.txt. Output failures
+        do not change the returned handle.
+
+    SEE ALSO
+        btRemErrorMsg(), btCopyStrFmtA(), btSendEvent()
+
+*****************************************************************************/
 AROS_LH4(struct BtErrorMsg *, btAddErrorMsgA,
          AROS_LHA(UWORD, level, D0),
          AROS_LHA(STRPTR, origin, A0),
@@ -227,6 +348,35 @@ AROS_LH4(struct BtErrorMsg *, btAddErrorMsgA,
 /* \\\ */
 
 /* /// "btRemErrorMsg()" */
+/*****************************************************************************
+    NAME
+        VOID btRemErrorMsg(
+
+    SYNOPSIS
+        APTR bem)
+
+    FUNCTION
+        Unlink an error message, free its copied strings and storage, then
+        send BEHMB_REMERRORMSG.
+
+    INPUTS
+        bem - Live message handle in this library's error list. NULL and
+            previously removed handles are invalid.
+
+    RESULT
+        None.
+
+    NOTES
+        The handle and its strings are invalid after removal. The removal
+        event carries the old address only as an identifier: recipients
+        must not dereference it. Earlier queued add events do not keep the
+        message alive. Serialize removal with message readers and other
+        removers. Call from task context.
+
+    SEE ALSO
+        btAddErrorMsgA(), btSendEvent()
+
+*****************************************************************************/
 AROS_LH1(void, btRemErrorMsg,
          AROS_LHA(struct BtErrorMsg *, bem, A0),
          LIBBASETYPEPTR, BluetoothBase, 39, bt)
@@ -412,6 +562,52 @@ void bDeviceClassScan(LIBBASETYPEPTR BluetoothBase, struct BtDevice *bd)
 /* \\\ */
 
 /* /// "btClassScan()" */
+/*****************************************************************************
+    NAME
+        VOID btClassScan(
+
+    SYNOPSIS
+        )
+
+    FUNCTION
+        Offer eligible known devices and services to registered Bluetooth classes.
+
+    INPUTS
+        None.
+
+    RESULT
+        None. Individual binding failures are not returned.
+
+    NOTES
+        A device must be registered, have known services, permit class
+        binding and have no device or application binding. Existing service
+        bindings are preserved. Classes are visited in priority order;
+        forced class configuration restricts which class is offered a
+        binding. A successful binding sends BEHMB_ADDBINDING.
+
+        This is a synchronous scan of existing objects, not radio discovery
+        or remote service enumeration. Class methods can start workers and
+        wait for I/O. Call from task context outside the hardware task and
+        serialize scans with class changes and application claims. The base
+        read lock remains held across the scan; callbacks must not wait for
+        another task that needs exclusive base access.
+
+        At most 16 unbound, eligible services per device are selected in one
+        scan. Device-binding methods are called with the device write lock
+        held on the normal fallback path; service-binding attempts release
+        that lock. Do not assume every service is attempted in one call.
+
+    BUGS
+        The scan's service-binding status is not initialized before it is
+        tested. Forced-device selection and device-binding fallback can
+        therefore depend on an indeterminate value. The implementation does
+        not provide reliable device-binding selection when no service has
+        set that status.
+
+    SEE ALSO
+        btAddClass(), btGetForcedBinding(), btUnbindAll()
+
+*****************************************************************************/
 AROS_LH0(void, btClassScan,
          LIBBASETYPEPTR, BluetoothBase, 35, bt)
 {
@@ -449,6 +645,62 @@ AROS_LH0(void, btClassScan,
 /* \\\ */
 
 /* /// "btClaimAppBindingA()" */
+/*****************************************************************************
+    NAME
+        APTR btClaimAppBindingA(
+
+    SYNOPSIS
+        struct TagItem *taglist)
+
+    FUNCTION
+        Claim exclusive application ownership of a device's binding slot.
+
+    INPUTS
+        taglist - Application-binding tags. NULL lacks the required device and hook.
+
+    TAGS
+        BABA_Device - Required live device handle.
+        BABA_ReleaseHook - Required Hook pointer, retained until release.
+        BABA_UserData - IPTR passed to the release hook as its message
+            argument. Supply explicitly, using zero if no data is needed.
+        BABA_ForceRelease - FALSE by default. TRUE releases an existing
+            device binding, or existing service bindings when no device
+            binding exists, before attempting the claim.
+        BABA_Task - Replaced by the calling task on successful allocation;
+            it cannot assign ownership to another task.
+
+    RESULT
+        Application-binding handle, or NULL if required inputs are absent,
+        a device or service binding remains, or allocation fails.
+
+    NOTES
+        Call from task context. A successful claim excludes class bindings
+        through the device's application-binding flag; it does not establish
+        a connection, register the device or retain its lifetime. Serialize
+        claims with scans, device removal and other binding changes.
+
+        The release hook is called synchronously in the releasing task,
+        which need not be the claimant. Its object is the binding handle;
+        its message is BABA_UserData converted to APTR. The device write
+        lock is held and the device's binding pointer has already been
+        cleared. The hook result is ignored. Finish application cleanup
+        before returning; the binding is then freed by the library.
+
+        Keep the hook, its code, referenced user data, claimant task and
+        bluetooth.library valid until release finishes. Do not free the
+        binding yourself or claim a replacement from within its release
+        hook. Avoid waiting for work that needs the held device lock.
+        Release a live claim with btReleaseAppBinding().
+
+    BUGS
+        Omitting BABA_UserData leaves the callback argument uninitialized.
+        Forced release is destructive: failure to allocate the new binding
+        does not restore the old bindings. It is not an atomic replacement.
+
+    SEE ALSO
+        btReleaseAppBinding(), btReleaseDevBinding(), btClassScan()
+
+*****************************************************************************/
 AROS_LH1(struct BtAppBinding *, btClaimAppBindingA,
          AROS_LHA(struct TagItem *, tags, A1),
          LIBBASETYPEPTR, BluetoothBase, 45, bt)
@@ -524,6 +776,41 @@ AROS_LH1(struct BtAppBinding *, btClaimAppBindingA,
 /* \\\ */
 
 /* /// "btReleaseAppBinding()" */
+/*****************************************************************************
+    NAME
+        APTR btReleaseAppBinding(
+
+    SYNOPSIS
+        APTR bab)
+
+    FUNCTION
+        Release the device binding associated with an application-binding handle.
+
+    INPUTS
+        bab - Live application-binding handle, or NULL for no operation.
+
+    RESULT
+        No defined return value. Ignore the public APTR result.
+
+    NOTES
+        The release hook runs synchronously through btReleaseDevBinding().
+        It can run in a task other than the claimant and under the device
+        write lock. The library frees the binding after the hook returns.
+        Do not use or release the handle again, including after an external
+        removal has already invoked the hook.
+
+        Serialize release with claims and device removal. The function uses
+        the handle's device; it does not verify that the device still points
+        to this exact binding. Call from task context and preserve the
+        callback's code and data until completion.
+
+    BUGS
+        The public declaration returns APTR, but the implementation returns void.
+
+    SEE ALSO
+        btClaimAppBindingA(), btReleaseDevBinding()
+
+*****************************************************************************/
 AROS_LH1(void, btReleaseAppBinding,
          AROS_LHA(struct BtAppBinding *, bab, A0),
          LIBBASETYPEPTR, BluetoothBase, 46, bt)
@@ -538,6 +825,41 @@ AROS_LH1(void, btReleaseAppBinding,
 /* \\\ */
 
 /* /// "btReleaseDevBinding()" */
+/*****************************************************************************
+    NAME
+        VOID btReleaseDevBinding(
+
+    SYNOPSIS
+        APTR bd)
+
+    FUNCTION
+        Detach a device-level class or application binding and invoke its release callback.
+
+    INPUTS
+        bd - Live device handle, or NULL for no operation.
+
+    RESULT
+        None. An unbound device requires no action; callback results are ignored.
+
+    NOTES
+        Call from task context. The device binding pointer is cleared before
+        the callback. The device write lock is held throughout release.
+        For an application binding, CallHookPkt() receives the binding as
+        object and its user data as message; the library then frees it and
+        clears the application-binding flag. For a class binding, the class
+        receives BCM_ReleaseDeviceBinding and its usage count is decremented.
+
+        Callbacks must complete cleanup before returning. They must not
+        install a replacement binding or wait for another task that needs
+        the held lock. Serialize release with claims, scans and device
+        removal. This call does not release service-level bindings or remove
+        the device. A removal event refers to the device, not the released
+        binding.
+
+    SEE ALSO
+        btReleaseAppBinding(), btReleaseSvcBinding(), btUnbindAll()
+
+*****************************************************************************/
 AROS_LH1(void, btReleaseDevBinding,
          AROS_LHA(struct BtDevice *, bd, A0),
          LIBBASETYPEPTR, BluetoothBase, 50, bt)
@@ -576,6 +898,39 @@ AROS_LH1(void, btReleaseDevBinding,
 /* \\\ */
 
 /* /// "btReleaseSvcBinding()" */
+/*****************************************************************************
+    NAME
+        VOID btReleaseSvcBinding(
+
+    SYNOPSIS
+        APTR bsv)
+
+    FUNCTION
+        Detach a service-level class binding and invoke its release method.
+
+    INPUTS
+        bsv - Live service handle, or NULL for no operation.
+
+    RESULT
+        None. An unbound service requires no action; the class method result is ignored.
+
+    NOTES
+        Call from task context. The service binding pointer is cleared
+        before BCM_ReleaseServiceBinding is called. The owning device's
+        write lock is held throughout the callback; the class usage count
+        is then decremented. Keep the service, device and class valid until
+        release completes and serialize with scans and service replacement.
+
+        The callback must finish cleanup before returning and must not wait
+        for another task that needs the held device lock. Do not call from
+        a worker that the callback must stop. The service remains present,
+        but its old binding is no longer valid. BEHMB_REMBINDING identifies
+        the owning device; it does not carry the service handle.
+
+    SEE ALSO
+        btReleaseDevBinding(), btClassScan(), btUnbindAll()
+
+*****************************************************************************/
 AROS_LH1(void, btReleaseSvcBinding,
          AROS_LHA(struct BtService *, bsv, A0),
          LIBBASETYPEPTR, BluetoothBase, 51, bt)
@@ -607,6 +962,41 @@ AROS_LH1(void, btReleaseSvcBinding,
 /* \\\ */
 
 /* /// "btUnbindAll()" */
+/*****************************************************************************
+    NAME
+        VOID btUnbindAll(
+
+    SYNOPSIS
+        )
+
+    FUNCTION
+        Release device and service bindings across the active hardware device lists.
+
+    INPUTS
+        None.
+
+    RESULT
+        None. Callback failures are not reported.
+
+    NOTES
+        Application bindings are included, so their release hooks may run.
+        The traversal drops the base lock for each release and restarts
+        afterward. This is not an atomic snapshot or a permanent binding
+        inhibit. Stop competing claims and scans if all devices must remain
+        unbound when the call returns.
+
+        Call from task context outside workers that release callbacks must
+        stop. Keep devices and services valid across each release. Callbacks
+        run synchronously under the owning device's write lock and may wait
+        without a timeout. Continuous rebinding can prevent termination.
+        Classes remain registered, devices remain present, and forced-binding
+        configuration is unchanged. Devices outside the active lists are
+        not visited.
+
+    SEE ALSO
+        btReleaseDevBinding(), btReleaseSvcBinding(), btClassScan()
+
+*****************************************************************************/
 AROS_LH0(void, btUnbindAll,
          LIBBASETYPEPTR, BluetoothBase, 52, bt)
 {
@@ -686,6 +1076,39 @@ AROS_LH2(struct BtEventHook *, btAddEventHandler,
 /* \\\ */
 
 /* /// "btRemEventHandler()" */
+/*****************************************************************************
+    NAME
+        VOID btRemEventHandler(
+
+    SYNOPSIS
+        APTR beh)
+
+    FUNCTION
+        Unregister an event hook, reply to every message currently queued
+        on its port and free the hook.
+
+    INPUTS
+        beh - Live hook returned by btAddEventHandler(), or NULL for
+            no operation.
+
+    RESULT
+        None.
+
+    NOTES
+        Use a dedicated message port: queued messages are replied without
+        checking their type or which hook delivered them. The port itself
+        is not deleted. Keep it alive through this call. Messages already
+        removed from the port by a consumer are not reclaimed here; reply
+        to them before ending the consumer's use of the library.
+
+        Call from task context. Serialize removal with consumers and other
+        removers; the hook is invalid afterward. Unregister all hooks and
+        complete outstanding replies before closing bluetooth.library.
+
+    SEE ALSO
+        btAddEventHandler(), btSendEvent(), exec.library/ReplyMsg()
+
+*****************************************************************************/
 AROS_LH1(void, btRemEventHandler,
          AROS_LHA(struct BtEventHook *, beh, A0),
          LIBBASETYPEPTR, BluetoothBase, 48, bt)
@@ -710,6 +1133,42 @@ AROS_LH1(void, btRemEventHandler,
 /* \\\ */
 
 /* /// "btSendEvent()" */
+/*****************************************************************************
+    NAME
+        VOID btSendEvent(
+
+    SYNOPSIS
+        ULONG behmt, APTR param1, APTR param2)
+
+    FUNCTION
+        Queue a separate event note for each registered hook whose mask
+        selects the event. Reclaim previously replied notes first.
+
+    INPUTS
+        behmt - Event number (BEHMB_*), not a BEHMF_* bit mask. Use a
+            defined event number from libraries/bluetooth.h.
+        param1, param2 - Event-specific values copied into each note;
+            pointed-to objects and data are not copied or retained.
+
+    RESULT
+        None. Allocation failure can omit delivery to any individual hook
+        without reporting an error; delivery is not all-or-nothing.
+
+    NOTES
+        Call from task context; this can wait for the event-list semaphore
+        but does not wait for recipients. Keep referenced objects valid for
+        asynchronous use, or define them as identifiers only. Removal events
+        can carry already-invalid object addresses.
+
+        Recipients must ReplyMsg() each note exactly once and must not free
+        it themselves. ben_Data and ben_Device are NULL; ben_DataLength is
+        zero. This generic call does not construct the copied value payload
+        of a service-write notification.
+
+    SEE ALSO
+        btAddEventHandler(), btRemEventHandler(), exec.library/ReplyMsg()
+
+*****************************************************************************/
 AROS_LH3(void, btSendEvent,
          AROS_LHA(ULONG, behmt, D0),
          AROS_LHA(APTR, param1, A0),

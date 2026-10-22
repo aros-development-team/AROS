@@ -778,6 +778,29 @@ APTR PM_DoHint(struct PM_Window *a)
     return 0L;
 }
 
+/*****************************************************************************
+    NAME
+        APTR PM_OBSOLETEFilterIMsgA(
+
+    SYNOPSIS
+        struct Window *window, struct PopupMenu *pm, struct IntuiMessage *im, struct TagItem *tags)
+
+    FUNCTION
+        Compatibility stub. No message processing is performed.
+
+    INPUTS
+        window, pm, im, tags - Ignored.
+
+    RESULT
+        Always NULL.
+
+    NOTES
+        The caller remains responsible for replying to im.
+
+    SEE ALSO
+        PM_FilterIMsgA()
+
+*****************************************************************************/
 APTR __saveds ASM PM_OBSOLETEFilterIMsgA()
 {
     return NULL;
@@ -787,6 +810,55 @@ APTR __saveds ASM PM_OBSOLETEFilterIMsgA()
 // Filter the IntuiMessage structure for command key sequences, and
 // mouse events for intuition menu replacement mode.
 //
+/*****************************************************************************
+    NAME
+        APTR PM_FilterIMsgA(
+
+    SYNOPSIS
+        struct Window *w, struct PopupMenu *pm, struct IntuiMessage *im, struct TagItem *tags)
+
+    FUNCTION
+        Handle right-command shortcuts or forward menu-button events to
+        PM_OpenPopupMenuA().
+
+    INPUTS
+        w - Parent window for popup display, or NULL for the active screen.
+        pm - Menu tree, or NULL.
+        im - Caller-owned IntuiMessage, or NULL.
+        tags - Terminated option list, or NULL.
+
+    RESULT
+        Selected UserData, or NULL when no item is selected. NULL UserData
+        also returns NULL, so this result is not a message-consumed flag.
+
+    TAGS
+        PM_MenuHandler (struct Hook *) - Optional synchronous selection hook.
+            For a shortcut, the object is the item and the message is NULL.
+        PM_AutoPullDown - Presence enables handling MENUDOWN and MENUUP,
+            even if ti_Data is FALSE.
+        PM_RawKey (BOOL) - Handle IDCMP_RAWKEY when TRUE; otherwise handle
+            IDCMP_VANILLAKEY. Default FALSE.
+        Other tags are forwarded unchanged when a popup is opened.
+
+    NOTES
+        The caller must reply to the original message; this function neither
+        replies nor takes ownership. NULL pm or im returns immediately.
+        Shortcuts require IEQUALIFIER_RCOMMAND and match the first command
+        key case-insensitively. Disabled items are ignored. Checkable items
+        toggle, update AutoStore and apply their ID list before the hook.
+        Keep the tree and callback data valid for the whole call. Popup
+        handling can block; call from task context.
+
+    BUGS
+        Shortcut handling ignores Hidden, NoSelect and Toggle restrictions.
+        Raw key codes are compared directly with command-key bytes without
+        keymap translation. Popup forwarding inherits PM_OpenPopupMenuA()
+        limitations, including ambiguous zero results.
+
+    SEE ALSO
+        PM_OpenPopupMenuA(), PM_SetItemAttrsA()
+
+*****************************************************************************/
 APTR __saveds ASM PM_FilterIMsgA(register __a0 struct Window *w GNUCREG(a0),
     register __a1 struct PopupMenu *pm GNUCREG(a1),
     register __a2 struct IntuiMessage *im GNUCREG(a2),
@@ -918,6 +990,79 @@ void PM_DoSelected(struct PM_Root *p, struct PopupMenu *pm)
 /// PM_OpenPopupMenuA
 struct Window FakeWnd;
 
+/*****************************************************************************
+    NAME
+        IPTR PM_OpenPopupMenuA(
+
+    SYNOPSIS
+        struct Window *prevwnd, struct TagItem *tags)
+
+    FUNCTION
+        Display a popup and process input synchronously until it closes.
+        Update item selection state and invoke the optional menu handler
+        before returning.
+
+    INPUTS
+        prevwnd - Live parent window. NULL uses the active screen, which
+            must exist and remain available throughout the call.
+        tags - Terminated option list, or NULL.
+
+    RESULT
+        UserData from the last selected item, represented as IPTR, or zero
+        if no selection was recorded. Selecting an item with NULL UserData
+        also returns zero. There is no separate error result.
+
+    TAGS
+        PM_Menu (struct PopupMenu *) - Borrow the menu tree for this call.
+        PM_Left, PM_Top (LONG) - Position relative to the parent window.
+            Odd left coordinates are increased by one before adding the
+            parent offset. Defaults use the screen mouse position.
+        PM_MinWidth, PM_MinHeight (LONG) - Minimum menu dimensions.
+        PM_Right, PM_Bottom (LONG), PM_CenterScreen (BOOL) - Unsafe positioning
+            options in this implementation; see BUGS.
+        PM_ForceFont (struct TextFont *) - Borrow a font for the call.
+        PM_PullDown (BOOL) - Request a horizontal pulldown. Its effect depends
+            on the pulldown-position preference; when enabled it moves the
+            root menu to the screen's top-left corner.
+        PM_MenuHandler (struct Hook *) - Enable multiple selection. Supply a
+            valid hook; it receives each selected item after display closes.
+            Its message points to a temporary IPTR containing zero.
+        PM_LocaleHook (struct Hook *) - Resolve locale title IDs to readable
+            strings for measurement and drawing. The item is the hook object.
+            Returned strings remain caller-owned. See BUGS for message layout.
+        PM_Code (UWORD) - Input-event code. The release prefix cancels display
+            and stops processing further tags.
+        PM_UseLMB (BOOL) - Set button flags; see BUGS.
+        PM_HintBox - Presence selects hint display, even with FALSE data.
+            A non-timer input event closes the hint.
+        Unknown tags, including PM_DRIPensOnly, are ignored.
+
+    NOTES
+        Call from task context. The function waits for input and timer
+        messages; there is no caller-selected timeout. It reloads shared
+        preferences and uses temporary windows and an input handler.
+
+        The menu is borrowed, not freed. Keep its items, images, AutoStore
+        storage, font, hooks and parent screen alive through all callbacks.
+        Do not concurrently modify or free the tree or reenter popup display
+        from a callback. Selection can change checked and AutoStore values.
+        A returned pointer to item-owned UserData remains valid only until
+        that data is replaced or the item is freed.
+
+    BUGS
+        PM_Right, PM_Bottom and PM_CenterScreen can dereference the root
+        window before it opens. Root-menu and timer allocation failures are
+        not handled safely on all paths; zero is not a reliable failure
+        notification. PM_UseLMB flags are not consulted by selection.
+
+        The locale hook receives an IPTR array during measurement but a
+        pointer to ULONG during drawing. Do not assume a consistent payload
+        layout on targets where those types differ in size.
+
+    SEE ALSO
+        PM_FilterIMsgA(), PM_SetItemAttrsA(), PM_ReloadPrefs()
+
+*****************************************************************************/
 APTR __saveds ASM PM_OpenPopupMenuA(register __a1 struct Window *prevwnd GNUCREG(a1),
     register __a2 struct TagItem *tags GNUCREG(a2))
 {
@@ -1117,6 +1262,60 @@ APTR __saveds ASM PM_OpenPopupMenuA(register __a1 struct Window *prevwnd GNUCREG
 // Function to add an item to a menu
 //
 
+/*****************************************************************************
+    NAME
+        LONG PM_InsertMenuItemA(
+
+    SYNOPSIS
+        struct PopupMenu *menu, struct TagItem *tags)
+
+    FUNCTION
+        Process insertion-method tags and link each subsequent item using
+        the selected method. No item is allocated or copied.
+
+    INPUTS
+        menu - First menu item, or NULL.
+        tags - Terminated tag list, or NULL. Set a method before its items.
+
+    RESULT
+        Number of PM_Insert_Item tags with a non-NULL item and a non-NULL
+        selected target. This can exceed the number of successful insertions.
+        Zero for NULL menu.
+
+    TAGS
+        PM_Insert_After (struct PopupMenu *) - Insert after this item.
+        PM_Insert_AfterID (ULONG) - Insert after the first matching ID.
+        PM_Insert_Before (struct PopupMenu *) - Insert before this item;
+            the item must have a preceding sibling. See BUGS.
+        PM_Insert_BeforeID (ULONG) - Find the preceding sibling of the first
+            matching ID and insert after it. See BUGS for a list head.
+        PM_Insert_First (BOOL) - TRUE inserts after menu, preserving a header.
+        PM_Insert_Last (BOOL) - TRUE appends to menu's sibling list.
+        PM_InsertSub_First (struct PopupMenu *) - Prepend to this item's
+            children and update its child-list pointer.
+        PM_InsertSub_Last (struct PopupMenu *) - Append to the sibling chain
+            starting at this pointer, not to its child list.
+        PM_InsertSub_Sorted (struct PopupMenu *) - Broken; see BUGS.
+        PM_Insert_Item (struct PopupMenu *) - Distinct unlinked item to insert.
+            May repeat. Unknown tags are ignored.
+
+    NOTES
+        The target remains unchanged between item tags. Repeated insertion
+        after one target or at the first position reverses item order.
+        A linked item's ownership passes to the menu. Keep an item unowned
+        elsewhere and keep the tree acyclic. Do not alter an active popup.
+
+    BUGS
+        Sorted insertion never finds an insertion point because the string
+        comparison result is unsigned and tested for less than zero; the
+        item tag can still count. Pointer-based insertion before a list head
+        can create a cycle. BeforeID at a list head inserts after that head.
+        Use a persistent header and avoid these unsupported cases.
+
+    SEE ALSO
+        PM_RemoveMenuItem(), PM_MakeMenuA()
+
+*****************************************************************************/
 LONG __saveds ASM PM_InsertMenuItemA(register __a0 struct PopupMenu *base GNUCREG(a0),
     register __a1 struct TagItem *tags GNUCREG(a1))
 {
@@ -1209,6 +1408,34 @@ LONG __saveds ASM PM_InsertMenuItemA(register __a0 struct PopupMenu *base GNUCRE
 // Function to remove an item
 //
 
+/*****************************************************************************
+    NAME
+        struct PopupMenu * PM_RemoveMenuItem(
+
+    SYNOPSIS
+        struct PopupMenu *menu, struct PopupMenu *item)
+
+    FUNCTION
+        Detach an item from one sibling list without freeing it or its
+        children. The first item in the list cannot be removed.
+
+    INPUTS
+        menu - First item of the sibling list, or NULL.
+        item - Item to detach.
+
+    RESULT
+        The detached item with its next-sibling link cleared, or NULL if
+        absent or equal to menu.
+
+    NOTES
+        Descendants are not searched. Pass their own sibling-list head to
+        operate on them. The caller owns a detached item and may reinsert it
+        or free it with PM_FreePopupMenu(). Do not modify an active popup.
+
+    SEE ALSO
+        PM_InsertMenuItemA(), PM_FreePopupMenu()
+
+*****************************************************************************/
 struct PopupMenu * __saveds ASM PM_RemoveMenuItem(register __a0 struct PopupMenu *base GNUCREG(a0),
     register __a1 struct PopupMenu *item GNUCREG(a1))
 {
@@ -1235,6 +1462,37 @@ struct PopupMenu * __saveds ASM PM_RemoveMenuItem(register __a0 struct PopupMenu
 ///
 
 /// PM_AbortHook
+/*****************************************************************************
+    NAME
+        BOOL PM_AbortHook(
+
+    SYNOPSIS
+        APTR handle)
+
+    FUNCTION
+        Check whether the pointer has left the item whose submenu is being
+        constructed. An existing child window may also be refreshed.
+
+    INPUTS
+        handle - Opaque parent handle supplied to the active SubConstruct
+            hook. Extract the IPTR value from the hook message and cast that
+            value to APTR; do not pass the message pointer itself.
+
+    RESULT
+        TRUE if the pointer is outside the selected item; FALSE otherwise.
+
+    NOTES
+        Use only during the constructor callback that supplied the handle.
+        NULL, expired handles and calls without an active selected item are
+        invalid. A TRUE result does not stop the constructor automatically;
+        the hook must decide whether to abandon its work and return NULL.
+        The refresh side effect can perform window operations and must run
+        in task context.
+
+    SEE ALSO
+        PM_SetItemAttrsA(), PM_OpenPopupMenuA()
+
+*****************************************************************************/
 BOOL __saveds ASM PM_AbortHook(register __a0 APTR handle GNUCREG(a0))
 {
     struct PM_Window *a=(struct PM_Window *)handle;
@@ -1272,6 +1530,30 @@ char version[256];
 extern char _LibID[];
 #endif
 
+/*****************************************************************************
+    NAME
+        STRPTR PM_GetVersion(
+
+    SYNOPSIS
+        )
+
+    FUNCTION
+        Build a descriptive library-version string, including detected
+        graphics-environment information.
+
+    INPUTS
+        None.
+
+    RESULT
+        Pointer to a library-owned shared buffer containing a terminated
+        string. Do not modify or free it.
+
+    NOTES
+        Each call overwrites the buffer. Copy the string before another call
+        or before closing the library. This text is not a numeric version
+        interface; use OpenLibrary() version requirements for compatibility.
+
+*****************************************************************************/
 STRPTR ASM __saveds PM_GetVersion(void)
 {
     strcpy(version, _LibID);
@@ -1283,6 +1565,27 @@ STRPTR ASM __saveds PM_GetVersion(void)
 }
 ///
 
+/*****************************************************************************
+    NAME
+        LONG PM_LayoutMenuA(
+
+    SYNOPSIS
+        struct Window *window, struct PopupMenu *pm, struct TagItem *tags)
+
+    FUNCTION
+        Layout is not implemented by this entry point. No menu or window
+        state is changed.
+
+    INPUTS
+        window, pm, tags - Ignored.
+
+    RESULT
+        Always zero.
+
+    SEE ALSO
+        PM_OpenPopupMenuA()
+
+*****************************************************************************/
 LONG ASM __saveds PM_LayoutMenuA(register __a0 struct Window *w GNUCREG(a0),
     register __a1 struct PopupMenu *pm GNUCREG(a1),
     register __a2 struct TagItem *tags GNUCREG(a2))

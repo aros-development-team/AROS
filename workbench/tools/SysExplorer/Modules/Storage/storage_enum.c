@@ -199,6 +199,48 @@ void storageBusEnum(OOP_Object *obj, struct MUI_NListtree_TreeNode *parent)
     HIDD_StorageBus_EnumUnits(obj, &storageunitenum_hook, parent);
 }
 
+/*****************************************************************************
+    NAME
+        BOOL EnumBusUnits(
+
+    SYNOPSIS
+        OOP_Object *obj, struct MUI_NListtree_TreeNode *parent, APTR hookFunc, APTR hookData)
+
+    FUNCTION
+        Enumerate a storage bus through a caller-supplied hook entry.
+
+    INPUTS
+        obj - Live OOP object implementing Hidd_StorageBus.EnumUnits.
+        parent - Tree node or parent token forwarded unchanged to the hook.
+        hookFunc - Non-NULL AROS hook entry accepting struct Hook * in A0,
+            the unit OOP_Object * in A2 and parent in A1. Return FALSE to
+            continue, TRUE to request termination of enumeration.
+        hookData - Caller data made available as hook->h_Data; may be NULL.
+
+    RESULT
+        No defined return value. The public declaration specifies BOOL, but
+        the implementation returns void. Call only for its callback effects
+        and do not inspect the result.
+
+    NOTES
+        The call dispatches synchronously to the bus. Keep obj, hookFunc,
+        hookData and parent valid until return. The temporary hook must not
+        be retained. Only h_Entry and h_Data are initialized; callbacks must
+        not read other Hook fields or rely on an h_SubEntry trampoline.
+
+        Unit objects are borrowed from the bus; this wrapper acquires no
+        reference, creates no tree nodes and performs no locking. The bus
+        implementation controls enumeration order, locking and termination.
+        Do not modify bus membership or dispose enumerated units in a hook.
+
+        Use the initialized Storage.Module base in task context. If the hook
+        updates the host's MUI tree, call from the host task. The call has no
+        timeout; duration includes bus traversal and every hook invocation.
+
+    SEE ALSO
+        RegisterStorageBusHandler()
+
+*****************************************************************************/
 AROS_LH4(void, EnumBusUnits,
          AROS_LHA(OOP_Object *, obj, A0),
          AROS_LHA(struct MUI_NListtree_TreeNode *, parent, A1),
@@ -224,6 +266,33 @@ AROS_LH4(void, EnumBusUnits,
     for the unit.
     Add objects to the passed in colgroup(2) if supported features are found.
 */
+/*****************************************************************************
+    NAME
+        void QueryATAStorageFeatures(
+
+    SYNOPSIS
+        Object *obj, char *devName, int devUnit)
+
+    FUNCTION
+        Reserved entry point for adding ATA feature information to a property group.
+
+    INPUTS
+        obj - Intended target MUI group; currently unused.
+        devName - Intended Exec device name; currently unused.
+        devUnit - Intended device unit number; currently unused.
+
+    RESULT
+        None.
+
+    NOTES
+        This implementation performs no operation. It does not open a device,
+        query SMART or TRIM support, inspect the inputs or modify the group.
+        Pointer arguments may be NULL; no storage is retained.
+
+        Absence of added feature information does not mean that the device
+        lacks the feature. Use the initialized Storage.Module base.
+
+*****************************************************************************/
 AROS_LH3(void, QueryATAStorageFeatures,
          AROS_LHA(Object *, obj, A0),
          AROS_LHA(char *, devName, A1),
@@ -321,6 +390,62 @@ AROS_LH3(void, QueryATAStorageFeatures,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+    NAME
+        BOOL RegisterStorageClassHandler(
+
+    SYNOPSIS
+        CONST_STRPTR classid, BYTE pri, struct MUI_CustomClass *customwinclass, CLASS_ENUMFUNC enumfunc, CLASS_VALIDFUNC validfunc)
+
+    FUNCTION
+        Register a SysExplorer storage handler for an OOP class.
+
+    INPUTS
+        classid - Persistent, non-NULL, NUL-terminated class identifier.
+        pri - Signed priority for a newly inserted handler; higher values first.
+        customwinclass - Borrowed MUI property-window class, or NULL.
+        enumfunc - CLASS_ENUMFUNC child enumerator, or NULL.
+        validfunc - CLASS_VALIDFUNC object filter, or NULL to accept all objects.
+
+    RESULT
+        TRUE if the storage entry was inserted or updated; FALSE on allocation
+        failure or if an existing entry's enumerator differs from HWEnum.Func.
+        TRUE does not confirm registration in the host's handler list.
+
+    NOTES
+        Use the initialized Storage.Module base obtained through GetBase().
+        The identifier, custom class and callbacks are retained without copying.
+        Keep them valid while the host uses the handler. Register during module
+        startup and serialize all registry access; no lock is taken.
+
+        New entries are ordered by priority, with equal priorities in insertion
+        order. A new entry also attempts host registration with the same class,
+        priority and callbacks but no property-window class.
+
+        An existing entry is replaceable only when its enumerator equals the
+        pointer returned by GetBase("HWEnum.Func"). Unlike RegisterClassHandler(),
+        a NULL enumerator normally prevents replacement. An update overwrites
+        all fields but neither reorders the list nor updates the host entry.
+
+        The storage enumerator calls validfunc(obj, flags) before inserting an
+        object. FALSE omits the object and descendants. flags initially contains
+        TNF_LIST|TNF_OPEN when enumfunc is present, otherwise zero. For an accepted
+        object, enumfunc(obj, parent) receives the new tree node if TNF_LIST is
+        set. Arguments are borrowed; do not retain flags or dispose the object
+        or parent. The storage enumeration path does not consult SkipClass().
+
+        No callback runs during registration, and no existing tree node or
+        window is refreshed. There is no unregister operation.
+
+    BUGS
+        Failure of the accompanying host registration is ignored. Updating
+        priority does not restore sorted order, so the stored priority may
+        not describe the actual handler-selection order.
+
+    SEE ALSO
+        RegisterStorageControllerHandler(), RegisterStorageBusHandler(), FindObjectHandler()
+
+*****************************************************************************/
 AROS_LH5(BOOL, RegisterStorageClassHandler,
          AROS_LHA(CONST_STRPTR, classid, A0),
          AROS_LHA(BYTE, pri, D0),
@@ -372,6 +497,44 @@ AROS_LH5(BOOL, RegisterStorageClassHandler,
 }
 
 
+/*****************************************************************************
+    NAME
+        BOOL RegisterStorageControllerHandler(
+
+    SYNOPSIS
+        CONST_STRPTR classid, BYTE pri, struct MUI_CustomClass *customwinclass, CLASS_ENUMFUNC enumfunc, CLASS_VALIDFUNC validfunc)
+
+    FUNCTION
+        Register a SysExplorer storage-controller handler with a default enumerator.
+
+    INPUTS
+        classid - Persistent, non-NULL, NUL-terminated controller class identifier.
+        pri - Signed handler priority; higher values are considered first.
+        customwinclass - Borrowed MUI property-window class, or NULL.
+        enumfunc - Custom CLASS_ENUMFUNC callback, or NULL to use the default
+            controller enumerator.
+        validfunc - CLASS_VALIDFUNC object filter, or NULL to accept all objects.
+
+    RESULT
+        Result of RegisterStorageClassHandler(). TRUE confirms the storage
+        entry only; it does not confirm host registration or enumeration.
+
+    NOTES
+        With a NULL enumfunc, the registered callback calls
+        HIDD_StorageController_EnumBuses() when the tree is enumerated.
+        Buses are processed through storage class-handler lookup and filtering.
+        The controller holds its bus-list read lock during callbacks; do not
+        add or remove buses from those callbacks.
+
+        Registration itself does not enumerate devices. Use the initialized
+        Storage.Module base during host setup. Input lifetimes, serialization,
+        replacement restrictions and priority-update limitations are those of
+        RegisterStorageClassHandler().
+
+    SEE ALSO
+        RegisterStorageClassHandler(), EnumBusUnits()
+
+*****************************************************************************/
 AROS_LH5(BOOL, RegisterStorageControllerHandler,
          AROS_LHA(CONST_STRPTR, classid, A0),
          AROS_LHA(BYTE, pri, D0),
@@ -394,6 +557,44 @@ AROS_LH5(BOOL, RegisterStorageControllerHandler,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+    NAME
+        BOOL RegisterStorageBusHandler(
+
+    SYNOPSIS
+        CONST_STRPTR classid, BYTE pri, struct MUI_CustomClass *customwinclass, CLASS_ENUMFUNC enumfunc, CLASS_VALIDFUNC validfunc)
+
+    FUNCTION
+        Register a SysExplorer storage-bus handler with a default enumerator.
+
+    INPUTS
+        classid - Persistent, non-NULL, NUL-terminated bus class identifier.
+        pri - Signed handler priority; higher values are considered first.
+        customwinclass - Borrowed MUI property-window class, or NULL.
+        enumfunc - Custom CLASS_ENUMFUNC callback, or NULL to use the default
+            bus enumerator.
+        validfunc - CLASS_VALIDFUNC object filter, or NULL to accept all objects.
+
+    RESULT
+        Result of RegisterStorageClassHandler(). TRUE confirms the storage
+        entry only; it does not confirm host registration or enumeration.
+
+    NOTES
+        With a NULL enumfunc, the registered callback calls
+        HIDD_StorageBus_EnumUnits() when the tree is enumerated.
+        Units are inserted with the standard StorageUnitWindow class. This
+        default unit callback does not perform per-unit handler lookup or
+        invoke per-unit validation callbacks.
+
+        Registration itself does not enumerate devices. Use the initialized
+        Storage.Module base during host setup. Input lifetimes, serialization,
+        replacement restrictions and priority-update limitations are those of
+        RegisterStorageClassHandler().
+
+    SEE ALSO
+        RegisterStorageClassHandler(), EnumBusUnits()
+
+*****************************************************************************/
 AROS_LH5(BOOL, RegisterStorageBusHandler,
          AROS_LHA(CONST_STRPTR, classid, A0),
          AROS_LHA(BYTE, pri, D0),

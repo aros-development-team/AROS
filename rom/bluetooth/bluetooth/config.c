@@ -52,6 +52,43 @@ static void bWrBE32(APTR ptr, ULONG val)
 /* \\\ */
 
 /* /// "btReadCfg()" */
+/*****************************************************************************
+    NAME
+        BOOL btReadCfg(
+
+    SYNOPSIS
+        APTR bic, APTR formdata)
+
+    FUNCTION
+        Replace the contents of an existing configuration FORM. Its type
+        and context remain; old child FORMs are freed and chunks replaced.
+
+    INPUTS
+        bic - Context to replace, or NULL for the global root.
+        formdata - Serialized FORM, including its header and type. The type
+            must match the destination context. The buffer is copied.
+
+    RESULT
+        TRUE if the input is consumed successfully. FALSE if the root is
+        absent, the header or type differs, allocation fails, or parsing
+        leaves unconsumed data.
+
+    NOTES
+        Supply a complete, valid IFF buffer with consistent nested lengths
+        and a padding byte after each odd-length chunk. No buffer length
+        is passed to this API; malformed input is not safely rejected.
+        The buffer must not alias storage in the destination tree.
+
+        Call from task context. A type mismatch leaves the tree unchanged.
+        Once replacement starts, failure can leave partial contents; there
+        is no rollback. Earlier child-context and string references become
+        invalid. This call requests change detection but does not mount
+        hardware or save a file.
+
+    SEE ALSO
+        btWriteCfg(), btParseCfg(), btAddCfgEntry()
+
+*****************************************************************************/
 AROS_LH2(BOOL, btReadCfg,
          AROS_LHA(struct BtIFFContext *, pic, A0),
          AROS_LHA(APTR, formdata, A1),
@@ -107,6 +144,47 @@ AROS_LH2(BOOL, btReadCfg,
 /* \\\ */
 
 /* /// "btLoadCfgFromDisk()" */
+/*****************************************************************************
+    NAME
+        BOOL btLoadCfgFromDisk(
+
+    SYNOPSIS
+        STRPTR filename)
+
+    FUNCTION
+        Read an IFF preference file into the global configuration and apply
+        it to the running stack.
+
+    INPUTS
+        filename - NUL-terminated filename, or NULL to try
+            ENV:Sys/bluetooth.prefs first and ENVARC:Sys/bluetooth.prefs
+            only if the first attempt returns FALSE.
+
+    RESULT
+        TRUE if a matching root header and its declared payload were read.
+        FALSE for library, open, header, allocation or incomplete-read
+        failures. TRUE does not establish successful configuration parsing.
+
+    NOTES
+        The root must use the current target's IFFFORM_BTCFG: BTBC on
+        big-endian systems, BTLC on little-endian systems. Payloads contain
+        native structures and are not converted between target formats.
+
+        Call from process context with DOS available. Applying the file can
+        remove hardware and release bindings. The filename is borrowed only
+        during the call. Successful file reading updates the saved-state
+        marker even when applying the configuration fails.
+
+    BUGS
+        The parser result is ignored; TRUE can describe a partially replaced
+        or rejected configuration. Such a result prevents the default-path
+        fallback. Declared lengths are not adequately validated before
+        allocation and parsing. Load only complete, trusted preference files.
+
+    SEE ALSO
+        btReadCfg(), btParseCfg(), btSaveCfgToDisk()
+
+*****************************************************************************/
 AROS_LH1(BOOL, btLoadCfgFromDisk,
          AROS_LHA(STRPTR, filename, A1),
          LIBBASETYPEPTR, BluetoothBase, 72, bt)
@@ -231,6 +309,46 @@ void bSyncStackCfg(LIBBASETYPEPTR BluetoothBase)
 /* \\\ */
 
 /* /// "btSaveCfgToDisk()" */
+/*****************************************************************************
+    NAME
+        BOOL btSaveCfgToDisk(
+
+    SYNOPSIS
+        STRPTR filename, BOOL mode)
+
+    FUNCTION
+        Serialize the running configuration to a preference file. First
+        replace stored radio entries with the currently registered radios;
+        class configurations remain, but no loaded-class list is generated.
+
+    INPUTS
+        filename - NUL-terminated filename, or NULL to attempt both
+            ENVARC:Sys/bluetooth.prefs and ENV:Sys/bluetooth.prefs, in that
+            order, even if the first attempt fails.
+        mode - Ignored. Only a data file is written.
+
+    RESULT
+        TRUE if serialization succeeds and the destination opens. For NULL,
+        both destinations must meet those conditions. FALSE otherwise.
+        Write and close failures are not reflected in this result.
+
+    NOTES
+        Call from process context with DOS available. An existing file is
+        truncated when opened; no temporary-file replacement or rollback is
+        provided. The in-memory radio list is rewritten even if opening the
+        file later fails. The filename is not retained. A NULL-path success
+        also permits subsequent automatic registration and bond saves.
+        Files use the current target's IFFFORM_BTCFG and native payloads.
+
+    BUGS
+        A short write or close failure can leave a damaged file while the
+        function returns TRUE and marks the configuration saved. Failure
+        to rebuild every in-memory radio entry is also not reported.
+
+    SEE ALSO
+        btWriteCfg(), btLoadCfgFromDisk()
+
+*****************************************************************************/
 AROS_LH2(BOOL, btSaveCfgToDisk,
          AROS_LHA(STRPTR, filename, A1),
          AROS_LHA(BOOL, executable, D0),
@@ -284,6 +402,42 @@ AROS_LH2(BOOL, btSaveCfgToDisk,
 /* \\\ */
 
 /* /// "btWriteCfg()" */
+/*****************************************************************************
+    NAME
+        APTR btWriteCfg(
+
+    SYNOPSIS
+        APTR bic)
+
+    FUNCTION
+        Serialize a configuration FORM and its descendants. Plain chunks
+        precede child FORMs in the output. For the global root, refresh the
+        stored global settings from the running stack first.
+
+    INPUTS
+        bic - Live context, or NULL for the global root.
+
+    RESULT
+        Newly allocated FORM buffer, or NULL if the root is absent or the
+        buffer cannot be allocated. Release the buffer with btFreeVec().
+
+    NOTES
+        The buffer includes the eight-byte IFF header; decode its big-endian
+        length and add eight to obtain the total byte count. It remains
+        independent of later tree changes. Chunk payloads can contain native
+        structures: the root uses IFFFORM_BTCFG for the current byte order,
+        not a portable interchange format. Keep bluetooth.library open
+        until the buffer is freed. Call from task context.
+
+        Serialize this call with other configuration access. Root export
+        can replace the stored global-settings chunk. An allocation failure
+        during that refresh is not reported separately; a non-NULL result
+        does not guarantee that every global setting was refreshed.
+
+    SEE ALSO
+        btReadCfg(), btSaveCfgToDisk(), btFreeVec()
+
+*****************************************************************************/
 AROS_LH1(APTR, btWriteCfg,
          AROS_LHA(struct BtIFFContext *, pic, A0),
          LIBBASETYPEPTR, BluetoothBase, 54, bt)
@@ -315,6 +469,35 @@ AROS_LH1(APTR, btWriteCfg,
 /* \\\ */
 
 /* /// "btFindCfgForm()" */
+/*****************************************************************************
+    NAME
+        APTR btFindCfgForm(
+
+    SYNOPSIS
+        APTR bic, ULONG formid)
+
+    FUNCTION
+        Find the first immediate child FORM of the requested type. The
+        search does not descend into grandchildren or test the parent itself.
+
+    INPUTS
+        bic - Parent context, or NULL for the global root.
+        formid - FORM type to find, in host byte order.
+
+    RESULT
+        Borrowed child context, or NULL if no match or no root exists.
+
+    NOTES
+        The context is borrowed, not a snapshot. Do not free it directly.
+        Prevent concurrent removal or replacement while using it; internal
+        locking does not extend its lifetime after this call returns.
+        Call from task context. Use btNextCfgForm() to find later siblings
+        of the same type.
+
+    SEE ALSO
+        btNextCfgForm(), btAllocCfgForm()
+
+*****************************************************************************/
 AROS_LH2(struct BtIFFContext *, btFindCfgForm,
          AROS_LHA(struct BtIFFContext *, pic, A0),
          AROS_LHA(ULONG, formid, D0),
@@ -347,6 +530,35 @@ AROS_LH2(struct BtIFFContext *, btFindCfgForm,
 /* \\\ */
 
 /* /// "btNextCfgForm()" */
+/*****************************************************************************
+    NAME
+        APTR btNextCfgForm(
+
+    SYNOPSIS
+        APTR bic)
+
+    FUNCTION
+        Find the next sibling with the same FORM type as the supplied
+        context, skipping siblings of other types.
+
+    INPUTS
+        bic - Live context in a context list, or NULL.
+
+    RESULT
+        Borrowed matching sibling, or NULL at the end of the list or for
+        a NULL input.
+
+    NOTES
+        The context is borrowed, not a snapshot. Do not free it directly.
+        Prevent concurrent removal or replacement while using it; internal
+        locking does not extend its lifetime after this call returns.
+        Call from task context. Do not remove the current context before
+        using it to locate its successor.
+
+    SEE ALSO
+        btFindCfgForm(), btRemCfgForm()
+
+*****************************************************************************/
 AROS_LH1(struct BtIFFContext *, btNextCfgForm,
          AROS_LHA(struct BtIFFContext *, pic, A0),
          LIBBASETYPEPTR, BluetoothBase, 56, bt)
@@ -377,6 +589,34 @@ AROS_LH1(struct BtIFFContext *, btNextCfgForm,
 /* \\\ */
 
 /* /// "btAllocCfgForm()" */
+/*****************************************************************************
+    NAME
+        APTR btAllocCfgForm(
+
+    SYNOPSIS
+        ULONG formid)
+
+    FUNCTION
+        Create an empty, independent configuration FORM. It is not attached
+        to the global configuration tree.
+
+    INPUTS
+        formid - FORM type in host byte order.
+
+    RESULT
+        New context, or NULL on allocation failure.
+
+    NOTES
+        Release the context and its descendants with btRemCfgForm(), not
+        btFreeVec(). Keep bluetooth.library open until it is released.
+        Populate it with btAddCfgEntry() or btReadCfg(). To add its contents
+        to another tree, serialize it with btWriteCfg() and add that buffer;
+        a context pointer is not a serialized FORM. Call from task context.
+
+    SEE ALSO
+        btRemCfgForm(), btWriteCfg(), btAddCfgEntry()
+
+*****************************************************************************/
 AROS_LH1(struct BtIFFContext *, btAllocCfgForm,
          AROS_LHA(ULONG, formid, D0),
          LIBBASETYPEPTR, BluetoothBase, 61, bt)
@@ -402,6 +642,35 @@ AROS_LH1(struct BtIFFContext *, btAllocCfgForm,
 /* \\\ */
 
 /* /// "btRemCfgForm()" */
+/*****************************************************************************
+    NAME
+        BOOL btRemCfgForm(
+
+    SYNOPSIS
+        APTR bic)
+
+    FUNCTION
+        Unlink and free a configuration FORM, all descendant FORMs and
+        their stored chunks.
+
+    INPUTS
+        bic - Live context to remove, or NULL to remove the global root.
+            If no global root exists, NULL has no effect.
+
+    RESULT
+        No usable result. Although the public declaration returns BOOL,
+        the implementation returns no value; do not test the result.
+
+    NOTES
+        All references to the removed tree become invalid. Removing the
+        global root does not create a replacement root or stop running
+        hardware. Call from task context and prevent concurrent users from
+        accessing the context. Change detection is requested after removal.
+
+    SEE ALSO
+        btAllocCfgForm(), btRemCfgChunk()
+
+*****************************************************************************/
 AROS_LH1(void, btRemCfgForm,
          AROS_LHA(struct BtIFFContext *, pic, A0),
          LIBBASETYPEPTR, BluetoothBase, 57, bt)
@@ -425,6 +694,49 @@ AROS_LH1(void, btRemCfgForm,
 /* \\\ */
 
 /* /// "btAddCfgEntry()" */
+/*****************************************************************************
+    NAME
+        APTR btAddCfgEntry(
+
+    SYNOPSIS
+        APTR bic, APTR formdata)
+
+    FUNCTION
+        Copy an IFF chunk or FORM into a configuration context. A plain
+        chunk replaces the first chunk with the same ID, then appends the
+        new data. A FORM is appended as a new child; existing FORMs of that
+        type are retained.
+
+    INPUTS
+        bic - Destination context, or NULL for the global root.
+        formdata - Complete serialized chunk or FORM, including its header
+            and even-byte padding.
+
+    RESULT
+        For a plain chunk, the destination context. For a FORM, the new
+        child context. NULL if the root is absent, allocation fails or a
+        FORM cannot be consumed completely.
+
+    NOTES
+        Supply a complete, valid IFF buffer with consistent nested lengths
+        and a padding byte after each odd-length chunk. No buffer length
+        is passed to this API; malformed input is not safely rejected.
+        The buffer must not alias storage in the destination tree.
+
+        The input is not retained. Returned contexts belong to the tree.
+        Failure is not atomic: replacement can remove the old chunk before
+        allocation fails, and failed FORM import can leave a partial child.
+        Call from task context. Change detection is requested; no file is
+        saved and no hardware configuration is applied.
+
+    BUGS
+        Replacing a chunk can reach the overlapping-copy defect described
+        under btRemCfgChunk().
+
+    SEE ALSO
+        btReadCfg(), btRemCfgChunk(), btWriteCfg()
+
+*****************************************************************************/
 AROS_LH2(struct BtIFFContext *, btAddCfgEntry,
          AROS_LHA(struct BtIFFContext *, pic, A0),
          AROS_LHA(APTR, formdata, A1),
@@ -451,6 +763,40 @@ AROS_LH2(struct BtIFFContext *, btAddCfgEntry,
 /* \\\ */
 
 /* /// "btRemCfgChunk()" */
+/*****************************************************************************
+    NAME
+        BOOL btRemCfgChunk(
+
+    SYNOPSIS
+        APTR bic, ULONG chnkid)
+
+    FUNCTION
+        Remove the first plain chunk with a matching ID. If the ID is zero,
+        clear all chunks and child FORMs while retaining the context itself.
+
+    INPUTS
+        bic - Context to modify, or NULL for the global root.
+        chnkid - Chunk ID in host byte order; zero clears the contents.
+
+    RESULT
+        TRUE if a chunk or child FORM was removed; FALSE if nothing matched
+        or the global root is absent.
+
+    NOTES
+        A nonzero ID does not remove child FORMs; use btRemCfgForm() for
+        those. Clearing the context invalidates all descendant references.
+        Chunk removal can invalidate borrowed strings within the context.
+        Call from task context. Change detection is requested.
+
+    BUGS
+        Removing a chunk before later chunks uses memcpy() on potentially
+        overlapping storage. The remaining data is not reliably preserved
+        on that path.
+
+    SEE ALSO
+        btRemCfgForm(), btAddCfgEntry()
+
+*****************************************************************************/
 AROS_LH2(BOOL, btRemCfgChunk,
          AROS_LHA(struct BtIFFContext *, pic, A0),
          AROS_LHA(ULONG, chnkid, D0),
@@ -492,6 +838,40 @@ AROS_LH2(BOOL, btRemCfgChunk,
 /* \\\ */
 
 /* /// "btGetCfgChunk()" */
+/*****************************************************************************
+    NAME
+        APTR btGetCfgChunk(
+
+    SYNOPSIS
+        APTR bic, ULONG chnkid)
+
+    FUNCTION
+        Copy the first plain chunk with a matching ID. Only the supplied
+        context is searched. A root query also refreshes its stored global
+        settings from the running stack.
+
+    INPUTS
+        bic - Live context, or NULL for the global root.
+        chnkid - Chunk ID in host byte order.
+
+    RESULT
+        Allocated chunk including its eight-byte header, or NULL if no
+        match or root exists, or allocation fails. Release with btFreeVec().
+
+    NOTES
+        The returned size is eight plus the big-endian payload length in
+        the header. An odd-length payload has no extra padding byte in this
+        copy. Add padding before passing such a copy to btAddCfgEntry().
+
+        The copy is independent of later configuration changes. Its payload
+        is opaque and may contain native structures. Keep bluetooth.library
+        open until it is freed. Call from task context and serialize root
+        queries with other configuration access.
+
+    SEE ALSO
+        btAddCfgEntry(), btGetStringChunk(), btFreeVec()
+
+*****************************************************************************/
 AROS_LH2(APTR, btGetCfgChunk,
          AROS_LHA(struct BtIFFContext *, pic, A0),
          AROS_LHA(ULONG, chnkid, D0),
@@ -528,6 +908,47 @@ AROS_LH2(APTR, btGetCfgChunk,
 /* \\\ */
 
 /* /// "btParseCfg()" */
+/*****************************************************************************
+    NAME
+        VOID btParseCfg(
+
+    SYNOPSIS
+        )
+
+    FUNCTION
+        Apply the in-memory stack configuration to running hardware and
+        classes, restore registered devices and scan for class bindings.
+
+    INPUTS
+        None.
+
+    RESULT
+        None. Individual hardware, class and binding failures are not
+        returned to the caller.
+
+    NOTES
+        Call from task context; hardware changes and class initialization
+        can block. If STKC is absent, no hardware reconciliation occurs.
+        If STKC contains BHWD entries, remove radios that have no matching
+        online entry, then add and enumerate missing online radios. Without
+        any BHWD entries, retain existing radios. Legacy BCLS entries add
+        missing classes; omission from that list does not remove a class.
+
+        This call can disconnect devices and release bindings. On the first
+        process-context application after an earlier task-context load, it
+        performs AfterDOS class handling. Before DOS, the configured boot
+        delay can postpone return. It marks the resulting configuration as
+        read and updates its saved-state marker without writing a file.
+        Serialize configuration replacement with this operation.
+
+    BUGS
+        Opening a class while holding the configuration lock can deadlock
+        if its initialization waits for another task that needs that lock.
+
+    SEE ALSO
+        btReadCfg(), btLoadCfgFromDisk(), btSaveCfgToDisk()
+
+*****************************************************************************/
 AROS_LH0(void, btParseCfg,
          LIBBASETYPEPTR, BluetoothBase, 65, bt)
 {
@@ -774,6 +1195,41 @@ AROS_LH0(void, btParseCfg,
 /* \\\ */
 
 /* /// "btSetClsCfg()" */
+/*****************************************************************************
+    NAME
+        BOOL btSetClsCfg(
+
+    SYNOPSIS
+        STRPTR owner, APTR form)
+
+    FUNCTION
+        Store private class configuration under the specified owner.
+        Replace existing class-data contents, or create a class entry.
+
+    INPUTS
+        owner - Non-NULL, NUL-terminated class owner name. Case-sensitive.
+        form - Complete IFFFORM_BTCLASSDATA (GCPD) FORM, or NULL to store
+            empty class data.
+
+    RESULT
+        TRUE if the requested update is accepted; FALSE on failure.
+
+    NOTES
+        For a non-NULL form, supply a complete, valid IFF buffer with consistent nested lengths
+        and a padding byte after each odd-length chunk. No buffer length
+        is passed to this API; malformed input is not safely rejected.
+        The buffer must not alias storage in the destination tree.
+
+        Owner and FORM data are copied. NULL clears data rather than removing
+        the owner entry. Updates are not transactional: a failed replacement
+        can leave partial data and fall back to creating another owner
+        entry. Call from task context. Change detection runs before return;
+        no preference file is written.
+
+    SEE ALSO
+        btGetClsCfg(), btReadCfg(), btSaveCfgToDisk()
+
+*****************************************************************************/
 AROS_LH2(BOOL, btSetClsCfg,
          AROS_LHA(STRPTR, owner, A0),
          AROS_LHA(APTR, form, A1),
@@ -841,6 +1297,33 @@ AROS_LH2(BOOL, btSetClsCfg,
 /* \\\ */
 
 /* /// "btGetClsCfg()" */
+/*****************************************************************************
+    NAME
+        APTR btGetClsCfg(
+
+    SYNOPSIS
+        STRPTR owner)
+
+    FUNCTION
+        Find private class data for the first matching owner entry.
+
+    INPUTS
+        owner - Non-NULL, NUL-terminated class owner name. Case-sensitive.
+
+    RESULT
+        Borrowed GCPD context, or NULL if the owner or its data is absent.
+
+    NOTES
+        The context is borrowed, not a snapshot. Do not free it directly.
+        Prevent concurrent removal or replacement while using it; internal
+        locking does not extend its lifetime after this call returns.
+        The search does not continue past a matching owner whose data FORM
+        is missing. Call from task context.
+
+    SEE ALSO
+        btSetClsCfg(), btWriteCfg(), btGetCfgChunk()
+
+*****************************************************************************/
 AROS_LH1(struct BtIFFContext *, btGetClsCfg,
          AROS_LHA(STRPTR, owner, A0),
          LIBBASETYPEPTR, BluetoothBase, 67, bt)
@@ -862,6 +1345,44 @@ AROS_LH1(struct BtIFFContext *, btGetClsCfg,
 /* \\\ */
 
 /* /// "btSetDevCfg()" */
+/*****************************************************************************
+    NAME
+        BOOL btSetDevCfg(
+
+    SYNOPSIS
+        STRPTR owner, STRPTR devid, STRPTR svcid, APTR form)
+
+    FUNCTION
+        Store owner-specific configuration for a device or one of its
+        services, creating missing containers as needed.
+
+    INPUTS
+        owner - Non-NULL, NUL-terminated class owner name.
+        devid - Non-NULL, NUL-terminated device ID.
+        svcid - Service ID, or NULL for device-wide configuration.
+        form - Complete DCPD FORM for device-wide data or SCPD FORM for
+            service data; NULL stores empty data. Names and IDs are
+            case-sensitive.
+
+    RESULT
+        TRUE if the selected data was replaced or cleared; FALSE on failure.
+
+    NOTES
+        For a non-NULL form, supply a complete, valid IFF buffer with consistent nested lengths
+        and a padding byte after each odd-length chunk. No buffer length
+        is passed to this API; malformed input is not safely rejected.
+        The buffer must not alias storage in the destination tree.
+
+        Strings and FORM data are copied. NULL clears the data, retaining
+        its containers. Failures can leave partial containers or duplicate
+        device entries; prior data is not restored. Call from task context.
+        Change detection runs before return. This does not bind a class or
+        write a preference file.
+
+    SEE ALSO
+        btGetDevCfg(), btReadCfg(), btSetForcedBinding()
+
+*****************************************************************************/
 AROS_LH4(BOOL, btSetDevCfg,
          AROS_LHA(STRPTR, owner, A0),
          AROS_LHA(STRPTR, devid, A2),
@@ -993,6 +1514,37 @@ AROS_LH4(BOOL, btSetDevCfg,
 /* \\\ */
 
 /* /// "btGetDevCfg()" */
+/*****************************************************************************
+    NAME
+        APTR btGetDevCfg(
+
+    SYNOPSIS
+        STRPTR owner, STRPTR devid, STRPTR svcid)
+
+    FUNCTION
+        Find an owner-specific data FORM under the first matching device
+        entry, optionally selecting a service within that device.
+
+    INPUTS
+        owner - Non-NULL, NUL-terminated class owner name.
+        devid - Non-NULL, NUL-terminated device ID.
+        svcid - Non-NULL service ID, or NULL for device-wide data.
+            Comparisons are case-sensitive.
+
+    RESULT
+        Borrowed DCPD or SCPD context, or NULL if the selected data is absent.
+
+    NOTES
+        The context is borrowed, not a snapshot. Do not free it directly.
+        Prevent concurrent removal or replacement while using it; internal
+        locking does not extend its lifetime after this call returns.
+        Later duplicate device entries are not searched. Call from task
+        context; no context is created by this query.
+
+    SEE ALSO
+        btSetDevCfg(), btGetCfgChunk(), btWriteCfg()
+
+*****************************************************************************/
 AROS_LH3(struct BtIFFContext *, btGetDevCfg,
          AROS_LHA(STRPTR, owner, A0),
          AROS_LHA(STRPTR, devid, A2),
@@ -1053,6 +1605,40 @@ AROS_LH3(struct BtIFFContext *, btGetDevCfg,
 /* \\\ */
 
 /* /// "btSetForcedBinding()" */
+/*****************************************************************************
+    NAME
+        BOOL btSetForcedBinding(
+
+    SYNOPSIS
+        STRPTR owner, STRPTR devid, STRPTR svcid)
+
+    FUNCTION
+        Set or clear the preferred class owner recorded for a device or
+        service. This changes configuration, not an active binding.
+
+    INPUTS
+        owner - Class owner name; NULL or an empty string clears the choice.
+        devid - Non-NULL, NUL-terminated device ID.
+        svcid - Service ID, or NULL for a device-wide choice.
+            Non-NULL strings must be terminated; matching is case-sensitive.
+
+    RESULT
+        TRUE if a choice was stored, or for clearing even if none existed.
+        FALSE if storing a choice fails.
+
+    NOTES
+        Strings are copied. For a service, all matching service containers
+        under the first matching device are visited. A successful update
+        of one container can mask a failure in another. Creation failures
+        can leave partial containers or duplicate device entries.
+
+        Call from task context. Change detection runs before return; no
+        file is saved and no class is immediately rebound.
+
+    SEE ALSO
+        btGetForcedBinding(), btClassScan(), btSaveCfgToDisk()
+
+*****************************************************************************/
 AROS_LH3(BOOL, btSetForcedBinding,
          AROS_LHA(STRPTR, owner, A2),
          AROS_LHA(STRPTR, devid, A0),
@@ -1162,6 +1748,36 @@ AROS_LH3(BOOL, btSetForcedBinding,
 /* \\\ */
 
 /* /// "btGetForcedBinding()" */
+/*****************************************************************************
+    NAME
+        STRPTR btGetForcedBinding(
+
+    SYNOPSIS
+        STRPTR devid, STRPTR svcid)
+
+    FUNCTION
+        Find the recorded class owner for a device or service. Search only
+        the first matching device entry.
+
+    INPUTS
+        devid - Non-NULL, NUL-terminated device ID.
+        svcid - Service ID, or NULL for the device-wide choice.
+            Comparisons are case-sensitive.
+
+    RESULT
+        Borrowed owner string, or NULL if no matching choice exists.
+
+    NOTES
+        Do not modify or free the string. Copy it while configuration
+        changes are excluded if it must survive another configuration call.
+        Chunk replacement, buffer growth or form removal can invalidate it.
+        Internal locking ends before return. A service query does not fall
+        back to the device-wide choice. Call from task context.
+
+    SEE ALSO
+        btSetForcedBinding(), btCopyStr()
+
+*****************************************************************************/
 AROS_LH2(STRPTR, btGetForcedBinding,
          AROS_LHA(STRPTR, devid, A0),
          AROS_LHA(STRPTR, svcid, A1),
@@ -1214,6 +1830,39 @@ AROS_LH2(STRPTR, btGetForcedBinding,
 /* \\\ */
 
 /* /// "btAddStringChunk()" */
+/*****************************************************************************
+    NAME
+        BOOL btAddStringChunk(
+
+    SYNOPSIS
+        APTR bic, ULONG chunkid, CONST_STRPTR contents)
+
+    FUNCTION
+        Copy a terminated string into a plain chunk, replacing the first
+        chunk with the same ID. The stored length includes the terminator.
+
+    INPUTS
+        bic - Live context; NULL is not a root shorthand here.
+        chunkid - Plain-chunk ID in host byte order; do not use ID_FORM.
+        contents - Non-NULL, NUL-terminated string.
+
+    RESULT
+        TRUE if stored; FALSE if allocation fails.
+
+    NOTES
+        The string is copied before replacement and is not retained.
+        Failure after replacement begins can remove the old chunk. Call
+        from task context. This function does not request change detection,
+        apply the configuration or save it to disk.
+
+    BUGS
+        Replacing an existing chunk can reach the overlapping-copy defect
+        described under btRemCfgChunk().
+
+    SEE ALSO
+        btGetStringChunk(), btMatchStringChunk(), btAddCfgEntry()
+
+*****************************************************************************/
 AROS_LH3(BOOL, btAddStringChunk,
          AROS_LHA(struct BtIFFContext *, pic, A0),
          AROS_LHA(ULONG, chunkid, D0),
@@ -1232,6 +1881,35 @@ AROS_LH3(BOOL, btAddStringChunk,
 /* \\\ */
 
 /* /// "btMatchStringChunk()" */
+/*****************************************************************************
+    NAME
+        BOOL btMatchStringChunk(
+
+    SYNOPSIS
+        APTR bic, ULONG chunkid, CONST_STRPTR contents)
+
+    FUNCTION
+        Compare a string with the first matching plain chunk in a context.
+        Comparison is case-sensitive and bounded by the stored chunk length.
+
+    INPUTS
+        bic - Live context; NULL is invalid.
+        chunkid - Chunk ID in host byte order.
+        contents - Non-NULL, NUL-terminated comparison string.
+
+    RESULT
+        TRUE if the strings match; FALSE for a missing chunk or a mismatch.
+
+    NOTES
+        The comparison stops at the stored NUL or the end of the payload.
+        It also accepts an unterminated payload when its full byte sequence
+        matches the comparison string. No data is retained or allocated.
+        Call from task context.
+
+    SEE ALSO
+        btAddStringChunk(), btGetStringChunk()
+
+*****************************************************************************/
 AROS_LH3(BOOL, btMatchStringChunk,
          AROS_LHA(struct BtIFFContext *, pic, A0),
          AROS_LHA(ULONG, chunkid, D0),
@@ -1250,6 +1928,35 @@ AROS_LH3(BOOL, btMatchStringChunk,
 /* \\\ */
 
 /* /// "btGetStringChunk()" */
+/*****************************************************************************
+    NAME
+        STRPTR btGetStringChunk(
+
+    SYNOPSIS
+        APTR bic, ULONG chunkid)
+
+    FUNCTION
+        Copy the payload of the first matching plain chunk into a new
+        string buffer, adding a trailing NUL byte.
+
+    INPUTS
+        bic - Live context; NULL is invalid.
+        chunkid - Chunk ID in host byte order.
+
+    RESULT
+        Allocated string, or NULL if the chunk is absent or allocation
+        fails. Release it with btFreeVec().
+
+    NOTES
+        Copies the complete payload, including bytes after an embedded NUL.
+        An ordinary string consumer sees only the prefix before that NUL.
+        The copy is independent of the configuration tree. Keep the library
+        open until the buffer is freed. Call from task context.
+
+    SEE ALSO
+        btGetCfgChunk(), btMatchStringChunk(), btFreeVec()
+
+*****************************************************************************/
 AROS_LH2(STRPTR, btGetStringChunk,
          AROS_LHA(struct BtIFFContext *, pic, A0),
          AROS_LHA(ULONG, chunkid, D0),
