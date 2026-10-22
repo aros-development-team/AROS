@@ -77,6 +77,57 @@ static BOOL getlelong(ULONG addr, UBYTE offset, UBYTE nextbyte, ULONG *outp)
     return TRUE;
 }
 
+/*****************************************************************************
+    NAME
+        BOOL CopyTuple(
+
+    SYNOPSIS
+        struct CardHandle *handle, UBYTE *buffer, ULONG tuplecode, ULONG size)
+
+    FUNCTION
+        Search the m68k-Amiga card's CIS chains and copy a matching tuple.
+
+    INPUTS
+        handle - Current card owner.
+        buffer - Writable storage for at least two header bytes plus size
+        data bytes. NULL selects diagnostic traversal without copying. No
+        pointer is retained.
+        tuplecode - Tuple type in bits 0-7 and zero-based occurrence to skip
+        in bits 16-31. Bits 8-15 are ignored.
+        size - Maximum number of tuple data bytes to copy, excluding the two
+        header bytes. Zero still copies the header.
+
+    RESULT
+        With a buffer, TRUE when a matching tuple is selected; FALSE when
+        none is found, ownership is absent or traversal fails before
+        selection. The buffer is unchanged on those FALSE paths. With NULL,
+        TRUE only when traversal reaches an end with no further link; no
+        tuple selection is made.
+
+    NOTES
+        Requires a non-NULL handle that currently owns the inserted card.
+        The ownership test does not protect against subsequent removal.
+        The first two output bytes are the tuple code and its original link
+        length. At most min(size, link length) data bytes follow. The link
+        byte is not reduced after truncation, and the function returns no
+        separate copied-byte count.
+
+        Traversal starts in attribute memory and can follow long links into
+        attribute or common memory. It temporarily selects 720 ns timing
+        with the programming voltage cleared, then restores the previous
+        configuration before returning. Task switching is forbidden during
+        traversal. A NULL buffer prints tuples to the diagnostic log;
+        tuplecode and size do not filter that traversal.
+
+    BUGS
+        After finding a tuple, individual read failures are ignored and
+        failed reads supply zero bytes. TRUE does not certify a complete or
+        valid tuple, especially after removal. Cyclic long links are not
+        detected and can prevent the call from returning while task
+        switching remains forbidden. Do not use this function as validation
+        of untrusted CIS data.
+
+*****************************************************************************/
 AROS_LH4(ULONG, CopyTuple,
         AROS_LHA(struct CardHandle*, handle, A1),
         AROS_LHA(UBYTE*, buffer, A0),
