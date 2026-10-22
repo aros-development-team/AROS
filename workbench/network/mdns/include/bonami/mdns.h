@@ -20,6 +20,7 @@
 
 #include <exec/types.h>
 #include <exec/lists.h>
+#include <exec/ports.h>
 #include <utility/tagitem.h>
 #include <utility/hooks.h>
 #include <libraries/bonamibase.h>
@@ -28,7 +29,7 @@
 /* Library identity (subsystem name, not API prefix) */
 
 #define BONAMI_LIB_VERSION   41
-#define BONAMI_LIB_REVISION  1
+#define BONAMI_LIB_REVISION  2
 
 /*------------------------------------------------------------------------*/
 /* DNS-SD well-known values */
@@ -74,6 +75,43 @@
  * with a backslash. Each decoded item becomes one DNS-SD TXT string. */
 #define MDNS_HostAddr           (MDNS_Dummy + 14)  /* ULONG IPv4, network order */
 #define MDNS_TimeToLive         (MDNS_Dummy + 17)  /* ULONG seconds, 1..4500 */
+
+/* AROS discovery: each operation has one bounded event queue,
+ * read with ReadMDNSEvent() in the caller's own task. Nothing runs in mdnsd
+ * on the caller's behalf; there are no daemon callbacks. */
+#define MDNS_EventMode         (MDNS_Dummy + 18)
+#define MDNS_EVENT_QUEUE       1
+#define MDNS_DISCOVERY_TXT_MAX 512
+
+/* Counted wire TXT strings; names are individual labels, without escaping.
+ * Address and interface are network byte order. No embedded pointers. */
+struct MDNSDiscoveryEvent
+{
+    ULONG de_Code;
+    ULONG de_Address;
+    ULONG de_Interface;
+    UWORD de_Port;
+    UWORD de_TXTLength;
+    char de_Name[64];
+    char de_Type[MDNS_MAX_TYPE + 1];
+    UBYTE de_TXT[MDNS_DISCOVERY_TXT_MAX];
+};
+
+/* Optional wakeup for a queue: a message the caller lends to mdnsd with
+ * RequestMDNSEvent(). The caller sets er_Msg.mn_ReplyPort and mn_Length;
+ * mdnsd sets er_Result and replies to it exactly once. Until then it
+ * belongs to mdnsd: StopBrowse()/StopResolve() return only after it is
+ * back on the reply port.
+ *   MDNS_OK           events are waiting: read until MDNSERR_NOTREADY
+ *   MDNSERR_BUSY      the queue overflowed: stop and start again
+ *   MDNSERR_CANCELLED the operation was stopped
+ *   MDNSERR_NOENGINE  mdnsd ended */
+struct MDNSEventRequest
+{
+    struct Message er_Msg;
+    LONG           er_Result;
+    ULONG          er_Reserved;
+};
 
 /* GetMDNSStatusA output counters (ti_Data = ULONG *) */
 #define MDNS_StatusRxPackets    (MDNS_Dummy + 20)  /* ULONG * RX datagram count */

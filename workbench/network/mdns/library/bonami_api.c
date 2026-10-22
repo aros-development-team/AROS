@@ -83,6 +83,7 @@
 {
     AROS_LIBFUNC_INIT
     (void)BonamiBase;
+    bonamiDiscoveryRelease(BonamiBase);
     bonamiReleaseTask();
     AROS_LIBFUNC_EXIT
 }

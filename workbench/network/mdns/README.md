@@ -10,8 +10,10 @@ RFC 6763), which they register through `bonami.library`, so that other
 machines find a printer, a file share or a MIDI session without being told
 an address or a port.
 
-These are the first two parts of a system mDNS/DNS-SD service. Looking for
-other hosts' services and names (browse, resolve, lookup) is to follow.
+It also browses for services and resolves them asynchronously, through a
+queue per operation with an optional wakeup by a lent request message. See
+[DISCOVERY.md](DISCOVERY.md) for the API, lifetime contract and limits.
+Generic host lookup and record queries remain separate.
 
 ## What it does
 
@@ -79,10 +81,10 @@ and the reply is waited for. Without mdnsd the calls return
 | `UpdateServiceA(ref, tags)` | changes its text or port |
 | `DeregisterService(ref)` | withdraws it |
 
-The remaining upstream ABI slots are present as compatibility stubs.
-`BrowseServiceTypeA`, `ResolveServiceA`, `MakeTXTRecordA`, `GetMDNSStatusA`,
+Some upstream ABI slots remain compatibility stubs.
+`MakeTXTRecordA`, `GetMDNSStatusA`,
 `InquiryFromNIPCTagsA` and `PublishNIPCEntitiesA` return `MDNSERR_NOTREADY`.
-`StopBrowse`, `StopResolve`, `FreeTXTRecord` and `UnpublishNIPCEntitiesA`
+`FreeTXTRecord` and `UnpublishNIPCEntitiesA`
 do nothing. They invoke no callbacks, change no output buffers and take
 ownership of no memory. Public headers include the upstream handles,
 events, flags, service snapshots, tags and Envoy definitions. These
@@ -92,8 +94,8 @@ documented by the implemented functions are acted on in this release.
 ### Task lifetime and compatibility
 
 The first fifteen slots, their order/registers and existing tag/error values
-follow upstream Bonami. The AROS implementation is version 41.1. Its daemon
-and library must be installed together: their private IPC is now version 2.
+follow upstream Bonami. The AROS implementation is version 41.2. Its daemon
+and library must be installed together: their private IPC is now version 3.
 
 Registration lifetime deliberately differs from upstream Bonami:
 

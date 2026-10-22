@@ -19,7 +19,14 @@
 #include <bonami/mdns.h>
 
 #define MDNS_IPC_PORT       "BonAmi"
-#define MDNS_IPC_VERSION    2
+#define MDNS_IPC_VERSION    3
+
+#define MDNS_IPC_BROWSE     4
+#define MDNS_IPC_STOPBROWSE 5
+#define MDNS_IPC_RESOLVE    6
+#define MDNS_IPC_STOPRESOLVE 7
+#define MDNS_IPC_READ       17
+#define MDNS_IPC_NOTIFY     18      /* lend mi_Request until an event */
 
 #define MDNS_IPC_REGISTER   1
 #define MDNS_IPC_UNREGISTER 2
@@ -50,7 +57,10 @@ struct MDNSIPCMsg
     UWORD           mi_Pad;
     ULONG           mi_HostAddr;    /* 0xAABBCCDD == A.B.C.D */
     ULONG           mi_TTL;         /* seconds, 0 for the defaults */
+    ULONG           mi_DaemonID;    /* expected incarnation, zero on create */
+    struct MDNSDiscoveryEvent mi_Event;
     ULONG           mi_TaskID;      /* GetETaskID() of the calling task */
+    struct MDNSEventRequest *mi_Request; /* MDNS_IPC_NOTIFY only */
 };
 
 #endif /* MDNSD_MDNS_IPC_H */

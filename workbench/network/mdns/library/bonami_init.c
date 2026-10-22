@@ -42,6 +42,8 @@ BonamiInit(struct BonamiIntern *base)
 {
     InitSemaphore(&base->bi_Lock);
     NEWLIST(&base->bi_Openers);
+    NEWLIST(&base->bi_Discovery);
+    base->bi_NextDiscovery = 1;
     return TRUE;
 }
 
@@ -84,6 +86,7 @@ BonamiClose(struct BonamiIntern *base)
     }
     ReleaseSemaphore(&base->bi_Lock);
     if (last) {
+        bonamiDiscoveryRelease(base);
         bonamiReleaseTask();
     }
     return TRUE;

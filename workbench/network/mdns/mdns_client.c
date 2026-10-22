@@ -33,6 +33,15 @@ mdnsClientMessage(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
     msg->mi_HostName[MDNS_MAX_HOST] = '\0';
     msg->mi_TXT[MDNS_MAX_TXT] = '\0';
 
+    if (msg->mi_Command == MDNS_IPC_BROWSE ||
+        msg->mi_Command == MDNS_IPC_STOPBROWSE ||
+        msg->mi_Command == MDNS_IPC_RESOLVE ||
+        msg->mi_Command == MDNS_IPC_STOPRESOLVE ||
+        msg->mi_Command == MDNS_IPC_READ ||
+        msg->mi_Command == MDNS_IPC_NOTIFY) {
+        msg->mi_Result = mdnsDiscoveryMessage(md, msg);
+        return;
+    }
     switch (msg->mi_Command) {
     case MDNS_IPC_REGISTER:
         msg->mi_Result = mdnsRegAdd(md, msg);
@@ -47,6 +56,7 @@ mdnsClientMessage(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
     case MDNS_IPC_RELEASE:
         /* A client is gone: nothing of its may be announced any more. */
         mdnsRegRelease(md, msg->mi_TaskID);
+        mdnsDiscoveryRelease(md, msg->mi_TaskID);
         msg->mi_Result = MDNS_OK;
         break;
     default:
