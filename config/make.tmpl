@@ -3776,6 +3776,11 @@ endif
 	    $(ECHO) '' ; \
 	    $(ECHO) '[build]' ; \
 	    $(ECHO) 'target-dir = "%(targetdir)"' ; \
+	    if test "$(RUST_OFFICIAL)" = yes ; then \
+	        $(ECHO) 'target = "$(RUST_TARGET_SPEC)"' ; \
+	        $(ECHO) '[unstable]' ; \
+	        $(ECHO) 'json-target-spec = true' ; \
+	    fi ; \
 	    $(ECHO) '' ; \
 	    $(ECHO) '[env]' ; \
 	    $(ECHO) 'AROS_CC = "$(TARGET_RUST_LINKER)"' ; \

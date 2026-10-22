@@ -4,19 +4,23 @@ include $(SRCDIR)/config/aros.cfg
 #
 # Rust cross compiler for AROS
 #
-# The upstream rustc source release is fetched, patched for AROS and built
-# with rust's own bootstrap (x.py) against a binary release of the same
-# version, which is also fetched. The result is a host rustc with a std for
-# $(RUST_TARGET_TRIPLE), installed into $(CROSSTOOLSDIR)/bin. The AROS C
-# cross toolchain must already exist: rustc links through it, so this works
-# the same for the gnu and the llvm toolchains.
+# The official AArch64/LLVM pin uses the private std and native adapter
+# installation in unmodified/integrate.py. Other profiles bootstrap the
+# patched source compiler with x.py. Both reach the native target C driver.
 #
 
 #MM- tools-crosstools-rust-yes : tools-crosstools-rust
 #MM- tools-crosstools-rust-no :
 
-#MM tools-crosstools-rust : tools-crosstools-$(AROS_TOOLCHAIN)-$(AROS_TARGET_CPU) \
+#MM tools-crosstools-rust : crosstools-rust-backend-$(TARGET_RUST_VER)
+
+#MM- crosstools-rust-backend-1.98.1 : tools-crosstools-$(AROS_TOOLCHAIN)-$(AROS_TARGET_CPU) \
 #MM     crosstools-rust-fetch crosstools-rust-stage0
+# The official Rust profile consumes the configured C driver and SDK. The
+# top-level `make crosstools-toolchain` prepares that driver when
+# needed; forcing the LLVM source build here would configure/rebuild LLVM
+# even with a complete installed C toolchain.
+#MM- crosstools-rust-backend-nightly-2026-08-04 : tools-crosstools-autolibs
 
 #MM- crosstools-rust-quick : tools-crosstools-rust
 #MM crosstools-rust-create-patch : crosstools-rust-src-create-patch
@@ -30,8 +34,8 @@ RUST_BOOTSTRAP_TOML     := $(HOSTGENDIR)/$(CURDIR)/bootstrap.toml
 
 rust-installflag        := $(CROSSTOOLSDIR)/.installflag-rust-$(RUST_VERSION)-$(AROS_TARGET_CPU)
 rust-stage0-installflag := $(RUST_STAGE0_DIR)/.installflag-rust-stage0-$(RUST_STAGE0_VERSION)
-rust-bindgen-installflag := $(CROSSTOOLSDIR)/.installflag-rust-bindgen-$(RUST_BINDGEN_VERSION)
-rust-cbindgen-installflag := $(CROSSTOOLSDIR)/.installflag-rust-cbindgen-$(RUST_CBINDGEN_VERSION)
+rust-bindgen-installflag := $(RUST_INSTALL_PREFIX)/.installflag-rust-bindgen-$(RUST_BINDGEN_VERSION)
+rust-cbindgen-installflag := $(RUST_INSTALL_PREFIX)/.installflag-rust-cbindgen-$(RUST_CBINDGEN_VERSION)
 
 # The C driver and flags rustc links the target with. CC_PREFIX (ccache) is
 # dropped: the wrapper is a plain program.
@@ -169,6 +173,7 @@ $(RUST_BOOTSTRAP_TOML) : $(TOP)/$(CURDIR)/mmakefile $(SRCDIR)/tools/crosstools/r
 # flags of this build, so it is always a small script around $(TARGET_CC).
 # Like make.tmpl it passes $(TARGET_SYSROOT), and it puts $(TOOLDIR) on PATH
 # so the driver finds collect-aros when cargo runs outside the build.
+ifeq ($(RUST_OFFICIAL),no)
 # The ISA flags come after the caller's arguments: they are the target's ABI,
 # and build scripts compiling C through this driver (the cc crate) pass their
 # own guesses - on riscv64 a soft-float -mabi=lp64 for any OS but Linux and
@@ -185,8 +190,19 @@ $(TARGET_RUST_LINKER) : $(TOP)/$(CURDIR)/mmakefile
 	) > $@
 	@chmod +x $@
 
+endif
+
 ## Build and install ###
 
+ifeq ($(RUST_OFFICIAL),yes)
+#MM
+tools-crosstools-rust :
+	+$(PYTHON) $(SRCDIR)/tools/crosstools/rust/unmodified/integrate.py \
+	    --prefix $(RUST_INSTALL_PREFIX) \
+	    --work $(HOSTGENDIR)/$(CURDIR)/official-$(RUST_VERSION)-$(AROS_TARGET_CPU) \
+	    --sdk $(AROS_DEVELOPER) --crosstools $(CROSSTOOLSDIR) \
+	    --collect-aros $(TOOLDIR)/collect-aros --host-triple $(RUST_HOST_TRIPLE)
+else
 #MM
 tools-crosstools-rust : $(RUST_BOOTSTRAP_TOML) $(TARGET_RUST_LINKER)
 	@$(IF) ! $(TEST) -f $(rust-installflag) ; then \
@@ -206,10 +222,18 @@ tools-crosstools-rust : $(RUST_BOOTSTRAP_TOML) $(TARGET_RUST_LINKER)
 	           $(CROSSTOOLSDIR)/lib/rustlib/$(RUST_HOST_TRIPLE)/bin/rust-objcopy ; \
 	fi
 
+endif
+
 #MM- tools-crosstools-rust-clean : crosstools-rust-clean
 
+ifeq ($(RUST_OFFICIAL),yes)
+crosstools-rust-clean :
+	$(RM) $(RUST_INSTALL_PREFIX) $(HOSTGENDIR)/$(CURDIR)/official-$(RUST_VERSION)-$(AROS_TARGET_CPU)
+else
 crosstools-rust-clean :
 	$(RM) $(RUST_BUILDDIR) $(RUST_BOOTSTRAP_TOML) $(rust-installflag)
+
+endif
 
 ## bindgen and cbindgen ###
 
@@ -223,7 +247,7 @@ tools-crosstools-rust-bindgen :
 	@$(IF) ! $(TEST) -f $(rust-bindgen-installflag) ; then \
 	    $(ECHO) "Installing bindgen $(RUST_BINDGEN_VERSION)" \
 	    && PATH=$(RUST_BINDIR):$$PATH $(HOST_CARGO) install bindgen-cli \
-	           --version $(RUST_BINDGEN_VERSION) --locked --root $(CROSSTOOLSDIR) \
+	           --version $(RUST_BINDGEN_VERSION) --locked --root $(RUST_INSTALL_PREFIX) \
 	    && $(TOUCH) $(rust-bindgen-installflag) ; \
 	fi
 
@@ -234,7 +258,7 @@ tools-crosstools-rust-cbindgen :
 	@$(IF) ! $(TEST) -f $(rust-cbindgen-installflag) ; then \
 	    $(ECHO) "Installing cbindgen $(RUST_CBINDGEN_VERSION)" \
 	    && PATH=$(RUST_BINDIR):$$PATH $(HOST_CARGO) install cbindgen \
-	           --version $(RUST_CBINDGEN_VERSION) --locked --root $(CROSSTOOLSDIR) \
+	           --version $(RUST_CBINDGEN_VERSION) --locked --root $(RUST_INSTALL_PREFIX) \
 	    && $(TOUCH) $(rust-cbindgen-installflag) ; \
 	fi
 

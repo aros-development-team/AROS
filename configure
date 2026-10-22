@@ -1822,8 +1822,7 @@ Optional Packages:
   --with-llvm-version=VERSION
                           Compile llvm-VERSION for AROS
   --with-rust-version=VERSION
-                          Compile rust-VERSION for AROS
-                          (default=$default_rust_version)
+                          Rust version (AArch64 LLVM: nightly-2026-08-04; other targets: 1.98.1)
   --with-cpu=<spec>       Specify minumum CPU (default=$gcc_default_cpu).
   --with-fpu=<spec>       Specify minumum FPU (default=$gcc_float_fpu).
   --with-float=<spec>     Specify floating point ABI
@@ -12583,6 +12582,9 @@ fi
 printf '%s\n' "$aros_enable_rust" >&6; }
 
 default_rust_version="1.98.1"
+if test "$aros_target_cpu:$aros_toolchain" = "aarch64:llvm"; then
+    default_rust_version="nightly-2026-08-04"
+fi
 
 # Check whether --with-rust-version was given.
 if test ${with_rust_version+y}
