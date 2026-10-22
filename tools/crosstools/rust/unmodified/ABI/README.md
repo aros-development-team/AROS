@@ -42,3 +42,12 @@ archives and links them explicitly into one relocatable object. This forces
 collisions that ordinary lazy archive extraction could hide. It rejects Rust
 crate definitions of the unavailable C interfaces and, with `--binary FILE`,
 requires exactly one native provider for the probed application calls.
+
+The native AArch64 declarations include `pthread_condattr_t.cond_clock` from
+`pthread.h`. Its attribute storage and field offsets must match the SDK; a
+smaller declaration would let native initialization overwrite the caller's
+allocation. File metadata, time types and pthread attributes require exact
+layout checks when updating the SDK. The mutex, condition, rwlock and semaphore
+facades use overallocated aligned storage for pointer-only calls; sufficient
+storage does not establish compatibility for embedding those types in C structs
+or passing arrays whose stride is the native type size.
