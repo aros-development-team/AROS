@@ -388,7 +388,10 @@ VOID DeleteObject(struct Handler *handler, struct Object *object)
 
          /* Prepare to destroy "heir" link */
 
+         AdjustExaminations(handler, heir);
+         UnmatchNotifyRequests(handler, heir);
          Remove((APTR)heir);
+         MatchNotifyRequests(handler);
          object = heir;
       }
 
