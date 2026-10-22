@@ -224,7 +224,7 @@ static int invite_configured(struct applemidi_runtime *rt, uint64_t now)
     int index = applemidi_peers_invite(&rt->peers, rt->configured_address,
                                        rt->configured_port,
                                        netmidid_random(now),
-                                       (uint32_t)(now / 10), &invite);
+                                       (uint32_t)now, &invite);
     if (index < 0)
         return -1;
     stream_begin(rt, index, 1, now);
@@ -480,7 +480,7 @@ static void receive_packet(struct applemidi_runtime *rt, int data_port)
                 applemidi_peers_find_data(&rt->peers, address, port) : -1;
         if (index >= 0) {
             rt->stream[index].last_activity = now;
-            applemidi_peers_seen(&rt->peers, index, (uint32_t)(now / 10));
+            applemidi_peers_seen(&rt->peers, index, (uint32_t)now);
             receive_rtp(rt, index, bytes, (size_t)count);
         }
         return;
@@ -492,7 +492,7 @@ static void receive_packet(struct applemidi_runtime *rt, int data_port)
             packet.ssrc != rt->peers.peer[index].session.peer_ssrc)
             return;
         rt->stream[index].last_activity = now;
-        applemidi_peers_seen(&rt->peers, index, (uint32_t)(now / 10));
+        applemidi_peers_seen(&rt->peers, index, (uint32_t)now);
         {
             unsigned int completed = rt->stream[index].clock.completed;
 
@@ -526,7 +526,7 @@ static void receive_packet(struct applemidi_runtime *rt, int data_port)
     {
         int known = index;
         action = applemidi_peers_receive(&rt->peers, address, port, data_port,
-                                         &packet, (uint32_t)(now / 10),
+                                         &packet, (uint32_t)now,
                                          &response, &response_port, &index,
                                          &event);
         if (action < 0)
@@ -853,6 +853,15 @@ static int applemidi_periodic(struct netmidid *d, void *self, uint64_t now)
     for (index = 0; index < APPLEMIDI_PEERS_MAX; ++index)
         if (rt->peers.peer[index].used)
             periodic_peer(rt, index, now);
+    /* A peer not heard from for as long as a clock exchange may take has
+       gone without BY, whichever side invited: it is ended, and a
+       configured one is then invited again. */
+    index = applemidi_peers_expired(&rt->peers, (uint32_t)now,
+                                    APPLEMIDI_CLOCK_TIMEOUT);
+    if (index >= 0) {
+        puts(TAG "peer timed out");
+        drop_peer(rt, index, now);
+    }
     /* The peer given by its address is invited again when there is no
        session with it, be it that it never answered or that it left:
        more slowly each time, up to once a minute, and from the start
