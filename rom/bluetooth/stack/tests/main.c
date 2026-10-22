@@ -3,6 +3,7 @@
 #include "a2dp/test_a2dp_source.h"
 #include "l2cap/test_listener_pair.h"
 #include "btaudio/test_clock.h"
+#include "btmidi/test_blemidi.h"
 #include "endian/test_endian.h"
 #include "buffer/test_buffer.h"
 #include "hci/test_hci.h"
@@ -44,6 +45,7 @@ int main(void)
     run_a2dp_source_tests();
     run_l2cap_listener_pair_tests();
     run_clock_tests();
+    run_blemidi_tests();
     run_endian_tests();
     run_buffer_tests();
     run_hci_tests();
