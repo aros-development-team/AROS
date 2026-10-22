@@ -72,6 +72,7 @@ void netmidi_config_defaults(struct netmidi_network_config *config)
     netmidi_config_take(config->session_name, sizeof(config->session_name),
                         "AROS");
     netmidi_applemidi_config_defaults(&config->applemidi);
+    netmidi_midi2_config_defaults(&config->midi2);
 }
 
 int netmidi_config_save(const char *path,
@@ -89,6 +90,7 @@ int netmidi_config_save(const char *path,
     if (config->latency_ms)
         fprintf(file, "latency_ms=%d\n", config->latency_ms);
     netmidi_applemidi_config_save(file, &config->applemidi);
+    netmidi_midi2_config_save(file, &config->midi2);
     failed = ferror(file);
     return fclose(file) || failed ? -1 : 0;
 }
@@ -155,12 +157,16 @@ int netmidi_config_load(const char *path, struct netmidi_network_config *config)
         taken = common_key(&next, key, value);
         if (!taken)
             taken = netmidi_applemidi_config_key(&next.applemidi, key, value);
+        if (!taken)
+            taken = netmidi_midi2_config_key(&next.midi2, key, value);
         if (taken != 1)
             goto done;
     }
     if (ferror(file))
         goto done;
     if (netmidi_applemidi_config_check(&next.applemidi) != 0)
+        goto done;
+    if (netmidi_midi2_config_check(&next.midi2) != 0)
         goto done;
     *config = next;
     result = 0;
