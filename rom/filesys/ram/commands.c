@@ -1561,7 +1561,10 @@ BOOL CmdExamineAll(struct Handler *handler, struct Lock *lock,
             }
          }
          else if(match)
+         {
             error = ERROR_NO_FREE_STORE;
+            break; /* Retry this entry in the next buffer. */
+         }
       }
       else
          error = ERROR_NO_MORE_ENTRIES;
