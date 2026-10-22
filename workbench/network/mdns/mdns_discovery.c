@@ -704,6 +704,20 @@ static struct DiscoveryView *view_of(struct MDNSDiscovery *d,
     return NULL;
 }
 
+static void release_type_views(struct MDNSDiscovery *d, const UBYTE *type)
+{
+    LONG i;
+
+    for (i = 0; i < DISC_VIEWS; i++) {
+        struct DiscoveryView *view = &d->views[i];
+
+        if (view->key[0] != 0 &&
+            same_key(view->key + view->key[0] + 1, type)) {
+            memset(view, 0, sizeof(*view));
+        }
+    }
+}
+
 static void refresh_views(struct MDNSDaemon *md, ULONG now)
 {
     struct MDNSDiscovery *d = md->md_Discovery;
@@ -761,6 +775,9 @@ static void refresh_views(struct MDNSDaemon *md, ULONG now)
                     fail(d, s);
                 }
             }
+            /* The failed type no longer has a live browse. Return its views
+             * now so a later PTR in this rebuild can use them. */
+            release_type_views(d, r->key);
         }
     }
     for (i = 0; i < DISC_VIEWS; i++) {
