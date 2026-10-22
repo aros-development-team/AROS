@@ -204,6 +204,33 @@ struct PopupMenu *PM_FindItemCommKey(struct PopupMenu *base, UBYTE key)
 }
 
 // PM_FindItem - find an item based on it's ID
+/*****************************************************************************
+    NAME
+        struct PopupMenu * PM_FindItem(
+
+    SYNOPSIS
+        struct PopupMenu *menu, ULONG id)
+
+    FUNCTION
+        Find the first item with the specified ID. Search each item before
+        its descendants, then continue with its next sibling.
+
+    INPUTS
+        menu - First item of an acyclic menu tree, or NULL.
+        id - Item ID, including zero.
+
+    RESULT
+        A borrowed pointer to the first match, or NULL if absent.
+
+    NOTES
+        Hidden, disabled and unselectable items are included. Duplicate IDs
+        are not rejected. The result remains valid only while its item exists;
+        this function neither detaches nor retains it.
+
+    SEE ALSO
+        PM_ItemChecked(), PM_RemoveMenuItem()
+
+*****************************************************************************/
 struct PopupMenu * __saveds ASM PM_FindItem(register __a1 struct PopupMenu *menu GNUCREG(a1),
     register __d1 ULONG ID GNUCREG(d1))
 {
@@ -215,6 +242,31 @@ struct PopupMenu * __saveds ASM PM_FindItem(register __a1 struct PopupMenu *menu
 //
 // See if an item is checked
 //
+/*****************************************************************************
+    NAME
+        BOOL PM_ItemChecked(
+
+    SYNOPSIS
+        struct PopupMenu *p, ULONG id)
+
+    FUNCTION
+        Read the checked state of the first item with the specified ID.
+
+    INPUTS
+        p - First item of an acyclic menu tree, or NULL.
+        id - Item ID.
+
+    RESULT
+        TRUE if checked, FALSE if unchecked, or PMERR (-5) if not found.
+
+    NOTES
+        Test for PMERR before interpreting the result as a Boolean. A missing
+        item produces a nonzero result. PM_Checkit need not be enabled.
+
+    SEE ALSO
+        PM_FindItem(), PM_GetItemAttrsA()
+
+*****************************************************************************/
 BOOL __saveds ASM PM_ItemChecked(register __a1 struct PopupMenu *pm GNUCREG(a1),
     register __d1 ULONG ID GNUCREG(d1))
 {
@@ -233,6 +285,39 @@ BOOL __saveds ASM PM_ItemChecked(register __a1 struct PopupMenu *pm GNUCREG(a1),
 // Set/Clear all items in a list
 //
 
+/*****************************************************************************
+    NAME
+        void PM_AlterState(
+
+    SYNOPSIS
+        struct PopupMenu *pm, struct PM_IDLst *l, UWORD action)
+
+    FUNCTION
+        Apply each ID-list operation to the first matching menu item. Update
+        its checked and selected flags and any attached AutoStore value.
+
+    INPUTS
+        pm - First menu item, or NULL.
+        l - ID list, or NULL.
+        action - 3 for selection; 2 for deselection. Other values do nothing.
+
+    RESULT
+        None.
+
+    NOTES
+        For selection, Include and Reflect check the item; Exclude and
+        Inverse clear it. For deselection, Reflect clears the item and
+        Inverse checks it; Include and Exclude leave it unchanged. Missing
+        IDs are skipped. Operations run in list order without checking
+        Hidden, Disabled, Checkit or Toggle attributes.
+
+        This call does not redraw a displayed menu or invoke a menu handler.
+        The menu and list remain owned by their callers.
+
+    SEE ALSO
+        PM_MakeIDListA(), PM_ItemChecked()
+
+*****************************************************************************/
 void __saveds ASM PM_AlterState(register __a1 struct PopupMenu *base GNUCREG(a1),
     register __a2 struct PM_IDLst *ids GNUCREG(a2),
     register __d1 UWORD action GNUCREG(d1))
