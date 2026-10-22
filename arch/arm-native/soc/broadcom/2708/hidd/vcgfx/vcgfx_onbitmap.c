@@ -368,6 +368,59 @@ static BOOL vc4_program_token_fb(struct VideoCoreGfx_staticdata *xsd,
     return TRUE;
 }
 
+/* Already showing our own buffer behind a token framebuffer (HVS5): a
+ * buffer of the new size and our own mode set, no firmware involved. */
+static BOOL vc4_program_own_fb(struct VideoCoreGfx_staticdata *xsd,
+    ULONG aligned_width, ULONG height, UBYTE bytesperpix,
+    const struct vcgfx_timing *want, APTR *fb_ptr_out, ULONG *fb_pitch_out)
+{
+    struct vcgfx_scanbuf old = xsd->vcsd_FBBuf;
+    ULONG oldsize = xsd->vcsd_FBBufSize;
+    ULONG pitch = aligned_width * bytesperpix, size = pitch * height;
+
+    if (!xsd->vcsd_HVS.hvs_Active || !xsd->vcsd_HVS.hvs_Tiny)
+        return FALSE;
+
+    if (!old.sb_Pixels || (oldsize != size))
+    {
+        if (!vcgfx_scanout_alloc(xsd, &xsd->vcsd_FBBuf, size))
+        {
+            xsd->vcsd_FBBuf = old;
+            return FALSE;
+        }
+        xsd->vcsd_FBBufSize = size;
+    }
+    else
+        old.sb_Raw = NULL;
+
+    if (!vc4_hvs5_mode_switch(xsd, aligned_width, height,
+                              (ULONG)(IPTR)xsd->vcsd_FBBuf.sb_Pixels, pitch, want))
+    {
+        /* Not a mode we set (the list is untouched): the firmware decides */
+        if (old.sb_Raw)
+        {
+            vcgfx_scanout_free(xsd, &xsd->vcsd_FBBuf);
+            xsd->vcsd_FBBuf     = old;
+            xsd->vcsd_FBBufSize = oldsize;
+        }
+        return FALSE;
+    }
+
+    /* The list showing the old buffer has latched away. */
+    if (old.sb_Raw)
+        vcgfx_scanout_free(xsd, &old);
+
+    xsd->vcsd_FBPage[0]    = xsd->vcsd_HVS.hvs_ShowPtr;
+    xsd->vcsd_FBPage[1]    = xsd->vcsd_HVS.hvs_ShowPtr;
+    xsd->vcsd_FBPageHeight = height;
+    xsd->vcsd_FBFront      = 0;
+    xsd->vcsd_FBPages      = 1;
+
+    *fb_ptr_out   = xsd->vcsd_FBBuf.sb_Pixels;
+    *fb_pitch_out = pitch;
+    return TRUE;
+}
+
 static BOOL vc4_program_fb(struct VideoCoreGfx_staticdata *xsd,
     ULONG aligned_width, ULONG height, UBYTE bytesperpix,
     const struct vcgfx_timing *want, APTR *fb_ptr_out, ULONG *fb_pitch_out)
@@ -375,6 +428,11 @@ static BOOL vc4_program_fb(struct VideoCoreGfx_staticdata *xsd,
     APTR fb_ptr = NULL;
     ULONG fb_pitch = 0;
     int pages = 1;
+
+    if ((xsd->vcsd_HVSGen == VCGFX_HVS_HVS5)
+        && vc4_program_own_fb(xsd, aligned_width, height, bytesperpix, want,
+                              fb_ptr_out, fb_pitch_out))
+        return TRUE;
 
     /* The firmware builds its lists for the mode it set itself, so a mode
      * of ours goes back to that one first. */
