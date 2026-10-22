@@ -2481,7 +2481,7 @@ LONG CmdReadLink(struct Handler *handler, struct Lock *lock,
          if(pos != -1)
          {
             if(!AddPart(buffer, name + pos, buffer_size))
-               error = ERROR_LINE_TOO_LONG;
+               error = ERROR_BUFFER_OVERFLOW;
          }
       }
       else
