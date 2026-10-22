@@ -1368,6 +1368,11 @@ BOOL CmdExamineNext(struct Handler *handler, struct FileInfoBlock *info)
          leave a growing list of abandoned and not freed examinations, as there is
          no quarantee that ExNext will be called after Examine */
       examination = AllocPooled(handler->clear_pool, sizeof(struct Examination));
+      if(examination == NULL)
+      {
+         SetIoErr(ERROR_NO_FREE_STORE);
+         return FALSE;
+      }
       AddTail((APTR)&handler->examinations, (APTR)examination);
       examination->next_object = (struct Object *)info->fib_DiskKey;
       info->fib_DiskKey = (IPTR)examination;
