@@ -336,7 +336,8 @@ VOID DeleteObject(struct Handler *handler, struct Object *object)
 
       /* Delete a hard link */
 
-      if(object_type == ST_LINKFILE || object_type == ST_LINKDIR)
+      if((object_type == ST_LINKFILE || object_type == ST_LINKDIR)
+         && object->hard_link.mln_Pred != NULL)
       {
          node = real_object->hard_link.mln_Succ;
          master_link = HARDLINK(node);
