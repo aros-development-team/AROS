@@ -1,10 +1,14 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 /*********************************************************************************************/
 
 #include <proto/icon.h>
+#ifdef __AROS__
+#include <proto/workbench.h>
+#include <intuition/extensions.h>
+#endif
 #include <exec/rawfmt.h>
 
 #include "global.h"
@@ -94,6 +98,15 @@ static BOOL             FromWB;
 static BOOL             bClipBoard = FALSE;
 static BOOL             bRequester = TRUE;
 static BOOL             bWindow = FALSE;
+static struct IBox       normalbox;
+static BOOL              sizechanged = FALSE;
+#ifdef __AROS__
+static struct Library    *iconifywbbase;
+static struct Library    *iconifyiconbase;
+static struct DiskObject *iconifydiskobject;
+static struct AppIcon    *appicon;
+static BOOL              iconified = FALSE;
+#endif
 static APTR             clipunit = 0;
 static STRPTR           pubScreen;
 static jmp_buf exit_buf;
@@ -117,11 +130,23 @@ static void CloseDTO(void);
 static void KillWindow(void);
 static void ScrollTo(UWORD dir, UWORD quali);
 static void FitToWindow(void);
+static void ResizeWindow(UWORD action);
+#ifdef __AROS__
+static void InitIconify(void);
+static void CloseIconify(void);
+static void IconifyWindow(void);
+static void RestoreWindow(void);
+#endif
 
 char *cmdexport = NULL;
 
 /*********************************************************************************************/
 
+/*
+ * Displays a diagnostic message when msg is non-NULL. A Workbench-launched
+ * process uses an Intuition requester when available; a CLI process prints it.
+ * No output is produced for a NULL message.
+ */
 void OutputMessage(CONST_STRPTR msg)
 {
     struct EasyStruct es;
@@ -149,34 +174,54 @@ void OutputMessage(CONST_STRPTR msg)
 
 /*********************************************************************************************/
 
+/*
+ * Remembers window coordinates, preserving the saved normal geometry after a
+ * menu-driven size change. Unregisters AppWindow/AppIcon objects before
+ * replying to pending app messages and releasing window resources.
+ */
 void WinCleanup(void)
 {
     D(bug("[MultiView] %s()\n", __func__));
 
     if (win)
     {
-        wincoords.MinX = win->LeftEdge;
-        wincoords.MinY = win->TopEdge;
-        wincoords.MaxX = win->Width;
-        wincoords.MaxY = win->Height;
+        wincoords.MinX = sizechanged ? normalbox.Left : win->LeftEdge;
+        wincoords.MinY = sizechanged ? normalbox.Top : win->TopEdge;
+        wincoords.MaxX = sizechanged ? normalbox.Width : win->Width;
+        wincoords.MaxY = sizechanged ? normalbox.Height : win->Height;
     }
+    sizechanged = FALSE;
     D(bug("[Multiview] WinCleanup() MinX = %d  MinY = %d  MaxX = %d  MaxY = %d\n",
         wincoords.MinX, wincoords.MinY, wincoords.MaxX, wincoords.MaxY));
 
-    if (msgport)
-    {
-        DeleteMsgPort(msgport);
-        msgport = NULL;
-        D(bug("[Multiview] removed msgport\n"));
-    }
     if (appwindow)
     {
         RemoveAppWindow(appwindow);
         appwindow = NULL;
         D(bug("[Multiview] removed appwindow\n"));
     }
-    
+#ifdef __AROS__
+    if (appicon)
+    {
+        RemoveAppIcon(appicon);
+        appicon = NULL;
+    }
+    iconified = FALSE;
+#endif
+    if (msgport)
+    {
+        struct AppMessage *appmsg;
+
+        while ((appmsg = (struct AppMessage *)GetMsg(msgport)))
+            ReplyMsg((struct Message *)appmsg);
+        DeleteMsgPort(msgport);
+        msgport = NULL;
+        msgmask = 0;
+        D(bug("[Multiview] removed msgport\n"));
+    }
+
     KillWindow();
+    winmask = 0;
     KillMenus();
     KillGadgets();
     FreeVisual();
@@ -187,6 +232,11 @@ void WinCleanup(void)
 
 /*********************************************************************************************/
 
+/*
+ * Terminates the screen-notification subscription, releases application
+ * resources, restores the saved current directory and returns control to
+ * main through exit_buf. The optional msg is reported before teardown.
+ */
 void Cleanup(CONST_STRPTR msg)
 {
     struct ScreenNotifyMessage *snmsg;
@@ -208,6 +258,9 @@ void Cleanup(CONST_STRPTR msg)
     }
 
     WinCleanup();
+#ifdef __AROS__
+    CloseIconify();
+#endif
 
     FreeArguments();
 
@@ -222,6 +275,11 @@ void Cleanup(CONST_STRPTR msg)
 
 /*********************************************************************************************/
 
+/*
+ * Opens the libraries listed in libtable using their required versions.
+ * A failed OpenLibrary call reports the missing library through Cleanup;
+ * opened bases are later released by CloseLibs.
+ */
 static void OpenLibs(void)
 {
     struct libinfo *li;
@@ -241,6 +299,10 @@ static void OpenLibs(void)
 
 /*********************************************************************************************/
 
+/*
+ * Closes library bases opened through libtable when their slots are non-NULL.
+ * Called during final application cleanup.
+ */
 static void CloseLibs(void)
 {
     struct libinfo *li;
@@ -255,6 +317,11 @@ static void CloseLibs(void)
 
 /*********************************************************************************************/
 
+/*
+ * Opens the selected disk font. If unavailable, tries the graphics default
+ * font and finally the topaz 8 fallback; stores the resulting font pointer
+ * for later use and release.
+ */
 static void LoadFont(void)
 {
     D(bug("[MultiView] %s()\n", __func__));
@@ -280,6 +347,10 @@ static void LoadFont(void)
 
 /*********************************************************************************************/
 
+/*
+ * Closes the font currently stored in the module's font pointer, if any.
+ * Called after the window and datatype objects have been torn down.
+ */
 static void KillFont(void)
 {
     D(bug("[MultiView] %s()\n", __func__));
@@ -289,6 +360,11 @@ static void KillFont(void)
 
 /*********************************************************************************************/
 
+/*
+ * Copies the graphics library's current default-font attributes to the
+ * module's textattr selection. Does not acquire an additional font handle;
+ * LoadFont performs the subsequent open.
+ */
 static void InitDefaultFont(void)
 {
     struct TextFont *defaultfont = GfxBase->DefaultFont;
@@ -311,6 +387,13 @@ static void InitDefaultFont(void)
 
 /*********************************************************************************************/
 
+/*
+ * Maps parsed CLI options from args into filename, input-source flags,
+ * font selection, clipboard unit, window coordinates and public-screen name.
+ * Clipboard and WINDOW modes disable the initial file requester and are
+ * mutually exclusive; WINDOW wins if both switches are supplied. An explicit
+ * filename is not cleared by this routine.
+ */
 static void GetArguments(void)
 {
     D(bug("[MultiView] %s()\n", __func__));
@@ -365,6 +448,11 @@ static void GetArguments(void)
         pubScreen = (STRPTR)args[ARG_PUBSCREEN];
 }
 
+/*
+ * Reads recognized MultiView options from the .info file associated with
+ * fname and updates startup settings. Does nothing for a NULL filename or
+ * missing disk object; frees a disk object after processing its ToolTypes.
+ */
 static void GetFileToolTypes(STRPTR fname)
 {
     struct DiskObject *dobj;
@@ -438,6 +526,9 @@ static void GetFileToolTypes(STRPTR fname)
 
 /*********************************************************************************************/
 
+/*
+ * Releases the ReadArgs allocation held in myargs if one exists.
+ */
 static void FreeArguments(void)
 {
     D(bug("[MultiView] %s()\n", __func__));
@@ -446,6 +537,11 @@ static void FreeArguments(void)
 
 /*********************************************************************************************/
 
+/*
+ * Constructs the Intuition model and interconnection objects used to map
+ * datatype scrolling attributes to the scrollbar gadgets. Records model
+ * membership and enters application cleanup if creation fails.
+ */
 static void MakeICObjects(void)
 {
     static const struct TagItem dto_to_vert_map[] =
@@ -514,6 +610,12 @@ static void MakeICObjects(void)
 
 /*********************************************************************************************/
 
+/*
+ * Disposes the model and interconnection objects created by MakeICObjects.
+ * Unattached model interconnections are disposed individually. Once added
+ * as members, they are released when the model is disposed; the separate
+ * scrollbar-to-datatype connections are always disposed individually.
+ */
 static void KillICObjects(void)
 {
     D(bug("[MultiView] %s()\n", __func__));
@@ -534,6 +636,10 @@ static void KillICObjects(void)
 
 /*********************************************************************************************/
 
+/*
+ * Locks the selected public screen and obtains its DrawInfo and GadTools
+ * VisualInfo. Failure to obtain any required resource enters Cleanup.
+ */
 static void GetVisual(void)
 {
     D(bug("[MultiView] %s()\n", __func__));
@@ -551,6 +657,10 @@ static void GetVisual(void)
 
 /*********************************************************************************************/
 
+/*
+ * Releases the GadTools VisualInfo and DrawInfo, then unlocks the screen
+ * acquired by GetVisual when their corresponding pointers are non-NULL.
+ */
 static void FreeVisual(void)
 {
     D(bug("[MultiView] %s()\n", __func__));
@@ -562,6 +672,11 @@ static void FreeVisual(void)
 
 /*********************************************************************************************/
 
+/*
+ * Builds Intuition system images and the scroll/arrow gadgets for the
+ * current screen, then connects scrollbar notifications with the datatype
+ * interconnection objects. An allocation failure enters Cleanup.
+ */
 static void MakeGadgets(void)
 {
     static WORD img2which[] =
@@ -690,6 +805,10 @@ static void MakeGadgets(void)
 
 /*********************************************************************************************/
 
+/*
+ * Removes the module's gadgets from the window where present and disposes
+ * all gadget and system-image objects created by MakeGadgets.
+ */
 static void KillGadgets(void)
 {
     WORD i;
@@ -712,6 +831,11 @@ static void KillGadgets(void)
 
 /*********************************************************************************************/
 
+/*
+ * Clears the window client area, sizes the current datatype object relative
+ * to the window borders, attaches it to the window and requests a refresh.
+ * Requires an open window and an existing datatype object.
+ */
 void AddDTOToWin(void)
 {
     D(bug("[MultiView] %s()\n", __func__));
@@ -733,6 +857,12 @@ void AddDTOToWin(void)
 
 /*********************************************************************************************/
 
+/*
+ * Creates a datatype object from the selected file or clipboard and probes
+ * its supported methods and capabilities. On replacement, disposes the
+ * previous object and updates window content, title and menu state; initial
+ * creation errors can terminate through Cleanup.
+ */
 static void OpenDTO(void)
 {
     struct DTMethod *triggermethods;
@@ -983,6 +1113,10 @@ static void OpenDTO(void)
 
 /*********************************************************************************************/
 
+/*
+ * Disposes the current datatype object, clearing its module pointer.
+ * Detaches the object first if a window is open.
+ */
 static void CloseDTO(void)
 {
     D(bug("[MultiView] %s()\n", __func__));
@@ -998,6 +1132,12 @@ static void CloseDTO(void)
 
 /*********************************************************************************************/
 
+/*
+ * Creates the MultiView window with its datatype, menus, scroll gadgets
+ * and configured geometry. On AROS it offers the iconify title gadget only
+ * when an icon object is available. Registers a Workbench AppWindow and
+ * sets the event-loop signal masks; creation failures enter Cleanup.
+ */
 static void MakeWindow(void)
 {
     WORD minwidth, minheight;
@@ -1019,12 +1159,21 @@ static void MakeWindow(void)
     minwidth  = ( (winwidth) && (winwidth < 50) ) ? winwidth : 50;
     minheight = ( (winheight) && (winheight < 50) ) ? winheight : 50;
 
+    /* Keep the title gadgets and a usable client area accessible. */
+    if (minwidth < 12 * scr->BarHeight)
+        minwidth = 12 * scr->BarHeight;
+    if (minheight < 6 * scr->BarHeight)
+        minheight = 6 * scr->BarHeight;
+
     win = OpenWindowTags(0, WA_PubScreen        , (IPTR)scr             ,
                             WA_Title            , (IPTR)objnamebuffer   ,
                             WA_CloseGadget      , TRUE                  ,
                             WA_DepthGadget      , TRUE                  ,
                             WA_DragBar          , TRUE                  ,
                             WA_SizeGadget       , TRUE                  ,
+#ifdef __AROS__
+                            WA_ExtraGadget_Iconify, iconifydiskobject != NULL,
+#endif
                             WA_Activate         , TRUE                  ,
                             WA_SimpleRefresh    , TRUE                  ,
                             WA_NoCareRefresh    , TRUE                  ,
@@ -1077,6 +1226,10 @@ static void MakeWindow(void)
 
 /*********************************************************************************************/
 
+/*
+ * Detaches window-owned objects, clears the menu strip, closes the window
+ * and resets the cached nominal width and height.
+ */
 static void KillWindow(void)
 {
     D(bug("[MultiView] %s()\n", __func__));
@@ -1094,6 +1247,11 @@ static void KillWindow(void)
 
 /*********************************************************************************************/
 
+/*
+ * Creates the screen-notification message port and requests callbacks
+ * before Workbench screen closure and after reopening. Sets isnmask only
+ * when the subscription succeeds; port creation failure enters Cleanup.
+ */
 static void InitIScreenNotify(void)
 {
     D(bug("[MultiView] %s()\n", __func__));
@@ -1116,6 +1274,11 @@ static void InitIScreenNotify(void)
 /************************************************************************************/
 /* Handle Intuition's ScreenNotify signals                                          */
 
+/*
+ * Replies to queued screen-notification messages. Before Workbench
+ * closes, tears down the current window; after reopening, rebuilds it
+ * through InitWin when no window exists.
+ */
 static void HandleIScreenNotify(void)
 {
     struct ScreenNotifyMessage *isnmsg;
@@ -1154,6 +1317,11 @@ static void HandleIScreenNotify(void)
 
 /*********************************************************************************************/
 
+/*
+ * Converts cursor or AROS mouse-wheel directions and qualifier keys into
+ * bounded datatype scrolling. Updates the matching scrollbar's PGA_Top
+ * when the requested position differs from the current position.
+ */
 static void ScrollTo(UWORD dir, UWORD quali)
 {
     IPTR val;
@@ -1261,6 +1429,10 @@ static void ScrollTo(UWORD dir, UWORD quali)
 
 /*********************************************************************************************/
 
+/*
+ * When picture fitting is enabled, scales the current datatype content
+ * to the window client dimensions, honoring the aspect-ratio setting.
+ */
 static void FitToWindow(void)
 {
     D(bug("[MultiView] %s()\n", __func__));
@@ -1280,6 +1452,165 @@ static void FitToWindow(void)
 
 /*********************************************************************************************/
 
+#define MV_SIZE_MINIMUM  1
+#define MV_SIZE_NORMAL   2
+#define MV_SIZE_MAXIMUM  3
+
+/*
+ * Handles the three Window menu size actions. The first Minimize or
+ * Maximize saves the normal geometry; Normal restores it. Minimize uses
+ * the window minimum, Maximize uses the screen viewport, and requests
+ * changes through Intuition's ChangeWindowBox.
+ */
+static void ResizeWindow(UWORD action)
+{
+    WORD left, top, width, height;
+
+    if (!win) return;
+
+    if (action == MV_SIZE_NORMAL)
+    {
+        if (!sizechanged) return;
+        ChangeWindowBox(win, normalbox.Left, normalbox.Top,
+                        normalbox.Width, normalbox.Height);
+        sizechanged = FALSE;
+        return;
+    }
+
+    if (action != MV_SIZE_MINIMUM && action != MV_SIZE_MAXIMUM) return;
+
+    if (action == MV_SIZE_MAXIMUM)
+    {
+        left = -scr->LeftEdge;
+        top = -scr->TopEdge;
+        if (top < scr->BarHeight + 1) top = scr->BarHeight + 1;
+        width = scr->ViewPort.DWidth;
+        height = scr->ViewPort.DHeight - (scr->BarHeight + 1);
+    }
+    else
+    {
+        left = sizechanged ? normalbox.Left : win->LeftEdge;
+        top = sizechanged ? normalbox.Top : win->TopEdge;
+        width = win->MinWidth;
+        height = win->MinHeight;
+    }
+
+    if (width <= 0 || height <= 0) return;
+
+    if (!sizechanged)
+    {
+        normalbox.Left = win->LeftEdge;
+        normalbox.Top = win->TopEdge;
+        normalbox.Width = win->Width;
+        normalbox.Height = win->Height;
+        sizechanged = TRUE;
+    }
+
+    ChangeWindowBox(win, left, top, width, height);
+}
+
+#ifdef __AROS__
+/*
+ * AROS only: opens the optional Workbench and icon libraries and loads a
+ * default AppIcon or tool icon. A missing icon prevents iconification but
+ * does not prevent ordinary window creation.
+ */
+static void InitIconify(void)
+{
+    iconifywbbase = OpenLibrary("workbench.library", 0);
+    iconifyiconbase = OpenLibrary("icon.library", 0);
+    if (iconifywbbase && iconifyiconbase)
+    {
+        iconifydiskobject = GetDefDiskObject(WBAPPICON);
+        if (!iconifydiskobject)
+            iconifydiskobject = GetDefDiskObject(WBTOOL);
+    }
+}
+
+/*
+ * AROS only: frees the loaded icon object and closes the optional
+ * iconify-specific library handles. Invoked after window cleanup.
+ */
+static void CloseIconify(void)
+{
+    if (iconifydiskobject)
+    {
+        FreeDiskObject(iconifydiskobject);
+        iconifydiskobject = NULL;
+    }
+    if (iconifyiconbase)
+    {
+        CloseLibrary(iconifyiconbase);
+        iconifyiconbase = NULL;
+    }
+    if (iconifywbbase)
+    {
+        CloseLibrary(iconifywbbase);
+        iconifywbbase = NULL;
+    }
+}
+
+/*
+ * AROS only: creates a Wanderer AppIcon on the existing application port,
+ * unregisters the AppWindow and hides the window. If hiding fails, removes
+ * the new AppIcon and attempts to register the AppWindow again.
+ */
+static void IconifyWindow(void)
+{
+    if (!win || !msgport || !iconifydiskobject || iconified) return;
+
+    iconifydiskobject->do_CurrentX = NO_ICON_POSITION;
+    iconifydiskobject->do_CurrentY = NO_ICON_POSITION;
+
+    appicon = AddAppIconA(0, 0, "MultiView", msgport, BNULL,
+                          iconifydiskobject, NULL);
+    if (!appicon) return;
+
+    if (appwindow)
+    {
+        RemoveAppWindow(appwindow);
+        appwindow = NULL;
+    }
+    if (!HideWindow(win))
+    {
+        RemoveAppIcon(appicon);
+        appicon = NULL;
+        appwindow = AddAppWindow(0, 0, win, msgport, NULL);
+        if (!appwindow) OutputMessage(MSG(MSG_CANT_ADD_APPWINDOW));
+        return;
+    }
+    iconified = TRUE;
+}
+
+/*
+ * AROS only: shows an iconified window, removes its AppIcon, attempts to
+ * register an AppWindow for file drops, and raises/activates the window.
+ * If ShowWindow fails, the iconified state is retained; an AppWindow
+ * registration failure is reported without undoing the restore.
+ */
+static void RestoreWindow(void)
+{
+    if (!win || !iconified || !ShowWindow(win, NULL)) return;
+
+    iconified = FALSE;
+    RemoveAppIcon(appicon);
+    appicon = NULL;
+    appwindow = AddAppWindow(0, 0, win, msgport, NULL);
+    if (!appwindow) OutputMessage(MSG(MSG_CANT_ADD_APPWINDOW));
+    WindowToFront(win);
+    ScreenToFront(scr);
+    ActivateWindow(win);
+}
+#endif
+
+/*********************************************************************************************/
+
+/*
+ * Dispatches screen-notification, Workbench AppWindow/AppIcon and
+ * Intuition window events. Replies to messages after processing their
+ * data, handles datatype/menu/scroll actions and exits on close or Escape.
+ * The AROS iconify gadget is acted on after replying to its IDCMP message.
+ */
 static void HandleAll(void)
 {
     struct IntuiMessage *msg;
@@ -1311,7 +1642,14 @@ static void HandleAll(void)
 
         while ( (msgport) && (appmsg = (struct AppMessage *) GetMsg(msgport)) )
         {
-            if (appmsg->am_Type == AMTYPE_APPWINDOW)
+#ifdef __AROS__
+            BOOL restore = appmsg->am_Type == AMTYPE_APPICON && iconified &&
+                           appmsg->am_NumArgs == 0 && appmsg->am_ArgList == NULL;
+            BOOL drop = appmsg->am_Type == AMTYPE_APPWINDOW && !iconified;
+#else
+            BOOL drop = appmsg->am_Type == AMTYPE_APPWINDOW;
+#endif
+            if (drop)
             {
                 if (appmsg->am_NumArgs >= 1)
                 {
@@ -1323,18 +1661,26 @@ static void HandleAll(void)
             }
 
             ReplyMsg ((struct Message *) appmsg);
-            ActivateWindow(win);
-
-            if (filename)
+#ifdef __AROS__
+            if (restore) RestoreWindow();
+#endif
+            if (drop)
             {
-                OpenDTO();
-                FitToWindow();
+                ActivateWindow(win);
+                if (filename)
+                {
+                    OpenDTO();
+                    FitToWindow();
+                }
             }
 
         } /* while ((appmsg = (struct AppMessage *) GetMsg(msgport))) */
         
         while( (win) && (msg = (struct IntuiMessage *)GetMsg(win->UserPort)) )
         {
+#ifdef __AROS__
+            BOOL doiconify = FALSE;
+#endif
 //          D(if (msg->Class!=IDCMP_INTUITICKS) bug("  Msg Class %08lx\n", (long)msg->Class));
             switch (msg->Class)
             {
@@ -1483,6 +1829,14 @@ static void HandleAll(void)
                     break;
                     
                 case IDCMP_GADGETUP:
+#ifdef __AROS__
+                    if (msg->IAddress &&
+                        ((struct Gadget *)msg->IAddress)->GadgetID == ETI_Iconify)
+                    {
+                        doiconify = TRUE;
+                        break;
+                    }
+#endif
                     switch(((struct Gadget *)msg->IAddress)->GadgetID)
                     {
                         case GAD_UPARROW:
@@ -1618,15 +1972,15 @@ static void HandleAll(void)
                                     break;
 
                                 case MSG_MEN_WINDOW_MINIMIZE:
-                                    OutputMessage(not_supported);
+                                    ResizeWindow(MV_SIZE_MINIMUM);
                                     break;
 
                                 case MSG_MEN_WINDOW_NORMAL:
-                                    OutputMessage(not_supported);
+                                    ResizeWindow(MV_SIZE_NORMAL);
                                     break;
 
                                 case MSG_MEN_WINDOW_MAXIMIZE:
-                                    OutputMessage(not_supported);
+                                    ResizeWindow(MV_SIZE_MAXIMUM);
                                     break;
 
                                 case MSG_MEN_SETTINGS_SAVEDEF:
@@ -1766,7 +2120,9 @@ static void HandleAll(void)
             } /* switch (msg->Class) */
 
             ReplyMsg((struct Message *)msg);
-
+#ifdef __AROS__
+            if (doiconify) IconifyWindow();
+#endif
         } /* while((msg = (struct IntuiMessage *)GetMsg(win->UserPort))) */
 
     } /* while (!quitme) */
@@ -1774,6 +2130,11 @@ static void HandleAll(void)
 
 /*********************************************************************************************/
 
+/*
+ * Recreates the font, datatype notification objects, current datatype,
+ * screen visuals, gadgets, menus and window. Applies current datatype
+ * settings and initial picture fitting.
+ */
 void InitWin(void)
 {
     D(bug("[MultiView] %s()\n", __func__));
@@ -1798,6 +2159,12 @@ void InitWin(void)
 
 /*********************************************************************************************/
 
+/*
+ * Initializes MultiView from Workbench startup arguments or CLI ReadArgs,
+ * configures locale, file/clipboard/window input and screen notifications,
+ * runs the window event loop, and performs cleanup on exit. Startup and
+ * fatal resource failures return through the setjmp/longjmp cleanup path.
+ */
 int main(int argc, char **argv)
 {
     struct WBStartup *WBenchMsg;
@@ -1827,6 +2194,9 @@ int main(int argc, char **argv)
     separate_screen   = FALSE;
 
     OpenLibs();
+#ifdef __AROS__
+    InitIconify();
+#endif
     InitDefaultFont(); /* May be overridden in GetArguments() if user specifies a font */
     InitLocale("System/Utilities/MultiView.catalog", 2);
     InitMenus(nm);
