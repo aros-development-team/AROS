@@ -1649,6 +1649,7 @@ VOID CmdExamineAllEnd(struct Handler *handler, struct Lock *lock,
       Remove((APTR)examination);
       FreePooled(handler->clear_pool, examination,
          sizeof(struct Examination));
+      control->eac_LastKey = 0;
    }
 
    return;
