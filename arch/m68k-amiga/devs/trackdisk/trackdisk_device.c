@@ -582,7 +582,7 @@ static int GM_UNIQUENAME(init)(LIBBASETYPEPTR TDBase)
     TDBase->td_DiskBase = DiskBase;
     /* Kickstart 1.x compatible layout, see struct TrackDiskBase */
     TDBase->td_SysBase = SysBase;
-    TDBase->td_GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 0);
+    TDBase->td_GfxBase = (struct GfxBase *)TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
     TDBase->ciaa = (struct CIA*)0xbfe001;
     TDBase->ciab = (struct CIA*)0xbfd000;
     TDBase->custom = (struct Custom*)0xdff000;

@@ -488,7 +488,7 @@ static UBYTE td_decodebuffer_ados(struct TDU *tdu, struct TrackDiskBase *tdb)
         UBYTE i;
         UBYTE lasterr;
         UBYTE *data = tdb->td_DataBuffer;
-        APTR gfxbase = OpenLibrary("graphics.library", 0);
+        APTR gfxbase = tdb->td_GfxBase;
         BOOL blitterowned = FALSE;
 
         lasterr = 0;
@@ -603,8 +603,6 @@ end:
             TD_WAITBLIT(gfxbase);
             TD_DISOWNBLITTER(gfxbase);
         }
-        if (gfxbase != NULL)
-            CloseLibrary(gfxbase);
         D(bug("td_decodebuffer err=%d secmask=%08x\n", lasterr, tdb->td_sectorbits));
         return lasterr;
 }
