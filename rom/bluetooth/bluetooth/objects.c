@@ -1994,6 +1994,59 @@ BOOL bSubmitCtrl(LIBBASETYPEPTR BluetoothBase, struct BtHardware *bth, struct Bt
 /* \\\ */
 
 /* /// "btStartDiscoveryA()" */
+/*****************************************************************************
+    NAME
+        BOOL btStartDiscoveryA(
+
+    SYNOPSIS
+        APTR bth, struct TagItem *taglist)
+
+    FUNCTION
+        Start device discovery on a Bluetooth adapter.
+
+    INPUTS
+        bth - Live hardware handle.
+        taglist - Discovery options, or NULL for defaults.
+
+    TAGS
+        BDSA_Duration - ULONG duration in seconds. Defaults to
+            BGCA_DiscoveryTime; zero selects 10 seconds. Values above 60
+            are limited to 60. Name resolution can extend the operation.
+        BDSA_Classic - Enable classic inquiry; TRUE by default.
+        BDSA_LE - Enable LE active scanning; TRUE by default.
+        BDSA_ResolveNames - Resolve missing names of discovered classic
+            devices after inquiry; TRUE by default.
+        BDSA_ClearOld - FALSE by default. TRUE removes unregistered devices
+            that are neither connected nor connecting, have no device or
+            service binding, and have no outstanding device use count.
+
+    RESULT
+        TRUE if discovery was accepted. FALSE for NULL hardware, a missing
+        hardware task, an adapter that is not ready, discovery already in
+        progress, or no requested discovery mode supported by the adapter.
+        Detailed errors are not returned through IoErr().
+        Hardware shutdown also returns FALSE.
+
+    NOTES
+        Unsupported modes are ignored when another requested mode is
+        available. Discovery clears the discovered flag on retained devices.
+        ClearOld invalidates handles to removed devices and their services
+        and endpoints; a raw pointer alone does not prevent removal.
+
+        Return does not wait for radio discovery or name resolution.
+        BEHMB_DISCOVERYSTART and BEHMB_DISCOVERYSTOP identify the adapter.
+        Controller command failures are not reflected in the return value;
+        TRUE does not guarantee that the radio started or found a device.
+
+        Call from a task other than the adapter's hardware task. Keep the
+        adapter and bluetooth.library valid during the call. The call uses
+        SIGF_SINGLE and waits for the hardware task without a caller timeout;
+        do not hold locks that task needs. The tag list is not retained.
+
+    SEE ALSO
+        btStopDiscovery(), btFindDeviceA(), btAddEventHandler()
+
+*****************************************************************************/
 AROS_LH2(BOOL, btStartDiscoveryA,
          AROS_LHA(struct BtHardware *, bth, A0),
          AROS_LHA(struct TagItem *, tags, A1),
@@ -2020,6 +2073,41 @@ AROS_LH2(BOOL, btStartDiscoveryA,
 /* \\\ */
 
 /* /// "btStopDiscovery()" */
+/*****************************************************************************
+    NAME
+        BOOL btStopDiscovery(
+
+    SYNOPSIS
+        APTR bth)
+
+    FUNCTION
+        Request termination of device discovery on an adapter.
+
+    INPUTS
+        bth - Live hardware handle.
+
+    RESULT
+        TRUE if the stop request was processed, including when discovery
+        was already inactive. FALSE for NULL hardware or a missing hardware
+        task. Detailed errors are not returned through IoErr().
+        Hardware shutdown also returns FALSE.
+
+    NOTES
+        Cancels pending discovery and queued name lookups. An outstanding
+        name lookup may delay BEHMB_DISCOVERYSTOP. The call does not wait
+        for controller cancellation commands to complete, and their failure
+        is not returned. Existing discovery results remain available.
+        Background scanning may resume; this call does not disable the radio.
+
+        Call from a task other than the adapter's hardware task. Keep the
+        adapter and bluetooth.library valid during the call. It uses
+        SIGF_SINGLE and waits for the hardware task without a caller timeout.
+        Do not hold locks that task needs.
+
+    SEE ALSO
+        btStartDiscoveryA(), btAddEventHandler()
+
+*****************************************************************************/
 AROS_LH1(BOOL, btStopDiscovery,
          AROS_LHA(struct BtHardware *, bth, A0),
          LIBBASETYPEPTR, BluetoothBase, 76, bt)
@@ -2035,6 +2123,45 @@ AROS_LH1(BOOL, btStopDiscovery,
 /* \\\ */
 
 /* /// "btConnectDevice()" */
+/*****************************************************************************
+    NAME
+        BOOL btConnectDevice(
+
+    SYNOPSIS
+        APTR bd)
+
+    FUNCTION
+        Establish a connection to a known Bluetooth device.
+
+    INPUTS
+        bd - Live device handle.
+
+    RESULT
+        TRUE when the selected transport is connected, including an already
+        connected transport. FALSE for NULL, unavailable hardware, an
+        unsupported transport, resource failure or connection failure.
+        Detailed errors are not returned through IoErr().
+        Hardware shutdown also returns FALSE.
+
+    NOTES
+        Selects classic Bluetooth when supported by both device and adapter;
+        otherwise selects LE. For a dual-mode device, an additional connection
+        is attempted on the other transport without waiting for its result.
+        TRUE does not establish that both transports, pairing, service
+        enumeration or class binding have completed.
+
+        Explicit connection clears the device's temporary reconnect hold.
+        The configured automatic-connection policy is not changed.
+
+        Call from a task other than the adapter's hardware task. Keep the
+        device, adapter and bluetooth.library valid until return. The call
+        uses SIGF_SINGLE and waits without a caller timeout or cancellation
+        parameter. Do not hold locks needed by the hardware task.
+
+    SEE ALSO
+        btDisconnectDevice(), btPairDeviceA(), btEnumerateServices()
+
+*****************************************************************************/
 AROS_LH1(BOOL, btConnectDevice,
          AROS_LHA(struct BtDevice *, bd, A0),
          LIBBASETYPEPTR, BluetoothBase, 77, bt)
@@ -2050,6 +2177,43 @@ AROS_LH1(BOOL, btConnectDevice,
 /* \\\ */
 
 /* /// "btDisconnectDevice()" */
+/*****************************************************************************
+    NAME
+        BOOL btDisconnectDevice(
+
+    SYNOPSIS
+        APTR bd)
+
+    FUNCTION
+        Request disconnection of both transports of a Bluetooth device.
+
+    INPUTS
+        bd - Live device handle.
+
+    RESULT
+        TRUE if the request was processed, including when no connection
+        exists. FALSE for NULL or a missing hardware task. Detailed errors
+        are not returned through IoErr().
+        Hardware shutdown also returns FALSE.
+
+    NOTES
+        Requests disconnection of established links and cancellation of
+        connection attempts. Return does not wait for controller completion;
+        command-submission and controller failures are not returned. Monitor
+        BEHMB_DEVICEDISCONNECTED and current device state for completion.
+        Registration, stored keys and the configured automatic-connection
+        policy remain unchanged. A locally terminated link can enter a
+        temporary reconnect hold, cleared by an explicit connection request.
+
+        Call from a task other than the adapter's hardware task. Keep the
+        device, adapter and bluetooth.library valid during the call. It uses
+        SIGF_SINGLE and waits for the hardware task without a caller timeout.
+        Do not hold locks that task needs.
+
+    SEE ALSO
+        btConnectDevice(), btUnpairDevice(), btUnregisterDevice()
+
+*****************************************************************************/
 AROS_LH1(BOOL, btDisconnectDevice,
          AROS_LHA(struct BtDevice *, bd, A0),
          LIBBASETYPEPTR, BluetoothBase, 78, bt)
@@ -2085,6 +2249,59 @@ static void bFillPairParams(LIBBASETYPEPTR BluetoothBase, struct BtPairParams *b
 /* \\\ */
 
 /* /// "btPairDeviceA()" */
+/*****************************************************************************
+    NAME
+        BOOL btPairDeviceA(
+
+    SYNOPSIS
+        APTR bd, struct TagItem *taglist)
+
+    FUNCTION
+        Connect to a device if necessary and wait for pairing to finish.
+
+    INPUTS
+        bd - Live device handle.
+        taglist - Pairing tag list, or NULL. See BUGS.
+
+    RESULT
+        TRUE when pairing reports success. FALSE for NULL, unavailable
+        hardware, an unsupported transport or role, pairing already in
+        progress, or connection or pairing failure. Detailed errors are not
+        returned through IoErr().
+        Hardware shutdown also returns FALSE.
+
+    NOTES
+        Prefers classic Bluetooth when both device and adapter support it;
+        otherwise uses LE. Initiated LE pairing requires the central role
+        and waits for any active service enumeration on that connection.
+
+        User interaction is reported through BEHMB_PAIRINGREQUEST and the
+        BDA_PairingRequest and BDA_PairingPasskey attributes. Arrange for
+        another task or the library's enabled pairing popup to answer with
+        btPairingReplyA(); the calling task remains blocked. Completion
+        updates BDA_PairingState and sends BEHMB_PAIRINGDONE.
+
+        Success marks the device bonded and registered and requests a
+        configuration save. It does not confirm that preferences reached
+        disk or that class binding completed. Failure does not roll back
+        connection establishment or all intermediate state.
+
+        Call from a task other than the adapter's hardware task. Keep the
+        device, adapter, library and tag list valid until return. The call
+        uses SIGF_SINGLE and has no caller timeout or cancellation parameter.
+        Do not hold locks needed by the hardware task.
+
+    BUGS
+        BPRA_Bond, BPRA_MITM, BPRA_IOCapability, BPRA_PINCode, BPRA_Passkey
+        and BPRA_Confirm are read but not used to configure this operation.
+        They cannot disable bonding, enforce MITM protection, select an I/O
+        capability or pre-answer a prompt. Supply responses separately with
+        btPairingReplyA(). Do not infer authentication strength from TRUE.
+
+    SEE ALSO
+        btPairingReplyA(), btUnpairDevice(), btGetAttrsA()
+
+*****************************************************************************/
 AROS_LH2(BOOL, btPairDeviceA,
          AROS_LHA(struct BtDevice *, bd, A0),
          AROS_LHA(struct TagItem *, tags, A1),
@@ -2103,6 +2320,61 @@ AROS_LH2(BOOL, btPairDeviceA,
 /* \\\ */
 
 /* /// "btPairingReplyA()" */
+/*****************************************************************************
+    NAME
+        BOOL btPairingReplyA(
+
+    SYNOPSIS
+        APTR bd, struct TagItem *taglist)
+
+    FUNCTION
+        Answer a pending pairing prompt for a Bluetooth device.
+
+    INPUTS
+        bd - Live device handle with a pending pairing prompt.
+        taglist - Response tags, or NULL. Supply the response explicitly;
+            omission can accept some prompts and reject others.
+
+    TAGS
+        BPRA_Confirm - BOOL response to consent or numeric comparison.
+            A held incoming LE pairing request requires explicit TRUE.
+            Other supported confirmation prompts default to acceptance
+            when this tag is absent.
+        BPRA_Passkey - ULONG from 0 through 999999 for passkey entry.
+            Zero is a valid passkey. Omitting the tag rejects the request.
+        BPRA_PINCode - NUL-terminated string for classic legacy PIN entry.
+            NULL or an empty string rejects it; at most 16 bytes are used.
+        BPRA_Bond, BPRA_MITM, BPRA_IOCapability - Ignored by this operation.
+
+    RESULT
+        TRUE if a supported response was processed, including rejection or
+        an immediate pairing failure. FALSE for NULL, a missing hardware
+        task, no waiting pairing operation, or an unsupported prompt.
+        Detailed errors are not returned through IoErr().
+        Hardware shutdown also returns FALSE.
+
+    NOTES
+        Read BDA_PairingRequest before choosing response tags. For numeric
+        comparison, display BDA_PairingPasskey and obtain the user's decision.
+        A passkey-display prompt requires display on this host and entry on
+        the peer, not a passkey response. If both transports await input,
+        the classic connection is selected first.
+
+        Return does not wait for pairing completion. Observe
+        BEHMB_PAIRINGDONE or BDA_PairingState for the outcome. Controller
+        reply-submission failures and invalid passkey rejection are not
+        reliably reflected in the BOOL result.
+
+        Call from a task other than the adapter's hardware task and serialize
+        responders for the device. Keep the device, adapter, library, tag list
+        and PIN string valid until return; the input storage is not retained.
+        The call uses SIGF_SINGLE and waits for the hardware task without a
+        caller timeout. Do not hold locks that task needs.
+
+    SEE ALSO
+        btPairDeviceA(), btGetAttrsA(), btAddEventHandler()
+
+*****************************************************************************/
 AROS_LH2(BOOL, btPairingReplyA,
          AROS_LHA(struct BtDevice *, bd, A0),
          AROS_LHA(struct TagItem *, tags, A1),
@@ -2121,6 +2393,43 @@ AROS_LH2(BOOL, btPairingReplyA,
 /* \\\ */
 
 /* /// "btUnpairDevice()" */
+/*****************************************************************************
+    NAME
+        BOOL btUnpairDevice(
+
+    SYNOPSIS
+        APTR bd)
+
+    FUNCTION
+        Remove locally stored pairing keys and request device disconnection.
+
+    INPUTS
+        bd - Live device handle.
+
+    RESULT
+        TRUE after the local key state is cleared and disconnection is
+        requested. FALSE for NULL or a missing hardware task. Detailed
+        errors are not returned through IoErr().
+        Hardware shutdown also returns FALSE.
+
+    NOTES
+        Clears the bonded flag and cached current address and requests a
+        configuration save. Registration is retained. Both transports are
+        disconnected or their connection attempts cancelled without waiting
+        for controller completion. TRUE confirms neither disk persistence
+        nor removal of keys stored by the remote device.
+
+        Serialize with pairing and other registration or key changes; this
+        call does not make those operations an atomic transaction. Call from
+        a task other than the adapter's hardware task. Keep the device,
+        adapter and bluetooth.library valid until return. The call uses
+        SIGF_SINGLE and waits without a caller timeout. Do not hold locks
+        needed by the hardware task, including configuration locks.
+
+    SEE ALSO
+        btPairDeviceA(), btUnregisterDevice(), btDisconnectDevice()
+
+*****************************************************************************/
 AROS_LH1(BOOL, btUnpairDevice,
          AROS_LHA(struct BtDevice *, bd, A0),
          LIBBASETYPEPTR, BluetoothBase, 81, bt)
@@ -2136,6 +2445,47 @@ AROS_LH1(BOOL, btUnpairDevice,
 /* \\\ */
 
 /* /// "btRegisterDevice()" */
+/*****************************************************************************
+    NAME
+        BOOL btRegisterDevice(
+
+    SYNOPSIS
+        APTR bd)
+
+    FUNCTION
+        Register a known Bluetooth device for persistent use and class binding.
+
+    INPUTS
+        bd - Live device handle.
+
+    RESULT
+        TRUE after registration, including when already registered. FALSE
+        for NULL or a missing hardware task. Detailed errors are not
+        returned through IoErr().
+        Hardware shutdown also returns FALSE.
+
+    NOTES
+        A new registration clears the temporary reconnect hold, requests a
+        configuration save and sends BEHMB_DEVICEREGISTERED. An already
+        registered device is left unchanged. Pairing and connection are not
+        required and are not performed by this call.
+
+        Class scanning follows asynchronously when services are known.
+        Return confirms neither binding completion nor disk persistence;
+        configuration-allocation and save failures are not returned. Automatic
+        saving requires an initialized disk configuration and DOS support.
+        The device remains library-owned.
+
+        Call from a task other than the adapter's hardware task. Keep the
+        device, adapter and bluetooth.library valid until return and serialize
+        registration changes. The call uses SIGF_SINGLE and waits without a
+        caller timeout. Do not hold locks needed by the hardware task,
+        including configuration locks.
+
+    SEE ALSO
+        btUnregisterDevice(), btPairDeviceA(), btClassScan()
+
+*****************************************************************************/
 AROS_LH1(BOOL, btRegisterDevice,
          AROS_LHA(struct BtDevice *, bd, A0),
          LIBBASETYPEPTR, BluetoothBase, 82, bt)
@@ -2151,6 +2501,48 @@ AROS_LH1(BOOL, btRegisterDevice,
 /* \\\ */
 
 /* /// "btUnregisterDevice()" */
+/*****************************************************************************
+    NAME
+        BOOL btUnregisterDevice(
+
+    SYNOPSIS
+        APTR bd)
+
+    FUNCTION
+        Remove a device registration and its locally stored pairing keys.
+
+    INPUTS
+        bd - Live device handle.
+
+    RESULT
+        TRUE after processing, including when already unregistered. FALSE
+        for NULL or a missing hardware task. Detailed errors are not
+        returned through IoErr().
+        Hardware shutdown also returns FALSE.
+
+    NOTES
+        For a registered device, clears registration, bonding, keys and the
+        cached current address, requests a configuration save and sends
+        BEHMB_DEVICEUNREGISTERED. An already unregistered device is left
+        unchanged, including any key state it still has.
+
+        Binding release is delegated to the event handler and may occur after
+        return. Event allocation can fail independently. The call does not
+        itself disconnect or free the device. Return does not confirm binding
+        release, disk persistence or deletion of keys on the remote device.
+        Quiesce users of bindings before unregistering; their handles become
+        invalid when release callbacks run.
+
+        Call from a task other than the adapter's hardware task. Keep the
+        device, adapter and bluetooth.library valid and serialize registration
+        and pairing changes. The call uses SIGF_SINGLE and waits without a
+        caller timeout. Do not hold locks needed by the hardware task,
+        including configuration locks.
+
+    SEE ALSO
+        btRegisterDevice(), btUnpairDevice(), btDisconnectDevice()
+
+*****************************************************************************/
 AROS_LH1(BOOL, btUnregisterDevice,
          AROS_LHA(struct BtDevice *, bd, A0),
          LIBBASETYPEPTR, BluetoothBase, 83, bt)
@@ -2166,6 +2558,55 @@ AROS_LH1(BOOL, btUnregisterDevice,
 /* \\\ */
 
 /* /// "btEnumerateServices()" */
+/*****************************************************************************
+    NAME
+        BOOL btEnumerateServices(
+
+    SYNOPSIS
+        APTR bd)
+
+    FUNCTION
+        Refresh remote services on the selected transport of a Bluetooth device.
+
+    INPUTS
+        bd - Live device handle.
+
+    RESULT
+        TRUE when enumeration completes successfully, including an empty
+        result. FALSE for NULL, unavailable hardware, unsupported transport,
+        connection or enumeration failure, or another explicit enumeration
+        request already waiting. Detailed errors are not returned through
+        IoErr().
+        Hardware shutdown also returns FALSE.
+
+    NOTES
+        Connects if necessary, preferring classic Bluetooth when supported
+        by both device and adapter; otherwise uses LE. Enumerates SDP on
+        classic Bluetooth or GATT on LE. It does not explicitly refresh both
+        transports. An active enumeration without an explicit waiter is
+        joined; otherwise a new refresh is started.
+
+        Refresh closes endpoint state and can free unbound service and
+        endpoint objects on that transport. Bound services and services being
+        bound are retained for refresh in place. Quiesce endpoint users and
+        release channels referring to unbound endpoints before calling;
+        reacquire service and endpoint handles afterward. Keeping a device
+        handle or an allocated channel does not pin those endpoint objects.
+        Failure can leave partially refreshed results; the old list is not
+        restored.
+
+        Success marks services known and sends BEHMB_SERVICESCHG. The return
+        value is not a service count and does not wait for class binding.
+
+        Call from a task other than the adapter's hardware task. Keep the
+        device, adapter and bluetooth.library valid until return. The call
+        uses SIGF_SINGLE and waits without a caller timeout or cancellation
+        parameter. Do not hold locks needed by the hardware task.
+
+    SEE ALSO
+        btFindServiceA(), btFindEndpointA(), btConnectDevice()
+
+*****************************************************************************/
 AROS_LH1(BOOL, btEnumerateServices,
          AROS_LHA(struct BtDevice *, bd, A0),
          LIBBASETYPEPTR, BluetoothBase, 84, bt)
