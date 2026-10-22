@@ -1847,6 +1847,235 @@ static const ULONG *BtPTArray[BGA_LAST+1] = {
 /* \\\ */
 
 /* /// "btGetAttrsA()" */
+/*****************************************************************************
+    NAME
+        LONG btGetAttrsA(
+
+    SYNOPSIS
+        ULONG type, APTR btstruct, struct TagItem *taglist)
+
+    FUNCTION
+        Read attributes of a Bluetooth object into caller-provided result storage.
+
+    INPUTS
+        type - BGA_* object type listed under TAGS.
+        btstruct - Live object of that type. Ignored for BGA_STACK and
+            BGA_STACKCFG, which use the library's current objects.
+        taglist - Query tags, or NULL. Each ti_Data is a result address,
+            not the value to retrieve.
+
+    TAGS
+        Supported tags follow, grouped by object type. Enum and flag values
+        are defined in <libraries/bluetooth.h>. All table results use IPTR
+        storage, including pointer-valued and narrow numeric attributes.
+
+        BGA_STACK:
+
+            Pointer or IPTR values:
+                BSA_GlobalConfig.
+
+            Unsigned values and booleans:
+                BSA_ConfigRead, BSA_MemPoolUsage, BSA_CurrConfigHash,
+                BSA_SavedConfigHash, BSA_ReleaseVersion, BSA_OSVersion,
+                BSA_LEAdvertising, BSA_EIRServices, BSA_LEConnInterval.
+
+            BSA_HardwareList, BSA_ClassList, BSA_ErrorMsgList,
+            BSA_ServiceRecordList - borrowed struct List pointers.
+            BSA_LENotifyPayload - ULONG result; minimum nonzero cached adapter
+                payload, with a floor of 20 bytes. A snapshot, not a reservation.
+
+        BGA_BTCLASS:
+
+            Pointer or IPTR values:
+                BCA_ClassBase, BCA_ClassName, BCA_FullPath.
+
+            Unsigned values and booleans:
+                BCA_UseCount.
+
+        BGA_HARDWARE:
+
+            Pointer or IPTR values:
+                BHA_DeviceName, BHA_ProductName, BHA_Manufacturer,
+                BHA_Description, BHA_Copyright, BHA_LocalName.
+
+            Unsigned values and booleans:
+                BHA_DeviceUnit, BHA_Version, BHA_Revision,
+                BHA_DriverVersion, BHA_NumDevices, BHA_State,
+                BHA_ClassOfDevice, BHA_HCIVersion, BHA_HCIRevision,
+                BHA_LMPVersion, BHA_LMPSubversion, BHA_ManufacturerID,
+                BHA_ACLMaxPktSize, BHA_ACLNumPkts, BHA_SCOMaxPktSize,
+                BHA_SCONumPkts, BHA_LEACLMaxPktSize, BHA_LEACLNumPkts,
+                BHA_ErrorCount, BHA_LastHCIError, BHA_IsClassic, BHA_IsLE,
+                BHA_IsDiscovering, BHA_Discoverable, BHA_Connectable.
+
+            BHA_DeviceList - borrowed struct List pointer.
+            BHA_Address - borrowed BD_ADDR pointer.
+            BHA_AddressString, BHA_ManufacturerName - borrowed strings.
+            BHA_Features, BHA_LEFeatures - borrowed eight-byte feature arrays.
+            BHA_LECaps, BHA_AcceptListSize, BHA_ResolvingListSize,
+            BHA_LEReconnect, BHA_IsReady - IPTR results.
+
+        BGA_DEVICE:
+
+            Pointer or IPTR values:
+                BDA_Name, BDA_OrigName, BDA_Hardware, BDA_Binding,
+                BDA_BindingClass, BDA_IDString.
+
+            Signed values:
+                BDA_RSSI.
+
+            Unsigned values and booleans:
+                BDA_AddressType, BDA_ClassOfDevice, BDA_Appearance,
+                BDA_ConnHandle, BDA_Role, BDA_LinkType, BDA_BondFlags,
+                BDA_NumServices, BDA_VendorID, BDA_ProductID,
+                BDA_ProductVersion, BDA_VendorIDSource, BDA_LMPVersion,
+                BDA_ManufacturerID, BDA_AdvDataLength, BDA_PairingState,
+                BDA_PairingRequest, BDA_PairingPasskey, BDA_IsNewToMe,
+                BDA_InhibitPopup, BDA_InhibitClassBind, BDA_AutoConnect,
+                BDA_Trusted, BDA_IsClassic, BDA_IsLE, BDA_IsDiscovered,
+                BDA_IsRegistered, BDA_IsBonded, BDA_IsConnected,
+                BDA_IsEncrypted, BDA_IsDead, BDA_HasAppBinding,
+                BDA_ServicesKnown.
+
+            BDA_ServiceList - borrowed struct List pointer.
+            BDA_Address - borrowed BD_ADDR pointer.
+            BDA_AddressString - borrowed string.
+            BDA_AdvData - borrowed byte array; length is BDA_AdvDataLength.
+            BDA_LastSeen, BDA_FirstSeen - borrowed DateStamp pointers.
+
+        BGA_SERVICE:
+
+            Pointer or IPTR values:
+                BSVA_Device, BSVA_Name, BSVA_Binding, BSVA_BindingClass,
+                BSVA_IDString, BSVA_ServiceClassIDs, BSVA_HIDDescriptor.
+
+            Unsigned values and booleans:
+                BSVA_UUID16, BSVA_Protocol, BSVA_PSM, BSVA_RFCOMMChannel,
+                BSVA_RecordHandle, BSVA_StartHandle, BSVA_EndHandle,
+                BSVA_Version, BSVA_IsPrimary, BSVA_NumEndpoints,
+                BSVA_HIDDescriptorLen, BSVA_Incoming.
+
+            BSVA_EndpointList - borrowed struct List pointer.
+            BSVA_UUID - borrowed 16-byte UUID.
+            BSVA_UUIDString - the borrowed service ID string, also returned
+                by BSVA_IDString; not a separately formatted UUID string.
+
+        BGA_ENDPOINT:
+
+            Pointer or IPTR values:
+                BEA_Service, BEA_Name.
+
+            Unsigned values and booleans:
+                BEA_CanRead, BEA_CanWrite, BEA_Type, BEA_PSM, BEA_CID,
+                BEA_RFCOMMChannel, BEA_Handle, BEA_UUID16, BEA_Properties,
+                BEA_MaxPktSize, BEA_ReportID, BEA_ReportType,
+                BEA_CCCDHandle, BEA_ReportRefHandle.
+
+            BEA_UUID - borrowed 16-byte UUID.
+            BEA_IsOpen - IPTR boolean; tests the endpoint's channel pointer.
+
+        BGA_ERRORMSG:
+
+            Pointer or IPTR values:
+                BEMA_Origin, BEMA_Msg.
+
+            Unsigned values and booleans:
+                BEMA_Level.
+
+            BEMA_DateStamp - borrowed DateStamp pointer.
+
+        BGA_CHANNEL:
+
+            Pointer or IPTR values:
+                BCHA_Endpoint, BCHA_Device.
+
+            Signed values:
+                BCHA_Error.
+
+            Unsigned values and booleans:
+                BCHA_Actual, BCHA_Timeout, BCHA_AutoConnect, BCHA_NoWait.
+
+            BCHA_MaxPktSize - IPTR result from the endpoint, or zero for a
+                channel without an endpoint.
+
+        BGA_APPBINDING:
+
+            Pointer or IPTR values:
+                BABA_ReleaseHook, BABA_Device, BABA_UserData, BABA_Task.
+
+            Unsigned values and booleans:
+                BABA_ForceRelease.
+
+        BGA_EVENTNOTE:
+
+            Pointer or IPTR values:
+                BENA_Param1, BENA_Param2, BENA_Data, BENA_Device.
+
+            Unsigned values and booleans:
+                BENA_EventID, BENA_DataLength.
+
+        BGA_STACKCFG:
+
+            Signed values:
+                BGCA_SubTaskPri.
+
+            Unsigned values and booleans:
+                BGCA_LogInfo, BGCA_LogWarning, BGCA_LogError,
+                BGCA_LogFailure, BGCA_BootDelay, BGCA_PopupDeviceNew,
+                BGCA_PopupDeviceGone, BGCA_PopupPairing,
+                BGCA_PopupCloseDelay, BGCA_PopupActivateWin,
+                BGCA_PopupWinToFront, BGCA_Discoverable, BGCA_Connectable,
+                BGCA_DiscoveryTime, BGCA_AutoConnect, BGCA_PrefsVersion.
+
+            BGCA_LocalName - borrowed string in the global configuration.
+
+        BGA_SERVICERECORD:
+
+            Pointer or IPTR values:
+                BSRA_Name, BSRA_Owner.
+
+            Unsigned values and booleans:
+                BSRA_UUID16, BSRA_Protocol, BSRA_RFCOMMChannel, BSRA_PSM,
+                BSRA_NumCharacteristics, BSRA_LEConnInterval, BSRA_Enabled,
+                BSRA_FirstHandle, BSRA_LastHandle.
+
+            BSRA_UUID128 - borrowed 16-byte UUID, or NULL when the record
+                does not use a 128-bit UUID.
+
+    RESULT
+        Number of recognized attributes written, or -1 for an unsupported
+        type. Zero means no requested attribute was handled. Unknown tags
+        leave their destination untouched. Only the first occurrence of each
+        recognized tag is used; the count is not the tag-list length.
+
+    NOTES
+        Use an aligned IPTR slot for each table-derived result, even when
+        the underlying value is a byte, word or ULONG. Signed fields are
+        sign-extended; interpret their result as SIPTR when needed. For the
+        explicit pointer results listed under TAGS, supply the address of a
+        pointer of the stated type. BSA_LENotifyPayload is the exception
+        among scalar results: its destination must be ULONG storage.
+
+        No destination may be NULL for a recognized query. For types other
+        than STACK and STACKCFG, the object must match type and remain live;
+        there is no runtime handle validation. Pointer-valued attributes may return NULL.
+
+        Returned strings, arrays, lists and object pointers are borrowed.
+        Do not modify or free them. Coordinate object lifetime and updates;
+        return does not acquire a reference or copy pointed-to data. Traverse
+        base-owned lists under the base read lock and device-owned lists under
+        the appropriate device lock. Event data is valid only until ReplyMsg().
+
+        Call from task context with bluetooth.library open. Apart from the
+        payload calculation's internal base lock, this function does not lock
+        objects or provide an atomic snapshot across attributes. Copy needed
+        data while its owner is protected. Service and endpoint pointers can
+        be invalidated by remote service refresh.
+
+    SEE ALSO
+        btSetAttrsA(), btLockReadBase(), btLockReadDevice(), UnpackStructureTags()
+
+*****************************************************************************/
 AROS_LH3(LONG, btGetAttrsA,
          AROS_LHA(ULONG, type, D0),
          AROS_LHA(APTR, btstruct, A0),
@@ -2052,6 +2281,126 @@ AROS_LH3(LONG, btGetAttrsA,
 /* \\\ */
 
 /* /// "btSetAttrsA()" */
+/*****************************************************************************
+    NAME
+        LONG btSetAttrsA(
+
+    SYNOPSIS
+        ULONG type, APTR btstruct, struct TagItem *taglist)
+
+    FUNCTION
+        Set writable attributes of a Bluetooth object.
+
+    INPUTS
+        type - BGA_* object type.
+        btstruct - Live object of that type. Ignored for BGA_STACK and
+            BGA_STACKCFG, which use the library's current objects.
+        taglist - Assignment tags, or NULL. ti_Data contains the value;
+            string and object values are pointers, not output addresses.
+
+    TAGS
+        BGA_STACK:
+            BSA_ConfigRead - Stored UWORD configuration-loaded flag.
+            BSA_SavedConfigHash - Stored ULONG saved-configuration hash.
+            BSA_LEAdvertising - Boolean LE advertising policy.
+            BSA_EIRServices - Boolean classic service-advertising policy.
+            BSA_LEConnInterval - Preferred peripheral connection interval
+                in 1.25 ms units; 0 leaves selection to the central, and
+                values above 1199 are limited to 1199.
+
+        BGA_HARDWARE:
+            BHA_LocalName - NUL-terminated name; NULL requests an empty name.
+            BHA_ClassOfDevice - ULONG class-of-device value.
+            BHA_Discoverable, BHA_Connectable - Boolean classic scan modes.
+                An omitted mode keeps its current flag value.
+
+        BGA_DEVICE:
+            BDA_Name - Nonempty NUL-terminated custom name, copied. NULL,
+                empty and identical names are counted without replacing it.
+            BDA_InhibitPopup, BDA_InhibitClassBind, BDA_AutoConnect,
+            BDA_Trusted - Stored UWORD policy fields; use zero or one.
+            BDA_Binding, BDA_BindingClass - Direct binding pointers. No claim,
+                release callback or usage-count adjustment is performed.
+
+        BGA_SERVICE:
+            BSVA_Binding, BSVA_BindingClass - Direct binding pointers, with
+                no binding lifecycle management.
+
+        BGA_CHANNEL:
+            BCHA_Timeout - Stored ULONG timeout in milliseconds; setting it
+                does not establish that a request path enforces the timeout.
+            BCHA_AutoConnect, BCHA_NoWait - Boolean channel flags. Their
+                effect depends on the request and transport.
+
+        BGA_APPBINDING:
+            BABA_ReleaseHook, BABA_Device, BABA_Task - Borrowed pointers.
+            BABA_UserData - IPTR callback data.
+            BABA_ForceRelease - Stored UWORD flag. Assigning it does not
+                release anything. Use btClaimAppBindingA() to make a claim.
+
+        BGA_STACKCFG:
+            BGCA_LogInfo, BGCA_LogWarning, BGCA_LogError, BGCA_LogFailure,
+            BGCA_PopupDeviceNew, BGCA_PopupDeviceGone, BGCA_PopupPairing,
+            BGCA_PopupActivateWin, BGCA_PopupWinToFront, BGCA_Discoverable,
+            BGCA_Connectable, BGCA_AutoConnect - UWORD flags; use zero or one.
+            BGCA_SubTaskPri - Signed WORD priority for subsequently spawned
+                subtasks; values are not validated against scheduler limits.
+            BGCA_BootDelay - ULONG delay in seconds used during stack startup.
+            BGCA_PopupCloseDelay - ULONG popup close-delay setting.
+            BGCA_DiscoveryTime - ULONG default discovery duration in seconds.
+            BGCA_LocalName - Copied into the 64-byte global name buffer;
+                supply at most 63 bytes plus NUL. NULL clears the name.
+
+        BGA_SERVICERECORD:
+            BSRA_Enabled - Boolean local service availability. Updates the
+                relevant advertising sequence and, for GATT, interval policy.
+
+        BGA_BTCLASS, BGA_ENDPOINT, BGA_ERRORMSG and BGA_EVENTNOTE have no
+        writable attributes. Other tags, including read-only fields and
+        creation-only service-record tags, are ignored.
+
+    RESULT
+        Number of recognized assignments, or -1 for an unsupported type.
+        Zero means no writable tag was handled. Only the first occurrence of
+        each recognized tag is used. The count does not confirm allocation,
+        controller-command success, persistence or completion of side effects.
+
+    NOTES
+        Assignments are not transactional or processed in tag-list order.
+        Manual handlers run before table assignments. Numeric table values
+        are narrowed to their stored field width without range checks.
+        Pointer fields are assigned directly, without copying or retaining
+        objects; only the documented string setters copy their input.
+
+        Coordinate object lifetime and concurrent writers. No general object
+        lock is taken. Change channel attributes only while the channel is
+        idle. Direct binding setters are for code that already owns the
+        binding protocol; use claim/release APIs for normal binding changes.
+
+        Hardware assignments wait for the hardware task using SIGF_SINGLE;
+        call from another task without locks that worker needs. No caller
+        timeout is provided. Device and global configuration updates can
+        also acquire configuration locks. Keep all input pointers and the
+        library valid until return.
+
+        Device name/policy changes update in-memory configuration, without a
+        disk save. STACKCFG updates its configuration chunk and checks for
+        changes even with an empty tag list. Applying global defaults does
+        not synchronously reconfigure every adapter. Advertising and interval
+        changes are consumed later; no negotiated radio setting is promised.
+
+    BUGS
+        Hardware command errors are discarded although their tags are counted.
+        Device-name replacement frees the old name before allocating its copy;
+        failure loses the old value. A replacement must not alias that storage.
+        BGCA_LocalName copies at most 63 bytes without explicitly writing the
+        last byte of the buffer. A short terminated input avoids depending on
+        that byte's prior contents; truncation is not reported.
+
+    SEE ALSO
+        btGetAttrsA(), btClaimAppBindingA(), btSaveCfgToDisk(), PackStructureTags()
+
+*****************************************************************************/
 AROS_LH3(LONG, btSetAttrsA,
          AROS_LHA(ULONG, type, D0),
          AROS_LHA(APTR, btstruct, A0),

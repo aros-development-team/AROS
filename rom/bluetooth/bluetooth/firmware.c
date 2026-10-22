@@ -163,6 +163,69 @@ BOOL bDoFirmware(struct BtHWCore *hc)
 /* \\\ */
 
 /* /// "btAddFirmwareLoader()" */
+/*****************************************************************************
+    NAME
+        VOID btAddFirmwareLoader(
+
+    SYNOPSIS
+        struct BtFirmwareLoader *loader)
+
+    FUNCTION
+        Register a controller-firmware loader and notify matching active adapters.
+
+    INPUTS
+        loader - Naturally aligned BtFirmwareLoader with an unlinked node,
+            persistent name, callbacks and user data. NULL performs no operation.
+
+    RESULT
+        None. Registration does not report firmware-loading success.
+
+    NOTES
+        The supplied structure is linked directly; it is not copied. Register
+        it once and keep it, its name, callback code and referenced data valid
+        until btRemFirmwareLoader() has completed and concurrent registration
+        or matching calls have ended. The library does not retain the module
+        that owns the callbacks.
+
+        fwl_Match(self, ctx) returns zero for no match or a nonzero priority.
+        The highest priority wins; ties keep the first registered match.
+        Matching must use only the identity fields and must not issue HCI
+        commands. During registration, ctx has no command, log or private
+        callback state. Matching can run in the registering task or in hardware
+        tasks; callbacks must tolerate concurrent invocation and must not
+        register or remove loaders from within a callback.
+
+        The selected fwl_Load(self, ctx) runs synchronously in the adapter's
+        hardware task under a shared firmware-list lock. Return zero for
+        success or no required download, nonzero for failure. During this
+        callback ctx supplies synchronous fwc_HciCommand and fwc_Log. Do not retain ctx or invoke its callbacks after fwl_Load returns.
+        Do not use the channel from another task or nest command operations.
+        Command parameter length must fit the HCI one-byte length field.
+        Firmware data is to be read from disk, not fetched from the network.
+
+        Registration checks existing adapters that have not been marked
+        handled and signals matching hardware tasks. Actual loading selects
+        the best loader again; the newly registered loader need not win.
+        Loading can occur during initial bring-up or later, when successful
+        loading triggers controller reinitialization. Return is not a barrier
+        for either download or reinitialization.
+
+        Call from task context with bluetooth.library open. Registration can
+        wait for active loads. Serialize changes to a given loader's lifetime;
+        the existing-adapter match pass runs outside the firmware-list lock
+        while holding the base read lock.
+
+    BUGS
+        Duplicate registration is not checked and can corrupt the loader list.
+        After selecting a loader, the adapter is marked handled even if the
+        load fails or fwl_Load is NULL. Registering a replacement does not retry
+        that adapter; a fresh adapter instance is needed. A handled flag is
+        not proof of a successful firmware download.
+
+    SEE ALSO
+        btRemFirmwareLoader(), btAddHardware()
+
+*****************************************************************************/
 AROS_LH1(void, btAddFirmwareLoader,
          AROS_LHA(struct BtFirmwareLoader *, loader, A0),
          LIBBASETYPEPTR, BluetoothBase, 86, bt)
