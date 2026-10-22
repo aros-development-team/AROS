@@ -10,6 +10,7 @@
 #include <emul/emulinterface.h>
 #endif
 #include <exec/libraries.h>
+#include <exec/rawfmt.h>
 #include <intuition/intuition.h>
 #include <libraries/miamipanel.h>
 #include <proto/dos.h>
@@ -370,6 +371,10 @@ void gui_set_interface_state(struct ifnet *ifp, long state)
 
 void error_request(STRPTR Text, ...)
 {
+    /* Networking does not require a desktop. Open Intuition only when an
+     * error requester is needed; a local base avoids mandatory autoinit. */
+    struct IntuitionBase *IntuitionBase =
+        (struct IntuitionBase *)OpenLibrary("intuition.library", 37);
     struct EasyStruct es = {
         sizeof(struct EasyStruct),
         0,
@@ -380,8 +385,16 @@ void error_request(STRPTR Text, ...)
 
     es.es_TextFormat = Text;
     AROS_SLOWSTACKFORMAT_PRE(Text);
-    EasyRequestArgs(NULL, &es, NULL, AROS_SLOWSTACKFORMAT_ARG(Text));
+    if (IntuitionBase)
+        EasyRequestArgs(NULL, &es, NULL, AROS_SLOWSTACKFORMAT_ARG(Text));
+    else
+    {
+        RawDoFmt(Text, AROS_SLOWSTACKFORMAT_ARG(Text), RAWFMTFUNC_SERIAL, NULL);
+        RawPutChar('\n');
+    }
     AROS_SLOWSTACKFORMAT_POST(Text);
+    if (IntuitionBase)
+        CloseLibrary((struct Library *)IntuitionBase);
 }
 
 /*
@@ -391,6 +404,8 @@ void error_request(STRPTR Text, ...)
  */
 LONG iface_fail_request(CONST_STRPTR name, CONST_STRPTR device, LONG unit)
 {
+    struct IntuitionBase *IntuitionBase =
+        (struct IntuitionBase *)OpenLibrary("intuition.library", 37);
     struct EasyStruct es = {
         sizeof(struct EasyStruct),
         0,
@@ -408,13 +423,18 @@ LONG iface_fail_request(CONST_STRPTR name, CONST_STRPTR device, LONG unit)
              name, device ? (const char *)device : "(no device)", (long)unit);
     args[0] = (IPTR)text;
 
+    if(IntuitionBase == NULL)
+        return IFFAIL_SKIP;
     win = BuildEasyRequestArgs(NULL, &es, 0, (RAWARG)args);
-    if(win == NULL || win == (struct Window *)1)
-        return IFFAIL_SKIP;         /* nothing to ask on: do not hold the stack up */
+    if(win == NULL || win == (struct Window *)1) {
+        CloseLibrary((struct Library *)IntuitionBase);
+        return IFFAIL_SKIP;
+    }
 
     while((choice = SysReqHandler(win, NULL, TRUE)) < 0)
         ;
     FreeSysRequest(win);
+    CloseLibrary((struct Library *)IntuitionBase);
 
     /* gadgets answer 1, 2, ... from the left, the rightmost 0 */
     if(choice == 1)

@@ -310,11 +310,6 @@ extern struct ExecBase *SysBase;
 #define DIPF(x)
 #endif
 
-#if 0
-GLOBAL struct IntuitionBase *IntuitionBase;
-GLOBAL struct Library *GadToolsBase;
-GLOBAL struct GfxBase *GfxBase;
-#endif
 GLOBAL struct DosLibrary *DOSBase;
 #ifdef __MORPHOS__
 GLOBAL struct Library *UtilityBase;
