@@ -346,6 +346,43 @@ static BOOL wanted(const struct MDNSDiscovery *d, UWORD type, const UBYTE *key,
     return FALSE;
 }
 
+/* Mark the cache records reached by the current operations. Do the session
+ * lookups once per PTR/SRV/TXT, then join wanted SRVs to their A records.
+ * This avoids repeating the records-by-sessions host search for every A in
+ * a full-cache eviction or refresh pass. */
+static void mark_wanted_records(const struct MDNSDiscovery *d, ULONG now,
+    UBYTE marked[DISC_RECORDS])
+{
+    LONG i, j;
+
+    memset(marked, 0, DISC_RECORDS);
+    for (i = 0; i < DISC_RECORDS; i++) {
+        const struct DiscoveryRecord *r = &d->records[i];
+
+        if (r->type != 0 && r->type != DNS_TYPE_A &&
+            !due(now, r->expires) &&
+            wanted(d, r->type, r->key, r->link, now)) {
+            marked[i] = TRUE;
+        }
+    }
+    for (i = 0; i < DISC_RECORDS; i++) {
+        const struct DiscoveryRecord *srv = &d->records[i];
+
+        if (!marked[i] || srv->type != DNS_TYPE_SRV) {
+            continue;
+        }
+        for (j = 0; j < DISC_RECORDS; j++) {
+            const struct DiscoveryRecord *addr = &d->records[j];
+
+            if (addr->type == DNS_TYPE_A && addr->link == srv->link &&
+                !due(now, addr->expires) &&
+                same_key(addr->key, srv->data + 6)) {
+                marked[j] = TRUE;
+            }
+        }
+    }
+}
+
 /* The cache has no room for a record operations want: those operations,
  * and only those, are failed. */
 static void fail_wanting(struct MDNSDiscovery *d, UWORD type, const UBYTE *key,
@@ -527,12 +564,15 @@ static void cache(struct MDNSDiscovery *d, UWORD type, UWORD rclass, ULONG ttl,
         }
     }
     if (slot == NULL) {
+        UBYTE marked[DISC_RECORDS];
+
         /* Full: the oldest record no operation reaches any more gives way. */
+        mark_wanted_records(d, now, marked);
         for (i = 0; i < DISC_RECORDS; i++) {
             struct DiscoveryRecord *r = &d->records[i];
 
             if ((slot == NULL || (LONG)(r->serial - slot->serial) < 0) &&
-                !wanted(d, r->type, r->key, r->link, now)) {
+                !marked[i]) {
                 slot = r;
             }
         }
@@ -704,6 +744,20 @@ static struct DiscoveryView *view_of(struct MDNSDiscovery *d,
     return NULL;
 }
 
+static void release_type_views(struct MDNSDiscovery *d, const UBYTE *type)
+{
+    LONG i;
+
+    for (i = 0; i < DISC_VIEWS; i++) {
+        struct DiscoveryView *view = &d->views[i];
+
+        if (view->key[0] != 0 &&
+            same_key(view->key + view->key[0] + 1, type)) {
+            memset(view, 0, sizeof(*view));
+        }
+    }
+}
+
 static void refresh_views(struct MDNSDaemon *md, ULONG now)
 {
     struct MDNSDiscovery *d = md->md_Discovery;
@@ -761,6 +815,9 @@ static void refresh_views(struct MDNSDaemon *md, ULONG now)
                     fail(d, s);
                 }
             }
+            /* The failed type no longer has a live browse. Return its views
+             * now so a later PTR in this rebuild can use them. */
+            release_type_views(d, r->key);
         }
     }
     for (i = 0; i < DISC_VIEWS; i++) {
@@ -789,6 +846,7 @@ void mdnsDiscoveryTick(struct MDNSDaemon *md)
     ULONG now = mdnsTicks();
     LONG i, j;
     BOOL interested = FALSE, rebuild;
+    UBYTE marked[DISC_RECORDS];
 
     if (d == NULL) {
         return;
@@ -861,12 +919,12 @@ void mdnsDiscoveryTick(struct MDNSDaemon *md)
         return;
     }
     d->lastRefresh = now;
+    mark_wanted_records(d, now, marked);
     for (i = 0; i < DISC_RECORDS; i++) {
         struct DiscoveryRecord *r = &d->records[i];
         BOOL missing = FALSE;
 
-        if (r->type == 0 || due(now, r->expires) ||
-            !wanted(d, r->type, r->key, r->link, now)) {
+        if (!marked[i]) {
             continue;
         }
         if (r->refreshStep < 4 && due(now, r->refresh)) {

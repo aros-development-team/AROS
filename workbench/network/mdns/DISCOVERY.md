@@ -174,7 +174,7 @@ arrival order does not matter. Network changes clear the old views,
 report removals and restart queries. Resolve is a one-shot result; browse
 tracks subsequent changes.
 
-## Deliberate bounds and open review points
+## Deliberate bounds and follow-up work
 
 Lazy cache allocation holds 128 records, 32 service views and 16 operations
 (at most four per task), with eight pending snapshots per operation. Views
@@ -194,8 +194,10 @@ reflection needs additional work. IPv6, passive duplicate-question suppression,
 negative caching/NSEC and continuation of oversized known-answer lists are
 not implemented. The parent service's other RFC limitations still apply.
 
-Discovery adds LVOs 20 and 21 after the table of upstream Bonami; whether
-that numbering may be taken is part of the event-delivery decision in #1559.
+Discovery adds LVOs 20 and 21 after the table of upstream Bonami, as accepted
+with #1695. A future upstream Bonami addition at either position will need an
+explicit ABI reconciliation; #1794 tracks that and the remaining follow-up
+work.
 
 Callers should read with a finite per-iteration budget. The original Hook
 API is refused rather than served through a dispatcher process. Full RFC,
