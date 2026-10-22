@@ -16,21 +16,32 @@ static struct SignalSemaphore syscall_semaphore,baselist_semaphore;
 #define SOCK_DGRAM 2
 #define SOCK_NONBLOCK 0x10000000
 #define SS_NBIO 1
+#define SS_CANTRCVMORE 2
+#define SS_CANTSENDMORE 4
+#define SS_RCVATMARK 8
 #define SOL_SOCKET 65535
 #define SO_LINGER 128
 #define FIONBIO 0x8008667eU
 #define FIONREAD 0x4008667fU
 struct linger {int l_onoff;int l_linger;};
-struct socket {int so_refcnt,so_state,so_options,id;struct {int sb_cc;}so_rcv;void *so_pgid;};
-struct DataBuffer {void *db_Addr;};
-struct SocketBase {void *thisTask;struct socket **dTable;int dTableSize,defErrno;struct DataBuffer selitems;};
+struct sockbuf {int sb_cc;void *sb_mb;};
+struct socket {int so_refcnt,so_state,so_options,id,so_error,so_type,so_oobmark;
+ struct sockbuf so_rcv,so_snd;void *so_pgid;};
+typedef int spl_t;
+static spl_t splnet(void){return 0;}
+static void splx(spl_t value){(void)value;}
+#define soreadable(so) ((so)->so_rcv.sb_cc || (so)->so_error || ((so)->so_state & SS_CANTRCVMORE))
+#define sowriteable(so) ((so)->so_snd.sb_cc || (so)->so_error || ((so)->so_state & SS_CANTSENDMORE))
+struct DataBuffer {void *db_Addr;size_t db_Size;};
+struct SocketBase {void *thisTask;struct socket **dTable;int dTableSize,defErrno;
+ struct DataBuffer selitems;struct newselbuf *p_sb;};
 struct sockaddr {char bytes[16];};
 #define timeval fixture_timeval
 struct timeval {long tv_sec,tv_usec;};
-typedef struct {ULONG bits;} fd_set;
-#define FD_ZERO(s) ((s)->bits=0)
-#define FD_SET(n,s) ((s)->bits|=1U<<(n))
-#define FD_ISSET(n,s) (((s)->bits>>(n))&1)
+typedef union {ULONG bits;ULONG fds_bits[8];} fd_set;
+#define FD_ZERO(s) memset(s,0,sizeof(*(s)))
+#define FD_SET(n,s) ((s)->fds_bits[(n)/32]|=1U<<((n)%32))
+#define FD_ISSET(n,s) (((s)->fds_bits[(n)/32]>>((n)%32))&1)
 static _Thread_local int task;
 static atomic_int contexts,created_count,destroyed_count,fail_context;
 static _Thread_local int last_seen;
@@ -51,9 +62,9 @@ static struct socket *target(struct SocketBase *p){
  last_seen=p->dTable[0]->id;return p->dTable[0];
 }
 static LONG socreate(int family,struct socket **so,int type,int protocol){
- (void)type;(void)protocol;
+ (void)protocol;
  if(family!=2&&family!=28)return EAFNOSUPPORT;
- *so=calloc(1,sizeof(**so));assert(*so);(*so)->id=atomic_fetch_add(&created_count,1)+1;return 0;
+ *so=calloc(1,sizeof(**so));assert(*so);(*so)->so_type=type;(*so)->id=atomic_fetch_add(&created_count,1)+1;return 0;
 }
 static LONG releaseSocketRef(struct socket *so){
  assert(so&&so->so_refcnt==1&&so->so_pgid==NULL&&!(so->so_options&SO_LINGER));
@@ -83,11 +94,21 @@ static LONG native_setsockopt(LONG fd,LONG lev,LONG name,caddr_t b,ULONG len,str
 static LONG native_getsockname(LONG fd,caddr_t a,ULONG*l,struct SocketBase*p){(void)fd;target(p);if(*l>=16){memset(a,0,16);*l=16;}return 0;}
 static LONG native_getpeername(LONG fd,caddr_t a,ULONG*l,struct SocketBase*p){return native_getsockname(fd,a,l,p);}
 static LONG __IoctlSocket(LONG fd,ULONG cmd,caddr_t b,struct SocketBase*p){(void)fd;assert(cmd==FIONBIO);struct socket*so=target(p);ObtainSemaphore(&syscall_semaphore);if(*(int*)b)so->so_state|=SS_NBIO;else so->so_state&=~SS_NBIO;ReleaseSemaphore(&syscall_semaphore);return 0;}
+#ifndef NATIVE_POLL_ENGINE_TEST
 static LONG __WaitSelect(ULONG n,fd_set*r,fd_set*w,fd_set*e,struct timeval*t,ULONG*sig,struct SocketBase*p){
  (void)sig;assert(n==1);target(p);p->selitems.db_Addr=calloc(1,10);
  assert(!t||(t->tv_sec>=0&&t->tv_usec>=0));
  e->bits=0;r->bits=0;return w->bits?1:0;
 }
+#endif
+static void sbselqueue(struct sockbuf *buffer, struct SocketBase *context);
+#ifndef NATIVE_POLL_ENGINE_TEST
+static void sbselqueue(struct sockbuf *buffer, struct SocketBase *context){(void)buffer;(void)context;}
+static LONG __WaitNativePoll(ULONG count,struct timeval *timeout,struct SocketBase *context,
+ int (*scan)(struct SocketBase*,APTR,int*,int*),APTR data){
+ int ready,items;(void)count;(void)timeout;assert(!scan(context,data,&ready,&items));return ready;
+}
+#endif
 #define __FDH_READ 1
 #define __FDH_WRITE 2
 #define __FDH_CLOSE 3

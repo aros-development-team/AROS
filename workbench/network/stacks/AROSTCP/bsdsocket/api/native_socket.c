@@ -27,6 +27,7 @@
 #include <api/allocdatabuffer.h>
 #include <api/native_socket.h>
 #include <kern/uipc_socket_protos.h>
+#include <kern/uipc_socket2_protos.h>
 
 #if defined(ENABLE_FDLIBRARY)
 extern struct Library *FDBase;
@@ -226,6 +227,110 @@ BOOL native_socket_withdraw(void)
     return ok;
 }
 
+/* A batch retains every reservation until the common native wait completes.
+ * Scan callbacks run under the stack syscall exclusion. Queueing both socket
+ * buffers observes errors/shutdown even when no ordinary events are requested;
+ * unrequested data does not turn into a ready result or a retry loop. */
+struct native_poll_state {
+    struct aros_socket_pollfd *fds;
+    struct socket **sockets;
+    ULONG count;
+};
+static int native_poll_scan(struct SocketBase *context, APTR data,
+                            int *ready, int *items)
+{
+    struct native_poll_state *state = data;
+    ULONG i;
+    spl_t level = splnet();
+    *ready = 0;
+    *items = 0;
+    for (i = 0; i < state->count; i++) {
+        struct aros_socket_pollfd *entry = &state->fds[i];
+        struct socket *so = state->sockets[i];
+        UWORD events = 0;
+        if (!so) {
+            if (entry->revents) (*ready)++;
+            continue;
+        }
+        if (so->so_error) events |= AROS_POLL_ERR; /* Do not consume SO_ERROR. */
+        if (so->so_type == SOCK_STREAM &&
+            (so->so_state & (SS_CANTRCVMORE | SS_CANTSENDMORE)) ==
+                           (SS_CANTRCVMORE | SS_CANTSENDMORE))
+            events |= AROS_POLL_HUP;
+        if ((entry->events & AROS_POLL_IN) &&
+            (soreadable(so) || (so->so_type == SOCK_DGRAM && so->so_rcv.sb_mb)))
+            events |= AROS_POLL_IN;
+        if (!(events & AROS_POLL_HUP) && (entry->events & AROS_POLL_OUT) && sowriteable(so)) events |= AROS_POLL_OUT;
+        if ((entry->events & AROS_POLL_PRI) &&
+            (so->so_oobmark || (so->so_state & SS_RCVATMARK))) events |= AROS_POLL_PRI;
+        entry->revents = events;
+        if (events) (*ready)++;
+        sbselqueue(&so->so_rcv, context);
+        sbselqueue(&so->so_snd, context);
+        *items += 2;
+    }
+    splx(level);
+    return 0;
+}
+static LONG native_poll_batch(struct aros_socket_request *request)
+{
+    struct aros_socket_pollfd *fds = request->buffer;
+    struct fd_lease *leases = NULL;
+    struct socket **sockets = NULL;
+    struct SocketBase *context = NULL;
+    struct native_poll_state state;
+    struct timeval timeout;
+    ULONG i, count;
+    LONG error = 0, result;
+    BOOL invalid = FALSE;
+    request->result = -1;
+    if (request->arg1 < -1 || request->length > INT_MAX / 256 ||
+        (request->length && !fds)) return EINVAL;
+    count = request->length;
+    for (i = 0; i < count; i++) fds[i].revents = 0;
+    if (count) {
+        leases = AllocVec(count * sizeof(*leases), MEMF_ANY | MEMF_CLEAR);
+        sockets = AllocVec(count * sizeof(*sockets), MEMF_ANY | MEMF_CLEAR);
+        if (!leases || !sockets) { error = ENOMEM; goto done; }
+    }
+    for (i = 0; i < count; i++) {
+        fd_owner_t owner;
+        if (fds[i].fd < 0) continue;
+        owner = FD_GetOwner(fds[i].fd);
+        if (owner != FD_OWNER_NONE && owner != FD_OWNER_NATIVE_SOCKET) {
+            error = EOPNOTSUPP; goto done;
+        }
+        error = FD_Acquire(fds[i].fd, &leases[i]);
+        if (error == EBADF) {
+            fds[i].revents = AROS_POLL_NVAL;
+            invalid = TRUE; error = 0; continue;
+        }
+        if (error) goto done;
+        if (leases[i].owner != FD_OWNER_NATIVE_SOCKET) { error = EOPNOTSUPP; goto done; }
+        sockets[i] = ((struct native_binding *)leases[i].data)->object->socket;
+    }
+    context = api_hookbase_open();
+    if (!context) { error = ENOMEM; goto done; }
+    context->dTable = sockets;
+    context->dTableSize = count;
+    state.fds = fds; state.sockets = sockets; state.count = count;
+    timeout.tv_sec = request->arg1 < 0 ? 0 : request->arg1 / 1000;
+    timeout.tv_usec = request->arg1 < 0 ? 0 : (request->arg1 % 1000) * 1000;
+    if (invalid) timeout.tv_sec = timeout.tv_usec = 0;
+    result = __WaitNativePoll(count, request->arg1 < 0 && !invalid ? NULL : &timeout,
+                             context, native_poll_scan, &state);
+    if (result < 0) error = context->defErrno;
+    else request->result = result;
+    freeDataBuffer(&context->selitems);
+    context->dTable = NULL; context->dTableSize = 0;
+    api_hookbase_close(context);
+done:
+    if (leases) for (i = 0; i < count; i++)
+        if (leases[i].private_record) FD_Release(&leases[i]);
+    FreeVec(sockets); FreeVec(leases);
+    return error;
+}
+
 /* Every call gets its own sleep state and one private slot. Reusing the
  * stack's ordinary internal calls preserves blocking, UDP, option and
  * readiness behavior without adding its socket to a creator's dTable. */
@@ -242,6 +347,7 @@ static LONG native_call(struct aros_socket_request *r, APTR expected)
     struct timeval timeout;
     if (!FDBase || FDBase->lib_Version<51) return ENOSYS;
     r->result=-1;
+    if (r->operation==AROS_SOCKET_POLL_BATCH) return native_poll_batch(r);
     if (r->operation!=AROS_SOCKET_CREATE) {
         error=FD_Acquire(r->fd,&lease);
         if (error) return error;

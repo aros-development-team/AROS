@@ -14,4 +14,7 @@ LONG native_getsockopt(LONG,LONG,LONG,caddr_t,ULONG *,struct SocketBase *);
 LONG native_getsockname(LONG,caddr_t,ULONG *,struct SocketBase *);
 LONG native_getpeername(LONG,caddr_t,ULONG *,struct SocketBase *);
 LONG native_recvfrom(LONG,caddr_t,LONG,LONG,caddr_t,LONG *,struct SocketBase *);
+/* Internal shared wait engine: the scan runs under syscall exclusion. */
+typedef int (*native_poll_scan_fn)(struct SocketBase *, APTR, int *, int *);
+LONG __WaitNativePoll(ULONG, struct timeval *, struct SocketBase *, native_poll_scan_fn, APTR);
 #endif

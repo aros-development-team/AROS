@@ -22,6 +22,8 @@ if any(parent==out or parent in out.parents for parent in (ROOT,sdk,gen,a.crosst
 out.mkdir(parents=True)
 (out/'include/libraries').mkdir(parents=True)
 shutil.copyfile(ROOT/'workbench/libs/fd/include/fd.h',out/'include/libraries/fd.h')
+(out/'include/bsdsocket').mkdir()
+shutil.copyfile(ROOT/'workbench/network/common/include/bsdsocket/native.h',out/'include/bsdsocket/native.h')
 clang=str(a.crosstools.resolve()/'bin/clang')
 common=[clang,'--target=aarch64-unknown-aros','-mcmodel=large','-fno-pic','-O2','-std=gnu99',
  '-Werror=implicit-function-declaration','-Wno-pointer-sign','-Wno-format','-Wno-parentheses',
@@ -40,7 +42,7 @@ config=(sdk/'include/aros/config.h').read_text()
 if '#define __AROSEXEC_SMP__' not in config:p.error('SDK must select native SMP layout')
 commands=[];identities={}
 for prefix,folder,files,flags in [
- ('stack',stack/'api',['native_socket','amiga_api','amiga_syscalls','amiga_sendrecv','amiga_fdhooks','amiga_libtables'],stackflags),
+ ('stack',stack/'api',['native_socket','amiga_generic','amiga_api','amiga_syscalls','amiga_sendrecv','amiga_fdhooks','amiga_libtables'],stackflags),
  ('posix',crt/'posixc',['__fdesc','read','write','close','ioctl','fcntl','dup2','pread64','pwrite','pwrite64'],posixflags)]:
  for name in files:
   source=folder/(name+'.c');obj=out/(prefix+'-'+name+'.o')
