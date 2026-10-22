@@ -419,6 +419,8 @@ VOID DeleteObject(struct Handler *handler, struct Object *object)
       SetString(handler, &object->comment, NULL);
       handler->block_count -= object->block_count;
       FreePooled(handler->clear_pool, object, sizeof(struct Object));
+      if(object_type == ST_LINKDIR)
+         RematchNotifyRequests(handler);
    }
 
    return;
