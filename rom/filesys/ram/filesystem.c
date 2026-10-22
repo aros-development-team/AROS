@@ -897,24 +897,25 @@ UPINT WriteData(struct Handler *handler, struct Opening *opening,
 
       if(block_length == 0)
       {
-         block = (struct Block *)((struct MinNode *)block)->mln_Succ;
-         block_pos = 0;
+         new_block = (struct Block *)((struct MinNode *)block)->mln_Succ;
 
          /* Add another block to the file if required */
 
-         if(((struct MinNode *)block)->mln_Succ == NULL)
+         if(((struct MinNode *)new_block)->mln_Succ == NULL)
          {
             new_block = AddDataBlock(handler, opening->file, remainder);
             if(new_block != NULL)
-            {
-               block = new_block;
                file->end_length = 0;
-            }
             else
                error = IoErr();
          }
 
-         block_length = block->length;
+         if(error == 0)
+         {
+            block = new_block;
+            block_pos = 0;
+            block_length = block->length;
+         }
       }
 
       /* Write as much as possible to the current block */
