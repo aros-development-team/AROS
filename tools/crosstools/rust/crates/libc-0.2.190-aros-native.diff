@@ -30,7 +30,7 @@
          pub(crate) use helenos::*;
 --- a/src/unix/aros/mod.rs
 +++ b/src/unix/aros/mod.rs
-@@ -0,0 +1,1045 @@
+@@ -0,0 +1,1164 @@
 +//! Bindings for the AROS C library (posixc.library / stdc.library) and
 +//! pthread.library, as shipped in the AROS SDK.
 +//!
@@ -1076,6 +1076,125 @@
 +        status == 0xffff
 +    }
 +}
++
++// Additional AROS SDK declarations used by native application crates.
++// Values checked against the selected SDK with Clang, not another OS's libc.
++pub const AF_APPLETALK: c_int = 16;
++pub const AF_BLUETOOTH: c_int = 36;
++pub const AF_DECnet: c_int = 12;
++pub const AF_IPX: c_int = 23;
++pub const AF_ISDN: c_int = 26;
++pub const AF_NETLINK: c_int = 38;
++pub const AF_SNA: c_int = 11;
++pub const CLD_CONTINUED: c_int = 6;
++pub const CLD_DUMPED: c_int = 3;
++pub const CLD_EXITED: c_int = 1;
++pub const CLD_KILLED: c_int = 2;
++pub const CLD_STOPPED: c_int = 5;
++pub const CLD_TRAPPED: c_int = 4;
++pub const EHOSTDOWN: c_int = 64;
++pub const EPFNOSUPPORT: c_int = 46;
++pub const ERESTART: c_int = -1;
++pub const ESHUTDOWN: c_int = 58;
++pub const ESOCKTNOSUPPORT: c_int = 44;
++pub const IPPROTO_AH: c_int = 51;
++pub const IPPROTO_EGP: c_int = 8;
++pub const IPPROTO_ESP: c_int = 50;
++pub const IPPROTO_FRAGMENT: c_int = 44;
++pub const IPPROTO_GRE: c_int = 47;
++pub const IPPROTO_IDP: c_int = 22;
++pub const IPPROTO_PUP: c_int = 12;
++pub const IPPROTO_RAW: c_int = 255;
++pub const IPPROTO_ROUTING: c_int = 43;
++pub const IPPROTO_RSVP: c_int = 46;
++pub const IPPROTO_SCTP: c_int = 132;
++pub const IPPROTO_TP: c_int = 29;
++pub const IPPROTO_UDPLITE: c_int = 136;
++pub const IPV6_MULTICAST_HOPS: c_int = 10;
++pub const IPV6_MULTICAST_IF: c_int = 9;
++pub const IPV6_RECVHOPLIMIT: c_int = 37;
++pub const IPV6_TCLASS: c_int = 36;
++pub const IPV6_UNICAST_HOPS: c_int = 4;
++pub const IP_ADD_SOURCE_MEMBERSHIP: c_int = 25;
++pub const IP_DROP_SOURCE_MEMBERSHIP: c_int = 26;
++pub const IP_HDRINCL: c_int = 2;
++pub const IP_MULTICAST_IF: c_int = 9;
++pub const IP_TOS: c_int = 3;
++pub const MSG_CMSG_CLOEXEC: c_int = 262144;
++pub const MSG_CTRUNC: c_int = 32;
++pub const MSG_DONTROUTE: c_int = 4;
++pub const MSG_DONTWAIT: c_int = 128;
++pub const MSG_EOR: c_int = 8;
++pub const MSG_NOSIGNAL: c_int = 131072;
++pub const MSG_OOB: c_int = 1;
++pub const MSG_TRUNC: c_int = 16;
++pub const MSG_WAITALL: c_int = 64;
++pub const O_ASYNC: c_int = 8192;
++pub const RLIMIT_AS: c_int = 6;
++pub const RLIMIT_CORE: c_int = 0;
++pub const RLIMIT_CPU: c_int = 1;
++pub const RLIMIT_DATA: c_int = 2;
++pub const RLIMIT_FSIZE: c_int = 3;
++pub const RLIMIT_STACK: c_int = 5;
++pub const SCM_RIGHTS: c_int = 1;
++pub const SOCK_CLOEXEC: c_int = 268435456;
++pub const SOCK_NONBLOCK: c_int = 536870912;
++pub const SOCK_RDM: c_int = 4;
++pub const SOCK_SEQPACKET: c_int = 5;
++pub const SO_ACCEPTCONN: c_int = 2;
++pub const SO_DOMAIN: c_int = 4121;
++pub const SO_OOBINLINE: c_int = 256;
++pub const TCP_KEEPCNT: c_int = 1024;
++pub const TCP_KEEPIDLE: c_int = 256;
++pub const TCP_KEEPINTVL: c_int = 512;
++pub const TCP_MAXSEG: c_int = 2;
++pub const WCONTINUED: c_int = 8;
++pub const WEXITED: c_int = 4;
++pub const WSTOPPED: c_int = 2;
++
++s! {
++    pub struct ip_mreq_source {
++        pub imr_multiaddr: in_addr,
++        pub imr_sourceaddr: in_addr,
++        pub imr_interface: in_addr,
++    }
++}
++extern "C" { pub fn sync(); }
++
++// AROS sys/socket.h aligns ancillary records with AROS_ALIGN (16 bytes on
++// aarch64). These helpers only describe buffers; they introduce no C symbols.
++#[cfg(all(target_os = "aros", target_arch = "aarch64"))]
++#[allow(non_snake_case)]
++mod aros_cmsg {
++    use super::*;
++    const fn aligned(n: usize) -> usize { (n + 15) & !15 }
++    pub const unsafe fn CMSG_SPACE(n: u32) -> usize {
++        aligned(core::mem::size_of::<cmsghdr>()) + aligned(n as usize)
++    }
++    pub const unsafe fn CMSG_LEN(n: u32) -> usize {
++        aligned(core::mem::size_of::<cmsghdr>()) + n as usize
++    }
++    pub unsafe fn CMSG_DATA(header: *const cmsghdr) -> *mut u8 {
++        (header as *mut u8).add(aligned(core::mem::size_of::<cmsghdr>()))
++    }
++    pub unsafe fn CMSG_FIRSTHDR(msg: *const msghdr) -> *mut cmsghdr {
++        if (*msg).msg_controllen as usize >= core::mem::size_of::<cmsghdr>() {
++            (*msg).msg_control.cast()
++        } else { core::ptr::null_mut() }
++    }
++    pub unsafe fn CMSG_NXTHDR(msg: *const msghdr, header: *const cmsghdr) -> *mut cmsghdr {
++        if header.is_null() { return CMSG_FIRSTHDR(msg); }
++        let next = (header as usize).checked_add(aligned((*header).cmsg_len as usize));
++        let end = ((*msg).msg_control as usize).checked_add((*msg).msg_controllen as usize);
++        match (next, end) {
++            (Some(next), Some(end)) if next.checked_add(aligned(core::mem::size_of::<cmsghdr>()))
++                .is_some_and(|header_end| header_end <= end) => next as *mut cmsghdr,
++            _ => core::ptr::null_mut(),
++        }
++    }
++}
++#[cfg(all(target_os = "aros", target_arch = "aarch64"))]
++pub use aros_cmsg::*;
 --- a/src/unix/mod.rs
 +++ b/src/unix/mod.rs
 @@ -15,7 +15,14 @@
