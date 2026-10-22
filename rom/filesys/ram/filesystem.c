@@ -707,6 +707,9 @@ PINT ChangeFileSize(struct Handler *handler, struct Opening *opening,
    {
       /* Remove surplus blocks from the file */
 
+      UPINT resize_blocks;
+      PINT resize_result;
+
       block = NULL;
       while(full_length > new_length)
       {
@@ -723,7 +726,11 @@ PINT ChangeFileSize(struct Handler *handler, struct Opening *opening,
       file->length = full_length;
       CmdSeek(handler, opening, 0, OFFSET_END);
 
-      if(ChangeFileSize(handler, opening, diff, OFFSET_END) != -1)
+      resize_blocks = file->block_count;
+      resize_result = ChangeFileSize(handler, opening, diff, OFFSET_END);
+      /* The outer call accounts for the complete net change below. */
+      handler->block_count -= file->block_count - resize_blocks;
+      if(resize_result != -1)
       {
          WriteData(handler, opening,
             ((UBYTE *)block) + sizeof(struct Block), diff);
