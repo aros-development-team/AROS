@@ -1921,6 +1921,9 @@ BOOL CmdRenameObject(struct Handler *handler, struct Lock *old_lock,
 
    /* Check for a circular rename */
 
+   if(parent != NULL)
+      parent = GetRealObject(parent);
+
    for(p = parent; p != NULL; p = p->parent)
    {
       if(p == object)
