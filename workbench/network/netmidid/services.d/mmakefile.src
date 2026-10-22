@@ -1,0 +1,7 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+# Install netmidid's default service config into the AROSTCP service-manager
+# dir (db/services.d/), alongside the stack's own service scripts.
+%copy_files_q mmake=workbench-network-netmidid-svccfg files="$(filter-out mmakefile.src mmakefile, $(call WILDCARD, *))" \
+    dst=$(AROS_SYSTEM)/Network/AROSTCP/db/services.d

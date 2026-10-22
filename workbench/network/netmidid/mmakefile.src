@@ -1,0 +1,27 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+# netmidid: MIDI over the network as a service of the network stack. Its
+# core keeps the configuration (ENV:NetMIDI), the sockets and the clock,
+# and reaches CAMD through the ports of the drivers in DEVS:Midi, whose
+# adapters it attaches to, a peer to a port: it is no client of
+# camd.library. Each protocol is a transport of its own (netmidid.h),
+# added beside it; without one the service has nothing to run.
+
+FILES := main adapters network config
+
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include \
+    -I$(SRCDIR)/$(CURDIR)/rtpmidi/include \
+    -I$(SRCDIR)/workbench/devs/camd/networkmidi2
+USER_CPPFLAGS := -DNETMIDI_SERVICE
+
+#MM- workbench-network : workbench-network-netmidid
+#MM- workbench-network-netmidid : workbench-network-netmidid-svccfg
+#MM workbench-network-netmidid : includes linklibs linklibs-rtpmidi \
+#MM      network-includes-copy
+
+%build_prog mmake=workbench-network-netmidid \
+    progname=netmidid targetdir=$(AROS_SYSTEM)/Network/Services \
+    files="$(FILES)" uselibs="rtpmidi"
+
+%common
