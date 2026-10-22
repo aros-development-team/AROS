@@ -60,6 +60,48 @@ struct BtHardware * bFindHardware(LIBBASETYPEPTR BluetoothBase, STRPTR name, ULO
 /* \\\ */
 
 /* /// "btAddHardware()" */
+/*****************************************************************************
+    NAME
+        APTR btAddHardware(
+
+    SYNOPSIS
+        STRPTR name, ULONG unit)
+
+    FUNCTION
+        Open and initialize a Bluetooth HCI adapter, or return an existing adapter.
+
+    INPUTS
+        name - Non-NULL, NUL-terminated HCI device name or path.
+        unit - Device unit passed to OpenDevice().
+
+    RESULT
+        Hardware handle after successful initial startup, an existing
+        matching handle, or NULL if allocation, task creation, device opening
+        or controller initialization fails. No new ownership reference is
+        acquired when an existing handle is returned.
+
+    NOTES
+        Lookup tries the supplied name, then suffixes following slash or
+        colon separators. Device opening uses the same fallback order.
+        A newly started hardware task completes controller bring-up before
+        the call returns; this can include an installed firmware loader.
+        An existing handle is returned without rechecking its ready state.
+
+        Call from task context with bluetooth.library open. Startup clears
+        SIGF_SINGLE and waits for the worker using btBorrowLocksWait(); no
+        caller timeout is provided. The name is copied for a new adapter.
+        Serialize adapter addition and removal: duplicate lookup and insertion
+        are not one atomic operation, and returned handles are shared.
+
+        A new adapter sends BEHMB_ADDHARDWARE. Event allocation can fail
+        independently. Use btEnumerateHardware() to restore configured devices
+        and apply scan settings, and btStartDiscoveryA() for radio discovery.
+        Remove the shared adapter only after coordinating its users.
+
+    SEE ALSO
+        btRemHardware(), btEnumerateHardware(), btStartDiscoveryA()
+
+*****************************************************************************/
 AROS_LH2(struct BtHardware *, btAddHardware,
          AROS_LHA(STRPTR, name, A0),
          AROS_LHA(ULONG, unit, D0),
@@ -115,6 +157,51 @@ AROS_LH2(struct BtHardware *, btAddHardware,
 /* \\\ */
 
 /* /// "btRemHardware()" */
+/*****************************************************************************
+    NAME
+        VOID btRemHardware(
+
+    SYNOPSIS
+        APTR bth)
+
+    FUNCTION
+        Release an adapter's devices, stop its hardware task and remove the adapter.
+
+    INPUTS
+        bth - Live hardware handle. NULL is invalid.
+
+    RESULT
+        None. Shutdown or binding-release failures are not returned.
+
+    NOTES
+        Stop discovery, connections and new I/O, complete outstanding requests
+        and release channels before removal. Quiesce all users of the adapter
+        and its devices. This call releases class and application bindings;
+        their callbacks run synchronously and may wait for workers.
+
+        Call from task context outside the hardware task and any worker that
+        a release callback must stop. Keep bluetooth.library open until return.
+        The call waits on SIGF_SINGLE for hardware-task termination and has
+        no bounded completion guarantee. Do not hold locks needed by workers
+        or release callbacks.
+
+        The adapter handle and all device, service and endpoint handles owned
+        by it become invalid. Removal events carry old pointers as identifiers;
+        they do not retain objects and must not be dereferenced. Saved adapter
+        and device configuration is not removed by this call.
+
+    BUGS
+        Binding release starts while the hardware task may still run. The
+        task is then stopped before dead-device cleanup, but outstanding
+        connection use is not protected by the shutdown sequence.
+        After repeated waits for device use counts, removal forcibly clears
+        a remaining count and continues. It does not safely refuse removal
+        while channels are in use; callers must establish quiescence first.
+
+    SEE ALSO
+        btAddHardware(), btDisconnectDevice(), btFreeChannel(), btFreeDevice()
+
+*****************************************************************************/
 AROS_LH1(void, btRemHardware,
          AROS_LHA(struct BtHardware *, bth, A0),
          LIBBASETYPEPTR, BluetoothBase, 13, bt)
@@ -251,6 +338,38 @@ AROS_LH1(APTR, btEnumerateHardware,
 /* *** Devices *** */
 
 /* /// "btAllocDevice()" */
+/*****************************************************************************
+    NAME
+        APTR btAllocDevice(
+
+    SYNOPSIS
+        APTR bth)
+
+    FUNCTION
+        Allocate a remote-device object and append it to an adapter's device list.
+
+    INPUTS
+        bth - Live hardware handle. NULL is invalid.
+
+    RESULT
+        Device handle, or NULL if the device allocation fails.
+
+    NOTES
+        The object starts without an address, name, services, registration
+        or connection. RSSI is initialized to 127; automatic connection uses
+        the current global default. The adapter device count is incremented.
+        No radio operation, duplicate-address check or add-device event occurs.
+
+        This is an object-construction operation, not device discovery.
+        Coordinate initialization with list readers: the object is already
+        visible when returned. Keep the adapter and bluetooth.library valid,
+        call from task context and serialize with adapter removal. Release
+        with btFreeDevice(), not btFreeVec().
+
+    SEE ALSO
+        btFreeDevice(), btSetAttrsA(), btStartDiscoveryA()
+
+*****************************************************************************/
 AROS_LH1(struct BtDevice *, btAllocDevice,
          AROS_LHA(struct BtHardware *, bth, A0),
          LIBBASETYPEPTR, BluetoothBase, 15, bt)
@@ -409,6 +528,50 @@ void bFreeDevice(LIBBASETYPEPTR BluetoothBase, struct BtDevice *bd)
 /* \\\ */
 
 /* /// "btFreeDevice()" */
+/*****************************************************************************
+    NAME
+        VOID btFreeDevice(
+
+    SYNOPSIS
+        APTR bd)
+
+    FUNCTION
+        Remove a device from active enumeration and release its bindings and resources.
+
+    INPUTS
+        bd - Live device on its adapter's active list. NULL is invalid.
+
+    RESULT
+        None. Outstanding channel use can defer resource cleanup.
+
+    NOTES
+        Complete connection shutdown and outstanding I/O, release channels
+        and quiesce all device users before calling. The function moves the
+        device to the adapter's dead-device list and decrements the active
+        count. Class and application release callbacks run synchronously
+        under the device write lock. Do not call from a worker they must stop
+        or wait for another task that needs that lock.
+
+        A nonzero device use count defers final cleanup until the last channel
+        is released. Otherwise services, endpoints and selected device metadata
+        are released and the device is unlinked. Treat the handle and all
+        child handles as invalid after this call; do not call it twice or
+        free the returned storage yourself.
+
+        Call from task context with the adapter and bluetooth.library valid.
+        The call does not request a controller disconnect, delete persistent
+        registration or emit BEHMB_REMDEVICE. It has no callback timeout.
+
+    BUGS
+        Final cleanup deliberately leaves the device allocation resident.
+        That allocation is not a usable retained handle: its semaphore and
+        child resources have been dismantled. Retention does not make calls
+        through stale device pointers safe.
+
+    SEE ALSO
+        btAllocDevice(), btDisconnectDevice(), btFreeChannel(), btUnregisterDevice()
+
+*****************************************************************************/
 AROS_LH1(void, btFreeDevice,
          AROS_LHA(struct BtDevice *, bd, A0),
          LIBBASETYPEPTR, BluetoothBase, 16, bt)
@@ -2801,6 +2964,80 @@ void bUpdateLEConnInterval(LIBBASETYPEPTR BluetoothBase)
  * attribute list content is encoded once; the record handle is unique per
  * stack lifetime.
  */
+/*****************************************************************************
+    NAME
+        APTR btAddServiceRecordA(
+
+    SYNOPSIS
+        struct TagItem *taglist)
+
+    FUNCTION
+        Register a local SDP or GATT service record.
+
+    INPUTS
+        taglist - Service definition. NULL lacks the required service UUID.
+
+    TAGS
+        BSRA_Protocol - BSVP_RFCOMM (default), BSVP_L2CAP or BSVP_ATT.
+        BSRA_UUID16 - Nonzero 16-bit service UUID for SDP. For GATT, use
+            this or BSRA_UUID128; a supplied UUID128 takes precedence.
+        BSRA_UUID128 - GATT service UUID: 16 bytes, most significant first.
+        BSRA_RFCOMMChannel - Required RFCOMM server channel, from 1 to 30.
+        BSRA_PSM - Required nonzero 16-bit PSM for BSVP_L2CAP. The value
+            is encoded without further protocol-validity checks.
+        BSRA_Name - Optional NUL-terminated service name. SDP publishes at
+            most its first 64 bytes; the stored name is copied in full.
+        BSRA_ProfileUUID16 - SDP profile UUID; defaults to BSRA_UUID16.
+        BSRA_ProfileVersion - SDP profile version; defaults to 0x0102.
+        BSRA_Owner - Optional NUL-terminated owner name. Defaults to the
+            calling task's name; the string is copied.
+        BSRA_Characteristics - Array of BtGattCharDef for GATT. Required
+            when BSRA_NumCharacteristics is nonzero.
+        BSRA_NumCharacteristics - GATT array length, from 0 to 64; default 0.
+        BSRA_LEConnInterval - GATT preferred connection interval in 1.25 ms
+            units. Default 0 adds no preference; values above 1199 are
+            limited to 1199. This is not a negotiated-interval guarantee.
+
+    RESULT
+        Service-record handle, or NULL for an invalid required definition,
+        allocation failure or exhausted GATT attribute-handle space.
+        A successful result does not guarantee remote availability.
+
+    NOTES
+        Each GATT characteristic needs a nonzero bgd_UUID16 or a 16-byte
+        bgd_UUID128; the 16-bit form takes precedence for characteristics.
+        Both bgd_Len and bgd_MaxLen must be at most BGATT_MAXVALUE (512).
+        A nonzero initial length requires bgd_Value. Capacity is the larger
+        of those lengths. UUIDs, definitions and value bytes are copied.
+
+        bgd_Properties uses BGDP_READ, BGDP_WRITENR, BGDP_WRITE, BGDP_NOTIFY
+        and BGDP_INDICATE. BGDP_STREAM marks an event stream whose remote
+        reads are empty; writes and notifications remain available. Properties
+        are not comprehensively validated and do not establish a security
+        policy. Supply only properties supported by the service.
+
+        SDP records start enabled; GATT records start disabled. Registered
+        server classes receive BCM_ServiceRecordEvent synchronously and may
+        apply their policy before return. BSRA_Enabled is not a creation tag;
+        use btSetAttrsA(BGA_SERVICERECORD, ...) to change it. Creating a record
+        does not create a listening application or prove that a class can
+        serve the advertised protocol.
+
+        Call from task context, keep bluetooth.library open and serialize
+        record removal with all users. Class callbacks run with the base read
+        lock held; avoid incompatible locks or reentrant record removal.
+        Input storage is not retained. Release with btRemServiceRecord().
+
+    BUGS
+        Failure to copy the name or owner is not checked, so a non-NULL
+        record may have missing metadata. Duplicate service UUIDs and transport
+        endpoints are not rejected. SDP UUIDs, PSM and profile fields are
+        encoded as 16-bit values; out-of-range ULONG values are not rejected.
+
+    SEE ALSO
+        btRemServiceRecord(), btSetServiceValue(), btGetServiceValue(), btSetAttrsA()
+
+*****************************************************************************/
 AROS_LH1(APTR, btAddServiceRecordA,
          AROS_LHA(struct TagItem *, tags, A0),
          LIBBASETYPEPTR, BluetoothBase, 88, bt)
@@ -2905,6 +3142,45 @@ AROS_LH1(APTR, btAddServiceRecordA,
 /* \\\ */
 
 /* /// "btRemServiceRecord()" */
+/*****************************************************************************
+    NAME
+        VOID btRemServiceRecord(
+
+    SYNOPSIS
+        APTR record)
+
+    FUNCTION
+        Remove a local service record and discard its queued GATT value updates.
+
+    INPUTS
+        record - Live service-record handle, or NULL for no operation.
+
+    RESULT
+        None. Class callback results are ignored.
+
+    NOTES
+        Unlinks the record, removes its pending notification snapshots and
+        requests advertising and preferred-interval updates. Every registered
+        class receives BCM_ServiceRecordEvent synchronously before the record
+        and its copied metadata, characteristics and values are freed.
+        The callback runs under the base read lock and must not retain the
+        record or recursively remove it.
+
+        BEHMB_REMSERVICEREC carries the old handle without retaining the
+        record. An asynchronous recipient must treat it as an identifier,
+        not dereference it. Remote caches are not invalidated synchronously,
+        and previously transmitted updates are not recalled. GATT attribute
+        handles are not recycled during the library instance's lifetime.
+
+        Call from task context with bluetooth.library open. Quiesce all record
+        users, including value access and class operations, before removal.
+        Do not call twice. The base and GATT locks protect internal list work;
+        they do not validate a stale caller handle.
+
+    SEE ALSO
+        btAddServiceRecordA(), btSetServiceValue(), btGetServiceValue()
+
+*****************************************************************************/
 AROS_LH1(void, btRemServiceRecord,
          AROS_LHA(APTR, record, A0),
          LIBBASETYPEPTR, BluetoothBase, 89, bt)
@@ -2946,6 +3222,57 @@ AROS_LH1(void, btRemServiceRecord,
  * that subscribed to it are notified by the radio tasks shortly after.
  * Returns the length stored or -1.
  */
+/*****************************************************************************
+    NAME
+        LONG btSetServiceValue(
+
+    SYNOPSIS
+        APTR record, ULONG index, APTR data, ULONG len)
+
+    FUNCTION
+        Replace a local GATT characteristic value and queue updates for subscribers.
+
+    INPUTS
+        record - Live GATT service-record handle.
+        index - Zero-based index in the record's characteristic array.
+        data - Buffer containing len bytes; may be NULL when len is zero.
+        len - New byte length, no greater than the characteristic's capacity.
+
+    RESULT
+        Number of bytes stored, including zero. Returns -1 for NULL or a
+        non-GATT record, an invalid index, missing nonempty data, excessive
+        length, notification allocation failure or a full notification queue.
+        On these failures the current value remains unchanged.
+
+    NOTES
+        The value is copied and its length replaced; unused capacity is not
+        part of the value. The call may update a disabled record and does not
+        require BGDP_WRITE, which controls access from remote devices.
+
+        For BGDP_NOTIFY or BGDP_INDICATE, an update snapshot is allocated
+        before checking subscribers. With subscribers, it is appended to the
+        shared queue, limited to 256 outstanding snapshots across all records.
+        Without subscribers, the snapshot is discarded. Even without subscribers,
+        its initial allocation can fail. Successful updates wake radio tasks.
+
+        Return confirms the local update, not transmission or acknowledgement.
+        Each notification or indication carries at most the negotiated ATT
+        MTU minus three bytes, also bounded by the sender's packet buffer;
+        longer values are truncated for that update, not split into messages.
+        Updates may be skipped when the record is disabled, a subscription
+        ends, a link fails, or indication handling stops. Remote reads of a
+        BGDP_STREAM value remain empty; btGetServiceValue() returns its stored
+        local bytes.
+
+        Call from task context. Keep the record and bluetooth.library valid,
+        serialize with record removal, and keep data unchanged until return.
+        The GATT lock serializes value access; it does not retain the record.
+        No ownership of the input buffer is transferred.
+
+    SEE ALSO
+        btGetServiceValue(), btAddServiceRecordA(), btRemServiceRecord()
+
+*****************************************************************************/
 AROS_LH4(LONG, btSetServiceValue,
          AROS_LHA(APTR, record, A0),
          AROS_LHA(ULONG, index, D0),
@@ -3020,6 +3347,42 @@ AROS_LH4(LONG, btSetServiceValue,
 /* /// "btGetServiceValue()" */
 /* The current value (a device may have written it: BEHMB_SERVICEWRITE).
    Returns its length, of which at most len bytes were copied, or -1. */
+/*****************************************************************************
+    NAME
+        LONG btGetServiceValue(
+
+    SYNOPSIS
+        APTR record, ULONG index, APTR buf, ULONG len)
+
+    FUNCTION
+        Read the current local value of a GATT characteristic.
+
+    INPUTS
+        record - Live GATT service-record handle.
+        index - Zero-based index in the record's characteristic array.
+        buf - Destination buffer, or NULL to query the current length.
+        len - Available bytes in buf; zero performs no copy.
+
+    RESULT
+        Full current value length, which may exceed len. Returns -1 for a
+        NULL or non-GATT record or an invalid index. Copies at most len bytes
+        when buf is non-NULL; no terminator is appended.
+
+    NOTES
+        Length and copied bytes are read under the GATT lock as one snapshot.
+        A separate length query and read can observe different values; size
+        the buffer or handle truncation accordingly. Values can change through
+        btSetServiceValue() or permitted remote writes. A disabled record and
+        a BGDP_STREAM characteristic can still be read locally.
+
+        Call from task context. Keep the record and bluetooth.library valid
+        and serialize with removal. The lock protects value access, not record
+        lifetime. The destination is caller-owned and is not retained.
+
+    SEE ALSO
+        btSetServiceValue(), btAddServiceRecordA(), btRemServiceRecord()
+
+*****************************************************************************/
 AROS_LH4(LONG, btGetServiceValue,
          AROS_LHA(APTR, record, A0),
          AROS_LHA(ULONG, index, D0),
