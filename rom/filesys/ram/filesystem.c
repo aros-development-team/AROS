@@ -748,6 +748,11 @@ PINT ChangeFileSize(struct Handler *handler, struct Opening *opening,
    if(new_length != -1)
       file->length = new_length;
    handler->block_count += file->block_count - block_count;
+   if(new_length == -1)
+   {
+      SetIoErr(error);
+      return -1;
+   }
 
    /* Re-establish old seek position */
 
