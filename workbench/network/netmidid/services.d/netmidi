@@ -1,10 +1,12 @@
 #
 # AROSTCP network service: MIDI over the network (netmidid).
 #
-# AppleMIDI (RTP-MIDI) sessions on UDP 5004 and 5005. It answers
-# invitations and invites the peer it is configured to. CAMD clients reach
-# its peers through the ports of the driver DEVS:Midi/applemidi. It takes
-# no arguments: what it does is in its configuration, ENV:NetMIDI.
+# AppleMIDI (RTP-MIDI) sessions on UDP 5004 and 5005, and Network MIDI 2.0
+# sessions on the port its configuration gives, if it gives one. It
+# answers invitations and invites the peers it is configured to. CAMD
+# clients reach its peers through the ports of the drivers
+# DEVS:Midi/applemidi and DEVS:Midi/networkmidi2. It takes no arguments:
+# what it does is in its configuration, ENV:NetMIDI.
 #
 #   Path    - the daemon executable
 #   Order   - bring-up priority hint (higher starts earlier)

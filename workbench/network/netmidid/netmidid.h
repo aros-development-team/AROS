@@ -95,6 +95,7 @@ struct netmidid_transport {
 };
 
 extern const struct netmidid_transport netmidid_applemidi;
+extern const struct netmidid_transport netmidid_midi2;
 
 uint64_t netmidid_now(void);
 uint64_t netmidid_elapsed(uint64_t now, uint64_t then);
