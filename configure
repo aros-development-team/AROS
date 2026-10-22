@@ -4176,7 +4176,9 @@ ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
-CXX_BASE=$CXX
+# Autoconf can append a language-standard flag to CXX. Keep only the
+# executable name when deriving sibling tool names.
+CXX_BASE=`echo "$CXX" | sed 's/[[:space:]].*$//'`
 # Extract the first word of "$CXX", so it can be a program name with args.
 set dummy $CXX; ac_word=$2
 { printf '%s\n' "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -4715,7 +4717,8 @@ ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
-CC_BASE=$CC
+# CC can likewise contain e.g. "gcc -std=gnu23" after AC_PROG_CC.
+CC_BASE=`echo "$CC" | sed 's/[[:space:]].*$//'`
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
