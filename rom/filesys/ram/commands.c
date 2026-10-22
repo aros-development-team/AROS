@@ -1448,7 +1448,8 @@ BOOL CmdExamineAll(struct Handler *handler, struct Lock *lock,
 
    /* Check we support the requested format */
 
-   if(type > ED_COMMENT)
+   lock = FIXLOCK(handler, lock);
+   if(type < ED_NAME || type > ED_COMMENT)
       error = ERROR_BAD_NUMBER;
 
    /* ExAll must be called on directories */
@@ -1466,7 +1467,7 @@ BOOL CmdExamineAll(struct Handler *handler, struct Lock *lock,
    }
    else
    {
-      object = (APTR)((struct FileLock *)lock)->fl_Key;
+      object = GetRealObject((APTR)((struct FileLock *)lock)->fl_Key);
       object = (APTR)object->elements.mlh_Head;
    }
 
