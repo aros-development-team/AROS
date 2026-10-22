@@ -302,12 +302,19 @@ static void midi2_sessions(struct midi2_runtime *rt, uint64_t now)
 static int midi2_periodic(struct netmidid *d, void *self, uint64_t now)
 {
     struct midi2_runtime *rt = self;
+    int index;
 
     (void)d;
     /* The Host we are to be a Client of is known and we have no session
-       with it: invite it, and again more slowly while it does not answer. */
-    if (rt->midi2_host &&
-        netmidi2_table_find(&rt->midi2, rt->midi2_host_key) < 0 &&
+       with it: invite it, and again more slowly while it does not answer,
+       up to once a minute, and from the start again after a session. */
+    index = rt->midi2_host ?
+            netmidi2_table_find(&rt->midi2, rt->midi2_host_key) : -1;
+    if (index >= 0 &&
+        rt->midi2.slot[index].session.state == NETMIDI2_ESTABLISHED) {
+        rt->midi2_tried = now ? now : 1;
+        rt->midi2_wait = APPLEMIDI_WANTED_FIRST_WAIT;
+    } else if (rt->midi2_host && index < 0 &&
         (!rt->midi2_tried ||
          netmidid_elapsed(now, rt->midi2_tried) >= rt->midi2_wait)) {
         static uint8_t out[NETMIDI2_MAX_PACKET];
@@ -424,13 +431,14 @@ static unsigned long midi2_counts(struct netmidid *d, void *self,
     struct midi2_runtime *rt = self;
     int index;
 
-    (void)d;
     for (index = 0; index < NETMIDI2_SESSIONS_MAX; ++index) {
         int port = rt->midi2_port[index];
 
         if (!rt->midi2_known[index] || port < 0)
             continue;
         counts[port] = rt->midi2_count[index];
+        counts[port].sysex_dropped += netmidi_camd_sysex_dropped(&d->camd,
+                                                                 port);
         counts[port].present = 1;
     }
     return 0;
@@ -494,6 +502,16 @@ static int midi2_open(struct netmidid *d, void *self)
     rt->port = config->port;
     if (!rt->port)
         return 1;
+    if (config->peer_ip[0]) {
+        uint32_t address;
+
+        if (netmidid_ipv4(config->peer_ip, &address) != 0) {
+            fputs(TAG "MIDI 2.0 host must be an IPv4 address\n", stderr);
+            return -1;
+        }
+        rt->midi2_host_key = ((uint64_t)address << 16) | config->peer_port;
+        rt->midi2_host = 1;
+    }
     rt->socket = netmidid_socket(d, &netmidid_midi2, rt->port);
     if (rt->socket < 0) {
         fputs(TAG "cannot bind the Network MIDI 2.0 port\n", stderr);
@@ -512,15 +530,6 @@ static int midi2_open(struct netmidid *d, void *self)
                                config->port_name[index]) != 0)
             printf(TAG "networkmidi2 port %d cannot be kept for \"%s\"\n",
                    index, config->port_name[index]);
-    if (config->peer_ip[0]) {
-        uint32_t address;
-
-        if (netmidid_ipv4(config->peer_ip, &address) == 0) {
-            rt->midi2_host_key = ((uint64_t)address << 16) |
-                                 config->peer_port;
-            rt->midi2_host = 1;
-        }
-    }
     return 0;
 }
 
