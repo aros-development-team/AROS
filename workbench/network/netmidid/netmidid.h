@@ -37,21 +37,10 @@
  * what it receives into a buffer at least this long. */
 #define NETMIDID_SYSEX_MAX 32768
 
-/* What the program is told on its command line beside the configuration;
- * the service has its configuration alone. Where one is given it is taken
- * instead of what the configuration says. */
-struct netmidid_options {
-    const char *accept;         /* who may connect; NULL: as configured */
-    const char *peer_name;      /* a peer to invite where it is
-                                   advertised under this name; NULL: as
-                                   configured */
-};
-
 struct netmidid_transport;
 
 struct netmidid {
     struct netmidi_network_config config;
-    struct netmidid_options options;
     char session_name[64];      /* the name all transports go by */
     /* Added to the time every received event is due, in ten-thousandths of
        a second: room for the network's unevenness, paid for in delay. */

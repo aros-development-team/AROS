@@ -153,6 +153,12 @@ int rtpmidi_sender_packet_list(struct rtpmidi_sender *sender,
                                size_t count,
                                uint8_t *data, size_t capacity,
                                size_t *packet_length, size_t *taken);
+/* Builds a packet with no MIDI commands and the sender's recovery journal.
+ * It keeps the connection alive while there is history to acknowledge. */
+int rtpmidi_sender_guard(const struct rtpmidi_sender *sender,
+                         uint16_t sequence, uint32_t timestamp, uint32_t ssrc,
+                         uint8_t *data, size_t capacity,
+                         size_t *packet_length);
 void rtpmidi_sender_ack(struct rtpmidi_sender *sender, uint32_t extended_sequence);
 int rtpmidi_sender_journal(const struct rtpmidi_sender *sender, uint16_t sequence,
                       uint32_t timestamp, uint8_t *data, size_t capacity,

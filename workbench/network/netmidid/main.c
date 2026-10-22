@@ -270,7 +270,7 @@ static int run(void)
     d->session_name[sizeof(d->session_name) - 1] = 0;
     config_look(&watch);
     if (netmidi_camd_open(&d->camd) != 0) {
-        fputs(TAG "camd.library unavailable\n", stderr);
+        fputs(TAG "cannot initialize CAMD adapters\n", stderr);
         goto cleanup;
     }
     d->shared_port = netmidi_camd_ports(&d->camd) == 1;

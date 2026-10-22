@@ -295,6 +295,15 @@ int netmidi_camd_ports(const struct netmidi_camd_runtime *runtime)
     return NETMIDI_CAMD_PORTS;
 }
 
+unsigned long netmidi_camd_sysex_dropped(
+    const struct netmidi_camd_runtime *runtime, int number)
+{
+    if (!runtime || number < 0 ||
+        number >= NETMIDI_CAMD_PORTS * NETMIDI_CAMD_DRIVERS)
+        return 0;
+    return runtime->stream[number].sysex_dropped;
+}
+
 static unsigned data_bytes(uint8_t status)
 {
     if (status < 0xf0)
@@ -323,10 +332,12 @@ static void take_byte(struct netmidi_camd_runtime *all, int number,
                while the first is unfinished is left out, as one that is
                too long is */
             if (runtime->in_sysex == 1 && all->sysex_port == number &&
-                runtime->sysex_length < RTPMIDI_SYSEX_MAX - 1)
+                runtime->sysex_length < RTPMIDI_SYSEX_MAX - 1) {
                 all->sysex[runtime->sysex_length++] = byte;
-            else
+            } else if (runtime->in_sysex == 1) {
                 runtime->in_sysex = 2;
+                ++runtime->sysex_dropped;
+            }
             return;
         }
         /* EOX, or any other status, ends it */
@@ -348,6 +359,7 @@ static void take_byte(struct netmidi_camd_runtime *all, int number,
             all->sysex[0] = 0xf0;
         } else {
             runtime->in_sysex = 2;
+            ++runtime->sysex_dropped;
         }
         runtime->sysex_length = 1;
         runtime->status = 0;

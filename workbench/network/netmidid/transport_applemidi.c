@@ -757,16 +757,11 @@ static void send_guard(struct applemidi_runtime *rt, int index, uint64_t now)
     struct sockaddr_in data;
     uint8_t wire[1100];
     size_t wire_length;
-    size_t journal_length;
     uint32_t timestamp = (uint32_t)now;
-    if (rtpmidi_encode_list(stream->sequence, timestamp, rt->peers.local_ssrc,
-                           NULL, 0, wire, sizeof(wire), &wire_length) != 0 ||
-        rtpmidi_sender_journal(&stream->sender, stream->sequence, timestamp,
-                          wire + wire_length, sizeof(wire) - wire_length,
-                          &journal_length) != 0)
+    if (rtpmidi_sender_guard(&stream->sender, stream->sequence, timestamp,
+                             rt->peers.local_ssrc, wire, sizeof(wire),
+                             &wire_length) != 0)
         return;
-    wire[12] |= 0x40;
-    wire_length += journal_length;
     peer_address(&rt->peers.peer[index], 1, &data);
     if (send_to(rt, 1, wire, wire_length, &data) == 0) {
         ++stream->sequence;
@@ -919,7 +914,6 @@ static unsigned long applemidi_counts(struct netmidid *d, void *self,
     struct applemidi_runtime *rt = self;
     int index;
 
-    (void)d;
     for (index = 0; index < APPLEMIDI_PEERS_MAX; ++index) {
         struct stream *stream = &rt->stream[index];
 
@@ -928,6 +922,8 @@ static unsigned long applemidi_counts(struct netmidid *d, void *self,
             continue;
         stream->count.journals_omitted = stream->sender.journals_omitted;
         counts[stream->port] = stream->count;
+        counts[stream->port].sysex_dropped +=
+            netmidi_camd_sysex_dropped(&d->camd, stream->port);
         counts[stream->port].present = 1;
     }
     return rt->peers.refused;
@@ -1003,8 +999,7 @@ static int applemidi_open(struct netmidid *d, void *self)
         return -1;
     if (config->max_peers)
         rt->peers.limit = config->max_peers;
-    if (accept_peers(rt, d->options.accept ? d->options.accept :
-                         config->accept[0] ? config->accept : NULL) != 0)
+    if (accept_peers(rt, config->accept[0] ? config->accept : NULL) != 0)
         return -1;
     return 0;
 }

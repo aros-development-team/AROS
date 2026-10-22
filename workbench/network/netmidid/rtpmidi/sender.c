@@ -1177,6 +1177,25 @@ int rtpmidi_sender_journal(const struct rtpmidi_sender *sender, uint16_t sequenc
     return 0;
 }
 
+int rtpmidi_sender_guard(const struct rtpmidi_sender *sender,
+                         uint16_t sequence, uint32_t timestamp, uint32_t ssrc,
+                         uint8_t *data, size_t capacity,
+                         size_t *packet_length)
+{
+    size_t journal_length;
+
+    if (!sender || !data || !packet_length ||
+        rtpmidi_encode_list(sequence, timestamp, ssrc, NULL, 0, data,
+                            capacity, packet_length) != 0 ||
+        rtpmidi_sender_journal(sender, sequence, timestamp,
+            data + *packet_length, capacity - *packet_length,
+            &journal_length) != 0)
+        return -1;
+    data[12] |= 0x40;
+    *packet_length += journal_length;
+    return 0;
+}
+
 /* A delta time as RFC 6295 section 3.1 writes it: seven bits to a byte,
  * the most significant first, every byte but the last with its top bit
  * set. Four bytes hold any 28 bits; a longer wait is sent as the longest. */

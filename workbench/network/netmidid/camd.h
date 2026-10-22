@@ -36,6 +36,7 @@ struct netmidi_camd_runtime {
         uint8_t need;
         int in_sysex;
         size_t sysex_length;
+        unsigned long sysex_dropped;
     } stream[NETMIDI_CAMD_PORTS * NETMIDI_CAMD_DRIVERS];
     uint8_t *sysex;             /* one message at a time, of any port */
     int sysex_port;
@@ -54,6 +55,10 @@ void netmidi_camd_deliver_port(struct netmidi_camd_runtime *runtime, int port,
                                const uint8_t *message, size_t length);
 /* How many ports there are for peers to be given: 1 when they share. */
 int netmidi_camd_ports(const struct netmidi_camd_runtime *runtime);
+/* SysEx messages a CAMD client sent on a port but the shared gather buffer
+ * could not hold. The count lasts for this run of the service. */
+unsigned long netmidi_camd_sysex_dropped(
+    const struct netmidi_camd_runtime *runtime, int port);
 void netmidi_camd_deliver_sysex(struct netmidi_camd_runtime *runtime,
                                 const uint8_t *message, size_t length);
 void netmidi_camd_poll(struct netmidi_camd_runtime *runtime,
