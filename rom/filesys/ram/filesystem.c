@@ -715,7 +715,7 @@ PINT ChangeFileSize(struct Handler *handler, struct Opening *opening,
    {
       /* Remove surplus blocks from the file */
 
-      UPINT resize_blocks;
+      UPINT resize_blocks, alloc_size;
       PINT resize_result;
 
       block = NULL;
@@ -728,26 +728,42 @@ PINT ChangeFileSize(struct Handler *handler, struct Opening *opening,
       end_block = (APTR)file->elements.mlh_TailPred;
       file->end_length = end_length = end_block->length;
 
-      /* Allocate a suitably sized end block and copy old data to it */
+      /* Keep the last block if replacing it would save no memory. */
 
       diff = new_length - full_length;
-      file->length = full_length;
-      CmdSeek(handler, opening, 0, OFFSET_END);
-
-      resize_blocks = file->block_count;
-      resize_result = ChangeFileSize(handler, opening, diff, OFFSET_END);
-      /* The outer call accounts for the complete net change below. */
-      handler->block_count -= file->block_count - resize_blocks;
-      if(resize_result != -1)
-      {
-         WriteData(handler, opening,
-            ((UBYTE *)block) + sizeof(struct Block), diff);
+      alloc_size = sizeof(struct Block) + diff;
+      if(alloc_size < handler->min_block_size)
+         alloc_size = handler->min_block_size;
+      if(diff == 0)
          FreeDataBlock(handler, file, block);
-      }
-      else
+      else if(MEMBLOCKS(alloc_size)
+         == MEMBLOCKS(sizeof(struct Block) + block->length))
       {
          AddTail((struct List *)&file->elements, (APTR)block);
          file->end_length = diff;
+      }
+      else
+      {
+         /* Allocate a smaller end block and copy the retained data. */
+
+         file->length = full_length;
+         CmdSeek(handler, opening, 0, OFFSET_END);
+
+         resize_blocks = file->block_count;
+         resize_result = ChangeFileSize(handler, opening, diff, OFFSET_END);
+         /* The outer call accounts for the complete net change below. */
+         handler->block_count -= file->block_count - resize_blocks;
+         if(resize_result != -1)
+         {
+            WriteData(handler, opening,
+               ((UBYTE *)block) + sizeof(struct Block), diff);
+            FreeDataBlock(handler, file, block);
+         }
+         else
+         {
+            AddTail((struct List *)&file->elements, (APTR)block);
+            file->end_length = diff;
+         }
       }
    }
 
