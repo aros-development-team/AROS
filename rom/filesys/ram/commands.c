@@ -2021,23 +2021,34 @@ BOOL CmdRenameObject(struct Handler *handler, struct Lock *old_lock,
 BOOL CmdRenameDisk(struct Handler *handler, STRPTR new_name)
 {
    LONG error = 0;
+   struct Object renamed;
+   struct Object *root = handler->root_dir;
+   PINT block_diff;
 
-   /* Check volume isn't write-protected */
+   renamed.node.ln_Name = NULL;
+   renamed.block_count = 0;
 
    if(handler->locked)
       error = ERROR_DISK_WRITE_PROTECTED;
 
-   /* Rename volume's DOS entry and root directory */
+   /* Prepare the root name without changing the published directory. */
+   if(error == 0 && !SetName(handler, &renamed, new_name))
+      error = IoErr();
+   if(error == 0 && !MyRenameDosEntry(handler, handler->volume, new_name))
+      error = IoErr();
 
    if(error == 0)
-      if(!SetName(handler, handler->root_dir, new_name))
-         error = IoErr();
-
-   if(error == 0)
-      if(!MyRenameDosEntry(handler, handler->volume, new_name))
-         error = IoErr();
-
-   /* Return success indicator */
+   {
+      block_diff = SetString(handler, (TEXT **)&root->node.ln_Name, NULL);
+      root->node.ln_Name = renamed.node.ln_Name;
+      root->block_count += renamed.block_count + block_diff;
+      handler->block_count += block_diff;
+   }
+   else
+   {
+      SetString(handler, (TEXT **)&renamed.node.ln_Name, NULL);
+      handler->block_count -= renamed.block_count;
+   }
 
    SetIoErr(error);
    return error == 0;
