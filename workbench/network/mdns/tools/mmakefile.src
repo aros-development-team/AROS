@@ -1,0 +1,43 @@
+include $(SRCDIR)/config/aros.cfg
+
+# Command-line tools on bonami.library, installed in C: beside the other
+# network commands: dnssd in the manner of dns-sd and avahi-browse, and
+# Nearby, Share and Handshake, which say the same in plain words. Each is
+# built with the helpers they share, in an object directory of its own.
+
+# gnu99: strict c99 removes the 'asm' keyword the inline LVO headers need
+USER_CFLAGS := $(CFLAGS_GNU99)
+
+#MM- workbench-network-mdns : workbench-network-mdns-tools
+#MM- workbench-network-mdns-tools : \
+#MM      workbench-network-mdns-tools-dnssd \
+#MM      workbench-network-mdns-tools-nearby \
+#MM      workbench-network-mdns-tools-share \
+#MM      workbench-network-mdns-tools-handshake
+
+#MM workbench-network-mdns-tools-dnssd : workbench-network-mdns-includes \
+#MM      workbench-network-mdns-bonami-includes
+#MM workbench-network-mdns-tools-nearby : workbench-network-mdns-includes \
+#MM      workbench-network-mdns-bonami-includes
+#MM workbench-network-mdns-tools-share : workbench-network-mdns-includes \
+#MM      workbench-network-mdns-bonami-includes
+#MM workbench-network-mdns-tools-handshake : workbench-network-mdns-includes \
+#MM      workbench-network-mdns-bonami-includes
+
+%build_prog mmake=workbench-network-mdns-tools-dnssd \
+    progname=dnssd targetdir=$(AROS_C) \
+    files="dnssd ba_common" objdir="$(GENDIR)/$(CURDIR)/dnssd"
+
+%build_prog mmake=workbench-network-mdns-tools-nearby \
+    progname=Nearby targetdir=$(AROS_C) \
+    files="nearby ba_common ba_types" objdir="$(GENDIR)/$(CURDIR)/nearby"
+
+%build_prog mmake=workbench-network-mdns-tools-share \
+    progname=Share targetdir=$(AROS_C) \
+    files="share ba_common ba_types" objdir="$(GENDIR)/$(CURDIR)/share"
+
+%build_prog mmake=workbench-network-mdns-tools-handshake \
+    progname=Handshake targetdir=$(AROS_C) \
+    files="handshake ba_common ba_types" objdir="$(GENDIR)/$(CURDIR)/handshake"
+
+%common
