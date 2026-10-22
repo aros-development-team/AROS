@@ -12,6 +12,9 @@ USER_INCLUDES  := -I $(SRCDIR)/$(CURDIR)/includes
 #MM- test : test-lowlevel
 #MM- test-quick : test-lowlevel-quick
 
+#MM- test-lowlevel : test-lowlevel-elapsedtime
+#MM- test-lowlevel-quick : test-lowlevel-elapsedtime-quick
+
 # The mouse regression reads native Amiga hardware registers.
 #MM- test-lowlevel-amiga-m68k : test-lowlevel-mouse
 #MM- test-lowlevel-amiga-m68k-quick : test-lowlevel-mouse-quick
