@@ -106,6 +106,36 @@ void FreeImages(struct DecorImages * di)
 
 /* ========== Library Entry Points ========== */
 
+/*****************************************************************************
+    NAME
+        struct DecorImages * DTNewDecorImages(
+
+    SYNOPSIS
+        )
+
+    FUNCTION
+        Allocate an empty, independently owned decoration-image set.
+
+    INPUTS
+        None.
+
+    RESULT
+        Owned DecorImages with all image pointers NULL, or NULL on allocation failure.
+
+    NOTES
+        No image data is loaded or allocated. Populate image fields only with
+        containers owned exclusively by this set and suitable for disposal
+        through decorator.library/DDisposeImageContainer(). Each non-NULL
+        container must appear in at most one field and have no other owner.
+
+        Free the set with DTFreeImages() when no renderer or element descriptor
+        uses it. Do not insert borrowed images from a theme or screen instance.
+        Call in task context with decortheme.library open.
+
+    SEE ALSO
+        DTFreeImages(), DTGetImages()
+
+*****************************************************************************/
 AROS_LH0(struct DecorImages *, DTNewDecorImages,
     struct Library *, DecorThemeBase, 11, Decortheme)
 {
@@ -114,6 +144,37 @@ AROS_LH0(struct DecorImages *, DTNewDecorImages,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+    NAME
+        void DTFreeImages(
+
+    SYNOPSIS
+        struct DecorImages *di)
+
+    FUNCTION
+        Dispose the images in an independently owned set and free the set.
+
+    INPUTS
+        di - Non-NULL, owned DecorImages returned by DTNewDecorImages().
+            Each image field must be NULL or own a distinct disposable container.
+
+    RESULT
+        None.
+
+    NOTES
+        Every image field is disposed through decorator.library, then the set
+        is freed. NULL image fields are accepted; a NULL set pointer is not.
+        Stop all rendering and release users of its images before calling.
+        There is no reference count, alias detection or synchronization.
+
+        Do not pass the borrowed result of DTGetImages() or a screen instance's
+        dts_Images. Their owning theme or screen instance releases those sets.
+        Call once, in task context with decortheme.library open.
+
+    SEE ALSO
+        DTNewDecorImages(), DTFreeTheme(), DTReleaseScreenTheme()
+
+*****************************************************************************/
 AROS_LH1(void, DTFreeImages,
     AROS_LHA(struct DecorImages *, di, A0),
     struct Library *, DecorThemeBase, 12, Decortheme)
