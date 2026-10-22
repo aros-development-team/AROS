@@ -136,6 +136,50 @@ ULONG *ScaleBuffer(ULONG *srcdata, LONG widthBuffer, LONG widthSrc, LONG heightS
     return scaleddata;
 }
 
+/*****************************************************************************
+    NAME
+        ULONG * DScaleBuffer(
+
+    SYNOPSIS
+        ULONG *srcdata, LONG widthBuffer, LONG widthSrc, LONG heightSrc, LONG widthDest, LONG heightDest)
+
+    FUNCTION
+        Scale a rectangular array of 32-bit pixels into a new packed buffer.
+
+    INPUTS
+        srcdata - Non-NULL readable pixel pointer at the source rectangle's
+            top-left pixel. Storage must remain valid until return.
+        widthBuffer - Source row stride in pixels, at least widthSrc.
+        widthSrc, heightSrc - Positive source dimensions, at most 65535 each.
+        widthDest, heightDest - Positive destination dimensions. Products,
+            row offsets and scaling accumulators must fit target arithmetic.
+
+    RESULT
+        New widthDest*heightDest ULONG buffer on normal completion. Free it
+        with FreeVec(). Allocation failure is not reliably reported as NULL.
+
+    NOTES
+        Scaling selects source samples without interpolation or color/alpha
+        conversion. All four bytes of a selected pixel are copied unchanged.
+        The output is tightly packed. The source is neither modified nor
+        retained; a subrectangle may use a larger source stride.
+
+        No bounds or arithmetic-overflow checks are performed. Source sample
+        indices use 16-bit storage. Provide enough source storage for all rows
+        and keep scaled sizes within the allocator's byte-size limit.
+
+        Call in task context with decorator.library open. Processing is
+        synchronous and has no cancellation or timeout.
+
+    BUGS
+        The output and horizontal sampling-table allocations are used without
+        NULL checks. Memory exhaustion can cause invalid memory access rather
+        than returning an error. Nonpositive dimensions are not supported.
+
+    SEE ALSO
+        DScaleDecorImage(), FreeVec()
+
+*****************************************************************************/
 AROS_LH6(ULONG *, DScaleBuffer,
     AROS_LHA(ULONG *, srcdata, A0),
     AROS_LHA(LONG, widthBuffer, D0),
@@ -174,6 +218,40 @@ void DisposeImageContainer(struct DecorImage *di)
     }
 }
 
+/*****************************************************************************
+    NAME
+        void DDisposeImageContainer(
+
+    SYNOPSIS
+        struct DecorImage *di)
+
+    FUNCTION
+        Release an owned ARGB image container and its associated resources.
+
+    INPUTS
+        di - Owned DecorImage, or NULL for no operation.
+
+    RESULT
+        None.
+
+    NOTES
+        Releases the pixel buffer, filename, subimage decision table and
+        auxiliary bitmap. If a datatype object is present, it is disposed;
+        its bitmap and mask are not separately freed. An unrelated bitmap
+        assigned only to the bitmap field is not independently released.
+
+        Stop all rendering and other access before disposal. The call does
+        not detach element descriptors, release references held elsewhere or
+        detect shared ownership. Each owned allocation must have one owner.
+        Do not dispose images borrowed from a theme or screen instance.
+
+        Call once in task context with decorator.library open. Do not reuse
+        the container or any pointers into its owned resources after return.
+
+    SEE ALSO
+        DNewDecorImageContainer(), DGetImageFromFile(), DScaleDecorImage()
+
+*****************************************************************************/
 AROS_LH1(void, DDisposeImageContainer,
     AROS_LHA(struct DecorImage *, di, A0),
     struct Library *, DecoratorBase, 8, Decorator)
@@ -193,6 +271,31 @@ void DisposeLUT8ImageContainer(struct DecorImageLUT8 *di)
     }
 }
 
+/*****************************************************************************
+    NAME
+        void DDisposeLUT8ImageContainer(
+
+    SYNOPSIS
+        struct DecorImageLUT8 *di)
+
+    FUNCTION
+        Release an owned eight-bit image container and its pixel buffer.
+
+    INPUTS
+        di - Owned DecorImageLUT8, or NULL for no operation.
+
+    RESULT
+        None.
+
+    NOTES
+        Stop all access before calling. The buffer and container are freed;
+        no reference counting, synchronization or shared-buffer detection is
+        performed. Call once in task context with decorator.library open.
+
+    SEE ALSO
+        DNewLUT8ImageContainer()
+
+*****************************************************************************/
 AROS_LH1(void, DDisposeLUT8ImageContainer,
     AROS_LHA(struct DecorImageLUT8 *, di, A0),
     struct Library *, DecoratorBase, 12, Decorator)
@@ -222,6 +325,35 @@ struct DecorImageLUT8 *NewLUT8ImageContainer(UWORD w, UWORD h)
     return di;
 }
 
+/*****************************************************************************
+    NAME
+        struct DecorImageLUT8 * DNewLUT8ImageContainer(
+
+    SYNOPSIS
+        UWORD w, UWORD h)
+
+    FUNCTION
+        Allocate an empty eight-bit image container and pixel buffer.
+
+    INPUTS
+        w, h - Positive pixel dimensions. The product must fit the target's
+            signed multiplication and allocation limits; it is not checked.
+
+    RESULT
+        Owned DecorImageLUT8, or NULL if either allocation fails.
+
+    NOTES
+        The tightly packed w*h byte buffer is cleared. No palette is allocated
+        or attached. Pixel interpretation belongs to the consuming operation;
+        DRegionFromLUT8Image() treats zero as transparent and nonzero as opaque.
+
+        Release the container with DDisposeLUT8ImageContainer(). Call in task
+        context with decorator.library open; do not use zero dimensions.
+
+    SEE ALSO
+        DDisposeLUT8ImageContainer(), DRegionFromLUT8Image()
+
+*****************************************************************************/
 AROS_LH2(struct DecorImageLUT8 *, DNewLUT8ImageContainer,
     AROS_LHA(UWORD, w, D0),
     AROS_LHA(UWORD, h, D1),
@@ -254,6 +386,42 @@ struct DecorImage *NewDecorImageContainer(UWORD w, UWORD h)
     return di;
 }
 
+/*****************************************************************************
+    NAME
+        struct DecorImage * DNewDecorImageContainer(
+
+    SYNOPSIS
+        UWORD w, UWORD h)
+
+    FUNCTION
+        Allocate an empty ARGB image container and pixel buffer.
+
+    INPUTS
+        w, h - Positive pixel dimensions. Their product and the four-byte
+            pixel allocation must fit the target's arithmetic and allocation
+            limits; no size validation is performed.
+
+    RESULT
+        Owned DecorImage, or NULL if the container or pixel allocation fails.
+
+    NOTES
+        The buffer is cleared and tightly packed, with four bytes per pixel
+        in alpha, red, green, blue order in memory. The subimage grid is 1 by 1.
+        The ok flag remains FALSE; initialize the pixels and set it TRUE before
+        passing the image to rendering operations that test that flag.
+
+        No filename, datatype object, screen bitmap or subimage decision table
+        is created. This container alone is not a valid source for
+        DCreateDecorImageContainerMatchingScreen(), which expects a filename.
+
+        Release the result with DDisposeImageContainer(). Call in task context
+        with decorator.library open. Zero dimensions have no defined useful
+        image result and must not be used.
+
+    SEE ALSO
+        DDisposeImageContainer(), DScaleDecorImage(), DGetImageFromFile()
+
+*****************************************************************************/
 AROS_LH2(struct DecorImage *, DNewDecorImageContainer,
     AROS_LHA(UWORD, w, D0),
     AROS_LHA(UWORD, h, D1),
@@ -287,6 +455,44 @@ struct DecorImage *ScaleDecorImage(struct DecorImage *oni, UWORD neww, UWORD new
     return di;
 }
 
+/*****************************************************************************
+    NAME
+        struct DecorImage * DScaleDecorImage(
+
+    SYNOPSIS
+        struct DecorImage *di, UWORD neww, UWORD newh)
+
+    FUNCTION
+        Create a scaled copy of an image pixel buffer.
+
+    INPUTS
+        di - Live DecorImage with a non-NULL readable data buffer and positive
+            dimensions. Its ok flag is not checked.
+        neww, newh - Positive destination dimensions whose allocation and
+            scaling arithmetic fit the target's limits.
+
+    RESULT
+        Owned DecorImage on normal completion, or NULL if allocation of the
+        outer container fails. Deeper allocation failures are not reliably
+        reported. Dispose the result with DDisposeImageContainer().
+
+    NOTES
+        The complete source pixel buffer is scaled using DScaleBuffer().
+        The subimage row and column counts are copied without validation;
+        choose destination dimensions that preserve any required grid layout.
+        The returned ok flag is TRUE after successful scaling.
+
+        Filename, datatype object, bitmap, mask and subimage decision table
+        are not copied. The result is a pixel-buffer image, not a screen-matched
+        copy or a filename-backed source for screen matching.
+
+        The source remains owned by the caller. Keep it stable until return.
+        Call synchronously in task context with decorator.library open.
+
+    SEE ALSO
+        DScaleBuffer(), DDisposeImageContainer()
+
+*****************************************************************************/
 AROS_LH3(struct DecorImage *, DScaleDecorImage,
     AROS_LHA(struct DecorImage *, oni, A0),
     AROS_LHA(UWORD, neww, D0),
@@ -384,6 +590,52 @@ struct DecorImage *GetImageFromFile(STRPTR path, STRPTR name, ULONG expectedsubi
     return di;
 }
 
+/*****************************************************************************
+    NAME
+        struct DecorImage * DGetImageFromFile(
+
+    SYNOPSIS
+        STRPTR path, STRPTR name, ULONG expectedsubimagescols, ULONG expectedsubimagesrows)
+
+    FUNCTION
+        Load a picture file into an owned ARGB image container.
+
+    INPUTS
+        path - Non-NULL, NUL-terminated directory path.
+        name - Non-NULL, NUL-terminated name appended with DOS AddPart().
+        expectedsubimagescols, expectedsubimagesrows - Positive grid counts
+            stored in the result. Supply counts consistent with the image
+            dimensions; this function does not validate the grid.
+
+    RESULT
+        Owned DecorImage, or NULL when the file cannot be opened as a picture,
+        no bitmap header is available, or checked image allocation fails.
+        A non-NULL result does not prove that pixel decoding succeeded.
+
+    NOTES
+        The image contains tightly packed ARGB bytes. For indexed pictures
+        using a transparent-color index, matching source pixels receive zero
+        alpha and other pixels receive full alpha. The temporary datatype
+        object is disposed before return.
+
+        The combined filename is copied into the result without resolving it
+        to an absolute path. Input strings need remain valid only until return.
+        Use a stable absolute path if the image will later be screen-matched.
+        No extension is added and no alternate filename is tried here.
+
+        Release the result with DDisposeImageContainer(). Call from a DOS
+        process with decorator.library open. File access and picture decoding
+        are synchronous, with no caller timeout.
+
+    BUGS
+        Path and filename allocations are unchecked. Allocation failure can
+        cause invalid memory access. The pixel-read method's result is ignored
+        and ok is set TRUE even if that method fails.
+
+    SEE ALSO
+        DDisposeImageContainer(), DCreateDecorImageContainerMatchingScreen()
+
+*****************************************************************************/
 AROS_LH4(struct DecorImage *, DGetImageFromFile,
     AROS_LHA(STRPTR, path, A0),
     AROS_LHA(STRPTR, name, A1),
@@ -531,6 +783,59 @@ struct DecorImage *CreateDecorImageContainerMatchingScreen(struct DecorImage *in
     return out;
 }
 
+/*****************************************************************************
+    NAME
+        struct DecorImage * DCreateDecorImageContainerMatchingScreen(
+
+    SYNOPSIS
+        struct DecorImage *in, BOOL truecolor, struct Screen *scr)
+
+    FUNCTION
+        Create an image copy prepared for a target screen.
+
+    INPUTS
+        in - Source DecorImage with a valid filename, dimensions and nonzero
+            subimage grid consistent with those dimensions; normally returned
+            by DGetImageFromFile(). NULL requests an empty unusable container.
+        truecolor - TRUE to use copied ARGB data; FALSE to try palette-matched
+            picture loading for the target screen.
+        scr - Live, non-NULL Screen with a valid RastPort.BitMap. Keep the
+            screen open until the returned image has been disposed.
+
+    RESULT
+        Owned DecorImage on normal completion. Check its ok flag before use;
+        a returned container can be unusable. Allocation failures are not
+        reliably converted to a NULL result.
+
+    NOTES
+        Dimensions and grid counts are copied. Source pixels, when present,
+        are copied into a separate allocation. The source remains caller-owned
+        and must stay stable until return; it is not retained afterward.
+
+        The palette path first loads filename with _LUT appended, then tries
+        the original file remapped to scr. The true-color path does not reopen
+        the file, but still requires a valid source filename. Relative names
+        use the process's current directory at conversion time.
+
+        For copied pixels, fully opaque subimages are recorded in a decision
+        table and may receive an auxiliary screen-compatible bitmap. No grid,
+        buffer-size or arithmetic validation is performed. A zero grid count
+        can cause division by zero.
+
+        Dispose the result with DDisposeImageContainer() before closing scr.
+        Call from a DOS process with decorator.library open. Conversion and
+        any picture loading are synchronous and have no caller timeout.
+
+    BUGS
+        Several allocations and rendering resources are used without checks.
+        Memory exhaustion can cause invalid memory access. When palette loading
+        succeeds and copied source pixels are also present, the datatype-object
+        pointer is cleared without disposal, leaking its owned resources.
+
+    SEE ALSO
+        DGetImageFromFile(), DDisposeImageContainer()
+
+*****************************************************************************/
 AROS_LH3(struct DecorImage *, DCreateDecorImageContainerMatchingScreen,
     AROS_LHA(struct DecorImage *, in, A0),
     AROS_LHA(BOOL, truecolor, D0),
@@ -596,6 +901,46 @@ struct Region *RegionFromLUT8Image(int w, int h, struct DecorImageLUT8 *s)
     return shape;
 }
 
+/*****************************************************************************
+    NAME
+        struct Region * DRegionFromLUT8Image(
+
+    SYNOPSIS
+        int w, int h, struct DecorImageLUT8 *s)
+
+    FUNCTION
+        Build a region from nonzero pixels in an eight-bit image.
+
+    INPUTS
+        w, h - Intended overall region width and height. Use positive values
+            representable by graphics Rectangle coordinates.
+        s - Live DecorImageLUT8 with readable, tightly packed data, or NULL.
+            Its width and height must fit the region coordinate range.
+
+    RESULT
+        Owned Region, or NULL for a NULL source, failure to allocate a region,
+        or a detected rectangle-insertion failure. Release it with DisposeRegion().
+
+    NOTES
+        Each nonzero source pixel contributes to opaque horizontal runs;
+        zero pixels are transparent. Source rows use s->w and s->h directly.
+        The function also adds the rectangle from (0, s->h) through (w-1, h-1)
+        below the source image. It does not scale or clip source runs to w or h;
+        use w >= s->w and h >= s->h for a containing extent.
+
+        The source buffer is borrowed only until return. Region construction
+        is synchronous and does not acquire a reference or lock the image.
+        Call in task context with decorator.library open.
+
+    BUGS
+        Failure to add a run ending at a transparent pixel is ignored; only
+        the lower rectangle and runs reaching the row end are checked. A
+        non-NULL result can therefore be incomplete after allocation failure.
+
+    SEE ALSO
+        DNewLUT8ImageContainer(), DisposeRegion()
+
+*****************************************************************************/
 AROS_LH3(struct Region *, DRegionFromLUT8Image,
     AROS_LHA(int, w, D0),
     AROS_LHA(int, h, D1),
