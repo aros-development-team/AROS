@@ -119,6 +119,10 @@ struct PosixCIntBase
     struct Task *upath_task;
     struct MinList upath_others;
     struct SignalSemaphore upath_sem;
+
+    /* __threadhook.c: stdc/stdcio bases opened by posixc itself */
+    struct StdCBase *own_stdcbase;
+    struct StdCIOBase *own_stdciobase;
 };
 
 /* flags; values of flags are power of two so they can be ORed together */
