@@ -240,6 +240,7 @@ main(void)
         if (running && mdnsNow() - lastReap >= MDNSD_REAP_SECONDS) {
             lastReap = mdnsNow();
             mdnsClientReap(md);
+            mdnsDiscoveryReap(md);
         }
 
         mdnsDiscoveryTick(md);

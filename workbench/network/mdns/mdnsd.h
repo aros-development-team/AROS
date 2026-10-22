@@ -163,6 +163,7 @@ mdnsTextCopy(char *to, LONG size, const char *from)
 
 /* mdns_discovery.c: daemon-owned cache and bounded event queues. */
 LONG mdnsDiscoveryMessage(struct MDNSDaemon *md, struct MDNSIPCMsg *msg);
+void mdnsDiscoveryReap(struct MDNSDaemon *md);
 void mdnsDiscoveryRecord(struct MDNSDaemon *md, const struct MDNSRecord *r,
     const UBYTE *pkt, LONG length, LONG ownerOffset);
 void mdnsDiscoveryTick(struct MDNSDaemon *md);

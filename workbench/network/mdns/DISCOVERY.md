@@ -81,7 +81,8 @@ Each operation belongs to its creating Exec task ID. Another task cannot
 read, request or stop it. Stop removes both queued events and the operation
 before replying, so afterwards its reference cannot deliver another event.
 Close of the engine/the task's last library close releases all operations;
-daemon cleanup reaps owners using `FindTaskByPID()`. A client may read
+the daemon's five-second reap timer removes those of a task that ended
+without stopping them, found with `FindTaskByPID()`. A client may read
 slowly, exit or fail without executing anything in mdnsd.
 
 ## Optional wakeup: a lent request
@@ -131,8 +132,11 @@ its queue is empty, and `MDNSERR_BUSY` after queue/cache exhaustion. A busy
 subscription is terminal: stop it, discard the client's cached view and
 resubscribe. It never silently drops a removal while pretending the event
 stream is complete. These are snapshots: an unconsumed update for the same
-name/type/interface replaces its earlier queued snapshot. Consumers must
-replace entries by that identity rather than count ADD/REMOVE pairs.
+name/type/interface replaces its earlier queued snapshot. When an instance
+changes while its removal is still unread, the caller sees only the newest
+state: the queued removal is replaced by the addition that follows it.
+Consumers must replace entries by that identity rather than count
+ADD/REMOVE pairs.
 
 ## Data and wire behavior
 
@@ -149,20 +153,35 @@ counted, including literal dots/backslashes in the instance; the registration
 API's existing dot restriction does not apply to received discovery labels.
 Instances containing embedded NUL cannot be represented and are rejected.
 
-The cache is keyed by interface, owner/type and data. PTR, SRV, TXT and A have
-independent expirations and refresh queries. Browsing retries exponentially,
+The cache is keyed by interface, owner/type and data, and holds only what an
+active operation can reach: the PTRs of a browsed type, the SRV and TXT of an
+instance of a browsed type or of an instance being resolved, and the A of a
+host such an SRV names. Records of services nobody asked for are not cached,
+refreshed or queried for (RFC 6762 section 5.2). An A record that arrives
+before any SRV naming its host is held for one second (eight at most) and
+cached when that SRV comes; an older one is asked for again by the
+missing-record query. When the cache is full, the oldest
+record no operation reaches any more gives way; only if every record is
+still reached are the operations that want the new record failed with
+`MDNSERR_BUSY`. PTR, SRV, TXT and A have independent expirations and refresh
+queries. Browsing retries exponentially,
 up to one hour, and queries list known answers with enough remaining TTL.
 Missing components are queried separately. Goodbye and cache-flush handling
 allow a one-second rescue period; recently received members of an RRset are
 protected from a flush. A snapshot becomes unavailable if any required record
-expires. Arrival order does not matter. Network changes clear the old views,
+expires. Apart from an A that comes more than a second before its SRV,
+arrival order does not matter. Network changes clear the old views,
 report removals and restart queries. Resolve is a one-shot result; browse
 tracks subsequent changes.
 
 ## Deliberate bounds and open review points
 
 Lazy cache allocation holds 128 records, 32 service views and 16 operations
-(at most four per task), with eight pending snapshots per operation. TXT is
+(at most four per task), with eight pending snapshots per operation. Views
+exist only for instances of browsed types; more than 32 of them fail the
+browses of the type that overflowed, once, and no other operation. The views
+are rebuilt only when the cache or the operations change or a record
+expires, not on every pass of mdnsd's loop. TXT is
 limited to the parent parser's 512-byte record buffer; larger TXT cannot be
 resolved here. Cache lifetimes are conservatively capped at 4500 seconds.
 A multihomed/round-robin service exposes one currently selected address per
@@ -174,6 +193,9 @@ into this discovery cache. This slice discovers remote peers; explicit local
 reflection needs additional work. IPv6, passive duplicate-question suppression,
 negative caching/NSEC and continuation of oversized known-answer lists are
 not implemented. The parent service's other RFC limitations still apply.
+
+Discovery adds LVOs 20 and 21 after the table of upstream Bonami; whether
+that numbering may be taken is part of the event-delivery decision in #1559.
 
 Callers should read with a finite per-iteration budget. The original Hook
 API is refused rather than served through a dispatcher process. Full RFC,
