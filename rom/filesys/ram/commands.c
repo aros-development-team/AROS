@@ -1226,7 +1226,7 @@ struct Lock *CmdCreateDir(struct Handler *handler,
                else
                {
                   error = IoErr();
-                  DeleteObject(handler, dir);
+                  AttemptDeleteObject(handler, dir, FALSE);
                }
             }
             else
