@@ -1,4 +1,5 @@
 /*
+    Copyright (C) 2026 John KNIPPER <code@jkn.me>.
     Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
@@ -95,75 +96,28 @@
 
     if (!desc)
     {
-        /* Descriptor owned by another subsystem (e.g. a bsdsocket socket).
-           Honour the descriptor- and status-flag commands as best-effort
-           no-ops so that callers setting FD_CLOEXEC / O_NONBLOCK during
-           socket setup succeed and keep using the descriptor. */
-        APTR data;
-        const struct fd_hooks *hooks = __getfdhooks(fd, &data);
-        if (hooks)
-        {
-            switch (cmd)
-            {
-                case F_GETFD: return 0;
-                case F_SETFD: return 0;
-                case F_GETFL:
-                {
-                    /* Report the real non-blocking state so callers that read,
-                       modify and write back the flags behave correctly. */
-                    LONG e2 = 0, nb = 0;
-                    if (hooks->fdh_ioctl)
-                        nb = hooks->fdh_ioctl(data, fd, FIONBIO, NULL, &e2);
-                    return O_RDWR | (nb > 0 ? O_NONBLOCK : 0);
-                }
-                case F_SETFL:
-                {
-                    va_list ap;
-                    int arg, nb;
-                    LONG e2 = 0;
-                    va_start(ap, cmd);
-                    arg = va_arg(ap, int);
-                    va_end(ap);
-                    nb = (arg & O_NONBLOCK) ? 1 : 0;
-                    if (hooks->fdh_ioctl)
-                        hooks->fdh_ioctl(data, fd, FIONBIO, &nb, &e2);
-                    return 0;
-                }
-                case F_DUPFD:
-                {
-                    va_list ap;
-                    int arg;
-                    va_start(ap, cmd);
-                    arg = va_arg(ap, int);
-                    va_end(ap);
-                    return dup2(fd, __getfirstfd(arg));
-                }
-                default:
-                    errno = EINVAL;
-                    return -1;
-            }
+        LONG err=0;
+        int arg=0;
+        SIPTR result;
+        if (cmd==F_SETFD || cmd==F_SETFL || cmd==F_DUPFD) {
+            va_list ap;va_start(ap,cmd);arg=va_arg(ap,int);va_end(ap);
         }
-        errno = EBADF;
-        return -1;
+        result=__fdhook(fd,__FDH_FCNTL,cmd,arg,0,&err);
+        if (result<0) errno=err;
+        return result;
     }
 
     switch (cmd)
     {
         case F_DUPFD:
+        case F_DUPFD_CLOEXEC:
         {
             va_list ap;
-            int     arg;
-            
+            int minimum;
             va_start(ap, cmd);
-            arg = va_arg(ap, int);
+            minimum = va_arg(ap, int);
             va_end(ap);
-            
-            /*
-                FIXME: FD_CLOEXEC must be off on the copy, once this flag
-                       is supported (related to F_GETFD and F_SETFD).
-            */
-            
-            return dup2(fd, __getfirstfd(arg));
+            return __dupfd(fd, minimum, cmd == F_DUPFD_CLOEXEC ? FD_CLOEXEC : 0);
         }
         case F_GETFD:
             return desc->fdflags;

@@ -1,9 +1,15 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
+    Copyright (C) 2026 John KNIPPER <code@jkn.me>.
+    Licensed under the AROS Public License (APL), Version 1.1.
 
     Read from a file at a given offset.
 */
 #include <errno.h>
+#include <fcntl.h>
+#include <proto/dos.h>
+#include "__fdesc.h"
+#include "__dos64.h"
 
 /*****************************************************************************
 
@@ -33,10 +39,11 @@
         with errno set.
 
     NOTES
-        Implemented with lseek64() and read(), so unlike POSIX it is not
-        atomic: another thread using the same descriptor at the same time
-        may see the offset move. Since lseek() past the end extends a file,
-        an offset at or beyond the end returns 0 without seeking.
+        The fcb semaphore spans position capture, seek, read and restoration.
+        Other POSIX/stdio users of duplicated descriptors use the same lock,
+        so they cannot observe the temporary position. Reads at or beyond EOF
+        do not seek or extend the file. Restoration uses the DOS primitive,
+        which cannot silently grow the file like lseek64()'s fallback.
 
     EXAMPLE
 
@@ -49,35 +56,52 @@
 
 ******************************************************************************/
 {
-    __off64_t old, size;
-    ssize_t cnt;
-    int error;
+    fdesc *fdesc = __getfdesc(d);
+    QUAD old, size, count = -1;
+    int error = 0;
 
-    if (offset < 0)
-    {
-        errno = EINVAL;
-        return -1;
+    if (!fdesc) { errno = EBADF; return -1; }
+    if (offset < 0) { errno = EINVAL; return -1; }
+    if (nbytes && !buf) { errno = EFAULT; return -1; }
+
+    __fcb_lock(fdesc->fcb);
+    if ((fdesc->fcb->flags & O_ACCMODE) == O_WRONLY) {
+        error = EBADF;
+        goto done;
     }
-
-    old = lseek64(d, 0, SEEK_CUR);
-    if (old == -1)
-        return -1;
-    size = lseek64(d, 0, SEEK_END);
-    if (size == -1)
-        return -1;
-    if (offset >= size || nbytes == 0)
-    {
-        lseek64(d, old, SEEK_SET);
-        return 0;
+    if (fdesc->fcb->privflags & _FCB_ISDIR) {
+        error = EISDIR;
+        goto done;
     }
-
-    if (lseek64(d, offset, SEEK_SET) == -1)
-        cnt = -1;
-    else
-        cnt = read(d, buf, nbytes);
-
-    error = errno;
-    lseek64(d, old, SEEK_SET);
-    errno = error;
-    return cnt;
+    FLUSHONREADCHECK
+    old = __dos64_getpos(fdesc->fcb);
+    if (old < 0) {
+        error = __stdc_ioerr2errno(IoErr());
+        goto done;
+    }
+    if (!nbytes) { count = 0; goto done; }
+    size = __dos64_getsize(fdesc->fcb);
+    if (size < 0) {
+        error = __stdc_ioerr2errno(IoErr());
+        goto restore;
+    }
+    if (offset >= size) { count = 0; goto done; }
+    if (__dos64_seek(fdesc->fcb, offset, OFFSET_BEGINNING) < 0) {
+        error = __stdc_ioerr2errno(IoErr());
+        goto restore;
+    }
+    if (nbytes > ((size_t)-1 >> 1))
+        nbytes = (size_t)-1 >> 1;
+    count = __dos64_read(fdesc->fcb, buf, nbytes);
+    if (count < 0)
+        error = __stdc_ioerr2errno(IoErr());
+restore:
+    /* A failed restoration is an error even after a successful transfer.
+       Preserve an earlier I/O error when both operations fail. */
+    if (__dos64_seek(fdesc->fcb, old, OFFSET_BEGINNING) < 0 && !error)
+        error = __stdc_ioerr2errno(IoErr());
+done:
+    __fcb_unlock(fdesc->fcb);
+    if (error) { errno = error; return -1; }
+    return (ssize_t)count;
 } /* pread64 */
