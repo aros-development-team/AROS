@@ -1842,9 +1842,8 @@ BOOL CmdSetComment(struct Handler *handler, struct Lock *lock,
    if(error == 0)
    {
       block_diff = SetString(handler, &object->comment, comment);
-      if(block_diff == -1)
-         error = IoErr();
-      else
+      error = IoErr();
+      if(error == 0)
       {
          object->block_count += block_diff;
          handler->block_count += block_diff;
@@ -2383,9 +2382,8 @@ BOOL CmdMakeLink(struct Handler *handler, struct Lock *lock, STRPTR name,
       {
          block_diff =
             SetString(handler, (APTR)&link->soft_link_target, reference);
-         if(block_diff == -1)
-            error = IoErr();
-         else
+         error = IoErr();
+         if(error == 0)
          {
             link->block_count += block_diff;
             handler->block_count += block_diff;
