@@ -1,5 +1,6 @@
 /*
     Copyright (C) 2025-2026, The AROS Development Team. All rights reserved.
+    Copyright (C) 2026, John KNIPPER <code@jkn.me>.
 
     Per-owner operation hooks.  An owner (posixc.library for filesystem
     descriptors, bsdsocket.library for network descriptors) registers one
@@ -57,6 +58,13 @@
         return EINVAL;
 
     ObtainSemaphore(&FDBase->fd_Lock);
+    /* A live lease also retains the old code table through its finalizer.
+       Never wait here: a callback can itself attempt provider withdrawal. */
+    if (FDBase->fd_OwnerUsers[owner] && FDBase->fd_OwnerHooks[owner] != hooks)
+    {
+        ReleaseSemaphore(&FDBase->fd_Lock);
+        return EBUSY;
+    }
     FDBase->fd_OwnerHooks[owner] = hooks;
     ReleaseSemaphore(&FDBase->fd_Lock);
 

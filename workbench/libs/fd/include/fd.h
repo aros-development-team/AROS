@@ -3,6 +3,7 @@
 
 /*
     Copyright (C) 2025-2026, The AROS Development Team. All rights reserved.
+    Copyright (C) 2026, John KNIPPER <code@jkn.me>.
 */
 
 #include <exec/types.h>
@@ -16,6 +17,7 @@ typedef UBYTE fd_owner_t;
 #define FD_OWNER_NONE      ((fd_owner_t)0)
 #define FD_OWNER_POSIXC    ((fd_owner_t)1)
 #define FD_OWNER_BSDSOCKET ((fd_owner_t)2)
+#define FD_OWNER_NATIVE_SOCKET ((fd_owner_t)3) /* task-independent sockets */
 #define FD_OWNER_MAX       ((fd_owner_t)16)   /* size of the owner-hooks table */
 
 /*
@@ -56,6 +58,42 @@ struct fd_hooks
 };
 
 #define FD_HOOKS_VERSION 1
+
+/* An operation lease is zero-initialized, non-copyable and owned by one
+   caller. Keep fd.library open until release. Its binding is coherent and
+   cannot be changed by FD_SetData/FD_Free while held. Providers must use
+   FD_Retire and keep their object alive until the retirement callback;
+   this API cannot retain an object a provider destroys independently.
+   Hook withdrawal/replacement returns EBUSY until every lease and retirement
+   callback has completed. Providers must honor that result before unloading. */
+struct fd_lease
+{
+    fd_owner_t owner;
+    const struct fd_hooks *hooks;
+    APTR data;
+    APTR private_record;
+};
+typedef LONG (*fd_retire_fn)(APTR data, APTR cookie);
+
+LONG FD_Acquire(LONG fd, struct fd_lease *lease);
+/* Returns the finalizer result when this release performs retirement,
+   otherwise zero. An ordinary operation must preserve its own result/errno. */
+LONG FD_Release(struct fd_lease *lease);
+/* Withdraw only the exact reservation held by lease. The number is immediately
+   reusable. Callback runs once, outside registry exclusion, on the final
+   release (possibly in another task). No callback runs inside FD_Retire.
+   The provider owns cancellation, close error reporting and callback context. */
+LONG FD_Retire(struct fd_lease *lease, fd_retire_fn retire, APTR cookie);
+/* Provider-side withdrawal requires no allocation or new lease. The provider
+   must hold its own object reference and serialize its descriptor table while
+   matching fd/owner/data; generic consumers must use lease identity instead.
+   On success the reservation is detached. With no admitted users, the callback
+   runs before return and its result is written to close_error. Otherwise the
+   callback is deferred and close_error is zero. The output pointer is never
+   retained. A nonzero function result means nothing was detached; it is
+   separate from a completed close whose callback reported an error. */
+LONG FD_RetireOwner(LONG fd, fd_owner_t owner, APTR data,
+                   fd_retire_fn retire, APTR cookie, LONG *close_error);
 
 LONG FD_Alloc(LONG startfd, fd_owner_t owner, APTR data, LONG *outfd);
 LONG FD_Reserve(LONG fd, fd_owner_t owner, APTR data);
