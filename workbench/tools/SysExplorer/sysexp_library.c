@@ -70,6 +70,52 @@ AROS_LH0(void, Null,
 
 /** Library API functions **/
 
+/*****************************************************************************
+    NAME
+        void RegisterModule(
+
+    SYNOPSIS
+        struct SysexpModule *Module, APTR ModBase)
+
+    FUNCTION
+        Register a SysExplorer module for startup, lookup and shutdown.
+
+    INPUTS
+        Module - Module descriptor, or NULL for no operation. sem_Node.ln_Name
+            must point to a persistent NUL-terminated module identifier.
+            sem_Node.ln_Pri sets startup and shutdown order. sem_Startup and
+            sem_Shutdown may be NULL.
+        ModBase - Open module-library base whose open reference will be closed
+            by the host at shutdown.
+
+    RESULT
+        None.
+
+    NOTES
+        The descriptor is copied; the name and callback pointers are retained.
+        The original descriptor may be reused after return, but its referenced
+        storage and callback code must remain valid through host shutdown.
+        Registration does not open the module or invoke either callback.
+
+        Register once during module initialization, before the host traverses
+        its module list. Higher priorities run first; equal priorities retain
+        registration order. Shutdown uses the same order as startup, calls
+        sem_Shutdown when present, then closes the registered module base.
+        Callbacks receive the host SysexpBase.
+
+        Use the host-supplied SysexpBase in task context. Serialize registry
+        access; registration and lookup do not acquire locks. There is no
+        unregister operation or automatic startup of a late registration.
+
+    BUGS
+        Allocation failure is not checked and can cause an invalid memory
+        access. Duplicate registrations are accepted and can cause repeated
+        callbacks and multiple closes of the same module.
+
+    SEE ALSO
+        GetBase(), RegisterBase()
+
+*****************************************************************************/
 AROS_LH2(void, RegisterModule,
          AROS_LHA(struct SysexpModule *, Module, A0),
          AROS_LHA(APTR, ModBase, A1),
@@ -91,6 +137,43 @@ AROS_LH2(void, RegisterModule,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+    NAME
+        void RegisterBase(
+
+    SYNOPSIS
+        CONST_STRPTR BaseID, APTR Base)
+
+    FUNCTION
+        Associate an identifier with a pointer in the SysExplorer registry.
+
+    INPUTS
+        BaseID - Persistent, non-NULL, NUL-terminated identifier.
+        Base - Pointer to publish. NULL is stored as a value.
+
+    RESULT
+        None.
+
+    NOTES
+        BaseID and Base are retained without copying or acquiring ownership.
+        Keep their storage valid while the host can query or use the entry.
+        The registry accepts library bases, class pointers and other values;
+        the identifier's provider defines the result type.
+
+        New entries are appended. Registering an existing identifier does not
+        replace it: GetBase() returns the first registered matching base.
+        Generic-base entries take precedence over module names.
+
+        Call with the host-supplied SysexpBase in task context. Serialize
+        registration with lookup. No unregister operation is provided.
+
+    BUGS
+        Allocation failure is not checked and can cause an invalid memory access.
+
+    SEE ALSO
+        GetBase(), RegisterModule()
+
+*****************************************************************************/
 AROS_LH2(void, RegisterBase,
          AROS_LHA(CONST_STRPTR, BaseID, A0),
          AROS_LHA(APTR, Base, A1),
@@ -110,6 +193,40 @@ AROS_LH2(void, RegisterBase,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+    NAME
+        APTR GetBase(
+
+    SYNOPSIS
+        CONST_STRPTR BaseID)
+
+    FUNCTION
+        Find a registered SysExplorer base or module by identifier.
+
+    INPUTS
+        BaseID - Non-NULL, NUL-terminated identifier; comparison is case-sensitive.
+
+    RESULT
+        Borrowed pointer from the first matching generic-base entry, otherwise
+        from the first matching module, or NULL if neither matches. A stored
+        NULL base is indistinguishable from absence and prevents module fallback.
+
+    NOTES
+        Generic bases are searched in registration order, then modules in
+        priority order. Matching requires the complete identifier; there is
+        no prefix matching or type validation.
+
+        The call does not open a library or retain the result. Interpret it
+        according to the identifier's provider and keep that provider alive.
+        Do not close a module-library base obtained only through this lookup.
+
+        Use the host-supplied SysexpBase and serialize access with registration.
+        Lookup does not acquire a lock or invoke module callbacks.
+
+    SEE ALSO
+        RegisterBase(), RegisterModule()
+
+*****************************************************************************/
 AROS_LH1(APTR, GetBase,
          AROS_LHA(CONST_STRPTR, BaseID, A0),
          struct SysexpBase *, SysexpBase, 7, Sysexp)
@@ -136,6 +253,58 @@ AROS_LH1(APTR, GetBase,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+    NAME
+        BOOL RegisterClassHandler(
+
+    SYNOPSIS
+        CONST_STRPTR classid, BYTE pri, struct MUI_CustomClass *customwinclass, CLASS_ENUMFUNC enumfunc, CLASS_VALIDFUNC validfunc)
+
+    FUNCTION
+        Register or replace a SysExplorer handler for an OOP class.
+
+    INPUTS
+        classid - Persistent, non-NULL, NUL-terminated class identifier.
+        pri - Signed priority. Higher-priority handlers are considered first.
+        customwinclass - Borrowed MUI custom class for the property window,
+            or NULL for no property window.
+        enumfunc - CLASS_ENUMFUNC callback, or NULL for no child enumeration.
+        validfunc - CLASS_VALIDFUNC callback, or NULL to accept the object.
+
+    RESULT
+        TRUE if the handler was inserted or replaced; FALSE on allocation
+        failure or if an existing handler has a non-NULL enumerator other
+        than the host's HWEnum.Func callback. A NULL existing enumerator may
+        be replaced.
+
+    NOTES
+        The class identifier, custom class and callbacks are retained. Keep
+        them valid while the host uses the handler. No callback is invoked
+        by registration. There is no unregister operation.
+
+        A replacement changes all fields and reorders the entry by priority.
+        Equal priorities retain insertion order; a replacement goes after
+        existing entries of the same priority. Register specific subclasses
+        before broader classes by assigning them higher priorities.
+
+        During host enumeration, validfunc(obj, flags) returns TRUE to accept
+        an object or FALSE to omit it and its descendants. flags initially
+        contains TNF_LIST|TNF_OPEN when enumfunc is present, otherwise zero;
+        the callback may adjust these tree flags. Do not retain flags.
+
+        For a visible accepted object, enumfunc(obj, parent) is called with
+        its new tree node when TNF_LIST remains set. For a skipped class, the
+        host calls the enumerator with the existing parent instead. Callback
+        objects and tree nodes are borrowed; do not dispose them.
+
+        Call in the host task during setup, before enumeration. No registry
+        lock is taken; serialize registration, lookup and callback use.
+        Registration does not refresh existing tree nodes or property windows.
+
+    SEE ALSO
+        FindClassHandler(), FindObjectHandler(), RegisterSkipClass()
+
+*****************************************************************************/
 AROS_LH5(BOOL, RegisterClassHandler,
          AROS_LHA(CONST_STRPTR, classid, A0),
          AROS_LHA(BYTE, pri, D0),
@@ -182,6 +351,36 @@ AROS_LH5(BOOL, RegisterClassHandler,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+    NAME
+        struct ClassHandlerNode * FindClassHandler(
+
+    SYNOPSIS
+        CONST_STRPTR classid, struct List *_handlers)
+
+    FUNCTION
+        Find the first handler whose class identifier matches exactly.
+
+    INPUTS
+        classid - Non-NULL, NUL-terminated class identifier.
+        _handlers - Initialized list of ClassHandlerNode entries with valid
+            names. NULL does not select a default list.
+
+    RESULT
+        Borrowed pointer to the first exact, case-sensitive match, or NULL.
+
+    NOTES
+        The list is searched in its existing order. No superclass lookup or
+        validation callback is performed. The result is not copied or retained;
+        do not unlink or free an entry owned by the registry.
+
+        Keep the list and its entries valid and serialize access with changes.
+        No lock is acquired. A later registration may update the returned node.
+
+    SEE ALSO
+        FindObjectHandler(), RegisterClassHandler()
+
+*****************************************************************************/
 AROS_LH2(struct ClassHandlerNode *, FindClassHandler,
          AROS_LHA(CONST_STRPTR, classid, A0),
          AROS_LHA(struct List *, _handlers, A1),
@@ -204,6 +403,41 @@ AROS_LH2(struct ClassHandlerNode *, FindClassHandler,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+    NAME
+        struct ClassHandlerNode * FindObjectHandler(
+
+    SYNOPSIS
+        OOP_Object *obj, struct List *_handlers)
+
+    FUNCTION
+        Find the first handler matching an object class or one of its superclasses.
+
+    INPUTS
+        obj - Live, non-NULL OOP object with a valid class chain.
+        _handlers - Initialized list of ClassHandlerNode entries with valid
+            class identifiers. NULL does not select a default list.
+
+    RESULT
+        Borrowed matching handler, or NULL if no list entry matches the class chain.
+
+    NOTES
+        List order takes precedence over inheritance distance. Each handler
+        is compared with the object's class and then its superclasses before
+        the next handler is considered. A broad handler earlier in the list
+        can therefore win over a later handler for the exact class.
+
+        Class names must match completely and case-sensitively. This lookup
+        does not call validFunc, create a window or enumerate children.
+
+        Keep the object, class chain, list and entries valid during lookup.
+        The result is not copied or retained. Serialize lookup with registry
+        changes; no lock is acquired. Do not free a registry-owned handler.
+
+    SEE ALSO
+        FindClassHandler(), RegisterClassHandler()
+
+*****************************************************************************/
 AROS_LH2(struct ClassHandlerNode *, FindObjectHandler,
          AROS_LHA(OOP_Object *, obj, A0),
          AROS_LHA(struct List *, _handlers, A1),
@@ -235,6 +469,42 @@ AROS_LH2(struct ClassHandlerNode *, FindObjectHandler,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+    NAME
+        void RegisterSkipClass(
+
+    SYNOPSIS
+        CONST_STRPTR ClassID)
+
+    FUNCTION
+        Hide a class node during SysExplorer hardware-tree enumeration.
+
+    INPUTS
+        ClassID - Non-NULL, NUL-terminated class identifier to copy.
+
+    RESULT
+        None.
+
+    NOTES
+        An exact, case-sensitive duplicate has no effect. The identifier is
+        copied and may be released after return. No unregister operation is
+        provided.
+
+        The host tests an object's concrete class, not its superclasses. When
+        an accepted object is skipped, its enumerator can still add children
+        to the existing parent. The storage module has its own enumeration
+        path and does not apply this skip list.
+
+        Register during host setup, before enumeration. Existing tree nodes
+        are not removed. Serialize access with SkipClass(); no lock is taken.
+
+    BUGS
+        Allocation failure is not checked and can cause an invalid memory access.
+
+    SEE ALSO
+        SkipClass(), RegisterClassHandler()
+
+*****************************************************************************/
 AROS_LH1(void, RegisterSkipClass,
          AROS_LHA(CONST_STRPTR, ClassID, A0),
          struct SysexpBase *, SysexpBase, 15, Sysexp)
@@ -254,6 +524,33 @@ AROS_LH1(void, RegisterSkipClass,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+    NAME
+        BOOL SkipClass(
+
+    SYNOPSIS
+        CONST_STRPTR ClassID)
+
+    FUNCTION
+        Test whether an exact class identifier is in the SysExplorer skip list.
+
+    INPUTS
+        ClassID - Non-NULL, NUL-terminated class identifier.
+
+    RESULT
+        TRUE for an exact, case-sensitive match; FALSE otherwise.
+
+    NOTES
+        This call only queries the list. It does not traverse superclasses,
+        modify the tree or suppress child enumeration.
+
+        Use the host-supplied SysexpBase. Serialize lookup with registration;
+        no lock is acquired. The input string is not retained.
+
+    SEE ALSO
+        RegisterSkipClass()
+
+*****************************************************************************/
 AROS_LH1(BOOL, SkipClass,
          AROS_LHA(CONST_STRPTR, ClassID, A0),
          struct SysexpBase *, SysexpBase, 16, Sysexp)
