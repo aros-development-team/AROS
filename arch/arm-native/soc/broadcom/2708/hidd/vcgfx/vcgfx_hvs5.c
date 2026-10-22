@@ -997,6 +997,57 @@ BOOL vc4_hvs5_mode_apply(struct VideoCoreGfx_staticdata *xsd, ULONG w, ULONG h,
     return ok;
 }
 
+/*
+ * A new mode behind a token framebuffer: our buffer of w x h as a unity
+ * plane in our own list, and the mode set by us - the boot mode too. The
+ * firmware builds no list once a mode of ours has been on, so it is never
+ * asked again (BCM2712 works like this throughout). FALSE, with nothing
+ * changed, when w x h is not a mode we set.
+ */
+BOOL vc4_hvs5_mode_switch(struct VideoCoreGfx_staticdata *xsd, ULONG w, ULONG h,
+                          ULONG fb_phys, ULONG pitch, const struct vcgfx_timing *want)
+{
+    struct vc4_hvs_state *st = &xsd->vcsd_HVS;
+    const struct vcgfx_timing *t, *cur = &xsd->vcsd_HVS5M.m5_CurTiming;
+    ULONG base;
+    BOOL boot;
+
+    if (!st->hvs_Active || !st->hvs_Tiny || (pitch < w * 4)
+        || !(t = vc4_hvs5_mode_lookup(xsd, w, h, want, &boot)))
+        return FALSE;
+
+    st->hvs_ShowPtr   = fb_phys;
+    st->hvs_ShowPitch = pitch;
+    st->hvs_ShowW     = w;
+    st->hvs_ShowH     = h;
+    st->hvs_FBPtr     = fb_phys;
+    st->hvs_FBPitch   = pitch;
+    st->hvs_FBX       = 0;
+    st->hvs_FBY       = 0;
+    st->hvs_SrcW      = st->hvs_DestW = w;
+    st->hvs_SrcH      = st->hvs_DestH = h;
+    st->hvs_OvlUsable = TRUE;
+    st->hvs_FBLBM     = HVS5_LBM_TOP;
+
+    VC4_MBOX_LOCK(xsd);
+    base = hvs5_build_list(xsd);
+    if ((t->hdisp == cur->hdisp) && (t->vdisp == cur->vdisp) && (t->clock == cur->clock))
+    {
+        /* Same timing: only the buffer changes, at the next vblank */
+        hvs5_commit(st, base);
+        st->hvs_FlipArmed = st->hvs_VSyncCount + 1;
+        hvs5_latch_wait(st);
+    }
+    else
+    {
+        /* A list that never latches is logged there; the buffer is in use */
+        hvs5_note_list(st, base);
+        vc4_hvs5_mode_set(xsd, st->hvs_Channel, base, t, boot);
+    }
+    VC4_MBOX_UNLOCK(xsd);
+    return TRUE;
+}
+
 BOOL vc4_hvs5_flip_page(struct VideoCoreGfx_staticdata *xsd, ULONG page_phys)
 {
     struct vc4_hvs_state *st = &xsd->vcsd_HVS;

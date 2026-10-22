@@ -257,5 +257,7 @@ BOOL vc4_hvs5_mode_set(struct VideoCoreGfx_staticdata *xsd, ULONG ch, ULONG list
 void vc4_hvs5_mode_restore(struct VideoCoreGfx_staticdata *xsd);
 BOOL vc4_hvs5_mode_apply(struct VideoCoreGfx_staticdata *xsd, ULONG w, ULONG h,
                          ULONG pitch, const struct vcgfx_timing *want);
+BOOL vc4_hvs5_mode_switch(struct VideoCoreGfx_staticdata *xsd, ULONG w, ULONG h,
+                          ULONG fb_phys, ULONG pitch, const struct vcgfx_timing *want);
 
 #endif /* _VIDEOCOREGFX_HVS5_H */
