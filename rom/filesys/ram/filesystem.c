@@ -756,10 +756,11 @@ PINT ChangeFileSize(struct Handler *handler, struct Opening *opening,
    if(new_length != -1)
       file->length = new_length;
    handler->block_count += file->block_count - block_count;
-   if(new_length == -1)
+   /* Growing or retaining the size leaves every existing cursor valid. */
+   if(new_length == -1 || new_length >= length)
    {
       SetIoErr(error);
-      return -1;
+      return new_length;
    }
 
    /* Re-establish old seek position */
