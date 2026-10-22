@@ -1064,12 +1064,13 @@ LONG CONMain(struct ExecBase *SysBase)
     }
     D(bug("[con:handler] 0x%p open\n", fh));
 
-    /*
-     * A device-backed console is a single stream, so publish the port and let
-     * everyone share this handler. CON: deliberately does not do this: leaving
-     * dn_Task clear is what gets each open its own window.
+    /* Serial devices expose one shared stream. ConsoleNG instead creates a
+     * window for each device open, just as CON: does. Leave dn_Task clear for
+     * it so independent opens start independent handlers; inherited handles
+     * still address their original handler.
      */
-    if (fh->flags & FHFLG_DEVICEMODE)
+    if ((fh->flags & FHFLG_DEVICEMODE) &&
+        strcmp((const char *)fh->devname, "consoleng.device"))
         fh->dn->dn_Task = mp;
 
     replypkt(dp, DOSTRUE);
