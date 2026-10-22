@@ -5,10 +5,12 @@ include $(SRCDIR)/config/aros.cfg
 # core keeps the configuration (ENV:NetMIDI), the sockets and the clock,
 # and reaches CAMD through the ports of the drivers in DEVS:Midi, whose
 # adapters it attaches to, a peer to a port: it is no client of
-# camd.library. Each protocol is a transport of its own (netmidid.h),
-# added beside it; without one the service has nothing to run.
+# camd.library. Each protocol is a transport of its own (netmidid.h). Here
+# that is AppleMIDI (RTP-MIDI), the link library rtpmidi's: it answers
+# invitations on UDP 5004 and 5005, invites the peer the configuration
+# names, and keeps the clocks.
 
-FILES := main adapters network config
+FILES := main transport_applemidi adapters network config config_applemidi
 
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include \
     -I$(SRCDIR)/$(CURDIR)/rtpmidi/include \

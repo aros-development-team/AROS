@@ -24,6 +24,7 @@
 
 /* The transports, in the order they are asked. */
 static const struct netmidid_transport *const transports[] = {
+    &netmidid_applemidi,
     NULL
 };
 #define TRANSPORT_COUNT \

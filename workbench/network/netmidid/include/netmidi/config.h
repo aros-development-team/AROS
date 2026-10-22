@@ -8,6 +8,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <netmidi/config_applemidi.h>
 
 /* What the service is told, a text file of "key = value" lines: the keys
  * every transport shares, and each transport's own. */
@@ -17,6 +18,7 @@ struct netmidi_network_config {
     /* "latency_ms": added to the time each received event is due, 0 to
      * 2000. */
     int latency_ms;
+    struct netmidi_applemidi_config applemidi;
 };
 
 void netmidi_config_defaults(struct netmidi_network_config *config);
