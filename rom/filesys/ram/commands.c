@@ -1910,7 +1910,11 @@ BOOL CmdRenameObject(struct Handler *handler, struct Lock *old_lock,
    if(duplicate && duplicate != object)
       error = ERROR_OBJECT_EXISTS;
    if(parent == NULL)
+   {
       error = IoErr();
+      if(error == 0)
+         error = ERROR_OBJECT_EXISTS;
+   }
 
    /* Check for a circular rename */
 
