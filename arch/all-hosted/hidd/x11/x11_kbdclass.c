@@ -322,6 +322,45 @@ WORD xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd)
 
 /****************************************************************************************/
 
+/*****************************************************************************
+    NAME
+        void x11kdb_LoadkeyTable(
+
+    SYNOPSIS
+        APTR table)
+
+    FUNCTION
+        Install a replacement X11 keycode-to-rawkey table. The driver
+        copies all 256 entries and uses them for subsequent key
+        translation instead of its built-in KeySym tables.
+
+    INPUTS
+        table - Address of 256 readable bytes, indexed by X11 keycode.
+                Use raw keycodes 0x00 through 0x7F and 0xFF for unmapped
+                keys. Keep the buffer valid and unchanged until the
+                call returns. The driver does not retain its address.
+
+    RESULT
+        None. If the driver has no allocated key-table storage, the
+        call has no effect and provides no failure indication.
+
+    NOTES
+        The call may wait for the driver semaphore. Call from task
+        context, outside keyboard-event callbacks.
+
+        The table is copied without validating its address or entries.
+        NULL does not restore the built-in mapping. With a loaded
+        table, unmapped keys do not fall back to KeySym translation;
+        values 0x80 through 0xFE are also suppressed by event handling.
+
+        Replacing the table does not release held keys or emit key
+        events. A held key retains its previous raw-key assignment
+        until released.
+
+        This mapping supplies raw keys, not characters. The guest
+        keymap still determines the keyboard layout.
+
+*****************************************************************************/
 AROS_LH1(void , x11kdb_LoadkeyTable,
          AROS_LHA(APTR, table, A0),
          struct x11clbase *, X11Base, 5, X11Cl)
