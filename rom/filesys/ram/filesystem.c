@@ -737,7 +737,10 @@ PINT ChangeFileSize(struct Handler *handler, struct Opening *opening,
          FreeDataBlock(handler, file, block);
       }
       else
+      {
          AddTail((struct List *)&file->elements, (APTR)block);
+         file->end_length = diff;
+      }
    }
 
    /* Store new file size */
