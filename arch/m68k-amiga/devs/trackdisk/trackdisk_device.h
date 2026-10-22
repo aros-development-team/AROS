@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Internal defs for trackdisk
 */
@@ -52,14 +52,24 @@ struct TDU
 
 struct TrackDiskBase
 {
-    struct Device           td_device;
-    struct TaskData			*td_TaskData;
-    struct TDU				*td_Units[TD_NUMUNITS];
-    struct timerequest  	*td_TimerIO;
-    struct timerequest  	*td_TimerIO2;
-    struct MsgPort      	*td_TimerMP;
+    struct Device           td_device;          /* 0x00 */
+    /*
+     * Compatibility: some old bootblocks/loaders written for Kickstart 1.x take
+     * the exec, graphics and disk.resource bases straight out of the
+     * trackdisk.device base (offsets 0x34, 0x38 and 0x3C) instead of opening
+     * them. Keep these three pointers at those offsets; the other fields fill
+     * the space before them.
+     */
+    UWORD                   td_pad0;            /* 0x22 */
+    struct TaskData			*td_TaskData;       /* 0x24 */
+    struct timerequest  	*td_TimerIO;        /* 0x28 */
+    struct timerequest  	*td_TimerIO2;       /* 0x2C */
+    struct MsgPort      	*td_TimerMP;        /* 0x30 */
+    struct ExecBase         *td_SysBase;        /* 0x34 */
+    struct GfxBase          *td_GfxBase;        /* 0x38 */
+    struct DiskBase 		*td_DiskBase;       /* 0x3C */
     struct MsgPort      	*td_TimerMP2;
-    struct DiskBase 		*td_DiskBase;
+    struct TDU				*td_Units[TD_NUMUNITS];
     struct DiscResourceUnit td_dru;
     struct MsgPort			td_druport;
     struct MsgPort		    td_Port;			// MessagePort
