@@ -18,6 +18,7 @@
 #include <netmidi/config.h>
 #include <rtpmidi/ports.h>
 #include "camd.h"
+#include "discovery.h"
 #include "network.h"
 
 #include <stddef.h>
@@ -54,6 +55,9 @@ struct netmidid {
     struct applemidi_ports ports[NETMIDI_CAMD_DRIVERS];
     /* which transport reads each socket */
     const struct netmidid_transport *socket_owner[NETMIDI_NETWORK_SOCKETS];
+    /* what the system's mDNS service advertises for us: kept across a
+       change of the configuration, which begins the rest anew */
+    struct netmidi_discovery *discovery;
     uint64_t published;         /* when the counts were last told */
 };
 

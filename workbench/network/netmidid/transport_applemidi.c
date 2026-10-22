@@ -1001,6 +1001,9 @@ static int applemidi_open(struct netmidid *d, void *self)
         rt->peers.limit = config->max_peers;
     if (accept_peers(rt, config->accept[0] ? config->accept : NULL) != 0)
         return -1;
+    /* An AppleMIDI session is found under its control port. */
+    netmidi_discovery_add(d->discovery, d->session_name, "_apple-midi._udp",
+                          rt->local_port);
     return 0;
 }
 

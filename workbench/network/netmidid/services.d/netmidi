@@ -8,8 +8,12 @@
 # DEVS:Midi/applemidi and DEVS:Midi/networkmidi2. It takes no arguments:
 # what it does is in its configuration, ENV:NetMIDI.
 #
+# The AppleMIDI session is advertised as _apple-midi._udp through mdnsd,
+# when it runs; without it the sessions work as before, by IPv4 address.
+#
 #   Path    - the daemon executable
-#   Order   - bring-up priority hint (higher starts earlier)
+#   Order   - bring-up priority hint (higher starts earlier): after mdnsd,
+#             though one that starts later is still found
 #   StopSig - signal bit sent to stop it (12 = CTRL-C)
 #   Policy  - restart: across a reconfiguration of the stack it is stopped
 #             and started again, and its sessions with it

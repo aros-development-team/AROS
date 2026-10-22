@@ -1,4 +1,3 @@
-
 include $(SRCDIR)/config/aros.cfg
 
 # netmidid: MIDI over the network as a service of the network stack. Its
@@ -13,9 +12,12 @@ include $(SRCDIR)/config/aros.cfg
 # Network MIDI 2.0 (UDP), the link library netmidi2's, is a second
 # transport: given a port for it, a Host, and the Client of the Host the
 # configuration names, each session on a port of DEVS:Midi/networkmidi2.
+#
+# The AppleMIDI session is advertised by the system's mDNS service, which
+# it asks through bonami.library: it holds no socket on port 5353 itself.
 
 FILES := main transport_applemidi transport_midi2 adapters network config \
-    config_applemidi config_midi2
+    config_applemidi config_midi2 discovery
 
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include \
     -I$(SRCDIR)/$(CURDIR)/rtpmidi/include \
