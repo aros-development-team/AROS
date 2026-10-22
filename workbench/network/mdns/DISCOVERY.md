@@ -74,8 +74,9 @@ complete snapshots, using `MEVENT_ADD` and `MEVENT_REMOVE`.
 The queue-mode tag and an output reference are required. Non-NULL hooks and
 calls without the mode return `MDNSERR_NOTREADY`; no hook is dereferenced.
 Only `.local` TCP/UDP service types are supported. Nondefault flags and
-interface selection are rejected. No generic host lookup, record query,
-service-type enumeration or Envoy bridge is introduced in this slice.
+interface selection are rejected. No generic host lookup, record query or
+Envoy bridge is introduced in this slice.
+
 
 Each operation belongs to its creating Exec task ID. Another task cannot
 read, request or stop it. Stop removes both queued events and the operation
@@ -84,6 +85,18 @@ Close of the engine/the task's last library close releases all operations;
 the daemon's five-second reap timer removes those of a task that ended
 without stopping them, found with `FindTaskByPID()`. A client may read
 slowly, exit or fail without executing anything in mdnsd.
+
+## Service types on the link
+
+A browse of `_services._dns-sd._udp` (`MDNS_TYPE_SERVICES_DNS_SD`) is told
+the service types present on the link instead of instances (RFC 6763
+section 9). Each type is one snapshot: `de_Type` is the type, as
+`"_http._tcp"`, `de_Interface` the link it was seen on, and `de_Name`,
+`de_Address`, `de_Port` and the TXT are empty; nothing is resolved for it.
+`MEVENT_ADD` comes when a type is first seen and `MEVENT_REMOVE` when its
+last PTR expires or is withdrawn. A PTR there whose target is not a type
+(an instance, a name without `_tcp` or `_udp`) is left out. A resolve of
+that name is refused with `MDNSERR_BADTYPE`.
 
 ## Optional wakeup: a lent request
 
