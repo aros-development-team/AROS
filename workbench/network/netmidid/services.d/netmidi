@@ -1,0 +1,24 @@
+#
+# AROSTCP network service: MIDI over the network (netmidid).
+#
+# AppleMIDI (RTP-MIDI) sessions on UDP 5004 and 5005. It answers
+# invitations and invites the peer it is configured to. CAMD clients reach
+# its peers through the ports of the driver DEVS:Midi/applemidi. It takes
+# no arguments: what it does is in its configuration, ENV:NetMIDI.
+#
+#   Path    - the daemon executable
+#   Order   - bring-up priority hint (higher starts earlier)
+#   StopSig - signal bit sent to stop it (12 = CTRL-C)
+#   Policy  - restart: across a reconfiguration of the stack it is stopped
+#             and started again, and its sessions with it
+#   Enabled - yes or no.  DISABLED BY DEFAULT: it listens on the network and
+#             takes the invitation of whoever sends one, unless "accept" in
+#             its configuration says otherwise.  Set Enabled=yes and reboot
+#             or reload the stack to turn it on.
+#
+Name=Network MIDI
+Path=SYS:System/Network/Services/netmidid
+Order=10
+StopSig=12
+Policy=restart
+Enabled=no
