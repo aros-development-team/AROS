@@ -41,10 +41,16 @@
 #define CLID_Hidd_Display_VideoCore4 "hidd.display.bcmvc4"
 
 #define MAX_TAGS        256
-#define ATTRBASES_NUM   10
+#define ATTRBASES_NUM   11
 
 struct VideoCoreGfxDisplayData
 {
+};
+
+/* A cgxvideo overlay: its frame lives in scanout memory. */
+struct VideoCoreGfxOverlayData
+{
+    struct vcgfx_scanbuf    sb;
 };
 
 /* Screens shown as HVS planes (ShowViewPorts). x/y are the bitmap's
@@ -83,6 +89,8 @@ struct VideoCoreGfx_staticdata {
 
         OOP_Class 	    	*vcsd_basebm;            /* baseclass for CreateObject */
         OOP_Class               *vcsd_basegallium;       /* baseclass for CreateObject */
+        OOP_Class               *vcsd_baseoverlay;       /* baseclass for CreateObject */
+        OOP_Class               *vcsd_OverlayClass;      /* cgxvideo overlays */
         struct Library          *vcsd_GalliumLib;        /* keeps the SoC's gallium hidd loaded */
 
         OOP_Class               *vcsd_VideoCoreGfxClass;
@@ -175,6 +183,7 @@ struct VideoCoreGfx_staticdata {
         struct BitmapData      *vcsd_OvlBMData;
         struct vc4gfx_overlay   vcsd_OvlDesc;
         BOOL                    vcsd_OvlShown;
+        OOP_Object             *vcsd_OvlClient;     /* cgxvideo overlay holding the plane */
 
         /* Hardware screen composition (ShowViewPorts): every screen is its
          * own plane and the fb is only the backdrop. Sticky once set, as a
@@ -258,6 +267,7 @@ struct DisplayMode
 #undef HiddDisplayAttrBase
 #undef HiddDMEnumAttrBase
 #undef HiddAttrBase
+#undef HiddOverlayAttrBase
 
 /* These must stay in the same order as interfaces[] array in vcgfx_init.c */
 #define HiddVideoCoreGfxAttrBase         XSD(cl)->vcsd_attrBases[0]
@@ -270,6 +280,7 @@ struct DisplayMode
 #define HiddDisplayAttrBase              XSD(cl)->vcsd_attrBases[7]
 #define HiddDMEnumAttrBase               XSD(cl)->vcsd_attrBases[8]
 #define HiddAttrBase                     XSD(cl)->vcsd_attrBases[9]
+#define HiddOverlayAttrBase              XSD(cl)->vcsd_attrBases[10]
 
 #define FNAME_SUPPORT(x) VideoCoreGfx__Support__ ## x
 
@@ -297,6 +308,18 @@ BOOL    vc4_dma_get(struct VideoCoreGfx_staticdata *xsd,
                     ULONG src_phys, ULONG src_pitch,
                     UBYTE *dst, ULONG dst_modulo,
                     ULONG width_bytes, ULONG height);
+
+/* An overlay's HVS pixel format, 0 = the plane template's 32bpp one */
+static inline ULONG vc4_ovl_pxf(ULONG flags)
+{
+    return (flags & VC4GFX_OVL_RGB565) ? HVS_PXF_RGB565
+         : (flags & VC4GFX_OVL_RGB555) ? HVS_PXF_RGB555 : 0;
+}
+
+static inline ULONG vc4_ovl_bpp(ULONG flags)
+{
+    return (flags & (VC4GFX_OVL_RGB565 | VC4GFX_OVL_RGB555)) ? 2 : 4;
+}
 
 ULONG   vc4_fb_backpage(struct VideoCoreGfx_staticdata *xsd);
 BOOL    vc4_fb_flip(struct VideoCoreGfx_staticdata *xsd);

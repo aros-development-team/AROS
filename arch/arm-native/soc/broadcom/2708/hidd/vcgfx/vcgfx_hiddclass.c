@@ -814,7 +814,16 @@ OOP_Object *MNAME_DISPLAY(CreateObject)(OOP_Class *cl, OOP_Object *o, struct pHi
         if (!XSD(cl)->vcsd_basegallium)
             XSD(cl)->vcsd_basegallium = OOP_FindClass(CLID_Hidd_Gallium);
 
-        if (XSD(cl)->vcsd_basegallium && msg->cl == XSD(cl)->vcsd_basegallium)
+        if (!XSD(cl)->vcsd_baseoverlay)
+            XSD(cl)->vcsd_baseoverlay = OOP_FindClass(CLID_Hidd_Overlay);
+
+        if (XSD(cl)->vcsd_baseoverlay && msg->cl == XSD(cl)->vcsd_baseoverlay)
+        {
+            /* Its frame goes in scanout memory, for the overlay plane */
+            if (vcgfx_planes_supported(XSD(cl)))
+                object = OOP_NewObject(XSD(cl)->vcsd_OverlayClass, NULL, msg->attrList);
+        }
+        else if (XSD(cl)->vcsd_basegallium && msg->cl == XSD(cl)->vcsd_basegallium)
         {
             /* V3D on BCM2711/2712, VC4 before. Loaded from the FS on first
              * request so the class registers before OOP_NewObject. */

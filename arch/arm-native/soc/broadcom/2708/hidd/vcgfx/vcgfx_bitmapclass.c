@@ -58,14 +58,18 @@ static BOOL vcbm_set_private(OOP_Class *cl, OOP_Object *o, ULONG idx, IPTR val)
             BOOL shown;
 
             ObtainSemaphore(&xsd->vcsd_OvlLock);
-            shown = vc4_hvs_overlay(xsd, ovl, o) && ovl;
-            if (shown)
+            /* A cgxvideo layer holding the plane keeps it */
+            if (!xsd->vcsd_OvlClient)
             {
-                xsd->vcsd_OvlDesc   = *ovl;
-                xsd->vcsd_OvlBM     = o;
-                xsd->vcsd_OvlBMData = data;
+                shown = vc4_hvs_overlay(xsd, ovl, o) && ovl;
+                if (shown)
+                {
+                    xsd->vcsd_OvlDesc   = *ovl;
+                    xsd->vcsd_OvlBM     = o;
+                    xsd->vcsd_OvlBMData = data;
+                }
+                xsd->vcsd_OvlShown = shown;
             }
-            xsd->vcsd_OvlShown = shown;
             ReleaseSemaphore(&xsd->vcsd_OvlLock);
         }
         return TRUE;
@@ -395,6 +399,9 @@ VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 #else
             *msg->storage = vcgfx_plane_overlay_shown(XSD(cl), o) ? 1 : 0;
 #endif
+            /* Not the caller's while a cgxvideo layer holds it */
+            if (XSD(cl)->vcsd_OvlClient)
+                *msg->storage = 0;
             break;
         case aoHidd_VideoCoreGfxBitMap_LatchWait:
             vc4_hvs_latch_wait(XSD(cl));

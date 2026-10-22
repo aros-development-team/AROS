@@ -367,6 +367,7 @@ static void hvs5_init_plane(ULONG base, ULONG alpha_mode, ULONG words)
 struct hvs5_src
 {
     ULONG phys, pitch;
+    ULONG pxf, bpp;         /* pxf 0 = the template's 32bpp format */
     ULONG srcw, srch;
     LONG  x, y;
     ULONG w, h;
@@ -429,6 +430,9 @@ static void hvs5_write_src(struct vc4_hvs_state *st, ULONG base, ULONG words,
     LONG ox, oy;
     ULONG ow, oh;
 
+    if (s->pxf)
+        ctl0 = (ctl0 & ~HVS5_CTL0_FORMAT_MASK) | s->pxf;
+
     if (!hvs5_src_rect(st, s, &ox, &oy, &ow, &oh))
     {
         hvs5_dl_wr(base, ctl0 & ~HVS5_CTL0_VALID);
@@ -441,7 +445,7 @@ static void hvs5_write_src(struct vc4_hvs_state *st, ULONG base, ULONG words,
         ULONG skip = (ULONG)(left - ox);
         ULONG ssk = skip * srcw / ow;
 
-        ptr += ssk * 4;
+        ptr += ssk * s->bpp;
         srcw -= ssk;
         ow -= skip;
         ox = left;
@@ -511,6 +515,8 @@ static void hvs5_ovl_src(struct vc4_hvs_state *st, struct hvs5_src *s,
 {
     s->phys  = st->hvs_OvlPhys;
     s->pitch = st->hvs_OvlPitch;
+    s->pxf   = st->hvs_OvlPxf;
+    s->bpp   = st->hvs_OvlBpp;
     s->srcw  = st->hvs_OvlW;
     s->srch  = st->hvs_OvlH;
     s->x     = orgx + st->hvs_OvlX;
@@ -570,6 +576,8 @@ static ULONG hvs5_emit_fb(struct vc4_hvs_state *st, ULONG base, ULONG n, ULONG *
 
         s.phys  = st->hvs_FBPtr;
         s.pitch = st->hvs_FBPitch;
+        s.pxf   = 0;
+        s.bpp   = 4;
         s.srcw  = s.w = s.cw = st->hvs_SrcW;
         s.srch  = s.h = s.ch = st->hvs_SrcH;
         s.x     = 0;
@@ -593,6 +601,8 @@ static void hvs5_plane_src(struct vcgfx_plane *pl, struct hvs5_src *s)
 
     s->phys  = (ULONG)(IPTR)d->VideoData;
     s->pitch = d->bytesperrow;
+    s->pxf   = 0;
+    s->bpp   = 4;
     s->srcw  = s->w = d->width;
     s->srch  = s->h = d->height;
     s->x     = pl->pl_X;
@@ -652,11 +662,21 @@ static ULONG hvs5_emit_planes(struct VideoCoreGfx_staticdata *xsd,
             LONG orr = (px + (LONG)pw < right) ? px + (LONG)pw : right;
             LONG ob = (py + (LONG)ph < cb) ? py + (LONG)ph : cb;
             struct hvs5_src o;
+            LONG dx, dy;
+            ULONG dw, dh;
 
             hvs5_ovl_src(st, &o, pl->pl_X, pl->pl_Y, s.cw, s.ch);
-            st->hvs_OvlOff = n;
-            n = hvs5_emit_src(st, base, n, &o, lbm, ol, ot, orr, ob,
-                              &st->hvs_OvlWords, &st->hvs_OvlLBM);
+
+            /* A size the scaler can't make is left out, not shown wrong */
+            st->hvs_OvlNoFit = hvs5_src_rect(st, &o, &dx, &dy, &dw, &dh)
+                            && ((dw != o.srcw) || (dh != o.srch))
+                            && (hvs5_src_words(st, &o, *lbm) != HVS5_SCALED_WORDS);
+            if (!st->hvs_OvlNoFit)
+            {
+                st->hvs_OvlOff = n;
+                n = hvs5_emit_src(st, base, n, &o, lbm, ol, ot, orr, ob,
+                                  &st->hvs_OvlWords, &st->hvs_OvlLBM);
+            }
         }
     }
     return n;
@@ -1171,6 +1191,13 @@ BOOL vc4_hvs5_overlay(struct VideoCoreGfx_staticdata *xsd,
         return TRUE;
     }
 
+    /* Without planes the entry is 32bpp, scaled only like the fb */
+    if (!xsd->vcsd_PlanesMode && (vc4_ovl_bpp(ovl->ovl_Flags) != 4))
+    {
+        VC4_MBOX_UNLOCK(xsd);
+        return FALSE;
+    }
+
     /* Its x/y are in that screen, which has to be on display. */
     if (xsd->vcsd_PlanesMode)
     {
@@ -1203,6 +1230,14 @@ BOOL vc4_hvs5_overlay(struct VideoCoreGfx_staticdata *xsd,
     st->hvs_OvlH     = ovl->ovl_Height;
     st->hvs_OvlDestW = ovl->ovl_Width;
     st->hvs_OvlDestH = ovl->ovl_Height;
+    if (xsd->vcsd_PlanesMode && ovl->ovl_DestW && ovl->ovl_DestH)
+    {
+        st->hvs_OvlDestW = ovl->ovl_DestW;
+        st->hvs_OvlDestH = ovl->ovl_DestH;
+    }
+    st->hvs_OvlPxf   = vc4_ovl_pxf(ovl->ovl_Flags);
+    st->hvs_OvlBpp   = vc4_ovl_bpp(ovl->ovl_Flags);
+    st->hvs_OvlNoFit = FALSE;
     st->hvs_OvlX     = ovl->ovl_X;
     st->hvs_OvlY     = ovl->ovl_Y;
 
@@ -1223,7 +1258,7 @@ BOOL vc4_hvs5_overlay(struct VideoCoreGfx_staticdata *xsd,
         hvs5_latch_wait(st);
 
     VC4_MBOX_UNLOCK(xsd);
-    return TRUE;
+    return !st->hvs_OvlNoFit;
 }
 
 void vc4_hvs5_latch_wait(struct VideoCoreGfx_staticdata *xsd)

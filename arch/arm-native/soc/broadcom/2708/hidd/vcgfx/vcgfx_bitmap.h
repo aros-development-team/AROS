@@ -47,6 +47,9 @@ struct vc4gfx_overlay
 
 /* Don't wait for the latch; keep the displaced buffer until LatchWait. */
 #define VC4GFX_OVL_NOWAIT (1 << 0)
+/* 16bpp little-endian sources (cgxvideo); neither = 32bpp. */
+#define VC4GFX_OVL_RGB565 (1 << 1)
+#define VC4GFX_OVL_RGB555 (1 << 2)
 
 /* Per-vblank callback, run in interrupt context: no locks, no printing.
  * Mirrored by hand on the v3d side. */

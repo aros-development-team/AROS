@@ -746,8 +746,8 @@ void vcgfx_ovl_yield(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm,
 
     ox = d->ovl_X;
     oy = d->ovl_Y;
-    ow = d->ovl_Width;
-    oh = d->ovl_Height;
+    ow = d->ovl_DestW ? d->ovl_DestW : d->ovl_Width;
+    oh = d->ovl_DestH ? d->ovl_DestH : d->ovl_Height;
     if (x1 < ox || y1 < oy || x0 >= ox + ow || y0 >= oy + oh)
     {
         ReleaseSemaphore(&xsd->vcsd_OvlLock);
@@ -760,6 +760,7 @@ void vcgfx_ovl_yield(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm,
      * mapped, vc4gallium's bus address masks back to the vaddr. */
     fb = xsd->vcsd_OvlBMData;
     if (fb && fb->VideoData && fb->bytesperpix == 4
+        && !(d->ovl_Flags & (VC4GFX_OVL_RGB565 | VC4GFX_OVL_RGB555))
         && (!d->ovl_DestW || d->ovl_DestW == d->ovl_Width)
         && (!d->ovl_DestH || d->ovl_DestH == d->ovl_Height))
     {
@@ -788,7 +789,8 @@ void vcgfx_ovl_yield(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm,
     }
 
     vc4_hvs_overlay(xsd, NULL, NULL);
-    xsd->vcsd_OvlShown = FALSE;
+    xsd->vcsd_OvlShown  = FALSE;
+    xsd->vcsd_OvlClient = NULL;
     ReleaseSemaphore(&xsd->vcsd_OvlLock);
 }
 

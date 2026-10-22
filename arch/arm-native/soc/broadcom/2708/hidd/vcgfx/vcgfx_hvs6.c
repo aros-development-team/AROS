@@ -702,6 +702,10 @@ BOOL vc4_hvs6_overlay(struct VideoCoreGfx_staticdata *xsd,
     if (xsd->vcsd_PlanesMode)
         return hvs6_planes_overlay(xsd, ovl, owner);
 
+    /* Without planes the entry is the fb's, unscaled 32bpp */
+    if (ovl && (vc4_ovl_bpp(ovl->ovl_Flags) != 4))
+        return FALSE;
+
     if (!ovl)
     {
         if (st->h6_Overlay)
@@ -811,7 +815,7 @@ BOOL vc4_hvs6_init_cursor(struct VideoCoreGfx_staticdata *xsd)
  * source address and shrinking the extent, keeping the full pitch. FALSE
  * when nothing is left. */
 static BOOL hvs6_clip(LONG *x, LONG *y, ULONG *w, ULONG *h, UQUAD *phys,
-                      ULONG pitch, LONG l, LONG t, LONG r, LONG b)
+                      ULONG pitch, ULONG bpp, LONG l, LONG t, LONG r, LONG b)
 {
     if (*x < l)
     {
@@ -819,7 +823,7 @@ static BOOL hvs6_clip(LONG *x, LONG *y, ULONG *w, ULONG *h, UQUAD *phys,
 
         if (skip >= *w)
             return FALSE;
-        *phys += skip * 4;
+        *phys += skip * bpp;
         *w    -= skip;
         *x     = l;
     }
@@ -860,7 +864,7 @@ static BOOL hvs6_cursor_geom(struct VideoCoreGfx_staticdata *xsd, UQUAD *phys,
     *pitch = *w * 4;
     *phys  = st->h6_CurPhys;
 
-    return hvs6_clip(x, y, w, h, phys, *pitch, 0, 0,
+    return hvs6_clip(x, y, w, h, phys, *pitch, 4, 0, 0,
                      (LONG)HVS6_DISPCTRL_W(out), (LONG)HVS6_DISPCTRL_H(out));
 }
 
@@ -1072,7 +1076,7 @@ static void hvs6_scaled(ULONG dst, ULONG fb, UQUAD addr, ULONG pitch, ULONG ptr0
 /* hvs6_clip for a scaled plane: trims the source in proportion. */
 static BOOL hvs6_clip_scaled(LONG *ox, LONG *oy, ULONG *ow, ULONG *oh,
                              ULONG *sw, ULONG *sh, UQUAD *phys, ULONG pitch,
-                             LONG l, LONG t, LONG r, LONG b)
+                             ULONG bpp, LONG l, LONG t, LONG r, LONG b)
 {
     if (*ox < l)
     {
@@ -1081,7 +1085,7 @@ static BOOL hvs6_clip_scaled(LONG *ox, LONG *oy, ULONG *ow, ULONG *oh,
         if (skip >= *ow)
             return FALSE;
         ssk = skip * *sw / *ow;
-        *phys += ssk * 4; *sw -= ssk; *ow -= skip; *ox = l;
+        *phys += ssk * bpp; *sw -= ssk; *ow -= skip; *ox = l;
     }
     if (*oy < t)
     {
@@ -1186,7 +1190,7 @@ static ULONG hvs6_build_planes(struct VideoCoreGfx_staticdata *xsd, ULONG list)
             y = py[i];
             w = pw[i];
             h = ph[i];
-            if (hvs6_clip(&x, &y, &w, &h, &phys, pitch, 0, 0, out_w, limit[i]))
+            if (hvs6_clip(&x, &y, &w, &h, &phys, pitch, 4, 0, 0, out_w, limit[i]))
                 hvs6_plane(ent, fb, phys, pitch, ptr0[i], (ULONG)x, (ULONG)y, w, h);
             else
                 hvs6_wr(ent, HVS6_CTL0_EMPTY);
@@ -1195,7 +1199,7 @@ static ULONG hvs6_build_planes(struct VideoCoreGfx_staticdata *xsd, ULONG list)
 
         ox = px[i]; oy = py[i]; ow = pw[i]; oh = ph[i];
         sw = d->width; sh = d->height;
-        if (!hvs6_clip_scaled(&ox, &oy, &ow, &oh, &sw, &sh, &phys, pitch,
+        if (!hvs6_clip_scaled(&ox, &oy, &ow, &oh, &sw, &sh, &phys, pitch, 4,
                               0, 0, out_w, limit[i])
             || (scaled >= HVS6_SCALE_MAX)
             || !HVS6_PPF_FITS(sw, ow) || !HVS6_PPF_FITS(sh, oh))
@@ -1226,13 +1230,15 @@ static ULONG hvs6_build_planes(struct VideoCoreGfx_staticdata *xsd, ULONG list)
             b = limit[front];
         phys = st->h6_OvlPhys;
 
-        if ((pw[front] == d->width) && (ph[front] == d->height))
+        if ((pw[front] == d->width) && (ph[front] == d->height)
+            && (st->h6_OvlDestW == st->h6_OvlW) && (st->h6_OvlDestH == st->h6_OvlH))
         {
             x = px[front] + st->h6_OvlX;
             y = py[front] + st->h6_OvlY;
             w = st->h6_OvlW;
             h = st->h6_OvlH;
-            if (hvs6_clip(&x, &y, &w, &h, &phys, st->h6_OvlPitch, l, t, r, b))
+            if (hvs6_clip(&x, &y, &w, &h, &phys, st->h6_OvlPitch, st->h6_OvlBpp,
+                          l, t, r, b))
             {
                 hvs6_plane(ent, fb, phys, st->h6_OvlPitch, st->h6_OvlPTR0,
                            (ULONG)x, (ULONG)y, w, h);
@@ -1243,13 +1249,13 @@ static ULONG hvs6_build_planes(struct VideoCoreGfx_staticdata *xsd, ULONG list)
         {
             LONG ox = px[front] + st->h6_OvlX * (LONG)pw[front] / (LONG)d->width;
             LONG oy = py[front] + st->h6_OvlY * (LONG)ph[front] / (LONG)d->height;
-            ULONG ow = st->h6_OvlW * pw[front] / d->width;
-            ULONG oh = st->h6_OvlH * ph[front] / d->height;
+            ULONG ow = st->h6_OvlDestW * pw[front] / d->width;
+            ULONG oh = st->h6_OvlDestH * ph[front] / d->height;
             ULONG sw = st->h6_OvlW, sh = st->h6_OvlH;
 
             /* The overlay's slice is two lines of the widest pitch */
             if (hvs6_clip_scaled(&ox, &oy, &ow, &oh, &sw, &sh, &phys, st->h6_OvlPitch,
-                                 l, t, r, b)
+                                 st->h6_OvlBpp, l, t, r, b)
                 && (scaled < HVS6_SCALE_MAX)
                 && (hvs6_upm_size(st->h6_OvlPitch, 4) <= HVS6_UPM_SLICE)
                 && HVS6_PPF_FITS(sw, ow) && HVS6_PPF_FITS(sh, oh))
@@ -1263,13 +1269,23 @@ static ULONG hvs6_build_planes(struct VideoCoreGfx_staticdata *xsd, ULONG list)
         }
 
         if (shown)
-            hvs6_wr(ent + HVS6_ENT_CTL0 * 4,
-                    (hvs6_rd(ent + HVS6_ENT_CTL0 * 4) & ~HVS6_CTL0_ORDER) | HVS6_ORDER_BGRA);
+        {
+            ULONG ctl0 = (hvs6_rd(ent + HVS6_ENT_CTL0 * 4) & ~HVS6_CTL0_ORDER)
+                       | HVS6_ORDER_BGRA;
+
+            if (st->h6_OvlPxf)
+                ctl0 = (ctl0 & ~HVS6_CTL0_FORMAT) | st->h6_OvlPxf;
+            hvs6_wr(ent + HVS6_ENT_CTL0 * 4, ctl0);
+        }
         else
             hvs6_wr(ent, HVS6_CTL0_EMPTY);
+        st->h6_OvlShown = shown;
     }
     else
+    {
         hvs6_wr(ent, HVS6_CTL0_EMPTY);
+        st->h6_OvlShown = FALSE;
+    }
 
     ent = hvs6_pslot(st, list, HVS6_PL_CUR);
     st->h6_Cursor = hvs6_cursor_geom(xsd, &phys, &pitch, &x, &y, &w, &h);
@@ -1379,9 +1395,7 @@ static BOOL hvs6_planes_overlay(struct VideoCoreGfx_staticdata *xsd,
 
     if (ovl)
     {
-        if (!ovl->ovl_Phys || !ovl->ovl_Pitch || !ovl->ovl_Width || !ovl->ovl_Height
-            || (ovl->ovl_DestW && (ovl->ovl_DestW != ovl->ovl_Width))
-            || (ovl->ovl_DestH && (ovl->ovl_DestH != ovl->ovl_Height)))
+        if (!ovl->ovl_Phys || !ovl->ovl_Pitch || !ovl->ovl_Width || !ovl->ovl_Height)
             return FALSE;
         show = n && (xsd->vcsd_Plane[n - 1].pl_BM == owner);
     }
@@ -1397,8 +1411,14 @@ static BOOL hvs6_planes_overlay(struct VideoCoreGfx_staticdata *xsd,
         st->h6_OvlH     = ovl->ovl_Height;
         st->h6_OvlX     = ovl->ovl_X;
         st->h6_OvlY     = ovl->ovl_Y;
+        st->h6_OvlDestW = ovl->ovl_DestW ? ovl->ovl_DestW : ovl->ovl_Width;
+        st->h6_OvlDestH = ovl->ovl_DestH ? ovl->ovl_DestH : ovl->ovl_Height;
+        st->h6_OvlPxf   = vc4_ovl_pxf(ovl->ovl_Flags);
+        st->h6_OvlBpp   = vc4_ovl_bpp(ovl->ovl_Flags);
         st->h6_Overlay  = TRUE;
+        st->h6_OvlShown = FALSE;
         vc4_hvs6_planes_commit(xsd);
+        show = st->h6_OvlShown;
     }
     else if (st->h6_Overlay)
     {

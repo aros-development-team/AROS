@@ -461,6 +461,7 @@ static ULONG hvs_overlay_entry(struct VideoCoreGfx_staticdata *xsd, ULONG *w)
 struct hvs_src
 {
     ULONG phys, pitch;
+    ULONG pxf, bpp;         /* pxf 0 = the template's 32bpp format */
     ULONG srcw, srch;
     LONG  x, y;
     ULONG w, h;
@@ -528,7 +529,7 @@ static ULONG hvs_put_src(struct vc4_hvs_state *st, ULONG *w, ULONG words,
         ULONG skip = (ULONG)(left - ox);
         ULONG ssk = skip * srcw / ow;
 
-        ptr += ssk * 4;
+        ptr += ssk * s->bpp;
         srcw -= ssk;
         ow -= skip;
         ox = left;
@@ -574,6 +575,8 @@ static ULONG hvs_put_src(struct vc4_hvs_state *st, ULONG *w, ULONG words,
         w[4] = HVS_PTR_BUS_ALIAS | ptr;
         w[5] = 0;
         w[6] = s->pitch;
+        if (s->pxf)
+            w[0] = (w[0] & ~HVS_CTL0_FORMAT_MASK) | s->pxf;
         return HVS_UNITY_WORDS;
     }
 
@@ -592,6 +595,8 @@ static ULONG hvs_put_src(struct vc4_hvs_state *st, ULONG *w, ULONG words,
     w[11]           = 0;
     w[HVS_SC_KRN0]  = HVS_OWN_KERNEL;
     w[HVS_SC_KRN1]  = HVS_OWN_KERNEL;
+    if (s->pxf)
+        w[0] = (w[0] & ~HVS_CTL0_FORMAT_MASK) | s->pxf;
     return HVS_SCALED_WORDS;
 }
 
@@ -618,6 +623,8 @@ static void hvs_plane_src(struct vcgfx_plane *pl, struct hvs_src *s)
 
     s->phys  = (ULONG)(IPTR)d->VideoData;
     s->pitch = d->bytesperrow;
+    s->pxf   = 0;
+    s->bpp   = 4;
     s->srcw  = s->w = d->width;
     s->srch  = s->h = d->height;
     s->x     = pl->pl_X;
@@ -638,6 +645,8 @@ static ULONG hvs_emit_fb(struct vc4_hvs_state *st, ULONG *w, ULONG n, ULONG *lbm
 
         s.phys  = st->hvs_FBPtr;
         s.pitch = st->hvs_FBPitch;
+        s.pxf   = 0;
+        s.bpp   = 4;
         s.srcw  = s.w = s.cw = st->hvs_SrcW;
         s.srch  = s.h = s.ch = st->hvs_SrcH;
         s.x     = 0;
@@ -717,20 +726,38 @@ static ULONG hvs_emit_planes(struct VideoCoreGfx_staticdata *xsd, ULONG *w,
             LONG orr = (px + (LONG)pw < right) ? px + (LONG)pw : right;
             LONG ob = (py + (LONG)ph < cb) ? py + (LONG)ph : cb;
             struct hvs_src o;
+            LONG dx, dy;
+            ULONG dw, dh;
 
             o.phys  = st->hvs_OvlPhys;
             o.pitch = st->hvs_OvlPitch;
-            o.srcw  = o.w = st->hvs_OvlW;
-            o.srch  = o.h = st->hvs_OvlH;
+            o.pxf   = st->hvs_OvlPxf;
+            o.bpp   = st->hvs_OvlBpp;
+            o.srcw  = st->hvs_OvlW;
+            o.srch  = st->hvs_OvlH;
+            o.w     = st->hvs_OvlDestW;
+            o.h     = st->hvs_OvlDestH;
             o.x     = pl->pl_X + st->hvs_OvlX;
             o.y     = pl->pl_Y + st->hvs_OvlY;
             o.cw    = s.cw;
             o.ch    = s.ch;
-            st->hvs_OvlOff = n;
-            n = hvs_emit_src(st, w, n, &o, lbm, ol, ot, orr, ob,
-                             &st->hvs_OvlWords);
-            if (!st->hvs_OvlWords)
-                st->hvs_OvlOff = 0;
+            st->hvs_OvlOff = 0;
+            st->hvs_OvlWords = 0;
+            st->hvs_OvlNoFit = FALSE;
+
+            /* A size the scaler can't make is left out, not shown wrong */
+            if (hvs_src_rect(st, &o, &dx, &dy, &dw, &dh)
+                && ((dw != o.srcw) || (dh != o.srch))
+                && (hvs_src_words(st, &o, *lbm) != HVS_SCALED_WORDS))
+                st->hvs_OvlNoFit = TRUE;
+            else
+            {
+                st->hvs_OvlOff = n;
+                n = hvs_emit_src(st, w, n, &o, lbm, ol, ot, orr, ob,
+                                 &st->hvs_OvlWords);
+                if (!st->hvs_OvlWords)
+                    st->hvs_OvlOff = 0;
+            }
         }
     }
     return n;
@@ -1367,8 +1394,10 @@ BOOL vc4_hvs_overlay(struct VideoCoreGfx_staticdata *xsd,
         st->hvs_OvlPitch  = ovl->ovl_Pitch;
         st->hvs_OvlW      = ovl->ovl_Width;
         st->hvs_OvlH      = ovl->ovl_Height;
-        st->hvs_OvlDestW  = ovl->ovl_Width;
-        st->hvs_OvlDestH  = ovl->ovl_Height;
+        st->hvs_OvlDestW  = ovl->ovl_DestW ? ovl->ovl_DestW : ovl->ovl_Width;
+        st->hvs_OvlDestH  = ovl->ovl_DestH ? ovl->ovl_DestH : ovl->ovl_Height;
+        st->hvs_OvlPxf    = vc4_ovl_pxf(ovl->ovl_Flags);
+        st->hvs_OvlBpp    = vc4_ovl_bpp(ovl->ovl_Flags);
         st->hvs_OvlX      = ovl->ovl_X;
         st->hvs_OvlY      = ovl->ovl_Y;
         hvs_commit(st, hvs_build_list(xsd));
@@ -1377,7 +1406,14 @@ BOOL vc4_hvs_overlay(struct VideoCoreGfx_staticdata *xsd,
         if (!(ovl->ovl_Flags & VC4GFX_OVL_NOWAIT))
             hvs_latch_wait(st);
         VC4_MBOX_UNLOCK(xsd);
-        return TRUE;
+        return !st->hvs_OvlNoFit;
+    }
+
+    /* Without planes the entry is 32bpp only */
+    if (vc4_ovl_bpp(ovl->ovl_Flags) != 4)
+    {
+        VC4_MBOX_UNLOCK(xsd);
+        return FALSE;
     }
 
     dw = ovl->ovl_DestW ? ovl->ovl_DestW : ovl->ovl_Width;

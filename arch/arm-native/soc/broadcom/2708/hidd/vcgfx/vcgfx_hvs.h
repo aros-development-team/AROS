@@ -284,6 +284,8 @@ struct vc4_hvs_state
     ULONG       hvs_OvlPhys, hvs_OvlPitch;
     ULONG       hvs_OvlW, hvs_OvlH;         /* source size */
     ULONG       hvs_OvlDestW, hvs_OvlDestH; /* on-screen size */
+    ULONG       hvs_OvlPxf, hvs_OvlBpp;     /* format; pxf 0 = 32bpp */
+    BOOL        hvs_OvlNoFit;               /* planes: scaler can't make its size */
     LONG        hvs_OvlX, hvs_OvlY;
     ULONG       hvs_OvlOff;
     ULONG       hvs_OvlWords;               /* entry length in the list */

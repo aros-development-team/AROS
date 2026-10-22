@@ -23,6 +23,7 @@ FILES	:=	\
 	vcgfx_pixfmts \
 	vcgfx_onbitmap \
 	vcgfx_offbitmap \
+	vcgfx_overlay \
 	vcgfx_planes
 
 %build_module mmake=hidd-vcgfx \
