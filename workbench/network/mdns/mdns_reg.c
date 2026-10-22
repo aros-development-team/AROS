@@ -1035,11 +1035,15 @@ mdnsRegAdd(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
 }
 
 /* Changes a registered service's text or port and tells the link. Only
- * the client that registered it may. */
+ * the client that registered it may. An update that changes nothing is
+ * not announced: the link is told of changed data only (RFC 6762 sections
+ * 8.3 and 8.4), and a client may use such an update to learn that the
+ * daemon still knows its handle. */
 LONG
 mdnsRegUpdate(struct MDNSDaemon *md, const struct MDNSIPCMsg *msg)
 {
     struct MDNSRegisteredService *rs = service_find(md, msg->mi_Handle);
+    BOOL changed = FALSE;
 
     if (rs == NULL) {
         return MDNSERR_NOTFOUND;
@@ -1051,15 +1055,23 @@ mdnsRegUpdate(struct MDNSDaemon *md, const struct MDNSIPCMsg *msg)
         return MDNSERR_BADPARAM;
     }
     if (msg->mi_Flags & MDNS_IPC_UPDF_TXT) {
-        mdnsTextCopy(rs->rs_TXT, (LONG)sizeof(rs->rs_TXT), msg->mi_TXT);
+        char txt[sizeof(rs->rs_TXT)];
+
+        mdnsTextCopy(txt, (LONG)sizeof(txt), msg->mi_TXT);
+        if (strcmp(txt, rs->rs_TXT) != 0) {
+            memcpy(rs->rs_TXT, txt, sizeof(txt));
+            changed = TRUE;
+        }
     }
-    if (msg->mi_Port != 0) {
+    if (msg->mi_Port != 0 && msg->mi_Port != rs->rs_Port) {
         rs->rs_Port = msg->mi_Port;
+        changed = TRUE;
     }
-    if (msg->mi_TTL != 0) {
+    if (msg->mi_TTL != 0 && msg->mi_TTL != rs->rs_TTL) {
         rs->rs_TTL = msg->mi_TTL;
+        changed = TRUE;
     }
-    if (rs->rs_State == MDNS_NAME_ANNOUNCED) {
+    if (changed && rs->rs_State == MDNS_NAME_ANNOUNCED) {
         service_send(md, rs, FALSE);
         rs->rs_Step = 1;
         rs->rs_NextTick = mdnsTicks() + 50;
