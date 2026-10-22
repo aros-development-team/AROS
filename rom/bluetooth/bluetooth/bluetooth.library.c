@@ -270,6 +270,38 @@ struct btMemHeader
 };
 
 /* /// "btAllocVec()" */
+/*****************************************************************************
+    NAME
+        APTR btAllocVec(
+
+    SYNOPSIS
+        ULONG size)
+
+    FUNCTION
+        Allocate cleared public memory from the Bluetooth library pool.
+        The returned address meets AROS_WORSTALIGN.
+
+    INPUTS
+        size - Requested byte count.
+
+    RESULT
+        Allocated memory, or NULL if allocation fails.
+
+    NOTES
+        Release the exact returned address with btFreeVec(), not FreeVec().
+        Keep bluetooth.library open until all allocations are released.
+        A zero-size request may return a pointer, but provides no usable
+        bytes. Call from task context.
+
+    BUGS
+        Allocation overhead is added without overflow checking. Requests
+        near the ULONG limit can return a block smaller than requested;
+        do not use this function to validate externally supplied sizes.
+
+    SEE ALSO
+        btFreeVec(), btCopyStr()
+
+*****************************************************************************/
 AROS_LH1(APTR, btAllocVec,
          AROS_LHA(ULONG, size, D0),
          LIBBASETYPEPTR, BluetoothBase, 5, bt)
@@ -308,6 +340,32 @@ AROS_LH1(APTR, btAllocVec,
 /* \\\ */
 
 /* /// "btFreeVec()" */
+/*****************************************************************************
+    NAME
+        VOID btFreeVec(
+
+    SYNOPSIS
+        APTR memptr)
+
+    FUNCTION
+        Release memory allocated by btAllocVec() or an API that specifies
+        btFreeVec() as its release function.
+
+    INPUTS
+        memptr - Exact allocation address, or NULL for no operation.
+
+    RESULT
+        None.
+
+    NOTES
+        Release each allocation once, through the same library instance.
+        Interior pointers and memory from other allocators are invalid.
+        The allocation must no longer be in use. Call from task context.
+
+    SEE ALSO
+        btAllocVec(), btCopyStrFmtA()
+
+*****************************************************************************/
 AROS_LH1(void, btFreeVec,
          AROS_LHA(APTR, pmem, A1),
          LIBBASETYPEPTR, BluetoothBase, 6, bt)
@@ -598,6 +656,34 @@ void bUnlockSem(LIBBASETYPEPTR BluetoothBase, struct BtLockSem *bls)
 /* \\\ */
 
 /* /// "btDebugSemaphores()" */
+/*****************************************************************************
+    NAME
+        VOID btDebugSemaphores(
+
+    SYNOPSIS
+        )
+
+    FUNCTION
+        Append diagnostic records for registered Bluetooth locks to the
+        Bluetooth error-message list. Include owners, nesting counts,
+        waiting tasks and reader records.
+
+    INPUTS
+        None.
+
+    RESULT
+        None. Individual message allocation failures are not reported.
+
+    NOTES
+        Call from task context. Records use RETURN_OK and can be suppressed
+        by the information-log setting. Logging can allocate memory, emit
+        events and perform configured debug output. This does not acquire
+        the reported locks, resolve a deadlock or validate lock ownership.
+
+    SEE ALSO
+        btAddErrorMsgA()
+
+*****************************************************************************/
 AROS_LH0(void, btDebugSemaphores,
          LIBBASETYPEPTR, BluetoothBase, 85, bt)
 {
@@ -620,6 +706,37 @@ AROS_LH0(void, btDebugSemaphores,
 /* \\\ */
 
 /* /// "btLockReadBase()" */
+/*****************************************************************************
+    NAME
+        VOID btLockReadBase(
+
+    SYNOPSIS
+        )
+
+    FUNCTION
+        Acquire shared access to the Bluetooth library base. The calling task
+        may nest acquisitions.
+
+    INPUTS
+        None.
+
+    RESULT
+        None. Return indicates that access has been acquired.
+
+    NOTES
+        Call from task context. The call may wait indefinitely and uses
+        SIGB_SINGLE while waiting. Balance every acquisition with one
+        btUnlockBase() in the same task. A read acquisition made by the
+        exclusive owner increases its exclusive nesting count.
+
+        If a reader record cannot be allocated, the call acquires exclusive
+        access instead. Do not depend on another reader entering while this
+        lock is held. No reader/writer fairness guarantee is provided.
+
+    SEE ALSO
+        btLockWriteBase(), btUnlockBase(), btBorrowLocksWait()
+
+*****************************************************************************/
 AROS_LH0(void, btLockReadBase,
          LIBBASETYPEPTR, BluetoothBase, 8, bt)
 {
@@ -631,6 +748,38 @@ AROS_LH0(void, btLockReadBase,
 /* \\\ */
 
 /* /// "btLockWriteBase()" */
+/*****************************************************************************
+    NAME
+        VOID btLockWriteBase(
+
+    SYNOPSIS
+        )
+
+    FUNCTION
+        Acquire exclusive access to the Bluetooth library base. Repeated
+        acquisitions by the owner increase the nesting count.
+
+    INPUTS
+        None.
+
+    RESULT
+        None. Return indicates that exclusive access has been acquired.
+
+    NOTES
+        Call from task context. The call may wait indefinitely and uses
+        SIGB_SINGLE while waiting. Balance every acquisition with one
+        btUnlockBase() in the same task.
+
+        An existing read lock can be promoted when this task is the only
+        reader. The read acquisition remains and needs its own unlock after
+        the exclusive acquisition is released. Do not attempt concurrent
+        read-to-write upgrades: waiting while retaining shared access can
+        deadlock with another upgrading reader.
+
+    SEE ALSO
+        btLockReadBase(), btUnlockBase(), btBorrowLocksWait()
+
+*****************************************************************************/
 AROS_LH0(void, btLockWriteBase,
          LIBBASETYPEPTR, BluetoothBase, 7, bt)
 {
@@ -642,6 +791,34 @@ AROS_LH0(void, btLockWriteBase,
 /* \\\ */
 
 /* /// "btUnlockBase()" */
+/*****************************************************************************
+    NAME
+        VOID btUnlockBase(
+
+    SYNOPSIS
+        )
+
+    FUNCTION
+        Release one lock acquisition held by the calling task on the Bluetooth library base.
+
+    INPUTS
+        None.
+
+    RESULT
+        None. Ownership errors are logged, not returned.
+
+    NOTES
+        Release exclusive acquisitions before any underlying shared
+        acquisitions. The last acquisition of a mode releases that mode and
+        wakes waiting tasks; it does not guarantee which waiter proceeds.
+        An unlock by a non-owner or without an acquisition leaves the lock
+        unchanged and can add diagnostic messages. Do not use this call
+        as an ownership test. Call from task context.
+
+    SEE ALSO
+        btLockReadBase(), btLockWriteBase()
+
+*****************************************************************************/
 AROS_LH0(void, btUnlockBase,
          LIBBASETYPEPTR, BluetoothBase, 9, bt)
 {
@@ -653,6 +830,48 @@ AROS_LH0(void, btUnlockBase,
 /* \\\ */
 
 /* /// "btBorrowLocksWait()" */
+/*****************************************************************************
+    NAME
+        ULONG btBorrowLocksWait(
+
+    SYNOPSIS
+        struct Task *task, ULONG signals)
+
+    FUNCTION
+        Temporarily lend the calling task's tracked Bluetooth locks to
+        another task while waiting for a signal, then restore the caller's
+        acquisitions. A target already waiting for a lock may be allowed
+        to acquire it instead of receiving its ownership directly.
+
+    INPUTS
+        task - Live, cooperating target task, distinct from the caller.
+        signals - Nonzero Exec signal mask to wait for in the calling task.
+
+    RESULT
+        Signal mask returned by Wait(). Restoring the locks may delay
+        return beyond receipt of the signal.
+
+    NOTES
+        Call from task context. This applies only to locks registered with
+        bluetooth.library, not arbitrary Exec semaphores. With no tracked
+        locks held, it is equivalent to Wait(signals).
+
+        Arrange a completion handshake before calling. The target must
+        balance its own acquisitions, leave borrowed acquisitions intact
+        and keep the protected objects and locks alive until restoration.
+        The target and entry code must remain valid through the handshake.
+        There is no timeout or cancellation result. Do not use a stale
+        signal as evidence that the target has finished.
+
+    BUGS
+        Allocation failure can leave some locks with the caller while it
+        waits, without an error result. A target needing those locks can
+        then deadlock. Lending is not an atomic all-or-nothing operation.
+
+    SEE ALSO
+        btLockReadBase(), btLockWriteBase(), btSpawnSubTask(), exec.library/Wait()
+
+*****************************************************************************/
 AROS_LH2(ULONG, btBorrowLocksWait,
          AROS_LHA(struct Task *, task, A1),
          AROS_LHA(ULONG, signals, D0),
@@ -871,6 +1090,32 @@ AROS_LH2(ULONG, btBorrowLocksWait,
 /* *** Support *** */
 
 /* /// "btCopyStr()" */
+/*****************************************************************************
+    NAME
+        STRPTR btCopyStr(
+
+    SYNOPSIS
+        CONST_STRPTR name)
+
+    FUNCTION
+        Allocate a copy of a NUL-terminated string, including its terminator.
+
+    INPUTS
+        name - Non-NULL source string, valid for the duration of the call.
+
+    RESULT
+        Independent string copy, or NULL on allocation failure.
+
+    NOTES
+        Release with btFreeVec(). Keep the library open until the copy is
+        freed. The source is not retained. Call from task context. The
+        string length and allocation overhead must fit the allocator's
+        ULONG size range.
+
+    SEE ALSO
+        btFreeVec(), btAllocVec(), btCopyStrFmtA()
+
+*****************************************************************************/
 AROS_LH1(STRPTR, btCopyStr,
          AROS_LHA(CONST_STRPTR, name, A0),
          LIBBASETYPEPTR, BluetoothBase, 10, bt)
@@ -887,6 +1132,40 @@ AROS_LH1(STRPTR, btCopyStr,
 /* \\\ */
 
 /* /// "btSafeRawDoFmtA()" */
+/*****************************************************************************
+    NAME
+        VOID btSafeRawDoFmtA(
+
+    SYNOPSIS
+        STRPTR buf, ULONG len, CONST_STRPTR fmtstr, RAWARG fmtdata)
+
+    FUNCTION
+        Format a RawDoFmt argument stream into a bounded buffer. Retain
+        at most len - 1 output bytes and terminate the result when len
+        is nonzero.
+
+    INPUTS
+        buf - Writable buffer of at least len bytes.
+        len - Capacity including the terminating NUL; zero writes nothing
+            and does not inspect the format or arguments.
+        fmtstr - NUL-terminated RawDoFmt format, not a printf format.
+        fmtdata - Argument stream in the target's RawDoFmt layout. It may
+            be NULL only when the format consumes no arguments.
+
+    RESULT
+        None. Truncation and the required output length are not reported.
+
+    NOTES
+        For nonzero len, the format and all referenced arguments must remain
+        valid throughout formatting. Filling the buffer does not stop
+        format processing or argument access. Do not overlap the output
+        with the format, argument stream or referenced strings. Inputs are
+        not retained. A one-byte buffer receives only a NUL.
+
+    SEE ALSO
+        btCopyStrFmtA(), exec.library/RawDoFmt()
+
+*****************************************************************************/
 AROS_LH4(void, btSafeRawDoFmtA,
          AROS_LHA(STRPTR, buf, A0),
          AROS_LHA(ULONG, len, D0),
@@ -922,6 +1201,36 @@ AROS_UFH2(void, bPutChar,
 /* \\\ */
 
 /* /// "btCopyStrFmtA()" */
+/*****************************************************************************
+    NAME
+        STRPTR btCopyStrFmtA(
+
+    SYNOPSIS
+        CONST_STRPTR fmtstr, RAWARG fmtdata)
+
+    FUNCTION
+        Allocate a string containing formatted RawDoFmt output.
+
+    INPUTS
+        fmtstr - Non-NULL, NUL-terminated RawDoFmt format.
+        fmtdata - Matching RawDoFmt argument stream; NULL is valid only
+            when no arguments are consumed.
+
+    RESULT
+        Allocated terminated string, or NULL on allocation failure.
+
+    NOTES
+        The format is evaluated twice, first to measure and then to write.
+        Keep the argument stream and all referenced data unchanged through
+        both passes. The result is independent of those inputs. Release it
+        with btFreeVec() before closing the library. Call from task context.
+        Output length, terminators and allocation overhead must fit ULONG;
+        length arithmetic is not checked for overflow.
+
+    SEE ALSO
+        btSafeRawDoFmtA(), btFreeVec(), exec.library/RawDoFmt()
+
+*****************************************************************************/
 AROS_LH2(STRPTR, btCopyStrFmtA,
          AROS_LHA(CONST_STRPTR, fmtstr, A0),
          AROS_LHA(RAWARG, fmtdata, A1),
@@ -953,6 +1262,30 @@ AROS_UFH2(void, bRawFmtLength,
 /* \\\ */
 
 /* /// "btDelayMS()" */
+/*****************************************************************************
+    NAME
+        VOID btDelayMS(
+
+    SYNOPSIS
+        ULONG milli)
+
+    FUNCTION
+        Submit a timer.device delay and wait for its completion.
+
+    INPUTS
+        milli - Requested delay in milliseconds.
+
+    RESULT
+        None. Timer errors are not returned.
+
+    NOTES
+        Call from task context with bluetooth.library open. The wait uses
+        SIGB_SINGLE in the calling task; do not use that signal concurrently
+        for another protocol. Scheduling may extend the elapsed delay.
+        Zero still submits a zero-duration timer request; this is not a
+        precision timing or cancellation interface.
+
+*****************************************************************************/
 AROS_LH1(void, btDelayMS,
          AROS_LHA(ULONG, milli, D0),
          LIBBASETYPEPTR, BluetoothBase, 11, bt)
@@ -978,6 +1311,43 @@ AROS_LH1(void, btDelayMS,
 /* \\\ */
 
 /* /// "btSpawnSubTask()" */
+/*****************************************************************************
+    NAME
+        struct Task * btSpawnSubTask(
+
+    SYNOPSIS
+        STRPTR name, APTR initpc, APTR userdata)
+
+    FUNCTION
+        Start a worker using the configured Bluetooth subtask priority and
+        AROS_STACKSIZE. Create a DOS process when dos.library can be opened;
+        otherwise create an Exec task.
+
+    INPUTS
+        name - Non-NULL, NUL-terminated task name; copied during creation.
+        initpc - Non-NULL entry point compatible with both possible startup
+            environments. It receives no ordinary C argument from this call.
+        userdata - Borrowed pointer installed in the worker's tc_UserData.
+            The worker can retrieve it through FindTask(NULL).
+
+    RESULT
+        Task pointer, or NULL if required arguments are NULL or creation
+        fails. The result can point to a Process. It is not an initialization
+        completion notification or a lifetime reference.
+
+    NOTES
+        Call from task context. The worker may run or exit before the caller
+        resumes. Establish an explicit startup and shutdown handshake before
+        using the returned pointer. Keep userdata and entry code alive until
+        the worker finishes; neither is copied or freed by this function.
+        A DOS process does not copy the caller's local variables (NP_CopyVars
+        is FALSE). An Exec task must not assume a DOS process environment.
+        The caller must keep libraries used by the worker open.
+
+    SEE ALSO
+        btBorrowLocksWait(), exec.library/FindTask(), dos.library/CreateNewProc()
+
+*****************************************************************************/
 AROS_LH3(struct Task *, btSpawnSubTask,
          AROS_LHA(STRPTR, name, A0),
          AROS_LHA(APTR, initpc, A1),

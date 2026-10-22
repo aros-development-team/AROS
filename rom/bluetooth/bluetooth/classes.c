@@ -163,6 +163,47 @@ AROS_LH1(void, btRemClass,
 /* *** Error Msgs *** */
 
 /* /// "btAddErrorMsgA()" */
+/*****************************************************************************
+    NAME
+        APTR btAddErrorMsgA(
+
+    SYNOPSIS
+        UWORD level, STRPTR origin, STRPTR fmtstr, RAWARG fmtdata)
+
+    FUNCTION
+        Format and append a message to the Bluetooth error-message list,
+        subject to the configured severity filters.
+
+    INPUTS
+        level - Severity. Values below RETURN_WARN are informational;
+            RETURN_WARN to below RETURN_ERROR are warnings; RETURN_ERROR
+            to below RETURN_FAIL are errors; RETURN_FAIL and above are
+            failures.
+        origin - Non-NULL, NUL-terminated origin name; copied.
+        fmtstr - Non-NULL, NUL-terminated RawDoFmt format.
+        fmtdata - Matching RawDoFmt argument stream; referenced data must
+            remain unchanged while the message is formatted.
+
+    RESULT
+        Message handle, or NULL if filtered out or allocation fails. NULL
+        does not distinguish suppression from failure.
+
+    NOTES
+        The message and copied strings belong to the library list. Remove
+        the message with btRemErrorMsg(), not btFreeVec(). Coordinate with
+        other message-list users; the handle is not a retained reference.
+        Inputs are not retained after formatting.
+
+        Call from task context. A successful append sends BEHMB_ADDERRORMSG,
+        but event delivery can fail independently. With btdebug enabled,
+        output is also sent to the kernel log and, from a DOS process with
+        DOS available, appended to SYS:BluetoothLog.txt. Output failures
+        do not change the returned handle.
+
+    SEE ALSO
+        btRemErrorMsg(), btCopyStrFmtA(), btSendEvent()
+
+*****************************************************************************/
 AROS_LH4(struct BtErrorMsg *, btAddErrorMsgA,
          AROS_LHA(UWORD, level, D0),
          AROS_LHA(STRPTR, origin, A0),
@@ -227,6 +268,35 @@ AROS_LH4(struct BtErrorMsg *, btAddErrorMsgA,
 /* \\\ */
 
 /* /// "btRemErrorMsg()" */
+/*****************************************************************************
+    NAME
+        VOID btRemErrorMsg(
+
+    SYNOPSIS
+        APTR bem)
+
+    FUNCTION
+        Unlink an error message, free its copied strings and storage, then
+        send BEHMB_REMERRORMSG.
+
+    INPUTS
+        bem - Live message handle in this library's error list. NULL and
+            previously removed handles are invalid.
+
+    RESULT
+        None.
+
+    NOTES
+        The handle and its strings are invalid after removal. The removal
+        event carries the old address only as an identifier: recipients
+        must not dereference it. Earlier queued add events do not keep the
+        message alive. Serialize removal with message readers and other
+        removers. Call from task context.
+
+    SEE ALSO
+        btAddErrorMsgA(), btSendEvent()
+
+*****************************************************************************/
 AROS_LH1(void, btRemErrorMsg,
          AROS_LHA(struct BtErrorMsg *, bem, A0),
          LIBBASETYPEPTR, BluetoothBase, 39, bt)
@@ -686,6 +756,39 @@ AROS_LH2(struct BtEventHook *, btAddEventHandler,
 /* \\\ */
 
 /* /// "btRemEventHandler()" */
+/*****************************************************************************
+    NAME
+        VOID btRemEventHandler(
+
+    SYNOPSIS
+        APTR beh)
+
+    FUNCTION
+        Unregister an event hook, reply to every message currently queued
+        on its port and free the hook.
+
+    INPUTS
+        beh - Live hook returned by btAddEventHandler(), or NULL for
+            no operation.
+
+    RESULT
+        None.
+
+    NOTES
+        Use a dedicated message port: queued messages are replied without
+        checking their type or which hook delivered them. The port itself
+        is not deleted. Keep it alive through this call. Messages already
+        removed from the port by a consumer are not reclaimed here; reply
+        to them before ending the consumer's use of the library.
+
+        Call from task context. Serialize removal with consumers and other
+        removers; the hook is invalid afterward. Unregister all hooks and
+        complete outstanding replies before closing bluetooth.library.
+
+    SEE ALSO
+        btAddEventHandler(), btSendEvent(), exec.library/ReplyMsg()
+
+*****************************************************************************/
 AROS_LH1(void, btRemEventHandler,
          AROS_LHA(struct BtEventHook *, beh, A0),
          LIBBASETYPEPTR, BluetoothBase, 48, bt)
@@ -710,6 +813,42 @@ AROS_LH1(void, btRemEventHandler,
 /* \\\ */
 
 /* /// "btSendEvent()" */
+/*****************************************************************************
+    NAME
+        VOID btSendEvent(
+
+    SYNOPSIS
+        ULONG behmt, APTR param1, APTR param2)
+
+    FUNCTION
+        Queue a separate event note for each registered hook whose mask
+        selects the event. Reclaim previously replied notes first.
+
+    INPUTS
+        behmt - Event number (BEHMB_*), not a BEHMF_* bit mask. Use a
+            defined event number from libraries/bluetooth.h.
+        param1, param2 - Event-specific values copied into each note;
+            pointed-to objects and data are not copied or retained.
+
+    RESULT
+        None. Allocation failure can omit delivery to any individual hook
+        without reporting an error; delivery is not all-or-nothing.
+
+    NOTES
+        Call from task context; this can wait for the event-list semaphore
+        but does not wait for recipients. Keep referenced objects valid for
+        asynchronous use, or define them as identifiers only. Removal events
+        can carry already-invalid object addresses.
+
+        Recipients must ReplyMsg() each note exactly once and must not free
+        it themselves. ben_Data and ben_Device are NULL; ben_DataLength is
+        zero. This generic call does not construct the copied value payload
+        of a service-write notification.
+
+    SEE ALSO
+        btAddEventHandler(), btRemEventHandler(), exec.library/ReplyMsg()
+
+*****************************************************************************/
 AROS_LH3(void, btSendEvent,
          AROS_LHA(ULONG, behmt, D0),
          AROS_LHA(APTR, param1, A0),
