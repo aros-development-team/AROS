@@ -235,7 +235,8 @@ AROS_LH1(struct Library *, Open,
     ObtainSemaphore(&baselist_semaphore);
     if((newBase = FindSocketBase(FindTask(NULL))) != NULL) {
         /* A same-task callback must not resurrect a base being closed. */
-        if(newBase->libNode.lib_OpenCnt == 0) {
+        if(newBase->libNode.lib_OpenCnt == 0 ||
+                newBase->libNode.lib_OpenCnt == (UWORD)~0U) {
             ReleaseSemaphore(&baselist_semaphore);
             return NULL;
         }
@@ -286,8 +287,15 @@ AROS_LH1(struct Library *, Open,
     newBase->libNode.lib_Node.ln_Succ = NULL;
     newBase->libNode.lib_Node.ln_Pred = NULL;
     ObtainSemaphore(&baselist_semaphore);
-    libPtr->lib_OpenCnt++;		/* mark us as having another opener */
-    libPtr->lib_Flags &= ~LIBF_DELEXP;	/* prevent delayed expunges */
+    if(libPtr->lib_OpenCnt == (UWORD)~0U) {
+        ULONG size = newBase->libNode.lib_NegSize + newBase->libNode.lib_PosSize;
+        UBYTE *allocation = (UBYTE *)newBase - newBase->libNode.lib_NegSize;
+        ReleaseSemaphore(&baselist_semaphore);
+        FreeMem(allocation, size);
+        return NULL;
+    }
+    libPtr->lib_OpenCnt++;
+    libPtr->lib_Flags &= ~LIBF_DELEXP;
     ReleaseSemaphore(&baselist_semaphore);
 
     /*
@@ -585,6 +593,7 @@ struct SocketBase *api_hookbase_open(VOID)
     if(ok) {
         ObtainSemaphore(&baselist_semaphore);
         ok = MasterSocketBase != NULL &&
+             MasterSocketBase->lib_OpenCnt != (UWORD)~0U &&
              (api_state == API_SHOWN || api_state == API_HIDDEN);
         if(ok) {
             AddTail(&socketBaseList, (struct Node *)p);
@@ -618,8 +627,21 @@ VOID api_hookbase_close(struct SocketBase *p)
 
 #if defined(ENABLE_FDLIBRARY)
 extern BOOL fdhooks_setup(void);        /* amiga_fdhooks.c */
-extern void fdhooks_cleanup(void);
+extern BOOL fdhooks_withdraw(void);
+extern BOOL fdhooks_cleanup(void);
 #endif
+
+/* Stop fd admission before any network resource is destroyed. The normal
+   stop request is rejected while admitted operations remain; error cleanup
+   keeps resources alive until the same barrier succeeds. */
+BOOL api_quiesce_fd(void)
+{
+#if defined(ENABLE_FDLIBRARY)
+    return fdhooks_withdraw();
+#else
+    return TRUE;
+#endif
+}
 
 BOOL api_init()
 {
@@ -1004,7 +1026,9 @@ VOID api_deinit()
         return;
 
 #if defined(ENABLE_FDLIBRARY)
-    fdhooks_cleanup();
+    /* Also honor the barrier if called independently of deinit_all(). */
+    while (!fdhooks_cleanup())
+        Delay(1);
 #endif
 
     Forbid();
