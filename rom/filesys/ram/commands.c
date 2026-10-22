@@ -1970,8 +1970,13 @@ BOOL CmdRenameObject(struct Handler *handler, struct Lock *old_lock,
          /* Update notifications */
 
          NotifyAll(handler, object, FALSE);
-         UnmatchNotifyRequests(handler, object);
-         MatchNotifyRequests(handler);
+         if(object->node.ln_Pri > 0)
+            RematchNotifyRequests(handler);
+         else
+         {
+            UnmatchNotifyRequests(handler, object);
+            MatchNotifyRequests(handler);
+         }
       }
 
       NotifyAll(handler, object, FALSE);
@@ -2652,6 +2657,7 @@ BOOL CmdAddNotify(struct Handler *handler, struct NotifyRequest *request)
 
    if(error == 0)
    {
+      handler->notification_count++;
       notification->request = request;
       request->nr_Flags &= ~NRF_MAGIC;
 
@@ -2709,6 +2715,7 @@ BOOL CmdRemoveNotify(struct Handler *handler, struct NotifyRequest *request)
 
    notification = FindNotification(handler, request);
    Remove((APTR)notification);
+   handler->notification_count--;
    FreePooled(handler->clear_pool, notification,
       sizeof(struct Notification));
 

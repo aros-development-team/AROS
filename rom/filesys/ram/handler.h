@@ -152,6 +152,7 @@ struct Handler
    ULONG max_block_size;
    BOOL locked;
    struct MinList notifications;
+   UPINT notification_count;
    struct MinList examinations;
    APTR clear_pool;
    APTR muddy_pool;

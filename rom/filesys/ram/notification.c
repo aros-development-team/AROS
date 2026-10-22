@@ -57,6 +57,34 @@ static VOID NotifyObject(struct Handler *handler, struct Object *object);
 *
 */
 
+/* A directory path change may affect notifications through hard-link aliases.
+   Walk the owning tree, not the aliases, so directory-link cycles are harmless.
+   Ordinary renames without notifications require no tree walk. */
+VOID RematchNotifyRequests(struct Handler *handler)
+{
+   struct Object *object = handler->root_dir;
+
+   if(handler->notification_count == 0)
+      return;
+
+   for(;;)
+   {
+      UnmatchNotifyRequests(handler, object);
+      if((object->node.ln_Pri == ST_ROOT || object->node.ln_Pri == ST_USERDIR)
+         && !IsListEmpty(&object->elements))
+      {
+         object = (APTR)object->elements.mlh_Head;
+         continue;
+      }
+      while(object != handler->root_dir && object->node.ln_Succ->ln_Succ == NULL)
+         object = object->parent;
+      if(object == handler->root_dir)
+         break;
+      object = (APTR)object->node.ln_Succ;
+   }
+   MatchNotifyRequests(handler);
+}
+
 VOID MatchNotifyRequests(struct Handler *handler)
 {
    struct Notification *notification, *next_notification, *tail;

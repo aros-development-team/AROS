@@ -391,7 +391,10 @@ VOID DeleteObject(struct Handler *handler, struct Object *object)
          AdjustExaminations(handler, heir);
          UnmatchNotifyRequests(handler, heir);
          Remove((APTR)heir);
-         MatchNotifyRequests(handler);
+         if(object_type == ST_USERDIR)
+            RematchNotifyRequests(handler);
+         else
+            MatchNotifyRequests(handler);
          object = heir;
       }
 
