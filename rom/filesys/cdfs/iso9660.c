@@ -31,6 +31,7 @@ struct ISOVolume {
     struct isoVolume iv_Volume;
     struct ISOLock   iv_RootLock;
     TEXT             iv_Name[1 + 32 + 1];
+    BOOL             iv_NoPathTable;
     struct {
         ULONG   Size;   /* In bytes */
         ULONG   Extent;
@@ -44,9 +45,9 @@ static ULONG ascdec(STRPTR val, int len)
 {
     ULONG out = 0;
 
-    while ((*val >= '0' && *val <= '9') && len > 0) {
+    while (len > 0 && (*val >= '0' && *val <= '9')) {
         out *= 10;
-        out += *val - '9';
+        out += *val - '0';
         len--;
         val++;
     }
@@ -114,11 +115,19 @@ static BOOL isoParseDir(struct CDFSVolume *vol, struct ISOLock *il, struct isoDi
     const strD *cp;
     BOOL has_Amiga_Protections = FALSE;
     BOOL has_RockRidge = FALSE;
+    BOOL has_name = FALSE, name_continues = FALSE;
 
     if (dir) {
+        if (dir->DirectoryLength < 34 || dir->FileIdentifierLength == 0 ||
+            dir->FileIdentifierLength > dir->DirectoryLength - 33)
+            return FALSE;
         il->il_Extent = isoRead32LM(&dir->ExtentLocation);
         il->il_PathTable = NULL;
     } else {
+        if (!iv || !iv->iv_PathTable.Entry || !il->il_PathTable ||
+            il->il_PathTable->ParentDirectory == 0 ||
+            il->il_PathTable->ParentDirectory > iv->iv_PathTable.Entries)
+            return FALSE;
         il->il_Extent = il->il_PathTable->ExtentLocation;
         iparent = iv->iv_PathTable.Entry[il->il_PathTable->ParentDirectory-1]->ExtentLocation;
     }
@@ -194,18 +203,21 @@ static BOOL isoParseDir(struct CDFSVolume *vol, struct ISOLock *il, struct isoDi
     while (i < (dir->DirectoryLength - 3)) {
         struct rrSystemUse *rr = (APTR)(((UBYTE *)dir) + i);
         D(bug("%s: RR @%d [%c%c] (%d)\n", __func__, i, (AROS_BE2WORD(rr->Signature) >> 8) & 0xff, AROS_BE2WORD(rr->Signature) & 0xff, rr->Length));
-        if (rr->Length == 0) {
-            D(bug("%s: Corrupted RR section detected (%d left)\n", __func__, dir->DirectoryLength - i));
-            break;
-        }
+        if (rr->Length < 4 || rr->Length > dir->DirectoryLength - i)
+            goto system_use_done;
         switch (AROS_BE2WORD(rr->Signature)) {
         case RR_SystemUse_AS:
             if (rr->Version == RR_SystemUse_AS_VERSION) {
                 UBYTE *data = &rr->AS.Data[0];
+                UBYTE *end = (UBYTE *)rr + rr->Length;
 
+                if (rr->Length < 5)
+                    goto system_use_done;
                 /* Amiga System Use area */
                 if (rr->AS.Flags & RR_AS_PROTECTION) {
                     struct SystemUseASProtection *ap = (APTR)data;
+                    if (end - data < sizeof(*ap))
+                        goto system_use_done;
                     fib->fib_Protection = (ap->User       << 24) |
                                           (ap->Zero       << 16) |
                                           (ap->MultiUser  << 8) |
@@ -215,16 +227,22 @@ static BOOL isoParseDir(struct CDFSVolume *vol, struct ISOLock *il, struct isoDi
                 }
                 if (rr->AS.Flags & RR_AS_COMMENT) {
                     struct SystemUseASComment *ac = (APTR)data;
-                    int len = ac->Length;
-                    if (len > (MAXCOMMENTLENGTH - fib->fib_Comment[0])-1) {
-                        len = (MAXCOMMENTLENGTH - fib->fib_Comment[0])-1;
-                        CopyMem(&ac->Comment[0], &fib->fib_Comment[fib->fib_Comment[0]+1], len);
-                        fib->fib_Comment[0] += len;
-                    }
+                    int len, available;
+                    if (data == end || ac->Length > end - data - 1)
+                        goto system_use_done;
+                    len = ac->Length;
+                    available = sizeof(fib->fib_Comment) - 2 - (UBYTE)fib->fib_Comment[0];
+                    if (len > available)
+                        len = available;
+                    CopyMem(ac->Comment, &fib->fib_Comment[(UBYTE)fib->fib_Comment[0]+1], len);
+                    fib->fib_Comment[0] += len;
+                    fib->fib_Comment[(UBYTE)fib->fib_Comment[0]+1] = 0;
                 }
             }
             break;
         case RR_SystemUse_PX:
+            if (rr->Length < 36)
+                goto system_use_done;
             /* This field is mandatory for Rock Ridge */
             has_RockRidge = TRUE;
 
@@ -251,20 +269,38 @@ static BOOL isoParseDir(struct CDFSVolume *vol, struct ISOLock *il, struct isoDi
             break;
         case RR_SystemUse_NM:
             if (rr->Version == RR_SystemUse_NM_VERSION) {
-                int len = rr->Length - ((UBYTE *)&rr->NM.Content[0] - (UBYTE *)rr);
-                if (len > (MAXCOMMENTLENGTH - fib->fib_FileName[0])-1) {
-                    len = (MAXCOMMENTLENGTH - fib->fib_FileName[0])-1;
-                    CopyMem(&rr->NM.Content[0], &fib->fib_FileName[fib->fib_FileName[0]+1], len);
-                    fib->fib_FileName[0] += len;
+                int len, available;
+                if (rr->Length < 5)
+                    goto system_use_done;
+                /* Current/parent and reserved names are not alternate filenames. */
+                if (rr->NM.Flags & ~1)
+                    break;
+                if (has_name && !name_continues)
+                    break;
+                if (!has_name) {
+                    fib->fib_FileName[0] = 0;
+                    has_name = TRUE;
                 }
+                len = rr->Length - 5;
+                available = sizeof(fib->fib_FileName) - 2 - (UBYTE)fib->fib_FileName[0];
+                if (len > available)
+                    len = available;
+                CopyMem(rr->NM.Content, &fib->fib_FileName[(UBYTE)fib->fib_FileName[0]+1], len);
+                fib->fib_FileName[0] += len;
+                fib->fib_FileName[(UBYTE)fib->fib_FileName[0]+1] = 0;
+                name_continues = (rr->NM.Flags & 1) != 0;
             }
             break;
         case RR_SystemUse_CL:
+            if (rr->Length < 12)
+                goto system_use_done;
             if (rr->Version == RR_SystemUse_CL_VERSION) {
                 il->il_Extent = isoRead32LM(&rr->CL.ChildDirectory);
             }
             break;
         case RR_SystemUse_PL:
+            if (rr->Length < 12)
+                goto system_use_done;
             if (rr->Version == RR_SystemUse_PL_VERSION) {
                 il->il_ParentExtent = isoRead32LM(&rr->PL.ParentDirectory);
             }
@@ -275,6 +311,9 @@ static BOOL isoParseDir(struct CDFSVolume *vol, struct ISOLock *il, struct isoDi
                 return FALSE;
             }
             break;
+        case RR_SystemUse_ST:
+            i = dir->DirectoryLength;
+            continue;
         case RR_SystemUse_TF:
             /* TF fields have no use under AROS */
             break;
@@ -288,15 +327,11 @@ static BOOL isoParseDir(struct CDFSVolume *vol, struct ISOLock *il, struct isoDi
         i += rr->Length;
     }
 
-    /* If RockRidge is detected, the PathTable is
-     * useless to us, due to re-arranged directories.
-     */
-    if (has_RockRidge && iv && iv->iv_PathTable.Size) {
-        FreeVec(iv->iv_PathTable.Entry);
-        FreeVec(iv->iv_PathTable.Data);
-        iv->iv_PathTable.Size = 0;
-        iv->iv_PathTable.Entries = 0;
-    }
+system_use_done:
+    /* Rock Ridge can relocate directories. Stop using the path-table shortcut,
+     * but retain its storage until unmount: existing locks may reference it. */
+    if (has_RockRidge && iv)
+        iv->iv_NoPathTable = TRUE;
 
 end:
 
@@ -317,36 +352,44 @@ static LONG isoReadDir(struct CDFSVolume *vol, struct ISOLock *ilock, ULONG exte
 {
     struct BCache *bcache = vol->cv_Device->cd_BCache;
     UBYTE *buff;
+    struct isoDirectory *dir;
+    ULONG within = offset % 2048;
+    ULONG length;
     LONG err;
-    D(struct CDFS *cdfs = vol->cv_CDFSBase;(void)cdfs;);
 
-    D(bug("%s: Extent @0x%08x, offset 0x%03x, parent 0x%08x\n", __func__, extent, offset, iparent));
-
-    err = BCache_Read(bcache, extent + (offset / 2048), &buff);
-    if (err == RETURN_OK) {
-        struct isoDirectory *dir = (APTR)&buff[offset];
-        if (!isoParseDir(vol, ilock, dir, iparent))
-            err = ERROR_OBJECT_WRONG_TYPE;
-        else {
-            if (dir->DirectoryLength == 0) {
-                err = ERROR_NO_MORE_ENTRIES;
-            } else {
-                if (size)
-                    *size = dir->DirectoryLength;
-                D(bug("%s: pe %d of %d dl %d\n", __func__, ilock->il_ParentExtent, offset, dir->DirectoryLength));
-                if (offset == 0 && dir->DirectoryLength) {
-                    offset = dir->DirectoryLength;
-                    D(bug("%s: Reading parent dir info at %d\n", __func__, offset));
-                    dir = (struct isoDirectory *)&buff[offset];
-                    ilock->il_ParentExtent = isoRead32LM(&dir->ExtentLocation);
-                    if (size)
-                        *size += dir->DirectoryLength;
-                }
-            }
-        }
+    if (size)
+        *size = 0;
+    err = BCache_Read(bcache, extent + offset / 2048, &buff);
+    if (err != RETURN_OK)
+        return err;
+    dir = (APTR)(buff + within);
+    length = dir->DirectoryLength;
+    if (length == 0) {
+        /* Padding ends this sector, not the directory. */
+        if (size)
+            *size = 2048 - within;
+        return ERROR_OBJECT_WRONG_TYPE;
     }
+    if (length < 34 || length > 2048 - within ||
+        dir->FileIdentifierLength == 0 || dir->FileIdentifierLength > length - 33)
+        return ERROR_NOT_A_DOS_DISK;
+    if (size)
+        *size = length;
+    if (!isoParseDir(vol, ilock, dir, iparent))
+        return ERROR_OBJECT_WRONG_TYPE;
 
-    return err;
+    if (offset == 0) {
+        /* The first two records describe this directory and its parent. */
+        dir = (APTR)(buff + length);
+        if (2048 - length < 34 || dir->DirectoryLength < 34 ||
+            dir->DirectoryLength > 2048 - length ||
+            dir->FileIdentifierLength != 1 || dir->FileIdentifier[0] != 1)
+            return ERROR_NOT_A_DOS_DISK;
+        ilock->il_ParentExtent = isoRead32LM(&dir->ExtentLocation);
+        if (size)
+            *size += dir->DirectoryLength;
+    }
+    return RETURN_OK;
 }
 
 static LONG isoFindCmp(struct CDFSVolume *vol, struct ISOLock *ifile, ULONG extent, BOOL (*cmp)(struct ISOLock *il, APTR data), APTR data)
@@ -359,17 +402,18 @@ static LONG isoFindCmp(struct CDFSVolume *vol, struct ISOLock *ifile, ULONG exte
     int i;
 
     /* Scan the path table first, if present */
-    for (i = 0; i < iv->iv_PathTable.Entries; i++) {
+    for (i = 0; !iv->iv_NoPathTable && i < iv->iv_PathTable.Entries; i++) {
         struct isoPathTable *pt = iv->iv_PathTable.Entry[i];
         if (pt->ExtentLocation == extent) {
             int j, parent = i;
             /* Is the thing we're looking for a subdirectory?  */
             for (j = 0; j < iv->iv_PathTable.Entries; j++) {
                 pt = iv->iv_PathTable.Entry[j];
-                if (j == parent)
+                if (j == parent || pt->ParentDirectory != parent + 1)
                     continue;
                 ifile->il_PathTable = pt;
-                isoParseDir(vol, ifile, NULL, 0);
+                if (!isoParseDir(vol, ifile, NULL, 0))
+                    continue;
                 if (cmp(ifile, data))
                     return RETURN_OK;
             }
@@ -389,7 +433,7 @@ static LONG isoFindCmp(struct CDFSVolume *vol, struct ISOLock *ifile, ULONG exte
 
         if (err != ERROR_OBJECT_WRONG_TYPE) {
             if (err != RETURN_OK)
-                break;
+                return err;
 
             if (cmp(ifile, data))
                 return RETURN_OK;
@@ -397,14 +441,9 @@ static LONG isoFindCmp(struct CDFSVolume *vol, struct ISOLock *ifile, ULONG exte
 
         offset += size;
 
-        /* Move to next block */
-        if (err == ERROR_OBJECT_WRONG_TYPE || size == 0 ||
-            (2048 - (offset % 2048)) < sizeof(struct isoDirectory) + 2) {
-            offset = (offset + 2048 - 1) & ~(2048 - 1);
-        }
     }
 
-    return RETURN_FAIL;
+    return ERROR_OBJECT_NOT_FOUND;
 }
 
 struct namecmp {
@@ -452,84 +491,64 @@ static VOID isoReadPathTables(struct CDFSVolume *vol)
     struct CDFS *cdfs = vol->cv_CDFSBase;
     struct BCache *bcache = vol->cv_Device->cd_BCache;
     struct ISOVolume *iv = vol->cv_Private;
-    ULONG sector;
     UBYTE *data, *dp;
-    LONG size, err;
-    int i;
+    ULONG size = iv->iv_PathTable.Size;
+    ULONG sector = iv->iv_PathTable.Extent;
+    ULONG entries = 0, i;
+    struct isoPathTable **table;
 
-    if (iv->iv_PathTable.Size == 0)
+    if (size == 0)
         return;
-
-    sector = iv->iv_PathTable.Extent;
-    size   = iv->iv_PathTable.Size;
-
-    D(bug("%s: Reading path table @0x%08x, %d bytes\n", __func__, sector * 2048, size));
     data = AllocVec(size, MEMF_PUBLIC);
     if (!data)
         return;
-
-    /* Read in the path table */
     dp = data;
-    while (size > 0) {
-        ULONG tocopy = size;
+    while (size) {
         UBYTE *cp;
-
-        if (tocopy > bcache->bc_BlockSize)
-            tocopy = bcache->bc_BlockSize;
-
-        err = BCache_Read(bcache, sector, &cp);
-        if (err != RETURN_OK) {
-            FreeVec(data);
-            return;
-        }
-
-        CopyMem(cp, dp, tocopy);
+        ULONG count = size < 2048 ? size : 2048;
+        if (BCache_Read(bcache, sector, &cp) != RETURN_OK)
+            goto bad_table;
+        CopyMem(cp, dp, count);
         sector++;
-        dp += tocopy;
-        size -= tocopy;
+        dp += count;
+        size -= count;
     }
-
-    /* Count the number of entries in the PathTable */
     size = iv->iv_PathTable.Size;
-    iv->iv_PathTable.Entries = 0;
     dp = data;
-    while (size > 0) {
-        UWORD len = (dp[0] + 8);
-        if (len & 1)
-            len++;
-        dp += len;
-        size -= len;
-        iv->iv_PathTable.Entries++;
+    while (size) {
+        ULONG length;
+        if (size < 8 || dp[0] == 0)
+            goto bad_table;
+        length = (8 + dp[0] + 1) & ~1;
+        if (length > size)
+            goto bad_table;
+        entries++;
+        dp += length;
+        size -= length;
     }
-
-    D(bug("%s: %d entries\n", __func__, iv->iv_PathTable.Entries));
-
-    if (iv->iv_PathTable.Entries == 0) {
-        FreeVec(data);
-        iv->iv_PathTable.Size = 0;
-        return;
+    if (entries > ~(ULONG)0 / sizeof(*table))
+        goto bad_table;
+    table = AllocVec(entries * sizeof(*table), MEMF_PUBLIC);
+    if (!table)
+        goto bad_table;
+    dp = data;
+    for (i = 0; i < entries; i++) {
+        struct isoPathTable *pt = (APTR)dp;
+        if (pt->ParentDirectory == 0 || pt->ParentDirectory > entries) {
+            FreeVec(table);
+            goto bad_table;
+        }
+        table[i] = pt;
+        dp += (8 + dp[0] + 1) & ~1;
     }
-
-    iv->iv_PathTable.Entry = AllocVec(sizeof(struct isoPathTable *)*iv->iv_PathTable.Entries, MEMF_PUBLIC);
-    if (iv->iv_PathTable.Entry == NULL) {
-        FreeVec(data);
-        iv->iv_PathTable.Size = 0;
-        return;
-    }
-
     iv->iv_PathTable.Data = data;
-
-    /* Compute the pathtable offsets */
-    dp = iv->iv_PathTable.Data;
-    for (i = 0; i < iv->iv_PathTable.Entries; i++) {
-        UWORD len = (dp[0] + 8);
-        if (len & 1)
-            len++;
-        iv->iv_PathTable.Entry[i] = (struct isoPathTable *)dp;
-        dp += len;
-    }
-
+    iv->iv_PathTable.Entry = table;
+    iv->iv_PathTable.Entries = entries;
     return;
+
+bad_table:
+    FreeVec(data);
+    iv->iv_PathTable.Size = 0;
 }
 
 LONG ISO9660_Mount(struct CDFSVolume *vol)
@@ -649,8 +668,15 @@ LONG ISO9660_Unmount(struct CDFSVolume *vol)
 {
     struct CDFS *cdfs = vol->cv_CDFSBase;
 
-    FreeVec(vol->cv_Private);
-    return ERROR_NO_FREE_STORE;
+    struct ISOVolume *iv = vol->cv_Private;
+
+    if (iv) {
+        FreeVec(iv->iv_PathTable.Entry);
+        FreeVec(iv->iv_PathTable.Data);
+        FreeVec(iv);
+        vol->cv_Private = NULL;
+    }
+    return RETURN_OK;
 }
 
 LONG ISO9660_Locate(struct CDFSVolume *vol, struct CDFSLock *idir, CONST_STRPTR file, ULONG mode, struct CDFSLock **ifile)
@@ -706,7 +732,7 @@ LONG ISO9660_Locate(struct CDFSVolume *vol, struct CDFSLock *idir, CONST_STRPTR 
                 ASSERT(il->il_Public.cl_FileInfoBlock.fib_DirEntryType == ST_USERDIR);
 
                 /* Otherwise, move to parent */
-                if (il->il_PathTable) {
+                if (il->il_PathTable && !iv->iv_NoPathTable) {
                     /* Non-RockRidge */
                     tl.il_PathTable = iv->iv_PathTable.Entry[il->il_PathTable->ParentDirectory-1];
                     isoParseDir(vol, &tl, NULL, 0);
@@ -717,9 +743,11 @@ LONG ISO9660_Locate(struct CDFSVolume *vol, struct CDFSLock *idir, CONST_STRPTR 
                     if (err == RETURN_OK) {
                         /* .. and find its name in its parent */
                         if (tl.il_Public.cl_FileInfoBlock.fib_DirEntryType != ST_ROOT)
-                            isoFindExtent(vol, &tl, tl.il_Extent, tl.il_ParentExtent);
-                        il = &tl;
-                        continue;
+                            err = isoFindExtent(vol, &tl, tl.il_Extent, tl.il_ParentExtent);
+                        if (err == RETURN_OK) {
+                            il = &tl;
+                            continue;
+                        }
                     }
                 }
                 FreeVec(fl);
@@ -832,11 +860,6 @@ LONG ISO9660_ExamineNext(struct CDFSVolume *vol, struct CDFSLock *dl, struct Fil
         D(bug("%s: err=%d, size=%d\n", __func__, err, size));
         offset += size;
 
-        /* Move to next block */
-        if (err == ERROR_OBJECT_WRONG_TYPE || size == 0 ||
-            (2048 - (offset % 2048)) < sizeof(struct isoDirectory) + 2) {
-            offset = (offset + 2048 - 1) & ~(2048 - 1);
-        }
 
         if (err == RETURN_OK) {
             struct FileInfoBlock *tfib = &tl.il_Public.cl_FileInfoBlock;
@@ -898,29 +921,28 @@ LONG ISO9660_Seek(struct CDFSVolume *vol, struct CDFSLock *fl, SIPTR pos, LONG m
 {
     struct ISOLock *il = (struct ISOLock *)fl;
     UQUAD size = fl->cl_FileInfoBlock.fib_Size;
+    UQUAD base, next;
 
     *oldpos = il->il_Offset;
     switch (mode) {
-    case OFFSET_BEGINNING:
-        if (pos < 0 || pos > size)
-            return ERROR_SEEK_ERROR;
-        il->il_Offset = pos;
-        break;
-    case OFFSET_CURRENT:
-        if (-pos > il->il_Offset ||
-            (il->il_Offset + pos) > size)
-            return ERROR_SEEK_ERROR;
-        il->il_Offset += pos;
-        break;
-    case OFFSET_END:
-        if (pos < 0 || -pos > size)
-            return ERROR_SEEK_ERROR;
-        il->il_Offset = size + pos;
-        break;
-    default:
-        return ERROR_SEEK_ERROR;
+    case OFFSET_BEGINNING: base = 0; break;
+    case OFFSET_CURRENT: base = il->il_Offset; break;
+    case OFFSET_END: base = size; break;
+    default: return ERROR_SEEK_ERROR;
     }
-
+    if (pos < 0) {
+        UQUAD distance = (UQUAD)(-(pos + 1)) + 1;
+        if (distance > base)
+            return ERROR_SEEK_ERROR;
+        next = base - distance;
+    } else {
+        if (base > size || (UQUAD)pos > size - base)
+            return ERROR_SEEK_ERROR;
+        next = base + pos;
+    }
+    if (next > size)
+        return ERROR_SEEK_ERROR;
+    il->il_Offset = next;
     return RETURN_OK;
 }
 

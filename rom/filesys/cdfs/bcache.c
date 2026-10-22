@@ -353,8 +353,8 @@ LONG BCache_Invalidate(struct BCache *bcache)
     struct BCacheEntry *be;
     int i;
 
-    while ((be = (struct BCacheEntry *)REMHEAD(&bp->bp_CacheValid)))
-        ADDHEAD(&bp->bp_CacheInvalid, be);
+    while ((be = (struct BCacheEntry *)RemHead(&bp->bp_CacheValid)))
+        AddHead(&bp->bp_CacheInvalid, (struct Node *)be);
 
     if (BCache_Present(bcache) == ERROR_NO_DISK)
         return ERROR_NO_DISK;
@@ -385,7 +385,7 @@ static LONG BCache_IO(struct BCache *bcache, ULONG cmd, ULONG block, ULONG block
     }
 
     /* Validate the offset + length */
-    if ((block + blocks) > bp->bp_Blocks) {
+    if (block > bp->bp_Blocks || blocks > bp->bp_Blocks - block) {
         D(bug("%s: Block 0x%08x exceeds max 0x%08x\n", __func__, (ULONG)(block + blocks), (ULONG)bp->bp_Blocks));
         return ERROR_SEEK_ERROR;
     }
@@ -408,11 +408,12 @@ static LONG BCache_IO(struct BCache *bcache, ULONG cmd, ULONG block, ULONG block
         /* Stir the RNG */
         XorshiftRNG(&bp->bp_RNG);
         D(bug("%s: io_Error %d\n", __func__, io->io_Error));
-        return io->io_Error ? RETURN_ERROR : RETURN_OK;
+        return (io->io_Error || io->io_Actual != io->io_Length) ?
+            ERROR_SEEK_ERROR : RETURN_OK;
     }
 
-    D(bug("%s: Invalid command?\n", __func__));
-    return RETURN_FAIL;
+    D(bug("%s: Device transfer failed\n", __func__));
+    return ERROR_SEEK_ERROR;
 }
 
 /* Read block from disk to the buffer
@@ -432,11 +433,11 @@ LONG BCache_Read(struct BCache *bcache, ULONG block, UBYTE **bufferp)
     struct BCacheEntry *be;
     LONG err;
     ULONG depth = 0;
-    ULONG index, run;
+    ULONG index, run, loaded;
     int i;
 
     D(bug("%s: Block %d\n", __func__, block));
-    if (block > bp->bp_Blocks)
+    if (block >= bp->bp_Blocks)
         return ERROR_SEEK_ERROR;
 
     /* Scan to see if this block was cached */
@@ -472,6 +473,8 @@ LONG BCache_Read(struct BCache *bcache, ULONG block, UBYTE **bufferp)
         index = XorshiftRNG(&bp->bp_RNG) % (bp->bp_NumBuffers - run);
     }
 
+    if (run > bp->bp_Blocks - block)
+        run = bp->bp_Blocks - block;
     ASSERT(run > 0);
     ASSERT(index + run <= bp->bp_NumBuffers);
     ASSERT(block + run <= bp->bp_Blocks);
@@ -497,21 +500,27 @@ LONG BCache_Read(struct BCache *bcache, ULONG block, UBYTE **bufferp)
 
     be = &bp->bp_CacheEntries[index];
 
-    /* Read the run */
+    /* Read-ahead is optional: an unreadable following sector must not
+     * prevent access to the requested sector. */
+    loaded = run;
     err = BCache_IO(bcache, bp->bp_ReadCMD, block, run, be->be_Buffer);
-    if (err == RETURN_OK) {
-        D(bug("%s: Adding to Valid cache...\n", __func__));
-        for (i = 0; i < run; i++, be++) {
+    if (err == ERROR_SEEK_ERROR && run > 1) {
+        loaded = 1;
+        err = BCache_IO(bcache, bp->bp_ReadCMD, block, 1, be->be_Buffer);
+    }
+    if (err != RETURN_OK)
+        loaded = 0;
+
+    for (i = 0; i < run; i++, be++) {
+        if (i < loaded) {
             be->be_Block = block + i;
             ADDHEAD(&bp->bp_CacheValid, &be->be_Node);
-        }
-        *bufferp = bp->bp_CacheEntries[index].be_Buffer;
-    } else {
-        D(bug("%s: IO failed, returning %d (%d) to Invalid list\n", __func__, index, run));
-        for (i = 0; i < run; i++, be++) {
+        } else {
             ADDHEAD(&bp->bp_CacheInvalid, &be->be_Node);
         }
     }
+    if (err == RETURN_OK)
+        *bufferp = bp->bp_CacheEntries[index].be_Buffer;
 
     D(bug("Valid:"));
     ForeachNode(&bp->bp_CacheValid, be) {
@@ -543,7 +552,7 @@ LONG BCache_Write(struct BCache *bcache, ULONG block, CONST UBYTE *buffer)
     struct BCacheEntry *be;
     ULONG depth = 0;
 
-    if (block > bp->bp_Blocks)
+    if (block >= bp->bp_Blocks)
         return ERROR_SEEK_ERROR;
 
     /* Scan to see if this block was cached */
