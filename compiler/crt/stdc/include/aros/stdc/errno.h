@@ -62,6 +62,7 @@
 #define	EBUSY		16		/* Device busy */
 #define	EEXIST		17		/* File exists */
 #define	EINTR		4		/* Interrupted system call */
+#define	EIO		5		/* Input/output error */
 #define	ENOBUFS		55		/* No buffer space available */
 #define	ENOENT		2		/* No such file or directory */
 #define	ENOEXEC		8		/* Exec format error */

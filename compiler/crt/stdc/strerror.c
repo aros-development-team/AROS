@@ -92,7 +92,7 @@ static const char * _errstrings[__STDC_ELAST+2] =
     /* ENOENT          */       "No such file or directory",
     /* NA              */       NULL,
     /* EINTR           */       "Interrupted system call",
-    /* NA              */       NULL,
+    /* EIO             */       "Input/output error",
     /* NA              */       NULL,
     /* NA              */       NULL,
     /* ENOEXEC         */       "Exec format error",
