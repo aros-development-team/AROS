@@ -2186,3 +2186,629 @@
      } else if #[cfg(target_os = "redox")] {
          mod redox;
          pub use self::redox::*;
+diff --git a/library/std/src/path/aros.rs b/library/std/src/path/aros.rs
+--- /dev/null
++++ b/library/std/src/path/aros.rs
+@@ -0,0 +1,75 @@
++// SPDX-License-Identifier: MIT
++// Copyright (c) 2026 John Knipper
++// Shared Path integration for the native DOS grammar only.
++use super::*;
++use crate::sys::path::lex::{Kind, Token};
++
++impl<'a> Components<'a> {
++    #[must_use]
++    #[stable(feature = "rust1", since = "1.0.0")]
++    pub fn as_path(&self) -> &'a Path {
++        // The lexer only splits at ASCII ':' and '/' byte boundaries.
++        unsafe { Path::from_u8_slice(self.inner.remaining()) }
++    }
++    pub(super) fn has_root(&self) -> bool { self.inner.has_root() }
++    fn component(&self, token: Token) -> Component<'a> {
++        let raw = unsafe { OsStr::from_encoded_bytes_unchecked(self.inner.slice(token)) };
++        match token.kind {
++            Kind::Prefix => Component::Prefix(PrefixComponent { raw, parsed: self.prefix.unwrap() }),
++            Kind::Root => Component::RootDir,
++            Kind::Parent => Component::ParentDir,
++            Kind::Normal => Component::Normal(raw),
++        }
++    }
++}
++#[stable(feature = "rust1", since = "1.0.0")]
++impl<'a> Iterator for Components<'a> {
++    type Item = Component<'a>;
++    fn next(&mut self) -> Option<Component<'a>> {
++        self.inner.next().map(|token| self.component(token))
++    }
++}
++#[stable(feature = "rust1", since = "1.0.0")]
++impl<'a> DoubleEndedIterator for Components<'a> {
++    fn next_back(&mut self) -> Option<Component<'a>> {
++        self.inner.next_back().map(|token| self.component(token))
++    }
++}
++#[stable(feature = "rust1", since = "1.0.0")]
++impl<'a> PartialEq for Components<'a> {
++    fn eq(&self, other: &Self) -> bool { Iterator::eq(self.clone(), other.clone()) }
++}
++pub(super) fn compare_components(left: Components<'_>, right: Components<'_>) -> cmp::Ordering {
++    Iterator::cmp(left, right)
++}
++impl Path {
++    #[unstable(feature = "path_trailing_sep", issue = "142503")]
++    pub fn has_trailing_sep(&self) -> bool {
++        self.as_u8_slice().last().is_some_and(|&b| b == b'/' || b == b':')
++    }
++    #[unstable(feature = "path_trailing_sep", issue = "142503")]
++    pub fn trim_trailing_sep(&self) -> &Path {
++        // Removing a slash parent would change DOS resolution. Only discard
++        // the single delimiter after a normal leaf, as components also does.
++        self.components().as_path()
++    }
++
++    #[stable(feature = "rust1", since = "1.0.0")]
++    pub fn components(&self) -> Components<'_> {
++        Components {
++            inner: crate::sys::path::lex::Lexer::new(self.as_u8_slice()),
++            prefix: parse_prefix(self.as_os_str()),
++        }
++    }
++}
++impl PathBuf {
++    pub(super) fn _push(&mut self, path: &Path) { crate::sys::path::push(&mut self.inner, path.as_os_str()); }
++}
++#[stable(feature = "rust1", since = "1.0.0")]
++impl Hash for Path {
++    fn hash<H: Hasher>(&self, state: &mut H) {
++        // Hash exactly the same DOS components used by Eq and Ord, including
++        // parent slashes and literal dots. Never use Unix's separator fast path.
++        for component in self.components() { component.hash(state); }
++    }
++}
+diff --git a/library/std/src/path.rs b/library/std/src/path.rs
+--- a/library/std/src/path.rs
++++ b/library/std/src/path.rs
+@@ -21,6 +21,13 @@
+ //!
+ //! ## Path normalization
+ //!
++//! Native AROS uses DOS path grammar: a volume/assign ends in `:`, a leading
++//! or additional `/` denotes a parent, and `.` and `..` are literal names.
++//! Iteration, comparison and hashing preserve these meaningful components.
++//! One trailing delimiter after a normal name is ignored; additional slashes
++//! remain parents. `join` and `push` follow DOS AddPart separator rules.
++//!
++//! The normalization rules below describe Unix and Windows paths.
+ //! Several methods in this module perform basic path normalization by disregarding
+ //! repeated separators, non-leading `.` components, and trailing separators. These include:
+ //! - Methods for iteration, such as [`Path::components`] and [`Path::iter`]
+@@ -149,6 +156,13 @@
+ #[derive(Copy, Clone, Debug, Hash, PartialOrd, Ord, PartialEq, Eq)]
+ #[stable(feature = "rust1", since = "1.0.0")]
+ pub enum Prefix<'a> {
++    /// A native AROS volume, device, or assign name, excluding its final colon.
++    /// PrefixComponent::as_os_str() includes the colon; the following RootDir
++    /// is implicit and also spells `:`. Names retain their original OsStr bytes.
++    #[cfg(target_os = "aros")]
++    #[stable(feature = "aros_native_paths", since = "1.99.0")]
++    ArosVolume(#[stable(feature = "aros_native_paths", since = "1.99.0")] &'a OsStr),
++
+     /// Verbatim prefix, e.g., `\\?\cat_pics`.
+     ///
+     /// Verbatim prefixes consist of `\\?\` immediately followed by the given
+@@ -212,6 +226,8 @@
+             UNC(x, y) => 2 + os_str_len(x) + if os_str_len(y) > 0 { 1 + os_str_len(y) } else { 0 },
+             DeviceNS(x) => 4 + os_str_len(x),
+             Disk(_) => 2,
++            #[cfg(target_os = "aros")]
++            ArosVolume(name) => os_str_len(name) + 1,
+         }
+     }
+ 
+@@ -284,6 +300,8 @@
+ pub const SEPARATORS_STR: &[&str] = crate::sys::path::SEPARATORS_STR;
+ 
+ /// The primary separator of path components for the current platform, represented as a [`char`];
++/// on native AROS, `/` separates names and also denotes a parent at a component
++/// boundary; `:` terminates a volume/assign root and is not a name separator.
+ /// for example, this is `'/'` on Unix and `'\\'` on Windows.
+ #[stable(feature = "rust1", since = "1.0.0")]
+ #[cfg_attr(not(test), rustc_diagnostic_item = "path_main_separator")]
+@@ -502,6 +520,10 @@
+ 
+ /// A single component of a path.
+ ///
++/// On native AROS, a volume prefix is followed by an implicit `RootDir`
++/// spelling `:`, and `ParentDir` spells `/`. Dot names are ordinary names;
++/// repeated slashes carry parent traversal rather than being normalized away.
++///
+ /// A `Component` roughly corresponds to a substring between path separators
+ /// (`/` or `\`).
+ ///
+@@ -573,9 +595,15 @@
+     pub fn as_os_str(self) -> &'a OsStr {
+         match self {
+             Component::Prefix(p) => p.as_os_str(),
++            #[cfg(not(target_os = "aros"))]
+             Component::RootDir => OsStr::new(MAIN_SEPARATOR_STR),
++            #[cfg(target_os = "aros")]
++            Component::RootDir => OsStr::new(":"),
+             Component::CurDir => OsStr::new("."),
++            #[cfg(not(target_os = "aros"))]
+             Component::ParentDir => OsStr::new(".."),
++            #[cfg(target_os = "aros")]
++            Component::ParentDir => OsStr::new("/"),
+             Component::Normal(path) => path,
+         }
+     }
+@@ -598,6 +626,12 @@
+ }
+ 
+ /// An iterator over the [`Component`]s of a [`Path`].
++///
++/// Native AROS preserves DOS parent slashes and literal dot names. One trailing
++/// delimiter after a normal name is ignored; additional slashes are parents.
++/// An AROS volume prefix contains its implicit root colon. As with Windows UNC
++/// implicit roots, `as_path` may retain that colon after its RootDir was consumed
++/// from the back while the Prefix component remains unconsumed.
+ ///
+ /// This `struct` is created by the [`components`] method on [`Path`].
+ /// See its documentation for more.
+@@ -618,6 +652,7 @@
+ #[derive(Clone)]
+ #[must_use = "iterators are lazy and do nothing unless consumed"]
+ #[stable(feature = "rust1", since = "1.0.0")]
++#[cfg(not(target_os = "aros"))]
+ pub struct Components<'a> {
+     // The path left to parse components from
+     path: &'a [u8],
+@@ -636,6 +671,22 @@
+     back: State,
+ }
+ 
++// DOS grammar is intentionally separate from the Unix/Windows state machine.
++#[cfg(target_os = "aros")]
++#[derive(Clone)]
++#[must_use = "iterators are lazy and do nothing unless consumed"]
++#[stable(feature = "rust1", since = "1.0.0")]
++pub struct Components<'a> {
++    inner: crate::sys::path::lex::Lexer<'a>,
++    prefix: Option<Prefix<'a>>,
++}
++
++#[cfg(target_os = "aros")]
++#[path = "path/aros.rs"]
++mod aros;
++#[cfg(target_os = "aros")]
++use self::aros::compare_components;
++
+ /// An iterator over the [`Component`]s of a [`Path`], as [`OsStr`] slices.
+ ///
+ /// This `struct` is created by the [`iter`] method on [`Path`].
+@@ -664,6 +715,7 @@
+     }
+ }
+ 
++#[cfg(not(target_os = "aros"))]
+ impl<'a> Components<'a> {
+     // how long is the prefix, if any?
+     #[inline]
+@@ -917,6 +969,7 @@
+ impl FusedIterator for Iter<'_> {}
+ 
+ #[stable(feature = "rust1", since = "1.0.0")]
++#[cfg(not(target_os = "aros"))]
+ impl<'a> Iterator for Components<'a> {
+     type Item = Component<'a>;
+ 
+@@ -972,6 +1025,7 @@
+ }
+ 
+ #[stable(feature = "rust1", since = "1.0.0")]
++#[cfg(not(target_os = "aros"))]
+ impl<'a> DoubleEndedIterator for Components<'a> {
+     fn next_back(&mut self) -> Option<Component<'a>> {
+         while !self.finished() {
+@@ -1023,6 +1077,7 @@
+ impl FusedIterator for Components<'_> {}
+ 
+ #[stable(feature = "rust1", since = "1.0.0")]
++#[cfg(not(target_os = "aros"))]
+ impl<'a> PartialEq for Components<'a> {
+     #[inline]
+     fn eq(&self, other: &Components<'a>) -> bool {
+@@ -1068,6 +1123,7 @@
+     }
+ }
+ 
++#[cfg(not(target_os = "aros"))]
+ fn compare_components(mut left: Components<'_>, mut right: Components<'_>) -> cmp::Ordering {
+     // Fast path for long shared prefixes
+     //
+@@ -1338,6 +1394,7 @@
+         self._push(path.as_ref())
+     }
+ 
++    #[cfg(not(target_os = "aros"))]
+     fn _push(&mut self, path: &Path) {
+         // in general, a separator is needed if the rightmost byte is not a separator
+         let buf = self.inner.as_encoded_bytes();
+@@ -2580,6 +2637,10 @@
+ 
+     /// Returns `true` if the `Path` has a root.
+     ///
++    /// Native AROS paths have a root when they have a volume/assign prefix or
++    /// start with `:` (current-volume root). Leading `/` denotes a relative
++    /// parent, not a root.
++    ///
+     /// * On Unix, a path has a root if it begins with `/`.
+     ///
+     /// * On Windows, a path has a root if it:
+@@ -2982,6 +3043,7 @@
+     #[unstable(feature = "path_trailing_sep", issue = "142503")]
+     #[must_use]
+     #[inline]
++    #[cfg(not(target_os = "aros"))]
+     pub fn has_trailing_sep(&self) -> bool {
+         self.as_os_str().as_encoded_bytes().last().copied().is_some_and(is_sep_byte)
+     }
+@@ -3033,6 +3095,7 @@
+     #[unstable(feature = "path_trailing_sep", issue = "142503")]
+     #[must_use]
+     #[inline]
++    #[cfg(not(target_os = "aros"))]
+     pub fn trim_trailing_sep(&self) -> &Path {
+         if self.has_trailing_sep() && (!self.has_root() || self.parent().is_some()) {
+             let mut bytes = self.inner.as_encoded_bytes();
+@@ -3241,6 +3304,7 @@
+     ///
+     /// [`CurDir`]: Component::CurDir
+     #[stable(feature = "rust1", since = "1.0.0")]
++    #[cfg(not(target_os = "aros"))]
+     pub fn components(&self) -> Components<'_> {
+         let prefix = parse_prefix(self.as_os_str());
+         Components {
+@@ -3412,20 +3476,24 @@
+         absolute(self)
+     }
+ 
+-    /// Normalize a path, including `..` without traversing the filesystem.
+-    ///
+-    /// Returns an error if normalization would leave leading `..` components.
++    /// Normalize a path, including parent components, without traversing the filesystem.
++    ///
++    /// Returns an error if normalization would leave leading parent components.
++    /// On Unix and Windows, parent components are spelled `..`. On native AROS,
++    /// parents are slash components: `a/b//c` normalizes to `a/c`, while `.` and
++    /// `..` remain literal names and are never interpreted as traversal.
+     ///
+     /// <div class="warning">
+     ///
+-    /// This function always resolves `..` to the "lexical" parent.
+-    /// That is "a/b/../c" will always resolve to `a/c` which can change the meaning of the path.
+-    /// In particular, `a/c` and `a/b/../c` are distinct on many systems because `b` may be a symbolic link, so its parent isn't `a`.
++    /// This function resolves parent components to the "lexical" parent.
++    /// On Unix and Windows, `a/b/../c` resolves to `a/c`; native AROS uses
++    /// `a/b//c` for that parent traversal. This can change the path's meaning:
++    /// if `b` is a symbolic link, its actual parent need not be `a`.
+     ///
+     /// </div>
+     ///
+-    /// [`path::absolute`](absolute) is an alternative that preserves `..`.
+-    /// Or [`Path::canonicalize`] can be used to resolve any `..` by querying the filesystem.
++    /// [`path::absolute`](absolute) is an alternative that preserves parent components.
++    /// Or [`Path::canonicalize`] can resolve them by querying the filesystem.
+     #[unstable(feature = "normalize_lexically", issue = "134694")]
+     pub fn normalize_lexically(&self) -> Result<PathBuf, NormalizeError> {
+         let mut lexical = PathBuf::new();
+@@ -3792,6 +3860,7 @@
+ }
+ 
+ #[stable(feature = "rust1", since = "1.0.0")]
++#[cfg(not(target_os = "aros"))]
+ impl Hash for Path {
+     fn hash<H: Hasher>(&self, h: &mut H) {
+         let bytes = self.as_u8_slice();
+diff --git a/library/std/src/sys/path/aros/lex.rs b/library/std/src/sys/path/aros/lex.rs
+--- /dev/null
++++ b/library/std/src/sys/path/aros/lex.rs
+@@ -0,0 +1,147 @@
++// SPDX-License-Identifier: MIT
++// Copyright (c) 2026 John Knipper
++// Byte grammar shared by the AROS std backend and standalone host regression tests.
++// Only ASCII delimiters are examined; arbitrary OsStr bytes are retained.
++
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub(crate) enum Kind { Prefix, Root, Parent, Normal }
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub(crate) struct Token { pub kind: Kind, pub start: usize, pub end: usize }
++
++pub(crate) fn volume_end(bytes: &[u8]) -> Option<usize> {
++    for (i, &byte) in bytes.iter().enumerate() {
++        match byte {
++            b':' => return if i == 0 { None } else { Some(i + 1) },
++            b'/' => return None,
++            _ => {}
++        }
++    }
++    None
++}
++
++/// No allocation, no filesystem lookup, and no POSIX dot/slash normalization.
++/// A volume prefix owns its colon; the Root token is an implicit overlapping
++/// view of that colon, as Windows UNC prefixes also have an implicit root.
++#[derive(Clone, Debug)]
++pub(crate) struct Lexer<'a> {
++    bytes: &'a [u8],
++    front: usize,
++    back: usize,
++    prefix_end: usize,
++    prefix_pending: bool,
++    root_pending: bool,
++}
++impl<'a> Lexer<'a> {
++    pub(crate) fn new(bytes: &'a [u8]) -> Self {
++        let prefix_end = volume_end(bytes).unwrap_or(0);
++        Self { bytes, front: 0, back: bytes.len(), prefix_end,
++            prefix_pending: prefix_end != 0,
++            root_pending: prefix_end != 0 || bytes.first() == Some(&b':') }
++    }
++    pub(crate) fn has_root(&self) -> bool {
++        self.prefix_end != 0 || self.bytes.first() == Some(&b':')
++    }
++    fn body_start(&self) -> usize {
++        if self.prefix_pending || self.root_pending {
++            if self.prefix_end != 0 { self.prefix_end } else { 1 }
++        } else { self.front }
++    }
++    pub(crate) fn slice(&self, token: Token) -> &'a [u8] {
++        &self.bytes[token.start..token.end]
++    }
++    pub(crate) fn remaining(&self) -> &'a [u8] {
++        let mut end = self.back;
++        let start = self.body_start();
++        // One slash after a name is a delimiter, not an extra parent token.
++        if end >= start + 2 && self.bytes[end - 1] == b'/'
++            && self.bytes[end - 2] != b'/' {
++            end -= 1;
++        }
++        // A prefix-only iterator still exposes its complete raw spelling,
++        // including the implicit root colon (the same limitation as UNC roots).
++        if self.prefix_pending && !self.root_pending && end < self.prefix_end {
++            end = self.prefix_end;
++        }
++        &self.bytes[self.front.min(end)..end]
++    }
++}
++impl Iterator for Lexer<'_> {
++    type Item = Token;
++    fn next(&mut self) -> Option<Token> {
++        if self.prefix_pending {
++            self.prefix_pending = false;
++            let token = Token { kind: Kind::Prefix, start: 0, end: self.prefix_end };
++            self.front = if self.root_pending { self.prefix_end - 1 } else { self.back };
++            return Some(token);
++        }
++        if self.root_pending {
++            self.root_pending = false;
++            let start = self.front;
++            self.front += 1;
++            return Some(Token { kind: Kind::Root, start, end: start + 1 });
++        }
++        if self.front >= self.back { return None; }
++        let start = self.front;
++        if self.bytes[start] == b'/' {
++            self.front += 1;
++            return Some(Token { kind: Kind::Parent, start, end: self.front });
++        }
++        let end = self.bytes[start..self.back].iter().position(|&b| b == b'/')
++            .map_or(self.back, |n| start + n);
++        self.front = if end < self.back { end + 1 } else { end };
++        Some(Token { kind: Kind::Normal, start, end })
++    }
++}
++impl DoubleEndedIterator for Lexer<'_> {
++    fn next_back(&mut self) -> Option<Token> {
++        let body = self.body_start();
++        if self.back > body {
++            if self.bytes[self.back - 1] == b'/' {
++                // Only inspect the preceding byte: walking the complete run
++                // for each parent would make reverse iteration quadratic.
++                if self.back == body + 1 || self.bytes[self.back - 2] == b'/' {
++                    self.back -= 1;
++                    return Some(Token { kind: Kind::Parent, start: self.back, end: self.back + 1 });
++                }
++                // The only trailing slash is the delimiter after a normal name.
++                self.back -= 1;
++            }
++            let end = self.back;
++            let start = self.bytes[body..end].iter().rposition(|&b| b == b'/')
++                .map_or(body, |n| body + n + 1);
++            self.back = start;
++            // Remove a separating slash after an earlier normal name, but never
++            // a slash that denotes a parent (including a leading slash).
++            if start >= body + 2 && self.bytes[start - 1] == b'/'
++                && self.bytes[start - 2] != b'/' {
++                self.back -= 1;
++            }
++            return Some(Token { kind: Kind::Normal, start, end });
++        }
++        if self.root_pending {
++            self.root_pending = false;
++            let start = if self.prefix_end != 0 { self.prefix_end - 1 } else { 0 };
++            self.back = start;
++            return Some(Token { kind: Kind::Root, start, end: start + 1 });
++        }
++        if self.prefix_pending {
++            self.prefix_pending = false;
++            self.front = self.back;
++            return Some(Token { kind: Kind::Prefix, start: 0, end: self.prefix_end });
++        }
++        None
++    }
++}
++impl core::iter::FusedIterator for Lexer<'_> {}
++
++/// DOS AddPart's lexical base retention and separator insertion decisions.
++/// The returned length retains the base prefix. The caller appends `suffix`
++/// verbatim after optionally inserting one separating slash.
++pub(crate) fn push_plan(base: &[u8], suffix: &[u8]) -> (usize, bool) {
++    if volume_end(suffix).is_some() { return (0, false); }
++    if suffix.first() == Some(&b':') {
++        return (volume_end(base).map_or(0, |end| end - 1), false);
++    }
++    let separator = base.last().is_some_and(|&b| b != b':' && b != b'/');
++    (base.len(), separator)
++}
+diff --git a/library/std/src/sys/path/aros.rs b/library/std/src/sys/path/aros.rs
+--- /dev/null
++++ b/library/std/src/sys/path/aros.rs
+@@ -0,0 +1,39 @@
++// SPDX-License-Identifier: MIT
++// Copyright (c) 2026 John Knipper
++
++use crate::ffi::{OsStr, OsString};
++use crate::path::{Path, PathBuf, Prefix};
++use crate::{env, io};
++
++pub(crate) mod lex;
++path_separator_bytes!(b'/');
++pub const HAS_PREFIXES: bool = true;
++#[inline]
++pub const fn is_verbatim_sep(byte: u8) -> bool { is_sep_byte(byte) }
++
++pub fn parse_prefix(path: &OsStr) -> Option<Prefix<'_>> {
++    let bytes = path.as_encoded_bytes();
++    lex::volume_end(bytes).map(|end| {
++        // ASCII colon boundary preserves OsStr's encoding invariant.
++        Prefix::ArosVolume(unsafe { OsStr::from_encoded_bytes_unchecked(&bytes[..end - 1]) })
++    })
++}
++
++pub(crate) fn is_absolute(path: &Path) -> bool { parse_prefix(path.as_os_str()).is_some() }
++
++pub(crate) fn push(base: &mut OsString, suffix: &OsStr) {
++    let (keep, separator) = lex::push_plan(base.as_encoded_bytes(), suffix.as_encoded_bytes());
++    base.truncate(keep);
++    if separator { base.push("/"); }
++    base.push(suffix);
++}
++
++pub(crate) fn absolute(path: &Path) -> io::Result<PathBuf> {
++    if is_absolute(path) { return Ok(path.to_path_buf()); }
++    // A current-volume colon or parent slash needs the current DOS directory.
++    // Keep parent traversal and dot names lexical; do not canonicalize a path
++    // that may not exist or resolve its assigns/symlinks here.
++    let mut absolute = env::current_dir()?;
++    absolute.push(path);
++    Ok(absolute)
++}
+diff --git a/library/std/src/sys/path/mod.rs b/library/std/src/sys/path/mod.rs
+--- a/library/std/src/sys/path/mod.rs
++++ b/library/std/src/sys/path/mod.rs
+@@ -18,6 +18,10 @@
+ }
+ 
+ cfg_select! {
++    target_os = "aros" => {
++        mod aros;
++        pub use aros::*;
++    }
+     target_os = "windows" => {
+         mod windows;
+         mod windows_prefix;
+diff --git a/library/std/tests/path_aros.rs b/library/std/tests/path_aros.rs
+--- /dev/null
++++ b/library/std/tests/path_aros.rs
+@@ -0,0 +1,91 @@
++#![cfg(target_os = "aros")]
++#![feature(path_trailing_sep)]
++// SPDX-License-Identifier: MIT
++// Copyright (c) 2026 John Knipper
++use std::path::{self, Component, Path, PathBuf, Prefix};
++use std::ffi::OsStr;
++use std::os::unix::ffi::OsStrExt;
++use std::hash::{Hash, Hasher};
++fn hash(p: &Path) -> u64 {
++    let mut h = std::collections::hash_map::DefaultHasher::new(); p.hash(&mut h); h.finish()
++}
++#[test]
++fn qualified_volume_basics() {
++    for root in ["T:", "RAM Disk:", "SYS:"] {
++        let root = Path::new(root);
++        assert!(root.is_absolute()); assert!(root.has_root());
++        assert_eq!(root.file_name(), None); assert_eq!(root.parent(), None);
++        assert_eq!(path::absolute(root).unwrap().as_os_str(), root.as_os_str());
++    }
++    let p = Path::new("RAM:foo");
++    assert_eq!(p.file_name(), Some(OsStr::new("foo")));
++    assert_eq!(p.parent(), Some(Path::new("RAM:")));
++    assert_eq!(p.strip_prefix("RAM:").unwrap(), Path::new("foo"));
++    assert_eq!(Path::new("T:").join("foo").as_os_str(), "T:foo");
++}
++#[test]
++fn volume_prefix_api_and_component_spellings() {
++    let mut c = Path::new("RAM Disk:foo").components();
++    match c.next().unwrap() {
++        Component::Prefix(p) => { assert_eq!(p.kind(), Prefix::ArosVolume(OsStr::new("RAM Disk"))); assert_eq!(p.as_os_str(), "RAM Disk:"); }
++        other => panic!("unexpected {other:?}"),
++    }
++    assert_eq!(c.as_path().as_os_str(), ":foo");
++    assert_eq!(c.next(), Some(Component::RootDir));
++    assert_eq!(Component::RootDir.as_os_str(), ":");
++    assert_eq!(Component::ParentDir.as_os_str(), "/");
++    assert_eq!(c.as_path().as_os_str(), "foo");
++    assert_eq!(c.next_back(), Some(Component::Normal(OsStr::new("foo"))));
++    assert_eq!(c.next(), None);
++}
++#[test]
++fn native_push_parent_and_volume_replacement() {
++    let mut p = PathBuf::from("SYS:old/dir");
++    p.push("RAM Disk:new"); assert_eq!(p.as_os_str(), "RAM Disk:new");
++    p.push(":root"); assert_eq!(p.as_os_str(), "RAM Disk:root");
++    p.push("/sibling"); assert_eq!(p.as_os_str(), "RAM Disk:root//sibling");
++    assert!(!Path::new("/foo").is_absolute()); assert!(!Path::new("/foo").has_root());
++    assert!(!Path::new(":foo").is_absolute()); assert!(Path::new(":foo").has_root());
++    assert_eq!(p.parent().unwrap().as_os_str(), "RAM Disk:root//");
++}
++#[test]
++fn eq_hash_ord_and_literal_names() {
++    assert_eq!(Path::new("a/"), Path::new("a"));
++    assert_eq!(hash(Path::new("a/")), hash(Path::new("a")));
++    assert_eq!(Path::new("a/").cmp(Path::new("a")), std::cmp::Ordering::Equal);
++    for (a,b) in [("a//b","a/b"),("a/./b","a/b"),("..","/"),("RAM:","ram:")] {
++        assert_ne!(Path::new(a), Path::new(b));
++    }
++    let raw = Path::new(OsStr::from_bytes(b"RAM Disk:copi\xe9.txt"));
++    assert!(raw.is_absolute());
++    assert_eq!(raw.file_name().unwrap().as_bytes(), b"copi\xe9.txt");
++    assert_eq!(raw.parent().unwrap().as_os_str(), "RAM Disk:");
++}
++#[test]
++fn component_collection_extension_pop_and_file_name() {
++    for text in ["", "T:", "RAM:foo", ":foo", "/foo", "dir//file", "dir///", "a/./../b", "RAM:/a//b"] {
++        let p = Path::new(text);
++        let c: PathBuf = p.components().collect();
++        assert_eq!(c, p, "collect {text}");
++        let mut ext = PathBuf::new(); ext.extend(p.components()); assert_eq!(ext, p);
++        let forward: Vec<_> = p.components().collect();
++        assert_eq!(forward.iter().rev().copied().collect::<Vec<_>>(), p.components().rev().collect::<Vec<_>>());
++        for split in 0..=forward.len() {
++            let mut it = p.components();
++            for expected in &forward[..split] { assert_eq!(it.next(), Some(*expected)); }
++            for expected in forward[split..].iter().rev() { assert_eq!(it.next_back(), Some(*expected)); }
++            assert_eq!(it.next(), None); assert_eq!(it.next_back(), None);
++        }
++    }
++    let mut p = PathBuf::from("RAM:foo"); p.set_file_name("bar"); assert_eq!(p.as_os_str(), "RAM:bar");
++    assert!(p.pop()); assert_eq!(p.as_os_str(), "RAM:"); assert!(!p.pop());
++}
++#[test]
++fn strip_prefix_parents_and_trailing_operations() {
++    assert_eq!(Path::new("RAM:dir//file").strip_prefix("RAM:dir").unwrap().as_os_str(), "/file");
++    assert_eq!(Path::new("RAM:dir//file").strip_prefix("RAM:dir//").unwrap().as_os_str(), "file");
++    assert_eq!(Path::new("a/").trim_trailing_sep().as_os_str(), "a");
++    assert_eq!(Path::new("a//").trim_trailing_sep().as_os_str(), "a//");
++    assert_eq!(Path::new("/").trim_trailing_sep().as_os_str(), "/");
++    let mut root = PathBuf::from("T:"); root.push_trailing_sep(); assert_eq!(root.as_os_str(), "T:"); assert!(root.has_trailing_sep());
++}
