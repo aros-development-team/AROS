@@ -2,6 +2,7 @@
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 */
 
+#include <netmidi/queue.h>
 #include "rtpmidi/receiver.h"
 
 #include <stdarg.h>
@@ -23,7 +24,7 @@ static void report(struct rtpmidi_receiver *rx, const char *format, ...)
 
 void rtpmidi_receiver_init(struct rtpmidi_receiver *rx,
                       const struct rtpmidi_receiver_output *output, void *context,
-                      struct rtpmidi_event_queue *queue)
+                      struct netmidi_event_queue *queue)
 {
     memset(rx, 0, sizeof(*rx));
     rx->output = output;
@@ -694,7 +695,7 @@ static void recover_notes(struct rtpmidi_receiver *rx,
                 note = octave * 8 + bit;
                 if (!(notes.offbits[octave] & (0x80u >> bit)))
                     continue;
-                cancelled = rtpmidi_queue_cancel_note_on(rx->queue,
+                cancelled = netmidi_queue_cancel_note_on(rx->queue,
                                                     channel->number,
                                                     (uint8_t)note);
                 if (cancelled)
@@ -722,7 +723,7 @@ static void recover_notes(struct rtpmidi_receiver *rx,
                 continue;
             if (rx->active_notes[channel->number][log->number] ==
                 log->velocity ||
-                rtpmidi_queue_has_note_on(rx->queue, channel->number,
+                netmidi_queue_has_note_on(rx->queue, channel->number,
                                      log->number))
                 continue;
             if (rx->active_notes[channel->number][log->number]) {
@@ -738,7 +739,7 @@ static void recover_notes(struct rtpmidi_receiver *rx,
             message[2] = log->velocity;
             if (due > now) {
                 if (due - now > 100000 ||
-                    rtpmidi_queue_push(rx->queue, due, message,
+                    netmidi_queue_push(rx->queue, due, message,
                                   sizeof(message)) != 0)
                     continue;
             } else {

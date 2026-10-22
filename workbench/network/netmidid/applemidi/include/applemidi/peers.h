@@ -8,7 +8,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "rtpmidi/session.h"
+#include "applemidi/session.h"
 
 /* Several AppleMIDI sessions at once, one per peer, so that a Mac and an
  * iPad can both be connected. Each peer is one session (session.h) found
@@ -88,11 +88,6 @@ struct applemidi_peers {
  * port is forgotten after twelve seconds: as long as we would go on
  * inviting it ourselves. */
 #define APPLEMIDI_DATA_INVITE_TIMEOUT 120000u
-/* A peer wanted by name that does not answer is invited again after five
- * seconds, then after twice as long each time, up to a minute: it is
- * advertised, so it is there, and may be refusing us on purpose. */
-#define APPLEMIDI_WANTED_FIRST_WAIT 50000u
-#define APPLEMIDI_WANTED_LONGEST_WAIT 600000u
 
 int applemidi_peers_init(struct applemidi_peers *peers, uint32_t local_ssrc,
                   const uint8_t *name, size_t name_length);

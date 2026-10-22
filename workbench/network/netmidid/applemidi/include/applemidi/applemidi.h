@@ -63,16 +63,6 @@ enum applemidi_decode_result {
  * This protocol has no specification to hold a peer to.
  * Encoding returns 0 for success, -1 for invalid data or insufficient
  * capacity. */
-/* How much of a name of length bytes fits in limit bytes without cutting a
- * UTF-8 character in two: limit, or a few bytes less. A name is whatever a
- * peer sent, so bytes that are no UTF-8 at all are cut where limit falls. */
-size_t applemidi_name_fit(const uint8_t *name, size_t length, size_t limit);
-
-/* The length of a string that ends in a zero byte, looked for in its
- * first limit + 1 bytes: limit + 1 when there is none there, which a
- * caller takes for "too long". */
-size_t applemidi_text_length(const char *text, size_t limit);
-
 int applemidi_decode(const uint8_t *data, size_t length,
                     struct applemidi_packet *packet);
 int applemidi_encode(const struct applemidi_packet *packet, uint8_t *data,

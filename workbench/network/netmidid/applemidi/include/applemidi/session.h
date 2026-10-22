@@ -5,7 +5,7 @@
 #ifndef APPLEMIDI_SESSION_H
 #define APPLEMIDI_SESSION_H
 
-#include "rtpmidi/applemidi.h"
+#include "applemidi/applemidi.h"
 
 /* One peer per session. The caller owns UDP sockets, peer address validation,
  * random token generation, retries and timeouts. No OS calls occur here. */

@@ -10,16 +10,13 @@
  * networkmidi2. The protocol is the link library netmidi2's. */
 
 
+#include <netmidi/text.h>
+#include <netmidi/queue.h>
 #include "netmidid.h"
 
 #include <netmidi2/netmidi2.h>
 #include <ump/ump.h>
-#include <rtpmidi/ports.h>
-#include <rtpmidi/rtpmidi.h>
-#include <rtpmidi/timing.h>
-/* for the names peers give and how long to wait between invitations */
-#include <rtpmidi/applemidi.h>
-#include <rtpmidi/peers.h>
+#include <netmidi/ports.h>
 
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -32,9 +29,6 @@
 #include <proto/bsdsocket.h>
 
 #define PRODUCT_ID_MAX 42   /* M2-124-UM section 4.4 */
-
-/* what the core hands over fits the buffers SysEx is gathered into */
-typedef char sysex_fits[NETMIDID_SYSEX_MAX <= RTPMIDI_SYSEX_MAX ? 1 : -1];
 
 
 struct midi2_runtime {
@@ -52,7 +46,7 @@ struct midi2_runtime {
     /* Each peer's clock against ours, from its JR Clock messages, and what
        its timestamps have us hold until its time (M2-104-UM 7.2.2) */
     struct ump_jr_clock midi2_clock[NETMIDI2_SESSIONS_MAX];
-    struct rtpmidi_event_queue midi2_queue[NETMIDI2_SESSIONS_MAX];
+    struct netmidi_event_queue midi2_queue[NETMIDI2_SESSIONS_MAX];
     int midi2_current;              /* the session whose UMP is passing */
     /* the port each session's peer has, of the networkmidi2 driver's,
        numbered through with the other driver's; -1 for none */
@@ -121,11 +115,11 @@ static void midi2_to_camd(void *context, const uint8_t *bytes, size_t length)
 
         ++rt->midi2_timed;
         ++rt->midi2_count[index].timed;
-        if (due > now && due - now <= RTPMIDI_QUEUE_HORIZON &&
+        if (due > now && due - now <= NETMIDID_QUEUE_HORIZON &&
             (bytes[0] == 0xf0 ?
-                 rtpmidi_queue_push_sysex(&rt->midi2_queue[index], due, bytes,
+                 netmidi_queue_push_sysex(&rt->midi2_queue[index], due, bytes,
                                           length) :
-                 rtpmidi_queue_push(&rt->midi2_queue[index], due, bytes,
+                 netmidi_queue_push(&rt->midi2_queue[index], due, bytes,
                                     length)) == 0)
             return;
         if (due <= now) {
@@ -139,16 +133,16 @@ static void midi2_to_camd(void *context, const uint8_t *bytes, size_t length)
 /* What was held and is now due. */
 static void midi2_release(struct midi2_runtime *rt, uint64_t now)
 {
-    struct rtpmidi_queued_event event;
+    struct netmidi_queued_event event;
     int index;
 
     for (index = 0; index < NETMIDI2_SESSIONS_MAX; ++index)
-        while (rtpmidi_queue_pop_due(&rt->midi2_queue[index], now, &event)) {
+        while (netmidi_queue_pop_due(&rt->midi2_queue[index], now, &event)) {
             if (event.sysex)
                 midi2_deliver(rt, index, event.sysex, event.sysex_length);
             else
                 midi2_deliver(rt, index, event.bytes, event.length);
-            rtpmidi_queue_event_release(&event);
+            netmidi_queue_event_release(&event);
         }
 }
 
@@ -231,7 +225,7 @@ static void midi2_sessions(struct midi2_runtime *rt, uint64_t now)
                     rt->midi2_timed = rt->midi2_late = 0;
                 }
                 /* what was still held would sound after the notes off */
-                rtpmidi_queue_reset(&rt->midi2_queue[index]);
+                netmidi_queue_reset(&rt->midi2_queue[index]);
                 midi2_all_notes_off(rt, index);
                 netmidid_port_release(rt->d, NETMIDID_NETWORKMIDI2,
                                       index + 1);
@@ -252,7 +246,7 @@ static void midi2_sessions(struct midi2_runtime *rt, uint64_t now)
             rt->midi2_port[index] = netmidid_port_take(
                 rt->d, NETMIDID_NETWORKMIDI2,
                 (const uint8_t *)session->peer_name,
-                applemidi_text_length(session->peer_name,
+                netmidi_text_length(session->peer_name,
                                       sizeof(session->peer_name) - 1),
                 index + 1);
             printf(TAG "MIDI 2.0 session established peer=\"%s\" port=%d\n",
@@ -262,9 +256,9 @@ static void midi2_sessions(struct midi2_runtime *rt, uint64_t now)
                    rt->midi2_port[index] - NETMIDI_CAMD_MIDI2);
             memset(&rt->midi2_count[index], 0, sizeof(rt->midi2_count[index]));
             {
-                size_t n = applemidi_name_fit(
+                size_t n = netmidi_name_fit(
                     (const uint8_t *)session->peer_name,
-                    applemidi_text_length(session->peer_name,
+                    netmidi_text_length(session->peer_name,
                         sizeof(session->peer_name) - 1),
                     sizeof(rt->midi2_count[index].name) - 1);
 
@@ -275,9 +269,9 @@ static void midi2_sessions(struct midi2_runtime *rt, uint64_t now)
             rt->midi2_resets[index] = session->resets;
             ump_to_midi1_init(&rt->midi2_in[index], 0);
             if (!rt->midi2_sysex[index])
-                rt->midi2_sysex[index] = malloc(RTPMIDI_SYSEX_MAX);
+                rt->midi2_sysex[index] = malloc(NETMIDID_SYSEX_MAX);
             ump_to_midi1_buffer(&rt->midi2_in[index], rt->midi2_sysex[index],
-                                RTPMIDI_SYSEX_MAX);
+                                NETMIDID_SYSEX_MAX);
             ump_jr_clock_init(&rt->midi2_clock[index]);
         }
         if (rt->midi2_known[index] &&
@@ -289,7 +283,7 @@ static void midi2_sessions(struct midi2_runtime *rt, uint64_t now)
             rt->midi2_gaps[index] = session->gaps;
             rt->midi2_resets[index] = session->resets;
             ump_to_midi1_buffer(&rt->midi2_in[index], rt->midi2_sysex[index],
-                                RTPMIDI_SYSEX_MAX);
+                                NETMIDID_SYSEX_MAX);
             midi2_all_notes_off(rt, index);
         }
         netmidi2_writer_init(&packet, out, sizeof(out));
@@ -313,7 +307,7 @@ static int midi2_periodic(struct netmidid *d, void *self, uint64_t now)
     if (index >= 0 &&
         rt->midi2.slot[index].session.state == NETMIDI2_ESTABLISHED) {
         rt->midi2_tried = now ? now : 1;
-        rt->midi2_wait = APPLEMIDI_WANTED_FIRST_WAIT;
+        rt->midi2_wait = NETMIDID_WANTED_FIRST_WAIT;
     } else if (rt->midi2_host && index < 0 &&
         (!rt->midi2_tried ||
          netmidid_elapsed(now, rt->midi2_tried) >= rt->midi2_wait)) {
@@ -328,9 +322,9 @@ static int midi2_periodic(struct netmidid *d, void *self, uint64_t now)
         }
         rt->midi2_tried = now ? now : 1;
         rt->midi2_wait = rt->midi2_wait ? rt->midi2_wait * 2 :
-                         APPLEMIDI_WANTED_FIRST_WAIT;
-        if (rt->midi2_wait > APPLEMIDI_WANTED_LONGEST_WAIT)
-            rt->midi2_wait = APPLEMIDI_WANTED_LONGEST_WAIT;
+                         NETMIDID_WANTED_FIRST_WAIT;
+        if (rt->midi2_wait > NETMIDID_WANTED_LONGEST_WAIT)
+            rt->midi2_wait = NETMIDID_WANTED_LONGEST_WAIT;
     }
     midi2_sessions(rt, now);
     midi2_release(rt, netmidid_now());
@@ -417,7 +411,7 @@ static int midi2_next_due(struct netmidid *d, void *self, uint64_t *due)
 
     (void)d;
     for (index = 0; index < NETMIDI2_SESSIONS_MAX; ++index)
-        if (rtpmidi_queue_next_due(&rt->midi2_queue[index], &next) &&
+        if (netmidi_queue_next_due(&rt->midi2_queue[index], &next) &&
             (!found || next < *due)) {
             *due = next;
             found = 1;
@@ -523,7 +517,7 @@ static int midi2_open(struct netmidid *d, void *self)
     /* a peer may send its timestamps: they are used */
     rt->midi2.jr_offered = UMP_JR_RECEIVE;
     for (index = 0; index < NETMIDI2_SESSIONS_MAX; ++index)
-        rtpmidi_queue_reset(&rt->midi2_queue[index]);
+        netmidi_queue_reset(&rt->midi2_queue[index]);
     for (index = 0; index < 16; ++index)
         if (config->port_name[index][0] &&
             netmidid_port_keep(d, NETMIDID_NETWORKMIDI2, index,

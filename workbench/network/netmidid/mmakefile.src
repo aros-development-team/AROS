@@ -18,6 +18,8 @@ FILES := main transport_applemidi transport_midi2 adapters network config \
     config_applemidi config_midi2
 
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include \
+    -I$(SRCDIR)/$(CURDIR)/common/include \
+    -I$(SRCDIR)/$(CURDIR)/applemidi/include \
     -I$(SRCDIR)/$(CURDIR)/rtpmidi/include \
     -I$(SRCDIR)/$(CURDIR)/netmidi2/include \
     -I$(SRCDIR)/workbench/devs/camd/networkmidi2
@@ -25,12 +27,12 @@ USER_CPPFLAGS := -DNETMIDI_SERVICE
 
 #MM- workbench-network : workbench-network-netmidid
 #MM- workbench-network-netmidid : workbench-network-netmidid-svccfg
-#MM workbench-network-netmidid : includes linklibs linklibs-rtpmidi \
+#MM workbench-network-netmidid : includes linklibs linklibs-applemidi linklibs-rtpmidi linklibs-netmidi-common \
 #MM      linklibs-netmidi2 \
 #MM      network-includes-copy
 
 %build_prog mmake=workbench-network-netmidid \
     progname=netmidid targetdir=$(AROS_SYSTEM)/Network/Services \
-    files="$(FILES)" uselibs="rtpmidi netmidi2"
+    files="$(FILES)" uselibs="applemidi rtpmidi netmidi-common netmidi2"
 
 %common

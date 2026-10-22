@@ -1,0 +1,18 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+# AppleMIDI control packets, sessions, peers, RS feedback and CK exchange.
+# The transport combines this with the independent RFC 6295 payload library.
+
+FILES := applemidi session peers clock
+
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include \
+    -I$(SRCDIR)/$(CURDIR)/../common/include
+
+#MM linklibs-applemidi : includes linklibs-netmidi-common
+
+%build_linklib mmake=linklibs-applemidi \
+    libname=applemidi \
+    files="$(FILES)"
+
+%common

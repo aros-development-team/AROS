@@ -5,6 +5,7 @@
 #ifndef RTPMIDI_RECEIVER_H
 #define RTPMIDI_RECEIVER_H
 
+#include <netmidi/queue.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -38,7 +39,7 @@ struct rtpmidi_receiver_clock {
 struct rtpmidi_receiver {
     const struct rtpmidi_receiver_output *output;
     void *context;
-    struct rtpmidi_event_queue *queue;
+    struct netmidi_event_queue *queue;
     uint8_t active_notes[16][128];
     uint8_t note_count[16][128];
     uint8_t program[16];
@@ -82,7 +83,7 @@ struct rtpmidi_receiver {
  * it for a Note On still waiting and may add one. */
 void rtpmidi_receiver_init(struct rtpmidi_receiver *receiver,
                       const struct rtpmidi_receiver_output *output, void *context,
-                      struct rtpmidi_event_queue *queue);
+                      struct netmidi_event_queue *queue);
 
 /* Every message of the stream passes here on its way out: the receiver
  * notes what it changes and hands it to the output. */
