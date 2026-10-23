@@ -25,7 +25,7 @@ agree that your contribution is made available under the APL.
 Code and components written for AROS are contributed to the project as a whole, and must carry
 the standard AROS copyright notice:
 
-    Copyright (C) 1995-<year>, The AROS Development Team. All rights reserved.
+    Copyright (C) <year range>, The AROS Development Team. All rights reserved.
 
 Do not assign copyright of code or components you contribute to AROS to yourself, and do not add
 personal copyright notices or alternative licence terms to files written for AROS. Pull requests
