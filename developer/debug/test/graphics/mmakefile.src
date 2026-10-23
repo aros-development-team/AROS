@@ -15,6 +15,7 @@ FILES := screenppm \
     gfxinfo \
     gfxtest \
     obtainpentest \
+    planescreens \
     readpixelarray \
     scalepixelarray \
     showvisregion \
