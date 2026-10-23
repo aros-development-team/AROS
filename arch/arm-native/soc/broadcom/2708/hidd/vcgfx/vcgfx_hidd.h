@@ -70,8 +70,8 @@ struct vcgfx_plane
 
 /* Overlays: a client's pixels over a screen, desc x/y in that screen.
  * They share the HVS budget with the screens, front screen first; one
- * that does not fit is not shown and its client blits. VideoCore IV,
- * and screens not being planes, take one only (vcgfx_ovl_show). */
+ * that does not fit is not shown and its client blits. Without screens
+ * as planes there is one only (vcgfx_ovl_show). */
 #define VCGFX_MAX_OVERLAYS      8
 
 /* The GL drivers' client key: each has a single overlay session. */

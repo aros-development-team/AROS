@@ -287,13 +287,11 @@ struct vc4_hvs_state
     ULONG       hvs_OvlW, hvs_OvlH;         /* source size */
     ULONG       hvs_OvlDestW, hvs_OvlDestH; /* on-screen size */
     ULONG       hvs_OvlPxf, hvs_OvlBpp;     /* format; pxf 0 = 32bpp */
-    BOOL        hvs_OvlNoFit;               /* planes: scaler can't make its size */
     LONG        hvs_OvlX, hvs_OvlY;
     ULONG       hvs_OvlOff;
     ULONG       hvs_OvlWords;               /* entry length in the list */
     ULONG       hvs_OvlLBM;                 /* line-buffer base, scaled only */
     ULONG       hvs_FBLBM;                  /* LBM ceiling left by the fb plane */
-    OOP_Object *hvs_OvlOwner;               /* VC4 planes: screen ovl x/y are in */
 
     /* HVS5 with screens as planes: the firmware's framebuffer is a token
      * one, and the fb plane shows a buffer of ours, ShowW x ShowH. */
@@ -373,6 +371,7 @@ BOOL vc4_hvs_overlay(struct VideoCoreGfx_staticdata *xsd,
 
 /* Wait for the last armed flip/overlay to latch (VC4GFX_OVL_NOWAIT). */
 void vc4_hvs_latch_wait(struct VideoCoreGfx_staticdata *xsd);
+void vc4_hvs_latch_until(struct VideoCoreGfx_staticdata *xsd, ULONG armed);
 
 /* Screens as planes (vcgfx_planes.c), VideoCore IV. */
 BOOL vc4_hvs_planes_ok(void);

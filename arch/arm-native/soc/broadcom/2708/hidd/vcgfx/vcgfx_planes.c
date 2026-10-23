@@ -136,22 +136,14 @@ LONG vcgfx_plane_occlude(LONG px, LONG py, ULONG pw, ULONG ph,
  * plane, driven through vc4_hvs_overlay(). */
 static BOOL ovl_pooled(struct VideoCoreGfx_staticdata *xsd)
 {
-    return (xsd->vcsd_HVSGen != VCGFX_HVS_VC4) && xsd->vcsd_PlanesMode;
+    return xsd->vcsd_PlanesMode;
 }
 
-/* What the last commit armed: a vblank count on HVS5, a frame on HVS6. */
+/* What the last commit armed: a vblank count, or a frame on HVS6. */
 static ULONG ovl_armed(struct VideoCoreGfx_staticdata *xsd)
 {
     return (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6) ? xsd->vcsd_HVS6.h6_OvlFrame
                                                 : xsd->vcsd_HVS.hvs_FlipArmed;
-}
-
-static void ovl_latch_until(struct VideoCoreGfx_staticdata *xsd, ULONG armed)
-{
-    if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
-        vc4_hvs6_latch_until(xsd, armed);
-    else
-        vc4_hvs5_latch_until(xsd, armed);
 }
 
 struct vcgfx_ovl *vcgfx_ovl_find(struct VideoCoreGfx_staticdata *xsd, APTR client)
@@ -215,7 +207,7 @@ BOOL vcgfx_ovl_show(struct VideoCoreGfx_staticdata *xsd, APTR client,
         VC4_MBOX_UNLOCK(xsd);
 
         if (shown && !(desc->ovl_Flags & VC4GFX_OVL_NOWAIT))
-            ovl_latch_until(xsd, armed);
+            vc4_hvs_latch_until(xsd, armed);
         return shown;
     }
 
@@ -307,9 +299,9 @@ void vcgfx_ovl_latch_wait(struct VideoCoreGfx_staticdata *xsd, APTR client)
     if (!ovl_pooled(xsd))
         vc4_hvs_latch_wait(xsd);
     else if (client == VCGFX_OVL_GL)
-        ovl_latch_until(xsd, xsd->vcsd_OvlGLArmed);
+        vc4_hvs_latch_until(xsd, xsd->vcsd_OvlGLArmed);
     else if ((e = vcgfx_ovl_find(xsd, client)) && e->ov_Shown)
-        ovl_latch_until(xsd, e->ov_Armed);
+        vc4_hvs_latch_until(xsd, e->ov_Armed);
 }
 
 /* A bitmap is going away: no overlay may refer to it. */
@@ -659,12 +651,6 @@ void vcgfx_plane_forget(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm)
         return;
 
     VC4_MBOX_LOCK(xsd);
-    if (xsd->vcsd_HVS.hvs_OvlOwner == bm)
-    {
-        xsd->vcsd_HVS.hvs_OvlActive = FALSE;
-        xsd->vcsd_HVS.hvs_OvlOwner  = NULL;
-        gone = TRUE;
-    }
     if ((pl = plane_find(xsd, bm)))
     {
         ULONG i = pl - xsd->vcsd_Plane;
