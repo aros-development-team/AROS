@@ -20,6 +20,7 @@ POSIXCTESTFILES := \
         mnt_names \
         open \
         opendir \
+        opendir_slotfail \
         pipe \
         statfs \
         strptime \
