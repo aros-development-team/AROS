@@ -57,14 +57,6 @@ struct CursorFBData
         inside = TRUE;                                                  \
     }
 
-/* Conservative bracket for operations whose bounds are not cheaply known: if
-   this bitmap currently carries the pointer, remove it for the whole op. */
-#define CFB_REMOVE_ALL                                                  \
-    if (GfxDisplay_CursorIntersects(csd, data->display, data->realbm, -16384, -16384, 16383, 16383)) { \
-        GfxDisplay_CursorRemove(csd, data->display);                   \
-        inside = TRUE;                                                  \
-    }
-
 #define CFB_FORWARD                                                     \
     retval = OOP_DoMethod(data->realbm, (OOP_Msg)msg);
 
@@ -162,201 +154,115 @@ static IPTR cursorfb_fwd(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 /* Pixel-writing / reading operations, bracketed with pointer hide/show       */
 /******************************************************************************/
 
-static IPTR cursorfb_putpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPixel *msg)
+/* The bracket shared by the methods below; each one passes the bounds of the
+   area it touches. One copy of it instead of one per method keeps the class
+   small. */
+static IPTR cursorfb_bracket(OOP_Class *cl, OOP_Object *o, OOP_Msg msg,
+                             WORD x1, WORD y1, WORD x2, WORD y2)
 {
     CFB_INIT
-    CFB_REMOVE(msg->x, msg->y, msg->x, msg->y)
-    CFB_FORWARD
-    CFB_EXIT
-}
-
-static IPTR cursorfb_drawpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawPixel *msg)
-{
-    CFB_INIT
-    CFB_REMOVE(msg->x, msg->y, msg->x, msg->y)
-    CFB_FORWARD
-    CFB_EXIT
-}
-
-static IPTR cursorfb_getpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetPixel *msg)
-{
-    CFB_INIT
-    CFB_REMOVE(msg->x, msg->y, msg->x, msg->y)
-    CFB_FORWARD
-    CFB_EXIT
-}
-
-static IPTR cursorfb_drawline(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawLine *msg)
-{
-    WORD x1 = msg->x1, y1 = msg->y1, x2 = msg->x2, y2 = msg->y2, t;
-    CFB_INIT
-    if (x1 > x2) { t = x1; x1 = x2; x2 = t; }
-    if (y1 > y2) { t = y1; y1 = y2; y2 = t; }
     CFB_REMOVE(x1, y1, x2, y2)
     CFB_FORWARD
     CFB_EXIT
 }
 
+#define CFB_BRACKET(x1, y1, x2, y2) \
+    return cursorfb_bracket(cl, o, (OOP_Msg)msg, (x1), (y1), (x2), (y2));
+
+#define CFB_BRACKET_BOX(x, y, w, h) \
+    CFB_BRACKET((x), (y), (x) + (w) - 1, (y) + (h) - 1)
+
+static IPTR cursorfb_putpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPixel *msg)
+{
+    CFB_BRACKET(msg->x, msg->y, msg->x, msg->y)
+}
+
+static IPTR cursorfb_drawpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawPixel *msg)
+{
+    CFB_BRACKET(msg->x, msg->y, msg->x, msg->y)
+}
+
+static IPTR cursorfb_getpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetPixel *msg)
+{
+    CFB_BRACKET(msg->x, msg->y, msg->x, msg->y)
+}
+
+static IPTR cursorfb_drawline(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawLine *msg)
+{
+    WORD x1 = msg->x1, y1 = msg->y1, x2 = msg->x2, y2 = msg->y2, t;
+    if (x1 > x2) { t = x1; x1 = x2; x2 = t; }
+    if (y1 > y2) { t = y1; y1 = y2; y2 = t; }
+    CFB_BRACKET(x1, y1, x2, y2)
+}
+
 static IPTR cursorfb_putimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImage *msg)
 {
-    CFB_INIT
-    CFB_REMOVE(msg->x, msg->y, msg->x + msg->width - 1, msg->y + msg->height - 1)
-    CFB_FORWARD
-    CFB_EXIT
+    CFB_BRACKET_BOX(msg->x, msg->y, msg->width, msg->height)
 }
 
 static IPTR cursorfb_putalphaimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutAlphaImage *msg)
 {
-    CFB_INIT
-    CFB_REMOVE(msg->x, msg->y, msg->x + msg->width - 1, msg->y + msg->height - 1)
-    CFB_FORWARD
-    CFB_EXIT
+    CFB_BRACKET_BOX(msg->x, msg->y, msg->width, msg->height)
 }
 
 static IPTR cursorfb_puttemplate(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutTemplate *msg)
 {
-    CFB_INIT
-    CFB_REMOVE(msg->x, msg->y, msg->x + msg->width - 1, msg->y + msg->height - 1)
-    CFB_FORWARD
-    CFB_EXIT
+    CFB_BRACKET_BOX(msg->x, msg->y, msg->width, msg->height)
 }
 
 static IPTR cursorfb_putalphatemplate(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutAlphaTemplate *msg)
 {
-    CFB_INIT
-    CFB_REMOVE(msg->x, msg->y, msg->x + msg->width - 1, msg->y + msg->height - 1)
-    CFB_FORWARD
-    CFB_EXIT
+    CFB_BRACKET_BOX(msg->x, msg->y, msg->width, msg->height)
 }
 
 static IPTR cursorfb_putpattern(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPattern *msg)
 {
-    CFB_INIT
-    CFB_REMOVE(msg->x, msg->y, msg->x + msg->width - 1, msg->y + msg->height - 1)
-    CFB_FORWARD
-    CFB_EXIT
+    CFB_BRACKET_BOX(msg->x, msg->y, msg->width, msg->height)
 }
 
 static IPTR cursorfb_getimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
 {
-    CFB_INIT
-    CFB_REMOVE(msg->x, msg->y, msg->x + msg->width - 1, msg->y + msg->height - 1)
-    CFB_FORWARD
-    CFB_EXIT
+    CFB_BRACKET_BOX(msg->x, msg->y, msg->width, msg->height)
 }
 
 static IPTR cursorfb_putimagelut(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImageLUT *msg)
 {
-    CFB_INIT
-    CFB_REMOVE(msg->x, msg->y, msg->x + msg->width - 1, msg->y + msg->height - 1)
-    CFB_FORWARD
-    CFB_EXIT
+    CFB_BRACKET_BOX(msg->x, msg->y, msg->width, msg->height)
 }
 
 static IPTR cursorfb_puttranspimagelut(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutTranspImageLUT *msg)
 {
-    CFB_INIT
-    CFB_REMOVE(msg->x, msg->y, msg->x + msg->width - 1, msg->y + msg->height - 1)
-    CFB_FORWARD
-    CFB_EXIT
+    CFB_BRACKET_BOX(msg->x, msg->y, msg->width, msg->height)
 }
 
 static IPTR cursorfb_getimagelut(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImageLUT *msg)
 {
-    CFB_INIT
-    CFB_REMOVE(msg->x, msg->y, msg->x + msg->width - 1, msg->y + msg->height - 1)
-    CFB_FORWARD
-    CFB_EXIT
+    CFB_BRACKET_BOX(msg->x, msg->y, msg->width, msg->height)
 }
 
-static IPTR cursorfb_drawrect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
+/* DrawRect and FillRect */
+static IPTR cursorfb_rect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
 {
-    CFB_INIT
-    CFB_REMOVE(msg->minX, msg->minY, msg->maxX, msg->maxY)
-    CFB_FORWARD
-    CFB_EXIT
+    CFB_BRACKET(msg->minX, msg->minY, msg->maxX, msg->maxY)
 }
 
-static IPTR cursorfb_fillrect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
+/* DrawEllipse and FillEllipse */
+static IPTR cursorfb_ellipse(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawEllipse *msg)
 {
-    CFB_INIT
-    CFB_REMOVE(msg->minX, msg->minY, msg->maxX, msg->maxY)
-    CFB_FORWARD
-    CFB_EXIT
+    CFB_BRACKET(msg->x - msg->rx, msg->y - msg->ry, msg->x + msg->rx, msg->y + msg->ry)
 }
 
-static IPTR cursorfb_drawellipse(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawEllipse *msg)
+/* Polygons, text, Clear and BitMapScale: the bounds are not cheaply known
+   (polygons may be anywhere, the text extent is not trivially known here), so
+   be safe and remove the pointer whenever this bitmap carries it. */
+static IPTR cursorfb_all(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    CFB_INIT
-    CFB_REMOVE(msg->x - msg->rx, msg->y - msg->ry, msg->x + msg->rx, msg->y + msg->ry)
-    CFB_FORWARD
-    CFB_EXIT
-}
-
-static IPTR cursorfb_fillellipse(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawEllipse *msg)
-{
-    CFB_INIT
-    CFB_REMOVE(msg->x - msg->rx, msg->y - msg->ry, msg->x + msg->rx, msg->y + msg->ry)
-    CFB_FORWARD
-    CFB_EXIT
-}
-
-static IPTR cursorfb_drawpolygon(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawPolygon *msg)
-{
-    /* Be conservative: the polygon may be anywhere, always remove the pointer */
-    CFB_INIT
-    CFB_REMOVE_ALL
-    CFB_FORWARD
-    CFB_EXIT
-}
-
-static IPTR cursorfb_fillpolygon(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawPolygon *msg)
-{
-    CFB_INIT
-    CFB_REMOVE_ALL
-    CFB_FORWARD
-    CFB_EXIT
-}
-
-static IPTR cursorfb_drawtext(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawText *msg)
-{
-    /* Text extent is not trivially known here; be safe and remove the pointer */
-    CFB_INIT
-    CFB_REMOVE_ALL
-    CFB_FORWARD
-    CFB_EXIT
-}
-
-static IPTR cursorfb_filltext(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawText *msg)
-{
-    CFB_INIT
-    CFB_REMOVE_ALL
-    CFB_FORWARD
-    CFB_EXIT
-}
-
-static IPTR cursorfb_clear(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *msg)
-{
-    CFB_INIT
-    CFB_REMOVE_ALL
-    CFB_FORWARD
-    CFB_EXIT
+    CFB_BRACKET(-16384, -16384, 16383, 16383)
 }
 
 static IPTR cursorfb_blitcolexp(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_BlitColorExpansion *msg)
 {
-    CFB_INIT
-    CFB_REMOVE(msg->destX, msg->destY, msg->destX + msg->width - 1, msg->destY + msg->height - 1)
-    CFB_FORWARD
-    CFB_EXIT
-}
-
-static IPTR cursorfb_scale(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_BitMapScale *msg)
-{
-    CFB_INIT
-    CFB_REMOVE_ALL
-    CFB_FORWARD
-    CFB_EXIT
+    CFB_BRACKET_BOX(msg->destX, msg->destY, msg->width, msg->height)
 }
 
 /******************************************************************************/
@@ -433,16 +339,16 @@ OOP_Class *init_cursorfbclass(struct class_static_data *csd)
         {(IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))cursorfb_getimage         , moHidd_BitMap_GetImage                 },
         {(IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))cursorfb_getpixel         , moHidd_BitMap_GetPixel                 },
         {(IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))cursorfb_drawline         , moHidd_BitMap_DrawLine                 },
-        {(IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))cursorfb_drawrect         , moHidd_BitMap_DrawRect                 },
-        {(IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))cursorfb_fillrect         , moHidd_BitMap_FillRect                 },
-        {(IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))cursorfb_drawellipse      , moHidd_BitMap_DrawEllipse              },
-        {(IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))cursorfb_fillellipse      , moHidd_BitMap_FillEllipse              },
-        {(IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))cursorfb_drawpolygon      , moHidd_BitMap_DrawPolygon              },
-        {(IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))cursorfb_fillpolygon      , moHidd_BitMap_FillPolygon              },
-        {(IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))cursorfb_drawtext         , moHidd_BitMap_DrawText                 },
-        {(IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))cursorfb_filltext         , moHidd_BitMap_FillText                 },
+        {(IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))cursorfb_rect             , moHidd_BitMap_DrawRect                 },
+        {(IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))cursorfb_rect             , moHidd_BitMap_FillRect                 },
+        {(IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))cursorfb_ellipse          , moHidd_BitMap_DrawEllipse              },
+        {(IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))cursorfb_ellipse          , moHidd_BitMap_FillEllipse              },
+        {(IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))cursorfb_all              , moHidd_BitMap_DrawPolygon              },
+        {(IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))cursorfb_all              , moHidd_BitMap_FillPolygon              },
+        {(IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))cursorfb_all              , moHidd_BitMap_DrawText                 },
+        {(IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))cursorfb_all              , moHidd_BitMap_FillText                 },
         {(IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))cursorfb_fwd              , moHidd_BitMap_FillSpan                 },
-        {(IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))cursorfb_clear            , moHidd_BitMap_Clear                    },
+        {(IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))cursorfb_all              , moHidd_BitMap_Clear                    },
         {(IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))cursorfb_blitcolexp       , moHidd_BitMap_BlitColorExpansion       },
         {(IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))cursorfb_fwd              , moHidd_BitMap_MapColor                 },
         {(IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))cursorfb_fwd              , moHidd_BitMap_UnmapPixel               },
@@ -480,7 +386,7 @@ OOP_Class *init_cursorfbclass(struct class_static_data *csd)
         {(IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))cursorfb_fwd              , moHidd_BitMap_SetColorMap              },
         {(IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))cursorfb_fwd              , moHidd_BitMap_ObtainDirectAccess       },
         {(IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))cursorfb_fwd              , moHidd_BitMap_ReleaseDirectAccess      },
-        {(IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))cursorfb_scale            , moHidd_BitMap_BitMapScale              },
+        {(IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))cursorfb_all              , moHidd_BitMap_BitMapScale              },
         {(IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))cursorfb_fwd              , moHidd_BitMap_PrivateSet               },
         {(IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))cursorfb_fwd              , moHidd_BitMap_SetRGBConversionFunction },
         {(IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))cursorfb_fwd              , moHidd_BitMap_UpdateRect               },

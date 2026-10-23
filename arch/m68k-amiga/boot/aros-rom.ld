@@ -5,6 +5,17 @@ MEMORY {
 
 SECTIONS 
 {
+  /* String literals, one pool per bank. The final link appends each pool to
+   * its bank, merging duplicate strings and shared tails across modules
+   * (merging only happens in a final link, not in this -r one). The .ext
+   * pool takes only the .ext modules' strings, so that no .rom code points
+   * into the extended ROM; everything else, static libs included, goes to
+   * the .rom pool.
+   */
+  .extstr                     : {
+INCLUDE ext_strs.ld
+                                } >valid
+  .romstr                     : { *(.romstrings .rodata.str1.1) } >valid
   .ext                        : { _ext_start = .;
 INCLUDE ext_objs.ld
   /* Static-lib code used ONLY by .ext modules. The catch-all in .rom below

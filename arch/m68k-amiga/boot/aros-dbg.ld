@@ -17,7 +17,7 @@ INCLUDE any_objs.ld
  .rom.MEMF_LOCAL             : { _rom_start = .;
 INCLUDE local_objs.ld
                                   /* This is for the static libs */
-                                 *(.text .text.* .rodata .rodata.*)
+                                 *(.text .text.* .rodata .rodata.* .romstrings)
                                  *(.eh_frame)
                                  _rom_end = .;
                                } >valid

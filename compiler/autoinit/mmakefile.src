@@ -11,6 +11,7 @@ AUTOFILE := \
 # libraries_nolibs must come BEFORE libraries
 LIBHANDLINGFILES := \
 	functions \
+	classes \
 	dso_handle \
 	libraries_nolibs \
 	libraries
@@ -34,7 +35,7 @@ FILES := $(LIBBASEFILES) $(LIBHANDLINGFILES) $(STARTUPFILES) $(MISCFILES)
 
 #MM- core-linklibs : linklibs-autoinit
 #MM- linklibs: linklibs-autoinit
-#MM linklibs-autoinit : includes includes-copy kernel-expansion-includes linklibs-autoinit-autofile
+#MM linklibs-autoinit : includes includes-copy kernel-expansion-includes kernel-oop-includes linklibs-autoinit-autofile
 
 %copy_includes includes="autoinit.h detach.h" path=aros
 

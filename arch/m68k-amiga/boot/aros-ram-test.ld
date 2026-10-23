@@ -12,7 +12,7 @@ SECTIONS
                                 } >valid
   .rom.MEMF_LOCAL             : { _rom_start = .;
                                    /* This is for the static libs */
-                                  *(.text .text.* .rodata .rodata.*)
+                                  *(.text .text.* .rodata .rodata.* .romstrings)
                                   *(.eh_frame)
                                   _rom_end = .;   
                                   _ext_start = .;   

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -34,6 +34,7 @@
 #endif
 
 #include "gadgets.h" /* Some handy rendering funtions */
+#include "decorsupport.h"
 
 #define INTDRI(dri) ((struct IntDrawInfo *)(dri))
 
@@ -66,33 +67,12 @@ extern void DrawJUMP(struct RastPort *rp,ULONG state,LONG cx,LONG cy,struct Intu
  */
 #define IM(o) ((struct Image *)o)
 
-static UWORD getbgpen(ULONG state, UWORD *pens);
 static UWORD getbgpen_gt(ULONG state, UWORD *pens);
-static void renderimageframe(struct RastPort *rp, ULONG which, ULONG state, UWORD *pens,
-                             WORD left, WORD top, WORD width, WORD height,
-                             struct IntuitionBase *IntuitionBase);
 
 /**************************************************************************************************/
 
 #define SYSIFLG_GADTOOLS 1
 #define SYSIFLG_NOBORDER 2
-
-/**************************************************************************************************/
-
-/* Some handy drawing functions */
-
-void draw_thick_line(Class *cl, struct RastPort *rport,
-                     LONG x1, LONG y1, LONG x2, LONG y2,
-                     UWORD thickness)
-{
-    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
-    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
-    Move(rport, x1, y1);
-    Draw(rport, x2, y2);
-    /* Georg Steger */
-    Move(rport, x1 + 1, y1);
-    Draw(rport, x2 + 1, y2);
-}
 
 /**************************************************************************************************/
 
@@ -604,8 +584,8 @@ IPTR SysIClass__IM_DRAW(Class *cl, Object *obj, struct impDraw *msg)
 
             if (!(data->flags & SYSIFLG_NOBORDER))
             {
-                renderimageframe(rport, LEFTIMAGE, msg->imp_State, data->dri->dri_Pens,
-                                 left, top, width, height, IntuitionBase);
+                drawimageframe(rport, LEFTIMAGE, msg->imp_State, data->dri->dri_Pens,
+                                 left, top, width, height, 1, 1, IntuitionBase);
                 left++;
                 top++;
                 right--;
@@ -708,8 +688,8 @@ IPTR SysIClass__IM_DRAW(Class *cl, Object *obj, struct impDraw *msg)
 
             if (!(data->flags & SYSIFLG_NOBORDER))
             {
-                renderimageframe(rport, UPIMAGE, msg->imp_State, data->dri->dri_Pens,
-                                 left, top, width, height, IntuitionBase);
+                drawimageframe(rport, UPIMAGE, msg->imp_State, data->dri->dri_Pens,
+                                 left, top, width, height, 1, 1, IntuitionBase);
                 left++;
                 top++;
                 right--;
@@ -813,8 +793,8 @@ IPTR SysIClass__IM_DRAW(Class *cl, Object *obj, struct impDraw *msg)
 
             if (!(data->flags & SYSIFLG_NOBORDER))
             {
-                renderimageframe(rport, RIGHTIMAGE, msg->imp_State, data->dri->dri_Pens,
-                                 left, top, width, height, IntuitionBase);
+                drawimageframe(rport, RIGHTIMAGE, msg->imp_State, data->dri->dri_Pens,
+                                 left, top, width, height, 1, 1, IntuitionBase);
                 left++;
                 top++;
                 right--;
@@ -919,8 +899,8 @@ IPTR SysIClass__IM_DRAW(Class *cl, Object *obj, struct impDraw *msg)
 
             if (!(data->flags & SYSIFLG_NOBORDER))
             {
-                renderimageframe(rport, DOWNIMAGE, msg->imp_State, data->dri->dri_Pens,
-                                 left, top, width, height, IntuitionBase);
+                drawimageframe(rport, DOWNIMAGE, msg->imp_State, data->dri->dri_Pens,
+                                 left, top, width, height, 1, 1, IntuitionBase);
                 left++;
                 top++;
                 right--;
@@ -1059,27 +1039,6 @@ IPTR SysIClass__OM_SET(Class *cl, Object *obj, Msg msg)
 
 /**************************************************************************************************/
 
-static UWORD getbgpen(ULONG state, UWORD *pens)
-{
-    UWORD bg;
-
-    switch (state)
-    {
-        case IDS_NORMAL:
-        case IDS_SELECTED:
-            bg = pens[FILLPEN];
-            break;
-
-        default:
-            bg = pens[BACKGROUNDPEN];
-            break;
-    }
-    
-    return bg;
-}
-
-/**************************************************************************************************/
-
 static UWORD getbgpen_gt(ULONG state, UWORD *pens)
 {
     UWORD bg;
@@ -1097,85 +1056,6 @@ static UWORD getbgpen_gt(ULONG state, UWORD *pens)
     }
     
     return bg;
-}
-
-/**************************************************************************************************/
-
-static void renderimageframe(struct RastPort *rp, ULONG which, ULONG state, UWORD *pens,
-                             WORD left, WORD top, WORD width, WORD height,
-                             struct IntuitionBase *IntuitionBase)
-{
-    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
-    WORD right = left + width - 1;
-    WORD bottom = top + height - 1;
-    BOOL leftedgegodown = FALSE;
-    BOOL topedgegoright = FALSE;
-
-    switch(which)
-    {
-        case CLOSEIMAGE:
-            /* draw separator line at the right side */
-            SetAPen(rp, pens[SHINEPEN]);
-            RectFill(rp, right, top, right, bottom - 1);
-            SetAPen(rp, pens[SHADOWPEN]);
-            WritePixel(rp, right, bottom);
-
-            right--;
-            break;
-
-        case ZOOMIMAGE:
-        case DEPTHIMAGE:
-        case SDEPTHIMAGE:
-            /* draw separator line at the left side */
-            SetAPen(rp, pens[SHINEPEN]);
-            WritePixel(rp, left, top);
-            SetAPen(rp, pens[SHADOWPEN]);
-            RectFill(rp, left, top + 1, left, bottom);
-
-            left++;
-            break;
-
-        case UPIMAGE:
-        case DOWNIMAGE:
-            leftedgegodown = TRUE;
-            break;
-
-        case LEFTIMAGE:
-        case RIGHTIMAGE:
-            topedgegoright = TRUE;
-            break;
-    }
-
-    if (left == 0) leftedgegodown = TRUE;
-    if (top == 0) topedgegoright = TRUE;
-
-    SetAPen(rp, pens[((state == IDS_SELECTED) || (state == IDS_INACTIVESELECTED)) ? SHADOWPEN : SHINEPEN]);
-
-    /* left edge */
-    RectFill(rp, left,
-             top,
-             left,
-             bottom - (leftedgegodown ? 0 : 1));
-
-    /* top edge */
-    RectFill(rp, left + 1,
-             top,
-             right - (topedgegoright ? 0 : 1),
-             top);
-
-    SetAPen(rp, pens[((state == IDS_SELECTED) || (state == IDS_INACTIVESELECTED)) ? SHINEPEN : SHADOWPEN]);
-
-    /* right edge */
-    RectFill(rp, right,
-             top + (topedgegoright ? 1 : 0),
-             right,
-             bottom);
-
-    /* bottom edge */
-    RectFill(rp, left + (leftedgegodown ? 1 : 0),
-             bottom,
-             right - 1,
-             bottom);
 }
 
 /**************************************************************************************************/

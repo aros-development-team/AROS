@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2005-2016, The AROS Development Team. All rights reserved.
+    Copyright (C) 2005-2026, The AROS Development Team. All rights reserved.
 
     Desc: Support functions for oop.library classes. Part of genmodule.
 */
@@ -56,8 +56,6 @@ void writeoopinit(FILE *out, struct classinfo *cl)
         "#ifdef GM_OOPBASE_FIELD\n"
         "    struct Library *OOPBase = GM_OOPBASE_FIELD(LIBBASE);\n"
         "#endif\n"
-        "    OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);\n"
-        "    OOP_Class *cl = NULL;\n"
         "\n",
         cl->basename
     );
@@ -83,7 +81,7 @@ void writeoopinit(FILE *out, struct classinfo *cl)
             }
 
             /* Start new MethodDescr declaration */
-            fprintf(out, "    struct OOP_MethodDescr %s_%s_descr[] =\n    {\n",
+            fprintf(out, "    static const struct OOP_MethodDescr %s_%s_descr[] =\n    {\n",
                     cl->basename, methlistit->interface->s
             );
             methods = 1;
@@ -108,7 +106,7 @@ void writeoopinit(FILE *out, struct classinfo *cl)
     }
 
     /* Write the interface description */
-    fprintf(out, "    struct OOP_InterfaceDescr %s_ifdescr[] =\n    {\n", cl->basename);
+    fprintf(out, "    static const struct OOP_InterfaceDescr %s_ifdescr[] =\n    {\n", cl->basename);
     for (interface = cl->interfaces; interface != NULL; interface = interface->next)
     {
         fprintf(out,
@@ -124,62 +122,47 @@ void writeoopinit(FILE *out, struct classinfo *cl)
             "\n"
     );
 
-    /* Write the class creation TagList */
+    /* Write the class description; the creation itself is done by
+       _set_oop_addclass() in libautoinit */
     fprintf(out,
-            "    struct TagItem %s_tags[] =\n"
-            "    {\n",
+            "    static const struct __aros_oopclass %s_class =\n"
+            "    {\n"
+            "        %s_ifdescr,\n",
+            cl->basename,
             cl->basename
     );
     if (cl->superclass != NULL)
-        fprintf(out,
-                "        {aMeta_SuperID, (IPTR)%s},\n",
-                cl->superclass
-        );
+        fprintf(out, "        %s,\n", cl->superclass);
     else if (cl->superclass_field != NULL)
-        fprintf(out,
-                "        {aMeta_SuperPtr, (IPTR)LIBBASE->%s},\n",
-                cl->superclass_field
-        );
+        fprintf(out, "        NULL,\n");
     else
     {
         fprintf(stderr, "Internal error: both superclass and superclass_field are NULL\n");
         exit(20);
     }
-
     fprintf(out,
-            "        {aMeta_InterfaceDescr, (IPTR)%s_ifdescr},\n"
-            "        {aMeta_InstSize, (IPTR)%s_DATA_SIZE},\n",
-            cl->basename,
+            "        %s,\n"
+            "        %s_DATA_SIZE\n"
+            "    };\n"
+            "\n",
+            (cl->classid != NULL) ? cl->classid : "NULL",
             cl->basename
     );
-    if (cl->classid != NULL)
-        fprintf(out,
-                "        {aMeta_ID, (IPTR)%s},\n",
-                cl->classid
-        );
-    fprintf(out, "        {TAG_DONE, (IPTR)0}\n    };\n");
 
     /* Write class constructor */
-    fprintf
-    (
-        out,
-        "\n"
-        "    if (MetaAttrBase == 0)\n"
-        "        return FALSE;\n"
-        "\n"
-        "    cl = OOP_NewObject(NULL, CLID_HiddMeta, %s_tags);\n"
-        "    if (cl != NULL)\n"
-        "    {\n"
-        "        cl->UserData = (APTR)LIBBASE;\n"
-        "        %s_CLASSPTR_FIELD(LIBBASE) = cl;\n"
-        "        OOP_AddClass(cl);\n"
-        "    }\n"
-        "\n"
-        "    OOP_ReleaseAttrBase(IID_Meta);\n"
-        "    return cl != NULL;\n"
-        "}\n",
-        cl->basename,
-        cl->basename
+    fprintf(out,
+            "    return _set_oop_addclass(&%s_class, ",
+            cl->basename
+    );
+    if (cl->superclass != NULL)
+        fprintf(out, "NULL");
+    else
+        fprintf(out, "(OOP_Class *)LIBBASE->%s", cl->superclass_field);
+    fprintf(out,
+            ",\n"
+            "                             (APTR)LIBBASE, (OOP_Class **)&%s_CLASSPTR_FIELD(LIBBASE), OOPBase);\n"
+            "}\n",
+            cl->basename
     );
 
     /* Write class destructor */
@@ -191,16 +174,8 @@ void writeoopinit(FILE *out, struct classinfo *cl)
         "#ifdef GM_OOPBASE_FIELD\n"
         "    struct Library *OOPBase = GM_OOPBASE_FIELD(LIBBASE);\n"
         "#endif\n"
-        "    if (%s_CLASSPTR_FIELD(LIBBASE) != NULL)\n"
-        "    {\n"
-        "        OOP_RemoveClass(%s_CLASSPTR_FIELD(LIBBASE));\n"
-        "        OOP_DisposeObject((OOP_Object *)%s_CLASSPTR_FIELD(LIBBASE));\n"
-        "    }\n"
-        "\n"
-//        "    return TRUE;\n"
+        "    _set_oop_removeclass((OOP_Class *)%s_CLASSPTR_FIELD(LIBBASE), OOPBase);\n"
         "}\n",
-        cl->basename,
-        cl->basename,
         cl->basename,
         cl->basename
     );
