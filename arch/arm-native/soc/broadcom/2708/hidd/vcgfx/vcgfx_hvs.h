@@ -21,6 +21,8 @@
 #include <exec/types.h>
 #include <oop/oop.h>
 
+#include "vcgfx_vblwait.h"
+
 /* ------------------------------------------------------------------ */
 /* HVS: bus 0x7E400000                                                 */
 /* ------------------------------------------------------------------ */
@@ -110,8 +112,9 @@
 
 /* LBM as on HVS5: the firmware hands it out downwards from 0xbc00 at 8
  * bytes per source pixel of width (its scaled fb planes sit at 0x9400 for
- * 1280 wide and 0xa300 for 800). Our planes take it upwards from 0. */
-#define HVS_LBM_TOP             0xbc00
+ * 1280 wide and 0xa300 for 800). Our planes take it upwards from 0, up
+ * to all 48K (Linux's size) unless a scaled fb plane holds the top. */
+#define HVS_LBM_SIZE            0xc000
 #define HVS_LBM_BYTES(w)        ((ULONG)(w) * 8)
 
 /* HVS_PPF() keeps 16 bits of ratio: upscale only. */
@@ -319,10 +322,9 @@ struct vc4_hvs_state
     volatile ULONG  hvs_VSyncCount;
     ULONG           hvs_FlipArmed;
 
-    /* The vsync IRQ signals hvs_VSyncTask (NULL = no waiter).
+    /* HVS5: the vsync IRQ signals the tasks in hvs_VSyncWait.
      * hvs_VSyncStamp: time of the last counted vsync. */
-    struct Task * volatile hvs_VSyncTask;
-    ULONG           hvs_VSyncSigMask;
+    struct vcgfx_vblwait hvs_VSyncWait;
     volatile ULONG  hvs_VSyncStamp;
     struct vc4gfx_vblank * volatile hvs_VBlank;  /* client callback */
 };

@@ -10,6 +10,7 @@
 #include <oop/oop.h>
 
 #include "vcgfx_edid.h"
+#include "vcgfx_vblwait.h"
 
 struct vc4gfx_vblank;
 
@@ -88,15 +89,14 @@ struct vc4_hvs6_state
     struct Task *h6_Watch;
 
     /* Vblank from pixelvalve 0 (vcgfx_hvs6.c). h6_VSyncMask is the INTEN
-     * bit measured to run at frame rate, 0 = none; h6_VSyncTask the one
-     * task sleeping on it, and h6_VSyncStamp dates the last tick so a
+     * bit measured to run at frame rate, 0 = none; h6_VSyncWait the
+     * tasks sleeping on it, and h6_VSyncStamp dates the last tick so a
      * stopped interrupt is noticed instead of slept on. */
     APTR            h6_VSyncIrq;
     ULONG           h6_VSyncMask;
     volatile ULONG  h6_VSyncCount;
     volatile ULONG  h6_VSyncStamp;
-    struct Task * volatile h6_VSyncTask;
-    ULONG           h6_VSyncSigMask;
+    struct vcgfx_vblwait h6_VSyncWait;
     struct vc4gfx_vblank * volatile h6_VBlank;  /* client callback */
 
     /* The firmware's colour path, put back with the boot mode: CSC_CTL,

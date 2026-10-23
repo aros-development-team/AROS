@@ -54,10 +54,11 @@ struct VideoCoreGfxOverlayData
 };
 
 /* Screens shown as HVS planes (ShowViewPorts). x/y are the bitmap's
- * LeftEdge/TopEdge in display coordinates. Only the front screens get a
- * plane, and only 32-bit ones in scanout memory: the rest are not shown
- * until a compositor can blit them. Each such case is logged once. */
-#define VCGFX_MAX_PLANES        4
+ * LeftEdge/TopEdge in display coordinates. Only 32-bit ones in scanout
+ * memory get a plane, front first while the HVS budget lasts: the rest
+ * are not shown until a compositor can blit them. Each such case is
+ * logged once. */
+#define VCGFX_MAX_PLANES        16
 
 struct vcgfx_plane
 {
@@ -66,6 +67,7 @@ struct vcgfx_plane
     LONG                 pl_X, pl_Y;
     ULONG                pl_PtrWord;    /* VC4: its PTR0 in the newest list, 0 = none */
     ULONG                pl_PtrSkip;    /* and the bytes clipped off in front */
+    BOOL                 pl_Shown;      /* the last list built had room for it */
 };
 
 /* Overlays: a client's pixels over a screen, desc x/y in that screen.

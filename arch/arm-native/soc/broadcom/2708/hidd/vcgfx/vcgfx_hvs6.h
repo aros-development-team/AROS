@@ -117,8 +117,10 @@ static inline void hvs6_wr(ULONG offset, ULONG value)
 #define HVS6_PL_END         (HVS6_PL_CUR + 1)
 #define HVS6_PL_SLOTS       (HVS6_PL_END + 1)
 #define HVS6_PL_LISTS       3
-#define HVS6_PL_HANDLE      26          /* screens take 26..29 */
-#define HVS6_PL_OVL_HANDLE  18          /* overlays 18..25 */
+/* UPM handles for the planes a list shows, in the order they get UPM;
+ * 30..32 are the fb's, the overlay's and the cursor's */
+#define HVS6_PL_HANDLE      14
+#define HVS6_PL_HANDLE_END  30
 
 /* UPM below this is left to the firmware's own planes, which it
  * allocates upwards from 0 */

@@ -512,6 +512,7 @@ static void backdrop_clear(struct VideoCoreGfx_staticdata *xsd)
 #define PLANES_WARN_BUDGET  (1 << 0)
 #define PLANES_WARN_CLASS   (1 << 1)
 #define PLANES_WARN_SCANOUT (1 << 2)
+#define PLANES_WARN_ROOM    (1 << 3)
 
 /* A screen that gets no plane is not shown at all: say so, once a reason. */
 static void planes_warn(struct VideoCoreGfx_staticdata *xsd, ULONG why,
@@ -593,6 +594,7 @@ ULONG vcgfx_show_viewports(struct VideoCoreGfx_staticdata *xsd,
         shown[n].pl_BM      = v->Bitmap;
         shown[n].pl_Data    = data;
         shown[n].pl_PtrWord = 0;
+        shown[n].pl_Shown   = TRUE;
         plane_pos(xsd, v->Bitmap, &shown[n].pl_X, &shown[n].pl_Y);
         n++;
     }
@@ -611,6 +613,12 @@ ULONG vcgfx_show_viewports(struct VideoCoreGfx_staticdata *xsd,
     xsd->vcsd_NumPlanes = n;
     backdrop_clear(xsd);
     planes_commit(xsd);
+    for (i = 0; i < n; i++)
+    {
+        if (!xsd->vcsd_Plane[i].pl_Shown)
+            planes_warn(xsd, PLANES_WARN_ROOM,
+                        "a screen did not fit the HVS budget: not shown");
+    }
     VC4_MBOX_UNLOCK(xsd);
 
     return TRUE;

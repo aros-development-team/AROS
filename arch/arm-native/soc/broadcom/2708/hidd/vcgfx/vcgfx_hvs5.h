@@ -147,7 +147,8 @@
  * ratio field up to bit 24; a 1280 to 1024 shrink showed right on a Pi 4. */
 #define HVS5_PPF_FITS(src, dst) ((((ULONG)(src) << 16) / (ULONG)(dst)) <= 0x18000)
 
-#define HVS5_LBM_TOP            0xbc00
+/* All 60K (Linux's size); the firmware's own planes stay below 0xbc00 */
+#define HVS5_LBM_SIZE           0xf000
 #define HVS5_LBM_BYTES(w)       ((ULONG)(w) * 8)
 
 /* pixelvalve@..., "brcm,bcm2711-pixelvalveN". PV2 has moved (0x7e807000

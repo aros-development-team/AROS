@@ -708,25 +708,27 @@ static ULONG hvs_take(struct vc4_hvs_state *st, const struct hvs_src *s, ULONG *
  * kept black, is the backdrop where no screen covers. A screen's overlays
  * sit right above it.
  *
- * The slot and the line buffer go to the screens first, as they would
- * without overlays, then to the overlays, front screen first. A plane
- * placed back to front then never finds less than this pass left it.
+ * The slot and the line buffer go to the screens first, front first, then
+ * to the overlays, front screen first; a screen that does not fit is not
+ * shown. Placed back to front with what was decided here.
  */
 static ULONG hvs_emit_planes(struct VideoCoreGfx_staticdata *xsd, ULONG *w,
                              ULONG n, ULONG *lbm)
 {
     struct vc4_hvs_state *st = &xsd->vcsd_HVS;
     LONG limit[VCGFX_MAX_PLANES];
-    BOOL inlist[VCGFX_MAX_OVERLAYS];
+    ULONG swords[VCGFX_MAX_PLANES], slbm[VCGFX_MAX_PLANES];
+    ULONG owords[VCGFX_MAX_OVERLAYS], olbm[VCGFX_MAX_OVERLAYS];
     LONG left = (LONG)st->hvs_FBX, right = left + (LONG)st->hvs_DestW;
     LONG top = (LONG)st->hvs_FBY, bottom = top + (LONG)st->hvs_DestH;
-    ULONG room = HVS_OWN_SLOT_STRIDE - n - 1 - HVS_UNITY_WORDS, used = 0, need = 0;
-    ULONG words, k;
+    LONG front = (LONG)xsd->vcsd_NumPlanes - 1;
+    ULONG room = HVS_OWN_SLOT_STRIDE - n - 1 - HVS_UNITY_WORDS, need = 0;
+    ULONG words, lb, k;
     struct hvs_src s, o;
     LONG i, px, py, dx, dy;
     ULONG pw, ph, dw, dh;
 
-    for (i = (LONG)xsd->vcsd_NumPlanes - 1; i >= 0; i--)
+    for (i = front; i >= 0; i--)
     {
         limit[i] = bottom;
         hvs_plane_src(&xsd->vcsd_Plane[i], &s);
@@ -745,35 +747,54 @@ static ULONG hvs_emit_planes(struct VideoCoreGfx_staticdata *xsd, ULONG *w,
         else
             room -= st->hvs_FBWords;
     }
-    for (i = 0; i < (LONG)xsd->vcsd_NumPlanes; i++)
+
+    for (i = front; i >= 0; i--)
     {
-        hvs_plane_src(&xsd->vcsd_Plane[i], &s);
-        if (hvs_src_rect(st, &s, &px, &py, &pw, &ph) && (limit[i] > py) && (limit[i] > top))
-            room -= hvs_take(st, &s, &need);
+        struct vcgfx_plane *pl = &xsd->vcsd_Plane[i];
+
+        swords[i] = 0;
+        pl->pl_Shown = TRUE;
+        hvs_plane_src(pl, &s);
+        if (!hvs_src_rect(st, &s, &px, &py, &pw, &ph) || (limit[i] <= py) || (limit[i] <= top))
+            continue;
+
+        /* One the scaler can't make is left out, not shown at the wrong size */
+        lb = need;
+        words = hvs_take(st, &s, &lb);
+        if ((words > room)
+            || (((pw != s.srcw) || (ph != s.srch)) && (words != HVS_SCALED_WORDS)))
+        {
+            pl->pl_Shown = FALSE;
+            continue;
+        }
+        room -= words;
+        slbm[i] = need;
+        need = lb;
+        swords[i] = words;
     }
 
     for (k = 0; k < VCGFX_MAX_OVERLAYS; k++)
     {
-        inlist[k] = FALSE;
+        owords[k] = 0;
         xsd->vcsd_Ovl[k].ov_Shown = FALSE;
     }
-    for (i = (LONG)xsd->vcsd_NumPlanes - 1; i >= 0; i--)
+    for (i = front; i >= 0; i--)
     {
         struct vcgfx_plane *pl = &xsd->vcsd_Plane[i];
-        BOOL vis;
 
+        if (!pl->pl_Shown)
+            continue;
         hvs_plane_src(pl, &s);
-        vis = hvs_src_rect(st, &s, &px, &py, &pw, &ph) && (limit[i] > py) && (limit[i] > top);
 
         for (k = 0; k < VCGFX_MAX_OVERLAYS; k++)
         {
             struct vcgfx_ovl *e = &xsd->vcsd_Ovl[k];
-            ULONG lb = need;
 
             if (!e->ov_Client || (e->ov_BM != pl->pl_BM))
                 continue;
 
             /* A size the scaler can't make is left out, not shown wrong */
+            lb = need;
             hvs_pool_src(e, &o, pl->pl_X, pl->pl_Y, s.cw, s.ch);
             words = hvs_take(st, &o, &lb);
             if (hvs_src_rect(st, &o, &dx, &dy, &dw, &dh)
@@ -781,41 +802,45 @@ static ULONG hvs_emit_planes(struct VideoCoreGfx_staticdata *xsd, ULONG *w,
                 continue;
 
             /* Its screen hidden: taken, with nothing of it to show */
-            if (!vis)
+            if (!swords[i])
             {
                 e->ov_Shown = TRUE;
                 continue;
             }
-            if (used + words > room)
+            if (words > room)
                 continue;
 
-            used += words;
+            room -= words;
+            olbm[k] = need;
             need = lb;
-            e->ov_Shown = inlist[k] = TRUE;
+            owords[k] = words;
+            e->ov_Shown = TRUE;
         }
     }
 
     if (bottom > top)
         n = hvs_emit_fb(st, w, n, lbm);
 
-    for (i = 0; i < (LONG)xsd->vcsd_NumPlanes; i++)
+    for (i = 0; i <= front; i++)
     {
         struct vcgfx_plane *pl = &xsd->vcsd_Plane[i];
         LONG cb = limit[i];
         LONG ol, ot, orr, ob;
-        ULONG at = n, got;
+        ULONG got;
 
         pl->pl_PtrWord = 0;
-        hvs_plane_src(pl, &s);
-        if (!hvs_src_rect(st, &s, &px, &py, &pw, &ph) || cb <= py || cb <= top)
+        if (!swords[i])
             continue;
 
-        n = hvs_emit_src(st, w, n, &s, lbm, left, top, right, cb, &got);
+        hvs_plane_src(pl, &s);
+        hvs_src_rect(st, &s, &px, &py, &pw, &ph);
+        got = hvs_put_src(st, &w[n], swords[i], slbm[i], &s, left, top, right, cb);
         if (got)
         {
-            pl->pl_PtrWord = at + ((got == HVS_SCALED_WORDS) ? HVS_SC_PTR0 : 4);
+            pl->pl_PtrWord = n + ((got == HVS_SCALED_WORDS) ? HVS_SC_PTR0 : 4);
             pl->pl_PtrSkip = (w[pl->pl_PtrWord] & ~HVS_PTR_BUS_ALIAS)
                            - (s.phys & ~HVS_PTR_BUS_ALIAS);
+            n += got;
         }
 
         /* No further out than the screen itself. */
@@ -826,10 +851,10 @@ static ULONG hvs_emit_planes(struct VideoCoreGfx_staticdata *xsd, ULONG *w,
 
         for (k = 0; k < VCGFX_MAX_OVERLAYS; k++)
         {
-            if (!inlist[k] || (xsd->vcsd_Ovl[k].ov_BM != pl->pl_BM))
+            if (!owords[k] || (xsd->vcsd_Ovl[k].ov_BM != pl->pl_BM))
                 continue;
             hvs_pool_src(&xsd->vcsd_Ovl[k], &o, pl->pl_X, pl->pl_Y, s.cw, s.ch);
-            n = hvs_emit_src(st, w, n, &o, lbm, ol, ot, orr, ob, NULL);
+            n += hvs_put_src(st, &w[n], owords[k], olbm[k], &o, ol, ot, orr, ob);
         }
     }
     return n;
@@ -1235,9 +1260,9 @@ BOOL vc4_hvs_takeover(struct VideoCoreGfx_staticdata *xsd,
 
         /* A scaled fb plane holds the line buffer from its LBM word up. */
         st->hvs_FBLBM = (st->hvs_FBWords == HVS_SCALED_WORDS)
-                      ? st->hvs_FBEntry[HVS_SC_LBM] : HVS_LBM_TOP;
-        if (st->hvs_FBLBM > HVS_LBM_TOP)
-            st->hvs_FBLBM = HVS_LBM_TOP;
+                      ? st->hvs_FBEntry[HVS_SC_LBM] : HVS_LBM_SIZE;
+        if (st->hvs_FBLBM > HVS_LBM_SIZE)
+            st->hvs_FBLBM = HVS_LBM_SIZE;
 
         st->hvs_OutW  = (ctrl >> HVS_DISPCTRLX_W_SHIFT) & 0xfff;
         st->hvs_OutH  = (ctrl >> HVS_DISPCTRLX_H_SHIFT) & 0xfff;
@@ -1251,7 +1276,7 @@ BOOL vc4_hvs_takeover(struct VideoCoreGfx_staticdata *xsd,
             st->hvs_SrcH    = st->hvs_ShowH;
             st->hvs_FBPtr   = st->hvs_ShowPtr & ~HVS_PTR_BUS_ALIAS;
             st->hvs_FBPitch = st->hvs_ShowPitch;
-            st->hvs_FBLBM   = HVS_LBM_TOP;
+            st->hvs_FBLBM   = HVS_LBM_SIZE;
         }
         st->hvs_Slot  = 0;
         st->hvs_FlipArmed = st->hvs_VSyncCount;     /* no flip pending */
