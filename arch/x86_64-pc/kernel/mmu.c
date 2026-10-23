@@ -3,6 +3,7 @@
 */
 
 #include <asm/cpu.h>
+#include <string.h>
 #include <exec/types.h>
 #include "kernel_base.h"
 #include "kernel_intern.h"
@@ -236,6 +237,9 @@ void core_ProtPage(intptr_t addr, char p, char rw, char us)
 
     DMMU(bug("[Kernel] Marking page 0x%p as read-only\n", addr));
 
+    /* Same lock map_global() takes; this splits 2 MiB entries too. */
+    core_PageTableLock();
+
     MMU = &__KernBootPrivate->MMU;
     pml4 = MMU->mmu_PML4;
     pdpe = (struct PDPE *)((((IPTR)pml4[pml4_off].base_low) << 12) | (((IPTR)pml4[pml4_off].base_high) << 32));
@@ -254,6 +258,7 @@ void core_ProtPage(intptr_t addr, char p, char rw, char us)
         {
             bug("[Kernel] core_ProtPage: split PTE pool exhausted at 0x%p\n",
                 addr);
+            core_PageTableUnlock();
             return;
         }
 
@@ -269,6 +274,9 @@ void core_ProtPage(intptr_t addr, char p, char rw, char us)
             pte[i].us        = pde2[pde_off].us;
             pte[i].pwt       = pde2[pde_off].pwt;
             pte[i].pcd       = pde2[pde_off].pcd;
+            pte[i].pat       = pde2[pde_off].pat;
+            pte[i].g         = pde2[pde_off].g;
+            pte[i].nx        = pde2[pde_off].nx;
             pte[i].base_low  = base >> 12;
             pte[i].base_high = (base >> 32) & 0x0FFFFF;
 
@@ -279,14 +287,31 @@ void core_ProtPage(intptr_t addr, char p, char rw, char us)
         tmp_pde.base_low = (intptr_t)pte >> 12;
         tmp_pde.base_high = ((intptr_t)pte >> 32) & 0x0FFFFF;
 
-        pde[pde_off] = tmp_pde;
+        /* One 8-byte store: the page walker must never see half an entry. */
+        {
+            uint64_t val;
+
+            memcpy(&val, &tmp_pde, sizeof(val));
+            __atomic_store_n((volatile uint64_t *)(void *)&pde[pde_off], val, __ATOMIC_RELAXED);
+        }
     }
             
     pte = (struct PTE *)((((IPTR)pde[pde_off].base_low) << 12) | (((IPTR)pde[pde_off].base_high) << 32));
 
-    pte[pte_off].rw = rw ? 1:0;
-    pte[pte_off].us = us ? 1:0;
-    pte[pte_off].p = p ? 1:0;
+    {
+        struct PTE tmp_pte = pte[pte_off];
+        uint64_t val;
+
+        tmp_pte.rw = rw ? 1:0;
+        tmp_pte.us = us ? 1:0;
+        tmp_pte.p = p ? 1:0;
+        /* One 8-byte store, as above. */
+        memcpy(&val, &tmp_pte, sizeof(val));
+        __atomic_store_n((volatile uint64_t *)(void *)&pte[pte_off], val, __ATOMIC_RELAXED);
+    }
+
+    core_PageTableUnlock();
+
     asm volatile ("invlpg (%0)"::"r"(addr));
 }
 

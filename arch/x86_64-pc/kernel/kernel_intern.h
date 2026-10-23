@@ -91,6 +91,14 @@ void core_CPUFreqInit(struct PlatformData *pdata);
 
 /* */
 void core_ProtKernelArea(intptr_t addr, intptr_t length, char p, char rw, char us);
+struct pt_pool;
+int core_PTPoolPrepare(IPTR vaddr, IPTR vend, IPTR paddr, BOOL unmap, struct pt_pool **pool);
+void core_PTPoolDispose(struct pt_pool *pool);
+int core_UnmapGlobal(IPTR vaddr, IPTR vend, struct pt_pool *pool);
+void core_PageTableLock(void);
+void core_PageTableUnlock(void);
+void core_FlushOwnTLB(void);
+void core_FlushOtherCPUTLB(int async, struct KernelBase *KernelBase);
 void core_Supervisor(struct ExceptionContext *);
 
 /* HW IRQ Related Functions */
