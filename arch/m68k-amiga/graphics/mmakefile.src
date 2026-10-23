@@ -16,8 +16,10 @@ include $(SRCDIR)/config/aros.cfg
 #MM- test-graphics-amiga-m68k-quick : test-graphics-interleavedblit-quick
 #MM- test-graphics-amiga-m68k : test-graphics-regionpool
 #MM- test-graphics-amiga-m68k-quick : test-graphics-regionpool-quick
+#MM- test-graphics-amiga-m68k : test-graphics-loadviewinterrupts
+#MM- test-graphics-amiga-m68k-quick : test-graphics-loadviewinterrupts-quick
 
-CFILES  := bltclear blittercompat changeextspritea gfxlookup movesprite rawblit setchiprev vbeampos
+CFILES  := bltclear blittercompat changeextspritea gfxlookup loadview movesprite rawblit setchiprev vbeampos
 AFILES  := attemptlocklayerrom blitterabi locklayerrom unlocklayerrom waitblit
 
 #MM kernel-graphics-amiga-m68k : kernel-hidd-includes kernel-graphics-includes includes-asm_h kernel-hidd-graphics-includes
