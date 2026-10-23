@@ -109,15 +109,16 @@ static inline void hvs6_wr(ULONG offset, ULONG value)
 /* Keeps the free-slot search inside the readable range */
 #define HVS6_FREE_LIMIT     0x1300
 
-/* Screens as planes: backdrop, four screens, overlay, cursor, END */
-#define HVS6_PL_SLOTS       8
+/* Screens as planes: backdrop, the screens back to front each with its
+ * overlays over it, unused slots empty, cursor, END */
 #define HVS6_PL_BACK        0
-#define HVS6_PL_SCREEN      1
-#define HVS6_PL_OVL         5
-#define HVS6_PL_CUR         6
-#define HVS6_PL_END         7
+#define HVS6_PL_FIRST       1
+#define HVS6_PL_CUR         (HVS6_PL_FIRST + VCGFX_MAX_PLANES + VCGFX_MAX_OVERLAYS)
+#define HVS6_PL_END         (HVS6_PL_CUR + 1)
+#define HVS6_PL_SLOTS       (HVS6_PL_END + 1)
 #define HVS6_PL_LISTS       3
 #define HVS6_PL_HANDLE      26          /* screens take 26..29 */
+#define HVS6_PL_OVL_HANDLE  18          /* overlays 18..25 */
 
 /* UPM below this is left to the firmware's own planes, which it
  * allocates upwards from 0 */
@@ -135,6 +136,7 @@ BOOL vc4_hvs6_add_backpage(struct VideoCoreGfx_staticdata *xsd,
 APTR vc4_hvs6_alloc_fb(struct VideoCoreGfx_staticdata *xsd, ULONG pitch, ULONG height);
 BOOL vc4_hvs6_flip_page(struct VideoCoreGfx_staticdata *xsd, ULONG page_phys);
 void vc4_hvs6_latch_wait(struct VideoCoreGfx_staticdata *xsd);
+void vc4_hvs6_latch_until(struct VideoCoreGfx_staticdata *xsd, ULONG frame);
 void vc4_hvs6_irq_init(struct VideoCoreGfx_staticdata *xsd);
 BOOL vc4_hvs6_overlay(struct VideoCoreGfx_staticdata *xsd,
                       const struct vc4gfx_overlay *ovl, OOP_Object *owner);

@@ -68,6 +68,25 @@ struct vcgfx_plane
     ULONG                pl_PtrSkip;    /* and the bytes clipped off in front */
 };
 
+/* Overlays: a client's pixels over a screen, desc x/y in that screen.
+ * They share the HVS budget with the screens, front screen first; one
+ * that does not fit is not shown and its client blits. VideoCore IV,
+ * and screens not being planes, take one only (vcgfx_ovl_show). */
+#define VCGFX_MAX_OVERLAYS      8
+
+/* The GL drivers' client key: each has a single overlay session. */
+#define VCGFX_OVL_GL            ((APTR)1)
+
+struct vcgfx_ovl
+{
+    APTR                    ov_Client;      /* cgxvideo object or VCGFX_OVL_GL, NULL = free */
+    OOP_Object             *ov_BM;          /* the screen it is over */
+    struct BitmapData      *ov_BMData;
+    struct vc4gfx_overlay   ov_Desc;
+    BOOL                    ov_Shown;       /* taken by the last list built */
+    ULONG                   ov_Armed;       /* its last commit, for vcgfx_ovl_latch_wait */
+};
+
 /* Normal-NC arena the screen bitmaps are carved from. */
 struct vcgfx_arena
 {
@@ -174,16 +193,14 @@ struct VideoCoreGfx_staticdata {
         /* The sink's EDID, read once by HDMI_SyncGen (vcgfx_edid.c). */
         struct vcgfx_edid       vcsd_EDID;
 
-        /* The overlay a gallium driver last put up, so a draw into its
-         * rectangle can hide it (vcgfx_ovl_yield). The driver only rechecks
-         * visibility when it presents, and an app that stops presenting
-         * would leave the plane on top of whatever opens over it. */
+        /* The overlays up, so a draw into one's rectangle can hide it
+         * (vcgfx_ovl_yield). A client only rechecks visibility when it
+         * presents, and one that stops presenting would leave the plane
+         * on top of whatever opens over it. The entries change under the
+         * mailbox lock too, as the list builders read them. */
         struct SignalSemaphore  vcsd_OvlLock;
-        OOP_Object             *vcsd_OvlBM;
-        struct BitmapData      *vcsd_OvlBMData;
-        struct vc4gfx_overlay   vcsd_OvlDesc;
-        BOOL                    vcsd_OvlShown;
-        OOP_Object             *vcsd_OvlClient;     /* cgxvideo overlay holding the plane */
+        struct vcgfx_ovl        vcsd_Ovl[VCGFX_MAX_OVERLAYS];
+        ULONG                   vcsd_OvlGLArmed;    /* ov_Armed for GL, kept past a hide */
 
         /* Hardware screen composition (ShowViewPorts): every screen is its
          * own plane and the fb is only the backdrop. Sticky once set, as a
@@ -340,6 +357,14 @@ void    vcgfx_plane_forget(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm);
 ULONG   vcgfx_plane_backpage(struct VideoCoreGfx_staticdata *xsd,
                              struct BitmapData *data);
 BOOL    vcgfx_plane_flip(OOP_Class *cl, OOP_Object *bm);
-BOOL    vcgfx_plane_overlay_shown(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm);
+
+/* Overlays; the caller holds vcsd_OvlLock. */
+struct vcgfx_ovl *vcgfx_ovl_find(struct VideoCoreGfx_staticdata *xsd, APTR client);
+BOOL    vcgfx_ovl_show(struct VideoCoreGfx_staticdata *xsd, APTR client,
+                       OOP_Object *bm, const struct vc4gfx_overlay *desc);
+void    vcgfx_ovl_hide(struct VideoCoreGfx_staticdata *xsd, APTR client);
+ULONG   vcgfx_ovl_state(struct VideoCoreGfx_staticdata *xsd, APTR client);
+void    vcgfx_ovl_latch_wait(struct VideoCoreGfx_staticdata *xsd, APTR client);
+void    vcgfx_ovl_drop_bm(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm);
 
 #endif /* _VIDEOCOREGFX_CLASS_H */

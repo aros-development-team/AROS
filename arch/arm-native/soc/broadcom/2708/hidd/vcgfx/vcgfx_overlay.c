@@ -1,14 +1,15 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
-    Desc: cgxvideo overlays on the HVS overlay plane.
+    Desc: cgxvideo overlays on HVS planes.
 
     The base class keeps the pages in our scanout memory, so the plane
     scans them in place: the 16-bit RGB formats straight from what the
     client writes, YUV after the base class has converted it. A new page
     goes on at the next vblank; nothing writes into the page it replaced
-    until that has latched. A layer showing on the plane takes it from a
-    gallium driver, which falls back to blitting until the layer hides.
+    until that has latched. Where the backend has a single overlay plane,
+    a layer showing on it takes it from a gallium driver, which falls back
+    to blitting until the layer hides.
 */
 
 #define DEBUG 0
@@ -27,24 +28,21 @@
 
 #include LC_LIBDEFS_FILE
 
-/* Take the plane down if this overlay holds it; caller has vcsd_OvlLock. */
+/* Take the plane down if this overlay holds one; caller has vcsd_OvlLock. */
 static void ovl_release(struct VideoCoreGfx_staticdata *xsd, OOP_Object *o)
 {
-    if (xsd->vcsd_OvlClient == o)
-    {
-        if (xsd->vcsd_OvlShown)
-            vc4_hvs_overlay(xsd, NULL, NULL);
-        xsd->vcsd_OvlShown  = FALSE;
-        xsd->vcsd_OvlClient = NULL;
-    }
+    if (vcgfx_ovl_find(xsd, o))
+        vcgfx_ovl_hide(xsd, o);
 }
 
 /* The page left by the last flip may still be on display until the
  * vblank; Lock, Unlock and Swap may write into it next. */
 static void ovl_settle(struct VideoCoreGfx_staticdata *xsd, OOP_Object *o)
 {
-    if ((xsd->vcsd_OvlClient == o) && xsd->vcsd_OvlShown)
-        vc4_hvs_latch_wait(xsd);
+    struct vcgfx_ovl *e = vcgfx_ovl_find(xsd, o);
+
+    if (e && e->ov_Shown)
+        vcgfx_ovl_latch_wait(xsd, o);
 }
 
 APTR VideoCoreGfxOverlay__Hidd_Overlay__Lock(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
@@ -82,6 +80,7 @@ BOOL VideoCoreGfxOverlay__Hidd_Overlay__Show(OOP_Class *cl, OOP_Object *o,
     struct VideoCoreGfx_staticdata *xsd = XSD(cl);
     OOP_Class *bmcl = OOP_OCLASS(msg->bitMap);
     struct vc4gfx_overlay desc;
+    struct vcgfx_ovl *e;
     IPTR frame = 0, fmt = 0, mod = 0, sw = 0, sh = 0;
     BOOL shown, was;
 
@@ -112,29 +111,16 @@ BOOL VideoCoreGfxOverlay__Hidd_Overlay__Show(OOP_Class *cl, OOP_Object *o,
         desc.ovl_Flags |= VC4GFX_OVL_RGB555;
 
     ObtainSemaphore(&xsd->vcsd_OvlLock);
-    was = (xsd->vcsd_OvlClient == o) && xsd->vcsd_OvlShown;
-    if ((xsd->vcsd_OvlClient == o) && xsd->vcsd_OvlShown
-        && (xsd->vcsd_OvlBM == msg->bitMap)
-        && !memcmp(&xsd->vcsd_OvlDesc, &desc, sizeof(desc)))
+    e = vcgfx_ovl_find(xsd, o);
+    was = e && e->ov_Shown;
+    if (was && (e->ov_BM == msg->bitMap)
+        && !memcmp(&e->ov_Desc, &desc, sizeof(desc)))
     {
         /* Up as asked; the plane scans the new pixels in place */
         shown = TRUE;
     }
-    else if ((shown = vc4_hvs_overlay(xsd, &desc, msg->bitMap)))
-    {
-        xsd->vcsd_OvlDesc   = desc;
-        xsd->vcsd_OvlBM     = msg->bitMap;
-        xsd->vcsd_OvlBMData = OOP_INST_DATA(bmcl, msg->bitMap);
-        xsd->vcsd_OvlShown  = TRUE;
-        xsd->vcsd_OvlClient = o;
-    }
     else
-    {
-        /* Whatever the attempt left on the plane goes */
-        vc4_hvs_overlay(xsd, NULL, NULL);
-        xsd->vcsd_OvlShown  = FALSE;
-        xsd->vcsd_OvlClient = NULL;
-    }
+        shown = vcgfx_ovl_show(xsd, o, msg->bitMap, &desc);
     ReleaseSemaphore(&xsd->vcsd_OvlLock);
 
     if (shown != was)

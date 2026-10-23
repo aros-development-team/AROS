@@ -49,16 +49,9 @@ struct vc4_hvs6_state
     ULONG   h6_OvlFrame;
     BOOL    h6_OvlLatchDue;
 
-    /* Screens as planes: the overlay's source, x/y relative to the
-     * screen it belongs to; three lists so one is always free to write;
-     * UPM between h6_UpmFloor and h6_UpmTop (bytes) for the screens. */
-    OOP_Object *h6_OvlOwner;
-    ULONG   h6_OvlPhys;
-    ULONG   h6_OvlW, h6_OvlH;
-    LONG    h6_OvlX, h6_OvlY;
-    ULONG   h6_OvlDestW, h6_OvlDestH;
-    ULONG   h6_OvlPxf, h6_OvlBpp;   /* format; pxf 0 = the fb's 32bpp */
-    BOOL    h6_OvlShown;        /* the last list built has it */
+    /* Screens as planes, with the overlays in vcsd_Ovl[]: three lists
+     * so one is always free to write; UPM between h6_UpmFloor and
+     * h6_UpmTop (bytes) for the screens and overlays. */
     ULONG   h6_PlList[3];       /* word offsets from h6_ListBase, 0 = none */
     ULONG   h6_PlLast;          /* the one last written to DISPLIST */
     ULONG   h6_UpmTop;

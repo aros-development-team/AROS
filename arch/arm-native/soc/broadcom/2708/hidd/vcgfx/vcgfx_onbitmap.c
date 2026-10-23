@@ -729,68 +729,71 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 void vcgfx_ovl_yield(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm,
                      LONG x0, LONG y0, LONG x1, LONG y1)
 {
-    const struct vc4gfx_overlay *d = &xsd->vcsd_OvlDesc;
     struct BitmapData *fb;
     LONG ox, oy, ow, oh, cx0, cy0, cx1, cy1, y;
+    ULONG i;
 
     /* Unlocked first: this sits in front of every fb draw. */
-    if (!xsd->vcsd_OvlShown || bm != xsd->vcsd_OvlBM)
+    for (i = 0; i < VCGFX_MAX_OVERLAYS; i++)
+    {
+        if (xsd->vcsd_Ovl[i].ov_Shown && (xsd->vcsd_Ovl[i].ov_BM == bm))
+            break;
+    }
+    if (i == VCGFX_MAX_OVERLAYS)
         return;
 
     ObtainSemaphore(&xsd->vcsd_OvlLock);
-    if (!xsd->vcsd_OvlShown || bm != xsd->vcsd_OvlBM)
+    for (i = 0; i < VCGFX_MAX_OVERLAYS; i++)
     {
-        ReleaseSemaphore(&xsd->vcsd_OvlLock);
-        return;
-    }
+        struct vcgfx_ovl *e = &xsd->vcsd_Ovl[i];
+        const struct vc4gfx_overlay *d = &e->ov_Desc;
 
-    ox = d->ovl_X;
-    oy = d->ovl_Y;
-    ow = d->ovl_DestW ? d->ovl_DestW : d->ovl_Width;
-    oh = d->ovl_DestH ? d->ovl_DestH : d->ovl_Height;
-    if (x1 < ox || y1 < oy || x0 >= ox + ow || y0 >= oy + oh)
-    {
-        ReleaseSemaphore(&xsd->vcsd_OvlLock);
-        return;
-    }
+        if (!e->ov_Shown || (e->ov_BM != bm))
+            continue;
 
-    /* Unscaled 32bpp only - both planes are XRGB, so rows copy as-is. A
-     * scaled plane is just taken down; the next present repaints it. The
-     * plane's address is a valid CPU address: V3D arenas are identity
-     * mapped, vc4gallium's bus address masks back to the vaddr. */
-    fb = xsd->vcsd_OvlBMData;
-    if (fb && fb->VideoData && fb->bytesperpix == 4
-        && !(d->ovl_Flags & (VC4GFX_OVL_RGB565 | VC4GFX_OVL_RGB555))
-        && (!d->ovl_DestW || d->ovl_DestW == d->ovl_Width)
-        && (!d->ovl_DestH || d->ovl_DestH == d->ovl_Height))
-    {
-        cx0 = ox > 0 ? ox : 0;
-        cy0 = oy > 0 ? oy : 0;
-        cx1 = ox + ow < (LONG)fb->width  ? ox + ow : (LONG)fb->width;
-        cy1 = oy + oh < (LONG)fb->height ? oy + oh : (LONG)fb->height;
+        ox = d->ovl_X;
+        oy = d->ovl_Y;
+        ow = d->ovl_DestW ? d->ovl_DestW : d->ovl_Width;
+        oh = d->ovl_DestH ? d->ovl_DestH : d->ovl_Height;
+        if (x1 < ox || y1 < oy || x0 >= ox + ow || y0 >= oy + oh)
+            continue;
 
-        if (cx1 > cx0 && cy1 > cy0)
+        /* Unscaled 32bpp only - both planes are XRGB, so rows copy as-is. A
+         * scaled plane is just taken down; the next present repaints it. The
+         * plane's address is a valid CPU address: V3D arenas are identity
+         * mapped, vc4gallium's bus address masks back to the vaddr. */
+        fb = e->ov_BMData;
+        if (fb && fb->VideoData && fb->bytesperpix == 4
+            && !(d->ovl_Flags & (VC4GFX_OVL_RGB565 | VC4GFX_OVL_RGB555))
+            && (!d->ovl_DestW || d->ovl_DestW == d->ovl_Width)
+            && (!d->ovl_DestH || d->ovl_DestH == d->ovl_Height))
         {
-            UBYTE *src = (UBYTE *)(IPTR)d->ovl_Phys
-                       + (cy0 - oy) * d->ovl_Pitch + (cx0 - ox) * 4;
-            UBYTE *dst = fb->VideoData + cy0 * fb->bytesperrow + cx0 * 4;
-            ULONG bytes = (ULONG)(cx1 - cx0) * 4;
+            cx0 = ox > 0 ? ox : 0;
+            cy0 = oy > 0 ? oy : 0;
+            cx1 = ox + ow < (LONG)fb->width  ? ox + ow : (LONG)fb->width;
+            cy1 = oy + oh < (LONG)fb->height ? oy + oh : (LONG)fb->height;
 
-            /* V3D pages are Normal-NC; vc4gallium's may be cached. */
-            CacheClearE(src, (ULONG)(cy1 - cy0 - 1) * d->ovl_Pitch + bytes,
-                        CACRF_InvalidateD);
-            for (y = cy0; y < cy1; y++)
+            if (cx1 > cx0 && cy1 > cy0)
             {
-                neon_copyline(dst, src, bytes);
-                src += d->ovl_Pitch;
-                dst += fb->bytesperrow;
+                UBYTE *src = (UBYTE *)(IPTR)d->ovl_Phys
+                           + (cy0 - oy) * d->ovl_Pitch + (cx0 - ox) * 4;
+                UBYTE *dst = fb->VideoData + cy0 * fb->bytesperrow + cx0 * 4;
+                ULONG bytes = (ULONG)(cx1 - cx0) * 4;
+
+                /* V3D pages are Normal-NC; vc4gallium's may be cached. */
+                CacheClearE(src, (ULONG)(cy1 - cy0 - 1) * d->ovl_Pitch + bytes,
+                            CACRF_InvalidateD);
+                for (y = cy0; y < cy1; y++)
+                {
+                    neon_copyline(dst, src, bytes);
+                    src += d->ovl_Pitch;
+                    dst += fb->bytesperrow;
+                }
             }
         }
-    }
 
-    vc4_hvs_overlay(xsd, NULL, NULL);
-    xsd->vcsd_OvlShown  = FALSE;
-    xsd->vcsd_OvlClient = NULL;
+        vcgfx_ovl_hide(xsd, e->ov_Client);
+    }
     ReleaseSemaphore(&xsd->vcsd_OvlLock);
 }
 
@@ -905,11 +908,7 @@ VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
     EnterFunc(bug("VideoCoreGfx.OnBitMap::Dispose()\n"));
     ObtainSemaphore(&xsd->vcsd_OvlLock);
-    if (xsd->vcsd_OvlBM == o)
-    {
-        xsd->vcsd_OvlShown = FALSE;
-        xsd->vcsd_OvlBM    = NULL;
-    }
+    vcgfx_ovl_drop_bm(xsd, o);
     ReleaseSemaphore(&xsd->vcsd_OvlLock);
     OOP_DoSuperMethod(cl, o, msg);
     ReturnVoid("VideoCoreGfx.OnBitMap::Dispose");

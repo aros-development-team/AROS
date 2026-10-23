@@ -222,6 +222,7 @@ void vc4_hvs5_update_cursor(struct VideoCoreGfx_staticdata *xsd);
 
 /* Wait for the last armed overlay/flip to latch (VC4GFX_OVL_NOWAIT). */
 void vc4_hvs5_latch_wait(struct VideoCoreGfx_staticdata *xsd);
+void vc4_hvs5_latch_until(struct VideoCoreGfx_staticdata *xsd, ULONG armed);
 
 /* Show (ovl != NULL) or drop (ovl == NULL) a plane composited over the
  * framebuffer, below the cursor - what lets the GL stack present without

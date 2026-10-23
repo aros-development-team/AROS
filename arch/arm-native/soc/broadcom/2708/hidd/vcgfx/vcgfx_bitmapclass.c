@@ -55,21 +55,12 @@ static BOOL vcbm_set_private(OOP_Class *cl, OOP_Object *o, ULONG idx, IPTR val)
             /* Zero-copy overlay plane (windowed GL). Success is reported
              * via a Get on the same attribute. */
             const struct vc4gfx_overlay *ovl = (const struct vc4gfx_overlay *)val;
-            BOOL shown;
 
             ObtainSemaphore(&xsd->vcsd_OvlLock);
-            /* A cgxvideo layer holding the plane keeps it */
-            if (!xsd->vcsd_OvlClient)
-            {
-                shown = vc4_hvs_overlay(xsd, ovl, o) && ovl;
-                if (shown)
-                {
-                    xsd->vcsd_OvlDesc   = *ovl;
-                    xsd->vcsd_OvlBM     = o;
-                    xsd->vcsd_OvlBMData = data;
-                }
-                xsd->vcsd_OvlShown = shown;
-            }
+            if (ovl)
+                vcgfx_ovl_show(xsd, VCGFX_OVL_GL, o, ovl);
+            else
+                vcgfx_ovl_hide(xsd, VCGFX_OVL_GL);
             ReleaseSemaphore(&xsd->vcsd_OvlLock);
         }
         return TRUE;
@@ -392,19 +383,13 @@ VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
             *msg->storage = 0;
             break;
         case aoHidd_VideoCoreGfxBitMap_Overlay:
-#ifdef OnBitmap
             /* Callers read this back to learn whether the plane took. */
-            *msg->storage = (XSD(cl)->vcsd_HVS.hvs_OvlActive
-                             || XSD(cl)->vcsd_HVS6.h6_Overlay) ? 1 : 0;
-#else
-            *msg->storage = vcgfx_plane_overlay_shown(XSD(cl), o) ? 1 : 0;
-#endif
-            /* Not the caller's while a cgxvideo layer holds it */
-            if (XSD(cl)->vcsd_OvlClient)
-                *msg->storage = VC4GFX_OVL_BUSY;
+            ObtainSemaphore(&XSD(cl)->vcsd_OvlLock);
+            *msg->storage = vcgfx_ovl_state(XSD(cl), VCGFX_OVL_GL);
+            ReleaseSemaphore(&XSD(cl)->vcsd_OvlLock);
             break;
         case aoHidd_VideoCoreGfxBitMap_LatchWait:
-            vc4_hvs_latch_wait(XSD(cl));
+            vcgfx_ovl_latch_wait(XSD(cl), VCGFX_OVL_GL);
             *msg->storage = 1;
             break;
         default:

@@ -130,12 +130,203 @@ LONG vcgfx_plane_occlude(LONG px, LONG py, ULONG pw, ULONG ph,
     return bottom;
 }
 
-/* The overlay is up over this screen. */
-BOOL vcgfx_plane_overlay_shown(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm)
+/*********** Overlays ************************************************/
+
+/* The list builder places every overlay; elsewhere the backend has one
+ * plane, driven through vc4_hvs_overlay(). */
+static BOOL ovl_pooled(struct VideoCoreGfx_staticdata *xsd)
+{
+    return (xsd->vcsd_HVSGen != VCGFX_HVS_VC4) && xsd->vcsd_PlanesMode;
+}
+
+/* What the last commit armed: a vblank count on HVS5, a frame on HVS6. */
+static ULONG ovl_armed(struct VideoCoreGfx_staticdata *xsd)
+{
+    return (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6) ? xsd->vcsd_HVS6.h6_OvlFrame
+                                                : xsd->vcsd_HVS.hvs_FlipArmed;
+}
+
+static void ovl_latch_until(struct VideoCoreGfx_staticdata *xsd, ULONG armed)
 {
     if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
-        return xsd->vcsd_HVS6.h6_Overlay && (xsd->vcsd_HVS6.h6_OvlOwner == bm);
-    return xsd->vcsd_HVS.hvs_OvlActive && (xsd->vcsd_HVS.hvs_OvlOwner == bm);
+        vc4_hvs6_latch_until(xsd, armed);
+    else
+        vc4_hvs5_latch_until(xsd, armed);
+}
+
+struct vcgfx_ovl *vcgfx_ovl_find(struct VideoCoreGfx_staticdata *xsd, APTR client)
+{
+    ULONG i;
+
+    for (i = 0; i < VCGFX_MAX_OVERLAYS; i++)
+    {
+        if (xsd->vcsd_Ovl[i].ov_Client == client)
+            return &xsd->vcsd_Ovl[i];
+    }
+    return NULL;
+}
+
+/* One plane: whoever holds it. */
+static struct vcgfx_ovl *ovl_holder(struct VideoCoreGfx_staticdata *xsd)
+{
+    ULONG i;
+
+    for (i = 0; i < VCGFX_MAX_OVERLAYS; i++)
+    {
+        if (xsd->vcsd_Ovl[i].ov_Client && xsd->vcsd_Ovl[i].ov_Shown)
+            return &xsd->vcsd_Ovl[i];
+    }
+    return NULL;
+}
+
+static void ovl_clear(struct vcgfx_ovl *e)
+{
+    e->ov_Client = NULL;
+    e->ov_BM     = NULL;
+    e->ov_Shown  = FALSE;
+}
+
+/* Show or move a client's overlay. FALSE = not shown, the client blits. */
+BOOL vcgfx_ovl_show(struct VideoCoreGfx_staticdata *xsd, APTR client,
+                    OOP_Object *bm, const struct vc4gfx_overlay *desc)
+{
+    struct vcgfx_ovl *e = vcgfx_ovl_find(xsd, client), *held;
+    ULONG armed;
+    BOOL shown;
+
+    if (!e && !(e = vcgfx_ovl_find(xsd, NULL)))
+        return FALSE;
+
+    if (ovl_pooled(xsd))
+    {
+        VC4_MBOX_LOCK(xsd);
+        e->ov_Client = client;
+        e->ov_BM     = bm;
+        e->ov_BMData = OOP_INST_DATA(OOP_OCLASS(bm), bm);
+        e->ov_Desc   = *desc;
+        e->ov_Shown  = FALSE;
+        planes_commit(xsd);
+        armed = e->ov_Armed = ovl_armed(xsd);
+        if (client == VCGFX_OVL_GL)
+            xsd->vcsd_OvlGLArmed = armed;
+        shown = e->ov_Shown;
+        if (!shown)
+            ovl_clear(e);
+        VC4_MBOX_UNLOCK(xsd);
+
+        if (shown && !(desc->ovl_Flags & VC4GFX_OVL_NOWAIT))
+            ovl_latch_until(xsd, armed);
+        return shown;
+    }
+
+    /* One plane: a video layer keeps it from GL, and takes it from GL. */
+    held = ovl_holder(xsd);
+    if (held && (held != e))
+    {
+        if (client == VCGFX_OVL_GL)
+            return FALSE;
+        VC4_MBOX_LOCK(xsd);
+        ovl_clear(held);
+        VC4_MBOX_UNLOCK(xsd);
+    }
+
+    shown = vc4_hvs_overlay(xsd, desc, bm);
+    VC4_MBOX_LOCK(xsd);
+    if (shown)
+    {
+        e->ov_Client = client;
+        e->ov_BM     = bm;
+        e->ov_BMData = OOP_INST_DATA(OOP_OCLASS(bm), bm);
+        e->ov_Desc   = *desc;
+        e->ov_Shown  = TRUE;
+    }
+    else if (e->ov_Client)
+        ovl_clear(e);
+    VC4_MBOX_UNLOCK(xsd);
+
+    /* Whatever a refused video layer left on the plane goes */
+    if (!shown && (client != VCGFX_OVL_GL))
+        vc4_hvs_overlay(xsd, NULL, NULL);
+    return shown;
+}
+
+void vcgfx_ovl_hide(struct VideoCoreGfx_staticdata *xsd, APTR client)
+{
+    struct vcgfx_ovl *e = vcgfx_ovl_find(xsd, client), *held;
+    BOOL was;
+
+    if (ovl_pooled(xsd))
+    {
+        if (!e)
+            return;
+        VC4_MBOX_LOCK(xsd);
+        was = e->ov_Shown;
+        ovl_clear(e);
+        if (was)
+            planes_commit(xsd);
+        /* Its pages may be on the list a screen change just replaced */
+        if (client == VCGFX_OVL_GL)
+            xsd->vcsd_OvlGLArmed = ovl_armed(xsd);
+        VC4_MBOX_UNLOCK(xsd);
+        return;
+    }
+
+    /* Not while a video layer holds it, but GL may have left a refused
+     * overlay with the backend. */
+    held = ovl_holder(xsd);
+    if (!held || (held == e))
+        vc4_hvs_overlay(xsd, NULL, NULL);
+    if (e)
+    {
+        VC4_MBOX_LOCK(xsd);
+        ovl_clear(e);
+        VC4_MBOX_UNLOCK(xsd);
+    }
+}
+
+/* 1 = shown. VC4GFX_OVL_BUSY = video layers hold the one plane, or the
+ * budget; GL tries again later rather than giving up for good. */
+ULONG vcgfx_ovl_state(struct VideoCoreGfx_staticdata *xsd, APTR client)
+{
+    struct vcgfx_ovl *e = vcgfx_ovl_find(xsd, client), *held;
+
+    if (e && e->ov_Shown)
+        return 1;
+    held = ovl_holder(xsd);
+    if (held && (held->ov_Client != VCGFX_OVL_GL))
+        return VC4GFX_OVL_BUSY;
+    return 0;
+}
+
+/* Until the client's last change is on display. With a list per change,
+ * not until whatever another client did since. */
+void vcgfx_ovl_latch_wait(struct VideoCoreGfx_staticdata *xsd, APTR client)
+{
+    struct vcgfx_ovl *e;
+
+    if (!ovl_pooled(xsd))
+        vc4_hvs_latch_wait(xsd);
+    else if (client == VCGFX_OVL_GL)
+        ovl_latch_until(xsd, xsd->vcsd_OvlGLArmed);
+    else if ((e = vcgfx_ovl_find(xsd, client)) && e->ov_Shown)
+        ovl_latch_until(xsd, e->ov_Armed);
+}
+
+/* A bitmap is going away: no overlay may refer to it. */
+void vcgfx_ovl_drop_bm(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm)
+{
+    ULONG i;
+
+    VC4_MBOX_LOCK(xsd);
+    for (i = 0; i < VCGFX_MAX_OVERLAYS; i++)
+    {
+        if (xsd->vcsd_Ovl[i].ov_BM == bm)
+        {
+            xsd->vcsd_Ovl[i].ov_BM    = NULL;
+            xsd->vcsd_Ovl[i].ov_Shown = FALSE;
+        }
+    }
+    VC4_MBOX_UNLOCK(xsd);
 }
 
 /*********** Scanout memory ******************************************/
@@ -472,12 +663,6 @@ void vcgfx_plane_forget(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm)
     {
         xsd->vcsd_HVS.hvs_OvlActive = FALSE;
         xsd->vcsd_HVS.hvs_OvlOwner  = NULL;
-        gone = TRUE;
-    }
-    if (xsd->vcsd_HVS6.h6_OvlOwner == bm)
-    {
-        xsd->vcsd_HVS6.h6_Overlay  = FALSE;
-        xsd->vcsd_HVS6.h6_OvlOwner = NULL;
         gone = TRUE;
     }
     if ((pl = plane_find(xsd, bm)))

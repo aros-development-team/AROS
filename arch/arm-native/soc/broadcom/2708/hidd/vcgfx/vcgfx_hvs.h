@@ -293,7 +293,7 @@ struct vc4_hvs_state
     ULONG       hvs_OvlWords;               /* entry length in the list */
     ULONG       hvs_OvlLBM;                 /* line-buffer base, scaled only */
     ULONG       hvs_FBLBM;                  /* LBM ceiling left by the fb plane */
-    OOP_Object *hvs_OvlOwner;               /* HVS5: screen bitmap ovl x/y are in */
+    OOP_Object *hvs_OvlOwner;               /* VC4 planes: screen ovl x/y are in */
 
     /* HVS5 with screens as planes: the firmware's framebuffer is a token
      * one, and the fb plane shows a buffer of ours, ShowW x ShowH. */

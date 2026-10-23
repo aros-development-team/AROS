@@ -381,11 +381,7 @@ VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 #endif
 
     ObtainSemaphore(&xsd->vcsd_OvlLock);
-    if (xsd->vcsd_OvlBM == o)
-    {
-        xsd->vcsd_OvlShown = FALSE;
-        xsd->vcsd_OvlBM    = NULL;
-    }
+    vcgfx_ovl_drop_bm(xsd, o);
     ReleaseSemaphore(&xsd->vcsd_OvlLock);
 
     /* Off the display before the pages go. */
