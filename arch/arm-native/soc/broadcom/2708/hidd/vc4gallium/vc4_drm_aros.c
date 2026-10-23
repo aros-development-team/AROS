@@ -2433,19 +2433,20 @@ static int do_submit_cl(struct vc4galliumstaticdata *sd, struct drm_vc4_submit_c
 
     bo_handles = (ULONG *)(IPTR)args->bo_handles;
 
-    /* The page the last present took off the plane is on scanout until
-     * vblank; wait for the latch before rendering into it. */
-    if (sd->overlay_displaced_handle
-        && args->color_write.hindex != (ULONG)~0
-        && args->color_write.hindex < args->bo_handle_count
-        && bo_handles[args->color_write.hindex] == sd->overlay_displaced_handle)
+    struct vc4_ovl_pin *dpin;
+
+    /* A page a present took off a plane is on scanout until vblank; wait
+     * for the latch before rendering into it. */
+    if ((args->color_write.hindex != (ULONG)~0)
+        && (args->color_write.hindex < args->bo_handle_count)
+        && (dpin = vc4_aros_displaced_pin(sd, bo_handles[args->color_write.hindex])))
     {
 #if VC4G_PROFILE
         static ULONG _lw_n, _lw_us, _lw_max;
         ULONG _lw_t0 = gallium_now_us_ext();
 #endif
 
-        vc4_aros_overlay_latch_wait(sd);
+        vc4_aros_overlay_latch_wait(sd, dpin);
 
 #if VC4G_PROFILE
         {
@@ -3328,12 +3329,15 @@ void vc4_aros_release_session(struct vc4galliumstaticdata *sd, ULONG sid)
      * already; a dead one's comes down at the next present. */
     if (sd->dma_pinned_handle && (sd->bo_table[sd->dma_pinned_handle].owner == sid))
         sd->dma_pinned_handle = 0;
-    if (sd->overlay_pinned_handle
-        && (sd->bo_table[sd->overlay_pinned_handle].owner == sid))
-        sd->overlay_pinned_handle = 0;
-    if (sd->overlay_displaced_handle
-        && (sd->bo_table[sd->overlay_displaced_handle].owner == sid))
-        sd->overlay_displaced_handle = 0;
+    for (i = 0; i < VC4_MAX_SESSIONS; i++)
+    {
+        struct vc4_ovl_pin *pin = &sd->ovl_pins[i];
+
+        if (pin->op_Pinned && (sd->bo_table[pin->op_Pinned].owner == sid))
+            pin->op_Pinned = 0;
+        if (pin->op_Displaced && (sd->bo_table[pin->op_Displaced].owner == sid))
+            pin->op_Displaced = 0;
+    }
     for (i = 1; i < VC4_MAX_BOS; i++)
     {
         if ((sd->bo_table[i].refcount > 0) && (sd->bo_table[i].owner == sid))

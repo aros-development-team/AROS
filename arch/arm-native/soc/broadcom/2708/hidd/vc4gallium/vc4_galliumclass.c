@@ -877,21 +877,40 @@ int vc4_aros_flip_scanout(struct vc4galliumstaticdata *sd, OOP_Object *bm_obj)
     return (back_after && back_after != back_before) ? 0 : -1;
 }
 
+/* The client's pin slot, a free one taken when asked. Caller holds
+ * bo_lock. */
+static struct vc4_ovl_pin *ovl_pin(struct vc4galliumstaticdata *sd, APTR key,
+                                   BOOL take)
+{
+    struct vc4_ovl_pin *free = NULL;
+    ULONG i;
+
+    for (i = 0; i < VC4_MAX_SESSIONS; i++)
+    {
+        if (sd->ovl_pins[i].op_Key == key)
+            return &sd->ovl_pins[i];
+        if (!free && !sd->ovl_pins[i].op_Key)
+            free = &sd->ovl_pins[i];
+    }
+    if (take && free)
+        free->op_Key = key;
+    return take ? free : NULL;
+}
+
 /*
- * Zero-copy windowed present: show a rendered BO as an HVS overlay
- * plane at (x,y) on the screen's framebuffer bitmap. The BO stays
- * pinned while on scanout; each call retargets the plane and unpins
- * the previous buffer (the hidd's overlay path waits for the vblank
- * latch before returning, so the old buffer is off-screen by then).
+ * Zero-copy windowed present: show a rendered BO as the client's HVS
+ * overlay plane at (x,y) on the screen's framebuffer bitmap. The BO stays
+ * pinned while on scanout; each call retargets the plane and keeps the
+ * previous buffer pinned until its latch is retired.
  * Returns 0 on success, -1 when the overlay is unavailable (firmware
- * owns the display / scaled desktop / bad handle), -2 while a video
- * layer holds the plane — caller blits either way.
+ * owns the display / scaled desktop / bad handle), -2 while the planes
+ * are taken - caller blits either way.
  */
-int vc4_aros_set_overlay(struct vc4galliumstaticdata *sd,
-                         OOP_Object *bm_obj,
-                         ULONG src_bo_handle, ULONG src_stride,
-                         LONG x, LONG y, ULONG w, ULONG h,
-                         ULONG dest_w, ULONG dest_h)
+int vc4_aros_set_overlay_key(struct vc4galliumstaticdata *sd, APTR key,
+                             OOP_Object *bm_obj,
+                             ULONG src_bo_handle, ULONG src_stride,
+                             LONG x, LONG y, ULONG w, ULONG h,
+                             ULONG dest_w, ULONG dest_h)
 {
     struct vc4gfx_overlay desc;
     struct TagItem ovltags[] =
@@ -899,13 +918,20 @@ int vc4_aros_set_overlay(struct vc4galliumstaticdata *sd,
         { 0, (IPTR)&desc },
         { TAG_DONE, 0 }
     };
+    struct vc4_ovl_pin *pin;
     ULONG active, prev;
 
     if (!bm_obj || !sd->hiddVC4GfxBMAB || !w || !h)
         return -1;
 
+    ObtainSemaphore(&sd->bo_lock);
+    pin = ovl_pin(sd, key, TRUE);
+    ReleaseSemaphore(&sd->bo_lock);
+    if (!pin)
+        return -2;
+
     /* A page displaced by the last Set may still be on scanout */
-    vc4_aros_overlay_latch_wait(sd);
+    vc4_aros_overlay_latch_wait(sd, pin);
 
     ObtainSemaphore(&sd->bo_lock);
     if (src_bo_handle >= VC4_MAX_BOS || !sd->bo_table[src_bo_handle].vaddr
@@ -922,19 +948,19 @@ int vc4_aros_set_overlay(struct vc4galliumstaticdata *sd,
     desc.ovl_Y      = y;
     desc.ovl_DestW  = dest_w;
     desc.ovl_DestH  = dest_h;
-    /* No latch wait here; submit_cl waits if a job renders into the
-     * displaced page. */
+    /* No latch wait here; the next Set or a submit rendering into the
+     * displaced page waits. */
     desc.ovl_Flags  = VC4GFX_OVL_NOWAIT;
-    desc.ovl_Client = sd;
+    desc.ovl_Client = key;
     desc.ovl_Result = 0;
     desc.ovl_Armed  = 0;
 
     /* Pin the new buffer before showing it; the previous pin is
      * released only after the hidd confirms the switch latched. */
     sd->bo_table[src_bo_handle].refcount++;
-    prev = sd->overlay_pinned_handle;
-    sd->overlay_pinned_handle = src_bo_handle;
-    sd->overlay_bm = bm_obj;
+    prev = pin->op_Pinned;
+    pin->op_Pinned = src_bo_handle;
+    pin->op_BM = bm_obj;
     ReleaseSemaphore(&sd->bo_lock);
 
     /* The frame must be complete before it becomes visible — but that is
@@ -965,8 +991,10 @@ int vc4_aros_set_overlay(struct vc4galliumstaticdata *sd,
         vc4_aros_bo_unref_locked(sd, src_bo_handle);
         if (prev)
             vc4_aros_bo_unref_locked(sd, prev);
-        sd->overlay_pinned_handle = 0;
-        sd->overlay_bm = NULL;
+        pin->op_Pinned = 0;
+        pin->op_BM = NULL;
+        if (!pin->op_Displaced)
+            pin->op_Key = NULL;
         ReleaseSemaphore(&sd->bo_lock);
         return (active == VC4GFX_OVL_BUSY) ? -2 : -1;
     }
@@ -974,13 +1002,24 @@ int vc4_aros_set_overlay(struct vc4galliumstaticdata *sd,
      * repeat of the same BO drops the duplicate pin now. */
     if (prev && prev != src_bo_handle)
     {
-        sd->overlay_displaced_handle = prev;
-        sd->overlay_armed = desc.ovl_Armed;
+        pin->op_Displaced = prev;
+        pin->op_Armed = desc.ovl_Armed;
     }
     else if (prev)
         vc4_aros_bo_unref_locked(sd, prev);
     ReleaseSemaphore(&sd->bo_lock);
     return 0;
+}
+
+/* The bridge's single client, keyed to the hidd */
+int vc4_aros_set_overlay(struct vc4galliumstaticdata *sd,
+                         OOP_Object *bm_obj,
+                         ULONG src_bo_handle, ULONG src_stride,
+                         LONG x, LONG y, ULONG w, ULONG h,
+                         ULONG dest_w, ULONG dest_h)
+{
+    return vc4_aros_set_overlay_key(sd, sd, bm_obj, src_bo_handle, src_stride,
+                                    x, y, w, h, dest_w, dest_h);
 }
 
 /* Installs vcgfx's per-vblank callback, NULL removes it. Called by the
@@ -1003,7 +1042,25 @@ void vc4_aros_set_vblank(void *ctx, OOP_Object *bm_obj,
     sd->ovl_vbl_armed = (vbl != NULL);
 }
 
-void vc4_aros_overlay_latch_wait(struct vc4galliumstaticdata *sd)
+/* The pin whose displaced page is `handle`, if any. */
+struct vc4_ovl_pin *vc4_aros_displaced_pin(struct vc4galliumstaticdata *sd, ULONG handle)
+{
+    struct vc4_ovl_pin *pin = NULL;
+    ULONG i;
+
+    ObtainSemaphore(&sd->bo_lock);
+    for (i = 0; handle && (i < VC4_MAX_SESSIONS); i++)
+    {
+        if (sd->ovl_pins[i].op_Key && (sd->ovl_pins[i].op_Displaced == handle))
+            pin = &sd->ovl_pins[i];
+    }
+    ReleaseSemaphore(&sd->bo_lock);
+    return pin;
+}
+
+/* Until the page the pin's last Set displaced is off scanout, then
+ * unpin it. */
+void vc4_aros_overlay_latch_wait(struct vc4galliumstaticdata *sd, struct vc4_ovl_pin *pin)
 {
     struct vc4gfx_overlay desc = { 0 };
     struct TagItem ovltags[] =
@@ -1015,9 +1072,10 @@ void vc4_aros_overlay_latch_wait(struct vc4galliumstaticdata *sd)
     ULONG displaced;
 
     ObtainSemaphore(&sd->bo_lock);
-    bm = sd->overlay_bm;
-    displaced = sd->overlay_displaced_handle;
-    desc.ovl_Armed = sd->overlay_armed;
+    bm = pin->op_BM;
+    displaced = pin->op_Displaced;
+    desc.ovl_Armed  = pin->op_Armed;
+    desc.ovl_Client = pin->op_Key;
     ReleaseSemaphore(&sd->bo_lock);
 
     if (!displaced)
@@ -1025,23 +1083,24 @@ void vc4_aros_overlay_latch_wait(struct vc4galliumstaticdata *sd)
 
     if (bm && sd->hiddVC4GfxBMAB)
     {
-        desc.ovl_Flags  = VC4GFX_OVL_LATCHWAIT;
-        desc.ovl_Client = sd;
+        desc.ovl_Flags = VC4GFX_OVL_LATCHWAIT;
         ovltags[0].ti_Tag = sd->hiddVC4GfxBMAB + aoHidd_VideoCoreGfxBitMap_Overlay;
         OOP_SetAttrs(bm, ovltags);
     }
 
     ObtainSemaphore(&sd->bo_lock);
-    if (sd->overlay_displaced_handle == displaced)
+    if (pin->op_Displaced == displaced)
     {
         vc4_aros_bo_unref_locked(sd, displaced);
-        sd->overlay_displaced_handle = 0;
+        pin->op_Displaced = 0;
     }
     ReleaseSemaphore(&sd->bo_lock);
 }
 
-void vc4_aros_clear_overlay(struct vc4galliumstaticdata *sd,
-                            OOP_Object *bm_obj)
+/* Take the client's plane down and drop its pins; bm_obj NULL = the
+ * bitmap it was shown on. */
+void vc4_aros_clear_overlay_key(struct vc4galliumstaticdata *sd, APTR key,
+                                OOP_Object *bm_obj)
 {
     struct vc4gfx_overlay desc = { 0 };
     struct TagItem ovltags[] =
@@ -1049,29 +1108,41 @@ void vc4_aros_clear_overlay(struct vc4galliumstaticdata *sd,
         { 0, (IPTR)&desc },
         { TAG_DONE, 0 }
     };
-    OOP_Object *target = bm_obj ? bm_obj : sd->overlay_bm;
+    struct vc4_ovl_pin *pin;
+    OOP_Object *target;
+
+    ObtainSemaphore(&sd->bo_lock);
+    pin = ovl_pin(sd, key, FALSE);
+    target = bm_obj ? bm_obj : (pin ? pin->op_BM : NULL);
+    ReleaseSemaphore(&sd->bo_lock);
 
     if (target && sd->hiddVC4GfxBMAB)
     {
         desc.ovl_Flags  = VC4GFX_OVL_HIDE;
-        desc.ovl_Client = sd;
+        desc.ovl_Client = key;
         ovltags[0].ti_Tag = sd->hiddVC4GfxBMAB + aoHidd_VideoCoreGfxBitMap_Overlay;
         OOP_SetAttrs(target, ovltags);
     }
 
     ObtainSemaphore(&sd->bo_lock);
-    if (sd->overlay_pinned_handle)
+    if (pin)
     {
-        vc4_aros_bo_unref_locked(sd, sd->overlay_pinned_handle);
-        sd->overlay_pinned_handle = 0;
+        if (pin->op_Pinned)
+            vc4_aros_bo_unref_locked(sd, pin->op_Pinned);
+        if (pin->op_Displaced)
+            vc4_aros_bo_unref_locked(sd, pin->op_Displaced);
+        pin->op_Pinned = 0;
+        pin->op_Displaced = 0;
+        pin->op_BM = NULL;
+        pin->op_Key = NULL;
     }
-    if (sd->overlay_displaced_handle)
-    {
-        vc4_aros_bo_unref_locked(sd, sd->overlay_displaced_handle);
-        sd->overlay_displaced_handle = 0;
-    }
-    sd->overlay_bm = NULL;
     ReleaseSemaphore(&sd->bo_lock);
+}
+
+void vc4_aros_clear_overlay(struct vc4galliumstaticdata *sd,
+                            OOP_Object *bm_obj)
+{
+    vc4_aros_clear_overlay_key(sd, sd, bm_obj);
 }
 
 /*

@@ -66,6 +66,18 @@ struct vc4_session
     struct Task        *vs_Task;
 };
 
+/* A client's overlay plane: the BO on it, pinned until replaced or
+ * cleared, and the one the last set_overlay took off, on scanout until
+ * the commit in op_Armed latches. */
+struct vc4_ovl_pin
+{
+    APTR                op_Key;     /* vcgfx's client key, NULL = free */
+    OOP_Object         *op_BM;      /* the bitmap it was shown on */
+    ULONG               op_Pinned;
+    ULONG               op_Displaced;
+    ULONG               op_Armed;
+};
+
 /* Shader metadata (set by the QPU scanner on CREATE_SHADER_BO). Only
  * shader BOs have it, so it is allocated apart from the table entry. */
 struct vc4_shader_meta
@@ -276,14 +288,8 @@ struct vc4galliumstaticdata
      * a Mesa-side GEM_CLOSE racing the display swap. 0 = none. */
     ULONG                   dma_pinned_handle;
 
-    /* BO currently scanned out as the HVS overlay plane (windowed
-     * zero-copy GL), pinned until replaced or cleared; the bitmap it
-     * was shown on, for clear_overlay(NULL) at context teardown. */
-    ULONG                   overlay_pinned_handle;
-    OOP_Object             *overlay_bm;
-    /* Page the last set_overlay took off the plane; on scanout until vblank. */
-    ULONG                   overlay_displaced_handle;
-    ULONG                   overlay_armed;  /* the commit that took it off */
+    /* The overlay planes of windowed zero-copy GL, one per client key */
+    struct vc4_ovl_pin      ovl_pins[VC4_MAX_SESSIONS];
     BOOL                    ovl_vbl_armed;  /* vcgfx may call the overlay's vblank callback */
 
     struct Task            *v3d_service_task;
@@ -369,7 +375,8 @@ void vc4_aros_dma_wait_idle(struct vc4galliumstaticdata *sd);
 /* Wait for all submitted V3D work and flush its L2. Defined in
  * vc4_galliumclass.c. */
 void vc4_aros_wait_idle(struct vc4galliumstaticdata *sd);
-void vc4_aros_overlay_latch_wait(struct vc4galliumstaticdata *sd);
+struct vc4_ovl_pin *vc4_aros_displaced_pin(struct vc4galliumstaticdata *sd, ULONG handle);
+void vc4_aros_overlay_latch_wait(struct vc4galliumstaticdata *sd, struct vc4_ovl_pin *pin);
 ULONG gallium_now_us_ext(void);
 
 /* V3D service task. Defined in vc4_galliumclass.c. */
