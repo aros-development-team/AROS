@@ -11,6 +11,7 @@ HOST_CC	     ?= $(CC)
 HOST_STRIP   ?= strip
 MECHO	     ?= echo
 COLLECT-AROS ?= collect-aros
+CAGENDIR     ?= .
 RM           ?= rm
 COLLECT-AROS-BACKEND   ?= backend-generic.c
 COLLECT-AROS-DOCOMMAND ?= docommand-exec.c
