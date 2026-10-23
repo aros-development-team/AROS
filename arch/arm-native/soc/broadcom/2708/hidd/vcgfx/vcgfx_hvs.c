@@ -728,30 +728,23 @@ static ULONG hvs_emit_planes(struct VideoCoreGfx_staticdata *xsd, ULONG *w,
     LONG i, px, py, dx, dy;
     ULONG pw, ph, dw, dh;
 
-    for (i = front; i >= 0; i--)
+    /* The cursor is reserved for above, as it may come up without a rebuild,
+     * and the backdrop here, before it is known whether anything uncovers it */
+    if (st->hvs_Tiny)
     {
-        limit[i] = bottom;
-        hvs_plane_src(&xsd->vcsd_Plane[i], &s);
-        if (hvs_src_rect(st, &s, &px, &py, &pw, &ph))
-            bottom = vcgfx_plane_occlude(px, py, pw, ph, left, top, right, bottom);
+        hvs_fb_src(st, &s);
+        room -= hvs_take(st, &s, &need);
     }
+    else
+        room -= st->hvs_FBWords;
 
-    /* The cursor is reserved for above, as it may come up without a rebuild */
-    if (bottom > top)
-    {
-        if (st->hvs_Tiny)
-        {
-            hvs_fb_src(st, &s);
-            room -= hvs_take(st, &s, &need);
-        }
-        else
-            room -= st->hvs_FBWords;
-    }
-
+    /* Front first: a screen that gets a plane hides what is behind it,
+     * one that does not hides nothing */
     for (i = front; i >= 0; i--)
     {
         struct vcgfx_plane *pl = &xsd->vcsd_Plane[i];
 
+        limit[i] = bottom;
         swords[i] = 0;
         pl->pl_Shown = TRUE;
         hvs_plane_src(pl, &s);
@@ -771,6 +764,8 @@ static ULONG hvs_emit_planes(struct VideoCoreGfx_staticdata *xsd, ULONG *w,
         slbm[i] = need;
         need = lb;
         swords[i] = words;
+
+        bottom = vcgfx_plane_occlude(px, py, pw, ph, left, top, right, bottom);
     }
 
     for (k = 0; k < VCGFX_MAX_OVERLAYS; k++)

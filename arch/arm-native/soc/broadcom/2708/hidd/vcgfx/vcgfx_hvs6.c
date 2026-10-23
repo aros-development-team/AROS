@@ -88,13 +88,13 @@ static void hvs6_upm_carve(struct vc4_hvs6_state *st)
     st->h6_OvlPTR0 = HVS6_PTR0_BASE(top) | HVS6_PTR0_HANDLE(31)
                    | HVS6_PTR0_LINES2;
 
-    top = (arena - 2 * HVS6_UPM_SLICE) / HVS6_UPM_GRAN;
+    top = (arena - HVS6_UPM_SLICE - HVS6_UPM_CURSOR) / HVS6_UPM_GRAN;
     st->h6_CurPTR0 = HVS6_PTR0_BASE(top) | HVS6_PTR0_HANDLE(32)
                    | HVS6_PTR0_LINES2;
 
     /* For a framebuffer of our own: the firmware's slice is sized for
      * the boot surface's pitch, and a wider line overruns it. */
-    top = (arena - 3 * HVS6_UPM_SLICE) / HVS6_UPM_GRAN;
+    top = (arena - 2 * HVS6_UPM_SLICE - HVS6_UPM_CURSOR) / HVS6_UPM_GRAN;
     st->h6_FbPTR0  = HVS6_PTR0_BASE(top) | HVS6_PTR0_HANDLE(30)
                    | HVS6_PTR0_LINES2;
 
@@ -969,12 +969,21 @@ hide:
 #define HVS6_HANDLE_ERROR   0x002c
 #define HVS6_KERNEL_WORD    1           /* firmware's kernel at +0x4004 */
 #define HVS6_SC_WORDS       17
-#define HVS6_PTR0_LINES4    (1UL << 8)
 #define HVS6_SCL_MASK       ((7UL << 8) | (7UL << 5))
 #define HVS6_PPF(src, dst)  ((1UL << 30) | ((((ULONG)(src) << 16) / (ULONG)(dst)) << 8) | 0x60)
 #define HVS6_PPF_FITS(src, dst) ((((ULONG)(src) << 16) / (ULONG)(dst)) <= 0x18000)
-#define HVS6_SCALE_MAX      2           /* scaled planes per list */
 #define HVS6_VERIFY_US      100000
+
+/* Line buffer for a scaled plane, in what LBM_SIZE counts: lines of 128
+ * words. A line of PPF scaling takes four words per component, four
+ * components a pixel, over the narrower of source and destination; a
+ * plane not scaled vertically needs none. */
+static ULONG hvs6_lbm_need(ULONG sw, ULONG dw, ULONG sh, ULONG dh)
+{
+    ULONG width = (((sw < dw) ? sw : dw) + 3) & ~3UL;
+
+    return (sh == dh) ? 0 : (width * 16 + 127) / 128;
+}
 
 BOOL vc4_hvs6_planes_ok(void)
 {
@@ -1173,28 +1182,58 @@ static ULONG hvs6_build_planes(struct VideoCoreGfx_staticdata *xsd, ULONG list)
     LONG limit[VCGFX_MAX_PLANES], bottom = out_h, front = (LONG)xsd->vcsd_NumPlanes - 1;
     LONG px[VCGFX_MAX_PLANES], py[VCGFX_MAX_PLANES];
     ULONG pw[VCGFX_MAX_PLANES], ph[VCGFX_MAX_PLANES];
-    ULONG ptr0[VCGFX_MAX_PLANES] = { 0 };
     struct hvs6_ent scr[VCGFX_MAX_PLANES], ovl[VCGFX_MAX_OVERLAYS];
     ULONG upm = st->h6_UpmTop, lbm = 0, scaled = 0, i, k, slot, pitch, w, h, ent;
-    ULONG handle = HVS6_PL_HANDLE;
+    ULONG handle = HVS6_PL_HANDLE, lbmsize = hvs6_rd(HVS6_LBM_SIZE), need;
     UQUAD phys;
     LONG x, y, j;
 
+    /* Front first: a screen that gets a plane hides what is behind it,
+     * one that does not hides nothing */
     for (j = front; j >= 0; j--)
     {
         struct vcgfx_plane *pl = &xsd->vcsd_Plane[j];
         struct BitmapData *d = pl->pl_Data;
-        BOOL sc;
+        struct hvs6_ent *e = &scr[j];
         ULONG size;
 
+        need = 0;
         hvs6_plane_rect(xsd, pl, out_w, out_h, &px[j], &py[j], &pw[j], &ph[j]);
-        sc = (pw[j] != d->width) || (ph[j] != d->height);
-        size = hvs6_upm_size(d->bytesperrow, sc ? 4 : HVS6_UPM_LINES);
-
         limit[j] = bottom;
         pl->pl_Shown = TRUE;
+        e->valid = FALSE;
+        e->ovl   = FALSE;
         if (!pw[j] || !ph[j] || (limit[j] <= py[j]) || (limit[j] <= 0))
             continue;
+
+        e->phys   = (UQUAD)(IPTR)d->VideoData;
+        e->pitch  = d->bytesperrow;
+        e->x = px[j]; e->y = py[j]; e->w = pw[j]; e->h = ph[j];
+        e->scaled = (pw[j] != d->width) || (ph[j] != d->height);
+
+        if (!e->scaled)
+        {
+            if (!hvs6_clip(&e->x, &e->y, &e->w, &e->h, &e->phys, e->pitch, 4,
+                           0, 0, out_w, limit[j]))
+                continue;
+        }
+        else
+        {
+            e->sw = d->width;
+            e->sh = d->height;
+            if (!hvs6_clip_scaled(&e->x, &e->y, &e->w, &e->h, &e->sw, &e->sh, &e->phys,
+                                  e->pitch, 4, 0, 0, out_w, limit[j]))
+                continue;
+            need = hvs6_lbm_need(e->sw, e->w, e->sh, e->h);
+            if ((lbm + need > lbmsize)
+                || !HVS6_PPF_FITS(e->sw, e->w) || !HVS6_PPF_FITS(e->sh, e->h))
+            {
+                pl->pl_Shown = FALSE;
+                continue;
+            }
+        }
+
+        size = hvs6_upm_size(d->bytesperrow, HVS6_UPM_LINES);
         if ((upm < st->h6_UpmFloor + size) || (handle == HVS6_PL_HANDLE_END))
         {
             pl->pl_Shown = FALSE;
@@ -1202,9 +1241,16 @@ static ULONG hvs6_build_planes(struct VideoCoreGfx_staticdata *xsd, ULONG list)
         }
 
         upm -= size;
-        ptr0[j] = HVS6_PTR0_BASE(upm / HVS6_UPM_GRAN)
+        e->ptr0 = HVS6_PTR0_BASE(upm / HVS6_UPM_GRAN)
                 | HVS6_PTR0_HANDLE(handle++)
-                | (sc ? HVS6_PTR0_LINES4 : HVS6_PTR0_LINES2);
+                | HVS6_PTR0_LINES2;
+        if (e->scaled)
+        {
+            e->lbm = lbm;
+            lbm += need;
+            scaled++;
+        }
+        e->valid = TRUE;
 
         bottom = vcgfx_plane_occlude(px[j], py[j], pw[j], ph[j], 0, 0, out_w, bottom);
     }
@@ -1217,47 +1263,6 @@ static ULONG hvs6_build_planes(struct VideoCoreGfx_staticdata *xsd, ULONG list)
     }
     else
         hvs6_wr(ent, HVS6_CTL0_EMPTY);
-
-    /* The screens take the scaler first, front first */
-    for (j = front; j >= 0; j--)
-    {
-        struct BitmapData *d = xsd->vcsd_Plane[j].pl_Data;
-        struct hvs6_ent *e = &scr[j];
-
-        e->valid = FALSE;
-        e->ovl   = FALSE;
-        if (!ptr0[j])
-            continue;
-
-        e->phys  = (UQUAD)(IPTR)d->VideoData;
-        e->pitch = d->bytesperrow;
-        e->ptr0  = ptr0[j];
-        e->x = px[j]; e->y = py[j]; e->w = pw[j]; e->h = ph[j];
-        e->scaled = (pw[j] != d->width) || (ph[j] != d->height);
-
-        if (!e->scaled)
-        {
-            e->valid = hvs6_clip(&e->x, &e->y, &e->w, &e->h, &e->phys, e->pitch, 4,
-                                 0, 0, out_w, limit[j]);
-            continue;
-        }
-
-        e->sw = d->width;
-        e->sh = d->height;
-        if (!hvs6_clip_scaled(&e->x, &e->y, &e->w, &e->h, &e->sw, &e->sh, &e->phys,
-                              e->pitch, 4, 0, 0, out_w, limit[j]))
-            continue;
-        if ((scaled >= HVS6_SCALE_MAX)
-            || !HVS6_PPF_FITS(e->sw, e->w) || !HVS6_PPF_FITS(e->sh, e->h))
-        {
-            xsd->vcsd_Plane[j].pl_Shown = FALSE;
-            continue;
-        }
-        e->lbm = lbm;
-        lbm += d->width * 8;
-        scaled++;
-        e->valid = TRUE;
-    }
 
     /* Then the overlays, front screen first: scaled like their screen,
      * and no further out than it */
@@ -1304,7 +1309,7 @@ static ULONG hvs6_build_planes(struct VideoCoreGfx_staticdata *xsd, ULONG list)
             e->ovl    = TRUE;
             e->pxf    = vc4_ovl_pxf(dsc->ovl_Flags);
             e->scaled = !unity || (dw != dsc->ovl_Width) || (dh != dsc->ovl_Height);
-            size = hvs6_upm_size(e->pitch, e->scaled ? 4 : HVS6_UPM_LINES);
+            size = hvs6_upm_size(e->pitch, HVS6_UPM_LINES);
             if ((upm < st->h6_UpmFloor + size) || (handle == HVS6_PL_HANDLE_END))
                 continue;
 
@@ -1336,18 +1341,19 @@ static ULONG hvs6_build_planes(struct VideoCoreGfx_staticdata *xsd, ULONG list)
                     continue;
                 }
                 /* A size the scaler can't make is left out, not shown wrong */
-                if (!vc4_hvs6_scales(xsd) || (scaled >= HVS6_SCALE_MAX)
+                need = hvs6_lbm_need(e->sw, e->w, e->sh, e->h);
+                if (!vc4_hvs6_scales(xsd) || (lbm + need > lbmsize)
                     || !HVS6_PPF_FITS(e->sw, e->w) || !HVS6_PPF_FITS(e->sh, e->h))
                     continue;
                 e->lbm = lbm;
-                lbm += dsc->ovl_Width * 8;
+                lbm += need;
                 scaled++;
             }
 
             upm -= size;
             e->ptr0 = HVS6_PTR0_BASE(upm / HVS6_UPM_GRAN)
                     | HVS6_PTR0_HANDLE(handle++)
-                    | (e->scaled ? HVS6_PTR0_LINES4 : HVS6_PTR0_LINES2);
+                    | HVS6_PTR0_LINES2;
             e->valid = o->ov_Shown = TRUE;
         }
     }

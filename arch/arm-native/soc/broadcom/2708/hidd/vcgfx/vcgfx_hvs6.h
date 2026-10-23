@@ -99,28 +99,35 @@ static inline void hvs6_wr(ULONG offset, ULONG value)
 #define HVS6_UPM_LINES      2
 #define HVS6_UPM_FALLBACK   0x40000         /* arena if UBM_SIZE is odd   */
 
-/* One slice each for the overlay, the cursor and our own framebuffer,
- * sized for the widest mode, so a mode change never re-carves */
+/* One slice each for the overlay and our own framebuffer, sized for the
+ * widest mode, so a mode change never re-carves; the cursor's for its
+ * widest line */
 #define HVS6_UPM_MAX_PITCH  (4096 * 4)
 #define HVS6_UPM_SLICE      ((((HVS6_UPM_MAX_PITCH + 62) / 32) * 32 *     \
+                              HVS6_UPM_LINES + HVS6_UPM_GRAN - 1) &       \
+                             ~(HVS6_UPM_GRAN - 1))
+#define HVS6_UPM_CURSOR     ((((VC4_CURSOR_MAX_W * 4 + 62) / 32) * 32 *   \
                               HVS6_UPM_LINES + HVS6_UPM_GRAN - 1) &       \
                              ~(HVS6_UPM_GRAN - 1))
 
 /* Keeps the free-slot search inside the readable range */
 #define HVS6_FREE_LIMIT     0x1300
 
-/* Screens as planes: backdrop, the screens back to front each with its
- * overlays over it, unused slots empty, cursor, END */
-#define HVS6_PL_BACK        0
-#define HVS6_PL_FIRST       1
-#define HVS6_PL_CUR         (HVS6_PL_FIRST + VCGFX_MAX_PLANES + VCGFX_MAX_OVERLAYS)
-#define HVS6_PL_END         (HVS6_PL_CUR + 1)
-#define HVS6_PL_SLOTS       (HVS6_PL_END + 1)
-#define HVS6_PL_LISTS       3
 /* UPM handles for the planes a list shows, in the order they get UPM;
  * 30..32 are the fb's, the overlay's and the cursor's */
 #define HVS6_PL_HANDLE      14
 #define HVS6_PL_HANDLE_END  30
+
+/* Screens as planes: backdrop, the screens back to front each with its
+ * overlays over it, unused slots empty, cursor, END. A plane shown needs
+ * a handle, so there are never more than those; three lists of more do
+ * not fit the free list RAM. */
+#define HVS6_PL_BACK        0
+#define HVS6_PL_FIRST       1
+#define HVS6_PL_CUR         (HVS6_PL_FIRST + HVS6_PL_HANDLE_END - HVS6_PL_HANDLE)
+#define HVS6_PL_END         (HVS6_PL_CUR + 1)
+#define HVS6_PL_SLOTS       (HVS6_PL_END + 1)
+#define HVS6_PL_LISTS       3
 
 /* UPM below this is left to the firmware's own planes, which it
  * allocates upwards from 0 */

@@ -676,26 +676,20 @@ static ULONG hvs5_emit_planes(struct VideoCoreGfx_staticdata *xsd,
     LONG i, px, py, dx, dy;
     ULONG pw, ph, dw, dh;
 
-    for (i = front; i >= 0; i--)
-    {
-        limit[i] = bottom;
-        hvs5_plane_src(&xsd->vcsd_Plane[i], &s);
-        if (hvs5_src_rect(st, &s, &px, &py, &pw, &ph))
-            bottom = vcgfx_plane_occlude(px, py, pw, ph, left, top, right, bottom);
-    }
-
+    /* The backdrop is reserved before it is known whether anything
+     * uncovers it */
     if (xsd->vcsd_CurBuf)
         room -= HVS5_PLANE_WORDS;
-    if (bottom > top)
-    {
-        hvs5_fb_src(st, &s);
-        room -= st->hvs_Tiny ? hvs5_take(st, &s, &need) : st->hvs_FBWords;
-    }
+    hvs5_fb_src(st, &s);
+    room -= st->hvs_Tiny ? hvs5_take(st, &s, &need) : st->hvs_FBWords;
 
+    /* Front first: a screen that gets a plane hides what is behind it,
+     * one that does not hides nothing */
     for (i = front; i >= 0; i--)
     {
         struct vcgfx_plane *pl = &xsd->vcsd_Plane[i];
 
+        limit[i] = bottom;
         swords[i] = 0;
         pl->pl_Shown = TRUE;
         hvs5_plane_src(pl, &s);
@@ -715,6 +709,8 @@ static ULONG hvs5_emit_planes(struct VideoCoreGfx_staticdata *xsd,
         slbm[i] = need;
         need = lb;
         swords[i] = words;
+
+        bottom = vcgfx_plane_occlude(px, py, pw, ph, left, top, right, bottom);
     }
 
     for (k = 0; k < VCGFX_MAX_OVERLAYS; k++)
