@@ -1319,6 +1319,40 @@ ADD2INITLIB(sdio_init, 0)
 /* ----------------------------------------------------------------------- */
 /* Public API                                                              */
 
+/*****************************************************************************
+    NAME
+        int SDIOProbe(
+
+    SYNOPSIS
+        )
+
+    FUNCTION
+        Power, enumerate and select the SDIO device.
+
+    RESULT
+        Nonzero after card selection; zero on a reported probe failure.
+        After success, subsequent calls return the cached result.
+
+    NOTES
+        Obtain sdio.resource with OpenResource() first. Call in task context.
+        Holds the resource semaphore while probing. An uncached probe can
+        power-cycle the radio and change its clock, pins and card state.
+        Coordinate users before probing or retrying.
+
+        Attempts to select a 4-bit bus and increase the clock after selection.
+        There is no operation to invalidate cached success or detect removal.
+
+    BUGS
+        Power, clock and interrupt-registration failures are not all reported.
+        Success does not establish a working interrupt handler; cached calls
+        do not retry registration. Failure can leave partial hardware changes.
+        Mailbox exchanges have no overall deadline, and their failures do not
+        prevent reuse or release of the message buffer.
+
+    SEE ALSO
+        SDIOIsPresent(), SDIOEnableFunction(), SDIOSetInterrupt()
+
+*****************************************************************************/
 AROS_LH0(int, SDIOProbe,
                 struct SDIOBase *, SDIOBase, 1, Sdio)
 {
@@ -1335,6 +1369,35 @@ AROS_LH0(int, SDIOProbe,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+    NAME
+        uint8_t SDIOReadByte(
+
+    SYNOPSIS
+        uint32_t func, uint32_t addr)
+
+    FUNCTION
+        Read one function register using CMD52.
+
+    INPUTS
+        func - Existing function number, 0 through 7. Zero addresses common
+            control registers.
+        addr - Register address, 0 through 0x1ffff.
+
+    RESULT
+        The register value, or zero on command or card-response error.
+        A zero result cannot distinguish failure from a register value of zero.
+
+    NOTES
+        Requires a probed device. Call in task context. Holds the resource
+        semaphore for this command; separate calls are not an atomic sequence.
+        Function numbers are not validated. Address bits above bit 16 are
+        discarded. Register reads may have device-defined side effects.
+
+    SEE ALSO
+        SDIOWriteByte(), SDIOReadExt(), SDIOProbe()
+
+*****************************************************************************/
 AROS_LH2(uint8_t, SDIOReadByte,
                 AROS_LHA(uint32_t, func, D0),
                 AROS_LHA(uint32_t, addr, D1),
@@ -1353,6 +1416,36 @@ AROS_LH2(uint8_t, SDIOReadByte,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+    NAME
+        void SDIOWriteByte(
+
+    SYNOPSIS
+        uint32_t func, uint32_t addr, uint8_t val)
+
+    FUNCTION
+        Write one function register using CMD52.
+
+    INPUTS
+        func - Existing function number, 0 through 7. Zero addresses common
+            control registers.
+        addr - Register address, 0 through 0x1ffff.
+        val - Byte to write.
+
+    NOTES
+        Requires a probed device. Call in task context. Holds the resource
+        semaphore for this command; separate calls are not an atomic sequence.
+        Function numbers are not validated. Address bits above bit 16 are
+        discarded. The write is not read back.
+
+    BUGS
+        Command and card-response errors are discarded. No result confirms
+        whether the register was written.
+
+    SEE ALSO
+        SDIOReadByte(), SDIOWriteExt(), SDIOProbe()
+
+*****************************************************************************/
 AROS_LH3(void, SDIOWriteByte,
                 AROS_LHA(uint32_t, func, D0),
                 AROS_LHA(uint32_t, addr, D1),
@@ -1368,6 +1461,53 @@ AROS_LH3(void, SDIOWriteByte,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+    NAME
+        int SDIOReadExt(
+
+    SYNOPSIS
+        uint32_t func, uint32_t addr, void * buf, uint32_t len, uint32_t incr)
+
+    FUNCTION
+        Read an SDIO data region or FIFO using CMD53.
+
+    INPUTS
+        func - Existing function number, 0 through 7.
+        addr - Starting address, 0 through 0x1ffff.
+        buf - Non-NULL writable buffer of at least len bytes, valid until return.
+            No word alignment or padding is required.
+        len - Nonzero byte count. Buffer extent and address arithmetic must fit.
+        incr - Zero for fixed device address; nonzero for incrementing access.
+            An incrementing range must remain within 0x1ffff.
+
+    RESULT
+        Zero if the command sequence reports success; -1 for zero length or
+        an observed command/card error. This is a status, not a byte count.
+        Failure can leave an unspecified buffer prefix changed and device
+        data already consumed. No partial count or rollback is provided.
+
+    NOTES
+        Requires a probed device and a usable function. Call in task context.
+        Holds the resource semaphore throughout the transfer. Uses the cached
+        block size for whole blocks, at most 511 per command, then byte-mode
+        chunks of at most 512 bytes. Without a cached size, uses byte mode.
+
+        Fixed-address transfers still advance the host buffer. The device
+        defines FIFO semantics. The buffer is not retained.
+
+        Pointers, function numbers and address ranges are not validated.
+        Command waits busy-poll; there is no cancellation or whole-transfer
+        deadline.
+
+    BUGS
+        An error first observed in the final transfer-completion wait can be
+        treated as success. Card R5 errors are checked after the data phase.
+        A zero result is therefore not a complete transfer-integrity check.
+
+    SEE ALSO
+        SDIOWriteExt(), SDIOSetBlockSize(), SDIOEnableFunction()
+
+*****************************************************************************/
 AROS_LH5(int, SDIOReadExt,
                 AROS_LHA(uint32_t, func, D0),
                 AROS_LHA(uint32_t, addr, D1),
@@ -1389,6 +1529,54 @@ AROS_LH5(int, SDIOReadExt,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+    NAME
+        int SDIOWriteExt(
+
+    SYNOPSIS
+        uint32_t func, uint32_t addr, void * buf, uint32_t len, uint32_t incr)
+
+    FUNCTION
+        Write an SDIO data region or FIFO using CMD53.
+
+    INPUTS
+        func - Existing function number, 0 through 7.
+        addr - Starting address, 0 through 0x1ffff.
+        buf - Non-NULL readable buffer of at least len bytes, valid until return.
+            No word alignment or padding is required.
+        len - Nonzero byte count. Buffer extent and address arithmetic must fit.
+        incr - Zero for fixed device address; nonzero for incrementing access.
+            An incrementing range must remain within 0x1ffff.
+
+    RESULT
+        Zero if the command sequence reports success; -1 for zero length or
+        an observed command/card error. This is a status, not a byte count.
+        A failure can follow partial device writes. No progress count or
+        rollback is provided; retrying can duplicate FIFO data.
+
+    NOTES
+        Requires a probed device and a usable function. Call in task context.
+        Holds the resource semaphore throughout the transfer. Uses the cached
+        block size for whole blocks, at most 511 per command, then byte-mode
+        chunks of at most 512 bytes. Without a cached size, uses byte mode.
+
+        Fixed-address transfers still advance the host buffer. The device
+        defines FIFO semantics. The buffer is not retained.
+        The source buffer is not modified.
+
+        Pointers, function numbers and address ranges are not validated.
+        Command waits busy-poll; there is no cancellation or whole-transfer
+        deadline.
+
+    BUGS
+        An error first observed in the final transfer-completion wait can be
+        treated as success. Card R5 errors are checked after the data phase.
+        A zero result is therefore not a complete transfer-integrity check.
+
+    SEE ALSO
+        SDIOReadExt(), SDIOSetBlockSize(), SDIOEnableFunction()
+
+*****************************************************************************/
 AROS_LH5(int, SDIOWriteExt,
                 AROS_LHA(uint32_t, func, D0),
                 AROS_LHA(uint32_t, addr, D1),
@@ -1410,6 +1598,38 @@ AROS_LH5(int, SDIOWriteExt,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+    NAME
+        int SDIOEnableFunction(
+
+    SYNOPSIS
+        uint32_t func)
+
+    FUNCTION
+        Enable an I/O function and poll its readiness bit.
+
+    INPUTS
+        func - Existing I/O function number, 1 through 7. Function zero
+            supplies common control registers and is not enabled this way.
+
+    RESULT
+        Zero if register accesses succeed; -1 if an access fails.
+        Exhausting the readiness loop also returns zero, so success does not
+        guarantee that the function is ready.
+
+    NOTES
+        Requires a probed device. Call in task context. Holds the resource
+        semaphore while preserving other enable bits, enabling the function
+        and reading readiness up to 50 times. Each unsuccessful test adds a
+        1 ms busy delay; command waits add further time.
+
+        The enable bit is not cleared after failure or readiness exhaustion.
+        The function number is not validated before shifting its bit.
+
+    SEE ALSO
+        SDIOProbe(), SDIOReadByte(), SDIOSetBlockSize()
+
+*****************************************************************************/
 AROS_LH1(int, SDIOEnableFunction,
                 AROS_LHA(uint32_t, func, D0),
                 struct SDIOBase *, SDIOBase, 6, Sdio)
@@ -1447,6 +1667,45 @@ AROS_LH1(int, SDIOEnableFunction,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+    NAME
+        int SDIOSetBlockSize(
+
+    SYNOPSIS
+        uint32_t func, uint32_t size)
+
+    FUNCTION
+        Program and cache a function's CMD53 block size.
+
+    INPUTS
+        func - Existing function number, 0 through 7.
+        size - Positive byte size supported by the card and host. Must fit
+            the host's 12-bit field: at most 4095. This encoding limit does
+            not establish which sizes the hardware supports.
+
+    RESULT
+        Zero after both register writes succeed; -1 if either fails.
+        Updates the cached size only on success. Does not read back the value.
+
+    NOTES
+        Requires a probed device. Call in task context. Holds the resource
+        semaphore across the low-byte and high-byte FBR writes. Extended
+        transfers use the cached size to select block mode. Coordinate users
+        sharing the function; there is no ownership claim for this setting.
+
+        If the second write fails, the card may be partly changed while the
+        cache retains its old value. Direct register writes do not update
+        the cache.
+
+    BUGS
+        Function and size are not validated. Zero changes both the card and
+        the cache; it is not a host-only switch to byte mode. Oversized values
+        can disagree with the host block-size field.
+
+    SEE ALSO
+        SDIOReadExt(), SDIOWriteExt(), SDIOEnableFunction()
+
+*****************************************************************************/
 AROS_LH2(int, SDIOSetBlockSize,
                 AROS_LHA(uint32_t, func, D0),
                 AROS_LHA(uint32_t, size, D1),
@@ -1477,6 +1736,29 @@ AROS_LH2(int, SDIOSetBlockSize,
  * traffic, so a client (bwfm) can gate on it without re-running CMD0/CMD5 on
  * the already-selected card.
  */
+/*****************************************************************************
+    NAME
+        int SDIOIsPresent(
+
+    SYNOPSIS
+        )
+
+    FUNCTION
+        Return the cached card-enumeration state.
+
+    RESULT
+        Nonzero after SDIOProbe() marks the device present; otherwise zero.
+
+    NOTES
+        Issues no bus commands and takes no semaphore. Does not power up or
+        probe the device. Transfer failures and physical device loss do not
+        clear the cached value. It establishes neither function readiness nor
+        successful interrupt-handler registration.
+
+    SEE ALSO
+        SDIOProbe(), SDIOEnableFunction(), SDIOSetInterrupt()
+
+*****************************************************************************/
 AROS_LH0(int, SDIOIsPresent,
                 struct SDIOBase *, SDIOBase, 8, Sdio)
 {
@@ -1494,6 +1776,47 @@ AROS_LH0(int, SDIOIsPresent,
  * masks the interrupt each time; the consumer re-arms it with
  * SDIOAckInterrupt() after draining its frames.
  */
+/*****************************************************************************
+    NAME
+        int SDIOSetInterrupt(
+
+    SYNOPSIS
+        struct Task * task, uint32_t sigmask)
+
+    FUNCTION
+        Route card interrupts to an Exec task signal.
+
+    INPUTS
+        task - Live task to notify. The pointer is retained and must remain
+            valid while interrupt delivery is possible.
+        sigmask - Mask of signals allocated to task, not a signal-bit number.
+
+    RESULT
+        Zero if the card interrupt-enable write succeeds; -1 if it fails.
+        The task and mask are stored and host signalling is enabled even
+        when that write fails.
+
+    NOTES
+        Requires a probed device with a registered interrupt handler. Call
+        in task context and coordinate changes with the existing consumer.
+        Replaces the single task/mask pair and the card interrupt-enable byte,
+        enabling its master and function-1 source.
+
+        The handler masks host signalling before notifying the task. Service
+        and clear the device interrupt source, then call SDIOAckInterrupt().
+        Signals may coalesce; they are not frame counts. The consumer must
+        drain device data.
+
+    BUGS
+        Registration is not transactional or synchronized with the handler.
+        There is no safe unregister-and-drain operation. NULL task suppresses
+        Signal() but does not disable card or host interrupts. This function
+        does not check whether probe-time handler registration succeeded.
+
+    SEE ALSO
+        SDIOAckInterrupt(), SDIOProbe()
+
+*****************************************************************************/
 AROS_LH2(int, SDIOSetInterrupt,
                 AROS_LHA(struct Task *, task, A0),
                 AROS_LHA(uint32_t, sigmask, D0),
@@ -1525,6 +1848,30 @@ AROS_LH2(int, SDIOSetInterrupt,
  * Re-arm the card interrupt after the consumer has drained pending frames.
  * (The handler masks it on each fire to avoid a level-triggered storm.)
  */
+/*****************************************************************************
+    NAME
+        void SDIOAckInterrupt(
+
+    SYNOPSIS
+        )
+
+    FUNCTION
+        Re-enable host signalling for the card interrupt.
+
+    NOTES
+        Call after the consumer services pending work and clears the device
+        interrupt source. Only the host signal-enable register is written.
+        This does not clear card status, drain data, clear the task signal or
+        register a consumer.
+
+        An asserted source can trigger delivery immediately and cause the
+        handler to mask signalling again. Coordinate with registration and
+        shutdown. This call takes no semaphore and provides no status check.
+
+    SEE ALSO
+        SDIOSetInterrupt(), SDIOReadExt()
+
+*****************************************************************************/
 AROS_LH0(void, SDIOAckInterrupt,
                 struct SDIOBase *, SDIOBase, 10, Sdio)
 {
