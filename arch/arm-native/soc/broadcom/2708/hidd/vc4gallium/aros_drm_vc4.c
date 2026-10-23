@@ -188,15 +188,19 @@ static void aros_scanout_unbind(struct vc4_resource *rsc)
  * unobscured cliprect, the rendered BO is shown as an HVS overlay
  * plane — the windowed analogue of the fullscreen scanout path above.
  *
- * The present is PIPELINED over a ring of three private pages: each
+ * The present is PIPELINED over a ring of four private pages: each
  * present displays the frame rendered the present BEFORE (whose jobs
  * finished while this frame was being built, so the seqno wait is
  * normally instant) and queues the just-rendered frame for the next
- * present. Rotation: render target -> queued -> on plane -> render
- * target. This overlaps CPU emit with GPU render — frame time becomes
- * max(CPU, GPU) instead of CPU + GPU (the hidd's set_overlay used to
- * wait for full GPU idle, which cost tens of ms per frame in a
+ * present. Rotation: render target -> queued -> on plane -> retiring
+ * -> render target. This overlaps CPU emit with GPU render — frame time
+ * becomes max(CPU, GPU) instead of CPU + GPU (the hidd's set_overlay
+ * used to wait for full GPU idle, which cost tens of ms per frame in a
  * GPU-bound scene) — at the cost of one frame of display latency.
+ *
+ * The page leaving the plane is on scanout until the vblank, so it parks
+ * in `retiring` for one present: the next set_overlay waits for that
+ * latch anyway, and rendering never does.
  */
 static struct {
     struct pipe_resource *rsc;
@@ -204,7 +208,8 @@ static struct {
     struct vc4_bo  *queued;         /* last-rendered frame; shown next present */
     uint32_t        queued_seqno;   /* submit seqno covering `queued` */
     struct vc4_bo  *onplane;        /* page the overlay currently scans */
-    struct vc4_bo  *freep;          /* 3rd page, parked until the ring fills */
+    struct vc4_bo  *freep;          /* spare, parked until the ring fills */
+    struct vc4_bo  *retiring;       /* displaced last present, latch due */
     BOOL            shown;          /* plane currently on scanout */
     struct pipe_resource *refused;  /* set_overlay said no for this
                                      * resource (e.g. scaled desktop):
@@ -354,6 +359,8 @@ static void aros_ovl_exit(void)
         vc4_bo_unreference(&aros_ovl.onplane);
     if (aros_ovl.freep)
         vc4_bo_unreference(&aros_ovl.freep);
+    if (aros_ovl.retiring)
+        vc4_bo_unreference(&aros_ovl.retiring);
     aros_ovl.queued_seqno = 0;
     aros_ovl.rsc = NULL;
     aros_ovl.owner = NULL;
@@ -395,11 +402,14 @@ static void aros_ovl_flush(void)
             aros_ovl.dest_w, aros_ovl.dest_h) != 0)
         return;
 
+    /* `retiring` latched in that set_overlay: it is the spare the refill
+     * takes. */
     off = aros_ovl.onplane;
     aros_ovl.onplane = aros_ovl.queued;
     aros_ovl.queued = NULL;
     aros_ovl.queued_seqno = 0;
-    aros_ovl.freep = off;
+    aros_ovl.freep = aros_ovl.retiring;
+    aros_ovl.retiring = off;
 }
 
 /* Interrupt context, every vblank while the overlay is up. */
@@ -693,10 +703,10 @@ BOOL aros_drm_blit_resource(struct pipe_resource *src_pres,
                 if (oret == 0)
                 {
                     /* Rotate: queued -> on plane; the page leaving the
-                     * plane becomes the next render target (the GPU
-                     * won't write it before the next submit, long after
-                     * the vblank latch). */
-                    struct vc4_bo *freed = aros_ovl.onplane;
+                     * plane parks in `retiring`, and the one parked last
+                     * time, latched off by this set_overlay, is the next
+                     * render target. */
+                    struct vc4_bo *off = aros_ovl.onplane;
 
                     aros_ovl.shown = TRUE;
                     aros_ovl.onplane = aros_ovl.queued;
@@ -705,7 +715,8 @@ BOOL aros_drm_blit_resource(struct pipe_resource *src_pres,
                         aros_drm_bridge->get_seqno(aros_drm_bridge->ctx);
                     aros_ovl_queued_at(vscreen, scr_bm_obj, absX, absY,
                                        xSize, ySize, stride);
-                    rsc->bo = freed;
+                    rsc->bo = aros_ovl.retiring;
+                    aros_ovl.retiring = off;
                     rsc->slices[0].offset = 0;
                     aros_ovl.page_handle = rsc->bo->handle;
                     UnlockLayerRom(L);
@@ -746,19 +757,24 @@ BOOL aros_drm_blit_resource(struct pipe_resource *src_pres,
                  && aros_ovl.refused != src_pres && !aros_ovl_held())
         {
             struct vc4_screen *vscreen = vc4_screen(rsc->base.screen);
-            struct vc4_bo *nb1, *nb2 = NULL;
+            struct vc4_bo *nb1, *nb2 = NULL, *nb3 = NULL;
             int oret = -1;
 
             D(bug("[vc4ovl] enter: bo=%lu %ldx%ld at %ld,%ld stride=%lu\n",
                 (unsigned long)rsc->bo->handle, xSize, ySize,
                 absX, absY, (unsigned long)stride));
+            /* The next render target, a parked spare, and a page never
+             * on the plane to seed `retiring` */
             nb1 = vc4_bo_alloc(vscreen, rsc->slices[0].size, "overlay-page");
             if (nb1)
                 nb2 = vc4_bo_alloc(vscreen, rsc->slices[0].size,
                                    "overlay-page");
-            D(bug("[vc4ovl] page alloc: %s\n", nb2 ? "ok" : "FAILED"));
-
             if (nb2)
+                nb3 = vc4_bo_alloc(vscreen, rsc->slices[0].size,
+                                   "overlay-page");
+            D(bug("[vc4ovl] page alloc: %s\n", nb3 ? "ok" : "FAILED"));
+
+            if (nb3)
             {
                 /* The entry present shows the frame just rendered, so
                  * it must wait for it — the only full wait left on this
@@ -774,7 +790,7 @@ BOOL aros_drm_blit_resource(struct pipe_resource *src_pres,
             }
             D(bug("[vc4ovl] set_overlay=%d\n", oret));
 
-            if (nb2 && oret == 0)
+            if (nb3 && oret == 0)
             {
                 aros_ovl.rsc = src_pres;
                 aros_ovl.owner = src_pres->screen;
@@ -783,6 +799,7 @@ BOOL aros_drm_blit_resource(struct pipe_resource *src_pres,
                 aros_ovl.queued = NULL;
                 aros_ovl.queued_seqno = 0;
                 aros_ovl.freep = nb2;
+                aros_ovl.retiring = nb3;
                 rsc->bo = nb1;
                 rsc->slices[0].offset = 0;
                 aros_ovl.page_handle = nb1->handle;
@@ -805,6 +822,8 @@ BOOL aros_drm_blit_resource(struct pipe_resource *src_pres,
                 vc4_bo_unreference(&nb1);
             if (nb2)
                 vc4_bo_unreference(&nb2);
+            if (nb3)
+                vc4_bo_unreference(&nb3);
             /* Refused (scaled desktop / no takeover): remember and stop
              * paying an alloc+refusal on every present. Cleared when
              * the resource changes (resize/mode switch). Held by a video
@@ -1004,6 +1023,7 @@ void aros_drm_screen_gone(APTR screen, BOOL dead)
             aros_ovl.queued = NULL;
             aros_ovl.onplane = NULL;
             aros_ovl.freep = NULL;
+            aros_ovl.retiring = NULL;
             aros_ovl.queued_seqno = 0;
             aros_ovl.rsc = NULL;
             aros_ovl.owner = NULL;
