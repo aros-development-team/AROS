@@ -103,16 +103,18 @@ int main(void)
 
         if (sizes && sizes[0])
         {
+            unsigned long sw, sh;
             ULONG k = 0;
 
             while (sizes[k])
                 k++;
-            if (sscanf(sizes[i % k], "%lux%lu", (unsigned long *)&w,
-                       (unsigned long *)&h) != 2)
+            if (sscanf(sizes[i % k], "%lux%lu", &sw, &sh) != 2)
             {
                 printf("bad size \"%s\", want WxH\n", sizes[i % k]);
                 goto out;
             }
+            w = sw;
+            h = sh;
             if ((w != wbw) || (h != wbh))
                 mode = INVALID_ID;
         }
@@ -169,7 +171,10 @@ int main(void)
 
 out:
     while (n--)
-        CloseScreen(scr[n]);
+    {
+        if (!CloseScreen(scr[n]))
+            printf("screen %lu: CloseScreen failed\n", (unsigned long)n);
+    }
     FreeArgs(rda);
     return rc;
 }
