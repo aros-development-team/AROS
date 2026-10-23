@@ -13,6 +13,7 @@
 #define STATEF_WINK             (1 << STATEFLAG_CORE + 0)
 #define STATEF_AROSLOGO         (1 << STATEFLAG_CORE + 1)
 
+#if !defined(NOMEDIA_PLANAR) || (NOMEDIA_PACKED == 1)
 static const UBYTE *unpack_byterun1(const UBYTE *source, UBYTE *dest, LONG unpackedsize)
 {
     BYTE c;
@@ -56,6 +57,66 @@ static const UBYTE *unpack_byterun1(const UBYTE *source, UBYTE *dest, LONG unpac
     }
     return source;
 }
+#endif
+
+#if NOMEDIA_PACKED == 2
+/*
+ * The LZ stream written by ilbmtoc -pz (see pack_lz() there): a token with
+ * the literal count and match length - 4 in its nibbles, 15 meaning "add the
+ * following bytes while they are 255"; the literals; a big endian match
+ * offset. The literals of the last token end the image. Runs are offset 1
+ * matches, filled with long-word stores like the byterun1 runs above.
+ */
+static ULONG unpack_lzlen(const UBYTE **source, ULONG n)
+{
+    if (n == 15)
+    {
+        UBYTE b;
+
+        do
+        {
+            b = *(*source)++;
+            n += b;
+        } while (b == 255);
+    }
+    return n;
+}
+
+static void unpack_lz(const UBYTE *source, UBYTE *dest, LONG unpackedsize)
+{
+    UBYTE *end = dest + unpackedsize;
+
+    for (;;)
+    {
+        UBYTE token = *source++;
+        const UBYTE *match;
+        ULONG n;
+
+        n = unpack_lzlen(&source, token >> 4);
+        while (n--)
+            *dest++ = *source++;
+        if (dest >= end)
+            break;
+
+        match = dest - ((source[0] << 8) | source[1]);
+        source += 2;
+        n = unpack_lzlen(&source, token & 15) + 4;
+
+        if ((match == dest - 1) && (n >= 8))
+        {
+            UBYTE r = *match;
+            ULONG rr = r;
+
+            rr |= rr << 8;
+            rr |= rr << 16;
+            while (((IPTR)dest & 3) && n) { *dest++ = r; n--; }
+            while (n >= 4) { *(ULONG *)dest = rr; dest += 4; n -= 4; }
+        }
+        while (n--)
+            *dest++ = *match++;
+    }
+}
+#endif
 
 struct AnimData *banm_Init(struct Screen *scr, struct DOSBootBase *DOSBootBase)
 {
@@ -105,7 +166,10 @@ struct AnimData *banm_Init(struct Screen *scr, struct DOSBootBase *DOSBootBase)
                 if (ad->srcbm && planebuf)
                 {
                     /* Unpack the RLE planar blob ONCE (linear decode, not C2P). */
-#if NOMEDIA_PACKED
+#if NOMEDIA_PACKED == 2
+                    unpack_lz(nomedia_data, planebuf,
+                              NOMEDIA_PLANESIZE * NOMEDIA_PLANES);
+#elif NOMEDIA_PACKED
                     unpack_byterun1(nomedia_data, planebuf,
                                     NOMEDIA_PLANESIZE * NOMEDIA_PLANES);
 #else
