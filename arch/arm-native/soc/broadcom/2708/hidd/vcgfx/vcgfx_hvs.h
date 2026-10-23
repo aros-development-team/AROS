@@ -115,7 +115,7 @@
  * 1280 wide and 0xa300 for 800). Our planes take it upwards from 0, up
  * to all 48K (Linux's size) unless a scaled fb plane holds the top. */
 #define HVS_LBM_SIZE            0xc000
-#define HVS_LBM_BYTES(w)        ((ULONG)(w) * 8)
+#define HVS_LBM_BYTES(w)        (((ULONG)(w) * 8 + 31) & ~31UL)
 
 /* HVS_PPF() keeps 16 bits of ratio: upscale only. */
 #define HVS_PPF_FITS(src, dst)  ((((ULONG)(src) << 16) / (ULONG)(dst)) <= 0xffff)

@@ -147,9 +147,11 @@
  * ratio field up to bit 24; a 1280 to 1024 shrink showed right on a Pi 4. */
 #define HVS5_PPF_FITS(src, dst) ((((ULONG)(src) << 16) / (ULONG)(dst)) <= 0x18000)
 
-/* All 60K (Linux's size); the firmware's own planes stay below 0xbc00 */
+/* All 60K words (Linux's size); the firmware's own planes stay below
+ * 0xbc00. A word holds four pixels' worth of a PPF line, where the
+ * firmware allots two, and a plane's share starts on 64 words. */
 #define HVS5_LBM_SIZE           0xf000
-#define HVS5_LBM_BYTES(w)       ((ULONG)(w) * 8)
+#define HVS5_LBM_BYTES(w)       (((ULONG)(w) * 4 + 63) & ~63UL)
 
 /* pixelvalve@..., "brcm,bcm2711-pixelvalveN". PV2 has moved (0x7e807000
  * on BCM283x) and PV3/PV4 are new.
@@ -200,11 +202,11 @@ void vc4_hvs5_dump(struct VideoCoreGfx_staticdata *xsd,
 /* Our own lists live high in list RAM, clear of the firmware's (which
  * ran from word 4 to about word 840) and of the filter kernel at 0xff4.
  * Four slots: the one scanned, the last repointed at, the one waiting for
- * vblank, and the one being written. A slot holds the backdrop, four
- * scaled screens, a scaled overlay and the cursor (100 words). */
+ * vblank, and the one being written. A slot holds the backdrop, every
+ * screen and overlay scaled (15 words each), the cursor and END. */
 #define HVS5_OWN_SLOTS      4
-#define HVS5_OWN_SLOT_BASE  3584
-#define HVS5_OWN_SLOT_STRIDE 120
+#define HVS5_OWN_SLOT_STRIDE 384
+#define HVS5_OWN_SLOT_BASE  (4064 - HVS5_OWN_SLOTS * HVS5_OWN_SLOT_STRIDE)
 
 /* Take the HDMI channel: copy the firmware's live list into a slot of
  * our own, retarget the framebuffer plane and repoint the channel. The

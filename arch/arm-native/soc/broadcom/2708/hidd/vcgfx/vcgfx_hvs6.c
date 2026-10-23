@@ -976,13 +976,13 @@ hide:
 
 /* Line buffer for a scaled plane, in what LBM_SIZE counts: lines of 128
  * words. A line of PPF scaling takes four words per component, four
- * components a pixel, over the narrower of source and destination; a
- * plane not scaled vertically needs none. */
-static ULONG hvs6_lbm_need(ULONG sw, ULONG dw, ULONG sh, ULONG dh)
+ * components a pixel, over the narrower of source and destination. Our
+ * entries scale vertically too, 1:1 or not, so every one needs it. */
+static ULONG hvs6_lbm_need(ULONG sw, ULONG dw)
 {
     ULONG width = (((sw < dw) ? sw : dw) + 3) & ~3UL;
 
-    return (sh == dh) ? 0 : (width * 16 + 127) / 128;
+    return (width * 16 + 127) / 128;
 }
 
 BOOL vc4_hvs6_planes_ok(void)
@@ -1224,7 +1224,7 @@ static ULONG hvs6_build_planes(struct VideoCoreGfx_staticdata *xsd, ULONG list)
             if (!hvs6_clip_scaled(&e->x, &e->y, &e->w, &e->h, &e->sw, &e->sh, &e->phys,
                                   e->pitch, 4, 0, 0, out_w, limit[j]))
                 continue;
-            need = hvs6_lbm_need(e->sw, e->w, e->sh, e->h);
+            need = hvs6_lbm_need(e->sw, e->w);
             if ((lbm + need > lbmsize)
                 || !HVS6_PPF_FITS(e->sw, e->w) || !HVS6_PPF_FITS(e->sh, e->h))
             {
@@ -1341,7 +1341,7 @@ static ULONG hvs6_build_planes(struct VideoCoreGfx_staticdata *xsd, ULONG list)
                     continue;
                 }
                 /* A size the scaler can't make is left out, not shown wrong */
-                need = hvs6_lbm_need(e->sw, e->w, e->sh, e->h);
+                need = hvs6_lbm_need(e->sw, e->w);
                 if (!vc4_hvs6_scales(xsd) || (lbm + need > lbmsize)
                     || !HVS6_PPF_FITS(e->sw, e->w) || !HVS6_PPF_FITS(e->sh, e->h))
                     continue;
