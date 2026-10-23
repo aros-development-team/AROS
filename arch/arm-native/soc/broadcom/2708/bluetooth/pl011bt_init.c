@@ -426,6 +426,29 @@ static int pl011bt_init(struct PL011BTBase *PL011BTBase)
     return TRUE;
 }
 
+/*****************************************************************************
+    NAME
+        unsigned int PL011BTGetAPIVersion(
+
+    SYNOPSIS
+        )
+
+    FUNCTION
+        Return the interface version of pl011bt.resource.
+
+    RESULT
+        PL011BT_API_VERSION, currently 1.
+
+    NOTES
+        Obtain the resource with OpenResource("pl011bt.resource") before
+        calling its functions. A version result describes the software
+        interface; it does not establish that the controller is powered,
+        configured or able to receive data. No ownership claim is required.
+
+    SEE ALSO
+        PL011BTGetCapabilities(), PL011BTClaim()
+
+*****************************************************************************/
 AROS_LH0(unsigned int, PL011BTGetAPIVersion,
     struct PL011BTBase *, PL011BTBase, 1, Pl011bt)
 {
@@ -436,6 +459,38 @@ AROS_LH0(unsigned int, PL011BTGetAPIVersion,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+    NAME
+        unsigned long PL011BTGetCapabilities(
+
+    SYNOPSIS
+        )
+
+    FUNCTION
+        Return the resource's transport capability flags.
+
+    RESULT
+        Bitwise combination of PL011BT_CAP_* values:
+            PRESENT - The resource initialized for a supported peripheral window.
+            RX_INTERRUPT - A receive interrupt handler has been registered.
+            TX_INTERRUPT - Reserved; not set by this implementation.
+            BAUD_CHANGE - UART divisor configuration is implemented.
+            POWER_CONTROL - Controller power-line control is implemented.
+
+    NOTES
+        No ownership claim is required. RX_INTERRUPT is added after successful
+        handler registration during PL011BTConfigure(). It remains set after
+        PL011BTRelease() and does not mean receive interrupts are currently
+        enabled. The flags do not report controller power or UART readiness.
+
+        POWER_CONTROL does not guarantee that a firmware GPIO request can
+        succeed. Check the result of PL011BTSetPower(). RTS/CTS wiring is not
+        reported by this mask.
+
+    SEE ALSO
+        PL011BTGetAPIVersion(), PL011BTConfigure(), PL011BTSetPower()
+
+*****************************************************************************/
 AROS_LH0(unsigned long, PL011BTGetCapabilities,
     struct PL011BTBase *, PL011BTBase, 2, Pl011bt)
 {
@@ -446,6 +501,40 @@ AROS_LH0(unsigned long, PL011BTGetCapabilities,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+    NAME
+        long PL011BTClaim(
+
+    SYNOPSIS
+        void *owner)
+
+    FUNCTION
+        Reserve the Bluetooth UART transport for an owner token.
+
+    INPUTS
+        owner - Non-NULL token identifying the client. The pointer is compared
+            by identity and retained until release; it is not dereferenced.
+            Keep the token unique for the duration of the claim.
+
+    RESULT
+        PL011BT_OK on success, PL011BT_ERR_ARGUMENT for NULL, or
+        PL011BT_ERR_BUSY if any owner already holds the resource, including
+        the same token. Claims are not recursive or reference-counted.
+
+    NOTES
+        Call in task context. May wait for the resource semaphore, but does
+        not wait for an existing owner to release its claim. Claiming does
+        not power or configure the controller and does not clear receive data.
+
+        Use the same token for subsequent operations. Configure the UART
+        before data transfer and arrange a single reader and a single writer.
+        The token does not serialize calls made by the same client. Release
+        the claim with PL011BTRelease() after transfers have stopped.
+
+    SEE ALSO
+        PL011BTConfigure(), PL011BTSetPower(), PL011BTRelease()
+
+*****************************************************************************/
 AROS_LH1(long, PL011BTClaim,
     AROS_LHA(void *, owner, A0),
     struct PL011BTBase *, PL011BTBase, 3, Pl011bt)
@@ -469,6 +558,35 @@ AROS_LH1(long, PL011BTClaim,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+    NAME
+        void PL011BTRelease(
+
+    SYNOPSIS
+        void *owner)
+
+    FUNCTION
+        Disable the UART and release a matching ownership claim.
+
+    INPUTS
+        owner - Token used for a successful PL011BTClaim(). NULL or a token
+            that does not match the current owner has no effect.
+
+    NOTES
+        Call in task context after all client reads and writes have stopped.
+        May wait for the resource semaphore. Disables UART interrupts and the
+        UART, then clears the owner and saved configuration. It does not wait
+        for bytes already accepted for transmission to reach the controller.
+
+        Does not power down the controller, stop its low-power clock, restore
+        pin routing, unregister the interrupt handler or clear the receive
+        ring. If power-down is required, call PL011BTSetPower(owner, 0) before
+        release. No completion status is returned.
+
+    SEE ALSO
+        PL011BTClaim(), PL011BTSetPower(), PL011BTWrite()
+
+*****************************************************************************/
 AROS_LH1(void, PL011BTRelease,
     AROS_LHA(void *, owner, A0),
     struct PL011BTBase *, PL011BTBase, 4, Pl011bt)
@@ -489,6 +607,59 @@ AROS_LH1(void, PL011BTRelease,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+    NAME
+        long PL011BTConfigure(
+
+    SYNOPSIS
+        void *owner, unsigned long baud, unsigned long flags)
+
+    FUNCTION
+        Configure the Bluetooth UART and reset its receive path.
+
+    INPUTS
+        owner - Non-NULL token holding the resource claim.
+        baud - Nonzero requested bit rate. The rounded clock divisor must
+            have an integer part from 1 through 65535.
+        flags - PL011BT_CONFIG_RTS_CTS requests hardware flow control. It is
+            enabled only when the resource considers those signals wired.
+            Other bits have no effect on hardware configuration.
+
+    RESULT
+        PL011BT_OK after UART setup; PL011BT_ERR_ARGUMENT for NULL owner,
+        zero baud or an unusable divisor; PL011BT_ERR_NOT_OWNER for a token
+        without the claim; PL011BT_ERR_TIMEOUT if clock or UART busy polling
+        exhausts its iteration limit. Success does not confirm receive IRQ
+        registration; check PL011BT_CAP_RX_INTERRUPT afterward.
+
+    NOTES
+        Call in task context with client transfers stopped. May wait for the
+        resource semaphore. Sets up the controller's 32.768 kHz clock and pin
+        routing, then enables 8-bit UART data, no parity, one stop bit and
+        FIFOs. Does not change controller power or negotiate its baud rate.
+        Coordinate baud changes and controller startup with the higher layer.
+
+        Reconfiguration discards queued receive data and resets the overflow
+        count. The hardware FIFO drain is bounded; remaining input is not
+        reported. RTS/CTS requests may be silently ignored when wiring is
+        absent. Unknown flag bits are retained but otherwise ignored.
+
+        Clock and UART busy waits are bounded by iteration counts, not elapsed
+        time. Failed calls can leave clock, pins or UART state changed. An
+        invalid divisor is detected after disabling the UART and clearing the
+        receive ring. There is no rollback to the previous configuration.
+
+    BUGS
+        Receive-handler registration failure still returns PL011BT_OK.
+        PL011BTRead() has no FIFO polling fallback and cannot receive new
+        bytes without that handler. Divisor arithmetic is not checked for
+        overflow before range validation.
+
+    SEE ALSO
+        PL011BTClaim(), PL011BTGetCapabilities(), PL011BTSetPower(),
+        PL011BTRead(), PL011BTWrite()
+
+*****************************************************************************/
 AROS_LH3(long, PL011BTConfigure,
     AROS_LHA(void *, owner, A0),
     AROS_LHA(unsigned long, baud, D0),
@@ -614,6 +785,47 @@ AROS_LH3(long, PL011BTConfigure,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+    NAME
+        long PL011BTSetPower(
+
+    SYNOPSIS
+        void *owner, unsigned long enabled)
+
+    FUNCTION
+        Set the Bluetooth controller's power-enable line.
+
+    INPUTS
+        owner - Non-NULL token holding the resource claim.
+        enabled - Zero to disable the controller; nonzero to enable it.
+
+    RESULT
+        PL011BT_OK after issuing the GPIO change, PL011BT_ERR_ARGUMENT for
+        NULL owner, PL011BT_ERR_NOT_OWNER for a token without the claim, or
+        PL011BT_ERR_UNAVAILABLE when the firmware GPIO path cannot complete
+        its request. Success does not confirm controller readiness.
+
+    NOTES
+        Call in task context. May wait for the resource semaphore. Uses the
+        power pin and polarity determined during initialization, through a
+        SoC GPIO or firmware mailbox. The SoC path provides no hardware
+        acknowledgement; firmware response checks do not verify pin readback.
+
+        Power changes do not reconfigure the UART, clear receive data or
+        release ownership. Disabling power can interrupt controller activity
+        and discard its volatile state. The caller must coordinate transfers,
+        startup delays, reset and any firmware reload required by the radio.
+        Repeated calls issue the requested GPIO operations again.
+
+    BUGS
+        The firmware path inherits mailbox waits without an overall deadline
+        and can block while holding the resource semaphore. A failed request
+        can leave GPIO configuration partially changed.
+
+    SEE ALSO
+        PL011BTClaim(), PL011BTConfigure(), PL011BTRelease()
+
+*****************************************************************************/
 AROS_LH2(long, PL011BTSetPower,
     AROS_LHA(void *, owner, A0),
     AROS_LHA(unsigned long, enabled, D0),
@@ -651,6 +863,44 @@ AROS_LH2(long, PL011BTSetPower,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+    NAME
+        long PL011BTWrite(
+
+    SYNOPSIS
+        void *owner, const void *data, unsigned long length)
+
+    FUNCTION
+        Write as many raw bytes as the UART transmit FIFO currently accepts.
+
+    INPUTS
+        owner - Non-NULL token holding the resource claim.
+        data - Readable byte buffer, or NULL when length is zero.
+        length - Maximum bytes to submit, no greater than LONG_MAX. The buffer
+            must contain at least this many bytes and remain valid until return.
+
+    RESULT
+        Number of bytes accepted, from zero through length; or
+        PL011BT_ERR_ARGUMENT for NULL owner or NULL data with nonzero length,
+        or PL011BT_ERR_NOT_OWNER for a token without the claim.
+        Zero is a valid short write, not an error.
+
+    NOTES
+        Requires a successfully configured UART and the appropriate controller
+        power state; these are not checked. Stops when the FIFO is full and
+        does not wait for room or transmission completion. Retry only the
+        unaccepted suffix, with a caller-defined retry or timeout policy.
+
+        No framing, packet boundaries or HCI status are added. Accepted bytes
+        may still be queued in the UART when the function returns. The source
+        buffer is not retained. Serialize writers and prevent configuration,
+        power changes or release from racing with this call; it does not take
+        the resource semaphore.
+
+    SEE ALSO
+        PL011BTConfigure(), PL011BTRead(), PL011BTRelease()
+
+*****************************************************************************/
 AROS_LH3(long, PL011BTWrite,
     AROS_LHA(void *, owner, A0),
     AROS_LHA(const void *, data, A1),
@@ -680,6 +930,51 @@ AROS_LH3(long, PL011BTWrite,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+    NAME
+        long PL011BTRead(
+
+    SYNOPSIS
+        void *owner, void *data, unsigned long capacity)
+
+    FUNCTION
+        Remove available raw bytes from the interrupt-fed receive ring.
+
+    INPUTS
+        owner - Non-NULL token holding the resource claim.
+        data - Writable byte buffer, or NULL when capacity is zero.
+        capacity - Maximum bytes to receive, no greater than LONG_MAX. The
+            buffer must provide at least this many bytes until return.
+
+    RESULT
+        Number of bytes copied, from zero through capacity; or
+        PL011BT_ERR_ARGUMENT for NULL owner or NULL data with nonzero capacity,
+        or PL011BT_ERR_NOT_OWNER for a token without the claim.
+        Zero means no bytes were copied, not end of stream.
+
+    NOTES
+        Returns without waiting for new input. Requires configuration with a
+        registered receive interrupt handler; verify PL011BT_CAP_RX_INTERRUPT
+        after PL011BTConfigure(). The ring holds at most 8191 unread bytes.
+        Drain it promptly to limit data loss. There is no client notification
+        or wait operation in this interface.
+
+        Transfers raw bytes without H:4 framing. Consumed bytes are removed
+        from the ring. The destination is not retained. Use one reader and
+        prevent configuration, power changes or release from racing with the
+        call; it does not take the resource semaphore.
+
+    BUGS
+        UART error status and receive overflow are not returned to the caller.
+        Bytes marked with UART errors can be delivered as ordinary data, and
+        ring overflow can lose bytes. Diagnostic logging is not a reliable
+        error-reporting interface. If interrupt registration fails, there is
+        no direct FIFO read fallback.
+
+    SEE ALSO
+        PL011BTConfigure(), PL011BTGetCapabilities(), PL011BTWrite()
+
+*****************************************************************************/
 AROS_LH3(long, PL011BTRead,
     AROS_LHA(void *, owner, A0),
     AROS_LHA(void *, data, A1),
