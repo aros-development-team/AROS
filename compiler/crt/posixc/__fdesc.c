@@ -250,7 +250,11 @@ int __getfdslot(int wanted_fd)
            before stdc.library's relbase is available. */
         tmp = AllocPooled(FD_POOL(PosixCBase), (wanted_fd+1)*sizeof(fdesc *));
 
-        if (!tmp) { FD_UNLOCK(PosixCBase); return -1; }
+        if (!tmp) {
+            FD_UNLOCK(PosixCBase);
+            __set_errno(PosixCBase, ENOMEM);
+            return -1;
+        }
 
         if (FD_ARRAY(PosixCBase))
         {
