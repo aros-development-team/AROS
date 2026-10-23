@@ -146,8 +146,11 @@ static struct
  *
  * An app that stops presenting (draws only on change) would leave its
  * last frame queued forever, so a vblank with no present for a whole
- * frame has v3d_ovl_task put it on. Under sd->ovl_lock. */
-static struct
+ * frame has v3d_ovl_task put it on.
+ *
+ * One per session, each its own plane under its own key (its address).
+ * Under sd->ovl_lock. */
+struct v3d_ovl
 {
     struct pipe_resource *rsc;
     struct v3d_bo  *onplane;        /* page the overlay currently scans */
@@ -162,7 +165,7 @@ static struct
     struct pipe_resource *refused;  /* overlay said no (scaled desktop /
                                      * no takeover): don't retry per frame */
     ULONG           busy_skip;      /* presents before the next entry try
-                                     * while a video layer holds the plane */
+                                     * while the planes are taken */
     OOP_Object     *bm;
     LONG            x, y;           /* where the last present put it */
     ULONG           w, h, stride;
@@ -170,9 +173,10 @@ static struct
     volatile ULONG  vbl_gen;        /* gen at the last vblank */
     volatile ULONG  flush_gen;      /* gen the task was woken for */
     BOOL            flushed;        /* the task emptied the queue */
-    ULONG           owner;          /* session id of rsc's screen */
     BOOL            stale;          /* plane still up for a dead session */
-} v3d_ovl;
+};
+
+static struct v3d_ovl v3d_ovls[V3D_MAX_SESSIONS];
 
 /* The session a pipe screen belongs to, 0 for none. */
 static ULONG v3d_session_of(struct V3DData *sd, APTR screen)
@@ -353,10 +357,10 @@ static void v3d_scan_unbind(struct v3d_resource *rsc)
     v3d_scan_release();
 }
 
-/* Hand vcgfx a descriptor under our key; it returns the outcome and
- * the commit to wait for in it. */
-static void v3d_ovl_set(struct V3DData *sd, OOP_Object *bmobj,
-                        struct vc4gfx_overlay *desc)
+/* Hand vcgfx a descriptor under the session's key; it returns the
+ * outcome and the commit to wait for in it. */
+static void v3d_ovl_set(struct V3DData *sd, struct v3d_ovl *ov,
+                        OOP_Object *bmobj, struct vc4gfx_overlay *desc)
 {
     struct TagItem ovltags[] =
     {
@@ -364,41 +368,41 @@ static void v3d_ovl_set(struct V3DData *sd, OOP_Object *bmobj,
         { TAG_DONE, 0 }
     };
 
-    desc->ovl_Client = &v3d_ovl;
+    desc->ovl_Client = ov;
     desc->ovl_Result = 0;
     OOP_SetAttrs(bmobj, ovltags);
 }
 
 /* Retire a NOWAIT Set; normally its vblank has already passed. */
-static void v3d_ovl_latch_wait(struct V3DData *sd)
+static void v3d_ovl_latch_wait(struct V3DData *sd, struct v3d_ovl *ov)
 {
     struct vc4gfx_overlay desc = { 0 };
 
-    if (!v3d_ovl.latch_due)
+    if (!ov->latch_due)
         return;
-    if (v3d_ovl.bm && sd->hiddVCGfxBMAB)
+    if (ov->bm && sd->hiddVCGfxBMAB)
     {
         desc.ovl_Flags = VC4GFX_OVL_LATCHWAIT;
-        desc.ovl_Armed = v3d_ovl.armed;
-        v3d_ovl_set(sd, v3d_ovl.bm, &desc);
+        desc.ovl_Armed = ov->armed;
+        v3d_ovl_set(sd, ov, ov->bm, &desc);
     }
-    v3d_ovl.latch_due = FALSE;
+    ov->latch_due = FALSE;
 }
 
-/* Take our plane down; `onplane` shows until the returned commit latches. */
-static void v3d_ovl_clear(struct V3DData *sd, OOP_Object *bmobj)
+/* Take the plane down; `onplane` shows until the returned commit latches. */
+static void v3d_ovl_clear(struct V3DData *sd, struct v3d_ovl *ov, OOP_Object *bmobj)
 {
     struct vc4gfx_overlay desc = { 0 };
 
     desc.ovl_Flags = VC4GFX_OVL_HIDE;
-    v3d_ovl_set(sd, bmobj, &desc);
-    v3d_ovl.armed = desc.ovl_Armed;
+    v3d_ovl_set(sd, ov, bmobj, &desc);
+    ov->armed = desc.ovl_Armed;
 }
 
-/* Show a BO on the HVS overlay plane at fb coords x,y. A NOWAIT Set
+/* Show a BO on the session's HVS plane at fb coords x,y. A NOWAIT Set
  * returns before the vblank latch. */
-static ULONG v3d_show_overlay(struct V3DData *sd, OOP_Object *bmobj,
-                             struct v3d_bo *bo, ULONG stride,
+static ULONG v3d_show_overlay(struct V3DData *sd, struct v3d_ovl *ov,
+                             OOP_Object *bmobj, struct v3d_bo *bo, ULONG stride,
                              LONG x, LONG y, ULONG w, ULONG h)
 {
     struct vc4gfx_overlay desc = { 0 };
@@ -428,42 +432,44 @@ static ULONG v3d_show_overlay(struct V3DData *sd, OOP_Object *bmobj,
     desc.ovl_DestH  = 0;
     desc.ovl_Flags  = V3D_OVL_NOWAIT ? VC4GFX_OVL_NOWAIT : 0;
 
-    v3d_ovl_set(sd, bmobj, &desc);
+    v3d_ovl_set(sd, ov, bmobj, &desc);
     if (desc.ovl_Result == 1)
-        v3d_ovl.armed = desc.ovl_Armed;
+        ov->armed = desc.ovl_Armed;
     return desc.ovl_Result;
 }
 
 /* Hide the plane but keep the pages: obscure/reveal cycles must not
  * allocate or free BOs. */
-static void v3d_ovl_suspend(struct V3DData *sd)
+static void v3d_ovl_suspend(struct V3DData *sd, struct v3d_ovl *ov)
 {
     /* Clearing over an unlatched Set would leave `retiring` unretired. */
-    v3d_ovl_latch_wait(sd);
+    v3d_ovl_latch_wait(sd, ov);
 
-    if (v3d_ovl.shown && v3d_ovl.bm)
+    if (ov->shown && ov->bm)
     {
-        v3d_ovl_clear(sd, v3d_ovl.bm);
+        v3d_ovl_clear(sd, ov, ov->bm);
         /* `onplane` shows until the clear latches. Not waited for here
          * (obscure must stay cheap); whoever frees the pages waits. */
-        v3d_ovl.latch_due = TRUE;
+        ov->latch_due = TRUE;
     }
-    v3d_ovl.shown = FALSE;
+    ov->shown = FALSE;
 
     /* Retire the queued frame: it goes stale while the plane is hidden
      * (the blit path is drawing meanwhile), and showing it on reveal
      * would put one old image on screen. Park it as the spare instead,
      * so the ring refills exactly as it does at entry. */
-    if (v3d_ovl.queued)
+    if (ov->queued)
     {
-        if (v3d_ovl.freep)
-            v3d_bo_unreference(&v3d_ovl.queued);
+        if (ov->freep)
+            v3d_bo_unreference(&ov->queued);
         else
-            v3d_ovl.freep = v3d_ovl.queued;
-        v3d_ovl.queued = NULL;
-        v3d_ovl.queued_seqno = 0;
+            ov->freep = ov->queued;
+        ov->queued = NULL;
+        ov->queued_seqno = 0;
     }
 }
+
+static void v3d_ovl_vblank(APTR data);
 
 static struct vc4gfx_vblank v3d_ovl_vbl;
 static BOOL v3d_ovl_vbl_armed;      /* vcgfx may call v3d_ovl_vblank() */
@@ -481,121 +487,153 @@ static void v3d_ovl_set_vblank(struct V3DData *sd, OOP_Object *bmobj,
     v3d_ovl_vbl_armed = (vbl != NULL);
 }
 
+/* The vblank callback is up while any session has an overlay; changing
+ * it needs a live bitmap. */
+static void v3d_ovl_vbl_update(struct V3DData *sd, OOP_Object *bmobj)
+{
+    BOOL want = FALSE;
+    ULONG i;
+
+    for (i = 0; i < V3D_MAX_SESSIONS; i++)
+        want |= (v3d_ovls[i].rsc != NULL);
+    if (!bmobj || (want == v3d_ovl_vbl_armed))
+        return;
+
+    v3d_ovl_vbl.vbl_Func = v3d_ovl_vblank;
+    v3d_ovl_vbl.vbl_Data = sd;
+    v3d_ovl_set_vblank(sd, bmobj, want ? &v3d_ovl_vbl : NULL);
+}
+
 /* Raw drop, for a session whose Mesa objects are gone: its pages are
  * swept with its BOs, and the plane is left for the next present. So is
  * the vblank callback, as taking it off needs a live bitmap: with nothing
  * queued it does nothing, and v3d_ovl_shutdown() keeps us loaded until a
  * present has taken it off. */
-static void v3d_ovl_forget(void)
+static void v3d_ovl_forget(struct v3d_ovl *ov)
 {
-    v3d_ovl.rsc = NULL;
-    v3d_ovl.onplane = NULL;
-    v3d_ovl.queued = NULL;
-    v3d_ovl.freep = NULL;
-    v3d_ovl.retiring = NULL;
-    v3d_ovl.queued_seqno = 0;
-    v3d_ovl.latch_due = FALSE;
-    v3d_ovl.page_handle = 0;
-    v3d_ovl.shown = FALSE;
-    v3d_ovl.refused = NULL;
-    v3d_ovl.bm = NULL;
-    v3d_ovl.stale = TRUE;
+    ov->rsc = NULL;
+    ov->onplane = NULL;
+    ov->queued = NULL;
+    ov->freep = NULL;
+    ov->retiring = NULL;
+    ov->queued_seqno = 0;
+    ov->latch_due = FALSE;
+    ov->page_handle = 0;
+    ov->shown = FALSE;
+    ov->refused = NULL;
+    ov->bm = NULL;
+    ov->stale = TRUE;
 }
 
 /* Take down a plane nobody owns any more, through a bitmap that is alive. */
-static void v3d_ovl_hide(struct V3DData *sd, OOP_Object *bmobj)
+static void v3d_ovl_hide(struct V3DData *sd, struct v3d_ovl *ov, OOP_Object *bmobj)
 {
-    v3d_ovl_set_vblank(sd, bmobj, NULL);
-    v3d_ovl_clear(sd, bmobj);
-    v3d_ovl.stale = FALSE;
+    v3d_ovl_clear(sd, ov, bmobj);
+    ov->stale = FALSE;
+    v3d_ovl_vbl_update(sd, bmobj);
 }
 
-/* A video layer holds the plane: try entering again only now and then. */
-static BOOL v3d_ovl_held(void)
+/* The plane is held or the budget used: try entering again only now and
+ * then. */
+static BOOL v3d_ovl_held(struct v3d_ovl *ov)
 {
-    if (!v3d_ovl.busy_skip)
+    if (!ov->busy_skip)
         return FALSE;
-    v3d_ovl.busy_skip--;
+    ov->busy_skip--;
     return TRUE;
 }
 
 /* Full teardown: resource changed or the session is going away. */
-static void v3d_ovl_exit(struct V3DData *sd)
+static void v3d_ovl_exit(struct V3DData *sd, struct v3d_ovl *ov)
 {
-    if (v3d_ovl.bm)
-        v3d_ovl_set_vblank(sd, v3d_ovl.bm, NULL);
-    v3d_ovl_suspend(sd);
+    OOP_Object *bm = ov->bm;
+
+    v3d_ovl_suspend(sd, ov);
     /* The clear must latch before the pages go back to Mesa. */
-    v3d_ovl_latch_wait(sd);
-    if (v3d_ovl.onplane)
-        v3d_bo_unreference(&v3d_ovl.onplane);
-    if (v3d_ovl.queued)
-        v3d_bo_unreference(&v3d_ovl.queued);
-    if (v3d_ovl.freep)
-        v3d_bo_unreference(&v3d_ovl.freep);
-    if (v3d_ovl.retiring)
-        v3d_bo_unreference(&v3d_ovl.retiring);
-    v3d_ovl.queued_seqno = 0;
-    v3d_ovl.latch_due = FALSE;
-    v3d_ovl.rsc = NULL;
-    v3d_ovl.page_handle = 0;
-    v3d_ovl.bm = NULL;
+    v3d_ovl_latch_wait(sd, ov);
+    if (ov->onplane)
+        v3d_bo_unreference(&ov->onplane);
+    if (ov->queued)
+        v3d_bo_unreference(&ov->queued);
+    if (ov->freep)
+        v3d_bo_unreference(&ov->freep);
+    if (ov->retiring)
+        v3d_bo_unreference(&ov->retiring);
+    ov->queued_seqno = 0;
+    ov->latch_due = FALSE;
+    ov->rsc = NULL;
+    ov->page_handle = 0;
+    ov->bm = NULL;
+    v3d_ovl_vbl_update(sd, bm);
 }
 
 /* Record a newly queued frame and where it goes. */
-static void v3d_ovl_queued_at(LONG x, LONG y, ULONG w, ULONG h, ULONG stride)
+static void v3d_ovl_queued_at(struct v3d_ovl *ov, LONG x, LONG y, ULONG w, ULONG h,
+                              ULONG stride)
 {
-    v3d_ovl.x = x;
-    v3d_ovl.y = y;
-    v3d_ovl.w = w;
-    v3d_ovl.h = h;
-    v3d_ovl.stride = stride;
-    v3d_ovl.gen++;
+    ov->x = x;
+    ov->y = y;
+    ov->w = w;
+    ov->h = h;
+    ov->stride = stride;
+    ov->gen++;
 }
 
 /* Put the queued frame on, as the next present would have. That present
  * then takes the refill path. Caller holds ovl_lock. */
-static void v3d_ovl_flush(struct V3DData *sd)
+static void v3d_ovl_flush(struct V3DData *sd, struct v3d_ovl *ov)
 {
     struct v3d_bo *off;
 
-    if (!v3d_ovl.queued || !v3d_ovl.shown || v3d_ovl.gen != v3d_ovl.flush_gen)
+    if (!ov->queued || !ov->shown || ov->gen != ov->flush_gen)
         return;
 
-    v3d_hw_wait_seqno(sd, v3d_ovl.queued_seqno);
-    v3d_ovl_latch_wait(sd);
-    if (v3d_show_overlay(sd, v3d_ovl.bm, v3d_ovl.queued, v3d_ovl.stride,
-                         v3d_ovl.x, v3d_ovl.y, v3d_ovl.w, v3d_ovl.h) != 1)
+    v3d_hw_wait_seqno(sd, ov->queued_seqno);
+    v3d_ovl_latch_wait(sd, ov);
+    if (v3d_show_overlay(sd, ov, ov->bm, ov->queued, ov->stride,
+                         ov->x, ov->y, ov->w, ov->h) != 1)
         return;
 
     /* `retiring` latched above: it becomes the spare the refill takes. */
-    off = v3d_ovl.onplane;
-    v3d_ovl.onplane = v3d_ovl.queued;
-    v3d_ovl.queued = NULL;
-    v3d_ovl.queued_seqno = 0;
-    v3d_ovl.freep = v3d_ovl.retiring;
-    v3d_ovl.retiring = off;
-    v3d_ovl.latch_due = V3D_OVL_NOWAIT;
-    v3d_ovl.flushed = TRUE;
+    off = ov->onplane;
+    ov->onplane = ov->queued;
+    ov->queued = NULL;
+    ov->queued_seqno = 0;
+    ov->freep = ov->retiring;
+    ov->retiring = off;
+    ov->latch_due = V3D_OVL_NOWAIT;
+    ov->flushed = TRUE;
 }
 
-/* Interrupt context, every vblank while the overlay is up. */
+/* Interrupt context, every vblank while an overlay is up: a session with
+ * a frame queued and no present for a whole frame gets the task. */
 static void v3d_ovl_vblank(APTR data)
 {
     struct V3DData *sd = data;
-    ULONG gen = v3d_ovl.gen;
+    BOOL wake = FALSE;
+    ULONG i;
 
-    if (gen != v3d_ovl.vbl_gen)
-        v3d_ovl.vbl_gen = gen;
-    else if (gen != v3d_ovl.flush_gen && v3d_ovl.queued && sd->ovl_task)
+    for (i = 0; i < V3D_MAX_SESSIONS; i++)
     {
-        v3d_ovl.flush_gen = gen;
-        Signal(sd->ovl_task, SIGBREAKF_CTRL_F);
+        struct v3d_ovl *ov = &v3d_ovls[i];
+        ULONG gen = ov->gen;
+
+        if (gen != ov->vbl_gen)
+            ov->vbl_gen = gen;
+        else if (gen != ov->flush_gen && ov->queued)
+        {
+            ov->flush_gen = gen;
+            wake = TRUE;
+        }
     }
+    if (wake && sd->ovl_task)
+        Signal(sd->ovl_task, SIGBREAKF_CTRL_F);
 }
 
 static void v3d_ovl_task(struct V3DData *sd)
 {
+    ULONG i;
+
     for (;;)
     {
         ULONG sigs = Wait(SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_F);
@@ -603,7 +641,8 @@ static void v3d_ovl_task(struct V3DData *sd)
         if (sigs & SIGBREAKF_CTRL_C)
             break;
         ObtainSemaphore(&sd->ovl_lock);
-        v3d_ovl_flush(sd);
+        for (i = 0; i < V3D_MAX_SESSIONS; i++)
+            v3d_ovl_flush(sd, &v3d_ovls[i]);
         ReleaseSemaphore(&sd->ovl_lock);
     }
 
@@ -678,8 +717,8 @@ static void v3d_sweep_dead(struct V3DData *sd)
         ObtainSemaphore(&sd->ovl_lock);
         if (v3d_scan.rsc && (v3d_scan.owner == i + 1))
             v3d_scan_forget();
-        if (v3d_ovl.rsc && (v3d_ovl.owner == i + 1))
-            v3d_ovl_forget();
+        if (v3d_ovls[i].rsc)
+            v3d_ovl_forget(&v3d_ovls[i]);
         ReleaseSemaphore(&sd->ovl_lock);
 
         v3d_release_session(sd, i + 1);
@@ -815,8 +854,8 @@ VOID HiddV3D__Hidd_Gallium__DestroyPipeScreen(OOP_Class *cl, OOP_Object *o,
     /* Only the present state this screen owns: another app keeps its
      * overlay or its scanout pages. */
     ObtainSemaphore(&sd->ovl_lock);
-    if (v3d_ovl.rsc && (v3d_ovl.owner == sid))
-        v3d_ovl_exit(sd);
+    if (sid && v3d_ovls[sid - 1].rsc)
+        v3d_ovl_exit(sd, &v3d_ovls[sid - 1]);
     if (v3d_scan.rsc && (v3d_scan.owner == sid))
         v3d_scan_release();
     ReleaseSemaphore(&sd->ovl_lock);
@@ -999,7 +1038,8 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
     OOP_Object *scr_bm_obj;
     ULONG stride;
     BOOL fullscreen, bound, windowed, scan_free, multi = FALSE;
-    ULONG sid;
+    struct v3d_ovl *ov;
+    ULONG sid, i;
     BOOL enter_scanout = FALSE, detach_after_blit = FALSE;
     BOOL copied = FALSE;
     UBYTE *base;
@@ -1033,30 +1073,30 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
     ObtainSemaphore(&sd->ovl_lock);
     scr_bm_obj = HIDD_BM_OBJ(rp->BitMap);
     sid = v3d_session_of(sd, rsc->base.screen);
+    ov = sid ? &v3d_ovls[sid - 1] : NULL;
 
-    if (v3d_ovl.stale && !v3d_ovl.rsc)
-        v3d_ovl_hide(sd, scr_bm_obj);
+    for (i = 0; i < V3D_MAX_SESSIONS; i++)
+    {
+        if (v3d_ovls[i].stale && !v3d_ovls[i].rsc)
+            v3d_ovl_hide(sd, &v3d_ovls[i], scr_bm_obj);
+    }
 
     /* Drop this session's stale state when its bound resource went away
      * (resize). Another session's binding stays: it keeps the plane or
      * the pages, and this one blits. */
     if (v3d_scan.rsc && (v3d_scan.owner == sid) && v3d_scan.rsc != &rsc->base)
         v3d_scan_release();
-    if (v3d_ovl.rsc && (v3d_ovl.owner == sid) && v3d_ovl.rsc != &rsc->base)
-        v3d_ovl_exit(sd);
-    if (v3d_ovl.refused && v3d_ovl.refused != &rsc->base)
-        v3d_ovl.refused = NULL;
+    if (ov && ov->rsc && ov->rsc != &rsc->base)
+        v3d_ovl_exit(sd, ov);
+    if (ov && ov->refused && ov->refused != &rsc->base)
+        ov->refused = NULL;
     scan_free = !v3d_scan.rsc || (v3d_scan.owner == sid);
 
-    /* One plane, several apps: everyone blits, and whoever holds the
-     * plane gives it up. */
+    /* Each session has a plane of its own, but the framebuffer pages are
+     * one: with several apps, nobody flips. */
     multi = (v3d_live_apps(sd) > 1);
     if (multi)
-    {
-        if (v3d_ovl.rsc && (v3d_ovl.owner == sid))
-            v3d_ovl_exit(sd);
         scan_free = FALSE;
-    }
 
     fullscreen = (xSrc == 0 && ySrc == 0 && xDest == 0 && yDest == 0 &&
                   L->bounds.MinX == 0 && L->bounds.MinY == 0 &&
@@ -1069,7 +1109,7 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
      * the HVS plane cannot serve still gets a zero-copy path. */
     if (fullscreen && scan_free
         && (!V3D_OVERLAY_ENABLE || !V3D_PREFER_OVERLAY
-            || v3d_ovl.refused == &rsc->base))
+            || !ov || ov->refused == &rsc->base))
     {
         struct v3d_scanout_info so;
 #if V3D_PROFILE
@@ -1153,8 +1193,8 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
                 bug("[V3D] present: entering scanout mode %ldx%ld "
                     "pitch=%u pages %08x/%08x\n", (long)xSize, (long)ySize,
                     (unsigned)so.pitch, so.name[0], so.name[1]);
-                if (v3d_ovl.rsc == &rsc->base)
-                    v3d_ovl_exit(sd);
+                if (ov && ov->rsc == &rsc->base)
+                    v3d_ovl_exit(sd, ov);
                 enter_scanout = TRUE;
             }
         }
@@ -1199,7 +1239,7 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
      * case on a non-native mode. Gating it on !fullscreen sent exactly
      * that case to the CPU blit instead.
      */
-    if (!bound && !detach_after_blit && !enter_scanout)
+    if (ov && !bound && !detach_after_blit && !enter_scanout)
     {
         LONG absX = L->bounds.MinX + xDest;
         LONG absY = L->bounds.MinY + yDest;
@@ -1211,15 +1251,15 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
                     L->ClipRect && !L->ClipRect->Next &&
                     !L->ClipRect->lobs);
 
-        if (v3d_ovl.rsc == &rsc->base)
+        if (ov->rsc == &rsc->base)
         {
-            if (windowed && rsc->bo->handle == v3d_ovl.page_handle)
+            if (windowed && rsc->bo->handle == ov->page_handle)
             {
                 ULONG shown;
 #if V3D_PROFILE
                 ULONG t0 = V3D_NOW_US(), t1;
 #endif
-                if (!v3d_ovl.queued)
+                if (!ov->queued)
                 {
                     /* The ring only empties at entry, after a suspend,
                      * or when v3d_ovl_task put an idle app's frame on.
@@ -1227,24 +1267,24 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
                      * dropped. */
                     static ULONG refills = 0;
 
-                    if (!v3d_ovl.flushed
+                    if (!ov->flushed
                         && (++refills <= 8 || (refills & 63) == 0))
                         bug("[V3D] present: overlay ring refill #%u "
                             "(a present showed nothing new)\n",
                             (unsigned)refills);
-                    v3d_ovl.flushed = FALSE;
+                    ov->flushed = FALSE;
 
                     /* Ring not full yet (the present right after entry,
                      * or after a reveal): queue the frame just rendered,
                      * take the parked page as the next target, and leave
                      * the plane showing what it already has. */
-                    v3d_ovl.queued = rsc->bo;
-                    v3d_ovl.queued_seqno = sd->seqno;
-                    v3d_ovl_queued_at(absX, absY, xSize, ySize, stride);
-                    rsc->bo = v3d_ovl.freep;
-                    v3d_ovl.freep = NULL;
+                    ov->queued = rsc->bo;
+                    ov->queued_seqno = sd->seqno;
+                    v3d_ovl_queued_at(ov, absX, absY, xSize, ySize, stride);
+                    rsc->bo = ov->freep;
+                    ov->freep = NULL;
                     rsc->slices[0].offset = 0;
-                    v3d_ovl.page_handle = rsc->bo->handle;
+                    ov->page_handle = rsc->bo->handle;
                     ReleaseSemaphore(&sd->ovl_lock);
                     UnlockLayerRom(L);
                     return TRUE;
@@ -1253,21 +1293,21 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
                 /* Show the PREVIOUS frame. Its jobs ran while this one
                  * was being built, so this wait is normally a no-op -
                  * that is the whole point of the third page. */
-                v3d_hw_wait_seqno(sd, v3d_ovl.queued_seqno);
+                v3d_hw_wait_seqno(sd, ov->queued_seqno);
 
                 /* Before the next Set, or this waits for its latch
                  * instead; `retiring` is off-screen after this. */
-                v3d_ovl_latch_wait(sd);
+                v3d_ovl_latch_wait(sd, ov);
 #if V3D_PROFILE
                 t1 = V3D_NOW_US();
 #endif
-                shown = v3d_show_overlay(sd, scr_bm_obj, v3d_ovl.queued, stride,
+                shown = v3d_show_overlay(sd, ov, scr_bm_obj, ov->queued, stride,
                                          absX, absY, xSize, ySize);
                 if (shown == 1)
                 {
                     /* Rotate: the page leaving the plane parks in
                      * `retiring`; the one parked last time is rendered. */
-                    struct v3d_bo *off = v3d_ovl.onplane;
+                    struct v3d_bo *off = ov->onplane;
                     static ULONG n = 0;
 
                     /* Twice, at startup, and never again: one serial
@@ -1314,26 +1354,26 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
                     }
 #endif
 
-                    v3d_ovl.onplane = v3d_ovl.queued;
-                    v3d_ovl.queued = rsc->bo;
-                    v3d_ovl.queued_seqno = sd->seqno;
-                    v3d_ovl_queued_at(absX, absY, xSize, ySize, stride);
-                    v3d_ovl.shown = TRUE;
-                    v3d_ovl.bm = scr_bm_obj;
-                    v3d_ovl.latch_due = V3D_OVL_NOWAIT;
-                    rsc->bo = v3d_ovl.retiring;
-                    v3d_ovl.retiring = off;
+                    ov->onplane = ov->queued;
+                    ov->queued = rsc->bo;
+                    ov->queued_seqno = sd->seqno;
+                    v3d_ovl_queued_at(ov, absX, absY, xSize, ySize, stride);
+                    ov->shown = TRUE;
+                    ov->bm = scr_bm_obj;
+                    ov->latch_due = V3D_OVL_NOWAIT;
+                    rsc->bo = ov->retiring;
+                    ov->retiring = off;
                     rsc->slices[0].offset = 0;
-                    v3d_ovl.page_handle = rsc->bo->handle;
+                    ov->page_handle = rsc->bo->handle;
                     ReleaseSemaphore(&sd->ovl_lock);
                     UnlockLayerRom(L);
                     return TRUE;
                 }
                 if (shown == VC4GFX_OVL_BUSY)
                 {
-                    /* A video layer holds the plane: blit and keep the
+                    /* The planes are taken: blit and keep the
                      * pages, as when obscured. */
-                    v3d_ovl_suspend(sd);
+                    v3d_ovl_suspend(sd, ov);
                 }
                 else
                 {
@@ -1341,24 +1381,24 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
                      * change): tear down, don't retry for this resource. */
                     bug("[V3D] present: overlay refused mid-session, "
                         "back to blitting\n");
-                    v3d_ovl_exit(sd);
-                    v3d_ovl.refused = &rsc->base;
+                    v3d_ovl_exit(sd, ov);
+                    ov->refused = &rsc->base;
                 }
             }
             else if (!windowed)
             {
                 /* Obscured: hide the plane, keep the pages, blit. */
-                v3d_ovl_suspend(sd);
+                v3d_ovl_suspend(sd, ov);
             }
             else
             {
                 /* Mesa replaced the BO under us - bookkeeping void. */
-                v3d_ovl_exit(sd);
+                v3d_ovl_exit(sd, ov);
             }
         }
-        else if (V3D_OVERLAY_ENABLE && windowed && !v3d_ovl.rsc && !multi
-                 && rsc->slices[0].size && v3d_ovl.refused != &rsc->base
-                 && !v3d_ovl_held())
+        else if (V3D_OVERLAY_ENABLE && windowed && !ov->rsc
+                 && rsc->slices[0].size && ov->refused != &rsc->base
+                 && !v3d_ovl_held(ov))
         {
             /* Three more pages: the next render target, a parked spare,
              * and a latch-free seed for `retiring`. */
@@ -1381,25 +1421,25 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
                 /* Entry frame only: nothing is queued yet, so this one
                  * has to be waited for before it goes on the plane. */
                 v3d_wait_idle(sd);
-                shown = v3d_show_overlay(sd, scr_bm_obj, rsc->bo, stride,
+                shown = v3d_show_overlay(sd, ov, scr_bm_obj, rsc->bo, stride,
                                          absX, absY, xSize, ySize);
                 if (shown == 1)
                 {
                     bug("[V3D] present: overlay mode %ldx%ld at %ld,%ld\n",
                         (long)xSize, (long)ySize, (long)absX, (long)absY);
-                    v3d_ovl.rsc = &rsc->base;
-                    v3d_ovl.owner = sid;
-                    v3d_ovl.onplane = rsc->bo;
-                    v3d_ovl.queued = NULL;
-                    v3d_ovl.queued_seqno = 0;
-                    v3d_ovl.freep = nb2;
-                    v3d_ovl.retiring = nb3;
-                    v3d_ovl.latch_due = FALSE;
-                    v3d_ovl.shown = TRUE;
-                    v3d_ovl.bm = scr_bm_obj;
+                    ov->rsc = &rsc->base;
+                    ov->stale = FALSE;
+                    ov->onplane = rsc->bo;
+                    ov->queued = NULL;
+                    ov->queued_seqno = 0;
+                    ov->freep = nb2;
+                    ov->retiring = nb3;
+                    ov->latch_due = FALSE;
+                    ov->shown = TRUE;
+                    ov->bm = scr_bm_obj;
                     rsc->bo = nb;
                     rsc->slices[0].offset = 0;
-                    v3d_ovl.page_handle = nb->handle;
+                    ov->page_handle = nb->handle;
 
                     if (!sd->ovl_task)
                         sd->ovl_task = NewCreateTask(TASKTAG_PC, v3d_ovl_task,
@@ -1407,9 +1447,7 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
                                                      TASKTAG_PRI, 1,
                                                      TASKTAG_ARG1, sd,
                                                      TAG_DONE);
-                    v3d_ovl_vbl.vbl_Func = v3d_ovl_vblank;
-                    v3d_ovl_vbl.vbl_Data = sd;
-                    v3d_ovl_set_vblank(sd, scr_bm_obj, &v3d_ovl_vbl);
+                    v3d_ovl_vbl_update(sd, scr_bm_obj);
                     ReleaseSemaphore(&sd->ovl_lock);
                     UnlockLayerRom(L);
                     return TRUE;
@@ -1419,15 +1457,15 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
                 v3d_bo_unreference(&nb3);
                 if (shown == VC4GFX_OVL_BUSY)
                 {
-                    /* A video layer holds the plane: try again later */
-                    v3d_ovl.busy_skip = 30;
+                    /* The planes are taken: try again later */
+                    ov->busy_skip = 30;
                 }
                 else
                 {
                     /* Scaled desktop or no takeover: remember and stop
                      * paying an alloc+refusal every present. */
                     bug("[V3D] present: overlay unavailable, blitting\n");
-                    v3d_ovl.refused = &rsc->base;
+                    ov->refused = &rsc->base;
                 }
             }
             else if (nb)
@@ -1438,7 +1476,7 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
                     v3d_bo_unreference(&nb2);
                 bug("[V3D] present: no memory for the overlay ring, "
                     "blitting\n");
-                v3d_ovl.refused = &rsc->base;
+                ov->refused = &rsc->base;
             }
         }
     }
