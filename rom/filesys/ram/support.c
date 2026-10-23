@@ -337,11 +337,11 @@ struct DosList *MyMakeDosEntry(struct Handler *handler, const TEXT *name, LONG t
    if(entry != NULL)
    {
       if(!MyRenameDosEntry(handler, entry, name))
-         error = IoErr();
+         error = ERROR_NO_FREE_STORE;
       entry->dol_Type = type;
    }
    else
-      error = IoErr();
+      error = ERROR_NO_FREE_STORE;
 
    if(error != 0)
    {
@@ -452,7 +452,7 @@ BOOL MyRenameDosEntry(struct Handler *handler, struct DosList *entry, const TEXT
       }
 #endif
       else
-         error = IoErr();
+         error = ERROR_NO_FREE_STORE;
    }
 
    /* Deallocate old string and set new one */
@@ -492,7 +492,7 @@ BOOL MyRenameDosEntry(struct DosList *entry, const TEXT *name)
          *name_copy = length;
       }
       else
-         error = IoErr();
+         error = ERROR_NO_FREE_STORE;
    }
 
    /* Deallocate old string and set new one */

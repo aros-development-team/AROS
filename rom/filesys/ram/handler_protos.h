@@ -118,6 +118,7 @@ UPINT GetBlockLength(struct Object *file, struct Block *block);
 struct Object *GetRealObject(struct Object *object);
 
 VOID MatchNotifyRequests(struct Handler *handler);
+VOID RematchNotifyRequests(struct Handler *handler);
 VOID UnmatchNotifyRequests(struct Handler *handler, struct Object *object);
 VOID NotifyAll(struct Handler *handler, struct Object *object,
    BOOL notify_links);

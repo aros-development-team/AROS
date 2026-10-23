@@ -336,7 +336,8 @@ VOID DeleteObject(struct Handler *handler, struct Object *object)
 
       /* Delete a hard link */
 
-      if(object_type == ST_LINKFILE || object_type == ST_LINKDIR)
+      if((object_type == ST_LINKFILE || object_type == ST_LINKDIR)
+         && object->hard_link.mln_Pred != NULL)
       {
          node = real_object->hard_link.mln_Succ;
          master_link = HARDLINK(node);
@@ -387,7 +388,13 @@ VOID DeleteObject(struct Handler *handler, struct Object *object)
 
          /* Prepare to destroy "heir" link */
 
+         AdjustExaminations(handler, heir);
+         UnmatchNotifyRequests(handler, heir);
          Remove((APTR)heir);
+         if(object_type == ST_USERDIR)
+            RematchNotifyRequests(handler);
+         else
+            MatchNotifyRequests(handler);
          object = heir;
       }
 
@@ -412,6 +419,8 @@ VOID DeleteObject(struct Handler *handler, struct Object *object)
       SetString(handler, &object->comment, NULL);
       handler->block_count -= object->block_count;
       FreePooled(handler->clear_pool, object, sizeof(struct Object));
+      if(object_type == ST_LINKDIR)
+         RematchNotifyRequests(handler);
    }
 
    return;
@@ -626,7 +635,7 @@ PINT ChangeFileSize(struct Handler *handler, struct Opening *opening,
 {
    PINT length, new_length, remainder, end_length, full_length;
    UPINT diff, old_pos, block_count;
-   struct Block *block, *end_block;
+   struct Block *block, *end_block, *old_end_block;
    struct Object *file;
    LONG error = 0;
    struct MinList *openings;
@@ -663,7 +672,7 @@ PINT ChangeFileSize(struct Handler *handler, struct Opening *opening,
    full_length = length;
    end_length = file->end_length;
 
-   block = GetLastBlock(file);
+   block = old_end_block = GetLastBlock(file);
    full_length += block->length - end_length;
 
    /* Change size */
@@ -693,7 +702,11 @@ PINT ChangeFileSize(struct Handler *handler, struct Opening *opening,
       {
          new_length = -1;
          error = IoErr();
-         ChangeFileSize(handler, opening, length, OFFSET_BEGINNING);
+         while(GetLastBlock(file) != old_end_block)
+         {
+            block = (APTR)RemTail((APTR)&file->elements);
+            FreeDataBlock(handler, file, block);
+         }
       }
       else
          file->end_length = end_length;
@@ -701,6 +714,9 @@ PINT ChangeFileSize(struct Handler *handler, struct Opening *opening,
    else if(length != new_length)
    {
       /* Remove surplus blocks from the file */
+
+      UPINT resize_blocks, alloc_size;
+      PINT resize_result;
 
       block = NULL;
       while(full_length > new_length)
@@ -712,20 +728,43 @@ PINT ChangeFileSize(struct Handler *handler, struct Opening *opening,
       end_block = (APTR)file->elements.mlh_TailPred;
       file->end_length = end_length = end_block->length;
 
-      /* Allocate a suitably sized end block and copy old data to it */
+      /* Keep the last block if replacing it would save no memory. */
 
       diff = new_length - full_length;
-      file->length = full_length;
-      CmdSeek(handler, opening, 0, OFFSET_END);
-
-      if(ChangeFileSize(handler, opening, diff, OFFSET_END) != -1)
-      {
-         WriteData(handler, opening,
-            ((UBYTE *)block) + sizeof(struct Block), diff);
+      alloc_size = sizeof(struct Block) + diff;
+      if(alloc_size < handler->min_block_size)
+         alloc_size = handler->min_block_size;
+      if(diff == 0)
          FreeDataBlock(handler, file, block);
+      else if(MEMBLOCKS(alloc_size)
+         == MEMBLOCKS(sizeof(struct Block) + block->length))
+      {
+         AddTail((struct List *)&file->elements, (APTR)block);
+         file->end_length = diff;
       }
       else
-         AddTail((struct List *)&file->elements, (APTR)block);
+      {
+         /* Allocate a smaller end block and copy the retained data. */
+
+         file->length = full_length;
+         CmdSeek(handler, opening, 0, OFFSET_END);
+
+         resize_blocks = file->block_count;
+         resize_result = ChangeFileSize(handler, opening, diff, OFFSET_END);
+         /* The outer call accounts for the complete net change below. */
+         handler->block_count -= file->block_count - resize_blocks;
+         if(resize_result != -1)
+         {
+            WriteData(handler, opening,
+               ((UBYTE *)block) + sizeof(struct Block), diff);
+            FreeDataBlock(handler, file, block);
+         }
+         else
+         {
+            AddTail((struct List *)&file->elements, (APTR)block);
+            file->end_length = diff;
+         }
+      }
    }
 
    /* Store new file size */
@@ -733,6 +772,12 @@ PINT ChangeFileSize(struct Handler *handler, struct Opening *opening,
    if(new_length != -1)
       file->length = new_length;
    handler->block_count += file->block_count - block_count;
+   /* Growing or retaining the size leaves every existing cursor valid. */
+   if(new_length == -1 || new_length >= length)
+   {
+      SetIoErr(error);
+      return new_length;
+   }
 
    /* Re-establish old seek position */
 
@@ -897,24 +942,25 @@ UPINT WriteData(struct Handler *handler, struct Opening *opening,
 
       if(block_length == 0)
       {
-         block = (struct Block *)((struct MinNode *)block)->mln_Succ;
-         block_pos = 0;
+         new_block = (struct Block *)((struct MinNode *)block)->mln_Succ;
 
          /* Add another block to the file if required */
 
-         if(((struct MinNode *)block)->mln_Succ == NULL)
+         if(((struct MinNode *)new_block)->mln_Succ == NULL)
          {
             new_block = AddDataBlock(handler, opening->file, remainder);
             if(new_block != NULL)
-            {
-               block = new_block;
                file->end_length = 0;
-            }
             else
                error = IoErr();
          }
 
-         block_length = block->length;
+         if(error == 0)
+         {
+            block = new_block;
+            block_pos = 0;
+            block_length = block->length;
+         }
       }
 
       /* Write as much as possible to the current block */
@@ -1011,7 +1057,7 @@ struct Lock *LockObject(struct Handler *handler, struct Object *object,
          NewList((struct List *)&lock->openings);
       }
       else
-         error = IoErr();
+         error = ERROR_NO_FREE_STORE;
    }
    else
    {

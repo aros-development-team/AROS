@@ -58,6 +58,8 @@ LONG RAMMain(void)
 #endif
 {
    struct Handler *handler;
+   struct DosLibrary *dos_base;
+   struct DeviceNode *dev_node;
    struct MsgPort *proc_port;
    struct DosPacket *packet;
    PINT result;
@@ -89,8 +91,9 @@ LONG RAMMain(void)
    WaitPort(proc_port);
    packet = GetPacket(proc_port);
 
+   dev_node = BADDR(packet->dp_Arg3);
    exit = CmdStartup(handler, BStr(handler, BADDR(packet->dp_Arg1)),
-      BADDR(packet->dp_Arg3), proc_port);
+      dev_node, proc_port);
 
    ReplyPacket(proc_port, packet, DOSBOOL(!exit), IoErr());
 
@@ -136,6 +139,8 @@ LONG RAMMain(void)
             if(!CmdDie(handler))
                result = DOSFALSE;
             exit = result;
+            if(exit)
+               dev_node->dn_Task = NULL;
             break;
 
          case ACTION_IS_FILESYSTEM:
@@ -423,13 +428,15 @@ LONG RAMMain(void)
 
          ramSecEndPacket(handler);
          ReplyPacket(proc_port, packet, result, IoErr());
+         if(exit)
+            break;
       }
 
    }
 
-   CloseLibrary((APTR)DOSBase);
-
+   dos_base = DOSBase;
    DeleteHandler(handler);
+   CloseLibrary((APTR)dos_base);
 
    return RETURN_OK;
 }
