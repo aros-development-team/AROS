@@ -772,6 +772,7 @@ static ULONG hvs_emit_planes(struct VideoCoreGfx_staticdata *xsd, ULONG *w,
     {
         owords[k] = 0;
         xsd->vcsd_Ovl[k].ov_Shown = FALSE;
+        xsd->vcsd_Ovl[k].ov_NoFit = FALSE;
     }
     for (i = front; i >= 0; i--)
     {
@@ -794,7 +795,11 @@ static ULONG hvs_emit_planes(struct VideoCoreGfx_staticdata *xsd, ULONG *w,
             words = hvs_take(st, &o, &lb);
             if (hvs_src_rect(st, &o, &dx, &dy, &dw, &dh)
                 && ((dw != o.srcw) || (dh != o.srch)) && (words != HVS_SCALED_WORDS))
+            {
+                /* Not even with the whole line buffer: final, not room */
+                e->ov_NoFit = (hvs_src_words(st, &o, 0) != HVS_SCALED_WORDS);
                 continue;
+            }
 
             /* Its screen hidden: taken, with nothing of it to show */
             if (!swords[i])

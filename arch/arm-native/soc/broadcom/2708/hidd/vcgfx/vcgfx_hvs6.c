@@ -1270,6 +1270,7 @@ static ULONG hvs6_build_planes(struct VideoCoreGfx_staticdata *xsd, ULONG list)
     {
         ovl[k].valid = FALSE;
         xsd->vcsd_Ovl[k].ov_Shown = FALSE;
+        xsd->vcsd_Ovl[k].ov_NoFit = FALSE;
     }
     for (j = front; j >= 0; j--)
     {
@@ -1342,8 +1343,13 @@ static ULONG hvs6_build_planes(struct VideoCoreGfx_staticdata *xsd, ULONG list)
                 }
                 /* A size the scaler can't make is left out, not shown wrong */
                 need = hvs6_lbm_need(e->sw, e->w);
-                if (!vc4_hvs6_scales(xsd) || (lbm + need > lbmsize)
+                if (!vc4_hvs6_scales(xsd)
                     || !HVS6_PPF_FITS(e->sw, e->w) || !HVS6_PPF_FITS(e->sh, e->h))
+                {
+                    o->ov_NoFit = TRUE;
+                    continue;
+                }
+                if (lbm + need > lbmsize)
                     continue;
                 e->lbm = lbm;
                 lbm += need;

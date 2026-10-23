@@ -197,7 +197,11 @@ BOOL vcgfx_ovl_show(struct VideoCoreGfx_staticdata *xsd, APTR client, BOOL gl,
     BOOL shown;
 
     if (!e && !(e = vcgfx_ovl_find(xsd, NULL)))
+    {
+        xsd->vcsd_OvlRefused = client;
+        xsd->vcsd_OvlNoFit   = FALSE;
         return FALSE;
+    }
 
     if (ovl_pooled(xsd))
     {
@@ -208,7 +212,11 @@ BOOL vcgfx_ovl_show(struct VideoCoreGfx_staticdata *xsd, APTR client, BOOL gl,
         armed = e->ov_Armed = vcgfx_ovl_armed(xsd);
         shown = e->ov_Shown;
         if (!shown)
+        {
+            xsd->vcsd_OvlRefused = client;
+            xsd->vcsd_OvlNoFit   = e->ov_NoFit;
             ovl_clear(e);
+        }
         VC4_MBOX_UNLOCK(xsd);
 
         if (shown && !(desc->ovl_Flags & VC4GFX_OVL_NOWAIT))
@@ -276,13 +284,18 @@ void vcgfx_ovl_hide(struct VideoCoreGfx_staticdata *xsd, APTR client)
 }
 
 /* 1 = shown. VC4GFX_OVL_BUSY = another holds the one plane, or the
- * budget is used; the client tries again later rather than for good. */
+ * budget or the pool is used; the client tries again later. 0 = for
+ * good: a size the scaler can't make, or no plane without planes. */
 ULONG vcgfx_ovl_state(struct VideoCoreGfx_staticdata *xsd, APTR client)
 {
     struct vcgfx_ovl *e = vcgfx_ovl_find(xsd, client);
 
     if (e && e->ov_Shown)
         return 1;
+    /* Among planes only a size the scaler can't make is final; room may free */
+    if (ovl_pooled(xsd))
+        return ((xsd->vcsd_OvlRefused == client) && xsd->vcsd_OvlNoFit)
+            ? 0 : VC4GFX_OVL_BUSY;
     return ovl_holder(xsd) ? VC4GFX_OVL_BUSY : 0;
 }
 

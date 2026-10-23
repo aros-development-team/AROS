@@ -87,6 +87,7 @@ struct vcgfx_ovl
     struct BitmapData      *ov_BMData;
     struct vc4gfx_overlay   ov_Desc;
     BOOL                    ov_Shown;       /* taken by the last list built */
+    BOOL                    ov_NoFit;       /* left out of it: the scaler can't make its size */
     ULONG                   ov_Armed;       /* its last commit, for vcgfx_ovl_latch_wait */
 };
 
@@ -203,6 +204,8 @@ struct VideoCoreGfx_staticdata {
          * mailbox lock too, as the list builders read them. */
         struct SignalSemaphore  vcsd_OvlLock;
         struct vcgfx_ovl        vcsd_Ovl[VCGFX_MAX_OVERLAYS];
+        APTR                    vcsd_OvlRefused;    /* the client of the last refused show */
+        BOOL                    vcsd_OvlNoFit;      /* and whether its size was why */
 
         /* Hardware screen composition (ShowViewPorts): every screen is its
          * own plane and the fb is only the backdrop. Sticky once set, as a
