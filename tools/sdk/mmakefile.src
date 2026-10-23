@@ -12,7 +12,7 @@ sdk:
 	$(CP) -a $(AROS_INCLUDES)/* $(SDKINCDIR)
 	$(CP) -a $(AROS_LIB)/* $(SDKLIBDIR)
 	$(CP) -a $(SRCDIR)/tools/collect-aros/* $(SDKTOOLDIR)/collect-aros
-	$(CP) -a $(TOP)/tools/collect-aros/* $(SDKTOOLDIR)/collect-aros
+	$(CP) $(HOSTGENDIR)/tools/collect-aros/env.h $(SDKTOOLDIR)/collect-aros
 	$(CP) -a $(SRCDIR)/$(CURDIR)/scripts $(SDKDIR)
 	$(CP) $(SRCDIR)/$(CURDIR)/AROS-SDK-Install $(SRCDIR)/LICENSE $(SRCDIR)/ACKNOWLEDGEMENTS $(SDKDIR)
 
