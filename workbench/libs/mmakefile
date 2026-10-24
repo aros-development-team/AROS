@@ -19,6 +19,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     workbench-libs-decorator \
 #MM     workbench-libs-decortheme \
 #MM     workbench-libs-diskfont \
+#MM     workbench-libs-dosrelative \
 #MM     workbench-libs-egl \
 #MM     workbench-libs-expat \
 #MM     workbench-libs-freetype-complete \
@@ -81,6 +82,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     workbench-libs-decorator-includes \
 #MM     workbench-libs-decortheme-includes \
 #MM     workbench-libs-diskfont-includes \
+#MM     workbench-libs-dosrelative-includes \
 #MM     workbench-libs-egl-includes \
 #MM     workbench-libs-expat-includes \
 #MM     workbench-libs-gadtools-includes \

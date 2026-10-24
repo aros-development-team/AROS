@@ -22,6 +22,7 @@ FILES := \
     getenv \
     inhibit \
     isinteractive \
+    lockrelative \
     match \
     matchtest \
     minicat \
