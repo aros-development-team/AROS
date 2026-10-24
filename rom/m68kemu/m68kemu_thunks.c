@@ -739,7 +739,7 @@ const ULONG m68kemu_thunks_exec_count = 33;
 /* -60: Output() -> D0=filehandle */
 static IPTR thunk_dos_Output(struct M68KEmuContext *ctx, void *cpu)
 {
-    return (IPTR)Output();
+    return (IPTR)m68k_bptr_out(ctx, Output());
 }
 
 /* -948: PutStr(D1=str) -> D0=result */
@@ -753,7 +753,7 @@ static IPTR thunk_dos_PutStr(struct M68KEmuContext *ctx, void *cpu)
 /* -48: Write(D1=file, D2=buffer, D3=length) -> D0=actual */
 static IPTR thunk_dos_Write(struct M68KEmuContext *ctx, void *cpu)
 {
-    BPTR fh     = (BPTR)THUNK_D(1);
+    BPTR fh     = m68k_bptr_in(ctx, THUNK_D(1));
     void *buf   = m68k_to_host(ctx, THUNK_D(2));
     LONG length = (LONG)THUNK_D(3);
     if (!buf) return -1;
@@ -763,7 +763,7 @@ static IPTR thunk_dos_Write(struct M68KEmuContext *ctx, void *cpu)
 /* -42: Read(D1=file, D2=buffer, D3=length) -> D0=actual */
 static IPTR thunk_dos_Read(struct M68KEmuContext *ctx, void *cpu)
 {
-    BPTR fh     = (BPTR)THUNK_D(1);
+    BPTR fh     = m68k_bptr_in(ctx, THUNK_D(1));
     void *buf   = m68k_to_host(ctx, THUNK_D(2));
     LONG length = (LONG)THUNK_D(3);
     if (!buf) return -1;
@@ -776,20 +776,21 @@ static IPTR thunk_dos_Open(struct M68KEmuContext *ctx, void *cpu)
     const char *name = (const char *)m68k_to_host(ctx, THUNK_D(1));
     LONG mode = (LONG)THUNK_D(2);
     if (!name) return 0;
-    return (IPTR)Open(name, mode);
+    return (IPTR)m68k_bptr_out(ctx, Open(name, mode));
 }
 
 /* -36: Close(D1=file) -> D0=success */
 static IPTR thunk_dos_Close(struct M68KEmuContext *ctx, void *cpu)
 {
-    BPTR fh = (BPTR)THUNK_D(1);
+    BPTR fh = m68k_bptr_in(ctx, THUNK_D(1));
+    m68k_bptr_drop(ctx, THUNK_D(1));
     return (IPTR)Close(fh);
 }
 
 /* -66: Seek(D1=file, D2=position, D3=offset) -> D0=oldPosition */
 static IPTR thunk_dos_Seek(struct M68KEmuContext *ctx, void *cpu)
 {
-    BPTR fh = (BPTR)THUNK_D(1);
+    BPTR fh = m68k_bptr_in(ctx, THUNK_D(1));
     LONG pos = (LONG)THUNK_D(2);
     LONG mode = (LONG)THUNK_D(3);
     return (IPTR)Seek(fh, pos, mode);
@@ -813,13 +814,14 @@ static IPTR thunk_dos_Lock(struct M68KEmuContext *ctx, void *cpu)
     const char *name = (const char *)m68k_to_host(ctx, THUNK_D(1));
     LONG type = (LONG)THUNK_D(2);
     if (!name) return 0;
-    return (IPTR)Lock(name, type);
+    return (IPTR)m68k_bptr_out(ctx, Lock(name, type));
 }
 
 /* -90: UnLock(D1=lock) */
 static IPTR thunk_dos_UnLock(struct M68KEmuContext *ctx, void *cpu)
 {
-    UnLock((BPTR)THUNK_D(1));
+    UnLock(m68k_bptr_in(ctx, THUNK_D(1)));
+    m68k_bptr_drop(ctx, THUNK_D(1));
     return 0;
 }
 
@@ -844,7 +846,7 @@ static IPTR thunk_dos_Rename(struct M68KEmuContext *ctx, void *cpu)
 /* -342: FPuts(D1=fh, D2=str) -> D0=result */
 static IPTR thunk_dos_FPuts(struct M68KEmuContext *ctx, void *cpu)
 {
-    BPTR fh = (BPTR)THUNK_D(1);
+    BPTR fh = m68k_bptr_in(ctx, THUNK_D(1));
     const char *str = (const char *)m68k_to_host(ctx, THUNK_D(2));
     if (!str) return -1;
     return (IPTR)FPuts(fh, str);
@@ -876,50 +878,211 @@ static IPTR thunk_dos_GetProgramName(struct M68KEmuContext *ctx, void *cpu)
 /* -126: CurrentDir(D1=lock) -> D0=oldLock */
 static IPTR thunk_dos_CurrentDir(struct M68KEmuContext *ctx, void *cpu)
 {
-    return (IPTR)CurrentDir((BPTR)THUNK_D(1));
+    return (IPTR)m68k_bptr_out(ctx, CurrentDir(m68k_bptr_in(ctx, THUNK_D(1))));
 }
 
 
 /* -798: ReadArgs(D1=template, D2=array, D3=rdargs) -> D0=rdargs */
+/* Template entry kinds that decide how a ReadArgs() result is copied */
+#define RDA_KIND_STRING 0
+#define RDA_KIND_SWITCH 1
+#define RDA_KIND_NUMBER 2
+#define RDA_KIND_MULTI  3
+
+static int rda_kinds(const char *tmpl, UBYTE *kind, int maxargs)
+{
+    int n = 0, k = RDA_KIND_STRING;
+    const char *p;
+
+    for (p = tmpl; ; p++)
+    {
+        if (*p == '/')
+        {
+            char c = p[1];
+            if (c >= 'a' && c <= 'z') c -= 'a' - 'A';
+            if (c == 'S' || c == 'T') k = RDA_KIND_SWITCH;
+            else if (c == 'N') k = RDA_KIND_NUMBER;
+            else if (c == 'M') k = RDA_KIND_MULTI;
+        }
+        else if (*p == ',' || *p == '\0')
+        {
+            if (n < maxargs)
+                kind[n] = k;
+            n++;
+            k = RDA_KIND_STRING;
+            if (*p == '\0')
+                break;
+        }
+    }
+    return n;
+}
+
+/* ReadArgs() fills the array with pointers into native memory: strings,
+   LONGs for /N and string arrays for /M. The m68k side needs them in
+   containment, so they are copied into one block per ReadArgs() call that
+   FreeArgs() releases again. */
 static IPTR thunk_dos_ReadArgs(struct M68KEmuContext *ctx, void *cpu)
 {
     const char *tmpl = (const char *)m68k_to_host(ctx, THUNK_D(1));
-    /* array is in m68k space - we need to allocate a host-side array,
-       call ReadArgs, then copy results back */
     ULONG m68k_array = THUNK_D(2);
     ULONG m68k_rdargs = THUNK_D(3);
-    
+    UBYTE kind[64];
+    IPTR *host_array;
+    struct RDArgs *result;
+    int nargs, i, slot;
+    ULONG need = 0, block = 0, pos;
+
     if (!tmpl) return 0;
-    
-    /* Count template entries (number of commas + 1) */
-    int nargs = 1;
-    for (const char *p = tmpl; *p; p++) if (*p == ',') nargs++;
-    
-    IPTR *host_array = (IPTR *)AllocMem(nargs * sizeof(IPTR), MEMF_CLEAR);
+    if (m68k_rdargs)
+    {
+        bug("[m68kemu] ReadArgs with a caller-supplied RDArgs is not supported\n");
+        return 0;
+    }
+
+    nargs = rda_kinds(tmpl, kind, sizeof(kind));
+    if (nargs > (int)sizeof(kind))
+        return 0;
+
+    for (slot = 0; slot < M68KEMU_MAX_RDARGS; slot++)
+        if (!ctx->rdargs_blocks[slot].rd)
+            break;
+    if (slot == M68KEMU_MAX_RDARGS)
+        return 0;
+
+    host_array = (IPTR *)AllocMem(2 * nargs * sizeof(IPTR), MEMF_CLEAR);
     if (!host_array) return 0;
-    
-    /* Copy initial values from m68k array */
-    for (int i = 0; i < nargs; i++)
-        host_array[i] = (IPTR)m68k_read32(ctx, m68k_array + i * 4);
-    
-    struct RDArgs *result = ReadArgs(tmpl, host_array, (struct RDArgs *)(IPTR)m68k_rdargs);
-    
+
+    for (i = 0; i < nargs; i++)
+    {
+        ULONG v = m68k_read32(ctx, m68k_array + i * 4);
+        /* defaults: numbers and strings the program points at in containment */
+        if (v && kind[i] == RDA_KIND_NUMBER)
+        {
+            LONG *def = AllocMem(sizeof(LONG), MEMF_ANY);
+            if (def)
+                *def = (LONG)m68k_read32(ctx, v);
+            host_array[i] = (IPTR)def;
+            host_array[nargs + i] = (IPTR)def;     /* ours, freed below */
+        }
+        else if (v && kind[i] == RDA_KIND_STRING)
+            host_array[i] = (IPTR)m68k_to_host(ctx, v);
+        else
+            host_array[i] = (IPTR)v;
+    }
+
+    result = ReadArgs(tmpl, host_array, NULL);
+
     if (result)
     {
-        /* Copy results back to m68k array */
-        for (int i = 0; i < nargs; i++)
-            m68k_write32(ctx, m68k_array + i * 4, (ULONG)host_array[i]);
+        /* size the containment block */
+        for (i = 0; i < nargs; i++)
+        {
+            if (!host_array[i]) continue;
+            switch (kind[i])
+            {
+            case RDA_KIND_STRING: need += strlen((char *)host_array[i]) + 1; break;
+            case RDA_KIND_NUMBER: need += sizeof(LONG); break;
+            case RDA_KIND_MULTI:
+            {
+                char **m = (char **)host_array[i];
+                ULONG cnt = 0;
+                while (m[cnt]) { need += strlen(m[cnt]) + 1; cnt++; }
+                need += (cnt + 1) * 4;
+                break;
+            }
+            default: break;
+            }
+            need = (need + 3) & ~3;
+        }
+        if (need)
+            block = M68KEmu_HeapAlloc(ctx, need, 0);
+        if (need && !block)
+        {
+            FreeArgs(result);
+            result = NULL;
+        }
     }
-    
-    FreeMem(host_array, nargs * sizeof(IPTR));
-    return (IPTR)result;
+
+    if (result)
+    {
+        pos = block;
+        for (i = 0; i < nargs; i++)
+        {
+            ULONG v = 0;
+            if (host_array[i])
+            {
+                switch (kind[i])
+                {
+                case RDA_KIND_SWITCH:
+                    v = (ULONG)host_array[i];
+                    break;
+                case RDA_KIND_STRING:
+                {
+                    ULONG len = strlen((char *)host_array[i]) + 1;
+                    CopyMem((APTR)host_array[i], m68k_to_host(ctx, pos), len);
+                    v = pos;
+                    pos = (pos + len + 3) & ~3;
+                    break;
+                }
+                case RDA_KIND_NUMBER:
+                    m68k_write32(ctx, pos, (ULONG)*(LONG *)host_array[i]);
+                    v = pos;
+                    pos += sizeof(LONG);
+                    break;
+                case RDA_KIND_MULTI:
+                {
+                    char **m = (char **)host_array[i];
+                    ULONG cnt = 0, j, arr;
+                    while (m[cnt]) cnt++;
+                    arr = pos;
+                    pos += (cnt + 1) * 4;
+                    for (j = 0; j < cnt; j++)
+                    {
+                        ULONG len = strlen(m[j]) + 1;
+                        CopyMem(m[j], m68k_to_host(ctx, pos), len);
+                        m68k_write32(ctx, arr + j * 4, pos);
+                        pos += len;
+                    }
+                    m68k_write32(ctx, arr + cnt * 4, 0);
+                    pos = (pos + 3) & ~3;
+                    v = arr;
+                    break;
+                }
+                }
+            }
+            m68k_write32(ctx, m68k_array + i * 4, v);
+        }
+        ctx->rdargs_blocks[slot].rd   = result;
+        ctx->rdargs_blocks[slot].addr = block;
+        ctx->rdargs_blocks[slot].size = need;
+    }
+
+    for (i = 0; i < nargs; i++)
+        if (host_array[nargs + i])
+            FreeMem((APTR)host_array[nargs + i], sizeof(LONG));
+    FreeMem(host_array, 2 * nargs * sizeof(IPTR));
+    return result ? (IPTR)m68k_bptr_out(ctx, (BPTR)result) : 0;
 }
 
 /* -858: FreeArgs(D1=rdargs) */
 static IPTR thunk_dos_FreeArgs(struct M68KEmuContext *ctx, void *cpu)
 {
-    struct RDArgs *rdargs = (struct RDArgs *)(IPTR)THUNK_D(1);
-    if (rdargs) FreeArgs(rdargs);
+    struct RDArgs *rdargs = (struct RDArgs *)m68k_bptr_in(ctx, THUNK_D(1));
+    int slot;
+
+    if (!rdargs) return 0;
+    for (slot = 0; slot < M68KEMU_MAX_RDARGS; slot++)
+    {
+        if (ctx->rdargs_blocks[slot].rd == rdargs)
+        {
+            if (ctx->rdargs_blocks[slot].size)
+                M68KEmu_HeapFree(ctx, ctx->rdargs_blocks[slot].addr, ctx->rdargs_blocks[slot].size);
+            ctx->rdargs_blocks[slot].rd = NULL;
+            break;
+        }
+    }
+    m68k_bptr_drop(ctx, THUNK_D(1));
+    FreeArgs(rdargs);
     return 0;
 }
 
@@ -927,7 +1090,7 @@ static IPTR thunk_dos_FreeArgs(struct M68KEmuContext *ctx, void *cpu)
 /* -54: Input() -> D0=filehandle */
 static IPTR thunk_dos_Input(struct M68KEmuContext *ctx, void *cpu)
 {
-    return (IPTR)Input();
+    return (IPTR)m68k_bptr_out(ctx, Input());
 }
 
 
@@ -954,7 +1117,7 @@ static void fib_to_m68k(struct M68KEmuContext *ctx, ULONG m68k_fib, struct FileI
 /* -102: Examine(D1=lock, D2=fib) -> D0=success */
 static IPTR thunk_dos_Examine(struct M68KEmuContext *ctx, void *cpu)
 {
-    BPTR lock = (BPTR)THUNK_D(1);
+    BPTR lock = m68k_bptr_in(ctx, THUNK_D(1));
     ULONG m68k_fib = THUNK_D(2);
     if (!m68k_fib) return 0;
 
@@ -970,7 +1133,7 @@ static IPTR thunk_dos_Examine(struct M68KEmuContext *ctx, void *cpu)
 
 static IPTR thunk_dos_ExNext(struct M68KEmuContext *ctx, void *cpu)
 {
-    BPTR lock = (BPTR)THUNK_D(1);
+    BPTR lock = m68k_bptr_in(ctx, THUNK_D(1));
     ULONG m68k_fib = THUNK_D(2);
     if (!m68k_fib) return 0;
 
@@ -990,12 +1153,12 @@ static IPTR thunk_dos_ExNext(struct M68KEmuContext *ctx, void *cpu)
 
 static IPTR thunk_dos_ExAll(struct M68KEmuContext *ctx, void *cpu)
 {
-    return ExAll((BPTR)THUNK_D(1), THUNK_PTR(2), THUNK_D(3), THUNK_D(4), THUNK_PTR(5));
+    return ExAll(m68k_bptr_in(ctx, THUNK_D(1)), THUNK_PTR(2), THUNK_D(3), THUNK_D(4), THUNK_PTR(5));
 }
 
 static IPTR thunk_dos_ExAllEnd(struct M68KEmuContext *ctx, void *cpu)
 {
-    ExAllEnd((BPTR)THUNK_D(1), THUNK_PTR(2), THUNK_D(3), THUNK_D(4), THUNK_PTR(5));
+    ExAllEnd(m68k_bptr_in(ctx, THUNK_D(1)), THUNK_PTR(2), THUNK_D(3), THUNK_D(4), THUNK_PTR(5));
     return 0;
 }
 
@@ -1042,7 +1205,7 @@ static IPTR thunk_dos_FreeDosObject(struct M68KEmuContext *ctx, void *cpu)
 static IPTR thunk_dos_Execute(struct M68KEmuContext *ctx, void *cpu)
 {
     return Execute((CONST_STRPTR)m68k_to_host(ctx, THUNK_D(1)),
-                   (BPTR)THUNK_D(2), (BPTR)THUNK_D(3));
+                   m68k_bptr_in(ctx, THUNK_D(2)), m68k_bptr_in(ctx, THUNK_D(3)));
 }
 
 static IPTR thunk_dos_SystemTagList(struct M68KEmuContext *ctx, void *cpu)
@@ -1056,7 +1219,7 @@ static IPTR thunk_dos_SystemTagList(struct M68KEmuContext *ctx, void *cpu)
 
 static IPTR thunk_dos_RunCommand(struct M68KEmuContext *ctx, void *cpu)
 {
-    return RunCommand((BPTR)THUNK_D(1), THUNK_D(2),
+    return RunCommand(m68k_bptr_in(ctx, THUNK_D(1)), THUNK_D(2),
                       (CONST_STRPTR)m68k_to_host(ctx, THUNK_D(3)), THUNK_D(4));
 }
 
@@ -1074,7 +1237,7 @@ static IPTR thunk_dos_CreateNewProc(struct M68KEmuContext *ctx, void *cpu)
 static IPTR thunk_dos_CreateProc(struct M68KEmuContext *ctx, void *cpu)
 {
     struct MsgPort *port = CreateProc((CONST_STRPTR)m68k_to_host(ctx, THUNK_D(1)),
-                                     THUNK_D(2), (BPTR)THUNK_D(3), THUNK_D(4));
+                                     THUNK_D(2), m68k_bptr_in(ctx, THUNK_D(3)), THUNK_D(4));
     if (!port) return 0;
     return shadow_create_by_name(ctx, "MsgPort", port);
 }
@@ -1095,12 +1258,12 @@ static IPTR thunk_dos_CliInitRun(struct M68KEmuContext *ctx, void *cpu)
 
 static IPTR thunk_dos_LoadSeg(struct M68KEmuContext *ctx, void *cpu)
 {
-    return (IPTR)LoadSeg((CONST_STRPTR)m68k_to_host(ctx, THUNK_D(1)));
+    return (IPTR)m68k_bptr_out(ctx, LoadSeg((CONST_STRPTR)m68k_to_host(ctx, THUNK_D(1))));
 }
 
 static IPTR thunk_dos_UnLoadSeg(struct M68KEmuContext *ctx, void *cpu)
 {
-    UnLoadSeg((BPTR)THUNK_D(1));
+    UnLoadSeg(m68k_bptr_in(ctx, THUNK_D(1)));
     return 0;
 }
 
@@ -1110,7 +1273,7 @@ static IPTR thunk_dos_NewLoadSeg(struct M68KEmuContext *ctx, void *cpu)
     struct TagItem *tags = m68k_to_native_taglist(ctx, THUNK_D(2));
     BPTR seg = NewLoadSeg(file, tags);
     if (tags) FreeVec(tags);
-    return (IPTR)seg;
+    return (IPTR)m68k_bptr_out(ctx, seg);
 }
 
 /* ── DOS: Packets ── */
@@ -1158,7 +1321,7 @@ static IPTR thunk_dos_VFPrintf(struct M68KEmuContext *ctx, void *cpu)
     if (!fmt) return -1;
     ULONG size;
     APTR args = m68k_to_native_fmt_stream(ctx, fmt, THUNK_D(3), &size);
-    LONG ret = VFPrintf((BPTR)THUNK_D(1), fmt, (RAWARG)args);
+    LONG ret = VFPrintf(m68k_bptr_in(ctx, THUNK_D(1)), fmt, (RAWARG)args);
     if (args) FreeMem(args, size);
     return (IPTR)ret;
 }
@@ -1169,7 +1332,7 @@ static IPTR thunk_dos_VFWritef(struct M68KEmuContext *ctx, void *cpu)
     if (!fmt) return 0;
     ULONG size;
     APTR args = m68k_to_native_fmt_stream(ctx, fmt, THUNK_D(3), &size);
-    VFWritef((BPTR)THUNK_D(1), fmt, (RAWARG)args);
+    VFWritef(m68k_bptr_in(ctx, THUNK_D(1)), fmt, (RAWARG)args);
     if (args) FreeMem(args, size);
     return 0;
 }

@@ -8,7 +8,12 @@
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
+#include <proto/dos.h>
 #include <dos/bptr.h>
+#include <dos/dostags.h>
+#include <utility/tagitem.h>
+#include <aros/macros.h>
+#include <aros/debug.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -55,6 +60,7 @@ struct M68KEmuContext *M68KEmu_CreateContext(struct M68KEmuLibBase *base)
 void M68KEmu_DestroyContext(struct M68KEmuContext *ctx)
 {
     if (!ctx) return;
+    if (ctx->handles) FreeVec(ctx->handles);
     if (ctx->mem) FreeMem(ctx->mem, ctx->mem_size);
     FreeMem(ctx, sizeof(struct M68KEmuContext));
 }
@@ -150,24 +156,53 @@ void M68KEmu_HeapFree(struct M68KEmuContext *ctx, ULONG addr, ULONG size)
     }
 }
 
+/* Copy a seglist LoadSeg() built from a hunk file into containment. dos
+   relocated the segments to their host addresses; the relocation list it
+   kept (GSLI_68KRELOCS) is applied again for the containment addresses. */
 ULONG M68KEmu_LoadHunks(struct M68KEmuContext *ctx, BPTR segList)
 {
-    BPTR seg = segList;
+    BPTR seg;
     ULONG entry_point = 0;
-
-    while (seg)
+    ULONG nseg = 0, i;
+    UBYTE **host;
+    ULONG *cont, *size;
+    struct HunkRelocTable *relocs = NULL;
+    struct TagItem tags[] =
     {
-        ULONG *baddr    = (ULONG *)BADDR(seg);
-        ULONG alloc_size = *(baddr - 1);
-        ULONG data_size  = alloc_size - sizeof(BPTR);
+        { GSLI_68KRELOCS, (IPTR)&relocs },
+        { TAG_DONE,       0             }
+    };
+
+    for (seg = segList; seg; seg = *((BPTR *)BADDR(seg)))
+        nseg++;
+    if (!nseg)
+        return 0;
+
+    host = AllocVec(nseg * (sizeof(*host) + sizeof(*cont) + sizeof(*size)), MEMF_CLEAR);
+    if (!host)
+        return 0;
+    cont = (ULONG *)(host + nseg);
+    size = cont + nseg;
+
+    for (seg = segList, i = 0; seg; seg = *((BPTR *)BADDR(seg)), i++)
+    {
+        ULONG *baddr     = (ULONG *)BADDR(seg);
+        ULONG alloc_size = *(baddr - 1);              /* ULONG size + BPTR next + data */
+        ULONG data_size  = alloc_size - sizeof(ULONG) - sizeof(BPTR);
         UBYTE *src       = (UBYTE *)baddr + sizeof(BPTR);
         ULONG m68k_addr;
 
         m68k_addr = M68KEmu_HeapAlloc(ctx, data_size, 0);
         if (!m68k_addr)
+        {
+            FreeVec(host);
             return 0;
+        }
 
         CopyMem(src, m68k_to_host(ctx, m68k_addr), data_size);
+        host[i] = src;
+        cont[i] = m68k_addr;
+        size[i] = data_size;
 
         if (!entry_point)
         {
@@ -175,10 +210,48 @@ ULONG M68KEmu_LoadHunks(struct M68KEmuContext *ctx, BPTR segList)
             ctx->entry_point = m68k_addr;
             ctx->seg_start   = m68k_addr;
         }
-
-        seg = *((BPTR *)BADDR(seg));
     }
 
+    GetSegListInfo(segList, tags);
+    if (relocs)
+    {
+        if (relocs->hrt_Count == 0xFFFFFFFFUL)
+        {
+            bug("[m68kemu] relocation list of seglist %p was lost, cannot run it\n", BADDR(segList));
+            FreeVec(host);
+            return 0;
+        }
+        for (i = 0; i < relocs->hrt_Count; i++)
+        {
+            const struct HunkReloc32 *r = &relocs->hrt_Relocs[i];
+            UBYTE *p;
+            ULONG val, original;
+
+            if (r->hr_Hunk >= nseg || r->hr_Target >= nseg || r->hr_Offset + 4 > size[r->hr_Hunk])
+            {
+                bug("[m68kemu] bad relocation %lu (hunk %lu offset %lu target %lu)\n",
+                    (unsigned long)i, (unsigned long)r->hr_Hunk, (unsigned long)r->hr_Offset,
+                    (unsigned long)r->hr_Target);
+                FreeVec(host);
+                return 0;
+            }
+            p   = ctx->mem + cont[r->hr_Hunk] + r->hr_Offset;
+            val = AROS_BE2LONG(*(ULONG *)p);
+            if (r->hr_Type == HUNKRELOC_REL)
+            {
+                original = val + (ULONG)(IPTR)(host[r->hr_Hunk] + r->hr_Offset) - (ULONG)(IPTR)host[r->hr_Target];
+                val = cont[r->hr_Target] + original - (cont[r->hr_Hunk] + r->hr_Offset);
+            }
+            else
+            {
+                original = val - (ULONG)(IPTR)host[r->hr_Target];
+                val = cont[r->hr_Target] + original;
+            }
+            *(ULONG *)p = AROS_LONG2BE(val);
+        }
+    }
+
+    FreeVec(host);
     return entry_point;
 }
 
@@ -460,5 +533,69 @@ void M68KEmu_AutoOpenLibs(struct M68KEmuContext *ctx)
         }
 
         off = p;
+    }
+}
+
+/* ── Native BPTR handles ──────────────────────────────────────────────
+   A native BPTR is a 64-bit pointer on this side and cannot travel through
+   a 32-bit m68k register. The m68k side gets an index into a table instead;
+   the same native BPTR always maps to the same handle. Values outside the
+   handle range are m68k BPTRs into containment (BSTRs, in-memory seglists)
+   and translate by address. */
+
+ULONG m68k_bptr_out(struct M68KEmuContext *ctx, BPTR b)
+{
+    ULONG i, free_slot = (ULONG)-1;
+
+    if (b == BNULL)
+        return 0;
+    if (!ctx->handles)
+    {
+        ctx->handles = AllocVec(M68KEMU_MAX_HANDLES * sizeof(BPTR), MEMF_CLEAR);
+        if (!ctx->handles)
+            return 0;
+    }
+    for (i = 0; i < ctx->num_handles; i++)
+    {
+        if (ctx->handles[i] == b)
+            return M68KEMU_HANDLE_BASE + i * 4;
+        if (ctx->handles[i] == BNULL && free_slot == (ULONG)-1)
+            free_slot = i;
+    }
+    if (free_slot == (ULONG)-1)
+    {
+        if (ctx->num_handles >= M68KEMU_MAX_HANDLES)
+        {
+            bug("[m68kemu] out of BPTR handles\n");
+            return 0;
+        }
+        free_slot = ctx->num_handles++;
+    }
+    ctx->handles[free_slot] = b;
+    return M68KEMU_HANDLE_BASE + free_slot * 4;
+}
+
+BPTR m68k_bptr_in(struct M68KEmuContext *ctx, ULONG v)
+{
+    if (v == 0)
+        return BNULL;
+    if (v >= M68KEMU_HANDLE_BASE && v < M68KEMU_HANDLE_BASE + M68KEMU_MAX_HANDLES * 4)
+    {
+        ULONG i = (v - M68KEMU_HANDLE_BASE) / 4;
+        if (ctx->handles && i < ctx->num_handles)
+            return ctx->handles[i];
+        return BNULL;
+    }
+    /* an m68k BPTR into containment */
+    return MKBADDR(m68k_to_host(ctx, v << 2));
+}
+
+void m68k_bptr_drop(struct M68KEmuContext *ctx, ULONG v)
+{
+    if (v >= M68KEMU_HANDLE_BASE && v < M68KEMU_HANDLE_BASE + M68KEMU_MAX_HANDLES * 4)
+    {
+        ULONG i = (v - M68KEMU_HANDLE_BASE) / 4;
+        if (ctx->handles && i < ctx->num_handles)
+            ctx->handles[i] = BNULL;
     }
 }
