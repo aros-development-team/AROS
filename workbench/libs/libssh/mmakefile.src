@@ -9,7 +9,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-LIBSSH_VERSION := 0.12.0
+LIBSSH_VERSION := 0.12.2
 LIBSSH_VMAJOR := $(word 1,$(subst ., ,$(LIBSSH_VERSION)))
 LIBSSH_VMINOR := $(word 2,$(subst ., ,$(LIBSSH_VERSION)))
 LIBSSH_VPATCH := $(word 3,$(subst ., ,$(LIBSSH_VERSION)))
