@@ -14,6 +14,7 @@
 #include <proto/exec.h>
 #include <proto/task.h>
 #include <aros/symbolsets.h>
+#include <aros/libcall.h>
 #include <aros/debug.h>
 
 #include "debug.h"
@@ -79,9 +80,10 @@
 } /* malloc */
 
 
-/* The bases one program opens (its own, posixc's, stdcio's, those of its
-   pthread workers) share one pool, so memory may cross between them. The
-   pool is found through a task storage slot and dies with its last base. */
+/* Besides the program's own base, stdcio opens a stdc base of its own, and
+   so does posixc for pthread workers and the vfork() child. All bases of one
+   program share one pool, so memory may cross between them. The pool is
+   found through a task storage slot and dies with its last base. */
 struct __stdc_memctx
 {
     struct MinNode  node;
@@ -131,7 +133,9 @@ int __init_memstuff(struct StdCIntBase *StdCBase)
     ObtainSemaphore(&__stdc_memsem);
 
     /* A program started by RunCommand() sees its caller's slot */
-    ctx = (struct __stdc_memctx *)GetTaskStorageSlot(__stdc_memslot);
+    ctx = NULL;
+    if (__stdc_memslot > 0)
+        ctx = (struct __stdc_memctx *)GetTaskStorageSlot(__stdc_memslot);
     if (!__stdc_memctx_live(ctx)
         || (ctx->task == me && ctx->retaddr != __stdc_retaddr(me)))
         ctx = NULL;
@@ -147,7 +151,8 @@ int __init_memstuff(struct StdCIntBase *StdCBase)
                 ctx->task = me;
                 ctx->retaddr = __stdc_retaddr(me);
                 AddTail((struct List *)&__stdc_memctxs, (struct Node *)ctx);
-                SetTaskStorageSlot(__stdc_memslot, (IPTR)ctx);
+                if (__stdc_memslot > 0)
+                    SetTaskStorageSlot(__stdc_memslot, (IPTR)ctx);
             }
             else
             {
@@ -185,7 +190,7 @@ void __exit_memstuff(struct StdCIntBase *StdCBase)
     if (--ctx->refcnt == 0)
     {
         Remove((struct Node *)ctx);
-        if (GetTaskStorageSlot(__stdc_memslot) == (IPTR)ctx)
+        if (__stdc_memslot > 0 && GetTaskStorageSlot(__stdc_memslot) == (IPTR)ctx)
             SetTaskStorageSlot(__stdc_memslot, 0);
         DeletePool(ctx->pool);
         FreeMem(ctx, sizeof(*ctx));
@@ -201,7 +206,7 @@ static int __init_memslot(struct StdCIntBase *StdCBase)
 {
     NEWLIST((struct List *)&__stdc_memctxs);
     InitSemaphore(&__stdc_memsem);
-    /* Without a slot every base keeps a pool of its own */
+    /* Without a slot (0) every base keeps a pool of its own */
     __stdc_memslot = AllocTaskStorageSlot();
 
     return 1;
@@ -220,10 +225,13 @@ static int __exit_memslot(struct StdCIntBase *StdCBase)
 /*****************************************************************************
 
     NAME */
-        void __stdc_inherit_mempool (
+        AROS_LH1(void, __stdc_inherit_mempool,
 
 /*  SYNOPSIS */
-        int inherit)
+        AROS_LHA(int, inherit, D0),
+
+/*  LOCATION */
+        struct StdCIntBase *, StdCBase, 527, StdC)
 
 /*  FUNCTION
         Decide which pool the stdc.library bases this task opens from now
@@ -239,7 +247,8 @@ static int __exit_memslot(struct StdCIntBase *StdCBase)
     NOTES
         This function is private to the C runtime. posixc.library calls it
         for pthread workers and for the vfork() child, which belong to the
-        program of their creator.
+        program of their creator. Any stdc.library base may be used for the
+        call. Available from stdc.library 0.50.
 
     EXAMPLE
 
@@ -251,7 +260,12 @@ static int __exit_memslot(struct StdCIntBase *StdCBase)
 
 ******************************************************************************/
 {
+    AROS_LIBFUNC_INIT
+
     struct __stdc_memctx *ctx = NULL;
+
+    if (__stdc_memslot <= 0)
+        return;
 
     ObtainSemaphore(&__stdc_memsem);
     if (inherit)
@@ -262,6 +276,8 @@ static int __exit_memslot(struct StdCIntBase *StdCBase)
     }
     SetTaskStorageSlot(__stdc_memslot, (IPTR)ctx);
     ReleaseSemaphore(&__stdc_memsem);
+
+    AROS_LIBFUNC_EXIT
 } /* __stdc_inherit_mempool */
 
 ADD2OPENLIB(__init_memstuff, 0);

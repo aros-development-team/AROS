@@ -139,6 +139,9 @@ struct PosixCIntBase
    process until execve() is called. */
 #define PRETEND_CHILD 0x00000004
 
+/* __threadhook.c: picks the malloc pool of the stdc bases this task opens */
+void __posixc_inherit_mempool(struct StdCBase *StdCBase, int inherit);
+
 /* __upath.c: frees the path buffers of other Tasks (upath_others) */
 void __upath_free_others(struct PosixCIntBase *PosixCBase);
 

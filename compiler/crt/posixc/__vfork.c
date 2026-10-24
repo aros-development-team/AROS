@@ -173,7 +173,7 @@ LONG launcher()
         else
             /* Our bases share the parent's pool (see __posixc_publish_stdbases);
                a program exec'd here must get a pool of its own. */
-            __stdc_inherit_mempool(0);
+            __posixc_inherit_mempool(PosixCBase->PosixCBase.StdCBase, 0);
     }
     if (!PosixCBase)
     {

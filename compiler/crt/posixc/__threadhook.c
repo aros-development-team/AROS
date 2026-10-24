@@ -34,6 +34,7 @@
 #include <proto/task.h>   /* task-storage slots; TaskResBase is the module global genmodule opens */
 #include <proto/stdc.h>
 #include <proto/stdcio.h>
+#include <defines/stdc_LVO.h>
 #include <exec/semaphores.h>
 #include <exec/lists.h>
 #include <aros/symbolsets.h>
@@ -71,9 +72,9 @@ static struct CRTThreadHook __posixc_threadhook;
  * pthread workers under lavapipe, 2026-09-16).  A private task-storage slot
  * keeps the opened base out of reach of the offset-table traffic. */
 extern APTR TaskResBase;
+/* Holds POSIXC_THREAD_OPENING while posixc_thread_enter() opens the base, so
+   __posixc_publish_stdbases() knows the opener is a worker. */
 static LONG __posixc_threadbase_slot;
-
-/* Slot value while the worker's base is being opened */
 #define POSIXC_THREAD_OPENING ((IPTR)1)
 
 static void posixc_thread_enter(void)
@@ -220,15 +221,9 @@ static int __posixc_publish_stdbases(struct PosixCIntBase *PosixCBase)
         && GetTaskStorageSlot(__posixc_threadbase_slot) == POSIXC_THREAD_OPENING;
 
     /* A pthread worker and the vfork() child belong to their creator's
-       program, so their stdc bases take its malloc pool. The call goes
-       through the creator's StdCBase as we have none yet. */
-    if (pPosixCBase && pPosixCBase->PosixCBase.StdCBase
-        && (worker || (pPosixCBase->flags & VFORK_PARENT)))
-    {
-        PosixCBase->PosixCBase.StdCBase = pPosixCBase->PosixCBase.StdCBase;
-        __stdc_inherit_mempool(1);
-        PosixCBase->PosixCBase.StdCBase = NULL;
-    }
+       program, so their stdc bases take its malloc pool. */
+    if (pPosixCBase && (worker || (pPosixCBase->flags & VFORK_PARENT)))
+        __posixc_inherit_mempool(pPosixCBase->PosixCBase.StdCBase, 1);
 
     if (PosixCBase->PosixCBase.StdCBase == NULL)
         PosixCBase->PosixCBase.StdCBase = PosixCBase->own_stdcbase =
@@ -238,6 +233,18 @@ static int __posixc_publish_stdbases(struct PosixCIntBase *PosixCBase)
             (struct StdCIOBase *)OpenLibrary((CONST_STRPTR)"stdcio.library", 0);
 
     return TRUE;
+}
+
+/* Calls stdc's __stdc_inherit_mempool() through the given base, which need
+   not be ours. The function came with stdc.library 0.50. */
+void __posixc_inherit_mempool(struct StdCBase *StdCBase, int inherit)
+{
+    struct Library *base = (struct Library *)StdCBase;
+
+    if (base && (base->lib_Version > 0 || base->lib_Revision >= 50))
+        AROS_LVO_CALL1NR(void,
+            AROS_LCA(int, inherit, D0),
+            struct StdCBase *, StdCBase, LVO__stdc_inherit_mempool, StdC);
 }
 
 /* Close what __posixc_publish_stdbases() opened, even if the fields were
