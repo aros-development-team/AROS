@@ -7,9 +7,17 @@ caller's own task. A caller either reads it from a loop it already runs, or
 lends mdnsd a message that comes back when there is something to read. The
 original fifteen vectors keep their offsets and signatures. Vectors 16 and
 17 (LVO 20 and 21 after the four standard entries) append
-`ReadMDNSEvent(ref, event)` and `RequestMDNSEvent(ref, request)`. Library
-version is 41.2, private IPC version 3; the library and daemon must be
-installed together.
+`ReadMDNSEvent(ref, event)` and `RequestMDNSEvent(ref, request)`. They were
+introduced with library version 41.2 and private IPC version 3.
+
+Generic record queries append `LookupHostA()`, `QueryRecordA()`,
+`StopQuery()` and `ReadMDNSRecordEvent()` at LVOs 22 through 25. Library
+version is 41.3 and private IPC version 4 with these calls; the library and
+daemon must be installed together. Because `OpenLibrary()` checks the major
+version only, a caller that can run with 41.2 must check
+`lib_Revision >= BONAMI_LIB_REVISION` before calling LVO 22 or later. The
+record query is a new AROS interface, not a published original-BonAmi vector,
+so it is queue-native and has no unused Hook argument.
 
 ## Calls and ownership
 
@@ -151,6 +159,54 @@ state: the queued removal is replaced by the addition that follows it.
 Consumers must replace entries by that identity rather than count
 ADD/REMOVE pairs.
 
+## Host lookup and generic record queries
+
+`LookupHostA(host, address, tags)` waits for the first IPv4 A answer, for
+three seconds by default or 1 through 60 seconds selected with
+`MDNS_Timeout`. A name without a dot is placed in `.local`; one trailing dot
+is accepted. The output address is in network byte order and is not modified
+on failure. This host's own announced name is answered locally.
+
+`QueryRecordA(name, type, tags)` starts a standing mDNS question. It
+requires `MDNS_EventMode=MDNS_EVENT_QUEUE` and an output `MDNS_QueryRef`, as
+browse and resolve require their output references. A call without queue
+mode returns `MDNSERR_NOTREADY`. Read each answer with
+`ReadMDNSRecordEvent()` and end the operation with `StopQuery()`.
+
+```c
+MDNSQueryRef ref = NULL;
+struct MDNSRecordEvent event;
+struct TagItem tags[] = {
+    { MDNS_EventMode, MDNS_EVENT_QUEUE },
+    { MDNS_QueryRef, (IPTR)&ref },
+    { TAG_DONE, 0 }
+};
+
+rc = QueryRecordA("_http._tcp.local", 12, tags); /* PTR */
+while (rc == MDNS_OK && ReadMDNSRecordEvent(ref, &event) == MDNS_OK) {
+    /* consume a complete record snapshot */
+}
+StopQuery(ref);
+```
+
+`RequestMDNSEvent()` accepts a query reference too. Its ownership,
+cancellation, daemon-restart and one-outstanding-request rules are unchanged;
+after an `MDNS_OK` reply, drain with `ReadMDNSRecordEvent()` instead. Query
+references have the same task ownership as browse and resolve references.
+
+`MDNSRecordEvent` contains the owner name, type, class without the cache-flush
+bit, remaining TTL, receiving interface and at most 512 bytes of RDATA. PTR
+targets and the target following the first six bytes of SRV data are expanded
+to uncompressed DNS wire labels, so no compression pointer refers to a packet
+the caller cannot see. Other RDATA remains in wire byte order.
+
+There are eight query operations, at most four per task, and eight pending
+records per operation. Repeated copies of the same owner/type/class/interface
+and RDATA replace their pending event with the newest TTL. Exhaustion is
+terminal and reported as `MDNSERR_BUSY`; stop and start the query again.
+Standing questions retry with exponential backoff. They do not retain a
+record cache or put known answers in later questions.
+
 ## Data and wire behavior
 
 `MDNSDiscoveryEvent` has no pointers. It contains the instance's single UTF-8
@@ -202,7 +258,8 @@ interface; multiple-address selection and SRV priority/weight policy are not
 implemented. The last received usable record wins within that interface.
 
 The existing own-packet filter means local registrations are not reflected
-into this discovery cache. This slice discovers remote peers; explicit local
+into discovery or generic record queries; the local host's own A answer is the
+only local query exception. This slice discovers remote peers; explicit local
 reflection needs additional work. IPv6, passive duplicate-question suppression,
 negative caching/NSEC and continuation of oversized known-answer lists are
 not implemented. The parent service's other RFC limitations still apply.

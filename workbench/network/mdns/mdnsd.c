@@ -66,6 +66,7 @@ static void
 net_down(struct MDNSDaemon *md)
 {
     mdnsDiscoveryReset(md);
+    mdnsQueryReset(md);
     mdnsRegGoodbyeAll(md);
     mdnsHostGoodbye(md);
     mdnsNetClose(md);
@@ -96,6 +97,7 @@ net_up(struct MDNSDaemon *md)
      * for again with the addresses as they are now. */
     if (mdnsNetRescan(md)) {
         mdnsDiscoveryReset(md);
+        mdnsQueryReset(md);
         mdnsHostRestart(md);
         mdnsRegRestartAll(md);
     }
@@ -244,6 +246,7 @@ main(void)
         }
 
         mdnsDiscoveryTick(md);
+        mdnsQueryTick(md);
         probing = FALSE;
         if (running && md->md_Socket >= 0) {
             /* the host's name first: no service is announced before it */
@@ -258,6 +261,7 @@ main(void)
      * public: a client that cannot find the port any more never waits for
      * one. Messages still queued are not acted on, so none is lent again. */
     mdnsDiscoveryCancel(md);
+    mdnsQueryCancel(md);
 
     /* No client may find the port any more; whoever already sent is told
      * that mdnsd is gone. */
@@ -272,6 +276,7 @@ main(void)
     net_down(md);
     mdnsRegFree(md);
     mdnsDiscoveryFree(md);
+    mdnsQueryFree(md);
     mdnsdServiceClose();
     FreeMem(md->md_RxBuf, MDNS_MAX_PACKET);
     FreeMem(md->md_TxBuf, MDNS_MAX_PACKET);

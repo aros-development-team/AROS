@@ -12,6 +12,7 @@ USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/..
 
 %build_module mmake=workbench-network-mdns-bonami \
     modname=bonami modtype=library \
-    files="bonami_init bonami_api bonami_ipc bonami_stubs bonami_discovery"
+    files="bonami_init bonami_api bonami_ipc bonami_stubs bonami_discovery \
+           bonami_query"
 
 %common
