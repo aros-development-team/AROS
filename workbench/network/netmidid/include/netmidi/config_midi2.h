@@ -17,6 +17,9 @@ struct netmidi_midi2_config {
      * and "midi2_peer_port". It needs midi2_port. */
     char peer_ip[64];
     uint16_t peer_port;
+    /* "midi2_peer_name": the Host to invite is the one advertised whose
+     * endpoint is called that, wherever it is. It needs midi2_port. */
+    char peer_name[64];
     /* "networkmidi2.port.<n> = <name>": port n of the driver networkmidi2
      * is kept for the peer whose endpoint has that name. */
     char port_name[16][64];

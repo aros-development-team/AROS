@@ -24,6 +24,10 @@ int netmidi_applemidi_config_key(struct netmidi_applemidi_config *c,
     if (strcmp(key, "peer_ip") == 0)
         return netmidi_config_take(c->peer_ip, sizeof(c->peer_ip),
                                    value) ? -1 : 1;
+    if (strcmp(key, "peer_name") == 0)
+        return !*value || netmidi_config_take(c->peer_name,
+                                              sizeof(c->peer_name),
+                                              value) ? -1 : 1;
     if (strcmp(key, "max_peers") == 0) {
         char *end;
         unsigned long peers;
@@ -59,6 +63,8 @@ void netmidi_applemidi_config_save(FILE *file,
     if (c->peer_ip[0])
         fprintf(file, "peer_ip=%s\npeer_port=%u\n", c->peer_ip,
                 (unsigned)c->peer_port);
+    if (c->peer_name[0])
+        fprintf(file, "peer_name=%s\n", c->peer_name);
     if (c->max_peers)
         fprintf(file, "max_peers=%d\n", c->max_peers);
     if (c->accept[0])

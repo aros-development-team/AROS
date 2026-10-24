@@ -13,8 +13,8 @@ include $(SRCDIR)/config/aros.cfg
 # transport: given a port for it, a Host, and the Client of the Host the
 # configuration names, each session on a port of DEVS:Midi/networkmidi2.
 #
-# The AppleMIDI session is advertised by the system's mDNS service, which
-# it asks through bonami.library: it holds no socket on port 5353 itself.
+# Sessions are advertised by the system's mDNS service, which it asks
+# through bonami.library: it holds no socket on port 5353 itself.
 
 FILES := main transport_applemidi transport_midi2 adapters network config \
     config_applemidi config_midi2 discovery

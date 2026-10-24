@@ -101,6 +101,15 @@ void netmidid_port_release(struct netmidid *d, int driver, int owner)
     netmidi_ports_release(&d->ports[driver], owner);
 }
 
+int netmidid_browse(struct netmidid *d, const struct netmidid_transport *t,
+                    const char *type)
+{
+    int browse = netmidi_discovery_browse(d->discovery, type);
+
+    if (browse >= 0)
+        d->browse_owner[browse] = t;
+    return browse;
+}
 
 /* Which transports run, of those in transports[], and the state each is
    given for a run. */
@@ -179,11 +188,25 @@ static int periodic(struct netmidid *d, uint64_t now)
     /* The system's mDNS service may come up after us, or again. */
     {
         int registered = netmidi_discovery_poll(d->discovery, now);
+        struct netmidi_discovered seen;
 
         if (registered > discovered)
             puts(TAG "advertised by the system mDNS service");
         if (registered >= 0)
             discovered = registered;
+        while (netmidi_discovery_next(d->discovery, now, &seen)) {
+            const struct netmidid_transport *owner;
+
+            if (strcmp(seen.name, d->session_name) == 0)
+                continue;           /* our own registration, come back */
+            owner = seen.browse >= 0 &&
+                    seen.browse < NETMIDI_DISCOVERY_BROWSES ?
+                    d->browse_owner[seen.browse] : NULL;
+            for (i = 0; i < TRANSPORT_COUNT; ++i)
+                if (running[i] && transports[i] == owner &&
+                    owner->discovered)
+                    owner->discovered(d, state[i], &seen);
+        }
     }
     for (i = 0; i < TRANSPORT_COUNT; ++i)
         if (running[i] && transports[i]->periodic &&
