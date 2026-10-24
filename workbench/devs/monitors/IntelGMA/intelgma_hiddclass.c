@@ -556,7 +556,7 @@ OOP_Object *METHOD(INTELG45, Root, New)
         /* Create compositor object */
         {
             struct TagItem comptags [] = {
-                { aHidd_Compositor_DisplayHidd, (IPTR)sd->display },
+                { aHidd_GMACompositor_DisplayHidd, (IPTR)sd->display },
                 { TAG_DONE, TAG_DONE }
             };
             sd->compositor = OOP_NewObject(sd->compositorclass, NULL, comptags);
@@ -909,9 +909,9 @@ void METHOD(INTELG45, Hidd_Gfx, CopyBox)
 
 ULONG METHOD(INTELG45, Hidd_Display, ShowViewPorts)
 {
-    struct pHidd_Compositor_BitMapStackChanged bscmsg =
+    struct pHidd_GMACompositor_BitMapStackChanged bscmsg =
     {
-        .mID    = OOP_GetMethodID(IID_Hidd_Compositor, moHidd_Compositor_BitMapStackChanged),
+        .mID    = OOP_GetMethodID(IID_Hidd_GMACompositor, moHidd_GMACompositor_BitMapStackChanged),
         .data   = msg->Data
     };
     D(bug("[IntelG45] ShowViewPorts enter TopLevelBM %x\n", msg->Data->Bitmap));

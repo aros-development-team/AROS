@@ -102,6 +102,7 @@ struct x11_func {
     int (*XGetInputFocus) ( Display*, Window*, int* );
     int (*XSetInputFocus) ( Display* , Window , int , Time );
     XPixmapFormatValues *(*XListPixmapFormats)( Display* , int* );
+    int (*XUnmapWindow) ( Display* , Window );
 #if DEBUG_X11_SYNCHRON
     void (*XSynchronize)(Display *, Bool );
 #endif
@@ -161,6 +162,20 @@ extern struct xf86vm_func xf86vm_func;
 extern void *xcursor_handle;
 extern struct xcursor_func xcursor_func;
 
+/* Optional: scaled plane emulation (x11gfx_displayclass.c). NULL entries when libXrender is missing. */
+/* Xrender.h is not included here (it drags in Xlib.h, which conflicts with x11_types.h users): opaque types */
+struct xrender_func {
+    int (*XRenderQueryExtension) ( Display * , int * , int * );
+    void * (*XRenderFindVisualFormat) ( Display * , const Visual * );
+    unsigned long (*XRenderCreatePicture) ( Display * , Drawable , const void * , unsigned long , const void * );
+    void (*XRenderFreePicture) ( Display * , unsigned long );
+    void (*XRenderSetPictureTransform) ( Display * , unsigned long , void * );
+    void (*XRenderSetPictureFilter) ( Display * , unsigned long , const char * , int * , int );
+    void (*XRenderComposite) ( Display * , int , unsigned long , unsigned long , unsigned long , int , int , int , int , int , int , unsigned int , unsigned int );
+};
+extern struct xrender_func xrender_func;
+extern void *xrender_handle;
+
 extern void *x11_handle;
 extern struct x11_func x11_func;
 
@@ -172,6 +187,7 @@ extern struct libc_func libc_func;
 #define LIBC_SOFILE   "libc.so.6"
 #define XF86VM_SOFILE "libXxf86vm.so.1"
 #define XCURSOR_SOFILE "libXcursor.so.1"
+#define XRENDER_SOFILE "libXrender.so.1"
 #endif
 
 #ifdef HOST_OS_darwin
@@ -179,6 +195,7 @@ extern struct libc_func libc_func;
 #define LIBC_SOFILE   "libSystem.dylib"
 #define XF86VM_SOFILE "/usr/X11/lib/libXxf86vm.1.dylib"
 #define XCURSOR_SOFILE "/usr/X11/lib/libXcursor.1.dylib"
+#define XRENDER_SOFILE "/usr/X11/lib/libXrender.1.dylib"
 #endif
 
 #ifndef X11_SOFILE
@@ -186,10 +203,12 @@ extern struct libc_func libc_func;
 #define LIBC_SOFILE   "libc.so"
 #define XF86VM_SOFILE "libXxf86vm.so"
 #define XCURSOR_SOFILE "libXcursor.so"
+#define XRENDER_SOFILE "libXrender.so"
 #endif
 
 #define XVMCALL(func,...) (xf86vm_func.func(__VA_ARGS__))
 #define XCCALL(func,...) (xcursor_func.func(__VA_ARGS__))
+#define XRCALL(func,...) (xrender_func.func(__VA_ARGS__))
 #define XCALL(func,...) (x11_func.func(__VA_ARGS__))
 #define CCALL(func,...) (libc_func.func(__VA_ARGS__))
 

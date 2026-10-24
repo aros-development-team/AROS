@@ -310,7 +310,8 @@ static VOID int_screendepth(struct ScreenDepthActionMsg *msg,
                         prefamily = previous;
                     }
                     /* Go to last screen of this family */
-                    while ( !GetPrivScreen(current)->SpecialFlags & SF_IsParent )
+                    while ( current->NextScreen &&
+                            !(GetPrivScreen(current)->SpecialFlags & SF_IsParent) )
                     {
                         current = current->NextScreen;
                     }

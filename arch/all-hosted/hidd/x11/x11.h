@@ -232,6 +232,15 @@ struct x11_staticdata
 #define OPTION_BACKINGSTORE     (1 << 1)
 #define OPTION_FORCESTDMODES    (1 << 2)
 #define OPTION_DELAYXWINMAPPING (1 << 3)
+#define OPTION_NOPLANES         (1 << 4)    /* --noplanes: do not emulate overlay scan-out planes */
+
+/*
+ * Emulated overlay scan-out planes (see x11gfx_displayclass.c). Each one is a
+ * child X window of the framebuffer window whose background is the scanned
+ * bitmap's pixmap, so the X server shows the bitmap where the plane is placed
+ * without any copy by AROS.
+ */
+#define X11_OVERLAY_PLANES      2
 
 /* Send the message and wait for the reply */
 static inline void X11DoNotify(struct x11_staticdata *xsd, struct notify_msg *msg)

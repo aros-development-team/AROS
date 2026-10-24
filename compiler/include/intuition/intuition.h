@@ -2,7 +2,7 @@
 #define INTUITION_INTUITION_H
 
 /*
-    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Important defines and structures for intuition.library
@@ -690,6 +690,13 @@ struct ExtNewWindow
 #define WA_Priority 	     (WA_Dummy + 100)
 #define WA_Parent   	     (WA_Dummy + 101)
 #define WA_Behind   	     (WA_Dummy + 103)
+/* Composited windows (AROS): the window's layer renders into a surface of
+   its own that the display composes onto the screen. Only honoured when the
+   screen's display can compose; otherwise an ordinary smart refresh window.
+   WA_Opaqueness is the AmigaOS 4 name; the value is AROS specific. */
+#define WA_Opaqueness	     (WA_Dummy + 104)	/* 0..255, 255 = opaque */
+#define WA_AlphaSurface      (WA_Dummy + 105)	/* BOOL: surface with per pixel alpha; starts transparent,
+                                                   pens render with alpha 0, see LA_AlphaSurface */
 
 /* Flags */
 #define WFLG_SIZEGADGET     (1L<<0)

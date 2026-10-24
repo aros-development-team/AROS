@@ -276,8 +276,8 @@ struct HiddBMHistogramData
 #endif
 };
 
-#define NUM_ATTRBASES   13
-#define NUM_METHODBASES 8
+#define NUM_ATTRBASES   14
+#define NUM_METHODBASES 9
 
 struct class_static_data
 {
@@ -295,6 +295,7 @@ struct class_static_data
     OOP_Class            *gfxhiddclass; /* graphics hidd class    */
     OOP_Class            *dmenumclass;  /* display mode enumerator class */
     OOP_Class            *displayclass; /* display class          */
+    OOP_Class            *compositorclass; /* display compositor class */
     OOP_Class            *bitmapclass;  /* bitmap class           */
     OOP_Class            *cursorfbclass;        /* software-cursor framebuffer wrapper bitmap class */
     OOP_Class            *bmhistogramclass;
@@ -334,11 +335,12 @@ struct class_static_data
 #define __IHidd_GC  	    (csd->attrBases[5])
 #define __IHidd_ColorMap    (csd->attrBases[6])
 #define __IHW 	            (csd->attrBases[7])
-#define __IHidd             (csd->attrBases[8])
-#define __IHidd_Sync	    (csd->attrBases[9])
-#define __IHidd_PixFmt      (csd->attrBases[10])
-#define __IHidd_PlanarBM    (csd->attrBases[11])
-#define __IHidd_ChunkyBM    (csd->attrBases[12])
+#define __IHidd_Compositor  (csd->attrBases[8])
+#define __IHidd             (csd->attrBases[9])
+#define __IHidd_Sync	    (csd->attrBases[10])
+#define __IHidd_PixFmt      (csd->attrBases[11])
+#define __IHidd_PlanarBM    (csd->attrBases[12])
+#define __IHidd_ChunkyBM    (csd->attrBases[13])
 
 #undef HiddBitMapBase
 #undef HiddBMHistogramBase
@@ -348,6 +350,7 @@ struct class_static_data
 #undef HiddGCBase
 #undef HiddColorMapBase
 #undef HWBase
+#undef HiddCompositorBase
 #define HiddBitMapBase	    (csd->methodBases[0])
 #define HiddBMHistogramBase (csd->methodBases[1])
 #define HiddGfxBase	    (csd->methodBases[2])
@@ -356,6 +359,7 @@ struct class_static_data
 #define HiddGCBase	    (csd->methodBases[5])
 #define HiddColorMapBase    (csd->methodBases[6])
 #define HWBase              (csd->methodBases[7])
+#define HiddCompositorBase  (csd->methodBases[8])
 
 /* Library base */
 

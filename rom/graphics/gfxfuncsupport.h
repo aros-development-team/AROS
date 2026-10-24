@@ -80,6 +80,7 @@ do                                                                             \
 
 #define HIDD_BMF_SHARED_PIXTAB    	1
 #define HIDD_BMF_SCREEN_BITMAP	      512
+#define HIDD_BMF_LAYERSURFACES	     1024	/* has a LayerSurfaceNode (composited layers) */
 
 /* Minterms and GC drawmodes are in opposite order */
 #define MINTERM_TO_GCDRMD(minterm) 	\
@@ -215,6 +216,10 @@ BOOL GetRPClipRectangleForBitMap(struct RastPort *rp, struct BitMap *bm,
 
 void update_bitmap(struct BitMap *bitmap, OOP_Object *bm, UWORD x, UWORD y, UWORD width, UWORD height,
                    struct GfxBase *GfxBase);
+
+/* composited layer surfaces of a screen bitmap (layersurfaceschanged.c) */
+struct HIDD_CompositeRequest *gfx_FindLayerSurfaces(struct BitMap *bitmap, struct GfxBase *GfxBase);
+void gfx_ForgetLayerSurfaces(struct BitMap *bitmap, struct GfxBase *GfxBase);
 
 void BltRastPortBitMap(struct RastPort *srcRastPort, WORD xSrc, WORD ySrc,
                        struct BitMap *destBitMap, WORD xDest, WORD yDest,

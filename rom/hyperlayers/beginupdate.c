@@ -100,8 +100,18 @@
 
   AndRectRegion(damage_region, &l->bounds);
 
-  visible_damage_region = AndRegionRegionND(l->VisibleRegion, damage_region);
-  AndRegionRegion(l->visibleshape, visible_damage_region);
+  if (IS_COMPOSITED(l))
+  {
+    /* The whole damage, covered or not: the layer is complete in its surface */
+    visible_damage_region = NewRegion();
+    if (visible_damage_region)
+      OrRegionRegion(damage_region, visible_damage_region);
+  }
+  else
+  {
+    visible_damage_region = AndRegionRegionND(l->VisibleRegion, damage_region);
+    AndRegionRegion(l->visibleshape, visible_damage_region);
+  }
   
   if (l->shaperegion)
   {

@@ -60,6 +60,8 @@ static int GfxInit(struct GfxBase *LIBBASE)
     LIBBASE->SimpleSprites = PrivGBase(LIBBASE)->simple_sprites;
     InitSemaphore(&PrivGBase(GfxBase)->hashtab_sema);
     InitSemaphore(&PrivGBase(GfxBase)->view_sema);
+    NEWLIST(&PrivGBase(GfxBase)->layersurfaces);
+    InitSemaphore(&PrivGBase(GfxBase)->layersurfaces_sema);
     InitSemaphore(&PrivGBase(GfxBase)->tfe_hashtab_sema);
     /* Public by name so diskfont.library can arbitrate its TextFonts walks */
     InitSemaphore(&PrivGBase(GfxBase)->fontsem);

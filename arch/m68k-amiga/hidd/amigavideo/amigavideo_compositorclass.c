@@ -66,7 +66,7 @@ OOP_Object *METHOD(AmigaVideoCompositor, Root, New)
         if (!OOP_ObtainAttrBases(attrbases))
             dodispose = TRUE;
 
-        compdata->display = (OOP_Object *)GetTagData(aHidd_Compositor_DisplayHidd, 0, msg->attrList);
+        compdata->display = (OOP_Object *)GetTagData(aHidd_AmigaVideoCompositor_DisplayHidd, 0, msg->attrList);
         if (compdata->display == NULL)
             dodispose = TRUE;
         else
@@ -127,7 +127,7 @@ VOID METHOD(AmigaVideoCompositor, Root, Dispose)
     OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
 }
 
-VOID METHOD(AmigaVideoCompositor, Hidd_Compositor, BitMapStackChanged)
+VOID METHOD(AmigaVideoCompositor, Hidd_AmigaVideoCompositor, BitMapStackChanged)
 {
     struct amigavideo_staticdata *csd = CSD(cl);
     struct amigacomposit_data * compdata = OOP_INST_DATA(cl, o);
@@ -484,12 +484,12 @@ VOID METHOD(AmigaVideoCompositor, Hidd_Compositor, BitMapStackChanged)
     UNLOCK_COMPOSITOR
 }
 
-VOID METHOD(AmigaVideoCompositor, Hidd_Compositor, BitMapRectChanged)
+VOID METHOD(AmigaVideoCompositor, Hidd_AmigaVideoCompositor, BitMapRectChanged)
 {
     D(bug("[AmigaVideo:Compositor] %s()\n", __func__);)
 }
 
-VOID METHOD(AmigaVideoCompositor, Hidd_Compositor, BitMapPositionChanged)
+VOID METHOD(AmigaVideoCompositor, Hidd_AmigaVideoCompositor, BitMapPositionChanged)
 {
     struct amigavideo_staticdata *csd = CSD(cl);
     struct amigacomposit_data * compdata = OOP_INST_DATA(cl, o);
@@ -504,7 +504,7 @@ VOID METHOD(AmigaVideoCompositor, Hidd_Compositor, BitMapPositionChanged)
     UNLOCK_COMPOSITOR
 }
 
-VOID METHOD(AmigaVideoCompositor, Hidd_Compositor, ValidateBitMapPositionChange)
+VOID METHOD(AmigaVideoCompositor, Hidd_AmigaVideoCompositor, ValidateBitMapPositionChange)
 {
     D(bug("[AmigaVideo:Compositor] %s()\n", __func__);)
 }

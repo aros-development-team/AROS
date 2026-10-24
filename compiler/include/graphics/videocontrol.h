@@ -2,7 +2,7 @@
 #define GRAPHICS_VIDEOCONTROL_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -87,5 +87,13 @@
 #define VC_NoColorPaletteLoad_Query 0x80000083
 #define VC_DUALPF_Disable         0x80000084
 #define VC_DUALPF_Disable_Query   0x80000085
+
+/* AROS: screen composition. The ViewPort's COMPF_* flags (see <hidd/gfx.h>)
+   and the hook run on the backdrop before an alpha ViewPort is blended over it.
+   Set by intuition.library from SA_CompositingFlags / SA_AlphaPreCompositingHook. */
+#define VTAG_COMPOSITING_SET      0x80000200
+#define VTAG_COMPOSITING_GET      0x80000201
+#define VTAG_ALPHAHOOK_SET        0x80000202
+#define VTAG_ALPHAHOOK_GET        0x80000203
 
 #endif	/* GRAPHICS_VIDEOCONTROL_H */

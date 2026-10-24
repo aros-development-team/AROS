@@ -19,6 +19,10 @@
 #include <proto/layers.h>
 #include <exec/ports.h>
 #include "intuition_intern.h"
+
+#ifndef AROS_NO_COMPOSITED_LAYERS
+#define AROS_NO_COMPOSITED_LAYERS 0   /* ROM-size build switch, see rom/hyperlayers/layers_intern.h */
+#endif
 #include "intuition_customize.h"
 #include "inputhandler.h"
 #include "inputhandler_actions.h"
@@ -47,6 +51,10 @@ struct OpenWindowActionMsg
     struct Layer                *parentlayer;
     BOOL                             invisible;
     BOOL                             success;
+    /* composited window (WA_Opaqueness / WA_AlphaSurface): LA_Composited layer */
+    BOOL                             composited;
+    BOOL                             alphasurface;
+    UBYTE                            opaqueness;
 };
 
 static VOID int_openwindow(struct OpenWindowActionMsg *msg,
@@ -123,6 +131,8 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
     ULONG                                extrabuttons = 0, extrabuttonsid = ETI_Dummy;
   //ULONG                                      lock;
     ULONG                            windowinvisible = FALSE;
+    BOOL                                 composited = FALSE, alphasurface = FALSE;
+    ULONG                                opaqueness = 255;
     BOOL                                 driver_init_done = FALSE, have_helpgroup = FALSE;
     BOOL                             do_setwindowpointer = FALSE;
 
@@ -545,6 +555,24 @@ moreFlags |= (name); else moreFlags &= ~(name)
             case WA_Hidden:
                 windowinvisible = tag->ti_Data;
                 break;
+
+            /*
+             * Composited windows: the window's layer renders into a surface
+             * of its own that the display composes (layers.library
+             * LA_Composited). Opt-in only; without these tags nothing changes.
+             */
+#if !AROS_NO_COMPOSITED_LAYERS
+            case WA_Opaqueness:
+                opaqueness = (tag->ti_Data > 255) ? 255 : tag->ti_Data;
+                composited = TRUE;
+                break;
+
+            case WA_AlphaSurface:
+                alphasurface = tag->ti_Data ? TRUE : FALSE;
+                if (alphasurface)
+                    composited = TRUE;
+                break;
+#endif
 #endif
 
             case WA_Pointer:
@@ -555,6 +583,15 @@ moreFlags |= (name); else moreFlags &= ~(name)
             } /* switch Tag */
 
         } /* while ((tag = NextTagItem (&tagList))) */
+
+        /*
+         * A composited window keeps all its pixels in its surface, so it is
+         * a smart refresh window: it never gets refresh events from exposure.
+         */
+#if !AROS_NO_COMPOSITED_LAYERS
+        if (composited)
+            nw.Flags &= ~(WFLG_SIMPLE_REFRESH | WFLG_SUPER_BITMAP);
+#endif
 
     } /* if (tagList) */
 
@@ -1068,6 +1105,9 @@ moreFlags |= (name); else moreFlags &= ~(name)
     msg.shapehook = shapehook;
     msg.parentlayer = parentl;
     msg.invisible = windowinvisible;
+    msg.composited = composited;
+    msg.alphasurface = alphasurface;
+    msg.opaqueness = opaqueness;
     msg.success = FALSE;
 
     /* int_openwindow() may activate and render the window before returning.
@@ -1372,6 +1412,9 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
             {LA_WindowPtr, (IPTR)w     },
             {LA_ChildOf  , (IPTR)parent}, /* These two are AROS-specific */
             {LA_Hidden   , invisible   },
+            {TAG_IGNORE  , 0           }, /* [7..9]: LA_Composited, LA_Opacity, LA_AlphaSurface for the inner layer */
+            {TAG_IGNORE  , 0           },
+            {TAG_IGNORE  , 0           },
             {TAG_DONE}
         };
 
@@ -1409,6 +1452,17 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
 
         /* Now comes the inner window */
         layertags[0].ti_Data = (IPTR)backfillhook;
+#if !AROS_NO_COMPOSITED_LAYERS
+        if (msg->composited)
+        {
+            layertags[7].ti_Tag  = LA_Composited;
+            layertags[7].ti_Data = TRUE;
+            layertags[8].ti_Tag  = LA_Opacity;
+            layertags[8].ti_Data = msg->opaqueness;
+            layertags[9].ti_Tag  = LA_AlphaSurface;
+            layertags[9].ti_Data = msg->alphasurface;
+        }
+#endif
         if (shapehook)
         {
             layertags[2].ti_Tag  = LA_ShapeHook;
@@ -1464,6 +1518,11 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
             {LA_WindowPtr, (IPTR)w     },
             {LA_ChildOf  , (IPTR)parent}, /* These two are AROS-specific */
             {LA_Hidden, invisible   },
+#if !AROS_NO_COMPOSITED_LAYERS
+            {msg->composited ? LA_Composited   : TAG_IGNORE, TRUE                  },
+            {msg->composited ? LA_Opacity      : TAG_IGNORE, msg->opaqueness       },
+            {msg->composited ? LA_AlphaSurface : TAG_IGNORE, msg->alphasurface     },
+#endif
             {TAG_DONE}
         };
 

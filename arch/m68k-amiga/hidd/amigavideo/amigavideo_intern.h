@@ -173,7 +173,7 @@ struct amigavideoclbase
 
 #define __IHidd 	                (csd->hiddAttrBase)
 #define __IHidd_BitMap	                (csd->hiddBitMapAttrBase)
-#define __IHidd_Compositor              (csd->hiddCompositorAttrBase)
+#define __IHidd_AmigaVideoCompositor    (csd->hiddCompositorAttrBase)
 #define __IHidd_PlanarBM	        (csd->hiddPlanarBitMapAttrBase)
 #define __IHidd_BitMap_AmigaVideo       (csd->hiddAmigaVideoBitMapAttrBase)
 #define __IHidd_GC			(csd->hiddGCAttrBase)

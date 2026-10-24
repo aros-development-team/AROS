@@ -1,7 +1,7 @@
 #ifndef AMIGAVIDEO_COMPOSITOR_H
 #define AMIGAVIDEO_COMPOSITOR_H
 /*
-    Copyright © 2019-2026, The AROS Development Team. All rights reserved.
+    Copyright (C) 2019-2026, The AROS Development Team. All rights reserved.
     $Id$
 */
 

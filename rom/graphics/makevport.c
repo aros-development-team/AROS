@@ -120,6 +120,11 @@
         BOOL current_owned = (vpe->Flags & VPXF_WRAPPED_BITMAP) != 0;
 
         vpd->vpe = vpe;
+        /* Composition parameters set through VideoControl() travel with the chain */
+        vpd->CompFlags    = IVPE(vpe)->compflags;
+        vpd->PreAlphaHook = IVPE(vpe)->prealphahook;
+        /* Composited layer surfaces of this screen (layers.library, LayerSurfacesChanged()) */
+        vpd->Surfaces     = gfx_FindLayerSurfaces(bitmap, GfxBase);
 
         if(IS_HIDD_BM(bitmap)) {
             if(vpd->Bitmap != HIDD_BM_OBJ(bitmap)) {

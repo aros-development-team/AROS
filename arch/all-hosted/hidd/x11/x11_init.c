@@ -188,6 +188,11 @@ int X11_Init(struct x11_staticdata *xsd)
                         xsd->options |= OPTION_DELAYXWINMAPPING;
                     }
 
+                    if (strcmp("--noplanes", n->ln_Name) == 0)
+                    {
+                        xsd->options |= OPTION_NOPLANES;
+                    }
+
                 }
             }
         }

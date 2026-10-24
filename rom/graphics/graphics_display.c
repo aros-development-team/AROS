@@ -40,7 +40,6 @@
 
 #include "graphics_intern.h"
 #include "graphics_display.h"
-#include "graphics_compositor.h"
 #include "gfxfuncsupport.h"
 #include "dispinfo.h"
 
@@ -57,13 +56,10 @@ struct gfxdisplay_data *display_Setup(OOP_Object *displayhidd, struct GfxBase *G
     ULONG cnt = 0;
     IPTR softcursor;
     IPTR fbtype = vHidd_FrameBuffer_Direct; /* We default to direct for historical reasons */
-    UWORD compose = 0;
-    BOOL can_compose = FALSE;
     BOOL ok = TRUE;
     ULONG i;
     HIDDT_ModeID *modes, *m;
     struct monitor_displaydata *mdd;
-    struct HIDD_ModeProperties props = {0};
     OOP_Object *dmenum;
 
     D(bug("[graphics.library/display] %s: '%s' @ 0x%p\n", __func__, OOP_OCLASS(displayhidd)->ClassNode.ln_Name, displayhidd));
@@ -108,50 +104,19 @@ struct gfxdisplay_data *display_Setup(OOP_Object *displayhidd, struct GfxBase *G
     }
     D(bug("[graphics.library/display] %s: GfxHidd at 0x%p\n", __func__, mdd->mdisplay.display_gfxhidd));
 
-    /*
-     * 1. Fill in ModeID database in the driverdata.
-     * 2. Check if at least one mode supports composition.
-     * 3. Check if the driver has at least one non-palettized mode.
-     * (2) and (3) are needed to determine if we need/can use software screen
-     * composition with this driver.
-     */
+    /* Fill in ModeID database in the driverdata. */
     for (i = 0; i <= cnt; i++)
     {
         mdd->modes[i].id  = modes[i];
 	mdd->modes[i].drv = (struct gfxdisplay_data *)mdd;
-
-	/* Watch out! The last record in the array is terminator (vHidd_ModeID_Invalid) */
-	if ((i < cnt) && (!compose))
-	{
-	    HIDD_Display_ModeProperties(displayhidd, modes[i], &props, sizeof(props));
-	    compose |= props.CompositionFlags;
-
-	    if (!can_compose)
-	    {
-		OOP_Object *sync, *pf;
-		IPTR colmod;
-
-		HIDD_DMEnum_GetMode(mdd->mdisplay.display_dmenum, modes[i], &sync, &pf);
-                if (pf)
-                {
-                    OOP_GetAttr(pf, aHidd_PixFmt_ColorModel, &colmod);
-
-                    if (colmod == vHidd_ColorModel_TrueColor)
-                    {
-                        /*
-                         * At the moment software compositor supports only truecolor screens.
-                         * There also definitions for DirectColor, gray, etc, but there is
-                         * no such hardware supported by now.
-                         */
-                        can_compose = TRUE;
-                    }
-                }
-	    }
-	}
     }
 
     HIDD_DMEnum_ReleaseModeIDs(mdd->mdisplay.display_dmenum, modes);
     mdd->mdisplay.display_obj = displayhidd;
+
+    /* Damage notification runs after every render operation: resolve it once */
+    mdd->mdisplay.display_UpdateRect = OOP_GetMethod(displayhidd, HiddDisplayBase + moHidd_Display_UpdateRect,
+                                                     &mdd->mdisplay.display_UpdateRect_cl);
 
     /* Query properties of our driver */
     OOP_GetAttr(mdd->mdisplay.display_gfxhidd, aHidd_Gfx_FrameBufferType, &fbtype);
@@ -177,18 +142,17 @@ struct gfxdisplay_data *display_Setup(OOP_Object *displayhidd, struct GfxBase *G
                     bug("[graphics.library/display] %s: FRAMEBUFFER OK: %p\n", __func__, mdd->framebuffer);
             )
 
-	    if ((!compose) && can_compose)
+	    /*
+	     * Whether screens compose on this display (dragging, alpha) is the
+	     * display's business: its driver either composes in hardware
+	     * (ModeProperties reports COMPF_* flags) or its compositor does.
+	     */
 	    {
-		D(bug("[graphics.library/display] %s: Software screen composition required\n", __func__));
+	        IPTR caps = 0;
 
-		mdd->mdisplay.display_flags |= DF_SoftComposit;
-		/*
-		 * NB: the compositor is instantiated later, from display_Register(),
-		 * once display_idbase has been assigned. The compositor needs the id
-		 * base in order to build a valid DisplayID for the bitmap it allocates
-		 * to composite into on NoFrameBuffer drivers; setting it up here (before
-		 * the id base is known) would bake in an invalid (zero) DisplayID.
-		 */
+	        OOP_GetAttr(displayhidd, aHidd_Display_CompositionCapabilities, &caps);
+	        if (caps)
+	            mdd->mdisplay.display_flags |= DF_Composes;
 	    }
 
 	    return (struct gfxdisplay_data *)mdd;
@@ -242,9 +206,7 @@ void display_Expunge(struct monitor_displaydata *mdd, struct GfxBase *GfxBase)
     if (CDD(GfxBase)->DriverNotify)
 	CDD(GfxBase)->DriverNotify(mdd->mdisplay.display_userdata, FALSE, CDD(GfxBase)->mdisplay.display_userdata);
 
-    /* Dispose associated stuff */
-    if (mdd->mdisplay.display_compositor)
-        OOP_DisposeObject(mdd->mdisplay.display_compositor);
+    /* Dispose associated stuff (the compositor goes with the display object) */
     if (mdd->framebuffer)
         OOP_DisposeObject(mdd->framebuffer);
 
@@ -376,23 +338,17 @@ void display_Register(OOP_Object *display, struct gfxdriver_data *cfg, BOOL forc
          * Merge (do not overwrite) the driver-config flags into the flags that
          * display_Setup() already derived from the hardware (DF_DirectFB,
          * DF_SoftComposit, DF_SoftCursor). Overwriting them here would discard the
-         * software-composition request and break the compositor retry path in
-         * compositor_Install() when the Compositor class registers after the display.
+         * composition flag.
          */
         mdd->display_flags     |= cfg->drv_flags;
         mdd->display_cfg        = cfg;
 
         /*
-         * Now that display_idbase is known, instantiate the software compositor
-         * if this display needs it and the Compositor class is already
-         * registered. (When the class registers later, compositor_Install()
-         * performs this same setup; by then the id base is already assigned.)
+         * The display (and its compositor, which allocates the bitmap it
+         * composes into on NoFrameBuffer drivers) needs the public ID base
+         * to build complete DisplayIDs.
          */
-        if ((mdd->display_flags & DF_SoftComposit) && CDD(GfxBase)->compositorClass &&
-            !mdd->display_compositor)
-        {
-            compositor_Setup((struct monitor_displaydata *)mdd, GfxBase);
-        }
+        OOP_SetAttrsTags(display, aHidd_Display_DisplayID, cfg->drv_idbase, TAG_DONE);
 
         if ((mdd->display_flags & DF_BootMode) && (!force))
         {
@@ -510,60 +466,29 @@ ULONG display_PrepareViewPorts(struct monitor_displaydata *mdd, struct HIDD_View
  */
 ULONG display_LoadViewPorts(struct monitor_displaydata *mdd, struct HIDD_ViewPortData *vpd, struct View *v, struct GfxBase *GfxBase)
 {
-    struct BitMap *bitmap;
-    OOP_Object *bm, *fb;
+    struct BitMap *bitmap = vpd ? vpd->vpe->ViewPort->RasInfo->BitMap : NULL;
+    OOP_Object *fb;
     BOOL compositing = FALSE;
 
     DEBUG_LOADVIEW(bug("[graphics.library/display] %s: Showing ViewPortData 0x%p, BitMap object 0x%p\n", __func__, vpd, vpd ? vpd->Bitmap : NULL));
     mdd->display = vpd;
 
-    /* First try the new method */
+    /* A driver composing in hardware takes the whole chain */
     if (HIDD_Display_ShowViewPorts(mdd->mdisplay.display_obj, vpd))
     {
         DEBUG_LOADVIEW(bug("[graphics.library/display] %s: ShowViewPorts() worked\n", __func__));
+        mdd->frontbm = bitmap;
         return 0;
     }
 
     /*
-     * ShowViewPorts not supported.
-     * Perhaps we can use software screen compositor. But for proper operation
-     * we need to figure out our frontmost bitmap.
+     * Otherwise the display's compositor shows it: the frontmost bitmap
+     * directly when it covers the display, a composed bitmap otherwise. It
+     * handles all possible failures internally and falls back to showing
+     * the frontmost bitmap alone.
      */
-    if (vpd)
-    {
-        bitmap = vpd->vpe->ViewPort->RasInfo->BitMap;
-        bm     = vpd->Bitmap;
-    }
-    else
-    {
-        bitmap = NULL;
-        bm     = NULL;
-    }
-    DEBUG_LOADVIEW(bug("[graphics.library/display] %s: Old bitmap 0x%p, New bitmap 0x%p, object 0x%p\n", __func__, mdd->frontbm, bitmap, bm));
-
-    if (mdd->mdisplay.display_compositor)
-    {
-    	/*
-    	 * Compositor present. Give ViewPorts chain to it.
-    	 * For improved visual appearance it will call Show itself and return its result.
-    	 * The compositor is expected to handle all possible failures internally. If some
-    	 * internal error happens, it must fail back to single HIDD_Gfx_Show().
-    	 */
-    	fb = compositor_LoadViewPorts(mdd->mdisplay.display_compositor, vpd, &compositing, GfxBase);
-    	DEBUG_LOADVIEW(bug("[graphics.library/display] %s: Compositor returned 0x%p, active: %d\n", __func__, fb, compositing));
-    }
-    else
-    {
-    	/*
-     	 * First check if the bitmap is already displayed. If so, do nothing (because
-     	 * displaying the same bitmap twice may cause some problems)
-     	 */
-    	if (mdd->frontbm == bitmap)
-            return 0;
-
-    	fb = HIDD_Display_Show(mdd->mdisplay.display_obj, bm, fHidd_Display_Show_CopyBack);
-    	DEBUG_LOADVIEW(bug("[graphics.library/display] %s:] Show() returned 0x%p\n", __func__, fb));
-    }
+    fb = HIDD_Display_ComposeViewPorts(mdd->mdisplay.display_obj, vpd, &compositing);
+    DEBUG_LOADVIEW(bug("[graphics.library/display] %s: Compositor returned 0x%p, active: %d\n", __func__, fb, compositing));
 
     /* Summary of possible responses (when no error happened):
        NoFrameBuffer = FALSE: bm = NULL  -> fb != NULL and bm != fb
@@ -587,7 +512,7 @@ ULONG display_LoadViewPorts(struct monitor_displaydata *mdd, struct HIDD_ViewPor
     	mdd->frontbm = bitmap;
 
 	/*
-	 * Install the framebuffer into new bitmap. Only if software composition is inactive.
+	 * Install the framebuffer into new bitmap. Only if composition is inactive.
 	 * If it is active, our BitMap is mirrored, not replaced.
 	 */
 	if (!compositing)
@@ -611,6 +536,90 @@ ULONG display_LoadViewPorts(struct monitor_displaydata *mdd, struct HIDD_ViewPor
     }
 
     return 0;
+}
+
+/*
+ * Custom screen bitmaps (OpenScreen() with SA_BitMap): a bitmap that is not
+ * displayable itself can still be shown when the display composes screens.
+ * A display composing in hardware decides for itself through ShowViewPorts();
+ * the compositor shows any HIDD bitmap it can read. Classic planar bitmaps in
+ * Chip RAM are wrapped by MakeVPort() on displays that scan them out directly.
+ */
+static BOOL display_CanDisplayExternalPlanar(struct BitMap *bitmap, struct gfxdisplay_data *display, struct GfxBase *GfxBase)
+{
+    UBYTE plane;
+
+    if (!(display->display_flags & DF_ExternalPlanar) || !bitmap ||
+        IS_HIDD_BM(bitmap) || !bitmap->Rows || !bitmap->BytesPerRow ||
+        !bitmap->Depth || bitmap->Depth > 8)
+        return FALSE;
+
+    for (plane = 0; plane < bitmap->Depth; plane++)
+    {
+        if (!bitmap->Planes[plane] ||
+            !(TypeOfMem(bitmap->Planes[plane]) & MEMF_CHIP))
+            return FALSE;
+    }
+
+    return TRUE;
+}
+
+/* The display's compositor (not the driver) composes screens on this display */
+BOOL display_SoftComposes(struct gfxdisplay_data *display, HIDDT_ModeID hiddmode, struct GfxBase *GfxBase)
+{
+    struct HIDD_ModeProperties props = {0};
+
+    if (!(display->display_flags & DF_Composes))
+        return FALSE;
+
+    HIDD_Display_ModeProperties(display->display_obj, hiddmode, &props, sizeof(props));
+    return props.CompositionFlags == 0;
+}
+
+BOOL display_IsBMCompositable(struct BitMap *bitmap, DisplayInfoHandle handle, struct GfxBase *GfxBase)
+{
+    if (display_SoftComposes(DIH(handle)->drv, DIH(handle)->id, GfxBase))
+        return IS_HIDD_BM(bitmap);
+
+    return display_CanDisplayExternalPlanar(bitmap, DIH(handle)->drv, GfxBase);
+}
+
+BOOL display_SetBMCompositable(struct BitMap *bitmap, DisplayInfoHandle handle, struct GfxBase *GfxBase)
+{
+    if (display_SoftComposes(DIH(handle)->drv, DIH(handle)->id, GfxBase))
+    {
+        if (!IS_HIDD_BM(bitmap))
+            return FALSE;
+
+        if (!OOP_GET(HIDD_BM_OBJ(bitmap), aHidd_BitMap_Displayable))
+        {
+            struct TagItem composittags[] =
+            {
+                {aHidd_BitMap_Compositable, TRUE},
+                {TAG_DONE                 , 0   }
+            };
+
+            OOP_SetAttrs(HIDD_BM_OBJ(bitmap), composittags);
+        }
+
+        /*
+         * A bitmap allocated with an explicit pixel format (BMF_SPECIALFMT,
+         * the way to get an ARGB screen bitmap) carries no mode ID: AllocBitMap()
+         * drops it in favour of the format. It is about to be shown through
+         * this display's compositor in the mode OpenScreen() picked, so give
+         * it that mode now. MakeVPort() checks the bitmap's mode and driver
+         * against the viewport's colormap and would otherwise refuse it.
+         */
+        if (HIDD_BM_HIDDMODE(bitmap) == vHidd_ModeID_Invalid)
+        {
+            HIDD_BM_HIDDMODE(bitmap) = DIH(handle)->id;
+            HIDD_BM_DRVDATA(bitmap)  = (struct monitor_driverdata *)DIH(handle)->drv;
+        }
+
+        return TRUE;
+    }
+    /* MakeVPort wraps classic planar BitMaps without copying their planes. */
+    return display_CanDisplayExternalPlanar(bitmap, DIH(handle)->drv, GfxBase);
 }
 
 /* Find the first visible ViewPortData for the specified monitor in the View */

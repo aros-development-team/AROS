@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -74,7 +74,8 @@
     return FALSE;
   }
     
-  if (IS_VISIBLE(l))
+  /* A blended layer hid nothing: nothing to show or backfill behind it */
+  if (IS_VISIBLE(l) && !IS_TRANSLUCENT(l))
   {
     struct Region r;
     InitRegion(&r);
@@ -114,7 +115,7 @@
        * have to take it out.
        */
       if (IS_VISIBLE(_l))
-        ClearRegionRegion(_l->visibleshape, &r);
+        ClearRegionRegion(OCCLUDESHAPE(_l), &r);
 
       _l = _l->back;
     }
@@ -142,6 +143,11 @@
   
   if (l->back)
     l->back->front = l->front;
+
+  /* The display must drop the surface before it is freed */
+  if (IS_COMPOSITED(l) && NULL != LIE(l->LayerInfo))
+    LIE(l->LayerInfo)->lie_NumComposited--;
+  UPDATE_SURFACES(l->LayerInfo);
   
   UnlockLayers(l->LayerInfo);
 

@@ -32,7 +32,6 @@ static ULONG Nouveau_Init(LIBBASETYPEPTR LIBBASE)
     { IID_Hidd_I2C_Nouveau,     &LIBBASE->sd.i2cNouveauAttrBase },
     { IID_Hidd_Gallium,         &LIBBASE->sd.galliumAttrBase },
     { IID_Hidd_GC,              &LIBBASE->sd.gcAttrBase },
-    { IID_Hidd_Compositor,     &LIBBASE->sd.compositorAttrBase },
     { IID_Hidd_BitMap_Nouveau,  &LIBBASE->sd.bitMapNouveauAttrBase },
     { NULL, NULL }
     };
@@ -63,15 +62,6 @@ static ULONG Nouveau_Init(LIBBASETYPEPTR LIBBASE)
     LIBBASE->sd.mid_ConvertPixels   = OOP_GetMethodID((STRPTR)IID_Hidd_BitMap, moHidd_BitMap_ConvertPixels);
     LIBBASE->sd.mid_GetPixFmt       = OOP_GetMethodID((STRPTR)IID_Hidd_DMEnum, moHidd_DMEnum_GetPixFmt);
 
-    LIBBASE->sd.mid_BitMapPositionChanged   =
-        OOP_GetMethodID((STRPTR)IID_Hidd_Compositor, moHidd_Compositor_BitMapPositionChanged);
-    LIBBASE->sd.mid_BitMapRectChanged       = 
-        OOP_GetMethodID((STRPTR)IID_Hidd_Compositor, moHidd_Compositor_BitMapRectChanged);
-    LIBBASE->sd.mid_ValidateBitMapPositionChange =
-        OOP_GetMethodID((STRPTR)IID_Hidd_Compositor, moHidd_Compositor_ValidateBitMapPositionChange);
-
-  
-    
     InitSemaphore(&LIBBASE->sd.multibitmapsemaphore);
 
     NouveauMemPool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR | MEMF_SEM_PROTECTED, 32 * 1024, 16 * 1024);

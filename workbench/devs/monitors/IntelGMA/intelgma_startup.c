@@ -31,7 +31,7 @@ OOP_AttrBase HiddGMABitMapAttrBase;
 OOP_AttrBase HiddI2CAttrBase;
 OOP_AttrBase HiddI2CDeviceAttrBase;
 OOP_AttrBase HiddGCAttrBase;
-OOP_AttrBase HiddCompositorAttrBase;
+OOP_AttrBase HiddGMACompositorAttrBase;
 OOP_AttrBase MetaAttrBase;
 OOP_AttrBase HiddAttrBase;
 OOP_AttrBase HiddPCIDeviceAttrBase;
@@ -68,7 +68,7 @@ static const struct OOP_ABDescr attrbases[] =
     {IID_Hidd_I2CDevice     , &HiddI2CDeviceAttrBase  },
     {IID_Hidd_PlanarBM      , &__IHidd_PlanarBM       },
     {IID_Hidd_GC            , &HiddGCAttrBase         },
-    {IID_Hidd_Compositor   , &HiddCompositorAttrBase},
+    {IID_Hidd_GMACompositor   , &HiddGMACompositorAttrBase},
     {NULL, NULL }
 };
 

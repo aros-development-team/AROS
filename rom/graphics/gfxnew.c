@@ -63,7 +63,7 @@ static LONG dummy_init(void);
     struct ExtendedNode *Result;
     const ULONG GfxNew_memsizes[] = { 0,
                                       sizeof(struct ViewExtra),
-                                      sizeof(struct ViewPortExtra),
+                                      sizeof(struct IntViewPortExtra),
                                       sizeof(struct SpecialMonitor),
                                       sizeof(struct MonitorSpec)
                                     };

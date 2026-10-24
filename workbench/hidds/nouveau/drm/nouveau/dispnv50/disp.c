@@ -78,6 +78,37 @@
  */
 int nv50_disp_sync_host_param = 0;
 bool nv50_disp_sv_release_enabled = false;
+/*
+ * GB20x display supervisor handling. GSP-RM services the supervisor phases
+ * (phase 2 reprograms the pixel clock and OR routing) on its own FE event
+ * vector, which it sets in 0x611fa0 (0x400000b1 on the GB207). The port
+ * points that vector at the CPU display line (0x4000009a) and releases the
+ * phases itself, which skips RM's work: a mode change that alters the timing
+ * loses sync. Titan 2026-10-23: for such a commit, RM's vector restored and
+ * the driver waiting, RM clears each phase in 7-17 ms and 640x480 <-> 1080p
+ * works. Leaving RM's vector for every update (incl. display init) made the
+ * init core update time out, so the hand-over is limited to timing changes
+ * of a live head until that is understood.
+ *
+ * NOUVEAU_DISP_SV_RM=0 disables the hand-over. NOUVEAU_DISP_SV_GRACE=<ms>
+ * applies the waiting release to every update and logs every supervisor
+ * register change (experiment). NOUVEAU_DISP_FE_VECTOR=keep never redirects.
+ */
+int nv50_disp_sv_rm_param = 1;
+/* NOUVEAU_WINDOW_PLANES (default 1; 0 = off): offer Volta+ overlay windows
+ * to the compositor (nouveau_hiddclass.c). Turning one on or off goes to RM
+ * too. On the GB207 the firmware's live head 0 owns no overlay window;
+ * coreca7d_wndw_owner gives it window 1 (NOUVEAU_WNDW_LIVE_OWNER). Confirmed
+ * with planescreens on the Titan 2026-10-24. */
+int nouveau_window_planes = 1;
+/* NOUVEAU_VBLANK (default 1): 0 makes the hidd treat vblank as unavailable
+ * (WaitLatch/CommitPlanes return at once, as with the old stubs). */
+int nouveau_vblank_param = 1;
+int nv50_disp_sv_grace_ms = 0;
+int nv50_disp_fe_vector_keep = 0;
+static struct nvif_object *nv50_disp_fe_obj;
+static u32 nv50_disp_fe_vector_rm;
+static bool nv50_disp_sv_defer;
 
 int
 nv50_disp_sync_host_param_get(void)
@@ -126,23 +157,79 @@ nv50_disp_imp(struct nv50_disp *disp, const struct nvkm_disp_imp_head *heads, in
 void
 nv50_disp_sv_release(struct nvif_device *device)
 {
-	u32 sv;
+	static u32 seen;
+	static u64 since;
+	static int logged;
+	u32 sv, grace;
+	u64 now;
 
 	if (!nv50_disp_sv_release_enabled)
 		return;
 
-	/*
-	 * GB20x: GSP-RM does not run the display supervisor for a client-driven
-	 * update. Service it ourselves - reset the pending SUPERVISOR event and
-	 * trigger SUPERVISOR_MAIN.RESTART - so the FE advances through its
-	 * phases and the update completes. (Register semantics from NVIDIA's
-	 * open-gpu-doc Ampere display manual: 0x611860 = EVT_STAT_CTRL_DISP,
-	 * bits 0-2 = SUPERVISOR1-3; 0x6107a8 = SUPERVISOR_MAIN, bit31 = RESTART.)
-	 */
 	sv = nvif_rd32(&device->object, 0x611860) & 0x7;
-	if (sv) {
-		nvif_wr32(&device->object, 0x611860, sv);
-		nvif_wr32(&device->object, 0x006107a8, 0x80000000);
+
+	if (!nv50_disp_sv_defer && !nv50_disp_sv_grace_ms) {
+		/* Reset the pending SUPERVISOR event and trigger
+		   SUPERVISOR_MAIN.RESTART (0x6107a8 bit31) at once. Nothing may
+		   delay this - a late release wedges the engine. */
+		if (sv) {
+			nvif_wr32(&device->object, 0x611860, sv);
+			nvif_wr32(&device->object, 0x006107a8, 0x80000000);
+		}
+		return;
+	}
+
+	grace = nv50_disp_sv_grace_ms ? nv50_disp_sv_grace_ms : 500;
+	now = nvif_device_time(device);
+
+	if (nv50_disp_sv_grace_ms) {
+		static u32 le = ~0, lm = ~0, lh = ~0;
+		static u64 t0;
+		u32 e = nvif_rd32(&device->object, 0x611860);
+		u32 m = nvif_rd32(&device->object, 0x6107a8);
+		u32 h = nvif_rd32(&device->object, 0x6107ac);
+
+		if ((e != le || m != lm || h != lh) && logged < 256) {
+			if (!t0)
+				t0 = now;
+			logged++;
+			printk(KERN_NOTICE "[nouveau] sv: t=%llu us evt %08x main %08x head0 %08x\n",
+			       (now - t0) / 1000, e, m, h);
+			le = e; lm = m; lh = h;
+		}
+	}
+
+	if (seen && !(sv & seen))
+		seen = 0;	/* RM serviced it */
+	if (!sv)
+		return;
+	if (sv != seen) {
+		seen = sv;
+		since = now;
+	}
+	if (now - since < (u64)grace * 1000000ULL)
+		return;
+
+	/* RM left it pending: release it so the update can finish. */
+	nvif_wr32(&device->object, 0x611860, sv);
+	nvif_wr32(&device->object, 0x006107a8, 0x80000000);
+	if (logged < 256) {
+		logged++;
+		printk(KERN_WARNING "[nouveau] sv: phase %x not serviced by RM in %u ms, released by driver\n",
+		       sv, grace);
+	}
+	seen = 0;
+}
+
+/* Shutdown: RM's teardown was only ever run with the old routing, where the
+   driver releases its phases (r535 msgq poll / gsp fini); keep it that way. */
+void
+nv50_disp_sv_shutdown(void)
+{
+	if (nv50_disp_sv_release_enabled && nv50_disp_fe_obj && !nv50_disp_fe_vector_keep) {
+		nv50_disp_sv_rm_param = 0;
+		nv50_disp_sv_defer = false;
+		nvif_wr32(nv50_disp_fe_obj, 0x611fa0, 0x4000009a);
 	}
 }
 #include "nv50_display.h"
@@ -215,6 +302,19 @@ nv50_dmac_kick(struct nvif_push *push)
 
 	dmac->cur = push->cur - (u32 __iomem *)dmac->push.mem.object.map.ptr;
 	if (dmac->put != dmac->cur) {
+#if defined(__AROS__)
+		/*
+		 * A push buffer in host memory is written through a cached CPU
+		 * mapping, and the display front end fetches it over PCIe, which
+		 * does not snoop the CPU caches on every platform (riscv boards
+		 * with Zicbom but no coherent bus). Clean the buffer before PUT
+		 * moves, or the FE may fetch stale methods and the update never
+		 * completes (notifier timeouts). A no-op where the bus snoops.
+		 */
+		if (!(dmac->push.mem.type & NVIF_MEM_VRAM))
+			compat_dma_sync(NULL, (void *)dmac->push.mem.object.map.ptr, dmac->push.mem.size,
+					DMA_TO_DEVICE, true);
+#endif
 		/* Push buffer fetches are not coherent with BAR1, we need to ensure
 		 * writes have been flushed right through to VRAM before writing PUT.
 		 */
@@ -2290,6 +2390,43 @@ nv50_disp_atomic_commit_tail(struct drm_atomic_state *state)
 	if (atom->lock_core)
 		mutex_lock(&disp->mutex);
 
+#if defined(__AROS__)
+	/* A live head changing timing, or an overlay window being turned on
+	   or off (window/head usage, bandwidth), needs RM's supervisor work. */
+	if (nv50_disp_sv_release_enabled && nv50_disp_sv_rm_param && nv50_disp_fe_vector_rm) {
+		struct drm_plane_state *old_plane_state;
+		static int noted;
+
+		for_each_oldnew_plane_in_state(state, plane, old_plane_state, new_plane_state, i) {
+			if (old_plane_state->visible == new_plane_state->visible)
+				continue;
+			if (noted < 48) {
+				noted++;
+				printk(KERN_NOTICE "[nouveau] plane %u %s (type %d, crtcs %x) %s%s\n",
+				       plane->base.id, plane->name, plane->type, plane->possible_crtcs,
+				       new_plane_state->visible ? "on" : "off",
+				       plane->type == DRM_PLANE_TYPE_OVERLAY ? ": phases to RM" : "");
+			}
+			if (plane->type == DRM_PLANE_TYPE_OVERLAY)
+				nv50_disp_sv_defer = true;
+		}
+		for_each_oldnew_crtc_in_state(state, crtc, old_crtc_state, new_crtc_state, i) {
+			const struct drm_display_mode *om = &old_crtc_state->adjusted_mode;
+			const struct drm_display_mode *nm = &new_crtc_state->adjusted_mode;
+
+			if (old_crtc_state->active && new_crtc_state->active &&
+			    drm_atomic_crtc_needs_modeset(new_crtc_state) &&
+			    (om->clock != nm->clock || om->htotal != nm->htotal ||
+			     om->vtotal != nm->vtotal)) {
+				nv50_disp_sv_defer = true;
+				break;
+			}
+		}
+		if (nv50_disp_sv_defer)
+			nvif_wr32(&drm->client.device.object, 0x611fa0, nv50_disp_fe_vector_rm);
+	}
+#endif
+
 	/* Disable head(s). */
 	for_each_oldnew_crtc_in_state(state, crtc, old_crtc_state, new_crtc_state, i) {
 		struct nv50_head_atom *asyh = nv50_head_atom(new_crtc_state);
@@ -2481,6 +2618,14 @@ nv50_disp_atomic_commit_tail(struct drm_atomic_state *state)
 		if (ret)
 			NV_ERROR(drm, "%s: timeout\n", plane->name);
 	}
+
+#if defined(__AROS__)
+	if (nv50_disp_sv_defer) {
+		nv50_disp_sv_defer = false;
+		if (!nv50_disp_fe_vector_keep)
+			nvif_wr32(&drm->client.device.object, 0x611fa0, 0x4000009a);
+	}
+#endif
 
 	for_each_new_crtc_in_state(state, crtc, new_crtc_state, i) {
 		if (new_crtc_state->event) {
@@ -2960,12 +3105,17 @@ nv50_display_create(struct drm_device *dev)
 	if (disp->disp->object.oclass >= GB202_DISP) {
 		struct nvif_object *dev = &drm->client.device.object;
 		/*
-		 * The FE fires its GSP-target events on a vector nothing
-		 * services on GB20x; point it at RM's display vector so the
-		 * supervisor events reach GSP-RM (see nv50_disp_sv_release
-		 * for the phase servicing).
+		 * Remember RM's FE event vector (0x611fa0) and point it at the
+		 * CPU display line; timing changes hand it back to RM (see
+		 * nv50_disp_sv_release and nv50_disp_atomic_commit_tail).
 		 */
-		nvif_wr32(dev, 0x611fa0, 0x4000009a);
+		nv50_disp_fe_obj = dev;
+		nv50_disp_fe_vector_rm = nvif_rd32(dev, 0x611fa0);
+		printk(KERN_NOTICE "[nouveau] fe: RM event vector 611fa0 %08x; timing changes %s\n",
+		       nv50_disp_fe_vector_rm,
+		       nv50_disp_sv_rm_param ? "serviced by GSP-RM" : "released by the driver");
+		if (!nv50_disp_fe_vector_keep)
+			nvif_wr32(dev, 0x611fa0, 0x4000009a);
 	}
 
 	ret = nv50_core_new(drm, &disp->core);

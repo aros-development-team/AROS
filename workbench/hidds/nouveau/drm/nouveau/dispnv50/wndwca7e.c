@@ -44,9 +44,37 @@ wndwca7e_image_set(struct nv50_wndw *wndw, struct nv50_wndw_atom *asyw)
 	else
 		kind = NVCA7E_SET_SURFACE_ADDRESS_LO_ISO_KIND_PITCH;
 
-	ret = PUSH_WAIT(push, 17);
+	ret = PUSH_WAIT(push, 17 + 13 + 12);
 	if (ret)
 		return ret;
+
+	/*
+	 * RGB colour pipeline defaults, as nvkms sets them on every flip
+	 * (nvkms-evo3.c EvoSetFMTMatrixC5, ConfigureCsc0/Csc1C5, TMO LUT):
+	 * identity FMT matrix, CSC00/01/10/11 and both CSC LUTs off, no TMO
+	 * LUT, so a window the firmware never set up does not depend on its
+	 * reset state. (The wrong overlay colours on the GB207 were blending,
+	 * see nv50_wndw_atomic_check_acquire.)
+	 */
+	PUSH_MTHD(push, NVCA7E, SET_FMT_COEFFICIENT_C00, 0x00010000,
+				SET_FMT_COEFFICIENT_C01, 0,
+				SET_FMT_COEFFICIENT_C02, 0,
+				SET_FMT_COEFFICIENT_C03, 0,
+				SET_FMT_COEFFICIENT_C10, 0,
+				SET_FMT_COEFFICIENT_C11, 0x00010000);
+	PUSH_MTHD(push, NVCA7E, SET_FMT_COEFFICIENT_C12, 0,
+				SET_FMT_COEFFICIENT_C13, 0,
+				SET_FMT_COEFFICIENT_C20, 0,
+				SET_FMT_COEFFICIENT_C21, 0,
+				SET_FMT_COEFFICIENT_C22, 0x00010000,
+				SET_FMT_COEFFICIENT_C23, 0);
+	PUSH_MTHD(push, NVCA7E, SET_CSC00CONTROL, 0);
+	PUSH_MTHD(push, NVCA7E, SET_CSC0LUT_CONTROL, 0);
+	PUSH_MTHD(push, NVCA7E, SET_CSC01CONTROL, 0);
+	PUSH_MTHD(push, NVCA7E, SET_CSC10CONTROL, 0);
+	PUSH_MTHD(push, NVCA7E, SET_CSC1LUT_CONTROL, 0);
+	PUSH_MTHD(push, NVCA7E, SET_CSC11CONTROL, 0);
+	PUSH_MTHD(push, NVCA7E, SET_SURFACE_ADDRESS_LO_TMO_LUT, 0);
 
 	PUSH_MTHD(push, NVCA7E, SET_SURFACE_ADDRESS_HI_ISO(0), iso0_hi);
 

@@ -381,6 +381,7 @@ OOP_Object *Display__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
         {TAG_MORE           , 0}
     };
     OOP_Class *dmenumclass = NULL;
+    OOP_Class *compositorclass = NULL;
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&supermsg);
     if (o)
@@ -421,6 +422,9 @@ OOP_Object *Display__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
             case aoHidd_Display_DMEnumClass:
                 dmenumclass = (OOP_Class *)tag->ti_Data;
                 break;
+            case aoHidd_Display_CompositorClass:
+                compositorclass = (OOP_Class *)tag->ti_Data;
+                break;
             case aoHidd_Display_ConnectorType:
                 data->connectortype = tag->ti_Data;
                 break;
@@ -456,6 +460,32 @@ OOP_Object *Display__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
             OOP_CoerceMethod(cl, o, &dispose_mid);
             return NULL;
         }
+
+        /*
+         * Every display owns a compositor. It decides what is scanned out when
+         * the driver does not compose in hardware (see ComposeViewPorts). The
+         * driver may supply its own policy class; the base class composes in
+         * software and passes a single full-display bitmap straight through.
+         */
+        {
+            struct TagItem comptags[] =
+            {
+                {aHidd_Compositor_DisplayHidd, (IPTR)o},
+                {TAG_DONE                    , 0      }
+            };
+
+            data->compositor = OOP_NewObject(compositorclass ? compositorclass : CSD(cl)->compositorclass, NULL, comptags);
+            if (NULL == data->compositor)
+            {
+                OOP_MethodID dispose_mid = msg->mID - moRoot_New + moRoot_Dispose;
+                OOP_CoerceMethod(cl, o, &dispose_mid);
+                return NULL;
+            }
+            /* Damage notification runs after every render operation: resolve it once */
+            data->comp_RectChanged = OOP_GetMethod(data->compositor,
+                                                   HiddCompositorBase + moHidd_Compositor_BitMapRectChanged,
+                                                   &data->comp_RectChanged_cl);
+        }
     }
     return o;
 }
@@ -465,6 +495,8 @@ VOID Display__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     struct HIDDDisplayData *data = OOP_INST_DATA(cl, o);
 
+    if (NULL != data->compositor)
+        OOP_DisposeObject(data->compositor);
     if (NULL != data->gc)
         OOP_DisposeObject(data->gc);
     if (NULL != data->dmenum)
@@ -496,6 +528,25 @@ VOID Display__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         return;
     case aoHidd_Display_FrameBuffer:
         *msg->storage = (IPTR)data->framebuffer;
+        return;
+    case aoHidd_Display_DisplayID:
+        *msg->storage = data->displayid;
+        return;
+    case aoHidd_Display_PlaneCount:
+        *msg->storage = 1;      /* the primary plane, driven by Show() */
+        return;
+    case aoHidd_Display_VBlankCount:
+        *msg->storage = 0;      /* not counted by the base class */
+        return;
+    case aoHidd_Display_CompositionCapabilities:
+        *msg->storage = 0;
+        if (data->compositor)
+            OOP_GetAttr(data->compositor, aHidd_Compositor_Capabilities, msg->storage);
+        return;
+    case aoHidd_Display_CompositionState:
+        *msg->storage = 0;
+        if (data->compositor)
+            OOP_GetAttr(data->compositor, aHidd_Compositor_State, msg->storage);
         return;
     case aoHidd_Display_DefaultGC:
         *msg->storage = (IPTR)data->gc;
@@ -540,6 +591,7 @@ VOID Display__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 {
     struct HIDDDisplayData *data = OOP_INST_DATA(cl, o);
     struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     struct TagItem *tag, *tstate = msg->attrList;
     ULONG idx;
 
@@ -550,9 +602,14 @@ VOID Display__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
         case aoHidd_Display_FrameBuffer:
             data->framebuffer = (OOP_Object *)tag->ti_Data;
             break;
-        case aoHidd_Display_Compositor:
-            data->compositor = (OOP_Object *)tag->ti_Data;
+        case aoHidd_Display_DisplayID:
+            data->displayid = tag->ti_Data;
             break;
+        case aoHidd_Display_CompositionState:
+            if (data->compositor)
+                OOP_SetAttrsTags(data->compositor, aHidd_Compositor_State, tag->ti_Data, TAG_DONE);
+            break;
+        /* aoHidd_Display_Compositor: owned by the display, not settable */
         }
     }
 }
@@ -592,8 +649,14 @@ VOID Display__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 *****************************************************************************************/
 VOID Display__Hidd_Display__DisplayToBMCoords(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_DisplayToBMCoords *msg)
 {
-        *msg->TargetX = msg->DispX;
-        *msg->TargetY = msg->DispY;
+    struct HIDDDisplayData *data = OOP_INST_DATA(cl, o);
+    LONG x = msg->DispX, y = msg->DispY;
+
+    /* The compositor knows how (whether) the bitmap is scaled on the display */
+    if (data->compositor)
+        HIDD_Compositor_MapCoords(data->compositor, msg->Target, FALSE, &x, &y);
+    *msg->TargetX = x;
+    *msg->TargetY = y;
 }
 
 /*****************************************************************************************
@@ -631,8 +694,13 @@ VOID Display__Hidd_Display__DisplayToBMCoords(OOP_Class *cl, OOP_Object *o, stru
 *****************************************************************************************/
 VOID Display__Hidd_Display__BMToDisplayCoords(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_BMToDisplayCoords *msg)
 {
-        *msg->DispX = msg->TargetX;
-        *msg->DispY = msg->TargetY;
+    struct HIDDDisplayData *data = OOP_INST_DATA(cl, o);
+    LONG x = msg->TargetX, y = msg->TargetY;
+
+    if (data->compositor)
+        HIDD_Compositor_MapCoords(data->compositor, msg->Target, TRUE, &x, &y);
+    *msg->DispX = x;
+    *msg->DispY = y;
 }
 
 /*****************************************************************************************
@@ -1350,8 +1418,150 @@ OOP_Object *Display__Hidd_Display__Show(OOP_Class *cl, OOP_Object *o, struct pHi
 
 ULONG Display__Hidd_Display__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_ShowViewPorts *msg)
 {
-    /* By default we don't support screen composition (and this method too) */
+    /*
+     * The base class does not compose in hardware. Returning FALSE makes
+     * graphics.library call ComposeViewPorts(), which hands the chain to the
+     * display's compositor.
+     */
     return FALSE;
+}
+
+/*****************************************************************************************
+
+    NAME
+        moHidd_Display_ComposeViewPorts
+
+    SYNOPSIS
+        OOP_Object *OOP_DoMethod(OOP_Object *obj, struct pHidd_Display_ComposeViewPorts *msg);
+
+        OOP_Object *HIDD_Display_ComposeViewPorts(OOP_Object *display, struct HIDD_ViewPortData *Data, BOOL *composing);
+
+    LOCATION
+        hidd.gfx.display
+
+    FUNCTION
+        Show a chain of bitmaps through the display's compositor. This is what
+        graphics.library calls when the driver's ShowViewPorts() returned FALSE:
+        the compositor shows the frontmost bitmap directly when it covers the
+        whole display, and composes the chain into one bitmap otherwise.
+
+    INPUTS
+        display   - the display object
+        Data      - a singly linked list of bitmaps to show, frontmost first;
+                    NULL blanks the display
+        composing - set to TRUE when the display now shows a composed bitmap
+                    rather than the frontmost bitmap itself
+
+    RESULT
+        The bitmap object actually scanned out (what Show() returned), or NULL
+        for a blank display.
+
+    NOTES
+        A driver with a hardware compositor overrides ShowViewPorts() and
+        never sees this method. A driver that wants the system compositor for
+        some chains only returns FALSE from its ShowViewPorts() for them.
+
+    SEE ALSO
+        moHidd_Display_ShowViewPorts, moHidd_Display_Show
+
+*****************************************************************************************/
+
+OOP_Object *Display__Hidd_Display__ComposeViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_ComposeViewPorts *msg)
+{
+    struct HIDDDisplayData *data = OOP_INST_DATA(cl, o);
+
+    if (data->compositor)
+        return HIDD_Compositor_BitMapStackChanged(data->compositor, msg->Data, msg->composing);
+
+    *msg->composing = FALSE;
+    return HIDD_Display_Show(o, msg->Data ? msg->Data->Bitmap : NULL, fHidd_Display_Show_CopyBack);
+}
+
+/*****************************************************************************************
+
+    NAME
+        moHidd_Display_ViewPortPositionChange
+
+    SYNOPSIS
+        BOOL OOP_DoMethod(OOP_Object *obj, struct pHidd_Display_ViewPortPositionChange *msg);
+
+        BOOL HIDD_Display_ViewPortPositionChange(OOP_Object *display, OOP_Object *bitMap, SIPTR *x, SIPTR *y);
+
+    LOCATION
+        hidd.gfx.display
+
+    FUNCTION
+        A shown bitmap is being moved on the display (screen drag or scroll).
+        The caller has already stored the new offsets in the bitmap's LeftEdge
+        and TopEdge attributes; the display's compositor validates them, clamps
+        them to what composition allows and writes the result back.
+
+    INPUTS
+        display - the display object
+        bitMap  - the bitmap being moved
+        x, y    - the requested offsets, updated to the validated ones
+
+    RESULT
+        TRUE when composition is active after the move, FALSE when the
+        bitmap is scanned out directly.
+
+*****************************************************************************************/
+
+BOOL Display__Hidd_Display__ViewPortPositionChange(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_ViewPortPositionChange *msg)
+{
+    struct HIDDDisplayData *data = OOP_INST_DATA(cl, o);
+
+    if (data->compositor)
+        return HIDD_Compositor_BitMapPositionChange(data->compositor, msg->bitMap, msg->x, msg->y);
+
+    return FALSE;
+}
+
+/*****************************************************************************************
+
+    NAME
+        moHidd_Display_UpdateRect
+
+    SYNOPSIS
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_Display_UpdateRect *msg);
+
+        VOID HIDD_Display_UpdateRect(OOP_Object *display, OOP_Object *bitMap, WORD x, WORD y, UWORD width, UWORD height);
+
+    LOCATION
+        hidd.gfx.display
+
+    FUNCTION
+        A rectangle of a bitmap belonging to this display has been rendered to.
+        While composing, the compositor re-composes the visible part of it;
+        otherwise the change is passed to the bitmap's own UpdateRect().
+
+    NOTES
+        This is called after every rendering operation, so graphics.library
+        caches the method with OOP_GetMethod() and the display calls its
+        compositor through a cached method pointer as well.
+
+*****************************************************************************************/
+
+VOID Display__Hidd_Display__UpdateRect(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_UpdateRect *msg)
+{
+    struct HIDDDisplayData *data = OOP_INST_DATA(cl, o);
+
+    if (data->comp_RectChanged)
+    {
+        struct pHidd_Compositor_BitMapRectChanged cmsg =
+        {
+            .mID    = HiddCompositorBase + moHidd_Compositor_BitMapRectChanged,
+            .bm     = msg->bitMap,
+            .x      = msg->x,
+            .y      = msg->y,
+            .width  = msg->width,
+            .height = msg->height
+        };
+
+        data->comp_RectChanged(data->comp_RectChanged_cl, data->compositor, (OOP_Msg)&cmsg);
+    }
+    else
+        HIDD_BM_UpdateRect(msg->bitMap, msg->x, msg->y, msg->width, msg->height);
 }
 
 /*****************************************************************************************
@@ -1962,4 +2172,196 @@ ULONG Display__Hidd_Display__InitViewPorts(OOP_Class *cl, OOP_Object *o, struct 
     D(bug("[HiddDisplay] %s()\n", __func__));
 
     return MCOP_OK;
+}
+
+/*****************************************************************************************
+
+    NAME
+        moHidd_Display_SurfaceStackChanged
+
+    SYNOPSIS
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_Display_SurfaceStackChanged *msg);
+
+        VOID HIDD_Display_SurfaceStackChanged(OOP_Object *display, struct HIDD_ViewPortData *Data);
+
+    LOCATION
+        hidd.gfx.display
+
+    FUNCTION
+        The composited layer surfaces (Data->Surfaces) of a shown ViewPort
+        changed. The display's compositor re-composes the affected area.
+
+    NOTES
+        graphics.library calls this from its private LayerSurfacesChanged()
+        entry on behalf of layers.library.
+
+*****************************************************************************************/
+
+VOID Display__Hidd_Display__SurfaceStackChanged(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_SurfaceStackChanged *msg)
+{
+    struct HIDDDisplayData *data = OOP_INST_DATA(cl, o);
+
+    if (data->compositor)
+        HIDD_Compositor_SurfaceStackChanged(data->compositor, msg->Data);
+}
+
+/*****************************************************************************************
+
+    NAME
+        moHidd_Display_GetPlaneInfo
+
+    SYNOPSIS
+        ULONG OOP_DoMethod(OOP_Object *obj, struct pHidd_Display_GetPlaneInfo *msg);
+
+        ULONG HIDD_Display_GetPlaneInfo(OOP_Object *display, ULONG index, struct HIDD_PlaneInfo *info, ULONG infoLen);
+
+    LOCATION
+        hidd.gfx.display
+
+    FUNCTION
+        Describe one of the display's scan-out planes: its type, the z-order
+        positions it can take, the pixel formats it can scan out, how much it
+        can scale, which alpha blending it does, and its alignment and size
+        limits. The display's compositor uses this to decide which composition
+        requests can be scanned out directly and which must be blitted.
+
+    INPUTS
+        display - the display object
+        index   - 0 .. aHidd_Display_PlaneCount - 1
+        info    - where to store the description
+        infoLen - size of the buffer, so that the structure may grow
+
+    RESULT
+        The number of bytes stored, 0 if there is no such plane.
+
+    NOTES
+        The base class has one plane, the primary: any displayable pixel
+        format, no scaling, no blending. It is what Show() drives.
+
+*****************************************************************************************/
+
+ULONG Display__Hidd_Display__GetPlaneInfo(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_GetPlaneInfo *msg)
+{
+    struct HIDD_PlaneInfo info =
+    {
+        .Type       = vHidd_Plane_Primary,
+        .ZMin       = 0,
+        .ZMax       = 0,
+        .PixFmtMask = 0xFFFFFFFF,
+        .ScaleMin   = HIDD_PLANE_SCALE_UNITY,
+        .ScaleMax   = HIDD_PLANE_SCALE_UNITY,
+        .AlphaModes = (1 << vHidd_CompAlpha_None),
+        .PosAlignX  = 1,
+        .PosAlignY  = 1,
+        .MaxWidth   = 0,
+        .MaxHeight  = 0,
+        .Flags      = 0
+    };
+    ULONG len = msg->infoLen;
+
+    if (msg->index != 0)
+        return 0;
+
+    if (len > sizeof(info))
+        len = sizeof(info);
+    CopyMem(&info, msg->info, len);
+
+    return len;
+}
+
+/*****************************************************************************************
+
+    NAME
+        moHidd_Display_CommitPlanes
+
+    SYNOPSIS
+        BOOL OOP_DoMethod(OOP_Object *obj, struct pHidd_Display_CommitPlanes *msg);
+
+        BOOL HIDD_Display_CommitPlanes(OOP_Object *display, struct HIDD_PlaneState *states, ULONG count, ULONG flags);
+
+    LOCATION
+        hidd.gfx.display
+
+    FUNCTION
+        Apply a complete set of plane states atomically: every plane named in
+        the array takes its new bitmap, rectangles and blending at the same
+        frame boundary; planes not named keep their state. A NULL BitMap
+        disables a plane.
+
+    INPUTS
+        display - the display object
+        states  - the plane states to apply
+        count   - how many
+        flags   - fHidd_Commit_NoWait: return as soon as the state is queued;
+                  fHidd_Commit_Test: validate against GetPlaneInfo() only
+
+    RESULT
+        TRUE when the states are valid (and, unless testing, applied).
+
+    NOTES
+        The base class implements its single primary plane with Show(): the
+        bitmap of the plane 0 state is shown, unscaled, at the origin.
+
+    SEE ALSO
+        moHidd_Display_GetPlaneInfo, moHidd_Display_WaitLatch, moHidd_Display_Show
+
+*****************************************************************************************/
+
+BOOL Display__Hidd_Display__CommitPlanes(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_CommitPlanes *msg)
+{
+    struct HIDD_PlaneState *primary = NULL;
+    ULONG i;
+
+    for (i = 0; i < msg->count; i++)
+    {
+        struct HIDD_PlaneState *st = &msg->states[i];
+
+        if (st->Plane != 0)
+            return FALSE;
+        if (st->BitMap)
+        {
+            /* The primary scans the bitmap out as it is: no offset, no scaling, no blending */
+            if ((st->Dest.MinX != 0) || (st->Dest.MinY != 0) || (st->Src.MinX != 0) || (st->Src.MinY != 0))
+                return FALSE;
+            if (((st->Dest.MaxX - st->Dest.MinX) != (st->Src.MaxX - st->Src.MinX)) ||
+                ((st->Dest.MaxY - st->Dest.MinY) != (st->Src.MaxY - st->Src.MinY)))
+                return FALSE;
+            if (st->AlphaMode != vHidd_CompAlpha_None)
+                return FALSE;
+        }
+        primary = st;
+    }
+
+    if (!primary || (msg->flags & fHidd_Commit_Test))
+        return TRUE;
+
+    HIDD_Display_Show(o, primary->BitMap, fHidd_Display_Show_CopyBack);
+    return TRUE;
+}
+
+/*****************************************************************************************
+
+    NAME
+        moHidd_Display_WaitLatch
+
+    SYNOPSIS
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_Display_WaitLatch *msg);
+
+        VOID HIDD_Display_WaitLatch(OOP_Object *display);
+
+    LOCATION
+        hidd.gfx.display
+
+    FUNCTION
+        Wait until the last CommitPlanes() has been scanned out, i.e. until
+        the bitmaps it replaced are no longer read by the hardware and may be
+        reused or freed.
+
+    NOTES
+        The base class shows bitmaps synchronously and returns at once.
+
+*****************************************************************************************/
+
+VOID Display__Hidd_Display__WaitLatch(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_WaitLatch *msg)
+{
 }

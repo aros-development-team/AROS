@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Basic support functions for layers.library.
 */
@@ -183,9 +183,22 @@ void _BackFillRegion(struct Layer * l,
 
 BOOL _AllocClipRectBitMap(struct ClipRect *cr, struct BitMap *display_bm, int aligndx, struct LayersBase *LayersBase);
 BOOL _BackClipRect(struct ClipRect *cr, struct Layer *l, int aligndx, struct LayersBase *LayersBase);
-#if LAYERS_BACKING_SURFACE
 BOOL _EnsureSurfaceSize(struct Layer *l, WORD w, WORD h, struct LayersBase *LayersBase);
-#endif
+
+/***************************************************************************/
+/*                           COMPOSITED LAYERS                             */
+/***************************************************************************/
+
+void _SetCompositedClipRects(struct Layer *l, struct LayersBase *LayersBase);
+void _UpdateSurfaces(struct Layer_Info *li, struct LayersBase *LayersBase);
+BOOL _IsLayerHitAt(struct Layer *l, LONG x, LONG y, struct LayersBase *LayersBase);
+void _UncompositeLayer(struct Layer *l, struct LayersBase *LayersBase);
+
+/* surface memory budget (LAYERS_SURFACE_BUDGET_FACTOR, LAYERS_SURFACE_MINFREE) */
+ULONG _SurfaceBytes(struct BitMap *screenbm, LONG width, LONG height, BOOL alphasurface, struct LayersBase *LayersBase);
+BOOL _SurfaceBudgetAllows(struct Layer_Info *li, struct BitMap *screenbm, ULONG newbytes, ULONG oldbytes,
+                          struct LayersBase *LayersBase);
+void _AccountSurface(struct Layer *l, ULONG bytes, struct LayersBase *LayersBase);
 struct ClipRect * _CreateClipRectsFromRegion(struct Region *r,
                                              struct Layer * l,
                                              int invisible,

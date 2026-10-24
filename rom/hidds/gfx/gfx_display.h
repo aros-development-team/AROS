@@ -27,10 +27,15 @@ struct HIDDDisplayData
 	/* gc used for stuff like rendering cursor */
 	OOP_Object  *gc;
 
-	/* cached compositor cursor method ids */
-	OOP_MethodID mid_CompositorSetCursorShape;
-	OOP_MethodID mid_CompositorSetCursorVisible;
-	OOP_MethodID mid_CompositorSetCursorPos;
+	/*
+	 * Composition. The compositor is created by Display::New (from the
+	 * driver's aHidd_Display_CompositorClass or the base class) and is the
+	 * only thing that decides what the display scans out when the driver
+	 * does not compose in hardware (ShowViewPorts not overridden).
+	 */
+	ULONG        displayid;         /* public display ID base, from graphics.library  */
+	OOP_MethodFunc comp_RectChanged; /* cached compositor BitMapRectChanged (hot path) */
+	OOP_Class   *comp_RectChanged_cl;
 
 	/*
 	 * Software cursor state.

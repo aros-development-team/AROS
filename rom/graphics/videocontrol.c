@@ -80,6 +80,27 @@
             tag->ti_Data = (STACKIPTR)cm->cm_vpe;
             break;
 
+        /* AROS: screen composition parameters, kept in the ViewPortExtra */
+        case VTAG_COMPOSITING_SET:
+            if(cm->cm_vpe)
+                IVPE(cm->cm_vpe)->compflags = tag->ti_Data;
+            break;
+
+        case VTAG_COMPOSITING_GET:
+            tag->ti_Tag = VTAG_COMPOSITING_SET;
+            tag->ti_Data = cm->cm_vpe ? IVPE(cm->cm_vpe)->compflags : 0;
+            break;
+
+        case VTAG_ALPHAHOOK_SET:
+            if(cm->cm_vpe)
+                IVPE(cm->cm_vpe)->prealphahook = (struct Hook *)tag->ti_Data;
+            break;
+
+        case VTAG_ALPHAHOOK_GET:
+            tag->ti_Tag = VTAG_ALPHAHOOK_SET;
+            tag->ti_Data = cm->cm_vpe ? (STACKIPTR)IVPE(cm->cm_vpe)->prealphahook : 0;
+            break;
+
         case VTAG_NORMAL_DISP_SET:
             cm->NormalDisplayInfo = (APTR)tag->ti_Data;
             break;

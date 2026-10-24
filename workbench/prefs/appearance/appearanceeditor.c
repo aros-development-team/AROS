@@ -58,6 +58,8 @@ struct AppearanceEditor_DATA
     Object *ae_CompLeft;
     Object *ae_CompRight;
     Object *ae_CompAlpha;
+    Object *ae_CompScale;
+    Object *ae_CompNative;
 
     IPTR   *ae_ThemeArray;
     struct Hook ae_PreviewHook;
@@ -71,7 +73,8 @@ static    CONST_STRPTR COMPOSITE_ENVPATH = "SYS/compositor.prefs";
 static    CONST_STRPTR THEMES_DEFPATH = "SYS:Prefs/Presets/theme.default";
 static    CONST_STRPTR THEMES_OPTZUNEPATH = "Zune/usethemeprefs";
 
-#define COMPOSITE_PEFSTEMPLATE  "ABOVE/S,BELOW/S,LEFT/S,RIGHT/S,ALPHA/S"
+/* NOPLANES is parsed so that a hand-edited variable still imports; the editor has no control for it */
+#define COMPOSITE_PEFSTEMPLATE  "ABOVE/S,BELOW/S,LEFT/S,RIGHT/S,ALPHA/S,SCALE/S,NATIVEMODE/S,NOPLANES/S"
 
 enum
 {
@@ -80,6 +83,9 @@ enum
     ARG_LEFT,
     ARG_RIGHT,
     ARG_ALPHA,
+    ARG_SCALE,
+    ARG_NATIVEMODE,
+    ARG_NOPLANES,
     NOOFARGS
 };
 
@@ -210,6 +216,8 @@ AROS_UFH3(static void, AppearanceEditor__PreviewHookFunc,
     SET(data->ae_CompLeft, MUIA_Disabled, !(compEnable));
     SET(data->ae_CompRight, MUIA_Disabled, !(compEnable));
     SET(data->ae_CompAlpha, MUIA_Disabled, !(compEnable));
+    SET(data->ae_CompScale, MUIA_Disabled, !(compEnable));
+    SET(data->ae_CompNative, MUIA_Disabled, !(compEnable) || !XGET(data->ae_CompScale, MUIA_Selected));
 
     if (themeEnable && data->ae_ThemeArray[themeActive])
     {
@@ -262,6 +270,8 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
     Object              *_CompLeft;
     Object              *_CompRight;
     Object              *_CompAlpha;
+    Object              *_CompScale;
+    Object              *_CompNative;
 
     struct List         _ThemesAvailable;
     struct Node         *_ThemeEntry;
@@ -438,6 +448,16 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
                         Child, (IPTR)Label1(__(MSG_ENABLE_COMPOSITE_WITH_ALPHA)),
                         Child, (IPTR)HVSpace,
                     End,
+                    Child, (IPTR)HGroup,
+                        Child, (IPTR)(_CompScale = MakeCheckmark(FALSE)),
+                        Child, (IPTR)Label1(__(MSG_COMPOSITE_SCALE)),
+                        Child, (IPTR)HVSpace,
+                    End,
+                    Child, (IPTR)HGroup,
+                        Child, (IPTR)(_CompNative = MakeCheckmark(FALSE)),
+                        Child, (IPTR)Label1(__(MSG_COMPOSITE_NATIVEMODE)),
+                        Child, (IPTR)HVSpace,
+                    End,
                     Child, (IPTR)HVSpace,
                 End,
 
@@ -474,6 +494,8 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
         data->ae_CompLeft = _CompLeft;
         data->ae_CompRight = _CompRight;
         data->ae_CompAlpha = _CompAlpha;
+        data->ae_CompScale = _CompScale;
+        data->ae_CompNative = _CompNative;
 
         data->ae_ThemeArray = (IPTR *)_ThemeArray;
 
@@ -534,6 +556,16 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
         DoMethod
         (
             data->ae_CompAlpha, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            (IPTR) self, 3, MUIM_CallHook, (IPTR)&data->ae_PreviewHook, (IPTR)NULL
+        );
+        DoMethod
+        (
+            data->ae_CompScale, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            (IPTR) self, 3, MUIM_CallHook, (IPTR)&data->ae_PreviewHook, (IPTR)NULL
+        );
+        DoMethod
+        (
+            data->ae_CompNative, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
             (IPTR) self, 3, MUIM_CallHook, (IPTR)&data->ae_PreviewHook, (IPTR)NULL
         );
     }
@@ -747,6 +779,8 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_ImportFH (
                 NNSET(data->ae_CompLeft, MUIA_Selected, (BOOL)CompArgs[ARG_LEFT]);
                 NNSET(data->ae_CompRight, MUIA_Selected, (BOOL)CompArgs[ARG_RIGHT]);
                 NNSET(data->ae_CompAlpha, MUIA_Selected, (BOOL)CompArgs[ARG_ALPHA]);
+                NNSET(data->ae_CompScale, MUIA_Selected, (BOOL)CompArgs[ARG_SCALE]);
+                NNSET(data->ae_CompNative, MUIA_Selected, (BOOL)CompArgs[ARG_NATIVEMODE]);
                 FreeArgs(rdargs);
             }
             FreeDosObject(DOS_RDARGS, rdargs);
@@ -1013,12 +1047,27 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_ExportFH
                 sprintf(exportBuffer + ebPos, " ALPHA");
                 ebPos = strlen(exportBuffer);
             }
+            if (XGET(data->ae_CompScale, MUIA_Selected))
+            {
+                sprintf(exportBuffer + ebPos, " SCALE");
+                ebPos = strlen(exportBuffer);
+                if (XGET(data->ae_CompNative, MUIA_Selected))
+                {
+                    sprintf(exportBuffer + ebPos, " NATIVEMODE");
+                    ebPos = strlen(exportBuffer);
+                }
+            }
             SetVar(COMPOSITE_ENVPATH, exportBuffer, ebPos,
                 GVF_GLOBAL_ONLY | GVF_SAVE_VAR);
         }
-        else
+        else if (!backup)
         {
-            DeleteVar(COMPOSITE_ENVPATH, GVF_GLOBAL_ONLY | GVF_SAVE_VAR);
+            /*
+             * Composition off: say so explicitly. A missing variable means
+             * "use the AmigaOS-like default" (screens drag down) to the
+             * display's compositor, an empty one enables nothing.
+             */
+            SetVar(COMPOSITE_ENVPATH, " ", 1, GVF_GLOBAL_ONLY | GVF_SAVE_VAR);
         }
     }
     FreeVec(exportBuffer);
@@ -1142,6 +1191,8 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_SetDefaults
     SET(data->ae_CompLeft, MUIA_Selected, FALSE);
     SET(data->ae_CompRight, MUIA_Selected, FALSE);
     SET(data->ae_CompAlpha, MUIA_Selected, TRUE);
+    SET(data->ae_CompScale, MUIA_Selected, FALSE);
+    SET(data->ae_CompNative, MUIA_Selected, FALSE);
 
     return TRUE;
 }

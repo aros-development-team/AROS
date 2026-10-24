@@ -9,7 +9,6 @@
 
 #include "graphics_intern.h"
 #include "graphics_display.h"
-#include "graphics_compositor.h"
 #include "gfxfuncsupport.h"
 
 /*****************************************************************************
@@ -68,41 +67,29 @@
         IPTR y = vp->DyOffset;
         BOOL compositing = FALSE;
 
-        D(bug("[ScrollVPort] ViewPort 0x%p, Extra 0x%p, compositor 0x%p, offset (%ld, %ld)\n", vp, vpe, mdd->mdisplay.display_compositor, x, y));
+        D(bug("[ScrollVPort] ViewPort 0x%p, Extra 0x%p, offset (%ld, %ld)\n", vp, vpe, x, y));
 
         /*
          * First we actually move the bitmap.
-         * If we are using software composition, this will update bitmap's offsets, for
-         * the case if this move will cause the screen to be completely covered with this
-         * bitmap (while previously it was not). In this case the compositor will dispose
-         * own working bitmap and display our bitmap instead. In effect of position update
-         * it will appear already in correct position. This will improve visual appearance
-         * of the scrolling.
+         * The display's compositor validates the offsets against its composition
+         * rules and writes the result back; if it composes, our bitmap is mirrored
+         * into the composed bitmap and the driver framebuffer must not be installed
+         * into it.
          */
         OOP_SetAttrsTags(bm, aHidd_BitMap_LeftEdge, x, aHidd_BitMap_TopEdge, y, TAG_DONE);
 
-        if(mdd->mdisplay.display_compositor) {
-            /*
-             * Perform the operation via software compositor.
-             * x and y will be updated to the validated values.
-             */
-            compositing = compositor_ScrollBitMap(mdd->mdisplay.display_compositor, bm, &x, &y, GfxBase);
+        compositing = HIDD_Display_ViewPortPositionChange(mdd->mdisplay.display_obj, bm, &x, &y);
 
-            if(compositing) {
-                /*
-                 * Composition is active.
-                 * Uninstall the framebuffer from the frontmost bitmap
-                 */
-                display_FBUninstall(mdd, GfxBase);
-            } else if(!mdd->bm_bak) {
-                /*
-                 * Composition is inactive. Install the framebuffer into the frontmost
-                 * bitmap, if not already done.
-                 * This will actually trigger only once, when composition switched from
-                 * active to inactive state.
-                 */
-                display_FBInstall(mdd, GfxBase);
-            }
+        if(compositing) {
+            /* Composition is active. Uninstall the framebuffer from the frontmost bitmap */
+            display_FBUninstall(mdd, GfxBase);
+        } else if(!mdd->bm_bak) {
+            /*
+             * Composition is inactive. Install the framebuffer into the frontmost
+             * bitmap, if not already done. This will actually trigger only once,
+             * when composition switched from active to inactive state.
+             */
+            display_FBInstall(mdd, GfxBase);
         }
 
         /* The bitmap may fail to move. Fix up offsets now. */

@@ -138,6 +138,23 @@ VOID X11BM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
         HostLib_Unlock();
     }
 
+    if (data->plane)
+    {
+        /* Still bound to an emulated plane: switch the plane off before the pixmap goes */
+        XSetWindowAttributes attr;
+
+        HostLib_Lock();
+        if (data->plane->mapped)
+            XCALL(XUnmapWindow, data->display, data->plane->win);
+        attr.background_pixmap = None;
+        XCALL(XChangeWindowAttributes, data->display, data->plane->win, CWBackPixmap, &attr);
+        X11Plane_Detach(data->display, data->plane);
+        data->plane->mapped = FALSE;
+        data->plane->bm = NULL;
+        data->plane = NULL;
+        HostLib_Unlock();
+    }
+
     if (data->flags & BMDF_FRAMEBUFFER)
         X11BM_DisposeFB(data, XSD(cl));
     else
@@ -1333,6 +1350,10 @@ VOID MNAME(Root__Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         case aoHidd_BitMap_X11_GC:
             *msg->storage = (IPTR) data->gc;
             return;
+
+        case aoHidd_BitMap_X11_Window:
+            *msg->storage = (data->flags & BMDF_FRAMEBUFFER) ? (IPTR) WINDRAWABLE(data) : 0;
+            return;
         }
     }
 
@@ -1466,6 +1487,19 @@ VOID MNAME(Hidd_BitMap__UpdateRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_B
 
     if (data->flags & BMDF_FRAMEBUFFER)
         X11BM_ExposeFB(data, msg->x, msg->y, msg->width, msg->height);
+    else if (data->plane)
+    {
+        /*
+         * Scanned out by an emulated plane: the plane window's background is
+         * our pixmap, so a clear of the changed area makes the server repaint
+         * it from the pixmap. This is the "hardware sees the bitmap" path.
+         * A scaled plane re-renders the changed part first.
+         */
+        if (data->plane->isscaled)
+            X11Plane_Refresh(data->display, data->plane, msg->x, msg->y, msg->width, msg->height);
+        else
+            XCALL(XClearArea, data->display, data->plane->win, msg->x, msg->y, msg->width, msg->height, False);
+    }
 
     XCALL(XFlush, data->display);
 

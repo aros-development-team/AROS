@@ -2,7 +2,7 @@
 #define GRAPHICS_LAYERSEXT_H
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Layer extensions for the new AROS layers.library
@@ -33,5 +33,27 @@
 #define LA_AROS		(TAG_USER + 1234)
 #define LA_Behind	(LA_AROS + 3)
 #define LA_ChildOf	(LA_AROS + 4)
+/* Composited layers: the layer gets a surface bitmap of its own and the
+   display composes it onto the screen (see LAYERCOMPOSITED in clip.h).
+   Ignored, giving an ordinary smart refresh layer, when the screen bitmap's
+   display cannot present surfaces. */
+#define LA_Composited	(LA_AROS + 5)	/* BOOL. Default is FALSE */
+#define LA_Opacity	(LA_AROS + 6)	/* 0..255 constant alpha, 255 = opaque (default) */
+#define LA_AlphaSurface	(LA_AROS + 7)	/* BOOL. Surface with per pixel alpha. Default is FALSE */
+/* An LA_AlphaSurface surface has the screen's pixel layout plus an alpha
+   byte and starts fully transparent. Pens are mapped for the screen, so pen
+   rendering leaves alpha 0; WritePixelArray() with RECTFMT_ARGB sets it.
+   On screens whose layout has no spare byte (15/16/24 bit, LUT) the tag is
+   ignored and the layer gets a constant opacity surface. */
+/* Memory: the surfaces of all composited layers of a screen together may
+   take at most four times the screen bitmap (layers.library's
+   LAYERS_SURFACE_BUDGET_FACTOR), and a surface is never allocated when it
+   would leave less than 4 MB of the largest free memory block. A layer that
+   does not fit is created as an ordinary smart refresh layer (no
+   LAYERCOMPOSITED in Layer.Flags, LA_Opacity and LA_AlphaSurface ignored),
+   exactly as if LA_Composited had not been given, and a composited layer
+   whose growth (SizeLayer(), MoveSizeLayer()) does not fit is converted
+   into one, keeping its content. Check Layer.Flags for LAYERCOMPOSITED
+   after creation and after resizing when it matters. */
 
 #endif /* GRAPHICS_LAYERSEXT_H */

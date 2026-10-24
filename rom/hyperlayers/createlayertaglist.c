@@ -11,6 +11,7 @@
 #include <proto/utility.h>
 #include <proto/graphics.h>
 #include <proto/layers.h>
+#include <cybergraphx/cybergraphics.h>
 
 #include "basicfuncs.h"
 #include "layers_intern.h"
@@ -27,6 +28,9 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
   struct Hook * hook = NULL, *shapehook = NULL;
   APTR win = 0;
   int visible = TRUE;
+  int composited = FALSE, alphasurface = FALSE;
+  ULONG alphaformat = (ULONG)-1;
+  ULONG opacity = 0xFF;
   struct Layer * behind = NULL, * infrontof = NULL, * parent = NULL;
   struct Layer * l;
   struct Region * layershape = NULL, *shape;
@@ -72,12 +76,49 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
         win = (APTR)tag->ti_Data;
         break;
 
+    case LA_Composited:
+        composited = tag->ti_Data ? TRUE : FALSE;
+        break;
+
+    case LA_Opacity:
+        opacity = (tag->ti_Data > 0xFF) ? 0xFF : tag->ti_Data;
+        break;
+
+    case LA_AlphaSurface:
+        alphasurface = tag->ti_Data ? TRUE : FALSE;
+        break;
+
     }
 
   } /* while((tag = NextTagItem(&tstate))) */
   
   if ((flags & LAYERSUPER) && (NULL == superbitmap))
     return NULL;
+
+  /*
+   * A composited layer renders into a surface of its own that the screen's
+   * display composes; it needs a display that can do that and a
+   * LayerInfo_extra to keep the screen's surface list in (Intuition
+   * screens get theirs here). Otherwise it is an ordinary smart refresh
+   * layer, as a composited one behaves like one.
+   */
+#if AROS_NO_COMPOSITED_LAYERS
+  composited = FALSE;   /* ROM-size build: LA_Composited gives a smart refresh layer */
+#endif
+  if (composited)
+  {
+    if (NULL == li->LayerInfo_extra && !_AllocExtLayerInfo(li, LayersBase))
+      composited = FALSE;
+    else if (!CompositeLayersSupported(bm, &alphaformat))
+      composited = FALSE;
+  }
+  if (composited)
+  {
+    flags = (flags & ~(LAYERSIMPLE | LAYERSUPER)) | LAYERSMART | LAYERCOMPOSITED;
+    superbitmap = NULL;
+  }
+  else
+    flags &= ~LAYERCOMPOSITED;
 
   if (!parent)
   {
@@ -211,8 +252,57 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
     l->bounds.MaxY = y1;
     l->Width  = x1 - x0 + 1;
     l->Height = y1 - y0 + 1;
+    IL(l)->opacity = 0xFF;
+    IL(l)->alphaformat = alphaformat;
+#if !AROS_NO_COMPOSITED_LAYERS
+    if (IS_COMPOSITED(l))
+    {
+      ULONG bytes;
+
+      /*
+       * The surface: the screen's format or, for per pixel alpha, the
+       * screen's pixel layout with an alpha byte (cleared, i.e. fully
+       * transparent; pens render with alpha 0, WritePixelArray() with
+       * RECTFMT_ARGB sets it). A screen whose layout has no room for alpha
+       * gets a constant opacity surface instead.
+       *
+       * Memory: the screen's composited surfaces together stay within
+       * LAYERS_SURFACE_BUDGET_FACTOR screen bitmaps and leave
+       * LAYERS_SURFACE_MINFREE of memory alone. A layer that does not fit,
+       * or whose surface cannot be allocated, is an ordinary smart refresh
+       * layer, exactly as if LA_Composited had not been given.
+       */
+      if (alphasurface && (ULONG)-1 == alphaformat)
+        alphasurface = FALSE;
+
+      bytes = _SurfaceBytes(bm, l->Width, l->Height, alphasurface, LayersBase);
+      if (!_SurfaceBudgetAllows(li, bm, bytes, 0, LayersBase))
+        l->Flags &= ~LAYERCOMPOSITED;
+      else
+      {
+        if (alphasurface)
+          IL(l)->surface = AllocBitMap(l->Width, l->Height, 32,
+                                       BMF_SPECIALFMT | SHIFT_PIXFMT(alphaformat) | BMF_CLEAR, bm);
+        else
+          IL(l)->surface = AllocBitMap(l->Width, l->Height, bm->Depth, 0, bm);
+
+        if (NULL != IL(l)->surface)
+        {
+          IL(l)->surfw = l->Width;
+          IL(l)->surfh = l->Height;
+          IL(l)->opacity = opacity;
+          IL(l)->alphasurface = alphasurface;
+          _AccountSurface(l, bytes, LayersBase);
+          if (!LAYERS_COMPOSITED_OCCLUDES || 0xFF != opacity || alphasurface)
+            IL(l)->intflags |= INTFLAG_TRANSLUCENT;
+        }
+        else
+          l->Flags &= ~LAYERCOMPOSITED;
+      }
+    }
+#endif /* !AROS_NO_COMPOSITED_LAYERS */
 #if LAYERS_BACKING_SURFACE
-    if (IS_SMARTREFRESH(l))
+    if (!IS_COMPOSITED(l) && IS_SMARTREFRESH(l) && NULL == IL(l)->surface)
     {
       /* no surface (out of memory) means per ClipRect bitmaps as before */
       IL(l)->surface = AllocBitMap(l->Width, l->Height, bm->Depth, 0, bm);
@@ -228,6 +318,14 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
       goto failexit;
     if (NULL == (l->visibleshape = NewRegion()))
       goto failexit;
+    /* what the layer hides from those behind: its visible shape, or nothing when blended */
+    if (IS_TRANSLUCENT(l))
+    {
+      if (NULL == (IL(l)->occludeshape = NewRegion()))
+        goto failexit;
+    }
+    else
+      IL(l)->occludeshape = l->visibleshape;
     
     l->visible = visible;
 
@@ -346,7 +444,7 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
       if (l->front)
       {
         SetRegion(l->front->VisibleRegion, l->VisibleRegion);
-        ClearRegionRegion(l->front->visibleshape, l->VisibleRegion);
+        ClearRegionRegion(OCCLUDESHAPE(l->front), l->VisibleRegion);
       }
       else
         SetRegion(li->check_lp->shape, l->VisibleRegion);
@@ -359,10 +457,10 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
        */
       while (1)
       {
-        if (IS_VISIBLE(_l) && DO_OVERLAP(&l->shape->bounds, &_l->shape->bounds))
-          _BackupPartsOfLayer(_l, l->visibleshape, 0, FALSE, LayersBase);
+        if (IS_VISIBLE(_l) && !IS_TRANSLUCENT(l) && DO_OVERLAP(&l->shape->bounds, &_l->shape->bounds))
+          _BackupPartsOfLayer(_l, OCCLUDESHAPE(l), 0, FALSE, LayersBase);
         else
-          ClearRegionRegion(l->visibleshape, _l->VisibleRegion);
+          ClearRegionRegion(OCCLUDESHAPE(l), _l->VisibleRegion);
         
         if (_l == lparent)
         {
@@ -384,6 +482,13 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
      */
     if (!IS_ROOTLAYER(l))
       _ShowLayer(l, LayersBase);
+
+    if (IS_COMPOSITED(l))
+    {
+      LIE(li)->lie_NumComposited++;
+      LIE(li)->lie_ScreenBM = bm;
+    }
+    UPDATE_SURFACES(li);
   }
   else
     goto failexit;
@@ -395,10 +500,13 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
 failexit:
   if (l)
   {
-#if LAYERS_BACKING_SURFACE
     if (IL(l)->surface)
+    {
+      _AccountSurface(l, 0, LayersBase);
       FreeBitMap(IL(l)->surface);
-#endif
+    }
+    if (IL(l)->occludeshape && IL(l)->occludeshape != l->visibleshape)
+      DisposeRegion(IL(l)->occludeshape);
     if (l->VisibleRegion)
       DisposeRegion(l->VisibleRegion);
     if (l->DamageList)

@@ -8,6 +8,13 @@ extern void display_Queue(struct gfxdisplay_data *mdd, struct gfxdisplay_data *l
 extern void display_Expunge(struct monitor_displaydata *mdd, struct GfxBase *GfxBase);
 extern void display_Enable(struct gfxdisplay_data *mdd, struct GfxBase *GfxBase);
 
+/* the display's compositor (not the driver) composes screens in this mode */
+extern BOOL display_SoftComposes(struct gfxdisplay_data *display, HIDDT_ModeID hiddmode, struct GfxBase *GfxBase);
+
+/* custom screen bitmaps (OpenScreen() SA_BitMap) shown through composition */
+extern BOOL display_IsBMCompositable(struct BitMap *bm, DisplayInfoHandle handle, struct GfxBase *GfxBase);
+extern BOOL display_SetBMCompositable(struct BitMap *bm, DisplayInfoHandle handle, struct GfxBase *GfxBase);
+
 /* framebuffer functions */
 extern OOP_Object *display_FBCreate(struct monitor_displaydata *mdd, struct GfxBase *GfxBase);
 extern void display_FBInstall(struct monitor_displaydata *mdd, struct GfxBase *GfxBase);

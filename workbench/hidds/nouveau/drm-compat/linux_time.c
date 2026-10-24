@@ -33,6 +33,17 @@ static struct timerequest *timer_init_req = NULL;
 static struct MsgPort *timer_proc_port = NULL;
 static struct Process *timer_proc = NULL;
 static struct Task *timer_parent = NULL;
+
+/* Helper-process start-up handshake (linux_sched.c). */
+struct compat_startup {
+    struct Task *parent;
+    LONG sig;
+    volatile BOOL ready;
+};
+void compat_startup_prepare(struct compat_startup *s);
+void compat_startup_signal(struct compat_startup *s);
+void compat_startup_wait(struct compat_startup *s, const char *what);
+static struct compat_startup timer_su;
 static struct SignalSemaphore timer_lock;
 
 static int init_timerbase(void)
@@ -292,7 +303,7 @@ static void timer_proc_main(void)
 
     timer_proc_port = CreateMsgPort();
     timer_cmd_port = CreateMsgPort();
-    Signal(timer_parent, SIGF_SINGLE);
+    compat_startup_signal(&timer_su);
     if (!timer_proc_port || !timer_cmd_port)
         return;
 
@@ -332,6 +343,7 @@ static BOOL timer_proc_start(void)
     ObtainSemaphore(&timer_lock);
     if (!timer_proc) {
         timer_parent = FindTask(NULL);
+        compat_startup_prepare(&timer_su);
         timer_proc = CreateNewProcTags(
             NP_Name, (IPTR)"Nouveau Timers",
             NP_Priority, 21,     /* kernel timer callbacks must outrank waiters, like the workqueues */
@@ -339,7 +351,9 @@ static BOOL timer_proc_start(void)
             NP_StackSize, 64 * 1024,
             TAG_DONE);
         if (timer_proc)
-            Wait(SIGF_SINGLE);
+            compat_startup_wait(&timer_su, "Nouveau Timers");
+        else if (timer_su.sig >= 0)
+            FreeSignal(timer_su.sig);
     }
     ReleaseSemaphore(&timer_lock);
     return timer_proc && timer_cmd_port;

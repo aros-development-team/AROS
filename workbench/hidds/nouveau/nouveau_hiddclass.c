@@ -7,7 +7,6 @@
 #include <exec/pm.h>
 #include <proto/exec.h>
 #include "nouveau_intern.h"
-#include "compositor.h"
 
 #include <graphics/displayinfo.h>
 #include <graphics/driver.h>
@@ -30,7 +29,6 @@
 #undef HiddGfxNouveauAttrBase
 #undef HiddSyncAttrBase
 #undef HiddBitMapAttrBase
-#undef HiddCompositorAttrBase
 #undef HiddBitMapNouveauAttrBase
 
 #define HiddAttrBase          (SD(cl)->hiddAttrBase)
@@ -41,7 +39,6 @@
 #define HiddGfxNouveauAttrBase      (SD(cl)->gfxNouveauAttrBase)
 #define HiddSyncAttrBase            (SD(cl)->syncAttrBase)
 #define HiddBitMapAttrBase          (SD(cl)->bitMapAttrBase)
-#define HiddCompositorAttrBase     (SD(cl)->compositorAttrBase)
 #define HiddBitMapNouveauAttrBase   (SD(cl)->bitMapNouveauAttrBase)
 
 #define MAX_BITMAP_WIDTH    4096
@@ -341,6 +338,7 @@ static BOOL HIDDNouveauReleaseBootDisplays(struct pci_dev *pdev,
  * intuition's final screen.
  */
 volatile int nouveau_shutting_down;
+extern int nouveau_window_planes;
 
 static struct CardData *nouveau_shutdown_carddata;
 
@@ -353,6 +351,10 @@ static AROS_INTH1(HIDDNouveauShutdownHandler, struct Interrupt *, handler)
     /* Bitwise: covers cold, warm and the combined SD_ACTION_REBOOT */
     if (action & SD_ACTION_REBOOT)
     {
+        extern void nv50_disp_sv_shutdown(void);
+
+        /* RM's display teardown runs with the routing it was tested with */
+        nv50_disp_sv_shutdown();
         nouveau_shutting_down = 1;
         if (nouveau_shutdown_carddata)
         {
@@ -605,6 +607,24 @@ OOP_Object * METHOD(Nouveau, Root, New)
             gfxdata->selectedcrtcid = selectedcrtcid;
             gfxdata->selectedmode = NULL;
             gfxdata->selectedconnector = selectedconnector;
+            /* The crtc's overlay planes and vblank counter, for the display compositor */
+            HIDDNouveauEnumPlanes(NOUVEAU_DEV_FD(nvdev), gfxdata);
+            /*
+             * Volta and later (chipset 0x140+) drive the display through
+             * windows rather than the base/overlay channels; the window a
+             * live firmware head lacks is assigned in dispnv50/coreca7d.c.
+             * They are offered unless NOUVEAU_WINDOW_PLANES=0. Classic
+             * overlays (Tesla to Pascal) are offered as they are.
+             */
+            if (nouveau_window_planes && (nvdev->chipset >= 0x140) && gfxdata->nplanes)
+                nvlog("[Nouveau] window-based display (chipset %03x): offering %lu overlay window(s) (NOUVEAU_WINDOW_PLANES=0 to disable)\n",
+                    nvdev->chipset, (unsigned long)gfxdata->nplanes);
+            if (!nouveau_window_planes && (nvdev->chipset >= 0x140) && gfxdata->nplanes)
+            {
+                nvlog("[Nouveau] window-based display (chipset %03x): its %lu overlay window(s) are not used (NOUVEAU_WINDOW_PLANES=0)\n",
+                    nvdev->chipset, (unsigned long)gfxdata->nplanes);
+                gfxdata->nplanes = 0;
+            }
             carddata->dev = nvdev;
             carddata->client = nvclient;
             ULONG gartsize = 0;
@@ -752,24 +772,6 @@ OOP_Object * METHOD(Nouveau, Root, New)
                 HIDDNouveauNVC0SetPattern(carddata, ~0, ~0, ~0, ~0);
                 break;
             }
-
-#if NOUVEAU_PRIVATE_COMPOSITOR
-            /* Create compositor object */
-            {
-                struct TagItem comptags [] =
-                {
-                    { aHidd_Compositor_DisplayHidd, (IPTR)SD(cl)->display },
-                    { TAG_DONE, TAG_DONE }
-                };
-                gfxdata->compositor = OOP_NewObject(SD(cl)->compositorclass, NULL, comptags);
-                SD(cl)->compositor = gfxdata->compositor;
-                /* TODO: Check if object was created, how to handle ? */
-            }
-#else
-            gfxdata->compositor = NULL;
-            SD(cl)->compositor = NULL;
-#endif
-
         }
         UNLOCK_ENGINE
 
@@ -781,7 +783,7 @@ OOP_Object * METHOD(Nouveau, Root, New)
 }
 
 /* FIXME: IMPLEMENT DISPOSE - calling nouveau_close(), freeing cursor bo, gart bo, 
-    selectedconnector, gfxdata->compositor, HIDDNouveauAccelFree */
+    selectedconnector, HIDDNouveauAccelFree */
 
 /* FIXME: IMPLEMENT DISPOSE BITMAP - REMOVE FROM FB IF MARKED AS SUCH */
 

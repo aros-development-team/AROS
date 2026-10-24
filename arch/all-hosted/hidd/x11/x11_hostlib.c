@@ -20,6 +20,20 @@ void *xcursor_handle = NULL;
 struct x11_func x11_func;
 struct libc_func libc_func;
 struct xf86vm_func xf86vm_func;
+void *xrender_handle = NULL;
+struct xrender_func xrender_func;
+
+static const char *xrender_func_names[] = {
+    "XRenderQueryExtension",
+    "XRenderFindVisualFormat",
+    "XRenderCreatePicture",
+    "XRenderFreePicture",
+    "XRenderSetPictureTransform",
+    "XRenderSetPictureFilter",
+    "XRenderComposite"
+};
+
+#define XRENDER_NUM_FUNCS (7)
 #if !X11SOFTMOUSE
 struct xcursor_func xcursor_func;
 #endif
@@ -118,16 +132,17 @@ static const char *x11_func_names[] = {
     "XSetClassHint",
     "XGetInputFocus",
     "XSetInputFocus",
-    "XListPixmapFormats"
+    "XListPixmapFormats",
+    "XUnmapWindow"
 #if DEBUG_X11_SYNCHRON
     , "XSynchronize"
 #endif
 };
 
 #if DEBUG_X11_SYNCHRON
-#define X11_NUM_FUNCS (85)
+#define X11_NUM_FUNCS (86)
 #else
-#define X11_NUM_FUNCS (84)
+#define X11_NUM_FUNCS (85)
 #endif
 
 
@@ -218,6 +233,9 @@ static int x11_hostlib_init(LIBBASETYPEPTR LIBBASE)
             x11_func.XkbSetDetectableAutoRepeat = NULL;
     }
 
+    /* Optional: without it the emulated planes cannot scale */
+    xrender_handle = x11_hostlib_load_so(XRENDER_SOFILE, xrender_func_names, XRENDER_NUM_FUNCS, (void **) &xrender_func);
+
     if ((libc_handle = x11_hostlib_load_so(LIBC_SOFILE, libc_func_names, LIBC_NUM_FUNCS, (void **) &libc_func)) == NULL) {
         HostLib_Close(x11_handle, NULL);
         return FALSE;
@@ -237,6 +255,9 @@ static int x11_hostlib_expunge(LIBBASETYPEPTR LIBBASE)
 
     if (xf86vm_handle != NULL)
         HostLib_Close(xf86vm_handle, NULL);
+
+    if (xrender_handle != NULL)
+        HostLib_Close(xrender_handle, NULL);
 
     if (x11_handle != NULL)
         HostLib_Close(x11_handle, NULL);

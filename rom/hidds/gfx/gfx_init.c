@@ -219,6 +219,7 @@ static const CONST_STRPTR interfaces[NUM_ATTRBASES] =
     IID_Hidd_GC,
     IID_Hidd_ColorMap,
     IID_HW,
+    IID_Hidd_Compositor,
     IID_Hidd,
     IID_Hidd_Sync,
     IID_Hidd_PixFmt,

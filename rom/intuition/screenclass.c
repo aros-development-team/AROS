@@ -7,6 +7,7 @@
 #include <hidd/gfx.h>
 #include <hidd/hidd.h>
 #include <graphics/driver.h>
+#include <graphics/videocontrol.h>
 #include <graphics/sprite.h>
 #include <intuition/intuition.h>
 #include <intuition/intuitionbase.h>
@@ -15,6 +16,7 @@
 #include <intuition/monitorclass.h>
 #include <proto/alib.h>
 #include <proto/exec.h>
+#include <proto/graphics.h>
 #include <proto/intuition.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
@@ -735,6 +737,7 @@ IPTR ScreenClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
     struct Library *OOPBase = GetPrivIBase(IntuitionBase)->OOPBase;
     OOP_AttrBase HiddBitMapAttrBase = GetPrivIBase(IntuitionBase)->HiddAttrBase;
     OOP_AttrBase HiddPixFmtAttrBase = GetPrivIBase(IntuitionBase)->HiddPixFmtAttrBase;
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct IntScreen *screen = INST_DATA(cl, o);
 
     switch (msg->opg_AttrID)
@@ -887,10 +890,27 @@ IPTR ScreenClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
         *msg->opg_Storage = (IPTR)screen->preAlphaCompHook;
         break;
 
-    case SA_OpacitySupport:    /* These are reserved in AROS */
-    case SA_SourceAlphaSupport:
-    case SA_ScreenbarSignal:
+    /*
+     * Composited layers (WA_Opaqueness / WA_AlphaSurface): what the screen's
+     * display can do, from graphics.library's private
+     * CompositeLayersSupported() which layers.library itself asks.
+     * Read-only; OpenScreen() ignores them.
+     */
     case SA_CompositingLayers:
+    case SA_OpacitySupport:
+        *msg->opg_Storage = CompositeLayersSupported(screen->Screen.RastPort.BitMap, NULL) ? TRUE : FALSE;
+        break;
+
+    case SA_SourceAlphaSupport:
+        {
+            ULONG alphaformat = (ULONG)-1;
+
+            *msg->opg_Storage = (CompositeLayersSupported(screen->Screen.RastPort.BitMap, &alphaformat)
+                                 && (ULONG)-1 != alphaformat) ? TRUE : FALSE;
+        }
+        break;
+
+    case SA_ScreenbarSignal:    /* Reserved in AROS */
         *msg->opg_Storage = 0;
         break;
 
@@ -904,6 +924,7 @@ IPTR ScreenClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
 IPTR ScreenClass__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct IntScreen *screen = INST_DATA(cl, o);
     struct TagItem *tstate = msg->ops_AttrList;
@@ -962,7 +983,16 @@ IPTR ScreenClass__OM_SET(Class *cl, Object *o, struct opSet *msg)
 
         case SA_AlphaPreCompositingHook:
             {
+                struct TagItem hooktags[] =
+                {
+                    { VTAG_ALPHAHOOK_SET, tag->ti_Data },
+                    { VTAG_END_CM       , 0            }
+                };
+
                 screen->preAlphaCompHook = (struct Hook *)tag->ti_Data;
+                /* The compositor takes it from the ViewPort */
+                if (screen->Screen.ViewPort.ColorMap)
+                    VideoControl(screen->Screen.ViewPort.ColorMap, hooktags);
             }
             break;
         }

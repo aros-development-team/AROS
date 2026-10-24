@@ -180,9 +180,9 @@ static void loadMonitors(struct List *monitorsList, struct DosLibrary *DOSBase,
     D(bug("--------------------------\n"));
 }
 
-AROS_SH2H(AROSMonDrvs, 1.0, "Load AROS Monitor and Compositor drivers",
-        AROS_SHAH(BOOL, , NOCOMPOSITION,/S,FALSE, "Only load Monitors"),
-        AROS_SHAH(BOOL, , ONLYCOMPOSITION,/S,FALSE, "Only load Compositor"))
+AROS_SH2H(AROSMonDrvs, 1.1, "Load AROS Monitor drivers",
+        AROS_SHAH(BOOL, , NOCOMPOSITION,/S,FALSE, "Ignored (kept for compatibility)"),
+        AROS_SHAH(BOOL, , ONLYCOMPOSITION,/S,FALSE, "Load no monitor drivers"))
 {
     AROS_SHCOMMAND_INIT
 
@@ -201,17 +201,12 @@ AROS_SH2H(AROSMonDrvs, 1.0, "Load AROS Monitor and Compositor drivers",
         olddir = CurrentDir(dir);
         D(bug("[LoadMonDrvs] CurrentDir 0x%p -> 0x%p\n", olddir, dir));
 
-        if (!SHArg(NOCOMPOSITION))
-        {
-            /* Software composition driver is run first */
-            D(BOOL cres;)
-
-            D(bug("[LoadMonDrvs] Loading composition driver...\n"));
-            D(bug("[LoadMonDrvs] Execute('%s') ...\n", COMPOSITING_NAME));
-            D(cres = ) Execute(COMPOSITING_NAME, BNULL, BNULL);
-            D(bug("[LoadMonDrvs] Execute('%s') returned %d, IoErr %ld\n",
-                  COMPOSITING_NAME, cres, (long)IoErr()));
-        }
+        /*
+         * Screen composition is a service of every display (gfx.hidd owns the
+         * compositor class), so there is no composition driver to run any more.
+         * NOCOMPOSITION and ONLYCOMPOSITION are kept for startup scripts that
+         * still pass them; a leftover Devs/Monitors/Compositor is skipped.
+         */
 
         if (!SHArg(ONLYCOMPOSITION))
         {

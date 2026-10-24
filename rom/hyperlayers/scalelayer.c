@@ -140,6 +140,10 @@ AROS_UFH3(BOOL, ScaleLayerCallback,
   if (NULL == l->ClipRect)
     return FALSE;
 
+  /* A composited layer's single ClipRect is a view into its surface; not scaled (yet) */
+  if (IS_COMPOSITED(l))
+    return FALSE;
+
   srcbm = AllocBitMap(l->Width + ALIGN_CLIPRECT, l->Height, depth, BMF_CLEAR, display_bm);
   if (NULL == srcbm)
     return FALSE;

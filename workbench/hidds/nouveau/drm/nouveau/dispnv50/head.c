@@ -549,13 +549,46 @@ nvd9_head_func = {
 	.late_register = nv50_head_late_register,
 };
 
+#if defined(__AROS__)
+/*
+ * The nvkm display interrupt delivers this event from the exec interrupt
+ * server. The DRM vblank core takes semaphore-backed locks and asks the
+ * driver for the scanout position (an nvif method), neither allowed in an
+ * AROS interrupt, so the handling runs on the high-priority work queue.
+ */
+static unsigned long nv50_head_vblank_pending;
+static struct drm_device *nv50_head_vblank_dev;
+static struct work_struct nv50_head_vblank_work;
+
+static void
+nv50_head_vblank_worker(struct work_struct *work)
+{
+	int i;
+
+	for (i = 0; i < BITS_PER_LONG; i++) {
+		struct drm_crtc *crtc;
+
+		if (!test_and_clear_bit(i, &nv50_head_vblank_pending))
+			continue;
+		crtc = drm_crtc_from_index(nv50_head_vblank_dev, i);
+		if (crtc && drm_crtc_handle_vblank(crtc))
+			nv50_crc_handle_vblank(nv50_head(crtc));
+	}
+}
+#endif
+
 static int
 nv50_head_vblank_handler(struct nvif_event *event, void *repv, u32 repc)
 {
 	struct nouveau_crtc *nv_crtc = container_of(event, struct nouveau_crtc, vblank);
 
+#if defined(__AROS__)
+	set_bit(drm_crtc_index(&nv_crtc->base), &nv50_head_vblank_pending);
+	queue_work(system_highpri_wq, &nv50_head_vblank_work);
+#else
 	if (drm_crtc_handle_vblank(&nv_crtc->base))
 		nv50_crc_handle_vblank(nv50_head(&nv_crtc->base));
+#endif
 
 	return NVIF_EVENT_KEEP;
 }
@@ -575,6 +608,12 @@ nv50_head_create(struct drm_device *dev, int index)
 	head = kzalloc(sizeof(*head), GFP_KERNEL);
 	if (!head)
 		return ERR_PTR(-ENOMEM);
+#if defined(__AROS__)
+	if (!nv50_head_vblank_dev) {
+		nv50_head_vblank_dev = dev;
+		INIT_WORK(&nv50_head_vblank_work, nv50_head_vblank_worker);
+	}
+#endif
 
 	head->func = disp->core->func->head;
 	head->disp = disp;

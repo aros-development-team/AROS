@@ -121,5 +121,9 @@ struct nvkm_disp_imp_result;
 int nv50_disp_imp(struct nv50_disp *, const struct nvkm_disp_imp_head *, int,
 		  struct nvkm_disp_imp_result *);
 extern bool nv50_disp_sv_release_enabled;
+extern int nv50_disp_sv_grace_ms;
+extern int nv50_disp_fe_vector_keep;
+extern int nv50_disp_sv_rm_param;
 void nv50_disp_sv_release(struct nvif_device *);
+void nv50_disp_sv_shutdown(void);
 #endif

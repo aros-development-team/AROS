@@ -66,21 +66,33 @@
   AROS_LIBFUNC_INIT
 
   struct Layer * first, *_l, *lparent;
-  struct Region * newshape, * oldshape, r, rtmp, cutnewshape;
+  struct Region * newshape, * oldshape, r, rtmp, cutnewshape, cutocclude;
   struct Region *clipregion, *olddamage = NULL;
   struct Rectangle rectw, recth;
 
   InitRegion(&r);
   InitRegion(&rtmp);
   InitRegion(&cutnewshape);
+  InitRegion(&cutocclude);
 
   LockLayers(l->LayerInfo);
 
-#if LAYERS_BACKING_SURFACE
   /* a growing layer needs a bigger surface before anything is backed up */
-  if (dw > 0 || dh > 0)
-    _EnsureSurfaceSize(l, l->Width + dw, l->Height + dh, LayersBase);
-#endif
+  if ((dw > 0 || dh > 0) && NULL != IL(l)->surface)
+  {
+    if (!_EnsureSurfaceSize(l, l->Width + dw, l->Height + dh, LayersBase) && IS_COMPOSITED(l))
+    {
+      /*
+       * A composited layer must be complete in its surface. When the bigger
+       * one is not allowed (surface budget, LAYERS_SURFACE_BUDGET_FACTOR)
+       * or cannot be allocated, the layer goes on as an ordinary smart
+       * refresh layer, its content kept and the old surface its backing
+       * store as far as it reaches. A smart refresh layer with a surface
+       * that is too small simply gets ClipRect bitmaps for the rest.
+       */
+      _UncompositeLayer(l, LayersBase);
+    }
+  }
   
   clipregion = _InternalInstallClipRegion(l, NULL, 0, 0, LayersBase);
 
@@ -185,6 +197,9 @@
 
   SetRegion(newshape, &cutnewshape);
   AndRegionRegion(l->parent->visibleshape, &cutnewshape);
+  /* what the layer will hide from those behind at its new place: nothing when blended */
+  if (!IS_TRANSLUCENT(l))
+    SetRegion(&cutnewshape, &cutocclude);
 
   first = GetFirstFamilyMember(l);
   /*
@@ -224,10 +239,10 @@ kprintf("\t\t%s: Backing up parts of layers that are behind the layer!\n",
 #endif
   while (1)
   {
-    if (IS_VISIBLE(_l) && DO_OVERLAP(&cutnewshape.bounds, &_l->shape->bounds))
-      _BackupPartsOfLayer(_l, &cutnewshape, 0, FALSE, LayersBase);
+    if (IS_VISIBLE(_l) && !IS_TRANSLUCENT(l) && DO_OVERLAP(&cutocclude.bounds, &_l->shape->bounds))
+      _BackupPartsOfLayer(_l, &cutocclude, 0, FALSE, LayersBase);
     else
-      ClearRegionRegion(&cutnewshape, _l->VisibleRegion);
+      ClearRegionRegion(&cutocclude, _l->VisibleRegion);
 
     if (_l == lparent)
     {
@@ -239,8 +254,9 @@ kprintf("\t\t%s: Backing up parts of layers that are behind the layer!\n",
     _l = _l->back;
   }
 
-   SetRegion(&cutnewshape, l->visibleshape);
+  SetRegion(&cutnewshape, l->visibleshape);
   ClearRegion(&cutnewshape);
+  ClearRegion(&cutocclude);
 
   /*
    * Now I need to move the layer and all its familiy to the new
@@ -330,7 +346,7 @@ kprintf("\t\t%s: SHOWING parts of THE LAYER TO BE MOVED (children)!\n",
       if (l == _l)
         break;
       
-      ClearRegionRegion(_l->visibleshape, &r);
+      ClearRegionRegion(OCCLUDESHAPE(_l), &r);
     }
 
     if (l == _l)
@@ -341,65 +357,74 @@ kprintf("\t\t%s: SHOWING parts of THE LAYER TO BE MOVED (children)!\n",
 
   /*
    * Now make those parts of the layers after l up to and including
-   * its parent visible.
+   * its parent visible. A blended layer hid nothing, so nothing has
+   * to be shown or backfilled behind it.
    */
-  SetRegion(l->VisibleRegion, &r);
-  ClearRegionRegion(l->visibleshape, &r);
-  _l = l->back;
-  lparent = l->parent;
-    
-  while (1)
+  if (IS_TRANSLUCENT(l))
   {
+    DisposeRegion(oldshape);
+    oldshape = NULL;
+  }
+  else
+  {
+    SetRegion(l->VisibleRegion, &r);
+    ClearRegionRegion(OCCLUDESHAPE(l), &r);
+    _l = l->back;
+    lparent = l->parent;
+
+    while (1)
+    {
 #if 0
 kprintf("\t\t%s: SHOWING parts of the layers behind the layer to be moved!\n",
-        __FUNCTION__);
+          __FUNCTION__);
 #endif
-    if (IS_VISIBLE(_l) &&
-       (  DO_OVERLAP(&l->visibleshape->bounds, &_l->shape->bounds) ||
-          DO_OVERLAP(   &oldshape->bounds, &_l->shape->bounds) ))
-    {
-      ClearRegion(_l->VisibleRegion);
-      _ShowPartsOfLayer(_l, &r, LayersBase);
-    }
-    else
-      SetRegion(&r, _l->VisibleRegion);
+      if (IS_VISIBLE(_l) &&
+         (  DO_OVERLAP(&l->visibleshape->bounds, &_l->shape->bounds) ||
+            DO_OVERLAP(   &oldshape->bounds, &_l->shape->bounds) ))
+      {
+        ClearRegion(_l->VisibleRegion);
+        _ShowPartsOfLayer(_l, &r, LayersBase);
+      }
+      else
+        SetRegion(&r, _l->VisibleRegion);
 
-    if (IS_VISIBLE(_l) || IS_ROOTLAYER(_l))
-      AndRegionRegion(_l->VisibleRegion, oldshape);
+      if (IS_VISIBLE(_l) || IS_ROOTLAYER(_l))
+        AndRegionRegion(_l->VisibleRegion, oldshape);
 
 #if 0
-    if (IS_ROOTLAYER(_l))
-      kprintf("root reached! %p\n",_l);
+      if (IS_ROOTLAYER(_l))
+        kprintf("root reached! %p\n",_l);
 #endif
       
-    if (_l == lparent)
-    {
-      if (IS_VISIBLE(_l) || (NULL == lparent->parent))
-        break;
-      else
-        lparent = lparent->parent;
-    }
+      if (_l == lparent)
+      {
+        if (IS_VISIBLE(_l) || (NULL == lparent->parent))
+          break;
+        else
+          lparent = lparent->parent;
+      }
       
-    if (IS_VISIBLE(_l))
-      ClearRegionRegion(_l->visibleshape, &r);
+      if (IS_VISIBLE(_l))
+        ClearRegionRegion(OCCLUDESHAPE(_l), &r);
 
-    _l = _l->back;
-  }
+      _l = _l->back;
+    }
 
-  ClearRegion(&rtmp);
+    ClearRegion(&rtmp);
     
-  /*
-   * Now I need to clear the old layer at its previous place..
-   * But I may only clear those parts where no layer has become
-   * visible in the meantime.
-   */
-  if (!IS_EMPTYREGION(oldshape))
-  {
-    if (lparent && IS_ROOTLAYER(lparent))
-      _BackFillRegion(l->parent, oldshape, TRUE, LayersBase);
-  }
+    /*
+     * Now I need to clear the old layer at its previous place..
+     * But I may only clear those parts where no layer has become
+     * visible in the meantime.
+     */
+    if (!IS_EMPTYREGION(oldshape))
+    {
+      if (lparent && IS_ROOTLAYER(lparent))
+        _BackFillRegion(l->parent, oldshape, TRUE, LayersBase);
+    }
 
-  DisposeRegion(oldshape);
+    DisposeRegion(oldshape);
+  } /* if (!IS_TRANSLUCENT(l)) */
 
   /*
    * If the size of the layer became larger clear the
@@ -438,6 +463,8 @@ kprintf("\t\t%s: SHOWING parts of the layers behind the layer to be moved!\n",
   
   if (clipregion)
     _InternalInstallClipRegion(l, clipregion, 0, 0, LayersBase);
+
+  UPDATE_SURFACES(l->LayerInfo);
 
   UnlockLayers(l->LayerInfo);
 

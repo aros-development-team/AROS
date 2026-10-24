@@ -33,6 +33,30 @@ struct VMWareSVGA_FB
     ULONG                       bpp, depth;
 };
 
+/*
+ * Scan-out planes for the display compositor. Overlay planes of our crtc
+ * that can scan out an RGB framebuffer are listed at start; 1 = no overlays,
+ * the cursor is a plane of its own. VMWSVGA_PLANE_SCREENS makes displayable
+ * off-screen bitmaps (screens) dumb buffers so that overlays can scan them
+ * out; it is off until that has been tried on hardware.
+ */
+#define VMWSVGA_MAX_PLANES      8
+#define VMWSVGA_PLANE_SCREENS   0
+
+#define KMSFMT_XRGB8888     (1 << 0)
+#define KMSFMT_ARGB8888     (1 << 1)
+#define KMSFMT_XBGR8888     (1 << 2)
+#define KMSFMT_ABGR8888     (1 << 3)
+#define KMSFMT_RGB565       (1 << 4)
+#define KMSFMT_XRGB1555     (1 << 5)
+
+struct VMWareSVGA_Plane
+{
+    ULONG                       id;             /* KMS plane object id */
+    ULONG                       formats;        /* KMSFMT_* it scans out */
+    ULONG                       fbid;           /* framebuffer on it, 0 = off */
+};
+
 struct VMWareSVGA_KMS
 {
     int                         fd;             /* the hidd's drm file */
@@ -59,6 +83,13 @@ struct VMWareSVGA_KMS
     struct Box                  damage;
     BOOL                        damage_pending;
     struct Task                 *render_task;
+
+    /* scan-out planes */
+    ULONG                       crtc_index;     /* index of crtc_id among the crtcs (plane masks, vblank) */
+    ULONG                       nplanes;        /* overlay planes usable on our crtc */
+    struct VMWareSVGA_Plane     planes[VMWSVGA_MAX_PLANES];
+    BOOL                        vblank_ok;      /* the kernel answers vblank waits for our crtc */
+    ULONG                       vblanks;        /* last vblank sequence seen */
 };
 
 #define VMWSVGA_CURSOR_SIZE     64
@@ -79,5 +110,11 @@ VOID VMWareSVGA_KMS_DamageFlush(struct VMWareSVGA_KMS *kms);
 BOOL VMWareSVGA_KMS_SetCursorShape(struct VMWareSVGA_KMS *kms, ULONG *argb, ULONG width, ULONG height);
 BOOL VMWareSVGA_KMS_ShowCursor(struct VMWareSVGA_KMS *kms, BOOL show);
 BOOL VMWareSVGA_KMS_MoveCursor(struct VMWareSVGA_KMS *kms, LONG x, LONG y);
+
+VOID VMWareSVGA_KMS_EnumPlanes(struct VMWareSVGA_KMS *kms);
+BOOL VMWareSVGA_KMS_SetPlane(struct VMWareSVGA_KMS *kms, ULONG index, ULONG fbid, LONG crtcx, LONG crtcy, ULONG crtcw, ULONG crtch,
+                            ULONG srcx, ULONG srcy, ULONG srcw, ULONG srch);
+BOOL VMWareSVGA_KMS_WaitVBlank(struct VMWareSVGA_KMS *kms);
+ULONG VMWareSVGA_KMS_VBlankCount(struct VMWareSVGA_KMS *kms);
 
 #endif /* _VMWARESVGA_KMS_H */

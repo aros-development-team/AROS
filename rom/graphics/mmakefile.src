@@ -17,7 +17,6 @@ FILES	  := \
 	gels_internal \
 	objcache \
 	default_font \
-	graphics_compositor \
 	graphics_display \
 	graphics_driver \
 	dispinfo \
@@ -55,6 +54,7 @@ FUNCTIONS := \
 	bestmodeida \
 	bitmapscale \
 	bltbitmap \
+	bltbitmapalpha \
 	bltbitmaprastport \
 	bltclear \
 	bltmaskbitmaprastport \
@@ -195,6 +195,9 @@ FUNCTIONS := \
 	textlength \
 	ucopperlistinit \
 	updatebitmap \
+	compositelayerssupported \
+	layersurfaceschanged \
+	layersurfacealpha \
 	unlocklayerrom \
 	vbeampos \
 	videocontrol \
@@ -220,8 +223,6 @@ FUNCTIONS := \
 
 #MM- core-linklibs : linklibs-graphics
 
-#MM kernel-graphics     : includes-compositor-copy
-#MM kernel-graphics-kobj: includes-compositor-copy
 
 ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
 OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)

@@ -309,7 +309,7 @@ VOID METHOD(GMABM, Root, Set)
     }
 
     /* If there was a change requested, validate it */
-    struct pHidd_Compositor_ValidateBitMapPositionChange vbpcmsg =
+    struct pHidd_GMACompositor_ValidateBitMapPositionChange vbpcmsg =
     {
         .mID = SD(cl)->mid_ValidateBitMapPositionChange,
         .bm = o,
@@ -322,7 +322,7 @@ VOID METHOD(GMABM, Root, Set)
     if ((newxoffset != bmdata->xoffset) || (newyoffset != bmdata->yoffset))
     {
         /* If change passed validation, execute it */
-        struct pHidd_Compositor_BitMapPositionChanged bpcmsg =
+        struct pHidd_GMACompositor_BitMapPositionChanged bpcmsg =
         {
             .mID = SD(cl)->mid_BitMapPositionChanged,
             .bm = o
@@ -964,7 +964,7 @@ VOID METHOD(GMABM, Hidd_BitMap, ReleaseDirectAccess)
 
         if (bm->displayable)
     {
-        struct pHidd_Compositor_BitMapRectChanged brcmsg =
+        struct pHidd_GMACompositor_BitMapRectChanged brcmsg =
         {
             .mID = SD(cl)->mid_BitMapRectChanged,
             .bm = o,
@@ -2159,7 +2159,7 @@ VOID METHOD(GMABM, Hidd_BitMap, UpdateRect)
     D(bug("[GMA]BitMap::UpdateRect %d,%d-%d,%d o=%p\n",msg->x,msg->y,msg->width,msg->height,o));
     if (bmdata->displayable)
     {
-        struct pHidd_Compositor_BitMapRectChanged brcmsg =
+        struct pHidd_GMACompositor_BitMapRectChanged brcmsg =
         {
             .mID = SD(cl)->mid_BitMapRectChanged,
             .bm = o,

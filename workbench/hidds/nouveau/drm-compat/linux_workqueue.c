@@ -16,6 +16,16 @@
 #include <linux/interrupt.h>
 #include <linux/delay.h>
 
+/* Helper-process start-up handshake (linux_sched.c). */
+struct compat_startup {
+    struct Task *parent;
+    LONG sig;
+    volatile BOOL ready;
+};
+void compat_startup_prepare(struct compat_startup *s);
+void compat_startup_signal(struct compat_startup *s);
+void compat_startup_wait(struct compat_startup *s, const char *what);
+
 /*
  * A workqueue is one worker process with a message port. Queued work
  * items are linked on the queue's list under Disable(); the worker pops
@@ -40,6 +50,7 @@ struct workqueue_struct {
     volatile ULONG done_generation;
     struct SignalSemaphore flush_lock;
     volatile BOOL stopping;
+    struct compat_startup su;
 };
 
 struct workqueue_struct *system_wq = NULL;
@@ -55,7 +66,7 @@ static void worker_main(void)
     struct workqueue_struct *wq = self->tc_UserData;
 
     wq->sigbit = AllocSignal(-1);
-    Signal(wq->creator, SIGF_SINGLE);
+    compat_startup_signal(&wq->su);
     if (wq->sigbit == (ULONG)-1)
         return;
 
@@ -110,6 +121,7 @@ struct workqueue_struct *alloc_workqueue(const char *fmt, unsigned int flags, in
     InitSemaphore(&wq->flush_lock);
     wq->creator = FindTask(NULL);
     wq->sigbit = (ULONG)-1;
+    compat_startup_prepare(&wq->su);
 
     wq->worker = CreateNewProcTags(
         NP_Name, (IPTR)wq->name,
@@ -125,10 +137,12 @@ struct workqueue_struct *alloc_workqueue(const char *fmt, unsigned int flags, in
         NP_UserData, (IPTR)wq,
         TAG_DONE);
     if (!wq->worker) {
+        if (wq->su.sig >= 0)
+            FreeSignal(wq->su.sig);
         kfree(wq);
         return NULL;
     }
-    Wait(SIGF_SINGLE);
+    compat_startup_wait(&wq->su, wq->name);
     if (wq->sigbit == (ULONG)-1) {
         kfree(wq);
         return NULL;
