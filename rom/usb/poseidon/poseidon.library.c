@@ -6245,37 +6245,41 @@ static VOID pFreeDevAndBindings(LIBBASETYPEPTR ps, struct PsdDevice *pd)
 /* \\\ */
 
 /* /// "psdCheckPipe()" */
-/****** poseidon.library/psdCheckPipe **************************************
+/*****************************************************************************
+    NAME
+        APTR psdCheckPipe(
 
-    NAME */
-        AROS_LH1(struct PsdPipe *, psdCheckPipe,
-/*  SYNOPSIS */
-         AROS_LHA(struct PsdPipe *, pp, A1),
-/*  LOCATION */
-         LIBBASETYPEPTR, ps, 71, psd)
-/*  FUNCTION
-        Check whether a pipe's message is still pending, without waiting.
+    SYNOPSIS
+        APTR pp)
+
+    FUNCTION
+        Test whether a pipe is marked as pending.
 
     INPUTS
-        pp - Pipe to inspect; must be valid.
+        pp - Valid, non-NULL pipe handle.
 
     RESULT
-        NULL while the pipe message has node type NT_MESSAGE. Otherwise
-        returns pp. No new reference or allocation is created.
+        NULL while the pipe message has type NT_MESSAGE; otherwise pp.
+        A non-NULL result does not mean that the transfer succeeded, and an
+        idle pipe need not have completed a transfer at all.
 
     NOTES
-        This is a message-state test, not a transfer completion or success
-        check. It does not consume a reply, wait for the hardware task, or
-        examine the transfer's I/O error. Use psdWaitPipe() to collect the
-        result, and psdGetPipeError() to inspect the transfer status.
+        Does not wait, remove a reply message or inspect transfer status.
+        Use psdWaitPipe() for the normal completion path and inspect its result
+        and the actual byte count before reusing transfer data. Serialize
+        submission, completion and freeing of the pipe with this check.
+        The returned handle is the original pipe, not a new allocation.
 
     BUGS
         The implementation dereferences pp without checking for NULL.
 
     SEE ALSO
-        psdSendPipe(), psdWaitPipe(), psdGetPipeError()
+        psdSendPipe(), psdWaitPipe(), psdGetPipeActual(), psdGetPipeError()
 
-******************************************************************************/
+*****************************************************************************/
+        AROS_LH1(struct PsdPipe *, psdCheckPipe,
+         AROS_LHA(struct PsdPipe *, pp, A1),
+         LIBBASETYPEPTR, ps, 71, psd)
 {
     AROS_LIBFUNC_INIT
     KPRINTF(5, ("psdCheckPipe(%p)\n", pp));
@@ -7259,56 +7263,63 @@ static VOID pFreeDevAndBindings(LIBBASETYPEPTR ps, struct PsdDevice *pd)
 /* *** Realtime Iso */
 
 /* /// "psdAllocRTIsoHandler()" */
-/****** poseidon.library/psdAllocRTIsoHandlerA *****************************
+/*****************************************************************************
+    NAME
+        APTR psdAllocRTIsoHandlerA(
 
-    NAME */
-        AROS_LH2(struct PsdRTIsoHandler *, psdAllocRTIsoHandlerA,
-/*  SYNOPSIS */
-         AROS_LHA(struct PsdEndpoint *, pep, A0),
-         AROS_LHA(struct TagItem *, tags, A1),
-/*  LOCATION */
-         LIBBASETYPEPTR, ps, 93, psd)
-/*  FUNCTION
-        Register a real-time isochronous transfer handler for a USB endpoint
-        whose controller supports the real-time isochronous interface.
+    SYNOPSIS
+        APTR pep, struct TagItem *taglist)
+
+    FUNCTION
+        Register a real-time isochronous endpoint handler with its controller.
 
     INPUTS
-        pep  - Valid isochronous endpoint. Its device and controller must
-               remain available while the handler is registered.
-        tags - Optional handler configuration; see TAGS.
+        pep - Live isochronous endpoint. NULL is rejected.
+        taglist - RTA_* attributes, or NULL for defaults.
 
     TAGS
-        RTA_InRequestHook   - Hook used for incoming transfer requests.
-        RTA_OutRequestHook  - Hook used for outgoing transfer requests.
-        RTA_InDoneHook      - Hook for completed incoming transfers.
-        RTA_OutDoneHook     - Hook for completed outgoing transfers.
-        RTA_ReleaseHook     - Hook notified during device teardown.
-        RTA_OutPrefetchSize - Outgoing prefetch size; defaults to 2048.
+        RTA_InRequestHook, RTA_OutRequestHook - Buffer request hooks for
+            input or output, using struct IOUsbHWBufferReq.
+        RTA_InDoneHook, RTA_OutDoneHook - Buffer completion hooks.
+        RTA_ReleaseHook - Device-removal notification hook, called with the
+            handler as object and NULL as message.
+        RTA_OutPrefetchSize - Maximum output prefetch in bytes; default 2048.
 
     RESULT
-        Registered handler, or NULL if the endpoint is invalid, is not
-        isochronous, lacks controller support, or resource allocation or
-        controller registration fails.
+        A registered handler, or NULL if the endpoint is unsuitable, the
+        controller lacks UHCF_RT_ISO, allocation fails or registration fails.
+        Allocation does not start transfers. Release with psdFreeRTIsoHandler().
 
     NOTES
-        Registration allocates a handler and a pipe, applies the RTA_* tags,
-        and submits UHCMD_ADDISOHANDLER using DoIO(). On success the handler
-        is linked to the device's real-time isochronous handler list.
-        The returned handler is owned by the caller until released with
-        psdFreeRTIsoHandler(). Registration does not start transfers.
+        Call in task context and coordinate endpoint lifetime. Hook pointers
+        are retained, not copied; keep hook structures, code and associated
+        state valid until the controller no longer uses them. The tag list
+        itself is not retained. No hook is installed by default.
 
-        The device teardown path invokes RTA_ReleaseHook when supplied.
-        That hook does not substitute for managing the handler's lifetime.
+        Data hooks follow <devices/usbhardware.h>. They may run with interrupts
+        disabled; do not wait, perform DOS I/O or call these lifecycle functions
+        from a data hook. The callback object is controller-private, not the
+        Poseidon handler. Request buffers and completion semantics must satisfy
+        the selected controller; do not release buffers while it can use them.
+
+        The release hook runs during device removal with the device write lock
+        held. Arrange cleanup without waiting for a task that needs that lock.
+        Registration uses synchronous controller I/O with no reply port and
+        requires quick completion support; there is no library-level timeout.
 
     BUGS
-        The implementation does not validate the endpoint's ownership chain
-        before dereferencing it. Controller capability is checked, but no
-        independent runtime check of the driver's quick-I/O behavior is made.
+        The endpoint ownership chain is dereferenced without separate
+        validation. Controller quick-I/O support is required by the
+        synchronous calls but is not independently verified here.
 
     SEE ALSO
-        psdFreeRTIsoHandler(), psdStartRTIso(), psdStopRTIso()
+        psdStartRTIso(), psdStopRTIso(), psdFreeRTIsoHandler(), psdSetAttrsA()
 
-******************************************************************************/
+*****************************************************************************/
+        AROS_LH2(struct PsdRTIsoHandler *, psdAllocRTIsoHandlerA,
+         AROS_LHA(struct PsdEndpoint *, pep, A0),
+         AROS_LHA(struct TagItem *, tags, A1),
+         LIBBASETYPEPTR, ps, 93, psd)
 {
     AROS_LIBFUNC_INIT
     struct PsdRTIsoHandler *prt;
@@ -7357,37 +7368,41 @@ static VOID pFreeDevAndBindings(LIBBASETYPEPTR ps, struct PsdDevice *pd)
 /* \\\ */
 
 /* /// "psdFreeRTIsoHandler()" */
-/****** poseidon.library/psdFreeRTIsoHandler *******************************
+/*****************************************************************************
+    NAME
+        VOID psdFreeRTIsoHandler(
 
-    NAME */
-        AROS_LH1(void, psdFreeRTIsoHandler,
-/*  SYNOPSIS */
-         AROS_LHA(struct PsdRTIsoHandler *, prt, A1),
-/*  LOCATION */
-         LIBBASETYPEPTR, ps, 94, psd)
-/*  FUNCTION
-        Unregister and release a real-time isochronous transfer handler.
+    SYNOPSIS
+        APTR prt)
+
+    FUNCTION
+        Remove a real-time isochronous handler and free its library storage.
 
     INPUTS
-        prt - Handler returned by psdAllocRTIsoHandlerA(), or NULL.
+        prt - Live handler returned by psdAllocRTIsoHandlerA(), or NULL.
 
     NOTES
-        A NULL handler is ignored. Otherwise the function removes the
-        handler from its device list, sends UHCMD_REMISOHANDLER through
-        DoIO(), releases its pipe, and frees the handler allocation.
-        The handler pointer is invalid after this call.
+        NULL is ignored. Call in task context. Stop a running handler first
+        and serialize this call with all operations using it. Removes the
+        handler from the device list, asks the controller to remove it, then
+        frees its pipe and storage. The handle is invalid after return.
+
+        Does not stop an active handler, call the release hook or
+        balance a successful start itself.
+        This call has no library-level timeout.
 
     BUGS
-        The result of the controller removal request is discarded.
-        The implementation does not stop an active handler explicitly
-        or verify that all callback activity has ceased before freeing
-        its memory. Clients must coordinate shutdown with the controller
-        and any callbacks before releasing the handler.
+        The controller removal result is ignored. Storage is freed even if
+        removal fails, so return does not independently prove that callbacks
+        or controller references have been quiesced.
 
     SEE ALSO
-        psdAllocRTIsoHandlerA(), psdStartRTIso(), psdStopRTIso()
+        psdAllocRTIsoHandlerA(), psdStopRTIso()
 
-******************************************************************************/
+*****************************************************************************/
+        AROS_LH1(void, psdFreeRTIsoHandler,
+         AROS_LHA(struct PsdRTIsoHandler *, prt, A1),
+         LIBBASETYPEPTR, ps, 94, psd)
 {
     AROS_LIBFUNC_INIT
     struct PsdPipe *pp;
@@ -7408,39 +7423,45 @@ static VOID pFreeDevAndBindings(LIBBASETYPEPTR ps, struct PsdDevice *pd)
 /* \\\ */
 
 /* /// "psdStartRTIso()" */
-/****** poseidon.library/psdStartRTIso *************************************
+/*****************************************************************************
+    NAME
+        LONG psdStartRTIso(
 
-    NAME */
-        AROS_LH1(LONG, psdStartRTIso,
-/*  SYNOPSIS */
-         AROS_LHA(struct PsdRTIsoHandler *, prt, A1),
-/*  LOCATION */
-         LIBBASETYPEPTR, ps, 95, psd)
-/*  FUNCTION
-        Request that the controller start a registered real-time
-        isochronous handler.
+    SYNOPSIS
+        APTR prt)
+
+    FUNCTION
+        Ask the controller to start a registered real-time ISO handler.
 
     INPUTS
-        prt - Valid registered real-time isochronous handler.
+        prt - Live, stopped handler returned by psdAllocRTIsoHandlerA().
 
     RESULT
-        UHCMD_STARTRTISO I/O result, or UHIOERR_BADPARAMS for NULL prt.
-        Zero indicates that the controller command completed successfully.
+        Zero on controller-command success; otherwise the controller I/O
+        error. NULL returns UHIOERR_BADPARAMS. Success is not a completed
+        transfer or a guarantee of error-free future frames.
 
     NOTES
-        If the associated device is suspended, the function first calls
-        psdResumeDevice(). It then issues UHCMD_STARTRTISO through DoIO().
-        On a zero I/O result it increments the device's busy-I/O count.
+        Call in task context. Serializes neither concurrent lifecycle calls
+        nor attribute changes; the caller must do so. If the device is
+        suspended, attempts to resume it before issuing the start command.
+        Data hooks can run during controller setup. There is no library-level
+        timeout or rollback guarantee for a failed start.
+
+        Each successful start increments the device busy count. Pair it with
+        one successful psdStopRTIso() before freeing the handler.
 
     BUGS
-        The result of psdResumeDevice() is not checked before the start
-        request. The function does not check for an already active handler;
-        repeated successful starts each increment the busy-I/O count.
+        No running-state guard prevents repeated starts. The device-resume
+        result is ignored; the returned status belongs to the start command.
 
     SEE ALSO
         psdAllocRTIsoHandlerA(), psdStopRTIso(), psdFreeRTIsoHandler()
 
-******************************************************************************/
+*****************************************************************************/
+        AROS_LH1(LONG, psdStartRTIso,
+         AROS_LHA(struct PsdRTIsoHandler *, prt, A1),
+         LIBBASETYPEPTR, ps, 95, psd)
 {
     AROS_LIBFUNC_INIT
     struct PsdPipe *pp;
@@ -7465,39 +7486,42 @@ static VOID pFreeDevAndBindings(LIBBASETYPEPTR ps, struct PsdDevice *pd)
 /* \\\ */
 
 /* /// "psdStopRTIso()" */
-/****** poseidon.library/psdStopRTIso **************************************
+/*****************************************************************************
+    NAME
+        LONG psdStopRTIso(
 
-    NAME */
-        AROS_LH1(LONG, psdStopRTIso,
-/*  SYNOPSIS */
-         AROS_LHA(struct PsdRTIsoHandler *, prt, A1),
-/*  LOCATION */
-         LIBBASETYPEPTR, ps, 96, psd)
-/*  FUNCTION
-        Request that the controller stop a registered real-time
-        isochronous handler.
+    SYNOPSIS
+        APTR prt)
+
+    FUNCTION
+        Ask the controller to stop a running real-time ISO handler.
 
     INPUTS
-        prt - Valid registered real-time isochronous handler.
+        prt - Live handler with one unmatched successful psdStartRTIso().
 
     RESULT
-        UHCMD_STOPRTISO I/O result, or UHIOERR_BADPARAMS for NULL prt.
-        Zero indicates that the controller command completed successfully.
+        Zero on controller-command success; otherwise the controller I/O
+        error. NULL returns UHIOERR_BADPARAMS. On failure, do not assume that
+        the controller has stopped accessing callback state or buffers.
 
     NOTES
-        The function submits UHCMD_STOPRTISO using DoIO() and decrements
-        the associated device's busy-I/O count on a zero I/O result.
-        A failed request leaves that count unchanged.
+        Call in task context and serialize lifecycle operations. On success,
+        decrements the device busy count. The registered handler remains
+        allocated and may be started again. There is no library-level timeout;
+        callback and buffer quiescence depend on the controller implementation.
 
     BUGS
-        No active-state check precedes the stop request. Repeated successful
-        stops can decrement the busy-I/O count more than once. This entry
-        point does not free the handler or unregister it from the device.
+        No running-state guard prevents unmatched or repeated stops. Each
+        successful command decrements the busy count, even without a matching
+        successful start.
 
     SEE ALSO
-        psdStartRTIso(), psdFreeRTIsoHandler(), psdAllocRTIsoHandlerA()
+        psdStartRTIso(), psdFreeRTIsoHandler()
 
-******************************************************************************/
+*****************************************************************************/
+        AROS_LH1(LONG, psdStopRTIso,
+         AROS_LHA(struct PsdRTIsoHandler *, prt, A1),
+         LIBBASETYPEPTR, ps, 96, psd)
 {
     AROS_LIBFUNC_INIT
     struct PsdPipe *pp;
@@ -8917,44 +8941,49 @@ static void pReleaseAfterDOSBindings(LIBBASETYPEPTR ps)
 /* *** Events *** */
 
 /* /// "psdAddEventHandler()" */
-/****** poseidon.library/psdAddEventHandler ************************
+/*****************************************************************************
+    NAME
+        APTR psdAddEventHandler(
 
-    NAME */
-        AROS_LH2(struct PsdEventHook *, psdAddEventHandler,
+    SYNOPSIS
+        struct MsgPort *mp, ULONG msgmask)
 
-/*  SYNOPSIS */
-         AROS_LHA(struct MsgPort *, mp, A1),
-         AROS_LHA(ULONG, msgmask, D0),
-/*  LOCATION */
-         LIBBASETYPEPTR, ps, 47, psd)
-/*  FUNCTION
-        Register a message port to receive selected Poseidon events.
-        Each matching event is delivered as a library-allocated message.
+    FUNCTION
+        Subscribe a message port to Poseidon events.
 
     INPUTS
-        mp - Message port to receive the events. Must not be NULL.
-        msgmask - Bitmask of EHMF_* event flags from libraries/poseidon.h.
+        mp - Live message port dedicated to this registration.
+        msgmask - Bitwise OR of EHMF_* masks from <libraries/poseidon.h>.
+            Zero registers a handler that receives no events.
 
     RESULT
-        A registration handle, or NULL if mp is NULL or allocation
-        fails. The handle is released by psdRemEventHandler().
+        An opaque registration handle, or NULL for a NULL port or allocation
+        failure. Remove a successful registration with psdRemEventHandler().
 
     NOTES
-        The caller owns the message port and must keep it valid until
-        psdRemEventHandler() returns. Reply to each delivered message
-        using ReplyMsg(); Poseidon reclaims replied messages later.
-        Event parameters refer to existing objects and are not copied.
-        Their lifetime must not be inferred from the message lifetime.
+        Call in task context; registration may wait for a semaphore. The
+        port is retained, not copied or owned. Keep it alive until removal
+        completes and coordinate removal with the receiving task.
 
-    BUGS
-        The current removal routine drains and replies to every
-        message still queued on the registered port. Use a dedicated
-        message port to avoid consuming unrelated messages.
+        Each notification is a PsdEventNote message. Read ENA_EventID,
+        ENA_Param1 and ENA_Param2 with psdGetAttrsA(PGA_EVENTNOTE, ...), then
+        ReplyMsg() exactly once. Do not free the message or use it after reply.
+        Parameter pointers do not pin their objects; removal notifications
+        can refer to objects that are no longer safe to dereference.
+
+        There is no initial state snapshot. Allocation failure can silently
+        drop individual notifications; use events as change notifications,
+        not as a guaranteed transaction log.
 
     SEE ALSO
-        psdRemEventHandler(), psdSendEvent()
+        psdRemEventHandler(), psdSendEvent(), psdGetAttrsA()
 
-******************************************************************************/
+*****************************************************************************/
+        AROS_LH2(struct PsdEventHook *, psdAddEventHandler,
+
+         AROS_LHA(struct MsgPort *, mp, A1),
+         AROS_LHA(ULONG, msgmask, D0),
+         LIBBASETYPEPTR, ps, 47, psd)
 {
     AROS_LIBFUNC_INIT
     struct PsdEventHook *peh = NULL;
@@ -8976,38 +9005,41 @@ static void pReleaseAfterDOSBindings(LIBBASETYPEPTR ps)
 /* \\\ */
 
 /* /// "psdRemEventHandler()" */
-/****** poseidon.library/psdRemEventHandler ************************
+/*****************************************************************************
+    NAME
+        VOID psdRemEventHandler(
 
-    NAME */
-        AROS_LH1(void, psdRemEventHandler,
+    SYNOPSIS
+        APTR peh)
 
-/*  SYNOPSIS */
-         AROS_LHA(struct PsdEventHook *, peh, A0),
-/*  LOCATION */
-         LIBBASETYPEPTR, ps, 48, psd)
-/*  FUNCTION
-        Unregister an event handler and free its registration handle.
-        A NULL handle has no effect.
+    FUNCTION
+        Remove an event registration and reply to queued port messages.
 
     INPUTS
-        peh - Handle returned by psdAddEventHandler(), or NULL.
+        peh - Live registration returned by psdAddEventHandler(), or NULL.
 
     NOTES
-        Removes the handler while holding Poseidon's reentrant lock.
-        Replies to all messages currently queued at its message port,
-        then collects replied event messages and frees the handle.
-        The caller retains ownership of the message port.
-        Do not use peh after this call.
+        NULL is ignored. Call in task context. Removes the registration
+        under the event semaphore, drains its port with GetMsg()/ReplyMsg(),
+        and frees the registration. No later send can select that registration.
+        The port itself is not deleted.
+
+        Coordinate with the receiving task before removal. Messages already
+        taken by the consumer are not drained; the consumer must still reply
+        to each exactly once. Do not reuse the registration handle.
 
     BUGS
-        The current implementation drains the entire supplied port,
-        including unrelated queued messages, not just Poseidon events.
-        Register a dedicated port and avoid other concurrent consumers.
+        Drains every message on the port without checking its origin. Use a
+        dedicated port, not a port shared with another registration or protocol.
 
     SEE ALSO
         psdAddEventHandler(), psdSendEvent()
 
-******************************************************************************/
+*****************************************************************************/
+        AROS_LH1(void, psdRemEventHandler,
+
+         AROS_LHA(struct PsdEventHook *, peh, A0),
+         LIBBASETYPEPTR, ps, 48, psd)
 {
     AROS_LIBFUNC_INIT
     struct Message *msg;
@@ -9029,43 +9061,45 @@ static void pReleaseAfterDOSBindings(LIBBASETYPEPTR ps)
 /* \\\ */
 
 /* /// "psdSendEvent()" */
-/****** poseidon.library/psdSendEvent ************************
+/*****************************************************************************
+    NAME
+        VOID psdSendEvent(
 
-    NAME */
-        AROS_LH3(void, psdSendEvent,
+    SYNOPSIS
+        ULONG ehmt, APTR param1, APTR param2)
 
-/*  SYNOPSIS */
-         AROS_LHA(ULONG, ehmt, D0),
-         AROS_LHA(APTR, param1, A0),
-         AROS_LHA(APTR, param2, A1),
-/*  LOCATION */
-         LIBBASETYPEPTR, ps, 49, psd)
-/*  FUNCTION
-        Send an event to every registered message port whose mask
-        includes the selected event number.
+    FUNCTION
+        Queue a notification for each registration selecting an event.
 
     INPUTS
-        ehmt - EHMB_* event number defined by libraries/poseidon.h.
-        param1 - Event-dependent object pointer; the object is not copied.
-        param2 - Second event-dependent pointer; also not copied.
+        ehmt - EHMB_* event number, not an EHMF_* mask. Use a defined event
+            from <libraries/poseidon.h>; the shift count is not validated.
+        param1, param2 - Event-specific values copied into each notification.
+            Pointed-to objects are neither copied nor retained.
 
     NOTES
-        For each matching handler, a separate event message is allocated
-        and queued. The receiver must ReplyMsg() to release the message
-        back to Poseidon for later collection. This call does not wait
-        for receivers to process the message.
-        The event mask is calculated as 1L << ehmt. Pass only defined
-        EHMB_* values, never arbitrary shifts or bit masks.
+        Call in task context; allocation and the event semaphore may wait.
+        The call queues messages and returns without waiting for recipients.
+        Each recipient must ReplyMsg() its notification. Replied messages are
+        reclaimed by Poseidon during subsequent event garbage collection.
+
+        Keep event payload lifetime independent of message delivery. An object
+        address may identify a change without remaining safe to dereference.
 
     BUGS
-        Message allocation failures silently skip the affected handler.
-        No completion or delivery status is returned. Event parameter
-        pointers can become invalid before a receiver processes them.
+        Allocation failure drops the notification for that recipient without
+        a return status. Delivery is neither all-or-nothing nor guaranteed.
 
     SEE ALSO
         psdAddEventHandler(), psdRemEventHandler()
 
-******************************************************************************/
+*****************************************************************************/
+        AROS_LH3(void, psdSendEvent,
+
+         AROS_LHA(ULONG, ehmt, D0),
+         AROS_LHA(APTR, param1, A0),
+         AROS_LHA(APTR, param2, A1),
+         LIBBASETYPEPTR, ps, 49, psd)
 {
     AROS_LIBFUNC_INIT
     struct PsdEventNote *pen;
