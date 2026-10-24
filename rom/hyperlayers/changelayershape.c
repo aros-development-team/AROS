@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -89,8 +89,9 @@
       lfirst = GetFirstFamilyMember(l);
       SetRegion(lfirst->VisibleRegion, &r);
 
-      SetRegion(l->visibleshape, &cutoldshape);
-      _BackupPartsOfLayer(l, &cutoldshape, 0, TRUE, LayersBase);
+      /* back the layer up completely; cutoldshape is what it hid from the layers behind */
+      _BackupPartsOfLayer(l, l->visibleshape, 0, TRUE, LayersBase);
+      SetRegion(OCCLUDESHAPE(l), &cutoldshape);
     }
 
     /*
@@ -162,8 +163,8 @@
       {
         if ((l != _l))
         {
-          if(IS_VISIBLE(_l) && DO_OVERLAP(&l->visibleshape->bounds, &_l->visibleshape->bounds))
-            _BackupPartsOfLayer(_l, l->visibleshape, 0, FALSE, LayersBase);
+          if(IS_VISIBLE(_l) && !IS_TRANSLUCENT(l) && DO_OVERLAP(&l->visibleshape->bounds, &_l->visibleshape->bounds))
+            _BackupPartsOfLayer(_l, OCCLUDESHAPE(l), 0, FALSE, LayersBase);
         }
         
         if (_l == lparent)
@@ -220,7 +221,7 @@
         }
           
         if (IS_VISIBLE(_l))
-          ClearRegionRegion(_l->visibleshape, &r);
+          ClearRegionRegion(OCCLUDESHAPE(_l), &r);
 
         _l = _l->back;
       } /* while(1) */
@@ -242,6 +243,8 @@
     ClearRegion(&cutnewshape);
   
   }
+
+  UPDATE_SURFACES(l->LayerInfo);
   
   UnlockLayers(l->LayerInfo);
   

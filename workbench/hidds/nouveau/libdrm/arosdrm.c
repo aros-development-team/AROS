@@ -191,6 +191,7 @@ int drmIoctl(int fd, unsigned long request, void *arg)
             case DRM_IOCTL_MODE_SETGAMMA:   ret = drm_mode_gamma_set_ioctl(dev, arg, file); break;
             case DRM_IOCTL_MODE_PAGE_FLIP:  ret = drm_mode_page_flip_ioctl(dev, arg, file); break;
             case DRM_IOCTL_MODE_DIRTYFB:    ret = drm_mode_dirtyfb_ioctl(dev, arg, file); break;
+            case DRM_IOCTL_WAIT_VBLANK:     ret = drm_wait_vblank_ioctl(dev, arg, file); break;
             default:
                 bug("[nouveau] drmIoctl: request 0x%lx not implemented\n", request);
                 return -EINVAL;

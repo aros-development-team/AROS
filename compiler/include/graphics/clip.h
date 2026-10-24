@@ -133,6 +133,13 @@ cliprects */
 #define CR_SETBMOFF(cr, x, y) \
     do { (cr)->_p1 = (void *)(IPTR)(WORD)(x); (cr)->_p2 = (void *)(IPTR)(WORD)(y); } while (0)
 
+/* AROS: the layer renders into a surface bitmap of its own (one hidden
+   ClipRect covering the layer, CR_SHAREDBITMAP view into the surface) and
+   the display composes that surface onto the screen. It never owns screen
+   bitmap pixels. Set together with LAYERSMART by CreateLayerTagList()
+   for LA_Composited; bit 3 is unused by AmigaOS, MorphOS and AROS. */
+#define LAYERCOMPOSITED     (1<<3)
+
 
 /*
  * Tags for scale layer

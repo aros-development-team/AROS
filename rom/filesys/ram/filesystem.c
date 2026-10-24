@@ -682,7 +682,7 @@ PINT ChangeFileSize(struct Handler *handler, struct Opening *opening,
       /* Add the required number of data bytes */
 
       remainder = new_length - full_length;
-      end_length -= remainder;
+      end_length = block->length + remainder;
 
       while(remainder > 0)
       {

@@ -27,7 +27,11 @@
 
 #include "vmwaresvga_intern.h"
 
+#include "vmwaresvga_bitmap.h"
 #include LC_LIBDEFS_FILE
+
+/* Overlay planes are only reported when screens can be scanned out from them */
+#define OVERLAYS_REPORTED(data) (VMWSVGA_PLANE_SCREENS ? (data)->kms.nplanes : 0)
 
 static OOP_AttrBase             HiddBitMapAttrBase;
 static OOP_AttrBase             HiddDisplayAttrBase;
@@ -48,6 +52,15 @@ VOID VMWareSVGADisplay__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get
     {
     case aoHidd_Display_SupportsGamma:
         *msg->storage = (IPTR)TRUE;
+        found = TRUE;
+        break;
+    case aoHidd_Display_PlaneCount:
+        /* primary + overlays + the hardware cursor */
+        *msg->storage = 1 + OVERLAYS_REPORTED(XSD(cl)) + (XSD(cl)->hwCursor ? 1 : 0);
+        found = TRUE;
+        break;
+    case aoHidd_Display_VBlankCount:
+        *msg->storage = VMWareSVGA_KMS_VBlankCount(&XSD(cl)->kms);
         found = TRUE;
         break;
     }
@@ -219,6 +232,166 @@ VOID VMWareSVGADisplay__Hidd_Display__SetCursorVisible(OOP_Class *cl, OOP_Object
         if (msg->visible)
             VMWareSVGA_KMS_MoveCursor(&XSD(cl)->kms, XSD(cl)->mouse.x, XSD(cl)->mouse.y);
     }
+}
+
+/* --- scan-out planes ---------------------------------------------------------- */
+
+/* vHidd_StdPixFmt_* bits for the DRM formats a plane takes (memory byte order) */
+static ULONG VMWareSVGADisplay_PlanePixFmts(ULONG fmts)
+{
+    ULONG m = 0;
+
+    if (fmts & KMSFMT_XRGB8888) m |= (1UL << vHidd_StdPixFmt_BGR032) | (1UL << vHidd_StdPixFmt_BGRA32);
+    if (fmts & KMSFMT_ARGB8888) m |= (1UL << vHidd_StdPixFmt_BGRA32);
+    if (fmts & KMSFMT_XBGR8888) m |= (1UL << vHidd_StdPixFmt_RGB032) | (1UL << vHidd_StdPixFmt_RGBA32);
+    if (fmts & KMSFMT_ABGR8888) m |= (1UL << vHidd_StdPixFmt_RGBA32);
+    if (fmts & KMSFMT_RGB565)   m |= (1UL << vHidd_StdPixFmt_RGB16_LE);
+    if (fmts & KMSFMT_XRGB1555) m |= (1UL << vHidd_StdPixFmt_RGB15_LE);
+    return m;
+}
+
+/* The KMS framebuffer behind one of our bitmaps, 0 when it has none */
+static ULONG VMWareSVGADisplay_BitMapFB(OOP_Class *cl, OOP_Object *bm)
+{
+    if ((OOP_OCLASS(bm) == XSD(cl)->vmwaresvgaonbmclass) || (OOP_OCLASS(bm) == XSD(cl)->vmwaresvgaoffbmclass))
+    {
+        struct BitmapData *bmd = OOP_INST_DATA(OOP_OCLASS(bm), bm);
+        return bmd->fb.fbid;
+    }
+    return 0;
+}
+
+/*
+ * Plane layout: 0 = primary (the framebuffer, driven by Show()),
+ * 1 .. overlays = overlay planes of the crtc, last = the hardware cursor.
+ */
+ULONG VMWareSVGADisplay__Hidd_Display__GetPlaneInfo(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_GetPlaneInfo *msg)
+{
+    struct VMWareSVGA_staticdata *data = XSD(cl);
+    ULONG overlays = OVERLAYS_REPORTED(data);
+    struct HIDD_PlaneInfo info;
+    ULONG len = msg->infoLen;
+
+    if (msg->index == 0)
+        return OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+    memset(&info, 0, sizeof(info));
+    info.ZMin = info.ZMax = msg->index;
+    info.ScaleMin = info.ScaleMax = HIDD_PLANE_SCALE_UNITY;
+    info.PosAlignX = info.PosAlignY = 1;
+    if (msg->index <= overlays)
+    {
+        info.Type       = vHidd_Plane_Overlay;
+        info.PixFmtMask = VMWareSVGADisplay_PlanePixFmts(data->kms.planes[msg->index - 1].formats);
+        info.AlphaModes = (1 << vHidd_CompAlpha_None);
+        info.Flags      = PIF_NEEDS_DISPLAYMEM;     /* only our dumb buffers can be scanned out */
+    }
+    else if ((msg->index == overlays + 1) && data->hwCursor)
+    {
+        info.Type       = vHidd_Plane_Cursor;
+        info.PixFmtMask = 0xFFFFFFFF;               /* converted to ARGB on the way */
+        info.AlphaModes = (1 << vHidd_CompAlpha_PerPixel);
+        info.MaxWidth   = VMWSVGA_CURSOR_SIZE;
+        info.MaxHeight  = VMWSVGA_CURSOR_SIZE;
+    }
+    else
+        return 0;
+
+    if (len > sizeof(info))
+        len = sizeof(info);
+    CopyMem(&info, msg->info, len);
+    return len;
+}
+
+BOOL VMWareSVGADisplay__Hidd_Display__CommitPlanes(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_CommitPlanes *msg)
+{
+    struct VMWareSVGA_staticdata *data = XSD(cl);
+    ULONG overlays = OVERLAYS_REPORTED(data);
+    ULONG cursorplane = data->hwCursor ? overlays + 1 : 0;
+    struct HIDD_PlaneState *primary = NULL;
+    ULONG i;
+
+    /* Validate first: a commit is all or nothing */
+    for (i = 0; i < msg->count; i++)
+    {
+        struct HIDD_PlaneState *st = &msg->states[i];
+
+        if (st->Plane == 0)
+        {
+            primary = st;
+            continue;
+        }
+        if ((st->Plane > overlays) && (st->Plane != cursorplane))
+            return FALSE;
+        if (st->BitMap && (st->Plane <= overlays))
+        {
+            if (!VMWareSVGADisplay_BitMapFB(cl, st->BitMap))
+                return FALSE;                       /* not a scan-out buffer */
+            if (((st->Dest.MaxX - st->Dest.MinX) != (st->Src.MaxX - st->Src.MinX)) ||
+                ((st->Dest.MaxY - st->Dest.MinY) != (st->Src.MaxY - st->Src.MinY)))
+                return FALSE;                       /* no scaling */
+            if (st->AlphaMode != vHidd_CompAlpha_None)
+                return FALSE;
+        }
+    }
+
+    if (primary)
+    {
+        struct pHidd_Display_CommitPlanes p = { msg->mID, primary, 1, msg->flags };
+
+        if (!OOP_DoSuperMethod(cl, o, (OOP_Msg)&p))
+            return FALSE;
+    }
+    if (msg->flags & fHidd_Commit_Test)
+        return TRUE;
+
+    for (i = 0; i < msg->count; i++)
+    {
+        struct HIDD_PlaneState *st = &msg->states[i];
+
+        if (st->Plane == 0)
+            continue;
+        if (st->Plane == cursorplane)
+        {
+            if (st->BitMap)
+            {
+                struct pHidd_Display_SetCursorShape shape = { OOP_GetMethodID(IID_Hidd_Display, moHidd_Display_SetCursorShape), st->BitMap, 0, 0 };
+                struct pHidd_Display_SetCursorPos   pos   = { OOP_GetMethodID(IID_Hidd_Display, moHidd_Display_SetCursorPos), st->Dest.MinX, st->Dest.MinY };
+                struct pHidd_Display_SetCursorVisible vis = { OOP_GetMethodID(IID_Hidd_Display, moHidd_Display_SetCursorVisible), TRUE };
+
+                OOP_DoMethod(o, (OOP_Msg)&shape);
+                OOP_DoMethod(o, (OOP_Msg)&pos);
+                OOP_DoMethod(o, (OOP_Msg)&vis);
+            }
+            else
+            {
+                struct pHidd_Display_SetCursorVisible vis = { OOP_GetMethodID(IID_Hidd_Display, moHidd_Display_SetCursorVisible), FALSE };
+
+                OOP_DoMethod(o, (OOP_Msg)&vis);
+            }
+            continue;
+        }
+        /* Overlay */
+        if (st->BitMap)
+        {
+            if (!VMWareSVGA_KMS_SetPlane(&data->kms, st->Plane - 1, VMWareSVGADisplay_BitMapFB(cl, st->BitMap),
+                                       st->Dest.MinX, st->Dest.MinY,
+                                       st->Dest.MaxX - st->Dest.MinX + 1, st->Dest.MaxY - st->Dest.MinY + 1,
+                                       st->Src.MinX, st->Src.MinY,
+                                       st->Src.MaxX - st->Src.MinX + 1, st->Src.MaxY - st->Src.MinY + 1))
+                return FALSE;
+        }
+        else
+            VMWareSVGA_KMS_SetPlane(&data->kms, st->Plane - 1, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    }
+    if (!(msg->flags & fHidd_Commit_NoWait))
+        VMWareSVGA_KMS_WaitVBlank(&data->kms);
+    return TRUE;
+}
+
+VOID VMWareSVGADisplay__Hidd_Display__WaitLatch(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_WaitLatch *msg)
+{
+    VMWareSVGA_KMS_WaitVBlank(&XSD(cl)->kms);
 }
 
 VOID VMWareSVGADisplay__Hidd_Display__NominalDimensions(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_NominalDimensions *msg)

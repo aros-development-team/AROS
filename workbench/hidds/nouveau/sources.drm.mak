@@ -44,6 +44,8 @@ AROS_DRM_CORE_SOURCES = \
             drm/drm_property \
             drm/drm_rect \
             drm/drm_self_refresh_helper \
+            drm/drm_vblank \
+            drm/drm_vblank_work \
             drm/ttm/ttm_bo \
             drm/ttm/ttm_bo_util \
             drm/ttm/ttm_device \

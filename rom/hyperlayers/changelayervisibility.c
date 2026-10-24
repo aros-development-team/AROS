@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -77,10 +77,10 @@
     _l = l->back;
     while (1)
     {
-      if (IS_VISIBLE(_l) && DO_OVERLAP(&l->visibleshape->bounds, &_l->shape->bounds))
-        _BackupPartsOfLayer(_l, l->visibleshape, 0, FALSE, LayersBase);
+      if (IS_VISIBLE(_l) && !IS_TRANSLUCENT(l) && DO_OVERLAP(&l->visibleshape->bounds, &_l->shape->bounds))
+        _BackupPartsOfLayer(_l, OCCLUDESHAPE(l), 0, FALSE, LayersBase);
       else
-        ClearRegionRegion(l->visibleshape, _l->VisibleRegion);
+        ClearRegionRegion(OCCLUDESHAPE(l), _l->VisibleRegion);
         
       if (_l == lparent)
       {
@@ -113,7 +113,7 @@
       if (IS_VISIBLE(_l))
       {
         SetRegion(_l->VisibleRegion, &r);
-        ClearRegionRegion(_l->visibleshape, &r);
+        ClearRegionRegion(OCCLUDESHAPE(_l), &r);
         break;
       }
         
@@ -158,8 +158,9 @@
 
     SetRegion(l->VisibleRegion, &r);
 
-    SetRegion(l->visibleshape, &clearr);
-    _BackupPartsOfLayer(l, &clearr, 0, FALSE, LayersBase);
+    /* hide the layer itself completely; the layers behind get back what it hid from them */
+    _BackupPartsOfLayer(l, l->visibleshape, 0, FALSE, LayersBase);
+    SetRegion(OCCLUDESHAPE(l), &clearr);
 
     /*
      * Walk through all the layers behind this layer and
@@ -194,7 +195,7 @@
        * layer behind this one.
        */
       if (IS_VISIBLE(_l))
-        ClearRegionRegion(_l->visibleshape, &r);
+        ClearRegionRegion(OCCLUDESHAPE(_l), &r);
 
       _l = _l->back;
     }
@@ -211,6 +212,9 @@
   }
 
   ClearRegion(&r);
+
+  UPDATE_SURFACES(l->LayerInfo);
+
   UnlockLayers(l->LayerInfo);
 
   return TRUE;

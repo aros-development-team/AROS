@@ -80,6 +80,7 @@ static char                 bigimagename[1000];
 static BOOL                 brush2c;    // compatibility with brush2c from MUI SDK
 static BOOL                 brush2pix;  // compatibility with brush2pix from JabberWocky
 static BOOL                 planar;     // emit deinterleaved planar planes (for direct BltBitMap)
+static BOOL                 planarlz;   // pack them with pack_lz() instead of byterun1
 
 /****************************************************************************************/
 
@@ -121,11 +122,17 @@ static void getarguments(int argc, char **argv)
         planar = 1;
         narg++;
     }
+    else if (!strcasecmp(argv[1], "-pz"))
+    {
+        planar = 1;
+        planarlz = 1;
+        narg++;
+    }
 
     if (argc > narg)
         filename = argv[narg++];
     else
-        cleanup("Usage: ilbmtoc [-b2c|-b2p|-p] filename [imagename]", 1);
+        cleanup("Usage: ilbmtoc [-b2c|-b2p|-p|-pz] filename [imagename]", 1);
     
     if (argc > narg)
         imagenamestart = argv[narg];
@@ -655,6 +662,117 @@ static void gensource(void)
 /****************************************************************************************/
 
 /*
+ * LZ pack for -pz (PACKED 2). A sequence is a token byte, high nibble the
+ * literal count and low nibble the match length - 4, either one extended by
+ * following bytes added in while they are 255 (literal extension before the
+ * literals, match extension after the offset); then the literals, then the
+ * match offset as a big endian word. The last sequence has no match: the
+ * stream ends when the literals fill the output. Runs become offset 1 matches.
+ */
+#define LZ_MINMATCH 4
+#define LZ_WINDOW   65535
+#define LZ_HASHSIZE 4096
+#define LZ_CHAIN    256
+
+static unsigned char *lz_putlen(unsigned char *d, LONG n)
+{
+    for (n -= 15; n >= 255; n -= 255)
+        *d++ = 255;
+    *d++ = n;
+    return d;
+}
+
+static LONG lz_hash(unsigned char *s)
+{
+    return ((s[0] << 8) ^ (s[1] << 4) ^ s[2] ^ (s[3] << 2)) & (LZ_HASHSIZE - 1);
+}
+
+static BOOL pack_lz(unsigned char *source, unsigned char *dest, LONG size,
+                    LONG destsize, LONG *packedsize)
+{
+    LONG *head = malloc(LZ_HASHSIZE * sizeof(LONG));
+    LONG *prev = malloc(size * sizeof(LONG));
+    unsigned char *d = dest;
+    LONG i = 0, lit = 0, j;
+
+    if (!head || !prev)
+        cleanup("Memory allocation for LZ pack tables failed!", 1);
+    for (j = 0; j < LZ_HASHSIZE; j++)
+        head[j] = -1;
+
+    while (i <= size)
+    {
+        LONG best = 0, bestoff = 0;
+
+        if (i + LZ_MINMATCH <= size)
+        {
+            LONG p = head[lz_hash(source + i)], chain = LZ_CHAIN;
+
+            for (; (p >= 0) && (i - p <= LZ_WINDOW) && chain--; p = prev[p])
+            {
+                LONG l = 0;
+
+                while ((i + l < size) && (source[p + l] == source[i + l]))
+                    l++;
+                if (l > best)
+                {
+                    best = l;
+                    bestoff = i - p;
+                }
+            }
+        }
+
+        if ((best >= LZ_MINMATCH) || (i == size))
+        {
+            unsigned char *token = d++;
+
+            /* worst case: token, literals, offset and 2 extension runs */
+            if ((d - dest) + lit + (lit / 255) + (best / 255) + 8 > destsize)
+            {
+                free(prev); free(head);
+                return 0;
+            }
+            *token = ((lit < 15) ? lit : 15) << 4;
+            if (lit >= 15)
+                d = lz_putlen(d, lit);
+            memcpy(d, source + i - lit, lit);
+            d += lit;
+            lit = 0;
+            if (i == size)
+                break;
+            *d++ = bestoff >> 8;
+            *d++ = bestoff;
+            *token |= (best - LZ_MINMATCH < 15) ? best - LZ_MINMATCH : 15;
+            if (best - LZ_MINMATCH >= 15)
+                d = lz_putlen(d, best - LZ_MINMATCH);
+            for (j = 0; j < best; j++, i++)
+            {
+                if (i + LZ_MINMATCH <= size)
+                {
+                    LONG h = lz_hash(source + i);
+                    prev[i] = head[h];
+                    head[h] = i;
+                }
+            }
+        }
+        else
+        {
+            LONG h = lz_hash(source + i);
+
+            prev[i] = head[h];
+            head[h] = i;
+            lit++;
+            i++;
+        }
+    }
+
+    free(prev);
+    free(head);
+    *packedsize = d - dest;
+    return 1;
+}
+
+/*
  * Emit the image as native planar bitplanes so the target can point a struct
  * BitMap at them and BltBitMap directly - no chunky<->planar conversion at
  * runtime. Used for m68k/native Amiga where per-pixel C2P on the CPU is
@@ -674,7 +792,7 @@ static void gensourceplanar(void)
     LONG totalsize = planesize * bmh.bmh_Depth;
     unsigned char *deint, *packed, *emit;
     LONG emitsize, packedsize = 0;
-    BOOL packok;
+    int packok;
 
     /* Deinterleave into contiguous per-plane layout. */
     deint = malloc(totalsize);
@@ -687,7 +805,10 @@ static void gensourceplanar(void)
     /* Try to RLE-pack the whole planar buffer. */
     packed = malloc(totalsize);
     if (!packed) cleanup("Memory allocation for packed planar buffer failed!", 1);
-    packok = pack_byterun1(deint, packed, totalsize, totalsize, &packedsize);
+    if (planarlz)
+        packok = pack_lz(deint, packed, totalsize, totalsize, &packedsize) ? 2 : 0;
+    else
+        packok = pack_byterun1(deint, packed, totalsize, totalsize, &packedsize);
     if (packok)
     {
         emit = packed; emitsize = packedsize;
@@ -700,7 +821,7 @@ static void gensourceplanar(void)
     printf("#include <exec/types.h>\n");
     printf("\n");
     printf("#define %s_PLANAR       1\n", bigimagename);
-    printf("#define %s_PACKED       %d\n", bigimagename, packok ? 1 : 0);
+    printf("#define %s_PACKED       %d\n", bigimagename, packok);
     printf("#define %s_WIDTH  %d\n", bigimagename, bmh.bmh_Width);
     printf("#define %s_HEIGHT %d\n", bigimagename, bmh.bmh_Height);
     printf("#define %s_PLANES %d\n", bigimagename, bmh.bmh_Depth);

@@ -95,12 +95,6 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
     if (bmdata->bo == NULL)
         goto exit_fail;
 
-    bmdata->compositor = (OOP_Object *)GetTagData(aHidd_BitMap_Nouveau_CompositorHidd, 0, msg->attrList);
-#if NOUVEAU_PRIVATE_COMPOSITOR
-    if (bmdata->compositor == NULL)
-        goto exit_fail;
-#endif
-
     if (displayable)
         nvlog("[Nouveau] displayable bitmap %p: %ldx%ld depth %ld pitch %ld bo %p\n", o,
               (long)width, (long)height, (long)depth, (long)bmdata->pitch, bmdata->bo);
@@ -206,37 +200,10 @@ VOID METHOD(NouveauBitMap, Root, Set)
         }
     }
 
-    if (((newxoffset != bmdata->xoffset) || (newyoffset != bmdata->yoffset)) && !bmdata->compositor)
+    if ((newxoffset != bmdata->xoffset) || (newyoffset != bmdata->yoffset))
     {
-        /* graphics.library's compositor validated the position already */
+        /* The display's compositor validated the position already */
         HIDDNouveauSetOffsets(o, newxoffset, newyoffset);
-    }
-    else if ((newxoffset != bmdata->xoffset) || (newyoffset != bmdata->yoffset))
-    {
-        /* If there was a change requested, validate it */
-        struct pHidd_Compositor_ValidateBitMapPositionChange vbpcmsg =
-        {
-            .mID  = SD(cl)->mid_ValidateBitMapPositionChange,
-            .bm  = o,
-            .newxoffset  = &newxoffset,
-            .newyoffset  = &newyoffset
-        };
-        
-        OOP_DoMethod(bmdata->compositor, (OOP_Msg)&vbpcmsg);
-        
-        if ((newxoffset != bmdata->xoffset) || (newyoffset != bmdata->yoffset))
-        {
-            /* If change passed validation, execute it */
-            struct pHidd_Compositor_BitMapPositionChanged bpcmsg =
-            {
-                .mID  = SD(cl)->mid_BitMapPositionChanged,
-                .bm  = o
-            };
-
-            HIDDNouveauSetOffsets(o, newxoffset, newyoffset);
-        
-            OOP_DoMethod(bmdata->compositor, (OOP_Msg)&bpcmsg);
-        }
     }
 
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -1074,21 +1041,6 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, DrawLine)
 
 VOID METHOD(NouveauBitMap, Hidd_BitMap, UpdateRect)
 {
-    struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
-    
-    /* Scan-out is direct; only the private compositor needs to hear about changes */
-    if (bmdata->displayable && bmdata->compositor)
-    {
-        struct pHidd_Compositor_BitMapRectChanged brcmsg =
-        {
-            .mID  = SD(cl)->mid_BitMapRectChanged,
-            .bm  = o,
-            .x  = msg->x,
-            .y  = msg->y,
-            .width  = msg->width,
-            .height  = msg->height
-        };
-        
-        OOP_DoMethod(bmdata->compositor, (OOP_Msg)&brcmsg);    
-    }
+    /* Scan-out is direct: nothing to notify, the display's compositor
+       drives what is shown through Hidd_Display::Show() */
 }

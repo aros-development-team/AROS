@@ -27,6 +27,7 @@
 #include <libdrm/arosdrmmode.h>
 
 #include <string.h>
+#include <errno.h>
 
 #define U642VOID(x) ((void *)(unsigned long)(x))
 #define VOID2U64(x) ((uint64_t)(unsigned long)(x))
@@ -523,4 +524,156 @@ int drmModeSetCursor2(int fd, uint32_t crtcId, uint32_t bo_handle, uint32_t widt
 	arg.hot_y = hot_y;
 
 	return DRM_IOCTL(fd, DRM_IOCTL_MODE_CURSOR2, &arg);
+}
+
+/*
+ * Planes, page flips and vblank waits: AROS additions for the display
+ * compositor's scan-out planes (the kernel side comes with the DRM core).
+ */
+drmModePlaneResPtr drmModeGetPlaneResources(int fd)
+{
+	struct drm_mode_get_plane_res res, counts;
+	drmModePlaneResPtr r = 0;
+
+retry:
+	memset(&res, 0, sizeof(res));
+	if (drmIoctl(fd, DRM_IOCTL_MODE_GETPLANERESOURCES, &res))
+		return 0;
+
+	counts = res;
+
+	if (res.count_planes) {
+		res.plane_id_ptr = VOID2U64(drmMalloc(res.count_planes * sizeof(uint32_t)));
+		if (!res.plane_id_ptr)
+			goto err_allocs;
+	}
+
+	if (drmIoctl(fd, DRM_IOCTL_MODE_GETPLANERESOURCES, &res))
+		goto err_allocs;
+
+	if (counts.count_planes < res.count_planes) {
+		drmFree(U642VOID(res.plane_id_ptr));
+		goto retry;
+	}
+
+	if (!(r = drmMalloc(sizeof(*r))))
+		goto err_allocs;
+
+	r->count_planes = res.count_planes;
+	r->planes = U642VOID(res.plane_id_ptr);
+	return r;
+
+err_allocs:
+	drmFree(U642VOID(res.plane_id_ptr));
+	return r;
+}
+
+void drmModeFreePlaneResources(drmModePlaneResPtr ptr)
+{
+	if (!ptr)
+		return;
+	drmFree(ptr->planes);
+	drmFree(ptr);
+}
+
+drmModePlanePtr drmModeGetPlane(int fd, uint32_t plane_id)
+{
+	struct drm_mode_get_plane f, ovf;
+	drmModePlanePtr r = 0;
+
+retry:
+	memset(&f, 0, sizeof(f));
+	f.plane_id = plane_id;
+
+	if (drmIoctl(fd, DRM_IOCTL_MODE_GETPLANE, &f))
+		return 0;
+
+	ovf = f;
+
+	if (f.count_format_types) {
+		f.format_type_ptr = VOID2U64(drmMalloc(f.count_format_types * sizeof(uint32_t)));
+		if (!f.format_type_ptr)
+			goto err_allocs;
+	}
+
+	if (drmIoctl(fd, DRM_IOCTL_MODE_GETPLANE, &f))
+		goto err_allocs;
+
+	if (ovf.count_format_types < f.count_format_types) {
+		drmFree(U642VOID(f.format_type_ptr));
+		goto retry;
+	}
+
+	if (!(r = drmMalloc(sizeof(*r))))
+		goto err_allocs;
+
+	r->count_formats = f.count_format_types;
+	r->plane_id = f.plane_id;
+	r->crtc_id = f.crtc_id;
+	r->fb_id = f.fb_id;
+	r->possible_crtcs = f.possible_crtcs;
+	r->gamma_size = f.gamma_size;
+	r->formats = U642VOID(f.format_type_ptr);
+	return r;
+
+err_allocs:
+	drmFree(U642VOID(f.format_type_ptr));
+	return r;
+}
+
+void drmModeFreePlane(drmModePlanePtr ptr)
+{
+	if (!ptr)
+		return;
+	drmFree(ptr->formats);
+	drmFree(ptr);
+}
+
+int drmModeSetPlane(int fd, uint32_t plane_id, uint32_t crtc_id, uint32_t fb_id, uint32_t flags,
+		    int32_t crtc_x, int32_t crtc_y, uint32_t crtc_w, uint32_t crtc_h,
+		    uint32_t src_x, uint32_t src_y, uint32_t src_w, uint32_t src_h)
+{
+	struct drm_mode_set_plane s;
+
+	memset(&s, 0, sizeof(s));
+	s.plane_id = plane_id;
+	s.crtc_id = crtc_id;
+	s.fb_id = fb_id;
+	s.flags = flags;
+	s.crtc_x = crtc_x;
+	s.crtc_y = crtc_y;
+	s.crtc_w = crtc_w;
+	s.crtc_h = crtc_h;
+	s.src_x = src_x;
+	s.src_y = src_y;
+	s.src_w = src_w;
+	s.src_h = src_h;
+
+	return drmIoctl(fd, DRM_IOCTL_MODE_SETPLANE, &s);
+}
+
+int drmModePageFlip(int fd, uint32_t crtc_id, uint32_t fb_id, uint32_t flags, void *user_data)
+{
+	struct drm_mode_crtc_page_flip flip;
+
+	memset(&flip, 0, sizeof(flip));
+	flip.fb_id = fb_id;
+	flip.crtc_id = crtc_id;
+	flip.user_data = VOID2U64(user_data);
+	flip.flags = flags;
+
+	return drmIoctl(fd, DRM_IOCTL_MODE_PAGE_FLIP, &flip);
+}
+
+int drmWaitVBlank(int fd, drmVBlankPtr vbl)
+{
+	/*
+	 * The DRM core's vblank handling (drm_vblank.c) is not built in this
+	 * port: drm-aros stubs drm_vblank_init() and the vblank on/off calls,
+	 * so there is no counter to wait on. Callers treat the error as "no
+	 * vblank available" and do not wait. (The request and reply layouts
+	 * match the kernel's union drm_wait_vblank should the core ever be
+	 * built: then this becomes drmIoctl(fd, DRM_IOCTL_WAIT_VBLANK, vbl).)
+	 */
+	return -ENOSYS;
 }

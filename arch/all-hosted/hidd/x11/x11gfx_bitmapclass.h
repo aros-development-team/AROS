@@ -28,6 +28,7 @@ enum
     aoHidd_BitMap_X11_SysCursor,
     aoHidd_BitMap_X11_ColorMap,
     aoHidd_BitMap_X11_VisualClass, /* stegerg */
+    aoHidd_BitMap_X11_Window,      /* [..G] X window of a framebuffer bitmap (0 for pixmaps) */
 
     num_Hidd_BitMap_X11_Attrs
 };
@@ -39,6 +40,7 @@ enum
 #define aHidd_BitMap_X11_SysCursor	(HiddX11BitMapAB + aoHidd_BitMap_X11_SysCursor)
 #define aHidd_BitMap_X11_ColorMap	(HiddX11BitMapAB + aoHidd_BitMap_X11_ColorMap)
 #define aHidd_BitMap_X11_VisualClass	(HiddX11BitMapAB + aoHidd_BitMap_X11_VisualClass) /* stegerg */
+#define aHidd_BitMap_X11_Window		(HiddX11BitMapAB + aoHidd_BitMap_X11_Window)
 
 #define IS_BM_ATTR(attr, idx) 	    ( ( (idx) = (attr) - HiddBitMapAttrBase) < num_Hidd_BitMap_Attrs)
 #define IS_X11BM_ATTR(attr, idx)    ( ( (idx) = (attr) - HiddX11BitMapAB) < num_Hidd_BitMap_X11_Attrs)

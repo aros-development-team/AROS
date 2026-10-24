@@ -7,11 +7,12 @@ NOMEDIA_IMAGE := nomedia
 #  - m68k / native Amiga has PLANAR display hardware. Emit native planar bitplanes
 #    so the image can be drawn with BltBitMap (blitter, planar->planar). The
 #    alternative - per-pixel chunky->planar C2P on a 7MHz 68000 - is prohibitively
-#    slow (~seconds per full-image draw).
+#    slow (~seconds per full-image draw). LZ packed (-pz): 1.6 KB less ROM than
+#    byterun1, still unpacked once.
 #  - other targets (x86/x64 etc.) have a CHUNKY framebuffer, so keep the chunky
 #    emit: WriteChunkyPixels writes chunky->chunky with no planar conversion at all.
 ifeq ($(AROS_TARGET_CPU),m68k)
-NOMEDIA_ILBMTOC_FLAGS := -p
+NOMEDIA_ILBMTOC_FLAGS := -pz
 else
 NOMEDIA_ILBMTOC_FLAGS :=
 endif
@@ -40,7 +41,7 @@ endif
 
 $(GENDIR)/$(CURDIR)/dosboot/bootanim_nomedia.d : $(GENDIR)/$(CURDIR)/dosboot/nomedia_image.h
 
-$(GENDIR)/$(CURDIR)/dosboot/nomedia_image.h : $(NOMEDIA_IMAGE).ilbm
+$(GENDIR)/$(CURDIR)/dosboot/nomedia_image.h : $(NOMEDIA_IMAGE).ilbm $(SRCDIR)/$(CURDIR)/mmakefile.src $(ILBMTOC)
 	@$(ECHO) "Creating   $@..."
 	@$(ILBMTOC) $(NOMEDIA_ILBMTOC_FLAGS) $< >$@
 

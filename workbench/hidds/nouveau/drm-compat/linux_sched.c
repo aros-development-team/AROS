@@ -7,6 +7,7 @@
 #include <proto/dos.h>
 #include <proto/timer.h>
 #include <exec/ports.h>
+#include <exec/tasks.h>
 #include <devices/timer.h>
 
 #include <linux/kernel.h>
@@ -112,6 +113,11 @@ unsigned long compat_sleep_usecs(unsigned long usecs)
     port.mp_SigTask = FindTask(NULL);
     NEWLIST(&port.mp_MsgList);
     if (port.mp_SigBit == (UBYTE)-1) {
+        static int warned;
+
+        if (!warned++)
+            printk(KERN_ERR "[nouveau] compat sleep: no free signal in task %s, waiting for a wakeup only\n",
+                   ((struct Task *)port.mp_SigTask)->tc_Node.ln_Name ? ((struct Task *)port.mp_SigTask)->tc_Node.ln_Name : "?");
         Wait(SIGF_SINGLE);
         return usecs;
     }
@@ -422,12 +428,65 @@ bool completion_done(struct completion *x)
     return READ_ONCE(x->done) != 0;
 }
 
+/* Helper-process start-up handshake (linux_sched.c). */
+struct compat_startup {
+    struct Task *parent;
+    LONG sig;
+    volatile BOOL ready;
+};
+void compat_startup_prepare(struct compat_startup *s);
+void compat_startup_signal(struct compat_startup *s);
+void compat_startup_wait(struct compat_startup *s, const char *what);
+
+/* --- helper-process start-up ------------------------------------------- */
+
+/*
+ * A process the compat layer starts on first use (timer process, workqueue
+ * workers, kthreads) reports back to the task that started it. That task
+ * can be any task the driver runs in - input.device during a display
+ * commit, say - so the report must not use SIGF_SINGLE: exec semaphores
+ * clear that bit when they queue and the compat sleep protocol consumes it,
+ * and the child (higher priority) reports before the parent reaches its
+ * Wait(). A lost report left input.device waiting forever (GB207 planescreens
+ * hang, 2026-10-23). The parent allocates a signal of its own for the report
+ * and waits for the ready flag.
+ */
+void compat_startup_prepare(struct compat_startup *s)
+{
+    s->parent = FindTask(NULL);
+    s->ready = FALSE;
+    s->sig = AllocSignal(-1);
+}
+
+void compat_startup_signal(struct compat_startup *s)
+{
+    s->ready = TRUE;
+    Signal(s->parent, (s->sig >= 0) ? (1UL << s->sig) : SIGF_SINGLE);
+}
+
+void compat_startup_wait(struct compat_startup *s, const char *what)
+{
+    struct Task *self = FindTask(NULL);
+
+    printk(KERN_NOTICE "[nouveau] %s started from task %s\n", what,
+           self->tc_Node.ln_Name ? self->tc_Node.ln_Name : "?");
+    if (s->sig >= 0) {
+        while (!s->ready)
+            Wait(1UL << s->sig);
+        FreeSignal(s->sig);
+    } else {
+        /* no signal free: poll, never block without a way out */
+        while (!s->ready)
+            compat_sleep_usecs(1000);
+    }
+}
+
 /* --- kthreads ---------------------------------------------------------- */
 
 struct kthread_start {
     int (*fn)(void *);
     void *data;
-    struct Task *parent;
+    struct compat_startup su;
     struct Task *self;
     struct task_struct *ts;
     volatile BOOL should_stop;
@@ -441,7 +500,7 @@ static void kthread_entry(void)
 
     ks->self = self;
     ks->ts = compat_current();
-    Signal(ks->parent, SIGF_SINGLE);
+    compat_startup_signal(&ks->su);
     ks->result = ks->fn(ks->data);
 }
 
@@ -454,7 +513,7 @@ struct task_struct *kthread_run_compat(int (*threadfn)(void *data), void *data, 
         return ERR_PTR(-ENOMEM);
     ks->fn = threadfn;
     ks->data = data;
-    ks->parent = FindTask(NULL);
+    compat_startup_prepare(&ks->su);
 
     proc = CreateNewProcTags(
         NP_Name, (IPTR)name,
@@ -464,10 +523,12 @@ struct task_struct *kthread_run_compat(int (*threadfn)(void *data), void *data, 
         NP_UserData, (IPTR)ks,
         TAG_DONE);
     if (!proc) {
+        if (ks->su.sig >= 0)
+            FreeSignal(ks->su.sig);
         kfree(ks);
         return ERR_PTR(-ENOMEM);
     }
-    Wait(SIGF_SINGLE);
+    compat_startup_wait(&ks->su, name);
     return ks->ts;
 }
 

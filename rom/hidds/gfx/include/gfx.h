@@ -25,6 +25,7 @@ typedef OOP_Object *HIDDT_GC;
 #define __Hidd_Gfx_NOMETHODBASE__
 #define __Hidd_Display_NOMETHODBASE__
 #define __Hidd_DMEnum_NOMETHODBASE__
+#define __Hidd_Compositor_NOMETHODBASE__
 #define __Hidd_BitMap_NOMETHODBASE__
 #define __Hidd_ColorMap_NOMETHODBASE__
 #define __Hidd_GC_NOMETHODBASE__
@@ -124,6 +125,39 @@ struct HIDD_ModeProperties
 struct ViewPort;
 struct View;
 
+/*
+ * One thing the compositor places on a display: a whole screen bitmap or a
+ * composited layer surface inside a screen. Src and Dest are in pixels; a
+ * Dest of another size than Src asks for scaling. Shape (display relative)
+ * clips the request, NULL means the Dest rectangle.
+ */
+struct HIDD_CompositeRequest
+{
+    struct HIDD_CompositeRequest *Next;      /* back to front within the parent */
+    OOP_Object                   *BitMap;    /* HIDD bitmap object to show      */
+    struct Rectangle              Src;       /* source rectangle in BitMap      */
+    struct Rectangle              Dest;      /* destination, display pixels     */
+    struct Region                *Shape;     /* NULL = Dest rectangle           */
+    UBYTE                         Opacity;   /* 0..255 constant alpha           */
+    UBYTE                         AlphaMode; /* vHidd_CompAlpha_*               */
+    UWORD                         Flags;     /* CRF_*                           */
+    ULONG                         ZOrder;
+    APTR                          UserData;  /* compositor private              */
+};
+
+#define vHidd_CompAlpha_None     0
+#define vHidd_CompAlpha_Fixed    1
+#define vHidd_CompAlpha_PerPixel 2
+
+#define CRB_OPAQUE          0
+#define CRF_OPAQUE          (1 << CRB_OPAQUE)   /* covers everything behind it        */
+#define CRB_PLANE_OK        1
+#define CRF_PLANE_OK        (1 << CRB_PLANE_OK) /* may be scanned out by a plane      */
+#define CRB_PLANE_REQUIRED  2
+#define CRF_PLANE_REQUIRED  (1 << CRB_PLANE_REQUIRED) /* must not be blitted          */
+#define CRB_SCALED          3
+#define CRF_SCALED          (1 << CRB_SCALED)   /* Dest size differs from Src size    */
+
 /* A structure passed to ShowViewPorts() method */
 struct HIDD_ViewPortData
 {
@@ -133,6 +167,13 @@ struct HIDD_ViewPortData
     APTR                      UserData; /* The driver can keep own stuff here   */
     OOP_Object               *PreviousBitmap; /* Kept alive until display swap    */
     ULONG                     Flags;
+    /* Composition parameters of this ViewPort, set by graphics.library from
+     * the ViewPortExtra (VideoControl() VTAG_COMPOSITION_* tags).           */
+    ULONG                     CompFlags;      /* COMPF_* for this screen          */
+    struct Hook              *PreAlphaHook;   /* called on the backdrop before an
+                                               * alpha screen is blended over it   */
+    struct HIDD_CompositeRequest *Surfaces;   /* composited layers of this screen,
+                                               * back to front; NULL = none        */
 };
 
 #define HIDD_VPDF_PREVIOUS_BITMAP_OWNED (1UL << 0)
@@ -608,6 +649,88 @@ enum
         ( ( ( idx ) = (attr) - HiddDisplayAttrBase) < num_Hidd_Display_Attrs)
 
 #define CLID_Hidd_Display IID_Hidd_Display
+
+/************* Compositor class *****************************/
+
+/*
+ * Every Display owns a compositor object (aHidd_Display_Compositor). The
+ * compositor is the composition policy: which bitmaps are shown where and
+ * how. graphics.library and Intuition reach it only through the Display.
+ */
+
+#include <interface/Hidd_Compositor.h>
+
+#define IS_COMPOSITOR_ATTR(attr, idx)  \
+        ( ( ( idx ) = (attr) - HiddCompositorAttrBase) < num_Hidd_Compositor_Attrs)
+
+#define CLID_Hidd_Compositor IID_Hidd_Compositor
+
+/*
+ * Scan-out planes. A display scans out one or more planes, each showing a
+ * rectangle of a bitmap at a position on the display, optionally scaled and
+ * blended. The base Display has exactly one plane (the primary), which is
+ * what Show() drives; a driver with more describes them through
+ * GetPlaneInfo() and applies a whole set at once with CommitPlanes(). The
+ * display's compositor assigns composition requests to planes within these
+ * constraints and blits whatever gets no plane into the primary one.
+ */
+#define vHidd_Plane_Primary     0   /* full display scan-out, always present       */
+#define vHidd_Plane_Overlay     1   /* composed above the primary at a position    */
+#define vHidd_Plane_Cursor      2   /* small, topmost; the mouse pointer           */
+
+#define PIB_NEEDS_DISPLAYMEM    0   /* only bitmaps in display memory can be scanned */
+#define PIF_NEEDS_DISPLAYMEM    (1 << PIB_NEEDS_DISPLAYMEM)
+#define PIB_FULL_WIDTH_ONLY     1   /* the plane spans the whole display width        */
+#define PIF_FULL_WIDTH_ONLY     (1 << PIB_FULL_WIDTH_ONLY)
+#define PIB_VSPLIT_ONLY         2   /* planes stack vertically only (copper lists)    */
+#define PIF_VSPLIT_ONLY         (1 << PIB_VSPLIT_ONLY)
+
+#define HIDD_PLANE_SCALE_UNITY  0x10000     /* 16.16 */
+
+struct HIDD_PlaneInfo
+{
+    ULONG   Type;           /* vHidd_Plane_*                                    */
+    ULONG   ZMin, ZMax;     /* z-order positions this plane can take            */
+    ULONG   PixFmtMask;     /* bit per vHidd_StdPixFmt_* the plane can scan out */
+    ULONG   ScaleMin;       /* 16.16; both UNITY = no scaling                   */
+    ULONG   ScaleMax;
+    ULONG   AlphaModes;     /* bit per vHidd_CompAlpha_*                        */
+    UWORD   PosAlignX;      /* position/size alignment in pixels (1 = any)      */
+    UWORD   PosAlignY;
+    UWORD   MaxWidth;       /* 0 = up to the display size                       */
+    UWORD   MaxHeight;
+    ULONG   Flags;          /* PIF_*                                            */
+};
+
+struct HIDD_PlaneState
+{
+    ULONG            Plane;     /* plane index, 0 .. aHidd_Display_PlaneCount-1 */
+    OOP_Object      *BitMap;    /* NULL disables the plane                      */
+    struct Rectangle Src;       /* part of BitMap shown                         */
+    struct Rectangle Dest;      /* where on the display (size may differ = scale) */
+    UBYTE            Opacity;   /* for vHidd_CompAlpha_Fixed                    */
+    UBYTE            AlphaMode; /* vHidd_CompAlpha_*                            */
+    ULONG            ZOrder;
+};
+
+/* CommitPlanes() flags */
+#define fHidd_Commit_NoWait     (1 << 0)    /* return before the new state is scanned out */
+#define fHidd_Commit_Test       (1 << 1)    /* validate only, change nothing              */
+
+/* aHidd_Compositor_ModePolicy */
+#define vHidd_Compositor_ModePolicy_FollowTop    0 /* display switches to the frontmost screen's mode, no scaling     */
+#define vHidd_Compositor_ModePolicy_Native       1 /* display keeps its own (highest) mode, every screen is scaled    */
+#define vHidd_Compositor_ModePolicy_ScaleLargest 2 /* display takes the mode of the largest screen shown, the smaller */
+                                                   /* screens are scaled up to it (prefs SCALE; NATIVEMODE = Native)   */
+
+/* Message passed to the backfill hook and the pre-alpha hook */
+struct HIDD_BackFillHookMsg
+{
+    void                        *dummy;
+    struct Rectangle            *bounds;
+    LONG                        offsetx;
+    LONG                        offsety;
+};
 
 /************* Graphics class *****************************/
 

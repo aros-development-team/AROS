@@ -743,12 +743,26 @@ r535_sor_cnt(struct nvkm_disp *disp, unsigned long *pmask)
 	return 4;
 }
 
+/*
+ * GB20x (display v05_02) moved the CPU's head-timing (vblank) enable to
+ * RM_INTR_EN1_HEAD_TIMING (0x611ef0, LAST_DATA bit 1), which feeds the
+ * separate low-latency display line; RM_INTR_EN_HEAD_TIMING (0x611d80) is no
+ * longer the CPU's. Status and reset are unchanged (0x611c00 / 0x611800).
+ * OpenRM 580: kernel_head_0502.c kheadWriteVblankIntrEnable_KERNEL_v05_02.
+ */
+static u32
+r535_head_vblank_en(struct nvkm_head *head)
+{
+	return (head->disp->engine.subdev.device->chipset >= 0x1b0 ? 0x611ef0 : 0x611d80) +
+	       (head->id * 4);
+}
+
 static void
 r535_head_vblank_put(struct nvkm_head *head)
 {
 	struct nvkm_device *device = head->disp->engine.subdev.device;
 
-	nvkm_mask(device, 0x611d80 + (head->id * 4), 0x00000002, 0x00000000);
+	nvkm_mask(device, r535_head_vblank_en(head), 0x00000002, 0x00000000);
 }
 
 static void
@@ -757,7 +771,7 @@ r535_head_vblank_get(struct nvkm_head *head)
 	struct nvkm_device *device = head->disp->engine.subdev.device;
 
 	nvkm_wr32(device, 0x611800 + (head->id * 4), 0x00000002);
-	nvkm_mask(device, 0x611d80 + (head->id * 4), 0x00000002, 0x00000002);
+	nvkm_mask(device, r535_head_vblank_en(head), 0x00000002, 0x00000002);
 }
 
 static void
@@ -1555,6 +1569,51 @@ r535_disp_intr_head_timing(struct nvkm_disp *disp, int head)
 
 		nvkm_wr32(device, 0x611800 + (head * 0x04), 0x00000002);
 	}
+
+	/* GB20x: clear every head-timing event the low-latency line reports
+	   (rg-line etc.), or the re-armed line fires again at once. */
+	if (device->chipset >= 0x1b0 && (stat & ~0x00000002))
+		nvkm_wr32(device, 0x611800 + (head * 0x04), stat & ~0x00000002);
+}
+
+/*
+ * GB20x: OpenRM's kernel side also services window-semaphore and channel
+ * AWAKEN events on the low-latency line (kdispHandleWinSemEvt_v04_01,
+ * kdispServiceAwakenIntr_v03_00) and clears them by writing the status
+ * back (EVT_STAT_SEM_WIN 0x611868, EVT_STAT_AWAKEN_WIN/OTHER 0x611858/c).
+ * nouveau has no use for them; left pending, the re-armed line raises
+ * the interrupt forever (system hang when an overlay window went live).
+ */
+static void
+r535_disp_intr_gb20x_other(struct nvkm_disp *disp)
+{
+	struct nvkm_device *device = disp->engine.subdev.device;
+	u32 ctrl = nvkm_rd32(device, 0x611c30);
+	static u32 seen;
+
+	if (ctrl & 0x00000100) {
+		u32 win = nvkm_rd32(device, 0x611858);
+		u32 oth = nvkm_rd32(device, 0x61185c);
+
+		if (win)
+			nvkm_wr32(device, 0x611858, win);
+		if (oth)
+			nvkm_wr32(device, 0x61185c, oth);
+		if (!(seen & 1)) {
+			seen |= 1;
+			nvkm_warn(&disp->engine.subdev, "awaken event: win %08x other %08x\n", win, oth);
+		}
+	}
+	if (ctrl & 0x00000200) {
+		u32 sem = nvkm_rd32(device, 0x611868);
+
+		if (sem)
+			nvkm_wr32(device, 0x611868, sem);
+		if (!(seen & 2)) {
+			seen |= 2;
+			nvkm_warn(&disp->engine.subdev, "window semaphore event: %08x\n", sem);
+		}
+	}
 }
 
 static irqreturn_t
@@ -1563,11 +1622,27 @@ r535_disp_intr(struct nvkm_inth *inth)
 	struct nvkm_disp *disp = container_of(inth, typeof(*disp), engine.subdev.inth);
 	struct nvkm_subdev *subdev = &disp->engine.subdev;
 	struct nvkm_device *device = subdev->device;
-	unsigned long mask = nvkm_rd32(device, 0x611ec0) & 0x000000ff;
+	unsigned long mask;
 	int head;
+
+	/* GB20x: look at every head's status, as OpenRM's kernel side does
+	   for the low-latency line, rather than relying on RM_INTR_DISPATCH
+	   (unverified whether it summarises EN1 head-timing events). */
+	if (device->chipset >= 0x1b0)
+		mask = disp->head.mask;
+	else
+		mask = nvkm_rd32(device, 0x611ec0) & 0x000000ff;
 
 	for_each_set_bit(head, &mask, 8)
 		r535_disp_intr_head_timing(disp, head);
+
+	if (device->chipset >= 0x1b0)
+		r535_disp_intr_gb20x_other(disp);
+
+	/* GB20x: re-arm the low-latency line (FE_INTR_RETRIGGER(LOW_LATENCY),
+	   OpenRM kdispIntrRetrigger_v05_01), or later events may not raise it. */
+	if (device->chipset >= 0x1b0)
+		nvkm_wr32(device, 0x611f30 + 1 * 4, 0x00000001);
 
 	return IRQ_HANDLED;
 }

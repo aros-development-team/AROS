@@ -12,6 +12,7 @@
 #include <graphics/regions.h>
 #include <graphics/layers.h>
 #include <graphics/gfx.h>
+#include <cybergraphx/cybergraphics.h>
 #include <utility/hooks.h>
 #include <setjmp.h>
 
@@ -196,10 +197,15 @@ void _FreeLayer(struct Layer * l, struct LayersBase *LayersBase)
     cr = _cr;
   }
 
-#if LAYERS_BACKING_SURFACE
   if (IL(l)->surface)
+  {
+    _AccountSurface(l, 0, LayersBase);
     FreeBitMap(IL(l)->surface);
-#endif
+  }
+  if (IL(l)->occludeshape && IL(l)->occludeshape != l->visibleshape)
+    DisposeRegion(IL(l)->occludeshape);
+  if (IL(l)->compshape)
+    DisposeRegion(IL(l)->compshape);
   DisposeRegion(l->DamageList);
   DisposeRegion(l->VisibleRegion);
   DisposeRegion(l->shape);
@@ -250,7 +256,11 @@ void _FreeExtLayerInfo(struct Layer_Info * li, struct LayersBase *LayersBase)
 
     if(li->LayerInfo_extra == NULL)
         return;
-    
+
+    /* Should composited layers be left behind, the display must forget their surfaces */
+    if (LIE(li)->lie_Surfaces && LIE(li)->lie_ScreenBM)
+        LayerSurfacesChanged(LIE(li)->lie_ScreenBM, NULL);
+
     FreeMem(li->LayerInfo_extra, sizeof(struct LayerInfo_extra));
 
     li->LayerInfo_extra = NULL;
@@ -453,7 +463,6 @@ BOOL _AllocClipRectBitMap(struct ClipRect *cr, struct BitMap *display_bm, int al
  */
 BOOL _BackClipRect(struct ClipRect *cr, struct Layer *l, int aligndx, struct LayersBase *LayersBase)
 {
-#if LAYERS_BACKING_SURFACE
   if (NULL != IL(l)->surface &&
       cr->bounds.MinX >= l->bounds.MinX && cr->bounds.MinY >= l->bounds.MinY &&
       cr->bounds.MaxX - l->bounds.MinX < IL(l)->surfw &&
@@ -464,11 +473,9 @@ BOOL _BackClipRect(struct ClipRect *cr, struct Layer *l, int aligndx, struct Lay
     cr->Flags |= CR_SHAREDBITMAP;
     return TRUE;
   }
-#endif
   return _AllocClipRectBitMap(cr, l->rp->BitMap, aligndx, LayersBase);
 }
 
-#if LAYERS_BACKING_SURFACE
 /*
  * Make the layer's surface at least w x h, keeping its content and
  * re-pointing the ClipRects that view it. Content outside the old size
@@ -478,6 +485,7 @@ BOOL _EnsureSurfaceSize(struct Layer *l, WORD w, WORD h, struct LayersBase *Laye
 {
   struct BitMap *old = IL(l)->surface, *new;
   struct ClipRect *lists[3], *cr;
+  ULONG newbytes = 0;
   int i;
 
   if (NULL == old)
@@ -487,9 +495,23 @@ BOOL _EnsureSurfaceSize(struct Layer *l, WORD w, WORD h, struct LayersBase *Laye
   if (w < IL(l)->surfw) w = IL(l)->surfw;
   if (h < IL(l)->surfh) h = IL(l)->surfh;
 
-  new = AllocBitMap(w, h, l->rp->BitMap->Depth, 0, l->rp->BitMap);
+  /* A composited surface stays within the screen's budget (the old one is replaced) */
+  if (IS_COMPOSITED(l))
+  {
+    newbytes = _SurfaceBytes(l->rp->BitMap, w, h, IL(l)->alphasurface, LayersBase);
+    if (!_SurfaceBudgetAllows(l->LayerInfo, l->rp->BitMap, newbytes, IL(l)->surfbytes, LayersBase))
+      return FALSE;
+  }
+
+  /* An alpha surface keeps its format: the screen's layout with its alpha byte */
+  if (IL(l)->alphasurface)
+    new = AllocBitMap(w, h, 32, BMF_SPECIALFMT | SHIFT_PIXFMT(IL(l)->alphaformat) | BMF_CLEAR, l->rp->BitMap);
+  else
+    new = AllocBitMap(w, h, l->rp->BitMap->Depth, 0, l->rp->BitMap);
   if (NULL == new)
     return FALSE;
+  if (IS_COMPOSITED(l))
+    _AccountSurface(l, newbytes, LayersBase);
 
   BltBitMap(old, 0, 0, new, 0, 0, IL(l)->surfw, IL(l)->surfh, 0x0c0, 0xff, NULL);
 
@@ -507,7 +529,294 @@ BOOL _EnsureSurfaceSize(struct Layer *l, WORD w, WORD h, struct LayersBase *Laye
   IL(l)->surfh = h;
   return TRUE;
 }
-#endif
+
+/***************************************************************************/
+/*                           COMPOSITED LAYERS                             */
+/***************************************************************************/
+
+/*
+ * The ClipRect list of a composited layer: exactly one hidden ClipRect
+ * covering the layer, a view into the surface at (0,0). Nothing of the
+ * layer is ever in the screen bitmap, so the visible/hidden split of the
+ * other layer kinds does not apply; VisibleRegion is still maintained by
+ * the callers for the hit test and the layers behind.
+ */
+void _SetCompositedClipRects(struct Layer *l, struct LayersBase *LayersBase)
+{
+  struct ClipRect * cr = l->ClipRect;
+
+  if (NULL == cr)
+  {
+    cr = _AllocClipRect(l, LayersBase);
+    l->ClipRect = cr;
+    if (NULL == cr)
+      return;
+  }
+  else if (NULL != cr->Next)
+  {
+    _FreeClipRectListBM(l, cr->Next, LayersBase);
+    cr->Next = NULL;
+  }
+
+  cr->bounds = l->bounds;
+  cr->lobs   = (struct Layer *)(IPTR)TRUE;
+  cr->BitMap = IL(l)->surface;
+  CR_SETBMOFF(cr, 0, 0);
+  cr->Flags |= CR_SHAREDBITMAP;
+}
+
+/*
+ * Bytes a surface of this size takes: chunky, 1, 2 or 4 bytes per pixel
+ * from the screen's depth (a 24 bit deep screen is a 32 bit 0RGB/BGR0
+ * layout here; a packed 24 bit one is counted generously), 4 for a per
+ * pixel alpha surface. The same formula sizes the screen bitmap for the
+ * budget, so the two match. (The BytesPerRow of a HIDD struct BitMap is
+ * not the real row size, and the pixel format is not reachable from here.)
+ */
+ULONG _SurfaceBytes(struct BitMap *screenbm, LONG width, LONG height, BOOL alphasurface, struct LayersBase *LayersBase)
+{
+  ULONG depth = alphasurface ? 32 : GetBitMapAttr(screenbm, BMA_DEPTH);
+  ULONG bpp   = (depth <= 8) ? 1 : (depth <= 16) ? 2 : 4;
+
+  return (ULONG)width * (ULONG)height * bpp;
+}
+
+/*
+ * May a composited surface of newbytes be allocated for this Layer_Info,
+ * oldbytes being the surface it replaces (0 for a new one)? The surfaces
+ * of a screen together may take LAYERS_SURFACE_BUDGET_FACTOR screen
+ * bitmaps, and at least LAYERS_SURFACE_MINFREE of the largest free block
+ * must stay free.
+ */
+BOOL _SurfaceBudgetAllows(struct Layer_Info *li, struct BitMap *screenbm, ULONG newbytes, ULONG oldbytes,
+                          struct LayersBase *LayersBase)
+{
+  ULONG budget = LAYERS_SURFACE_BUDGET_FACTOR *
+                 _SurfaceBytes(screenbm, GetBitMapAttr(screenbm, BMA_WIDTH), GetBitMapAttr(screenbm, BMA_HEIGHT), FALSE, LayersBase);
+  ULONG inuse  = (NULL != LIE(li)) ? LIE(li)->lie_SurfaceBytes : 0;
+  ULONG largest;
+
+  inuse = (inuse > oldbytes) ? inuse - oldbytes : 0;
+  if (inuse + newbytes > budget)
+    return FALSE;
+
+  largest = AvailMem(MEMF_ANY | MEMF_LARGEST);
+  if (largest < newbytes || largest - newbytes < LAYERS_SURFACE_MINFREE)
+    return FALSE;
+
+  return TRUE;
+}
+
+/* Set the bytes the layer's surface is counted with in its Layer_Info (0: not counted) */
+void _AccountSurface(struct Layer *l, ULONG bytes, struct LayersBase *LayersBase)
+{
+  struct LayerInfo_extra * lie = (NULL != l->LayerInfo) ? LIE(l->LayerInfo) : NULL;
+
+  if (NULL != lie)
+    lie->lie_SurfaceBytes = lie->lie_SurfaceBytes - IL(l)->surfbytes + bytes;
+  IL(l)->surfbytes = bytes;
+}
+
+/*
+ * Does the point (screen coordinates) hit the layer? Visible, inside the
+ * shape and, for a composited layer with a per pixel alpha surface, not
+ * on a fully transparent pixel. WhichLayer() and IsLayerHitAt().
+ */
+BOOL _IsLayerHitAt(struct Layer *l, LONG x, LONG y, struct LayersBase *LayersBase)
+{
+  if (!IS_VISIBLE(l) || !IsPointInRegion(l->visibleshape, x, y))
+    return FALSE;
+
+  if (IS_COMPOSITED(l) && IL(l)->alphasurface && NULL != IL(l)->surface)
+    return 0 != LayerSurfaceAlpha(IL(l)->surface, x - l->bounds.MinX, y - l->bounds.MinY);
+
+  return TRUE;
+}
+
+/*
+ * Turn a composited layer into an ordinary smart refresh layer in place,
+ * keeping its content: the layers behind back up what it now hides (a
+ * blended one hid nothing), its visible parts go into the screen bitmap
+ * and its surface stays as the backing store of its hidden ClipRects (as
+ * far as it is big enough; _BackClipRect gives the rest bitmaps of their
+ * own). Used when a growing surface is not allowed any more (budget) or
+ * cannot be allocated. Called with the layers locked.
+ */
+void _UncompositeLayer(struct Layer *l, struct LayersBase *LayersBase)
+{
+  struct Layer_Info * li = l->LayerInfo;
+  struct Layer * _l, * lparent;
+  struct Region r;
+
+  if (!IS_COMPOSITED(l))
+    return;
+
+  if (IS_TRANSLUCENT(l))
+  {
+    if (IS_VISIBLE(l))
+    {
+      /* as CreateLayerTagList() does for a new opaque layer */
+      lparent = l->parent;
+      _l = l->back;
+      while (NULL != _l)
+      {
+        if (IS_VISIBLE(_l) && DO_OVERLAP(&l->visibleshape->bounds, &_l->shape->bounds))
+          _BackupPartsOfLayer(_l, l->visibleshape, 0, FALSE, LayersBase);
+        else
+          ClearRegionRegion(l->visibleshape, _l->VisibleRegion);
+
+        if (_l == lparent)
+        {
+          if (IS_VISIBLE(_l) || NULL == lparent || NULL == lparent->parent)
+            break;
+          lparent = lparent->parent;
+        }
+        _l = _l->back;
+      }
+    }
+    if (IL(l)->occludeshape && IL(l)->occludeshape != l->visibleshape)
+      DisposeRegion(IL(l)->occludeshape);
+    IL(l)->occludeshape = l->visibleshape;
+    IL(l)->intflags &= ~INTFLAG_TRANSLUCENT;
+  }
+
+  l->Flags &= ~LAYERCOMPOSITED;
+  if (NULL != LIE(li))
+    LIE(li)->lie_NumComposited--;
+  _AccountSurface(l, 0, LayersBase);
+
+  if (IS_VISIBLE(l))
+  {
+    /* its visible parts become ClipRects in the screen bitmap, copied from the surface */
+    InitRegion(&r);
+    SetRegion(l->VisibleRegion, &r);
+    ClearRegion(l->VisibleRegion);
+    _ShowPartsOfLayer(l, &r, LayersBase);
+    ClearRegion(&r);
+  }
+
+  /* the display stops showing the surface */
+  UPDATE_SURFACES(li);
+}
+
+/*
+ * Rebuild the Layer_Info's back to front list of surface requests from its
+ * visible composited layers and hand it to the display. Called once at the
+ * end of every layer operation of a Layer_Info that has composited layers
+ * (UPDATE_SURFACES). A request's Shape is the part of the layer that is
+ * visible (its visibleshape inside its VisibleRegion, screen coordinates),
+ * NULL when that is the whole rectangle. The Shape regions belong to the
+ * layers and are only changed here, right before the hand over.
+ */
+void _UpdateSurfaces(struct Layer_Info *li, struct LayersBase *LayersBase)
+{
+  struct LayerInfo_extra * lie = LIE(li);
+  struct HIDD_CompositeRequest * head = NULL, ** tail = &head;
+  struct Layer * l;
+  ULONG z = 0;
+
+  if (NULL == lie || NULL == lie->lie_ScreenBM)
+    return;
+
+  /* bottom layer first */
+  l = li->top_layer;
+  while (NULL != l && NULL != l->back)
+    l = l->back;
+
+  for (; NULL != l; l = l->front)
+  {
+    struct HIDD_CompositeRequest * rq;
+    struct Region * vis;
+
+    if (!IS_COMPOSITED(l) || !IS_VISIBLE(l) || NULL == IL(l)->surface)
+      continue;
+
+    vis = AndRegionRegionND(l->visibleshape, l->VisibleRegion);
+    if (NULL == vis)
+      continue;
+    if (IS_EMPTYREGION(vis))
+    {
+      DisposeRegion(vis);
+      continue;
+    }
+
+    rq = &IL(l)->request;
+    rq->BitMap    = HIDD_BM_OBJ(IL(l)->surface);
+    rq->Src.MinX  = 0;
+    rq->Src.MinY  = 0;
+    rq->Src.MaxX  = l->Width - 1;
+    rq->Src.MaxY  = l->Height - 1;
+    rq->Dest      = l->bounds;
+
+    if (NULL == vis->RegionRectangle->Next &&
+        vis->bounds.MinX + vis->RegionRectangle->bounds.MinX == l->bounds.MinX &&
+        vis->bounds.MinY + vis->RegionRectangle->bounds.MinY == l->bounds.MinY &&
+        vis->bounds.MinX + vis->RegionRectangle->bounds.MaxX == l->bounds.MaxX &&
+        vis->bounds.MinY + vis->RegionRectangle->bounds.MaxY == l->bounds.MaxY)
+    {
+      rq->Shape = NULL;
+    }
+    else
+    {
+      if (NULL == IL(l)->compshape)
+        IL(l)->compshape = NewRegion();
+      if (NULL != IL(l)->compshape && SetRegion(vis, IL(l)->compshape))
+        rq->Shape = IL(l)->compshape;
+      else
+        rq->Shape = NULL; /* out of memory: show the whole rectangle rather than nothing */
+    }
+    DisposeRegion(vis);
+
+    rq->Opacity = IL(l)->opacity;
+    if (IL(l)->alphasurface)
+      rq->AlphaMode = vHidd_CompAlpha_PerPixel;
+    else if (IL(l)->opacity != 0xFF)
+      rq->AlphaMode = vHidd_CompAlpha_Fixed;
+    else
+      rq->AlphaMode = vHidd_CompAlpha_None;
+    rq->Flags  = (vHidd_CompAlpha_None == rq->AlphaMode) ? CRF_OPAQUE : 0;
+    rq->ZOrder = z++;
+    rq->Next   = NULL;
+
+    *tail = rq;
+    tail  = &rq->Next;
+  }
+
+  lie->lie_Surfaces = head;
+  LayerSurfacesChanged(lie->lie_ScreenBM, head);
+}
+
+/*
+ * Backfill a (screen relative) region of a composited layer into its surface.
+ */
+static void _BackFillSurface(struct Layer * l, struct Region * r, struct LayersBase * LayersBase)
+{
+  struct RegionRectangle * RR;
+  struct BitMap * bm = l->rp->BitMap;
+
+  if (NULL == IL(l)->surface)
+    return;
+
+  l->rp->BitMap = IL(l)->surface;
+  for (RR = r->RegionRectangle; NULL != RR; RR = RR->Next)
+  {
+    struct Rectangle bmrect;
+
+    bmrect.MinX = RR->bounds.MinX + r->bounds.MinX - l->bounds.MinX;
+    bmrect.MinY = RR->bounds.MinY + r->bounds.MinY - l->bounds.MinY;
+    bmrect.MaxX = RR->bounds.MaxX + r->bounds.MinX - l->bounds.MinX;
+    bmrect.MaxY = RR->bounds.MaxY + r->bounds.MinY - l->bounds.MinY;
+
+    _CallLayerHook(l->BackFill,
+                   l->rp,
+                   l,
+                   &bmrect,
+                   bmrect.MinX + l->Scroll_X,
+                   bmrect.MinY + l->Scroll_Y,
+                   LayersBase);
+  }
+  l->rp->BitMap = bm;
+}
 
 /*
  * From region r create a list of ClipRects: visible ones for r itself,
@@ -528,6 +837,10 @@ struct ClipRect * _CreateClipRectsFromRegion(struct Region *r,
   int looped = FALSE;
   struct ClipRect * firstcr = NULL, * cr;
   struct BitMap * display_bm = l->rp->BitMap;
+
+  /* A composited layer has no visible ClipRects: all are views into its surface */
+  if (IS_COMPOSITED(l))
+    invisible = TRUE;
 
   while (1)
   {
@@ -607,7 +920,7 @@ struct ClipRect * _CreateClipRectsFromRegion(struct Region *r,
 #else
       AndRectRegion(r,&l->bounds);
 #endif
-      if (TRUE == invisible)
+      if (TRUE == invisible && !IS_COMPOSITED(l))
         invisible = FALSE;
       else
         invisible = TRUE;
@@ -633,6 +946,28 @@ int _CopyClipRectsToClipRects(struct Layer * l,
                               struct LayersBase *LayersBase)
 {
   struct BitMap * display_bm = l->rp->BitMap;
+
+  /*
+   * Every ClipRect of a composited layer is a view into its surface:
+   * there is nothing to copy and nothing to back up.
+   */
+  if (IS_COMPOSITED(l))
+  {
+    if (TRUE == freelist)
+    {
+      while (NULL != oldcr)
+      {
+        struct ClipRect * _cr = oldcr->Next;
+        _FreeClipRect(oldcr, l, LayersBase);
+        oldcr = _cr;
+      }
+    }
+    if (IS_EMPTYREGION(l->DamageList))
+      l->Flags &= ~LAYERREFRESH;
+    else
+      l->Flags |=  LAYERREFRESH;
+    return TRUE;
+  }
 
   /*
    * New backing bitmaps are allocated uncleared. Normally the old
@@ -1160,7 +1495,15 @@ int _BackupPartsOfLayer(struct Layer * l,
   clipregion = _InternalInstallClipRegion(l, NULL, 0, 0, LayersBase);
 
   ClearRegionRegion(hide_region,l->VisibleRegion);
-  r = AndRegionRegionND(l->visibleshape, l->VisibleRegion);
+
+  if (IS_COMPOSITED(l))
+  {
+    /* nothing to copy: the layer lives in its surface, the display composes it */
+    _SetCompositedClipRects(l, LayersBase);
+    r = NULL;
+  }
+  else
+    r = AndRegionRegionND(l->visibleshape, l->VisibleRegion);
   
   if (r)
   {
@@ -1227,7 +1570,14 @@ int _ShowPartsOfLayer(struct Layer * l,
   clipregion = InstallClipRegion(l, NULL);
 
   OrRegionRegion(show_region,l->VisibleRegion);
-  r = AndRegionRegionND(l->visibleshape, l->VisibleRegion);
+
+  if (IS_COMPOSITED(l))
+  {
+    _SetCompositedClipRects(l, LayersBase);
+    r = NULL;
+  }
+  else
+    r = AndRegionRegionND(l->visibleshape, l->VisibleRegion);
   if (r != NULL)
   {
       newcr = _CreateClipRectsFromRegion(r,l,FALSE,NULL,0,NULL,LayersBase);
@@ -1259,6 +1609,20 @@ int _ShowLayer(struct Layer * l, struct LayersBase *LayersBase)
   struct ClipRect * prevcr = NULL;
   struct BitMap * bm = l->rp->BitMap;
   int invisible = FALSE;
+
+  if (IS_COMPOSITED(l))
+  {
+    /* One ClipRect, the surface; the backfill hook paints the whole surface */
+    struct Region * all = NewRectRegion(l->bounds.MinX, l->bounds.MinY, l->bounds.MaxX, l->bounds.MaxY);
+
+    _SetCompositedClipRects(l, LayersBase);
+    if (all)
+    {
+      _BackFillSurface(l, all, LayersBase);
+      DisposeRegion(all);
+    }
+    return TRUE;
+  }
 
   r = AndRegionRegionND(l->shape, l->VisibleRegion);
   AndRegionRegion(l->parent->shape, r);
@@ -1457,6 +1821,19 @@ kprintf("%s: Adding %d/%d-%d/%d to damagelist!\n",
 #endif
     
   } /* if (TRUE == addtodamagelist) */
+
+  if (IS_COMPOSITED(l))
+  {
+    /* The whole area, covered or not: the layer is complete in its surface */
+    if (l->shaperegion)
+    {
+      _TranslateRect(&r->bounds, -l->bounds.MinX, -l->bounds.MinY);
+      AndRegionRegion(l->shaperegion, r);
+      _TranslateRect(&r->bounds, l->bounds.MinX, l->bounds.MinY);
+    }
+    _BackFillSurface(l, r, LayersBase);
+    return;
+  }
 
   AndRegionRegion(l->VisibleRegion, r);
   if (l->shaperegion)

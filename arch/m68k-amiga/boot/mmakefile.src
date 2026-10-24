@@ -136,7 +136,7 @@ ROMLOC_ss  := 0x003f800
 # Main ROM (0xf80000 - 0xffffff)
 ROMLOC_rom := 0x0f80000
 
-FILES=start early debug mmu
+FILES=start early debug mmu divdi3
 AFILES=rom_entry rom_init cpu_detect superstack_swap
 
 # Every module linked into the ROM is also linked as an ordinary file into the
@@ -242,7 +242,15 @@ $(GENDIR)/%_objs.ld: $(SRCDIR)/$(CURDIR)/mmakefile.src
 		echo ". = ALIGN(4);" >>$@; \
 		echo "$$file(.text)" >>$@; \
 		echo ". = ALIGN(4);" >>$@; \
-		echo "$$file(.rodata .rodata.*)" >>$@; \
+		echo "$$file(.rodata .rodata.* .romstrings)" >>$@; \
+	done
+
+# The string literals of the .ext modules, for the .ext string pool in
+# aros-rom.ld (everything else goes to the .rom pool).
+$(GENDIR)/ext_strs.ld: $(SRCDIR)/$(CURDIR)/mmakefile.src
+	$(Q)rm -f $@
+	$(Q)for file in $(OBJS_ext) $(KOBJS_ext); do \
+		echo "$$file(.romstrings .rodata.str1.1)" >>$@; \
 	done
 
 $(GENDIR)/boot/aros-amiga-m68k-reloc.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/mmakefile.src \
@@ -250,7 +258,8 @@ $(GENDIR)/boot/aros-amiga-m68k-reloc.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/mmakef
 	$(OBJS_ext) $(KOBJS_ext) \
 	$(SRCDIR)/$(CURDIR)/aros-rom.ld \
 	$(GENDIR)/rom_objs.ld \
-	$(GENDIR)/ext_objs.ld
+	$(GENDIR)/ext_objs.ld \
+	$(GENDIR)/ext_strs.ld
 	@$(MKDIR) $(GENDIR)/boot
 	@$(ECHO) Linking $@...
 	$(Q)$(KERNEL_CC) -Wl,-r \
@@ -264,9 +273,10 @@ $(GENDIR)/boot/aros-amiga-m68k-reloc.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/mmakef
 		-o $@ -Wl,-T -Wl,$(SRCDIR)/$(CURDIR)/aros-rom.ld \
 		-L$(AROS_LIB) $(LIBS) -lgcc
 
-$(GENDIR)/boot/aros-amiga-m68k.elf: $(GENDIR)/boot/aros-amiga-m68k-reloc.elf
+$(GENDIR)/boot/aros-amiga-m68k.elf: $(GENDIR)/boot/aros-amiga-m68k-reloc.elf $(SRCDIR)/$(CURDIR)/aros-rom-final.ld
 	$(Q)$(KERNEL_LD) -o $@ \
 		-Map $(GENDIR)/boot/aros-amiga-m68k.elf.map \
+		-T $(SRCDIR)/$(CURDIR)/aros-rom-final.ld \
 		--section-start .rom=$(ROMLOC_rom) \
 		--section-start .ext=$(ROMLOC_ext) \
 		--section-start .ss=$(ROMLOC_ss) \

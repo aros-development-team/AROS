@@ -732,7 +732,7 @@ struct IntScreen
     UWORD                    Pens[NUMDRIPENS];
     struct PubScreenNode    *pubScrNode;
     Object                  *depthgadget;
-    UWORD                    SpecialFlags;
+    ULONG                    SpecialFlags;   /* SF_*: the mode's COMPF_* flags live in bits 8 and up */
     struct Layer            *rootLayer;
     struct Hook              *preAlphaCompHook;
 #if !USE_NEWDISPLAYBEEP

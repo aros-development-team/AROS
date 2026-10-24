@@ -280,7 +280,6 @@ NOUVEAU_HIDD_C_SOURCES := \
             nouveau_bitmapclass \
             nouveau_accel \
             nouveau_i2cclass \
-            nouveau_compositorclass \
             nouveau_galliumclass \
             $(addprefix $(XF86_NOUVEAU_PATH), $(XF86_NOUVEAU_SOURCES))  \
 

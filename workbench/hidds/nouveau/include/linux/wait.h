@@ -105,7 +105,11 @@ long wait_woken(struct wait_queue_entry *wq_entry, unsigned mode, long timeout);
         __label__ __out;                                                \
         struct wait_queue_entry __wq_entry;                             \
         long __ret = ret;                                               \
+        /* as Linux init_wait_entry(): the list links must start empty, \
+           or prepare_to_wait_event() skips the queue and finish_wait() \
+           unlinks stack garbage (GB207 input.device hang 2026-10-24) */\
         init_waitqueue_entry(&__wq_entry, current);                     \
+        INIT_LIST_HEAD(&__wq_entry.entry);                              \
         if (exclusive) __wq_entry.flags = WQ_FLAG_EXCLUSIVE;            \
         for (;;) {                                                      \
             long __int = prepare_to_wait_event(&(wq_head), &__wq_entry, state); \

@@ -13,7 +13,7 @@
 #include <string.h>
 
 #include "graphics_intern.h"
-#include "graphics_compositor.h"
+#include "graphics_display.h"
 #include "dispinfo.h"
 
 /****************************************************************************************/
@@ -275,8 +275,8 @@ static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *ms
                 via the display compositor, and to enable it.
                 e.g openscreen uses these to determine if a custombitmap may be displayed.
             */
-        di->reserved[0] = (IPTR)compositor_IsBMCompositable;
-        di->reserved[1] = (IPTR)compositor_SetBMCompositable;
+        di->reserved[0] = (IPTR)display_IsBMCompositable;
+        di->reserved[1] = (IPTR)display_SetBMCompositable;
 
         break;
     }
@@ -327,18 +327,19 @@ static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *ms
         }
 
         /*
-         * reserved[0] is HIDD composition flags for intuition.library/OpenScreen().
-         * It can't be done in another way because only we (graphics.library) know about existence
-         * of software screen composition.
+         * reserved[0] is HIDD composition flags for intuition.library/OpenScreen():
+         * capabilities in the upper half, enabled state in the lower. A driver
+         * composing in hardware reports them in its mode properties; otherwise
+         * they are those of the display's compositor.
          */
-        if(mdd->mdisplay.display_compositor) {
-            IPTR capabilities, state;
-            OOP_GetAttr(mdd->mdisplay.display_compositor, aHidd_Compositor_Capabilities, &capabilities);
-            OOP_GetAttr(mdd->mdisplay.display_compositor, aHidd_Compositor_State, &state);
-            di->reserved[0] = (capabilities << 16) | state;
-        } else {
-            HIDD_Display_ModeProperties(mdd->mdisplay.display_obj, hiddmode, &HIDDProps, sizeof(HIDDProps));
+        HIDD_Display_ModeProperties(mdd->mdisplay.display_obj, hiddmode, &HIDDProps, sizeof(HIDDProps));
+        if(HIDDProps.CompositionFlags) {
             di->reserved[0] = (HIDDProps.CompositionFlags << 16) | HIDDProps.CompositionFlags;
+        } else {
+            IPTR capabilities = 0, state = 0;
+            OOP_GetAttr(mdd->mdisplay.display_obj, aHidd_Display_CompositionCapabilities, &capabilities);
+            OOP_GetAttr(mdd->mdisplay.display_obj, aHidd_Display_CompositionState, &state);
+            di->reserved[0] = (capabilities << 16) | state;
         }
 
         /* This is for cybergraphics.library */
@@ -379,9 +380,10 @@ static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *ms
          */
         mi->PreferredModeID = ID;
 
-        if(mdd->mdisplay.display_compositor) {
+        HIDD_Display_ModeProperties(mdd->mdisplay.display_obj, hiddmode, &HIDDProps, sizeof(HIDDProps));
+        if(!HIDDProps.CompositionFlags && (mdd->mdisplay.display_flags & DF_Composes)) {
             /*
-             * If we have software screen composition, we know we can compose.
+             * The display's compositor composes screens, so we know we can compose.
              * We use MCOMPAT_MIXED here because of changed understanding of what is "monitor".
              * In AmigaOS(tm) a "monitor" is actually a sync (video mode). Different "monitors"
              * are actually different modes of the same display (PAL, NTSC, VGA, etc).
@@ -391,9 +393,7 @@ static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *ms
              */
             mi->Compatibility = MCOMPAT_MIXED;
         } else {
-            /* Otherwise query the driver */
-            HIDD_Display_ModeProperties(mdd->mdisplay.display_obj, hiddmode, &HIDDProps, sizeof(HIDDProps));
-
+            /* Otherwise it is what the driver said */
             if(HIDDProps.CompositionFlags)
                 mi->Compatibility = (HIDDProps.CompositionFlags & COMPF_SAME) ? MCOMPAT_SELF : MCOMPAT_MIXED;
             else

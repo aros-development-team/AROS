@@ -6,7 +6,6 @@
 
 #include <aros/debug.h>
 #include <graphics/driver.h>
-#include <hidd/compositor.h>
 #include <oop/oop.h>
 
 #include <proto/utility.h>
@@ -15,7 +14,6 @@
 
 #include "graphics_intern.h"
 #include "graphics_driver.h"
-#include "graphics_compositor.h"
 #include "dispinfo.h"
 
 #define CL(x) ((OOP_Class *)x)
@@ -169,17 +167,12 @@
     EnterFunc(bug("AddDisplayDriverA(0x%p) <%s>\n", gfxclass, CL(gfxclass)->ClassNode.ln_Name));
 
     /*
-     * MAGIC: Detect composition HIDD here.
-     * This allows to hotplug it, and even (potentially) replace.
+     * Composition is a service of every display now (gfx.hidd owns the
+     * compositor class). An old Devs/Monitors/Compositor program registering
+     * its class here is simply accepted and ignored.
      */
     if (IS_CLASS(gfxclass, CLID_Hidd_Compositor))
-    {
-	ObtainSemaphore(&CDD(GfxBase)->displaydb_sem);
-    	ret = compositor_Install(gfxclass, GfxBase);
-    	ReleaseSemaphore(&CDD(GfxBase)->displaydb_sem);
-
-    	return ret;
-    }
+        return DD_OK;
 
     cfg = AllocMem(sizeof(struct gfxdriver_data), MEMF_ANY);
     if (!cfg)

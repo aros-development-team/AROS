@@ -13,6 +13,32 @@
 #define DRAWABLE(data)      (data->drawable)
 #define WINDRAWABLE(data)   (data->windowdrawable)
 
+/*
+ * An emulated overlay scan-out plane: a child window of the framebuffer window
+ * whose background pixmap is the scanned bitmap. Owned by the display class;
+ * the bitmap bound to it keeps a pointer so that UpdateRect() can refresh the
+ * window and Dispose() can detach.
+ */
+struct x11_plane
+{
+    Window           win;
+    OOP_Object      *bm;        /* bitmap scanned out by this plane, NULL = off */
+    BOOL             mapped;
+    /*
+     * Scaled plane (XRender): the bitmap is rendered scaled into 'scaled', a
+     * pixmap of the plane's size on the display, which is the window's
+     * background; a refresh re-renders the changed part and clears it.
+     */
+    BOOL             isscaled;
+    Pixmap           scaled;
+    unsigned long    srcpic, dstpic;    /* XRender Pictures (XIDs); Xrender.h is only seen by the display class */
+    LONG             srcw, srch, dstw, dsth;
+};
+
+/* x11gfx_displayclass.c: plane helpers used by the bitmap class */
+VOID X11Plane_Refresh(Display *d, struct x11_plane *p, LONG x, LONG y, LONG w, LONG h);
+VOID X11Plane_Detach(Display *d, struct x11_plane *p);
+
 /* This structure is used as instance data for the bitmap class. */
 struct bitmap_data
 {
@@ -29,6 +55,7 @@ struct bitmap_data
     IPTR            height;
     OOP_Object      *dmenum;        /* Cached display mode enumerator      */
     Drawable        windowdrawable; /* Explicit pointer to window drawable for BMDF_FRAMEBUFFER */
+    struct x11_plane *plane;        /* Overlay plane scanning this bitmap out, or NULL */
 };
 
 #define BMDF_COLORMAP_ALLOCED   1

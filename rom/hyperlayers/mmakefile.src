@@ -33,6 +33,7 @@ FUNCS := \
 	installlayerhook \
 	installlayerinfohook \
 	islayerhiddenbysibling \
+	islayerhitat \
 	islayervisible \
 	locklayer \
 	locklayerinfo \

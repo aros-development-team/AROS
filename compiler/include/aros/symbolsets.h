@@ -13,6 +13,7 @@
 #include <exec/libraries.h>
 #include <exec/execbase.h>
 #include <aros/asmcall.h>
+#include <dos/bptr.h>
 
 #include <stddef.h>
 
@@ -254,5 +255,49 @@ extern int _set_libinit(const struct __aros_libinit_sets *sets, void *libbase, s
    close, per-task slot, __freebase). */
 extern void _set_libexpunge(const struct __aros_libinit_sets *sets, void *libbase, struct ExecBase *sysBase);
 #define set_libexpunge(sets, libbase) _set_libexpunge(sets, libbase, SysBase)
+
+/* The library vectors genmodule used to emit inline into every module, for
+   the plain case: an auto-initialised base, no per-opener or per-task bases.
+   The module-specific field stores stay at the call site. Resources have no
+   vectors, so only libraries and devices carry the extra sets. */
+struct __aros_libfuncs_sets
+{
+    struct __aros_libinit_sets init;
+    const void * const *openlib;        /* OPENLIB,  NULL if noopenclose */
+    const void * const *closelib;       /* CLOSELIB, NULL if noopenclose */
+    const void * const *opendev;        /* OPENDEV,  NULL if no device   */
+    const void * const *closedev;       /* CLOSEDEV, NULL if no device   */
+};
+
+struct IORequest;
+extern void *_set_libinitbase(const struct __aros_libinit_sets *sets, struct Library *lib,
+                              LONG sysver, struct Library **oopbaseptr, struct ExecBase *sysBase);
+extern void *_set_resalloc(ULONG vecsize, ULONG basesize, CONST_STRPTR name, BYTE pri,
+                           CONST_APTR functable, LONG sysver, struct ExecBase *sysBase);
+extern void *_set_resadd(const struct __aros_libinit_sets *sets, APTR base, ULONG vecsize,
+                         ULONG basesize, struct ExecBase *sysBase);
+extern void *_set_libopen(const struct __aros_libfuncs_sets *sets, struct Library *lib);
+extern void _set_devopen(const struct __aros_libfuncs_sets *sets, struct Library *lib,
+                         struct IORequest *ioreq, IPTR unitnum, ULONG flags);
+extern int _set_libclose(const struct __aros_libfuncs_sets *sets, struct Library *lib,
+                         struct IORequest *ioreq);
+extern BPTR _set_libexpungebase(const struct __aros_libfuncs_sets *sets, struct Library *lib,
+                                BPTR seglist, struct Library **oopbaseptr, struct ExecBase *sysBase);
+
+/* Consolidated OOP class creation: what genmodule used to emit inline into
+   every OOP class's startup and shutdown. */
+struct OOP_InterfaceDescr;
+struct OOP_IClass;
+struct __aros_oopclass
+{
+    const struct OOP_InterfaceDescr *ifdescr;
+    CONST_STRPTR superid;               /* NULL: superclass passed as pointer */
+    CONST_STRPTR classid;               /* NULL: no aMeta_ID                  */
+    IPTR instsize;
+};
+
+extern int _set_oop_addclass(const struct __aros_oopclass *c, struct OOP_IClass *superptr,
+                             APTR libbase, struct OOP_IClass **clptr, struct Library *OOPBase);
+extern void _set_oop_removeclass(struct OOP_IClass *cl, struct Library *OOPBase);
 
 #endif /* _AROS_SYMBOLSETS_H */

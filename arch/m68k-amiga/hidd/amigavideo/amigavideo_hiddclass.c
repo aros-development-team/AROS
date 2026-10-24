@@ -701,7 +701,7 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
         {
             struct TagItem comptags [] =
             {
-                { aHidd_Compositor_DisplayHidd, (IPTR)csd->display },
+                { aHidd_AmigaVideoCompositor_DisplayHidd, (IPTR)csd->display },
                 { TAG_DONE, TAG_DONE }
             };
             data->compositor = OOP_NewObject(csd->amigacompositorclass, NULL, comptags);
@@ -1577,7 +1577,7 @@ ULONG AmigaVideoDisplay__Hidd_Display__ShowViewPorts(OOP_Class *cl, OOP_Object *
     OOP_Object *gfx = NULL;
     struct amigagfx_data *data;
     struct HIDD_ViewPortData *vpd;
-    struct pHidd_Compositor_BitMapStackChanged bscmsg =
+    struct pHidd_AmigaVideoCompositor_BitMapStackChanged bscmsg =
     {
         mID : csd->mid_BitMapStackChanged,
     };
@@ -1705,7 +1705,7 @@ static void freeattrbases(struct amigavideo_staticdata *csd)
     OOP_ReleaseAttrBase(IID_Hidd_Gfx);
     OOP_ReleaseAttrBase(IID_Hidd_Display);
     OOP_ReleaseAttrBase(IID_Hidd_DMEnum);
-    OOP_ReleaseAttrBase(IID_Hidd_Compositor);
+    OOP_ReleaseAttrBase(IID_Hidd_AmigaVideoCompositor);
     OOP_ReleaseAttrBase(IID_Hidd_PixFmt);
     OOP_ReleaseAttrBase(IID_Hidd_ColorMap);
 }
@@ -1725,7 +1725,7 @@ int Init_AmigaVideoClass(LIBBASETYPEPTR LIBBASE)
     __IHidd_Gfx         = OOP_ObtainAttrBase(IID_Hidd_Gfx);
     __IHidd_Display     = OOP_ObtainAttrBase(IID_Hidd_Display);
     __IHidd_DMEnum      = OOP_ObtainAttrBase(IID_Hidd_DMEnum);
-    __IHidd_Compositor          = OOP_ObtainAttrBase(IID_Hidd_Compositor);
+    __IHidd_AmigaVideoCompositor          = OOP_ObtainAttrBase(IID_Hidd_AmigaVideoCompositor);
     __IHidd_PixFmt              = OOP_ObtainAttrBase(IID_Hidd_PixFmt);
     __IHidd_ColorMap    = OOP_ObtainAttrBase(IID_Hidd_ColorMap);
 
@@ -1739,13 +1739,13 @@ int Init_AmigaVideoClass(LIBBASETYPEPTR LIBBASE)
     }
 
     LIBBASE->csd.mid_BitMapStackChanged   =
-        OOP_GetMethodID((STRPTR)IID_Hidd_Compositor, moHidd_Compositor_BitMapStackChanged);
+        OOP_GetMethodID((STRPTR)IID_Hidd_AmigaVideoCompositor, moHidd_AmigaVideoCompositor_BitMapStackChanged);
     LIBBASE->csd.mid_BitMapPositionChanged   =
-        OOP_GetMethodID((STRPTR)IID_Hidd_Compositor, moHidd_Compositor_BitMapPositionChanged);
+        OOP_GetMethodID((STRPTR)IID_Hidd_AmigaVideoCompositor, moHidd_AmigaVideoCompositor_BitMapPositionChanged);
     LIBBASE->csd.mid_BitMapRectChanged       =
-        OOP_GetMethodID((STRPTR)IID_Hidd_Compositor, moHidd_Compositor_BitMapRectChanged);
+        OOP_GetMethodID((STRPTR)IID_Hidd_AmigaVideoCompositor, moHidd_AmigaVideoCompositor_BitMapRectChanged);
     LIBBASE->csd.mid_ValidateBitMapPositionChange =
-        OOP_GetMethodID((STRPTR)IID_Hidd_Compositor, moHidd_Compositor_ValidateBitMapPositionChange);
+        OOP_GetMethodID((STRPTR)IID_Hidd_AmigaVideoCompositor, moHidd_AmigaVideoCompositor_ValidateBitMapPositionChange);
 
     return TRUE;
 }

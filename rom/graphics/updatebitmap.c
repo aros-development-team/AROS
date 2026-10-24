@@ -6,7 +6,6 @@
 */
 
 #include "graphics_intern.h"
-#include "graphics_compositor.h"
 #include "gfxfuncsupport.h"
 
 #include <hidd/gfx.h>
@@ -30,10 +29,28 @@ AROS_LH5(void, UpdateBitMap,
 void update_bitmap(struct BitMap *bitmap, OOP_Object *bm, UWORD x, UWORD y, UWORD width, UWORD height,
                    struct GfxBase *GfxBase)
 {
-    struct monitor_displaydata *mdd = (struct monitor_displaydata *)GET_BM_DRIVERDATA(bitmap);
+    /*
+     * The bitmap's display (the software rasterizer's for bitmaps that are
+     * not displayable). Damage goes to it: it re-composes the visible part
+     * or passes it on to the bitmap. This runs after every rendering
+     * operation, so the display's method was resolved once at display setup.
+     */
+    struct gfxdisplay_data *mdd = (struct gfxdisplay_data *)GET_BM_DRIVERDATA(bitmap);
 
-    if(mdd && mdd->mdisplay.display_compositor)
-        compositor_UpdateBitMap(mdd->mdisplay.display_compositor, bm, x, y, width, height, GfxBase);
+    if (mdd && mdd->display_UpdateRect)
+    {
+        struct pHidd_Display_UpdateRect msg =
+        {
+            .mID    = HiddDisplayBase + moHidd_Display_UpdateRect,
+            .bitMap = bm,
+            .x      = x,
+            .y      = y,
+            .width  = width,
+            .height = height
+        };
+
+        mdd->display_UpdateRect(mdd->display_UpdateRect_cl, mdd->display_obj, (OOP_Msg)&msg);
+    }
     else
         HIDD_BM_UpdateRect(bm, x, y, width, height);
 }

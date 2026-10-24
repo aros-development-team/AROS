@@ -97,9 +97,18 @@ coreca7d_owned(struct nv50_core *core, u32 *pactive, u32 *ptiles, u32 *pphywins)
 
 
 /*
- * Window ownership follows the same rule as tiles: never moved to or from
- * a head that is currently driving an output.
+ * Window ownership: never taken away from a head that is currently driving
+ * an output. The firmware lights head 0 with window 0 only (two phywins), so
+ * window 1 starts unowned. An unowned window is given to its live natural
+ * head together with as many free physical windows as the head has tiles,
+ * in the same update - the vendor binds all windows at init, live head or
+ * not (nvkms-evo3.c EvoInitWindowMapping3), and every window of a head
+ * needs phywins to match its tiles (nvkms-evo4.c EvoSetMultiTileConfigCA).
+ * The owner alone failed the update (Xid 56, 0x12). Default on (confirmed
+ * on the Titan 2026-10-24); NOUVEAU_WNDW_LIVE_OWNER=0 restores the old rule.
  */
+int nouveau_wndw_live_owner = 1;
+
 static int
 coreca7d_wndw_owner(struct nv50_core *core)
 {
@@ -110,7 +119,7 @@ coreca7d_wndw_owner(struct nv50_core *core)
 
 	coreca7d_owned(core, &active, &tiles, &phywins);
 
-	if ((ret = PUSH_WAIT(push, windows * 2)))
+	if ((ret = PUSH_WAIT(push, windows * 4)))
 		return ret;
 
 	for (i = 0; i < windows; i++) {
@@ -120,8 +129,34 @@ coreca7d_wndw_owner(struct nv50_core *core)
 
 		if (owner == head)
 			continue;
-		if ((owner < 4 && (active & BIT(owner))) || (active & BIT(head)))
+		if (owner < 8 && (active & BIT(owner)))
 			continue;
+		if (active & BIT(head)) {
+			/*
+			 * Every window of a head needs as many physical windows
+			 * as the head has tiles (nvkms-evo4.c EvoSetMultiTileConfigCA
+			 * asserts it); the firmware runs 1080p on two tiles.
+			 */
+			u32 htiles = coreca7d_armed(core, NVCA7D_HEAD_SET_TILE_MASK(head)) & 0xff;
+			u32 need = hweight32(htiles) ? hweight32(htiles) : 1;
+			u32 pw = coreca7d_armed(core, NVCA7D_WINDOW_SET_PHYSICAL(i)) & 0xff, t;
+
+			if (!nouveau_wndw_live_owner)
+				continue;
+			if (hweight32(pw) != need) {
+				pw = 0;
+				for (t = 0; t < 8 && hweight32(pw) < need; t++) {
+					if (!(phywins & BIT(t)))
+						pw |= BIT(t);
+				}
+				if (hweight32(pw) != need)
+					continue;
+				phywins |= pw;
+			}
+			printk(KERN_NOTICE "[nouveau] wndw %d: owner %x -> live head %d (tiles %02x), phywins %02x\n",
+			       i, owner, head, htiles, pw);
+			PUSH_MTHD(push, NVCA7D, WINDOW_SET_PHYSICAL(i), pw);
+		}
 		PUSH_MTHD(push, NVCA7D, WINDOW_SET_CONTROL(i),
 			  NVDEF(NVCA7D, WINDOW_SET_CONTROL, OWNER, HEAD(head)));
 	}
@@ -180,9 +215,12 @@ coreca7d_init(struct nv50_core *core)
 			nv50_disp_imp(core->disp, ih, n, &res);
 	}
 	for (i = 0; i < windows; i++)
-		NVIF_DEBUG(&core->chan.base.user, "wndw %d: owner %08x phywin %08x", i,
-			   coreca7d_armed(core, NVCA7D_WINDOW_SET_CONTROL(i)),
-			   coreca7d_armed(core, NVCA7D_WINDOW_SET_PHYSICAL(i)));
+		printk(KERN_NOTICE "[nouveau] wndw %d: control %08x phywin %08x\n", i,
+		       coreca7d_armed(core, NVCA7D_WINDOW_SET_CONTROL(i)),
+		       coreca7d_armed(core, NVCA7D_WINDOW_SET_PHYSICAL(i)));
+	for (i = 0; i < heads; i++)
+		printk(KERN_NOTICE "[nouveau] head %d: tiles %08x live %d\n", i,
+		       coreca7d_armed(core, NVCA7D_HEAD_SET_TILE_MASK(i)), !!(active & BIT(i)));
 
 	ret = PUSH_WAIT(push, windows * 6 + heads * 4);
 	if (ret)

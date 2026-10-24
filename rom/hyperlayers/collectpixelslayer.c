@@ -277,11 +277,11 @@ struct CollectPixelsMsg
                         _rr = _rr->Next;
                         
                         cplm.xSrc  = _rect.MinX;
-                        cplm.xSrc  = _rect.MinY;
+                        cplm.ySrc  = _rect.MinY;
                         cplm.width = _rect.MaxX - _rect.MinX + 1;
                         cplm.height= _rect.MaxY - _rect.MinY + 1;
                         cplm.xDest = _rect.MinX;
-                        cplm.yDest = _rect.MaxY;
+                        cplm.yDest = _rect.MinY;
                         cplm.bm    = NULL;
                         cplm.layer = NULL;
                         D(bug("Calling callback now!\n"));

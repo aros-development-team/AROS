@@ -1,7 +1,7 @@
 #ifndef HIDD_COMPOSITOR_H
 #define HIDD_COMPOSITOR_H
 /*
-    Copyright © 2010-2026, The AROS Development Team. All rights reserved.
+    Copyright (C) 2010-2026, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -22,46 +22,46 @@
 #endif
 
 /* Compositor interface */
-#define CLID_Hidd_Compositor   "hidd.gfx.compositor"
-#define IID_Hidd_Compositor    "hidd.gfx.compositor"
+#define CLID_Hidd_AmigaVideoCompositor   "hidd.gfx.compositor.amigavideo"
+#define IID_Hidd_AmigaVideoCompositor    "hidd.gfx.compositor.amigavideo"
 
-#define HiddCompositorAttrBase __IHidd_Compositor
+#define HiddAmigaVideoCompositorAttrBase __IHidd_AmigaVideoCompositor
 
 #ifndef __OOP_NOATTRBASES__
-extern OOP_AttrBase HiddCompositorAttrBase;
+extern OOP_AttrBase HiddAmigaVideoCompositorAttrBase;
 #endif
 
 /* Compositor class methods */
 
 enum
 {
-    moHidd_Compositor_BitMapStackChanged = 0,
-    moHidd_Compositor_BitMapRectChanged,
-    moHidd_Compositor_BitMapPositionChanged,
-    moHidd_Compositor_ValidateBitMapPositionChange,
+    moHidd_AmigaVideoCompositor_BitMapStackChanged = 0,
+    moHidd_AmigaVideoCompositor_BitMapRectChanged,
+    moHidd_AmigaVideoCompositor_BitMapPositionChanged,
+    moHidd_AmigaVideoCompositor_ValidateBitMapPositionChange,
 
-    NUM_COMPOSITOR_METHODS
+    NUM_AMIGAVIDEOCOMPOSITOR_METHODS
 };
 
 enum
 {
-    aoHidd_Compositor_DisplayHidd = 0, /* [I..] Display driver object connected with this compositor object */
+    aoHidd_AmigaVideoCompositor_DisplayHidd = 0, /* [I..] Display driver object connected with this compositor object */
     
-    num_Hidd_Compositor_Attrs
+    num_Hidd_AmigaVideoCompositor_Attrs
 };
 
-#define aHidd_Compositor_DisplayHidd  (HiddCompositorAttrBase + aoHidd_Compositor_DisplayHidd)
+#define aHidd_AmigaVideoCompositor_DisplayHidd  (HiddAmigaVideoCompositorAttrBase + aoHidd_AmigaVideoCompositor_DisplayHidd)
 
-#define IS_COMPOSITOR_ATTR(attr, idx) \
-    (((idx) = (attr) - HiddCompositorAttrBase) < num_Hidd_Compositor_Attrs)
+#define IS_AMIGAVIDEOCOMPOSITOR_ATTR(attr, idx) \
+    (((idx) = (attr) - HiddAmigaVideoCompositorAttrBase) < num_Hidd_AmigaVideoCompositor_Attrs)
 
-struct pHidd_Compositor_BitMapStackChanged
+struct pHidd_AmigaVideoCompositor_BitMapStackChanged
 {
     OOP_MethodID                mID;
     struct HIDD_ViewPortData    *data;
 };
 
-struct pHidd_Compositor_BitMapRectChanged
+struct pHidd_AmigaVideoCompositor_BitMapRectChanged
 {
     OOP_MethodID    mID;
     OOP_Object      *bm;
@@ -71,13 +71,13 @@ struct pHidd_Compositor_BitMapRectChanged
     WORD            height;
 };
 
-struct pHidd_Compositor_BitMapPositionChanged
+struct pHidd_AmigaVideoCompositor_BitMapPositionChanged
 {
     OOP_MethodID    mID;
     OOP_Object      *bm;
 };
 
-struct pHidd_Compositor_ValidateBitMapPositionChange
+struct pHidd_AmigaVideoCompositor_ValidateBitMapPositionChange
 {
     OOP_MethodID    mID;
     OOP_Object      *bm;

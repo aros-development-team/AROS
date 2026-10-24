@@ -10,6 +10,7 @@
 #include <graphics/monitor.h>
 
 #include <X11/cursorfont.h>
+#include <X11/extensions/Xrender.h>
 #include <signal.h>
 #include <string.h>
 
@@ -515,6 +516,22 @@ OOP_Object *X11Display__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
         D(bug("[X11:Gfx] Got object from super\n"));
 
         data->display = XSD(cl)->display;
+
+        /* Emulated overlay planes, unless disabled on the command line */
+        data->overlays = (XSD(cl)->options & OPTION_NOPLANES) ? 0 : X11_OVERLAY_PLANES;
+
+        /* Scaled planes need XRender on the host */
+        if (xrender_handle)
+        {
+            int ev, er;
+
+            LOCK_X11
+            if (XRCALL(XRenderQueryExtension, data->display, &ev, &er))
+                data->pictfmt = XRCALL(XRenderFindVisualFormat, data->display, DefaultVisual(data->display, data->screen));
+            if (!data->pictfmt)
+                bug("[X11:Gfx] XRender unavailable: planes cannot scale\n");
+            UNLOCK_X11
+        }
     }
 
     ReturnPtr("X11Display::New", OOP_Object *, o);
@@ -537,6 +554,13 @@ VOID X11Display__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 #else
         *msg->storage = vHidd_SpriteType_DirectColor;
 #endif
+        return;
+
+    case aoHidd_Display_PlaneCount:
+        {
+            struct X11DisplayData *data = OOP_INST_DATA(cl, o);
+            *msg->storage = 1 + data->overlays;
+        }
         return;
     }
 
@@ -693,3 +717,370 @@ VOID X11Display__Hidd_Display__SetCursorVisible(OOP_Class *cl, OOP_Object *o,
     return;
 }
 
+
+
+/****************************************************************************************/
+/* Emulated scan-out planes                                                             */
+/****************************************************************************************/
+
+/*
+ * The X11 driver has one real scan-out surface, the framebuffer window. To let
+ * the hybrid compositor (rom/hidds/gfx/gfx_compositorclass.c) be exercised on a
+ * hosted build, X11_OVERLAY_PLANES overlay planes are emulated with child
+ * windows of that framebuffer window:
+ *
+ *  - the plane's bitmap (an X pixmap) becomes the child window's background, so
+ *    the X server paints the bitmap wherever the window is; AROS copies nothing,
+ *  - CommitPlanes() positions, stacks, maps and unmaps the windows; a screen
+ *    drag is a single XConfigureWindow(),
+ *  - a change inside the bitmap reaches the screen through UpdateRect()
+ *    (XClearArea() of the window, see x11gfx_bitmapclass.c), which is what a
+ *    real plane does by scanning the bitmap memory,
+ *  - XSync() stands in for the vblank latch.
+ *
+ * Pointer events over the child windows propagate to the framebuffer window
+ * (the children select no events), so input is unchanged.
+ */
+
+static struct bitmap_data *x11plane_bmdata(OOP_Class *cl, OOP_Object *bm)
+{
+    struct bitmap_data *bmd;
+
+    /* Only bitmaps of our own class carry a pixmap we can scan out */
+    if (OOP_OCLASS(bm) != XSD(cl)->bmclass)
+        return NULL;
+    bmd = OOP_INST_DATA(XSD(cl)->bmclass, bm);
+    /* The framebuffer is the primary plane itself, never an overlay source */
+    if (bmd->flags & BMDF_FRAMEBUFFER)
+        return NULL;
+    return bmd;
+}
+
+static Window x11plane_fbwindow(OOP_Class *cl, OOP_Object *o, struct X11DisplayData *data)
+{
+    if (!data->fbwindow)
+    {
+        OOP_Object *fb = NULL;
+        IPTR win = 0;
+
+        OOP_GetAttr(o, aHidd_Display_FrameBuffer, (IPTR *)&fb);
+        if (fb)
+            OOP_GetAttr(fb, aHidd_BitMap_X11_Window, &win);
+        data->fbwindow = (Window)win;
+    }
+    return data->fbwindow;
+}
+
+/*
+ * Scaled planes. XRender draws the bitmap's pixmap, scaled with a nearest
+ * neighbour filter (exact colours, like a hardware scaler without filtering),
+ * into a pixmap of the plane's display size; that pixmap is the window's
+ * background. Both calls below run under LOCK_X11.
+ */
+
+/* The bitmap's part x,y,w,h changed: re-render it scaled and show it */
+VOID X11Plane_Refresh(Display *d, struct x11_plane *p, LONG x, LONG y, LONG w, LONG h)
+{
+    LONG dx0, dy0, dx1, dy1;
+
+    if (!p->isscaled || !p->srcpic || !p->dstpic || !p->srcw || !p->srch)
+        return;
+    /* Source -> plane pixels, rounded outwards */
+    dx0 = (x * p->dstw) / p->srcw;
+    dy0 = (y * p->dsth) / p->srch;
+    dx1 = ((x + w) * p->dstw + p->srcw - 1) / p->srcw;
+    dy1 = ((y + h) * p->dsth + p->srch - 1) / p->srch;
+    if (dx0 < 0) dx0 = 0;
+    if (dy0 < 0) dy0 = 0;
+    if (dx1 > p->dstw) dx1 = p->dstw;
+    if (dy1 > p->dsth) dy1 = p->dsth;
+    if ((dx1 <= dx0) || (dy1 <= dy0))
+        return;
+    /* With a transform on the source picture, source coordinates are in destination space */
+    XRCALL(XRenderComposite, d, PictOpSrc, p->srcpic, None, p->dstpic, dx0, dy0, 0, 0, dx0, dy0, dx1 - dx0, dy1 - dy0);
+    XCALL(XClearArea, d, p->win, dx0, dy0, dx1 - dx0, dy1 - dy0, False);
+}
+
+/* Forget the bound bitmap's picture (the bitmap goes away or another one takes the plane) */
+VOID X11Plane_Detach(Display *d, struct x11_plane *p)
+{
+    if (p->srcpic)
+    {
+        XRCALL(XRenderFreePicture, d, p->srcpic);
+        p->srcpic = 0;
+    }
+}
+
+static void x11plane_free_scaled(Display *d, struct x11_plane *p)
+{
+    X11Plane_Detach(d, p);
+    if (p->dstpic)
+    {
+        XRCALL(XRenderFreePicture, d, p->dstpic);
+        p->dstpic = 0;
+    }
+    if (p->scaled)
+    {
+        XCALL(XFreePixmap, d, p->scaled);
+        p->scaled = 0;
+    }
+    p->isscaled = FALSE;
+}
+
+/* Make the plane show 'bmd' (srcw x srch) scaled to dstw x dsth; returns the background pixmap */
+static Pixmap x11plane_setup_scaled(struct X11DisplayData *data, struct x11_plane *p, struct bitmap_data *bmd,
+                                    OOP_Object *bm, LONG srcw, LONG srch, LONG dstw, LONG dsth, Window fbwin)
+{
+    Display *d = data->display;
+    XTransform t;
+
+    if (!data->pictfmt)
+        return 0;
+    if (p->isscaled && ((p->dstw != dstw) || (p->dsth != dsth)))
+    {
+        /* New size on the display: new target */
+        if (p->dstpic)
+            XRCALL(XRenderFreePicture, d, p->dstpic);
+        if (p->scaled)
+            XCALL(XFreePixmap, d, p->scaled);
+        p->dstpic = 0;
+        p->scaled = 0;
+    }
+    if (!p->scaled)
+    {
+        p->scaled = XCALL(XCreatePixmap, d, fbwin, dstw, dsth, DefaultDepth(d, data->screen));
+        if (!p->scaled)
+            return 0;
+        p->dstpic = XRCALL(XRenderCreatePicture, d, p->scaled, data->pictfmt, 0, NULL);
+    }
+    if (p->srcpic && (p->bm != bm))
+        X11Plane_Detach(d, p);
+    if (!p->srcpic)
+    {
+        p->srcpic = XRCALL(XRenderCreatePicture, d, bmd->drawable, data->pictfmt, 0, NULL);
+        XRCALL(XRenderSetPictureFilter, d, p->srcpic, FilterNearest, NULL, 0);
+    }
+    /* Destination -> source: scale down by the plane's magnification */
+    memset(&t, 0, sizeof(t));
+    t.matrix[0][0] = (XFixed)(((long long)srcw << 16) / dstw);
+    t.matrix[1][1] = (XFixed)(((long long)srch << 16) / dsth);
+    t.matrix[2][2] = 1 << 16;
+    XRCALL(XRenderSetPictureTransform, d, p->srcpic, (void *)&t);
+    p->srcw = srcw;
+    p->srch = srch;
+    p->dstw = dstw;
+    p->dsth = dsth;
+    p->isscaled = TRUE;
+    XRCALL(XRenderComposite, d, PictOpSrc, p->srcpic, None, p->dstpic, 0, 0, 0, 0, 0, 0, dstw, dsth);
+    return p->scaled;
+}
+
+ULONG X11Display__Hidd_Display__GetPlaneInfo(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_GetPlaneInfo *msg)
+{
+    struct X11DisplayData *data = OOP_INST_DATA(cl, o);
+    struct HIDD_PlaneInfo info =
+    {
+        .Type       = vHidd_Plane_Overlay,
+        .ZMin       = msg->index,
+        .ZMax       = msg->index,
+        .PixFmtMask = 0xFFFFFFFF,       /* every X11 pixmap has the display's depth   */
+        /* With XRender the planes scale from 1/8 to 16 times (a 320x200 screen on a 4K display) */
+        .ScaleMin   = data->pictfmt ? (HIDD_PLANE_SCALE_UNITY / 8) : HIDD_PLANE_SCALE_UNITY,
+        .ScaleMax   = data->pictfmt ? (HIDD_PLANE_SCALE_UNITY * 16) : HIDD_PLANE_SCALE_UNITY,
+        .AlphaModes = (1 << vHidd_CompAlpha_None),
+        .PosAlignX  = 1,
+        .PosAlignY  = 1,
+        .MaxWidth   = 0,
+        .MaxHeight  = 0,
+        .Flags      = 0
+    };
+    ULONG len = msg->infoLen;
+
+    if (msg->index == 0)
+        return OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    if (msg->index > data->overlays)
+        return 0;
+
+    if (len > sizeof(info))
+        len = sizeof(info);
+    CopyMem(&info, msg->info, len);
+    return len;
+}
+
+BOOL X11Display__Hidd_Display__CommitPlanes(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_CommitPlanes *msg)
+{
+    struct X11DisplayData *data = OOP_INST_DATA(cl, o);
+    struct HIDD_PlaneState *primary = NULL;
+    Window fbwin = 0;
+    ULONG i;
+
+    /* Validate everything first: a commit is all or nothing */
+    for (i = 0; i < msg->count; i++)
+    {
+        struct HIDD_PlaneState *st = &msg->states[i];
+
+        if (st->Plane == 0)
+        {
+            primary = st;
+            continue;
+        }
+        if (st->Plane > data->overlays)
+            return FALSE;
+        if (st->BitMap)
+        {
+            if (!x11plane_bmdata(cl, st->BitMap))
+                return FALSE;
+            /* A window background cannot be offset; scaling needs XRender */
+            if ((st->Src.MinX != 0) || (st->Src.MinY != 0))
+                return FALSE;
+            if ((((st->Dest.MaxX - st->Dest.MinX) != (st->Src.MaxX - st->Src.MinX)) ||
+                 ((st->Dest.MaxY - st->Dest.MinY) != (st->Src.MaxY - st->Src.MinY))) && !data->pictfmt)
+                return FALSE;
+            if (st->AlphaMode != vHidd_CompAlpha_None)
+                return FALSE;
+            if (!(fbwin = x11plane_fbwindow(cl, o, data)))
+                return FALSE;
+        }
+    }
+
+    if (primary)
+    {
+        /* The primary plane is the framebuffer window, handled by the base class via Show() */
+        struct pHidd_Display_CommitPlanes p = { msg->mID, primary, 1, msg->flags };
+
+        if (!OOP_DoSuperMethod(cl, o, (OOP_Msg)&p))
+            return FALSE;
+    }
+
+    if (msg->flags & fHidd_Commit_Test)
+        return TRUE;
+
+    LOCK_X11
+
+    for (i = 0; i < msg->count; i++)
+    {
+        struct HIDD_PlaneState *st = &msg->states[i];
+        struct x11_plane *p;
+        struct bitmap_data *bmd;
+        XSetWindowAttributes attr;
+        XWindowChanges ch;
+
+        if (st->Plane == 0)
+            continue;
+        p = &data->planes[st->Plane - 1];
+
+        if (!st->BitMap)
+        {
+            if (p->win && p->mapped)
+                XCALL(XUnmapWindow, data->display, p->win);
+            p->mapped = FALSE;
+            if (p->bm)
+            {
+                bmd = x11plane_bmdata(cl, p->bm);
+                if (bmd)
+                    bmd->plane = NULL;
+                p->bm = NULL;
+            }
+            x11plane_free_scaled(data->display, p);
+            continue;
+        }
+
+        bmd = x11plane_bmdata(cl, st->BitMap);
+        {
+            LONG srcw = st->Src.MaxX - st->Src.MinX + 1, srch = st->Src.MaxY - st->Src.MinY + 1;
+            LONG dstw = st->Dest.MaxX - st->Dest.MinX + 1, dsth = st->Dest.MaxY - st->Dest.MinY + 1;
+
+            if ((srcw != dstw) || (srch != dsth))
+            {
+                attr.background_pixmap = x11plane_setup_scaled(data, p, bmd, st->BitMap, srcw, srch, dstw, dsth, fbwin);
+                if (!attr.background_pixmap)
+                {
+                    UNLOCK_X11
+                    return FALSE;
+                }
+            }
+            else
+            {
+                if (p->isscaled)
+                    x11plane_free_scaled(data->display, p);
+                attr.background_pixmap = bmd->drawable;
+            }
+        }
+
+        if (!p->win)
+        {
+            attr.event_mask = 0;        /* input propagates to the framebuffer window */
+            p->win = XCALL(XCreateWindow, data->display, fbwin,
+                st->Dest.MinX, st->Dest.MinY,
+                st->Dest.MaxX - st->Dest.MinX + 1, st->Dest.MaxY - st->Dest.MinY + 1,
+                0, CopyFromParent, InputOutput, CopyFromParent,
+                CWEventMask | CWBackPixmap, &attr);
+            if (!p->win)
+            {
+                UNLOCK_X11
+                return FALSE;
+            }
+        }
+        else
+        {
+            XCALL(XChangeWindowAttributes, data->display, p->win, CWBackPixmap, &attr);
+            ch.x      = st->Dest.MinX;
+            ch.y      = st->Dest.MinY;
+            ch.width  = st->Dest.MaxX - st->Dest.MinX + 1;
+            ch.height = st->Dest.MaxY - st->Dest.MinY + 1;
+            XCALL(XConfigureWindow, data->display, p->win, CWX | CWY | CWWidth | CWHeight, &ch);
+        }
+
+        if (p->bm != st->BitMap)
+        {
+            struct bitmap_data *old = p->bm ? x11plane_bmdata(cl, p->bm) : NULL;
+
+            /* The old bitmap may already be bound to another plane by this commit */
+            if (old && (old->plane == p))
+                old->plane = NULL;
+            p->bm = st->BitMap;
+            bmd->plane = p;
+            /* New content: repaint the whole window from its new background */
+            XCALL(XClearArea, data->display, p->win, 0, 0, 0, 0, False);
+        }
+
+        if (!p->mapped)
+        {
+            XCALL(XMapWindow, data->display, p->win);
+            p->mapped = TRUE;
+        }
+    }
+
+    /* Stacking: plane index is z order, the highest index on top */
+    for (i = 0; i < data->overlays; i++)
+    {
+        struct x11_plane *p = &data->planes[i];
+
+        if (p->win && p->mapped)
+        {
+            XWindowChanges ch;
+
+            ch.stack_mode = Above;
+            XCALL(XConfigureWindow, data->display, p->win, CWStackMode, &ch);
+        }
+    }
+
+    if (msg->flags & fHidd_Commit_NoWait)
+        XCALL(XFlush, data->display);
+    else
+        XCALL(XSync, data->display, False);
+
+    UNLOCK_X11
+
+    return TRUE;
+}
+
+VOID X11Display__Hidd_Display__WaitLatch(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_WaitLatch *msg)
+{
+    struct X11DisplayData *data = OOP_INST_DATA(cl, o);
+
+    /* Every queued request has been performed by the server = the frame is "scanned out" */
+    LOCK_X11
+    XCALL(XSync, data->display, False);
+    UNLOCK_X11
+}

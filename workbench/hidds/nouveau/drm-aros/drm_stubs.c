@@ -90,73 +90,10 @@ bool drm_vma_node_is_allowed(struct drm_vma_offset_node *node, struct drm_file *
     return true;
 }
 
-/* --- vblank: no counter, events complete at once ------------------------ */
+/* --- vblank: drm_vblank.c / drm_vblank_work.c are built; leftovers only -- */
 
-int drm_vblank_init(struct drm_device *dev, unsigned int num_crtcs)
-{
-    dev->num_crtcs = num_crtcs;
-    return 0;
-}
-
-int drm_crtc_vblank_get(struct drm_crtc *crtc)          { return 0; }
-void drm_crtc_vblank_put(struct drm_crtc *crtc)         { }
-void drm_crtc_vblank_on(struct drm_crtc *crtc)          { }
-void drm_crtc_vblank_off(struct drm_crtc *crtc)         { }
-void drm_crtc_vblank_reset(struct drm_crtc *crtc)       { }
-void drm_crtc_vblank_restore(struct drm_crtc *crtc)     { }
-void drm_crtc_wait_one_vblank(struct drm_crtc *crtc)    { }
-void drm_crtc_vblank_on_config(struct drm_crtc *crtc, const struct drm_vblank_crtc_config *config) { }
-u64 drm_crtc_vblank_count(struct drm_crtc *crtc)        { return 0; }
-u64 drm_crtc_accurate_vblank_count(struct drm_crtc *crtc) { return 0; }
-u64 drm_crtc_vblank_count_and_time(struct drm_crtc *crtc, ktime_t *vblanktime)
-{
-    if (vblanktime)
-        *vblanktime = ktime_get();
-    return 0;
-}
-bool drm_crtc_handle_vblank(struct drm_crtc *crtc)      { return false; }
-bool drm_handle_vblank(struct drm_device *dev, unsigned int pipe) { return false; }
-void drm_crtc_set_max_vblank_count(struct drm_crtc *crtc, u32 max_vblank_count) { }
-wait_queue_head_t *drm_crtc_vblank_waitqueue(struct drm_crtc *crtc) { return NULL; }
-struct drm_vblank_crtc *drm_crtc_vblank_crtc(struct drm_crtc *crtc) { return NULL; }
 void drm_vblank_restore(struct drm_device *dev, unsigned int pipe) { }
 bool drm_vblank_passed(u64 seq, u64 ref) { return true; }
-void drm_calc_timestamping_constants(struct drm_crtc *crtc, const struct drm_display_mode *mode) { }
-bool drm_crtc_vblank_helper_get_vblank_timestamp(struct drm_crtc *crtc, int *max_error, ktime_t *vblank_time, bool in_vblank_irq)
-{
-    *vblank_time = ktime_get();
-    return true;
-}
-bool drm_crtc_vblank_helper_get_vblank_timestamp_internal(struct drm_crtc *crtc, int *max_error, ktime_t *vblank_time,
-    bool in_vblank_irq, drm_vblank_get_scanout_position_func get_scanout_position)
-{
-    *vblank_time = ktime_get();
-    return true;
-}
-
-void drm_crtc_send_vblank_event(struct drm_crtc *crtc, struct drm_pending_vblank_event *e)
-{
-    struct drm_device *dev = crtc->dev;
-
-    e->pipe = drm_crtc_index(crtc);
-    e->event.vbl.sequence = 0;
-    drm_send_event_locked(dev, &e->base);
-}
-
-void drm_crtc_arm_vblank_event(struct drm_crtc *crtc, struct drm_pending_vblank_event *e)
-{
-    drm_crtc_send_vblank_event(crtc, e);
-}
-
-void drm_wait_one_vblank(struct drm_device *dev, unsigned int pipe) { }
-void drm_vblank_work_init(struct drm_vblank_work *work, struct drm_crtc *crtc, void (*func)(struct kthread_work *work)) { }
-int drm_vblank_work_schedule(struct drm_vblank_work *work, u64 count, bool nextonmiss) { return 0; }
-bool drm_vblank_work_cancel_sync(struct drm_vblank_work *work) { return false; }
-void drm_vblank_work_flush(struct drm_vblank_work *work) { }
-void drm_vblank_work_flush_all(struct drm_crtc *crtc) { }
-
-bool drm_dev_has_vblank(const struct drm_device *dev) { return false; }
-int drm_crtc_next_vblank_start(struct drm_crtc *crtc, ktime_t *vblanktime) { *vblanktime = ktime_get(); return 0; }
 
 /* --- framebuffers over gem objects (drm_gem_framebuffer_helper) ---------- */
 

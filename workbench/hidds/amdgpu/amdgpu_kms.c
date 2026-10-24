@@ -20,6 +20,7 @@
 #include <string.h>
 
 #include "amdgpu_kms.h"
+#include <uapi/drm/drm_fourcc.h>
 
 /* drm-aros/drm_drv.c */
 struct pci_dev *amdgpu_aros_findcard(void);
@@ -354,6 +355,128 @@ BOOL Amdgpu_KMS_MoveCursor(struct Amdgpu_KMS *kms, LONG x, LONG y)
     return (ret == 0);
 }
 
+/* --- scan-out planes ---------------------------------------------------------- */
+
+/*
+ * Overlay planes of our crtc that scan out an RGB framebuffer. Without the
+ * universal-planes client capability the kernel lists overlays only, which
+ * is what the compositor can use: the primary is driven by the mode set and
+ * the cursor by the cursor calls.
+ */
+VOID Amdgpu_KMS_EnumPlanes(struct Amdgpu_KMS *kms)
+{
+    drmModePlaneResPtr pres;
+    drmVBlank vbl;
+    ULONG i;
+
+    kms->nplanes = 0;
+    LOCK_KMS(kms);
+    pres = drmModeGetPlaneResources(kms->fd);
+    if (pres)
+    {
+        for (i = 0; (i < pres->count_planes) && (kms->nplanes < AMDGPU_MAX_PLANES); i++)
+        {
+            drmModePlanePtr p = drmModeGetPlane(kms->fd, pres->planes[i]);
+            ULONG f, fmts = 0;
+
+            if (!p)
+                continue;
+            if (p->possible_crtcs & (1UL << kms->crtc_index))
+            {
+                for (f = 0; f < p->count_formats; f++)
+                {
+                    switch (p->formats[f])
+                    {
+                    case DRM_FORMAT_XRGB8888: fmts |= KMSFMT_XRGB8888; break;
+                    case DRM_FORMAT_ARGB8888: fmts |= KMSFMT_ARGB8888; break;
+                    case DRM_FORMAT_XBGR8888: fmts |= KMSFMT_XBGR8888; break;
+                    case DRM_FORMAT_ABGR8888: fmts |= KMSFMT_ABGR8888; break;
+                    case DRM_FORMAT_RGB565:   fmts |= KMSFMT_RGB565;   break;
+                    case DRM_FORMAT_XRGB1555: fmts |= KMSFMT_XRGB1555; break;
+                    }
+                }
+                if (fmts)
+                {
+                    kms->planes[kms->nplanes].id      = p->plane_id;
+                    kms->planes[kms->nplanes].formats = fmts;
+                    kms->planes[kms->nplanes].fbid    = 0;
+                    kms->nplanes++;
+                }
+            }
+            drmModeFreePlane(p);
+        }
+        drmModeFreePlaneResources(pres);
+    }
+    UNLOCK_KMS(kms);
+
+    /* Does the kernel count vblanks for our crtc? Ask for the current count. */
+    memset(&vbl, 0, sizeof(vbl));
+    vbl.request.type = DRM_VBLANK_RELATIVE | ((kms->crtc_index << DRM_VBLANK_HIGH_CRTC_SHIFT) & DRM_VBLANK_HIGH_CRTC_MASK);
+    vbl.request.sequence = 0;
+    kms->vblank_ok = (drmWaitVBlank(kms->fd, &vbl) == 0);
+    if (kms->vblank_ok)
+        kms->vblanks = vbl.reply.sequence;
+
+    bug("[Amdgpu:KMS] crtc %u: %lu overlay plane(s) for RGB scan-out, vblank %s\n", kms->crtc_id,
+        (unsigned long)kms->nplanes, kms->vblank_ok ? "counted" : "not available");
+}
+
+/* Put framebuffer 'fbid' (0 = switch the plane off) on overlay 'index' */
+BOOL Amdgpu_KMS_SetPlane(struct Amdgpu_KMS *kms, ULONG index, ULONG fbid, LONG crtcx, LONG crtcy, ULONG crtcw, ULONG crtch,
+                            ULONG srcx, ULONG srcy, ULONG srcw, ULONG srch)
+{
+    int ret;
+
+    if (index >= kms->nplanes)
+        return FALSE;
+    LOCK_KMS(kms);
+    if (fbid)
+        ret = drmModeSetPlane(kms->fd, kms->planes[index].id, kms->crtc_id, fbid, 0,
+                              crtcx, crtcy, crtcw, crtch, srcx << 16, srcy << 16, srcw << 16, srch << 16);
+    else
+        ret = drmModeSetPlane(kms->fd, kms->planes[index].id, kms->crtc_id, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    UNLOCK_KMS(kms);
+    if (ret == 0)
+        kms->planes[index].fbid = fbid;
+    else
+        bug("[Amdgpu:KMS] plane %u: set to fb %u at %ld,%ld %lux%lu failed (%d)\n", kms->planes[index].id, fbid,
+            (long)crtcx, (long)crtcy, (unsigned long)crtcw, (unsigned long)crtch, ret);
+    return (ret == 0);
+}
+
+/* Wait for the next vblank of our crtc; FALSE when the kernel cannot */
+BOOL Amdgpu_KMS_WaitVBlank(struct Amdgpu_KMS *kms)
+{
+    drmVBlank vbl;
+
+    if (!kms->vblank_ok)
+        return FALSE;
+    memset(&vbl, 0, sizeof(vbl));
+    vbl.request.type = DRM_VBLANK_RELATIVE | ((kms->crtc_index << DRM_VBLANK_HIGH_CRTC_SHIFT) & DRM_VBLANK_HIGH_CRTC_MASK);
+    vbl.request.sequence = 1;
+    if (drmWaitVBlank(kms->fd, &vbl) != 0)
+    {
+        kms->vblank_ok = FALSE;
+        return FALSE;
+    }
+    kms->vblanks = vbl.reply.sequence;
+    return TRUE;
+}
+
+ULONG Amdgpu_KMS_VBlankCount(struct Amdgpu_KMS *kms)
+{
+    drmVBlank vbl;
+
+    if (!kms->vblank_ok)
+        return kms->vblanks;
+    memset(&vbl, 0, sizeof(vbl));
+    vbl.request.type = DRM_VBLANK_RELATIVE | ((kms->crtc_index << DRM_VBLANK_HIGH_CRTC_SHIFT) & DRM_VBLANK_HIGH_CRTC_MASK);
+    vbl.request.sequence = 0;
+    if (drmWaitVBlank(kms->fd, &vbl) == 0)
+        kms->vblanks = vbl.reply.sequence;
+    return kms->vblanks;
+}
+
 /* --- bring-up ----------------------------------------------------------------- */
 
 static BOOL Amdgpu_KMS_SelectDisplay(struct Amdgpu_KMS *kms)
@@ -431,6 +554,13 @@ static BOOL Amdgpu_KMS_SelectDisplay(struct Amdgpu_KMS *kms)
             kms->max_height = mode->vdisplay;
     }
 
+    /* The crtc's index is what plane masks and vblank requests refer to */
+    kms->crtc_index = 0;
+    for (i = 0; i < res->count_crtcs; i++)
+    {
+        if (res->crtcs[i] == kms->crtc_id)
+            kms->crtc_index = i;
+    }
     drmModeFreeResources(res);
     return (kms->crtc_id != 0);
 }
@@ -475,6 +605,7 @@ BOOL Amdgpu_KMS_Init(struct Amdgpu_KMS *kms)
                                      TASKTAG_ARG1,  kms,
                                      TAG_DONE);
 
+    Amdgpu_KMS_EnumPlanes(kms);
     kms->ready = TRUE;
     /* code anchors: a fault address minus these gives the offset in the module's .text */
     D(bug("[Amdgpu:KMS] code: Amdgpu_KMS_Init 0x%p Amdgpu_KMS_SetMode 0x%p\n",

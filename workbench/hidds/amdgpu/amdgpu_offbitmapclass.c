@@ -103,6 +103,21 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         data->bytesperpix = multi;
         data->pitch = width * multi;
 
+#if AMDGPU_PLANE_SCREENS
+        /* A screen that an overlay plane could scan out: a dumb buffer with a framebuffer */
+        {
+            IPTR displayable = FALSE;
+
+            OOP_GetAttr(o, aHidd_BitMap_Displayable, &displayable);
+            if (displayable && XSD(cl)->kms.nplanes && (multi == 4) &&
+                Amdgpu_KMS_CreateFB(&XSD(cl)->kms, &data->fb, width, height, AMDGPU_FB_BPP, AMDGPU_FB_DEPTH))
+            {
+                data->VideoData = data->fb.map;
+                data->pitch = data->fb.pitch;
+            }
+        }
+        if (!data->VideoData)
+#endif
         data->VideoData = AllocVec(width*height*multi, MEMF_PUBLIC | MEMF_CLEAR);
         if (data->VideoData)
         {
@@ -129,7 +144,10 @@ VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
     D(bug(DEBUGNAME " %s()\n", __func__);)
 
-    FreeVec(data->VideoData);
+    if (data->fb.handle)
+        Amdgpu_KMS_DestroyFB(&XSD(cl)->kms, &data->fb);
+    else
+        FreeVec(data->VideoData);
     OOP_DoSuperMethod(cl, o, msg);
     ReturnVoid("Amdgpu.BitMap::Dispose");
 }

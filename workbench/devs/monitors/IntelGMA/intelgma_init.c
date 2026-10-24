@@ -522,9 +522,9 @@ int G45_Init(struct g45staticdata *sd)
                     sd->mid_CopyLUTMemBox32 = OOP_GetMethodID((STRPTR)CLID_Hidd_BitMap, moHidd_BitMap_CopyLUTMemBox32);
                     sd->mid_GetImage    = OOP_GetMethodID((STRPTR)CLID_Hidd_BitMap, moHidd_BitMap_GetImage);
 
-                    sd->mid_BitMapPositionChanged        = OOP_GetMethodID((STRPTR)IID_Hidd_Compositor, moHidd_Compositor_BitMapPositionChanged);
-                    sd->mid_BitMapRectChanged            = OOP_GetMethodID((STRPTR)IID_Hidd_Compositor, moHidd_Compositor_BitMapRectChanged);
-                    sd->mid_ValidateBitMapPositionChange = OOP_GetMethodID((STRPTR)IID_Hidd_Compositor, moHidd_Compositor_ValidateBitMapPositionChange);
+                    sd->mid_BitMapPositionChanged        = OOP_GetMethodID((STRPTR)IID_Hidd_GMACompositor, moHidd_GMACompositor_BitMapPositionChanged);
+                    sd->mid_BitMapRectChanged            = OOP_GetMethodID((STRPTR)IID_Hidd_GMACompositor, moHidd_GMACompositor_BitMapRectChanged);
+                    sd->mid_ValidateBitMapPositionChange = OOP_GetMethodID((STRPTR)IID_Hidd_GMACompositor, moHidd_GMACompositor_ValidateBitMapPositionChange);
 
                     return TRUE;
                 }

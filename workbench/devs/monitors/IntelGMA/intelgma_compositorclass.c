@@ -423,7 +423,7 @@ OOP_Object *METHOD(Compositor, Root, New)
         compdata->screenmodeid  = vHidd_ModeID_Invalid;
         InitSemaphore(&compdata->semaphore);
                 
-        compdata->display = (OOP_Object *)GetTagData(aHidd_Compositor_DisplayHidd, 0, msg->attrList);
+        compdata->display = (OOP_Object *)GetTagData(aHidd_GMACompositor_DisplayHidd, 0, msg->attrList);
         
         if (compdata->display != NULL)
         {
@@ -447,7 +447,7 @@ OOP_Object *METHOD(Compositor, Root, New)
     return o;
 }
 
-VOID METHOD(Compositor, Hidd_Compositor, BitMapStackChanged)
+VOID METHOD(Compositor, Hidd_GMACompositor, BitMapStackChanged)
 {
     struct HIDD_ViewPortData * vpdata;
     struct HIDDCompositorData * compdata = OOP_INST_DATA(cl, o);
@@ -500,7 +500,7 @@ VOID METHOD(Compositor, Hidd_Compositor, BitMapStackChanged)
     UNLOCK_COMPOSITING
 }
 
-VOID METHOD(Compositor, Hidd_Compositor, BitMapRectChanged)
+VOID METHOD(Compositor, Hidd_GMACompositor, BitMapRectChanged)
 {
     struct HIDDCompositorData * compdata = OOP_INST_DATA(cl, o);
     //D(bug("[Compositor] BitMapRectChanged\n"));
@@ -511,7 +511,7 @@ VOID METHOD(Compositor, Hidd_Compositor, BitMapRectChanged)
         }
 }
 
-VOID METHOD(Compositor, Hidd_Compositor, BitMapPositionChanged)
+VOID METHOD(Compositor, Hidd_GMACompositor, BitMapPositionChanged)
 {
     struct HIDDCompositorData * compdata = OOP_INST_DATA(cl, o);
     D(bug("[Compositor] BitMapPositionChanged\n"));
@@ -527,7 +527,7 @@ VOID METHOD(Compositor, Hidd_Compositor, BitMapPositionChanged)
     UNLOCK_COMPOSITING
 }
 
-VOID METHOD(Compositor, Hidd_Compositor, ValidateBitMapPositionChange)
+VOID METHOD(Compositor, Hidd_GMACompositor, ValidateBitMapPositionChange)
 {
     struct HIDDCompositorData * compdata = OOP_INST_DATA(cl, o);
     struct StackBitMapNode * n = NULL;
@@ -573,20 +573,20 @@ static const struct OOP_MethodDescr Compositor_Root_descr[] =
 };
 #define NUM_Compositor_Root_METHODS 1
 
-static const struct OOP_MethodDescr Compositor_Hidd_Compositor_descr[] =
+static const struct OOP_MethodDescr Compositor_Hidd_GMACompositor_descr[] =
 {
-    {(OOP_MethodFunc)Compositor__Hidd_Compositor__BitMapStackChanged, moHidd_Compositor_BitMapStackChanged},
-    {(OOP_MethodFunc)Compositor__Hidd_Compositor__BitMapRectChanged, moHidd_Compositor_BitMapRectChanged},
-    {(OOP_MethodFunc)Compositor__Hidd_Compositor__BitMapPositionChanged, moHidd_Compositor_BitMapPositionChanged},
-    {(OOP_MethodFunc)Compositor__Hidd_Compositor__ValidateBitMapPositionChange, moHidd_Compositor_ValidateBitMapPositionChange},
+    {(OOP_MethodFunc)Compositor__Hidd_GMACompositor__BitMapStackChanged, moHidd_GMACompositor_BitMapStackChanged},
+    {(OOP_MethodFunc)Compositor__Hidd_GMACompositor__BitMapRectChanged, moHidd_GMACompositor_BitMapRectChanged},
+    {(OOP_MethodFunc)Compositor__Hidd_GMACompositor__BitMapPositionChanged, moHidd_GMACompositor_BitMapPositionChanged},
+    {(OOP_MethodFunc)Compositor__Hidd_GMACompositor__ValidateBitMapPositionChange, moHidd_GMACompositor_ValidateBitMapPositionChange},
     {NULL, 0}
 };
-#define NUM_Compositor_Hidd_Compositor_METHODS 4
+#define NUM_Compositor_Hidd_GMACompositor_METHODS 4
 
 const struct OOP_InterfaceDescr Compositor_ifdescr[] =
 {
     {Compositor_Root_descr, IID_Root, NUM_Compositor_Root_METHODS},
-    {Compositor_Hidd_Compositor_descr, IID_Hidd_Compositor, NUM_Compositor_Hidd_Compositor_METHODS},
+    {Compositor_Hidd_GMACompositor_descr, IID_Hidd_GMACompositor, NUM_Compositor_Hidd_GMACompositor_METHODS},
     {NULL, NULL}
 };
 

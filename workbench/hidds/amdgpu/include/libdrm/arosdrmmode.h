@@ -164,4 +164,67 @@ extern int drmModeDirtyFB(int fd, uint32_t bufferId, drmModeClipPtr clips, uint3
 extern int drmModeSetCursor2(int fd, uint32_t crtcId, uint32_t bo_handle,
             uint32_t width, uint32_t height, int32_t hot_x, int32_t hot_y);
 
+
+/*
+ * Planes, page flips and vblank waits (AROS additions for the display
+ * compositor's scan-out planes; same shapes as libdrm's).
+ */
+typedef struct _drmModePlaneRes {
+	uint32_t count_planes;
+	uint32_t *planes;
+} drmModePlaneRes, *drmModePlaneResPtr;
+
+typedef struct _drmModePlane {
+	uint32_t count_formats;
+	uint32_t *formats;
+	uint32_t plane_id;
+	uint32_t crtc_id;
+	uint32_t fb_id;
+	uint32_t crtc_x, crtc_y;
+	uint32_t x, y;
+	uint32_t possible_crtcs;
+	uint32_t gamma_size;
+} drmModePlane, *drmModePlanePtr;
+
+extern drmModePlaneResPtr drmModeGetPlaneResources(int fd);
+extern void drmModeFreePlaneResources(drmModePlaneResPtr ptr);
+extern drmModePlanePtr drmModeGetPlane(int fd, uint32_t plane_id);
+extern void drmModeFreePlane(drmModePlanePtr ptr);
+extern int drmModeSetPlane(int fd, uint32_t plane_id, uint32_t crtc_id, uint32_t fb_id, uint32_t flags,
+			   int32_t crtc_x, int32_t crtc_y, uint32_t crtc_w, uint32_t crtc_h,
+			   uint32_t src_x, uint32_t src_y, uint32_t src_w, uint32_t src_h);
+extern int drmModePageFlip(int fd, uint32_t crtc_id, uint32_t fb_id, uint32_t flags, void *user_data);
+
+typedef enum {
+	DRM_VBLANK_ABSOLUTE = 0x0,
+	DRM_VBLANK_RELATIVE = 0x1,
+	DRM_VBLANK_HIGH_CRTC_MASK = 0x0000003e,
+	DRM_VBLANK_EVENT = 0x4000000,
+	DRM_VBLANK_FLIP = 0x8000000,
+	DRM_VBLANK_NEXTONMISS = 0x10000000,
+	DRM_VBLANK_SECONDARY = 0x20000000,
+	DRM_VBLANK_SIGNAL = 0x40000000
+} drmVBlankSeqType;
+#define DRM_VBLANK_HIGH_CRTC_SHIFT 1
+
+typedef struct _drmVBlankReq {
+	drmVBlankSeqType type;
+	unsigned int sequence;
+	unsigned long signal;
+} drmVBlankReq;
+
+typedef struct _drmVBlankReply {
+	drmVBlankSeqType type;
+	unsigned int sequence;
+	long tval_sec;
+	long tval_usec;
+} drmVBlankReply;
+
+typedef union _drmVBlank {
+	drmVBlankReq request;
+	drmVBlankReply reply;
+} drmVBlank, *drmVBlankPtr;
+
+extern int drmWaitVBlank(int fd, drmVBlankPtr vbl);
+
 #endif /* _AROSDRMMODE_H_ */

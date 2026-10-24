@@ -61,7 +61,7 @@ LONG RAMMain(void)
    struct DosLibrary *dos_base;
    struct DeviceNode *dev_node;
    struct MsgPort *proc_port;
-   struct DosPacket *packet;
+   struct DosPacket *packet, *next_packet = NULL;
    PINT result;
    BOOL exit;
    LONG link_type;
@@ -119,8 +119,10 @@ LONG RAMMain(void)
 
       /* Service packet requests */
 
-      while((packet = GetPacket(proc_port)) != NULL)
+      while((packet = next_packet != NULL ? next_packet
+         : GetPacket(proc_port)) != NULL)
       {
+         next_packet = NULL;
          result = DOSTRUE;
          SetIoErr(0);
 
@@ -138,6 +140,12 @@ LONG RAMMain(void)
 
             if(!CmdDie(handler))
                result = DOSFALSE;
+            else if((next_packet = GetPacket(proc_port)) != NULL)
+            {
+               /* Pending work keeps the handler alive. Service it next. */
+               result = DOSFALSE;
+               SetIoErr(ERROR_OBJECT_IN_USE);
+            }
             exit = result;
             if(exit)
                dev_node->dn_Task = NULL;

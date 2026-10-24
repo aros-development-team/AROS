@@ -13,6 +13,13 @@
  * first read and leaps the whole module (body + rodata) to the next module's tag
  * via rt_EndSkip - instead of walking every word of the ROM.
  *
+ * String literals (.rodata.str1.1) are the exception: they stay a separate
+ * mergeable section, so that the ROM link can pool each bank's strings and
+ * drop the duplicates (see aros-rom.ld). They are not walked by the romtag
+ * scanner there, the pools lie past _rom_end/_ext_end. The section is named
+ * .romstrings because collect-aros' own second partial link would fold any
+ * .rodata.* into .rodata, losing the merge flags; it leaves this one alone.
+ *
  * NOTE: AROS linker-set sub-sections (__INITLIB_LIST__, __aros_set_*, etc.) stay
  * in .rodata deliberately - the KOBJ link's OBJCOPY -L step collects/renames them,
  * so they must not be folded away. They are only a few dozen bytes per module.
@@ -26,6 +33,7 @@
  * Wired in via KERNEL_KOBJ_LDSCRIPT in config/make.cfg (amiga-m68k only).
  */
 SECTIONS {
+  .romstrings : { *(.rodata.str1.1) }
   .text : {
     . = ALIGN(2);
     *(.text.romtag)

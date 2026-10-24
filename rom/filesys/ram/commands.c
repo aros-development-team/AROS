@@ -110,6 +110,9 @@ BOOL CmdStartup(struct Handler *handler, STRPTR name, struct DeviceNode *dev_nod
       handler->max_block_size = MAX_BLOCK_SIZE;
       NewList((APTR)&handler->examinations);
 
+      /* Publish before allocating: DOS clears this if startup fails. */
+      dev_node->dn_Task = proc_port;
+
       /* Create pools for zeroed, non-zeroed and public zeroed memory */
 
       handler->clear_pool = CreatePool(MEMF_CLEAR, CLEAR_PUDDLE_SIZE,
@@ -176,8 +179,6 @@ BOOL CmdStartup(struct Handler *handler, STRPTR name, struct DeviceNode *dev_nod
 
    /* Return result */
 
-   if(error == 0)
-      dev_node->dn_Task = proc_port;
    SetIoErr(error);
    return error != 0;
 }

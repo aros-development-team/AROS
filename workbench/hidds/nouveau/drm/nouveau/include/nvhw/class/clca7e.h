@@ -134,4 +134,25 @@
 #define NVCA7E_SET_SURFACE_ADDRESS_LO_ILUT_ENABLE_DISABLE                       (0x00000000)
 #define NVCA7E_SET_SURFACE_ADDRESS_LO_ILUT_ENABLE_ENABLE                        (0x00000001)
 
+/* Window colour pipeline (from OpenRM 580.178.04 clca7e.h). */
+#define NVCA7E_SET_FMT_COEFFICIENT_C00                                     (0x00000400)
+#define NVCA7E_SET_FMT_COEFFICIENT_C01                                     (0x00000404)
+#define NVCA7E_SET_FMT_COEFFICIENT_C02                                     (0x00000408)
+#define NVCA7E_SET_FMT_COEFFICIENT_C03                                     (0x0000040C)
+#define NVCA7E_SET_FMT_COEFFICIENT_C10                                     (0x00000410)
+#define NVCA7E_SET_FMT_COEFFICIENT_C11                                     (0x00000414)
+#define NVCA7E_SET_FMT_COEFFICIENT_C12                                     (0x00000418)
+#define NVCA7E_SET_FMT_COEFFICIENT_C13                                     (0x0000041C)
+#define NVCA7E_SET_FMT_COEFFICIENT_C20                                     (0x00000420)
+#define NVCA7E_SET_FMT_COEFFICIENT_C21                                     (0x00000424)
+#define NVCA7E_SET_FMT_COEFFICIENT_C22                                     (0x00000428)
+#define NVCA7E_SET_FMT_COEFFICIENT_C23                                     (0x0000042C)
+#define NVCA7E_SET_CSC00CONTROL                                                 (0x0000045C)
+#define NVCA7E_SET_CSC0LUT_CONTROL                                              (0x000004A0)
+#define NVCA7E_SET_CSC01CONTROL                                                 (0x000004BC)
+#define NVCA7E_SET_CSC10CONTROL                                                 (0x0000053C)
+#define NVCA7E_SET_CSC1LUT_CONTROL                                              (0x00000580)
+#define NVCA7E_SET_CSC11CONTROL                                                 (0x0000059C)
+#define NVCA7E_SET_SURFACE_ADDRESS_LO_TMO_LUT                                   (0x00000694)
+
 #endif // _clca7e_h

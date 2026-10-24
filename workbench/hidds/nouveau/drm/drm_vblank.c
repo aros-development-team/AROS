@@ -2314,7 +2314,11 @@ void drm_crtc_vblank_get_vblank_timeout(struct drm_crtc *crtc, ktime_t *vblank_t
 	 */
 	do {
 		cur_count = drm_crtc_vblank_count_and_time(crtc, &cur_time);
+#if defined(__AROS__)
+		*vblank_time = READ_ONCE(vtimer->timer.expires);	/* compat hrtimer */
+#else
 		*vblank_time = READ_ONCE(vtimer->timer.node.expires);
+#endif
 	} while (cur_count != drm_crtc_vblank_count_and_time(crtc, &cur_time));
 
 	if (drm_WARN_ON(crtc->dev, !ktime_compare(*vblank_time, cur_time)))

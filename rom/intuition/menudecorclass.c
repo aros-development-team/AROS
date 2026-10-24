@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2011, The AROS Development Team. All rights reserved.
+    Copyright  1995-2026, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -35,6 +35,7 @@
 
 #include "intuition_intern.h"
 #include "gadgets.h"
+#include "decorsupport.h"
 
 
 /**************************************************************************************************/
@@ -70,20 +71,6 @@
 #define DEBUG 0
 #include <aros/debug.h>
 /**************************************************************************************************/
-
-void menu_draw_thick_line(Class *cl, struct RastPort *rport,
-                     LONG x1, LONG y1, LONG x2, LONG y2,
-                     UWORD thickness)
-{
-    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
-    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
-
-    Move(rport, x1, y1);
-    Draw(rport, x2, y2);
-    /* Georg Steger */
-    Move(rport, x1 + 1, y1);
-    Draw(rport, x2 + 1, y2);
-}
 
 IPTR MenuDecorClass__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 {
@@ -216,8 +203,8 @@ IPTR MenuDecorClass__MDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct mdpDrawSys
             RectFill(rport, left, top, right, bottom);
 
             SetAPen(rport, pens[BARDETAILPEN]);
-            menu_draw_thick_line(cl, rport, left + 1, top + height / 3 , left + 1, bottom, 0);
-            menu_draw_thick_line(cl, rport, left + 2, bottom, right - 2, top, 0);
+            draw_thick_line(cl, rport, left + 1, top + height / 3 , left + 1, bottom, 0);
+            draw_thick_line(cl, rport, left + 2, bottom, right - 2, top, 0);
 
             break;
         }

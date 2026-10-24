@@ -6,6 +6,7 @@ FILES := screenppm \
     allocbitmap \
     alphascreen \
     areatest2 \
+    bltbitmapalpha \
     blttemplatealpha \
     CGXTest \
     copper \

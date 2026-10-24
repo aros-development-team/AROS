@@ -21,6 +21,12 @@ struct X11DisplayData
 
     /* baseclass for CreateObject */
     OOP_Class	*basebm;
+
+    /* Emulated overlay scan-out planes (0 with --noplanes) */
+    ULONG            overlays;
+    struct x11_plane planes[X11_OVERLAY_PLANES];
+    Window           fbwindow;      /* framebuffer window, parent of the plane windows */
+    APTR             pictfmt;       /* XRenderPictFormat of the display visual (NULL = no scaling) */
 };
 
 #endif /* X11GFX_DISPLAY_H */

@@ -31,14 +31,46 @@ extern OOP_AttrBase HiddGfxNouveauAttrBase;
 
 extern struct SignalSemaphore globalLock;
 
+/*
+ * Scan-out planes for the display compositor: the overlay planes of the
+ * selected crtc that scan out RGB (nv50 and later have one per head), plus
+ * the hardware cursor. Screen bitmaps are buffer objects already, so an
+ * overlay shows a screen from its own memory once it is a KMS framebuffer.
+ */
+#define NOUVEAU_MAX_PLANES  8
+
+#define KMSFMT_XRGB8888     (1 << 0)
+#define KMSFMT_ARGB8888     (1 << 1)
+#define KMSFMT_XBGR8888     (1 << 2)
+#define KMSFMT_ABGR8888     (1 << 3)
+#define KMSFMT_RGB565       (1 << 4)
+#define KMSFMT_XRGB1555     (1 << 5)
+
+struct HIDDNouveauPlane
+{
+    ULONG               id;             /* KMS plane object id */
+    ULONG               formats;        /* KMSFMT_* it scans out */
+    ULONG               fbid;           /* framebuffer on it, 0 = off */
+};
+
 struct HIDDNouveauData
 {
     struct nouveau_bo   *cursor;
     ULONG               selectedcrtcid;
     APTR                selectedmode;
     APTR                selectedconnector;
-    OOP_Object          *compositor;
+
+    /* scan-out planes */
+    ULONG               selectedcrtcindex;  /* index of the crtc among the crtcs (plane masks, vblank) */
+    ULONG               nplanes;            /* overlay planes usable on the crtc */
+    struct HIDDNouveauPlane planes[NOUVEAU_MAX_PLANES];
+    BOOL                vblank_ok;          /* the kernel answers vblank waits for the crtc */
+    ULONG               vblanks;            /* last vblank sequence seen */
 };
+
+/* nouveau_displayclass.c */
+VOID HIDDNouveauEnumPlanes(LONG fd, struct HIDDNouveauData *gfxdata);
+BOOL HIDDNouveauEnsureFB(OOP_Object *bm);
 
 struct HIDDNouveauDisplayData
 {
@@ -60,12 +92,9 @@ extern OOP_AttrBase HiddBitMapNouveauAttrBase;
 
 enum
 {
-    aoHidd_BitMap_Nouveau_CompositorHidd,       /* [I..] The compositor object that will be used by bitmap */
-    
+    /* No private bitmap attributes at present */
     num_Hidd_BitMap_Nouveau_Attrs
 };
-
-#define aHidd_BitMap_Nouveau_CompositorHidd    (HiddBitMapNouveauAttrBase + aoHidd_BitMap_Nouveau_CompositorHidd)
 
 #define IS_BITMAPNOUVEAU_ATTR(attr, idx) \
     (((idx) = (attr) - HiddBitMapNouveauAttrBase) < num_Hidd_BitMap_Nouveau_Attrs)
@@ -95,7 +124,6 @@ struct HIDDNouveauBitMapData
     BOOL    displayable;    /* Can bitmap be displayed on screen */
     
     /* Information connected with display */
-    OOP_Object  *compositor;   /* Compositor object used by bitmap */
     LONG        xoffset;        /* Offset to bitmap point that is displayed as (0,0) on screen */
     LONG        yoffset;        /* Offset to bitmap point that is displayed as (0,0) on screen */
     ULONG       fbid;           /* Contains ID under which bitmap 
@@ -197,10 +225,8 @@ struct staticdata
     OOP_Class       *bmclass;
     OOP_Class       *i2cclass;
     OOP_Class       *galliumclass;
-    OOP_Class       *compositorclass;
 
     OOP_Object      *display;
-    OOP_Object      *compositor;
     OOP_Object      *dmenum;
 
     OOP_AttrBase    hiddAttrBase;
@@ -215,7 +241,6 @@ struct staticdata
     OOP_AttrBase    i2cNouveauAttrBase;
     OOP_AttrBase    galliumAttrBase;
     OOP_AttrBase    gcAttrBase;
-    OOP_AttrBase    compositorAttrBase;
     OOP_AttrBase    bitMapNouveauAttrBase;
     
     OOP_MethodID    mid_CopyMemBox16;
@@ -229,9 +254,6 @@ struct staticdata
     OOP_MethodID    mid_ConvertPixels;
     OOP_MethodID    mid_GetPixFmt;
     
-    OOP_MethodID    mid_BitMapPositionChanged;
-    OOP_MethodID    mid_BitMapRectChanged;
-    OOP_MethodID    mid_ValidateBitMapPositionChange;
 
     struct CardData carddata;
     
@@ -471,17 +493,10 @@ BOOL HiddNouveauNVAccelDownloadM2MF(
 
 VOID HIDDNouveauShowCursor(OOP_Object * gfx, BOOL visible);
 /*
- * Nouveau used to compose screens itself (nouveau_compositorclass.c). That
- * compositor stacks opaque screens only and has no alpha path, so the driver
- * now leaves composition to graphics.library's compositor: ShowViewPorts()
- * declines, ModeProperties reports no composition capability, and the
+ * Nouveau does not compose screens itself: ShowViewPorts() declines,
+ * ModeProperties reports no composition capability, and the display's
  * compositor shows whatever it composes through Hidd_Display::Show().
- * Set NOUVEAU_PRIVATE_COMPOSITOR to 1 to restore the old behaviour.
  */
-#ifndef NOUVEAU_PRIVATE_COMPOSITOR
-#define NOUVEAU_PRIVATE_COMPOSITOR 0
-#endif
-
 BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm);
 VOID HIDDNouveauSetOffsets(OOP_Object * bm, LONG newxoffset, LONG newyoffset);
 

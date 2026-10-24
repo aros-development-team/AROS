@@ -341,7 +341,16 @@ nv50_wndw_atomic_check_acquire(struct nv50_wndw *wndw, bool modeset,
 	if (wndw->func->blend_set) {
 		asyw->blend.depth = 255 - asyw->state.normalized_zpos;
 		asyw->blend.k1 = asyw->state.alpha >> 8;
-		switch (asyw->state.pixel_blend_mode) {
+		/*
+		 * XRGB-style formats are scanned out as A8R8G8B8 etc., so the
+		 * hardware reads the pad byte as alpha. DRM defines that byte as
+		 * ignored; Linux clients happen to fill it with 0xff, AROS bitmaps
+		 * leave it 0 - with the default premultiplied blend an overlay then
+		 * adds onto what is below it (GB207 planescreens: red over green
+		 * showed yellow). Without an alpha channel, blend as opaque.
+		 */
+		switch (asyw->state.fb->format->has_alpha ? asyw->state.pixel_blend_mode :
+							    DRM_MODE_BLEND_PIXEL_NONE) {
 		case DRM_MODE_BLEND_PREMULTI:
 			asyw->blend.src_color = NVC37E_SET_COMPOSITION_FACTOR_SELECT_SRC_COLOR_FACTOR_MATCH_SELECT_K1;
 			asyw->blend.dst_color = NVC37E_SET_COMPOSITION_FACTOR_SELECT_DST_COLOR_FACTOR_MATCH_SELECT_NEG_K1_TIMES_SRC;

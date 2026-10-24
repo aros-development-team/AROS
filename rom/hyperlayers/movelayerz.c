@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -53,7 +53,7 @@ int _MoveLayerBehind(struct Layer *l,
      * the visible region
      */
     if (l->parent == _l->parent && IS_VISIBLE(_l))
-      OrRegionRegion(_l->visibleshape, hide);
+      OrRegionRegion(OCCLUDESHAPE(_l), hide);
 
     if (_l == lfront)
       break;
@@ -103,7 +103,7 @@ int _MoveLayerBehind(struct Layer *l,
       break;
 
     if (IS_VISIBLE(_l))
-      ClearRegionRegion(_l->visibleshape, &show);
+      ClearRegionRegion(OCCLUDESHAPE(_l), &show);
 
     _l = _l->back;
   }
@@ -119,6 +119,8 @@ int _MoveLayerBehind(struct Layer *l,
 
   first->front = lfront;
   lfront->back = first;
+
+  UPDATE_SURFACES(l->LayerInfo);
 
   return TRUE;
 }
@@ -156,7 +158,7 @@ int _MoveLayerToFront(struct Layer * l,
    * family.
    */
   if (IS_VISIBLE(l))
-    backupr = l->visibleshape;
+    backupr = OCCLUDESHAPE(l);
   else
   {
     _l = l;
@@ -170,7 +172,7 @@ int _MoveLayerToFront(struct Layer * l,
           backupr_allocated = TRUE;
         }
         if (backupr)
-          OrRegionRegion(_l->visibleshape, backupr);
+          OrRegionRegion(OCCLUDESHAPE(_l), backupr);
       }
       if (_l == first)
         break;
@@ -228,7 +230,7 @@ int _MoveLayerToFront(struct Layer * l,
         break;
 
       if (IS_VISIBLE(_l))
-        ClearRegionRegion(_l->visibleshape, &r);
+        ClearRegionRegion(OCCLUDESHAPE(_l), &r);
 
       _l = _l->back;
     }
@@ -248,6 +250,8 @@ int _MoveLayerToFront(struct Layer * l,
 
   l->back = lbehind;
   lbehind->front = l;
+
+  UPDATE_SURFACES(l->LayerInfo);
 
   return TRUE;
 }

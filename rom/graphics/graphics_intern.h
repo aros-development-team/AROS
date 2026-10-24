@@ -109,10 +109,12 @@ struct gfxdisplay_data {
 							   struct MonitorHandle mirror - do not grow  */
     OOP_Object                  *display_obj;	/* display object to use			  */
     OOP_Object                  *display_gfxhidd;/* displays graphics driver object		  */
-    OOP_Object                  *display_compositor;	/* screen composition object		  */
     OOP_Object                  *display_dmenum;	/* display mode enumerator		  */
     APTR                        display_userdata;
     struct gfxdriver_data       *display_cfg;
+    /* Damage notification, resolved once: called after every render operation */
+    OOP_MethodFunc              display_UpdateRect;
+    OOP_Class                   *display_UpdateRect_cl;
 };
 
 struct DisplayInfoHandle {
@@ -143,12 +145,26 @@ struct monitor_displaydata {
     struct DisplayInfoHandle    modes[1];	/* Display modes array				  */
 };
 
+/*
+ * ViewPortExtra as allocated by GfxNew(): the public structure followed by
+ * the composition parameters set through VideoControl(). Only GfxNew() may
+ * allocate a ViewPortExtra, so every one reaching graphics.library has them.
+ */
+struct IntViewPortExtra
+{
+    struct ViewPortExtra        vpe;
+    ULONG                       compflags;      /* COMPF_* requested for this ViewPort      */
+    struct Hook                 *prealphahook;  /* hook run on the backdrop before blending */
+};
+
+#define IVPE(x) ((struct IntViewPortExtra *)(x))
+
 #define GFXPRIVATE_DISPLAYDATA(x) ((struct monitor_displaydata *)(x))
 
 /* Driver flags */
 #define DF_Enabled      (1 << 0)
 #define DF_SoftCursor   (1 << 1)	/* Software cursor used				*/
-#define DF_SoftComposit (1 << 2)	/* Software screen composition requested	*/
+#define DF_Composes     (1 << 2)	/* Display composes screens (hardware or compositor) */
 #define DF_DirectFB     (1 << 3)	/* Driver uses a direct-mode framebuffer	*/
 #define DF_ExternalPlanar (1 << 4) /* Displays caller-owned Chip RAM planar BitMaps */
 #define DF_BootSurvive  (1 << 15)	/* Boot mode driver that shouldnt be flushed	*/
@@ -173,7 +189,6 @@ struct gfxsoftrast_data {
     ObjectCache                 *planarbm_cache;/* Planar bitmaps cache		   */
 
     /* HIDD classes */
-    OOP_Class                   *compositorClass;	/* Compositor class		   */
     OOP_Class                   *gcClass;	/* GC class			   */
 
     /* Attribute bases */
@@ -185,7 +200,6 @@ struct gfxsoftrast_data {
     OOP_AttrBase                hiddGfxAttrBase;
     OOP_AttrBase                hiddDisplayAttrBase;
     OOP_AttrBase                hiddDMEnumAttrBase;
-    OOP_AttrBase                hiddCompositorAttrBase;
 };
 
 #define GFXPRIVATE_SOFTRASTDATA(x)  ((struct gfxsoftrast_data *)(x))
@@ -202,7 +216,6 @@ struct gfxsoftrast_data {
 #define __IHidd_Gfx         	CDD(GfxBase)->hiddGfxAttrBase
 #define __IHidd_Display     	CDD(GfxBase)->hiddDisplayAttrBase
 #define __IHidd_DMEnum      	CDD(GfxBase)->hiddDMEnumAttrBase
-#define HiddCompositorAttrBase  CDD(GfxBase)->hiddCompositorAttrBase
 
 /* Hashtable sizes. Must be powers of two */
 #define GFXASSOCIATE_HASHSIZE   8
@@ -250,7 +263,6 @@ struct GfxBase_intern {
     OOP_MethodID                HiddDisplayBase;
     OOP_MethodID                HiddDMEnumBase;
     OOP_MethodID                HiddPlanarBMBase;
-    OOP_MethodID		HiddCompositorMethodBase;
 
     /* baseclass for CreateObject */
     OOP_Class                   *basebm;
@@ -258,6 +270,21 @@ struct GfxBase_intern {
     /* ChangeVPBitMap() replies due after the display's next vertical blank. */
     struct DBufInfo             *dbuf_pending;
     struct SimpleSprite         *simple_sprites[8];
+
+    /*
+     * Composited layer surfaces per screen bitmap (LayerSurfacesChanged()):
+     * one node per screen bitmap that has surfaces, looked up by MakeVPort().
+     * The plane data behind a HIDD struct BitMap is full, so this lives here.
+     */
+    struct MinList              layersurfaces;
+    struct SignalSemaphore      layersurfaces_sema;
+};
+
+struct LayerSurfaceNode
+{
+    struct MinNode                node;
+    struct BitMap                *bitmap;
+    struct HIDD_CompositeRequest *surfaces;
 };
 
 void internal_QueueDBufInfo(struct DBufInfo *db, struct GfxBase *GfxBase);

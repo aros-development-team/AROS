@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 /*
@@ -23,6 +23,9 @@ struct Errors
     ULONG   number;
     STRPTR  string;
 };
+
+/* A NULL string ending the table of a subsystem stands for
+   "unknown <subsystem name> error", see Alert_GetString() */
 
 /* Get a string from an array of type Errors. */
 static STRPTR getString(ULONG alertnum, const struct Errors *errs)
@@ -125,7 +128,7 @@ static const struct Errors execstrings[] =
     { AN_StackProbe,    "Stack extends out of range" },
     { AN_BadFreeAddr,   "Memory header not located" },
     { AN_BadSemaphore,  "Attempt to use the old message semaphore" },
-    { 0, "unknown exec.library error" }
+    { 0, NULL }
 };
 
 static const struct Errors gfxstrings[] =
@@ -142,7 +145,7 @@ static const struct Errors gfxstrings[] =
     { AN_GfxFreeError,  "Error in GfxFree()" },
     { AN_GfxNoLCM,      "Emergency memory not available" },
     { AN_ObsoleteFont,  "Unsupported font description used" },
-    { 0, "unknown graphics.library error" }
+    { 0, NULL }
 };
 
 static const struct Errors unknownstrings[] =
@@ -153,7 +156,7 @@ static const struct Errors unknownstrings[] =
 static const struct Errors layersstrings[] =
 {
     { AN_LayersNoMem,   "layers: no memory" },
-    { 0, "unknown layers.library error" }
+    { 0, NULL }
 };
 
 static const struct Errors intuistrings[] =
@@ -175,7 +178,7 @@ static const struct Errors intuistrings[] =
     { AN_NoConsole,     "couldn't open the console.device" },
     { AN_NoISem,        "intuition skipped obtaining a semaphore" },
     { AN_ISemOrder,     "intuition got a semaphore in wrong order" },
-    { 0, "unknown intuition.library error" }
+    { 0, NULL }
 };
 
 static const struct Errors mathstrings[] =
@@ -199,7 +202,7 @@ static const struct Errors dosstrings[] =
     { AN_BadOverlay,    "bad overlay" },
     { AN_BadInitFunc,   "invalid initialization packet for cli/shell" },
     { AN_FileReclosed,  "filehandle closed more than once" },
-    { 0, "unknown dos.library error" }
+    { 0, NULL }
 };
 
 static const struct Errors ramlibstrings[] =
@@ -210,13 +213,13 @@ static const struct Errors ramlibstrings[] =
 
 static const struct Errors iconstrings[] =
 {
-    { 0, "unknown icon.library error" }
+    { 0, NULL }
 };
 
 static const struct Errors expanstrings[] =
 {
     { AN_BadExpansionFree,  "expansion freeing region already freed"},
-    { 0, "unknown expansion.library error" }
+    { 0, NULL }
 };
 
 static const struct Errors utilitystrings[] =
@@ -231,41 +234,41 @@ static const struct Errors keymapstrings[] =
 
 static const struct Errors dfontstrings[] =
 {
-    { 0, "unknown diskfont.library error" }
+    { 0, NULL }
 };
 
 static const struct Errors audiostrings[] =
 {
-    { 0, "unknown audio.device error" }
+    { 0, NULL }
 };
 
 static const struct Errors consolestrings[] =
 {
     { AN_NoWindow, "can't open initial console window" },
-    { 0, "unknown console.device error" }
+    { 0, NULL }
 };
 
 static const struct Errors gameportstrings[] =
 {
-    { 0, "unknown gameport.device error" }
+    { 0, NULL }
 };
 
 static const struct Errors keyboardstrings[] =
 {
-    { 0, "unknown keyboard.device error" }
+    { 0, NULL }
 };
 
 static const struct Errors trackdiskstrings[] =
 {
     { AN_TDCalibSeek,   "trackdisk calibrate seek error" },
-    { 0, "unknown trackdisk.device error" }
+    { 0, NULL }
 };
 
 static const struct Errors timerstrings[] =
 {
     { AN_TMBadReq,      "bad timer request" },
     { AN_TMBadSupply,   "bad timer powersupply frequency" },
-    { 0, "unknown timer.device error" }
+    { 0, NULL }
 };
 
 static const struct Errors ciastrings[] =
@@ -277,18 +280,18 @@ static const struct Errors diskstrings[] =
 {
     { AN_DRHasDisk, "get disk unit, already has disk" },
     { AN_DRIntNoAct,"disk interrupt, no active unit" },
-    { 0, "unknown disk.resource error" }
+    { 0, NULL }
 };
 
 static const struct Errors miscstrings[] =
 {
-    { 0, "unknown misc.resource error" }
+    { 0, NULL }
 };
 
 static const struct Errors bootstrings[] =
 {
     { AN_BootError, "boot code returned an error" },
-    { 0, "unknown bootstrap error" }
+    { 0, NULL }
 };
 
 static const struct Errors workbenchstrings[] =
@@ -298,12 +301,12 @@ static const struct Errors workbenchstrings[] =
     { AN_WBBadStartupMsg2,  "bad startup message 2 for workbench" },
     { AN_WBBadIOMsg,        "bad IO message for workbench" },
     { AN_WBReLayoutToolMenu, "error with layout on tools menu" },
-    { 0, "unknown workbench error" }
+    { 0, NULL }
 };
 
 static const struct Errors diskcopystrings[] =
 {
-    {0, "unknown diskcopy error" }
+    {0, NULL }
 };
 
 static const struct Errors gadtoolsstrings[] =
@@ -328,7 +331,7 @@ static const struct Errors hiddstrings[] =
 
 static const struct Errors partitionstrings[] =
 {
-    {0, "unknown partition.library error" }
+    {0, NULL }
 };
 
 static const struct Errors *const stringlist[] =
@@ -457,8 +460,15 @@ STRPTR Alert_GetString(ULONG alertnum, STRPTR buf)
     else
     {
         UBYTE subsys = (alertnum & 0x7f000000) >> 24;
+        STRPTR str = getString(alertnum, stringlist[subsys]);
 
-        buf = Alert_AddString(buf, getString(alertnum, stringlist[subsys]));
+        if (str == NULL)
+        {
+            buf = Alert_AddString(buf, "unknown ");
+            buf = Alert_AddString(buf, getString(subsys, subsystems));
+            str = "error";
+        }
+        buf = Alert_AddString(buf, str);
     }
 
     *buf = 0;

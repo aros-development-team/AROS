@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Internal information for layers.library.
 */
@@ -14,6 +14,7 @@
 #include <graphics/rastport.h>
 #include <graphics/clip.h>
 #include <graphics/layers.h>
+#include <hidd/gfx.h>
 #include <utility/utility.h>
 #include <setjmp.h>
 #include <dos/dos.h>   /* BPTR below */
@@ -56,10 +57,31 @@ struct IntLayer
     IPTR	    window;	/* This is passed to shape hook. Comes from Intuition. */
     ULONG	    intflags;
     struct RastPort rp;		/* lay.rp */
-#if LAYERS_BACKING_SURFACE
-    struct BitMap  *surface;	/* backing store of a smart refresh layer, layer relative */
+    /*
+     * The layer's own bitmap, layer relative: the surface of a composited
+     * layer (LAYERCOMPOSITED, always), or the backing store of a smart
+     * refresh layer (LAYERS_BACKING_SURFACE). NULL otherwise.
+     */
+    struct BitMap  *surface;
     WORD	    surfw, surfh;
-#endif
+
+    /*
+     * What this layer hides from the layers behind it (what they subtract
+     * from their VisibleRegion). Normally lay.visibleshape itself; for a
+     * translucent composited layer (opacity < 255 or alpha surface) a
+     * region of its own that stays empty, so the layers behind keep
+     * rendering as if it were not there and the display blends it on top.
+     * The layer's hit test (WhichLayer) and what it paints stay visibleshape.
+     */
+    struct Region  *occludeshape;
+
+    /* Composited layers: the layer's entry in its screen's surface list */
+    struct HIDD_CompositeRequest request;
+    struct Region  *compshape;	/* request.Shape when the visible part is not the whole rectangle */
+    UBYTE	    opacity;	/* 255 = opaque */
+    BOOL	    alphasurface;
+    ULONG	    alphaformat;	/* cybergraphics PIXFMT_#? of an alpha surface (for reallocation) */
+    ULONG	    surfbytes;	/* bytes of the surface counted in lie_SurfaceBytes (composited only) */
 };
 
 #define IL(x) ((struct IntLayer *)(x))
@@ -70,6 +92,40 @@ struct IntLayer
 #define UPFRONTPRIORITY		20
 
 #define INTFLAG_AVOID_BACKFILL 1
+#define INTFLAG_TRANSLUCENT    2	/* composited, blended: occludes nothing */
+
+#define IS_COMPOSITED(l)  (0 != ((l)->Flags & LAYERCOMPOSITED))
+#define IS_TRANSLUCENT(l) (0 != (IL(l)->intflags & INTFLAG_TRANSLUCENT))
+#define OCCLUDESHAPE(l)   (IL(l)->occludeshape)
+
+/*
+ * Policy: does an opaque composited layer occlude the layers behind it
+ * (they back up and restore their pixels as under any opaque layer, the
+ * design in hyperlayers-composition-study.md 7.3), or is it treated like a
+ * translucent one (the layers behind keep painting into the screen bitmap,
+ * which the compositor does not show there, and depth or position changes
+ * of the composited layer copy no pixels at all)? Both are correct with
+ * the compositor; 1 is the documented design.
+ */
+#ifndef LAYERS_COMPOSITED_OCCLUDES
+#define LAYERS_COMPOSITED_OCCLUDES 1
+#endif
+
+/*
+ * Memory budget of composited layer surfaces, per Layer_Info (screen):
+ * their surfaces together may take at most LAYERS_SURFACE_BUDGET_FACTOR
+ * times the screen bitmap, and a surface is never allocated when it would
+ * leave less than LAYERS_SURFACE_MINFREE of the largest free memory block.
+ * A layer that does not fit is created as an ordinary smart refresh layer,
+ * and a composited layer whose growth (SizeLayer()) does not fit is turned
+ * into one (_UncompositeLayer). See <graphics/layersext.h>.
+ */
+#ifndef LAYERS_SURFACE_BUDGET_FACTOR
+#define LAYERS_SURFACE_BUDGET_FACTOR 4
+#endif
+#ifndef LAYERS_SURFACE_MINFREE
+#define LAYERS_SURFACE_MINFREE (4UL * 1024 * 1024)
+#endif
 
 struct LayerInfo_extra
 {
@@ -81,7 +137,31 @@ struct LayerInfo_extra
 #endif
     struct MinList lie_ResourceList;
     UBYTE          lie_pad[4];
+
+    /*
+     * Composited layers of this Layer_Info: how many there are, the head of
+     * their back to front list of surface requests as last handed to
+     * graphics.library (LayerSurfacesChanged()) and the screen bitmap it
+     * was handed for. Intuition screens get a LayerInfo_extra only when
+     * their first composited layer is created.
+     */
+    LONG           lie_NumComposited;
+    struct HIDD_CompositeRequest *lie_Surfaces;
+    struct BitMap *lie_ScreenBM;
+    ULONG          lie_SurfaceBytes;	/* bytes of all composited surfaces (budget, see above) */
 };
+
+#define LIE(li) ((struct LayerInfo_extra *)(li)->LayerInfo_extra)
+
+/*
+ * Hand the Layer_Info's surface list to the display at the end of a layer
+ * operation. Nothing is done (one test) when it never had a composited layer.
+ */
+#define UPDATE_SURFACES(li) \
+    do { \
+        if (NULL != LIE(li) && (0 != LIE(li)->lie_NumComposited || NULL != LIE(li)->lie_Surfaces)) \
+            _UpdateSurfaces(li, LayersBase); \
+    } while (0)
 
 /*
  * These are special types of ResData resources. If layers finds one of

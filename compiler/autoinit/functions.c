@@ -8,6 +8,9 @@
 
 #include <aros/symbolsets.h>
 #include <aros/debug.h>
+#include <exec/errors.h>
+#include <exec/io.h>
+#include <proto/exec.h>
 
 int _set_call_funcs(const void * const set[], int direction, int test_fail, struct ExecBase *SysBase)
 {
@@ -83,4 +86,145 @@ void _set_libexpunge(const struct __aros_libinit_sets *s, void *libbase, struct 
         _set_close_rellibraries_list(libbase, s->rellibs, SysBase);
     if (s->libs)
         _set_close_libraries_list(s->libs, SysBase);
+}
+
+/* The InitLib, OpenLib, CloseLib and ExpungeLib bodies genmodule used to
+   emit inline into every module with an auto-initialised base. Each one
+   must keep the order of the generated code it replaces. */
+void *_set_libinitbase(const struct __aros_libinit_sets *s, struct Library *lib,
+                       LONG sysver, struct Library **oopbaseptr, struct ExecBase *SysBase)
+{
+    if (!SysBase || SysBase->LibNode.lib_Version < sysver)
+        return NULL;
+
+    if (oopbaseptr)
+    {
+        *oopbaseptr = OpenLibrary("oop.library", 0);
+        if (*oopbaseptr == NULL)
+            return NULL;
+    }
+
+    if (!_set_libinit(s, lib, SysBase))
+    {
+        FreeMem((UBYTE *)lib - lib->lib_NegSize, lib->lib_NegSize + lib->lib_PosSize);
+        return NULL;
+    }
+
+    return lib;
+}
+
+/* A resource that builds its own base: allocation and vectors here, the
+   set sequence and AddResource() in _set_resadd(). */
+static ULONG resvecsize(ULONG vecsize)
+{
+    if (vecsize > 0)
+        vecsize = ((vecsize-1)/sizeof(IPTR) + 1)*sizeof(IPTR);
+    return vecsize;
+}
+
+void *_set_resalloc(ULONG vecsize, ULONG basesize, CONST_STRPTR name, BYTE pri,
+                    CONST_APTR functable, LONG sysver, struct ExecBase *SysBase)
+{
+    struct Node *n;
+    char *mem;
+
+    if (!SysBase || SysBase->LibNode.lib_Version < sysver)
+        return NULL;
+
+    vecsize = resvecsize(vecsize);
+    mem = AllocMem(vecsize+basesize, MEMF_PUBLIC|MEMF_CLEAR);
+    if (mem == NULL)
+         return NULL;
+    n = (struct Node *)(mem + vecsize);
+    n->ln_Type = NT_RESOURCE;
+    n->ln_Pri = pri;
+    n->ln_Name = (char *)name;
+    MakeFunctions(n, (APTR)functable, NULL);
+
+    return n;
+}
+
+void *_set_resadd(const struct __aros_libinit_sets *s, APTR base, ULONG vecsize,
+                  ULONG basesize, struct ExecBase *SysBase)
+{
+    if (!_set_libinit(s, base, SysBase))
+    {
+        vecsize = resvecsize(vecsize);
+        FreeMem((char *)base - vecsize, vecsize+basesize);
+        return NULL;
+    }
+
+    AddResource(base);
+    return base;
+}
+
+void *_set_libopen(const struct __aros_libfuncs_sets *s, struct Library *lib)
+{
+    if (set_call_libfuncs(s->openlib, 1, 1, lib))
+    {
+        lib->lib_OpenCnt++;
+        lib->lib_Flags &= ~LIBF_DELEXP;
+        return lib;
+    }
+
+    return NULL;
+}
+
+void _set_devopen(const struct __aros_libfuncs_sets *s, struct Library *lib,
+                  struct IORequest *ioreq, IPTR unitnum, ULONG flags)
+{
+    if (set_call_libfuncs(s->openlib, 1, 1, lib)
+        && set_call_devfuncs(s->opendev, 1, 1, lib, ioreq, unitnum, flags)
+    )
+    {
+        lib->lib_OpenCnt++;
+        lib->lib_Flags &= ~LIBF_DELEXP;
+
+        ioreq->io_Message.mn_Node.ln_Type = NT_REPLYMSG;
+    }
+    else
+    {
+        if (ioreq->io_Error >= 0)
+            ioreq->io_Error = IOERR_OPENFAIL;
+    }
+}
+
+/* Returns TRUE when the caller has to expunge the module */
+int _set_libclose(const struct __aros_libfuncs_sets *s, struct Library *lib,
+                  struct IORequest *ioreq)
+{
+    if (s->closedev && !set_call_devfuncs(s->closedev, -1, 1, lib, ioreq, 0, 0))
+        return FALSE;
+
+    lib->lib_OpenCnt--;
+    set_call_libfuncs(s->closelib, -1, 0, lib);
+
+    return (lib->lib_OpenCnt == 0) && (lib->lib_Flags & LIBF_DELEXP);
+}
+
+BPTR _set_libexpungebase(const struct __aros_libfuncs_sets *s, struct Library *lib,
+                         BPTR seglist, struct Library **oopbaseptr, struct ExecBase *SysBase)
+{
+    if (lib->lib_OpenCnt == 0)
+    {
+        if (!set_call_libfuncs(s->init.expungelib, -1, 1, lib))
+        {
+            lib->lib_Flags |= LIBF_DELEXP;
+            return BNULL;
+        }
+
+        Remove((struct Node *)lib);
+
+        _set_libexpunge(&s->init, lib, SysBase);
+        if (oopbaseptr)
+            CloseLibrary(*oopbaseptr);
+
+        FreeMem((UBYTE *)lib - lib->lib_NegSize, lib->lib_NegSize + lib->lib_PosSize);
+
+        return seglist;
+    }
+
+    lib->lib_Flags |= LIBF_DELEXP;
+
+    return BNULL;
 }

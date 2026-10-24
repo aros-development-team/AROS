@@ -1563,6 +1563,36 @@ nouveau_aros_params(void)
 		nv50_disp_sync_host_param = (*v != '0');
 		kfree(v);
 	}
+	if ((v = nouveau_aros_getenv("NOUVEAU_DISP_SV_GRACE"))) {
+		extern int nv50_disp_sv_grace_ms;
+		nv50_disp_sv_grace_ms = simple_strtoul(v, NULL, 0);
+		kfree(v);
+	}
+	if ((v = nouveau_aros_getenv("NOUVEAU_VBLANK"))) {
+		extern int nouveau_vblank_param;
+		nouveau_vblank_param = (*v != '0');
+		kfree(v);
+	}
+	if ((v = nouveau_aros_getenv("NOUVEAU_WNDW_LIVE_OWNER"))) {
+		extern int nouveau_wndw_live_owner;
+		nouveau_wndw_live_owner = (*v != '0');
+		kfree(v);
+	}
+	if ((v = nouveau_aros_getenv("NOUVEAU_WINDOW_PLANES"))) {
+		extern int nouveau_window_planes;
+		nouveau_window_planes = (*v != '0');
+		kfree(v);
+	}
+	if ((v = nouveau_aros_getenv("NOUVEAU_DISP_SV_RM"))) {
+		extern int nv50_disp_sv_rm_param;
+		nv50_disp_sv_rm_param = (*v != '0');
+		kfree(v);
+	}
+	if ((v = nouveau_aros_getenv("NOUVEAU_DISP_FE_VECTOR"))) {
+		extern int nv50_disp_fe_vector_keep;
+		nv50_disp_fe_vector_keep = !strcmp(v, "keep");
+		kfree(v);
+	}
 	if ((v = nouveau_aros_getenv("NOUVEAU_VRAM_PUSHBUF"))) {
 		extern int nouveau_vram_pushbuf;
 		nouveau_vram_pushbuf = (*v != '0');
