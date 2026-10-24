@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -93,6 +93,15 @@
                         {
                             IPTR *storage = (IPTR *)tag->ti_Data;
                             *storage = (IPTR)segfound->ln_Name;
+                            count++;
+                        }
+                        break;
+
+                    case GSLI_68KRELOCS:
+                        if ((tag->ti_Data) && (segfound->ln_Type == SEGTYPE_HUNK))
+                        {
+                            IPTR *storage = (IPTR *)tag->ti_Data;
+                            *storage = (IPTR)&((struct HunkSegNode *)segfound)->hsn_Relocs;
                             count++;
                         }
                         break;

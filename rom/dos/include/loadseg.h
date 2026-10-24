@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2011-2026, The AROS Development Team.  All rights reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
@@ -13,7 +13,9 @@
 
 /* This is called after ELF file is loaded. You may grab the debug info from it. */
 void register_elf(BPTR file, BPTR hunks, struct elfheader *eh, struct sheader *sh, struct DosLibrary *DOSBase);
-void register_hunk(BPTR file, BPTR hunks, APTR header, struct DosLibrary *DOSBase);
+/* relocs/numrelocs: what the loader applied, kept with the seglist (GSLI_68KRELOCS);
+   numrelocs ~0 records that the list was lost */
+void register_hunk(BPTR file, BPTR hunks, APTR header, const struct HunkReloc32 *relocs, ULONG numrelocs, struct DosLibrary *DOSBase);
 
 AROS_LD4(BPTR, InternalLoadSeg,
          AROS_LDA(BPTR       , fh           , D0),

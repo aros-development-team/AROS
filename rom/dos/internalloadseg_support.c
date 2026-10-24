@@ -82,18 +82,24 @@ void register_elf(BPTR file, BPTR hunks, struct elfheader *eh, struct sheader *s
  * No DosBase = Open debug.library manually, this enables
  * us to have RDB segments in debug.library list.
  */
-void register_hunk(BPTR file, BPTR hunks, APTR header, struct DosLibrary *DOSBase)
+void register_hunk(BPTR file, BPTR hunks, APTR header, const struct HunkReloc32 *relocs, ULONG numrelocs, struct DosLibrary *DOSBase)
 {
     struct Library *DebugBase;
     struct KernelBase *KernelBase = OpenResource("kernel.resource");
     BOOL issuper = (KernelBase && KrnIsSuper());
     if (DOSBase)
     {
-        struct Node *segnode = AllocVec(sizeof(struct Node), MEMF_CLEAR);
+        ULONG kept = (numrelocs == 0xFFFFFFFFUL) ? 0 : numrelocs;
+        struct HunkSegNode *hsn = AllocVec(sizeof(struct HunkSegNode) + kept * sizeof(struct HunkReloc32), MEMF_CLEAR);
+        struct Node *segnode = hsn ? &hsn->hsn_Node : NULL;
         if (segnode)
         {
             segnode->ln_Name = (char *)hunks;
             segnode->ln_Type = SEGTYPE_HUNK;
+            hsn->hsn_Relocs.hrt_Count  = numrelocs;
+            hsn->hsn_Relocs.hrt_Relocs = (struct HunkReloc32 *)(hsn + 1);
+            if (kept)
+                CopyMem((APTR)relocs, hsn->hsn_Relocs.hrt_Relocs, kept * sizeof(struct HunkReloc32));
 
             if (issuper)
                 Forbid();
