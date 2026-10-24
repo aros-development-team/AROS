@@ -64,13 +64,14 @@ CUNITEXEDIR := $(AROS_TESTS)/cunit/crt/posixc
 #MM- test-cunit : test-crt-posixc-cunit
 #MM- test-cunit-quick : test-crt-posixc-cunit-quick
 
-#MM- test-crt-posixc : test-crt-posixc-general test-crt-posixc-gnu test-crt-posixc-2k8 test-crt-posixc-nix test-crt-posixc-posix1 test-crt-posixc-$(TARGET_UNITTESTS)-cunit
-#MM- test-crt-posixc-quick : test-crt-posixc-general-quick test-crt-posixc-gnu-quick test-crt-posixc-2k8-quick test-crt-posixc-nix-quick test-crt-posixc-posix1-quick test-crt-posixc-$(TARGET_UNITTESTS)-cunit-quick
+#MM- test-crt-posixc : test-crt-posixc-general test-crt-posixc-gnu test-crt-posixc-mempool test-crt-posixc-2k8 test-crt-posixc-nix test-crt-posixc-posix1 test-crt-posixc-$(TARGET_UNITTESTS)-cunit
+#MM- test-crt-posixc-quick : test-crt-posixc-general-quick test-crt-posixc-gnu-quick test-crt-posixc-mempool-quick test-crt-posixc-2k8-quick test-crt-posixc-nix-quick test-crt-posixc-posix1-quick test-crt-posixc-$(TARGET_UNITTESTS)-cunit-quick
 
 #MM test-crt-posixc-general : includes includes-copy linklibs kernel
 #MM test-crt-posixc-2k8 : includes includes-copy linklibs kernel
 #MM test-crt-posixc-gnu : includes includes-copy linklibs kernel
 #MM test-crt-posixc-nix : includes includes-copy linklibs kernel
+#MM test-crt-posixc-mempool : includes includes-copy linklibs kernel
 
 #MM- test-crt-posixc-posix1 :                   \
 #MM     test-crt-posixc-posix1-scanf            \
@@ -110,6 +111,13 @@ USER_CPPFLAGS:=
 
 %build_progs mmake=test-crt-posixc-nix \
     files=$(POSIXCNIXTESTFILES) targetdir=$(EXEDIR) nix=yes coverageinstr=no
+
+USER_CPPFLAGS:= -D_GNU_SOURCE
+
+%build_prog mmake=test-crt-posixc-mempool \
+    progname=mempool files=mempool targetdir=$(EXEDIR) uselibs="pthread"
+
+USER_CPPFLAGS:=
 
 %build_prog mmake=test-crt-posixc-posix1-scanf \
     progname=scanf files="posix.1/scanf-examples" targetdir=$(EXEDIR)
