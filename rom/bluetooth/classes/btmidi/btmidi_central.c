@@ -81,7 +81,9 @@ struct btmidi_binding *btmidi_force_binding(struct BTMidiBase *base,
                                        ? (const char *)device_name
                                        : "BLE MIDI device");
         if (port < 0) {
-            /* every port has a device: this one stays without CAMD */
+            btAddErrorMsg(RETURN_WARN, (STRPTR)"btmidi.class",
+                (STRPTR)"No free MIDI port: all %ld device ports are assigned.",
+                (LONG)(BTMIDI_PORTS - 1));
             FreeVec(binding);
             CloseLibrary(bluetooth);
             return NULL;
