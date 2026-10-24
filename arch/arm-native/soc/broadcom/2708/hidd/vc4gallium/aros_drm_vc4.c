@@ -127,11 +127,13 @@ static struct {
     struct pipe_resource *rsc;      /* resource bound to a page (identity only) */
     uint32_t        page_handle;    /* hidd BO handle of the bound page */
     uint32_t        name[2];        /* page GEM names (phys addrs) */
+    struct pipe_screen *owner;      /* rsc's screen, identity only */
 } aros_scanout;
 
 static void aros_scanout_forget(void)
 {
     aros_scanout.rsc = NULL;
+    aros_scanout.owner = NULL;
     aros_scanout.page_handle = 0;
     aros_scanout.name[0] = aros_scanout.name[1] = 0;
 }
@@ -157,6 +159,7 @@ static BOOL aros_scanout_bind_back(struct vc4_resource *rsc,
     rsc->slices[0].offset = 0;
 
     aros_scanout.rsc = &rsc->base;
+    aros_scanout.owner = rsc->base.screen;
     aros_scanout.page_handle = nb->handle;
     aros_scanout.name[0] = so.name[0];
     aros_scanout.name[1] = so.name[1];
@@ -206,7 +209,42 @@ static struct {
     struct pipe_resource *refused;  /* set_overlay said no for this
                                      * resource (e.g. scaled desktop):
                                      * don't retry every present */
+    /* What the last present did with `queued`, for aros_ovl_flush */
+    struct vc4_screen *screen;
+    OOP_Object     *bm;
+    LONG            x, y;
+    ULONG           w, h, stride, dest_w, dest_h;
+    volatile ULONG  gen;            /* bumped per queued frame */
+    volatile ULONG  vbl_gen;        /* gen at the last vblank */
+    volatile ULONG  flush_gen;      /* gen the flush task was woken for */
+    struct pipe_screen *owner;      /* rsc's screen, identity only */
+    BOOL            stale;          /* plane still up for a dead session */
 } aros_ovl;
+
+/* An app that stops presenting (draws only on change) would leave its
+ * last frame queued forever, so a vblank with no present for a whole
+ * frame has this task put it on. aros_ovl is under aros_ovl_lock. */
+static struct SignalSemaphore aros_ovl_lock;
+static struct Task *aros_ovl_task;
+
+/* From InitLib: every GL app runs create_screen, concurrently. */
+void vc4_aros_ovl_init(void)
+{
+    InitSemaphore(&aros_ovl_lock);
+}
+
+/* vcgfx's per-vblank callback, mirrored from vcgfx_bitmap.h */
+struct vc4gfx_vblank
+{
+    void (*vbl_Func)(APTR data);
+    APTR  vbl_Data;
+};
+static struct vc4gfx_vblank aros_ovl_vbl;
+
+/* In vc4_galliumclass.c: this half is linked into the same hidd. */
+extern BOOL vc4_aros_shared_gpu(void *ctx);
+extern void vc4_aros_set_vblank(void *ctx, OOP_Object *bm_obj,
+                                struct vc4gfx_vblank *vbl);
 
 /* Hide the plane but KEEP the page pair: obscure/reveal cycles (another
  * window dragged across, menus opening over the GL window) must not
@@ -295,6 +333,9 @@ static void aros_ovl_suspend(void)
 /* Full teardown: resource changed or the screen is going away. */
 static void aros_ovl_exit(void)
 {
+    if (aros_drm_bridge && aros_ovl.bm)
+        vc4_aros_set_vblank(aros_drm_bridge->ctx, aros_ovl.bm, NULL);
+    aros_ovl.bm = NULL;
     aros_ovl_suspend();
     if (aros_ovl.queued)
         vc4_bo_unreference(&aros_ovl.queued);
@@ -304,7 +345,100 @@ static void aros_ovl_exit(void)
         vc4_bo_unreference(&aros_ovl.freep);
     aros_ovl.queued_seqno = 0;
     aros_ovl.rsc = NULL;
+    aros_ovl.owner = NULL;
     aros_ovl.page_handle = 0;
+}
+
+/* Record a newly queued frame and where it goes. */
+static void aros_ovl_queued_at(struct vc4_screen *screen, OOP_Object *bm,
+                               LONG x, LONG y, ULONG w, ULONG h, ULONG stride)
+{
+    aros_ovl.screen = screen;
+    aros_ovl.bm = bm;
+    aros_ovl.x = x;
+    aros_ovl.y = y;
+    aros_ovl.w = w;
+    aros_ovl.h = h;
+    aros_ovl.stride = stride;
+    aros_ovl.dest_w = w * mesa3dgl_render_scale;
+    aros_ovl.dest_h = h * mesa3dgl_render_scale;
+    aros_ovl.gen++;
+}
+
+/* Put the queued frame on, as the next present would have; that present
+ * then refills the ring. The displaced page stays pinned until its latch,
+ * as after any set_overlay. Caller holds aros_ovl_lock. */
+static void aros_ovl_flush(void)
+{
+    struct vc4_bo *off;
+
+    if (!aros_drm_bridge || !aros_ovl.queued || !aros_ovl.shown
+        || aros_ovl.gen != aros_ovl.flush_gen)
+        return;
+
+    vc4_wait_seqno(aros_ovl.screen, aros_ovl.queued_seqno,
+                   PIPE_TIMEOUT_INFINITE, "ovl-flush");
+    if (aros_drm_bridge->set_overlay(aros_drm_bridge->ctx, aros_ovl.bm,
+            aros_ovl.queued->handle, aros_ovl.stride,
+            aros_ovl.x, aros_ovl.y, aros_ovl.w, aros_ovl.h,
+            aros_ovl.dest_w, aros_ovl.dest_h) != 0)
+        return;
+
+    off = aros_ovl.onplane;
+    aros_ovl.onplane = aros_ovl.queued;
+    aros_ovl.queued = NULL;
+    aros_ovl.queued_seqno = 0;
+    aros_ovl.freep = off;
+}
+
+/* Interrupt context, every vblank while the overlay is up. */
+static void aros_ovl_vblank(APTR data)
+{
+    ULONG gen = aros_ovl.gen;
+
+    (void)data;
+    if (gen != aros_ovl.vbl_gen)
+        aros_ovl.vbl_gen = gen;
+    else if (gen != aros_ovl.flush_gen && aros_ovl.queued && aros_ovl_task)
+    {
+        aros_ovl.flush_gen = gen;
+        Signal(aros_ovl_task, SIGBREAKF_CTRL_F);
+    }
+}
+
+static struct Task *aros_ovl_waiter;
+
+static void aros_ovl_task_entry(void)
+{
+    for (;;)
+    {
+        ULONG sigs = Wait(SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_F);
+
+        if (sigs & SIGBREAKF_CTRL_C)
+            break;
+        ObtainSemaphore(&aros_ovl_lock);
+        aros_ovl_flush();
+        ReleaseSemaphore(&aros_ovl_lock);
+    }
+
+    /* Forbid until exit: the stopper may unload this code once woken */
+    Forbid();
+    aros_ovl_task = NULL;
+    if (aros_ovl_waiter)
+        Signal(aros_ovl_waiter, SIGF_SINGLE);
+}
+
+/* From Expunge, once vcgfx can no longer call aros_ovl_vblank(). */
+void vc4_aros_ovl_shutdown(void)
+{
+    if (!aros_ovl_task)
+        return;
+    aros_ovl_waiter = FindTask(NULL);
+    SetSignal(0, SIGF_SINGLE);
+    Signal(aros_ovl_task, SIGBREAKF_CTRL_C);
+    while (aros_ovl_task)
+        Wait(SIGF_SINGLE);
+    aros_ovl_waiter = NULL;
 }
 
 /*
@@ -327,6 +461,7 @@ BOOL aros_drm_blit_resource(struct pipe_resource *src_pres,
     struct ClipRect *CR;
     BOOL copied = FALSE;
     BOOL fullscreen, bound, enter_scanout = FALSE, detach_after_blit = FALSE;
+    BOOL multi, scan_free;
     OOP_Object *scr_bm_obj;
     ULONG bo_handle, stride, offset, cpp;
 
@@ -370,9 +505,14 @@ BOOL aros_drm_blit_resource(struct pipe_resource *src_pres,
     /* Drop stale scanout state if the bound resource went away (e.g.
      * the framebuffer was resized and recreated). Pointer compare only;
      * the page BO itself was released with the old resource. */
-    if (aros_scanout.rsc && aros_scanout.rsc != src_pres)
+    /* Only this screen's: another app's binding stays, and this one
+     * blits. */
+    if (aros_scanout.rsc && (aros_scanout.owner == src_pres->screen)
+        && aros_scanout.rsc != src_pres)
         aros_scanout_forget();
-    if (aros_ovl.rsc && aros_ovl.rsc != src_pres)
+    ObtainSemaphore(&aros_ovl_lock);
+    if (aros_ovl.rsc && (aros_ovl.owner == src_pres->screen)
+        && aros_ovl.rsc != src_pres)
         aros_ovl_exit();
     if (aros_ovl.refused && aros_ovl.refused != src_pres)
         aros_ovl.refused = NULL;
@@ -380,6 +520,20 @@ BOOL aros_drm_blit_resource(struct pipe_resource *src_pres,
     LockLayerRom(L);
 
     scr_bm_obj = HIDD_BM_OBJ(destRP->BitMap);
+
+    /* A dead session's plane comes down through a bitmap that is alive. */
+    if (aros_ovl.stale && !aros_ovl.rsc)
+    {
+        aros_drm_bridge->clear_overlay(aros_drm_bridge->ctx, scr_bm_obj);
+        aros_ovl.stale = FALSE;
+    }
+
+    /* One plane and one pair of pages, several screens: everyone blits,
+     * and whoever holds the plane gives it up. */
+    multi = vc4_aros_shared_gpu(aros_drm_bridge->ctx);
+    if (multi && (aros_ovl.rsc == src_pres))
+        aros_ovl_exit();
+    scan_free = !multi && (!aros_scanout.rsc || (aros_scanout.owner == src_pres->screen));
 
     /* Fullscreen = a single unobscured cliprect, surface at 0,0, no
      * source offset. Geometry against the framebuffer is checked by
@@ -391,7 +545,7 @@ BOOL aros_drm_blit_resource(struct pipe_resource *src_pres,
     bound = (aros_scanout.rsc == src_pres &&
              rsc->bo->handle == aros_scanout.page_handle);
 
-    if (fullscreen && cpp == 4 && offset == 0 &&
+    if (fullscreen && scan_free && cpp == 4 && offset == 0 &&
         aros_drm_bridge->version >= 2)
     {
         struct vc4_aros_scanout so;
@@ -413,6 +567,7 @@ BOOL aros_drm_blit_resource(struct pipe_resource *src_pres,
                     aros_scanout_bind_back(rsc, scr_bm_obj))
                 {
                     UnlockLayerRom(L);
+                    ReleaseSemaphore(&aros_ovl_lock);
                     return TRUE;
                 }
                 /* Flip refused (e.g. flipping got disabled): this
@@ -475,11 +630,14 @@ BOOL aros_drm_blit_resource(struct pipe_resource *src_pres,
                     aros_ovl.queued = rsc->bo;
                     aros_ovl.queued_seqno =
                         aros_drm_bridge->get_seqno(aros_drm_bridge->ctx);
+                    aros_ovl_queued_at(vscreen, scr_bm_obj, absX, absY,
+                                       xSize, ySize, stride);
                     rsc->bo = aros_ovl.freep;
                     aros_ovl.freep = NULL;
                     rsc->slices[0].offset = 0;
                     aros_ovl.page_handle = rsc->bo->handle;
                     UnlockLayerRom(L);
+                    ReleaseSemaphore(&aros_ovl_lock);
                     return TRUE;
                 }
 
@@ -534,10 +692,13 @@ BOOL aros_drm_blit_resource(struct pipe_resource *src_pres,
                     aros_ovl.queued = rsc->bo;
                     aros_ovl.queued_seqno =
                         aros_drm_bridge->get_seqno(aros_drm_bridge->ctx);
+                    aros_ovl_queued_at(vscreen, scr_bm_obj, absX, absY,
+                                       xSize, ySize, stride);
                     rsc->bo = freed;
                     rsc->slices[0].offset = 0;
                     aros_ovl.page_handle = rsc->bo->handle;
                     UnlockLayerRom(L);
+                    ReleaseSemaphore(&aros_ovl_lock);
                     return TRUE;
                 }
                 /* The hidd refused a present that was fine before
@@ -561,7 +722,7 @@ BOOL aros_drm_blit_resource(struct pipe_resource *src_pres,
                 aros_ovl_exit();
             }
         }
-        else if (windowed && !aros_ovl.rsc && rsc->slices[0].size
+        else if (windowed && !multi && !aros_ovl.rsc && rsc->slices[0].size
                  && aros_ovl.refused != src_pres)
         {
             struct vc4_screen *vscreen = vc4_screen(rsc->base.screen);
@@ -596,6 +757,7 @@ BOOL aros_drm_blit_resource(struct pipe_resource *src_pres,
             if (nb2 && oret == 0)
             {
                 aros_ovl.rsc = src_pres;
+                aros_ovl.owner = src_pres->screen;
                 aros_ovl.shown = TRUE;
                 aros_ovl.onplane = rsc->bo;    /* now on the overlay */
                 aros_ovl.queued = NULL;
@@ -604,7 +766,19 @@ BOOL aros_drm_blit_resource(struct pipe_resource *src_pres,
                 rsc->bo = nb1;
                 rsc->slices[0].offset = 0;
                 aros_ovl.page_handle = nb1->handle;
+                aros_ovl.bm = scr_bm_obj;
+
+                if (!aros_ovl_task)
+                    aros_ovl_task = NewCreateTask(TASKTAG_PC, aros_ovl_task_entry,
+                                                  TASKTAG_NAME, "VC4 overlay",
+                                                  TASKTAG_PRI, 1,
+                                                  TAG_DONE);
+                aros_ovl_vbl.vbl_Func = aros_ovl_vblank;
+                aros_ovl_vbl.vbl_Data = NULL;
+                vc4_aros_set_vblank(aros_drm_bridge->ctx, scr_bm_obj,
+                                    &aros_ovl_vbl);
                 UnlockLayerRom(L);
+                ReleaseSemaphore(&aros_ovl_lock);
                 return TRUE;
             }
             if (nb1)
@@ -674,6 +848,7 @@ BOOL aros_drm_blit_resource(struct pipe_resource *src_pres,
         aros_scanout_unbind(rsc);
 
     UnlockLayerRom(L);
+    ReleaseSemaphore(&aros_ovl_lock);
     return TRUE;
 }
 
@@ -697,19 +872,20 @@ extern void util_cpu_detect(void);
 #define aros_util_cpu_detect() util_cpu_detect()
 #endif
 
-/* Live screens created through the bridge. An app toggling between
- * fullscreen and windowed mode may create the new context before
- * destroying the old one; dropping the bridge pointer on the first
- * destroy would kill presents for the survivor. */
-static LONG aros_drm_screens;
-
 struct pipe_screen *vc4_aros_create_screen(struct vc4_aros_bridge *bridge,
-                                           APTR coreapi)
+                                           APTR coreapi, int fd)
 {
     struct pipe_screen *pscreen = NULL;
 
     if (!bridge)
         return NULL;
+    if (bridge->version != VC4_AROS_BRIDGE_VERSION)
+    {
+        bug("[aros_drm_vc4] bridge version %lu, expected %d - rebuild"
+            " mesa3dgl-library and this hidd together\n",
+            (unsigned long)bridge->version, VC4_AROS_BRIDGE_VERSION);
+        return NULL;
+    }
 
     /* Bind the driver's Mesa-core trampolines to mesa3dgl's
      * GalliumCoreAPI table before any driver code runs. Idempotent;
@@ -743,46 +919,18 @@ struct pipe_screen *vc4_aros_create_screen(struct vc4_aros_bridge *bridge,
 
     aros_drm_bridge = bridge;
 
-    /* New-app reclaim: an application may exit via exit() without any GL
-     * teardown, so glADestroyContext (aros_drm_release_bridge) never runs
-     * and the driver-internal pages (overlay/scanout/pools) leak VideoCore
-     * memory until the firmware OOMs after a few runs. The aros_drm_screens
-     * counter is unreliable for detecting this (it only decrements on clean
-     * teardown, so it grows without bound across dirty-exit runs). Instead
-     * key on the owning task: a different task means the PREVIOUS app is
-     * dead and its leftover BOs are safe to sweep. The same task (one app
-     * creating several contexts) does NOT sweep — which also means
-     * successive Shell commands, that RunCommand() runs on one task, are
-     * not told apart here. */
-    {
-        struct Task *me = FindTask(NULL);
-        static struct Task *aros_bo_owner_task;
-        static BOOL aros_bo_owner_valid;
-
-        if (aros_bo_owner_valid && me != aros_bo_owner_task)
-        {
-            D(bug("[aros_drm_vc4] new run (task %p -> task %p):"
-                " reclaiming leaked BOs\n", aros_bo_owner_task, me));
-            if (bridge->release_all_bos)
-                bridge->release_all_bos(bridge->ctx);
-            aros_drm_screens = 0;   /* stale counter from dirty-exit runs */
-        }
-        aros_bo_owner_task = me;
-        aros_bo_owner_valid = TRUE;
-    }
-
     /* Dispatch on driver_id (one mesa3dgl can carry several drivers, one
      * per Pi GPU gen). Only VC4 today; V3D slots into the commented case.
-     * fd is any positive value (dispatch goes through the bridge, not fd
-     * lookup); NULL renderonly since we own the display path. */
+     * fd names the session to the hidd; NULL renderonly since we own the
+     * display path. */
     switch (bridge->driver_id)
     {
     case AROS_GALLIUM_DRIVER_VC4:
         /* vc4_screen.h declares it; Mesa 26 takes a screen config too. */
 #if AROS_MESA_MAJOR >= 26
-        pscreen = vc4_screen_create(1, NULL, NULL);
+        pscreen = vc4_screen_create(fd, NULL, NULL);
 #else
-        pscreen = vc4_screen_create(1, NULL);
+        pscreen = vc4_screen_create(fd, NULL);
 #endif
         if (!pscreen)
             bug("[aros_drm_vc4] vc4_screen_create FAILED (bridge ok, falling back)\n");
@@ -798,8 +946,6 @@ struct pipe_screen *vc4_aros_create_screen(struct vc4_aros_bridge *bridge,
         return NULL;
     }
 
-    if (pscreen)
-        aros_drm_screens++;
     return pscreen;
 }
 
@@ -815,39 +961,46 @@ IPTR vc4_aros_display_rp(APTR resource, LONG srcx, LONG srcy,
                                   width, height) ? TRUE : FALSE;
 }
 
-/* Per-screen teardown bookkeeping, called from DestroyPipeScreen after
- * the screen itself is gone. Returns TRUE when this was the LAST live
- * screen, which is the caller's cue to put the hardware back in its
- * idle, empty state. An app may hold two screens at once - a toolkit
- * probing GL capabilities keeps its probe context while building the
- * real one, and switching to fullscreen typically creates the new
- * context before dropping the old - so that reset must not run on the
- * first of them: it would free the survivor's BOs and clear V3D state
- * mid-render. */
-BOOL aros_drm_release_bridge(void)
+/* A screen is going away: drop the present state it owns. A live one
+ * (called before its destroy) releases its overlay pages; a dead one's
+ * Mesa objects are gone, so its state is only forgotten, and the plane
+ * comes down at the next present through a bitmap that is alive. Until
+ * then the vblank callback stays too, doing nothing with nothing queued,
+ * and Expunge waits for it to be taken off. */
+void aros_drm_screen_gone(APTR screen, BOOL dead)
 {
-    /* Take the plane down first: the BO sweep below frees the page the HVS
-     * scans out. clear_overlay only touches hidd state, so it is safe here. */
-    if (aros_drm_bridge && aros_ovl.shown)
-        aros_drm_bridge->clear_overlay(aros_drm_bridge->ctx, NULL);
+    ObtainSemaphore(&aros_ovl_lock);
+    if (aros_ovl.rsc && (aros_ovl.owner == screen))
+    {
+        if (!dead)
+            aros_ovl_exit();
+        else
+        {
+            aros_ovl.bm = NULL;
+            aros_ovl.queued = NULL;
+            aros_ovl.onplane = NULL;
+            aros_ovl.freep = NULL;
+            aros_ovl.queued_seqno = 0;
+            aros_ovl.rsc = NULL;
+            aros_ovl.owner = NULL;
+            aros_ovl.page_handle = 0;
+            aros_ovl.stale = aros_ovl.shown;
+            aros_ovl.shown = FALSE;
+        }
+    }
+    if (aros_scanout.rsc && (aros_scanout.owner == screen))
+        aros_scanout_forget();
+    ReleaseSemaphore(&aros_ovl_lock);
+}
 
-    /* Just drop our in-lib bookkeeping pointers — the underlying firmware
-     * BOs are freed by the hidd sweep below, not here (unreferencing the
-     * vc4_bo structs would touch the just-freed in-lib screen). */
-    aros_ovl.queued = NULL;
-    aros_ovl.onplane = NULL;
-    aros_ovl.freep = NULL;
-    aros_ovl.queued_seqno = 0;
-    aros_ovl.shown = FALSE;
-    aros_ovl.rsc = NULL;
-    aros_ovl.page_handle = 0;
-
-    if (aros_drm_screens > 0 && --aros_drm_screens > 0)
-        return FALSE;
-
-    /* Last screen gone. The BO sweep itself is the caller's job (it owns
-     * the bo_table); here we only drop the pointers into it. */
+/* The last screen is gone. The BO sweep itself is the caller's job (it
+ * owns the bo_table); here we only drop the pointers into it. */
+void aros_drm_release_bridge(void)
+{
+    ObtainSemaphore(&aros_ovl_lock);
+    aros_ovl.refused = NULL;
+    aros_ovl.stale = FALSE;
+    ReleaseSemaphore(&aros_ovl_lock);
     aros_scanout_forget();
     aros_drm_bridge = NULL;
-    return TRUE;
 }

@@ -13,10 +13,12 @@
 #include <exec/types.h>
 #include <exec/libraries.h>
 #include <exec/semaphores.h>
+#include <exec/memory.h>
 #include <exec/interrupts.h>
 #include <devices/timer.h>
 #include <oop/oop.h>
 #include <hidd/gallium.h>
+#include <utility/hooks.h>
 
 #include LC_LIBDEFS_FILE
 
@@ -29,9 +31,11 @@ struct HiddGalliumVC4Data
     OOP_Object              *vc4_obj;
 };
 
-/* Buffer Object handle tracking. Entries are ~760 bytes (shader metadata
- * inline), so the table is ~760 KB of library-base memory at 1024. */
-#define VC4_MAX_BOS     1024
+/* Buffer Object handle tracking. Entries are 72 bytes, as a shader's
+ * metadata is allocated apart, so 8192 of them - v3d's count - take about
+ * 576 KB of library-base memory. 1024 ran out on texture-heavy apps
+ * (Widelands). */
+#define VC4_MAX_BOS     8192
 
 /* Max texture samples and uniform address offsets per shader */
 #define VC4_MAX_TEX_SAMPLES     32
@@ -46,6 +50,33 @@ struct vc4_texture_sample_info
     ULONG   p_offset[4];   /* Offsets to P0, P1, P2, P3 in uniform stream */
 };
 
+/* One GL pipe screen. Mesa passes the fd a screen was created with to
+ * every ioctl, so a tagged fd tells the shim whose objects are whose. */
+#define VC4_MAX_SESSIONS    16
+#define VC4_SCREENFD_TAG    0x20000000
+
+struct vc4_session
+{
+    BOOL                vs_Used;
+    volatile BOOL       vs_Dead;    /* its task ended without a teardown */
+    APTR                vs_Screen;  /* struct pipe_screen * */
+    /* The one that created it. Assumes a screen is destroyed by the task
+     * that created it, as mesa3dgl does: its exit marks the session dead
+     * and the next sweep frees its objects. */
+    struct Task        *vs_Task;
+};
+
+/* Shader metadata (set by the QPU scanner on CREATE_SHADER_BO). Only
+ * shader BOs have it, so it is allocated apart from the table entry. */
+struct vc4_shader_meta
+{
+    ULONG   uniforms_size;          /* Bytes of uniform data GPU reads */
+    ULONG   num_texture_samples;    /* Number of texture lookups */
+    struct vc4_texture_sample_info texture_samples[VC4_MAX_TEX_SAMPLES];
+    ULONG   num_uniform_addr_offsets;
+    ULONG   uniform_addr_offsets[VC4_MAX_UNIFORM_ADDR]; /* Indices into uniform words */
+};
+
 struct vc4_bo_entry
 {
     APTR    vaddr;          /* CPU virtual address (= physical on RPi) */
@@ -53,6 +84,7 @@ struct vc4_bo_entry
     ULONG   gpu_handle;     /* Mailbox memory handle for free */
     ULONG   size;
     ULONG   refcount;
+    ULONG   owner;          /* session that created it, 0 = shared (scanout) */
     ULONG   seqno;          /* Last submission that referenced this BO (0 = never) */
     BOOL    is_shader;      /* Immutable shader BO */
     BOOL    external;       /* Wraps memory we don't own (scanout page) */
@@ -60,12 +92,7 @@ struct vc4_bo_entry
     APTR    cached_base;    /* VC4_CACHED_BO: AllocMem base, NULL = VC pool */
     ULONG   cached_size;
     UQUAD   tiling_modifier;/* DRM_FORMAT_MOD_* — round-tripped via set/get_tiling */
-    /* Shader metadata (set by QPU scanner on CREATE_SHADER_BO) */
-    ULONG   uniforms_size;          /* Bytes of uniform data GPU reads */
-    ULONG   num_texture_samples;    /* Number of texture lookups */
-    struct vc4_texture_sample_info texture_samples[VC4_MAX_TEX_SAMPLES];
-    ULONG   num_uniform_addr_offsets;
-    ULONG   uniform_addr_offsets[VC4_MAX_UNIFORM_ADDR]; /* Indices into uniform words */
+    struct vc4_shader_meta *shader;     /* shader BOs only, else NULL */
 };
 
 /* V3D hardware state */
@@ -129,6 +156,25 @@ struct vc4_frame_bo
     ULONG   size;           /* Current allocated size (0 = not allocated) */
 };
 
+/* GPU memory from ARM RAM instead of the firmware's gpu_mem partition.
+ * The arenas are remapped Normal-NC, which needs KrnMapGlobal - only the
+ * aarch64 kernel implements it, so arm32 stays on ALLOCMEM. */
+#ifdef __aarch64__
+#define VC4_ARM_MEM 1
+#else
+#define VC4_ARM_MEM 0
+#endif
+
+struct vc4_arena
+{
+    struct MinNode      node;
+    APTR                raw;
+    ULONG               raw_size;
+    APTR                base;
+    ULONG               size;
+    struct MemHeader    mh;
+};
+
 /* Static data for the module */
 struct vc4galliumstaticdata
 {
@@ -158,6 +204,12 @@ struct vc4galliumstaticdata
     ULONG                   gpu_mem_allocs;
     ULONG                   vcram_base;
     ULONG                   vcram_size;
+
+    /* VC4_ARM_MEM: the arenas BOs are carved from. mem_lock is a leaf
+     * lock, never held while taking another. */
+    struct MinList          arenas;
+    ULONG                   arena_bytes;
+    struct SignalSemaphore  mem_lock;
 
     /* Mailbox message buffer (16-byte aligned) */
     APTR                    mbox_msg_raw;   /* Raw allocation for FreeMem */
@@ -231,6 +283,7 @@ struct vc4galliumstaticdata
     OOP_Object             *overlay_bm;
     /* Page the last set_overlay took off the plane; on scanout until vblank. */
     ULONG                   overlay_displaced_handle;
+    BOOL                    ovl_vbl_armed;  /* vcgfx may call the overlay's vblank callback */
 
     struct Task            *v3d_service_task;
     struct Task            *v3d_service_waiter;
@@ -243,7 +296,26 @@ struct vc4galliumstaticdata
     /* mesa3dgl's GalliumCoreAPI table (aHidd_Gallium_CoreAPI attr at New).
      * The driver's Mesa-core trampolines bind to it at CreatePipeScreen. */
     APTR                    coreapi;
+
+    /* Every GL screen in the system, id = index + 1; under bo_lock. The
+     * task hook marks a session dead when its task ends without tearing
+     * it down, and the next screen created or destroyed sweeps it. That
+     * hook runs as the task is removed and cannot wait, so it sets the
+     * volatile vs_Dead without the lock. */
+    struct vc4_session      sessions[VC4_MAX_SESSIONS];
+    struct Hook             task_hook;
+    APTR                    task_res;
 };
+
+/* The session an fd stands for, 0 for none. */
+static inline ULONG vc4_fd_session(int fd)
+{
+    ULONG v = (ULONG)fd, id = v & 0xff;
+
+    if (((v & ~0xffUL) != VC4_SCREENFD_TAG) || !id || (id > VC4_MAX_SESSIONS))
+        return 0;
+    return id;
+}
 
 LIBBASETYPE
 {
@@ -283,11 +355,12 @@ LIBBASETYPE
 struct pipe_screen;
 struct RastPort;
 struct pipe_screen *vc4_aros_create_screen(struct vc4_aros_bridge *bridge,
-                                           APTR coreapi);
+                                           APTR coreapi, int fd);
 IPTR vc4_aros_display_rp(APTR resource, LONG srcx, LONG srcy,
                          struct RastPort *rp, LONG dstx, LONG dsty,
                          LONG width, LONG height);
-BOOL aros_drm_release_bridge(void);
+void aros_drm_screen_gone(APTR screen, BOOL dead);
+void aros_drm_release_bridge(void);
 
 /* Drain any in-flight display-blit DMA. Defined in vc4_galliumclass.c. */
 void vc4_aros_dma_wait_idle(struct vc4galliumstaticdata *sd);

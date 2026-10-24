@@ -16,22 +16,24 @@
 #include "vc4_drm_aros.h"
 #include "vc4_aros_bridge.h"
 
-/* Stack-local fake fd wrapping the ctx (the hidd's staticdata). Valid
- * only for the helper call — no helper stores it past return. */
-#define BRIDGE_FD(ctx)                                              \
+/* Stack-local fake fd wrapping the ctx (the hidd's staticdata) and the
+ * session the screen's fd names. Valid only for the helper call — no
+ * helper stores it past return. */
+#define BRIDGE_FD(ctx, sid)                                         \
     struct vc4_aros_fd _bfd = { VC4_AROS_FD_MAGIC,                  \
-                                (struct vc4galliumstaticdata *)(ctx) }; \
+                                (struct vc4galliumstaticdata *)(ctx), \
+                                (sid) };                            \
     int _fd = (int)(IPTR)&_bfd
 
-static int bridge_ioctl(void *ctx, unsigned long request, void *arg)
+static int bridge_ioctl(void *ctx, int fd, unsigned long request, void *arg)
 {
-    BRIDGE_FD(ctx);
+    BRIDGE_FD(ctx, vc4_fd_session(fd));
     return vc4_aros_ioctl(_fd, request, arg);
 }
 
 static void *bridge_mmap(void *ctx, ULONG handle)
 {
-    BRIDGE_FD(ctx);
+    BRIDGE_FD(ctx, 0);
     return vc4_aros_mmap(_fd, handle);
 }
 

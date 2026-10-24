@@ -21,9 +21,10 @@
 #include <exec/types.h>
 #include <oop/oop.h>
 
-/* ABI version. Bump on any field add/remove/reorder. mesa3dgl checks it
- * at screen-create and refuses an incompatible bridge. */
-#define VC4_AROS_BRIDGE_VERSION   5
+/* ABI version. Bump on any field add/remove/reorder, and on any change to
+ * a function pointer's signature: that breaks callers just the same.
+ * Screen-create refuses a bridge of another version. */
+#define VC4_AROS_BRIDGE_VERSION   6
 
 /* Which gallium driver this bridge fronts. mesa3dgl dispatches
  * screen-create on driver_id, so one mesa3dgl can carry several drivers
@@ -56,8 +57,9 @@ struct vc4_aros_bridge
 
     /* DRM ioctl entry. request is a DRM_VC4_* command (DRM_COMMAND_BASE +
      * cmd) or plain DRM_GEM_CLOSE etc; arg is the matching drm_vc4_*
-     * struct. Returns 0 / negative errno. */
-    int    (*ioctl)(void *ctx, unsigned long request, void *arg);
+     * struct. fd is the screen's, which names its session. Returns 0 /
+     * negative errno. */
+    int    (*ioctl)(void *ctx, int fd, unsigned long request, void *arg);
 
     /* Map a BO (handle from DRM_VC4_CREATE_BO) and return a CPU pointer,
      * NULL on failure. Mapping is identity (CPU == physical) on AROS, so

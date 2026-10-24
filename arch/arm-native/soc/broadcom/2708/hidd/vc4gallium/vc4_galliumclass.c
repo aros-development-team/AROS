@@ -43,6 +43,7 @@
 #define aoHidd_VideoCoreGfxBitMap_Flip          2
 #define aoHidd_VideoCoreGfxBitMap_Overlay       3
 #define aoHidd_VideoCoreGfxBitMap_LatchWait     4
+#define aoHidd_VideoCoreGfxBitMap_VBlank        5
 
 /* Mirrored from vcgfx_bitmap.h, like the attr indices above. */
 struct vc4gfx_overlay
@@ -55,6 +56,13 @@ struct vc4gfx_overlay
     ULONG ovl_Flags;
 };
 #define VC4GFX_OVL_NOWAIT (1 << 0)
+
+/* Per-vblank callback, interrupt context (mirrored from vcgfx_bitmap.h). */
+struct vc4gfx_vblank
+{
+    void (*vbl_Func)(APTR data);
+    APTR  vbl_Data;
+};
 
 #if (AROS_BIG_ENDIAN == 1)
 #define AROS_PIXFMT RECTFMT_RAW
@@ -372,9 +380,99 @@ VOID METHOD(HiddVC4Gallium, Root, Get)
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
+/* The session a pipe screen belongs to, 0 for none. */
+static ULONG vc4_session_of(struct vc4galliumstaticdata *sd, APTR screen)
+{
+    ULONG i, sid = 0;
+
+    ObtainSemaphore(&sd->bo_lock);
+    for (i = 0; i < VC4_MAX_SESSIONS; i++)
+    {
+        if (sd->sessions[i].vs_Used && (sd->sessions[i].vs_Screen == screen))
+        {
+            sid = i + 1;
+            break;
+        }
+    }
+    ReleaseSemaphore(&sd->bo_lock);
+    return sid;
+}
+
+/* For the present half: is another GL app live? An app can hold more
+ * than one screen, and contention is between apps, so each task counts
+ * once. */
+BOOL vc4_aros_shared_gpu(void *ctx)
+{
+    struct vc4galliumstaticdata *sd = ctx;
+    struct vc4_session *s = sd->sessions;
+    ULONG i, j, n = 0;
+
+    ObtainSemaphore(&sd->bo_lock);
+    for (i = 0; i < VC4_MAX_SESSIONS; i++)
+    {
+        if (!s[i].vs_Used || s[i].vs_Dead)
+            continue;
+        for (j = 0; j < i; j++)
+        {
+            if (s[j].vs_Used && !s[j].vs_Dead && (s[j].vs_Task == s[i].vs_Task))
+                break;
+        }
+        if (j == i)
+            n++;
+    }
+    ReleaseSemaphore(&sd->bo_lock);
+    return n > 1;
+}
+
+/* Sessions whose task died without destroying its screen: their Mesa
+ * objects are gone, so the present state they own is dropped, not
+ * released, and then their BOs go. */
+static void vc4_sweep_dead(struct vc4galliumstaticdata *sd)
+{
+    ULONG i;
+    BOOL dead = FALSE;
+    APTR screen = NULL;
+
+    ObtainSemaphore(&sd->bo_lock);
+    for (i = 0; (i < VC4_MAX_SESSIONS) && !dead; i++)
+        dead = sd->sessions[i].vs_Used && sd->sessions[i].vs_Dead;
+    ReleaseSemaphore(&sd->bo_lock);
+    if (!dead)
+        return;
+
+    vc4_aros_wait_idle(sd);
+
+    for (i = 0; i < VC4_MAX_SESSIONS; i++)
+    {
+        /* Claim it, so a concurrent sweep leaves it alone. */
+        ObtainSemaphore(&sd->bo_lock);
+        dead = sd->sessions[i].vs_Used && sd->sessions[i].vs_Dead;
+        if (dead)
+        {
+            sd->sessions[i].vs_Dead = FALSE;
+            screen = sd->sessions[i].vs_Screen;
+        }
+        ReleaseSemaphore(&sd->bo_lock);
+        if (!dead)
+            continue;
+
+        aros_drm_screen_gone(screen, TRUE);
+        vc4_aros_release_session(sd, i + 1);
+        bug("[VC4Gallium] session %u: its task ended without a GL teardown, swept\n",
+            (unsigned)(i + 1));
+
+        ObtainSemaphore(&sd->bo_lock);
+        sd->sessions[i].vs_Used = FALSE;
+        sd->sessions[i].vs_Dead = FALSE;
+        ReleaseSemaphore(&sd->bo_lock);
+    }
+}
+
 APTR METHOD(HiddVC4Gallium, Hidd_Gallium, CreatePipeScreen)
 {
     struct vc4galliumstaticdata *sd = SD(cl);
+    struct pipe_screen *screen;
+    ULONG i;
 
     /* Diagnostic: has the firmware governor re-clocked anything since
      * InitLib forced V3D to max? Logged once per GL context start. */
@@ -392,7 +490,41 @@ APTR METHOD(HiddVC4Gallium, Hidd_Gallium, CreatePipeScreen)
         sd->bridge_inited = TRUE;
     }
 
-    return vc4_aros_create_screen(&sd->bridge, sd->coreapi);
+    vc4_sweep_dead(sd);
+
+    /* A session per screen, named to the shim by the fd. */
+    ObtainSemaphore(&sd->bo_lock);
+    for (i = 0; (i < VC4_MAX_SESSIONS) && sd->sessions[i].vs_Used; i++)
+        ;
+    if (i < VC4_MAX_SESSIONS)
+    {
+        sd->sessions[i].vs_Used   = TRUE;
+        sd->sessions[i].vs_Dead   = FALSE;
+        sd->sessions[i].vs_Screen = NULL;
+        sd->sessions[i].vs_Task   = FindTask(NULL);
+    }
+    ReleaseSemaphore(&sd->bo_lock);
+    if (i == VC4_MAX_SESSIONS)
+    {
+        bug("[VC4Gallium] %u GL screens open already - GL falls back to softpipe\n",
+            (unsigned)VC4_MAX_SESSIONS);
+        return NULL;
+    }
+
+    screen = vc4_aros_create_screen(&sd->bridge, sd->coreapi,
+                                    (int)(VC4_SCREENFD_TAG | (i + 1)));
+    if (!screen)
+    {
+        vc4_aros_release_session(sd, i + 1);
+        ObtainSemaphore(&sd->bo_lock);
+        sd->sessions[i].vs_Used = FALSE;
+        ReleaseSemaphore(&sd->bo_lock);
+        return NULL;
+    }
+    ObtainSemaphore(&sd->bo_lock);
+    sd->sessions[i].vs_Screen = screen;
+    ReleaseSemaphore(&sd->bo_lock);
+    return screen;
 }
 
 IPTR METHOD(HiddVC4Gallium, Hidd_Gallium, DisplayResourceRP)
@@ -406,6 +538,7 @@ VOID METHOD(HiddVC4Gallium, Hidd_Gallium, DestroyPipeScreen)
 {
     struct vc4galliumstaticdata *sd = SD(cl);
     struct vc4_v3d_state *v3d = &sd->v3d;
+    ULONG sid, i;
 
     /* The direct path builds the pipe_screen in mesa3dgl via
      * vc4_screen_create(), so the base class's no-op DestroyPipeScreen
@@ -413,7 +546,11 @@ VOID METHOD(HiddVC4Gallium, Hidd_Gallium, DestroyPipeScreen)
      * Dispatch into the screen's own destroy fn here. */
     D(bug("[VC4Gallium] %s(screen=%p)\n", __PRETTY_FUNCTION__, msg->screen));
 
-    if (msg->screen)
+    if (!msg->screen)
+        return;
+
+    sid = vc4_session_of(sd, msg->screen);
+
     {
         struct pipe_screen *screen = (struct pipe_screen *)msg->screen;
 
@@ -425,16 +562,32 @@ VOID METHOD(HiddVC4Gallium, Hidd_Gallium, DestroyPipeScreen)
         vc4_aros_wait_idle(sd);
         vc4_aros_dma_wait_idle(sd);
 
+        /* Only the present state this screen owns: another app keeps its
+         * overlay or its scanout pages. */
+        aros_drm_screen_gone(screen, FALSE);
         screen->destroy(screen);
     }
 
-    /* Drop the winsys bookkeeping for this screen. TRUE means it was the
-     * last one, so the hardware reset below is safe; with a second screen
-     * still live (a capability-probe context, or a fullscreen toggle
-     * building the new context before dropping the old) it would free the
-     * survivor's BOs and clear V3D state under its rendering. */
-    if (!aros_drm_release_bridge())
+    if (sid)
+    {
+        vc4_aros_release_session(sd, sid);
+        ObtainSemaphore(&sd->bo_lock);
+        sd->sessions[sid - 1].vs_Used = FALSE;
+        ReleaseSemaphore(&sd->bo_lock);
+    }
+    vc4_sweep_dead(sd);
+
+    /* With another screen live (another app, a capability-probe context,
+     * or a fullscreen toggle building the new context before dropping the
+     * old) the reset below would free the survivor's BOs and clear V3D
+     * state under its rendering. */
+    ObtainSemaphore(&sd->bo_lock);
+    for (i = 0; (i < VC4_MAX_SESSIONS) && !sd->sessions[i].vs_Used; i++)
+        ;
+    ReleaseSemaphore(&sd->bo_lock);
+    if (i < VC4_MAX_SESSIONS)
         return;
+    aros_drm_release_bridge();
 
     /* Return the driver to a clean, idle, empty state for the next GL
      * session: sweep whatever Mesa leaked (plus the async-DMA pin and the
@@ -817,6 +970,26 @@ int vc4_aros_set_overlay(struct vc4galliumstaticdata *sd,
         vc4_aros_bo_unref_locked(sd, prev);
     ReleaseSemaphore(&sd->bo_lock);
     return 0;
+}
+
+/* Installs vcgfx's per-vblank callback, NULL removes it. Called by the
+ * present half (aros_drm_vc4.c), which is linked into this hidd too, so
+ * the bridge ABI shared with mesa3dgl stays as it is. */
+void vc4_aros_set_vblank(void *ctx, OOP_Object *bm_obj,
+                         struct vc4gfx_vblank *vbl)
+{
+    struct vc4galliumstaticdata *sd = ctx;
+    struct TagItem vbltags[] =
+    {
+        { 0, (IPTR)vbl },
+        { TAG_DONE, 0 }
+    };
+
+    if (!bm_obj || !sd->hiddVC4GfxBMAB)
+        return;
+    vbltags[0].ti_Tag = sd->hiddVC4GfxBMAB + aoHidd_VideoCoreGfxBitMap_VBlank;
+    OOP_SetAttrs(bm_obj, vbltags);
+    sd->ovl_vbl_armed = (vbl != NULL);
 }
 
 void vc4_aros_overlay_latch_wait(struct vc4galliumstaticdata *sd)
