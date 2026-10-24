@@ -95,6 +95,14 @@ SPIOEXIT:
   if ((pipekey->iotype != iotype) && (pipekey->iotype != PIPERW))
     goto SPIOEXIT;
 
+  /* No buffer space, data or tap I/O is needed for an empty request. */
+  if (pkt->dp_Arg3 == 0)
+    { pkt->dp_Res1= 0;
+      pkt->dp_Res2= 0;
+      QuickReplyPkt (pkt);
+      return;
+    }
+
   if ((wd= (WAITINGDATA *) AllocMem (sizeof (WAITINGDATA), ALLOCMEM_FLAGS)) == NULL)
     { pkt->dp_Res2= ERROR_NO_FREE_STORE;
       goto SPIOEXIT;
