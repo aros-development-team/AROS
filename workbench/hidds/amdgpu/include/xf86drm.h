@@ -62,6 +62,7 @@ extern int drmGetDevice2(int fd, uint32_t flags, drmDevicePtr *device);
 extern void drmFreeDevice(drmDevicePtr *device);
 extern int drmGetNodeTypeFromFd(int fd);
 extern char *drmGetPrimaryDeviceNameFromFd(int fd);
+extern char *drmGetRenderDeviceNameFromFd(int fd);
 extern char *drmGetFormatModifierName(uint64_t modifier);
 extern void drmMsg(const char *format, ...);
 

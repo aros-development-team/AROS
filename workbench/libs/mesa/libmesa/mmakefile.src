@@ -60,6 +60,7 @@ endif
 ifeq ($(MESA_MESA_LAYOUT),new)
 MESA_GENERATED_C_SOURCES := \
             main/api_exec_init.c \
+            main/api_trace.c \
             main/enums.c \
             main/format_fallback.c \
             main/unmarshal_table.c \
@@ -167,6 +168,11 @@ $(top_builddir)/$(CUR_MESADIR)/main/enums.c: $(dispatch_deps)
 $(top_builddir)/$(CUR_MESADIR)/main/api_exec_init.c: PRIVATE_SCRIPT := $(PYTHON) $(glapi)/api_exec_init.py
 $(top_builddir)/$(CUR_MESADIR)/main/api_exec_init.c: PRIVATE_XML := -f $(glapi)/gl_and_es_API.xml
 $(top_builddir)/$(CUR_MESADIR)/main/api_exec_init.c: $(dispatch_deps)
+	$(call es-gen)
+
+$(top_builddir)/$(CUR_MESADIR)/main/api_trace.c: PRIVATE_SCRIPT := $(PYTHON) $(glapi)/api_trace_c.py
+$(top_builddir)/$(CUR_MESADIR)/main/api_trace.c: PRIVATE_XML := -f $(glapi)/gl_and_es_API.xml
+$(top_builddir)/$(CUR_MESADIR)/main/api_trace.c: $(dispatch_deps)
 	$(call es-gen)
 
 $(top_builddir)/$(CUR_MESADIR)/main/api_exec_decl.h: PRIVATE_SCRIPT := $(PYTHON) $(glapi)/api_exec_decl_h.py

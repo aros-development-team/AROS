@@ -47,7 +47,7 @@ endif
 # The svga glue targets the Mesa 26 gallium driver API; only hook the hidd
 # in for the Mesa version it has been ported to.
 #MM- workbench-hidds-vmwaresvga : hidd-vmwaresvga-mesa$(OPT_MESAGL)
-#MM- hidd-vmwaresvga-mesa26.0.0 : hidd-vmwaresvga-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
+#MM- hidd-vmwaresvga-mesa26.2.5 : hidd-vmwaresvga-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 #MM- hidd-vmwaresvga-pc-i386 : hidd-vmwaresvga
 #MM- hidd-vmwaresvga-pc-x86_64 : hidd-vmwaresvga
 #MM hidd-vmwaresvga: includes hidd-vmwaresvga-drmcore hidd-vmwaresvga-drm hidd-vmwaresvga-libdrm hidd-vmwaresvga-svga hidd-gallium mesa3dgl-linklibs linklibs-libatomic workbench-libs-z-linklib

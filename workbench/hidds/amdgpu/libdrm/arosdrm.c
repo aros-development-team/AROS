@@ -463,6 +463,13 @@ char *drmGetPrimaryDeviceNameFromFd(int fd)
     return name;
 }
 
+/* No render nodes on AROS; the amdgpu winsys only asks for one after a
+ * failed EACCES open of a primary node, which cannot happen here either. */
+char *drmGetRenderDeviceNameFromFd(int fd)
+{
+    return NULL;
+}
+
 char *drmGetFormatModifierName(uint64_t modifier)
 {
     return NULL;

@@ -56,7 +56,8 @@ GALLIUM_AUXILIARY_GENERATED_SOURCES := \
             driver_trace/tr_util.c \
             util/u_tracepoints.c \
             indices/u_indices_gen.c \
-            indices/u_unfilled_gen.c
+            indices/u_unfilled_gen.c \
+            draw/draw_nir_lower_opcodes.c
 GALLIUM_AUXILIARY_GENERATED_HEADERS := \
             driver_trace/tr_util.h \
             util/u_tracepoints.h
@@ -166,6 +167,16 @@ $(top_builddir)/$(CUR_MESADIR)/driver_trace/tr_util.h: \
 	%mkdir_q dir="$(dir $@)"
 	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
 	$(Q)$(PYTHON) $(PYTHON_FLAGS) $(top_srcdir)/$(CUR_MESADIR)/driver_trace/enums2names.py $(tr_util_inputs) -C $(top_builddir)/$(CUR_MESADIR)/driver_trace/tr_util.c -H $(top_builddir)/$(CUR_MESADIR)/driver_trace/tr_util.h
+endif
+
+ifeq ($(MESA_GALLIUM_AUX_LAYOUT),new)
+# nir_algebraic pass for the draw module's software stages (Mesa >= 26.2)
+$(top_builddir)/$(CUR_MESADIR)/draw/draw_nir_lower_opcodes.c: \
+	$(top_srcdir)/$(CUR_MESADIR)/draw/draw_nir_lower_opcodes.py \
+	$(top_srcdir)/src/compiler/nir/nir_algebraic.py $(top_srcdir)/src/compiler/nir/nir_opcodes.py
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $< -p $(top_srcdir)/src/compiler/nir/ > $@.tmp && mv -f $@.tmp $@
 endif
 
 #MM

@@ -6,7 +6,7 @@ include $(SRCDIR)/workbench/libs/mesa/mesa.cfg
 EGL_PATH = $(top_srcdir)/src/egl
 
 ################################################################################
-# EGL — Mesa 26.0.0 (Makefile.sources removed; files listed explicitly)        #
+# EGL — Mesa 26 (Makefile.sources removed; files listed explicitly)            #
 ################################################################################
 
 #MM workbench-libs-egl : includes mesa3dgl-linklibs linklibs-libatomic

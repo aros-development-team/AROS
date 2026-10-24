@@ -14,7 +14,7 @@ GALLIUM_PATH = $(top_srcdir)/$(CUR_MESADIR)
 # the Mesa version it has been ported to.
 #MM- workbench-hidds-raspi : hidd-vc4gallium-mesa$(OPT_MESAGL)
 #MM- hidd-vc4gallium-mesa20.0.8 : hidd-vc4gallium
-#MM- hidd-vc4gallium-mesa26.0.0 : hidd-vc4gallium
+#MM- hidd-vc4gallium-mesa26.2.5 : hidd-vc4gallium
 
 #MM hidd-vc4gallium : includes hidd-gallium mesa3dgl-linklibs linklibs-libatomic linklibs-gallium_vc4 linklibs-gallium_vc4-gca kernel-mbox-bcm2708-includes kernel-dma-bcm2708-includes
 #MM linklibs-gallium_vc4 : mesa3dgl-linklibs linklibs-gallium_vc4-gen-cle

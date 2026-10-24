@@ -1163,8 +1163,8 @@ pushbuf_submit(struct nouveau_pushbuf *push, struct nouveau_object *chan)
    if (chan->oclass != NOUVEAU_FIFO_CHANNEL_CLASS)
       return -EINVAL;
 
-   if (push->kick_notify)
-      push->kick_notify(push);
+   if (push->kick_notify && !push->kick_notify(push))
+      return -ENOMEM;
 
    nouveau_pushbuf_data(push, NULL, 0, 0);
 

@@ -1,0 +1,1188 @@
+diff -ruN mesa-26.2.5/include/c99_alloca.h mesa-26.2.5.aros/include/c99_alloca.h
+--- mesa-26.2.5/include/c99_alloca.h	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/include/c99_alloca.h	2026-10-24 22:32:44.543719807 +0100
+@@ -35,7 +35,7 @@
+ 
+ #  define alloca _alloca
+ 
+-#elif defined(__sun) || defined(__CYGWIN__)
++#elif defined(__sun) || defined(__CYGWIN__) || defined(__AROS__)
+ 
+ #  include <alloca.h>
+ 
+diff -ruN mesa-26.2.5/include/EGL/eglplatform.h mesa-26.2.5.aros/include/EGL/eglplatform.h
+--- mesa-26.2.5/include/EGL/eglplatform.h	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/include/EGL/eglplatform.h	2026-10-24 22:32:44.542850007 +0100
+@@ -145,6 +145,13 @@
+ typedef khronos_uintptr_t  EGLNativePixmapType;
+ typedef khronos_uintptr_t  EGLNativeWindowType;
+ 
++#elif defined(__AROS__)
++
++struct Window;  /* intuition/intuition.h */
++typedef void              *EGLNativeDisplayType;
++typedef void              *EGLNativePixmapType;
++typedef struct Window     *EGLNativeWindowType;
++
+ #else
+ #error "Platform not recognized"
+ #endif
+diff -ruN mesa-26.2.5/include/math.h mesa-26.2.5.aros/include/math.h
+--- mesa-26.2.5/include/math.h	1970-01-01 01:00:00.000000000 +0100
++++ mesa-26.2.5.aros/include/math.h	2026-10-24 22:32:44.543659907 +0100
+@@ -0,0 +1,4 @@
++#ifndef AROS_MESA_LOCAL_MATH_H
++#define AROS_MESA_LOCAL_MATH_H
++#include_next <math.h>
++#endif
+diff -ruN mesa-26.2.5/include/stdlib.h mesa-26.2.5.aros/include/stdlib.h
+--- mesa-26.2.5/include/stdlib.h	1970-01-01 01:00:00.000000000 +0100
++++ mesa-26.2.5.aros/include/stdlib.h	2026-10-24 22:32:44.543687707 +0100
+@@ -0,0 +1,4 @@
++#ifndef AROS_MESA_LOCAL_STDLIB_H
++#define AROS_MESA_LOCAL_STDLIB_H
++#include_next <stdlib.h>
++#endif
+diff -ruN mesa-26.2.5/src/c11/threads.h mesa-26.2.5.aros/src/c11/threads.h
+--- mesa-26.2.5/src/c11/threads.h	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/c11/threads.h	2026-10-24 22:32:44.541407308 +0100
+@@ -47,6 +47,20 @@
+ #  error Not supported on this platform.
+ #endif
+ 
++#if defined(__AROS__)
++/* AROS exec/types.h defines these as macros; they collide with Mesa parser
++ * token names (for example VOLATILE in generated GLSL parser headers).
++ */
++# if defined(VOLATILE)
++#  undef VOLATILE
++# endif
++# if defined(RESTRICT)
++#  undef RESTRICT
++# endif
++# if defined(STATIC)
++#  undef STATIC
++# endif
++#endif
+ #if defined(HAVE_THRD_CREATE)
+ #include <threads.h>
+ #else
+diff -ruN mesa-26.2.5/src/c11/time.h mesa-26.2.5.aros/src/c11/time.h
+--- mesa-26.2.5/src/c11/time.h	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/c11/time.h	2026-10-24 22:32:44.541459808 +0100
+@@ -10,6 +10,10 @@
+ 
+ #include <time.h>
+ 
++#if defined(__AROS__) && !defined(HAVE_STRUCT_TIMESPEC)
++#define HAVE_STRUCT_TIMESPEC 1
++#endif
++
+ /*---------------------------- macros ---------------------------*/
+ 
+ /* Refer to https://htmlpreview.github.io/?https://icube-forge.unistra.fr/icps/c23-library/-/raw/main/README.html#time_monotonic-time_active-time_thread_active */
+diff -ruN mesa-26.2.5/src/compiler/glsl/glsl_lexer.ll mesa-26.2.5.aros/src/compiler/glsl/glsl_lexer.ll
+--- mesa-26.2.5/src/compiler/glsl/glsl_lexer.ll	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/compiler/glsl/glsl_lexer.ll	2026-10-24 22:32:44.541533908 +0100
+@@ -23,9 +23,27 @@
+  */
+ #include <ctype.h>
+ #include <limits.h>
++#include <stdlib.h>
+ #include "util/strtod.h"
+ #include "ast.h"
+ #include "glsl_parser_extras.h"
++#if defined(__AROS__)
++# if defined(ASM)
++#  undef ASM
++# endif
++# if defined(CONST)
++#  undef CONST
++# endif
++# if defined(STATIC)
++#  undef STATIC
++# endif
++# if defined(VOLATILE)
++#  undef VOLATILE
++# endif
++# if defined(RESTRICT)
++#  undef RESTRICT
++# endif
++#endif
+ #include "glsl_parser.h"
+ #include "main/consts_exts.h"
+ 
+diff -ruN mesa-26.2.5/src/compiler/glsl/glsl_parser_extras.cpp mesa-26.2.5.aros/src/compiler/glsl/glsl_parser_extras.cpp
+--- mesa-26.2.5/src/compiler/glsl/glsl_parser_extras.cpp	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/compiler/glsl/glsl_parser_extras.cpp	2026-10-24 22:32:44.541925508 +0100
+@@ -37,6 +37,23 @@
+ #include "util/mesa-blake3.h"
+ #include "ast.h"
+ #include "glsl_parser_extras.h"
++#if defined(__AROS__)
++# if defined(ASM)
++#  undef ASM
++# endif
++# if defined(CONST)
++#  undef CONST
++# endif
++# if defined(STATIC)
++#  undef STATIC
++# endif
++# if defined(VOLATILE)
++#  undef VOLATILE
++# endif
++# if defined(RESTRICT)
++#  undef RESTRICT
++# endif
++#endif
+ #include "glsl_parser.h"
+ #include "glsl_to_nir.h"
+ #include "ir_optimization.h"
+diff -ruN mesa-26.2.5/src/compiler/glsl/glsl_parser.yy mesa-26.2.5.aros/src/compiler/glsl/glsl_parser.yy
+--- mesa-26.2.5/src/compiler/glsl/glsl_parser.yy	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/compiler/glsl/glsl_parser.yy	2026-10-24 22:32:44.541748108 +0100
+@@ -79,6 +79,24 @@
+    else
+       return strcasecmp(s1, s2);
+ }
++
++#if defined(__AROS__)
++# if defined(ASM)
++#  undef ASM
++# endif
++# if defined(CONST)
++#  undef CONST
++# endif
++# if defined(STATIC)
++#  undef STATIC
++# endif
++# if defined(VOLATILE)
++#  undef VOLATILE
++# endif
++# if defined(RESTRICT)
++#  undef RESTRICT
++# endif
++#endif
+ %}
+ 
+ %expect 0
+diff -ruN mesa-26.2.5/src/egl/main/egldisplay.c mesa-26.2.5.aros/src/egl/main/egldisplay.c
+--- mesa-26.2.5/src/egl/main/egldisplay.c	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/egl/main/egldisplay.c	2026-10-24 22:32:44.543144607 +0100
+@@ -84,6 +84,7 @@
+    {_EGL_PLATFORM_SURFACELESS, "surfaceless"},
+    {_EGL_PLATFORM_DEVICE, "device"},
+    {_EGL_PLATFORM_WINDOWS, "windows"},
++   {_EGL_PLATFORM_AROS, "aros"},
+ };
+ 
+ /**
+diff -ruN mesa-26.2.5/src/egl/main/egldisplay.h mesa-26.2.5.aros/src/egl/main/egldisplay.h
+--- mesa-26.2.5/src/egl/main/egldisplay.h	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/egl/main/egldisplay.h	2026-10-24 22:32:44.542908807 +0100
+@@ -55,6 +55,7 @@
+    _EGL_PLATFORM_SURFACELESS,
+    _EGL_PLATFORM_DEVICE,
+    _EGL_PLATFORM_WINDOWS,
++   _EGL_PLATFORM_AROS,
+ 
+    _EGL_NUM_PLATFORMS,
+    _EGL_INVALID_PLATFORM = -1
+diff -ruN mesa-26.2.5/src/gallium/auxiliary/nir/nir_to_tgsi.c mesa-26.2.5.aros/src/gallium/auxiliary/nir/nir_to_tgsi.c
+--- mesa-26.2.5/src/gallium/auxiliary/nir/nir_to_tgsi.c	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/gallium/auxiliary/nir/nir_to_tgsi.c	2026-10-24 22:33:57.364380604 +0100
+@@ -801,7 +801,10 @@
+    /* Look for a single use for try_store_in_tgsi_output */
+    nir_src *use = NULL;
+    nir_foreach_reg_load(src, reg_decl) {
+-      nir_intrinsic_instr *load = nir_instr_as_intrinsic(nir_src_use_instr(src));
++      nir_instr *parent = nir_src_use_instr(src);
++      if (!parent || parent->type != nir_instr_type_intrinsic)
++         return false;
++      nir_intrinsic_instr *load = (nir_intrinsic_instr *)parent;
+       nir_foreach_use_including_if(load_use, &load->def) {
+          /* We can only have one use */
+          if (use != NULL)
+@@ -2938,17 +2941,18 @@
+ static void
+ ntt_emit_instr(struct ntt_compile *c, nir_instr *instr)
+ {
++   /* Use direct casts in this hot path to avoid assert-failure callbacks on AROS. */
+    switch (instr->type) {
+    case nir_instr_type_deref:
+       /* ignored, will be walked by nir_intrinsic_image_*_deref. */
+       break;
+ 
+    case nir_instr_type_alu:
+-      ntt_emit_alu(c, nir_instr_as_alu(instr));
++      ntt_emit_alu(c, (nir_alu_instr *)instr);
+       break;
+ 
+    case nir_instr_type_intrinsic:
+-      ntt_emit_intrinsic(c, nir_instr_as_intrinsic(instr));
++      ntt_emit_intrinsic(c, (nir_intrinsic_instr *)instr);
+       break;
+ 
+    case nir_instr_type_load_const:
+@@ -2959,15 +2963,15 @@
+       break;
+ 
+    case nir_instr_type_tex:
+-      ntt_emit_texture(c, nir_instr_as_tex(instr));
++      ntt_emit_texture(c, (nir_tex_instr *)instr);
+       break;
+ 
+    case nir_instr_type_jump:
+-      ntt_emit_jump(c, nir_instr_as_jump(instr));
++      ntt_emit_jump(c, (nir_jump_instr *)instr);
+       break;
+ 
+    case nir_instr_type_undef:
+-      ntt_emit_ssa_undef(c, nir_instr_as_undef(instr));
++      ntt_emit_ssa_undef(c, (nir_undef_instr *)instr);
+       break;
+ 
+    default:
+diff -ruN mesa-26.2.5/src/gallium/drivers/nouveau/nouveau_fence.h mesa-26.2.5.aros/src/gallium/drivers/nouveau/nouveau_fence.h
+--- mesa-26.2.5/src/gallium/drivers/nouveau/nouveau_fence.h	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/gallium/drivers/nouveau/nouveau_fence.h	2026-10-24 22:33:57.364545204 +0100
+@@ -61,6 +61,12 @@
+ MUST_CHECK bool _nouveau_fence_next(struct nouveau_context *);
+ void _nouveau_fence_ref(struct nouveau_fence *, struct nouveau_fence **);
+ 
++#if defined(__AROS__)
++/* the ported kernel driver exports these names too */
++#define nouveau_fence_new   gallium_nouveau_fence_new
++#define nouveau_fence_wait  gallium_nouveau_fence_wait
++#endif
++
+ /** returns false on error */
+ MUST_CHECK bool nouveau_fence_new(struct nouveau_context *, struct nouveau_fence **);
+ void nouveau_fence_cleanup(struct nouveau_context *);
+diff -ruN mesa-26.2.5/src/gallium/drivers/nouveau/nouveau_screen.c mesa-26.2.5.aros/src/gallium/drivers/nouveau/nouveau_screen.c
+--- mesa-26.2.5/src/gallium/drivers/nouveau/nouveau_screen.c	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/gallium/drivers/nouveau/nouveau_screen.c	2026-10-24 22:32:44.544765107 +0100
+@@ -11,7 +11,9 @@
+ #include "util/u_string.h"
+ #include "util/hex.h"
+ 
++#if !defined(__AROS__)
+ #include "util/os_mman.h"
++#endif
+ #include "util/os_time.h"
+ 
+ #include <stdio.h>
+@@ -199,11 +201,16 @@
+ static void*
+ reserve_vma(uintptr_t start, uint64_t reserved_size)
+ {
++#if defined(__AROS__)
++   /* no address space reservation on AROS; SVM stays disabled */
++   return NULL;
++#else
+    void *reserved = os_mmap((void*)start, reserved_size, PROT_NONE,
+                             MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+    if (reserved == MAP_FAILED)
+       return NULL;
+    return reserved;
++#endif
+ }
+ 
+ static void
+@@ -333,7 +340,11 @@
+       size = sizeof(nve0_data);
+    }
+ 
++#if defined(__AROS__)
++   const bool enable_svm = false;
++#else
+    bool enable_svm = debug_get_bool_option("NOUVEAU_SVM", false);
++#endif
+    screen->has_svm = false;
+    /* we only care about HMM with OpenCL enabled */
+    if (dev->chipset > 0x130 && enable_svm) {
+@@ -368,8 +379,10 @@
+          ret = drmCommandWrite(screen->drm->fd, DRM_NOUVEAU_SVM_INIT,
+                                &svm_args, sizeof(svm_args));
+          screen->has_svm = !ret;
++#if !defined(__AROS__)
+          if (!screen->has_svm)
+             os_munmap(screen->svm_cutout, screen->svm_cutout_size);
++#endif
+          break;
+       } while ((start + screen->svm_cutout_size) < BITFIELD64_MASK(limit_bit));
+    }
+@@ -460,8 +473,10 @@
+    return 0;
+ 
+ err:
++#if !defined(__AROS__)
+    if (screen->svm_cutout)
+       os_munmap(screen->svm_cutout, screen->svm_cutout_size);
++#endif
+    return ret;
+ }
+ 
+@@ -471,8 +486,10 @@
+    int fd = screen->drm->fd;
+ 
+    glsl_type_singleton_decref();
++#if !defined(__AROS__)
+    if (screen->has_svm)
+       os_munmap(screen->svm_cutout, screen->svm_cutout_size);
++#endif
+ 
+    nouveau_mm_destroy(screen->mm_GART);
+    nouveau_mm_destroy(screen->mm_VRAM);
+diff -ruN mesa-26.2.5/src/gallium/drivers/nouveau/nouveau_vp3_video.c mesa-26.2.5.aros/src/gallium/drivers/nouveau/nouveau_vp3_video.c
+--- mesa-26.2.5/src/gallium/drivers/nouveau/nouveau_vp3_video.c	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/gallium/drivers/nouveau/nouveau_vp3_video.c	2026-10-24 22:32:44.544154907 +0100
+@@ -20,7 +20,15 @@
+  * OTHER DEALINGS IN THE SOFTWARE.
+  */
+ 
++#if defined(__AROS__)
++/* buffer objects are mapped by the drm shim for their whole life */
++#define munmap(p, s) do { (void)(p); (void)(s); } while (0)
++#ifndef O_CLOEXEC
++#define O_CLOEXEC 0
++#endif
++#else
+ #include <sys/mman.h>
++#endif
+ #include <sys/stat.h>
+ #include <stdio.h>
+ #include <fcntl.h>
+diff -ruN mesa-26.2.5/src/gallium/drivers/nouveau/nv50/nv84_video.c mesa-26.2.5.aros/src/gallium/drivers/nouveau/nv50/nv84_video.c
+--- mesa-26.2.5/src/gallium/drivers/nouveau/nv50/nv84_video.c	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/gallium/drivers/nouveau/nv50/nv84_video.c	2026-10-24 22:32:44.544226007 +0100
+@@ -20,7 +20,15 @@
+  * OTHER DEALINGS IN THE SOFTWARE.
+  */
+ 
++#if defined(__AROS__)
++/* buffer objects are mapped by the drm shim for their whole life */
++#define munmap(p, s) do { (void)(p); (void)(s); } while (0)
++#ifndef O_CLOEXEC
++#define O_CLOEXEC 0
++#endif
++#else
+ #include <sys/mman.h>
++#endif
+ #include <sys/stat.h>
+ #include <sys/types.h>
+ #include <fcntl.h>
+diff -ruN mesa-26.2.5/src/gallium/drivers/nouveau/nv50/nv98_video_vp.c mesa-26.2.5.aros/src/gallium/drivers/nouveau/nv50/nv98_video_vp.c
+--- mesa-26.2.5/src/gallium/drivers/nouveau/nv50/nv98_video_vp.c	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/gallium/drivers/nouveau/nv50/nv98_video_vp.c	2026-10-24 22:32:44.544286507 +0100
+@@ -21,7 +21,15 @@
+  */
+ 
+ #include "nv50/nv98_video.h"
++#if defined(__AROS__)
++/* buffer objects are mapped by the drm shim for their whole life */
++#define munmap(p, s) do { (void)(p); (void)(s); } while (0)
++#ifndef O_CLOEXEC
++#define O_CLOEXEC 0
++#endif
++#else
+ #include <sys/mman.h>
++#endif
+ 
+ #if NOUVEAU_VP3_DEBUG_FENCE
+ static void dump_comm_vp(struct nouveau_vp3_decoder *dec, struct comm *comm, u32 comm_seq,
+diff -ruN mesa-26.2.5/src/gallium/drivers/nouveau/nvc0/nvc0_video_vp.c mesa-26.2.5.aros/src/gallium/drivers/nouveau/nvc0/nvc0_video_vp.c
+--- mesa-26.2.5/src/gallium/drivers/nouveau/nvc0/nvc0_video_vp.c	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/gallium/drivers/nouveau/nvc0/nvc0_video_vp.c	2026-10-24 22:32:44.544499007 +0100
+@@ -21,7 +21,15 @@
+  */
+ 
+ #include "nvc0/nvc0_video.h"
++#if defined(__AROS__)
++/* buffer objects are mapped by the drm shim for their whole life */
++#define munmap(p, s) do { (void)(p); (void)(s); } while (0)
++#ifndef O_CLOEXEC
++#define O_CLOEXEC 0
++#endif
++#else
+ #include <sys/mman.h>
++#endif
+ 
+ #if NOUVEAU_VP3_DEBUG_FENCE
+ static void dump_comm_vp(struct nouveau_vp3_decoder *dec, struct comm *comm, u32 comm_seq,
+diff -ruN mesa-26.2.5/src/gallium/drivers/radeonsi/si_pipe.c mesa-26.2.5.aros/src/gallium/drivers/radeonsi/si_pipe.c
+--- mesa-26.2.5/src/gallium/drivers/radeonsi/si_pipe.c	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/gallium/drivers/radeonsi/si_pipe.c	2026-10-24 22:32:44.542729707 +0100
+@@ -190,8 +190,8 @@
+    FREE(sscreen);
+ }
+ 
+-static struct pipe_screen *radeonsi_screen_create_impl(struct radeon_winsys *ws,
+-                                                       const struct pipe_screen_config *config)
++struct pipe_screen *radeonsi_screen_create_impl(struct radeon_winsys *ws,
++                                                const struct pipe_screen_config *config)
+ {
+    struct si_screen *sscreen = CALLOC_STRUCT(si_screen);
+ 
+diff -ruN mesa-26.2.5/src/gallium/drivers/svga/svgadump/svga_shader.h mesa-26.2.5.aros/src/gallium/drivers/svga/svgadump/svga_shader.h
+--- mesa-26.2.5/src/gallium/drivers/svga/svgadump/svga_shader.h	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/gallium/drivers/svga/svgadump/svga_shader.h	2026-10-24 22:32:44.544038107 +0100
+@@ -17,6 +17,11 @@
+ 
+ #include "util/compiler.h"
+ 
++#if defined(__AROS__)
++/* for uint */
++#include <sys/types.h>
++#endif
++
+ struct sh_op
+ {
+    unsigned opcode:16;
+diff -ruN mesa-26.2.5/src/gallium/drivers/vc4/vc4_program.c mesa-26.2.5.aros/src/gallium/drivers/vc4/vc4_program.c
+--- mesa-26.2.5/src/gallium/drivers/vc4/vc4_program.c	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/gallium/drivers/vc4/vc4_program.c	2026-10-24 22:32:44.546563706 +0100
+@@ -396,6 +396,9 @@
+         }
+ }
+ 
++static struct qreg
++ntq_ffract(struct vc4_compile *c, struct qreg src);
++
+ static void
+ ntq_emit_tex(struct vc4_compile *c, nir_tex_instr *instr)
+ {
+@@ -453,6 +456,17 @@
+                 is_txb = false;
+         }
+ 
++        /* The TMU only wraps REPEAT coordinates at power-of-two bounds, so
++         * for NPOT textures the wrap is done here instead (the P1 wrap
++         * field is forced to clamp in write_texture_p1).
++         */
++        if (instr->sampler_dim != GLSL_SAMPLER_DIM_CUBE) {
++                if (c->key->tex[unit].npot_s)
++                        s = ntq_ffract(c, s);
++                if (c->key->tex[unit].npot_t)
++                        t = ntq_ffract(c, t);
++        }
++
+         struct qreg texture_u[] = {
+                 qir_uniform(c, QUNIFORM_TEXTURE_CONFIG_P0, unit),
+                 qir_uniform(c, QUNIFORM_TEXTURE_CONFIG_P1, unit),
+@@ -2737,6 +2751,18 @@
+                         key->tex[i].wrap_t = sampler_state->wrap_t;
+                         key->tex[i].force_first_level =
+                                 vc4_sampler->force_first_level;
++                        /* The TMU wraps REPEAT coordinates at power-of-two
++                         * bounds only; NPOT + REPEAT samples the (stale)
++                         * POT padding.  Flag it so the shader fract()s the
++                         * coordinate instead (see ntq_emit_tex), and
++                         * write_texture_p1 forces the axis to clamp.
++                         */
++                        key->tex[i].npot_s =
++                                sampler_state->wrap_s == PIPE_TEX_WRAP_REPEAT &&
++                                !util_is_power_of_two_or_zero(sampler->texture->width0);
++                        key->tex[i].npot_t =
++                                sampler_state->wrap_t == PIPE_TEX_WRAP_REPEAT &&
++                                !util_is_power_of_two_or_zero(sampler->texture->height0);
+                 }
+         }
+ }
+diff -ruN mesa-26.2.5/src/gallium/drivers/vc4/vc4_qir.h mesa-26.2.5.aros/src/gallium/drivers/vc4/vc4_qir.h
+--- mesa-26.2.5/src/gallium/drivers/vc4/vc4_qir.h	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/gallium/drivers/vc4/vc4_qir.h	2026-10-24 22:32:44.546425206 +0100
+@@ -309,6 +309,13 @@
+                                 unsigned wrap_s:3;
+                                 unsigned wrap_t:3;
+                                 bool force_first_level:1;
++                                /* NPOT texture with REPEAT wrap: the TMU
++                                 * wraps at power-of-two bounds only, so the
++                                 * shader must fract() the coordinate (and
++                                 * the P1 wrap field is forced to clamp).
++                                 */
++                                unsigned npot_s:1;
++                                unsigned npot_t:1;
+                         };
+                         struct {
+                                 uint16_t msaa_width, msaa_height;
+diff -ruN mesa-26.2.5/src/gallium/drivers/vc4/vc4_uniforms.c mesa-26.2.5.aros/src/gallium/drivers/vc4/vc4_uniforms.c
+--- mesa-26.2.5/src/gallium/drivers/vc4/vc4_uniforms.c	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/gallium/drivers/vc4/vc4_uniforms.c	2026-10-24 22:32:44.547071306 +0100
+@@ -23,6 +23,7 @@
+ 
+ #include "util/u_pack_color.h"
+ #include "util/u_upload_mgr.h"
++#include "util/u_math.h"
+ #include "util/format_srgb.h"
+ 
+ #include "vc4_context.h"
+@@ -51,8 +52,26 @@
+                 vc4_sampler_view(texstate->textures[unit]);
+         struct vc4_sampler_state *sampler =
+                 vc4_sampler_state(texstate->samplers[unit]);
++        uint32_t p1 = sview->texture_p1 | sampler->texture_p1;
+ 
+-        cl_aligned_u32(uniforms, sview->texture_p1 | sampler->texture_p1);
++        /* The TMU only wraps REPEAT coordinates at power-of-two bounds.
++         * For NPOT + REPEAT the shader fract()s the coordinate into [0, 1)
++         * (see ntq_emit_tex), so clamp here to keep the filter's neighbour
++         * fetches inside the actually-written texels instead of the POT
++         * padding.
++         */
++        if (sampler->base.wrap_s == PIPE_TEX_WRAP_REPEAT &&
++            !util_is_power_of_two_or_zero(sview->base.texture->width0)) {
++                p1 = (p1 & ~VC4_TEX_P1_WRAP_S_MASK) |
++                     VC4_SET_FIELD(1, VC4_TEX_P1_WRAP_S);
++        }
++        if (sampler->base.wrap_t == PIPE_TEX_WRAP_REPEAT &&
++            !util_is_power_of_two_or_zero(sview->base.texture->height0)) {
++                p1 = (p1 & ~VC4_TEX_P1_WRAP_T_MASK) |
++                     VC4_SET_FIELD(1, VC4_TEX_P1_WRAP_T);
++        }
++
++        cl_aligned_u32(uniforms, p1);
+ }
+ 
+ static void
+diff -ruN mesa-26.2.5/src/gallium/winsys/amdgpu/drm/amdgpu_winsys.c mesa-26.2.5.aros/src/gallium/winsys/amdgpu/drm/amdgpu_winsys.c
+--- mesa-26.2.5/src/gallium/winsys/amdgpu/drm/amdgpu_winsys.c	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/gallium/winsys/amdgpu/drm/amdgpu_winsys.c	2026-10-24 22:32:44.547182506 +0100
+@@ -156,8 +156,10 @@
+    if (!locked)
+       simple_mtx_unlock(&dev_tab_mutex);
+ 
++#ifndef __AROS__
+    if (sws->fd != aws->fd)
+       close(sws->fd);
++#endif
+ 
+    if (destroy)
+       do_winsys_deinit(aws);
+@@ -565,7 +567,12 @@
+    }
+ 
+    if (sws->fd < 0)
++#ifdef __AROS__
++      /* the fd is an index into the in-process shim */
++      sws->fd = fd;
++#else
+       sws->fd = os_dupfd_cloexec(fd);
++#endif
+ 
+    sws->aws = aws;
+ 
+diff -ruN mesa-26.2.5/src/gallium/winsys/svga/drm/vmw_screen.c mesa-26.2.5.aros/src/gallium/winsys/svga/drm/vmw_screen.c
+--- mesa-26.2.5/src/gallium/winsys/svga/drm/vmw_screen.c	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/gallium/winsys/svga/drm/vmw_screen.c	2026-10-24 22:32:44.545403806 +0100
+@@ -25,8 +25,16 @@
+ #include <sys/stat.h>
+ #include <unistd.h>
+ #include <fcntl.h>
++#ifndef __AROS__
+ #include <sys/ioctl.h>
+ #include <sys/mman.h>
++#endif
++
++#ifdef __AROS__
++/* one device, keyed by a zero dev_t */
++#define major(d) ((unsigned)((d) >> 8))
++#define minor(d) ((unsigned)((d) & 0xff))
++#endif
+ 
+ static struct hash_table *dev_hash = NULL;
+ 
+@@ -117,8 +125,13 @@
+          return NULL;
+    }
+ 
++#ifdef __AROS__
++   /* one device, and the fd is an index into the in-process shim */
++   memset(&stat_buf, 0, sizeof(stat_buf));
++#else
+    if (fstat(fd, &stat_buf))
+       return NULL;
++#endif
+ 
+    vws = util_hash_table_get(dev_hash, &stat_buf.st_rdev);
+    if (vws) {
+@@ -132,7 +145,11 @@
+ 
+    vws->device = stat_buf.st_rdev;
+    vws->open_count = 1;
++#ifdef __AROS__
++   vws->ioctl.drm_fd = fd;
++#else
+    vws->ioctl.drm_fd = os_dupfd_cloexec(fd);
++#endif
+    vws->force_coherent = false;
+    if (!vmw_ioctl_init(vws))
+       goto out_no_ioctl;
+@@ -175,7 +192,9 @@
+ out_no_fence_ops:
+    vmw_ioctl_cleanup(vws);
+ out_no_ioctl:
++#ifndef __AROS__
+    close(vws->ioctl.drm_fd);
++#endif
+    FREE(vws);
+ out_no_vws:
+    return NULL;
+@@ -194,7 +213,9 @@
+ #ifdef VMX86_STATS
+       vmw_winsys_screen_deinit_mksstat(vws);
+ #endif
++#ifndef __AROS__
+       close(vws->ioctl.drm_fd);
++#endif
+       mtx_destroy(&vws->cs_mutex);
+       cnd_destroy(&vws->cs_cond);
+       FREE(vws);
+diff -ruN mesa-26.2.5/src/gallium/winsys/svga/drm/vmw_screen_ioctl.c mesa-26.2.5.aros/src/gallium/winsys/svga/drm/vmw_screen_ioctl.c
+--- mesa-26.2.5/src/gallium/winsys/svga/drm/vmw_screen_ioctl.c	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/gallium/winsys/svga/drm/vmw_screen_ioctl.c	2026-10-24 22:32:44.545493606 +0100
+@@ -28,7 +28,9 @@
+ #include "svga3d_devcaps.h"
+ #include "svga3d_reg.h"
+ 
++#ifndef __AROS__
+ #include "util/os_mman.h"
++#endif
+ 
+ #include <errno.h>
+ #include <unistd.h>
+@@ -48,7 +50,7 @@
+ }
+ 
+ #if defined(__DragonFly__) || defined(__FreeBSD__) || \
+-    defined(__NetBSD__) || defined(__OpenBSD__)
++    defined(__NetBSD__) || defined(__OpenBSD__) || defined(__AROS__)
+ #define ERESTART EINTR
+ #endif
+ 
+@@ -630,7 +632,11 @@
+               region->ptr.gmrId, region->ptr.offset);
+ 
+    if (region->data) {
++#ifdef __AROS__
++      drmMUnmap(region->drm_fd, region->handle);
++#else
+       os_munmap(region->data, region->size);
++#endif
+       region->data = NULL;
+    }
+ 
+@@ -657,6 +663,14 @@
+               region->ptr.gmrId, region->ptr.offset);
+ 
+    if (region->data == NULL) {
++#ifdef __AROS__
++      /* the kernel port hands out the mapping itself */
++      map = drmMMap(region->drm_fd, region->handle, NULL, NULL);
++      if (map == NULL) {
++         vmw_error("%s: Map failed.\n", __func__);
++         return NULL;
++      }
++#else
+       map = os_mmap(NULL, region->size, PROT_READ | PROT_WRITE, MAP_SHARED,
+                  region->drm_fd, region->map_handle);
+       if (map == MAP_FAILED) {
+@@ -668,6 +682,7 @@
+ #ifdef MADV_HUGEPAGE
+       (void) madvise(map, region->size, MADV_HUGEPAGE);
+ #endif
++#endif
+       region->data = map;
+    }
+ 
+@@ -683,7 +698,11 @@
+               region->ptr.gmrId, region->ptr.offset);
+ 
+    --region->map_count;
++#ifdef __AROS__
++   drmMUnmap(region->drm_fd, region->handle);
++#else
+    os_munmap(region->data, region->size);
++#endif
+    region->data = NULL;
+ }
+ 
+diff -ruN mesa-26.2.5/src/gallium/winsys/svga/drm/vmw_screen_svga.c mesa-26.2.5.aros/src/gallium/winsys/svga/drm/vmw_screen_svga.c
+--- mesa-26.2.5/src/gallium/winsys/svga/drm/vmw_screen_svga.c	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/gallium/winsys/svga/drm/vmw_screen_svga.c	2026-10-24 22:32:44.545594206 +0100
+@@ -16,8 +16,10 @@
+ 
+ #include <libsync.h>
+ #include <stdint.h>
++#ifndef __AROS__
+ #include <sys/ioctl.h>
+ #include <sys/mman.h>
++#endif
+ 
+ #include "svga_cmd.h"
+ #include "svga3d_devcaps.h"
+diff -ruN mesa-26.2.5/src/mesa/glapi/glapi/glapi.h mesa-26.2.5.aros/src/mesa/glapi/glapi/glapi.h
+--- mesa-26.2.5/src/mesa/glapi/glapi/glapi.h	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/mesa/glapi/glapi/glapi.h	2026-10-24 22:32:44.545032407 +0100
+@@ -69,10 +69,14 @@
+ 
+ struct _glapi_table;
+ 
++#ifndef __AROS__
+ _GLAPI_EXPORT extern __THREAD_INITIAL_EXEC struct _glapi_table * _mesa_glapi_tls_Dispatch;
+ _GLAPI_EXPORT extern __THREAD_INITIAL_EXEC void * _mesa_glapi_tls_Context;
++#endif
+ 
+-#if DETECT_OS_WINDOWS && !defined(MAPI_MODE_SHARED_GLAPI)
++/* AROS joins the accessor path: it has no TLS the static relocator can
++   handle, so the two slots live in pthread keys inside core.c. */
++#if (DETECT_OS_WINDOWS && !defined(MAPI_MODE_SHARED_GLAPI)) || defined(__AROS__)
+ # define GET_DISPATCH() _mesa_glapi_get_dispatch()
+ # define GET_CURRENT_CONTEXT(C)  struct gl_context *C = (struct gl_context *) _mesa_glapi_get_context()
+ #else
+diff -ruN mesa-26.2.5/src/mesa/glapi/shared-glapi/core.c mesa-26.2.5.aros/src/mesa/glapi/shared-glapi/core.c
+--- mesa-26.2.5/src/mesa/glapi/shared-glapi/core.c	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/mesa/glapi/shared-glapi/core.c	2026-10-24 22:32:44.545101307 +0100
+@@ -148,9 +148,37 @@
+ #endif /* defined(_GLAPI_ENTRY_ARCH_TLS_H) */
+ 
+ /* Current dispatch and current context variables */
++#ifdef __AROS__
++/*
++ * AROS has no thread local storage. LoadSeg() is a static relocator, so
++ * neither the TPREL form of __thread nor the GOT-indirect form that
++ * -femulated-tls emits can be relocated - the loader rejects both. Keep the
++ * two per-thread slots in pthread keys instead, reached only through the
++ * accessors below; glapi.h routes GET_DISPATCH/GET_CURRENT_CONTEXT there.
++ */
++#include <pthread.h>
++
++static pthread_key_t aros_dispatch_key;
++static pthread_key_t aros_context_key;
++
++static void
++aros_glapi_keys_init(void)
++{
++   pthread_key_create(&aros_dispatch_key, NULL);
++   pthread_key_create(&aros_context_key, NULL);
++}
++
++static inline void
++aros_glapi_keys(void)
++{
++   static once_flag flag = ONCE_FLAG_INIT;
++   call_once(&flag, aros_glapi_keys_init);
++}
++#else
+ __THREAD_INITIAL_EXEC struct _glapi_table *_mesa_glapi_tls_Dispatch
+    = (struct _glapi_table *)table_noop_array;
+ __THREAD_INITIAL_EXEC void *_mesa_glapi_tls_Context;
++#endif
+ 
+ static int
+ stub_compare(const void *key, const void *elem)
+@@ -238,7 +266,12 @@
+ void
+ _mesa_glapi_set_context(void *ptr)
+ {
++#ifdef __AROS__
++   aros_glapi_keys();
++   pthread_setspecific(aros_context_key, ptr);
++#else
+    _mesa_glapi_tls_Context = ptr;
++#endif
+ }
+ 
+ /**
+@@ -249,7 +282,12 @@
+ void *
+ _mesa_glapi_get_context(void)
+ {
++#ifdef __AROS__
++   aros_glapi_keys();
++   return pthread_getspecific(aros_context_key);
++#else
+    return _mesa_glapi_tls_Context;
++#endif
+ }
+ 
+ /**
+@@ -263,8 +301,14 @@
+    static once_flag flag = ONCE_FLAG_INIT;
+    call_once(&flag, entry_patch_public);
+ 
++#ifdef __AROS__
++   aros_glapi_keys();
++   pthread_setspecific(aros_dispatch_key,
++      tbl ? tbl : (void *)table_noop_array);
++#else
+    _mesa_glapi_tls_Dispatch =
+       tbl ? tbl : (struct _glapi_table *)table_noop_array;
++#endif
+ }
+ 
+ /**
+@@ -273,5 +317,16 @@
+ struct _glapi_table *
+ _mesa_glapi_get_dispatch(void)
+ {
++#ifdef __AROS__
++   struct _glapi_table *tbl;
++
++   aros_glapi_keys();
++   tbl = pthread_getspecific(aros_dispatch_key);
++
++   /* An unset key reads NULL, where the TLS variable started out holding
++      the no-op table. Callers dispatch through this unchecked. */
++   return tbl ? tbl : (struct _glapi_table *)table_noop_array;
++#else
+    return _mesa_glapi_tls_Dispatch;
++#endif
+ }
+diff -ruN mesa-26.2.5/src/mesa/main/scissor.c mesa-26.2.5.aros/src/mesa/main/scissor.c
+--- mesa-26.2.5/src/mesa/main/scissor.c	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/mesa/main/scissor.c	2026-10-24 22:32:44.546011506 +0100
+@@ -66,6 +66,22 @@
+    ctx->Scissor.ScissorArray[idx].Height = height;
+ }
+ 
++#ifdef __AROS__
++/* AROS vc4 render-scale: scissor rects are in window units and are
++ * divided ONLY while the window-system framebuffer (fb 0) is bound —
++ * application FBOs are unscaled, same rule as viewport.c. */
++extern unsigned int mesa3dgl_render_scale __attribute__((weak));
++static inline int _aros_rscale_sc(struct gl_context *ctx, int v)
++{
++   if (&mesa3dgl_render_scale && mesa3dgl_render_scale > 1
++       && ctx->DrawBuffer && ctx->DrawBuffer->Name == 0)
++      return v / (int)mesa3dgl_render_scale;
++   return v;
++}
++#else
++#define _aros_rscale_sc(ctx, v) (v)
++#endif
++
+ static void
+ scissor(struct gl_context *ctx, GLint x, GLint y, GLsizei width, GLsizei height)
+ {
+@@ -84,7 +100,10 @@
+     * implementation, but only signal the driver once at the end.
+     */
+    for (i = 0; i < ctx->Const.MaxViewports; i++)
+-      set_scissor_no_notify(ctx, i, x, y, width, height);
++      set_scissor_no_notify(ctx, i, _aros_rscale_sc(ctx, x),
++                            _aros_rscale_sc(ctx, y),
++                            _aros_rscale_sc(ctx, width),
++                            _aros_rscale_sc(ctx, height));
+ }
+ 
+ /**
+diff -ruN mesa-26.2.5/src/mesa/main/viewport.c mesa-26.2.5.aros/src/mesa/main/viewport.c
+--- mesa-26.2.5/src/mesa/main/viewport.c	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/mesa/main/viewport.c	2026-10-24 22:32:44.545929306 +0100
+@@ -93,11 +93,33 @@
+    GLdouble Near, Far;          /**< Depth buffer range */
+ };
+ 
++#ifdef __AROS__
++/* AROS vc4 render-scale (ENV:VC4_RENDER_SCALE, set up in mesa3dgl):
++ * only the window-system framebuffer is HVS-scaled (drawable is 1/N of
++ * the window), so viewport rects — given in window units — are divided
++ * at the API boundary ONLY while fb 0 is bound. Application FBOs render
++ * at full size; their viewports must pass through untouched (else an
++ * FBO-heavy renderer would confine its scene to a 1/N corner). */
++extern unsigned int mesa3dgl_render_scale __attribute__((weak));
++static inline int _aros_rscale(struct gl_context *ctx, int v)
++{
++   if (&mesa3dgl_render_scale && mesa3dgl_render_scale > 1
++       && ctx->DrawBuffer && ctx->DrawBuffer->Name == 0)
++      return v / (int)mesa3dgl_render_scale;
++   return v;
++}
++#else
++#define _aros_rscale(ctx, v) (v)
++#endif
++
+ static void
+ viewport(struct gl_context *ctx, GLint x, GLint y, GLsizei width,
+          GLsizei height)
+ {
+-   struct gl_viewport_inputs input = { x, y, width, height };
++   struct gl_viewport_inputs input = { _aros_rscale(ctx, x),
++                                       _aros_rscale(ctx, y),
++                                       _aros_rscale(ctx, width),
++                                       _aros_rscale(ctx, height) };
+ 
+    /* Clamp the viewport to the implementation dependent values. */
+    clamp_viewport(ctx, &input.X, &input.Y, &input.Width, &input.Height);
+diff -ruN mesa-26.2.5/src/mesa/state_tracker/st_extensions.c mesa-26.2.5.aros/src/mesa/state_tracker/st_extensions.c
+--- mesa-26.2.5/src/mesa/state_tracker/st_extensions.c	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/mesa/state_tracker/st_extensions.c	2026-10-24 22:32:44.546096706 +0100
+@@ -791,10 +791,6 @@
+         { PIPE_FORMAT_R32G32B32A32_UINT,
+           PIPE_FORMAT_R32G32B32A32_SINT } },
+ 
+-      { { o(ARB_texture_rg) },
+-        { PIPE_FORMAT_R8_UNORM,
+-          PIPE_FORMAT_R8G8_UNORM } },
+-
+       { { o(EXT_texture_norm16) },
+         { PIPE_FORMAT_R16_UNORM,
+           PIPE_FORMAT_R16G16_UNORM,
+@@ -837,6 +833,16 @@
+ 
+    /* Required: sampler support */
+    static const struct st_extension_format_mapping texture_mapping[] = {
++      /* AROS: moved here from the render-target list. On vc4 R8/RG8 are
++       * samplable but not renderable, which hid the whole extension and
++       * made GL_RED an invalid internalformat (indexed-colour textures
++       * went undefined -> black screen). Sampling R8 returns
++       * spec-correct (R,0,0,1); RED framebuffer attachments still fail
++       * cleanly via the separate renderability validation. */
++      { { o(ARB_texture_rg) },
++        { PIPE_FORMAT_R8_UNORM,
++          PIPE_FORMAT_R8G8_UNORM } },
++
+       { { o(OES_texture_float) },
+         { PIPE_FORMAT_R32G32B32A32_FLOAT } },
+ 
+diff -ruN mesa-26.2.5/src/util/compiler.h mesa-26.2.5.aros/src/util/compiler.h
+--- mesa-26.2.5/src/util/compiler.h	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/util/compiler.h	2026-10-24 22:32:44.544814307 +0100
+@@ -62,6 +62,9 @@
+ #elif defined(__OpenBSD__)
+ #include <sys/types.h>
+ #define CPU_TO_LE32( x ) htole32( x )
++#elif defined(__AROS__)
++/* AROS has no <sys/endian.h>; use the compiler builtin. */
++#define CPU_TO_LE32( x ) __builtin_bswap32( x )
+ #else /*__linux__ */
+ #include <sys/endian.h>
+ #define CPU_TO_LE32( x ) bswap32( x )
+diff -ruN mesa-26.2.5/src/util/os_drm.h mesa-26.2.5.aros/src/util/os_drm.h
+--- mesa-26.2.5/src/util/os_drm.h	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/util/os_drm.h	2026-10-24 22:32:44.547133306 +0100
+@@ -14,10 +14,32 @@
+ #error "Windows shouldn't include this."
+ #endif
+ 
+-#include <sys/ioctl.h>
+ #include <errno.h>
+ #include <xf86drm.h>
+ 
++#ifdef __AROS__
++/* the kernel driver runs in-process; requests go through the libdrm shim */
++static inline int
++drm_ioctl(int fd, uint32_t request, void *arg)
++{
++   return drmIoctl(fd, request, arg);
++}
++
++static inline int
++drm_ioctl_write(int fd, unsigned drm_command_index, void *data, unsigned size)
++{
++   return drmCommandWrite(fd, drm_command_index, data, size);
++}
++
++static inline int
++drm_ioctl_write_read(int fd, unsigned drm_command_index, void *data,
++                     unsigned size)
++{
++   return drmCommandWriteRead(fd, drm_command_index, data, size);
++}
++#else
++#include <sys/ioctl.h>
++
+ static inline int
+ drm_ioctl(int fd, uint32_t request, void *arg)
+ {
+@@ -48,3 +70,5 @@
+ }
+ 
+ #endif
++
++#endif
+diff -ruN mesa-26.2.5/src/util/set.c mesa-26.2.5.aros/src/util/set.c
+--- mesa-26.2.5/src/util/set.c	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/util/set.c	2026-10-24 22:32:44.542304208 +0100
+@@ -48,8 +48,9 @@
+  * free to avoid exponential performance degradation as the hash table fills
+  */
+ 
++/* The tombstone address is stored per set, so a set handed to code linked
++ * against another copy of this file still sees the same sentinel. */
+ static const uint32_t deleted_key_value;
+-static const void *deleted_key = &deleted_key_value;
+ 
+ static const struct {
+    uint32_t max_entries, size, rehash;
+@@ -108,9 +109,9 @@
+ };
+ 
+ ASSERTED static inline bool
+-key_pointer_is_reserved(const void *key)
++key_pointer_is_reserved(const struct set *ht, const void *key)
+ {
+-   return key == NULL || key == deleted_key;
++   return key == NULL || key == ht->deleted_key;
+ }
+ 
+ static int
+@@ -120,15 +121,15 @@
+ }
+ 
+ static int
+-entry_is_deleted(struct set_entry *entry)
++entry_is_deleted(const struct set *ht, struct set_entry *entry)
+ {
+-   return entry->key == deleted_key;
++   return entry->key == ht->deleted_key;
+ }
+ 
+ static int
+-entry_is_present(struct set_entry *entry)
++entry_is_present(const struct set *ht, struct set_entry *entry)
+ {
+-   return entry->key != NULL && entry->key != deleted_key;
++   return entry->key != NULL && entry->key != ht->deleted_key;
+ }
+ 
+ void
+@@ -146,6 +147,7 @@
+    ht->max_entries = hash_sizes[ht->size_index].max_entries;
+    ht->key_hash_function = key_hash_function;
+    ht->key_equals_function = key_equals_function;
++   ht->deleted_key = &deleted_key_value;
+    assert(ht->size == ARRAY_SIZE(ht->_initial_storage));
+    ht->table = ht->_initial_storage;
+    memset(ht->table, 0, sizeof(ht->_initial_storage));
+@@ -304,7 +306,7 @@
+ 
+    if (delete_function) {
+       for (entry = set->table; entry != set->table + set->size; entry++) {
+-         if (entry_is_present(entry))
++         if (entry_is_present(set, entry))
+             delete_function(entry);
+ 
+          entry->key = NULL;
+@@ -323,7 +325,7 @@
+ static struct set_entry *
+ set_search(const struct set *ht, uint32_t hash, const void *key)
+ {
+-   assert(!key_pointer_is_reserved(key));
++   assert(!key_pointer_is_reserved(ht, key));
+ 
+    uint32_t size = ht->size;
+    uint32_t start_address = util_fast_urem32(hash, size, ht->size_magic);
+@@ -335,7 +337,7 @@
+ 
+       if (entry_is_free(entry)) {
+          return NULL;
+-      } else if (entry_is_present(entry) && entry->hash == hash) {
++      } else if (entry_is_present(ht, entry) && entry->hash == hash) {
+          if (ht->key_equals_function(key, entry->key)) {
+             return entry;
+          }
+@@ -462,7 +464,7 @@
+ {
+    struct set_entry *available_entry = NULL;
+ 
+-   assert(!key_pointer_is_reserved(key));
++   assert(!key_pointer_is_reserved(ht, key));
+ 
+    if (ht->entries >= ht->max_entries) {
+       set_rehash(ht, ht->size_index + 1);
+@@ -478,7 +480,7 @@
+    do {
+       struct set_entry *entry = ht->table + hash_address;
+ 
+-      if (!entry_is_present(entry)) {
++      if (!entry_is_present(ht, entry)) {
+          /* Stash the first available entry we find */
+          if (available_entry == NULL)
+             available_entry = entry;
+@@ -486,7 +488,7 @@
+             break;
+       }
+ 
+-      if (!entry_is_deleted(entry) &&
++      if (!entry_is_deleted(ht, entry) &&
+           entry->hash == hash &&
+           ht->key_equals_function(key, entry->key)) {
+          if (found)
+@@ -501,7 +503,7 @@
+ 
+    if (available_entry) {
+       /* There is no matching entry, create it. */
+-      if (entry_is_deleted(available_entry))
++      if (entry_is_deleted(ht, available_entry))
+          ht->deleted_entries--;
+       available_entry->hash = hash;
+       available_entry->key = key;
+@@ -614,7 +616,7 @@
+    if (!entry)
+       return;
+ 
+-   entry->key = deleted_key;
++   entry->key = ht->deleted_key;
+    ht->entries--;
+    ht->deleted_entries++;
+ }
+@@ -664,7 +666,7 @@
+       entry = entry + 1;
+ 
+    for (; entry != ht->table + ht->size; entry++) {
+-      if (entry_is_present(entry)) {
++      if (entry_is_present(ht, entry)) {
+          return entry;
+       }
+    }
+diff -ruN mesa-26.2.5/src/util/set.h mesa-26.2.5.aros/src/util/set.h
+--- mesa-26.2.5/src/util/set.h	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/util/set.h	2026-10-24 22:32:44.542397508 +0100
+@@ -45,6 +45,7 @@
+    struct set_entry *table;
+    uint32_t (*key_hash_function)(const void *key);
+    bool (*key_equals_function)(const void *a, const void *b);
++   const void *deleted_key;
+    uint32_t size;
+    uint32_t rehash;
+    uint64_t size_magic;
+diff -ruN mesa-26.2.5/src/util/u_endian.h mesa-26.2.5.aros/src/util/u_endian.h
+--- mesa-26.2.5/src/util/u_endian.h	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/util/u_endian.h	2026-10-24 22:32:44.542627708 +0100
+@@ -82,6 +82,16 @@
+ # define UTIL_ARCH_BIG_ENDIAN 1
+ #endif
+ 
++#elif defined(__AROS__)
++#include <aros/cpu.h>
++#if (AROS_BIG_ENDIAN)
++# define UTIL_ARCH_LITTLE_ENDIAN 0
++# define UTIL_ARCH_BIG_ENDIAN 1
++#else
++# define UTIL_ARCH_LITTLE_ENDIAN 1
++# define UTIL_ARCH_BIG_ENDIAN 0
++#endif
++
+ #elif defined(_WIN32) || defined(__ANDROID__)
+ 
+ #define UTIL_ARCH_LITTLE_ENDIAN 1
+diff -ruN mesa-26.2.5/src/util/u_thread.h mesa-26.2.5.aros/src/util/u_thread.h
+--- mesa-26.2.5/src/util/u_thread.h	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/util/u_thread.h	2026-10-24 22:32:44.543758407 +0100
+@@ -45,9 +45,11 @@
+  * still want to use normal TLS (which involves a function call, but not the
+  * expensive pthread_getspecific() or its equivalent).
+  */
+-#if DETECT_OS_APPLE
++#if DETECT_OS_APPLE || defined(__AROS__)
+ /* Apple Clang emits wrappers when using thread_local that break module linkage,
+- * but not with __thread
++ * but not with __thread.  The same applies to C++ objects on AROS: GCC emits a
++ * weak reference to the TLS init wrapper for an extern thread_local, which the
++ * AROS module link rejects as an undefined symbol.
+  */
+ #define __THREAD_INITIAL_EXEC __thread
+ #elif defined(__GLIBC__)

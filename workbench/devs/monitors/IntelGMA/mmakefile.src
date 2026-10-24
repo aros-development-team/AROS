@@ -58,7 +58,7 @@ USER_CFLAGS += $(NOWARN_FLAGS)
 # the Mesa version it has been ported to.
 #MM- devs-monitors-intelgma : devs-monitors-intelgma-mesa$(OPT_MESAGL)
 #MM- devs-monitors-intelgma-mesa20.0.8 : devs-monitors-intelgma-driver
-#MM- devs-monitors-intelgma-mesa26.0.0 : devs-monitors-intelgma-driver
+#MM- devs-monitors-intelgma-mesa26.2.5 : devs-monitors-intelgma-driver
 #MM devs-monitors-intelgma-driver : hidd-i2c hidd-gallium mesa3dgl-linklibs intelgma-linklibs-gallium_i915 linklibs-galliumauxiliary
 
 %build_prog mmake=devs-monitors-intelgma-driver \
