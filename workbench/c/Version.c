@@ -1404,15 +1404,23 @@ struct Resident *FindLibResident(BPTR   Segment)
 {
     while (Segment)
     {
-        IPTR        *MySegment;
-        UWORD       *MyBuffer;
-        UWORD       *EndBuffer;
+        UBYTE       *MySegment;
+        UBYTE       *MyBuffer;
+        UBYTE       *EndBuffer;
+        ULONG        BufferLen;
 
-        MySegment   = (IPTR*) BADDR(Segment);
-        MyBuffer    = (UWORD*) &MySegment[1];
-        EndBuffer   = (UWORD*) &MySegment[(MySegment[-1] - sizeof(ULONG) * 4) / sizeof(ULONG)];
+        /* ULONG length (counted from itself), BPTR next, data; 0 = unknown */
+        MySegment   = BADDR(Segment);
+        BufferLen   = *(ULONG *)(MySegment - sizeof(ULONG));
+        if (BufferLen < sizeof(ULONG) + sizeof(BPTR) + sizeof(struct Resident))
+        {
+            Segment = *(BPTR *)MySegment;
+            continue;
+        }
+        MyBuffer    = MySegment + sizeof(BPTR);
+        EndBuffer   = MySegment - sizeof(ULONG) + BufferLen - sizeof(struct Resident);
 
-        while (MyBuffer < EndBuffer)
+        while (MyBuffer <= EndBuffer)
         {
             struct Resident *MyResident;
 
@@ -1423,10 +1431,10 @@ struct Resident *FindLibResident(BPTR   Segment)
                 return MyResident;
             }
 
-            MyBuffer++;
+            MyBuffer += sizeof(UWORD);
         }
 
-        Segment =(BPTR) MySegment[0];
+        Segment = *(BPTR *)MySegment;
     }
 
     SetIoErr(ERROR_OBJECT_NOT_FOUND);
