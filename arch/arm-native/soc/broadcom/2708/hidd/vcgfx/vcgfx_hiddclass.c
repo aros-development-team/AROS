@@ -394,8 +394,18 @@ ULONG MNAME_DISPLAY(ShowViewPorts)(OOP_Class *cl, OOP_Object *o, struct pHidd_Di
     return vcgfx_show_viewports(XSD(cl), msg->Data);
 }
 
-/* Screens that are planes compose; reporting it is also what keeps
- * graphics.library from setting up the software compositor. Above only,
+/* A plane moves with its bitmap's LeftEdge/TopEdge. Composition is ours:
+ * FALSE would have graphics.library install the framebuffer into the
+ * front screen's bitmap, and the screen would draw into the token fb. */
+BOOL MNAME_DISPLAY(ViewPortPositionChange)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_ViewPortPositionChange *msg)
+{
+    if (XSD(cl)->vcsd_PlanesMode)
+        return TRUE;
+    return (BOOL)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+/* Screens that are planes compose; graphics.library and Intuition take
+ * these flags over the display compositor's own capabilities. Above only,
  * as that compositor defaults to: a screen drags down to reveal the ones
  * behind, and its title bar can never leave the display. Where they also
  * scale, Intuition asks DisplayToBMCoords for their own pixels. */
