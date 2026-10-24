@@ -19,7 +19,7 @@
 #include <bonami/mdns.h>
 
 #define MDNS_IPC_PORT       "BonAmi"
-#define MDNS_IPC_VERSION    3
+#define MDNS_IPC_VERSION    4
 
 #define MDNS_IPC_BROWSE     4
 #define MDNS_IPC_STOPBROWSE 5
@@ -27,6 +27,10 @@
 #define MDNS_IPC_STOPRESOLVE 7
 #define MDNS_IPC_READ       17
 #define MDNS_IPC_NOTIFY     18      /* lend mi_Request until an event */
+#define MDNS_IPC_QUERY      19
+#define MDNS_IPC_STOPQUERY  20
+#define MDNS_IPC_READQUERY  21
+#define MDNS_IPC_NOTIFYQUERY 22
 
 #define MDNS_IPC_REGISTER   1
 #define MDNS_IPC_UNREGISTER 2
@@ -59,8 +63,12 @@ struct MDNSIPCMsg
     ULONG           mi_TTL;         /* seconds, 0 for the defaults */
     ULONG           mi_DaemonID;    /* expected incarnation, zero on create */
     struct MDNSDiscoveryEvent mi_Event;
+    struct MDNSRecordEvent mi_RecordEvent;
     ULONG           mi_TaskID;      /* GetETaskID() of the calling task */
-    struct MDNSEventRequest *mi_Request; /* MDNS_IPC_NOTIFY only */
+    struct MDNSEventRequest *mi_Request; /* MDNS_IPC_*NOTIFY only */
+    UWORD           mi_QueryType;
+    UWORD           mi_QueryTimeout; /* seconds; zero for a standing query */
+    char            mi_QueryName[256];
 };
 
 #endif /* MDNSD_MDNS_IPC_H */
