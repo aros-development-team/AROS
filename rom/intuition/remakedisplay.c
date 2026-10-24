@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -56,10 +56,15 @@
             failure = error;
     }
 
+    UnlockIBase(ilock);
+
+    /*
+     * RethinkDisplay() takes the IBase lock itself, in the input.device task
+     * (DoSyncAction). Calling it with the lock still held here deadlocks
+     * every caller that is not the input.device task.
+     */
     if (!failure)
         failure = RethinkDisplay();
-
-    UnlockIBase(ilock);
 
     return failure;
 
