@@ -18,8 +18,7 @@ IGMA_HIDD_SOURCES := \
             intelgma_support \
             intelgma_memory \
             intelgma_startup \
-            intelgma_galliumclass \
-            intelgma_compositorclass
+            intelgma_galliumclass
 
 IGMA_HIDD_SOURCES += \
             intelgma_copybox \

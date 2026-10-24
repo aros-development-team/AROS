@@ -86,7 +86,6 @@ typedef struct {
     BOOL    displayable;    /* Can bitmap be displayed on screen */
 
     /* Information connected with display */
-    OOP_Object  *compositor;   /* Compositor object used by bitmap */
     LONG        xoffset;        /* Offset to bitmap point that is displayed as (0,0) on screen */
     LONG        yoffset;        /* Offset to bitmap point that is displayed as (0,0) on screen */
     ULONG       fbid;           /* Contains ID under which bitmap 
@@ -164,10 +163,8 @@ struct g45staticdata
 	OOP_Class *				IntelG45DisplayClass;
 	OOP_Class *				IntelI2C;
 	OOP_Class *				BMClass;
-    OOP_Class *				compositorclass;
     OOP_Class *				galliumclass;
     
-	OOP_Object          *compositor;
 	OOP_Object          *display;
 	OOP_Object          *dmenum;
     
@@ -204,10 +201,6 @@ struct g45staticdata
     OOP_MethodID    mid_CopyLUTMemBox16;
     OOP_MethodID    mid_CopyLUTMemBox32;
 
-    OOP_MethodID    mid_BitMapPositionChanged;
-    OOP_MethodID    mid_BitMapRectChanged;
-    OOP_MethodID    mid_ValidateBitMapPositionChange;
-
 	ULONG pipe;
 	struct Sync lvds_fixed;
 	LONG pointerx;
@@ -216,12 +209,10 @@ struct g45staticdata
 
 enum {
     aoHidd_GMABitMap_Drawable,
-    aoHidd_BitMap_IntelG45_CompositorHidd,
     num_Hidd_GMABitMap_Attrs
 };
 
 #define aHidd_GMABitMap_Drawable (HiddGMABitMapAttrBase + aoHidd_GMABitMap_Drawable)
-#define aHidd_BitMap_IntelG45_CompositorHidd    (HiddGMABitMapAttrBase + aoHidd_BitMap_IntelG45_CompositorHidd)
 
 #define IS_BM_ATTR(attr, idx) (((idx)=(attr)-HiddBitMapAttrBase) < num_Hidd_BitMap_Attrs)
 #define IS_GMABM_ATTR(attr, idx) (((idx)=(attr)-HiddGMABitMapAttrBase) < num_Hidd_GMABitMap_Attrs)

@@ -20,7 +20,6 @@
 
 #include "intelgma_hidd.h"
 #include "intelG45_regs.h"
-#include "compositing.h"
 
 struct __ROP ROP_table[] = {
     { ROP3_ZERO, ROP3_ZERO }, /* GXclear        */
@@ -114,10 +113,6 @@ OOP_Object *METHOD(GMABM, Root, New)
         bm->fbid = 0; /* Default value */
 
                 if (displayable) bm->displayable = TRUE; else bm->displayable = FALSE;
-                //bm->compositor = sd->compositor;
-        bm->compositor = (OOP_Object *)
-            GetTagData(aHidd_BitMap_IntelG45_CompositorHidd, 0, msg->attrList);
-        /* FIXME: check if compositor hidd was passed */
 
         if (displayable)
         {
@@ -308,30 +303,20 @@ VOID METHOD(GMABM, Root, Set)
         }
     }
 
-    /* If there was a change requested, validate it */
-    struct pHidd_GMACompositor_ValidateBitMapPositionChange vbpcmsg =
-    {
-        .mID = SD(cl)->mid_ValidateBitMapPositionChange,
-        .bm = o,
-        .newxoffset = &newxoffset,
-        .newyoffset = &newyoffset
-    };
-    
-    OOP_DoMethod(bmdata->compositor, (OOP_Msg)&vbpcmsg);
-    
+    /*
+     * The display's compositor validated the position already
+     * (Hidd_Display::ViewPortPositionChange) and redraws or re-shows the
+     * screen. A bitmap that is scanned out directly (an oversized screen
+     * being scrolled) is not shown again, so its new offsets go straight
+     * into the plane's base address.
+     */
     if ((newxoffset != bmdata->xoffset) || (newyoffset != bmdata->yoffset))
     {
-        /* If change passed validation, execute it */
-        struct pHidd_GMACompositor_BitMapPositionChanged bpcmsg =
-        {
-            .mID = SD(cl)->mid_BitMapPositionChanged,
-            .bm = o
-        };
-    
         bmdata->xoffset = newxoffset;
         bmdata->yoffset = newyoffset;
-    
-        OOP_DoMethod(bmdata->compositor, (OOP_Msg)&bpcmsg);
+
+        if (SD(cl)->VisibleBitmap == bmdata)
+            HIDD_INTELG45_SetFramebuffer(o);
     }
 
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -962,20 +947,7 @@ VOID METHOD(GMABM, Hidd_BitMap, ReleaseDirectAccess)
     GMABitMap_t *bm = OOP_INST_DATA(cl, o);
     UNLOCK_BITMAP
 
-        if (bm->displayable)
-    {
-        struct pHidd_GMACompositor_BitMapRectChanged brcmsg =
-        {
-            .mID = SD(cl)->mid_BitMapRectChanged,
-            .bm = o,
-            .x = 0,
-            .y = 0,
-            .width = bm->width,
-            .height = bm->height
-        };
-        OOP_DoMethod(bm->compositor, (OOP_Msg)&brcmsg);
-    }
-
+    /* Damage is reported by cybergraphics' UnLockBitMap() through UpdateBitMap() */
 }
 
 #define pHidd_BitMap_FillRect pHidd_BitMap_DrawRect
@@ -2155,21 +2127,8 @@ VOID METHOD(GMABM, Hidd_BitMap, PutPattern)
 
 VOID METHOD(GMABM, Hidd_BitMap, UpdateRect)
 {
-    GMABitMap_t * bmdata = OOP_INST_DATA(cl, o);
-    D(bug("[GMA]BitMap::UpdateRect %d,%d-%d,%d o=%p\n",msg->x,msg->y,msg->width,msg->height,o));
-    if (bmdata->displayable)
-    {
-        struct pHidd_GMACompositor_BitMapRectChanged brcmsg =
-        {
-            .mID = SD(cl)->mid_BitMapRectChanged,
-            .bm = o,
-            .x = msg->x,
-            .y = msg->y,
-            .width = msg->width,
-            .height = msg->height
-        };
-        OOP_DoMethod(bmdata->compositor, (OOP_Msg)&brcmsg);
-    }
+    /* Scan-out is direct: nothing to notify, the display's compositor
+       drives what is shown through Hidd_Display::Show() */
 }
 
 

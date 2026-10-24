@@ -22,7 +22,6 @@
 #include "intelgma_hidd.h"
 #include "intelG45_regs.h"
 #include "intelgma_gallium.h"
-#include "compositing.h"
 
 #define sd ((struct g45staticdata*)SD(cl))
 
@@ -553,15 +552,6 @@ OOP_Object *METHOD(INTELG45, Root, New)
                 OOP_GetAttr(sd->display, aHidd_Display_DMEnumerator, (IPTR *)&sd->dmenum);
         }
 
-        /* Create compositor object */
-        {
-            struct TagItem comptags [] = {
-                { aHidd_GMACompositor_DisplayHidd, (IPTR)sd->display },
-                { TAG_DONE, TAG_DONE }
-            };
-            sd->compositor = OOP_NewObject(sd->compositorclass, NULL, comptags);
-            /* TODO: Check if object was created, how to handle ? */
-        }
     }
 
     FreeVecPooled(sd->MemPool, modetags);
@@ -683,7 +673,6 @@ OOP_Object * METHOD(INTELG45, Hidd_Display, CreateObject)
         {
             { TAG_IGNORE, TAG_IGNORE }, /* Placeholder for aHidd_BitMap_ClassPtr */
             { TAG_IGNORE, TAG_IGNORE }, /* Placeholder for aHidd_BitMap_Align */
-            { aHidd_BitMap_IntelG45_CompositorHidd, (IPTR)sd->compositor },
             { TAG_MORE, (IPTR)msg->attrList }
         };
 
@@ -907,16 +896,47 @@ void METHOD(INTELG45, Hidd_Gfx, CopyBox)
     }
 }
 
-ULONG METHOD(INTELG45, Hidd_Display, ShowViewPorts)
+/*
+ * Scan out the given bitmap. The display's compositor (gfx.hidd) calls this
+ * with the frontmost screen's bitmap when it covers the whole display, and
+ * with the bitmap it composes into otherwise. All displayable bitmaps live in
+ * graphics memory, so nothing is copied: a bitmap in the mode already shown
+ * only moves the plane's base address (a flip), another mode loads the pipe
+ * timing first.
+ */
+OOP_Object *METHOD(INTELG45, Hidd_Display, Show)
 {
-    struct pHidd_GMACompositor_BitMapStackChanged bscmsg =
+    if (msg->bitMap && (OOP_OCLASS(msg->bitMap) == SD(cl)->BMClass))
     {
-        .mID    = OOP_GetMethodID(IID_Hidd_GMACompositor, moHidd_GMACompositor_BitMapStackChanged),
-        .data   = msg->Data
-    };
-    D(bug("[IntelG45] ShowViewPorts enter TopLevelBM %x\n", msg->Data->Bitmap));
-    OOP_DoMethod(sd->compositor, (OOP_Msg)&bscmsg);
-    return TRUE; /* Indicate driver supports this method */
+        GMABitMap_t *bmdata = OOP_INST_DATA(SD(cl)->BMClass, msg->bitMap);
+        IPTR newmode = vHidd_ModeID_Invalid, curmode = vHidd_ModeID_Invalid;
+
+        D(bug("[IntelG45] Show bitmap %p\n", msg->bitMap));
+
+        if (!bmdata->fbgfx || !bmdata->state)
+            return NULL;
+
+        OOP_GetAttr(msg->bitMap, aHidd_BitMap_ModeID, &newmode);
+        if (sd->VisibleBitmap)
+            OOP_GetAttr(sd->VisibleBitmap->bitmap, aHidd_BitMap_ModeID, &curmode);
+
+        if (sd->VisibleBitmap != bmdata)
+        {
+            if (newmode != curmode)
+            {
+                if (!HIDD_INTELG45_SwitchToVideoMode(msg->bitMap))
+                    return NULL;
+            }
+            else
+                sd->VisibleBitmap = bmdata;
+        }
+
+        /* Base address and stride of the shown bitmap (a flip in the same mode) */
+        HIDD_INTELG45_SetFramebuffer(msg->bitMap);
+    }
+
+    /* Base class tracks the shown bitmap as the pointer target */
+    return (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
 BOOL HIDD_INTELG45_SwitchToVideoMode(OOP_Object * bm)
@@ -1004,7 +1024,7 @@ static struct HIDD_ModeProperties modeprops =
 {
     DIPF_IS_SPRITES,
     1,
-    COMPF_ABOVE
+    0   /* no composition in hardware: the display's compositor composes */
 };
 
 ULONG METHOD(INTELG45, Hidd_Display, ModeProperties)
@@ -1063,7 +1083,7 @@ static const struct OOP_MethodDescr INTELG45_Hidd_Display_descr[] =
     {(OOP_MethodFunc)INTELG45__Hidd_Display__SetCursorVisible, moHidd_Display_SetCursorVisible},
     {(OOP_MethodFunc)INTELG45__Hidd_Display__SetCursorPos    , moHidd_Display_SetCursorPos    },
     {(OOP_MethodFunc)INTELG45__Hidd_Display__SetCursorShape  , moHidd_Display_SetCursorShape  },
-    {(OOP_MethodFunc)INTELG45__Hidd_Display__ShowViewPorts   , moHidd_Display_ShowViewPorts   },
+    {(OOP_MethodFunc)INTELG45__Hidd_Display__Show            , moHidd_Display_Show            },
     {(OOP_MethodFunc)INTELG45__Hidd_Display__ModeProperties  , moHidd_Display_ModeProperties  },
     {(OOP_MethodFunc)INTELG45__Hidd_Display__NominalDimensions, moHidd_Display_NominalDimensions},
     {NULL, 0}
