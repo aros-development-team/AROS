@@ -5,7 +5,57 @@
 */
 #include <exec/memory.h>
 #include <proto/exec.h>
+#include <graphics/view.h>
 #include "graphics_intern.h"
+
+/*
+ * Compatibility: some Kickstart 1.x era tools ("add21k" and the like, found on
+ * many old game disks) free a plane of the displayed Workbench screen with
+ * FreeRaster() to gain chip memory. On AROS the planes of a displayed bitmap
+ * are part of a larger allocation owned by the display driver, and the display
+ * keeps using them, so freeing one of them corrupts the free memory list.
+ * FreeRaster() therefore leaves alone a plane of a display driver bitmap in
+ * the active View. Planes of a plain bitmap (for example an application's
+ * SA_BitMap) come from the application's own AllocRaster() calls and are
+ * still freed, as on Kickstart.
+ */
+static BOOL IsDriverPlane(struct BitMap *bm, PLANEPTR p)
+{
+    UWORD i;
+
+    if (bm == NULL || !IS_HIDD_BM(bm))
+        return FALSE;
+
+    /*
+     * Check all eight entries, not just Depth: these tools lower Depth
+     * before freeing the plane that is no longer counted.
+     */
+    for (i = 0; i < 8; i++)
+    {
+        if (bm->Planes[i] == p)
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+static BOOL IsDisplayedPlane(PLANEPTR p, struct GfxBase *GfxBase)
+{
+    struct ViewPort *vp;
+    struct RasInfo *ri;
+    BOOL found = FALSE;
+
+    Forbid();
+    for (vp = GfxBase->ActiView ? GfxBase->ActiView->ViewPort : NULL; vp && !found; vp = vp->Next)
+    {
+        /* RasInfo->Next is the second playfield of a dual-playfield ViewPort */
+        for (ri = vp->RasInfo; ri && !found; ri = ri->Next)
+            found = IsDriverPlane(ri->BitMap, p);
+    }
+    Permit();
+
+    return found;
+}
 
 /*****************************************************************************
 
@@ -49,6 +99,9 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
+
+    if (IsDisplayedPlane(p, GfxBase))
+        return;
 
     FreeMem(p, RASSIZE(width, height));
 
