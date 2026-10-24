@@ -162,6 +162,47 @@ dd_mul(long double a, long double b)
  *	Dekker, T.  A Floating-Point Technique for Extending the
  *	Available Precision.  Numer. Math. 18, 224-242 (1971).
  */
+/*****************************************************************************
+    NAME
+        long double fmal(
+
+    SYNOPSIS
+        long double x, long double y, long double z)
+
+    FUNCTION
+        Compute x * y + z with one final rounding to long double precision.
+
+    INPUTS
+        x, y - Multiplicands.
+        z - Addend.
+
+    RESULT
+        The fused long double result in the current rounding direction,
+        subject to the implementation limits below. Special-value behavior
+        and floating-point side effects follow the fma() contract.
+
+    NOTES
+        Include <math.h>. On targets where long double and double have equal
+        precision, this function aliases the double implementation. Otherwise
+        the software algorithm uses the target long double format; it requires
+        intermediate arithmetic at that format's precision.
+
+        The routine temporarily uses round-to-nearest and restores the incoming
+        rounding mode before normal return. It does not establish the x87
+        precision-control setting for long double evaluation.
+
+    BUGS
+        The extended-precision implementation calls double-precision ldexp()
+        in its round-to-nearest subnormal-result path. The conversion and
+        scaling can discard long double precision and turn a representable
+        nonzero result into zero. Do not rely on correct fused rounding in
+        this range. Equal-precision aliases inherit the fma() limitations.
+
+    SEE ALSO
+        fma(), fmaf(), ldexpl()
+
+*****************************************************************************/
+
 long double
 fmal(long double x, long double y, long double z)
 {
