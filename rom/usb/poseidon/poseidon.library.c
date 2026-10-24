@@ -8227,37 +8227,47 @@ static void pReleaseAfterDOSBindings(LIBBASETYPEPTR ps)
 /* \\\ */
 
 /* /// "psdReleaseDevBinding()" */
-/****** poseidon.library/psdReleaseDevBinding ************************
+/*****************************************************************************
+    NAME
+        VOID psdReleaseDevBinding(
 
-    NAME */
-        AROS_LH1(void, psdReleaseDevBinding,
-/*  SYNOPSIS */
-         AROS_LHA(struct PsdDevice *, pd, A0),
-/*  LOCATION */
-         LIBBASETYPEPTR, ps, 50, psd)
-/*  FUNCTION
-        Request release of an existing whole-device binding. A root-hub
-        binding is released through psdHubReleaseDevBinding(); for a child
-        device the request is forwarded to its parent hub class.
+    SYNOPSIS
+        APTR pd)
+
+    FUNCTION
+        Request release of the current device-level class or application binding.
 
     INPUTS
-        pd - Pointer to a valid Poseidon device. Must not be NULL.
+        pd - Valid, non-NULL device handle. Keep the device alive until return.
+
+    RESULT
+        None. Dispatch and release failures are not reported.
 
     NOTES
-        The function has no effect when pd->pd_DevBinding is NULL. For
-        child devices it sends UCM_HubReleaseDevBinding only if the parent
-        hub has both a device binding and an associated class.
-        No completion status is returned; the function does not itself
-        clear a child device's binding pointer.
+        Does nothing if the device has no device-level binding. Interface
+        bindings are not released by this call.
+
+        For a root device, calls psdHubReleaseDevBinding() directly. For a
+        child device, dispatches UCM_HubReleaseDevBinding through its parent
+        hub class. The supplied hub.class waits for the hub task to finish;
+        callbacks and that wait may block without a timeout.
+
+        The release path can invoke an application release hook or a class
+        release method. Stop using the binding before requesting release.
+        Coordinate device lifetime and competing binding operations with the
+        owner of the device.
 
     BUGS
-        A NULL or invalid device pointer is not checked. A missing parent
-        hub binding silently leaves the device binding in place.
+        If the parent hub has no device binding or class binding, the request
+        is silently skipped. Returning does not by itself prove release.
 
     SEE ALSO
-        psdReleaseIfBinding(), psdHubReleaseDevBinding()
+        psdReleaseIfBinding(), psdReleaseAppBinding(), psdHubReleaseDevBinding()
 
-******************************************************************************/
+*****************************************************************************/
+        AROS_LH1(void, psdReleaseDevBinding,
+         AROS_LHA(struct PsdDevice *, pd, A0),
+         LIBBASETYPEPTR, ps, 50, psd)
 {
     AROS_LIBFUNC_INIT
     struct PsdUsbClass *puc;
@@ -8280,37 +8290,46 @@ static void pReleaseAfterDOSBindings(LIBBASETYPEPTR ps)
 /* \\\ */
 
 /* /// "psdReleaseIfBinding()" */
-/****** poseidon.library/psdReleaseIfBinding ************************
+/*****************************************************************************
+    NAME
+        VOID psdReleaseIfBinding(
 
-    NAME */
-        AROS_LH1(void, psdReleaseIfBinding,
-/*  SYNOPSIS */
-         AROS_LHA(struct PsdInterface *, pif, A0),
-/*  LOCATION */
-         LIBBASETYPEPTR, ps, 51, psd)
-/*  FUNCTION
-        Request release of a USB interface binding through its hub.
-        An interface belonging to a root hub is released directly through
-        psdHubReleaseIfBinding().
+    SYNOPSIS
+        APTR pif)
+
+    FUNCTION
+        Request release of an interface class binding.
 
     INPUTS
-        pif - Pointer to a valid Poseidon interface. Must not be NULL.
+        pif - Valid, non-NULL interface handle whose configuration and device
+            remain alive until return.
+
+    RESULT
+        None. Dispatch and release failures are not reported.
 
     NOTES
-        The release is requested only if both pif->pif_IfBinding and
-        pif->pif_ClsBinding are set. For a child device the parent hub
-        must have a device binding and an associated class; the request
-        is then sent as UCM_HubReleaseIfBinding. No completion status
-        is returned.
+        Does nothing unless both an interface binding and its class are present.
+        Other interface bindings and the device-level binding are left intact.
+
+        For a root device, calls psdHubReleaseIfBinding() directly. Otherwise
+        dispatches UCM_HubReleaseIfBinding through the parent hub class. The
+        supplied hub.class waits for the hub task to finish; the class release
+        callback and that wait may block without a timeout.
+
+        Stop using the binding before requesting release. Coordinate interface
+        and device lifetime and competing binding operations with their owner.
 
     BUGS
-        A NULL or invalid interface pointer is not checked. An absent
-        class or parent hub binding can leave the interface bound.
+        If the parent hub has no device binding or class binding, the request
+        is silently skipped. Returning does not by itself prove release.
 
     SEE ALSO
         psdReleaseDevBinding(), psdHubReleaseIfBinding()
 
-******************************************************************************/
+*****************************************************************************/
+        AROS_LH1(void, psdReleaseIfBinding,
+         AROS_LHA(struct PsdInterface *, pif, A0),
+         LIBBASETYPEPTR, ps, 51, psd)
 {
     AROS_LIBFUNC_INIT
     struct PsdUsbClass *puc;
@@ -8333,43 +8352,43 @@ static void pReleaseAfterDOSBindings(LIBBASETYPEPTR ps)
 /* \\\ */
 
 /* /// "psdUnbindAll()" */
-/****** poseidon.library/psdUnbindAll ************************
+/*****************************************************************************
+    NAME
+        VOID psdUnbindAll(
 
-    NAME */
-        AROS_LH0(void, psdUnbindAll,
-/*  SYNOPSIS */
-/*  LOCATION */
-         LIBBASETYPEPTR, ps, 61, psd)
-/*  FUNCTION
-        Request the release of all device and interface bindings on the
-        registered USB hardware. The function walks each device's bindings
-        and requests their release through the normal Poseidon API.
+    SYNOPSIS
+        )
 
-    INPUTS
+    FUNCTION
+        Release device and interface bindings throughout the stack.
+
+    RESULT
         None.
 
     NOTES
-        The traversal normally holds the Poseidon base read lock. Before
-        each release request it drops that lock, calls psdReleaseDevBinding()
-        or psdReleaseIfBinding(), reacquires the lock and restarts from the
-        first hardware entry. No status is returned, and the operation is
-        not an atomic snapshot or transaction.
+        Visits hardware, devices, configurations and interfaces. Requests one
+        release, then restarts traversal from the beginning. Returns after a
+        complete traversal finds no binding. This is not an atomic snapshot
+        or a guarantee that later scans cannot create new bindings.
 
-        For a child device, the release functions forward requests to the
-        parent hub. A request does not itself guarantee that the binding
-        has been removed.
+        Can invoke class release methods and application release hooks, and
+        can wait for hub tasks. Coordinate stack teardown and exclude concurrent
+        device removal or rebinding before calling. Devices and hardware are
+        not explicitly freed by this function, but release callbacks can have
+        additional effects.
 
     BUGS
-        The loop does not check whether a release request made progress.
-        If a binding remains present, the same request may be repeated
-        indefinitely. Hardware or device removal while the base lock is
-        temporarily dropped is not handled by a stable traversal cursor.
+        There is no timeout or progress check. If a release leaves its binding
+        in place, the traversal can retry indefinitely. The base read lock is
+        released before each release request; the selected object is not pinned
+        across that interval, so concurrent removal can invalidate it.
 
     SEE ALSO
-        psdReleaseDevBinding(), psdReleaseIfBinding(),
-        psdHubReleaseDevBinding(), psdHubReleaseIfBinding()
+        psdReleaseDevBinding(), psdReleaseIfBinding(), psdClassScan()
 
-******************************************************************************/
+*****************************************************************************/
+        AROS_LH0(void, psdUnbindAll,
+         LIBBASETYPEPTR, ps, 61, psd)
 {
     AROS_LIBFUNC_INIT
     struct PsdHardware *phw;
@@ -8701,52 +8720,57 @@ static void pReleaseAfterDOSBindings(LIBBASETYPEPTR ps)
 /* \\\ */
 
 /* /// "psdHubClaimAppBindingA()" */
-/****** poseidon.library/psdHubClaimAppBindingA ****************************
+/*****************************************************************************
+    NAME
+        APTR psdHubClaimAppBindingA(
 
-    NAME */
-        AROS_LH1(struct PsdAppBinding *, psdHubClaimAppBindingA,
-/*  SYNOPSIS */
-         AROS_LHA(struct TagItem *, tags, A1),
-/*  LOCATION */
-         LIBBASETYPEPTR, ps, 83, psd)
-/*  FUNCTION
-        Establish a device-level application binding when no device or
-        interface binding is currently installed.
+    SYNOPSIS
+        struct TagItem *taglist)
+
+    FUNCTION
+        Install an application binding on an unbound device.
 
     INPUTS
-        tags - Application binding attributes; see TAGS.
+        taglist - TagItem list describing the application binding.
 
     TAGS
-        ABA_Device      - Device to claim; required.
-        ABA_ReleaseHook - Release callback; required.
-        ABA_UserData    - Value stored with the binding.
-        ABA_Task        - Associated task.
-        ABA_ForceRelease - Binding attribute; this function does not
-                           forcibly release existing bindings.
+        ABA_Device - Required valid device handle.
+        ABA_ReleaseHook - Required hook, retained until release. It is called
+            with the binding handle as the object and ABA_UserData as the message.
+        ABA_UserData - Value passed to the release hook; defaults to zero.
+            Keep any referenced data alive until the hook has returned.
+        ABA_Task - Task pointer stored in the binding; defaults to NULL.
+            This function does not substitute the current task.
+        ABA_ForceRelease - Stored flag; does not force release in this function.
 
     RESULT
-        New application-binding handle, or NULL if allocation fails,
-        required attributes are missing, or another binding is present.
+        An installed binding handle, or NULL if allocation fails, a required
+        attribute is missing, or any device or interface binding already exists.
+        Do not free the handle with psdFreeVec().
 
     NOTES
-        Attributes are copied into an allocated PsdAppBinding. The
-        function rejects a claim if the device already has a device-level
-        binding or any interface in any configuration is bound. On success
-        it marks the device as application-bound, stores the binding on
-        the device and clears the class-binding pointer.
+        This is the hub-side operation. Applications should normally use
+        psdClaimAppBindingA(), which dispatches to the hub owner, handles forced
+        release, records the calling task and sends the binding-added event.
 
-        The caller owns the binding's lifetime through the corresponding
-        release path. The function takes no device lock while testing or
-        updating binding state.
+        The caller must serialize access to the device and its configurations;
+        this function takes no device lock. Tag values are copied, but referenced
+        objects are retained rather than copied. Keep the device, hook and any
+        supplied task pointer valid for the binding lifetime. The tag list itself
+        is not retained.
 
-    BUGS
-        ABA_ForceRelease is not acted upon here. Competing binding changes
-        are not synchronized by this entry point.
+        Release through the owning binding path. On release, the hook must
+        finish using the binding before returning; Poseidon then frees it.
+        This function neither emits a binding-added event nor assigns a task
+        name to the binding.
 
     SEE ALSO
         psdClaimAppBindingA(), psdReleaseAppBinding(), psdHubReleaseDevBinding()
 
-******************************************************************************/
+*****************************************************************************/
+        AROS_LH1(struct PsdAppBinding *, psdHubClaimAppBindingA,
+         AROS_LHA(struct TagItem *, tags, A1),
+         LIBBASETYPEPTR, ps, 83, psd)
 {
     AROS_LIBFUNC_INIT
     struct PsdDevice *pd;
@@ -8793,47 +8817,51 @@ static void pReleaseAfterDOSBindings(LIBBASETYPEPTR ps)
 /* \\\ */
 
 /* /// "psdHubReleaseDevBinding()" */
-/****** poseidon.library/psdHubReleaseDevBinding ************************
+/*****************************************************************************
+    NAME
+        VOID psdHubReleaseDevBinding(
 
-    NAME */
-        AROS_LH1(void, psdHubReleaseDevBinding,
-/*  SYNOPSIS */
-         AROS_LHA(struct PsdDevice *, pd, A0),
-/*  LOCATION */
-         LIBBASETYPEPTR, ps, 84, psd)
-/*  FUNCTION
-        Release a device binding through its local hub-side teardown path.
-        Application bindings receive their release hook; class bindings
-        receive UCM_ReleaseDeviceBinding when an owning class is present.
+    SYNOPSIS
+        APTR pd)
+
+    FUNCTION
+        Remove a device-level binding and invoke its release callback.
 
     INPUTS
-        pd - Poseidon device whose binding is to be released. NULL is
-             accepted and has no effect.
+        pd - Device handle, or NULL to do nothing. Keep a non-NULL device
+            alive until return.
+
+    RESULT
+        None. Callback results are ignored.
 
     NOTES
-        The function takes the device write lock and does nothing when
-        pd->pd_DevBinding is NULL.
+        This is the hub-side operation; ordinary clients should use
+        psdReleaseDevBinding() or psdReleaseAppBinding(). Waits for the device
+        write lock and keeps it held while invoking the release callback.
+        Coordinate device lifetime and avoid callback dependencies on another
+        task that needs this lock.
 
-        An application binding is detached, its release hook is called
-        with the stored user data, the binding is freed, and
-        EHMB_REMBINDING is sent. For a class binding, the device binding
-        pointer is cleared first. If pd->pd_ClsBinding is set, the class
-        pointer is cleared, UCM_ReleaseDeviceBinding is dispatched, the
-        class use count is decremented, and EHMB_REMBINDING is sent.
+        Clears the device binding pointer before the callback. For an application
+        binding, calls its release hook with the binding as the object and its
+        user data as the message, then clears the application-binding flag,
+        frees the binding and sends EHMB_REMBINDING. The hook must not free the
+        binding or retain it after returning.
 
-        The function returns no completion status. A class binding's
-        storage is not freed directly by this entry point.
+        For a class binding, clears the class pointer, calls
+        UCM_ReleaseDeviceBinding, decrements the class use count and sends
+        EHMB_REMBINDING. If no class pointer is present, only the device binding
+        pointer is cleared. Interface bindings are not released here.
 
-    BUGS
-        A non-application binding with no associated class is cleared
-        without a class release method or removal event. The release
-        callback's result is not reported to the caller.
+        Release callbacks must complete before return. Do not install a new
+        binding from the callback while this release is still cleaning up.
 
     SEE ALSO
-        psdReleaseDevBinding(), psdHubReleaseIfBinding(),
-        psdSendEvent()
+        psdReleaseDevBinding(), psdReleaseAppBinding(), psdHubReleaseIfBinding()
 
-******************************************************************************/
+*****************************************************************************/
+        AROS_LH1(void, psdHubReleaseDevBinding,
+         AROS_LHA(struct PsdDevice *, pd, A0),
+         LIBBASETYPEPTR, ps, 84, psd)
 {
     AROS_LIBFUNC_INIT
     struct PsdUsbClass *puc;
@@ -8869,45 +8897,47 @@ static void pReleaseAfterDOSBindings(LIBBASETYPEPTR ps)
 /* \\\ */
 
 /* /// "psdHubReleaseIfBinding()" */
-/****** poseidon.library/psdHubReleaseIfBinding ************************
+/*****************************************************************************
+    NAME
+        VOID psdHubReleaseIfBinding(
 
-    NAME */
-        AROS_LH1(void, psdHubReleaseIfBinding,
-/*  SYNOPSIS */
-         AROS_LHA(struct PsdInterface *, pif, A0),
-/*  LOCATION */
-         LIBBASETYPEPTR, ps, 85, psd)
-/*  FUNCTION
-        Release a USB interface binding through its local hub-side
-        teardown path, invoking the owning class's
-        UCM_ReleaseInterfaceBinding method when a class is present.
+    SYNOPSIS
+        APTR pif)
+
+    FUNCTION
+        Remove an interface binding and invoke its class release method.
 
     INPUTS
-        pif - Valid Poseidon interface. NULL is accepted and has no
-              effect. A non-NULL interface must have a valid configuration
-              and parent device.
+        pif - Interface handle, or NULL to do nothing. Keep a non-NULL
+            interface, its configuration and its device alive until return.
+
+    RESULT
+        None. The class method result is ignored.
 
     NOTES
-        The parent device is obtained from the interface's configuration.
-        The function takes that device's write lock. If an interface
-        binding exists, its pointer is cleared. When an owning class is
-        present, the class pointer is also cleared, the release method is
-        called and the class use count is decremented.
+        This is the hub-side operation; ordinary clients should use
+        psdReleaseIfBinding(). Waits for the device write lock and holds it
+        through the class callback. Avoid callback dependencies on another
+        task that needs this lock.
 
-        EHMB_REMBINDING is sent for any interface binding that was
-        present, including one with no associated class. No event is sent
-        if the binding was already NULL. The function returns no status.
+        If a binding exists, clears the interface binding pointer. If its class
+        is present, also clears the class pointer, calls
+        UCM_ReleaseInterfaceBinding and decrements the class use count.
+        Sends EHMB_REMBINDING for the device whenever a binding was removed,
+        including when no class pointer was present.
 
-    BUGS
-        A binding without an owning class is cleared without calling a
-        class release method. The class release method's outcome is not
-        reported to the caller.
+        Does nothing if the interface has no binding. Other interface bindings
+        and the device-level binding are left intact. Stop using the released
+        binding; the class owns its cleanup. This function does not free the
+        interface or its configuration.
 
     SEE ALSO
-        psdReleaseIfBinding(), psdHubReleaseDevBinding(),
-        psdSendEvent()
+        psdReleaseIfBinding(), psdHubReleaseDevBinding()
 
-******************************************************************************/
+*****************************************************************************/
+        AROS_LH1(void, psdHubReleaseIfBinding,
+         AROS_LHA(struct PsdInterface *, pif, A0),
+         LIBBASETYPEPTR, ps, 85, psd)
 {
     AROS_LIBFUNC_INIT
     struct PsdUsbClass *puc;
