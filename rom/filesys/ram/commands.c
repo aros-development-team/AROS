@@ -104,8 +104,8 @@ BOOL CmdStartup(struct Handler *handler, STRPTR name, struct DeviceNode *dev_nod
    if(error == 0)
    {
       handler->proc_port = proc_port;
-      handler->block_count = MEMBLOCKS(StrSize(default_vol_name)) +
-         MEMBLOCKS(sizeof(struct Handler));
+      handler->block_count = MemBlocks(StrSize(default_vol_name)) +
+         MemBlocks(sizeof(struct Handler));
       handler->min_block_size = MIN_BLOCK_SIZE;
       handler->max_block_size = MAX_BLOCK_SIZE;
       NewList((APTR)&handler->examinations);
@@ -1698,9 +1698,9 @@ BOOL CmdInfo(struct Handler *handler, struct InfoData *info_data)
       disk_state = ID_VALIDATED;
    info_data->id_DiskState = disk_state;
    info_data->id_NumBlocks = handler->block_count
-      + MEMBLOCKS(AvailMem(MEMF_ANY));
+      + MemBlocks(AvailMem(MEMF_ANY));
    info_data->id_NumBlocksUsed = handler->block_count;
-   info_data->id_BytesPerBlock = MEM_BLOCKSIZE;
+   info_data->id_BytesPerBlock = RAM_BLOCKSIZE;
    info_data->id_DiskType = ID_DOS_DISK;
    info_data->id_VolumeNode = MKBADDR(handler->volume);
    info_data->id_InUse = DOSBOOL(handler->lock_count > 1);
