@@ -162,6 +162,7 @@ BOOL ddstricmp (DSTR dstr1, DSTR dstr2)
 UBYTE *BCPLtoCString(STRPTR dest, DSTR src)
 {
 #ifdef AROS_FAST_BSTR
+  /* At most 255 bytes: CheckNames() refuses longer names */
   strcpy(dest, (CONST_STRPTR)src);
   return dest;
 #else
