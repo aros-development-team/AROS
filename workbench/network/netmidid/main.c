@@ -163,6 +163,11 @@ static void publish_counts(struct netmidid *d, uint64_t now)
                          counts, NETMIDI_CAMD_PORTS * NETMIDI_CAMD_DRIVERS);
 }
 
+/* Outlives a run: a change of the configuration that leaves a service as
+   it was leaves its advertisement alone. */
+static struct netmidi_discovery discovery;
+static int discovered;              /* services advertised, as last seen */
+
 /* A turn of the loop for everything but the sockets. Returns 1 when a
  * transport says the program is done. */
 static int periodic(struct netmidid *d, uint64_t now)
@@ -171,6 +176,15 @@ static int periodic(struct netmidid *d, uint64_t now)
     int i;
 
     publish_counts(d, now);
+    /* The system's mDNS service may come up after us, or again. */
+    {
+        int registered = netmidi_discovery_poll(d->discovery, now);
+
+        if (registered > discovered)
+            puts(TAG "advertised by the system mDNS service");
+        if (registered >= 0)
+            discovered = registered;
+    }
     for (i = 0; i < TRANSPORT_COUNT; ++i)
         if (running[i] && transports[i]->periodic &&
             transports[i]->periodic(d, state[i], now))
@@ -252,6 +266,8 @@ static int run(void)
     }
     netmidi_network_init(&d->network);
     d->latency = (uint32_t)d->config.latency_ms * 10;
+    d->discovery = &discovery;
+    netmidi_discovery_begin(d->discovery);
 
     if (netmidi_network_platform_open(&d->network) != 0) {
         fputs(TAG "bsdsocket.library unavailable\n", stderr);
@@ -299,6 +315,8 @@ static int run(void)
         goto cleanup;
     }
     now = netmidid_now();
+    if (netmidi_discovery_poll(d->discovery, now) < 0)
+        puts(TAG "no system mDNS service: not advertised");
     for (i = 0; i < TRANSPORT_COUNT; ++i)
         if (running[i] && transports[i]->start &&
             transports[i]->start(d, state[i], now) != 0)
@@ -395,8 +413,10 @@ int main(void)
     }
     setvbuf(stdout, NULL, _IONBF, 0);
     setvbuf(stderr, NULL, _IONBF, 0);
+    netmidi_discovery_init(&discovery);
     do
         result = run();
     while (result == RUN_AGAIN);
+    netmidi_discovery_close(&discovery);
     return result;
 }
