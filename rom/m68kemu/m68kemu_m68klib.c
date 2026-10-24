@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <aros/debug.h>
 #include <exec/types.h>
+#include <dos/dosextens.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <string.h>
@@ -31,6 +32,11 @@ ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name)
     LONG fileSize;
     UBYTE *fileData;
     ULONG entry, base = 0;
+    struct Process *me = (struct Process *)FindTask(NULL);
+    APTR oldwin = me->pr_WindowPtr;
+
+    /* A probe for an optional library must not raise a volume requester */
+    me->pr_WindowPtr = (APTR)-1;
 
     /* Try LIBS68K:name first (dedicated assign for m68k libraries) */
     snprintf(path, sizeof(path), "LIBS68K:%s", name);
@@ -49,6 +55,8 @@ ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name)
         snprintf(path, sizeof(path), "LIBS:%s", name);
         fh = Open(path, MODE_OLDFILE);
     }
+
+    me->pr_WindowPtr = oldwin;
 
     if (!fh) return 0;
 
