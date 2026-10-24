@@ -1,5 +1,6 @@
 /*
     Copyright (C) 2025-2026, The AROS Development Team. All rights reserved.
+    Copyright (C) 2026, John KNIPPER <code@jkn.me>.
 */
 
 #include <aros/libcall.h>
@@ -86,7 +87,7 @@ static fd_entry *fd_get_entry(struct fd_base *base, LONG fd)
     if (!outfd)
         return EINVAL;
 
-    if (owner == FD_OWNER_NONE)
+    if (owner == FD_OWNER_NONE || owner >= FD_OWNER_MAX)
         return EINVAL;
 
     ObtainSemaphore(&FDBase->fd_Lock);
@@ -161,7 +162,7 @@ static fd_entry *fd_get_entry(struct fd_base *base, LONG fd)
     LONG error = 0;
     fd_entry *entry = NULL;
 
-    if (owner == FD_OWNER_NONE)
+    if (owner == FD_OWNER_NONE || owner >= FD_OWNER_MAX)
         return EINVAL;
 
     ObtainSemaphore(&FDBase->fd_Lock);
@@ -231,7 +232,7 @@ static fd_entry *fd_get_entry(struct fd_base *base, LONG fd)
     LONG error = 0;
     fd_entry *entry = NULL;
 
-    if (owner == FD_OWNER_NONE)
+    if (owner == FD_OWNER_NONE || owner >= FD_OWNER_MAX)
         return EINVAL;
 
     ObtainSemaphore(&FDBase->fd_Lock);
@@ -239,6 +240,11 @@ static fd_entry *fd_get_entry(struct fd_base *base, LONG fd)
     entry = fd_get_entry(FDBase, fd);
     if (!entry || entry->owner == FD_OWNER_NONE || entry->owner != owner) {
         error = EBADF;
+        goto done;
+    }
+
+    if (entry->retention) {
+        error = EBUSY;
         goto done;
     }
 
@@ -450,7 +456,7 @@ static fd_entry *fd_get_entry(struct fd_base *base, LONG fd)
     LONG error = 0;
     fd_entry *entry = NULL;
 
-    if (owner == FD_OWNER_NONE)
+    if (owner == FD_OWNER_NONE || owner >= FD_OWNER_MAX)
         return EINVAL;
 
     ObtainSemaphore(&FDBase->fd_Lock);
@@ -461,6 +467,10 @@ static fd_entry *fd_get_entry(struct fd_base *base, LONG fd)
         goto done;
     }
 
+    if (entry->retention && entry->data != data) {
+        error = EBUSY;
+        goto done;
+    }
     entry->data = data;
 
  done:

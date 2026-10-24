@@ -1,7 +1,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES:= fd_alloc fd_hooks fd_init
+FILES:= fd_alloc fd_hooks fd_init fd_lease
 
 USER_LDFLAGS := -static
 

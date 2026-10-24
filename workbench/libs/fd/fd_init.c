@@ -1,5 +1,6 @@
 /*
     Copyright (C) 2025-2026, The AROS Development Team. All rights reserved.
+    Copyright (C) 2026, John KNIPPER <code@jkn.me>.
 */
 
 #include <aros/symbolsets.h>
@@ -17,7 +18,10 @@ static int FD_Init(LIBBASETYPEPTR LIBBASE)
     LIBBASE->fd_Slots = 0;
 
     for (i = 0; i < FD_OWNER_MAX; i++)
+    {
         LIBBASE->fd_OwnerHooks[i] = NULL;
+        LIBBASE->fd_OwnerUsers[i] = 0;
+    }
 
     return TRUE;
 }
