@@ -192,13 +192,21 @@ struct DosPacket  *pkt;
   if ((fh= (struct FileHandle *) BPTRtoCptr (pkt->dp_Arg1)) != NULL) {
       if ((lock= (struct FileLock *) BPTRtoCptr (pkt->dp_Arg2)) != NULL) {
           if ((pipe= (PIPEDATA *) lock->fl_Key) != NULL) {
-              if ((pipekey= (PIPEKEY *) AllocMem (sizeof (PIPEKEY), ALLOCMEM_FLAGS)) != NULL) {
+              if (pipe->flags & OPEN_FOR_READ) {
+                  pkt->dp_Res2= ERROR_OBJECT_IN_USE;
+              } else if ((pipekey= (PIPEKEY *) AllocMem (sizeof (PIPEKEY), ALLOCMEM_FLAGS)) != NULL) {
+                  /* PipeLock only grants shared locks, hence read handles. */
                   pipekey->pipe = pipe;
-                  pipekey->openmode = (lock->fl_Access == ACCESS_READ) ? OPEN_FOR_READ : OPEN_FOR_WRITE;
-                  pipekey->iotype = (lock->fl_Access == ACCESS_READ) ? PIPEREAD : PIPEWRITE;
+                  pipekey->openmode = MODE_READONLY;
+                  pipekey->iotype = PIPEREAD;
+                  pipe->flags |= OPEN_FOR_READ;
+                  --pipe->lockct;     /* successful conversion consumes the lock */
                   fh->fh_Arg1 = (SIPTR)pipekey;
+                  fh->fh_Interactive = DOSTRUE;
                   pkt->dp_Res1= DOSTRUE;
                   pkt->dp_Res2= 0;
+              } else {
+                  pkt->dp_Res2= ERROR_NO_FREE_STORE;
               }
           }
       }
