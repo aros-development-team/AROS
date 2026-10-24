@@ -9,7 +9,7 @@
 **  History:    05-Jan-87       Original Version (1.0)
 **		07-Feb-87	Added conditional compilation for autoname.
 */
-#include   <string.h>	/* For strcpy */
+#include   <string.h>	/* For strncpy */
 
 #include   <libraries/dos.h>
 #include   <libraries/dosextens.h>
@@ -288,13 +288,9 @@ register char  *to;
 register char  *from;
 
 {
-#ifdef __AROS__
-  strcpy(to, from);
-#else
-STRCPYLOOP:
-  if (*(to++)= *(from++))
-    goto STRCPYLOOP;
-#endif
+  /* ParsePipeName also uses this to remove a prefix in place. */
+  while ((*(to++)= *(from++)) != '\0')
+    ;
 }
 
 
