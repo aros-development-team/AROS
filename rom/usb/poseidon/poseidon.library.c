@@ -4576,49 +4576,58 @@ fail:
 /* \\\ */
 
 /* /// "psdSuspendBindings()" */
-/****** poseidon.library/psdSuspendBindings ************************
+/*****************************************************************************
+    NAME
+        BOOL psdSuspendBindings(
 
-    NAME */
-        AROS_LH1(BOOL, psdSuspendBindings,
-/*  SYNOPSIS */
-         AROS_LHA(struct PsdDevice *, pd, A0),
-/*  LOCATION */
-         LIBBASETYPEPTR, ps, 100, psd)
-/*  FUNCTION
-        Prepare a configured USB device for suspension by asking its
-        device and interface class bindings to suspend. Classes that
-        advertise UCCA_SupportsSuspend receive UCM_AttemptSuspendDevice.
+    SYNOPSIS
+        APTR pd)
+
+    FUNCTION
+        Prepare the device binding and current interface bindings for suspension.
 
     INPUTS
-        pd - Configured Poseidon device with a valid current config.
-             NULL returns FALSE.
+        pd - Device with a valid current configuration, or NULL. Keep the
+            device, configuration and bindings alive throughout the call.
 
     RESULT
-        TRUE if all examined bindings allow suspension, FALSE for NULL
-        or a binding that refuses or blocks suspension. TRUE does not
-        mean the USB device itself has been suspended.
+        TRUE if traversal finishes without a binding refusing suspension.
+        FALSE for NULL or a rejected suspension request. TRUE does not mean
+        that the hub port has been suspended.
 
     NOTES
-        Forced suspension is enabled only when pgc_ForceSuspend is set
-        and the current configuration advertises USCAF_REMOTE_WAKEUP.
-        A busy class without suspend support blocks an ordinary suspend;
-        forced suspension requests release of that binding instead.
-        An application device binding also blocks suspension unless
-        forced release is enabled. An idle class without suspend support
-        can remain bound.
-        psdSuspendDevice() takes the device write lock before calling
-        this function. Direct callers must provide suitable synchronization.
+        Call in a context that serializes device and binding changes; this
+        function takes no device lock. Class methods and binding release can
+        block. psdSuspendDevice() performs this preparation under a device
+        write lock before asking the hub to suspend the port.
+
+        Classes advertising UCCA_SupportsSuspend receive
+        UCM_AttemptSuspendDevice. A refusal stops traversal. Classes without
+        that capability are accepted if the device has no active I/O.
+
+        When GCA_ForceSuspend is enabled and the current configuration advertises
+        remote wakeup, application bindings and busy bindings of classes without
+        suspend support are released. Otherwise an application binding or a busy,
+        unsupported class causes failure. A suspend-capable class may still veto
+        suspension when force mode is enabled.
+
+        Visits the device binding and every interface in the current
+        configuration. Released binding handles become invalid. This function
+        does not change the port state or the device's suspended flag.
 
     BUGS
-        The implementation dereferences pd->pd_CurrentConfig without
-        validating it. On failure, earlier bindings may already have been
-        suspended or released; no rollback is performed.
+        Failure does not undo earlier class suspension or binding releases.
+        Release requests have no status, so TRUE cannot establish that forced
+        release completed. A non-NULL device without a current configuration
+        is invalid and can cause a NULL dereference.
 
     SEE ALSO
-        psdSuspendDevice(), psdResumeBindings(), psdReleaseDevBinding(),
-        psdReleaseIfBinding()
+        psdSuspendDevice(), psdResumeBindings(), psdReleaseDevBinding()
 
-******************************************************************************/
+*****************************************************************************/
+        AROS_LH1(BOOL, psdSuspendBindings,
+         AROS_LHA(struct PsdDevice *, pd, A0),
+         LIBBASETYPEPTR, ps, 100, psd)
 {
     AROS_LIBFUNC_INIT
     struct PsdUsbClass *puc;
@@ -4720,45 +4729,55 @@ fail:
 /* \\\ */
 
 /* /// "psdSuspendDevice()" */
-/****** poseidon.library/psdSuspendDevice **********************************
+/*****************************************************************************
+    NAME
+        BOOL psdSuspendDevice(
 
-    NAME */
-        AROS_LH1(BOOL, psdSuspendDevice,
-/*  SYNOPSIS */
-         AROS_LHA(struct PsdDevice *, pd, A0),
-/*  LOCATION */
-         LIBBASETYPEPTR, ps, 98, psd)
-/*  FUNCTION
-        Request suspension of a non-root USB device through its class
-        bindings and parent hub.
+    SYNOPSIS
+        APTR pd)
+
+    FUNCTION
+        Prepare a device for suspension and request suspension of its hub port.
 
     INPUTS
-        pd - Valid Poseidon device. NULL is not safe on the failure path.
+        pd - Valid, non-NULL device with a current configuration. Keep it and
+            its parent hub alive until return; serialize competing state changes.
 
     RESULT
-        TRUE if the device is already marked suspended, or the binding
-        suspension and hub suspension requests both succeed; otherwise
-        FALSE.
+        TRUE if the device is already marked suspended, or if binding
+        preparation and the dispatched hub method report success. FALSE if
+        preparation or the hub method fails, or a root hub needs suspension.
+        See BUGS for the missing-parent-binding case.
 
     NOTES
-        The function first calls psdSuspendBindings() while holding the
-        device write lock. If that succeeds and the parent hub has a class
-        binding, it sends UCM_HubSuspendDevice through that hub's class.
-        An already suspended device returns TRUE without another request.
+        May block on device locks, class callbacks, hub-task replies and USB
+        control transfers. There is no whole-operation timeout.
 
-        Root-hub suspension is explicitly unsupported and returns FALSE.
-        This routine does not itself set the suspended flag; the hub
-        implementation owns the resulting device state.
+        Runs psdSuspendBindings() under the device write lock, then dispatches
+        UCM_HubSuspendDevice under a device read lock. Preparation may release
+        bindings. The supplied hub.class sets PORT_SUSPEND; on successful control
+        transfer it marks the device suspended and sends EHMB_DEVSUSPENDED.
+        This reports command completion, not an independent measurement of
+        power consumption.
+
+        Root-hub suspension is unsupported unless the suspended flag was already
+        set, in which case the initial state check returns TRUE.
 
     BUGS
-        NULL pd reaches the failure message, which dereferences pd while
-        attempting to report the error. Callers must not pass NULL.
-        A failed hub request does not undo successful binding suspension.
+        If preparation succeeds but the parent has no device binding or class
+        binding, no hub request is sent and TRUE is still returned. Preparation
+        is not rolled back after a failed port-suspend request.
+
+        NULL is unsafe: the failure diagnostic dereferences pd. State checks and
+        preparation are not one atomic transition with the subsequent hub call.
 
     SEE ALSO
-        psdResumeDevice(), psdSuspendBindings(), psdResumeBindings()
+        psdSuspendBindings(), psdResumeDevice(), psdGetAttrsA()
 
-******************************************************************************/
+*****************************************************************************/
+        AROS_LH1(BOOL, psdSuspendDevice,
+         AROS_LHA(struct PsdDevice *, pd, A0),
+         LIBBASETYPEPTR, ps, 98, psd)
 {
     AROS_LIBFUNC_INIT
     struct PsdUsbClass *puc;
@@ -4801,43 +4820,49 @@ fail:
 /* \\\ */
 
 /* /// "psdResumeBindings()" */
-/****** poseidon.library/psdResumeBindings ************************
+/*****************************************************************************
+    NAME
+        BOOL psdResumeBindings(
 
-    NAME */
-        AROS_LH1(BOOL, psdResumeBindings,
-/*  SYNOPSIS */
-         AROS_LHA(struct PsdDevice *, pd, A0),
-/*  LOCATION */
-         LIBBASETYPEPTR, ps, 101, psd)
-/*  FUNCTION
-        Ask existing class bindings to resume after device suspension.
-        If a class rejects UCM_AttemptResumeDevice, request release of
-        its binding and run psdClassScan() to look for a replacement.
+    SYNOPSIS
+        APTR pd)
+
+    FUNCTION
+        Ask existing class bindings to resume and rescan after a failed callback.
 
     INPUTS
-        pd - Configured Poseidon device with a valid current config.
-             NULL is accepted and leaves bindings unchanged.
+        pd - Device with a valid current configuration, or NULL. Keep the
+            device, configuration and bindings alive throughout the call.
 
     RESULT
-        TRUE unconditionally. This is not confirmation that bindings
-        resumed successfully or that a replacement binding was found.
+        Always TRUE, including for NULL and when a class resume method fails.
+        The result does not certify that all bindings resumed.
 
     NOTES
-        Application-level device bindings are skipped. The implementation
-        considers the first interface with a binding, then leaves the
-        interface loop without visiting subsequent bound interfaces.
-        psdResumeDevice() invokes this routine after hub resume succeeds.
-        Direct callers must provide suitable synchronization.
+        Requires serialized access to the device and its bindings; this function
+        takes no device lock. Class callbacks, releases and rescanning can block.
+        It neither resumes the hub port nor changes the suspended flag.
+
+        Sends UCM_AttemptResumeDevice to a device class binding. Application
+        bindings are left alone. A failed class callback requests release of
+        that binding and schedules a stack-wide psdClassScan(). The same
+        handling is applied to the first bound interface in the current
+        configuration. A rescan can create new bindings; it does not guarantee
+        replacement of each released binding.
 
     BUGS
-        The first-bound-interface limit can leave other interface
-        bindings unresumed. The return value does not report class resume
-        failures, rebinding results or the NULL-device case.
+        Interface traversal stops at the first binding, even if its class
+        pointer is absent. Later bound interfaces are not resumed. Failures
+        are not returned and release completion is not checked. A non-NULL
+        device without a current configuration can cause a NULL dereference.
 
     SEE ALSO
         psdResumeDevice(), psdSuspendBindings(), psdClassScan()
 
-******************************************************************************/
+*****************************************************************************/
+        AROS_LH1(BOOL, psdResumeBindings,
+         AROS_LHA(struct PsdDevice *, pd, A0),
+         LIBBASETYPEPTR, ps, 101, psd)
 {
     AROS_LIBFUNC_INIT
     struct PsdUsbClass *puc;
@@ -4887,41 +4912,54 @@ fail:
 /* \\\ */
 
 /* /// "psdResumeDevice()" */
-/****** poseidon.library/psdResumeDevice ***********************************
+/*****************************************************************************
+    NAME
+        BOOL psdResumeDevice(
 
-    NAME */
-        AROS_LH1(BOOL, psdResumeDevice,
-/*  SYNOPSIS */
-         AROS_LHA(struct PsdDevice *, pd, A0),
-/*  LOCATION */
-         LIBBASETYPEPTR, ps, 99, psd)
-/*  FUNCTION
-        Request resumption of a suspended non-root USB device through its
-        parent hub, then resume class bindings.
+    SYNOPSIS
+        APTR pd)
+
+    FUNCTION
+        Request port resume through the parent hub, then resume class bindings.
 
     INPUTS
-        pd - Poseidon device to resume; may be NULL.
+        pd - Device handle, or NULL. A suspended device must have a valid
+            current configuration. Keep the device and parent hub alive until
+            return; serialize competing state changes.
 
     RESULT
-        TRUE if a non-NULL device was not marked suspended, or its parent
-        hub's UCM_HubResumeDevice method returned success. FALSE if pd is
-        NULL, root-hub resume is requested, or the hub request fails or
-        cannot be dispatched.
+        TRUE if the device is already marked active, or if the hub resume
+        method succeeds. FALSE for NULL, an unsupported root-hub resume, a
+        missing parent binding or class, or a failed hub resume method.
+        TRUE does not certify successful resumption of all class bindings.
 
     NOTES
-        The device write lock protects the hub resume method call.
-        Following a successful hub request, psdResumeBindings() is called
-        to notify or replace class bindings. Its return value is ignored.
-        Root-hub resume is explicitly unsupported by this entry point.
+        May block on the device write lock, a hub-task reply, USB control I/O,
+        class callbacks and rescanning. There is no whole-operation timeout.
+
+        Dispatches UCM_HubResumeDevice while holding the device write lock.
+        The supplied hub.class clears PORT_SUSPEND; after a successful transfer
+        it clears the suspended flag, sends EHMB_DEVRESUMED and waits 30 ms.
+        After the hub method returns successfully, this function releases the
+        lock and calls psdResumeBindings(). The resumed event therefore does
+        not establish that binding callbacks have finished.
+
+        An already-active device returns immediately without resuming bindings.
+        An active root hub also returns TRUE; resuming a suspended root hub is
+        unsupported.
 
     BUGS
-        The reported success does not confirm that all class bindings
-        resumed. No recovery is performed if the hub method fails.
+        The binding phase has no usable failure result and only processes the
+        first bound interface. State checks, hub resume and binding callbacks
+        are not one atomic transition.
 
     SEE ALSO
-        psdSuspendDevice(), psdResumeBindings(), psdSuspendBindings()
+        psdResumeBindings(), psdSuspendDevice(), psdGetAttrsA()
 
-******************************************************************************/
+*****************************************************************************/
+        AROS_LH1(BOOL, psdResumeDevice,
+         AROS_LHA(struct PsdDevice *, pd, A0),
+         LIBBASETYPEPTR, ps, 99, psd)
 {
     AROS_LIBFUNC_INIT
     struct PsdUsbClass *puc;
