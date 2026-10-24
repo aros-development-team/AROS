@@ -10,6 +10,7 @@
 #include <proto/dos.h>
 #include <dos/dos.h>
 #include <string.h>
+#include <stdio.h>
 
 static int write_fixture(CONST_STRPTR name)
 {
@@ -35,8 +36,7 @@ int main(int argc, char **argv)
         {"missing", "missing TO out\n", "", FALSE, RETURN_ERROR}
     };
     BPTR segment, lock, olddir;
-    char dirname[80], output[128], command[128];
-    unsigned i;
+    char dirname[80];
     int failed = 0;
     if (argc != 2) {
         Printf("Usage: TypeRetryNative path/to/Type\n");
@@ -72,11 +72,12 @@ int main(int argc, char **argv)
     if (!write_fixture("one.txt") || !write_fixture("two.txt")) {
         failed = 1;
         Printf("FAIL fixture creation\n");
-    } else for (i = 0; i < sizeof(cases)/sizeof(cases[0]); ++i) {
+    } else for (unsigned i = 0; i < sizeof(cases)/sizeof(cases[0]); ++i) {
+        char output[128], command[128];
         LONG rc, error, n = -1;
         ULONG pending;
         BPTR f;
-        strcpy(command, (const char *)cases[i].args);
+        snprintf(command, sizeof command, "%s", cases[i].args);
         SetSignal(0, SIGBREAKF_CTRL_C);
         if (cases[i].signal) Signal(FindTask(NULL), SIGBREAKF_CTRL_C);
         rc = RunCommand(segment, 65536, command, strlen(command));
