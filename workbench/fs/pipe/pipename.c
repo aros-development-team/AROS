@@ -67,10 +67,9 @@ static int ParseNum ( char   *str, ULONG  *nump);
 ** "n" represents a number and "t" represents a tap name.
 **      ParsePipeName() returns nonzero iff "Bname" conforms to the syntax
 ** and the following restrictions.
-**      "D:" represents a device name.  If it occurs, it is ignored.  Notice
-** that tap names which contain a ":" force a device name to be specified for
-** the pipe.  Otherwise, everything up to and including the ":" in the tap
-** name will be ignored.
+**      "D:" represents a device name.  If it occurs before the first
+** separator, it is ignored.  A colon in the tap name is part of that name;
+** DOS may already have removed the pipe device prefix from the packet.
 **      *nmp returns pointing to a copy of "p", even if it is empty.  Default
 ** pipe names are handled by calling get_autoname().  (This is done by
 ** OpenPipe() if *nmp returns empty.)
@@ -106,7 +105,8 @@ char   **tapnmp;     /* reference to tap name pointer, returns NULL if none */
 
   BSTRtoCstr (Bname, *nmp, PIPENAMELEN);
 
-  if (*(cp= findchar (*nmp, ':')) == ':')
+  if ((*(cp= findchar (*nmp, ':')) == ':') &&
+      (cp < findchar (*nmp, PIPE_SPEC_CHAR)))
     l_strcpy (*nmp, ++cp);     /* get rid of "devname:" prefix */
 
   if ( *(cp= findchar (*nmp, PIPE_SPEC_CHAR)) )     /* true if not '\0' */
