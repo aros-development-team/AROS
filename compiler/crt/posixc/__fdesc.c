@@ -224,6 +224,45 @@ int __getfirstfd(register int startfd)
     }
 }
 
+#ifdef POSIXC_FAULT_INJECTION
+/*
+ * Test builds only (make compiler-posixc POSIXC_FAULT_INJECTION=yes): when the
+ * calling process's local variable "posixc_fault" names a failure point, that
+ * point fails once and the variable is deleted. "probe" fails nothing; it is
+ * consumed by the check at the start of every __getfdslot() call, so a test
+ * can tell that this build has failure points. The variable belongs to one
+ * process, so other tasks are never affected; plain Exec tasks have no local
+ * variables and are skipped before GetVar(), which would read pr_LocalVars.
+ * Only descriptors above the standard streams are checked: those for 0..2 are
+ * taken while posixc opens, before dos.library may be used here. Regular
+ * builds contain none of this.
+ */
+static int __fault(int fd, const char *point)
+{
+    char value[16];
+    const char *p, *v;
+
+    if (fd <= STDERR_FILENO || FindTask(NULL)->tc_Node.ln_Type != NT_PROCESS ||
+        GetVar("posixc_fault", value, sizeof value, GVF_LOCAL_ONLY) <= 0)
+        return 0;
+    for (p = "probe", v = value; *p && *p == *v; p++, v++)
+        ;
+    if (!*p && !*v) {
+        DeleteVar("posixc_fault", GVF_LOCAL_ONLY);
+        return 0;
+    }
+    if (!point)
+        return 0;
+    p = point;
+    v = value;
+    while (*p && *p == *v) { p++; v++; }
+    if (*p || *v)
+        return 0;
+    DeleteVar("posixc_fault", GVF_LOCAL_ONLY);
+    return 1;
+}
+#endif
+
 int __getfdslot(int wanted_fd)
 {
     struct PosixCIntBase *PosixCBase =
@@ -239,6 +278,11 @@ int __getfdslot(int wanted_fd)
     if (wanted_fd == __FD_FIRSTFREE)
         wanted_fd = __getfirstfd(0);
 
+#ifdef POSIXC_FAULT_INJECTION
+    /* Consumes "probe" on every call; fails nothing. */
+    (void)__fault(wanted_fd, NULL);
+#endif
+
     if (wanted_fd>=FD_SLOTS(PosixCBase))
     {
         void *tmp;
@@ -248,9 +292,18 @@ int __getfdslot(int wanted_fd)
            range are already NULL. Do not call memset()/other stdc helpers
            here: __getfdslot() runs during posixc OpenLib (via __init_stdfiles)
            before stdc.library's relbase is available. */
+#ifdef POSIXC_FAULT_INJECTION
+        if (__fault(wanted_fd, "grow"))
+            tmp = NULL;
+        else
+#endif
         tmp = AllocPooled(FD_POOL(PosixCBase), (wanted_fd+1)*sizeof(fdesc *));
 
-        if (!tmp) { FD_UNLOCK(PosixCBase); return -1; }
+        if (!tmp) {
+            FD_UNLOCK(PosixCBase);
+            __set_errno(PosixCBase, ENOMEM);
+            return -1;
+        }
 
         if (FD_ARRAY(PosixCBase))
         {
@@ -294,6 +347,12 @@ int __getfdslot(int wanted_fd)
            would fail and abort the child's posixc OpenLib (seen as a spurious
            ENOMEM from fork()).  Only reserve numbers not already owned by us. */
         if (FD_GetOwner(wanted_fd) != FD_OWNER_POSIXC) {
+#ifdef POSIXC_FAULT_INJECTION
+            /* As if fd.library refused the number; FD_Reserve() is not called. */
+            if (__fault(wanted_fd, "reserve"))
+                error = EMFILE;
+            else
+#endif
             error = FD_Reserve(wanted_fd, FD_OWNER_POSIXC, NULL);
             if (error) {
                 FD_UNLOCK(PosixCBase);

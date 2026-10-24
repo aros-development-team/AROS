@@ -339,6 +339,12 @@ USER_CPPFLAGS += \
 
 #USER_CPPFLAGS += -DDEBUG=1
 
+# Failure points for developer/debug/test/crt/posixc/opendir_slotfail; never
+# set for a regular build.
+ifeq ($(POSIXC_FAULT_INJECTION),yes)
+USER_CPPFLAGS += -DPOSIXC_FAULT_INJECTION
+endif
+
 USER_LDFLAGS := -noposixc
 
 POSIXC_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/posixc/,$(notdir $(POSIXC_COMMON))))
