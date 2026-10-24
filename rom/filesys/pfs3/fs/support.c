@@ -135,7 +135,7 @@ static void OutOfMemory (globaldata *g)
 BOOL dstricmp (DSTR dstring, STRPTR cstring)
 {
   BOOL result;
-  UBYTE temp[PATHSIZE];
+  UBYTE temp[PATHSIZE + 1];   /* ctodstr(): length, name and NUL */
 
 	ctodstr (cstring, temp);
 	intltoupper (temp);
