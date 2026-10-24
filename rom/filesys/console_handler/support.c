@@ -29,6 +29,7 @@
 #include <utility/tagitem.h>
 #include <dos/exall.h>
 #include <dos/dosasl.h>
+#include <dos/conclip.h>
 #include <intuition/intuition.h>
 #include <intuition/sghooks.h>
 #include <devices/conunit.h>
@@ -490,7 +491,7 @@ static void copy_from_pastebuf(struct filehandle * fh)
         fh->pastebufferpos += len;
         if (fh->pastebufferpos >= fh->pastebuffersize)
         {
-            FreeMem(fh->pastebuffer, PASTEBUFSIZE);
+            FreeMem(fh->pastebuffer, fh->pastebuffercapacity);
             fh->pastebuffer = 0;
         }
     }
@@ -591,6 +592,18 @@ WORD scan_input(struct filehandle *fh, UBYTE *buffer)
             result = INP_EOF;
             break;
 
+        case 0x1B: /* ConsoleNG uses the seven-bit xterm CSI spelling. */
+            if (!(fh->flags & FHFLG_DEVICEMODE) ||
+                strcmp((const char *)fh->devname, "consoleng.device") ||
+                fh->conbufferpos >= fh->conbuffersize ||
+                fh->consolebuffer[fh->conbufferpos] != '[')
+            {
+                *buffer = c;
+                result = INP_STRING;
+                break;
+            }
+            fh->conbufferpos++;
+            /* Fall through to the existing key-sequence table. */
         case 0x9B: /* CSI */
             result = INP_UNKNOWN;
 
@@ -775,12 +788,49 @@ struct MyEditHookMsg
     WORD            code;
 };
 
+/* Optional ConsoleNG extension. Keep the wire command in sync with
+ * contrib/workbench/devs/consoleng/include/consoleng.h without making the standard
+ * handler depend on the optional device's private headers. */
+#define CD_GETPASTEMODE (CMD_NONSTD + 25)
+
+static BOOL bracketed_paste(struct filehandle *fh)
+{
+    ULONG enabled = 0;
+    struct IOStdReq query;
+    if (!(fh->flags & FHFLG_RAW) || !(fh->flags & FHFLG_DEVICEMODE) ||
+        strcmp((const char *)fh->devname, "consoleng.device"))
+        return FALSE;
+    query = fh->conwriteio;
+    query.io_Command = CD_GETPASTEMODE;
+    query.io_Data = &enabled;
+    query.io_Length = sizeof(enabled);
+    query.io_Actual = 0;
+    return !DoIO((struct IORequest *)&query) &&
+        query.io_Actual == sizeof(enabled) && enabled == 1;
+}
+
+/* Source occupies the same buffer. Reserve twelve bytes before fetching the
+ * clipboard. Strip ESC/ETX as Alacritty does, preventing pasted terminators
+ * or Ctrl-C from escaping the negotiated bracketed-paste envelope. */
+static ULONG frame_paste(UBYTE *buffer, ULONG length)
+{
+    ULONG in, out = 0;
+    for (in = 0; in < length; in++)
+        if (buffer[in] != 27 && buffer[in] != 3)
+            buffer[out++] = buffer[in];
+    memmove(buffer + 6, buffer, out);
+    CopyMem("\x1b[200~", buffer, 6);
+    CopyMem("\x1b[201~", buffer + 6 + out, 6);
+    return out + 12;
+}
+
 void do_paste(struct filehandle * fh)
 {
     struct MsgPort replyport, *port;
     struct SGWork sgw;
     struct MyEditHookMsg msg;
     struct StringInfo sinfo;
+    BOOL bracketed;
 
     if (!(port = FindPort(CONCLIP_PORTNAME)))
     {
@@ -797,11 +847,49 @@ void do_paste(struct filehandle * fh)
     replyport.mp_SigTask = FindTask(NULL);
     NEWLIST(&replyport.mp_MsgList);
 
+    /* An unknown request is replied unchanged by legacy ConClip. Only raw
+     * ConsoleNG asks for this optional snapshot; string gadgets retain SGWork. */
+    if ((fh->flags & FHFLG_RAW) && (fh->flags & FHFLG_DEVICEMODE) &&
+        !strcmp((const char *)fh->devname, "consoleng.device"))
+    {
+        struct ConClipTextMessage text;
+        memset(&text, 0, sizeof(text));
+        text.msg.mn_Node.ln_Type = NT_MESSAGE;
+        text.msg.mn_ReplyPort = &replyport;
+        text.msg.mn_Length = sizeof(text);
+        text.code = CONCLIP_READ_TEXT; text.version = CONCLIP_TEXT_VERSION;
+        SetSignal(0, SIGF_SINGLE);
+        PutMsg(port, &text.msg); WaitPort(&replyport); GetMsg(&replyport);
+        if (text.status != CONCLIP_TEXT_UNSUPPORTED)
+        {
+            if (text.status == CONCLIP_TEXT_OK && text.data)
+            {
+                if (text.length <= 0x7fffffffUL - 12 &&
+                    text.capacity >= text.length + 12)
+                {
+                    ULONG length = text.length;
+                    if (bracketed_paste(fh)) length = frame_paste(text.data, length);
+                    if (fh->pastebuffer) FreeMem(fh->pastebuffer, fh->pastebuffercapacity);
+                    fh->pastebuffer = (STRPTR)text.data;
+                    fh->pastebuffersize = length;
+                    fh->pastebuffercapacity = text.capacity;
+                    fh->pastebufferpos = 0;
+                    return;
+                }
+                FreeMem(text.data, text.capacity);
+            }
+            return; /* Snapshot failure must not paste a truncated fallback. */
+        }
+    }
+
     /* ConClip only ever looks at MaxChars in StringInfo */
-    sinfo.MaxChars = PASTEBUFSIZE;
+    bracketed = bracketed_paste(fh);
+    sinfo.MaxChars = bracketed ? PASTEBUFSIZE - 12 : PASTEBUFSIZE;
 
     memset( &sgw, 0, sizeof( struct SGWork ) );
     sgw.WorkBuffer = AllocMem(PASTEBUFSIZE, MEMF_CLEAR | MEMF_ANY);
+    if (!sgw.WorkBuffer)
+        return;
     sgw.Code = CODE_PASTE;
     sgw.EditOp = EO_BIGCHANGE;
     sgw.StringInfo = &sinfo;
@@ -816,11 +904,21 @@ void do_paste(struct filehandle * fh)
     SetSignal(0, SIGF_SINGLE);
     PutMsg(port, &msg.msg);
     WaitPort(&replyport);
+    GetMsg(&replyport);
+
+    if (sgw.BufferPos < 0 || sgw.BufferPos > sinfo.MaxChars)
+    {
+        FreeMem(sgw.WorkBuffer, PASTEBUFSIZE);
+        return;
+    }
+    if (bracketed)
+        sgw.BufferPos = frame_paste((UBYTE *)sgw.WorkBuffer, sgw.BufferPos);
 
     D(bug("Pasting %d bytes\n", sgw.BufferPos));
 
     if (fh->pastebuffer)
-        FreeMem(fh->pastebuffer, PASTEBUFSIZE);
+        FreeMem(fh->pastebuffer, fh->pastebuffercapacity);
+    fh->pastebuffercapacity = PASTEBUFSIZE;
     fh->pastebuffer = sgw.WorkBuffer;
     fh->pastebuffersize = sgw.BufferPos;
     fh->pastebufferpos = 0;
@@ -1211,6 +1309,20 @@ BOOL process_input(struct filehandle *fh)
     return FALSE;
 }
 
+/* Borrow a native console window without transferring IDCMP or close ownership.
+ * Only ConsoleNG's known public ConUnit prefix is safe in device mode. */
+struct Window *con_window(struct filehandle *fh)
+{
+    if (fh->window)
+        return fh->window;
+    if ((fh->flags & FHFLG_DEVICEMODE) &&
+        (fh->flags & FHFLG_CONSOLEDEVICEOPEN) &&
+        !strcmp((const char *)fh->devname, "consoleng.device") &&
+        fh->conreadio && fh->conreadio->io_Unit)
+        return ((struct ConUnit *)fh->conreadio->io_Unit)->cu_Window;
+    return NULL;
+}
+
 BOOL answer_write_request(struct filehandle *fh, struct DosPacket *dp)
 {
     UBYTE *buffer = (UBYTE*) dp->dp_Arg2;
@@ -1238,11 +1350,23 @@ BOOL answer_write_request(struct filehandle *fh, struct DosPacket *dp)
     return TRUE;
 }
 
-void answer_read_request(struct filehandle *fh, struct DosPacket *dp, ULONG dp_Arg3)
+ULONG answer_read_request(struct filehandle *fh, struct DosPacket *dp, ULONG dp_Arg3)
 {
     ULONG readlen;
 
     readlen = (fh->inputsize < dp_Arg3) ? fh->inputsize : dp_Arg3;
+
+    /* Keep subsequent pasted commands in the handler. RunCommand flushes
+     * the DOS input buffer after a command, and a console cannot seek back
+     * to recover lines read ahead into that buffer. Raw reads remain byte
+     * streams; do not change the contract of other console devices here. */
+    if (!(fh->flags & FHFLG_RAW) && (fh->flags & FHFLG_DEVICEMODE) &&
+        !strcmp((const char *)fh->devname, "consoleng.device"))
+    {
+        UBYTE *newline = memchr(fh->inputbuffer, '\n', readlen);
+        if (newline)
+            readlen = newline - fh->inputbuffer + 1;
+    }
 
     CopyMem(fh->inputbuffer, (UBYTE*) dp->dp_Arg2, readlen);
     CopyMem(fh->inputbuffer + readlen, fh->inputbuffer, fh->inputsize - readlen);
@@ -1252,6 +1376,7 @@ void answer_read_request(struct filehandle *fh, struct DosPacket *dp, ULONG dp_A
     fh->inputstart -= readlen;
 
     replypkt2(dp, readlen, 0);
+    return readlen;
 }
 
 void HandlePendingReads(struct filehandle *fh)
@@ -1288,7 +1413,7 @@ void con_read(struct filehandle *fh, struct DosPacket *dp)
     {
         ULONG readlen = (fh->canreadsize < dp->dp_Arg3) ? fh->canreadsize : dp->dp_Arg3;
 
-        answer_read_request(fh, dp, readlen);
+        readlen = answer_read_request(fh, dp, readlen);
 
         fh->canreadsize -= readlen;
         if (fh->canreadsize == 0)

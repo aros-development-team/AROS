@@ -55,6 +55,8 @@
 
 #include <aros/asmcall.h>
 #include <dos/dos.h>
+#include <dos/conclip.h>
+#include <exec/memory.h>
 #include <intuition/intuition.h>
 #include <intuition/sghooks.h>
 #include <intuition/classusr.h>
@@ -392,6 +394,102 @@ static void readfromclipboard(struct SGWork *sgw)
 
 /*****************************************************************************************/
 
+/* Keep string-gadget WORD limits out of the terminal text snapshot. */
+static void readtextsnapshot(struct ConClipTextMessage *msg)
+{
+    struct IFFHandle *iff;
+    UBYTE *data = NULL;
+    ULONG capacity = 0, used = 0;
+    BOOL saw_text = FALSE;
+    msg->status = CONCLIP_TEXT_ERROR;
+    msg->data = NULL; msg->length = msg->capacity = 0;
+    if (!(iff = AllocIFF())) return;
+    if ((iff->iff_Stream = (IPTR)OpenClipboard(clipunit)))
+    {
+        InitIFFasClip(iff);
+        if (!OpenIFF(iff, IFFF_READ))
+        {
+            LONG error = StopChunk(iff, ID_FTXT, ID_CHRS);
+            while (!error && !(error = ParseIFF(iff, IFFPARSE_SCAN)))
+            {
+                struct ContextNode *cn = CurrentChunk(iff);
+                /* Keep all arithmetic and ReadChunkBytes counts representable
+                 * as signed LONG, including twelve framing bytes. */
+                if (!cn || cn->cn_Type != ID_FTXT || cn->cn_ID != ID_CHRS ||
+                    cn->cn_Size < 0 || (ULONG)cn->cn_Size > 0x7fffffffUL - 12 - used)
+                {
+                    error = IFFERR_MANGLED;
+                    break;
+                }
+                ULONG length = cn->cn_Size, needed = used + length + 12;
+                if (needed > capacity)
+                {
+                    ULONG grown = capacity ? capacity : 256;
+                    while (grown < needed)
+                        grown = grown > 0x7fffffffUL / 2 ? needed : grown * 2;
+                    UBYTE *replacement = AllocMem(grown, MEMF_PUBLIC);
+                    if (!replacement) { error = IFFERR_NOMEM; break; }
+                    if (used) CopyMem(data, replacement, used);
+                    if (data) FreeMem(data, capacity);
+                    data = replacement;
+                    capacity = grown;
+                }
+                if (ReadChunkBytes(iff, data + used, length) != (LONG)length)
+                {
+                    error = IFFERR_MANGLED;
+                    break;
+                }
+                used += length;
+                saw_text = TRUE;
+            }
+            /* Publish only a complete stream; a malformed/short later chunk
+             * must never turn an earlier prefix into a successful snapshot. */
+            if (error == IFFERR_EOF && saw_text)
+            {
+                msg->data = data; msg->length = used;
+                msg->capacity = capacity; msg->status = CONCLIP_TEXT_OK;
+                data = NULL;
+            }
+            CloseIFF(iff);
+        }
+        CloseClipboard((struct ClipboardHandle *)iff->iff_Stream);
+    }
+    FreeIFF(iff);
+    if (data) FreeMem(data, capacity);
+}
+
+/* Optional large-copy transport; never interpret a signed string-gadget WORD. */
+static void writetextsnapshot(struct ConClipTextMessage *msg)
+{
+    struct IFFHandle *iff;
+    BOOL written = FALSE;
+    msg->status = CONCLIP_TEXT_ERROR;
+    if (msg->sgw || msg->length > CONCLIP_WRITE_MAX ||
+        msg->length > msg->capacity || (msg->length && !msg->data)) return;
+    if (!(iff = AllocIFF())) return;
+    if ((iff->iff_Stream = (IPTR)OpenClipboard(clipunit)))
+    {
+        InitIFFasClip(iff);
+        if (!OpenIFF(iff, IFFF_WRITE))
+        {
+            if (!PushChunk(iff, ID_FTXT, ID_FORM, IFFSIZE_UNKNOWN))
+            {
+                if (!PushChunk(iff, ID_FTXT, ID_CHRS, IFFSIZE_UNKNOWN))
+                {
+                    written = !msg->length || WriteChunkBytes(iff,
+                        msg->data, msg->length) == (LONG)msg->length;
+                    if (PopChunk(iff)) written = FALSE;
+                }
+                if (PopChunk(iff)) written = FALSE;
+            }
+            CloseIFF(iff);
+        }
+        CloseClipboard((struct ClipboardHandle *)iff->iff_Stream);
+    }
+    FreeIFF(iff);
+    if (written) msg->status = CONCLIP_TEXT_OK;
+}
+
 static void handleall(void)
 {
     BOOL quitme = FALSE;
@@ -409,6 +507,18 @@ static void handleall(void)
             {
                 switch(msg->code)
                 {
+                    case CONCLIP_WRITE_TEXT:
+                        if (msg->msg.mn_Length >= sizeof(struct ConClipTextMessage) &&
+                            ((struct ConClipTextMessage *)msg)->version == CONCLIP_TEXT_VERSION)
+                            writetextsnapshot((struct ConClipTextMessage *)msg);
+                        break;
+
+                    case CONCLIP_READ_TEXT:
+                        if (msg->msg.mn_Length >= sizeof(struct ConClipTextMessage) &&
+                            ((struct ConClipTextMessage *)msg)->version == CONCLIP_TEXT_VERSION)
+                            readtextsnapshot((struct ConClipTextMessage *)msg);
+                        break;
+
                     case CODE_COPY:
                         D(bug("ConClip: Received CODE_COPY message\n"));
                         savetoclipboard(msg->sgw);

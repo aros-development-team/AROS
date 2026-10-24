@@ -41,6 +41,30 @@
  */
 #define AUXF_DEVICE             0x40000000
 
+/*
+ * ...and that "only has room to live" caveat above is not theoretical: it is
+ * false on every target this tree builds. AROS_FAST_BPTR is 1 for x86_64,
+ * i386, arm, aarch64, ppc, riscv and riscv64 (aros/<cpu>/cpu.h), so a BPTR IS
+ * the address and bit 30 belongs to it. ORing AUXF_DEVICE in, and masking it
+ * out on the other side, silently CLEARS bit 30 of any FileSysStartupMsg that
+ * happens to have it set - handing con-handler a corrupted pointer that it
+ * dereferences at con_handler.c:469. Whether it crashes depends purely on
+ * where the FSSM landed, which is why AUX: can boot fine repeatedly and then
+ * bus fault: observed as a "Hardware bus fault/address error" in the CONNG
+ * task, traced to open_con+0xf0.
+ *
+ * The flag is left in place because con_handler.c documents it as the
+ * established convention with AUX: stubs from other sources, and removing it
+ * would break them. Instead the real, unmasked pointer is passed alongside it
+ * in a spare packet field, with a magic in the next one so the receiver can
+ * tell a stub that supplies it from one that does not. A startup packet uses
+ * dp_Arg1..dp_Arg3 only, so these are free.
+ *
+ * Old stub + new handler: no magic, handler falls back to the old path.
+ * New stub + old handler: extra fields ignored, behaves as before.
+ */
+#define AUXP_FSSM_MAGIC         0x41555844  /* 'AUXD' */
+
 #define DEFAULT_DEVICE          "serial.device"
 
 /*
@@ -145,6 +169,12 @@ LONG aux_handler(struct ExecBase *SysBase)
             }
 
             dp->dp_Arg2 = (SIPTR)((IPTR)MKBADDR(fssm) | AUXF_DEVICE);
+
+            /* The pointer again, unmasked, for a handler that knows to look.
+               See the AUXP_FSSM_MAGIC note above: dp_Arg2 alone cannot be
+               trusted on an AROS_FAST_BPTR target. */
+            dp->dp_Arg4 = (SIPTR)fssm;
+            dp->dp_Arg5 = (SIPTR)AUXP_FSSM_MAGIC;
 
             /* con-handler collects this once it starts up below. */
             PutMsg(mp, mn);

@@ -48,6 +48,7 @@
 #define  OT_UnderLined		(OT_Level0 | 0x24)
 #define  OT_StrikeThrough	(OT_Level0 | 0x25)
 #define  OT_GlyphMap8Bits   	(OT_Level0 | OT_Indirect | 0x50)
+#define  OT_ColorGlyphMap32   (OT_Level0 | OT_Indirect | 0x51)
 
 #define  OTUL_None		0
 #define  OTUL_Solid		1

@@ -95,7 +95,7 @@ void do_paste(struct filehandle * fh);
 WORD scan_input(struct filehandle *fh, UBYTE *);
 
 void con_read(struct filehandle *fh, struct DosPacket *dp);
-void answer_read_request(struct filehandle *fh, struct DosPacket *dp, ULONG dp_Arg3);
+ULONG answer_read_request(struct filehandle *fh, struct DosPacket *dp, ULONG dp_Arg3);
 BOOL answer_write_request(struct filehandle *fh, struct DosPacket *dp);
 void HandlePendingReads(struct filehandle *fh);
 
@@ -106,3 +106,6 @@ BOOL process_input(struct filehandle *fh);
 
 void replypkt(struct DosPacket *dp, SIPTR res1);
 void replypkt2(struct DosPacket *dp, SIPTR res1, SIPTR res2);
+
+/* Borrowed native window; callers must not close it or assume IDCMP ownership. */
+struct Window *con_window(struct filehandle *fh);
