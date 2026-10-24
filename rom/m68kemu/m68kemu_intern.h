@@ -32,6 +32,7 @@ struct M68KHeapBlock
 };
 
 struct M68KThunkEntry;
+struct RDArgs;
 
 #define M68KEMU_MAX_LIBS        32
 #define M68KEMU_MAX_LVO         512
@@ -68,6 +69,18 @@ struct M68KEmuContext
     ULONG   heap_free;
 
     ULONG   entry_point;
+    ULONG   trace_exc;
+
+    /* Native BPTRs (file handles, locks, seglists) the m68k side holds, by
+       index: a native BPTR is a 64-bit pointer and does not fit a register */
+    #define M68KEMU_MAX_HANDLES  1024
+    #define M68KEMU_HANDLE_BASE  0x7F000000UL
+    BPTR   *handles;
+    ULONG   num_handles;
+
+    /* Containment copies of ReadArgs() results, freed by FreeArgs() */
+    #define M68KEMU_MAX_RDARGS 16
+    struct { struct RDArgs *rd; ULONG addr; ULONG size; } rdargs_blocks[M68KEMU_MAX_RDARGS];
     ULONG   seg_start;
 
     ULONG   stack_top;
@@ -104,6 +117,11 @@ struct M68KEmuContext
     UBYTE   beam_h;     /* horizontal position 0-226 */
     UBYTE   beam_lof;   /* long frame flag (toggled each frame) */
 };
+
+/* Native BPTR <-> 32-bit m68k handle (m68kemu_memory.c) */
+ULONG m68k_bptr_out(struct M68KEmuContext *ctx, BPTR b);
+BPTR  m68k_bptr_in(struct M68KEmuContext *ctx, ULONG v);
+void  m68k_bptr_drop(struct M68KEmuContext *ctx, ULONG v);
 
 static inline void *m68k_to_host(struct M68KEmuContext *ctx, ULONG addr)
 {
