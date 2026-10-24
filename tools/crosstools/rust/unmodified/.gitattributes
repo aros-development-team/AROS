@@ -1,0 +1,4 @@
+# Copyright (C) 2026 John KNIPPER <code@jkn.me>
+# Licensed under the AROS Public License (APL) Version 1.1
+# A unified diff uses a single space for an empty context line.
+*.diff whitespace=-blank-at-eol

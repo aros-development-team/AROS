@@ -141,10 +141,13 @@ fi
 # Due to a bug in autoconf check for c++ compiler first.
 # For mor info see, http://osdir.com/ml/bug-autoconf-gnu/2010-05/msg00001.html.
 AC_PROG_CXX([${host_cxx_compilers}])
-CXX_BASE=$CXX
+# Autoconf can append a language-standard flag to CXX. Keep only the
+# executable name when deriving sibling tool names.
+CXX_BASE=`echo "$CXX" | sed 's/[[[:space:]]].*$//'`
 AC_PATH_PROG(CXX,$CXX)
 AC_PROG_CC([${host_c_compilers}])
-CC_BASE=$CC
+# CC can likewise contain e.g. "gcc -std=gnu23" after AC_PROG_CC.
+CC_BASE=`echo "$CC" | sed 's/[[[:space:]]].*$//'`
 AC_PROG_CPP
 CPP_BASE=$CPP
 AC_PATH_PROG(CC,$CC)
@@ -2843,7 +2846,10 @@ fi
 AC_MSG_RESULT($aros_enable_rust)
 
 default_rust_version="1.98.1"
-AC_ARG_WITH(rust-version,AS_HELP_STRING([--with-rust-version=VERSION],[Compile rust-VERSION for AROS (default=$default_rust_version)]),use_rust_version="$withval",use_rust_version="")
+if test "$aros_target_cpu:$aros_toolchain" = "aarch64:llvm"; then
+    default_rust_version="nightly-2026-08-04"
+fi
+AC_ARG_WITH(rust-version,AS_HELP_STRING([--with-rust-version=VERSION],[Rust version (AArch64 LLVM: nightly-2026-08-04; other targets: 1.98.1)]),use_rust_version="$withval",use_rust_version="")
 if test "$use_rust_version" = ""; then
     target_rust_version="$default_rust_version"
 else

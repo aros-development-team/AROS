@@ -1,0 +1,2814 @@
+--- a/library/backtrace/src/backtrace/mod.rs
++++ b/library/backtrace/src/backtrace/mod.rs
+@@ -175,6 +175,7 @@
+             all(
+                 unix,
+                 not(target_os = "emscripten"),
++                not(target_os = "aros"),
+                 not(all(target_os = "ios", target_arch = "arm")),
+             ),
+             all(
+--- a/library/backtrace/src/symbolize/mod.rs
++++ b/library/backtrace/src/symbolize/mod.rs
+@@ -441,6 +441,7 @@
+         any(unix, all(windows, target_env = "gnu")),
+         not(target_vendor = "uwp"),
+         not(target_os = "emscripten"),
++        not(target_os = "aros"),
+         any(not(backtrace_in_libstd), feature = "backtrace"),
+     ))] {
+         mod gimli;
+--- a/library/panic_unwind/src/lib.rs
++++ b/library/panic_unwind/src/lib.rs
+@@ -38,6 +38,11 @@
+     }
+     target_os = "l4re" => {
+         // L4Re is unix family but does not yet support unwinding.
++        #[path = "dummy.rs"]
++        mod imp;
++    }
++    target_os = "aros" => {
++        // AROS is unix family but links no unwinder; panics abort.
+         #[path = "dummy.rs"]
+         mod imp;
+     }
+--- a/library/std/build.rs
++++ b/library/std/build.rs
+@@ -39,6 +39,7 @@
+         || target_os == "l4re"
+         || target_os == "redox"
+         || target_os == "haiku"
++        || target_os == "aros"
+         || target_os == "vxworks"
+         || target_arch == "wasm32"
+         || target_arch == "wasm64"
+--- a/library/std/src/os/aros/fs.rs
++++ b/library/std/src/os/aros/fs.rs
+@@ -0,0 +1,116 @@
++#![stable(feature = "metadata_ext", since = "1.1.0")]
++
++use crate::fs::Metadata;
++#[allow(deprecated)]
++use crate::os::aros::raw;
++use crate::sys::AsInner;
++
++/// OS-specific extensions to [`fs::Metadata`].
++///
++/// [`fs::Metadata`]: crate::fs::Metadata
++#[stable(feature = "metadata_ext", since = "1.1.0")]
++pub trait MetadataExt {
++    /// Gain a reference to the underlying `stat` structure which contains
++    /// the raw information returned by the OS.
++    ///
++    /// The contents of the returned `stat` are **not** consistent across
++    /// Unix platforms. The `os::unix::fs::MetadataExt` trait contains the
++    /// cross-Unix abstractions contained within the raw stat.
++    #[stable(feature = "metadata_ext", since = "1.1.0")]
++    #[deprecated(
++        since = "1.8.0",
++        note = "deprecated in favor of the accessor \
++                methods of this trait"
++    )]
++    #[allow(deprecated)]
++    fn as_raw_stat(&self) -> &raw::stat;
++
++    #[stable(feature = "metadata_ext2", since = "1.8.0")]
++    fn st_dev(&self) -> u64;
++    #[stable(feature = "metadata_ext2", since = "1.8.0")]
++    fn st_ino(&self) -> u64;
++    #[stable(feature = "metadata_ext2", since = "1.8.0")]
++    fn st_mode(&self) -> u32;
++    #[stable(feature = "metadata_ext2", since = "1.8.0")]
++    fn st_nlink(&self) -> u64;
++    #[stable(feature = "metadata_ext2", since = "1.8.0")]
++    fn st_uid(&self) -> u32;
++    #[stable(feature = "metadata_ext2", since = "1.8.0")]
++    fn st_gid(&self) -> u32;
++    #[stable(feature = "metadata_ext2", since = "1.8.0")]
++    fn st_rdev(&self) -> u64;
++    #[stable(feature = "metadata_ext2", since = "1.8.0")]
++    fn st_size(&self) -> u64;
++    #[stable(feature = "metadata_ext2", since = "1.8.0")]
++    fn st_atime(&self) -> i64;
++    #[stable(feature = "metadata_ext2", since = "1.8.0")]
++    fn st_atime_nsec(&self) -> i64;
++    #[stable(feature = "metadata_ext2", since = "1.8.0")]
++    fn st_mtime(&self) -> i64;
++    #[stable(feature = "metadata_ext2", since = "1.8.0")]
++    fn st_mtime_nsec(&self) -> i64;
++    #[stable(feature = "metadata_ext2", since = "1.8.0")]
++    fn st_ctime(&self) -> i64;
++    #[stable(feature = "metadata_ext2", since = "1.8.0")]
++    fn st_ctime_nsec(&self) -> i64;
++    #[stable(feature = "metadata_ext2", since = "1.8.0")]
++    fn st_blksize(&self) -> u64;
++    #[stable(feature = "metadata_ext2", since = "1.8.0")]
++    fn st_blocks(&self) -> u64;
++}
++
++#[stable(feature = "metadata_ext", since = "1.1.0")]
++impl MetadataExt for Metadata {
++    #[allow(deprecated)]
++    fn as_raw_stat(&self) -> &raw::stat {
++        unsafe { &*(self.as_inner().as_inner() as *const libc::stat as *const raw::stat) }
++    }
++    fn st_dev(&self) -> u64 {
++        self.as_inner().as_inner().st_dev as u64
++    }
++    fn st_ino(&self) -> u64 {
++        self.as_inner().as_inner().st_ino as u64
++    }
++    fn st_mode(&self) -> u32 {
++        self.as_inner().as_inner().st_mode as u32
++    }
++    fn st_nlink(&self) -> u64 {
++        self.as_inner().as_inner().st_nlink as u64
++    }
++    fn st_uid(&self) -> u32 {
++        self.as_inner().as_inner().st_uid as u32
++    }
++    fn st_gid(&self) -> u32 {
++        self.as_inner().as_inner().st_gid as u32
++    }
++    fn st_rdev(&self) -> u64 {
++        self.as_inner().as_inner().st_rdev as u64
++    }
++    fn st_size(&self) -> u64 {
++        self.as_inner().as_inner().st_size as u64
++    }
++    fn st_atime(&self) -> i64 {
++        self.as_inner().as_inner().st_atime as i64
++    }
++    fn st_atime_nsec(&self) -> i64 {
++        self.as_inner().as_inner().st_atime_nsec as i64
++    }
++    fn st_mtime(&self) -> i64 {
++        self.as_inner().as_inner().st_mtime as i64
++    }
++    fn st_mtime_nsec(&self) -> i64 {
++        self.as_inner().as_inner().st_mtime_nsec as i64
++    }
++    fn st_ctime(&self) -> i64 {
++        self.as_inner().as_inner().st_ctime as i64
++    }
++    fn st_ctime_nsec(&self) -> i64 {
++        self.as_inner().as_inner().st_ctime_nsec as i64
++    }
++    fn st_blksize(&self) -> u64 {
++        self.as_inner().as_inner().st_blksize as u64
++    }
++    fn st_blocks(&self) -> u64 {
++        self.as_inner().as_inner().st_blocks as u64
++    }
++}
+--- a/library/std/src/os/aros/mod.rs
++++ b/library/std/src/os/aros/mod.rs
+@@ -0,0 +1,6 @@
++//! AROS-specific definitions
++
++#![stable(feature = "raw_ext", since = "1.1.0")]
++
++pub mod fs;
++pub mod raw;
+--- a/library/std/src/os/aros/raw.rs
++++ b/library/std/src/os/aros/raw.rs
+@@ -0,0 +1,79 @@
++//! AROS-specific raw type definitions
++
++#![stable(feature = "raw_ext", since = "1.1.0")]
++#![deprecated(
++    since = "1.53.0",
++    note = "these type aliases are no longer supported by \
++            the standard library, the `libc` crate on \
++            crates.io should be used instead for the correct \
++            definitions"
++)]
++#![allow(deprecated)]
++
++use crate::os::raw::c_long;
++use crate::os::unix::raw::{gid_t, uid_t};
++
++#[stable(feature = "pthread_t", since = "1.8.0")]
++pub type pthread_t = u32;
++
++#[stable(feature = "raw_ext", since = "1.1.0")]
++pub type blkcnt_t = c_long;
++#[stable(feature = "raw_ext", since = "1.1.0")]
++pub type blksize_t = c_long;
++#[stable(feature = "raw_ext", since = "1.1.0")]
++pub type dev_t = usize;
++#[stable(feature = "raw_ext", since = "1.1.0")]
++pub type ino_t = i32;
++#[stable(feature = "raw_ext", since = "1.1.0")]
++pub type mode_t = u16;
++#[stable(feature = "raw_ext", since = "1.1.0")]
++pub type nlink_t = u16;
++#[stable(feature = "raw_ext", since = "1.1.0")]
++pub type off_t = c_long;
++#[stable(feature = "raw_ext", since = "1.1.0")]
++pub type time_t = i32;
++
++#[repr(C)]
++#[derive(Clone)]
++#[stable(feature = "raw_ext", since = "1.1.0")]
++pub struct stat {
++    #[stable(feature = "raw_ext", since = "1.1.0")]
++    pub st_dev: dev_t,
++    #[stable(feature = "raw_ext", since = "1.1.0")]
++    pub st_ino: ino_t,
++    #[stable(feature = "raw_ext", since = "1.1.0")]
++    pub st_mode: mode_t,
++    #[stable(feature = "raw_ext", since = "1.1.0")]
++    pub st_nlink: nlink_t,
++    #[stable(feature = "raw_ext", since = "1.1.0")]
++    pub st_uid: uid_t,
++    #[stable(feature = "raw_ext", since = "1.1.0")]
++    pub st_gid: gid_t,
++    #[stable(feature = "raw_ext", since = "1.1.0")]
++    pub st_rdev: dev_t,
++    #[stable(feature = "raw_ext", since = "1.1.0")]
++    pub st_size: off_t,
++    #[stable(feature = "raw_ext", since = "1.1.0")]
++    pub st_atime: time_t,
++    __st_atime_pad: [u8; 4],
++    #[stable(feature = "raw_ext", since = "1.1.0")]
++    pub st_atime_nsec: c_long,
++    #[stable(feature = "raw_ext", since = "1.1.0")]
++    pub st_mtime: time_t,
++    __st_mtime_pad: [u8; 4],
++    #[stable(feature = "raw_ext", since = "1.1.0")]
++    pub st_mtime_nsec: c_long,
++    #[stable(feature = "raw_ext", since = "1.1.0")]
++    pub st_ctime: time_t,
++    __st_ctime_pad: [u8; 4],
++    #[stable(feature = "raw_ext", since = "1.1.0")]
++    pub st_ctime_nsec: c_long,
++    #[stable(feature = "raw_ext", since = "1.1.0")]
++    pub st_blksize: blksize_t,
++    #[stable(feature = "raw_ext", since = "1.1.0")]
++    pub st_blocks: blkcnt_t,
++    #[stable(feature = "raw_ext", since = "1.1.0")]
++    pub st_flags: c_long,
++    #[stable(feature = "raw_ext", since = "1.1.0")]
++    pub st_gen: c_long,
++}
+--- a/library/std/src/os/mod.rs
++++ b/library/std/src/os/mod.rs
+@@ -103,6 +103,8 @@
+ pub mod fuchsia;
+ #[cfg(target_os = "haiku")]
+ pub mod haiku;
++#[cfg(target_os = "aros")]
++pub mod aros;
+ #[cfg(target_os = "hermit")]
+ pub mod hermit;
+ #[cfg(target_os = "horizon")]
+--- a/library/std/src/os/unix/mod.rs
++++ b/library/std/src/os/unix/mod.rs
+@@ -57,6 +57,8 @@
+     pub use crate::os::fuchsia::*;
+     #[cfg(target_os = "haiku")]
+     pub use crate::os::haiku::*;
++    #[cfg(target_os = "aros")]
++    pub use crate::os::aros::*;
+     #[cfg(target_os = "horizon")]
+     pub use crate::os::horizon::*;
+     #[cfg(target_os = "hurd")]
+--- a/library/std/src/os/unix/process.rs
++++ b/library/std/src/os/unix/process.rs
+@@ -259,7 +259,7 @@
+     }
+ 
+     fn process_group(&mut self, pgroup: i32) -> &mut process::Command {
+-        self.as_inner_mut().pgroup(pgroup);
++        self.as_inner_mut().pgroup(pgroup as libc::pid_t);
+         self
+     }
+ 
+--- a/library/std/src/sys/args/unix.rs
++++ b/library/std/src/sys/args/unix.rs
+@@ -73,6 +73,7 @@
+     target_os = "illumos",
+     target_os = "emscripten",
+     target_os = "haiku",
++    target_os = "aros",
+     target_os = "hermit",
+     target_os = "l4re",
+     target_os = "fuchsia",
+--- a/library/std/src/sys/env/unix.rs
++++ b/library/std/src/sys/env/unix.rs
+@@ -53,8 +53,18 @@
+     unsafe { environ }
+ }
+ 
++// AROS keeps the process environment behind stdcio.library: the C start-up
++// registers the address of its `environ` with it, and programs that never did
++// so get a null pointer back.
++#[cfg(target_os = "aros")]
++pub unsafe fn environ() -> *mut *const *const c_char {
++    static mut EMPTY_ENVIRON: *const *const c_char = crate::ptr::null();
++    let environ = unsafe { libc::__stdcio_get_environptr() } as *mut *const *const c_char;
++    if environ.is_null() { &raw mut EMPTY_ENVIRON } else { environ }
++}
++
+ // Use the `environ` static which is part of POSIX.
+-#[cfg(not(any(target_os = "freebsd", target_vendor = "apple")))]
++#[cfg(not(any(target_os = "freebsd", target_vendor = "apple", target_os = "aros")))]
+ pub unsafe fn environ() -> *mut *const *const c_char {
+     unsafe extern "C" {
+         static mut environ: *const *const c_char;
+--- a/library/std/src/sys/fd/unix.rs
++++ b/library/std/src/sys/fd/unix.rs
+@@ -8,6 +8,7 @@
+     target_os = "l4re",
+     target_os = "android",
+     target_os = "hurd",
++    target_os = "aros",
+ )))]
+ use libc::off_t as off64_t;
+ #[cfg(any(
+@@ -15,6 +16,7 @@
+     target_os = "linux",
+     target_os = "l4re",
+     target_os = "hurd",
++    target_os = "aros",
+ ))]
+ use libc::off64_t;
+ 
+@@ -44,6 +46,7 @@
+         all(target_os = "linux", not(target_env = "musl")),
+         target_os = "android",
+         target_os = "hurd",
++        target_os = "aros",
+     ) => {
+         // Prefer explicit pread64 for 64-bit offset independently of libc
+         // #[cfg(gnu_file_offset_bits64)].
+@@ -150,6 +153,7 @@
+         target_os = "espidf",
+         target_os = "horizon",
+         target_os = "vita",
++        target_os = "aros",
+         target_os = "nuttx"
+     )))]
+     pub fn read_vectored(&self, bufs: &mut [IoSliceMut<'_>]) -> io::Result<usize> {
+@@ -167,6 +171,7 @@
+         target_os = "espidf",
+         target_os = "horizon",
+         target_os = "vita",
++        target_os = "aros",
+         target_os = "nuttx"
+     ))]
+     pub fn read_vectored(&self, bufs: &mut [IoSliceMut<'_>]) -> io::Result<usize> {
+@@ -179,6 +184,7 @@
+             target_os = "espidf",
+             target_os = "horizon",
+             target_os = "vita",
++            target_os = "aros",
+             target_os = "nuttx",
+             target_os = "wasi",
+         )))
+@@ -386,6 +392,7 @@
+         target_os = "espidf",
+         target_os = "horizon",
+         target_os = "vita",
++        target_os = "aros",
+         target_os = "nuttx"
+     )))]
+     pub fn write_vectored(&self, bufs: &[IoSlice<'_>]) -> io::Result<usize> {
+@@ -403,6 +410,7 @@
+         target_os = "espidf",
+         target_os = "horizon",
+         target_os = "vita",
++        target_os = "aros",
+         target_os = "nuttx"
+     ))]
+     pub fn write_vectored(&self, bufs: &[IoSlice<'_>]) -> io::Result<usize> {
+@@ -415,6 +423,7 @@
+             target_os = "espidf",
+             target_os = "horizon",
+             target_os = "vita",
++            target_os = "aros",
+             target_os = "nuttx",
+             target_os = "wasi",
+         )))
+@@ -577,6 +586,7 @@
+         target_os = "linux",
+         target_os = "cygwin",
+         target_os = "haiku",
++        target_os = "aros",
+         target_os = "redox",
+         target_os = "vxworks",
+         target_os = "nto",
+@@ -602,6 +612,7 @@
+         target_os = "linux",
+         target_os = "cygwin",
+         target_os = "haiku",
++        target_os = "aros",
+         target_os = "redox",
+         target_os = "vxworks",
+         target_os = "nto",
+--- a/library/std/src/sys/fs/unix.rs
++++ b/library/std/src/sys/fs/unix.rs
+@@ -32,6 +32,7 @@
+     target_os = "redox",
+     target_os = "solaris",
+     target_os = "vita",
++    target_os = "aros",
+     target_os = "wasi",
+     all(target_os = "linux", target_env = "musl"),
+ ))]
+@@ -50,6 +51,7 @@
+     target_os = "redox",
+     target_os = "solaris",
+     target_os = "vita",
++    target_os = "aros",
+     target_os = "wasi",
+ )))]
+ use libc::readdir_r as readdir64_r;
+@@ -305,6 +307,7 @@
+         target_os = "espidf",
+         target_os = "horizon",
+         target_os = "vita",
++        target_os = "aros",
+         target_os = "nto",
+         target_os = "qnx",
+         target_os = "vxworks",
+@@ -439,6 +442,7 @@
+     target_os = "redox",
+     target_os = "solaris",
+     target_os = "vita",
++    target_os = "aros",
+     target_os = "wasi",
+ ))]
+ pub struct DirEntry {
+@@ -466,6 +470,7 @@
+     target_os = "redox",
+     target_os = "solaris",
+     target_os = "vita",
++    target_os = "aros",
+     target_os = "wasi",
+ ))]
+ struct dirent64_min {
+@@ -494,6 +499,7 @@
+     target_os = "redox",
+     target_os = "solaris",
+     target_os = "vita",
++    target_os = "aros",
+     target_os = "wasi",
+ )))]
+ pub struct DirEntry {
+@@ -893,6 +899,7 @@
+         target_os = "redox",
+         target_os = "solaris",
+         target_os = "vita",
++        target_os = "aros",
+         target_os = "wasi",
+     ))]
+     fn next(&mut self) -> Option<io::Result<DirEntry>> {
+@@ -993,6 +1000,7 @@
+         target_os = "redox",
+         target_os = "solaris",
+         target_os = "vita",
++        target_os = "aros",
+         target_os = "wasi",
+     )))]
+     fn next(&mut self) -> Option<io::Result<DirEntry>> {
+@@ -1181,6 +1189,7 @@
+         target_os = "freebsd",
+         target_os = "fuchsia",
+         target_os = "haiku",
++        target_os = "aros",
+         target_os = "horizon",
+         target_os = "hurd",
+         target_os = "illumos",
+@@ -1249,6 +1258,7 @@
+         target_os = "nto",
+         target_os = "qnx",
+         target_os = "vita",
++        target_os = "aros",
+         target_os = "hurd",
+         target_os = "wasi",
+     )))]
+@@ -1267,6 +1277,7 @@
+         target_os = "nto",
+         target_os = "qnx",
+         target_os = "vita",
++        target_os = "aros",
+         target_os = "hurd",
+         target_os = "wasi",
+     ))]
+@@ -1726,7 +1737,7 @@
+ 
+     pub fn set_times(&self, times: FileTimes) -> io::Result<()> {
+         cfg_select! {
+-            any(target_os = "redox", target_os = "espidf", target_os = "horizon", target_os = "nuttx") => {
++            any(target_os = "redox", target_os = "espidf", target_os = "horizon", target_os = "nuttx", target_os = "aros") => {
+                 // Redox doesn't appear to support `UTIME_OMIT`.
+                 // ESP-IDF and HorizonOS do not support `futimens` at all and the behavior for those OS is therefore
+                 // the same as for Redox.
+@@ -1795,6 +1806,7 @@
+     target_os = "espidf",
+     target_os = "horizon",
+     target_os = "nuttx",
++    target_os = "aros",
+ )))]
+ fn file_time_to_timespec(time: Option<SystemTime>) -> io::Result<libc::timespec> {
+     match time {
+@@ -2116,6 +2128,7 @@
+             // Other misc platforms
+             target_os = "horizon",
+             target_os = "vita",
++            target_os = "aros",
+             target_env = "nto70",
+         ) => {
+             cvt(unsafe { libc::link(original.as_ptr(), link.as_ptr()) })?;
+@@ -2189,7 +2202,7 @@
+ 
+ fn set_times_impl(p: &CStr, times: FileTimes, follow_symlinks: bool) -> io::Result<()> {
+     cfg_select! {
+-       any(target_os = "redox", target_os = "espidf", target_os = "horizon", target_os = "nuttx", target_os = "vita", target_os = "rtems") => {
++       any(target_os = "redox", target_os = "espidf", target_os = "horizon", target_os = "nuttx", target_os = "vita", target_os = "rtems", target_os = "aros") => {
+             let _ = (p, times, follow_symlinks);
+             Err(io::const_error!(
+                 io::ErrorKind::Unsupported,
+@@ -2481,6 +2494,7 @@
+     target_os = "espidf",
+     target_os = "horizon",
+     target_os = "vita",
++    target_os = "aros",
+     target_os = "nto",
+     target_os = "qnx",
+     target_os = "vxworks",
+@@ -2496,6 +2510,7 @@
+     target_os = "espidf",
+     target_os = "horizon",
+     target_os = "vita",
++    target_os = "aros",
+     target_os = "nto",
+     target_os = "qnx",
+     target_os = "vxworks",
+--- a/library/std/src/sys/io/error/unix.rs
++++ b/library/std/src/sys/io/error/unix.rs
+@@ -38,6 +38,7 @@
+     #[cfg_attr(target_os = "qnx", link_name = "__get_errno_ptr")]
+     #[cfg_attr(any(target_os = "freebsd", target_vendor = "apple"), link_name = "__error")]
+     #[cfg_attr(target_os = "haiku", link_name = "_errnop")]
++    #[cfg_attr(target_os = "aros", link_name = "__stdc_geterrnoptr")]
+     #[cfg_attr(target_os = "aix", link_name = "_Errno")]
+     // SAFETY: this will always return the same pointer on a given thread.
+     #[unsafe(ffi_const)]
+--- a/library/std/src/sys/net/connection/socket/mod.rs
++++ b/library/std/src/sys/net/connection/socket/mod.rs
+@@ -82,7 +82,7 @@
+         target_os = "dragonfly", target_os = "freebsd",
+         target_os = "openbsd", target_os = "netbsd",
+         target_os = "solaris", target_os = "illumos",
+-        target_os = "nto", target_os = "qnx",
++        target_os = "nto", target_os = "qnx", target_os = "aros",
+     ) => {
+         use crate::ffi::c_uchar;
+         type IpV4MultiCastType = c_uchar;
+--- a/library/std/src/sys/net/connection/socket/unix.rs
++++ b/library/std/src/sys/net/connection/socket/unix.rs
+@@ -204,7 +204,11 @@
+ 
+             let timeout = cmp::min(timeout, c_int::MAX as u64) as c_int;
+ 
+-            match unsafe { libc::poll(&mut pollfd, 1, timeout) } {
++            #[cfg(target_os = "aros")]
++            let ready = unsafe { libc::aros_socket_wait_writable(pollfd.fd, timeout) };
++            #[cfg(not(target_os = "aros"))]
++            let ready = unsafe { libc::poll(&mut pollfd, 1, timeout) };
++            match ready {
+                 -1 => {
+                     let err = io::Error::last_os_error();
+                     if !err.is_interrupted() {
+@@ -213,7 +217,7 @@
+                 }
+                 0 => {}
+                 _ => {
+-                    if cfg!(target_os = "vxworks") {
++                    if cfg!(any(target_os = "vxworks", target_os = "aros")) {
+                         // VxWorks poll does not return  POLLHUP or POLLERR in revents. Check if the
+                         // connection actually succeeded and return ok only when the socket is
+                         // ready and no errors were found.
+@@ -274,6 +278,14 @@
+     }
+ 
+     pub fn duplicate(&self) -> io::Result<Socket> {
++        #[cfg(target_os = "aros")]
++        {
++            let fd = cvt(unsafe { libc::aros_socket_clone(self.as_raw_fd()) })?;
++            let fd = unsafe { FileDesc::from_raw_fd(fd) };
++            fd.set_cloexec()?;
++            Ok(Socket(fd))
++        }
++        #[cfg(not(target_os = "aros"))]
+         self.0.duplicate().map(Socket)
+     }
+ 
+@@ -591,10 +603,15 @@
+         Ok(local_creds_persistent != 0)
+     }
+ 
+-    #[cfg(not(any(target_os = "solaris", target_os = "illumos", target_os = "vita")))]
++    #[cfg(not(any(target_os = "solaris", target_os = "illumos", target_os = "vita", target_os = "aros")))]
+     pub fn set_nonblocking(&self, nonblocking: bool) -> io::Result<()> {
+         let mut nonblocking = nonblocking as libc::c_int;
+         cvt(unsafe { libc::ioctl(self.as_raw_fd(), libc::FIONBIO, &mut nonblocking) }).map(drop)
++    }
++
++    #[cfg(target_os = "aros")]
++    pub fn set_nonblocking(&self, enabled: bool) -> io::Result<()> {
++        cvt(unsafe { libc::aros_socket_nonblocking(self.as_raw_fd(), enabled as c_int) }).map(drop)
+     }
+ 
+     #[cfg(target_os = "vita")]
+--- a/library/std/src/sys/pal/unix/mod.rs
++++ b/library/std/src/sys/pal/unix/mod.rs
+@@ -84,7 +84,8 @@
+             target_os = "horizon",
+             target_os = "vita",
+             target_os = "rtems",
+-            // The poll on Darwin doesn't set POLLNVAL for closed fds when `events == 0`.
++            target_os = "aros", // no `poll`
++            // The poll on Darwin does not set POLLNVAL for closed fds when events == 0.
+             target_vendor = "apple",
+         )))]
+         'poll: {
+--- a/library/std/src/sys/pal/unix/sync/condvar.rs
++++ b/library/std/src/sys/pal/unix/sync/condvar.rs
+@@ -140,6 +140,7 @@
+     target_os = "espidf",
+     target_os = "horizon",
+     target_os = "l4re",
++    target_os = "aros",
+     target_os = "redox",
+     target_os = "teeos",
+ )))]
+@@ -195,6 +196,7 @@
+     target_os = "espidf",
+     target_os = "horizon",
+     target_os = "l4re",
++    target_os = "aros",
+     target_os = "redox",
+     target_os = "teeos",
+ ))]
+--- a/library/std/src/sys/paths/unix.rs
++++ b/library/std/src/sys/paths/unix.rs
+@@ -355,6 +355,16 @@
+     }
+ }
+ 
++#[cfg(target_os = "aros")]
++pub fn current_exe() -> io::Result<PathBuf> {
++    // There is no /proc on AROS; the C start-up hands the program name over
++    // as argv[0], which the DOS loader fills with the path it was run by.
++    crate::env::args_os()
++        .next()
++        .map(PathBuf::from)
++        .ok_or_else(|| io::const_error!(io::ErrorKind::NotFound, "no argv[0] available"))
++}
++
+ #[cfg(target_os = "redox")]
+ pub fn current_exe() -> io::Result<PathBuf> {
+     crate::fs::read_to_string("/scheme/sys/exe").map(PathBuf::from)
+@@ -422,6 +432,7 @@
+         cfg_select! {
+             target_vendor = "apple" => darwin_temp_dir(),
+             target_os = "android" => PathBuf::from("/data/local/tmp"),
++            target_os = "aros" => PathBuf::from("T:"),
+             _ => PathBuf::from("/tmp"),
+         }
+     })
+--- a/library/std/src/sys/personality/mod.rs
++++ b/library/std/src/sys/personality/mod.rs
+@@ -14,7 +14,7 @@
+ 
+ #[cfg(not(any(test, doctest)))]
+ cfg_select! {
+-    any(target_env = "msvc", target_family = "wasm", target_os = "motor") => {
++    any(target_env = "msvc", target_family = "wasm", target_os = "motor", target_os = "aros") => {
+         // This is required by the compiler to exist (e.g., it's a lang item),
+         // but it's never actually called by the compiler because
+         // __CxxFrameHandler3 (msvc) / __gxx_wasm_personality_v0 (wasm) is the
+--- a/library/std/src/sys/process/unix/unix.rs
++++ b/library/std/src/sys/process/unix/unix.rs
+@@ -1191,8 +1191,10 @@
+         #[cfg(not(target_os = "l4re"))]
+         libc::SIGPROF => " (SIGPROF)",
+         #[cfg(not(any(target_os = "l4re", target_os = "rtems")))]
++        #[cfg(not(target_os = "aros"))]
+         libc::SIGWINCH => " (SIGWINCH)",
+         #[cfg(not(any(target_os = "haiku", target_os = "l4re")))]
++        #[cfg(not(target_os = "aros"))]
+         libc::SIGIO => " (SIGIO)",
+         #[cfg(target_os = "haiku")]
+         libc::SIGPOLL => " (SIGPOLL)",
+--- a/library/std/src/sys/random/mod.rs
++++ b/library/std/src/sys/random/mod.rs
+@@ -17,6 +17,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
++        target_os = "aros",
+         target_os = "illumos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+--- a/library/std/src/sys/thread/unix.rs
++++ b/library/std/src/sys/thread/unix.rs
+@@ -429,7 +429,8 @@
+     target_os = "freebsd",
+     target_os = "dragonfly",
+     target_os = "nuttx",
+-    target_os = "cygwin"
++    target_os = "cygwin",
++    target_os = "aros"
+ ))]
+ pub fn set_name(name: &CStr) {
+     unsafe {
+--- a/library/unwind/src/lib.rs
++++ b/library/unwind/src/lib.rs
+@@ -19,6 +19,7 @@
+         // Windows MSVC no extra unwinder support needed
+     }
+     any(
++        target_os = "aros",
+         target_os = "l4re",
+         target_os = "none",
+         target_os = "espidf",
+--- a/library/vendor/libc-0.2.189/.cargo-checksum.json
++++ b/library/vendor/libc-0.2.189/.cargo-checksum.json
+@@ -1 +1 @@
+-{"$comment":"This file only protects against accidental modifications. It is not a security mechanism and does not protect against malicious changes.","files":{".cargo_vcs_info.json":"3ae25e402263c1d372a9c6a0b09d4f63d6744a1f8d7912108191c3b6276ceb4f",".editorconfig":"e57fecd6b82cd69640ca1bc4e44f0c7acfe5fc12f641f14af9536e323b4159db",".git-blame-ignore-revs":"761aa385c661241fa77c15b502c361398cf500bbb9f8c3a4579b412c4c6249d7",".release-plz.toml":"fcf2d382c4a2abd96caf9cc391b63e0c94d5832f5c48e9ab9eb4b2c847c0887c",".rustfmt.toml":"c88d9ba0e884291a2904d43cc7b940fafcb1ab443cdb7bcfca7117809c4f2816","CHANGELOG.md":"1629ffb688b6f2ea0c1720ba1f768904ef9f27da4e9e7f32b76d6d52cd1940d1","CONTRIBUTING.md":"ed7177a16e331da75244df3232c4e34f70bf58d2b31cffffd9b769a4745de567","Cargo.lock":"7b23220c994971e1ef93c3a13c78476fb35043e701a2e9c3f80567af3d94a9c3","Cargo.toml":"95159789ef9c9aaee8230b13be5c89594833a7bf2db299e61eb23b512cb67144","Cargo.toml.orig":"cba73b06128539455a57f7432e466ba583358ecb83ef8eda60731751b8a9f5cc","LICENSE-APACHE":"62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a","LICENSE-MIT":"123a331b5dbf04c30097fa43b8f858bc85df671fe776de498d01f3d6b7c1f69e","README.md":"5af805465cb8cfa4186cb75df07f4aebd35a3d88f497ed71d189b74ecf8cbcdc","build.rs":"e47f4a6762799b6e69cefc7acdb3291df828010e4de20609f7378f9c94ea29e6","etc/libc-util.py":"a99fdefe6354c28c52eeac9c1e851041b69dad25b8a3b521d4f57b761517c798","src/fuchsia/aarch64.rs":"34105478e20e9ce40b9e484eea6494e2408fead17c13500da90a2d44d996ce63","src/fuchsia/mod.rs":"3b17821b3ceaf3430b6503965f5337b033817077e289e3cce29c80bf3960770f","src/fuchsia/riscv64.rs":"a91ae8276df139f6181591be7209f9a68e9f3de5eec881c2e1c9768c53c4e292","src/fuchsia/x86_64.rs":"543ea567b29d646afc026956ee5e652c10e87256789058e7e39f91bf2fe8bf14","src/hermit.rs":"ebfe4d68e8f0323dc97d7e3165f7b315e4058ee9f5ced3e76f181f0a492e75e1","src/lib.rs":"0701ce9606a01448c3229517fab308d49d160cccfca02ed6ebd8edfd8bb37d66","src/macros.rs":"6d534c7b511cd19217ba205a4a30e289f7243ba3706645d6ec5cb417b7bdac7c","src/new/aix/mod.rs":"df0de5d8e452a8abb27727b8451b2ceff3bb856f7e5d9e9306df5177e4c6326f","src/new/aix/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/apple/libc/signal.rs":"a960b6153775d791055b278534f79e21f8ff76c2c0c2891271e7abdf26e193d3","src/new/apple/libc/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/apple/libpthread/mod.rs":"1e99efe513b0ee1fa6e53daf5950fc027380b1d71d793eca9e5b22af7b331b5b","src/new/apple/libpthread/pthread_/introspection.rs":"3c797ded6d1a55670f9537a997407cf2267e6c7e7dbfa360d32474e2432979af","src/new/apple/libpthread/pthread_/pthread.rs":"c2b680120ec8db839e702c4340bc39748ac34c806b5fc08acea0a4593131a015","src/new/apple/libpthread/pthread_/pthread_impl.rs":"57a9925a75b79d092c65288b8a8eb21bfb6c7de4c70d37a49018b4eb8b32a646","src/new/apple/libpthread/pthread_/pthread_spis.rs":"1ba51c251249822fae222db6a19e17278ffffc424fc6eea30282a6171491edbe","src/new/apple/libpthread/pthread_/qos.rs":"40f816fb6cebd19ead21197671e5425b454144515ee4b966d00db32ba6b0dfe5","src/new/apple/libpthread/pthread_/sched.rs":"7b22a3204e72d5013ebac7b830235d50883aefca86d720f1f38b93d54e309477","src/new/apple/libpthread/pthread_/spawn.rs":"daef8af8ed0b3d16922c2f5a511a67f57f69b5f80dfe37362bd0b410213f95ca","src/new/apple/libpthread/pthread_/stack_np.rs":"d1b6e2eab1850c303f8eec4059b3e8ec57d69eb47c216243f6b4b7523761fc29","src/new/apple/libpthread/sys/_pthread/_pthread_types.rs":"a7a4307d7c3f91a6b03f76599fac5f40de556e5652123c6bc3b95df2bfa685de","src/new/apple/libpthread/sys/mod.rs":"337265fe49d77a7dcc879cd23e4f5baedcffab4808433dfb6ab9deb4ab490380","src/new/apple/libpthread/sys/qos.rs":"a6297cbab4089b330416bfcbe13b6d7aa8e75352299295046429b2e9d3bada42","src/new/apple/mod.rs":"96e4f2300247b8b587f312aeb8de991c65afd6a1693bbe0dc25610b9574d66db","src/new/apple/xnu/arm/_mcontext.rs":"63f1c62b47e7d7181c2b85f3cd3833c69a29eb0cad37a5754bfa6b5954ae7f6f","src/new/apple/xnu/i386/_mcontext.rs":"50543eaa5cf1d87f900b0c3e531dbfefd7586e1be2be3406223b2319edfcb7f2","src/new/apple/xnu/mach/arm/_structs.rs":"8e4af554170cef61c9143f92a283fd7eef66ad78824f194bbc89b098c6049a43","src/new/apple/xnu/mach/i386/_structs.rs":"d7316b7d3fa5e55a5818cfd8a1977921bb14e07133648cffa8f4d9da2e31a604","src/new/apple/xnu/mach/machine/_structs.rs":"82f5a7f751897c882ed4c378d6282976ff21cf0c9cdf7f3be3cecd369a63b6f8","src/new/apple/xnu/mach/mod.rs":"46aad5c7197df2cc57c4392d9019034236233f0240bc7975f9e22ac33c9d40ed","src/new/apple/xnu/machine/_mcontext.rs":"166b0a450b730e2a943ca08a0c70061effb77ff9eff6f41c7b0c51b2d4215db9","src/new/apple/xnu/mod.rs":"9359b08f58f8cd88ade250166850202daa6e3278d387c072ac51e8f0c0cced19","src/new/apple/xnu/net/bpf.rs":"0b6477e4ff541fbabe66ac2729524fc38c1e4be52a2f9e34c4155be732643318","src/new/apple/xnu/net/mod.rs":"7868b2b0065e01776ec4badaf166cac4ccb68ed98bf9bc284dbaffbf33e367b5","src/new/apple/xnu/netinet6/in6_var.rs":"61d6fc1ed1bbff8b0aa7de219b181aa68cc870ef290a6c39f5f3703eab955608","src/new/apple/xnu/netinet6/mod.rs":"dd1b80a3a57ffe7b48c60639a003d6e293646eb7a2cf209bf3673b043edbe611","src/new/apple/xnu/sys/_types/_ucontext.rs":"1651132d39042f0fc8cca7a23c890da0031b74359472189f851fb3458f2fde3e","src/new/apple/xnu/sys/ioccom.rs":"dab00d14e36566c21be6cc7063ce4542c5c7fe9d9d3d27b1069a4c523e5125cd","src/new/apple/xnu/sys/mod.rs":"9f1013ae8b269add421f0d4a52b0baba841e1909dee5076fd1e76639a024e379","src/new/apple/xnu/sys/signal.rs":"a03cb64ec19326657c87ff8a5a31c2e6bc1deb55f9a7343ab1b2420819ed72bf","src/new/apple/xnu/sys/sockio.rs":"1f298340a2d7b17b23aeacb87d1af829a142f6c8bb82d2237d7e0bee3b4c053e","src/new/apple/xnu/sys/ttycom.rs":"da3bc0f95f4e7ded2e399fe977a39751b248c8a807cd37b3c6fdf41d15478d18","src/new/bionic_libc/kernel_uapi/linux/mod.rs":"b33dff424c9841a9037e31dddb90d7bd74de451e8509d7abc7dda636ec2646e7","src/new/bionic_libc/kernel_uapi/linux/types.rs":"10860921059eb04c5f0f159becfc415021f501ae33dc374872861b9a339af25b","src/new/bionic_libc/kernel_uapi/mod.rs":"d7808294eeb095d0298e8a9837d597f80f7c2629aa5e3281547f7ae00392f17b","src/new/bionic_libc/mod.rs":"23fdadb2e6d9823b8d37436abf5ba01629006fd5310977d2035802e5ca9a0c1c","src/new/bionic_libc/pthread.rs":"d40b7f8421cf78d61f23224c3bda17407e40a1c85dd8122ca4f290624b21d8a1","src/new/bionic_libc/sys/mod.rs":"570e7c97f7c1efb14e167a3f0688547fbc907ed9dca93ad6d90dc719289cb6f1","src/new/bionic_libc/sys/socket.rs":"19877b1de0e235a01734f9aebf20fc1ff1a01fd17302ed1a7d7b520a9fa68edb","src/new/bionic_libc/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/common/bsd.rs":"8282cc2b87ca3afc6b01216fe3c3fe1818a3d57e95aa8d1e1a36cc5af1660609","src/new/common/freebsd_like.rs":"156dce9baa6b0ac57d483ffb582a913b9e4944cf10bbb5711a64da5f496a55c2","src/new/common/linux_like/mod.rs":"d42e65b3d6fccd5ba85a8397abb28267a96bfb76b6b47754000fbe9332c03fe4","src/new/common/linux_like/pthread.rs":"a1a33b1e27cd159ab1035c73e72fa8b0c266dd5a28f1079ad74d3c370857f097","src/new/common/mod.rs":"5bcbce2960ff0840ab67a1ba5011009fa1f0f7697cff745d1461bf2b1460ddc6","src/new/common/netbsd_like.rs":"4327dd28d929f2c7b316f9241c44da6f6069d3db4381fb82700ec6d70d749041","src/new/common/posix/mod.rs":"f64b9d7f78e924529c62f2cd78199075eb334e0db9479cb59787f2740bd82d51","src/new/common/posix/pthread.rs":"912f3d6bfc4b1e3ec90754d021ead243a5cdc96666b053bec5718edf5fbe6b92","src/new/common/posix/unistd.rs":"3f633a8c6776d1442f014717785fea3f068d1d3edbfad545d445f8076cb58447","src/new/common/solarish.rs":"ac208e1ad95d07b7528419fd9c573612d58af3d50766816b81667570ccb8b3b3","src/new/cygwin/mod.rs":"9de4cba157252e7731256d60192468f5a759ebd33ab2b509819ffc7557adced5","src/new/cygwin/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/dragonfly/mod.rs":"7b96df7e566874a736d0c33ffc9e75a5f80e674da990cb664556728769ff25f9","src/new/dragonfly/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/emscripten/mod.rs":"d0ec81b919d9d078bb7d66d9429c08b609e2b0fab512be30aa22cc00fa620660","src/new/emscripten/pthread.rs":"f14720341515da443cad49d61bf27a3d156b9fe7d7ccdf51651f1fdf4cb15c7f","src/new/emscripten/sched.rs":"6f0a5b3cefb42bb01feabf34ad92d4bdbe5743263d4cd7b754baf921da81a127","src/new/emscripten/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/espidf/mod.rs":"c89c7d3b96583d84888aae0c463dc49b5af61b34a97e9cde52fb9b62d301a023","src/new/freebsd/mod.rs":"d686733e28252ecb6e3100265c2f8c9d7b8ef1c0683504483f097882f195df12","src/new/freebsd/net/dlt.rs":"bf5e1dc8da836253b2a00e14e590d95611d73ac9136fe96af8ac42541905ff9d","src/new/freebsd/net/mod.rs":"68225681a4f1a024f91185088a430a4324dfed6a290ba26cca9c4dd93d0b32c9","src/new/freebsd/netinet6/in6_var.rs":"858763ada9b7d549d0ad95478f40c380e46c2f9ca8af1a35ec86f3ca0545ee74","src/new/freebsd/netinet6/mod.rs":"f6fcf32012b48840525df6e684c83cdbcafe69b8148f540bbc9dfe9f36ce0356","src/new/freebsd/sys/file.rs":"4dffceca36eaa53c3ace434e4fed1309009448c67ea6684a067a2cf362235e02","src/new/freebsd/sys/ioccom.rs":"7b842ee1a6688a6d38ededc8aa69dd991b9d2e31d796fd0b8f9ce982ec8d1867","src/new/freebsd/sys/mod.rs":"3f2a2b60db73753dc32a06cf50914767eb567338ce21d8b18ddf53473688f9c5","src/new/freebsd/sys/socket.rs":"fc0b459bc6f0ae2c5d359b0bcb28d0d5f68ac492e4b7ba06654932e9b72fbe03","src/new/freebsd/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/fuchsia/mod.rs":"c15b2da96c52281e86d4f114522999e6e713723f4950d62c2d544be641b28722","src/new/fuchsia/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/glibc/mod.rs":"fdec8f6272dbb2e084f6f4a87ebf30d479c0f66e7b0677796db8ae5b6c9df3e7","src/new/glibc/posix/unistd.rs":"b8528999ecab0a4883c0d89b1cb3c585a666255ab4a4bf5bfc705f7613edd8f4","src/new/glibc/sysdeps/mips/mod.rs":"4ee7bbd51acb0822e15b0b2e367aeb9c17b8514ec0e30c48f49664d6fda58030","src/new/glibc/sysdeps/mips/nptl/bits/mod.rs":"04b4ad0d30f3909c758eb5f20856289063d40af62a219e458dfe5b395ce46f7d","src/new/glibc/sysdeps/mips/nptl/bits/struct_mutex.rs":"dea882605b6d2bb7ece9f464350a5e08fe60b2269da1e743500862000fff0aa0","src/new/glibc/sysdeps/nptl/bits/struct_mutex.rs":"3eb21d2dca785c486c42cf27f1826d703b93dd68b162b60f27496b759244b55c","src/new/glibc/sysdeps/nptl/mod.rs":"80241727cf97fd683fd142516c8785ff65d5610af46c4d328f7b189968822055","src/new/glibc/sysdeps/nptl/pthread.rs":"2a70703f299597f77969f3c221a8588036f668415fe3c8d7b4cadbb0613b9b84","src/new/glibc/sysdeps/powerpc/mod.rs":"a4ace6198d60e936cf9f9c6c91142de0504deea7e75d956fd87d8616ee9d8ca5","src/new/glibc/sysdeps/powerpc/nptl/bits/mod.rs":"22902d28b252dc2bc895039f35f73b9bd0820901f279c52ea68886dfa3e01bb4","src/new/glibc/sysdeps/powerpc/nptl/bits/struct_mutex.rs":"cabb41afb4bd7a8530381f333cdf5ac10b1e5efa3d8a0b0e5eabb4992fa2dd59","src/new/glibc/sysdeps/s390/mod.rs":"14b77d79c4d6a9c6317de05fcd7abde4ce96d3205d51f122155d97469a3ee3d6","src/new/glibc/sysdeps/s390/nptl/bits/mod.rs":"9917ffcb24f1b3176ef8893b63d62db6e0a1739d127791d57ab747f632d96575","src/new/glibc/sysdeps/s390/nptl/bits/struct_mutex.rs":"d03e09f593df8db6e3c4ea38a0500adef7a55835f8eec094e16d38a65bd65af9","src/new/glibc/sysdeps/unix/linux/mod.rs":"9a7c4d5c62c37166b35d2daa69a3dc8f5b4548ef49955463ae41393e260a4cb5","src/new/glibc/sysdeps/unix/linux/net/route.rs":"d8ec70bbaa919692430fdd608b70db11dbfe86b202760727dfd474a4b25b35c2","src/new/glibc/sysdeps/unix/mod.rs":"aa6d2fb4c32f5e1139cae14bcf7cee5935657aeff97df9c064ae9acd67620d04","src/new/glibc/sysdeps/x86/mod.rs":"3b10a1317ab9a91b525b14072c7a18bd19d03dbfbd7d9c21a67e88677485815d","src/new/glibc/sysdeps/x86/nptl/bits/mod.rs":"ffe722e02d262533f5f1ecdfa972492465ddc8585dd1c586c8ec00c68e59c50e","src/new/glibc/sysdeps/x86/nptl/bits/struct_mutex.rs":"ed725f7e076ebe1ef7ce856d819434f918911f99a9f1541cd1da3d6f8075770c","src/new/haiku/mod.rs":"b3863768692c6da24fc28fdcf0c29a9dd9e3a84f301d4bee6ccc4f802befc4f8","src/new/haiku/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/hermit_abi/mod.rs":"25e5d698f292b95057f18dfe203fa96316326e0ca103da532190bb17c29cfdcf","src/new/horizon/mod.rs":"44b47e15d429026d369adfc16a4e9783cdda1be3d0a04f17c283da06573df886","src/new/hurd/mod.rs":"190a149192c237634df3e49c4834d05299aee91a3d399f356d97c36d35571a59","src/new/illumos/mod.rs":"eb5dd158844f63375a6fbb881d63279b12865342d1bb0da221216b7aa9c474b5","src/new/illumos/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/l4re/mod.rs":"5fe9a1660accdaa5df8c1837b04001cea818620eca4d46d3a9cde81682cc59cb","src/new/l4re/packet.rs":"7f3ddbd9121e2029cdebede7890cf812e16da43bd7f9a0fb3b6cf224fdd318ce","src/new/linux_uapi/linux/can.rs":"b30565ca3a98f76f98a6410fdd0649336270aa1ae4c677d1ce0d67a9be8803ee","src/new/linux_uapi/linux/can/bcm.rs":"1718a1c3aae686d18ec83dff1560439d61de244bfaf332256cc2b42b85fe5249","src/new/linux_uapi/linux/can/error.rs":"5c5ef6d7c2b9432ebbf6147f96cd260e10686f449f879e64db4757670a6ec638","src/new/linux_uapi/linux/can/j1939.rs":"8976b51496d3f4aeb8eeec68558cb0298ad1fa4a879a9b4fda56ce2572f61d18","src/new/linux_uapi/linux/can/netlink.rs":"2d90a0cb5dc9a15365c99c5101db1698f2da2df66704cfefdafd06252bcabe3e","src/new/linux_uapi/linux/can/raw.rs":"669f39f228820f8c76db846322dd4aa7599fcdf90a2f2f17d841294924bc094c","src/new/linux_uapi/linux/futex.rs":"5168f5be61449a3a6d81bc52bbc28f1c006c3c1ee2ae4005800d89d6ff2e1296","src/new/linux_uapi/linux/if_addr.rs":"997e2be333fced6a65698ed07cd0c894c38ccf82ee15e85f46aba3b1956a3e49","src/new/linux_uapi/linux/if_link.rs":"11d7773f787f6eab32e66795d315cc96f72c7fc38bc6a32bcfab3d8465d90ed2","src/new/linux_uapi/linux/if_packet.rs":"27b1f41f897c0ab33809dbcdc53b55e29cf3ba0c542da855f8c871f1c4527b44","src/new/linux_uapi/linux/keyctl.rs":"c25ee20a54a14d56de2c886c32f718b7a403b18152cc81bd7726f974cdf5b3a3","src/new/linux_uapi/linux/membarrier.rs":"5d6b55b1f7410aeb24ce6bcdbac0d33144b14dc048641ebccb5adc697ea7de2f","src/new/linux_uapi/linux/mod.rs":"1ac1404725b699c36f4981f39f0b33f71659fd1d41d2a98527fcff668c72f854","src/new/linux_uapi/linux/mount.rs":"be5bdf14fcab637b86feab3888d4faf4cfbb0b48078af1f5c64a4cc0192bb112","src/new/linux_uapi/linux/netlink.rs":"f662fc63c460e4927874c8143fcc826f9f97da6a878c86db3653b7004a3285fd","src/new/linux_uapi/linux/pidfd.rs":"6500c63d1ccaf4b7e14a36f225fd309bce9de80a50b81bca14bc6bded6ebd04e","src/new/linux_uapi/linux/sctp.rs":"065a53c3d4b6ece8976424eefeb1e1d1a6f0ac842999c58b905631dffdd2a6cc","src/new/linux_uapi/linux/tls.rs":"de59d2e2dd5b9939594874fad5453603ce4d59587d1affad6931616c9e9884bc","src/new/linux_uapi/linux/types.rs":"834f7e361d08bf1dec5c4761011b8df780e14feb69b6e2a6717fc0d3c6a6a12e","src/new/linux_uapi/mod.rs":"76cc081d46d008fe05fbb3d7f007fb62374d4efd9464916bbeb9b20c288c6416","src/new/mod.rs":"7b2d0abc1797d27b8d5d18eba44e722e032cef54e1c9a0110db40422784bd3e5","src/new/musl/arch/generic/mod.rs":"106383ed35cb7526bbbb0e16ce3521ddb2a9e61fb533687922fc9b43cd654af7","src/new/musl/arch/mips/bits/socket.rs":"eb4dff2ab581eb893e0e6547ae7a7d86453caa069b61272a818256280a23ca71","src/new/musl/arch/mips/mod.rs":"cc6c0a24ef77b7c404887fb5b7a7fd15c2a79e2a3396531ea0058636cacb3018","src/new/musl/arch/mips64/bits/socket.rs":"eb4dff2ab581eb893e0e6547ae7a7d86453caa069b61272a818256280a23ca71","src/new/musl/arch/mips64/mod.rs":"40242447a56ed21249f0417f87a7ccd074a366f19eb1353d94e904f370e0f20f","src/new/musl/arch/mod.rs":"31a73fedfd8606e04352425fb4917181f2d7376f445cb61a5460bd682ce29ed4","src/new/musl/mod.rs":"6b2e092bdc907d2d236a5f6ad977d931e13e99425a3738a62769220697cc13de","src/new/musl/pthread.rs":"e76e8f71cba55b45e4aa954970f939142595b828fd7e83586fc9145299a3b1cb","src/new/musl/sched.rs":"6f0a5b3cefb42bb01feabf34ad92d4bdbe5743263d4cd7b754baf921da81a127","src/new/musl/sys/socket.rs":"ed9de77a5937115aada325ce3d68b31e24e7ac21691dc2cb52c4e4695aa1e1dd","src/new/musl/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/netbsd/mod.rs":"d7bddddf98b09188a6fe541feaaaecdee85eb55fee2aa3cf670f7e6afa4ac342","src/new/netbsd/net/if_.rs":"5083d0f9d84de47c8b6fae60c9bb74d7c0586a80ccb8d625e5e2b4876e7f9444","src/new/netbsd/sys/file.rs":"a30095d85a4f8af49494f9b38114415f5c30e1d96a8c882eb7efd83a1cb6816a","src/new/netbsd/sys/ipc.rs":"91af85c26b3dca2a0661c820871d176baf29c00d53540f4807b9b28f9f3dfae4","src/new/netbsd/sys/mod.rs":"2dfbbf18e7585b64acfeb2f39d0495b50c142caec680db64bb4655e182347262","src/new/netbsd/sys/socket.rs":"a926087991d4cd7ebe31a3f626b5a196047c20955e9e3c99f5abe50b899b1ef3","src/new/netbsd/sys/statvfs.rs":"875c73a2c18ef78c7363b2196282579b88beca2d42ed24bda4fe8e7800db9bd4","src/new/netbsd/sys/time.rs":"7d420d5384e13ca361aaf9a7fc9faafe29a55b216988c8252a891d2232407a0c","src/new/netbsd/sys/timex.rs":"1b476328c16ce06e316485bd9dc751f31e51f63d0c07e438bf3227e66da07768","src/new/netbsd/sys/types.rs":"a0ec3ac038f0026c285ebfd869a8ae062117b1ff29855cbcf570f7f55860c854","src/new/netbsd/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/netbsd/utmp_.rs":"cbd35108f4ad7fd3c4fc65b888ba7813a29e3ed4af7920604df8085345f81973","src/new/netbsd/utmpx_.rs":"27171f826d6d2bf962a1d973a3427477ae960ad5dccc947c481d45f17ae645f0","src/new/newlib/mod.rs":"046372b698393e20436c85b28dac6f02b5cc7d599d134637bbdaa89f2530d1a6","src/new/newlib/unistd.rs":"15e74fb2c22e2343faa06a7a61baca198d7867cd70f8a4ead6cdc1f4fae24905","src/new/nto/mod.rs":"2e80a71385d3344a5f0b95b8d509148b52ea1a253d87e8f27345956d119f7e58","src/new/nto/net/bpf.rs":"3634f8f5f31f9ad86bf9fe6b4438782806bffc75700c6045673e5512b4cb14bc","src/new/nto/net/if_.rs":"cdea96569bb155c7372da481dbf00630aadfadb68ef07bfe94d258a6c600b82b","src/new/nto/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/nuttx/mod.rs":"7dbbf039987cb5ca17d2a1a562dc967de1c31b970568f728339cd5b9c8e05e25","src/new/nuttx/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/openbsd/mod.rs":"7d86ff099ddfdc8c383f49a1f6fa9c1169810cbe0c1c57d0e86dc14cb1d87320","src/new/openbsd/sys/ipc.rs":"dd37c821138dbf723d637319ad0849e9ed0b2fce1d498e7e38627a8b0a8bf142","src/new/openbsd/sys/mod.rs":"a8fd8f1cb50bffb34db04d1040048e7c23043fea834c1915453b5d539034a845","src/new/openbsd/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/qurt/dlfcn.rs":"8bfec94f78786e2eee9d4306efbf9ad977cf2b3f0d930f8cc65186e922371a9a","src/new/qurt/errno.rs":"2456f7f7557e4716f8b65b1ef67281f795c70ad1d5515d6b001d26c07b943af3","src/new/qurt/fcntl.rs":"0784ab7c55521df2ae80d37749fd22587bf5fe27568758e7d1b7e121a26db457","src/new/qurt/limits.rs":"91c8b32b54cddbef81c9d1225f0c15d27b8d697e04225a808f28737960390727","src/new/qurt/mod.rs":"8047001f3aa1704683ea57343015248b1ba1c860a671763fb7087da1c497fd36","src/new/qurt/mqueue.rs":"f7d9175c4170f9c7fac147aacece30a08319c1a01ceac242819dacc31b1abb28","src/new/qurt/pthread.rs":"8d6ad30ecf52a10062e0ffc891719643dbe1282d779934180a1e858f8c1b1e5b","src/new/qurt/semaphore.rs":"eb995a92cdead52ee61c3f498c7e408430b8430cd6cb6be74b47e6728c6773ae","src/new/qurt/signal.rs":"82ec220c868d6bff14556abdb8e12fdb9498f991d5b525d5cd13151f57b5f309","src/new/qurt/stdio.rs":"280e1faa29c7e2749469a9f9c4b0fa4ba8e0cee42a6e53d9376be6b8e3b8c2ff","src/new/qurt/stdlib.rs":"7d2aad4837a4be08083be8153ecf3e95d8c70469598fbad25793c4cfed1939d8","src/new/qurt/sys/mman.rs":"c0b862bf262564507796b1cdda967c601d265e6a1f1abfe1a5b6d45aa0742df6","src/new/qurt/sys/mod.rs":"e8585c4d447d02d1f4b72183e3d8b8c0d57301ca7099534ce2086a7a3d384b7d","src/new/qurt/sys/sched.rs":"5ae31ad3bf9199e570b9aa0f164eb337a322498aa8d7fb88e9cd73bc19ded597","src/new/qurt/sys/stat.rs":"bbd98cd523dfc7e34c163bc2d397be8ed08401fe24d85d617b581d31e5bdb708","src/new/qurt/sys/types.rs":"c23c7f02eaa198f04991f0dede9e55279effd49ec4a341fb13064f68c19f24ca","src/new/qurt/time.rs":"2745f5ad92955c192023cb57922c7d028d29a5a36a4cd531f9c2ad2a6f3fabc2","src/new/qurt/unistd.rs":"377331ec77889334611103320c54838592dc1b92f38b52bdf5b324b67657af81","src/new/redox/mod.rs":"aaeaa40c0bffde42973cd1809c1c845075f92fac95a074fe3d01d4fb02dc0992","src/new/relibc/mod.rs":"5c6955e052d8b7ead97179e356c369ffcc435e09fcca4def3e100568845e7296","src/new/relibc/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/rtems/mod.rs":"8ad621434ced0a9d1c0ed5d68514f59b0c8bd4c77fdad81eb09e671e7a42cf1d","src/new/sgx/mod.rs":"c500dc72eff5cbf99c9d7e0e3f1faa3c680bfd7f6ac0166fa1a35fd0d7e69f41","src/new/sgx/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/solaris/mod.rs":"ce8a152ebacb9e8e0d87829d166e3ead64222ead397371bd557e18eefdcafe3d","src/new/solaris/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/solid/mod.rs":"dc5c3c8a627972865ef0a968125e74b2f87636dc89dd2df0f7cea9a40d7c6beb","src/new/teeos/mod.rs":"1d69f212e2a848a32292eef9ad16a44a8d5cf80c7d43db5f445dbd1a49400e3b","src/new/trusty/mod.rs":"3f009fef70cbe062126c82f1f9274cba60b12d3766b825d66326666a1f240fc2","src/new/uclibc/mod.rs":"c3f988f3eb289ba6bc3b2535b82163a7ff160288b7494c156f0fba62143cf2d5","src/new/uclibc/pthread.rs":"ab235319003806c5f20aef5f851af472480e88ff13d2a5f730870efb95e7982e","src/new/uclibc/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/ucrt/mod.rs":"4fd3a973de4c4c6349e76320e09b13701ac284e7ae03c671054b1eeebb86215d","src/new/vita/mod.rs":"196d6ca5c9b1ccc602a6270c3cf0b0bdbd39246066d1a8385df03ba45b31d368","src/new/vxworks/mod.rs":"cf19388e70e80a6712bd770cd650bb4e6b5e95504b3d1d026b37a6bb0ed31e07","src/new/vxworks/unistd.rs":"bcbb65f70759cd84c81fc24ea36aac423edb8f9d7148f65b545ee63954411fd1","src/new/wasi/mod.rs":"2a74140697bc528193214aad11edc632923bd0cf8350d24f6d600f849dd19e19","src/new/xous/mod.rs":"69016c5c153d9a14003b15558cab96b4691a927586c20ca493fc8d3bb65594eb","src/primitives.rs":"af323402fee13278461bcaec6a06a15dfca24a02d48b0570c88e2746288d7078","src/psp.rs":"5c4d5fa3a24dad41aba8e05e5592fbc0bc5a5171785d75dab8f5df4f3727d40a","src/qurt/mod.rs":"5af8edfb34f5431586b7ae00b341daa4312737c1e39c16348b1fff1d1cb8c642","src/sgx.rs":"964d6af358f5c85f948275090e5a7854e0169c43b5c338070b6a4cd156ebc9e6","src/solid/aarch64.rs":"4d4236500f98858fc249f3b6858af5009851c8c582031926b8195b2646f7da5e","src/solid/arm.rs":"4d4236500f98858fc249f3b6858af5009851c8c582031926b8195b2646f7da5e","src/solid/mod.rs":"600ae7749abc6d75d6c6922138505440e73a6959e6dd9a2dee0599fcc8a6b8f2","src/switch.rs":"5db5be2d9c235c00f74b25cceabdf2ce5ec9e1936f991815513e4edf5dec0d56","src/teeos/mod.rs":"5811b33c2a80d152a16462a6620e66b1b5093f7be2fc70de63afda5a196e02a1","src/trusty.rs":"cc90bf6b35a515021a3155aa3cc5fcab33457b8fbb2ac7259f0b694d33625fd8","src/types.rs":"f5d55bd81c50b83575435562c65abf49cedbfe7635d4ba443e33a6d2f24a2294","src/unix/aix/mod.rs":"f8b8e22bc7d82f2b3c7d3a920a4df6d3de95523af9097c02010687f618d9aed9","src/unix/aix/powerpc64.rs":"814b5f3ccef00968c907f2ea126ad8598fc13fe11d186541342ed39d50ff7fa9","src/unix/bsd/apple/b32/mod.rs":"c57d89459e22c7644df826ad694bcfe77e28d4fbfcd8d5fcd51645ec764df901","src/unix/bsd/apple/b64/aarch64/mod.rs":"bf2e39a80c8d768c2969197b80fafa50608ac0186b4f4aea53e7fa8bf40d2214","src/unix/bsd/apple/b64/mod.rs":"c0a38b3174c3a8513e4e27faf75b5e506c6495b98d16ae36cc841b847d7aa404","src/unix/bsd/apple/b64/x86_64/mod.rs":"ff16a360cb478a4c2e912b9779a806d0e3439e4c5110e0325c82af5ee8429591","src/unix/bsd/apple/mod.rs":"30b07c6607e27c676ef00fcd0b8d23001fe6222360a5406f26db06111dd047de","src/unix/bsd/freebsdlike/dragonfly/mod.rs":"ffbd3b6aecfb9154f109e015deb30af91e3470f5502ef6b44691095591cf6ecd","src/unix/bsd/freebsdlike/freebsd/aarch64.rs":"f13a68b825a58596b5d3339378b0812b778481a291aeacb41de74cb65ad66d3f","src/unix/bsd/freebsdlike/freebsd/arm.rs":"d627ed0bf17932ec0e3226944a4f9714805b27a953778b309d914545cf21b82a","src/unix/bsd/freebsdlike/freebsd/freebsd11/b32.rs":"316e70938d2b050fd67e5aaf0bcdd0a70d55f195b26ce4ad6055cdf05cea2e61","src/unix/bsd/freebsdlike/freebsd/freebsd11/b64.rs":"811c3f1aeb70dfd051abc9d3357e8eca9564c08b85d3ea6f81caacfa559e3060","src/unix/bsd/freebsdlike/freebsd/freebsd11/mod.rs":"76d8b8fa17ebac22cc0423eec6502c51910a03f4e7330d29d88d8908ac30b1a4","src/unix/bsd/freebsdlike/freebsd/freebsd12/mod.rs":"9f2acdbe2569d1b8890b86019d09d356c43500415a90b2335dd59c8432f557ff","src/unix/bsd/freebsdlike/freebsd/freebsd12/x86_64.rs":"cccd7a563ad4e91518fad7c1d1c7630a5348e5d2dd935e36a40f60f254828c9c","src/unix/bsd/freebsdlike/freebsd/freebsd13/mod.rs":"0ecd3d7abf2c2eeecc343fa7b2f3ae2872535a0ec69a61544f2cf133bcd27897","src/unix/bsd/freebsdlike/freebsd/freebsd13/x86_64.rs":"cccd7a563ad4e91518fad7c1d1c7630a5348e5d2dd935e36a40f60f254828c9c","src/unix/bsd/freebsdlike/freebsd/freebsd14/mod.rs":"b0df06bd48f06eee77446e689c942fa2b33dc73f9653d5e4d49f58479cdcacff","src/unix/bsd/freebsdlike/freebsd/freebsd14/x86_64.rs":"838dee28bffe6f5d6bf0004d823cd8d17e642acb1d30c27a99f96faa32f0cdb8","src/unix/bsd/freebsdlike/freebsd/freebsd15/mod.rs":"d85e17e4c18f3cccf4ac563eba35ad5b77a3621244bdd208d78b10c29c9b5f68","src/unix/bsd/freebsdlike/freebsd/freebsd15/x86_64.rs":"838dee28bffe6f5d6bf0004d823cd8d17e642acb1d30c27a99f96faa32f0cdb8","src/unix/bsd/freebsdlike/freebsd/mod.rs":"f1862cec4db3f2c72906c50b9ebeb2fc24007ab6feb8d457852949da6c5015df","src/unix/bsd/freebsdlike/freebsd/powerpc.rs":"af7a43826e3ca9e5e7c3d7c1b50defa482074fd9909de3ee2e52cd0109c1a950","src/unix/bsd/freebsdlike/freebsd/powerpc64.rs":"f7be922bddd7a4b7da863d6aba057aab2d27f500c7101596bbaaccf075133451","src/unix/bsd/freebsdlike/freebsd/riscv64.rs":"69242a001ab21b6e06b7442c37a89dbc5a67660c7c3cade1d46b65adf32a5669","src/unix/bsd/freebsdlike/freebsd/x86.rs":"5165242f0c82040898dbf711294ba45c5ab2635d39d0bbf9cc899b816415e2a4","src/unix/bsd/freebsdlike/freebsd/x86_64/mod.rs":"84044f397dbf13a1c517885c7b234efa2900d116324a4cca626d2f8df398d655","src/unix/bsd/freebsdlike/mod.rs":"514068e20eb263560abaf4bc0f629e4f619d4648e0d25fa765041edb399ed4ec","src/unix/bsd/mod.rs":"f3c1d43560fc184895036a88f65f489b1ed3d31bc38ce30f2bfdc033b9d102cd","src/unix/bsd/netbsdlike/mod.rs":"e935dd0c5fd490e9328b2ac8afcdbe967340692594a7116cc8854fbe5045fae4","src/unix/bsd/netbsdlike/netbsd/aarch64.rs":"ba2425edbf025f13ab3c3534d1671d310392df3a7d237539817d9cfa675971c8","src/unix/bsd/netbsdlike/netbsd/arm.rs":"8dd57613695dec1b2104ec35839f0b9b6d234c6cc80365e9fef9ca977c1865a0","src/unix/bsd/netbsdlike/netbsd/mips.rs":"20cdd8d1427c986ecc3fcf7960d337917a13cfd8386dd2d54f8693a23d60892f","src/unix/bsd/netbsdlike/netbsd/mod.rs":"31a6505b5a16b6cbe5b6463359f76a4ad8f896b3beb75a84b71dce2b8188dafa","src/unix/bsd/netbsdlike/netbsd/powerpc.rs":"c19c4edbc73b5a97b51e3e2ad39b9fee02ad15e80c70ceb3a1abfe977e5c0ead","src/unix/bsd/netbsdlike/netbsd/riscv64.rs":"f446c996f00e4d15fd25461a30c767c05d083df9e047b0da497ce7c545acfa96","src/unix/bsd/netbsdlike/netbsd/sparc64.rs":"d50816e830225779ac9e9a55a7e3e097882153d72987061d76a96ee736c8af9c","src/unix/bsd/netbsdlike/netbsd/x86.rs":"3006b6a086c0241f5383ca101e7b9357368d713f9c38400633491656d110798e","src/unix/bsd/netbsdlike/netbsd/x86_64.rs":"13dd36a0db740930155b5f28fedfac606c7291c0276bbf2c2b3fe03a4dbd2a51","src/unix/bsd/netbsdlike/openbsd/aarch64.rs":"13c91b304dfb5c3c26777863827c7b3707fe245fcf50da32caab641aff998c63","src/unix/bsd/netbsdlike/openbsd/arm.rs":"f064d935f416ca9f7e5e767b9b46da2250c997d667c0c7f4b4c7dfe02d0258c3","src/unix/bsd/netbsdlike/openbsd/mips64.rs":"bee7664d88f8451ae22552fc0721b6b6a6dee2493cc42bcb9829c1e47e4b05f5","src/unix/bsd/netbsdlike/openbsd/mod.rs":"b5bf21aef874477bf26664c0ddfdb370ffeb73b287d7447f8bdd9c61e2546bb2","src/unix/bsd/netbsdlike/openbsd/powerpc.rs":"f064d935f416ca9f7e5e767b9b46da2250c997d667c0c7f4b4c7dfe02d0258c3","src/unix/bsd/netbsdlike/openbsd/powerpc64.rs":"1f62a42e2970c42de9e3492fbf3cd5b45410889f033743579266342d1a9e2a00","src/unix/bsd/netbsdlike/openbsd/riscv64.rs":"b2cf3778bfb51d1c0277f0e92963a04f734be3e29879c6c09a25bad2d9b5ab6a","src/unix/bsd/netbsdlike/openbsd/sparc64.rs":"8d4c5a4cae63e09e1c156164ddc82e0fc77926841d4d4e419dd2e7a7b7145f58","src/unix/bsd/netbsdlike/openbsd/x86.rs":"e6da2fdff7706fd3eac147d3aaf16afdd8542f231f502660d1d89c79b5eca21b","src/unix/bsd/netbsdlike/openbsd/x86_64.rs":"bc7ed75ce66059aafa7a86986aefff267b2c951e47558453fe13ce1bdb48dc0b","src/unix/cygwin/mod.rs":"6aad2e8077d97d293889145ea37ecc379cbe5cb78d2b198750639e822f0917d5","src/unix/haiku/b32.rs":"c3f8678ceee65a3094d8133b0d1a94470860e0b1867977f0569c52c5a20e039f","src/unix/haiku/b64.rs":"f97ce9225f4710893dab03ab3e13bc62152cc84f90c597ec88f6dc1f4c27d242","src/unix/haiku/bsd.rs":"4d9af31fdac2561ee5f942dca97dd2f48139ca74660d40b854b307fa5679d1c8","src/unix/haiku/mod.rs":"102560660857c1a7c6113b2a6b12bd816d9b70dd62cca17a77c543f798301681","src/unix/haiku/native.rs":"93993d4cd065550b772c9700b1da64455f1b495ac8ce7fd71d9c043d4bae1ff0","src/unix/haiku/x86_64.rs":"def40c16609b5d62c3cdbba6a38340720a96b326ad98d53838554e4b6878d2ee","src/unix/hurd/b32.rs":"501f426f7aeb60acf4119064100dd94bbdfebff2cec785428708059d853dc123","src/unix/hurd/b64.rs":"b9b2082e721a5ec89ba55fd5a16bbffcc8a05ca7cef6dbfbd78aff0806cb931f","src/unix/hurd/mod.rs":"47c18259062e834f1937aa8e5902f27f431053f112d22f2af64c4826bbaabd6a","src/unix/linux_like/android/b32/arm.rs":"9c19aeacb713b2886e0293c0abb4b64ddba5935a876a239c8c392b8ae68d02ab","src/unix/linux_like/android/b32/mod.rs":"013d0c2f1b53ae7999ed789a6b92fd4938268a6df0e8dda50f6f16a21567bc6f","src/unix/linux_like/android/b32/x86/mod.rs":"3cc9a98c2dd052029901f2c507c72795018a0ccfb64f97297b5680307da362a9","src/unix/linux_like/android/b64/aarch64/mod.rs":"57e8a37d0cf47c07444832c8684d29be2383547a21c388715b2f597573f77412","src/unix/linux_like/android/b64/mod.rs":"0ac090c7920232aecb9efbb7aef6074a1fc09a4f76c195886c1592a23d847374","src/unix/linux_like/android/b64/riscv64/mod.rs":"394125fc6cbf568271c18cba4673dbb136b560c484d38e01670cab825ca55a0d","src/unix/linux_like/android/b64/x86_64/mod.rs":"0ea316ab5e84781758ff14db88c90721400b4a4d2fb73f61c802bf2784774f94","src/unix/linux_like/android/mod.rs":"5b79b3cb98010896af67fdc4a3c8105ce104fecfa8c21373ee2306e2958fd446","src/unix/linux_like/emscripten/lfs64.rs":"5921989146110ae9b898334dc6c1de8fc2334149711f2aeb26dc654857ee82ac","src/unix/linux_like/emscripten/mod.rs":"515dbc5565556e0b21f7453fe9d529a1cba73ae69ca6c0d3386d6eddb4df9bd2","src/unix/linux_like/l4re/mod.rs":"47c07dc3c5e368ec9a64b33af9a314f51e5ed6c7fc6456bfba919d661a812275","src/unix/linux_like/l4re/uclibc/aarch64/mod.rs":"c22979fe55e9fd752114a43d97cc42211fc5b2244a6c601042c1c6d6b263ba53","src/unix/linux_like/l4re/uclibc/mod.rs":"47b8ca0231d56146c4435c9f5cded520ac67d5c5581d6a1277050942991ef4ef","src/unix/linux_like/l4re/uclibc/x86_64/mod.rs":"438e289c3ad818dd8be5391a4b44e294daf8759424bbe54ae6cf06be14d81498","src/unix/linux_like/linux/arch/generic/mod.rs":"39f70281f38aa591d18e23a465ad8b654acfd66203b53e44a9e27cd174fcea70","src/unix/linux_like/linux/arch/mips/mod.rs":"00014d704cc5c578be2300c7c2057358c64c4700d33da5dcf2a01fd1a50c42fa","src/unix/linux_like/linux/arch/mod.rs":"8bc5898b03760a95dd4f124ac76ad92e5ae36b2d0644203d752ef2b37e487c3a","src/unix/linux_like/linux/arch/powerpc/mod.rs":"03b1a1271891909372a3817f208943d8ed273ee66a8342a02426e0dd7b1137cf","src/unix/linux_like/linux/arch/sparc/mod.rs":"5bb8a0680447d5e061fa2f2370681233487f2e099619536ab2392bbafa31cc0b","src/unix/linux_like/linux/gnu/b32/arm/mod.rs":"60d5c7667d81db0ad9faf65edc79420b2100cab27699e03de4d415de931e9f58","src/unix/linux_like/linux/gnu/b32/csky/mod.rs":"627e61997c33fc12fca9e337d248d8531ef0751f21f70110b65631a0e481b66d","src/unix/linux_like/linux/gnu/b32/m68k/mod.rs":"2ea8f649fc9f01829de439ffe0fdbf9566602ed6ec0088128167af1080c3a1b2","src/unix/linux_like/linux/gnu/b32/mips/mod.rs":"8b3254b47401cde6118f9eea7e98319af8174d99feac451949e673a28ed4ff6e","src/unix/linux_like/linux/gnu/b32/mod.rs":"c7a1d5a3033fea02322b4d1f17b9576e11761a56f418e4ed5e72993f61fad160","src/unix/linux_like/linux/gnu/b32/powerpc.rs":"585983c6617a590ee0ac5217280d03642efcf721bd80fdabd6b9477031574fee","src/unix/linux_like/linux/gnu/b32/riscv32/mod.rs":"a5e6c931ca8da568626233f2aa5ee0dd0b8e4e1e8905d52ab9dd0ea618376c2f","src/unix/linux_like/linux/gnu/b32/sparc/mod.rs":"d3f846bfcec990fbc009fe705edc39b64c011464b8ec1dd5373424ab9511e919","src/unix/linux_like/linux/gnu/b32/x86/mod.rs":"e370a80bfdec000347c384f080b30c6f537dc51e17e715c2dd8a360e6a1407f3","src/unix/linux_like/linux/gnu/b64/aarch64/ilp32.rs":"cbf545c6fe4e5998792c036d9456408ae415cfe3d68ae2ad6981b8b8ac47a395","src/unix/linux_like/linux/gnu/b64/aarch64/lp64.rs":"0e41329debd9e8924bfe784d082c40efaeb8a585a7b5bc1faf9be8b53f0769e1","src/unix/linux_like/linux/gnu/b64/aarch64/mod.rs":"368b40031515d5c4d9834a899136e0d046fdb06f751df84c143ca257d73d3fd9","src/unix/linux_like/linux/gnu/b64/loongarch64/mod.rs":"080980118660502ff312a31e108aa9fee51a671fecd80b1871959586b2bdee02","src/unix/linux_like/linux/gnu/b64/mips64/mod.rs":"cde2c6f63ef0efb12cb423e313a20572d76d2e3a24deceec2675fbb07ee422f2","src/unix/linux_like/linux/gnu/b64/mod.rs":"4b6ba534576035f3dd89d6d89c520d4c0a98f3a3e24ece70dff5970d2047d446","src/unix/linux_like/linux/gnu/b64/powerpc64/mod.rs":"9cd129a0658213e1e13d7a06c88c54035f4e012f0fa73456605808902e4607f5","src/unix/linux_like/linux/gnu/b64/riscv64/mod.rs":"f229eb10a427a4d206bafa433f4f015cccbd4077d04d340bfae163bbb305435f","src/unix/linux_like/linux/gnu/b64/s390x.rs":"f55c3bca64e3d01691125352e1dda98c93db7361761b817378db0b5f62b1df9d","src/unix/linux_like/linux/gnu/b64/sparc64/mod.rs":"0a71dfee9d66d55e20323b82bb1817070a88606dc88e9008c1c11b32a45478f6","src/unix/linux_like/linux/gnu/b64/x86_64/mod.rs":"5e23cc1b0fc69f2c50f6fc83e0dc8d25afef2d2e74dccd4240ae873c5d6bb72d","src/unix/linux_like/linux/gnu/b64/x86_64/not_x32.rs":"414d14164e09f0d66609180cda5ff919fda0440b29df43bd0f0f55fd2ddcee4b","src/unix/linux_like/linux/gnu/b64/x86_64/x32.rs":"3cab97c6a03adecccd4e10e90196b2555e3c9de77e210ac9caf3f186fbcd3f01","src/unix/linux_like/linux/gnu/mod.rs":"df5cb173336a5381f3a668af12c89495fd161bcaa5ff3a46b0f9e7222a3bda2e","src/unix/linux_like/linux/mod.rs":"caff5b733b297569edca489ab9b0d049c4fe70ca953de635d983ef483e10a197","src/unix/linux_like/linux/musl/b32/arm/mod.rs":"7dc4b9a4d723d6868a84e81dbd5953b234c4540db3edd5a4a7ea0e154b101d91","src/unix/linux_like/linux/musl/b32/hexagon.rs":"e0e53f5575871faa1870f43bf85b0033c1feac149f766ad73fa2149be2447324","src/unix/linux_like/linux/musl/b32/mips/mod.rs":"64f6b834d3d98db1c2d95d40371c644f71170d7710fcdd933f1ff51c3fbe2c70","src/unix/linux_like/linux/musl/b32/mod.rs":"b136185b20a863d5e2bbec9e3bcb7e0c56329e196165ca70f2aed5777e39aeab","src/unix/linux_like/linux/musl/b32/powerpc.rs":"a946612120ed9700ff1e4e729b0f8107a40f9ed7f5b320357552d5475441042d","src/unix/linux_like/linux/musl/b32/riscv32/mod.rs":"7b5efe1ebf7d5d5439fb929032b48dcde98ba274fb22deb0f45137df21eb87b6","src/unix/linux_like/linux/musl/b32/x86/mod.rs":"83e340712e8acd89cefcb5eef0e826da79f47a7a42784699df90604c4e9a8712","src/unix/linux_like/linux/musl/b64/aarch64/mod.rs":"889ba0c0d20a8531dd05024ec9825a7bc57562c2bda4d063e5c632e76a143fc4","src/unix/linux_like/linux/musl/b64/loongarch64/mod.rs":"a7a136f43e8a6f2c680faf477055a12459fa307587111c0c7c147ac7df8722db","src/unix/linux_like/linux/musl/b64/mips64.rs":"a855f49b0685e50b9fd118c8d8f9d5596440092e37b7696db87cc3d3db3894f9","src/unix/linux_like/linux/musl/b64/mod.rs":"1ce1eee49b1c7c5c02fe04b1539a0316becf0295763e3e18b1088895ed937373","src/unix/linux_like/linux/musl/b64/powerpc64.rs":"e18d27dc96bfd7a352b065498847b4f97d00d33dc27f1fd49ead11d97a923211","src/unix/linux_like/linux/musl/b64/riscv64/mod.rs":"7dd2c67186d0f6e0d585c4eabd686f476edf83f2bd4ca0f6a3a55bcd71c11fd6","src/unix/linux_like/linux/musl/b64/s390x.rs":"042a2be23f0b7437e7b5b007ed7ebddaf6b51e32cfac803f7e9d4fd6941d1d39","src/unix/linux_like/linux/musl/b64/wasm32/mod.rs":"2ae98dba37841279be44f68330c301f823ec2e251ea8258dd7d40f491fd26f76","src/unix/linux_like/linux/musl/b64/wasm32/wali.rs":"006149b7af0145dc40123fc7991d853c7f2c5c77bbc9c8a44c276be0d99a1343","src/unix/linux_like/linux/musl/b64/x86_64/mod.rs":"6a2d9adaf90aa39b56b383d6987091616227f4b6c167934cda2e825e6c806c02","src/unix/linux_like/linux/musl/lfs64.rs":"3c15fd2820d400b0650cca950cd41dc77c017c5f06841db1942cd59118a252e3","src/unix/linux_like/linux/musl/mod.rs":"490ef1317a0173e283c139df5a83e37f54c3ba48eba66a485b2659907220389e","src/unix/linux_like/linux/uclibc/arm/mod.rs":"27a2bab2ff33d0b159eb49ba5a302bcf2ecbc24431ffd0f494ab274a6e43f016","src/unix/linux_like/linux/uclibc/mips/mips32/mod.rs":"39057a283532e0430dc664d9c4ace6a2fba6e9b252c1404a6835ed382a1f2e27","src/unix/linux_like/linux/uclibc/mips/mips64/mod.rs":"7458bd4483a6c16db943d8d69de3e02ca952ec67c608604e174a26e99e453d71","src/unix/linux_like/linux/uclibc/mips/mod.rs":"e552f579a8dc9e690891113aa6360607ad962bd84cbb60c370b5c5f7c7d1d8c0","src/unix/linux_like/linux/uclibc/mod.rs":"aad428f795b39aa987653919175bb2fab633ceedbd01bcbf358c550dc7bdf936","src/unix/linux_like/linux/uclibc/x86_64/mod.rs":"68ec631cd8d8da3d5b12161936e367a68fca982dacf45424789840335c1f39c0","src/unix/linux_like/linux_l4re_shared.rs":"ee47eb40a299f4897e0cc1f8d5a6d554e4fb6302f11b752d921cfcfb09c0afab","src/unix/linux_like/mod.rs":"298ca2a15df5313c893184334caef990df5dbe6f71afcf332d4322dde80e1c3d","src/unix/mod.rs":"999588f6f4ac24156c1bf9260d639a64247a83d7b6db187f4f94f7305c5cde47","src/unix/newlib/aarch64/mod.rs":"d72d067a433bf24ee6b6255c4d04ea7c966518b8d064560c593f1ab23c025962","src/unix/newlib/arm/mod.rs":"95b6e4b3cd1eeb0386d4867e9e4c3438305aa3e8ae75697e06720aa06540a666","src/unix/newlib/espidf/mod.rs":"cbaf10ccdb429719003cac3f3cd4aa0aa63a12a383afc5bd88a4ab3abaef9e2e","src/unix/newlib/generic.rs":"c435a955d72878a71ea0719a75a4579818da6a2e01635f9fe1073d9a0d67352f","src/unix/newlib/horizon/mod.rs":"329f41f1703f318ea8999c2a9f48b953381e9a4fc388670ce69444ad7a32b122","src/unix/newlib/mod.rs":"6bbe0874c5d6f53ea2d9f2a7cb1b27bdb27b9b02704160e6133ea6e559ad66cd","src/unix/newlib/powerpc/mod.rs":"4d6dca09ea5dc000cbd39fb939a9b1a743d819931dfca3c896659e919a07a7da","src/unix/newlib/rtems/mod.rs":"efcb2c5f96ae5877fb4cefa59e4a38ae40c4eba22afa9c9a9ecdc61121d3b9d2","src/unix/newlib/vita/mod.rs":"2f9bf66b40c2aa611033faf3ade5510dc9789af7302571fade40a1715398f06c","src/unix/nto/arch/aarch64.rs":"e7fc7ada9e273c6cffe556f977db71a96c9e4a27f496a8223bc23e3fd876c05e","src/unix/nto/arch/i686.rs":"6ebb8acc594e9dbfa80c363dcf56aca0125afdab4fb3a1fc2806ed8ffe9dc252","src/unix/nto/arch/mod.rs":"4ff319773cd756d9dcace1348a3ac4569cf89a031436bdb57e66c9557a9eb948","src/unix/nto/arch/x86_64.rs":"71e97cb09b938b2c6f01ba71e268221f8a51500ca309c71d6c8de61ee2c0e9c8","src/unix/nto/io_pkt/mod.rs":"1fc160ff187fb6b49744859e3da481a3e7264b248bbe289efff22fd1e6d699e9","src/unix/nto/io_sock/mod.rs":"941bfd903a0cd329ed92f36222a2f13c7e798cd403fee7d7859214a794a65534","src/unix/nto/mod.rs":"41b6926daedda07a5dfbca7e23516ba39161f1de9b9cc89d9b6e512bd877f595","src/unix/nto/neutrino.rs":"59e3b22aa27c2aba3e96b39c0f624897747650c7e916832629586259d18579ce","src/unix/nuttx/mod.rs":"b231559c8b5e0af7fa32f869dce8236b32d0057603a5cea115c776b2ceaf14a0","src/unix/redox/mod.rs":"45613acbd48fb5469a9d4e597e4e492a98138af3135887043c6d5b3f64e18ccb","src/unix/solarish/compat.rs":"3d120a056208c03215cfbe3eef1584105160d133c0aa4557bb38018c177640b0","src/unix/solarish/illumos.rs":"597c04a05dd586eec164624d1819d5bd0db3c26711131fdd896e2af09406340a","src/unix/solarish/mod.rs":"9f94cb59612b898d8da26e69e291730cf374376f6d40940faed92c193c51f359","src/unix/solarish/solaris.rs":"5ea6cc86389f7e3b8dca2de17fbd4fcdbb5b0a6638b95efeb7ae15c8bbb9e79b","src/unix/solarish/x86.rs":"44261c1f1b300dac9fa0dab93ec85d0c3b3c48b15bc4515b9820c9421cff7427","src/unix/solarish/x86_64.rs":"eec1602998dbd3b3aeb2d9a5bd66fc53a6fbbcd7967ed0bb2dd61a8c176023e4","src/unix/solarish/x86_common.rs":"4ae02d88622f7f080f5e8cd328f13187edbc5e124fb3e05e4cf212597f6cce48","src/vxworks/aarch64.rs":"4d4236500f98858fc249f3b6858af5009851c8c582031926b8195b2646f7da5e","src/vxworks/arm.rs":"4d4236500f98858fc249f3b6858af5009851c8c582031926b8195b2646f7da5e","src/vxworks/mod.rs":"e5efaf8a584862fca87a3e367042de056a688a8a105d0bed149f09e516e4cc05","src/vxworks/powerpc.rs":"4d4236500f98858fc249f3b6858af5009851c8c582031926b8195b2646f7da5e","src/vxworks/powerpc64.rs":"4d4236500f98858fc249f3b6858af5009851c8c582031926b8195b2646f7da5e","src/vxworks/riscv32.rs":"b1f933205800f0da00f975d53b18fe0035e075cc4613acf110a09a277dc3302a","src/vxworks/riscv64.rs":"b1f933205800f0da00f975d53b18fe0035e075cc4613acf110a09a277dc3302a","src/vxworks/x86.rs":"b1f933205800f0da00f975d53b18fe0035e075cc4613acf110a09a277dc3302a","src/vxworks/x86_64.rs":"b1f933205800f0da00f975d53b18fe0035e075cc4613acf110a09a277dc3302a","src/wasi/mod.rs":"f4bd5f0481da1922dd31195a2825bf9a1a852c82f56e536f82639eff961c0f9a","src/wasi/p2.rs":"feecc0485eabd2c32bc5d800df6ad1b9b4d282741342fb08792f2635204e1e08","src/windows/gnu/mod.rs":"6422acc5c5a82122c11efb84882778e30888c0693c0993fbf7f3baa59e4cbbb5","src/windows/mod.rs":"8ec2bd46a05aed28f8bdfa17d99909300b59eb36cdc694545e29f8aa902e9e53","src/windows/msvc/mod.rs":"40410b26b606d1b59b0742b2632f3cd0a28a5429f784f9693fae0a78c15b3889","src/xous.rs":"1a83621c40248ad4d0c08e1fd4c1107d5efcbc2f4f0169538b7b4a885abedbfa","tests/const_fn.rs":"8ac3171d7bced3576a4e93f48570b3e00c553d7510ab85a7473ae3b716a812dc"},"package":"3eaf3ede3fee6db1a4c2ee091bf8a8b4dccdc6d17f656fb07896ee72867612f2"}
+\ No newline at end of file
++{"$comment":"This file only protects against accidental modifications. It is not a security mechanism and does not protect against malicious changes.","files":{},"package":"3eaf3ede3fee6db1a4c2ee091bf8a8b4dccdc6d17f656fb07896ee72867612f2"}
+--- a/library/vendor/libc-0.2.189/src/new/aros/mod.rs
++++ b/library/vendor/libc-0.2.189/src/new/aros/mod.rs
+@@ -0,0 +1,5 @@
++//! AROS C library (posixc.library / stdc.library).
++// See src/unix/aros for the bindings; this module only carries the
++// header-organised parts of the new layout.
++
++pub(crate) mod unistd;
+--- a/library/vendor/libc-0.2.189/src/new/aros/unistd.rs
++++ b/library/vendor/libc-0.2.189/src/new/aros/unistd.rs
+@@ -0,0 +1,7 @@
++//! Header: `unistd.h`
++
++pub use crate::new::common::posix::unistd::{
++    STDERR_FILENO,
++    STDIN_FILENO,
++    STDOUT_FILENO,
++};
+--- a/library/vendor/libc-0.2.189/src/new/mod.rs
++++ b/library/vendor/libc-0.2.189/src/new/mod.rs
+@@ -72,6 +72,9 @@
+     } else if #[cfg(target_os = "haiku")] {
+         mod haiku;
+         pub(crate) use haiku::*;
++    } else if #[cfg(target_os = "aros")] {
++        mod aros;
++        pub(crate) use aros::*;
+     } else if #[cfg(target_os = "hermit")] {
+         mod hermit_abi;
+         // pub(crate) use hermit_abi::*;
+--- a/library/vendor/libc-0.2.189/src/unix/aros/mod.rs
++++ b/library/vendor/libc-0.2.189/src/unix/aros/mod.rs
+@@ -0,0 +1,1045 @@
++//! Bindings for the AROS C library (posixc.library / stdc.library) and
++//! pthread.library, as shipped in the AROS SDK.
++//!
++//! Type widths and structure layouts follow the SDK headers
++//! (`aros/types/*.h`, `aros/posixc/*.h`, `pthread.h`). They were verified
++//! against the x86_64 and riscv64 cross compilers; the 32-bit variants
++//! follow the same headers through `__WORDSIZE`.
++
++use crate::prelude::*;
++
++pub type blkcnt_t = c_long;
++pub type blksize_t = c_long;
++pub type clock_t = c_ulong;
++pub type clockid_t = i32;
++pub type dev_t = usize;
++pub type fsblkcnt_t = c_ulong;
++pub type fsfilcnt_t = c_ulong;
++pub type gid_t = u32;
++pub type ino_t = i32;
++pub type mode_t = u16;
++pub type nfds_t = c_uint;
++pub type nlink_t = u16;
++pub type off_t = c_long;
++pub type off64_t = i64;
++pub type rlim_t = c_ulong;
++pub type sa_family_t = u8;
++pub type socklen_t = u32;
++pub type speed_t = c_uint;
++pub type suseconds_t = i32;
++pub type tcflag_t = c_uint;
++pub type time_t = i32;
++pub type useconds_t = u32;
++pub type wchar_t = u32;
++pub type id_t = c_int;
++pub type key_t = c_int;
++pub type timer_t = *mut c_void;
++
++pub type pthread_t = c_uint;
++pub type pthread_key_t = c_uint;
++pub type pthread_spinlock_t = c_int;
++
++s! {
++    pub struct stat {
++        pub st_dev: dev_t,
++        pub st_ino: ino_t,
++        pub st_mode: mode_t,
++        pub st_nlink: nlink_t,
++        pub st_uid: crate::uid_t,
++        pub st_gid: gid_t,
++        pub st_rdev: dev_t,
++        pub st_size: off_t,
++        pub st_atime: time_t,
++        __st_atime_pad: [u8; 4],
++        pub st_atime_nsec: c_long,
++        pub st_mtime: time_t,
++        __st_mtime_pad: [u8; 4],
++        pub st_mtime_nsec: c_long,
++        pub st_ctime: time_t,
++        __st_ctime_pad: [u8; 4],
++        pub st_ctime_nsec: c_long,
++        pub st_blksize: blksize_t,
++        pub st_blocks: blkcnt_t,
++        pub st_flags: c_ulong,
++        pub st_gen: c_ulong,
++    }
++
++    pub struct dirent {
++        pub d_ino: ino_t,
++        pub d_off: off_t,
++        pub d_reclen: c_ushort,
++        pub d_type: c_uchar,
++        pub d_name: [c_char; 1025],
++    }
++
++    pub struct sigset_t {
++        __bits: [u32; 4],
++    }
++
++    pub struct sigaction {
++        pub sa_sigaction: crate::sighandler_t,
++        pub sa_mask: sigset_t,
++        pub sa_flags: c_int,
++    }
++
++    pub struct stack_t {
++        pub ss_sp: *mut c_void,
++        pub ss_size: size_t,
++        pub ss_flags: c_int,
++    }
++
++    pub struct siginfo_t {
++        pub si_signo: c_int,
++        pub si_code: c_int,
++        pub si_errno: c_int,
++        pub si_pid: crate::pid_t,
++        pub si_uid: crate::uid_t,
++        pub si_addr: *mut c_void,
++        pub si_status: c_int,
++        pub si_band: c_long,
++        pub si_value: crate::sigval,
++    }
++
++    pub struct fd_set {
++        pub fds_bits: [i32; 2],
++    }
++
++    pub struct passwd {
++        pub pw_name: *mut c_char,
++        pub pw_uid: crate::uid_t,
++        pub pw_gid: gid_t,
++        pub pw_dir: *mut c_char,
++        pub pw_shell: *mut c_char,
++        pub pw_passwd: *mut c_char,
++        pub pw_gecos: *mut c_char,
++    }
++
++    pub struct tm {
++        pub tm_sec: c_int,
++        pub tm_min: c_int,
++        pub tm_hour: c_int,
++        pub tm_mday: c_int,
++        pub tm_mon: c_int,
++        pub tm_year: c_int,
++        pub tm_wday: c_int,
++        pub tm_yday: c_int,
++        pub tm_isdst: c_int,
++        pub tm_gmtoff: c_long,
++        pub tm_zone: *const c_char,
++    }
++
++    pub struct flock {
++        pub l_type: c_short,
++        pub l_whence: c_short,
++        pub l_start: off_t,
++        pub l_len: off_t,
++        pub l_pid: crate::pid_t,
++    }
++
++    pub struct termios {
++        pub c_iflag: tcflag_t,
++        pub c_oflag: tcflag_t,
++        pub c_cflag: tcflag_t,
++        pub c_lflag: tcflag_t,
++        pub c_cc: [crate::cc_t; NCCS as usize],
++        __internal: [c_char; 64],
++    }
++
++    pub struct lconv {
++        pub decimal_point: *mut c_char,
++        pub thousands_sep: *mut c_char,
++        pub grouping: *mut c_char,
++        pub int_curr_symbol: *mut c_char,
++        pub currency_symbol: *mut c_char,
++        pub mon_decimal_point: *mut c_char,
++        pub mon_thousands_sep: *mut c_char,
++        pub mon_grouping: *mut c_char,
++        pub positive_sign: *mut c_char,
++        pub negative_sign: *mut c_char,
++        pub int_frac_digits: c_char,
++        pub frac_digits: c_char,
++        pub p_cs_precedes: c_char,
++        pub p_sep_by_space: c_char,
++        pub n_cs_precedes: c_char,
++        pub n_sep_by_space: c_char,
++        pub p_sign_posn: c_char,
++        pub n_sign_posn: c_char,
++        pub int_p_cs_precedes: c_char,
++        pub int_p_sep_by_space: c_char,
++        pub int_n_cs_precedes: c_char,
++        pub int_n_sep_by_space: c_char,
++        pub int_p_sign_posn: c_char,
++        pub int_n_sign_posn: c_char,
++    }
++
++    pub struct statvfs {
++        pub f_bsize: c_ulong,
++        pub f_frsize: c_ulong,
++        pub f_blocks: fsblkcnt_t,
++        pub f_bfree: fsblkcnt_t,
++        pub f_bavail: fsblkcnt_t,
++        pub f_files: fsfilcnt_t,
++        pub f_ffree: fsfilcnt_t,
++        pub f_favail: fsfilcnt_t,
++        pub f_fsid: c_ulong,
++        pub f_flag: c_ulong,
++        pub f_namemax: c_ulong,
++    }
++
++    pub struct sched_param {
++        pub sched_priority: c_int,
++    }
++
++    pub struct pthread_attr_t {
++        pub stackaddr: *mut c_void,
++        pub stacksize: size_t,
++        pub detachstate: c_int,
++        pub param: sched_param,
++        pub inheritsched: c_int,
++        pub contentionscope: c_int,
++    }
++
++    pub struct pthread_mutexattr_t {
++        pub pshared: c_int,
++        pub kind: c_int,
++    }
++
++    pub struct pthread_condattr_t {
++        pub pshared: c_int,
++        pub cond_clock: clockid_t,
++    }
++
++    pub struct pthread_rwlockattr_t {
++        pub pshared: c_int,
++    }
++
++    pub struct pthread_once_t {
++        pub done: c_int,
++        pub started: c_int,
++        pub lock: c_int,
++    }
++
++    // The pthread.library synchronisation objects embed exec.library
++    // structures (SignalSemaphore, MinList) whose size depends on the CPU
++    // and on the kernel's spinlock isolation. They are only ever handled
++    // through pointers, so they are modelled as opaque, 8-byte aligned
++    // blocks that are at least as large as any AROS build defines them
++    // (x86_64 SMP: mutex 248, cond 264, sem 552 bytes).
++    pub struct pthread_mutex_t {
++        __private: [u64; 32],
++    }
++
++    pub struct pthread_cond_t {
++        __private: [u64; 40],
++    }
++
++    pub struct pthread_rwlock_t {
++        __private: [u64; 32],
++    }
++
++    pub struct sem_t {
++        __private: [u64; 72],
++    }
++
++    // Networking is not provided by the C library on AROS (bsdsocket.library
++    // is reached through its library base); these definitions only satisfy
++    // the shared unix declarations.
++    pub struct sockaddr {
++        pub sa_len: u8,
++        pub sa_family: sa_family_t,
++        pub sa_data: [c_char; 14],
++    }
++
++    pub struct sockaddr_in {
++        pub sin_len: u8,
++        pub sin_family: sa_family_t,
++        pub sin_port: crate::in_port_t,
++        pub sin_addr: crate::in_addr,
++        pub sin_zero: [c_char; 8],
++    }
++
++    pub struct sockaddr_in6 {
++        pub sin6_len: u8,
++        pub sin6_family: sa_family_t,
++        pub sin6_port: crate::in_port_t,
++        pub sin6_flowinfo: u32,
++        pub sin6_addr: crate::in6_addr,
++        pub sin6_scope_id: u32,
++    }
++
++    pub struct sockaddr_un {
++        pub sun_len: u8,
++        pub sun_family: sa_family_t,
++        pub sun_path: [c_char; 104],
++    }
++
++    pub struct sockaddr_storage {
++        pub ss_len: u8,
++        pub ss_family: sa_family_t,
++        __ss_pad1: [u8; 6],
++        __ss_align: i64,
++        __ss_pad2: [u8; 112],
++    }
++
++    pub struct in_addr {
++        pub s_addr: crate::in_addr_t,
++    }
++
++    pub struct ip_mreq {
++        pub imr_multiaddr: in_addr,
++        pub imr_interface: in_addr,
++    }
++
++    pub struct addrinfo {
++        pub ai_flags: c_int,
++        pub ai_family: c_int,
++        pub ai_socktype: c_int,
++        pub ai_protocol: c_int,
++        pub ai_addrlen: socklen_t,
++        pub ai_canonname: *mut c_char,
++        pub ai_addr: *mut sockaddr,
++        pub ai_next: *mut addrinfo,
++    }
++
++    pub struct msghdr {
++        pub msg_name: *mut c_void,
++        pub msg_namelen: socklen_t,
++        pub msg_iov: *mut crate::iovec,
++        pub msg_iovlen: c_int,
++        pub msg_control: *mut c_void,
++        pub msg_controllen: socklen_t,
++        pub msg_flags: c_int,
++    }
++
++    pub struct cmsghdr {
++        pub cmsg_len: socklen_t,
++        pub cmsg_level: c_int,
++        pub cmsg_type: c_int,
++    }
++
++    pub struct Dl_info {
++        pub dli_fname: *const c_char,
++        pub dli_fbase: *mut c_void,
++        pub dli_sname: *const c_char,
++        pub dli_saddr: *mut c_void,
++    }
++
++    pub struct utsname {
++        pub sysname: [c_char; 65],
++        pub nodename: [c_char; 65],
++        pub release: [c_char; 65],
++        pub version: [c_char; 65],
++        pub machine: [c_char; 65],
++    }
++}
++
++pub const PTHREAD_MUTEX_INITIALIZER: pthread_mutex_t = pthread_mutex_t { __private: [0; 32] };
++pub const PTHREAD_COND_INITIALIZER: pthread_cond_t = pthread_cond_t { __private: [0; 40] };
++pub const PTHREAD_RWLOCK_INITIALIZER: pthread_rwlock_t = pthread_rwlock_t { __private: [0; 32] };
++pub const PTHREAD_ONCE_INIT: pthread_once_t = pthread_once_t { done: 0, started: -1, lock: 0 };
++
++pub const RTLD_LAZY: c_int = 0x1;
++pub const RTLD_NOW: c_int = 0x2;
++pub const RTLD_GLOBAL: c_int = 0x100;
++pub const RTLD_LOCAL: c_int = 0;
++pub const RTLD_DEFAULT: *mut c_void = 0 as *mut c_void;
++
++pub const AF_UNSPEC: c_int = 0;
++pub const AF_UNIX: c_int = 1;
++pub const AF_INET: c_int = 2;
++pub const AF_INET6: c_int = 28;
++pub const SOCK_STREAM: c_int = 1;
++pub const SOCK_DGRAM: c_int = 2;
++pub const SOCK_RAW: c_int = 3;
++pub const SOL_SOCKET: c_int = 0xffff;
++pub const MSG_PEEK: c_int = 0x2;
++pub const SHUT_RD: c_int = 0;
++pub const SHUT_WR: c_int = 1;
++pub const SHUT_RDWR: c_int = 2;
++
++pub const RLIMIT_NOFILE: c_int = 8;
++pub const RLIM_INFINITY: rlim_t = !0;
++
++pub const POLLIN: c_short = 0x1;
++pub const POLLPRI: c_short = 0x2;
++pub const POLLOUT: c_short = 0x4;
++pub const POLLERR: c_short = 0x8;
++pub const POLLHUP: c_short = 0x10;
++pub const POLLNVAL: c_short = 0x20;
++
++// The following values were generated from the SDK headers with the
++// x86_64-aros cross compiler (see tools/crosstools/rust/libcprobe in the
++// AROS tree); they are identical on every AROS CPU.
++// errno
++pub const E2BIG: c_int = 7;
++pub const EACCES: c_int = 13;
++pub const EADDRINUSE: c_int = 48;
++pub const EADDRNOTAVAIL: c_int = 49;
++pub const EAFNOSUPPORT: c_int = 47;
++pub const EAGAIN: c_int = 35;
++pub const EALREADY: c_int = 37;
++pub const EBADF: c_int = 9;
++pub const EBADMSG: c_int = 88;
++pub const EBUSY: c_int = 16;
++pub const ECANCELED: c_int = 87;
++pub const ECHILD: c_int = 10;
++pub const ECHO: c_int = 1;
++pub const ECHOE: c_int = 2;
++pub const ECHOK: c_int = 4;
++pub const ECHONL: c_int = 8;
++pub const ECONNABORTED: c_int = 53;
++pub const ECONNREFUSED: c_int = 61;
++pub const ECONNRESET: c_int = 54;
++pub const EDEADLK: c_int = 11;
++pub const EDESTADDRREQ: c_int = 39;
++pub const EDOM: c_int = 33;
++pub const EDQUOT: c_int = 69;
++pub const EEXIST: c_int = 17;
++pub const EFAULT: c_int = 14;
++pub const EFBIG: c_int = 27;
++pub const EFTYPE: c_int = 79;
++pub const EHOSTUNREACH: c_int = 65;
++pub const EIDRM: c_int = 82;
++pub const EILSEQ: c_int = 85;
++pub const EINPROGRESS: c_int = 36;
++pub const EINTR: c_int = 4;
++pub const EINVAL: c_int = 22;
++pub const EIO: c_int = 5;
++pub const EISCONN: c_int = 56;
++pub const EISDIR: c_int = 21;
++pub const ELOOP: c_int = 62;
++pub const EMFILE: c_int = 24;
++pub const EMLINK: c_int = 31;
++pub const EMSGSIZE: c_int = 40;
++pub const EMULTIHOP: c_int = 94;
++pub const ENAMETOOLONG: c_int = 63;
++pub const ENETDOWN: c_int = 50;
++pub const ENETRESET: c_int = 52;
++pub const ENETUNREACH: c_int = 51;
++pub const ENFILE: c_int = 23;
++pub const ENOBUFS: c_int = 55;
++pub const ENODATA: c_int = 89;
++pub const ENODEV: c_int = 19;
++pub const ENOENT: c_int = 2;
++pub const ENOEXEC: c_int = 8;
++pub const ENOLCK: c_int = 77;
++pub const ENOLINK: c_int = 95;
++pub const ENOMEM: c_int = 12;
++pub const ENOMSG: c_int = 83;
++pub const ENOPROTOOPT: c_int = 42;
++pub const ENOSPC: c_int = 28;
++pub const ENOSR: c_int = 90;
++pub const ENOSTR: c_int = 91;
++pub const ENOSYS: c_int = 78;
++pub const ENOTBLK: c_int = 15;
++pub const ENOTCONN: c_int = 57;
++pub const ENOTDIR: c_int = 20;
++pub const ENOTEMPTY: c_int = 66;
++pub const ENOTSOCK: c_int = 38;
++pub const ENOTSUP: c_int = 86;
++pub const ENOTTY: c_int = 25;
++pub const ENXIO: c_int = 6;
++pub const EOF: c_int = -1;
++pub const EOPNOTSUPP: c_int = 45;
++pub const EOVERFLOW: c_int = 84;
++pub const EPERM: c_int = 1;
++pub const EPIPE: c_int = 32;
++pub const EPROCLIM: c_int = 67;
++pub const EPROTO: c_int = 96;
++pub const EPROTONOSUPPORT: c_int = 43;
++pub const EPROTOTYPE: c_int = 41;
++pub const ERANGE: c_int = 34;
++pub const EROFS: c_int = 30;
++pub const ESPIPE: c_int = 29;
++pub const ESRCH: c_int = 3;
++pub const ESTALE: c_int = 70;
++pub const ETIME: c_int = 92;
++pub const ETIMEDOUT: c_int = 60;
++pub const ETXTBSY: c_int = 26;
++pub const EUSERS: c_int = 68;
++pub const EWOULDBLOCK: c_int = 35;
++pub const EXDEV: c_int = 18;
++
++// open
++pub const O_ACCMODE: c_int = 3;
++pub const O_APPEND: c_int = 1024;
++pub const O_CLOEXEC: c_int = 65536;
++pub const O_CREAT: c_int = 64;
++pub const O_DIRECTORY: c_int = 131072;
++pub const O_DSYNC: c_int = 16384;
++pub const O_EXCL: c_int = 128;
++pub const O_EXEC: c_int = 4;
++pub const O_EXLOCK: c_int = 256;
++pub const O_NOCTTY: c_int = 0;
++pub const O_NOFOLLOW: c_int = 262144;
++pub const O_NONBLOCK: c_int = 2048;
++pub const O_RDONLY: c_int = 1;
++pub const O_RDWR: c_int = 3;
++pub const O_RSYNC: c_int = 32768;
++pub const O_SHLOCK: c_int = 0;
++pub const O_SYNC: c_int = 4096;
++pub const O_TRUNC: c_int = 512;
++pub const O_WRONLY: c_int = 2;
++
++// mode
++pub const S_IFBLK: mode_t = 24576;
++pub const S_IFCHR: mode_t = 8192;
++pub const S_IFDIR: mode_t = 16384;
++pub const S_IFIFO: mode_t = 4096;
++pub const S_IFLNK: mode_t = 40960;
++pub const S_IFMT: mode_t = 61440;
++pub const S_IFREG: mode_t = 32768;
++pub const S_IFSOCK: mode_t = 49152;
++pub const S_IREAD: mode_t = 256;
++pub const S_IRGRP: mode_t = 32;
++pub const S_IROTH: mode_t = 4;
++pub const S_IRUSR: mode_t = 256;
++pub const S_IRWXG: mode_t = 56;
++pub const S_IRWXO: mode_t = 7;
++pub const S_IRWXU: mode_t = 448;
++pub const S_ISGID: mode_t = 1024;
++pub const S_ISUID: mode_t = 2048;
++pub const S_ISVTX: mode_t = 512;
++pub const S_IWGRP: mode_t = 16;
++pub const S_IWOTH: mode_t = 2;
++pub const S_IWRITE: mode_t = 128;
++pub const S_IWUSR: mode_t = 128;
++pub const S_IXGRP: mode_t = 8;
++pub const S_IXOTH: mode_t = 1;
++pub const S_IXUSR: mode_t = 64;
++
++// seek
++pub const SEEK_CUR: c_int = 1;
++pub const SEEK_END: c_int = 2;
++pub const SEEK_SET: c_int = 0;
++
++// fcntl
++pub const F_DUPFD: c_int = 0;
++pub const F_DUPFD_CLOEXEC: c_int = 1;
++pub const F_EXLCK: c_int = 4;
++pub const F_GETFD: c_int = 2;
++pub const F_GETFL: c_int = 4;
++pub const F_GETLK: c_int = 6;
++pub const F_GETOWN: c_int = 9;
++pub const F_GETSIG: c_int = 11;
++pub const F_LOCK: c_int = 0;
++pub const F_OK: c_int = 0;
++pub const F_RDLCK: c_int = 0;
++pub const F_SETFD: c_int = 3;
++pub const F_SETFL: c_int = 5;
++pub const F_SETLK: c_int = 7;
++pub const F_SETLKW: c_int = 8;
++pub const F_SETOWN: c_int = 10;
++pub const F_SETSIG: c_int = 12;
++pub const F_SHLCK: c_int = 8;
++pub const F_TEST: c_int = 1;
++pub const F_TLOCK: c_int = 2;
++pub const F_ULOCK: c_int = 3;
++pub const F_UNLCK: c_int = 2;
++pub const F_WRLCK: c_int = 1;
++
++// access
++pub const R_OK: c_int = 4;
++pub const W_OK: c_int = 2;
++pub const X_OK: c_int = 1;
++
++// at
++pub const AT_EACCESS: c_int = 1;
++pub const AT_FDCWD: c_int = -100;
++pub const AT_REMOVEDIR: c_int = 8;
++pub const AT_SYMLINK_FOLLOW: c_int = 4;
++pub const AT_SYMLINK_NOFOLLOW: c_int = 2;
++
++// signal
++pub const SIGABRT: c_int = 6;
++pub const SIGALRM: c_int = 14;
++pub const SIGBUS: c_int = 10;
++pub const SIGCHLD: c_int = 20;
++pub const SIGCONT: c_int = 19;
++pub const SIGFPE: c_int = 8;
++pub const SIGHUP: c_int = 1;
++pub const SIGILL: c_int = 4;
++pub const SIGINT: c_int = 2;
++pub const SIGKILL: c_int = 9;
++pub const SIGPIPE: c_int = 13;
++pub const SIGPROF: c_int = 26;
++pub const SIGQUIT: c_int = 3;
++pub const SIGSEGV: c_int = 11;
++pub const SIGSTKSZ: c_int = 49152;
++pub const SIGSTOP: c_int = 17;
++pub const SIGSYS: c_int = 12;
++pub const SIGTERM: c_int = 15;
++pub const SIGTRAP: c_int = 5;
++pub const SIGTSTP: c_int = 18;
++pub const SIGTTIN: c_int = 21;
++pub const SIGTTOU: c_int = 22;
++pub const SIGURG: c_int = 16;
++pub const SIGUSR1: c_int = 28;
++pub const SIGUSR2: c_int = 29;
++pub const SIGVTALRM: c_int = 25;
++pub const SIGXCPU: c_int = 23;
++pub const SIGXFSZ: c_int = 24;
++
++// sigflags
++pub const SA_NOCLDSTOP: c_int = 1;
++pub const SA_NOCLDWAIT: c_int = 32;
++pub const SA_NODEFER: c_int = 64;
++pub const SA_ONSTACK: c_int = 2;
++pub const SA_RESETHAND: c_int = 4;
++pub const SA_RESTART: c_int = 8;
++pub const SA_SIGINFO: c_int = 16;
++
++// sigmask
++pub const SIG_BLOCK: c_int = 1;
++pub const SIG_SETMASK: c_int = 34;
++pub const SIG_UNBLOCK: c_int = 2;
++
++// clock
++pub const CLOCK_MONOTONIC: clockid_t = 0;
++pub const CLOCK_PROCESS_CPUTIME_ID: clockid_t = 1;
++pub const CLOCK_REALTIME: clockid_t = 2;
++pub const CLOCK_THREAD_CPUTIME_ID: clockid_t = 3;
++
++// lock
++pub const LOCK_EX: c_int = 2;
++pub const LOCK_NB: c_int = 4;
++pub const LOCK_SH: c_int = 1;
++pub const LOCK_UN: c_int = 8;
++
++// exit
++pub const EXIT_FAILURE: c_int = 20;
++pub const EXIT_SUCCESS: c_int = 0;
++
++// limits
++pub const BUFSIZ: c_int = 1024;
++pub const FD_SETSIZE: c_int = 64;
++pub const FILENAME_MAX: c_int = 256;
++pub const IOV_MAX: c_int = 16;
++pub const L_tmpnam: c_int = 256;
++pub const MINSIGSTKSZ: c_int = 8192;
++pub const NAME_MAX: c_int = 255;
++pub const NCCS: c_int = 32;
++pub const NSIG: c_int = 65;
++pub const PATH_MAX: c_int = 1024;
++pub const PIPE_BUF: c_int = 512;
++pub const RAND_MAX: c_int = 2147483647;
++pub const TMP_MAX: c_int = 10240;
++pub const _POSIX_VDISABLE: c_int = 255;
++
++// pthread
++pub const PTHREAD_CANCEL_ASYNCHRONOUS: c_int = 0;
++pub const PTHREAD_CANCEL_DEFERRED: c_int = 1;
++pub const PTHREAD_CANCEL_DISABLE: c_int = 1;
++pub const PTHREAD_CANCEL_ENABLE: c_int = 0;
++pub const PTHREAD_CREATE_DETACHED: c_int = 1;
++pub const PTHREAD_CREATE_JOINABLE: c_int = 0;
++pub const PTHREAD_DESTRUCTOR_ITERATIONS: c_int = 4;
++pub const PTHREAD_EXPLICIT_SCHED: c_int = 1;
++pub const PTHREAD_INHERIT_SCHED: c_int = 0;
++pub const PTHREAD_KEYS_MAX: c_int = 64;
++pub const PTHREAD_MUTEX_DEFAULT: c_int = 0;
++pub const PTHREAD_MUTEX_ERRORCHECK: c_int = 2;
++pub const PTHREAD_MUTEX_NORMAL: c_int = 0;
++pub const PTHREAD_MUTEX_RECURSIVE: c_int = 1;
++pub const PTHREAD_PROCESS_PRIVATE: c_int = 0;
++pub const PTHREAD_PROCESS_SHARED: c_int = 1;
++pub const PTHREAD_SCOPE_PROCESS: c_int = 0;
++pub const PTHREAD_SCOPE_SYSTEM: c_int = 1;
++pub const PTHREAD_STACK_MIN: size_t = 40960;
++pub const PTHREAD_THREADS_MAX: c_int = 2019;
++
++// sched
++pub const SCHED_BATCH: c_int = 3;
++pub const SCHED_FIFO: c_int = 1;
++pub const SCHED_NORMAL: c_int = 0;
++pub const SCHED_OTHER: c_int = 0;
++pub const SCHED_RR: c_int = 2;
++
++// termios_act
++pub const TCSADRAIN: c_int = 1;
++pub const TCSAFLUSH: c_int = 2;
++pub const TCSANOW: c_int = 0;
++
++// termios_iflag
++pub const BRKINT: tcflag_t = 1;
++pub const ICRNL: tcflag_t = 2;
++pub const IGNBRK: tcflag_t = 4;
++pub const IGNCR: tcflag_t = 8;
++pub const IGNPAR: tcflag_t = 16;
++pub const INLCR: tcflag_t = 32;
++pub const INPCK: tcflag_t = 64;
++pub const ISTRIP: tcflag_t = 128;
++pub const IXANY: tcflag_t = 256;
++pub const IXOFF: tcflag_t = 512;
++pub const IXON: tcflag_t = 1024;
++pub const PARMRK: tcflag_t = 2048;
++
++// termios_oflag
++pub const OCRNL: tcflag_t = 4;
++pub const OFDEL: tcflag_t = 32;
++pub const OFILL: tcflag_t = 64;
++pub const ONLCR: tcflag_t = 2;
++pub const ONLRET: tcflag_t = 16;
++pub const ONOCR: tcflag_t = 8;
++pub const OPOST: tcflag_t = 1;
++
++// termios_cflag
++pub const CLOCAL: tcflag_t = 128;
++pub const CREAD: tcflag_t = 8;
++pub const CS5: tcflag_t = 0;
++pub const CS6: tcflag_t = 1;
++pub const CS7: tcflag_t = 2;
++pub const CS8: tcflag_t = 3;
++pub const CSIZE: tcflag_t = 3;
++pub const CSTOPB: tcflag_t = 4;
++pub const HUPCL: tcflag_t = 64;
++pub const PARENB: tcflag_t = 16;
++pub const PARODD: tcflag_t = 32;
++
++// termios_lflag
++pub const ICANON: tcflag_t = 16;
++pub const IEXTEN: tcflag_t = 64;
++pub const ISIG: tcflag_t = 128;
++pub const NOFLSH: tcflag_t = 256;
++pub const TOSTOP: tcflag_t = 512;
++
++// termios_cc
++pub const VEOF: usize = 0;
++pub const VEOL: usize = 1;
++pub const VERASE: usize = 2;
++pub const VINTR: usize = 3;
++pub const VKILL: usize = 4;
++pub const VMIN: usize = 5;
++pub const VQUIT: usize = 6;
++pub const VSTART: usize = 7;
++pub const VSTOP: usize = 8;
++pub const VSUSP: usize = 9;
++pub const VTIME: usize = 10;
++
++// baud
++pub const B0: speed_t = 0;
++pub const B110: speed_t = 3;
++pub const B1200: speed_t = 9;
++pub const B134: speed_t = 4;
++pub const B150: speed_t = 5;
++pub const B1800: speed_t = 10;
++pub const B19200: speed_t = 14;
++pub const B200: speed_t = 6;
++pub const B2400: speed_t = 11;
++pub const B300: speed_t = 7;
++pub const B38400: speed_t = 15;
++pub const B4800: speed_t = 12;
++pub const B50: speed_t = 1;
++pub const B600: speed_t = 8;
++pub const B75: speed_t = 2;
++pub const B9600: speed_t = 13;
++
++// fadvise
++pub const POSIX_FADV_DONTNEED: c_int = 1;
++pub const POSIX_FADV_NOREUSE: c_int = 2;
++pub const POSIX_FADV_NORMAL: c_int = 3;
++pub const POSIX_FADV_RANDOM: c_int = 4;
++pub const POSIX_FADV_SEQUENTIAL: c_int = 5;
++pub const POSIX_FADV_WILLNEED: c_int = 6;
++
++// stdio
++pub const _IOFBF: c_int = 0;
++pub const _IOLBF: c_int = 1;
++pub const _IONBF: c_int = 2;
++
++// pc
++pub const _PC_PATH_MAX: c_int = 11;
++pub const _PC_VDISABLE: c_int = 21;
++
++// sysconf names (enumerators in <unistd.h>)
++pub const _SC_ARG_MAX: c_int = 19;
++pub const _SC_CLK_TCK: c_int = 28;
++pub const _SC_GETPW_R_SIZE_MAX: c_int = 36;
++pub const _SC_OPEN_MAX: c_int = 52;
++pub const _SC_PAGESIZE: c_int = 54;
++pub const _SC_THREAD_STACK_MIN: c_int = 90;
++
++// ioctl requests
++pub const FIONBIO: c_ulong = 2148034174;
++pub const FIONREAD: c_ulong = 1074292351;
++pub const TIOCGWINSZ: c_ulong = 1074295912;
++
++f! {
++    pub unsafe fn FD_CLR(fd: c_int, set: *mut fd_set) -> () {
++        let bits = 32;
++        let fd = fd as usize;
++        (*set).fds_bits[fd / bits] &= !(1 << (fd % bits));
++    }
++
++    pub unsafe fn FD_ISSET(fd: c_int, set: *const fd_set) -> bool {
++        let bits = 32;
++        let fd = fd as usize;
++        (*set).fds_bits[fd / bits] & (1 << (fd % bits)) != 0
++    }
++
++    pub unsafe fn FD_SET(fd: c_int, set: *mut fd_set) -> () {
++        let bits = 32;
++        let fd = fd as usize;
++        (*set).fds_bits[fd / bits] |= 1 << (fd % bits);
++    }
++
++    pub unsafe fn FD_ZERO(set: *mut fd_set) -> () {
++        for slot in (*set).fds_bits.iter_mut() {
++            *slot = 0;
++        }
++    }
++}
++
++safe_f! {
++    pub const safe fn WIFEXITED(status: c_int) -> bool {
++        (status & 0x7f) == 0
++    }
++
++    pub const safe fn WEXITSTATUS(status: c_int) -> c_int {
++        (status >> 8) & 0xff
++    }
++
++    pub const safe fn WIFSIGNALED(status: c_int) -> bool {
++        ((status & 0x7f) + 1) as i8 >= 2
++    }
++
++    pub const safe fn WTERMSIG(status: c_int) -> c_int {
++        status & 0x7f
++    }
++
++    pub const safe fn WIFSTOPPED(status: c_int) -> bool {
++        (status & 0xff) == 0x7f
++    }
++
++    pub const safe fn WSTOPSIG(status: c_int) -> c_int {
++        (status >> 8) & 0xff
++    }
++
++    pub const safe fn WCOREDUMP(status: c_int) -> bool {
++        (status & 0x80) != 0
++    }
++}
++
++extern "C" {
++    #[link_name = "aros_rs_execle"]
++    pub fn execle(path: *const c_char, arg0: *const c_char, ...) -> c_int;
++    #[link_name = "aros_rs_pread64"]
++    pub fn pread64(fd: c_int, buf: *mut c_void, count: size_t, offset: off64_t) -> ssize_t;
++    #[link_name = "aros_rs_pwrite64"]
++    pub fn pwrite64(fd: c_int, buf: *const c_void, count: size_t, offset: off64_t) -> ssize_t;
++    // errno lives in stdc.library's per-task data.
++    pub fn __stdc_geterrnoptr() -> *mut c_int;
++    // The process environment (posixc.library's environ replacement).
++    pub fn __stdcio_get_environptr() -> *mut *mut *mut c_char;
++
++    pub fn getentropy(buf: *mut c_void, buflen: size_t) -> c_int;
++    pub fn arc4random() -> u32;
++    pub fn arc4random_buf(buf: *mut c_void, nbytes: size_t);
++    pub fn arc4random_uniform(upper_bound: u32) -> u32;
++
++    pub fn clock_gettime(clk_id: clockid_t, tp: *mut crate::timespec) -> c_int;
++    pub fn gettimeofday(tp: *mut crate::timeval, tz: *mut c_void) -> c_int;
++
++    pub fn strerror_r(errnum: c_int, buf: *mut c_char, buflen: size_t) -> c_int;
++    pub fn ioctl(fd: c_int, request: c_ulong, ...) -> c_int;
++    pub fn dirfd(dirp: *mut crate::DIR) -> c_int;
++    pub fn fdopendir(fd: c_int) -> *mut crate::DIR;
++    pub fn seekdir(dirp: *mut crate::DIR, loc: c_long);
++    pub fn telldir(dirp: *mut crate::DIR) -> c_long;
++    pub fn openat(dirfd: c_int, pathname: *const c_char, flags: c_int, ...) -> c_int;
++    pub fn getpwuid_r(
++        uid: crate::uid_t,
++        pwd: *mut passwd,
++        buf: *mut c_char,
++        buflen: size_t,
++        result: *mut *mut passwd,
++    ) -> c_int;
++    pub fn getpwnam_r(
++        name: *const c_char,
++        pwd: *mut passwd,
++        buf: *mut c_char,
++        buflen: size_t,
++        result: *mut *mut passwd,
++    ) -> c_int;
++    pub fn getrlimit(resource: c_int, rlim: *mut crate::rlimit) -> c_int;
++    pub fn setrlimit(resource: c_int, rlim: *const crate::rlimit) -> c_int;
++    pub fn uname(buf: *mut utsname) -> c_int;
++    pub fn vfork() -> crate::pid_t;
++    pub fn sigaction(signum: c_int, act: *const sigaction, oldact: *mut sigaction) -> c_int;
++    pub fn sigsuspend(mask: *const sigset_t) -> c_int;
++    pub fn pselect(
++        nfds: c_int,
++        readfds: *mut fd_set,
++        writefds: *mut fd_set,
++        errorfds: *mut fd_set,
++        timeout: *const crate::timespec,
++        sigmask: *const sigset_t,
++    ) -> c_int;
++    pub fn flock(fd: c_int, operation: c_int) -> c_int;
++    pub fn posix_fadvise(fd: c_int, offset: off_t, len: off_t, advise: c_int) -> c_int;
++    pub fn getloadavg(loadavg: *mut c_double, nelem: c_int) -> c_int;
++
++    pub fn pthread_create(
++        native: *mut pthread_t,
++        attr: *const pthread_attr_t,
++        f: extern "C" fn(*mut c_void) -> *mut c_void,
++        value: *mut c_void,
++    ) -> c_int;
++    pub fn pthread_attr_getstack(
++        attr: *const pthread_attr_t,
++        stackaddr: *mut *mut c_void,
++        stacksize: *mut size_t,
++    ) -> c_int;
++    pub fn pthread_attr_setstack(
++        attr: *mut pthread_attr_t,
++        stackaddr: *mut c_void,
++        stacksize: size_t,
++    ) -> c_int;
++    pub fn pthread_attr_getdetachstate(attr: *const pthread_attr_t, detachstate: *mut c_int) -> c_int;
++    pub fn pthread_getattr_np(native: pthread_t, attr: *mut pthread_attr_t) -> c_int;
++    pub fn pthread_setname_np(native: pthread_t, name: *const c_char) -> c_int;
++    pub fn pthread_getname_np(native: pthread_t, name: *mut c_char, len: size_t) -> c_int;
++    pub fn pthread_mutexattr_gettype(attr: *const pthread_mutexattr_t, kind: *mut c_int) -> c_int;
++    pub fn pthread_mutex_timedlock(lock: *mut pthread_mutex_t, abstime: *const crate::timespec) -> c_int;
++    pub fn pthread_cond_timedwait_relative_np(
++        cond: *mut pthread_cond_t,
++        lock: *mut pthread_mutex_t,
++        reltime: *const crate::timespec,
++    ) -> c_int;
++    pub fn pthread_once(once: *mut pthread_once_t, init: extern "C" fn()) -> c_int;
++    pub fn pthread_cancel(thread: pthread_t) -> c_int;
++    pub fn pthread_setcancelstate(state: c_int, oldstate: *mut c_int) -> c_int;
++    pub fn pthread_setcanceltype(ty: c_int, oldty: *mut c_int) -> c_int;
++    pub fn pthread_testcancel();
++    pub fn pthread_kill(thread: pthread_t, sig: c_int) -> c_int;
++    pub fn pthread_sigmask(how: c_int, set: *const sigset_t, oldset: *mut sigset_t) -> c_int;
++    pub fn pthread_spin_init(lock: *mut pthread_spinlock_t, pshared: c_int) -> c_int;
++    pub fn pthread_spin_destroy(lock: *mut pthread_spinlock_t) -> c_int;
++    pub fn pthread_spin_lock(lock: *mut pthread_spinlock_t) -> c_int;
++    pub fn pthread_spin_trylock(lock: *mut pthread_spinlock_t) -> c_int;
++    pub fn pthread_spin_unlock(lock: *mut pthread_spinlock_t) -> c_int;
++    pub fn sched_get_priority_max(policy: c_int) -> c_int;
++    pub fn sched_get_priority_min(policy: c_int) -> c_int;
++
++    pub fn sem_init(sem: *mut sem_t, pshared: c_int, value: c_uint) -> c_int;
++    pub fn sem_destroy(sem: *mut sem_t) -> c_int;
++    pub fn sem_getvalue(sem: *mut sem_t, sval: *mut c_int) -> c_int;
++    pub fn sem_timedwait(sem: *mut sem_t, abstime: *const crate::timespec) -> c_int;
++}
++
++// Socket option names as bsdsocket.library defines them (sys/socket.h);
++// std's networking code needs them to compile, sockets themselves are
++// not reachable through the C library - see the stubs below.
++pub const SO_DEBUG: c_int = 0x0001;
++pub const SO_REUSEADDR: c_int = 0x0004;
++pub const SO_KEEPALIVE: c_int = 0x0008;
++pub const SO_BROADCAST: c_int = 0x0020;
++pub const SO_LINGER: c_int = 0x0080;
++pub const SO_REUSEPORT: c_int = 0x0200;
++pub const SO_SNDBUF: c_int = 0x1001;
++pub const SO_RCVBUF: c_int = 0x1002;
++pub const SO_SNDTIMEO: c_int = 0x1005;
++pub const SO_RCVTIMEO: c_int = 0x1006;
++pub const SO_ERROR: c_int = 0x1007;
++pub const SO_TYPE: c_int = 0x1008;
++pub const SOMAXCONN: c_int = 128;
++pub const TCP_NODELAY: c_int = 1;
++pub const IP_TTL: c_int = 4;
++pub const IP_MULTICAST_TTL: c_int = 10;
++pub const IP_MULTICAST_LOOP: c_int = 11;
++pub const IP_ADD_MEMBERSHIP: c_int = 12;
++pub const IP_DROP_MEMBERSHIP: c_int = 13;
++pub const IPV6_MULTICAST_LOOP: c_int = 11;
++pub const IPV6_V6ONLY: c_int = 26;
++pub const IPV6_JOIN_GROUP: c_int = 12;
++pub const IPV6_LEAVE_GROUP: c_int = 13;
++pub const EAI_SYSTEM: c_int = 11;
++pub const FIOCLEX: c_ulong = 0x20006601;
++pub const FIONCLEX: c_ulong = 0x20006602;
++pub const _SC_HOST_NAME_MAX: c_int = 72;
++pub const _SC_NPROCESSORS_ONLN: c_int = 1000;
++pub const _SC_NPROCESSORS_CONF: c_int = 1001;
++
++pub struct linger {
++    pub l_onoff: c_int,
++    pub l_linger: c_int,
++}
++
++// Unsupported POSIX calls report ENOSYS. Native network and positioned-I/O
++// operations use their dedicated AROS adapters.
++// Pointer and interface-index results have their own zero failure sentinel.
++// One native provider serves std and application libc versions. Declarations
++// carry explicit adapter names; this crate exports no replacement C bodies.
++macro_rules! aros_unavailable {
++    ($($(#[$attr:meta])* $vis:vis fn $name:ident($($arg:ident: $ty:ty),* $(,)?) -> $ret:ty;)*) => {
++        unsafe extern "C" { $(
++            $(#[$attr])*
++            #[link_name = ::core::concat!("aros_rs_", ::core::stringify!($name))]
++            $vis fn $name($($arg: $ty),*) -> $ret;
++        )*}
++    };
++}
++
++aros_unavailable! {
++    pub fn poll(fds: *mut crate::pollfd, nfds: nfds_t, timeout: c_int) -> c_int;
++    pub fn fork() -> crate::pid_t;
++    pub fn mkfifo(path: *const c_char, mode: mode_t) -> c_int;
++    pub fn lchown(path: *const c_char, uid: crate::uid_t, gid: crate::gid_t) -> c_int;
++    pub fn chroot(name: *const c_char) -> c_int;
++    pub fn setpgid(pid: crate::pid_t, pgid: crate::pid_t) -> c_int;
++    pub fn setgroups(ngroups: c_int, ptr: *const crate::gid_t) -> c_int;
++    pub fn mlock(addr: *const c_void, len: size_t) -> c_int;
++    pub fn munlock(addr: *const c_void, len: size_t) -> c_int;
++    pub fn mlockall(flags: c_int) -> c_int;
++    pub fn munlockall() -> c_int;
++    pub fn munmap(addr: *mut c_void, len: size_t) -> c_int;
++    pub fn setreuid(ruid: crate::uid_t, euid: crate::uid_t) -> c_int;
++    pub fn setregid(rgid: crate::gid_t, egid: crate::gid_t) -> c_int;
++    pub fn alarm(seconds: c_uint) -> c_uint;
++    pub fn killpg(pgrp: crate::pid_t, sig: c_int) -> c_int;
++    pub fn fpathconf(filedes: c_int, name: c_int) -> c_long;
++    pub fn getrusage(resource: c_int, usage: *mut crate::rusage) -> c_int;
++    pub fn res_init() -> c_int;
++    pub fn gethostname(name: *mut c_char, len: size_t) -> c_int;
++    pub fn execvpe(file: *const c_char, argv: *const *const c_char, envp: *const *const c_char) -> c_int;
++    pub fn linkat(olddirfd: c_int, oldpath: *const c_char, newdirfd: c_int, newpath: *const c_char, flags: c_int) -> c_int;
++    pub fn renameat(olddirfd: c_int, oldpath: *const c_char, newdirfd: c_int, newpath: *const c_char) -> c_int;
++    pub fn symlinkat(target: *const c_char, newdirfd: c_int, linkpath: *const c_char) -> c_int;
++    pub fn fchownat(dirfd: c_int, pathname: *const c_char, owner: crate::uid_t, group: crate::gid_t, flags: c_int) -> c_int;
++    pub fn lockf(fd: c_int, cmd: c_int, len: off_t) -> c_int;
++    pub fn ttyname_r(fd: c_int, buf: *mut c_char, buflen: size_t) -> c_int;
++    pub fn tcsetpgrp(fd: c_int, pgrp: crate::pid_t) -> c_int;
++    pub fn if_nametoindex(ifname: *const c_char) -> c_uint;
++    pub fn mkdtemp(template: *mut c_char) -> *mut c_char;
++    pub fn mmap(addr: *mut c_void, len: size_t, prot: c_int, flags: c_int, fd: c_int, offset: off_t) -> *mut c_void;
++    pub fn hstrerror(errcode: c_int) -> *const c_char;
++
++}
++
++unsafe extern "C" {
++    #[link_name = "aros_rs_socket_wait_writable"]
++    pub fn aros_socket_wait_writable(fd: c_int, timeout_ms: c_int) -> c_int;
++    #[link_name = "aros_rs_bind"]
++    pub fn bind(socket: c_int, address: *const sockaddr, address_len: socklen_t) -> c_int;
++    #[link_name = "aros_rs_recvfrom"]
++    pub fn recvfrom(socket: c_int, buf: *mut c_void, len: size_t, flags: c_int, addr: *mut sockaddr, addrlen: *mut socklen_t) -> isize;
++    #[link_name = "aros_rs_sendmsg"]
++    pub fn sendmsg(fd: c_int, msg: *const msghdr, flags: c_int) -> isize;
++    #[link_name = "aros_rs_recvmsg"]
++    pub fn recvmsg(fd: c_int, msg: *mut msghdr, flags: c_int) -> isize;
++    #[link_name = "aros_rs_socket_clone"]
++    pub fn aros_socket_clone(fd: c_int) -> c_int;
++    #[link_name = "aros_rs_socket_nonblocking"]
++    pub fn aros_socket_nonblocking(fd: c_int, enabled: c_int) -> c_int;
++}
++
++pub const IPV6_ADD_MEMBERSHIP: c_int = IPV6_JOIN_GROUP;
++pub const IPV6_DROP_MEMBERSHIP: c_int = IPV6_LEAVE_GROUP;
++pub const WNOHANG: c_int = 1;
++pub const WUNTRACED: c_int = 2;
++
++safe_f! {
++    pub const safe fn WIFCONTINUED(status: c_int) -> bool {
++        status == 0xffff
++    }
++}
+--- a/library/vendor/libc-0.2.189/src/unix/mod.rs
++++ b/library/vendor/libc-0.2.189/src/unix/mod.rs
+@@ -14,8 +14,10 @@
+ pub type uintptr_t = usize;
+ pub type ssize_t = isize;
+ 
+-#[cfg(not(target_os = "nuttx"))]
++#[cfg(all(not(target_os = "nuttx"), not(target_os = "aros")))]
+ pub type pid_t = i32;
++#[cfg(target_os = "aros")]
++pub type pid_t = isize;
+ pub type in_addr_t = u32;
+ pub type in_port_t = u16;
+ pub type sighandler_t = size_t;
+@@ -572,6 +574,12 @@
+         #[link(name = "root")]
+         #[link(name = "network")]
+         extern "C" {}
++    } else if #[cfg(target_os = "aros")] {
++        // The AROS C driver links the C library (posixc/stdc) and the
++        // system link libraries itself; only pthread.library's link
++        // library has to be asked for.
++        #[link(name = "pthread")]
++        extern "C" {}
+     } else if #[cfg(target_env = "newlib")] {
+         #[link(name = "c")]
+         #[link(name = "m")]
+@@ -806,6 +814,7 @@
+     #[cfg_attr(target_os = "illumos", link_name = "__xnet_socket")]
+     #[cfg_attr(target_os = "solaris", link_name = "__xnet7_socket")]
+     #[cfg_attr(target_os = "espidf", link_name = "lwip_socket")]
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_socket")]
+     pub fn socket(domain: c_int, ty: c_int, protocol: c_int) -> c_int;
+     #[cfg(not(all(target_arch = "powerpc", target_vendor = "nintendo")))]
+     #[cfg_attr(
+@@ -817,12 +826,14 @@
+         link_name = "__xnet_connect"
+     )]
+     #[cfg_attr(target_os = "espidf", link_name = "lwip_connect")]
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_connect")]
+     pub fn connect(socket: c_int, address: *const sockaddr, len: socklen_t) -> c_int;
+     #[cfg_attr(
+         all(target_os = "macos", target_arch = "x86"),
+         link_name = "listen$UNIX2003"
+     )]
+     #[cfg_attr(target_os = "espidf", link_name = "lwip_listen")]
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_listen")]
+     pub fn listen(socket: c_int, backlog: c_int) -> c_int;
+     #[cfg(not(all(target_arch = "powerpc", target_vendor = "nintendo")))]
+     #[cfg_attr(
+@@ -831,6 +842,7 @@
+     )]
+     #[cfg_attr(target_os = "espidf", link_name = "lwip_accept")]
+     #[cfg_attr(target_os = "aix", link_name = "naccept")]
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_accept")]
+     pub fn accept(socket: c_int, address: *mut sockaddr, address_len: *mut socklen_t) -> c_int;
+     #[cfg(not(all(target_arch = "powerpc", target_vendor = "nintendo")))]
+     #[cfg_attr(
+@@ -839,6 +851,7 @@
+     )]
+     #[cfg_attr(target_os = "espidf", link_name = "lwip_getpeername")]
+     #[cfg_attr(target_os = "aix", link_name = "ngetpeername")]
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_getpeername")]
+     pub fn getpeername(socket: c_int, address: *mut sockaddr, address_len: *mut socklen_t)
+         -> c_int;
+     #[cfg(not(all(target_arch = "powerpc", target_vendor = "nintendo")))]
+@@ -848,10 +861,12 @@
+     )]
+     #[cfg_attr(target_os = "espidf", link_name = "lwip_getsockname")]
+     #[cfg_attr(target_os = "aix", link_name = "ngetsockname")]
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_getsockname")]
+     pub fn getsockname(socket: c_int, address: *mut sockaddr, address_len: *mut socklen_t)
+         -> c_int;
+     #[cfg_attr(target_os = "espidf", link_name = "lwip_setsockopt")]
+     #[cfg_attr(gnu_time_bits64, link_name = "__setsockopt64")]
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_setsockopt")]
+     pub fn setsockopt(
+         socket: c_int,
+         level: c_int,
+@@ -867,6 +882,7 @@
+         any(target_os = "illumos", target_os = "solaris"),
+         link_name = "__xnet_socketpair"
+     )]
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_socketpair")]
+     pub fn socketpair(
+         domain: c_int,
+         type_: c_int,
+@@ -883,6 +899,7 @@
+         link_name = "__xnet_sendto"
+     )]
+     #[cfg_attr(target_os = "espidf", link_name = "lwip_sendto")]
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_sendto")]
+     pub fn sendto(
+         socket: c_int,
+         buf: *const c_void,
+@@ -892,6 +909,7 @@
+         addrlen: socklen_t,
+     ) -> ssize_t;
+     #[cfg_attr(target_os = "espidf", link_name = "lwip_shutdown")]
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_shutdown")]
+     pub fn shutdown(socket: c_int, how: c_int) -> c_int;
+ 
+     #[cfg_attr(
+@@ -1021,6 +1039,7 @@
+     pub fn fchmodat(dirfd: c_int, pathname: *const c_char, mode: mode_t, flags: c_int) -> c_int;
+     pub fn fchown(fd: c_int, owner: crate::uid_t, group: crate::gid_t) -> c_int;
+     #[cfg(not(target_os = "l4re"))]
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_fchownat")]
+     pub fn fchownat(
+         dirfd: c_int,
+         pathname: *const c_char,
+@@ -1047,6 +1066,7 @@
+     #[cfg_attr(musl_redir_time64, link_name = "__fstatat_time64")]
+     pub fn fstatat(dirfd: c_int, pathname: *const c_char, buf: *mut stat, flags: c_int) -> c_int;
+     #[cfg(not(target_os = "l4re"))]
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_linkat")]
+     pub fn linkat(
+         olddirfd: c_int,
+         oldpath: *const c_char,
+@@ -1057,6 +1077,7 @@
+     #[cfg(not(target_os = "l4re"))]
+     pub fn mkdirat(dirfd: c_int, pathname: *const c_char, mode: mode_t) -> c_int;
+     #[cfg(not(target_os = "l4re"))]
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_renameat")]
+     pub fn renameat(
+         olddirfd: c_int,
+         oldpath: *const c_char,
+@@ -1064,11 +1085,13 @@
+         newpath: *const c_char,
+     ) -> c_int;
+     #[cfg(not(target_os = "l4re"))]
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_symlinkat")]
+     pub fn symlinkat(target: *const c_char, newdirfd: c_int, linkpath: *const c_char) -> c_int;
+     #[cfg(not(target_os = "l4re"))]
+     pub fn unlinkat(dirfd: c_int, pathname: *const c_char, flags: c_int) -> c_int;
+ 
+     pub fn access(path: *const c_char, amode: c_int) -> c_int;
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_alarm")]
+     pub fn alarm(seconds: c_uint) -> c_uint;
+     pub fn chdir(dir: *const c_char) -> c_int;
+     pub fn fchdir(dirfd: c_int) -> c_int;
+@@ -1077,6 +1100,7 @@
+         all(target_os = "macos", target_arch = "x86"),
+         link_name = "lchown$UNIX2003"
+     )]
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_lchown")]
+     pub fn lchown(path: *const c_char, uid: uid_t, gid: gid_t) -> c_int;
+     #[cfg_attr(
+         all(target_os = "macos", target_arch = "x86"),
+@@ -1091,6 +1115,7 @@
+     pub fn dup2(src: c_int, dst: c_int) -> c_int;
+ 
+     pub fn execl(path: *const c_char, arg0: *const c_char, ...) -> c_int;
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_execle")]
+     pub fn execle(path: *const c_char, arg0: *const c_char, ...) -> c_int;
+     pub fn execlp(file: *const c_char, arg0: *const c_char, ...) -> c_int;
+ 
+@@ -1103,7 +1128,9 @@
+     ) -> c_int;
+     pub fn execvp(c: *const c_char, argv: *const *const c_char) -> c_int;
+ 
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_fork")]
+     pub fn fork() -> pid_t;
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_fpathconf")]
+     pub fn fpathconf(filedes: c_int, name: c_int) -> c_long;
+     pub fn getcwd(buf: *mut c_char, size: size_t) -> *mut c_char;
+     pub fn getegid() -> gid_t;
+@@ -1140,10 +1167,13 @@
+     pub fn seteuid(uid: uid_t) -> c_int;
+     pub fn setegid(gid: gid_t) -> c_int;
+     pub fn setgid(gid: gid_t) -> c_int;
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_setpgid")]
+     pub fn setpgid(pid: pid_t, pgid: pid_t) -> c_int;
+     pub fn setsid() -> pid_t;
+     pub fn setuid(uid: uid_t) -> c_int;
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_setreuid")]
+     pub fn setreuid(ruid: uid_t, euid: uid_t) -> c_int;
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_setregid")]
+     pub fn setregid(rgid: gid_t, egid: gid_t) -> c_int;
+     #[cfg_attr(
+         all(target_os = "macos", target_arch = "x86"),
+@@ -1159,6 +1189,7 @@
+     #[cfg_attr(musl_redir_time64, link_name = "__nanosleep_time64")]
+     pub fn nanosleep(rqtp: *const timespec, rmtp: *mut timespec) -> c_int;
+     pub fn tcgetpgrp(fd: c_int) -> pid_t;
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_tcsetpgrp")]
+     pub fn tcsetpgrp(fd: c_int, pgrp: crate::pid_t) -> c_int;
+     pub fn ttyname(fd: c_int) -> *mut c_char;
+     #[cfg_attr(
+@@ -1169,6 +1200,7 @@
+         any(target_os = "illumos", target_os = "solaris"),
+         link_name = "__posix_ttyname_r"
+     )]
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_ttyname_r")]
+     pub fn ttyname_r(fd: c_int, buf: *mut c_char, buflen: size_t) -> c_int;
+     pub fn unlink(c: *const c_char) -> c_int;
+     #[cfg_attr(
+@@ -1191,12 +1223,14 @@
+         link_name = "pread$UNIX2003"
+     )]
+     #[cfg_attr(gnu_file_offset_bits64, link_name = "pread64")]
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_pread")]
+     pub fn pread(fd: c_int, buf: *mut c_void, count: size_t, offset: off_t) -> ssize_t;
+     #[cfg_attr(
+         all(target_os = "macos", target_arch = "x86"),
+         link_name = "pwrite$UNIX2003"
+     )]
+     #[cfg_attr(gnu_file_offset_bits64, link_name = "pwrite64")]
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_pwrite")]
+     pub fn pwrite(fd: c_int, buf: *const c_void, count: size_t, offset: off_t) -> ssize_t;
+     pub fn umask(mask: mode_t) -> mode_t;
+ 
+@@ -1213,11 +1247,16 @@
+         all(target_os = "macos", target_arch = "x86"),
+         link_name = "killpg$UNIX2003"
+     )]
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_killpg")]
+     pub fn killpg(pgrp: pid_t, sig: c_int) -> c_int;
+ 
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_mlock")]
+     pub fn mlock(addr: *const c_void, len: size_t) -> c_int;
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_munlock")]
+     pub fn munlock(addr: *const c_void, len: size_t) -> c_int;
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_mlockall")]
+     pub fn mlockall(flags: c_int) -> c_int;
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_munlockall")]
+     pub fn munlockall() -> c_int;
+ 
+     #[cfg_attr(
+@@ -1225,6 +1264,7 @@
+         link_name = "mmap$UNIX2003"
+     )]
+     #[cfg_attr(gnu_file_offset_bits64, link_name = "mmap64")]
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_mmap")]
+     pub fn mmap(
+         addr: *mut c_void,
+         len: size_t,
+@@ -1237,8 +1277,10 @@
+         all(target_os = "macos", target_arch = "x86"),
+         link_name = "munmap$UNIX2003"
+     )]
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_munmap")]
+     pub fn munmap(addr: *mut c_void, len: size_t) -> c_int;
+ 
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_if_nametoindex")]
+     pub fn if_nametoindex(ifname: *const c_char) -> c_uint;
+     pub fn if_indextoname(ifindex: c_uint, ifname: *mut c_char) -> *mut c_char;
+ 
+@@ -1289,6 +1331,7 @@
+     #[cfg_attr(target_os = "netbsd", link_name = "__getrusage50")]
+     #[cfg_attr(gnu_time_bits64, link_name = "__getrusage64")]
+     #[cfg_attr(musl_redir_time64, link_name = "__getrusage_time64")]
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_getrusage")]
+     pub fn getrusage(resource: c_int, usage: *mut rusage) -> c_int;
+ 
+     #[cfg_attr(
+@@ -1429,6 +1472,7 @@
+     )]
+     #[cfg_attr(target_os = "espidf", link_name = "lwip_getsockopt")]
+     #[cfg_attr(gnu_time_bits64, link_name = "__getsockopt64")]
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_getsockopt")]
+     pub fn getsockopt(
+         sockfd: c_int,
+         level: c_int,
+@@ -1454,6 +1498,7 @@
+         link_name = "__xnet_getaddrinfo"
+     )]
+     #[cfg_attr(target_os = "espidf", link_name = "lwip_getaddrinfo")]
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_getaddrinfo")]
+     pub fn getaddrinfo(
+         node: *const c_char,
+         service: *const c_char,
+@@ -1462,8 +1507,11 @@
+     ) -> c_int;
+     #[cfg(not(all(target_arch = "powerpc", target_vendor = "nintendo")))]
+     #[cfg_attr(target_os = "espidf", link_name = "lwip_freeaddrinfo")]
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_freeaddrinfo")]
+     pub fn freeaddrinfo(res: *mut addrinfo);
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_hstrerror")]
+     pub fn hstrerror(errcode: c_int) -> *const c_char;
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_gai_strerror")]
+     pub fn gai_strerror(errcode: c_int) -> *const c_char;
+     #[cfg_attr(
+         any(
+@@ -1490,6 +1538,7 @@
+     )]
+     #[cfg_attr(target_os = "aix", link_name = "_res_init")]
+     #[cfg(not(target_os = "l4re"))]
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_res_init")]
+     pub fn res_init() -> c_int;
+ 
+     #[cfg_attr(target_os = "netbsd", link_name = "__gmtime_r50")]
+@@ -1540,6 +1589,7 @@
+     )]
+     pub fn mknod(pathname: *const c_char, mode: mode_t, dev: crate::dev_t) -> c_int;
+     #[cfg(not(target_os = "espidf"))]
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_gethostname")]
+     pub fn gethostname(name: *mut c_char, len: size_t) -> c_int;
+     pub fn endservent();
+     pub fn getservbyname(name: *const c_char, proto: *const c_char) -> *mut servent;
+@@ -1548,6 +1598,7 @@
+     pub fn setservent(stayopen: c_int);
+     pub fn getprotobyname(name: *const c_char) -> *mut protoent;
+     pub fn getprotobynumber(proto: c_int) -> *mut protoent;
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_chroot")]
+     pub fn chroot(name: *const c_char) -> c_int;
+     #[cfg(target_os = "cygwin")]
+     pub fn usleep(secs: useconds_t) -> c_int;
+@@ -1562,12 +1613,14 @@
+         link_name = "send$UNIX2003"
+     )]
+     #[cfg_attr(target_os = "espidf", link_name = "lwip_send")]
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_send")]
+     pub fn send(socket: c_int, buf: *const c_void, len: size_t, flags: c_int) -> ssize_t;
+     #[cfg_attr(
+         all(target_os = "macos", target_arch = "x86"),
+         link_name = "recv$UNIX2003"
+     )]
+     #[cfg_attr(target_os = "espidf", link_name = "lwip_recv")]
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_recv")]
+     pub fn recv(socket: c_int, buf: *mut c_void, len: size_t, flags: c_int) -> ssize_t;
+     #[cfg_attr(
+         all(target_os = "macos", target_arch = "x86"),
+@@ -1579,6 +1632,7 @@
+         all(target_os = "macos", target_arch = "x86"),
+         link_name = "poll$UNIX2003"
+     )]
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_poll")]
+     pub fn poll(fds: *mut pollfd, nfds: nfds_t, timeout: c_int) -> c_int;
+     #[cfg_attr(
+         all(target_os = "macos", target_arch = "x86_64"),
+@@ -1634,6 +1688,7 @@
+     #[cfg_attr(target_os = "solaris", link_name = "__sysconf_xpg7")]
+     pub fn sysconf(name: c_int) -> c_long;
+ 
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_mkfifo")]
+     pub fn mkfifo(path: *const c_char, mode: mode_t) -> c_int;
+ 
+     #[cfg_attr(gnu_file_offset_bits64, link_name = "fseeko64")]
+@@ -2093,6 +2148,7 @@
+     pub fn tcsendbreak(fd: c_int, duration: c_int) -> c_int;
+     #[cfg_attr(gnu_file_offset_bits64, link_name = "mkstemp64")]
+     pub fn mkstemp(template: *mut c_char) -> c_int;
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_mkdtemp")]
+     pub fn mkdtemp(template: *mut c_char) -> *mut c_char;
+ 
+     pub fn tmpnam(ptr: *mut c_char) -> *mut c_char;
+@@ -2122,6 +2178,7 @@
+     pub fn getline(lineptr: *mut *mut c_char, n: *mut size_t, stream: *mut FILE) -> ssize_t;
+ 
+     #[cfg_attr(gnu_file_offset_bits64, link_name = "lockf64")]
++    #[cfg_attr(target_os = "aros", link_name = "aros_rs_lockf")]
+     pub fn lockf(fd: c_int, cmd: c_int, len: off_t) -> c_int;
+ 
+ }
+@@ -2496,6 +2553,9 @@
+     } else if #[cfg(target_os = "haiku")] {
+         mod haiku;
+         pub use self::haiku::*;
++    } else if #[cfg(target_os = "aros")] {
++        mod aros;
++        pub use self::aros::*;
+     } else if #[cfg(target_os = "redox")] {
+         mod redox;
+         pub use self::redox::*;
+diff --git a/library/std/src/path/aros.rs b/library/std/src/path/aros.rs
+--- /dev/null
++++ b/library/std/src/path/aros.rs
+@@ -0,0 +1,75 @@
++// SPDX-License-Identifier: MIT
++// Copyright (c) 2026 John Knipper
++// Shared Path integration for the native DOS grammar only.
++use super::*;
++use crate::sys::path::lex::{Kind, Token};
++
++impl<'a> Components<'a> {
++    #[must_use]
++    #[stable(feature = "rust1", since = "1.0.0")]
++    pub fn as_path(&self) -> &'a Path {
++        // The lexer only splits at ASCII ':' and '/' byte boundaries.
++        unsafe { Path::from_u8_slice(self.inner.remaining()) }
++    }
++    pub(super) fn has_root(&self) -> bool { self.inner.has_root() }
++    fn component(&self, token: Token) -> Component<'a> {
++        let raw = unsafe { OsStr::from_encoded_bytes_unchecked(self.inner.slice(token)) };
++        match token.kind {
++            Kind::Prefix => Component::Prefix(PrefixComponent { raw, parsed: self.prefix.unwrap() }),
++            Kind::Root => Component::RootDir,
++            Kind::Parent => Component::ParentDir,
++            Kind::Normal => Component::Normal(raw),
++        }
++    }
++}
++#[stable(feature = "rust1", since = "1.0.0")]
++impl<'a> Iterator for Components<'a> {
++    type Item = Component<'a>;
++    fn next(&mut self) -> Option<Component<'a>> {
++        self.inner.next().map(|token| self.component(token))
++    }
++}
++#[stable(feature = "rust1", since = "1.0.0")]
++impl<'a> DoubleEndedIterator for Components<'a> {
++    fn next_back(&mut self) -> Option<Component<'a>> {
++        self.inner.next_back().map(|token| self.component(token))
++    }
++}
++#[stable(feature = "rust1", since = "1.0.0")]
++impl<'a> PartialEq for Components<'a> {
++    fn eq(&self, other: &Self) -> bool { Iterator::eq(self.clone(), other.clone()) }
++}
++pub(super) fn compare_components(left: Components<'_>, right: Components<'_>) -> cmp::Ordering {
++    Iterator::cmp(left, right)
++}
++impl Path {
++    #[unstable(feature = "path_trailing_sep", issue = "142503")]
++    pub fn has_trailing_sep(&self) -> bool {
++        self.as_u8_slice().last().is_some_and(|&b| b == b'/' || b == b':')
++    }
++    #[unstable(feature = "path_trailing_sep", issue = "142503")]
++    pub fn trim_trailing_sep(&self) -> &Path {
++        // Removing a slash parent would change DOS resolution. Only discard
++        // the single delimiter after a normal leaf, as components also does.
++        self.components().as_path()
++    }
++
++    #[stable(feature = "rust1", since = "1.0.0")]
++    pub fn components(&self) -> Components<'_> {
++        Components {
++            inner: crate::sys::path::lex::Lexer::new(self.as_u8_slice()),
++            prefix: parse_prefix(self.as_os_str()),
++        }
++    }
++}
++impl PathBuf {
++    pub(super) fn _push(&mut self, path: &Path) { crate::sys::path::push(&mut self.inner, path.as_os_str()); }
++}
++#[stable(feature = "rust1", since = "1.0.0")]
++impl Hash for Path {
++    fn hash<H: Hasher>(&self, state: &mut H) {
++        // Hash exactly the same DOS components used by Eq and Ord, including
++        // parent slashes and literal dots. Never use Unix's separator fast path.
++        for component in self.components() { component.hash(state); }
++    }
++}
+diff --git a/library/std/src/path.rs b/library/std/src/path.rs
+--- a/library/std/src/path.rs
++++ b/library/std/src/path.rs
+@@ -21,6 +21,13 @@
+ //!
+ //! ## Path normalization
+ //!
++//! Native AROS uses DOS path grammar: a volume/assign ends in `:`, a leading
++//! or additional `/` denotes a parent, and `.` and `..` are literal names.
++//! Iteration, comparison and hashing preserve these meaningful components.
++//! One trailing delimiter after a normal name is ignored; additional slashes
++//! remain parents. `join` and `push` follow DOS AddPart separator rules.
++//!
++//! The normalization rules below describe Unix and Windows paths.
+ //! Several methods in this module perform basic path normalization by disregarding
+ //! repeated separators, non-leading `.` components, and trailing separators. These include:
+ //! - Methods for iteration, such as [`Path::components`] and [`Path::iter`]
+@@ -149,6 +156,13 @@
+ #[derive(Copy, Clone, Debug, Hash, PartialOrd, Ord, PartialEq, Eq)]
+ #[stable(feature = "rust1", since = "1.0.0")]
+ pub enum Prefix<'a> {
++    /// A native AROS volume, device, or assign name, excluding its final colon.
++    /// PrefixComponent::as_os_str() includes the colon; the following RootDir
++    /// is implicit and also spells `:`. Names retain their original OsStr bytes.
++    #[cfg(target_os = "aros")]
++    #[stable(feature = "aros_native_paths", since = "1.99.0")]
++    ArosVolume(#[stable(feature = "aros_native_paths", since = "1.99.0")] &'a OsStr),
++
+     /// Verbatim prefix, e.g., `\\?\cat_pics`.
+     ///
+     /// Verbatim prefixes consist of `\\?\` immediately followed by the given
+@@ -212,6 +226,8 @@
+             UNC(x, y) => 2 + os_str_len(x) + if os_str_len(y) > 0 { 1 + os_str_len(y) } else { 0 },
+             DeviceNS(x) => 4 + os_str_len(x),
+             Disk(_) => 2,
++            #[cfg(target_os = "aros")]
++            ArosVolume(name) => os_str_len(name) + 1,
+         }
+     }
+ 
+@@ -284,6 +300,8 @@
+ pub const SEPARATORS_STR: &[&str] = crate::sys::path::SEPARATORS_STR;
+ 
+ /// The primary separator of path components for the current platform, represented as a [`char`];
++/// on native AROS, `/` separates names and also denotes a parent at a component
++/// boundary; `:` terminates a volume/assign root and is not a name separator.
+ /// for example, this is `'/'` on Unix and `'\\'` on Windows.
+ #[stable(feature = "rust1", since = "1.0.0")]
+ #[cfg_attr(not(test), rustc_diagnostic_item = "path_main_separator")]
+@@ -502,6 +520,10 @@
+ 
+ /// A single component of a path.
+ ///
++/// On native AROS, a volume prefix is followed by an implicit `RootDir`
++/// spelling `:`, and `ParentDir` spells `/`. Dot names are ordinary names;
++/// repeated slashes carry parent traversal rather than being normalized away.
++///
+ /// A `Component` roughly corresponds to a substring between path separators
+ /// (`/` or `\`).
+ ///
+@@ -573,9 +595,15 @@
+     pub fn as_os_str(self) -> &'a OsStr {
+         match self {
+             Component::Prefix(p) => p.as_os_str(),
++            #[cfg(not(target_os = "aros"))]
+             Component::RootDir => OsStr::new(MAIN_SEPARATOR_STR),
++            #[cfg(target_os = "aros")]
++            Component::RootDir => OsStr::new(":"),
+             Component::CurDir => OsStr::new("."),
++            #[cfg(not(target_os = "aros"))]
+             Component::ParentDir => OsStr::new(".."),
++            #[cfg(target_os = "aros")]
++            Component::ParentDir => OsStr::new("/"),
+             Component::Normal(path) => path,
+         }
+     }
+@@ -598,6 +626,12 @@
+ }
+ 
+ /// An iterator over the [`Component`]s of a [`Path`].
++///
++/// Native AROS preserves DOS parent slashes and literal dot names. One trailing
++/// delimiter after a normal name is ignored; additional slashes are parents.
++/// An AROS volume prefix contains its implicit root colon. As with Windows UNC
++/// implicit roots, `as_path` may retain that colon after its RootDir was consumed
++/// from the back while the Prefix component remains unconsumed.
+ ///
+ /// This `struct` is created by the [`components`] method on [`Path`].
+ /// See its documentation for more.
+@@ -618,6 +652,7 @@
+ #[derive(Clone)]
+ #[must_use = "iterators are lazy and do nothing unless consumed"]
+ #[stable(feature = "rust1", since = "1.0.0")]
++#[cfg(not(target_os = "aros"))]
+ pub struct Components<'a> {
+     // The path left to parse components from
+     path: &'a [u8],
+@@ -636,6 +671,22 @@
+     back: State,
+ }
+ 
++// DOS grammar is intentionally separate from the Unix/Windows state machine.
++#[cfg(target_os = "aros")]
++#[derive(Clone)]
++#[must_use = "iterators are lazy and do nothing unless consumed"]
++#[stable(feature = "rust1", since = "1.0.0")]
++pub struct Components<'a> {
++    inner: crate::sys::path::lex::Lexer<'a>,
++    prefix: Option<Prefix<'a>>,
++}
++
++#[cfg(target_os = "aros")]
++#[path = "path/aros.rs"]
++mod aros;
++#[cfg(target_os = "aros")]
++use self::aros::compare_components;
++
+ /// An iterator over the [`Component`]s of a [`Path`], as [`OsStr`] slices.
+ ///
+ /// This `struct` is created by the [`iter`] method on [`Path`].
+@@ -664,6 +715,7 @@
+     }
+ }
+ 
++#[cfg(not(target_os = "aros"))]
+ impl<'a> Components<'a> {
+     // how long is the prefix, if any?
+     #[inline]
+@@ -917,6 +969,7 @@
+ impl FusedIterator for Iter<'_> {}
+ 
+ #[stable(feature = "rust1", since = "1.0.0")]
++#[cfg(not(target_os = "aros"))]
+ impl<'a> Iterator for Components<'a> {
+     type Item = Component<'a>;
+ 
+@@ -972,6 +1025,7 @@
+ }
+ 
+ #[stable(feature = "rust1", since = "1.0.0")]
++#[cfg(not(target_os = "aros"))]
+ impl<'a> DoubleEndedIterator for Components<'a> {
+     fn next_back(&mut self) -> Option<Component<'a>> {
+         while !self.finished() {
+@@ -1023,6 +1077,7 @@
+ impl FusedIterator for Components<'_> {}
+ 
+ #[stable(feature = "rust1", since = "1.0.0")]
++#[cfg(not(target_os = "aros"))]
+ impl<'a> PartialEq for Components<'a> {
+     #[inline]
+     fn eq(&self, other: &Components<'a>) -> bool {
+@@ -1068,6 +1123,7 @@
+     }
+ }
+ 
++#[cfg(not(target_os = "aros"))]
+ fn compare_components(mut left: Components<'_>, mut right: Components<'_>) -> cmp::Ordering {
+     // Fast path for long shared prefixes
+     //
+@@ -1338,6 +1394,7 @@
+         self._push(path.as_ref())
+     }
+ 
++    #[cfg(not(target_os = "aros"))]
+     fn _push(&mut self, path: &Path) {
+         // in general, a separator is needed if the rightmost byte is not a separator
+         let buf = self.inner.as_encoded_bytes();
+@@ -2580,6 +2637,10 @@
+ 
+     /// Returns `true` if the `Path` has a root.
+     ///
++    /// Native AROS paths have a root when they have a volume/assign prefix or
++    /// start with `:` (current-volume root). Leading `/` denotes a relative
++    /// parent, not a root.
++    ///
+     /// * On Unix, a path has a root if it begins with `/`.
+     ///
+     /// * On Windows, a path has a root if it:
+@@ -2982,6 +3043,7 @@
+     #[unstable(feature = "path_trailing_sep", issue = "142503")]
+     #[must_use]
+     #[inline]
++    #[cfg(not(target_os = "aros"))]
+     pub fn has_trailing_sep(&self) -> bool {
+         self.as_os_str().as_encoded_bytes().last().copied().is_some_and(is_sep_byte)
+     }
+@@ -3033,6 +3095,7 @@
+     #[unstable(feature = "path_trailing_sep", issue = "142503")]
+     #[must_use]
+     #[inline]
++    #[cfg(not(target_os = "aros"))]
+     pub fn trim_trailing_sep(&self) -> &Path {
+         if self.has_trailing_sep() && (!self.has_root() || self.parent().is_some()) {
+             let mut bytes = self.inner.as_encoded_bytes();
+@@ -3241,6 +3304,7 @@
+     ///
+     /// [`CurDir`]: Component::CurDir
+     #[stable(feature = "rust1", since = "1.0.0")]
++    #[cfg(not(target_os = "aros"))]
+     pub fn components(&self) -> Components<'_> {
+         let prefix = parse_prefix(self.as_os_str());
+         Components {
+@@ -3412,20 +3476,24 @@
+         absolute(self)
+     }
+ 
+-    /// Normalize a path, including `..` without traversing the filesystem.
+-    ///
+-    /// Returns an error if normalization would leave leading `..` components.
++    /// Normalize a path, including parent components, without traversing the filesystem.
++    ///
++    /// Returns an error if normalization would leave leading parent components.
++    /// On Unix and Windows, parent components are spelled `..`. On native AROS,
++    /// parents are slash components: `a/b//c` normalizes to `a/c`, while `.` and
++    /// `..` remain literal names and are never interpreted as traversal.
+     ///
+     /// <div class="warning">
+     ///
+-    /// This function always resolves `..` to the "lexical" parent.
+-    /// That is "a/b/../c" will always resolve to `a/c` which can change the meaning of the path.
+-    /// In particular, `a/c` and `a/b/../c` are distinct on many systems because `b` may be a symbolic link, so its parent isn't `a`.
++    /// This function resolves parent components to the "lexical" parent.
++    /// On Unix and Windows, `a/b/../c` resolves to `a/c`; native AROS uses
++    /// `a/b//c` for that parent traversal. This can change the path's meaning:
++    /// if `b` is a symbolic link, its actual parent need not be `a`.
+     ///
+     /// </div>
+     ///
+-    /// [`path::absolute`](absolute) is an alternative that preserves `..`.
+-    /// Or [`Path::canonicalize`] can be used to resolve any `..` by querying the filesystem.
++    /// [`path::absolute`](absolute) is an alternative that preserves parent components.
++    /// Or [`Path::canonicalize`] can resolve them by querying the filesystem.
+     #[unstable(feature = "normalize_lexically", issue = "134694")]
+     pub fn normalize_lexically(&self) -> Result<PathBuf, NormalizeError> {
+         let mut lexical = PathBuf::new();
+@@ -3792,6 +3860,7 @@
+ }
+ 
+ #[stable(feature = "rust1", since = "1.0.0")]
++#[cfg(not(target_os = "aros"))]
+ impl Hash for Path {
+     fn hash<H: Hasher>(&self, h: &mut H) {
+         let bytes = self.as_u8_slice();
+diff --git a/library/std/src/sys/path/aros/lex.rs b/library/std/src/sys/path/aros/lex.rs
+--- /dev/null
++++ b/library/std/src/sys/path/aros/lex.rs
+@@ -0,0 +1,147 @@
++// SPDX-License-Identifier: MIT
++// Copyright (c) 2026 John Knipper
++// Byte grammar shared by the AROS std backend and standalone host regression tests.
++// Only ASCII delimiters are examined; arbitrary OsStr bytes are retained.
++
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub(crate) enum Kind { Prefix, Root, Parent, Normal }
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub(crate) struct Token { pub kind: Kind, pub start: usize, pub end: usize }
++
++pub(crate) fn volume_end(bytes: &[u8]) -> Option<usize> {
++    for (i, &byte) in bytes.iter().enumerate() {
++        match byte {
++            b':' => return if i == 0 { None } else { Some(i + 1) },
++            b'/' => return None,
++            _ => {}
++        }
++    }
++    None
++}
++
++/// No allocation, no filesystem lookup, and no POSIX dot/slash normalization.
++/// A volume prefix owns its colon; the Root token is an implicit overlapping
++/// view of that colon, as Windows UNC prefixes also have an implicit root.
++#[derive(Clone, Debug)]
++pub(crate) struct Lexer<'a> {
++    bytes: &'a [u8],
++    front: usize,
++    back: usize,
++    prefix_end: usize,
++    prefix_pending: bool,
++    root_pending: bool,
++}
++impl<'a> Lexer<'a> {
++    pub(crate) fn new(bytes: &'a [u8]) -> Self {
++        let prefix_end = volume_end(bytes).unwrap_or(0);
++        Self { bytes, front: 0, back: bytes.len(), prefix_end,
++            prefix_pending: prefix_end != 0,
++            root_pending: prefix_end != 0 || bytes.first() == Some(&b':') }
++    }
++    pub(crate) fn has_root(&self) -> bool {
++        self.prefix_end != 0 || self.bytes.first() == Some(&b':')
++    }
++    fn body_start(&self) -> usize {
++        if self.prefix_pending || self.root_pending {
++            if self.prefix_end != 0 { self.prefix_end } else { 1 }
++        } else { self.front }
++    }
++    pub(crate) fn slice(&self, token: Token) -> &'a [u8] {
++        &self.bytes[token.start..token.end]
++    }
++    pub(crate) fn remaining(&self) -> &'a [u8] {
++        let mut end = self.back;
++        let start = self.body_start();
++        // One slash after a name is a delimiter, not an extra parent token.
++        if end >= start + 2 && self.bytes[end - 1] == b'/'
++            && self.bytes[end - 2] != b'/' {
++            end -= 1;
++        }
++        // A prefix-only iterator still exposes its complete raw spelling,
++        // including the implicit root colon (the same limitation as UNC roots).
++        if self.prefix_pending && !self.root_pending && end < self.prefix_end {
++            end = self.prefix_end;
++        }
++        &self.bytes[self.front.min(end)..end]
++    }
++}
++impl Iterator for Lexer<'_> {
++    type Item = Token;
++    fn next(&mut self) -> Option<Token> {
++        if self.prefix_pending {
++            self.prefix_pending = false;
++            let token = Token { kind: Kind::Prefix, start: 0, end: self.prefix_end };
++            self.front = if self.root_pending { self.prefix_end - 1 } else { self.back };
++            return Some(token);
++        }
++        if self.root_pending {
++            self.root_pending = false;
++            let start = self.front;
++            self.front += 1;
++            return Some(Token { kind: Kind::Root, start, end: start + 1 });
++        }
++        if self.front >= self.back { return None; }
++        let start = self.front;
++        if self.bytes[start] == b'/' {
++            self.front += 1;
++            return Some(Token { kind: Kind::Parent, start, end: self.front });
++        }
++        let end = self.bytes[start..self.back].iter().position(|&b| b == b'/')
++            .map_or(self.back, |n| start + n);
++        self.front = if end < self.back { end + 1 } else { end };
++        Some(Token { kind: Kind::Normal, start, end })
++    }
++}
++impl DoubleEndedIterator for Lexer<'_> {
++    fn next_back(&mut self) -> Option<Token> {
++        let body = self.body_start();
++        if self.back > body {
++            if self.bytes[self.back - 1] == b'/' {
++                // Only inspect the preceding byte: walking the complete run
++                // for each parent would make reverse iteration quadratic.
++                if self.back == body + 1 || self.bytes[self.back - 2] == b'/' {
++                    self.back -= 1;
++                    return Some(Token { kind: Kind::Parent, start: self.back, end: self.back + 1 });
++                }
++                // The only trailing slash is the delimiter after a normal name.
++                self.back -= 1;
++            }
++            let end = self.back;
++            let start = self.bytes[body..end].iter().rposition(|&b| b == b'/')
++                .map_or(body, |n| body + n + 1);
++            self.back = start;
++            // Remove a separating slash after an earlier normal name, but never
++            // a slash that denotes a parent (including a leading slash).
++            if start >= body + 2 && self.bytes[start - 1] == b'/'
++                && self.bytes[start - 2] != b'/' {
++                self.back -= 1;
++            }
++            return Some(Token { kind: Kind::Normal, start, end });
++        }
++        if self.root_pending {
++            self.root_pending = false;
++            let start = if self.prefix_end != 0 { self.prefix_end - 1 } else { 0 };
++            self.back = start;
++            return Some(Token { kind: Kind::Root, start, end: start + 1 });
++        }
++        if self.prefix_pending {
++            self.prefix_pending = false;
++            self.front = self.back;
++            return Some(Token { kind: Kind::Prefix, start: 0, end: self.prefix_end });
++        }
++        None
++    }
++}
++impl core::iter::FusedIterator for Lexer<'_> {}
++
++/// DOS AddPart's lexical base retention and separator insertion decisions.
++/// The returned length retains the base prefix. The caller appends `suffix`
++/// verbatim after optionally inserting one separating slash.
++pub(crate) fn push_plan(base: &[u8], suffix: &[u8]) -> (usize, bool) {
++    if volume_end(suffix).is_some() { return (0, false); }
++    if suffix.first() == Some(&b':') {
++        return (volume_end(base).map_or(0, |end| end - 1), false);
++    }
++    let separator = base.last().is_some_and(|&b| b != b':' && b != b'/');
++    (base.len(), separator)
++}
+diff --git a/library/std/src/sys/path/aros.rs b/library/std/src/sys/path/aros.rs
+--- /dev/null
++++ b/library/std/src/sys/path/aros.rs
+@@ -0,0 +1,39 @@
++// SPDX-License-Identifier: MIT
++// Copyright (c) 2026 John Knipper
++
++use crate::ffi::{OsStr, OsString};
++use crate::path::{Path, PathBuf, Prefix};
++use crate::{env, io};
++
++pub(crate) mod lex;
++path_separator_bytes!(b'/');
++pub const HAS_PREFIXES: bool = true;
++#[inline]
++pub const fn is_verbatim_sep(byte: u8) -> bool { is_sep_byte(byte) }
++
++pub fn parse_prefix(path: &OsStr) -> Option<Prefix<'_>> {
++    let bytes = path.as_encoded_bytes();
++    lex::volume_end(bytes).map(|end| {
++        // ASCII colon boundary preserves OsStr's encoding invariant.
++        Prefix::ArosVolume(unsafe { OsStr::from_encoded_bytes_unchecked(&bytes[..end - 1]) })
++    })
++}
++
++pub(crate) fn is_absolute(path: &Path) -> bool { parse_prefix(path.as_os_str()).is_some() }
++
++pub(crate) fn push(base: &mut OsString, suffix: &OsStr) {
++    let (keep, separator) = lex::push_plan(base.as_encoded_bytes(), suffix.as_encoded_bytes());
++    base.truncate(keep);
++    if separator { base.push("/"); }
++    base.push(suffix);
++}
++
++pub(crate) fn absolute(path: &Path) -> io::Result<PathBuf> {
++    if is_absolute(path) { return Ok(path.to_path_buf()); }
++    // A current-volume colon or parent slash needs the current DOS directory.
++    // Keep parent traversal and dot names lexical; do not canonicalize a path
++    // that may not exist or resolve its assigns/symlinks here.
++    let mut absolute = env::current_dir()?;
++    absolute.push(path);
++    Ok(absolute)
++}
+diff --git a/library/std/src/sys/path/mod.rs b/library/std/src/sys/path/mod.rs
+--- a/library/std/src/sys/path/mod.rs
++++ b/library/std/src/sys/path/mod.rs
+@@ -18,6 +18,10 @@
+ }
+ 
+ cfg_select! {
++    target_os = "aros" => {
++        mod aros;
++        pub use aros::*;
++    }
+     target_os = "windows" => {
+         mod windows;
+         mod windows_prefix;
+diff --git a/library/std/tests/path_aros.rs b/library/std/tests/path_aros.rs
+--- /dev/null
++++ b/library/std/tests/path_aros.rs
+@@ -0,0 +1,91 @@
++#![cfg(target_os = "aros")]
++#![feature(path_trailing_sep)]
++// SPDX-License-Identifier: MIT
++// Copyright (c) 2026 John Knipper
++use std::path::{self, Component, Path, PathBuf, Prefix};
++use std::ffi::OsStr;
++use std::os::unix::ffi::OsStrExt;
++use std::hash::{Hash, Hasher};
++fn hash(p: &Path) -> u64 {
++    let mut h = std::collections::hash_map::DefaultHasher::new(); p.hash(&mut h); h.finish()
++}
++#[test]
++fn qualified_volume_basics() {
++    for root in ["T:", "RAM Disk:", "SYS:"] {
++        let root = Path::new(root);
++        assert!(root.is_absolute()); assert!(root.has_root());
++        assert_eq!(root.file_name(), None); assert_eq!(root.parent(), None);
++        assert_eq!(path::absolute(root).unwrap().as_os_str(), root.as_os_str());
++    }
++    let p = Path::new("RAM:foo");
++    assert_eq!(p.file_name(), Some(OsStr::new("foo")));
++    assert_eq!(p.parent(), Some(Path::new("RAM:")));
++    assert_eq!(p.strip_prefix("RAM:").unwrap(), Path::new("foo"));
++    assert_eq!(Path::new("T:").join("foo").as_os_str(), "T:foo");
++}
++#[test]
++fn volume_prefix_api_and_component_spellings() {
++    let mut c = Path::new("RAM Disk:foo").components();
++    match c.next().unwrap() {
++        Component::Prefix(p) => { assert_eq!(p.kind(), Prefix::ArosVolume(OsStr::new("RAM Disk"))); assert_eq!(p.as_os_str(), "RAM Disk:"); }
++        other => panic!("unexpected {other:?}"),
++    }
++    assert_eq!(c.as_path().as_os_str(), ":foo");
++    assert_eq!(c.next(), Some(Component::RootDir));
++    assert_eq!(Component::RootDir.as_os_str(), ":");
++    assert_eq!(Component::ParentDir.as_os_str(), "/");
++    assert_eq!(c.as_path().as_os_str(), "foo");
++    assert_eq!(c.next_back(), Some(Component::Normal(OsStr::new("foo"))));
++    assert_eq!(c.next(), None);
++}
++#[test]
++fn native_push_parent_and_volume_replacement() {
++    let mut p = PathBuf::from("SYS:old/dir");
++    p.push("RAM Disk:new"); assert_eq!(p.as_os_str(), "RAM Disk:new");
++    p.push(":root"); assert_eq!(p.as_os_str(), "RAM Disk:root");
++    p.push("/sibling"); assert_eq!(p.as_os_str(), "RAM Disk:root//sibling");
++    assert!(!Path::new("/foo").is_absolute()); assert!(!Path::new("/foo").has_root());
++    assert!(!Path::new(":foo").is_absolute()); assert!(Path::new(":foo").has_root());
++    assert_eq!(p.parent().unwrap().as_os_str(), "RAM Disk:root//");
++}
++#[test]
++fn eq_hash_ord_and_literal_names() {
++    assert_eq!(Path::new("a/"), Path::new("a"));
++    assert_eq!(hash(Path::new("a/")), hash(Path::new("a")));
++    assert_eq!(Path::new("a/").cmp(Path::new("a")), std::cmp::Ordering::Equal);
++    for (a,b) in [("a//b","a/b"),("a/./b","a/b"),("..","/"),("RAM:","ram:")] {
++        assert_ne!(Path::new(a), Path::new(b));
++    }
++    let raw = Path::new(OsStr::from_bytes(b"RAM Disk:copi\xe9.txt"));
++    assert!(raw.is_absolute());
++    assert_eq!(raw.file_name().unwrap().as_bytes(), b"copi\xe9.txt");
++    assert_eq!(raw.parent().unwrap().as_os_str(), "RAM Disk:");
++}
++#[test]
++fn component_collection_extension_pop_and_file_name() {
++    for text in ["", "T:", "RAM:foo", ":foo", "/foo", "dir//file", "dir///", "a/./../b", "RAM:/a//b"] {
++        let p = Path::new(text);
++        let c: PathBuf = p.components().collect();
++        assert_eq!(c, p, "collect {text}");
++        let mut ext = PathBuf::new(); ext.extend(p.components()); assert_eq!(ext, p);
++        let forward: Vec<_> = p.components().collect();
++        assert_eq!(forward.iter().rev().copied().collect::<Vec<_>>(), p.components().rev().collect::<Vec<_>>());
++        for split in 0..=forward.len() {
++            let mut it = p.components();
++            for expected in &forward[..split] { assert_eq!(it.next(), Some(*expected)); }
++            for expected in forward[split..].iter().rev() { assert_eq!(it.next_back(), Some(*expected)); }
++            assert_eq!(it.next(), None); assert_eq!(it.next_back(), None);
++        }
++    }
++    let mut p = PathBuf::from("RAM:foo"); p.set_file_name("bar"); assert_eq!(p.as_os_str(), "RAM:bar");
++    assert!(p.pop()); assert_eq!(p.as_os_str(), "RAM:"); assert!(!p.pop());
++}
++#[test]
++fn strip_prefix_parents_and_trailing_operations() {
++    assert_eq!(Path::new("RAM:dir//file").strip_prefix("RAM:dir").unwrap().as_os_str(), "/file");
++    assert_eq!(Path::new("RAM:dir//file").strip_prefix("RAM:dir//").unwrap().as_os_str(), "file");
++    assert_eq!(Path::new("a/").trim_trailing_sep().as_os_str(), "a");
++    assert_eq!(Path::new("a//").trim_trailing_sep().as_os_str(), "a//");
++    assert_eq!(Path::new("/").trim_trailing_sep().as_os_str(), "/");
++    let mut root = PathBuf::from("T:"); root.push_trailing_sep(); assert_eq!(root.as_os_str(), "T:"); assert!(root.has_trailing_sep());
++}
