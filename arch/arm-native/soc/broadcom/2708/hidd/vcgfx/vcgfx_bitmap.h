@@ -20,6 +20,8 @@ enum {
     aoHidd_VideoCoreGfxBitMap_Overlay,         /* [GS.] set: struct vc4gfx_overlay * (NULL
                                                 * clears); get: 1 while an overlay is shown */
     aoHidd_VideoCoreGfxBitMap_LatchWait,       /* [G..] wait for the last armed update to latch */
+    aoHidd_VideoCoreGfxBitMap_VBlank,          /* [.S.] struct vc4gfx_vblank * (NULL removes);
+                                                * all HVS generations */
     num_Hidd_VideoCoreGfxBitMap_Attrs
 };
 
@@ -46,6 +48,14 @@ struct vc4gfx_overlay
 /* Don't wait for the latch; keep the displaced buffer until LatchWait. */
 #define VC4GFX_OVL_NOWAIT (1 << 0)
 
+/* Per-vblank callback, run in interrupt context: no locks, no printing.
+ * Mirrored by hand on the v3d side. */
+struct vc4gfx_vblank
+{
+    void (*vbl_Func)(APTR data);
+    APTR  vbl_Data;
+};
+
 /* This structure is used for both onscreen and offscreen bitmaps !! */
 
 #define IS_BM_ATTR(attr, idx)                   ( ( (idx) = (attr) - HiddBitMapAttrBase) < num_Hidd_BitMap_Attrs)
@@ -58,6 +68,14 @@ struct Box
 {
     int x1, y1;
     int x2, y2;
+};
+
+/* A page of scanout memory (vcgfx_scanout_alloc), 4K aligned. */
+struct vcgfx_scanbuf
+{
+    APTR                sb_Raw;
+    ULONG               sb_RawSize;
+    UBYTE              *sb_Pixels;
 };
 
 struct BitmapData {
@@ -73,6 +91,9 @@ struct BitmapData {
 	struct MouseData    *mouse;
 	ULONG               gpuhandle;              /* Offscreen: firmware mem handle (0 = RAM-backed) */
 	ULONG               dispwidth;              /* Mode width (width is 16px-aligned) */
+	struct vcgfx_scanbuf scan[2];               /* Offscreen screen pages, [front] = VideoData */
+	UBYTE               front;
+	ULONG               modew, modeh;           /* Screen: its mode's display size */
 };
 
 #endif /* _VIDEOCOREGFX_BITMAP_H */

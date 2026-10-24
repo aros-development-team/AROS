@@ -18,19 +18,65 @@
 
 #include "vcgfx_neon.h"
 
-/* Shared by the onscreen (FB) and offscreen (GPU) bitmap classes: both have
- * uncached physical pixels in data->VideoData. RAM-backed offscreen bitmaps
- * leave VideoData NULL and fall through to ChunkyBM.
+/* Shared by the onscreen (FB) and offscreen bitmap classes: the fb and
+ * screens in scanout memory have uncached physical pixels in
+ * data->VideoData. RAM-backed offscreen bitmaps leave VideoData NULL and
+ * fall through to ChunkyBM.
  */
 
-/* Onscreen only: a draw into an overlay plane's rectangle takes the plane
- * down first (vcgfx_ovl_yield in vcgfx_onbitmap.c). */
-#ifdef OnBitmap
+/* A draw into an overlay plane's rectangle takes the plane down first
+ * (vcgfx_ovl_yield in vcgfx_onbitmap.c). */
 #define OVL_YIELD(x, y, w, h) \
     vcgfx_ovl_yield(XSD(cl), o, (x), (y), (x) + (LONG)(w) - 1, (y) + (LONG)(h) - 1)
+
+/* Flip, Overlay and VBlank; FALSE for any other attribute. */
+static BOOL vcbm_set_private(OOP_Class *cl, OOP_Object *o, ULONG idx, IPTR val)
+{
+    struct VideoCoreGfx_staticdata *xsd = XSD(cl);
+    struct BitmapData *data = OOP_INST_DATA(cl, o);
+
+    switch (idx)
+    {
+    case aoHidd_VideoCoreGfxBitMap_Flip:
+        /* Page-flip request (e.g. from a gallium driver after a full-frame
+         * render into the back page). */
+        if (val)
+        {
+#ifdef OnBitmap
+            vc4_fb_flip(xsd);
 #else
-#define OVL_YIELD(x, y, w, h) ((void)0)
+            vcgfx_plane_flip(cl, o);
 #endif
+        }
+        return TRUE;
+
+    case aoHidd_VideoCoreGfxBitMap_Overlay:
+        {
+            /* Zero-copy overlay plane (windowed GL). Success is reported
+             * via a Get on the same attribute. */
+            const struct vc4gfx_overlay *ovl = (const struct vc4gfx_overlay *)val;
+            BOOL shown;
+
+            ObtainSemaphore(&xsd->vcsd_OvlLock);
+            shown = vc4_hvs_overlay(xsd, ovl, o) && ovl;
+            if (shown)
+            {
+                xsd->vcsd_OvlDesc   = *ovl;
+                xsd->vcsd_OvlBM     = o;
+                xsd->vcsd_OvlBMData = data;
+            }
+            xsd->vcsd_OvlShown = shown;
+            ReleaseSemaphore(&xsd->vcsd_OvlLock);
+        }
+        return TRUE;
+
+    case aoHidd_VideoCoreGfxBitMap_VBlank:
+        xsd->vcsd_HVS.hvs_VBlank   = (struct vc4gfx_vblank *)val;
+        xsd->vcsd_HVS6.h6_VBlank = (struct vc4gfx_vblank *)val;
+        return TRUE;
+    }
+    return FALSE;
+}
 
 /*********  BitMap::Clear()  *************************************/
 VOID MNAME_BM(Clear)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *msg)
@@ -331,9 +377,11 @@ VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
             break;
         case aoHidd_VideoCoreGfxBitMap_BackDrawable:
 #ifdef OnBitmap
-            *msg->storage = (IPTR)vc4_fb_backpage(XSD(cl));
+            /* Screens as planes leave the fb a backdrop only. */
+            *msg->storage = XSD(cl)->vcsd_PlanesMode ? 0
+                                                     : (IPTR)vc4_fb_backpage(XSD(cl));
 #else
-            *msg->storage = 0;
+            *msg->storage = vcgfx_plane_backpage(XSD(cl), data);
 #endif
             break;
         case aoHidd_VideoCoreGfxBitMap_Flip:
@@ -345,13 +393,11 @@ VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
             *msg->storage = (XSD(cl)->vcsd_HVS.hvs_OvlActive
                              || XSD(cl)->vcsd_HVS6.h6_Overlay) ? 1 : 0;
 #else
-            *msg->storage = 0;
+            *msg->storage = vcgfx_plane_overlay_shown(XSD(cl), o) ? 1 : 0;
 #endif
             break;
         case aoHidd_VideoCoreGfxBitMap_LatchWait:
-#ifdef OnBitmap
             vc4_hvs_latch_wait(XSD(cl));
-#endif
             *msg->storage = 1;
             break;
         default:

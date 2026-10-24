@@ -389,6 +389,83 @@ VOID MNAME_DISPLAY(NominalDimensions)(OOP_Class *cl, OOP_Object *o, struct pHidd
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
+ULONG MNAME_DISPLAY(ShowViewPorts)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_ShowViewPorts *msg)
+{
+    return vcgfx_show_viewports(XSD(cl), msg->Data);
+}
+
+/* Screens that are planes compose; reporting it is also what keeps
+ * graphics.library from setting up the software compositor. Above only,
+ * as that compositor defaults to: a screen drags down to reveal the ones
+ * behind, and its title bar can never leave the display. Where they also
+ * scale, Intuition asks DisplayToBMCoords for their own pixels. */
+ULONG MNAME_DISPLAY(ModeProperties)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_ModeProperties *msg)
+{
+    struct HIDD_ModeProperties props = { 0, 0, 0 };
+    struct pHidd_Display_ModeProperties supmsg = *msg;
+    ULONG len = msg->propsLen;
+
+    supmsg.props    = &props;
+    supmsg.propsLen = sizeof(props);
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)&supmsg);
+
+    if (vcgfx_planes_supported(XSD(cl)))
+    {
+        props.CompositionFlags = COMPF_ABOVE;
+        if ((XSD(cl)->vcsd_HVSGen != VCGFX_HVS_HVS6) || vc4_hvs6_scales(XSD(cl)))
+            props.CompositionFlags |= COMPF_SCALE;
+    }
+
+    if (len > sizeof(props))
+        len = sizeof(props);
+    CopyMem(&props, msg->props, len);
+    return len;
+}
+
+/* A screen that is a plane fills the display as its own mode would, so its
+ * pixels are the display's scaled by mode size over display mode size. */
+static BOOL vc4_screen_scale(OOP_Class *cl, OOP_Object *bm, ULONG *mw, ULONG *mh,
+                             ULONG *dw, ULONG *dh)
+{
+    struct VideoCoreGfx_staticdata *xsd = XSD(cl);
+    struct BitmapData *data;
+
+    if (!xsd->vcsd_PlanesMode || !bm
+        || (OOP_OCLASS(bm) != xsd->vcsd_VideoCoreGfxOffBMClass))
+        return FALSE;
+
+    data = OOP_INST_DATA(xsd->vcsd_VideoCoreGfxOffBMClass, bm);
+    *mw = data->modew;
+    *mh = data->modeh;
+    return vcgfx_planes_out_size(xsd, dw, dh) && *mw && *mh && *dw && *dh;
+}
+
+VOID MNAME_DISPLAY(DisplayToBMCoords)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_DisplayToBMCoords *msg)
+{
+    ULONG mw, mh, dw, dh;
+
+    if (!vc4_screen_scale(cl, msg->Target, &mw, &mh, &dw, &dh))
+    {
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        return;
+    }
+    *msg->TargetX = (ULONG)msg->DispX * mw / dw;
+    *msg->TargetY = (ULONG)msg->DispY * mh / dh;
+}
+
+VOID MNAME_DISPLAY(BMToDisplayCoords)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_BMToDisplayCoords *msg)
+{
+    ULONG mw, mh, dw, dh;
+
+    if (!vc4_screen_scale(cl, msg->Target, &mw, &mh, &dw, &dh))
+    {
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        return;
+    }
+    *msg->DispX = (ULONG)msg->TargetX * dw / mw;
+    *msg->DispY = (ULONG)msg->TargetY * dh / mh;
+}
+
 BOOL MNAME_DISPLAY(SetCursorShape)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_SetCursorShape *msg)
 {
     struct VideoCoreGfx_staticdata *xsd = XSD(cl);

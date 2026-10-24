@@ -3,12 +3,11 @@
 
     Desc: BCM VideoCore4 Gfx Hidd Offscreen Bitmap Class.
 
-    Large 32bpp offscreen bitmaps are placed in firmware (GPU) memory:
-    uncached and physically contiguous, so CopyBox/PutImage/GetImage
-    against the framebuffer run entirely on the DMA engine with no
-    cache maintenance. Small bitmaps, non-32bpp formats and allocation
-    failures fall back to the ChunkyBM superclass' system-RAM buffer,
-    with VideoData left NULL so every accelerated path skips them.
+    Screen bitmaps go in scanout memory when screens are HVS planes
+    (vcgfx_planes.c): uncached and physically contiguous, so the HVS shows
+    them directly and blits against them run on the DMA engine. Other
+    bitmaps use the ChunkyBM superclass' system-RAM buffer, with VideoData
+    left NULL so every accelerated path skips them.
 */
 
 #define DEBUG 0
@@ -168,11 +167,115 @@ static void vc4_gpumem_free(struct VideoCoreGfx_staticdata *xsd, ULONG handle)
 
 #endif /* VC4_GPUBM_ENABLE */
 
+/* A screen: a 32bpp displayable bitmap in a page of scanout memory. NULL
+ * when it is something else, or when there is no memory left for it -
+ * the screen then fails to open rather than open invisible. */
+static OOP_Object *vc4_screen_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg,
+                                  BOOL *handled)
+{
+    struct VideoCoreGfx_staticdata *xsd = XSD(cl);
+    OOP_Object *sync = NULL, *pf = NULL;
+    IPTR width, height, bytesperpix = 0;
+    HIDDT_ModeID modeid;
+    struct vcgfx_scanbuf sb = { 0 };
+    ULONG pitch;
+
+    *handled = FALSE;
+    if (!GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList)
+        || !vcgfx_planes_supported(xsd))
+        return NULL;
+
+    width  = GetTagData(aHidd_BitMap_Width,  0, msg->attrList);
+    height = GetTagData(aHidd_BitMap_Height, 0, msg->attrList);
+    modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
+
+    if ((modeid == vHidd_ModeID_Invalid)
+        || !HIDD_DMEnum_GetMode(xsd->vcsd_DMEnum, modeid, &sync, &pf) || !pf)
+        return NULL;
+    if (!width && sync)
+        OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
+    if (!height && sync)
+        OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
+    OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &bytesperpix);
+    if (!width || !height || (bytesperpix != 4))
+        return NULL;
+
+    *handled = TRUE;
+
+    /* The BitMap superclass's own 16-pixel row alignment. */
+    pitch = ((width + 15) & ~15) * 4;
+    if (!vcgfx_scanout_alloc(xsd, &sb, pitch * height))
+    {
+        bug("[VideoCoreGfx] no scanout memory for a %ux%u screen\n",
+            (unsigned)width, (unsigned)height);
+        return NULL;
+    }
+
+    {
+        struct TagItem extra_tags[] =
+        {
+            { aHidd_ChunkyBM_Buffer,    (IPTR)sb.sb_Pixels     },
+            { aHidd_BitMap_BytesPerRow, pitch                  },
+            { TAG_MORE,                 (IPTR)msg->attrList    }
+        };
+        struct pRoot_New new_msg;
+
+        new_msg.mID = msg->mID;
+        new_msg.attrList = extra_tags;
+
+        o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&new_msg);
+    }
+    if (!o)
+    {
+        vcgfx_scanout_free(xsd, &sb);
+        return NULL;
+    }
+
+    {
+        struct BitmapData *data = OOP_INST_DATA(cl, o);
+
+        memset(data, 0, sizeof(struct BitmapData));
+        data->VideoData   = sb.sb_Pixels;
+        data->width       = width;
+        data->height      = height;
+        data->bytesperrow = pitch;
+        data->bytesperpix = 4;
+        data->bpp         = 32;
+        data->disp        = -1;
+        data->scan[0]     = sb;
+        data->modew       = width;
+        data->modeh       = height;
+        if (sync)
+        {
+            IPTR mw = 0, mh = 0;
+
+            OOP_GetAttr(sync, aHidd_Sync_HDisp, &mw);
+            OOP_GetAttr(sync, aHidd_Sync_VDisp, &mh);
+            if (mw && mh)
+            {
+                data->modew = mw;
+                data->modeh = mh;
+            }
+        }
+    }
+
+    D(bug("[VideoCoreGfx] OffBitMap::New: %ux%u screen @ 0x%p, pitch %u\n",
+        (unsigned)width, (unsigned)height, sb.sb_Pixels, (unsigned)pitch));
+    return o;
+}
+
 /*********** BitMap::New() *************************************/
 
 OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
+    BOOL handled;
+    OOP_Object *screen;
+
     D(bug("[VideoCoreGfx] VideoCoreGfx.OffBitMap::New()\n"));
+
+    screen = vc4_screen_new(cl, o, msg, &handled);
+    if (handled)
+        return screen;
 
 #if VC4_GPUBM_ENABLE
     {
@@ -270,16 +373,62 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
 VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-#if VC4_GPUBM_ENABLE
     struct VideoCoreGfx_staticdata *xsd = XSD(cl);
     struct BitmapData *data = OOP_INST_DATA(cl, o);
+    struct vcgfx_scanbuf scan[2];
+#if VC4_GPUBM_ENABLE
     ULONG handle = data->gpuhandle;
+#endif
+
+    ObtainSemaphore(&xsd->vcsd_OvlLock);
+    if (xsd->vcsd_OvlBM == o)
+    {
+        xsd->vcsd_OvlShown = FALSE;
+        xsd->vcsd_OvlBM    = NULL;
+    }
+    ReleaseSemaphore(&xsd->vcsd_OvlLock);
+
+    /* Off the display before the pages go. */
+    if (data->scan[0].sb_Pixels)
+        vcgfx_plane_forget(xsd, o);
+    scan[0] = data->scan[0];
+    scan[1] = data->scan[1];
 
     OOP_DoSuperMethod(cl, o, msg);
 
+    vcgfx_scanout_free(xsd, &scan[0]);
+    vcgfx_scanout_free(xsd, &scan[1]);
+#if VC4_GPUBM_ENABLE
     if (handle)
         vc4_gpumem_free(xsd, handle);
-#else
-    OOP_DoSuperMethod(cl, o, msg);
 #endif
+}
+
+/**********  Bitmap::Set()  ***************************************/
+
+/* LeftEdge/TopEdge are how graphics.library drags a screen: the superclass
+ * clamps and stores them, the plane follows. */
+IPTR MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
+{
+    struct BitmapData *data = OOP_INST_DATA(cl, o);
+    struct TagItem *tag, *tstate = msg->attrList;
+    BOOL moved = FALSE;
+    ULONG idx;
+    IPTR result;
+
+    while ((tag = NextTagItem(&tstate)))
+    {
+        /* Flips and overlays need a screen the HVS can show. */
+        if (data->scan[0].sb_Pixels && IS_VideoCoreGfxBM_ATTR(tag->ti_Tag, idx)
+            && vcbm_set_private(cl, o, idx, tag->ti_Data))
+            return TRUE;
+        if (IS_BM_ATTR(tag->ti_Tag, idx)
+            && ((idx == aoHidd_BitMap_LeftEdge) || (idx == aoHidd_BitMap_TopEdge)))
+            moved = TRUE;
+    }
+
+    result = OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    if (moved)
+        vcgfx_plane_moved(XSD(cl), o);
+    return result;
 }
