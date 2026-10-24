@@ -27,6 +27,7 @@
 
 #include "chipset.h"
 #include "blitter.h"
+#include "amigavideo_compositor.h"
 
 #define SPECIALMODES 3
 #define NATIVEMODES (3 * 4 * SPECIALMODES)
@@ -1263,6 +1264,159 @@ static void AmigaVideo_FreeDspIns(struct CopList *cl,
     FreeCopList(cl);
 }
 
+/*
+ * On Kickstart the display runs the merged list built by MrgCop(), so
+ * FreeVPortCopLists() on a displayed ViewPort does not change the picture
+ * until the next LoadView(), and some old programs free and rebuild the lists
+ * of their displayed ViewPort without loading the View again. Here the copper
+ * runs the ViewPort's own DspIns, so DeinitViewPort() hands a list that may
+ * still be running to this retire list. It is freed once a later composition
+ * has replaced it and a frame has passed.
+ */
+static void AmigaVideo_RetireDspIns(struct amigavideo_staticdata *csd,
+                                    struct CopList *cl)
+{
+    struct GfxBase *GfxBase = (APTR)csd->cs_GfxBase;
+    struct amigavideo_retiredcl *r;
+
+    if (!cl)
+        return;
+
+    r = AllocMem(sizeof(*r), MEMF_PUBLIC);
+    if (!r)
+    {
+        /* Out of memory: free it now, as before */
+        AmigaVideo_FreeDspIns(cl, GfxBase);
+        return;
+    }
+    r->cl = cl;
+    Forbid();
+    r->compgen = csd->compgen;
+    r->next = csd->retiredcl;
+    csd->retiredcl = r;
+    Permit();
+}
+
+static BOOL AmigaVideo_ListIsLoaded(struct CopList *cl, struct GfxBase *GfxBase)
+{
+    APTR lof = GfxBase->LOFlist, shf = GfxBase->SHFlist;
+
+    return (cl->CopLStart && (cl->CopLStart == lof || cl->CopLStart == shf)) ||
+           (cl->CopSStart && (cl->CopSStart == lof || cl->CopSStart == shf));
+}
+
+static void AmigaVideo_FlushRetiredDspIns(struct amigavideo_staticdata *csd)
+{
+    struct GfxBase *GfxBase = (APTR)csd->cs_GfxBase;
+    struct amigavideo_retiredcl *r, **rp, *done = NULL;
+
+    Forbid();
+    if ((UWORD)(csd->framecounter - csd->compframe) >= 2)
+    {
+        for (rp = &csd->retiredcl; (r = *rp) != NULL; )
+        {
+            /* a composition without native screens leaves LOF/SHFlist alone */
+            if (r->compgen != csd->compgen &&
+                !AmigaVideo_ListIsLoaded(r->cl, GfxBase))
+            {
+                *rp = r->next;
+                r->next = done;
+                done = r;
+            }
+            else
+                rp = &r->next;
+        }
+    }
+    Permit();
+
+    while ((r = done) != NULL)
+    {
+        done = r->next;
+        AmigaVideo_FreeDspIns(r->cl, GfxBase);
+        FreeMem(r, sizeof(*r));
+    }
+}
+
+/*
+ * Take a bitmap out of the compositor's lists, so that neither the
+ * compositor nor the VBlank server touches it, or the HIDD_ViewPortData it
+ * points to, after the ViewPort has been deinitialised. Returns TRUE if the
+ * bitmap was part of the composition, i.e. its lists may still be running.
+ */
+static BOOL AmigaVideo_DetachComposited(struct amigavideo_staticdata *csd,
+                                        OOP_Object *display,
+                                        struct amigabm_data *bmdata)
+{
+    struct Library *OOPBase = csd->cs_OOPBase;
+    struct amigacomposit_data *compdata;
+    struct amigagfx_data *data;
+    OOP_Object *gfx = NULL;
+    struct Node *n;
+    BOOL found = FALSE;
+
+    OOP_GetAttr(display, aHidd_Display_GfxHidd, (IPTR *)&gfx);
+    if (!gfx)
+        return FALSE;
+    data = OOP_INST_DATA(csd->amigagfxclass, gfx);
+    if (!data->compositor)
+        return FALSE;
+    compdata = OOP_INST_DATA(csd->amigacompositorclass, data->compositor);
+
+    LOCK_COMPOSITOR_WRITE
+    Disable();
+    if (csd->compositedbms)
+    {
+        ForeachNode(csd->compositedbms, n)
+        {
+            if (n == &bmdata->node)
+            {
+                found = TRUE;
+                break;
+            }
+        }
+    }
+    if (!found && csd->obscuredbms)
+    {
+        ForeachNode(csd->obscuredbms, n)
+        {
+            if (n == &bmdata->node)
+            {
+                found = TRUE;
+                break;
+            }
+        }
+    }
+    if (found)
+    {
+        Remove(&bmdata->node);
+        bmdata->node.ln_Pri = -1;
+
+        /* its copper fragments, used by the VBlank server to rechain */
+        ForeachNode(&csd->c2fragments, n)
+        {
+            if (n == (struct Node *)&bmdata->copld.cnode)
+            {
+                Remove(n);
+                break;
+            }
+        }
+        ForeachNode(&csd->c2ifragments, n)
+        {
+            if (n == (struct Node *)&bmdata->copsd.cnode)
+            {
+                Remove(n);
+                break;
+            }
+        }
+    }
+    if (csd->updatescroll == bmdata)
+        csd->updatescroll = NULL;
+    Enable();
+    UNLOCK_COMPOSITOR
+
+    return found;
+}
+
 ULONG AmigaVideoDisplay__Hidd_Display__MakeViewPort(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_MakeViewPort *msg)
 {
     ULONG retval = MVP_OK;
@@ -1273,6 +1427,8 @@ ULONG AmigaVideoDisplay__Hidd_Display__MakeViewPort(OOP_Class *cl, OOP_Object *o
     D(bug("[AmigaVideo:Hidd] %s(vp=%p, bm=%p, vpe=%p)\n", __func__, vpd->vpe->ViewPort, vpd->Bitmap, vpd->vpe));
 
     D(bug("[AmigaVideo:Hidd] %s: initial ViewPort->DspIns=0x%p\n", __func__, vpd->vpe->ViewPort->DspIns));
+
+    AmigaVideo_FlushRetiredDspIns(CSD(cl));
 
     /*
      * Build into fresh storage.  If this ViewPort is already displayed, its
@@ -1384,14 +1540,37 @@ void AmigaVideoDisplay__Hidd_Display__DeinitViewPort(OOP_Class *cl, OOP_Object *
     struct ViewPort *vp = vpd->vpe->ViewPort;
     struct amigavideo_vpdata *avpd = vpd->UserData;
 
+    BOOL composited = FALSE;
+
     D(bug("[AmigaVideo:Hidd] %s(vp=%p, bm=%p, vpe=%p)\n", __func__, vpd->vpe->ViewPort, vpd->Bitmap, vpd->vpe));
+
+    AmigaVideo_FlushRetiredDspIns(csd);
+
+    if (vpd->Bitmap && (OOP_OCLASS(vpd->Bitmap) == csd->amigabmclass))
+    {
+        struct amigabm_data *bmdata = OOP_INST_DATA(OOP_OCLASS(vpd->Bitmap), vpd->Bitmap);
+
+        composited = AmigaVideo_DetachComposited(csd, o, bmdata);
+        if (composited && bmdata->bmcl == vp->DspIns)
+            bmdata->bmcl = NULL;
+    }
+
     /* It's safe to call these functions on NULL pointers */
     FreeCopList(vp->ClrIns);
-    AmigaVideo_FreeDspIns(vp->DspIns, GfxBase);
+    if (composited)
+    {
+        D(bug("[AmigaVideo:Hidd] %s: ViewPort is displayed, retiring its DspIns\n", __func__));
+        AmigaVideo_RetireDspIns(csd, vp->DspIns);
+    }
+    else
+        AmigaVideo_FreeDspIns(vp->DspIns, GfxBase);
     FreeCopList(vp->SprIns);
     if (avpd)
     {
-        AmigaVideo_FreeDspIns(avpd->retired_dspins, GfxBase);
+        if (composited)
+            AmigaVideo_RetireDspIns(csd, avpd->retired_dspins);
+        else
+            AmigaVideo_FreeDspIns(avpd->retired_dspins, GfxBase);
         FreeMem(avpd, sizeof(*avpd));
     }
     vpd->UserData = NULL;
@@ -1587,11 +1766,19 @@ ULONG AmigaVideoDisplay__Hidd_Display__ShowViewPorts(OOP_Class *cl, OOP_Object *
 
     D(bug("[AmigaVideo:Hidd] %s: first ViewPort @ 0x%p\n", __func__, msg->Data));
 
+    AmigaVideo_FlushRetiredDspIns(csd);
+
 #if USE_FAST_BMSTACKCHANGE
         data->bmstackchange(data->bmstackchange_Class, data->compositor, (OOP_Msg)&bscmsg.mID);
 #else
     OOP_DoMethod(data->compositor, (OOP_Msg)&bscmsg.mID);
 #endif
+
+    /* Retired lists are no longer chained in; free them a frame from now */
+    Forbid();
+    csd->compgen++;
+    csd->compframe = csd->framecounter;
+    Permit();
 
     for (vpd = msg->Data; vpd; vpd = vpd->Next)
     {
