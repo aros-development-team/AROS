@@ -2,7 +2,7 @@
 #define DOS_DOSTAGS_H
 
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Tags for DOS routines
@@ -179,6 +179,26 @@
 #define GSLI_ElfHandle  (GSLI_Dummy + 4)
 #define GSLI_68KHUNK    (GSLI_Dummy + 5)
 #define GSLI_68KOVLAY   (GSLI_Dummy + 6)
+#define GSLI_68KRELOCS  (GSLI_Dummy + 7)
+
+/* GSLI_68KRELOCS: the 32-bit relocations LoadSeg() applied to a hunk file,
+   for an emulator that copies the segments elsewhere. The table lives as
+   long as the seglist. Count is ~0 when the list could not be kept. */
+struct HunkReloc32
+{
+    ULONG hr_Hunk;      /* hunk holding the relocated longword */
+    ULONG hr_Offset;    /* byte offset of the longword in that hunk */
+    ULONG hr_Target;    /* hunk whose base was added */
+    ULONG hr_Type;      /* HUNKRELOC_* */
+};
+#define HUNKRELOC_ABS   0   /* word = target base + original */
+#define HUNKRELOC_REL   1   /* word = target base + original - address of the word */
+
+struct HunkRelocTable
+{
+    ULONG               hrt_Count;
+    struct HunkReloc32 *hrt_Relocs;
+};
 
 /* Tags for AllocDosObject(). */
 

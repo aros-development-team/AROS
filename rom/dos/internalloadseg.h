@@ -1,9 +1,20 @@
 #ifndef INTERNALLOADSEG_H
 #define INTERNALLOADSEG_H
 
+#include <exec/nodes.h>
+#include <dos/dostags.h>
+
 #define SEGTYPE_HUNK            1
 #define SEGTYPE_HUNK_OVERLAY    2
 #define SEGTYPE_ELF             10
+
+/* segdata node of a SEGTYPE_HUNK seglist; the relocation entries follow it
+   in the same allocation, so UnLoadSeg() frees them with the node */
+struct HunkSegNode
+{
+    struct Node             hsn_Node;
+    struct HunkRelocTable   hsn_Relocs;
+};
 
 BPTR InternalLoadSeg_AOS(BPTR file,
                          BPTR table,
