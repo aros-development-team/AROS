@@ -90,3 +90,18 @@ AROS itself.
 8. Ensure that the pull request description clearly explains what the change does, why it is
    required, and how it was tested. Where relevant, include the AROS targets on which the change
    was tested and identify any known limitations or untested targets.
+
+## Draft pull requests
+
+Do not open draft pull requests. Draft pull requests will not be reviewed, and should not be opened
+and left dormant. Only open a pull request once the change is complete and ready for actual review
+and inclusion in the repository.
+
+## After submitting
+
+It is the responsibility of the pull request author to follow the progress of their pull request,
+and to check whether reviewers have requested any further changes or work. Requested changes should
+be addressed, or responded to, in a timely manner. Pull requests should not be left to stagnate.
+
+Pull requests where requested changes have not been addressed within a reasonable time will be
+closed without being merged.
