@@ -91,27 +91,19 @@ SPIOEXIT:
   pipekey= (PIPEKEY *) pkt->dp_Arg1;
   pipe= pipekey->pipe;
 
+  pkt->dp_Res2= ERROR_INVALID_LOCK;
+  if ((pipekey->iotype != iotype) && (pipekey->iotype != PIPERW))
+    goto SPIOEXIT;
+
   if ((wd= (WAITINGDATA *) AllocMem (sizeof (WAITINGDATA), ALLOCMEM_FLAGS)) == NULL)
     { pkt->dp_Res2= ERROR_NO_FREE_STORE;
       goto SPIOEXIT;
     }
 
-
-  pkt->dp_Res2= ERROR_INVALID_LOCK;     /* in case not open for iotype */
-
   if (iotype == PIPEREAD)
-    { if ((pipekey->iotype != PIPEREAD) && (pipekey->iotype != PIPERW))
-        goto SPIOEXIT;
-
-      InsertTail (&pipe->readerlist, (PIPELISTNODE *)wd);
-    }
-  else     /* PIPEWRITE */
-    { if ((pipekey->iotype != PIPEWRITE) && (pipekey->iotype != PIPERW))
-        goto SPIOEXIT;
-
-      InsertTail (&pipe->writerlist, (PIPELISTNODE *)wd);
-    }
-
+    InsertTail (&pipe->readerlist, (PIPELISTNODE *)wd);
+  else
+    InsertTail (&pipe->writerlist, (PIPELISTNODE *)wd);
 
   wd->pkt= pkt;
   wd->pktinfo.pipewait.reqtype= iotype;
