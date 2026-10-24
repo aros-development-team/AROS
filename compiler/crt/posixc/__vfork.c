@@ -170,6 +170,10 @@ LONG launcher()
             CloseLibrary((struct Library *)PosixCBase);
             PosixCBase = NULL;
         }
+        else
+            /* Our bases share the parent's pool (see __posixc_publish_stdbases);
+               a program exec'd here must get a pool of its own. */
+            __posixc_inherit_mempool(PosixCBase->PosixCBase.StdCBase, 0);
     }
     if (!PosixCBase)
     {
