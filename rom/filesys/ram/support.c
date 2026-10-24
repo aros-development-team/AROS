@@ -82,13 +82,13 @@ PINT SetString(struct Handler *handler, TEXT **field, const TEXT *new_str)
       /* Deallocate old string */
 
       if(size > 0)
-         block_diff = MEMBLOCKS(size);
+         block_diff = MemBlocks(size);
       old_str = *field;
       if(old_str != NULL)
       {
          size = StrSize(old_str);
          FreePooled(handler->muddy_pool, old_str, size);
-         block_diff -= MEMBLOCKS(size);
+         block_diff -= MemBlocks(size);
       }
 
       /* Store new string */
@@ -139,11 +139,11 @@ PINT SwapStrings(TEXT **field1, TEXT **field2)
 
    str1 = *field1;
    if(str1 != NULL)
-      block_diff = MEMBLOCKS(StrSize(str1));
+      block_diff = MemBlocks(StrSize(str1));
 
    str2 = *field2;
    if(str2 != NULL)
-      block_diff -= MEMBLOCKS(StrSize(str2));
+      block_diff -= MemBlocks(StrSize(str2));
 
    *field1 = str2;
    *field2 = str1;

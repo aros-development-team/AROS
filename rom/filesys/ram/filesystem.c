@@ -170,8 +170,8 @@ struct Object *CreateObject(struct Handler *handler, const TEXT *name,
 
    if(error == 0)
    {
-      object->block_count = MEMBLOCKS(sizeof(struct Object));
-      handler->block_count += MEMBLOCKS(sizeof(struct Object));
+      object->block_count = MemBlocks(sizeof(struct Object));
+      handler->block_count += MemBlocks(sizeof(struct Object));
 
       NewList((struct List *)&object->elements);
       ((struct Node *)object)->ln_Pri = type;
@@ -736,8 +736,8 @@ PINT ChangeFileSize(struct Handler *handler, struct Opening *opening,
          alloc_size = handler->min_block_size;
       if(diff == 0)
          FreeDataBlock(handler, file, block);
-      else if(MEMBLOCKS(alloc_size)
-         == MEMBLOCKS(sizeof(struct Block) + block->length))
+      else if(MemBlocks(alloc_size)
+         == MemBlocks(sizeof(struct Block) + block->length))
       {
          AddTail((struct List *)&file->elements, (APTR)block);
          file->end_length = diff;

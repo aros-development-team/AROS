@@ -58,7 +58,13 @@ typedef LONG PINT;
 #define RAM_BLOCKMASK (RAM_BLOCKSIZE - 1)
 
 #define MIN(A, B) (((A) < (B))? (A): (B))
-#define MEMBLOCKS(A) ((((A) - 1) / RAM_BLOCKSIZE) + 1)
+
+/* Handle zero without underflow, while keeping the maximum input safe. */
+static inline UPINT MemBlocks(UPINT size)
+{
+   return size == 0 ? 0 : (size - 1) / RAM_BLOCKSIZE + 1;
+}
+
 #define HARDLINK(A)\
    ((struct Object *)\
    (((BYTE *)(A)) - (UPINT)&((struct Object *)NULL)->hard_link))
