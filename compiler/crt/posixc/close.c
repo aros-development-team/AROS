@@ -52,24 +52,10 @@
 
     if (!(fdesc = __getfdesc(fd)))
     {
-        /* Not a local posixc file descriptor: dispatch to the owning
-           subsystem's close hook (e.g. a bsdsocket socket).  The owner
-           releases its own fd.library reservation. */
-        APTR data;
-        const struct fd_hooks *hooks = __getfdhooks(fd, &data);
-        if (hooks && hooks->fdh_close)
-        {
-            LONG err = 0;
-            if (hooks->fdh_close(data, fd, &err) < 0)
-            {
-                errno = err;
-                return -1;
-            }
-            return 0;
-        }
-        errno = EBADF;
-
-        return -1;
+        LONG err=0;
+        int result=__fdhook(fd,__FDH_CLOSE,0,0,0,&err);
+        if (result<0) errno=err;
+        return result;
     }
 
     /* Serialise the reference-count decrement and the final teardown

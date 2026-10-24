@@ -1,5 +1,7 @@
 /*
   Copyright (C) 2014 Szilard Biro
+  Copyright (C) 2026 John Knipper
+  Altered for native AROS signal-mask error reporting.
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -37,25 +39,31 @@
 	sigset_t *oldset)
 
 /*  FUNCTION
-        Reject a request to inspect or modify the calling thread's signal
-        mask because this operation is not implemented.
+        Inspect or modify the calling thread's signal mask through its
+        task-local POSIX library base.
 
     INPUTS
-        how - Requested signal-mask operation; ignored.
-        set - Pointer to the requested signal set; ignored.
-        oldset - Pointer for the previous signal mask; not written.
+        how - Signal-mask operation accepted by sigprocmask().
+        set - Requested signal set, or NULL to inspect the existing mask.
+        oldset - Optional destination for the previous signal mask.
 
     RESULT
-        Always returns -1 and sets errno to ENOSYS.
+        Returns zero on success or the positive error number on failure.
+        Leaves errno unchanged.
 
     NOTES
-        The thread's signal mask remains unchanged.
+        Uses the same per-task signal-mask implementation as sigprocmask().
 
 ******************************************************************************/
 {
-    /* TODO: Implement pthread_sigmask() */
-    AROS_FUNCTION_NOT_IMPLEMENTED("pthread");
-    errno = ENOSYS;
-    
-    return -1;
+    int saved_errno = errno;
+    int error = 0;
+
+    if (sigprocmask(how, set, oldset) != 0)
+        error = errno ? errno : EINVAL;
+
+    /* POSIX: pthread_sigmask() returns the error and leaves errno alone. */
+    errno = saved_errno;
+
+    return error;
 } /* pthread_sigmask */

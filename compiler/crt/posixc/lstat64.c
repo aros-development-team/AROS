@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -12,10 +12,7 @@
 #include "__stat.h"
 #include "__upath.h"
 
-/* like Dos_Lock() but no automatic soft link resolution */
-static BPTR __lock(
-    const char* name,
-    LONG        accessMode);
+#include "__lstat_lock.h"
 
 /*****************************************************************************
 
@@ -73,7 +70,7 @@ static BPTR __lock(
     if (path == NULL)
         return -1;
 
-    lock = __lock(path, SHARED_LOCK);
+    lock = __lstat_lock(path, SHARED_LOCK);
     if (!lock)
     {
         if (   IoErr() == ERROR_IS_SOFT_LINK
@@ -98,11 +95,4 @@ static BPTR __lock(
     UnLock(lock);
 
     return res;
-}
-
-static BPTR __lock(
-    const char* name,
-    LONG        accessMode)
-{
-    return Lock(name, accessMode);
 }

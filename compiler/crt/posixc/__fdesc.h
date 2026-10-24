@@ -73,6 +73,7 @@ void __setfdarraybase(struct PosixCIntBase *PosixCBase2);
 fdesc *__getfdesc(register int fd);
 void __setfdesc(register int fd, fdesc *fdesc);
 int __getfdslot(int wanted_fd);
+int __dupfd(int oldfd, int minimum, int flags);
 /* wanted_fd for __getfdslot()/__open(): the lowest free fd, picked and
    reserved under the table lock so two Tasks cannot get the same one */
 #define __FD_FIRSTFREE (-2)
@@ -90,5 +91,15 @@ void __close_on_exec_fdescs(void);
    file descriptor (handled locally) or when fd.library is unavailable. */
 struct fd_hooks;
 const struct fd_hooks *__getfdhooks(int fd, APTR *datap);
+
+/* Coherent foreign-owner call admission. Every call retains fd.library and
+ * its hook binding until completion; providers must also retire their objects. */
+#define __FDH_READ 1
+#define __FDH_WRITE 2
+#define __FDH_CLOSE 3
+#define __FDH_IOCTL 4
+#define __FDH_FCNTL 5
+#define __FDH_DUP 6
+SIPTR __fdhook(int fd, int operation, IPTR a, IPTR b, IPTR c, LONG *error);
 
 #endif /* ___FDESC_H */

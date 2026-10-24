@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     C99 function strerror().
 */
@@ -92,7 +92,7 @@ static const char * _errstrings[__STDC_ELAST+2] =
     /* ENOENT          */       "No such file or directory",
     /* NA              */       NULL,
     /* EINTR           */       "Interrupted system call",
-    /* NA              */       NULL,
+    /* EIO             */       "Input/output error",
     /* NA              */       NULL,
     /* NA              */       NULL,
     /* ENOEXEC         */       "Exec format error",

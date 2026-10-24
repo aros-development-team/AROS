@@ -1,14 +1,12 @@
 /*
     Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2026 John Knipper.
 
     C99 function rename().
 */
 #include <proto/dos.h>
 #include <errno.h>
 
-#include <aros/debug.h>
-
-#include "debug.h"
 
 /*****************************************************************************
 
@@ -43,45 +41,22 @@
 
 ******************************************************************************/
 {
-    BPTR oldlock, newlock;
+    LONG error;
 
-    /* try to delete newpath first */
-    Forbid();
+    /* Request the native non-replacing operation. Handler guarantees are
+     * qualified separately; this wrapper never deletes the destination. */
+    if (Rename((CONST_STRPTR)oldpath, (CONST_STRPTR)newpath))
+        return 0;
 
-    newlock = Lock(newpath, SHARED_LOCK);
-    if (newlock)
+    error = IoErr();
+    if (error == ERROR_OBJECT_EXISTS)
     {
-        UnLock(newlock);
-
-        oldlock = Lock(oldpath, EXCLUSIVE_LOCK);
-        if (oldlock)
-        {
-            UnLock(oldlock);
-
-            /* DeleteFile returns an error if directory is non-empty */
-            if (!DeleteFile(newpath))
-            {
-                LONG ioerr = IoErr();
-                errno = __stdc_ioerr2errno(ioerr);
-                D(bug("[%s] %s: '%s' -> '%s', delete errno=%d, IoErr=%d\n", STDCNAME, __func__,
-                        oldpath, newpath, errno, ioerr));
-                Permit();
-                return -1;
-            }
-        }
+        error = ERROR_ACTION_NOT_KNOWN;
     }
 
-    if (!Rename (oldpath, newpath))
-    {
-        LONG ioerr = IoErr();
-        errno = __stdc_ioerr2errno(ioerr);
-        D(bug("[%s] %s: '%s' -> '%s' errno=%d, IoErr=%d\n", STDCNAME, __func__,
-                oldpath, newpath, errno, ioerr));
-        Permit();
-        return -1;
-    }
-
-    Permit();
-    return 0;
-
+    /* Native replacement needs its own public capability contract. Refuse it
+     * safely until available, and preserve the captured DOS error for callers. */
+    errno = error == 0 ? EIO : __stdc_ioerr2errno(error);
+    SetIoErr(error);
+    return -1;
 } /* rename */

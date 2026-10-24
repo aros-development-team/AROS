@@ -2,7 +2,7 @@
 #define EXEC_TYPES_H
 
 /*
-    Copyright � 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright � 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Data typing - must be included before any other file.
@@ -231,12 +231,23 @@
 #   define VOID                                 void
 #endif
 
+/* Guarded individually: portable C defines its own versions of these
+ * ancient storage-class macros (sqlite3.c has a function-like GLOBAL(t,v);
+ * this header reaching it through <pthread.h> must not clobber that). */
 #ifndef NO_AMIGA_LINKAGE_TYPES
+#ifndef GLOBAL
 #define GLOBAL                                  extern
+#endif
+#ifndef IMPORT
 #define IMPORT                                  extern
+#endif
+#ifndef STATIC
 #define STATIC                                  static
 #endif
+#endif
+#ifndef REGISTER
 #define REGISTER                                register
+#endif
 
 #ifndef CONST
 #if __STDC__

@@ -92,27 +92,19 @@
        dispatch the ioctl (FIONBIO/FIONREAD/...) through its hook. */
     if (desc == NULL)
     {
-        APTR data;
-        const struct fd_hooks *hooks = __getfdhooks(fd, &data);
-        if (hooks && hooks->fdh_ioctl)
-        {
-            va_list ap;
-            APTR arg;
-            LONG err = 0, r;
-            va_start(ap, request);
-            arg = va_arg(ap, APTR);
-            va_end(ap);
-            /* request is an int but the codes are unsigned 32-bit values
-               with bit 31 set (FIONBIO = _IOW('f', 126, long) = 0x8008667e),
-               so on 64-bit targets a plain (IPTR) cast sign-extends and no
-               hook's switch can match it. Zero-extend instead. */
-            r = hooks->fdh_ioctl(data, fd, (IPTR)(ULONG)request, arg, &err);
-            if (r < 0)
-                errno = err;
-            return r;
-        }
-        errno = hooks ? ENOTTY : EBADF;
-        return -1;
+        LONG err = 0;
+        va_list ap;
+        APTR arg;
+        SIPTR result;
+
+        va_start(ap, request);
+        arg = va_arg(ap, APTR);
+        va_end(ap);
+        result = __fdhook(fd, __FDH_IOCTL, (IPTR)(ULONG)request,
+                          (IPTR)arg, 0, &err);
+        if (result < 0)
+            errno = err;
+        return result;
     }
 
     if (!desc->fcb)
