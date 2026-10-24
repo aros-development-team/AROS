@@ -158,7 +158,7 @@ unsigned       maxsize;
   register int   limit;
 
 
-  if ((limit= *(BSTRp++)) > ((int) maxsize - 1))     /* leave room for '\0' */
+  if ((limit= (UBYTE) *(BSTRp++)) > ((int) maxsize - 1))     /* leave room for '\0' */
     limit= (int) maxsize - 1;
 
   for (i= 0; i < limit; ++i)
