@@ -372,8 +372,8 @@ struct DosPacket  *pkt;
                OpenPipe (wd->pktinfo.tapwait.clientpkt, (BPTR)pkt->dp_Arg1);
              else     /* couldn't open tap */
                { FreeMem (wd->pktinfo.tapwait.handle, sizeof (struct FileHandle));
-                 pkt->dp_Res1= 0;
-                 pkt->dp_Res2= ERROR_INVALID_COMPONENT_NAME;
+                 wd->pktinfo.tapwait.clientpkt->dp_Res1= 0;
+                 wd->pktinfo.tapwait.clientpkt->dp_Res2= pkt->dp_Res2;
                  QuickReplyPkt (wd->pktinfo.tapwait.clientpkt);
                }
 
