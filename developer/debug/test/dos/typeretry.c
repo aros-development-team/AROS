@@ -77,10 +77,15 @@ int main(int argc, char **argv)
         LONG rc, error, n = -1;
         ULONG pending;
         BPTR f;
-        snprintf(command, sizeof command, "%s", cases[i].args);
+        int command_size = snprintf(command, sizeof command, "%s", cases[i].args);
+        if (command_size < 0 || (size_t)command_size >= sizeof command) {
+            Printf("FAIL test command length\n");
+            ++failed;
+            break;
+        }
         SetSignal(0, SIGBREAKF_CTRL_C);
         if (cases[i].signal) Signal(FindTask(NULL), SIGBREAKF_CTRL_C);
-        rc = RunCommand(segment, 65536, command, strlen(command));
+        rc = RunCommand(segment, 65536, command, command_size);
         error = IoErr();
         pending = SetSignal(0, SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C;
         f = Open("out", MODE_OLDFILE);
