@@ -50,6 +50,7 @@ FILES := \
     systemtags_slave \
     systemtags2 \
     systemtags2_slave \
+    typeretry \
     waitforchar
 
 PURE_FILES := \
