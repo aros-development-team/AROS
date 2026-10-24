@@ -41,6 +41,7 @@
 #include <api/amiga_api.h>
 #include <api/amiga_libcallentry.h>
 #include <kern/uipc_socket_protos.h>
+#include <api/native_socket.h>
 
 /* fd.library base, opened once at api_init().  Shared (single instance). */
 struct Library *FDBase = NULL;
@@ -332,23 +333,39 @@ BOOL fdhooks_setup(void)
     if (FDBase == NULL)
         return FALSE;
 
-    if (FD_SetOwnerHooks(FD_OWNER_BSDSOCKET, &bsdsocket_fd_hooks) != 0)
-    {
+    if (FD_SetOwnerHooks(FD_OWNER_BSDSOCKET, &bsdsocket_fd_hooks) != 0) {
         CloseLibrary(FDBase);
         FDBase = NULL;
         return FALSE;
     }
+    /* Owned descriptors require fd.library51; legacy hooks remain available. */
+    native_socket_setup();
     return TRUE;
 }
 
-void fdhooks_cleanup(void)
+/* Nonblocking admission barrier. EBUSY keeps the old table and library
+   reference intact, including while a retirement callback is running. */
+BOOL fdhooks_withdraw(void)
 {
+    if (FDBase == NULL) return TRUE;
+    if (!native_socket_withdraw()) return FALSE;
+    if (FD_SetOwnerHooks(FD_OWNER_BSDSOCKET, NULL) == 0) return TRUE;
+    /* Legacy admission is busy: restore the native admission withdrawn above
+       before the service resumes after the refused stop. */
+    native_socket_setup();
+    return FALSE;
+}
+
+BOOL fdhooks_cleanup(void)
+{
+    if (!fdhooks_withdraw())
+        return FALSE;
     if (FDBase != NULL)
     {
-        FD_SetOwnerHooks(FD_OWNER_BSDSOCKET, NULL);
         CloseLibrary(FDBase);
         FDBase = NULL;
     }
+    return TRUE;
 }
 
 #endif /* ENABLE_FDLIBRARY */
