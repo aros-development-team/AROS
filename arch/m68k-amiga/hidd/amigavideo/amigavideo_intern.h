@@ -30,6 +30,13 @@ struct copper2data
 };
 
 
+struct amigavideo_retiredcl
+{
+    struct amigavideo_retiredcl *next;
+    struct CopList              *cl;
+    ULONG                       compgen;        /* csd->compgen when retired */
+};
+
 struct NativeChipsetMode
 {
     struct Node                 node;
@@ -94,6 +101,11 @@ struct amigavideo_staticdata
     struct Interrupt            inter;
     volatile UWORD              framecounter;
     struct amigabm_data         *updatescroll;
+
+    /* display lists of deinitialised ViewPorts the copper may still run */
+    struct amigavideo_retiredcl *retiredcl;
+    ULONG                       compgen;        /* compositions done */
+    UWORD                       compframe;      /* framecounter at the last one */
 
     WORD                        width_alignment;
     WORD                        startx, starty;
