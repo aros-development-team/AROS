@@ -444,15 +444,21 @@ int main (void)
                             continue;
                         }
 
-                        for (error = MatchFirst(*names, &apath.apath);
-                             !error;
-                             error = MatchNext(&apath.apath))
+                        /* Only an Open failure can require wildcard expansion.
+                         * A dump error must not reopen an already processed file.
+                         */
+                        if (numfiles == 0)
                         {
-                                error = processfile(apath.apath.ap_Buf, in, out, args, &numfiles);
-                                if (error)
-                                        break;
+                            for (error = MatchFirst(*names, &apath.apath);
+                                 !error;
+                                 error = MatchNext(&apath.apath))
+                            {
+                                    error = processfile(apath.apath.ap_Buf, in, out, args, &numfiles);
+                                    if (error)
+                                            break;
+                            }
+                            MatchEnd(&apath.apath);
                         }
-                        MatchEnd(&apath.apath);
 
                         if (numfiles == 0 && error == ERROR_NO_MORE_ENTRIES)
                         {
