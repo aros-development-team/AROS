@@ -9236,46 +9236,52 @@ static void pWrBE32(APTR ptr, ULONG val)
 /* \\\ */
 
 /* /// "psdLoadCfgFromDisk()" */
-/****** poseidon.library/psdLoadCfgFromDisk ************************
+/*****************************************************************************
+    NAME
+        BOOL psdLoadCfgFromDisk(
 
-    NAME */
-        AROS_LH1(BOOL, psdLoadCfgFromDisk,
-/*  SYNOPSIS */
-         AROS_LHA(STRPTR, filename, A1),
-/*  LOCATION */
-         LIBBASETYPEPTR, ps, 79, psd)
-/*  FUNCTION
-        Load a Poseidon preferences FORM from a DOS file and attempt to apply
-        its configuration to the USB stack.
+    SYNOPSIS
+        STRPTR filename)
+
+    FUNCTION
+        Read a Poseidon preferences file and apply its configuration to the
+        running stack.
 
     INPUTS
-        filename - DOS path to the preferences file, or NULL to search the
-                   default paths.
+        filename - NUL-terminated DOS path, valid until return. NULL tries
+            ENV:Sys/poseidon.prefs first, then ENVARC:Sys/poseidon.prefs if
+            the first attempt returns FALSE.
 
     RESULT
-        TRUE after a recognized FORM header and complete payload read;
-        FALSE if a file cannot be opened or the read cannot be completed.
-        TRUE does not establish that the configuration was accepted.
+        TRUE after the header and declared payload have been read and
+        configuration application has been attempted. FALSE if DOS cannot be
+        opened, the file cannot be opened, the header is rejected, allocation
+        fails, or the requested bytes cannot be read.
 
     NOTES
-        With a NULL filename, ENV:Sys/poseidon.prefs is tried first and
-        ENVARC:Sys/poseidon.prefs is tried only if the first load fails.
-        The file must be a Poseidon IFF PSDCFG FORM. After reading, the
-        implementation calls psdReadCfg() and psdParseCfg(), which may
-        change registered USB classes and hardware. On reported success,
-        the current configuration hash is marked as saved.
+        This call performs synchronous file I/O and may add or remove hardware,
+        load or unload classes, and change device bindings through psdParseCfg().
+        Call from a context that permits DOS I/O and blocking stack operations.
+        The filename is not retained. A reported success updates the saved
+        configuration hash.
 
     BUGS
-        The return value of psdReadCfg() is ignored. A complete file read
-        can therefore be reported as success even if the FORM is rejected.
-        The FORM length is not checked for a minimum value or a safe upper
-        bound before subtraction and allocation. Malformed length fields
-        can cause unsigned underflow or invalid memory access.
+        Only load trusted, structurally valid Poseidon IFF configuration files.
+        The declared FORM length is used without complete bounds or overflow
+        validation. Malformed lengths can cause invalid memory accesses.
+
+        The result of psdReadCfg() is ignored. TRUE does not establish that the
+        configuration was imported completely or that all devices and classes
+        were configured. Import failure can leave a partially replaced tree;
+        there is no rollback. A TRUE result also prevents default-path fallback.
 
     SEE ALSO
-        psdSaveCfgToDisk(), psdReadCfg(), psdParseCfg()
+        psdReadCfg(), psdParseCfg(), psdSaveCfgToDisk()
 
-******************************************************************************/
+*****************************************************************************/
+        AROS_LH1(BOOL, psdLoadCfgFromDisk,
+         AROS_LHA(STRPTR, filename, A1),
+         LIBBASETYPEPTR, ps, 79, psd)
 {
     AROS_LIBFUNC_INIT
     ULONG *buf;
@@ -9352,47 +9358,47 @@ static void pWrBE32(APTR ptr, ULONG val)
 /* \\\ */
 
 /* /// "psdSaveCfgToDisk()" */
-/****** poseidon.library/psdSaveCfgToDisk ************************
+/*****************************************************************************
+    NAME
+        BOOL psdSaveCfgToDisk(
 
-    NAME */
-        AROS_LH2(BOOL, psdSaveCfgToDisk,
-/*  SYNOPSIS */
-         AROS_LHA(STRPTR, filename, A1),
-         AROS_LHA(BOOL, executable, D0),
-/*  LOCATION */
-         LIBBASETYPEPTR, ps, 80, psd)
-/*  FUNCTION
-        Serialize the current Poseidon configuration and write it to a
-        DOS file.
+    SYNOPSIS
+        STRPTR filename, BOOL mode)
+
+    FUNCTION
+        Write the current configuration to a Poseidon preferences file.
 
     INPUTS
-        filename   - Destination DOS path, or NULL for both default
-                     preferences paths.
-        executable - Unused by the current implementation.
+        filename - NUL-terminated DOS path, valid until return. NULL writes
+            both ENVARC:Sys/poseidon.prefs and ENV:Sys/poseidon.prefs, in
+            that order. Both writes are attempted.
+        mode - Ignored by this implementation. Pass FALSE.
 
     RESULT
-        TRUE when serialization returns a buffer and the destination
-        file is opened, or when both default-path calls report TRUE.
-        FALSE otherwise. A TRUE result does not confirm a complete write.
+        TRUE if serialization and opening the destination succeeded. FALSE
+        if DOS cannot be opened, serialization fails, or opening fails. With
+        filename NULL, TRUE requires both default-path calls to return TRUE.
 
     NOTES
-        With a NULL filename, ENVARC:Sys/poseidon.prefs is written first,
-        followed by ENV:Sys/poseidon.prefs; both calls are made and both
-        must report success. A named destination is opened with
-        MODE_NEWFILE, replacing its previous contents. The serialized
-        buffer is released internally. After reported success, the current
-        configuration hash is marked as saved. The executable argument
-        does not affect file creation or permissions.
+        Performs synchronous DOS I/O while holding the configuration read lock.
+        Opening an existing destination truncates it. There is no temporary-file
+        replacement or rollback. The filename is not retained. A reported
+        success updates the saved configuration hash.
 
     BUGS
-        The return value of Write() is ignored. Short or failed writes
-        may be reported as successful, including when a destination has
-        been truncated. No temporary file or atomic replacement is used.
+        Write() and Close() results are ignored. TRUE does not establish that
+        the file was written completely or closed successfully. A failed write
+        can leave a truncated file and still mark the configuration as saved.
+        The two default destinations are not updated atomically.
 
     SEE ALSO
-        psdLoadCfgFromDisk(), psdWriteCfg(), psdParseCfg()
+        psdWriteCfg(), psdLoadCfgFromDisk()
 
-******************************************************************************/
+*****************************************************************************/
+        AROS_LH2(BOOL, psdSaveCfgToDisk,
+         AROS_LHA(STRPTR, filename, A1),
+         AROS_LHA(BOOL, executable, D0),
+         LIBBASETYPEPTR, ps, 80, psd)
 {
     AROS_LIBFUNC_INIT
     ULONG *buf;
@@ -9883,44 +9889,52 @@ static void pWrBE32(APTR ptr, ULONG val)
 /* \\\ */
 
 /* /// "psdParseCfg()" */
-/****** poseidon.library/psdParseCfg ***************************************
+/*****************************************************************************
+    NAME
+        VOID psdParseCfg(
 
-    NAME */
-        AROS_LH0(void, psdParseCfg,
-/*  SYNOPSIS */
-/*  LOCATION */
-         LIBBASETYPEPTR, ps, 60, psd)
-/*  FUNCTION
-        Apply the stored Poseidon stack configuration to installed USB
-        controller hardware and USB class libraries.
+    SYNOPSIS
+        )
+
+    FUNCTION
+        Apply the in-memory stack configuration to hardware and USB classes,
+        then scan devices for class bindings.
+
+    RESULT
+        None. Failures are not returned to the caller.
 
     NOTES
-        If the global stack configuration form is absent, the function
-        returns without changing the installed hardware or classes. If the
-        form contains no hardware entries, existing hardware is retained.
-        Classes marked resident are retained while still in use.
+        May block while opening classes, adding or enumerating hardware,
+        removing resources, or scanning bindings. Coordinate the call with
+        other configuration changes and stack lifecycle operations.
 
-        The function reconciles configured class names and enabled hardware
-        units with the live lists, removes obsolete entries, loads missing
-        classes, and enumerates newly added controllers. It then marks the
-        configuration as read, updates the saved hash and starts a class
-        scan. During early task-based startup, a configured boot delay can
-        be applied when mass-storage bindings are active.
+        If no stack configuration form exists, hardware and class reconciliation
+        is skipped. If the form has no hardware entries, existing hardware is
+        preserved. Otherwise hardware absent from the enabled entries is
+        removed. Classes absent from the configured list are removed, except
+        resident classes whose use count is nonzero.
 
-        Configuration locks are released before removals, then reacquired
-        while adding classes and hardware. This routine may allocate,
-        open libraries, enumerate devices and delay its caller.
+        Missing classes are opened. Missing enabled hardware is added and
+        enumerated; hardware whose initial enumeration fails is removed again.
+        These operations can invalidate existing device and binding handles.
+
+        After reconciliation, marks the configuration as read, updates the saved
+        configuration hash, and calls psdClassScan(). When called by a task
+        rather than a process, a configured boot delay may wait for hubs and
+        mass-storage bindings. This call does not save a preferences file.
 
     BUGS
-        The class-addition path holds the configuration lock while opening
-        libraries; the implementation explicitly notes a possible deadlock
-        when library initialization accesses configuration in another task.
-        No completion or partial-failure status is returned.
+        Application is not transactional. Individual add and remove failures
+        have no aggregate result, and completed changes are not rolled back.
+        Class opening occurs while the configuration read lock is held; a class
+        that waits for another task to modify configuration can deadlock.
 
     SEE ALSO
-        psdReadCfg(), psdClassScan(), psdAddClass(), psdAddHardware()
+        psdReadCfg(), psdLoadCfgFromDisk(), psdSaveCfgToDisk(), psdClassScan()
 
-******************************************************************************/
+*****************************************************************************/
+        AROS_LH0(void, psdParseCfg,
+         LIBBASETYPEPTR, ps, 60, psd)
 {
     AROS_LIBFUNC_INIT
     struct PsdIFFContext *pic;
@@ -10509,57 +10523,53 @@ static void pWrBE32(APTR ptr, ULONG val)
 /* \\\ */
 
 /* /// "psdSetForcedBinding()" */
-/****** poseidon.library/psdSetForcedBinding ************************
+/*****************************************************************************
+    NAME
+        BOOL psdSetForcedBinding(
 
-    NAME */
+    SYNOPSIS
+        STRPTR owner, STRPTR devid, STRPTR ifid)
+
+    FUNCTION
+        Store or remove the preferred USB class for a device or interface in
+        the in-memory configuration.
+
+    INPUTS
+        owner - NUL-terminated class name to store. NULL or an empty string
+            removes the forced binding.
+        devid - Non-NULL, NUL-terminated device ID string.
+        ifid - NUL-terminated interface ID string, or NULL for a device binding.
+            Strings must remain valid until return; stored values are copied.
+
+    RESULT
+        TRUE if the binding was stored, or if removal was requested, including
+        when no matching binding existed. FALSE if storing could not complete.
+        Failure can leave configuration changes in place.
+
+    NOTES
+        May wait for the configuration write lock. Searches the first matching
+        device form. Interface removal affects all matching interface forms
+        within that device; device removal leaves interface bindings intact.
+
+        Does not load the named class, verify that it accepts the target, or
+        release and rebind an existing device. Changes remain in memory until
+        saved. A changed configuration hash triggers a configuration-change
+        event; storing a name does not establish a live binding.
+
+    BUGS
+        Updates are not transactional. Allocation failure can remove a previous
+        value or leave incomplete or duplicate configuration forms. FALSE does
+        not guarantee that the previous binding remains available.
+
+    SEE ALSO
+        psdGetForcedBinding(), psdClassScan(), psdSaveCfgToDisk()
+
+*****************************************************************************/
         AROS_LH3(BOOL, psdSetForcedBinding,
-/*  SYNOPSIS */
          AROS_LHA(STRPTR, owner, A2),
          AROS_LHA(STRPTR, devid, A0),
          AROS_LHA(STRPTR, ifid, A1),
-/*  LOCATION */
          LIBBASETYPEPTR, ps, 69, psd)
-/*  FUNCTION
-        Store or remove a forced USB class binding in Poseidon's device
-        configuration. A binding may apply to a whole device or to one
-        interface, depending on whether an interface identifier is given.
-
-    INPUTS
-        owner - Class owner name to store. NULL or an empty string removes
-                the forced-binding chunk instead.
-        devid - NUL-terminated device identifier to look up; must be valid.
-        ifid  - NUL-terminated interface identifier for an interface-level
-                setting, or NULL for a device-level setting.
-
-    RESULT
-        TRUE if the requested configuration operation is reported as
-        successful; FALSE if a required form or chunk could not be added.
-        Removing a binding can return TRUE even when no matching record
-        or forced-binding chunk existed.
-
-    NOTES
-        The configuration is accessed under the exclusive ConfigLock.
-        Existing matching records are updated. For a nonempty owner,
-        missing device or interface forms may be created. The class name
-        is copied into a configuration chunk. The configuration-change
-        check runs after releasing ConfigLock.
-
-        This function changes stored configuration. It does not release
-        existing USB bindings, claim devices, or guarantee that the named
-        class will be selected immediately.
-
-    BUGS
-        Removal reports TRUE without checking whether a chunk was found
-        or deleted. Adding a form or a sequence of string chunks has no
-        rollback: allocation failure can leave incomplete configuration
-        records even when FALSE is returned. Duplicate matching interface
-        forms may all be updated. No validation of a NULL device identifier
-        is performed before string comparison.
-
-    SEE ALSO
-        psdGetForcedBinding(), psdParseCfg(), psdAddStringChunk()
-
-******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     struct PsdIFFContext *pic;
@@ -10664,52 +10674,45 @@ static void pWrBE32(APTR ptr, ULONG val)
 /* \\\ */
 
 /* /// "psdGetForcedBinding()" */
-/****** poseidon.library/psdGetForcedBinding ************************
+/*****************************************************************************
+    NAME
+        STRPTR psdGetForcedBinding(
 
-    NAME */
-        AROS_LH2(STRPTR, psdGetForcedBinding,
-/*  SYNOPSIS */
-         AROS_LHA(STRPTR, devid, A0),
-         AROS_LHA(STRPTR, ifid, A1),
-/*  LOCATION */
-         LIBBASETYPEPTR, ps, 70, psd)
-/*  FUNCTION
-        Look up the configured forced class binding for a device or one
-        of its interfaces.
+    SYNOPSIS
+        STRPTR devid, STRPTR ifid)
+
+    FUNCTION
+        Look up the configured forced class binding for a device or interface.
 
     INPUTS
-        devid - NUL-terminated device identifier to look up; must be valid.
-        ifid  - NUL-terminated interface identifier, or NULL to query the
-                device-level forced binding.
+        devid - Non-NULL, NUL-terminated device ID string.
+        ifid - NUL-terminated interface ID string, or NULL for a device binding.
+            Both strings must remain valid until return.
 
     RESULT
-        Pointer to the class owner name stored in the matching
-        configuration chunk, or NULL if no matching forced binding is
-        found. The pointer is borrowed; it must not be freed by the caller.
+        A borrowed pointer to the stored class name, or NULL if no matching
+        binding is found. Do not modify or free the returned string.
 
     NOTES
-        The lookup holds ConfigLock in shared mode but releases it before
-        returning. The result points directly into Poseidon's internal
-        configuration storage, not to an allocated copy. A later update,
-        deletion or relocation of the chunk buffer may invalidate it.
-        External synchronization is required when a stable reference is
-        needed; the function provides no protected copy operation.
+        May wait for the configuration read lock. Searches only the first
+        matching device form. An interface lookup does not fall back to the
+        device binding. The result describes configuration, not a live binding
+        or proof that the named class is available.
 
-        A non-NULL interface identifier selects interface-level lookup.
-        If no interface binding is found, the function does not fall back
-        to a device-level setting. NULL also represents missing device
-        or interface records.
-
-    BUGS
-        The returned pointer is not protected against concurrent
-        configuration changes after the shared lock is released.
-        No validation of a NULL device identifier is performed before
-        string comparison.
+        The read lock is released before return. Configuration replacement,
+        removal, or buffer reallocation can invalidate the pointer. Exclude
+        concurrent configuration mutation for the lookup and the entire use
+        of the result; copy it while that exclusion remains in effect if a
+        longer-lived value is required.
 
     SEE ALSO
-        psdSetForcedBinding(), psdGetStringChunk(), psdParseCfg()
+        psdSetForcedBinding(), psdGetStringChunk()
 
-******************************************************************************/
+*****************************************************************************/
+        AROS_LH2(STRPTR, psdGetForcedBinding,
+         AROS_LHA(STRPTR, devid, A0),
+         AROS_LHA(STRPTR, ifid, A1),
+         LIBBASETYPEPTR, ps, 70, psd)
 {
     AROS_LIBFUNC_INIT
     struct PsdIFFContext *pic;
