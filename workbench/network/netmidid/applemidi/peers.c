@@ -2,7 +2,8 @@
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 */
 
-#include "rtpmidi/peers.h"
+#include <netmidi/text.h>
+#include "applemidi/peers.h"
 
 #include <string.h>
 
@@ -26,7 +27,7 @@ int applemidi_peers_allow(struct applemidi_peers *peers, uint32_t address,
 {
     struct applemidi_allowed *entry;
     size_t length = name ?
-        applemidi_text_length(name, APPLEMIDI_PEER_NAME_MAX) : 0;
+        netmidi_text_length(name, APPLEMIDI_PEER_NAME_MAX) : 0;
 
     if (!peers || peers->allowed_count == APPLEMIDI_ALLOWED_MAX ||
         (!address && !length) || length > APPLEMIDI_PEER_NAME_MAX)
@@ -51,7 +52,7 @@ static int may_connect(const struct applemidi_peers *peers, uint32_t address,
         return 0;
     for (i = 0; i < peers->allowed_count; ++i) {
         const struct applemidi_allowed *entry = &peers->allowed[i];
-        size_t length = applemidi_text_length(entry->name,
+        size_t length = netmidi_text_length(entry->name,
                                               APPLEMIDI_PEER_NAME_MAX);
         if (entry->address && entry->address == address)
             return 1;
@@ -108,7 +109,7 @@ static void remember_name(struct applemidi_peer *peer, const struct applemidi_pa
     size_t length = in->name_length;
     if (!in->name || !length)
         return;
-    length = applemidi_name_fit(in->name, length, APPLEMIDI_PEER_NAME_MAX);
+    length = netmidi_name_fit(in->name, length, APPLEMIDI_PEER_NAME_MAX);
     memcpy(peer->name, in->name, length);
     peer->name[length] = 0;
 }

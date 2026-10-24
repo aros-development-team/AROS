@@ -2,7 +2,7 @@
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 */
 
-#include "rtpmidi/applemidi.h"
+#include "applemidi/applemidi.h"
 
 #include <string.h>
 
@@ -60,31 +60,6 @@ uint16_t applemidi_feedback_acked(uint32_t field, uint16_t last_sent)
 
     return (uint16_t)(last_sent - first) <= (uint16_t)(last_sent - last) ?
            first : last;
-}
-
-size_t applemidi_name_fit(const uint8_t *name, size_t length, size_t limit)
-{
-    size_t cut = limit;
-    unsigned back;
-
-    if (!name || length <= limit)
-        return length;
-    /* a continuation byte is 10xxxxxx: step back to the byte that begins
-       the character the limit falls inside, at most three such bytes */
-    for (back = 0; back < 3 && cut && (name[cut] & 0xc0) == 0x80; ++back)
-        --cut;
-    if ((name[cut] & 0xc0) == 0x80)
-        return limit;           /* not UTF-8: nothing to keep whole */
-    return cut;
-}
-
-size_t applemidi_text_length(const char *text, size_t limit)
-{
-    size_t length = 0;
-
-    while (length <= limit && text[length])
-        ++length;
-    return length;
 }
 
 int applemidi_decode(const uint8_t *data, size_t length,

@@ -21,7 +21,7 @@
 
 #include "netmidi_camd.h"
 #include "netmidi_status.h"
-#include "rtpmidi/rtpmidi.h"
+#include <netmidi/limits.h>
 
 int netmidi_camd_open(struct netmidi_camd_runtime *runtime)
 {
@@ -30,7 +30,7 @@ int netmidi_camd_open(struct netmidi_camd_runtime *runtime)
     memset(runtime, 0, sizeof(*runtime));
     runtime->sysex_port = -1;
     runtime->signal_bit = AllocSignal(-1);
-    runtime->sysex = AllocMem(RTPMIDI_SYSEX_MAX, MEMF_ANY);
+    runtime->sysex = AllocMem(NETMIDI_SYSEX_MAX, MEMF_ANY);
     if (runtime->signal_bit < 0 || !runtime->sysex) {
         netmidi_camd_close(runtime);
         return -1;
@@ -234,7 +234,7 @@ void netmidi_camd_close(struct netmidi_camd_runtime *runtime)
         FreeSignal(runtime->signal_bit);
     runtime->signal_bit = -1;
     if (runtime->sysex)
-        FreeMem(runtime->sysex, RTPMIDI_SYSEX_MAX);
+        FreeMem(runtime->sysex, NETMIDI_SYSEX_MAX);
     runtime->sysex = NULL;
     runtime->opened = 0;
 }
@@ -332,7 +332,7 @@ static void take_byte(struct netmidi_camd_runtime *all, int number,
                while the first is unfinished is left out, as one that is
                too long is */
             if (runtime->in_sysex == 1 && all->sysex_port == number &&
-                runtime->sysex_length < RTPMIDI_SYSEX_MAX - 1) {
+                runtime->sysex_length < NETMIDI_SYSEX_MAX - 1) {
                 all->sysex[runtime->sysex_length++] = byte;
             } else if (runtime->in_sysex == 1) {
                 runtime->in_sysex = 2;

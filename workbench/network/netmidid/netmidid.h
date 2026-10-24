@@ -16,7 +16,8 @@
  * send or close: on AROS those are macros of bsdsocket.library. */
 
 #include <netmidi/config.h>
-#include <rtpmidi/ports.h>
+#include <netmidi/limits.h>
+#include <netmidi/ports.h>
 #include "camd.h"
 #include "discovery.h"
 #include "network.h"
@@ -36,7 +37,13 @@
 
 /* The longest SysEx message the core hands a transport; each gathers
  * what it receives into a buffer at least this long. */
-#define NETMIDID_SYSEX_MAX 32768
+#define NETMIDID_SYSEX_MAX NETMIDI_SYSEX_MAX
+
+/* Retry from five seconds up to one minute; queue at most ten seconds
+ * ahead. All intervals use the runtime clock (10000 ticks per second). */
+#define NETMIDID_WANTED_FIRST_WAIT 50000u
+#define NETMIDID_WANTED_LONGEST_WAIT 600000u
+#define NETMIDID_QUEUE_HORIZON 100000u
 
 struct netmidid_transport;
 
@@ -52,7 +59,7 @@ struct netmidid {
     struct netmidi_network_runtime network;
     struct netmidi_camd_runtime camd;
     /* the ports of each driver, given to peers by name or as they come */
-    struct applemidi_ports ports[NETMIDI_CAMD_DRIVERS];
+    struct netmidi_ports ports[NETMIDI_CAMD_DRIVERS];
     /* which transport reads each socket */
     const struct netmidid_transport *socket_owner[NETMIDI_NETWORK_SOCKETS];
     /* what the system's mDNS service advertises for us: kept across a

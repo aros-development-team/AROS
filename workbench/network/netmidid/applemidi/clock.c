@@ -2,11 +2,32 @@
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 */
 
-#include "rtpmidi/clock.h"
+#include "applemidi/clock.h"
 
 #include <string.h>
 
-#include "rtpmidi/timing.h"
+#include <limits.h>
+
+int applemidi_clock_offset(const uint64_t timestamps[3], int is_initiator,
+                    int64_t *peer_to_local)
+{
+    uint64_t midpoint;
+    uint64_t distance;
+    if (!timestamps || !peer_to_local || timestamps[2] < timestamps[0])
+        return -1;
+    midpoint = timestamps[0] + (timestamps[2] - timestamps[0]) / 2;
+    distance = midpoint >= timestamps[1] ? midpoint - timestamps[1] :
+                                           timestamps[1] - midpoint;
+    if (distance > INT64_MAX)
+        return -1;
+    if (is_initiator)
+        *peer_to_local = midpoint >= timestamps[1] ?
+                         (int64_t)distance : -(int64_t)distance;
+    else
+        *peer_to_local = midpoint >= timestamps[1] ?
+                         -(int64_t)distance : (int64_t)distance;
+    return 0;
+}
 
 void applemidi_clock_init(struct applemidi_clock *clock, int initiator,
                           uint64_t now)
@@ -87,7 +108,7 @@ int applemidi_clock_receive(struct applemidi_clock *clock,
         {
             int64_t offset;
 
-            if (rtpmidi_clock_offset(out->timestamps, 1, &offset) == 0) {
+            if (applemidi_clock_offset(out->timestamps, 1, &offset) == 0) {
                 clock->outstanding = 0;
                 if (clock->early < APPLEMIDI_CLOCK_FIRST_EXCHANGES)
                     ++clock->early;
@@ -102,7 +123,7 @@ int applemidi_clock_receive(struct applemidi_clock *clock,
         int64_t offset;
 
         /* the round trip is the peer's to measure: its two times */
-        if (rtpmidi_clock_offset(in->timestamps, 0, &offset) == 0) {
+        if (applemidi_clock_offset(in->timestamps, 0, &offset) == 0) {
             clock->answered = 0;
             exchange_done(clock, in->timestamps[2] - in->timestamps[0],
                           offset);

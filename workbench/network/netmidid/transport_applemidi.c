@@ -8,15 +8,17 @@
  * applemidi. The protocol is the link library rtpmidi's. */
 
 
+#include <netmidi/text.h>
+#include <netmidi/queue.h>
 #include "netmidid.h"
 
-#include <rtpmidi/applemidi.h>
-#include <rtpmidi/clock.h>
-#include <rtpmidi/peers.h>
-#include <rtpmidi/ports.h>
+#include <applemidi/applemidi.h>
+#include <applemidi/clock.h>
+#include <applemidi/peers.h>
+#include <netmidi/ports.h>
 #include <rtpmidi/receiver.h>
 #include <rtpmidi/rtpmidi.h>
-#include <rtpmidi/session.h>
+#include <applemidi/session.h>
 #include <rtpmidi/sender.h>
 #include <rtpmidi/timing.h>
 
@@ -47,7 +49,7 @@ struct stream {
     uint64_t last_activity;
     unsigned int retries;
     struct rtpmidi_sysex_assembler sysex;
-    struct rtpmidi_event_queue queue;
+    struct netmidi_event_queue queue;
     struct rtpmidi_sender sender;
     struct rtpmidi_receiver receiver;
     unsigned long timed;        /* events that came with a time to keep */
@@ -168,7 +170,7 @@ static void stream_begin(struct applemidi_runtime *rt, int index,
        slot has, and kept for the next */
     uint8_t *sysex_buffer = stream->sysex.bytes;
 
-    rtpmidi_queue_reset(&stream->queue);
+    netmidi_queue_reset(&stream->queue);
     memset(stream, 0, sizeof(*stream));
     if (!sysex_buffer)
         sysex_buffer = malloc(RTPMIDI_SYSEX_MAX);
@@ -181,7 +183,7 @@ static void stream_begin(struct applemidi_runtime *rt, int index,
     stream->sequence = (uint16_t)netmidid_random(now);
     applemidi_clock_init(&stream->clock, initiating, now);
     rtpmidi_sysex_reset(&stream->sysex);
-    rtpmidi_queue_reset(&stream->queue);
+    netmidi_queue_reset(&stream->queue);
     rtpmidi_sender_reset(&stream->sender);
     rtpmidi_receiver_init(&stream->receiver, &receiver_output, stream,
                           &stream->queue);
@@ -206,7 +208,7 @@ static void stream_forget(struct applemidi_runtime *rt, int index,
     applemidi_clock_init(&stream->clock, stream->initiating, now);
     stream->have_received_sequence = 0;
     rtpmidi_sysex_reset(&stream->sysex);
-    rtpmidi_queue_reset(&stream->queue);
+    netmidi_queue_reset(&stream->queue);
     if (stream->receiver.output) {
         rtpmidi_receiver_release_notes(&stream->receiver);
         rtpmidi_receiver_reset_channels(&stream->receiver);
@@ -403,8 +405,8 @@ static void receive_rtp(struct applemidi_runtime *rt, int index,
                     rtpmidi_clock_due(stream->sysex.timestamp, now,
                                  stream->clock.peer_to_local, &due) == 0 &&
                     stream_due(rt, stream, now, &due)) {
-                    if (due - now > RTPMIDI_QUEUE_HORIZON ||
-                        rtpmidi_queue_push_sysex(&stream->queue, due,
+                    if (due - now > NETMIDID_QUEUE_HORIZON ||
+                        netmidi_queue_push_sysex(&stream->queue, due,
                                             sysex_message,
                                             sysex_length) != 0)
                         puts(TAG "future SysEx event discarded");
@@ -424,8 +426,8 @@ static void receive_rtp(struct applemidi_runtime *rt, int index,
                 rtpmidi_clock_due(event.timestamp, now,
                              stream->clock.peer_to_local, &due) == 0 &&
                 stream_due(rt, stream, now, &due)) {
-                if (due - now > RTPMIDI_QUEUE_HORIZON ||
-                    rtpmidi_queue_push(&stream->queue, due, event.bytes,
+                if (due - now > NETMIDID_QUEUE_HORIZON ||
+                    netmidi_queue_push(&stream->queue, due, event.bytes,
                                   event.length) != 0)
                     puts(TAG "future MIDI event discarded");
                 continue;
@@ -575,7 +577,7 @@ static void receive_packet(struct applemidi_runtime *rt, int data_port)
         printf(TAG "session connected port=%d\n",
                rt->stream[index].port);
         {
-            size_t n = applemidi_name_fit(
+            size_t n = netmidi_name_fit(
                 packet.name, packet.name_length,
                 sizeof(rt->stream[index].count.name) - 1);
 
@@ -789,17 +791,17 @@ static void periodic_peer(struct applemidi_runtime *rt, int index,
     const struct applemidi_session *session =
         &rt->peers.peer[index].session;
     struct applemidi_packet packet;
-    struct rtpmidi_queued_event event;
+    struct netmidi_queued_event event;
     int data_port;
 
-    while (rtpmidi_queue_pop_due(&stream->queue, now, &event)) {
+    while (netmidi_queue_pop_due(&stream->queue, now, &event)) {
         if (event.sysex)
             rtpmidi_receiver_deliver_sysex(&stream->receiver, event.sysex,
                                            event.sysex_length);
         else
             rtpmidi_receiver_deliver(&stream->receiver, event.bytes,
                                      event.length);
-        rtpmidi_queue_event_release(&event);
+        netmidi_queue_event_release(&event);
     }
 
     if (session->phase == APPLEMIDI_SESSION_INVITING_CONTROL ||
@@ -868,15 +870,15 @@ static int applemidi_periodic(struct netmidid *d, void *self, uint64_t now)
             if (rt->peers.peer[index].session.phase ==
                     APPLEMIDI_SESSION_CONNECTED) {
                 rt->again_tried = now;
-                rt->again_wait = APPLEMIDI_WANTED_FIRST_WAIT;
+                rt->again_wait = NETMIDID_WANTED_FIRST_WAIT;
             }
         } else if (netmidid_elapsed(now, rt->again_tried) >=
                    rt->again_wait) {
             invite_configured(rt, now);
             rt->again_tried = now;
             rt->again_wait *= 2;
-            if (rt->again_wait > APPLEMIDI_WANTED_LONGEST_WAIT)
-                rt->again_wait = APPLEMIDI_WANTED_LONGEST_WAIT;
+            if (rt->again_wait > NETMIDID_WANTED_LONGEST_WAIT)
+                rt->again_wait = NETMIDID_WANTED_LONGEST_WAIT;
         }
     }
     return 0;
@@ -900,7 +902,7 @@ static int applemidi_next_due(struct netmidid *d, void *self, uint64_t *due)
     (void)d;
     for (index = 0; index < APPLEMIDI_PEERS_MAX; ++index)
         if (rt->peers.peer[index].used &&
-            rtpmidi_queue_next_due(&rt->stream[index].queue, &next) &&
+            netmidi_queue_next_due(&rt->stream[index].queue, &next) &&
             (!found || next < *due)) {
             *due = next;
             found = 1;
@@ -994,7 +996,7 @@ static int applemidi_open(struct netmidid *d, void *self)
     now = netmidid_now();
     if (applemidi_peers_init(&rt->peers, netmidid_random(now),
                         (const uint8_t *)d->session_name,
-                        applemidi_text_length(d->session_name,
+                        netmidi_text_length(d->session_name,
                             sizeof(d->session_name) - 1)) != 0)
         return -1;
     if (config->max_peers)
@@ -1015,7 +1017,7 @@ static int applemidi_start(struct netmidid *d, void *self, uint64_t now)
     if (rt->configured && invite_configured(rt, now) != 0)
         return -1;
     rt->again_tried = now;
-    rt->again_wait = APPLEMIDI_WANTED_FIRST_WAIT;
+    rt->again_wait = NETMIDID_WANTED_FIRST_WAIT;
     printf(TAG "listening on UDP %u/%u\n", (unsigned int)rt->local_port,
            (unsigned int)rt->local_port + 1);
     fflush(stdout);

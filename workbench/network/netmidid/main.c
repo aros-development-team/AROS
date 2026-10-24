@@ -82,7 +82,7 @@ int netmidid_socket(struct netmidid *d, const struct netmidid_transport *t,
 int netmidid_port_keep(struct netmidid *d, int driver, int index,
                        const char *name)
 {
-    return applemidi_ports_keep(&d->ports[driver], index, name);
+    return netmidi_ports_keep(&d->ports[driver], index, name);
 }
 
 int netmidid_port_take(struct netmidid *d, int driver, const uint8_t *name,
@@ -92,13 +92,13 @@ int netmidid_port_take(struct netmidid *d, int driver, const uint8_t *name,
 
     if (d->shared_port)
         return 0;
-    port = applemidi_ports_take(&d->ports[driver], name, name_length, owner);
+    port = netmidi_ports_take(&d->ports[driver], name, name_length, owner);
     return port < 0 ? -1 : driver * NETMIDI_CAMD_PORTS + port;
 }
 
 void netmidid_port_release(struct netmidid *d, int driver, int owner)
 {
-    applemidi_ports_release(&d->ports[driver], owner);
+    netmidi_ports_release(&d->ports[driver], owner);
 }
 
 
@@ -292,8 +292,8 @@ static int run(void)
     }
     d->shared_port = netmidi_camd_ports(&d->camd) == 1;
     for (i = 0; i < NETMIDI_CAMD_DRIVERS; ++i)
-        applemidi_ports_init(&d->ports[i], d->shared_port ? 0 :
-                                           netmidi_camd_ports(&d->camd));
+        netmidi_ports_init(&d->ports[i], d->shared_port ? 0 :
+                                         netmidi_camd_ports(&d->camd));
     for (i = 0; i < TRANSPORT_COUNT; ++i) {
         int status;
 

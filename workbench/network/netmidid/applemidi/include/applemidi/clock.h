@@ -8,7 +8,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "rtpmidi/applemidi.h"
+#include "applemidi/applemidi.h"
 
 /* The clock exchange of one AppleMIDI session. The side that sent the
  * invitation starts each exchange with a CK that has its own time; the
@@ -58,6 +58,10 @@ struct applemidi_clock {
     unsigned int kept_count;
     unsigned int kept_next;
 };
+
+/* Convert the three CK timestamps to a peer-to-local clock offset. */
+int applemidi_clock_offset(const uint64_t timestamps[3], int is_initiator,
+                           int64_t *peer_to_local);
 
 /* At the moment the session is connected. */
 void applemidi_clock_init(struct applemidi_clock *clock, int initiator,
