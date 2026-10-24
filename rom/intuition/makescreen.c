@@ -45,6 +45,7 @@
 
     struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     LONG  failure = TRUE;
+    BOOL  remake = FALSE;
     ULONG ilock = LockIBase(0);
 
     if (screen)
@@ -71,7 +72,7 @@
 
         if ((screen->ViewPort.Modes ^ IntuitionBase->ViewLord.Modes) & LACE)
         {
-            failure = RemakeDisplay();
+            remake = TRUE;
         }
         else
         {
@@ -80,6 +81,14 @@
     }
 
     UnlockIBase(ilock);
+
+    /*
+     * RemakeDisplay() ends with RethinkDisplay(), which takes the IBase lock
+     * in the input.device task. The lock nests, so it must not be held here
+     * either when RemakeDisplay() is called.
+     */
+    if (remake)
+        failure = RemakeDisplay();
 
     return failure;
 
