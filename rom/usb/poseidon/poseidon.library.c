@@ -1278,40 +1278,43 @@ AROS_UFH2(void, pPutChar,
 /* \\\ */
 
 /* /// "psdCopyStrFmtA()" */
-/****** poseidon.library/psdCopyStrFmtA ************************************
+/*****************************************************************************
+    NAME
+        STRPTR psdCopyStrFmtA(
 
-    NAME */
-        AROS_LH2(STRPTR, psdCopyStrFmtA,
-/*  SYNOPSIS */
-         AROS_LHA(CONST_STRPTR, fmtstr, A0),
-         AROS_LHA(RAWARG, fmtdata, A1),
-/*  LOCATION */
-         LIBBASETYPEPTR, ps, 68, psd)
-/*  FUNCTION
-        Allocate a string and format it with RawDoFmt() using a caller-supplied
-        argument stream.
+    SYNOPSIS
+        CONST_STRPTR fmtstr, RAWARG fmtdata)
+
+    FUNCTION
+        Allocate a string formatted with Exec RawDoFmt().
 
     INPUTS
-        fmtstr  - Valid RawDoFmt() format string.
-        fmtdata - RawDoFmt() argument stream matching fmtstr.
+        fmtstr - Non-NULL RawDoFmt format string.
+        fmtdata - Argument stream in the format required by RawDoFmt(),
+            matching fmtstr. Referenced strings must remain valid and unchanged
+            throughout both formatting passes.
 
     RESULT
-        Newly allocated, NUL-terminated string, or NULL if allocation fails.
-        Release the returned string with psdFreeVec().
+        A NUL-terminated allocated string, or NULL on allocation failure.
+        Release the result with psdFreeVec().
 
     NOTES
-        RawDoFmt() first measures the formatted length. The function then
-        allocates length plus one byte and calls psdSafeRawDoFmtA() to fill
-        the buffer. Neither the format nor its argument stream is copied.
+        Formats once to count output characters and again to fill the buffer.
+        The format and argument data are borrowed and are not retained.
+        RawDoFmt conventions apply, including argument widths and string
+        representations; this is not a printf argument list.
 
-    BUGS
-        The input pointers are not validated. Formatting is performed in two
-        passes; callers must supply an argument stream valid for both passes.
+        The character count, terminator and allocator overhead must fit in
+        ULONG. Count overflow and NULL input pointers are not checked.
 
     SEE ALSO
-        psdSafeRawDoFmtA(), psdFreeVec(), psdCopyStr()
+        psdSafeRawDoFmtA(), psdFreeVec(), exec.library/RawDoFmt()
 
-******************************************************************************/
+*****************************************************************************/
+        AROS_LH2(STRPTR, psdCopyStrFmtA,
+         AROS_LHA(CONST_STRPTR, fmtstr, A0),
+         AROS_LHA(RAWARG, fmtdata, A1),
+         LIBBASETYPEPTR, ps, 68, psd)
 {
     AROS_LIBFUNC_INIT
     ULONG len = 0;
@@ -2179,57 +2182,52 @@ struct PsdEndpoint * pAllocEndpoint(struct PsdInterface *pif)
 /* \\\ */
 
 /* /// "psdFindEndpointA()" */
-/****** poseidon.library/psdFindEndpointA ************************
+/*****************************************************************************
+    NAME
+        APTR psdFindEndpointA(
 
-    NAME */
+    SYNOPSIS
+        APTR pif, APTR pep, struct TagItem *taglist)
+
+    FUNCTION
+        Find the next endpoint matching all supplied filters.
+
+    INPUTS
+        pif - Valid interface handle.
+        pep - NULL to start at the first endpoint; otherwise a previous result
+            belonging to pif. Searching resumes after that endpoint.
+        taglist - Filter list, or NULL for no filters.
+
+    TAGS
+        EA_IsIn - Nonzero for IN, zero for OUT.
+        EA_EndpointNum, EA_TransferType, EA_MaxPktSize, EA_Interval,
+        EA_MaxBurst, EA_CompAttributes, EA_BytesPerInterval - Exact matches
+            against the corresponding stored endpoint attributes.
+
+    RESULT
+        A borrowed endpoint handle, or NULL if no further endpoint matches.
+
+    NOTES
+        Searches only this interface's endpoint list. Does not allocate an
+        endpoint, issue USB requests or retain the tag list. Unknown tags are
+        ignored. No lock is taken: keep the interface, cursor and returned
+        object alive and exclude concurrent list changes while traversing.
+        Do not free the result.
+
+    BUGS
+        EA_Interface, EA_SyncType, EA_UsageType and EA_MaxStreams are
+        declared but are not supported as search filters. A NULL
+        interface and an unrelated continuation cursor are unchecked.
+
+    SEE ALSO
+        psdFindInterfaceA(), psdGetAttrsA(), psdLockReadDevice()
+
+*****************************************************************************/
         AROS_LH3(struct PsdEndpoint *, psdFindEndpointA,
-/*  SYNOPSIS */
          AROS_LHA(struct PsdInterface *, pif, A0),
          AROS_LHA(struct PsdEndpoint *, pep, A2),
          AROS_LHA(struct TagItem *, tags, A1),
-/*  LOCATION */
          LIBBASETYPEPTR, ps, 67, psd)
-/*  FUNCTION
-        Find an endpoint in the given interface's endpoint list. A previous
-        result may be supplied to continue the search.
-
-    INPUTS
-        pif  - Interface whose endpoint list is searched; must be valid.
-        pep  - Previous endpoint or NULL to start at the first endpoint.
-        tags - Optional endpoint match criteria; see TAGS.
-
-    TAGS
-        EA_IsIn            - Nonzero selects IN, zero selects OUT.
-        EA_EndpointNum     - Endpoint number.
-        EA_TransferType    - Transfer type.
-        EA_MaxPktSize      - Maximum packet size.
-        EA_Interval        - Polling interval.
-        EA_MaxBurst        - Maximum burst value.
-        EA_CompAttributes  - Companion descriptor attributes.
-        EA_BytesPerInterval - Bytes per service interval.
-
-    RESULT
-        Next matching endpoint, or NULL if no match remains. The result
-        is owned by the interface and must not be freed by the caller.
-
-    NOTES
-        All supplied criteria are combined using exact equality, except
-        EA_IsIn, which treats any nonzero value as IN. A NULL pep starts
-        at the list head; otherwise iteration begins at pep's successor.
-
-        No lock is acquired and no ownership check is made for pep. Keep
-        the interface and its endpoint list stable across iteration.
-
-    BUGS
-        Other endpoint tags defined by the public header, including
-        EA_Interface, EA_SyncType, EA_UsageType and EA_MaxStreams, are not
-        interpreted by this search. The function does not check a NULL pif
-        or verify that the continuation endpoint belongs to the list.
-
-    SEE ALSO
-        psdFindInterfaceA(), psdFindDescriptorA()
-
-******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     struct TagItem *ti;
@@ -2345,67 +2343,60 @@ struct PsdInterface * pAllocInterface(struct PsdConfig *pc)
 /* \\\ */
 
 /* /// "psdFindInterfaceA()" */
-/****** poseidon.library/psdFindInterfaceA ************************
+/*****************************************************************************
+    NAME
+        APTR psdFindInterfaceA(
 
-    NAME */
+    SYNOPSIS
+        APTR pd, APTR pif, struct TagItem *taglist)
+
+    FUNCTION
+        Find the next interface matching all supplied filters.
+
+    INPUTS
+        pd - Valid device handle. A fresh search uses its current configuration.
+        pif - NULL to start; otherwise a previous result for this device.
+        taglist - Filter list, or NULL for no filters.
+
+    TAGS
+        IFA_InterfaceNum, IFA_NumEndpoints, IFA_Class, IFA_SubClass,
+        IFA_Protocol - Exact matches against stored attributes.
+        IFA_AlternateNum - Enables alternate-interface searching. Values
+            through 255 also select that alternate number; larger values
+            accept any alternate number.
+        IFA_Binding - Exact binding-pointer match, including NULL.
+        IFA_InterfaceName, IFA_IDString - Case-sensitive string matches.
+            Supply valid strings; the corresponding stored string must exist.
+
+    RESULT
+        A borrowed interface handle, or NULL if no further match is found
+        or a fresh search has no current configuration.
+
+    NOTES
+        Without IFA_AlternateNum, fresh searches visit main interfaces only.
+        With it, each main interface is followed by its alternates. Resuming
+        from an alternate also enables alternate traversal. Unknown tags are
+        ignored. This call does not select an alternate or issue USB requests.
+
+        No lock is taken. Keep device, configuration, cursor and results alive
+        and exclude concurrent topology changes while traversing. The result
+        is owned by Poseidon; do not free it. Tag data is not retained.
+
+    BUGS
+        Resuming after the last alternate can return NULL before visiting
+        later main interfaces. Name filters pass stored pointers to strcmp()
+        without checking for NULL. Other declared interface filters,
+        including IFA_Config and IFA_BindingClass, are not handled.
+
+    SEE ALSO
+        psdFindEndpointA(), psdSetAltInterface(), psdLockReadDevice()
+
+*****************************************************************************/
         AROS_LH3(struct PsdInterface *, psdFindInterfaceA,
-/*  SYNOPSIS */
          AROS_LHA(struct PsdDevice *, pd, A0),
          AROS_LHA(struct PsdInterface *, pif, A2),
          AROS_LHA(struct TagItem *, tags, A1),
-/*  LOCATION */
          LIBBASETYPEPTR, ps, 66, psd)
-/*  FUNCTION
-        Find an interface in the device's current configuration. Repeated
-        calls can traverse matching interfaces, including alternate settings
-        when alternate-interface searching is enabled.
-
-    INPUTS
-        pd   - Device whose current configuration is searched; must be valid.
-        pif  - Previous interface returned by this search, or NULL to start
-               at the first primary interface of the current configuration.
-        tags - Optional match criteria; see TAGS.
-
-    TAGS
-        IFA_InterfaceNum  - Interface number.
-        IFA_AlternateNum  - Alternate-setting number, or a value above 255 to
-                            enable alternate traversal without filtering by
-                            alternate-setting number.
-        IFA_NumEndpoints  - Number of endpoints.
-        IFA_Class         - Interface class.
-        IFA_SubClass      - Interface subclass.
-        IFA_Protocol      - Interface protocol.
-        IFA_Binding       - Binding pointer.
-        IFA_InterfaceName - Interface name, compared with strcmp().
-        IFA_IDString      - Interface identifier, compared with strcmp().
-
-    RESULT
-        First matching interface after pif, or NULL if no further match
-        exists. The result belongs to the device; it is not a new allocation.
-
-    NOTES
-        A NULL pif starts with the device's current configuration; if there
-        is no current configuration, the function returns NULL. Supplying a
-        previous interface advances past that entry. Alternate interfaces
-        are visited when IFA_AlternateNum is present or when iteration is
-        resumed from an alternate interface.
-
-        The function does not acquire a device lock. A returned pointer and
-        a continuation pointer are valid only while the owning interface
-        lists remain unchanged. String match tags require valid
-        NUL-terminated strings; the implementation does not check for NULL
-        before calling strcmp().
-
-    BUGS
-        The implementation ignores other IFA_* tags declared in the
-        public header, including IFA_Config and IFA_BindingClass. It does
-        not validate that pif belongs to pd or protect traversal against
-        concurrent reconfiguration.
-
-    SEE ALSO
-        psdFindEndpointA(), psdFindDescriptorA()
-
-******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     struct PsdConfig *pc;
@@ -2609,59 +2600,56 @@ struct PsdDescriptor * pAllocDescriptor(struct PsdDevice *pd, UBYTE *buf)
 /* \\\ */
 
 /* /// "psdFindDescriptorA()" */
-/****** poseidon.library/psdFindDescriptorA ************************
+/*****************************************************************************
+    NAME
+        APTR psdFindDescriptorA(
 
-    NAME */
+    SYNOPSIS
+        APTR pd, APTR pdd, struct TagItem *taglist)
+
+    FUNCTION
+        Find the next stored descriptor matching all supplied filters.
+
+    INPUTS
+        pd - Valid device handle.
+        pdd - NULL to start; otherwise a previous descriptor from this device.
+            Searching resumes after it.
+        taglist - Filter list, or NULL for default configuration filtering.
+
+    TAGS
+        DDA_Config - Configuration handle to match. NULL accepts every
+            configuration. If omitted, matches the current configuration.
+        DDA_Interface, DDA_Endpoint - Exact association-pointer matches.
+            NULL matches an unassociated descriptor, not every association.
+        DDA_DescriptorType, DDA_CS_SubType, DDA_DescriptorLength - Exact
+            matches against stored descriptor attributes.
+
+    RESULT
+        A borrowed descriptor handle, or NULL if no further match is found.
+
+    NOTES
+        Searches the device's stored descriptor list without issuing USB
+        requests. Unknown tags are ignored. With no current configuration,
+        the default matches descriptors whose configuration pointer is NULL.
+
+        No lock is taken. Keep the device, cursor and returned objects alive
+        and exclude concurrent list changes. Do not free the result. The tag
+        list is not retained.
+
+    BUGS
+        DDA_Device, DDA_Name and DDA_DescriptorData are declared but
+        not interpreted as search filters. A NULL device and a
+        foreign continuation descriptor are not validated.
+
+    SEE ALSO
+        psdGetAttrsA(), psdFindInterfaceA(), psdLockReadDevice()
+
+*****************************************************************************/
         AROS_LH3(struct PsdDescriptor *, psdFindDescriptorA,
-/*  SYNOPSIS */
          AROS_LHA(struct PsdDevice *, pd, A0),
          AROS_LHA(struct PsdDescriptor *, pdd, A2),
          AROS_LHA(struct TagItem *, tags, A1),
-/*  LOCATION */
          LIBBASETYPEPTR, ps, 91, psd)
-/*  FUNCTION
-        Search the device's descriptor list in list order, optionally
-        restricting matches by configuration, interface, endpoint and
-        descriptor fields.
-
-    INPUTS
-        pd   - Device whose descriptors are searched; must be valid.
-        pdd  - Previous descriptor, or NULL to start at the list head.
-        tags - Optional descriptor match criteria; see TAGS.
-
-    TAGS
-        DDA_Config           - Exact configuration pointer. If absent,
-                               only the current configuration is searched;
-                               an explicit NULL searches all configurations.
-        DDA_Interface        - Exact interface pointer, including NULL.
-        DDA_Endpoint         - Exact endpoint pointer, including NULL.
-        DDA_DescriptorType   - Descriptor type.
-        DDA_CS_SubType       - Class-specific descriptor subtype.
-        DDA_DescriptorLength - Descriptor length.
-
-    RESULT
-        Next matching descriptor, or NULL when no match remains. The
-        pointer refers to a descriptor owned by the device.
-
-    NOTES
-        A NULL pdd starts at the first descriptor; otherwise iteration
-        starts at the next list node. An absent DDA_Config tag restricts
-        results to the device's current configuration. Supplying the tag
-        with a NULL value disables that default restriction.
-
-        No device lock is acquired. Do not retain or continue iterating
-        through pointers after the descriptor list has been changed.
-
-    BUGS
-        DDA_Device, DDA_Name and DDA_DescriptorData are declared in the
-        public header but are not handled as search criteria here. A NULL
-        pd is dereferenced, and an unrelated continuation pointer is not
-        checked before traversal.
-
-    SEE ALSO
-        psdFindInterfaceA(), psdFindEndpointA()
-
-******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     struct PsdConfig *pc = pd->pd_CurrentConfig;
@@ -9584,37 +9572,37 @@ static void pWrBE32(APTR ptr, ULONG val)
 /* \\\ */
 
 /* /// "psdAllocCfgForm()" */
-/****** poseidon.library/psdAllocCfgForm ************************
+/*****************************************************************************
+    NAME
+        APTR psdAllocCfgForm(
 
-    NAME */
-        AROS_LH1(struct PsdIFFContext *, psdAllocCfgForm,
-/*  SYNOPSIS */
-         AROS_LHA(ULONG, formid, D0),
-/*  LOCATION */
-         LIBBASETYPEPTR, ps, 86, psd)
-/*  FUNCTION
-        Allocate an empty Poseidon IFF FORM context with the specified form
-        identifier. The new context is registered in the library's separate
-        configuration-form list, not inserted into the active config tree.
+    SYNOPSIS
+        ULONG formid)
+
+    FUNCTION
+        Allocate an empty, detached configuration form.
 
     INPUTS
-        formid - IFF FORM type identifier stored in the new context.
+        formid - Numeric four-character form identifier in host byte order.
 
     RESULT
-        A new FORM context, or NULL if allocation fails.
+        An opaque form handle, or NULL if allocation fails.
 
     NOTES
-        The context initially contains no chunks or child FORMs. Its FORM
-        payload length is four bytes for the type identifier. Release the
-        context with psdRemCfgForm() when it is no longer needed; do not
-        free the returned pointer directly. No active configuration change
-        or notification is performed by this function.
+        The form starts with no chunks or child forms and with a
+        four-byte payload for its type identifier. It is tracked
+        separately from the active configuration tree.
+        Allocation alone neither installs configuration nor saves it to disk.
+        Release the form and its contents with psdRemCfgForm(); do not free
+        the handle with psdFreeVec(). Coordinate its lifetime with all users.
 
     SEE ALSO
-        psdRemCfgForm(), psdReadCfg(), psdWriteCfg(),
-        psdAddStringChunk()
+        psdAddStringChunk(), psdWriteCfg(), psdRemCfgForm()
 
-******************************************************************************/
+*****************************************************************************/
+        AROS_LH1(struct PsdIFFContext *, psdAllocCfgForm,
+         AROS_LHA(ULONG, formid, D0),
+         LIBBASETYPEPTR, ps, 86, psd)
 {
     AROS_LIBFUNC_INIT
     struct PsdIFFContext *pic;
@@ -10739,46 +10727,49 @@ static void pWrBE32(APTR ptr, ULONG val)
 /* \\\ */
 
 /* /// "psdAddStringChunk()" */
-/****** poseidon.library/psdAddStringChunk ************************
+/*****************************************************************************
+    NAME
+        BOOL psdAddStringChunk(
 
-    NAME */
+    SYNOPSIS
+        APTR pic, ULONG chunkid, CONST_STRPTR contents)
+
+    FUNCTION
+        Store a string chunk in a configuration form.
+
+    INPUTS
+        pic - Valid, non-NULL form handle.
+        chunkid - Numeric chunk identifier in host byte order; must not be FORM.
+        contents - Non-NULL, NUL-terminated string. Keep it valid until return.
+            Its length and allocation overhead must fit in ULONG.
+
+    RESULT
+        TRUE if the string was stored; FALSE if allocation fails. Failure
+        while expanding the form buffer can leave the previous chunk removed.
+
+    NOTES
+        Copies the string, including its terminator, into the form. Replaces
+        the first existing chunk with the same identifier. The source is not
+        retained. Uses the configuration write lock and may wait; call in task
+        context. Coordinate form lifetime separately.
+
+        Does not save preferences, apply configuration or set the configuration
+        recheck request. Use the appropriate configuration operation afterward.
+
+    BUGS
+        Replacement removes the old chunk before securing expansion memory.
+        Input sizes and the reserved FORM identifier are not validated.
+
+    SEE ALSO
+        psdAllocCfgForm(), psdGetStringChunk(), psdMatchStringChunk(),
+        psdRemCfgChunk(), psdAddCfgEntry()
+
+*****************************************************************************/
         AROS_LH3(BOOL, psdAddStringChunk,
-/*  SYNOPSIS */
          AROS_LHA(struct PsdIFFContext *, pic, A0),
          AROS_LHA(ULONG, chunkid, D0),
          AROS_LHA(CONST_STRPTR, str, A1),
-/*  LOCATION */
          LIBBASETYPEPTR, ps, 87, psd)
-/*  FUNCTION
-        Store a string in a configuration FORM as an IFF chunk. An
-        existing chunk with the same identifier is replaced.
-
-    INPUTS
-        pic     - Valid Poseidon FORM context. Must not be NULL.
-        chunkid - Identifier of the chunk to create or replace.
-        str     - NUL-terminated input string. Must not be NULL.
-
-    RESULT
-        TRUE when the chunk was stored; FALSE if allocation or insertion
-        fails.
-
-    NOTES
-        The string is copied, including its terminating NUL, into a
-        length-prefixed IFF chunk. The temporary chunk buffer is released
-        before this function returns. The config write lock covers the
-        operation. This entry point does not set ps_CheckConfigReq or
-        dispatch a configuration-change notification.
-
-    BUGS
-        Replacing a chunk is not atomic. The existing chunk is removed
-        before the replacement's storage is grown. If that allocation
-        fails, the original value has already been lost.
-
-    SEE ALSO
-        psdMatchStringChunk(), psdGetStringChunk(),
-        psdRemCfgChunk(), psdAddCfgEntry()
-
-******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     BOOL res;
@@ -10792,40 +10783,41 @@ static void pWrBE32(APTR ptr, ULONG val)
 /* \\\ */
 
 /* /// "psdMatchStringChunk()" */
-/****** poseidon.library/psdMatchStringChunk ************************
+/*****************************************************************************
+    NAME
+        BOOL psdMatchStringChunk(
 
-    NAME */
-        AROS_LH3(BOOL, psdMatchStringChunk,
-/*  SYNOPSIS */
-         AROS_LHA(struct PsdIFFContext *, pic, A0),
-         AROS_LHA(ULONG, chunkid, D0),
-         AROS_LHA(CONST_STRPTR, str, A1),
-/*  LOCATION */
-         LIBBASETYPEPTR, ps, 88, psd)
-/*  FUNCTION
-        Compare a supplied string with the contents of a string chunk
-        in a configuration FORM.
+    SYNOPSIS
+        APTR pic, ULONG chunkid, CONST_STRPTR contents)
+
+    FUNCTION
+        Compare a string with the first matching configuration chunk.
 
     INPUTS
-        pic     - Valid Poseidon FORM context. Must not be NULL.
-        chunkid - Identifier of the chunk to inspect.
-        str     - NUL-terminated string to compare. Must not be NULL.
+        pic - Valid, non-NULL form handle.
+        chunkid - Numeric chunk identifier in host byte order.
+        contents - Non-NULL, NUL-terminated string to compare.
 
     RESULT
-        TRUE if a matching chunk was found; FALSE if no matching chunk
-        exists or the comparison fails.
+        TRUE for a byte-for-byte, case-sensitive match; FALSE if the chunk
+        is absent or differs. Comparison stops at its first NUL or declared
+        length, and the supplied string must end at that point.
 
     NOTES
-        Comparison is case-sensitive. The config read lock covers the
-        lookup and comparison. The stored length limits the comparison;
-        this routine does not validate the chunk as a complete, properly
-        NUL-terminated string. Malformed chunk data may therefore produce
-        misleading matches.
+        Uses the configuration read lock and may wait; call in task context.
+        Retains neither the string nor a chunk pointer. Coordinate form
+        lifetime separately. This is not validation of serialized IFF data;
+        the form must already contain structurally valid chunks.
 
     SEE ALSO
         psdAddStringChunk(), psdGetStringChunk(), psdGetCfgChunk()
 
-******************************************************************************/
+*****************************************************************************/
+        AROS_LH3(BOOL, psdMatchStringChunk,
+         AROS_LHA(struct PsdIFFContext *, pic, A0),
+         AROS_LHA(ULONG, chunkid, D0),
+         AROS_LHA(CONST_STRPTR, str, A1),
+         LIBBASETYPEPTR, ps, 88, psd)
 {
     AROS_LIBFUNC_INIT
     BOOL res;
@@ -10839,45 +10831,44 @@ static void pWrBE32(APTR ptr, ULONG val)
 /* \\\ */
 
 /* /// "psdGetStringChunk()" */
-/****** poseidon.library/psdGetStringChunk ************************
+/*****************************************************************************
+    NAME
+        STRPTR psdGetStringChunk(
 
-    NAME */
-        AROS_LH2(STRPTR, psdGetStringChunk,
-/*  SYNOPSIS */
-         AROS_LHA(struct PsdIFFContext *, pic, A0),
-         AROS_LHA(ULONG, chunkid, D0),
-/*  LOCATION */
-         LIBBASETYPEPTR, ps, 89, psd)
-/*  FUNCTION
-        Return an allocated copy of the contents of a string chunk in
-        a configuration FORM.
+    SYNOPSIS
+        APTR pic, ULONG chunkid)
+
+    FUNCTION
+        Copy the first matching configuration chunk into a string buffer.
 
     INPUTS
-        pic     - Valid Poseidon FORM context. Must not be NULL.
-        chunkid - Identifier of the chunk to copy.
+        pic - Valid, non-NULL form handle.
+        chunkid - Numeric chunk identifier in host byte order.
 
     RESULT
-        Allocated copy of the chunk data, or NULL if the chunk is absent
-        or memory allocation fails.
+        An allocated copy of the chunk payload, followed by a zero byte.
+        Returns NULL if the chunk is absent or allocation fails. Release the
+        result with psdFreeVec(). An empty stored string returns a non-NULL
+        empty string when allocation succeeds.
 
     NOTES
-        The config read lock covers the lookup and copy. The function
-        allocates the stored chunk length plus one byte, copies exactly
-        the stored length and returns the allocation to the caller.
-        Release it with psdFreeVec(). Unlike a borrowed config pointer,
-        this allocation remains owned by the caller after the read lock
-        is released.
+        Copies the declared payload length, including any embedded NULs.
+        The extra zero byte comes from the cleared allocation. The result
+        remains valid after the form changes or is removed.
 
-    BUGS
-        The function does not explicitly write a trailing NUL. Treat
-        the result as a C string only when the stored chunk contains a
-        terminator; arbitrary or malformed chunk data is not validated.
+        Uses the configuration read lock and may wait; call in task context.
+        Coordinate form lifetime separately. The form must contain structurally
+        valid chunks; this operation does not validate imported IFF data.
 
     SEE ALSO
         psdAddStringChunk(), psdMatchStringChunk(), psdFreeVec(),
         psdGetCfgChunk()
 
-******************************************************************************/
+*****************************************************************************/
+        AROS_LH2(STRPTR, psdGetStringChunk,
+         AROS_LHA(struct PsdIFFContext *, pic, A0),
+         AROS_LHA(ULONG, chunkid, D0),
+         LIBBASETYPEPTR, ps, 89, psd)
 {
     AROS_LIBFUNC_INIT
     STRPTR str;
