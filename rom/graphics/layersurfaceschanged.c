@@ -15,11 +15,6 @@
 #include "graphics_display.h"
 #include "gfxfuncsupport.h"
 
-#ifndef AROS_NO_COMPOSITED_LAYERS
-#define AROS_NO_COMPOSITED_LAYERS 0
-#endif
-
-#if !AROS_NO_COMPOSITED_LAYERS
 /*
  * The plane data behind a HIDD struct BitMap has no room left, so the surface
  * list of a screen bitmap is kept in a small private list of graphics.library,
@@ -102,17 +97,6 @@ static void gfx_SetLayerSurfaces(struct BitMap *bitmap, struct HIDD_CompositeReq
     ReleaseSemaphore(&PrivGBase(GfxBase)->layersurfaces_sema);
 }
 
-#else /* AROS_NO_COMPOSITED_LAYERS */
-/* ROM-size build: no screen bitmap ever carries layer surfaces */
-struct HIDD_CompositeRequest *gfx_FindLayerSurfaces(struct BitMap *bitmap, struct GfxBase *GfxBase)
-{
-    return NULL;
-}
-void gfx_ForgetLayerSurfaces(struct BitMap *bitmap, struct GfxBase *GfxBase)
-{
-}
-#endif /* !AROS_NO_COMPOSITED_LAYERS */
-
 /*****************************************************************************
 
     NAME */
@@ -160,9 +144,6 @@ void gfx_ForgetLayerSurfaces(struct BitMap *bitmap, struct GfxBase *GfxBase)
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-#if AROS_NO_COMPOSITED_LAYERS
-    /* ROM-size build: nothing composes layer surfaces (see layers_intern.h) */
-#else
 
     struct gfxdisplay_data *display;
     struct ViewPort *vp;
@@ -203,7 +184,6 @@ void gfx_ForgetLayerSurfaces(struct BitMap *bitmap, struct GfxBase *GfxBase)
     }
 
     ReleaseSemaphore(GfxBase->ActiViewCprSemaphore);
-#endif
 
     AROS_LIBFUNC_EXIT
 } /* LayerSurfacesChanged */

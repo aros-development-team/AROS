@@ -12,10 +12,6 @@
 #include "graphics_intern.h"
 #include "gfxfuncsupport.h"
 
-#ifndef AROS_NO_COMPOSITED_LAYERS
-#define AROS_NO_COMPOSITED_LAYERS 0
-#endif
-
 /*****************************************************************************
 
     NAME */
@@ -63,10 +59,6 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-#if AROS_NO_COMPOSITED_LAYERS
-    /* ROM-size build: no layer surfaces exist, everything is opaque */
-    return 255;
-#else
 
     OOP_Object *bm, *pf = NULL;
     IPTR mask = 0, shift = 0;
@@ -92,7 +84,6 @@
     comp = ((pix & (HIDDT_Pixel)mask) << shift) >> MAP_SHIFT;     /* a HIDDT_ColComp */
 
     return (ULONG)(comp >> (sizeof(HIDDT_ColComp) * 8 - 8)) & 0xFF;
-#endif
 
     AROS_LIBFUNC_EXIT
 } /* LayerSurfaceAlpha */

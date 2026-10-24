@@ -483,9 +483,6 @@ BOOL _BackClipRect(struct ClipRect *cr, struct Layer *l, int aligndx, struct Lay
  */
 BOOL _EnsureSurfaceSize(struct Layer *l, WORD w, WORD h, struct LayersBase *LayersBase)
 {
-#if AROS_NO_COMPOSITED_LAYERS && !LAYERS_BACKING_SURFACE
-    return FALSE;
-#else
   struct BitMap *old = IL(l)->surface, *new;
   struct ClipRect *lists[3], *cr;
   ULONG newbytes = 0;
@@ -531,7 +528,6 @@ BOOL _EnsureSurfaceSize(struct Layer *l, WORD w, WORD h, struct LayersBase *Laye
   IL(l)->surfw = w;
   IL(l)->surfh = h;
   return TRUE;
-#endif
 }
 
 /***************************************************************************/
@@ -579,14 +575,10 @@ void _SetCompositedClipRects(struct Layer *l, struct LayersBase *LayersBase)
  */
 ULONG _SurfaceBytes(struct BitMap *screenbm, LONG width, LONG height, BOOL alphasurface, struct LayersBase *LayersBase)
 {
-#if AROS_NO_COMPOSITED_LAYERS
-    return 0;
-#else
   ULONG depth = alphasurface ? 32 : GetBitMapAttr(screenbm, BMA_DEPTH);
   ULONG bpp   = (depth <= 8) ? 1 : (depth <= 16) ? 2 : 4;
 
   return (ULONG)width * (ULONG)height * bpp;
-#endif
 }
 
 /*
@@ -599,9 +591,6 @@ ULONG _SurfaceBytes(struct BitMap *screenbm, LONG width, LONG height, BOOL alpha
 BOOL _SurfaceBudgetAllows(struct Layer_Info *li, struct BitMap *screenbm, ULONG newbytes, ULONG oldbytes,
                           struct LayersBase *LayersBase)
 {
-#if AROS_NO_COMPOSITED_LAYERS
-    return FALSE;
-#else
   ULONG budget = LAYERS_SURFACE_BUDGET_FACTOR *
                  _SurfaceBytes(screenbm, GetBitMapAttr(screenbm, BMA_WIDTH), GetBitMapAttr(screenbm, BMA_HEIGHT), FALSE, LayersBase);
   ULONG inuse  = (NULL != LIE(li)) ? LIE(li)->lie_SurfaceBytes : 0;
@@ -616,20 +605,16 @@ BOOL _SurfaceBudgetAllows(struct Layer_Info *li, struct BitMap *screenbm, ULONG 
     return FALSE;
 
   return TRUE;
-#endif
 }
 
 /* Set the bytes the layer's surface is counted with in its Layer_Info (0: not counted) */
 void _AccountSurface(struct Layer *l, ULONG bytes, struct LayersBase *LayersBase)
 {
-#if AROS_NO_COMPOSITED_LAYERS
-#else
   struct LayerInfo_extra * lie = (NULL != l->LayerInfo) ? LIE(l->LayerInfo) : NULL;
 
   if (NULL != lie)
     lie->lie_SurfaceBytes = lie->lie_SurfaceBytes - IL(l)->surfbytes + bytes;
   IL(l)->surfbytes = bytes;
-#endif
 }
 
 /*
@@ -642,10 +627,8 @@ BOOL _IsLayerHitAt(struct Layer *l, LONG x, LONG y, struct LayersBase *LayersBas
   if (!IS_VISIBLE(l) || !IsPointInRegion(l->visibleshape, x, y))
     return FALSE;
 
-#if !AROS_NO_COMPOSITED_LAYERS
   if (IS_COMPOSITED(l) && IL(l)->alphasurface && NULL != IL(l)->surface)
     return 0 != LayerSurfaceAlpha(IL(l)->surface, x - l->bounds.MinX, y - l->bounds.MinY);
-#endif
 
   return TRUE;
 }
@@ -661,8 +644,6 @@ BOOL _IsLayerHitAt(struct Layer *l, LONG x, LONG y, struct LayersBase *LayersBas
  */
 void _UncompositeLayer(struct Layer *l, struct LayersBase *LayersBase)
 {
-#if AROS_NO_COMPOSITED_LAYERS
-#else
   struct Layer_Info * li = l->LayerInfo;
   struct Layer * _l, * lparent;
   struct Region r;
@@ -716,7 +697,6 @@ void _UncompositeLayer(struct Layer *l, struct LayersBase *LayersBase)
 
   /* the display stops showing the surface */
   UPDATE_SURFACES(li);
-#endif
 }
 
 /*
@@ -730,8 +710,6 @@ void _UncompositeLayer(struct Layer *l, struct LayersBase *LayersBase)
  */
 void _UpdateSurfaces(struct Layer_Info *li, struct LayersBase *LayersBase)
 {
-#if AROS_NO_COMPOSITED_LAYERS
-#else
   struct LayerInfo_extra * lie = LIE(li);
   struct HIDD_CompositeRequest * head = NULL, ** tail = &head;
   struct Layer * l;
@@ -806,7 +784,6 @@ void _UpdateSurfaces(struct Layer_Info *li, struct LayersBase *LayersBase)
 
   lie->lie_Surfaces = head;
   LayerSurfacesChanged(lie->lie_ScreenBM, head);
-#endif
 }
 
 /*
@@ -814,8 +791,6 @@ void _UpdateSurfaces(struct Layer_Info *li, struct LayersBase *LayersBase)
  */
 static void _BackFillSurface(struct Layer * l, struct Region * r, struct LayersBase * LayersBase)
 {
-#if AROS_NO_COMPOSITED_LAYERS && !LAYERS_BACKING_SURFACE
-#else
   struct RegionRectangle * RR;
   struct BitMap * bm = l->rp->BitMap;
 
@@ -841,7 +816,6 @@ static void _BackFillSurface(struct Layer * l, struct Region * r, struct LayersB
                    LayersBase);
   }
   l->rp->BitMap = bm;
-#endif
 }
 
 /*

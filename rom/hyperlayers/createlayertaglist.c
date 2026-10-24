@@ -102,9 +102,6 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
    * screens get theirs here). Otherwise it is an ordinary smart refresh
    * layer, as a composited one behaves like one.
    */
-#if AROS_NO_COMPOSITED_LAYERS
-  composited = FALSE;   /* ROM-size build: LA_Composited gives a smart refresh layer */
-#endif
   if (composited)
   {
     if (NULL == li->LayerInfo_extra && !_AllocExtLayerInfo(li, LayersBase))
@@ -254,7 +251,6 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
     l->Height = y1 - y0 + 1;
     IL(l)->opacity = 0xFF;
     IL(l)->alphaformat = alphaformat;
-#if !AROS_NO_COMPOSITED_LAYERS
     if (IS_COMPOSITED(l))
     {
       ULONG bytes;
@@ -300,7 +296,6 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
           l->Flags &= ~LAYERCOMPOSITED;
       }
     }
-#endif /* !AROS_NO_COMPOSITED_LAYERS */
 #if LAYERS_BACKING_SURFACE
     if (!IS_COMPOSITED(l) && IS_SMARTREFRESH(l) && NULL == IL(l)->surface)
     {

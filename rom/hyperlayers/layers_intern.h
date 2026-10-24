@@ -46,16 +46,6 @@ LIBBASETYPE
  * at all. Costs one layer sized bitmap per smart refresh layer. Enable
  * with -DLAYERS_BACKING_SURFACE=1 (USER_CPPFLAGS in the mmakefile).
  */
-/*
- * Measurement switch (-DAROS_NO_COMPOSITED_LAYERS=1, never set by the
- * makefiles): compiles the composited-layer surface, budget and presentation
- * code to stubs, to measure what it costs in a ROM image (the amiga-m68k
- * 512 KB banks). Composited layers are the default on every target.
- */
-#ifndef AROS_NO_COMPOSITED_LAYERS
-#define AROS_NO_COMPOSITED_LAYERS 0
-#endif
-
 #ifndef LAYERS_BACKING_SURFACE
 #define LAYERS_BACKING_SURFACE 0
 #endif
@@ -104,11 +94,7 @@ struct IntLayer
 #define INTFLAG_AVOID_BACKFILL 1
 #define INTFLAG_TRANSLUCENT    2	/* composited, blended: occludes nothing */
 
-#if AROS_NO_COMPOSITED_LAYERS
-#define IS_COMPOSITED(l)  (0)   /* ROM-size build: the flag is never set, drop the branches */
-#else
 #define IS_COMPOSITED(l)  (0 != ((l)->Flags & LAYERCOMPOSITED))
-#endif
 #define IS_TRANSLUCENT(l) (0 != (IL(l)->intflags & INTFLAG_TRANSLUCENT))
 #define OCCLUDESHAPE(l)   (IL(l)->occludeshape)
 
@@ -171,15 +157,11 @@ struct LayerInfo_extra
  * Hand the Layer_Info's surface list to the display at the end of a layer
  * operation. Nothing is done (one test) when it never had a composited layer.
  */
-#if AROS_NO_COMPOSITED_LAYERS
-#define UPDATE_SURFACES(li) do { } while (0)
-#else
 #define UPDATE_SURFACES(li) \
     do { \
         if (NULL != LIE(li) && (0 != LIE(li)->lie_NumComposited || NULL != LIE(li)->lie_Surfaces)) \
             _UpdateSurfaces(li, LayersBase); \
     } while (0)
-#endif
 
 /*
  * These are special types of ResData resources. If layers finds one of

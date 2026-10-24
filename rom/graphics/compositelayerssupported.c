@@ -14,10 +14,6 @@
 #include "graphics_display.h"
 #include "gfxfuncsupport.h"
 
-#ifndef AROS_NO_COMPOSITED_LAYERS
-#define AROS_NO_COMPOSITED_LAYERS 0
-#endif
-
 /*****************************************************************************
 
     NAME */
@@ -70,11 +66,6 @@
 
     if (alphaformat)
         *alphaformat = (ULONG)-1;
-#if AROS_NO_COMPOSITED_LAYERS
-    /* ROM-size build: no compositor, no composited layers (see layers_intern.h) */
-    (void)display;
-    return FALSE;
-#else
 
     if (!screenbm || !IS_HIDD_BM(screenbm))
         return FALSE;
@@ -111,6 +102,5 @@
 
     return TRUE;
 
-#endif
     AROS_LIBFUNC_EXIT
 } /* CompositeLayersSupported */

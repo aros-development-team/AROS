@@ -20,9 +20,6 @@
 #include <exec/ports.h>
 #include "intuition_intern.h"
 
-#ifndef AROS_NO_COMPOSITED_LAYERS
-#define AROS_NO_COMPOSITED_LAYERS 0   /* ROM-size build switch, see rom/hyperlayers/layers_intern.h */
-#endif
 #include "intuition_customize.h"
 #include "inputhandler.h"
 #include "inputhandler_actions.h"
@@ -561,7 +558,6 @@ moreFlags |= (name); else moreFlags &= ~(name)
              * of its own that the display composes (layers.library
              * LA_Composited). Opt-in only; without these tags nothing changes.
              */
-#if !AROS_NO_COMPOSITED_LAYERS
             case WA_Opaqueness:
                 opaqueness = (tag->ti_Data > 255) ? 255 : tag->ti_Data;
                 composited = TRUE;
@@ -572,7 +568,6 @@ moreFlags |= (name); else moreFlags &= ~(name)
                 if (alphasurface)
                     composited = TRUE;
                 break;
-#endif
 #endif
 
             case WA_Pointer:
@@ -588,10 +583,8 @@ moreFlags |= (name); else moreFlags &= ~(name)
          * A composited window keeps all its pixels in its surface, so it is
          * a smart refresh window: it never gets refresh events from exposure.
          */
-#if !AROS_NO_COMPOSITED_LAYERS
         if (composited)
             nw.Flags &= ~(WFLG_SIMPLE_REFRESH | WFLG_SUPER_BITMAP);
-#endif
 
     } /* if (tagList) */
 
@@ -1452,7 +1445,6 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
 
         /* Now comes the inner window */
         layertags[0].ti_Data = (IPTR)backfillhook;
-#if !AROS_NO_COMPOSITED_LAYERS
         if (msg->composited)
         {
             layertags[7].ti_Tag  = LA_Composited;
@@ -1462,7 +1454,6 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
             layertags[9].ti_Tag  = LA_AlphaSurface;
             layertags[9].ti_Data = msg->alphasurface;
         }
-#endif
         if (shapehook)
         {
             layertags[2].ti_Tag  = LA_ShapeHook;
@@ -1518,11 +1509,9 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
             {LA_WindowPtr, (IPTR)w     },
             {LA_ChildOf  , (IPTR)parent}, /* These two are AROS-specific */
             {LA_Hidden, invisible   },
-#if !AROS_NO_COMPOSITED_LAYERS
             {msg->composited ? LA_Composited   : TAG_IGNORE, TRUE                  },
             {msg->composited ? LA_Opacity      : TAG_IGNORE, msg->opaqueness       },
             {msg->composited ? LA_AlphaSurface : TAG_IGNORE, msg->alphasurface     },
-#endif
             {TAG_DONE}
         };
 

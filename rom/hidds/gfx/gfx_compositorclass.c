@@ -56,61 +56,6 @@
 
 #include LC_LIBDEFS_FILE
 
-#if defined(GFX_COMPOSITOR_STUB)
-/*
- * Measurement build (-DGFX_COMPOSITOR_STUB, never set by the makefiles): the
- * class is registered so that gfx.hidd's class table is complete, but no
- * compositor object can be created and the Display runs in passthrough.
- * It exists to measure what the compositor costs in a ROM image (the
- * amiga-m68k 512 KB banks); the full class, the default everywhere, is below.
- */
-OOP_Object *Compositor__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
-{
-    return NULL;
-}
-VOID Compositor__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
-{
-    OOP_DoSuperMethod(cl, o, msg);
-}
-VOID Compositor__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
-{
-    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-}
-VOID Compositor__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
-{
-    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-}
-OOP_Object *Compositor__Hidd_Compositor__BitMapStackChanged(OOP_Class *cl, OOP_Object *o, struct pHidd_Compositor_BitMapStackChanged *msg)
-{
-    *msg->active = FALSE;
-    return NULL;
-}
-VOID Compositor__Hidd_Compositor__BitMapRectChanged(OOP_Class *cl, OOP_Object *o, struct pHidd_Compositor_BitMapRectChanged *msg)
-{
-}
-BOOL Compositor__Hidd_Compositor__BitMapPositionChange(OOP_Class *cl, OOP_Object *o, struct pHidd_Compositor_BitMapPositionChange *msg)
-{
-    return FALSE;
-}
-VOID Compositor__Hidd_Compositor__DisplayRectChanged(OOP_Class *cl, OOP_Object *o, struct pHidd_Compositor_DisplayRectChanged *msg)
-{
-}
-BOOL Compositor__Hidd_Compositor__BitMapValidate(OOP_Class *cl, OOP_Object *o, struct pHidd_Compositor_BitMapValidate *msg)
-{
-    return FALSE;
-}
-BOOL Compositor__Hidd_Compositor__BitMapEnable(OOP_Class *cl, OOP_Object *o, struct pHidd_Compositor_BitMapEnable *msg)
-{
-    return FALSE;
-}
-VOID Compositor__Hidd_Compositor__SurfaceStackChanged(OOP_Class *cl, OOP_Object *o, struct pHidd_Compositor_SurfaceStackChanged *msg)
-{
-}
-VOID Compositor__Hidd_Compositor__MapCoords(OOP_Class *cl, OOP_Object *o, struct pHidd_Compositor_MapCoords *msg)
-{
-}
-#else /* !GFX_COMPOSITOR_STUB */
-
 /*
  * The helpers below take the instance data, not the class: resolve the
  * module static data (and with it the method/attribute bases) through it.
@@ -2922,5 +2867,3 @@ VOID Compositor__Hidd_Compositor__SurfaceStackChanged(OOP_Class *cl, OOP_Object 
 
     UNLOCK_COMPOSITOR
 }
-
-#endif /* !GFX_COMPOSITOR_STUB */
