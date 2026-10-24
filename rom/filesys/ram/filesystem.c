@@ -1349,7 +1349,7 @@ static struct Block *AddDataBlock(struct Handler *handler,
    block = NULL;
    while(block == NULL && alloc_size >= limit)
    {
-      alloc_size = ((alloc_size - 1) & (~MEM_BLOCKMASK)) + MEM_BLOCKSIZE;
+      alloc_size = ((alloc_size - 1) & (~RAM_BLOCKMASK)) + RAM_BLOCKSIZE;
       block = AllocPooled(handler->muddy_pool, alloc_size);
       if(block == NULL)
          alloc_size >>= 1;
@@ -1361,7 +1361,7 @@ static struct Block *AddDataBlock(struct Handler *handler,
    {
       AddTail((struct List *)&file->elements, (struct Node *)block);
       block->length = alloc_size - sizeof(struct Block);
-      file->block_count += alloc_size >> MEM_BLOCKSHIFT;
+      file->block_count += alloc_size / RAM_BLOCKSIZE;
    }
    else
       SetIoErr(ERROR_DISK_FULL);
@@ -1409,7 +1409,7 @@ static VOID FreeDataBlock(struct Handler *handler, struct Object *file,
    if(block != NULL)
    {
       alloc_size = sizeof(struct Block) + block->length;
-      file->block_count -= alloc_size >> MEM_BLOCKSHIFT;
+      file->block_count -= alloc_size / RAM_BLOCKSIZE;
       FreePooled(handler->muddy_pool, block, alloc_size);
    }
 

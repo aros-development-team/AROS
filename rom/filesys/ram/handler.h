@@ -52,12 +52,13 @@ typedef LONG PINT;
 #endif                         
 #endif
 
-#ifndef MEM_BLOCKSHIFT
-#define MEM_BLOCKSHIFT ((sizeof(APTR) == 8) ? 4 : 3)
-#endif
+/* Preserve the handler's accounting unit: 8 bytes on 32-bit targets,
+   16 bytes on 64-bit targets. Use it for allocation and reporting too. */
+#define RAM_BLOCKSIZE (2 * sizeof(APTR))
+#define RAM_BLOCKMASK (RAM_BLOCKSIZE - 1)
 
 #define MIN(A, B) (((A) < (B))? (A): (B))
-#define MEMBLOCKS(A) ((((A) - 1) >> (MEM_BLOCKSHIFT)) + 1)
+#define MEMBLOCKS(A) ((((A) - 1) / RAM_BLOCKSIZE) + 1)
 #define HARDLINK(A)\
    ((struct Object *)\
    (((BYTE *)(A)) - (UPINT)&((struct Object *)NULL)->hard_link))
