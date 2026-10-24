@@ -176,6 +176,51 @@ dd_mul(double a, double b)
  * since this implementation will likely be several times slower.
  */
 
+/*****************************************************************************
+    NAME
+        double fma(
+
+    SYNOPSIS
+        double x, double y, double z)
+
+    FUNCTION
+        Compute x * y + z with one final rounding to double precision.
+
+    INPUTS
+        x, y - Multiplicands.
+        z - Addend.
+
+    RESULT
+        The fused result in the current rounding direction, subject to the
+        implementation limits below. This can differ from evaluating x * y
+        and then adding z as two separately rounded operations.
+
+    NOTES
+        Include <math.h>. Zero times infinity and an infinite product added
+        to an oppositely signed infinity produce NaN through invalid arithmetic.
+        NaN operands propagate without a payload guarantee. Finite results can
+        underflow or overflow; floating-point exceptions may be raised.
+
+        The software path temporarily selects round-to-nearest and restores
+        the incoming rounding mode before normal return. Exception flags are
+        not restored to their previous values, and enabled traps may interrupt
+        the operation. This entry point does not explicitly report errors
+        through errno.
+
+    BUGS
+        The software algorithm requires double-precision intermediate rounding.
+        On x87, it does not establish that precision itself; extended-precision
+        evaluation can invalidate its error-free transformations.
+
+        The m68k FPU library-vector replacement uses single-precision operand
+        and result moves with separate multiply and add instructions. It does
+        not implement this double-precision fused contract.
+
+    SEE ALSO
+        fmaf(), fmal(), fegetround(), fesetround()
+
+*****************************************************************************/
+
 double
 fma(double x, double y, double z)
 {
