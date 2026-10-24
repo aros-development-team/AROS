@@ -45,6 +45,7 @@ struct DiscoveryView
     UBYTE key[256];
     ULONG link;
     BOOL active, present;
+    BOOL type;          /* key is a service type, from type enumeration */
     struct MDNSDiscoveryEvent event;
 };
 struct DiscoverySession
@@ -72,6 +73,15 @@ struct MDNSDiscovery
     /* An A that came before the SRV naming its host: kept a second, so
      * that the order records arrive in does not matter. */
     struct PendingAddress pending[DISC_PENDING];
+};
+
+/* RFC 6763 section 9: the PTRs of this name point at the service types
+ * on the link, not at instances. */
+static const UBYTE services_key[] = {
+    9, '_', 's', 'e', 'r', 'v', 'i', 'c', 'e', 's',
+    7, '_', 'd', 'n', 's', '-', 's', 'd',
+    4, '_', 'u', 'd', 'p',
+    5, 'l', 'o', 'c', 'a', 'l', 0
 };
 
 static BOOL due(ULONG now, ULONG deadline)
@@ -256,7 +266,8 @@ static void notify(struct MDNSDiscovery *d, const struct DiscoveryView *view, UL
         struct DiscoverySession *s = &d->sessions[i];
 
         if (s->handle != NULL && !s->resolve &&
-            same_key(s->key, view->key + view->key[0] + 1)) {
+            same_key(s->key, view->type ? services_key :
+                view->key + view->key[0] + 1)) {
             enqueue(s, &event);
         }
     }
@@ -447,26 +458,47 @@ static BOOL snapshot(struct MDNSDiscovery *d, const UBYTE *key, ULONG link,
     return TRUE;
 }
 
-static BOOL valid_instance(const UBYTE *key)
+static BOOL is_services(const UBYTE *key)
+{
+    return same_key(key, services_key);
+}
+
+/* A service type as labels, "_http", "_tcp", "local". */
+static BOOL valid_type(const UBYTE *key)
 {
     UBYTE expected[256];
     char type[MDNS_MAX_TYPE + 1];
-    const UBYTE *suffix;
-    LONG n;
+    LONG n = key[0];
 
+    if (n < 2 || n + 5 > MDNS_MAX_TYPE || key[n + 1] != 4) {
+        return FALSE;
+    }
+    memcpy(type, key + 1, n);
+    type[n] = '.';
+    memcpy(type + n + 1, key + n + 2, 4);
+    type[n + 5] = '\0';
+    return type_key(type, expected) && same_key(expected, key);
+}
+
+/* What a type found by enumeration is told as: its type, no instance. */
+static void type_event(const UBYTE *key, ULONG link,
+    struct MDNSDiscoveryEvent *out)
+{
+    LONG n = key[0];
+
+    memset(out, 0, sizeof(*out));
+    memcpy(out->de_Type, key + 1, n);
+    out->de_Type[n] = '.';
+    memcpy(out->de_Type + n + 1, key + n + 2, 4);
+    out->de_Interface = htonl(link);
+}
+
+static BOOL valid_instance(const UBYTE *key)
+{
     if (key[0] == 0 || key[0] > 63 || memchr(key + 1, 0, key[0]) != NULL) {
         return FALSE;
     }
-    suffix = key + key[0] + 1;
-    n = suffix[0];
-    if (n < 2 || n + 5 > MDNS_MAX_TYPE || suffix[n + 1] != 4) {
-        return FALSE;
-    }
-    memcpy(type, suffix + 1, n);
-    type[n] = '.';
-    memcpy(type + n + 1, suffix + n + 2, 4);
-    type[n + 5] = '\0';
-    return type_key(type, expected) && same_key(expected, suffix);
+    return valid_type(key + key[0] + 1);
 }
 
 /* Whether any browse or resolve wants records at all. */
@@ -628,8 +660,11 @@ void mdnsDiscoveryRecord(struct MDNSDaemon *md, const struct MDNSRecord *record,
     }
     if (record->type == DNS_TYPE_PTR) {
         consumed = decode(pkt, length, record->rdoffset, data);
-        if (consumed != size || !valid_instance(data) ||
-            !same_key(key, data + data[0] + 1)) {
+        if (consumed != size) {
+            return;
+        }
+        if (is_services(key) ? !valid_type(data) :
+            !valid_instance(data) || !same_key(key, data + data[0] + 1)) {
             return;
         }
         size = key_length(data);
@@ -747,12 +782,13 @@ static struct DiscoveryView *view_of(struct MDNSDiscovery *d,
 static void release_type_views(struct MDNSDiscovery *d, const UBYTE *type)
 {
     LONG i;
+    BOOL services = is_services(type);
 
     for (i = 0; i < DISC_VIEWS; i++) {
         struct DiscoveryView *view = &d->views[i];
 
-        if (view->key[0] != 0 &&
-            same_key(view->key + view->key[0] + 1, type)) {
+        if (view->key[0] != 0 && view->type == services &&
+            (services || same_key(view->key + view->key[0] + 1, type))) {
             memset(view, 0, sizeof(*view));
         }
     }
@@ -801,6 +837,7 @@ static void refresh_views(struct MDNSDaemon *md, ULONG now)
                 memcpy(view->key, r->data, 256);
                 view->link = r->link;
                 view->active = TRUE;
+                view->type = is_services(r->key);
                 break;
             }
         }
@@ -828,7 +865,12 @@ static void refresh_views(struct MDNSDaemon *md, ULONG now)
         if (v->key[0] == 0) {
             continue;
         }
-        present = snapshot(d, v->key, v->link, &event, now);
+        if (v->type) {
+            type_event(v->key, v->link, &event);
+            present = TRUE;
+        } else {
+            present = snapshot(d, v->key, v->link, &event, now);
+        }
         if (v->present && (!present || memcmp(&event, &v->event, sizeof(event)) != 0)) {
             notify(d, v, MEVENT_REMOVE);
         }
@@ -936,7 +978,7 @@ void mdnsDiscoveryTick(struct MDNSDaemon *md)
         if (!due(now, r->nextMissing)) {
             continue;
         }
-        if (r->type == DNS_TYPE_PTR) {
+        if (r->type == DNS_TYPE_PTR && !is_services(r->key)) {
             if (find_record(d, r->data, r->link, DNS_TYPE_SRV, now) == NULL) {
                 send_question(md, r->data, DNS_TYPE_SRV, r->link);
                 missing = TRUE;
@@ -1006,7 +1048,11 @@ LONG mdnsDiscoveryMessage(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
         }
         memset(s, 0, sizeof(*s));
         s->resolve = msg->mi_Command == MDNS_IPC_RESOLVE;
-        if (!type_key(msg->mi_ServiceType, s->key)) {
+        if (!s->resolve && Stricmp(msg->mi_ServiceType,
+                MDNS_TYPE_SERVICES_DNS_SD) == 0) {
+            /* type enumeration: the types on the link, each once */
+            memcpy(s->key, services_key, sizeof(services_key));
+        } else if (!type_key(msg->mi_ServiceType, s->key)) {
             return MDNSERR_BADTYPE;
         }
         if (s->resolve) {
@@ -1031,7 +1077,8 @@ LONG mdnsDiscoveryMessage(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
         for (i = 0; i < DISC_VIEWS; i++) {
             const struct DiscoveryView *v = &d->views[i];
 
-            if (!s->resolve && v->present && same_key(s->key, v->key + v->key[0] + 1)) {
+            if (!s->resolve && v->present && same_key(s->key,
+                    v->type ? services_key : v->key + v->key[0] + 1)) {
                 struct MDNSDiscoveryEvent event = v->event;
 
                 event.de_Code = MEVENT_ADD;

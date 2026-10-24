@@ -13,7 +13,8 @@ an address or a port.
 It also browses for services and resolves them asynchronously, through a
 queue per operation with an optional wakeup by a lent request message. See
 [DISCOVERY.md](DISCOVERY.md) for the API, lifetime contract and limits.
-Generic host lookup and record queries remain separate.
+It can also list the service types present on the link (RFC 6763 section
+9). Generic host lookup and record queries remain separate.
 
 ## What it does
 
