@@ -3,7 +3,7 @@
 
     Desc: Reaction integer.gadget - BOOPSI class implementation
 */
-#define DEBUG 1
+#define DEBUG 0
 
 #include <string.h>
 #include <limits.h>

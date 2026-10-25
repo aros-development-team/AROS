@@ -10,7 +10,7 @@
     accessor. SetPageGadgetAttrsA / RefreshPageGadget are convenience
     wrappers around SetGadgetAttrsA / RefreshGList.
 */
-#define DEBUG 1
+#define DEBUG 0
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
