@@ -372,6 +372,7 @@ LONG port_handler(struct ExecBase *SysBase)
 {
     struct DosPacket *dp;
     struct DeviceNode *devNode;
+    struct Message *nextMessage = NULL;
     struct MsgPort *mp;
     BOOL dead = FALSE;
     SIPTR res;
@@ -409,8 +410,12 @@ LONG port_handler(struct ExecBase *SysBase)
 
     do {
         replyPkt(dp, SysBase);
-        WaitPort(mp);
-        dp = (struct DosPacket *)(GetMsg(mp)->mn_Node.ln_Name);
+        if (nextMessage == NULL) {
+            WaitPort(mp);
+            nextMessage = GetMsg(mp);
+        }
+        dp = (struct DosPacket *)nextMessage->mn_Node.ln_Name;
+        nextMessage = NULL;
         D(bug("%s: type=%d\n", __func__, dp->dp_Type));
 
         switch (dp->dp_Type) {
@@ -492,7 +497,9 @@ LONG port_handler(struct ExecBase *SysBase)
             }
             break;
         case ACTION_DIE:
-            if (IsListEmpty(&pb.pb_Files)) {
+            /* Refuse shutdown if a packet is queued; the caller must retry. */
+            if (IsListEmpty(&pb.pb_Files) &&
+                (nextMessage = GetMsg(mp)) == NULL) {
                 dp->dp_Res1 = DOSTRUE;
                 dp->dp_Res2 = 0;
                 dead = TRUE;
