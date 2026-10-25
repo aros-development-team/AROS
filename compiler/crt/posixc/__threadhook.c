@@ -34,6 +34,7 @@
 #include <proto/task.h>   /* task-storage slots; TaskResBase is the module global genmodule opens */
 #include <proto/stdc.h>
 #include <proto/stdcio.h>
+#include <defines/stdc_LVO.h>
 #include <exec/semaphores.h>
 #include <exec/lists.h>
 #include <aros/symbolsets.h>
@@ -71,13 +72,20 @@ static struct CRTThreadHook __posixc_threadhook;
  * pthread workers under lavapipe, 2026-09-16).  A private task-storage slot
  * keeps the opened base out of reach of the offset-table traffic. */
 extern APTR TaskResBase;
+/* Holds POSIXC_THREAD_OPENING while posixc_thread_enter() opens the base, so
+   __posixc_publish_stdbases() knows the opener is a worker. */
 static LONG __posixc_threadbase_slot;
+#define POSIXC_THREAD_OPENING ((IPTR)1)
 
 static void posixc_thread_enter(void)
 {
     /* Runs in a freshly-created pthread worker: give it its own per-task
        posixc base (inherited from the creator, descriptors routed there). */
-    struct Library *base = OpenLibrary((STRPTR)"posixc.library", 0);
+    struct Library *base;
+
+    if (__posixc_threadbase_slot > 0)
+        SetTaskStorageSlot(__posixc_threadbase_slot, POSIXC_THREAD_OPENING);
+    base = OpenLibrary((STRPTR)"posixc.library", 0);
     if (__posixc_threadbase_slot > 0)
         SetTaskStorageSlot(__posixc_threadbase_slot, (IPTR)base);
 }
@@ -207,16 +215,51 @@ static int __posixc_publish_stdbases(struct PosixCIntBase *PosixCBase)
        adopts these so posixc and the program share one stdc/stdcio base.  In
        the absolute case __posixc_startup() overwrites the fields afterwards, so
        behaviour there is unchanged. */
+    struct PosixCIntBase *pPosixCBase =
+        (struct PosixCIntBase *)__GM_GetBaseParent(PosixCBase);
+    BOOL worker = __posixc_threadbase_slot > 0
+        && GetTaskStorageSlot(__posixc_threadbase_slot) == POSIXC_THREAD_OPENING;
+
+    /* A pthread worker and the vfork() child belong to their creator's
+       program, so their stdc bases take its malloc pool. */
+    if (pPosixCBase && (worker || (pPosixCBase->flags & VFORK_PARENT)))
+        __posixc_inherit_mempool(pPosixCBase->PosixCBase.StdCBase, 1);
+
     if (PosixCBase->PosixCBase.StdCBase == NULL)
-        PosixCBase->PosixCBase.StdCBase =
+        PosixCBase->PosixCBase.StdCBase = PosixCBase->own_stdcbase =
             (struct StdCBase *)OpenLibrary((CONST_STRPTR)"stdc.library", 0);
     if (PosixCBase->PosixCBase.StdCIOBase == NULL)
-        PosixCBase->PosixCBase.StdCIOBase =
+        PosixCBase->PosixCBase.StdCIOBase = PosixCBase->own_stdciobase =
             (struct StdCIOBase *)OpenLibrary((CONST_STRPTR)"stdcio.library", 0);
 
     return TRUE;
 }
 
+/* Calls stdc's __stdc_inherit_mempool() through the given base, which need
+   not be ours. The function came with stdc.library 0.50. */
+void __posixc_inherit_mempool(struct StdCBase *StdCBase, int inherit)
+{
+    struct Library *base = (struct Library *)StdCBase;
+
+    if (base && (base->lib_Version > 0 || base->lib_Revision >= 50))
+        AROS_LVO_CALL1NR(void,
+            AROS_LCA(int, inherit, D0),
+            struct StdCBase *, StdCBase, LVO__stdc_inherit_mempool, StdC);
+}
+
+/* Close what __posixc_publish_stdbases() opened, even if the fields were
+   overwritten since. Runs last as the other close hooks still use them. */
+static void __posixc_close_stdbases(struct PosixCIntBase *PosixCBase)
+{
+    if (PosixCBase->own_stdciobase)
+        CloseLibrary((struct Library *)PosixCBase->own_stdciobase);
+    if (PosixCBase->own_stdcbase)
+        CloseLibrary((struct Library *)PosixCBase->own_stdcbase);
+    PosixCBase->own_stdciobase = NULL;
+    PosixCBase->own_stdcbase = NULL;
+}
+
 /* High priority so the public bases are set before other OpenLib hooks
    (e.g. __init_fd/__init_stdio) that touch errno/stdio. */
 ADD2OPENLIB(__posixc_publish_stdbases, 90);
+ADD2CLOSELIB(__posixc_close_stdbases, -110);
