@@ -29,10 +29,11 @@ struct debugBase {
 };
 
 /* Open a handle on the debug-handler for IO */
-static struct debugArgs *debugOpen(struct debugBase *pb, struct debugArgs *pa, BPTR name, SIPTR *err)
+static struct debugArgs *debugOpen(struct debugBase *pb, BPTR name, SIPTR *err)
 {
     struct ExecBase *SysBase = pb->pb_SysBase;
     int len = AROS_BSTR_strlen(name);
+    struct debugArgs *pa;
 
     if ((pa = AllocVec(sizeof(*pa) + len + 1, MEMF_ANY))) {
         pa->pa_Node.ln_Name = (APTR)(&pa[1]);
@@ -99,7 +100,7 @@ LONG debug_handler(struct ExecBase *SysBase)
         case ACTION_FINDINPUT:
         case ACTION_FINDOUTPUT:
         case ACTION_FINDUPDATE:
-            pa = debugOpen(&pb, pa, (BSTR)dp->dp_Arg3, &dp->dp_Res2);
+            pa = debugOpen(&pb, (BSTR)dp->dp_Arg3, &dp->dp_Res2);
             if (dp->dp_Res2 == RETURN_OK) {
                 struct FileHandle *fh = BADDR(dp->dp_Arg1);
                 fh->fh_Arg1 = (SIPTR)pa;
