@@ -47,6 +47,7 @@ endif
 
 FUNCS	 := \
              mapglobal \
+             unmapglobal \
              setprotection
 ASMFILES := \
              core_interrupts
