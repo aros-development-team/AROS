@@ -74,6 +74,7 @@ LONG debug_handler(struct ExecBase *SysBase)
     struct Process *thisProc = (struct Process *)FindTask(NULL);
     struct MsgPort *mp = &thisProc->pr_MsgPort;
     struct DosPacket *dp;
+    struct DeviceNode *devNode;
     struct debugBase pb = {};
     BOOL debugPipe = TRUE;
 
@@ -88,7 +89,8 @@ LONG debug_handler(struct ExecBase *SysBase)
     if ((pb.pb_UtilityBase = OpenLibrary("utility.library", 0))) {
     }
 
-    ((struct DeviceNode *)BADDR(dp->dp_Arg3))->dn_Task = mp;
+    devNode = BADDR(dp->dp_Arg3);
+    devNode->dn_Task = mp;
     dp->dp_Res1 = DOSTRUE;
 
     do {
@@ -174,6 +176,7 @@ LONG debug_handler(struct ExecBase *SysBase)
     } while (debugPipe);
 
     /* ACTION_DIE ends up here... */
+    devNode->dn_Task = NULL;
     replyPkt(dp, SysBase);
 
     CloseLibrary(pb.pb_UtilityBase);
