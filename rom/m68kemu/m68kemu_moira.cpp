@@ -392,8 +392,12 @@ public:
         if (pc == M68KEMU_FAULT_STUB)
         {
             ULONG i;
-            bug("[m68kemu] unhandled exception %lu at PC %08lx: stopping the program\n",
-                (unsigned long)ctx->last_exc, (unsigned long)ctx->last_exc_pc);
+            m68k_log(ctx, "%s: unhandled exception %lu at PC %08lx, program stopped%s",
+                ctx->program_name[0] ? ctx->program_name : "68k program",
+                (unsigned long)ctx->last_exc, (unsigned long)ctx->last_exc_pc,
+                ctx->trace_calls ? "" : " (SetEnv M68KEMU_TRACE 1 for registers and the last instructions)");
+            if (ctx->trace_calls)
+            {
             bug("[m68kemu]   D0 %08x D1 %08x D2 %08x A0 %08x A1 %08x A2 %08x A5 %08x A6 %08x SP %08x\n",
                 (unsigned)getD(0), (unsigned)getD(1), (unsigned)getD(2), (unsigned)getA(0), (unsigned)getA(1),
                 (unsigned)getA(2), (unsigned)getA(5), (unsigned)getA(6), (unsigned)getA(7));
@@ -403,6 +407,7 @@ public:
                 ULONG p = ctx->pc_ring[(ctx->pc_ring_pos + i) & 511];
                 bug("[m68kemu]   %08x: %04x %04x %04x\n", (unsigned)p,
                     (unsigned)m68k_read16(ctx, p), (unsigned)m68k_read16(ctx, p + 2), (unsigned)m68k_read16(ctx, p + 4));
+            }
             }
             ctx->running = FALSE;
             return;
@@ -442,6 +447,24 @@ public:
                         }
 
                         setD(0, (u32)ret);
+                        if (ctx->ccr_valid)
+                        {
+                            setCCR((getCCR() & 0x10) | ctx->ccr_val);
+                            ctx->ccr_valid = FALSE;
+                        }
+                        if (ctx->tail_pc)
+                        {
+                            /* run 68k code (a library's init) as if the caller had
+                               called it: its RTS returns to the caller with D0 */
+                            u32 tsp = getA(7) - 4;
+                            m68k_write32(ctx, tsp, ret_addr);
+                            setA(7, tsp);
+                            setD(0, ctx->tail_d0);
+                            setA(0, ctx->tail_a0);
+                            setA(6, ctx->tail_a6);
+                            ret_addr = ctx->tail_pc;
+                            ctx->tail_pc = 0;
+                        }
 
                         /*
                          * Set PC so Moira pushes ret_addr in the exception frame.
@@ -490,7 +513,8 @@ public:
                     setD(0, 0);
                     setPC0(ret_addr);
                     setPC(ret_addr + 2);
-                    bug("[m68kemu] UNIMPL %s LVO -%lu\n", lib->name, lvo_offset);
+                    m68k_log(ctx, "%s: %s function -%lu is not supported yet",
+                             ctx->program_name[0] ? ctx->program_name : "68k program", lib->name, lvo_offset);
                 }
                 return;
             }
@@ -636,6 +660,8 @@ LONG M68KEmu_Execute(struct M68KEmuContext *ctx)
             {
                 ULONG i;
                 ctx->low_trap_count = 8;
+                if (ctx->trace_calls)
+                {
                 bug("[m68kemu] TRACE AbsExecBase changed to %08x before PC %08x; last instructions:\n",
                     (unsigned)m68k_read32(ctx, 4), (unsigned)pc);
                 for (i = 480; i < 512; i++)
@@ -647,21 +673,24 @@ LONG M68KEmu_Execute(struct M68KEmuContext *ctx)
                 }
                 bug("[m68kemu]   mem0: %08x %08x %08x %08x\n", (unsigned)m68k_read32(ctx, 0),
                     (unsigned)m68k_read32(ctx, 4), (unsigned)m68k_read32(ctx, 8), (unsigned)m68k_read32(ctx, 12));
+                }
                 m68k_write32(ctx, 4, ctx->m68k_sysbase);
             }
             if (pc >= ctx->mem_size && !ctx->pc_exit_dumped)
             {
                 ULONG i;
                 ctx->pc_exit_dumped = TRUE;
-                bug("[m68kemu] TRACE PC %08x left containment; last instructions:\n", (unsigned)pc);
-                for (i = 448; i < 512; i++)
+                m68k_log(ctx, "%s: jumped to %08x outside its memory, program stopped%s",
+                    ctx->program_name[0] ? ctx->program_name : "68k program", (unsigned)pc,
+                    ctx->trace_calls ? "" : " (SetEnv M68KEMU_TRACE 1 for registers and the last instructions)");
+                for (i = 448; i < 512 && ctx->trace_calls; i++)
                 {
                     ULONG p = ctx->pc_ring[(ctx->pc_ring_pos + i) & 511];
                     bug("[m68kemu]   %08x: %04x %04x %04x\n", (unsigned)p,
                         (unsigned)m68k_read16(ctx, p), (unsigned)m68k_read16(ctx, p + 2),
                         (unsigned)m68k_read16(ctx, p + 4));
                 }
-                bug("[m68kemu]   D0 %08x D1 %08x A0 %08x A1 %08x A5 %08x A6 %08x SP %08x\n",
+                if (ctx->trace_calls) bug("[m68kemu]   D0 %08x D1 %08x A0 %08x A1 %08x A5 %08x A6 %08x SP %08x\n",
                     (unsigned)cpu.getD(0), (unsigned)cpu.getD(1), (unsigned)cpu.getA(0),
                     (unsigned)cpu.getA(1), (unsigned)cpu.getA(5), (unsigned)cpu.getA(6), (unsigned)cpu.getA(7));
                 ctx->running = FALSE;

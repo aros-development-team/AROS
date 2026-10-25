@@ -831,3 +831,46 @@ void m68k_watchdog_stop(struct M68KEmuContext *ctx)
     while (ctx->watchdog_quit) Delay(10);
     ctx->watchdog_on = FALSE;
 }
+
+/* Messages about a program (it failed, a library is missing): to the
+   system log, which LogDump and the log viewers read, so nothing paints
+   over the screen; to the debug output as well while M68KEMU_TRACE is set. */
+#include <resources/log.h>
+#include <proto/log.h>
+#include <stdarg.h>
+#include <stdio.h>
+static struct Library *m68k_LogResBase;
+static APTR m68k_loghandle;
+static struct Node m68k_lognode = { .ln_Name = (char *)"m68kemu" };
+#define __LOG_LIBBASE m68k_LogResBase
+
+void m68k_log(struct M68KEmuContext *ctx, const char *fmt, ...)
+{
+    char buf[256];
+    va_list ap;
+
+    va_start(ap, fmt);
+    vsnprintf(buf, sizeof(buf), fmt, ap);
+    va_end(ap);
+    if (ctx && ctx->trace_calls)
+        bug("[m68kemu] %s\n", buf);
+    Forbid();
+    if (!m68k_LogResBase)
+    {
+        m68k_LogResBase = OpenResource("log.resource");
+        if (m68k_LogResBase)
+            m68k_loghandle = logInitialise(&m68k_lognode);
+    }
+    Permit();
+    if (m68k_LogResBase && m68k_loghandle)
+    {
+        /* the message is already formatted: plain text, no format arguments */
+        char *c;
+        for (c = buf; *c; c++)
+            if (*c == '%') *c = '?';
+        logAddEntryA(LOGF_Flag_Type_Error | 20, m68k_loghandle, (CONST_STRPTR)"", (CONST_STRPTR)"m68kemu", 0,
+                     (CONST_STRPTR)buf, (RAWARG)NULL);
+    }
+    else if (!ctx || !ctx->trace_calls)
+        bug("[m68kemu] %s\n", buf);
+}

@@ -48,6 +48,7 @@ M68KEMU_FILES := \
     m68kemu_shadow \
     m68kemu_m68klib \
     m68kemu_stubs \
+    m68kemu_math \
     m68kemu_thunks_gen
 
 M68KEMU_CXXFILES := \

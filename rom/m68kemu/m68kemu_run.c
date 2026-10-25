@@ -100,6 +100,9 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
         CurrentDir(curdir);  /* restore */
 
         BPTR dirlock = DupLock(curdir);
+        struct Process *me = (struct Process *)FindTask(NULL);
+        /* started from a Shell: the program checks pr_CLI to know it */
+        IPTR is_cli = (me->pr_Task.tc_Node.ln_Type == NT_PROCESS && me->pr_CLI) ? TRUE : FALSE;
 
         struct TagItem tags[] = {
             { NP_Entry,       (IPTR)emu_proc_entry },
@@ -113,6 +116,7 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
             { NP_Output,      (IPTR)Output() },
             { NP_CloseOutput, FALSE },
             { NP_CurrentDir,  (IPTR)dirlock },
+            { NP_Cli,         is_cli },
             { TAG_DONE,       0 }
         };
 
@@ -186,8 +190,17 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
     if (ctx->trace_calls) bug("[m68kemu] TRACE build " __DATE__ " " __TIME__ " RunHunk seglist %p stack %u args %u -> entry %08x\n",
         BADDR(segList), (unsigned)stackSize, (unsigned)argSize, (unsigned)entry);
     if (entry)
+    {
+        char name[108];
+        /* the Shell's command name, or the task name, for messages */
+        if (!GetProgramName((STRPTR)name, sizeof(name)) || !name[0])
+        {
+            struct Task *me = FindTask(NULL);
+            snprintf(name, sizeof(name), "%s", me->tc_Node.ln_Name ? me->tc_Node.ln_Name : "");
+        }
         result = setup_and_execute(ctx, entry, argPtr, argSize,
-                                   stackSize, NULL, M68KEmuBase);
+                                   stackSize, name[0] ? name : NULL, M68KEmuBase);
+    }
     if (ctx && 0) bug("[m68kemu] TRACE RunHunk result %ld\n", (long)result);
 
     M68KEmu_DestroyContext(ctx);

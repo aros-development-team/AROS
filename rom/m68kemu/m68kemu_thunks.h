@@ -51,6 +51,13 @@ struct M68KLibThunkSet {
     ULONG count;
 };
 
+extern const struct M68KLibThunkSet m68kemu_math_libs[];
+extern const ULONG m68kemu_math_libs_count;
+extern const struct M68KLibThunkSet m68kemu_wb_lib;
+extern const struct M68KThunkEntry m68kemu_cx_manual[];
+extern const ULONG m68kemu_cx_manual_count;
+
+
 extern const struct M68KLibThunkSet m68kemu_all_gen_libs[];
 extern const ULONG m68kemu_all_gen_libs_count;
 
