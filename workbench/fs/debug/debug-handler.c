@@ -75,6 +75,7 @@ LONG debug_handler(struct ExecBase *SysBase)
     struct MsgPort *mp = &thisProc->pr_MsgPort;
     struct DosPacket *dp;
     struct DeviceNode *devNode;
+    struct Message *nextMessage = NULL;
     struct debugBase pb = {};
     BOOL debugPipe = TRUE;
 
@@ -96,8 +97,12 @@ LONG debug_handler(struct ExecBase *SysBase)
     do {
         struct debugArgs *pa;
         replyPkt(dp, SysBase);
-        WaitPort(mp);
-        dp = (struct DosPacket *)(GetMsg(mp)->mn_Node.ln_Name);
+        if (nextMessage == NULL) {
+            WaitPort(mp);
+            nextMessage = GetMsg(mp);
+        }
+        dp = (struct DosPacket *)nextMessage->mn_Node.ln_Name;
+        nextMessage = NULL;
         switch (dp->dp_Type) {
         case ACTION_FINDINPUT:
         case ACTION_FINDOUTPUT:
@@ -159,7 +164,9 @@ LONG debug_handler(struct ExecBase *SysBase)
             }
             break;
         case ACTION_DIE:
-            if (IsListEmpty(&pb.pb_Openers)) {
+            /* Refuse shutdown if a packet is queued; the caller must retry. */
+            if (IsListEmpty(&pb.pb_Openers) &&
+                (nextMessage = GetMsg(mp)) == NULL) {
                 dp->dp_Res1 = DOSTRUE;
                 dp->dp_Res2 = 0;
                 debugPipe = FALSE;
