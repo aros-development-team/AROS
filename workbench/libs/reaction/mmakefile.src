@@ -26,6 +26,6 @@ FILES := reaction_init
 %build_module mmake=workbench-libs-reaction \
     modname=reaction modtype=library \
     files="$(FUNCS) $(FILES)" \
-    linklibfiles="reaction_classes_autoinit"
+    linklibfiles="reaction_classes_autoinit reaction_labels reaction_varargs"
 
 %common
