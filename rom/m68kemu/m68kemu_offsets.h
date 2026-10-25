@@ -103,6 +103,17 @@
 #define M68K_WIN_RPORT              50
 #define M68K_WIN_IDCMPFLAGS         82
 #define M68K_WIN_USERPORT           86
+#define M68K_WIN_BORDERLEFT         54
+#define M68K_WIN_BORDERTOP          55
+#define M68K_WIN_BORDERRIGHT        56
+#define M68K_WIN_BORDERBOTTOM       57
+#define M68K_WIN_GZZWIDTH           112
+#define M68K_WIN_GZZHEIGHT          114
+#define M68K_WIN_WLAYER             124
+#define M68K_RP_LAYER               0
+#define M68K_LAYER_RP               12
+#define M68K_LAYER_BOUNDS           16
+#define M68K_SIZEOF_LAYER_SHADOW    160
 
 /* ── NewScreen struct offsets (m68k) ─────────────────────────────── */
 
