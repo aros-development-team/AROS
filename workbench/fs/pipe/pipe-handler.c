@@ -178,6 +178,13 @@ struct DosPacket  *StartPkt;
   SysBase= AbsExecBase;
 #endif
 
+  Task= FindTask (NULL);
+  PipePort= &((struct Process *)Task)->pr_MsgPort;
+  DevNode= (struct DeviceNode *) BPTRtoCptr (StartPkt->dp_Arg3);
+  DevNode->dn_Task= PipePort;
+
+  StartPkt->dp_Res1= DOSFALSE;
+  StartPkt->dp_Res2= ERROR_INVALID_RESIDENT_LIBRARY;
   if ((DOSBase= (APTR)OpenLibrary (DOSNAME, 0)) == NULL)
     goto QUIT;
 
@@ -188,10 +195,9 @@ struct DosPacket  *StartPkt;
         break;
       }
 
-  Task= FindTask (NULL);
-  PipePort= &((struct Process *)Task)->pr_MsgPort;
   ((struct Process *) Task)->pr_CurrentDir= 0;     /* initial file system root */
 
+  StartPkt->dp_Res2= ERROR_NO_FREE_STORE;
   if ((TapReplyPort= CreatePort (NULL, PipePort->mp_Node.ln_Pri)) == NULL)
     goto QUIT;
 
@@ -205,9 +211,6 @@ struct DosPacket  *StartPkt;
   TapReplyMask= (1L << TapReplyPort->mp_SigBit);
   WakeupMask=   (PipeMask | TapReplyMask);
 
-  DevNode= (struct DeviceNode *) BPTRtoCptr (StartPkt->dp_Arg3);
-  DevNode->dn_Task= PipePort;
-
   InitList (&pipelist);
   InitList (&tapwaitlist);
 
@@ -216,6 +219,7 @@ struct DosPacket  *StartPkt;
 #endif /* PIPEDIR */
 
   StartPkt->dp_Res1 = DOSTRUE;
+  StartPkt->dp_Res2 = 0;
   QuickReplyPkt (StartPkt);
 
 
@@ -359,7 +363,7 @@ QUIT:
   DevNode->dn_Task= NULL;     /* bad if someone in process of accessing us . . . */
 
   if (TapReplyPort != NULL)
-    FreeMem (TapReplyPort, sizeof (struct MsgPort));     /* signal bit won't matter */
+    DeletePort (TapReplyPort);
 
 #ifdef DEBUG
   CleanupDebugIO ();
@@ -367,6 +371,8 @@ QUIT:
 
   if (DOSBase != NULL)
     CloseLibrary ((APTR)DOSBase);
+
+  QuickReplyPkt (StartPkt);
 }
 
 
