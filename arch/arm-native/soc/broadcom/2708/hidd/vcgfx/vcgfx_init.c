@@ -86,8 +86,7 @@ static const STRPTR interfaces[] =
     IID_Hidd_Gfx,
     IID_Hidd_Display,
     IID_Hidd_DMEnum,
-    IID_Hidd,
-    IID_Hidd_Overlay
+    IID_Hidd
 };
 
 /* Real firmware (BCM2712 too) answers GETCLKMEASURED; QEMU leaves its
