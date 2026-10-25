@@ -43,7 +43,7 @@ static struct debugArgs *debugOpen(struct debugBase *pb, BPTR name, SIPTR *err)
         *err = 0;
         return pa;
     }
-    *err = ERROR_NO_DISK;
+    *err = ERROR_NO_FREE_STORE;
     return NULL;
 }
 
