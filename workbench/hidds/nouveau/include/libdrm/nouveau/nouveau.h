@@ -140,7 +140,9 @@ struct nouveau_pushbuf {
    struct nouveau_client *client;
    struct nouveau_object *channel;
    struct nouveau_bufctx *bufctx;
-   void (*kick_notify)(struct nouveau_pushbuf *);
+   /* libdrm >= 2.4.126 / Mesa 26.2: returns false when the driver could not
+    * prepare the submission (fence allocation), and the kick is abandoned */
+   bool (*kick_notify)(struct nouveau_pushbuf *);
    void *user_priv;
    uint32_t rsvd_kick;
    uint32_t flags;

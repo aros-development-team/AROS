@@ -82,10 +82,12 @@ BROADCOM_COMPILER_SOURCES := \
     $(MESA_BROADCOM_DIR)/compiler/vir \
     $(MESA_BROADCOM_DIR)/compiler/vir_dump \
     $(MESA_BROADCOM_DIR)/compiler/vir_live_variables \
+    $(MESA_BROADCOM_DIR)/compiler/vir_opt_alu \
     $(MESA_BROADCOM_DIR)/compiler/vir_opt_constant_alu \
     $(MESA_BROADCOM_DIR)/compiler/vir_opt_copy_propagate \
     $(MESA_BROADCOM_DIR)/compiler/vir_opt_dead_code \
     $(MESA_BROADCOM_DIR)/compiler/vir_opt_redundant_flags \
+    $(MESA_BROADCOM_DIR)/compiler/vir_opt_redundant_setnnmode \
     $(MESA_BROADCOM_DIR)/compiler/vir_opt_small_immediates \
     $(MESA_BROADCOM_DIR)/compiler/vir_register_allocate \
     $(MESA_BROADCOM_DIR)/compiler/vir_to_qpu \
@@ -100,6 +102,7 @@ BROADCOM_COMPILER_SOURCES := \
     $(MESA_BROADCOM_DIR)/compiler/v3d_nir_lower_load_output \
     $(MESA_BROADCOM_DIR)/compiler/v3d_nir_lower_load_store_bitsize \
     $(MESA_BROADCOM_DIR)/compiler/v3d_nir_lower_logic_ops \
+    $(MESA_BROADCOM_DIR)/compiler/v3d_nir_lower_null_descriptors \
     $(MESA_BROADCOM_DIR)/compiler/v3d_nir_lower_scratch \
     $(MESA_BROADCOM_DIR)/compiler/v3d_nir_lower_txf_ms \
     $(V3D_NIR_ALGEBRAIC)
@@ -109,6 +112,7 @@ BROADCOM_COMPILER_SOURCES := \
 BROADCOM_COMMON_SOURCES := \
     $(MESA_BROADCOM_DIR)/common/v3d_debug \
     $(MESA_BROADCOM_DIR)/common/v3d_device_info \
+    $(MESA_BROADCOM_DIR)/common/v3d_submit_util \
     $(MESA_BROADCOM_DIR)/common/v3d_tiling \
     $(MESA_BROADCOM_DIR)/common/v3d_util \
     $(MESA_BROADCOM_DIR)/clif/clif_dump \

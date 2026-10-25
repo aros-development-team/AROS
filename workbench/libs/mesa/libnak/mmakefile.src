@@ -186,17 +186,25 @@ COMPILER_RS_BINDING_TYPES := exec_list exec_node float_controls gc_ctx gl_access
     gl_tess_spacing gl_varying_slot gl_vert_attrib glsl_type glsl_matrix_layout nir_.* \
     mesa_scope mesa_prim shader_info tess_primitive_mode u_printf_info
 
-$(COMPILER_RS_GENDIR)/bindings.rs : $(top_srcdir)/src/compiler/rust/bindings.h $(wildcard $(top_srcdir)/src/compiler/rust/*.rs)
+# Since 26.2 the crate also calls static inline functions from nir.h and
+# half_float.h, so bindgen's static-fns wrapping (meson's
+# output_inline_wrapper) writes bindings.c with an out-of-line
+# *_compiler_rs_extern copy of each; that file is built into libnak.a.
+$(COMPILER_RS_GENDIR)/bindings.rs $(COMPILER_RS_GENDIR)/bindings.c : $(top_srcdir)/src/compiler/rust/bindings.h $(wildcard $(top_srcdir)/src/compiler/rust/*.rs)
 	%mkdir_q dir="$(COMPILER_RS_GENDIR)"
 	$(Q)$(ECHO) "Generating rust bindings for NIR (compiler crate)"
 	$(Q)$(CP) $(top_srcdir)/src/compiler/rust/*.rs $(COMPILER_RS_GENDIR)/
 	$(Q)$(NAK_BINDGEN) $(NAK_BINDGEN_OUTPUT_ARGS) \
+	    --experimental --wrap-static-fns --wrap-static-fns-suffix _compiler_rs_extern \
+	    --wrap-static-fns-path $(COMPILER_RS_GENDIR)/bindings \
 	    --allowlist-var 'NIR_.*' --allowlist-var 'nir_.*_infos' --allowlist-var 'rust_.*' \
 	    --allowlist-function 'glsl_.*' --allowlist-function '_mesa_shader_stage_to_string' \
+	    --allowlist-function '_mesa_.*half.*' --allowlist-function '_mesa_.*float16.*' \
 	    --allowlist-function 'nir_.*' --allowlist-function 'compiler_rs.*' --allowlist-function 'u_memstream.*' \
-	    --allowlist-type u_memstream $(foreach t,$(COMPILER_RS_BINDING_TYPES),--allowlist-type '$(t)') \
+	    --allowlist-function 'util_dynarray.*' \
+	    --allowlist-type u_memstream --allowlist-type util_dynarray $(foreach t,$(COMPILER_RS_BINDING_TYPES),--allowlist-type '$(t)') \
 	    --no-prepend-enum-name --with-derive-default \
-	    -o $@ $< -- $(NAK_BINDGEN_CLANG_ARGS) || ($(RM) $@; false)
+	    -o $(COMPILER_RS_GENDIR)/bindings.rs $< -- $(NAK_BINDGEN_CLANG_ARGS) || ($(RM) $(COMPILER_RS_GENDIR)/bindings.rs $(COMPILER_RS_GENDIR)/bindings.c; false)
 
 $(NAK_TGTDIR)/libcompiler.rlib : $(COMPILER_RS_GENDIR)/bindings.rs
 	$(Q)$(ECHO) "Compiling  rust crate compiler"
@@ -244,7 +252,7 @@ $(NAK_GENDIR)/nak_bindings.rs : $(NAK_SRCDIR)/nak_bindings.h $(NAK_SRCDIR)/nak.h
 	    --allowlist-type 'drm.*' --allowlist-type 'nak_.*' --allowlist-type 'nouveau_ws_.*' \
 	    --allowlist-var 'DRM_.*' --allowlist-var 'NAK_.*' --allowlist-var NVIDIA_VENDOR_ID \
 	    --allowlist-function 'drm.*' --allowlist-function 'nak_.*' --allowlist-function 'nouveau_ws_.*' \
-	    --blocklist-type 'glsl_.*' --no-prepend-enum-name --with-derive-default \
+	    --blocklist-type 'glsl_.*' --blocklist-type 'pipe_format.*' --no-prepend-enum-name --with-derive-default \
 	    -o $@ $< -- $(NAK_BINDGEN_CLANG_ARGS) || ($(RM) $@; false)
 
 $(NAK_TGTDIR)/libnak_bindings.rlib : $(NAK_GENDIR)/nak_bindings.rs $(NAK_TGTDIR)/libcompiler.rlib
@@ -266,6 +274,7 @@ $(NIL_GENDIR)/nil_bindings.rs : $(NIL_SRCDIR)/nil_bindings.h $(NIL_GENDIR)/nil_f
 	    --allowlist-function util_format_is_srgb --allowlist-function drm_format_mod_block_linear_2D \
 	    --allowlist-function drm_mod_is_nvidia \
 	    --allowlist-type nil_format_support_flags --allowlist-type nv_device_info --allowlist-type nv_device_type \
+	    --allowlist-type nv_zcull_device_info \
 	    --allowlist-type pipe_format --allowlist-type pipe_swizzle \
 	    --allowlist-var nil_format_table --allowlist-var drm_format_mod_invalid --allowlist-var drm_format_mod_linear \
 	    --no-prepend-enum-name \
@@ -333,7 +342,8 @@ $(top_libdir)/libnak_rs.a : $(NAK_TGTDIR)/libnak_rs.a
 
 NAK_C_SOURCES := $(patsubst %.c,%,$(wildcard $(NAK_SRCDIR)/nak_nir*.c)) \
                  $(top_srcdir)/src/compiler/rust/rust_helpers
-NAK_C_GEN_SOURCES := $(NAK_GENDIR)/compiler/nak_nir_algebraic
+NAK_C_GEN_SOURCES := $(NAK_GENDIR)/compiler/nak_nir_algebraic \
+                     $(COMPILER_RS_GENDIR)/bindings
 
 $(NAK_GENDIR)/compiler/nak_nir_algebraic.c : $(NAK_SRCDIR)/nak_nir_algebraic.py
 	%mkdir_q dir="$(dir $@)"
@@ -342,7 +352,7 @@ $(NAK_GENDIR)/compiler/nak_nir_algebraic.c : $(NAK_SRCDIR)/nak_nir_algebraic.py
 
 #MM mesa3d-linklib-nak-c : mesa3d-nak-generate-c
 #MM
-mesa3d-nak-generate-c : $(NAK_GENDIR)/compiler/nak_nir_algebraic.c $(NIL_GENDIR)/nil.h
+mesa3d-nak-generate-c : $(NAK_GENDIR)/compiler/nak_nir_algebraic.c $(NIL_GENDIR)/nil.h $(COMPILER_RS_GENDIR)/bindings.c
 
 %build_linklib mmake=mesa3d-linklib-nak-c \
     libname=nak \

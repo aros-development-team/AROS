@@ -12958,7 +12958,7 @@ if test ${with_mesagl+y}
 then :
   withval=$with_mesagl; aros_mesagl="$withval"
 else case e in #(
-  e) aros_mesagl="26.0.0" ;;
+  e) aros_mesagl="26.2.5" ;;
 esac
 fi
 

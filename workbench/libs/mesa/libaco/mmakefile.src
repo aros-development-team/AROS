@@ -23,7 +23,6 @@ ACO_CXX_SOURCES := \
     $(top_srcdir)/$(CUR_MESADIR)/instruction_selection/aco_select_nir \
     $(top_srcdir)/$(CUR_MESADIR)/instruction_selection/aco_select_ps_epilog \
     $(top_srcdir)/$(CUR_MESADIR)/instruction_selection/aco_select_ps_prolog \
-    $(top_srcdir)/$(CUR_MESADIR)/instruction_selection/aco_select_rt_prolog \
     $(top_srcdir)/$(CUR_MESADIR)/instruction_selection/aco_select_trap_handler \
     $(top_srcdir)/$(CUR_MESADIR)/instruction_selection/aco_select_vs_prolog \
     $(top_srcdir)/$(CUR_MESADIR)/aco_dead_code_analysis \

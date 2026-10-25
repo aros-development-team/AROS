@@ -755,31 +755,40 @@ void pUnlockSem(LIBBASETYPEPTR ps, struct PsdLockSem *pls)
 /* \\\ */
 
 /* /// "psdDebugSemaphores()" */
-/****** poseidon.library/psdDebugSemaphores ********************************
+/*****************************************************************************
+    NAME
+        VOID psdDebugSemaphores(
 
-    NAME */
-        AROS_LH0(void, psdDebugSemaphores,
-/*  SYNOPSIS */
-/*  LOCATION */
-         LIBBASETYPEPTR, ps, 81, psd)
-/*  FUNCTION
-        Record the current Poseidon semaphore-tracking state in the
-        stack's diagnostic message log.
+    SYNOPSIS
+        )
+
+    FUNCTION
+        Log the registered Poseidon semaphore owners, readers and waiters.
+
+    RESULT
+        None. Output is added to the Poseidon message log.
 
     NOTES
-        The function identifies the calling task, then traverses the
-        tracked semaphore list under Forbid()/Permit(). Each entry is
-        passed to the internal semaphore diagnostic formatter. The output
-        uses the Poseidon error-message mechanism rather than returning
-        data to the caller.
+        Reports the calling task, then each registered semaphore's name,
+        exclusive and shared counts, owner, waiting tasks and shared-lock counts.
+        It does not acquire, release or repair the reported locks.
 
-        The report describes internal lock bookkeeping. It is not a
-        synchronization barrier or a deadlock detector with a result code.
+        Messages use informational severity and are suppressed when information
+        logging is disabled. Allocation failure can omit individual messages;
+        there is no complete-output indication. Only registered Poseidon locks
+        are visited, not arbitrary Exec semaphores.
+
+        Use from task context. Traversal uses Forbid()/Permit(), while logging
+        can allocate memory and perform other system calls. The output is a
+        diagnostic view, not a guaranteed atomic snapshot or a deadlock verdict.
 
     SEE ALSO
-        psdBorrowLocksWait(), psdLockReadPBase(), psdLockWritePBase()
+        psdBorrowLocksWait(), psdAddErrorMsgA(),
+        psdLockReadPBase(), psdLockWritePBase()
 
-******************************************************************************/
+*****************************************************************************/
+        AROS_LH0(void, psdDebugSemaphores,
+         LIBBASETYPEPTR, ps, 81, psd)
 {
     AROS_LIBFUNC_INIT
     struct Task *thistask = FindTask(NULL);
@@ -889,49 +898,64 @@ void pUnlockSem(LIBBASETYPEPTR ps, struct PsdLockSem *pls)
 /* \\\ */
 
 /* /// "psdBorrowLocksWait()" */
-/****** poseidon.library/psdBorrowLocksWait ********************************
+/*****************************************************************************
+    NAME
+        ULONG psdBorrowLocksWait(
 
-    NAME */
-        AROS_LH2(ULONG, psdBorrowLocksWait,
-/*  SYNOPSIS */
-         AROS_LHA(struct Task *, task, A1),
-         AROS_LHA(ULONG, signals, D0),
-/*  LOCATION */
-         LIBBASETYPEPTR, ps, 97, psd)
-/*  FUNCTION
-        Wait for task signals while temporarily transferring Poseidon
-        semaphore ownership to another task, then reclaim the locks.
+    SYNOPSIS
+        struct Task *task, ULONG signals)
+
+    FUNCTION
+        Temporarily lend the caller's registered Poseidon locks to another
+        task while waiting for signals, then reclaim them.
 
     INPUTS
-        task    - Valid task intended to receive the caller's locks.
-        signals - Signal mask passed to Exec Wait().
+        task - Valid, non-NULL cooperating task distinct from the caller.
+            Keep it alive throughout the wait and lock reclamation.
+        signals - Exec signal mask for completion. The caller must arrange for
+            the cooperating operation to signal it.
 
     RESULT
-        Signal bits returned by Wait().
+        The signal mask returned by Wait(signals), after lock reclamation.
+        This is not a lock-transfer status or a count of transferred locks.
 
     NOTES
-        The function examines Poseidon's tracked exclusive and shared
-        locks under Forbid(). If the caller holds none, it calls Wait()
-        directly. Otherwise it creates temporary transfer and reclaim
-        lists. Where the destination task already waits for a lock, the
-        function may release the caller's ownership and wake that task.
-        Other held locks can be assigned to the destination task while
-        the caller waits.
+        Used when a cooperating task must access Poseidon state protected by
+        locks held by the caller. Only locks registered with Poseidon's lock
+        implementation participate; ordinary Exec semaphores are unaffected.
+        With no caller-held registered locks, behaves as Wait(signals).
 
-        After Wait(), the function restores ownership when possible and
-        reacquires locks whose state changed during the wait. Reacquiring
-        may itself block. The mechanism applies only to locks represented
-        in Poseidon's semaphore-tracking list.
+        The cooperating task must balance its own lock acquisitions and must
+        not consume the caller's borrowed lock counts. Keep all participating
+        lock objects alive until reclamation finishes. Do not use this operation
+        as permission to destroy or replace protected objects.
+
+        Transfers or temporarily releases exclusive and shared ownership,
+        including recursive counts. A waiting recipient can be moved to the
+        front of a wait queue and its shared request promoted to exclusive.
+        After receiving a signal, restores ownership directly where possible
+        and otherwise reacquires the saved lock counts.
+
+        Reclamation can block after the requested signal arrives. There is no
+        timeout or cancellation result. A completion signal should represent
+        a point at which the cooperating operation can release its locks.
 
     BUGS
-        The destination task is dereferenced without validation. Internal
-        pooled allocation failures can prevent individual transfers; no
-        allocation or reclaim status is returned separately from signals.
+        The recipient task is dereferenced without NULL validation.
+        Transfer bookkeeping allocation can fail without an error result.
+        Some locks can remain with the caller while others have been lent;
+        waiting can then deadlock. Queue reordering or promotion can precede
+        the failed allocation. This function does not guarantee deadlock
+        avoidance or an all-or-nothing transfer.
 
     SEE ALSO
-        psdDebugSemaphores(), psdLockReadPBase(), psdUnlockPBase()
+        psdDebugSemaphores(), exec.library/Wait()
 
-******************************************************************************/
+*****************************************************************************/
+        AROS_LH2(ULONG, psdBorrowLocksWait,
+         AROS_LHA(struct Task *, task, A1),
+         AROS_LHA(ULONG, signals, D0),
+         LIBBASETYPEPTR, ps, 97, psd)
 {
     AROS_LIBFUNC_INIT
     struct Task *thistask = FindTask(NULL);
@@ -5608,38 +5632,56 @@ static VOID pFreeDevAndBindings(LIBBASETYPEPTR ps, struct PsdDevice *pd)
 /* \\\ */
 
 /* /// "psdCalculatePower()" */
-/****** poseidon.library/psdCalculatePower *********************************
+/*****************************************************************************
+    NAME
+        VOID psdCalculatePower(
 
-    NAME */
-        AROS_LH1(void, psdCalculatePower,
-/*  SYNOPSIS */
-         AROS_LHA(struct PsdHardware *, phw, A0),
-/*  LOCATION */
-         LIBBASETYPEPTR, ps, 78, psd)
-/*  FUNCTION
-        Recalculate USB power distribution for every root device attached
-        to the specified controller.
+    SYNOPSIS
+        APTR phw)
+
+    FUNCTION
+        Recalculate the stored power estimates for a hardware device tree.
 
     INPUTS
-        phw - Valid Poseidon hardware controller with an initialized
-              device list.
+        phw - Valid, non-NULL hardware handle. Keep the hardware and its
+            device topology alive and stable until return.
+
+    RESULT
+        None. Read device estimates through DA_PowerSupply and DA_PowerDrained.
 
     NOTES
-        The function takes the Poseidon base read lock. For each root
-        device, it sets the initial power drain to zero and power supply
-        to 500, then invokes the recursive drain and supply calculations
-        for its downstream device tree. Descendant power figures depend on
-        the current device topology and configuration.
+        Visits every root device of this hardware and recursively updates
+        supply and drain estimates in milliamperes. Uses current configurations,
+        self-powered status, power overrides and the suspended flag.
+
+        The model starts roots at 500 mA, allows 500 mA per downstream connection
+        from self-powered devices, and caps downstream supply from bus-powered
+        devices at 100 mA after accounting for their own demand. Suspended
+        configured devices use a 1 or 3 mA drain estimate.
+
+        A newly detected deficit sets the low-power flag, logs a warning and
+        sends EHMB_DEVICELOWPW. A resolved deficit clears the flag and logs a
+        message; it does not send a matching recovery event.
+
+        May wait for the base read lock and perform logging and event allocation.
+        It does not measure current, negotiate power, switch ports or reject
+        configurations. Coordinate concurrent configuration and power-state
+        changes; the read lock does not serialize these stored-value updates.
 
     BUGS
-        phw is dereferenced without a NULL check. No result is returned,
-        and the call does not establish that the physical controller can
-        actually deliver the calculated power.
+        A NULL hardware pointer is dereferenced without validation.
+        The fixed 500/100 mA model is not a speed-specific USB power budget.
+        Suspended devices stop drain recursion, so descendants can retain old
+        drain values. Self-powered devices report zero upstream drain. Treat
+        these values as implementation estimates, not electrical guarantees.
 
     SEE ALSO
-        psdAddHardware(), psdEnumerateHardware()
+        psdGetAttrsA(), psdSuspendDevice(), psdResumeDevice()
 
-******************************************************************************/
+*****************************************************************************/
+        AROS_LH1(void, psdCalculatePower,
+         AROS_LHA(struct PsdHardware *, phw, A0),
+         LIBBASETYPEPTR, ps, 78, psd)
 {
     AROS_LIBFUNC_INIT
     struct PsdDevice *roothub = NULL;
@@ -8057,42 +8099,71 @@ static void pReleaseAfterDOSBindings(LIBBASETYPEPTR ps)
 /* \\\ */
 
 /* /// "psdDoHubMethodA()" */
-/****** poseidon.library/psdDoHubMethodA ***********************************
+/*****************************************************************************
+    NAME
+        IPTR psdDoHubMethodA(
 
-    NAME */
+    SYNOPSIS
+        APTR pd, ULONG methodid, IPTR *methoddata)
+
+    FUNCTION
+        Dispatch a method to the class bound to a device's parent hub.
+
+    INPUTS
+        pd - Device used to select the parent hub class, or NULL. Keep the
+            device, parent hub and class binding alive until return.
+        methodid - Method identifier understood by that class.
+        methoddata - Array of IPTR arguments in the layout required by the
+            method. Keep the array and referenced objects valid until return
+            and for any longer lifetime required by that method.
+
+    RESULT
+        The method result, subject to the return-width defect below. Returns
+        zero without dispatch if pd is NULL, has no parent hub, or the parent
+        has no device binding or class binding. Zero is also a possible method
+        result and does not distinguish these cases.
+
+    NOTES
+        The argument array is passed unchanged. This function does not insert
+        the parent hub binding or validate the method identifier, argument count,
+        argument pointers or target port. The routing device and the objects in
+        the argument array have distinct roles.
+
+        For UCM_HubPowerCyclePort and UCM_HubDisablePort, the supplied hub.class
+        expects { hub device, one-based port number }. For UCM_HubClassScan it
+        expects { hub binding }; for UCM_HubClaimAppBinding,
+        { hub binding, tag list }; for UCM_HubReleaseIfBinding,
+        { hub binding, interface }; and for UCM_HubReleaseDevBinding,
+        UCM_HubSuspendDevice and UCM_HubResumeDevice, { hub binding, device }.
+
+        Takes no device or base lock. The caller must coordinate topology and
+        binding changes. The class method may block. For the supplied hub.class,
+        claim, release, suspend and resume requests can wait for its task to
+        reply. Power-cycle, disable-port and class-scan methods schedule work;
+        their return does not establish completion of that work.
+
+        Prefer the dedicated binding and power-state APIs when they provide the
+        requested operation; they perform additional bookkeeping and callbacks.
+
+    BUGS
+        The public result type is IPTR, but this implementation returns LONG.
+        On targets with pointers wider than 32 bits, pointer-valued and other
+        wide results cannot be relied on. In particular, do not obtain an
+        application-binding handle through this dispatcher on such targets;
+        use psdClaimAppBindingA(). The source also uses APTR for methoddata;
+        the public array layout remains IPTR elements.
+
+    SEE ALSO
+        psdClaimAppBindingA(), psdReleaseDevBinding(), psdReleaseIfBinding(),
+        psdSuspendDevice(), psdResumeDevice(), psdClassScan(),
+        psdHubClassScan(), psdHubClaimAppBindingA()
+
+*****************************************************************************/
         AROS_LH3(LONG, psdDoHubMethodA,
-/*  SYNOPSIS */
          AROS_LHA(struct PsdDevice *, pd, A0),
          AROS_LHA(ULONG, methodid, D0),
          AROS_LHA(APTR, methoddata, A1),
-/*  LOCATION */
          LIBBASETYPEPTR, ps, 92, psd)
-/*  FUNCTION
-        Dispatch a USB class method when the device's parent hub has an
-        active class binding.
-
-    INPUTS
-        pd         - Device whose parent hub is inspected; may be NULL.
-        methodid   - USB class method identifier.
-        methoddata - Argument array required by the selected method.
-
-    RESULT
-        Return value from usbDoMethodA() when a parent hub and its class
-        binding are present; otherwise zero. Zero alone does not identify
-        which path was taken or whether a class method ran successfully.
-
-    NOTES
-        The method is sent through usbDoMethodA() without an explicit
-        binding argument. The function only uses the parent hub's binding
-        and owning class to decide whether to dispatch.
-
-        It acquires no device or base lock. Callers must keep the parent
-        hub and its binding stable for the duration of the call.
-
-    SEE ALSO
-        psdHubClassScan(), psdHubClaimAppBindingA()
-
-******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     struct PsdUsbClass *puc;
@@ -8487,49 +8558,71 @@ static void pReleaseAfterDOSBindings(LIBBASETYPEPTR ps)
 /* \\\ */
 
 /* /// "psdHubClassScan()" */
-/****** poseidon.library/psdHubClassScan ***********************************
+/*****************************************************************************
+    NAME
+        VOID psdHubClassScan(
 
-    NAME */
-        AROS_LH1(void, psdHubClassScan,
-/*  SYNOPSIS */
-         AROS_LHA(struct PsdDevice *, pd, A0),
-/*  LOCATION */
-         LIBBASETYPEPTR, ps, 82, psd)
-/*  FUNCTION
-        Search registered USB classes for bindings to an enumerated
-        device or its interfaces, including alternate interface settings.
+    SYNOPSIS
+        APTR pd)
+
+    FUNCTION
+        Try to bind installed USB classes to a device and request a hub scan.
 
     INPUTS
-        pd - Valid Poseidon device with initialized configuration and
-             interface lists.
+        pd - Valid, non-NULL device with a stable configuration and interface
+            tree. Keep it alive until return.
+
+    RESULT
+        None. Allocation, configuration and binding failures are not aggregated.
 
     NOTES
-        The function creates a temporary message port, takes the base
-        read lock and the device write lock, then attempts to allocate a
-        control pipe. It does not scan a device that forbids class binding
-        or already has a device-level binding.
+        Runs in the owning hub context. Ordinary clients should normally use
+        psdClassScan() to initiate scanning through the stack.
 
-        Forced device bindings take priority when no interface is bound.
-        Otherwise the function visits eligible configurations, attempts
-        interface bindings through the registered classes, and may select
-        alternate interface settings. If no interface binding succeeds,
-        it attempts device-level bindings. A successful binding updates
-        ownership, increments the class use count and sends
-        EHMB_ADDBINDING. If a device-class binding exists on exit, the
-        class receives UCM_HubClassScan.
+        Creates a message port and control pipe, takes the base read lock and
+        the device write lock, and may perform USB control transfers and invoke
+        class methods while those locks are held. There is no whole-scan timeout.
+        Allocation failure for the message port or control pipe prevents
+        new binding attempts.
 
-        The control pipe, port and locks are released before returning.
-        Failure to create the message port or pipe prevents scanning.
+        An existing device binding or the device's no-class-binding setting
+        skips new binding attempts. Otherwise a forced device class is tried
+        first when no interface binding exists. A configured forced name
+        suppresses ordinary fallback even when that class is absent or refuses.
+
+        Without that forced-device path, tries unbound interfaces across eligible
+        configurations and alternate settings. Existing interface bindings
+        restrict configuration selection. Forced interface names restrict class
+        selection; otherwise classes are tried in list order. If no interface
+        binds, attempts a device-level binding.
+
+        Successful bindings update class use counts and send EHMB_ADDBINDING.
+        Configuration and alternate-setting selection can change even when no
+        class binds. Do not retain assumptions about current interface ordering
+        across this call.
+
+        Finally, if a device class binding exists, invokes UCM_HubClassScan on
+        it, including when new binding attempts were skipped. The supplied
+        hub.class schedules its downstream scan; this call does not wait for
+        that downstream scan to finish.
 
     BUGS
-        A void return does not distinguish a successful scan, a missing
-        suitable class, an allocation failure or a failed forced binding.
-        The source does not validate pd before accessing its members.
+        A NULL device handle is not validated before dereference.
+        Class callbacks run under stack and device locks and can deadlock if
+        they wait for another task requiring those locks. Forced class names
+        are borrowed from configuration storage; concurrent configuration
+        replacement can invalidate them. Coordinate configuration mutation
+        with scanning. Failed attempts do not restore the original configuration
+        or guarantee that all temporary alternate selections were undone.
 
     SEE ALSO
-        psdClassScan(), psdSetForcedBinding(), psdHubClaimAppBindingA()
+        psdClassScan(), psdSetForcedBinding(), psdSetDeviceConfig(),
+        psdSetAltInterface(), psdHubClaimAppBindingA()
 
-******************************************************************************/
+*****************************************************************************/
+        AROS_LH1(void, psdHubClassScan,
+         AROS_LHA(struct PsdDevice *, pd, A0),
+         LIBBASETYPEPTR, ps, 82, psd)
 {
     AROS_LIBFUNC_INIT
     struct PsdUsbClass *puc;

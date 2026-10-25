@@ -21,7 +21,7 @@ include $(SRCDIR)/$(CURDIR)/sources.drm.mak
 # the driver out (the trick jpegxl.datatype uses for its own gcc floor).
 #MM- workbench-hidds-nouveau : hidd-nouveau-mesa$(OPT_MESAGL)
 #MM- hidd-nouveau-mesa20.0.8 : hidd-nouveau-$(AROS_TARGET_CPU)
-#MM- hidd-nouveau-mesa26.0.0 : hidd-nouveau-$(NOUVEAU_TOOLCHAINSUPPORT)$(AROS_TARGET_CPU)
+#MM- hidd-nouveau-mesa26.2.5 : hidd-nouveau-$(NOUVEAU_TOOLCHAINSUPPORT)$(AROS_TARGET_CPU)
 #MM- hidd-nouveau-i386 : hidd-nouveau
 #MM- hidd-nouveau-x86_64 : hidd-nouveau
 #MM- hidd-nouveau-riscv64 : hidd-nouveau
@@ -195,7 +195,10 @@ GALLIUM_NOUVEAU_CXX_SOURCES := \
 
 USER_CPPFLAGS += -DPACKAGE_VERSION=\"$(MESAGLVERSION)\" -DNOUVEAU_USE_UTIL_LIST
 
-%build_linklib mmake=hidd-nouveau-gallium libname=gallium_nouveau objdir=$(GENDIR)/$(CURDIR)/gallium \
+# Per Mesa version, like the libdrm half: the port's sources carry the
+# tarball's timestamps, so an object left from an older Mesa in a shared
+# objdir would pass as up to date.
+%build_linklib mmake=hidd-nouveau-gallium libname=gallium_nouveau libdir=$(top_libdir) objdir=$(GENDIR)/$(CURDIR)/$(MESAGLVERSION)/gallium \
     files="$(GALLIUM_NOUVEAU_C_SOURCES)" cxxfiles="$(GALLIUM_NOUVEAU_CXX_SOURCES)"
 
 ###############################################

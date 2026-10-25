@@ -48,6 +48,7 @@ VK_RUNTIME_SOURCES := \
     $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_meta_object_list \
     $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_nir \
     $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_nir_convert_ycbcr \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_nir_lower_descriptor_heaps \
     $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_object \
     $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_physical_device \
     $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_pipeline \
@@ -120,7 +121,8 @@ USER_INCLUDES += \
 
 USER_CPPFLAGS += \
     -DNO_AMIGA_LINKAGE_TYPES \
-    -DPACKAGE_VERSION=\"26.0.0\" \
+    -DPACKAGE_VERSION=\"$(MESAGLVERSION)\" \
+    -DMESA_VK_LOG=0 \
     -DNDEBUG
 
 USER_CFLAGS += $(MESA_NOWARNFLAGS)

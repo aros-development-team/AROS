@@ -51,6 +51,7 @@ ZINK_GEN_SOURCES := \
 USER_INCLUDES += \
     -iquote $(SRCDIR)/$(CURDIR)/../aros_compat \
     -iquote $(top_srcdir)/$(CUR_MESADIR) \
+    -iquote $(top_srcdir)/$(CUR_MESADIR)/nir_to_spirv \
     -iquote $(top_srcdir)/src \
     -iquote $(top_srcdir)/src/gallium/include \
     -iquote $(top_srcdir)/src/gallium/auxiliary \
@@ -99,7 +100,7 @@ mesa3d-generate-zink :
 	  "$$VK_XML" \
 	  $(ZINK_GENDIR)/zink_instance.h \
 	  $(ZINK_GENDIR)/zink_instance.c && \
-	python3 $(top_srcdir)/$(CUR_MESADIR)/zink_nir_algebraic.py \
+	python3 $(top_srcdir)/$(CUR_MESADIR)/nir_to_spirv/zink_nir_algebraic.py \
 	  -p $(top_srcdir)/src/compiler/nir/ \
 	  > $(ZINK_GENDIR)/zink_nir_algebraic.c
 	@$(ECHO) "Zink headers generated."

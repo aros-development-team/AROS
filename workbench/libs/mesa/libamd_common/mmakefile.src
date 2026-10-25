@@ -18,17 +18,19 @@ AMD_COMMON_C_SOURCES := \
     ac_cmdbuf \
     ac_cmdbuf_cp \
     ac_cmdbuf_sdma \
+    ac_cmdbuf_video \
     ac_shader_args \
     ac_shader_util \
+    ac_guardband \
     ac_gather_context_rolls \
     ac_gpu_info \
     ac_surface \
     ac_debug \
     ac_descriptors \
     ac_formats \
-    ac_null_device \
     ac_shadowed_regs \
     ac_spm \
+    ac_spm_config \
     ac_sqtt \
     ac_rgp \
     ac_msgpack \
@@ -40,19 +42,25 @@ AMD_COMMON_C_SOURCES := \
     ac_perfcounter_gfx11 \
     ac_perfcounter_gfx12 \
     ac_pm4 \
+    ac_vcn \
     ac_vcn_dec \
     ac_vcn_enc \
-    ac_uvd_dec
+    ac_uvd_dec \
+    ac_video \
+    ac_video_dec
 
 # NIR-based AMD common sources
 AMD_COMMON_NIR_SOURCES := \
     nir/ac_nir \
+    nir/ac_nir_assign_io_locations \
     nir/ac_nir_opt_outputs \
     nir/ac_nir_cull \
     nir/ac_nir_create_gs_copy_shader \
+    nir/ac_nir_fixup_smem_loads_null_prt \
     nir/ac_nir_lower_esgs_io_to_mem \
     nir/ac_nir_lower_global_access \
     nir/ac_nir_lower_image_opcodes_cdna \
+    nir/ac_nir_lower_image_tex \
     nir/ac_nir_lower_intrinsics_to_args \
     nir/ac_nir_lower_legacy_gs \
     nir/ac_nir_lower_legacy_vs \
@@ -60,16 +68,17 @@ AMD_COMMON_NIR_SOURCES := \
     nir/ac_nir_lower_resinfo \
     nir/ac_nir_lower_taskmesh_io_to_mem \
     nir/ac_nir_lower_tess_io_to_mem \
-    nir/ac_nir_lower_tex \
     nir/ac_nir_lower_ngg \
     nir/ac_nir_lower_ngg_gs \
     nir/ac_nir_lower_ngg_mesh \
     nir/ac_nir_lower_ps_early \
     nir/ac_nir_lower_ps_late \
-    nir/ac_nir_lower_sin_cos \
+    nir/ac_nir_lower_sample_mask_in \
+    nir/ac_nir_lower_tex_coords \
     nir/ac_nir_meta_cs_blit \
     nir/ac_nir_meta_cs_clear_copy_buffer \
     nir/ac_nir_meta_ps_resolve \
+    nir/ac_nir_opt_flip_if_for_mem_loads \
     nir/ac_nir_opt_shared_append \
     nir/ac_nir_prerast_utils \
     nir/ac_nir_surface
@@ -78,9 +87,11 @@ AMD_COMMON_NIR_SOURCES := \
 AMD_COMMON_DRM_SOURCES := \
     ac_linux_drm
 
-# Generated source
+# Generated sources (the PM4 packet printers are the amd_ib_parsers set)
 AMD_COMMON_GEN_SOURCES := \
-    $(AMD_GENDIR)/gfx10_format_table
+    $(AMD_GENDIR)/gfx10_format_table \
+    $(AMD_GENDIR)/amd_cp_print_packet_gfx11 \
+    $(AMD_GENDIR)/amd_cp_print_packet_gfx12
 
 # All sources combined
 AMD_COMMON_ALL_SOURCES := \
@@ -187,6 +198,22 @@ mesa3d-generate-amd-headers :
 	    $(top_srcdir)/src/amd/registers/gfx10-rsrc.json \
 	    $(top_srcdir)/src/amd/registers/gfx11-rsrc.json \
 	    > $(AMD_GENDIR)/gfx10_format_table.c
+	@for gen in gfx11 gfx12 ; do \
+	    python3 $(top_srcdir)/src/amd/packets/parse_cp_pm4_table_data_json.py \
+	        $(top_srcdir)/src/amd/packets/cp_pm4_table_data_gfx11.json \
+	        $(top_srcdir)/src/amd/packets/pm4_it_opcodes_gfx11.h \
+	        $(top_srcdir)/src/amd/packets/cp_pm4_table_data_gfx12.json \
+	        $(top_srcdir)/src/amd/packets/pm4_it_opcodes_gfx12.h \
+	        $$gen packets_h > $(AMD_GENDIR)/amd_cp_packets_$$gen.h || exit 1 ; \
+	    python3 $(top_srcdir)/src/amd/packets/parse_cp_pm4_table_data_json.py \
+	        $(top_srcdir)/src/amd/packets/cp_pm4_table_data_$$gen.json \
+	        $(top_srcdir)/src/amd/packets/pm4_it_opcodes_$$gen.h \
+	        $$gen print_c > $(AMD_GENDIR)/amd_cp_print_packet_$$gen.c || exit 1 ; \
+	    python3 $(top_srcdir)/src/amd/packets/parse_cp_pm4_table_data_json.py \
+	        $(top_srcdir)/src/amd/packets/cp_pm4_table_data_$$gen.json \
+	        $(top_srcdir)/src/amd/packets/pm4_it_opcodes_$$gen.h \
+	        $$gen print_h > $(AMD_GENDIR)/amd_cp_print_packet_$$gen.h || exit 1 ; \
+	done
 	@$(ECHO) "AMD headers generated."
 
 %common

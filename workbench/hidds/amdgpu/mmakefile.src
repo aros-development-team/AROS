@@ -16,7 +16,7 @@ include $(SRCDIR)/$(CURDIR)/sources.radeonsi.mak
 # copy of its own in this tree.
 
 #MM- workbench-hidds-amdgpu : hidd-amdgpu-mesa$(OPT_MESAGL)
-#MM- hidd-amdgpu-mesa26.0.0 : hidd-amdgpu-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
+#MM- hidd-amdgpu-mesa26.2.5 : hidd-amdgpu-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 #MM- hidd-amdgpu-pc-x86_64 : hidd-amdgpu hidd-amdgpu-ids
 #MM hidd-amdgpu: includes hidd-amdgpu-drmcore hidd-amdgpu-drm hidd-amdgpu-libdrm hidd-amdgpu-libdrm-amdgpu hidd-amdgpu-radeonsi hidd-gallium mesa3dgl-linklibs linklibs-libatomic workbench-libs-z-linklib
 #MM hidd-amdgpu-libdrm : mesa3dgl-linklibs
@@ -175,7 +175,7 @@ USER_CFLAGS := $(CFLAGS_GNU11) $(CFLAGS_NO_STRICT_ALIASING) $(NOWARN_FLAGS)
 
 RADEONSI_PATH := $(GALLIUM_PATH)/drivers/radeonsi
 WINSYS_PATH := $(GALLIUM_PATH)/winsys/amdgpu/drm
-RADEONSI_GENDIR := $(GENDIR)/$(CURDIR)/radeonsi-gen
+RADEONSI_GENDIR := $(GENDIR)/$(CURDIR)/$(MESAGLVERSION)/radeonsi-gen
 
 RADEONSI_GENERATED := $(RADEONSI_GENDIR)/si_tracepoints.c $(RADEONSI_GENDIR)/si_tracepoints.h \
                       $(RADEONSI_GENDIR)/si_tracepoints_perfetto.h $(RADEONSI_GENDIR)/driconf_static.h
@@ -183,7 +183,7 @@ RADEONSI_GENERATED := $(RADEONSI_GENDIR)/si_tracepoints.c $(RADEONSI_GENDIR)/si_
 #MM
 hidd-amdgpu-radeonsi-gen : $(RADEONSI_GENERATED)
 
-$(filter-out %/driconf_static.h,$(RADEONSI_GENERATED)) : $(RADEONSI_PATH)/si_tracepoints.py
+$(filter-out %/driconf_static.h,$(RADEONSI_GENERATED)) : $(RADEONSI_PATH)/si_tracepoints.py $(top_srcdir)/src/util/perf/u_trace.py
 	@$(IF) $(TEST) ! -d $(RADEONSI_GENDIR) ; then $(MKDIR) $(RADEONSI_GENDIR) ; else $(NOP) ; fi
 	$(Q)$(PYTHON) $(PYTHON_FLAGS) $< -p $(top_srcdir)/src/util/perf/ -C $(RADEONSI_GENDIR)/si_tracepoints.c \
 	    --perfetto-hdr $(RADEONSI_GENDIR)/si_tracepoints_perfetto.h -H $(RADEONSI_GENDIR)/si_tracepoints.h
@@ -198,6 +198,10 @@ USER_INCLUDES := \
             -I$(top_srcdir)/include/GL \
             -I$(top_srcdir)/src \
             -iquote $(RADEONSI_PATH) \
+            -iquote $(RADEONSI_PATH)/gfx \
+            -iquote $(RADEONSI_PATH)/mm \
+            -I$(RADEONSI_PATH) \
+            -I$(GALLIUM_PATH)/include \
             -iquote $(GALLIUM_PATH)/drivers \
             -iquote $(GALLIUM_PATH)/include \
             -iquote $(GALLIUM_PATH)/auxiliary \
@@ -237,7 +241,9 @@ USER_CPPFLAGS := $(MESA_COMPILEFLAGS) $(MESA_DEBUG) \
                 -include $(SRCDIR)/workbench/libs/mesa/aros_compat/aros_mesa_compat.h
 USER_CFLAGS := $(MESA_STD) $(MESA_COMPILEOPTIONS) $(CFLAGS_NO_STRICT_ALIASING) $(NOWARN_FLAGS)
 
-%build_linklib mmake=hidd-amdgpu-radeonsi libname=gallium_radeonsi objdir=$(GENDIR)/$(CURDIR)/radeonsi \
+# Per Mesa version: the port's sources carry the tarball's timestamps, so an
+# object left from an older Mesa in a shared objdir would pass as up to date.
+%build_linklib mmake=hidd-amdgpu-radeonsi libname=gallium_radeonsi libdir=$(top_libdir) objdir=$(GENDIR)/$(CURDIR)/$(MESAGLVERSION)/radeonsi \
     files="$(addprefix $(RADEONSI_PATH)/,$(AROS_AMDGPU_RADEONSI_C_SOURCES) $(AROS_AMDGPU_RADEONSI_VIDEO_SOURCES)) $(addprefix $(WINSYS_PATH)/,$(AROS_AMDGPU_WINSYS_C_SOURCES)) $(RADEONSI_GENDIR)/si_tracepoints $(top_srcdir)/src/util/xmlconfig $(top_srcdir)/src/util/u_sync_provider $(SRCDIR)/$(CURDIR)/radeonsi/radeonsi_aros" \
     cxxfiles="$(addprefix $(RADEONSI_PATH)/,$(AROS_AMDGPU_RADEONSI_CXX_SOURCES)) $(addprefix $(WINSYS_PATH)/,$(AROS_AMDGPU_WINSYS_CXX_SOURCES)) $(addprefix $(SRCDIR)/$(CURDIR)/,$(AROS_AMDGPU_RADEONSI_DRAW_SOURCES))"
 
