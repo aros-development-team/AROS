@@ -948,13 +948,15 @@ IPTR Layout__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
         }
 
         /* Draw bevel frame if requested. cap_3DLook=FALSE in UIPrefs
-         * suppresses the frame. */
+         * suppresses the frame. The group is filled above: the frame
+         * only draws its edges, also when LAYOUT_BevelState recesses it. */
         if (data->ld_BevelStyle != BVS_NONE && dri && data->ld_3DLook)
         {
             if (!data->ld_BevelImage)
             {
                 data->ld_BevelImage = NewObject(NULL, "bevel.image",
                     BEVEL_Style, data->ld_BevelStyle,
+                    BEVEL_Transparent, TRUE,
                     data->ld_Label ? BEVEL_Label : TAG_IGNORE,
                     data->ld_Label,
                     data->ld_FillPen >= 0 ? BEVEL_FillPen : TAG_IGNORE,
