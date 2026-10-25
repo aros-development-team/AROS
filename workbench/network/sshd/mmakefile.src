@@ -1,14 +1,12 @@
 include $(SRCDIR)/config/aros.cfg
 
-LIBSSH_INCDIR := $(PORTSDIR)/libssh/libssh-0.12.0/include
-
 # libssh and the mbedTLS linklibs are installed into the standard lib tree
-# (uselibs below); mbedTLS headers likewise come from the standard include
-# tree, installed by workbench-libs-mbedtls (no version-pinned Ports path
-# to go stale).  The libraries are built with the AROS mbedTLS
-# configuration; compile against the same config so structure layouts
-# match.
-USER_INCLUDES := -I$(LIBSSH_INCDIR) -I$(SRCDIR)/workbench/libs/mbedtls
+# (uselibs below); their headers likewise come from the standard include
+# tree, installed by workbench-libs-libssh and workbench-libs-mbedtls (no
+# version-pinned Ports path to go stale).  The libraries are built with the
+# AROS mbedTLS configuration; compile against the same config so structure
+# layouts match.
+USER_INCLUDES := -I$(SRCDIR)/workbench/libs/mbedtls
 USER_CPPFLAGS := -DMBEDTLS_CONFIG_FILE='"mbedtls_aros_config.h"'
 # gnu99: strict c99 removes the 'asm' keyword the inline LVO headers need
 USER_CFLAGS := $(CFLAGS_GNU99)
