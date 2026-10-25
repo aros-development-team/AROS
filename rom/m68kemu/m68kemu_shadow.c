@@ -242,6 +242,12 @@ ULONG shadow_init_execbase(struct M68KEmuContext *ctx, ULONG m68k_base, void *na
     /* AFF_68010 (1) | AFF_68020 (2) | AFF_68030 (4) | AFF_68040 (8) | AFF_FPU40 (0x40) */
     m68k_write16(ctx, m68k_base + M68K_EXECBASE_ATTNFLAGS, M68K_ATTNFLAGS_040FPU);
 
+    /* VBlankFrequency (530) and PowerSupplyFrequency (531): the emulator's
+       vertical blank runs at 50 Hz; programs divide by these to turn ticks
+       into seconds */
+    ctx->mem[m68k_base + 530] = 50;
+    ctx->mem[m68k_base + 531] = 50;
+
     /* Override ThisTask — create a Process shadow in containment space.
        The synced value is a truncated native pointer, unusable by m68k code. */
     {
