@@ -672,10 +672,27 @@ static IPTR thunk_exec_SetSignal(struct M68KEmuContext *ctx, void *cpu)
 /* exec -276: FindName(A0=list, A1=name) -> D0=node */
 static IPTR thunk_exec_FindName(struct M68KEmuContext *ctx, void *cpu)
 {
-    struct List *list = (struct List *)THUNK_PTR(0);
-    CONST_STRPTR name = (CONST_STRPTR)THUNK_PTR(1);
+    ULONG m68k_list = THUNK_A(0);
+    struct List *list;
+    CONST_STRPTR name;
+    struct Node *node;
+
+    /* The lists in the fake ExecBase hold nothing; a program that looks a
+       library up there instead of opening it (SysInfo: expansion.library)
+       gets the thunked base. Devices and resources have no m68k base. */
+    if (m68k_list == ctx->m68k_sysbase + M68K_EXECBASE_LIBLIST)
+    {
+        name = (CONST_STRPTR)m68k_to_host(ctx, THUNK_A(1));
+        return name ? (IPTR)M68KEmu_OpenLibrary(ctx, (const char *)name) : 0;
+    }
+    if (m68k_list == ctx->m68k_sysbase + M68K_EXECBASE_DEVICELIST ||
+        m68k_list == ctx->m68k_sysbase + M68K_EXECBASE_RESOURCELIST)
+        return 0;
+
+    list = (struct List *)THUNK_PTR(0);
+    name = (CONST_STRPTR)THUNK_PTR(1);
     if (!list || !name) return 0;
-    struct Node *node = FindName(list, name);
+    node = FindName(list, name);
     if (!node) return 0;
     /* For libraries/devices, return our fake base if we have one,
        otherwise return 0 — a shadow struct would crash if used as a base */
