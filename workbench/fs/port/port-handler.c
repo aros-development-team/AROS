@@ -371,6 +371,7 @@ void replyPkt(struct DosPacket *dp, struct ExecBase *SysBase)
 LONG port_handler(struct ExecBase *SysBase)
 {
     struct DosPacket *dp;
+    struct DeviceNode *devNode;
     struct MsgPort *mp;
     BOOL dead = FALSE;
     SIPTR res;
@@ -393,8 +394,9 @@ LONG port_handler(struct ExecBase *SysBase)
         res = decodeStartup(&pb, (BPTR)dp->dp_Arg2);
     }
 
+    devNode = BADDR(dp->dp_Arg3);
     if (res == 0)
-        ((struct DeviceNode *)BADDR(dp->dp_Arg3))->dn_Task = mp;
+        devNode->dn_Task = mp;
 
     dp->dp_Res2 = res;
     dp->dp_Res1 = (dp->dp_Res2 == 0) ? DOSTRUE : DOSFALSE;
@@ -507,6 +509,7 @@ LONG port_handler(struct ExecBase *SysBase)
     } while (!dead);
 
 /* ACTION_DIE ends up here... */
+    devNode->dn_Task = NULL;
     D(bug("%s: Exiting\n"));
 
     replyPkt(dp, SysBase);
