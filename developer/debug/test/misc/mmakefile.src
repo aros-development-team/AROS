@@ -1,4 +1,4 @@
-# Copyright (C) 2016-2021, The AROS Development Team. All rights reserved.
+# Copyright (C) 2016-2026, The AROS Development Team. All rights reserved.
 
 include $(SRCDIR)/config/aros.cfg
 
@@ -22,6 +22,7 @@ FILES := \
     joystick \
     mathtest \
     partition \
+    pthreadspintest \
     pthreadtest \
     simplepng \
     versionlib
