@@ -105,6 +105,7 @@ struct M68KEmuContext
     struct { ULONG m68k; APTR native; } gadmap[M68KEMU_MAX_GADGETS];
     ULONG   num_gadmap;
     BOOL    trace_after_msg;
+    ULONG   load_lo, load_hi;      /* span of the last LoadHunksFromMemory() */
     volatile ULONG icount_lo;     /* instructions executed (low 32 bits), read by the watchdog */
     volatile BOOL  watchdog_quit;
     BOOL    watchdog_on;
