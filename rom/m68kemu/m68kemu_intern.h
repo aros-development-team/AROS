@@ -99,6 +99,15 @@ struct M68KEmuContext
     ULONG   plane_rows;
     ULONG   plane_depth;
     APTR    plane_screen;       /* struct Screen * (native) */
+
+    /* m68k Gadget <-> native copy (AddGList & co translate the list) */
+    #define M68KEMU_MAX_GADGETS 256
+    struct { ULONG m68k; APTR native; } gadmap[M68KEMU_MAX_GADGETS];
+    ULONG   num_gadmap;
+    BOOL    trace_after_msg;
+    volatile ULONG icount_lo;     /* instructions executed (low 32 bits), read by the watchdog */
+    volatile BOOL  watchdog_quit;
+    BOOL    watchdog_on;
     BOOL    trace_calls;        /* per-call trace lines (off: they flood the debug console) */
 
     /* CIA-A ($BFE001, odd bytes) and CIA-B ($BFD000, even bytes): ports,
@@ -175,6 +184,8 @@ void  m68k_planar_touch(struct M68KEmuContext *ctx, ULONG addr, ULONG nbytes);
 BOOL  m68k_vbl_due(struct M68KEmuContext *ctx);
 void  m68k_vbl_close(struct M68KEmuContext *ctx);
 ULONG m68k_eclock_now(struct M68KEmuContext *ctx, ULONG *freq);
+void  m68k_watchdog_start(struct M68KEmuContext *ctx);
+void  m68k_watchdog_stop(struct M68KEmuContext *ctx);
 #ifdef __cplusplus
 }
 #endif

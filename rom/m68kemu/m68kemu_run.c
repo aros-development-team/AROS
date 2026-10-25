@@ -176,7 +176,10 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
     {
         char tracebuf[4];
         if (GetVar((CONST_STRPTR)"M68KEMU_TRACE", (STRPTR)tracebuf, sizeof(tracebuf), 0) > 0)
-            ctx->trace_calls = TRUE;
+        {
+            if (tracebuf[0] == 'm') ctx->trace_after_msg = TRUE;    /* "msg": start at the first IntuiMessage */
+            else ctx->trace_calls = TRUE;
+        }
     }
 
     entry = M68KEmu_LoadHunks(ctx, segList);

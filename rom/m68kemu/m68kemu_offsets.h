@@ -242,6 +242,6 @@
 
 /* ── AttnFlags value for 68040+FPU ───────────────────────────────── */
 
-#define M68K_ATTNFLAGS_040FPU       0x004F
+#define M68K_ATTNFLAGS_040FPU      0x000F   /* AFF_68010-68040, no FPU: Moira executes no FPU instructions */
 
 #endif /* M68KEMU_OFFSETS_H */

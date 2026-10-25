@@ -109,6 +109,17 @@ ULONG M68KEmu_HeapAlloc(struct M68KEmuContext *ctx, ULONG size, ULONG requiremen
         prev = cur;
         cur  = blk_next;
     }
+    {
+        ULONG n = 0, total = 0, largest = 0, c = ctx->heap_free;
+        while (c && n < 100000)
+        {
+            ULONG bs = m68k_read32(ctx, c);
+            n++; total += bs; if (bs > largest) largest = bs;
+            c = m68k_read32(ctx, c + 4);
+        }
+        bug("[m68kemu] HeapAlloc(%lu) failed: free list head %08lx, %lu blocks, %lu bytes free, largest %lu\n",
+            (unsigned long)size, (unsigned long)ctx->heap_free, (unsigned long)n, (unsigned long)total, (unsigned long)largest);
+    }
     return 0;
 }
 
@@ -119,7 +130,30 @@ void M68KEmu_HeapFree(struct M68KEmuContext *ctx, ULONG addr, ULONG size)
     if (!addr) return;
 
     blk      = addr - M68KEMU_HEAP_HDR;
+    /* Only a block this heap handed out may come back: an address outside
+       the heap, a size that runs past it, or a block already on the free
+       list would wreck the list (the program's FreeMem() takes any pointer) */
+    if (addr < ctx->heap_start + M68KEMU_HEAP_HDR || addr >= ctx->heap_end)
+    {
+        if (ctx->trace_calls) bug("[m68kemu] FreeMem of %08lx (size %lu): not heap memory, ignored\n", (unsigned long)addr, (unsigned long)size);
+        return;
+    }
     blk_size = m68k_read32(ctx, blk);
+    if (blk_size < M68KEMU_HEAP_HDR || blk + blk_size > ctx->heap_end)
+    {
+        if (ctx->trace_calls) bug("[m68kemu] FreeMem of %08lx: bad block header %08lx, ignored\n", (unsigned long)addr, (unsigned long)blk_size);
+        return;
+    }
+    for (cur = ctx->heap_free; cur; cur = m68k_read32(ctx, cur + 4))
+    {
+        ULONG cs = m68k_read32(ctx, cur);
+        if (blk >= cur && blk < cur + cs)
+        {
+            if (ctx->trace_calls) bug("[m68kemu] FreeMem of %08lx: already free, ignored\n", (unsigned long)addr);
+            return;
+        }
+        if (cur > blk) break;
+    }
 
     /* Insert in address order */
     prev = 0;
@@ -697,13 +731,13 @@ BOOL m68k_vbl_due(struct M68KEmuContext *ctx)
     }
     {
         static ULONG calls = 0;
-        if ((++calls & 0xFFFF) == 0 && ctx->trace_calls)
+        if ((++calls & 0x3FFF) == 0 && ctx->trace_calls)
             bug("[m68kemu] VBL clock: call %lu elapsed %lu ev_lo %lu last %lu\n", (unsigned long)calls,
                 (unsigned long)elapsed, (unsigned long)ev.ev_lo, (unsigned long)ctx->vbl_last_lo);
     }
     if (elapsed < ctx->vbl_efreq / 50)
         return FALSE;
-    if (ctx->vbl_count < 3 && ctx->trace_calls)
+    if (ctx->vbl_count < 8 && ctx->trace_calls)
         bug("[m68kemu] VBL clock: due, elapsed %lu E ticks (freq %lu)\n", (unsigned long)elapsed, (unsigned long)ctx->vbl_efreq);
     ctx->vbl_last_lo = ev.ev_lo;
     ctx->vbl_last_hi = ev.ev_hi;
@@ -744,4 +778,46 @@ ULONG m68k_eclock_now(struct M68KEmuContext *ctx, ULONG *freq)
     ReadEClock(&ev);
     if (freq) *freq = ctx->vbl_efreq ? ctx->vbl_efreq : 709379;
     return ev.ev_lo;
+}
+
+/* Diagnostic watchdog (M68KEMU_TRACE set): a native process that prints
+   where the emulated CPU is every two seconds, so a stall inside one
+   instruction shows up as a frozen count and PC */
+#include <dos/dostags.h>
+static struct M68KEmuContext *wd_ctx;
+static void wd_entry(void)
+{
+    struct M68KEmuContext *ctx = wd_ctx;
+    ULONG last = 0xFFFFFFFF;
+    while (!ctx->watchdog_quit)
+    {
+        ULONG ic, pc;
+        Delay(100);
+        if (ctx->watchdog_quit) break;
+        if (!ctx->trace_calls) continue;           /* quiet until the trace starts */
+        ic = ctx->icount_lo;
+        pc = ctx->pc_ring[(ctx->pc_ring_pos - 1) & 511];
+        bug("[m68kemu] WATCHDOG icount %lu%s pc %08lx op %04x %04x vbl %lu irq %d code %08lx\n",
+            (unsigned long)ic, ic == last ? " (STUCK)" : "", (unsigned long)pc,
+            (unsigned)m68k_read16(ctx, pc), (unsigned)m68k_read16(ctx, pc + 2),
+            (unsigned long)ctx->vbl_count, (int)ctx->vbl_irq, (unsigned long)ctx->vbl_code);
+        last = ic;
+    }
+    ctx->watchdog_quit = FALSE;
+}
+
+void m68k_watchdog_start(struct M68KEmuContext *ctx)
+{
+    wd_ctx = ctx;
+    ctx->watchdog_quit = FALSE;
+    ctx->watchdog_on = CreateNewProcTags(NP_Entry, (IPTR)wd_entry, NP_Name, (IPTR)"m68kemu watchdog",
+                                         NP_Priority, 5, TAG_DONE) != NULL;
+}
+
+void m68k_watchdog_stop(struct M68KEmuContext *ctx)
+{
+    if (!ctx->watchdog_on) return;
+    ctx->watchdog_quit = TRUE;
+    while (ctx->watchdog_quit) Delay(10);
+    ctx->watchdog_on = FALSE;
 }
