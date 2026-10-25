@@ -70,6 +70,40 @@ struct M68KEmuContext
 
     ULONG   entry_point;
     ULONG   trace_exc;
+    ULONG   pc_ring[512];
+    ULONG   pc_ring_pos;
+    BOOL    low_guard;
+    ULONG   low_trap_count;
+
+    /* Vertical blank interrupt server (AddIntServer INTB_VERTB): the one
+       server programs install for timing; raised as a level 3 autovector */
+    #define M68KEMU_VBL_STUB     0x140   /* 68k stub: save, call server, restore, rte */
+    #define M68KEMU_VBL_DATA     0x170   /* cell: is_Data (the stub is 34 bytes, 0x140-0x161) */
+    #define M68KEMU_VBL_CODE     0x174   /* cell: is_Code */
+    /* Default exception handling: a MOVEC the core does not implement is
+       skipped (addq.l #4,2(sp); rte), any other exception a program did not
+       install a handler for stops the emulation with a message */
+    #define M68KEMU_SKIP4_STUB   0x180
+    #define M68KEMU_FAULT_STUB   0x188
+    ULONG   last_exc;
+    ULONG   last_exc_pc;
+    ULONG   cia_trace;
+    BOOL    pc_exit_dumped;
+    BOOL    trace_calls;        /* per-call trace lines (off: they flood the debug console) */
+
+    /* CIA-A ($BFE001, odd bytes) and CIA-B ($BFD000, even bytes): ports,
+       timers and TOD derived from the E clock on every read; writes only
+       keep latches and control registers. */
+    struct { UWORD ta_latch, tb_latch; UBYTE cra, crb, pra, prb, ddra, ddrb; ULONG tod_base; } cia[2];
+    ULONG   vbl_code;
+    ULONG   vbl_data;
+    BOOL    vbl_irq;            /* level 3 asserted, waiting for the stub to start */
+    ULONG   vbl_count;
+    ULONG   irq_stack_top;      /* containment stack for the interrupt frame in user mode */
+    APTR    vbl_timerport;
+    APTR    vbl_timerio;
+    ULONG   vbl_last_lo, vbl_last_hi;
+    ULONG   vbl_efreq;
 
     /* Native BPTRs (file handles, locks, seglists) the m68k side holds, by
        index: a native BPTR is a 64-bit pointer and does not fit a register */
@@ -118,10 +152,21 @@ struct M68KEmuContext
     UBYTE   beam_lof;   /* long frame flag (toggled each frame) */
 };
 
-/* Native BPTR <-> 32-bit m68k handle (m68kemu_memory.c) */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+/* Native BPTR <-> 32-bit m68k handle, and the vector-table write diagnostic (m68kemu_memory.c) */
 ULONG m68k_bptr_out(struct M68KEmuContext *ctx, BPTR b);
 BPTR  m68k_bptr_in(struct M68KEmuContext *ctx, ULONG v);
 void  m68k_bptr_drop(struct M68KEmuContext *ctx, ULONG v);
+void  m68k_low_write_trap(struct M68KEmuContext *ctx, ULONG addr, const char *who);
+BOOL  m68k_vbl_due(struct M68KEmuContext *ctx);
+void  m68k_vbl_close(struct M68KEmuContext *ctx);
+ULONG m68k_eclock_now(struct M68KEmuContext *ctx, ULONG *freq);
+#ifdef __cplusplus
+}
+#endif
 
 static inline void *m68k_to_host(struct M68KEmuContext *ctx, ULONG addr)
 {
@@ -164,9 +209,11 @@ static inline ULONG m68k_read32(struct M68KEmuContext *ctx, ULONG addr)
            ((ULONG)p[2] << 8)  |  (ULONG)p[3];
 }
 
+
 static inline void m68k_write16(struct M68KEmuContext *ctx, ULONG addr, UWORD val)
 {
     if (addr + 1 >= ctx->mem_size) return;
+    if (ctx->low_guard && addr < 0x400 && addr != 0x28 && addr != 0x6C && addr != 0x10 && !(addr >= 0x140 && addr < 0x190)) { m68k_low_write_trap(ctx, addr, "thunk"); return; }
     UBYTE *p = ctx->mem + addr;
     p[0] = (UBYTE)(val >> 8);
     p[1] = (UBYTE)(val);
@@ -175,6 +222,7 @@ static inline void m68k_write16(struct M68KEmuContext *ctx, ULONG addr, UWORD va
 static inline void m68k_write32(struct M68KEmuContext *ctx, ULONG addr, ULONG val)
 {
     if (addr + 3 >= ctx->mem_size) return;
+    if (ctx->low_guard && addr < 0x400 && addr != 0x28 && addr != 0x6C && addr != 0x10 && !(addr >= 0x140 && addr < 0x190)) { m68k_low_write_trap(ctx, addr, "thunk"); return; }
     UBYTE *p = ctx->mem + addr;
     p[0] = (UBYTE)(val >> 24);
     p[1] = (UBYTE)(val >> 16);

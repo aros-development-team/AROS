@@ -20,6 +20,8 @@
 #include "m68kemu_intern.h"
 #include "m68kemu_offsets.h"
 #include "m68kemu_thunks.h"
+#include "m68kemu_shadow.h"
+extern ULONG shadow_register(struct M68KEmuContext *ctx, ULONG m68k_addr, void *native, UWORD type);
 
 struct M68KEmuContext *M68KEmu_CreateContext(struct M68KEmuLibBase *base)
 {
@@ -60,6 +62,7 @@ struct M68KEmuContext *M68KEmu_CreateContext(struct M68KEmuLibBase *base)
 void M68KEmu_DestroyContext(struct M68KEmuContext *ctx)
 {
     if (!ctx) return;
+    m68k_vbl_close(ctx);
     if (ctx->handles) FreeVec(ctx->handles);
     if (ctx->mem) FreeMem(ctx->mem, ctx->mem_size);
     FreeMem(ctx, sizeof(struct M68KEmuContext));
@@ -266,8 +269,33 @@ ULONG M68KEmu_SetupLibBase(struct M68KEmuContext *ctx, UWORD lib_id,
     if (ctx->num_libs >= M68KEMU_MAX_LIBS)
         return 0;
 
+    /* Programs read fields of the well-known bases (GfxBase->ActiView,
+       IntuitionBase->FirstScreen, DosLibrary->dl_Root): give those bases
+       their full m68k layout, synced from the native library. */
+    static const struct { const char *lib; const char *layout; } base_layouts[] =
+    {
+        { "graphics.library",  "GfxBase"       },
+        { "intuition.library", "IntuitionBase" },
+        { "dos.library",       "DosLibrary"    },
+        { NULL, NULL }
+    };
+    const struct M68KStructLayout *base_layout = NULL;
+    ULONG base_size = (lib_id == 0) ? M68K_SIZEOF_EXECBASE : M68K_SIZEOF_LIBRARY;
+
+    if (name && lib_id != 0)
+    {
+        for (i = 0; base_layouts[i].lib; i++)
+            if (strcmp(name, base_layouts[i].lib) == 0)
+            {
+                base_layout = shadow_find_layout(base_layouts[i].layout);
+                if (base_layout && base_layout->m68k_size > base_size)
+                    base_size = base_layout->m68k_size;
+                break;
+            }
+    }
+
     vectors_size = (ULONG)num_vectors * M68K_JT_SLOT_SIZE;
-    total_size   = vectors_size + ((lib_id == 0) ? M68K_SIZEOF_EXECBASE : M68K_SIZEOF_LIBRARY);
+    total_size   = vectors_size + base_size;
 
     /* Find next free spot in LIBBASE_REGION */
     region_offset = M68KEMU_LIBBASE_REGION;
@@ -299,17 +327,22 @@ ULONG M68KEmu_SetupLibBase(struct M68KEmuContext *ctx, UWORD lib_id,
         struct Library *native = name ? OpenLibrary((CONST_STRPTR)name, 0) : NULL;
         UWORD ver = native ? native->lib_Version : 0;
         UWORD rev = native ? native->lib_Revision : 0;
+        if (native && base_layout)
+        {
+            shadow_register(ctx, base_addr, native, base_layout->shadow_type);
+            shadow_sync(ctx, base_layout, base_addr, native);
+        }
         if (native)
             CloseLibrary(native);
         m68k_write16(ctx, base_addr + 8, (UWORD)NT_LIBRARY << 8);     /* ln_Type, ln_Pri */
         m68k_write16(ctx, base_addr + 16, (UWORD)vectors_size);       /* lib_NegSize */
-        m68k_write16(ctx, base_addr + 18, (lib_id == 0) ? M68K_SIZEOF_EXECBASE : M68K_SIZEOF_LIBRARY);
+        m68k_write16(ctx, base_addr + 18, (UWORD)base_size);          /* lib_PosSize */
         m68k_write16(ctx, base_addr + M68K_LIB_VERSION, ver);
         m68k_write16(ctx, base_addr + M68K_LIB_REVISION, rev);
     }
 
     ctx->libs[ctx->num_libs].m68k_addr   = base_addr;
-    ctx->libs[ctx->num_libs].pos_size    = (lib_id == 0) ? M68K_SIZEOF_EXECBASE : M68K_SIZEOF_LIBRARY;
+    ctx->libs[ctx->num_libs].pos_size    = base_size;
     ctx->libs[ctx->num_libs].jt_start    = base_addr - vectors_size;
     ctx->libs[ctx->num_libs].lib_id      = lib_id;
     ctx->libs[ctx->num_libs].num_vectors = num_vectors;
@@ -614,4 +647,101 @@ void m68k_bptr_drop(struct M68KEmuContext *ctx, ULONG v)
         if (ctx->handles && i < ctx->num_handles)
             ctx->handles[i] = BNULL;
     }
+}
+
+void m68k_low_write_trap(struct M68KEmuContext *ctx, ULONG addr, const char *who)
+{
+    if (ctx->low_trap_count++ < 8 && ctx->trace_calls)
+        bug("[m68kemu] %s wrote into the vector table at %08x (dropped)\n", who, (unsigned)addr);
+}
+
+/* ── Vertical blank clock ────────────────────────────────────────────
+   A 50 Hz tick from timer.device's E clock; the CPU loop asks every few
+   thousand instructions. */
+
+#include <devices/timer.h>
+#include <proto/timer.h>
+
+BOOL m68k_vbl_due(struct M68KEmuContext *ctx)
+{
+    struct EClockVal ev;
+    struct Device *TimerBase;
+    ULONG elapsed;
+
+    if (!ctx->vbl_timerio)
+    {
+        struct MsgPort *port = CreateMsgPort();
+        struct timerequest *req = port ? (struct timerequest *)CreateIORequest(port, sizeof(struct timerequest)) : NULL;
+        if (!req || OpenDevice((CONST_STRPTR)"timer.device", UNIT_ECLOCK, (struct IORequest *)req, 0) != 0)
+        {
+            bug("[m68kemu] no timer.device for the vertical blank clock\n");
+            if (req) DeleteIORequest((struct IORequest *)req);
+            if (port) DeleteMsgPort(port);
+            return FALSE;
+        }
+        ctx->vbl_timerport = port;
+        ctx->vbl_timerio = req;
+        TimerBase = req->tr_node.io_Device;
+        ctx->vbl_efreq = ReadEClock(&ev);
+        ctx->vbl_last_lo = ev.ev_lo;
+        ctx->vbl_last_hi = ev.ev_hi;
+        return FALSE;
+    }
+    TimerBase = ((struct timerequest *)ctx->vbl_timerio)->tr_node.io_Device;
+    ReadEClock(&ev);
+    elapsed = ev.ev_lo - ctx->vbl_last_lo;          /* wraps correctly for short intervals */
+    if (ctx->vbl_efreq == 0)
+    {
+        bug("[m68kemu] VBL clock: ReadEClock reports frequency 0\n");
+        ctx->vbl_efreq = 709379;
+    }
+    {
+        static ULONG calls = 0;
+        if ((++calls & 0xFFFF) == 0 && ctx->trace_calls)
+            bug("[m68kemu] VBL clock: call %lu elapsed %lu ev_lo %lu last %lu\n", (unsigned long)calls,
+                (unsigned long)elapsed, (unsigned long)ev.ev_lo, (unsigned long)ctx->vbl_last_lo);
+    }
+    if (elapsed < ctx->vbl_efreq / 50)
+        return FALSE;
+    if (ctx->vbl_count < 3 && ctx->trace_calls)
+        bug("[m68kemu] VBL clock: due, elapsed %lu E ticks (freq %lu)\n", (unsigned long)elapsed, (unsigned long)ctx->vbl_efreq);
+    ctx->vbl_last_lo = ev.ev_lo;
+    ctx->vbl_last_hi = ev.ev_hi;
+    return TRUE;
+}
+
+void m68k_vbl_close(struct M68KEmuContext *ctx)
+{
+    if (ctx->vbl_timerio)
+    {
+        CloseDevice((struct IORequest *)ctx->vbl_timerio);
+        DeleteIORequest((struct IORequest *)ctx->vbl_timerio);
+        ctx->vbl_timerio = NULL;
+    }
+    if (ctx->vbl_timerport)
+    {
+        DeleteMsgPort((struct MsgPort *)ctx->vbl_timerport);
+        ctx->vbl_timerport = NULL;
+    }
+}
+
+/* Current E clock (ev_lo) for the CIA model; opens the timer like m68k_vbl_due */
+ULONG m68k_eclock_now(struct M68KEmuContext *ctx, ULONG *freq)
+{
+    struct EClockVal ev;
+    struct Device *TimerBase;
+
+    if (!ctx->vbl_timerio)
+    {
+        (void)m68k_vbl_due(ctx);
+        if (!ctx->vbl_timerio)
+        {
+            if (freq) *freq = 709379;
+            return 0;
+        }
+    }
+    TimerBase = ((struct timerequest *)ctx->vbl_timerio)->tr_node.io_Device;
+    ReadEClock(&ev);
+    if (freq) *freq = ctx->vbl_efreq ? ctx->vbl_efreq : 709379;
+    return ev.ev_lo;
 }
