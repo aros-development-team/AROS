@@ -518,8 +518,10 @@ void  M68KEmu_SetPC(void *cpu, ULONG val) { static_cast<AROSMoira *>(cpu)->setPC
 
 LONG M68KEmu_Execute(struct M68KEmuContext *ctx)
 {
+    if (ctx->trace_calls || ctx->trace_after_msg)
+        m68k_watchdog_start(ctx);
     AROSMoira cpu(ctx);
-    cpu.setModel(Model::M68040);
+    cpu.setModel(Model::M68LC040);          /* Moira has no FPU: F-line instructions trap as on an LC040 */
 
     m68k_write32(ctx, 0, ctx->stack_top);
     m68k_write32(ctx, 4, ctx->entry_point);
@@ -614,7 +616,7 @@ LONG M68KEmu_Execute(struct M68KEmuContext *ctx)
                     {
                         cpu.setIPL(0);
                         ctx->vbl_irq = FALSE;
-                        if ((ctx->vbl_count <= 2 || ctx->vbl_count == 50) && ctx->trace_calls)
+                        if ((ctx->vbl_count <= 6 || ctx->vbl_count == 50) && ctx->trace_calls)
                             bug("[m68kemu] VBL %lu stub entered, SR %04x SP %08x\n", (unsigned long)ctx->vbl_count,
                                 (unsigned)cpu.getSR(), (unsigned)cpu.getA(7));
                     }
@@ -624,7 +626,7 @@ LONG M68KEmu_Execute(struct M68KEmuContext *ctx)
                     if (!(cpu.getSR() & 0x2000) && ctx->irq_stack_top)
                         cpu.setISP(ctx->irq_stack_top);
                     ctx->vbl_irq = TRUE;
-                    if ((ctx->vbl_count++ == 0 || ctx->vbl_count == 2 || ctx->vbl_count == 50) && ctx->trace_calls)
+                    if ((ctx->vbl_count++ < 6 || ctx->vbl_count == 50) && ctx->trace_calls)
                         bug("[m68kemu] VBL %lu raised at PC %08x SR %04x\n", (unsigned long)ctx->vbl_count,
                             (unsigned)pc, (unsigned)cpu.getSR());
                     cpu.setIPL(3);
@@ -665,6 +667,7 @@ LONG M68KEmu_Execute(struct M68KEmuContext *ctx)
                 ctx->running = FALSE;
                 break;
             }
+            ctx->icount_lo = (ULONG)icount;
             cpu.execute();
             if ((++icount & 0xFFFFF) == 0)
             {
@@ -676,11 +679,12 @@ LONG M68KEmu_Execute(struct M68KEmuContext *ctx)
                 (void)lastpc;
             }
         }
-        if (ctx->trace_calls) bug("[m68kemu] TRACE stop after %lu instructions, D0 %08x, %lu VBLs\n", icount, (unsigned)cpu.getD(0),
+        if (ctx->trace_calls) bug("[m68kemu] program ended after %lu instructions, D0 %08x, %lu VBLs\n", icount, (unsigned)cpu.getD(0),
             (unsigned long)ctx->vbl_count);
     }
 
     ctx->exit_code = (LONG)cpu.getD(0);
+    m68k_watchdog_stop(ctx);
     return ctx->exit_code;
 }
 

@@ -23,6 +23,9 @@
 #include "m68kemu_offsets.h"
 #include "m68kemu_shadow.h"
 #include "m68kemu_thunks.h"
+
+static ULONG gadget_m68k(struct M68KEmuContext *ctx, APTR native);
+static void gadgets_sync_back(struct M68KEmuContext *ctx);
 extern const struct M68KThunkEntry m68kemu_thunks_intuition_manual[];
 extern const ULONG m68kemu_thunks_intuition_manual_count;
 extern const struct M68KThunkEntry m68kemu_thunks_graphics_manual[];
@@ -551,6 +554,14 @@ static IPTR thunk_intuition_OpenWindow(struct M68KEmuContext *ctx, void *cpu)
         WA_MaxWidth, (IPTR)maxw, WA_MaxHeight, (IPTR)maxh,
         TAG_DONE);
 
+    if (ctx->trace_calls && w)
+    {
+        /* probe: does input reach this window at all? */
+        ModifyIDCMP(w, idcmp | IDCMP_MOUSEBUTTONS | IDCMP_ACTIVEWINDOW | IDCMP_INACTIVEWINDOW);
+        bug("[m68kemu] OpenWindow %d,%d %dx%d idcmp %08lx flags %08lx -> %p userport %p screen %p front %p\n",
+            left, top, width, height, (unsigned long)idcmp, (unsigned long)flags, w, w->UserPort, w->WScreen,
+            IntuitionBase->FirstScreen);
+    }
     if (!w) return 0;
     return (IPTR)setup_window_shadow(ctx, w);
 }
@@ -660,7 +671,12 @@ static IPTR thunk_exec_WaitPort(struct M68KEmuContext *ctx, void *cpu)
     if (ctx->trace_calls) bug("[m68kemu] WaitPort: m68k_port=0x%lx\n", (unsigned long)mp);
     struct MsgPort *port = (struct MsgPort *)shadow_lookup(ctx, mp);
     if (ctx->trace_calls) bug("[m68kemu] WaitPort: native=%p\n", port);
-    if (port) return (IPTR)WaitPort(port);
+    if (port)
+    {
+        struct Message *m = WaitPort(port);
+        if (ctx->trace_calls) bug("[m68kemu] WaitPort: woke with %p (sigbit %d task %p)\n", m, port->mp_SigBit, port->mp_SigTask);
+        return m ? (IPTR)mp : 0;        /* non-zero; the program then calls GetMsg */
+    }
     /* No shadow found — m68k code is using a containment-space port, skip */
     return 0;
 }
@@ -674,6 +690,7 @@ static IPTR thunk_exec_GetMsg(struct M68KEmuContext *ctx, void *cpu)
 
     struct IntuiMessage *imsg = (struct IntuiMessage *)GetMsg(port);
     if (!imsg) return 0;
+    if (ctx->trace_after_msg) ctx->trace_calls = TRUE;
 
     ULONG mi = shadow_create(ctx, shadow_find_layout("IntuiMessage"), imsg);
     if (!mi) return 0;
@@ -684,6 +701,15 @@ static IPTR thunk_exec_GetMsg(struct M68KEmuContext *ctx, void *cpu)
         if (ctx->shadow_map[s].native_ptr == (void *)imsg->IDCMPWindow && ctx->shadow_map[s].type == 1)
             { m68k_win = ctx->shadow_map[s].m68k_addr; break; }
     m68k_write32(ctx, mi + M68K_IMSG_IDCMPWINDOW, m68k_win);
+    /* IAddress (offset 28): a gadget message names the program's own gadget */
+    {
+        ULONG mg = gadget_m68k(ctx, imsg->IAddress);
+        if (mg) m68k_write32(ctx, mi + 28, mg);
+        if (ctx->num_gadmap) gadgets_sync_back(ctx);
+        if (ctx->trace_calls)
+            bug("[m68kemu] IntuiMessage class %08lx code %04x iaddr %p -> %08lx\n",
+                (unsigned long)imsg->Class, (unsigned)imsg->Code, imsg->IAddress, (unsigned long)mg);
+    }
     return (IPTR)mi;
 }
 
@@ -1635,6 +1661,7 @@ static IPTR thunk_intuition_CloseScreen(struct M68KEmuContext *ctx, void *cpu)
     struct Screen *scr = (struct Screen *)shadow_lookup(ctx, ms);
     if (scr)
     {
+        if (ctx->trace_calls) bug("[m68kemu] CloseScreen %08lx\n", (unsigned long)ms);
         if (ctx->plane_screen == scr)
         {
             if (ctx->plane_base)
@@ -1998,7 +2025,284 @@ static IPTR thunk_intuition_DrawBorder(struct M68KEmuContext *ctx, void *cpu)
     return 0;
 }
 
+
+/* ── Gadgets: m68k struct Gadget (44 bytes, big-endian, 32-bit pointers)
+   translated into native copies that live as long as the gadget is in a
+   window. The map lets IntuiMessage.IAddress name the program's own gadget
+   and lets later calls (RefreshGList, ModifyProp, RemoveGList) find the copy. ── */
+#define M68K_GAD_NEXT      0
+#define M68K_GAD_LEFT      4
+#define M68K_GAD_TOP       6
+#define M68K_GAD_WIDTH     8
+#define M68K_GAD_HEIGHT    10
+#define M68K_GAD_FLAGS     12
+#define M68K_GAD_ACTIV     14
+#define M68K_GAD_TYPE      16
+#define M68K_GAD_RENDER    18
+#define M68K_GAD_SELRENDER 22
+#define M68K_GAD_TEXT      26
+#define M68K_GAD_SPECIAL   34
+#define M68K_GAD_ID        38
+#define M68K_GAD_USERDATA  40
+
+static struct Gadget *gadget_native(struct M68KEmuContext *ctx, ULONG mg)
+{
+    ULONG i;
+    for (i = 0; i < ctx->num_gadmap; i++)
+        if (ctx->gadmap[i].m68k == mg) return (struct Gadget *)ctx->gadmap[i].native;
+    return NULL;
+}
+
+static ULONG gadget_m68k(struct M68KEmuContext *ctx, APTR native)
+{
+    ULONG i;
+    for (i = 0; i < ctx->num_gadmap; i++)
+        if (ctx->gadmap[i].native == native) return ctx->gadmap[i].m68k;
+    return 0;
+}
+
+static APTR gadget_render_from_m68k(struct M68KEmuContext *ctx, ULONG mr, BOOL image)
+{
+    if (!mr) return NULL;
+    return image ? (APTR)image_from_m68k(ctx, mr, 64) : (APTR)border_from_m68k(ctx, mr, 64);
+}
+
+static void gadget_free_one(struct Gadget *g)
+{
+    BOOL img = (g->Flags & GFLG_GADGIMAGE) != 0;
+    if ((g->GadgetType & GTYP_GTYPEMASK) == GTYP_PROPGADGET)
+    {
+        if (g->GadgetRender) FreeMem(g->GadgetRender, sizeof(struct Image));
+        if (g->SpecialInfo) FreeMem(g->SpecialInfo, sizeof(struct PropInfo));
+    }
+    else
+    {
+        if (g->GadgetRender) { if (img) image_free(g->GadgetRender); else border_free(g->GadgetRender); }
+        if (g->SelectRender) { if (g->Flags & GFLG_GADGHIMAGE) image_free(g->SelectRender); else border_free(g->SelectRender); }
+    }
+    if (g->GadgetText) { free_intuitext_chain(g->GadgetText); FreeMem(g->GadgetText, sizeof(struct IntuiText)); }
+    FreeMem(g, sizeof(struct Gadget));
+}
+
+static void gadget_unmap(struct M68KEmuContext *ctx, APTR native)
+{
+    ULONG i;
+    for (i = 0; i < ctx->num_gadmap; i++)
+        if (ctx->gadmap[i].native == native)
+        {
+            gadget_free_one((struct Gadget *)native);
+            ctx->gadmap[i] = ctx->gadmap[--ctx->num_gadmap];
+            return;
+        }
+}
+
+/* Translate up to n gadgets of an m68k list (n < 0: all), linked natively */
+static struct Gadget *gadgets_from_m68k(struct M68KEmuContext *ctx, ULONG mg, LONG n)
+{
+    struct Gadget *first = NULL, *prev = NULL;
+    while (mg && n-- != 0 && ctx->num_gadmap < M68KEMU_MAX_GADGETS)
+    {
+        struct Gadget *g = gadget_native(ctx, mg);
+        if (!g)
+        {
+            UWORD type;
+            g = AllocMem(sizeof(struct Gadget), MEMF_CLEAR);
+            if (!g) break;
+            g->LeftEdge   = (WORD)m68k_read16(ctx, mg + M68K_GAD_LEFT);
+            g->TopEdge    = (WORD)m68k_read16(ctx, mg + M68K_GAD_TOP);
+            g->Width      = (WORD)m68k_read16(ctx, mg + M68K_GAD_WIDTH);
+            g->Height     = (WORD)m68k_read16(ctx, mg + M68K_GAD_HEIGHT);
+            g->Flags      = m68k_read16(ctx, mg + M68K_GAD_FLAGS);
+            g->Activation = m68k_read16(ctx, mg + M68K_GAD_ACTIV);
+            g->GadgetType = type = m68k_read16(ctx, mg + M68K_GAD_TYPE);
+            g->GadgetID   = m68k_read16(ctx, mg + M68K_GAD_ID);
+            g->UserData   = (APTR)(IPTR)m68k_read32(ctx, mg + M68K_GAD_USERDATA);
+            if ((type & GTYP_GTYPEMASK) == GTYP_PROPGADGET)
+            {
+                ULONG mp = m68k_read32(ctx, mg + M68K_GAD_SPECIAL);
+                struct PropInfo *pi = AllocMem(sizeof(struct PropInfo), MEMF_CLEAR);
+                struct Image *knob = AllocMem(sizeof(struct Image), MEMF_CLEAR);
+                if (pi && mp)
+                {
+                    pi->Flags = m68k_read16(ctx, mp + 0);
+                    pi->HorizPot = m68k_read16(ctx, mp + 2);  pi->VertPot = m68k_read16(ctx, mp + 4);
+                    pi->HorizBody = m68k_read16(ctx, mp + 6); pi->VertBody = m68k_read16(ctx, mp + 8);
+                }
+                if (pi) pi->Flags |= AUTOKNOB;               /* the program's knob image is m68k data */
+                g->SpecialInfo = pi;
+                g->GadgetRender = knob;
+                g->Flags &= ~GFLG_GADGIMAGE;
+                g->Flags |= GFLG_GADGIMAGE;                  /* AUTOKNOB wants an Image buffer */
+            }
+            else
+            {
+                g->GadgetRender = gadget_render_from_m68k(ctx, m68k_read32(ctx, mg + M68K_GAD_RENDER), (g->Flags & GFLG_GADGIMAGE) != 0);
+                if ((g->Flags & GFLG_GADGHIGHBITS) == GFLG_GADGHIMAGE)
+                    g->SelectRender = gadget_render_from_m68k(ctx, m68k_read32(ctx, mg + M68K_GAD_SELRENDER), (g->Flags & GFLG_GADGIMAGE) != 0);
+                if ((type & GTYP_GTYPEMASK) == GTYP_STRGADGET)
+                    g->SpecialInfo = NULL;                   /* string gadgets: not yet */
+            }
+            {
+                ULONG mt = m68k_read32(ctx, mg + M68K_GAD_TEXT);
+                if (mt)
+                {
+                    struct IntuiText *it = AllocMem(sizeof(struct IntuiText), MEMF_CLEAR);
+                    if (it) translate_intuitext(ctx, mt, it, 16);
+                    g->GadgetText = it;
+                }
+            }
+            ctx->gadmap[ctx->num_gadmap].m68k = mg;
+            ctx->gadmap[ctx->num_gadmap].native = g;
+            ctx->num_gadmap++;
+            if (ctx->trace_calls)
+                bug("[m68kemu] Gadget %08lx id %u type %04x act %04x flags %04x at %d,%d %dx%d render %p text %p\n",
+                    (unsigned long)mg, g->GadgetID, g->GadgetType, g->Activation, g->Flags,
+                    g->LeftEdge, g->TopEdge, g->Width, g->Height, g->GadgetRender, g->GadgetText);
+        }
+        g->NextGadget = NULL;
+        if (prev) prev->NextGadget = g; else first = g;
+        prev = g;
+        mg = m68k_read32(ctx, mg + M68K_GAD_NEXT);
+    }
+    return first;
+}
+
+/* Copy the state intuition changes (selected flag, prop pots) back */
+static void gadgets_sync_back(struct M68KEmuContext *ctx)
+{
+    ULONG i;
+    for (i = 0; i < ctx->num_gadmap; i++)
+    {
+        struct Gadget *g = (struct Gadget *)ctx->gadmap[i].native;
+        ULONG mg = ctx->gadmap[i].m68k;
+        m68k_write16(ctx, mg + M68K_GAD_FLAGS, (UWORD)((m68k_read16(ctx, mg + M68K_GAD_FLAGS) & ~(GFLG_SELECTED | GFLG_DISABLED)) |
+                                                      (g->Flags & (GFLG_SELECTED | GFLG_DISABLED))));
+        if ((g->GadgetType & GTYP_GTYPEMASK) == GTYP_PROPGADGET && g->SpecialInfo)
+        {
+            ULONG mp = m68k_read32(ctx, mg + M68K_GAD_SPECIAL);
+            struct PropInfo *pi = (struct PropInfo *)g->SpecialInfo;
+            if (mp)
+            {
+                m68k_write16(ctx, mp + 2, pi->HorizPot);  m68k_write16(ctx, mp + 4, pi->VertPot);
+                m68k_write16(ctx, mp + 6, pi->HorizBody); m68k_write16(ctx, mp + 8, pi->VertBody);
+            }
+        }
+    }
+}
+
+/* -438: AddGList(A0=window, A1=gadget, D0=position, D1=numGad, A2=requester) */
+static IPTR thunk_intuition_AddGList_t(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct Window *w = (struct Window *)shadow_lookup(ctx, THUNK_A(0));
+    LONG n = (LONG)THUNK_D(1);
+    struct Gadget *g = w ? gadgets_from_m68k(ctx, THUNK_A(1), n) : NULL;
+    if (ctx->trace_calls)
+        bug("[m68kemu] AddGList window %08lx (%p) first %08lx n %ld -> native %p\n",
+            (unsigned long)THUNK_A(0), w, (unsigned long)THUNK_A(1), (long)n, g);
+    if (!g) return (IPTR)-1;
+    return (IPTR)(LONG)AddGList(w, g, (LONG)(WORD)THUNK_D(0), n, NULL);
+}
+
+/* -42: AddGadget(A0=window, A1=gadget, D0=position) */
+static IPTR thunk_intuition_AddGadget_t(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct Window *w = (struct Window *)shadow_lookup(ctx, THUNK_A(0));
+    struct Gadget *g = w ? gadgets_from_m68k(ctx, THUNK_A(1), 1) : NULL;
+    if (!g) return (IPTR)-1;
+    return (IPTR)(LONG)AddGadget(w, g, (LONG)(WORD)THUNK_D(0));
+}
+
+/* -432: RefreshGList(A0=gadgets, A1=window, A2=requester, D0=numGad) */
+static IPTR thunk_intuition_RefreshGList_t(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct Gadget *g = gadget_native(ctx, THUNK_A(0));
+    struct Window *w = (struct Window *)shadow_lookup(ctx, THUNK_A(1));
+    if (g && w) RefreshGList(g, w, NULL, (LONG)THUNK_D(0));
+    return 0;
+}
+
+/* -222: RefreshGadgets(A0=gadgets, A1=window, A2=requester) */
+static IPTR thunk_intuition_RefreshGadgets_t(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct Gadget *g = gadget_native(ctx, THUNK_A(0));
+    struct Window *w = (struct Window *)shadow_lookup(ctx, THUNK_A(1));
+    if (g && w) RefreshGList(g, w, NULL, -1);
+    return 0;
+}
+
+/* -444: RemoveGList(A0=window, A1=gadget, D0=numGad) */
+static IPTR thunk_intuition_RemoveGList_t(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct Window *w = (struct Window *)shadow_lookup(ctx, THUNK_A(0));
+    struct Gadget *g = gadget_native(ctx, THUNK_A(1)), *n;
+    LONG cnt = (LONG)THUNK_D(0), r;
+    if (!w || !g) return (IPTR)-1;
+    r = RemoveGList(w, g, cnt);
+    while (g && cnt-- != 0) { n = g->NextGadget; gadget_unmap(ctx, g); g = n; }
+    return (IPTR)r;
+}
+
+/* -228: RemoveGadget(A0=window, A1=gadget) */
+static IPTR thunk_intuition_RemoveGadget_t(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct Window *w = (struct Window *)shadow_lookup(ctx, THUNK_A(0));
+    struct Gadget *g = gadget_native(ctx, THUNK_A(1));
+    LONG r;
+    if (!w || !g) return (IPTR)-1;
+    r = RemoveGadget(w, g);
+    gadget_unmap(ctx, g);
+    return (IPTR)r;
+}
+
+/* -156: ModifyProp(A0=gadget, A1=window, A2=req, D0=flags, D1-D4=pots/bodies) */
+static IPTR thunk_intuition_ModifyProp_t(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct Gadget *g = gadget_native(ctx, THUNK_A(0));
+    struct Window *w = (struct Window *)shadow_lookup(ctx, THUNK_A(1));
+    if (!g) return 0;
+    ModifyProp(g, w, NULL, THUNK_D(0) | AUTOKNOB, THUNK_D(1), THUNK_D(2), THUNK_D(3), THUNK_D(4));
+    gadgets_sync_back(ctx);
+    return 0;
+}
+
+/* -468: NewModifyProp(A0=gadget, A1=window, A2=req, D0=flags, D1-D4, D5=numGad) */
+static IPTR thunk_intuition_NewModifyProp_t(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct Gadget *g = gadget_native(ctx, THUNK_A(0));
+    struct Window *w = (struct Window *)shadow_lookup(ctx, THUNK_A(1));
+    if (!g) return 0;
+    NewModifyProp(g, w, NULL, THUNK_D(0) | AUTOKNOB, THUNK_D(1), THUNK_D(2), THUNK_D(3), THUNK_D(4), (LONG)THUNK_D(5));
+    gadgets_sync_back(ctx);
+    return 0;
+}
+
+/* -186 OnGadget / -174 OffGadget (A0=gadget, A1=window, A2=req) */
+static IPTR thunk_intuition_OnGadget_t(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct Gadget *g = gadget_native(ctx, THUNK_A(0));
+    struct Window *w = (struct Window *)shadow_lookup(ctx, THUNK_A(1));
+    if (g) { OnGadget(g, w, NULL); gadgets_sync_back(ctx); }
+    return 0;
+}
+static IPTR thunk_intuition_OffGadget_t(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct Gadget *g = gadget_native(ctx, THUNK_A(0));
+    struct Window *w = (struct Window *)shadow_lookup(ctx, THUNK_A(1));
+    if (g) { OffGadget(g, w, NULL); gadgets_sync_back(ctx); }
+    return 0;
+}
+
 const struct M68KThunkEntry m68kemu_thunks_intuition_manual[] = {
+    { 438, thunk_intuition_AddGList_t },
+    { 42,  thunk_intuition_AddGadget_t },
+    { 432, thunk_intuition_RefreshGList_t },
+    { 222, thunk_intuition_RefreshGadgets_t },
+    { 444, thunk_intuition_RemoveGList_t },
+    { 228, thunk_intuition_RemoveGadget_t },
+    { 156, thunk_intuition_ModifyProp_t },
+    { 468, thunk_intuition_NewModifyProp_t },
+    { 186, thunk_intuition_OnGadget_t },
+    { 174, thunk_intuition_OffGadget_t },
     { 216, thunk_intuition_PrintIText },
     { 114, thunk_intuition_DrawImage },
     { 108, thunk_intuition_DrawBorder },
