@@ -455,11 +455,13 @@ void chooser_popup_close(struct ChooserData *data)
     data->cd_Hot = -1;
 }
 
-/* entry under the pointer, -1 outside the list */
-static LONG chooser_popup_hit(struct ChooserData *data, struct GadgetInfo *gi)
+/* entry under the pointer, -1 outside the list; gpi_Mouse is relative
+   to the gadget, which stays the active one while the list is open */
+static LONG chooser_popup_hit(struct ChooserData *data, Object *o, struct gpInput *msg)
 {
-    struct Window *pw = data->cd_PopWin;
-    WORD mx = gi->gi_Screen->MouseX - pw->LeftEdge, my = gi->gi_Screen->MouseY - pw->TopEdge;
+    struct Window *pw = data->cd_PopWin, *win = msg->gpi_GInfo->gi_Window;
+    WORD mx = win->LeftEdge + G(o)->LeftEdge + msg->gpi_Mouse.X - pw->LeftEdge;
+    WORD my = win->TopEdge + G(o)->TopEdge + msg->gpi_Mouse.Y - pw->TopEdge;
     LONG i;
 
     if (mx < 0 || mx >= pw->Width || my < 2 || my >= pw->Height - 2)
@@ -537,7 +539,7 @@ IPTR Chooser__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
 
     if (data->cd_PopWin && ie->ie_Class == IECLASS_RAWMOUSE)
     {
-        LONG hit = chooser_popup_hit(data, msg->gpi_GInfo);
+        LONG hit = chooser_popup_hit(data, o, msg);
 
         if (hit != data->cd_Hot && (hit < 0 || chooser_selectable(data, hit)))
         {
@@ -646,4 +648,50 @@ IPTR Chooser__GM_GOINACTIVE(Class *cl, Object *o, struct gpGoInactive *msg)
     }
 
     return DoSuperMethodA(cl, o, (Msg)msg);
+}
+
+/******************************************************************************/
+
+IPTR Chooser__GM_DOMAIN(Class *cl, Object *o, struct gpDomain *msg)
+{
+    struct ChooserData *data = INST_DATA(cl, o);
+    struct TextFont *font = NULL;
+    struct RastPort rp;
+    UWORD minW = 40, minH = 14, textW = 0;
+    struct MinNode *node;
+
+    if (msg->gpd_GInfo && msg->gpd_GInfo->gi_DrInfo)
+        font = msg->gpd_GInfo->gi_DrInfo->dri_Font;
+    if (!font && msg->gpd_RPort)
+        font = msg->gpd_RPort->Font;
+
+    if (font)
+    {
+        InitRastPort(&rp);
+        SetFont(&rp, font);
+        if (data->cd_Labels)
+            for (node = (struct MinNode *)data->cd_Labels->lh_Head; node->mln_Succ; node = node->mln_Succ)
+            {
+                struct ChooserNode *cn = (struct ChooserNode *)node;
+                if (cn->cn_Text)
+                {
+                    UWORD w = TextLength(&rp, cn->cn_Text, strlen(cn->cn_Text));
+                    if (w > textW) textW = w;
+                }
+            }
+        if (data->cd_Title)
+        {
+            UWORD w = TextLength(&rp, data->cd_Title, strlen(data->cd_Title));
+            if (w > textW) textW = w;
+        }
+        /* text, its margins and the arrow box */
+        minW = textW + 8 + 18;
+        minH = font->tf_YSize + 6;
+    }
+
+    msg->gpd_Domain.Left   = 0;
+    msg->gpd_Domain.Top    = 0;
+    msg->gpd_Domain.Width  = minW;
+    msg->gpd_Domain.Height = minH;
+    return TRUE;
 }
