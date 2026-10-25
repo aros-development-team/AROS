@@ -50,6 +50,7 @@
 #include <dos/rdargs.h>
 #include <graphics/view.h>
 #include <hidd/gfx.h>
+#include <string.h>
 
 #include "gfx_intern.h"
 #include "gfx_compositor.h"
@@ -225,11 +226,118 @@ static void comp_ReadPrefs(struct HIDDCompositorData *compdata)
     me->pr_WindowPtr = old_windowptr;
 }
 
+/****************************************************************************************/
+/* Surface hook calls                                                                   */
+/****************************************************************************************/
+
+/*
+ * Hook firing rule. A client surface's hook (damage, plane gained/lost,
+ * screen moved) is called with no compositor lock held, from the task whose
+ * call caused the event. Calls are collected into a HookFires list while the
+ * lock is held (QueueHook counts the pending call in ClientSurface.firing
+ * under hooksem) and made once the lock is released (FireHooks: the call,
+ * then the counter goes down under hooksem and a DetachSurface waiting for
+ * zero is woken). DetachSurface unlinks the surface under the write lock, so
+ * no further call can be collected for it, releases the lock, and waits
+ * (SIGF_SINGLE) until every call collected before that has returned; only
+ * then is the entry freed and the method returns. Hence the hook is never
+ * entered after DetachSurface returns, and the entry it is given is never
+ * freed under a running hook. For the client: UpdateSurface may be called
+ * from the hook (no lock is held), DetachSurface must not (it would wait for
+ * the hook call it is made from).
+ */
+#define HOOKFIRE_CHUNK 8
+
+struct HookFire
+{
+    struct ClientSurface       *cs;
+    struct HIDD_SurfaceHookMsg  msg;
+};
+
+struct HookFires
+{
+    struct HookFires *next;     /* overflow chunks, allocated on demand */
+    ULONG             count;
+    struct HookFire   f[HOOKFIRE_CHUNK];
+};
+
+static inline void HIDDCompositorInitFires(struct HookFires *hf)
+{
+    hf->next  = NULL;
+    hf->count = 0;
+}
+
+/* Lock held: remember a hook call for HIDDCompositorFireHooks() */
+static void HIDDCompositorQueueHook(struct HIDDCompositorData *compdata, struct HookFires *hf, struct ClientSurface *cs,
+                                    ULONG type, struct Rectangle *rect, ULONG plane)
+{
+    struct HookFire *f;
+
+    if (!hf || !cs->hook)
+        return;
+    while (hf->count == HOOKFIRE_CHUNK)
+    {
+        if (!hf->next)
+        {
+            hf->next = AllocMem(sizeof(struct HookFires), MEMF_ANY);
+            if (!hf->next)
+                return;     /* out of memory: this call is lost */
+            HIDDCompositorInitFires(hf->next);
+        }
+        hf = hf->next;
+    }
+    f = &hf->f[hf->count++];
+    f->cs          = cs;
+    f->msg.Type    = type;
+    f->msg.Request = cs->req;
+    f->msg.Plane   = plane;
+    if (rect)
+        f->msg.Rect = *rect;
+    else
+        f->msg.Rect.MinX = f->msg.Rect.MinY = f->msg.Rect.MaxX = f->msg.Rect.MaxY = 0;
+
+    ObtainSemaphore(&compdata->hooksem);
+    cs->firing++;
+    ReleaseSemaphore(&compdata->hooksem);
+}
+
+/* Lock released: make the collected calls, free the overflow chunks */
+static void HIDDCompositorFireHooks(struct HIDDCompositorData *compdata, struct HookFires *hf)
+{
+    struct HookFires *chunk = hf;
+
+    while (chunk)
+    {
+        struct HookFires *next = chunk->next;
+        ULONG i;
+
+        for (i = 0; i < chunk->count; i++)
+        {
+            struct HookFire *f = &chunk->f[i];
+
+            CallHookPkt(f->cs->hook, compdata->display, &f->msg);
+
+            ObtainSemaphore(&compdata->hooksem);
+            if ((--f->cs->firing == 0) && f->cs->waiter)
+                Signal(f->cs->waiter, SIGF_SINGLE);
+            ReleaseSemaphore(&compdata->hooksem);
+        }
+        if (chunk != hf)
+            FreeMem(chunk, sizeof(struct HookFires));
+        chunk = next;
+    }
+}
+
 static void HIDDCompositorRecalculateSurfaces(struct HIDDCompositorData *compdata, struct StackBitMapNode *n);
+static VOID HIDDCompositorRecalculateVisibleRegions(struct HIDDCompositorData *compdata);
+static VOID HIDDCompositorRedrawVisibleRegions(struct HIDDCompositorData *compdata, struct Rectangle *drawrect);
 static void HIDDCompositorQueryPlanes(struct HIDDCompositorData *compdata);
 static void HIDDCompositorAssignPlanes(struct HIDDCompositorData *compdata);
-static void HIDDCompositorCommitPlanes(struct HIDDCompositorData *compdata, ULONG flags);
+static void HIDDCompositorPlanPlanes(struct HIDDCompositorData *compdata);
+static void HIDDCompositorCommitPlanes(struct HIDDCompositorData *compdata, ULONG flags, struct HookFires *fires);
+static void HIDDCompositorQueuePlaneHooks(struct HIDDCompositorData *compdata, struct HookFires *fires);
 static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata, BOOL newtop);
+static struct StackBitMapNode *HIDDCompositorFindBitMapStackNode(struct HIDDCompositorData *compdata, OOP_Object *bm);
 
 /****************************************************************************************/
 /* Screen geometry on the display                                                       */
@@ -795,10 +903,13 @@ static VOID HIDDCompositorRecalculateVisibleRegions(struct HIDDCompositorData *c
             n->sbmflags &= ~STACKNODEF_VISIBLE;
 
             /* Scanned out by a plane above the composed bitmap: not part of it */
-            if (n->plane >= 0)
+            if (n->promoted)
             {
                 if (n->screenregion)
                     ClearRegion(n->screenregion);
+                /* Its client surfaces are placed by where the screen is on the display */
+                if (n->hassurfaces)
+                    HIDDCompositorRecalculateSurfaces(compdata, n);
                 continue;
             }
 
@@ -928,12 +1039,21 @@ static void HIDDCompositorQueryPlanes(struct HIDDCompositorData *compdata)
     OOP_GetAttr(compdata->display, aHidd_Display_PlaneCount, &count);
     if (count < 2)
         return;     /* only the primary: everything is composed into it, as before */
+    if (count > 32)
+        count = 32; /* the assignment tracks the planes in use in a 32 bit mask */
 
-    compdata->planes = AllocMem(count * (sizeof(struct HIDD_PlaneInfo) + sizeof(struct HIDD_PlaneState)), MEMF_ANY | MEMF_CLEAR);
+    compdata->planes = AllocMem(count * (sizeof(struct HIDD_PlaneInfo) + 2 * sizeof(struct HIDD_PlaneState)), MEMF_ANY | MEMF_CLEAR);
     if (!compdata->planes)
         return;
     compdata->planealloc = count;
     compdata->planestates = (struct HIDD_PlaneState *)&compdata->planes[count];
+    compdata->commitstates = &compdata->planestates[count];
+    {
+        IPTR key = HIDD_DISPLAY_DEFAULT_COLORKEY;
+
+        OOP_GetAttr(compdata->display, aHidd_Display_ColorKey, &key);
+        compdata->colorkey = key;
+    }
 
     for (i = 0; i < count; i++)
     {
@@ -955,43 +1075,80 @@ static void HIDDCompositorQueryPlanes(struct HIDDCompositorData *compdata)
 static void HIDDCompositorDisablePlanes(struct HIDDCompositorData *compdata)
 {
     struct StackBitMapNode *n;
+    struct SurfaceNode *sn;
     ULONG i, count = 0;
-    struct HIDD_PlaneState *states;
+    struct HIDD_PlaneState *states = compdata->commitstates;
 
     bug("[Compositor] display 0x%p refused a plane commit: composing everything from now on\n", compdata->display);
-    states = AllocMem(compdata->planecount * sizeof(struct HIDD_PlaneState), MEMF_ANY | MEMF_CLEAR);
-    if (states)
+    for (i = 0; i < compdata->planecount; i++)
     {
-        for (i = 0; i < compdata->planecount; i++)
+        if (compdata->planes[i].Type == vHidd_Plane_Overlay)
         {
-            if (compdata->planes[i].Type == vHidd_Plane_Overlay)
-            {
-                states[count].Plane  = i;
-                states[count].BitMap = NULL;
-                count++;
-            }
+            memset(&states[count], 0, sizeof(struct HIDD_PlaneState));
+            states[count].Plane  = i;
+            states[count].BitMap = NULL;
+            count++;
         }
-        if (count)
-            HIDD_Display_CommitPlanes(compdata->display, states, count, 0);
-        FreeMem(states, compdata->planecount * sizeof(struct HIDD_PlaneState));
     }
+    if (count)
+        HIDD_Display_CommitPlanes(compdata->display, states, count, 0);
     compdata->planecount = 1;
     ForeachNode(&compdata->bitmapstack, n)
+    {
         n->plane = -1;
+        n->promoted = FALSE;
+        ForeachNode(&n->surfaces, sn)
+            sn->plane = -1;
+    }
     HIDDCompositorToggleCompositing(compdata, TRUE);
+}
+
+/* Attributes of a surface's bitmap the plane logic needs, cached on the node */
+static void HIDDCompositorSurfaceBitMapAttrs(struct HIDDCompositorData *compdata, struct SurfaceNode *sn)
+{
+    struct HIDD_CompositeRequest *req = SNREQ(sn);
+    IPTR vf = 0, scanout = 0;
+
+    if (req->BitMap)
+    {
+        OOP_GetAttr(req->BitMap, aHidd_BitMap_VideoFormat, &vf);
+        OOP_GetAttr(req->BitMap, aHidd_BitMap_Scanout, &scanout);
+    }
+    sn->videofmt = vf;
+    sn->scanout  = scanout ? TRUE : FALSE;
+}
+
+/* A surface the compositor can blit when it holds no plane: anything but a video bitmap */
+#define SURFACE_BLITTABLE(sn) ((sn)->videofmt == vHidd_VideoFmt_None)
+
+/* May this surface take a plane in the current pass? (plan 3.3 item 1) */
+static BOOL HIDDCompositorSurfaceIsCandidate(struct HIDDCompositorData *compdata, struct SurfaceNode *sn)
+{
+    struct HIDD_CompositeRequest *req = SNREQ(sn);
+
+    if (!sn->client || sn->denied || !sn->scanout || !req->BitMap)
+        return FALSE;
+    return (req->Flags & (CRF_PLANE_OK | CRF_PLANE_REQUIRED)) ? TRUE : FALSE;
 }
 
 /* Can this screen be scanned out by plane 'p' as it is (unscaled, at its offset)? */
 static BOOL HIDDCompositorPlaneFits(struct HIDDCompositorData *compdata, ULONG p, struct StackBitMapNode *n)
 {
     struct HIDD_PlaneInfo *pi = &compdata->planes[p];
+    struct SurfaceNode *sn;
     OOP_Object *pf;
     IPTR stdpf = 0, w = 0, h = 0;
 
     if (pi->Type == vHidd_Plane_Cursor)
         return FALSE;
-    if (n->hassurfaces || (n->sbmflags & COMPF_ALPHA))
+    if (n->haslayersurfaces || (n->sbmflags & COMPF_ALPHA))
         return FALSE;   /* composed layers and blending stay in software for now */
+    /* A client surface the compositor may have to blit needs the screen in the composed bitmap */
+    ForeachNode(&n->surfaces, sn)
+    {
+        if (sn->client && !sn->candidate && SURFACE_BLITTABLE(sn))
+            return FALSE;
+    }
     /*
      * graphics.library may still have the display's framebuffer installed in
      * the frontmost screen's BitMap from a passthrough LoadView(); that object
@@ -1047,51 +1204,509 @@ static BOOL HIDDCompositorPlaneFits(struct HIDDCompositorData *compdata, ULONG p
 }
 
 /*
- * Give the frontmost screens the overlay planes, highest z first, for as long
- * as each screen fits a free plane. Z order must be kept: once a screen gets
- * no plane, every screen behind it is composed into the primary too, since a
- * plane would show above the composed bitmap.
+ * Can plane 'p' show surface 'sn' of screen 'n' as it is visible now? On
+ * success the plane geometry is left in sn->psrc/pdest/pflags.
  *
- * The backmost screen always stays on the primary: the primary is the base
- * image of the display, a single screen is then shown exactly as without
- * planes, and overlays only ever carry screens that have another screen
- * behind them (which is where they save the blits). It also means a plane
- * the hardware accepts but does not show can never leave the display blank.
+ * The visible region decides (plan 3.3 item 2): one rectangle is cropped to;
+ * several need a destination colour key (the key is stamped into the primary
+ * under the plane, so only a surface of a composed or passthrough screen can
+ * use it); without a key an RGB surface is blitted by the compositor through
+ * its region instead, and a video surface is shown over whatever covers it,
+ * or hidden when the driver asks for that (PIF_HIDE_OBSCURED).
+ */
+static BOOL HIDDCompositorSurfacePlaneFits(struct HIDDCompositorData *compdata, ULONG p,
+                                           struct StackBitMapNode *n, struct SurfaceNode *sn)
+{
+    struct HIDD_PlaneInfo *pi = &compdata->planes[p];
+    struct HIDD_CompositeRequest *req = SNREQ(sn);
+    struct RegionRectangle *rr;
+    struct Rectangle full, vis;
+    ULONG flags = 0, nrects = 0;
+    LONG srcw, srch, dstw, dsth;
+
+    if (pi->Type != vHidd_Plane_Overlay)
+        return FALSE;
+    if (!(pi->AlphaModes & (1UL << req->AlphaMode)))
+        return FALSE;
+    if (!sn->region || !(rr = sn->region->RegionRectangle))
+        return FALSE;   /* nothing of it is visible: no plane */
+
+    /* Format */
+    if (sn->videofmt)
+    {
+        if ((sn->videofmt >= 32) || !(pi->VideoFmtMask & (1UL << sn->videofmt)))
+            return FALSE;
+    }
+    else
+    {
+        OOP_Object *pf = (OOP_Object *)OOP_GET(req->BitMap, aHidd_BitMap_PixFmt);
+        IPTR stdpf = 0;
+
+        if (pf)
+            OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);
+        if ((stdpf < 32) && !(pi->PixFmtMask & (1UL << stdpf)))
+            return FALSE;
+    }
+
+    /* Source size */
+    srcw = req->Src.MaxX - req->Src.MinX + 1;
+    srch = req->Src.MaxY - req->Src.MinY + 1;
+    if ((srcw <= 0) || (srch <= 0))
+        return FALSE;
+    if ((pi->MaxWidth && (srcw > pi->MaxWidth)) || (pi->MaxHeight && (srch > pi->MaxHeight)))
+        return FALSE;
+
+    /* The whole destination on the display, and what is visible of it */
+    HIDDCompositorNodeMapRect(n, req->Dest.MinX, req->Dest.MinY, req->Dest.MaxX, req->Dest.MaxY, &full);
+    dstw = full.MaxX - full.MinX + 1;
+    dsth = full.MaxY - full.MinY + 1;
+    if ((dstw <= 0) || (dsth <= 0))
+        return FALSE;
+
+    vis.MinX = rr->bounds.MinX + sn->region->bounds.MinX;
+    vis.MinY = rr->bounds.MinY + sn->region->bounds.MinY;
+    vis.MaxX = rr->bounds.MaxX + sn->region->bounds.MinX;
+    vis.MaxY = rr->bounds.MaxY + sn->region->bounds.MinY;
+    for (; rr; rr = rr->Next)
+        nrects++;
+
+    if (nrects > 1)
+    {
+        if ((pi->Flags & PIF_COLORKEY) && !n->promoted)
+            flags |= PSF_COLORKEY;              /* the primary carries the key under the plane */
+        else if (!sn->videofmt)
+            return FALSE;                       /* RGB: blitted through its region instead */
+        else if (pi->Flags & PIF_HIDE_OBSCURED)
+            return FALSE;                       /* driver policy: off until it is one rectangle */
+        /* Keyed, or a video shown on top: the whole rectangle, clipped to the display */
+        if (!AndRectRect(&full, &compdata->displayrect, &vis))
+            return FALSE;
+    }
+
+    /* Scaling: the plane scales Src onto the whole destination */
+    if ((srcw != dstw) || (srch != dsth))
+    {
+        ULONG sx = (ULONG)(((UQUAD)dstw << 16) / srcw);
+        ULONG sy = (ULONG)(((UQUAD)dsth << 16) / srch);
+
+        if ((sx < pi->ScaleMin) || (sx > pi->ScaleMax) || (sy < pi->ScaleMin) || (sy > pi->ScaleMax))
+            return FALSE;
+    }
+
+    /* Position constraints are about display pixels */
+    if ((pi->PosAlignX > 1) && (vis.MinX % pi->PosAlignX))
+        return FALSE;
+    if ((pi->PosAlignY > 1) && (vis.MinY % pi->PosAlignY))
+        return FALSE;
+    if ((pi->Flags & PIF_FULL_WIDTH_ONLY) && (vis.MinX != 0))
+        return FALSE;
+    /* PIF_NEEDS_DISPLAYMEM: a scan-out bitmap is allocated by the driver for exactly this */
+
+    /* Src cropped in proportion to the part of Dest that is shown (exact when unscaled) */
+    sn->pdest = vis;
+    sn->psrc.MinX = req->Src.MinX + (LONG)(((QUAD)(vis.MinX - full.MinX) * srcw) / dstw);
+    sn->psrc.MinY = req->Src.MinY + (LONG)(((QUAD)(vis.MinY - full.MinY) * srch) / dsth);
+    sn->psrc.MaxX = req->Src.MinX + (LONG)((((QUAD)(vis.MaxX - full.MinX + 1) * srcw) + dstw - 1) / dstw) - 1;
+    sn->psrc.MaxY = req->Src.MinY + (LONG)((((QUAD)(vis.MaxY - full.MinY + 1) * srch) + dsth - 1) / dsth) - 1;
+    if (sn->psrc.MaxX < sn->psrc.MinX)
+        sn->psrc.MaxX = sn->psrc.MinX;
+    if (sn->psrc.MaxY < sn->psrc.MinY)
+        sn->psrc.MaxY = sn->psrc.MinY;
+    if (sn->psrc.MaxX > req->Src.MaxX)
+        sn->psrc.MaxX = req->Src.MaxX;
+    if (sn->psrc.MaxY > req->Src.MaxY)
+        sn->psrc.MaxY = req->Src.MaxY;
+    sn->pflags = flags;
+    return TRUE;
+}
+
+/*
+ * One plane assignment pass over the stack (plan 3.3 items 4 and 5).
+ *
+ * (A) Which screens leave the composed bitmap for a plane of their own: the
+ *     frontmost screens, for as long as each fits an overlay plane, never the
+ *     backmost one (the primary is the base image of the display: a single
+ *     screen is shown exactly as without planes, and a plane the hardware
+ *     accepts but does not show can never leave the display blank). Z order
+ *     must be kept: once a screen is composed every screen behind it is too,
+ *     since a plane would show above the composed bitmap. Screens only get
+ *     the planes no surface asks for (video before GL before screens), so an
+ *     opening screen never takes a plane away from a video.
+ * (B) A z pass back to front over the composed screens' surfaces, then each
+ *     promoted screen and its surfaces: every candidate takes the lowest free
+ *     plane whose z range fits above everything assigned below it. A surface
+ *     that finds none is blitted (RGB) or off (video); a promoted screen that
+ *     finds none, or whose blittable surface finds none, is composed instead
+ *     and the pass starts over. Each restart demotes one screen, so it ends.
+ *
+ * The visible regions are recomputed in between: a promoted screen is not
+ * part of the composed bitmap, and the surfaces' regions decide their planes.
  */
 static void HIDDCompositorAssignPlanes(struct HIDDCompositorData *compdata)
 {
     struct StackBitMapNode *n;
-    ULONG p;
-    BOOL composing = FALSE;
+    struct SurfaceNode *sn;
+    ULONG noverlay = 0, zfloor = 0, zcur, nreq, nok, used, usedcount, p;
 
-    ForeachNode(&compdata->bitmapstack, n)
-        n->plane = -1;
-
-    if (compdata->planecount < 2)
-        return;
-
-    /* Overlay planes, from the top of the z range downwards */
-    p = compdata->planecount;
     ForeachNode(&compdata->bitmapstack, n)
     {
-        ULONG q;
-
-        if (composing)
-            break;
-        if (!n->n.mln_Succ->mln_Succ)
-            break;      /* the backmost screen: primary */
-
-        for (q = p; q > 0; q--)
+        n->plane = -1;
+        n->promoted = FALSE;
+        ForeachNode(&n->surfaces, sn)
         {
-            if ((compdata->planes[q - 1].Type == vHidd_Plane_Overlay) && HIDDCompositorPlaneFits(compdata, q - 1, n))
+            sn->plane  = -1;
+            sn->pflags = 0;
+            sn->candidate = HIDDCompositorSurfaceIsCandidate(compdata, sn);
+        }
+    }
+
+    if (compdata->planecount < 2)
+    {
+        /* No planes: client surfaces are still placed (blitted) by their regions */
+        if (compdata->nclientsurfaces)
+            HIDDCompositorRecalculateVisibleRegions(compdata);
+        return;
+    }
+
+    for (p = 0; p < compdata->planecount; p++)
+    {
+        if (compdata->planes[p].Type == vHidd_Plane_Overlay)
+            noverlay++;
+        else if ((compdata->planes[p].Type == vHidd_Plane_Primary) && (compdata->planes[p].ZMax > zfloor))
+            zfloor = compdata->planes[p].ZMax;
+    }
+
+restart:
+    /* (A) */
+    nreq = nok = 0;
+    ForeachNode(&compdata->bitmapstack, n)
+    {
+        n->promoted = FALSE;
+        ForeachNode(&n->surfaces, sn)
+        {
+            if (sn->candidate)
             {
-                n->plane = q - 1;
-                p = q - 1;
+                if (SNREQ(sn)->Flags & CRF_PLANE_REQUIRED)
+                    nreq++;
+                else
+                    nok++;
+            }
+        }
+    }
+    {
+        ULONG budget = (noverlay > nreq + nok) ? noverlay - nreq - nok : 0;
+
+        ForeachNode(&compdata->bitmapstack, n)
+        {
+            BOOL fits = FALSE;
+
+            if (!n->n.mln_Succ->mln_Succ)
+                break;      /* the backmost screen: primary */
+            if (!budget || n->planedenied)
+                break;
+            for (p = 0; p < compdata->planecount; p++)
+            {
+                if ((compdata->planes[p].Type == vHidd_Plane_Overlay) && HIDDCompositorPlaneFits(compdata, p, n))
+                {
+                    fits = TRUE;
+                    break;
+                }
+            }
+            if (!fits)
+                break;      /* composed, and so is every screen behind it */
+            n->promoted = TRUE;
+            budget--;
+        }
+    }
+
+    /* Screens alone need no regions here (ToggleCompositing() computes them); surfaces are placed by theirs */
+    if (compdata->nclientsurfaces)
+    {
+        HIDDCompositorRecalculateVisibleRegions(compdata);
+
+        /* Only candidates with something visible compete for the planes below */
+        nreq = nok = 0;
+        ForeachNode(&compdata->bitmapstack, n)
+        {
+            ForeachNode(&n->surfaces, sn)
+            {
+                if (sn->candidate && sn->region && sn->region->RegionRectangle)
+                {
+                    if (SNREQ(sn)->Flags & CRF_PLANE_REQUIRED)
+                        nreq++;
+                    else
+                        nok++;
+                }
+            }
+        }
+    }
+
+    /* (B) */
+    used = 0;
+    usedcount = 0;
+    zcur = zfloor;
+    for (n = (struct StackBitMapNode *)compdata->bitmapstack.mlh_TailPred;
+         n->n.mln_Pred; n = (struct StackBitMapNode *)n->n.mln_Pred)
+    {
+        if (n->promoted)
+        {
+            LONG best = -1;
+            ULONG bestz = 0;
+
+            for (p = 0; p < compdata->planecount; p++)
+            {
+                struct HIDD_PlaneInfo *pi = &compdata->planes[p];
+                ULONG z;
+
+                if ((pi->Type != vHidd_Plane_Overlay) || (used & (1UL << p)))
+                    continue;
+                z = (zcur + 1 > pi->ZMin) ? zcur + 1 : pi->ZMin;
+                if (z > pi->ZMax)
+                    continue;
+                if ((best >= 0) && (z >= bestz))
+                    continue;
+                if (!HIDDCompositorPlaneFits(compdata, p, n))
+                    continue;
+                best  = p;
+                bestz = z;
+            }
+            if (best < 0)
+            {
+                n->planedenied = TRUE;
+                goto restart;
+            }
+            n->plane  = best;
+            n->zorder = bestz;
+            used |= 1UL << best;
+            usedcount++;
+            zcur = bestz;
+        }
+
+        ForeachNode(&n->surfaces, sn)
+        {
+            LONG best = -1;
+            ULONG bestz = 0, later;
+            BOOL required;
+
+            if (!sn->candidate || !sn->region || !sn->region->RegionRectangle)
+                continue;   /* not a candidate, or nothing of it visible: no plane */
+            required = (SNREQ(sn)->Flags & CRF_PLANE_REQUIRED) ? TRUE : FALSE;
+            if (required)
+            {
+                nreq--;
+                later = nreq;
+            }
+            else
+            {
+                nok--;
+                later = nreq + nok;
+            }
+            /* Video before GL, and frontmost first within a class: leave planes for those still to come */
+            if (noverlay - usedcount <= later)
+                continue;
+
+            for (p = 0; p < compdata->planecount; p++)
+            {
+                struct HIDD_PlaneInfo *pi = &compdata->planes[p];
+                ULONG z;
+
+                if ((pi->Type != vHidd_Plane_Overlay) || (used & (1UL << p)))
+                    continue;
+                z = (zcur + 1 > pi->ZMin) ? zcur + 1 : pi->ZMin;
+                if (z > pi->ZMax)
+                    continue;
+                if ((best >= 0) && (z >= bestz))
+                    continue;
+                if (!HIDDCompositorSurfacePlaneFits(compdata, p, n, sn))
+                    continue;
+                best  = p;
+                bestz = z;
+            }
+            if (best < 0)
+            {
+                struct HIDD_CompositeRequest *r = SNREQ(sn);
+
+                /* Said on serial: a client surface that gets no plane is the first thing to look at when bringing a driver up */
+                bug("[Compositor] surface 0x%p (video %lu, flags 0x%x) src %ldx%ld dest %ldx%ld region %s: no plane (%lu overlays, %lu used, z floor %lu)\n",
+                    r, (unsigned long)sn->videofmt, r->Flags,
+                    (long)(r->Src.MaxX - r->Src.MinX + 1), (long)(r->Src.MaxY - r->Src.MinY + 1),
+                    (long)(r->Dest.MaxX - r->Dest.MinX + 1), (long)(r->Dest.MaxY - r->Dest.MinY + 1),
+                    (sn->region->RegionRectangle->Next) ? "several rects" : "one rect",
+                    (unsigned long)noverlay, (unsigned long)usedcount, (unsigned long)zcur);
+                if (!required && n->promoted)
+                {
+                    /* It has to be blitted, which only the composed bitmap allows */
+                    n->planedenied = TRUE;
+                    goto restart;
+                }
+                continue;
+            }
+            HIDDCompositorSurfacePlaneFits(compdata, best, n, sn);   /* the geometry of the chosen plane */
+            bug("[Compositor] surface 0x%p (video %lu) -> plane %ld z %lu dest (%d,%d)-(%d,%d) src (%d,%d)-(%d,%d)%s\n",
+                SNREQ(sn), (unsigned long)sn->videofmt, (long)best, (unsigned long)bestz,
+                sn->pdest.MinX, sn->pdest.MinY, sn->pdest.MaxX, sn->pdest.MaxY,
+                sn->psrc.MinX, sn->psrc.MinY, sn->psrc.MaxX, sn->psrc.MaxY,
+                (sn->pflags & PSF_COLORKEY) ? " keyed" : "");
+            sn->plane  = best;
+            sn->zorder = bestz;
+            used |= 1UL << best;
+            usedcount++;
+            zcur = bestz;
+            /* The plane shows it: nothing of the screen under it is needed */
+            sn->opaque = TRUE;
+            if (n->paintregion && sn->region)
+                ClearRegionRegion(sn->region, n->paintregion);
+        }
+    }
+}
+
+/*
+ * Fill in the plane states for the current assignment (screens and surfaces;
+ * an unused overlay carries a NULL bitmap) and copy the overlay ones into
+ * commitstates. Returns their number; *inuse is how many show something.
+ */
+static ULONG HIDDCompositorBuildPlaneStates(struct HIDDCompositorData *compdata, ULONG *inuse)
+{
+    struct StackBitMapNode *n;
+    struct SurfaceNode *sn;
+    ULONG i, count = 0, shown = 0;
+
+    for (i = 0; i < compdata->planecount; i++)
+    {
+        struct HIDD_PlaneState *st = &compdata->planestates[i];
+
+        if (compdata->planes[i].Type != vHidd_Plane_Overlay)
+            continue;
+        memset(st, 0, sizeof(*st));
+        st->Plane = i;
+    }
+
+    ForeachNode(&compdata->bitmapstack, n)
+    {
+        struct HIDD_PlaneState *st;
+
+        if (n->plane >= 0)
+        {
+            st = &compdata->planestates[n->plane];
+            st->BitMap    = n->bm;
+            st->Src.MinX  = 0;
+            st->Src.MinY  = 0;
+            st->Src.MaxX  = n->scrw - 1;
+            st->Src.MaxY  = n->scrh - 1;
+            HIDDCompositorNodeRect(n, &st->Dest);
+            st->Opacity   = 0xFF;
+            st->AlphaMode = vHidd_CompAlpha_None;
+            st->ZOrder    = n->zorder;
+            st->Flags     = 0;
+            st->ColorKey  = 0;
+            shown++;
+        }
+        ForeachNode(&n->surfaces, sn)
+        {
+            struct HIDD_CompositeRequest *req = SNREQ(sn);
+
+            if (sn->plane < 0)
+                continue;
+            st = &compdata->planestates[sn->plane];
+            st->BitMap    = req->BitMap;
+            st->Src       = sn->psrc;
+            st->Dest      = sn->pdest;
+            st->Opacity   = req->Opacity;
+            st->AlphaMode = req->AlphaMode;
+            st->ZOrder    = sn->zorder;
+            st->Flags     = sn->pflags;
+            st->ColorKey  = (sn->pflags & PSF_COLORKEY) ? compdata->colorkey : 0;
+            shown++;
+        }
+    }
+
+    for (i = 0; i < compdata->planecount; i++)
+    {
+        if (compdata->planes[i].Type == vHidd_Plane_Overlay)
+            compdata->commitstates[count++] = compdata->planestates[i];
+    }
+    *inuse = shown;
+    return count;
+}
+
+/*
+ * Plane planning with the driver's test commit (plan 3.3 item 7). The static
+ * checks of the Fits() functions cannot know the hardware's dynamic budget,
+ * so the assignment is offered with fHidd_Commit_Test and, when refused,
+ * reduced by one plane user and offered again until it passes (an empty set
+ * passes without asking). The victim is, in this order, the first that
+ * exists: the backmost screen on a plane (composed; a composed screen sits at
+ * the primary's z and must not have an overlay screen below it), the backmost
+ * CRF_PLANE_OK surface on a plane (blitted), the backmost CRF_PLANE_REQUIRED
+ * surface on a plane (off, PlaneLost). Each victim is marked denied for this
+ * pass and AssignPlanes() is re-run so z ranges stay consistent. This runs
+ * before ToggleCompositing(), which depends on which screens are on planes;
+ * DisablePlanes() is left for a real commit failing after its test passed.
+ */
+static void HIDDCompositorPlanPlanes(struct HIDDCompositorData *compdata)
+{
+    struct StackBitMapNode *n;
+    struct SurfaceNode *sn;
+
+    ForeachNode(&compdata->bitmapstack, n)
+    {
+        n->planedenied = FALSE;
+        ForeachNode(&n->surfaces, sn)
+            sn->denied = FALSE;
+    }
+
+    for (;;)
+    {
+        struct StackBitMapNode *victim = NULL;
+        struct SurfaceNode *svictim = NULL;
+        ULONG count, inuse, pass;
+
+        HIDDCompositorAssignPlanes(compdata);
+        if (compdata->planecount < 2)
+            return;
+        count = HIDDCompositorBuildPlaneStates(compdata, &inuse);
+        if (!inuse)
+            return;
+        if (HIDD_Display_CommitPlanes(compdata->display, compdata->commitstates, count, fHidd_Commit_Test))
+            return;
+
+        for (n = (struct StackBitMapNode *)compdata->bitmapstack.mlh_TailPred;
+             n->n.mln_Pred; n = (struct StackBitMapNode *)n->n.mln_Pred)
+        {
+            if (n->plane >= 0)
+            {
+                victim = n;
                 break;
             }
         }
-        if (n->plane < 0)
-            composing = TRUE;
+        if (victim)
+        {
+            D(bug("[Compositor] %s: test commit refused, screen 0x%p composed\n", __func__, victim->bm));
+            victim->planedenied = TRUE;
+            continue;
+        }
+        for (pass = 0; (pass < 2) && !svictim; pass++)
+        {
+            for (n = (struct StackBitMapNode *)compdata->bitmapstack.mlh_TailPred;
+                 n->n.mln_Pred && !svictim; n = (struct StackBitMapNode *)n->n.mln_Pred)
+            {
+                ForeachNode(&n->surfaces, sn)
+                {
+                    BOOL required = (SNREQ(sn)->Flags & CRF_PLANE_REQUIRED) ? TRUE : FALSE;
+
+                    if ((sn->plane >= 0) && (required == (pass == 1)))
+                    {
+                        svictim = sn;
+                        break;
+                    }
+                }
+            }
+        }
+        if (!svictim)
+            return;     /* nothing holds a plane, yet refused: nothing more to take away */
+        D(bug("[Compositor] %s: test commit refused, surface 0x%p %s\n", __func__, SNREQ(svictim),
+              (SNREQ(svictim)->Flags & CRF_PLANE_REQUIRED) ? "off" : "blitted"));
+        svictim->denied = TRUE;
     }
 }
 
@@ -1116,116 +1731,260 @@ static BOOL HIDDCompositorIsActive(struct HIDDCompositorData *compdata)
     return FALSE;
 }
 
-/* Program the overlay planes from the stack (the primary is driven by Show()) */
-static void HIDDCompositorCommitPlanes(struct HIDDCompositorData *compdata, ULONG flags)
+/*
+ * Program the overlay planes from the stack (the primary is driven by
+ * Show()). The clients' PlaneGained/PlaneLost are queued after the real
+ * commit only, never from the test loop.
+ */
+static void HIDDCompositorCommitPlanes(struct HIDDCompositorData *compdata, ULONG flags, struct HookFires *fires)
 {
-    struct StackBitMapNode *n;
-    ULONG i, count = 0;
-
-    if (compdata->planecount < 2)
-        return;
-
-    for (i = 0; i < compdata->planecount; i++)
+    if (compdata->planecount >= 2)
     {
-        struct HIDD_PlaneState *st = &compdata->planestates[i];
+        ULONG inuse, count = HIDDCompositorBuildPlaneStates(compdata, &inuse);
 
-        if (compdata->planes[i].Type != vHidd_Plane_Overlay)
-            continue;
-        st->Plane = i;
-        st->BitMap = NULL;
-    }
-
-    ForeachNode(&compdata->bitmapstack, n)
-    {
-        struct HIDD_PlaneState *st;
-
-        if (n->plane < 0)
-            continue;
-        st = &compdata->planestates[n->plane];
-        st->BitMap    = n->bm;
-        st->Src.MinX  = 0;
-        st->Src.MinY  = 0;
-        st->Src.MaxX  = n->scrw - 1;
-        st->Src.MaxY  = n->scrh - 1;
-        HIDDCompositorNodeRect(n, &st->Dest);
-        st->Opacity   = 0xFF;
-        st->AlphaMode = vHidd_CompAlpha_None;
-        st->ZOrder    = n->plane;
-    }
-
-    /* Hand over the overlay states only; disabled ones carry a NULL bitmap */
-    {
-        struct HIDD_PlaneState *states = AllocMem(compdata->planecount * sizeof(struct HIDD_PlaneState), MEMF_ANY);
-
-        if (!states)
-            return;
-        for (i = 0; i < compdata->planecount; i++)
-        {
-            if (compdata->planes[i].Type == vHidd_Plane_Overlay)
-                states[count++] = compdata->planestates[i];
-        }
-        if (count && !HIDD_Display_CommitPlanes(compdata->display, states, count, flags))
-        {
-            FreeMem(states, compdata->planecount * sizeof(struct HIDD_PlaneState));
+        if (count && !HIDD_Display_CommitPlanes(compdata->display, compdata->commitstates, count, flags))
             HIDDCompositorDisablePlanes(compdata);
-            return;
-        }
-        FreeMem(states, compdata->planecount * sizeof(struct HIDD_PlaneState));
     }
+    HIDDCompositorQueuePlaneHooks(compdata, fires);
 }
 
 /****************************************************************************************/
 /* Composited layer surfaces                                                            */
 /****************************************************************************************/
 
+static void HIDDCompositorFreeSurfaceNode(struct HIDDCompositorData *compdata, struct SurfaceNode *sn)
+{
+    if (sn->client)
+        sn->client->sn = NULL;      /* the registry entry stays until DetachSurface */
+    if (sn->region)
+        DisposeRegion(sn->region);
+    FreeMem(sn, sizeof(struct SurfaceNode));
+}
+
+/* Free every surface node of a screen (layer and client ones) */
 static void HIDDCompositorFreeSurfaces(struct HIDDCompositorData *compdata, struct StackBitMapNode *n)
 {
     struct SurfaceNode *sn, *next;
 
     ForeachNodeSafe(&n->surfaces, sn, next)
-    {
-        if (sn->region)
-            DisposeRegion(sn->region);
-        FreeMem(sn, sizeof(struct SurfaceNode));
-    }
+        HIDDCompositorFreeSurfaceNode(compdata, sn);
     NEWLIST(&n->surfaces);
     n->hassurfaces = FALSE;
+    n->haslayersurfaces = FALSE;
 }
 
 /*
- * Take a private copy of a screen's surface list (owned by layers.library,
- * valid only during the call that hands it over).
+ * Take a private copy of a screen's layer surface list (owned by
+ * layers.library, valid only during the call that hands it over). The
+ * screen's client surfaces are kept, behind the layer surfaces.
  */
 static void HIDDCompositorCopySurfaces(struct HIDDCompositorData *compdata, struct StackBitMapNode *n,
                                        struct HIDD_CompositeRequest *req)
 {
+    struct SurfaceNode *sn, *next;
+    struct MinList clients;
+
+    NEWLIST(&clients);
+    ForeachNodeSafe(&n->surfaces, sn, next)
+    {
+        if (sn->client)
+        {
+            Remove((struct Node *)sn);
+            AddTail((struct List *)&clients, (struct Node *)sn);
+        }
+    }
     HIDDCompositorFreeSurfaces(compdata, n);
 
     for (; req; req = req->Next)
     {
-        struct SurfaceNode *sn = AllocMem(sizeof(struct SurfaceNode), MEMF_ANY | MEMF_CLEAR);
-
+        sn = AllocMem(sizeof(struct SurfaceNode), MEMF_ANY | MEMF_CLEAR);
         if (!sn)
             break;
         sn->req = *req;
         sn->req.Next = NULL;
+        sn->plane = -1;
+        HIDDCompositorSurfaceBitMapAttrs(compdata, sn);
         sn->opaque = (req->Flags & CRF_OPAQUE) && (req->Opacity == 0xFF) && !req->Shape;
         AddTail((struct List *)&n->surfaces, (struct Node *)sn);
-        n->hassurfaces = TRUE;
+        n->haslayersurfaces = TRUE;
     }
+
+    while ((sn = (struct SurfaceNode *)RemHead((struct List *)&clients)) != NULL)
+        AddTail((struct List *)&n->surfaces, (struct Node *)sn);
+    n->hassurfaces = IsListEmpty(&n->surfaces) ? FALSE : TRUE;
 }
 
-/* Union of a screen's surface regions, display relative; NULL when there are none */
+/* Union of a screen's layer surface regions, display relative */
 static void HIDDCompositorOrSurfaceRegions(struct HIDDCompositorData *compdata, struct StackBitMapNode *n, struct Region *into)
 {
     struct SurfaceNode *sn;
 
     ForeachNode(&n->surfaces, sn)
     {
-        if (sn->region)
+        if (sn->region && !sn->client)
             OrRegionRegion(sn->region, into);
     }
 }
+
+/****************************************************************************************/
+/* Client surfaces (video overlays, 3D colour buffers): see VIDEO-OVERLAY-3D-SCANOUT-PLAN */
+/****************************************************************************************/
+
+static struct ClientSurface *HIDDCompositorFindClientSurface(struct HIDDCompositorData *compdata, struct HIDD_CompositeRequest *req)
+{
+    struct ClientSurface *cs;
+
+    ForeachNode(&compdata->clientsurfaces, cs)
+    {
+        if (cs->req == req)
+            return cs;
+    }
+    return NULL;
+}
+
+/* Put a client surface on its screen's list (behind the layer surfaces, attach order) */
+static struct SurfaceNode *HIDDCompositorLinkClientSurface(struct HIDDCompositorData *compdata, struct StackBitMapNode *n,
+                                                           struct ClientSurface *cs)
+{
+    struct SurfaceNode *sn = AllocMem(sizeof(struct SurfaceNode), MEMF_ANY | MEMF_CLEAR);
+
+    if (!sn)
+        return NULL;
+    sn->creq   = cs->req;
+    sn->client = cs;
+    sn->plane  = -1;
+    HIDDCompositorSurfaceBitMapAttrs(compdata, sn);
+    AddTail((struct List *)&n->surfaces, (struct Node *)sn);
+    n->hassurfaces = TRUE;
+    cs->sn = sn;
+    return sn;
+}
+
+static void HIDDCompositorUnlinkClientSurface(struct HIDDCompositorData *compdata, struct StackBitMapNode *n, struct SurfaceNode *sn)
+{
+    Remove((struct Node *)sn);
+    HIDDCompositorFreeSurfaceNode(compdata, sn);
+    n->hassurfaces = IsListEmpty(&n->surfaces) ? FALSE : TRUE;
+}
+
+/*
+ * After a stack change: the screens' nodes are new, so every client surface
+ * whose screen is on the stack gets its node again (a screen that left the
+ * display keeps its client surfaces until it is shown again or they detach).
+ */
+static void HIDDCompositorRelinkClientSurfaces(struct HIDDCompositorData *compdata)
+{
+    struct ClientSurface *cs;
+
+    ForeachNode(&compdata->clientsurfaces, cs)
+    {
+        struct StackBitMapNode *n = HIDDCompositorFindBitMapStackNode(compdata, cs->screenbm);
+
+        cs->sn = NULL;
+        if (n)
+            HIDDCompositorLinkClientSurface(compdata, n, cs);
+    }
+}
+
+/* Lock held: Damage for every client surface of 'n' whose Dest meets the rectangle (screen bitmap coordinates) */
+static void HIDDCompositorQueueDamage(struct HIDDCompositorData *compdata, struct StackBitMapNode *n,
+                                      WORD x, WORD y, WORD width, WORD height, struct HookFires *fires)
+{
+    struct SurfaceNode *sn;
+    struct Rectangle dmg, r;
+
+    dmg.MinX = x;
+    dmg.MinY = y;
+    dmg.MaxX = x + width - 1;
+    dmg.MaxY = y + height - 1;
+    ForeachNode(&n->surfaces, sn)
+    {
+        if (sn->client && AndRectRect(&dmg, &sn->creq->Dest, &r))
+            HIDDCompositorQueueHook(compdata, fires, sn->client, vHidd_SurfaceHook_Damage, &r, 0);
+    }
+}
+
+/* Lock held, after a real commit: PlaneGained/PlaneLost for every client surface whose plane state changed */
+static void HIDDCompositorQueuePlaneHooks(struct HIDDCompositorData *compdata, struct HookFires *fires)
+{
+    struct ClientSurface *cs;
+
+    ForeachNode(&compdata->clientsurfaces, cs)
+    {
+        LONG cur = (cs->sn && (cs->sn->plane >= 0)) ? cs->sn->plane : -1;
+
+        if (cur == cs->hookplane)
+            continue;
+        cs->hookplane = cur;
+        if (cur >= 0)
+            HIDDCompositorQueueHook(compdata, fires, cs, vHidd_SurfaceHook_PlaneGained, NULL, cur);
+        else
+            HIDDCompositorQueueHook(compdata, fires, cs, vHidd_SurfaceHook_PlaneLost, NULL, 0);
+    }
+}
+
+/* Paint the display's colour key over 'rect' of 'target': a keyed plane shows its surface there */
+static void HIDDCompositorFillKey(struct HIDDCompositorData *compdata, OOP_Object *target, struct Rectangle *rect)
+{
+    HIDDT_Color col;
+    HIDDT_Pixel pix;
+    IPTR oldfg = 0;
+
+    col.red   = ((compdata->colorkey >> 16) & 0xFF) * 0x0101;
+    col.green = ((compdata->colorkey >> 8) & 0xFF) * 0x0101;
+    col.blue  = (compdata->colorkey & 0xFF) * 0x0101;
+    col.alpha = 0xFFFF;
+    pix = HIDD_BM_MapColor(target, &col);
+
+    OOP_GetAttr(compdata->gc, aHidd_GC_Foreground, &oldfg);
+    OOP_SetAttrsTags(compdata->gc, aHidd_GC_Foreground, pix, TAG_DONE);
+    HIDD_BM_FillRect(target, compdata->gc, rect->MinX, rect->MinY, rect->MaxX, rect->MaxY);
+    OOP_SetAttrsTags(compdata->gc, aHidd_GC_Foreground, oldfg, TAG_DONE);
+}
+
+/*
+ * Colour key stamping in passthrough (plan 3.3 item 3): the screen bitmap
+ * itself is the primary, so the key for a keyed surface plane is painted into
+ * it over the surface's visible region. The compositor never restores what
+ * it painted over; the client's backfill keeps the area keyed afterwards and
+ * the application repaints it when the surface goes. Composed screens get
+ * their key from the surface redraw (HIDDCompositorRedrawSurfaceRect).
+ */
+static void HIDDCompositorStampKeys(struct HIDDCompositorData *compdata)
+{
+    struct StackBitMapNode *n;
+    struct SurfaceNode *sn;
+
+    if (compdata->displaybitmap || !compdata->passthroughbm)
+        return;
+    n = HIDDCompositorFindBitMapStackNode(compdata, compdata->passthroughbm);
+    if (!n || !n->hassurfaces)
+        return;
+
+    ForeachNode(&n->surfaces, sn)
+    {
+        struct RegionRectangle *rr;
+
+        if (!sn->client || (sn->plane < 0) || !(sn->pflags & PSF_COLORKEY) || !sn->region)
+            continue;
+        for (rr = sn->region->RegionRectangle; rr; rr = rr->Next)
+        {
+            struct Rectangle r;
+
+            /* Display -> screen bitmap coordinates (a passthrough screen is unscaled) */
+            r.MinX = rr->bounds.MinX + sn->region->bounds.MinX - n->leftedge;
+            r.MinY = rr->bounds.MinY + sn->region->bounds.MinY - n->topedge;
+            r.MaxX = rr->bounds.MaxX + sn->region->bounds.MinX - n->leftedge;
+            r.MaxY = rr->bounds.MaxY + sn->region->bounds.MinY - n->topedge;
+            HIDDCompositorFillKey(compdata, n->bm, &r);
+            HIDD_BM_UpdateRect(n->bm, r.MinX, r.MinY, r.MaxX - r.MinX + 1, r.MaxY - r.MinY + 1);
+        }
+    }
+}
+
+/****************************************************************************************/
+/* Surface regions and drawing                                                          */
+/****************************************************************************************/
 
 /*
  * Compute the display relative region of every surface of a screen (its Dest
@@ -1246,6 +2005,7 @@ static void HIDDCompositorRecalculateSurfaces(struct HIDDCompositorData *compdat
 
     ForeachNode(&n->surfaces, sn)
     {
+        struct HIDD_CompositeRequest *req = SNREQ(sn);
         struct Rectangle r;
 
         if (sn->region)
@@ -1255,27 +2015,55 @@ static void HIDDCompositorRecalculateSurfaces(struct HIDDCompositorData *compdat
         if (!sn->region)
             continue;
 
-        if (sn->req.Shape)
+        if (req->Shape)
         {
             struct RegionRectangle *rr;
 
-            for (rr = sn->req.Shape->RegionRectangle; rr; rr = rr->Next)
+            for (rr = req->Shape->RegionRectangle; rr; rr = rr->Next)
             {
                 HIDDCompositorNodeMapRect(n,
-                    rr->bounds.MinX + sn->req.Shape->bounds.MinX, rr->bounds.MinY + sn->req.Shape->bounds.MinY,
-                    rr->bounds.MaxX + sn->req.Shape->bounds.MinX, rr->bounds.MaxY + sn->req.Shape->bounds.MinY, &r);
+                    rr->bounds.MinX + req->Shape->bounds.MinX, rr->bounds.MinY + req->Shape->bounds.MinY,
+                    rr->bounds.MaxX + req->Shape->bounds.MinX, rr->bounds.MaxY + req->Shape->bounds.MinY, &r);
                 OrRectRegion(sn->region, &r);
             }
         }
         else
         {
-            HIDDCompositorNodeMapRect(n, sn->req.Dest.MinX, sn->req.Dest.MinY, sn->req.Dest.MaxX, sn->req.Dest.MaxY, &r);
+            HIDDCompositorNodeMapRect(n, req->Dest.MinX, req->Dest.MinY, req->Dest.MaxX, req->Dest.MaxY, &r);
             OrRectRegion(sn->region, &r);
         }
 
-        /* Only what the screen shows of it */
-        if (n->screenregion)
+        if (n->promoted)
+        {
+            /*
+             * The screen is on a plane: the surface shows where the screen is
+             * on the display (what is in front of the screen is on planes
+             * above it), still display coordinates.
+             */
+            struct Rectangle clip;
+
+            HIDDCompositorNodeRect(n, &clip);
+            if (AndRectRect(&clip, &compdata->displayrect, &clip))
+                AndRectRegion(sn->region, &clip);
+            else
+                ClearRegion(sn->region);
+        }
+        else if (n->screenregion)
+        {
+            /* Only what the screen shows of it */
             AndRegionRegion(n->screenregion, sn->region);
+        }
+
+        if (sn->client)
+        {
+            /*
+             * On a plane nothing under it is needed. Blitted, the request
+             * says whether it covers the screen. A video surface without a
+             * plane shows nothing: the screen's own pixels stay.
+             */
+            sn->opaque = (sn->plane >= 0) ||
+                         ((req->Flags & CRF_OPAQUE) && (req->Opacity == 0xFF) && !req->Shape && SURFACE_BLITTABLE(sn));
+        }
 
         /* An opaque surface hides the screen pixels under it: no need to blit those */
         if (sn->opaque && n->paintregion)
@@ -1287,32 +2075,43 @@ static void HIDDCompositorRecalculateSurfaces(struct HIDDCompositorData *compdat
 static void HIDDCompositorRedrawSurfaceRect(struct HIDDCompositorData *compdata, OOP_Object *renderTarget,
                                             struct StackBitMapNode *n, struct SurfaceNode *sn, struct Rectangle *rect)
 {
+    struct HIDD_CompositeRequest *req = SNREQ(sn);
     /* Display -> surface bitmap coordinates */
-    WORD sx = sn->req.Src.MinX + (rect->MinX - (sn->req.Dest.MinX + n->leftedge));
-    WORD sy = sn->req.Src.MinY + (rect->MinY - (sn->req.Dest.MinY + n->topedge));
+    WORD sx = req->Src.MinX + (rect->MinX - (req->Dest.MinX + n->leftedge));
+    WORD sy = req->Src.MinY + (rect->MinY - (req->Dest.MinY + n->topedge));
     ULONG w = rect->MaxX - rect->MinX + 1;
     ULONG h = rect->MaxY - rect->MinY + 1;
-    BOOL copy = sn->opaque || (sn->req.AlphaMode == vHidd_CompAlpha_None && sn->req.Opacity == 0xFF);
+    BOOL copy = sn->opaque || (req->AlphaMode == vHidd_CompAlpha_None && req->Opacity == 0xFF);
+
+    if (sn->plane >= 0)
+    {
+        /* A plane shows it: with a colour key the primary carries the key under it, otherwise nothing is drawn */
+        if (sn->pflags & PSF_COLORKEY)
+            HIDDCompositorFillKey(compdata, renderTarget, rect);
+        return;
+    }
+    if (!SURFACE_BLITTABLE(sn))
+        return;     /* a video bitmap is never blitted: gfx.hidd has no conversion for it */
 
     if (n->scaled)
     {
         /* The surface scales with its screen */
         struct Rectangle d;
 
-        HIDDCompositorNodeMapRect(n, sn->req.Dest.MinX, sn->req.Dest.MinY, sn->req.Dest.MaxX, sn->req.Dest.MaxY, &d);
-        HIDDCompositorScaledBlit(compdata, renderTarget, sn->req.BitMap,
-                                 sn->req.Src.MinX, sn->req.Src.MinY,
-                                 sn->req.Dest.MaxX - sn->req.Dest.MinX + 1, sn->req.Dest.MaxY - sn->req.Dest.MinY + 1,
+        HIDDCompositorNodeMapRect(n, req->Dest.MinX, req->Dest.MinY, req->Dest.MaxX, req->Dest.MaxY, &d);
+        HIDDCompositorScaledBlit(compdata, renderTarget, req->BitMap,
+                                 req->Src.MinX, req->Src.MinY,
+                                 req->Dest.MaxX - req->Dest.MinX + 1, req->Dest.MaxY - req->Dest.MinY + 1,
                                  d.MinX, d.MinY, d.MaxX - d.MinX + 1, d.MaxY - d.MinY + 1,
-                                 rect, sn->req.Opacity, !copy);
+                                 rect, req->Opacity, !copy);
         return;
     }
 
     if (copy)
-        HIDD_Gfx_CopyBox(compdata->gfx, sn->req.BitMap, sx, sy, renderTarget, rect->MinX, rect->MinY, w, h, compdata->gc);
+        HIDD_Gfx_CopyBox(compdata->gfx, req->BitMap, sx, sy, renderTarget, rect->MinX, rect->MinY, w, h, compdata->gc);
     else
-        HIDD_Gfx_CopyBoxAlpha(compdata->gfx, sn->req.BitMap, sx, sy, renderTarget, rect->MinX, rect->MinY, w, h,
-                              sn->req.Opacity, compdata->gc);
+        HIDD_Gfx_CopyBoxAlpha(compdata->gfx, req->BitMap, sx, sy, renderTarget, rect->MinX, rect->MinY, w, h,
+                              req->Opacity, compdata->gc);
 }
 
 /* Draw every surface of a screen (back to front) that intersects 'drawrect' (NULL = all) */
@@ -1348,7 +2147,7 @@ static void HIDDCompositorRedrawSurfaces(struct HIDDCompositorData *compdata, OO
     }
 }
 
-/* Find the surface showing bitmap 'bm', and its screen */
+/* Find the surface (layer or client) showing bitmap 'bm', and its screen */
 static struct SurfaceNode *HIDDCompositorFindSurface(struct HIDDCompositorData *compdata, OOP_Object *bm,
                                                      struct StackBitMapNode **screen)
 {
@@ -1361,7 +2160,7 @@ static struct SurfaceNode *HIDDCompositorFindSurface(struct HIDDCompositorData *
             continue;
         ForeachNode(&n->surfaces, sn)
         {
-            if (sn->req.BitMap == bm)
+            if (SNREQ(sn)->BitMap == bm)
             {
                 *screen = n;
                 return sn;
@@ -1712,6 +2511,56 @@ have or don't have displaybitmap. If we have it, composition is on (sb = cb).
 If we don't have it, composition is off (sb = ntb).
 */
 
+/*
+ * Does a screen need the composed bitmap for its surfaces? Composited layers
+ * only exist there, and so does a client surface the compositor blits (RGB
+ * without a plane). One on a plane does not (the plane sits above a
+ * passthrough primary just as well, the common video-on-Workbench case), nor
+ * does a video surface that is off: nothing of it is drawn either way.
+ */
+static BOOL HIDDCompositorNodeNeedsComposition(struct HIDDCompositorData *compdata, struct StackBitMapNode *n)
+{
+    struct SurfaceNode *sn;
+
+    if (n->haslayersurfaces)
+        return TRUE;
+    ForeachNode(&n->surfaces, sn)
+    {
+        if (sn->client && (sn->plane < 0) && SURFACE_BLITTABLE(sn))
+            return TRUE;
+    }
+    return FALSE;
+}
+
+/* Must the display be composed, 'topnode' being the frontmost screen that is not on a plane? */
+static BOOL HIDDCompositorNeedsComposition(struct HIDDCompositorData *compdata, struct StackBitMapNode *topnode)
+{
+    struct Rectangle toprect;
+
+    HIDDCompositorNodeRect(topnode, &toprect);
+    if ((toprect.MinY > 0) || ((compdata->displayrect.MaxY - compdata->displayrect.MinY + 1) > topnode->dsth))
+        return TRUE;
+    if ((toprect.MinX > 0) || ((compdata->displayrect.MaxX - compdata->displayrect.MinX + 1) > topnode->dstw))
+        return TRUE;
+    if (topnode->sbmflags & COMPF_ALPHA)
+        return TRUE;
+    if (HIDDCompositorNodeNeedsComposition(compdata, topnode))
+        return TRUE;
+    if (topnode->scaled)
+        return TRUE;    /* passthrough shows the bitmap as it is: a scaled screen must be composed */
+    return FALSE;
+}
+
+/* The frontmost screen that is not on a plane (the composed bitmap starts there), NULL when all are */
+static struct StackBitMapNode *HIDDCompositorFirstComposedNode(struct HIDDCompositorData *compdata)
+{
+    struct StackBitMapNode *topnode = (struct StackBitMapNode *)compdata->bitmapstack.mlh_Head;
+
+    while (topnode->n.mln_Succ && (topnode->plane >= 0))
+        topnode = (struct StackBitMapNode *)topnode->n.mln_Succ;
+    return topnode->n.mln_Succ ? topnode : NULL;
+}
+
 static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata, BOOL newtop)
 {
     /*
@@ -1724,7 +2573,6 @@ static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata,
     struct StackBitMapNode *topnode = (struct StackBitMapNode *)compdata->bitmapstack.mlh_Head;
     OOP_Object *newsdispbitmap = NULL;
     OOP_Object *fb = NULL;
-    IPTR topwidth, topheight;
 
     BOOL ok = TRUE, composit = FALSE;
 
@@ -1784,24 +2632,7 @@ static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata,
         compdata->displaybitmap = NULL;
     }
 
-    {
-        struct Rectangle toprect;
-
-        HIDDCompositorNodeRect(topnode, &toprect);
-        topwidth  = topnode->dstw;
-        topheight = topnode->dsth;
-
-        if ((toprect.MinY > 0) || ((compdata->displayrect.MaxY - compdata->displayrect.MinY + 1) > topheight))
-            composit = TRUE;
-        else if ((toprect.MinX > 0) || ((compdata->displayrect.MaxX - compdata->displayrect.MinX + 1) > topwidth))
-            composit = TRUE;
-        else if (topnode->sbmflags & COMPF_ALPHA)
-            composit = TRUE;
-        else if (topnode->hassurfaces)
-            composit = TRUE;    /* composited layers only exist in the composed bitmap */
-        else if (topnode->scaled)
-            composit = TRUE;    /* passthrough shows the bitmap as it is: a scaled screen must be composed */
-    }
+    composit = HIDDCompositorNeedsComposition(compdata, topnode);
 
     if (composit)
     {
@@ -1946,6 +2777,65 @@ static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata,
     return ok;
 }
 
+/*
+ * The plane demand changed (a client surface came, went or moved): plan the
+ * planes again, switch composition on or off as the result asks, redraw
+ * 'dirty' (display relative, may be NULL) where composing, commit, stamp. A
+ * full redraw only happens when a screen changed planes or composition
+ * toggles. 'cs' (may be NULL) has its new region added to 'dirty'.
+ */
+static void HIDDCompositorReplan(struct HIDDCompositorData *compdata, struct ClientSurface *cs,
+                                 struct Region *dirty, struct HookFires *fires)
+{
+    struct StackBitMapNode *n, *topnode;
+    BOOL changed = FALSE;
+
+    if (IsListEmpty(&compdata->bitmapstack))
+    {
+        HIDDCompositorQueuePlaneHooks(compdata, fires);
+        return;
+    }
+
+    ForeachNode(&compdata->bitmapstack, n)
+        n->lastplane = n->plane;
+    HIDDCompositorPlanPlanes(compdata);
+    if ((compdata->planecount < 2) && !compdata->nclientsurfaces)
+        HIDDCompositorRecalculateVisibleRegions(compdata);      /* AssignPlanes() did not */
+    ForeachNode(&compdata->bitmapstack, n)
+    {
+        if (n->plane != n->lastplane)
+            changed = TRUE;
+    }
+    if (cs && cs->sn && cs->sn->region && dirty)
+        OrRegionRegion(cs->sn->region, dirty);
+
+    topnode = HIDDCompositorFirstComposedNode(compdata);
+    if (changed || (topnode && (HIDDCompositorNeedsComposition(compdata, topnode) != (compdata->displaybitmap != NULL))))
+        HIDDCompositorToggleCompositing(compdata, FALSE);       /* redraws everything when composing */
+    else if (compdata->displaybitmap)
+    {
+        if (dirty)
+        {
+            struct RegionRectangle *rr;
+
+            for (rr = dirty->RegionRectangle; rr; rr = rr->Next)
+            {
+                struct Rectangle r;
+
+                r.MinX = rr->bounds.MinX + dirty->bounds.MinX;
+                r.MinY = rr->bounds.MinY + dirty->bounds.MinY;
+                r.MaxX = rr->bounds.MaxX + dirty->bounds.MinX;
+                r.MaxY = rr->bounds.MaxY + dirty->bounds.MinY;
+                HIDDCompositorRedrawVisibleRegions(compdata, &r);
+            }
+        }
+        else
+            HIDDCompositorRedrawVisibleRegions(compdata, NULL);
+    }
+    HIDDCompositorCommitPlanes(compdata, 0, fires);
+    HIDDCompositorStampKeys(compdata);
+}
+
 static VOID HIDDCompositorPurgeBitMapStack(struct HIDDCompositorData *compdata)
 {
     struct StackBitMapNode *curr, *next;
@@ -2080,7 +2970,9 @@ OOP_Object *Compositor__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
         compdata->displaymode = vHidd_ModeID_Invalid;
 
         NEWLIST(&compdata->bitmapstack);
+        NEWLIST(&compdata->clientsurfaces);
         InitSemaphore(&compdata->semaphore);
+        InitSemaphore(&compdata->hooksem);
 
         compdata->defaultbackfill.h_Entry = (HOOKFUNC)AROS_ASMSYMNAME(CompositorDefaultBackFillFunc);
         compdata->defaultbackfill.h_Data = compdata;
@@ -2130,10 +3022,17 @@ void Compositor__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
         HIDDCompositorPurgeBitMapStack(compdata);
         CloseLibrary((struct Library *)compdata->GraphicsBase);
     }
+    {
+        /* Client surfaces still attached (the client should have detached them) */
+        struct ClientSurface *cs, *next;
+
+        ForeachNodeSafe(&compdata->clientsurfaces, cs, next)
+            FreeMem(cs, sizeof(struct ClientSurface));
+    }
     if (compdata->dosbase)
         CloseLibrary(compdata->dosbase);
     if (compdata->planes)
-        FreeMem(compdata->planes, compdata->planealloc * (sizeof(struct HIDD_PlaneInfo) + sizeof(struct HIDD_PlaneState)));
+        FreeMem(compdata->planes, compdata->planealloc * (sizeof(struct HIDD_PlaneInfo) + 2 * sizeof(struct HIDD_PlaneState)));
     if (compdata->scalesrc)
         FreeVec(compdata->scalesrc);
     if (compdata->scaledst)
@@ -2265,11 +3164,13 @@ OOP_Object *Compositor__Hidd_Compositor__BitMapStackChanged(OOP_Class *cl, OOP_O
     struct HIDDCompositorData *compdata = OOP_INST_DATA(cl, o);
     struct HIDD_ViewPortData *vpdata;
     struct StackBitMapNode *n;
+    struct HookFires fires;
     OOP_Object *bmpxfmt;
     int bmstdfmt;
     BOOL newtop = FALSE;
     BOOL ok = TRUE;
 
+    HIDDCompositorInitFires(&fires);
 
     DSTACK(bug("[Compositor] %s: Top bitmap: 0x%p\n", __func__, msg->data ? msg->data->Bitmap : NULL));
 
@@ -2303,8 +3204,11 @@ OOP_Object *Compositor__Hidd_Compositor__BitMapStackChanged(OOP_Class *cl, OOP_O
     {
         /* Blank screen */
         HIDDCompositorShowSingle(compdata, NULL);
+        /* Client surfaces lost their screens' nodes, and with them their planes */
+        HIDDCompositorQueuePlaneHooks(compdata, &fires);
 
         UNLOCK_COMPOSITOR
+        HIDDCompositorFireHooks(compdata, &fires);
 
         /* We know we are inactive after this */
         *msg->active = FALSE;
@@ -2370,13 +3274,14 @@ OOP_Object *Compositor__Hidd_Compositor__BitMapStackChanged(OOP_Class *cl, OOP_O
         AddTail((struct List *)&compdata->bitmapstack, (struct Node *)n);
     }
 
+    /* The client surfaces of the screens that are (still, or again) on the stack */
+    HIDDCompositorRelinkClientSurfaces(compdata);
+
     /* Switch mode if needed */
     UpdateDisplayMode(compdata);
     HIDDCompositorUpdateScaling(compdata);
 
-    /* Frontmost screens that fit a scan-out plane bypass the composed bitmap */
     HIDDCompositorQueryPlanes(compdata);
-    HIDDCompositorAssignPlanes(compdata);
 
     if (msg->data->Bitmap != compdata->topbitmap)
     {
@@ -2398,6 +3303,13 @@ OOP_Object *Compositor__Hidd_Compositor__BitMapStackChanged(OOP_Class *cl, OOP_O
                 compdata->displayrect.MaxY - compdata->displayrect.MinY + 1);
         }
 
+        /*
+         * Frontmost screens that fit a scan-out plane bypass the composed
+         * bitmap, surfaces take planes too; the driver's test commit settles
+         * the set before the composed area is decided.
+         */
+        HIDDCompositorPlanPlanes(compdata);
+
         /* Toogle compositing based on screen positions */
         ok = HIDDCompositorToggleCompositing(compdata, newtop);
     }
@@ -2407,11 +3319,16 @@ OOP_Object *Compositor__Hidd_Compositor__BitMapStackChanged(OOP_Class *cl, OOP_O
     {
         HIDDCompositorReset(compdata);
         HIDDCompositorShowSingle(compdata, msg->data->Bitmap);
+        HIDDCompositorQueuePlaneHooks(compdata, &fires);
     }
     else
-        HIDDCompositorCommitPlanes(compdata, 0);
+    {
+        HIDDCompositorCommitPlanes(compdata, 0, &fires);
+        HIDDCompositorStampKeys(compdata);
+    }
 
     UNLOCK_COMPOSITOR
+    HIDDCompositorFireHooks(compdata, &fires);
 
     DSTACK(bug("[Compositor] %s: Done, composited bitmap 0x%p\n", __func__, compdata->displaybitmap));
 
@@ -2443,12 +3360,21 @@ OOP_Object *Compositor__Hidd_Compositor__BitMapStackChanged(OOP_Class *cl, OOP_O
         This is the per-render-operation hot path: graphics.library reaches it
         through HIDD_Display_UpdateRect() with cached method pointers.
 
+        Client surfaces of the screen whose Dest meets the rectangle get
+        vHidd_SurfaceHook_Damage (after the lock is released). Damage to a
+        client surface's own bitmap (the driver reports it on SwapBuffers of a
+        bitmap that is not on a plane) re-blits the surface when it is
+        blitted, and is nothing to do when a plane shows it.
+
 *****************************************************************************************/
 
 VOID Compositor__Hidd_Compositor__BitMapRectChanged(OOP_Class *cl, OOP_Object *o, struct pHidd_Compositor_BitMapRectChanged *msg)
 {
     struct HIDDCompositorData *compdata = OOP_INST_DATA(cl, o);
     OOP_Object                *renderTarget = compdata->displaybitmap;
+    struct HookFires           fires;
+
+    HIDDCompositorInitFires(&fires);
 
     if (compdata->displaybitmap)
     {
@@ -2465,19 +3391,20 @@ VOID Compositor__Hidd_Compositor__BitMapRectChanged(OOP_Class *cl, OOP_Object *o
         n = HIDDCompositorFindBitMapStackNode(compdata, msg->bm);
         if (!n)
         {
-            /* Not a screen: a composited layer surface? */
+            /* Not a screen: a surface? On a plane the driver shows the bitmap itself; a video bitmap is never blitted */
             struct StackBitMapNode *screen;
             struct SurfaceNode *sn = HIDDCompositorFindSurface(compdata, msg->bm, &screen);
 
-            if (sn && sn->region && (screen->sbmflags & STACKNODEF_VISIBLE))
+            if (sn && (sn->plane < 0) && SURFACE_BLITTABLE(sn) && sn->region && (screen->sbmflags & STACKNODEF_VISIBLE))
             {
+                struct HIDD_CompositeRequest *req = SNREQ(sn);
                 struct Rectangle srcrect, r;
                 struct RegionRectangle *rr;
 
                 /* Surface -> screen -> display coordinates */
                 {
-                    LONG x0 = sn->req.Dest.MinX + (msg->x - sn->req.Src.MinX);
-                    LONG y0 = sn->req.Dest.MinY + (msg->y - sn->req.Src.MinY);
+                    LONG x0 = req->Dest.MinX + (msg->x - req->Src.MinX);
+                    LONG y0 = req->Dest.MinY + (msg->y - req->Src.MinY);
 
                     HIDDCompositorNodeMapRect(screen, x0, y0, x0 + msg->width - 1, y0 + msg->height - 1, &srcrect);
                 }
@@ -2514,11 +3441,16 @@ VOID Compositor__Hidd_Compositor__BitMapRectChanged(OOP_Class *cl, OOP_Object *o
             return;
         }
 
+        /* The screen's client surfaces learn about damage inside their rectangles */
+        if (n->hassurfaces)
+            HIDDCompositorQueueDamage(compdata, n, msg->x, msg->y, msg->width, msg->height, &fires);
+
         if (n->plane >= 0)
         {
             /* Scanned out by a plane: the driver sees the change through the bitmap */
             UNLOCK_COMPOSITOR
             HIDD_BM_UpdateRect(msg->bm, msg->x, msg->y, msg->width, msg->height);
+            HIDDCompositorFireHooks(compdata, &fires);
             return;
         }
 
@@ -2582,11 +3514,28 @@ VOID Compositor__Hidd_Compositor__BitMapRectChanged(OOP_Class *cl, OOP_Object *o
         }
 
         UNLOCK_COMPOSITOR
+        HIDDCompositorFireHooks(compdata, &fires);
     }
     else
     {
-        /* In order to speed things up, we handle passthrough ourselves here. */
+        /*
+         * In order to speed things up, we handle passthrough ourselves here.
+         * Only a display with client surfaces attached pays for the lock
+         * (the counter is a hint: a surface attached a moment later sees
+         * the damage that follows).
+         */
+        if (compdata->nclientsurfaces)
+        {
+            struct StackBitMapNode *n;
+
+            LOCK_COMPOSITOR_READ
+            n = HIDDCompositorFindBitMapStackNode(compdata, msg->bm);
+            if (n && n->hassurfaces)
+                HIDDCompositorQueueDamage(compdata, n, msg->x, msg->y, msg->width, msg->height, &fires);
+            UNLOCK_COMPOSITOR
+        }
         HIDD_BM_UpdateRect(msg->bm, msg->x, msg->y, msg->width, msg->height);
+        HIDDCompositorFireHooks(compdata, &fires);
     }
 }
 
@@ -2617,12 +3566,16 @@ BOOL Compositor__Hidd_Compositor__BitMapPositionChange(OOP_Class *cl, OOP_Object
 {
     struct HIDDCompositorData *compdata = OOP_INST_DATA(cl, o);
     struct StackBitMapNode *n;
+    struct HookFires fires;
     IPTR disp_width, disp_height;
 
     if (!compdata->GraphicsBase)
         return FALSE;
 
-    LOCK_COMPOSITOR_READ
+    HIDDCompositorInitFires(&fires);
+
+    /* Regions and plane states are rewritten below: readers (BitMapRectChanged) must not see them half done */
+    LOCK_COMPOSITOR_WRITE
 
     n = HIDDCompositorFindBitMapStackNode(compdata, msg->bm);
     if (n)
@@ -2670,20 +3623,34 @@ BOOL Compositor__Hidd_Compositor__BitMapPositionChange(OOP_Class *cl, OOP_Object
 
     if (n && ((*msg->newxoffset != n->leftedge) || (*msg->newyoffset != n->topedge)))
     {
+        struct SurfaceNode *sn;
+
         /* Reflect the change if it happened */
         n->leftedge = *msg->newxoffset;
         n->topedge  = *msg->newyoffset;
 
-        if (n->plane >= 0)
+        /* The screen's client surfaces move with it (informational) */
+        ForeachNode(&n->surfaces, sn)
+        {
+            if (sn->client)
+                HIDDCompositorQueueHook(compdata, &fires, sn->client, vHidd_SurfaceHook_ScreenMoved, NULL, 0);
+        }
+
+        if (compdata->nclientsurfaces && (compdata->planecount >= 2))
+        {
+            /* Surface planes follow the visible regions (crop, key, z): plan again */
+            HIDDCompositorReplan(compdata, NULL, NULL, &fires);
+        }
+        else if (n->plane >= 0)
         {
             /* No blit: the plane follows. Re-assign if the new position no longer fits. */
             if (HIDDCompositorPlaneFits(compdata, n->plane, n))
-                HIDDCompositorCommitPlanes(compdata, fHidd_Commit_NoWait);
+                HIDDCompositorCommitPlanes(compdata, fHidd_Commit_NoWait, &fires);
             else
             {
-                HIDDCompositorAssignPlanes(compdata);
+                HIDDCompositorPlanPlanes(compdata);
                 HIDDCompositorToggleCompositing(compdata, TRUE);
-                HIDDCompositorCommitPlanes(compdata, 0);
+                HIDDCompositorCommitPlanes(compdata, 0, &fires);
             }
         }
         else if (compdata->topbitmap == msg->bm)
@@ -2705,6 +3672,7 @@ BOOL Compositor__Hidd_Compositor__BitMapPositionChange(OOP_Class *cl, OOP_Object
     {
         BOOL active = HIDDCompositorIsActive(compdata);
         UNLOCK_COMPOSITOR
+        HIDDCompositorFireHooks(compdata, &fires);
         return active;
     }
 }
@@ -2824,6 +3792,20 @@ VOID Compositor__Hidd_Compositor__SurfaceStackChanged(OOP_Class *cl, OOP_Object 
 
     HIDDCompositorCopySurfaces(compdata, n, msg->data->Surfaces);
 
+    if ((n->plane >= 0) && n->haslayersurfaces)
+    {
+        /* A screen on a plane got composited layers: they only exist in the composed bitmap */
+        struct HookFires fires;
+
+        HIDDCompositorInitFires(&fires);
+        if (dirty)
+            DisposeRegion(dirty);
+        HIDDCompositorReplan(compdata, NULL, NULL, &fires);
+        UNLOCK_COMPOSITOR
+        HIDDCompositorFireHooks(compdata, &fires);
+        return;
+    }
+
     if (!compdata->displaybitmap)
     {
         /*
@@ -2861,9 +3843,249 @@ VOID Compositor__Hidd_Compositor__SurfaceStackChanged(OOP_Class *cl, OOP_Object 
     else
         HIDDCompositorRedrawVisibleRegions(compdata, NULL);
 
-    /* With no surfaces left and the screen covering the display, passthrough may resume */
-    if (!n->hassurfaces && (n == (struct StackBitMapNode *)compdata->bitmapstack.mlh_Head))
+    /* With no layer surfaces left and the screen covering the display, passthrough may resume */
+    if (!n->haslayersurfaces && (n == (struct StackBitMapNode *)compdata->bitmapstack.mlh_Head) &&
+        !HIDDCompositorNodeNeedsComposition(compdata, n))
+    {
         HIDDCompositorToggleCompositing(compdata, FALSE);
+        HIDDCompositorStampKeys(compdata);
+    }
 
     UNLOCK_COMPOSITOR
+}
+
+/*****************************************************************************************
+
+    NAME
+        moHidd_Compositor_AttachSurface
+
+    SYNOPSIS
+        BOOL OOP_DoMethod(OOP_Object *obj, struct pHidd_Compositor_AttachSurface *msg);
+
+        BOOL HIDD_Compositor_AttachSurface(OOP_Object *obj, OOP_Object *screenBitMap,
+                                           struct HIDD_CompositeRequest *request, struct Hook *hook);
+
+    LOCATION
+        hidd.gfx.compositor
+
+    FUNCTION
+        Attach a client surface (a video overlay, a 3D colour buffer) to a
+        screen on this display. The request is the client's and is not
+        copied: Dest/Shape are in screen bitmap coordinates, like a layer
+        surface's; the client changes it only through UpdateSurface. The
+        surface joins the screen's surface list behind the layer surfaces and
+        is shown by a scan-out plane when one fits (CRF_PLANE_OK or
+        CRF_PLANE_REQUIRED and a Scanout bitmap), blitted when it is RGB and
+        has none, and not at all when it is video and has none.
+
+        The surface stays attached while its screen leaves the display and
+        comes back. See the hook firing rule at the top of this file for when
+        the hook runs.
+
+    RESULT
+        FALSE when the screen bitmap is not on the display's stack (the client
+        may retry once the screen is shown), the request is attached already,
+        or memory is short.
+
+    SEE ALSO
+        moHidd_Display_AttachSurface
+
+*****************************************************************************************/
+
+BOOL Compositor__Hidd_Compositor__AttachSurface(OOP_Class *cl, OOP_Object *o, struct pHidd_Compositor_AttachSurface *msg)
+{
+    struct HIDDCompositorData *compdata = OOP_INST_DATA(cl, o);
+    struct StackBitMapNode *n;
+    struct ClientSurface *cs;
+    struct HookFires fires;
+    struct Region *dirty;
+
+    if (!compdata->GraphicsBase || !msg->request || !msg->screenBitMap)
+        return FALSE;
+
+    HIDDCompositorInitFires(&fires);
+
+    LOCK_COMPOSITOR_WRITE
+
+    n = HIDDCompositorFindBitMapStackNode(compdata, msg->screenBitMap);
+    if (!n || HIDDCompositorFindClientSurface(compdata, msg->request))
+    {
+        UNLOCK_COMPOSITOR
+        return FALSE;
+    }
+
+    cs = AllocMem(sizeof(struct ClientSurface), MEMF_ANY | MEMF_CLEAR);
+    if (!cs)
+    {
+        UNLOCK_COMPOSITOR
+        return FALSE;
+    }
+    cs->screenbm  = msg->screenBitMap;
+    cs->req       = msg->request;
+    cs->hook      = msg->hook;
+    cs->hookplane = -1;
+    if (!HIDDCompositorLinkClientSurface(compdata, n, cs))
+    {
+        FreeMem(cs, sizeof(struct ClientSurface));
+        UNLOCK_COMPOSITOR
+        return FALSE;
+    }
+    AddTail((struct List *)&compdata->clientsurfaces, (struct Node *)cs);
+    compdata->nclientsurfaces++;
+
+    bug("[Compositor] AttachSurface: request 0x%p (bitmap 0x%p, scanout %d video %lu, flags 0x%x) on screen 0x%p\n",
+        msg->request, msg->request->BitMap, cs->sn ? cs->sn->scanout : -1, cs->sn ? (unsigned long)cs->sn->videofmt : 0UL,
+        msg->request->Flags, msg->screenBitMap);
+
+    HIDDCompositorQueryPlanes(compdata);
+    dirty = NewRegion();
+    HIDDCompositorReplan(compdata, cs, dirty, &fires);
+    if (dirty)
+        DisposeRegion(dirty);
+
+    UNLOCK_COMPOSITOR
+    HIDDCompositorFireHooks(compdata, &fires);
+
+    return TRUE;
+}
+
+/*****************************************************************************************
+
+    NAME
+        moHidd_Compositor_UpdateSurface
+
+    SYNOPSIS
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_Compositor_UpdateSurface *msg);
+
+        VOID HIDD_Compositor_UpdateSurface(OOP_Object *obj, struct HIDD_CompositeRequest *request);
+
+    LOCATION
+        hidd.gfx.compositor
+
+    FUNCTION
+        The client changed its attached request (Dest, Shape, Src, flags,
+        bitmap). The surface's visible region, plane, crop and colour key are
+        worked out again; the display area it covered and covers is redrawn
+        and its plane re-committed. May be called from the surface hook.
+
+*****************************************************************************************/
+
+VOID Compositor__Hidd_Compositor__UpdateSurface(OOP_Class *cl, OOP_Object *o, struct pHidd_Compositor_UpdateSurface *msg)
+{
+    struct HIDDCompositorData *compdata = OOP_INST_DATA(cl, o);
+    struct ClientSurface *cs;
+    struct HookFires fires;
+
+    if (!compdata->GraphicsBase || !msg->request)
+        return;
+
+    HIDDCompositorInitFires(&fires);
+
+    LOCK_COMPOSITOR_WRITE
+
+    cs = HIDDCompositorFindClientSurface(compdata, msg->request);
+    if (cs && cs->sn)
+    {
+        struct Region *dirty = NewRegion();
+
+        if (dirty && cs->sn->region)
+            OrRegionRegion(cs->sn->region, dirty);
+        HIDDCompositorSurfaceBitMapAttrs(compdata, cs->sn);     /* the bitmap may be another one */
+        HIDDCompositorReplan(compdata, cs, dirty, &fires);
+        if (dirty)
+            DisposeRegion(dirty);
+    }
+    /* else: not attached, or its screen is not on the display: nothing is shown of it */
+
+    UNLOCK_COMPOSITOR
+    HIDDCompositorFireHooks(compdata, &fires);
+}
+
+/*****************************************************************************************
+
+    NAME
+        moHidd_Compositor_DetachSurface
+
+    SYNOPSIS
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_Compositor_DetachSurface *msg);
+
+        VOID HIDD_Compositor_DetachSurface(OOP_Object *obj, struct HIDD_CompositeRequest *request);
+
+    LOCATION
+        hidd.gfx.compositor
+
+    FUNCTION
+        Detach a client surface: its plane is switched off, the display area
+        it covered is redrawn, and the request and hook are not referred to
+        again once this returns. No PlaneLost is sent for the detaching
+        surface. Must not be called from the surface hook (it waits for the
+        hook calls in flight to return; see the hook firing rule).
+
+*****************************************************************************************/
+
+VOID Compositor__Hidd_Compositor__DetachSurface(OOP_Class *cl, OOP_Object *o, struct pHidd_Compositor_DetachSurface *msg)
+{
+    struct HIDDCompositorData *compdata = OOP_INST_DATA(cl, o);
+    struct ClientSurface *cs;
+    struct HookFires fires;
+    ULONG pending;
+
+    if (!msg->request)
+        return;
+
+    HIDDCompositorInitFires(&fires);
+
+    LOCK_COMPOSITOR_WRITE
+
+    cs = HIDDCompositorFindClientSurface(compdata, msg->request);
+    if (!cs)
+    {
+        UNLOCK_COMPOSITOR
+        return;
+    }
+
+    D(bug("[Compositor] %s: request 0x%p\n", __func__, msg->request));
+
+    if (cs->sn)
+    {
+        struct StackBitMapNode *n = HIDDCompositorFindBitMapStackNode(compdata, cs->screenbm);
+        struct Region *dirty = NewRegion();
+
+        if (dirty && cs->sn->region)
+            OrRegionRegion(cs->sn->region, dirty);
+        if (n)
+            HIDDCompositorUnlinkClientSurface(compdata, n, cs->sn);
+        else
+            HIDDCompositorFreeSurfaceNode(compdata, cs->sn);     /* cannot happen: a node implies its screen */
+        Remove((struct Node *)cs);
+        compdata->nclientsurfaces--;
+        if (compdata->GraphicsBase)
+            HIDDCompositorReplan(compdata, NULL, dirty, &fires);
+        if (dirty)
+            DisposeRegion(dirty);
+    }
+    else
+    {
+        Remove((struct Node *)cs);
+        compdata->nclientsurfaces--;
+    }
+
+    /*
+     * Unlinked: no further call can be collected for it. Register as the
+     * waiter before the lock goes (the signal is cleared first so that a
+     * call returning between here and Wait() is not missed), then wait for
+     * the calls other tasks collected before the lock was taken.
+     */
+    SetSignal(0, SIGF_SINGLE);
+    ObtainSemaphore(&compdata->hooksem);
+    cs->waiter = FindTask(NULL);
+    pending = cs->firing;
+    ReleaseSemaphore(&compdata->hooksem);
+
+    UNLOCK_COMPOSITOR
+    HIDDCompositorFireHooks(compdata, &fires);
+    if (pending)
+        Wait(SIGF_SINGLE);
+
+    FreeMem(cs, sizeof(struct ClientSurface));
 }

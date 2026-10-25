@@ -1709,6 +1709,18 @@ nvkm_gsp_radix3_sg(struct nvkm_gsp *gsp, struct sg_table *sgt, u64 size,
 		}
 	}
 
+#if defined(__AROS__)
+	/*
+	 * Level 2 was mapped (and so cleaned) while still empty; the entries
+	 * were written through the cached mapping afterwards. On a bus that
+	 * does not snoop, the GSP-FMC otherwise reads whatever happens to
+	 * have been evicted to RAM by boot time - a sometimes-only refusal
+	 * (mailbox 0xb) with nothing else different. Levels 0 and 1 are
+	 * coherent blocks and are cleaned with the rest before the boot.
+	 */
+	dma_sync_sgtable_for_device(gsp->subdev.device->dev, &rx3->lvl2, DMA_TO_DEVICE);
+#endif
+
 	if (ret) {
 lvl2_fail:
 		nvkm_gsp_mem_dtor(&rx3->lvl1);

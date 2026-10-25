@@ -26,6 +26,21 @@ struct mesa3dgl_framebuffer
     ULONG                       width;
     ULONG                       height;
     BOOL                        resized;
+
+    /* 3D scan-out (gallium.library scan-out framebuffer): when the window's
+     * display can show the colour buffers itself, the FRONT_LEFT attachment
+     * is the scan-out buffer being rendered (scanout_back) instead of a
+     * resource of our own; glASwapBuffers() flips it. NULL = the
+     * BltPipeResourceRastPort() path. */
+    struct mesa3dgl_context     *ctx;
+    APTR                        scanout;
+    struct Window               *scanout_window; /* window/rectangle it was made for */
+    LONG                        scanout_left;
+    LONG                        scanout_top;
+    ULONG                       scanout_back;    /* buffer rendered next */
+    BOOL                        scanout_tried;   /* creation attempted for this size */
+    BOOL                        noscanout;       /* ENV:MESA3DGL_NOSCANOUT */
+    ULONG                       scanout_buffers; /* wanted (ENV:MESA3DGL_SCANOUT_BUFFERS, default 3) */
 };
 
 /* mesa/gallium GL context */

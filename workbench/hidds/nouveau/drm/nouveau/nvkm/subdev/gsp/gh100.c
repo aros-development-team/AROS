@@ -632,6 +632,35 @@ gh100_gsp_aros_dumpfiles(struct nvkm_gsp *gsp)
 	nvkm_info(subdev, "dump written to SYS:nouveau-dump\n");
 }
 
+#if defined(__AROS__)
+/*
+ * One line of GSP falcon / FSP state, logged on every boot: before the
+ * driver touches the falcon and right before each GSP-FMC boot request.
+ * The FMC occasionally refuses a cold boot (mbox 0xb); these lines let an
+ * accepting and a refusing boot be compared. 0x110000 reads badf4100 when
+ * the GSP falcon block is still disabled (power-on), badf56xx when it is
+ * powered and priv-locked.
+ */
+static void
+gh100_gsp_aros_snapshot(struct nvkm_gsp *gsp, const char *when)
+{
+	struct nvkm_device *device = gsp->subdev.device;
+	struct nvkm_falcon *falcon = &gsp->falcon;
+
+	nvkm_warn(&gsp->subdev, "%s: falcon %08x engine %08x mbox %08x/%08x plm %08x "
+		    "cpuctl %08x hwcfg2 %08x wpr2 %08x/%08x fsp %08x GPU up %llu ms\n", when,
+		    nvkm_rd32(device, 0x110000), nvkm_rd32(device, 0x1103c0),
+		    nvkm_falcon_rd32(falcon, NV_PFALCON_FALCON_MAILBOX0),
+		    nvkm_falcon_rd32(falcon, NV_PFALCON_FALCON_MAILBOX1),
+		    nvkm_falcon_rd32(falcon, 0x3c4),
+		    nvkm_falcon_rd32(falcon, falcon->addr2 + NV_PRISCV_RISCV_CPUCTL),
+		    nvkm_falcon_rd32(falcon, NV_PFALCON_FALCON_HWCFG2),
+		    nvkm_rd32(device, 0x1fa824), nvkm_rd32(device, 0x1fa828),
+		    nvkm_rd32(device, 0xad00bc),
+		    device->timer ? (unsigned long long)(nvkm_timer_read(device->timer) / 1000000) : 0ULL);
+}
+#endif
+
 int
 gh100_gsp_init(struct nvkm_gsp *gsp)
 {
@@ -701,6 +730,7 @@ gh100_gsp_init(struct nvkm_gsp *gsp)
 		}
 	}
 	compat_dma_sync_all_coherent();
+	gh100_gsp_aros_snapshot(gsp, "before reset");
 	/*
 	 * The FMC/ACR occasionally refuses the first boot on this platform
 	 * (mailbox 0xb) although a fresh attempt a moment later succeeds;
@@ -754,6 +784,9 @@ gh100_gsp_init(struct nvkm_gsp *gsp)
 				compat_dma_sync_all_coherent();
 			}
 			gh100_gsp_reset_hw(gsp);
+			/* the firmware page table's level 2 is not a coherent block: clean it too */
+			dma_sync_sgtable_for_device(device->dev, &gsp->radix3.lvl2, DMA_TO_DEVICE);
+			gh100_gsp_aros_snapshot(gsp, attempt ? "before retry" : "before boot");
 			ret = nvkm_fsp_boot_gsp_fmc(device->fsp, gsp->fmc.args.addr, rsvd, resume,
 						    gsp->fmc.fw.addr, gsp->fmc.hash, gsp->fmc.pkey, gsp->fmc.sig);
 			if (ret) {

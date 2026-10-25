@@ -64,15 +64,27 @@
         if (zs && pipe->invalidate_resource)
             pipe->invalidate_resource(pipe, zs);
 
-        /* Flush rendering cache before blitting */
+        /* Flush rendering cache before blitting / flipping. ST_FLUSH_FRONT
+         * also marks the framebuffer state dirty, so the next draw
+         * revalidates the drawable and picks up a swapped attachment. */
         st_context_flush(_ctx->st, ST_FLUSH_FRONT, NULL, NULL, NULL);
 
-        /* gallium.library tries the whole-window DisplayResourceRP method
-         * first (vc4 presents zero-copy there) and falls back to the
-         * per-cliprect DisplayResource loop (softpipe). */
-        BltPipeResourceRastPort(_ctx->driver, _ctx->framebuffer->render_resource, 0, 0,
-            _ctx->visible_rp, _ctx->left, _ctx->top,
-            _ctx->framebuffer->width, _ctx->framebuffer->height);
+        if (_ctx->framebuffer->scanout)
+        {
+            /* 3D scan-out: the rendered buffer is flipped onto the window
+             * by the display (plane or compositor blit); the next buffer
+             * becomes the render target. */
+            MESA3DGLScanoutSwap(_ctx);
+        }
+        else
+        {
+            /* gallium.library tries the whole-window DisplayResourceRP method
+             * first (vc4 presents zero-copy there) and falls back to the
+             * per-cliprect DisplayResource loop (softpipe). */
+            BltPipeResourceRastPort(_ctx->driver, _ctx->framebuffer->render_resource, 0, 0,
+                _ctx->visible_rp, _ctx->left, _ctx->top,
+                _ctx->framebuffer->width, _ctx->framebuffer->height);
+        }
     }
 
 

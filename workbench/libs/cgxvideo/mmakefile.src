@@ -20,8 +20,8 @@ FUNCS := \
 	QueryVLayerAttr
 
 #MM- workbench-libs-complete : workbench-libs-cgxvideo
-#MM- workbench-libs-cgxvideo : linklibs
-#MM- workbench-libs-cgxvideo-kobj : linklibs
+#MM- workbench-libs-cgxvideo : linklibs linklibs-surfacetrack
+#MM- workbench-libs-cgxvideo-kobj : linklibs linklibs-surfacetrack
 
 #MM- workbench-libs-cgxvideo-includes : \
 #MM      kernel-exec-includes \
@@ -29,7 +29,8 @@ FUNCS := \
 
 %build_module mmake=workbench-libs-cgxvideo \
   modname=cgxvideo modtype=library \
-  files="cgxvideo_init nullbackend $(FUNCS)"
+  files="cgxvideo_init nullbackend backend $(FUNCS)" \
+  uselibs="surfacetrack"
 
 #MM includes-copy
 

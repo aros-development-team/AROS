@@ -1,8 +1,9 @@
- /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id$
+/*
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 #include <aros/debug.h>
+#include <proto/exec.h>
+#include <proto/utility.h>
 
 #include "cgxvideo_intern.h"
 
@@ -46,11 +47,12 @@
                 VOA_BottomIndent (ULONG) - additional offset from the bottom window
                                                 border
 
+        A changed indent moves the overlay at once. Subpicture and
+        colour key tags are ignored.
+
     EXAMPLE
 
     BUGS
-        The null backend has no runtime attributes, so all tags are
-        ignored.
 
     SEE ALSO
         GetVLayerAttr()
@@ -63,7 +65,40 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* Nothing to update until a display backend exists */
+    struct VLayerHandle *vh = VLayerHandle;
+    struct TagItem *tag, *tstate = TagItems;
+    BOOL changed = FALSE;
+
+    if (!vh)
+        return;
+
+    ObtainSemaphore(&vh->lock);
+
+    while ((tag = NextTagItem(&tstate)))
+    {
+        LONG idx;
+
+        switch (tag->ti_Tag)
+        {
+        case VOA_LeftIndent:   idx = 0; break;
+        case VOA_TopIndent:    idx = 1; break;
+        case VOA_RightIndent:  idx = 2; break;
+        case VOA_BottomIndent: idx = 3; break;
+        default:               idx = -1; break;
+        }
+
+        if (idx >= 0 && vh->indents[idx] != (LONG)tag->ti_Data)
+        {
+            vh->indents[idx] = tag->ti_Data;
+            changed = TRUE;
+        }
+    }
+
+    if (changed)
+        st_SetStale(&vh->track);
+    cgxv_Refresh(vh);
+
+    ReleaseSemaphore(&vh->lock);
 
     AROS_LIBFUNC_EXIT
 } /* SetVLayerAttrTagList */

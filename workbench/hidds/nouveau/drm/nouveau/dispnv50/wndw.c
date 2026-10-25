@@ -45,6 +45,90 @@
 #include "nouveau_gem.h"
 #include "tile.h"
 
+/*
+ * AROS: destination colour keying on the window planes (the display
+ * compositor shows a video overlay only where the primary carries the key).
+ * NOUVEAU_COLORKEY: 0 = never program a key (the "colorkey" property is
+ * accepted and ignored), 1 = key components as 8-bit values (default, what
+ * nvkms writes for an 8 bpc surface), 2 = key components replicated to 16
+ * bits (if the window compares against the 16 bpc composition result).
+ * NOUVEAU_PLANE_ATOMIC (default 1): the hidd programs overlays through one
+ * atomic request; 0 = legacy SETPLANE plus property sets (nouveau_displayclass.c).
+ */
+int nouveau_colorkey_param = 1;
+int nouveau_plane_atomic = 1;
+/*
+ * NOUVEAU_WNDW_PACKED422 (default 0): offer packed 4:2:2 (YUYV/UYVY) on the
+ * Volta+ windows. nvkms never programs it there ("the required programming
+ * support hasn't been added", nvHwFormatFromKmsFormatC3) and on the GB207 a
+ * YUYV window raised a window UPDATE exception (Xid 56 reason 5) that
+ * stalled the display (2026-10-25). Video on windows is semi-planar NV12.
+ */
+int nouveau_wndw_packed422 = 0;
+
+/*
+ * IHUB_COMMON_CAPA (display capability region at BAR0 0x640000 + 0x10, the
+ * NVC573/C673/CA73 caps class) bit 19: on Turing it means semi-planar
+ * 4:2:0 is supported, on Ampere and later full planar (nvkms-evo3.c
+ * nvEvoParseCapabilityNotifier5/6). -1 until read.
+ */
+u32 nouveau_wndw_ihub_caps;		/* IHUB_COMMON_CAPA (BAR0 0x640010; bit 31 is set on the GB207) */
+u32 nouveau_wndw_ihub_capc;		/* IHUB_COMMON_CAPC (BAR0 0x640018) */
+static bool nouveau_wndw_ihub_known;
+static u16 nouveau_wndw_chipset;
+
+/*
+ * Record the display capabilities once (the first caller wins: the RM
+ * mode-possible query at core init, else the first window).
+ */
+void
+nouveau_wndw_ihub_init(u16 chipset, u32 capa, u32 capc)
+{
+	if (nouveau_wndw_ihub_known)
+		return;
+	nouveau_wndw_ihub_known = true;
+	nouveau_wndw_chipset = chipset;
+	nouveau_wndw_ihub_caps = capa;
+	nouveau_wndw_ihub_capc = capc;
+	printk(KERN_NOTICE "[nouveau] ihub capa %08x capc %08x (chipset %03x): 4:2:0 semi-planar %s, planar %s, yuv mask %x\n",
+	       capa, capc, chipset,
+	       (nouveau_wndw_yuv_mask() & NOUVEAU_WNDW_YUV_NV12) ? "yes" : "no",
+	       (nouveau_wndw_yuv_mask() & NOUVEAU_WNDW_YUV_I420) ? "yes" : "no",
+	       nouveau_wndw_yuv_mask());
+}
+
+/*
+ * The YUV formats the windows may be given, from the switches and the
+ * hardware, as nvkms decides it (nvEvoParseCapabilityNotifier5/6): on
+ * Turing CAPA bit 19 means semi-planar; from Ampere on CAPA bit 19 is
+ * planar and CAPC bit 11 semi-planar. Packed 4:2:2 needs no capability.
+ * The core channel usage bounds, RM's mode-possible query and the formats
+ * offered to the hidd all use this one answer.
+ */
+u32
+nouveau_wndw_yuv_mask(void)
+{
+	extern int nouveau_wndw_yuv, nouveau_wndw_packed422;
+	bool semi = false, planar = false;
+	u32 m = 0;
+
+	if (!nouveau_wndw_ihub_known)
+		return 0;
+	if (nouveau_wndw_chipset >= 0x170) {
+		planar = !!(nouveau_wndw_ihub_caps & BIT(19));
+		semi = !!(nouveau_wndw_ihub_capc & BIT(11));
+	} else if (nouveau_wndw_chipset >= 0x160) {
+		semi = !!(nouveau_wndw_ihub_caps & BIT(19));
+	}
+	if (nouveau_wndw_packed422)
+		m |= NOUVEAU_WNDW_YUV_PACKED422;
+	if (nouveau_wndw_yuv && semi)
+		m |= NOUVEAU_WNDW_YUV_NV12;
+	if (nouveau_wndw_yuv && planar)
+		m |= NOUVEAU_WNDW_YUV_I420;
+	return m;
+}
+
 static void
 nv50_wndw_ctxdma_del(struct nv50_wndw_ctxdma *ctxdma)
 {
@@ -211,14 +295,35 @@ nv50_wndw_atomic_check_release(struct nv50_wndw *wndw,
 }
 
 static int
-nv50_wndw_atomic_check_acquire_yuv(struct nv50_wndw_atom *asyw)
+nv50_wndw_atomic_check_acquire_yuv(struct nv50_wndw *wndw, struct nv50_wndw_atom *asyw)
 {
+	const u16 chipset = nouveau_drm(wndw->plane.dev)->client.device.info.chipset;
+
+	asyw->image.swapuv = 0;
 	switch (asyw->state.fb->format->format) {
 	case DRM_FORMAT_YUYV:
 		asyw->image.format = NV507E_SURFACE_SET_PARAMS_FORMAT_VE8YO8UE8YE8;
 		break;
 	case DRM_FORMAT_UYVY:
 		asyw->image.format = NV507E_SURFACE_SET_PARAMS_FORMAT_YO8VE8YE8UE8;
+		break;
+	case DRM_FORMAT_NV12:
+		/*
+		 * Semi-planar 4:2:0, the format nvkms uses for video on the
+		 * windows: Y plane, then interleaved chroma. The hardware format
+		 * is named V8U8; nvkms maps its U8V8 (NV12) layout to it with
+		 * SWAP_UV off and the V8U8 (NV21) one with SWAP_UV on
+		 * (IsSurfaceFormatUVSwapped), so DRM's U-first NV12 needs no swap.
+		 */
+		if (asyw->image.kind || chipset < 0x160)
+			return -EINVAL;		/* pitch layout; Turing+ (nvkms supportsSemiPlanar) */
+		asyw->image.format = NVC37E_SET_PARAMS_FORMAT_Y8___V8U8_N420;
+		break;
+	case DRM_FORMAT_YUV420:
+		/* Full planar 4:2:0 (CGX I420): Y, U, V planes; Ampere+ windows (supportsPlanar) */
+		if (asyw->image.kind || chipset < 0x170)
+			return -EINVAL;
+		asyw->image.format = NVC37E_SET_PARAMS_FORMAT_Y8___U8___V8_N420;
 		break;
 	default:
 		WARN_ON(1);
@@ -294,7 +399,7 @@ nv50_wndw_atomic_check_acquire(struct nv50_wndw *wndw, bool modeset,
 
 		ret = nv50_wndw_atomic_check_acquire_rgb(asyw);
 		if (ret) {
-			ret = nv50_wndw_atomic_check_acquire_yuv(asyw);
+			ret = nv50_wndw_atomic_check_acquire_yuv(wndw, asyw);
 			if (ret)
 				return ret;
 		}
@@ -313,6 +418,10 @@ nv50_wndw_atomic_check_acquire(struct nv50_wndw *wndw, bool modeset,
 			asyw->image.blocks[0] = 0;
 			asyw->image.pitch[0] = fb->pitches[0];
 		}
+		/* chroma planes of the planar formats (same buffer, own pitch/offset) */
+		asyw->image.blocks[1] = asyw->image.blocks[2] = 0;
+		asyw->image.pitch[1] = (fb->format->num_planes > 1) ? fb->pitches[1] : 0;
+		asyw->image.pitch[2] = (fb->format->num_planes > 2) ? fb->pitches[2] : 0;
 
 		if (!asyh->state.async_flip)
 			asyw->image.interval = 1;
@@ -365,6 +474,7 @@ nv50_wndw_atomic_check_acquire(struct nv50_wndw *wndw, bool modeset,
 			asyw->blend.dst_color = NVC37E_SET_COMPOSITION_FACTOR_SELECT_DST_COLOR_FACTOR_MATCH_SELECT_NEG_K1;
 			break;
 		}
+		asyw->blend.ckey = nouveau_colorkey_param ? asyw->ckey : 0;
 		if (memcmp(&armw->blend, &asyw->blend, sizeof(asyw->blend)))
 			asyw->set.blend = true;
 	}
@@ -589,7 +699,18 @@ nv50_wndw_prepare_fb(struct drm_plane *plane, struct drm_plane_state *state)
 	if (ret)
 		return ret;
 
-	asyw->image.offset[0] = nvbo->offset;
+	asyw->image.offset[0] = nvbo->offset + fb->offsets[0];
+	/* Planar formats: the chroma planes live in the same buffer (one handle) */
+	for (ret = 1; ret < 3; ret++) {
+		if (fb->format->num_planes > ret) {
+			asyw->image.handle[ret] = asyw->image.handle[0];
+			asyw->image.offset[ret] = nvbo->offset + fb->offsets[ret];
+		} else {
+			asyw->image.handle[ret] = 0;
+			asyw->image.offset[ret] = 0;
+		}
+	}
+	ret = 0;
 
 	if (wndw->func->prepare) {
 		asyh = nv50_head_atom_get_new(asyw->state.state, asyw->state.crtc);
@@ -749,9 +870,39 @@ nv50_wndw_atomic_duplicate_state(struct drm_plane *plane)
 	asyw->csc  = armw->csc;
 	asyw->image = armw->image;
 	asyw->point = armw->point;
+	asyw->ckey = armw->ckey;
 	asyw->clr.mask = 0;
 	asyw->set.mask = 0;
 	return &asyw->state;
+}
+
+/* The nouveau-private "colorkey" plane property (see nouveau_colorkey_param) */
+static int
+nv50_wndw_atomic_set_property(struct drm_plane *plane, struct drm_plane_state *state,
+			      struct drm_property *property, uint64_t val)
+{
+	struct nv50_wndw *wndw = nv50_wndw(plane);
+	struct nv50_wndw_atom *asyw = nv50_wndw_atom(state);
+
+	if (property == wndw->ckey_prop) {
+		asyw->ckey = val;
+		return 0;
+	}
+	return -EINVAL;
+}
+
+static int
+nv50_wndw_atomic_get_property(struct drm_plane *plane, const struct drm_plane_state *state,
+			      struct drm_property *property, uint64_t *val)
+{
+	struct nv50_wndw *wndw = nv50_wndw(plane);
+	const struct nv50_wndw_atom *asyw = nv50_wndw_atom(state);
+
+	if (property == wndw->ckey_prop) {
+		*val = asyw->ckey;
+		return 0;
+	}
+	return -EINVAL;
 }
 
 static int
@@ -849,6 +1000,8 @@ nv50_wndw = {
 	.reset = nv50_wndw_reset,
 	.atomic_duplicate_state = nv50_wndw_atomic_duplicate_state,
 	.atomic_destroy_state = nv50_wndw_atomic_destroy_state,
+	.atomic_set_property = nv50_wndw_atomic_set_property,
+	.atomic_get_property = nv50_wndw_atomic_get_property,
 	.format_mod_supported = nv50_plane_format_mod_supported,
 };
 
@@ -871,6 +1024,11 @@ nv50_wndw_new_(const struct nv50_wndw_func *func, struct drm_device *dev,
 	const u64 *format_modifiers;
 	int nformat;
 	int ret;
+
+	if (!nouveau_wndw_ihub_known && drm->client.device.info.family >= NV_DEVICE_INFO_V0_VOLTA)
+		nouveau_wndw_ihub_init(drm->client.device.info.chipset,
+				       nvif_rd32(&drm->client.device.object, 0x640010),
+				       nvif_rd32(&drm->client.device.object, 0x640018));
 
 	if (!(wndw = *pwndw = kzalloc(sizeof(*wndw), GFP_KERNEL)))
 		return -ENOMEM;
@@ -924,6 +1082,18 @@ nv50_wndw_new_(const struct nv50_wndw_func *func, struct drm_device *dev,
 				BIT(DRM_MODE_BLEND_COVERAGE));
 		if (ret)
 			return ret;
+
+		/*
+		 * Destination colour key, as dispnv04/overlay.c names it: bit 24
+		 * enables, bits 23:0 are the 0xRRGGBB the primary must show for
+		 * the window to be visible (wndwc37e_blend_set).
+		 */
+		if (type == DRM_PLANE_TYPE_OVERLAY) {
+			wndw->ckey_prop = drm_property_create_range(dev, 0, "colorkey", 0, 0x01ffffff);
+			if (!wndw->ckey_prop)
+				return -ENOMEM;
+			drm_object_attach_property(&wndw->plane.base, wndw->ckey_prop, 0);
+		}
 	} else {
 		ret = drm_plane_create_zpos_immutable_property(&wndw->plane,
 				nv50_wndw_zpos_default(&wndw->plane));

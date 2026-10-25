@@ -43,6 +43,23 @@ OOP_Object *CBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
     SetMem(data, 0, sizeof (*data));
 
+    /*
+     * Scan-out bitmaps live in display memory a plane can read: only a driver
+     * bitmap class can make one. There is no software overlay.
+     */
+    {
+        IPTR scanout = FALSE;
+
+        OOP_GetAttr(o, aHidd_BitMap_Scanout, &scanout);
+        if (scanout)
+        {
+            OOP_MethodID dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+
+            OOP_CoerceMethod(cl, o, &dispose_mid);
+            return NULL;
+        }
+    }
+
     OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&pf);
     OOP_GetAttr(o, aHidd_BitMap_Display, (APTR)&data->display);
     OOP_GetAttr(data->display, aHidd_Display_DMEnumerator, (APTR)&data->dmenum);

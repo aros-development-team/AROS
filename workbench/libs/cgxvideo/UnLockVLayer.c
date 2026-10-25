@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 #include <aros/debug.h>
 #include <proto/exec.h>
@@ -29,6 +29,7 @@
         result - always 0
 
     NOTES
+        The display may upload or flush the buffer here.
 
     EXAMPLE
 
@@ -45,11 +46,14 @@
 {
     AROS_LIBFUNC_INIT
 
-    if (VLayerHandle)
+    struct VLayerHandle *vh = VLayerHandle;
+
+    if (vh)
     {
-        ObtainSemaphore(&VLayerHandle->lock);
-        VLayerHandle->locked = FALSE;
-        ReleaseSemaphore(&VLayerHandle->lock);
+        ObtainSemaphore(&vh->lock);
+        cgxv_UnlockBuffer(vh);
+        cgxv_Refresh(vh);
+        ReleaseSemaphore(&vh->lock);
     }
 
     return 0;

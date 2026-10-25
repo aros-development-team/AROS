@@ -384,6 +384,25 @@ static void nlog_append(const char *s, size_t n)
         Signal(nlog.flusher, 1UL << nlog.sigbit);
 }
 
+/*
+ * Keep the previous boot's log as <log>.1 (one generation), so a boot that
+ * fails is not lost to the next one. Done right before the log is first
+ * created, when its volume is known to be there; .1 is only replaced when a
+ * previous log actually exists.
+ */
+static void nlog_rotate(const char *cur)
+{
+    char prev[160];
+    BPTR lock = Lock(cur, SHARED_LOCK);
+
+    if (!lock)
+        return;
+    UnLock(lock);
+    snprintf(prev, sizeof(prev), "%s.1", cur);
+    DeleteFile(prev);
+    Rename(cur, prev);
+}
+
 static void nlog_flusher(void)
 {
     struct Task *self = FindTask(NULL);
@@ -405,8 +424,7 @@ static void nlog_flusher(void)
     if (!strcmp(name, "off"))
         return;
 
-    /* Delete last boot's log before the first Wait(); fails harmlessly when the media is not writable yet. */
-    DeleteFile(name[0] ? name : "SYS:nouveau.log");
+    /* The last boot's log is kept as <log>.1, see nlog_rotate(). */
 
     /*
      * The file is opened, appended to and closed for every burst: a
@@ -432,15 +450,21 @@ static void nlog_flusher(void)
         if (!created && name[0] == '\0')
         {
             strcpy(name, "SYS:nouveau.log");
+            nlog_rotate(name);
             fh = Open(name, MODE_NEWFILE);
             if (!fh)
             {
                 strcpy(name, "T:nouveau.log");
+                nlog_rotate(name);
                 fh = Open(name, MODE_NEWFILE);
             }
         }
         else
+        {
+            if (!created)
+                nlog_rotate(name);
             fh = Open(name, created ? MODE_READWRITE : MODE_NEWFILE);
+        }
         if (!fh)
         {
             if (++idle == 1 || (idle % 50) == 0)

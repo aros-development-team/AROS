@@ -1593,9 +1593,34 @@ nouveau_aros_params(void)
 		nv50_disp_fe_vector_keep = !strcmp(v, "keep");
 		kfree(v);
 	}
+	if ((v = nouveau_aros_getenv("NOUVEAU_FREEZEDUMP"))) {
+		extern int nouveau_freezedump_secs;
+		nouveau_freezedump_secs = simple_strtoul(v, NULL, 0);
+		kfree(v);
+	}
 	if ((v = nouveau_aros_getenv("NOUVEAU_VRAM_PUSHBUF"))) {
 		extern int nouveau_vram_pushbuf;
 		nouveau_vram_pushbuf = (*v != '0');
+		kfree(v);
+	}
+	if ((v = nouveau_aros_getenv("NOUVEAU_COLORKEY"))) {
+		extern int nouveau_colorkey_param;
+		nouveau_colorkey_param = simple_strtoul(v, NULL, 0);
+		kfree(v);
+	}
+	if ((v = nouveau_aros_getenv("NOUVEAU_PLANE_ATOMIC"))) {
+		extern int nouveau_plane_atomic;
+		nouveau_plane_atomic = (*v != '0');
+		kfree(v);
+	}
+	if ((v = nouveau_aros_getenv("NOUVEAU_WNDW_YUV"))) {
+		extern int nouveau_wndw_yuv;
+		nouveau_wndw_yuv = (*v != '0');
+		kfree(v);
+	}
+	if ((v = nouveau_aros_getenv("NOUVEAU_WNDW_PACKED422"))) {
+		extern int nouveau_wndw_packed422;
+		nouveau_wndw_packed422 = (*v != '0');
 		kfree(v);
 	}
 }
@@ -1620,6 +1645,10 @@ nouveau_aros_probe(struct pci_dev *pdev, struct drm_device **pdrm)
 
 	drm = pci_get_drvdata(pdev);
 	*pdrm = drm->dev;
+	{
+		extern void nouveau_freezedump_start(void);
+		nouveau_freezedump_start();
+	}
 	return 0;
 }
 

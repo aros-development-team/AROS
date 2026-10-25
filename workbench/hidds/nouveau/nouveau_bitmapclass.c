@@ -32,14 +32,19 @@ VOID HIDDNouveauSetOffsets(OOP_Object * bm, LONG newxoffset, LONG newyoffset)
     bmdata->yoffset = newyoffset;
 }
 
+/* Video bitmaps (aHidd_BitMap_VideoFormat != 0) are scan-out only: no pixel method touches them */
+#define VIDEO_BITMAP_REFUSED(bmdata, result)  if ((bmdata)->videoformat) return result
+
 /* PUBLIC METHODS */
 OOP_Object * METHOD(NouveauBitMap, Root, New)
 {
     IPTR width, height, depth, displayable, bytesperpixel;
+    IPTR scanout = FALSE, buffers = 1, videoformat = vHidd_VideoFmt_None;
     OOP_Object * pf;
     struct HIDDNouveauBitMapData * bmdata = NULL;
     HIDDT_StdPixFmt stdfmt = vHidd_StdPixFmt_Unknown;
     struct CardData * carddata = &(SD(cl)->carddata);
+    ULONG i;
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
@@ -53,27 +58,59 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
     bmdata->xoffset = 0;
     bmdata->yoffset = 0;
     bmdata->bo = NULL;
+    bmdata->nbufs = 0;
     
     OOP_GetAttr(o, aHidd_BitMap_Width,  &width);
     OOP_GetAttr(o, aHidd_BitMap_Height, &height);
     OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&pf);
     OOP_GetAttr(o, aHidd_BitMap_Displayable, &displayable);
+    OOP_GetAttr(o, aHidd_BitMap_Scanout, &scanout);
+    OOP_GetAttr(o, aHidd_BitMap_Buffers, &buffers);
+    OOP_GetAttr(o, aHidd_BitMap_VideoFormat, &videoformat);
     OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdfmt);
     OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &bytesperpixel);
     OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
     
     D(bug("[Nouveau] BitMap New: %d x %d x %d\n", width, height, depth));
 
-    /* Check if requested format is one of the supported ones */
-    if ((stdfmt != vHidd_StdPixFmt_BGR032) && (stdfmt != vHidd_StdPixFmt_RGB16_LE))
-        goto exit_fail;
+    /*
+     * Formats: the screen formats as before; a scan-out bitmap may also be
+     * BGRA32 (a GL colour buffer, registered as XRGB8888 - the plane blends
+     * it opaque) or a packed video format (the base class gave it a private
+     * 2 bytes per pixel pixfmt of colour model Video; only a plane reads it).
+     */
+    if (videoformat)
+    {
+        switch (videoformat)
+        {
+        case vHidd_VideoFmt_YUYV:
+        case vHidd_VideoFmt_UYVY:
+            if (bytesperpixel != 2)
+                goto exit_fail;
+            break;
+        case vHidd_VideoFmt_NV12:
+        case vHidd_VideoFmt_I420:
+            if ((bytesperpixel != 1) || (width & 1) || (height & 1))
+                goto exit_fail;
+            break;
+        default:
+            goto exit_fail;
+        }
+        scanout = TRUE;
+    }
+    else
+    {
+        if ((stdfmt != vHidd_StdPixFmt_BGR032) && (stdfmt != vHidd_StdPixFmt_RGB16_LE) &&
+            !(scanout && (stdfmt == vHidd_StdPixFmt_BGRA32)))
+            goto exit_fail;
 
-    /* Check if requested depth is a supported one */
-    if (depth < 16)
-        goto exit_fail;
+        /* Check if requested depth is a supported one */
+        if (depth < 16)
+            goto exit_fail;
+    }
     
     /* Check if requested byted per pixel is a supported one */
-    if ((bytesperpixel != 2) && (bytesperpixel != 4))
+    if ((bytesperpixel != 2) && (bytesperpixel != 4) && !videoformat)
         goto exit_fail;
 
     /* Initialize properties */
@@ -82,9 +119,79 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
     bmdata->drawable.depth = bmdata->drawable.bitsPerPixel = depth;
     bmdata->drawable.pScreen = carddata;
     bmdata->bytesperpixel = bytesperpixel;
+    bmdata->stdfmt = stdfmt;
+    bmdata->videoformat = videoformat;
 
     if (displayable) bmdata->displayable = TRUE; else bmdata->displayable = FALSE;
     InitSemaphore(&bmdata->semaphore);
+
+    if (scanout)
+    {
+        /*
+         * Scan-out bitmap: N buffers of the same size and pitch, each a
+         * contiguous linear VRAM surface a plane can show (the display
+         * pitch alignment is HIDDNouveauAccelAllocSurface's). bo/fbid alias
+         * the front buffer.
+         */
+        /*
+         * Planar 4:2:0 (contract "Planar 4:2:0"): the Y plane is the bitmap's
+         * width x height at the surface pitch (256-aligned on Tesla+, so the
+         * chroma pitch pitch/2 is the multiple of 64 the window needs), the
+         * chroma planes follow in the same buffer: I420 = U then V at
+         * pitch/2 x height/2 each, NV12 = interleaved UV at pitch x
+         * height/2; each 256-byte aligned. Allocated as extra rows.
+         */
+        ULONG rows = height;
+        ULONG chromarows = (height + 1) / 2;
+
+        if ((videoformat == vHidd_VideoFmt_NV12) || (videoformat == vHidd_VideoFmt_I420))
+            rows += chromarows + 2;             /* + slack for the 256-byte rounding */
+        if (buffers < 1)
+            buffers = 1;
+        if (buffers > NOUVEAU_MAX_BUFFERS)
+            buffers = NOUVEAU_MAX_BUFFERS;
+        LOCK_ENGINE
+        for (i = 0; i < buffers; i++)
+        {
+            ULONG pitch = 0;
+
+            bmdata->buf[i].bo = NULL;
+            bmdata->buf[i].fbid = 0;
+            HIDDNouveauAccelAllocSurface(carddata, width, rows, bytesperpixel * 8, &pitch, &bmdata->buf[i].bo);
+            if (!bmdata->buf[i].bo)
+                break;
+            if (i == 0)
+                bmdata->pitch = pitch;
+            else if (pitch != bmdata->pitch)
+            {
+                nouveau_bo_ref(NULL, &bmdata->buf[i].bo);
+                break;
+            }
+            bmdata->nbufs = i + 1;
+        }
+        UNLOCK_ENGINE
+        if (bmdata->nbufs != buffers)
+            goto exit_fail;
+        bmdata->front = 0;
+        bmdata->back = (bmdata->nbufs > 1) ? 1 : 0;
+        bmdata->bo = bmdata->buf[0].bo;
+        bmdata->planeoff[0] = bmdata->planeoff[1] = 0;
+        if (videoformat == vHidd_VideoFmt_NV12)
+            bmdata->planeoff[0] = (bmdata->pitch * height + 255) & ~255UL;
+        else if (videoformat == vHidd_VideoFmt_I420)
+        {
+            bmdata->planeoff[0] = (bmdata->pitch * height + 255) & ~255UL;
+            bmdata->planeoff[1] = (bmdata->planeoff[0] + (bmdata->pitch / 2) * chromarows + 255) & ~255UL;
+            if ((bmdata->pitch & 127) ||
+                (bmdata->planeoff[1] + (bmdata->pitch / 2) * chromarows > bmdata->bo->size))
+                goto exit_fail;
+        }
+        nvlog("[Nouveau] scan-out bitmap %p: %ldx%ld %s%ld pitch %ld planes +%lu +%lu, %lu buffer(s)\n", o,
+              (long)width, (long)height, videoformat ? "video format " : "depth ",
+              videoformat ? (long)videoformat : (long)depth, (long)bmdata->pitch,
+              (unsigned long)bmdata->planeoff[0], (unsigned long)bmdata->planeoff[1], (unsigned long)bmdata->nbufs);
+        return o;
+    }
 
     LOCK_ENGINE
     /* Creation of buffer object */
@@ -127,6 +234,35 @@ VOID NouveauBitMap__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
         struct nouveau_device *nvdev = SD(cl)->carddata.dev;
         drmModeRmFB(NOUVEAU_DEV_FD(nvdev), bmdata->fbid);   
         bmdata->fbid = 0;
+        if (bmdata->nbufs)
+            bmdata->buf[bmdata->front].fbid = 0;
+    }
+
+    if (bmdata->nbufs)
+    {
+        /* Scan-out bitmap: bo aliases buf[front]; free every buffer */
+        struct nouveau_device *nvdev = SD(cl)->carddata.dev;
+        struct CardData *carddata = &(SD(cl)->carddata);
+        ULONG i;
+
+        if (bmdata->gpu_dirty)
+        {
+            if (carddata->pushbuf)
+                nouveau_pushbuf_kick(carddata->pushbuf);
+            if (carddata->ce_enabled && carddata->ce_pushbuf)
+                nouveau_pushbuf_kick(carddata->ce_pushbuf);
+            bmdata->gpu_dirty = FALSE;
+        }
+        for (i = 0; i < bmdata->nbufs; i++)
+        {
+            if (bmdata->buf[i].fbid)
+                drmModeRmFB(NOUVEAU_DEV_FD(nvdev), bmdata->buf[i].fbid);
+            bmdata->buf[i].fbid = 0;
+            if (bmdata->buf[i].bo)
+                nouveau_bo_ref(NULL, &bmdata->buf[i].bo);
+        }
+        bmdata->bo = NULL;
+        bmdata->nbufs = 0;
     }
 
     if (bmdata->bo)
@@ -168,6 +304,15 @@ VOID METHOD(NouveauBitMap, Root, Get)
             return;
         case aoHidd_BitMap_TopEdge:
             *msg->storage = bmdata->yoffset;
+            return;
+        case aoHidd_BitMap_FrontBuffer:
+            *msg->storage = bmdata->nbufs ? bmdata->front : 0;
+            return;
+        case aoHidd_BitMap_BackBuffer:
+            *msg->storage = bmdata->nbufs ? bmdata->back : 0;
+            return;
+        case aoHidd_BitMap_BufferHandle:
+            *msg->storage = bmdata->nbufs ? bmdata->buf[bmdata->back].bo->handle : 0;
             return;
         }
     }
@@ -215,6 +360,8 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutPixel)
     struct CardData *carddata = &(SD(cl)->carddata);
     IPTR addr = (msg->x * bmdata->bytesperpixel) + (bmdata->pitch * msg->y);
 
+    VIDEO_BITMAP_REFUSED(bmdata, );
+
     /* FIXME "Optimistics" synchronization (yes, I know it's wrong) */
     IPTR map = (IPTR)bmdata->bo->map;
     
@@ -258,6 +405,8 @@ HIDDT_Pixel METHOD(NouveauBitMap, Hidd_BitMap, GetPixel)
     struct CardData *carddata = &(SD(cl)->carddata);
     IPTR addr = (msg->x * bmdata->bytesperpixel) + (bmdata->pitch * msg->y);
     HIDDT_Pixel pixel = 0;
+
+    VIDEO_BITMAP_REFUSED(bmdata, 0);
 
     /* FIXME "Optimistics" synchronization (yes, I know it's wrong) */
     IPTR map = (IPTR)bmdata->bo->map;
@@ -303,6 +452,8 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, Clear)
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
     struct CardData * carddata = &(SD(cl)->carddata);
     BOOL ret = FALSE;
+
+    VIDEO_BITMAP_REFUSED(bmdata, );
     
     LOCK_ENGINE
 
@@ -358,6 +509,8 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, FillRect)
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
     struct CardData * carddata = &(SD(cl)->carddata);
     BOOL ret = FALSE;
+
+    VIDEO_BITMAP_REFUSED(bmdata, );
     
     LOCK_ENGINE
 
@@ -408,6 +561,8 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutImage)
 {
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
     struct CardData * carddata = &(SD(cl)->carddata);
+
+    VIDEO_BITMAP_REFUSED(bmdata, );
 
     LOCK_ENGINE
 
@@ -467,6 +622,8 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, GetImage)
 {
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
     struct CardData * carddata = &(SD(cl)->carddata);
+
+    VIDEO_BITMAP_REFUSED(bmdata, );
 
     LOCK_ENGINE
 
@@ -632,6 +789,8 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaImage)
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
     struct CardData * carddata = &(SD(cl)->carddata);
 
+    VIDEO_BITMAP_REFUSED(bmdata, );
+
     LOCK_ENGINE
     LOCK_BITMAP
 
@@ -739,6 +898,8 @@ BOOL METHOD(NouveauBitMap, Hidd_BitMap, ObtainDirectAccess)
 {
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
     struct CardData *carddata = &(SD(cl)->carddata);
+
+    VIDEO_BITMAP_REFUSED(bmdata, FALSE);    /* LockBuffer is the way in */
     
     LOCK_ENGINE
     LOCK_BITMAP
@@ -787,6 +948,8 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaTemplate)
 {
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
     struct CardData * carddata = &(SD(cl)->carddata);
+
+    VIDEO_BITMAP_REFUSED(bmdata, );
 
     if (STAGING_BOUNCE_WANTED)
     {
@@ -884,6 +1047,8 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutTemplate)
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
     struct CardData * carddata = &(SD(cl)->carddata);
 
+    VIDEO_BITMAP_REFUSED(bmdata, );
+
     if (STAGING_BOUNCE_WANTED)
     {
         struct nouveau_staging_ctx ctx = { cl, o, NULL, NULL, msg, NULL, bmdata->bytesperpixel };
@@ -950,6 +1115,8 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutPattern)
 {
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
     struct CardData * carddata = &(SD(cl)->carddata);
+
+    VIDEO_BITMAP_REFUSED(bmdata, );
 
     if (STAGING_BOUNCE_WANTED)
     {
@@ -1021,6 +1188,8 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, DrawLine)
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
     struct CardData *carddata = &(SD(cl)->carddata);
 
+    VIDEO_BITMAP_REFUSED(bmdata, );
+
     LOCK_BITMAP
 
     if ((GC_DRMD(msg->gc) == vHidd_GC_DrawMode_Copy) && (GC_COLMASK(msg->gc) == ~0))
@@ -1043,4 +1212,115 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, UpdateRect)
 {
     /* Scan-out is direct: nothing to notify, the display's compositor
        drives what is shown through Hidd_Display::Show() */
+}
+
+/*
+ * Scan-out bitmap buffers (aHidd_BitMap_Scanout).
+ *
+ * LockBuffer maps the buffer's VRAM through BAR1 and hands that mapping
+ * out: the simplest thing that works on every card. BAR1 writes are
+ * uncached and slow on the Titan (the PutImage path stages through GART
+ * and the copy engine for that reason); a staged lock - a cached system
+ * memory copy per buffer, UnlockBuffer's dirty rectangle copied into VRAM
+ * by the engine - is the planned follow-up (design 4.4) and keeps the same
+ * interface. UnlockBuffer therefore has nothing to flush here.
+ */
+BOOL METHOD(NouveauBitMap, Hidd_BitMap, LockBuffer)
+{
+    struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
+    struct CardData *carddata = &(SD(cl)->carddata);
+    struct nouveau_bo *bo;
+
+    if (!msg->addressReturn || !msg->pitchReturn)
+        return FALSE;
+    if (bmdata->nbufs)
+    {
+        if (msg->buffer >= bmdata->nbufs)
+            return FALSE;
+        bo = bmdata->buf[msg->buffer].bo;
+    }
+    else
+    {
+        if (msg->buffer != 0)
+            return FALSE;
+        bo = bmdata->bo;
+    }
+    if (!bo)
+        return FALSE;
+
+    LOCK_ENGINE
+    LOCK_BITMAP
+    if (!bo->map)
+        nouveau_bo_map(bo, NOUVEAU_BO_RDWR, carddata->client);
+    if (bo->map && (bo == bmdata->bo) && bmdata->gpu_dirty)
+    {
+        /* engine work still queued for the front buffer: settle it first */
+        nouveau_bo_wait(bo, NOUVEAU_BO_RDWR, carddata->client);
+        bmdata->gpu_dirty = FALSE;
+    }
+    UNLOCK_BITMAP
+    UNLOCK_ENGINE
+
+    if (!bo->map)
+        return FALSE;
+    *msg->addressReturn = (UBYTE *)bo->map;
+    *msg->pitchReturn = bmdata->pitch;
+    if (msg->planeOffsets)
+    {
+        /* I420: U, V planes (chroma pitch = pitch/2); NV12: UV plane, 0; packed: 0, 0 */
+        msg->planeOffsets[0] = bmdata->planeoff[0];
+        msg->planeOffsets[1] = bmdata->planeoff[1];
+    }
+    return TRUE;
+}
+
+VOID METHOD(NouveauBitMap, Hidd_BitMap, UnlockBuffer)
+{
+    /* Direct VRAM mapping: the writes are already where the plane reads them */
+}
+
+/*
+ * Make another buffer the front one. The display re-programs the plane
+ * that shows this bitmap (same geometry, new framebuffer) and waits for
+ * the vblank unless fHidd_Swap_NoWait; a bitmap no plane shows is reported
+ * as changed to the display, whose compositor re-blits an RGB surface (a
+ * video bitmap off a plane shows nothing). The displaced buffer joins the
+ * ring: BackBuffer is the next one after the new front.
+ */
+BOOL METHOD(NouveauBitMap, Hidd_BitMap, SwapBuffers)
+{
+    struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
+    OOP_Object *display = NULL;
+    ULONG oldfbid, newfbid;
+
+    if (!bmdata->nbufs || (msg->newFront >= bmdata->nbufs))
+        return FALSE;
+    OOP_GetAttr(o, aHidd_BitMap_Display, (IPTR *)&display);
+    if (!display)
+        return FALSE;
+
+    if (msg->newFront == bmdata->front)
+        return TRUE;
+
+    /* Both framebuffers must exist before the plane can be switched */
+    if (!HIDDNouveauEnsureBufferFB(o, msg->newFront))
+        return FALSE;
+    (void)HIDDNouveauEnsureBufferFB(o, bmdata->front);
+
+    LOCK_BITMAP
+    bmdata->buf[bmdata->front].fbid = bmdata->fbid;
+    oldfbid = bmdata->fbid;
+    newfbid = bmdata->buf[msg->newFront].fbid;
+    bmdata->front = msg->newFront;
+    bmdata->back = (bmdata->front + 1) % bmdata->nbufs;
+    bmdata->bo = bmdata->buf[bmdata->front].bo;
+    bmdata->fbid = newfbid;
+    UNLOCK_BITMAP
+
+    if (!HIDDNouveauPlaneSwap(display, oldfbid, newfbid, (msg->flags & fHidd_Swap_NoWait) ? FALSE : TRUE))
+    {
+        /* Not on a plane: the compositor shows it from the front buffer */
+        HIDD_Display_UpdateRect(display, o, 0, 0, bmdata->drawable.width, bmdata->drawable.height);
+    }
+    return TRUE;
 }

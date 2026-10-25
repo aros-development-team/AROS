@@ -35,7 +35,7 @@ wndwc57e_image_set(struct nv50_wndw *wndw, struct nv50_wndw_atom *asyw)
 	struct nvif_push *push = &wndw->wndw.push;
 	int ret;
 
-	if ((ret = PUSH_WAIT(push, 17)))
+	if ((ret = PUSH_WAIT(push, 17 + 2)))
 		return ret;
 
 	PUSH_MTHD(push, NVC57E, SET_PRESENT_CONTROL,
@@ -75,6 +75,11 @@ wndwc57e_image_set(struct nv50_wndw *wndw, struct nv50_wndw_atom *asyw)
 	PUSH_MTHD(push, NVC57E, SET_SIZE_OUT,
 		  NVVAL(NVC57E, SET_SIZE_OUT, WIDTH, asyw->state.crtc_w) |
 		  NVVAL(NVC57E, SET_SIZE_OUT, HEIGHT, asyw->state.crtc_h));
+
+	/* nvkms sets the input scaler taps on every flip (see wndwca7e.c) */
+	PUSH_MTHD(push, NVC57E, SET_CONTROL_INPUT_SCALER,
+		  NVDEF(NVC57E, SET_CONTROL_INPUT_SCALER, VERTICAL_TAPS, TAPS_2) |
+		  NVDEF(NVC57E, SET_CONTROL_INPUT_SCALER, HORIZONTAL_TAPS, TAPS_2));
 	return 0;
 }
 

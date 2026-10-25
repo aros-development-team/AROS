@@ -538,6 +538,9 @@ VOID Display__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     case aoHidd_Display_VBlankCount:
         *msg->storage = 0;      /* not counted by the base class */
         return;
+    case aoHidd_Display_ColorKey:
+        *msg->storage = HIDD_DISPLAY_DEFAULT_COLORKEY;
+        return;
     case aoHidd_Display_CompositionCapabilities:
         *msg->storage = 0;
         if (data->compositor)
@@ -1079,7 +1082,13 @@ OOP_Object *Display__Hidd_Display__CreateObject(OOP_Class *cl, OOP_Object *o, st
             {
                 /* Last alternative is that the user passed a friend bitmap */
 
-                OOP_GetAttr(friend_bm, aHidd_BitMap_PixFmt, (IPTR *)&pf);
+                /*
+                 * A video bitmap (aHidd_BitMap_VideoFormat) has no RGB layout:
+                 * the bitmap class registers its own pixel format, the friend
+                 * only supplies size, class and display.
+                 */
+                if (!GetTagData(aHidd_BitMap_VideoFormat, vHidd_VideoFmt_None, msg->attrList))
+                    OOP_GetAttr(friend_bm, aHidd_BitMap_PixFmt, (IPTR *)&pf);
 
                 /*
                  * Inherit the class from friend bitmap (if not already specified).
@@ -2364,4 +2373,175 @@ BOOL Display__Hidd_Display__CommitPlanes(OOP_Class *cl, OOP_Object *o, struct pH
 
 VOID Display__Hidd_Display__WaitLatch(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_WaitLatch *msg)
 {
+}
+
+/*****************************************************************************************
+
+    NAME
+        moHidd_Display_QueryScanout
+
+    SYNOPSIS
+        ULONG OOP_DoMethod(OOP_Object *obj, struct pHidd_Display_QueryScanout *msg);
+
+        ULONG HIDD_Display_QueryScanout(OOP_Object *display, HIDDT_StdPixFmt pixFmt, ULONG videoFmt,
+                                        ULONG width, ULONG height, struct HIDD_ScanoutCaps *caps);
+
+    LOCATION
+        hidd.gfx.display
+
+    FUNCTION
+        Asks whether a plane of this display can show a client surface of the
+        given format and source size: a video format (videoFmt != 0, pixFmt is
+        then ignored) or a standard RGB pixel format. The answer is SCF_* flags,
+        0 when no plane can show it at all; caps (may be NULL) receives the
+        details. cgxvideo.library and gallium.library ask this before creating
+        a scan-out bitmap (aHidd_BitMap_Scanout) through moHidd_Display_CreateObject.
+
+        The base class answers 0: its one plane shows screens, not surfaces.
+        A driver answers from its plane set; a driver that cannot scan the
+        format out in hardware must answer 0, there is no software fallback in
+        the system (the client provides its own).
+
+    INPUTS
+        display  - the display
+        pixFmt   - vHidd_StdPixFmt_* of an RGB surface
+        videoFmt - vHidd_VideoFmt_* of a video surface, or vHidd_VideoFmt_None
+        width    - source width in pixels
+        height   - source height in pixels
+        caps     - filled in when non-NULL
+
+    RESULT
+        SCF_* flags, 0 = not possible.
+
+    SEE ALSO
+        moHidd_Display_AttachSurface, moHidd_Display_GetPlaneInfo
+
+*****************************************************************************************/
+
+ULONG Display__Hidd_Display__QueryScanout(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_QueryScanout *msg)
+{
+    struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
+
+    if (msg->caps)
+        SetMem(msg->caps, 0, sizeof(struct HIDD_ScanoutCaps));
+    return 0;
+}
+
+/*****************************************************************************************
+
+    NAME
+        moHidd_Display_AttachSurface
+
+    SYNOPSIS
+        BOOL OOP_DoMethod(OOP_Object *obj, struct pHidd_Display_AttachSurface *msg);
+
+        BOOL HIDD_Display_AttachSurface(OOP_Object *display, OOP_Object *screenBitMap,
+                                        struct HIDD_CompositeRequest *request, struct Hook *hook);
+
+    LOCATION
+        hidd.gfx.display
+
+    FUNCTION
+        Attaches a client surface (a video overlay or a 3D colour buffer) to a
+        screen shown on this display. The request describes the surface: BitMap
+        is a scan-out bitmap, Src the part of it shown, Dest its rectangle in
+        screen bitmap coordinates, Shape the visible region in the same
+        coordinates (NULL = all of Dest), Flags carry CRF_PLANE_REQUIRED (video,
+        never blitted) or CRF_PLANE_OK (may be blitted when no plane is free)
+        and CRF_SCALED. The request belongs to the caller and must stay valid and
+        unchanged while attached, except through moHidd_Display_UpdateSurface.
+
+        The display's compositor shows the surface above the screen's own
+        content, on a hardware plane where it can (cropped to its visible
+        rectangle or colour keyed), and calls hook (CallHookPkt(hook, display,
+        struct HIDD_SurfaceHookMsg *)) when the client should look at the screen
+        again (vHidd_SurfaceHook_Damage) or the plane state changed. The hook
+        runs in the task that caused the event, with no compositor lock held,
+        and must not block.
+
+    INPUTS
+        display      - the display
+        screenBitMap - the screen's bitmap object (HIDD_BM_OBJ of the screen bitmap)
+        request      - the surface description, owned by the caller
+        hook         - notification hook, may be NULL
+
+    RESULT
+        TRUE when attached. FALSE when the display cannot compose surfaces.
+
+    SEE ALSO
+        moHidd_Display_UpdateSurface, moHidd_Display_DetachSurface, moHidd_Display_QueryScanout
+
+*****************************************************************************************/
+
+BOOL Display__Hidd_Display__AttachSurface(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_AttachSurface *msg)
+{
+    struct HIDDDisplayData *data = OOP_INST_DATA(cl, o);
+
+    if (!data->compositor || !msg->request || !msg->screenBitMap)
+        return FALSE;
+    return HIDD_Compositor_AttachSurface(data->compositor, msg->screenBitMap, msg->request, msg->hook);
+}
+
+/*****************************************************************************************
+
+    NAME
+        moHidd_Display_UpdateSurface
+
+    SYNOPSIS
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_Display_UpdateSurface *msg);
+
+        VOID HIDD_Display_UpdateSurface(OOP_Object *display, struct HIDD_CompositeRequest *request);
+
+    LOCATION
+        hidd.gfx.display
+
+    FUNCTION
+        Tells the display that an attached request changed (Dest, Shape, Src,
+        Flags, Opacity). The caller edits the request in place and then calls
+        this; the compositor re-evaluates the surface's plane and redraws.
+
+    INPUTS
+        display - the display
+        request - an attached request
+
+*****************************************************************************************/
+
+VOID Display__Hidd_Display__UpdateSurface(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_UpdateSurface *msg)
+{
+    struct HIDDDisplayData *data = OOP_INST_DATA(cl, o);
+
+    if (data->compositor && msg->request)
+        HIDD_Compositor_UpdateSurface(data->compositor, msg->request);
+}
+
+/*****************************************************************************************
+
+    NAME
+        moHidd_Display_DetachSurface
+
+    SYNOPSIS
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_Display_DetachSurface *msg);
+
+        VOID HIDD_Display_DetachSurface(OOP_Object *display, struct HIDD_CompositeRequest *request);
+
+    LOCATION
+        hidd.gfx.display
+
+    FUNCTION
+        Removes an attached surface. When it returns the plane (if any) is off,
+        the area is redrawn and the hook is not called again; the request and
+        the bitmap may then be freed.
+
+    INPUTS
+        display - the display
+        request - an attached request
+
+*****************************************************************************************/
+
+VOID Display__Hidd_Display__DetachSurface(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_DetachSurface *msg)
+{
+    struct HIDDDisplayData *data = OOP_INST_DATA(cl, o);
+
+    if (data->compositor && msg->request)
+        HIDD_Compositor_DetachSurface(data->compositor, msg->request);
 }

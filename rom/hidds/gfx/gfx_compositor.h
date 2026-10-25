@@ -15,17 +15,56 @@
 #include <utility/hooks.h>
 
 /*
- * A composited layer surface shown inside a screen: a private copy of the
- * HIDD_CompositeRequest handed over by graphics.library, plus the display
- * relative region it covers after clipping to its screen.
+ * A client surface (video overlay, 3D colour buffer) attached through
+ * moHidd_Compositor_AttachSurface. It outlives the screen's stack node: the
+ * screen may leave the display and come back while the client stays attached,
+ * so the registry entry lives in HIDDCompositorData.clientsurfaces (attach
+ * order) and is linked to a SurfaceNode on the screen's list whenever the
+ * screen is on the stack.
+ */
+struct ClientSurface
+{
+    struct MinNode                n;
+    OOP_Object                   *screenbm;  /* the screen it was attached to              */
+    struct HIDD_CompositeRequest *req;       /* the client's own request, never copied     */
+    struct Hook                  *hook;      /* surface hook, may be NULL                  */
+    struct SurfaceNode           *sn;        /* node on the screen's list, NULL when the
+                                              * screen is not on the stack                */
+    LONG                          hookplane; /* plane last reported to the hook, -1 = none */
+    ULONG                         firing;    /* hook calls collected but not yet made     */
+    struct Task                  *waiter;    /* DetachSurface waiting for firing == 0     */
+};
+
+/*
+ * A surface shown inside a screen: a composited layer (a private copy of the
+ * HIDD_CompositeRequest handed over by graphics.library) or a client surface
+ * (the client's request, pointed at), plus the display relative region it
+ * covers after clipping to its screen, and the scan-out plane it holds.
  */
 struct SurfaceNode
 {
     struct MinNode               n;         /* back to front                              */
-    struct HIDD_CompositeRequest req;       /* Dest/Shape are screen bitmap relative      */
+    struct HIDD_CompositeRequest req;       /* layer surface: the copy; Dest/Shape are
+                                             * screen bitmap relative                    */
+    struct HIDD_CompositeRequest *creq;     /* client surface: the client's request,
+                                             * NULL for a layer surface                  */
+    struct ClientSurface        *client;    /* registry entry, NULL for a layer surface   */
     struct Region               *region;    /* visible part, display relative             */
-    BOOL                         opaque;    /* blitted, and hides the screen under it     */
+    BOOL                         opaque;    /* hides the screen under it (blitted opaque,
+                                             * or shown by a plane)                      */
+    ULONG                        videofmt;  /* aHidd_BitMap_VideoFormat of the bitmap     */
+    BOOL                         scanout;   /* aHidd_BitMap_Scanout of the bitmap         */
+    BOOL                         candidate; /* may take a plane in this pass              */
+    BOOL                         denied;    /* lost its plane in this pass's test loop    */
+    LONG                         plane;     /* scan-out plane showing it, -1 = none       */
+    LONG                         zorder;    /* z the plane was given                      */
+    ULONG                        pflags;    /* PSF_* of the plane state                   */
+    struct Rectangle             psrc;      /* plane state: part of the bitmap shown      */
+    struct Rectangle             pdest;     /* plane state: where on the display          */
 };
+
+/* The request a SurfaceNode shows */
+#define SNREQ(sn) ((sn)->creq ? (sn)->creq : &(sn)->req)
 
 /* One bitmap on the display, in Z order (first = frontmost) */
 struct StackBitMapNode
@@ -38,9 +77,14 @@ struct StackBitMapNode
     SIPTR           topedge;
     IPTR            sbmflags;           /* COMPF_* of this screen + STACKNODEF_* */
     struct Hook     *prealphacomphook;  /* from HIDD_ViewPortData.PreAlphaHook */
-    struct MinList  surfaces;           /* struct SurfaceNode, back to front */
-    BOOL            hassurfaces;
+    struct MinList  surfaces;           /* struct SurfaceNode, back to front: layer surfaces, then client surfaces */
+    BOOL            hassurfaces;        /* the list is not empty */
+    BOOL            haslayersurfaces;   /* composited layers (always blitted) are on it */
     LONG            plane;              /* scan-out plane showing this screen, -1 = composed */
+    LONG            zorder;             /* z the plane was given */
+    LONG            lastplane;          /* plane before the current re-plan */
+    BOOL            promoted;           /* plane assignment in progress: gets a plane */
+    BOOL            planedenied;        /* lost its plane in this pass's test loop */
     /*
      * Geometry: the screen bitmap is scrw x scrh pixels and takes dstw x dsth
      * pixels on the display. They differ (scaled) only with ModePolicy_Native,
@@ -120,8 +164,20 @@ struct HIDDCompositorData
     ULONG                       planealloc;     /* entries allocated for the tables below   */
     struct HIDD_PlaneInfo       *planes;        /* planecount entries                       */
     struct HIDD_PlaneState      *planestates;   /* planecount entries, what was committed   */
+    struct HIDD_PlaneState      *commitstates;  /* planecount entries, the set handed to the driver */
     BOOL                        planesknown;
     BOOL                        noplanes;       /* prefs NOPLANES: never use scan-out planes */
+    ULONG                       colorkey;       /* aHidd_Display_ColorKey, 0x00RRGGBB         */
+
+    /*
+     * Client surfaces (AttachSurface) of every screen, attach order. Their
+     * hooks are called with the compositor lock dropped; hooksem guards the
+     * per-surface call counters that DetachSurface waits on (see the hook
+     * firing rule in gfx_compositorclass.c).
+     */
+    struct MinList              clientsurfaces; /* struct ClientSurface                       */
+    ULONG                       nclientsurfaces;
+    struct SignalSemaphore      hooksem;
 };
 
 #define COMPSTATEB_HASALPHA     0

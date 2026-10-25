@@ -92,17 +92,38 @@ wndwc37e_ilut(struct nv50_wndw *wndw, struct nv50_wndw_atom *asyw, int size)
 	asyw->xlut.i.load = head907d_olut_load;
 }
 
+/*
+ * AROS: destination colour key (asyw->blend.ckey, bit 24 = on). The window
+ * is composed where the pixels below it match the key (MATCH factors: the
+ * normal blend) and is transparent elsewhere (NO_MATCH: source zero,
+ * destination one), as nvkms does with COLOR_KEY_SELECT_DST. Each matched
+ * component has MIN = MAX = its value, the unmatched alpha spans 0..max
+ * (nvkms-evo3.c UpdateComposition). NOUVEAU_COLORKEY picks the width.
+ */
+extern int nouveau_colorkey_param;
+
 int
 wndwc37e_blend_set(struct nv50_wndw *wndw, struct nv50_wndw_atom *asyw)
 {
 	struct nvif_push *push = &wndw->wndw.push;
+	const bool key = (asyw->blend.ckey & 0x01000000) != 0;
+	u32 kr = (asyw->blend.ckey >> 16) & 0xff;
+	u32 kg = (asyw->blend.ckey >>  8) & 0xff;
+	u32 kb = (asyw->blend.ckey >>  0) & 0xff;
 	int ret;
+
+	if (nouveau_colorkey_param == 2) {
+		kr |= kr << 8;
+		kg |= kg << 8;
+		kb |= kb << 8;
+	}
 
 	if ((ret = PUSH_WAIT(push, 8)))
 		return ret;
 
 	PUSH_MTHD(push, NVC37E, SET_COMPOSITION_CONTROL,
-		  NVDEF(NVC37E, SET_COMPOSITION_CONTROL, COLOR_KEY_SELECT, DISABLE) |
+		  (key ? NVDEF(NVC37E, SET_COMPOSITION_CONTROL, COLOR_KEY_SELECT, DST) :
+			 NVDEF(NVC37E, SET_COMPOSITION_CONTROL, COLOR_KEY_SELECT, DISABLE)) |
 		  NVVAL(NVC37E, SET_COMPOSITION_CONTROL, DEPTH, asyw->blend.depth),
 
 				SET_COMPOSITION_CONSTANT_ALPHA,
@@ -112,28 +133,30 @@ wndwc37e_blend_set(struct nv50_wndw *wndw, struct nv50_wndw_atom *asyw)
 				SET_COMPOSITION_FACTOR_SELECT,
 		  NVVAL(NVC37E, SET_COMPOSITION_FACTOR_SELECT, SRC_COLOR_FACTOR_MATCH_SELECT,
 							       asyw->blend.src_color) |
-		  NVVAL(NVC37E, SET_COMPOSITION_FACTOR_SELECT, SRC_COLOR_FACTOR_NO_MATCH_SELECT,
-							       asyw->blend.src_color) |
+		  (key ? NVDEF(NVC37E, SET_COMPOSITION_FACTOR_SELECT, SRC_COLOR_FACTOR_NO_MATCH_SELECT, ZERO) :
+			 NVVAL(NVC37E, SET_COMPOSITION_FACTOR_SELECT, SRC_COLOR_FACTOR_NO_MATCH_SELECT,
+							       asyw->blend.src_color)) |
 		  NVVAL(NVC37E, SET_COMPOSITION_FACTOR_SELECT, DST_COLOR_FACTOR_MATCH_SELECT,
 							       asyw->blend.dst_color) |
-		  NVVAL(NVC37E, SET_COMPOSITION_FACTOR_SELECT, DST_COLOR_FACTOR_NO_MATCH_SELECT,
-							       asyw->blend.dst_color),
+		  (key ? NVDEF(NVC37E, SET_COMPOSITION_FACTOR_SELECT, DST_COLOR_FACTOR_NO_MATCH_SELECT, ONE) :
+			 NVVAL(NVC37E, SET_COMPOSITION_FACTOR_SELECT, DST_COLOR_FACTOR_NO_MATCH_SELECT,
+							       asyw->blend.dst_color)),
 
 				SET_KEY_ALPHA,
 		  NVVAL(NVC37E, SET_KEY_ALPHA, MIN, 0x0000) |
 		  NVVAL(NVC37E, SET_KEY_ALPHA, MAX, 0xffff),
 
 				SET_KEY_RED_CR,
-		  NVVAL(NVC37E, SET_KEY_RED_CR, MIN, 0x0000) |
-		  NVVAL(NVC37E, SET_KEY_RED_CR, MAX, 0xffff),
+		  NVVAL(NVC37E, SET_KEY_RED_CR, MIN, key ? kr : 0x0000) |
+		  NVVAL(NVC37E, SET_KEY_RED_CR, MAX, key ? kr : 0xffff),
 
 				SET_KEY_GREEN_Y,
-		  NVVAL(NVC37E, SET_KEY_GREEN_Y, MIN, 0x0000) |
-		  NVVAL(NVC37E, SET_KEY_GREEN_Y, MAX, 0xffff),
+		  NVVAL(NVC37E, SET_KEY_GREEN_Y, MIN, key ? kg : 0x0000) |
+		  NVVAL(NVC37E, SET_KEY_GREEN_Y, MAX, key ? kg : 0xffff),
 
 				SET_KEY_BLUE_CB,
-		  NVVAL(NVC37E, SET_KEY_BLUE_CB, MIN, 0x0000) |
-		  NVVAL(NVC37E, SET_KEY_BLUE_CB, MAX, 0xffff));
+		  NVVAL(NVC37E, SET_KEY_BLUE_CB, MIN, key ? kb : 0x0000) |
+		  NVVAL(NVC37E, SET_KEY_BLUE_CB, MAX, key ? kb : 0xffff));
 	return 0;
 }
 
@@ -143,14 +166,17 @@ wndwc37e_image_clr(struct nv50_wndw *wndw)
 	struct nvif_push *push = &wndw->wndw.push;
 	int ret;
 
-	if ((ret = PUSH_WAIT(push, 4)))
+	if ((ret = PUSH_WAIT(push, 6 + 2)))
 		return ret;
 
 	PUSH_MTHD(push, NVC37E, SET_PRESENT_CONTROL,
 		  NVVAL(NVC37E, SET_PRESENT_CONTROL, MIN_PRESENT_INTERVAL, 0) |
 		  NVDEF(NVC37E, SET_PRESENT_CONTROL, BEGIN_MODE, NON_TEARING));
 
+	/* surface slots are eye + plane * 2: the left eye's planes sit in 0, 2, 4 */
 	PUSH_MTHD(push, NVC37E, SET_CONTEXT_DMA_ISO(0), 0x00000000);
+	PUSH_MTHD(push, NVC37E, SET_CONTEXT_DMA_ISO(2), 0x00000000);
+	PUSH_MTHD(push, NVC37E, SET_CONTEXT_DMA_ISO(4), 0x00000000);
 	return 0;
 }
 
@@ -160,7 +186,7 @@ wndwc37e_image_set(struct nv50_wndw *wndw, struct nv50_wndw_atom *asyw)
 	struct nvif_push *push = &wndw->wndw.push;
 	int ret;
 
-	if ((ret = PUSH_WAIT(push, 17)))
+	if ((ret = PUSH_WAIT(push, 23 + 4)))
 		return ret;
 
 	PUSH_MTHD(push, NVC37E, SET_PRESENT_CONTROL,
@@ -184,14 +210,31 @@ wndwc37e_image_set(struct nv50_wndw *wndw, struct nv50_wndw_atom *asyw)
 		  NVDEF(NVC37E, SET_PARAMS, DE_GAMMA, NONE) |
 		  NVVAL(NVC37E, SET_PARAMS, CSC, asyw->csc.valid) |
 		  NVDEF(NVC37E, SET_PARAMS, CLAMP_BEFORE_BLEND, DISABLE) |
-		  NVDEF(NVC37E, SET_PARAMS, SWAP_UV, DISABLE),
+		  NVVAL(NVC37E, SET_PARAMS, SWAP_UV, asyw->image.swapuv),
 
 				SET_PLANAR_STORAGE(0),
 		  NVVAL(NVC37E, SET_PLANAR_STORAGE, PITCH, asyw->image.blocks[0]) |
-		  NVVAL(NVC37E, SET_PLANAR_STORAGE, PITCH, asyw->image.pitch[0] >> 6));
+		  NVVAL(NVC37E, SET_PLANAR_STORAGE, PITCH, asyw->image.pitch[0] >> 6),
 
-	PUSH_MTHD(push, NVC37E, SET_CONTEXT_DMA_ISO(0), asyw->image.handle, 1);
+				SET_PLANAR_STORAGE(1),
+		  NVVAL(NVC37E, SET_PLANAR_STORAGE, PITCH, asyw->image.blocks[1]) |
+		  NVVAL(NVC37E, SET_PLANAR_STORAGE, PITCH, asyw->image.pitch[1] >> 6),
+
+				SET_PLANAR_STORAGE(2),
+		  NVVAL(NVC37E, SET_PLANAR_STORAGE, PITCH, asyw->image.blocks[2]) |
+		  NVVAL(NVC37E, SET_PLANAR_STORAGE, PITCH, asyw->image.pitch[2] >> 6));
+
+	/*
+	 * Surface slots are eye + plane * 2 (nvkms EyeAndPlaneToCtxDmaIdx): the
+	 * left eye's planes 0, 1, 2 live in slots 0, 2, 4. The chroma planes
+	 * (semi-planar: 1, planar: 1 and 2) are the same buffer at their offsets, else off.
+	 */
+	PUSH_MTHD(push, NVC37E, SET_CONTEXT_DMA_ISO(0), asyw->image.handle[0]);
+	PUSH_MTHD(push, NVC37E, SET_CONTEXT_DMA_ISO(2), asyw->image.handle[1]);
+	PUSH_MTHD(push, NVC37E, SET_CONTEXT_DMA_ISO(4), asyw->image.handle[2]);
 	PUSH_MTHD(push, NVC37E, SET_OFFSET(0), asyw->image.offset[0] >> 8);
+	PUSH_MTHD(push, NVC37E, SET_OFFSET(2), asyw->image.offset[1] >> 8);
+	PUSH_MTHD(push, NVC37E, SET_OFFSET(4), asyw->image.offset[2] >> 8);
 
 	PUSH_MTHD(push, NVC37E, SET_POINT_IN(0),
 		  NVVAL(NVC37E, SET_POINT_IN, X, asyw->state.src_x >> 16) |
@@ -307,6 +350,8 @@ wndwc37e_format[] = {
 	DRM_FORMAT_C8,
 	DRM_FORMAT_YUYV,
 	DRM_FORMAT_UYVY,
+	DRM_FORMAT_NV12,
+	DRM_FORMAT_YUV420,
 	DRM_FORMAT_XRGB8888,
 	DRM_FORMAT_ARGB8888,
 	DRM_FORMAT_RGB565,

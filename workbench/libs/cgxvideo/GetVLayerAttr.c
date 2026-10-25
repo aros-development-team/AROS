@@ -1,7 +1,9 @@
 /*
-    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 #include <aros/debug.h>
+#include <proto/exec.h>
+#include <proto/oop.h>
 
 #include "cgxvideo_intern.h"
 
@@ -45,13 +47,21 @@
 
         VOA_Width, VOA_Height - source dimensions in pixels
 
-        VOA_Modulo -            bytes per source row
+        VOA_Modulo -            bytes per source row (the Y plane pitch for
+                                SRCFMT_YCbCr420; the chroma pitch is half)
+
+        VOA_BaseOffset0/1/2 -   SRCFMT_YCbCr420: offsets of the Y, U and V
+                                planes from VOA_BaseAddress (V50);
+                                SRCFMT_YCbCr420_NV12: Y and interleaved UV
+                                plane offsets, VOA_BaseOffset2 is 0. Valid
+                                after the first LockVLayer(); 0 for other
+                                source types.
 
     EXAMPLE
 
     BUGS
-        VOA_BaseAddress returns NULL unless the layer is locked. Color
-        keying is not supported yet. Other attributes return 0.
+        VOA_BaseAddress returns NULL unless the layer is locked. Other
+        attributes return 0.
 
     SEE ALSO
         SetVLayerAttrTagList()
@@ -64,29 +74,67 @@
 {
     AROS_LIBFUNC_INIT
 
-    if (!VLayerHandle)
+    struct VLayerHandle *vh = VLayerHandle;
+    IPTR result = 0;
+
+    if (!vh)
         return 0;
+
+    ObtainSemaphore(&vh->lock);
+    cgxv_Refresh(vh);
 
     switch (AttrNum)
     {
     case VOA_BaseAddress:
-        return VLayerHandle->locked ? (IPTR)VLayerHandle->buffer : 0;
+        result = vh->locked ? (IPTR)vh->lockedAddr : 0;
+        break;
 
     case VOA_ColorKeyPen:
+        result = (vh->flags & VHF_COLORKEY) ? (IPTR)vh->colorkeypen : (IPTR)-1;
+        break;
+
     case VOA_ColorKey:
-        return (IPTR)-1;
+        result = (vh->flags & VHF_COLORKEY) ? (IPTR)vh->colorkey : (IPTR)-1;
+        break;
 
     case VOA_Width:
-        return VLayerHandle->width;
+        result = vh->width;
+        break;
 
     case VOA_Height:
-        return VLayerHandle->height;
+        result = vh->height;
+        break;
+
+    case VOA_BaseOffset0:
+        result = 0;
+        break;
+
+    case VOA_BaseOffset1:
+        result = VH_PLANAR(vh) ? vh->planeOffsets[0] : 0;
+        break;
+
+    case VOA_BaseOffset2:
+        result = (VH_PLANAR(vh) && !VH_NV12(vh)) ? vh->planeOffsets[1] : 0;
+        break;
 
     case VOA_Modulo:
-        return VLayerHandle->modulo;
+        if (vh->locked)
+            result = vh->lockedPitch;
+        else if (vh->flags & VHF_NULL)
+            result = vh->modulo;
+        else
+        {
+            IPTR bpr = 0;
+
+            OOP_GetAttr(vh->bm, aHidd_BitMap_BytesPerRow, &bpr);
+            result = bpr ? bpr : vh->modulo;
+        }
+        break;
     }
 
-    return 0;
+    ReleaseSemaphore(&vh->lock);
+
+    return result;
 
     AROS_LIBFUNC_EXIT
 } /* GetVLayerAttr */

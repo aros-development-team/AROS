@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 #include <aros/debug.h>
 #include <proto/exec.h>
@@ -31,6 +31,8 @@
         result - 0 if videolayer could be detached from the window
 
     NOTES
+        The backfill hook installed by AttachVLayerTagList() is removed;
+        the key colour stays in the window until the application redraws.
 
     EXAMPLE
 
@@ -48,18 +50,22 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct IntCGXVBase *base = GetCGXVBase(CGXVideoBase);
+    struct VLayerHandle *vh = VLayerHandle;
     ULONG result = TRUE;
 
-    if (!VLayerHandle)
+    if (!vh)
         return result;
 
-    ObtainSemaphore(&VLayerHandle->lock);
-    if (!VLayerHandle->locked && VLayerHandle->window)
+    ObtainSemaphore(&base->handleLock);
+    ObtainSemaphore(&vh->lock);
+    if (!vh->locked && (vh->flags & VHF_ATTACHED))
     {
-        VLayerHandle->window = NULL;
+        cgxv_Detach(vh);
         result = 0;
     }
-    ReleaseSemaphore(&VLayerHandle->lock);
+    ReleaseSemaphore(&vh->lock);
+    ReleaseSemaphore(&base->handleLock);
 
     return result;
 

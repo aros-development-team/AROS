@@ -955,7 +955,69 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
                 case aoHidd_BitMap_PixFmt:
                     data->prot.pixfmt = (OOP_Object *)tag->ti_Data;
                     break;
+
+                case aoHidd_BitMap_Scanout:
+                    data->scanout = tag->ti_Data ? TRUE : FALSE;
+                    break;
+
+                case aoHidd_BitMap_Buffers:
+                    data->buffers = tag->ti_Data;
+                    break;
+
+                case aoHidd_BitMap_VideoFormat:
+                    data->videoformat = tag->ti_Data;
+                    break;
+
+                case aoHidd_BitMap_ColorSpace:
+                    data->colorspace = tag->ti_Data;
+                    break;
                 }
+            }
+        }
+
+        if (!data->buffers)
+            data->buffers = 1;
+
+        /*
+         * A video bitmap has no RGB layout. It gets a private pixel format of
+         * colour model Video so that width, bytes per row and direct access
+         * stay meaningful; the ordinary pixel methods refuse it (BM_IS_VIDEO).
+         */
+        if (data->videoformat)
+        {
+            if ((data->videoformat >= num_Hidd_VideoFmt) || data->displayable || data->compositable || data->framebuffer)
+                ok = FALSE;
+            else
+            {
+                /* An inherited RGB pixfmt (friend) does not describe a video buffer */
+                data->prot.pixfmt = NULL;
+                ULONG bpp = (data->videoformat <= vHidd_VideoFmt_UYVY) ? 2 : 1;
+                struct TagItem vtags[] =
+                {
+                    { aHidd_PixFmt_ColorModel,     vHidd_ColorModel_Video    },
+                    { aHidd_PixFmt_RedShift,       0                         },
+                    { aHidd_PixFmt_GreenShift,     0                         },
+                    { aHidd_PixFmt_BlueShift,      0                         },
+                    { aHidd_PixFmt_AlphaShift,     0                         },
+                    { aHidd_PixFmt_RedMask,        0                         },
+                    { aHidd_PixFmt_GreenMask,      0                         },
+                    { aHidd_PixFmt_BlueMask,       0                         },
+                    { aHidd_PixFmt_AlphaMask,      0                         },
+                    { aHidd_PixFmt_Depth,          bpp * 8                   },
+                    { aHidd_PixFmt_BitsPerPixel,   bpp * 8                   },
+                    { aHidd_PixFmt_BytesPerPixel,  bpp                       },
+                    { aHidd_PixFmt_StdPixFmt,      vHidd_StdPixFmt_Unknown   },
+                    { aHidd_PixFmt_CLUTShift,      0                         },
+                    { aHidd_PixFmt_CLUTMask,       0                         },
+                    { aHidd_PixFmt_BitMapType,     vHidd_BitMapType_Chunky   },
+                    { aHidd_PixFmt_SwapPixelBytes, 0                         },
+                    { TAG_DONE,                    0                         }
+                };
+
+                data->prot.pixfmt = DMEnum__Internal__RegisterPixFmt(CSD(cl)->dmenumclass, vtags);
+                data->pf_registered = (data->prot.pixfmt != NULL);
+                if (!data->prot.pixfmt)
+                    ok = FALSE;
             }
         }
 
@@ -1199,6 +1261,31 @@ VOID BM__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
             *msg->storage = data->framebuffer;
             return;
 
+        case aoHidd_BitMap_Scanout:
+            *msg->storage = data->scanout;
+            return;
+
+        case aoHidd_BitMap_Buffers:
+            *msg->storage = data->buffers;
+            return;
+
+        case aoHidd_BitMap_FrontBuffer:
+        case aoHidd_BitMap_BackBuffer:
+            *msg->storage = 0;      /* one buffer unless the driver says otherwise */
+            return;
+
+        case aoHidd_BitMap_BufferHandle:
+            *msg->storage = 0;
+            return;
+
+        case aoHidd_BitMap_VideoFormat:
+            *msg->storage = data->videoformat;
+            return;
+
+        case aoHidd_BitMap_ColorSpace:
+            *msg->storage = data->colorspace;
+            return;
+
         case aoHidd_BitMap_PixFmt:
             *msg->storage = (IPTR)data->prot.pixfmt;
             return;
@@ -1259,6 +1346,10 @@ VOID BM__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
 /****************************************************************************************/
 
 #define UB(x) ((UBYTE *)x)
+
+/* Video bitmaps (aHidd_BitMap_VideoFormat != 0) are scan-out only: no pixel method touches them */
+#define BM_IS_VIDEO(data)        ((data)->videoformat != 0)
+#define BM_VIDEO_GUARD(cl, o)    BM_IS_VIDEO(((struct HIDDBitMapData *)OOP_INST_DATA((cl), (o))))
 
 /*****************************************************************************************
 
@@ -1447,6 +1538,8 @@ BOOL BM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
 VOID BM__Hidd_BitMap__DrawPixel(OOP_Class *cl, OOP_Object *obj,
                                  struct pHidd_BitMap_DrawPixel *msg)
 {
+    if (BM_VIDEO_GUARD(cl, obj))
+        return;
     HIDDT_Pixel                     src, dest, val;
     HIDDT_DrawMode                  mode;
     HIDDT_Pixel                     writeMask;
@@ -1561,6 +1654,8 @@ VOID BM__Hidd_BitMap__DrawLine
     OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_DrawLine *msg
 )
 {
+    if (BM_VIDEO_GUARD(cl, obj))
+        return;
     WORD        dx, dy, incrE, incrNE, d, x, y, s1, s2, t, i;
     WORD        x1, y1, x2, y2;
     UWORD       maskLine;  /* for line pattern */
@@ -1832,6 +1927,8 @@ VOID BM__Hidd_BitMap__DrawLine
 VOID BM__Hidd_BitMap__DrawRect(OOP_Class *cl, OOP_Object *obj,
                                struct pHidd_BitMap_DrawRect *msg)
 {
+    if (BM_VIDEO_GUARD(cl, obj))
+        return;
 #ifdef __RESERVED__
     OOP_Object *gc = msg->gc;
     WORD        addX, addY;
@@ -1898,6 +1995,8 @@ VOID BM__Hidd_BitMap__DrawRect(OOP_Class *cl, OOP_Object *obj,
 VOID BM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *obj,
                                struct pHidd_BitMap_DrawRect *msg)
 {
+    if (BM_VIDEO_GUARD(cl, obj))
+        return;
     OOP_Object *gc = msg->gc;
     WORD        y = msg->minY;
     UWORD       linepat;
@@ -1967,6 +2066,8 @@ VOID BM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *obj,
 VOID BM__Hidd_BitMap__DrawEllipse(OOP_Class *cl, OOP_Object *obj,
                                   struct pHidd_BitMap_DrawEllipse *msg)
 {
+    if (BM_VIDEO_GUARD(cl, obj))
+        return;
     OOP_Object *gc = msg->gc;
     WORD        x = msg->rx, y = 0;     /* ellipse points */
 
@@ -2246,6 +2347,8 @@ VOID BM__Hidd_BitMap__FillEllipse(OOP_Class *cl, OOP_Object *obj,
 VOID BM__Hidd_BitMap__DrawPolygon(OOP_Class *cl, OOP_Object *obj,
                                   struct pHidd_BitMap_DrawPolygon *msg)
 {
+    if (BM_VIDEO_GUARD(cl, obj))
+        return;
 #ifdef __RESERVED__
     OOP_Object *gc = msg->gc;
     WORD        i;
@@ -2563,6 +2666,8 @@ VOID BM__Hidd_BitMap__FillSpan(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitM
 
 VOID BM__Hidd_BitMap__Clear(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_Clear *msg)
 {
+    if (BM_VIDEO_GUARD(cl, obj))
+        return;
     struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     WORD  x, y;
     IPTR width, height;
@@ -2663,6 +2768,8 @@ static LONG inline getpixfmtbpp(OOP_Class *cl, OOP_Object *o, HIDDT_StdPixFmt st
 VOID BM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o,
                                struct pHidd_BitMap_GetImage *msg)
 {
+    if (BM_VIDEO_GUARD(cl, o))
+        return;
     WORD                    x, y;
     UBYTE                   *pixarray = (UBYTE *)msg->pixels;
     APTR                    ppixarray = &pixarray;
@@ -2818,6 +2925,8 @@ VOID BM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o,
 VOID BM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
                                struct pHidd_BitMap_PutImage *msg)
 {
+    if (BM_VIDEO_GUARD(cl, o))
+        return;
     WORD                    x, y;
     UBYTE                   *pixarray = (UBYTE *)msg->pixels;
     APTR                    ppixarray = &pixarray;
@@ -3142,6 +3251,8 @@ static void PutAlphaImageBuffered(ULONG *xbuf, UWORD starty, UWORD width, UWORD 
 VOID BM__Hidd_BitMap__PutAlphaImage(OOP_Class *cl, OOP_Object *o,
                                     struct pHidd_BitMap_PutAlphaImage *msg)
 {
+    if (BM_VIDEO_GUARD(cl, o))
+        return;
     WORD x, y;
     struct HIDDBitMapData *bmdata = OOP_INST_DATA(cl, o);
     struct paib_data data = {msg->pixels, msg->modulo};
@@ -3389,6 +3500,8 @@ static void JAM2TemplateBuffered(ULONG *xbuf, UWORD starty, UWORD width, UWORD h
 
 VOID BM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutTemplate *msg)
 {
+    if (BM_VIDEO_GUARD(cl, o))
+        return;
     OOP_Object *gc = msg->gc;
     BOOL get = TRUE;
     void (*op)(ULONG *, UWORD, UWORD, UWORD, struct ptb_data *);
@@ -3570,6 +3683,8 @@ static void JAM2AlphaTemplateBuffered(ULONG *xbuf, UWORD starty, UWORD width, UW
 VOID BM__Hidd_BitMap__PutAlphaTemplate(OOP_Class *cl, OOP_Object *o,
                                        struct pHidd_BitMap_PutAlphaTemplate *msg)
 {
+    if (BM_VIDEO_GUARD(cl, o))
+        return;
     OOP_Object *gc = msg->gc;
     BOOL get = TRUE;
     void (*op)(ULONG *, UWORD, UWORD, UWORD, struct patb_data *);
@@ -3886,6 +4001,8 @@ static void ColorPatternBuffered(ULONG *xbuf, UWORD starty, UWORD width, UWORD h
 VOID BM__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
                                  struct pHidd_BitMap_PutPattern *msg)
 {
+    if (BM_VIDEO_GUARD(cl, o))
+        return;
     void (*op)(ULONG *xbuf, UWORD starty, UWORD width, UWORD height, struct ppb_data *data);
     BOOL get = TRUE;
     struct ppb_data data;
@@ -3999,6 +4116,8 @@ VOID BM__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
 VOID BM__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
                                   struct pHidd_BitMap_PutImageLUT *msg)
 {
+    if (BM_VIDEO_GUARD(cl, o))
+        return;
     WORD                    x, y;
     UBYTE                   *pixarray = (UBYTE *)msg->pixels;
     HIDDT_PixelLUT          *pixlut = msg->pixlut;
@@ -4163,6 +4282,8 @@ static void PutTranspImageLUTBuffered(ULONG *xbuf, UWORD starty, UWORD width, UW
 VOID BM__Hidd_BitMap__PutTranspImageLUT(OOP_Class *cl, OOP_Object *o,
                                         struct pHidd_BitMap_PutTranspImageLUT *msg)
 {
+    if (BM_VIDEO_GUARD(cl, o))
+        return;
     struct HIDDBitMapData *data = OOP_INST_DATA(cl, o);
     struct ptilb_data userdata =
     {
@@ -4235,6 +4356,8 @@ VOID BM__Hidd_BitMap__PutTranspImageLUT(OOP_Class *cl, OOP_Object *o,
 VOID BM__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o,
                                   struct pHidd_BitMap_GetImageLUT *msg)
 {
+    if (BM_VIDEO_GUARD(cl, o))
+        return;
     WORD                    x, y;
     UBYTE                   *pixarray = (UBYTE *)msg->pixels;
     HIDDT_PixelLUT          *pixlut = msg->pixlut;
@@ -4348,6 +4471,8 @@ VOID BM__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o,
 VOID BM__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o,
                                          struct pHidd_BitMap_BlitColorExpansion *msg)
 {
+    if (BM_VIDEO_GUARD(cl, o))
+        return;
 #ifdef __RESERVED__
     ULONG   cemd;
     ULONG   fg, bg;
@@ -4582,6 +4707,10 @@ IPTR BM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
         {
             Hidd_BitMap_Switch(tag->ti_Tag, idx)
             {
+            case aoHidd_BitMap_ColorSpace:
+                data->colorspace = tag->ti_Data;
+                break;
+
             case aoHidd_BitMap_LeftEdge:
                 xoffset = tag->ti_Data;
                 /*
@@ -5003,6 +5132,8 @@ static inline ULONG scale_srcpos(ULONG i, ULONG sf, ULONG df, ULONG srcsize)
 VOID BM__Hidd_BitMap__BitMapScale(OOP_Class * cl, OOP_Object *o,
                                   struct pHidd_BitMap_BitMapScale * msg)
 {
+    if (BM_VIDEO_GUARD(cl, o))
+        return;
     struct BitScaleArgs *bsa = msg->bsa;
     ULONG *srcbuf, *dstbuf;
     UWORD *linepattern;
@@ -5325,4 +5456,115 @@ void BM__Hidd_BitMap__SetVisible(OOP_Class *cl, OOP_Object *o, BOOL val)
     ObtainSemaphore(&data->lock);
     data->visible = val;
     ReleaseSemaphore(&data->lock);
+}
+
+/*****************************************************************************************
+
+    NAME
+        moHidd_BitMap_LockBuffer
+
+    SYNOPSIS
+        BOOL OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_LockBuffer *msg);
+
+        BOOL HIDD_BM_LockBuffer(OOP_Object *obj, ULONG buffer, UBYTE **addressReturn,
+                                ULONG *pitchReturn, ULONG *planeOffsets);
+
+    LOCATION
+        hidd.gfx.bitmap
+
+    FUNCTION
+        Gives the caller CPU access to one buffer of a scan-out bitmap
+        (aHidd_BitMap_Scanout). addressReturn receives the buffer's address,
+        pitchReturn its bytes per row and, for planar video formats, planeOffsets
+        the byte offsets of the second and third plane (may be NULL for packed
+        formats). The access ends with moHidd_BitMap_UnlockBuffer.
+
+        The base classes have no scan-out bitmaps and return FALSE. A driver's
+        bitmap class implements it for its display memory; the mapping may be a
+        staging copy that UnlockBuffer uploads.
+
+    INPUTS
+        obj           - a scan-out bitmap
+        buffer        - buffer index, 0 .. aHidd_BitMap_Buffers - 1
+        addressReturn - where to put the address
+        pitchReturn   - where to put the bytes per row
+        planeOffsets  - array of 2 ULONGs for planar formats, or NULL
+
+    RESULT
+        TRUE when the buffer is mapped.
+
+    SEE ALSO
+        moHidd_BitMap_UnlockBuffer, moHidd_BitMap_SwapBuffers
+
+*****************************************************************************************/
+
+BOOL BM__Hidd_BitMap__LockBuffer(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_LockBuffer *msg)
+{
+    return FALSE;
+}
+
+/*****************************************************************************************
+
+    NAME
+        moHidd_BitMap_UnlockBuffer
+
+    SYNOPSIS
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_UnlockBuffer *msg);
+
+        VOID HIDD_BM_UnlockBuffer(OOP_Object *obj, ULONG buffer, struct Rectangle *dirty);
+
+    LOCATION
+        hidd.gfx.bitmap
+
+    FUNCTION
+        Ends an access started with moHidd_BitMap_LockBuffer. dirty names the
+        part of the buffer that was written (NULL = all of it); a driver that
+        locks through a staging copy uploads that part.
+
+    INPUTS
+        obj    - a scan-out bitmap
+        buffer - the buffer that was locked
+        dirty  - the changed rectangle or NULL
+
+*****************************************************************************************/
+
+VOID BM__Hidd_BitMap__UnlockBuffer(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_UnlockBuffer *msg)
+{
+}
+
+/*****************************************************************************************
+
+    NAME
+        moHidd_BitMap_SwapBuffers
+
+    SYNOPSIS
+        BOOL OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_SwapBuffers *msg);
+
+        BOOL HIDD_BM_SwapBuffers(OOP_Object *obj, ULONG newFront, ULONG flags);
+
+    LOCATION
+        hidd.gfx.bitmap
+
+    FUNCTION
+        Makes buffer newFront the one shown by the plane scanning the bitmap
+        out (aHidd_BitMap_FrontBuffer), at the next vertical blank. Unless
+        fHidd_Swap_NoWait is given the method returns when the previously shown
+        buffer is no longer scanned out and may be written again; it is then
+        aHidd_BitMap_BackBuffer.
+
+        The base classes return FALSE.
+
+    INPUTS
+        obj      - a scan-out bitmap
+        newFront - buffer index to show
+        flags    - fHidd_Swap_*
+
+    RESULT
+        TRUE when the swap was queued.
+
+*****************************************************************************************/
+
+BOOL BM__Hidd_BitMap__SwapBuffers(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SwapBuffers *msg)
+{
+    return FALSE;
 }

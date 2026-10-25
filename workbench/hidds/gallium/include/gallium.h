@@ -44,6 +44,7 @@ enum
     moHidd_Gallium_DestroyPipeScreen,
     moHidd_Gallium_DisplayResource,
     moHidd_Gallium_DisplayResourceRP,
+    moHidd_Gallium_ResourceFromBitMap,
 
     NUM_GALLIUM_METHODS
 };
@@ -105,6 +106,23 @@ struct pHidd_Gallium_DisplayResourceRP
     STACKED LONG                    dsty;
     STACKED LONG                    width;
     STACKED LONG                    height;
+};
+
+/* Alias one buffer of a scan-out bitmap (aHidd_BitMap_Scanout, created
+ * through the screen's display) as a pipe_resource of the given pipe
+ * screen, so that a GL context renders straight into display memory a
+ * plane can scan out (or the compositor blits). The resource must use
+ * the buffer's linear layout and pitch and be usable as a render target
+ * (PIPE_BIND_RENDER_TARGET | SAMPLER_VIEW | SCANOUT | LINEAR). Returns a
+ * referenced struct pipe_resource * (release with pipe_resource_reference)
+ * or NULL. The base class returns NULL: gallium.library then refuses the
+ * scan-out framebuffer and mesa3dgl keeps the DisplayResource blit path. */
+struct pHidd_Gallium_ResourceFromBitMap
+{
+    STACKED OOP_MethodID            mID;
+    STACKED OOP_Object              *bitmap;   /* scan-out bitmap object */
+    STACKED ULONG                   buffer;    /* 0 .. aHidd_BitMap_Buffers-1 */
+    STACKED APTR                    screen;    /* struct pipe_screen * of this pipe */
 };
 
 #endif

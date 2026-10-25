@@ -70,6 +70,13 @@
 #define NVCA7E_SET_SIZE_OUT                                                     (0x000002A4)
 #define NVCA7E_SET_SIZE_OUT_WIDTH                                               15:0
 #define NVCA7E_SET_SIZE_OUT_HEIGHT                                              31:16
+#define NVCA7E_SET_CONTROL_INPUT_SCALER                                         (0x000002A8)
+#define NVCA7E_SET_CONTROL_INPUT_SCALER_VERTICAL_TAPS                           2:0
+#define NVCA7E_SET_CONTROL_INPUT_SCALER_VERTICAL_TAPS_TAPS_2                    (0x00000001)
+#define NVCA7E_SET_CONTROL_INPUT_SCALER_VERTICAL_TAPS_TAPS_5                    (0x00000004)
+#define NVCA7E_SET_CONTROL_INPUT_SCALER_HORIZONTAL_TAPS                         6:4
+#define NVCA7E_SET_CONTROL_INPUT_SCALER_HORIZONTAL_TAPS_TAPS_2                  (0x00000001)
+#define NVCA7E_SET_CONTROL_INPUT_SCALER_HORIZONTAL_TAPS_TAPS_5                  (0x00000004)
 #define NVCA7E_SET_PRESENT_CONTROL                                              (0x00000308)
 #define NVCA7E_SET_PRESENT_CONTROL_MIN_PRESENT_INTERVAL                         3:0
 #define NVCA7E_SET_PRESENT_CONTROL_BEGIN_MODE                                   6:4

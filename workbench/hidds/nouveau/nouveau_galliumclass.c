@@ -16,6 +16,7 @@
 #include "nouveau_winsys.h"
 #include "nv50/nv50_resource.h"
 #include "nv30/nv30_resource.h"
+#include "frontend/winsys_handle.h"
 
 #undef HiddGalliumAttrBase
 #define HiddGalliumAttrBase   (SD(cl)->galliumAttrBase)
@@ -265,4 +266,102 @@ nouveau_bo_wait(dstdata->bo, NOUVEAU_BO_RD, carddata->client);
     UNLOCK_BITMAP_BM(dstdata)
 
     UNLOCK_ENGINE
+}
+
+/*
+ * Alias buffer `buffer` of a nouveau scan-out bitmap as a pipe_resource of
+ * the gallium screen `screen` (3D scan-out, plan 3.7 / 4.6). The gallium
+ * screen and the hidd share one nouveau_device, so the bo is handed over
+ * through its GEM name: nouveau_screen_bo_from_handle() finds the same
+ * nouveau_bo in the device's list and takes a reference, the miptree
+ * takes the bitmap's pitch as its level-0 pitch and the bo's (linear)
+ * config as its layout. The 2D/3D engines render linear targets by pitch
+ * (bo memtype 0), which is exactly what the window plane
+ * scans out and what the compositor's CopyBox reads.
+ */
+APTR METHOD(NouveauGallium, Hidd_Gallium, ResourceFromBitMap)
+{
+    struct pipe_screen *pscreen = (struct pipe_screen *)msg->screen;
+    OOP_Object *bm = msg->bitmap;
+    struct HIDDNouveauBitMapData *bmdata;
+    struct nouveau_bo *bo;
+    struct winsys_handle whandle;
+    struct pipe_resource templ;
+    struct pipe_resource *res;
+    enum pipe_format format;
+    uint32_t name = 0;
+
+    if (!pscreen || !bm || !pscreen->resource_from_handle)
+        return NULL;
+    if (!IS_NOUVEAU_BM_CLASS(OOP_OCLASS(bm)))
+        return NULL;
+
+    bmdata = OOP_INST_DATA(OOP_OCLASS(bm), bm);
+    if (!bmdata->nbufs || msg->buffer >= bmdata->nbufs || bmdata->videoformat)
+        return NULL;
+
+    bo = bmdata->buf[msg->buffer].bo;
+    if (!bo || !bmdata->pitch)
+        return NULL;
+
+    /* Only linear buffers: the plane and the compositor read them by pitch
+     * (memtype 0: nv50 and nvc0 share the field) */
+    if (bo->config.nv50.memtype != 0)
+    {
+        D(bug("[NouveauGallium] %s: buffer %lu of %p is tiled (memtype %x), refused\n",
+              __func__, (unsigned long)msg->buffer, bm, bo->config.nv50.memtype));
+        return NULL;
+    }
+
+    switch (bmdata->stdfmt)
+    {
+    case vHidd_StdPixFmt_BGRA32:
+        format = PIPE_FORMAT_B8G8R8A8_UNORM;
+        break;
+    case vHidd_StdPixFmt_BGR032:
+        format = PIPE_FORMAT_B8G8R8X8_UNORM;
+        break;
+    case vHidd_StdPixFmt_RGB16_LE:
+        format = PIPE_FORMAT_B5G6R5_UNORM;
+        break;
+    default:
+        D(bug("[NouveauGallium] %s: std pixfmt %lu has no pipe format\n", __func__,
+              (unsigned long)bmdata->stdfmt));
+        return NULL;
+    }
+
+    if (nouveau_bo_name_get(bo, &name) || !name)
+    {
+        D(bug("[NouveauGallium] %s: no GEM name for bo %p\n", __func__, bo));
+        return NULL;
+    }
+
+    memset(&whandle, 0, sizeof(whandle));
+    whandle.type   = WINSYS_HANDLE_TYPE_SHARED;
+    whandle.handle = name;
+    whandle.stride = bmdata->pitch;
+    whandle.offset = 0;
+
+    memset(&templ, 0, sizeof(templ));
+    templ.target     = pscreen->caps.npot_textures ? PIPE_TEXTURE_2D : PIPE_TEXTURE_RECT;
+    templ.format     = format;
+    templ.width0     = bmdata->drawable.width;
+    templ.height0    = bmdata->drawable.height;
+    templ.depth0     = 1;
+    templ.array_size = 1;
+    templ.last_level = 0;
+    templ.nr_samples = 0;
+    templ.nr_storage_samples = 0;
+    templ.bind       = PIPE_BIND_RENDER_TARGET | PIPE_BIND_SAMPLER_VIEW
+                     | PIPE_BIND_SCANOUT | PIPE_BIND_LINEAR | PIPE_BIND_SHARED;
+    templ.usage      = PIPE_USAGE_DEFAULT;
+
+    res = pscreen->resource_from_handle(pscreen, &templ, &whandle,
+                                        PIPE_HANDLE_USAGE_FRAMEBUFFER_WRITE);
+
+    D(bug("[NouveauGallium] %s: bitmap %p buffer %lu bo %p name %lu pitch %lu -> resource %p\n",
+          __func__, bm, (unsigned long)msg->buffer, bo, (unsigned long)name,
+          (unsigned long)bmdata->pitch, res));
+
+    return res;
 }

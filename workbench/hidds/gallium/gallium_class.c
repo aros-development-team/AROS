@@ -100,3 +100,10 @@ IPTR METHOD(HiddGallium, Hidd_Gallium, DisplayResourceRP)
     return FALSE;
 }
 
+APTR METHOD(HiddGallium, Hidd_Gallium, ResourceFromBitMap)
+{
+    /* Default: no import. gallium.library refuses the scan-out
+     * framebuffer and the client keeps the blit path. */
+    D(bug ("[Gallium] %s()\n", __func__));
+    return NULL;
+}

@@ -5,12 +5,13 @@ include $(SRCDIR)/workbench/libs/mesa/mesa.cfg
 
 GALLIUM_PATH = $(top_srcdir)/src/gallium
 
-#MM workbench-libs-gallium : includes hidd-gallium
+#MM workbench-libs-gallium : includes hidd-gallium linklibs-surfacetrack
 
 USER_INCLUDES += \
             -I$(AROS_INCLUDES)/gallium \
             -iquote $(top_builddir)/src \
-            -iquote $(GALLIUM_PATH)/include
+            -iquote $(GALLIUM_PATH)/include \
+            -iquote $(GALLIUM_PATH)/auxiliary
 #USER_CPPFLAGS +=-DDEBUG=1
 
 LIB_GALLIUM_SOURCES = \
@@ -19,7 +20,8 @@ LIB_GALLIUM_SOURCES = \
             destroypipe \
             createpipescreen \
             destroypipescreen \
-            bltpiperesourcerastport
+            bltpiperesourcerastport \
+            scanoutframebuffer
 
 ##MM- core-linklibs : linklibs-gallium
 
@@ -27,7 +29,7 @@ LIB_GALLIUM_SOURCES = \
    modname=gallium modtype=library \
    libdir=$(top_libdir) linklibname=gallium \
    files="$(LIB_GALLIUM_SOURCES)" \
-   uselibs="stdc"
+   uselibs="surfacetrack stdc"
 
 INCLUDE_FILES := $(call WILDCARD, include/*.h)
 
