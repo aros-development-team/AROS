@@ -3586,8 +3586,9 @@ static BOOL MakeDirEntry(BYTE type, UBYTE *name, UBYTE *entrybuffer, globaldata 
 	if (g->muFS_ready)
 	{
 		extrafields.link = 0;
-		extrafields.uid = g->user->uid;
-		extrafields.gid = g->user->gid;
+		/* a task owned by nobody has no muExtOwner (g->user is NULL) */
+		extrafields.uid = g->user ? g->user->uid : muNOBODY_UID;
+		extrafields.gid = g->user ? g->user->gid : muNOBODY_GID;
 		extrafields.prot = muGetDefProtection(g->action->dp_Port->mp_SigTask);
 		direntry->protection = extrafields.prot;
 		extrafields.prot &= 0xffffff00;
