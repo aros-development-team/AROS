@@ -118,6 +118,11 @@ LONG debug_handler(struct ExecBase *SysBase)
             break;
         case ACTION_WRITE:
             if ((pa = (struct debugArgs *)dp->dp_Arg1)) {
+                if (dp->dp_Arg3 < 0) {
+                    dp->dp_Res1 = -1;
+                    dp->dp_Res2 = ERROR_BAD_NUMBER;
+                    break;
+                }
                 ULONG len = dp->dp_Arg3 > OUTBUF_SIZE - 1 ? OUTBUF_SIZE - 1 : dp->dp_Arg3;
                 pa->outbuf[0] = '\0';
                 if (is_ascii((char *)dp->dp_Arg2, len))
