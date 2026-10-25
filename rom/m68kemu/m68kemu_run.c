@@ -108,6 +108,7 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
             { NP_UserData,    (IPTR)ctx },
             { NP_FreeSeglist, FALSE },
             { NP_Input,       (IPTR)Input() },
+            { NP_Arguments,   (IPTR)argPtr },
             { NP_CloseInput,  FALSE },
             { NP_Output,      (IPTR)Output() },
             { NP_CloseOutput, FALSE },
@@ -173,9 +174,12 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
         return -1;
 
     entry = M68KEmu_LoadHunks(ctx, segList);
+    if (ctx->trace_calls) bug("[m68kemu] TRACE build " __DATE__ " " __TIME__ " RunHunk seglist %p stack %u args %u -> entry %08x\n",
+        BADDR(segList), (unsigned)stackSize, (unsigned)argSize, (unsigned)entry);
     if (entry)
         result = setup_and_execute(ctx, entry, argPtr, argSize,
                                    stackSize, NULL, M68KEmuBase);
+    if (ctx && 0) bug("[m68kemu] TRACE RunHunk result %ld\n", (long)result);
 
     M68KEmu_DestroyContext(ctx);
     return result;

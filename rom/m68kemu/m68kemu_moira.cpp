@@ -109,10 +109,13 @@ public:
         /* Push exception frame for the user function's RTE:
            68020 format: vector_offset(word) + PC(long) + SR(word) = 8 bytes
            68000 format: PC(long) + SR(word) = 6 bytes */
+        /* The frame's SR is the caller's own: the program runs in supervisor
+           mode here from reset, and an RTE into user mode would hand it the
+           never-initialised user stack pointer. */
         u32 sp = getA(7);
         sp -= 2; m68k_write16(ctx, sp, 0x0000);  /* vector offset (68020) */
         sp -= 4; m68k_write32(ctx, sp, ret_addr); /* return PC */
-        sp -= 2; m68k_write16(ctx, sp, 0x0000);  /* SR: user mode */
+        sp -= 2; m68k_write16(ctx, sp, getSR() & 0xFFFF); /* SR: the caller's */
         setA(7, sp);
 
         /* Redirect LINEA vector to supervisor trampoline */
@@ -123,12 +126,93 @@ public:
         setPC0(userFunc);
         setPC(userFunc + 2);
 
-        bug("[m68kemu] Supervisor: dispatching to 0x%lx, ret=0x%lx\n",
+        if (ctx->trace_calls) bug("[m68kemu] Supervisor: dispatching to 0x%lx, ret=0x%lx\n",
             (unsigned long)userFunc, (unsigned long)ret_addr);
+    }
+
+    void ciaTrace(const char *what, u32 addr, u32 val) const
+    {
+        if (ctx->trace_calls && ctx->cia_trace < 24)
+        {
+            const_cast<AROSMoira*>(this)->ctx->cia_trace++;
+            bug("[m68kemu] CIA %s %08x val %02x at PC %08x\n", what, (unsigned)addr, (unsigned)val, (unsigned)getPC0());
+        }
+    }
+
+    /* which CIA and register a byte access hits: A on odd $BFEx01, B on even $BFDx00 */
+    bool ciaDecode(u32 addr, int &chip, int &reg) const
+    {
+        if ((addr & 0xFFF001) == 0xBFE001) { chip = 0; reg = (addr >> 8) & 15; return true; }
+        if ((addr & 0xFFF001) == 0xBFD000) { chip = 1; reg = (addr >> 8) & 15; return true; }
+        return false;
+    }
+
+    u8 ciaRead(int chip, int reg) const
+    {
+        ULONG freq = 709379;
+        ULONG e = m68k_eclock_now(ctx, &freq);
+        auto &c = ctx->cia[chip];
+        switch (reg)
+        {
+            case 0:  return c.pra ? c.pra : 0xFF;            /* PRA: no buttons, no disk change */
+            case 1:  return c.prb;
+            case 2:  return c.ddra;
+            case 3:  return c.ddrb;
+            case 4: case 5:                                   /* timer A, counting down at E rate */
+            {
+                UWORD latch = c.ta_latch ? c.ta_latch : 0xFFFF;
+                UWORD v = (UWORD)(latch - (e % (latch + 1u)));
+                return reg == 4 ? (u8)v : (u8)(v >> 8);
+            }
+            case 6: case 7:                                   /* timer B */
+            {
+                UWORD latch = c.tb_latch ? c.tb_latch : 0xFFFF;
+                UWORD v = (UWORD)(latch - (e % (latch + 1u)));
+                return reg == 6 ? (u8)v : (u8)(v >> 8);
+            }
+            case 8: case 9: case 10:                          /* TOD: A at 50 Hz, B at horizontal rate */
+            {
+                ULONG rate = chip ? 15625 : 50;
+                ULONG tod = (ULONG)(((unsigned long long)e * rate) / freq) + c.tod_base;
+                tod &= 0xFFFFFF;
+                return (u8)(tod >> ((reg - 8) * 8));
+            }
+            case 12: return 0;                                /* SDR */
+            case 13: return 0;                                /* ICR: nothing pending */
+            case 14: return c.cra;
+            case 15: return c.crb;
+            default: return 0;
+        }
+    }
+
+    void ciaWrite(int chip, int reg, u8 val) const
+    {
+        auto &c = const_cast<AROSMoira*>(this)->ctx->cia[chip];
+        switch (reg)
+        {
+            case 0:  c.pra = val; break;
+            case 1:  c.prb = val; break;
+            case 2:  c.ddra = val; break;
+            case 3:  c.ddrb = val; break;
+            case 4:  c.ta_latch = (UWORD)((c.ta_latch & 0xFF00) | val); break;
+            case 5:  c.ta_latch = (UWORD)((c.ta_latch & 0x00FF) | (val << 8)); break;
+            case 6:  c.tb_latch = (UWORD)((c.tb_latch & 0xFF00) | val); break;
+            case 7:  c.tb_latch = (UWORD)((c.tb_latch & 0x00FF) | (val << 8)); break;
+            case 14: c.cra = val; break;
+            case 15: c.crb = val; break;
+            default: break;                                   /* TOD writes, SDR, ICR mask: ignored */
+        }
     }
 
     u8 read8(u32 addr) const override
     {
+        int chip, reg;
+        if (ciaDecode(addr, chip, reg))
+        {
+            u8 v = ciaRead(chip, reg);
+            ciaTrace("read", addr, v);
+            return v;
+        }
         if ((addr & CUSTOM_MASK) == CUSTOM_BASE)
         {
             u16 w = customRead16(addr & 0xFFE);
@@ -153,8 +237,22 @@ public:
 
     void write8(u32 addr, u8 val) const override
     {
+        int chip, reg;
+        if (ciaDecode(addr, chip, reg))
+        {
+            ciaTrace("write", addr, val);
+            ciaWrite(chip, reg, val);
+            return;
+        }
         if ((addr & CUSTOM_MASK) == CUSTOM_BASE) return;
         if (addr >= ctx->mem_size) return;
+        if (ctx->low_guard && (addr < 8 || (addr >= 0x100 && addr < 0x180)))
+        {
+            if (ctx->low_trap_count++ < 8 && ctx->trace_calls)
+                bug("[m68kemu] CPU wrote into the vector table at %08x from PC %08x (dropped)\n",
+                    (unsigned)addr, (unsigned)getPC0());
+            return;
+        }
         ctx->mem[addr] = val;
     }
 
@@ -166,6 +264,13 @@ public:
             return;
         }
         if (addr + 1 >= ctx->mem_size) return;
+        if (ctx->low_guard && (addr < 8 || (addr >= 0x100 && addr < 0x180)))
+        {
+            if (ctx->low_trap_count++ < 8 && ctx->trace_calls)
+                bug("[m68kemu] CPU wrote into the vector table at %08x from PC %08x (dropped)\n",
+                    (unsigned)addr, (unsigned)getPC0());
+            return;
+        }
         ctx->mem[addr]     = (u8)(val >> 8);
         ctx->mem[addr + 1] = (u8)(val);
     }
@@ -203,13 +308,103 @@ public:
      */
     void willExecute(M68kException exc, u16 vector) override
     {
-        if (exc != M68kException::LINEA) return;
+        if (exc != M68kException::LINEA)
+        {
+            ULONG vec = m68k_read32(ctx, (ULONG)vector * 4);
+
+            ctx->last_exc = (ULONG)exc;
+            ctx->last_exc_pc = getPC0();
+
+            /* A MOVEC on a control register the core does not implement
+               (the 68040 TT/MMU registers SysInfo reads) is skipped: the
+               destination reads 0, as an MMU that is switched off would. */
+            if (exc == M68kException::ILLEGAL &&
+                (vec == 0 || vec == RTE_ADDR || vec == M68KEMU_SKIP4_STUB || vec == M68KEMU_FAULT_STUB))
+            {
+                u16 op = m68k_read16(ctx, getPC0());
+                if (op == 0x4E7A || op == 0x4E7B)
+                {
+                    u16 ext = m68k_read16(ctx, getPC0() + 2);
+                    if (op == 0x4E7A)
+                    {
+                        if (ext & 0x8000) setA((ext >> 12) & 7, 0); else setD((ext >> 12) & 7, 0);
+                    }
+                    /* The frame about to be written takes its PC from pc0:
+                       point it past the 4-byte MOVEC and return through the
+                       plain RTE, as a thunk return does. */
+                    {
+                        u32 next = getPC0() + 4;
+                        setPC0(next);
+                        setPC(next + 2);
+                    }
+                    m68k_write32(ctx, (ULONG)vector * 4, RTE_ADDR);
+                }
+                else
+                    m68k_write32(ctx, (ULONG)vector * 4, M68KEMU_FAULT_STUB);
+            }
+            else if (vec == 0)
+                m68k_write32(ctx, (ULONG)vector * 4, M68KEMU_FAULT_STUB);
+
+            if (ctx->trace_calls && ctx->trace_exc < 40)
+            {
+                ctx->trace_exc++;
+                bug("[m68kemu] TRACE exception %d vector %u at PC %08x SP %08x\n",
+                    (int)exc, (unsigned)vector, (unsigned)getPC0(), (unsigned)getA(7));
+                if (ctx->trace_exc == 1)
+                {
+                    ULONG i;
+                    bug("[m68kemu] TRACE last instructions (pc: opcode words):\n");
+                    for (i = 0; i < 512; i++)
+                    {
+                        ULONG pc = ctx->pc_ring[(ctx->pc_ring_pos + i) & 511];
+                        bug("[m68kemu]   %08x: %04x %04x %04x\n", (unsigned)pc,
+                            (unsigned)m68k_read16(ctx, pc), (unsigned)m68k_read16(ctx, pc + 2),
+                            (unsigned)m68k_read16(ctx, pc + 4));
+                    }
+                    bug("[m68kemu]   stack: %08x %08x %08x %08x %08x %08x\n",
+                        (unsigned)m68k_read32(ctx, getA(7)), (unsigned)m68k_read32(ctx, getA(7) + 4),
+                        (unsigned)m68k_read32(ctx, getA(7) + 8), (unsigned)m68k_read32(ctx, getA(7) + 12),
+                        (unsigned)m68k_read32(ctx, getA(7) + 16), (unsigned)m68k_read32(ctx, getA(7) + 20));
+                    bug("[m68kemu]   SR %04x vectors 2-15:", (unsigned)getSR());
+                    for (i = 2; i < 16; i++)
+                        bug(" %08x", (unsigned)m68k_read32(ctx, i * 4));
+                    bug("\n");
+                    {
+                        ULONG h = m68k_read32(ctx, vector * 4);
+                        bug("[m68kemu]   handler %08x:", (unsigned)h);
+                        for (i = 0; i < 16; i++)
+                            bug(" %04x", (unsigned)m68k_read16(ctx, h + i * 2));
+                        bug("\n");
+                    }
+                }
+            }
+            return;
+        }
 
         /* Restore LINEA vector to normal RTE return (may have been
            redirected by a previous Supervisor() call) */
         m68k_write32(ctx, M68K_VEC_LINEA, RTE_ADDR);
 
         u32 pc = getPC0();
+
+        if (pc == M68KEMU_FAULT_STUB)
+        {
+            ULONG i;
+            bug("[m68kemu] unhandled exception %lu at PC %08lx: stopping the program\n",
+                (unsigned long)ctx->last_exc, (unsigned long)ctx->last_exc_pc);
+            bug("[m68kemu]   D0 %08x D1 %08x D2 %08x A0 %08x A1 %08x A2 %08x A5 %08x A6 %08x SP %08x\n",
+                (unsigned)getD(0), (unsigned)getD(1), (unsigned)getD(2), (unsigned)getA(0), (unsigned)getA(1),
+                (unsigned)getA(2), (unsigned)getA(5), (unsigned)getA(6), (unsigned)getA(7));
+            bug("[m68kemu]   last instructions:\n");
+            for (i = 464; i < 512; i++)
+            {
+                ULONG p = ctx->pc_ring[(ctx->pc_ring_pos + i) & 511];
+                bug("[m68kemu]   %08x: %04x %04x %04x\n", (unsigned)p,
+                    (unsigned)m68k_read16(ctx, p), (unsigned)m68k_read16(ctx, p + 2), (unsigned)m68k_read16(ctx, p + 4));
+            }
+            ctx->running = FALSE;
+            return;
+        }
 
         /* Find which library jump table this PC falls in */
         for (UWORD i = 0; i < ctx->num_libs; i++)
@@ -231,8 +426,12 @@ public:
                         setA(7, sp + 4);
 
                         /* Run the thunk */
-                        bug("[m68kemu] CALL %s LVO -%lu\n", lib->name, lvo_offset);
+                        if (ctx->trace_calls) bug("[m68kemu] CALL %s LVO -%lu d0 %08x d1 %08x d2 %08x a0 %08x a1 %08x from %08x %08x %08x\n", lib->name, lvo_offset, (unsigned)getD(0),
+                            (unsigned)getD(1), (unsigned)getD(2), (unsigned)getA(0), (unsigned)getA(1),
+                            (unsigned)ctx->pc_ring[(ctx->pc_ring_pos - 2) & 511], (unsigned)ctx->pc_ring[(ctx->pc_ring_pos - 3) & 511],
+                            (unsigned)ctx->pc_ring[(ctx->pc_ring_pos - 4) & 511]);
                         IPTR ret = lib->thunks[j].thunk(ctx, static_cast<void *>(this));
+                        if (ctx->trace_calls) bug("[m68kemu]   -> %08lx\n", (unsigned long)ret);
 
                         if (ctx->sv_redirect)
                         {
@@ -261,8 +460,12 @@ public:
                         u32 sp = getA(7);
                         u32 ret_addr = m68k_read32(ctx, sp);
                         setA(7, sp + 4);
-                        bug("[m68kemu] GEN %s LVO -%lu\n", lib->name, lvo_offset);
+                        if (ctx->trace_calls) bug("[m68kemu] GEN %s LVO -%lu d1 %08x d2 %08x a0 %08x a1 %08x from %08x %08x %08x\n", lib->name, lvo_offset,
+                            (unsigned)getD(1), (unsigned)getD(2), (unsigned)getA(0), (unsigned)getA(1),
+                            (unsigned)ctx->pc_ring[(ctx->pc_ring_pos - 2) & 511], (unsigned)ctx->pc_ring[(ctx->pc_ring_pos - 3) & 511],
+                            (unsigned)ctx->pc_ring[(ctx->pc_ring_pos - 4) & 511]);
                         IPTR ret = lib->gen_thunks[j].thunk(ctx, static_cast<void *>(this));
+                        if (ctx->trace_calls) bug("[m68kemu]   -> %08lx\n", (unsigned long)ret);
 
                         if (ctx->sv_redirect)
                         {
@@ -323,6 +526,18 @@ LONG M68KEmu_Execute(struct M68KEmuContext *ctx)
     /* Restore AbsExecBase at address 4 */
     m68k_write32(ctx, 4, ctx->m68k_sysbase);
 
+    /* Reset leaves the interrupt mask at 7; AmigaOS code runs with it at 0,
+       and the vertical blank server needs level 3 to get through */
+    cpu.setSR(cpu.getSR() & ~0x0700);
+
+    /* A user stack, should anything drop the CPU to user mode: reset leaves
+       the user stack pointer at 0 */
+    {
+        ULONG usp = M68KEmu_HeapAlloc(ctx, 16384, 0);
+        if (usp)
+            cpu.setUSP(usp + 16384);
+    }
+
     /* Write RTE at RTE_ADDR for LINEA exception return */
     m68k_write16(ctx, RTE_ADDR, M68K_OP_RTE);
 
@@ -346,11 +561,122 @@ LONG M68KEmu_Execute(struct M68KEmuContext *ctx)
     cpu.setD(0, ctx->m68k_argsize);
     cpu.setA(6, ctx->m68k_sysbase);
 
+    /* Vertical blank stub at M68KEMU_VBL_STUB, reached through autovector 3:
+         movem.l d0-d1/a0-a1/a5-a6,-(sp)
+         lea     $dff000,a0
+         movea.l M68KEMU_VBL_DATA,a1
+         movea.l M68KEMU_VBL_CODE,a5
+         movea.l 4.w,a6
+         jsr     (a5)
+         movem.l (sp)+,d0-d1/a0-a1/a5-a6
+         rte                                                               */
+    {
+        static const u16 stub[] = { 0x48E7, 0xC0C6, 0x41F9, 0x00DF, 0xF000, 0x2279, 0x0000, M68KEMU_VBL_DATA,
+                                    0x2A79, 0x0000, M68KEMU_VBL_CODE, 0x2C78, 0x0004, 0x4E95, 0x4CDF, 0x6303, 0x4E73 };
+        for (unsigned i = 0; i < sizeof(stub) / sizeof(stub[0]); i++)
+            m68k_write16(ctx, M68KEMU_VBL_STUB + i * 2, stub[i]);
+        m68k_write32(ctx, 0x6C, M68KEMU_VBL_STUB);          /* level 3 autovector */
+
+        /* addq.l #4,2(sp); rte */
+        m68k_write16(ctx, M68KEMU_SKIP4_STUB,     0x586F);
+        m68k_write16(ctx, M68KEMU_SKIP4_STUB + 2, 0x0002);
+        m68k_write16(ctx, M68KEMU_SKIP4_STUB + 4, 0x4E73);
+        /* A-line the dispatcher recognises as "unhandled exception" */
+        m68k_write16(ctx, M68KEMU_FAULT_STUB, 0xA0FF);
+        for (unsigned v = 2; v < 48; v++)
+            if (v != 10 && v != 27)                          /* LINEA, level 3 */
+                m68k_write32(ctx, v * 4, M68KEMU_FAULT_STUB);
+        ctx->irq_stack_top = M68KEmu_HeapAlloc(ctx, 8192, 0);
+        if (ctx->irq_stack_top)
+            ctx->irq_stack_top += 8192;
+    }
+
     ctx->running = TRUE;
     ctx->exit_code = 0;
+    ctx->low_guard = TRUE;
 
-    while (ctx->running)
-        cpu.execute();
+    if (ctx->trace_calls) bug("[m68kemu] TRACE core " __DATE__ " " __TIME__ " start entry %08x sp %08x argptr %08x argsize %u sysbase %08x\n",
+        (unsigned)ctx->entry_point, (unsigned)sp, (unsigned)ctx->m68k_argptr,
+        (unsigned)ctx->m68k_argsize, (unsigned)ctx->m68k_sysbase);
+    {
+        unsigned long icount = 0;
+        while (ctx->running)
+        {
+            ULONG pc = cpu.getPC0();
+            ctx->pc_ring[ctx->pc_ring_pos++ & 511] = pc;
+            if (ctx->vbl_code)
+            {
+                if (ctx->vbl_irq)
+                {
+                    if (pc == M68KEMU_VBL_STUB)
+                    {
+                        cpu.setIPL(0);
+                        ctx->vbl_irq = FALSE;
+                        if ((ctx->vbl_count <= 2 || ctx->vbl_count == 50) && ctx->trace_calls)
+                            bug("[m68kemu] VBL %lu stub entered, SR %04x SP %08x\n", (unsigned long)ctx->vbl_count,
+                                (unsigned)cpu.getSR(), (unsigned)cpu.getA(7));
+                    }
+                }
+                else if ((icount & 0x3FF) == 0 && m68k_vbl_due(ctx))
+                {
+                    if (!(cpu.getSR() & 0x2000) && ctx->irq_stack_top)
+                        cpu.setISP(ctx->irq_stack_top);
+                    ctx->vbl_irq = TRUE;
+                    if ((ctx->vbl_count++ == 0 || ctx->vbl_count == 2 || ctx->vbl_count == 50) && ctx->trace_calls)
+                        bug("[m68kemu] VBL %lu raised at PC %08x SR %04x\n", (unsigned long)ctx->vbl_count,
+                            (unsigned)pc, (unsigned)cpu.getSR());
+                    cpu.setIPL(3);
+                }
+            }
+            if (m68k_read32(ctx, 4) != ctx->m68k_sysbase && ctx->low_trap_count < 8)
+            {
+                ULONG i;
+                ctx->low_trap_count = 8;
+                bug("[m68kemu] TRACE AbsExecBase changed to %08x before PC %08x; last instructions:\n",
+                    (unsigned)m68k_read32(ctx, 4), (unsigned)pc);
+                for (i = 480; i < 512; i++)
+                {
+                    ULONG p = ctx->pc_ring[(ctx->pc_ring_pos + i) & 511];
+                    bug("[m68kemu]   %08x: %04x %04x %04x\n", (unsigned)p,
+                        (unsigned)m68k_read16(ctx, p), (unsigned)m68k_read16(ctx, p + 2),
+                        (unsigned)m68k_read16(ctx, p + 4));
+                }
+                bug("[m68kemu]   mem0: %08x %08x %08x %08x\n", (unsigned)m68k_read32(ctx, 0),
+                    (unsigned)m68k_read32(ctx, 4), (unsigned)m68k_read32(ctx, 8), (unsigned)m68k_read32(ctx, 12));
+                m68k_write32(ctx, 4, ctx->m68k_sysbase);
+            }
+            if (pc >= ctx->mem_size && !ctx->pc_exit_dumped)
+            {
+                ULONG i;
+                ctx->pc_exit_dumped = TRUE;
+                bug("[m68kemu] TRACE PC %08x left containment; last instructions:\n", (unsigned)pc);
+                for (i = 448; i < 512; i++)
+                {
+                    ULONG p = ctx->pc_ring[(ctx->pc_ring_pos + i) & 511];
+                    bug("[m68kemu]   %08x: %04x %04x %04x\n", (unsigned)p,
+                        (unsigned)m68k_read16(ctx, p), (unsigned)m68k_read16(ctx, p + 2),
+                        (unsigned)m68k_read16(ctx, p + 4));
+                }
+                bug("[m68kemu]   D0 %08x D1 %08x A0 %08x A1 %08x A5 %08x A6 %08x SP %08x\n",
+                    (unsigned)cpu.getD(0), (unsigned)cpu.getD(1), (unsigned)cpu.getA(0),
+                    (unsigned)cpu.getA(1), (unsigned)cpu.getA(5), (unsigned)cpu.getA(6), (unsigned)cpu.getA(7));
+                ctx->running = FALSE;
+                break;
+            }
+            cpu.execute();
+            if ((++icount & 0xFFFFF) == 0)
+            {
+                static ULONG lastpc = 0xFFFFFFFF;
+                if (ctx->trace_calls) bug("[m68kemu] TRACE %lu instructions, PC %08x SP %08x D0 %08x A6 %08x SR %04x\n",
+                    icount, (unsigned)cpu.getPC0(), (unsigned)cpu.getA(7),
+                    (unsigned)cpu.getD(0), (unsigned)cpu.getA(6), (unsigned)cpu.getSR());
+                lastpc = cpu.getPC0();
+                (void)lastpc;
+            }
+        }
+        if (ctx->trace_calls) bug("[m68kemu] TRACE stop after %lu instructions, D0 %08x, %lu VBLs\n", icount, (unsigned)cpu.getD(0),
+            (unsigned long)ctx->vbl_count);
+    }
 
     ctx->exit_code = (LONG)cpu.getD(0);
     return ctx->exit_code;

@@ -18,6 +18,7 @@
 #include <graphics/text.h>
 #include <intuition/intuition.h>
 #include <intuition/screens.h>
+#include <graphics/displayinfo.h>
 #include "m68kemu_intern.h"
 #include "m68kemu_offsets.h"
 #include "m68kemu_shadow.h"
@@ -80,7 +81,7 @@ static IPTR thunk_exec_OpenLibrary(struct M68KEmuContext *ctx, void *cpu)
         return (IPTR)base;
     }
 
-    bug("[m68kemu] Library not found: %s\n", name);
+    if (ctx->trace_calls) bug("[m68kemu] Library not found: %s\n", name);
     return 0;
 }
 
@@ -88,6 +89,36 @@ static IPTR thunk_exec_OpenLibrary(struct M68KEmuContext *ctx, void *cpu)
 static IPTR thunk_exec_OldOpenLibrary(struct M68KEmuContext *ctx, void *cpu)
 {
     return thunk_exec_OpenLibrary(ctx, cpu);
+}
+
+/* -168: AddIntServer(D0=intNum, A1=interrupt). Only the vertical blank
+   server is run: the CPU loop raises a level 3 autovector at 50 Hz and a
+   stub in low memory calls is_Code with the Amiga register convention. */
+static IPTR thunk_exec_AddIntServer(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG is = THUNK_A(1);
+    if (THUNK_D(0) == 5 && is)      /* INTB_VERTB */
+    {
+        ctx->vbl_data = m68k_read32(ctx, is + 14);
+        ctx->vbl_code = m68k_read32(ctx, is + 18);
+        m68k_write32(ctx, M68KEMU_VBL_DATA, ctx->vbl_data);
+        m68k_write32(ctx, M68KEMU_VBL_CODE, ctx->vbl_code);
+        if (ctx->trace_calls) bug("[m68kemu] VBL server installed: code %08lx data %08lx\n",
+            (unsigned long)ctx->vbl_code, (unsigned long)ctx->vbl_data);
+    }
+    return 0;
+}
+
+/* -174: RemIntServer(D0=intNum, A1=interrupt) */
+static IPTR thunk_exec_RemIntServer(struct M68KEmuContext *ctx, void *cpu)
+{
+    if (THUNK_D(0) == 5)
+    {
+        if (ctx->trace_calls) bug("[m68kemu] VBL server removed after %lu VBLs\n", (unsigned long)ctx->vbl_count);
+        ctx->vbl_code = 0;
+        ctx->vbl_data = 0;
+    }
+    return 0;
 }
 
 /* -498: OpenResource(A1=name) -> D0=resource. A native resource base is a
@@ -620,9 +651,9 @@ static IPTR thunk_intuition_CloseWindow(struct M68KEmuContext *ctx, void *cpu)
 static IPTR thunk_exec_WaitPort(struct M68KEmuContext *ctx, void *cpu)
 {
     ULONG mp = THUNK_A(0);
-    bug("[m68kemu] WaitPort: m68k_port=0x%lx\n", (unsigned long)mp);
+    if (ctx->trace_calls) bug("[m68kemu] WaitPort: m68k_port=0x%lx\n", (unsigned long)mp);
     struct MsgPort *port = (struct MsgPort *)shadow_lookup(ctx, mp);
-    bug("[m68kemu] WaitPort: native=%p\n", port);
+    if (ctx->trace_calls) bug("[m68kemu] WaitPort: native=%p\n", port);
     if (port) return (IPTR)WaitPort(port);
     /* No shadow found — m68k code is using a containment-space port, skip */
     return 0;
@@ -718,12 +749,28 @@ static IPTR thunk_exec_AVL_FindNode(struct M68KEmuContext *ctx, void *cpu) { ret
 static IPTR thunk_exec_Supervisor(struct M68KEmuContext *ctx, void *cpu)
 {
     ULONG userFunc = THUNK_A(5);
-    bug("[m68kemu] Supervisor: userFunc=0x%lx\n", (unsigned long)userFunc);
+    if (ctx->trace_calls) bug("[m68kemu] Supervisor: userFunc=0x%lx\n", (unsigned long)userFunc);
     ctx->sv_redirect = userFunc;
     return 0; /* D0 will be set by the user function */
 }
 
+
+/* -450: CloseDevice(A1=ioreq). An IORequest the emulator did not create
+   (no shadow) cannot be handed to the native device: ignore it. */
+static IPTR thunk_exec_CloseDevice_checked(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct IORequest *io = (struct IORequest *)shadow_lookup(ctx, THUNK_A(1));
+    if (!io)
+    {
+        if (ctx->trace_calls) bug("[m68kemu] CloseDevice: IORequest %08lx is not one of ours, ignored\n", (unsigned long)THUNK_A(1));
+        return 0;
+    }
+    CloseDevice(io);
+    return 0;
+}
+
 const struct M68KThunkEntry m68kemu_thunks_exec[] = {
+    { 450, thunk_exec_CloseDevice_checked },
     { 30, thunk_exec_Supervisor },
     { 852, thunk_exec_AVL_AddNode },
     { 858, thunk_exec_AVL_RemNodeByAddress },
@@ -731,6 +778,8 @@ const struct M68KThunkEntry m68kemu_thunks_exec[] = {
     { 552, thunk_exec_OpenLibrary },
     { 408, thunk_exec_OldOpenLibrary },
     { 498, thunk_exec_OpenResource },
+    { 168, thunk_exec_AddIntServer },
+    { 174, thunk_exec_RemIntServer },
     { 414, thunk_exec_CloseLibrary },
     { 198, thunk_exec_AllocMem },
     { 210, thunk_exec_FreeMem },
@@ -1421,6 +1470,52 @@ const ULONG m68kemu_thunks_dos_count = sizeof(m68kemu_thunks_dos) / sizeof(m68ke
 
 
 /* intuition -198: OpenScreen(A0=newScreen) -> D0=screen */
+/* A program finds its own screen through the bases: IntuitionBase's
+   ActiveScreen/FirstScreen and GfxBase's ActiView (whose ViewPort is the
+   screen's). SysInfo takes &IntuitionBase->ActiveScreen->ViewPort without
+   looking, so a NULL there is a wild pointer. */
+#define M68K_IB_ACTIVESCREEN 56
+#define M68K_IB_FIRSTSCREEN  60
+#define M68K_GB_ACTIVIEW     34
+#define M68K_SIZEOF_VIEW     18
+static void note_screen_in_bases(struct M68KEmuContext *ctx, ULONG ms, BOOL opened)
+{
+    ULONG ib = M68KEmu_FindLibBase(ctx, "intuition.library");
+    ULONG gb = M68KEmu_FindLibBase(ctx, "graphics.library");
+
+    if (ib)
+    {
+        if (opened)
+        {
+            m68k_write32(ctx, ib + M68K_IB_ACTIVESCREEN, ms);
+            m68k_write32(ctx, ib + M68K_IB_FIRSTSCREEN, ms);
+        }
+        else
+        {
+            if (m68k_read32(ctx, ib + M68K_IB_ACTIVESCREEN) == ms) m68k_write32(ctx, ib + M68K_IB_ACTIVESCREEN, 0);
+            if (m68k_read32(ctx, ib + M68K_IB_FIRSTSCREEN) == ms)  m68k_write32(ctx, ib + M68K_IB_FIRSTSCREEN, 0);
+        }
+    }
+    if (gb)
+    {
+        ULONG view = m68k_read32(ctx, gb + M68K_GB_ACTIVIEW);
+        if (opened)
+        {
+            if (!view)
+                view = M68KEmu_HeapAlloc(ctx, M68K_SIZEOF_VIEW, 0);
+            if (view)
+            {
+                m68k_write32(ctx, view, ms + M68K_SCR_VIEWPORT);     /* v_ViewPort */
+                m68k_write32(ctx, gb + M68K_GB_ACTIVIEW, view);
+            }
+        }
+        else if (view && m68k_read32(ctx, view) == ms + M68K_SCR_VIEWPORT)
+        {
+            m68k_write32(ctx, view, 0);
+        }
+    }
+}
+
 static IPTR thunk_intuition_OpenScreen(struct M68KEmuContext *ctx, void *cpu)
 {
     ULONG ns = THUNK_A(0);
@@ -1438,17 +1533,45 @@ static IPTR thunk_intuition_OpenScreen(struct M68KEmuContext *ctx, void *cpu)
     ULONG m68k_title = m68k_read32(ctx, ns + M68K_NS_DEFAULTTITLE);
     CONST_STRPTR title = m68k_title ? (CONST_STRPTR)m68k_to_host(ctx, m68k_title) : NULL;
 
+    /* An Amiga-sized request (640x200/256, 2-4 planes) has no mode on a PC
+       card; ask for the nearest real one and let the program's own size be
+       a clip of it, as a Workbench-size screen would be. */
+    /* The VESA driver has one mode, the one the Workbench runs in: open the
+       program's screen in that mode and size, or the display cannot show it. */
+    ULONG modeid = (ULONG)INVALID_ID;
+    WORD  swidth = width < 640 ? 640 : width, sheight = height < 480 ? 480 : height, sdepth = depth < 8 ? 8 : depth;
+    {
+        struct Screen *wb = LockPubScreen(NULL);
+        if (wb)
+        {
+            modeid  = GetVPModeID(&wb->ViewPort);
+            swidth  = wb->Width;
+            sheight = wb->Height;
+            sdepth  = GetBitMapAttr(wb->RastPort.BitMap, BMA_DEPTH);
+            UnlockPubScreen(NULL, wb);
+        }
+    }
     struct Screen *scr = OpenScreenTags(NULL,
         SA_Left, (IPTR)left, SA_Top, (IPTR)top,
-        SA_Width, (IPTR)width, SA_Height, (IPTR)height,
-        SA_Depth, (IPTR)depth,
+        SA_Width, (IPTR)swidth, SA_Height, (IPTR)sheight,
+        SA_Depth, (IPTR)sdepth,
         SA_DetailPen, (IPTR)dpen, SA_BlockPen, (IPTR)bpen,
         SA_Title, (IPTR)title,
         SA_Type, (IPTR)(type & 0x000F),
         SA_ShowTitle, TRUE,
+        (modeid != (ULONG)INVALID_ID) ? SA_DisplayID : TAG_IGNORE, (IPTR)modeid,
         TAG_DONE);
 
+    if (ctx->trace_calls)
+        bug("[m68kemu] OpenScreen %dx%dx%d requested -> mode %08lx, screen %p %dx%d\n",
+            (int)width, (int)height, (int)depth, (unsigned long)modeid, scr,
+            scr ? (int)scr->Width : 0, scr ? (int)scr->Height : 0);
     if (!scr) return 0;
+
+    /* Paint the whole screen once: the display driver pushes damaged regions
+       only, and a new screen's untouched area would keep whatever the
+       framebuffer held (the boot console) */
+    SetRast(&scr->RastPort, 0);
 
     /* Allocate full m68k Screen (346 bytes) */
     ULONG ms = M68KEmu_HeapAlloc(ctx, M68K_SIZEOF_SCREEN, 0);
@@ -1470,6 +1593,8 @@ static IPTR thunk_intuition_OpenScreen(struct M68KEmuContext *ctx, void *cpu)
     /* Embedded RastPort — register as shadow */
     shadow_register(ctx, ms + M68K_SCR_RASTPORT, &scr->RastPort, 3);
 
+    note_screen_in_bases(ctx, ms, TRUE);
+
     return (IPTR)ms;
 }
 
@@ -1478,7 +1603,12 @@ static IPTR thunk_intuition_CloseScreen(struct M68KEmuContext *ctx, void *cpu)
 {
     ULONG ms = THUNK_A(0);
     struct Screen *scr = (struct Screen *)shadow_lookup(ctx, ms);
-    if (scr) { CloseScreen(scr); shadow_destroy(ctx, shadow_find_layout("Screen"), ms); }
+    if (scr)
+    {
+        note_screen_in_bases(ctx, ms, FALSE);
+        CloseScreen(scr);
+        shadow_destroy(ctx, shadow_find_layout("Screen"), ms);
+    }
     return 0;
 }
 
@@ -1638,7 +1768,197 @@ static IPTR thunk_gfx_ScrollRaster(struct M68KEmuContext *ctx, void *cpu)
 }
 
 /* ── Intuition manual thunks (shadow struct) ── */
+
+/* -216: PrintIText(A0=rp, A1=itext, D0=left, D1=top) */
+static IPTR thunk_intuition_PrintIText(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct RastPort *rp = resolve_rp(ctx, THUNK_A(0));
+    ULONG m68k_it = THUNK_A(1);
+    struct IntuiText it;
+    if (!rp || !m68k_it) return 0;
+    memset(&it, 0, sizeof(it));
+    translate_intuitext(ctx, m68k_it, &it, 16);
+    PrintIText(rp, &it, (LONG)THUNK_D(0), (LONG)THUNK_D(1));
+    free_intuitext_chain(&it);
+    return 0;
+}
+
+/* -726: FindDisplayInfo(D0=ID) -> D0=handle. The handle is a native pointer:
+   hand the m68k side an opaque table entry. */
+static IPTR thunk_graphics_FindDisplayInfo_h(struct M68KEmuContext *ctx, void *cpu)
+{
+    DisplayInfoHandle h = FindDisplayInfo(THUNK_D(0));
+    return h ? (IPTR)m68k_bptr_out(ctx, (BPTR)h) : 0;
+}
+
+/* -756: GetDisplayInfoData(A0=handle, A1=buf, D0=size, D1=tagID, D2=ID) -> D0=bytes
+   The native structs differ in alignment and reserved-field width from the
+   m68k ones; copy field by field. */
+static IPTR thunk_graphics_GetDisplayInfoData_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    DisplayInfoHandle h = THUNK_A(0) ? (DisplayInfoHandle)m68k_bptr_in(ctx, THUNK_A(0)) : NULL;
+    ULONG buf = THUNK_A(1), size = THUNK_D(0), tag = THUNK_D(1), id = THUNK_D(2);
+    union { struct DisplayInfo di; struct DimensionInfo dm; struct NameInfo ni; UBYTE raw[512]; } u;
+    ULONG got, out = 0, i;
+
+    if (!buf) return 0;
+    memset(&u, 0, sizeof(u));
+    got = GetDisplayInfoData(h, u.raw, sizeof(u), tag, id);
+    if (!got) return 0;
+
+#define W16(o, v) do { if ((o) + 2 <= size) m68k_write16(ctx, buf + (o), (UWORD)(v)); } while (0)
+#define W32(o, v) do { if ((o) + 4 <= size) m68k_write32(ctx, buf + (o), (ULONG)(v)); } while (0)
+    W32(0, u.di.Header.StructID); W32(4, u.di.Header.DisplayID);
+    W32(8, u.di.Header.SkipID);   W32(12, u.di.Header.Length);
+    switch (tag)
+    {
+    case DTAG_DISP:
+        W16(16, u.di.NotAvailable); W32(18, u.di.PropertyFlags);
+        W16(22, u.di.Resolution.x); W16(24, u.di.Resolution.y);
+        W16(26, u.di.PixelSpeed); W16(28, u.di.NumStdSprites); W16(30, u.di.PaletteRange);
+        W16(32, u.di.SpriteResolution.x); W16(34, u.di.SpriteResolution.y);
+        if (43 <= size) { ctx->mem[buf + 40] = u.di.RedBits; ctx->mem[buf + 41] = u.di.GreenBits; ctx->mem[buf + 42] = u.di.BlueBits; }
+        out = 56;
+        break;
+    case DTAG_DIMS:
+    {
+        const struct Rectangle *r[5] = { &u.dm.Nominal, &u.dm.MaxOScan, &u.dm.VideoOScan, &u.dm.TxtOScan, &u.dm.StdOScan };
+        W16(16, u.dm.MaxDepth); W16(18, u.dm.MinRasterWidth); W16(20, u.dm.MinRasterHeight);
+        W16(22, u.dm.MaxRasterWidth); W16(24, u.dm.MaxRasterHeight);
+        for (i = 0; i < 5; i++)
+        {
+            W16(26 + i * 8, r[i]->MinX); W16(28 + i * 8, r[i]->MinY);
+            W16(30 + i * 8, r[i]->MaxX); W16(32 + i * 8, r[i]->MaxY);
+        }
+        out = 88;
+        break;
+    }
+    case DTAG_NAME:
+        for (i = 0; i < DISPLAYNAMELEN && 16 + i < size; i++)
+            ctx->mem[buf + 16 + i] = u.ni.Name[i];
+        out = 56;
+        break;
+    default:
+        return 0;                       /* MonitorInfo/VecInfo carry pointers: not offered */
+    }
+#undef W16
+#undef W32
+    return out < size ? out : size;
+}
+
+
+/* ── struct Image / struct Border: m68k layout with big-endian planar data
+   and coordinate words, translated into native copies for one draw call ── */
+static struct Image *image_from_m68k(struct M68KEmuContext *ctx, ULONG mi, int depth_left)
+{
+    struct Image *im;
+    ULONG data, words, planes, i;
+
+    if (!mi || depth_left <= 0) return NULL;
+    im = AllocMem(sizeof(struct Image), MEMF_CLEAR);
+    if (!im) return NULL;
+    im->LeftEdge   = (WORD)m68k_read16(ctx, mi + 0);
+    im->TopEdge    = (WORD)m68k_read16(ctx, mi + 2);
+    im->Width      = (WORD)m68k_read16(ctx, mi + 4);
+    im->Height     = (WORD)m68k_read16(ctx, mi + 6);
+    im->Depth      = (WORD)m68k_read16(ctx, mi + 8);
+    im->PlanePick  = ctx->mem[mi + 14];
+    im->PlaneOnOff = ctx->mem[mi + 15];
+    data = m68k_read32(ctx, mi + 10);
+    planes = 0;
+    for (i = 0; i < 8; i++) if (im->PlanePick & (1 << i)) planes++;
+    words = (ULONG)((im->Width + 15) / 16) * (ULONG)im->Height * planes;
+    if (data && words && words < 0x100000)
+    {
+        UWORD *copy = AllocMem(words * 2 + 2, MEMF_ANY);
+        if (copy)
+        {
+            for (i = 0; i < words; i++)
+                copy[i] = m68k_read16(ctx, data + i * 2);
+            copy[words] = 0;
+            im->ImageData = copy;
+        }
+    }
+    im->NextImage = image_from_m68k(ctx, m68k_read32(ctx, mi + 16), depth_left - 1);
+    return im;
+}
+
+static void image_free(struct Image *im)
+{
+    while (im)
+    {
+        struct Image *next = im->NextImage;
+        ULONG planes = 0, i;
+        for (i = 0; i < 8; i++) if (im->PlanePick & (1 << i)) planes++;
+        if (im->ImageData)
+            FreeMem(im->ImageData, (ULONG)((im->Width + 15) / 16) * (ULONG)im->Height * planes * 2 + 2);
+        FreeMem(im, sizeof(struct Image));
+        im = next;
+    }
+}
+
+static struct Border *border_from_m68k(struct M68KEmuContext *ctx, ULONG mb, int depth_left)
+{
+    struct Border *b;
+    ULONG xy, i;
+
+    if (!mb || depth_left <= 0) return NULL;
+    b = AllocMem(sizeof(struct Border), MEMF_CLEAR);
+    if (!b) return NULL;
+    b->LeftEdge = (WORD)m68k_read16(ctx, mb + 0);
+    b->TopEdge  = (WORD)m68k_read16(ctx, mb + 2);
+    b->FrontPen = ctx->mem[mb + 4];
+    b->BackPen  = ctx->mem[mb + 5];
+    b->DrawMode = ctx->mem[mb + 6];
+    b->Count    = ctx->mem[mb + 7];
+    xy = m68k_read32(ctx, mb + 8);
+    if (xy && b->Count)
+    {
+        WORD *pts = AllocMem((ULONG)b->Count * 4, MEMF_ANY);
+        if (pts)
+        {
+            for (i = 0; i < (ULONG)b->Count * 2; i++)
+                pts[i] = (WORD)m68k_read16(ctx, xy + i * 2);
+            b->XY = pts;
+        }
+    }
+    b->NextBorder = border_from_m68k(ctx, m68k_read32(ctx, mb + 12), depth_left - 1);
+    return b;
+}
+
+static void border_free(struct Border *b)
+{
+    while (b)
+    {
+        struct Border *next = b->NextBorder;
+        if (b->XY) FreeMem(b->XY, (ULONG)b->Count * 4);
+        FreeMem(b, sizeof(struct Border));
+        b = next;
+    }
+}
+
+/* -114: DrawImage(A0=rp, A1=image, D0=left, D1=top) */
+static IPTR thunk_intuition_DrawImage(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct RastPort *rp = resolve_rp(ctx, THUNK_A(0));
+    struct Image *im = rp ? image_from_m68k(ctx, THUNK_A(1), 64) : NULL;
+    if (im) { DrawImage(rp, im, (LONG)THUNK_D(0), (LONG)THUNK_D(1)); image_free(im); }
+    return 0;
+}
+
+/* -108: DrawBorder(A0=rp, A1=border, D0=left, D1=top) */
+static IPTR thunk_intuition_DrawBorder(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct RastPort *rp = resolve_rp(ctx, THUNK_A(0));
+    struct Border *b = rp ? border_from_m68k(ctx, THUNK_A(1), 64) : NULL;
+    if (b) { DrawBorder(rp, b, (LONG)THUNK_D(0), (LONG)THUNK_D(1)); border_free(b); }
+    return 0;
+}
+
 const struct M68KThunkEntry m68kemu_thunks_intuition_manual[] = {
+    { 216, thunk_intuition_PrintIText },
+    { 114, thunk_intuition_DrawImage },
+    { 108, thunk_intuition_DrawBorder },
     { 204, thunk_intuition_OpenWindow },
     { 348, thunk_intuition_AutoRequest },
     { 432, thunk_intuition_RefreshGList },
@@ -1684,7 +2004,24 @@ static IPTR thunk_gfx_OpenFont(struct M68KEmuContext *ctx, void *cpu)
 }
 
 /* ── Graphics manual thunks (shadow RastPort) ── */
+/* -792: GetVPModeID(A0=vp) -> D0=modeID. A ViewPort the program found through
+   an untranslated pointer resolves to nothing; answer INVALID_ID instead of
+   handing graphics.library a NULL. */
+static IPTR thunk_graphics_GetVPModeID_checked(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct ViewPort *vp = (struct ViewPort *)m68k_to_host_or_shadow(ctx, THUNK_A(0));
+    if (!vp)
+    {
+        bug("[m68kemu] GetVPModeID: ViewPort %08lx unknown\n", (unsigned long)THUNK_A(0));
+        return (IPTR)0xFFFFFFFFUL;      /* INVALID_ID */
+    }
+    return (IPTR)GetVPModeID(vp);
+}
+
 const struct M68KThunkEntry m68kemu_thunks_graphics_manual[] = {
+    { 792, thunk_graphics_GetVPModeID_checked },
+    { 726, thunk_graphics_FindDisplayInfo_h },
+    { 756, thunk_graphics_GetDisplayInfoData_m },
     { 72,  thunk_gfx_OpenFont },
     { 192, thunk_gfx_LoadRGB4 },
     { 240, thunk_gfx_Move },
