@@ -108,17 +108,24 @@ static SIPTR decodeArgs(struct portBase *pb, struct portArgs *pa, BSTR args)
             CONST_STRPTR unit = cp + 5;
             int ulen = slen - 5;
             int i;
-            SIPTR uval = 0;
+            IPTR uval = 0;
+            BOOL overflow = FALSE;
 
             for (i = 0; i < ulen; i++) {
                 if (unit[i] < '0' || unit[i] > '9')
                     break;
-                uval *= 10;
-                uval += unit[i] - '0';
+                if (uval > (IPTR)-1 / 10 ||
+                    (uval == (IPTR)-1 / 10 && (unit[i] - '0') > (IPTR)-1 % 10))
+                    overflow = TRUE;
+                else
+                    uval = uval * 10 + (unit[i] - '0');
             }
 
-            if (i == ulen)
+            if (i == ulen) {
+                if (overflow)
+                    return ERROR_BAD_NUMBER;
                 pa->pa_DeviceUnit = uval;
+            }
 
         } else if (pb->pb_Mode == PORT_PARALLEL) {
             /* No parallel.device options to process */
@@ -131,15 +138,21 @@ static SIPTR decodeArgs(struct portBase *pb, struct portArgs *pa, BSTR args)
         } else if (pb->pb_Mode == PORT_SERIAL) {
             int i;
             ULONG baud = 0;
+            BOOL overflow = FALSE;
 
             /* Check for all-numeric */
             for (i = 0; i < slen; i++) {
                 if (cp[i] < '0' || cp[i] > '9')
                     break;
-                baud *= 10;
-                baud += cp[i] - '0';
+                if (baud > (ULONG)-1 / 10 ||
+                    (baud == (ULONG)-1 / 10 && (cp[i] - '0') > (ULONG)-1 % 10))
+                    overflow = TRUE;
+                else
+                    baud = baud * 10 + (cp[i] - '0');
             }
             if (i == slen) {
+                if (overflow)
+                    return ERROR_BAD_NUMBER;
                 pa->pa_Serial.ps_Baud = baud;
             } else if (slen == 3) {
                 TEXT bits, mode, stop;
@@ -287,7 +300,11 @@ static struct portArgs *portOpen(struct portBase *pb, BPTR name, SIPTR *err)
         CopyMem(AROS_BSTR_ADDR(name), pa->pa_Node.ln_Name, len);
         pa->pa_Node.ln_Name[len] = 0;
 
-        decodeArgs(pb, pa, name);
+        *err = decodeArgs(pb, pa, name);
+        if (*err != RETURN_OK) {
+            FreeVec(pa);
+            return NULL;
+        }
 
         D(bug("%s: %s device=%s, unit=%d (%d), mode=%d\n",
                     __func__, name, pb->pb_DeviceName,
