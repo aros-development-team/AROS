@@ -267,7 +267,7 @@ ULONG M68KEmu_SetupLibBase(struct M68KEmuContext *ctx, UWORD lib_id,
         return 0;
 
     vectors_size = (ULONG)num_vectors * M68K_JT_SLOT_SIZE;
-    total_size   = vectors_size + 4;
+    total_size   = vectors_size + ((lib_id == 0) ? M68K_SIZEOF_EXECBASE : M68K_SIZEOF_LIBRARY);
 
     /* Find next free spot in LIBBASE_REGION */
     region_offset = M68KEMU_LIBBASE_REGION;
@@ -292,8 +292,24 @@ ULONG M68KEmu_SetupLibBase(struct M68KEmuContext *ctx, UWORD lib_id,
         m68k_write16(ctx, slot_addr + 4, M68K_OP_NOP);
     }
 
+    /* A program reads the base as a struct Library: AROS startup code checks
+       lib_Version against the version it was built for. Report the native
+       library's numbers. */
+    {
+        struct Library *native = name ? OpenLibrary((CONST_STRPTR)name, 0) : NULL;
+        UWORD ver = native ? native->lib_Version : 0;
+        UWORD rev = native ? native->lib_Revision : 0;
+        if (native)
+            CloseLibrary(native);
+        m68k_write16(ctx, base_addr + 8, (UWORD)NT_LIBRARY << 8);     /* ln_Type, ln_Pri */
+        m68k_write16(ctx, base_addr + 16, (UWORD)vectors_size);       /* lib_NegSize */
+        m68k_write16(ctx, base_addr + 18, (lib_id == 0) ? M68K_SIZEOF_EXECBASE : M68K_SIZEOF_LIBRARY);
+        m68k_write16(ctx, base_addr + M68K_LIB_VERSION, ver);
+        m68k_write16(ctx, base_addr + M68K_LIB_REVISION, rev);
+    }
+
     ctx->libs[ctx->num_libs].m68k_addr   = base_addr;
-    ctx->libs[ctx->num_libs].pos_size    = (lib_id == 0) ? M68K_SIZEOF_EXECBASE : 4;
+    ctx->libs[ctx->num_libs].pos_size    = (lib_id == 0) ? M68K_SIZEOF_EXECBASE : M68K_SIZEOF_LIBRARY;
     ctx->libs[ctx->num_libs].jt_start    = base_addr - vectors_size;
     ctx->libs[ctx->num_libs].lib_id      = lib_id;
     ctx->libs[ctx->num_libs].num_vectors = num_vectors;
