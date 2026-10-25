@@ -59,6 +59,17 @@ struct ChooserData
 
     BOOL                cd_Active;       /* Dropdown is open */
     LONG                cd_NumLabels;    /* Cached count of labels */
+
+    struct Window       *cd_PopWin;      /* the open list, or NULL */
+    LONG                cd_Hot;          /* highlighted entry, -1 none */
+    WORD                cd_ItemH;        /* height of one entry */
+    BOOL                cd_Sticky;       /* opened by a click: the next click picks */
+    BOOL                cd_ShowAt;       /* ShowChooser(): open at cd_ShowX/Y */
+    WORD                cd_ShowX, cd_ShowY;
+    BOOL                cd_HideReq;      /* HideChooser(): leave on the next input */
+    struct List         *cd_OwnLabels;   /* list built from CHOOSER_LabelArray */
 };
+
+void chooser_popup_close(struct ChooserData *data);
 
 #endif /* CHOOSER_INTERN_H */
