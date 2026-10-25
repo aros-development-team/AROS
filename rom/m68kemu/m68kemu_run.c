@@ -173,6 +173,12 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
     if (!ctx)
         return -1;
 
+    {
+        char tracebuf[4];
+        if (GetVar((CONST_STRPTR)"M68KEMU_TRACE", (STRPTR)tracebuf, sizeof(tracebuf), 0) > 0)
+            ctx->trace_calls = TRUE;
+    }
+
     entry = M68KEmu_LoadHunks(ctx, segList);
     if (ctx->trace_calls) bug("[m68kemu] TRACE build " __DATE__ " " __TIME__ " RunHunk seglist %p stack %u args %u -> entry %08x\n",
         BADDR(segList), (unsigned)stackSize, (unsigned)argSize, (unsigned)entry);

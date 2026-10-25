@@ -599,7 +599,13 @@ static ULONG setup_window_shadow(struct M68KEmuContext *ctx, struct Window *w)
     {
         for (UWORD i = 0; i < ctx->num_shadows; i++)
             if (ctx->shadow_map[i].native_ptr == (void *)w->WScreen)
-                { m68k_write32(ctx, mw + M68K_WIN_WSCREEN, ctx->shadow_map[i].m68k_addr); break; }
+            {
+                ULONG mrp = m68k_read32(ctx, mw + M68K_WIN_RPORT);
+                m68k_write32(ctx, mw + M68K_WIN_WSCREEN, ctx->shadow_map[i].m68k_addr);
+                if (mrp)                                      /* window rp_BitMap = the screen's */
+                    m68k_write32(ctx, mrp + 4, ctx->shadow_map[i].m68k_addr + 184);
+                break;
+            }
     }
 
     /* Title */
@@ -1551,10 +1557,12 @@ static IPTR thunk_intuition_OpenScreen(struct M68KEmuContext *ctx, void *cpu)
             UnlockPubScreen(NULL, wb);
         }
     }
+    static struct TextAttr topaz8 = { (STRPTR)"topaz.font", 8, FS_NORMAL, FPF_ROMFONT | FPF_DESIGNED };
     struct Screen *scr = OpenScreenTags(NULL,
         SA_Left, (IPTR)left, SA_Top, (IPTR)top,
         SA_Width, (IPTR)swidth, SA_Height, (IPTR)sheight,
         SA_Depth, (IPTR)sdepth,
+        SA_Font, (IPTR)&topaz8,
         SA_DetailPen, (IPTR)dpen, SA_BlockPen, (IPTR)bpen,
         SA_Title, (IPTR)title,
         SA_Type, (IPTR)(type & 0x000F),
@@ -1593,6 +1601,28 @@ static IPTR thunk_intuition_OpenScreen(struct M68KEmuContext *ctx, void *cpu)
     /* Embedded RastPort — register as shadow */
     shadow_register(ctx, ms + M68K_SCR_RASTPORT, &scr->RastPort, 3);
 
+    /* sc_BitMap (offset 184): real planes of the size the program asked
+       for, so code that draws into the bitplanes has somewhere to draw;
+       m68k_planar_touch() mirrors each written word onto the screen. */
+    {
+        ULONG bpr = (ULONG)((width + 15) / 16) * 2, rows = (ULONG)height, d = (ULONG)(depth > 0 ? depth : 1);
+        ULONG psize = bpr * rows, i;
+        ULONG base = (d <= 8 && psize) ? M68KEmu_HeapAlloc(ctx, psize * d, 0) : 0;
+        m68k_write16(ctx, ms + 184 + 0, (UWORD)bpr);
+        m68k_write16(ctx, ms + 184 + 2, (UWORD)rows);
+        ctx->mem[ms + 184 + 4] = 0;
+        ctx->mem[ms + 184 + 5] = (UBYTE)d;
+        for (i = 0; i < 8; i++)
+            m68k_write32(ctx, ms + 184 + 8 + i * 4, (base && i < d) ? base + i * psize : 0);
+        m68k_write32(ctx, ms + M68K_SCR_RASTPORT + 4, ms + 184);          /* rp_BitMap */
+        if (base)
+        {
+            memset(ctx->mem + base, 0, psize * d);
+            ctx->plane_base = base; ctx->plane_size = psize; ctx->plane_bpr = bpr;
+            ctx->plane_rows = rows; ctx->plane_depth = d; ctx->plane_screen = scr;
+        }
+    }
+
     note_screen_in_bases(ctx, ms, TRUE);
 
     return (IPTR)ms;
@@ -1605,6 +1635,12 @@ static IPTR thunk_intuition_CloseScreen(struct M68KEmuContext *ctx, void *cpu)
     struct Screen *scr = (struct Screen *)shadow_lookup(ctx, ms);
     if (scr)
     {
+        if (ctx->plane_screen == scr)
+        {
+            if (ctx->plane_base)
+                M68KEmu_HeapFree(ctx, ctx->plane_base, ctx->plane_size * ctx->plane_depth);
+            ctx->plane_base = 0; ctx->plane_screen = NULL;
+        }
         note_screen_in_bases(ctx, ms, FALSE);
         CloseScreen(scr);
         shadow_destroy(ctx, shadow_find_layout("Screen"), ms);
@@ -1865,8 +1901,7 @@ static struct Image *image_from_m68k(struct M68KEmuContext *ctx, ULONG mi, int d
     im->PlanePick  = ctx->mem[mi + 14];
     im->PlaneOnOff = ctx->mem[mi + 15];
     data = m68k_read32(ctx, mi + 10);
-    planes = 0;
-    for (i = 0; i < 8; i++) if (im->PlanePick & (1 << i)) planes++;
+    planes = (ULONG)(im->Depth > 0 ? im->Depth : 0);        /* ImageData holds Depth planes */
     words = (ULONG)((im->Width + 15) / 16) * (ULONG)im->Height * planes;
     if (data && words && words < 0x100000)
     {
@@ -1879,6 +1914,15 @@ static struct Image *image_from_m68k(struct M68KEmuContext *ctx, ULONG mi, int d
             im->ImageData = copy;
         }
     }
+    if (ctx->trace_calls && ctx->cia_trace < 40)
+    {
+        ctx->cia_trace++;
+        bug("[m68kemu] Image %08lx: %d,%d %dx%d depth %d pick %02x onoff %02x data %08lx words %lu: %04x %04x %04x %04x\n",
+            (unsigned long)mi, im->LeftEdge, im->TopEdge, im->Width, im->Height, im->Depth, im->PlanePick, im->PlaneOnOff,
+            (unsigned long)data, (unsigned long)words,
+            data ? m68k_read16(ctx, data) : 0, data ? m68k_read16(ctx, data + 2) : 0,
+            data ? m68k_read16(ctx, data + 4) : 0, data ? m68k_read16(ctx, data + 6) : 0);
+    }
     im->NextImage = image_from_m68k(ctx, m68k_read32(ctx, mi + 16), depth_left - 1);
     return im;
 }
@@ -1888,8 +1932,7 @@ static void image_free(struct Image *im)
     while (im)
     {
         struct Image *next = im->NextImage;
-        ULONG planes = 0, i;
-        for (i = 0; i < 8; i++) if (im->PlanePick & (1 << i)) planes++;
+        ULONG planes = (ULONG)(im->Depth > 0 ? im->Depth : 0);
         if (im->ImageData)
             FreeMem(im->ImageData, (ULONG)((im->Width + 15) / 16) * (ULONG)im->Height * planes * 2 + 2);
         FreeMem(im, sizeof(struct Image));
@@ -1976,13 +2019,20 @@ static IPTR thunk_gfx_LoadRGB4(struct M68KEmuContext *ctx, void *cpu)
 {
     struct ViewPort *vp = (struct ViewPort *)m68k_to_host_or_shadow(ctx, THUNK_A(0));
     ULONG m68k_colors = THUNK_A(1);
-    LONG count = (LONG)THUNK_D(0);
+    LONG count = (WORD)(THUNK_D(0) & 0xFFFF);      /* D0.W: assembler callers leave the high word dirty */
     if (!vp || !m68k_colors || count <= 0) return 0;
+    if (count > 256) count = 256;
     /* Byte-swap big-endian m68k UWORDs to native */
     UWORD *native_colors = (UWORD *)AllocMem(count * sizeof(UWORD), 0);
     if (!native_colors) return 0;
     for (LONG i = 0; i < count; i++)
         native_colors[i] = m68k_read16(ctx, m68k_colors + i * 2);
+    if (ctx->trace_calls)
+    {
+        bug("[m68kemu] LoadRGB4 vp %08lx count %ld:", (unsigned long)THUNK_A(0), (long)count);
+        for (LONG i = 0; i < count && i < 32; i++) bug(" %03x", native_colors[i]);
+        bug("\n");
+    }
     LoadRGB4(vp, native_colors, count);
     FreeMem(native_colors, count * sizeof(UWORD));
     return 0;
@@ -2040,3 +2090,37 @@ const struct M68KThunkEntry m68kemu_thunks_graphics_manual[] = {
 const ULONG m68kemu_thunks_graphics_manual_count = sizeof(m68kemu_thunks_graphics_manual) / sizeof(m68kemu_thunks_graphics_manual[0]);
 
 
+
+/* A write into the program's bitplanes: recompose the touched pixels from
+   all planes and put them on the native screen. nbytes is 1 or 2. */
+void m68k_planar_touch(struct M68KEmuContext *ctx, ULONG addr, ULONG nbytes)
+{
+    ULONG off, o, y, xbyte, x, n, i, p;
+    UBYTE pens[16];
+    struct Screen *scr = (struct Screen *)ctx->plane_screen;
+
+    if (!scr || addr < ctx->plane_base || addr >= ctx->plane_base + ctx->plane_size * ctx->plane_depth)
+        return;
+    off = addr - ctx->plane_base;
+    o = off % ctx->plane_size;
+    y = o / ctx->plane_bpr;
+    xbyte = o % ctx->plane_bpr;
+    if (nbytes == 2 && (xbyte & 1))              /* odd-aligned word: two bytes, same row */
+        nbytes = 1;
+    x = xbyte * 8;
+    n = nbytes * 8;
+    if (y >= ctx->plane_rows || x + n > ctx->plane_bpr * 8)
+        return;
+    for (i = 0; i < n; i++)
+    {
+        UBYTE pen = 0;
+        for (p = 0; p < ctx->plane_depth; p++)
+        {
+            UBYTE b = ctx->mem[ctx->plane_base + p * ctx->plane_size + y * ctx->plane_bpr + xbyte + (i >> 3)];
+            if (b & (0x80 >> (i & 7)))
+                pen |= (UBYTE)(1 << p);
+        }
+        pens[i] = pen;
+    }
+    WriteChunkyPixels(&scr->RastPort, x, y, x + n - 1, y, pens, n);
+}
