@@ -688,6 +688,13 @@ unsigned char driQueryOptionb(const void *cache, const char *name)
     return 0;
 }
 
+/* Every float option's default: heap_memory_percent 0.0 is the heuristic. */
+float driQueryOptionf(const void *cache, const char *name)
+{
+    (void)cache; (void)name;
+    return 0.0f;
+}
+
 /* Sync objects. Mesa exports a fence as a sync-file fd, then imports and
  * waits on it. Here the fd is a seqno plus a tag bit no real fd has, as
  * Mesa close()s it and that must not hit an open file. */
