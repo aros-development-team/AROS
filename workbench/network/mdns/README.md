@@ -85,6 +85,12 @@ and the reply is waited for. Without mdnsd the calls return
 Some upstream ABI slots remain compatibility stubs.
 `MakeTXTRecordA`, `GetMDNSStatusA`,
 `InquiryFromNIPCTagsA` and `PublishNIPCEntitiesA` return `MDNSERR_NOTREADY`.
+
+Version 41.3 also provides `LookupHostA()` and queued generic record queries:
+`QueryRecordA()` / `StopQuery()`, `ReadMDNSRecordEvent()` and the existing
+`RequestMDNSEvent()` wakeup. See `DISCOVERY.md` for ownership, record format,
+bounds and restart behavior. Hook delivery remains deliberately unavailable;
+queries do not execute client code in mdnsd.
 `FreeTXTRecord` and `UnpublishNIPCEntitiesA`
 do nothing. They invoke no callbacks, change no output buffers and take
 ownership of no memory. Public headers include the upstream handles,

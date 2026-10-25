@@ -9,7 +9,7 @@
 **  History:    05-Jan-87       Original Version (1.0)
 **		07-Feb-87	Added conditional compilation for autoname.
 */
-#include   <string.h>	/* For strcpy */
+#include   <string.h>	/* For strncpy */
 
 #include   <libraries/dos.h>
 #include   <libraries/dosextens.h>
@@ -67,10 +67,9 @@ static int ParseNum ( char   *str, ULONG  *nump);
 ** "n" represents a number and "t" represents a tap name.
 **      ParsePipeName() returns nonzero iff "Bname" conforms to the syntax
 ** and the following restrictions.
-**      "D:" represents a device name.  If it occurs, it is ignored.  Notice
-** that tap names which contain a ":" force a device name to be specified for
-** the pipe.  Otherwise, everything up to and including the ":" in the tap
-** name will be ignored.
+**      "D:" represents a device name.  If it occurs before the first
+** separator, it is ignored.  A colon in the tap name is part of that name;
+** DOS may already have removed the pipe device prefix from the packet.
 **      *nmp returns pointing to a copy of "p", even if it is empty.  Default
 ** pipe names are handled by calling get_autoname().  (This is done by
 ** OpenPipe() if *nmp returns empty.)
@@ -106,7 +105,8 @@ char   **tapnmp;     /* reference to tap name pointer, returns NULL if none */
 
   BSTRtoCstr (Bname, *nmp, PIPENAMELEN);
 
-  if (*(cp= findchar (*nmp, ':')) == ':')
+  if ((*(cp= findchar (*nmp, ':')) == ':') &&
+      (cp < findchar (*nmp, PIPE_SPEC_CHAR)))
     l_strcpy (*nmp, ++cp);     /* get rid of "devname:" prefix */
 
   if ( *(cp= findchar (*nmp, PIPE_SPEC_CHAR)) )     /* true if not '\0' */
@@ -158,7 +158,7 @@ unsigned       maxsize;
   register int   limit;
 
 
-  if ((limit= *(BSTRp++)) > ((int) maxsize - 1))     /* leave room for '\0' */
+  if ((limit= (UBYTE) *(BSTRp++)) > ((int) maxsize - 1))     /* leave room for '\0' */
     limit= (int) maxsize - 1;
 
   for (i= 0; i < limit; ++i)
@@ -288,13 +288,9 @@ register char  *to;
 register char  *from;
 
 {
-#ifdef __AROS__
-  strcpy(to, from);
-#else
-STRCPYLOOP:
-  if (*(to++)= *(from++))
-    goto STRCPYLOOP;
-#endif
+  /* ParsePipeName also uses this to remove a prefix in place. */
+  while ((*(to++)= *(from++)) != '\0')
+    ;
 }
 
 

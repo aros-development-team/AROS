@@ -1508,6 +1508,40 @@ ADD2INITLIB(bwfm_init, 0)
 /* ----------------------------------------------------------------------- */
 /* Public API                                                              */
 
+/*****************************************************************************
+    NAME
+        int BWFMAttach(
+
+    SYNOPSIS
+        )
+
+    FUNCTION
+        Probe and initialize the Broadcom FullMAC chip on the SDIO bus.
+
+    RESULT
+        TRUE if attachment completes or the chip is already marked attached;
+        FALSE if probing, clock setup, interconnect checks or required-core
+        discovery fails. Success does not mean firmware is running.
+
+    NOTES
+        Call in task context before accessing the chip. The operation holds
+        the resource semaphore, powers and probes SDIO as needed, enables
+        function 1, enumerates cores, halts the chip CPU and sizes RAM. It
+        uses busy waits and can block on bus access.
+
+        After successful attachment, later calls return the cached state
+        without probing again. Failure can leave hardware partially configured;
+        there is no rollback or detach operation.
+
+    BUGS
+        Some register-transfer and core-reset failures are not propagated.
+        Attachment can succeed without a usable RAM layout. Check firmware
+        startup separately; this call is not a hardware health check.
+
+    SEE ALSO
+        BWFMChipID(), BWFMChipRev(), BWFMStartFirmware()
+
+*****************************************************************************/
 AROS_LH0(int, BWFMAttach,
                 struct BWFMBase *, BWFMBase, 1, Bwfm)
 {
@@ -1524,6 +1558,29 @@ AROS_LH0(int, BWFMAttach,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+    NAME
+        uint32_t BWFMChipID(
+
+    SYNOPSIS
+        )
+
+    FUNCTION
+        Return the cached Broadcom chip identifier.
+
+    RESULT
+        The identifier obtained during successful attachment, or zero if the
+        resource has not attached to a chip.
+
+    NOTES
+        This call does not probe hardware. Call BWFMAttach() first. Use the
+        revision as well as the identifier when selecting firmware; different
+        revisions of one identifier can require different images.
+
+    SEE ALSO
+        BWFMChipRev(), BWFMAttach()
+
+*****************************************************************************/
 AROS_LH0(uint32_t, BWFMChipID,
                 struct BWFMBase *, BWFMBase, 2, Bwfm)
 {
@@ -1536,6 +1593,28 @@ AROS_LH0(uint32_t, BWFMChipID,
 
 /* The chip id alone does not name a firmware image: BCM4345 covers both the
  * CYW43455 and (revision 9) the CYW43456, which need different blobs. */
+/*****************************************************************************
+    NAME
+        uint32_t BWFMChipRev(
+
+    SYNOPSIS
+        )
+
+    FUNCTION
+        Return the cached chip revision.
+
+    RESULT
+        The revision obtained during attachment. Zero is also returned when
+        the resource is not attached, so it does not establish attachment.
+
+    NOTES
+        This call does not probe hardware. Check BWFMAttach() before using
+        the revision to select firmware.
+
+    SEE ALSO
+        BWFMChipID(), BWFMAttach()
+
+*****************************************************************************/
 AROS_LH0(uint32_t, BWFMChipRev,
                 struct BWFMBase *, BWFMBase, 17, Bwfm)
 {
@@ -1555,6 +1634,63 @@ AROS_LH0(uint32_t, BWFMChipRev,
  * nvram region's non-64-aligned address returned a data CRC), while the writes
  * themselves are reliable.
  */
+/*****************************************************************************
+    NAME
+        int BWFMStartFirmware(
+
+    SYNOPSIS
+        void * fw, uint32_t fwlen, void * nvram, uint32_t nvlen)
+
+    FUNCTION
+        Upload firmware and optional board configuration, then start the chip CPU.
+
+    INPUTS
+        fw - Readable firmware image selected for the chip and revision. Must
+            be aligned for a uint32_t load; its first word supplies the reset
+            vector for a CR4 CPU.
+        fwlen - Image length, at least four bytes and no greater than chip RAM.
+        nvram - Optional readable configuration in firmware binary format:
+            NUL-separated records, zero padding to a four-byte boundary and
+            a trailing little-endian size token. NULL skips this upload.
+        nvlen - Configuration length including its token. Zero skips the
+            upload; otherwise it must be smaller than chip RAM.
+
+    RESULT
+        Zero after a firmware-ready or device-ready mailbox indication; -1
+        for rejected inputs or RAM size, clock timeout, upload failure, CPU
+        activation failure or exhausted readiness polling. Post-start setup
+        failures are not included in this result.
+
+    NOTES
+        Call in task context after BWFMAttach(), before starting other chip
+        operations. Keep both buffers valid until return; neither is retained.
+        The call holds the resource semaphore throughout. Clock and readiness
+        polling can busy-wait for approximately five and two seconds,
+        respectively, in addition to transfers and scheduling delays.
+
+        The image is written at the RAM base and configuration at its upper
+        end. Supply nonoverlapping images suitable for the board. The token
+        contains the configuration word count, excluding the token, in its
+        low 16 bits and the complemented count in its high 16 bits. The call
+        does not convert text configuration or validate the token.
+
+        Uploads overwrite chip memory and are not read back. Failure does
+        not restore memory, clocks or the previous CPU state. Do not use this
+        as a concurrent reload or recovery operation.
+
+    BUGS
+        Firmware/configuration overlap is not checked. Transfer padding to
+        64-byte boundaries is not included in the RAM-bound checks and can
+        write beyond the intended image or RAM end.
+
+        A failed mailbox read can appear as an all-bits-set ready indication.
+        Errors enabling SDIO function 2 and configuring the post-start bus
+        are ignored, so zero does not establish a working data path.
+
+    SEE ALSO
+        BWFMAttach(), BWFMChipID(), BWFMChipRev(), BWFMLoadCLM()
+
+*****************************************************************************/
 AROS_LH4(int, BWFMStartFirmware,
                 AROS_LHA(APTR, fw, A0),
                 AROS_LHA(uint32_t, fwlen, D0),
@@ -1697,6 +1833,37 @@ done:
  * Read the chip's current MAC address via the BCDC "cur_etheraddr" iovar.
  * Valid only after BWFMStartFirmware has succeeded. mac must hold 6 bytes.
  */
+/*****************************************************************************
+    NAME
+        int BWFMGetMAC(
+
+    SYNOPSIS
+        uint8_t * mac)
+
+    FUNCTION
+        Read the current Ethernet address from the firmware.
+
+    INPUTS
+        mac - Writable storage for six address bytes. Must not be NULL.
+
+    RESULT
+        Zero on a successful firmware response; a firmware error status or
+        -1 on a transport, framing or polling failure. mac is unchanged on
+        reported failure.
+
+    NOTES
+        Call in task context after successful attachment and firmware startup.
+        The call serializes firmware access and may block. The buffer is not
+        retained.
+
+    BUGS
+        A successful response shorter than six bytes is not rejected. Bytes
+        missing from that response are copied from the request buffer.
+
+    SEE ALSO
+        BWFMStartFirmware(), BWFMIovar()
+
+*****************************************************************************/
 AROS_LH1(int, BWFMGetMAC,
                 AROS_LHA(UBYTE *, mac, A0),
                 struct BWFMBase *, BWFMBase, 4, Bwfm)
@@ -1727,6 +1894,49 @@ AROS_LH1(int, BWFMGetMAC,
  * Raw firmware ioctl. For GET, the response is copied back into buf; for
  * SET, buf holds the argument (may be NULL/0). Returns 0 / firmware status.
  */
+/*****************************************************************************
+    NAME
+        int BWFMIoctl(
+
+    SYNOPSIS
+        uint32_t cmd, int set, void * buf, uint32_t len)
+
+    FUNCTION
+        Issue a synchronous firmware command.
+
+    INPUTS
+        cmd - Firmware command number.
+        set - Zero for a query; nonzero for a set operation.
+        buf - Readable and writable storage for len bytes. Its initial contents
+            are sent for both queries and set operations. May be NULL only
+            when len is zero.
+        len - Request length and response capacity, from zero to 484 bytes.
+
+    RESULT
+        Zero on a successful firmware response; a firmware error status or
+        -1 for an oversized request, transport error, malformed frame or
+        exhausted response polling. No response length is returned.
+
+    NOTES
+        Call in task context after successful attachment and firmware startup.
+        Access is serialized with other firmware operations. Payload layout
+        and byte order depend on cmd; the payload is not converted. buf is
+        not retained.
+
+        A successful response overwrites up to len bytes, including for set
+        operations. Any unused tail retains its request contents. Responses
+        longer than len are truncated. Polling makes at most 1000 attempts;
+        this is not a fixed wall-clock timeout.
+
+    BUGS
+        Short responses are accepted without reporting their length. The
+        caller cannot distinguish a complete result from retained request
+        bytes. Oversized incoming frames can leave unread FIFO data.
+
+    SEE ALSO
+        BWFMIovar(), BWFMGetMAC()
+
+*****************************************************************************/
 AROS_LH4(int, BWFMIoctl,
                 AROS_LHA(uint32_t, cmd, D0),
                 AROS_LHA(int, set, D1),
@@ -1750,6 +1960,47 @@ AROS_LH4(int, BWFMIoctl,
  * Named firmware variable (iovar) access. Encodes "name\0" + payload and
  * issues GET_VAR/SET_VAR. For GET, the value is copied back into buf.
  */
+/*****************************************************************************
+    NAME
+        int BWFMIovar(
+
+    SYNOPSIS
+        uint8_t * name, int set, void * buf, uint32_t len)
+
+    FUNCTION
+        Read or write a named firmware variable.
+
+    INPUTS
+        name - NUL-terminated firmware variable name. Must not be NULL.
+        set - Zero to read; nonzero to write.
+        buf - Readable storage for len request bytes, also writable when
+            reading a variable. May be NULL only when len is zero.
+        len - Payload length. The name, its terminating NUL and the payload
+            together must fit in 256 bytes.
+
+    RESULT
+        Zero on a successful firmware response; a firmware error status or
+        -1 if the request does not fit or firmware communication fails.
+        A successful read copies len bytes into buf. Writes and reported
+        failures leave buf unchanged.
+
+    NOTES
+        Call in task context after successful attachment and firmware startup.
+        Access is serialized. Both read and write requests send the initial
+        contents of buf after the name. Supply any query parameters required
+        by the variable, and initialize unused request bytes. Payload byte
+        order is defined by the firmware. Neither pointer is retained.
+
+    BUGS
+        The response length is not returned or checked against len. A short
+        read response can leave bytes from the encoded request in the result.
+        The size calculation does not detect unsigned overflow; callers must
+        respect the 256-byte limit before calling.
+
+    SEE ALSO
+        BWFMIoctl(), BWFMGetMAC()
+
+*****************************************************************************/
 AROS_LH4(int, BWFMIovar,
                 AROS_LHA(uint8_t *, name, A0),
                 AROS_LHA(int, set, D0),
@@ -1801,6 +2052,58 @@ static UWORD bwfm_scan_ie_len[BWFM_SCAN_IE_MAX];
  * an escan, then polls the SDPCM event channel for ESCAN_RESULT events,
  * parsing each bss_info, until the firmware reports scan complete or ~5s pass.
  */
+/*****************************************************************************
+    NAME
+        int BWFMScan(
+
+    SYNOPSIS
+        void * out, int max)
+
+    FUNCTION
+        Collect nearby wireless networks with a passive broadcast scan.
+
+    INPUTS
+        out - Writable array of max struct bwfm_scanresult records.
+        max - Positive array capacity. No pointer is retained.
+
+    RESULT
+        The number of records written, from zero to max. Zero also covers
+        invalid inputs, no attachment and failure to start the scan. A
+        positive count can be partial; completion, timeout and dropped
+        results are not distinguished.
+
+    NOTES
+        Call in task context after firmware startup. Serialize this operation
+        with joins and other scans. A separate receive task must keep calling
+        BWFMRxFrame() and forward events with BWFMEventPost().
+
+        Each result has bssid[6], ssid_len, ssid[32], signed 16-bit rssi and
+        16-bit chanspec fields, as defined in bwfm_scan.h. RSSI and chanspec
+        are converted to host byte order. SSIDs are length-delimited, not
+        NUL-terminated; unused array elements and SSID tail bytes are unchanged.
+
+        Results retain first-seen BSSID order. Repeated sightings update the
+        strongest RSSI, fill an initially empty SSID and replace chanspec.
+        Extra BSSIDs are discarded when the array is full. BWFMScanIE() can
+        retrieve cached information elements for the first 32 results.
+
+        The scan uses up to 100 polling iterations with 50-millisecond waits.
+        Firmware setup and event processing add time. Radio mode, power
+        settings and the event mask are changed and are not restored.
+
+    BUGS
+        Only version-zero scan requests are generated. Setup failures are
+        not consistently propagated, and completion events are not matched
+        to a unique scan generation.
+
+        The IE cache is not cleared as a whole between scans. Only indices
+        assigned to new results are reset; duplicate sightings do not refresh
+        their IEs. Bounds checking of firmware IE lengths can overflow.
+
+    SEE ALSO
+        BWFMScanIE(), BWFMRxFrame(), BWFMEventPost(), BWFMJoin()
+
+*****************************************************************************/
 AROS_LH2(int, BWFMScan,
                 AROS_LHA(void *, outp, A0),
                 AROS_LHA(int, max, D0),
@@ -2060,6 +2363,39 @@ AROS_LH2(int, BWFMScan,
  */
 #define BWFM_CLM_CHUNK  256
 
+/*****************************************************************************
+    NAME
+        int BWFMLoadCLM(
+
+    SYNOPSIS
+        void * clm, uint32_t clmlen)
+
+    FUNCTION
+        Upload a Country Locale Matrix blob to the firmware.
+
+    INPUTS
+        clm - Readable blob supplied for the chip and firmware in use.
+        clmlen - Blob size in bytes.
+
+    RESULT
+        Zero if every chunk is accepted. Zero is also returned without an
+        upload when clm is NULL, clmlen is zero or the chip is not attached.
+        Otherwise, the first firmware error status or -1 for a communication
+        failure is returned.
+
+    NOTES
+        Call in task context after firmware startup. The call holds the
+        resource semaphore throughout the upload and sends at most 256 blob
+        bytes per command. clm is borrowed until return.
+
+        Failure stops the upload without rolling back accepted chunks. The
+        call does not validate the blob or query the final CLM load status;
+        command acceptance alone does not establish regulatory readiness.
+
+    SEE ALSO
+        BWFMStartFirmware(), BWFMIovar()
+
+*****************************************************************************/
 AROS_LH2(int, BWFMLoadCLM,
                 AROS_LHA(void *, clm, A0),
                 AROS_LHA(uint32_t, clmlen, D0),
@@ -2120,6 +2456,46 @@ AROS_LH2(int, BWFMLoadCLM,
  * block size for >512B frames) and write it to the func2 FIFO. Mirrors
  * OpenBSD bwfm_sdio_tx_dataframe(). Called from the device's CMD_WRITE path.
  */
+/*****************************************************************************
+    NAME
+        int BWFMTxData(
+
+    SYNOPSIS
+        void * eth, uint32_t ethlen)
+
+    FUNCTION
+        Submit an Ethernet frame to the firmware transmit FIFO.
+
+    INPUTS
+        eth - Readable Ethernet frame, including its destination, source and
+            type or length fields. The pointer is borrowed until return.
+        ethlen - Frame length in bytes, from 1 to 2032. The caller is
+            responsible for supplying a valid Ethernet frame.
+
+    RESULT
+        Zero if the SDIO write succeeds; -1 if attachment or arguments are
+        invalid, the frame does not fit, transmit credits remain unavailable
+        or the transfer fails. Success does not confirm radio transmission
+        or delivery to the peer.
+
+    NOTES
+        Call in task context after firmware startup and association. The
+        call copies the frame and does not retain eth. It may wait for
+        transmit credits, releasing the resource semaphore between waits
+        so the receive task can update the credit window.
+
+        Credit waiting uses up to 200 one-millisecond waits, in addition to
+        scheduling and semaphore delays. Failure to open timer.device uses
+        busy waits instead. The caller must keep the receive task running.
+
+    BUGS
+        Frame-size arithmetic does not detect unsigned overflow. Do not
+        pass lengths above 2032, even to test whether they are rejected.
+
+    SEE ALSO
+        BWFMRxFrame(), BWFMJoin()
+
+*****************************************************************************/
 AROS_LH2(int, BWFMTxData,
                 AROS_LHA(void *, eth, A0),
                 AROS_LHA(uint32_t, ethlen, D0),
@@ -2218,6 +2594,58 @@ AROS_LH2(int, BWFMTxData,
  * *info gets the SDPCM channel in the low byte plus BWFM_RX_EVENT if the
  * frame is a firmware event (LINK_CTL ethertype) rather than network data.
  */
+/*****************************************************************************
+    NAME
+        int BWFMRxFrame(
+
+    SYNOPSIS
+        void * buf, uint32_t bufsize, uint32_t * info)
+
+    FUNCTION
+        Copy the next queued or received Ethernet frame into a caller buffer.
+
+    INPUTS
+        buf - Writable storage for bufsize bytes. Must not be NULL.
+        bufsize - Positive buffer capacity. Use at least 2048 bytes to avoid
+            truncation of frames accepted by the current receive path.
+        info - Optional writable uint32_t result slot; may be NULL.
+
+    RESULT
+        The number of bytes copied. Zero means no frame was delivered; it
+        also covers no attachment, transport errors, malformed input and
+        consumed frames on unsupported channels. It does not prove that the
+        receive FIFO is empty.
+
+    NOTES
+        Call in task context after firmware startup, from the designated
+        receive task. Access is serialized by the resource semaphore. The
+        call services queued aggregate subframes before reading more SDIO
+        data and returns at most one delivered frame. No pointer is retained.
+
+        A delivered frame includes its Ethernet header, without SDPCM/BDC
+        headers. If info is supplied, bits 0 to 7 contain the SDPCM channel,
+        bit 8 marks a firmware event, bit 9 copies bit 0 of its event flags,
+        and bits 16 to 31 contain the low 16 bits of the firmware event type.
+        Interpret bit 9 as link-up only for an event whose type defines it.
+        Use info only after a positive return.
+
+        Forward complete firmware event frames through BWFMEventPost() for
+        waiting joins or scans. Chip interrupt acknowledgement and re-arming
+        remain separate operations.
+
+    BUGS
+        A frame larger than bufsize is consumed and silently truncated; its
+        original size is not returned. Event classification uses the truncated
+        length, so a short buffer can hide the event flag.
+
+        Malformed or oversized input can leave unread FIFO data. Control-path
+        aggregate processing can requeue already delivered frames. Zero is
+        therefore neither an error code nor a reliable drain-completion test.
+
+    SEE ALSO
+        BWFMEventPost(), BWFMClearInt(), BWFMAckRx()
+
+*****************************************************************************/
 AROS_LH3(int, BWFMRxFrame,
                 AROS_LHA(void *, buf, A0),
                 AROS_LHA(uint32_t, bufsize, D0),
@@ -2357,6 +2785,77 @@ out:
     *authp = auth;
 }
 
+/*****************************************************************************
+    NAME
+        int BWFMJoin(
+
+    SYNOPSIS
+        uint8_t * ssid, uint32_t ssidlen, uint8_t * pass, uint32_t passlen, uint8_t * ie, uint32_t ielen, uint8_t * bssid)
+
+    FUNCTION
+        Request association with a wireless network.
+
+    INPUTS
+        ssid - Readable SSID bytes. Must not be NULL.
+        ssidlen - SSID length, from 1 to 32 bytes; no NUL is required.
+        pass - Passphrase bytes for the firmware supplicant. May be NULL
+            when passlen is zero or ielen is nonzero.
+        passlen - Passphrase length. With no IE, a nonzero value selects
+            firmware WPA2-PSK; only the first 65 bytes are copied.
+        ie - Complete WPA or RSN information element, including its element
+            identifier and length. Required when ielen is nonzero.
+        ielen - IE size. A nonzero value selects host-managed authentication
+            and takes precedence over pass. The IE must fit within 294 bytes.
+        bssid - Optional six-byte BSSID of the selected access point. When
+            NULL, the join request permits any BSSID. Borrowed until return.
+
+    RESULT
+        Zero when a link-up event is observed or an acceptable associated
+        BSSID is returned by the firmware. If bssid is provided, the fallback
+        requires an exact six-byte BSSID match.
+        Negative results are -1 for invalid attachment or SSID, or no decisive
+        result; -2 for link down; -3 for association rejection; and -4 for
+        deauthentication or disassociation. Later events and retries can
+        replace an earlier result.
+
+    NOTES
+        Call in task context after firmware startup. Serialize join and scan
+        requests externally. A separate receive task must continue reading
+        frames and forwarding firmware events through BWFMEventPost().
+        Do not call from that receive task. Input buffers must remain valid
+        until return; they are not retained afterwards.
+
+        A non-NULL bssid is included in both the preferred firmware join
+        request and the older SET_SSID fallback. This selects the requested
+        node when multiple access points share one SSID; it does not verify
+        the SSID or bind link events to a particular join request.
+
+        With an IE, the host supplicant must complete authentication and
+        install keys through BWFMSetKey(). With a passphrase and no IE, the
+        firmware must support an internal supplicant. With neither, the
+        function requests an open network.
+
+        Up to three attempts each perform 200 polling iterations with
+        50-millisecond waits. Firmware commands and scheduling add time.
+        Failure does not restore the previous radio or security settings.
+
+    BUGS
+        Success does not establish that the requested SSID was joined or
+        that authentication completed. With bssid NULL, the BSSID fallback
+        accepts any existing nonzero BSSID. With a selected bssid, the
+        fallback compares that address, but link-up events are still not
+        correlated with this request.
+
+        Security-configuration failures do not abort association. IE parsing
+        does not fully validate element types, versions or suite OUIs; some
+        malformed IEs leave the selected security settings zero. Passphrases
+        are truncated without reporting an error. Validate inputs before
+        calling and verify the resulting connection independently.
+
+    SEE ALSO
+        BWFMRxFrame(), BWFMEventPost(), BWFMSetKey(), BWFMScan()
+
+*****************************************************************************/
 AROS_LH7(int, BWFMJoin,
                 AROS_LHA(uint8_t *, ssid, A0),
                 AROS_LHA(uint32_t, ssidlen, D0),
@@ -2617,6 +3116,56 @@ AROS_LH7(int, BWFMJoin,
  * afterwards wsec gets the cipher's bit added without disturbing the others.
  * len == 0 clears the slot.
  */
+/*****************************************************************************
+    NAME
+        int BWFMSetKey(
+
+    SYNOPSIS
+        uint32_t index, uint32_t algo, uint8_t * mac, uint8_t * key, uint32_t keylen)
+
+    FUNCTION
+        Install or remove a firmware encryption key.
+
+    INPUTS
+        index - Firmware key-slot index, passed through without range checks.
+        algo - BWFM_CRYPTO_ALGO_OFF (0), WEP1 (1), TKIP (2), WEP128 (3),
+            or AES_CCM (4). The prefix BWFM_CRYPTO_ALGO_ applies to each name.
+        mac - Optional six-byte peer address. A nonzero unicast address
+            selects a pairwise key except for WEP. NULL, an all-zero address,
+            a multicast address or a WEP algorithm selects a primary key.
+        key - Readable key bytes in firmware order. May be NULL if keylen
+            is zero.
+        keylen - Number of key bytes, at most 32. Zero removes the selected
+            key by sending algorithm OFF. algo must still be a supported value.
+
+    RESULT
+        Zero if the firmware accepts the key command; a firmware status or
+        -1 on invalid attachment, unsupported algorithm, excessive length
+        or communication failure. Failure of the subsequent cipher-setting
+        update is not reported.
+
+    NOTES
+        Call in task context after firmware startup, with the key negotiated
+        for the current connection. Access is serialized. Key and address
+        bytes are copied; neither pointer is retained.
+
+        The caller must supply an algorithm-appropriate length and firmware
+        key layout. This function neither derives keys nor completes the
+        authentication handshake. It sends no receive sequence counter; the
+        corresponding firmware fields are zero. Removing a key does not
+        clear the interface cipher-enable bits.
+
+    BUGS
+        Installing a nonempty key clears all WEP, TKIP and AES enable bits
+        before setting the new cipher bit, losing other active cipher modes.
+        The key command is not rolled back if the later update fails.
+        Algorithm-specific lengths and slot ranges are not validated, and
+        temporary key copies are not explicitly erased before return.
+
+    SEE ALSO
+        BWFMJoin(), BWFMIovar()
+
+*****************************************************************************/
 AROS_LH5(int, BWFMSetKey,
                 AROS_LHA(uint32_t, index, D0),
                 AROS_LHA(uint32_t, algo, D1),
@@ -2692,6 +3241,45 @@ AROS_LH5(int, BWFMSetKey,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+    NAME
+        int BWFMSetRxSignal(
+
+    SYNOPSIS
+        struct Task * task, uint32_t sigmask)
+
+    FUNCTION
+        Route SDIO card interrupts to an Exec task signal.
+
+    INPUTS
+        task - Live task to notify. The pointer is retained while interrupt
+            delivery is enabled.
+        sigmask - Mask of signals allocated to task, not a signal-bit number.
+
+    RESULT
+        Zero if the card interrupt-enable write succeeds; -1 if it fails.
+        The task and mask are replaced and host signalling is enabled even
+        when the card write fails.
+
+    NOTES
+        Call in task context after attachment has registered the SDIO
+        interrupt handler. Coordinate changes with the existing consumer;
+        there is one shared task/mask registration.
+
+        The handler masks host signalling before notifying the task. Drain
+        received frames, call BWFMClearInt(), then BWFMAckRx() to re-enable
+        signalling. Signals can coalesce and do not count frames.
+
+    BUGS
+        Registration is not synchronized with the handler and provides no
+        safe unregister-and-drain operation. A NULL task suppresses Signal()
+        but does not disable interrupts. A successful return does not check
+        whether the SDIO handler was registered successfully.
+
+    SEE ALSO
+        BWFMRxFrame(), BWFMClearInt(), BWFMAckRx(), SDIOSetInterrupt()
+
+*****************************************************************************/
 AROS_LH2(int, BWFMSetRxSignal,
                 AROS_LHA(struct Task *, task, A0),
                 AROS_LHA(uint32_t, sigmask, D0),
@@ -2705,6 +3293,29 @@ AROS_LH2(int, BWFMSetRxSignal,
 }
 
 /* Re-arm the card interrupt after the pump has drained pending frames. */
+/*****************************************************************************
+    NAME
+        void BWFMAckRx(
+
+    SYNOPSIS
+        )
+
+    FUNCTION
+        Re-enable host signalling for the SDIO card interrupt.
+
+    NOTES
+        Use after BWFMSetRxSignal() has installed a consumer. Drain pending
+        frames and call BWFMClearInt() before re-arming. An asserted source
+        can trigger another notification immediately.
+
+        This call does not drain data, clear chip interrupt status or clear
+        the task signal. It takes no semaphore and returns no status.
+        Coordinate it with registration and shutdown.
+
+    SEE ALSO
+        BWFMSetRxSignal(), BWFMClearInt(), BWFMRxFrame()
+
+*****************************************************************************/
 AROS_LH0(void, BWFMAckRx,
                 struct BWFMBase *, BWFMBase, 13, Bwfm)
 {
@@ -2721,6 +3332,35 @@ AROS_LH0(void, BWFMAckRx,
  * re-armed card interrupt does not immediately re-fire on a still-asserted
  * line. Mirrors OpenBSD bwfm_sdio_task()'s INTSTATUS read + W1C.
  */
+/*****************************************************************************
+    NAME
+        void BWFMClearInt(
+
+    SYNOPSIS
+        )
+
+    FUNCTION
+        Acknowledge pending chip mailbox and frame interrupt status.
+
+    NOTES
+        Call in task context after draining received frames and before
+        BWFMAckRx(). The call takes the resource semaphore, requests the
+        high-throughput clock when needed, acknowledges a pending host
+        mailbox notification and clears the selected latched status bits.
+        It does nothing if the resource is not attached.
+
+        The call does not drain the receive FIFO, clear the task signal or
+        re-enable host signalling. Clock waiting can busy-wait for about
+        10 milliseconds, in addition to register-transfer delays.
+
+    BUGS
+        Clock timeout and register-transfer failures are not reported.
+        Returning does not establish that the interrupt source was cleared.
+
+    SEE ALSO
+        BWFMRxFrame(), BWFMAckRx(), BWFMSetRxSignal()
+
+*****************************************************************************/
 AROS_LH0(void, BWFMClearInt,
                 struct BWFMBase *, BWFMBase, 14, Bwfm)
 {
@@ -2798,6 +3438,38 @@ AROS_LH0(void, BWFMClearInt,
  * outside join/scan are not acted on yet). On overflow the oldest entry is
  * dropped so the pump never blocks.
  */
+/*****************************************************************************
+    NAME
+        void BWFMEventPost(
+
+    SYNOPSIS
+        void * ev, uint32_t len)
+
+    FUNCTION
+        Copy a firmware event into the queue for a waiting join or scan.
+
+    INPUTS
+        ev - Readable Ethernet event frame, including its Ethernet and
+            firmware event headers. NULL discards the request.
+        len - Frame length. Zero discards the request; at most 2048 bytes
+            are copied.
+
+    NOTES
+        Call in task context from the receive task after BWFMRxFrame() marks
+        a complete firmware event. The call acquires the resource semaphore,
+        copies the bytes and does not retain ev. It does not validate the
+        event headers or report acceptance.
+
+        Events are discarded when no join or scan is listening. The queue
+        holds eight events; inserting into a full queue drops the oldest.
+        Frames longer than 2048 bytes are truncated. Starting a new listener
+        discards previously queued events. No task signal is sent; the
+        control operation polls the queue.
+
+    SEE ALSO
+        BWFMRxFrame(), BWFMJoin(), BWFMScan()
+
+*****************************************************************************/
 AROS_LH2(void, BWFMEventPost,
                 AROS_LHA(void *, ev, A0),
                 AROS_LHA(uint32_t, len, D0),
@@ -2817,6 +3489,45 @@ AROS_LH2(void, BWFMEventPost,
  * into buf; returns the length (0 if none / out of range). The SANA-II device's
  * S2_GETNETWORKS hands these to wpa_supplicant as S2INFO_InfoElements.
  */
+/*****************************************************************************
+    NAME
+        int BWFMScanIE(
+
+    SYNOPSIS
+        int idx, void * buf, uint32_t bufsize)
+
+    FUNCTION
+        Copy cached information elements for a scan-result index.
+
+    INPUTS
+        idx - Result index, from zero to 31 and below the count returned by
+            the corresponding BWFMScan().
+        buf - Writable storage for bufsize bytes. NULL returns zero.
+        bufsize - Copy capacity; zero copies nothing.
+
+    RESULT
+        The number of bytes copied, up to bufsize and the 256-byte cache
+        limit. Zero also means no cached bytes or an invalid index or buffer.
+        The full original IE length is not returned.
+
+    NOTES
+        Read the cache after BWFMScan() returns and before another scan
+        starts. Coordinate this externally: this call takes no semaphore.
+        The buffer is not retained.
+
+        The bytes are a prefix of the first captured IE sequence for that
+        result. Neither cache truncation nor caller-buffer truncation respects
+        IE boundaries. Validate each element length before using the data.
+
+    BUGS
+        Only the physical index range is checked; the current scan-result
+        count is not. Unused slots can retain earlier scans, and duplicate
+        BSSID sightings do not refresh cached IEs.
+
+    SEE ALSO
+        BWFMScan()
+
+*****************************************************************************/
 AROS_LH3(int, BWFMScanIE,
                 AROS_LHA(int, idx, D0),
                 AROS_LHA(void *, buf, A0),

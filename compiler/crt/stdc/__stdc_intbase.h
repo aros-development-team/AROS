@@ -24,6 +24,7 @@
 
 /* Some structs that are defined privately */
 struct signal_func_data;
+struct __stdc_memctx;
 
 struct StdCIntBase
 {
@@ -80,6 +81,9 @@ struct StdCIntBase
     
     /* locale */
     struct __locale             *__locale_cur;
+
+    /* malloc.c: pool shared per program */
+    struct __stdc_memctx        *memctx;
 };
 
 /* Make a distinction between exit() and abort() */

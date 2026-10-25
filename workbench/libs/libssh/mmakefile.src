@@ -24,9 +24,23 @@ LIBSSH_INCDIR := $(LIBSSH_SRCDIR)/include
 # workbench-libs-mbedtls (no version-pinned Ports path to go stale).
 MBEDTLS_INCDIR := $(AROS_INCLUDES)
 
-#MM- workbench-libs-libssh : linklibs-ssh
+#MM- workbench-libs-libssh : linklibs-ssh workbench-libs-libssh-includes
 #MM linklibs-ssh : libssh-fetch libssh-genversion workbench-libs-mbedtls
 #MM libssh-genversion : libssh-fetch
+
+# The public headers go into the standard include tree, as mbedTLS's do,
+# so that programs using libssh need no version-pinned Ports path.  The set
+# is include/libssh/CMakeLists.txt's for WITH_SFTP + WITH_SERVER, plus the
+# generated libssh_version.h.
+#MM- workbench-libs-libssh-includes : workbench-libs-libssh-includes-copy
+#MM workbench-libs-libssh-includes-copy : libssh-fetch libssh-genversion
+#MM- ports-includes : workbench-libs-libssh-includes-copy
+
+LIBSSH_PUBLIC_HEADERS := callbacks.h libssh.h ssh2.h legacy.h libsshpp.hpp \
+    sftp.h server.h sftpserver.h libssh_version.h
+
+%copy_includes mmake=workbench-libs-libssh-includes-copy \
+    dir=$(LIBSSH_INCDIR)/libssh includes=$(LIBSSH_PUBLIC_HEADERS) path=libssh
 
 %fetch mmake=libssh-fetch archive=$(LIBSSH_ARCHBASE) \
     destination=$(PORTSDIR)/libssh suffixes=$(LIBSSH_SUFFIXES) \

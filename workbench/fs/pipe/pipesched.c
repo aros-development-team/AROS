@@ -91,27 +91,27 @@ SPIOEXIT:
   pipekey= (PIPEKEY *) pkt->dp_Arg1;
   pipe= pipekey->pipe;
 
+  pkt->dp_Res2= ERROR_INVALID_LOCK;
+  if ((pipekey->iotype != iotype) && (pipekey->iotype != PIPERW))
+    goto SPIOEXIT;
+
+  /* No buffer space, data or tap I/O is needed for an empty request. */
+  if (pkt->dp_Arg3 == 0)
+    { pkt->dp_Res1= 0;
+      pkt->dp_Res2= 0;
+      QuickReplyPkt (pkt);
+      return;
+    }
+
   if ((wd= (WAITINGDATA *) AllocMem (sizeof (WAITINGDATA), ALLOCMEM_FLAGS)) == NULL)
     { pkt->dp_Res2= ERROR_NO_FREE_STORE;
       goto SPIOEXIT;
     }
 
-
-  pkt->dp_Res2= ERROR_INVALID_LOCK;     /* in case not open for iotype */
-
   if (iotype == PIPEREAD)
-    { if ((pipekey->iotype != PIPEREAD) && (pipekey->iotype != PIPERW))
-        goto SPIOEXIT;
-
-      InsertTail (&pipe->readerlist, (PIPELISTNODE *)wd);
-    }
-  else     /* PIPEWRITE */
-    { if ((pipekey->iotype != PIPEWRITE) && (pipekey->iotype != PIPERW))
-        goto SPIOEXIT;
-
-      InsertTail (&pipe->writerlist, (PIPELISTNODE *)wd);
-    }
-
+    InsertTail (&pipe->readerlist, (PIPELISTNODE *)wd);
+  else
+    InsertTail (&pipe->writerlist, (PIPELISTNODE *)wd);
 
   wd->pkt= pkt;
   wd->pktinfo.pipewait.reqtype= iotype;
@@ -372,8 +372,8 @@ struct DosPacket  *pkt;
                OpenPipe (wd->pktinfo.tapwait.clientpkt, (BPTR)pkt->dp_Arg1);
              else     /* couldn't open tap */
                { FreeMem (wd->pktinfo.tapwait.handle, sizeof (struct FileHandle));
-                 pkt->dp_Res1= 0;
-                 pkt->dp_Res2= ERROR_INVALID_COMPONENT_NAME;
+                 wd->pktinfo.tapwait.clientpkt->dp_Res1= 0;
+                 wd->pktinfo.tapwait.clientpkt->dp_Res2= pkt->dp_Res2;
                  QuickReplyPkt (wd->pktinfo.tapwait.clientpkt);
                }
 

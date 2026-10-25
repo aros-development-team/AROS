@@ -1,0 +1,33 @@
+#
+#   Makefile for ARDA - the AROS Remote Debug Agent.
+#   Installs the agent to SYS:Developer/Debug/ARDA, the instrumentation link
+#   library libardatrace.a + <arda/ardatrace.h> into the Developer SDK, and
+#   the tracetest program to SYS:Developer/Debug/Tests/arda/.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- debug-tools : debug-tools-arda
+#MM debug-tools-arda : includes linklibs network-includes-copy \
+#MM     debug-tools-arda-includes debug-tools-arda-linklib debug-tools-arda-tracetest
+#MM debug-tools-arda-linklib : debug-tools-arda-includes
+#MM debug-tools-arda-tracetest : debug-tools-arda-linklib
+
+FILES := arda arda_net arda_cmd arda_sys arda_log arda_netdiag
+
+USER_CFLAGS   := $(CFLAGS_GNU99)
+USER_CPPFLAGS := -D__BSD_VISIBLE=1
+
+INCLUDE_FILES := ardatrace.h
+%copy_includes mmake=debug-tools-arda-includes path=arda includes=$(INCLUDE_FILES)
+
+%build_linklib mmake=debug-tools-arda-linklib libname=ardatrace files=ardatrace
+
+%build_prog mmake=debug-tools-arda \
+    progname=ARDA targetdir=$(AROS_DEBUG) \
+    files="$(FILES)" uselibs="ardatrace"
+
+%build_prog mmake=debug-tools-arda-tracetest \
+    progname=tracetest targetdir=$(AROS_TESTS)/arda \
+    files=tracetest uselibs="ardatrace"
+
+%common
