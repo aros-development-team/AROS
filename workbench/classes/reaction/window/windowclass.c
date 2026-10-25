@@ -380,8 +380,9 @@ IPTR Window__WM_OPEN(Class *cl, Object *o, Msg msg)
 
     left   = data->wcd_Left;
     top    = data->wcd_Top;
-    width  = data->wcd_Width  ? data->wcd_Width  : 400;
-    height = data->wcd_Height ? data->wcd_Height : 300;
+    /* no size given: the layout's own minimum, as ReAction opens it */
+    width  = data->wcd_Width  ? data->wcd_Width  : (layoutMinW ? layoutMinW : 400);
+    height = data->wcd_Height ? data->wcd_Height : (layoutMinH ? layoutMinH : 300);
 
     /* Auto-fit to layout content. LockWidth/LockHeight forces the window to
      * exactly the layout's minimum size; otherwise we just ensure the inner
