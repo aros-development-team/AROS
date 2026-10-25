@@ -647,7 +647,7 @@ gh100_gsp_aros_snapshot(struct nvkm_gsp *gsp, const char *when)
 	struct nvkm_device *device = gsp->subdev.device;
 	struct nvkm_falcon *falcon = &gsp->falcon;
 
-	nvkm_warn(&gsp->subdev, "%s: falcon %08x engine %08x mbox %08x/%08x plm %08x "
+	nvkm_debug(&gsp->subdev, "%s: falcon %08x engine %08x mbox %08x/%08x plm %08x "
 		    "cpuctl %08x hwcfg2 %08x wpr2 %08x/%08x fsp %08x GPU up %llu ms\n", when,
 		    nvkm_rd32(device, 0x110000), nvkm_rd32(device, 0x1103c0),
 		    nvkm_falcon_rd32(falcon, NV_PFALCON_FALCON_MAILBOX0),

@@ -268,10 +268,10 @@ static BOOL MESA3DGLScanoutCreate(struct mesa3dgl_framebuffer * amfb)
     amfb->scanout_top    = ctx->top;
     amfb->scanout_back   = GetScanoutFrameBufferAttr(amfb->scanout, SFBA_BackBuffer);
 
-    bug("[MESA3DGL] scan-out framebuffer %p active for window %p: %lux%lu at %ld,%ld, %lu buffers\n",
+    D(bug("[MESA3DGL] scan-out framebuffer %p active for window %p: %lux%lu at %ld,%ld, %lu buffers\n",
         amfb->scanout, ctx->window, (unsigned long)amfb->width, (unsigned long)amfb->height,
         (long)ctx->left, (long)ctx->top,
-        (unsigned long)GetScanoutFrameBufferAttr(amfb->scanout, SFBA_Buffers));
+        (unsigned long)GetScanoutFrameBufferAttr(amfb->scanout, SFBA_Buffers)));
 
     return TRUE;
 }

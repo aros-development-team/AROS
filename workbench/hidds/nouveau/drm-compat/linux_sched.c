@@ -612,10 +612,10 @@ void kthread_flush_work(struct kthread_work *work)
  * delayed work lists the ready tasks and every waiting task with its exec
  * state and the code addresses found on its stack (kickstart modules and
  * this hidd), so a system freeze can be read off the serial log afterwards.
- * NOUVEAU_FREEZEDUMP=<seconds> (0 = off).
+ * NOUVEAU_FREEZEDUMP=<seconds> turns it on (default off).
  */
 #include <exec/execbase.h>
-int nouveau_freezedump_secs = 60;
+int nouveau_freezedump_secs = 0;	/* off unless NOUVEAU_FREEZEDUMP=<seconds> */
 static struct delayed_work freeze_dwork;
 
 static inline int freeze_is_code(IPTR v, IPTR hiddlo, IPTR hiddhi)
@@ -677,5 +677,5 @@ void nouveau_freezedump_start(void)
         return;
     INIT_DELAYED_WORK(&freeze_dwork, freeze_dump);
     schedule_delayed_work(&freeze_dwork, HZ * nouveau_freezedump_secs);
-    bug("[freeze] dump every %d s (NOUVEAU_FREEZEDUMP=0 to disable)\n", nouveau_freezedump_secs);
+    bug("[freeze] dump every %d s (NOUVEAU_FREEZEDUMP)\n", nouveau_freezedump_secs);
 }

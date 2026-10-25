@@ -174,28 +174,6 @@ coreca7d_wndw_owner(struct nv50_core *core)
 	return 0;
 }
 
-static u32
-coreca7d_assembly(struct nv50_core *core, u32 mthd)
-{
-	return nvif_rd32(&core->chan.base.user, mthd);
-}
-
-/* What the core channel holds for a window and its head (diagnostics) */
-void
-coreca7d_wndw_log(struct nv50_core *core, int id, const char *when)
-{
-	u32 ctrl = coreca7d_armed(core, NVCA7D_WINDOW_SET_CONTROL(id));
-	u32 head = NVVAL_GET(ctrl, NVCA7D, WINDOW_SET_CONTROL, OWNER);
-
-	printk(KERN_NOTICE "[nouveau] wndw %d %s: armed control %08x physical %08x format-bounds %08x (assembly %08x) usage-bounds %08x; head %u tiles %08x usage-bounds %08x\n",
-	       id, when, ctrl, coreca7d_armed(core, NVCA7D_WINDOW_SET_PHYSICAL(id)),
-	       coreca7d_armed(core, NVCA7D_WINDOW_SET_WINDOW_FORMAT_USAGE_BOUNDS(id)),
-	       coreca7d_assembly(core, NVCA7D_WINDOW_SET_WINDOW_FORMAT_USAGE_BOUNDS(id)),
-	       coreca7d_armed(core, NVCA7D_WINDOW_SET_WINDOW_USAGE_BOUNDS(id)),
-	       head, head < 4 ? coreca7d_armed(core, NVCA7D_HEAD_SET_TILE_MASK(head)) : 0,
-	       head < 4 ? coreca7d_armed(core, NVCA7D_HEAD_SET_HEAD_USAGE_BOUNDS(head)) : 0);
-}
-
 /* The usage bounds this driver gives a window (5 words) */
 static void
 coreca7d_wndw_bounds_push(struct nvif_push *push, int i, u32 yuv)

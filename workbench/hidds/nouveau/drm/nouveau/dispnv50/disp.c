@@ -2442,16 +2442,6 @@ nv50_disp_atomic_commit_tail(struct drm_atomic_state *state)
 				       plane->base.id, plane->name, plane->type, plane->possible_crtcs,
 				       new_plane_state->visible ? "on" : "off",
 				       plane->type == DRM_PLANE_TYPE_OVERLAY ? ": phases to RM" : "");
-				if (plane->type == DRM_PLANE_TYPE_OVERLAY && new_plane_state->visible &&
-				    drm->client.device.info.chipset >= 0x1b0 && new_plane_state->fb)
-					printk(KERN_NOTICE "[nouveau] plane %u: fb format %08x (%d plane(s)) %ux%u src %ux%u\n",
-					       plane->base.id, new_plane_state->fb->format->format,
-					       new_plane_state->fb->format->num_planes,
-					       new_plane_state->fb->width, new_plane_state->fb->height,
-					       new_plane_state->src_w >> 16, new_plane_state->src_h >> 16);
-				if (plane->type == DRM_PLANE_TYPE_OVERLAY && new_plane_state->visible &&
-				    drm->client.device.info.chipset >= 0x1b0)
-					coreca7d_wndw_log(disp->core, nv50_wndw(plane)->id, "before enable");
 			}
 			/*
 			 * The window's usage bounds travel in this update, interlocked
@@ -2601,10 +2591,6 @@ nv50_disp_atomic_commit_tail(struct drm_atomic_state *state)
 		nv50_disp_atomic_commit_core(state, interlock);
 		core->assign_windows = false;
 		interlock[NV50_DISP_INTERLOCK_CORE] = 0;
-		if (drm->client.device.info.chipset >= 0x1b0) {
-			coreca7d_wndw_log(core, 0, "after owner update");
-			coreca7d_wndw_log(core, 1, "after owner update");
-		}
 	}
 
 	/* Finish updating head(s)...
@@ -2678,9 +2664,6 @@ nv50_disp_atomic_commit_tail(struct drm_atomic_state *state)
 			NV_ERROR(drm, "%s: timeout\n", plane->name);
 			nv50_disp_plane_timeout_note(plane->base.id);
 		}
-		if (plane->type == DRM_PLANE_TYPE_OVERLAY && new_plane_state->visible &&
-		    drm->client.device.info.chipset >= 0x1b0)
-			coreca7d_wndw_log(disp->core, wndw->id, ret ? "after timeout" : "after enable");
 	}
 
 #if defined(__AROS__)

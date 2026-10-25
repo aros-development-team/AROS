@@ -1062,9 +1062,8 @@ static void HIDDCompositorQueryPlanes(struct HIDDCompositorData *compdata)
         compdata->planestates[i].Plane = i;
     }
     compdata->planecount = i;
-    /* Said once per display: useful when bringing a driver's planes up */
     if (compdata->planecount > 1)
-        bug("[Compositor] display 0x%p: %lu scan-out planes\n", compdata->display, (unsigned long)compdata->planecount);
+        D(bug("[Compositor] display 0x%p: %lu scan-out planes\n", compdata->display, (unsigned long)compdata->planecount));
 }
 
 /*
@@ -1526,13 +1525,12 @@ restart:
             {
                 struct HIDD_CompositeRequest *r = SNREQ(sn);
 
-                /* Said on serial: a client surface that gets no plane is the first thing to look at when bringing a driver up */
-                bug("[Compositor] surface 0x%p (video %lu, flags 0x%x) src %ldx%ld dest %ldx%ld region %s: no plane (%lu overlays, %lu used, z floor %lu)\n",
+                D(bug("[Compositor] surface 0x%p (video %lu, flags 0x%x) src %ldx%ld dest %ldx%ld region %s: no plane (%lu overlays, %lu used, z floor %lu)\n",
                     r, (unsigned long)sn->videofmt, r->Flags,
                     (long)(r->Src.MaxX - r->Src.MinX + 1), (long)(r->Src.MaxY - r->Src.MinY + 1),
                     (long)(r->Dest.MaxX - r->Dest.MinX + 1), (long)(r->Dest.MaxY - r->Dest.MinY + 1),
                     (sn->region->RegionRectangle->Next) ? "several rects" : "one rect",
-                    (unsigned long)noverlay, (unsigned long)usedcount, (unsigned long)zcur);
+                    (unsigned long)noverlay, (unsigned long)usedcount, (unsigned long)zcur));
                 if (!required && n->promoted)
                 {
                     /* It has to be blitted, which only the composed bitmap allows */
@@ -1542,11 +1540,11 @@ restart:
                 continue;
             }
             HIDDCompositorSurfacePlaneFits(compdata, best, n, sn);   /* the geometry of the chosen plane */
-            bug("[Compositor] surface 0x%p (video %lu) -> plane %ld z %lu dest (%d,%d)-(%d,%d) src (%d,%d)-(%d,%d)%s\n",
+            D(bug("[Compositor] surface 0x%p (video %lu) -> plane %ld z %lu dest (%d,%d)-(%d,%d) src (%d,%d)-(%d,%d)%s\n",
                 SNREQ(sn), (unsigned long)sn->videofmt, (long)best, (unsigned long)bestz,
                 sn->pdest.MinX, sn->pdest.MinY, sn->pdest.MaxX, sn->pdest.MaxY,
                 sn->psrc.MinX, sn->psrc.MinY, sn->psrc.MaxX, sn->psrc.MaxY,
-                (sn->pflags & PSF_COLORKEY) ? " keyed" : "");
+                (sn->pflags & PSF_COLORKEY) ? " keyed" : ""));
             sn->plane  = best;
             sn->zorder = bestz;
             used |= 1UL << best;
@@ -3933,9 +3931,9 @@ BOOL Compositor__Hidd_Compositor__AttachSurface(OOP_Class *cl, OOP_Object *o, st
     AddTail((struct List *)&compdata->clientsurfaces, (struct Node *)cs);
     compdata->nclientsurfaces++;
 
-    bug("[Compositor] AttachSurface: request 0x%p (bitmap 0x%p, scanout %d video %lu, flags 0x%x) on screen 0x%p\n",
+    D(bug("[Compositor] AttachSurface: request 0x%p (bitmap 0x%p, scanout %d video %lu, flags 0x%x) on screen 0x%p\n",
         msg->request, msg->request->BitMap, cs->sn ? cs->sn->scanout : -1, cs->sn ? (unsigned long)cs->sn->videofmt : 0UL,
-        msg->request->Flags, msg->screenBitMap);
+        msg->request->Flags, msg->screenBitMap));
 
     HIDDCompositorQueryPlanes(compdata);
     dirty = NewRegion();

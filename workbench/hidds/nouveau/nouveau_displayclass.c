@@ -1266,17 +1266,17 @@ BOOL METHOD(NouveauDisplay, Hidd_Display, CommitPlanes)
             {
                 struct HIDDNouveauBitMapData *bmdata = OOP_INST_DATA(SD(cl)->bmclass, st->BitMap);
 
-                nvlog("[Nouveau] plane %lu: fb %lu (%lux%lu bo %p) at %d,%d %dx%d%s on crtc %lu (atomic)\n", (unsigned long)p->id,
+                D(bug("[Nouveau] plane %lu: fb %lu (%lux%lu bo %p) at %d,%d %dx%d%s on crtc %lu (atomic)\n", (unsigned long)p->id,
                     (unsigned long)bmdata->fbid, (unsigned long)bmdata->drawable.width, (unsigned long)bmdata->drawable.height,
                     bmdata->bo, st->Dest.MinX, st->Dest.MinY, st->Dest.MaxX - st->Dest.MinX + 1, st->Dest.MaxY - st->Dest.MinY + 1,
-                    (st->Flags & PSF_COLORKEY) ? " keyed" : "", (unsigned long)gfxdata->selectedcrtcid);
+                    (st->Flags & PSF_COLORKEY) ? " keyed" : "", (unsigned long)gfxdata->selectedcrtcid));
                 HIDDNouveauPlaneRemember(p, bmdata->fbid, st);
                 changed = TRUE;
                 touched |= 1UL << (st->Plane - 1);
             }
             else if (p->fbid)
             {
-                nvlog("[Nouveau] plane %lu: off (atomic)\n", (unsigned long)p->id);
+                D(bug("[Nouveau] plane %lu: off (atomic)\n", (unsigned long)p->id));
                 HIDDNouveauPlaneRemember(p, 0, NULL);
                 changed = TRUE;
                 touched |= 1UL << (st->Plane - 1);
@@ -1325,10 +1325,10 @@ BOOL METHOD(NouveauDisplay, Hidd_Display, CommitPlanes)
             LOCK_ENGINE
             ret = HIDDNouveauPlaneSetLegacy(NOUVEAU_DEV_FD(nvdev), gfxdata, p, bmdata->fbid, st);
             UNLOCK_ENGINE
-            nvlog("[Nouveau] plane %lu: fb %lu (%lux%lu bo %p) at %d,%d %dx%d%s on crtc %lu: %d\n", (unsigned long)p->id,
+            D(bug("[Nouveau] plane %lu: fb %lu (%lux%lu bo %p) at %d,%d %dx%d%s on crtc %lu: %d\n", (unsigned long)p->id,
                 (unsigned long)bmdata->fbid, (unsigned long)bmdata->drawable.width, (unsigned long)bmdata->drawable.height,
                 bmdata->bo, st->Dest.MinX, st->Dest.MinY, st->Dest.MaxX - st->Dest.MinX + 1, st->Dest.MaxY - st->Dest.MinY + 1,
-                (st->Flags & PSF_COLORKEY) ? " keyed" : "", (unsigned long)gfxdata->selectedcrtcid, ret);
+                (st->Flags & PSF_COLORKEY) ? " keyed" : "", (unsigned long)gfxdata->selectedcrtcid, ret));
             touched |= 1UL << (st->Plane - 1);
             if (ret)
             {

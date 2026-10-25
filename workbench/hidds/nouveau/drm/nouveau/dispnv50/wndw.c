@@ -90,7 +90,7 @@ nouveau_wndw_ihub_init(u16 chipset, u32 capa, u32 capc)
 	nouveau_wndw_chipset = chipset;
 	nouveau_wndw_ihub_caps = capa;
 	nouveau_wndw_ihub_capc = capc;
-	printk(KERN_NOTICE "[nouveau] ihub capa %08x capc %08x (chipset %03x): 4:2:0 semi-planar %s, planar %s, yuv mask %x\n",
+	printk(KERN_INFO "[nouveau] ihub capa %08x capc %08x (chipset %03x): 4:2:0 semi-planar %s, planar %s, yuv mask %x\n",
 	       capa, capc, chipset,
 	       (nouveau_wndw_yuv_mask() & NOUVEAU_WNDW_YUV_NV12) ? "yes" : "no",
 	       (nouveau_wndw_yuv_mask() & NOUVEAU_WNDW_YUV_I420) ? "yes" : "no",

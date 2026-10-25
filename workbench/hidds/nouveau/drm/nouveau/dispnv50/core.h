@@ -71,7 +71,6 @@ int corec37d_caps_init(struct nouveau_drm *, struct nv50_disp *);
 int corec37d_ntfy_wait_done(struct nouveau_bo *, u32, struct nvif_device *);
 int corec37d_update(struct nv50_core *, u32 *, bool);
 int corec37d_wndw_owner(struct nv50_core *);
-void coreca7d_wndw_log(struct nv50_core *, int id, const char *when);
 int coreca7d_wndw_bounds(struct nv50_core *, int id);
 extern const struct nv50_outp_func sorc37d;
 

@@ -186,10 +186,10 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
                 (bmdata->planeoff[1] + (bmdata->pitch / 2) * chromarows > bmdata->bo->size))
                 goto exit_fail;
         }
-        nvlog("[Nouveau] scan-out bitmap %p: %ldx%ld %s%ld pitch %ld planes +%lu +%lu, %lu buffer(s)\n", o,
+        D(bug("[Nouveau] scan-out bitmap %p: %ldx%ld %s%ld pitch %ld planes +%lu +%lu, %lu buffer(s)\n", o,
               (long)width, (long)height, videoformat ? "video format " : "depth ",
               videoformat ? (long)videoformat : (long)depth, (long)bmdata->pitch,
-              (unsigned long)bmdata->planeoff[0], (unsigned long)bmdata->planeoff[1], (unsigned long)bmdata->nbufs);
+              (unsigned long)bmdata->planeoff[0], (unsigned long)bmdata->planeoff[1], (unsigned long)bmdata->nbufs));
         return o;
     }
 

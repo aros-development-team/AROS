@@ -386,10 +386,10 @@ r535_disp_imp(struct nvkm_disp *disp, const struct nvkm_disp_imp_head *heads, in
 				res->tiles[ctrl->head[h].headIndex]++;
 		}
 	}
-	printk(KERN_NOTICE "[nouveau] imp: %d head(s) %d window(s) formats %02x: possible %d dispclk %u kHz bw %u assignments %u tiles/head0 %d\n",
-	       ctrl->numHeads, ctrl->numWindows, formats,
-	       res->possible, res->dispclk_khz, res->minbw_kbps, ctrl->numTilingAssignments,
-	       res->tiles[0]);
+	nvkm_debug(subdev, "imp: %d head(s) %d window(s) formats %02x: possible %d dispclk %u kHz bw %u assignments %u tiles/head0 %d\n",
+		   ctrl->numHeads, ctrl->numWindows, formats,
+		   res->possible, res->dispclk_khz, res->minbw_kbps, ctrl->numTilingAssignments,
+		   res->tiles[0]);
 
 	nvkm_gsp_rm_ctrl_done(&disp->rm.imp, ctrl);
 	return 0;
