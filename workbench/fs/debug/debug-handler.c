@@ -29,10 +29,11 @@ struct debugBase {
 };
 
 /* Open a handle on the debug-handler for IO */
-static struct debugArgs *debugOpen(struct debugBase *pb, struct debugArgs *pa, BPTR name, SIPTR *err)
+static struct debugArgs *debugOpen(struct debugBase *pb, BPTR name, SIPTR *err)
 {
     struct ExecBase *SysBase = pb->pb_SysBase;
     int len = AROS_BSTR_strlen(name);
+    struct debugArgs *pa;
 
     if ((pa = AllocVec(sizeof(*pa) + len + 1, MEMF_ANY))) {
         pa->pa_Node.ln_Name = (APTR)(&pa[1]);
@@ -42,7 +43,7 @@ static struct debugArgs *debugOpen(struct debugBase *pb, struct debugArgs *pa, B
         *err = 0;
         return pa;
     }
-    *err = ERROR_NO_DISK;
+    *err = ERROR_NO_FREE_STORE;
     return NULL;
 }
 
@@ -73,6 +74,8 @@ LONG debug_handler(struct ExecBase *SysBase)
     struct Process *thisProc = (struct Process *)FindTask(NULL);
     struct MsgPort *mp = &thisProc->pr_MsgPort;
     struct DosPacket *dp;
+    struct DeviceNode *devNode;
+    struct Message *nextMessage = NULL;
     struct debugBase pb = {};
     BOOL debugPipe = TRUE;
 
@@ -87,19 +90,24 @@ LONG debug_handler(struct ExecBase *SysBase)
     if ((pb.pb_UtilityBase = OpenLibrary("utility.library", 0))) {
     }
 
-    ((struct DeviceNode *)BADDR(dp->dp_Arg3))->dn_Task = mp;
+    devNode = BADDR(dp->dp_Arg3);
+    devNode->dn_Task = mp;
     dp->dp_Res1 = DOSTRUE;
 
     do {
         struct debugArgs *pa;
         replyPkt(dp, SysBase);
-        WaitPort(mp);
-        dp = (struct DosPacket *)(GetMsg(mp)->mn_Node.ln_Name);
+        if (nextMessage == NULL) {
+            WaitPort(mp);
+            nextMessage = GetMsg(mp);
+        }
+        dp = (struct DosPacket *)nextMessage->mn_Node.ln_Name;
+        nextMessage = NULL;
         switch (dp->dp_Type) {
         case ACTION_FINDINPUT:
         case ACTION_FINDOUTPUT:
         case ACTION_FINDUPDATE:
-            pa = debugOpen(&pb, pa, (BSTR)dp->dp_Arg3, &dp->dp_Res2);
+            pa = debugOpen(&pb, (BSTR)dp->dp_Arg3, &dp->dp_Res2);
             if (dp->dp_Res2 == RETURN_OK) {
                 struct FileHandle *fh = BADDR(dp->dp_Arg1);
                 fh->fh_Arg1 = (SIPTR)pa;
@@ -109,15 +117,20 @@ LONG debug_handler(struct ExecBase *SysBase)
             break;
         case ACTION_READ:
             if ((pa = (struct debugArgs *)dp->dp_Arg1)) {
-                dp->dp_Res1 = DOSFALSE;
+                dp->dp_Res1 = -1;
                 dp->dp_Res2 = ERROR_READ_PROTECTED;
             } else {
-                dp->dp_Res1 = DOSFALSE;
+                dp->dp_Res1 = -1;
                 dp->dp_Res2 = ERROR_OBJECT_WRONG_TYPE;
             }
             break;
         case ACTION_WRITE:
             if ((pa = (struct debugArgs *)dp->dp_Arg1)) {
+                if (dp->dp_Arg3 < 0) {
+                    dp->dp_Res1 = -1;
+                    dp->dp_Res2 = ERROR_BAD_NUMBER;
+                    break;
+                }
                 ULONG len = dp->dp_Arg3 > OUTBUF_SIZE - 1 ? OUTBUF_SIZE - 1 : dp->dp_Arg3;
                 pa->outbuf[0] = '\0';
                 if (is_ascii((char *)dp->dp_Arg2, len))
@@ -130,12 +143,13 @@ LONG debug_handler(struct ExecBase *SysBase)
                     int i;
                     for (i = 0; i < (len >> 1); i ++)
                         pa->outbuf[i] = *(UBYTE *)(dp->dp_Arg2 + (i << 1) + 1);
+                    pa->outbuf[i] = '\0';
                 }
                 kprintf("%s", pa->outbuf);
                 dp->dp_Res1 = len;
                 dp->dp_Res2 = 0;
             } else {
-                dp->dp_Res1 = DOSFALSE;
+                dp->dp_Res1 = -1;
                 dp->dp_Res2 = ERROR_OBJECT_WRONG_TYPE;
             }
             break;
@@ -150,7 +164,9 @@ LONG debug_handler(struct ExecBase *SysBase)
             }
             break;
         case ACTION_DIE:
-            if (IsListEmpty(&pb.pb_Openers)) {
+            /* Refuse shutdown if a packet is queued; the caller must retry. */
+            if (IsListEmpty(&pb.pb_Openers) &&
+                (nextMessage = GetMsg(mp)) == NULL) {
                 dp->dp_Res1 = DOSTRUE;
                 dp->dp_Res2 = 0;
                 debugPipe = FALSE;
@@ -167,6 +183,7 @@ LONG debug_handler(struct ExecBase *SysBase)
     } while (debugPipe);
 
     /* ACTION_DIE ends up here... */
+    devNode->dn_Task = NULL;
     replyPkt(dp, SysBase);
 
     CloseLibrary(pb.pb_UtilityBase);
