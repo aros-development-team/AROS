@@ -1,0 +1,20 @@
+include $(SRCDIR)/config/aros.cfg
+
+USER_CFLAGS := $(PARANOIA_CFLAGS)
+USER_LDFLAGS := -static
+
+FILES         := qrcode qrcodegen
+INCLUDE_FILES := qrcode.h
+
+#MM- workbench-classes-zune : workbench-classes-zune-qrcode
+#MM workbench-classes-zune-qrcode : includes
+
+%build_module \
+    mmake=workbench-classes-zune-qrcode \
+    modname=QRCode modtype=mcc \
+    conffile=qrcode.conf uselibs=stdc
+
+%copy_includes path=zune
+
+%common
+%include_deps
