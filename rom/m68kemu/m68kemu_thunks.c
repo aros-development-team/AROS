@@ -90,6 +90,16 @@ static IPTR thunk_exec_OldOpenLibrary(struct M68KEmuContext *ctx, void *cpu)
     return thunk_exec_OpenLibrary(ctx, cpu);
 }
 
+/* -498: OpenResource(A1=name) -> D0=resource. A native resource base is a
+   64-bit pointer the m68k side would call into; only a thunked one is usable,
+   anything else reads as absent. */
+static IPTR thunk_exec_OpenResource(struct M68KEmuContext *ctx, void *cpu)
+{
+    const char *name = (const char *)THUNK_PTR(1);
+    if (!name) return 0;
+    return (IPTR)M68KEmu_FindLibBase(ctx, name);
+}
+
 /* -414: CloseLibrary(A1=library) */
 static IPTR thunk_exec_CloseLibrary(struct M68KEmuContext *ctx, void *cpu)
 {
@@ -703,6 +713,7 @@ const struct M68KThunkEntry m68kemu_thunks_exec[] = {
     { 864, thunk_exec_AVL_FindNode },
     { 552, thunk_exec_OpenLibrary },
     { 408, thunk_exec_OldOpenLibrary },
+    { 498, thunk_exec_OpenResource },
     { 414, thunk_exec_CloseLibrary },
     { 198, thunk_exec_AllocMem },
     { 210, thunk_exec_FreeMem },
@@ -732,7 +743,7 @@ const struct M68KThunkEntry m68kemu_thunks_exec[] = {
     { 360, thunk_exec_RemPort },
     { 0, NULL }
 };
-const ULONG m68kemu_thunks_exec_count = 33;
+const ULONG m68kemu_thunks_exec_count = sizeof(m68kemu_thunks_exec) / sizeof(m68kemu_thunks_exec[0]);
 
 /* ── dos.library thunks ──────────────────────────────────────────── */
 
@@ -1388,7 +1399,7 @@ const struct M68KThunkEntry m68kemu_thunks_dos[] = {
     { 858, thunk_dos_FreeArgs },
     { 0, NULL }
 };
-const ULONG m68kemu_thunks_dos_count = 47;
+const ULONG m68kemu_thunks_dos_count = sizeof(m68kemu_thunks_dos) / sizeof(m68kemu_thunks_dos[0]);
 
 
 
@@ -1621,7 +1632,7 @@ const struct M68KThunkEntry m68kemu_thunks_intuition_manual[] = {
     { 66, thunk_intuition_CloseScreen },
     { 0, NULL }
 };
-const ULONG m68kemu_thunks_intuition_manual_count = 8;
+const ULONG m68kemu_thunks_intuition_manual_count = sizeof(m68kemu_thunks_intuition_manual) / sizeof(m68kemu_thunks_intuition_manual[0]);
 
 /* graphics -192: LoadRGB4(A0=vp, A1=colors, D0=count) */
 static IPTR thunk_gfx_LoadRGB4(struct M68KEmuContext *ctx, void *cpu)
@@ -1672,6 +1683,6 @@ const struct M68KThunkEntry m68kemu_thunks_graphics_manual[] = {
     { 318, thunk_gfx_ScrollRaster },
     { 0, NULL }
 };
-const ULONG m68kemu_thunks_graphics_manual_count = 13;
+const ULONG m68kemu_thunks_graphics_manual_count = sizeof(m68kemu_thunks_graphics_manual) / sizeof(m68kemu_thunks_graphics_manual[0]);
 
 
