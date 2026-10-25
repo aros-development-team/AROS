@@ -74,6 +74,17 @@ VOID VideoCoreGfxOverlay__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg ms
     OOP_DoSuperMethod(cl, o, msg);
 }
 
+VOID VideoCoreGfxOverlay__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+{
+    /* VideoCore IV has 12 bits for the source width */
+    if ((msg->attrID == aHidd_Overlay_MaxWidth) && (XSD(cl)->vcsd_HVSGen == VCGFX_HVS_VC4))
+    {
+        *msg->storage = 4095;
+        return;
+    }
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
 BOOL VideoCoreGfxOverlay__Hidd_Overlay__Show(OOP_Class *cl, OOP_Object *o,
                                              struct pHidd_Overlay_Show *msg)
 {
