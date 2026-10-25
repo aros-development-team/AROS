@@ -387,7 +387,7 @@ LONG port_handler(struct ExecBase *SysBase)
 
     dp = (struct DosPacket *)(GetMsg(mp)->mn_Node.ln_Name);
 
-    res = RETURN_FAIL;
+    res = ERROR_INVALID_RESIDENT_LIBRARY;
     if ((pb.pb_UtilityBase = OpenLibrary("utility.library", 0))) {
         res = decodeStartup(&pb, (BPTR)dp->dp_Arg2);
     }
@@ -397,6 +397,12 @@ LONG port_handler(struct ExecBase *SysBase)
 
     dp->dp_Res2 = res;
     dp->dp_Res1 = (dp->dp_Res2 == 0) ? DOSTRUE : DOSFALSE;
+
+    if (res != RETURN_OK) {
+        CloseLibrary(pb.pb_UtilityBase);
+        replyPkt(dp, SysBase);
+        return RETURN_FAIL;
+    }
 
     do {
         replyPkt(dp, SysBase);
