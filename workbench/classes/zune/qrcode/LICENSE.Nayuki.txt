@@ -1,0 +1,10 @@
+Project Nayuki QR Code generator library (C)
+Source: https://github.com/nayuki/QR-Code-generator
+Pinned revision: 3c6d0b3cefb4e049dc337e82237c9644399716a8
+
+The original, complete MIT license and copyright notices are retained at
+the top of qrcodegen.c and qrcodegen.h. The imported source files are
+normalized only by removing trailing ASCII whitespace from each line for
+AROS diff hygiene. The pinned Git blob SHA-1 values identify the original
+upstream bytes before this representation-only change. This note is
+provenance documentation, not a replacement for those notices.
