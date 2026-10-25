@@ -31,7 +31,8 @@ USER_CPPFLAGS := -DNETMIDI_SERVICE
 #MM- workbench-network-netmidid : workbench-network-netmidid-svccfg
 #MM workbench-network-netmidid : includes linklibs linklibs-applemidi linklibs-rtpmidi linklibs-netmidi-common \
 #MM      linklibs-netmidi2 \
-#MM      network-includes-copy
+#MM      network-includes-copy \
+#MM      workbench-network-mdns-bonami-includes
 
 %build_prog mmake=workbench-network-netmidid \
     progname=netmidid targetdir=$(AROS_SYSTEM)/Network/Services \
