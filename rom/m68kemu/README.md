@@ -194,17 +194,19 @@ Type tags distinguish shadow kinds: 1=Window, 3=RastPort, 4=MsgPort, 5=Screen,
 ### m68k Library Loading
 
 Libraries without native AROS equivalents (e.g., `reqtools.library`) are loaded
-as m68k hunk files. The loader searches in this order:
+as m68k hunk files. They belong in `LIBS68K:`. The loader searches in this order:
 
 1. `LIBS68K:<name>` — dedicated assign for m68k libraries
-2. `LIBS:m68k/<name>` — subdirectory, no assign needed
-3. `LIBS:<name>` — fallback for compatibility
+2. `SYS:Libs68k/<name>` — the default when `LIBS68K:` is not assigned
+3. `LIBS:m68k/<name>` — subdirectory
+4. `LIBS:<name>` — fallback for compatibility
 
-This keeps m68k libraries separate from native AROS libraries, avoiding
-name conflicts. Users can set up `LIBS68K:` in their Startup-Sequence:
+Only hunk files are taken from any of them, so the native AROS libraries in
+`LIBS:` are never mistaken for m68k ones. To keep the m68k libraries
+elsewhere:
 
 ```
-Assign LIBS68K: SYS:Libs/m68k
+Assign LIBS68K: Work:Libs68k
 ```
 
 The loader:

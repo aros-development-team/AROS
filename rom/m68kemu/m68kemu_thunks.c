@@ -80,7 +80,7 @@ static IPTR thunk_exec_OpenLibrary(struct M68KEmuContext *ctx, void *cpu)
     /* No native library found — try loading m68k .library from LIBS: */
     base = M68KEmu_LoadM68KLibrary(ctx, name);
     if (base) {
-        bug("[m68kemu] Loaded m68k library %s at 0x%lx\n", name, (unsigned long)base);
+        if (ctx->trace_calls) bug("[m68kemu] Loaded m68k library %s at 0x%lx\n", name, (unsigned long)base);
         return (IPTR)base;
     }
 
@@ -726,6 +726,21 @@ static IPTR thunk_exec_ReplyMsg(struct M68KEmuContext *ctx, void *cpu)
 }
 
 
+/* exec -732: StackSwap(A0=struct StackSwapStruct *) — exchange the program's
+   stack pointer with stk_Pointer; the second call swaps back. The return
+   address is already popped here, so A7 is the caller's stack pointer. */
+static IPTR thunk_exec_StackSwap(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG sss = THUNK_A(0);
+    ULONG newsp, sp = THUNK_A(7);
+
+    if (!sss) return 0;
+    newsp = m68k_read32(ctx, sss + 8);
+    m68k_write32(ctx, sss + 8, sp);
+    THUNK_SET_A(7, newsp);
+    return 0;
+}
+
 /* exec -306: SetSignal(D0=newSignals, D1=signalSet) -> D0=oldSignals */
 static IPTR thunk_exec_SetSignal(struct M68KEmuContext *ctx, void *cpu)
 {
@@ -803,6 +818,7 @@ static IPTR thunk_exec_CloseDevice_checked(struct M68KEmuContext *ctx, void *cpu
 
 const struct M68KThunkEntry m68kemu_thunks_exec[] = {
     { 450, thunk_exec_CloseDevice_checked },
+    { 732, thunk_exec_StackSwap },
     { 30, thunk_exec_Supervisor },
     { 852, thunk_exec_AVL_AddNode },
     { 858, thunk_exec_AVL_RemNodeByAddress },

@@ -535,6 +535,16 @@ ULONG M68KEmu_LoadHunksFromMemory(struct M68KEmuContext *ctx, UBYTE *data, LONG 
     ctx->entry_point = entry_point;
     ctx->seg_start   = entry_point;
 
+    /* The span this file occupies: the heap allocates top down, so a
+       later hunk can sit below the first one */
+    ctx->load_lo = 0xFFFFFFFF;
+    ctx->load_hi = 0;
+    for (i = 0; i < num_hunks; i++)
+    {
+        if (hunk_addrs[i] < ctx->load_lo) ctx->load_lo = hunk_addrs[i];
+        if (hunk_addrs[i] + hunk_sizes[i] > ctx->load_hi) ctx->load_hi = hunk_addrs[i] + hunk_sizes[i];
+    }
+
     FreeMem(hunk_sizes, num_hunks * sizeof(ULONG));
     FreeMem(hunk_addrs, num_hunks * sizeof(ULONG));
     return entry_point;

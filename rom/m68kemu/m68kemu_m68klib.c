@@ -38,22 +38,26 @@ ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name)
     /* A probe for an optional library must not raise a volume requester */
     me->pr_WindowPtr = (APTR)-1;
 
-    /* Try LIBS68K:name first (dedicated assign for m68k libraries) */
-    snprintf(path, sizeof(path), "LIBS68K:%s", name);
-    fh = Open(path, MODE_OLDFILE);
-
-    /* Try LIBS:m68k/name */
-    if (!fh)
+    /* m68k libraries without a native replacement live in LIBS68K:,
+       SYS:Libs68k/ when that assign is not set */
     {
-        snprintf(path, sizeof(path), "LIBS:m68k/%s", name);
-        fh = Open(path, MODE_OLDFILE);
-    }
+        static const char *const dirs[] = { "LIBS68K:", "SYS:Libs68k/", "LIBS:m68k/", "LIBS:" };
+        ULONG d;
 
-    /* Fall back to LIBS:name */
-    if (!fh)
-    {
-        snprintf(path, sizeof(path), "LIBS:%s", name);
-        fh = Open(path, MODE_OLDFILE);
+        fh = BNULL;
+        for (d = 0; d < sizeof(dirs) / sizeof(dirs[0]) && !fh; d++)
+        {
+            ULONG magic = 0;
+
+            snprintf(path, sizeof(path), "%s%s", dirs[d], name);
+            fh = Open(path, MODE_OLDFILE);
+            /* only a hunk file: LIBS: also holds the native libraries */
+            if (fh && (Read(fh, &magic, 4) != 4 || AROS_BE2LONG(magic) != 0x3F3))
+            {
+                Close(fh);
+                fh = BNULL;
+            }
+        }
     }
 
     me->pr_WindowPtr = oldwin;
@@ -83,8 +87,8 @@ ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name)
 
     /* Scan containment for M68K_RTC_MATCHWORD (0x4AFC) */
     ULONG rt_addr = 0;
-    /* Hunks loaded at high addresses — scan from entry through loaded region */
-    for (ULONG addr = entry & ~1; addr < ctx->mem_size; addr += 2)
+    /* Scan every hunk of the library: the Resident can live in its data hunk */
+    for (ULONG addr = ctx->load_lo & ~1; addr + M68K_RT_MATCHTAG + 4 <= ctx->load_hi; addr += 2)
     {
         if (m68k_read16(ctx, addr) == M68K_RTC_MATCHWORD)
         {
@@ -109,7 +113,7 @@ ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name)
     UBYTE rt_Type    = ctx->mem[rt_addr + M68K_RT_TYPE];
     ULONG rt_Init    = m68k_read32(ctx, rt_addr + M68K_RT_INIT);
 
-    bug("[m68kemu] m68klib: %s resident at 0x%lx flags=0x%x type=%d init=0x%lx\n",
+    if (ctx->trace_calls) bug("[m68kemu] m68klib: %s resident at 0x%lx flags=0x%x type=%d init=0x%lx\n",
         name, (unsigned long)rt_addr, rt_Flags, rt_Type, (unsigned long)rt_Init);
 
     if (!(rt_Flags & M68K_RTF_AUTOINIT))
@@ -127,7 +131,7 @@ ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name)
     ULONG dataInit  = m68k_read32(ctx, rt_Init + M68K_AUTOINIT_DATAINIT);
     ULONG initFunc  = m68k_read32(ctx, rt_Init + M68K_AUTOINIT_INITFUNC);
 
-    bug("[m68kemu] m68klib: dataSize=%lu funcTable=0x%lx dataInit=0x%lx initFunc=0x%lx\n",
+    if (ctx->trace_calls) bug("[m68kemu] m68klib: dataSize=%lu funcTable=0x%lx dataInit=0x%lx initFunc=0x%lx\n",
         (unsigned long)dataSize, (unsigned long)funcTable, (unsigned long)dataInit, (unsigned long)initFunc);
 
     if (!funcTable) return 0;
@@ -143,7 +147,7 @@ ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name)
 
     if (numFuncs == 0) return 0;
 
-    bug("[m68kemu] m68klib: %s has %d functions\n", name, numFuncs);
+    if (ctx->trace_calls) bug("[m68kemu] m68klib: %s has %d functions\n", name, numFuncs);
 
     /* Allocate library base with jump table.
        Jump table: numFuncs * 6 bytes (JMP abs.l = 4E F9 xx xx xx xx)
@@ -183,7 +187,7 @@ ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name)
     ULONG rt_Name = m68k_read32(ctx, rt_addr + M68K_RT_NAME);
     m68k_write32(ctx, base + M68K_LIB_LNNAME, rt_Name);  /* ln_Name */
 
-    bug("[m68kemu] m68klib: %s loaded at base=0x%lx (%d funcs)\n",
+    if (ctx->trace_calls) bug("[m68kemu] m68klib: %s loaded at base=0x%lx (%d funcs)\n",
         name, (unsigned long)base, numFuncs);
 
     return base;
