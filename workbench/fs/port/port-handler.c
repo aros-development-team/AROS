@@ -267,9 +267,10 @@ static SIPTR decodeStartup(struct portBase *pb, BPTR startup)
 
 /* Open the device for IO
  */
-static struct portArgs *portOpen(struct portBase *pb, struct portArgs *pa, BPTR name, SIPTR *err)
+static struct portArgs *portOpen(struct portBase *pb, BPTR name, SIPTR *err)
 {
     int len = AROS_BSTR_strlen(name);
+    struct portArgs *pa;
     struct ExecBase *SysBase = pb->pb_SysBase;
 
     *err = 0;
@@ -414,7 +415,7 @@ LONG port_handler(struct ExecBase *SysBase)
         case ACTION_FINDINPUT:
         case ACTION_FINDOUTPUT:
         case ACTION_FINDUPDATE:
-            pa = portOpen(&pb, pa, (BSTR)dp->dp_Arg3, &dp->dp_Res2);
+            pa = portOpen(&pb, (BSTR)dp->dp_Arg3, &dp->dp_Res2);
             if (dp->dp_Res2 == RETURN_OK) {
                 fh = BADDR(dp->dp_Arg1);
                 fh->fh_Arg1 = (SIPTR)pa;
