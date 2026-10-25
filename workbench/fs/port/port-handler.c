@@ -99,6 +99,10 @@ static SIPTR decodeArgs(struct portBase *pb, struct portArgs *pa, BSTR args)
         if (loc < len)
             loc++;
 
+        /* An empty section does not specify a baud rate or other option. */
+        if (slen == 0)
+            continue;
+
         /* Check for matches.. */
         if (slen >= 5 && (0 == Strnicmp(cp, "UNIT=", 5))) {
             CONST_STRPTR unit = cp + 5;
