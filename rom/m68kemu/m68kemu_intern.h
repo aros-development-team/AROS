@@ -104,7 +104,17 @@ struct M68KEmuContext
     #define M68KEMU_MAX_GADGETS 256
     struct { ULONG m68k; APTR native; } gadmap[M68KEMU_MAX_GADGETS];
     ULONG   num_gadmap;
+
+    /* m68k Menu/MenuItem <-> native copy (SetMenuStrip translates the strip) */
+    #define M68KEMU_MAX_MENUITEMS 512
+    struct { ULONG m68k; APTR native; UBYTE is_menu; } menumap[M68KEMU_MAX_MENUITEMS];
+    ULONG   num_menumap;
+    struct { APTR window; APTR strip; } menustrips[8];
     BOOL    trace_after_msg;
+    ULONG   tail_pc;               /* after this thunk, continue in 68k code here ... */
+    ULONG   tail_d0, tail_a0, tail_a6; /* ... with these registers; its RTS returns to the caller */
+    BOOL    ccr_valid;             /* a thunk set the caller's condition codes */
+    UBYTE   ccr_val;
     ULONG   load_lo, load_hi;      /* span of the last LoadHunksFromMemory() */
     volatile ULONG icount_lo;     /* instructions executed (low 32 bits), read by the watchdog */
     volatile BOOL  watchdog_quit;
@@ -186,6 +196,7 @@ BOOL  m68k_vbl_due(struct M68KEmuContext *ctx);
 void  m68k_vbl_close(struct M68KEmuContext *ctx);
 ULONG m68k_eclock_now(struct M68KEmuContext *ctx, ULONG *freq);
 void  m68k_watchdog_start(struct M68KEmuContext *ctx);
+void  m68k_log(struct M68KEmuContext *ctx, const char *fmt, ...);
 void  m68k_watchdog_stop(struct M68KEmuContext *ctx);
 #ifdef __cplusplus
 }

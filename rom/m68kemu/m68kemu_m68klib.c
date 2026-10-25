@@ -12,6 +12,8 @@
 #include <proto/exec.h>
 #include <string.h>
 
+#include <exec/nodes.h>
+#include <exec/libraries.h>
 #include "m68kemu_intern.h"
 #include "m68kemu_offsets.h"
 
@@ -25,6 +27,45 @@
  *
  * Returns the m68k library base address, or 0 on failure.
  */
+/* exec InitStruct() on m68k memory: command byte ddssnnnn - dd 00 copy n+1
+   items here, 01 repeat one item n+1 times, 10 byte offset follows, 11
+   24-bit offset follows; ss 00 LONG, 01 WORD, 10 BYTE; WORD/LONG data is
+   word aligned; a zero command ends the table. */
+static void m68k_init_struct(struct M68KEmuContext *ctx, ULONG tab, ULONG mem)
+{
+    ULONG dst = mem, p = tab;
+    int guard = 0;
+
+    while (guard++ < 4096)
+    {
+        UBYTE cmd = ctx->mem[p++];
+        UBYTE kind = cmd >> 6, size = (cmd >> 4) & 3;
+        ULONG count = (cmd & 15) + 1, i, sz;
+
+        if (!cmd) break;
+        if (size == 3) break;
+        sz = size == 0 ? 4 : size == 1 ? 2 : 1;
+        if (kind == 2)
+            dst = mem + ctx->mem[p++];
+        else if (kind == 3)
+        {
+            dst = mem + ((ULONG)ctx->mem[p] << 16 | (ULONG)ctx->mem[p + 1] << 8 | ctx->mem[p + 2]);
+            p += 3;
+        }
+        if (sz > 1 && (p & 1)) p++;
+        for (i = 0; i < count; i++)
+        {
+            ULONG src = (kind == 1) ? p : p + i * sz;
+            if (sz == 4) m68k_write32(ctx, dst, m68k_read32(ctx, src));
+            else if (sz == 2) m68k_write16(ctx, dst, m68k_read16(ctx, src));
+            else ctx->mem[dst] = ctx->mem[src];
+            dst += sz;
+        }
+        p += (kind == 1) ? sz : count * sz;
+        if (p & 1) p++;
+    }
+}
+
 ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name)
 {
     char path[256];
@@ -81,7 +122,7 @@ ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name)
 
     if (!entry)
     {
-        bug("[m68kemu] m68klib: failed to load hunks for %s\n", name);
+        m68k_log(ctx, "68k library %s is not a usable hunk file", name);
         return 0;
     }
 
@@ -104,7 +145,7 @@ ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name)
 
     if (!rt_addr)
     {
-        bug("[m68kemu] m68klib: no resident tag in %s\n", name);
+        m68k_log(ctx, "68k library %s has no Resident tag", name);
         return 0;
     }
 
@@ -136,14 +177,16 @@ ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name)
 
     if (!funcTable) return 0;
 
-    /* Count functions in the function table (terminated by -1 / 0xFFFFFFFF) */
+    /* Function table: absolute LONGs ending in -1, or - when it starts with
+       the WORD -1 - WORD offsets from the table ending in -1 */
+    BOOL rel = m68k_read16(ctx, funcTable) == 0xFFFF;
     UWORD numFuncs = 0;
-    ULONG ft = funcTable;
-    while (m68k_read32(ctx, ft) != M68K_FUNCTABLE_END && numFuncs < 1000)
-    {
-        numFuncs++;
-        ft += 4;  /* relative or absolute function pointers */
-    }
+    if (rel)
+        while (m68k_read16(ctx, funcTable + 2 + numFuncs * 2) != 0xFFFF && numFuncs < 1000)
+            numFuncs++;
+    else
+        while (m68k_read32(ctx, funcTable + numFuncs * 4) != M68K_FUNCTABLE_END && numFuncs < 1000)
+            numFuncs++;
 
     if (numFuncs == 0) return 0;
 
@@ -164,28 +207,41 @@ ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name)
     /* Build jump table: JMP abs.l for each function */
     for (UWORD i = 0; i < numFuncs; i++)
     {
-        ULONG func_addr = m68k_read32(ctx, funcTable + i * 4);
-
-        /* Check if relative (high bit set = relative to funcTable) */
-        if (func_addr >= 0x80000000u)
-        {
-            /* Treat as relative offset from funcTable */
-            func_addr = funcTable + (LONG)func_addr;
-        }
+        ULONG func_addr = rel ? funcTable + (LONG)(WORD)m68k_read16(ctx, funcTable + 2 + i * 2)
+                              : m68k_read32(ctx, funcTable + i * 4);
 
         ULONG slot = base - ((ULONG)(i + 1) * M68K_JT_SLOT_SIZE);
         m68k_write16(ctx, slot,     M68K_OP_JMP_ABS_L);
         m68k_write32(ctx, slot + 2, func_addr);
     }
 
-    /* Init minimal Library node at base */
-    /* lib_Version at offset 20, lib_Revision at 22 */
-    UBYTE rt_Version = ctx->mem[rt_addr + M68K_RT_VERSION];
-    m68k_write16(ctx, base + M68K_LIB_VERSION, rt_Version);
+    memset(ctx->mem + base, 0, dataSize);
 
-    /* Store the library name pointer */
+    /* Library node: ln_Type, ln_Name, lib_Flags, lib_NegSize, lib_PosSize, lib_Version, lib_IdString */
+    UBYTE rt_Version = ctx->mem[rt_addr + M68K_RT_VERSION];
     ULONG rt_Name = m68k_read32(ctx, rt_addr + M68K_RT_NAME);
-    m68k_write32(ctx, base + M68K_LIB_LNNAME, rt_Name);  /* ln_Name */
+    ctx->mem[base + 8] = NT_LIBRARY;
+    m68k_write32(ctx, base + M68K_LIB_LNNAME, rt_Name);
+    ctx->mem[base + 14] = LIBF_SUMUSED | LIBF_CHANGED;
+    m68k_write16(ctx, base + 16, (UWORD)jt_size);
+    m68k_write16(ctx, base + 18, (UWORD)dataSize);
+    m68k_write16(ctx, base + M68K_LIB_VERSION, rt_Version);
+    m68k_write32(ctx, base + 24, m68k_read32(ctx, rt_addr + 18));   /* lib_IdString = rt_IdString */
+
+    if (dataInit)
+        m68k_init_struct(ctx, dataInit, base);
+
+    /* The library's init function stores the bases its functions use; it
+       runs as 68k code when the program's OpenLibrary returns (tail call:
+       D0 = base, A0 = seglist, A6 = SysBase), and its result is the
+       OpenLibrary result. */
+    if (initFunc)
+    {
+        ctx->tail_pc = initFunc;
+        ctx->tail_d0 = base;
+        ctx->tail_a0 = 0;
+        ctx->tail_a6 = ctx->m68k_sysbase;
+    }
 
     if (ctx->trace_calls) bug("[m68kemu] m68klib: %s loaded at base=0x%lx (%d funcs)\n",
         name, (unsigned long)base, numFuncs);

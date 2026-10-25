@@ -26,6 +26,9 @@
 
 static ULONG gadget_m68k(struct M68KEmuContext *ctx, APTR native);
 static void gadgets_sync_back(struct M68KEmuContext *ctx);
+static void menus_sync_back(struct M68KEmuContext *ctx);
+static struct Menu *strip_of(struct M68KEmuContext *ctx, struct Window *w, BOOL take);
+static void menus_free(struct M68KEmuContext *ctx, struct Menu *m);
 extern const struct M68KThunkEntry m68kemu_thunks_intuition_manual[];
 extern const ULONG m68kemu_thunks_intuition_manual_count;
 extern const struct M68KThunkEntry m68kemu_thunks_graphics_manual[];
@@ -45,6 +48,16 @@ ULONG M68KEmu_OpenLibrary(struct M68KEmuContext *ctx, const char *name)
     ULONG base = M68KEmu_FindLibBase(ctx, name);
     if (base) return base;
 
+    if (strcmp(name, m68kemu_wb_lib.name) == 0)
+        return M68KEmu_SetupLibBase(ctx, ctx->num_libs, name, M68KEMU_MAX_LVO,
+                                    m68kemu_wb_lib.thunks, m68kemu_wb_lib.count, NULL, 0);
+
+    for (ULONG i = 0; i < m68kemu_math_libs_count; i++)
+        if (strcmp(name, m68kemu_math_libs[i].name) == 0)
+            return M68KEmu_SetupLibBase(ctx, ctx->num_libs, name, M68KEMU_MAX_LVO,
+                                        m68kemu_math_libs[i].thunks, m68kemu_math_libs[i].count,
+                                        NULL, 0);
+
     for (ULONG i = 0; i < m68kemu_all_gen_libs_count; i++)
     {
         if (strcmp(name, m68kemu_all_gen_libs[i].name) == 0)
@@ -56,7 +69,9 @@ ULONG M68KEmu_OpenLibrary(struct M68KEmuContext *ctx, const char *name)
                 manual_count = m68kemu_thunks_intuition_manual_count;
             } else if (strcmp(name, "graphics.library") == 0) {
                 manual = m68kemu_thunks_graphics_manual;
-                manual_count = m68kemu_thunks_graphics_manual_count;
+                manual_count = m68kemu_thunks_graphics_manual_count;            } else if (strcmp(name, "commodities.library") == 0) {
+                manual = m68kemu_cx_manual;
+                manual_count = m68kemu_cx_manual_count;
             }
             return M68KEmu_SetupLibBase(ctx, ctx->num_libs, name,
                                         M68KEMU_MAX_LVO,
@@ -660,7 +675,13 @@ static IPTR thunk_intuition_CloseWindow(struct M68KEmuContext *ctx, void *cpu)
 {
     ULONG mw = THUNK_A(0);
     struct Window *w = (struct Window *)shadow_lookup(ctx, mw);
-    if (w) { CloseWindow(w); shadow_destroy(ctx, shadow_find_layout("Window"), mw); }
+    if (w)
+    {
+        struct Menu *m = strip_of(ctx, w, TRUE);
+        if (m) { ClearMenuStrip(w); menus_free(ctx, m); }
+        CloseWindow(w);
+        shadow_destroy(ctx, shadow_find_layout("Window"), mw);
+    }
     return 0;
 }
 
@@ -706,6 +727,7 @@ static IPTR thunk_exec_GetMsg(struct M68KEmuContext *ctx, void *cpu)
         ULONG mg = gadget_m68k(ctx, imsg->IAddress);
         if (mg) m68k_write32(ctx, mi + 28, mg);
         if (ctx->num_gadmap) gadgets_sync_back(ctx);
+        if (imsg->Class == IDCMP_MENUPICK && ctx->num_menumap) menus_sync_back(ctx);
         if (ctx->trace_calls)
             bug("[m68kemu] IntuiMessage class %08lx code %04x iaddr %p -> %08lx\n",
                 (unsigned long)imsg->Class, (unsigned)imsg->Code, imsg->IAddress, (unsigned long)mg);
@@ -738,6 +760,20 @@ static IPTR thunk_exec_StackSwap(struct M68KEmuContext *ctx, void *cpu)
     newsp = m68k_read32(ctx, sss + 8);
     m68k_write32(ctx, sss + 8, sp);
     THUNK_SET_A(7, newsp);
+    return 0;
+}
+
+/* exec -150: SuperState() / -156: UserState(D0=sysStack). The program
+   already runs in supervisor mode on its own stack (from reset), so there
+   is no mode to change: SuperState answers with the current stack pointer
+   for the matching UserState, which has nothing to restore. */
+static IPTR thunk_exec_SuperState(struct M68KEmuContext *ctx, void *cpu)
+{
+    return THUNK_A(7);
+}
+
+static IPTR thunk_exec_UserState(struct M68KEmuContext *ctx, void *cpu)
+{
     return 0;
 }
 
@@ -819,6 +855,8 @@ static IPTR thunk_exec_CloseDevice_checked(struct M68KEmuContext *ctx, void *cpu
 const struct M68KThunkEntry m68kemu_thunks_exec[] = {
     { 450, thunk_exec_CloseDevice_checked },
     { 732, thunk_exec_StackSwap },
+    { 150, thunk_exec_SuperState },
+    { 156, thunk_exec_UserState },
     { 30, thunk_exec_Supervisor },
     { 852, thunk_exec_AVL_AddNode },
     { 858, thunk_exec_AVL_RemNodeByAddress },
@@ -2308,7 +2346,274 @@ static IPTR thunk_intuition_OffGadget_t(struct M68KEmuContext *ctx, void *cpu)
     return 0;
 }
 
+
+/* ── Menus: a program's m68k Menu/MenuItem strip (big-endian, 32-bit
+   pointers) is copied into native structures for SetMenuStrip. The map
+   lets MENUPICK sync Flags (CHECKED) and NextSelect back into the
+   program's own items; ItemAddress walks the program's strip directly. ── */
+#define M68K_MENU_NEXT     0
+#define M68K_MENU_LEFT     4
+#define M68K_MENU_TOP      6
+#define M68K_MENU_WIDTH    8
+#define M68K_MENU_HEIGHT   10
+#define M68K_MENU_FLAGS    12
+#define M68K_MENU_NAME     14
+#define M68K_MENU_FIRST    18
+#define M68K_MI_NEXT       0
+#define M68K_MI_LEFT       4
+#define M68K_MI_TOP        6
+#define M68K_MI_WIDTH      8
+#define M68K_MI_HEIGHT     10
+#define M68K_MI_FLAGS      12
+#define M68K_MI_MUTEX      14
+#define M68K_MI_ITEMFILL   18
+#define M68K_MI_SELECTFILL 22
+#define M68K_MI_COMMAND    26
+#define M68K_MI_SUBITEM    28
+#define M68K_MI_NEXTSELECT 32
+
+static void menumap_add(struct M68KEmuContext *ctx, ULONG m, APTR n, UBYTE is_menu)
+{
+    if (ctx->num_menumap < M68KEMU_MAX_MENUITEMS)
+    {
+        ctx->menumap[ctx->num_menumap].m68k = m;
+        ctx->menumap[ctx->num_menumap].native = n;
+        ctx->menumap[ctx->num_menumap].is_menu = is_menu;
+        ctx->num_menumap++;
+    }
+}
+
+static APTR menu_fill_from_m68k(struct M68KEmuContext *ctx, ULONG mf, BOOL text)
+{
+    if (!mf) return NULL;
+    if (text)
+    {
+        struct IntuiText *it = AllocMem(sizeof(struct IntuiText), MEMF_CLEAR);
+        if (it) translate_intuitext(ctx, mf, it, 8);
+        return it;
+    }
+    return image_from_m68k(ctx, mf, 16);
+}
+
+static void menu_fill_free(APTR f, BOOL text)
+{
+    if (!f) return;
+    if (text) { free_intuitext_chain((struct IntuiText *)f); FreeMem(f, sizeof(struct IntuiText)); }
+    else image_free((struct Image *)f);
+}
+
+static struct MenuItem *items_from_m68k(struct M68KEmuContext *ctx, ULONG mi, int depth)
+{
+    struct MenuItem *first = NULL, *prev = NULL;
+    int guard = 0;
+    while (mi && guard++ < 128)
+    {
+        struct MenuItem *n = AllocMem(sizeof(struct MenuItem), MEMF_CLEAR);
+        BOOL text;
+        if (!n) break;
+        n->LeftEdge = (WORD)m68k_read16(ctx, mi + M68K_MI_LEFT);
+        n->TopEdge  = (WORD)m68k_read16(ctx, mi + M68K_MI_TOP);
+        n->Width    = (WORD)m68k_read16(ctx, mi + M68K_MI_WIDTH);
+        n->Height   = (WORD)m68k_read16(ctx, mi + M68K_MI_HEIGHT);
+        n->Flags    = m68k_read16(ctx, mi + M68K_MI_FLAGS);
+        n->MutualExclude = m68k_read32(ctx, mi + M68K_MI_MUTEX);
+        text = (n->Flags & ITEMTEXT) != 0;
+        n->ItemFill   = menu_fill_from_m68k(ctx, m68k_read32(ctx, mi + M68K_MI_ITEMFILL), text);
+        n->SelectFill = menu_fill_from_m68k(ctx, m68k_read32(ctx, mi + M68K_MI_SELECTFILL), text);
+        n->Command  = ctx->mem[mi + M68K_MI_COMMAND];
+        n->NextSelect = MENUNULL;
+        if (depth == 0)
+            n->SubItem = items_from_m68k(ctx, m68k_read32(ctx, mi + M68K_MI_SUBITEM), 1);
+        menumap_add(ctx, mi, n, 0);
+        if (prev) prev->NextItem = n; else first = n;
+        prev = n;
+        mi = m68k_read32(ctx, mi + M68K_MI_NEXT);
+    }
+    return first;
+}
+
+static struct Menu *menus_from_m68k(struct M68KEmuContext *ctx, ULONG mm)
+{
+    struct Menu *first = NULL, *prev = NULL;
+    int guard = 0;
+    while (mm && guard++ < 32)
+    {
+        struct Menu *n = AllocMem(sizeof(struct Menu), MEMF_CLEAR);
+        ULONG name;
+        if (!n) break;
+        n->LeftEdge = (WORD)m68k_read16(ctx, mm + M68K_MENU_LEFT);
+        n->TopEdge  = (WORD)m68k_read16(ctx, mm + M68K_MENU_TOP);
+        n->Width    = (WORD)m68k_read16(ctx, mm + M68K_MENU_WIDTH);
+        n->Height   = (WORD)m68k_read16(ctx, mm + M68K_MENU_HEIGHT);
+        n->Flags    = m68k_read16(ctx, mm + M68K_MENU_FLAGS);
+        name = m68k_read32(ctx, mm + M68K_MENU_NAME);
+        n->MenuName = name ? (CONST_STRPTR)m68k_to_host(ctx, name) : NULL;
+        n->FirstItem = items_from_m68k(ctx, m68k_read32(ctx, mm + M68K_MENU_FIRST), 0);
+        menumap_add(ctx, mm, n, 1);
+        if (prev) prev->NextMenu = n; else first = n;
+        prev = n;
+        mm = m68k_read32(ctx, mm + M68K_MENU_NEXT);
+    }
+    return first;
+}
+
+static void items_free(struct MenuItem *it)
+{
+    while (it)
+    {
+        struct MenuItem *nx = it->NextItem;
+        BOOL text = (it->Flags & ITEMTEXT) != 0;
+        items_free(it->SubItem);
+        menu_fill_free(it->ItemFill, text);
+        menu_fill_free(it->SelectFill, text);
+        FreeMem(it, sizeof(struct MenuItem));
+        it = nx;
+    }
+}
+
+static void menus_free(struct M68KEmuContext *ctx, struct Menu *m)
+{
+    ULONG i, j;
+    /* drop the map entries that point into this strip */
+    for (i = 0, j = 0; i < ctx->num_menumap; i++)
+    {
+        BOOL mine = FALSE;
+        struct Menu *mm;
+        for (mm = m; mm && !mine; mm = mm->NextMenu)
+        {
+            struct MenuItem *it, *sub;
+            if ((APTR)mm == ctx->menumap[i].native) mine = TRUE;
+            for (it = mm->FirstItem; it && !mine; it = it->NextItem)
+            {
+                if ((APTR)it == ctx->menumap[i].native) mine = TRUE;
+                for (sub = it->SubItem; sub && !mine; sub = sub->NextItem)
+                    if ((APTR)sub == ctx->menumap[i].native) mine = TRUE;
+            }
+        }
+        if (!mine) ctx->menumap[j++] = ctx->menumap[i];
+    }
+    ctx->num_menumap = j;
+    while (m)
+    {
+        struct Menu *nx = m->NextMenu;
+        items_free(m->FirstItem);
+        FreeMem(m, sizeof(struct Menu));
+        m = nx;
+    }
+}
+
+static ULONG menu_m68k_of(struct M68KEmuContext *ctx, APTR native)
+{
+    ULONG i;
+    for (i = 0; i < ctx->num_menumap; i++)
+        if (ctx->menumap[i].native == native) return ctx->menumap[i].m68k;
+    return 0;
+}
+
+/* After MENUPICK: copy Flags (CHECKED etc.) and NextSelect into the program's items */
+static void menus_sync_back(struct M68KEmuContext *ctx)
+{
+    ULONG i;
+    for (i = 0; i < ctx->num_menumap; i++)
+    {
+        if (ctx->menumap[i].is_menu)
+        {
+            struct Menu *n = (struct Menu *)ctx->menumap[i].native;
+            m68k_write16(ctx, ctx->menumap[i].m68k + M68K_MENU_FLAGS, n->Flags);
+        }
+        else
+        {
+            struct MenuItem *n = (struct MenuItem *)ctx->menumap[i].native;
+            m68k_write16(ctx, ctx->menumap[i].m68k + M68K_MI_FLAGS, n->Flags);
+            m68k_write16(ctx, ctx->menumap[i].m68k + M68K_MI_NEXTSELECT, n->NextSelect);
+        }
+    }
+}
+
+static struct Menu *strip_of(struct M68KEmuContext *ctx, struct Window *w, BOOL take)
+{
+    int i;
+    for (i = 0; i < 8; i++)
+        if (ctx->menustrips[i].window == w)
+        {
+            struct Menu *m = (struct Menu *)ctx->menustrips[i].strip;
+            if (take) { ctx->menustrips[i].window = NULL; ctx->menustrips[i].strip = NULL; }
+            return m;
+        }
+    return NULL;
+}
+
+/* -264: SetMenuStrip(A0=window, A1=menu) / -702: ResetMenuStrip */
+static IPTR thunk_intuition_SetMenuStrip_t(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct Window *w = (struct Window *)shadow_lookup(ctx, THUNK_A(0));
+    struct Menu *old, *m;
+    int i;
+    if (!w || !THUNK_A(1)) return FALSE;
+    old = strip_of(ctx, w, TRUE);
+    if (old) { ClearMenuStrip(w); menus_free(ctx, old); }
+    m = menus_from_m68k(ctx, THUNK_A(1));
+    if (!m) return FALSE;
+    for (i = 0; i < 8; i++)
+        if (!ctx->menustrips[i].window)
+        {
+            ctx->menustrips[i].window = w;
+            ctx->menustrips[i].strip = m;
+            break;
+        }
+    return (IPTR)SetMenuStrip(w, m);
+}
+
+/* -54: ClearMenuStrip(A0=window) */
+static IPTR thunk_intuition_ClearMenuStrip_t(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct Window *w = (struct Window *)shadow_lookup(ctx, THUNK_A(0));
+    struct Menu *m;
+    if (!w) return 0;
+    ClearMenuStrip(w);
+    m = strip_of(ctx, w, TRUE);
+    if (m) menus_free(ctx, m);
+    return 0;
+}
+
+/* -144: ItemAddress(A0=menustrip, D0=menunumber) on the program's own strip */
+static IPTR thunk_intuition_ItemAddress_t(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG mm = THUNK_A(0), it;
+    UWORD num = (UWORD)THUNK_D(0);
+    UWORD mnum = MENUNUM(num), inum = ITEMNUM(num), snum = SUBNUM(num);
+    if (num == MENUNULL || !mm) return 0;
+    while (mm && mnum--) mm = m68k_read32(ctx, mm + M68K_MENU_NEXT);
+    if (!mm || inum == NOITEM) return 0;
+    it = m68k_read32(ctx, mm + M68K_MENU_FIRST);
+    while (it && inum--) it = m68k_read32(ctx, it + M68K_MI_NEXT);
+    if (!it || snum == NOSUB) return it;
+    it = m68k_read32(ctx, it + M68K_MI_SUBITEM);
+    while (it && snum--) it = m68k_read32(ctx, it + M68K_MI_NEXT);
+    return it;
+}
+
+/* -192 OnMenu / -180 OffMenu (A0=window, D0=menunumber) */
+static IPTR thunk_intuition_OnMenu_t(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct Window *w = (struct Window *)shadow_lookup(ctx, THUNK_A(0));
+    if (w) { OnMenu(w, (UWORD)THUNK_D(0)); menus_sync_back(ctx); }
+    return 0;
+}
+static IPTR thunk_intuition_OffMenu_t(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct Window *w = (struct Window *)shadow_lookup(ctx, THUNK_A(0));
+    if (w) { OffMenu(w, (UWORD)THUNK_D(0)); menus_sync_back(ctx); }
+    return 0;
+}
+
 const struct M68KThunkEntry m68kemu_thunks_intuition_manual[] = {
+    { 264, thunk_intuition_SetMenuStrip_t },
+    { 702, thunk_intuition_SetMenuStrip_t },
+    { 54,  thunk_intuition_ClearMenuStrip_t },
+    { 144, thunk_intuition_ItemAddress_t },
+    { 192, thunk_intuition_OnMenu_t },
+    { 180, thunk_intuition_OffMenu_t },
     { 438, thunk_intuition_AddGList_t },
     { 42,  thunk_intuition_AddGadget_t },
     { 432, thunk_intuition_RefreshGList_t },
