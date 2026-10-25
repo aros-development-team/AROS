@@ -24,8 +24,12 @@ struct BonamiDiscovery
     APTR remote;
     ULONG owner;
     ULONG daemon;
-    BOOL resolve;
+    UWORD kind;
 };
+
+#define BONAMI_OP_BROWSE  1
+#define BONAMI_OP_RESOLVE 2
+#define BONAMI_OP_QUERY   3
 
 static struct BonamiDiscovery *find_ref(struct BonamiIntern *base, APTR ref)
 {
@@ -43,16 +47,16 @@ static struct BonamiDiscovery *find_ref(struct BonamiIntern *base, APTR ref)
 
 /* Caller holds bi_Lock. Neither IPC waits nor hooks happen under it. */
 static LONG prepare(struct BonamiIntern *base, APTR ref,
-    struct MDNSIPCMsg *msg, BOOL stop, BOOL resolve)
+    struct MDNSIPCMsg *msg, BOOL remove, UWORD kind)
 {
     struct BonamiDiscovery *op = find_ref(base, ref);
 
-    if (op == NULL || (stop && op->resolve != resolve)) {
+    if (op == NULL || (kind != 0 && op->kind != kind)) {
         return MDNSERR_BADPARAM;
     }
     msg->mi_Handle = op->remote;
     msg->mi_DaemonID = op->daemon;
-    if (stop) {
+    if (remove) {
         Remove(&op->node);
         FreeMem(op, sizeof(*op));
     }
@@ -111,7 +115,7 @@ static LONG start(struct BonamiIntern *base, STRPTR name, STRPTR type,
         return MDNSERR_NOMEM;
     }
     op->owner = GetETaskID(FindTask(NULL));
-    op->resolve = resolve;
+    op->kind = resolve ? BONAMI_OP_RESOLVE : BONAMI_OP_BROWSE;
     ObtainSemaphore(&base->bi_Lock);
     /* Reclaim records left by vanished tasks without reading their memory. */
     for (next = (struct BonamiDiscovery *)base->bi_Discovery.lh_Head;
@@ -157,7 +161,8 @@ static void stop(struct BonamiIntern *base, APTR ref, BOOL resolve)
     memset(&msg, 0, sizeof(msg));
     msg.mi_Command = resolve ? MDNS_IPC_STOPRESOLVE : MDNS_IPC_STOPBROWSE;
     ObtainSemaphore(&base->bi_Lock);
-    rc = prepare(base, ref, &msg, TRUE, resolve);
+    rc = prepare(base, ref, &msg, TRUE,
+        resolve ? BONAMI_OP_RESOLVE : BONAMI_OP_BROWSE);
     ReleaseSemaphore(&base->bi_Lock);
     if (rc == MDNS_OK) {
         bonamiSend(&msg);
@@ -227,8 +232,18 @@ AROS_LH2(LONG, ReadMDNSEvent,
     memset(&msg, 0, sizeof(msg));
     msg.mi_Command = MDNS_IPC_READ;
     ObtainSemaphore(&BonamiBase->bi_Lock);
-    rc = prepare(BonamiBase, ref, &msg, FALSE, FALSE);
+    rc = prepare(BonamiBase, ref, &msg, FALSE, 0);
     ReleaseSemaphore(&BonamiBase->bi_Lock);
+    if (rc == MDNS_OK) {
+        struct BonamiDiscovery *op;
+
+        ObtainSemaphore(&BonamiBase->bi_Lock);
+        op = find_ref(BonamiBase, ref);
+        if (op == NULL || op->kind == BONAMI_OP_QUERY) {
+            rc = MDNSERR_BADPARAM;
+        }
+        ReleaseSemaphore(&BonamiBase->bi_Lock);
+    }
     if (rc == MDNS_OK) {
         rc = bonamiSend(&msg);
         if (rc == MDNS_OK) {
@@ -243,7 +258,16 @@ AROS_LH2(LONG, RequestMDNSEvent,
     struct BonamiIntern *, BonamiBase, 21, Bonami)
 {
     AROS_LIBFUNC_INIT
+    return bonamiRequestEvent(BonamiBase, ref, request);
+    AROS_LIBFUNC_EXIT
+}
+
+LONG
+bonamiRequestEvent(struct BonamiIntern *base, APTR ref,
+    struct MDNSEventRequest *request)
+{
     struct MDNSIPCMsg msg;
+    struct BonamiDiscovery *op;
     LONG rc;
 
     /* Nothing is written to the request here: it may still be lent. */
@@ -252,14 +276,117 @@ AROS_LH2(LONG, RequestMDNSEvent,
         return MDNSERR_BADPARAM;
     }
     memset(&msg, 0, sizeof(msg));
-    msg.mi_Command = MDNS_IPC_NOTIFY;
     msg.mi_Request = request;
-    ObtainSemaphore(&BonamiBase->bi_Lock);
-    rc = prepare(BonamiBase, ref, &msg, FALSE, FALSE);
-    ReleaseSemaphore(&BonamiBase->bi_Lock);
+    ObtainSemaphore(&base->bi_Lock);
+    op = find_ref(base, ref);
+    if (op == NULL) {
+        rc = MDNSERR_BADPARAM;
+    } else {
+        msg.mi_Command = op->kind == BONAMI_OP_QUERY ?
+            MDNS_IPC_NOTIFYQUERY : MDNS_IPC_NOTIFY;
+        rc = prepare(base, ref, &msg, FALSE, 0);
+    }
+    ReleaseSemaphore(&base->bi_Lock);
+    return rc == MDNS_OK ? bonamiSend(&msg) : rc;
+}
+
+LONG
+bonamiQueryStart(struct BonamiIntern *base, CONST_STRPTR name, UWORD type,
+    UWORD timeout, MDNSQueryRef *ref)
+{
+    struct MDNSIPCMsg msg;
+    struct BonamiDiscovery *op, *next;
+    ULONG count = 0;
+    LONG rc;
+
+    if (name == NULL || ref == NULL || type == 0) {
+        return MDNSERR_BADPARAM;
+    }
+    memset(&msg, 0, sizeof(msg));
+    rc = copy_input(msg.mi_QueryName, sizeof(msg.mi_QueryName), name);
+    if (rc != MDNS_OK) {
+        return rc;
+    }
+    op = AllocMem(sizeof(*op), MEMF_CLEAR);
+    if (op == NULL) {
+        return MDNSERR_NOMEM;
+    }
+    op->owner = GetETaskID(FindTask(NULL));
+    op->kind = BONAMI_OP_QUERY;
+    ObtainSemaphore(&base->bi_Lock);
+    for (next = (struct BonamiDiscovery *)base->bi_Discovery.lh_Head;
+         next->node.ln_Succ != NULL;) {
+        struct BonamiDiscovery *current = next;
+
+        next = (struct BonamiDiscovery *)next->node.ln_Succ;
+        if (FindTaskByPID(current->owner) == NULL) {
+            Remove(&current->node);
+            FreeMem(current, sizeof(*current));
+        } else {
+            count++;
+        }
+    }
+    if (count == BONAMI_DISCOVERY_MAX || base->bi_NextDiscovery == 0) {
+        ReleaseSemaphore(&base->bi_Lock);
+        FreeMem(op, sizeof(*op));
+        return MDNSERR_BUSY;
+    }
+    op->ref = (APTR)base->bi_NextDiscovery++;
+    AddTail(&base->bi_Discovery, &op->node);
+    ReleaseSemaphore(&base->bi_Lock);
+    msg.mi_Command = MDNS_IPC_QUERY;
+    msg.mi_QueryType = type;
+    msg.mi_QueryTimeout = timeout;
+    rc = bonamiSend(&msg);
+    ObtainSemaphore(&base->bi_Lock);
+    if (rc == MDNS_OK) {
+        op->remote = msg.mi_Handle;
+        op->daemon = msg.mi_DaemonID;
+        *ref = op->ref;
+    } else {
+        Remove(&op->node);
+        FreeMem(op, sizeof(*op));
+    }
+    ReleaseSemaphore(&base->bi_Lock);
+    return rc;
+}
+
+LONG
+bonamiQueryRead(struct BonamiIntern *base, MDNSQueryRef ref,
+    struct MDNSRecordEvent *event)
+{
+    struct MDNSIPCMsg msg;
+    LONG rc;
+
+    if (event == NULL) {
+        return MDNSERR_BADPARAM;
+    }
+    memset(&msg, 0, sizeof(msg));
+    msg.mi_Command = MDNS_IPC_READQUERY;
+    ObtainSemaphore(&base->bi_Lock);
+    rc = prepare(base, ref, &msg, FALSE, BONAMI_OP_QUERY);
+    ReleaseSemaphore(&base->bi_Lock);
     if (rc == MDNS_OK) {
         rc = bonamiSend(&msg);
+        if (rc == MDNS_OK) {
+            *event = msg.mi_RecordEvent;
+        }
     }
     return rc;
-    AROS_LIBFUNC_EXIT
+}
+
+void
+bonamiQueryStop(struct BonamiIntern *base, MDNSQueryRef ref)
+{
+    struct MDNSIPCMsg msg;
+    LONG rc;
+
+    memset(&msg, 0, sizeof(msg));
+    msg.mi_Command = MDNS_IPC_STOPQUERY;
+    ObtainSemaphore(&base->bi_Lock);
+    rc = prepare(base, ref, &msg, TRUE, BONAMI_OP_QUERY);
+    ReleaseSemaphore(&base->bi_Lock);
+    if (rc == MDNS_OK) {
+        bonamiSend(&msg);
+    }
 }

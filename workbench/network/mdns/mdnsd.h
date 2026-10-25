@@ -81,6 +81,7 @@ struct MDNSKnownAnswer
 };
 
 struct MDNSDiscovery;
+struct MDNSQueryState;
 
 /* The daemon has one task and one of these. */
 struct MDNSDaemon
@@ -128,6 +129,7 @@ struct MDNSDaemon
     UWORD                   md_QueryPort;
 
     struct MDNSDiscovery   *md_Discovery;
+    struct MDNSQueryState  *md_Query;
     ULONG                   md_DaemonID;
     struct MsgPort         *md_Port;        /* MDNS_IPC_PORT, the clients' */
     struct List             md_Services;    /* MDNSRegisteredService */
@@ -171,6 +173,17 @@ void mdnsDiscoveryReset(struct MDNSDaemon *md);
 void mdnsDiscoveryRelease(struct MDNSDaemon *md, ULONG taskID);
 void mdnsDiscoveryCancel(struct MDNSDaemon *md);
 void mdnsDiscoveryFree(struct MDNSDaemon *md);
+
+/* mdns_query.c: generic record questions and their event queues. */
+LONG mdnsQueryMessage(struct MDNSDaemon *md, struct MDNSIPCMsg *msg);
+void mdnsQueryRecord(struct MDNSDaemon *md, const struct MDNSRecord *record,
+    const UBYTE *packet, LONG length);
+void mdnsQueryTick(struct MDNSDaemon *md);
+void mdnsQueryReset(struct MDNSDaemon *md);
+void mdnsQueryRelease(struct MDNSDaemon *md, ULONG owner);
+void mdnsQueryReap(struct MDNSDaemon *md);
+void mdnsQueryCancel(struct MDNSDaemon *md);
+void mdnsQueryFree(struct MDNSDaemon *md);
 
 /* mdnsd.c */
 ULONG mdnsNow(void);            /* seconds */

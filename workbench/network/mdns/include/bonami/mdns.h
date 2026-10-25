@@ -29,7 +29,7 @@
 /* Library identity (subsystem name, not API prefix) */
 
 #define BONAMI_LIB_VERSION   41
-#define BONAMI_LIB_REVISION  2
+#define BONAMI_LIB_REVISION  3
 
 /*------------------------------------------------------------------------*/
 /* DNS-SD well-known values */
@@ -70,10 +70,12 @@
 #define MDNS_BrowseRef          (MDNS_Dummy + 12)  /* MDNSBrowseRef output */
 #define MDNS_ResolveRef         (MDNS_Dummy + 13)  /* MDNSResolveRef output */
 
-/* AROS registration extensions; these values do not overlap upstream tags.
+/* AROS extensions; these values do not overlap upstream tags.
  * TXT items are separated by spaces; escape an item's space or backslash
  * with a backslash. Each decoded item becomes one DNS-SD TXT string. */
 #define MDNS_HostAddr           (MDNS_Dummy + 14)  /* ULONG IPv4, network order */
+#define MDNS_QueryRef           (MDNS_Dummy + 15)  /* MDNSQueryRef output */
+#define MDNS_Timeout            (MDNS_Dummy + 16)  /* ULONG seconds, 1..60 */
 #define MDNS_TimeToLive         (MDNS_Dummy + 17)  /* ULONG seconds, 1..4500 */
 
 /* AROS discovery: each operation has one bounded event queue,
@@ -95,6 +97,23 @@ struct MDNSDiscoveryEvent
     char de_Name[64];
     char de_Type[MDNS_MAX_TYPE + 1];
     UBYTE de_TXT[MDNS_DISCOVERY_TXT_MAX];
+};
+
+/* One answer to QueryRecordA(). Names in PTR and SRV RDATA are expanded
+ * into uncompressed DNS wire labels, so the event never refers to the
+ * received packet. Interface is an IPv4 address in network byte order. */
+#define MDNS_RECORD_DATA_MAX   512
+struct MDNSRecordEvent
+{
+    ULONG re_Code;
+    ULONG re_Interface;
+    ULONG re_TTL;
+    UWORD re_Type;
+    UWORD re_Class;
+    UWORD re_DataLength;
+    UWORD re_Reserved;
+    char  re_Name[256];
+    UBYTE re_Data[MDNS_RECORD_DATA_MAX];
 };
 
 /* Optional wakeup for a queue: a message the caller lends to mdnsd with
@@ -135,6 +154,7 @@ struct MDNSEventRequest
 #define MEVENT_REMOVE           2
 #define MEVENT_RESOLVED         3
 #define MEVENT_RESOLVE_FAILED   4
+#define MEVENT_RECORD           5
 
 /*------------------------------------------------------------------------*/
 /* Return codes (0 = success, negative = MDNSERR_*) */

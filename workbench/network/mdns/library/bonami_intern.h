@@ -32,6 +32,13 @@ struct BonamiIntern
 };
 
 void bonamiDiscoveryRelease(struct BonamiIntern *base);
+LONG bonamiQueryStart(struct BonamiIntern *base, CONST_STRPTR name,
+    UWORD type, UWORD timeout, MDNSQueryRef *ref);
+LONG bonamiQueryRead(struct BonamiIntern *base, MDNSQueryRef ref,
+    struct MDNSRecordEvent *event);
+void bonamiQueryStop(struct BonamiIntern *base, MDNSQueryRef ref);
+LONG bonamiRequestEvent(struct BonamiIntern *base, APTR ref,
+    struct MDNSEventRequest *request);
 
 /* bonami_ipc.c */
 LONG bonamiEngineThere(void);

@@ -42,6 +42,13 @@ mdnsClientMessage(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
         msg->mi_Result = mdnsDiscoveryMessage(md, msg);
         return;
     }
+    if (msg->mi_Command == MDNS_IPC_QUERY ||
+        msg->mi_Command == MDNS_IPC_STOPQUERY ||
+        msg->mi_Command == MDNS_IPC_READQUERY ||
+        msg->mi_Command == MDNS_IPC_NOTIFYQUERY) {
+        msg->mi_Result = mdnsQueryMessage(md, msg);
+        return;
+    }
     switch (msg->mi_Command) {
     case MDNS_IPC_REGISTER:
         msg->mi_Result = mdnsRegAdd(md, msg);
@@ -57,6 +64,7 @@ mdnsClientMessage(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
         /* A client is gone: nothing of its may be announced any more. */
         mdnsRegRelease(md, msg->mi_TaskID);
         mdnsDiscoveryRelease(md, msg->mi_TaskID);
+        mdnsQueryRelease(md, msg->mi_TaskID);
         msg->mi_Result = MDNS_OK;
         break;
     default:
@@ -92,4 +100,5 @@ mdnsClientReap(struct MDNSDaemon *md)
     for (i = 0; i < count; i++) {
         mdnsRegRelease(md, dead[i]);
     }
+    mdnsQueryReap(md);
 }
