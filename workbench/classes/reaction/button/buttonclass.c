@@ -27,6 +27,7 @@
 #include <string.h>
 
 #include "button_intern.h"
+#include "../reaction_box.h"
 
 #define ButtonBase ((struct Library *)(cl->cl_UserData))
 
@@ -303,10 +304,7 @@ IPTR Button__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     if (!rp)
         return FALSE;
 
-    x = gad->LeftEdge;
-    y = gad->TopEdge;
-    w = gad->Width;
-    h = gad->Height;
+    reaction_gadget_box(gad, msg->gpr_GInfo, &x, &y, &w, &h);
     selected = (gad->Flags & GFLG_SELECTED) || data->bd_PushButton;
     disabled = (gad->Flags & GFLG_DISABLED) != 0;
 

@@ -23,6 +23,7 @@
 #include <string.h>
 
 #include "space_intern.h"
+#include "../reaction_box.h"
 
 #define SpaceBase ((struct Library *)(cl->cl_UserData))
 
@@ -146,10 +147,7 @@ IPTR Space__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     if (!rp)
         return FALSE;
 
-    x = gad->LeftEdge;
-    y = gad->TopEdge;
-    w = gad->Width;
-    h = gad->Height;
+    reaction_gadget_box(gad, msg->gpr_GInfo, &x, &y, &w, &h);
 
     /* Fill background unless transparent */
     if (!data->sd_Transparent)

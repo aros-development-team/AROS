@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include "slider_intern.h"
+#include "../reaction_box.h"
 
 #define SliderBase ((struct Library *)(cl->cl_UserData))
 
@@ -263,10 +264,7 @@ IPTR Slider__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     if (!rp)
         return retval;
 
-    x = gad->LeftEdge;
-    y = gad->TopEdge;
-    w = gad->Width;
-    h = gad->Height;
+    reaction_gadget_box(gad, msg->gpr_GInfo, &x, &y, &w, &h);
 
     /* Draw tick marks */
     if (data->sd_Ticks > 0)

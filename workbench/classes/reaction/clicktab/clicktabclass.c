@@ -25,6 +25,7 @@
 #include <string.h>
 
 #include "clicktab_intern.h"
+#include "../reaction_box.h"
 
 #define ClickTabBase ((struct Library *)(cl->cl_UserData))
 
@@ -579,10 +580,7 @@ IPTR ClickTab__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     if (!rp)
         return FALSE;
 
-    x = gad->LeftEdge;
-    y = gad->TopEdge;
-    w = gad->Width;
-    h = gad->Height;
+    reaction_gadget_box(gad, msg->gpr_GInfo, &x, &y, &w, &h);
 
     /* Compute tab widths if not yet done */
     if (!data->td_TabWidths)
