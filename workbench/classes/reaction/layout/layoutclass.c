@@ -458,6 +458,16 @@ static void query_child_size(struct LayoutChild *lc, struct GadgetInfo *gi,
         }
     }
 
+    lc->lc_LabelW = lc->lc_LabelH = 0;
+    if (lc->lc_Label)
+    {
+        IPTR lw = 0, lh = 0;
+        GetAttr(IA_Width, lc->lc_Label, &lw);
+        GetAttr(IA_Height, lc->lc_Label, &lh);
+        lc->lc_LabelW = (UWORD)lw;
+        lc->lc_LabelH = (UWORD)lh;
+    }
+
     *outW = w;
     *outH = h;
 
@@ -528,11 +538,24 @@ void layout_compute_domain(Class *cl, Object *o, struct LayoutData *data)
     spacing = (data->ld_Orientation == LAYOUT_ORIENT_HORIZ)
               ? data->ld_HorizSpacing : data->ld_VertSpacing;
 
+    data->ld_LabelCol = 0;
     ForeachNode(&data->ld_Children, lc)
     {
         UWORD childW = 0, childH = 0;
 
         query_child_size(lc, gi, rp, &childW, &childH);
+
+        /* labels: a column left of the children in a vertical group, in
+           front of their own child in a horizontal one */
+        if (lc->lc_LabelW)
+        {
+            if (data->ld_Orientation == LAYOUT_ORIENT_HORIZ)
+                childW += lc->lc_LabelW + LAYOUT_LABEL_GAP;
+            else if (lc->lc_LabelW + LAYOUT_LABEL_GAP > data->ld_LabelCol)
+                data->ld_LabelCol = lc->lc_LabelW + LAYOUT_LABEL_GAP;
+        }
+        if (lc->lc_LabelH > childH)
+            childH = lc->lc_LabelH;
 
         if (data->ld_Orientation == LAYOUT_ORIENT_HORIZ)
         {
@@ -569,6 +592,9 @@ void layout_compute_domain(Class *cl, Object *o, struct LayoutData *data)
      * the available area and push trailing children past the layout edge. */
     if (data->ld_EvenSize && count > 0 && (ULONG)maxMain * count > totalMin)
         totalMin = (ULONG)maxMain * count;
+
+    if (data->ld_Orientation != LAYOUT_ORIENT_HORIZ)
+        maxCross += data->ld_LabelCol;
 
     /* Add spacing between children */
     if (count > 1)
@@ -684,6 +710,21 @@ void layout_perform_layout(Class *cl, Object *o, struct LayoutData *data,
     spacing = (data->ld_Orientation == LAYOUT_ORIENT_HORIZ)
               ? data->ld_HorizSpacing : data->ld_VertSpacing;
 
+    /* the label column comes off the children's width in a vertical group */
+    if (data->ld_Orientation != LAYOUT_ORIENT_HORIZ && data->ld_LabelCol)
+    {
+        x += data->ld_LabelCol;
+        availW = (availW > data->ld_LabelCol) ? availW - data->ld_LabelCol : 0;
+    }
+    /* in a horizontal group each label takes its room before its child */
+    if (data->ld_Orientation == LAYOUT_ORIENT_HORIZ)
+    {
+        ULONG lw = 0;
+        ForeachNode(&data->ld_Children, lc)
+            if (lc->lc_LabelW) lw += lc->lc_LabelW + LAYOUT_LABEL_GAP;
+        availW = (availW > lw) ? availW - lw : 0;
+    }
+
     D(bug("[Layout] perform_layout: obj %p orient=%ld gad=(%d,%d %dx%d) avail=(%d,%d %dx%d) spacing=%d\n",
         o, (LONG)data->ld_Orientation,
         (int)G(o)->LeftEdge, (int)G(o)->TopEdge,
@@ -797,6 +838,9 @@ void layout_perform_layout(Class *cl, Object *o, struct LayoutData *data,
                 if (childW > 0xFFFF) childW = 0xFFFF;
                 if (childH > 0xFFFF) childH = 0xFFFF;
 
+                if (data->ld_Orientation == LAYOUT_ORIENT_HORIZ && lc->lc_LabelW)
+                    x += lc->lc_LabelW + LAYOUT_LABEL_GAP;
+
                 lc->lc_Left   = x;
                 lc->lc_Top    = y;
 
@@ -810,6 +854,15 @@ void layout_perform_layout(Class *cl, Object *o, struct LayoutData *data,
 
                 lc->lc_Width  = (UWORD)childW;
                 lc->lc_Height = (UWORD)childH;
+
+                /* the label, right-aligned against the child and centred on it */
+                if (lc->lc_Label && lc->lc_LabelW)
+                {
+                    WORD lx = lc->lc_Left - LAYOUT_LABEL_GAP - lc->lc_LabelW;
+                    WORD ly = lc->lc_Top + ((WORD)childH - (WORD)lc->lc_LabelH) / 2;
+                    SetAttrs(lc->lc_Label, IA_Left, lx, IA_Top, ly,
+                             IA_Width, lc->lc_LabelW, IA_Height, lc->lc_LabelH, TAG_DONE);
+                }
 
                 D(bug("[Layout] perform_layout: obj %p assigning child %p isImage=%d -> (%d,%d) %dx%d (nat=%dx%d weight=%ld)\n",
                     o, lc->lc_Object, (int)lc->lc_IsImage,
@@ -944,6 +997,11 @@ IPTR Layout__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
                     0, 0,
                     IDS_NORMAL, dri);
             }
+            /* child labels: their IA_Left/IA_Top are absolute as well */
+            if (lc->lc_Label && lc->lc_LabelW)
+                DrawImageState(rp, (struct Image *)lc->lc_Label, 0, 0,
+                    (lc->lc_Object && !lc->lc_IsImage &&
+                     (G(lc->lc_Object)->Flags & GFLG_DISABLED)) ? IDS_DISABLED : IDS_NORMAL, dri);
         }
 
         if (!msg->gpr_RPort && msg->gpr_GInfo)
