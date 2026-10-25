@@ -161,7 +161,6 @@ IPTR Chooser__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
         memset(data, 0, sizeof(struct ChooserData));
         data->cd_Selected = 0;
-        data->cd_DropDown = TRUE;
         data->cd_Hot = -1;
 
         chooser_set(cl, (Object *)retval, msg);
@@ -241,6 +240,22 @@ static void chooser_draw_arrow(struct RastPort *rp, WORD x, WORD y,
     Draw(rp, cx + 4, ay);
 }
 
+/* the pop-up glyph: two left-pointing chevrons, two pixels thick */
+static void chooser_draw_chevrons(struct RastPort *rp, WORD x, WORD y, WORD w, WORD h, UWORD pen)
+{
+    WORD cy = y + h / 2, half = (h - 6) / 2, i, cx;
+
+    if (half < 2) half = 2;
+    if (half > 5) half = 5;
+    SetAPen(rp, pen);
+    for (i = 0; i < 2; i++)
+    {
+        cx = x + w / 2 - half + i * (half + 1) - 1;
+        Move(rp, cx + half, cy - half); Draw(rp, cx, cy); Draw(rp, cx + half, cy + half);
+        Move(rp, cx + half + 1, cy - half); Draw(rp, cx + 1, cy); Draw(rp, cx + half + 1, cy + half);
+    }
+}
+
 IPTR Chooser__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 {
     D(bug("[Chooser] GM_RENDER: obj=%p redraw=%ld\n", (void *)o, msg->gpr_Redraw));
@@ -269,13 +284,13 @@ IPTR Chooser__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     bg      = dri ? dri->dri_Pens[BACKGROUNDPEN]  : 0;
     text_pen = dri ? dri->dri_Pens[TEXTPEN]       : 1;
 
-    /* Draw recessed frame */
-    SetAPen(rp, shadow);
+    /* Raised frame, as a button */
+    SetAPen(rp, shine);
     Move(rp, x, y + h - 1);
     Draw(rp, x, y);
     Draw(rp, x + w - 1, y);
 
-    SetAPen(rp, shine);
+    SetAPen(rp, shadow);
     Move(rp, x + 1, y + h - 1);
     Draw(rp, x + w - 1, y + h - 1);
     Draw(rp, x + w - 1, y + 1);
@@ -295,10 +310,12 @@ IPTR Chooser__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     if (!label && data->cd_Title)
         label = data->cd_Title;
 
-    /* Draw label text */
+    /* Draw label text, centred in the area left of the glyph box */
     if (label)
     {
-        WORD tx = x + 4;
+        WORD area = w - 18 - 2;
+        WORD tw = TextLength(rp, label, strlen(label));
+        WORD tx = x + 1 + (tw < area ? (area - tw) / 2 : 3);
         WORD ty = y + (h - rp->TxHeight) / 2 + rp->TxBaseline;
 
         SetAPen(rp, text_pen);
@@ -307,8 +324,8 @@ IPTR Chooser__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
         Text(rp, label, strlen(label));
     }
 
-    /* Draw dropdown arrow on the right */
-    if (data->cd_DropDown)
+    /* Glyph box on the right: a down arrow for a drop-down menu, the
+       double chevron of a pop-up list */
     {
         WORD aw = 16;
 
@@ -320,8 +337,10 @@ IPTR Chooser__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
         Move(rp, x + w - aw, y + 1);
         Draw(rp, x + w - aw, y + h - 2);
 
-        /* Arrow */
-        chooser_draw_arrow(rp, x + w - aw, y, aw, h, text_pen);
+        if (data->cd_DropDown)
+            chooser_draw_arrow(rp, x + w - aw, y, aw, h, text_pen);
+        else
+            chooser_draw_chevrons(rp, x + w - aw, y, aw, h, text_pen);
     }
 
     /* Disabled overlay */
