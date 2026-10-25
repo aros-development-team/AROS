@@ -109,10 +109,10 @@ LONG debug_handler(struct ExecBase *SysBase)
             break;
         case ACTION_READ:
             if ((pa = (struct debugArgs *)dp->dp_Arg1)) {
-                dp->dp_Res1 = DOSFALSE;
+                dp->dp_Res1 = -1;
                 dp->dp_Res2 = ERROR_READ_PROTECTED;
             } else {
-                dp->dp_Res1 = DOSFALSE;
+                dp->dp_Res1 = -1;
                 dp->dp_Res2 = ERROR_OBJECT_WRONG_TYPE;
             }
             break;
@@ -136,7 +136,7 @@ LONG debug_handler(struct ExecBase *SysBase)
                 dp->dp_Res1 = len;
                 dp->dp_Res2 = 0;
             } else {
-                dp->dp_Res1 = DOSFALSE;
+                dp->dp_Res1 = -1;
                 dp->dp_Res2 = ERROR_OBJECT_WRONG_TYPE;
             }
             break;
