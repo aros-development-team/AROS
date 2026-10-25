@@ -8099,42 +8099,71 @@ static void pReleaseAfterDOSBindings(LIBBASETYPEPTR ps)
 /* \\\ */
 
 /* /// "psdDoHubMethodA()" */
-/****** poseidon.library/psdDoHubMethodA ***********************************
+/*****************************************************************************
+    NAME
+        IPTR psdDoHubMethodA(
 
-    NAME */
+    SYNOPSIS
+        APTR pd, ULONG methodid, IPTR *methoddata)
+
+    FUNCTION
+        Dispatch a method to the class bound to a device's parent hub.
+
+    INPUTS
+        pd - Device used to select the parent hub class, or NULL. Keep the
+            device, parent hub and class binding alive until return.
+        methodid - Method identifier understood by that class.
+        methoddata - Array of IPTR arguments in the layout required by the
+            method. Keep the array and referenced objects valid until return
+            and for any longer lifetime required by that method.
+
+    RESULT
+        The method result, subject to the return-width defect below. Returns
+        zero without dispatch if pd is NULL, has no parent hub, or the parent
+        has no device binding or class binding. Zero is also a possible method
+        result and does not distinguish these cases.
+
+    NOTES
+        The argument array is passed unchanged. This function does not insert
+        the parent hub binding or validate the method identifier, argument count,
+        argument pointers or target port. The routing device and the objects in
+        the argument array have distinct roles.
+
+        For UCM_HubPowerCyclePort and UCM_HubDisablePort, the supplied hub.class
+        expects { hub device, one-based port number }. For UCM_HubClassScan it
+        expects { hub binding }; for UCM_HubClaimAppBinding,
+        { hub binding, tag list }; for UCM_HubReleaseIfBinding,
+        { hub binding, interface }; and for UCM_HubReleaseDevBinding,
+        UCM_HubSuspendDevice and UCM_HubResumeDevice, { hub binding, device }.
+
+        Takes no device or base lock. The caller must coordinate topology and
+        binding changes. The class method may block. For the supplied hub.class,
+        claim, release, suspend and resume requests can wait for its task to
+        reply. Power-cycle, disable-port and class-scan methods schedule work;
+        their return does not establish completion of that work.
+
+        Prefer the dedicated binding and power-state APIs when they provide the
+        requested operation; they perform additional bookkeeping and callbacks.
+
+    BUGS
+        The public result type is IPTR, but this implementation returns LONG.
+        On targets with pointers wider than 32 bits, pointer-valued and other
+        wide results cannot be relied on. In particular, do not obtain an
+        application-binding handle through this dispatcher on such targets;
+        use psdClaimAppBindingA(). The source also uses APTR for methoddata;
+        the public array layout remains IPTR elements.
+
+    SEE ALSO
+        psdClaimAppBindingA(), psdReleaseDevBinding(), psdReleaseIfBinding(),
+        psdSuspendDevice(), psdResumeDevice(), psdClassScan(),
+        psdHubClassScan(), psdHubClaimAppBindingA()
+
+*****************************************************************************/
         AROS_LH3(LONG, psdDoHubMethodA,
-/*  SYNOPSIS */
          AROS_LHA(struct PsdDevice *, pd, A0),
          AROS_LHA(ULONG, methodid, D0),
          AROS_LHA(APTR, methoddata, A1),
-/*  LOCATION */
          LIBBASETYPEPTR, ps, 92, psd)
-/*  FUNCTION
-        Dispatch a USB class method when the device's parent hub has an
-        active class binding.
-
-    INPUTS
-        pd         - Device whose parent hub is inspected; may be NULL.
-        methodid   - USB class method identifier.
-        methoddata - Argument array required by the selected method.
-
-    RESULT
-        Return value from usbDoMethodA() when a parent hub and its class
-        binding are present; otherwise zero. Zero alone does not identify
-        which path was taken or whether a class method ran successfully.
-
-    NOTES
-        The method is sent through usbDoMethodA() without an explicit
-        binding argument. The function only uses the parent hub's binding
-        and owning class to decide whether to dispatch.
-
-        It acquires no device or base lock. Callers must keep the parent
-        hub and its binding stable for the duration of the call.
-
-    SEE ALSO
-        psdHubClassScan(), psdHubClaimAppBindingA()
-
-******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     struct PsdUsbClass *puc;
