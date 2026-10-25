@@ -247,6 +247,55 @@ sin_pil(long double x)
 	return -y;
 }
 
+/*****************************************************************************
+    NAME
+        long double lgammal_r(
+
+    SYNOPSIS
+        long double x, int *signgamp)
+
+    FUNCTION
+        Compute the natural logarithm of the absolute gamma function and its sign.
+
+    INPUTS
+        x - Argument to the gamma function.
+        signgamp - Non-NULL pointer to writable int storage. Receives the sign
+            of Gamma(x), normally +1 or -1 for finite non-pole arguments.
+
+    RESULT
+        An approximation to log(|Gamma(x)|), not Gamma(x). Returns zero for
+        x equal to 1 or 2, positive infinity at either signed zero or a negative
+        integer, positive infinity for either infinite input, and NaN for NaN.
+        Large positive finite inputs can overflow.
+
+        At -0, *signgamp is -1; at +0, negative integer poles, infinities and
+        NaN, it is +1. These values at poles and non-finite inputs do not
+        establish a valid finite Gamma value.
+
+    NOTES
+        Include <math.h>. The sign of the logarithm is independent of the
+        reported Gamma sign. Use tgammal() when Gamma(x) itself is required.
+
+        The function writes through signgamp on every returning path and does
+        not use signgam as implicit output. Use separate output storage for
+        independent concurrent calls; passing &signgam still writes that object.
+
+        No explicit errno assignment is made here. Pole evaluation uses division
+        by zero; overflow and inexact exceptions can arise during arithmetic.
+        Enabled traps may prevent return. Precision follows the target long
+        double format; equal-precision targets alias lgamma_r().
+
+    BUGS
+        Argument reduction for large negative nonintegers can select the wrong
+        reflection interval, producing an incorrect Gamma sign and logarithm.
+        This affects the extended-precision variants as well as the double
+        alias; avoid relying on these results for large negative arguments.
+
+    SEE ALSO
+        lgamma_r(), lgammal(), tgammal()
+
+*****************************************************************************/
+
 long double
 lgammal_r(long double x, int *signgamp)
 {
