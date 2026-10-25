@@ -446,6 +446,8 @@ public:
                             return;
                         }
 
+                        if ((ret >> 32) != 0 && (ret >> 32) != 0xFFFFFFFFUL)
+                            ret = m68k_bptr_out(ctx, (BPTR)ret);
                         setD(0, (u32)ret);
                         if (ctx->ccr_valid)
                         {
@@ -498,6 +500,10 @@ public:
                             return;
                         }
 
+                        /* a native pointer (an opaque object: VisualInfo, CxObj,
+                           BOOPSI object...) does not fit in D0: hand out a handle */
+                        if ((ret >> 32) != 0 && (ret >> 32) != 0xFFFFFFFFUL)
+                            ret = m68k_bptr_out(ctx, (BPTR)ret);
                         setD(0, (u32)ret);
                         setPC0(ret_addr);
                         setPC(ret_addr + 2);

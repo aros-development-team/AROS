@@ -26,12 +26,18 @@
 
 static ULONG gadget_m68k(struct M68KEmuContext *ctx, APTR native);
 static void gadgets_sync_back(struct M68KEmuContext *ctx);
+static struct Gadget *gadgets_from_m68k(struct M68KEmuContext *ctx, ULONG mg, LONG n);
+static struct Image *image_from_m68k(struct M68KEmuContext *ctx, ULONG mi, int depth_left);
 static void menus_sync_back(struct M68KEmuContext *ctx);
 static struct Menu *strip_of(struct M68KEmuContext *ctx, struct Window *w, BOOL take);
 static void menus_free(struct M68KEmuContext *ctx, struct Menu *m);
+static APTR gt_native_of(struct M68KEmuContext *ctx, ULONG m68k);
+static BOOL gt_strip_native(struct M68KEmuContext *ctx, APTR native);
 extern const struct M68KThunkEntry m68kemu_thunks_intuition_manual[];
 extern const ULONG m68kemu_thunks_intuition_manual_count;
 extern const struct M68KThunkEntry m68kemu_thunks_graphics_manual[];
+extern const struct M68KThunkEntry m68kemu_thunks_gadtools_manual[];
+extern const ULONG m68kemu_thunks_gadtools_manual_count;
 extern const ULONG m68kemu_thunks_graphics_manual_count;
 
 /* ── exec.library thunks ─────────────────────────────────────────── */
@@ -69,7 +75,10 @@ ULONG M68KEmu_OpenLibrary(struct M68KEmuContext *ctx, const char *name)
                 manual_count = m68kemu_thunks_intuition_manual_count;
             } else if (strcmp(name, "graphics.library") == 0) {
                 manual = m68kemu_thunks_graphics_manual;
-                manual_count = m68kemu_thunks_graphics_manual_count;            } else if (strcmp(name, "commodities.library") == 0) {
+                manual_count = m68kemu_thunks_graphics_manual_count;            } else if (strcmp(name, "gadtools.library") == 0) {
+                manual = m68kemu_thunks_gadtools_manual;
+                manual_count = m68kemu_thunks_gadtools_manual_count;
+            } else if (strcmp(name, "commodities.library") == 0) {
                 manual = m68kemu_cx_manual;
                 manual_count = m68kemu_cx_manual_count;
             }
@@ -435,6 +444,45 @@ static IPTR thunk_exec_ObtainSemaphore(struct M68KEmuContext *ctx, void *cpu) { 
 /* -384: ReleaseSemaphore(A0=semaphore) */
 static IPTR thunk_exec_ReleaseSemaphore(struct M68KEmuContext *ctx, void *cpu) { return 0; }
 
+/* The rest of the semaphore family, consistent with the three above: the
+   program is one emulated task, so its own semaphores never block. */
+static IPTR thunk_exec_SemTrue(struct M68KEmuContext *ctx, void *cpu) { return TRUE; }   /* Attempt(Shared) */
+static IPTR thunk_exec_SemNop(struct M68KEmuContext *ctx, void *cpu) { return 0; }       /* (Obtain|Release)List, ObtainShared */
+
+/* -600: AddSemaphore(A1) / -606: RemSemaphore(A1): a name table for FindSemaphore */
+static IPTR thunk_exec_AddSemaphore(struct M68KEmuContext *ctx, void *cpu)
+{
+    int i;
+    for (i = 0; i < 16; i++)
+        if (!ctx->pubsems[i]) { ctx->pubsems[i] = THUNK_A(1); break; }
+    return 0;
+}
+
+static IPTR thunk_exec_RemSemaphore(struct M68KEmuContext *ctx, void *cpu)
+{
+    int i;
+    for (i = 0; i < 16; i++)
+        if (ctx->pubsems[i] == THUNK_A(1)) ctx->pubsems[i] = 0;
+    return 0;
+}
+
+/* -594: FindSemaphore(A1=name): the program's own first, then the system's */
+static IPTR thunk_exec_FindSemaphore(struct M68KEmuContext *ctx, void *cpu)
+{
+    const char *name = (const char *)THUNK_PTR(1);
+    struct SignalSemaphore *ss;
+    int i;
+    if (!name) return 0;
+    for (i = 0; i < 16; i++)
+        if (ctx->pubsems[i])
+        {
+            ULONG np = m68k_read32(ctx, ctx->pubsems[i] + 10);   /* ln_Name */
+            if (np && strcmp((const char *)m68k_to_host(ctx, np), name) == 0) return ctx->pubsems[i];
+        }
+    ss = FindSemaphore((STRPTR)name);
+    return ss ? m68k_bptr_out(ctx, (BPTR)ss) : 0;
+}
+
 /* -306: AddPort(A1=port) */
 static IPTR thunk_exec_AddPort(struct M68KEmuContext *ctx, void *cpu) { return 0; }
 
@@ -509,8 +557,12 @@ ULONG shadow_register(struct M68KEmuContext *ctx, ULONG m68k_addr, void *native,
         ctx->num_shadows++;
         return m68k_addr;
     }
-    bug("[m68kemu] shadow_register: shadow table full (%u entries), cannot register 0x%lx\n",
-        (unsigned)M68KEMU_MAX_SHADOWS, (unsigned long)m68k_addr);
+    if (!ctx->shadow_full_logged)
+    {
+        ctx->shadow_full_logged = TRUE;
+        m68k_log(ctx, "%s: more than %u live library objects (messages not replied?), further ones refused",
+                 ctx->program_name[0] ? ctx->program_name : "68k program", (unsigned)M68KEMU_MAX_SHADOWS);
+    }
     return 0;
 }
 
@@ -597,6 +649,12 @@ static ULONG setup_window_shadow(struct M68KEmuContext *ctx, struct Window *w)
     m68k_write16(ctx, mw + M68K_WIN_MOUSEY,   (UWORD)w->MouseY);
     m68k_write16(ctx, mw + M68K_WIN_MOUSEX,   (UWORD)w->MouseX);
     m68k_write32(ctx, mw + M68K_WIN_FLAGS,    w->Flags);
+    ctx->mem[mw + M68K_WIN_BORDERLEFT]   = w->BorderLeft;
+    ctx->mem[mw + M68K_WIN_BORDERTOP]    = w->BorderTop;
+    ctx->mem[mw + M68K_WIN_BORDERRIGHT]  = w->BorderRight;
+    ctx->mem[mw + M68K_WIN_BORDERBOTTOM] = w->BorderBottom;
+    m68k_write16(ctx, mw + M68K_WIN_GZZWIDTH,  (UWORD)w->GZZWidth);
+    m68k_write16(ctx, mw + M68K_WIN_GZZHEIGHT, (UWORD)w->GZZHeight);
 
     /* RPort — shadow the Window's RastPort */
     if (w->RPort)
@@ -606,6 +664,26 @@ static ULONG setup_window_shadow(struct M68KEmuContext *ctx, struct Window *w)
         {
             shadow_register(ctx, mrp, w->RPort, 3);
             m68k_write32(ctx, mw + M68K_WIN_RPORT, mrp);
+        }
+    }
+
+    /* WLayer (and the RastPort's rp_Layer): programs lock it and read its
+       RastPort and bounds; the shadow resolves to the native layer */
+    if (w->WLayer)
+    {
+        ULONG ml = M68KEmu_HeapAlloc(ctx, M68K_SIZEOF_LAYER_SHADOW, 0);
+        if (ml)
+        {
+            ULONG mrp = m68k_read32(ctx, mw + M68K_WIN_RPORT);
+            memset(ctx->mem + ml, 0, M68K_SIZEOF_LAYER_SHADOW);
+            m68k_write32(ctx, ml + M68K_LAYER_RP, mrp);
+            m68k_write16(ctx, ml + M68K_LAYER_BOUNDS + 0, (UWORD)w->WLayer->bounds.MinX);
+            m68k_write16(ctx, ml + M68K_LAYER_BOUNDS + 2, (UWORD)w->WLayer->bounds.MinY);
+            m68k_write16(ctx, ml + M68K_LAYER_BOUNDS + 4, (UWORD)w->WLayer->bounds.MaxX);
+            m68k_write16(ctx, ml + M68K_LAYER_BOUNDS + 6, (UWORD)w->WLayer->bounds.MaxY);
+            shadow_register(ctx, ml, w->WLayer, 30);
+            m68k_write32(ctx, mw + M68K_WIN_WLAYER, ml);
+            if (mrp) m68k_write32(ctx, mrp + M68K_RP_LAYER, ml);
         }
     }
 
@@ -642,30 +720,72 @@ static ULONG setup_window_shadow(struct M68KEmuContext *ctx, struct Window *w)
 }
 
 /* intuition -606: OpenWindowTagList(A0=newWin, A1=tagList) */
-static IPTR thunk_intuition_OpenWindowTagList(struct M68KEmuContext *ctx, void *cpu)
+/* A program's window tag list in native form. Every WA_ tag whose value is
+   a pointer is translated by type; TAG_MORE/TAG_SKIP are followed. */
+static struct TagItem *window_tags_from_m68k(struct M68KEmuContext *ctx, ULONG mt)
 {
-    ULONG mt = THUNK_A(1);
+    struct TagItem *ht;
+    int n = 0, max = 128;
+    ULONG p = mt, guard = 0;
 
-    int n = 0;
-    ULONG p = mt;
-    while (m68k_read32(ctx, p) != 0) { n++; p += 8; }
-    n++;
-    struct TagItem *ht = (struct TagItem *)AllocMem(n * sizeof(struct TagItem), MEMF_CLEAR);
-    if (!ht) return 0;
-    p = mt;
-    for (int i = 0; i < n; i++) {
-        ht[i].ti_Tag = m68k_read32(ctx, p);
-        ULONG v = m68k_read32(ctx, p + 4);
-        if (ht[i].ti_Tag == WA_Title || ht[i].ti_Tag == WA_ScreenTitle || ht[i].ti_Tag == WA_PubScreenName)
-            ht[i].ti_Data = (IPTR)m68k_to_host(ctx, v);
-        else if (ht[i].ti_Tag == WA_CustomScreen)
-            ht[i].ti_Data = (IPTR)shadow_lookup(ctx, v);
-        else
-            ht[i].ti_Data = (IPTR)v;
+    if (!mt || !(ht = AllocVec((max + 1) * sizeof(struct TagItem), MEMF_CLEAR)))
+        return NULL;
+    while (p && n < max && guard++ < 1024)
+    {
+        ULONG tag = m68k_read32(ctx, p), v = m68k_read32(ctx, p + 4);
+        IPTR d = v;
+
+        if (tag == TAG_DONE) break;
+        if (tag == TAG_MORE) { p = v; continue; }
+        if (tag == TAG_SKIP) { p += 8 * (v + 1); continue; }
+        if (tag == TAG_IGNORE) { p += 8; continue; }
+        switch (tag)
+        {
+        case WA_Title: case WA_ScreenTitle: case WA_PubScreenName:
+            d = v ? (IPTR)m68k_to_host(ctx, v) : 0;
+            break;
+        case WA_CustomScreen: case WA_PubScreen: case WA_Pointer:
+            d = (IPTR)m68k_to_host_or_shadow(ctx, v);
+            break;
+        case WA_Gadgets:
+            d = v ? (IPTR)gadgets_from_m68k(ctx, v, -1) : 0;
+            break;
+        case WA_Checkmark: case WA_AmigaKey:
+            d = v ? (IPTR)image_from_m68k(ctx, v, 16) : 0;
+            break;
+        case WA_Zoom:
+        {
+            /* four WORDs: left, top, width, height */
+            static WORD zoom[4];
+            int i;
+            for (i = 0; i < 4 && v; i++) zoom[i] = (WORD)m68k_read16(ctx, v + i * 2);
+            d = v ? (IPTR)zoom : 0;
+            break;
+        }
+        case WA_SuperBitMap: case WA_BackFill:
+            /* a 68k bitmap or hook: not supported yet, open without it */
+            p += 8;
+            continue;
+        }
+        ht[n].ti_Tag = tag;
+        ht[n].ti_Data = d;
+        n++;
         p += 8;
     }
-    struct Window *w = OpenWindowTagList(NULL, ht);
-    FreeMem(ht, n * sizeof(struct TagItem));
+    ht[n].ti_Tag = TAG_DONE;
+    return ht;
+}
+
+static IPTR thunk_intuition_OpenWindowTagList(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct TagItem *ht = window_tags_from_m68k(ctx, THUNK_A(1));
+    struct Window *w;
+
+    if (THUNK_A(0) && ctx->trace_calls)
+        bug("[m68kemu] OpenWindowTagList with a NewWindow: only its tags are used\n");
+    w = OpenWindowTagList(NULL, ht);
+    if (ht) FreeVec(ht);
+    if (ctx->trace_calls) bug("[m68kemu] OpenWindowTagList -> %p\n", w);
     if (!w) return 0;
     return (IPTR)setup_window_shadow(ctx, w);
 }
@@ -678,7 +798,7 @@ static IPTR thunk_intuition_CloseWindow(struct M68KEmuContext *ctx, void *cpu)
     if (w)
     {
         struct Menu *m = strip_of(ctx, w, TRUE);
-        if (m) { ClearMenuStrip(w); menus_free(ctx, m); }
+        if (m) { ClearMenuStrip(w); if (!gt_strip_native(ctx, m)) menus_free(ctx, m); }
         CloseWindow(w);
         shadow_destroy(ctx, shadow_find_layout("Window"), mw);
     }
@@ -703,6 +823,8 @@ static IPTR thunk_exec_WaitPort(struct M68KEmuContext *ctx, void *cpu)
 }
 
 /* exec -372: GetMsg(A0=port) — shadow-aware */
+static ULONG imsg_to_m68k(struct M68KEmuContext *ctx, struct IntuiMessage *imsg);
+
 static IPTR thunk_exec_GetMsg(struct M68KEmuContext *ctx, void *cpu)
 {
     ULONG mp = THUNK_A(0);
@@ -711,6 +833,18 @@ static IPTR thunk_exec_GetMsg(struct M68KEmuContext *ctx, void *cpu)
 
     struct IntuiMessage *imsg = (struct IntuiMessage *)GetMsg(port);
     if (!imsg) return 0;
+    /* a device returning one of the program's I/O requests */
+    {
+        ULONG mio = m68k_ioreq_of(ctx, imsg);
+        if (mio) { m68k_ioreq_out(ctx, imsg); return mio; }
+    }
+    return imsg_to_m68k(ctx, imsg);
+}
+
+/* the program's view of a message: IntuiMessage layout, window and gadget
+   named by their m68k addresses; ReplyMsg/GT_ReplyIMsg drop it again */
+static ULONG imsg_to_m68k(struct M68KEmuContext *ctx, struct IntuiMessage *imsg)
+{
     if (ctx->trace_after_msg) ctx->trace_calls = TRUE;
 
     ULONG mi = shadow_create(ctx, shadow_find_layout("IntuiMessage"), imsg);
@@ -838,22 +972,23 @@ static IPTR thunk_exec_Supervisor(struct M68KEmuContext *ctx, void *cpu)
 }
 
 
-/* -450: CloseDevice(A1=ioreq). An IORequest the emulator did not create
-   (no shadow) cannot be handed to the native device: ignore it. */
-static IPTR thunk_exec_CloseDevice_checked(struct M68KEmuContext *ctx, void *cpu)
-{
-    struct IORequest *io = (struct IORequest *)shadow_lookup(ctx, THUNK_A(1));
-    if (!io)
-    {
-        if (ctx->trace_calls) bug("[m68kemu] CloseDevice: IORequest %08lx is not one of ours, ignored\n", (unsigned long)THUNK_A(1));
-        return 0;
-    }
-    CloseDevice(io);
-    return 0;
-}
+
+IPTR m68k_OpenDevice(struct M68KEmuContext *ctx, void *cpu);
+IPTR m68k_CloseDevice(struct M68KEmuContext *ctx, void *cpu);
+IPTR m68k_DoIO(struct M68KEmuContext *ctx, void *cpu);
+IPTR m68k_SendIO(struct M68KEmuContext *ctx, void *cpu);
+IPTR m68k_CheckIO(struct M68KEmuContext *ctx, void *cpu);
+IPTR m68k_WaitIO(struct M68KEmuContext *ctx, void *cpu);
+IPTR m68k_AbortIO(struct M68KEmuContext *ctx, void *cpu);
 
 const struct M68KThunkEntry m68kemu_thunks_exec[] = {
-    { 450, thunk_exec_CloseDevice_checked },
+    { 444, m68k_OpenDevice },
+    { 450, m68k_CloseDevice },
+    { 456, m68k_DoIO },
+    { 462, m68k_SendIO },
+    { 468, m68k_CheckIO },
+    { 474, m68k_WaitIO },
+    { 480, m68k_AbortIO },
     { 732, thunk_exec_StackSwap },
     { 150, thunk_exec_SuperState },
     { 156, thunk_exec_UserState },
@@ -891,6 +1026,14 @@ const struct M68KThunkEntry m68kemu_thunks_exec[] = {
     { 558, thunk_exec_InitSemaphore },
     { 564, thunk_exec_ObtainSemaphore },
     { 570, thunk_exec_ReleaseSemaphore },
+    { 576, thunk_exec_SemTrue },
+    { 582, thunk_exec_SemNop },
+    { 588, thunk_exec_SemNop },
+    { 594, thunk_exec_FindSemaphore },
+    { 600, thunk_exec_AddSemaphore },
+    { 606, thunk_exec_RemSemaphore },
+    { 678, thunk_exec_SemNop },
+    { 720, thunk_exec_SemTrue },
     { 354, thunk_exec_AddPort },
     { 360, thunk_exec_RemPort },
     { 0, NULL }
@@ -2551,8 +2694,9 @@ static IPTR thunk_intuition_SetMenuStrip_t(struct M68KEmuContext *ctx, void *cpu
     int i;
     if (!w || !THUNK_A(1)) return FALSE;
     old = strip_of(ctx, w, TRUE);
-    if (old) { ClearMenuStrip(w); menus_free(ctx, old); }
-    m = menus_from_m68k(ctx, THUNK_A(1));
+    if (old) { ClearMenuStrip(w); if (!gt_strip_native(ctx, old)) menus_free(ctx, old); }
+    m = (struct Menu *)gt_native_of(ctx, THUNK_A(1));
+    if (!m) m = menus_from_m68k(ctx, THUNK_A(1));
     if (!m) return FALSE;
     for (i = 0; i < 8; i++)
         if (!ctx->menustrips[i].window)
@@ -2572,7 +2716,7 @@ static IPTR thunk_intuition_ClearMenuStrip_t(struct M68KEmuContext *ctx, void *c
     if (!w) return 0;
     ClearMenuStrip(w);
     m = strip_of(ctx, w, TRUE);
-    if (m) menus_free(ctx, m);
+    if (m && !gt_strip_native(ctx, m)) menus_free(ctx, m);
     return 0;
 }
 
@@ -2606,6 +2750,241 @@ static IPTR thunk_intuition_OffMenu_t(struct M68KEmuContext *ctx, void *cpu)
     if (w) { OffMenu(w, (UWORD)THUNK_D(0)); menus_sync_back(ctx); }
     return 0;
 }
+
+
+/* ── GadTools menus: native GadTools builds the strip from the program's
+   NewMenu array; the program gets an m68k mirror of it (with the UserData
+   slot after each Menu/MenuItem, GTMENU(ITEM)_USERDATA), mapped item by
+   item so SetMenuStrip attaches the native strip and MENUPICK syncs. ── */
+#include <libraries/gadtools.h>
+#include <proto/gadtools.h>
+
+static APTR gt_native_of(struct M68KEmuContext *ctx, ULONG m68k)
+{
+    int i;
+    for (i = 0; i < 16; i++)
+        if (ctx->gtmenus[i].m68k && ctx->gtmenus[i].m68k == m68k) return ctx->gtmenus[i].native;
+    return NULL;
+}
+
+static BOOL gt_strip_native(struct M68KEmuContext *ctx, APTR native)
+{
+    int i;
+    for (i = 0; i < 16; i++)
+        if (ctx->gtmenus[i].native == native) return TRUE;
+    return FALSE;
+}
+
+static void gt_sync_item(struct M68KEmuContext *ctx, struct MenuItem *it)
+{
+    ULONG mi = menu_m68k_of(ctx, it);
+    if (!mi) return;
+    m68k_write16(ctx, mi + M68K_MI_LEFT, it->LeftEdge);
+    m68k_write16(ctx, mi + M68K_MI_TOP, it->TopEdge);
+    m68k_write16(ctx, mi + M68K_MI_WIDTH, it->Width);
+    m68k_write16(ctx, mi + M68K_MI_HEIGHT, it->Height);
+    m68k_write16(ctx, mi + M68K_MI_FLAGS, it->Flags);
+}
+
+/* copy geometry and flags of the native strip into its m68k mirror */
+static void gt_sync_mirror(struct M68KEmuContext *ctx, struct Menu *nm)
+{
+    for (; nm; nm = nm->NextMenu)
+    {
+        struct MenuItem *it, *sub;
+        ULONG mm = menu_m68k_of(ctx, nm);
+        if (mm)
+        {
+            m68k_write16(ctx, mm + M68K_MENU_LEFT, nm->LeftEdge);
+            m68k_write16(ctx, mm + M68K_MENU_TOP, nm->TopEdge);
+            m68k_write16(ctx, mm + M68K_MENU_WIDTH, nm->Width);
+            m68k_write16(ctx, mm + M68K_MENU_HEIGHT, nm->Height);
+            m68k_write16(ctx, mm + M68K_MENU_FLAGS, nm->Flags);
+        }
+        for (it = nm->FirstItem; it; it = it->NextItem)
+        {
+            gt_sync_item(ctx, it);
+            for (sub = it->SubItem; sub; sub = sub->NextItem)
+                gt_sync_item(ctx, sub);
+        }
+    }
+}
+
+static ULONG gt_mirror_items(struct M68KEmuContext *ctx, struct MenuItem *it, ULONG *ud, int *k)
+{
+    ULONG first = 0, prev = 0;
+    for (; it; it = it->NextItem)
+    {
+        ULONG mi = M68KEmu_HeapAlloc(ctx, 34 + 4, 0);
+        if (!mi) break;
+        memset(ctx->mem + mi, 0, 38);
+        m68k_write16(ctx, mi + M68K_MI_FLAGS, it->Flags);
+        m68k_write32(ctx, mi + M68K_MI_MUTEX, it->MutualExclude);
+        ctx->mem[mi + M68K_MI_COMMAND] = it->Command;
+        m68k_write16(ctx, mi + M68K_MI_NEXTSELECT, MENUNULL);
+        m68k_write32(ctx, mi + 34, ud[(*k)++]);                 /* GTMENUITEM_USERDATA */
+        menumap_add(ctx, mi, it, 0);
+        if (it->SubItem)
+            m68k_write32(ctx, mi + M68K_MI_SUBITEM, gt_mirror_items(ctx, it->SubItem, ud, k));
+        if (prev) m68k_write32(ctx, prev + M68K_MI_NEXT, mi); else first = mi;
+        prev = mi;
+    }
+    return first;
+}
+
+/* -48: CreateMenusA(A0=newmenu, A1=tags) */
+static IPTR thunk_gadtools_CreateMenusA_t(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG nm = THUNK_A(0), p, *ud, first = 0, prev = 0;
+    int n = 0, i, k = 0;
+    struct NewMenu *native;
+    struct TagItem *tags;
+    struct Menu *menus, *m;
+
+    if (!nm) return 0;
+    for (p = nm; ctx->mem[p] != NM_END && n < 1024; p += 20) n++;
+    native = AllocVec((n + 1) * sizeof(struct NewMenu), MEMF_CLEAR);
+    ud = AllocVec((n + 1) * sizeof(ULONG), MEMF_CLEAR);
+    if (!native || !ud) { FreeVec(native); FreeVec(ud); return 0; }
+    for (i = 0, p = nm; i < n; i++, p += 20)
+    {
+        ULONG lab = m68k_read32(ctx, p + 2), key = m68k_read32(ctx, p + 6);
+        native[i].nm_Type = ctx->mem[p];
+        native[i].nm_Label = lab == 0xFFFFFFFF ? NM_BARLABEL : (CONST_STRPTR)m68k_to_host(ctx, lab);
+        native[i].nm_CommKey = key ? (CONST_STRPTR)m68k_to_host(ctx, key) : NULL;
+        native[i].nm_Flags = m68k_read16(ctx, p + 10);
+        native[i].nm_MutualExclude = m68k_read32(ctx, p + 12);
+        native[i].nm_UserData = (APTR)(IPTR)m68k_read32(ctx, p + 16);
+    }
+    native[n].nm_Type = NM_END;
+    tags = m68k_to_native_taglist(ctx, THUNK_A(1));
+    menus = CreateMenusA(native, tags);
+    if (tags) FreeVec(tags);
+    if (!menus) { FreeVec(native); FreeVec(ud); return 0; }
+
+    /* userdata in strip order: menus, their items, subitems (the NewMenu order) */
+    for (i = 0; i < n; i++)
+        if (native[i].nm_Type != NM_IGNORE) ud[k++] = (ULONG)(IPTR)native[i].nm_UserData;
+    k = 0;
+    for (m = menus; m; m = m->NextMenu)
+    {
+        ULONG mm = M68KEmu_HeapAlloc(ctx, 30 + 4, 0), name;
+        if (!mm) break;
+        memset(ctx->mem + mm, 0, 34);
+        m68k_write16(ctx, mm + M68K_MENU_FLAGS, m->Flags);
+        name = 0;
+        for (i = 0, p = nm; i < n; i++, p += 20)
+            if (ctx->mem[p] == NM_TITLE && m68k_to_host(ctx, m68k_read32(ctx, p + 2)) == (APTR)m->MenuName)
+                { name = m68k_read32(ctx, p + 2); break; }
+        m68k_write32(ctx, mm + M68K_MENU_NAME, name);
+        m68k_write32(ctx, mm + 30, ud[k++]);                     /* GTMENU_USERDATA */
+        menumap_add(ctx, mm, m, 1);
+        m68k_write32(ctx, mm + M68K_MENU_FIRST, gt_mirror_items(ctx, m->FirstItem, ud, &k));
+        if (prev) m68k_write32(ctx, prev + M68K_MENU_NEXT, mm); else first = mm;
+        prev = mm;
+    }
+    FreeVec(native);
+    FreeVec(ud);
+    for (i = 0; i < 16; i++)
+        if (!ctx->gtmenus[i].m68k) { ctx->gtmenus[i].m68k = first; ctx->gtmenus[i].native = menus; break; }
+    return first;
+}
+
+/* -66: LayoutMenusA(A0=firstmenu, A1=vi, A2=tags) / -60: LayoutMenuItemsA(A0=firstitem, ...) */
+static IPTR thunk_gadtools_LayoutMenusA_t(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct Menu *m = (struct Menu *)gt_native_of(ctx, THUNK_A(0));
+    struct TagItem *tags;
+    BOOL ok;
+    if (!m) return FALSE;
+    tags = m68k_to_native_taglist(ctx, THUNK_A(2));
+    ok = LayoutMenusA(m, m68k_to_host_or_shadow(ctx, THUNK_A(1)), tags);
+    if (tags) FreeVec(tags);
+    gt_sync_mirror(ctx, m);
+    return ok;
+}
+
+static IPTR thunk_gadtools_LayoutMenuItemsA_t(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG i;
+    struct MenuItem *it = NULL;
+    struct TagItem *tags;
+    BOOL ok;
+    for (i = 0; i < ctx->num_menumap; i++)
+        if (ctx->menumap[i].m68k == THUNK_A(0) && !ctx->menumap[i].is_menu) it = ctx->menumap[i].native;
+    if (!it) return FALSE;
+    tags = m68k_to_native_taglist(ctx, THUNK_A(2));
+    ok = LayoutMenuItemsA(it, m68k_to_host_or_shadow(ctx, THUNK_A(1)), tags);
+    if (tags) FreeVec(tags);
+    return ok;
+}
+
+/* -54: FreeMenus(A0=menu) */
+static IPTR thunk_gadtools_FreeMenus_t(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG mm = THUNK_A(0), i, j;
+    struct Menu *m = (struct Menu *)gt_native_of(ctx, mm);
+    if (!m) return 0;
+    for (i = 0; i < 16; i++)
+        if (ctx->gtmenus[i].m68k == mm) { ctx->gtmenus[i].m68k = 0; ctx->gtmenus[i].native = NULL; }
+    /* the mirror goes with it: free the m68k blocks this strip mapped */
+    for (i = 0, j = 0; i < ctx->num_menumap; i++)
+    {
+        struct Menu *x;
+        BOOL mine = FALSE;
+        for (x = m; x && !mine; x = x->NextMenu)
+        {
+            struct MenuItem *it, *sub;
+            if ((APTR)x == ctx->menumap[i].native) mine = TRUE;
+            for (it = x->FirstItem; it && !mine; it = it->NextItem)
+            {
+                if ((APTR)it == ctx->menumap[i].native) mine = TRUE;
+                for (sub = it->SubItem; sub && !mine; sub = sub->NextItem)
+                    if ((APTR)sub == ctx->menumap[i].native) mine = TRUE;
+            }
+        }
+        if (mine)
+            M68KEmu_HeapFree(ctx, ctx->menumap[i].m68k, ctx->menumap[i].is_menu ? 34 : 38);
+        else
+            ctx->menumap[j++] = ctx->menumap[i];
+    }
+    ctx->num_menumap = j;
+    FreeMenus(m);
+    return 0;
+}
+
+/* -72: GT_GetIMsg(A0=port) / -78: GT_ReplyIMsg(A1=imsg): GadTools filters
+   its own gadget traffic, then the message reaches the program like GetMsg */
+static IPTR thunk_gadtools_GT_GetIMsg_t(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct MsgPort *port = (struct MsgPort *)shadow_lookup(ctx, THUNK_A(0));
+    struct IntuiMessage *imsg;
+    if (!port) return 0;
+    imsg = GT_GetIMsg(port);
+    return imsg ? imsg_to_m68k(ctx, imsg) : 0;
+}
+
+static IPTR thunk_gadtools_GT_ReplyIMsg_t(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG m = THUNK_A(1);
+    struct IntuiMessage *imsg = (struct IntuiMessage *)shadow_lookup(ctx, m);
+    if (imsg)
+    {
+        GT_ReplyIMsg(imsg);
+        shadow_destroy(ctx, shadow_find_layout("IntuiMessage"), m);
+    }
+    return 0;
+}
+
+const struct M68KThunkEntry m68kemu_thunks_gadtools_manual[] = {
+    { 72, thunk_gadtools_GT_GetIMsg_t },
+    { 78, thunk_gadtools_GT_ReplyIMsg_t },
+    { 48, thunk_gadtools_CreateMenusA_t },
+    { 54, thunk_gadtools_FreeMenus_t },
+    { 60, thunk_gadtools_LayoutMenuItemsA_t },
+    { 66, thunk_gadtools_LayoutMenusA_t },
+};
+const ULONG m68kemu_thunks_gadtools_manual_count = 6;
 
 const struct M68KThunkEntry m68kemu_thunks_intuition_manual[] = {
     { 264, thunk_intuition_SetMenuStrip_t },

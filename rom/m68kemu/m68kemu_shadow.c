@@ -14,6 +14,7 @@
 #include <string.h>
 #include <stddef.h>
 
+#include <intuition/intuition.h>
 #include "m68kemu_intern.h"
 #include "m68kemu_offsets.h"
 #include "m68kemu_shadow.h"
@@ -138,28 +139,41 @@ ULONG shadow_create_by_name(struct M68KEmuContext *ctx,
    Caller must free_native_taglist / FreeVec the returned array. Returns NULL on failure. */
 struct TagItem *m68k_to_native_taglist(struct M68KEmuContext *ctx, ULONG m68k_addr)
 {
+    struct TagItem *ht;
+    int n = 0, max = 256;
+    ULONG p = m68k_addr, guard = 0;
+
     if (!m68k_addr) return NULL;
-
-    /* Count tags */
-    int n = 0;
-    ULONG p = m68k_addr;
-    while (m68k_read32(ctx, p) != TAG_DONE) { n++; p += 8; }
-    n++; /* include TAG_DONE */
-
-    struct TagItem *ht = (struct TagItem *)AllocVec(n * sizeof(struct TagItem), MEMF_CLEAR);
+    ht = (struct TagItem *)AllocVec((max + 1) * sizeof(struct TagItem), MEMF_CLEAR);
     if (!ht) return NULL;
 
-    p = m68k_addr;
-    for (int i = 0; i < n; i++) {
-        ht[i].ti_Tag = m68k_read32(ctx, p);
-        ULONG v = m68k_read32(ctx, p + 4);
-        /* Heuristic: tags with pointer values need host resolution */
-        if (v >= 0x100 && v < ctx->mem_size)
-            ht[i].ti_Data = (IPTR)m68k_to_host(ctx, v);
-        else
-            ht[i].ti_Data = (IPTR)v;
+    while (p && n < max && guard++ < 2048)
+    {
+        ULONG tag = m68k_read32(ctx, p), v = m68k_read32(ctx, p + 4);
+        IPTR d = v;
+        void *nat;
+
+        if (tag == TAG_DONE) break;
+        if (tag == TAG_MORE) { p = v; continue; }
+        if (tag == TAG_SKIP) { p += 8 * (v + 1); continue; }
+        if (tag == TAG_IGNORE) { p += 8; continue; }
+
+        /* Without the tag's type: an object the program got from a library
+           (shadow or handle) maps to the native one; an address in the
+           program's own heap or hunks is a pointer; small values and the
+           known flag tags stay numbers. */
+        if (tag == WA_IDCMP || tag == WA_Flags)
+            d = v;
+        else if (v >= M68KEMU_HANDLE_BASE && (nat = m68k_to_host_or_shadow(ctx, v)))
+            d = (IPTR)nat;
+        else if (v >= M68KEMU_HEAP_BASE && v < ctx->mem_size)
+            d = (IPTR)m68k_to_host_or_shadow(ctx, v);
+        ht[n].ti_Tag = tag;
+        ht[n].ti_Data = d;
+        n++;
         p += 8;
     }
+    ht[n].ti_Tag = TAG_DONE;
     return ht;
 }
 

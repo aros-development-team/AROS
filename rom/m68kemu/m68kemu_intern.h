@@ -110,9 +110,16 @@ struct M68KEmuContext
     struct { ULONG m68k; APTR native; UBYTE is_menu; } menumap[M68KEMU_MAX_MENUITEMS];
     ULONG   num_menumap;
     struct { APTR window; APTR strip; } menustrips[8];
+    struct { ULONG m68k; APTR native; } gtmenus[16];   /* GadTools-built strips: native owned by gadtools */
+
+    /* m68k IORequest <-> native twin (m68kemu_devices.c) */
+    #define M68KEMU_MAX_IOREQS 64
+    struct M68KIoMap { ULONG m68k; struct IORequest *native; UBYTE kind; BOOL pending; struct MsgPort *ownport; } ioreqs[M68KEMU_MAX_IOREQS];
+    ULONG   pubsems[16];           /* AddSemaphore()d m68k semaphores, for FindSemaphore */
     BOOL    trace_after_msg;
     ULONG   tail_pc;               /* after this thunk, continue in 68k code here ... */
     ULONG   tail_d0, tail_a0, tail_a6; /* ... with these registers; its RTS returns to the caller */
+    BOOL    shadow_full_logged;
     BOOL    ccr_valid;             /* a thunk set the caller's condition codes */
     UBYTE   ccr_val;
     ULONG   load_lo, load_hi;      /* span of the last LoadHunksFromMemory() */
@@ -197,6 +204,8 @@ void  m68k_vbl_close(struct M68KEmuContext *ctx);
 ULONG m68k_eclock_now(struct M68KEmuContext *ctx, ULONG *freq);
 void  m68k_watchdog_start(struct M68KEmuContext *ctx);
 void  m68k_log(struct M68KEmuContext *ctx, const char *fmt, ...);
+ULONG m68k_ioreq_of(struct M68KEmuContext *ctx, APTR native);
+void  m68k_ioreq_out(struct M68KEmuContext *ctx, APTR native);
 void  m68k_watchdog_stop(struct M68KEmuContext *ctx);
 #ifdef __cplusplus
 }
@@ -212,6 +221,10 @@ static inline void *m68k_to_host(struct M68KEmuContext *ctx, ULONG addr)
 static inline void *m68k_to_host_or_shadow(struct M68KEmuContext *ctx, ULONG addr)
 {
     if (addr == 0) return NULL;
+    /* a handle for a native object handed out earlier */
+    if (addr >= M68KEMU_HANDLE_BASE && ((addr - M68KEMU_HANDLE_BASE) & 3) == 0
+        && (addr - M68KEMU_HANDLE_BASE) / 4 < ctx->num_handles && ctx->handles)
+        return (void *)ctx->handles[(addr - M68KEMU_HANDLE_BASE) / 4];
     /* Check shadow table first */
     for (UWORD i = 0; i < ctx->num_shadows; i++)
         if (ctx->shadow_map[i].m68k_addr == addr)
