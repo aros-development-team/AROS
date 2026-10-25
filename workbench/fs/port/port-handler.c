@@ -255,7 +255,7 @@ static SIPTR decodeStartup(struct portBase *pb, BPTR startup)
         pa->pa_DeviceUnit = fssm->fssm_Unit;
         pb->pb_DeviceFlags = fssm->fssm_Flags;
         if ((env = BADDR(fssm->fssm_Environ)) &&
-            (env->de_TableSize > DE_CONTROL) &&
+            (env->de_TableSize >= DE_CONTROL) &&
             ((BSTR)env->de_Control != BNULL)) {
             ret = decodeArgs(pb, pa, (BSTR)env->de_Control);
         }
