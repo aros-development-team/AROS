@@ -130,6 +130,7 @@ LONG debug_handler(struct ExecBase *SysBase)
                     int i;
                     for (i = 0; i < (len >> 1); i ++)
                         pa->outbuf[i] = *(UBYTE *)(dp->dp_Arg2 + (i << 1) + 1);
+                    pa->outbuf[i] = '\0';
                 }
                 kprintf("%s", pa->outbuf);
                 dp->dp_Res1 = len;
