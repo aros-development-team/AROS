@@ -307,7 +307,7 @@ static struct portArgs *portOpen(struct portBase *pb, BPTR name, SIPTR *err)
         }
 
         D(bug("%s: %s device=%s, unit=%d (%d), mode=%d\n",
-                    __func__, name, pb->pb_DeviceName,
+                    __func__, pa->pa_Node.ln_Name, pb->pb_DeviceName,
                     pa->pa_DeviceUnit, pb->pb_DeviceFlags,
                     pb->pb_Mode));
 
@@ -368,7 +368,7 @@ static struct portArgs *portOpen(struct portBase *pb, BPTR name, SIPTR *err)
 
 static void portClose(struct portArgs *pa, struct ExecBase *SysBase)
 {
-    D(bug("%s: Close %s\n", pa->pa_Node.ln_Name));
+    D(bug("%s: Close %s\n", __func__, pa->pa_Node.ln_Name));
     Remove(&pa->pa_Node);
     CloseDevice((struct IORequest *)pa->pa_IO);
     DeleteIORequest((struct IORequest *)pa->pa_IO);
@@ -538,7 +538,7 @@ LONG port_handler(struct ExecBase *SysBase)
 
 /* ACTION_DIE ends up here... */
     devNode->dn_Task = NULL;
-    D(bug("%s: Exiting\n"));
+    D(bug("%s: Exiting\n", __func__));
 
     replyPkt(dp, SysBase);
 
