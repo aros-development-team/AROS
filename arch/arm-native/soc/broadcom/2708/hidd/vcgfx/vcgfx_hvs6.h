@@ -156,6 +156,7 @@ void vc4_hvs6_cursor(struct VideoCoreGfx_staticdata *xsd);
  * mailbox lock for commit. */
 BOOL vc4_hvs6_planes_ok(void);
 void vc4_hvs6_planes_commit(struct VideoCoreGfx_staticdata *xsd);
+void vc4_hvs6_planes_try(struct VideoCoreGfx_staticdata *xsd);
 BOOL vc4_hvs6_plane_fits(struct VideoCoreGfx_staticdata *xsd, ULONG w, ULONG h);
 BOOL vc4_hvs6_scales(struct VideoCoreGfx_staticdata *xsd);
 void vc4_hvs6_out_size(struct VideoCoreGfx_staticdata *xsd, ULONG *w, ULONG *h);

@@ -602,21 +602,24 @@ static ULONG hvs5_emit_fb(struct vc4_hvs_state *st, ULONG base, ULONG n, ULONG *
     return n + st->hvs_FBWords;
 }
 
-/* A screen as a plane, in its own mode's coordinates. */
-static void hvs5_plane_src(struct vcgfx_plane *pl, struct hvs5_src *s)
+/* A plane, in display pixels. */
+static void hvs5_plane_src(struct VideoCoreGfx_staticdata *xsd, struct vcgfx_plane *pl,
+                           struct hvs5_src *s)
 {
     struct BitmapData *d = pl->pl_Data;
 
-    s->phys  = (ULONG)(IPTR)d->VideoData;
     s->pitch = d->bytesperrow;
+    s->phys  = (ULONG)(IPTR)d->VideoData + pl->pl_SrcY * s->pitch + pl->pl_SrcX * 4;
     s->pxf   = 0;
     s->bpp   = 4;
-    s->srcw  = s->w = d->width;
-    s->srch  = s->h = d->height;
+    s->srcw  = pl->pl_SrcW;
+    s->srch  = pl->pl_SrcH;
     s->x     = pl->pl_X;
     s->y     = pl->pl_Y;
-    s->cw    = d->modew;
-    s->ch    = d->modeh;
+    s->w     = pl->pl_W;
+    s->h     = pl->pl_H;
+    s->cw    = xsd->vcsd_DispW;
+    s->ch    = xsd->vcsd_DispH;
 }
 
 /* A pool overlay over the screen at orgx/orgy, in that screen's space. */
@@ -692,7 +695,7 @@ static ULONG hvs5_emit_planes(struct VideoCoreGfx_staticdata *xsd,
         limit[i] = bottom;
         swords[i] = 0;
         pl->pl_Shown = TRUE;
-        hvs5_plane_src(pl, &s);
+        hvs5_plane_src(xsd, pl, &s);
         if (!hvs5_src_rect(st, &s, &px, &py, &pw, &ph) || (limit[i] <= py) || (limit[i] <= top))
             continue;
 
@@ -725,7 +728,7 @@ static ULONG hvs5_emit_planes(struct VideoCoreGfx_staticdata *xsd,
 
         if (!pl->pl_Shown)
             continue;
-        hvs5_plane_src(pl, &s);
+        hvs5_plane_src(xsd, pl, &s);
 
         for (k = 0; k < VCGFX_MAX_OVERLAYS; k++)
         {
@@ -775,7 +778,7 @@ static ULONG hvs5_emit_planes(struct VideoCoreGfx_staticdata *xsd,
         if (!swords[i])
             continue;
 
-        hvs5_plane_src(pl, &s);
+        hvs5_plane_src(xsd, pl, &s);
         hvs5_src_rect(st, &s, &px, &py, &pw, &ph);
         hvs5_init_plane(base + n, HVS5_ALPHA_FIXED, swords[i]);
         hvs5_write_src(st, base + n, swords[i], slbm[i], &s, left, top, right, cb);
@@ -1669,4 +1672,19 @@ void vc4_hvs5_planes_commit(struct VideoCoreGfx_staticdata *xsd)
 
     hvs5_commit(st, hvs5_build_list(xsd));
     st->hvs_FlipArmed = st->hvs_VSyncCount + 1;
+}
+
+/* Build a list without showing it, for pl_Shown/ov_Shown; caller holds the
+ * mailbox lock. The slot it lands in is one no commit is reading, and the
+ * in-place patches keep aiming at the newest list. */
+void vc4_hvs5_planes_try(struct VideoCoreGfx_staticdata *xsd)
+{
+    struct vc4_hvs_state *st = &xsd->vcsd_HVS;
+    ULONG listbase = st->hvs_ListBase, curoff = st->hvs_CurOff;
+
+    if (!st->hvs_Active)
+        return;
+    hvs5_build_list(xsd);
+    st->hvs_ListBase = listbase;
+    st->hvs_CurOff   = curoff;
 }

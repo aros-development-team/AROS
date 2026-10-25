@@ -616,21 +616,24 @@ static ULONG hvs_emit_src(struct vc4_hvs_state *st, ULONG *w, ULONG n,
     return n + got;
 }
 
-/* A screen as a plane, in its own mode's coordinates. */
-static void hvs_plane_src(struct vcgfx_plane *pl, struct hvs_src *s)
+/* A plane, in display pixels. */
+static void hvs_plane_src(struct VideoCoreGfx_staticdata *xsd, struct vcgfx_plane *pl,
+                          struct hvs_src *s)
 {
     struct BitmapData *d = pl->pl_Data;
 
-    s->phys  = (ULONG)(IPTR)d->VideoData;
     s->pitch = d->bytesperrow;
+    s->phys  = (ULONG)(IPTR)d->VideoData + pl->pl_SrcY * s->pitch + pl->pl_SrcX * 4;
     s->pxf   = 0;
     s->bpp   = 4;
-    s->srcw  = s->w = d->width;
-    s->srch  = s->h = d->height;
+    s->srcw  = pl->pl_SrcW;
+    s->srch  = pl->pl_SrcH;
     s->x     = pl->pl_X;
     s->y     = pl->pl_Y;
-    s->cw    = d->modew;
-    s->ch    = d->modeh;
+    s->w     = pl->pl_W;
+    s->h     = pl->pl_H;
+    s->cw    = xsd->vcsd_DispW;
+    s->ch    = xsd->vcsd_DispH;
 }
 
 /* Our own buffer behind a token firmware framebuffer, filling the fb
@@ -747,7 +750,7 @@ static ULONG hvs_emit_planes(struct VideoCoreGfx_staticdata *xsd, ULONG *w,
         limit[i] = bottom;
         swords[i] = 0;
         pl->pl_Shown = TRUE;
-        hvs_plane_src(pl, &s);
+        hvs_plane_src(xsd, pl, &s);
         if (!hvs_src_rect(st, &s, &px, &py, &pw, &ph) || (limit[i] <= py) || (limit[i] <= top))
             continue;
 
@@ -780,7 +783,7 @@ static ULONG hvs_emit_planes(struct VideoCoreGfx_staticdata *xsd, ULONG *w,
 
         if (!pl->pl_Shown)
             continue;
-        hvs_plane_src(pl, &s);
+        hvs_plane_src(xsd, pl, &s);
 
         for (k = 0; k < VCGFX_MAX_OVERLAYS; k++)
         {
@@ -832,14 +835,14 @@ static ULONG hvs_emit_planes(struct VideoCoreGfx_staticdata *xsd, ULONG *w,
         if (!swords[i])
             continue;
 
-        hvs_plane_src(pl, &s);
+        hvs_plane_src(xsd, pl, &s);
         hvs_src_rect(st, &s, &px, &py, &pw, &ph);
         got = hvs_put_src(st, &w[n], swords[i], slbm[i], &s, left, top, right, cb);
         if (got)
         {
             pl->pl_PtrWord = n + ((got == HVS_SCALED_WORDS) ? HVS_SC_PTR0 : 4);
             pl->pl_PtrSkip = (w[pl->pl_PtrWord] & ~HVS_PTR_BUS_ALIAS)
-                           - (s.phys & ~HVS_PTR_BUS_ALIAS);
+                           - ((ULONG)(IPTR)pl->pl_Data->VideoData & ~HVS_PTR_BUS_ALIAS);
             n += got;
         }
 
@@ -1767,6 +1770,21 @@ void vc4_hvs_planes_commit(struct VideoCoreGfx_staticdata *xsd)
 
     hvs_commit(st, hvs_build_list(xsd));
     st->hvs_FlipArmed = st->hvs_VSyncCount + 1;
+}
+
+/* Build a list without showing it, for pl_Shown/ov_Shown; caller holds the
+ * mailbox lock. The slot it lands in is one no commit is reading, and the
+ * in-place patches keep aiming at the newest list. */
+void vc4_hvs_planes_try(struct VideoCoreGfx_staticdata *xsd)
+{
+    struct vc4_hvs_state *st = &xsd->vcsd_HVS;
+    ULONG listbase = st->hvs_ListBase, curoff = st->hvs_CurOff;
+
+    if (!st->hvs_Active)
+        return;
+    hvs_build_list(xsd);
+    st->hvs_ListBase = listbase;
+    st->hvs_CurOff   = curoff;
 }
 
 /* A GL flip of a screen that is a plane: only its pointer changes, and

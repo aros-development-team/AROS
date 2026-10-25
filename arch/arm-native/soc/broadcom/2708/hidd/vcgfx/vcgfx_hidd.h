@@ -53,18 +53,20 @@ struct VideoCoreGfxOverlayData
     struct vcgfx_scanbuf    sb[2];
 };
 
-/* Screens shown as HVS planes (ShowViewPorts). x/y are the bitmap's
- * LeftEdge/TopEdge in display coordinates. Only 32-bit ones in scanout
- * memory get a plane, front first while the HVS budget lasts: the rest
- * are not shown until a compositor can blit them. Each such case is
- * logged once. */
+/* Bitmaps shown as HVS planes: the primary (Show) and the overlay planes
+ * of the plane API (CommitPlanes). Rectangles are in display pixels, the
+ * primary's mode (vcsd_DispW x vcsd_DispH); only 32-bit bitmaps in
+ * scanout memory get a plane, front first while the HVS budget lasts. */
 #define VCGFX_MAX_PLANES        16
+#define VCGFX_OVL_PLANES        4       /* overlay planes offered, above the primary */
 
 struct vcgfx_plane
 {
     OOP_Object          *pl_BM;
     struct BitmapData   *pl_Data;       /* VideoData = page on scanout */
-    LONG                 pl_X, pl_Y;
+    LONG                 pl_X, pl_Y;    /* where on the display */
+    ULONG                pl_W, pl_H;    /* and how large */
+    ULONG                pl_SrcX, pl_SrcY, pl_SrcW, pl_SrcH;
     ULONG                pl_PtrWord;    /* VC4: its PTR0 in the newest list, 0 = none */
     ULONG                pl_PtrSkip;    /* and the bytes clipped off in front */
     BOOL                 pl_Shown;      /* the last list built had room for it */
@@ -207,12 +209,20 @@ struct VideoCoreGfx_staticdata {
         APTR                    vcsd_OvlRefused;    /* the client of the last refused show */
         BOOL                    vcsd_OvlNoFit;      /* and whether its size was why */
 
-        /* Hardware screen composition (ShowViewPorts): every screen is its
-         * own plane and the fb is only the backdrop. Sticky once set, as a
-         * fall back to Show() would leave the fb installed in a screen's
-         * BitMap. Guarded by the mailbox lock, like the display list. */
-        BOOL                    vcsd_PlanesMode;
-        BOOL                    vcsd_PlanesRefused;
+        /* No framebuffer for graphics.library: Show() puts the bitmap it
+         * is given on the primary plane, and the fb is only the backdrop -
+         * or holds a copy of a bitmap no plane can show (vcsd_Mirror).
+         * The overlay planes come from CommitPlanes(); vcsd_Plane[] is
+         * what the list builders read, stacked from both. Guarded by the
+         * mailbox lock, like the display list; vcsd_ShowLock keeps the fb
+         * and the mirror in step. */
+        BOOL                    vcsd_NoFB;
+        BOOL                    vcsd_PlanesMode;    /* the display list is ours */
+        struct SignalSemaphore  vcsd_ShowLock;
+        OOP_Object             *vcsd_Mirror;
+        ULONG                   vcsd_DispW, vcsd_DispH;
+        struct vcgfx_plane      vcsd_Primary;       /* pl_BM NULL: none */
+        struct vcgfx_plane      vcsd_OvlPlane[VCGFX_OVL_PLANES];
         ULONG                   vcsd_NumPlanes;
         struct vcgfx_plane      vcsd_Plane[VCGFX_MAX_PLANES];   /* back to front */
         UBYTE                  *vcsd_Backdrop;      /* fb page known to be black */
@@ -220,7 +230,6 @@ struct VideoCoreGfx_staticdata {
         struct SignalSemaphore  vcsd_ScanoutLock;
         struct MinList          vcsd_Arenas;
         BYTE                    vcsd_ScanoutOK;     /* 0 untried, 1 mappable, -1 not */
-        ULONG                   vcsd_PlanesWarned;  /* reasons already logged */
 
         /* The fb object's pixels when the firmware's framebuffer is a
          * token one (HVS5 with screens as planes). */
@@ -236,7 +245,6 @@ struct VideoCoreGfx_staticdata {
  * Uncached reads are ~10x slower than writes, hence the lower thresholds
  * for read-heavy operations.
  */
-#define VC4_DMA_COPY_THRESHOLD  2048    /* bytes (e.g. 32x16 px) */
 #define VC4_DMA_FILL_THRESHOLD  16384   /* bytes (e.g. 64x64 px) */
 #define VC4_DMA_PUT_THRESHOLD   16384   /* cached source, writes only */
 #define VC4_DMA_GET_THRESHOLD   4096    /* uncached source reads */
@@ -315,10 +323,6 @@ APTR    FNAME_SUPPORT(GenPixFmts)(OOP_Class *);
 
 void    vcgfx_ovl_yield(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm,
                         LONG x0, LONG y0, LONG x1, LONG y1);
-BOOL    vc4_dma_copy(struct VideoCoreGfx_staticdata *xsd,
-                     ULONG src_phys, ULONG src_pitch,
-                     ULONG dst_phys, ULONG dst_pitch,
-                     ULONG width_bytes, ULONG height, BOOL bottom_up);
 BOOL    vc4_dma_fill(struct VideoCoreGfx_staticdata *xsd,
                      ULONG dst_phys, ULONG dst_pitch,
                      ULONG width_bytes, ULONG height, ULONG pixel);
@@ -348,15 +352,17 @@ BOOL    vc4_fb_flip(struct VideoCoreGfx_staticdata *xsd);
 
 /* vcgfx_planes.c */
 BOOL    vcgfx_planes_supported(struct VideoCoreGfx_staticdata *xsd);
-BOOL    vcgfx_planes_out_size(struct VideoCoreGfx_staticdata *xsd, ULONG *w, ULONG *h);
 LONG    vcgfx_plane_occlude(LONG px, LONG py, ULONG pw, ULONG ph,
                             LONG left, LONG top, LONG right, LONG bottom);
 BOOL    vcgfx_scanout_alloc(struct VideoCoreGfx_staticdata *xsd,
                             struct vcgfx_scanbuf *sb, ULONG size);
 void    vcgfx_scanout_free(struct VideoCoreGfx_staticdata *xsd,
                            struct vcgfx_scanbuf *sb);
-ULONG   vcgfx_show_viewports(struct VideoCoreGfx_staticdata *xsd,
-                             struct HIDD_ViewPortData *vpd);
+void    vcgfx_show(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm);
+void    vcgfx_mirror_rect(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm,
+                          LONG x, LONG y, LONG w, LONG h);
+BOOL    vcgfx_planes_commit(struct VideoCoreGfx_staticdata *xsd,
+                            struct HIDD_PlaneState *states, ULONG count, ULONG flags);
 void    vcgfx_plane_moved(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm);
 void    vcgfx_plane_forget(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm);
 ULONG   vcgfx_plane_backpage(struct VideoCoreGfx_staticdata *xsd,

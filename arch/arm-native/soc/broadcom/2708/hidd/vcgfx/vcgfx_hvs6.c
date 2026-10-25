@@ -1047,23 +1047,22 @@ static BOOL hvs6_planes_lists(struct vc4_hvs6_state *st)
     return TRUE;
 }
 
-/* A screen's rectangle on the output: from its own mode's coordinates
- * when scaling, so it fills the output as that mode would. */
+/* A plane's rectangle on the output, from display pixels; those are
+ * output pixels where planes do not scale. */
 static void hvs6_plane_rect(struct VideoCoreGfx_staticdata *xsd, struct vcgfx_plane *pl,
                             LONG out_w, LONG out_h, LONG *dx, LONG *dy, ULONG *dw, ULONG *dh)
 {
-    struct BitmapData *d = pl->pl_Data;
     LONG cw = out_w, ch = out_h;
 
-    if (vc4_hvs6_scales(xsd) && d->modew && d->modeh)
+    if (vc4_hvs6_scales(xsd) && xsd->vcsd_DispW && xsd->vcsd_DispH)
     {
-        cw = (LONG)d->modew;
-        ch = (LONG)d->modeh;
+        cw = (LONG)xsd->vcsd_DispW;
+        ch = (LONG)xsd->vcsd_DispH;
     }
     *dx = pl->pl_X * out_w / cw;
     *dy = pl->pl_Y * out_h / ch;
-    *dw = d->width * (ULONG)out_w / (ULONG)cw;
-    *dh = d->height * (ULONG)out_h / (ULONG)ch;
+    *dw = pl->pl_W * (ULONG)out_w / (ULONG)cw;
+    *dh = pl->pl_H * (ULONG)out_h / (ULONG)ch;
 }
 
 /* A scaled entry, after the fb entry's CTL0/CTL2; CTL0 goes in last. */
@@ -1206,10 +1205,10 @@ static ULONG hvs6_build_planes(struct VideoCoreGfx_staticdata *xsd, ULONG list)
         if (!pw[j] || !ph[j] || (limit[j] <= py[j]) || (limit[j] <= 0))
             continue;
 
-        e->phys   = (UQUAD)(IPTR)d->VideoData;
         e->pitch  = d->bytesperrow;
+        e->phys   = (UQUAD)(IPTR)d->VideoData + pl->pl_SrcY * e->pitch + pl->pl_SrcX * 4;
         e->x = px[j]; e->y = py[j]; e->w = pw[j]; e->h = ph[j];
-        e->scaled = (pw[j] != d->width) || (ph[j] != d->height);
+        e->scaled = (pw[j] != pl->pl_SrcW) || (ph[j] != pl->pl_SrcH);
 
         if (!e->scaled)
         {
@@ -1219,8 +1218,8 @@ static ULONG hvs6_build_planes(struct VideoCoreGfx_staticdata *xsd, ULONG list)
         }
         else
         {
-            e->sw = d->width;
-            e->sh = d->height;
+            e->sw = pl->pl_SrcW;
+            e->sh = pl->pl_SrcH;
             if (!hvs6_clip_scaled(&e->x, &e->y, &e->w, &e->h, &e->sw, &e->sh, &e->phys,
                                   e->pitch, 4, 0, 0, out_w, limit[j]))
                 continue;
@@ -1278,7 +1277,7 @@ static ULONG hvs6_build_planes(struct VideoCoreGfx_staticdata *xsd, ULONG list)
         struct BitmapData *d = pl->pl_Data;
         LONG l = (px[j] > 0) ? px[j] : 0, t = (py[j] > 0) ? py[j] : 0;
         LONG r = px[j] + (LONG)pw[j], b = py[j] + (LONG)ph[j];
-        BOOL unity = (pw[j] == d->width) && (ph[j] == d->height);
+        BOOL unity = (pw[j] == pl->pl_SrcW) && (ph[j] == pl->pl_SrcH);
 
         if (r > out_w)
             r = out_w;
@@ -1329,10 +1328,10 @@ static ULONG hvs6_build_planes(struct VideoCoreGfx_staticdata *xsd, ULONG list)
             }
             else
             {
-                e->x  = px[j] + dsc->ovl_X * (LONG)pw[j] / (LONG)d->width;
-                e->y  = py[j] + dsc->ovl_Y * (LONG)ph[j] / (LONG)d->height;
-                e->w  = dw * pw[j] / d->width;
-                e->h  = dh * ph[j] / d->height;
+                e->x  = px[j] + dsc->ovl_X * (LONG)pw[j] / (LONG)pl->pl_SrcW;
+                e->y  = py[j] + dsc->ovl_Y * (LONG)ph[j] / (LONG)pl->pl_SrcH;
+                e->w  = dw * pw[j] / pl->pl_SrcW;
+                e->h  = dh * ph[j] / pl->pl_SrcH;
                 e->sw = dsc->ovl_Width;
                 e->sh = dsc->ovl_Height;
                 if (!hvs6_clip_scaled(&e->x, &e->y, &e->w, &e->h, &e->sw, &e->sh,
@@ -1475,4 +1474,26 @@ void vc4_hvs6_planes_commit(struct VideoCoreGfx_staticdata *xsd)
         }
     }
     hvs6_ovl_arm(st);
+}
+
+/* Build a list without showing it, for pl_Shown/ov_Shown; caller holds the
+ * mailbox lock. It lands in a list no commit is reading. */
+void vc4_hvs6_planes_try(struct VideoCoreGfx_staticdata *xsd)
+{
+    struct vc4_hvs6_state *st = &xsd->vcsd_HVS6;
+    ULONG act, list = 0, i;
+
+    if (!st->h6_Active || !hvs6_planes_lists(st))
+        return;
+
+    hvs6_upm_carve(st);
+
+    act = hvs6_rd(HVS6_CHAN(st->h6_Chan) + HVS6_DISPLACT);
+    for (i = 0; i < HVS6_PL_LISTS; i++)
+    {
+        list = st->h6_PlList[i];
+        if ((list != act) && (list != st->h6_PlLast))
+            break;
+    }
+    hvs6_build_planes(xsd, list);
 }

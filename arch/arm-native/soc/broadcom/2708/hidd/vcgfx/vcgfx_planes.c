@@ -1,15 +1,14 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
-    Desc: Hardware screen composition: every screen its own HVS plane.
+    Desc: Scanout without a framebuffer: HVS planes.
 
-    graphics.library hands ShowViewPorts() the screens front to back and
-    moves one by setting LeftEdge/TopEdge on its bitmap. Each screen bitmap
-    lives in scanout memory, so showing or dragging it only rewrites the
-    display list - no blit. Every screen scales to fill the display as its
-    own mode would, so the display keeps its timing while screens come and
-    go. The fb stays allocated for the firmware's sake and, kept black, is
-    the backdrop where no screen covers.
+    The display compositor hands Show() the bitmap to scan out - the front
+    screen or the one it composed - and pans one by setting LeftEdge/TopEdge
+    on it. Screen bitmaps live in scanout memory, so showing or panning one
+    only rewrites the display list - no blit. A plane scales the bitmap to
+    fill the display as its own mode would. The fb stays allocated for the
+    firmware's sake and the display timing and, kept black, is the backdrop.
 */
 
 #define DEBUG 0
@@ -47,8 +46,10 @@
 
 #undef HiddBitMapAttrBase
 #undef HiddChunkyBMAttrBase
+#undef HiddPixFmtAttrBase
 #define HiddBitMapAttrBase      (xsd->vcsd_attrBases[3])
 #define HiddChunkyBMAttrBase    (xsd->vcsd_attrBases[2])
+#define HiddPixFmtAttrBase      (xsd->vcsd_attrBases[4])
 
 static BOOL scanout_ok(struct VideoCoreGfx_staticdata *xsd);
 
@@ -101,21 +102,6 @@ static BOOL plane_fits(struct VideoCoreGfx_staticdata *xsd, ULONG w, ULONG h)
 static BOOL timing_follows_front(struct VideoCoreGfx_staticdata *xsd)
 {
     return xsd->vcsd_HVSGen != VCGFX_HVS_VC4;
-}
-
-/* The size every screen plane scales to; FALSE where planes do not scale. */
-BOOL vcgfx_planes_out_size(struct VideoCoreGfx_staticdata *xsd, ULONG *w, ULONG *h)
-{
-    if (xsd->vcsd_HVSGen != VCGFX_HVS_HVS6)
-    {
-        *w = xsd->vcsd_HVS.hvs_SrcW;
-        *h = xsd->vcsd_HVS.hvs_SrcH;
-        return TRUE;
-    }
-    if (!vc4_hvs6_scales(xsd))
-        return FALSE;
-    vc4_hvs6_out_size(xsd, w, h);
-    return TRUE;
 }
 
 /* Occlusion, applied front to back: a screen as wide as the display hides
@@ -525,138 +511,314 @@ static void backdrop_clear(struct VideoCoreGfx_staticdata *xsd)
     }
 }
 
-#define PLANES_WARN_BUDGET  (1 << 0)
-#define PLANES_WARN_CLASS   (1 << 1)
-#define PLANES_WARN_SCANOUT (1 << 2)
-#define PLANES_WARN_ROOM    (1 << 3)
-
-/* A screen that gets no plane is not shown at all: say so, once a reason. */
-static void planes_warn(struct VideoCoreGfx_staticdata *xsd, ULONG why,
-                        const char *msg)
-{
-    if (xsd->vcsd_PlanesWarned & why)
-        return;
-    xsd->vcsd_PlanesWarned |= why;
-    bug("[VideoCoreGfx] %s\n", msg);
-}
-
 /* Mode policy. A mode set blanks the display, so the timing follows the
- * front screen only when it is alone, or too big to scale down into it. */
+ * screen shown only where a plane can't scale it to fill the display, or
+ * exactly when it is copied into the fb. */
 static void planes_set_timing(struct VideoCoreGfx_staticdata *xsd,
-                              struct vcgfx_plane *front, ULONG n)
+                              struct BitmapData *data, IPTR mode, BOOL exact)
 {
-    IPTR mode = vHidd_ModeID_Invalid, fbmode = vHidd_ModeID_Invalid;
+    IPTR fbmode = vHidd_ModeID_Invalid;
 
-    if (!xsd->vcsd_FBObj
-        || (!((n == 1) && timing_follows_front(xsd))
-            && plane_fits(xsd, front->pl_Data->modew, front->pl_Data->modeh)))
+    if ((mode == vHidd_ModeID_Invalid)
+        || (!exact && !timing_follows_front(xsd) && plane_fits(xsd, data->modew, data->modeh)))
         return;
 
-    OOP_GetAttr(front->pl_BM, aHidd_BitMap_ModeID, &mode);
     OOP_GetAttr(xsd->vcsd_FBObj, aHidd_BitMap_ModeID, &fbmode);
-    if ((mode != vHidd_ModeID_Invalid) && (mode != fbmode))
+    if (mode != fbmode)
     {
         OOP_SetAttrsTags(xsd->vcsd_FBObj, aHidd_BitMap_ModeID, mode, TAG_DONE);
         xsd->vcsd_Backdrop = NULL;
     }
 }
 
-ULONG vcgfx_show_viewports(struct VideoCoreGfx_staticdata *xsd,
-                           struct HIDD_ViewPortData *vpd)
+/* Copy a rectangle of the mirrored bitmap into the fb; caller holds vcsd_ShowLock. */
+static void mirror_copy(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm,
+                        LONG x, LONG y, LONG w, LONG h)
 {
-    OOP_Class *offcl = xsd->vcsd_VideoCoreGfxOffBMClass;
-    struct vcgfx_plane shown[VCGFX_MAX_PLANES];
-    struct HIDD_ViewPortData *v;
+    struct BitmapData *fb = OOP_INST_DATA(xsd->vcsd_VideoCoreGfxOnBMClass, xsd->vcsd_FBObj);
+    OOP_Object *pf = NULL;
+    IPTR bw = 0, bh = 0, stdpf = 0;
+
+    OOP_GetAttr(bm, aHidd_BitMap_Width, &bw);
+    OOP_GetAttr(bm, aHidd_BitMap_Height, &bh);
+    if (bw > fb->dispwidth)
+        bw = fb->dispwidth;
+    if (bh > fb->height)
+        bh = fb->height;
+    if (x < 0)
+    {
+        w += x;
+        x = 0;
+    }
+    if (y < 0)
+    {
+        h += y;
+        y = 0;
+    }
+    if (x + w > (LONG)bw)
+        w = (LONG)bw - x;
+    if (y + h > (LONG)bh)
+        h = (LONG)bh - y;
+    if ((w <= 0) || (h <= 0) || !fb->VideoData)
+        return;
+
+    OOP_GetAttr(xsd->vcsd_FBObj, aHidd_BitMap_PixFmt, (IPTR *)&pf);
+    OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);
+    HIDD_BM_GetImage(bm, fb->VideoData + y * fb->bytesperrow + x * fb->bytesperpix,
+                     fb->bytesperrow, x, y, w, h, stdpf);
+}
+
+/* vcsd_Plane[] for the list builders: the primary, then the overlay planes
+ * by z. Caller holds the mailbox lock. */
+static void planes_stack(struct VideoCoreGfx_staticdata *xsd)
+{
     ULONG n = 0, i;
 
-    if (!vcgfx_planes_supported(xsd))
-        return FALSE;
-
-    /* Decided at the first call, either way: graphics.library never takes
-     * a framebuffer back out of a BitMap that Show() put it in. */
-    if (!xsd->vcsd_PlanesMode
-        && (xsd->vcsd_PlanesRefused || !planes_active(xsd)))
+    if (xsd->vcsd_Primary.pl_BM)
+        xsd->vcsd_Plane[n++] = xsd->vcsd_Primary;
+    for (i = 0; i < VCGFX_OVL_PLANES; i++)
     {
-        if (!xsd->vcsd_PlanesRefused)
-            bug("[VideoCoreGfx] no display list of our own: screens stay on Show()\n");
-        xsd->vcsd_PlanesRefused = TRUE;
-        return FALSE;
+        if (xsd->vcsd_OvlPlane[i].pl_BM)
+            xsd->vcsd_Plane[n++] = xsd->vcsd_OvlPlane[i];
+    }
+    xsd->vcsd_NumPlanes = n;
+}
+
+/* A list built into a slot nothing reads, for pl_Shown and ov_Shown. */
+static void planes_try(struct VideoCoreGfx_staticdata *xsd)
+{
+    if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
+        vc4_hvs6_planes_try(xsd);
+    else if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS5)
+        vc4_hvs5_planes_try(xsd);
+    else
+        vc4_hvs_planes_try(xsd);
+}
+
+/*
+ * Show() without a framebuffer: the bitmap given is the primary plane, read
+ * from its own pages and panned by its LeftEdge/TopEdge, its mode the
+ * display's pixels. One the HVS can't show - not ours, not in scanout
+ * memory, or over the budget - is copied into the fb behind instead, and
+ * kept up to date by vcgfx_mirror_rect(). The overlay planes stay.
+ */
+void vcgfx_show(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm)
+{
+    OOP_Class *offcl = xsd->vcsd_VideoCoreGfxOffBMClass;
+    struct vcgfx_plane *pl = &xsd->vcsd_Primary;
+    struct BitmapData *data = NULL;
+    IPTR mode = vHidd_ModeID_Invalid;
+    BOOL shown = FALSE;
+
+    if (bm)
+    {
+        OOP_GetAttr(bm, aHidd_BitMap_ModeID, &mode);
+        if (OOP_OCLASS(bm) == offcl)
+            data = OOP_INST_DATA(offcl, bm);
+        if (data && !data->scan[0].sb_Pixels)
+            data = NULL;
     }
 
-    for (v = vpd; v; v = v->Next)
+    ObtainSemaphore(&xsd->vcsd_ShowLock);
+    if (data && planes_active(xsd))
+        planes_set_timing(xsd, data, mode, FALSE);
+
+    VC4_MBOX_LOCK(xsd);
+    xsd->vcsd_PlanesMode = planes_active(xsd);
+    xsd->vcsd_Mirror     = NULL;
+    pl->pl_BM            = NULL;
+    if (data && xsd->vcsd_PlanesMode)
     {
-        struct BitmapData *data;
-
-        if (n == VCGFX_MAX_PLANES)
-        {
-            planes_warn(xsd, PLANES_WARN_BUDGET,
-                        "more screens than planes: those behind are not shown");
-            break;
-        }
-        if (OOP_OCLASS(v->Bitmap) != offcl)
-        {
-            planes_warn(xsd, PLANES_WARN_CLASS,
-                        "a screen of another bitmap class is not shown");
-            continue;
-        }
-        data = OOP_INST_DATA(offcl, v->Bitmap);
-        if (!data->VideoData || !data->scan[0].sb_Pixels)
-        {
-            planes_warn(xsd, PLANES_WARN_SCANOUT,
-                        "a screen that is not 32-bit or not in scanout memory is not shown");
-            continue;
-        }
-
-        shown[n].pl_BM      = v->Bitmap;
-        shown[n].pl_Data    = data;
-        shown[n].pl_PtrWord = 0;
-        shown[n].pl_Shown   = TRUE;
-        plane_pos(xsd, v->Bitmap, &shown[n].pl_X, &shown[n].pl_Y);
-        n++;
+        pl->pl_BM      = bm;
+        pl->pl_Data    = data;
+        pl->pl_PtrWord = 0;
+        pl->pl_Shown   = TRUE;
+        pl->pl_SrcX    = 0;
+        pl->pl_SrcY    = 0;
+        pl->pl_SrcW    = pl->pl_W = data->width;
+        pl->pl_SrcH    = pl->pl_H = data->height;
+        plane_pos(xsd, bm, &pl->pl_X, &pl->pl_Y);
+        xsd->vcsd_DispW = data->modew;
+        xsd->vcsd_DispH = data->modeh;
     }
+    backdrop_clear(xsd);
+    planes_stack(xsd);
+    planes_commit(xsd);
 
-    if (n)
-        planes_set_timing(xsd, &shown[0], n);
+    /* Left out of the list for the overlays in front: nothing of it is on display */
+    if (pl->pl_BM)
+    {
+        shown = xsd->vcsd_Plane[0].pl_Shown;
+        if (!shown)
+        {
+            pl->pl_BM = NULL;
+            planes_stack(xsd);
+        }
+    }
+    VC4_MBOX_UNLOCK(xsd);
+
+    if (bm && !shown)
+    {
+        struct BitmapData *fb;
+
+        planes_set_timing(xsd, NULL, mode, TRUE);
+        fb = OOP_INST_DATA(xsd->vcsd_VideoCoreGfxOnBMClass, xsd->vcsd_FBObj);
+        xsd->vcsd_DispW = fb->dispwidth;
+        xsd->vcsd_DispH = fb->height;
+        backdrop_clear(xsd);
+        xsd->vcsd_Mirror   = bm;
+        xsd->vcsd_Backdrop = NULL;
+        mirror_copy(xsd, bm, 0, 0, 0x7fff, 0x7fff);
+    }
+    ReleaseSemaphore(&xsd->vcsd_ShowLock);
+}
+
+/* A bitmap was drawn to: the mirrored one passes the change to the fb. */
+void vcgfx_mirror_rect(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm,
+                       LONG x, LONG y, LONG w, LONG h)
+{
+    if (bm != xsd->vcsd_Mirror)
+        return;
+
+    ObtainSemaphore(&xsd->vcsd_ShowLock);
+    if (bm == xsd->vcsd_Mirror)
+        mirror_copy(xsd, bm, x, y, w, h);
+    ReleaseSemaphore(&xsd->vcsd_ShowLock);
+}
+
+/*
+ * CommitPlanes(): the overlay planes, taken as a whole set or not at all.
+ * A set fits when the list built from it has room for every plane, the
+ * primary too, and keeps up the GL/video overlays shown on its screens;
+ * that list goes to a slot nothing reads to find out. A test only says.
+ */
+BOOL vcgfx_planes_commit(struct VideoCoreGfx_staticdata *xsd,
+                         struct HIDD_PlaneState *states, ULONG count, ULONG flags)
+{
+    OOP_Class *offcl = xsd->vcsd_VideoCoreGfxOffBMClass;
+    struct vcgfx_plane want[VCGFX_OVL_PLANES], keep[VCGFX_OVL_PLANES];
+    struct vcgfx_plane built[VCGFX_MAX_PLANES];
+    BOOL ovlshown[VCGFX_MAX_OVERLAYS], ovlnofit[VCGFX_MAX_OVERLAYS];
+    ULONG nbuilt, i, k;
+    BOOL ok = TRUE;
 
     VC4_MBOX_LOCK(xsd);
     if (!xsd->vcsd_PlanesMode)
     {
-        bug("[VideoCoreGfx] screens are HVS planes from now on\n");
-        xsd->vcsd_PlanesMode = TRUE;
+        VC4_MBOX_UNLOCK(xsd);
+        return FALSE;
     }
-    for (i = 0; i < n; i++)
-        xsd->vcsd_Plane[i] = shown[n - 1 - i];
-    xsd->vcsd_NumPlanes = n;
-    backdrop_clear(xsd);
-    planes_commit(xsd);
-    for (i = 0; i < n; i++)
+    CopyMem(xsd->vcsd_OvlPlane, want, sizeof(want));
+    CopyMem(xsd->vcsd_OvlPlane, keep, sizeof(keep));
+
+    for (i = 0; ok && (i < count); i++)
     {
-        if (!xsd->vcsd_Plane[i].pl_Shown)
-            planes_warn(xsd, PLANES_WARN_ROOM,
-                        "a screen did not fit the HVS budget: not shown");
+        const struct HIDD_PlaneState *st = &states[i];
+        const struct Rectangle *s = &st->Src, *d = &st->Dest;
+        struct BitmapData *data;
+        struct vcgfx_plane *pl;
+
+        if ((st->Plane < 1) || (st->Plane > VCGFX_OVL_PLANES))
+        {
+            ok = FALSE;
+            break;
+        }
+        pl = &want[st->Plane - 1];
+        pl->pl_BM = NULL;
+        if (!st->BitMap)
+            continue;
+
+        data = (OOP_OCLASS(st->BitMap) == offcl) ? OOP_INST_DATA(offcl, st->BitMap) : NULL;
+        if (!data || !data->scan[0].sb_Pixels || (st->AlphaMode != vHidd_CompAlpha_None)
+            || (s->MinX < 0) || (s->MinY < 0) || (s->MaxX < s->MinX) || (s->MaxY < s->MinY)
+            || (s->MaxX >= (WORD)data->width) || (s->MaxY >= (WORD)data->height)
+            || (d->MaxX < d->MinX) || (d->MaxY < d->MinY))
+        {
+            ok = FALSE;
+            break;
+        }
+        pl->pl_BM      = st->BitMap;
+        pl->pl_Data    = data;
+        pl->pl_X       = d->MinX;
+        pl->pl_Y       = d->MinY;
+        pl->pl_W       = d->MaxX - d->MinX + 1;
+        pl->pl_H       = d->MaxY - d->MinY + 1;
+        pl->pl_SrcX    = s->MinX;
+        pl->pl_SrcY    = s->MinY;
+        pl->pl_SrcW    = s->MaxX - s->MinX + 1;
+        pl->pl_SrcH    = s->MaxY - s->MinY + 1;
+        pl->pl_PtrWord = 0;
+        pl->pl_Shown   = TRUE;
+    }
+
+    if (ok)
+    {
+        CopyMem(xsd->vcsd_Plane, built, sizeof(built));
+        nbuilt = xsd->vcsd_NumPlanes;
+        for (k = 0; k < VCGFX_MAX_OVERLAYS; k++)
+        {
+            ovlshown[k] = xsd->vcsd_Ovl[k].ov_Shown;
+            ovlnofit[k] = xsd->vcsd_Ovl[k].ov_NoFit;
+        }
+
+        CopyMem(want, xsd->vcsd_OvlPlane, sizeof(want));
+        planes_stack(xsd);
+        planes_try(xsd);
+        for (i = 0; i < xsd->vcsd_NumPlanes; i++)
+        {
+            if (!xsd->vcsd_Plane[i].pl_Shown)
+                ok = FALSE;
+        }
+        /* A client's overlay up on a screen still shown must stay up */
+        for (k = 0; k < VCGFX_MAX_OVERLAYS; k++)
+        {
+            if (ovlshown[k] && !xsd->vcsd_Ovl[k].ov_Shown
+                && plane_find(xsd, xsd->vcsd_Ovl[k].ov_BM))
+                ok = FALSE;
+        }
+
+        CopyMem(built, xsd->vcsd_Plane, sizeof(built));
+        xsd->vcsd_NumPlanes = nbuilt;
+        for (k = 0; k < VCGFX_MAX_OVERLAYS; k++)
+        {
+            xsd->vcsd_Ovl[k].ov_Shown = ovlshown[k];
+            xsd->vcsd_Ovl[k].ov_NoFit = ovlnofit[k];
+        }
+    }
+
+    if (!ok || (flags & fHidd_Commit_Test))
+        CopyMem(keep, xsd->vcsd_OvlPlane, sizeof(keep));
+    else
+    {
+        planes_stack(xsd);
+        planes_commit(xsd);
     }
     VC4_MBOX_UNLOCK(xsd);
 
-    return TRUE;
+    if (ok && !(flags & (fHidd_Commit_Test | fHidd_Commit_NoWait)))
+        vc4_hvs_latch_wait(xsd);
+    return ok;
 }
 
-/* LeftEdge/TopEdge changed: the bitmap has clamped and stored them. */
+/* LeftEdge/TopEdge changed: the bitmap has clamped and stored them. Only
+ * the primary pans; the compositor places the overlay planes. */
 void vcgfx_plane_moved(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm)
 {
-    struct vcgfx_plane *pl;
+    struct vcgfx_plane *pl = &xsd->vcsd_Primary;
     LONG x, y;
 
     if (!xsd->vcsd_PlanesMode)
         return;
 
     VC4_MBOX_LOCK(xsd);
-    if ((pl = plane_find(xsd, bm)))
+    if (pl->pl_BM == bm)
     {
         plane_pos(xsd, bm, &x, &y);
         if ((x != pl->pl_X) || (y != pl->pl_Y))
         {
             pl->pl_X = x;
             pl->pl_Y = y;
+            planes_stack(xsd);
             planes_commit(xsd);
         }
     }
@@ -665,27 +827,36 @@ void vcgfx_plane_moved(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm)
 
 /* A bitmap going away must be off the display, and out of the list the
  * HVS is reading, before its pages are freed. That list may also be one
- * ShowViewPorts() already replaced, so always wait for the last commit. */
+ * Show() already replaced, so always wait for the last commit. */
 void vcgfx_plane_forget(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm)
 {
-    struct vcgfx_plane *pl;
     BOOL gone = FALSE;
+    ULONG i;
 
     if (!xsd->vcsd_PlanesMode)
         return;
 
     VC4_MBOX_LOCK(xsd);
-    if ((pl = plane_find(xsd, bm)))
+    if (xsd->vcsd_Mirror == bm)
+        xsd->vcsd_Mirror = NULL;
+    if (xsd->vcsd_Primary.pl_BM == bm)
     {
-        ULONG i = pl - xsd->vcsd_Plane;
-
-        for (; i + 1 < xsd->vcsd_NumPlanes; i++)
-            xsd->vcsd_Plane[i] = xsd->vcsd_Plane[i + 1];
-        xsd->vcsd_NumPlanes--;
+        xsd->vcsd_Primary.pl_BM = NULL;
         gone = TRUE;
     }
+    for (i = 0; i < VCGFX_OVL_PLANES; i++)
+    {
+        if (xsd->vcsd_OvlPlane[i].pl_BM == bm)
+        {
+            xsd->vcsd_OvlPlane[i].pl_BM = NULL;
+            gone = TRUE;
+        }
+    }
     if (gone)
+    {
+        planes_stack(xsd);
         planes_commit(xsd);
+    }
     VC4_MBOX_UNLOCK(xsd);
 
     vc4_hvs_latch_wait(xsd);

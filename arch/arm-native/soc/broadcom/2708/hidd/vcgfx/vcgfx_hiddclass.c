@@ -149,6 +149,7 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         { aHidd_Name            , (IPTR)"vcgfx.hidd"     },
         { aHidd_HardwareName    , (IPTR)"VideoCore4 Display Adaptor"   },
         { aHidd_ProducerName    , (IPTR)"Broadcom Corporation"  },
+        { aHidd_Gfx_FrameBufferType, vHidd_FrameBuffer_Direct },
         { TAG_MORE              , (IPTR)msg->attrList       }
     };
     struct pRoot_New            gfxmsg_New;
@@ -159,6 +160,11 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     EnterFunc(bug("VideoCoreGfx::New()\n"));
 
     NewList(&vc_modelist);
+
+    /* Planes scan screens out of their own memory */
+    XSD(cl)->vcsd_NoFB = vcgfx_planes_supported(XSD(cl));
+    if (XSD(cl)->vcsd_NoFB)
+        gfxmsg_tags[3].ti_Data = vHidd_FrameBuffer_None;
 
     FNAME_SUPPORT(SDTV_SyncGen)(&vc_modelist, cl);
     FNAME_SUPPORT(HDMI_SyncGen)(&vc_modelist, cl);
@@ -284,6 +290,14 @@ VOID MNAME_DISPLAY_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg
             *msg->storage = XSD(cl)->vcsd_CurBuf ? vHidd_SpriteType_DirectColor : 0;
             found = TRUE;
             break;
+
+        case aoHidd_Display_PlaneCount:
+            if (XSD(cl)->vcsd_NoFB)
+            {
+                *msg->storage = 1 + VCGFX_OVL_PLANES;
+                found = TRUE;
+            }
+            break;
         }
     }
     if (!found)
@@ -389,91 +403,90 @@ VOID MNAME_DISPLAY(NominalDimensions)(OOP_Class *cl, OOP_Object *o, struct pHidd
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-ULONG MNAME_DISPLAY(ShowViewPorts)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_ShowViewPorts *msg)
+/* The fb behind the planes: the display timing, and the backdrop. Ours
+ * only - graphics.library and the compositor must not draw into it. */
+static void vc4_fb_new(OOP_Class *cl, OOP_Object *o, OOP_Object *bm)
 {
-    return vcgfx_show_viewports(XSD(cl), msg->Data);
-}
-
-/* A plane moves with its bitmap's LeftEdge/TopEdge. Composition is ours:
- * FALSE would have graphics.library install the framebuffer into the
- * front screen's bitmap, and the screen would draw into the token fb. */
-BOOL MNAME_DISPLAY(ViewPortPositionChange)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_ViewPortPositionChange *msg)
-{
-    if (XSD(cl)->vcsd_PlanesMode)
-        return TRUE;
-    return (BOOL)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-}
-
-/* Screens that are planes compose; graphics.library and Intuition take
- * these flags over the display compositor's own capabilities. Above only,
- * as that compositor defaults to: a screen drags down to reveal the ones
- * behind, and its title bar can never leave the display. Where they also
- * scale, Intuition asks DisplayToBMCoords for their own pixels. */
-ULONG MNAME_DISPLAY(ModeProperties)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_ModeProperties *msg)
-{
-    struct HIDD_ModeProperties props = { 0, 0, 0 };
-    struct pHidd_Display_ModeProperties supmsg = *msg;
-    ULONG len = msg->propsLen;
-
-    supmsg.props    = &props;
-    supmsg.propsLen = sizeof(props);
-    OOP_DoSuperMethod(cl, o, (OOP_Msg)&supmsg);
-
-    if (vcgfx_planes_supported(XSD(cl)))
+    struct TagItem fbtags[] =
     {
-        props.CompositionFlags = COMPF_ABOVE;
-        if ((XSD(cl)->vcsd_HVSGen != VCGFX_HVS_HVS6) || vc4_hvs6_scales(XSD(cl)))
-            props.CompositionFlags |= COMPF_SCALE;
-    }
+        { aHidd_BitMap_FrameBuffer, TRUE                 },
+        { aHidd_BitMap_ModeID,      vHidd_ModeID_Invalid },
+        { TAG_DONE,                 0                    }
+    };
 
-    if (len > sizeof(props))
-        len = sizeof(props);
-    CopyMem(&props, msg->props, len);
+    OOP_GetAttr(bm, aHidd_BitMap_ModeID, &fbtags[1].ti_Data);
+    if (fbtags[1].ti_Data == vHidd_ModeID_Invalid)
+        return;
+    HIDD_Display_CreateObject(o, XSD(cl)->vcsd_basebm, fbtags);
+    OOP_SetAttrsTags(o, aHidd_Display_FrameBuffer, 0, TAG_DONE);
+}
+
+/* Without a framebuffer the bitmap given is scanned out itself; the base
+ * class then tracks it for the cursor. */
+OOP_Object *MNAME_DISPLAY(Show)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_Show *msg)
+{
+    struct VideoCoreGfx_staticdata *xsd = XSD(cl);
+
+    if (xsd->vcsd_NoFB)
+    {
+        if (msg->bitMap && !xsd->vcsd_FBObj)
+            vc4_fb_new(cl, o, msg->bitMap);
+        if (!xsd->vcsd_FBObj)
+            return NULL;
+        vcgfx_show(xsd, msg->bitMap);
+    }
+    return (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+VOID MNAME_DISPLAY(UpdateRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_UpdateRect *msg)
+{
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    vcgfx_mirror_rect(XSD(cl), msg->bitMap, msg->x, msg->y, msg->width, msg->height);
+}
+
+/* Overlay planes above the primary, z by index: 32-bit screens in scanout
+ * memory, scaled within what the HVS filters can do. How many fit at once
+ * is the budget's to say, in CommitPlanes(). */
+ULONG MNAME_DISPLAY(GetPlaneInfo)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_GetPlaneInfo *msg)
+{
+    struct VideoCoreGfx_staticdata *xsd = XSD(cl);
+    struct HIDD_PlaneInfo info = { 0 };
+    ULONG len = msg->infoLen;
+
+    if (!xsd->vcsd_NoFB || (msg->index == 0) || (msg->index > VCGFX_OVL_PLANES))
+        return (ULONG)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+    info.Type       = vHidd_Plane_Overlay;
+    info.ZMin       = msg->index;
+    info.ZMax       = msg->index;
+    info.PixFmtMask = 1 << ((xsd->vcsd_HVSGen == VCGFX_HVS_HVS6) ? vHidd_StdPixFmt_RGB032
+                                                                 : vHidd_StdPixFmt_BGR032);
+    info.ScaleMin   = HIDD_PLANE_SCALE_UNITY;
+    info.ScaleMax   = HIDD_PLANE_SCALE_UNITY;
+    if (xsd->vcsd_HVSGen == VCGFX_HVS_VC4)
+        info.ScaleMax = 16 * HIDD_PLANE_SCALE_UNITY;
+    else if ((xsd->vcsd_HVSGen == VCGFX_HVS_HVS5) || vc4_hvs6_scales(xsd))
+    {
+        /* Down to 2/3: a source at most 1.5 times the size it lands */
+        info.ScaleMin = (2 * HIDD_PLANE_SCALE_UNITY + 2) / 3;
+        info.ScaleMax = 16 * HIDD_PLANE_SCALE_UNITY;
+    }
+    info.AlphaModes = 1 << vHidd_CompAlpha_None;
+    info.PosAlignX  = 1;
+    info.PosAlignY  = 1;
+    info.Flags      = PIF_NEEDS_DISPLAYMEM;
+
+    if (len > sizeof(info))
+        len = sizeof(info);
+    CopyMem(&info, msg->info, len);
     return len;
 }
 
-/* A screen that is a plane fills the display as its own mode would, so its
- * pixels are the display's scaled by mode size over display mode size. */
-static BOOL vc4_screen_scale(OOP_Class *cl, OOP_Object *bm, ULONG *mw, ULONG *mh,
-                             ULONG *dw, ULONG *dh)
+BOOL MNAME_DISPLAY(CommitPlanes)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_CommitPlanes *msg)
 {
-    struct VideoCoreGfx_staticdata *xsd = XSD(cl);
-    struct BitmapData *data;
-
-    if (!xsd->vcsd_PlanesMode || !bm
-        || (OOP_OCLASS(bm) != xsd->vcsd_VideoCoreGfxOffBMClass))
-        return FALSE;
-
-    data = OOP_INST_DATA(xsd->vcsd_VideoCoreGfxOffBMClass, bm);
-    *mw = data->modew;
-    *mh = data->modeh;
-    return vcgfx_planes_out_size(xsd, dw, dh) && *mw && *mh && *dw && *dh;
-}
-
-VOID MNAME_DISPLAY(DisplayToBMCoords)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_DisplayToBMCoords *msg)
-{
-    ULONG mw, mh, dw, dh;
-
-    if (!vc4_screen_scale(cl, msg->Target, &mw, &mh, &dw, &dh))
-    {
-        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-        return;
-    }
-    *msg->TargetX = (ULONG)msg->DispX * mw / dw;
-    *msg->TargetY = (ULONG)msg->DispY * mh / dh;
-}
-
-VOID MNAME_DISPLAY(BMToDisplayCoords)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_BMToDisplayCoords *msg)
-{
-    ULONG mw, mh, dw, dh;
-
-    if (!vc4_screen_scale(cl, msg->Target, &mw, &mh, &dw, &dh))
-    {
-        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-        return;
-    }
-    *msg->DispX = (ULONG)msg->TargetX * dw / mw;
-    *msg->DispY = (ULONG)msg->TargetY * dh / mh;
+    if (!XSD(cl)->vcsd_NoFB)
+        return (BOOL)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    return vcgfx_planes_commit(XSD(cl), msg->states, msg->count, msg->flags);
 }
 
 BOOL MNAME_DISPLAY(SetCursorShape)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_SetCursorShape *msg)
@@ -638,22 +651,6 @@ VOID MNAME_DISPLAY(SetCursorVisible)(OOP_Class *cl, OOP_Object *o, struct pHidd_
     VC4_MBOX_UNLOCK(xsd);
 }
 
-/* Returns the DMA-addressable buffer base for our on/offscreen bitmaps
- * (uncached framebuffer / GPU mem), or 0 for foreign / RAM-backed ones.
- */
-static ULONG vc4_bm_dma_base(OOP_Class *cl, OOP_Object *bm)
-{
-    OOP_Class *bmcl = OOP_OCLASS(bm);
-
-    if (bmcl == XSD(cl)->vcsd_VideoCoreGfxOnBMClass ||
-        bmcl == XSD(cl)->vcsd_VideoCoreGfxOffBMClass)
-    {
-        struct BitmapData *data = OOP_INST_DATA(bmcl, bm);
-        return (ULONG)(IPTR)data->VideoData;
-    }
-    return 0;
-}
-
 /* NEON rect copy between two chunky 32bpp bitmaps; falls through to
  * super otherwise. Handles same-buffer overlap via row direction;
  * same-row right-shift uses a reverse copyline.
@@ -732,35 +729,9 @@ VOID MNAME_GFX(CopyBox)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *
      * where Mesa renders a complete frame in its own BO.
      */
 
-    /* Large copies between two uncached DMA-addressable buffers go through
-     * the DMA engine (uncached CPU reads dominate the NEON cost). Same-row
-     * horizontal overlap can't be done in 2D stride mode (rows always go
-     * forward), so it stays on the NEON reverse copy.
-     */
-    /* No channel (BCM2712) means no attempt: the aliasing bail-out below
-     * is only right after the engine has actually run. */
-    if (!same_row_overlap && (XSD(cl)->vcsd_DMAChannel >= 0)
-        && (row_bytes * msg->height) >= VC4_DMA_COPY_THRESHOLD
-        && vc4_bm_dma_base(cl, msg->src) == (ULONG)src_buf
-        && vc4_bm_dma_base(cl, msg->dest) == (ULONG)dst_buf
-        && src_buf && dst_buf)
-    {
-        if (vc4_dma_copy(XSD(cl), (ULONG)(IPTR)srow_base, src_pitch,
-                         (ULONG)(IPTR)drow_base, dst_pitch,
-                         row_bytes, msg->height, (y_step < 0)))
-            return;
-
-        /* A failed DMA already overwrote part of the destination. Where the
-         * rectangles alias (a scroll) the clobbered source rows are gone, so
-         * the row loop below would paint garbage over the rows the engine did
-         * get right. Stale pixels repaint on the next damage pass. */
-        if (src_buf == dst_buf && msg->destY != msg->srcY
-            && (ULONG)(msg->destY > msg->srcY ? msg->destY - msg->srcY
-                                              : msg->srcY - msg->destY)
-               < (ULONG)msg->height)
-            return;
-    }
-
+    /* NEON, not DMA: measured 700 MB/s against 30 on a Pi 4 and 220 against
+     * 36 on a Pi 3, uncached reads and all, and a full-display copy could
+     * outlast the DMA timeout. */
     for (y = y_start; y != y_end; y += y_step)
     {
         UBYTE *srow = srow_base + y * src_pitch;

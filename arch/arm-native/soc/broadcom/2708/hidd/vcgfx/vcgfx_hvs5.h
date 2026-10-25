@@ -241,6 +241,7 @@ BOOL vc4_hvs5_overlay(struct VideoCoreGfx_staticdata *xsd,
  * The caller holds the mailbox lock. */
 BOOL vc4_hvs5_planes_ok(void);
 void vc4_hvs5_planes_commit(struct VideoCoreGfx_staticdata *xsd);
+void vc4_hvs5_planes_try(struct VideoCoreGfx_staticdata *xsd);
 
 /* Can a screen of a w x h mode scale to fill the current output? */
 BOOL vc4_hvs5_plane_fits(struct VideoCoreGfx_staticdata *xsd, ULONG w, ULONG h);
