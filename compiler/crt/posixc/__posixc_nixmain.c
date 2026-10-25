@@ -30,6 +30,69 @@ static void restore_vars(struct MinList *old_vars);
 static void free_vars(struct MinList *vars);
 static void update_PATH(void);
 
+/*****************************************************************************
+    NAME
+        int __posixc_nixmain(
+
+    SYNOPSIS
+        int (*main)(int argc, char *argv[]), int argc, char *argv[])
+
+    FUNCTION
+        Run a program entry point with POSIXC Unix-style path handling.
+
+    INPUTS
+        main - Program entry point. Must not be NULL.
+        argc - Argument count passed unchanged to main.
+        argv - Argument vector passed to main. If argv and argv[0] are non-NULL,
+            the first pointer must be writable and its string must contain
+            an AmigaDOS-style program path. The callback must accept the
+            supplied argc and argv.
+
+    RESULT
+        The program exit-status slot after main returns or the runtime exit
+        path jumps back here. A normal callback return is stored in that slot.
+        If no slot exists, the final return value is zero.
+
+        Failure to duplicate the converted program path returns RETURN_FAIL
+        without calling main. Failure to clone local variables stores
+        RETURN_FAIL in the exit-status slot, if present, and skips main.
+
+    NOTES
+        This is the startup entry used by programs linked with Unix-path
+        support. Call only from an initialized DOS process with the POSIXC
+        and standard-C startup state established. It is not a general-purpose
+        callback wrapper and must not be nested or called from a worker task.
+
+        Unix-style path handling is enabled before setup and remains enabled.
+        When present, argv[0] is temporarily replaced by an allocated converted
+        path. The original pointer is restored and the replacement is freed
+        on the cleanup path. Other argument pointers are passed unchanged.
+        The callback must not free or retain the temporary program-path string.
+
+        Local variables are cloned and restored around the callback unless
+        the parent POSIXC base is marked as a vfork or exec parent. In that
+        case the existing local-variable environment is used directly. If
+        PATH is absent, startup attempts to derive it from the CLI path list;
+        individual conversion or allocation failures can omit entries.
+
+        Cleanup runs after normal callback return or a runtime exit through
+        the installed jump target. It is not guaranteed for other control
+        transfers or abrupt process termination.
+
+    BUGS
+        A failed path conversion is passed to strdup() without a NULL check.
+        Cloning an empty local-variable list leaves an invalid tail link.
+        The previous runtime exit jump target is saved but not restored before
+        return. These paths can invalidate startup or later exit processing.
+
+        PATH construction errors are not reported, and its temporary buffer
+        is not freed. An existing PATH, including an empty value, is retained.
+
+    SEE ALSO
+        __stdc_get_errorptr(), __stdc_set_exitjmp(), exit()
+
+*****************************************************************************/
+
 int __posixc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
 {
     struct PosixCIntBase *PosixCBase, *pPosixCBase;
