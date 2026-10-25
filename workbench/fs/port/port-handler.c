@@ -435,11 +435,11 @@ LONG port_handler(struct ExecBase *SysBase)
                     dp->dp_Res1 = pa->pa_IO->std.io_Actual;
                     dp->dp_Res2 = 0;
                 } else {
-                    dp->dp_Res1 = DOSFALSE;
+                    dp->dp_Res1 = -1;
                     dp->dp_Res2 = ERROR_READ_PROTECTED;
                 }
             } else {
-                dp->dp_Res1 = DOSFALSE;
+                dp->dp_Res1 = -1;
                 dp->dp_Res2 = ERROR_OBJECT_WRONG_TYPE;
             }
             break;
@@ -460,11 +460,11 @@ LONG port_handler(struct ExecBase *SysBase)
                     dp->dp_Res1 = pa->pa_IO->std.io_Actual;
                     dp->dp_Res2 = 0;
                 } else {
-                    dp->dp_Res1 = DOSFALSE;
-                    dp->dp_Res2 = ERROR_READ_PROTECTED;
+                    dp->dp_Res1 = -1;
+                    dp->dp_Res2 = ERROR_WRITE_PROTECTED;
                 }
             } else {
-                dp->dp_Res1 = DOSFALSE;
+                dp->dp_Res1 = -1;
                 dp->dp_Res2 = ERROR_OBJECT_WRONG_TYPE;
             }
             break;
