@@ -254,6 +254,7 @@ public:
             return;
         }
         ctx->mem[addr] = val;
+        if (ctx->plane_base) m68k_planar_touch(ctx, addr, 1);
     }
 
     void write16(u32 addr, u16 val) const override
@@ -273,6 +274,7 @@ public:
         }
         ctx->mem[addr]     = (u8)(val >> 8);
         ctx->mem[addr + 1] = (u8)(val);
+        if (ctx->plane_base) m68k_planar_touch(ctx, addr, 2);
     }
 
     u16 read16OnReset(u32 addr) const override

@@ -89,6 +89,16 @@ struct M68KEmuContext
     ULONG   last_exc_pc;
     ULONG   cia_trace;
     BOOL    pc_exit_dumped;
+
+    /* Planar bitplanes behind the program's screen: classic programs draw
+       into sc_BitMap directly. Writes land in containment and are mirrored
+       onto the native screen a word at a time (m68kemu_thunks.c). */
+    ULONG   plane_base;         /* first plane in containment, planes contiguous */
+    ULONG   plane_size;         /* bytes per plane */
+    ULONG   plane_bpr;          /* bytes per row */
+    ULONG   plane_rows;
+    ULONG   plane_depth;
+    APTR    plane_screen;       /* struct Screen * (native) */
     BOOL    trace_calls;        /* per-call trace lines (off: they flood the debug console) */
 
     /* CIA-A ($BFE001, odd bytes) and CIA-B ($BFD000, even bytes): ports,
@@ -161,6 +171,7 @@ ULONG m68k_bptr_out(struct M68KEmuContext *ctx, BPTR b);
 BPTR  m68k_bptr_in(struct M68KEmuContext *ctx, ULONG v);
 void  m68k_bptr_drop(struct M68KEmuContext *ctx, ULONG v);
 void  m68k_low_write_trap(struct M68KEmuContext *ctx, ULONG addr, const char *who);
+void  m68k_planar_touch(struct M68KEmuContext *ctx, ULONG addr, ULONG nbytes);
 BOOL  m68k_vbl_due(struct M68KEmuContext *ctx);
 void  m68k_vbl_close(struct M68KEmuContext *ctx);
 ULONG m68k_eclock_now(struct M68KEmuContext *ctx, ULONG *freq);
