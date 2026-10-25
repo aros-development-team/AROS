@@ -1914,16 +1914,50 @@ static IPTR thunk_intuition_AutoRequest(struct M68KEmuContext *ctx, void *cpu)
     return (IPTR)result;
 }
 
-/* intuition -432: RefreshGList(A0=gadgets, A1=window, A2=requester, D0=numGad) — no-op */
-static IPTR thunk_intuition_RefreshGList(struct M68KEmuContext *ctx, void *cpu)
+/* intuition -588: EasyRequestArgs(A0=window, A1=easyStruct, A2=IDCMP_ptr, A3=args)
+   The arguments of TextFormat and then GadgetFormat are one m68k datastream. */
+static IPTR thunk_intuition_EasyRequestArgs(struct M68KEmuContext *ctx, void *cpu)
 {
-    return 0;
-}
+    struct Window *win = THUNK_A(0) ? (struct Window *)shadow_lookup(ctx, THUNK_A(0)) : NULL;
+    ULONG mes = THUNK_A(1), midcmp = THUNK_A(2), margs = THUNK_A(3);
+    struct EasyStruct es;
+    ULONG idcmp = 0, size = 0;
+    APTR stream = NULL;
+    STRPTR both = NULL;
+    LONG r;
 
-/* intuition -438: SetWindowPointerA(A0=window, A1=taglist) — no-op */
-static IPTR thunk_intuition_SetWindowPointerA(struct M68KEmuContext *ctx, void *cpu)
-{
-    return 0; /* pointer shape is cosmetic, skip to avoid X11 blocking */
+    if (!mes)
+        return 0;
+    memset(&es, 0, sizeof(es));
+    es.es_StructSize   = sizeof(es);
+    es.es_Flags        = m68k_read32(ctx, mes + 4);
+    es.es_Title        = (CONST_STRPTR)m68k_to_host(ctx, m68k_read32(ctx, mes + 8));
+    es.es_TextFormat   = (CONST_STRPTR)m68k_to_host(ctx, m68k_read32(ctx, mes + 12));
+    es.es_GadgetFormat = (CONST_STRPTR)m68k_to_host(ctx, m68k_read32(ctx, mes + 16));
+    if (!es.es_TextFormat || !es.es_GadgetFormat)
+        return 0;
+
+    if (margs)
+    {
+        ULONG lt = strlen(es.es_TextFormat), lg = strlen(es.es_GadgetFormat);
+        if ((both = AllocVec(lt + lg + 1, MEMF_ANY)))
+        {
+            CopyMem(es.es_TextFormat, both, lt);
+            CopyMem(es.es_GadgetFormat, both + lt, lg + 1);
+            stream = m68k_to_native_fmt_stream(ctx, both, margs, &size);
+        }
+    }
+    if (midcmp)
+        idcmp = m68k_read32(ctx, midcmp);
+
+    r = EasyRequestArgs(win, &es, midcmp ? &idcmp : NULL, (RAWARG)stream);
+
+    if (midcmp)
+        m68k_write32(ctx, midcmp, idcmp);
+    if (stream)
+        FreeMem(stream, size);
+    FreeVec(both);
+    return (IPTR)(ULONG)r;
 }
 
 /* ── Graphics shadow-aware thunks ──────────────────────────────── */
@@ -3008,8 +3042,7 @@ const struct M68KThunkEntry m68kemu_thunks_intuition_manual[] = {
     { 108, thunk_intuition_DrawBorder },
     { 204, thunk_intuition_OpenWindow },
     { 348, thunk_intuition_AutoRequest },
-    { 432, thunk_intuition_RefreshGList },
-    { 438, thunk_intuition_SetWindowPointerA },
+    { 588, thunk_intuition_EasyRequestArgs },
     { 606, thunk_intuition_OpenWindowTagList },
     { 72, thunk_intuition_CloseWindow },
     { 198, thunk_intuition_OpenScreen },
