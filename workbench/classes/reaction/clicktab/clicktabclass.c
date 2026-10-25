@@ -664,6 +664,21 @@ done:
 
 /******************************************************************************/
 
+IPTR ClickTab__GM_HITTEST(Class *cl, Object *o, struct gpHitTest *msg)
+{
+    struct ClickTabData *data = INST_DATA(cl, o);
+    WORD th = data->td_TabHeight ? data->td_TabHeight : 18;
+
+    /* only the tab row: the rest of the box is the page group, whose
+       gadgets are in the window's list after us */
+    if (msg->gpht_Mouse.Y >= 0 && msg->gpht_Mouse.Y < th)
+        return GMR_GADGETHIT;
+
+    return 0;
+}
+
+/******************************************************************************/
+
 IPTR ClickTab__GM_GOACTIVE(Class *cl, Object *o, struct gpInput *msg)
 {
     D(bug("[ClickTab] GM_GOACTIVE: obj=%p\n", (void *)o));
