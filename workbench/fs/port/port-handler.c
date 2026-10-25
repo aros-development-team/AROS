@@ -104,7 +104,7 @@ static SIPTR decodeArgs(struct portBase *pb, struct portArgs *pa, BSTR args)
             continue;
 
         /* Check for matches.. */
-        if (slen >= 5 && (0 == Strnicmp(cp, "UNIT=", 5))) {
+        if (slen > 5 && (0 == Strnicmp(cp, "UNIT=", 5))) {
             CONST_STRPTR unit = cp + 5;
             int ulen = slen - 5;
             int i;
