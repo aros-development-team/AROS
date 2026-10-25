@@ -424,6 +424,11 @@ LONG port_handler(struct ExecBase *SysBase)
             break;
         case ACTION_READ:
             if ((pa = (struct portArgs *)dp->dp_Arg1)) {
+                if (dp->dp_Arg3 < 0) {
+                    dp->dp_Res1 = -1;
+                    dp->dp_Res2 = ERROR_BAD_NUMBER;
+                    break;
+                }
                 pa->pa_IO->std.io_Command = CMD_READ;
                 pa->pa_IO->std.io_Data = (APTR)dp->dp_Arg2;
                 pa->pa_IO->std.io_Length = dp->dp_Arg3;
@@ -445,6 +450,11 @@ LONG port_handler(struct ExecBase *SysBase)
             break;
         case ACTION_WRITE:
             if ((pa = (struct portArgs *)dp->dp_Arg1)) {
+                if (dp->dp_Arg3 < 0) {
+                    dp->dp_Res1 = -1;
+                    dp->dp_Res2 = ERROR_BAD_NUMBER;
+                    break;
+                }
                 if (pb.pb_Mode == PORT_PRINTER &&
                     pa->pa_Printer.pr_Type == PRT_RAW)
                     pa->pa_IO->std.io_Command = PRD_RAWWRITE;
