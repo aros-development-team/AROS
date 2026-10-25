@@ -556,6 +556,59 @@ AROS_LH2(IPTR, usbDoMethodA,
 /* \\\ */
 
 /* /// "usbCAMDOpenPort()" */
+/*****************************************************************************
+    NAME
+        APTR usbCAMDOpenPort(
+
+    SYNOPSIS
+        APTR xmitfc, APTR recvfct, APTR userdata, STRPTR idstr, ULONG port)
+
+    FUNCTION
+        Open a CAMD port in the port set identified by idstr. The adapter
+        can be opened while its USB MIDI device is disconnected.
+
+    INPUTS
+        xmitfc - Transmit callback supplied by the CAMD driver.
+        recvfct - Receive callback supplied by the CAMD driver.
+        userdata - Caller-owned context passed to these callbacks.
+        idstr - NUL-terminated CAMD driver identifier. Use a stable,
+            unique identifier of at most 31 bytes.
+        port - Port number in the identified set, from 0 through 15.
+
+    RESULT
+        Pointer to the class-owned CAMDAdapter, or NULL if port is out
+        of range or allocation of the port set or transmit buffer fails.
+        Do not free the returned adapter or its buffer.
+
+    NOTES
+        Each identifier selects a persistent set of 16 adapters. A new
+        set is allocated if the identifier is not found. Port sets and
+        their transmit buffers are released when the class is expunged,
+        not when individual ports are closed.
+
+        The 4096-byte transmit buffer is allocated on first use and
+        reused on subsequent opens. The call stores the callback pointers
+        and userdata; resets transmit indices, pending state and SysEx
+        mode; and selects the message port of a currently attached USB
+        binding, if any. It does not set ca_IsOpen or install the CAMD
+        driver's activation and interrupt handlers. The supplied CAMD
+        driver performs those steps after opening the port.
+
+        Callback code and userdata remain caller-owned. Keep them valid
+        while the port is active. Coordinate reopening and callback
+        replacement with the CAMD driver and any active USB task.
+
+    BUGS
+        Reopening an occupied port does not check for active users and
+        replaces callback state and ring indices. The implementation
+        retains the existing hook fields and SysEx data/count fields.
+        It does not reject identifiers longer than 31 bytes: stored IDs
+        are truncated, whereas later lookups compare the complete ID.
+
+    SEE ALSO
+        usbCAMDClosePort()
+
+*****************************************************************************/
 AROS_LH5(APTR, usbCAMDOpenPort,
          AROS_LHA(APTR, xmitfct, A0),
          AROS_LHA(APTR, recvfct, A1),
@@ -615,6 +668,47 @@ AROS_LH5(APTR, usbCAMDOpenPort,
 /* \\\ */
 
 /* /// "usbCAMDClosePort()" */
+/*****************************************************************************
+    NAME
+        VOID usbCAMDClosePort(
+
+    SYNOPSIS
+        ULONG port, STRPTR idstr)
+
+    FUNCTION
+        Mark a CAMD port closed in the port set identified by idstr.
+
+    INPUTS
+        port - Port number in the identified set, from 0 through 15.
+        idstr - NUL-terminated identifier used when opening the port.
+
+    RESULT
+        None.
+
+    NOTES
+        A port number outside 0 through 15 is ignored. If the specified
+        port set does not exist, this call has no effect.
+
+        For an existing port, only ca_IsOpen is cleared. The adapter,
+        transmit buffer, callback pointers, userdata, message port,
+        pending data and other state remain allocated or retained. The
+        port set persists across USB disconnection and reconnection and
+        is freed when the class is expunged.
+
+        The CAMD driver must stop using the port before closing it.
+        This function does not wait for callbacks, drain queued MIDI
+        data or stop USB tasks. Retain the class library and callback
+        lifetimes for the duration of any outstanding operations.
+
+    BUGS
+        Clearing ca_IsOpen is not synchronized with concurrent adapter
+        users. Callers must coordinate close with active transmit and
+        receive processing.
+
+    SEE ALSO
+        usbCAMDOpenPort()
+
+*****************************************************************************/
 AROS_LH2(void, usbCAMDClosePort,
          AROS_LHA(ULONG, port, D0),
          AROS_LHA(STRPTR, idstr, A1),
