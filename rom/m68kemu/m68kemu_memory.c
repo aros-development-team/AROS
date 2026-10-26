@@ -241,12 +241,18 @@ ULONG M68KEmu_LoadHunks(struct M68KEmuContext *ctx, BPTR segList)
         UBYTE *src       = (UBYTE *)baddr + sizeof(BPTR);
         ULONG m68k_addr;
 
-        m68k_addr = M68KEmu_HeapAlloc(ctx, data_size, 0);
+        /* as LoadSeg() lays it out: ULONG size, BPTR next, data - programs
+           walk their own seglist through the link before their code */
+        m68k_addr = M68KEmu_HeapAlloc(ctx, data_size + 8, MEMF_CLEAR);
         if (!m68k_addr)
         {
             FreeVec(host);
             return 0;
         }
+        m68k_write32(ctx, m68k_addr, data_size + 8);
+        if (i > 0)
+            m68k_write32(ctx, cont[i - 1] - 4, (m68k_addr + 4) >> 2);
+        m68k_addr += 8;
 
         CopyMem(src, m68k_to_host(ctx, m68k_addr), data_size);
         host[i] = src;
