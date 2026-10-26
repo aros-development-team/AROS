@@ -15,6 +15,7 @@
 
 #include <proto/intuition.h>
 #include <proto/graphics.h>
+#include <proto/diskfont.h>
 #include <graphics/text.h>
 #include <intuition/intuition.h>
 #include <intuition/screens.h>
@@ -39,6 +40,8 @@ extern const struct M68KThunkEntry m68kemu_thunks_graphics_manual[];
 extern const struct M68KThunkEntry m68kemu_thunks_gadtools_manual[];
 extern const ULONG m68kemu_thunks_gadtools_manual_count;
 extern const ULONG m68kemu_thunks_graphics_manual_count;
+extern const struct M68KThunkEntry m68kemu_thunks_diskfont_manual[];
+extern const ULONG m68kemu_thunks_diskfont_manual_count;
 
 /* ── exec.library thunks ─────────────────────────────────────────── */
 
@@ -84,6 +87,9 @@ ULONG M68KEmu_OpenLibrary(struct M68KEmuContext *ctx, const char *name)
                 manual_count = m68kemu_thunks_graphics_manual_count;            } else if (strcmp(name, "gadtools.library") == 0) {
                 manual = m68kemu_thunks_gadtools_manual;
                 manual_count = m68kemu_thunks_gadtools_manual_count;
+            } else if (strcmp(name, "diskfont.library") == 0) {
+                manual = m68kemu_thunks_diskfont_manual;
+                manual_count = m68kemu_thunks_diskfont_manual_count;
             } else if (strcmp(name, "commodities.library") == 0) {
                 manual = m68kemu_cx_manual;
                 manual_count = m68kemu_cx_manual_count;
@@ -510,15 +516,24 @@ static IPTR thunk_exec_RemPort(struct M68KEmuContext *ctx, void *cpu) { return 0
 /* -696: CreatePool(D0=requirements, D1=puddleSize, D2=threshSize) -> D0=pool */
 static IPTR thunk_exec_CreatePool(struct M68KEmuContext *ctx, void *cpu)
 {
-    /* Return a fake non-zero pool handle — we use the containment heap for everything */
-    return 0x00CAFE00;
+    /* The pool's allocations come from the containment heap; the header
+       only keeps the pool's memory flags (MEMF_CLEAR) for AllocPooled */
+    ULONG pool = M68KEmu_HeapAlloc(ctx, 8, MEMF_CLEAR);
+    if (pool)
+    {
+        m68k_write32(ctx, pool, THUNK_D(0));
+        m68k_write32(ctx, pool + 4, 0x504F4F4C);   /* 'POOL' */
+    }
+    return pool;
 }
 
 /* -708: AllocPooled(A0=poolHeader, D0=memSize) -> D0=memory */
 static IPTR thunk_exec_AllocPooled(struct M68KEmuContext *ctx, void *cpu)
 {
-    ULONG size = THUNK_D(0);
-    return (IPTR)M68KEmu_HeapAlloc(ctx, size, 0);
+    ULONG size = THUNK_D(0), pool = THUNK_A(0), reqs = 0;
+    if (pool && pool + 8 <= ctx->mem_size && m68k_read32(ctx, pool + 4) == 0x504F4F4C)
+        reqs = m68k_read32(ctx, pool);
+    return (IPTR)M68KEmu_HeapAlloc(ctx, size, reqs);
 }
 
 /* -714: FreePooled(A0=poolHeader, A1=memory, D0=memSize) */
@@ -533,14 +548,21 @@ static IPTR thunk_exec_FreePooled(struct M68KEmuContext *ctx, void *cpu)
 /* -720: DeletePool(A0=poolHeader) */
 static IPTR thunk_exec_DeletePool(struct M68KEmuContext *ctx, void *cpu)
 {
-    return 0; /* no-op — containment heap is freed when context is destroyed */
+    /* the pool's allocations stay until the context is destroyed */
+    ULONG pool = THUNK_A(0);
+    if (pool && pool + 8 <= ctx->mem_size && m68k_read32(ctx, pool + 4) == 0x504F4F4C)
+    {
+        m68k_write32(ctx, pool + 4, 0);
+        M68KEmu_HeapFree(ctx, pool, 8);
+    }
+    return 0;
 }
 
 /* -684: AllocVec(D0=byteSize, D1=requirements) -> D0=memory */
 static IPTR thunk_exec_AllocVec(struct M68KEmuContext *ctx, void *cpu)
 {
     ULONG size = THUNK_D(0);
-    return (IPTR)M68KEmu_HeapAlloc(ctx, size, 0);
+    return (IPTR)M68KEmu_HeapAlloc(ctx, size, THUNK_D(1));
 }
 
 /* -690: FreeVec(A1=memoryBlock) */
@@ -2190,6 +2212,33 @@ static IPTR thunk_intuition_AutoRequest(struct M68KEmuContext *ctx, void *cpu)
     return (IPTR)result;
 }
 
+/* intuition -426: GetScreenData(A0=buffer, D0=size, D1=type, A1=screen)
+   The program's buffer is an m68k Screen: copy the screen's shadow into it. */
+static IPTR thunk_intuition_GetScreenData_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG buf = THUNK_A(0), size = THUNK_D(0), type = THUNK_D(1), ms;
+    struct Screen *scr, *locked = NULL;
+
+    if (!buf || buf >= ctx->mem_size || !size)
+        return FALSE;
+    if (type == WBENCHSCREEN)
+        scr = locked = LockPubScreen((CONST_STRPTR)"Workbench");
+    else
+        scr = THUNK_A(1) ? (struct Screen *)shadow_lookup(ctx, THUNK_A(1)) : NULL;
+    if (!scr)
+        return FALSE;
+    ms = shadow_create_by_name(ctx, "Screen", scr);
+    if (ms)
+    {
+        if (size > M68K_SIZEOF_SCREEN) size = M68K_SIZEOF_SCREEN;
+        if (buf + size > ctx->mem_size) size = ctx->mem_size - buf;
+        memmove(ctx->mem + buf, ctx->mem + ms, size);
+    }
+    if (locked)
+        UnlockPubScreen(NULL, locked);
+    return ms ? TRUE : FALSE;
+}
+
 /* intuition -588: EasyRequestArgs(A0=window, A1=easyStruct, A2=IDCMP_ptr, A3=args)
    The arguments of TextFormat and then GadgetFormat are one m68k datastream. */
 static IPTR thunk_intuition_EasyRequestArgs(struct M68KEmuContext *ctx, void *cpu)
@@ -3325,6 +3374,7 @@ const struct M68KThunkEntry m68kemu_thunks_intuition_manual[] = {
     { 204, thunk_intuition_OpenWindow },
     { 348, thunk_intuition_AutoRequest },
     { 588, thunk_intuition_EasyRequestArgs },
+    { 426, thunk_intuition_GetScreenData_m },
     { 636, m68k_NewObjectA },
     { 642, m68k_DisposeObject },
     { 648, m68k_SetAttrsA },
@@ -3363,20 +3413,42 @@ static IPTR thunk_gfx_LoadRGB4(struct M68KEmuContext *ctx, void *cpu)
     return 0;
 }
 
-/* graphics -72: OpenFont(A1=textAttr) -> D0=font */
+/* an m68k TextAttr: ta_Name(4) ta_YSize(2) ta_Style(1) ta_Flags(1) */
+static BOOL textattr_in(struct M68KEmuContext *ctx, ULONG m68k_ta, struct TextAttr *ta)
+{
+    if (!m68k_ta || m68k_ta >= ctx->mem_size) return FALSE;
+    ta->ta_Name  = (STRPTR)m68k_to_host(ctx, m68k_read32(ctx, m68k_ta + M68K_TA_NAME));
+    ta->ta_YSize = m68k_read16(ctx, m68k_ta + M68K_TA_YSIZE);
+    ta->ta_Style = ctx->mem[m68k_ta + M68K_TA_STYLE];
+    ta->ta_Flags = ctx->mem[m68k_ta + M68K_TA_FLAGS];
+    return ta->ta_Name != NULL;
+}
+
+/* graphics -72: OpenFont(A0=textAttr) -> D0=font */
 static IPTR thunk_gfx_OpenFont(struct M68KEmuContext *ctx, void *cpu)
 {
-    ULONG m68k_ta = THUNK_A(1);
-    if (!m68k_ta) return 0;
-    /* TextAttr: ta_Name(4) ta_YSize(2) ta_Style(1) ta_Flags(1) */
     struct TextAttr ta;
-    ta.ta_Name  = (STRPTR)m68k_to_host(ctx, m68k_read32(ctx, m68k_ta + M68K_TA_NAME));
-    ta.ta_YSize = m68k_read16(ctx, m68k_ta + M68K_TA_YSIZE);
-    ta.ta_Style = ctx->mem[m68k_ta + M68K_TA_STYLE];
-    ta.ta_Flags = ctx->mem[m68k_ta + M68K_TA_FLAGS];
-    struct TextFont *font = OpenFont(&ta);
-    return (IPTR)font; /* native pointer — m68k code only passes it back to gfx calls */
+    struct TextFont *font;
+    if (!textattr_in(ctx, THUNK_A(0), &ta)) return 0;
+    font = OpenFont(&ta);
+    /* programs read tf_YSize, tf_Baseline... from the font */
+    return font ? (IPTR)shadow_create_by_name(ctx, "TextFont", font) : 0;
 }
+
+/* diskfont -30: OpenDiskFont(A0=textAttr) -> D0=font */
+static IPTR thunk_diskfont_OpenDiskFont_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct TextAttr ta;
+    struct TextFont *font;
+    if (!textattr_in(ctx, THUNK_A(0), &ta)) return 0;
+    font = OpenDiskFont(&ta);
+    return font ? (IPTR)shadow_create_by_name(ctx, "TextFont", font) : 0;
+}
+
+const struct M68KThunkEntry m68kemu_thunks_diskfont_manual[] = {
+    { 30, thunk_diskfont_OpenDiskFont_m },
+};
+const ULONG m68kemu_thunks_diskfont_manual_count = 1;
 
 /* ── Graphics manual thunks (shadow RastPort) ── */
 /* -792: GetVPModeID(A0=vp) -> D0=modeID. A ViewPort the program found through
