@@ -239,7 +239,10 @@ static inline ULONG v3d_now_us(void)
 
 /* ovl_Flags: skip the latch wait; LatchWait before reusing the old page. */
 #define VC4GFX_OVL_NOWAIT       (1 << 0)
-/* Overlay Get: a video layer holds the plane, retry later */
+/* ovl_Flags: take our plane down / wait for the commit in ovl_Armed */
+#define VC4GFX_OVL_HIDE         (1 << 3)
+#define VC4GFX_OVL_LATCHWAIT    (1 << 4)
+/* ovl_Result: the plane is held or the budget used, retry later */
 #define VC4GFX_OVL_BUSY         2
 
 /* Overlay descriptor (mirrored from vcgfx_bitmap.h, like the ids above):
@@ -254,6 +257,9 @@ struct vc4gfx_overlay
     ULONG ovl_DestW, ovl_DestH;     /* on-screen size; 0 (or == source)
                                      * = unscaled, larger = HVS upscale */
     ULONG ovl_Flags;                /* VC4GFX_OVL_* */
+    APTR  ovl_Client;               /* our key, so another client keeps its own */
+    ULONG ovl_Result;               /* out: 1 shown, VC4GFX_OVL_BUSY, 0 refused */
+    ULONG ovl_Armed;                /* out: the commit; in, with LATCHWAIT */
 };
 
 /* Per-vblank callback, interrupt context (mirrored from vcgfx_bitmap.h). */

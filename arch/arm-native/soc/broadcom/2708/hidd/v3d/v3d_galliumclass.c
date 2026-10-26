@@ -156,6 +156,7 @@ static struct
     struct v3d_bo  *freep;          /* parked spare, ring not yet full */
     struct v3d_bo  *retiring;       /* displaced last present, latch due */
     BOOL            latch_due;      /* a NOWAIT Set is still unlatched */
+    ULONG           armed;          /* the commit it waits for */
     ULONG           page_handle;    /* BO bound in rsc (render target) */
     BOOL            shown;
     struct pipe_resource *refused;  /* overlay said no (scaled desktop /
@@ -352,17 +353,46 @@ static void v3d_scan_unbind(struct v3d_resource *rsc)
     v3d_scan_release();
 }
 
+/* Hand vcgfx a descriptor under our key; it returns the outcome and
+ * the commit to wait for in it. */
+static void v3d_ovl_set(struct V3DData *sd, OOP_Object *bmobj,
+                        struct vc4gfx_overlay *desc)
+{
+    struct TagItem ovltags[] =
+    {
+        { sd->hiddVCGfxBMAB + aoVCGfxBM_Overlay, (IPTR)desc },
+        { TAG_DONE, 0 }
+    };
+
+    desc->ovl_Client = &v3d_ovl;
+    desc->ovl_Result = 0;
+    OOP_SetAttrs(bmobj, ovltags);
+}
+
 /* Retire a NOWAIT Set; normally its vblank has already passed. */
 static void v3d_ovl_latch_wait(struct V3DData *sd)
 {
-    IPTR dummy = 0;
+    struct vc4gfx_overlay desc = { 0 };
 
     if (!v3d_ovl.latch_due)
         return;
     if (v3d_ovl.bm && sd->hiddVCGfxBMAB)
-        OOP_GetAttr(v3d_ovl.bm, sd->hiddVCGfxBMAB + aoVCGfxBM_LatchWait,
-                    &dummy);
+    {
+        desc.ovl_Flags = VC4GFX_OVL_LATCHWAIT;
+        desc.ovl_Armed = v3d_ovl.armed;
+        v3d_ovl_set(sd, v3d_ovl.bm, &desc);
+    }
     v3d_ovl.latch_due = FALSE;
+}
+
+/* Take our plane down; `onplane` shows until the returned commit latches. */
+static void v3d_ovl_clear(struct V3DData *sd, OOP_Object *bmobj)
+{
+    struct vc4gfx_overlay desc = { 0 };
+
+    desc.ovl_Flags = VC4GFX_OVL_HIDE;
+    v3d_ovl_set(sd, bmobj, &desc);
+    v3d_ovl.armed = desc.ovl_Armed;
 }
 
 /* Show a BO on the HVS overlay plane at fb coords x,y. A NOWAIT Set
@@ -371,13 +401,7 @@ static ULONG v3d_show_overlay(struct V3DData *sd, OOP_Object *bmobj,
                              struct v3d_bo *bo, ULONG stride,
                              LONG x, LONG y, ULONG w, ULONG h)
 {
-    struct vc4gfx_overlay desc;
-    struct TagItem ovltags[] =
-    {
-        { sd->hiddVCGfxBMAB + aoVCGfxBM_Overlay, (IPTR)&desc },
-        { TAG_DONE, 0 }
-    };
-    IPTR active = 0;
+    struct vc4gfx_overlay desc = { 0 };
     ULONG paddr = 0;
 
     if (!bmobj || !sd->hiddVCGfxBMAB || !w || !h)
@@ -404,27 +428,22 @@ static ULONG v3d_show_overlay(struct V3DData *sd, OOP_Object *bmobj,
     desc.ovl_DestH  = 0;
     desc.ovl_Flags  = V3D_OVL_NOWAIT ? VC4GFX_OVL_NOWAIT : 0;
 
-    OOP_SetAttrs(bmobj, ovltags);
-    OOP_GetAttr(bmobj, sd->hiddVCGfxBMAB + aoVCGfxBM_Overlay, &active);
-    return (ULONG)active;
+    v3d_ovl_set(sd, bmobj, &desc);
+    if (desc.ovl_Result == 1)
+        v3d_ovl.armed = desc.ovl_Armed;
+    return desc.ovl_Result;
 }
 
 /* Hide the plane but keep the pages: obscure/reveal cycles must not
  * allocate or free BOs. */
 static void v3d_ovl_suspend(struct V3DData *sd)
 {
-    struct TagItem ovltags[] =
-    {
-        { sd->hiddVCGfxBMAB + aoVCGfxBM_Overlay, 0 },
-        { TAG_DONE, 0 }
-    };
-
     /* Clearing over an unlatched Set would leave `retiring` unretired. */
     v3d_ovl_latch_wait(sd);
 
     if (v3d_ovl.shown && v3d_ovl.bm)
     {
-        OOP_SetAttrs(v3d_ovl.bm, ovltags);
+        v3d_ovl_clear(sd, v3d_ovl.bm);
         /* `onplane` shows until the clear latches. Not waited for here
          * (obscure must stay cheap); whoever frees the pages waits. */
         v3d_ovl.latch_due = TRUE;
@@ -486,14 +505,8 @@ static void v3d_ovl_forget(void)
 /* Take down a plane nobody owns any more, through a bitmap that is alive. */
 static void v3d_ovl_hide(struct V3DData *sd, OOP_Object *bmobj)
 {
-    struct TagItem ovltags[] =
-    {
-        { sd->hiddVCGfxBMAB + aoVCGfxBM_Overlay, 0 },
-        { TAG_DONE, 0 }
-    };
-
     v3d_ovl_set_vblank(sd, bmobj, NULL);
-    OOP_SetAttrs(bmobj, ovltags);
+    v3d_ovl_clear(sd, bmobj);
     v3d_ovl.stale = FALSE;
 }
 

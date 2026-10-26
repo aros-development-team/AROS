@@ -283,6 +283,7 @@ struct vc4galliumstaticdata
     OOP_Object             *overlay_bm;
     /* Page the last set_overlay took off the plane; on scanout until vblank. */
     ULONG                   overlay_displaced_handle;
+    ULONG                   overlay_armed;  /* the commit that took it off */
     BOOL                    ovl_vbl_armed;  /* vcgfx may call the overlay's vblank callback */
 
     struct Task            *v3d_service_task;

@@ -54,9 +54,14 @@ struct vc4gfx_overlay
     LONG  ovl_X, ovl_Y;
     ULONG ovl_DestW, ovl_DestH;     /* 0/== source = unscaled */
     ULONG ovl_Flags;
+    APTR  ovl_Client;               /* our key, so another client keeps its own */
+    ULONG ovl_Result;               /* out: 1 shown, VC4GFX_OVL_BUSY, 0 refused */
+    ULONG ovl_Armed;                /* out: the commit; in, with LATCHWAIT */
 };
 #define VC4GFX_OVL_NOWAIT (1 << 0)
-#define VC4GFX_OVL_BUSY   2         /* Get: a video layer holds the plane */
+#define VC4GFX_OVL_HIDE   (1 << 3)
+#define VC4GFX_OVL_LATCHWAIT (1 << 4)
+#define VC4GFX_OVL_BUSY   2         /* ovl_Result: held or no room, retry later */
 
 /* Per-vblank callback, interrupt context (mirrored from vcgfx_bitmap.h). */
 struct vc4gfx_vblank
@@ -894,8 +899,7 @@ int vc4_aros_set_overlay(struct vc4galliumstaticdata *sd,
         { 0, (IPTR)&desc },
         { TAG_DONE, 0 }
     };
-    IPTR active = 0;
-    ULONG prev;
+    ULONG active, prev;
 
     if (!bm_obj || !sd->hiddVC4GfxBMAB || !w || !h)
         return -1;
@@ -921,6 +925,9 @@ int vc4_aros_set_overlay(struct vc4galliumstaticdata *sd,
     /* No latch wait here; submit_cl waits if a job renders into the
      * displaced page. */
     desc.ovl_Flags  = VC4GFX_OVL_NOWAIT;
+    desc.ovl_Client = sd;
+    desc.ovl_Result = 0;
+    desc.ovl_Armed  = 0;
 
     /* Pin the new buffer before showing it; the previous pin is
      * released only after the hidd confirms the switch latched. */
@@ -939,8 +946,7 @@ int vc4_aros_set_overlay(struct vc4galliumstaticdata *sd,
 
     ovltags[0].ti_Tag = sd->hiddVC4GfxBMAB + aoHidd_VideoCoreGfxBitMap_Overlay;
     OOP_SetAttrs(bm_obj, ovltags);
-    OOP_GetAttr(bm_obj,
-        sd->hiddVC4GfxBMAB + aoHidd_VideoCoreGfxBitMap_Overlay, &active);
+    active = desc.ovl_Result;
 
     {
         static ULONG _ovl_n = 0;
@@ -967,7 +973,10 @@ int vc4_aros_set_overlay(struct vc4galliumstaticdata *sd,
     /* The displaced page keeps its pin until its latch is retired; a
      * repeat of the same BO drops the duplicate pin now. */
     if (prev && prev != src_bo_handle)
+    {
         sd->overlay_displaced_handle = prev;
+        sd->overlay_armed = desc.ovl_Armed;
+    }
     else if (prev)
         vc4_aros_bo_unref_locked(sd, prev);
     ReleaseSemaphore(&sd->bo_lock);
@@ -996,20 +1005,31 @@ void vc4_aros_set_vblank(void *ctx, OOP_Object *bm_obj,
 
 void vc4_aros_overlay_latch_wait(struct vc4galliumstaticdata *sd)
 {
-    IPTR dummy = 0;
+    struct vc4gfx_overlay desc = { 0 };
+    struct TagItem ovltags[] =
+    {
+        { 0, (IPTR)&desc },
+        { TAG_DONE, 0 }
+    };
     OOP_Object *bm;
     ULONG displaced;
 
     ObtainSemaphore(&sd->bo_lock);
     bm = sd->overlay_bm;
     displaced = sd->overlay_displaced_handle;
+    desc.ovl_Armed = sd->overlay_armed;
     ReleaseSemaphore(&sd->bo_lock);
 
     if (!displaced)
         return;
 
     if (bm && sd->hiddVC4GfxBMAB)
-        OOP_GetAttr(bm, sd->hiddVC4GfxBMAB + aoHidd_VideoCoreGfxBitMap_LatchWait, &dummy);
+    {
+        desc.ovl_Flags  = VC4GFX_OVL_LATCHWAIT;
+        desc.ovl_Client = sd;
+        ovltags[0].ti_Tag = sd->hiddVC4GfxBMAB + aoHidd_VideoCoreGfxBitMap_Overlay;
+        OOP_SetAttrs(bm, ovltags);
+    }
 
     ObtainSemaphore(&sd->bo_lock);
     if (sd->overlay_displaced_handle == displaced)
@@ -1023,15 +1043,18 @@ void vc4_aros_overlay_latch_wait(struct vc4galliumstaticdata *sd)
 void vc4_aros_clear_overlay(struct vc4galliumstaticdata *sd,
                             OOP_Object *bm_obj)
 {
+    struct vc4gfx_overlay desc = { 0 };
     struct TagItem ovltags[] =
     {
-        { 0, 0 },       /* NULL descriptor = remove */
+        { 0, (IPTR)&desc },
         { TAG_DONE, 0 }
     };
     OOP_Object *target = bm_obj ? bm_obj : sd->overlay_bm;
 
     if (target && sd->hiddVC4GfxBMAB)
     {
+        desc.ovl_Flags  = VC4GFX_OVL_HIDE;
+        desc.ovl_Client = sd;
         ovltags[0].ti_Tag = sd->hiddVC4GfxBMAB + aoHidd_VideoCoreGfxBitMap_Overlay;
         OOP_SetAttrs(target, ovltags);
     }
