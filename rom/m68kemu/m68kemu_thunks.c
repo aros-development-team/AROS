@@ -9,6 +9,8 @@
 #include <aros/debug.h>
 #include <proto/exec.h>
 #include <proto/locale.h>
+#include <proto/utility.h>
+#include <utility/date.h>
 #include <graphics/gfxbase.h>
 #include <dos/datetime.h>
 #include <dos/filehandler.h>
@@ -48,6 +50,8 @@ extern const ULONG m68kemu_thunks_graphics_manual_count;
 extern const struct M68KThunkEntry m68kemu_thunks_diskfont_manual[];
 extern const ULONG m68kemu_thunks_diskfont_manual_count;
 extern const struct M68KThunkEntry m68kemu_thunks_locale_manual[];
+extern const struct M68KThunkEntry m68kemu_thunks_utility_manual[];
+extern const ULONG m68kemu_thunks_utility_manual_count;
 extern const ULONG m68kemu_thunks_locale_manual_count;
 
 /* ── exec.library thunks ─────────────────────────────────────────── */
@@ -65,6 +69,12 @@ IPTR m68k_DoGadgetMethodA(struct M68KEmuContext *ctx, void *cpu);
 static IPTR thunk_exec_Allocate_m(struct M68KEmuContext *ctx, void *cpu);
 static IPTR thunk_exec_CacheControl_m(struct M68KEmuContext *ctx, void *cpu);
 static IPTR thunk_exec_AllocAbs_m(struct M68KEmuContext *ctx, void *cpu);
+static IPTR thunk_exec_AllocEntry_m(struct M68KEmuContext *ctx, void *cpu);
+static IPTR thunk_dos_StrToLong_m(struct M68KEmuContext *ctx, void *cpu);
+static IPTR thunk_intuition_CurrentTime_m(struct M68KEmuContext *ctx, void *cpu);
+static IPTR thunk_intuition_DrawImageState_m(struct M68KEmuContext *ctx, void *cpu);
+static IPTR thunk_intuition_QueryOverscan_m(struct M68KEmuContext *ctx, void *cpu);
+static IPTR thunk_exec_FreeEntry_m(struct M68KEmuContext *ctx, void *cpu);
 static IPTR thunk_exec_Deallocate_m(struct M68KEmuContext *ctx, void *cpu);
 
 /* Open a library by name and return its fake base (no cpu needed) */
@@ -102,6 +112,9 @@ ULONG M68KEmu_OpenLibrary(struct M68KEmuContext *ctx, const char *name)
             } else if (strcmp(name, "diskfont.library") == 0) {
                 manual = m68kemu_thunks_diskfont_manual;
                 manual_count = m68kemu_thunks_diskfont_manual_count;
+            } else if (strcmp(name, "utility.library") == 0) {
+                manual = m68kemu_thunks_utility_manual;
+                manual_count = m68kemu_thunks_utility_manual_count;
             } else if (strcmp(name, "locale.library") == 0) {
                 manual = m68kemu_thunks_locale_manual;
                 manual_count = m68kemu_thunks_locale_manual_count;
@@ -1353,6 +1366,8 @@ const struct M68KThunkEntry m68kemu_thunks_exec[] = {
     { 690, thunk_exec_FreeVec },
     { 216, thunk_exec_AvailMem },
     { 186, thunk_exec_Allocate_m },
+    { 222, thunk_exec_AllocEntry_m },
+    { 228, thunk_exec_FreeEntry_m },
     { 648, thunk_exec_CacheControl_m },
     { 204, thunk_exec_AllocAbs_m },
     { 192, thunk_exec_Deallocate_m },
@@ -2286,6 +2301,7 @@ static IPTR thunk_dos_StrToDate_m(struct M68KEmuContext *ctx, void *cpu)
 
 const struct M68KThunkEntry m68kemu_thunks_dos[] = {
     { 192, thunk_dos_DateStamp_m },
+    { 816, thunk_dos_StrToLong_m },
     { 738, thunk_dos_CompareDates_m },
     { 396, thunk_dos_SetFileDate_m },
     { 390, thunk_dos_ExamineFH_m },
@@ -3859,6 +3875,9 @@ const struct M68KThunkEntry m68kemu_thunks_gadtools_manual[] = {
 const ULONG m68kemu_thunks_gadtools_manual_count = 6;
 
 const struct M68KThunkEntry m68kemu_thunks_intuition_manual[] = {
+    { 84,  thunk_intuition_CurrentTime_m },
+    { 618, thunk_intuition_DrawImageState_m },
+    { 474, thunk_intuition_QueryOverscan_m },
     { 264, thunk_intuition_SetMenuStrip_t },
     { 702, thunk_intuition_SetMenuStrip_t },
     { 54,  thunk_intuition_ClearMenuStrip_t },
@@ -4120,6 +4139,228 @@ static IPTR thunk_gfx_AllocBitMap_m(struct M68KEmuContext *ctx, void *cpu)
 
     return (IPTR)AllocBitMap(THUNK_D(0), THUNK_D(1), THUNK_D(2), THUNK_D(3), friend);
 }
+
+/* ── calls whose arguments point at small structures or arrays in the
+   program's memory, which native code would read or write in host order ── */
+
+/* intuition -84: CurrentTime(A0=seconds, A1=micros) */
+static IPTR thunk_intuition_CurrentTime_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG secs = 0, micros = 0;
+
+    CurrentTime(&secs, &micros);
+    if (THUNK_A(0)) m68k_write32(ctx, THUNK_A(0), secs);
+    if (THUNK_A(1)) m68k_write32(ctx, THUNK_A(1), micros);
+    return 0;
+}
+
+/* intuition -618: DrawImageState(A0=rp, A1=image, D0=left, D1=top, D2=state, A2=drawinfo) */
+static IPTR thunk_intuition_DrawImageState_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct RastPort *rp = resolve_rp(ctx, THUNK_A(0));
+    struct DrawInfo *dri = THUNK_A(2) ? (struct DrawInfo *)shadow_lookup(ctx, THUNK_A(2)) : NULL;
+    struct Image *im;
+
+    if (!rp || !THUNK_A(1))
+        return 0;
+    if ((im = shadow_lookup(ctx, THUNK_A(1))))
+        DrawImageState(rp, im, (LONG)THUNK_D(0), (LONG)THUNK_D(1), THUNK_D(2), dri);
+    else if ((im = image_from_m68k(ctx, THUNK_A(1), 64)))
+    {
+        DrawImageState(rp, im, (LONG)THUNK_D(0), (LONG)THUNK_D(1), THUNK_D(2), dri);
+        image_free(im);
+    }
+    return 0;
+}
+
+/* intuition -474: QueryOverscan(A0=displayID, A1=rect, D0=oScanType) */
+static IPTR thunk_intuition_QueryOverscan_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct Rectangle r;
+    LONG ok;
+
+    memset(&r, 0, sizeof(r));
+    ok = QueryOverscan(THUNK_A(0), &r, (WORD)THUNK_D(0));
+    if (ok && THUNK_A(1))
+    {
+        m68k_write16(ctx, THUNK_A(1),     r.MinX);
+        m68k_write16(ctx, THUNK_A(1) + 2, r.MinY);
+        m68k_write16(ctx, THUNK_A(1) + 4, r.MaxX);
+        m68k_write16(ctx, THUNK_A(1) + 6, r.MaxY);
+    }
+    return ok;
+}
+
+/* dos -816: StrToLong(D1=string, D2=value) */
+static IPTR thunk_dos_StrToLong_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    CONST_STRPTR str = (CONST_STRPTR)m68k_to_host(ctx, THUNK_D(1));
+    LONG v = 0, n;
+
+    if (!str)
+        return (IPTR)-1;
+    n = StrToLong(str, &v);
+    if (n >= 0 && THUNK_D(2))
+        m68k_write32(ctx, THUNK_D(2), v);
+    return (IPTR)n;
+}
+
+/* utility: struct ClockData is seven words, sec min hour mday month year wday */
+static void clockdata_in(struct M68KEmuContext *ctx, ULONG m, struct ClockData *cd)
+{
+    cd->sec   = m68k_read16(ctx, m);
+    cd->min   = m68k_read16(ctx, m + 2);
+    cd->hour  = m68k_read16(ctx, m + 4);
+    cd->mday  = m68k_read16(ctx, m + 6);
+    cd->month = m68k_read16(ctx, m + 8);
+    cd->year  = m68k_read16(ctx, m + 10);
+    cd->wday  = m68k_read16(ctx, m + 12);
+}
+
+/* utility -120: Amiga2Date(D0=seconds, A0=result) */
+static IPTR thunk_utility_Amiga2Date_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct ClockData cd;
+    ULONG m = THUNK_A(0);
+
+    if (!m)
+        return 0;
+    Amiga2Date(THUNK_D(0), &cd);
+    m68k_write16(ctx, m,      cd.sec);
+    m68k_write16(ctx, m + 2,  cd.min);
+    m68k_write16(ctx, m + 4,  cd.hour);
+    m68k_write16(ctx, m + 6,  cd.mday);
+    m68k_write16(ctx, m + 8,  cd.month);
+    m68k_write16(ctx, m + 10, cd.year);
+    m68k_write16(ctx, m + 12, cd.wday);
+    return 0;
+}
+
+/* utility -126: Date2Amiga(A0=date) / -132: CheckDate(A0=date) */
+static IPTR thunk_utility_Date2Amiga_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct ClockData cd;
+
+    if (!THUNK_A(0))
+        return 0;
+    clockdata_in(ctx, THUNK_A(0), &cd);
+    return Date2Amiga(&cd);
+}
+
+static IPTR thunk_utility_CheckDate_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct ClockData cd;
+
+    if (!THUNK_A(0))
+        return 0;
+    clockdata_in(ctx, THUNK_A(0), &cd);
+    return CheckDate(&cd);
+}
+
+/* graphics -336: PolyDraw(A1=rp, D0=count, A0=array of x,y words) */
+static IPTR thunk_gfx_PolyDraw_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct RastPort *rp = resolve_rp(ctx, THUNK_A(1));
+    LONG n = (WORD)THUNK_D(0), i;
+    ULONG a = THUNK_A(0);
+    WORD *xy;
+
+    if (!rp || !a || n <= 0 || !(xy = AllocMem(n * 4, MEMF_ANY)))
+        return 0;
+    for (i = 0; i < n * 2; i++)
+        xy[i] = (WORD)m68k_read16(ctx, a + i * 2);
+    PolyDraw(rp, n, xy);
+    FreeMem(xy, n * 4);
+    rp_state_out(ctx, THUNK_A(1), rp, FALSE);
+    return 0;
+}
+
+/* graphics -510/-504/-522/-558: Or/And/Clear/XorRectRegion(A0=region, A1=rect) */
+static BOOL rect_in(struct M68KEmuContext *ctx, ULONG m, struct Rectangle *r)
+{
+    if (!m)
+        return FALSE;
+    r->MinX = (WORD)m68k_read16(ctx, m);
+    r->MinY = (WORD)m68k_read16(ctx, m + 2);
+    r->MaxX = (WORD)m68k_read16(ctx, m + 4);
+    r->MaxY = (WORD)m68k_read16(ctx, m + 6);
+    return TRUE;
+}
+
+#define RECT_REGION_THUNK(name) \
+static IPTR thunk_gfx_##name##_m(struct M68KEmuContext *ctx, void *cpu) \
+{ \
+    struct Region *rg = (struct Region *)m68k_to_host_or_shadow(ctx, THUNK_A(0)); \
+    struct Rectangle r; \
+    if (!rg || !rect_in(ctx, THUNK_A(1), &r)) \
+        return 0; \
+    return (IPTR)name(rg, &r); \
+}
+RECT_REGION_THUNK(OrRectRegion)
+RECT_REGION_THUNK(XorRectRegion)
+RECT_REGION_THUNK(ClearRectRegion)
+
+static IPTR thunk_gfx_AndRectRegion_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct Region *rg = (struct Region *)m68k_to_host_or_shadow(ctx, THUNK_A(0));
+    struct Rectangle r;
+
+    if (rg && rect_in(ctx, THUNK_A(1), &r))
+        AndRectRegion(rg, &r);
+    return 0;
+}
+
+/* exec -222: AllocEntry(A0=memList): a copy of the list with each entry
+   allocated, or the failing requirements with bit 31 set.
+   MemList: Node (14), ml_NumEntries (word), then {reqs/addr, length} pairs */
+static IPTR thunk_exec_AllocEntry_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG ml = THUNK_A(0), n, i, copy, size;
+
+    if (!ml)
+        return 0x80000000;
+    n = m68k_read16(ctx, ml + 14);
+    size = 16 + n * 8;
+    if (!(copy = M68KEmu_HeapAlloc(ctx, size, MEMF_CLEAR)))
+        return 0x80000000 | MEMF_PUBLIC;
+    memcpy(ctx->mem + copy, ctx->mem + ml, size);
+    for (i = 0; i < n; i++)
+    {
+        ULONG e = copy + 16 + i * 8, reqs = m68k_read32(ctx, e), len = m68k_read32(ctx, e + 4);
+        ULONG a = len ? M68KEmu_HeapAlloc(ctx, len, reqs) : 0;
+
+        if (len && !a)
+        {
+            while (i-- > 0)
+                M68KEmu_HeapFree(ctx, m68k_read32(ctx, copy + 16 + i * 8), 0);
+            M68KEmu_HeapFree(ctx, copy, size);
+            return 0x80000000 | reqs;
+        }
+        m68k_write32(ctx, e, a);
+    }
+    return copy;
+}
+
+/* exec -228: FreeEntry(A0=memList) */
+static IPTR thunk_exec_FreeEntry_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG ml = THUNK_A(0), n, i;
+
+    if (!ml)
+        return 0;
+    n = m68k_read16(ctx, ml + 14);
+    for (i = 0; i < n; i++)
+        M68KEmu_HeapFree(ctx, m68k_read32(ctx, ml + 16 + i * 8), 0);
+    M68KEmu_HeapFree(ctx, ml, 0);
+    return 0;
+}
+
+const struct M68KThunkEntry m68kemu_thunks_utility_manual[] = {
+    { 120, thunk_utility_Amiga2Date_m },
+    { 126, thunk_utility_Date2Amiga_m },
+    { 132, thunk_utility_CheckDate_m },
+};
+const ULONG m68kemu_thunks_utility_manual_count = 3;
 
 /* -900: GetRGB32(A0=cm, D0=first, D1=ncolors, A1=table): the table is m68k longs */
 static IPTR thunk_gfx_GetRGB32(struct M68KEmuContext *ctx, void *cpu)
@@ -4594,6 +4835,11 @@ const struct M68KThunkEntry m68kemu_thunks_graphics_manual[] = {
     { 192, thunk_gfx_LoadRGB4 },
     { 900, thunk_gfx_GetRGB32 },
     { 960, thunk_gfx_GetBitMapAttr_m },
+    { 336, thunk_gfx_PolyDraw_m },
+    { 510, thunk_gfx_OrRectRegion_m },
+    { 504, thunk_gfx_AndRectRegion_m },
+    { 522, thunk_gfx_ClearRectRegion_m },
+    { 558, thunk_gfx_XorRectRegion_m },
     { 552, thunk_gfx_ClipBlit_m },
     { 198, thunk_gfx_InitRastPort_m },
     { 390, thunk_gfx_InitBitMap_m },
