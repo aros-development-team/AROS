@@ -1186,6 +1186,32 @@ diff -ruN mesa-26.2.5/src/util/u_endian.h mesa-26.2.5.aros/src/util/u_endian.h
  #elif defined(_WIN32) || defined(__ANDROID__)
  
  #define UTIL_ARCH_LITTLE_ENDIAN 1
+diff -ruN mesa-26.2.5/src/util/u_math.c mesa-26.2.5.aros/src/util/u_math.c
+--- mesa-26.2.5/src/util/u_math.c	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/util/u_math.c	2026-10-26 13:40:12.542627708 +0100
+@@ -86,7 +86,11 @@
+       fpstate = _mm_getcsr();
+    }
+ #endif
+-#if DETECT_ARCH_ARM
++/* vmrs/vmsr are VFP instructions: a target built without hardware FP
++ * (-mfloat-abi=soft, or -march=...+nofp) cannot assemble them, and
++ * has_neon is false there in any case.
++ */
++#if DETECT_ARCH_ARM && defined(__ARM_FP)
+    if (util_get_cpu_caps()->has_neon) {
+ #ifdef HAVE___BUILTIN_ARM_GET_FPSCR
+       fpstate = __builtin_arm_get_fpscr();
+@@ -153,7 +157,8 @@
+       _mm_setcsr(fpstate);
+    }
+ #endif
+-#if DETECT_ARCH_ARM
++/* VFP instructions, as in util_fpstate_get() */
++#if DETECT_ARCH_ARM && defined(__ARM_FP)
+    if (util_get_cpu_caps()->has_neon) {
+ #ifdef HAVE___BUILTIN_ARM_SET_FPSCR
+       __builtin_arm_set_fpscr(fpstate);
 diff -ruN mesa-26.2.5/src/util/u_thread.h mesa-26.2.5.aros/src/util/u_thread.h
 --- mesa-26.2.5/src/util/u_thread.h	2026-10-14 16:12:24.000000000 +0100
 +++ mesa-26.2.5.aros/src/util/u_thread.h	2026-10-24 22:32:44.543758407 +0100
