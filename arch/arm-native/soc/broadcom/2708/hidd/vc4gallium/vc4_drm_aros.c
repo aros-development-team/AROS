@@ -341,7 +341,8 @@ static void gpu_mem_report(struct vc4galliumstaticdata *sd, ULONG failed_size)
  * kernel never frees the table page a 4K-aligned edge would need. */
 #define VC4_BLOCK       (2 << 20)
 #define VC4_BLOCK_MASK  (VC4_BLOCK - 1)
-#define VC4_PAGE_MASK   4095
+#define VC4_PAGE        4096
+#define VC4_PAGE_MASK   (VC4_PAGE - 1)
 
 /* GPU_BUS_ADDR's 0xC0000000 alias only reaches the first 1GB. */
 #define VC4_PA_LIMIT    0x40000000ULL
@@ -515,7 +516,7 @@ static APTR gpu_mem_alloc(struct vc4galliumstaticdata *sd, ULONG size, ULONG ali
 
 #if VC4_ARM_MEM
     /* Arena chunks are page aligned and no finer: refuse a wider align. */
-    if (align > 4096)
+    if (align > VC4_PAGE)
         return NULL;
     return arm_mem_alloc(sd, size, flags, out_handle);
 #endif

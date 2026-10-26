@@ -175,14 +175,16 @@ static void gpu_mem_report(struct V3DData *sd, ULONG failed_size)
 }
 
 /* The returned handle IS the address (identity-mapped arena). Only 4K
- * alignment is honoured, which is all any caller asks for. */
+ * alignment is honoured, which is all any caller asks for; a wider one
+ * is refused. */
 ULONG v3d_gpu_mem_alloc(struct V3DData *sd, ULONG size, ULONG align,
                         ULONG *out_paddr)
 {
     struct V3DArena *a;
     APTR mem = NULL;
 
-    (void)align;
+    if (align > V3D_PAGE)
+        return 0;
     size = (size + V3D_PAGE_MASK) & ~(ULONG)V3D_PAGE_MASK;
 
     ObtainSemaphore(&sd->bo_lock);
