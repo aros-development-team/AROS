@@ -1286,6 +1286,10 @@ LONG CONMain(struct ExecBase *SysBase)
                     break;
                 case ACTION_READ:
                     DACTION(bug("[con:handler] ACTION_READ\n"));
+                    if (dp->dp_Arg3 < 0) {
+                        replypkt2(dp, -1, ERROR_BAD_NUMBER);
+                        break;
+                    }
                     if (dp->dp_Arg3 == 0) {
                         replypkt2(dp, 0, 0);
                         break;
@@ -1310,6 +1314,10 @@ LONG CONMain(struct ExecBase *SysBase)
                     break;
                 case ACTION_WRITE:
                     DACTION(bug("[con:handler] ACTION_WRITE\n"));
+                    if (dp->dp_Arg3 < 0) {
+                        replypkt2(dp, -1, ERROR_BAD_NUMBER);
+                        break;
+                    }
                     if (dp->dp_Arg3 == 0) {
                         replypkt2(dp, 0, 0);
                         break;
