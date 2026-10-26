@@ -420,7 +420,7 @@ static LONG MakeConWindow(struct filehandle *fh)
              { NM_ITEM,  "Paste",       "v",    0, 0, (APTR)MEN_CONSOLE_PASTE   },
             { NM_END                                                            }
         };
-        if ((fh->winmenu = CreateMenusA(newconmenu, menu_tags))) {
+        if (fh->gtbase && (fh->winmenu = CreateMenusA(newconmenu, menu_tags))) {
             APTR vi = GetVisualInfoA(fh->window->WScreen, NULL);
             if (vi) {
                 if (LayoutMenusA(fh->winmenu, vi, menu_tags)) {
