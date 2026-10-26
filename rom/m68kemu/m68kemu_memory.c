@@ -100,6 +100,8 @@ ULONG M68KEmu_HeapAlloc(struct M68KEmuContext *ctx, ULONG size, ULONG requiremen
                 /* Split: keep remainder as free, allocate from end */
                 m68k_write32(ctx, cur, remainder);
                 m68k_write32(ctx, cur + remainder, needed);
+                if (requirements & MEMF_CLEAR)
+                    memset(ctx->mem + cur + remainder + M68KEMU_HEAP_HDR, 0, size);
                 return cur + remainder + M68KEMU_HEAP_HDR;
             }
             else
@@ -111,6 +113,8 @@ ULONG M68KEmu_HeapAlloc(struct M68KEmuContext *ctx, ULONG size, ULONG requiremen
                 else
                     ctx->heap_free = blk_next;
                 m68k_write32(ctx, cur, needed);
+                if (requirements & MEMF_CLEAR)
+                    memset(ctx->mem + cur + M68KEMU_HEAP_HDR, 0, needed - M68KEMU_HEAP_HDR);
                 return cur + M68KEMU_HEAP_HDR;
             }
         }
