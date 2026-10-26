@@ -397,6 +397,8 @@ void do_write(struct filehandle *fh, APTR data, ULONG length)
     fh->conwriteio.io_Command = CMD_WRITE;
     fh->conwriteio.io_Data = data;
     fh->conwriteio.io_Length = length;
+    fh->conwriteio.io_Actual = 0;
+    fh->conwriteio.io_Error = 0;
 
     DoIO((struct IORequest *) &fh->conwriteio);
 }
@@ -1236,7 +1238,19 @@ BOOL answer_write_request(struct filehandle *fh, struct DosPacket *dp)
     }
 
     do_write(fh, buffer, length);
-    replypkt2(dp, length, 0);
+    if (fh->conwriteio.io_Error)
+        /* DOS has no general device-write error code. */
+        replypkt2(dp, -1, ERROR_WRITE_PROTECTED);
+    else if (fh->conwriteio.io_Actual)
+        replypkt2(dp, fh->conwriteio.io_Actual, 0);
+    else if (fh->flags & FHFLG_DEVICEMODE)
+        /* Some plain devices, including parallel.device, leave io_Actual
+         * zero on success. Preserve their existing all-or-error behavior. */
+        replypkt2(dp, length, 0);
+    else
+        /* A nonempty console write must make progress. Returning zero can
+         * leave DOS buffered output retrying the same write forever. */
+        replypkt2(dp, -1, ERROR_WRITE_PROTECTED);
 
     return TRUE;
 }
