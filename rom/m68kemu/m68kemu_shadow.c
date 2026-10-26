@@ -258,6 +258,54 @@ static void m68k_drawinfo_extras(struct M68KEmuContext *ctx, ULONG md, struct Dr
     m68k_write32(ctx, md + 8, dri->dri_Font ? shadow_create_by_name(ctx, "TextFont", dri->dri_Font) : 0);
 }
 
+/* A program that draws text itself reads the glyphs: tf_CharData (bitplane
+   bytes, tf_Modulo per row), tf_CharLoc (offset << 16 | width per char),
+   tf_CharSpace and tf_CharKern (words), for LoChar..HiChar plus the
+   not-a-char glyph. Copy them into m68k memory once per font. */
+#define SHADOW_GLYPHS 13
+
+static void m68k_textfont_extras(struct M68KEmuContext *ctx, ULONG mf, struct TextFont *tf)
+{
+    ULONG count, i, blk = 0, loc, space, kern, data, size;
+
+    if (!tf->tf_CharLoc || tf->tf_HiChar < tf->tf_LoChar)
+        return;
+    count = (ULONG)tf->tf_HiChar - tf->tf_LoChar + 2;
+    loc   = 0;
+    space = loc + count * 4;
+    kern  = space + count * 2;
+    data  = kern + count * 2;
+    size  = data + (tf->tf_CharData && tf->tf_Modulo > 0 ? (ULONG)tf->tf_Modulo * tf->tf_YSize : 0);
+
+    for (UWORD j = 0; j < ctx->num_shadows; j++)
+        if (ctx->shadow_map[j].native_ptr == tf->tf_CharLoc && ctx->shadow_map[j].type == SHADOW_GLYPHS)
+            { blk = ctx->shadow_map[j].m68k_addr; break; }
+    if (!blk)
+    {
+        if (!(blk = M68KEmu_HeapAlloc(ctx, size, MEMF_CLEAR)))
+            return;
+        if (!shadow_register(ctx, blk, tf->tf_CharLoc, SHADOW_GLYPHS))
+        {
+            M68KEmu_HeapFree(ctx, blk, size);
+            return;
+        }
+        for (i = 0; i < count; i++)
+        {
+            m68k_write32(ctx, blk + loc + i * 4, ((ULONG *)tf->tf_CharLoc)[i]);
+            if (tf->tf_CharSpace)
+                m68k_write16(ctx, blk + space + i * 2, ((WORD *)tf->tf_CharSpace)[i]);
+            if (tf->tf_CharKern)
+                m68k_write16(ctx, blk + kern + i * 2, ((WORD *)tf->tf_CharKern)[i]);
+        }
+        if (size > data)
+            memcpy(ctx->mem + blk + data, tf->tf_CharData, size - data);
+    }
+    m68k_write32(ctx, mf + 34, size > data ? blk + data : 0);
+    m68k_write32(ctx, mf + 40, blk + loc);
+    m68k_write32(ctx, mf + 44, tf->tf_CharSpace ? blk + space : 0);
+    m68k_write32(ctx, mf + 48, tf->tf_CharKern ? blk + kern : 0);
+}
+
 /* One shadow per native structure: a program that asks again (every
    LockPubScreen) gets the same one, brought up to date. */
 ULONG shadow_create(struct M68KEmuContext *ctx,
@@ -298,6 +346,8 @@ ULONG shadow_create(struct M68KEmuContext *ctx,
         m68k_screen_extras(ctx, m, (struct Screen *)native);
     else if (!strcmp(layout->name, "DrawInfo"))
         m68k_drawinfo_extras(ctx, m, (struct DrawInfo *)native);
+    else if (!strcmp(layout->name, "TextFont"))
+        m68k_textfont_extras(ctx, m, (struct TextFont *)native);
     return m;
 }
 
