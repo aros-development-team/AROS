@@ -3304,7 +3304,112 @@ static IPTR thunk_graphics_GetVPModeID_checked(struct M68KEmuContext *ctx, void 
     return (IPTR)GetVPModeID(vp);
 }
 
+/* Area fills: the program's AreaInfo and TmpRas are m68k structures it
+   hangs on its own RastPort. They get native twins (InitArea/InitTmpRas),
+   and the twins are put on the native RastPort before each area call. */
+static APTR gfx_own(struct M68KEmuContext *ctx, ULONG size)
+{
+    APTR p = AllocVec(size, MEMF_CLEAR);
+    for (int i = 0; p && i < 32; i++)
+        if (!ctx->gfx_owned[i]) { ctx->gfx_owned[i] = p; return p; }
+    FreeVec(p);
+    return NULL;
+}
+
+static struct RastPort *area_rp(struct M68KEmuContext *ctx, ULONG mrp)
+{
+    struct RastPort *rp = resolve_rp(ctx, mrp);
+    if (rp && mrp && mrp < ctx->mem_size)
+    {
+        struct AreaInfo *ai = shadow_lookup(ctx, m68k_read32(ctx, mrp + M68K_RP_AREAINFO));
+        struct TmpRas *tr = shadow_lookup(ctx, m68k_read32(ctx, mrp + M68K_RP_TMPRAS));
+        if (ai) rp->AreaInfo = ai;
+        if (tr) rp->TmpRas = tr;
+    }
+    return rp;
+}
+
+/* -282: InitArea(A0=areaInfo, A1=buffer, D0=maxVectors) */
+static IPTR thunk_gfx_InitArea_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG mai = THUNK_A(0);
+    WORD n = (WORD)THUNK_D(0);
+    struct AreaInfo *ai = shadow_lookup(ctx, mai);
+    APTR buf;
+    if (!mai || n <= 0) return 0;
+    if (!ai)
+    {
+        if (!(ai = gfx_own(ctx, sizeof(*ai)))) return 0;
+        shadow_register(ctx, mai, ai, 40);
+    }
+    if ((buf = gfx_own(ctx, n * 5 + 16)))
+        InitArea(ai, buf, n);
+    return 0;
+}
+
+/* -468: InitTmpRas(A0=tmpRas, A1=buffer, D0=size) -> D0=tmpRas */
+static IPTR thunk_gfx_InitTmpRas_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG mtr = THUNK_A(0);
+    struct TmpRas *tr = shadow_lookup(ctx, mtr);
+    if (!mtr) return 0;
+    if (!tr)
+    {
+        if (!(tr = gfx_own(ctx, sizeof(*tr)))) return 0;
+        shadow_register(ctx, mtr, tr, 41);
+    }
+    InitTmpRas(tr, THUNK_PTR(1), THUNK_D(0));
+    return mtr;
+}
+
+/* -186: AreaEllipse(A1=rp, D0=cx, D1=cy, D2=a, D3=b) */
+static IPTR thunk_gfx_AreaEllipse_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct RastPort *rp = area_rp(ctx, THUNK_A(1));
+    if (!rp) return (IPTR)-1;
+    return (IPTR)(ULONG)AreaEllipse(rp, (WORD)THUNK_D(0), (WORD)THUNK_D(1), (WORD)THUNK_D(2), (WORD)THUNK_D(3));
+}
+
+/* -252: AreaMove(A1=rp, D0=x, D1=y) */
+static IPTR thunk_gfx_AreaMove_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct RastPort *rp = area_rp(ctx, THUNK_A(1));
+    if (!rp) return (IPTR)-1;
+    return (IPTR)(ULONG)AreaMove(rp, (WORD)THUNK_D(0), (WORD)THUNK_D(1));
+}
+
+/* -258: AreaDraw(A1=rp, D0=x, D1=y) */
+static IPTR thunk_gfx_AreaDraw_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct RastPort *rp = area_rp(ctx, THUNK_A(1));
+    if (!rp) return (IPTR)-1;
+    return (IPTR)(ULONG)AreaDraw(rp, (WORD)THUNK_D(0), (WORD)THUNK_D(1));
+}
+
+/* -264: AreaEnd(A1=rp) */
+static IPTR thunk_gfx_AreaEnd_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct RastPort *rp = area_rp(ctx, THUNK_A(1));
+    if (!rp) return (IPTR)-1;
+    return (IPTR)(ULONG)AreaEnd(rp);
+}
+
+/* -330: Flood(A1=rp, D2=mode, D0=x, D1=y) */
+static IPTR thunk_gfx_Flood_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct RastPort *rp = area_rp(ctx, THUNK_A(1));
+    if (!rp) return 0;
+    return (IPTR)Flood(rp, THUNK_D(2), (WORD)THUNK_D(0), (WORD)THUNK_D(1));
+}
+
 const struct M68KThunkEntry m68kemu_thunks_graphics_manual[] = {
+    { 282, thunk_gfx_InitArea_m },
+    { 468, thunk_gfx_InitTmpRas_m },
+    { 186, thunk_gfx_AreaEllipse_m },
+    { 252, thunk_gfx_AreaMove_m },
+    { 258, thunk_gfx_AreaDraw_m },
+    { 264, thunk_gfx_AreaEnd_m },
+    { 330, thunk_gfx_Flood_m },
     { 792, thunk_graphics_GetVPModeID_checked },
     { 726, thunk_graphics_FindDisplayInfo_h },
     { 756, thunk_graphics_GetDisplayInfoData_m },

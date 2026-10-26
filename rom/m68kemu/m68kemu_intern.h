@@ -122,6 +122,7 @@ struct M68KEmuContext
     #define M68KEMU_MAX_BCLASSES 64
     #define M68KEMU_MAX_BLISTS   64
     #define M68KEMU_MAX_CLIBS    32
+    APTR    gfx_owned[32];         /* native AreaInfo/TmpRas and buffers of the program's */
     ULONG   boopsi_base;           /* pseudo library: vector -30 dispatches methods */
     ULONG   boopsi_logged;
     ULONG   bclasses[M68KEMU_MAX_BCLASSES];
