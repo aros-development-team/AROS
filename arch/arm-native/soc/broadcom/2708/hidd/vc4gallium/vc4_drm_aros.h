@@ -23,6 +23,7 @@ struct vc4_aros_fd
 {
     ULONG                       magic;      /* VC4_AROS_FD_MAGIC */
     struct vc4galliumstaticdata  *sd;
+    ULONG                       sid;        /* session, 0 = none */
 };
 
 #define VC4_AROS_FD_MAGIC   0x56433444  /* "VC4D" */
@@ -182,8 +183,8 @@ struct drm_gem_close {
 };
 
 /* Layout matches struct drm_gem_open (u32 name/handle, u64 size).
- * Used by Mesa's vc4_bo_open_name() to wrap the scanout pages announced
- * by the bridge's get_scanout entry: `name` is the page's physical
+ * Used by Mesa's vc4_bo_open_name() to wrap the scan-out bitmap buffers
+ * ResourceFromBitMap published: `name` is the buffer's physical
  * address. */
 struct drm_gem_open {
     ULONG name;
@@ -233,5 +234,8 @@ void vc4_aros_bo_unref_locked(struct vc4galliumstaticdata *sd, ULONG handle);
  * Called from Expunge.
  */
 void vc4_aros_release_all_bos(struct vc4galliumstaticdata *sd);
+
+/* Free the BOs one session created. */
+void vc4_aros_release_session(struct vc4galliumstaticdata *sd, ULONG sid);
 
 #endif /* _VC4_DRM_AROS_H */

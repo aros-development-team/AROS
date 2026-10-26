@@ -666,8 +666,6 @@ ULONG v3d_submit_cl(struct V3DData *sd, ULONG bcl_start, ULONG bcl_end,
     }
 
     seqno = ++sd->seqno;
-    sd->last_submit_us = v3d_now_us();
-    sd->session_swept = FALSE;
 
     /* Queue the render before starting the bin: the flush can land in
      * the handler the instant the bin is kicked, and the entry has to be
