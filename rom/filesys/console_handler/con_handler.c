@@ -1156,7 +1156,8 @@ LONG CONMain(struct ExecBase *SysBase)
 
             if (sigs & timermask) {
                 D(bug("[con:handler] %s: timer signal\n", __func__));
-                if (waitingdp) {
+                if (waitingdp && CheckIO((struct IORequest *)fh->timerreq)) {
+                    WaitIO((struct IORequest *)fh->timerreq);
                     replypkt(waitingdp, DOSFALSE);
                     waitingdp = NULL;
                 }
