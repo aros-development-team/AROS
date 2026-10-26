@@ -1298,7 +1298,7 @@ LONG CONMain(struct ExecBase *SysBase)
                         if (fh->flags & FHFLG_NOWINDOW)
                             replypkt(dp, 0); /* sink: end-of-file */
                         else
-                            replypkt2(dp, DOSFALSE, ERROR_NO_FREE_STORE);
+                            replypkt2(dp, -1, ERROR_NO_FREE_STORE);
                         break;
                     }
                     fh->breaktask = dp->dp_Port->mp_SigTask;
@@ -1326,7 +1326,7 @@ LONG CONMain(struct ExecBase *SysBase)
                         if (fh->flags & FHFLG_NOWINDOW)
                             replypkt(dp, dp->dp_Arg3); /* sink: swallowed */
                         else
-                            replypkt2(dp, DOSFALSE, ERROR_NO_FREE_STORE);
+                            replypkt2(dp, -1, ERROR_NO_FREE_STORE);
                         break;
                     }
                     fh->breaktask = dp->dp_Port->mp_SigTask;
