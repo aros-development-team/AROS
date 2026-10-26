@@ -78,17 +78,58 @@ static void sync_fields(struct M68KEmuContext *ctx,
     }
 }
 
+/* A Screen's embedded ViewPort and RastPort are passed on by address, and
+   its ColorMap goes to the pen functions: give them shadows as well. */
+void m68k_screen_extras(struct M68KEmuContext *ctx, ULONG ms, struct Screen *scr)
+{
+    const struct M68KStructLayout *cml = shadow_find_layout("ColorMap");
+    ULONG cm = 0;
+
+    if (!shadow_lookup(ctx, ms + M68K_SCR_VIEWPORT))
+        shadow_register(ctx, ms + M68K_SCR_VIEWPORT, &scr->ViewPort, 6);
+    if (!shadow_lookup(ctx, ms + M68K_SCR_RASTPORT))
+        shadow_register(ctx, ms + M68K_SCR_RASTPORT, &scr->RastPort, 3);
+    if (!scr->ViewPort.ColorMap || !cml)
+        return;
+    for (UWORD i = 0; i < ctx->num_shadows; i++)
+        if (ctx->shadow_map[i].native_ptr == scr->ViewPort.ColorMap)
+            { cm = ctx->shadow_map[i].m68k_addr; break; }
+    if (!cm && (cm = M68KEmu_HeapAlloc(ctx, cml->m68k_size, 0)))
+    {
+        if (shadow_register(ctx, cm, scr->ViewPort.ColorMap, cml->shadow_type))
+            sync_fields(ctx, cml->fields, cm, scr->ViewPort.ColorMap);
+        else
+        {
+            M68KEmu_HeapFree(ctx, cm, cml->m68k_size);
+            cm = 0;
+        }
+    }
+    m68k_write32(ctx, ms + M68K_SCR_VIEWPORT + 4, cm);
+}
+
+/* One shadow per native structure: a program that asks again (every
+   LockPubScreen) gets the same one, brought up to date. */
 ULONG shadow_create(struct M68KEmuContext *ctx,
                     const struct M68KStructLayout *layout,
                     void *native)
 {
-    ULONG m = M68KEmu_HeapAlloc(ctx, layout->m68k_size, 0);
-    if (!m) return 0;
-    if (!shadow_register(ctx, m, native, layout->shadow_type)) {
-        M68KEmu_HeapFree(ctx, m, layout->m68k_size);
-        return 0;
+    ULONG m = 0;
+
+    for (UWORD i = 0; i < ctx->num_shadows; i++)
+        if (ctx->shadow_map[i].native_ptr == native && ctx->shadow_map[i].type == layout->shadow_type)
+            { m = ctx->shadow_map[i].m68k_addr; break; }
+    if (!m)
+    {
+        if (!(m = M68KEmu_HeapAlloc(ctx, layout->m68k_size, 0)))
+            return 0;
+        if (!shadow_register(ctx, m, native, layout->shadow_type)) {
+            M68KEmu_HeapFree(ctx, m, layout->m68k_size);
+            return 0;
+        }
     }
     sync_fields(ctx, layout->fields, m, native);
+    if (!strcmp(layout->name, "Screen"))
+        m68k_screen_extras(ctx, m, (struct Screen *)native);
     return m;
 }
 
