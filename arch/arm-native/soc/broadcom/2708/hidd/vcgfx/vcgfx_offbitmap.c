@@ -3,12 +3,11 @@
 
     Desc: BCM VideoCore4 Gfx Hidd Offscreen Bitmap Class.
 
-    Large 32bpp offscreen bitmaps are placed in firmware (GPU) memory:
-    uncached and physically contiguous, so CopyBox/PutImage/GetImage
-    against the framebuffer run entirely on the DMA engine with no
-    cache maintenance. Small bitmaps, non-32bpp formats and allocation
-    failures fall back to the ChunkyBM superclass' system-RAM buffer,
-    with VideoData left NULL so every accelerated path skips them.
+    Screen bitmaps go in scanout memory when screens are HVS planes
+    (vcgfx_planes.c): uncached and physically contiguous, so the HVS shows
+    them directly and blits against them run on the DMA engine. Other
+    bitmaps use the ChunkyBM superclass' system-RAM buffer, with VideoData
+    left NULL so every accelerated path skips them.
 */
 
 #define DEBUG 0
@@ -168,11 +167,256 @@ static void vc4_gpumem_free(struct VideoCoreGfx_staticdata *xsd, ULONG handle)
 
 #endif /* VC4_GPUBM_ENABLE */
 
+/* A screen: a 32bpp displayable bitmap in a page of scanout memory. NULL
+ * when it is something else, or when there is no memory left for it -
+ * the screen then fails to open rather than open invisible. */
+static OOP_Object *vc4_screen_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg,
+                                  BOOL *handled)
+{
+    struct VideoCoreGfx_staticdata *xsd = XSD(cl);
+    OOP_Object *sync = NULL, *pf = NULL;
+    IPTR width, height, bytesperpix = 0;
+    HIDDT_ModeID modeid;
+    struct vcgfx_scanbuf sb = { 0 };
+    ULONG pitch;
+
+    *handled = FALSE;
+    if (!GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList)
+        || !vcgfx_planes_supported(xsd))
+        return NULL;
+
+    width  = GetTagData(aHidd_BitMap_Width,  0, msg->attrList);
+    height = GetTagData(aHidd_BitMap_Height, 0, msg->attrList);
+    modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
+
+    if ((modeid == vHidd_ModeID_Invalid)
+        || !HIDD_DMEnum_GetMode(xsd->vcsd_DMEnum, modeid, &sync, &pf) || !pf)
+        return NULL;
+    if (!width && sync)
+        OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
+    if (!height && sync)
+        OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
+    OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &bytesperpix);
+    if (!width || !height || (bytesperpix != 4))
+        return NULL;
+
+    *handled = TRUE;
+
+    /* The BitMap superclass's own 16-pixel row alignment. */
+    pitch = ((width + 15) & ~15) * 4;
+    if (!vcgfx_scanout_alloc(xsd, &sb, pitch * height))
+    {
+        bug("[VideoCoreGfx] no scanout memory for a %ux%u screen\n",
+            (unsigned)width, (unsigned)height);
+        return NULL;
+    }
+
+    {
+        struct TagItem extra_tags[] =
+        {
+            { aHidd_ChunkyBM_Buffer,    (IPTR)sb.sb_Pixels     },
+            { aHidd_BitMap_BytesPerRow, pitch                  },
+            { TAG_MORE,                 (IPTR)msg->attrList    }
+        };
+        struct pRoot_New new_msg;
+
+        new_msg.mID = msg->mID;
+        new_msg.attrList = extra_tags;
+
+        o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&new_msg);
+    }
+    if (!o)
+    {
+        vcgfx_scanout_free(xsd, &sb);
+        return NULL;
+    }
+
+    {
+        struct BitmapData *data = OOP_INST_DATA(cl, o);
+
+        memset(data, 0, sizeof(struct BitmapData));
+        data->VideoData   = sb.sb_Pixels;
+        data->width       = width;
+        data->height      = height;
+        data->bytesperrow = pitch;
+        data->bytesperpix = 4;
+        data->bpp         = 32;
+        data->disp        = -1;
+        data->scan[0]     = sb;
+        data->modew       = width;
+        data->modeh       = height;
+        if (sync)
+        {
+            IPTR mw = 0, mh = 0;
+
+            OOP_GetAttr(sync, aHidd_Sync_HDisp, &mw);
+            OOP_GetAttr(sync, aHidd_Sync_VDisp, &mh);
+            if (mw && mh)
+            {
+                data->modew = mw;
+                data->modeh = mh;
+            }
+        }
+    }
+
+    D(bug("[VideoCoreGfx] OffBitMap::New: %ux%u screen @ 0x%p, pitch %u\n",
+        (unsigned)width, (unsigned)height, sb.sb_Pixels, (unsigned)pitch));
+    return o;
+}
+
+/* A scan-out bitmap (aHidd_BitMap_Scanout): a client's surface the
+ * compositor may put on a plane. Its buffers are pages of scanout memory
+ * in a format an HVS plane reads: 32bpp as screens are, RGB15/16, or
+ * NV12/I420 video with its chroma planes behind the luma in each page.
+ * ChunkyBM refuses scan-out bitmaps, so it is told this one is none. */
+static OOP_Object *vc4_scanout_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg,
+                                   BOOL *handled)
+{
+    struct VideoCoreGfx_staticdata *xsd = XSD(cl);
+    struct vcgfx_scanbuf sb[VCGFX_SCAN_BUFFERS];
+    OOP_Object *pf;
+    struct TagItem *tags, *tag;
+    IPTR width, height, stdpf = 0;
+    ULONG videofmt, pxflags = 0, bpp, pitch, size, nbufs, i;
+
+    *handled = FALSE;
+    if (!GetTagData(aHidd_BitMap_Scanout, FALSE, msg->attrList))
+        return NULL;
+    *handled = TRUE;
+
+    if (!vcgfx_planes_supported(xsd))
+        return NULL;
+
+    videofmt = GetTagData(aHidd_BitMap_VideoFormat, vHidd_VideoFmt_None, msg->attrList);
+    width    = GetTagData(aHidd_BitMap_Width,  0, msg->attrList);
+    height   = GetTagData(aHidd_BitMap_Height, 0, msg->attrList);
+    pf       = (OOP_Object *)GetTagData(aHidd_BitMap_PixFmt, 0, msg->attrList);
+    if (pf)
+        OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);
+    if (!width || !height)
+        return NULL;
+
+    if (videofmt)
+    {
+        /* 4:2:0: whole chroma samples only */
+        if (!vcgfx_yuv_ok(xsd, videofmt) || (width & 1) || (height & 1))
+            return NULL;
+        bpp   = 1;
+        pitch = (width + 31) & ~31;
+        size  = pitch * height * 3 / 2;
+    }
+    else
+    {
+        if (!vcgfx_scanout_rgb(xsd, stdpf, &pxflags))
+            return NULL;
+        /* 16 bytes: the stride VC4's Mesa gives a linear render target */
+        bpp   = vcgfx_px_bpp(pxflags);
+        pitch = (width * bpp + 15) & ~15;
+        size  = pitch * height;
+    }
+    nbufs = GetTagData(aHidd_BitMap_Buffers, 1, msg->attrList);
+    if (nbufs < 1)
+        nbufs = 1;
+    if (nbufs > VCGFX_SCAN_BUFFERS)
+        nbufs = VCGFX_SCAN_BUFFERS;
+
+    memset(sb, 0, sizeof(sb));
+    for (i = 0; i < nbufs; i++)
+    {
+        if (!vcgfx_scanout_alloc(xsd, &sb[i], size))
+        {
+            while (i--)
+                vcgfx_scanout_free(xsd, &sb[i]);
+            return NULL;
+        }
+    }
+
+    if ((tags = CloneTagItems(msg->attrList)))
+    {
+        if ((tag = FindTagItem(aHidd_BitMap_Scanout, tags)))
+            tag->ti_Tag = TAG_IGNORE;
+        if ((tag = FindTagItem(aHidd_BitMap_Buffers, tags)))
+            tag->ti_Tag = TAG_IGNORE;
+        {
+            /* The superclass's row alignment, in pixels, down to ours */
+            struct TagItem extra_tags[] =
+            {
+                { aHidd_ChunkyBM_Buffer,    (IPTR)sb[0].sb_Pixels },
+                { aHidd_BitMap_BytesPerRow, pitch                 },
+                { aHidd_BitMap_Align,       16 / bpp              },
+                { TAG_MORE,                 (IPTR)tags            }
+            };
+            struct pRoot_New new_msg;
+
+            new_msg.mID = msg->mID;
+            new_msg.attrList = extra_tags;
+
+            o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&new_msg);
+        }
+        FreeTagItems(tags);
+    }
+    else
+        o = NULL;
+
+    if (!o)
+    {
+        for (i = 0; i < nbufs; i++)
+            vcgfx_scanout_free(xsd, &sb[i]);
+        return NULL;
+    }
+
+    {
+        struct BitmapData *data = OOP_INST_DATA(cl, o);
+
+        memset(data, 0, sizeof(struct BitmapData));
+        data->VideoData   = sb[0].sb_Pixels;
+        data->width       = width;
+        data->height      = height;
+        data->bytesperrow = pitch;
+        data->bytesperpix = bpp;
+        data->bpp         = bpp * 8;
+        data->disp        = -1;
+        data->pxflags     = pxflags;
+        data->videofmt    = videofmt;
+        data->colorspace  = GetTagData(aHidd_BitMap_ColorSpace, vHidd_ColorSpace_BT601, msg->attrList);
+        if (videofmt == vHidd_VideoFmt_NV12)
+        {
+            data->planeoff[0] = pitch * height;
+            data->cpitch      = pitch;
+        }
+        else if (videofmt == vHidd_VideoFmt_I420)
+        {
+            /* The CGX layout: U after Y, V after U, both pitch / 2 */
+            data->planeoff[0] = pitch * height;
+            data->planeoff[1] = data->planeoff[0] + (pitch / 2) * (height / 2);
+            data->cpitch      = pitch / 2;
+        }
+        data->nbufs       = nbufs;
+        data->back        = (nbufs > 1) ? 1 : 0;
+        for (i = 0; i < nbufs; i++)
+            data->scan[i] = sb[i];
+    }
+
+    D(bug("[VideoCoreGfx] OffBitMap::New: %ux%u scan-out bitmap, %u buffers, pitch %u\n",
+        (unsigned)width, (unsigned)height, (unsigned)nbufs, (unsigned)pitch));
+    return o;
+}
+
 /*********** BitMap::New() *************************************/
 
 OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
+    BOOL handled;
+    OOP_Object *screen;
+
     D(bug("[VideoCoreGfx] VideoCoreGfx.OffBitMap::New()\n"));
+
+    screen = vc4_scanout_new(cl, o, msg, &handled);
+    if (handled)
+        return screen;
+    screen = vc4_screen_new(cl, o, msg, &handled);
+    if (handled)
+        return screen;
 
 #if VC4_GPUBM_ENABLE
     {
@@ -270,16 +514,116 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
 VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-#if VC4_GPUBM_ENABLE
     struct VideoCoreGfx_staticdata *xsd = XSD(cl);
     struct BitmapData *data = OOP_INST_DATA(cl, o);
+    struct vcgfx_scanbuf scan[VCGFX_SCAN_BUFFERS];
+    ULONG i;
+#if VC4_GPUBM_ENABLE
     ULONG handle = data->gpuhandle;
+#endif
+
+    /* Off the display before the pages go. */
+    if (data->scan[0].sb_Pixels)
+        vcgfx_plane_forget(xsd, o);
+    CopyMem(data->scan, scan, sizeof(scan));
 
     OOP_DoSuperMethod(cl, o, msg);
 
+    for (i = 0; i < VCGFX_SCAN_BUFFERS; i++)
+        vcgfx_scanout_free(xsd, &scan[i]);
+#if VC4_GPUBM_ENABLE
     if (handle)
         vc4_gpumem_free(xsd, handle);
-#else
-    OOP_DoSuperMethod(cl, o, msg);
 #endif
+}
+
+/**********  Bitmap::Set()  ***************************************/
+
+/* LeftEdge/TopEdge are how graphics.library drags a screen: the superclass
+ * clamps and stores them, the plane follows. */
+IPTR MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
+{
+    struct TagItem *tag, *tstate = msg->attrList;
+    BOOL moved = FALSE;
+    ULONG idx;
+    IPTR result;
+
+    while ((tag = NextTagItem(&tstate)))
+    {
+        if (IS_BM_ATTR(tag->ti_Tag, idx)
+            && ((idx == aoHidd_BitMap_LeftEdge) || (idx == aoHidd_BitMap_TopEdge)))
+            moved = TRUE;
+    }
+
+    result = OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    if (moved)
+        vcgfx_plane_moved(XSD(cl), o);
+    return result;
+}
+
+/**********  Scan-out buffers  ************************************/
+
+BOOL MNAME_BM(LockBuffer)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_LockBuffer *msg)
+{
+    struct BitmapData *data = OOP_INST_DATA(cl, o);
+
+    if (!data->nbufs || (msg->buffer >= data->nbufs) || !msg->addressReturn || !msg->pitchReturn)
+        return FALSE;
+
+    /* Scanout memory is write-through: what the CPU writes is what the plane reads */
+    *msg->addressReturn = data->scan[msg->buffer].sb_Pixels;
+    *msg->pitchReturn   = data->bytesperrow;
+    if (msg->planeOffsets)
+    {
+        msg->planeOffsets[0] = data->planeoff[0];
+        msg->planeOffsets[1] = data->planeoff[1];
+    }
+    return TRUE;
+}
+
+/* What a plane shows is already there; the compositor blits a surface on
+ * no plane from its front buffer, so tell it when that one changed. */
+VOID MNAME_BM(UnlockBuffer)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_UnlockBuffer *msg)
+{
+    struct BitmapData *data = OOP_INST_DATA(cl, o);
+    OOP_Object *display = NULL;
+    const struct Rectangle *d = msg->dirty;
+
+    /* Video is never blitted: off a plane it shows nothing */
+    if (!data->nbufs || data->videofmt || (msg->buffer != data->front)
+        || (d && ((d->MaxX < d->MinX) || (d->MaxY < d->MinY)))
+        || vcgfx_plane_shows(XSD(cl), o))
+        return;
+
+    OOP_GetAttr(o, aHidd_BitMap_Display, (IPTR *)&display);
+    if (!display)
+        return;
+    if (d)
+        HIDD_Display_UpdateRect(display, o, d->MinX, d->MinY,
+                                d->MaxX - d->MinX + 1, d->MaxY - d->MinY + 1);
+    else
+        HIDD_Display_UpdateRect(display, o, 0, 0, data->width, data->height);
+}
+
+/* The displaced buffer joins the ring: the next one after the new front.
+ * On no plane the compositor re-blits the bitmap from its new front. */
+BOOL MNAME_BM(SwapBuffers)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SwapBuffers *msg)
+{
+    struct BitmapData *data = OOP_INST_DATA(cl, o);
+    OOP_Object *display = NULL;
+
+    if (!data->nbufs || (msg->newFront >= data->nbufs))
+        return FALSE;
+    if (msg->newFront == data->front)
+        return TRUE;
+
+    data->back = (msg->newFront + 1) % data->nbufs;
+    if (!vcgfx_plane_page(cl, o, msg->newFront, !(msg->flags & fHidd_Swap_NoWait))
+        && !data->videofmt)
+    {
+        OOP_GetAttr(o, aHidd_BitMap_Display, (IPTR *)&display);
+        if (display)
+            HIDD_Display_UpdateRect(display, o, 0, 0, data->width, data->height);
+    }
+    return TRUE;
 }

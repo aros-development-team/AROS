@@ -37,11 +37,17 @@ struct vcgfx_edid
     struct vcgfx_timing timings[VCGFX_EDID_TIMINGS];
 };
 
+/* CEA-861 and VESA DMT modes the HDMI mode setters offer besides the
+ * sink's own (vcgfx_edid.c). */
+#define VCGFX_STD_MODES         13
+extern const struct vcgfx_timing vcgfx_std_modes[VCGFX_STD_MODES];
+
 struct VideoCoreGfx_staticdata;
 
 void vcgfx_edid_probe(struct VideoCoreGfx_staticdata *xsd);
 const struct vcgfx_timing *vcgfx_edid_find(struct VideoCoreGfx_staticdata *xsd,
                                            ULONG width, ULONG height);
 UBYTE vcgfx_edid_vic(const struct vcgfx_timing *t, UBYTE *aspect);
+UBYTE vcgfx_edid_avi(const struct vcgfx_timing *t, ULONG avi[9], BOOL *limited);
 
 #endif /* _VIDEOCOREGFX_EDID_H */

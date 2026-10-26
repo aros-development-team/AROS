@@ -15,36 +15,17 @@
 
 enum {
     aoHidd_VideoCoreGfxBitMap_Drawable,
-    aoHidd_VideoCoreGfxBitMap_BackDrawable,    /* [G..] back page phys addr, 0 = no flipping */
-    aoHidd_VideoCoreGfxBitMap_Flip,            /* [.S.] set TRUE to flip front/back page */
-    aoHidd_VideoCoreGfxBitMap_Overlay,         /* [GS.] set: struct vc4gfx_overlay * (NULL
-                                                * clears); get: 1 while an overlay is shown */
-    aoHidd_VideoCoreGfxBitMap_LatchWait,       /* [G..] wait for the last armed update to latch */
     num_Hidd_VideoCoreGfxBitMap_Attrs
 };
 
 #define aHidd_VideoCoreGfxBitMap_Drawable	(HiddVideoCoreGfxBitMapAttrBase + aoHidd_VideoCoreGfxBitMap_Drawable)
-#define aHidd_VideoCoreGfxBitMap_BackDrawable	(HiddVideoCoreGfxBitMapAttrBase + aoHidd_VideoCoreGfxBitMap_BackDrawable)
-#define aHidd_VideoCoreGfxBitMap_Flip	(HiddVideoCoreGfxBitMapAttrBase + aoHidd_VideoCoreGfxBitMap_Flip)
-#define aHidd_VideoCoreGfxBitMap_Overlay	(HiddVideoCoreGfxBitMapAttrBase + aoHidd_VideoCoreGfxBitMap_Overlay)
 
-/* Descriptor passed via aoHidd_VideoCoreGfxBitMap_Overlay: an opaque
- * 32bpp plane scanned straight from GPU memory, composited by the HVS
- * above the framebuffer (below the cursor). x/y are fb coordinates.
- * Mirrored by hand on the vc4gallium side, like the attr indices. */
-struct vc4gfx_overlay
-{
-    ULONG ovl_Phys;                 /* ARM phys of the pixel data */
-    ULONG ovl_Pitch;                /* bytes per row */
-    ULONG ovl_Width, ovl_Height;    /* source pixels */
-    LONG  ovl_X, ovl_Y;             /* position in fb coordinates */
-    ULONG ovl_DestW, ovl_DestH;     /* on-screen size; 0 (or == source)
-                                     * = unscaled, larger = HVS upscale */
-    ULONG ovl_Flags;                /* VC4GFX_OVL_* */
-};
-
-/* Don't wait for the latch; keep the displaced buffer until LatchWait. */
-#define VC4GFX_OVL_NOWAIT (1 << 0)
+/* Scan-out bitmap pixel formats besides the screens' own 32bpp one:
+ * 16bpp little-endian, and 32bpp in B,G,R,X byte order on an HVS whose
+ * screens are R,G,B,X (HVS6) */
+#define VCGFX_PX_RGB565   (1 << 1)
+#define VCGFX_PX_RGB555   (1 << 2)
+#define VCGFX_PX_BGRA     (1 << 8)
 
 /* This structure is used for both onscreen and offscreen bitmaps !! */
 
@@ -60,6 +41,17 @@ struct Box
     int x2, y2;
 };
 
+/* Buffers of a scan-out bitmap (aHidd_BitMap_Scanout); screens use one */
+#define VCGFX_SCAN_BUFFERS  3
+
+/* A page of scanout memory (vcgfx_scanout_alloc), 4K aligned. */
+struct vcgfx_scanbuf
+{
+    APTR                sb_Raw;
+    ULONG               sb_RawSize;
+    UBYTE              *sb_Pixels;
+};
+
 struct BitmapData {
 	APTR                data;
 	UBYTE               *VideoData;             /* Pointing to video data */
@@ -73,6 +65,16 @@ struct BitmapData {
 	struct MouseData    *mouse;
 	ULONG               gpuhandle;              /* Offscreen: firmware mem handle (0 = RAM-backed) */
 	ULONG               dispwidth;              /* Mode width (width is 16px-aligned) */
+	struct vcgfx_scanbuf scan[VCGFX_SCAN_BUFFERS]; /* Pages on scanout, [front] = VideoData */
+	UBYTE               front;
+	UBYTE               back;                   /* Scan-out bitmap: the buffer to fill next */
+	UBYTE               nbufs;                  /* Scan-out bitmap: its buffers, 0 = a screen */
+	ULONG               pxflags;                /* VCGFX_PX_*, 0 = the screens' 32bpp */
+	UBYTE               videofmt;               /* vHidd_VideoFmt_NV12/I420, 0 = RGB */
+	UBYTE               colorspace;             /* vHidd_ColorSpace_* of a video bitmap */
+	ULONG               planeoff[2];            /* Video: chroma plane offsets in a page */
+	ULONG               cpitch;                 /* Video: chroma bytes per row */
+	ULONG               modew, modeh;           /* Screen: its mode's display size */
 };
 
 #endif /* _VIDEOCOREGFX_BITMAP_H */
