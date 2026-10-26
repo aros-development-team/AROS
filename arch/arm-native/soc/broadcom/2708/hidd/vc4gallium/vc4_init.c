@@ -16,6 +16,8 @@
 #include <proto/dma.h>
 #include <proto/kernel.h>
 #include <proto/openfirmware.h>
+#include <proto/task.h>
+#include <resources/task.h>
 
 #include <hardware/videocore.h>
 
@@ -132,9 +134,43 @@ void vc4_log_clocks(struct vc4galliumstaticdata *sd, const char *when)
 #undef MBoxBase
 }
 
+/* A task ending without destroying its GL screens leaves their sessions
+ * behind: mark them, and the next screen created or destroyed sweeps
+ * them. Called for every task in the system, so compare and go. */
+AROS_UFH3(static IPTR, vc4_task_notify,
+    AROS_UFHA(struct Hook *, hook, A0),
+    AROS_UFHA(struct Task *, task, A2),
+    AROS_UFHA(struct TaskNotifyMsg *, msg, A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct vc4galliumstaticdata *sd = hook->h_Data;
+    ULONG i;
+
+    (void)task;
+    if (msg->tnm_Action == TNA_REMOVED)
+    {
+        for (i = 0; i < VC4_MAX_SESSIONS; i++)
+        {
+            if (sd->sessions[i].vs_Used && (sd->sessions[i].vs_Task == msg->tnm_Task))
+                sd->sessions[i].vs_Dead = TRUE;
+        }
+    }
+    return 0;
+
+    AROS_USERFUNC_EXIT
+}
+
 static int HiddVC4Gallium_ExpungeLib(LIBBASETYPEPTR LIBBASE)
 {
     D(bug("[VC4Gallium] ExpungeLib\n"));
+
+    if (LIBBASE->sd.task_res)
+    {
+        struct Library *TaskResBase = LIBBASE->sd.task_res;
+
+        RemTaskNotifyHook(&LIBBASE->sd.task_hook);
+    }
 
     /* Stop the vblank server before tearing anything down, so it can't fire
      * into freed state. */
@@ -197,6 +233,9 @@ static int HiddVC4Gallium_ExpungeLib(LIBBASETYPEPTR LIBBASE)
 
     if (LIBBASE->sd.hiddVC4GfxBMAB)
         OOP_ReleaseAttrBase((STRPTR)IID_Hidd_BitMap_VideoCore4);
+
+    if (LIBBASE->sd.hiddPixFmtAB)
+        OOP_ReleaseAttrBase((STRPTR)IID_Hidd_PixFmt);
 
     if (LIBBASE->sd.hiddGalliumAB)
         OOP_ReleaseAttrBase((STRPTR)IID_Hidd_Gallium);
@@ -261,6 +300,8 @@ static int HiddVC4Gallium_InitLib(LIBBASETYPEPTR LIBBASE)
     InitSemaphore(&LIBBASE->sd.mbox_lock);
     InitSemaphore(&LIBBASE->sd.wait_gate);
     InitSemaphore(&LIBBASE->sd.render_lock);
+    InitSemaphore(&LIBBASE->sd.mem_lock);
+    NEWLIST(&LIBBASE->sd.arenas);
 
     /* Install the vblank int server that wakes GPU waiters (~50 Hz). */
     LIBBASE->sd.vblank_waiter = NULL;
@@ -312,6 +353,7 @@ static int HiddVC4Gallium_InitLib(LIBBASETYPEPTR LIBBASE)
 
     /* Standard BitMap attribute base for BytesPerRow etc. */
     LIBBASE->sd.hiddBitMapAB = OOP_ObtainAttrBase((STRPTR)IID_Hidd_BitMap);
+    LIBBASE->sd.hiddPixFmtAB = OOP_ObtainAttrBase((STRPTR)IID_Hidd_PixFmt);
 
     /* Power on V3D domain via mailbox.
      * BCM2835/2836 power domain ID 10 = V3D.
@@ -421,6 +463,18 @@ static int HiddVC4Gallium_InitLib(LIBBASETYPEPTR LIBBASE)
     }
     else if (!vc4_aros_start_service_task(&LIBBASE->sd))
         bug("[VC4Gallium] V3D service task not started; render kicks stay poll-only\n");
+
+    if ((LIBBASE->sd.task_res = OpenResource("task.resource")))
+    {
+        struct Library *TaskResBase = LIBBASE->sd.task_res;
+
+        LIBBASE->sd.task_hook.h_Entry = (HOOKFUNC)vc4_task_notify;
+        LIBBASE->sd.task_hook.h_Data  = &LIBBASE->sd;
+        if (!AddTaskNotifyHook(&LIBBASE->sd.task_hook))
+            LIBBASE->sd.task_res = NULL;
+    }
+    if (!LIBBASE->sd.task_res)
+        bug("[VC4Gallium] no task notifications - a GL app that dies keeps its buffers\n");
 
     D(bug("[VC4Gallium] Module initialized successfully\n"));
 

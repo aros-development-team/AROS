@@ -21,29 +21,16 @@
 #include <exec/types.h>
 #include <oop/oop.h>
 
-/* ABI version. Bump on any field add/remove/reorder. mesa3dgl checks it
- * at screen-create and refuses an incompatible bridge. */
-#define VC4_AROS_BRIDGE_VERSION   5
+/* ABI version. Bump on any field add/remove/reorder, and on any change to
+ * a function pointer's signature: that breaks callers just the same.
+ * Screen-create refuses a bridge of another version. */
+#define VC4_AROS_BRIDGE_VERSION   7
 
 /* Which gallium driver this bridge fronts. mesa3dgl dispatches
  * screen-create on driver_id, so one mesa3dgl can carry several drivers
  * (vc4 for Pi 0-3, v3d for Pi 4) and pick by the instantiated hidd. */
 #define AROS_GALLIUM_DRIVER_VC4   0
 //#define AROS_GALLIUM_DRIVER_V3D   1
-
-/* Scanout page description for zero-copy fullscreen GL (v2). The vcgfx
- * framebuffer has two flip pages; Mesa renders into the back page and
- * presents via flip_scanout instead of copying. name[] are GEM_OPEN names
- * (page physical addresses), stable across flips; `back` indexes the page
- * not currently shown. */
-struct vc4_aros_scanout
-{
-    ULONG   name[2];
-    ULONG   pitch;
-    ULONG   width;
-    ULONG   height;
-    ULONG   back;
-};
 
 struct vc4_aros_bridge
 {
@@ -56,8 +43,9 @@ struct vc4_aros_bridge
 
     /* DRM ioctl entry. request is a DRM_VC4_* command (DRM_COMMAND_BASE +
      * cmd) or plain DRM_GEM_CLOSE etc; arg is the matching drm_vc4_*
-     * struct. Returns 0 / negative errno. */
-    int    (*ioctl)(void *ctx, unsigned long request, void *arg);
+     * struct. fd is the screen's, which names its session. Returns 0 /
+     * negative errno. */
+    int    (*ioctl)(void *ctx, int fd, unsigned long request, void *arg);
 
     /* Map a BO (handle from DRM_VC4_CREATE_BO) and return a CPU pointer,
      * NULL on failure. Mapping is identity (CPU == physical) on AROS, so
@@ -92,39 +80,6 @@ struct vc4_aros_bridge
     /* Release every outstanding BO back to the firmware. Called by
      * mesa3dgl from screen destroy. */
     void   (*release_all_bos)(void *ctx);
-
-    /* v2: query the framebuffer's flip pages (publishing them as GEM_OPEN
-     * names). Returns 0 for a flippable vcgfx framebuffer, -1 otherwise. */
-    int    (*get_scanout)(void *ctx, OOP_Object *dest_bitmap,
-                          struct vc4_aros_scanout *out);
-
-    /* v2: make the back page visible (waits for GPU + DMA first). Returns
-     * 0 on success; get_scanout then reports the new back index. */
-    int    (*flip_scanout)(void *ctx, OOP_Object *dest_bitmap);
-
-    /* v3: zero-copy windowed present. Show src_bo_handle as an opaque
-     * HVS overlay plane at (x,y) (fb coordinates), source size w*h,
-     * shown at dest_w*dest_h (v4; 0 = unscaled, larger = HVS PPF
-     * upscale) on the screen's framebuffer bitmap. Waits for GPU idle
-     * first, pins the BO while shown, and returns 0 on success (-1 =
-     * unavailable: firmware owns the display / scaled desktop /
-     * downscale — caller blits instead). Repeated calls retarget/move
-     * the plane; the update latches at vblank with flip pacing. */
-    int    (*set_overlay)(void *ctx, OOP_Object *dest_bitmap,
-                          ULONG src_bo_handle, ULONG src_stride,
-                          LONG x, LONG y, ULONG w, ULONG h,
-                          ULONG dest_w, ULONG dest_h);
-
-    /* v3: remove the overlay plane and unpin its BO. Safe to call when
-     * none is shown; dest_bitmap may be NULL (uses the bitmap of the
-     * last set_overlay). */
-    void   (*clear_overlay)(void *ctx, OOP_Object *dest_bitmap);
-
-    /* v5: latest SUBMITTED job seqno (same domain as DRM_VC4_WAIT_SEQNO
-     * and drm_vc4_submit_cl.seqno). Snapshotted at present time so the
-     * pipelined overlay path can wait for exactly the frame it is about
-     * to display instead of full GPU idle. */
-    ULONG  (*get_seqno)(void *ctx);
 };
 
 /* Populate `bridge` with function pointers forwarding to `sd`'s state.

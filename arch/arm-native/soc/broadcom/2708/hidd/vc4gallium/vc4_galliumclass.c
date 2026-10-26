@@ -31,30 +31,15 @@
 
 #include "pipe/p_state.h"
 #include "pipe/p_screen.h"
+#include "frontend/winsys_handle.h"
 
 #include "vc4gallium_intern.h"
 #include "vc4_drm_aros.h"
 #include "vc4_v3d.h"  /* provides ARM_PERIIOBASE, bcm2708.h, GPU_BUS_ADDR */
 
-/* vcgfx bitmap attributes — must match the aoHidd_VideoCoreGfxBitMap_*
+/* vcgfx bitmap attribute — must match the aoHidd_VideoCoreGfxBitMap_*
  * enum in vcgfx_bitmap.h */
 #define aoHidd_VideoCoreGfxBitMap_Drawable      0
-#define aoHidd_VideoCoreGfxBitMap_BackDrawable  1
-#define aoHidd_VideoCoreGfxBitMap_Flip          2
-#define aoHidd_VideoCoreGfxBitMap_Overlay       3
-#define aoHidd_VideoCoreGfxBitMap_LatchWait     4
-
-/* Mirrored from vcgfx_bitmap.h, like the attr indices above. */
-struct vc4gfx_overlay
-{
-    ULONG ovl_Phys;
-    ULONG ovl_Pitch;
-    ULONG ovl_Width, ovl_Height;
-    LONG  ovl_X, ovl_Y;
-    ULONG ovl_DestW, ovl_DestH;     /* 0/== source = unscaled */
-    ULONG ovl_Flags;
-};
-#define VC4GFX_OVL_NOWAIT (1 << 0)
 
 #if (AROS_BIG_ENDIAN == 1)
 #define AROS_PIXFMT RECTFMT_RAW
@@ -79,11 +64,6 @@ static inline void __gallium_dsb(void) { asm volatile("dsb sy" ::: "memory"); }
 static inline ULONG gallium_now_us(void)
 {
     return AROS_LE2LONG(*(volatile ULONG *)SYSTIMER_CLO);
-}
-
-ULONG gallium_now_us_ext(void)
-{
-    return gallium_now_us();
 }
 
 /* The V3D IRQ is masked (the firmware co-owns the line), so the FLDONE ->
@@ -372,9 +352,71 @@ VOID METHOD(HiddVC4Gallium, Root, Get)
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
+/* The session a pipe screen belongs to, 0 for none. */
+static ULONG vc4_session_of(struct vc4galliumstaticdata *sd, APTR screen)
+{
+    ULONG i, sid = 0;
+
+    ObtainSemaphore(&sd->bo_lock);
+    for (i = 0; i < VC4_MAX_SESSIONS; i++)
+    {
+        if (sd->sessions[i].vs_Used && (sd->sessions[i].vs_Screen == screen))
+        {
+            sid = i + 1;
+            break;
+        }
+    }
+    ReleaseSemaphore(&sd->bo_lock);
+    return sid;
+}
+
+/* Sessions whose task died without destroying its screen: their Mesa
+ * objects are gone, so only their BOs go. */
+static void vc4_sweep_dead(struct vc4galliumstaticdata *sd)
+{
+    ULONG i;
+    BOOL dead = FALSE;
+    APTR screen = NULL;
+
+    ObtainSemaphore(&sd->bo_lock);
+    for (i = 0; (i < VC4_MAX_SESSIONS) && !dead; i++)
+        dead = sd->sessions[i].vs_Used && sd->sessions[i].vs_Dead;
+    ReleaseSemaphore(&sd->bo_lock);
+    if (!dead)
+        return;
+
+    vc4_aros_wait_idle(sd);
+
+    for (i = 0; i < VC4_MAX_SESSIONS; i++)
+    {
+        /* Claim it, so a concurrent sweep leaves it alone. */
+        ObtainSemaphore(&sd->bo_lock);
+        dead = sd->sessions[i].vs_Used && sd->sessions[i].vs_Dead;
+        if (dead)
+        {
+            sd->sessions[i].vs_Dead = FALSE;
+            screen = sd->sessions[i].vs_Screen;
+        }
+        ReleaseSemaphore(&sd->bo_lock);
+        if (!dead)
+            continue;
+
+        vc4_aros_release_session(sd, i + 1);
+        bug("[VC4Gallium] session %u: its task ended without a GL teardown, swept\n",
+            (unsigned)(i + 1));
+
+        ObtainSemaphore(&sd->bo_lock);
+        sd->sessions[i].vs_Used = FALSE;
+        sd->sessions[i].vs_Dead = FALSE;
+        ReleaseSemaphore(&sd->bo_lock);
+    }
+}
+
 APTR METHOD(HiddVC4Gallium, Hidd_Gallium, CreatePipeScreen)
 {
     struct vc4galliumstaticdata *sd = SD(cl);
+    struct pipe_screen *screen;
+    ULONG i;
 
     /* Diagnostic: has the firmware governor re-clocked anything since
      * InitLib forced V3D to max? Logged once per GL context start. */
@@ -392,7 +434,41 @@ APTR METHOD(HiddVC4Gallium, Hidd_Gallium, CreatePipeScreen)
         sd->bridge_inited = TRUE;
     }
 
-    return vc4_aros_create_screen(&sd->bridge, sd->coreapi);
+    vc4_sweep_dead(sd);
+
+    /* A session per screen, named to the shim by the fd. */
+    ObtainSemaphore(&sd->bo_lock);
+    for (i = 0; (i < VC4_MAX_SESSIONS) && sd->sessions[i].vs_Used; i++)
+        ;
+    if (i < VC4_MAX_SESSIONS)
+    {
+        sd->sessions[i].vs_Used   = TRUE;
+        sd->sessions[i].vs_Dead   = FALSE;
+        sd->sessions[i].vs_Screen = NULL;
+        sd->sessions[i].vs_Task   = FindTask(NULL);
+    }
+    ReleaseSemaphore(&sd->bo_lock);
+    if (i == VC4_MAX_SESSIONS)
+    {
+        bug("[VC4Gallium] %u GL screens open already - GL falls back to softpipe\n",
+            (unsigned)VC4_MAX_SESSIONS);
+        return NULL;
+    }
+
+    screen = vc4_aros_create_screen(&sd->bridge, sd->coreapi,
+                                    (int)(VC4_SCREENFD_TAG | (i + 1)));
+    if (!screen)
+    {
+        vc4_aros_release_session(sd, i + 1);
+        ObtainSemaphore(&sd->bo_lock);
+        sd->sessions[i].vs_Used = FALSE;
+        ReleaseSemaphore(&sd->bo_lock);
+        return NULL;
+    }
+    ObtainSemaphore(&sd->bo_lock);
+    sd->sessions[i].vs_Screen = screen;
+    ReleaseSemaphore(&sd->bo_lock);
+    return screen;
 }
 
 IPTR METHOD(HiddVC4Gallium, Hidd_Gallium, DisplayResourceRP)
@@ -406,6 +482,7 @@ VOID METHOD(HiddVC4Gallium, Hidd_Gallium, DestroyPipeScreen)
 {
     struct vc4galliumstaticdata *sd = SD(cl);
     struct vc4_v3d_state *v3d = &sd->v3d;
+    ULONG sid, i;
 
     /* The direct path builds the pipe_screen in mesa3dgl via
      * vc4_screen_create(), so the base class's no-op DestroyPipeScreen
@@ -413,7 +490,11 @@ VOID METHOD(HiddVC4Gallium, Hidd_Gallium, DestroyPipeScreen)
      * Dispatch into the screen's own destroy fn here. */
     D(bug("[VC4Gallium] %s(screen=%p)\n", __PRETTY_FUNCTION__, msg->screen));
 
-    if (msg->screen)
+    if (!msg->screen)
+        return;
+
+    sid = vc4_session_of(sd, msg->screen);
+
     {
         struct pipe_screen *screen = (struct pipe_screen *)msg->screen;
 
@@ -424,21 +505,33 @@ VOID METHOD(HiddVC4Gallium, Hidd_Gallium, DestroyPipeScreen)
          * kick a stale RCL into the NEXT GL session's first frame. */
         vc4_aros_wait_idle(sd);
         vc4_aros_dma_wait_idle(sd);
-
         screen->destroy(screen);
     }
 
-    /* Drop the winsys bookkeeping for this screen. TRUE means it was the
-     * last one, so the hardware reset below is safe; with a second screen
-     * still live (a capability-probe context, or a fullscreen toggle
-     * building the new context before dropping the old) it would free the
-     * survivor's BOs and clear V3D state under its rendering. */
-    if (!aros_drm_release_bridge())
+    if (sid)
+    {
+        vc4_aros_release_session(sd, sid);
+        ObtainSemaphore(&sd->bo_lock);
+        sd->sessions[sid - 1].vs_Used = FALSE;
+        ReleaseSemaphore(&sd->bo_lock);
+    }
+    vc4_sweep_dead(sd);
+
+    /* With another screen live (another app, a capability-probe context,
+     * or a fullscreen toggle building the new context before dropping the
+     * old) the reset below would free the survivor's BOs and clear V3D
+     * state under its rendering. */
+    ObtainSemaphore(&sd->bo_lock);
+    for (i = 0; (i < VC4_MAX_SESSIONS) && !sd->sessions[i].vs_Used; i++)
+        ;
+    ReleaseSemaphore(&sd->bo_lock);
+    if (i < VC4_MAX_SESSIONS)
         return;
+    aros_drm_release_bridge();
 
     /* Return the driver to a clean, idle, empty state for the next GL
      * session: sweep whatever Mesa leaked (plus the async-DMA pin and the
-     * frame pools) and drop the per-session submission/scanout state. */
+     * frame pools) and drop the per-session submission state. */
     vc4_aros_release_all_bos(sd);
 
     if (v3d->v3d_available)
@@ -454,12 +547,6 @@ VOID METHOD(HiddVC4Gallium, Hidd_Gallium, DestroyPipeScreen)
         V3D_WRITE(v3d, V3D_INTCTL,
                   V3D_INT_FLDONE | V3D_INT_FRDONE | V3D_INT_OUTOMEM);
     }
-
-    ObtainSemaphore(&sd->bo_lock);
-    sd->scanout_phys[0] = 0;
-    sd->scanout_phys[1] = 0;
-    sd->scanout_size = 0;
-    ReleaseSemaphore(&sd->bo_lock);
 }
 
 /*
@@ -484,7 +571,7 @@ void vc4_aros_wait_idle(struct vc4galliumstaticdata *sd)
      * µs-precise completion of short jobs, then ~1 ms timer naps so input
      * keeps running while the GPU renders. (Blocking on the vblank signal
      * from the start quantized every wait to ~20 ms and phase-locked the
-     * zero-copy GL frame time to 40 ms; pure spinning starves the mouse.)
+     * GL frame time to 40 ms; pure spinning starves the mouse.)
      * Beyond the nap window, fall back to CPU-free vblank blocking. */
     BYTE wsig = vc4_wait_enter(sd);
     ULONG ticks = 0;
@@ -629,254 +716,6 @@ void vc4_aros_wait_idle(struct vc4galliumstaticdata *sd)
 }
 
 /*
- * Scanout page query for zero-copy fullscreen GL. Resolves the vcgfx
- * framebuffer's two flip pages and announces them (via sd->scanout_*)
- * as acceptable GEM_OPEN names, so the Mesa side can wrap them as BOs
- * and render straight into the back page. Returns 0 on success, -1
- * when the bitmap isn't a flippable vcgfx framebuffer.
- */
-int vc4_aros_get_scanout(struct vc4galliumstaticdata *sd, OOP_Object *bm_obj,
-                         struct vc4_aros_scanout *out)
-{
-    IPTR front = 0, back = 0, pitch = 0, width = 0, height = 0;
-
-    if (!bm_obj || !sd->hiddVC4GfxBMAB || !sd->hiddBitMapAB)
-        return -1;
-
-    OOP_GetAttr(bm_obj,
-        sd->hiddVC4GfxBMAB + aoHidd_VideoCoreGfxBitMap_Drawable, &front);
-    OOP_GetAttr(bm_obj,
-        sd->hiddVC4GfxBMAB + aoHidd_VideoCoreGfxBitMap_BackDrawable, &back);
-    OOP_GetAttr(bm_obj, sd->hiddBitMapAB + aoHidd_BitMap_BytesPerRow, &pitch);
-    OOP_GetAttr(bm_obj, sd->hiddBitMapAB + aoHidd_BitMap_Width, &width);
-    OOP_GetAttr(bm_obj, sd->hiddBitMapAB + aoHidd_BitMap_Height, &height);
-
-    if (!front || !back || !pitch || !width || !height)
-        return -1;
-
-    /* Stable page identity regardless of which one is currently front. */
-    out->name[0] = (front < back) ? (ULONG)front : (ULONG)back;
-    out->name[1] = (front < back) ? (ULONG)back : (ULONG)front;
-    out->back    = ((ULONG)back == out->name[1]) ? 1 : 0;
-    out->pitch   = (ULONG)pitch;
-    out->width   = (ULONG)width;
-    out->height  = (ULONG)height;
-
-    /* Publish for GEM_OPEN. */
-    ObtainSemaphore(&sd->bo_lock);
-    sd->scanout_phys[0] = out->name[0];
-    sd->scanout_phys[1] = out->name[1];
-    sd->scanout_size = (ULONG)pitch * (ULONG)height;
-    ReleaseSemaphore(&sd->bo_lock);
-
-    return 0;
-}
-
-/*
- * Flip the vcgfx framebuffer pages after the GPU has rendered a full
- * frame into the back page. Waits for the GPU (and any in-flight blit
- * DMA) before the page becomes visible. Returns 0 on success.
- */
-int vc4_aros_flip_scanout(struct vc4galliumstaticdata *sd, OOP_Object *bm_obj)
-{
-    struct TagItem fliptags[] =
-    {
-        { 0, TRUE },
-        { TAG_DONE, 0 }
-    };
-    IPTR back_before = 0, back_after = 0;
-
-    if (!bm_obj || !sd->hiddVC4GfxBMAB)
-        return -1;
-
-    OOP_GetAttr(bm_obj,
-        sd->hiddVC4GfxBMAB + aoHidd_VideoCoreGfxBitMap_BackDrawable, &back_before);
-    if (!back_before)
-        return -1;
-
-    vc4_aros_wait_idle(sd);
-    vc4_aros_dma_wait_idle(sd);
-
-    /* The entry frame's blit pinned its source BO until "the next blit";
-     * on the flip path there is no next blit, so release it here now
-     * that the DMA engine is idle. */
-    ObtainSemaphore(&sd->bo_lock);
-    if (sd->dma_pinned_handle)
-    {
-        vc4_aros_bo_unref_locked(sd, sd->dma_pinned_handle);
-        sd->dma_pinned_handle = 0;
-    }
-    ReleaseSemaphore(&sd->bo_lock);
-
-    fliptags[0].ti_Tag = sd->hiddVC4GfxBMAB + aoHidd_VideoCoreGfxBitMap_Flip;
-    OOP_SetAttrs(bm_obj, fliptags);
-
-    OOP_GetAttr(bm_obj,
-        sd->hiddVC4GfxBMAB + aoHidd_VideoCoreGfxBitMap_BackDrawable, &back_after);
-
-    /* The flip succeeded iff the back page changed. */
-    return (back_after && back_after != back_before) ? 0 : -1;
-}
-
-/*
- * Zero-copy windowed present: show a rendered BO as an HVS overlay
- * plane at (x,y) on the screen's framebuffer bitmap. The BO stays
- * pinned while on scanout; each call retargets the plane and unpins
- * the previous buffer (the hidd's overlay path waits for the vblank
- * latch before returning, so the old buffer is off-screen by then).
- * Returns 0 on success, -1 when the overlay is unavailable (firmware
- * owns the display / scaled desktop / bad handle) — caller blits.
- */
-int vc4_aros_set_overlay(struct vc4galliumstaticdata *sd,
-                         OOP_Object *bm_obj,
-                         ULONG src_bo_handle, ULONG src_stride,
-                         LONG x, LONG y, ULONG w, ULONG h,
-                         ULONG dest_w, ULONG dest_h)
-{
-    struct vc4gfx_overlay desc;
-    struct TagItem ovltags[] =
-    {
-        { 0, (IPTR)&desc },
-        { TAG_DONE, 0 }
-    };
-    IPTR active = 0;
-    ULONG prev;
-
-    if (!bm_obj || !sd->hiddVC4GfxBMAB || !w || !h)
-        return -1;
-
-    /* A page displaced by the last Set may still be on scanout */
-    vc4_aros_overlay_latch_wait(sd);
-
-    ObtainSemaphore(&sd->bo_lock);
-    if (src_bo_handle >= VC4_MAX_BOS || !sd->bo_table[src_bo_handle].vaddr
-        || (ULONG)src_stride * h > sd->bo_table[src_bo_handle].size)
-    {
-        ReleaseSemaphore(&sd->bo_lock);
-        return -1;
-    }
-    desc.ovl_Phys   = sd->bo_table[src_bo_handle].bus_addr & 0x3fffffff;
-    desc.ovl_Pitch  = src_stride;
-    desc.ovl_Width  = w;
-    desc.ovl_Height = h;
-    desc.ovl_X      = x;
-    desc.ovl_Y      = y;
-    desc.ovl_DestW  = dest_w;
-    desc.ovl_DestH  = dest_h;
-    /* No latch wait here; submit_cl waits if a job renders into the
-     * displaced page. */
-    desc.ovl_Flags  = VC4GFX_OVL_NOWAIT;
-
-    /* Pin the new buffer before showing it; the previous pin is
-     * released only after the hidd confirms the switch latched. */
-    sd->bo_table[src_bo_handle].refcount++;
-    prev = sd->overlay_pinned_handle;
-    sd->overlay_pinned_handle = src_bo_handle;
-    sd->overlay_bm = bm_obj;
-    ReleaseSemaphore(&sd->bo_lock);
-
-    /* The frame must be complete before it becomes visible — but that is
-     * the CALLER's contract now (bridge v5): mesa3dgl waits on the seqno
-     * of the frame it displays (normally the previous frame, already
-     * finished) before calling here. Waiting for full GPU idle at this
-     * point serialized CPU and GPU (frame time = CPU + GPU), costing tens
-     * of ms per frame in a GPU-bound scene. */
-
-    ovltags[0].ti_Tag = sd->hiddVC4GfxBMAB + aoHidd_VideoCoreGfxBitMap_Overlay;
-    OOP_SetAttrs(bm_obj, ovltags);
-    OOP_GetAttr(bm_obj,
-        sd->hiddVC4GfxBMAB + aoHidd_VideoCoreGfxBitMap_Overlay, &active);
-
-    {
-        static ULONG _ovl_n = 0;
-
-        _ovl_n++;
-        if (_ovl_n <= 4 || (_ovl_n & 255) == 0)
-            bug("[VC4Gallium] set_overlay #%u: bo=%lu %lux%lu at %d,%d "
-                "active=%d\n", _ovl_n, (unsigned long)src_bo_handle,
-                (unsigned long)w, (unsigned long)h, x, y, (LONG)active);
-    }
-
-    ObtainSemaphore(&sd->bo_lock);
-    if (!active)
-    {
-        /* Rejected: nothing is on scanout — drop both pins. */
-        vc4_aros_bo_unref_locked(sd, src_bo_handle);
-        if (prev)
-            vc4_aros_bo_unref_locked(sd, prev);
-        sd->overlay_pinned_handle = 0;
-        sd->overlay_bm = NULL;
-        ReleaseSemaphore(&sd->bo_lock);
-        return -1;
-    }
-    /* The displaced page keeps its pin until its latch is retired; a
-     * repeat of the same BO drops the duplicate pin now. */
-    if (prev && prev != src_bo_handle)
-        sd->overlay_displaced_handle = prev;
-    else if (prev)
-        vc4_aros_bo_unref_locked(sd, prev);
-    ReleaseSemaphore(&sd->bo_lock);
-    return 0;
-}
-
-void vc4_aros_overlay_latch_wait(struct vc4galliumstaticdata *sd)
-{
-    IPTR dummy = 0;
-    OOP_Object *bm;
-    ULONG displaced;
-
-    ObtainSemaphore(&sd->bo_lock);
-    bm = sd->overlay_bm;
-    displaced = sd->overlay_displaced_handle;
-    ReleaseSemaphore(&sd->bo_lock);
-
-    if (!displaced)
-        return;
-
-    if (bm && sd->hiddVC4GfxBMAB)
-        OOP_GetAttr(bm, sd->hiddVC4GfxBMAB + aoHidd_VideoCoreGfxBitMap_LatchWait, &dummy);
-
-    ObtainSemaphore(&sd->bo_lock);
-    if (sd->overlay_displaced_handle == displaced)
-    {
-        vc4_aros_bo_unref_locked(sd, displaced);
-        sd->overlay_displaced_handle = 0;
-    }
-    ReleaseSemaphore(&sd->bo_lock);
-}
-
-void vc4_aros_clear_overlay(struct vc4galliumstaticdata *sd,
-                            OOP_Object *bm_obj)
-{
-    struct TagItem ovltags[] =
-    {
-        { 0, 0 },       /* NULL descriptor = remove */
-        { TAG_DONE, 0 }
-    };
-    OOP_Object *target = bm_obj ? bm_obj : sd->overlay_bm;
-
-    if (target && sd->hiddVC4GfxBMAB)
-    {
-        ovltags[0].ti_Tag = sd->hiddVC4GfxBMAB + aoHidd_VideoCoreGfxBitMap_Overlay;
-        OOP_SetAttrs(target, ovltags);
-    }
-
-    ObtainSemaphore(&sd->bo_lock);
-    if (sd->overlay_pinned_handle)
-    {
-        vc4_aros_bo_unref_locked(sd, sd->overlay_pinned_handle);
-        sd->overlay_pinned_handle = 0;
-    }
-    if (sd->overlay_displaced_handle)
-    {
-        vc4_aros_bo_unref_locked(sd, sd->overlay_displaced_handle);
-        sd->overlay_displaced_handle = 0;
-    }
-    sd->overlay_bm = NULL;
-    ReleaseSemaphore(&sd->bo_lock);
-}
-
-/*
  * Blit a rectangle from a BO to an AROS bitmap. Waits for GPU work
  * to finish first; pins/unpins the BO around the access; tries DMA
  * to the framebuffer phys address when the dest is a vcgfx bitmap,
@@ -989,80 +828,37 @@ void vc4_aros_display_blit(struct vc4galliumstaticdata *sd,
 
         if (fb_addr && fb_bpr)
         {
-            BOOL flip = FALSE;
-
-            /* Full-frame blit with a flippable framebuffer: blit into
-             * the back page and flip — tear-free, and the DMA never
-             * writes to live scanout. */
-            if (dst_x == 0 && dst_y == 0)
             {
-                IPTR back = 0, bm_w = 0, bm_h = 0;
-
-                OOP_GetAttr(bm_obj,
-                    sd->hiddVC4GfxBMAB + aoHidd_VideoCoreGfxBitMap_BackDrawable,
-                    &back);
-                if (back)
-                {
-                    OOP_GetAttr(bm_obj,
-                        sd->hiddBitMapAB + aoHidd_BitMap_Width, &bm_w);
-                    OOP_GetAttr(bm_obj,
-                        sd->hiddBitMapAB + aoHidd_BitMap_Height, &bm_h);
-                    if (width == (ULONG)bm_w && height == (ULONG)bm_h)
-                    {
-                        fb_addr = back;
-                        flip = TRUE;
-                    }
-                }
-            }
-
-            {
-                /* Log on geometry change; ignore fb_addr (it alternates
-                 * between the two flip pages every frame). */
+                /* Log on geometry change */
                 static struct {
                     ULONG w, h, bpr;
-                    LONG x, y, flip;
+                    LONG x, y;
                     ULONG count;
-                } dlast = { 0, 0, 0, -1, -1, -1, 0 };
+                } dlast = { 0, 0, 0, -1, -1, 0 };
 
                 if (dlast.count < 100 &&
                     (width != dlast.w || height != dlast.h ||
                      (ULONG)fb_bpr != dlast.bpr || dst_x != dlast.x ||
-                     dst_y != dlast.y || (LONG)flip != dlast.flip))
+                     dst_y != dlast.y))
                 {
                     dlast.count++;
                     dlast.w = width; dlast.h = height;
                     dlast.bpr = (ULONG)fb_bpr;
                     dlast.x = dst_x; dlast.y = dst_y;
-                    dlast.flip = flip;
                     bug("[VC4Gallium] display_blit: DMA %dx%d cpp=%d to "
-                        "fb=0x%08x bpr=%d at %d,%d flip=%d\n",
+                        "fb=0x%08x bpr=%d at %d,%d\n",
                         width, height, cpp, (ULONG)fb_addr, (ULONG)fb_bpr,
-                        dst_x, dst_y, (LONG)flip);
+                        dst_x, dst_y);
                 }
             }
 
+            /* On DMA failure (no TDMODE channel, CB alloc failure) fall
+             * through to the CPU path below. */
             _used_dma = gallium_dma_blit_direct(sd,
                 (ULONG)(IPTR)src_addr, src_stride,
                 (ULONG)fb_addr + dst_y * (ULONG)fb_bpr + dst_x * cpp,
                 (ULONG)fb_bpr,
                 width_bytes, height);
-
-            /* On DMA failure (no TDMODE channel, CB alloc failure) fall
-             * through to the CPU path below, and skip the flip — the back
-             * page never received the frame. */
-            if (_used_dma && flip)
-            {
-                /* The blit runs asynchronously — the page must be
-                 * complete before it becomes visible. */
-                struct TagItem fliptags[] =
-                {
-                    { sd->hiddVC4GfxBMAB + aoHidd_VideoCoreGfxBitMap_Flip, TRUE },
-                    { TAG_DONE, 0 }
-                };
-
-                vc4_aros_dma_wait_idle(sd);
-                OOP_SetAttrs(bm_obj, fliptags);
-            }
         }
 
         if (!_used_dma)
@@ -1139,4 +935,102 @@ void vc4_aros_display_blit(struct vc4galliumstaticdata *sd,
         _t_after_blit - _t_entry,
         _used_dma ? "DMA" : "CPU",
         width, height);
+}
+
+/*
+ * Alias buffer msg->buffer of a scan-out bitmap (vcgfx, in its scanout
+ * memory) as a linear render target of the pipe screen: its address is
+ * published as a GEM_OPEN name and imported by Mesa, so GL renders
+ * straight into what a plane scans out. vcgfx gives the buffer the
+ * stride Mesa works out for a linear target itself.
+ */
+APTR METHOD(HiddVC4Gallium, Hidd_Gallium, ResourceFromBitMap)
+{
+    struct vc4galliumstaticdata *sd = SD(cl);
+    struct pipe_screen *pscreen = (struct pipe_screen *)msg->screen;
+    OOP_Object *bm = msg->bitmap, *pf = NULL;
+    IPTR scanout = 0, width = 0, height = 0, stdpf = 0;
+    struct pHidd_BitMap_LockBuffer lmsg;
+    struct pHidd_BitMap_UnlockBuffer umsg;
+    struct Rectangle none = { 0, 0, -1, -1 };
+    struct winsys_handle wh;
+    struct pipe_resource templ;
+    enum pipe_format format;
+    UBYTE *addr = NULL;
+    ULONG pitch = 0, name, i;
+
+    if (!pscreen || !pscreen->resource_from_handle || !bm
+        || !sd->hiddBitMapAB || !sd->hiddPixFmtAB)
+        return NULL;
+
+    OOP_GetAttr(bm, sd->hiddBitMapAB + aoHidd_BitMap_Scanout, &scanout);
+    OOP_GetAttr(bm, sd->hiddBitMapAB + aoHidd_BitMap_Width, &width);
+    OOP_GetAttr(bm, sd->hiddBitMapAB + aoHidd_BitMap_Height, &height);
+    OOP_GetAttr(bm, sd->hiddBitMapAB + aoHidd_BitMap_PixFmt, (IPTR *)&pf);
+    if (pf)
+        OOP_GetAttr(pf, sd->hiddPixFmtAB + aoHidd_PixFmt_StdPixFmt, &stdpf);
+    if (!scanout || !width || !height)
+        return NULL;
+
+    switch (stdpf)
+    {
+    case vHidd_StdPixFmt_BGRA32:
+        format = PIPE_FORMAT_B8G8R8A8_UNORM;
+        break;
+    case vHidd_StdPixFmt_BGR032:
+        format = PIPE_FORMAT_B8G8R8X8_UNORM;
+        break;
+    case vHidd_StdPixFmt_RGB16_LE:
+        format = PIPE_FORMAT_B5G6R5_UNORM;
+        break;
+    default:
+        return NULL;
+    }
+
+    lmsg.mID           = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_LockBuffer);
+    lmsg.buffer        = msg->buffer;
+    lmsg.addressReturn = &addr;
+    lmsg.pitchReturn   = &pitch;
+    lmsg.planeOffsets  = NULL;
+    if (!OOP_DoMethod(bm, (OOP_Msg)&lmsg) || !addr || !pitch)
+        return NULL;
+    umsg.mID    = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_UnlockBuffer);
+    umsg.buffer = msg->buffer;
+    umsg.dirty  = &none;
+    OOP_DoMethod(bm, (OOP_Msg)&umsg);
+
+    /* Scanout memory is identity mapped: the address is the page's */
+    name = (ULONG)(IPTR)addr;
+    ObtainSemaphore(&sd->bo_lock);
+    for (i = 0; i < VC4_EXT_NAMES; i++)
+        if (sd->ext_name[i] == name)
+            break;
+    if (i == VC4_EXT_NAMES)
+    {
+        i = sd->ext_next;
+        sd->ext_next = (sd->ext_next + 1) % VC4_EXT_NAMES;
+    }
+    sd->ext_name[i] = name;
+    sd->ext_size[i] = pitch * height;
+    ReleaseSemaphore(&sd->bo_lock);
+
+    memset(&wh, 0, sizeof(wh));
+    wh.type     = WINSYS_HANDLE_TYPE_SHARED;
+    wh.handle   = name;
+    wh.stride   = pitch;
+    wh.modifier = 0;        /* DRM_FORMAT_MOD_LINEAR: drm_fourcc.h clashes with vc4_drm_aros.h */
+
+    memset(&templ, 0, sizeof(templ));
+    templ.target     = PIPE_TEXTURE_2D;
+    templ.format     = format;
+    templ.width0     = width;
+    templ.height0    = height;
+    templ.depth0     = 1;
+    templ.array_size = 1;
+    templ.bind       = PIPE_BIND_RENDER_TARGET | PIPE_BIND_SAMPLER_VIEW
+                     | PIPE_BIND_SCANOUT | PIPE_BIND_LINEAR | PIPE_BIND_SHARED;
+    templ.usage      = PIPE_USAGE_DEFAULT;
+
+    return pscreen->resource_from_handle(pscreen, &templ, &wh,
+                                         PIPE_HANDLE_USAGE_FRAMEBUFFER_WRITE);
 }

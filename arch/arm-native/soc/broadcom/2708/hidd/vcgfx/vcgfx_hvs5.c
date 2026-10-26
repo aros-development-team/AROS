@@ -18,8 +18,8 @@
     hardware. See vcgfx_hvs5.h for what came out of it.
 
     From there the driver owns the list: it inherits the framebuffer plane
-    verbatim, authors its own cursor and overlay planes, and paces flips
-    off the PixelValve interrupt.
+    verbatim, authors its own cursor plane and the screens', and paces
+    their updates off the PixelValve interrupt.
 */
 
 #define DEBUG 0
@@ -228,7 +228,13 @@ void vc4_hvs5_dump(struct VideoCoreGfx_staticdata *xsd,
 /* ------------------------------------------------------------------ */
 
 static void hvs5_write_cursor(struct VideoCoreGfx_staticdata *xsd, ULONG base);
-static void hvs5_latch_wait(struct vc4_hvs_state *st);
+static void hvs5_latch_until(struct vc4_hvs_state *st, ULONG armed);
+
+static inline void hvs5_latch_wait(struct vc4_hvs_state *st)
+{
+    hvs5_latch_until(st, st->hvs_FlipArmed);
+}
+static BOOL hvs5_vsync_live(struct vc4_hvs_state *st);
 #if VC4_HVS5_VSYNC_IRQ
 static void hvs5_vsync_start(struct vc4_hvs_state *st);
 #endif
@@ -359,42 +365,77 @@ static void hvs5_init_plane(ULONG base, ULONG alpha_mode, ULONG words)
     hvs5_dl_wr(base + 2, alpha_mode);
 }
 
-/* The overlay plane: a GL buffer composited over the framebuffer with fixed
- * alpha, since what GL leaves in the alpha channel is undefined. */
-/* The overlay's screen rectangle: fb coordinates and ovl_DestW/H taken
- * through the fb plane's own scaling. FALSE when empty. */
-static BOOL hvs5_ovl_rect(struct vc4_hvs_state *st, LONG *dx, LONG *dy,
-                          ULONG *dw, ULONG *dh)
+/* A plane to place: source pixels and where they go. x/y/w/h are in a
+ * cw x ch space that fills the fb plane's rectangle - the fb's own size,
+ * or a screen's mode size, so every screen fills the display as its own
+ * mode would. w/h exceed the source for an upscaled plane. */
+struct hvs5_src
 {
-    ULONG want_w = st->hvs_OvlDestW ? st->hvs_OvlDestW : st->hvs_OvlW;
-    ULONG want_h = st->hvs_OvlDestH ? st->hvs_OvlDestH : st->hvs_OvlH;
+    ULONG phys, pitch;
+    ULONG pxf, bpp;         /* pxf 0 = the template's 32bpp format */
+    ULONG srcw, srch;
+    LONG  x, y;
+    ULONG w, h;
+    ULONG cw, ch;
+    ULONG yuv;              /* HVS YUV format, 0 = RGB */
+    ULONG cphys[2], cpitch; /* its chroma: CbCr, or Cb then Cr */
+    ULONG csc[3];
+};
 
-    if (!st->hvs_SrcW || !st->hvs_SrcH || !want_w || !want_h)
+/* The plane's screen rectangle. FALSE when empty. */
+static BOOL hvs5_src_rect(struct vc4_hvs_state *st, const struct hvs5_src *s,
+                          LONG *dx, LONG *dy, ULONG *dw, ULONG *dh)
+{
+    if (!s->cw || !s->ch || !s->w || !s->h)
         return FALSE;
 
-    *dx = (LONG)st->hvs_FBX + st->hvs_OvlX * (LONG)st->hvs_DestW
-                                           / (LONG)st->hvs_SrcW;
-    *dy = (LONG)st->hvs_FBY + st->hvs_OvlY * (LONG)st->hvs_DestH
-                                           / (LONG)st->hvs_SrcH;
-    *dw = want_w * st->hvs_DestW / st->hvs_SrcW;
-    *dh = want_h * st->hvs_DestH / st->hvs_SrcH;
+    *dx = (LONG)st->hvs_FBX + s->x * (LONG)st->hvs_DestW / (LONG)s->cw;
+    *dy = (LONG)st->hvs_FBY + s->y * (LONG)st->hvs_DestH / (LONG)s->ch;
+    *dw = s->w * st->hvs_DestW / s->cw;
+    *dh = s->h * st->hvs_DestH / s->ch;
 
     return (*dw != 0) && (*dh != 0);
 }
 
-static ULONG hvs5_ovl_words(struct vc4_hvs_state *st)
+/* A YUV entry: chroma always through the PPF, luma too when scaled, so
+ * the line buffer is needed even at 1:1. Its words, 0 = can't be shown. */
+#define HVS5_YUV_WORDS(s, scaled) \
+    (((s)->yuv == HVS_PXF_YUV420_3PLANE ? 25 : 22) + ((scaled) ? 4 : 0))
+
+static ULONG hvs5_yuv_words(struct vc4_hvs_state *st, const struct hvs5_src *s,
+                            ULONG lbm)
+{
+    LONG dx, dy;
+    ULONG dw, dh;
+    BOOL scaled;
+
+    if (!hvs5_src_rect(st, s, &dx, &dy, &dw, &dh)
+        || (lbm + HVS5_LBM_BYTES(s->srcw) > st->hvs_FBLBM))
+        return 0;
+    scaled = (dw != s->srcw) || (dh != s->srch);
+    if (scaled && (!HVS5_PPF_FITS(s->srcw, dw) || !HVS5_PPF_FITS(s->srch, dh)))
+        return 0;
+    return HVS5_YUV_WORDS(s, scaled);
+}
+
+/* Unity or scaled. lbm is the line buffer already handed out this list;
+ * a scaled plane that would not fit shows unscaled instead. */
+static ULONG hvs5_src_words(struct vc4_hvs_state *st, const struct hvs5_src *s,
+                            ULONG lbm)
 {
     LONG dx, dy;
     ULONG dw, dh;
 
-    if (!hvs5_ovl_rect(st, &dx, &dy, &dw, &dh))
+    if (s->yuv)
+        return hvs5_yuv_words(st, s, lbm);
+    if (!hvs5_src_rect(st, s, &dx, &dy, &dw, &dh))
         return HVS5_PLANE_WORDS;
-    if (dw == st->hvs_OvlW && dh == st->hvs_OvlH)
+    if (dw == s->srcw && dh == s->srch)
         return HVS5_PLANE_WORDS;
-    if (!HVS5_PPF_FITS(st->hvs_OvlW, dw) || !HVS5_PPF_FITS(st->hvs_OvlH, dh))
+    if (!HVS5_PPF_FITS(s->srcw, dw) || !HVS5_PPF_FITS(s->srch, dh))
         return HVS5_PLANE_WORDS;
     /* Our LBM grows up from 0; a scaled fb plane's grows down from the top. */
-    if (HVS5_LBM_BYTES(st->hvs_OvlW) > st->hvs_FBLBM)
+    if (lbm + HVS5_LBM_BYTES(s->srcw) > st->hvs_FBLBM)
         return HVS5_PLANE_WORDS;
     return HVS5_SCALED_WORDS;
 }
@@ -406,21 +447,145 @@ static void hvs5_dl_set(ULONG idx, ULONG val)
         hvs5_dl_wr(idx, val);
 }
 
-static void hvs5_write_overlay(struct VideoCoreGfx_staticdata *xsd, ULONG base)
+/*
+ * A YUV entry at base, clipped like hvs5_write_src() but on whole chroma
+ * samples. After CTL0, POS0, CTL2, POS1 when scaled, POS2 and POS3: a
+ * pointer, a context word and a pitch per plane, the three CSC words,
+ * LBM, then the PPF words of the chroma channel and, scaled, of the luma
+ * channel, each H then V and its context, and four kernel pointers.
+ */
+static void hvs5_write_yuv(struct vc4_hvs_state *st, ULONG base, ULONG words,
+                           ULONG lbm, const struct hvs5_src *s,
+                           LONG left, LONG top, LONG right, LONG bottom)
 {
-    struct vc4_hvs_state *st = &xsd->vcsd_HVS;
-    LONG left = (LONG)st->hvs_FBX, top = (LONG)st->hvs_FBY;
-    LONG right = left + (LONG)st->hvs_DestW;
-    LONG bottom = top + (LONG)st->hvs_DestH;
-    BOOL scaled = (st->hvs_OvlWords == HVS5_SCALED_WORDS);
-    ULONG ptr = st->hvs_OvlPhys & ~HVS5_PTR_BUS_ALIAS;
-    ULONG srcw = st->hvs_OvlW, srch = st->hvs_OvlH;
+    BOOL scaled = (words == HVS5_YUV_WORDS(s, TRUE));
+    ULONG planes = (s->yuv == HVS_PXF_YUV420_3PLANE) ? 3 : 2;
+    ULONG cbytes = (planes == 2) ? 2 : 1;
+    ULONG ctl0 = HVS5_CTL0_VALID | (words << HVS5_CTL0_SIZE_SHIFT)
+               | (scaled ? 0 : HVS5_CTL0_UNITY) | s->yuv;
+    ULONG ptr = s->phys & ~HVS5_PTR_BUS_ALIAS;
+    ULONG c0 = s->cphys[0] & ~HVS5_PTR_BUS_ALIAS, c1 = s->cphys[1] & ~HVS5_PTR_BUS_ALIAS;
+    ULONG srcw = s->srcw, srch = s->srch, ssk, i, n = 1;
     LONG ox, oy;
     ULONG ow, oh;
 
-    if (!hvs5_ovl_rect(st, &ox, &oy, &ow, &oh))
+    if (!hvs5_src_rect(st, s, &ox, &oy, &ow, &oh))
     {
-        hvs5_dl_wr(base, HVS5_CTL0_CURSOR & ~HVS5_CTL0_VALID);
+        hvs5_dl_wr(base, ctl0 & ~HVS5_CTL0_VALID);
+        return;
+    }
+    if (!scaled)
+    {
+        ow = srcw;
+        oh = srch;
+    }
+
+    if (ox < left)
+    {
+        ULONG skip = (ULONG)(left - ox);
+
+        ssk = (skip * srcw / ow) & ~1UL;
+        ptr += ssk;
+        c0 += ssk / 2 * cbytes;
+        c1 += ssk / 2;
+        srcw -= ssk;
+        ow -= skip;
+        ox = left;
+    }
+    if (oy < top)
+    {
+        ULONG skip = (ULONG)(top - oy);
+
+        ssk = (skip * srch / oh) & ~1UL;
+        ptr += ssk * s->pitch;
+        c0 += ssk / 2 * s->cpitch;
+        c1 += ssk / 2 * s->cpitch;
+        srch -= ssk;
+        oh -= skip;
+        oy = top;
+    }
+    if (ox + (LONG)ow > right)
+    {
+        ULONG keep = (right > ox) ? (ULONG)(right - ox) : 0;
+
+        srcw = (srcw * keep / ow) & ~1UL;
+        ow = keep;
+    }
+    if (oy + (LONG)oh > bottom)
+    {
+        ULONG keep = (bottom > oy) ? (ULONG)(bottom - oy) : 0;
+
+        srch = (srch * keep / oh) & ~1UL;
+        oh = keep;
+    }
+    if ((LONG)ow <= 0 || (LONG)oh <= 0 || !srcw || !srch)
+    {
+        hvs5_dl_wr(base, ctl0 & ~HVS5_CTL0_VALID);
+        return;
+    }
+
+    hvs5_dl_set(base + n++, HVS5_POS0(ox, oy));
+    hvs5_dl_set(base + n++, HVS5_ALPHA_FIXED);
+    if (scaled)
+        hvs5_dl_set(base + n++, HVS5_POS2(ow, oh));
+    hvs5_dl_set(base + n++, HVS5_POS2(srcw, srch));
+    hvs5_dl_set(base + n++, 0);
+    hvs5_dl_set(base + n++, HVS5_PTR_BUS_ALIAS | ptr);
+    hvs5_dl_set(base + n++, HVS5_PTR_BUS_ALIAS | c0);
+    if (planes == 3)
+        hvs5_dl_set(base + n++, HVS5_PTR_BUS_ALIAS | c1);
+    for (i = 0; i < planes; i++)
+        hvs5_dl_set(base + n++, 0);
+    hvs5_dl_set(base + n++, s->pitch);
+    hvs5_dl_set(base + n++, s->cpitch);
+    if (planes == 3)
+        hvs5_dl_set(base + n++, s->cpitch);
+    for (i = 0; i < 3; i++)
+        hvs5_dl_set(base + n++, s->csc[i]);
+    hvs5_dl_set(base + n++, lbm);
+
+    /* 4:2:0 chroma: co-sited across, between two luma lines down */
+    hvs5_dl_set(base + n++, vcgfx_ppf(srcw / 2, ow, vcgfx_ppf_phase(srcw / 2, ow, 0, 2)));
+    hvs5_dl_set(base + n++, vcgfx_ppf(srch / 2, oh, vcgfx_ppf_phase(srch / 2, oh, 32, 2)));
+    hvs5_dl_set(base + n++, 0);
+    if (scaled)
+    {
+        hvs5_dl_set(base + n++, vcgfx_ppf(srcw, ow, vcgfx_ppf_phase(srcw, ow, 0, 1)));
+        hvs5_dl_set(base + n++, vcgfx_ppf(srch, oh, vcgfx_ppf_phase(srch, oh, 0, 1)));
+        hvs5_dl_set(base + n++, 0);
+    }
+    for (i = 0; i < 4; i++)
+        hvs5_dl_set(base + n++, HVS5_FW_KERNEL);
+
+    hvs5_dl_set(base, ctl0);
+}
+
+/* Fill in an entry laid down by hvs5_init_plane, clipped to
+ * [left,right) x [top,bottom) on screen with the source trimmed in
+ * proportion. Left invalid when nothing remains. */
+static void hvs5_write_src(struct vc4_hvs_state *st, ULONG base, ULONG words,
+                           ULONG lbm, const struct hvs5_src *s,
+                           LONG left, LONG top, LONG right, LONG bottom)
+{
+    BOOL scaled = (words == HVS5_SCALED_WORDS);
+    ULONG ctl0 = scaled ? HVS5_CTL0_SCALED : HVS5_CTL0_CURSOR;
+
+    if (s->yuv)
+    {
+        hvs5_write_yuv(st, base, words, lbm, s, left, top, right, bottom);
+        return;
+    }
+    ULONG ptr = s->phys & ~HVS5_PTR_BUS_ALIAS;
+    ULONG srcw = s->srcw, srch = s->srch;
+    LONG ox, oy;
+    ULONG ow, oh;
+
+    if (s->pxf)
+        ctl0 = (ctl0 & ~HVS5_CTL0_FORMAT_MASK) | s->pxf;
+
+    if (!hvs5_src_rect(st, s, &ox, &oy, &ow, &oh))
+    {
+        hvs5_dl_wr(base, ctl0 & ~HVS5_CTL0_VALID);
         return;
     }
 
@@ -430,7 +595,7 @@ static void hvs5_write_overlay(struct VideoCoreGfx_staticdata *xsd, ULONG base)
         ULONG skip = (ULONG)(left - ox);
         ULONG ssk = skip * srcw / ow;
 
-        ptr += ssk * 4;
+        ptr += ssk * s->bpp;
         srcw -= ssk;
         ow -= skip;
         ox = left;
@@ -440,21 +605,21 @@ static void hvs5_write_overlay(struct VideoCoreGfx_staticdata *xsd, ULONG base)
         ULONG skip = (ULONG)(top - oy);
         ULONG ssk = skip * srch / oh;
 
-        ptr += ssk * st->hvs_OvlPitch;
+        ptr += ssk * s->pitch;
         srch -= ssk;
         oh -= skip;
         oy = top;
     }
     if (ox + (LONG)ow > right)
     {
-        ULONG keep = (ULONG)(right - ox);
+        ULONG keep = (right > ox) ? (ULONG)(right - ox) : 0;
 
         srcw = srcw * keep / ow;
         ow = keep;
     }
     if (oy + (LONG)oh > bottom)
     {
-        ULONG keep = (ULONG)(bottom - oy);
+        ULONG keep = (bottom > oy) ? (ULONG)(bottom - oy) : 0;
 
         srch = srch * keep / oh;
         oh = keep;
@@ -462,7 +627,7 @@ static void hvs5_write_overlay(struct VideoCoreGfx_staticdata *xsd, ULONG base)
 
     if ((LONG)ow <= 0 || (LONG)oh <= 0 || !srcw || !srch)
     {
-        hvs5_dl_wr(base, HVS5_CTL0_CURSOR & ~HVS5_CTL0_VALID);
+        hvs5_dl_wr(base, ctl0 & ~HVS5_CTL0_VALID);
         return;
     }
 
@@ -473,55 +638,239 @@ static void hvs5_write_overlay(struct VideoCoreGfx_staticdata *xsd, ULONG base)
         hvs5_dl_set(base + 3, HVS5_POS2(ow, oh));
         hvs5_dl_set(base + HVS5_PLANE_WORDS - HVS5_PTROFF_FROM_END,
                     HVS5_PTR_BUS_ALIAS | ptr);
-        hvs5_dl_set(base + HVS5_PLANE_WORDS - 1, st->hvs_OvlPitch);
-        hvs5_dl_set(base, HVS5_CTL0_CURSOR);
+        hvs5_dl_set(base + HVS5_PLANE_WORDS - 1, s->pitch);
+        hvs5_dl_set(base, ctl0);
         return;
     }
 
     hvs5_dl_set(base + HVS5_SC_POS1, HVS5_POS2(ow, oh));
     hvs5_dl_set(base + HVS5_SC_POS2, HVS5_POS2(srcw, srch));
     hvs5_dl_set(base + HVS5_SC_PTR0, HVS5_PTR_BUS_ALIAS | ptr);
-    hvs5_dl_set(base + HVS5_SC_PITCH, st->hvs_OvlPitch);
-    hvs5_dl_set(base + HVS5_SC_LBM, st->hvs_OvlLBM);
+    hvs5_dl_set(base + HVS5_SC_PITCH, s->pitch);
+    hvs5_dl_set(base + HVS5_SC_LBM, lbm);
     hvs5_dl_set(base + HVS5_SC_PPFX, HVS5_PPF(srcw, ow));
     hvs5_dl_set(base + HVS5_SC_PPFY, HVS5_PPF(srch, oh));
     hvs5_dl_set(base + HVS5_SC_KRN0, HVS5_FW_KERNEL);
     hvs5_dl_set(base + HVS5_SC_KRN1, HVS5_FW_KERNEL);
 
-    hvs5_dl_set(base, HVS5_CTL0_SCALED);
+    hvs5_dl_set(base, ctl0);
+}
+
+/* Append a plane at word n of the list; returns the new length. */
+static ULONG hvs5_emit_src(struct vc4_hvs_state *st, ULONG base, ULONG n,
+                           const struct hvs5_src *s, ULONG *lbm,
+                           LONG left, LONG top, LONG right, LONG bottom)
+{
+    ULONG words = hvs5_src_words(st, s, *lbm);
+    ULONG at = 0;
+
+    if (words == HVS5_SCALED_WORDS)
+    {
+        at = *lbm;
+        *lbm += HVS5_LBM_BYTES(s->srcw);
+    }
+    hvs5_init_plane(base + n, HVS5_ALPHA_FIXED, words);
+    hvs5_write_src(st, base + n, words, at, s, left, top, right, bottom);
+    return n + words;
+}
+
+/* Our own buffer behind a token firmware framebuffer, filling the fb
+ * plane's rectangle. */
+static void hvs5_fb_src(struct vc4_hvs_state *st, struct hvs5_src *s)
+{
+    s->phys  = st->hvs_FBPtr;
+    s->pitch = st->hvs_FBPitch;
+    s->pxf   = 0;
+    s->bpp   = 4;
+    s->srcw  = s->w = s->cw = st->hvs_SrcW;
+    s->srch  = s->h = s->ch = st->hvs_SrcH;
+    s->x     = 0;
+    s->y     = 0;
+    s->yuv   = 0;
+}
+
+/* The fb plane, verbatim but for its pointer - or our own buffer. */
+static ULONG hvs5_emit_fb(struct vc4_hvs_state *st, ULONG base, ULONG n, ULONG *lbm)
+{
+    ULONG i;
+
+    if (st->hvs_Tiny)
+    {
+        struct hvs5_src s;
+
+        hvs5_fb_src(st, &s);
+        return hvs5_emit_src(st, base, n, &s, lbm,
+                             (LONG)st->hvs_FBX, (LONG)st->hvs_FBY,
+                             (LONG)(st->hvs_FBX + st->hvs_DestW),
+                             (LONG)(st->hvs_FBY + st->hvs_DestH));
+    }
+
+    for (i = 0; i < st->hvs_FBWords; i++)
+        hvs5_dl_wr(base + n + i, st->hvs_FBEntry[i]);
+    hvs5_dl_wr(base + n + st->hvs_FBPtrOff, HVS5_PTR_BUS_ALIAS | st->hvs_FBPtr);
+    return n + st->hvs_FBWords;
+}
+
+/* A plane, in display pixels. */
+static void hvs5_plane_src(struct VideoCoreGfx_staticdata *xsd, struct vcgfx_plane *pl,
+                           struct hvs5_src *s)
+{
+    struct BitmapData *d = pl->pl_Data;
+
+    s->pitch = d->bytesperrow;
+    s->phys  = (ULONG)(IPTR)d->VideoData + pl->pl_SrcY * s->pitch + pl->pl_SrcX * pl->pl_Bpp;
+    s->pxf   = pl->pl_Pxf;
+    s->bpp   = pl->pl_Bpp;
+    s->srcw  = pl->pl_SrcW;
+    s->srch  = pl->pl_SrcH;
+    s->x     = pl->pl_X;
+    s->y     = pl->pl_Y;
+    s->w     = pl->pl_W;
+    s->h     = pl->pl_H;
+    s->cw    = xsd->vcsd_DispW;
+    s->ch    = xsd->vcsd_DispH;
+    s->yuv   = pl->pl_Yuv;
+    if (s->yuv)
+    {
+        ULONG base = (ULONG)(IPTR)d->VideoData, cx = pl->pl_SrcX / 2, cy = pl->pl_SrcY / 2;
+
+        s->cpitch   = d->cpitch;
+        s->cphys[0] = base + d->planeoff[0] + cy * d->cpitch
+                    + cx * ((s->yuv == HVS_PXF_YUV420_2PLANE) ? 2 : 1);
+        s->cphys[1] = base + d->planeoff[1] + cy * d->cpitch + cx;
+        vcgfx_yuv_csc(d->colorspace, s->csc);
+    }
+}
+
+/* Words and line buffer for a plane, added to the running totals. */
+static ULONG hvs5_take(struct vc4_hvs_state *st, const struct hvs5_src *s, ULONG *lbm)
+{
+    ULONG words = hvs5_src_words(st, s, *lbm);
+
+    if ((words == HVS5_SCALED_WORDS) || (s->yuv && words))
+        *lbm += HVS5_LBM_BYTES(s->srcw);
+    return words;
 }
 
 /*
- * Compose a list into the next slot: the framebuffer plane, then the
- * overlay if one is up, then the cursor, then END. Round-robin so the
- * slot being written is never the one the HVS is scanning.
+ * The screens, back to front, each cut off where the screens in front
+ * hide it: one spanning the display's width down to the bottom of what is
+ * still visible covers everything behind it below its top edge. Worked out
+ * on screen, as every screen scales to fill the display like its own mode.
+ * The fb, kept black, is the backdrop where no screen covers.
  *
- * The caller must write the returned head to DISPLIST. Do that only for
- * structural changes: the HVS applies a repoint mid-scanout, which shows
- * as a torn frame, so steady-state updates patch the live list instead.
+ * The slot and the line buffer go to the screens, front first; a screen
+ * that does not fit is not shown. Placed back to front with what was
+ * decided here.
+ */
+static ULONG hvs5_emit_planes(struct VideoCoreGfx_staticdata *xsd,
+                              ULONG base, ULONG n, ULONG *lbm)
+{
+    struct vc4_hvs_state *st = &xsd->vcsd_HVS;
+    LONG limit[VCGFX_MAX_PLANES];
+    ULONG swords[VCGFX_MAX_PLANES], slbm[VCGFX_MAX_PLANES];
+    LONG left = (LONG)st->hvs_FBX, right = left + (LONG)st->hvs_DestW;
+    LONG top = (LONG)st->hvs_FBY, bottom = top + (LONG)st->hvs_DestH;
+    LONG front = (LONG)xsd->vcsd_NumPlanes - 1;
+    ULONG room = HVS5_OWN_SLOT_STRIDE - n - 1, need = 0, words, lb;
+    struct hvs5_src s;
+    LONG i, px, py;
+    ULONG pw, ph;
+
+    /* The backdrop is reserved before it is known whether anything
+     * uncovers it */
+    if (xsd->vcsd_CurBuf)
+        room -= HVS5_PLANE_WORDS;
+    hvs5_fb_src(st, &s);
+    room -= st->hvs_Tiny ? hvs5_take(st, &s, &need) : st->hvs_FBWords;
+
+    /* Front first: a screen that gets a plane hides what is behind it,
+     * one that does not hides nothing */
+    for (i = front; i >= 0; i--)
+    {
+        struct vcgfx_plane *pl = &xsd->vcsd_Plane[i];
+
+        limit[i] = bottom;
+        swords[i] = 0;
+        pl->pl_Shown = TRUE;
+        hvs5_plane_src(xsd, pl, &s);
+        if (!hvs5_src_rect(st, &s, &px, &py, &pw, &ph) || (limit[i] <= py) || (limit[i] <= top))
+            continue;
+
+        /* One the scaler can't make is left out, not shown at the wrong size */
+        lb = need;
+        words = hvs5_take(st, &s, &lb);
+        if (!words || (words > room)
+            || (!s.yuv && ((pw != s.srcw) || (ph != s.srch)) && (words != HVS5_SCALED_WORDS)))
+        {
+            pl->pl_Shown = FALSE;
+            continue;
+        }
+        room -= words;
+        slbm[i] = need;
+        need = lb;
+        swords[i] = words;
+
+        bottom = vcgfx_plane_occlude(px, py, pw, ph, left, top, right, bottom);
+    }
+
+    if (bottom > top)
+        n = hvs5_emit_fb(st, base, n, lbm);
+
+    for (i = 0; i <= front; i++)
+    {
+        struct vcgfx_plane *pl = &xsd->vcsd_Plane[i];
+        LONG cb = limit[i];
+
+        if (!swords[i])
+            continue;
+
+        hvs5_plane_src(xsd, pl, &s);
+        hvs5_init_plane(base + n, HVS5_ALPHA_FIXED, swords[i]);
+        hvs5_write_src(st, base + n, swords[i], slbm[i], &s, left, top, right, cb);
+        n += swords[i];
+    }
+    return n;
+}
+
+/* A slot nothing can be reading: not the one scanned, not the last one
+ * repointed at, not the one waiting for vblank. The pending list is read
+ * first - the interrupt records it as the last before it lets go of it. */
+static ULONG hvs5_free_slot(struct vc4_hvs_state *st)
+{
+    ULONG pend = __atomic_load_n(&st->hvs_PendList, __ATOMIC_ACQUIRE);
+    ULONG last = __atomic_load_n(&st->hvs_LastList, __ATOMIC_ACQUIRE);
+    ULONG act  = hvs5_rd(HVS5_DISPLACT(st->hvs_Channel));
+    ULONG i, base = HVS5_OWN_SLOT_BASE;
+
+    for (i = 0; i < HVS5_OWN_SLOTS; i++)
+    {
+        base = HVS5_OWN_SLOT_BASE + HVS5_OWN_SLOT_STRIDE * st->hvs_Slot;
+        st->hvs_Slot = (st->hvs_Slot + 1) % HVS5_OWN_SLOTS;
+        if (base != pend && base != last && base != act)
+            break;
+    }
+    return base;
+}
+
+/*
+ * Compose a list into a free slot: the framebuffer plane (or the screens,
+ * once they are planes), then the cursor, then END.
+ *
+ * The returned head goes to DISPLIST through hvs5_commit(), or directly
+ * where a mode set needs it. Steady-state updates that keep the shape of
+ * the list patch the live one instead.
  */
 static ULONG hvs5_build_list(struct VideoCoreGfx_staticdata *xsd)
 {
     struct vc4_hvs_state *st = &xsd->vcsd_HVS;
-    ULONG base = HVS5_OWN_SLOT_BASE + HVS5_OWN_SLOT_STRIDE * st->hvs_Slot;
-    ULONG n = 0, i;
+    ULONG base = hvs5_free_slot(st);
+    ULONG n = 0, lbm = 0;
 
-    st->hvs_Slot = (st->hvs_Slot + 1) % HVS5_OWN_SLOTS;
-
-    for (i = 0; i < st->hvs_FBWords; i++)
-        hvs5_dl_wr(base + n++, st->hvs_FBEntry[i]);
-    hvs5_dl_wr(base + st->hvs_FBPtrOff, HVS5_PTR_BUS_ALIAS | st->hvs_FBPtr);
-
-    st->hvs_OvlOff = 0;
-    st->hvs_OvlWords = 0;
-    if (st->hvs_OvlActive)
-    {
-        st->hvs_OvlOff = n;
-        st->hvs_OvlWords = hvs5_ovl_words(st);
-        hvs5_init_plane(base + n, HVS5_ALPHA_FIXED, st->hvs_OvlWords);
-        hvs5_write_overlay(xsd, base + n);
-        n += st->hvs_OvlWords;
-    }
+    if (xsd->vcsd_PlanesMode)
+        n = hvs5_emit_planes(xsd, base, n, &lbm);
+    else
+        n = hvs5_emit_fb(st, base, n, &lbm);
 
     /* Authored whenever a buffer exists, visible or not, so VALID alone
      * carries visibility and showing the pointer never reshapes the list. */
@@ -541,18 +890,41 @@ static ULONG hvs5_build_list(struct VideoCoreGfx_staticdata *xsd)
     return base;
 }
 
+/* DISPLIST is about to be written outside hvs5_commit(): nothing may stay
+ * queued behind it. */
+static void hvs5_note_list(struct vc4_hvs_state *st, ULONG base)
+{
+    __atomic_store_n(&st->hvs_PendList, 0, __ATOMIC_RELEASE);
+    __atomic_store_n(&st->hvs_LastList, base, __ATOMIC_RELEASE);
+}
+
+/* Repoint at a built list. A repoint takes effect mid-scanout, so while
+ * the vblank interrupt runs it does the write; otherwise now, torn. */
+static void hvs5_commit(struct vc4_hvs_state *st, ULONG base)
+{
+    if (hvs5_vsync_live(st))
+    {
+        __atomic_store_n(&st->hvs_PendList, base, __ATOMIC_RELEASE);
+        return;
+    }
+    hvs5_note_list(st, base);
+    hvs5_wr(HVS5_DISPLIST(st->hvs_Channel), base);
+}
+
 BOOL vc4_hvs5_takeover(struct VideoCoreGfx_staticdata *xsd,
                        ULONG fb_phys, ULONG fb_pitch)
 {
     struct vc4_hvs_state *st = &xsd->vcsd_HVS;
 
     st->hvs_Active = FALSE;
+    hvs5_note_list(st, 0);
     (void)fb_pitch;
 
 #if VC4_HVS5_TAKEOVER
     {
         ULONG ctrl, head, len, base, i, ch;
         ULONG fb_entry, fb_ptr, fb_words;
+        BOOL plain;
 
         if (hvs5_rd(HVS5_ID) != HVS5_ID_MAGIC)
             return FALSE;
@@ -654,18 +1026,29 @@ BOOL vc4_hvs5_takeover(struct VideoCoreGfx_staticdata *xsd,
         }
 
         /* A scaled fb plane's LBM base is the ceiling for ours. */
-        st->hvs_OvlActive = FALSE;
-        st->hvs_OvlUsable = (fb_words == HVS5_PLANE_WORDS)
-                         || (fb_words == HVS5_SCALED_WORDS);
+        plain = (fb_words == HVS5_PLANE_WORDS) || (fb_words == HVS5_SCALED_WORDS);
         st->hvs_FBLBM = (fb_words == HVS5_SCALED_WORDS)
-                      ? st->hvs_FBEntry[HVS5_SC_LBM] : HVS5_LBM_TOP;
-        st->hvs_OvlLBM = 0;
+                      ? st->hvs_FBEntry[HVS5_SC_LBM] : HVS5_LBM_SIZE;
 
+        /* Behind a token framebuffer the firmware's plane only gives the
+         * rectangle; the mode's size and our buffer go in it. */
+        if (st->hvs_Tiny)
+        {
+            st->hvs_SrcW      = st->hvs_ShowW;
+            st->hvs_SrcH      = st->hvs_ShowH;
+            st->hvs_FBPtr     = st->hvs_ShowPtr;
+            st->hvs_FBPitch   = st->hvs_ShowPitch;
+            st->hvs_FBLBM     = HVS5_LBM_SIZE;
+            plain             = TRUE;
+        }
+
+        /* Planes may be committing from another task. */
+        VC4_MBOX_LOCK(xsd);
         base = hvs5_build_list(xsd);
 
         hvs5_log_list(base);
 
-        if (!st->hvs_OvlUsable)
+        if (!plain)
         {
             ULONG i;
 
@@ -676,7 +1059,7 @@ BOOL vc4_hvs5_takeover(struct VideoCoreGfx_staticdata *xsd,
                     hvs5_dl_rd(HVS5_FW_KERNEL + i));
         }
 
-        VC4_MBOX_LOCK(xsd);
+        hvs5_note_list(st, base);
         hvs5_wr(HVS5_DISPLIST(st->hvs_Channel), base);
         for (i = 0; i < HVS5_SPIN_LATCH; i++)
         {
@@ -717,22 +1100,100 @@ BOOL vc4_hvs5_takeover(struct VideoCoreGfx_staticdata *xsd,
     return st->hvs_Active;
 }
 
-BOOL vc4_hvs5_flip_page(struct VideoCoreGfx_staticdata *xsd, ULONG page_phys)
+/*
+ * After a takeover: if w x h at the rate in want is a mode we can set,
+ * set it, showing the framebuffer as a unity plane at 0,0 - whatever the
+ * firmware had scaled it into.
+ */
+BOOL vc4_hvs5_mode_apply(struct VideoCoreGfx_staticdata *xsd, ULONG w, ULONG h,
+                         ULONG pitch, const struct vcgfx_timing *want)
 {
     struct vc4_hvs_state *st = &xsd->vcsd_HVS;
+    const struct vcgfx_timing *t;
+    ULONG base;
+    BOOL boot, ok;
 
-    if (!st->hvs_Active)
+    if (!st->hvs_Active || !(t = vc4_hvs5_mode_lookup(xsd, w, h, want, &boot)) || boot)
+        return FALSE;
+    if (pitch < w * 4)
+    {
+        bug("[VC4HVS5] fb pitch %u is short of %ux%u - firmware clamped it?\n",
+            (unsigned)pitch, (unsigned)w, (unsigned)h);
+        return FALSE;
+    }
+
+    st->hvs_FBEntry[0] = HVS5_CTL0_CURSOR;
+    st->hvs_FBEntry[1] = HVS5_POS0(0, 0);
+    st->hvs_FBEntry[2] = HVS5_ALPHA_FIXED;
+    st->hvs_FBEntry[3] = HVS5_POS2(w, h);
+    st->hvs_FBEntry[4] = 0;
+    st->hvs_FBEntry[5] = 0;
+    st->hvs_FBEntry[6] = 0;
+    st->hvs_FBEntry[7] = pitch;
+    st->hvs_FBWords    = HVS5_PLANE_WORDS;
+    st->hvs_FBPtrOff   = HVS5_PLANE_WORDS - HVS5_PTROFF_FROM_END;
+    st->hvs_FBX        = 0;
+    st->hvs_FBY        = 0;
+    st->hvs_SrcW       = st->hvs_DestW = w;
+    st->hvs_SrcH       = st->hvs_DestH = h;
+    st->hvs_FBLBM      = HVS5_LBM_SIZE;
+    st->hvs_FBPitch    = pitch;
+
+    VC4_MBOX_LOCK(xsd);
+    base = hvs5_build_list(xsd);
+    hvs5_note_list(st, base);
+    ok = vc4_hvs5_mode_set(xsd, st->hvs_Channel, base, t, FALSE);
+    VC4_MBOX_UNLOCK(xsd);
+    return ok;
+}
+
+/*
+ * A new mode behind a token framebuffer: our buffer of w x h as a unity
+ * plane in our own list, and the mode set by us - the boot mode too. The
+ * firmware builds no list once a mode of ours has been on, so it is never
+ * asked again (BCM2712 works like this throughout). FALSE, with nothing
+ * changed, when w x h is not a mode we set.
+ */
+BOOL vc4_hvs5_mode_switch(struct VideoCoreGfx_staticdata *xsd, ULONG w, ULONG h,
+                          ULONG fb_phys, ULONG pitch, const struct vcgfx_timing *want)
+{
+    struct vc4_hvs_state *st = &xsd->vcsd_HVS;
+    const struct vcgfx_timing *t, *cur = &xsd->vcsd_HVS5M.m5_CurTiming;
+    ULONG base;
+    BOOL boot;
+
+    if (!st->hvs_Active || !st->hvs_Tiny || (pitch < w * 4)
+        || !(t = vc4_hvs5_mode_lookup(xsd, w, h, want, &boot)))
         return FALSE;
 
-    /* One word, reloaded by the HVS at frame start, so the flip is
-     * vblank-latched without a repoint. Unpaced until the PixelValve
-     * interrupt is wired up. */
-    st->hvs_FBPtr = page_phys & ~HVS5_PTR_BUS_ALIAS;
-    hvs5_dl_wr(st->hvs_ListBase + st->hvs_FBPtrOff,
-               HVS5_PTR_BUS_ALIAS | st->hvs_FBPtr);
-    st->hvs_FlipArmed = st->hvs_VSyncCount + 1;
+    st->hvs_ShowPtr   = fb_phys;
+    st->hvs_ShowPitch = pitch;
+    st->hvs_ShowW     = w;
+    st->hvs_ShowH     = h;
+    st->hvs_FBPtr     = fb_phys;
+    st->hvs_FBPitch   = pitch;
+    st->hvs_FBX       = 0;
+    st->hvs_FBY       = 0;
+    st->hvs_SrcW      = st->hvs_DestW = w;
+    st->hvs_SrcH      = st->hvs_DestH = h;
+    st->hvs_FBLBM     = HVS5_LBM_SIZE;
 
-    hvs5_latch_wait(st);
+    VC4_MBOX_LOCK(xsd);
+    base = hvs5_build_list(xsd);
+    if ((t->hdisp == cur->hdisp) && (t->vdisp == cur->vdisp) && (t->clock == cur->clock))
+    {
+        /* Same timing: only the buffer changes, at the next vblank */
+        hvs5_commit(st, base);
+        st->hvs_FlipArmed = st->hvs_VSyncCount + 1;
+        hvs5_latch_wait(st);
+    }
+    else
+    {
+        /* A list that never latches is logged there; the buffer is in use */
+        hvs5_note_list(st, base);
+        vc4_hvs5_mode_set(xsd, st->hvs_Channel, base, t, boot);
+    }
+    VC4_MBOX_UNLOCK(xsd);
     return TRUE;
 }
 
@@ -796,80 +1257,6 @@ static void hvs5_write_cursor(struct VideoCoreGfx_staticdata *xsd, ULONG base)
     st->hvs_CurShown = TRUE;
 }
 
-BOOL vc4_hvs5_overlay(struct VideoCoreGfx_staticdata *xsd,
-                      const struct vc4gfx_overlay *ovl)
-{
-    struct vc4_hvs_state *st = &xsd->vcsd_HVS;
-    BOOL structural;
-
-    if (!st->hvs_Active || !st->hvs_OvlUsable)
-    {
-        /* Once: which precondition failed decides the fix (takeover
-         * failure vs a firmware-scaled fb plane). */
-        static BOOL said = FALSE;
-
-        if (!said && ovl)
-        {
-            said = TRUE;
-            bug("[VC4HVS5] overlay refused: %s (fb entry %u words,"
-                " lbm floor %u)\n",
-                !st->hvs_Active ? "no display list takeover"
-                                : "fb plane shape not understood",
-                (unsigned)st->hvs_FBWords, (unsigned)st->hvs_FBLBM);
-        }
-        return FALSE;
-    }
-
-    VC4_MBOX_LOCK(xsd);
-
-    if (!ovl)
-    {
-        if (st->hvs_OvlActive)
-        {
-            st->hvs_OvlActive = FALSE;
-            hvs5_wr(HVS5_DISPLIST(st->hvs_Channel), hvs5_build_list(xsd));
-            /* The hidden page scans until this latches: arm it so the
-             * caller's LatchWait covers the clear. */
-            st->hvs_FlipArmed = st->hvs_VSyncCount + 1;
-        }
-        VC4_MBOX_UNLOCK(xsd);
-        return TRUE;
-    }
-
-    structural = !st->hvs_OvlActive || !st->hvs_OvlOff
-              || st->hvs_OvlW != ovl->ovl_Width
-              || st->hvs_OvlH != ovl->ovl_Height;
-
-    st->hvs_OvlActive = TRUE;
-    /* Set before hvs5_ovl_words(), which reads it. */
-    st->hvs_OvlPhys  = ovl->ovl_Phys & ~HVS5_PTR_BUS_ALIAS;
-    st->hvs_OvlPitch = ovl->ovl_Pitch;
-    st->hvs_OvlW     = ovl->ovl_Width;
-    st->hvs_OvlH     = ovl->ovl_Height;
-    st->hvs_OvlDestW = ovl->ovl_Width;
-    st->hvs_OvlDestH = ovl->ovl_Height;
-    st->hvs_OvlX     = ovl->ovl_X;
-    st->hvs_OvlY     = ovl->ovl_Y;
-
-    /* Unity <-> scaled moves the words: rebuild, don't patch. */
-    if (hvs5_ovl_words(st) != st->hvs_OvlWords)
-        structural = TRUE;
-
-    if (structural)
-        hvs5_wr(HVS5_DISPLIST(st->hvs_Channel), hvs5_build_list(xsd));
-    else
-        hvs5_write_overlay(xsd, st->hvs_ListBase + st->hvs_OvlOff);
-
-    /* The buffer just replaced stays on screen until this latches, so
-     * pace the producer exactly like a page flip, unless deferred. */
-    st->hvs_FlipArmed = st->hvs_VSyncCount + 1;
-    if (!(ovl->ovl_Flags & VC4GFX_OVL_NOWAIT))
-        hvs5_latch_wait(st);
-
-    VC4_MBOX_UNLOCK(xsd);
-    return TRUE;
-}
-
 void vc4_hvs5_latch_wait(struct VideoCoreGfx_staticdata *xsd)
 {
     struct vc4_hvs_state *st = &xsd->vcsd_HVS;
@@ -928,10 +1315,21 @@ static void hvs5_vsync_irq(struct vc4_hvs_state *st, struct ExecBase *sysBase)
         pv_wr(st->hvs_PVOffset, HVS5_PV_INTSTAT, stat);   /* W1C */
         if (stat & st->hvs_VSyncMask)
         {
+            ULONG pend = __atomic_load_n(&st->hvs_PendList, __ATOMIC_ACQUIRE);
+
+            /* Recorded as the last list before it stops being pending, so
+             * hvs5_free_slot() never sees it as neither. */
+            if (pend && st->hvs_Active)
+            {
+                __atomic_store_n(&st->hvs_LastList, pend, __ATOMIC_RELEASE);
+                hvs5_wr(HVS5_DISPLIST(st->hvs_Channel), pend);
+                __atomic_compare_exchange_n(&st->hvs_PendList, &pend, 0, FALSE,
+                                            __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
+            }
+
             st->hvs_VSyncCount++;
             st->hvs_VSyncStamp = hvs5_now_us();
-            if (st->hvs_VSyncTask)
-                Signal(st->hvs_VSyncTask, st->hvs_VSyncSigMask);
+            vcgfx_vbl_signal(&st->hvs_VSyncWait);
         }
     }
 }
@@ -1072,7 +1470,7 @@ void vc4_hvs5_irq_init(struct VideoCoreGfx_staticdata *xsd)
  * degrades to unpaced rather than stalling.
  * Sleeps instead of spinning while the interrupt is demonstrably live.
  */
-static void hvs5_latch_wait(struct vc4_hvs_state *st)
+static void hvs5_latch_until(struct vc4_hvs_state *st, ULONG armed)
 {
 #if VC4_HVS5_VSYNC_IRQ
     ULONG start;
@@ -1083,45 +1481,99 @@ static void hvs5_latch_wait(struct vc4_hvs_state *st)
 
     start = hvs5_now_us();
 
-    /* One waiter slot: a second caller spins. */
-    if (!st->hvs_VSyncTask
-        && (start - st->hvs_VSyncStamp) < HVS5_LIVE_US)
+    /* With no waiter slot or signal free, spin. */
+    if ((start - st->hvs_VSyncStamp) < HVS5_LIVE_US)
     {
         BYTE sig = AllocSignal(-1);
+        LONG slot = (sig != -1) ? vcgfx_vbl_add(&st->hvs_VSyncWait, 1UL << sig) : -1;
 
-        if (sig != -1)
+        if (slot >= 0)
         {
-            st->hvs_VSyncSigMask = 1UL << sig;
-            Disable();
-            st->hvs_VSyncTask = FindTask(NULL);
-            Enable();
-
-            while ((LONG)(st->hvs_VSyncCount - st->hvs_FlipArmed) < 0)
+            while ((LONG)(st->hvs_VSyncCount - armed) < 0)
             {
                 if ((hvs5_now_us() - start) >= HVS5_FLIP_US)
                     break;
                 /* Clear, re-test, Wait(): a latch in the gap leaves
                  * the signal set. */
-                SetSignal(0, st->hvs_VSyncSigMask);
-                if ((LONG)(st->hvs_VSyncCount - st->hvs_FlipArmed) >= 0)
+                SetSignal(0, 1UL << sig);
+                if ((LONG)(st->hvs_VSyncCount - armed) >= 0)
                     break;
-                Wait(st->hvs_VSyncSigMask);
+                Wait(1UL << sig);
             }
 
-            Disable();
-            st->hvs_VSyncTask = NULL;
-            Enable();
+            vcgfx_vbl_rem(&st->hvs_VSyncWait, slot);
             FreeSignal(sig);
             return;
         }
+        if (sig != -1)
+            FreeSignal(sig);
     }
 
-    while ((LONG)(st->hvs_VSyncCount - st->hvs_FlipArmed) < 0)
+    while ((LONG)(st->hvs_VSyncCount - armed) < 0)
     {
         if ((hvs5_now_us() - start) >= HVS5_FLIP_US)
             break;
     }
 #else
     (void)st;
+    (void)armed;
 #endif
+}
+
+/* The interrupt is armed and has ticked within the last few frames. */
+static BOOL hvs5_vsync_live(struct vc4_hvs_state *st)
+{
+#if VC4_HVS5_VSYNC_IRQ
+    return st->hvs_VSyncIrq && st->hvs_VSyncMask
+        && (pv_rd(st->hvs_PVOffset, HVS5_PV_INTEN) & st->hvs_VSyncMask)
+        && (hvs5_now_us() - st->hvs_VSyncStamp) < HVS5_LIVE_US;
+#else
+    (void)st;
+    return FALSE;
+#endif
+}
+
+/* ------------------------------------------------------------------ */
+/* Screens as planes                                                   */
+/* ------------------------------------------------------------------ */
+
+BOOL vc4_hvs5_planes_ok(void)
+{
+    return VC4_HVS5_TAKEOVER;
+}
+
+BOOL vc4_hvs5_plane_fits(struct VideoCoreGfx_staticdata *xsd, ULONG w, ULONG h)
+{
+    struct vc4_hvs_state *st = &xsd->vcsd_HVS;
+
+    return st->hvs_DestW && st->hvs_DestH
+        && HVS5_PPF_FITS(w, st->hvs_DestW) && HVS5_PPF_FITS(h, st->hvs_DestH);
+}
+
+/* Caller holds the mailbox lock. Armed, so vc4_hvs5_latch_wait() tells when the
+ * previous list - and the pages it showed - are out of use. */
+void vc4_hvs5_planes_commit(struct VideoCoreGfx_staticdata *xsd)
+{
+    struct vc4_hvs_state *st = &xsd->vcsd_HVS;
+
+    if (!st->hvs_Active)
+        return;
+
+    hvs5_commit(st, hvs5_build_list(xsd));
+    st->hvs_FlipArmed = st->hvs_VSyncCount + 1;
+}
+
+/* Build a list without showing it, for pl_Shown; caller holds the
+ * mailbox lock. The slot it lands in is one no commit is reading, and the
+ * in-place patches keep aiming at the newest list. */
+void vc4_hvs5_planes_try(struct VideoCoreGfx_staticdata *xsd)
+{
+    struct vc4_hvs_state *st = &xsd->vcsd_HVS;
+    ULONG listbase = st->hvs_ListBase, curoff = st->hvs_CurOff;
+
+    if (!st->hvs_Active)
+        return;
+    hvs5_build_list(xsd);
+    st->hvs_ListBase = listbase;
+    st->hvs_CurOff   = curoff;
 }
