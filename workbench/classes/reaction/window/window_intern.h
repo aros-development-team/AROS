@@ -54,6 +54,10 @@ struct WindowClassData
     struct Hook         *wcd_AppMsgHook;    /* AppWindow message hook */
     struct DiskObject   *wcd_Icon;          /* Iconify icon */
 
+    struct TagItem      wcd_WinTags[33];    /* the program's WA_ tags, for OpenWindowTagList */
+    UWORD               wcd_NumWinTags;
+    BOOL                wcd_GadgetTags;     /* the program chose the window gadgets */
+    ULONG               wcd_IDCMP;          /* the program's WA_IDCMP */
     STRPTR              wcd_Title;          /* Window title */
     STRPTR              wcd_ScreenTitle;    /* Screen title */
     STRPTR              wcd_IconTitle;      /* Iconify title */

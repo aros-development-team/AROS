@@ -50,6 +50,53 @@ struct lpAddToWindow
 
 /******************************************************************************/
 
+/* WA_ tags passed on to the window as they are */
+static BOOL window_keep_tag(struct WindowClassData *data, struct TagItem *tag)
+{
+    UWORD i;
+
+    switch (tag->ti_Tag)
+    {
+        case WA_CloseGadget:
+        case WA_DepthGadget:
+        case WA_SizeGadget:
+        case WA_DragBar:
+            data->wcd_GadgetTags = TRUE;
+            /* fall through */
+        case WA_Flags:
+        case WA_NoCareRefresh:
+        case WA_SimpleRefresh:
+        case WA_SmartRefresh:
+        case WA_SizeBRight:
+        case WA_SizeBBottom:
+        case WA_GimmeZeroZero:
+        case WA_Borderless:
+        case WA_Activate:
+        case WA_RMBTrap:
+        case WA_Backdrop:
+        case WA_SuperBitMap:
+        case WA_BackFill:
+        case WA_HelpGroup:
+        case WA_MenuHelp:
+        case WA_Zoom:
+        case WA_NotifyDepth:
+            break;
+        default:
+            return FALSE;
+    }
+    for (i = 0; i < data->wcd_NumWinTags; i++)
+        if (data->wcd_WinTags[i].ti_Tag == tag->ti_Tag)
+            break;
+    if (i < 32)
+    {
+        data->wcd_WinTags[i] = *tag;
+        if (i == data->wcd_NumWinTags)
+            data->wcd_NumWinTags++;
+        data->wcd_WinTags[data->wcd_NumWinTags].ti_Tag = TAG_DONE;
+    }
+    return TRUE;
+}
+
 static void window_set(Class *cl, Object *o, struct opSet *msg)
 {
     struct WindowClassData *data = INST_DATA(cl, o);
@@ -58,8 +105,16 @@ static void window_set(Class *cl, Object *o, struct opSet *msg)
 
     while ((tag = NextTagItem(&tags)))
     {
+        if (window_keep_tag(data, tag))
+            continue;
         switch (tag->ti_Tag)
         {
+            case WA_IDCMP:
+                data->wcd_IDCMP = tag->ti_Data;
+                if (data->wcd_Window)
+                    ModifyIDCMP(data->wcd_Window, data->wcd_Window->IDCMPFlags | data->wcd_IDCMP);
+                break;
+
             case WA_Title:
                 data->wcd_Title = (STRPTR)tag->ti_Data;
                 if (data->wcd_Window)
@@ -451,17 +506,17 @@ IPTR Window__WM_OPEN(Class *cl, Object *o, Msg msg)
         WA_Title,       (IPTR)data->wcd_Title,
         WA_ScreenTitle, (IPTR)data->wcd_ScreenTitle,
         WA_PubScreen,   (IPTR)screen,
-        WA_DragBar,     TRUE,
-        WA_DepthGadget, TRUE,
-        WA_SizeGadget,  TRUE,
-        WA_CloseGadget, TRUE,
+        data->wcd_GadgetTags ? TAG_IGNORE : WA_DragBar,     TRUE,
+        data->wcd_GadgetTags ? TAG_IGNORE : WA_DepthGadget, TRUE,
+        data->wcd_GadgetTags ? TAG_IGNORE : WA_SizeGadget,  TRUE,
+        data->wcd_GadgetTags ? TAG_IGNORE : WA_CloseGadget, TRUE,
         WA_Activate,    TRUE,
         simpleRefresh ? WA_SimpleRefresh : WA_SmartRefresh, TRUE,
         WA_IDCMP,       IDCMP_CLOSEWINDOW | IDCMP_GADGETUP |
                          IDCMP_MENUPICK | IDCMP_REFRESHWINDOW |
                          IDCMP_NEWSIZE | IDCMP_RAWKEY | IDCMP_VANILLAKEY |
                          IDCMP_CHANGEWINDOW | IDCMP_ACTIVEWINDOW |
-                         IDCMP_INACTIVEWINDOW,
+                         IDCMP_INACTIVEWINDOW | data->wcd_IDCMP,
         WA_NewLookMenus, TRUE,
         WA_SizeBBottom, TRUE,
         /* Without explicit limits Intuition caps resizing at the opening
@@ -471,7 +526,7 @@ IPTR Window__WM_OPEN(Class *cl, Object *o, Msg msg)
         WA_MinHeight, (layoutMinH && layoutMinH < height) ? layoutMinH : height,
         WA_MaxWidth,  ~0,
         WA_MaxHeight, ~0,
-        TAG_DONE);
+        TAG_MORE,       (IPTR)data->wcd_WinTags);
 
     if (!data->wcd_Screen)
         UnlockPubScreen(NULL, screen);
