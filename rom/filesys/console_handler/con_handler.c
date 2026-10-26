@@ -567,7 +567,11 @@ static void close_con(struct filehandle *fh)
     DeleteIORequest(ioReq(fh->conreadio));
 
     D(bug("[con:handler] Delete console.device MsgPort 0x%p\n", fh->conreadmp));
-    FreeVec(fh->conreadmp);
+    if (fh->conreadmp) {
+        FreeSignal((BYTE)fh->conreadmp->mp_SigBit);
+        FreeSignal((BYTE)fh->conwritemp->mp_SigBit);
+        FreeVec(fh->conreadmp);
+    }
 
     if (fh->screenname)
         FreeVec(fh->screenname);
@@ -716,19 +720,26 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
     /* Create msgport for console.device communication */
     fh->conreadmp = AllocVec(sizeof(struct MsgPort) * 2, MEMF_PUBLIC | MEMF_CLEAR);
     if (fh->conreadmp) {
-        SetMem( fh->conreadmp, 0, sizeof( *fh->conreadmp ) );
+        fh->conwritemp = fh->conreadmp + 1;
+        fh->conreadmp->mp_SigBit = (UBYTE)-1;
+        fh->conwritemp->mp_SigBit = (UBYTE)-1;
         fh->conreadmp->mp_Node.ln_Type = NT_MSGPORT;
         fh->conreadmp->mp_Flags = PA_SIGNAL;
         fh->conreadmp->mp_SigBit = AllocSignal(-1);
+        if (fh->conreadmp->mp_SigBit == (UBYTE)-1) {
+            err = ERROR_NO_FREE_STORE;
+            goto out;
+        }
         fh->conreadmp->mp_SigTask = fh->contask;
         NEWLIST(&fh->conreadmp->mp_MsgList);
 
-        fh->conwritemp = fh->conreadmp + 1;
-
-        SetMem( fh->conwritemp, 0, sizeof( *fh->conwritemp ) );
         fh->conwritemp->mp_Node.ln_Type = NT_MSGPORT;
         fh->conwritemp->mp_Flags = PA_SIGNAL;
         fh->conwritemp->mp_SigBit = AllocSignal(-1);
+        if (fh->conwritemp->mp_SigBit == (UBYTE)-1) {
+            err = ERROR_NO_FREE_STORE;
+            goto out;
+        }
         fh->conwritemp->mp_SigTask = fh->contask;
         NEWLIST(&fh->conwritemp->mp_MsgList);
 
@@ -783,6 +794,7 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
     if (!(fh->flags & FHFLG_DEVICEMODE) && dn->dn_Startup)
         fh->flags |= FHFLG_RAW;
 
+out:
     if (!ok) {
         close_con(fh);
         fh = NULL;
