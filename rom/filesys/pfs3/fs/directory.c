@@ -714,7 +714,7 @@ static BOOL SearchInDir(ULONG dirnodenr, STRPTR objectname, union objectinfo *in
 	struct direntry *entry = NULL;
 	BOOL found = FALSE, eod = FALSE;
 	ULONG anodeoffset;
-	UBYTE intl_name[PATHSIZE];
+	UBYTE intl_name[PATHSIZE + 1];   /* ctodstr(): length, name and NUL */
 
 	ENTER("SearchInDir");
 	ctodstr(objectname, intl_name);
@@ -4055,7 +4055,7 @@ static struct deldirentry *SearchInDeldir(STRPTR delname, union objectinfo *resu
 	struct deldirentry *dde;
 	struct cdeldirblock *dblk;
 	UBYTE *delnumptr;
-	UBYTE intl_name[PATHSIZE];
+	UBYTE intl_name[PATHSIZE + 1];   /* ctodstr(): length, name and NUL */
 	unsigned slotnr, offset;
 
 	ENTER("SearchInDeldir");

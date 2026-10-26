@@ -104,6 +104,65 @@ void SleepCommands (struct DosPacket *action, globaldata *g);
 #include "dd_support.c"
 #include "dd_funcs.c"
 
+#ifdef AROS_FAST_BSTR
+/* Names reach the handler as C strings of any length, but BCPLtoCString()
+ * copies them into PATHSIZE buffers that hold a BSTR's 255 bytes. Refuse a
+ * longer name before the packet is handled, rather than act on a shortened
+ * one. */
+static BOOL CheckNames(struct DosPacket *action)
+{
+	SIPTR name = 0, name2 = 0, comment = 0;
+	SIPTR error = 0;
+
+	switch (action->dp_Type)
+	{
+		case ACTION_RENAME_DISK:
+		case ACTION_FORMAT:
+			name = action->dp_Arg1;
+			break;
+
+		case ACTION_LOCATE_OBJECT:
+		case ACTION_CREATE_DIR:
+		case ACTION_DELETE_OBJECT:
+		case ACTION_MAKE_LINK:
+			name = action->dp_Arg2;
+			break;
+
+		case ACTION_RENAME_OBJECT:
+			name = action->dp_Arg2;
+			name2 = action->dp_Arg4;
+			break;
+
+		case ACTION_FINDINPUT:
+		case ACTION_FINDOUTPUT:
+		case ACTION_FINDUPDATE:
+		case ACTION_SET_PROTECT:
+		case ACTION_SET_DATE:
+		case ACTION_SET_OWNER:
+			name = action->dp_Arg3;
+			break;
+
+		case ACTION_SET_COMMENT:
+			name = action->dp_Arg3;
+			comment = action->dp_Arg4;
+			break;
+	}
+
+	if ((name && strlen((char *)BADDR(name)) >= PATHSIZE) ||
+		(name2 && strlen((char *)BADDR(name2)) >= PATHSIZE))
+		error = ERROR_INVALID_COMPONENT_NAME;
+	else if (comment && strlen((char *)BADDR(comment)) >= PATHSIZE)
+		error = ERROR_COMMENT_TOO_BIG;
+
+	if (error)
+	{
+		action->dp_Res1 = DOSFALSE;
+		action->dp_Res2 = error;
+	}
+	return error == 0;
+}
+#endif
+
 
 /**********************
  * structures and globals
@@ -225,6 +284,11 @@ void NormalCommands(struct DosPacket *action, globaldata *g)
 
 	/* clear error field */
 	action->dp_Res2 = 0;
+
+#ifdef AROS_FAST_BSTR
+	if (!CheckNames(action))
+		return;
+#endif
 
 	packettype = action->dp_Type;
 	if (packettype == ACTION_WRITE)
@@ -365,6 +429,11 @@ void InhibitedCommands(struct DosPacket *action, globaldata *g)
 {
 	/* clear error field */
 	action->dp_Res2 = 0;
+
+#ifdef AROS_FAST_BSTR
+	if (!CheckNames(action))
+		return;
+#endif
 
 	switch (action->dp_Type)
 	{

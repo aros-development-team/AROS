@@ -896,7 +896,7 @@ static SIPTR dd_Relabel(struct DosPacket *pkt, globaldata * g)
 	// ARG1 = BSTR new disk name
 	// RES1 = BOOL Success/failure (DOSTRUE/DOSFALSE)
 
-	UBYTE newlabel[FNSIZE];
+	UBYTE newlabel[PATHSIZE];
 	struct DosList *newentry;
 
 #if MULTIUSER

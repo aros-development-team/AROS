@@ -135,7 +135,7 @@ static void OutOfMemory (globaldata *g)
 BOOL dstricmp (DSTR dstring, STRPTR cstring)
 {
   BOOL result;
-  UBYTE temp[PATHSIZE];
+  UBYTE temp[PATHSIZE + 1];   /* ctodstr(): length, name and NUL */
 
 	ctodstr (cstring, temp);
 	intltoupper (temp);
@@ -162,6 +162,7 @@ BOOL ddstricmp (DSTR dstr1, DSTR dstr2)
 UBYTE *BCPLtoCString(STRPTR dest, DSTR src)
 {
 #ifdef AROS_FAST_BSTR
+  /* At most 255 bytes: CheckNames() refuses longer names */
   strcpy(dest, (CONST_STRPTR)src);
   return dest;
 #else
