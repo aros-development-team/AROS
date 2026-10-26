@@ -509,12 +509,12 @@ static void plane_format(struct vcgfx_plane *pl, struct BitmapData *data)
     }
 }
 
-/* NV12 and I420 on VideoCore IV and HVS5, whose entries carry their own
- * colour conversion. */
+/* NV12 and I420: through the scaler, so on HVS6 only where it scales. */
 BOOL vcgfx_yuv_ok(struct VideoCoreGfx_staticdata *xsd, ULONG videofmt)
 {
     return ((videofmt == vHidd_VideoFmt_NV12) || (videofmt == vHidd_VideoFmt_I420))
-        && (xsd->vcsd_HVSGen != VCGFX_HVS_HVS6) && vcgfx_planes_supported(xsd);
+        && ((xsd->vcsd_HVSGen != VCGFX_HVS_HVS6) || vc4_hvs6_scales(xsd))
+        && vcgfx_planes_supported(xsd);
 }
 
 /* A 10-bit S2.8 coefficient: 0 to 2.996, or -1 to just under 0 */
