@@ -852,7 +852,7 @@ LONG CONMain(struct ExecBase *SysBase)
     struct Message *mn;
     struct FileHandle *dosfh;
     LONG error;
-    struct filehandle *fh;
+    struct filehandle *fh = NULL;
     struct FileLock *fl;
     struct DosPacket *waitingdp = NULL;
 
