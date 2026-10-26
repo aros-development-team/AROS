@@ -681,8 +681,20 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
     }
 
     fh->timermp = CreateMsgPort();
+    if (!fh->timermp) {
+        close_con(fh);
+        return NULL;
+    }
     fh->timerreq = (struct timerequest*) CreateIORequest(fh->timermp, sizeof(struct timerequest));
-    OpenDevice(TIMERNAME, UNIT_MICROHZ, (struct IORequest *) fh->timerreq, 0);
+    if (!fh->timerreq) {
+        close_con(fh);
+        return NULL;
+    }
+    if (OpenDevice(TIMERNAME, UNIT_MICROHZ, (struct IORequest *) fh->timerreq, 0) != 0) {
+        *perr = ERROR_DEVICE_NOT_MOUNTED;
+        close_con(fh);
+        return NULL;
+    }
 
     err = 0;
     filename = BSTR2C((BSTR) dp->dp_Arg1);
