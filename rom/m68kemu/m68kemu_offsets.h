@@ -110,6 +110,11 @@
 #define M68K_WIN_GZZWIDTH           112
 #define M68K_WIN_GZZHEIGHT          114
 #define M68K_WIN_WLAYER             124
+/* AmigaOS 3 hires window borders, what 68k programs size their windows by */
+#define M68K_CLASSIC_WBORTOP        2
+#define M68K_CLASSIC_WBORLEFT       4
+#define M68K_CLASSIC_WBORRIGHT      4
+#define M68K_CLASSIC_WBORBOTTOM     2
 #define M68K_RP_LAYER               0
 #define M68K_RP_TMPRAS              12
 #define M68K_RP_AREAINFO            16

@@ -42,6 +42,11 @@ struct M68KEmuContext *M68KEmu_CreateContext(struct M68KEmuLibBase *base)
 
     ctx->mem      = mem;
     ctx->mem_size = M68KEMU_MEM_SIZE;
+    /* programs size windows from the classic border widths; M68KEMU_CLASSICBORDERS=0 shows the real ones */
+    {
+        char v[4];
+        ctx->classic_borders = !(GetVar((CONST_STRPTR)"M68KEMU_CLASSICBORDERS", (STRPTR)v, sizeof(v), 0) > 0 && v[0] == '0');
+    }
     ctx->emuBase  = base;
 
     ctx->stack_top    = M68KEMU_MEM_SIZE;
