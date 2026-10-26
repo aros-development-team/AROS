@@ -2494,7 +2494,7 @@ static struct Image *image_from_m68k(struct M68KEmuContext *ctx, ULONG mi, int d
         if (copy)
         {
             for (i = 0; i < words; i++)
-                copy[i] = m68k_read16(ctx, data + i * 2);
+                copy[i] = AROS_WORD2BE(m68k_read16(ctx, data + i * 2));
             copy[words] = 0;
             im->ImageData = copy;
         }
