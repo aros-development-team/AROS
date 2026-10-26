@@ -93,6 +93,51 @@ void m68k_task_stack(struct M68KEmuContext *ctx, ULONG mtask, struct Task *task)
 
 /* A Screen's embedded ViewPort and RastPort are passed on by address, and
    its ColorMap goes to the pen functions: give them shadows as well. */
+/* A deep screen's ColorMap has 256 entries, but only the 8 the palette prefs
+   set have colours; the free ones are black. Give the free pens an AGA-like
+   palette (a 6x6x6 colour cube, then a grey ramp), once per ColorMap, so a
+   program that draws or shows pens by number sees 256 colours. Allocated
+   pens are left alone and ObtainPen() still sets a free pen's colour. */
+static void m68k_aga_palette(struct M68KEmuContext *ctx, struct Screen *scr)
+{
+    struct ColorMap *cm = scr->ViewPort.ColorMap;
+    struct PaletteExtra *pe = cm ? cm->PalExtra : NULL;
+    int i, slot = -1;
+    WORD idx;
+
+    if (!pe || cm->Count < 256 || !scr->RastPort.BitMap ||
+        GetBitMapAttr(scr->RastPort.BitMap, BMA_DEPTH) <= 8)
+        return;
+    for (i = 0; i < 4; i++)
+    {
+        if (ctx->aga_cmaps[i] == cm)
+            return;
+        if (!ctx->aga_cmaps[i] && slot < 0)
+            slot = i;
+    }
+    if (slot < 0)
+        return;
+    ctx->aga_cmaps[slot] = cm;
+
+    ObtainSemaphore(&pe->pe_Semaphore);
+    for (idx = (WORD)pe->pe_FirstFree, i = 0; idx >= 0 && idx < 256 && i < 256;
+         idx = ((WORD *)pe->pe_AllocList)[idx], i++)
+    {
+        ULONG r, g, b;
+
+        if (idx < 216)
+        {
+            r = (idx / 36) * 51;
+            g = ((idx / 6) % 6) * 51;
+            b = (idx % 6) * 51;
+        }
+        else
+            r = g = b = (idx - 216) * 255 / 39;
+        SetRGB32(&scr->ViewPort, idx, r * 0x01010101, g * 0x01010101, b * 0x01010101);
+    }
+    ReleaseSemaphore(&pe->pe_Semaphore);
+}
+
 void m68k_screen_extras(struct M68KEmuContext *ctx, ULONG ms, struct Screen *scr)
 {
     const struct M68KStructLayout *cml = shadow_find_layout("ColorMap");
@@ -159,6 +204,7 @@ void m68k_screen_extras(struct M68KEmuContext *ctx, ULONG ms, struct Screen *scr
         ctx->mem[ms + M68K_SCR_BITMAP + 5] = (UBYTE)(depth > 8 ? 8 : depth);
         m68k_write32(ctx, ms + M68K_SCR_RASTPORT + 4, ms + M68K_SCR_BITMAP);
     }
+    m68k_aga_palette(ctx, scr);
     if (!scr->ViewPort.ColorMap || !cml)
         return;
     for (UWORD i = 0; i < ctx->num_shadows; i++)

@@ -141,6 +141,7 @@ struct M68KEmuContext
     volatile BOOL  watchdog_quit;
     BOOL    watchdog_on;
     BOOL    trace_calls;        /* per-call trace lines (off: they flood the debug console) */
+    APTR    aga_cmaps[4];       /* ColorMaps whose free pens got the AGA palette */
     BOOL    classic_borders;    /* show classic window borders, grow windows by the decoration's extra */
 
     /* CIA-A ($BFE001, odd bytes) and CIA-B ($BFD000, even bytes): ports,
