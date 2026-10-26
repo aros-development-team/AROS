@@ -650,59 +650,62 @@ LONG DoWrite(struct emulbase *emulbase, struct filehandle *fh, CONST_APTR buff, 
 
 SIPTR DoSeek(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, ULONG mode, SIPTR *err)
 {
-    off_t res;
-    LONG oldpos = 0, newpos;
+    off_t oldpos, base = 0, newpos;
     struct stat st;
-
-    DSEEK(bug("[emul] DoSeek(%d, %d, %d)\n", (int)fh->fd, offset, mode));
+    SIPTR result = -1;
 
     HostLib_Lock();
 
-    res = oldpos = LSeek((IPTR)fh->fd, 0, SEEK_CUR);
+    oldpos = LSeek((IPTR)fh->fd, 0, SEEK_CUR);
     AROS_HOST_BARRIER
-    if (res != -1)
-        res = emulbase->pdata.SysIFace->fstat((int)(IPTR)fh->fd, &st);
-    AROS_HOST_BARRIER
+    if (oldpos < 0 || (SIPTR)oldpos < 0 || (off_t)(SIPTR)oldpos != oldpos)
+        goto out;
 
-    DSEEK(bug("[emul] Original position: %lu\n", (unsigned long)oldpos));
-
-    if (res != -1)
+    /* A position query must also work after another handle shrinks the file. */
+    if (mode == OFFSET_CURRENT && offset == 0)
     {
-        switch (mode) {
-        case OFFSET_BEGINNING:
-            newpos = offset;
-            mode = SEEK_SET;
-            break;
-
-        case OFFSET_CURRENT:
-            newpos = offset + res;
-            mode = SEEK_CUR;
-            break;
-
-        default:
-            newpos = offset + st.st_size;
-            mode = SEEK_END;
-        }
-
-        if (newpos > st.st_size)
-            res = -1;
+        result = oldpos;
+        goto out;
     }
 
-    if (res != -1)
+    if (emulbase->pdata.SysIFace->fstat((int)(IPTR)fh->fd, &st) < 0)
     {
-        res = LSeek((IPTR)fh->fd, offset, mode);
         AROS_HOST_BARRIER
+        goto out;
+    }
+    AROS_HOST_BARRIER
 
-        DSEEK(bug("[emul] New position: %lu\n", (unsigned long)res));
+    switch (mode)
+    {
+    case OFFSET_BEGINNING:
+        break;
+    case OFFSET_CURRENT:
+        base = oldpos;
+        break;
+    case OFFSET_END:
+        base = st.st_size;
+        break;
+    default:
+        goto out;
     }
 
-    if (res == -1)
-        oldpos = -1;
+    /* Check bounds before adding, including when a host process has shrunk
+     * the file below our current position. A DOS seek cannot extend a file. */
+    if (base < 0 || st.st_size < 0 || offset < -base || offset > st.st_size - base)
+        goto out;
 
+    newpos = base + offset;
+    if ((SIPTR)newpos < 0 || (off_t)(SIPTR)newpos != newpos)
+        goto out;
+
+    if (LSeek((IPTR)fh->fd, newpos, SEEK_SET) != (off_t)-1)
+        result = oldpos;
+    AROS_HOST_BARRIER
+
+out:
     HostLib_Unlock();
-
-    *err = ERROR_SEEK_ERROR;
-    return oldpos;
+    *err = result == -1 ? ERROR_SEEK_ERROR : 0;
+    return result;
 }
 
 LONG DoMkDir(struct emulbase *emulbase, struct filehandle *fh, ULONG protect)
