@@ -2,6 +2,8 @@
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 */
 #include <aros/debug.h>
+#include <proto/exec.h>
+#include <proto/oop.h>
 
 #include "cgxvideo_intern.h"
 
@@ -30,12 +32,12 @@
         none
 
     NOTES
-        Available since V50.
+        Available since V50. Does nothing for a single buffered layer or
+        while the layer is locked.
 
     EXAMPLE
 
     BUGS
-        No backend supports double buffering yet, so this does nothing.
 
     SEE ALSO
         LockVLayer(), QueryVLayerAttr()
@@ -47,6 +49,22 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
+
+    struct VLayerHandle *vh = VLayerHandle;
+
+    if (!vh)
+        return;
+
+    ObtainSemaphore(&vh->lock);
+    cgxv_Refresh(vh);
+    if (!(vh->flags & VHF_NULL) && !vh->locked && vh->buffers > 1)
+    {
+        IPTR back = 0;
+
+        OOP_GetAttr(vh->bm, aHidd_BitMap_BackBuffer, &back);
+        HIDD_BM_SwapBuffers(vh->bm, back, 0);
+    }
+    ReleaseSemaphore(&vh->lock);
 
     AROS_LIBFUNC_EXIT
 } /* SwapVLayerBuffer */

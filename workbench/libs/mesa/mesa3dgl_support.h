@@ -12,4 +12,6 @@ BOOL MESA3DGLStandardInit(struct mesa3dgl_context * ctx, struct TagItem *tagList
 VOID MESA3DGLRecalculateBufferWidthHeight(struct mesa3dgl_context * ctx);
 VOID MESA3DGLFreeContext(struct mesa3dgl_context * ctx);
 
+extern ULONG mesa3dgl_render_scale;
+
 #endif /* MESA3DGL_SUPPORT_H */

@@ -608,6 +608,7 @@ OOP_Object * METHOD(Nouveau, Root, New)
             gfxdata->selectedmode = NULL;
             gfxdata->selectedconnector = selectedconnector;
             /* The crtc's overlay planes and vblank counter, for the display compositor */
+            gfxdata->chipset = nvdev->chipset;
             HIDDNouveauEnumPlanes(NOUVEAU_DEV_FD(nvdev), gfxdata);
             /*
              * Volta and later (chipset 0x140+) drive the display through
@@ -791,6 +792,11 @@ VOID METHOD(Nouveau, Hidd_Gfx, CopyBox)
 {
     OOP_Class * srcclass = OOP_OCLASS(msg->src);
     OOP_Class * destclass = OOP_OCLASS(msg->dest);
+
+    /* A video bitmap (aHidd_BitMap_VideoFormat) is scan-out only: nothing blits it */
+    if ((IS_NOUVEAU_BM_CLASS(srcclass) && ((struct HIDDNouveauBitMapData *)OOP_INST_DATA(srcclass, msg->src))->videoformat) ||
+        (IS_NOUVEAU_BM_CLASS(destclass) && ((struct HIDDNouveauBitMapData *)OOP_INST_DATA(destclass, msg->dest))->videoformat))
+        return;
 
     if (IS_NOUVEAU_BM_CLASS(srcclass) && IS_NOUVEAU_BM_CLASS(destclass))
     {

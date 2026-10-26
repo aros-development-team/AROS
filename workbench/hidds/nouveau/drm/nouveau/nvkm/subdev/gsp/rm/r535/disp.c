@@ -267,15 +267,42 @@ r535_core = {
  * modeset; on Blackwell RM also hands back the tile assignment it expects
  * (and its supervisor relies on the state this leaves behind).
  */
+/* dispnv50/wndw.c */
+void nouveau_wndw_ihub_init(u16 chipset, u32 capa, u32 capc);
+u32 nouveau_wndw_yuv_mask(void);
+#define NOUVEAU_WNDW_YUV_PACKED422	0x1
+#define NOUVEAU_WNDW_YUV_NV12		0x2
+#define NOUVEAU_WNDW_YUV_I420		0x4
+
 int
 r535_disp_imp(struct nvkm_disp *disp, const struct nvkm_disp_imp_head *heads, int nheads,
 	      struct nvkm_disp_imp_result *res)
 {
 	struct nvkm_subdev *subdev = &disp->engine.subdev;
+	struct nvkm_device *device = subdev->device;
 	NVC372_CTRL_IS_MODE_POSSIBLE_PARAMS *ctrl;
+	u32 yuv, formats;
 	int ret, i, w = 0;
 
 	memset(res, 0, sizeof(*res));
+
+	/*
+	 * The formats a window may be given must be the ones RM budgeted for
+	 * (nvkms hands IMP the head's guaranteedUsage, which on a desktop GPU
+	 * is every format the hardware supports, and sets the same in the core
+	 * channel's usage bounds). Read the capabilities here: this runs at
+	 * core init, before the windows exist.
+	 */
+	nouveau_wndw_ihub_init(device->chipset, nvkm_rd32(device, 0x640010), nvkm_rd32(device, 0x640018));
+	yuv = nouveau_wndw_yuv_mask();
+	formats = NVC372_CTRL_FORMAT_RGB_PACKED_1_BPP | NVC372_CTRL_FORMAT_RGB_PACKED_2_BPP |
+		  NVC372_CTRL_FORMAT_RGB_PACKED_4_BPP | NVC372_CTRL_FORMAT_RGB_PACKED_8_BPP;
+	if (yuv & NOUVEAU_WNDW_YUV_PACKED422)
+		formats |= NVC372_CTRL_FORMAT_YUV_PACKED_422;
+	if (yuv & NOUVEAU_WNDW_YUV_NV12)
+		formats |= NVC372_CTRL_FORMAT_YUV_SEMI_PLANAR_420;
+	if (yuv & NOUVEAU_WNDW_YUV_I420)
+		formats |= NVC372_CTRL_FORMAT_YUV_PLANAR_420;
 
 	if (!disp->rm.imp.client) {
 		ret = nvkm_gsp_rm_alloc(&disp->rm.device.object, NVC372_DISPLAY_SW << 16,
@@ -329,10 +356,7 @@ r535_disp_imp(struct nvkm_disp *disp, const struct nvkm_disp_imp_head *heads, in
 
 			iw->windowIndex = h->head * 2 + j;
 			iw->owningHead = h->head;
-			iw->formatUsageBound = NVC372_CTRL_FORMAT_RGB_PACKED_1_BPP |
-					       NVC372_CTRL_FORMAT_RGB_PACKED_2_BPP |
-					       NVC372_CTRL_FORMAT_RGB_PACKED_4_BPP |
-					       NVC372_CTRL_FORMAT_RGB_PACKED_8_BPP;
+			iw->formatUsageBound = formats;
 			iw->maxPixelsFetchedPerLine = (((h->view_w + 14) * 1024 + 1023) >> 10) + 8;
 			iw->maxDownscaleFactorH = 1024;
 			iw->maxDownscaleFactorV = 1024;
@@ -362,7 +386,8 @@ r535_disp_imp(struct nvkm_disp *disp, const struct nvkm_disp_imp_head *heads, in
 				res->tiles[ctrl->head[h].headIndex]++;
 		}
 	}
-	nvkm_debug(subdev, "imp: possible %d dispclk %u kHz bw %u assignments %u tiles/head0 %d\n",
+	nvkm_debug(subdev, "imp: %d head(s) %d window(s) formats %02x: possible %d dispclk %u kHz bw %u assignments %u tiles/head0 %d\n",
+		   ctrl->numHeads, ctrl->numWindows, formats,
 		   res->possible, res->dispclk_khz, res->minbw_kbps, ctrl->numTilingAssignments,
 		   res->tiles[0]);
 

@@ -896,7 +896,7 @@ static SIPTR dd_Relabel(struct DosPacket *pkt, globaldata * g)
 	// ARG1 = BSTR new disk name
 	// RES1 = BOOL Success/failure (DOSTRUE/DOSFALSE)
 
-	UBYTE newlabel[FNSIZE];
+	UBYTE newlabel[PATHSIZE];
 	struct DosList *newentry;
 
 #if MULTIUSER
@@ -1713,7 +1713,7 @@ static SIPTR dd_AddNotify (struct DosPacket *pkt, globaldata *g)
 	t = strlen (temp);
 	if (!(no->objectname = AllocMemP (t+2, g)))
 		goto memerror2;
-	ctodstr (temp, no->objectname);
+	ctodstrn (temp, no->objectname, PATHSIZE - 1);
 	intltoupper (no->objectname);
 
 	if (!(GetFullPath(NULL, name, &oi, &pkt->dp_Res2, g)))

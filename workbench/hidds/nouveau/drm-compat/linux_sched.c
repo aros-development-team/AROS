@@ -606,3 +606,95 @@ void kthread_flush_work(struct kthread_work *work)
 {
     flush_work(&work->work);
 }
+
+/*
+ * FREEZE DUMP 2026-10-25 (diagnostic): every nouveau_freezedump_secs seconds a
+ * delayed work lists the ready tasks and every waiting task with its exec
+ * state and the code addresses found on its stack (kickstart modules and
+ * this hidd), so a system freeze can be read off the serial log afterwards.
+ * NOUVEAU_FREEZEDUMP=<seconds> turns it on (default off).
+ */
+#include <exec/tasks.h>
+#include <resources/task.h>
+#include <proto/task.h>
+APTR TaskResBase;                       /* task.resource: the SMP-safe way to walk the task lists */
+int nouveau_freezedump_secs = 0;	/* off unless NOUVEAU_FREEZEDUMP=<seconds> */
+static struct delayed_work freeze_dwork;
+
+static inline int freeze_is_code(IPTR v, IPTR hiddlo, IPTR hiddhi)
+{
+    if ((v >= 0x80200000UL) && (v < 0x80600000UL))          /* kickstart package (riscv) */
+        return 1;
+    if ((v >= hiddlo) && (v < hiddhi))                      /* this hidd */
+        return 2;
+    return 0;
+}
+
+static void freeze_dump_task(struct Task *t, IPTR hiddlo, IPTR hiddhi)
+{
+    IPTR *sp = (IPTR *)t->tc_SPReg, *top = (IPTR *)t->tc_SPUpper;
+    int n = 0;
+
+    bug("[freeze]  %-24s pri %3d state %d sigwait %08lx recvd %08lx sp %p\n",
+        t->tc_Node.ln_Name ? t->tc_Node.ln_Name : "?", (int)t->tc_Node.ln_Pri, (int)t->tc_State,
+        (unsigned long)t->tc_SigWait, (unsigned long)t->tc_SigRecvd, t->tc_SPReg);
+    if (!sp || (sp < (IPTR *)t->tc_SPLower) || (sp >= top))
+        return;
+    bug("[freeze]    code:");
+    for (; (sp < top) && (n < 14); sp++)
+    {
+        int k = freeze_is_code(*sp, hiddlo, hiddhi);
+
+        if (k)
+        {
+            bug(" %s%lx", (k == 2) ? "H+" : "", (unsigned long)((k == 2) ? (*sp - hiddlo) : *sp));
+            n++;
+        }
+    }
+    bug("\n");
+}
+
+static void freeze_dump(struct work_struct *w)
+{
+    struct TaskList *tl;
+    struct Task *t;
+    IPTR hiddlo = ((IPTR)freeze_dump) & ~0xFFFFFUL;      /* this hidd's text, 1 MB granular */
+    IPTR hiddhi = hiddlo + 0x4000000UL;                   /* generous: the hidd is < 64 MB */
+    (void)w;
+
+    bug("[freeze] ---- dump (hidd text ~%lx, H+ offsets relative to it) ----\n", (unsigned long)hiddlo);
+    bug("[freeze] running: %s\n", FindTask(NULL)->tc_Node.ln_Name);
+    /*
+     * The exec task lists are private on SMP builds (SysBase->TaskReady /
+     * TaskWait and ThisTask must not be touched): enumerate through
+     * task.resource, which holds the list lock for us.
+     */
+    tl = LockTaskList(LTF_READY | LTF_WAITING);
+    while ((t = NextTaskEntry(tl, LTF_READY | LTF_WAITING)) != NULL)
+    {
+        if ((t->tc_State == TS_WAIT) || (t->tc_State == TS_SPIN))
+            freeze_dump_task(t, hiddlo, hiddhi);
+        else if (t != FindTask(NULL))
+            bug("[freeze] ready:   %s pri %d\n", t->tc_Node.ln_Name, (int)t->tc_Node.ln_Pri);
+    }
+    UnLockTaskList(tl, LTF_READY | LTF_WAITING);
+    bug("[freeze] ---- end ----\n");
+    if (nouveau_freezedump_secs > 0)
+        schedule_delayed_work(&freeze_dwork, HZ * nouveau_freezedump_secs);
+}
+
+void nouveau_freezedump_start(void)
+{
+    if (nouveau_freezedump_secs <= 0)
+        return;
+    if (!TaskResBase)
+        TaskResBase = OpenResource("task.resource");
+    if (!TaskResBase)
+    {
+        bug("[freeze] task.resource not available: dump disabled\n");
+        return;
+    }
+    INIT_DELAYED_WORK(&freeze_dwork, freeze_dump);
+    schedule_delayed_work(&freeze_dwork, HZ * nouveau_freezedump_secs);
+    bug("[freeze] dump every %d s (NOUVEAU_FREEZEDUMP)\n", nouveau_freezedump_secs);
+}

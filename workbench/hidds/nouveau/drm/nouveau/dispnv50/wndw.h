@@ -31,6 +31,8 @@ struct nv50_wndw {
 	u16 ntfy;
 	u16 sema;
 	u32 data;
+
+	struct drm_property *ckey_prop;	/* nouveau-private "colorkey" (blend_set classes) */
 };
 
 int nv50_wndw_new_(const struct nv50_wndw_func *, struct drm_device *,
@@ -140,3 +142,10 @@ int wndwca7e_new(struct nouveau_drm *, enum drm_plane_type, int, s32,
 int nv50_wndw_new(struct nouveau_drm *, enum drm_plane_type, int index,
 		  struct nv50_wndw **);
 #endif
+
+/* AROS: YUV formats the window planes may take (dispnv50/wndw.c) */
+#define NOUVEAU_WNDW_YUV_PACKED422	0x1	/* YUYV, UYVY */
+#define NOUVEAU_WNDW_YUV_NV12		0x2	/* semi-planar 4:2:0 */
+#define NOUVEAU_WNDW_YUV_I420		0x4	/* planar 4:2:0 */
+void nouveau_wndw_ihub_init(u16 chipset, u32 capa, u32 capc);
+u32 nouveau_wndw_yuv_mask(void);

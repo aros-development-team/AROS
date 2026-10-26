@@ -8,13 +8,14 @@ GLTESTFILES 	    := \
         glclear \
         glcustomscreen \
         gltri \
-        gltexfbo
+        gltexfbo \
+        glscanout
 
 EXEDIR      := $(AROS_TESTS)/graphics/gl
 
 #MM- test : test-gl
 
-#MM test-gl : includes linklibs workbench-libs-gl-includes
+#MM test-gl : includes linklibs workbench-libs-gl-includes workbench-libs-gallium-includes
 
 %build_progs mmake=test-gl \
     targetdir=$(EXEDIR) \

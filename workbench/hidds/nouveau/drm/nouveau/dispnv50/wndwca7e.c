@@ -17,7 +17,7 @@ wndwca7e_image_clr(struct nv50_wndw *wndw)
 	struct nvif_push *push = &wndw->wndw.push;
 	int ret;
 
-	ret = PUSH_WAIT(push, 4);
+	ret = PUSH_WAIT(push, 6 + 2);
 	if (ret)
 		return ret;
 
@@ -25,17 +25,46 @@ wndwca7e_image_clr(struct nv50_wndw *wndw)
 		  NVVAL(NVCA7E, SET_PRESENT_CONTROL, MIN_PRESENT_INTERVAL, 0) |
 		  NVDEF(NVCA7E, SET_PRESENT_CONTROL, BEGIN_MODE, NON_TEARING));
 
+	/* surface slots are eye + plane * 2 (nvkms EyeAndPlaneToCtxDmaIdx): planes of the left eye sit in 0, 2, 4 */
 	PUSH_MTHD(push, NVCA7E, SET_SURFACE_ADDRESS_LO_ISO(0),
+		  NVDEF(NVCA7E, SET_SURFACE_ADDRESS_LO_ISO, ENABLE, DISABLE));
+	PUSH_MTHD(push, NVCA7E, SET_SURFACE_ADDRESS_LO_ISO(2),
+		  NVDEF(NVCA7E, SET_SURFACE_ADDRESS_LO_ISO, ENABLE, DISABLE));
+	PUSH_MTHD(push, NVCA7E, SET_SURFACE_ADDRESS_LO_ISO(4),
 		  NVDEF(NVCA7E, SET_SURFACE_ADDRESS_LO_ISO, ENABLE, DISABLE));
 
 	return 0;
 }
+
+/*
+ * FMT (input format conversion) matrices, 12 coefficients C00..C23, as nvkms
+ * FMTMatrix[] (nvkms-evo3.c): identity for RGB sources; for the packed YUV
+ * sources the 8 bpc limited-range BT.601 / BT.709 to full-range RGB
+ * conversion, since CA7E has no SET_PARAMS COLOR_SPACE field (C37E..C67E
+ * convert through it instead).
+ */
+static const u32
+wndwca7e_fmt_matrix[3][12] = {
+	/* NV507E_SURFACE_SET_PARAMS_COLOR_SPACE_RGB: identity */
+	{ 0x10000,       0,       0,        0,        0, 0x10000,        0,      0,       0,       0, 0x10000,        0 },
+	/* YUV_601: FMT_COEFF_TYPE_REC601_YUV_8BPC_LTD_TO_RGB_16BPC_FULL */
+	{ 0x19A29, 0x12B3C,       0, 0x1F2038, 0x1F2F14, 0x12B3C, 0x1F9B52, 0x8819,       0, 0x12B3C, 0x20668, 0x1EEA18 },
+	/* YUV_709: FMT_COEFF_TYPE_REC709_YUV_8BPC_LTD_TO_RGB_16BPC_FULL */
+	{ 0x1CCB7, 0x12B3C,       0, 0x1F06F1, 0x1F770C, 0x12B3C, 0x1FC933, 0x4D2D,       0, 0x12B3C, 0x21EDD, 0x1EDDDE },
+};
 
 static int
 wndwca7e_image_set(struct nv50_wndw *wndw, struct nv50_wndw_atom *asyw)
 {
 	const u32 iso0_hi = upper_32_bits(asyw->image.offset[0]);
 	const u32 iso0_lo = lower_32_bits(asyw->image.offset[0]);
+	const u32 iso1_hi = upper_32_bits(asyw->image.offset[1]);
+	const u32 iso1_lo = lower_32_bits(asyw->image.offset[1]);
+	const u32 iso2_hi = upper_32_bits(asyw->image.offset[2]);
+	const u32 iso2_lo = lower_32_bits(asyw->image.offset[2]);
+	const bool planar = asyw->image.handle[1] != 0;		/* NV12 and I420 */
+	const bool planar3 = asyw->image.handle[2] != 0;	/* I420 */
+	const u32 *fmt = wndwca7e_fmt_matrix[asyw->image.colorspace < 3 ? asyw->image.colorspace : 0];
 	struct nvif_push *push = &wndw->wndw.push;
 	int ret, kind;
 
@@ -44,7 +73,7 @@ wndwca7e_image_set(struct nv50_wndw *wndw, struct nv50_wndw_atom *asyw)
 	else
 		kind = NVCA7E_SET_SURFACE_ADDRESS_LO_ISO_KIND_PITCH;
 
-	ret = PUSH_WAIT(push, 17 + 13 + 12);
+	ret = PUSH_WAIT(push, 17 + 13 + 12 + 8 + 2 + 4);
 	if (ret)
 		return ret;
 
@@ -56,18 +85,18 @@ wndwca7e_image_set(struct nv50_wndw *wndw, struct nv50_wndw_atom *asyw)
 	 * reset state. (The wrong overlay colours on the GB207 were blending,
 	 * see nv50_wndw_atomic_check_acquire.)
 	 */
-	PUSH_MTHD(push, NVCA7E, SET_FMT_COEFFICIENT_C00, 0x00010000,
-				SET_FMT_COEFFICIENT_C01, 0,
-				SET_FMT_COEFFICIENT_C02, 0,
-				SET_FMT_COEFFICIENT_C03, 0,
-				SET_FMT_COEFFICIENT_C10, 0,
-				SET_FMT_COEFFICIENT_C11, 0x00010000);
-	PUSH_MTHD(push, NVCA7E, SET_FMT_COEFFICIENT_C12, 0,
-				SET_FMT_COEFFICIENT_C13, 0,
-				SET_FMT_COEFFICIENT_C20, 0,
-				SET_FMT_COEFFICIENT_C21, 0,
-				SET_FMT_COEFFICIENT_C22, 0x00010000,
-				SET_FMT_COEFFICIENT_C23, 0);
+	PUSH_MTHD(push, NVCA7E, SET_FMT_COEFFICIENT_C00, fmt[0],
+				SET_FMT_COEFFICIENT_C01, fmt[1],
+				SET_FMT_COEFFICIENT_C02, fmt[2],
+				SET_FMT_COEFFICIENT_C03, fmt[3],
+				SET_FMT_COEFFICIENT_C10, fmt[4],
+				SET_FMT_COEFFICIENT_C11, fmt[5]);
+	PUSH_MTHD(push, NVCA7E, SET_FMT_COEFFICIENT_C12, fmt[6],
+				SET_FMT_COEFFICIENT_C13, fmt[7],
+				SET_FMT_COEFFICIENT_C20, fmt[8],
+				SET_FMT_COEFFICIENT_C21, fmt[9],
+				SET_FMT_COEFFICIENT_C22, fmt[10],
+				SET_FMT_COEFFICIENT_C23, fmt[11]);
 	PUSH_MTHD(push, NVCA7E, SET_CSC00CONTROL, 0);
 	PUSH_MTHD(push, NVCA7E, SET_CSC0LUT_CONTROL, 0);
 	PUSH_MTHD(push, NVCA7E, SET_CSC01CONTROL, 0);
@@ -76,13 +105,33 @@ wndwca7e_image_set(struct nv50_wndw *wndw, struct nv50_wndw_atom *asyw)
 	PUSH_MTHD(push, NVCA7E, SET_CSC11CONTROL, 0);
 	PUSH_MTHD(push, NVCA7E, SET_SURFACE_ADDRESS_LO_TMO_LUT, 0);
 
+	/*
+	 * Surface slots are eye + plane * 2 (nvkms EyeAndPlaneToCtxDmaIdx):
+	 * the left eye's planes 0, 1, 2 live in slots 0, 2, 4; slots 1, 3, 5
+	 * are the right eye. The chroma planes (semi-planar: 1, planar: 1 and 2)
+	 * are the same buffer at their offsets, else off.
+	 */
 	PUSH_MTHD(push, NVCA7E, SET_SURFACE_ADDRESS_HI_ISO(0), iso0_hi);
+	PUSH_MTHD(push, NVCA7E, SET_SURFACE_ADDRESS_HI_ISO(2), iso1_hi);
+	PUSH_MTHD(push, NVCA7E, SET_SURFACE_ADDRESS_HI_ISO(4), iso2_hi);
 
 	PUSH_MTHD(push, NVCA7E, SET_SURFACE_ADDRESS_LO_ISO(0),
 		  NVVAL(NVCA7E, SET_SURFACE_ADDRESS_LO_ISO, ADDRESS_LO, iso0_lo >> 4) |
 		  NVDEF(NVCA7E, SET_SURFACE_ADDRESS_LO_ISO, TARGET, PHYSICAL_NVM) |
 		  NVVAL(NVCA7E, SET_SURFACE_ADDRESS_LO_ISO, KIND, kind) |
 		  NVDEF(NVCA7E, SET_SURFACE_ADDRESS_LO_ISO, ENABLE, ENABLE));
+
+	PUSH_MTHD(push, NVCA7E, SET_SURFACE_ADDRESS_LO_ISO(2),
+		  NVVAL(NVCA7E, SET_SURFACE_ADDRESS_LO_ISO, ADDRESS_LO, planar ? iso1_lo >> 4 : 0) |
+		  NVDEF(NVCA7E, SET_SURFACE_ADDRESS_LO_ISO, TARGET, PHYSICAL_NVM) |
+		  NVVAL(NVCA7E, SET_SURFACE_ADDRESS_LO_ISO, KIND, kind) |
+		  NVVAL(NVCA7E, SET_SURFACE_ADDRESS_LO_ISO, ENABLE, planar ? 1 : 0));
+
+	PUSH_MTHD(push, NVCA7E, SET_SURFACE_ADDRESS_LO_ISO(4),
+		  NVVAL(NVCA7E, SET_SURFACE_ADDRESS_LO_ISO, ADDRESS_LO, planar3 ? iso2_lo >> 4 : 0) |
+		  NVDEF(NVCA7E, SET_SURFACE_ADDRESS_LO_ISO, TARGET, PHYSICAL_NVM) |
+		  NVVAL(NVCA7E, SET_SURFACE_ADDRESS_LO_ISO, KIND, kind) |
+		  NVVAL(NVCA7E, SET_SURFACE_ADDRESS_LO_ISO, ENABLE, planar3 ? 1 : 0));
 
 	PUSH_MTHD(push, NVCA7E, SET_PRESENT_CONTROL,
 		  NVVAL(NVCA7E, SET_PRESENT_CONTROL, MIN_PRESENT_INTERVAL, asyw->image.interval) |
@@ -99,12 +148,20 @@ wndwca7e_image_set(struct nv50_wndw *wndw, struct nv50_wndw_atom *asyw)
 				SET_PARAMS,
 		  NVVAL(NVCA7E, SET_PARAMS, FORMAT, asyw->image.format) |
 		  NVDEF(NVCA7E, SET_PARAMS, CLAMP_BEFORE_BLEND, DISABLE) |
-		  NVDEF(NVCA7E, SET_PARAMS, SWAP_UV, DISABLE) |
+		  NVVAL(NVCA7E, SET_PARAMS, SWAP_UV, asyw->image.swapuv) |
 		  NVDEF(NVCA7E, SET_PARAMS, FMT_ROUNDING_MODE, ROUND_TO_NEAREST),
 
 				SET_PLANAR_STORAGE(0),
 		  NVVAL(NVCA7E, SET_PLANAR_STORAGE, PITCH, asyw->image.blocks[0]) |
-		  NVVAL(NVCA7E, SET_PLANAR_STORAGE, PITCH, asyw->image.pitch[0] >> 6));
+		  NVVAL(NVCA7E, SET_PLANAR_STORAGE, PITCH, asyw->image.pitch[0] >> 6),
+
+				SET_PLANAR_STORAGE(1),
+		  NVVAL(NVCA7E, SET_PLANAR_STORAGE, PITCH, asyw->image.blocks[1]) |
+		  NVVAL(NVCA7E, SET_PLANAR_STORAGE, PITCH, asyw->image.pitch[1] >> 6),
+
+				SET_PLANAR_STORAGE(2),
+		  NVVAL(NVCA7E, SET_PLANAR_STORAGE, PITCH, asyw->image.blocks[2]) |
+		  NVVAL(NVCA7E, SET_PLANAR_STORAGE, PITCH, asyw->image.pitch[2] >> 6));
 
 	PUSH_MTHD(push, NVCA7E, SET_POINT_IN(0),
 		  NVVAL(NVCA7E, SET_POINT_IN, X, asyw->state.src_x >> 16) |
@@ -117,6 +174,16 @@ wndwca7e_image_set(struct nv50_wndw *wndw, struct nv50_wndw_atom *asyw)
 	PUSH_MTHD(push, NVCA7E, SET_SIZE_OUT,
 		  NVVAL(NVCA7E, SET_SIZE_OUT, WIDTH, asyw->state.crtc_w) |
 		  NVVAL(NVCA7E, SET_SIZE_OUT, HEIGHT, asyw->state.crtc_h));
+
+	/*
+	 * nvkms programs the input scaler taps on every flip (at least 2
+	 * taps, EvoFlipC5Common). RGB at 1:1 works with the reset value, but
+	 * 4:2:0 chroma is upsampled through this block, so leave nothing
+	 * unset here.
+	 */
+	PUSH_MTHD(push, NVCA7E, SET_CONTROL_INPUT_SCALER,
+		  NVDEF(NVCA7E, SET_CONTROL_INPUT_SCALER, VERTICAL_TAPS, TAPS_2) |
+		  NVDEF(NVCA7E, SET_CONTROL_INPUT_SCALER, HORIZONTAL_TAPS, TAPS_2));
 
 	return 0;
 }

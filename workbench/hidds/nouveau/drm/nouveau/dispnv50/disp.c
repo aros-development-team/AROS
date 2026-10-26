@@ -2294,6 +2294,41 @@ nv50_pior_create(struct nouveau_encoder *nv_encoder)
  * Atomic
  *****************************************************************************/
 
+/*
+ * AROS: a window whose UPDATE never completes (notifier timeout after an
+ * exception) is remembered by plane object id so that the hidd can stop
+ * using it (nouveau_displayclass.c CommitPlanes) instead of waiting 2 s on
+ * every later commit; the ioctl itself returns 0 for these.
+ */
+u32 nv50_disp_core_timeouts;
+static u32 nv50_disp_timeout_planes[16];
+static u32 nv50_disp_timeout_nplanes;
+
+static void
+nv50_disp_plane_timeout_note(u32 plane_id)
+{
+	u32 i;
+
+	for (i = 0; i < nv50_disp_timeout_nplanes; i++) {
+		if (nv50_disp_timeout_planes[i] == plane_id)
+			return;
+	}
+	if (nv50_disp_timeout_nplanes < ARRAY_SIZE(nv50_disp_timeout_planes))
+		nv50_disp_timeout_planes[nv50_disp_timeout_nplanes++] = plane_id;
+}
+
+int
+nv50_disp_plane_timed_out(u32 plane_id)
+{
+	u32 i;
+
+	for (i = 0; i < nv50_disp_timeout_nplanes; i++) {
+		if (nv50_disp_timeout_planes[i] == plane_id)
+			return 1;
+	}
+	return 0;
+}
+
 static void
 nv50_disp_atomic_commit_core(struct drm_atomic_state *state, u32 *interlock)
 {
@@ -2320,6 +2355,7 @@ nv50_disp_atomic_commit_core(struct drm_atomic_state *state, u32 *interlock)
 	if (core->func->ntfy_wait_done(disp->sync, NV50_DISP_CORE_NTFY,
 				       disp->core->chan.base.device)) {
 		NV_ERROR(drm, "core notifier timeout\n");
+		nv50_disp_core_timeouts++;
 	}
 
 	for_each_new_mst_mgr_in_state(state, mgr, mst_state, i) {
@@ -2407,6 +2443,15 @@ nv50_disp_atomic_commit_tail(struct drm_atomic_state *state)
 				       new_plane_state->visible ? "on" : "off",
 				       plane->type == DRM_PLANE_TYPE_OVERLAY ? ": phases to RM" : "");
 			}
+			/*
+			 * The window's usage bounds travel in this update, interlocked
+			 * with the window, the way nvkms sends them with a modeset/flip;
+			 * the init-time ones never armed on the GB207 (0x0f read back).
+			 */
+			if (plane->type == DRM_PLANE_TYPE_OVERLAY && new_plane_state->visible &&
+			    drm->client.device.info.chipset >= 0x1b0 &&
+			    !coreca7d_wndw_bounds(disp->core, nv50_wndw(plane)->id))
+				interlock[NV50_DISP_INTERLOCK_CORE] = 1;
 			if (plane->type == DRM_PLANE_TYPE_OVERLAY)
 				nv50_disp_sv_defer = true;
 		}
@@ -2615,8 +2660,10 @@ nv50_disp_atomic_commit_tail(struct drm_atomic_state *state)
 		struct nv50_wndw_atom *asyw = nv50_wndw_atom(new_plane_state);
 		struct nv50_wndw *wndw = nv50_wndw(plane);
 		int ret = nv50_wndw_wait_armed(wndw, asyw);
-		if (ret)
+		if (ret) {
 			NV_ERROR(drm, "%s: timeout\n", plane->name);
+			nv50_disp_plane_timeout_note(plane->base.id);
+		}
 	}
 
 #if defined(__AROS__)

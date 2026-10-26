@@ -194,6 +194,10 @@ struct HIDDBitMapData
     BOOL                   compositable;  /* bitmap displayable via compositor             */
     BOOL                   framebuffer;	  /* is a framebuffer ?		                   */
     BOOL                   pf_registered; /* Registered own pixelformat ?	           */
+    BOOL                   scanout;       /* aHidd_BitMap_Scanout                          */
+    ULONG                  buffers;       /* aHidd_BitMap_Buffers (>= 1)                   */
+    ULONG                  videoformat;   /* aHidd_BitMap_VideoFormat, 0 = RGB/palette     */
+    ULONG                  colorspace;    /* aHidd_BitMap_ColorSpace                       */
     ULONG                  flags;         /* see hidd/graphic.h 'flags for                 */
     ULONG                  bytesPerRow;   /* bytes per row                                 */
     OOP_Object            *friend;        /* Friend bitmap		                   */

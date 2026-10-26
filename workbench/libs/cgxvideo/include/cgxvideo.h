@@ -122,6 +122,7 @@ struct VLayerHandle;
 #define VSQ_FMT_R5G5B5_LE		(1UL << 1)
 #define VSQ_FMT_R5G6B5_LE		(1UL << 2)
 #define VSQ_FMT_YUV420_PLANAR	(1UL << 3)
+#define VSQ_FMT_NV12			(1UL << 4)	/* AROS: SRCFMT_YCbCr420_NV12 */
 
 /* returned error values for VOA_Error tag */
 
@@ -137,7 +138,10 @@ struct VLayerHandle;
 #define SRCFMT_YCbCr16		1
 #define SRCFMT_RGB15PC		2						/* for historical reasons this format is byte swapped */
 #define SRCFMT_RGB16PC		3						/* for historical reasons this format is byte swapped */
-#define SRCFMT_YCbCr420		4						/* planar */
+#define SRCFMT_YCbCr420		4						/* planar: Y, U, V planes (I420) */
+
+/* AROS extension: semi-planar 4:2:0, Y plane then interleaved U,V plane (NV12) */
+#define SRCFMT_YCbCr420_NV12	0x10
 
 #define SRCFMT_RGB15		SRCFMT_RGB15PC
 #define SRCFMT_R5G5B5PC		SRCFMT_RGB15PC

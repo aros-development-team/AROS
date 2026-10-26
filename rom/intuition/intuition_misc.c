@@ -1079,6 +1079,7 @@ BOOL ResourceExisting(APTR resource, UWORD resourcetype, struct IntuitionBase *I
 void FireScreenNotifyMessageCode(IPTR data, ULONG flag, ULONG code, struct IntuitionBase *IntuitionBase)
 {
     struct IntIntuitionBase *_intuitionBase = GetPrivIBase(IntuitionBase);
+    struct Library *UtilityBase = _intuitionBase->UtilityBase;
     ObtainSemaphoreShared(&_intuitionBase->ScreenNotificationListLock);
 
     struct ScreenNotifyMessage *msg;
@@ -1175,7 +1176,8 @@ void FireScreenNotifyMessageCode(IPTR data, ULONG flag, ULONG code, struct Intui
                     msg.snm_UserData = sn->userdata;
                     msg.snm_Message.mn_Length = sizeof(struct ScreenNotifyMessage);
 
-                    CallHook(sn->hook, NULL, (Msg) &msg);
+                    /* CallHook() is variadic and would hand the hook a pointer to its argument array */
+                    CallHookPkt(sn->hook, NULL, &msg);
                 }
             }
         }

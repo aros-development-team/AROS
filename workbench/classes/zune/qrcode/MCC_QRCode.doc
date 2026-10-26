@@ -1,0 +1,81 @@
+TABLE OF CONTENTS
+
+QRCode.mcc/QRCode.mcc
+QRCode.mcc/MUIA_QRCode_Text
+QRCode.mcc/MUIA_QRCode_Data
+QRCode.mcc/MUIA_QRCode_ECC
+QRCode.mcc/MUIA_QRCode_Status
+QRCode.mcc/QRCode.mcc
+
+   QRCode.mcc is a Zune custom class derived from MUIC_Area. It encodes
+   caller-supplied text or binary data as a QR Code Model 2 symbol and draws
+   its modules directly through the AROS graphics API.
+
+   The object copies input synchronously when created or updated. Drawing
+   does not rerun the encoder. The symbol uses integer pixel scaling and
+   four light modules of quiet zone on every side.
+
+   When the object is smaller than the complete symbol, it draws no QR Code.
+   Status reports the encoding result, not the size or contrast of the
+   resulting screen image.
+
+   The input payload may contain short-lived credentials such as login URLs.
+   Clearing the content with NULL/empty text or an empty data payload clears
+   the displayed symbol and releases its stored input buffer. The class does
+   not securely erase released memory. Applications own expiration and
+   access policy; do not rely on clearing the gadget to destroy secrets.
+
+   The encoder is derived from Project Nayuki's MIT-licensed QR Code generator.
+   Its original license notice is retained in qrcodegen.c and qrcodegen.h.
+QRCode.mcc/MUIA_QRCode_Text
+
+   MUIA_QRCode_Text -- [IS.], CONST_STRPTR
+
+   Sets a NUL-terminated UTF-8 byte string. The object immediately copies up
+   to 7089 input bytes. A NULL pointer or empty string clears the QR Code.
+   Oversized or unterminated input reports Invalid and clears the old symbol.
+
+   The application is responsible for supplying valid UTF-8. The class
+   copies the bytes without validating their Unicode encoding and does not
+   translate a system-local character set. Set either Text or Data in
+   one tag transaction, never both.
+QRCode.mcc/MUIA_QRCode_Data
+
+   MUIA_QRCode_Data -- [IS.], const struct MUI_QRCodePayload *
+
+   Encodes an arbitrary byte sequence, up to 2953 bytes. The structure has
+   members Bytes (const UBYTE *) and Length (ULONG). The object immediately
+   copies the bytes and does not retain the structure pointer.
+
+   A NULL structure or a zero-length payload clears the symbol. For nonzero
+   Length, Bytes must be non-NULL and must reference at least Length bytes.
+   The caller retains ownership of the structure and the source bytes.
+   Set either Text or Data in one tag transaction, never both.
+QRCode.mcc/MUIA_QRCode_ECC
+
+   MUIA_QRCode_ECC -- [ISG], ULONG
+
+   Selects the error-correction level: MUIV_QRCode_ECC_L,
+   MUIV_QRCode_ECC_M (default), MUIV_QRCode_ECC_Q, or MUIV_QRCode_ECC_H.
+   The specified level is used exactly; the encoder never raises it
+   automatically. Changing ECC regenerates the QR Code from the saved
+   input. An invalid level reports Invalid; content that cannot fit
+   at the selected level reports NoCapacity. Both clear the symbol.
+   The getter returns the last supplied ECC value, even if that value
+   is outside the supported range.
+QRCode.mcc/MUIA_QRCode_Status
+
+   MUIA_QRCode_Status -- [..G], ULONG
+
+   Reports the current encoding outcome:
+
+     MUIV_QRCode_Status_Empty       No current input
+     MUIV_QRCode_Status_Ready       Valid encoded matrix
+     MUIV_QRCode_Status_Invalid     Invalid parameters or input
+     MUIV_QRCode_Status_NoMemory    Allocation failed
+     MUIV_QRCode_Status_NoCapacity  Input does not fit requested ECC
+
+   A non-Ready status never retains the previous QR symbol. Failed input
+   updates do not restore previous content. Encoding failures are reported
+   through this attribute, not the return value of OM_SET. Status_Ready
+   does not assert that the gadget has enough display pixels to render it.

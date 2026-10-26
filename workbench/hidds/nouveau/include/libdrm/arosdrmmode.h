@@ -206,3 +206,47 @@ typedef union _drmVBlank {
 } drmVBlank, *drmVBlankPtr;
 
 extern int drmWaitVBlank(int fd, drmVBlankPtr vbl);
+
+/*
+ * Properties, atomic requests and fourcc framebuffers (AROS additions,
+ * same shapes and semantics as libdrm's xf86drmMode.h).
+ */
+typedef struct _drmModeProperty {
+	uint32_t prop_id;
+	uint32_t flags;
+	char name[DRM_PROP_NAME_LEN];
+	int count_values;
+	uint64_t *values; /* store the blob lengths */
+	int count_enums;
+	struct drm_mode_property_enum *enums;
+	int count_blobs;
+	uint32_t *blob_ids; /* store the blob IDs */
+} drmModePropertyRes, *drmModePropertyPtr;
+
+typedef struct _drmModeObjectProperties {
+	uint32_t count_props;
+	uint32_t *props;
+	uint64_t *prop_values;
+} drmModeObjectProperties, *drmModeObjectPropertiesPtr;
+
+extern drmModePropertyPtr drmModeGetProperty(int fd, uint32_t propertyId);
+extern void drmModeFreeProperty(drmModePropertyPtr ptr);
+extern drmModeObjectPropertiesPtr drmModeObjectGetProperties(int fd, uint32_t object_id, uint32_t object_type);
+extern void drmModeFreeObjectProperties(drmModeObjectPropertiesPtr ptr);
+extern int drmModeObjectSetProperty(int fd, uint32_t object_id, uint32_t object_type,
+				    uint32_t property_id, uint64_t value);
+
+typedef struct _drmModeAtomicReq drmModeAtomicReq, *drmModeAtomicReqPtr;
+
+extern drmModeAtomicReqPtr drmModeAtomicAlloc(void);
+extern void drmModeAtomicFree(drmModeAtomicReqPtr req);
+extern int drmModeAtomicGetCursor(const drmModeAtomicReqPtr req);
+extern void drmModeAtomicSetCursor(drmModeAtomicReqPtr req, int cursor);
+extern int drmModeAtomicAddProperty(drmModeAtomicReqPtr req, uint32_t object_id,
+				    uint32_t property_id, uint64_t value);
+extern int drmModeAtomicCommit(int fd, const drmModeAtomicReqPtr req, uint32_t flags, void *user_data);
+
+/* Framebuffer from a fourcc format (DRM_FORMAT_*), one handle/pitch/offset per plane */
+extern int drmModeAddFB2(int fd, uint32_t width, uint32_t height, uint32_t pixel_format,
+			 const uint32_t bo_handles[4], const uint32_t pitches[4],
+			 const uint32_t offsets[4], uint32_t *buf_id, uint32_t flags);

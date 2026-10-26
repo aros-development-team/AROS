@@ -132,6 +132,20 @@ OOP_Object *PBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     data->cached_depth_plus_one = 0;
     data->cache_pixfmt = FALSE;
 
+    /* Planar bitmaps are never scan-out bitmaps (see gfx_chunkybitmapclass.c) */
+    {
+        IPTR scanout = FALSE;
+
+        OOP_GetAttr(o, aHidd_BitMap_Scanout, &scanout);
+        if (scanout)
+        {
+            OOP_MethodID dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+
+            OOP_CoerceMethod(cl, o, &dispose_mid);
+            return NULL;
+        }
+    }
+
     /* Check if we want to use existing bitmap */
 
     tag = FindTagItem(aHidd_PlanarBM_BitMap, msg->attrList);

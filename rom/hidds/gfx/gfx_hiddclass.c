@@ -969,6 +969,16 @@ VOID GFXHIDD__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
  * access here is valid) and brackets the operation with the software pointer
  * hide/show.
  */
+/* Video bitmaps (aHidd_BitMap_VideoFormat) are scan-out only: no blit path reads or writes them */
+static inline BOOL gfx_is_video_bm(OOP_Class *cl, OOP_Object *bm)
+{
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
+    IPTR vf = 0;
+
+    OOP_GetAttr(bm, aHidd_BitMap_VideoFormat, &vf);
+    return vf != 0;
+}
+
 static VOID copybox_impl(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_CopyBox *msg)
 {
     struct Library *OOPBase = CSD(cl)->cs_OOPBase;
@@ -1257,6 +1267,9 @@ VOID GFXHIDD__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx
     struct SignalSemaphore *sem = NULL;
     BOOL bracket = FALSE;
 
+    if (gfx_is_video_bm(cl, msg->src) || gfx_is_video_bm(cl, msg->dest))
+        return;
+
     if (realdst)
         display = cursorfb_display(CSD(cl), msg->dest);
     else if (realsrc)
@@ -1381,6 +1394,9 @@ static IPTR copyboxmasked_impl(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_
 {
     struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     ULONG pixfmt = vHidd_StdPixFmt_Native32;
+
+    if (gfx_is_video_bm(cl, msg->src) || gfx_is_video_bm(cl, msg->dest))
+        return FALSE;
     OOP_Object *src_pf, *dest_pf;
     HIDDT_ColorModel src_colmod, dest_colmod;
     HIDDT_Color *ctab = NULL;
@@ -1726,6 +1742,8 @@ VOID GFXHIDD__Hidd_Gfx__CopyBoxAlpha(OOP_Class *cl, OOP_Object *obj, struct pHid
     WORD   y;
 
     if ((msg->width == 0) || (msg->height == 0) || (msg->opacity == 0))
+        return;
+    if (gfx_is_video_bm(cl, msg->src) || gfx_is_video_bm(cl, msg->dest))
         return;
 
     /* Work in chunks of whole rows so large blends don't need a large buffer */

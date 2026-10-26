@@ -206,63 +206,27 @@ static struct pcred *crfind(pid_t pid)
     return procfind(pid)->p_cred;
 }
 
-/****** usergroup.library/getuid *********************************************
 
-    NAME
-        getuid, geteuid - get user process identification
-        getgid, getegid - get group process identification
+/*****************************************************************************
 
-    SYNOPSIS
-        ruid = getuid()
-        D0
+    NAME */
+        AROS_LH0(uid_t, getuid,
 
-        uid_t getuid(void);
+/*  SYNOPSIS */
 
-        euid = geteuid()
-        D0
+/*  LOCATION */
+        struct Library *, UserGroupBase, 8, Usergroup)
 
-        uid_t geteuid(void);
+/*  FUNCTION
+        Returns the real user ID of the calling process.
 
-        rgid = getgid()
-        D0
+/*  RESULT
+        The real user ID of the calling process.
 
-        gid_t getgid(void);
+/*  SEE ALSO
+        geteuid(), getgid(), setuid(), setreuid()
 
-        egid = getegid()
-        D0
-
-        gid_t getegid(void);
-
-    FUNCTION
-        The getuid() function returns the real user ID of the calling
-        process, geteuid() returns the effective user ID of the calling
-        process.
-
-        The getgid() function returns the real group ID of the calling
-        process, getegid() returns the effective group ID of the calling
-        process.
-
-        The real user ID and real group ID is specified at login time.
-
-        The real ID is the ID of the user who invoked the program.  As the
-        effective user and gourp ID gives the process additional permissions
-        during the execution of `set-user-ID' or `set-group-ID' mode
-        programs, functions getgid() and getuid () are used to determine the
-        real-ids of the calling process.
-
-    RESULT
-        The getuid(), geteuid(), getgid(), and getegid() functions are
-        always successful, and no return value is reserved to indicate an
-        error.
-
-    NOTES
-        Any task can call these functions
-
-    SEE ALSO
-        getgroups(), setuid(), setreuid(), setgid(), setregid(), setgroups()
-
-******************************************************************************
-*/
+******************************************************************************/
 
 AROS_LH0(uid_t, getuid,
           struct Library *, UserGroupBase, 8, Usergroup)
@@ -277,6 +241,27 @@ AROS_LH0(uid_t, getuid,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+
+    NAME */
+        AROS_LH0(uid_t, geteuid,
+
+/*  SYNOPSIS */
+
+/*  LOCATION */
+        struct Library *, UserGroupBase, 9, Usergroup)
+
+/*  FUNCTION
+        Returns the effective user ID of the calling process.
+
+/*  RESULT
+        The effective user ID of the calling process.
+
+/*  SEE ALSO
+        getuid(), getegid(), setuid(), setreuid()
+
+******************************************************************************/
+
 AROS_LH0(uid_t, geteuid,
           struct Library *, UserGroupBase, 9, Usergroup)
 {
@@ -290,6 +275,27 @@ AROS_LH0(uid_t, geteuid,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+
+    NAME */
+        AROS_LH0(gid_t, getgid,
+
+/*  SYNOPSIS */
+
+/*  LOCATION */
+        struct Library *, UserGroupBase, 12, Usergroup)
+
+/*  FUNCTION
+        Returns the real group ID of the calling process.
+
+/*  RESULT
+        The real group ID of the calling process.
+
+/*  SEE ALSO
+        getegid(), getuid(), setgid(), setregid()
+
+******************************************************************************/
+
 AROS_LH0(gid_t, getgid,
           struct Library *, UserGroupBase, 12, Usergroup)
 {
@@ -302,6 +308,27 @@ AROS_LH0(gid_t, getgid,
 
     AROS_LIBFUNC_EXIT
 }
+
+/*****************************************************************************
+
+    NAME */
+        AROS_LH0(gid_t, getegid,
+
+/*  SYNOPSIS */
+
+/*  LOCATION */
+        struct Library *, UserGroupBase, 13, Usergroup)
+
+/*  FUNCTION
+        Returns the effective group ID of the calling process.
+
+/*  RESULT
+        The effective group ID of the calling process.
+
+/*  SEE ALSO
+        getgid(), geteuid(), setgid(), setregid()
+
+******************************************************************************/
 
 AROS_LH0(gid_t, getegid,
           struct Library *, UserGroupBase, 13, Usergroup)
@@ -387,6 +414,45 @@ AROS_LH0(gid_t, getegid,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************
+
+    NAME */
+        AROS_LH2 (int, setreuid,
+
+/*  SYNOPSIS */
+        AROS_LHA(uid_t, ruid, D0),
+        AROS_LHA(uid_t, euid, D1),
+
+/*  LOCATION */
+        struct UserGroupBase *, UserGroupBase, 10, Usergroup)
+
+/*  FUNCTION
+        Sets the real and effective user IDs of the calling process.
+        Passing NOID for either ID preserves its current value.
+
+/*  INPUTS
+        ruid - The requested real user ID, or NOID to retain it.
+        euid - The requested effective user ID, or NOID to retain it.
+
+/*  RESULT
+        Returns 0 on success or -1 when the request is rejected.
+        A rejected built-in privilege check reports EPERM.
+
+/*  NOTES
+        The built-in implementation checks whether a real-ID change
+        requires super-user privileges; it does not perform the
+        corresponding effective-ID privilege check. When
+        security.library is active, authorization is delegated
+        to the security provider.
+
+/*  SEE ALSO
+        setuid(), getuid(), geteuid()
+
+/*  HISTORY
+        The setreuid() function appeared in 4.2BSD.
+
+******************************************************************************/
+
 AROS_LH2 (int, setreuid,
           AROS_LHA(uid_t, ruid, D0),
           AROS_LHA(uid_t, euid, D1),
@@ -443,62 +509,40 @@ AROS_LH2 (int, setreuid,
     AROS_LIBFUNC_EXIT
 }
 
-/****** usergroup.library/setuid ***********************************************
 
-    NAME
-        setuid, setreuid - set real and effective user ID's
-        setgid, setregid - set real and effective group ID's
+/*****************************************************************************
 
-    SYNOPSIS
-        success = setuid(uid)
-        D0               D0
+    NAME */
+        AROS_LH1 (int, setuid,
 
-        int setuid(uid_t);
+/*  SYNOPSIS */
+        AROS_LHA(uid_t, uid, D0),
 
-        success = setreuid(ruid, euid);
-        D0                 D0    D1
+/*  LOCATION */
+        struct UserGroupBase *, UserGroupBase, 11, Usergroup)
 
-        int setreuid(uid_t, uid_t);
+/*  FUNCTION
+        Sets the user ID of the calling process to uid.
 
-        success = setgid(gid)
-        D0               D0
+/*  INPUTS
+        uid - The requested user ID.
 
-        int setgid(gid_t);
+/*  RESULT
+        Returns 0 on success or -1 when the request is rejected.
 
-        success = setregid(ruid, euid)
-        D0                 D0    D1
+/*  NOTES
+        With the built-in credential implementation, this call sets
+        both the real and effective IDs through setreuid(uid, uid).
+        When security.library is active, the security provider
+        determines the update semantics.
 
-        int setregid(gid_t ruid, gid_t euid);
+/*  SEE ALSO
+        setreuid(), getuid(), geteuid()
 
-    FUNCTION
-        The real and effective ID's of the current process are set according
-        to the arguments.  If ruid or euid is -1, the current uid is filled
-        in by the system.  Unprivileged users may change the real ID to the
-        effective ID and vice-versa; only the super-user may make other
-        changes.
+/*  HISTORY
+        The setuid() function appeared in Version 6 AT&T UNIX.
 
-    RETURN VALUES
-        Upon successful completion, a value of 0 is returned. Otherwise, a
-        value of -1 is returned and errno is set to indicate the error.
-
-    ERRORS
-        [EPERM]  The current process is not the super-user and a change
-                 other than changing the effective id to the real id was
-                 specified.
-
-    SEE ALSO
-        getuid(), getgid(), geteuid(), getegid()
-
-    NOTES
-        Any task can call these functions.
-
-    HISTORY
-        A setuid() and setgid() function calls appeared in Version 6 AT&T
-        UNIX.  The setreuid() and setregid() function calls appeared in
-        4.2BSD.
-
-****************************************************************************
-*/
+******************************************************************************/
 
 AROS_LH1 (int, setuid,
           AROS_LHA(uid_t, uid, D0),
@@ -513,6 +557,45 @@ AROS_LH1 (int, setuid,
 
     AROS_LIBFUNC_EXIT
 }
+
+/*****************************************************************************
+
+    NAME */
+        AROS_LH2 (int, setregid,
+
+/*  SYNOPSIS */
+        AROS_LHA(gid_t, rgid, D0),
+        AROS_LHA(gid_t, egid, D1),
+
+/*  LOCATION */
+        struct UserGroupBase *, UserGroupBase, 14, Usergroup)
+
+/*  FUNCTION
+        Sets the real and effective group IDs of the calling process.
+        Passing NOID for either ID preserves its current value.
+
+/*  INPUTS
+        rgid - The requested real group ID, or NOID to retain it.
+        egid - The requested effective group ID, or NOID to retain it.
+
+/*  RESULT
+        Returns 0 on success or -1 when the request is rejected.
+        A rejected built-in privilege check reports EPERM.
+
+/*  NOTES
+        The built-in implementation permits unprivileged changes
+        between the current real and effective group IDs.
+        Other changes require super-user privileges. When
+        security.library is active, authorization is delegated
+        to the security provider.
+
+/*  SEE ALSO
+        setgid(), getgid(), getegid()
+
+/*  HISTORY
+        The setregid() function appeared in 4.2BSD.
+
+******************************************************************************/
 
 AROS_LH2 (int, setregid,
           AROS_LHA(gid_t, rgid, D0),
@@ -559,6 +642,40 @@ AROS_LH2 (int, setregid,
 
     AROS_LIBFUNC_EXIT
 }
+
+/*****************************************************************************
+
+    NAME */
+        AROS_LH1 (int, setgid,
+
+/*  SYNOPSIS */
+        AROS_LHA(gid_t, gid, D0),
+
+/*  LOCATION */
+        struct UserGroupBase *, UserGroupBase, 15, Usergroup)
+
+/*  FUNCTION
+        Sets the group ID of the calling process to gid.
+
+/*  INPUTS
+        gid - The requested group ID.
+
+/*  RESULT
+        Returns 0 on success or -1 when the request is rejected.
+
+/*  NOTES
+        With the built-in credential implementation, this call sets
+        both the real and effective IDs through setregid(gid, gid).
+        When security.library is active, the security provider
+        determines the update semantics.
+
+/*  SEE ALSO
+        setregid(), getgid(), getegid()
+
+/*  HISTORY
+        The setgid() function appeared in Version 6 AT&T UNIX.
+
+******************************************************************************/
 
 AROS_LH1 (int, setgid,
           AROS_LHA(gid_t, gid, D0),

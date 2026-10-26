@@ -45,13 +45,38 @@ extern struct SignalSemaphore globalLock;
 #define KMSFMT_ABGR8888     (1 << 3)
 #define KMSFMT_RGB565       (1 << 4)
 #define KMSFMT_XRGB1555     (1 << 5)
+#define KMSFMT_YUYV         (1 << 6)    /* packed 4:2:2 video, vHidd_VideoFmt_YUYV */
+#define KMSFMT_UYVY         (1 << 7)    /* vHidd_VideoFmt_UYVY */
+#define KMSFMT_NV12         (1 << 8)    /* semi-planar 4:2:0, vHidd_VideoFmt_NV12 */
+#define KMSFMT_YUV420       (1 << 9)    /* planar 4:2:0 (CGX I420), vHidd_VideoFmt_I420 */
+#define KMSFMT_VIDEO        (KMSFMT_YUYV | KMSFMT_UYVY | KMSFMT_NV12 | KMSFMT_YUV420)
 
 struct HIDDNouveauPlane
 {
     ULONG               id;             /* KMS plane object id */
     ULONG               formats;        /* KMSFMT_* it scans out */
     ULONG               fbid;           /* framebuffer on it, 0 = off */
+    BOOL                dead;           /* its window channel timed out: not used again this boot */
+
+    /* DRM property ids (0 = the plane has none), read at enumeration */
+    ULONG               prop_fb_id, prop_crtc_id;
+    ULONG               prop_crtc_x, prop_crtc_y, prop_crtc_w, prop_crtc_h;
+    ULONG               prop_src_x, prop_src_y, prop_src_w, prop_src_h;
+    ULONG               prop_zpos;      /* "zpos" */
+    BOOL                zpos_mutable;
+    ULONG               zmin, zmax;     /* zpos range */
+    ULONG               prop_ckey;      /* nouveau's "colorkey" (dispnv50 windows) */
+
+    /* what the last commit programmed (SwapBuffers re-uses the geometry) */
+    LONG                crtc_x, crtc_y;
+    ULONG               crtc_w, crtc_h;
+    ULONG               src_x, src_y, src_w, src_h;     /* 16.16 */
+    ULONG               zpos;
+    ULONG               ckey;           /* property value, 0 = no key */
 };
+
+/* Buffers of one scan-out bitmap (aHidd_BitMap_Scanout); QueryScanout reports it */
+#define NOUVEAU_MAX_BUFFERS 3
 
 struct HIDDNouveauData
 {
@@ -66,11 +91,16 @@ struct HIDDNouveauData
     struct HIDDNouveauPlane planes[NOUVEAU_MAX_PLANES];
     BOOL                vblank_ok;          /* the kernel answers vblank waits for the crtc */
     ULONG               vblanks;            /* last vblank sequence seen */
+    BOOL                atomic;             /* every overlay has the atomic property set */
+    ULONG               maxfbw, maxfbh;     /* largest framebuffer the kernel takes */
+    ULONG               chipset;            /* nouveau_device chipset: decides the window class' formats */
 };
 
 /* nouveau_displayclass.c */
 VOID HIDDNouveauEnumPlanes(LONG fd, struct HIDDNouveauData *gfxdata);
 BOOL HIDDNouveauEnsureFB(OOP_Object *bm);
+BOOL HIDDNouveauEnsureBufferFB(OOP_Object *bm, ULONG buffer);
+BOOL HIDDNouveauPlaneSwap(OOP_Object *display, ULONG oldfbid, ULONG newfbid, BOOL wait);
 
 struct HIDDNouveauDisplayData
 {
@@ -109,6 +139,8 @@ struct HIDDNouveauBitMapData
 
     ULONG   pitch;          /* Width of single data row in bytes */
     UBYTE   bytesperpixel;  /* In bytes, how many bytes to store a pixel */
+    ULONG   stdfmt;         /* vHidd_StdPixFmt_* (Unknown for a video bitmap) */
+    ULONG   videoformat;    /* vHidd_VideoFmt_*, 0 = RGB; a video bitmap is scan-out only */
     BOOL    gpu_dirty;      /* Engine work targeting this bo has been queued
                                and not yet waited for. Any CPU access via the
                                mapping must sync first (MAP_BUFFER does). */
@@ -129,6 +161,21 @@ struct HIDDNouveauBitMapData
     ULONG       fbid;           /* Contains ID under which bitmap 
                                               is registered as framebuffer or 
                                               0 otherwise */
+
+    /*
+     * Scan-out bitmap (aHidd_BitMap_Scanout): nbufs buffers of the same
+     * size and pitch; bo/fbid above always alias buf[front], so that every
+     * existing method sees the front buffer. nbufs == 0 for ordinary bitmaps.
+     */
+    ULONG       nbufs;
+    ULONG       front;          /* buffer scanned out / addressed by bo */
+    ULONG       back;           /* buffer a client should write next */
+    ULONG       planeoff[2];    /* planar video: byte offsets of the U (or UV) and V planes */
+    struct
+    {
+        struct nouveau_bo   *bo;
+        ULONG               fbid;
+    } buf[NOUVEAU_MAX_BUFFERS];
 };
 
 #define CLID_Hidd_I2C_Nouveau           "hidd.i2c.nouveau"

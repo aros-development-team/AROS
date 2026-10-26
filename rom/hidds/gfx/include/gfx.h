@@ -500,6 +500,7 @@ enum
     vHidd_ColorModel_StaticPalette,
     vHidd_ColorModel_GrayScale,
     vHidd_ColorModel_StaticGray,
+    vHidd_ColorModel_Video,     /* scan-out only video bitmap (aHidd_BitMap_VideoFormat) */
 
     num_Hidd_CM
 };
@@ -684,6 +685,10 @@ enum
 #define PIF_FULL_WIDTH_ONLY     (1 << PIB_FULL_WIDTH_ONLY)
 #define PIB_VSPLIT_ONLY         2   /* planes stack vertically only (copper lists)    */
 #define PIF_VSPLIT_ONLY         (1 << PIB_VSPLIT_ONLY)
+#define PIB_COLORKEY            3   /* destination colour key: the plane shows only    */
+#define PIF_COLORKEY            (1 << PIB_COLORKEY) /* where the primary has the key  */
+#define PIB_HIDE_OBSCURED       4   /* key-less plane partly covered: hide it rather   */
+#define PIF_HIDE_OBSCURED       (1 << PIB_HIDE_OBSCURED) /* than show it on top       */
 
 #define HIDD_PLANE_SCALE_UNITY  0x10000     /* 16.16 */
 
@@ -700,6 +705,7 @@ struct HIDD_PlaneInfo
     UWORD   MaxWidth;       /* 0 = up to the display size                       */
     UWORD   MaxHeight;
     ULONG   Flags;          /* PIF_*                                            */
+    ULONG   VideoFmtMask;   /* bit per vHidd_VideoFmt_* the plane can scan out  */
 };
 
 struct HIDD_PlaneState
@@ -711,7 +717,70 @@ struct HIDD_PlaneState
     UBYTE            Opacity;   /* for vHidd_CompAlpha_Fixed                    */
     UBYTE            AlphaMode; /* vHidd_CompAlpha_*                            */
     ULONG            ZOrder;
+    ULONG            Flags;     /* PSF_*                                        */
+    ULONG            ColorKey;  /* 0x00RRGGBB, with PSF_COLORKEY                */
 };
+
+/* HIDD_PlaneState.Flags */
+#define PSF_COLORKEY            (1 << 0)    /* show only where the primary has ColorKey */
+
+/*
+ * Scan-out only video formats (aHidd_BitMap_VideoFormat, HIDD_PlaneInfo.VideoFmtMask,
+ * moHidd_Display_QueryScanout). These are deliberately not vHidd_StdPixFmt_*: no
+ * blit or conversion path understands them, only planes scan them out and the
+ * owner writes them through moHidd_BitMap_LockBuffer.
+ */
+#define vHidd_VideoFmt_None     0
+#define vHidd_VideoFmt_YUYV     1   /* packed 4:2:2, Y0 U Y1 V, 2 bytes per pixel */
+#define vHidd_VideoFmt_UYVY     2   /* packed 4:2:2, U Y0 V Y1                    */
+#define vHidd_VideoFmt_NV12     3   /* planar Y + interleaved UV, 4:2:0           */
+#define vHidd_VideoFmt_I420     4   /* planar Y, U, V, 4:2:0                      */
+#define vHidd_VideoFmt_YV12     5   /* planar Y, V, U, 4:2:0                      */
+#define num_Hidd_VideoFmt       6
+
+/* aHidd_BitMap_ColorSpace */
+#define vHidd_ColorSpace_BT601  0
+#define vHidd_ColorSpace_BT709  1
+
+/* moHidd_BitMap_SwapBuffers flags */
+#define fHidd_Swap_NoWait       (1 << 0)    /* return before the displaced buffer is off scan-out */
+
+/* moHidd_Display_QueryScanout */
+struct HIDD_ScanoutCaps
+{
+    ULONG   Flags;          /* SCF_*                                           */
+    ULONG   MaxWidth;       /* largest source the plane scans out, 0 = display */
+    ULONG   MaxHeight;
+    ULONG   MaxBuffers;     /* buffers one scan-out bitmap may have (>= 1)     */
+    ULONG   ScaleMin;       /* 16.16, as HIDD_PlaneInfo                        */
+    ULONG   ScaleMax;
+    ULONG   ColorKey;       /* the display's key colour when SCF_COLORKEY      */
+};
+
+#define SCF_PLANE               (1 << 0)    /* a plane can show this format at this size   */
+#define SCF_COLORKEY            (1 << 1)    /* ... with a destination colour key           */
+#define SCF_SCALE               (1 << 2)    /* ... scaled (ScaleMin/ScaleMax give the range) */
+
+/*
+ * Client surfaces (moHidd_Display_AttachSurface). The hook is called from the
+ * compositor's context, with its lock dropped, as CallHookPkt(hook, display, msg).
+ * It must not block; see the composition plan for the locking rule.
+ */
+struct HIDD_SurfaceHookMsg
+{
+    ULONG                         Type;     /* vHidd_SurfaceHook_*                  */
+    struct HIDD_CompositeRequest *Request;  /* the attached request                 */
+    struct Rectangle              Rect;     /* Damage: screen bitmap coordinates    */
+    ULONG                         Plane;    /* PlaneGained: the plane index         */
+};
+
+#define vHidd_SurfaceHook_Damage        0   /* the screen changed under/around Dest: recompute Shape */
+#define vHidd_SurfaceHook_PlaneGained   1   /* the surface is scanned out by a plane                 */
+#define vHidd_SurfaceHook_PlaneLost     2   /* the surface is no longer on a plane                   */
+#define vHidd_SurfaceHook_ScreenMoved   3   /* the screen moved on the display (informational)       */
+
+/* aHidd_Display_ColorKey default of the base class (CyberGraphX used the same value) */
+#define HIDD_DISPLAY_DEFAULT_COLORKEY   0x00080008
 
 /* CommitPlanes() flags */
 #define fHidd_Commit_NoWait     (1 << 0)    /* return before the new state is scanned out */

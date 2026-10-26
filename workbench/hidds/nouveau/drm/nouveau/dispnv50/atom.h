@@ -190,6 +190,7 @@ struct nv50_wndw_atom {
 
 	struct drm_property_blob *ilut;
 	bool visible;
+	u32 ckey;		/* "colorkey" property: 0x01RRGGBB = destination key on, 0 = off */
 
 	struct {
 		u32  handle;
@@ -229,6 +230,7 @@ struct nv50_wndw_atom {
 		u8  interval:4;
 
 		u8  colorspace:2;
+		u8  swapuv:1;	/* semi-planar chroma order (SET_PARAMS SWAP_UV) */
 		u8  format;
 		u8  kind:7;
 		u8  layout:1;
@@ -261,6 +263,7 @@ struct nv50_wndw_atom {
 		u8 k1;
 		u8 src_color:4;
 		u8 dst_color:4;
+		u32 ckey;	/* programmed destination colour key, bit 24 = enabled */
 	} blend;
 
 	union nv50_wndw_atom_mask {

@@ -5,6 +5,7 @@
 #include "core.h"
 #include "disp.h"
 #include "head.h"
+#include "wndw.h"
 
 #include <nvif/class.h>
 #include <nvif/printf.h>
@@ -108,6 +109,15 @@ coreca7d_owned(struct nv50_core *core, u32 *pactive, u32 *ptiles, u32 *pphywins)
  * on the Titan 2026-10-24); NOUVEAU_WNDW_LIVE_OWNER=0 restores the old rule.
  */
 int nouveau_wndw_live_owner = 1;
+/*
+ * NOUVEAU_WNDW_YUV (default 1): the windows this driver sets up may scan out
+ * 4:2:0 video (planar I420 and semi-planar NV12, what nvkms uses) - the
+ * format usage bounds carry YUV_PLANAR420 and YUV_SEMI_PLANAR420; YUV_PACKED422 only with
+ * NOUVEAU_WNDW_PACKED422 (a packed window raised an UPDATE exception on the
+ * GB207, 2026-10-25). 0 = RGB only.
+ */
+int nouveau_wndw_yuv = 1;
+extern int nouveau_wndw_packed422;
 
 static int
 coreca7d_wndw_owner(struct nv50_core *core)
@@ -164,12 +174,54 @@ coreca7d_wndw_owner(struct nv50_core *core)
 	return 0;
 }
 
+/* The usage bounds this driver gives a window (5 words) */
+static void
+coreca7d_wndw_bounds_push(struct nvif_push *push, int i, u32 yuv)
+{
+	PUSH_MTHD(push, NVCA7D, WINDOW_SET_WINDOW_FORMAT_USAGE_BOUNDS(i),
+		  NVDEF(NVCA7D, WINDOW_SET_WINDOW_FORMAT_USAGE_BOUNDS, RGB_PACKED1BPP, TRUE) |
+		  NVDEF(NVCA7D, WINDOW_SET_WINDOW_FORMAT_USAGE_BOUNDS, RGB_PACKED2BPP, TRUE) |
+		  NVDEF(NVCA7D, WINDOW_SET_WINDOW_FORMAT_USAGE_BOUNDS, RGB_PACKED4BPP, TRUE) |
+		  NVDEF(NVCA7D, WINDOW_SET_WINDOW_FORMAT_USAGE_BOUNDS, RGB_PACKED8BPP, TRUE) |
+		  ((yuv & NOUVEAU_WNDW_YUV_I420) ?
+		   NVDEF(NVCA7D, WINDOW_SET_WINDOW_FORMAT_USAGE_BOUNDS, YUV_PLANAR420, TRUE) : 0) |
+		  ((yuv & NOUVEAU_WNDW_YUV_NV12) ?
+		   NVDEF(NVCA7D, WINDOW_SET_WINDOW_FORMAT_USAGE_BOUNDS, YUV_SEMI_PLANAR420, TRUE) : 0) |
+		  ((yuv & NOUVEAU_WNDW_YUV_PACKED422) ?
+		   NVDEF(NVCA7D, WINDOW_SET_WINDOW_FORMAT_USAGE_BOUNDS, YUV_PACKED422, TRUE) : 0),
+
+				WINDOW_SET_WINDOW_ROTATED_FORMAT_USAGE_BOUNDS(i), 0x00000000);
+
+	PUSH_MTHD(push, NVCA7D, WINDOW_SET_WINDOW_USAGE_BOUNDS(i),
+		  NVVAL(NVCA7D, WINDOW_SET_WINDOW_USAGE_BOUNDS, MAX_PIXELS_FETCHED_PER_LINE, 0x7fff) |
+		  NVDEF(NVCA7D, WINDOW_SET_WINDOW_USAGE_BOUNDS, ILUT_ALLOWED, TRUE) |
+		  NVDEF(NVCA7D, WINDOW_SET_WINDOW_USAGE_BOUNDS, INPUT_SCALER_TAPS, TAPS_2) |
+		  NVDEF(NVCA7D, WINDOW_SET_WINDOW_USAGE_BOUNDS, UPSCALING_ALLOWED, FALSE));
+}
+
+/*
+ * Re-state a window's usage bounds in the core channel (nvkms sends the
+ * bounds in the core update of every modeset and of a flip that needs
+ * more; the init-time ones did not arm on the GB207, see 2026-10-25).
+ */
+int
+coreca7d_wndw_bounds(struct nv50_core *core, int id)
+{
+	struct nvif_push *push = &core->chan.push;
+	int ret;
+
+	if ((ret = PUSH_WAIT(push, 5)))
+		return ret;
+	coreca7d_wndw_bounds_push(push, id, nouveau_wndw_yuv_mask());
+	return 0;
+}
+
 static int
 coreca7d_init(struct nv50_core *core)
 {
 	struct nvif_push *push = &core->chan.push;
 	const u32 windows = 8, heads = 4;
-	u32 active, tiles, phywins;
+	u32 active, tiles, phywins, yuv;
 	int ret, i;
 
 	coreca7d_owned(core, &active, &tiles, &phywins);
@@ -214,6 +266,9 @@ coreca7d_init(struct nv50_core *core)
 		if (n)
 			nv50_disp_imp(core->disp, ih, n, &res);
 	}
+	/* Only known after the IMP query above read the capabilities (2026-10-25: computing
+	 * this at function entry sent RGB-only bounds, 0x0f, and every YUV flip failed). */
+	yuv = nouveau_wndw_yuv_mask();
 	for (i = 0; i < windows; i++)
 		printk(KERN_NOTICE "[nouveau] wndw %d: control %08x phywin %08x\n", i,
 		       coreca7d_armed(core, NVCA7D_WINDOW_SET_CONTROL(i)),
@@ -234,19 +289,7 @@ coreca7d_init(struct nv50_core *core)
 		if (owner < 4 && (active & BIT(owner)))
 			continue;
 
-		PUSH_MTHD(push, NVCA7D, WINDOW_SET_WINDOW_FORMAT_USAGE_BOUNDS(i),
-			  NVDEF(NVCA7D, WINDOW_SET_WINDOW_FORMAT_USAGE_BOUNDS, RGB_PACKED1BPP, TRUE) |
-			  NVDEF(NVCA7D, WINDOW_SET_WINDOW_FORMAT_USAGE_BOUNDS, RGB_PACKED2BPP, TRUE) |
-			  NVDEF(NVCA7D, WINDOW_SET_WINDOW_FORMAT_USAGE_BOUNDS, RGB_PACKED4BPP, TRUE) |
-			  NVDEF(NVCA7D, WINDOW_SET_WINDOW_FORMAT_USAGE_BOUNDS, RGB_PACKED8BPP, TRUE),
-
-					WINDOW_SET_WINDOW_ROTATED_FORMAT_USAGE_BOUNDS(i), 0x00000000);
-
-		PUSH_MTHD(push, NVCA7D, WINDOW_SET_WINDOW_USAGE_BOUNDS(i),
-			  NVVAL(NVCA7D, WINDOW_SET_WINDOW_USAGE_BOUNDS, MAX_PIXELS_FETCHED_PER_LINE, 0x7fff) |
-			  NVDEF(NVCA7D, WINDOW_SET_WINDOW_USAGE_BOUNDS, ILUT_ALLOWED, TRUE) |
-			  NVDEF(NVCA7D, WINDOW_SET_WINDOW_USAGE_BOUNDS, INPUT_SCALER_TAPS, TAPS_2) |
-			  NVDEF(NVCA7D, WINDOW_SET_WINDOW_USAGE_BOUNDS, UPSCALING_ALLOWED, FALSE));
+		coreca7d_wndw_bounds_push(push, i, yuv);
 
 		PUSH_MTHD(push, NVCA7D, WINDOW_SET_PHYSICAL(i), 0);
 	}

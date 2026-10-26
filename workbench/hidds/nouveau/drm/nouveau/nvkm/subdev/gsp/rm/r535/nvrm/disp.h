@@ -764,6 +764,9 @@ typedef struct NV0073_CTRL_SPECIFIC_DISPLAY_CHANGE_PARAMS {
 #define NVC372_CTRL_FORMAT_RGB_PACKED_2_BPP                  (0x00000002)
 #define NVC372_CTRL_FORMAT_RGB_PACKED_4_BPP                  (0x00000004)
 #define NVC372_CTRL_FORMAT_RGB_PACKED_8_BPP                  (0x00000008)
+#define NVC372_CTRL_FORMAT_YUV_PACKED_422                    (0x00000010)
+#define NVC372_CTRL_FORMAT_YUV_PLANAR_420                    (0x00000020)
+#define NVC372_CTRL_FORMAT_YUV_SEMI_PLANAR_420               (0x00000080)
 #define NVC372_CTRL_LAYOUT_PITCH                             1
 #define NV_DISP_LOCK_PIN_UNSPECIFIED                         0x10
 #define NV_DISP_LOCK_MODE_NO_LOCK                            0x0
