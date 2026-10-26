@@ -557,6 +557,12 @@ LONG DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, ULONG l
 
     DREAD(bug("[emul] Reading %u bytes from fd %ld\n", len, fh->fd));
 
+    if ((LONG)len < 0)
+    {
+        *err = ERROR_BAD_NUMBER;
+        return -1;
+    }
+
     if (len == 0)
     {
         *err = 0;
@@ -634,6 +640,12 @@ LONG DoWrite(struct emulbase *emulbase, struct filehandle *fh, CONST_APTR buff, 
     SIPTR error = 0;
 
     DWRITE(bug("[emul] Writing %u bytes to fd %ld\n", len, fh->fd));
+
+    if ((LONG)len < 0)
+    {
+        *err = ERROR_BAD_NUMBER;
+        return -1;
+    }
 
     HostLib_Lock();
 
