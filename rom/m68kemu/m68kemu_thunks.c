@@ -613,6 +613,53 @@ void shadow_remove(struct M68KEmuContext *ctx, ULONG m68k_addr)
 
 
 /* intuition -204: OpenWindow(A0=newWindow) -> D0=window */
+/* With classic borders shown, a window the program sized from the outside
+   grows by what the screen's decoration adds to the classic borders. */
+/* the last occurrence: OpenWindowTagList lets a later tag win */
+static struct TagItem *tag_find(struct TagItem *t, Tag tag)
+{
+    struct TagItem *found = NULL;
+    for (int k = 0; t && k < 256; k++, t++)
+    {
+        if (t->ti_Tag == TAG_DONE) break;
+        if (t->ti_Tag == TAG_MORE) { t = (struct TagItem *)t->ti_Data - 1; continue; }
+        if (t->ti_Tag == tag) found = t;
+    }
+    return found;
+}
+
+static void classic_grow(struct M68KEmuContext *ctx, struct TagItem *tags)
+{
+    struct TagItem *ti, *w, *h, *f;
+    struct Screen *scr = NULL, *locked = NULL;
+    WORD dw, dh;
+
+    if (!ctx->classic_borders || !tags)
+        return;
+    if ((ti = tag_find(tags, WA_Borderless)) && ti->ti_Data)
+        return;
+    if ((f = tag_find(tags, WA_Flags)) && (f->ti_Data & WFLG_BORDERLESS))
+        return;
+    w = tag_find(tags, WA_InnerWidth) ? NULL : tag_find(tags, WA_Width);
+    h = tag_find(tags, WA_InnerHeight) ? NULL : tag_find(tags, WA_Height);
+    if (!w && !h)
+        return;
+    if ((ti = tag_find(tags, WA_CustomScreen)) && ti->ti_Data)
+        scr = (struct Screen *)ti->ti_Data;
+    else if ((ti = tag_find(tags, WA_PubScreen)) && ti->ti_Data)
+        scr = (struct Screen *)ti->ti_Data;
+    else
+        scr = locked = LockPubScreen(NULL);
+    if (!scr)
+        return;
+    dw = (scr->WBorLeft - M68K_CLASSIC_WBORLEFT) + (scr->WBorRight - M68K_CLASSIC_WBORRIGHT);
+    dh = (scr->WBorTop - M68K_CLASSIC_WBORTOP) + (scr->WBorBottom - M68K_CLASSIC_WBORBOTTOM);
+    if (w && dw > 0) w->ti_Data += dw;
+    if (h && dh > 0) h->ti_Data += dh;
+    if (locked)
+        UnlockPubScreen(NULL, locked);
+}
+
 /* NewWindow fields as tags; title and screen strings point into m68k memory */
 static int newwindow_tags(struct M68KEmuContext *ctx, ULONG nw, struct TagItem *t)
 {
@@ -648,6 +695,7 @@ static IPTR thunk_intuition_OpenWindow(struct M68KEmuContext *ctx, void *cpu)
 
     if (!nw) return 0;
     newwindow_tags(ctx, nw, t);
+    classic_grow(ctx, t);
     w = OpenWindowTagList(NULL, t);
     if (ctx->trace_calls)
         bug("[m68kemu] OpenWindow %ld,%ld %ldx%ld idcmp %08lx flags %08lx -> %p\n",
@@ -824,10 +872,14 @@ static IPTR thunk_intuition_OpenWindowTagList(struct M68KEmuContext *ctx, void *
         int n = newwindow_tags(ctx, THUNK_A(0), t);
         t[n].ti_Tag = ht ? TAG_MORE : TAG_DONE;
         t[n].ti_Data = (IPTR)ht;
+        classic_grow(ctx, t);
         w = OpenWindowTagList(NULL, t);
     }
     else
+    {
+        classic_grow(ctx, ht);
         w = OpenWindowTagList(NULL, ht);
+    }
     if (ht) FreeVec(ht);
     if (ctx->trace_calls)
     {
