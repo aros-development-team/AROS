@@ -2116,6 +2116,17 @@ static BOOL HIDDCompositorRectHasSurfaces(struct HIDDCompositorData *compdata, s
     return FALSE;
 }
 
+/* Was surfacebitmap made for the display's current mode, depth and size? */
+static BOOL HIDDCompositorSurfaceBitMapFits(struct HIDDCompositorData *compdata)
+{
+    return (compdata->surfacebmrect.MinX == compdata->displayrect.MinX) &&
+           (compdata->surfacebmrect.MinY == compdata->displayrect.MinY) &&
+           (compdata->surfacebmrect.MaxX == compdata->displayrect.MaxX) &&
+           (compdata->surfacebmrect.MaxY == compdata->displayrect.MaxY) &&
+           (compdata->surfacebmdepth == compdata->displaydepth) &&
+           (compdata->surfacebmmode == compdata->displaymode);
+}
+
 /*
  * Where to compose 'rect' when the caller would draw straight into the
  * display bitmap: the backdrop is drawn first and the surfaces over it after,
@@ -2134,13 +2145,7 @@ static OOP_Object *HIDDCompositorTarget(struct HIDDCompositorData *compdata, OOP
         return target;
 
     ObtainSemaphore(&compdata->surfacesem);
-    if (compdata->surfacebitmap &&
-        (compdata->surfacebmrect.MaxX != compdata->displayrect.MaxX ||
-         compdata->surfacebmrect.MaxY != compdata->displayrect.MaxY ||
-         compdata->surfacebmrect.MinX != compdata->displayrect.MinX ||
-         compdata->surfacebmrect.MinY != compdata->displayrect.MinY ||
-         compdata->surfacebmdepth != compdata->displaydepth ||
-         compdata->surfacebmmode != compdata->displaymode))
+    if (compdata->surfacebitmap && !HIDDCompositorSurfaceBitMapFits(compdata))
         HIDDCompositorFreeSurfaceBitMap(compdata);
     if (!compdata->surfacebitmap)
     {
@@ -2930,9 +2935,18 @@ static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata,
     }
     if (olddisplaybitmap && (olddisplaybitmap != compdata->displaybitmap))
     {
-        /* Made for the old display bitmap's mode */
+        /*
+         * Composition stopped: passthrough never composes off screen, so the
+         * display sized bitmap is not kept. While composing, the redraw above
+         * has already made it for the new mode (HIDDCompositorTarget()
+         * replaces one of another mode itself): only a bitmap that does not
+         * fit the display goes, so a mode change does not free the one just
+         * made and allocate it again on the next update.
+         */
         ObtainSemaphore(&compdata->surfacesem);
-        HIDDCompositorFreeSurfaceBitMap(compdata);
+        if (compdata->surfacebitmap &&
+            (!compdata->displaybitmap || !HIDDCompositorSurfaceBitMapFits(compdata)))
+            HIDDCompositorFreeSurfaceBitMap(compdata);
         ReleaseSemaphore(&compdata->surfacesem);
     }
 
