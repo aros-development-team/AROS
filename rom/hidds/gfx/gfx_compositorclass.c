@@ -684,11 +684,11 @@ static void CalculateParametersAlpha(struct HIDDCompositorData *compdata, ULONG 
 
 /* Follows the resolution of topmost screen */
 static void CalculateParametersRegular(struct HIDDCompositorData *compdata, ULONG *wantedwidth,
-        ULONG *wantedheight, ULONG *wanteddepth)
+        ULONG *wantedheight, ULONG *wanteddepth, HIDDT_ModeID *topmode)
 {
     struct StackBitMapNode  *n;
     OOP_Object              *sync = NULL, *pf;
-    IPTR                    width, height, depth, modeid;
+    IPTR                    width, height, depth, modeid = vHidd_ModeID_Invalid;
 
     /*
      * Examine all bitmaps in the stack to figure out the needed depth.
@@ -730,6 +730,7 @@ static void CalculateParametersRegular(struct HIDDCompositorData *compdata, ULON
 
     *wantedwidth   = (ULONG)width;
     *wantedheight  = (ULONG)height;
+    *topmode       = (HIDDT_ModeID)modeid;
 }
 
 static void UpdateDisplayMode(struct HIDDCompositorData *compdata)
@@ -737,13 +738,14 @@ static void UpdateDisplayMode(struct HIDDCompositorData *compdata)
     ULONG                   wantedwidth = 0, wantedheight = 0, wanteddepth = 16;
     ULONG                   found_depth;
     IPTR                    modeid;
+    HIDDT_ModeID            topmode = vHidd_ModeID_Invalid;
 
     D(bug("[Compositor] %s()\n", __func__));
 
     if ((compdata->flags & COMPSTATEF_HASALPHA) || (compdata->modepolicy == vHidd_Compositor_ModePolicy_ScaleLargest))
         CalculateParametersAlpha(compdata, &wantedwidth, &wantedheight, &wanteddepth);   /* the largest screen's mode */
     else
-        CalculateParametersRegular(compdata, &wantedwidth, &wantedheight, &wanteddepth);
+        CalculateParametersRegular(compdata, &wantedwidth, &wantedheight, &wanteddepth, &topmode);
 
     if (compdata->modepolicy == vHidd_Compositor_ModePolicy_Native)
     {
@@ -753,12 +755,32 @@ static void UpdateDisplayMode(struct HIDDCompositorData *compdata)
         {
             wantedwidth  = compdata->nativew;
             wantedheight = compdata->nativeh;
+            topmode      = vHidd_ModeID_Invalid;
         }
     }
 
     D(bug("[Compositor] %s: Prefered mode %ldx%ldx%d\n", __func__, wantedwidth, wantedheight, wanteddepth));
 
     modeid = FindBestHiddMode(compdata, wantedwidth, wantedheight, wanteddepth, &found_depth);
+
+    /* The front screen's own mode where it fits: its refresh rate too, which
+     * FindBestHiddMode() does not look at, so composing never retimes the display */
+    if ((topmode != vHidd_ModeID_Invalid) && (topmode != (HIDDT_ModeID)modeid))
+    {
+        OOP_Object *sync, *pf;
+        IPTR w = 0, h = 0, d = 0;
+
+        if (HIDD_DMEnum_GetMode(compdata->dmenum, topmode, &sync, &pf)
+            && (OOP_GET(pf, aHidd_PixFmt_ColorModel) == vHidd_ColorModel_TrueColor))
+        {
+            OOP_GetAttr(sync, aHidd_Sync_HDisp, &w);
+            OOP_GetAttr(sync, aHidd_Sync_VDisp, &h);
+            OOP_GetAttr(pf, aHidd_PixFmt_Depth, &d);
+            if ((w == compdata->displayrect.MaxX + 1) && (h == compdata->displayrect.MaxY + 1)
+                && (d == found_depth))
+                modeid = topmode;
+        }
+    }
     D(bug("[Compositor] %s: Composition Display ModeID 0x%08X [current 0x%08X]\n", __func__, modeid, compdata->displaymode));
 
     if (modeid != compdata->displaymode)
@@ -2056,11 +2078,12 @@ static void HIDDCompositorRecalculateSurfaces(struct HIDDCompositorData *compdat
         {
             /*
              * On a plane nothing under it is needed. Blitted, the request
-             * says whether it covers the screen. A video surface without a
+             * says whether it covers the screen; a Shape only narrows where,
+             * and the region is that already. A video surface without a
              * plane shows nothing: the screen's own pixels stay.
              */
             sn->opaque = (sn->plane >= 0) ||
-                         ((req->Flags & CRF_OPAQUE) && (req->Opacity == 0xFF) && !req->Shape && SURFACE_BLITTABLE(sn));
+                         ((req->Flags & CRF_OPAQUE) && (req->Opacity == 0xFF) && SURFACE_BLITTABLE(sn));
         }
 
         /* An opaque surface hides the screen pixels under it: no need to blit those */
@@ -2546,6 +2569,26 @@ static BOOL HIDDCompositorNeedsComposition(struct HIDDCompositorData *compdata, 
         return TRUE;
     if (topnode->scaled)
         return TRUE;    /* passthrough shows the bitmap as it is: a scaled screen must be composed */
+    {
+        /*
+         * Shown as it is, a bitmap is shown in its own mode. One of another
+         * size than the display's (the front screen's, on a plane above it)
+         * would leave the planes placed in a display that is not there.
+         */
+        IPTR modeid = vHidd_ModeID_Invalid, w = 0, h = 0;
+        OOP_Object *sync = NULL, *pf = NULL;
+
+        OOP_GetAttr(topnode->bm, aHidd_BitMap_ModeID, &modeid);
+        if ((modeid != vHidd_ModeID_Invalid)
+            && HIDD_DMEnum_GetMode(compdata->dmenum, modeid, &sync, &pf) && sync)
+        {
+            OOP_GetAttr(sync, aHidd_Sync_HDisp, &w);
+            OOP_GetAttr(sync, aHidd_Sync_VDisp, &h);
+            if ((w != (IPTR)(compdata->displayrect.MaxX - compdata->displayrect.MinX + 1))
+                || (h != (IPTR)(compdata->displayrect.MaxY - compdata->displayrect.MinY + 1)))
+                return TRUE;
+        }
+    }
     return FALSE;
 }
 
