@@ -708,6 +708,13 @@ static ULONG setup_window_shadow(struct M68KEmuContext *ctx, struct Window *w)
         ULONG mport = M68KEmu_HeapAlloc(ctx, M68K_SIZEOF_MSGPORT, 0);
         if (mport)
         {
+            /* programs Wait() on 1 << mp_SigBit themselves */
+            memset(ctx->mem + mport, 0, M68K_SIZEOF_MSGPORT);
+            ctx->mem[mport + 8]  = NT_MSGPORT;
+            ctx->mem[mport + 14] = w->UserPort->mp_Flags;
+            ctx->mem[mport + 15] = w->UserPort->mp_SigBit;
+            m68k_write32(ctx, mport + 20, mport + 24);
+            m68k_write32(ctx, mport + 28, mport + 20);
             shadow_register(ctx, mport, w->UserPort, 4);
             m68k_write32(ctx, mw + M68K_WIN_USERPORT, mport);
         }
