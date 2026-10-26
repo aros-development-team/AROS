@@ -212,12 +212,14 @@ static IPTR thunk_exec_FindTask(struct M68KEmuContext *ctx, void *cpu)
         if (ctx->shadow_map[i].native_ptr == task && ctx->shadow_map[i].type == layout->shadow_type)
         {
             shadow_sync(ctx, layout, ctx->shadow_map[i].m68k_addr, task);
+            m68k_task_stack(ctx, ctx->shadow_map[i].m68k_addr, task);
             return ctx->shadow_map[i].m68k_addr;
         }
     ULONG m68k = M68KEmu_HeapAlloc(ctx, M68K_SIZEOF_PROCESS, 0); /* m68k Process size */
     if (!m68k) return 0;
     shadow_register(ctx, m68k, task, layout->shadow_type);
     shadow_sync(ctx, layout, m68k, task);
+    m68k_task_stack(ctx, m68k, task);
     /* If this is a Process with a CLI, build a fake m68k CLI struct
        and set pr_Arguments so SAS/C startup code can read args. */
     if (task->tc_Node.ln_Type == NT_PROCESS)

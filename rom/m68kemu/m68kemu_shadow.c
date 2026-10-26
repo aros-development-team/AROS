@@ -78,6 +78,18 @@ static void sync_fields(struct M68KEmuContext *ctx,
     }
 }
 
+/* The program's own task: its stack is the emulated one. Startup code that
+   copies its stack to a bigger one reads the bounds from tc_SPLower and
+   tc_SPUpper (a NULL there made it copy through all memory). */
+void m68k_task_stack(struct M68KEmuContext *ctx, ULONG mtask, struct Task *task)
+{
+    if (!mtask || task != FindTask(NULL))
+        return;
+    m68k_write32(ctx, mtask + 54, ctx->stack_top - 4);   /* tc_SPReg */
+    m68k_write32(ctx, mtask + 58, ctx->stack_bottom);    /* tc_SPLower */
+    m68k_write32(ctx, mtask + 62, ctx->stack_top);       /* tc_SPUpper */
+}
+
 /* A Screen's embedded ViewPort and RastPort are passed on by address, and
    its ColorMap goes to the pen functions: give them shadows as well. */
 void m68k_screen_extras(struct M68KEmuContext *ctx, ULONG ms, struct Screen *scr)
@@ -359,6 +371,7 @@ ULONG shadow_init_execbase(struct M68KEmuContext *ctx, ULONG m68k_base, void *na
             {
                 shadow_register(ctx, m68k_proc, task, tl->shadow_type);
                 shadow_sync(ctx, tl, m68k_proc, task);
+                m68k_task_stack(ctx, m68k_proc, task);
             }
             /* Set pr_CLI if running from CLI — build a real m68k CLI struct */
             if (task->tc_Node.ln_Type == NT_PROCESS)
