@@ -1217,13 +1217,16 @@ BOOL answer_write_request(struct filehandle *fh, struct DosPacket *dp)
     LONG length = dp->dp_Arg3;
 
 #if RMB_FREEZES_OUTPUT
-    struct Window *conwindow;
-
-    conwindow = ((struct ConUnit *) fh->conwriteio.io_Unit)->cu_Window;
-
-    while ((PeekQualifier() & IEQUALIFIER_RBUTTON) && conwindow && (conwindow == IntuitionBase->ActiveWindow))
+    if (!(fh->flags & FHFLG_DEVICEMODE))
     {
-        Delay(2);
+        struct Window *conwindow =
+            ((struct ConUnit *)fh->conwriteio.io_Unit)->cu_Window;
+
+        while ((PeekQualifier() & IEQUALIFIER_RBUTTON) && conwindow &&
+               (conwindow == IntuitionBase->ActiveWindow))
+        {
+            Delay(2);
+        }
     }
 #endif
 
