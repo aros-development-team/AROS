@@ -2433,6 +2433,35 @@ static IPTR thunk_graphics_GetDisplayInfoData_m(struct M68KEmuContext *ctx, void
     if (!buf) return 0;
     memset(&u, 0, sizeof(u));
     got = GetDisplayInfoData(h, u.raw, sizeof(u), tag, id);
+    if (tag == DTAG_MNTR)
+    {
+        /* MonitorInfo without the MonitorSpec pointer. The timing is PAL,
+           the rate of the emulator's own vertical blank: programs time
+           themselves by VBLs and turn rows x colour clocks into Hz */
+        for (i = 0; i < 96 && i < size; i++)
+            ctx->mem[buf + i] = 0;
+        if (size >= 16)
+        {
+            m68k_write32(ctx, buf + 0, DTAG_MNTR);
+            m68k_write32(ctx, buf + 4, got ? u.di.Header.DisplayID : id);
+            m68k_write32(ctx, buf + 12, 96);
+        }
+        if (size >= 40)
+        {
+            m68k_write16(ctx, buf + 20, 0x81);     /* ViewPosition */
+            m68k_write16(ctx, buf + 22, 0x2c);
+            m68k_write16(ctx, buf + 24, 22);       /* ViewResolution */
+            m68k_write16(ctx, buf + 26, 22);
+            m68k_write16(ctx, buf + 36, 312);      /* TotalRows */
+            m68k_write16(ctx, buf + 38, 227);      /* TotalColorClocks */
+        }
+        if (size >= 44)
+        {
+            m68k_write16(ctx, buf + 40, 29);       /* MinRow */
+            m68k_write16(ctx, buf + 42, MCOMPAT_MIXED);
+        }
+        return size < 96 ? size : 96;
+    }
     if (!got) return 0;
 
 #define W16(o, v) do { if ((o) + 2 <= size) m68k_write16(ctx, buf + (o), (UWORD)(v)); } while (0)
@@ -2468,7 +2497,7 @@ static IPTR thunk_graphics_GetDisplayInfoData_m(struct M68KEmuContext *ctx, void
         out = 56;
         break;
     default:
-        return 0;                       /* MonitorInfo/VecInfo carry pointers: not offered */
+        return 0;                       /* VecInfo carries pointers: not offered */
     }
 #undef W16
 #undef W32
