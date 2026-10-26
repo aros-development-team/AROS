@@ -57,9 +57,10 @@ struct M68KEmuContext *M68KEmu_CreateContext(struct M68KEmuLibBase *base)
     heap_size       = ctx->heap_end - ctx->heap_start;
 
     /* One big free block */
-    ctx->heap_free = ctx->heap_start;
-    m68k_write32(ctx, ctx->heap_start,     heap_size);
-    m68k_write32(ctx, ctx->heap_start + 4, 0);
+    ctx->heap_free  = ctx->heap_start;
+    ctx->heap_avail = heap_size;
+    m68k_write32(ctx, ctx->heap_start + FB_NEXT, 0);
+    m68k_write32(ctx, ctx->heap_start + FB_SIZE, heap_size);
 
     return ctx;
 }
@@ -76,6 +77,31 @@ void M68KEmu_DestroyContext(struct M68KEmuContext *ctx)
     FreeMem(ctx, sizeof(struct M68KEmuContext));
 }
 
+/* The 68k MemHeader of the heap (see shadow_init_execbase) follows the
+   free list: its first chunk and free byte count */
+static void heap_publish(struct M68KEmuContext *ctx)
+{
+    if (ctx->memheader)
+    {
+        m68k_write32(ctx, ctx->memheader + M68K_MH_FIRST, ctx->heap_free);
+        m68k_write32(ctx, ctx->memheader + M68K_MH_FREE, ctx->heap_avail);
+    }
+}
+
+ULONG M68KEmu_HeapLargest(struct M68KEmuContext *ctx)
+{
+    ULONG largest = 0, c, n = 0;
+
+    for (c = ctx->heap_free; c && n < 100000; c = m68k_read32(ctx, c + FB_NEXT), n++)
+    {
+        ULONG bs = m68k_read32(ctx, c + FB_SIZE);
+        if (bs > largest) largest = bs;
+    }
+    return largest > M68KEMU_HEAP_HDR ? largest - M68KEMU_HEAP_HDR : 0;
+}
+
+/* Free blocks are Amiga MemChunks (next, size), so the free list is the
+   MemHeader's chunk list; an allocated block starts with its size. */
 ULONG M68KEmu_HeapAlloc(struct M68KEmuContext *ctx, ULONG size, ULONG requirements)
 {
     ULONG needed, prev, cur;
@@ -88,8 +114,8 @@ ULONG M68KEmu_HeapAlloc(struct M68KEmuContext *ctx, ULONG size, ULONG requiremen
 
     while (cur)
     {
-        ULONG blk_size = m68k_read32(ctx, cur);
-        ULONG blk_next = m68k_read32(ctx, cur + 4);
+        ULONG blk_size = m68k_read32(ctx, cur + FB_SIZE);
+        ULONG blk_next = m68k_read32(ctx, cur + FB_NEXT);
 
         if (blk_size >= needed)
         {
@@ -98,10 +124,12 @@ ULONG M68KEmu_HeapAlloc(struct M68KEmuContext *ctx, ULONG size, ULONG requiremen
             if (remainder >= M68KEMU_HEAP_MIN_SPLIT)
             {
                 /* Split: keep remainder as free, allocate from end */
-                m68k_write32(ctx, cur, remainder);
+                m68k_write32(ctx, cur + FB_SIZE, remainder);
                 m68k_write32(ctx, cur + remainder, needed);
                 if (requirements & MEMF_CLEAR)
                     memset(ctx->mem + cur + remainder + M68KEMU_HEAP_HDR, 0, size);
+                ctx->heap_avail -= needed;
+                heap_publish(ctx);
                 return cur + remainder + M68KEMU_HEAP_HDR;
             }
             else
@@ -109,12 +137,14 @@ ULONG M68KEmu_HeapAlloc(struct M68KEmuContext *ctx, ULONG size, ULONG requiremen
                 /* Use whole block */
                 needed = blk_size;
                 if (prev)
-                    m68k_write32(ctx, prev + 4, blk_next);
+                    m68k_write32(ctx, prev + FB_NEXT, blk_next);
                 else
                     ctx->heap_free = blk_next;
                 m68k_write32(ctx, cur, needed);
                 if (requirements & MEMF_CLEAR)
                     memset(ctx->mem + cur + M68KEMU_HEAP_HDR, 0, needed - M68KEMU_HEAP_HDR);
+                ctx->heap_avail -= needed;
+                heap_publish(ctx);
                 return cur + M68KEMU_HEAP_HDR;
             }
         }
@@ -125,9 +155,9 @@ ULONG M68KEmu_HeapAlloc(struct M68KEmuContext *ctx, ULONG size, ULONG requiremen
         ULONG n = 0, total = 0, largest = 0, c = ctx->heap_free;
         while (c && n < 100000)
         {
-            ULONG bs = m68k_read32(ctx, c);
+            ULONG bs = m68k_read32(ctx, c + FB_SIZE);
             n++; total += bs; if (bs > largest) largest = bs;
-            c = m68k_read32(ctx, c + 4);
+            c = m68k_read32(ctx, c + FB_NEXT);
         }
         bug("[m68kemu] HeapAlloc(%lu) failed: free list head %08lx, %lu blocks, %lu bytes free, largest %lu\n",
             (unsigned long)size, (unsigned long)ctx->heap_free, (unsigned long)n, (unsigned long)total, (unsigned long)largest);
@@ -156,9 +186,9 @@ void M68KEmu_HeapFree(struct M68KEmuContext *ctx, ULONG addr, ULONG size)
         if (ctx->trace_calls) bug("[m68kemu] FreeMem of %08lx: bad block header %08lx, ignored\n", (unsigned long)addr, (unsigned long)blk_size);
         return;
     }
-    for (cur = ctx->heap_free; cur; cur = m68k_read32(ctx, cur + 4))
+    for (cur = ctx->heap_free; cur; cur = m68k_read32(ctx, cur + FB_NEXT))
     {
-        ULONG cs = m68k_read32(ctx, cur);
+        ULONG cs = m68k_read32(ctx, cur + FB_SIZE);
         if (blk >= cur && blk < cur + cs)
         {
             if (ctx->trace_calls) bug("[m68kemu] FreeMem of %08lx: already free, ignored\n", (unsigned long)addr);
@@ -166,6 +196,7 @@ void M68KEmu_HeapFree(struct M68KEmuContext *ctx, ULONG addr, ULONG size)
         }
         if (cur > blk) break;
     }
+    ctx->heap_avail += blk_size;
 
     /* Insert in address order */
     prev = 0;
@@ -173,36 +204,37 @@ void M68KEmu_HeapFree(struct M68KEmuContext *ctx, ULONG addr, ULONG size)
     while (cur && cur < blk)
     {
         prev = cur;
-        cur  = m68k_read32(ctx, cur + 4);
+        cur  = m68k_read32(ctx, cur + FB_NEXT);
     }
 
-    m68k_write32(ctx, blk,     blk_size);
-    m68k_write32(ctx, blk + 4, cur);
+    m68k_write32(ctx, blk + FB_SIZE, blk_size);
+    m68k_write32(ctx, blk + FB_NEXT, cur);
 
     if (prev)
-        m68k_write32(ctx, prev + 4, blk);
+        m68k_write32(ctx, prev + FB_NEXT, blk);
     else
         ctx->heap_free = blk;
 
     /* Coalesce forward */
     if (cur && (blk + blk_size) == cur)
     {
-        ULONG cur_size = m68k_read32(ctx, cur);
-        m68k_write32(ctx, blk,     blk_size + cur_size);
-        m68k_write32(ctx, blk + 4, m68k_read32(ctx, cur + 4));
+        ULONG cur_size = m68k_read32(ctx, cur + FB_SIZE);
+        m68k_write32(ctx, blk + FB_SIZE, blk_size + cur_size);
+        m68k_write32(ctx, blk + FB_NEXT, m68k_read32(ctx, cur + FB_NEXT));
         blk_size += cur_size;
     }
 
     /* Coalesce backward */
     if (prev)
     {
-        ULONG prev_size = m68k_read32(ctx, prev);
+        ULONG prev_size = m68k_read32(ctx, prev + FB_SIZE);
         if ((prev + prev_size) == blk)
         {
-            m68k_write32(ctx, prev,     prev_size + blk_size);
-            m68k_write32(ctx, prev + 4, m68k_read32(ctx, blk + 4));
+            m68k_write32(ctx, prev + FB_SIZE, prev_size + blk_size);
+            m68k_write32(ctx, prev + FB_NEXT, m68k_read32(ctx, blk + FB_NEXT));
         }
     }
+    heap_publish(ctx);
 }
 
 /* Copy a seglist LoadSeg() built from a hunk file into containment. dos

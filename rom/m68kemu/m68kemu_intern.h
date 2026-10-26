@@ -25,11 +25,9 @@ struct M68KEmuLibBase
 #define M68KEMU_HEAP_BASE       0x010400
 #define M68KEMU_STACK_SIZE      (64 * 1024)
 
-struct M68KHeapBlock
-{
-    ULONG size;
-    ULONG next;
-};
+/* a free heap block is an Amiga MemChunk */
+#define FB_NEXT 0
+#define FB_SIZE 4
 
 struct M68KThunkEntry;
 struct RDArgs;
@@ -67,6 +65,8 @@ struct M68KEmuContext
     ULONG   heap_start;
     ULONG   heap_end;
     ULONG   heap_free;
+    ULONG   heap_avail;         /* free bytes */
+    ULONG   memheader;          /* the 68k MemHeader describing the heap */
 
     ULONG   entry_point;
     ULONG   trace_exc;
@@ -308,6 +308,7 @@ void   M68KEmu_DestroyContext(struct M68KEmuContext *ctx);
 LONG   M68KEmu_Execute(struct M68KEmuContext *ctx);
 ULONG  M68KEmu_HeapAlloc(struct M68KEmuContext *ctx, ULONG size, ULONG requirements);
 void   M68KEmu_HeapFree(struct M68KEmuContext *ctx, ULONG addr, ULONG size);
+ULONG  M68KEmu_HeapLargest(struct M68KEmuContext *ctx);
 ULONG  M68KEmu_LoadHunks(struct M68KEmuContext *ctx, BPTR segList);
 ULONG  M68KEmu_LoadHunksFromMemory(struct M68KEmuContext *ctx, UBYTE *data, LONG size);
 ULONG  M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name);

@@ -234,6 +234,14 @@
 
 /* ── Heap constants ──────────────────────────────────────────────── */
 
+/* struct MemHeader */
+#define M68K_MH_ATTRIBUTES          14
+#define M68K_MH_FIRST               16
+#define M68K_MH_LOWER               20
+#define M68K_MH_UPPER               24
+#define M68K_MH_FREE                28
+#define M68K_SIZEOF_MEMHEADER       32
+
 #define M68KEMU_HEAP_HDR            8   /* heap block header size */
 #define M68KEMU_HEAP_MIN_SPLIT      16  /* minimum remainder to split */
 

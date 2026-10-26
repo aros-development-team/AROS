@@ -427,7 +427,6 @@ void *m68k_to_native_struct(struct M68KEmuContext *ctx,
 
 /* ExecBase embedded list offsets (m68k -> AROS) */
 static const struct { UWORD m68k_off; UWORD native_off; const char *name; } execbase_lists[] = {
-    { M68K_EXECBASE_MEMLIST,       624, "MemList" },
     { M68K_EXECBASE_RESOURCELIST,  656, "ResourceList" },
     { M68K_EXECBASE_DEVICELIST,    688, "DeviceList" },
     { M68K_EXECBASE_INTRLIST,      720, "IntrList" },
@@ -516,6 +515,34 @@ ULONG shadow_init_execbase(struct M68KEmuContext *ctx, ULONG m68k_base, void *na
     struct Library *lib = (struct Library *)native_sysbase;
     m68k_write16(ctx, m68k_base + M68K_EXECBASE_LIBVERSION, lib->lib_Version);
     m68k_write16(ctx, m68k_base + M68K_EXECBASE_LIBREVISION, lib->lib_Revision);
+
+    /* MemList: one MemHeader for the heap the program allocates from, its
+       chunks the heap's free list */
+    {
+        static const char name[] = "expansion fast memory";
+        ULONG ml = m68k_base + M68K_EXECBASE_MEMLIST;
+        ULONG mh = M68KEmu_HeapAlloc(ctx, M68K_SIZEOF_MEMHEADER + sizeof(name), MEMF_CLEAR);
+
+        if (mh)
+        {
+            memcpy(ctx->mem + mh + M68K_SIZEOF_MEMHEADER, name, sizeof(name));
+            m68k_write32(ctx, mh + 0, ml + 4);                          /* ln_Succ: lh_Tail */
+            m68k_write32(ctx, mh + 4, ml);                              /* ln_Pred */
+            ctx->mem[mh + 8] = NT_MEMORY;
+            ctx->mem[mh + 9] = 0;
+            m68k_write32(ctx, mh + 10, mh + M68K_SIZEOF_MEMHEADER);     /* ln_Name */
+            m68k_write16(ctx, mh + M68K_MH_ATTRIBUTES, MEMF_PUBLIC | MEMF_FAST | MEMF_LOCAL | MEMF_KICK);
+            m68k_write32(ctx, mh + M68K_MH_LOWER, ctx->heap_start);
+            m68k_write32(ctx, mh + M68K_MH_UPPER, ctx->heap_end);
+            m68k_write32(ctx, ml + 0, mh);                              /* lh_Head */
+            m68k_write32(ctx, ml + 4, 0);                               /* lh_Tail */
+            m68k_write32(ctx, ml + 8, mh);                              /* lh_TailPred */
+            ctx->mem[ml + 12] = NT_MEMORY;
+            ctx->memheader = mh;
+            m68k_write32(ctx, mh + M68K_MH_FIRST, ctx->heap_free);
+            m68k_write32(ctx, mh + M68K_MH_FREE, ctx->heap_avail);
+        }
+    }
 
     /* Embedded lists: register each native list as a shadow */
     for (int i = 0; execbase_lists[i].name; i++) {

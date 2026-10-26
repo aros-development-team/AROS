@@ -578,7 +578,15 @@ static IPTR thunk_exec_FreeVec(struct M68KEmuContext *ctx, void *cpu)
 /* -216: AvailMem(D1=requirements) -> D0=size */
 static IPTR thunk_exec_AvailMem(struct M68KEmuContext *ctx, void *cpu)
 {
-    return ctx->heap_end - ctx->heap_start;
+    ULONG req = THUNK_D(1);
+
+    if (req & MEMF_CHIP)
+        return 0;                       /* no chip memory in the emulator */
+    if (req & MEMF_TOTAL)
+        return ctx->heap_end - ctx->heap_start;
+    if (req & MEMF_LARGEST)
+        return M68KEmu_HeapLargest(ctx);
+    return ctx->heap_avail;
 }
 
 
