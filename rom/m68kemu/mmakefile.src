@@ -16,6 +16,24 @@ include $(SRCDIR)/config/aros.cfg
 #MM- kernel-m68kemu-aarch64 : kernel-m68kemu-library
 #MM- kernel-m68kemu-riscv64 : kernel-m68kemu-library
 
+#MM kernel-m68kemu-library-includes : \
+#MM     kernel-expansion-includes \
+#MM     kernel-keymap-includes \
+#MM     kernel-layers-includes \
+#MM     kernel-log-includes \
+#MM     kernel-timer-includes \
+#MM     kernel-utility-includes \
+#MM     workbench-libs-asl-includes \
+#MM     workbench-libs-cgfx-includes \
+#MM     workbench-libs-commodities-includes \
+#MM     workbench-libs-datatypes-includes \
+#MM     workbench-libs-diskfont-includes \
+#MM     workbench-libs-gadtools-includes \
+#MM     workbench-libs-icon-includes \
+#MM     workbench-libs-iffparse-includes \
+#MM     workbench-libs-locale-includes \
+#MM     workbench-libs-workbench-includes
+
 USER_CPPFLAGS := -DNO_INLINE_STDARG -I$(SRCDIR)/$(CURDIR)/Moira
 # Moira uses if constexpr (<integer>) - narrowing the condition to bool is only
 # well formed since P1401R5, which clang implements from 12 on (clang 11 errors).
