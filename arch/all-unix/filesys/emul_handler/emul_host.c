@@ -587,24 +587,29 @@ LONG DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, ULONG l
          * when the shell requests a single read of 208 bytes.
          */
         res = 0;
-        do
+        while ((ULONG)res < len)
         {
-            res2 = emulbase->pdata.SysIFace->read((long)fh->fd, buff++, 1);
+            res2 = emulbase->pdata.SysIFace->read((long)fh->fd, buff, 1);
             AROS_HOST_BARRIER
 
-            if (res2 == -1)
+            if (res2 <= 0)
+            {
+                /* Keep bytes already consumed if the next read fails. */
+                if (res2 < 0 && res == 0)
+                    res = -1;
                 break;
+            }
 
-            if (res++ == len)
+            buff = (UBYTE *)buff + 1;
+            res++;
+            if ((ULONG)res == len)
                 break;
 
             res2 = emulbase->pdata.SysIFace->poll(&pfd, 1, 0);
             AROS_HOST_BARRIER
-
-        } while (res2 > 0);
-
-        if (res2 == -1)
-            res = -1;
+            if (res2 <= 0)
+                break;
+        }
     }
     else
     {
