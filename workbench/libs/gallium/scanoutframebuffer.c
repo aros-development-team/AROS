@@ -415,7 +415,7 @@ void gallium_sfb_CloseNotify(struct Window *window, APTR userData)
     fb->req.Shape     = shape;
     fb->req.Opacity   = 255;
     fb->req.AlphaMode = vHidd_CompAlpha_None;
-    fb->req.Flags     = CRF_PLANE_OK;
+    fb->req.Flags     = CRF_PLANE_OK | CRF_OPAQUE;  /* GL's alpha is never blended */
     fb->req.ZOrder    = 0;
     fb->req.UserData  = NULL;
 
