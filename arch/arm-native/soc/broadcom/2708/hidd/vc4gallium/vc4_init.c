@@ -165,12 +165,6 @@ static int HiddVC4Gallium_ExpungeLib(LIBBASETYPEPTR LIBBASE)
 {
     D(bug("[VC4Gallium] ExpungeLib\n"));
 
-    /* vcgfx may still call the overlay's vblank callback: stay loaded.
-     * First, as staying must leave everything else as it is. */
-    if (LIBBASE->sd.ovl_vbl_armed)
-        return FALSE;
-    vc4_aros_ovl_shutdown();
-
     if (LIBBASE->sd.task_res)
     {
         struct Library *TaskResBase = LIBBASE->sd.task_res;
@@ -308,7 +302,6 @@ static int HiddVC4Gallium_InitLib(LIBBASETYPEPTR LIBBASE)
     InitSemaphore(&LIBBASE->sd.render_lock);
     InitSemaphore(&LIBBASE->sd.mem_lock);
     NEWLIST(&LIBBASE->sd.arenas);
-    vc4_aros_ovl_init();
 
     /* Install the vblank int server that wakes GPU waiters (~50 Hz). */
     LIBBASE->sd.vblank_waiter = NULL;

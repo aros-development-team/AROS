@@ -71,18 +71,6 @@ extern void vc4_aros_display_blit(struct vc4galliumstaticdata *sd,
                                   LONG dst_x, LONG dst_y,
                                   ULONG width, ULONG height);
 extern void vc4_aros_wait_idle(struct vc4galliumstaticdata *sd);
-extern int vc4_aros_get_scanout(struct vc4galliumstaticdata *sd,
-                                OOP_Object *bm_obj,
-                                struct vc4_aros_scanout *out);
-extern int vc4_aros_flip_scanout(struct vc4galliumstaticdata *sd,
-                                 OOP_Object *bm_obj);
-extern int vc4_aros_set_overlay(struct vc4galliumstaticdata *sd,
-                                OOP_Object *bm_obj,
-                                ULONG src_bo_handle, ULONG src_stride,
-                                LONG x, LONG y, ULONG w, ULONG h,
-                                ULONG dest_w, ULONG dest_h);
-extern void vc4_aros_clear_overlay(struct vc4galliumstaticdata *sd,
-                                   OOP_Object *bm_obj);
 
 static void bridge_display_blit(void *ctx,
     ULONG src_bo_handle, ULONG src_stride, ULONG src_offset, ULONG cpp,
@@ -100,40 +88,6 @@ static void bridge_wait_idle(void *ctx)
     vc4_aros_wait_idle((struct vc4galliumstaticdata *)ctx);
 }
 
-static int bridge_get_scanout(void *ctx, OOP_Object *dest_bitmap,
-                              struct vc4_aros_scanout *out)
-{
-    return vc4_aros_get_scanout((struct vc4galliumstaticdata *)ctx,
-                                dest_bitmap, out);
-}
-
-static int bridge_flip_scanout(void *ctx, OOP_Object *dest_bitmap)
-{
-    return vc4_aros_flip_scanout((struct vc4galliumstaticdata *)ctx,
-                                 dest_bitmap);
-}
-
-static int bridge_set_overlay(void *ctx, OOP_Object *dest_bitmap,
-                              ULONG src_bo_handle, ULONG src_stride,
-                              LONG x, LONG y, ULONG w, ULONG h,
-                              ULONG dest_w, ULONG dest_h)
-{
-    return vc4_aros_set_overlay((struct vc4galliumstaticdata *)ctx,
-                                dest_bitmap, src_bo_handle, src_stride,
-                                x, y, w, h, dest_w, dest_h);
-}
-
-static void bridge_clear_overlay(void *ctx, OOP_Object *dest_bitmap)
-{
-    vc4_aros_clear_overlay((struct vc4galliumstaticdata *)ctx, dest_bitmap);
-}
-
-static ULONG bridge_get_seqno(void *ctx)
-{
-    /* Aligned ULONG read — no lock needed for a monotonic snapshot. */
-    return ((struct vc4galliumstaticdata *)ctx)->v3d.seqno;
-}
-
 /* Populate a bridge struct for the given hidd staticdata. The struct
  * lives in caller storage (typically mesa3dgl's screen->priv slot). */
 void vc4_aros_bridge_init(struct vc4_aros_bridge *bridge,
@@ -149,9 +103,4 @@ void vc4_aros_bridge_init(struct vc4_aros_bridge *bridge,
     bridge->display_blit    = bridge_display_blit;
     bridge->wait_idle       = bridge_wait_idle;
     bridge->release_all_bos = bridge_release_all_bos;
-    bridge->get_scanout     = bridge_get_scanout;
-    bridge->flip_scanout    = bridge_flip_scanout;
-    bridge->set_overlay     = bridge_set_overlay;
-    bridge->clear_overlay   = bridge_clear_overlay;
-    bridge->get_seqno       = bridge_get_seqno;
 }

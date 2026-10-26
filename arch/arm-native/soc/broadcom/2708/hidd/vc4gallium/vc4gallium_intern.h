@@ -67,18 +67,6 @@ struct vc4_session
     struct Task        *vs_Task;
 };
 
-/* A client's overlay plane: the BO on it, pinned until replaced or
- * cleared, and the one the last set_overlay took off, on scanout until
- * the commit in op_Armed latches. */
-struct vc4_ovl_pin
-{
-    APTR                op_Key;     /* vcgfx's client key, NULL = free */
-    OOP_Object         *op_BM;      /* the bitmap it was shown on */
-    ULONG               op_Pinned;
-    ULONG               op_Displaced;
-    ULONG               op_Armed;
-};
-
 /* Shader metadata (set by the QPU scanner on CREATE_SHADER_BO). Only
  * shader BOs have it, so it is allocated apart from the table entry. */
 struct vc4_shader_meta
@@ -246,8 +234,7 @@ struct vc4galliumstaticdata
 
     /* Rotating BO pools — three sets so the CPU can prepare frame N+1
      * while the GPU renders frame N and frame N-1's set drains. With
-     * only two sets the submit of N blocked until N-2's render was done,
-     * which re-serialized the pipelined present path. */
+     * only two sets the submit of N blocked until N-2's render was done. */
 #define VC4_NUM_POOL_SETS   3
     struct {
         struct vc4_frame_bo tile;
@@ -266,13 +253,7 @@ struct vc4galliumstaticdata
     ULONG                   *shader_state_scratch;
     ULONG                   shader_state_scratch_max;
 
-    /* Scanout pages announced via the bridge's get_scanout entry. GEM_OPEN
-     * consults this to wrap a page as an external BO (the only names it
-     * accepts). Written under bo_lock. */
-    ULONG                   scanout_phys[2];
-    ULONG                   scanout_size;
-
-    /* Buffers of scan-out bitmaps that ResourceFromBitMap aliased: further
+    /* Buffers of scan-out bitmaps that ResourceFromBitMap aliased: the
      * GEM_OPEN names, the oldest replaced when the table is full. */
     ULONG                   ext_name[VC4_EXT_NAMES];
     ULONG                   ext_size[VC4_EXT_NAMES];
@@ -295,10 +276,6 @@ struct vc4galliumstaticdata
      * observes completion — keeps the firmware allocation alive across
      * a Mesa-side GEM_CLOSE racing the display swap. 0 = none. */
     ULONG                   dma_pinned_handle;
-
-    /* The overlay planes of windowed zero-copy GL, one per client key */
-    struct vc4_ovl_pin      ovl_pins[VC4_MAX_SESSIONS];
-    BOOL                    ovl_vbl_armed;  /* vcgfx may call the overlay's vblank callback */
 
     struct Task            *v3d_service_task;
     struct Task            *v3d_service_waiter;
@@ -374,7 +351,6 @@ struct pipe_screen *vc4_aros_create_screen(struct vc4_aros_bridge *bridge,
 IPTR vc4_aros_display_rp(APTR resource, LONG srcx, LONG srcy,
                          struct RastPort *rp, LONG dstx, LONG dsty,
                          LONG width, LONG height);
-void aros_drm_screen_gone(APTR screen, BOOL dead);
 void aros_drm_release_bridge(void);
 
 /* Drain any in-flight display-blit DMA. Defined in vc4_galliumclass.c. */
@@ -383,9 +359,6 @@ void vc4_aros_dma_wait_idle(struct vc4galliumstaticdata *sd);
 /* Wait for all submitted V3D work and flush its L2. Defined in
  * vc4_galliumclass.c. */
 void vc4_aros_wait_idle(struct vc4galliumstaticdata *sd);
-struct vc4_ovl_pin *vc4_aros_displaced_pin(struct vc4galliumstaticdata *sd, ULONG handle);
-void vc4_aros_overlay_latch_wait(struct vc4galliumstaticdata *sd, struct vc4_ovl_pin *pin);
-ULONG gallium_now_us_ext(void);
 
 /* V3D service task. Defined in vc4_galliumclass.c. */
 BOOL vc4_aros_start_service_task(struct vc4galliumstaticdata *sd);

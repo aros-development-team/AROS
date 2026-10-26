@@ -1222,11 +1222,11 @@ void vc4_aros_bo_unref_locked(struct vc4galliumstaticdata *sd, ULONG handle)
 }
 
 /*
- * GEM_OPEN: wrap a scanout page as an external BO. `name` is the page's
- * physical address, as announced by the bridge's get_scanout entry —
+ * GEM_OPEN: wrap a scan-out bitmap's buffer as an external BO. `name` is
+ * the buffer's physical address, as published by ResourceFromBitMap —
  * arbitrary names are refused. The entry carries no gpu_handle, so the
  * normal refcount/GEM_CLOSE machinery drops the table slot without
- * touching firmware memory (the page belongs to the framebuffer).
+ * touching firmware memory (the buffer belongs to the bitmap).
  */
 static int ioctl_gem_open(struct vc4galliumstaticdata *sd, struct drm_gem_open *args)
 {
@@ -1234,9 +1234,6 @@ static int ioctl_gem_open(struct vc4galliumstaticdata *sd, struct drm_gem_open *
 
     if (args->name == 0)
         return -1;
-    if (sd->scanout_size &&
-        (args->name == sd->scanout_phys[0] || args->name == sd->scanout_phys[1]))
-        size = sd->scanout_size;
     for (i = 0; !size && (i < VC4_EXT_NAMES); i++)
         if (sd->ext_name[i] == args->name)
             size = sd->ext_size[i];
@@ -2440,38 +2437,6 @@ static int do_submit_cl(struct vc4galliumstaticdata *sd, struct drm_vc4_submit_c
 
     bo_handles = (ULONG *)(IPTR)args->bo_handles;
 
-    struct vc4_ovl_pin *dpin;
-
-    /* A page a present took off a plane is on scanout until vblank; wait
-     * for the latch before rendering into it. */
-    if ((args->color_write.hindex != (ULONG)~0)
-        && (args->color_write.hindex < args->bo_handle_count)
-        && (dpin = vc4_aros_displaced_pin(sd, bo_handles[args->color_write.hindex])))
-    {
-#if VC4G_PROFILE
-        static ULONG _lw_n, _lw_us, _lw_max;
-        ULONG _lw_t0 = gallium_now_us_ext();
-#endif
-
-        vc4_aros_overlay_latch_wait(sd, dpin);
-
-#if VC4G_PROFILE
-        {
-            ULONG _lw_dt = gallium_now_us_ext() - _lw_t0;
-            _lw_us += _lw_dt;
-            if (_lw_dt > _lw_max)
-                _lw_max = _lw_dt;
-        }
-        if (++_lw_n >= 128)
-        {
-            bug("[VC4Gallium] submit latch-wait diag %lu: %lu us avg/%lu max\n",
-                (unsigned long)_lw_n, (unsigned long)(_lw_us / _lw_n),
-                (unsigned long)_lw_max);
-            _lw_n = _lw_us = _lw_max = 0;
-        }
-#endif
-    }
-
     tiles_x = args->max_x_tile - args->min_x_tile + 1;
     tiles_y = args->max_y_tile - args->min_y_tile + 1;
 
@@ -3332,19 +3297,9 @@ void vc4_aros_release_session(struct vc4galliumstaticdata *sd, ULONG sid)
     vc4_aros_dma_wait_idle(sd);
 
     ObtainSemaphore(&sd->bo_lock);
-    /* Pins on them die with them. A live session took its plane down
-     * already; a dead one's comes down at the next present. */
+    /* The DMA pin on one of them dies with it */
     if (sd->dma_pinned_handle && (sd->bo_table[sd->dma_pinned_handle].owner == sid))
         sd->dma_pinned_handle = 0;
-    for (i = 0; i < VC4_MAX_SESSIONS; i++)
-    {
-        struct vc4_ovl_pin *pin = &sd->ovl_pins[i];
-
-        if (pin->op_Pinned && (sd->bo_table[pin->op_Pinned].owner == sid))
-            pin->op_Pinned = 0;
-        if (pin->op_Displaced && (sd->bo_table[pin->op_Displaced].owner == sid))
-            pin->op_Displaced = 0;
-    }
     for (i = 1; i < VC4_MAX_BOS; i++)
     {
         if ((sd->bo_table[i].refcount > 0) && (sd->bo_table[i].owner == sid))
@@ -3373,14 +3328,6 @@ void vc4_aros_release_all_bos(struct vc4galliumstaticdata *sd)
         bug("[VC4Gallium] release_all_bos: %u live BOs (%u gpu, %u KB "
             "firmware)\n", live_n, freed_n, freed_bytes / 1024);
     })
-
-    /* Remove a live overlay plane first — it scans one of the BOs
-     * about to be freed. */
-    {
-        extern void vc4_aros_clear_overlay(struct vc4galliumstaticdata *,
-                                           OOP_Object *);
-        vc4_aros_clear_overlay(sd, NULL);
-    }
 
     /* Drain any async display-blit DMA so we don't free its source BO
      * while the channel is still reading it. */
