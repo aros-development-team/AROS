@@ -1360,6 +1360,8 @@ LONG CONMain(struct ExecBase *SysBase)
                         }
                         else if (dp->dp_Arg1 == 0) {
                             replypkt(dp, DOSFALSE);
+                        } else if (waitingdp) {
+                            replypkt2(dp, DOSFALSE, ERROR_OBJECT_IN_USE);
                         } else {
                             LONG timeout = dp->dp_Arg1;
                             LONG sec = timeout / 1000000;
