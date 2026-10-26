@@ -307,16 +307,11 @@ static OOP_Object *vc4_scanout_new(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
     }
     else
     {
-        if (stdpf == vcgfx_native32(xsd))
-            pxflags = 0;
-        else if (stdpf == vHidd_StdPixFmt_RGB16_LE)
-            pxflags = VC4GFX_OVL_RGB565;
-        else if (stdpf == vHidd_StdPixFmt_RGB15_LE)
-            pxflags = VC4GFX_OVL_RGB555;
-        else
+        if (!vcgfx_scanout_rgb(xsd, stdpf, &pxflags))
             return NULL;
+        /* 16 bytes: the stride VC4's Mesa gives a linear render target */
         bpp   = vc4_ovl_bpp(pxflags);
-        pitch = ((width + 15) & ~15) * bpp;
+        pitch = (width * bpp + 15) & ~15;
         size  = pitch * height;
     }
     nbufs = GetTagData(aHidd_BitMap_Buffers, 1, msg->attrList);
@@ -343,10 +338,12 @@ static OOP_Object *vc4_scanout_new(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
         if ((tag = FindTagItem(aHidd_BitMap_Buffers, tags)))
             tag->ti_Tag = TAG_IGNORE;
         {
+            /* The superclass's row alignment, in pixels, down to ours */
             struct TagItem extra_tags[] =
             {
                 { aHidd_ChunkyBM_Buffer,    (IPTR)sb[0].sb_Pixels },
                 { aHidd_BitMap_BytesPerRow, pitch                 },
+                { aHidd_BitMap_Align,       16 / bpp              },
                 { TAG_MORE,                 (IPTR)tags            }
             };
             struct pRoot_New new_msg;
@@ -603,6 +600,7 @@ VOID MNAME_BM(UnlockBuffer)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Un
 
     /* Video is never blitted: off a plane it shows nothing */
     if (!data->nbufs || data->videofmt || (msg->buffer != data->front)
+        || (d && ((d->MaxX < d->MinX) || (d->MaxY < d->MinY)))
         || vcgfx_plane_shows(XSD(cl), o))
         return;
 

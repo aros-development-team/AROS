@@ -59,6 +59,10 @@ struct vc4gfx_overlay
 /* Wait until the commit in ovl_Armed latched; only that field counts. */
 #define VC4GFX_OVL_LATCHWAIT (1 << 4)
 
+/* vcgfx only, beside the RGB565/555 flags: 32bpp in B,G,R,X byte order
+ * on an HVS whose screens are R,G,B,X (HVS6) */
+#define VCGFX_PX_BGRA     (1 << 8)
+
 /* ovl_Result: the plane is held or the budget used, retry later */
 #define VC4GFX_OVL_BUSY   2
 

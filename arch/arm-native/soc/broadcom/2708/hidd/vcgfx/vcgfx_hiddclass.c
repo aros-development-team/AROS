@@ -475,7 +475,8 @@ ULONG MNAME_DISPLAY(GetPlaneInfo)(OOP_Class *cl, OOP_Object *o, struct pHidd_Dis
     info.Type       = vHidd_Plane_Overlay;
     info.ZMin       = msg->index;
     info.ZMax       = msg->index;
-    info.PixFmtMask = (1 << vcgfx_native32(xsd)) | (1 << vHidd_StdPixFmt_RGB16_LE)
+    info.PixFmtMask = (1 << vcgfx_native32(xsd)) | (1 << vHidd_StdPixFmt_BGRA32)
+                    | (1 << vHidd_StdPixFmt_BGR032) | (1 << vHidd_StdPixFmt_RGB16_LE)
                     | (1 << vHidd_StdPixFmt_RGB15_LE);
     if (vcgfx_yuv_ok(xsd, vHidd_VideoFmt_NV12))
         info.VideoFmtMask = (1 << vHidd_VideoFmt_NV12) | (1 << vHidd_VideoFmt_I420);
@@ -496,7 +497,7 @@ ULONG MNAME_DISPLAY(GetPlaneInfo)(OOP_Class *cl, OOP_Object *o, struct pHidd_Dis
 ULONG MNAME_DISPLAY(QueryScanout)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_QueryScanout *msg)
 {
     struct VideoCoreGfx_staticdata *xsd = XSD(cl);
-    ULONG flags = SCF_PLANE, maxw = (xsd->vcsd_HVSGen == VCGFX_HVS_VC4) ? 4095 : 0;
+    ULONG flags = SCF_PLANE, maxw = (xsd->vcsd_HVSGen == VCGFX_HVS_VC4) ? 4095 : 0, pxflags;
 
     if (!xsd->vcsd_NoFB)
         return (ULONG)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -505,8 +506,7 @@ ULONG MNAME_DISPLAY(QueryScanout)(OOP_Class *cl, OOP_Object *o, struct pHidd_Dis
     if (!msg->width || !msg->height || (maxw && (msg->width > maxw)))
         return 0;
     if (msg->videoFmt ? !vcgfx_yuv_ok(xsd, msg->videoFmt)
-                      : ((msg->pixFmt != vcgfx_native32(xsd)) && (msg->pixFmt != vHidd_StdPixFmt_RGB16_LE)
-                         && (msg->pixFmt != vHidd_StdPixFmt_RGB15_LE)))
+                      : !vcgfx_scanout_rgb(xsd, msg->pixFmt, &pxflags))
         return 0;
 
     if (msg->caps)
@@ -698,7 +698,7 @@ VOID MNAME_GFX(CopyBox)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *
 {
     IPTR src_buf = 0, dst_buf = 0;
     IPTR src_pitch = 0, dst_pitch = 0;
-    IPTR src_bpp = 0, dst_bpp = 0;
+    IPTR src_bpp = 0, dst_bpp = 0, src_std = 0, dst_std = 0;
     UBYTE *srow_base, *drow_base;
     ULONG row_bytes;
     LONG y, y_start, y_end, y_step;
@@ -723,12 +723,23 @@ VOID MNAME_GFX(CopyBox)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *
         OOP_GetAttr(msg->src,  aHidd_BitMap_PixFmt, (IPTR *)&src_pf);
         OOP_GetAttr(msg->dest, aHidd_BitMap_PixFmt, (IPTR *)&dst_pf);
         if (src_pf)
+        {
             OOP_GetAttr(src_pf, aHidd_PixFmt_BytesPerPixel, &src_bpp);
+            OOP_GetAttr(src_pf, aHidd_PixFmt_StdPixFmt, &src_std);
+        }
         if (dst_pf)
+        {
             OOP_GetAttr(dst_pf, aHidd_PixFmt_BytesPerPixel, &dst_bpp);
+            OOP_GetAttr(dst_pf, aHidd_PixFmt_StdPixFmt, &dst_std);
+        }
+        /* Rows copy as they are only in one byte order; X and A are alike */
+        if (src_std == vHidd_StdPixFmt_BGRA32)
+            src_std = vHidd_StdPixFmt_BGR032;
+        if (dst_std == vHidd_StdPixFmt_BGRA32)
+            dst_std = vHidd_StdPixFmt_BGR032;
     }
 
-    if (!src_buf || !dst_buf || src_bpp != 4 || dst_bpp != 4)
+    if (!src_buf || !dst_buf || src_bpp != 4 || dst_bpp != 4 || src_std != dst_std)
     {
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
         return;

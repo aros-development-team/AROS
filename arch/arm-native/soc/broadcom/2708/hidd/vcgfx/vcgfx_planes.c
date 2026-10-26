@@ -501,6 +501,8 @@ static void plane_format(struct vcgfx_plane *pl, struct BitmapData *data)
     pl->pl_Pxf = vc4_ovl_pxf(data->pxflags);
     pl->pl_Bpp = vc4_ovl_bpp(data->pxflags);
     pl->pl_Yuv = 0;
+    if (data->pxflags & VCGFX_PX_BGRA)
+        pl->pl_Pxf = HVS6_CTL0_FMT_8888;    /* HVS6 entries then take B,G,R,A */
     if (data->videofmt)
     {
         pl->pl_Yuv = (data->videofmt == vHidd_VideoFmt_NV12) ? HVS_PXF_YUV420_2PLANE

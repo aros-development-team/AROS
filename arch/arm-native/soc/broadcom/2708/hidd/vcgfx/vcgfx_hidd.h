@@ -361,6 +361,24 @@ static inline ULONG vcgfx_native32(struct VideoCoreGfx_staticdata *xsd)
                                                : vHidd_StdPixFmt_BGR032;
 }
 
+/* The RGB formats a scan-out bitmap can have, as plane flags: the screens'
+ * own, GL's B,G,R,A/X, and RGB15/16. FALSE for any other. */
+static inline BOOL vcgfx_scanout_rgb(struct VideoCoreGfx_staticdata *xsd, ULONG stdpf,
+                                     ULONG *pxflags)
+{
+    if (stdpf == vcgfx_native32(xsd))
+        *pxflags = 0;
+    else if ((stdpf == vHidd_StdPixFmt_BGRA32) || (stdpf == vHidd_StdPixFmt_BGR032))
+        *pxflags = (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6) ? VCGFX_PX_BGRA : 0;
+    else if (stdpf == vHidd_StdPixFmt_RGB16_LE)
+        *pxflags = VC4GFX_OVL_RGB565;
+    else if (stdpf == vHidd_StdPixFmt_RGB15_LE)
+        *pxflags = VC4GFX_OVL_RGB555;
+    else
+        return FALSE;
+    return TRUE;
+}
+
 ULONG   vc4_fb_backpage(struct VideoCoreGfx_staticdata *xsd);
 BOOL    vc4_fb_flip(struct VideoCoreGfx_staticdata *xsd);
 
