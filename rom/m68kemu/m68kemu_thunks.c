@@ -1823,6 +1823,7 @@ static IPTR thunk_intuition_OpenScreen(struct M68KEmuContext *ctx, void *cpu)
 
     /* Embedded RastPort — register as shadow */
     shadow_register(ctx, ms + M68K_SCR_RASTPORT, &scr->RastPort, 3);
+    m68k_screen_extras(ctx, ms, scr);
 
     /* sc_BitMap (offset 184): real planes of the size the program asked
        for, so code that draws into the bitplanes has somewhere to draw;

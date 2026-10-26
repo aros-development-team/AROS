@@ -68,6 +68,7 @@ struct TagItem *m68k_to_native_taglist(struct M68KEmuContext *ctx, ULONG m68k_ad
 void free_native_taglist(struct TagItem *tags);
 void *m68k_to_native_struct(struct M68KEmuContext *ctx,
                             const char *struct_name, ULONG m68k_addr);
+void m68k_screen_extras(struct M68KEmuContext *ctx, ULONG ms, struct Screen *scr);
 /* Repack a m68k RawDoFmt datastream into a native one - FreeMem() the result */
 APTR m68k_to_native_fmt_stream(struct M68KEmuContext *ctx, const char *fmt,
                                ULONG m68k_args, ULONG *out_size);
