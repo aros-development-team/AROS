@@ -623,9 +623,9 @@ static void hvs_plane_src(struct VideoCoreGfx_staticdata *xsd, struct vcgfx_plan
     struct BitmapData *d = pl->pl_Data;
 
     s->pitch = d->bytesperrow;
-    s->phys  = (ULONG)(IPTR)d->VideoData + pl->pl_SrcY * s->pitch + pl->pl_SrcX * 4;
-    s->pxf   = 0;
-    s->bpp   = 4;
+    s->phys  = (ULONG)(IPTR)d->VideoData + pl->pl_SrcY * s->pitch + pl->pl_SrcX * pl->pl_Bpp;
+    s->pxf   = pl->pl_Pxf;
+    s->bpp   = pl->pl_Bpp;
     s->srcw  = pl->pl_SrcW;
     s->srch  = pl->pl_SrcH;
     s->x     = pl->pl_X;

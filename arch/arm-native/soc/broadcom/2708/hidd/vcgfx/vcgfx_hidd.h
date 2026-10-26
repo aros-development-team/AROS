@@ -52,7 +52,8 @@ struct VideoCoreGfxDisplayData
  * primary's mode (vcsd_DispW x vcsd_DispH); only 32-bit bitmaps in
  * scanout memory get a plane, front first while the HVS budget lasts. */
 #define VCGFX_MAX_PLANES        16
-#define VCGFX_OVL_PLANES        4       /* overlay planes offered, above the primary */
+#define VCGFX_OVL_PLANES        8       /* overlay planes offered, above the primary;
+                                         * the compositor's test commit keeps to the budget */
 
 struct vcgfx_plane
 {
@@ -61,6 +62,7 @@ struct vcgfx_plane
     LONG                 pl_X, pl_Y;    /* where on the display */
     ULONG                pl_W, pl_H;    /* and how large */
     ULONG                pl_SrcX, pl_SrcY, pl_SrcW, pl_SrcH;
+    ULONG                pl_Pxf, pl_Bpp;    /* HVS format (0 = 32bpp) and bytes per pixel */
     ULONG                pl_PtrWord;    /* VC4: its PTR0 in the newest list, 0 = none */
     ULONG                pl_PtrSkip;    /* and the bytes clipped off in front */
     BOOL                 pl_Shown;      /* the last list built had room for it */
@@ -337,6 +339,13 @@ static inline ULONG vc4_ovl_bpp(ULONG flags)
     return (flags & (VC4GFX_OVL_RGB565 | VC4GFX_OVL_RGB555)) ? 2 : 4;
 }
 
+/* The 32bpp format of screens: the HVS6 boot surface is R,G,B,X */
+static inline ULONG vcgfx_native32(struct VideoCoreGfx_staticdata *xsd)
+{
+    return (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6) ? vHidd_StdPixFmt_RGB032
+                                               : vHidd_StdPixFmt_BGR032;
+}
+
 ULONG   vc4_fb_backpage(struct VideoCoreGfx_staticdata *xsd);
 BOOL    vc4_fb_flip(struct VideoCoreGfx_staticdata *xsd);
 
@@ -358,6 +367,8 @@ void    vcgfx_plane_forget(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm);
 ULONG   vcgfx_plane_backpage(struct VideoCoreGfx_staticdata *xsd,
                              struct BitmapData *data);
 BOOL    vcgfx_plane_flip(OOP_Class *cl, OOP_Object *bm);
+BOOL    vcgfx_plane_page(OOP_Class *cl, OOP_Object *bm, ULONG page, BOOL wait);
+BOOL    vcgfx_plane_shows(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm);
 
 /* Overlays; the caller holds vcsd_OvlLock. */
 struct vcgfx_ovl *vcgfx_ovl_find(struct VideoCoreGfx_staticdata *xsd, APTR client);

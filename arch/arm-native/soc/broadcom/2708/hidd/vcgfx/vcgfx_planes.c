@@ -637,6 +637,8 @@ void vcgfx_show(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm)
         pl->pl_SrcY    = 0;
         pl->pl_SrcW    = pl->pl_W = data->width;
         pl->pl_SrcH    = pl->pl_H = data->height;
+        pl->pl_Pxf     = vc4_ovl_pxf(data->pxflags);
+        pl->pl_Bpp     = vc4_ovl_bpp(data->pxflags);
         plane_pos(xsd, bm, &pl->pl_X, &pl->pl_Y);
         xsd->vcsd_DispW = data->modew;
         xsd->vcsd_DispH = data->modeh;
@@ -730,6 +732,7 @@ BOOL vcgfx_planes_commit(struct VideoCoreGfx_staticdata *xsd,
 
         data = (OOP_OCLASS(st->BitMap) == offcl) ? OOP_INST_DATA(offcl, st->BitMap) : NULL;
         if (!data || !data->scan[0].sb_Pixels || (st->AlphaMode != vHidd_CompAlpha_None)
+            || (st->Flags & PSF_COLORKEY)
             || (s->MinX < 0) || (s->MinY < 0) || (s->MaxX < s->MinX) || (s->MaxY < s->MinY)
             || (s->MaxX >= (WORD)data->width) || (s->MaxY >= (WORD)data->height)
             || (d->MaxX < d->MinX) || (d->MaxY < d->MinY))
@@ -747,6 +750,8 @@ BOOL vcgfx_planes_commit(struct VideoCoreGfx_staticdata *xsd,
         pl->pl_SrcY    = s->MinY;
         pl->pl_SrcW    = s->MaxX - s->MinX + 1;
         pl->pl_SrcH    = s->MaxY - s->MinY + 1;
+        pl->pl_Pxf     = vc4_ovl_pxf(data->pxflags);
+        pl->pl_Bpp     = vc4_ovl_bpp(data->pxflags);
         pl->pl_PtrWord = 0;
         pl->pl_Shown   = TRUE;
     }
@@ -881,9 +886,9 @@ ULONG vcgfx_plane_backpage(struct VideoCoreGfx_staticdata *xsd,
     return back;
 }
 
-/* Swap the pages and show the new front from the next frame on. Returns
- * once the old one is off the display. */
-BOOL vcgfx_plane_flip(OOP_Class *cl, OOP_Object *bm)
+/* Show page 'page' of a bitmap from the next frame on; with wait, return
+ * once the old one is off the display. FALSE when no plane shows it. */
+BOOL vcgfx_plane_page(OOP_Class *cl, OOP_Object *bm, ULONG page, BOOL wait)
 {
     struct VideoCoreGfx_staticdata *xsd = XSD(cl);
     struct BitmapData *data = OOP_INST_DATA(cl, bm);
@@ -896,12 +901,9 @@ BOOL vcgfx_plane_flip(OOP_Class *cl, OOP_Object *bm)
     struct vcgfx_plane *pl;
     BOOL shown;
 
-    if (!data->scan[1].sb_Pixels)
-        return FALSE;
-
     VC4_MBOX_LOCK(xsd);
-    data->front ^= 1;
-    data->VideoData = data->scan[data->front].sb_Pixels;
+    data->front = page;
+    data->VideoData = data->scan[page].sb_Pixels;
 
     tags[0].ti_Data = (IPTR)data->VideoData;
     setmsg.mID      = OOP_GetMethodID(IID_Root, moRoot_Set);
@@ -914,7 +916,30 @@ BOOL vcgfx_plane_flip(OOP_Class *cl, OOP_Object *bm)
         planes_commit(xsd);
     VC4_MBOX_UNLOCK(xsd);
 
-    if (shown)
+    if (shown && wait)
         vc4_hvs_latch_wait(xsd);
+    return shown;
+}
+
+/* Is a plane scanning the bitmap out? */
+BOOL vcgfx_plane_shows(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm)
+{
+    BOOL shown;
+
+    VC4_MBOX_LOCK(xsd);
+    shown = (plane_find(xsd, bm) != NULL);
+    VC4_MBOX_UNLOCK(xsd);
+    return shown;
+}
+
+/* GL: swap the pages and show the new front from the next frame on.
+ * Returns once the old one is off the display. */
+BOOL vcgfx_plane_flip(OOP_Class *cl, OOP_Object *bm)
+{
+    struct BitmapData *data = OOP_INST_DATA(cl, bm);
+
+    if (!data->scan[1].sb_Pixels)
+        return FALSE;
+    vcgfx_plane_page(cl, bm, data->front ^ 1, TRUE);
     return TRUE;
 }

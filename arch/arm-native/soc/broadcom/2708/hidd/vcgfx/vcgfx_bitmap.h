@@ -84,6 +84,9 @@ struct Box
     int x2, y2;
 };
 
+/* Buffers of a scan-out bitmap (aHidd_BitMap_Scanout); screens use two */
+#define VCGFX_SCAN_BUFFERS  3
+
 /* A page of scanout memory (vcgfx_scanout_alloc), 4K aligned. */
 struct vcgfx_scanbuf
 {
@@ -105,8 +108,11 @@ struct BitmapData {
 	struct MouseData    *mouse;
 	ULONG               gpuhandle;              /* Offscreen: firmware mem handle (0 = RAM-backed) */
 	ULONG               dispwidth;              /* Mode width (width is 16px-aligned) */
-	struct vcgfx_scanbuf scan[2];               /* Offscreen screen pages, [front] = VideoData */
+	struct vcgfx_scanbuf scan[VCGFX_SCAN_BUFFERS]; /* Pages on scanout, [front] = VideoData */
 	UBYTE               front;
+	UBYTE               back;                   /* Scan-out bitmap: the buffer to fill next */
+	UBYTE               nbufs;                  /* Scan-out bitmap: its buffers, 0 = a screen */
+	ULONG               pxflags;                /* VC4GFX_OVL_RGB565/555, 0 = 32bpp */
 	ULONG               modew, modeh;           /* Screen: its mode's display size */
 };
 

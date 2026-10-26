@@ -409,6 +409,17 @@ VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
             OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
         }
     }
+#ifndef OnBitmap
+    else if (data->nbufs && IS_BM_ATTR(msg->attrID, idx)
+             && ((idx == aoHidd_BitMap_Scanout) || (idx == aoHidd_BitMap_Buffers)
+                 || (idx == aoHidd_BitMap_FrontBuffer) || (idx == aoHidd_BitMap_BackBuffer)))
+    {
+        /* A scan-out bitmap: ChunkyBM refuses those, so it was told it is none */
+        *msg->storage = (idx == aoHidd_BitMap_Scanout) ? TRUE
+                      : (idx == aoHidd_BitMap_Buffers) ? data->nbufs
+                      : (idx == aoHidd_BitMap_FrontBuffer) ? data->front : data->back;
+    }
+#endif
     else
     {
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);

@@ -444,9 +444,24 @@ VOID MNAME_DISPLAY(UpdateRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_Displa
     vcgfx_mirror_rect(XSD(cl), msg->bitMap, msg->x, msg->y, msg->width, msg->height);
 }
 
-/* Overlay planes above the primary, z by index: 32-bit screens in scanout
- * memory, scaled within what the HVS filters can do. How many fit at once
- * is the budget's to say, in CommitPlanes(). */
+/* How far a plane scales: VideoCore IV up only, HVS5/6 down to 2/3 too,
+ * that is a source at most 1.5 times the size it lands. */
+static void vc4_plane_scale(struct VideoCoreGfx_staticdata *xsd, ULONG *min, ULONG *max)
+{
+    *min = HIDD_PLANE_SCALE_UNITY;
+    *max = HIDD_PLANE_SCALE_UNITY;
+    if (xsd->vcsd_HVSGen == VCGFX_HVS_VC4)
+        *max = 16 * HIDD_PLANE_SCALE_UNITY;
+    else if ((xsd->vcsd_HVSGen == VCGFX_HVS_HVS5) || vc4_hvs6_scales(xsd))
+    {
+        *min = (2 * HIDD_PLANE_SCALE_UNITY + 2) / 3;
+        *max = 16 * HIDD_PLANE_SCALE_UNITY;
+    }
+}
+
+/* Overlay planes above the primary, z by index: 32-bit screens and client
+ * surfaces, 32 or 16 bit, in scanout memory. How many fit at once is the
+ * budget's to say, in CommitPlanes(). */
 ULONG MNAME_DISPLAY(GetPlaneInfo)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_GetPlaneInfo *msg)
 {
     struct VideoCoreGfx_staticdata *xsd = XSD(cl);
@@ -459,18 +474,9 @@ ULONG MNAME_DISPLAY(GetPlaneInfo)(OOP_Class *cl, OOP_Object *o, struct pHidd_Dis
     info.Type       = vHidd_Plane_Overlay;
     info.ZMin       = msg->index;
     info.ZMax       = msg->index;
-    info.PixFmtMask = 1 << ((xsd->vcsd_HVSGen == VCGFX_HVS_HVS6) ? vHidd_StdPixFmt_RGB032
-                                                                 : vHidd_StdPixFmt_BGR032);
-    info.ScaleMin   = HIDD_PLANE_SCALE_UNITY;
-    info.ScaleMax   = HIDD_PLANE_SCALE_UNITY;
-    if (xsd->vcsd_HVSGen == VCGFX_HVS_VC4)
-        info.ScaleMax = 16 * HIDD_PLANE_SCALE_UNITY;
-    else if ((xsd->vcsd_HVSGen == VCGFX_HVS_HVS5) || vc4_hvs6_scales(xsd))
-    {
-        /* Down to 2/3: a source at most 1.5 times the size it lands */
-        info.ScaleMin = (2 * HIDD_PLANE_SCALE_UNITY + 2) / 3;
-        info.ScaleMax = 16 * HIDD_PLANE_SCALE_UNITY;
-    }
+    info.PixFmtMask = (1 << vcgfx_native32(xsd)) | (1 << vHidd_StdPixFmt_RGB16_LE)
+                    | (1 << vHidd_StdPixFmt_RGB15_LE);
+    vc4_plane_scale(xsd, &info.ScaleMin, &info.ScaleMax);
     info.AlphaModes = 1 << vHidd_CompAlpha_None;
     info.PosAlignX  = 1;
     info.PosAlignY  = 1;
@@ -480,6 +486,33 @@ ULONG MNAME_DISPLAY(GetPlaneInfo)(OOP_Class *cl, OOP_Object *o, struct pHidd_Dis
         len = sizeof(info);
     CopyMem(&info, msg->info, len);
     return len;
+}
+
+/* RGB scan-out bitmaps a plane can show; video formats come with YUV planes. */
+ULONG MNAME_DISPLAY(QueryScanout)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_QueryScanout *msg)
+{
+    struct VideoCoreGfx_staticdata *xsd = XSD(cl);
+    ULONG flags = SCF_PLANE, maxw = (xsd->vcsd_HVSGen == VCGFX_HVS_VC4) ? 4095 : 0;
+
+    if (!xsd->vcsd_NoFB)
+        return (ULONG)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    if (msg->caps)
+        memset(msg->caps, 0, sizeof(*msg->caps));
+    if (msg->videoFmt || !msg->width || !msg->height || (maxw && (msg->width > maxw))
+        || ((msg->pixFmt != vcgfx_native32(xsd)) && (msg->pixFmt != vHidd_StdPixFmt_RGB16_LE)
+            && (msg->pixFmt != vHidd_StdPixFmt_RGB15_LE)))
+        return 0;
+
+    if (msg->caps)
+    {
+        vc4_plane_scale(xsd, &msg->caps->ScaleMin, &msg->caps->ScaleMax);
+        if (msg->caps->ScaleMax != HIDD_PLANE_SCALE_UNITY)
+            flags |= SCF_SCALE;
+        msg->caps->Flags      = flags;
+        msg->caps->MaxWidth   = maxw;
+        msg->caps->MaxBuffers = VCGFX_SCAN_BUFFERS;
+    }
+    return flags;
 }
 
 BOOL MNAME_DISPLAY(CommitPlanes)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_CommitPlanes *msg)
@@ -774,7 +807,8 @@ OOP_Object *MNAME_DISPLAY(CreateObject)(OOP_Class *cl, OOP_Object *o, struct pHi
             OOP_Class *frcl = friend ? OOP_OCLASS(friend) : NULL;
 
             if (displayable || frcl == XSD(cl)->vcsd_VideoCoreGfxOnBMClass
-                            || frcl == XSD(cl)->vcsd_VideoCoreGfxOffBMClass)
+                            || frcl == XSD(cl)->vcsd_VideoCoreGfxOffBMClass
+                            || GetTagData(aHidd_BitMap_Scanout, FALSE, msg->attrList))
             {
                 newbm_tags[0].ti_Tag  = aHidd_BitMap_ClassPtr;
                 newbm_tags[0].ti_Data = (IPTR)XSD(cl)->vcsd_VideoCoreGfxOffBMClass;

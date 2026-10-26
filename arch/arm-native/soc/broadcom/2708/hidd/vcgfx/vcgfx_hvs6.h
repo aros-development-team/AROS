@@ -71,7 +71,7 @@ static inline void hvs6_wr(ULONG offset, ULONG value)
 #define HVS6_CTL0_ORDER     (3UL << 13)     /* channel order, by memory:  */
 #define HVS6_ORDER_RGBA     (3UL << 13)     /* R,G,B,A - the framebuffer  */
 #define HVS6_ORDER_BGRA     (2UL << 13)     /* B,G,R,A - gallium, as HVS5 */
-#define HVS6_CTL0_FMT_MASK  0xf
+#define HVS6_CTL0_FMT_MASK  0x1f
 #define HVS6_CTL0_FMT_8888  7
 
 /* Plane entry. POS0/POS2 pack opposite to HVS5; extents are minus one. */

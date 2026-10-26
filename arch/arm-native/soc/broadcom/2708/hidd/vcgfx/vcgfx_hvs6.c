@@ -1206,13 +1206,15 @@ static ULONG hvs6_build_planes(struct VideoCoreGfx_staticdata *xsd, ULONG list)
             continue;
 
         e->pitch  = d->bytesperrow;
-        e->phys   = (UQUAD)(IPTR)d->VideoData + pl->pl_SrcY * e->pitch + pl->pl_SrcX * 4;
+        e->phys   = (UQUAD)(IPTR)d->VideoData + pl->pl_SrcY * e->pitch + pl->pl_SrcX * pl->pl_Bpp;
+        e->ovl    = (pl->pl_Pxf != 0);  /* 16bpp: the overlays' order and format */
+        e->pxf    = pl->pl_Pxf;
         e->x = px[j]; e->y = py[j]; e->w = pw[j]; e->h = ph[j];
         e->scaled = (pw[j] != pl->pl_SrcW) || (ph[j] != pl->pl_SrcH);
 
         if (!e->scaled)
         {
-            if (!hvs6_clip(&e->x, &e->y, &e->w, &e->h, &e->phys, e->pitch, 4,
+            if (!hvs6_clip(&e->x, &e->y, &e->w, &e->h, &e->phys, e->pitch, pl->pl_Bpp,
                            0, 0, out_w, limit[j]))
                 continue;
         }
@@ -1221,7 +1223,7 @@ static ULONG hvs6_build_planes(struct VideoCoreGfx_staticdata *xsd, ULONG list)
             e->sw = pl->pl_SrcW;
             e->sh = pl->pl_SrcH;
             if (!hvs6_clip_scaled(&e->x, &e->y, &e->w, &e->h, &e->sw, &e->sh, &e->phys,
-                                  e->pitch, 4, 0, 0, out_w, limit[j]))
+                                  e->pitch, pl->pl_Bpp, 0, 0, out_w, limit[j]))
                 continue;
             need = hvs6_lbm_need(e->sw, e->w);
             if ((lbm + need > lbmsize)
