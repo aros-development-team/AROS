@@ -171,6 +171,38 @@ void testCALLOC_overflow(void)
     CU_PASS("calloc(0, n) handled");
 }
 
+/* Code written for glibc-style allocators assumes malloc() returns memory
+   aligned to at least 8 bytes on every target (Mesa's ralloc header is one
+   such user); the pools give that, and the size prefix must not break it. */
+void testMALLOC_alignment(void)
+{
+    static const size_t sizes[] = { 1, 2, 3, 7, 8, 9, 15, 16, 17, 31, 100, 4097 };
+    size_t i;
+
+    for (i = 0; i < sizeof(sizes) / sizeof(sizes[0]); i++)
+    {
+        void *p = malloc(sizes[i]);
+        void *c = calloc(1, sizes[i]);
+
+        CU_ASSERT_PTR_NOT_NULL(p);
+        CU_ASSERT_PTR_NOT_NULL(c);
+        if (p)
+        {
+            CU_ASSERT_EQUAL((uintptr_t)p % 8, 0);
+            p = realloc(p, sizes[i] + 8192);
+            CU_ASSERT_PTR_NOT_NULL(p);
+            if (p)
+                CU_ASSERT_EQUAL((uintptr_t)p % 8, 0);
+            free(p);
+        }
+        if (c)
+        {
+            CU_ASSERT_EQUAL((uintptr_t)c % 8, 0);
+            free(c);
+        }
+    }
+}
+
 /* malloc() must reject a request whose internal (size + header) bookkeeping
    would wrap size_t, rather than under-allocating the block. */
 void testMALLOC_overflow(void)
@@ -247,6 +279,7 @@ int main(void)
         (NULL == CU_add_test(pSuite, "calloc()", testCALLOC)) ||
         (NULL == CU_add_test(pSuite, "calloc() overflow guard", testCALLOC_overflow)) ||
         (NULL == CU_add_test(pSuite, "malloc() overflow guard", testMALLOC_overflow)) ||
+        (NULL == CU_add_test(pSuite, "malloc() alignment", testMALLOC_alignment)) ||
         (NULL == CU_add_test(pSuite, "realloc() grow", testREALLOC_grow)) ||
         (NULL == CU_add_test(pSuite, "realloc(NULL, n)", testREALLOC_null)) ||
         (NULL == CU_add_test(pSuite, "realloc(ptr, 0)", testREALLOC_zero)))

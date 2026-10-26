@@ -64,7 +64,7 @@
         return NULL;
     }
 
-    mem = (UBYTE *)oldmem - AROS_ALIGN(sizeof(size_t));
+    mem = (UBYTE *)oldmem - MALLOC_HDRSIZE;
     oldsize = *((size_t *)mem);
 
     /* A block from aligned_alloc()/posix_memalign() has the magic number in
@@ -74,7 +74,7 @@
     {
         UBYTE *orig = ((UBYTE **)(mem - AROS_ALIGN(sizeof(void *))))[0];
 
-        oldsize = *((size_t *)(orig - AROS_ALIGN(sizeof(size_t)))) - ((UBYTE *)oldmem - orig);
+        oldsize = *((size_t *)(orig - MALLOC_HDRSIZE)) - ((UBYTE *)oldmem - orig);
         goto copy;
     }
 
