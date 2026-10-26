@@ -63,6 +63,7 @@ struct vcgfx_plane
     ULONG                pl_W, pl_H;    /* and how large */
     ULONG                pl_SrcX, pl_SrcY, pl_SrcW, pl_SrcH;
     ULONG                pl_Pxf, pl_Bpp;    /* HVS format (0 = 32bpp) and bytes per pixel */
+    ULONG                pl_Yuv;        /* HVS YUV format (luma 1 byte per pixel), 0 = RGB */
     ULONG                pl_PtrWord;    /* VC4: its PTR0 in the newest list, 0 = none */
     ULONG                pl_PtrSkip;    /* and the bytes clipped off in front */
     BOOL                 pl_Shown;      /* the last list built had room for it */
@@ -339,6 +340,20 @@ static inline ULONG vc4_ovl_bpp(ULONG flags)
     return (flags & (VC4GFX_OVL_RGB565 | VC4GFX_OVL_RGB555)) ? 2 : 4;
 }
 
+/* A PPF word: scale src/dst at 24:8, initial phase in 1/64 pixel at 6:0 */
+static inline ULONG vcgfx_ppf(ULONG src, ULONG dst, LONG phase)
+{
+    return (1UL << 30) | ((((ULONG)src << 16) / dst) << 8) | ((ULONG)phase & 0x7f);
+}
+
+/* The first sample of a channel subsampled by sub, sited siting64/64 of a
+ * luma pixel from the luma sample: half a destination pixel in, as the
+ * PPF centres on it. */
+static inline LONG vcgfx_ppf_phase(ULONG src, ULONG dst, ULONG siting64, ULONG sub)
+{
+    return -(LONG)(32 + siting64) / (LONG)sub + (LONG)((((ULONG)src << 16) / dst) >> 11);
+}
+
 /* The 32bpp format of screens: the HVS6 boot surface is R,G,B,X */
 static inline ULONG vcgfx_native32(struct VideoCoreGfx_staticdata *xsd)
 {
@@ -369,6 +384,8 @@ ULONG   vcgfx_plane_backpage(struct VideoCoreGfx_staticdata *xsd,
 BOOL    vcgfx_plane_flip(OOP_Class *cl, OOP_Object *bm);
 BOOL    vcgfx_plane_page(OOP_Class *cl, OOP_Object *bm, ULONG page, BOOL wait);
 BOOL    vcgfx_plane_shows(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm);
+void    vcgfx_yuv_csc(ULONG colorspace, ULONG csc[3]);
+BOOL    vcgfx_yuv_ok(struct VideoCoreGfx_staticdata *xsd, ULONG videofmt);
 
 /* Overlays; the caller holds vcsd_OvlLock. */
 struct vcgfx_ovl *vcgfx_ovl_find(struct VideoCoreGfx_staticdata *xsd, APTR client);

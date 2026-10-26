@@ -113,6 +113,10 @@ struct BitmapData {
 	UBYTE               back;                   /* Scan-out bitmap: the buffer to fill next */
 	UBYTE               nbufs;                  /* Scan-out bitmap: its buffers, 0 = a screen */
 	ULONG               pxflags;                /* VC4GFX_OVL_RGB565/555, 0 = 32bpp */
+	UBYTE               videofmt;               /* vHidd_VideoFmt_NV12/I420, 0 = RGB */
+	UBYTE               colorspace;             /* vHidd_ColorSpace_* of a video bitmap */
+	ULONG               planeoff[2];            /* Video: chroma plane offsets in a page */
+	ULONG               cpitch;                 /* Video: chroma bytes per row */
 	ULONG               modew, modeh;           /* Screen: its mode's display size */
 };
 

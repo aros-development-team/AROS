@@ -495,6 +495,56 @@ static void plane_pos(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm,
     *y = (LONG)t;
 }
 
+/* How a plane reads its bitmap: RGB of either width, or YUV. */
+static void plane_format(struct vcgfx_plane *pl, struct BitmapData *data)
+{
+    pl->pl_Pxf = vc4_ovl_pxf(data->pxflags);
+    pl->pl_Bpp = vc4_ovl_bpp(data->pxflags);
+    pl->pl_Yuv = 0;
+    if (data->videofmt)
+    {
+        pl->pl_Yuv = (data->videofmt == vHidd_VideoFmt_NV12) ? HVS_PXF_YUV420_2PLANE
+                                                             : HVS_PXF_YUV420_3PLANE;
+        pl->pl_Bpp = 1;
+    }
+}
+
+/* NV12 and I420 on VideoCore IV and HVS5, whose entries carry their own
+ * colour conversion. */
+BOOL vcgfx_yuv_ok(struct VideoCoreGfx_staticdata *xsd, ULONG videofmt)
+{
+    return ((videofmt == vHidd_VideoFmt_NV12) || (videofmt == vHidd_VideoFmt_I420))
+        && (xsd->vcsd_HVSGen != VCGFX_HVS_HVS6) && vcgfx_planes_supported(xsd);
+}
+
+/* A 10-bit S2.8 coefficient: 0 to 2.996, or -1 to just under 0 */
+#define CSC_COEF(v)     ((ULONG)((v) < 0 ? 1024 + (v) : (v)) & 0x3ff)
+
+/* The three CSC words of a YUV entry: limited range BT.601 or BT.709, in
+ * 1/256. Cb and Cr come centred already; Y loses its 16. */
+void vcgfx_yuv_csc(ULONG colorspace, ULONG csc[3])
+{
+    LONG y = 298, crr, cbg, crg, cbb;
+
+    if (colorspace == vHidd_ColorSpace_BT709)
+    {
+        crr = 459;
+        cbg = -55;
+        crg = -136;
+        cbb = 541;
+    }
+    else
+    {
+        crr = 409;
+        cbg = -100;
+        crg = -208;
+        cbb = 517;
+    }
+    csc[0] = (ULONG)(-16 & 0xff) << 16;
+    csc[1] = (CSC_COEF(cbg) << 22) | (CSC_COEF(crg) << 12) | (CSC_COEF(y) << 2);
+    csc[2] = (CSC_COEF(crr) << 10) | CSC_COEF(cbb);
+}
+
 /* The backdrop is the fb; a mode set leaves it holding anything. */
 static void backdrop_clear(struct VideoCoreGfx_staticdata *xsd)
 {
@@ -637,8 +687,7 @@ void vcgfx_show(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm)
         pl->pl_SrcY    = 0;
         pl->pl_SrcW    = pl->pl_W = data->width;
         pl->pl_SrcH    = pl->pl_H = data->height;
-        pl->pl_Pxf     = vc4_ovl_pxf(data->pxflags);
-        pl->pl_Bpp     = vc4_ovl_bpp(data->pxflags);
+        plane_format(pl, data);
         plane_pos(xsd, bm, &pl->pl_X, &pl->pl_Y);
         xsd->vcsd_DispW = data->modew;
         xsd->vcsd_DispH = data->modeh;
@@ -750,8 +799,7 @@ BOOL vcgfx_planes_commit(struct VideoCoreGfx_staticdata *xsd,
         pl->pl_SrcY    = s->MinY;
         pl->pl_SrcW    = s->MaxX - s->MinX + 1;
         pl->pl_SrcH    = s->MaxY - s->MinY + 1;
-        pl->pl_Pxf     = vc4_ovl_pxf(data->pxflags);
-        pl->pl_Bpp     = vc4_ovl_bpp(data->pxflags);
+        plane_format(pl, data);
         pl->pl_PtrWord = 0;
         pl->pl_Shown   = TRUE;
     }

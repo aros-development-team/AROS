@@ -466,6 +466,9 @@ struct hvs_src
     LONG  x, y;
     ULONG w, h;
     ULONG cw, ch;
+    ULONG yuv;              /* HVS YUV format, 0 = RGB */
+    ULONG cphys[2], cpitch; /* its chroma: CbCr, or Cb then Cr */
+    ULONG csc[3];
 };
 
 /* The plane's rectangle in output pixels. FALSE when empty. */
@@ -483,6 +486,135 @@ static BOOL hvs_src_rect(struct vc4_hvs_state *st, const struct hvs_src *s,
     return (*dw != 0) && (*dh != 0);
 }
 
+/* A YUV entry: chroma always through the PPF, luma too when scaled, so
+ * the line buffer is needed even at 1:1. Its words, 0 = can't be shown. */
+#define HVS_YUV_WORDS(s, scaled) \
+    (((s)->yuv == HVS_PXF_YUV420_3PLANE ? 24 : 21) + ((scaled) ? 4 : 0))
+
+static ULONG hvs_yuv_words(struct vc4_hvs_state *st, const struct hvs_src *s,
+                           ULONG lbm)
+{
+    LONG dx, dy;
+    ULONG dw, dh;
+    BOOL scaled;
+
+    if (!st->hvs_KernelOK || !hvs_src_rect(st, s, &dx, &dy, &dw, &dh)
+        || (dw > 0xfff) || (dh > 0xfff)
+        || (lbm + HVS_LBM_BYTES(s->srcw) > st->hvs_FBLBM))
+        return 0;
+    scaled = (dw != s->srcw) || (dh != s->srch);
+    if (scaled && (!HVS_PPF_FITS(s->srcw, dw) || !HVS_PPF_FITS(s->srch, dh)))
+        return 0;
+    return HVS_YUV_WORDS(s, scaled);
+}
+
+/*
+ * A YUV entry at w, clipped like hvs_put_src() but on whole chroma
+ * samples. After the RGB entry's head: a pointer, a context word and a
+ * pitch per plane, the three CSC words, LBM, then the PPF words of the
+ * chroma channel and, scaled, of the luma channel, each H then V and its
+ * context, and four kernel pointers.
+ */
+static ULONG hvs_put_yuv(struct vc4_hvs_state *st, ULONG *w, ULONG words,
+                         ULONG lbm, const struct hvs_src *s,
+                         LONG left, LONG top, LONG right, LONG bottom)
+{
+    BOOL scaled = (words == HVS_YUV_WORDS(s, TRUE));
+    ULONG planes = (s->yuv == HVS_PXF_YUV420_3PLANE) ? 3 : 2;
+    ULONG cbytes = (planes == 2) ? 2 : 1;
+    ULONG ptr = s->phys & ~HVS_PTR_BUS_ALIAS;
+    ULONG c0 = s->cphys[0] & ~HVS_PTR_BUS_ALIAS, c1 = s->cphys[1] & ~HVS_PTR_BUS_ALIAS;
+    ULONG srcw = s->srcw, srch = s->srch, ssk, i, n = 0;
+    LONG ox, oy;
+    ULONG ow, oh;
+
+    if (!hvs_src_rect(st, s, &ox, &oy, &ow, &oh))
+        return 0;
+    if (!scaled)
+    {
+        ow = srcw;
+        oh = srch;
+    }
+
+    if (ox < left)
+    {
+        ULONG skip = (ULONG)(left - ox);
+
+        ssk = (skip * srcw / ow) & ~1UL;
+        ptr += ssk;
+        c0 += ssk / 2 * cbytes;
+        c1 += ssk / 2;
+        srcw -= ssk;
+        ow -= skip;
+        ox = left;
+    }
+    if (oy < top)
+    {
+        ULONG skip = (ULONG)(top - oy);
+
+        ssk = (skip * srch / oh) & ~1UL;
+        ptr += ssk * s->pitch;
+        c0 += ssk / 2 * s->cpitch;
+        c1 += ssk / 2 * s->cpitch;
+        srch -= ssk;
+        oh -= skip;
+        oy = top;
+    }
+    if (ox + (LONG)ow > right)
+    {
+        ULONG keep = (right > ox) ? (ULONG)(right - ox) : 0;
+
+        srcw = (srcw * keep / ow) & ~1UL;
+        ow = keep;
+    }
+    if (oy + (LONG)oh > bottom)
+    {
+        ULONG keep = (bottom > oy) ? (ULONG)(bottom - oy) : 0;
+
+        srch = (srch * keep / oh) & ~1UL;
+        oh = keep;
+    }
+    if ((LONG)ow <= 0 || (LONG)oh <= 0 || !srcw || !srch)
+        return 0;
+
+    w[n++] = HVS_CTL0_VALID | (words << HVS_CTL0_SIZE_SHIFT)
+           | (scaled ? 0 : HVS_CTL0_UNITY) | s->yuv;
+    w[n++] = (0xffUL << HVS_POS0_ALPHA_SHIFT)
+           | ((ULONG)oy << HVS_POS0_Y_SHIFT) | ((ULONG)ox << HVS_POS0_X_SHIFT);
+    if (scaled)
+        w[n++] = (oh << HVS_POS2_H_SHIFT) | (ow << HVS_POS2_W_SHIFT);
+    w[n++] = (1UL << HVS_POS2_AMODE_SHIFT) | (srch << HVS_POS2_H_SHIFT)
+           | (srcw << HVS_POS2_W_SHIFT);
+    w[n++] = 0;
+    w[n++] = HVS_PTR_BUS_ALIAS | ptr;
+    w[n++] = HVS_PTR_BUS_ALIAS | c0;
+    if (planes == 3)
+        w[n++] = HVS_PTR_BUS_ALIAS | c1;
+    for (i = 0; i < planes; i++)
+        w[n++] = 0;
+    w[n++] = s->pitch;
+    w[n++] = s->cpitch;
+    if (planes == 3)
+        w[n++] = s->cpitch;
+    for (i = 0; i < 3; i++)
+        w[n++] = s->csc[i];
+    w[n++] = lbm;
+
+    /* 4:2:0 chroma: co-sited across, between two luma lines down */
+    w[n++] = vcgfx_ppf(srcw / 2, ow, vcgfx_ppf_phase(srcw / 2, ow, 0, 2));
+    w[n++] = vcgfx_ppf(srch / 2, oh, vcgfx_ppf_phase(srch / 2, oh, 32, 2));
+    w[n++] = 0;
+    if (scaled)
+    {
+        w[n++] = vcgfx_ppf(srcw, ow, vcgfx_ppf_phase(srcw, ow, 0, 1));
+        w[n++] = vcgfx_ppf(srch, oh, vcgfx_ppf_phase(srch, oh, 0, 1));
+        w[n++] = 0;
+    }
+    for (i = 0; i < 4; i++)
+        w[n++] = HVS_OWN_KERNEL;
+    return n;
+}
+
 /* Unity or scaled. lbm is the line buffer handed out so far this list; a
  * plane that cannot be scaled shows unscaled instead. */
 static ULONG hvs_src_words(struct vc4_hvs_state *st, const struct hvs_src *s,
@@ -491,6 +623,8 @@ static ULONG hvs_src_words(struct vc4_hvs_state *st, const struct hvs_src *s,
     LONG dx, dy;
     ULONG dw, dh;
 
+    if (s->yuv)
+        return hvs_yuv_words(st, s, lbm);
     if (!hvs_src_rect(st, s, &dx, &dy, &dw, &dh))
         return HVS_UNITY_WORDS;
     if ((dw == s->srcw) && (dh == s->srch))
@@ -514,6 +648,8 @@ static ULONG hvs_put_src(struct vc4_hvs_state *st, ULONG *w, ULONG words,
     LONG ox, oy;
     ULONG ow, oh;
 
+    if (s->yuv)
+        return hvs_put_yuv(st, w, words, lbm, s, left, top, right, bottom);
     if (!hvs_src_rect(st, s, &ox, &oy, &ow, &oh))
         return 0;
 
@@ -634,6 +770,17 @@ static void hvs_plane_src(struct VideoCoreGfx_staticdata *xsd, struct vcgfx_plan
     s->h     = pl->pl_H;
     s->cw    = xsd->vcsd_DispW;
     s->ch    = xsd->vcsd_DispH;
+    s->yuv   = pl->pl_Yuv;
+    if (s->yuv)
+    {
+        ULONG base = (ULONG)(IPTR)d->VideoData, cx = pl->pl_SrcX / 2, cy = pl->pl_SrcY / 2;
+
+        s->cpitch   = d->cpitch;
+        s->cphys[0] = base + d->planeoff[0] + cy * d->cpitch
+                    + cx * ((s->yuv == HVS_PXF_YUV420_2PLANE) ? 2 : 1);
+        s->cphys[1] = base + d->planeoff[1] + cy * d->cpitch + cx;
+        vcgfx_yuv_csc(d->colorspace, s->csc);
+    }
 }
 
 /* Our own buffer behind a token firmware framebuffer, filling the fb
@@ -648,6 +795,7 @@ static void hvs_fb_src(struct vc4_hvs_state *st, struct hvs_src *s)
     s->srch  = s->h = s->ch = st->hvs_SrcH;
     s->x     = 0;
     s->y     = 0;
+    s->yuv   = 0;
 }
 
 /* The fb plane, verbatim but for its pointer - or our own buffer. */
@@ -692,6 +840,7 @@ static void hvs_pool_src(const struct vcgfx_ovl *e, struct hvs_src *s,
     s->y     = orgy + d->ovl_Y;
     s->cw    = cw;
     s->ch    = ch;
+    s->yuv   = 0;
 }
 
 /* Words and line buffer for a plane, added to the running totals. */
@@ -699,7 +848,7 @@ static ULONG hvs_take(struct vc4_hvs_state *st, const struct hvs_src *s, ULONG *
 {
     ULONG words = hvs_src_words(st, s, *lbm);
 
-    if (words == HVS_SCALED_WORDS)
+    if ((words == HVS_SCALED_WORDS) || (s->yuv && words))
         *lbm += HVS_LBM_BYTES(s->srcw);
     return words;
 }
@@ -757,8 +906,8 @@ static ULONG hvs_emit_planes(struct VideoCoreGfx_staticdata *xsd, ULONG *w,
         /* One the scaler can't make is left out, not shown at the wrong size */
         lb = need;
         words = hvs_take(st, &s, &lb);
-        if ((words > room)
-            || (((pw != s.srcw) || (ph != s.srch)) && (words != HVS_SCALED_WORDS)))
+        if (!words || (words > room)
+            || (!s.yuv && ((pw != s.srcw) || (ph != s.srch)) && (words != HVS_SCALED_WORDS)))
         {
             pl->pl_Shown = FALSE;
             continue;
@@ -840,7 +989,8 @@ static ULONG hvs_emit_planes(struct VideoCoreGfx_staticdata *xsd, ULONG *w,
         got = hvs_put_src(st, &w[n], swords[i], slbm[i], &s, left, top, right, cb);
         if (got)
         {
-            pl->pl_PtrWord = n + ((got == HVS_SCALED_WORDS) ? HVS_SC_PTR0 : 4);
+            /* YUV has three pointers to patch: no flip in place */
+            pl->pl_PtrWord = pl->pl_Yuv ? 0 : n + ((got == HVS_SCALED_WORDS) ? HVS_SC_PTR0 : 4);
             pl->pl_PtrSkip = (w[pl->pl_PtrWord] & ~HVS_PTR_BUS_ALIAS)
                            - ((ULONG)(IPTR)pl->pl_Data->VideoData & ~HVS_PTR_BUS_ALIAS);
             n += got;

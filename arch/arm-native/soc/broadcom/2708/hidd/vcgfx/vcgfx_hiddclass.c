@@ -460,8 +460,9 @@ static void vc4_plane_scale(struct VideoCoreGfx_staticdata *xsd, ULONG *min, ULO
 }
 
 /* Overlay planes above the primary, z by index: 32-bit screens and client
- * surfaces, 32 or 16 bit, in scanout memory. How many fit at once is the
- * budget's to say, in CommitPlanes(). */
+ * surfaces, 32 or 16 bit or video, in scanout memory. How many fit at once
+ * is the budget's to say, in CommitPlanes(). With no colour key a video
+ * partly covered goes off rather than show over what covers it. */
 ULONG MNAME_DISPLAY(GetPlaneInfo)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_GetPlaneInfo *msg)
 {
     struct VideoCoreGfx_staticdata *xsd = XSD(cl);
@@ -476,11 +477,13 @@ ULONG MNAME_DISPLAY(GetPlaneInfo)(OOP_Class *cl, OOP_Object *o, struct pHidd_Dis
     info.ZMax       = msg->index;
     info.PixFmtMask = (1 << vcgfx_native32(xsd)) | (1 << vHidd_StdPixFmt_RGB16_LE)
                     | (1 << vHidd_StdPixFmt_RGB15_LE);
+    if (vcgfx_yuv_ok(xsd, vHidd_VideoFmt_NV12))
+        info.VideoFmtMask = (1 << vHidd_VideoFmt_NV12) | (1 << vHidd_VideoFmt_I420);
     vc4_plane_scale(xsd, &info.ScaleMin, &info.ScaleMax);
     info.AlphaModes = 1 << vHidd_CompAlpha_None;
     info.PosAlignX  = 1;
     info.PosAlignY  = 1;
-    info.Flags      = PIF_NEEDS_DISPLAYMEM;
+    info.Flags      = PIF_NEEDS_DISPLAYMEM | PIF_HIDE_OBSCURED;
 
     if (len > sizeof(info))
         len = sizeof(info);
@@ -488,7 +491,8 @@ ULONG MNAME_DISPLAY(GetPlaneInfo)(OOP_Class *cl, OOP_Object *o, struct pHidd_Dis
     return len;
 }
 
-/* RGB scan-out bitmaps a plane can show; video formats come with YUV planes. */
+/* Scan-out bitmaps a plane can show: RGB, and NV12/I420 where entries carry
+ * their own colour conversion. */
 ULONG MNAME_DISPLAY(QueryScanout)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_QueryScanout *msg)
 {
     struct VideoCoreGfx_staticdata *xsd = XSD(cl);
@@ -498,9 +502,11 @@ ULONG MNAME_DISPLAY(QueryScanout)(OOP_Class *cl, OOP_Object *o, struct pHidd_Dis
         return (ULONG)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (msg->caps)
         memset(msg->caps, 0, sizeof(*msg->caps));
-    if (msg->videoFmt || !msg->width || !msg->height || (maxw && (msg->width > maxw))
-        || ((msg->pixFmt != vcgfx_native32(xsd)) && (msg->pixFmt != vHidd_StdPixFmt_RGB16_LE)
-            && (msg->pixFmt != vHidd_StdPixFmt_RGB15_LE)))
+    if (!msg->width || !msg->height || (maxw && (msg->width > maxw)))
+        return 0;
+    if (msg->videoFmt ? !vcgfx_yuv_ok(xsd, msg->videoFmt)
+                      : ((msg->pixFmt != vcgfx_native32(xsd)) && (msg->pixFmt != vHidd_StdPixFmt_RGB16_LE)
+                         && (msg->pixFmt != vHidd_StdPixFmt_RGB15_LE)))
         return 0;
 
     if (msg->caps)

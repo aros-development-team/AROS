@@ -377,6 +377,9 @@ struct hvs5_src
     LONG  x, y;
     ULONG w, h;
     ULONG cw, ch;
+    ULONG yuv;              /* HVS YUV format, 0 = RGB */
+    ULONG cphys[2], cpitch; /* its chroma: CbCr, or Cb then Cr */
+    ULONG csc[3];
 };
 
 /* The plane's screen rectangle. FALSE when empty. */
@@ -394,6 +397,27 @@ static BOOL hvs5_src_rect(struct vc4_hvs_state *st, const struct hvs5_src *s,
     return (*dw != 0) && (*dh != 0);
 }
 
+/* A YUV entry: chroma always through the PPF, luma too when scaled, so
+ * the line buffer is needed even at 1:1. Its words, 0 = can't be shown. */
+#define HVS5_YUV_WORDS(s, scaled) \
+    (((s)->yuv == HVS_PXF_YUV420_3PLANE ? 25 : 22) + ((scaled) ? 4 : 0))
+
+static ULONG hvs5_yuv_words(struct vc4_hvs_state *st, const struct hvs5_src *s,
+                            ULONG lbm)
+{
+    LONG dx, dy;
+    ULONG dw, dh;
+    BOOL scaled;
+
+    if (!hvs5_src_rect(st, s, &dx, &dy, &dw, &dh)
+        || (lbm + HVS5_LBM_BYTES(s->srcw) > st->hvs_FBLBM))
+        return 0;
+    scaled = (dw != s->srcw) || (dh != s->srch);
+    if (scaled && (!HVS5_PPF_FITS(s->srcw, dw) || !HVS5_PPF_FITS(s->srch, dh)))
+        return 0;
+    return HVS5_YUV_WORDS(s, scaled);
+}
+
 /* Unity or scaled. lbm is the line buffer already handed out this list;
  * a scaled plane that would not fit shows unscaled instead. */
 static ULONG hvs5_src_words(struct vc4_hvs_state *st, const struct hvs5_src *s,
@@ -402,6 +426,8 @@ static ULONG hvs5_src_words(struct vc4_hvs_state *st, const struct hvs5_src *s,
     LONG dx, dy;
     ULONG dw, dh;
 
+    if (s->yuv)
+        return hvs5_yuv_words(st, s, lbm);
     if (!hvs5_src_rect(st, s, &dx, &dy, &dw, &dh))
         return HVS5_PLANE_WORDS;
     if (dw == s->srcw && dh == s->srch)
@@ -421,6 +447,119 @@ static void hvs5_dl_set(ULONG idx, ULONG val)
         hvs5_dl_wr(idx, val);
 }
 
+/*
+ * A YUV entry at base, clipped like hvs5_write_src() but on whole chroma
+ * samples. After CTL0, POS0, CTL2, POS1 when scaled, POS2 and POS3: a
+ * pointer, a context word and a pitch per plane, the three CSC words,
+ * LBM, then the PPF words of the chroma channel and, scaled, of the luma
+ * channel, each H then V and its context, and four kernel pointers.
+ */
+static void hvs5_write_yuv(struct vc4_hvs_state *st, ULONG base, ULONG words,
+                           ULONG lbm, const struct hvs5_src *s,
+                           LONG left, LONG top, LONG right, LONG bottom)
+{
+    BOOL scaled = (words == HVS5_YUV_WORDS(s, TRUE));
+    ULONG planes = (s->yuv == HVS_PXF_YUV420_3PLANE) ? 3 : 2;
+    ULONG cbytes = (planes == 2) ? 2 : 1;
+    ULONG ctl0 = HVS5_CTL0_VALID | (words << HVS5_CTL0_SIZE_SHIFT)
+               | (scaled ? 0 : HVS5_CTL0_UNITY) | s->yuv;
+    ULONG ptr = s->phys & ~HVS5_PTR_BUS_ALIAS;
+    ULONG c0 = s->cphys[0] & ~HVS5_PTR_BUS_ALIAS, c1 = s->cphys[1] & ~HVS5_PTR_BUS_ALIAS;
+    ULONG srcw = s->srcw, srch = s->srch, ssk, i, n = 1;
+    LONG ox, oy;
+    ULONG ow, oh;
+
+    if (!hvs5_src_rect(st, s, &ox, &oy, &ow, &oh))
+    {
+        hvs5_dl_wr(base, ctl0 & ~HVS5_CTL0_VALID);
+        return;
+    }
+    if (!scaled)
+    {
+        ow = srcw;
+        oh = srch;
+    }
+
+    if (ox < left)
+    {
+        ULONG skip = (ULONG)(left - ox);
+
+        ssk = (skip * srcw / ow) & ~1UL;
+        ptr += ssk;
+        c0 += ssk / 2 * cbytes;
+        c1 += ssk / 2;
+        srcw -= ssk;
+        ow -= skip;
+        ox = left;
+    }
+    if (oy < top)
+    {
+        ULONG skip = (ULONG)(top - oy);
+
+        ssk = (skip * srch / oh) & ~1UL;
+        ptr += ssk * s->pitch;
+        c0 += ssk / 2 * s->cpitch;
+        c1 += ssk / 2 * s->cpitch;
+        srch -= ssk;
+        oh -= skip;
+        oy = top;
+    }
+    if (ox + (LONG)ow > right)
+    {
+        ULONG keep = (right > ox) ? (ULONG)(right - ox) : 0;
+
+        srcw = (srcw * keep / ow) & ~1UL;
+        ow = keep;
+    }
+    if (oy + (LONG)oh > bottom)
+    {
+        ULONG keep = (bottom > oy) ? (ULONG)(bottom - oy) : 0;
+
+        srch = (srch * keep / oh) & ~1UL;
+        oh = keep;
+    }
+    if ((LONG)ow <= 0 || (LONG)oh <= 0 || !srcw || !srch)
+    {
+        hvs5_dl_wr(base, ctl0 & ~HVS5_CTL0_VALID);
+        return;
+    }
+
+    hvs5_dl_set(base + n++, HVS5_POS0(ox, oy));
+    hvs5_dl_set(base + n++, HVS5_ALPHA_FIXED);
+    if (scaled)
+        hvs5_dl_set(base + n++, HVS5_POS2(ow, oh));
+    hvs5_dl_set(base + n++, HVS5_POS2(srcw, srch));
+    hvs5_dl_set(base + n++, 0);
+    hvs5_dl_set(base + n++, HVS5_PTR_BUS_ALIAS | ptr);
+    hvs5_dl_set(base + n++, HVS5_PTR_BUS_ALIAS | c0);
+    if (planes == 3)
+        hvs5_dl_set(base + n++, HVS5_PTR_BUS_ALIAS | c1);
+    for (i = 0; i < planes; i++)
+        hvs5_dl_set(base + n++, 0);
+    hvs5_dl_set(base + n++, s->pitch);
+    hvs5_dl_set(base + n++, s->cpitch);
+    if (planes == 3)
+        hvs5_dl_set(base + n++, s->cpitch);
+    for (i = 0; i < 3; i++)
+        hvs5_dl_set(base + n++, s->csc[i]);
+    hvs5_dl_set(base + n++, lbm);
+
+    /* 4:2:0 chroma: co-sited across, between two luma lines down */
+    hvs5_dl_set(base + n++, vcgfx_ppf(srcw / 2, ow, vcgfx_ppf_phase(srcw / 2, ow, 0, 2)));
+    hvs5_dl_set(base + n++, vcgfx_ppf(srch / 2, oh, vcgfx_ppf_phase(srch / 2, oh, 32, 2)));
+    hvs5_dl_set(base + n++, 0);
+    if (scaled)
+    {
+        hvs5_dl_set(base + n++, vcgfx_ppf(srcw, ow, vcgfx_ppf_phase(srcw, ow, 0, 1)));
+        hvs5_dl_set(base + n++, vcgfx_ppf(srch, oh, vcgfx_ppf_phase(srch, oh, 0, 1)));
+        hvs5_dl_set(base + n++, 0);
+    }
+    for (i = 0; i < 4; i++)
+        hvs5_dl_set(base + n++, HVS5_FW_KERNEL);
+
+    hvs5_dl_set(base, ctl0);
+}
+
 /* Fill in an entry laid down by hvs5_init_plane, clipped to
  * [left,right) x [top,bottom) on screen with the source trimmed in
  * proportion. Left invalid when nothing remains. */
@@ -430,6 +569,12 @@ static void hvs5_write_src(struct vc4_hvs_state *st, ULONG base, ULONG words,
 {
     BOOL scaled = (words == HVS5_SCALED_WORDS);
     ULONG ctl0 = scaled ? HVS5_CTL0_SCALED : HVS5_CTL0_CURSOR;
+
+    if (s->yuv)
+    {
+        hvs5_write_yuv(st, base, words, lbm, s, left, top, right, bottom);
+        return;
+    }
     ULONG ptr = s->phys & ~HVS5_PTR_BUS_ALIAS;
     ULONG srcw = s->srcw, srch = s->srch;
     LONG ox, oy;
@@ -527,6 +672,7 @@ static void hvs5_ovl_src(struct vc4_hvs_state *st, struct hvs5_src *s)
     s->h     = st->hvs_OvlDestH ? st->hvs_OvlDestH : st->hvs_OvlH;
     s->cw    = st->hvs_SrcW;
     s->ch    = st->hvs_SrcH;
+    s->yuv   = 0;
 }
 
 /* Patch the live overlay entry in place (screens not planes). */
@@ -578,6 +724,7 @@ static void hvs5_fb_src(struct vc4_hvs_state *st, struct hvs5_src *s)
     s->srch  = s->h = s->ch = st->hvs_SrcH;
     s->x     = 0;
     s->y     = 0;
+    s->yuv   = 0;
 }
 
 /* The fb plane, verbatim but for its pointer - or our own buffer. */
@@ -620,6 +767,17 @@ static void hvs5_plane_src(struct VideoCoreGfx_staticdata *xsd, struct vcgfx_pla
     s->h     = pl->pl_H;
     s->cw    = xsd->vcsd_DispW;
     s->ch    = xsd->vcsd_DispH;
+    s->yuv   = pl->pl_Yuv;
+    if (s->yuv)
+    {
+        ULONG base = (ULONG)(IPTR)d->VideoData, cx = pl->pl_SrcX / 2, cy = pl->pl_SrcY / 2;
+
+        s->cpitch   = d->cpitch;
+        s->cphys[0] = base + d->planeoff[0] + cy * d->cpitch
+                    + cx * ((s->yuv == HVS_PXF_YUV420_2PLANE) ? 2 : 1);
+        s->cphys[1] = base + d->planeoff[1] + cy * d->cpitch + cx;
+        vcgfx_yuv_csc(d->colorspace, s->csc);
+    }
 }
 
 /* A pool overlay over the screen at orgx/orgy, in that screen's space. */
@@ -640,6 +798,7 @@ static void hvs5_pool_src(const struct vcgfx_ovl *e, struct hvs5_src *s,
     s->h     = d->ovl_DestH ? d->ovl_DestH : d->ovl_Height;
     s->cw    = cw;
     s->ch    = ch;
+    s->yuv   = 0;
 }
 
 /* Words and line buffer for a plane, added to the running totals. */
@@ -647,7 +806,7 @@ static ULONG hvs5_take(struct vc4_hvs_state *st, const struct hvs5_src *s, ULONG
 {
     ULONG words = hvs5_src_words(st, s, *lbm);
 
-    if (words == HVS5_SCALED_WORDS)
+    if ((words == HVS5_SCALED_WORDS) || (s->yuv && words))
         *lbm += HVS5_LBM_BYTES(s->srcw);
     return words;
 }
@@ -702,8 +861,8 @@ static ULONG hvs5_emit_planes(struct VideoCoreGfx_staticdata *xsd,
         /* One the scaler can't make is left out, not shown at the wrong size */
         lb = need;
         words = hvs5_take(st, &s, &lb);
-        if ((words > room)
-            || (((pw != s.srcw) || (ph != s.srch)) && (words != HVS5_SCALED_WORDS)))
+        if (!words || (words > room)
+            || (!s.yuv && ((pw != s.srcw) || (ph != s.srch)) && (words != HVS5_SCALED_WORDS)))
         {
             pl->pl_Shown = FALSE;
             continue;
