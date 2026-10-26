@@ -10,6 +10,7 @@
 #include <proto/exec.h>
 #include <proto/locale.h>
 #include <dos/datetime.h>
+#include <dos/filehandler.h>
 #include <aros/asmcall.h>
 #include <proto/dos.h>
 #include <dos/rdargs.h>
@@ -1760,6 +1761,173 @@ static IPTR thunk_dos_Examine(struct M68KEmuContext *ctx, void *cpu)
     return ok;
 }
 
+/* ── DosList entries for 68k code: NextDosEntry() and FindDosEntry() hand
+   out m68k copies (made once per native entry) in the
+   68k layout: dol_Next 0, dol_Type 4, dol_Task 8, dol_Lock 12, the union
+   at 16 (device: Handler, StackSize, Priority, Startup, SegList, GlobVec;
+   volume: VolumeDate, LockList, DiskType; assign: AssignName, List),
+   dol_Name 40. A device's FileSysStartupMsg and DosEnvec are copied too. ── */
+#define SHADOW_DOSLIST 12
+#define M68K_DOL_SIZE  44
+
+static ULONG m68k_bstr_copy(struct M68KEmuContext *ctx, BSTR b)
+{
+    ULONG len, m;
+
+    if (!b)
+        return 0;
+    len = AROS_BSTR_strlen(b);
+    if (len > 255)
+        len = 255;
+    if (!(m = M68KEmu_HeapAlloc(ctx, len + 2, MEMF_CLEAR)))
+        return 0;
+    ctx->mem[m] = (UBYTE)len;
+    memcpy(ctx->mem + m + 1, AROS_BSTR_ADDR(b), len);
+    return m >> 2;
+}
+
+static ULONG m68k_fssm_copy(struct M68KEmuContext *ctx, struct FileSysStartupMsg *fssm)
+{
+    struct DosEnvec *de;
+    ULONG m, md = 0, n, i;
+
+    if (!fssm || !TypeOfMem(fssm))
+        return 0;
+    if (!(m = M68KEmu_HeapAlloc(ctx, 16, MEMF_CLEAR)))
+        return 0;
+    m68k_write32(ctx, m, fssm->fssm_Unit);
+    m68k_write32(ctx, m + 4, m68k_bstr_copy(ctx, fssm->fssm_Device));
+    m68k_write32(ctx, m + 12, fssm->fssm_Flags);
+    de = (struct DosEnvec *)BADDR(fssm->fssm_Environ);
+    if (de && TypeOfMem(de))
+    {
+        n = de->de_TableSize;
+        if (n > DE_BOOTBLOCKS)
+            n = DE_BOOTBLOCKS;
+        if ((md = M68KEmu_HeapAlloc(ctx, (n + 1) * 4, MEMF_CLEAR)))
+            for (i = 0; i <= n; i++)
+                m68k_write32(ctx, md + i * 4, (ULONG)((IPTR *)de)[i]);
+    }
+    m68k_write32(ctx, m + 8, md >> 2);
+    return m >> 2;
+}
+
+static ULONG m68k_doslist_out(struct M68KEmuContext *ctx, struct DosList *dol)
+{
+    ULONG m = 0;
+    UWORD i;
+
+    if (!dol)
+        return 0;
+    for (i = 0; i < ctx->num_shadows; i++)
+        if (ctx->shadow_map[i].native_ptr == dol && ctx->shadow_map[i].type == SHADOW_DOSLIST)
+            return ctx->shadow_map[i].m68k_addr;
+    if (!(m = M68KEmu_HeapAlloc(ctx, M68K_DOL_SIZE, MEMF_CLEAR)))
+        return 0;
+    if (!shadow_register(ctx, m, dol, SHADOW_DOSLIST))
+    {
+        M68KEmu_HeapFree(ctx, m, M68K_DOL_SIZE);
+        return 0;
+    }
+    m68k_write32(ctx, m + 4, dol->dol_Type);
+    m68k_write32(ctx, m + 8, dol->dol_Task ? m68k_bptr_out(ctx, (BPTR)dol->dol_Task) : 0);
+    m68k_write32(ctx, m + 12, m68k_bptr_out(ctx, dol->dol_Lock));
+    switch (dol->dol_Type)
+    {
+    case DLT_DEVICE:
+        m68k_write32(ctx, m + 16, m68k_bstr_copy(ctx, dol->dol_misc.dol_handler.dol_Handler));
+        m68k_write32(ctx, m + 20, dol->dol_misc.dol_handler.dol_StackSize);
+        m68k_write32(ctx, m + 24, dol->dol_misc.dol_handler.dol_Priority);
+        {
+            BPTR st = (BPTR)dol->dol_misc.dol_handler.dol_Startup;
+            /* small values are handler arguments, not a message */
+            if ((IPTR)st > 0x1000)
+                m68k_write32(ctx, m + 28, m68k_fssm_copy(ctx, (struct FileSysStartupMsg *)BADDR(st)));
+            else
+                m68k_write32(ctx, m + 28, (ULONG)(IPTR)st);
+        }
+        m68k_write32(ctx, m + 32, m68k_bptr_out(ctx, dol->dol_misc.dol_handler.dol_SegList));
+        break;
+    case DLT_VOLUME:
+        m68k_write32(ctx, m + 16, dol->dol_misc.dol_volume.dol_VolumeDate.ds_Days);
+        m68k_write32(ctx, m + 20, dol->dol_misc.dol_volume.dol_VolumeDate.ds_Minute);
+        m68k_write32(ctx, m + 24, dol->dol_misc.dol_volume.dol_VolumeDate.ds_Tick);
+        m68k_write32(ctx, m + 32, dol->dol_misc.dol_volume.dol_DiskType);
+        break;
+    default:
+        if (dol->dol_misc.dol_assign.dol_AssignName)
+        {
+            const char *an = (const char *)dol->dol_misc.dol_assign.dol_AssignName;
+            ULONG len = strnlen(an, 255), ma = M68KEmu_HeapAlloc(ctx, len + 1, 0);
+            if (ma)
+            {
+                memcpy(ctx->mem + ma, an, len);
+                ctx->mem[ma + len] = 0;
+                m68k_write32(ctx, m + 16, ma);
+            }
+        }
+        break;
+    }
+    m68k_write32(ctx, m + 40, m68k_bstr_copy(ctx, dol->dol_Name));
+    return m;
+}
+
+/* the cursor a program passes back: our copy, or the LockDosList() handle */
+static struct DosList *m68k_doslist_in(struct M68KEmuContext *ctx, ULONG v)
+{
+    UWORD i;
+
+    for (i = 0; i < ctx->num_shadows; i++)
+        if (ctx->shadow_map[i].m68k_addr == v && ctx->shadow_map[i].type == SHADOW_DOSLIST)
+            return (struct DosList *)ctx->shadow_map[i].native_ptr;
+    return (struct DosList *)m68k_bptr_in(ctx, v);
+}
+
+/* dos -690: NextDosEntry(D1=dlist, D2=flags) */
+static IPTR thunk_dos_NextDosEntry_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct DosList *dol = m68k_doslist_in(ctx, THUNK_D(1));
+
+    return dol ? m68k_doslist_out(ctx, NextDosEntry(dol, THUNK_D(2))) : 0;
+}
+
+/* dos -684: FindDosEntry(D1=dlist, D2=name, D3=flags) */
+static IPTR thunk_dos_FindDosEntry_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct DosList *dol = m68k_doslist_in(ctx, THUNK_D(1));
+    CONST_STRPTR name = (CONST_STRPTR)m68k_to_host(ctx, THUNK_D(2));
+
+    return dol ? m68k_doslist_out(ctx, FindDosEntry(dol, name, THUNK_D(3))) : 0;
+}
+
+/* dos -114: Info(D1=lock, D2=infodata): nine longs in 68k order, the
+   volume node as a BPTR to its m68k DosList copy */
+static IPTR thunk_dos_Info_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    BPTR lock = m68k_bptr_in(ctx, THUNK_D(1));
+    ULONG mi = THUNK_D(2);
+    struct InfoData *id;
+    LONG ok;
+
+    if (!mi || !(id = AllocMem(sizeof(*id), MEMF_CLEAR)))
+        return 0;
+    ok = Info(lock, id);
+    if (ok)
+    {
+        m68k_write32(ctx, mi + 0,  id->id_NumSoftErrors);
+        m68k_write32(ctx, mi + 4,  id->id_UnitNumber);
+        m68k_write32(ctx, mi + 8,  id->id_DiskState);
+        m68k_write32(ctx, mi + 12, id->id_NumBlocks);
+        m68k_write32(ctx, mi + 16, id->id_NumBlocksUsed);
+        m68k_write32(ctx, mi + 20, id->id_BytesPerBlock);
+        m68k_write32(ctx, mi + 24, id->id_DiskType);
+        m68k_write32(ctx, mi + 28, m68k_doslist_out(ctx, (struct DosList *)BADDR(id->id_VolumeNode)) >> 2);
+        m68k_write32(ctx, mi + 32, id->id_InUse);
+    }
+    FreeMem(id, sizeof(*id));
+    return ok;
+}
+
 /* -390: ExamineFH(D1=fh, D2=fib) -> D0=success */
 static IPTR thunk_dos_ExamineFH_m(struct M68KEmuContext *ctx, void *cpu)
 {
@@ -2106,6 +2274,9 @@ const struct M68KThunkEntry m68kemu_thunks_dos[] = {
     { 738, thunk_dos_CompareDates_m },
     { 396, thunk_dos_SetFileDate_m },
     { 390, thunk_dos_ExamineFH_m },
+    { 690, thunk_dos_NextDosEntry_m },
+    { 114, thunk_dos_Info_m },
+    { 684, thunk_dos_FindDosEntry_m },
     { 744, thunk_dos_DateToStr_m },
     { 750, thunk_dos_StrToDate_m },
     { 108, thunk_dos_ExNext },
