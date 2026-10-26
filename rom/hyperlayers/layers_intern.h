@@ -82,6 +82,9 @@ struct IntLayer
     BOOL	    alphasurface;
     ULONG	    alphaformat;	/* cybergraphics PIXFMT_#? of an alpha surface (for reallocation) */
     ULONG	    surfbytes;	/* bytes of the surface counted in lie_SurfaceBytes (composited only) */
+
+    /* LA_InputShape: own copy, layer relative; NULL: input where it is seen */
+    struct Region  *inputshape;
 };
 
 #define IL(x) ((struct IntLayer *)(x))

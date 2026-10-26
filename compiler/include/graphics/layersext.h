@@ -40,6 +40,17 @@
 #define LA_Composited	(LA_AROS + 5)	/* BOOL. Default is FALSE */
 #define LA_Opacity	(LA_AROS + 6)	/* 0..255 constant alpha, 255 = opaque (default) */
 #define LA_AlphaSurface	(LA_AROS + 7)	/* BOOL. Surface with per pixel alpha. Default is FALSE */
+#define LA_InputShape	(LA_AROS + 8)	/* struct Region *. Default is NULL (input where the layer is seen) */
+/* LA_InputShape: where the layer takes input, apart from where it is seen.
+   Layer relative, as LA_ShapeRegion; layers.library keeps a copy of its own
+   (the caller's region may be disposed after the call). The point must
+   also lie inside the layer's visible shape; inside the input shape the
+   pixels' alpha does not matter, outside it the point goes to the layers
+   behind. An empty region takes no input at all; NULL (the default) keeps
+   the visible shape and, for an alpha surface, alpha 0 as the limits (see
+   IsLayerHitAt()). It is kept when the layer is moved or sized; change it
+   with ChangeLayerInputShape(). Works the same on composited and ordinary
+   layers. */
 /* An LA_AlphaSurface surface has the screen's pixel layout plus an alpha
    byte and starts fully transparent. Pens are mapped for the screen, so pen
    rendering leaves alpha 0; WritePixelArray() with RECTFMT_ARGB sets it.

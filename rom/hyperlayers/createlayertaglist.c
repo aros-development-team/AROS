@@ -34,6 +34,7 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
   struct Layer * behind = NULL, * infrontof = NULL, * parent = NULL;
   struct Layer * l;
   struct Region * layershape = NULL, *shape;
+  struct Region * inputshape = NULL;
   struct TagItem *tag, *tstate = tagList;
   
   while((tag = NextTagItem(&tstate)))
@@ -86,6 +87,10 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
 
     case LA_AlphaSurface:
         alphasurface = tag->ti_Data ? TRUE : FALSE;
+        break;
+
+    case LA_InputShape:
+        inputshape = (struct Region *)tag->ti_Data;
         break;
 
     }
@@ -251,6 +256,13 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
     l->Height = y1 - y0 + 1;
     IL(l)->opacity = 0xFF;
     IL(l)->alphaformat = alphaformat;
+    if (inputshape)
+    {
+      /* A copy: the caller's region may go away with the call */
+      if (NULL == (IL(l)->inputshape = NewRegion()) ||
+          !OrRegionRegion(inputshape, IL(l)->inputshape))
+        goto failexit;
+    }
     if (IS_COMPOSITED(l))
     {
       ULONG bytes;
@@ -495,6 +507,8 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
 failexit:
   if (l)
   {
+    if (IL(l)->inputshape)
+      DisposeRegion(IL(l)->inputshape);
     if (IL(l)->surface)
     {
       _AccountSurface(l, 0, LayersBase);
