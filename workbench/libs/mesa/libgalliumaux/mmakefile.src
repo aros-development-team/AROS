@@ -57,7 +57,8 @@ GALLIUM_AUXILIARY_GENERATED_SOURCES := \
             util/u_tracepoints.c \
             indices/u_indices_gen.c \
             indices/u_unfilled_gen.c \
-            draw/draw_nir_lower_opcodes.c
+            draw/draw_nir_lower_opcodes.c \
+            gallivm/lp_bld_nir_no_integer_algebraic.c
 GALLIUM_AUXILIARY_GENERATED_HEADERS := \
             driver_trace/tr_util.h \
             util/u_tracepoints.h
@@ -173,6 +174,15 @@ ifeq ($(MESA_GALLIUM_AUX_LAYOUT),new)
 # nir_algebraic pass for the draw module's software stages (Mesa >= 26.2)
 $(top_builddir)/$(CUR_MESADIR)/draw/draw_nir_lower_opcodes.c: \
 	$(top_srcdir)/$(CUR_MESADIR)/draw/draw_nir_lower_opcodes.py \
+	$(top_srcdir)/src/compiler/nir/nir_algebraic.py $(top_srcdir)/src/compiler/nir/nir_opcodes.py
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $< -p $(top_srcdir)/src/compiler/nir/ > $@.tmp && mv -f $@.tmp $@
+
+# and gallivm's for LLVM without native integers; it needs only NIR, so it
+# joins the generated objects here rather than libgalliumvm
+$(top_builddir)/$(CUR_MESADIR)/gallivm/lp_bld_nir_no_integer_algebraic.c: \
+	$(top_srcdir)/$(CUR_MESADIR)/gallivm/lp_bld_nir_no_integer_algebraic.py \
 	$(top_srcdir)/src/compiler/nir/nir_algebraic.py $(top_srcdir)/src/compiler/nir/nir_opcodes.py
 	%mkdir_q dir="$(dir $@)"
 	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
