@@ -130,6 +130,58 @@ public:
             (unsigned long)userFunc, (unsigned long)ret_addr);
     }
 
+    /* CINV, CPUSH and MOVE16 at pc: carry it out and point the exception
+       frame past it; false for any other F-line instruction */
+    bool emulate040(u32 pc)
+    {
+        u16 op = m68k_read16(ctx, pc);
+        u32 len, src, dst, i;
+
+        /* the core reports an F-line trap with pc0 past the opcode word */
+        if ((op & 0xFE00) != 0xF400 && (m68k_read16(ctx, pc - 2) & 0xFE00) == 0xF400)
+            op = m68k_read16(ctx, pc -= 2);
+
+        if ((op & 0xFF00) == 0xF400)                /* CINV, CPUSH */
+            len = 2;
+        else if ((op & 0xFFF8) == 0xF620)           /* MOVE16 (Ax)+,(Ay)+ */
+        {
+            u16 ext = m68k_read16(ctx, pc + 2);
+            int ax = op & 7, ay = (ext >> 12) & 7;
+
+            if ((ext & 0x8FFF) != 0x8000)
+                return false;
+            src = getA(ax) & ~15u;
+            dst = getA(ay) & ~15u;
+            for (i = 0; i < 16; i += 4)
+                m68k_write32(ctx, dst + i, m68k_read32(ctx, src + i));
+            setA(ax, getA(ax) + 16);
+            if (ay != ax)
+                setA(ay, getA(ay) + 16);
+            len = 4;
+        }
+        else if ((op & 0xFFE0) == 0xF600)           /* MOVE16 with an absolute address */
+        {
+            int ay = op & 7, mode = (op >> 3) & 3;
+            u32 abs = m68k_read32(ctx, pc + 2);
+
+            if (mode == 0 || mode == 2) { src = getA(ay); dst = abs; }   /* (Ay)+/(Ay) -> abs */
+            else                        { src = abs; dst = getA(ay); }   /* abs -> (Ay)+/(Ay) */
+            src &= ~15u;
+            dst &= ~15u;
+            for (i = 0; i < 16; i += 4)
+                m68k_write32(ctx, dst + i, m68k_read32(ctx, src + i));
+            if (mode < 2)
+                setA(ay, getA(ay) + 16);
+            len = 6;
+        }
+        else
+            return false;
+
+        setPC0(pc + len);
+        setPC(pc + len + 2);
+        return true;
+    }
+
     void ciaTrace(const char *what, u32 addr, u32 val) const
     {
         if (ctx->trace_calls && ctx->cia_trace < 24)
@@ -344,6 +396,14 @@ public:
                 else
                     m68k_write32(ctx, (ULONG)vector * 4, M68KEMU_FAULT_STUB);
             }
+            /* The 68040 cache instructions trap as F-line in the core: there
+               are no caches to flush, so CINV and CPUSH do nothing, and
+               MOVE16 copies its 16-byte line. A program's own F-line handler
+               (an FPU emulator) still gets the rest. */
+            else if (exc == M68kException::LINEF &&
+                     (vec == 0 || vec == RTE_ADDR || vec == M68KEMU_SKIP4_STUB || vec == M68KEMU_FAULT_STUB) &&
+                     emulate040(getPC0()))
+                m68k_write32(ctx, (ULONG)vector * 4, RTE_ADDR);
             else if (vec == 0)
                 m68k_write32(ctx, (ULONG)vector * 4, M68KEMU_FAULT_STUB);
 
