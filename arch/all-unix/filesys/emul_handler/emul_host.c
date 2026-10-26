@@ -866,48 +866,77 @@ LONG DoSetDate(struct emulbase *emulbase, char *name, struct DateStamp *date)
 
 SIPTR DoSetSize(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, ULONG mode, SIPTR *err)
 {
-    SIPTR absolute = 0;
-    SIPTR error = 0;
+    off_t oldpos, base = 0, newsize;
+    struct stat st;
+    SIPTR absolute = -1, error = 0;
 
     HostLib_Lock();
 
-    switch (mode) {
+    oldpos = LSeek((IPTR)fh->fd, 0, SEEK_CUR);
+    AROS_HOST_BARRIER
+    if (oldpos == (off_t)-1)
+    {
+        error = err_u2a(emulbase);
+        goto out;
+    }
+
+    switch (mode)
+    {
     case OFFSET_BEGINNING:
         break;
-
     case OFFSET_CURRENT:
-        absolute = LSeek((IPTR)fh->fd, 0, SEEK_CUR);
-        AROS_HOST_BARRIER
+        base = oldpos;
         break;
-
     case OFFSET_END:
-        absolute = LSeek((IPTR)fh->fd, 0, SEEK_END);
-        AROS_HOST_BARRIER
-        break;
-
-    default:
-        error = ERROR_UNKNOWN;
-    }
-
-    if (absolute == -1)
-        error = err_u2a(emulbase);
-
-    if (!error)
-    {
-        absolute += offset;
-        error = FTruncate((IPTR)fh->fd, absolute);
-        AROS_HOST_BARRIER
-        if (error)
+        if (emulbase->pdata.SysIFace->fstat((int)(IPTR)fh->fd, &st) < 0)
+        {
+            AROS_HOST_BARRIER
             error = err_u2a(emulbase);
+            goto out;
+        }
+        AROS_HOST_BARRIER
+        base = st.st_size;
+        break;
+    default:
+        error = ERROR_SEEK_ERROR;
+        goto out;
     }
 
+    /* The resulting size must fit both the host offset and packet result.
+     * Validate before adding so negative sizes and overflow cannot wrap. */
+    if (base < 0 || (SIPTR)base < 0 || (off_t)(SIPTR)base != base ||
+        offset < -(SIPTR)base ||
+        (offset > 0 && offset > (SIPTR)((IPTR)-1 >> 1) - (SIPTR)base))
+    {
+        error = ERROR_SEEK_ERROR;
+        goto out;
+    }
+    absolute = (SIPTR)base + offset;
+    newsize = absolute;
+    if (newsize < 0 || (SIPTR)newsize != absolute)
+    {
+        error = ERROR_SEEK_ERROR;
+        goto out;
+    }
+
+    if (FTruncate((IPTR)fh->fd, newsize) < 0)
+    {
+        AROS_HOST_BARRIER
+        error = err_u2a(emulbase);
+    }
+    else if (oldpos > newsize)
+    {
+        AROS_HOST_BARRIER
+        if (LSeek((IPTR)fh->fd, newsize, SEEK_SET) == (off_t)-1)
+            error = err_u2a(emulbase);
+        AROS_HOST_BARRIER
+    }
+    AROS_HOST_BARRIER
+
+out:
     HostLib_Unlock();
-
-    if (error)
-        absolute = -1;
-
     *err = error;
-    return absolute;
+    return error ? -1 : absolute;
 }
 
 LONG DoStatFS(struct emulbase *emulbase, char *path, struct InfoData *id)
