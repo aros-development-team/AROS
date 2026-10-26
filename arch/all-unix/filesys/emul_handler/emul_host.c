@@ -882,6 +882,12 @@ SIPTR DoSetSize(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, 
     struct stat st;
     SIPTR absolute = -1, error = 0;
 
+    if (fh->type != FHD_FILE)
+    {
+        *err = ERROR_OBJECT_WRONG_TYPE;
+        return -1;
+    }
+
     HostLib_Lock();
 
     oldpos = LSeek((IPTR)fh->fd, 0, SEEK_CUR);
