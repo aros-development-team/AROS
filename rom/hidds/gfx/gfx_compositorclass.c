@@ -2123,11 +2123,14 @@ static BOOL HIDDCompositorRectHasSurfaces(struct HIDDCompositorData *compdata, s
  * moment - a translucent window blinks on every update of itself or of what
  * lies under it. With a surface inside 'rect' this returns surfacebitmap
  * (surfacesem obtained; HIDDCompositorTargetDone() copies it to the display
- * and releases it), else 'target' unchanged.
+ * and releases it), else 'target' unchanged. A NULL 'rect' is the whole
+ * display.
  */
 static OOP_Object *HIDDCompositorTarget(struct HIDDCompositorData *compdata, OOP_Object *target, struct Rectangle *rect)
 {
-    if (target != compdata->displaybitmap || !rect || !HIDDCompositorRectHasSurfaces(compdata, rect))
+    if (!rect)
+        rect = &compdata->displayrect;
+    if (target != compdata->displaybitmap || !HIDDCompositorRectHasSurfaces(compdata, rect))
         return target;
 
     ObtainSemaphore(&compdata->surfacesem);
@@ -2159,6 +2162,8 @@ static void HIDDCompositorTargetDone(struct HIDDCompositorData *compdata, OOP_Ob
 {
     if (target != compdata->surfacebitmap || !target)
         return;
+    if (!rect)
+        rect = &compdata->displayrect;
     HIDD_Gfx_CopyBox(compdata->gfx, target, rect->MinX, rect->MinY, compdata->displaybitmap,
                      rect->MinX, rect->MinY, rect->MaxX - rect->MinX + 1, rect->MaxY - rect->MinY + 1, compdata->gc);
     HIDD_BM_UpdateRect(compdata->displaybitmap, rect->MinX, rect->MinY,
@@ -2403,19 +2408,42 @@ static VOID HIDDCompositorRedrawVisibleRegions(struct HIDDCompositorData *compda
         HIDDCompositorRecalculateVisibleRegions(compdata);
     }
 
-    if ((compdata->flags & COMPSTATEF_HASALPHA) && (compdata->intermedbitmap))
-        renderTarget = compdata->intermedbitmap;
-    else
-        renderTarget = HIDDCompositorTarget(compdata, renderTarget, drawrect);
+    /*
+     * Without the region nothing below gets drawn: leave the display as it
+     * is rather than present a target that was not drawn this time.
+     */
+    dispvisregion = NewRegion();
+#ifdef COMPOSITOR_FAULT_INJECTION
+    /* Test builds only: fail as if out of memory while the test holds this name */
+    if (dispvisregion)
+    {
+        BOOL fail;
 
-    if ((dispvisregion = NewRegion()) != NULL)
+        Forbid();
+        fail = FindSemaphore("compositor.fail.redrawregion") != NULL;
+        Permit();
+        if (fail)
+        {
+            DisposeRegion(dispvisregion);
+            dispvisregion = NULL;
+        }
+    }
+#endif
+    if (dispvisregion &&
+        !OrRectRegion(dispvisregion, drawrect ? drawrect : &compdata->displayrect))
+    {
+        DisposeRegion(dispvisregion);
+        dispvisregion = NULL;
+    }
+
+    if (dispvisregion)
     {
         struct RegionRectangle *dispclrrect;
 
-        if (drawrect)
-            OrRectRegion(dispvisregion, drawrect);
+        if ((compdata->flags & COMPSTATEF_HASALPHA) && (compdata->intermedbitmap))
+            renderTarget = compdata->intermedbitmap;
         else
-            OrRectRegion(dispvisregion, &compdata->displayrect);
+            renderTarget = HIDDCompositorTarget(compdata, renderTarget, drawrect);
 
         ForeachNode(&compdata->bitmapstack, n)
         {
@@ -2491,24 +2519,25 @@ static VOID HIDDCompositorRedrawVisibleRegions(struct HIDDCompositorData *compda
             HIDDCompositorRedrawAlphaRegions(compdata, drawrect);
         }
         DisposeRegion(dispvisregion);
-    }
-    if (renderTarget == compdata->surfacebitmap)
-        HIDDCompositorTargetDone(compdata, renderTarget, drawrect);
-    else if (renderTarget != compdata->displaybitmap)
-    {
-        struct Rectangle *r = drawrect ? drawrect : &compdata->displayrect;
 
-        HIDD_Gfx_CopyBox(compdata->gfx, renderTarget,
-                r->MinX, r->MinY,
-                compdata->displaybitmap,
-                r->MinX, r->MinY,
-                r->MaxX - r->MinX + 1,
-                r->MaxY - r->MinY + 1,
-                compdata->gc);
-        HIDD_BM_UpdateRect(compdata->displaybitmap,
-                r->MinX, r->MinY,
-                r->MaxX - r->MinX + 1,
-                r->MaxY - r->MinY + 1);
+        if (renderTarget == compdata->surfacebitmap)
+            HIDDCompositorTargetDone(compdata, renderTarget, drawrect);
+        else if (renderTarget != compdata->displaybitmap)
+        {
+            struct Rectangle *r = drawrect ? drawrect : &compdata->displayrect;
+
+            HIDD_Gfx_CopyBox(compdata->gfx, renderTarget,
+                    r->MinX, r->MinY,
+                    compdata->displaybitmap,
+                    r->MinX, r->MinY,
+                    r->MaxX - r->MinX + 1,
+                    r->MaxY - r->MinY + 1,
+                    compdata->gc);
+            HIDD_BM_UpdateRect(compdata->displaybitmap,
+                    r->MinX, r->MinY,
+                    r->MaxX - r->MinX + 1,
+                    r->MaxY - r->MinY + 1);
+        }
     }
 }
 
