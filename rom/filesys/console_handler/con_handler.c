@@ -578,10 +578,11 @@ static void close_con(struct filehandle *fh)
 
     CloseLibrary((struct Library*) fh->intuibase);
     CloseLibrary((struct Library*) fh->dosbase);
+    CloseLibrary(fh->utilbase);
     CloseLibrary((struct Library*) fh->workbenchbase);
     CloseLibrary((struct Library*) fh->iconbase);
 
-    /* These libraries are opened only if completion was used */
+    /* Graphics is opened only if completion was used. */
     if (fh->gfxbase)
         CloseLibrary((struct Library*) fh->gfxbase);
     if (fh->gtbase)
@@ -672,6 +673,7 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
     if (!fh->dosbase || !fh->utilbase ||
         (!(fh->flags & FHFLG_DEVICEMODE) && (!fh->intuibase || !fh->inputbase))) {
         CloseLibrary((APTR) fh->utilbase);
+        CloseLibrary(fh->gtbase);
         CloseLibrary((APTR) fh->dosbase);
         CloseLibrary((APTR) fh->intuibase);
         CloseLibrary((APTR) fh->workbenchbase);
