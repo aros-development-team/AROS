@@ -3563,7 +3563,156 @@ static IPTR thunk_gfx_Flood_m(struct M68KEmuContext *ctx, void *cpu)
     return (IPTR)Flood(rp, THUNK_D(2), (WORD)THUNK_D(0), (WORD)THUNK_D(1));
 }
 
+/* The program's bitplanes behind its screen changed in a rectangle: put the
+   recomposed pixels on the native screen in one go. */
+static void planar_refresh(struct M68KEmuContext *ctx, LONG x0, LONG y0, LONG w, LONG h)
+{
+    struct Screen *scr = (struct Screen *)ctx->plane_screen;
+    UBYTE *row;
+    LONG x, y;
+
+    if (!scr || w <= 0 || h <= 0)
+        return;
+    if (x0 < 0) { w += x0; x0 = 0; }
+    if (y0 < 0) { h += y0; y0 = 0; }
+    if (x0 + w > (LONG)(ctx->plane_bpr * 8)) w = ctx->plane_bpr * 8 - x0;
+    if (y0 + h > (LONG)ctx->plane_rows) h = ctx->plane_rows - y0;
+    if (w <= 0 || h <= 0 || !(row = AllocVec(w, MEMF_ANY)))
+        return;
+    for (y = y0; y < y0 + h; y++)
+    {
+        for (x = 0; x < w; x++)
+        {
+            UBYTE pen = 0;
+            ULONG xb = (x0 + x) >> 3, bit = 0x80 >> ((x0 + x) & 7), p;
+            for (p = 0; p < ctx->plane_depth; p++)
+                if (ctx->mem[ctx->plane_base + p * ctx->plane_size + y * ctx->plane_bpr + xb] & bit)
+                    pen |= (UBYTE)(1 << p);
+            row[x] = pen;
+        }
+        WriteChunkyPixels(&scr->RastPort, x0, y, x0 + w - 1, y, row, w);
+    }
+    FreeVec(row);
+}
+
+/* an m68k struct BitMap: BytesPerRow(2) Rows(2) Flags(1) Depth(1) pad(2) Planes[8](4 each) */
+struct M68KBitMapView { ULONG bpr, rows, depth; ULONG planes[8]; };
+
+static BOOL bitmap_view(struct M68KEmuContext *ctx, ULONG mbm, struct M68KBitMapView *v)
+{
+    if (!mbm || mbm + 40 > ctx->mem_size || shadow_lookup(ctx, mbm))
+        return FALSE;
+    v->bpr = m68k_read16(ctx, mbm);
+    v->rows = m68k_read16(ctx, mbm + 2);
+    v->depth = ctx->mem[mbm + 5];
+    if (v->depth > 8) v->depth = 8;
+    for (int i = 0; i < 8; i++)
+        v->planes[i] = m68k_read32(ctx, mbm + 8 + 4 * i);
+    return TRUE;
+}
+
+/* a native BitMap over an m68k one's planes (planar, so the bytes match) */
+static void bitmap_native(struct M68KEmuContext *ctx, struct M68KBitMapView *v, struct BitMap *nb)
+{
+    memset(nb, 0, sizeof(*nb));
+    nb->BytesPerRow = v->bpr;
+    nb->Rows = v->rows;
+    nb->Depth = v->depth;
+    for (ULONG i = 0; i < v->depth; i++)
+    {
+        ULONG pl = v->planes[i];
+        nb->Planes[i] = pl == 0xFFFFFFFF ? (PLANEPTR)-1 : (pl && pl < ctx->mem_size ? (PLANEPTR)(ctx->mem + pl) : NULL);
+    }
+}
+
+static inline UBYTE minterm_bit(UBYTE m, UBYTE b, UBYTE c)
+{
+    return ((m & 0x80) && b && c) || ((m & 0x40) && b && !c) || ((m & 0x20) && !b && c) || ((m & 0x10) && !b && !c);
+}
+
+/* -30: BltBitMap(A0=src, D0=srcX, D1=srcY, A1=dst, D2=dstX, D3=dstY, D4=w, D5=h,
+   D6=minterm, D7=mask, A2=tempA) -> D0=planes */
+static IPTR thunk_gfx_BltBitMap_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG msrc = THUNK_A(0), mdst = THUNK_A(1);
+    LONG sx = (WORD)THUNK_D(0), sy = (WORD)THUNK_D(1), dx = (WORD)THUNK_D(2), dy = (WORD)THUNK_D(3);
+    LONG w = (WORD)THUNK_D(4), h = (WORD)THUNK_D(5);
+    UBYTE minterm = (UBYTE)THUNK_D(6), mask = (UBYTE)THUNK_D(7);
+    struct M68KBitMapView vs, vd;
+    BOOL ms = bitmap_view(ctx, msrc, &vs), md = bitmap_view(ctx, mdst, &vd);
+    LONG planes = 0;
+
+    if (w <= 0 || h <= 0)
+        return 0;
+    if (ms && md)
+    {
+        UBYTE *bits;
+        ULONG p;
+        LONG x, y;
+
+        /* clip to both bitmaps */
+        if (sx < 0) { w += sx; dx -= sx; sx = 0; }
+        if (sy < 0) { h += sy; dy -= sy; sy = 0; }
+        if (dx < 0) { w += dx; sx -= dx; dx = 0; }
+        if (dy < 0) { h += dy; sy -= dy; dy = 0; }
+        if (sx + w > (LONG)(vs.bpr * 8)) w = vs.bpr * 8 - sx;
+        if (dx + w > (LONG)(vd.bpr * 8)) w = vd.bpr * 8 - dx;
+        if (sy + h > (LONG)vs.rows) h = vs.rows - sy;
+        if (dy + h > (LONG)vd.rows) h = vd.rows - dy;
+        if (w <= 0 || h <= 0 || !(bits = AllocVec(w * h, MEMF_ANY)))
+            return 0;
+        for (p = 0; p < vd.depth; p++)
+        {
+            ULONG sp = p < vs.depth ? vs.planes[p] : 0, dp = vd.planes[p];
+            if (!(mask & (1 << p)) || !dp || dp == 0xFFFFFFFF)
+                continue;
+            /* read the source rectangle first: source and destination may overlap */
+            for (y = 0; y < h; y++)
+                for (x = 0; x < w; x++)
+                {
+                    UBYTE b = 0;
+                    if (sp == 0xFFFFFFFF) b = 1;
+                    else if (sp)
+                    {
+                        ULONG a = sp + (sy + y) * vs.bpr + ((sx + x) >> 3);
+                        b = a < ctx->mem_size && (ctx->mem[a] & (0x80 >> ((sx + x) & 7))) ? 1 : 0;
+                    }
+                    bits[y * w + x] = b;
+                }
+            for (y = 0; y < h; y++)
+                for (x = 0; x < w; x++)
+                {
+                    ULONG a = dp + (dy + y) * vd.bpr + ((dx + x) >> 3);
+                    UBYTE bit = 0x80 >> ((dx + x) & 7);
+                    if (a >= ctx->mem_size) continue;
+                    if (minterm_bit(minterm, bits[y * w + x], (ctx->mem[a] & bit) != 0))
+                        ctx->mem[a] |= bit;
+                    else
+                        ctx->mem[a] &= ~bit;
+                }
+            planes++;
+        }
+        FreeVec(bits);
+    }
+    else
+    {
+        struct BitMap nbs, nbd, *src, *dst;
+        if (ms) { bitmap_native(ctx, &vs, &nbs); src = &nbs; }
+        else src = (struct BitMap *)shadow_lookup(ctx, msrc);
+        if (md) { bitmap_native(ctx, &vd, &nbd); dst = &nbd; }
+        else dst = (struct BitMap *)shadow_lookup(ctx, mdst);
+        if (!src || !dst)
+            return 0;
+        planes = BltBitMap(src, sx, sy, dst, dx, dy, w, h, minterm, mask, NULL);
+    }
+    /* the planes behind the program's screen: show the change */
+    if (md && vd.planes[0] == ctx->plane_base && ctx->plane_base)
+        planar_refresh(ctx, dx, dy, w, h);
+    return (IPTR)planes;
+}
+
 const struct M68KThunkEntry m68kemu_thunks_graphics_manual[] = {
+    { 30, thunk_gfx_BltBitMap_m },
     { 282, thunk_gfx_InitArea_m },
     { 468, thunk_gfx_InitTmpRas_m },
     { 186, thunk_gfx_AreaEllipse_m },
