@@ -3440,6 +3440,46 @@ static IPTR thunk_gfx_LoadRGB4(struct M68KEmuContext *ctx, void *cpu)
     return 0;
 }
 
+/* -900: GetRGB32(A0=cm, D0=first, D1=ncolors, A1=table): the table is m68k longs */
+static IPTR thunk_gfx_GetRGB32(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct ColorMap *cm = (struct ColorMap *)m68k_to_host_or_shadow(ctx, THUNK_A(0));
+    ULONG first = THUNK_D(0), n = THUNK_D(1), table = THUNK_A(1);
+    ULONG *rgb;
+
+    if (!cm || !table || !n) return 0;
+    if (n > 256) n = 256;
+    if (!(rgb = AllocMem(n * 12, MEMF_CLEAR))) return 0;
+    GetRGB32(cm, first, n, rgb);
+    for (ULONG i = 0; i < n * 3; i++)
+        m68k_write32(ctx, table + i * 4, rgb[i]);
+    FreeMem(rgb, n * 12);
+    return 0;
+}
+
+/* -882: LoadRGB32(A0=vp, A1=table): runs of (count << 16 | first) and count
+   r,g,b longs, ended by a zero count */
+static IPTR thunk_gfx_LoadRGB32(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct ViewPort *vp = (struct ViewPort *)m68k_to_host_or_shadow(ctx, THUNK_A(0));
+    ULONG table = THUNK_A(1), p = table, words = 0, count, *native;
+
+    if (!vp || !table) return 0;
+    do
+    {
+        count = m68k_read32(ctx, p) >> 16;
+        words += 1 + count * 3;
+        p += (1 + count * 3) * 4;
+        if (words > 256 * 3 + 64) return 0;      /* not a colour table */
+    } while (count);
+    if (!(native = AllocMem(words * 4, MEMF_ANY))) return 0;
+    for (ULONG i = 0; i < words; i++)
+        native[i] = m68k_read32(ctx, table + i * 4);
+    LoadRGB32(vp, native);
+    FreeMem(native, words * 4);
+    return 0;
+}
+
 /* an m68k TextAttr: ta_Name(4) ta_YSize(2) ta_Style(1) ta_Flags(1) */
 static BOOL textattr_in(struct M68KEmuContext *ctx, ULONG m68k_ta, struct TextAttr *ta)
 {
@@ -3752,6 +3792,8 @@ const struct M68KThunkEntry m68kemu_thunks_graphics_manual[] = {
     { 756, thunk_graphics_GetDisplayInfoData_m },
     { 72,  thunk_gfx_OpenFont },
     { 192, thunk_gfx_LoadRGB4 },
+    { 900, thunk_gfx_GetRGB32 },
+    { 882, thunk_gfx_LoadRGB32 },
     { 240, thunk_gfx_Move },
     { 60,  thunk_gfx_Text },
     { 342, thunk_gfx_SetAPen },
