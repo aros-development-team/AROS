@@ -206,6 +206,29 @@ diff -ruN mesa-26.2.5/src/egl/main/egldisplay.h mesa-26.2.5.aros/src/egl/main/eg
  
     _EGL_NUM_PLATFORMS,
     _EGL_INVALID_PLATFORM = -1
+diff -ruN mesa-26.2.5/src/gallium/auxiliary/cso_cache/cso_cache.h mesa-26.2.5.aros/src/gallium/auxiliary/cso_cache/cso_cache.h
+--- mesa-26.2.5/src/gallium/auxiliary/cso_cache/cso_cache.h	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/gallium/auxiliary/cso_cache/cso_cache.h	2026-10-26 19:03:29.000000000 +0000
+@@ -182,11 +182,17 @@
+    const unsigned *ikey = (const unsigned *)key;
+    unsigned num_elements = key_size / 4;
+ 
+-   assert(key_size % 4 == 0);
+-
++   /* Not every key is a whole number of words: m68k aligns structures to
++    * two bytes, and the compact blend key comes out two bytes short of a
++    * multiple of four. Fold the tail in rather than assert on it.
++    */
+    for (unsigned i = 0; i < num_elements; i++)
+       hash ^= ikey[i];
+ 
++   const unsigned char *tail = (const unsigned char *)key + num_elements * 4;
++   for (unsigned i = 0; i < (unsigned)key_size % 4; i++)
++      hash ^= (unsigned)tail[i] << (8 * i);
++
+    return hash;
+ }
+ 
 diff -ruN mesa-26.2.5/src/gallium/auxiliary/nir/nir_to_tgsi.c mesa-26.2.5.aros/src/gallium/auxiliary/nir/nir_to_tgsi.c
 --- mesa-26.2.5/src/gallium/auxiliary/nir/nir_to_tgsi.c	2026-10-14 16:12:24.000000000 +0100
 +++ mesa-26.2.5.aros/src/gallium/auxiliary/nir/nir_to_tgsi.c	2026-10-24 22:33:57.364380604 +0100
