@@ -182,6 +182,14 @@ public:
         return true;
     }
 
+    /* the core keeps all 16 low CACR bits on a 68040; the chip implements
+       only DE (bit 31) and IE (bit 15), which is how programs tell an 040
+       from an 020/030 */
+    void didChangeCACR(u32 value) override
+    {
+        reg.cacr &= 0x80008000;
+    }
+
     void ciaTrace(const char *what, u32 addr, u32 val) const
     {
         if (ctx->trace_calls && ctx->cia_trace < 24)
@@ -364,7 +372,8 @@ public:
     {
         if (exc != M68kException::LINEA)
         {
-            ULONG vec = m68k_read32(ctx, (ULONG)vector * 4);
+            /* a program may point VBR at its own table (CPU probes do) */
+            ULONG vec = m68k_read32(ctx, getVBR() + (ULONG)vector * 4);
 
             ctx->last_exc = (ULONG)exc;
             ctx->last_exc_pc = getPC0();
@@ -391,10 +400,10 @@ public:
                         setPC0(next);
                         setPC(next + 2);
                     }
-                    m68k_write32(ctx, (ULONG)vector * 4, RTE_ADDR);
+                    m68k_write32(ctx, getVBR() + (ULONG)vector * 4, RTE_ADDR);
                 }
                 else
-                    m68k_write32(ctx, (ULONG)vector * 4, M68KEMU_FAULT_STUB);
+                    m68k_write32(ctx, getVBR() + (ULONG)vector * 4, M68KEMU_FAULT_STUB);
             }
             /* The 68040 cache instructions trap as F-line in the core: there
                are no caches to flush, so CINV and CPUSH do nothing, and
@@ -403,9 +412,9 @@ public:
             else if (exc == M68kException::LINEF &&
                      (vec == 0 || vec == RTE_ADDR || vec == M68KEMU_SKIP4_STUB || vec == M68KEMU_FAULT_STUB) &&
                      emulate040(getPC0()))
-                m68k_write32(ctx, (ULONG)vector * 4, RTE_ADDR);
+                m68k_write32(ctx, getVBR() + (ULONG)vector * 4, RTE_ADDR);
             else if (vec == 0)
-                m68k_write32(ctx, (ULONG)vector * 4, M68KEMU_FAULT_STUB);
+                m68k_write32(ctx, getVBR() + (ULONG)vector * 4, M68KEMU_FAULT_STUB);
 
             if (ctx->trace_calls && ctx->trace_exc < 40)
             {
