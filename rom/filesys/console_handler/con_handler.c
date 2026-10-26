@@ -1475,7 +1475,7 @@ end:
 
     if (dp) {
         D(bug("[con:handler] Replying packet 0x%p, error %ld\n", dp, error));
-        replypkt2(dp, DOSFALSE, error);
+        replypkt2(dp, error ? DOSFALSE : DOSTRUE, error);
     }
 
     if (mp)
