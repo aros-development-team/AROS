@@ -11,6 +11,7 @@
 #include <dos/dosextens.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <proto/graphics.h>
 #include <string.h>
 #include <stddef.h>
 
@@ -144,6 +145,20 @@ void m68k_screen_extras(struct M68KEmuContext *ctx, ULONG ms, struct Screen *scr
         shadow_register(ctx, ms + M68K_SCR_VIEWPORT, &scr->ViewPort, 6);
     if (!shadow_lookup(ctx, ms + M68K_SCR_RASTPORT))
         shadow_register(ctx, ms + M68K_SCR_RASTPORT, &scr->RastPort, 3);
+
+    /* sc_BitMap of a screen the program did not open: an AGA-like 8 plane
+       description (no planes), so 1 << Depth names the 256 pens of the
+       screen's ColorMap rather than 1 << 24 or 1 << 32 */
+    if (!m68k_read32(ctx, ms + M68K_SCR_BITMAP + 8))
+    {
+        ULONG depth = scr->RastPort.BitMap ? GetBitMapAttr(scr->RastPort.BitMap, BMA_DEPTH) : 8;
+
+        m68k_write16(ctx, ms + M68K_SCR_BITMAP + 0, (UWORD)(((scr->Width + 15) >> 4) << 1));
+        m68k_write16(ctx, ms + M68K_SCR_BITMAP + 2, (UWORD)scr->Height);
+        ctx->mem[ms + M68K_SCR_BITMAP + 4] = 0;
+        ctx->mem[ms + M68K_SCR_BITMAP + 5] = (UBYTE)(depth > 8 ? 8 : depth);
+        m68k_write32(ctx, ms + M68K_SCR_RASTPORT + 4, ms + M68K_SCR_BITMAP);
+    }
     if (!scr->ViewPort.ColorMap || !cml)
         return;
     for (UWORD i = 0; i < ctx->num_shadows; i++)
@@ -160,6 +175,32 @@ void m68k_screen_extras(struct M68KEmuContext *ctx, ULONG ms, struct Screen *scr
         }
     }
     m68k_write32(ctx, ms + M68K_SCR_VIEWPORT + 4, cm);
+}
+
+/* dri_Pens and dri_Font point at native data: give the program a big-endian
+   copy of the pen table (one per table, type 9) and a TextFont shadow */
+static void m68k_drawinfo_extras(struct M68KEmuContext *ctx, ULONG md, struct DrawInfo *dri)
+{
+    ULONG pens = 0;
+    UWORD n = 0, i;
+
+    if (dri->dri_Pens)
+    {
+        n = dri->dri_NumPens > 64 ? 64 : dri->dri_NumPens;
+        for (i = 0; i < ctx->num_shadows; i++)
+            if (ctx->shadow_map[i].native_ptr == dri->dri_Pens && ctx->shadow_map[i].type == 9)
+                { pens = ctx->shadow_map[i].m68k_addr; break; }
+        if (!pens && (pens = M68KEmu_HeapAlloc(ctx, (n + 1) * 2, 0)))
+            shadow_register(ctx, pens, dri->dri_Pens, 9);
+        if (pens)
+        {
+            for (i = 0; i < n; i++)
+                m68k_write16(ctx, pens + i * 2, dri->dri_Pens[i]);
+            m68k_write16(ctx, pens + n * 2, (UWORD)~0);
+        }
+    }
+    m68k_write32(ctx, md + 4, pens);
+    m68k_write32(ctx, md + 8, dri->dri_Font ? shadow_create_by_name(ctx, "TextFont", dri->dri_Font) : 0);
 }
 
 /* One shadow per native structure: a program that asks again (every
@@ -186,6 +227,8 @@ ULONG shadow_create(struct M68KEmuContext *ctx,
     sync_fields(ctx, layout->fields, m, native);
     if (!strcmp(layout->name, "Screen"))
         m68k_screen_extras(ctx, m, (struct Screen *)native);
+    else if (!strcmp(layout->name, "DrawInfo"))
+        m68k_drawinfo_extras(ctx, m, (struct DrawInfo *)native);
     return m;
 }
 
