@@ -717,7 +717,7 @@ static BOOL SearchInDir(ULONG dirnodenr, STRPTR objectname, union objectinfo *in
 	UBYTE intl_name[PATHSIZE + 1];   /* ctodstr(): length, name and NUL */
 
 	ENTER("SearchInDir");
-	ctodstr(objectname, intl_name);
+	ctodstrn(objectname, intl_name, PATHSIZE - 1);
 
 	/* truncate */
 	if (intl_name[0] > FILENAMESIZE - 1)
@@ -4064,7 +4064,7 @@ static struct deldirentry *SearchInDeldir(STRPTR delname, union objectinfo *resu
 	stcd_i(delnumptr + 1, (int *) &slotnr);  /* retrieve the slotnr  */
 
 	*delnumptr = 0;             /* patch string to get filename part  */
-	ctodstr(delname, intl_name);
+	ctodstrn(delname, intl_name, PATHSIZE - 1);
 
 	/* truncate to maximum length */
 	if (intl_name[0] > FILENAMESIZE - 1)

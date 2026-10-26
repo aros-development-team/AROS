@@ -137,7 +137,7 @@ BOOL dstricmp (DSTR dstring, STRPTR cstring)
   BOOL result;
   UBYTE temp[PATHSIZE + 1];   /* ctodstr(): length, name and NUL */
 
-	ctodstr (cstring, temp);
+	ctodstrn (cstring, temp, PATHSIZE - 1);
 	intltoupper (temp);
 	result = intlcmp (temp, dstring);  
 	return result;

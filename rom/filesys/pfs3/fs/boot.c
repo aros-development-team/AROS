@@ -406,9 +406,11 @@ void __saveds EntryPoint (struct ExecBase *SysBase)
 
 #if MULTIUSER
 				/* get current task owner */
+				g->user = NULL;
 				if (g->muFS_ready)
 					g->user = muGetTaskExtOwner (pkt->dp_Port->mp_SigTask);
-				else
+				/* tasks nobody has logged in have no owner */
+				if (!g->user)
 					g->user = (APTR) &NOBODY;
 #endif
 				/* handle the packet */
@@ -419,7 +421,7 @@ void __saveds EntryPoint (struct ExecBase *SysBase)
 
 #if MULTIUSER
 				/* free structure previously allocated by muGetTaskOwner */
-				if (g->muFS_ready)
+				if (g->user != (APTR) &NOBODY)
 					muFreeExtOwner (g->user);
 #endif  
 

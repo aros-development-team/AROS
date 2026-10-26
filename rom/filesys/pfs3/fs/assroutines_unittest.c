@@ -57,6 +57,17 @@ int main(void)
 	ctodstr("foobar", tmp);
 	if (tmp[0] != 6 || memcmp(tmp+1, "foobar", 6)) { printf("failed \"foobar\"!\n"); return 5; }
 
+	printf("\nctodstrn:\n");
+	ctodstrn("foobar", tmp, 3);
+	if (tmp[0] != 3 || memcmp(tmp+1, "foo", 4)) { printf("failed \"foobar\" 3!\n"); return 5; }
+	ctodstrn("foo", tmp, 255);
+	if (tmp[0] != 3 || memcmp(tmp+1, "foo", 4)) { printf("failed \"foo\" 255!\n"); return 5; }
+	memset(t2, 'x', sizeof(t2) - 1);
+	t2[sizeof(t2) - 1] = 0;
+	memset(tmp, 0xaa, sizeof(tmp));
+	ctodstrn(t2, tmp, 10);
+	if (tmp[0] != 10 || tmp[11] != 0 || tmp[12] != 0xaa) { printf("failed long!\n"); return 5; }
+
 	printf("\nstcu_d:\n");
 	stcu_d(tmp, 0);
 	if (strcmp(tmp, "0")) { printf("failed 0\n"); return 5; }
