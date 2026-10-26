@@ -184,9 +184,10 @@ static BOOL st_Recompute(struct SurfaceTrack *st, BOOL mayBlock)
 
     st->Stale = FALSE;      /* damage arriving from here on sets it again */
 
+    /* Our own lock: damage from inside a layers operation, ClipRects not final yet */
     if (mayBlock)
         LockLayerRom(l);
-    else if (!AttemptLockLayerRom(l))
+    else if ((l->Lock.ss_Owner == FindTask(NULL)) || !AttemptLockLayerRom(l))
     {
         st->Stale = TRUE;
         return FALSE;
