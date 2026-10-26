@@ -64,6 +64,7 @@ void M68KEmu_DestroyContext(struct M68KEmuContext *ctx)
     if (!ctx) return;
     m68k_vbl_close(ctx);
     if (ctx->handles) FreeVec(ctx->handles);
+    m68k_boopsi_cleanup(ctx);
     if (ctx->mem) FreeMem(ctx->mem, ctx->mem_size);
     FreeMem(ctx, sizeof(struct M68KEmuContext));
 }

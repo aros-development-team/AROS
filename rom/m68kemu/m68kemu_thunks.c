@@ -45,6 +45,12 @@ extern const ULONG m68kemu_thunks_graphics_manual_count;
 /* Forward declarations for shadow helpers defined below */
 ULONG shadow_register(struct M68KEmuContext *ctx, ULONG m68k_addr, void *native, UWORD type);
 static ULONG setup_window_shadow(struct M68KEmuContext *ctx, struct Window *w);
+IPTR m68k_NewObjectA(struct M68KEmuContext *ctx, void *cpu);
+IPTR m68k_DisposeObject(struct M68KEmuContext *ctx, void *cpu);
+IPTR m68k_SetAttrsA(struct M68KEmuContext *ctx, void *cpu);
+IPTR m68k_GetAttr(struct M68KEmuContext *ctx, void *cpu);
+IPTR m68k_SetGadgetAttrsA(struct M68KEmuContext *ctx, void *cpu);
+IPTR m68k_DoGadgetMethodA(struct M68KEmuContext *ctx, void *cpu);
 
 /* Open a library by name and return its fake base (no cpu needed) */
 ULONG M68KEmu_OpenLibrary(struct M68KEmuContext *ctx, const char *name)
@@ -99,6 +105,10 @@ static IPTR thunk_exec_OpenLibrary(struct M68KEmuContext *ctx, void *cpu)
     if (!name) return 0;
 
     ULONG base = M68KEmu_OpenLibrary(ctx, name);
+    if (base) return (IPTR)base;
+
+    /* a native BOOPSI class library */
+    base = m68k_open_class_library(ctx, name, THUNK_D(0));
     if (base) return (IPTR)base;
 
     /* No native library found — try loading m68k .library from LIBS: */
@@ -634,6 +644,11 @@ static IPTR thunk_intuition_OpenWindow(struct M68KEmuContext *ctx, void *cpu)
 }
 
 /* Common Window shadow setup — used by OpenWindow and OpenWindowTagList */
+ULONG m68k_window_shadow(struct M68KEmuContext *ctx, struct Window *w)
+{
+    return setup_window_shadow(ctx, w);
+}
+
 static ULONG setup_window_shadow(struct M68KEmuContext *ctx, struct Window *w)
 {
     /* m68k Window shadow */
@@ -2407,7 +2422,13 @@ static void border_free(struct Border *b)
 static IPTR thunk_intuition_DrawImage(struct M68KEmuContext *ctx, void *cpu)
 {
     struct RastPort *rp = resolve_rp(ctx, THUNK_A(0));
-    struct Image *im = rp ? image_from_m68k(ctx, THUNK_A(1), 64) : NULL;
+    struct Image *im;
+    if (rp && (im = shadow_lookup(ctx, THUNK_A(1))))
+    {
+        DrawImage(rp, im, (LONG)THUNK_D(0), (LONG)THUNK_D(1));
+        return 0;
+    }
+    im = rp ? image_from_m68k(ctx, THUNK_A(1), 64) : NULL;
     if (im) { DrawImage(rp, im, (LONG)THUNK_D(0), (LONG)THUNK_D(1)); image_free(im); }
     return 0;
 }
@@ -3208,6 +3229,12 @@ const struct M68KThunkEntry m68kemu_thunks_intuition_manual[] = {
     { 204, thunk_intuition_OpenWindow },
     { 348, thunk_intuition_AutoRequest },
     { 588, thunk_intuition_EasyRequestArgs },
+    { 636, m68k_NewObjectA },
+    { 642, m68k_DisposeObject },
+    { 648, m68k_SetAttrsA },
+    { 654, m68k_GetAttr },
+    { 660, m68k_SetGadgetAttrsA },
+    { 810, m68k_DoGadgetMethodA },
     { 606, thunk_intuition_OpenWindowTagList },
     { 72, thunk_intuition_CloseWindow },
     { 198, thunk_intuition_OpenScreen },
