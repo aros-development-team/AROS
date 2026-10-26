@@ -140,7 +140,7 @@ static BOOL ovl_pooled(struct VideoCoreGfx_staticdata *xsd)
 }
 
 /* What the last commit armed: a vblank count, or a frame on HVS6. */
-static ULONG ovl_armed(struct VideoCoreGfx_staticdata *xsd)
+ULONG vcgfx_ovl_armed(struct VideoCoreGfx_staticdata *xsd)
 {
     return (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6) ? xsd->vcsd_HVS6.h6_OvlFrame
                                                 : xsd->vcsd_HVS.hvs_FlipArmed;
@@ -178,8 +178,18 @@ static void ovl_clear(struct vcgfx_ovl *e)
     e->ov_Shown  = FALSE;
 }
 
+static void ovl_fill(struct vcgfx_ovl *e, APTR client, BOOL gl, OOP_Object *bm,
+                     const struct vc4gfx_overlay *desc)
+{
+    e->ov_Client = client;
+    e->ov_GL     = gl;
+    e->ov_BM     = bm;
+    e->ov_BMData = OOP_INST_DATA(OOP_OCLASS(bm), bm);
+    e->ov_Desc   = *desc;
+}
+
 /* Show or move a client's overlay. FALSE = not shown, the client blits. */
-BOOL vcgfx_ovl_show(struct VideoCoreGfx_staticdata *xsd, APTR client,
+BOOL vcgfx_ovl_show(struct VideoCoreGfx_staticdata *xsd, APTR client, BOOL gl,
                     OOP_Object *bm, const struct vc4gfx_overlay *desc)
 {
     struct vcgfx_ovl *e = vcgfx_ovl_find(xsd, client), *held;
@@ -192,15 +202,10 @@ BOOL vcgfx_ovl_show(struct VideoCoreGfx_staticdata *xsd, APTR client,
     if (ovl_pooled(xsd))
     {
         VC4_MBOX_LOCK(xsd);
-        e->ov_Client = client;
-        e->ov_BM     = bm;
-        e->ov_BMData = OOP_INST_DATA(OOP_OCLASS(bm), bm);
-        e->ov_Desc   = *desc;
-        e->ov_Shown  = FALSE;
+        ovl_fill(e, client, gl, bm, desc);
+        e->ov_Shown = FALSE;
         planes_commit(xsd);
-        armed = e->ov_Armed = ovl_armed(xsd);
-        if (client == VCGFX_OVL_GL)
-            xsd->vcsd_OvlGLArmed = armed;
+        armed = e->ov_Armed = vcgfx_ovl_armed(xsd);
         shown = e->ov_Shown;
         if (!shown)
             ovl_clear(e);
@@ -215,7 +220,7 @@ BOOL vcgfx_ovl_show(struct VideoCoreGfx_staticdata *xsd, APTR client,
     held = ovl_holder(xsd);
     if (held && (held != e))
     {
-        if (client == VCGFX_OVL_GL)
+        if (gl)
             return FALSE;
         VC4_MBOX_LOCK(xsd);
         ovl_clear(held);
@@ -226,18 +231,15 @@ BOOL vcgfx_ovl_show(struct VideoCoreGfx_staticdata *xsd, APTR client,
     VC4_MBOX_LOCK(xsd);
     if (shown)
     {
-        e->ov_Client = client;
-        e->ov_BM     = bm;
-        e->ov_BMData = OOP_INST_DATA(OOP_OCLASS(bm), bm);
-        e->ov_Desc   = *desc;
-        e->ov_Shown  = TRUE;
+        ovl_fill(e, client, gl, bm, desc);
+        e->ov_Shown = TRUE;
     }
     else if (e->ov_Client)
         ovl_clear(e);
     VC4_MBOX_UNLOCK(xsd);
 
     /* Whatever a refused video layer left on the plane goes */
-    if (!shown && (client != VCGFX_OVL_GL))
+    if (!shown && !gl)
         vc4_hvs_overlay(xsd, NULL, NULL);
     return shown;
 }
@@ -256,15 +258,12 @@ void vcgfx_ovl_hide(struct VideoCoreGfx_staticdata *xsd, APTR client)
         ovl_clear(e);
         if (was)
             planes_commit(xsd);
-        /* Its pages may be on the list a screen change just replaced */
-        if (client == VCGFX_OVL_GL)
-            xsd->vcsd_OvlGLArmed = ovl_armed(xsd);
         VC4_MBOX_UNLOCK(xsd);
         return;
     }
 
-    /* Not while a video layer holds it, but GL may have left a refused
-     * overlay with the backend. */
+    /* Not while another holds it, but GL may have left a refused overlay
+     * with the backend. */
     held = ovl_holder(xsd);
     if (!held || (held == e))
         vc4_hvs_overlay(xsd, NULL, NULL);
@@ -276,31 +275,35 @@ void vcgfx_ovl_hide(struct VideoCoreGfx_staticdata *xsd, APTR client)
     }
 }
 
-/* 1 = shown. VC4GFX_OVL_BUSY = video layers hold the one plane, or the
- * budget; GL tries again later rather than giving up for good. */
+/* 1 = shown. VC4GFX_OVL_BUSY = another holds the one plane, or the
+ * budget is used; the client tries again later rather than for good. */
 ULONG vcgfx_ovl_state(struct VideoCoreGfx_staticdata *xsd, APTR client)
 {
-    struct vcgfx_ovl *e = vcgfx_ovl_find(xsd, client), *held;
+    struct vcgfx_ovl *e = vcgfx_ovl_find(xsd, client);
 
     if (e && e->ov_Shown)
         return 1;
-    held = ovl_holder(xsd);
-    if (held && (held->ov_Client != VCGFX_OVL_GL))
-        return VC4GFX_OVL_BUSY;
-    return 0;
+    return ovl_holder(xsd) ? VC4GFX_OVL_BUSY : 0;
 }
 
-/* Until the client's last change is on display. With a list per change,
- * not until whatever another client did since. */
+/* Until the commit that armed `armed` is on display; later commits by
+ * other clients do not move it. With one plane, until the last one. */
+void vcgfx_ovl_latch_until(struct VideoCoreGfx_staticdata *xsd, ULONG armed)
+{
+    if (ovl_pooled(xsd))
+        vc4_hvs_latch_until(xsd, armed);
+    else
+        vc4_hvs_latch_wait(xsd);
+}
+
+/* Until the client's last change is on display. */
 void vcgfx_ovl_latch_wait(struct VideoCoreGfx_staticdata *xsd, APTR client)
 {
-    struct vcgfx_ovl *e;
+    struct vcgfx_ovl *e = vcgfx_ovl_find(xsd, client);
 
     if (!ovl_pooled(xsd))
         vc4_hvs_latch_wait(xsd);
-    else if (client == VCGFX_OVL_GL)
-        vc4_hvs_latch_until(xsd, xsd->vcsd_OvlGLArmed);
-    else if ((e = vcgfx_ovl_find(xsd, client)) && e->ov_Shown)
+    else if (e && e->ov_Shown)
         vc4_hvs_latch_until(xsd, e->ov_Armed);
 }
 

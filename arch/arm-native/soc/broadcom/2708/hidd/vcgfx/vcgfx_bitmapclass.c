@@ -52,15 +52,28 @@ static BOOL vcbm_set_private(OOP_Class *cl, OOP_Object *o, ULONG idx, IPTR val)
 
     case aoHidd_VideoCoreGfxBitMap_Overlay:
         {
-            /* Zero-copy overlay plane (windowed GL). Success is reported
-             * via a Get on the same attribute. */
-            const struct vc4gfx_overlay *ovl = (const struct vc4gfx_overlay *)val;
+            /* Zero-copy overlay plane (windowed GL), one per client key.
+             * The outcome and the commit to wait for go back in the
+             * descriptor. */
+            struct vc4gfx_overlay *ovl = (struct vc4gfx_overlay *)val;
+            APTR client = (ovl && ovl->ovl_Client) ? ovl->ovl_Client : VCGFX_OVL_GL;
+
+            if (ovl && (ovl->ovl_Flags & VC4GFX_OVL_LATCHWAIT))
+            {
+                vcgfx_ovl_latch_until(xsd, ovl->ovl_Armed);
+                return TRUE;
+            }
 
             ObtainSemaphore(&xsd->vcsd_OvlLock);
-            if (ovl)
-                vcgfx_ovl_show(xsd, VCGFX_OVL_GL, o, ovl);
+            if (ovl && !(ovl->ovl_Flags & VC4GFX_OVL_HIDE))
+                vcgfx_ovl_show(xsd, client, TRUE, o, ovl);
             else
-                vcgfx_ovl_hide(xsd, VCGFX_OVL_GL);
+                vcgfx_ovl_hide(xsd, client);
+            if (ovl)
+            {
+                ovl->ovl_Result = vcgfx_ovl_state(xsd, client);
+                ovl->ovl_Armed  = vcgfx_ovl_armed(xsd);
+            }
             ReleaseSemaphore(&xsd->vcsd_OvlLock);
         }
         return TRUE;
@@ -389,7 +402,7 @@ VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
             ReleaseSemaphore(&XSD(cl)->vcsd_OvlLock);
             break;
         case aoHidd_VideoCoreGfxBitMap_LatchWait:
-            vcgfx_ovl_latch_wait(XSD(cl), VCGFX_OVL_GL);
+            vc4_hvs_latch_wait(XSD(cl));
             *msg->storage = 1;
             break;
         default:

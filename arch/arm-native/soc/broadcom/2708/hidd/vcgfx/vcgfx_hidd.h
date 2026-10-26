@@ -76,12 +76,13 @@ struct vcgfx_plane
  * as planes there is one only (vcgfx_ovl_show). */
 #define VCGFX_MAX_OVERLAYS      8
 
-/* The GL drivers' client key: each has a single overlay session. */
+/* The key of a GL client that gives none */
 #define VCGFX_OVL_GL            ((APTR)1)
 
 struct vcgfx_ovl
 {
-    APTR                    ov_Client;      /* cgxvideo object or VCGFX_OVL_GL, NULL = free */
+    APTR                    ov_Client;      /* cgxvideo object or a GL key, NULL = free */
+    BOOL                    ov_GL;          /* a GL client: never takes the one plane */
     OOP_Object             *ov_BM;          /* the screen it is over */
     struct BitmapData      *ov_BMData;
     struct vc4gfx_overlay   ov_Desc;
@@ -202,7 +203,6 @@ struct VideoCoreGfx_staticdata {
          * mailbox lock too, as the list builders read them. */
         struct SignalSemaphore  vcsd_OvlLock;
         struct vcgfx_ovl        vcsd_Ovl[VCGFX_MAX_OVERLAYS];
-        ULONG                   vcsd_OvlGLArmed;    /* ov_Armed for GL, kept past a hide */
 
         /* Hardware screen composition (ShowViewPorts): every screen is its
          * own plane and the fb is only the backdrop. Sticky once set, as a
@@ -362,11 +362,13 @@ BOOL    vcgfx_plane_flip(OOP_Class *cl, OOP_Object *bm);
 
 /* Overlays; the caller holds vcsd_OvlLock. */
 struct vcgfx_ovl *vcgfx_ovl_find(struct VideoCoreGfx_staticdata *xsd, APTR client);
-BOOL    vcgfx_ovl_show(struct VideoCoreGfx_staticdata *xsd, APTR client,
+BOOL    vcgfx_ovl_show(struct VideoCoreGfx_staticdata *xsd, APTR client, BOOL gl,
                        OOP_Object *bm, const struct vc4gfx_overlay *desc);
 void    vcgfx_ovl_hide(struct VideoCoreGfx_staticdata *xsd, APTR client);
 ULONG   vcgfx_ovl_state(struct VideoCoreGfx_staticdata *xsd, APTR client);
 void    vcgfx_ovl_latch_wait(struct VideoCoreGfx_staticdata *xsd, APTR client);
+void    vcgfx_ovl_latch_until(struct VideoCoreGfx_staticdata *xsd, ULONG armed);
+ULONG   vcgfx_ovl_armed(struct VideoCoreGfx_staticdata *xsd);
 void    vcgfx_ovl_drop_bm(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm);
 
 #endif /* _VIDEOCOREGFX_CLASS_H */

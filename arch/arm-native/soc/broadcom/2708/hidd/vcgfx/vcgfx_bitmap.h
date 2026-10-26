@@ -33,7 +33,8 @@ enum {
 /* Descriptor passed via aoHidd_VideoCoreGfxBitMap_Overlay: an opaque
  * 32bpp plane scanned straight from GPU memory, composited by the HVS
  * above the framebuffer (below the cursor). x/y are fb coordinates.
- * Mirrored by hand on the vc4gallium side, like the attr indices. */
+ * Each client keeps its own plane under its own key. Mirrored by hand
+ * on the v3d and vc4gallium sides, like the attr indices. */
 struct vc4gfx_overlay
 {
     ULONG ovl_Phys;                 /* ARM phys of the pixel data */
@@ -43,6 +44,9 @@ struct vc4gfx_overlay
     ULONG ovl_DestW, ovl_DestH;     /* on-screen size; 0 (or == source)
                                      * = unscaled, larger = HVS upscale */
     ULONG ovl_Flags;                /* VC4GFX_OVL_* */
+    APTR  ovl_Client;               /* the caller's key, NULL = the GL one */
+    ULONG ovl_Result;               /* out: 1 shown, VC4GFX_OVL_BUSY, 0 refused */
+    ULONG ovl_Armed;                /* out: the commit; in, with LATCHWAIT */
 };
 
 /* Don't wait for the latch; keep the displaced buffer until LatchWait. */
@@ -50,8 +54,12 @@ struct vc4gfx_overlay
 /* 16bpp little-endian sources (cgxvideo); neither = 32bpp. */
 #define VC4GFX_OVL_RGB565 (1 << 1)
 #define VC4GFX_OVL_RGB555 (1 << 2)
+/* Take the client's plane down; only ovl_Client counts. */
+#define VC4GFX_OVL_HIDE   (1 << 3)
+/* Wait until the commit in ovl_Armed latched; only that field counts. */
+#define VC4GFX_OVL_LATCHWAIT (1 << 4)
 
-/* Overlay Get while a cgxvideo layer holds the plane: retry later */
+/* ovl_Result: the plane is held or the budget used, retry later */
 #define VC4GFX_OVL_BUSY   2
 
 /* Per-vblank callback, run in interrupt context: no locks, no printing.

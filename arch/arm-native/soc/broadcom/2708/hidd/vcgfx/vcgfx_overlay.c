@@ -120,7 +120,7 @@ BOOL VideoCoreGfxOverlay__Hidd_Overlay__Show(OOP_Class *cl, OOP_Object *o,
         shown = TRUE;
     }
     else
-        shown = vcgfx_ovl_show(xsd, o, msg->bitMap, &desc);
+        shown = vcgfx_ovl_show(xsd, o, FALSE, msg->bitMap, &desc);
     ReleaseSemaphore(&xsd->vcsd_OvlLock);
 
     if (shown != was)
