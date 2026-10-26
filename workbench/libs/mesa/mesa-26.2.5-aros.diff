@@ -167,6 +167,23 @@ diff -ruN mesa-26.2.5/src/compiler/glsl/glsl_parser.yy mesa-26.2.5.aros/src/comp
  %}
  
  %expect 0
+diff -ruN mesa-26.2.5/src/compiler/nir/nir_opt_varyings.c mesa-26.2.5.aros/src/compiler/nir/nir_opt_varyings.c
+--- mesa-26.2.5/src/compiler/nir/nir_opt_varyings.c	2026-10-26 11:18:46.271315132 +0000
++++ mesa-26.2.5.aros/src/compiler/nir/nir_opt_varyings.c	2026-10-26 11:18:46.296988831 +0000
+@@ -3204,8 +3204,13 @@
+  * over the full struct are correct and efficient.
+  * If this assert fires, audit all nir_scalar assignments below.
+  */
++#if defined(__m68k__)
++/* m68k aligns int and pointers to 2 bytes: no padding but the tail byte */
++static_assert(sizeof(dedup_entry) == 26, "dedup_entry layout changed");
++#else
+ static_assert(sizeof(dedup_entry) == (sizeof(void *) == 8 ? 48 : 28),
+               "dedup_entry layout changed");
++#endif
+ 
+ static uint32_t
+ dedup_entry_hash_accum(const void *key, uint32_t hash)
 diff -ruN mesa-26.2.5/src/egl/main/egldisplay.c mesa-26.2.5.aros/src/egl/main/egldisplay.c
 --- mesa-26.2.5/src/egl/main/egldisplay.c	2026-10-14 16:12:24.000000000 +0100
 +++ mesa-26.2.5.aros/src/egl/main/egldisplay.c	2026-10-24 22:32:44.543144607 +0100
