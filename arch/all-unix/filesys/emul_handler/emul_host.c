@@ -557,6 +557,12 @@ LONG DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, ULONG l
 
     DREAD(bug("[emul] Reading %u bytes from fd %ld\n", len, fh->fd));
 
+    if (len == 0)
+    {
+        *err = 0;
+        return 0;
+    }
+
     /* Wait until the fd is ready to read. We reuse UnixIO capabilities for this. */
     error = Hidd_UnixIO_Wait(emulbase->pdata.unixio, (long)fh->fd, vHidd_UnixIO_Read);
     if (error)
