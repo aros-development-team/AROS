@@ -841,19 +841,24 @@ types_send(struct MDNSDaemon *md)
  * once for one query packet, always with all of its records.
  *
  * A question from another port than 5353 comes from a resolver that speaks
- * plain DNS: it gets its answer back alone, at once (section 6.7). A
- * question with the unicast-response bit is answered to the asker alone
- * when the group has had the records not long ago, and goes to the group
- * otherwise (section 5.4).
+ * plain DNS: it gets the matching services together in an answer back to
+ * it alone, at once (section 6.7). A question with the unicast-response bit
+ * is answered to the asker alone when the group has had the records not
+ * long ago, and goes to the group otherwise (section 5.4).
  */
 void
 mdnsRegHandleQuery(struct MDNSDaemon *md, struct MDNSQuestion *q,
     const struct MDNSKnownAnswer *known, LONG knownCount)
 {
+    UBYTE *pkt = md->md_TxBuf;
+    struct MDNSHeader *hdr = (struct MDNSHeader *)pkt;
     struct Node *n;
     BOOL any = q->qtype == DNS_TYPE_ANY;
     BOOL legacy = md->md_QueryPort != MDNS_DNS_PORT;
     BOOL direct = !legacy && (q->qclass & DNS_QU_BIT) != 0;
+    BOOL legacyAddrDone = FALSE;
+    LONG legacyPos = 0;
+    UWORD legacyAnswers = 0;
     ULONG now = mdnsNow();
 
     if ((any || q->qtype == DNS_TYPE_PTR) &&
@@ -864,6 +869,11 @@ mdnsRegHandleQuery(struct MDNSDaemon *md, struct MDNSQuestion *q,
         types_send(md);
         reply_to_group(md);
         return;
+    }
+
+    if (legacy) {
+        reply_to_asker(md, q, TRUE);
+        legacyPos = mdnsResponseBegin(md, pkt);
     }
 
     FOR_SERVICES(md, n) {
@@ -914,11 +924,31 @@ mdnsRegHandleQuery(struct MDNSDaemon *md, struct MDNSQuestion *q,
             continue;
         }
         rs->rs_Answered = md->md_PacketSerial;
-        if (legacy || (direct && rs->rs_Multicast != 0 &&
-                now - rs->rs_Multicast <= MDNS_UNICAST_SECONDS)) {
+        if (legacy) {
+            LONG ifindex = md->md_SendIf >= 0 ? md->md_SendIf : 0;
+
+            if (!service_append(md, rs, FALSE, ifindex, pkt, &legacyPos,
+                    &legacyAnswers, rs->rs_Proxy || !legacyAddrDone)) {
+                if (legacyAnswers != 0) {
+                    hdr->ancount = htons(legacyAnswers);
+                    mdnsNetSendOn(md, ifindex, pkt, legacyPos);
+                }
+                legacyPos = mdnsResponseBegin(md, pkt);
+                legacyAnswers = 0;
+                legacyAddrDone = FALSE;
+                if (!service_append(md, rs, FALSE, ifindex, pkt, &legacyPos,
+                        &legacyAnswers, TRUE)) {
+                    continue;
+                }
+            }
+            if (!rs->rs_Proxy) {
+                legacyAddrDone = TRUE;
+            }
+        } else if (direct && rs->rs_Multicast != 0 &&
+                now - rs->rs_Multicast <= MDNS_UNICAST_SECONDS) {
             /* to the asker alone, and at once: nobody else is waiting to
              * answer on a channel of two */
-            reply_to_asker(md, q, legacy);
+            reply_to_asker(md, q, FALSE);
             service_send(md, rs, FALSE);
             reply_to_group(md);
         } else if (shared) {
@@ -937,6 +967,14 @@ mdnsRegHandleQuery(struct MDNSDaemon *md, struct MDNSQuestion *q,
             /* a question for this one name: nobody else answers it */
             service_send(md, rs, FALSE);
         }
+    }
+    if (legacy) {
+        if (legacyAnswers != 0) {
+            hdr->ancount = htons(legacyAnswers);
+            mdnsNetSendOn(md, md->md_SendIf >= 0 ? md->md_SendIf : 0,
+                pkt, legacyPos);
+        }
+        reply_to_group(md);
     }
 }
 
