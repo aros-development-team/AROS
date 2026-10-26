@@ -85,6 +85,49 @@ void m68k_screen_extras(struct M68KEmuContext *ctx, ULONG ms, struct Screen *scr
     const struct M68KStructLayout *cml = shadow_find_layout("ColorMap");
     ULONG cm = 0;
 
+    /* the generated table leaves out the fields before the ViewPort that
+       programs size their windows from */
+    m68k_write16(ctx, ms + 8,  (UWORD)scr->LeftEdge);
+    m68k_write16(ctx, ms + 10, (UWORD)scr->TopEdge);
+    m68k_write16(ctx, ms + 12, (UWORD)scr->Width);
+    m68k_write16(ctx, ms + 14, (UWORD)scr->Height);
+    m68k_write16(ctx, ms + 16, (UWORD)scr->MouseY);
+    m68k_write16(ctx, ms + 18, (UWORD)scr->MouseX);
+    m68k_write16(ctx, ms + 20, scr->Flags);
+    ctx->mem[ms + 30] = scr->BarHeight;
+    ctx->mem[ms + 31] = scr->BarVBorder;
+    ctx->mem[ms + 32] = scr->BarHBorder;
+    ctx->mem[ms + 33] = scr->MenuVBorder;
+    ctx->mem[ms + 34] = scr->MenuHBorder;
+    ctx->mem[ms + 35] = scr->WBorTop;
+    ctx->mem[ms + 36] = scr->WBorLeft;
+    ctx->mem[ms + 37] = scr->WBorRight;
+    ctx->mem[ms + 38] = scr->WBorBottom;
+    if (scr->Font)
+    {
+        /* struct TextAttr with a copy of the font name, one per font */
+        const char *name = (const char *)scr->Font->ta_Name;
+        ULONG len = name ? strlen(name) + 1 : 1;
+        ULONG ta = 0;
+        for (UWORD i = 0; i < ctx->num_shadows; i++)
+            if (ctx->shadow_map[i].native_ptr == scr->Font && ctx->shadow_map[i].type == 42)
+                { ta = ctx->shadow_map[i].m68k_addr; break; }
+        if (ta)
+            m68k_write32(ctx, ms + 40, ta);
+        else if ((ta = M68KEmu_HeapAlloc(ctx, 8 + len, 0)))
+        {
+            shadow_register(ctx, ta, scr->Font, 42);
+            memset(ctx->mem + ta, 0, 8 + len);
+            if (name)
+                memcpy(ctx->mem + ta + 8, name, len);
+            m68k_write32(ctx, ta, ta + 8);
+            m68k_write16(ctx, ta + 4, scr->Font->ta_YSize);
+            ctx->mem[ta + 6] = scr->Font->ta_Style;
+            ctx->mem[ta + 7] = scr->Font->ta_Flags;
+            m68k_write32(ctx, ms + 40, ta);
+        }
+    }
+
     if (!shadow_lookup(ctx, ms + M68K_SCR_VIEWPORT))
         shadow_register(ctx, ms + M68K_SCR_VIEWPORT, &scr->ViewPort, 6);
     if (!shadow_lookup(ctx, ms + M68K_SCR_RASTPORT))
@@ -122,6 +165,7 @@ ULONG shadow_create(struct M68KEmuContext *ctx,
     {
         if (!(m = M68KEmu_HeapAlloc(ctx, layout->m68k_size, 0)))
             return 0;
+        memset(ctx->mem + m, 0, layout->m68k_size);
         if (!shadow_register(ctx, m, native, layout->shadow_type)) {
             M68KEmu_HeapFree(ctx, m, layout->m68k_size);
             return 0;
