@@ -51,6 +51,9 @@ struct vc4gfx_overlay
 #define VC4GFX_OVL_RGB565 (1 << 1)
 #define VC4GFX_OVL_RGB555 (1 << 2)
 
+/* Overlay Get while a cgxvideo layer holds the plane: retry later */
+#define VC4GFX_OVL_BUSY   2
+
 /* Per-vblank callback, run in interrupt context: no locks, no printing.
  * Mirrored by hand on the v3d side. */
 struct vc4gfx_vblank

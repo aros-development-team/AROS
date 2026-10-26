@@ -401,7 +401,7 @@ VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 #endif
             /* Not the caller's while a cgxvideo layer holds it */
             if (XSD(cl)->vcsd_OvlClient)
-                *msg->storage = 0;
+                *msg->storage = VC4GFX_OVL_BUSY;
             break;
         case aoHidd_VideoCoreGfxBitMap_LatchWait:
             vc4_hvs_latch_wait(XSD(cl));
