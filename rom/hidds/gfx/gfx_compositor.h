@@ -119,6 +119,17 @@ struct HIDDCompositorData
     OOP_Object                  *displaybitmap;
     OOP_Object                  *intermedbitmap;
 
+    /* A rectangle with layer surfaces in it is composed here and copied to
+       displaybitmap in one blit, so that the display never shows the
+       backdrop without the surfaces over it (see HIDDCompositorTarget()).
+       Display sized, made on first use and again after a mode change,
+       freed with the display bitmap. surfacesem: one user at a time, as
+       updates arrive under the shared compositor lock. */
+    OOP_Object                  *surfacebitmap;
+    struct Rectangle            surfacebmrect;
+    ULONG                       surfacebmdepth, surfacebmmode;
+    struct SignalSemaphore      surfacesem;
+
     /* Pointer to actual screen bitmap, result of last HIDD_Display_Show(). */
     OOP_Object                  *screenbitmap;
     OOP_Object                  *passthroughbm;  /* bitmap shown in passthrough (first screen without a plane), NULL otherwise */

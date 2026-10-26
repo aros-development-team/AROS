@@ -18,7 +18,8 @@ FILES := \
     compwindow \
     planescreens \
     pointerpos \
-    scrollerwin 
+    scrollerwin \
+    compflicker
 
 EXEDIR := $(AROS_TESTS)/intuition
 
