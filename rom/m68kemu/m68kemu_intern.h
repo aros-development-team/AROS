@@ -34,7 +34,7 @@ struct M68KHeapBlock
 struct M68KThunkEntry;
 struct RDArgs;
 
-#define M68KEMU_MAX_LIBS        32
+#define M68KEMU_MAX_LIBS        64
 #define M68KEMU_MAX_LVO         512
 
 struct M68KFakeLibBase
@@ -116,6 +116,18 @@ struct M68KEmuContext
     #define M68KEMU_MAX_IOREQS 64
     struct M68KIoMap { ULONG m68k; struct IORequest *native; UBYTE kind; BOOL pending; struct MsgPort *ownport; } ioreqs[M68KEMU_MAX_IOREQS];
     ULONG   pubsems[16];           /* AddSemaphore()d m68k semaphores, for FindSemaphore */
+
+    /* native BOOPSI classes used from m68k code (m68kemu_boopsi.c) */
+    #define M68KEMU_MAX_BOBJS    512
+    #define M68KEMU_MAX_BCLASSES 64
+    #define M68KEMU_MAX_BLISTS   64
+    #define M68KEMU_MAX_CLIBS    32
+    ULONG   boopsi_base;           /* pseudo library: vector -30 dispatches methods */
+    ULONG   boopsi_logged;
+    ULONG   bclasses[M68KEMU_MAX_BCLASSES];
+    struct M68KBoopsiObj { ULONG m68k; APTR native; ULONG strbuf, strsize, boxbuf, boxsize; APTR owned[4]; } bobjs[M68KEMU_MAX_BOBJS];
+    struct { ULONG m68k; struct List *native; } blists[M68KEMU_MAX_BLISTS];
+    struct M68KClassLib { ULONG m68k; struct Library *native; UBYTE kind; char name[32]; } clibs[M68KEMU_MAX_CLIBS];
     BOOL    trace_after_msg;
     ULONG   tail_pc;               /* after this thunk, continue in 68k code here ... */
     ULONG   tail_d0, tail_a0, tail_a6; /* ... with these registers; its RTS returns to the caller */
@@ -173,7 +185,7 @@ struct M68KEmuContext
     BOOL    running;
     LONG    exit_code;
     /* Shadow struct mapping: m68k addr <-> native ptr */
-    #define M68KEMU_MAX_SHADOWS 256
+    #define M68KEMU_MAX_SHADOWS 1024
     struct { ULONG m68k_addr; void *native_ptr; UWORD type; } shadow_map[M68KEMU_MAX_SHADOWS];
     UWORD num_shadows;
 
@@ -195,6 +207,9 @@ extern "C" {
 #endif
 /* Native BPTR <-> 32-bit m68k handle, and the vector-table write diagnostic (m68kemu_memory.c) */
 ULONG m68k_bptr_out(struct M68KEmuContext *ctx, BPTR b);
+/* m68kemu_boopsi.c */
+ULONG m68k_open_class_library(struct M68KEmuContext *ctx, const char *name, ULONG version);
+void  m68k_boopsi_cleanup(struct M68KEmuContext *ctx);
 BPTR  m68k_bptr_in(struct M68KEmuContext *ctx, ULONG v);
 void  m68k_bptr_drop(struct M68KEmuContext *ctx, ULONG v);
 void  m68k_low_write_trap(struct M68KEmuContext *ctx, ULONG addr, const char *who);
