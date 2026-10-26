@@ -917,6 +917,147 @@ static IPTR thunk_exec_SetSignal(struct M68KEmuContext *ctx, void *cpu)
     return (IPTR)SetSignal(THUNK_D(0), THUNK_D(1));
 }
 
+/* Exec lists in the program's memory have 32-bit big-endian links: the
+   native list functions would write native pointers into them. A list
+   that is a shadow of a native one is left to the native functions; the
+   nodes go with their list (a program's nodes may be shadows too). */
+#define ML_NATIVE(a) ((a) == 0 || (a) >= ctx->mem_size || shadow_lookup(ctx, (a)))
+
+static void ml_addhead(struct M68KEmuContext *ctx, ULONG l, ULONG n)
+{
+    ULONG head = m68k_read32(ctx, l);
+    m68k_write32(ctx, n, head);
+    m68k_write32(ctx, n + 4, l);
+    m68k_write32(ctx, head + 4, n);
+    m68k_write32(ctx, l, n);
+}
+
+static void ml_addtail(struct M68KEmuContext *ctx, ULONG l, ULONG n)
+{
+    ULONG tailpred = m68k_read32(ctx, l + 8);
+    m68k_write32(ctx, n, l + 4);
+    m68k_write32(ctx, n + 4, tailpred);
+    m68k_write32(ctx, tailpred, n);
+    m68k_write32(ctx, l + 8, n);
+}
+
+static void ml_remove(struct M68KEmuContext *ctx, ULONG n)
+{
+    ULONG succ = m68k_read32(ctx, n), pred = m68k_read32(ctx, n + 4);
+    m68k_write32(ctx, pred, succ);
+    m68k_write32(ctx, succ + 4, pred);
+}
+
+/* exec -234: Insert(A0=list, A1=node, A2=pred) */
+static IPTR thunk_exec_Insert_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG l = THUNK_A(0), n = THUNK_A(1), pred = THUNK_A(2);
+    if (ML_NATIVE(l))
+    {
+        Insert(THUNK_PTR(0), THUNK_PTR(1), THUNK_PTR(2));
+        return 0;
+    }
+    if (!pred)
+        ml_addhead(ctx, l, n);
+    else if (m68k_read32(ctx, pred))
+    {
+        ULONG succ = m68k_read32(ctx, pred);
+        m68k_write32(ctx, n, succ);
+        m68k_write32(ctx, n + 4, pred);
+        m68k_write32(ctx, succ + 4, n);
+        m68k_write32(ctx, pred, n);
+    }
+    else
+    {
+        /* pred is the list's tail node */
+        ULONG before = m68k_read32(ctx, pred + 4);
+        m68k_write32(ctx, n, pred);
+        m68k_write32(ctx, n + 4, before);
+        m68k_write32(ctx, before, n);
+        m68k_write32(ctx, pred + 4, n);
+    }
+    return 0;
+}
+
+/* exec -240: AddHead(A0=list, A1=node) */
+static IPTR thunk_exec_AddHead_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    if (ML_NATIVE(THUNK_A(0)))
+        AddHead(THUNK_PTR(0), THUNK_PTR(1));
+    else
+        ml_addhead(ctx, THUNK_A(0), THUNK_A(1));
+    return 0;
+}
+
+/* exec -246: AddTail(A0=list, A1=node) */
+static IPTR thunk_exec_AddTail_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    if (ML_NATIVE(THUNK_A(0)))
+        AddTail(THUNK_PTR(0), THUNK_PTR(1));
+    else
+        ml_addtail(ctx, THUNK_A(0), THUNK_A(1));
+    return 0;
+}
+
+/* exec -252: Remove(A1=node) */
+static IPTR thunk_exec_Remove_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    if (THUNK_A(1) == 0 || THUNK_A(1) >= ctx->mem_size)
+        Remove(THUNK_PTR(1));
+    else
+        ml_remove(ctx, THUNK_A(1));
+    return 0;
+}
+
+/* exec -258: RemHead(A0=list) -> D0=node */
+static IPTR thunk_exec_RemHead_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG l = THUNK_A(0), head;
+    if (ML_NATIVE(l))
+        return (IPTR)RemHead(THUNK_PTR(0));
+    head = m68k_read32(ctx, l);
+    if (!m68k_read32(ctx, head))
+        return 0;
+    ml_remove(ctx, head);
+    return head;
+}
+
+/* exec -264: RemTail(A0=list) -> D0=node */
+static IPTR thunk_exec_RemTail_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG l = THUNK_A(0), tail;
+    if (ML_NATIVE(l))
+        return (IPTR)RemTail(THUNK_PTR(0));
+    tail = m68k_read32(ctx, l + 8);
+    if (!m68k_read32(ctx, tail + 4))
+        return 0;
+    ml_remove(ctx, tail);
+    return tail;
+}
+
+/* exec -270: Enqueue(A0=list, A1=node): by ln_Pri, after equal priorities */
+static IPTR thunk_exec_Enqueue_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG l = THUNK_A(0), n = THUNK_A(1), next, pred;
+    BYTE pri;
+    int guard = 0;
+    if (ML_NATIVE(l))
+    {
+        Enqueue(THUNK_PTR(0), THUNK_PTR(1));
+        return 0;
+    }
+    pri = (BYTE)ctx->mem[n + 9];
+    for (next = m68k_read32(ctx, l); m68k_read32(ctx, next) && guard++ < 1000000; next = m68k_read32(ctx, next))
+        if ((BYTE)ctx->mem[next + 9] < pri)
+            break;
+    pred = m68k_read32(ctx, next + 4);
+    m68k_write32(ctx, n, next);
+    m68k_write32(ctx, n + 4, pred);
+    m68k_write32(ctx, pred, n);
+    m68k_write32(ctx, next + 4, n);
+    return 0;
+}
+
 /* exec -276: FindName(A0=list, A1=name) -> D0=node */
 static IPTR thunk_exec_FindName(struct M68KEmuContext *ctx, void *cpu)
 {
@@ -936,6 +1077,22 @@ static IPTR thunk_exec_FindName(struct M68KEmuContext *ctx, void *cpu)
     if (m68k_list == ctx->m68k_sysbase + M68K_EXECBASE_DEVICELIST ||
         m68k_list == ctx->m68k_sysbase + M68K_EXECBASE_RESOURCELIST)
         return 0;
+
+    if (!ML_NATIVE(m68k_list))
+    {
+        /* a list in the program's memory; A0 may also be a node to start after */
+        ULONG n;
+        int guard = 0;
+        name = (CONST_STRPTR)m68k_to_host(ctx, THUNK_A(1));
+        if (!name) return 0;
+        for (n = m68k_read32(ctx, m68k_list); n && m68k_read32(ctx, n) && guard++ < 1000000; n = m68k_read32(ctx, n))
+        {
+            CONST_STRPTR nn = (CONST_STRPTR)m68k_to_host(ctx, m68k_read32(ctx, n + 10));
+            if (nn && strcmp((const char *)nn, (const char *)name) == 0)
+                return n;
+        }
+        return 0;
+    }
 
     list = (struct List *)THUNK_PTR(0);
     name = (CONST_STRPTR)THUNK_PTR(1);
@@ -982,6 +1139,13 @@ IPTR m68k_WaitIO(struct M68KEmuContext *ctx, void *cpu);
 IPTR m68k_AbortIO(struct M68KEmuContext *ctx, void *cpu);
 
 const struct M68KThunkEntry m68kemu_thunks_exec[] = {
+    { 234, thunk_exec_Insert_m },
+    { 240, thunk_exec_AddHead_m },
+    { 246, thunk_exec_AddTail_m },
+    { 252, thunk_exec_Remove_m },
+    { 258, thunk_exec_RemHead_m },
+    { 264, thunk_exec_RemTail_m },
+    { 270, thunk_exec_Enqueue_m },
     { 444, m68k_OpenDevice },
     { 450, m68k_CloseDevice },
     { 456, m68k_DoIO },
