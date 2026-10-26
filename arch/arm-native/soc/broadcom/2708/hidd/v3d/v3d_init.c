@@ -278,6 +278,7 @@ static int V3D_Init(LIBBASETYPEPTR LIBBASE)
      * back to WritePixelArray. */
     sd->hiddBitMapAB = OOP_ObtainAttrBase(IID_Hidd_BitMap);
     sd->hiddVCGfxBMAB = OOP_ObtainAttrBase(IID_Hidd_BitMap_VideoCore4);
+    sd->hiddPixFmtAB = OOP_ObtainAttrBase(IID_Hidd_PixFmt);
 
     v3d_clock_on(sd);
     if (v3d_reset_deassert()
@@ -325,6 +326,8 @@ static int V3D_Expunge(LIBBASETYPEPTR LIBBASE)
         OOP_ReleaseAttrBase(IID_Hidd_BitMap);
     if (sd->hiddVCGfxBMAB)
         OOP_ReleaseAttrBase(IID_Hidd_BitMap_VideoCore4);
+    if (sd->hiddPixFmtAB)
+        OOP_ReleaseAttrBase(IID_Hidd_PixFmt);
     if (sd->gpu_timer_ok)
     {
         CloseDevice((struct IORequest *)&sd->gpu_timer_template);

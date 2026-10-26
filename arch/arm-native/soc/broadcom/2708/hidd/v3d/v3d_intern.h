@@ -375,6 +375,7 @@ static inline ULONG v3d_fd_session(int fd)
  * live, and Mesa answers a refused CREATE_BO by dropping its whole BO
  * cache and retrying. */
 #define V3D_MAX_BOS     8192
+#define V3D_EXT_NAMES   16
 
 /* A slab of system RAM, remapped Normal Non-Cacheable and suballocated as
  * GPU memory (v3d_mem.c). raw is what AllocMem returned, before the 4K
@@ -397,6 +398,7 @@ struct V3DData
     OOP_AttrBase    hiddAttrBase;
     OOP_AttrBase    hiddBitMapAB;
     OOP_AttrBase    hiddVCGfxBMAB;
+    OOP_AttrBase    hiddPixFmtAB;
 
     APTR            mbox_base;
     APTR            mbox_msg_raw;
@@ -481,6 +483,12 @@ struct V3DData
      * wraps them as BOs and renders straight into the back page. */
     ULONG           scanout_phys[2];
     ULONG           scanout_size;
+
+    /* Buffers of scan-out bitmaps that ResourceFromBitMap aliased: further
+     * GEM_OPEN names, the oldest replaced when the table is full. */
+    ULONG           ext_name[V3D_EXT_NAMES];
+    ULONG           ext_size[V3D_EXT_NAMES];
+    ULONG           ext_next;
 
     /* Overlay ring (v3d_galliumclass.c): the present path and the task
      * that puts an idle app's last frame on at vblank. */

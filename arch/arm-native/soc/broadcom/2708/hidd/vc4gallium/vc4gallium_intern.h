@@ -36,6 +36,7 @@ struct HiddGalliumVC4Data
  * 576 KB of library-base memory. 1024 ran out on texture-heavy apps
  * (Widelands). */
 #define VC4_MAX_BOS     8192
+#define VC4_EXT_NAMES   16
 
 /* Max texture samples and uniform address offsets per shader */
 #define VC4_MAX_TEX_SAMPLES     32
@@ -241,6 +242,7 @@ struct vc4galliumstaticdata
     /* vcgfx bitmap detection */
     OOP_AttrBase            hiddVC4GfxBMAB;     /* VideoCoreGfxBitMap attr base */
     OOP_AttrBase            hiddBitMapAB;       /* standard BitMap attr base */
+    OOP_AttrBase            hiddPixFmtAB;       /* standard PixFmt attr base */
 
     /* Rotating BO pools — three sets so the CPU can prepare frame N+1
      * while the GPU renders frame N and frame N-1's set drains. With
@@ -269,6 +271,12 @@ struct vc4galliumstaticdata
      * accepts). Written under bo_lock. */
     ULONG                   scanout_phys[2];
     ULONG                   scanout_size;
+
+    /* Buffers of scan-out bitmaps that ResourceFromBitMap aliased: further
+     * GEM_OPEN names, the oldest replaced when the table is full. */
+    ULONG                   ext_name[VC4_EXT_NAMES];
+    ULONG                   ext_size[VC4_EXT_NAMES];
+    ULONG                   ext_next;
 
     /* Pre-opened timer.device (UNIT_MICROHZ) for GPU-wait microsleeps —
      * io_Device/io_Unit are cloned into a stack request per use, so any

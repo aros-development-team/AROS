@@ -240,6 +240,9 @@ static int HiddVC4Gallium_ExpungeLib(LIBBASETYPEPTR LIBBASE)
     if (LIBBASE->sd.hiddVC4GfxBMAB)
         OOP_ReleaseAttrBase((STRPTR)IID_Hidd_BitMap_VideoCore4);
 
+    if (LIBBASE->sd.hiddPixFmtAB)
+        OOP_ReleaseAttrBase((STRPTR)IID_Hidd_PixFmt);
+
     if (LIBBASE->sd.hiddGalliumAB)
         OOP_ReleaseAttrBase((STRPTR)IID_Hidd_Gallium);
 
@@ -357,6 +360,7 @@ static int HiddVC4Gallium_InitLib(LIBBASETYPEPTR LIBBASE)
 
     /* Standard BitMap attribute base for BytesPerRow etc. */
     LIBBASE->sd.hiddBitMapAB = OOP_ObtainAttrBase((STRPTR)IID_Hidd_BitMap);
+    LIBBASE->sd.hiddPixFmtAB = OOP_ObtainAttrBase((STRPTR)IID_Hidd_PixFmt);
 
     /* Power on V3D domain via mailbox.
      * BCM2835/2836 power domain ID 10 = V3D.

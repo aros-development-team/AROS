@@ -43,6 +43,8 @@
 #include "v3d_bufmgr.h"
 #include "v3d_resource.h"
 #include "v3d_tiling.h"
+#include "frontend/winsys_handle.h"
+#include "drm-uapi/drm_fourcc.h"
 
 /* Compiled outside the driver archive, so objcopy does not rename the plain
  * names the v3d_bo_unreference inline reaches for. Forward each to its
@@ -1576,3 +1578,100 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
     return TRUE;
 }
 
+/*
+ * Alias buffer msg->buffer of a scan-out bitmap (vcgfx, in its scanout
+ * memory) as a linear render target of the pipe screen: its address is
+ * published as a GEM_OPEN name and imported by Mesa with the bitmap's
+ * pitch, so GL renders straight into what a plane scans out.
+ */
+APTR HiddV3D__Hidd_Gallium__ResourceFromBitMap(OOP_Class *cl, OOP_Object *o,
+    struct pHidd_Gallium_ResourceFromBitMap *msg)
+{
+    struct V3DData *sd = SD(cl);
+    struct pipe_screen *pscreen = (struct pipe_screen *)msg->screen;
+    OOP_Object *bm = msg->bitmap, *pf = NULL;
+    IPTR scanout = 0, width = 0, height = 0, stdpf = 0;
+    struct pHidd_BitMap_LockBuffer lmsg;
+    struct pHidd_BitMap_UnlockBuffer umsg;
+    struct Rectangle none = { 0, 0, -1, -1 };
+    struct winsys_handle wh;
+    struct pipe_resource templ;
+    enum pipe_format format;
+    UBYTE *addr = NULL;
+    ULONG pitch = 0, name, i;
+
+    if (!pscreen || !pscreen->resource_from_handle || !bm
+        || !sd->hiddBitMapAB || !sd->hiddPixFmtAB)
+        return NULL;
+
+    OOP_GetAttr(bm, sd->hiddBitMapAB + aoHidd_BitMap_Scanout, &scanout);
+    OOP_GetAttr(bm, sd->hiddBitMapAB + aoHidd_BitMap_Width, &width);
+    OOP_GetAttr(bm, sd->hiddBitMapAB + aoHidd_BitMap_Height, &height);
+    OOP_GetAttr(bm, sd->hiddBitMapAB + aoHidd_BitMap_PixFmt, (IPTR *)&pf);
+    if (pf)
+        OOP_GetAttr(pf, sd->hiddPixFmtAB + aoHidd_PixFmt_StdPixFmt, &stdpf);
+    if (!scanout || !width || !height)
+        return NULL;
+
+    switch (stdpf)
+    {
+    case vHidd_StdPixFmt_BGRA32:
+        format = PIPE_FORMAT_B8G8R8A8_UNORM;
+        break;
+    case vHidd_StdPixFmt_BGR032:
+        format = PIPE_FORMAT_B8G8R8X8_UNORM;
+        break;
+    case vHidd_StdPixFmt_RGB16_LE:
+        format = PIPE_FORMAT_B5G6R5_UNORM;
+        break;
+    default:
+        return NULL;
+    }
+
+    lmsg.mID           = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_LockBuffer);
+    lmsg.buffer        = msg->buffer;
+    lmsg.addressReturn = &addr;
+    lmsg.pitchReturn   = &pitch;
+    lmsg.planeOffsets  = NULL;
+    if (!OOP_DoMethod(bm, (OOP_Msg)&lmsg) || !addr || !pitch)
+        return NULL;
+    umsg.mID    = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_UnlockBuffer);
+    umsg.buffer = msg->buffer;
+    umsg.dirty  = &none;
+    OOP_DoMethod(bm, (OOP_Msg)&umsg);
+
+    /* Scanout memory is identity mapped: the address is the page's */
+    name = (ULONG)(IPTR)addr;
+    ObtainSemaphore(&sd->bo_lock);
+    for (i = 0; i < V3D_EXT_NAMES; i++)
+        if (sd->ext_name[i] == name)
+            break;
+    if (i == V3D_EXT_NAMES)
+    {
+        i = sd->ext_next;
+        sd->ext_next = (sd->ext_next + 1) % V3D_EXT_NAMES;
+    }
+    sd->ext_name[i] = name;
+    sd->ext_size[i] = pitch * height;
+    ReleaseSemaphore(&sd->bo_lock);
+
+    memset(&wh, 0, sizeof(wh));
+    wh.type     = WINSYS_HANDLE_TYPE_SHARED;
+    wh.handle   = name;
+    wh.stride   = pitch;
+    wh.modifier = DRM_FORMAT_MOD_LINEAR;
+
+    memset(&templ, 0, sizeof(templ));
+    templ.target     = PIPE_TEXTURE_2D;
+    templ.format     = format;
+    templ.width0     = width;
+    templ.height0    = height;
+    templ.depth0     = 1;
+    templ.array_size = 1;
+    templ.bind       = PIPE_BIND_RENDER_TARGET | PIPE_BIND_SAMPLER_VIEW
+                     | PIPE_BIND_SCANOUT | PIPE_BIND_LINEAR | PIPE_BIND_SHARED;
+    templ.usage      = PIPE_USAGE_DEFAULT;
+
+    return pscreen->resource_from_handle(pscreen, &templ, &wh,
+                                         PIPE_HANDLE_USAGE_FRAMEBUFFER_WRITE);
+}

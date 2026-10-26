@@ -239,11 +239,16 @@ static int v3d_ioctl_dispatch(struct V3DData *sd, ULONG sid,
          * memory is not ours, so the entry is marked external and only
          * ever unmapped, never FREEMEMed. */
         struct drm_gem_open *open = arg;
-        ULONG name = (ULONG)open->name, h;
+        ULONG name = (ULONG)open->name, h, size = 0, i;
 
         ObtainSemaphore(&sd->bo_lock);
-        if (!sd->scanout_size
-            || (name != sd->scanout_phys[0] && name != sd->scanout_phys[1]))
+        if (sd->scanout_size
+            && (name == sd->scanout_phys[0] || name == sd->scanout_phys[1]))
+            size = sd->scanout_size;
+        for (i = 0; !size && (i < V3D_EXT_NAMES); i++)
+            if (name && (sd->ext_name[i] == name))
+                size = sd->ext_size[i];
+        if (!size)
         {
             ReleaseSemaphore(&sd->bo_lock);
             return -1;
@@ -270,9 +275,8 @@ static int v3d_ioctl_dispatch(struct V3DData *sd, ULONG sid,
             sd->bo_table[h].gpu_handle = 0;
             sd->bo_table[h].external   = TRUE;
             sd->bo_table[h].paddr      = name;
-            sd->bo_table[h].gpu_va     = v3d_mmu_map(sd, name,
-                                                     sd->scanout_size);
-            sd->bo_table[h].size       = sd->scanout_size;
+            sd->bo_table[h].gpu_va     = v3d_mmu_map(sd, name, size);
+            sd->bo_table[h].size       = size;
             sd->bo_table[h].refcount   = 1;
             sd->bo_table[h].last_seqno = 0;
             sd->bo_table[h].owner      = 0;

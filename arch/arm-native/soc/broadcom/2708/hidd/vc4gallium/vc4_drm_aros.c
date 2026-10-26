@@ -1230,10 +1230,17 @@ void vc4_aros_bo_unref_locked(struct vc4galliumstaticdata *sd, ULONG handle)
  */
 static int ioctl_gem_open(struct vc4galliumstaticdata *sd, struct drm_gem_open *args)
 {
-    ULONG handle;
+    ULONG handle, size = 0, i;
 
-    if (args->name == 0 || sd->scanout_size == 0 ||
-        (args->name != sd->scanout_phys[0] && args->name != sd->scanout_phys[1]))
+    if (args->name == 0)
+        return -1;
+    if (sd->scanout_size &&
+        (args->name == sd->scanout_phys[0] || args->name == sd->scanout_phys[1]))
+        size = sd->scanout_size;
+    for (i = 0; !size && (i < VC4_EXT_NAMES); i++)
+        if (sd->ext_name[i] == args->name)
+            size = sd->ext_size[i];
+    if (!size)
         return -1;
 
     ObtainSemaphore(&sd->bo_lock);
@@ -1263,7 +1270,7 @@ static int ioctl_gem_open(struct vc4galliumstaticdata *sd, struct drm_gem_open *
     sd->bo_table[handle].vaddr = (APTR)(IPTR)args->name;
     sd->bo_table[handle].bus_addr = GPU_BUS_ADDR(args->name);
     sd->bo_table[handle].gpu_handle = 0;
-    sd->bo_table[handle].size = sd->scanout_size;
+    sd->bo_table[handle].size = size;
     sd->bo_table[handle].refcount = 1;
     sd->bo_table[handle].owner = 0;
     sd->bo_table[handle].seqno = 0;
@@ -1276,7 +1283,7 @@ static int ioctl_gem_open(struct vc4galliumstaticdata *sd, struct drm_gem_open *
     ReleaseSemaphore(&sd->bo_lock);
 
     args->handle = handle;
-    args->size = sd->scanout_size;
+    args->size = size;
 
     D(bug("[VC4Gallium] gem_open: scanout page 0x%08x -> handle=%d size=%d\n",
         args->name, handle, (ULONG)args->size));
