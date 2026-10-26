@@ -109,7 +109,7 @@ PRIV_KERNEL_INCLUDES = \
 # Make sure we optimize this code for size ..
 OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
 
-USELIBS := amiga arossupport autoinit libinit stdc.static
+USELIBS := arossupport amiga autoinit libinit stdc.static
 LIBS    := -L$(GENDIR)/lib -lloadseg $(addprefix -l,$(USELIBS))
 DEPLIBS := $(addprefix $(AROS_LIB)/lib,$(addsuffix .a,$(USELIBS)))
 
