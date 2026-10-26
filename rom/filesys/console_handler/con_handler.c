@@ -686,6 +686,10 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
 
     err = 0;
     filename = BSTR2C((BSTR) dp->dp_Arg1);
+    if (!filename) {
+        close_con(fh);
+        return NULL;
+    }
     fn = filename;
     i = isdosdevicec(fn);
     if (i >= 0)
