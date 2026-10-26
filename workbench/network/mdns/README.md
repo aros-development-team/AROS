@@ -98,11 +98,17 @@ events, flags, service snapshots, tags and Envoy definitions. These
 definitions preserve source compatibility; only the registration tags
 documented by the implemented functions are acted on in this release.
 
+`dnssd -q name rrtype` prints the queued answers of a generic query until
+Ctrl-C, and `dnssd -G v4 host` performs the bounded IPv4 lookup. `dnssd -Z`
+uses a short SRV record query for each discovered instance, so its zone output
+names the real SRV target and can use that name as the A owner; it never
+invents either value from the instance name.
+
 ### Task lifetime and compatibility
 
 The first fifteen slots, their order/registers and existing tag/error values
-follow upstream Bonami. The AROS implementation is version 41.2. Its daemon
-and library must be installed together: their private IPC is now version 3.
+follow upstream Bonami. The AROS implementation is version 41.3. Its daemon
+and library must be installed together: their private IPC is now version 4.
 
 Registration lifetime deliberately differs from upstream Bonami:
 
