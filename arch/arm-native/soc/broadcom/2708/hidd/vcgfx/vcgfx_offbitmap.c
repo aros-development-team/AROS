@@ -310,7 +310,7 @@ static OOP_Object *vc4_scanout_new(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
         if (!vcgfx_scanout_rgb(xsd, stdpf, &pxflags))
             return NULL;
         /* 16 bytes: the stride VC4's Mesa gives a linear render target */
-        bpp   = vc4_ovl_bpp(pxflags);
+        bpp   = vcgfx_px_bpp(pxflags);
         pitch = (width * bpp + 15) & ~15;
         size  = pitch * height;
     }
@@ -522,10 +522,6 @@ VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     ULONG handle = data->gpuhandle;
 #endif
 
-    ObtainSemaphore(&xsd->vcsd_OvlLock);
-    vcgfx_ovl_drop_bm(xsd, o);
-    ReleaseSemaphore(&xsd->vcsd_OvlLock);
-
     /* Off the display before the pages go. */
     if (data->scan[0].sb_Pixels)
         vcgfx_plane_forget(xsd, o);
@@ -547,7 +543,6 @@ VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
  * clamps and stores them, the plane follows. */
 IPTR MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 {
-    struct BitmapData *data = OOP_INST_DATA(cl, o);
     struct TagItem *tag, *tstate = msg->attrList;
     BOOL moved = FALSE;
     ULONG idx;
@@ -555,10 +550,6 @@ IPTR MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 
     while ((tag = NextTagItem(&tstate)))
     {
-        /* Flips and overlays need a screen the HVS can show. */
-        if (data->scan[0].sb_Pixels && IS_VideoCoreGfxBM_ATTR(tag->ti_Tag, idx)
-            && vcbm_set_private(cl, o, idx, tag->ti_Data))
-            return TRUE;
         if (IS_BM_ATTR(tag->ti_Tag, idx)
             && ((idx == aoHidd_BitMap_LeftEdge) || (idx == aoHidd_BitMap_TopEdge)))
             moved = TRUE;

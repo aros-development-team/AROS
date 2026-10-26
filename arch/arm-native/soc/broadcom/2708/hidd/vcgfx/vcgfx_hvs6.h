@@ -52,13 +52,11 @@ static inline void hvs6_wr(ULONG offset, ULONG value)
 #define HVS6_FREE_FROM      0x0500
 #define HVS6_FILL           0xb0b0b0b0
 
-/* Fixed slot layout so a plane toggles by one CTL0 write; one list per page */
-#define HVS6_LIST_SLOTS     4
+/* Fixed slot layout so a plane toggles by one CTL0 write */
+#define HVS6_LIST_SLOTS     3
 #define HVS6_SLOT_FB        0
-#define HVS6_SLOT_OVL       1
-#define HVS6_SLOT_CUR       2
-#define HVS6_SLOT_END       3
-#define HVS6_LISTS          2
+#define HVS6_SLOT_CUR       1
+#define HVS6_SLOT_END       2
 
 #define HVS6_CTL0_END       (1UL << 31)
 #define HVS6_CTL0_VALID     (1UL << 30)
@@ -99,9 +97,8 @@ static inline void hvs6_wr(ULONG offset, ULONG value)
 #define HVS6_UPM_LINES      2
 #define HVS6_UPM_FALLBACK   0x40000         /* arena if UBM_SIZE is odd   */
 
-/* One slice each for the overlay and our own framebuffer, sized for the
- * widest mode, so a mode change never re-carves; the cursor's for its
- * widest line */
+/* A slice for our own framebuffer, sized for the widest mode, so a mode
+ * change never re-carves; the cursor's for its widest line */
 #define HVS6_UPM_MAX_PITCH  (4096 * 4)
 #define HVS6_UPM_SLICE      ((((HVS6_UPM_MAX_PITCH + 62) / 32) * 32 *     \
                               HVS6_UPM_LINES + HVS6_UPM_GRAN - 1) &       \
@@ -114,12 +111,12 @@ static inline void hvs6_wr(ULONG offset, ULONG value)
 #define HVS6_FREE_LIMIT     0x1300
 
 /* UPM handles for the planes a list shows, in the order they get UPM;
- * 30..32 are the fb's, the overlay's and the cursor's */
+ * 30 and 32 are the fb's and the cursor's */
 #define HVS6_PL_HANDLE      14
 #define HVS6_PL_HANDLE_END  30
 
-/* Screens as planes: backdrop, the screens back to front each with its
- * overlays over it, unused slots empty, cursor, END. A plane shown needs
+/* Screens as planes: backdrop, the planes back to front, unused slots
+ * empty, cursor, END. A plane shown needs
  * a handle, so there are never more than those; three lists of more do
  * not fit the free list RAM. */
 #define HVS6_PL_BACK        0
@@ -140,15 +137,9 @@ void vc4_hvs6_report(struct VideoCoreGfx_staticdata *xsd, ULONG fb_phys,
 BOOL vc4_hvs6_takeover(struct VideoCoreGfx_staticdata *xsd, ULONG fb_phys,
                        ULONG fb_pitch, ULONG fb_width, ULONG fb_height,
                        const struct vcgfx_timing *want);
-BOOL vc4_hvs6_add_backpage(struct VideoCoreGfx_staticdata *xsd,
-                           ULONG fb_pitch, ULONG fb_height);
 APTR vc4_hvs6_alloc_fb(struct VideoCoreGfx_staticdata *xsd, ULONG pitch, ULONG height);
-BOOL vc4_hvs6_flip_page(struct VideoCoreGfx_staticdata *xsd, ULONG page_phys);
 void vc4_hvs6_latch_wait(struct VideoCoreGfx_staticdata *xsd);
-void vc4_hvs6_latch_until(struct VideoCoreGfx_staticdata *xsd, ULONG frame);
 void vc4_hvs6_irq_init(struct VideoCoreGfx_staticdata *xsd);
-BOOL vc4_hvs6_overlay(struct VideoCoreGfx_staticdata *xsd,
-                      const struct vc4gfx_overlay *ovl, OOP_Object *owner);
 BOOL vc4_hvs6_init_cursor(struct VideoCoreGfx_staticdata *xsd);
 void vc4_hvs6_cursor(struct VideoCoreGfx_staticdata *xsd);
 

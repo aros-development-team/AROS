@@ -18,8 +18,8 @@
     hardware. See vcgfx_hvs5.h for what came out of it.
 
     From there the driver owns the list: it inherits the framebuffer plane
-    verbatim, authors its own cursor and overlay planes, and paces flips
-    off the PixelValve interrupt.
+    verbatim, authors its own cursor plane and the screens', and paces
+    their updates off the PixelValve interrupt.
 */
 
 #define DEBUG 0
@@ -368,7 +368,7 @@ static void hvs5_init_plane(ULONG base, ULONG alpha_mode, ULONG words)
 /* A plane to place: source pixels and where they go. x/y/w/h are in a
  * cw x ch space that fills the fb plane's rectangle - the fb's own size,
  * or a screen's mode size, so every screen fills the display as its own
- * mode would. w/h exceed the source for an upscaled overlay. */
+ * mode would. w/h exceed the source for an upscaled plane. */
 struct hvs5_src
 {
     ULONG phys, pitch;
@@ -656,43 +656,10 @@ static void hvs5_write_src(struct vc4_hvs_state *st, ULONG base, ULONG words,
     hvs5_dl_set(base, ctl0);
 }
 
-/* The overlay plane over the fb: a GL buffer composited with fixed
- * alpha, since what GL leaves in the alpha channel is undefined. */
-static void hvs5_ovl_src(struct vc4_hvs_state *st, struct hvs5_src *s)
-{
-    s->phys  = st->hvs_OvlPhys;
-    s->pitch = st->hvs_OvlPitch;
-    s->pxf   = st->hvs_OvlPxf;
-    s->bpp   = st->hvs_OvlBpp;
-    s->srcw  = st->hvs_OvlW;
-    s->srch  = st->hvs_OvlH;
-    s->x     = st->hvs_OvlX;
-    s->y     = st->hvs_OvlY;
-    s->w     = st->hvs_OvlDestW ? st->hvs_OvlDestW : st->hvs_OvlW;
-    s->h     = st->hvs_OvlDestH ? st->hvs_OvlDestH : st->hvs_OvlH;
-    s->cw    = st->hvs_SrcW;
-    s->ch    = st->hvs_SrcH;
-    s->yuv   = 0;
-}
-
-/* Patch the live overlay entry in place (screens not planes). */
-static void hvs5_write_overlay(struct VideoCoreGfx_staticdata *xsd, ULONG base)
-{
-    struct vc4_hvs_state *st = &xsd->vcsd_HVS;
-    struct hvs5_src s;
-
-    hvs5_ovl_src(st, &s);
-    hvs5_write_src(st, base, st->hvs_OvlWords, st->hvs_OvlLBM, &s,
-                   (LONG)st->hvs_FBX, (LONG)st->hvs_FBY,
-                   (LONG)(st->hvs_FBX + st->hvs_DestW),
-                   (LONG)(st->hvs_FBY + st->hvs_DestH));
-}
-
 /* Append a plane at word n of the list; returns the new length. */
 static ULONG hvs5_emit_src(struct vc4_hvs_state *st, ULONG base, ULONG n,
                            const struct hvs5_src *s, ULONG *lbm,
-                           LONG left, LONG top, LONG right, LONG bottom,
-                           ULONG *words_out, ULONG *lbm_out)
+                           LONG left, LONG top, LONG right, LONG bottom)
 {
     ULONG words = hvs5_src_words(st, s, *lbm);
     ULONG at = 0;
@@ -704,11 +671,6 @@ static ULONG hvs5_emit_src(struct vc4_hvs_state *st, ULONG base, ULONG n,
     }
     hvs5_init_plane(base + n, HVS5_ALPHA_FIXED, words);
     hvs5_write_src(st, base + n, words, at, s, left, top, right, bottom);
-
-    if (words_out)
-        *words_out = words;
-    if (lbm_out)
-        *lbm_out = at;
     return n + words;
 }
 
@@ -740,7 +702,7 @@ static ULONG hvs5_emit_fb(struct vc4_hvs_state *st, ULONG base, ULONG n, ULONG *
         return hvs5_emit_src(st, base, n, &s, lbm,
                              (LONG)st->hvs_FBX, (LONG)st->hvs_FBY,
                              (LONG)(st->hvs_FBX + st->hvs_DestW),
-                             (LONG)(st->hvs_FBY + st->hvs_DestH), NULL, NULL);
+                             (LONG)(st->hvs_FBY + st->hvs_DestH));
     }
 
     for (i = 0; i < st->hvs_FBWords; i++)
@@ -780,27 +742,6 @@ static void hvs5_plane_src(struct VideoCoreGfx_staticdata *xsd, struct vcgfx_pla
     }
 }
 
-/* A pool overlay over the screen at orgx/orgy, in that screen's space. */
-static void hvs5_pool_src(const struct vcgfx_ovl *e, struct hvs5_src *s,
-                          LONG orgx, LONG orgy, ULONG cw, ULONG ch)
-{
-    const struct vc4gfx_overlay *d = &e->ov_Desc;
-
-    s->phys  = d->ovl_Phys;
-    s->pitch = d->ovl_Pitch;
-    s->pxf   = vc4_ovl_pxf(d->ovl_Flags);
-    s->bpp   = vc4_ovl_bpp(d->ovl_Flags);
-    s->srcw  = d->ovl_Width;
-    s->srch  = d->ovl_Height;
-    s->x     = orgx + d->ovl_X;
-    s->y     = orgy + d->ovl_Y;
-    s->w     = d->ovl_DestW ? d->ovl_DestW : d->ovl_Width;
-    s->h     = d->ovl_DestH ? d->ovl_DestH : d->ovl_Height;
-    s->cw    = cw;
-    s->ch    = ch;
-    s->yuv   = 0;
-}
-
 /* Words and line buffer for a plane, added to the running totals. */
 static ULONG hvs5_take(struct vc4_hvs_state *st, const struct hvs5_src *s, ULONG *lbm)
 {
@@ -816,12 +757,11 @@ static ULONG hvs5_take(struct vc4_hvs_state *st, const struct hvs5_src *s, ULONG
  * hide it: one spanning the display's width down to the bottom of what is
  * still visible covers everything behind it below its top edge. Worked out
  * on screen, as every screen scales to fill the display like its own mode.
- * The fb, kept black, is the backdrop where no screen covers. A screen's
- * overlays sit right above it.
+ * The fb, kept black, is the backdrop where no screen covers.
  *
- * The slot and the line buffer go to the screens first, front first, then
- * to the overlays, front screen first; a screen that does not fit is not
- * shown. Placed back to front with what was decided here.
+ * The slot and the line buffer go to the screens, front first; a screen
+ * that does not fit is not shown. Placed back to front with what was
+ * decided here.
  */
 static ULONG hvs5_emit_planes(struct VideoCoreGfx_staticdata *xsd,
                               ULONG base, ULONG n, ULONG *lbm)
@@ -829,14 +769,13 @@ static ULONG hvs5_emit_planes(struct VideoCoreGfx_staticdata *xsd,
     struct vc4_hvs_state *st = &xsd->vcsd_HVS;
     LONG limit[VCGFX_MAX_PLANES];
     ULONG swords[VCGFX_MAX_PLANES], slbm[VCGFX_MAX_PLANES];
-    ULONG owords[VCGFX_MAX_OVERLAYS], olbm[VCGFX_MAX_OVERLAYS];
     LONG left = (LONG)st->hvs_FBX, right = left + (LONG)st->hvs_DestW;
     LONG top = (LONG)st->hvs_FBY, bottom = top + (LONG)st->hvs_DestH;
     LONG front = (LONG)xsd->vcsd_NumPlanes - 1;
-    ULONG room = HVS5_OWN_SLOT_STRIDE - n - 1, need = 0, words, lb, k;
-    struct hvs5_src s, o;
-    LONG i, px, py, dx, dy;
-    ULONG pw, ph, dw, dh;
+    ULONG room = HVS5_OWN_SLOT_STRIDE - n - 1, need = 0, words, lb;
+    struct hvs5_src s;
+    LONG i, px, py;
+    ULONG pw, ph;
 
     /* The backdrop is reserved before it is known whether anything
      * uncovers it */
@@ -875,56 +814,6 @@ static ULONG hvs5_emit_planes(struct VideoCoreGfx_staticdata *xsd,
         bottom = vcgfx_plane_occlude(px, py, pw, ph, left, top, right, bottom);
     }
 
-    for (k = 0; k < VCGFX_MAX_OVERLAYS; k++)
-    {
-        owords[k] = 0;
-        xsd->vcsd_Ovl[k].ov_Shown = FALSE;
-        xsd->vcsd_Ovl[k].ov_NoFit = FALSE;
-    }
-    for (i = front; i >= 0; i--)
-    {
-        struct vcgfx_plane *pl = &xsd->vcsd_Plane[i];
-
-        if (!pl->pl_Shown)
-            continue;
-        hvs5_plane_src(xsd, pl, &s);
-
-        for (k = 0; k < VCGFX_MAX_OVERLAYS; k++)
-        {
-            struct vcgfx_ovl *e = &xsd->vcsd_Ovl[k];
-
-            if (!e->ov_Client || (e->ov_BM != pl->pl_BM))
-                continue;
-
-            /* A size the scaler can't make is left out, not shown wrong */
-            lb = need;
-            hvs5_pool_src(e, &o, pl->pl_X, pl->pl_Y, s.cw, s.ch);
-            words = hvs5_take(st, &o, &lb);
-            if (hvs5_src_rect(st, &o, &dx, &dy, &dw, &dh)
-                && ((dw != o.srcw) || (dh != o.srch)) && (words != HVS5_SCALED_WORDS))
-            {
-                /* Not even with the whole line buffer: final, not room */
-                e->ov_NoFit = (hvs5_src_words(st, &o, 0) != HVS5_SCALED_WORDS);
-                continue;
-            }
-
-            /* Its screen hidden: taken, with nothing of it to show */
-            if (!swords[i])
-            {
-                e->ov_Shown = TRUE;
-                continue;
-            }
-            if (words > room)
-                continue;
-
-            room -= words;
-            olbm[k] = need;
-            need = lb;
-            owords[k] = words;
-            e->ov_Shown = TRUE;
-        }
-    }
-
     if (bottom > top)
         n = hvs5_emit_fb(st, base, n, lbm);
 
@@ -932,32 +821,14 @@ static ULONG hvs5_emit_planes(struct VideoCoreGfx_staticdata *xsd,
     {
         struct vcgfx_plane *pl = &xsd->vcsd_Plane[i];
         LONG cb = limit[i];
-        LONG ol, ot, orr, ob;
 
         if (!swords[i])
             continue;
 
         hvs5_plane_src(xsd, pl, &s);
-        hvs5_src_rect(st, &s, &px, &py, &pw, &ph);
         hvs5_init_plane(base + n, HVS5_ALPHA_FIXED, swords[i]);
         hvs5_write_src(st, base + n, swords[i], slbm[i], &s, left, top, right, cb);
         n += swords[i];
-
-        /* No further out than the screen itself. */
-        ol  = (px > left) ? px : left;
-        ot  = (py > top) ? py : top;
-        orr = (px + (LONG)pw < right) ? px + (LONG)pw : right;
-        ob  = (py + (LONG)ph < cb) ? py + (LONG)ph : cb;
-
-        for (k = 0; k < VCGFX_MAX_OVERLAYS; k++)
-        {
-            if (!owords[k] || (xsd->vcsd_Ovl[k].ov_BM != pl->pl_BM))
-                continue;
-            hvs5_pool_src(&xsd->vcsd_Ovl[k], &o, pl->pl_X, pl->pl_Y, s.cw, s.ch);
-            hvs5_init_plane(base + n, HVS5_ALPHA_FIXED, owords[k]);
-            hvs5_write_src(st, base + n, owords[k], olbm[k], &o, ol, ot, orr, ob);
-            n += owords[k];
-        }
     }
     return n;
 }
@@ -984,8 +855,7 @@ static ULONG hvs5_free_slot(struct vc4_hvs_state *st)
 
 /*
  * Compose a list into a free slot: the framebuffer plane (or the screens,
- * once they are planes), then the overlay if one is up, then the cursor,
- * then END.
+ * once they are planes), then the cursor, then END.
  *
  * The returned head goes to DISPLIST through hvs5_commit(), or directly
  * where a mode set needs it. Steady-state updates that keep the shape of
@@ -997,27 +867,10 @@ static ULONG hvs5_build_list(struct VideoCoreGfx_staticdata *xsd)
     ULONG base = hvs5_free_slot(st);
     ULONG n = 0, lbm = 0;
 
-    st->hvs_OvlOff = 0;
-    st->hvs_OvlWords = 0;
-
     if (xsd->vcsd_PlanesMode)
         n = hvs5_emit_planes(xsd, base, n, &lbm);
     else
-    {
         n = hvs5_emit_fb(st, base, n, &lbm);
-        if (st->hvs_OvlActive)
-        {
-            struct hvs5_src s;
-
-            hvs5_ovl_src(st, &s);
-            st->hvs_OvlOff = n;
-            n = hvs5_emit_src(st, base, n, &s, &lbm,
-                              (LONG)st->hvs_FBX, (LONG)st->hvs_FBY,
-                              (LONG)(st->hvs_FBX + st->hvs_DestW),
-                              (LONG)(st->hvs_FBY + st->hvs_DestH),
-                              &st->hvs_OvlWords, &st->hvs_OvlLBM);
-        }
-    }
 
     /* Authored whenever a buffer exists, visible or not, so VALID alone
      * carries visibility and showing the pointer never reshapes the list. */
@@ -1071,6 +924,7 @@ BOOL vc4_hvs5_takeover(struct VideoCoreGfx_staticdata *xsd,
     {
         ULONG ctrl, head, len, base, i, ch;
         ULONG fb_entry, fb_ptr, fb_words;
+        BOOL plain;
 
         if (hvs5_rd(HVS5_ID) != HVS5_ID_MAGIC)
             return FALSE;
@@ -1172,12 +1026,9 @@ BOOL vc4_hvs5_takeover(struct VideoCoreGfx_staticdata *xsd,
         }
 
         /* A scaled fb plane's LBM base is the ceiling for ours. */
-        st->hvs_OvlActive = FALSE;
-        st->hvs_OvlUsable = (fb_words == HVS5_PLANE_WORDS)
-                         || (fb_words == HVS5_SCALED_WORDS);
+        plain = (fb_words == HVS5_PLANE_WORDS) || (fb_words == HVS5_SCALED_WORDS);
         st->hvs_FBLBM = (fb_words == HVS5_SCALED_WORDS)
                       ? st->hvs_FBEntry[HVS5_SC_LBM] : HVS5_LBM_SIZE;
-        st->hvs_OvlLBM = 0;
 
         /* Behind a token framebuffer the firmware's plane only gives the
          * rectangle; the mode's size and our buffer go in it. */
@@ -1187,8 +1038,8 @@ BOOL vc4_hvs5_takeover(struct VideoCoreGfx_staticdata *xsd,
             st->hvs_SrcH      = st->hvs_ShowH;
             st->hvs_FBPtr     = st->hvs_ShowPtr;
             st->hvs_FBPitch   = st->hvs_ShowPitch;
-            st->hvs_OvlUsable = TRUE;
             st->hvs_FBLBM     = HVS5_LBM_SIZE;
+            plain             = TRUE;
         }
 
         /* Planes may be committing from another task. */
@@ -1197,7 +1048,7 @@ BOOL vc4_hvs5_takeover(struct VideoCoreGfx_staticdata *xsd,
 
         hvs5_log_list(base);
 
-        if (!st->hvs_OvlUsable)
+        if (!plain)
         {
             ULONG i;
 
@@ -1285,7 +1136,6 @@ BOOL vc4_hvs5_mode_apply(struct VideoCoreGfx_staticdata *xsd, ULONG w, ULONG h,
     st->hvs_FBY        = 0;
     st->hvs_SrcW       = st->hvs_DestW = w;
     st->hvs_SrcH       = st->hvs_DestH = h;
-    st->hvs_OvlUsable  = TRUE;
     st->hvs_FBLBM      = HVS5_LBM_SIZE;
     st->hvs_FBPitch    = pitch;
 
@@ -1326,7 +1176,6 @@ BOOL vc4_hvs5_mode_switch(struct VideoCoreGfx_staticdata *xsd, ULONG w, ULONG h,
     st->hvs_FBY       = 0;
     st->hvs_SrcW      = st->hvs_DestW = w;
     st->hvs_SrcH      = st->hvs_DestH = h;
-    st->hvs_OvlUsable = TRUE;
     st->hvs_FBLBM     = HVS5_LBM_SIZE;
 
     VC4_MBOX_LOCK(xsd);
@@ -1345,26 +1194,6 @@ BOOL vc4_hvs5_mode_switch(struct VideoCoreGfx_staticdata *xsd, ULONG w, ULONG h,
         vc4_hvs5_mode_set(xsd, st->hvs_Channel, base, t, boot);
     }
     VC4_MBOX_UNLOCK(xsd);
-    return TRUE;
-}
-
-BOOL vc4_hvs5_flip_page(struct VideoCoreGfx_staticdata *xsd, ULONG page_phys)
-{
-    struct vc4_hvs_state *st = &xsd->vcsd_HVS;
-
-    /* With screens as planes the fb is only the backdrop. */
-    if (!st->hvs_Active || xsd->vcsd_PlanesMode)
-        return FALSE;
-
-    /* One word, reloaded by the HVS at frame start, so the flip is
-     * vblank-latched without a repoint. Unpaced until the PixelValve
-     * interrupt is wired up. */
-    st->hvs_FBPtr = page_phys & ~HVS5_PTR_BUS_ALIAS;
-    hvs5_dl_wr(st->hvs_ListBase + st->hvs_FBPtrOff,
-               HVS5_PTR_BUS_ALIAS | st->hvs_FBPtr);
-    st->hvs_FlipArmed = st->hvs_VSyncCount + 1;
-
-    hvs5_latch_wait(st);
     return TRUE;
 }
 
@@ -1428,108 +1257,12 @@ static void hvs5_write_cursor(struct VideoCoreGfx_staticdata *xsd, ULONG base)
     st->hvs_CurShown = TRUE;
 }
 
-BOOL vc4_hvs5_overlay(struct VideoCoreGfx_staticdata *xsd,
-                      const struct vc4gfx_overlay *ovl, OOP_Object *owner)
-{
-    struct vc4_hvs_state *st = &xsd->vcsd_HVS;
-    struct hvs5_src s;
-    BOOL structural;
-
-    /* Screens as planes place their overlays themselves (vcgfx_ovl_show). */
-    if (!st->hvs_Active || !st->hvs_OvlUsable)
-    {
-        /* Once: which precondition failed decides the fix (takeover
-         * failure vs a firmware-scaled fb plane). */
-        static BOOL said = FALSE;
-
-        if (!said && ovl)
-        {
-            said = TRUE;
-            bug("[VC4HVS5] overlay refused: %s (fb entry %u words,"
-                " lbm floor %u)\n",
-                !st->hvs_Active ? "no display list takeover"
-                                : "fb plane shape not understood",
-                (unsigned)st->hvs_FBWords, (unsigned)st->hvs_FBLBM);
-        }
-        return FALSE;
-    }
-
-    VC4_MBOX_LOCK(xsd);
-
-    if (!ovl)
-    {
-        if (st->hvs_OvlActive)
-        {
-            st->hvs_OvlActive = FALSE;
-            hvs5_commit(st, hvs5_build_list(xsd));
-            /* The hidden page scans until this latches: arm it so the
-             * caller's LatchWait covers the clear. */
-            st->hvs_FlipArmed = st->hvs_VSyncCount + 1;
-        }
-        VC4_MBOX_UNLOCK(xsd);
-        return TRUE;
-    }
-
-    /* Without planes the entry is 32bpp, scaled only like the fb */
-    if (vc4_ovl_bpp(ovl->ovl_Flags) != 4)
-    {
-        VC4_MBOX_UNLOCK(xsd);
-        return FALSE;
-    }
-
-    structural = !st->hvs_OvlActive || !st->hvs_OvlOff
-              || st->hvs_OvlW != ovl->ovl_Width
-              || st->hvs_OvlH != ovl->ovl_Height;
-
-    st->hvs_OvlActive = TRUE;
-    /* Set before hvs5_src_words(), which reads them. */
-    st->hvs_OvlPhys  = ovl->ovl_Phys & ~HVS5_PTR_BUS_ALIAS;
-    st->hvs_OvlPitch = ovl->ovl_Pitch;
-    st->hvs_OvlW     = ovl->ovl_Width;
-    st->hvs_OvlH     = ovl->ovl_Height;
-    st->hvs_OvlDestW = ovl->ovl_Width;
-    st->hvs_OvlDestH = ovl->ovl_Height;
-    st->hvs_OvlPxf   = vc4_ovl_pxf(ovl->ovl_Flags);
-    st->hvs_OvlBpp   = vc4_ovl_bpp(ovl->ovl_Flags);
-    st->hvs_OvlX     = ovl->ovl_X;
-    st->hvs_OvlY     = ovl->ovl_Y;
-
-    /* Unity <-> scaled moves the words: rebuild, don't patch. */
-    hvs5_ovl_src(st, &s);
-    if (hvs5_src_words(st, &s, 0) != st->hvs_OvlWords)
-        structural = TRUE;
-
-    if (structural)
-        hvs5_commit(st, hvs5_build_list(xsd));
-    else
-        hvs5_write_overlay(xsd, st->hvs_ListBase + st->hvs_OvlOff);
-
-    /* The buffer just replaced stays on screen until this latches, so
-     * pace the producer exactly like a page flip, unless deferred. */
-    st->hvs_FlipArmed = st->hvs_VSyncCount + 1;
-    if (!(ovl->ovl_Flags & VC4GFX_OVL_NOWAIT))
-        hvs5_latch_wait(st);
-
-    VC4_MBOX_UNLOCK(xsd);
-    return TRUE;
-}
-
 void vc4_hvs5_latch_wait(struct VideoCoreGfx_staticdata *xsd)
 {
     struct vc4_hvs_state *st = &xsd->vcsd_HVS;
 
     if (st->hvs_Active)
         hvs5_latch_wait(st);
-}
-
-/* Until the commit that armed `armed` has latched; later commits by
- * other clients do not move it. */
-void vc4_hvs5_latch_until(struct VideoCoreGfx_staticdata *xsd, ULONG armed)
-{
-    struct vc4_hvs_state *st = &xsd->vcsd_HVS;
-
-    if (st->hvs_Active)
-        hvs5_latch_until(st, armed);
 }
 
 void vc4_hvs5_update_cursor(struct VideoCoreGfx_staticdata *xsd)
@@ -1576,7 +1309,6 @@ static inline void pv_wr(ULONG base_off, ULONG offset, ULONG value)
 static void hvs5_vsync_irq(struct vc4_hvs_state *st, struct ExecBase *sysBase)
 {
     ULONG stat = pv_rd(st->hvs_PVOffset, HVS5_PV_INTSTAT);
-    struct vc4gfx_vblank *vbl;
 
     if (stat)
     {
@@ -1598,8 +1330,6 @@ static void hvs5_vsync_irq(struct vc4_hvs_state *st, struct ExecBase *sysBase)
             st->hvs_VSyncCount++;
             st->hvs_VSyncStamp = hvs5_now_us();
             vcgfx_vbl_signal(&st->hvs_VSyncWait);
-            if ((vbl = st->hvs_VBlank))
-                vbl->vbl_Func(vbl->vbl_Data);
         }
     }
 }
@@ -1820,8 +1550,8 @@ BOOL vc4_hvs5_plane_fits(struct VideoCoreGfx_staticdata *xsd, ULONG w, ULONG h)
         && HVS5_PPF_FITS(w, st->hvs_DestW) && HVS5_PPF_FITS(h, st->hvs_DestH);
 }
 
-/* Caller holds the mailbox lock. Armed like a flip, so LatchWait tells
- * when the previous list - and the pages it showed - are out of use. */
+/* Caller holds the mailbox lock. Armed, so vc4_hvs5_latch_wait() tells when the
+ * previous list - and the pages it showed - are out of use. */
 void vc4_hvs5_planes_commit(struct VideoCoreGfx_staticdata *xsd)
 {
     struct vc4_hvs_state *st = &xsd->vcsd_HVS;
@@ -1833,7 +1563,7 @@ void vc4_hvs5_planes_commit(struct VideoCoreGfx_staticdata *xsd)
     st->hvs_FlipArmed = st->hvs_VSyncCount + 1;
 }
 
-/* Build a list without showing it, for pl_Shown/ov_Shown; caller holds the
+/* Build a list without showing it, for pl_Shown; caller holds the
  * mailbox lock. The slot it lands in is one no commit is reading, and the
  * in-place patches keep aiming at the newest list. */
 void vc4_hvs5_planes_try(struct VideoCoreGfx_staticdata *xsd)

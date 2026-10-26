@@ -15,64 +15,17 @@
 
 enum {
     aoHidd_VideoCoreGfxBitMap_Drawable,
-    aoHidd_VideoCoreGfxBitMap_BackDrawable,    /* [G..] back page phys addr, 0 = no flipping */
-    aoHidd_VideoCoreGfxBitMap_Flip,            /* [.S.] set TRUE to flip front/back page */
-    aoHidd_VideoCoreGfxBitMap_Overlay,         /* [GS.] set: struct vc4gfx_overlay * (NULL
-                                                * clears); get: 1 while an overlay is shown */
-    aoHidd_VideoCoreGfxBitMap_LatchWait,       /* [G..] wait for the last armed update to latch */
-    aoHidd_VideoCoreGfxBitMap_VBlank,          /* [.S.] struct vc4gfx_vblank * (NULL removes);
-                                                * all HVS generations */
     num_Hidd_VideoCoreGfxBitMap_Attrs
 };
 
 #define aHidd_VideoCoreGfxBitMap_Drawable	(HiddVideoCoreGfxBitMapAttrBase + aoHidd_VideoCoreGfxBitMap_Drawable)
-#define aHidd_VideoCoreGfxBitMap_BackDrawable	(HiddVideoCoreGfxBitMapAttrBase + aoHidd_VideoCoreGfxBitMap_BackDrawable)
-#define aHidd_VideoCoreGfxBitMap_Flip	(HiddVideoCoreGfxBitMapAttrBase + aoHidd_VideoCoreGfxBitMap_Flip)
-#define aHidd_VideoCoreGfxBitMap_Overlay	(HiddVideoCoreGfxBitMapAttrBase + aoHidd_VideoCoreGfxBitMap_Overlay)
 
-/* Descriptor passed via aoHidd_VideoCoreGfxBitMap_Overlay: an opaque
- * 32bpp plane scanned straight from GPU memory, composited by the HVS
- * above the framebuffer (below the cursor). x/y are fb coordinates.
- * Each client keeps its own plane under its own key. Mirrored by hand
- * on the v3d and vc4gallium sides, like the attr indices. */
-struct vc4gfx_overlay
-{
-    ULONG ovl_Phys;                 /* ARM phys of the pixel data */
-    ULONG ovl_Pitch;                /* bytes per row */
-    ULONG ovl_Width, ovl_Height;    /* source pixels */
-    LONG  ovl_X, ovl_Y;             /* position in fb coordinates */
-    ULONG ovl_DestW, ovl_DestH;     /* on-screen size; 0 (or == source)
-                                     * = unscaled, larger = HVS upscale */
-    ULONG ovl_Flags;                /* VC4GFX_OVL_* */
-    APTR  ovl_Client;               /* the caller's key, NULL = the GL one */
-    ULONG ovl_Result;               /* out: 1 shown, VC4GFX_OVL_BUSY, 0 refused */
-    ULONG ovl_Armed;                /* out: the commit; in, with LATCHWAIT */
-};
-
-/* Don't wait for the latch; keep the displaced buffer until LatchWait. */
-#define VC4GFX_OVL_NOWAIT (1 << 0)
-/* 16bpp little-endian sources (cgxvideo); neither = 32bpp. */
-#define VC4GFX_OVL_RGB565 (1 << 1)
-#define VC4GFX_OVL_RGB555 (1 << 2)
-/* Take the client's plane down; only ovl_Client counts. */
-#define VC4GFX_OVL_HIDE   (1 << 3)
-/* Wait until the commit in ovl_Armed latched; only that field counts. */
-#define VC4GFX_OVL_LATCHWAIT (1 << 4)
-
-/* vcgfx only, beside the RGB565/555 flags: 32bpp in B,G,R,X byte order
- * on an HVS whose screens are R,G,B,X (HVS6) */
+/* Scan-out bitmap pixel formats besides the screens' own 32bpp one:
+ * 16bpp little-endian, and 32bpp in B,G,R,X byte order on an HVS whose
+ * screens are R,G,B,X (HVS6) */
+#define VCGFX_PX_RGB565   (1 << 1)
+#define VCGFX_PX_RGB555   (1 << 2)
 #define VCGFX_PX_BGRA     (1 << 8)
-
-/* ovl_Result: the plane is held or the budget used, retry later */
-#define VC4GFX_OVL_BUSY   2
-
-/* Per-vblank callback, run in interrupt context: no locks, no printing.
- * Mirrored by hand on the v3d side. */
-struct vc4gfx_vblank
-{
-    void (*vbl_Func)(APTR data);
-    APTR  vbl_Data;
-};
 
 /* This structure is used for both onscreen and offscreen bitmaps !! */
 
@@ -88,7 +41,7 @@ struct Box
     int x2, y2;
 };
 
-/* Buffers of a scan-out bitmap (aHidd_BitMap_Scanout); screens use two */
+/* Buffers of a scan-out bitmap (aHidd_BitMap_Scanout); screens use one */
 #define VCGFX_SCAN_BUFFERS  3
 
 /* A page of scanout memory (vcgfx_scanout_alloc), 4K aligned. */
@@ -116,7 +69,7 @@ struct BitmapData {
 	UBYTE               front;
 	UBYTE               back;                   /* Scan-out bitmap: the buffer to fill next */
 	UBYTE               nbufs;                  /* Scan-out bitmap: its buffers, 0 = a screen */
-	ULONG               pxflags;                /* VC4GFX_OVL_RGB565/555, 0 = 32bpp */
+	ULONG               pxflags;                /* VCGFX_PX_*, 0 = the screens' 32bpp */
 	UBYTE               videofmt;               /* vHidd_VideoFmt_NV12/I420, 0 = RGB */
 	UBYTE               colorspace;             /* vHidd_ColorSpace_* of a video bitmap */
 	ULONG               planeoff[2];            /* Video: chroma plane offsets in a page */

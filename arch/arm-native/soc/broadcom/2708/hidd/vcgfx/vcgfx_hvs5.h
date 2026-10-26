@@ -216,25 +216,11 @@ void vc4_hvs5_dump(struct VideoCoreGfx_staticdata *xsd,
 BOOL vc4_hvs5_takeover(struct VideoCoreGfx_staticdata *xsd,
                        ULONG fb_phys, ULONG fb_pitch);
 
-/* Retarget the framebuffer plane at another page. One word, latched by
- * the HVS at frame start. */
-BOOL vc4_hvs5_flip_page(struct VideoCoreGfx_staticdata *xsd, ULONG page_phys);
-
 /* Patch the cursor plane in place. No-op when there is no cursor buffer. */
 void vc4_hvs5_update_cursor(struct VideoCoreGfx_staticdata *xsd);
 
-/* Wait for the last armed overlay/flip to latch (VC4GFX_OVL_NOWAIT). */
+/* Wait for the last armed list update to latch. */
 void vc4_hvs5_latch_wait(struct VideoCoreGfx_staticdata *xsd);
-void vc4_hvs5_latch_until(struct VideoCoreGfx_staticdata *xsd, ULONG armed);
-
-/* Show (ovl != NULL) or drop (ovl == NULL) a plane composited over the
- * framebuffer, below the cursor - what lets the GL stack present without
- * a blit. Returns FALSE when unavailable, and the caller blits: scaling
- * would need the filter kernel and the wider entry that goes with it,
- * neither of which is decoded on HVS5 yet. */
-struct vc4gfx_overlay;
-BOOL vc4_hvs5_overlay(struct VideoCoreGfx_staticdata *xsd,
-                      const struct vc4gfx_overlay *ovl, OOP_Object *owner);
 
 /* Screens as planes (vcsd_Plane[]). planes_ok says whether the list can
  * be owned at all; commit rebuilds it and hands it to the next vblank.

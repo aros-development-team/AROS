@@ -52,98 +52,6 @@
 #undef MBoxBase
 #define MBoxBase      xsd->vcsd_MBoxBase
 
-/* Program the scanout window offset within the virtual framebuffer.
- * Returns TRUE only if the firmware echoes the requested offset back.
- */
-static BOOL vc4_set_voffset(struct VideoCoreGfx_staticdata *xsd, ULONG yoffset)
-{
-    BOOL ok;
-
-    VC4_MBOX_LOCK(xsd);
-    xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(8 * 4);
-    xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
-    xsd->vcsd_MBoxMessage[2] = AROS_LE2LONG(VCTAG_SETVOFFSET);
-    xsd->vcsd_MBoxMessage[3] = AROS_LE2LONG(8);
-    xsd->vcsd_MBoxMessage[4] = AROS_LE2LONG(8);
-    xsd->vcsd_MBoxMessage[5] = AROS_LE2LONG(0);
-    xsd->vcsd_MBoxMessage[6] = AROS_LE2LONG(yoffset);
-    xsd->vcsd_MBoxMessage[7] = 0;
-
-    ok = (MBoxCall((void *)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage)
-            != (volatile unsigned int *)-1)
-        && (xsd->vcsd_MBoxMessage[4] == AROS_LE2LONG(VCTAG_RESP + 8))
-        && (AROS_LE2LONG(xsd->vcsd_MBoxMessage[6]) == yoffset);
-    VC4_MBOX_UNLOCK(xsd);
-
-    return ok;
-}
-
-/* Phys address of the back page, or 0 when flipping is unavailable. */
-ULONG vc4_fb_backpage(struct VideoCoreGfx_staticdata *xsd)
-{
-    if (xsd->vcsd_FBPages < 2)
-        return 0;
-    return xsd->vcsd_FBPage[1 - xsd->vcsd_FBFront];
-}
-
-/* Make the back page visible and retarget rendering (data->VideoData and
- * the ChunkyBM buffer) at it. Caller must have drawn the full frame first.
- */
-BOOL vc4_fb_flip(struct VideoCoreGfx_staticdata *xsd)
-{
-    UBYTE nf;
-    BOOL  flipped;
-
-    /* Screens as planes leave the fb a backdrop only. */
-    if (xsd->vcsd_FBPages < 2 || !xsd->vcsd_FBObj || xsd->vcsd_PlanesMode)
-        return FALSE;
-
-    /* The mailbox lock also serializes concurrent flippers; the nested
-     * Obtain inside vc4_set_voffset is fine for the owning task. */
-    VC4_MBOX_LOCK(xsd);
-
-    nf = 1 - xsd->vcsd_FBFront;
-    flipped = vc4_hvs_flip_page(xsd, xsd->vcsd_FBPage[nf]);
-
-    /* BCM2712 acks SETVOFFSET without moving, and display tags risk
-     * the firmware taking the list back. */
-    if (!flipped && (xsd->vcsd_HVSGen != VCGFX_HVS_HVS6))
-        flipped = vc4_set_voffset(xsd, nf * xsd->vcsd_FBPageHeight);
-
-    if (!flipped)
-    {
-        /* Refused - disable for good. Loud: a GL client that wrapped the
-         * scanout pages would leave the screen frozen. */
-        bug("[VideoCoreGfx] flip refused, flipping disabled\n");
-        xsd->vcsd_FBPages = 1;
-        VC4_MBOX_UNLOCK(xsd);
-        return FALSE;
-    }
-    xsd->vcsd_FBFront = nf;
-
-    {
-        OOP_Class *bmcl = xsd->vcsd_VideoCoreGfxOnBMClass;
-        struct BitmapData *data = OOP_INST_DATA(bmcl, xsd->vcsd_FBObj);
-        struct TagItem btags[] =
-        {
-            { xsd->vcsd_attrBases[2] + aoHidd_ChunkyBM_Buffer, xsd->vcsd_FBPage[nf] },
-            { TAG_DONE, 0 }
-        };
-
-        data->VideoData = (UBYTE *)(IPTR)xsd->vcsd_FBPage[nf];
-        OOP_SetAttrs(xsd->vcsd_FBObj, btags);
-    }
-
-    VC4_MBOX_UNLOCK(xsd);
-    return TRUE;
-}
-
-/* Drive the firmware framebuffer to the requested geometry; report back the
- * CPU pointer and scanout pitch. Used by BitMap::New and BitMap::Set.
- *
- * A double-height virtual framebuffer is requested first; the second page
- * enables SETVOFFSET flipping. Falls back to a single page if unavailable.
- */
 /* The rate a sync object asks for, for telling modes of one size apart;
  * NULL when it cannot say. */
 static const struct vcgfx_timing *vc4_sync_timing(OOP_Class *cl, OOP_Object *sync,
@@ -165,131 +73,116 @@ static const struct vcgfx_timing *vc4_sync_timing(OOP_Class *cl, OOP_Object *syn
     return t;
 }
 
-/* FBFREE, then FBALLOC aligned_width x height, maxpages tall if the
- * firmware will (the second page enables SETVOFFSET flipping), and
- * GETPITCH. Not for BCM2712, which cannot allocate another. */
+/* FBFREE, then FBALLOC aligned_width x height, and GETPITCH. Not for
+ * BCM2712, which cannot allocate another. */
 static BOOL vc4_fballoc(struct VideoCoreGfx_staticdata *xsd,
-    ULONG aligned_width, ULONG height, UBYTE bytesperpix, int maxpages,
-    APTR *fb_ptr_out, ULONG *fb_pitch_out, int *pages_out)
+    ULONG aligned_width, ULONG height, UBYTE bytesperpix,
+    APTR *fb_ptr_out, ULONG *fb_pitch_out)
 {
     ULONG bitsperpixel = bytesperpix * 8;
     APTR fb_ptr = NULL;
     ULONG fb_pitch = 0, fb_size = 0;
-    int pages;
 
-    for (pages = maxpages; pages >= 1; pages--)
+    /* Hold the mailbox lock across the whole multi-transaction sequence
+     * (FBFREE -> batched mode/depth/pixfmt/FBALLOC -> GETPITCH). */
+    VC4_MBOX_LOCK(xsd);
+
+    /* Free any previous framebuffer the firmware was holding. */
+    xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(6 * 4);
+    xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
+    xsd->vcsd_MBoxMessage[2] = AROS_LE2LONG(VCTAG_FBFREE);
+    xsd->vcsd_MBoxMessage[3] = 0;
+    xsd->vcsd_MBoxMessage[4] = 0;
+    xsd->vcsd_MBoxMessage[5] = 0;
+    MBoxCall((void *)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
+
+    /* SETRES + SETVRES + SETDEPTH + SETPIXFMT + FBALLOC in one batch.
+     * SETPIXFMT pins channel order to RGB to match pftags_32bpp (R in
+     * low bits); real Pi3 defaults to BGR (brown/blue tint), QEMU to RGB.
+     */
+    xsd->vcsd_MBoxMessage[1]  = AROS_LE2LONG(VCTAG_REQ);
+    xsd->vcsd_MBoxMessage[2]  = AROS_LE2LONG(VCTAG_SETRES);
+    xsd->vcsd_MBoxMessage[3]  = AROS_LE2LONG(8);
+    xsd->vcsd_MBoxMessage[4]  = AROS_LE2LONG(8);
+    xsd->vcsd_MBoxMessage[5]  = AROS_LE2LONG(aligned_width);
+    xsd->vcsd_MBoxMessage[6]  = AROS_LE2LONG(height);
+
+    xsd->vcsd_MBoxMessage[7]  = AROS_LE2LONG(VCTAG_SETVRES);
+    xsd->vcsd_MBoxMessage[8]  = AROS_LE2LONG(8);
+    xsd->vcsd_MBoxMessage[9]  = AROS_LE2LONG(8);
+    xsd->vcsd_MBoxMessage[10] = AROS_LE2LONG(aligned_width);
+    xsd->vcsd_MBoxMessage[11] = AROS_LE2LONG(height);
+
+    xsd->vcsd_MBoxMessage[12] = AROS_LE2LONG(VCTAG_SETDEPTH);
+    xsd->vcsd_MBoxMessage[13] = AROS_LE2LONG(4);
+    xsd->vcsd_MBoxMessage[14] = AROS_LE2LONG(4);
+    xsd->vcsd_MBoxMessage[15] = AROS_LE2LONG(bitsperpixel);
+
+    xsd->vcsd_MBoxMessage[16] = AROS_LE2LONG(VCTAG_SETPIXFMT);
+    xsd->vcsd_MBoxMessage[17] = AROS_LE2LONG(4);
+    xsd->vcsd_MBoxMessage[18] = AROS_LE2LONG(4);
+    xsd->vcsd_MBoxMessage[19] = AROS_LE2LONG(VCPXFMT_BGR);
+
+    xsd->vcsd_MBoxMessage[20] = AROS_LE2LONG(VCTAG_FBALLOC);
+    xsd->vcsd_MBoxMessage[21] = AROS_LE2LONG(8);
+    xsd->vcsd_MBoxMessage[22] = AROS_LE2LONG(4);
+    xsd->vcsd_MBoxMessage[23] = AROS_LE2LONG(16);
+    xsd->vcsd_MBoxMessage[24] = 0;
+
+    xsd->vcsd_MBoxMessage[25] = 0;
+    xsd->vcsd_MBoxMessage[0]  = AROS_LE2LONG(26 << 2);
+
+    if ((MBoxCall((void *)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage)
+            == (volatile unsigned int *)-1)
+        || (xsd->vcsd_MBoxMessage[1] != AROS_LE2LONG(VCTAG_RESP))
+        || (xsd->vcsd_MBoxMessage[22] != AROS_LE2LONG(VCTAG_RESP + 8)))
     {
-        /* Hold the mailbox lock across the whole multi-transaction sequence
-         * (FBFREE -> batched mode/depth/pixfmt/FBALLOC -> GETPITCH). */
-        VC4_MBOX_LOCK(xsd);
-
-        /* Free any previous framebuffer the firmware was holding. */
-        xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(6 * 4);
-        xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
-        xsd->vcsd_MBoxMessage[2] = AROS_LE2LONG(VCTAG_FBFREE);
-        xsd->vcsd_MBoxMessage[3] = 0;
-        xsd->vcsd_MBoxMessage[4] = 0;
-        xsd->vcsd_MBoxMessage[5] = 0;
-        MBoxCall((void *)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
-
-        /* SETRES + SETVRES + SETDEPTH + SETPIXFMT + FBALLOC in one batch.
-         * SETPIXFMT pins channel order to RGB to match pftags_32bpp (R in
-         * low bits); real Pi3 defaults to BGR (brown/blue tint), QEMU to RGB.
-         */
-        xsd->vcsd_MBoxMessage[1]  = AROS_LE2LONG(VCTAG_REQ);
-        xsd->vcsd_MBoxMessage[2]  = AROS_LE2LONG(VCTAG_SETRES);
-        xsd->vcsd_MBoxMessage[3]  = AROS_LE2LONG(8);
-        xsd->vcsd_MBoxMessage[4]  = AROS_LE2LONG(8);
-        xsd->vcsd_MBoxMessage[5]  = AROS_LE2LONG(aligned_width);
-        xsd->vcsd_MBoxMessage[6]  = AROS_LE2LONG(height);
-
-        xsd->vcsd_MBoxMessage[7]  = AROS_LE2LONG(VCTAG_SETVRES);
-        xsd->vcsd_MBoxMessage[8]  = AROS_LE2LONG(8);
-        xsd->vcsd_MBoxMessage[9]  = AROS_LE2LONG(8);
-        xsd->vcsd_MBoxMessage[10] = AROS_LE2LONG(aligned_width);
-        xsd->vcsd_MBoxMessage[11] = AROS_LE2LONG(height * pages);
-
-        xsd->vcsd_MBoxMessage[12] = AROS_LE2LONG(VCTAG_SETDEPTH);
-        xsd->vcsd_MBoxMessage[13] = AROS_LE2LONG(4);
-        xsd->vcsd_MBoxMessage[14] = AROS_LE2LONG(4);
-        xsd->vcsd_MBoxMessage[15] = AROS_LE2LONG(bitsperpixel);
-
-        xsd->vcsd_MBoxMessage[16] = AROS_LE2LONG(VCTAG_SETPIXFMT);
-        xsd->vcsd_MBoxMessage[17] = AROS_LE2LONG(4);
-        xsd->vcsd_MBoxMessage[18] = AROS_LE2LONG(4);
-        xsd->vcsd_MBoxMessage[19] = AROS_LE2LONG(VCPXFMT_BGR);
-
-        xsd->vcsd_MBoxMessage[20] = AROS_LE2LONG(VCTAG_FBALLOC);
-        xsd->vcsd_MBoxMessage[21] = AROS_LE2LONG(8);
-        xsd->vcsd_MBoxMessage[22] = AROS_LE2LONG(4);
-        xsd->vcsd_MBoxMessage[23] = AROS_LE2LONG(16);
-        xsd->vcsd_MBoxMessage[24] = 0;
-
-        xsd->vcsd_MBoxMessage[25] = 0;
-        xsd->vcsd_MBoxMessage[0]  = AROS_LE2LONG(26 << 2);
-
-        if ((MBoxCall((void *)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage)
-                == (volatile unsigned int *)-1)
-            || (xsd->vcsd_MBoxMessage[1] != AROS_LE2LONG(VCTAG_RESP))
-            || (xsd->vcsd_MBoxMessage[22] != AROS_LE2LONG(VCTAG_RESP + 8)))
-        {
-            VC4_MBOX_UNLOCK(xsd);
-            if (pages > 1)
-                continue;
-            return FALSE;
-        }
-        fb_ptr = (APTR)(IPTR)(AROS_LE2LONG(xsd->vcsd_MBoxMessage[23]) & 0x3fffffff);
-        fb_size = AROS_LE2LONG(xsd->vcsd_MBoxMessage[24]);
-
-        /* Use the firmware-reported pitch verbatim: it may align rows, or
-         * (QEMU) keep a default virtual width that ignores our request.
-         */
-        xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(7 * 4);
-        xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
-        xsd->vcsd_MBoxMessage[2] = AROS_LE2LONG(VCTAG_GETPITCH);
-        xsd->vcsd_MBoxMessage[3] = AROS_LE2LONG(4);
-        xsd->vcsd_MBoxMessage[4] = 0;
-        xsd->vcsd_MBoxMessage[5] = 0;
-        xsd->vcsd_MBoxMessage[6] = 0;
-
-        if ((MBoxCall((void *)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage)
-                != (volatile unsigned int *)-1)
-            && (xsd->vcsd_MBoxMessage[4] == AROS_LE2LONG(VCTAG_RESP + 4)))
-        {
-            fb_pitch = AROS_LE2LONG(xsd->vcsd_MBoxMessage[5]);
-        }
-        else
-        {
-            /* Fallback: assume packed rows. */
-            fb_pitch = aligned_width * bytesperpix;
-        }
-
         VC4_MBOX_UNLOCK(xsd);
+        return FALSE;
+    }
+    fb_ptr = (APTR)(IPTR)(AROS_LE2LONG(xsd->vcsd_MBoxMessage[23]) & 0x3fffffff);
+    fb_size = AROS_LE2LONG(xsd->vcsd_MBoxMessage[24]);
 
-        /* Did the allocation really cover both pages? */
-        if (pages > 1 && fb_size < fb_pitch * height * 2)
-            continue;
+    /* Use the firmware-reported pitch verbatim: it may align rows, or
+     * (QEMU) keep a default virtual width that ignores our request.
+     */
+    xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(7 * 4);
+    xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
+    xsd->vcsd_MBoxMessage[2] = AROS_LE2LONG(VCTAG_GETPITCH);
+    xsd->vcsd_MBoxMessage[3] = AROS_LE2LONG(4);
+    xsd->vcsd_MBoxMessage[4] = 0;
+    xsd->vcsd_MBoxMessage[5] = 0;
+    xsd->vcsd_MBoxMessage[6] = 0;
 
-        /* The Pi 4 firmware caps the size at max_framebuffer_width/height
-         * and says so only in what it hands back: drawing into that would
-         * run past its end. */
-        if ((xsd->vcsd_HVSGen == VCGFX_HVS_HVS5)
-            && ((fb_pitch < aligned_width * bytesperpix) || (fb_size < fb_pitch * height)))
-        {
-            bug("[VideoCoreGfx] %ux%u: the firmware gave %u bytes at pitch %u"
-                " - raise max_framebuffer_width/height in config.txt\n",
-                (unsigned)aligned_width, (unsigned)height, (unsigned)fb_size,
-                (unsigned)fb_pitch);
-            if (pages > 1)
-                continue;
-            return FALSE;
-        }
-        break;
+    if ((MBoxCall((void *)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage)
+            != (volatile unsigned int *)-1)
+        && (xsd->vcsd_MBoxMessage[4] == AROS_LE2LONG(VCTAG_RESP + 4)))
+    {
+        fb_pitch = AROS_LE2LONG(xsd->vcsd_MBoxMessage[5]);
+    }
+    else
+    {
+        /* Fallback: assume packed rows. */
+        fb_pitch = aligned_width * bytesperpix;
+    }
+
+    VC4_MBOX_UNLOCK(xsd);
+
+    /* The Pi 4 firmware caps the size at max_framebuffer_width/height
+     * and says so only in what it hands back: drawing into that would
+     * run past its end. */
+    if ((xsd->vcsd_HVSGen == VCGFX_HVS_HVS5)
+        && ((fb_pitch < aligned_width * bytesperpix) || (fb_size < fb_pitch * height)))
+    {
+        bug("[VideoCoreGfx] %ux%u: the firmware gave %u bytes at pitch %u"
+            " - raise max_framebuffer_width/height in config.txt\n",
+            (unsigned)aligned_width, (unsigned)height, (unsigned)fb_size,
+            (unsigned)fb_pitch);
+        return FALSE;
     }
 
     *fb_ptr_out   = fb_ptr;
     *fb_pitch_out = fb_pitch;
-    *pages_out    = pages;
     return TRUE;
 }
 
@@ -314,11 +207,10 @@ static BOOL vc4_program_token_fb(struct VideoCoreGfx_staticdata *xsd,
     ULONG pitch = aligned_width * bytesperpix, size = pitch * height, tpitch;
     ULONG th = (VC4_TOKEN_FB * height + aligned_width / 2) / aligned_width;
     APTR tptr;
-    int pages;
 
     if (th < 16)
         th = 16;
-    if (!vc4_fballoc(xsd, VC4_TOKEN_FB, th, bytesperpix, 1, &tptr, &tpitch, &pages))
+    if (!vc4_fballoc(xsd, VC4_TOKEN_FB, th, bytesperpix, &tptr, &tpitch))
         return FALSE;
 
     if (!old.sb_Pixels || (xsd->vcsd_FBBufSize != size))
@@ -356,12 +248,6 @@ static BOOL vc4_program_token_fb(struct VideoCoreGfx_staticdata *xsd,
     /* The list showing the old buffer has latched away. */
     if (old.sb_Raw)
         vcgfx_scanout_free(xsd, &old);
-
-    xsd->vcsd_FBPage[0]    = st->hvs_ShowPtr;
-    xsd->vcsd_FBPage[1]    = st->hvs_ShowPtr;
-    xsd->vcsd_FBPageHeight = height;
-    xsd->vcsd_FBFront      = 0;
-    xsd->vcsd_FBPages      = 1;
 
     *fb_ptr_out   = xsd->vcsd_FBBuf.sb_Pixels;
     *fb_pitch_out = pitch;
@@ -410,12 +296,6 @@ static BOOL vc4_program_own_fb(struct VideoCoreGfx_staticdata *xsd,
     if (old.sb_Raw)
         vcgfx_scanout_free(xsd, &old);
 
-    xsd->vcsd_FBPage[0]    = xsd->vcsd_HVS.hvs_ShowPtr;
-    xsd->vcsd_FBPage[1]    = xsd->vcsd_HVS.hvs_ShowPtr;
-    xsd->vcsd_FBPageHeight = height;
-    xsd->vcsd_FBFront      = 0;
-    xsd->vcsd_FBPages      = 1;
-
     *fb_ptr_out   = xsd->vcsd_FBBuf.sb_Pixels;
     *fb_pitch_out = pitch;
     return TRUE;
@@ -427,7 +307,6 @@ static BOOL vc4_program_fb(struct VideoCoreGfx_staticdata *xsd,
 {
     APTR fb_ptr = NULL;
     ULONG fb_pitch = 0;
-    int pages = 1;
 
     if ((xsd->vcsd_HVSGen == VCGFX_HVS_HVS5)
         && vc4_program_own_fb(xsd, aligned_width, height, bytesperpix, want,
@@ -473,33 +352,11 @@ static BOOL vc4_program_fb(struct VideoCoreGfx_staticdata *xsd,
                 return FALSE;
         }
     }
-    else if (!vc4_fballoc(xsd, aligned_width, height, bytesperpix, 2,
-                          &fb_ptr, &fb_pitch, &pages))
+    else if (!vc4_fballoc(xsd, aligned_width, height, bytesperpix, &fb_ptr, &fb_pitch))
         return FALSE;
 
-    xsd->vcsd_FBPage[0]    = (ULONG)(IPTR)fb_ptr;
-    xsd->vcsd_FBPage[1]    = (ULONG)(IPTR)fb_ptr + fb_pitch * height;
-    xsd->vcsd_FBPageHeight = height;
-    xsd->vcsd_FBFront      = 0;
-    xsd->vcsd_FBPages      = 1;
-
-    if (pages == 2)
-    {
-        /* Only trust flipping if the firmware honours SETVOFFSET
-         * round-trips (QEMU's emulation may not). */
-        if (vc4_set_voffset(xsd, height) && vc4_set_voffset(xsd, 0))
-        {
-            /* Clear the back page so the first flip can't expose stale
-             * memory. CPU memset to the uncached FB — DMA fill hangs on HW. */
-            memset((APTR)(IPTR)xsd->vcsd_FBPage[1], 0, fb_pitch * height);
-            xsd->vcsd_FBPages = 2;
-        }
-        else
-            vc4_set_voffset(xsd, 0);
-    }
-
-    D(bug("[VideoCoreGfx] %s: %d page(s) @ 0x%p, pitch %d\n",
-        __PRETTY_FUNCTION__, (int)xsd->vcsd_FBPages, fb_ptr, (int)fb_pitch));
+    D(bug("[VideoCoreGfx] %s: fb @ 0x%p, pitch %d\n",
+        __PRETTY_FUNCTION__, fb_ptr, (int)fb_pitch));
 
     /* Phase-1 HVS bring-up: dump the firmware's live display list and PV
      * timing for this mode (read-only, self-skips on QEMU). */
@@ -512,14 +369,12 @@ static BOOL vc4_program_fb(struct VideoCoreGfx_staticdata *xsd,
 
         /* A mode set holds this ~100 ms; cursor updates must wait. */
         VC4_MBOX_LOCK(xsd);
-        if (vc4_hvs6_takeover(xsd, (ULONG)(IPTR)fb_ptr, fb_pitch,
-                              aligned_width, height, want))
-            vc4_hvs6_add_backpage(xsd, fb_pitch, height);
+        vc4_hvs6_takeover(xsd, (ULONG)(IPTR)fb_ptr, fb_pitch, aligned_width, height, want);
         VC4_MBOX_UNLOCK(xsd);
     }
 
-    /* Phase 2: own the display list from here on. Flips and cursor
-     * updates become dlist repoints; falls back to the firmware paths
+    /* Phase 2: own the display list from here on. Cursor updates
+     * become dlist repoints; falls back to the firmware paths
      * (and returns FALSE) if the live list can't be inherited. */
     vc4_hvs_takeover(xsd, (ULONG)(IPTR)fb_ptr, fb_pitch);
     if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS5)
@@ -716,87 +571,6 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     ReturnPtr("VideoCoreGfx.OnBitMap::New: Obj", OOP_Object *, o);
 }
 
-/*
- * A draw is about to land inside the rectangle an overlay plane covers.
- * Nothing draws there while the plane is up - the gallium driver renders
- * straight onto it - so this is something opening over the GL window: a
- * window, a menu, a requester. The HVS composites the plane above the fb,
- * so it would hide that. Hand the area back to the fb instead: copy what the
- * plane shows into the fb under it, then take the plane down. If the app is
- * still presenting, its next present sees the window obscured and blits as it
- * already does; if it has stopped, the fb now holds its last frame.
- */
-void vcgfx_ovl_yield(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm,
-                     LONG x0, LONG y0, LONG x1, LONG y1)
-{
-    struct BitmapData *fb;
-    LONG ox, oy, ow, oh, cx0, cy0, cx1, cy1, y;
-    ULONG i;
-
-    /* Unlocked first: this sits in front of every fb draw. */
-    for (i = 0; i < VCGFX_MAX_OVERLAYS; i++)
-    {
-        if (xsd->vcsd_Ovl[i].ov_Shown && (xsd->vcsd_Ovl[i].ov_BM == bm))
-            break;
-    }
-    if (i == VCGFX_MAX_OVERLAYS)
-        return;
-
-    ObtainSemaphore(&xsd->vcsd_OvlLock);
-    for (i = 0; i < VCGFX_MAX_OVERLAYS; i++)
-    {
-        struct vcgfx_ovl *e = &xsd->vcsd_Ovl[i];
-        const struct vc4gfx_overlay *d = &e->ov_Desc;
-
-        if (!e->ov_Shown || (e->ov_BM != bm))
-            continue;
-
-        ox = d->ovl_X;
-        oy = d->ovl_Y;
-        ow = d->ovl_DestW ? d->ovl_DestW : d->ovl_Width;
-        oh = d->ovl_DestH ? d->ovl_DestH : d->ovl_Height;
-        if (x1 < ox || y1 < oy || x0 >= ox + ow || y0 >= oy + oh)
-            continue;
-
-        /* Unscaled 32bpp only - both planes are XRGB, so rows copy as-is. A
-         * scaled plane is just taken down; the next present repaints it. The
-         * plane's address is a valid CPU address: V3D arenas are identity
-         * mapped, vc4gallium's bus address masks back to the vaddr. */
-        fb = e->ov_BMData;
-        if (fb && fb->VideoData && fb->bytesperpix == 4
-            && !(d->ovl_Flags & (VC4GFX_OVL_RGB565 | VC4GFX_OVL_RGB555))
-            && (!d->ovl_DestW || d->ovl_DestW == d->ovl_Width)
-            && (!d->ovl_DestH || d->ovl_DestH == d->ovl_Height))
-        {
-            cx0 = ox > 0 ? ox : 0;
-            cy0 = oy > 0 ? oy : 0;
-            cx1 = ox + ow < (LONG)fb->width  ? ox + ow : (LONG)fb->width;
-            cy1 = oy + oh < (LONG)fb->height ? oy + oh : (LONG)fb->height;
-
-            if (cx1 > cx0 && cy1 > cy0)
-            {
-                UBYTE *src = (UBYTE *)(IPTR)d->ovl_Phys
-                           + (cy0 - oy) * d->ovl_Pitch + (cx0 - ox) * 4;
-                UBYTE *dst = fb->VideoData + cy0 * fb->bytesperrow + cx0 * 4;
-                ULONG bytes = (ULONG)(cx1 - cx0) * 4;
-
-                /* V3D pages are Normal-NC; vc4gallium's may be cached. */
-                CacheClearE(src, (ULONG)(cy1 - cy0 - 1) * d->ovl_Pitch + bytes,
-                            CACRF_InvalidateD);
-                for (y = cy0; y < cy1; y++)
-                {
-                    neon_copyline(dst, src, bytes);
-                    src += d->ovl_Pitch;
-                    dst += fb->bytesperrow;
-                }
-            }
-        }
-
-        vcgfx_ovl_hide(xsd, e->ov_Client);
-    }
-    ReleaseSemaphore(&xsd->vcsd_OvlLock);
-}
-
 /**********  Bitmap::Set()  ***************************************/
 
 /* gfx.hidd's Show() switches the FB ModeID via SetAttrs on us. Left to the
@@ -828,9 +602,6 @@ IPTR MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
             newmodeid = (HIDDT_ModeID)tag->ti_Data;
             has_modeid = TRUE;
         }
-        else if (IS_VideoCoreGfxBM_ATTR(tag->ti_Tag, idx)
-                 && vcbm_set_private(cl, o, idx, tag->ti_Data))
-            return TRUE;
     }
 
     D(bug("[VideoCoreGfx] OnBitMap::Set: has_modeid=%d, newmodeid=0x%08lx\n",
@@ -898,18 +669,4 @@ IPTR MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
     }
 
     return OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-}
-
-/**********  Bitmap::Dispose()  ***********************************/
-
-VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
-{
-    struct VideoCoreGfx_staticdata *xsd = XSD(cl);
-
-    EnterFunc(bug("VideoCoreGfx.OnBitMap::Dispose()\n"));
-    ObtainSemaphore(&xsd->vcsd_OvlLock);
-    vcgfx_ovl_drop_bm(xsd, o);
-    ReleaseSemaphore(&xsd->vcsd_OvlLock);
-    OOP_DoSuperMethod(cl, o, msg);
-    ReturnVoid("VideoCoreGfx.OnBitMap::Dispose");
 }

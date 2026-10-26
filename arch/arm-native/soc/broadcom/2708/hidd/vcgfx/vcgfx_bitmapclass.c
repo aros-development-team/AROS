@@ -24,74 +24,10 @@
  * fall through to ChunkyBM.
  */
 
-/* A draw into an overlay plane's rectangle takes the plane down first
- * (vcgfx_ovl_yield in vcgfx_onbitmap.c). */
-#define OVL_YIELD(x, y, w, h) \
-    vcgfx_ovl_yield(XSD(cl), o, (x), (y), (x) + (LONG)(w) - 1, (y) + (LONG)(h) - 1)
-
-/* Flip, Overlay and VBlank; FALSE for any other attribute. */
-static BOOL vcbm_set_private(OOP_Class *cl, OOP_Object *o, ULONG idx, IPTR val)
-{
-    struct VideoCoreGfx_staticdata *xsd = XSD(cl);
-    struct BitmapData *data = OOP_INST_DATA(cl, o);
-
-    switch (idx)
-    {
-    case aoHidd_VideoCoreGfxBitMap_Flip:
-        /* Page-flip request (e.g. from a gallium driver after a full-frame
-         * render into the back page). */
-        if (val)
-        {
-#ifdef OnBitmap
-            vc4_fb_flip(xsd);
-#else
-            vcgfx_plane_flip(cl, o);
-#endif
-        }
-        return TRUE;
-
-    case aoHidd_VideoCoreGfxBitMap_Overlay:
-        {
-            /* Zero-copy overlay plane (windowed GL), one per client key.
-             * The outcome and the commit to wait for go back in the
-             * descriptor. */
-            struct vc4gfx_overlay *ovl = (struct vc4gfx_overlay *)val;
-            APTR client = (ovl && ovl->ovl_Client) ? ovl->ovl_Client : VCGFX_OVL_GL;
-
-            if (ovl && (ovl->ovl_Flags & VC4GFX_OVL_LATCHWAIT))
-            {
-                vcgfx_ovl_latch_until(xsd, ovl->ovl_Armed);
-                return TRUE;
-            }
-
-            ObtainSemaphore(&xsd->vcsd_OvlLock);
-            if (ovl && !(ovl->ovl_Flags & VC4GFX_OVL_HIDE))
-                vcgfx_ovl_show(xsd, client, TRUE, o, ovl);
-            else
-                vcgfx_ovl_hide(xsd, client);
-            if (ovl)
-            {
-                ovl->ovl_Result = vcgfx_ovl_state(xsd, client);
-                ovl->ovl_Armed  = vcgfx_ovl_armed(xsd);
-            }
-            ReleaseSemaphore(&xsd->vcsd_OvlLock);
-        }
-        return TRUE;
-
-    case aoHidd_VideoCoreGfxBitMap_VBlank:
-        xsd->vcsd_HVS.hvs_VBlank   = (struct vc4gfx_vblank *)val;
-        xsd->vcsd_HVS6.h6_VBlank = (struct vc4gfx_vblank *)val;
-        return TRUE;
-    }
-    return FALSE;
-}
-
 /*********  BitMap::Clear()  *************************************/
 VOID MNAME_BM(Clear)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
-
-    OVL_YIELD(0, 0, data->width, data->height);
 
     if (data->VideoData && data->bytesperpix == 4 && data->bytesperrow)
     {
@@ -115,8 +51,6 @@ VOID MNAME_BM(Clear)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *ms
 VOID MNAME_BM(FillRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
-
-    OVL_YIELD(msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1);
 
     if (data->VideoData && data->bytesperpix == 4 && data->bytesperrow &&
         GC_DRMD(msg->gc) == vHidd_GC_DrawMode_Copy)
@@ -144,8 +78,6 @@ VOID MNAME_BM(PutImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutIma
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
 
-    OVL_YIELD(msg->x, msg->y, msg->width, msg->height);
-
     if (data->VideoData && data->bytesperpix == 4 && data->bytesperrow &&
         (msg->pixFmt == vHidd_StdPixFmt_Native || msg->pixFmt == vHidd_StdPixFmt_Native32))
     {
@@ -153,11 +85,6 @@ VOID MNAME_BM(PutImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutIma
         UBYTE *dst = data->VideoData + msg->y * data->bytesperrow + msg->x * 4;
         ULONG copy_width = msg->width * 4;
         WORD y;
-
-        /* No page flip here (see Gfx::CopyBox): a full-frame PutImage is
-         * indistinguishable from mixed desktop rendering, and flipping
-         * corrupts read-modify-write / cached-pointer rendering. Flipping
-         * lives only on the gallium full-screen path. */
 
         if ((copy_width * msg->height) >= VC4_DMA_PUT_THRESHOLD &&
             vc4_dma_put(XSD(cl), src, msg->modulo, (ULONG)(IPTR)dst,
@@ -181,8 +108,6 @@ VOID MNAME_BM(PutImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutIma
 VOID MNAME_BM(PutTemplate)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutTemplate *msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
-
-    OVL_YIELD(msg->x, msg->y, msg->width, msg->height);
 
     if (data->VideoData && data->bytesperpix == 4 && data->bytesperrow &&
         GC_DRMD(msg->gc) == vHidd_GC_DrawMode_Copy &&
@@ -229,8 +154,6 @@ VOID MNAME_BM(PutTemplate)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Put
 VOID MNAME_BM(BlitColorExpansion)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_BlitColorExpansion *msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
-
-    OVL_YIELD(msg->destX, msg->destY, msg->width, msg->height);
 
     if (data->VideoData && data->bytesperpix == 4 && data->bytesperrow &&
         GC_DRMD(msg->gc) == vHidd_GC_DrawMode_Copy &&
@@ -382,28 +305,6 @@ VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         {
         case aoHidd_VideoCoreGfxBitMap_Drawable:
             *msg->storage = (IPTR)data->VideoData;
-            break;
-        case aoHidd_VideoCoreGfxBitMap_BackDrawable:
-#ifdef OnBitmap
-            /* Screens as planes leave the fb a backdrop only. */
-            *msg->storage = XSD(cl)->vcsd_PlanesMode ? 0
-                                                     : (IPTR)vc4_fb_backpage(XSD(cl));
-#else
-            *msg->storage = vcgfx_plane_backpage(XSD(cl), data);
-#endif
-            break;
-        case aoHidd_VideoCoreGfxBitMap_Flip:
-            *msg->storage = 0;
-            break;
-        case aoHidd_VideoCoreGfxBitMap_Overlay:
-            /* Callers read this back to learn whether the plane took. */
-            ObtainSemaphore(&XSD(cl)->vcsd_OvlLock);
-            *msg->storage = vcgfx_ovl_state(XSD(cl), VCGFX_OVL_GL);
-            ReleaseSemaphore(&XSD(cl)->vcsd_OvlLock);
-            break;
-        case aoHidd_VideoCoreGfxBitMap_LatchWait:
-            vc4_hvs_latch_wait(XSD(cl));
-            *msg->storage = 1;
             break;
         default:
             OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);

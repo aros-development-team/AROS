@@ -69,27 +69,6 @@ struct vcgfx_plane
     BOOL                 pl_Shown;      /* the last list built had room for it */
 };
 
-/* Overlays: a client's pixels over a screen, desc x/y in that screen.
- * They share the HVS budget with the screens, front screen first; one
- * that does not fit is not shown and its client blits. Without screens
- * as planes there is one only (vcgfx_ovl_show). */
-#define VCGFX_MAX_OVERLAYS      8
-
-/* The key of a GL client that gives none */
-#define VCGFX_OVL_GL            ((APTR)1)
-
-struct vcgfx_ovl
-{
-    APTR                    ov_Client;      /* cgxvideo object or a GL key, NULL = free */
-    BOOL                    ov_GL;          /* a GL client: never takes the one plane */
-    OOP_Object             *ov_BM;          /* the screen it is over */
-    struct BitmapData      *ov_BMData;
-    struct vc4gfx_overlay   ov_Desc;
-    BOOL                    ov_Shown;       /* taken by the last list built */
-    BOOL                    ov_NoFit;       /* left out of it: the scaler can't make its size */
-    ULONG                   ov_Armed;       /* its last commit, for vcgfx_ovl_latch_wait */
-};
-
 /* Normal-NC arena the screen bitmaps are carved from. */
 struct vcgfx_arena
 {
@@ -157,21 +136,11 @@ struct VideoCoreGfx_staticdata {
         ULONG                   vcsd_DMABouncePhys;
         struct SignalSemaphore  vcsd_DMALock;
 
-        /* SETVOFFSET page flipping. The framebuffer is allocated at twice
-         * the virtual height and the two pages flipped with SETVOFFSET;
-         * full-frame producers (GL, video) render to the back and flip,
-         * incremental UI targets the front. vcsd_FBPages == 1 = no flipping
-         * (alloc/validation failed).
-         */
         OOP_Object              *vcsd_FBObj;        /* The framebuffer bitmap */
-        ULONG                   vcsd_FBPage[2];     /* Page base phys addresses */
-        ULONG                   vcsd_FBPageHeight;  /* Rows per page */
-        UBYTE                   vcsd_FBPages;       /* 1 or 2 */
-        UBYTE                   vcsd_FBFront;       /* Currently scanned-out page */
 
         /* HVS display-list ownership (vcgfx_hvs.c). While hvs_Active,
-         * flips and cursor updates go through our own display list and
-         * the firmware display mailbox tags must not be used. */
+         * cursor updates go through our own display list and the
+         * firmware display mailbox tags must not be used. */
         struct vc4_hvs_state    vcsd_HVS;
 
         /* Keeps every HVS path off; see vcgfx_hvs.c. */
@@ -193,16 +162,6 @@ struct VideoCoreGfx_staticdata {
 
         /* The sink's EDID, read once by HDMI_SyncGen (vcgfx_edid.c). */
         struct vcgfx_edid       vcsd_EDID;
-
-        /* The overlays up, so a draw into one's rectangle can hide it
-         * (vcgfx_ovl_yield). A client only rechecks visibility when it
-         * presents, and one that stops presenting would leave the plane
-         * on top of whatever opens over it. The entries change under the
-         * mailbox lock too, as the list builders read them. */
-        struct SignalSemaphore  vcsd_OvlLock;
-        struct vcgfx_ovl        vcsd_Ovl[VCGFX_MAX_OVERLAYS];
-        APTR                    vcsd_OvlRefused;    /* the client of the last refused show */
-        BOOL                    vcsd_OvlNoFit;      /* and whether its size was why */
 
         /* No framebuffer for graphics.library: Show() puts the bitmap it
          * is given on the primary plane, and the fb is only the backdrop -
@@ -314,8 +273,6 @@ int     FNAME_SUPPORT(SDTV_SyncGen)(struct List *, OOP_Class *);
 int     FNAME_SUPPORT(HDMI_SyncGen)(struct List *, OOP_Class *);
 APTR    FNAME_SUPPORT(GenPixFmts)(OOP_Class *);
 
-void    vcgfx_ovl_yield(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm,
-                        LONG x0, LONG y0, LONG x1, LONG y1);
 BOOL    vc4_dma_fill(struct VideoCoreGfx_staticdata *xsd,
                      ULONG dst_phys, ULONG dst_pitch,
                      ULONG width_bytes, ULONG height, ULONG pixel);
@@ -328,16 +285,16 @@ BOOL    vc4_dma_get(struct VideoCoreGfx_staticdata *xsd,
                     UBYTE *dst, ULONG dst_modulo,
                     ULONG width_bytes, ULONG height);
 
-/* An overlay's HVS pixel format, 0 = the plane template's 32bpp one */
-static inline ULONG vc4_ovl_pxf(ULONG flags)
+/* A scan-out bitmap's HVS pixel format, 0 = the plane template's 32bpp one */
+static inline ULONG vcgfx_px_pxf(ULONG flags)
 {
-    return (flags & VC4GFX_OVL_RGB565) ? HVS_PXF_RGB565
-         : (flags & VC4GFX_OVL_RGB555) ? HVS_PXF_RGB555 : 0;
+    return (flags & VCGFX_PX_RGB565) ? HVS_PXF_RGB565
+         : (flags & VCGFX_PX_RGB555) ? HVS_PXF_RGB555 : 0;
 }
 
-static inline ULONG vc4_ovl_bpp(ULONG flags)
+static inline ULONG vcgfx_px_bpp(ULONG flags)
 {
-    return (flags & (VC4GFX_OVL_RGB565 | VC4GFX_OVL_RGB555)) ? 2 : 4;
+    return (flags & (VCGFX_PX_RGB565 | VCGFX_PX_RGB555)) ? 2 : 4;
 }
 
 /* A PPF word: scale src/dst at 24:8, initial phase in 1/64 pixel at 6:0 */
@@ -371,16 +328,13 @@ static inline BOOL vcgfx_scanout_rgb(struct VideoCoreGfx_staticdata *xsd, ULONG 
     else if ((stdpf == vHidd_StdPixFmt_BGRA32) || (stdpf == vHidd_StdPixFmt_BGR032))
         *pxflags = (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6) ? VCGFX_PX_BGRA : 0;
     else if (stdpf == vHidd_StdPixFmt_RGB16_LE)
-        *pxflags = VC4GFX_OVL_RGB565;
+        *pxflags = VCGFX_PX_RGB565;
     else if (stdpf == vHidd_StdPixFmt_RGB15_LE)
-        *pxflags = VC4GFX_OVL_RGB555;
+        *pxflags = VCGFX_PX_RGB555;
     else
         return FALSE;
     return TRUE;
 }
-
-ULONG   vc4_fb_backpage(struct VideoCoreGfx_staticdata *xsd);
-BOOL    vc4_fb_flip(struct VideoCoreGfx_staticdata *xsd);
 
 /* vcgfx_planes.c */
 BOOL    vcgfx_planes_supported(struct VideoCoreGfx_staticdata *xsd);
@@ -397,23 +351,9 @@ BOOL    vcgfx_planes_commit(struct VideoCoreGfx_staticdata *xsd,
                             struct HIDD_PlaneState *states, ULONG count, ULONG flags);
 void    vcgfx_plane_moved(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm);
 void    vcgfx_plane_forget(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm);
-ULONG   vcgfx_plane_backpage(struct VideoCoreGfx_staticdata *xsd,
-                             struct BitmapData *data);
-BOOL    vcgfx_plane_flip(OOP_Class *cl, OOP_Object *bm);
 BOOL    vcgfx_plane_page(OOP_Class *cl, OOP_Object *bm, ULONG page, BOOL wait);
 BOOL    vcgfx_plane_shows(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm);
 void    vcgfx_yuv_csc(ULONG colorspace, ULONG csc[3]);
 BOOL    vcgfx_yuv_ok(struct VideoCoreGfx_staticdata *xsd, ULONG videofmt);
-
-/* Overlays; the caller holds vcsd_OvlLock. */
-struct vcgfx_ovl *vcgfx_ovl_find(struct VideoCoreGfx_staticdata *xsd, APTR client);
-BOOL    vcgfx_ovl_show(struct VideoCoreGfx_staticdata *xsd, APTR client, BOOL gl,
-                       OOP_Object *bm, const struct vc4gfx_overlay *desc);
-void    vcgfx_ovl_hide(struct VideoCoreGfx_staticdata *xsd, APTR client);
-ULONG   vcgfx_ovl_state(struct VideoCoreGfx_staticdata *xsd, APTR client);
-void    vcgfx_ovl_latch_wait(struct VideoCoreGfx_staticdata *xsd, APTR client);
-void    vcgfx_ovl_latch_until(struct VideoCoreGfx_staticdata *xsd, ULONG armed);
-ULONG   vcgfx_ovl_armed(struct VideoCoreGfx_staticdata *xsd);
-void    vcgfx_ovl_drop_bm(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm);
 
 #endif /* _VIDEOCOREGFX_CLASS_H */

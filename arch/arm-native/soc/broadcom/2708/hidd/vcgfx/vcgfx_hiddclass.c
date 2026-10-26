@@ -704,10 +704,6 @@ VOID MNAME_GFX(CopyBox)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *
     LONG y, y_start, y_end, y_step;
     BOOL same_row_overlap;
 
-    /* Layers restore and move windows with this; see vcgfx_ovl_yield. */
-    vcgfx_ovl_yield(XSD(cl), msg->dest, msg->destX, msg->destY,
-                    msg->destX + msg->width - 1, msg->destY + msg->height - 1);
-
     if (GC_DRMD(msg->gc) != vHidd_GC_DrawMode_Copy)
     {
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -772,12 +768,6 @@ VOID MNAME_GFX(CopyBox)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *
                         && msg->destY == msg->srcY
                         && msg->destX > msg->srcX
                         && (ULONG)(msg->destX - msg->srcX) < msg->width);
-
-    /* No page flip here: desktop rendering is incremental read-modify-write
-     * and higher layers cache the framebuffer base, so flipping would expose
-     * a stale page. Page flipping stays in the gallium full-screen path,
-     * where Mesa renders a complete frame in its own BO.
-     */
 
     /* NEON, not DMA: measured 700 MB/s against 30 on a Pi 4 and 220 against
      * 36 on a Pi 3, uncached reads and all, and a full-display copy could

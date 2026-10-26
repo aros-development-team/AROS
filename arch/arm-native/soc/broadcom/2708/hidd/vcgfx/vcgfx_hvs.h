@@ -103,13 +103,6 @@
                                  ((((ULONG)(src) << 16) / (dst)) & 0xffff) << 8 | \
                                  0x60)
 
-/* Line Buffer Memory allocation for our single scaled plane. Units and
- * pool size are undocumented (firmware used 0x9400-0xa300 for its own
- * scaled fb); we only author a scaled plane on UNITY desktops, so the
- * pool is otherwise unused and base 0 is assumed free. One-line change
- * if real HW disagrees. */
-#define HVS_OVL_LBM             0
-
 /* LBM as on HVS5: the firmware hands it out downwards from 0xbc00 at 8
  * bytes per source pixel of width (its scaled fb planes sit at 0x9400 for
  * 1280 wide and 0xa300 for 800). Our planes take it upwards from 0, up
@@ -279,21 +272,8 @@ struct vc4_hvs_state
     /* HVS5 authors its own planes, so their shape is recorded here. */
     ULONG       hvs_CurPtrOff;          /* pointer word within that entry */
     ULONG       hvs_CurWords;           /* its length */
-    BOOL        hvs_OvlUsable;          /* fb plane is plain enough to compose over */
     BOOL        hvs_CurShown;           /* last validity written to the cursor plane */
 
-    /* Zero-copy overlay plane (windowed GL): composited above the fb
-     * plane, below the cursor. hvs_OvlOff = entry offset in the current
-     * list, 0 = none. Dest != src size = HVS-scaled (upscale only). */
-    BOOL        hvs_OvlActive;
-    ULONG       hvs_OvlPhys, hvs_OvlPitch;
-    ULONG       hvs_OvlW, hvs_OvlH;         /* source size */
-    ULONG       hvs_OvlDestW, hvs_OvlDestH; /* on-screen size */
-    ULONG       hvs_OvlPxf, hvs_OvlBpp;     /* format; pxf 0 = 32bpp */
-    LONG        hvs_OvlX, hvs_OvlY;
-    ULONG       hvs_OvlOff;
-    ULONG       hvs_OvlWords;               /* entry length in the list */
-    ULONG       hvs_OvlLBM;                 /* line-buffer base, scaled only */
     ULONG       hvs_FBLBM;                  /* LBM ceiling left by the fb plane */
 
     /* HVS5 with screens as planes: the firmware's framebuffer is a token
@@ -309,7 +289,7 @@ struct vc4_hvs_state
     volatile ULONG  hvs_LastList;
 
     /* Filter kernel for scaled planes, copied from the firmware's at
-     * takeover; hvs_KernelOK gates scaled-overlay support. */
+     * takeover; hvs_KernelOK gates scaled planes. */
     BOOL        hvs_KernelOK;
 
     /* PV2 vsync interrupt: frame counter for flip pacing.
@@ -326,7 +306,6 @@ struct vc4_hvs_state
      * hvs_VSyncStamp: time of the last counted vsync. */
     struct vcgfx_vblwait hvs_VSyncWait;
     volatile ULONG  hvs_VSyncStamp;
-    struct vc4gfx_vblank * volatile hvs_VBlank;  /* client callback */
 };
 
 /* Phase 1: read-only state dump (parses the firmware's live display
@@ -352,28 +331,12 @@ void vc4_hvs_init(struct VideoCoreGfx_staticdata *xsd);
 BOOL vc4_hvs_takeover(struct VideoCoreGfx_staticdata *xsd,
                       ULONG fb_phys, ULONG fb_pitch);
 
-/* Retarget the fb plane at another framebuffer page (page flip).
- * Returns FALSE when we don't own the display (caller falls back to
- * SETVOFFSET). Caller holds the mailbox lock (vc4_fb_flip). */
-BOOL vc4_hvs_flip_page(struct VideoCoreGfx_staticdata *xsd, ULONG page_phys);
-
 /* Rebuild + repoint after any vcsd_Cur* cursor state change. No-op
  * when not owning. Takes the mailbox lock itself. */
 void vc4_hvs_update_cursor(struct VideoCoreGfx_staticdata *xsd);
 
-/* Show (ovl != NULL) or remove (ovl == NULL) the zero-copy overlay
- * plane. Returns FALSE when unavailable (firmware owns the display, or
- * the fb plane is scaled) — caller falls back to blitting. Position
- * updates on a live overlay are patched in place and latch at vblank
- * like page flips. Takes the mailbox lock itself. */
-struct vc4gfx_overlay;
-struct vc4gfx_vblank;
-BOOL vc4_hvs_overlay(struct VideoCoreGfx_staticdata *xsd,
-                     const struct vc4gfx_overlay *ovl, OOP_Object *owner);
-
-/* Wait for the last armed flip/overlay to latch (VC4GFX_OVL_NOWAIT). */
+/* Wait for the last armed list update to latch. */
 void vc4_hvs_latch_wait(struct VideoCoreGfx_staticdata *xsd);
-void vc4_hvs_latch_until(struct VideoCoreGfx_staticdata *xsd, ULONG armed);
 
 /* Screens as planes (vcgfx_planes.c), VideoCore IV. */
 BOOL vc4_hvs_planes_ok(void);
