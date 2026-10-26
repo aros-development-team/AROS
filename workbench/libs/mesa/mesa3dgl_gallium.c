@@ -241,9 +241,6 @@ static BOOL MESA3DGLScanoutCreate(struct mesa3dgl_framebuffer * amfb)
         return FALSE;
     if (amfb->width == 0 || amfb->height == 0)
         return FALSE;
-    /* The render-scale path presents through the driver's own scaler */
-    if (mesa3dgl_render_scale != 1)
-        return FALSE;
     /* Only for the window's own RastPort (the rectangle is layer relative) */
     if (ctx->visible_rp->Layer != ctx->window->WLayer)
         return FALSE;
