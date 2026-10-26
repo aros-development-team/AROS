@@ -201,6 +201,13 @@ static IPTR thunk_exec_FindTask(struct M68KEmuContext *ctx, void *cpu)
        Sync Task fields, then set Process-specific fields manually. */
     const struct M68KStructLayout *layout = shadow_find_layout("Task");
     if (!layout) return 0;
+    /* one shadow per task: programs call FindTask(NULL) in their loops */
+    for (UWORD i = 0; i < ctx->num_shadows; i++)
+        if (ctx->shadow_map[i].native_ptr == task && ctx->shadow_map[i].type == layout->shadow_type)
+        {
+            shadow_sync(ctx, layout, ctx->shadow_map[i].m68k_addr, task);
+            return ctx->shadow_map[i].m68k_addr;
+        }
     ULONG m68k = M68KEmu_HeapAlloc(ctx, M68K_SIZEOF_PROCESS, 0); /* m68k Process size */
     if (!m68k) return 0;
     shadow_register(ctx, m68k, task, layout->shadow_type);
@@ -570,8 +577,18 @@ ULONG shadow_register(struct M68KEmuContext *ctx, ULONG m68k_addr, void *native,
     if (!ctx->shadow_full_logged)
     {
         ctx->shadow_full_logged = TRUE;
-        m68k_log(ctx, "%s: more than %u live library objects (messages not replied?), further ones refused",
-                 ctx->program_name[0] ? ctx->program_name : "68k program", (unsigned)M68KEMU_MAX_SHADOWS);
+        /* which kinds fill it, for the report */
+        UWORD count[512] = { 0 }, top = 0, top2 = 0;
+        for (UWORD i = 0; i < ctx->num_shadows; i++)
+            count[ctx->shadow_map[i].type & 511]++;
+        for (UWORD t = 1; t < 512; t++)
+        {
+            if (count[t] > count[top]) { top2 = top; top = t; }
+            else if (count[t] > count[top2]) top2 = t;
+        }
+        m68k_log(ctx, "%s: more than %u live library objects (messages not replied?), further ones refused; most are type %u (%u) and %u (%u)",
+                 ctx->program_name[0] ? ctx->program_name : "68k program", (unsigned)M68KEMU_MAX_SHADOWS,
+                 (unsigned)top, (unsigned)count[top], (unsigned)top2, (unsigned)count[top2]);
     }
     return 0;
 }
@@ -596,49 +613,46 @@ void shadow_remove(struct M68KEmuContext *ctx, ULONG m68k_addr)
 
 
 /* intuition -204: OpenWindow(A0=newWindow) -> D0=window */
+/* NewWindow fields as tags; title and screen strings point into m68k memory */
+static int newwindow_tags(struct M68KEmuContext *ctx, ULONG nw, struct TagItem *t)
+{
+    ULONG m68k_title  = m68k_read32(ctx, nw + M68K_NW_TITLE);
+    ULONG m68k_screen = m68k_read32(ctx, nw + M68K_NW_SCREEN);
+    struct Screen *scr = m68k_screen ? (struct Screen *)shadow_lookup(ctx, m68k_screen) : NULL;
+    int n = 0;
+
+    t[n].ti_Tag = WA_Left;      t[n++].ti_Data = (IPTR)(WORD)m68k_read16(ctx, nw + M68K_NW_LEFTEDGE);
+    t[n].ti_Tag = WA_Top;       t[n++].ti_Data = (IPTR)(WORD)m68k_read16(ctx, nw + M68K_NW_TOPEDGE);
+    t[n].ti_Tag = WA_Width;     t[n++].ti_Data = (IPTR)(WORD)m68k_read16(ctx, nw + M68K_NW_WIDTH);
+    t[n].ti_Tag = WA_Height;    t[n++].ti_Data = (IPTR)(WORD)m68k_read16(ctx, nw + M68K_NW_HEIGHT);
+    t[n].ti_Tag = WA_DetailPen; t[n++].ti_Data = ctx->mem[nw + M68K_NW_DETAILPEN];
+    t[n].ti_Tag = WA_BlockPen;  t[n++].ti_Data = ctx->mem[nw + M68K_NW_BLOCKPEN];
+    t[n].ti_Tag = WA_IDCMP;     t[n++].ti_Data = m68k_read32(ctx, nw + M68K_NW_IDCMPFLAGS);
+    t[n].ti_Tag = WA_Flags;     t[n++].ti_Data = m68k_read32(ctx, nw + M68K_NW_FLAGS);
+    t[n].ti_Tag = WA_Title;     t[n++].ti_Data = (IPTR)(m68k_title ? m68k_to_host(ctx, m68k_title) : NULL);
+    if (scr) { t[n].ti_Tag = WA_CustomScreen; t[n++].ti_Data = (IPTR)scr; }
+    t[n].ti_Tag = WA_MinWidth;  t[n++].ti_Data = (IPTR)(WORD)m68k_read16(ctx, nw + M68K_NW_MINWIDTH);
+    t[n].ti_Tag = WA_MinHeight; t[n++].ti_Data = (IPTR)(WORD)m68k_read16(ctx, nw + M68K_NW_MINHEIGHT);
+    t[n].ti_Tag = WA_MaxWidth;  t[n++].ti_Data = m68k_read16(ctx, nw + M68K_NW_MAXWIDTH);
+    t[n].ti_Tag = WA_MaxHeight; t[n++].ti_Data = m68k_read16(ctx, nw + M68K_NW_MAXHEIGHT);
+    t[n].ti_Tag = TAG_DONE;
+    return n;
+}
+
+/* intuition -204: OpenWindow(A0=newWindow) -> D0=window */
 static IPTR thunk_intuition_OpenWindow(struct M68KEmuContext *ctx, void *cpu)
 {
     ULONG nw = THUNK_A(0);
+    struct TagItem t[16];
+    struct Window *w;
+
     if (!nw) return 0;
-
-    WORD left    = (WORD)m68k_read16(ctx, nw + M68K_NW_LEFTEDGE);
-    WORD top     = (WORD)m68k_read16(ctx, nw + M68K_NW_TOPEDGE);
-    WORD width   = (WORD)m68k_read16(ctx, nw + M68K_NW_WIDTH);
-    WORD height  = (WORD)m68k_read16(ctx, nw + M68K_NW_HEIGHT);
-    UBYTE dpen   = ctx->mem[nw + M68K_NW_DETAILPEN];
-    UBYTE bpen   = ctx->mem[nw + M68K_NW_BLOCKPEN];
-    ULONG idcmp  = m68k_read32(ctx, nw + M68K_NW_IDCMPFLAGS);
-    ULONG flags  = m68k_read32(ctx, nw + M68K_NW_FLAGS);
-    ULONG m68k_title  = m68k_read32(ctx, nw + M68K_NW_TITLE);
-    ULONG m68k_screen = m68k_read32(ctx, nw + M68K_NW_SCREEN);
-    WORD minw    = (WORD)m68k_read16(ctx, nw + M68K_NW_MINWIDTH);
-    WORD minh    = (WORD)m68k_read16(ctx, nw + M68K_NW_MINHEIGHT);
-    UWORD maxw   = m68k_read16(ctx, nw + M68K_NW_MAXWIDTH);
-    UWORD maxh   = m68k_read16(ctx, nw + M68K_NW_MAXHEIGHT);
-
-    CONST_STRPTR title = m68k_title ? (CONST_STRPTR)m68k_to_host(ctx, m68k_title) : NULL;
-    struct Screen *scr = m68k_screen ? (struct Screen *)shadow_lookup(ctx, m68k_screen) : NULL;
-
-    struct Window *w = OpenWindowTags(NULL,
-        WA_Left, (IPTR)left, WA_Top, (IPTR)top,
-        WA_Width, (IPTR)width, WA_Height, (IPTR)height,
-        WA_DetailPen, (IPTR)dpen, WA_BlockPen, (IPTR)bpen,
-        WA_IDCMP, (IPTR)idcmp,
-        WA_Flags, (IPTR)flags,
-        WA_Title, (IPTR)title,
-        scr ? WA_CustomScreen : TAG_IGNORE, (IPTR)scr,
-        WA_MinWidth, (IPTR)minw, WA_MinHeight, (IPTR)minh,
-        WA_MaxWidth, (IPTR)maxw, WA_MaxHeight, (IPTR)maxh,
-        TAG_DONE);
-
-    if (ctx->trace_calls && w)
-    {
-        /* probe: does input reach this window at all? */
-        ModifyIDCMP(w, idcmp | IDCMP_MOUSEBUTTONS | IDCMP_ACTIVEWINDOW | IDCMP_INACTIVEWINDOW);
-        bug("[m68kemu] OpenWindow %d,%d %dx%d idcmp %08lx flags %08lx -> %p userport %p screen %p front %p\n",
-            left, top, width, height, (unsigned long)idcmp, (unsigned long)flags, w, w->UserPort, w->WScreen,
-            IntuitionBase->FirstScreen);
-    }
+    newwindow_tags(ctx, nw, t);
+    w = OpenWindowTagList(NULL, t);
+    if (ctx->trace_calls)
+        bug("[m68kemu] OpenWindow %ld,%ld %ldx%ld idcmp %08lx flags %08lx -> %p\n",
+            (long)(WORD)t[0].ti_Data, (long)(WORD)t[1].ti_Data, (long)(WORD)t[2].ti_Data,
+            (long)(WORD)t[3].ti_Data, (unsigned long)t[6].ti_Data, (unsigned long)t[7].ti_Data, w);
     if (!w) return 0;
     return (IPTR)setup_window_shadow(ctx, w);
 }
@@ -801,13 +815,36 @@ static struct TagItem *window_tags_from_m68k(struct M68KEmuContext *ctx, ULONG m
 static IPTR thunk_intuition_OpenWindowTagList(struct M68KEmuContext *ctx, void *cpu)
 {
     struct TagItem *ht = window_tags_from_m68k(ctx, THUNK_A(1));
+    struct TagItem t[17];
     struct Window *w;
 
-    if (THUNK_A(0) && ctx->trace_calls)
-        bug("[m68kemu] OpenWindowTagList with a NewWindow: only its tags are used\n");
-    w = OpenWindowTagList(NULL, ht);
+    /* an extended NewWindow: its fields, then the tags, which win */
+    if (THUNK_A(0))
+    {
+        int n = newwindow_tags(ctx, THUNK_A(0), t);
+        t[n].ti_Tag = ht ? TAG_MORE : TAG_DONE;
+        t[n].ti_Data = (IPTR)ht;
+        w = OpenWindowTagList(NULL, t);
+    }
+    else
+        w = OpenWindowTagList(NULL, ht);
     if (ht) FreeVec(ht);
-    if (ctx->trace_calls) bug("[m68kemu] OpenWindowTagList -> %p\n", w);
+    if (ctx->trace_calls)
+    {
+        struct TagItem *ti = THUNK_A(0) ? t : ht;
+        for (int k = 0; ti && k < 64; k++, ti++)
+        {
+            if (ti->ti_Tag == TAG_DONE) break;
+            if (ti->ti_Tag == TAG_MORE) { ti = (struct TagItem *)ti->ti_Data - 1; continue; }
+            bug("[m68kemu]   window tag %08lx = %08lx\n", (unsigned long)ti->ti_Tag, (unsigned long)ti->ti_Data);
+        }
+        bug("[m68kemu] OpenWindowTagList -> %p %dx%d\n", w, w ? w->Width : 0, w ? w->Height : 0);
+        if (w)
+            bug("[m68kemu]   borders %d %d %d %d, screen WBor %d %d %d %d bar %d font %d\n",
+                w->BorderLeft, w->BorderTop, w->BorderRight, w->BorderBottom,
+                w->WScreen->WBorLeft, w->WScreen->WBorTop, w->WScreen->WBorRight, w->WScreen->WBorBottom,
+                w->WScreen->BarHeight, w->WScreen->Font ? w->WScreen->Font->ta_YSize : -1);
+    }
     if (!w) return 0;
     return (IPTR)setup_window_shadow(ctx, w);
 }
