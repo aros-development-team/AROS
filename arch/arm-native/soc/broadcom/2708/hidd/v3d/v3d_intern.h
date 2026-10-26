@@ -230,44 +230,7 @@ static inline ULONG v3d_now_us(void)
 
 /* vcgfx bitmap interface, mirrored from vcgfx_bitmap.h */
 #define IID_Hidd_BitMap_VideoCore4  "hidd.bitmap.bcmvc4"
-#define aoVCGfxBM_Drawable      0   /* [G] front page phys addr */
-#define aoVCGfxBM_BackDrawable  1   /* [G] back page phys, 0 = no flip */
-#define aoVCGfxBM_Flip          2   /* [S] TRUE = flip front/back */
-#define aoVCGfxBM_Overlay       3   /* [GS] overlay descriptor */
-#define aoVCGfxBM_LatchWait     4   /* [G] block until the last Set latched */
-#define aoVCGfxBM_VBlank        5   /* [S] struct vc4gfx_vblank *, NULL removes */
-
-/* ovl_Flags: skip the latch wait; LatchWait before reusing the old page. */
-#define VC4GFX_OVL_NOWAIT       (1 << 0)
-/* ovl_Flags: take our plane down / wait for the commit in ovl_Armed */
-#define VC4GFX_OVL_HIDE         (1 << 3)
-#define VC4GFX_OVL_LATCHWAIT    (1 << 4)
-/* ovl_Result: the plane is held or the budget used, retry later */
-#define VC4GFX_OVL_BUSY         2
-
-/* Overlay descriptor (mirrored from vcgfx_bitmap.h, like the ids above):
- * a 32bpp plane the HVS scans straight from GPU memory, composited over
- * the framebuffer. x/y are fb coordinates. */
-struct vc4gfx_overlay
-{
-    ULONG ovl_Phys;                 /* ARM phys of the pixel data */
-    ULONG ovl_Pitch;                /* bytes per row */
-    ULONG ovl_Width, ovl_Height;    /* source pixels */
-    LONG  ovl_X, ovl_Y;             /* position in fb coordinates */
-    ULONG ovl_DestW, ovl_DestH;     /* on-screen size; 0 (or == source)
-                                     * = unscaled, larger = HVS upscale */
-    ULONG ovl_Flags;                /* VC4GFX_OVL_* */
-    APTR  ovl_Client;               /* our key, so another client keeps its own */
-    ULONG ovl_Result;               /* out: 1 shown, VC4GFX_OVL_BUSY, 0 refused */
-    ULONG ovl_Armed;                /* out: the commit; in, with LATCHWAIT */
-};
-
-/* Per-vblank callback, interrupt context (mirrored from vcgfx_bitmap.h). */
-struct vc4gfx_vblank
-{
-    void (*vbl_Func)(APTR data);
-    APTR  vbl_Data;
-};
+#define aoVCGfxBM_Drawable      0   /* [G] pixels phys addr */
 
 /*
  * GPU wait tiers (vc4gallium's proven values): tight spin for µs-precise
@@ -277,18 +240,6 @@ struct vc4gfx_vblank
 #define V3D_GPUWAIT_SPIN_US     2000
 #define V3D_GPUWAIT_NAP_US      1000
 #define V3D_GPUWAIT_TIMEOUT_US  1000000
-
-/* 0 = page flip first. The flip makes the render target an IMPORTED BO,
- * which Mesa cannot assume it owns, so it loads tiles and flushes more:
- * 2.5-3.4 jobs/frame against the overlay's 1.0. */
-#define V3D_PREFER_OVERLAY  1
-
-/* 0 = windowed presents blit, the HVS overlay plane is never used. */
-#define V3D_OVERLAY_ENABLE  1
-
-/* 0 = the overlay Set blocks until the vblank latch (vblank-paced). 1 = it
- * returns at once and the displaced page is retired at the next present. */
-#define V3D_OVL_NOWAIT      1
 
 /* Service from the completion interrupt (GIC SPI 74). 0 = poll only,
  * which leaves a stashed render idle until the next submit. If the Pi 3
@@ -478,23 +429,11 @@ struct V3DData
     ULONG           oom_reports;
     struct SignalSemaphore bo_lock;
 
-    /* The framebuffer flip pages, published (under bo_lock) as the only
-     * names DRM_IOCTL_GEM_OPEN accepts - the zero-copy fullscreen path
-     * wraps them as BOs and renders straight into the back page. */
-    ULONG           scanout_phys[2];
-    ULONG           scanout_size;
-
-    /* Buffers of scan-out bitmaps that ResourceFromBitMap aliased: further
-     * GEM_OPEN names, the oldest replaced when the table is full. */
+    /* Buffers of scan-out bitmaps that ResourceFromBitMap aliased, the
+     * only names GEM_OPEN accepts; the oldest replaced when full. */
     ULONG           ext_name[V3D_EXT_NAMES];
     ULONG           ext_size[V3D_EXT_NAMES];
     ULONG           ext_next;
-
-    /* Overlay ring (v3d_galliumclass.c): the present path and the task
-     * that puts an idle app's last frame on at vblank. */
-    struct SignalSemaphore ovl_lock;
-    struct Task     *ovl_task;
-    struct Task     *ovl_waiter;    /* Expunge, waiting for ovl_task to end */
 
     /* timer.device (UNIT_MICROHZ) for the wait loops' microsleeps. Only
      * io_Device/io_Unit are kept - each nap clones them into a stack
@@ -523,7 +462,6 @@ struct V3DData
     ULONG           spill_events;
 
 #if V3D_PROFILE
-    ULONG           prof_submits;   /* jobs since the last present */
     /* Bin against render, kick to latch. Sub-millisecond values are
      * noise: latch detection is delayed by up to one nap. */
     ULONG           prof_bin_kick, prof_render_kick;
@@ -563,9 +501,6 @@ ULONG v3d_gpu_mem_alloc(struct V3DData *sd, ULONG size, ULONG align,
                         ULONG *out_paddr);
 void v3d_gpu_mem_free(struct V3DData *sd, ULONG gpu_handle, ULONG size);
 void v3d_mem_release(struct V3DData *sd);
-
-/* v3d_galliumclass.c */
-BOOL v3d_ovl_shutdown(struct V3DData *sd);
 
 /* v3d_drm_shim.c */
 int v3d_ioctl_aros(struct V3DData *sd, int fd, unsigned long request, void *arg);

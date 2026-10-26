@@ -233,18 +233,14 @@ static int v3d_ioctl_dispatch(struct V3DData *sd, ULONG sid,
 
     case DRM_IOCTL_GEM_OPEN:
     {
-        /* Wrap a framebuffer flip page as a BO, so Mesa renders straight
-         * into scanout and presenting becomes a page flip. The only
-         * names accepted are the pages the gallium class published; the
-         * memory is not ours, so the entry is marked external and only
-         * ever unmapped, never FREEMEMed. */
+        /* Wrap a scan-out buffer ResourceFromBitMap published as a BO, so
+         * Mesa renders straight into display memory. The memory is not
+         * ours: the entry is marked external and only ever unmapped,
+         * never FREEMEMed. */
         struct drm_gem_open *open = arg;
         ULONG name = (ULONG)open->name, h, size = 0, i;
 
         ObtainSemaphore(&sd->bo_lock);
-        if (sd->scanout_size
-            && (name == sd->scanout_phys[0] || name == sd->scanout_phys[1]))
-            size = sd->scanout_size;
         for (i = 0; !size && (i < V3D_EXT_NAMES); i++)
             if (name && (sd->ext_name[i] == name))
                 size = sd->ext_size[i];
@@ -254,7 +250,7 @@ static int v3d_ioctl_dispatch(struct V3DData *sd, ULONG sid,
             return -1;
         }
 
-        /* The same page opened again keeps its handle - Mesa's handle
+        /* The same buffer opened again keeps its handle - Mesa's handle
          * hash relies on that identity. */
         for (h = 1; h < V3D_MAX_BOS; h++)
             if (sd->bo_table[h].refcount && sd->bo_table[h].external
@@ -571,7 +567,6 @@ int v3d_ioctl_aros(struct V3DData *sd, int fd, unsigned long request, void *arg)
 
     if (request == DRM_IOCTL_V3D_SUBMIT_CL)
     {
-        sd->prof_submits++;
         if (v3d_prof.prev_submit)
             v3d_prof.period += t1 - v3d_prof.prev_submit;
         v3d_prof.prev_submit = t1;

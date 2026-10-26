@@ -248,7 +248,6 @@ static int V3D_Init(LIBBASETYPEPTR LIBBASE)
     InitSemaphore(&sd->bo_lock);
     NEWLIST(&sd->arenas);
     InitSemaphore(&sd->job_lock);
-    InitSemaphore(&sd->ovl_lock);
 
     /* The CoreAPI table rides in on the attribute list at object
      * creation; without the base the tag id cannot even be computed. */
@@ -273,9 +272,8 @@ static int V3D_Init(LIBBASETYPEPTR LIBBASE)
     else
         bug("[V3D] timer.device unavailable - GPU waits will spin\n");
 
-    /* Standard and vcgfx bitmap attributes, for the present fast paths
-     * (DMA blit, flip, overlay). Non-fatal: without them presents fall
-     * back to WritePixelArray. */
+    /* Standard and vcgfx bitmap attributes, for presents and
+     * ResourceFromBitMap. */
     sd->hiddBitMapAB = OOP_ObtainAttrBase(IID_Hidd_BitMap);
     sd->hiddVCGfxBMAB = OOP_ObtainAttrBase(IID_Hidd_BitMap_VideoCore4);
     sd->hiddPixFmtAB = OOP_ObtainAttrBase(IID_Hidd_PixFmt);
@@ -309,10 +307,6 @@ static int V3D_Init(LIBBASETYPEPTR LIBBASE)
 static int V3D_Expunge(LIBBASETYPEPTR LIBBASE)
 {
     struct V3DData *sd = &LIBBASE->sd;
-
-    /* First, as staying loaded must leave everything else as it is. */
-    if (!v3d_ovl_shutdown(sd))
-        return FALSE;
 
     if (sd->task_res)
     {
