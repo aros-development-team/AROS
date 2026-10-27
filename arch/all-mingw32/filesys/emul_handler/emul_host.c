@@ -346,12 +346,19 @@ LONG DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, ULONG l
     {
         /* FIXME: This is not thread-safe. */
         struct AsyncReaderControl *reader = emulbase->pdata.ConsoleReader;
+        BYTE signal = AllocSignal(-1);
+
+        if (signal == -1)
+        {
+            *err = ERROR_NO_FREE_STORE;
+            return -1;
+        }
 
         DASYNC(bug("[emul] Reading %lu bytes asynchronously \n", len));
         reader->fh   = fh->fd;
         reader->addr = buff;
         reader->len  = len;
-        reader->sig  = SIGF_DOS;
+        reader->sig  = 1UL << signal;
         reader->task = FindTask(NULL);
         reader->cmd  = ASYNC_CMD_READ;
         SetSignal(0, reader->sig);
@@ -365,7 +372,7 @@ LONG DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, ULONG l
         {
             Wait(reader->sig);
 
-            DASYNC(bug("[emul] Read %ld bytes, error %lu\n", reader->.actual, reader->error));
+            DASYNC(bug("[emul] Read %ld bytes, error %lu\n", reader->actual, reader->error));
             len = reader->actual;
             werr = reader->error;
 
@@ -387,6 +394,7 @@ LONG DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, ULONG l
                 len = d - (UBYTE *)buff;
             }
         }
+        FreeSignal(signal);
     }
     else
     {
