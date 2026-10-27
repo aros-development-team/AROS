@@ -361,17 +361,18 @@ LONG DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, ULONG l
                 res = FALSE;
             else
             {
-                char *c, *d;
+                UBYTE *c = buff, *d = buff;
+                ULONG remaining = len;
 
-                c = buff;
-                d = c;
-                while (*c) {
-                    if ((c[0] == '\r') && (c[1] == '\n')) {
+                while (remaining) {
+                    if (remaining > 1 && c[0] == '\r' && c[1] == '\n') {
                         c++;
-                        len--;
+                        remaining--;
                     }
                     *d++ = *c++;
+                    remaining--;
                 }
+                len = d - (UBYTE *)buff;
             }
         }
     }
