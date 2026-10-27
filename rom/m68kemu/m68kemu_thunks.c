@@ -3673,7 +3673,7 @@ static IPTR thunk_gfx_TextLength(struct M68KEmuContext *ctx, void *cpu)
     return (IPTR)TextLength(rp, str, (ULONG)THUNK_D(0));
 }
 
-/* graphics -864: SetABPenDrMd(A1=rp, D0=apen, D1=bpen, D2=mode) */
+/* graphics -894: SetABPenDrMd(A1=rp, D0=apen, D1=bpen, D2=mode) */
 static IPTR thunk_gfx_SetABPenDrMd(struct M68KEmuContext *ctx, void *cpu)
 {
     struct RastPort *rp = resolve_rp(ctx, THUNK_A(1));
@@ -3692,7 +3692,7 @@ static IPTR thunk_gfx_SetFont(struct M68KEmuContext *ctx, void *cpu)
     return 0;
 }
 
-/* graphics -318: ScrollRaster(A1=rp, D0=dx, D1=dy, D2=xMin, D3=yMin, D4=xMax, D5=yMax) */
+/* graphics -396: ScrollRaster(A1=rp, D0=dx, D1=dy, D2=xMin, D3=yMin, D4=xMax, D5=yMax) */
 static IPTR thunk_gfx_ScrollRaster(struct M68KEmuContext *ctx, void *cpu)
 {
     struct RastPort *rp = resolve_rp(ctx, THUNK_A(1));
@@ -5931,8 +5931,8 @@ const struct M68KThunkEntry m68kemu_thunks_graphics_manual[] = {
     { 246, thunk_gfx_Draw },
     { 54,  thunk_gfx_TextLength },
     { 66,  thunk_gfx_SetFont },
-    { 864, thunk_gfx_SetABPenDrMd },
-    { 318, thunk_gfx_ScrollRaster },
+    { 894, thunk_gfx_SetABPenDrMd },
+    { 396, thunk_gfx_ScrollRaster },
     { 0, NULL }
 };
 const ULONG m68kemu_thunks_graphics_manual_count = sizeof(m68kemu_thunks_graphics_manual) / sizeof(m68kemu_thunks_graphics_manual[0]);
