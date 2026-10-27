@@ -43,15 +43,44 @@ void m68k_gil_init(struct M68KEmuContext *ctx)
     InitSemaphore(&ctx->gil);
 }
 
+/* As exec keeps a task's Forbid() and Disable() nesting while it waits, a
+   task of the program that lets go of the lock takes its nesting with it:
+   the tasks that run meanwhile are not forbidden by it, and it has its
+   nesting back when it holds the lock again */
 void m68k_gil_obtain(struct M68KEmuContext *ctx)
 {
+    struct Task *me = FindTask(NULL);
+    int i;
+
     ObtainSemaphore(&ctx->gil);
+    for (i = 0; i < 16; i++)
+        if (ctx->nest_saved[i].task == me)
+        {
+            ctx->forbid = ctx->nest_saved[i].forbid;
+            ctx->disable = ctx->nest_saved[i].disable;
+            ctx->nest_saved[i].task = NULL;
+            break;
+        }
 }
 
 void m68k_gil_release(struct M68KEmuContext *ctx)
 {
-    if (ctx->gil.ss_Owner == FindTask(NULL))
-        ReleaseSemaphore(&ctx->gil);
+    struct Task *me = FindTask(NULL);
+    int i;
+
+    if (ctx->gil.ss_Owner != me)
+        return;
+    if (ctx->forbid || ctx->disable)
+        for (i = 0; i < 16; i++)
+            if (!ctx->nest_saved[i].task)
+            {
+                ctx->nest_saved[i].task = me;
+                ctx->nest_saved[i].forbid = ctx->forbid;
+                ctx->nest_saved[i].disable = ctx->disable;
+                ctx->forbid = ctx->disable = 0;
+                break;
+            }
+    ReleaseSemaphore(&ctx->gil);
 }
 
 /* between instructions: let another task of the program run, unless the

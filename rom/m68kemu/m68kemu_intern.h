@@ -161,6 +161,7 @@ struct M68KEmuContext
     BOOL    watchdog_on;
     BOOL    trace_calls;        /* per-call trace lines (off: they flood the debug console) */
     APTR    aga_cmaps[4];       /* ColorMaps whose free pens got the AGA palette */
+    struct { APTR task; LONG forbid, disable; } nest_saved[16]; /* Forbid/Disable of tasks waiting outside the lock */
     BOOL    classic_borders;    /* show classic window borders, grow windows by the decoration's extra */
     ULONG   rexx_id;            /* "REXX", the ln_Name of the program's RexxMsgs */
     ULONG   m68k_proc;          /* the program's 68k Process */
