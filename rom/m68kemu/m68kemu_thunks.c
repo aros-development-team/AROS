@@ -29,6 +29,7 @@
 #include <graphics/text.h>
 #include <intuition/intuition.h>
 #include <intuition/screens.h>
+#include <intuition/imageclass.h>
 #include <intuition/intuitionbase.h>
 #include <graphics/displayinfo.h>
 #include "m68kemu_intern.h"
@@ -763,8 +764,8 @@ void shadow_remove(struct M68KEmuContext *ctx, ULONG m68k_addr)
 
 
 /* intuition -204: OpenWindow(A0=newWindow) -> D0=window */
-/* With classic borders shown, a window the program sized from the outside
-   grows by what the screen's decoration adds to the classic borders. */
+/* A window the program sized from the outside grows by what the decoration's
+   borders take beyond the classic ones, so its contents still fit. */
 /* the last occurrence: OpenWindowTagList lets a later tag win */
 static struct TagItem *tag_find(struct TagItem *t, Tag tag)
 {
@@ -782,8 +783,11 @@ static void classic_grow(struct M68KEmuContext *ctx, struct TagItem *tags)
 {
     struct TagItem *ti, *w, *h, *f;
     struct Screen *scr = NULL, *locked = NULL;
+    struct DrawInfo *dri;
+    ULONG flags;
     WORD dw, dh;
 
+    ctx->grow_dw = ctx->grow_dh = 0;
     if (!ctx->classic_borders || !tags)
         return;
     if ((ti = tag_find(tags, WA_Borderless)) && ti->ti_Data)
@@ -804,10 +808,74 @@ static void classic_grow(struct M68KEmuContext *ctx, struct TagItem *tags)
         return;
     dw = (scr->WBorLeft - M68K_CLASSIC_WBORLEFT) + (scr->WBorRight - M68K_CLASSIC_WBORRIGHT);
     dh = (scr->WBorTop - M68K_CLASSIC_WBORTOP) + (scr->WBorBottom - M68K_CLASSIC_WBORBOTTOM);
-    if (w && dw > 0) w->ti_Data += dw;
-    if (h && dh > 0) h->ti_Data += dh;
+    /* a sizing gadget sets its border: ask the decoration for its size, as
+       Intuition does, against the classic hires gadget's */
+    flags = f ? f->ti_Data : 0;
+    if ((ti = tag_find(tags, WA_SizeGadget))) flags = ti->ti_Data ? flags | WFLG_SIZEGADGET : flags & ~WFLG_SIZEGADGET;
+    if ((ti = tag_find(tags, WA_SizeBRight)) && ti->ti_Data) flags |= WFLG_SIZEBRIGHT;
+    if ((ti = tag_find(tags, WA_SizeBBottom)) && ti->ti_Data) flags |= WFLG_SIZEBBOTTOM;
+    if ((flags & WFLG_SIZEGADGET) && !(flags & (WFLG_SIZEBRIGHT | WFLG_SIZEBBOTTOM)))
+        flags |= WFLG_SIZEBRIGHT;
+    if ((flags & WFLG_SIZEGADGET) && (dri = GetScreenDrawInfo(scr)))
+    {
+        IPTR sw = 0, sh = 0;
+        Object *im = NewObject(NULL, SYSICLASS, SYSIA_DrawInfo, (IPTR)dri, SYSIA_Which, SIZEIMAGE,
+                               SYSIA_Size, (scr->Flags & SCREENHIRES) ? SYSISIZE_MEDRES : SYSISIZE_LOWRES, TAG_DONE);
+        if (im)
+        {
+            GetAttr(IA_Width, im, &sw);
+            GetAttr(IA_Height, im, &sh);
+            DisposeObject(im);
+        }
+        FreeScreenDrawInfo(scr, dri);
+        if ((WORD)sw < scr->WBorRight) sw = scr->WBorRight;
+        if ((WORD)sh < scr->WBorBottom) sh = scr->WBorBottom;
+        if (flags & WFLG_SIZEBRIGHT)
+            dw += ((WORD)sw - M68K_CLASSIC_SIZEWIDTH) - (scr->WBorRight - M68K_CLASSIC_WBORRIGHT);
+        if (flags & WFLG_SIZEBBOTTOM)
+            dh += ((WORD)sh - M68K_CLASSIC_SIZEHEIGHT) - (scr->WBorBottom - M68K_CLASSIC_WBORBOTTOM);
+    }
+    if (w && dw > 0) { w->ti_Data += dw; ctx->grow_dw = dw; }
+    if (h && dh > 0) { h->ti_Data += dh; ctx->grow_dh = dh; }
     if (locked)
         UnlockPubScreen(NULL, locked);
+}
+
+/* remember what classic_grow added to the window just opened */
+static void grow_note(struct M68KEmuContext *ctx, struct Window *w)
+{
+    int i;
+    if (!w || (!ctx->grow_dw && !ctx->grow_dh))
+        return;
+    for (i = 0; i < M68KEMU_MAX_GROWN; i++)
+        if (!ctx->grown[i].win)
+        {
+            ctx->grown[i].win = w;
+            ctx->grown[i].dw = ctx->grow_dw;
+            ctx->grown[i].dh = ctx->grow_dh;
+            return;
+        }
+}
+
+static void grow_of(struct M68KEmuContext *ctx, struct Window *w, WORD *dw, WORD *dh)
+{
+    int i;
+    *dw = *dh = 0;
+    for (i = 0; i < M68KEMU_MAX_GROWN; i++)
+        if (ctx->grown[i].win == w)
+        {
+            *dw = ctx->grown[i].dw;
+            *dh = ctx->grown[i].dh;
+            return;
+        }
+}
+
+static void grow_forget(struct M68KEmuContext *ctx, struct Window *w)
+{
+    int i;
+    for (i = 0; i < M68KEMU_MAX_GROWN; i++)
+        if (ctx->grown[i].win == w)
+            ctx->grown[i].win = NULL;
 }
 
 /* NewWindow fields as tags; title and screen strings point into m68k memory */
@@ -847,6 +915,7 @@ static IPTR thunk_intuition_OpenWindow(struct M68KEmuContext *ctx, void *cpu)
     newwindow_tags(ctx, nw, t);
     classic_grow(ctx, t);
     w = OpenWindowTagList(NULL, t);
+    grow_note(ctx, w);
     if (ctx->trace_calls)
         bug("[m68kemu] OpenWindow %ld,%ld %ldx%ld idcmp %08lx flags %08lx -> %p\n",
             (long)(WORD)t[0].ti_Data, (long)(WORD)t[1].ti_Data, (long)(WORD)t[2].ti_Data,
@@ -910,8 +979,12 @@ static ULONG setup_window_shadow(struct M68KEmuContext *ctx, struct Window *w)
     /* Sync scalar fields */
     m68k_write16(ctx, mw + M68K_WIN_LEFTEDGE, (UWORD)w->LeftEdge);
     m68k_write16(ctx, mw + M68K_WIN_TOPEDGE,  (UWORD)w->TopEdge);
-    m68k_write16(ctx, mw + M68K_WIN_WIDTH,    (UWORD)w->Width);
-    m68k_write16(ctx, mw + M68K_WIN_HEIGHT,   (UWORD)w->Height);
+    {
+        WORD dw, dh;
+        grow_of(ctx, w, &dw, &dh);
+        m68k_write16(ctx, mw + M68K_WIN_WIDTH,  (UWORD)(w->Width - dw));
+        m68k_write16(ctx, mw + M68K_WIN_HEIGHT, (UWORD)(w->Height - dh));
+    }
     m68k_write16(ctx, mw + M68K_WIN_MOUSEY,   (UWORD)w->MouseY);
     m68k_write16(ctx, mw + M68K_WIN_MOUSEX,   (UWORD)w->MouseX);
     m68k_write32(ctx, mw + M68K_WIN_FLAGS,    w->Flags);
@@ -1062,6 +1135,7 @@ static IPTR thunk_intuition_OpenWindowTagList(struct M68KEmuContext *ctx, void *
         classic_grow(ctx, ht);
         w = OpenWindowTagList(NULL, ht);
     }
+    grow_note(ctx, w);
     if (ht) FreeVec(ht);
     if (ctx->trace_calls)
     {
@@ -1094,6 +1168,7 @@ static IPTR thunk_intuition_CloseWindow(struct M68KEmuContext *ctx, void *cpu)
         if (m) { ClearMenuStrip(w); if (!gt_strip_native(ctx, m)) menus_free(ctx, m); }
         /* a shared port the program cleared out of the window stays alive */
         if (!m68k_read32(ctx, mw + M68K_WIN_USERPORT)) w->UserPort = NULL;
+        grow_forget(ctx, w);
         CloseWindow(w);
         shadow_destroy(ctx, shadow_find_layout("Window"), mw);
     }
@@ -5168,8 +5243,9 @@ static void sync_window_box(struct M68KEmuContext *ctx, ULONG mw, struct Window 
     }
     m68k_write16(ctx, mw + M68K_WIN_LEFTEDGE, (UWORD)w->LeftEdge);
     m68k_write16(ctx, mw + M68K_WIN_TOPEDGE,  (UWORD)w->TopEdge);
-    m68k_write16(ctx, mw + M68K_WIN_WIDTH,    (UWORD)w->Width);
-    m68k_write16(ctx, mw + M68K_WIN_HEIGHT,   (UWORD)w->Height);
+    grow_of(ctx, w, &width, &height);
+    m68k_write16(ctx, mw + M68K_WIN_WIDTH,    (UWORD)(w->Width - width));
+    m68k_write16(ctx, mw + M68K_WIN_HEIGHT,   (UWORD)(w->Height - height));
 }
 
 /* intuition -168: MoveWindow(A0=window, D0=dx, D1=dy) - Intuition only uses the low words */

@@ -166,10 +166,12 @@ void m68k_screen_extras(struct M68KEmuContext *ctx, ULONG ms, struct Screen *scr
     ctx->mem[ms + 32] = scr->BarHBorder;
     ctx->mem[ms + 33] = scr->MenuVBorder;
     ctx->mem[ms + 34] = scr->MenuHBorder;
-    ctx->mem[ms + 35] = ctx->classic_borders ? M68K_CLASSIC_WBORTOP    : scr->WBorTop;
-    ctx->mem[ms + 36] = ctx->classic_borders ? M68K_CLASSIC_WBORLEFT   : scr->WBorLeft;
-    ctx->mem[ms + 37] = ctx->classic_borders ? M68K_CLASSIC_WBORRIGHT  : scr->WBorRight;
-    ctx->mem[ms + 38] = ctx->classic_borders ? M68K_CLASSIC_WBORBOTTOM : scr->WBorBottom;
+    /* the decoration's real borders: programs placing gadgets from them
+       must agree with the window they get */
+    ctx->mem[ms + 35] = scr->WBorTop;
+    ctx->mem[ms + 36] = scr->WBorLeft;
+    ctx->mem[ms + 37] = scr->WBorRight;
+    ctx->mem[ms + 38] = scr->WBorBottom;
     if (scr->Font)
     {
         /* struct TextAttr with a copy of the font name, one per font */

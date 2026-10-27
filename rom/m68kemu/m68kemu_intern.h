@@ -163,7 +163,11 @@ struct M68KEmuContext
     APTR    aga_cmaps[4];       /* ColorMaps whose free pens got the AGA palette */
     APTR    native_procs[8];    /* native programs it started from a seglist (Workbench style) */
     struct { APTR task; LONG forbid, disable; } nest_saved[16]; /* Forbid/Disable of tasks waiting outside the lock */
-    BOOL    classic_borders;    /* show classic window borders, grow windows by the decoration's extra */
+    BOOL    classic_borders;    /* grow windows sized from outside by the decoration's extra */
+    /* windows grown for the decoration: the program sees the size it asked for */
+    #define M68KEMU_MAX_GROWN 32
+    struct { APTR win; WORD dw, dh; } grown[M68KEMU_MAX_GROWN];
+    WORD    grow_dw, grow_dh;   /* what classic_grow just added */
     ULONG   rexx_id;            /* "REXX", the ln_Name of the program's RexxMsgs */
     ULONG   m68k_proc;          /* the program's 68k Process */
     struct { char name[64]; ULONG base, reopen; } m68klibs[16];   /* 68k libraries loaded from disk */

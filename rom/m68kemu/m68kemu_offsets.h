@@ -117,6 +117,8 @@
 #define M68K_CLASSIC_WBORLEFT       4
 #define M68K_CLASSIC_WBORRIGHT      4
 #define M68K_CLASSIC_WBORBOTTOM     2
+#define M68K_CLASSIC_SIZEWIDTH      18      /* hires sizing gadget */
+#define M68K_CLASSIC_SIZEHEIGHT     10
 #define M68K_RP_LAYER               0
 #define M68K_RP_TMPRAS              12
 #define M68K_RP_AREAINFO            16
