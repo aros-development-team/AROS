@@ -25,6 +25,7 @@
 #include <string.h>
 
 #include "layout_intern.h"
+#include "../reaction_box.h"
 
 #define LayoutBase ((struct Library *)(cl->cl_UserData))
 
@@ -673,11 +674,11 @@ void layout_perform_layout(Class *cl, Object *o, struct LayoutData *data,
     ULONG count = 0;
     ULONG spacing;
     ULONG outerSpaceW = 0, outerSpaceH = 0;
+    WORD bw, bh;
 
-    x = G(o)->LeftEdge;
-    y = G(o)->TopEdge;
-    availW = (UWORD)G(o)->Width;
-    availH = (UWORD)G(o)->Height;
+    reaction_gadget_box(G(o), gi, &x, &y, &bw, &bh);
+    availW = (UWORD)bw;
+    availH = (UWORD)bh;
 
     /* Apply frame inset (bevel border + label) */
     {
@@ -914,6 +915,39 @@ void layout_perform_layout(Class *cl, Object *o, struct LayoutData *data,
 
 /******************************************************************************/
 
+/* Fill the group's box except where gadget children are: they draw
+   themselves, after the group when the window refreshes its list */
+static void layout_erase(struct RastPort *rp, struct LayoutData *data,
+                         WORD x, WORD y, WORD w, WORD h)
+{
+    struct Rectangle box = { x, y, x + w - 1, y + h - 1 };
+    struct Region *rg = NewRegion();
+    struct RegionRectangle *rr;
+    struct LayoutChild *lc;
+
+    if (!rg || !OrRectRegion(rg, &box))
+    {
+        RectFill(rp, box.MinX, box.MinY, box.MaxX, box.MaxY);
+        if (rg)
+            DisposeRegion(rg);
+        return;
+    }
+    ForeachNode(&data->ld_Children, lc)
+    {
+        if (lc->lc_Object && !lc->lc_IsImage && lc->lc_Width && lc->lc_Height)
+        {
+            struct Rectangle c = { lc->lc_Left, lc->lc_Top,
+                                   lc->lc_Left + lc->lc_Width - 1,
+                                   lc->lc_Top + lc->lc_Height - 1 };
+            ClearRectRegion(rg, &c);
+        }
+    }
+    for (rr = rg->RegionRectangle; rr; rr = rr->Next)
+        RectFill(rp, rg->bounds.MinX + rr->bounds.MinX, rg->bounds.MinY + rr->bounds.MinY,
+                 rg->bounds.MinX + rr->bounds.MaxX, rg->bounds.MinY + rr->bounds.MaxY);
+    DisposeRegion(rg);
+}
+
 IPTR Layout__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 {
     struct LayoutData *data = INST_DATA(cl, o);
@@ -932,19 +966,18 @@ IPTR Layout__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     {
         struct LayoutChild *lc;
         struct DrawInfo *dri = msg->gpr_GInfo ? msg->gpr_GInfo->gi_DrInfo : NULL;
-        struct Gadget *gad = G(o);
+        WORD gx, gy, gw, gh;
 
-        /* Erase the group's box first so content rendered at previous
-         * positions (e.g. before a window resize shrank us) doesn't
-         * survive; the bevel and the children repaint over this. */
-        if (dri && gad->Width > 0 && gad->Height > 0)
+        reaction_gadget_box(G(o), msg->gpr_GInfo, &gx, &gy, &gw, &gh);
+
+        /* Erase what was drawn at previous positions (e.g. before a window
+         * resize shrank us); the bevel and the children repaint over this. */
+        if (dri && gw > 0 && gh > 0)
         {
             SetDrMd(rp, JAM1);
             SetAPen(rp, data->ld_FillPen >= 0 ? (UWORD)data->ld_FillPen
                                               : dri->dri_Pens[BACKGROUNDPEN]);
-            RectFill(rp, gad->LeftEdge, gad->TopEdge,
-                gad->LeftEdge + gad->Width - 1,
-                gad->TopEdge + gad->Height - 1);
+            layout_erase(rp, data, gx, gy, gw, gh);
         }
 
         /* Draw bevel frame if requested. cap_3DLook=FALSE in UIPrefs
@@ -968,12 +1001,12 @@ IPTR Layout__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
                 struct impDraw idmsg;
                 idmsg.MethodID         = IM_DRAWFRAME;
                 idmsg.imp_RPort        = rp;
-                idmsg.imp_Offset.X     = gad->LeftEdge;
-                idmsg.imp_Offset.Y     = gad->TopEdge;
+                idmsg.imp_Offset.X     = gx;
+                idmsg.imp_Offset.Y     = gy;
                 idmsg.imp_State        = data->ld_BevelState;
                 idmsg.imp_DrInfo       = dri;
-                idmsg.imp_Dimensions.Width  = gad->Width;
-                idmsg.imp_Dimensions.Height = gad->Height;
+                idmsg.imp_Dimensions.Width  = gw;
+                idmsg.imp_Dimensions.Height = gh;
                 DoMethodA(data->ld_BevelImage, (Msg)&idmsg);
             }
         }
