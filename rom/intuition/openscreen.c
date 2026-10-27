@@ -1665,7 +1665,7 @@ static const char THIS_FILE[] = __FILE__;
                              screen->Screen.ViewPort,
                              k + lastcol, p[k+4].red, p[k+4].green, p[k+4].blue));
 
-                if (k + lastcol < numcolors)
+                if (k + lastcol < numcolors && !sharepens)
                 {
                     ObtainPen(screen->Screen.ViewPort.ColorMap,
                               k + lastcol,
