@@ -447,7 +447,8 @@ static void planes_try(struct VideoCoreGfx_staticdata *xsd)
  * memory, or over the budget - is copied into the fb behind instead, and
  * kept up to date by vcgfx_mirror_rect(). The overlay planes stay.
  */
-void vcgfx_show(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm)
+void vcgfx_show(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm,
+                IPTR scalemode, ULONG scalew, ULONG scaleh)
 {
     OOP_Class *offcl = xsd->vcsd_VideoCoreGfxOffBMClass;
     struct vcgfx_plane *pl = &xsd->vcsd_Primary;
@@ -466,7 +467,7 @@ void vcgfx_show(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm)
 
     ObtainSemaphore(&xsd->vcsd_ShowLock);
     if (data && planes_active(xsd))
-        planes_set_timing(xsd, data, mode, FALSE);
+        planes_set_timing(xsd, data, (scalemode != vHidd_ModeID_Invalid) ? scalemode : mode, FALSE);
 
     VC4_MBOX_LOCK(xsd);
     xsd->vcsd_PlanesMode = planes_active(xsd);
@@ -486,6 +487,13 @@ void vcgfx_show(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm)
         plane_pos(xsd, bm, &pl->pl_X, &pl->pl_Y);
         xsd->vcsd_DispW = data->modew;
         xsd->vcsd_DispH = data->modeh;
+        if (scalemode != vHidd_ModeID_Invalid)
+        {
+            /* The compositor's mode, the screen scaled to fill it */
+            pl->pl_X = pl->pl_Y = 0;
+            pl->pl_W = xsd->vcsd_DispW = scalew;
+            pl->pl_H = xsd->vcsd_DispH = scaleh;
+        }
     }
     backdrop_clear(xsd);
     planes_stack(xsd);
@@ -641,7 +649,7 @@ void vcgfx_plane_moved(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm)
         return;
 
     VC4_MBOX_LOCK(xsd);
-    if (pl->pl_BM == bm)
+    if ((pl->pl_BM == bm) && (pl->pl_W == pl->pl_SrcW) && (pl->pl_H == pl->pl_SrcH))
     {
         plane_pos(xsd, bm, &x, &y);
         if ((x != pl->pl_X) || (y != pl->pl_Y))

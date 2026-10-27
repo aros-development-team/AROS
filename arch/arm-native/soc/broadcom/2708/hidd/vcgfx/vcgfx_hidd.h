@@ -41,7 +41,7 @@
 #define CLID_Hidd_Display_VideoCore4 "hidd.display.bcmvc4"
 
 #define MAX_TAGS        256
-#define ATTRBASES_NUM   10
+#define ATTRBASES_NUM   11
 
 struct VideoCoreGfxDisplayData
 {
@@ -251,6 +251,7 @@ struct DisplayMode
 #undef HiddDisplayAttrBase
 #undef HiddDMEnumAttrBase
 #undef HiddAttrBase
+#undef HiddCompositorAttrBase
 
 /* These must stay in the same order as interfaces[] array in vcgfx_init.c */
 #define HiddVideoCoreGfxAttrBase         XSD(cl)->vcsd_attrBases[0]
@@ -263,6 +264,7 @@ struct DisplayMode
 #define HiddDisplayAttrBase              XSD(cl)->vcsd_attrBases[7]
 #define HiddDMEnumAttrBase               XSD(cl)->vcsd_attrBases[8]
 #define HiddAttrBase                     XSD(cl)->vcsd_attrBases[9]
+#define HiddCompositorAttrBase           XSD(cl)->vcsd_attrBases[10]
 
 #define FNAME_SUPPORT(x) VideoCoreGfx__Support__ ## x
 
@@ -344,7 +346,8 @@ BOOL    vcgfx_scanout_alloc(struct VideoCoreGfx_staticdata *xsd,
                             struct vcgfx_scanbuf *sb, ULONG size);
 void    vcgfx_scanout_free(struct VideoCoreGfx_staticdata *xsd,
                            struct vcgfx_scanbuf *sb);
-void    vcgfx_show(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm);
+void    vcgfx_show(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm,
+                   IPTR scalemode, ULONG scalew, ULONG scaleh);
 void    vcgfx_mirror_rect(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm,
                           LONG x, LONG y, LONG w, LONG h);
 BOOL    vcgfx_planes_commit(struct VideoCoreGfx_staticdata *xsd,

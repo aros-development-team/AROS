@@ -423,17 +423,44 @@ static void vc4_fb_new(OOP_Class *cl, OOP_Object *o, OOP_Object *bm)
 
 /* Without a framebuffer the bitmap given is scanned out itself; the base
  * class then tracks it for the cursor. */
+/* The compositor's display mode and its size, for fHidd_Display_Show_Scale */
+static BOOL vc4_scale_mode(OOP_Class *cl, OOP_Object *o, IPTR *mode, ULONG *w, ULONG *h)
+{
+    OOP_Object *comp = NULL, *sync = NULL, *pf = NULL;
+    IPTR m = vHidd_ModeID_Invalid, mw = 0, mh = 0;
+
+    OOP_GetAttr(o, aHidd_Display_Compositor, (IPTR *)&comp);
+    if (comp)
+        OOP_GetAttr(comp, aHidd_Compositor_DisplayMode, &m);
+    if ((m == vHidd_ModeID_Invalid)
+        || !HIDD_DMEnum_GetMode(XSD(cl)->vcsd_DMEnum, m, &sync, &pf) || !sync)
+        return FALSE;
+    OOP_GetAttr(sync, aHidd_Sync_HDisp, &mw);
+    OOP_GetAttr(sync, aHidd_Sync_VDisp, &mh);
+    if (!mw || !mh)
+        return FALSE;
+    *mode = m;
+    *w    = mw;
+    *h    = mh;
+    return TRUE;
+}
+
 OOP_Object *MNAME_DISPLAY(Show)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_Show *msg)
 {
     struct VideoCoreGfx_staticdata *xsd = XSD(cl);
 
     if (xsd->vcsd_NoFB)
     {
+        IPTR smode = vHidd_ModeID_Invalid;
+        ULONG sw = 0, sh = 0;
+
         if (msg->bitMap && !xsd->vcsd_FBObj)
             vc4_fb_new(cl, o, msg->bitMap);
         if (!xsd->vcsd_FBObj)
             return NULL;
-        vcgfx_show(xsd, msg->bitMap);
+        if (msg->flags & fHidd_Display_Show_Scale)
+            vc4_scale_mode(cl, o, &smode, &sw, &sh);
+        vcgfx_show(xsd, msg->bitMap, smode, sw, sh);
     }
     return (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
@@ -469,8 +496,24 @@ ULONG MNAME_DISPLAY(GetPlaneInfo)(OOP_Class *cl, OOP_Object *o, struct pHidd_Dis
     struct HIDD_PlaneInfo info = { 0 };
     ULONG len = msg->infoLen;
 
-    if (!xsd->vcsd_NoFB || (msg->index == 0) || (msg->index > VCGFX_OVL_PLANES))
+    if (!xsd->vcsd_NoFB || (msg->index > VCGFX_OVL_PLANES))
         return (ULONG)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+    if (msg->index == 0)
+    {
+        /* The base primary, but scaling a screen to fill the display */
+        struct pHidd_Display_GetPlaneInfo supmsg = *msg;
+
+        supmsg.info    = &info;
+        supmsg.infoLen = sizeof(info);
+        if (!OOP_DoSuperMethod(cl, o, (OOP_Msg)&supmsg))
+            return 0;
+        vc4_plane_scale(xsd, &info.ScaleMin, &info.ScaleMax);
+        if (len > sizeof(info))
+            len = sizeof(info);
+        CopyMem(&info, msg->info, len);
+        return len;
+    }
 
     info.Type       = vHidd_Plane_Overlay;
     info.ZMin       = msg->index;
