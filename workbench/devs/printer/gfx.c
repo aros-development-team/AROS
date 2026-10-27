@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2012-2026, The AROS Development Team.  All rights reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
@@ -665,7 +665,11 @@ bug("tp->Mode = 0x%04x\n", tp->Mode);
             D(bug("\tCan't find nor synthesize a source bitmap\n"));
         }
 
-        RENDER((SIPTR)err, io->io_Special, 0, PRS_CLOSE);
+        {
+            LONG closeerr = RENDER((SIPTR)err, io->io_Special, 0, PRS_CLOSE);
+            if (err == 0)
+                err = closeerr;
+        }
     }
 
     return err;
