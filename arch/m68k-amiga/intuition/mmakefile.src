@@ -2,6 +2,10 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+# Native planar screen regressions belong to the Intuition component.
+#MM- test-intuition-amiga-m68k : test-intuition-screenbitmap
+#MM- test-intuition-amiga-m68k-quick : test-intuition-screenbitmap-quick
+
 # Publish the native cursor interface before compiling Intuition.
 #MM- kernel-intuition-amiga-m68k-includes : kernel-amiga-m68k-amigavideo-includes
 

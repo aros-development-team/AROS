@@ -2265,8 +2265,11 @@ static const char THIS_FILE[] = __FILE__;
             D(bug("calling SetRast()\n"));
 
             DEBUG_OPENSCREEN(dprintf("OpenScreen: Set background color Pen %ld\n",screen->Pens[BACKGROUNDPEN]));
-            /* Set screen to background color */
-            SetRast(&screen->Screen.RastPort, screen->Pens[BACKGROUNDPEN]);
+            /* An installed backfill hook owns the background, including a
+             * no-op hook used to retain a preloaded custom bitmap. SetRast
+             * bypasses that hook and would erase the caller's picture. */
+            if (layer_info_hook == LAYERS_BACKFILL)
+                SetRast(&screen->Screen.RastPort, screen->Pens[BACKGROUNDPEN]);
 
             D(bug("SetRast() called\n"));
 
