@@ -63,7 +63,7 @@ static ULONG image_bytes(struct Image *im)
 
 static ULONG put_image(struct M68KEmuContext *ctx, ULONG at, struct Image *im)
 {
-    ULONG bytes = image_bytes(im), i;
+    ULONG bytes = image_bytes(im);
 
     m68k_write16(ctx, at, (UWORD)im->LeftEdge);
     m68k_write16(ctx, at + 2, (UWORD)im->TopEdge);
@@ -74,8 +74,9 @@ static ULONG put_image(struct M68KEmuContext *ctx, ULONG at, struct Image *im)
     ctx->mem[at + 14] = im->PlanePick;
     ctx->mem[at + 15] = im->PlaneOnOff;
     m68k_write32(ctx, at + 16, 0);
-    for (i = 0; i < bytes / 2; i++)
-        m68k_write16(ctx, at + IMG_SIZE + 2 * i, im->ImageData[i]);
+    /* native ImageData is already big-endian planar bytes */
+    if (bytes)
+        memcpy(ctx->mem + at + IMG_SIZE, im->ImageData, bytes);
     return IMG_SIZE + bytes;
 }
 
