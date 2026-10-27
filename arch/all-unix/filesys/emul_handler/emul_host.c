@@ -557,6 +557,18 @@ LONG DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, ULONG l
 
     DREAD(bug("[emul] Reading %u bytes from fd %ld\n", len, fh->fd));
 
+    if ((LONG)len < 0)
+    {
+        *err = ERROR_BAD_NUMBER;
+        return -1;
+    }
+
+    if (len == 0)
+    {
+        *err = 0;
+        return 0;
+    }
+
     /* Wait until the fd is ready to read. We reuse UnixIO capabilities for this. */
     error = Hidd_UnixIO_Wait(emulbase->pdata.unixio, (long)fh->fd, vHidd_UnixIO_Read);
     if (error)
@@ -581,24 +593,29 @@ LONG DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, ULONG l
          * when the shell requests a single read of 208 bytes.
          */
         res = 0;
-        do
+        while ((ULONG)res < len)
         {
-            res2 = emulbase->pdata.SysIFace->read((long)fh->fd, buff++, 1);
+            res2 = emulbase->pdata.SysIFace->read((long)fh->fd, buff, 1);
             AROS_HOST_BARRIER
 
-            if (res2 == -1)
+            if (res2 <= 0)
+            {
+                /* Keep bytes already consumed if the next read fails. */
+                if (res2 < 0 && res == 0)
+                    res = -1;
                 break;
+            }
 
-            if (res++ == len)
+            buff = (UBYTE *)buff + 1;
+            res++;
+            if ((ULONG)res == len)
                 break;
 
             res2 = emulbase->pdata.SysIFace->poll(&pfd, 1, 0);
             AROS_HOST_BARRIER
-
-        } while (res2 > 0);
-
-        if (res2 == -1)
-            res = -1;
+            if (res2 <= 0)
+                break;
+        }
     }
     else
     {
@@ -624,6 +641,12 @@ LONG DoWrite(struct emulbase *emulbase, struct filehandle *fh, CONST_APTR buff, 
 
     DWRITE(bug("[emul] Writing %u bytes to fd %ld\n", len, fh->fd));
 
+    if ((LONG)len < 0)
+    {
+        *err = ERROR_BAD_NUMBER;
+        return -1;
+    }
+
     HostLib_Lock();
 
     len = emulbase->pdata.SysIFace->write((IPTR)fh->fd, buff, len);
@@ -639,59 +662,62 @@ LONG DoWrite(struct emulbase *emulbase, struct filehandle *fh, CONST_APTR buff, 
 
 SIPTR DoSeek(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, ULONG mode, SIPTR *err)
 {
-    off_t res;
-    LONG oldpos = 0, newpos;
+    off_t oldpos, base = 0, newpos;
     struct stat st;
-
-    DSEEK(bug("[emul] DoSeek(%d, %d, %d)\n", (int)fh->fd, offset, mode));
+    SIPTR result = -1;
 
     HostLib_Lock();
 
-    res = oldpos = LSeek((IPTR)fh->fd, 0, SEEK_CUR);
+    oldpos = LSeek((IPTR)fh->fd, 0, SEEK_CUR);
     AROS_HOST_BARRIER
-    if (res != -1)
-        res = emulbase->pdata.SysIFace->fstat((int)(IPTR)fh->fd, &st);
-    AROS_HOST_BARRIER
+    if (oldpos < 0 || (SIPTR)oldpos < 0 || (off_t)(SIPTR)oldpos != oldpos)
+        goto out;
 
-    DSEEK(bug("[emul] Original position: %lu\n", (unsigned long)oldpos));
-
-    if (res != -1)
+    /* A position query must also work after another handle shrinks the file. */
+    if (mode == OFFSET_CURRENT && offset == 0)
     {
-        switch (mode) {
-        case OFFSET_BEGINNING:
-            newpos = offset;
-            mode = SEEK_SET;
-            break;
-
-        case OFFSET_CURRENT:
-            newpos = offset + res;
-            mode = SEEK_CUR;
-            break;
-
-        default:
-            newpos = offset + st.st_size;
-            mode = SEEK_END;
-        }
-
-        if (newpos > st.st_size)
-            res = -1;
+        result = oldpos;
+        goto out;
     }
 
-    if (res != -1)
+    if (emulbase->pdata.SysIFace->fstat((int)(IPTR)fh->fd, &st) < 0)
     {
-        res = LSeek((IPTR)fh->fd, offset, mode);
         AROS_HOST_BARRIER
+        goto out;
+    }
+    AROS_HOST_BARRIER
 
-        DSEEK(bug("[emul] New position: %lu\n", (unsigned long)res));
+    switch (mode)
+    {
+    case OFFSET_BEGINNING:
+        break;
+    case OFFSET_CURRENT:
+        base = oldpos;
+        break;
+    case OFFSET_END:
+        base = st.st_size;
+        break;
+    default:
+        goto out;
     }
 
-    if (res == -1)
-        oldpos = -1;
+    /* Check bounds before adding, including when a host process has shrunk
+     * the file below our current position. A DOS seek cannot extend a file. */
+    if (base < 0 || st.st_size < 0 || offset < -base || offset > st.st_size - base)
+        goto out;
 
+    newpos = base + offset;
+    if ((SIPTR)newpos < 0 || (off_t)(SIPTR)newpos != newpos)
+        goto out;
+
+    if (LSeek((IPTR)fh->fd, newpos, SEEK_SET) != (off_t)-1)
+        result = oldpos;
+    AROS_HOST_BARRIER
+
+out:
     HostLib_Unlock();
-
-    *err = ERROR_SEEK_ERROR;
-    return oldpos;
+    *err = result == -1 ? ERROR_SEEK_ERROR : 0;
+    return result;
 }
 
 LONG DoMkDir(struct emulbase *emulbase, struct filehandle *fh, ULONG protect)
@@ -852,48 +878,83 @@ LONG DoSetDate(struct emulbase *emulbase, char *name, struct DateStamp *date)
 
 SIPTR DoSetSize(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, ULONG mode, SIPTR *err)
 {
-    SIPTR absolute = 0;
-    SIPTR error = 0;
+    off_t oldpos, base = 0, newsize;
+    struct stat st;
+    SIPTR absolute = -1, error = 0;
+
+    if (fh->type != FHD_FILE)
+    {
+        *err = ERROR_OBJECT_WRONG_TYPE;
+        return -1;
+    }
 
     HostLib_Lock();
 
-    switch (mode) {
+    oldpos = LSeek((IPTR)fh->fd, 0, SEEK_CUR);
+    AROS_HOST_BARRIER
+    if (oldpos == (off_t)-1)
+    {
+        error = err_u2a(emulbase);
+        goto out;
+    }
+
+    switch (mode)
+    {
     case OFFSET_BEGINNING:
         break;
-
     case OFFSET_CURRENT:
-        absolute = LSeek((IPTR)fh->fd, 0, SEEK_CUR);
-        AROS_HOST_BARRIER
+        base = oldpos;
         break;
-
     case OFFSET_END:
-        absolute = LSeek((IPTR)fh->fd, 0, SEEK_END);
-        AROS_HOST_BARRIER
-        break;
-
-    default:
-        error = ERROR_UNKNOWN;
-    }
-
-    if (absolute == -1)
-        error = err_u2a(emulbase);
-
-    if (!error)
-    {
-        absolute += offset;
-        error = FTruncate((IPTR)fh->fd, absolute);
-        AROS_HOST_BARRIER
-        if (error)
+        if (emulbase->pdata.SysIFace->fstat((int)(IPTR)fh->fd, &st) < 0)
+        {
+            AROS_HOST_BARRIER
             error = err_u2a(emulbase);
+            goto out;
+        }
+        AROS_HOST_BARRIER
+        base = st.st_size;
+        break;
+    default:
+        error = ERROR_SEEK_ERROR;
+        goto out;
     }
 
+    /* The resulting size must fit both the host offset and packet result.
+     * Validate before adding so negative sizes and overflow cannot wrap. */
+    if (base < 0 || (SIPTR)base < 0 || (off_t)(SIPTR)base != base ||
+        offset < -(SIPTR)base ||
+        (offset > 0 && offset > (SIPTR)((IPTR)-1 >> 1) - (SIPTR)base))
+    {
+        error = ERROR_SEEK_ERROR;
+        goto out;
+    }
+    absolute = (SIPTR)base + offset;
+    newsize = absolute;
+    if (newsize < 0 || (SIPTR)newsize != absolute)
+    {
+        error = ERROR_SEEK_ERROR;
+        goto out;
+    }
+
+    if (FTruncate((IPTR)fh->fd, newsize) < 0)
+    {
+        AROS_HOST_BARRIER
+        error = err_u2a(emulbase);
+    }
+    else if (oldpos > newsize)
+    {
+        AROS_HOST_BARRIER
+        if (LSeek((IPTR)fh->fd, newsize, SEEK_SET) == (off_t)-1)
+            error = err_u2a(emulbase);
+        AROS_HOST_BARRIER
+    }
+    AROS_HOST_BARRIER
+
+out:
     HostLib_Unlock();
-
-    if (error)
-        absolute = -1;
-
     *err = error;
-    return absolute;
+    return error ? -1 : absolute;
 }
 
 LONG DoStatFS(struct emulbase *emulbase, char *path, struct InfoData *id)
