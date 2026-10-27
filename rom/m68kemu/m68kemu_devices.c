@@ -149,7 +149,7 @@ ULONG shadow_register(struct M68KEmuContext *ctx, ULONG m68k_addr, void *native,
 /* the native side of a program's reply port: a port it made itself in m68k
    memory (CreatePort, AllocSignal + AddPort) gets a native twin on the same
    task and signal bit, registered as its shadow so WaitPort/GetMsg find it */
-static struct MsgPort *port_for_m68k(struct M68KEmuContext *ctx, ULONG mport, BOOL *own)
+struct MsgPort *m68k_port_twin(struct M68KEmuContext *ctx, ULONG mport, BOOL *own)
 {
     struct MsgPort *port;
 
@@ -306,7 +306,7 @@ IPTR m68k_OpenDevice(struct M68KEmuContext *ctx, void *cpu)
 
     {
         BOOL own;
-        port = port_for_m68k(ctx, m68k_read32(ctx, mio + IO_REPLYPORT), &own);
+        port = m68k_port_twin(ctx, m68k_read32(ctx, mio + IO_REPLYPORT), &own);
         if (!port) return (IPTR)(LONG)IOERR_OPENFAIL;
         ctx->ioreqs[i].ownport = own ? port : NULL;
     }

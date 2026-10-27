@@ -24,7 +24,7 @@
 #include <dos/dos.h>
 #include <dos/dostags.h>
 #include <dos/dosextens.h>
-#include <proto/dos.h>
+#include <workbench/startup.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <string.h>
@@ -183,6 +183,64 @@ struct M68KCarrier
     UBYTE type;
 };
 
+/* A WBStartup for a native program the program started from a seglist, as
+   Workbench replacements start the WBStartup drawer and icons: the native
+   program reads it, and replies to the twin of the program's reply port.
+   m68k struct WBStartup: sm_Process 20, sm_Segment 24, sm_NumArgs 28,
+   sm_ToolWindow 32, sm_ArgList 36; struct WBArg: wa_Lock 0, wa_Name 4 */
+static const char wbcarrier_name[] = "m68kemu wbstartup";
+
+struct M68KWBCarrier
+{
+    struct WBStartup wbs;
+    ULONG mmsg;
+    UBYTE type;
+    struct WBArg args[];
+};
+
+static BOOL deliver_wbstartup(struct M68KEmuContext *ctx, struct MsgPort *port, ULONG mmsg)
+{
+    struct M68KWBCarrier *c;
+    struct MsgPort *reply = NULL;
+    ULONG nargs, margs, i, mreply;
+    BOOL own = FALSE;
+    int k;
+
+    for (k = 0; k < 8; k++)
+        if (ctx->native_procs[k] && &((struct Process *)ctx->native_procs[k])->pr_MsgPort == port)
+            break;
+    if (k == 8 || !in_mem(ctx, mmsg, 40))
+        return FALSE;
+    nargs = m68k_read32(ctx, mmsg + 28);
+    margs = m68k_read32(ctx, mmsg + 36);
+    if (nargs > 64 || (nargs && !in_mem(ctx, margs, nargs * 8)))
+        nargs = 0;
+    if (!(c = AllocVec(sizeof(*c) + nargs * sizeof(struct WBArg), MEMF_PUBLIC | MEMF_CLEAR)))
+        return FALSE;
+    if ((mreply = m68k_read32(ctx, mmsg + MN_REPLY)))
+        reply = m68k_port_twin(ctx, mreply, &own);
+    c->wbs.sm_Message.mn_Node.ln_Type = NT_MESSAGE;
+    c->wbs.sm_Message.mn_Node.ln_Name = (STRPTR)wbcarrier_name;
+    c->wbs.sm_Message.mn_Length = sizeof(struct WBStartup);
+    c->wbs.sm_Message.mn_ReplyPort = reply;
+    c->wbs.sm_Process = port;
+    c->wbs.sm_Segment = m68k_bptr_in(ctx, m68k_read32(ctx, mmsg + 24));
+    c->wbs.sm_NumArgs = nargs;
+    c->wbs.sm_ToolWindow = m68k_read32(ctx, mmsg + 32) ? (char *)m68k_to_host(ctx, m68k_read32(ctx, mmsg + 32)) : NULL;
+    c->wbs.sm_ArgList = nargs ? c->args : NULL;
+    for (i = 0; i < nargs; i++)
+    {
+        ULONG name = m68k_read32(ctx, margs + i * 8 + 4);
+        c->args[i].wa_Lock = m68k_bptr_in(ctx, m68k_read32(ctx, margs + i * 8));
+        c->args[i].wa_Name = name ? (STRPTR)m68k_to_host(ctx, name) : NULL;
+    }
+    c->mmsg = mmsg;
+    c->type = NT_REPLYMSG;
+    ctx->native_procs[k] = NULL;
+    PutMsg(port, &c->wbs.sm_Message);
+    return TRUE;
+}
+
 void m68k_deliver(struct M68KEmuContext *ctx, ULONG mport, ULONG mmsg, UBYTE type)
 {
     struct MsgPort *port;
@@ -192,7 +250,11 @@ void m68k_deliver(struct M68KEmuContext *ctx, ULONG mport, ULONG mmsg, UBYTE typ
     ctx->mem[mmsg + LN_TYPE] = type;
     if ((port = (struct MsgPort *)shadow_lookup(ctx, mport)))
     {
-        struct M68KCarrier *c = AllocVec(sizeof(*c), MEMF_PUBLIC | MEMF_CLEAR);
+        struct M68KCarrier *c;
+
+        if (type == NT_MESSAGE && deliver_wbstartup(ctx, port, mmsg))
+            return;
+        c = AllocVec(sizeof(*c), MEMF_PUBLIC | MEMF_CLEAR);
         if (!c)
             return;
         c->msg.mn_Node.ln_Name = (STRPTR)carrier_name;
@@ -219,6 +281,15 @@ ULONG m68k_msg_from_native(struct M68KEmuContext *ctx, struct Message *m)
     struct M68KCarrier *c = (struct M68KCarrier *)m;
     ULONG mmsg;
 
+    if (m && (const char *)m->mn_Node.ln_Name == wbcarrier_name)
+    {
+        struct M68KWBCarrier *w = (struct M68KWBCarrier *)m;
+
+        mmsg = w->mmsg;
+        ctx->mem[mmsg + LN_TYPE] = NT_REPLYMSG;
+        FreeVec(w);
+        return mmsg;
+    }
     if (!m || (const char *)m->mn_Node.ln_Name != carrier_name)
         return 0;
     mmsg = c->mmsg;
@@ -346,7 +417,11 @@ IPTR m68k_dos_CreateNewProc(struct M68KEmuContext *ctx, void *cpu)
             FreeVec(ch);
             p = CreateNewProc(t);
             FreeVec(name);
-            return p ? m68k_process_of(ctx, &p->pr_Task) : 0;
+            if (!p)
+                return 0;
+            for (int k = 0; k < 8; k++)
+                if (!ctx->native_procs[k]) { ctx->native_procs[k] = p; break; }
+            return m68k_process_of(ctx, &p->pr_Task);
         }
         if (seg)
         {

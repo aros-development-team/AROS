@@ -161,6 +161,7 @@ struct M68KEmuContext
     BOOL    watchdog_on;
     BOOL    trace_calls;        /* per-call trace lines (off: they flood the debug console) */
     APTR    aga_cmaps[4];       /* ColorMaps whose free pens got the AGA palette */
+    APTR    native_procs[8];    /* native programs it started from a seglist (Workbench style) */
     struct { APTR task; LONG forbid, disable; } nest_saved[16]; /* Forbid/Disable of tasks waiting outside the lock */
     BOOL    classic_borders;    /* show classic window borders, grow windows by the decoration's extra */
     ULONG   rexx_id;            /* "REXX", the ln_Name of the program's RexxMsgs */
@@ -298,6 +299,7 @@ BOOL  m68k_port_is_68k(struct M68KEmuContext *ctx, ULONG mport);
 ULONG m68k_port_getmsg(struct M68KEmuContext *ctx, ULONG mport);
 ULONG m68k_port_wait(struct M68KEmuContext *ctx, ULONG mport);
 void  m68k_deliver(struct M68KEmuContext *ctx, ULONG mport, ULONG mmsg, UBYTE type);
+struct MsgPort *m68k_port_twin(struct M68KEmuContext *ctx, ULONG mport, BOOL *own);
 ULONG m68k_msg_from_native(struct M68KEmuContext *ctx, struct Message *m);
 void  m68k_reply(struct M68KEmuContext *ctx, ULONG mmsg);
 ULONG m68k_process_of(struct M68KEmuContext *ctx, struct Task *task);
