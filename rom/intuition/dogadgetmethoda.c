@@ -195,7 +195,7 @@
 
     DEBUG_DOGADGETMETHOD(dprintf("DoGadgetMethod[%x]: Return 0x%lx\n", gi, ret));
 
-    return( (ULONG)ret );
+    return ret;
 
     AROS_LIBFUNC_EXIT
 
