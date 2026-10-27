@@ -236,7 +236,8 @@
 #define DIB_RGB_COLORS  0
 #define DIB_PAL_COLORS  1
 
-#pragma pack(4)
+/* Match the Windows ABI, including 8-byte pointer alignment on Win64. */
+#pragma pack(push, 8)
 
 typedef struct tagRECT
 { 
@@ -295,4 +296,4 @@ typedef struct _ICONINFO
     APTR hbmColor;
 } ICONINFO;
 
-#pragma pack()
+#pragma pack(pop)
