@@ -187,13 +187,19 @@ LONG internal_ScalePixelArray(APTR srcRect, UWORD SrcW, UWORD SrcH,
                 scale_args.bsa_SrcHeight = SrcH;
                 scale_args.bsa_DestWidth = dest_bounds->w;
                 scale_args.bsa_DestHeight = dest_bounds->h;
+                scale_args.bsa_XSrcFactor = SrcW;
+                scale_args.bsa_XDestFactor = dest_bounds->w;
+                scale_args.bsa_YSrcFactor = SrcH;
+                scale_args.bsa_YDestFactor = dest_bounds->h;
                 HIDD_BM_BitMapScale(tempbm2_obj, tempbm_obj, tempbm2_obj, &scale_args,
                     gc);
 
                 /* Render temporary destination bitmap to destination bitmap */
 
                 data.srcbm_obj = tempbm2_obj;
-                data.gfx_hidd = gfx_hidd;
+                /* CopyBox belongs to the driver, not the display */
+                OOP_GetAttr(gfx_hidd, aHidd_Display_GfxHidd,
+                    (IPTR *)&data.gfx_hidd);
                 rr.MinX = dest_bounds->x;
                 rr.MinY = dest_bounds->y;
                 rr.MaxX = dest_bounds->x + dest_bounds->w - 1;
