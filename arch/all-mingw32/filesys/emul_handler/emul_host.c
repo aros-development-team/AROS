@@ -1052,6 +1052,12 @@ SIPTR DoSetSize(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, 
     ULONG werr;
     UQUAD original, newpos;
 
+    if (fh->type != FHD_FILE)
+    {
+        *err = ERROR_OBJECT_WRONG_TYPE;
+        return -1;
+    }
+
     DFSIZE(bug("[emul] DoSetSize(): mode %ld, offset %llu\n", mode, (unsigned long long)offset));
 
     error = seek_file(emulbase, fh->fd, offset, mode, &original, &newpos, TRUE);
