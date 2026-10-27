@@ -18,26 +18,16 @@
 
 #include "vcgfx_neon.h"
 
-/* Shared by the onscreen (FB) and offscreen (GPU) bitmap classes: both have
- * uncached physical pixels in data->VideoData. RAM-backed offscreen bitmaps
- * leave VideoData NULL and fall through to ChunkyBM.
+/* Shared by the onscreen (FB) and offscreen bitmap classes: the fb and
+ * screens in scanout memory have uncached physical pixels in
+ * data->VideoData. RAM-backed offscreen bitmaps leave VideoData NULL and
+ * fall through to ChunkyBM.
  */
-
-/* Onscreen only: a draw into an overlay plane's rectangle takes the plane
- * down first (vcgfx_ovl_yield in vcgfx_onbitmap.c). */
-#ifdef OnBitmap
-#define OVL_YIELD(x, y, w, h) \
-    vcgfx_ovl_yield(XSD(cl), o, (x), (y), (x) + (LONG)(w) - 1, (y) + (LONG)(h) - 1)
-#else
-#define OVL_YIELD(x, y, w, h) ((void)0)
-#endif
 
 /*********  BitMap::Clear()  *************************************/
 VOID MNAME_BM(Clear)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
-
-    OVL_YIELD(0, 0, data->width, data->height);
 
     if (data->VideoData && data->bytesperpix == 4 && data->bytesperrow)
     {
@@ -61,8 +51,6 @@ VOID MNAME_BM(Clear)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *ms
 VOID MNAME_BM(FillRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
-
-    OVL_YIELD(msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1);
 
     if (data->VideoData && data->bytesperpix == 4 && data->bytesperrow &&
         GC_DRMD(msg->gc) == vHidd_GC_DrawMode_Copy)
@@ -90,8 +78,6 @@ VOID MNAME_BM(PutImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutIma
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
 
-    OVL_YIELD(msg->x, msg->y, msg->width, msg->height);
-
     if (data->VideoData && data->bytesperpix == 4 && data->bytesperrow &&
         (msg->pixFmt == vHidd_StdPixFmt_Native || msg->pixFmt == vHidd_StdPixFmt_Native32))
     {
@@ -99,11 +85,6 @@ VOID MNAME_BM(PutImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutIma
         UBYTE *dst = data->VideoData + msg->y * data->bytesperrow + msg->x * 4;
         ULONG copy_width = msg->width * 4;
         WORD y;
-
-        /* No page flip here (see Gfx::CopyBox): a full-frame PutImage is
-         * indistinguishable from mixed desktop rendering, and flipping
-         * corrupts read-modify-write / cached-pointer rendering. Flipping
-         * lives only on the gallium full-screen path. */
 
         if ((copy_width * msg->height) >= VC4_DMA_PUT_THRESHOLD &&
             vc4_dma_put(XSD(cl), src, msg->modulo, (ULONG)(IPTR)dst,
@@ -127,8 +108,6 @@ VOID MNAME_BM(PutImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutIma
 VOID MNAME_BM(PutTemplate)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutTemplate *msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
-
-    OVL_YIELD(msg->x, msg->y, msg->width, msg->height);
 
     if (data->VideoData && data->bytesperpix == 4 && data->bytesperrow &&
         GC_DRMD(msg->gc) == vHidd_GC_DrawMode_Copy &&
@@ -175,8 +154,6 @@ VOID MNAME_BM(PutTemplate)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Put
 VOID MNAME_BM(BlitColorExpansion)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_BlitColorExpansion *msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
-
-    OVL_YIELD(msg->destX, msg->destY, msg->width, msg->height);
 
     if (data->VideoData && data->bytesperpix == 4 && data->bytesperrow &&
         GC_DRMD(msg->gc) == vHidd_GC_DrawMode_Copy &&
@@ -329,35 +306,21 @@ VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         case aoHidd_VideoCoreGfxBitMap_Drawable:
             *msg->storage = (IPTR)data->VideoData;
             break;
-        case aoHidd_VideoCoreGfxBitMap_BackDrawable:
-#ifdef OnBitmap
-            *msg->storage = (IPTR)vc4_fb_backpage(XSD(cl));
-#else
-            *msg->storage = 0;
-#endif
-            break;
-        case aoHidd_VideoCoreGfxBitMap_Flip:
-            *msg->storage = 0;
-            break;
-        case aoHidd_VideoCoreGfxBitMap_Overlay:
-#ifdef OnBitmap
-            /* Callers read this back to learn whether the plane took. */
-            *msg->storage = (XSD(cl)->vcsd_HVS.hvs_OvlActive
-                             || XSD(cl)->vcsd_HVS6.h6_Overlay) ? 1 : 0;
-#else
-            *msg->storage = 0;
-#endif
-            break;
-        case aoHidd_VideoCoreGfxBitMap_LatchWait:
-#ifdef OnBitmap
-            vc4_hvs_latch_wait(XSD(cl));
-#endif
-            *msg->storage = 1;
-            break;
         default:
             OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
         }
     }
+#ifndef OnBitmap
+    else if (data->nbufs && IS_BM_ATTR(msg->attrID, idx)
+             && ((idx == aoHidd_BitMap_Scanout) || (idx == aoHidd_BitMap_Buffers)
+                 || (idx == aoHidd_BitMap_FrontBuffer) || (idx == aoHidd_BitMap_BackBuffer)))
+    {
+        /* A scan-out bitmap: ChunkyBM refuses those, so it was told it is none */
+        *msg->storage = (idx == aoHidd_BitMap_Scanout) ? TRUE
+                      : (idx == aoHidd_BitMap_Buffers) ? data->nbufs
+                      : (idx == aoHidd_BitMap_FrontBuffer) ? data->front : data->back;
+    }
+#endif
     else
     {
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);

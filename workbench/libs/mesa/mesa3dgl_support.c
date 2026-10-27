@@ -4,134 +4,15 @@
 
 #include <aros/debug.h>
 
-/* Before the rest: something further down defines SCHED_RR, which turns
- * the KRN_SchedType enum in aros/kernel.h into a syntax error. */
-#ifdef MESA3DGL_HAVE_COREAPI
-#include <aros/kernel.h>
-#include <proto/kernel.h>
-#include <hardware/bcm2708.h>
-#endif
-
 #include <proto/utility.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/cybergraphics.h>
-#include <proto/dos.h>
-#include <proto/icon.h>
-
-#include <workbench/workbench.h>
 
 #include <cybergraphx/cybergraphics.h>
 #include <graphics/rpattr.h>
 
 #include "mesa3dgl_support.h"
-
-/* Render-scale divisor (ENV:VC4_RENDER_SCALE, 1-4): GL renders at 1/N
- * of the drawable size and the vc4 present path shows it through the
- * HVS hardware scaler — fragment cost drops by N^2. Only honoured when
- * the vc4 shim is linked in (weak marker below) AND the display side can
- * actually scale a plane; elsewhere the fallback blit can't scale and
- * would draw a small image in the corner. */
-ULONG mesa3dgl_render_scale = 1;
-
-/* Marker: the GalliumCoreAPI table exists only in builds that carry a
- * runtime-bound hw driver (raspi/vc4) — the render-scale feature is
- * driver-side scaling, so gate on it. */
-#ifdef MESA3DGL_HAVE_COREAPI
-extern const void *gallium_core_get_api(void);
-#else
-static inline const void *gallium_core_get_api(void) { return (const void *)0; }
-#endif
-
-/*
- * Second gate: only HVS4 builds a scaled plane, so anywhere else a
- * scaled request would leave a 1/N image in the top-left corner. Not a
- * build-time decision - one aarch64 build ships both gallium hidds - and
- * the driver has no attribute to ask without pulling oop.library in here.
- * An allow list: an unknown SoC renders unscaled until someone has
- * checked its HVS, rather than silently taking the scaled path.
- */
-#ifdef MESA3DGL_HAVE_COREAPI
-static BOOL MESA3DGLScalerAvailable(VOID)
-{
-    struct Library *KernelBase = OpenResource("kernel.resource");
-    IPTR base;
-
-    if (!KernelBase)
-        return FALSE;
-
-    base = (IPTR)KrnGetSystemAttr(KATTR_PeripheralBase);
-
-    return (base == BCM2835_PERIPHYSBASE) || (base == BCM2836_PERIPHYSBASE);
-}
-#else
-static inline BOOL MESA3DGLScalerAvailable(VOID) { return FALSE; }
-#endif
-
-/* Per-program override: VC4_RENDER_SCALE tooltype in the program's icon
- * (.info next to the executable). Runs in the caller's process context,
- * so GetProgramDir() and the process name identify the right program. */
-static BOOL MESA3DGLReadScaleToolType(ULONG *scale)
-{
-    struct Library *IconBase;
-    struct Process *me = (struct Process *)FindTask(NULL);
-    struct DiskObject *dob;
-    BPTR progdir, olddir;
-    TEXT name[108];
-    STRPTR val;
-    BOOL found = FALSE;
-
-    if (me->pr_Task.tc_Node.ln_Type != NT_PROCESS)
-        return FALSE;
-
-    progdir = GetProgramDir();
-    if (progdir == BNULL)
-        return FALSE;
-
-    if (GetProgramName(name, sizeof(name)) == DOSFALSE || name[0] == '\0')
-    {
-        /* WB-launched: no CLI name set, the process carries the tool name */
-        name[sizeof(name) - 1] = '\0';
-        strncpy(name, me->pr_Task.tc_Node.ln_Name, sizeof(name) - 1);
-    }
-
-    IconBase = OpenLibrary("icon.library", 0);
-    if (!IconBase)
-        return FALSE;
-
-    olddir = CurrentDir(progdir);
-    dob = GetDiskObject(FilePart(name));
-    if (dob)
-    {
-        val = FindToolType(dob->do_ToolTypes, "VC4_RENDER_SCALE");
-        if (val && val[0] >= '1' && val[0] <= '4' && val[1] == '\0')
-        {
-            *scale = val[0] - '0';
-            found = TRUE;
-        }
-        FreeDiskObject(dob);
-    }
-    CurrentDir(olddir);
-    CloseLibrary(IconBase);
-
-    return found;
-}
-
-static VOID MESA3DGLReadRenderScale(VOID)
-{
-    TEXT buf[8];
-
-    mesa3dgl_render_scale = 1;
-    if (!gallium_core_get_api() || !MESA3DGLScalerAvailable())
-        return;
-
-    if (GetVar("VC4_RENDER_SCALE", buf, sizeof(buf), 0) > 0
-        && buf[0] >= '1' && buf[0] <= '4')
-        mesa3dgl_render_scale = buf[0] - '0';
-
-    /* Icon tooltype (per program) overrides the env variable (global) */
-    MESA3DGLReadScaleToolType(&mesa3dgl_render_scale);
-}
 
 VOID MESA3DGLSelectRastPort(struct mesa3dgl_context * ctx, struct TagItem * tagList)
 {
@@ -217,8 +98,6 @@ BOOL MESA3DGLStandardInit(struct mesa3dgl_context * ctx, struct TagItem *tagList
     LONG defaultright = 0, defaultbottom = 0;
 
     D(bug("[MESA3DGL] %s(ctx @ 0x%p, taglist @ 0x%p)\n", __func__, ctx, tagList));
-
-    MESA3DGLReadRenderScale();
 
     /* Set the defaults based on window information */
     if (ctx->window)
@@ -325,26 +204,15 @@ VOID MESA3DGLRecalculateBufferWidthHeight(struct mesa3dgl_context * ctx)
     if (newwidth < 0) newwidth = 0;
     if (newheight < 0) newheight = 0;
 
-    /* Render-scale: draw at 1/N, present through the HVS scaler. Even
-     * width keeps pixel formats happy; the present path upscales by
-     * the exact src/dest ratio so rounding never skews the aspect. */
-    if (mesa3dgl_render_scale > 1)
-    {
-        newwidth = (newwidth / mesa3dgl_render_scale) & ~1;
-        newheight = newheight / mesa3dgl_render_scale;
-        if (newwidth < 2) newwidth = 2;
-        if (newheight < 2) newheight = 2;
-    }
     
     
     if ((newwidth != ctx->framebuffer->width) || (newheight != ctx->framebuffer->height))
     {
-        /* rp_w/h are pre-scale/pre-border. */
-        D(bug("[MESA3DGL] fb resize: %lux%lu -> %lux%lu (rp %lux%lu, scale %lu)\n",
+        /* rp_w/h are pre-border. */
+        D(bug("[MESA3DGL] fb resize: %lux%lu -> %lux%lu (rp %lux%lu)\n",
             (ULONG)ctx->framebuffer->width, (ULONG)ctx->framebuffer->height,
             (ULONG)newwidth, (ULONG)newheight,
-            (ULONG)ctx->visible_rp_width, (ULONG)ctx->visible_rp_height,
-            (ULONG)mesa3dgl_render_scale));
+            (ULONG)ctx->visible_rp_width, (ULONG)ctx->visible_rp_height));
 
         /* The drawing area size has changed. Buffer must change */
         D(bug("[MESA3DGL] %s: current height    =   %d\n", __func__, ctx->framebuffer->height));

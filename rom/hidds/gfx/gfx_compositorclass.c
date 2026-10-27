@@ -2092,6 +2092,90 @@ static void HIDDCompositorRecalculateSurfaces(struct HIDDCompositorData *compdat
     }
 }
 
+static void HIDDCompositorFreeSurfaceBitMap(struct HIDDCompositorData *compdata);
+static OOP_Object *HIDDCompositorAllocBitMap(struct HIDDCompositorData *compdata, ULONG flags);
+
+/* Does a visible layer surface lie inside 'rect' (display relative)? */
+static BOOL HIDDCompositorRectHasSurfaces(struct HIDDCompositorData *compdata, struct Rectangle *rect)
+{
+    struct StackBitMapNode *n;
+    struct SurfaceNode *sn;
+    struct Rectangle r;
+
+    ForeachNode(&compdata->bitmapstack, n)
+    {
+        if (!n->hassurfaces || !(n->sbmflags & STACKNODEF_VISIBLE))
+            continue;
+        ForeachNode(&n->surfaces, sn)
+        {
+            if (sn->region && sn->region->RegionRectangle &&
+                AndRectRect(rect, &sn->region->bounds, &r))
+                return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+/* Was surfacebitmap made for the display's current mode, depth and size? */
+static BOOL HIDDCompositorSurfaceBitMapFits(struct HIDDCompositorData *compdata)
+{
+    return (compdata->surfacebmrect.MinX == compdata->displayrect.MinX) &&
+           (compdata->surfacebmrect.MinY == compdata->displayrect.MinY) &&
+           (compdata->surfacebmrect.MaxX == compdata->displayrect.MaxX) &&
+           (compdata->surfacebmrect.MaxY == compdata->displayrect.MaxY) &&
+           (compdata->surfacebmdepth == compdata->displaydepth) &&
+           (compdata->surfacebmmode == compdata->displaymode);
+}
+
+/*
+ * Where to compose 'rect' when the caller would draw straight into the
+ * display bitmap: the backdrop is drawn first and the surfaces over it after,
+ * so a display that scans displaybitmap out shows the backdrop alone for a
+ * moment - a translucent window blinks on every update of itself or of what
+ * lies under it. With a surface inside 'rect' this returns surfacebitmap
+ * (surfacesem obtained; HIDDCompositorTargetDone() copies it to the display
+ * and releases it), else 'target' unchanged. A NULL 'rect' is the whole
+ * display.
+ */
+static OOP_Object *HIDDCompositorTarget(struct HIDDCompositorData *compdata, OOP_Object *target, struct Rectangle *rect)
+{
+    if (!rect)
+        rect = &compdata->displayrect;
+    if (target != compdata->displaybitmap || !HIDDCompositorRectHasSurfaces(compdata, rect))
+        return target;
+
+    ObtainSemaphore(&compdata->surfacesem);
+    if (compdata->surfacebitmap && !HIDDCompositorSurfaceBitMapFits(compdata))
+        HIDDCompositorFreeSurfaceBitMap(compdata);
+    if (!compdata->surfacebitmap)
+    {
+        compdata->surfacebitmap = HIDDCompositorAllocBitMap(compdata, 0);
+        compdata->surfacebmrect = compdata->displayrect;
+        compdata->surfacebmdepth = compdata->displaydepth;
+        compdata->surfacebmmode = compdata->displaymode;
+    }
+    if (!compdata->surfacebitmap)
+    {
+        /* No memory: compose in place as before */
+        ReleaseSemaphore(&compdata->surfacesem);
+        return target;
+    }
+    return compdata->surfacebitmap;
+}
+
+static void HIDDCompositorTargetDone(struct HIDDCompositorData *compdata, OOP_Object *target, struct Rectangle *rect)
+{
+    if (target != compdata->surfacebitmap || !target)
+        return;
+    if (!rect)
+        rect = &compdata->displayrect;
+    HIDD_Gfx_CopyBox(compdata->gfx, target, rect->MinX, rect->MinY, compdata->displaybitmap,
+                     rect->MinX, rect->MinY, rect->MaxX - rect->MinX + 1, rect->MaxY - rect->MinY + 1, compdata->gc);
+    HIDD_BM_UpdateRect(compdata->displaybitmap, rect->MinX, rect->MinY,
+                       rect->MaxX - rect->MinX + 1, rect->MaxY - rect->MinY + 1);
+    ReleaseSemaphore(&compdata->surfacesem);
+}
+
 /* Blit the part of a surface inside 'rect' (display relative) onto the render target */
 static void HIDDCompositorRedrawSurfaceRect(struct HIDDCompositorData *compdata, OOP_Object *renderTarget,
                                             struct StackBitMapNode *n, struct SurfaceNode *sn, struct Rectangle *rect)
@@ -2329,17 +2413,42 @@ static VOID HIDDCompositorRedrawVisibleRegions(struct HIDDCompositorData *compda
         HIDDCompositorRecalculateVisibleRegions(compdata);
     }
 
-    if ((compdata->flags & COMPSTATEF_HASALPHA) && (compdata->intermedbitmap))
-        renderTarget = compdata->intermedbitmap;
+    /*
+     * Without the region nothing below gets drawn: leave the display as it
+     * is rather than present a target that was not drawn this time.
+     */
+    dispvisregion = NewRegion();
+#ifdef COMPOSITOR_FAULT_INJECTION
+    /* Test builds only: fail as if out of memory while the test holds this name */
+    if (dispvisregion)
+    {
+        BOOL fail;
 
-    if ((dispvisregion = NewRegion()) != NULL)
+        Forbid();
+        fail = FindSemaphore("compositor.fail.redrawregion") != NULL;
+        Permit();
+        if (fail)
+        {
+            DisposeRegion(dispvisregion);
+            dispvisregion = NULL;
+        }
+    }
+#endif
+    if (dispvisregion &&
+        !OrRectRegion(dispvisregion, drawrect ? drawrect : &compdata->displayrect))
+    {
+        DisposeRegion(dispvisregion);
+        dispvisregion = NULL;
+    }
+
+    if (dispvisregion)
     {
         struct RegionRectangle *dispclrrect;
 
-        if (drawrect)
-            OrRectRegion(dispvisregion, drawrect);
+        if ((compdata->flags & COMPSTATEF_HASALPHA) && (compdata->intermedbitmap))
+            renderTarget = compdata->intermedbitmap;
         else
-            OrRectRegion(dispvisregion, &compdata->displayrect);
+            renderTarget = HIDDCompositorTarget(compdata, renderTarget, drawrect);
 
         ForeachNode(&compdata->bitmapstack, n)
         {
@@ -2415,22 +2524,25 @@ static VOID HIDDCompositorRedrawVisibleRegions(struct HIDDCompositorData *compda
             HIDDCompositorRedrawAlphaRegions(compdata, drawrect);
         }
         DisposeRegion(dispvisregion);
-    }
-    if (renderTarget != compdata->displaybitmap)
-    {
-        struct Rectangle *r = drawrect ? drawrect : &compdata->displayrect;
 
-        HIDD_Gfx_CopyBox(compdata->gfx, renderTarget,
-                r->MinX, r->MinY,
-                compdata->displaybitmap,
-                r->MinX, r->MinY,
-                r->MaxX - r->MinX + 1,
-                r->MaxY - r->MinY + 1,
-                compdata->gc);
-        HIDD_BM_UpdateRect(compdata->displaybitmap,
-                r->MinX, r->MinY,
-                r->MaxX - r->MinX + 1,
-                r->MaxY - r->MinY + 1);
+        if (renderTarget == compdata->surfacebitmap)
+            HIDDCompositorTargetDone(compdata, renderTarget, drawrect);
+        else if (renderTarget != compdata->displaybitmap)
+        {
+            struct Rectangle *r = drawrect ? drawrect : &compdata->displayrect;
+
+            HIDD_Gfx_CopyBox(compdata->gfx, renderTarget,
+                    r->MinX, r->MinY,
+                    compdata->displaybitmap,
+                    r->MinX, r->MinY,
+                    r->MaxX - r->MinX + 1,
+                    r->MaxY - r->MinY + 1,
+                    compdata->gc);
+            HIDD_BM_UpdateRect(compdata->displaybitmap,
+                    r->MinX, r->MinY,
+                    r->MaxX - r->MinX + 1,
+                    r->MaxY - r->MinY + 1);
+        }
     }
 }
 
@@ -2468,6 +2580,16 @@ static void HIDDCompositorFreeBitMap(struct HIDDCompositorData *compdata, OOP_Ob
         FreeBitMap(freebm);
     else
         OOP_DisposeObject(bm);
+}
+
+/* Caller holds surfacesem (or is the only user, in Dispose) */
+static void HIDDCompositorFreeSurfaceBitMap(struct HIDDCompositorData *compdata)
+{
+    if (compdata->surfacebitmap)
+    {
+        HIDDCompositorFreeBitMap(compdata, compdata->surfacebitmap);
+        compdata->surfacebitmap = NULL;
+    }
 }
 
 /*
@@ -2811,6 +2933,22 @@ static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata,
         DTOGGLE(bug("[Compositor] %s: Disposing old display bitmap 0x%p\n", __func__, olddisplaybitmap));
         HIDDCompositorFreeBitMap(compdata, olddisplaybitmap);
     }
+    if (olddisplaybitmap && (olddisplaybitmap != compdata->displaybitmap))
+    {
+        /*
+         * Composition stopped: passthrough never composes off screen, so the
+         * display sized bitmap is not kept. While composing, the redraw above
+         * has already made it for the new mode (HIDDCompositorTarget()
+         * replaces one of another mode itself): only a bitmap that does not
+         * fit the display goes, so a mode change does not free the one just
+         * made and allocate it again on the next update.
+         */
+        ObtainSemaphore(&compdata->surfacesem);
+        if (compdata->surfacebitmap &&
+            (!compdata->displaybitmap || !HIDDCompositorSurfaceBitMapFits(compdata)))
+            HIDDCompositorFreeSurfaceBitMap(compdata);
+        ReleaseSemaphore(&compdata->surfacesem);
+    }
 
     /* Handled */
     compdata->modeschanged = FALSE;
@@ -3014,6 +3152,7 @@ OOP_Object *Compositor__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
         NEWLIST(&compdata->clientsurfaces);
         InitSemaphore(&compdata->semaphore);
         InitSemaphore(&compdata->hooksem);
+        InitSemaphore(&compdata->surfacesem);
 
         compdata->defaultbackfill.h_Entry = (HOOKFUNC)AROS_ASMSYMNAME(CompositorDefaultBackFillFunc);
         compdata->defaultbackfill.h_Data = compdata;
@@ -3058,6 +3197,7 @@ void Compositor__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
         }
         if (compdata->intermedbitmap)
             HIDDCompositorFreeBitMap(compdata, compdata->intermedbitmap);
+        HIDDCompositorFreeSurfaceBitMap(compdata);
         if (compdata->alpharegion)
             DisposeRegion(compdata->alpharegion);
         HIDDCompositorPurgeBitMapStack(compdata);
@@ -3522,10 +3662,15 @@ VOID Compositor__Hidd_Compositor__BitMapRectChanged(OOP_Class *cl, OOP_Object *o
                         if ((compdata->alpharegion) && (isRectInRegion(compdata->alpharegion, &dstandvisrect)))
                             updateAlphaBmps = TRUE;
 
-                        HIDDCompositorRedrawBitmap(compdata, renderTarget, n, &dstandvisrect);
-                        /* Translucent surfaces over it are blended again (opaque ones are outside 'paint') */
+                        /* Translucent surfaces over it are blended again (opaque ones are outside 'paint'),
+                           composed off screen first when they are drawn after the backdrop */
+                        OOP_Object *target = n->hassurfaces ? HIDDCompositorTarget(compdata, renderTarget, &dstandvisrect)
+                                                            : renderTarget;
+
+                        HIDDCompositorRedrawBitmap(compdata, target, n, &dstandvisrect);
                         if (n->hassurfaces)
-                            HIDDCompositorRedrawSurfaces(compdata, renderTarget, n, &dstandvisrect);
+                            HIDDCompositorRedrawSurfaces(compdata, target, n, &dstandvisrect);
+                        HIDDCompositorTargetDone(compdata, target, &dstandvisrect);
                     }
                     else
                     {

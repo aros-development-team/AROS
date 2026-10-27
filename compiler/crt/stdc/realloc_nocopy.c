@@ -5,6 +5,8 @@
 #include <aros/cpu.h>
 #include <proto/exec.h>
 
+#include "__memalign.h"
+
 /*****************************************************************************
 
     NAME */
@@ -56,8 +58,13 @@
     if (!oldmem)
         return malloc (size);
 
-    mem = (UBYTE *)oldmem - AROS_ALIGN(sizeof(size_t));
+    mem = (UBYTE *)oldmem - MALLOC_HDRSIZE;
     oldsize = *((size_t *)mem);
+
+    /* A block from aligned_alloc() has the magic number in place of its
+       size; there is nothing to keep, so always replace it. */
+    if (oldsize == MEMALIGN_MAGIC)
+        goto alloc;
 
     /* Reduce or enlarge the memory ? */
     if (size < oldsize)

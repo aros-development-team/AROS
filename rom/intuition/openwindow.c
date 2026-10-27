@@ -52,6 +52,7 @@ struct OpenWindowActionMsg
     BOOL                             composited;
     BOOL                             alphasurface;
     UBYTE                            opaqueness;
+    struct Region                   *inputregion;   /* WA_InputRegion, copied by layers.library */
 };
 
 static VOID int_openwindow(struct OpenWindowActionMsg *msg,
@@ -129,6 +130,7 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
   //ULONG                                      lock;
     ULONG                            windowinvisible = FALSE;
     BOOL                                 composited = FALSE, alphasurface = FALSE;
+    struct Region                       *inputregion = NULL;
     ULONG                                opaqueness = 255;
     BOOL                                 driver_init_done = FALSE, have_helpgroup = FALSE;
     BOOL                             do_setwindowpointer = FALSE;
@@ -567,6 +569,11 @@ moreFlags |= (name); else moreFlags &= ~(name)
                 alphasurface = tag->ti_Data ? TRUE : FALSE;
                 if (alphasurface)
                     composited = TRUE;
+                break;
+
+            /* Where the window takes input, see LA_InputShape */
+            case WA_InputRegion:
+                inputregion = (struct Region *)tag->ti_Data;
                 break;
 #endif
 
@@ -1101,6 +1108,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
     msg.composited = composited;
     msg.alphasurface = alphasurface;
     msg.opaqueness = opaqueness;
+    msg.inputregion = inputregion;
     msg.success = FALSE;
 
     /* int_openwindow() may activate and render the window before returning.
@@ -1512,6 +1520,7 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
             {msg->composited ? LA_Composited   : TAG_IGNORE, TRUE                  },
             {msg->composited ? LA_Opacity      : TAG_IGNORE, msg->opaqueness       },
             {msg->composited ? LA_AlphaSurface : TAG_IGNORE, msg->alphasurface     },
+            {msg->inputregion ? LA_InputShape  : TAG_IGNORE, (IPTR)msg->inputregion},
             {TAG_DONE}
         };
 

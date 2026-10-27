@@ -149,6 +149,7 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         { aHidd_Name            , (IPTR)"vcgfx.hidd"     },
         { aHidd_HardwareName    , (IPTR)"VideoCore4 Display Adaptor"   },
         { aHidd_ProducerName    , (IPTR)"Broadcom Corporation"  },
+        { aHidd_Gfx_FrameBufferType, vHidd_FrameBuffer_Direct },
         { TAG_MORE              , (IPTR)msg->attrList       }
     };
     struct pRoot_New            gfxmsg_New;
@@ -159,6 +160,11 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     EnterFunc(bug("VideoCoreGfx::New()\n"));
 
     NewList(&vc_modelist);
+
+    /* Planes scan screens out of their own memory */
+    XSD(cl)->vcsd_NoFB = vcgfx_planes_supported(XSD(cl));
+    if (XSD(cl)->vcsd_NoFB)
+        gfxmsg_tags[3].ti_Data = vHidd_FrameBuffer_None;
 
     FNAME_SUPPORT(SDTV_SyncGen)(&vc_modelist, cl);
     FNAME_SUPPORT(HDMI_SyncGen)(&vc_modelist, cl);
@@ -284,6 +290,14 @@ VOID MNAME_DISPLAY_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg
             *msg->storage = XSD(cl)->vcsd_CurBuf ? vHidd_SpriteType_DirectColor : 0;
             found = TRUE;
             break;
+
+        case aoHidd_Display_PlaneCount:
+            if (XSD(cl)->vcsd_NoFB)
+            {
+                *msg->storage = 1 + VCGFX_OVL_PLANES;
+                found = TRUE;
+            }
+            break;
         }
     }
     if (!found)
@@ -387,6 +401,131 @@ VOID MNAME_DISPLAY(NominalDimensions)(OOP_Class *cl, OOP_Object *o, struct pHidd
     }
 
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+/* The fb behind the planes: the display timing, and the backdrop. Ours
+ * only - graphics.library and the compositor must not draw into it. */
+static void vc4_fb_new(OOP_Class *cl, OOP_Object *o, OOP_Object *bm)
+{
+    struct TagItem fbtags[] =
+    {
+        { aHidd_BitMap_FrameBuffer, TRUE                 },
+        { aHidd_BitMap_ModeID,      vHidd_ModeID_Invalid },
+        { TAG_DONE,                 0                    }
+    };
+
+    OOP_GetAttr(bm, aHidd_BitMap_ModeID, &fbtags[1].ti_Data);
+    if (fbtags[1].ti_Data == vHidd_ModeID_Invalid)
+        return;
+    HIDD_Display_CreateObject(o, XSD(cl)->vcsd_basebm, fbtags);
+    OOP_SetAttrsTags(o, aHidd_Display_FrameBuffer, 0, TAG_DONE);
+}
+
+/* Without a framebuffer the bitmap given is scanned out itself; the base
+ * class then tracks it for the cursor. */
+OOP_Object *MNAME_DISPLAY(Show)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_Show *msg)
+{
+    struct VideoCoreGfx_staticdata *xsd = XSD(cl);
+
+    if (xsd->vcsd_NoFB)
+    {
+        if (msg->bitMap && !xsd->vcsd_FBObj)
+            vc4_fb_new(cl, o, msg->bitMap);
+        if (!xsd->vcsd_FBObj)
+            return NULL;
+        vcgfx_show(xsd, msg->bitMap);
+    }
+    return (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+VOID MNAME_DISPLAY(UpdateRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_UpdateRect *msg)
+{
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    vcgfx_mirror_rect(XSD(cl), msg->bitMap, msg->x, msg->y, msg->width, msg->height);
+}
+
+/* How far a plane scales: VideoCore IV up only, HVS5/6 down to 2/3 too,
+ * that is a source at most 1.5 times the size it lands. */
+static void vc4_plane_scale(struct VideoCoreGfx_staticdata *xsd, ULONG *min, ULONG *max)
+{
+    *min = HIDD_PLANE_SCALE_UNITY;
+    *max = HIDD_PLANE_SCALE_UNITY;
+    if (xsd->vcsd_HVSGen == VCGFX_HVS_VC4)
+        *max = 16 * HIDD_PLANE_SCALE_UNITY;
+    else if ((xsd->vcsd_HVSGen == VCGFX_HVS_HVS5) || vc4_hvs6_scales(xsd))
+    {
+        *min = (2 * HIDD_PLANE_SCALE_UNITY + 2) / 3;
+        *max = 16 * HIDD_PLANE_SCALE_UNITY;
+    }
+}
+
+/* Overlay planes above the primary, z by index: 32-bit screens and client
+ * surfaces, 32 or 16 bit or video, in scanout memory. How many fit at once
+ * is the budget's to say, in CommitPlanes(). With no colour key a video
+ * partly covered goes off rather than show over what covers it. */
+ULONG MNAME_DISPLAY(GetPlaneInfo)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_GetPlaneInfo *msg)
+{
+    struct VideoCoreGfx_staticdata *xsd = XSD(cl);
+    struct HIDD_PlaneInfo info = { 0 };
+    ULONG len = msg->infoLen;
+
+    if (!xsd->vcsd_NoFB || (msg->index == 0) || (msg->index > VCGFX_OVL_PLANES))
+        return (ULONG)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+    info.Type       = vHidd_Plane_Overlay;
+    info.ZMin       = msg->index;
+    info.ZMax       = msg->index;
+    info.PixFmtMask = (1 << vcgfx_native32(xsd)) | (1 << vHidd_StdPixFmt_BGRA32)
+                    | (1 << vHidd_StdPixFmt_BGR032) | (1 << vHidd_StdPixFmt_RGB16_LE)
+                    | (1 << vHidd_StdPixFmt_RGB15_LE);
+    if (vcgfx_yuv_ok(xsd, vHidd_VideoFmt_NV12))
+        info.VideoFmtMask = (1 << vHidd_VideoFmt_NV12) | (1 << vHidd_VideoFmt_I420);
+    vc4_plane_scale(xsd, &info.ScaleMin, &info.ScaleMax);
+    info.AlphaModes = 1 << vHidd_CompAlpha_None;
+    info.PosAlignX  = 1;
+    info.PosAlignY  = 1;
+    info.Flags      = PIF_NEEDS_DISPLAYMEM | PIF_HIDE_OBSCURED;
+
+    if (len > sizeof(info))
+        len = sizeof(info);
+    CopyMem(&info, msg->info, len);
+    return len;
+}
+
+/* Scan-out bitmaps a plane can show: RGB, and NV12/I420 where entries carry
+ * their own colour conversion. */
+ULONG MNAME_DISPLAY(QueryScanout)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_QueryScanout *msg)
+{
+    struct VideoCoreGfx_staticdata *xsd = XSD(cl);
+    ULONG flags = SCF_PLANE, maxw = (xsd->vcsd_HVSGen == VCGFX_HVS_VC4) ? 4095 : 0, pxflags;
+
+    if (!xsd->vcsd_NoFB)
+        return (ULONG)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    if (msg->caps)
+        memset(msg->caps, 0, sizeof(*msg->caps));
+    if (!msg->width || !msg->height || (maxw && (msg->width > maxw)))
+        return 0;
+    if (msg->videoFmt ? !vcgfx_yuv_ok(xsd, msg->videoFmt)
+                      : !vcgfx_scanout_rgb(xsd, msg->pixFmt, &pxflags))
+        return 0;
+
+    if (msg->caps)
+    {
+        vc4_plane_scale(xsd, &msg->caps->ScaleMin, &msg->caps->ScaleMax);
+        if (msg->caps->ScaleMax != HIDD_PLANE_SCALE_UNITY)
+            flags |= SCF_SCALE;
+        msg->caps->Flags      = flags;
+        msg->caps->MaxWidth   = maxw;
+        msg->caps->MaxBuffers = VCGFX_SCAN_BUFFERS;
+    }
+    return flags;
+}
+
+BOOL MNAME_DISPLAY(CommitPlanes)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_CommitPlanes *msg)
+{
+    if (!XSD(cl)->vcsd_NoFB)
+        return (BOOL)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    return vcgfx_planes_commit(XSD(cl), msg->states, msg->count, msg->flags);
 }
 
 BOOL MNAME_DISPLAY(SetCursorShape)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_SetCursorShape *msg)
@@ -551,22 +690,6 @@ VOID MNAME_DISPLAY(SetCursorVisible)(OOP_Class *cl, OOP_Object *o, struct pHidd_
     VC4_MBOX_UNLOCK(xsd);
 }
 
-/* Returns the DMA-addressable buffer base for our on/offscreen bitmaps
- * (uncached framebuffer / GPU mem), or 0 for foreign / RAM-backed ones.
- */
-static ULONG vc4_bm_dma_base(OOP_Class *cl, OOP_Object *bm)
-{
-    OOP_Class *bmcl = OOP_OCLASS(bm);
-
-    if (bmcl == XSD(cl)->vcsd_VideoCoreGfxOnBMClass ||
-        bmcl == XSD(cl)->vcsd_VideoCoreGfxOffBMClass)
-    {
-        struct BitmapData *data = OOP_INST_DATA(bmcl, bm);
-        return (ULONG)(IPTR)data->VideoData;
-    }
-    return 0;
-}
-
 /* NEON rect copy between two chunky 32bpp bitmaps; falls through to
  * super otherwise. Handles same-buffer overlap via row direction;
  * same-row right-shift uses a reverse copyline.
@@ -575,15 +698,11 @@ VOID MNAME_GFX(CopyBox)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *
 {
     IPTR src_buf = 0, dst_buf = 0;
     IPTR src_pitch = 0, dst_pitch = 0;
-    IPTR src_bpp = 0, dst_bpp = 0;
+    IPTR src_bpp = 0, dst_bpp = 0, src_std = 0, dst_std = 0;
     UBYTE *srow_base, *drow_base;
     ULONG row_bytes;
     LONG y, y_start, y_end, y_step;
     BOOL same_row_overlap;
-
-    /* Layers restore and move windows with this; see vcgfx_ovl_yield. */
-    vcgfx_ovl_yield(XSD(cl), msg->dest, msg->destX, msg->destY,
-                    msg->destX + msg->width - 1, msg->destY + msg->height - 1);
 
     if (GC_DRMD(msg->gc) != vHidd_GC_DrawMode_Copy)
     {
@@ -600,12 +719,23 @@ VOID MNAME_GFX(CopyBox)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *
         OOP_GetAttr(msg->src,  aHidd_BitMap_PixFmt, (IPTR *)&src_pf);
         OOP_GetAttr(msg->dest, aHidd_BitMap_PixFmt, (IPTR *)&dst_pf);
         if (src_pf)
+        {
             OOP_GetAttr(src_pf, aHidd_PixFmt_BytesPerPixel, &src_bpp);
+            OOP_GetAttr(src_pf, aHidd_PixFmt_StdPixFmt, &src_std);
+        }
         if (dst_pf)
+        {
             OOP_GetAttr(dst_pf, aHidd_PixFmt_BytesPerPixel, &dst_bpp);
+            OOP_GetAttr(dst_pf, aHidd_PixFmt_StdPixFmt, &dst_std);
+        }
+        /* Rows copy as they are only in one byte order; X and A are alike */
+        if (src_std == vHidd_StdPixFmt_BGRA32)
+            src_std = vHidd_StdPixFmt_BGR032;
+        if (dst_std == vHidd_StdPixFmt_BGRA32)
+            dst_std = vHidd_StdPixFmt_BGR032;
     }
 
-    if (!src_buf || !dst_buf || src_bpp != 4 || dst_bpp != 4)
+    if (!src_buf || !dst_buf || src_bpp != 4 || dst_bpp != 4 || src_std != dst_std)
     {
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
         return;
@@ -639,41 +769,9 @@ VOID MNAME_GFX(CopyBox)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *
                         && msg->destX > msg->srcX
                         && (ULONG)(msg->destX - msg->srcX) < msg->width);
 
-    /* No page flip here: desktop rendering is incremental read-modify-write
-     * and higher layers cache the framebuffer base, so flipping would expose
-     * a stale page. Page flipping stays in the gallium full-screen path,
-     * where Mesa renders a complete frame in its own BO.
-     */
-
-    /* Large copies between two uncached DMA-addressable buffers go through
-     * the DMA engine (uncached CPU reads dominate the NEON cost). Same-row
-     * horizontal overlap can't be done in 2D stride mode (rows always go
-     * forward), so it stays on the NEON reverse copy.
-     */
-    /* No channel (BCM2712) means no attempt: the aliasing bail-out below
-     * is only right after the engine has actually run. */
-    if (!same_row_overlap && (XSD(cl)->vcsd_DMAChannel >= 0)
-        && (row_bytes * msg->height) >= VC4_DMA_COPY_THRESHOLD
-        && vc4_bm_dma_base(cl, msg->src) == (ULONG)src_buf
-        && vc4_bm_dma_base(cl, msg->dest) == (ULONG)dst_buf
-        && src_buf && dst_buf)
-    {
-        if (vc4_dma_copy(XSD(cl), (ULONG)(IPTR)srow_base, src_pitch,
-                         (ULONG)(IPTR)drow_base, dst_pitch,
-                         row_bytes, msg->height, (y_step < 0)))
-            return;
-
-        /* A failed DMA already overwrote part of the destination. Where the
-         * rectangles alias (a scroll) the clobbered source rows are gone, so
-         * the row loop below would paint garbage over the rows the engine did
-         * get right. Stale pixels repaint on the next damage pass. */
-        if (src_buf == dst_buf && msg->destY != msg->srcY
-            && (ULONG)(msg->destY > msg->srcY ? msg->destY - msg->srcY
-                                              : msg->srcY - msg->destY)
-               < (ULONG)msg->height)
-            return;
-    }
-
+    /* NEON, not DMA: measured 700 MB/s against 30 on a Pi 4 and 220 against
+     * 36 on a Pi 3, uncached reads and all, and a full-display copy could
+     * outlast the DMA timeout. */
     for (y = y_start; y != y_end; y += y_step)
     {
         UBYTE *srow = srow_base + y * src_pitch;
@@ -716,7 +814,8 @@ OOP_Object *MNAME_DISPLAY(CreateObject)(OOP_Class *cl, OOP_Object *o, struct pHi
             OOP_Class *frcl = friend ? OOP_OCLASS(friend) : NULL;
 
             if (displayable || frcl == XSD(cl)->vcsd_VideoCoreGfxOnBMClass
-                            || frcl == XSD(cl)->vcsd_VideoCoreGfxOffBMClass)
+                            || frcl == XSD(cl)->vcsd_VideoCoreGfxOffBMClass
+                            || GetTagData(aHidd_BitMap_Scanout, FALSE, msg->attrList))
             {
                 newbm_tags[0].ti_Tag  = aHidd_BitMap_ClassPtr;
                 newbm_tags[0].ti_Data = (IPTR)XSD(cl)->vcsd_VideoCoreGfxOffBMClass;

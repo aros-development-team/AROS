@@ -32,6 +32,10 @@
         per pixel alpha surface (LA_Composited + LA_AlphaSurface), the
         surface pixel there is not fully transparent (alpha 0).
 
+        A layer with an input shape (LA_InputShape,
+        ChangeLayerInputShape()) is hit where the point is inside both
+        its visible shape and its input shape; alpha does not count then.
+
         This is the policy WhichLayer() applies to every layer front to
         back; it lets Intuition and applications apply the same one, for
         example to decide whether a click on a shaped, translucent window
@@ -67,7 +71,7 @@
     BUGS
 
     SEE ALSO
-        WhichLayer(), CreateUpfrontLayerTagList()
+        WhichLayer(), CreateUpfrontLayerTagList(), ChangeLayerInputShape()
 
     INTERNALS
         The surface pixel's alpha comes from graphics.library's private

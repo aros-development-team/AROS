@@ -70,7 +70,7 @@
 
     /* Guard the bookkeeping arithmetic against size_t overflow before asking
        malloc() for the padded block. */
-    extra = alignment + AROS_ALIGN(sizeof(size_t)) + AROS_ALIGN(sizeof(void *));
+    extra = alignment + MALLOC_HDRSIZE + AROS_ALIGN(sizeof(void *));
     if (size > SIZE_MAX - extra)
     {
         errno = ENOMEM;
@@ -90,12 +90,12 @@
         return orig;
 
     /* move forward to an even alignment boundary */
-    mem = (char *) (((IPTR) orig + AROS_ALIGN(sizeof(size_t)) + AROS_ALIGN(sizeof(void *)) + alignment - 1) & -alignment);
+    mem = (char *) (((IPTR) orig + MALLOC_HDRSIZE + AROS_ALIGN(sizeof(void *)) + alignment - 1) & -alignment);
     tmp = mem;
 
     /* store a magic number in the place that free() will look for the
      * allocation size, so it can handle this specially */
-    tmp -= AROS_ALIGN(sizeof(size_t *));
+    tmp -= MALLOC_HDRSIZE;
     *((size_t *) tmp) = MEMALIGN_MAGIC;
 
     /* then store the original pointer before it, for free() to find */

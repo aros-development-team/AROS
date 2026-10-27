@@ -7,6 +7,7 @@
 */
 
 #include <exec/types.h>
+#include <oop/oop.h>
 
 /* Only +0x0000-0x07ff and +0x4000-0x8dff read back without an abort */
 #define HVS6_BASE           (ARM_PERIIOBASE + 0x580000)
@@ -51,13 +52,11 @@ static inline void hvs6_wr(ULONG offset, ULONG value)
 #define HVS6_FREE_FROM      0x0500
 #define HVS6_FILL           0xb0b0b0b0
 
-/* Fixed slot layout so a plane toggles by one CTL0 write; one list per page */
-#define HVS6_LIST_SLOTS     4
+/* Fixed slot layout so a plane toggles by one CTL0 write */
+#define HVS6_LIST_SLOTS     3
 #define HVS6_SLOT_FB        0
-#define HVS6_SLOT_OVL       1
-#define HVS6_SLOT_CUR       2
-#define HVS6_SLOT_END       3
-#define HVS6_LISTS          2
+#define HVS6_SLOT_CUR       1
+#define HVS6_SLOT_END       2
 
 #define HVS6_CTL0_END       (1UL << 31)
 #define HVS6_CTL0_VALID     (1UL << 30)
@@ -66,10 +65,11 @@ static inline void hvs6_wr(ULONG offset, ULONG value)
 #define HVS6_CTL0_EMPTY     ((ULONG)HVS6_SLOT_WORDS << 24)
 #define HVS6_CTL0_ALPHAMASK (3UL << 18)     /* 0 = per-pixel, 3 = fixed   */
 #define HVS6_CTL0_UNITY     (1UL << 15)     /* source size == dest size   */
+#define HVS6_CTL0_FORMAT    0x1fUL          /* pixel format, 7 = RGBA8888 */
 #define HVS6_CTL0_ORDER     (3UL << 13)     /* channel order, by memory:  */
 #define HVS6_ORDER_RGBA     (3UL << 13)     /* R,G,B,A - the framebuffer  */
 #define HVS6_ORDER_BGRA     (2UL << 13)     /* B,G,R,A - gallium, as HVS5 */
-#define HVS6_CTL0_FMT_MASK  0xf
+#define HVS6_CTL0_FMT_MASK  0x1f
 #define HVS6_CTL0_FMT_8888  7
 
 /* Plane entry. POS0/POS2 pack opposite to HVS5; extents are minus one. */
@@ -97,15 +97,38 @@ static inline void hvs6_wr(ULONG offset, ULONG value)
 #define HVS6_UPM_LINES      2
 #define HVS6_UPM_FALLBACK   0x40000         /* arena if UBM_SIZE is odd   */
 
-/* One slice each for the overlay, the cursor and our own framebuffer,
- * sized for the widest mode, so a mode change never re-carves */
+/* A slice for our own framebuffer, sized for the widest mode, so a mode
+ * change never re-carves; the cursor's for its widest line */
 #define HVS6_UPM_MAX_PITCH  (4096 * 4)
 #define HVS6_UPM_SLICE      ((((HVS6_UPM_MAX_PITCH + 62) / 32) * 32 *     \
+                              HVS6_UPM_LINES + HVS6_UPM_GRAN - 1) &       \
+                             ~(HVS6_UPM_GRAN - 1))
+#define HVS6_UPM_CURSOR     ((((VC4_CURSOR_MAX_W * 4 + 62) / 32) * 32 *   \
                               HVS6_UPM_LINES + HVS6_UPM_GRAN - 1) &       \
                              ~(HVS6_UPM_GRAN - 1))
 
 /* Keeps the free-slot search inside the readable range */
 #define HVS6_FREE_LIMIT     0x1300
+
+/* UPM handles for the planes a list shows, in the order they get UPM;
+ * 30 and 32 are the fb's and the cursor's */
+#define HVS6_PL_HANDLE      14
+#define HVS6_PL_HANDLE_END  30
+
+/* Screens as planes: backdrop, the planes back to front, unused slots
+ * empty, cursor, END. A plane shown needs
+ * a handle, so there are never more than those; three lists of more do
+ * not fit the free list RAM. */
+#define HVS6_PL_BACK        0
+#define HVS6_PL_FIRST       1
+#define HVS6_PL_CUR         (HVS6_PL_FIRST + HVS6_PL_HANDLE_END - HVS6_PL_HANDLE)
+#define HVS6_PL_END         (HVS6_PL_CUR + 1)
+#define HVS6_PL_SLOTS       (HVS6_PL_END + 1)
+#define HVS6_PL_LISTS       3
+
+/* UPM below this is left to the firmware's own planes, which it
+ * allocates upwards from 0 */
+#define HVS6_UPM_FW_RESERVE 0x10000
 
 struct VideoCoreGfx_staticdata;
 
@@ -114,16 +137,20 @@ void vc4_hvs6_report(struct VideoCoreGfx_staticdata *xsd, ULONG fb_phys,
 BOOL vc4_hvs6_takeover(struct VideoCoreGfx_staticdata *xsd, ULONG fb_phys,
                        ULONG fb_pitch, ULONG fb_width, ULONG fb_height,
                        const struct vcgfx_timing *want);
-BOOL vc4_hvs6_add_backpage(struct VideoCoreGfx_staticdata *xsd,
-                           ULONG fb_pitch, ULONG fb_height);
 APTR vc4_hvs6_alloc_fb(struct VideoCoreGfx_staticdata *xsd, ULONG pitch, ULONG height);
-BOOL vc4_hvs6_flip_page(struct VideoCoreGfx_staticdata *xsd, ULONG page_phys);
 void vc4_hvs6_latch_wait(struct VideoCoreGfx_staticdata *xsd);
 void vc4_hvs6_irq_init(struct VideoCoreGfx_staticdata *xsd);
-BOOL vc4_hvs6_overlay(struct VideoCoreGfx_staticdata *xsd,
-                      struct vc4gfx_overlay *ovl);
 BOOL vc4_hvs6_init_cursor(struct VideoCoreGfx_staticdata *xsd);
 void vc4_hvs6_cursor(struct VideoCoreGfx_staticdata *xsd);
+
+/* Screens as planes (vcsd_Plane[]), unscaled; the caller holds the
+ * mailbox lock for commit. */
+BOOL vc4_hvs6_planes_ok(void);
+void vc4_hvs6_planes_commit(struct VideoCoreGfx_staticdata *xsd);
+void vc4_hvs6_planes_try(struct VideoCoreGfx_staticdata *xsd);
+BOOL vc4_hvs6_plane_fits(struct VideoCoreGfx_staticdata *xsd, ULONG w, ULONG h);
+BOOL vc4_hvs6_scales(struct VideoCoreGfx_staticdata *xsd);
+void vc4_hvs6_out_size(struct VideoCoreGfx_staticdata *xsd, ULONG *w, ULONG *h);
 
 /* vcgfx_hvs6_mode.c */
 void vc4_hvs6_mode_capture(struct VideoCoreGfx_staticdata *xsd);

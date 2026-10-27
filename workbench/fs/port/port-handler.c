@@ -99,22 +99,33 @@ static SIPTR decodeArgs(struct portBase *pb, struct portArgs *pa, BSTR args)
         if (loc < len)
             loc++;
 
+        /* An empty section does not specify a baud rate or other option. */
+        if (slen == 0)
+            continue;
+
         /* Check for matches.. */
-        if (slen >= 5 && (0 == Strnicmp(cp, "UNIT=", 5))) {
+        if (slen > 5 && (0 == Strnicmp(cp, "UNIT=", 5))) {
             CONST_STRPTR unit = cp + 5;
             int ulen = slen - 5;
             int i;
-            SIPTR uval = 0;
+            IPTR uval = 0;
+            BOOL overflow = FALSE;
 
             for (i = 0; i < ulen; i++) {
                 if (unit[i] < '0' || unit[i] > '9')
                     break;
-                uval *= 10;
-                uval += unit[i] - '0';
+                if (uval > (IPTR)-1 / 10 ||
+                    (uval == (IPTR)-1 / 10 && (unit[i] - '0') > (IPTR)-1 % 10))
+                    overflow = TRUE;
+                else
+                    uval = uval * 10 + (unit[i] - '0');
             }
 
-            if (i == ulen)
+            if (i == ulen) {
+                if (overflow)
+                    return ERROR_BAD_NUMBER;
                 pa->pa_DeviceUnit = uval;
+            }
 
         } else if (pb->pb_Mode == PORT_PARALLEL) {
             /* No parallel.device options to process */
@@ -127,15 +138,21 @@ static SIPTR decodeArgs(struct portBase *pb, struct portArgs *pa, BSTR args)
         } else if (pb->pb_Mode == PORT_SERIAL) {
             int i;
             ULONG baud = 0;
+            BOOL overflow = FALSE;
 
             /* Check for all-numeric */
             for (i = 0; i < slen; i++) {
                 if (cp[i] < '0' || cp[i] > '9')
                     break;
-                baud *= 10;
-                baud += cp[i] - '0';
+                if (baud > (ULONG)-1 / 10 ||
+                    (baud == (ULONG)-1 / 10 && (cp[i] - '0') > (ULONG)-1 % 10))
+                    overflow = TRUE;
+                else
+                    baud = baud * 10 + (cp[i] - '0');
             }
             if (i == slen) {
+                if (overflow)
+                    return ERROR_BAD_NUMBER;
                 pa->pa_Serial.ps_Baud = baud;
             } else if (slen == 3) {
                 TEXT bits, mode, stop;
@@ -255,7 +272,7 @@ static SIPTR decodeStartup(struct portBase *pb, BPTR startup)
         pa->pa_DeviceUnit = fssm->fssm_Unit;
         pb->pb_DeviceFlags = fssm->fssm_Flags;
         if ((env = BADDR(fssm->fssm_Environ)) &&
-            (env->de_TableSize > DE_CONTROL) &&
+            (env->de_TableSize >= DE_CONTROL) &&
             ((BSTR)env->de_Control != BNULL)) {
             ret = decodeArgs(pb, pa, (BSTR)env->de_Control);
         }
@@ -267,9 +284,10 @@ static SIPTR decodeStartup(struct portBase *pb, BPTR startup)
 
 /* Open the device for IO
  */
-static struct portArgs *portOpen(struct portBase *pb, struct portArgs *pa, BPTR name, SIPTR *err)
+static struct portArgs *portOpen(struct portBase *pb, BPTR name, SIPTR *err)
 {
     int len = AROS_BSTR_strlen(name);
+    struct portArgs *pa;
     struct ExecBase *SysBase = pb->pb_SysBase;
 
     *err = 0;
@@ -282,10 +300,14 @@ static struct portArgs *portOpen(struct portBase *pb, struct portArgs *pa, BPTR 
         CopyMem(AROS_BSTR_ADDR(name), pa->pa_Node.ln_Name, len);
         pa->pa_Node.ln_Name[len] = 0;
 
-        decodeArgs(pb, pa, name);
+        *err = decodeArgs(pb, pa, name);
+        if (*err != RETURN_OK) {
+            FreeVec(pa);
+            return NULL;
+        }
 
         D(bug("%s: %s device=%s, unit=%d (%d), mode=%d\n",
-                    __func__, name, pb->pb_DeviceName,
+                    __func__, pa->pa_Node.ln_Name, pb->pb_DeviceName,
                     pa->pa_DeviceUnit, pb->pb_DeviceFlags,
                     pb->pb_Mode));
 
@@ -346,7 +368,7 @@ static struct portArgs *portOpen(struct portBase *pb, struct portArgs *pa, BPTR 
 
 static void portClose(struct portArgs *pa, struct ExecBase *SysBase)
 {
-    D(bug("%s: Close %s\n", pa->pa_Node.ln_Name));
+    D(bug("%s: Close %s\n", __func__, pa->pa_Node.ln_Name));
     Remove(&pa->pa_Node);
     CloseDevice((struct IORequest *)pa->pa_IO);
     DeleteIORequest((struct IORequest *)pa->pa_IO);
@@ -370,6 +392,8 @@ void replyPkt(struct DosPacket *dp, struct ExecBase *SysBase)
 LONG port_handler(struct ExecBase *SysBase)
 {
     struct DosPacket *dp;
+    struct DeviceNode *devNode;
+    struct Message *nextMessage = NULL;
     struct MsgPort *mp;
     BOOL dead = FALSE;
     SIPTR res;
@@ -387,28 +411,39 @@ LONG port_handler(struct ExecBase *SysBase)
 
     dp = (struct DosPacket *)(GetMsg(mp)->mn_Node.ln_Name);
 
-    res = RETURN_FAIL;
+    res = ERROR_INVALID_RESIDENT_LIBRARY;
     if ((pb.pb_UtilityBase = OpenLibrary("utility.library", 0))) {
         res = decodeStartup(&pb, (BPTR)dp->dp_Arg2);
     }
 
+    devNode = BADDR(dp->dp_Arg3);
     if (res == 0)
-        ((struct DeviceNode *)BADDR(dp->dp_Arg3))->dn_Task = mp;
+        devNode->dn_Task = mp;
 
     dp->dp_Res2 = res;
     dp->dp_Res1 = (dp->dp_Res2 == 0) ? DOSTRUE : DOSFALSE;
 
+    if (res != RETURN_OK) {
+        CloseLibrary(pb.pb_UtilityBase);
+        replyPkt(dp, SysBase);
+        return RETURN_FAIL;
+    }
+
     do {
         replyPkt(dp, SysBase);
-        WaitPort(mp);
-        dp = (struct DosPacket *)(GetMsg(mp)->mn_Node.ln_Name);
+        if (nextMessage == NULL) {
+            WaitPort(mp);
+            nextMessage = GetMsg(mp);
+        }
+        dp = (struct DosPacket *)nextMessage->mn_Node.ln_Name;
+        nextMessage = NULL;
         D(bug("%s: type=%d\n", __func__, dp->dp_Type));
 
         switch (dp->dp_Type) {
         case ACTION_FINDINPUT:
         case ACTION_FINDOUTPUT:
         case ACTION_FINDUPDATE:
-            pa = portOpen(&pb, pa, (BSTR)dp->dp_Arg3, &dp->dp_Res2);
+            pa = portOpen(&pb, (BSTR)dp->dp_Arg3, &dp->dp_Res2);
             if (dp->dp_Res2 == RETURN_OK) {
                 fh = BADDR(dp->dp_Arg1);
                 fh->fh_Arg1 = (SIPTR)pa;
@@ -418,6 +453,11 @@ LONG port_handler(struct ExecBase *SysBase)
             break;
         case ACTION_READ:
             if ((pa = (struct portArgs *)dp->dp_Arg1)) {
+                if (dp->dp_Arg3 < 0) {
+                    dp->dp_Res1 = -1;
+                    dp->dp_Res2 = ERROR_BAD_NUMBER;
+                    break;
+                }
                 pa->pa_IO->std.io_Command = CMD_READ;
                 pa->pa_IO->std.io_Data = (APTR)dp->dp_Arg2;
                 pa->pa_IO->std.io_Length = dp->dp_Arg3;
@@ -429,16 +469,21 @@ LONG port_handler(struct ExecBase *SysBase)
                     dp->dp_Res1 = pa->pa_IO->std.io_Actual;
                     dp->dp_Res2 = 0;
                 } else {
-                    dp->dp_Res1 = DOSFALSE;
+                    dp->dp_Res1 = -1;
                     dp->dp_Res2 = ERROR_READ_PROTECTED;
                 }
             } else {
-                dp->dp_Res1 = DOSFALSE;
+                dp->dp_Res1 = -1;
                 dp->dp_Res2 = ERROR_OBJECT_WRONG_TYPE;
             }
             break;
         case ACTION_WRITE:
             if ((pa = (struct portArgs *)dp->dp_Arg1)) {
+                if (dp->dp_Arg3 < 0) {
+                    dp->dp_Res1 = -1;
+                    dp->dp_Res2 = ERROR_BAD_NUMBER;
+                    break;
+                }
                 if (pb.pb_Mode == PORT_PRINTER &&
                     pa->pa_Printer.pr_Type == PRT_RAW)
                     pa->pa_IO->std.io_Command = PRD_RAWWRITE;
@@ -454,11 +499,11 @@ LONG port_handler(struct ExecBase *SysBase)
                     dp->dp_Res1 = pa->pa_IO->std.io_Actual;
                     dp->dp_Res2 = 0;
                 } else {
-                    dp->dp_Res1 = DOSFALSE;
-                    dp->dp_Res2 = ERROR_READ_PROTECTED;
+                    dp->dp_Res1 = -1;
+                    dp->dp_Res2 = ERROR_WRITE_PROTECTED;
                 }
             } else {
-                dp->dp_Res1 = DOSFALSE;
+                dp->dp_Res1 = -1;
                 dp->dp_Res2 = ERROR_OBJECT_WRONG_TYPE;
             }
             break;
@@ -473,7 +518,9 @@ LONG port_handler(struct ExecBase *SysBase)
             }
             break;
         case ACTION_DIE:
-            if (IsListEmpty(&pb.pb_Files)) {
+            /* Refuse shutdown if a packet is queued; the caller must retry. */
+            if (IsListEmpty(&pb.pb_Files) &&
+                (nextMessage = GetMsg(mp)) == NULL) {
                 dp->dp_Res1 = DOSTRUE;
                 dp->dp_Res2 = 0;
                 dead = TRUE;
@@ -490,7 +537,8 @@ LONG port_handler(struct ExecBase *SysBase)
     } while (!dead);
 
 /* ACTION_DIE ends up here... */
-    D(bug("%s: Exiting\n"));
+    devNode->dn_Task = NULL;
+    D(bug("%s: Exiting\n", __func__));
 
     replyPkt(dp, SysBase);
 

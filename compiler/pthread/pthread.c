@@ -180,11 +180,14 @@ static int __m68k_sync_val_compare_and_swap(int *v, int o, int n)
 
 static int __m68k_sync_lock_test_and_set(int *v, int n)
 {
+    int old;
+
     Disable();
+    old = *v;
     (*v) = (n);
     Enable();
 
-    return n;
+    return old;
 }
 #undef __sync_lock_test_and_set
 #define __sync_lock_test_and_set(v, n) __m68k_sync_lock_test_and_set(v, n)
@@ -1551,9 +1554,7 @@ static int _obtain_sema_timed(struct SignalSemaphore *sema, const struct timespe
     BUGS
         Non-recursive ownership is not tracked. Acquiring a lock already held
         by the same task can deadlock. The source contains an explicit TODO
-        concerning yield frequency. The __mc68000__ replacement for
-        test-and-set returns the newly written value, so this loop cannot
-        observe an unlocked value through that replacement.
+        concerning yield frequency.
 
     SEE ALSO
         pthread_spin_trylock()
@@ -1605,11 +1606,6 @@ static int _obtain_sema_timed(struct SignalSemaphore *sema, const struct timespe
     NOTES
         Does not yield, sleep, or queue a waiter. Each successful acquisition
         requires a matching unlock.
-
-    BUGS
-        The __mc68000__ replacement for test-and-set returns the written value
-        instead of the old value; with a nonzero lock request this path
-        reports EBUSY even on an initially clear lock.
 
     SEE ALSO
         pthread_spin_lock()
@@ -2152,8 +2148,7 @@ static void OnceCleanup(void *arg)
         PTHREAD_ONCE_INIT: the initial compare-and-swap path can skip
         initialization. Cancellation during the callback also has nontrivial
         state and cleanup implications; do not assume a POSIX retry guarantee
-        without testing. On __mc68000__, its spin-lock helper also uses the
-        problematic test-and-set replacement.
+        without testing.
 
     SEE ALSO
         pthread_spin_lock()

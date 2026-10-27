@@ -206,6 +206,8 @@ void _FreeLayer(struct Layer * l, struct LayersBase *LayersBase)
     DisposeRegion(IL(l)->occludeshape);
   if (IL(l)->compshape)
     DisposeRegion(IL(l)->compshape);
+  if (IL(l)->inputshape)
+    DisposeRegion(IL(l)->inputshape);
   DisposeRegion(l->DamageList);
   DisposeRegion(l->VisibleRegion);
   DisposeRegion(l->shape);
@@ -626,6 +628,10 @@ BOOL _IsLayerHitAt(struct Layer *l, LONG x, LONG y, struct LayersBase *LayersBas
 {
   if (!IS_VISIBLE(l) || !IsPointInRegion(l->visibleshape, x, y))
     return FALSE;
+
+  /* An input shape decides alone where the layer takes input (LA_InputShape) */
+  if (NULL != IL(l)->inputshape)
+    return IsPointInRegion(IL(l)->inputshape, x - l->bounds.MinX, y - l->bounds.MinY);
 
   if (IS_COMPOSITED(l) && IL(l)->alphasurface && NULL != IL(l)->surface)
     return 0 != LayerSurfaceAlpha(IL(l)->surface, x - l->bounds.MinX, y - l->bounds.MinY);

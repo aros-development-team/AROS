@@ -7,6 +7,8 @@
 #include <aros/cpu.h>
 #include <proto/exec.h>
 
+#include "__memalign.h"
+
 /*****************************************************************************
 
     NAME */
@@ -62,8 +64,19 @@
         return NULL;
     }
 
-    mem = (UBYTE *)oldmem - AROS_ALIGN(sizeof(size_t));
+    mem = (UBYTE *)oldmem - MALLOC_HDRSIZE;
     oldsize = *((size_t *)mem);
+
+    /* A block from aligned_alloc()/posix_memalign() has the magic number in
+       place of its size; what is usable is the rest of the malloc() block it
+       lies in. Always move it, as the result need not keep its alignment. */
+    if (oldsize == MEMALIGN_MAGIC)
+    {
+        UBYTE *orig = ((UBYTE **)(mem - AROS_ALIGN(sizeof(void *))))[0];
+
+        oldsize = *((size_t *)(orig - MALLOC_HDRSIZE)) - ((UBYTE *)oldmem - orig);
+        goto copy;
+    }
 
     /* Reduce or enlarge the memory ? */
     if (size < oldsize)
