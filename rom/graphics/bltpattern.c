@@ -23,6 +23,7 @@ struct bp_render_data {
     WORD             renderx1;
     WORD             rendery1;
     UBYTE            invertpattern;
+    struct RastPort *rp;
 };
 
 static ULONG bltpattern_render(APTR bpr_data, WORD srcx, WORD srcy,
@@ -35,6 +36,7 @@ static ULONG bltpattern_render(APTR bpr_data, WORD srcx, WORD srcy,
     UBYTE                 *mask = bprd->mask + bprd->maskmodulo * srcy;
     WORD                   patsrcx = (srcx + bprd->renderx1) % 16;
     WORD                   patsrcy = (srcy + bprd->rendery1) % bprd->patternheight;
+    HIDDT_PixelLUT         lut;
 
     if(patsrcx < 0)
         patsrcx += 16;
@@ -43,7 +45,8 @@ static ULONG bltpattern_render(APTR bpr_data, WORD srcx, WORD srcy,
 
     HIDD_BM_PutPattern(dstbm_obj, dst_gc, bprd->pattern,
                        patsrcx, patsrcy, bprd->patternheight, bprd->patterndepth,
-                       &bprd->pixlut, bprd->invertpattern, mask, bprd->maskmodulo,
+                       alpha_pixtab_lut(dstbm_obj, bprd->rp, &bprd->pixlut, &lut, GfxBase),
+                       bprd->invertpattern, mask, bprd->maskmodulo,
                        srcx, rect->MinX, rect->MinY, width, height);
 
     return width * height;
@@ -170,6 +173,7 @@ static ULONG bltpattern_render(APTR bpr_data, WORD srcx, WORD srcy,
             bprd.invertpattern  = (rp->DrawMode & INVERSVID) ? TRUE : FALSE;
             bprd.pixlut.entries = bprd.patterndepth;
             bprd.pixlut.pixels  = IS_HIDD_BM(rp->BitMap) ? HIDD_BM_PIXTAB(rp->BitMap) : NULL;
+            bprd.rp             = rp;
 
             rr.MinX = xMin;
             rr.MinY = yMin;

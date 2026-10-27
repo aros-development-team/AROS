@@ -40,6 +40,76 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] = {
     vHidd_StdPixFmt_RGBA32
 };
 
+/*
+ * A bitmap with an alpha channel allocated as a friend of a bitmap without
+ * one cannot share the friend's colormap and pixel table: their pixel values
+ * have no alpha bits, so every pen would render fully transparent. Give it a
+ * colormap and pixel table of its own, with the friend's colours mapped
+ * through its own pixel format and opaque, and register it for colour
+ * updates on the friend. Returns FALSE when the bitmap is to share the
+ * friend's colours in the ordinary way.
+ */
+static BOOL alpha_friend_colors(struct BitMap *nbm, struct BitMap *friend_bitmap, struct GfxBase *GfxBase)
+{
+    OOP_Object  *bm_obj = HIDD_BM_OBJ(nbm);
+    OOP_Object  *pf, *friendpf;
+    IPTR         alphamask = 0, friendalphamask = 0;
+    HIDDT_Color *colors;
+    ULONG        i;
+    BOOL         ok = FALSE;
+
+    if (!bm_obj || !HIDD_BM_OBJ(friend_bitmap) || !HIDD_BM_COLMAP(friend_bitmap))
+        return FALSE;
+
+    OOP_GetAttr(bm_obj, aHidd_BitMap_PixFmt, (IPTR *)&pf);
+    OOP_GetAttr(pf, aHidd_PixFmt_AlphaMask, &alphamask);
+    OOP_GetAttr(HIDD_BM_OBJ(friend_bitmap), aHidd_BitMap_PixFmt, (IPTR *)&friendpf);
+    OOP_GetAttr(friendpf, aHidd_PixFmt_AlphaMask, &friendalphamask);
+
+    if (!alphamask || friendalphamask)
+        return FALSE;
+
+    colors = AllocMem(sizeof(HIDDT_Color) * AROS_PALETTE_SIZE, MEMF_ANY);
+    if (!colors)
+        return FALSE;
+
+    HIDD_BM_PIXTAB(nbm) = AllocVec(sizeof(HIDDT_Pixel) * AROS_PALETTE_SIZE, MEMF_ANY);
+    if (HIDD_BM_PIXTAB(nbm))
+    {
+        for (i = 0; i < AROS_PALETTE_SIZE; i++)
+        {
+            if (!HIDD_CM_GetColor(HIDD_BM_COLMAP(friend_bitmap), i, &colors[i]))
+                colors[i].red = colors[i].green = colors[i].blue = 0;
+            colors[i].alpha = 0xFFFF;   /* pens are opaque */
+        }
+
+        /* into the bitmap's own colormap, mapped for its own pixel format */
+        if (HIDD_BM_SetColors(bm_obj, colors, 0, AROS_PALETTE_SIZE))
+        {
+            for (i = 0; i < AROS_PALETTE_SIZE; i++)
+                HIDD_BM_PIXTAB(nbm)[i] = colors[i].pixval;
+
+            HIDD_BM_COLMAP(nbm) = (OOP_Object *)OOP_GET(bm_obj, aHidd_BitMap_ColorMap);
+
+            if (gfx_AddAlphaPixTab(nbm, HIDD_BM_COLMAP(friend_bitmap), GfxBase))
+            {
+                HIDD_BM_FLAGS(nbm) |= HIDD_BMF_ALPHA_PIXTAB;
+                ok = TRUE;
+            }
+        }
+
+        if (!ok)
+        {
+            FreeVec(HIDD_BM_PIXTAB(nbm));
+            HIDD_BM_PIXTAB(nbm) = NULL;
+        }
+    }
+
+    FreeMem(colors, sizeof(HIDDT_Color) * AROS_PALETTE_SIZE);
+
+    return ok;
+}
+
 /*****************************************************************************
 
     NAME */
@@ -408,7 +478,20 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] = {
                               (flags & BMF_REQUESTVMEM) == BMF_REQUESTVMEM)) {
                     HIDD_BM_FLAGS(nbm) |= HIDD_BMF_SCREEN_BITMAP;
 
-                    if(friend_bitmap && IS_HIDD_BM(friend_bitmap)) {
+                    if(friend_bitmap && IS_HIDD_BM(friend_bitmap) &&
+                       alpha_friend_colors(nbm, friend_bitmap, GfxBase)) {
+                        /*
+                         * A bitmap with an alpha channel whose friend has none
+                         * (a composited layer's alpha surface on a 0RGB
+                         * screen): the friend's pixel values carry no alpha,
+                         * so it got a colormap and pixel table of its own with
+                         * the friend's colours mapped opaque. SetRGB32() and
+                         * friends on the friend keep them up to date
+                         * (gfx_UpdateAlphaPixTabs()).
+                         */
+                        HIDD_BM_COLMOD(nbm)     = HIDD_BM_COLMOD(friend_bitmap);
+                        HIDD_BM_REALDEPTH(nbm)  = HIDD_BM_REALDEPTH(friend_bitmap);
+                    } else if(friend_bitmap && IS_HIDD_BM(friend_bitmap)) {
                         /* We got a friend_bitmap bitmap. We inherit its
                            colormap.
                            !!! NOTE !!! If this is used after the
@@ -439,7 +522,7 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] = {
                             col.red     = 0;
                             col.green   = 0;
                             col.blue    = 0;
-                            col.alpha   = 0;
+                            col.alpha   = 0xFFFF;   /* pens are opaque */
 
                             if(vHidd_ColorModel_Palette == colmod || vHidd_ColorModel_TrueColor == colmod) {
                                 ULONG numcolors;

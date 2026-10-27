@@ -64,7 +64,7 @@ CONVERTFUNC(BGR15OE,ARGB32)
         {
             ULONG s = INV16(src[x]);
 
-            dst[x] = UPSHIFT16(s, BGR15, ARGB32);
+            dst[x] = (UPSHIFT16(s, BGR15, ARGB32)) | ARGB32_AMASK;   /* source has no alpha: opaque */
         }
         src = (UWORD *)(((UBYTE *)src) + srcMod);
         dst = (ULONG *)(((UBYTE *)dst) + dstMod);
@@ -89,7 +89,7 @@ CONVERTFUNC(BGR15OE,BGRA32)
         {
             ULONG s = INV16(src[x]);
 
-            dst[x] = UPSHIFT16(s, BGR15, BGRA32);
+            dst[x] = (UPSHIFT16(s, BGR15, BGRA32)) | BGRA32_AMASK;   /* source has no alpha: opaque */
         }
         src = (UWORD *)(((UBYTE *)src) + srcMod);
         dst = (ULONG *)(((UBYTE *)dst) + dstMod);
@@ -114,7 +114,7 @@ CONVERTFUNC(BGR15OE,RGBA32)
         {
             ULONG s = INV16(src[x]);
 
-            dst[x] = UPSHIFT16(s, BGR15, RGBA32);
+            dst[x] = (UPSHIFT16(s, BGR15, RGBA32)) | RGBA32_AMASK;   /* source has no alpha: opaque */
         }
         src = (UWORD *)(((UBYTE *)src) + srcMod);
         dst = (ULONG *)(((UBYTE *)dst) + dstMod);
@@ -140,7 +140,7 @@ CONVERTFUNC(BGR15OE,ABGR32)
         {
             ULONG s = INV16(src[x]);
 
-            dst[x] = UPSHIFT16(s, BGR15, ABGR32);
+            dst[x] = (UPSHIFT16(s, BGR15, ABGR32)) | ABGR32_AMASK;   /* source has no alpha: opaque */
         }
         src = (UWORD *)(((UBYTE *)src) + srcMod);
         dst = (ULONG *)(((UBYTE *)dst) + dstMod);

@@ -55,6 +55,27 @@
                                                     \
     return 1;
 
+/* As SWAP2432CODE for a destination with an alpha channel: the 24 bit
+   source has none, so every pixel is opaque. */
+#define SWAP2432OPAQUECODE(AMASK)                   \
+    UBYTE *src = (UBYTE *)srcPixels;                \
+    ULONG *dst = (ULONG *)dstPixels;                \
+    ULONG x, y;                                     \
+                                                    \
+    for(y = 0; y < height; y++)                     \
+    {                                               \
+        for(x = 0; x < width; x++)                  \
+        {                                           \
+            ULONG s = GET24_INV;                    \
+                                                    \
+            dst[x] = s | (AMASK);                   \
+        }                                           \
+        src = (UBYTE *)(((UBYTE *)src) + srcMod);   \
+        dst = (ULONG *)(((UBYTE *)dst) + dstMod);   \
+    }                                               \
+                                                    \
+    return 1;
+
 #define SWAP2424CODE                                \
     UBYTE *src = (UBYTE *)srcPixels;                \
     UBYTE *dst = (UBYTE *)dstPixels;                \

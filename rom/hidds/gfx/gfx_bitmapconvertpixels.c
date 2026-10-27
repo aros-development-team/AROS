@@ -204,7 +204,8 @@ bug("destmasks = %p %p %p %p  diffs = %d %d %d %d\n",
 
             GET_TRUE_PIX(s, srcpix, srcfmt);
 
-            dstpix =      (SHIFT_PIX(srcpix & srcfmt->alpha_mask, alpha_diff) & dstfmt->alpha_mask)
+            /* A source without an alpha channel is opaque: full alpha in the destination */
+            dstpix =      (srcfmt->alpha_mask ? (SHIFT_PIX(srcpix & srcfmt->alpha_mask, alpha_diff) & dstfmt->alpha_mask) : dstfmt->alpha_mask)
                     | (SHIFT_PIX(srcpix & srcfmt->red_mask  , red_diff)   & dstfmt->red_mask)
                     | (SHIFT_PIX(srcpix & srcfmt->green_mask, green_diff) & dstfmt->green_mask)
                     | (SHIFT_PIX(srcpix & srcfmt->blue_mask , blue_diff)  & dstfmt->blue_mask);
