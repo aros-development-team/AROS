@@ -3,10 +3,12 @@
 
     Desc: Reaction chooser.gadget - Exported node management functions
 */
-#define DEBUG 1
+#define DEBUG 0
 
 #include <proto/exec.h>
 #include <proto/utility.h>
+#include <proto/intuition.h>
+#include <intuition/classes.h>
 
 #include <exec/types.h>
 #include <exec/memory.h>
@@ -223,6 +225,98 @@ static void choosernode_set(struct ChooserNode *cn, struct TagItem *tags)
                 break;
         }
     }
+
+    AROS_LIBFUNC_EXIT
+}
+
+/*****************************************************************************
+
+    NAME */
+#include <proto/chooser.h>
+
+        AROS_LH4(BOOL, ShowChooser,
+
+/*  SYNOPSIS */
+        AROS_LHA(Object *, o, A0),
+        AROS_LHA(struct Window *, w, A1),
+        AROS_LHA(ULONG, xpos, D0),
+        AROS_LHA(ULONG, ypos, D1),
+
+/*  LOCATION */
+        struct Library *, ChooserBase, 10, Chooser)
+
+/*  FUNCTION
+        Opens the chooser's list at a position in the window, as if the
+        user had clicked the gadget. The pick is reported like a click.
+
+    INPUTS
+        o    - chooser.gadget object, added to the window w.
+        w    - window the gadget is in.
+        xpos, ypos - top left corner of the list, window coordinates.
+
+    RESULT
+        TRUE if the list was opened.
+
+    SEE ALSO
+        HideChooser()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+
+    struct ChooserBase_intern *cb = (struct ChooserBase_intern *)ChooserBase;
+    struct ChooserData *data;
+
+    if (!o || !w)
+        return FALSE;
+    data = INST_DATA(cb->rc_Class, o);
+    data->cd_ShowAt = TRUE;
+    data->cd_ShowX = (WORD)xpos;
+    data->cd_ShowY = (WORD)ypos;
+    if (ActivateGadget((struct Gadget *)o, w, NULL))
+        return TRUE;
+    data->cd_ShowAt = FALSE;
+    return FALSE;
+
+    AROS_LIBFUNC_EXIT
+}
+
+/*****************************************************************************
+
+    NAME */
+#include <proto/chooser.h>
+
+        AROS_LH2(void, HideChooser,
+
+/*  SYNOPSIS */
+        AROS_LHA(Object *, o, A0),
+        AROS_LHA(struct Window *, w, A1),
+
+/*  LOCATION */
+        struct Library *, ChooserBase, 11, Chooser)
+
+/*  FUNCTION
+        Closes a list opened with ShowChooser() or by the user, without a pick.
+
+    INPUTS
+        o - chooser.gadget object.
+        w - window the gadget is in.
+
+    SEE ALSO
+        ShowChooser()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+
+    struct ChooserBase_intern *cb = (struct ChooserBase_intern *)ChooserBase;
+    struct ChooserData *data;
+
+    if (!o)
+        return;
+    data = INST_DATA(cb->rc_Class, o);
+    chooser_popup_close(data);
+    data->cd_HideReq = TRUE;
 
     AROS_LIBFUNC_EXIT
 }
