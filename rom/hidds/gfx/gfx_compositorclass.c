@@ -915,20 +915,21 @@ static void UpdateDisplayMode(struct HIDDCompositorData *compdata)
     if (DMEnum__Internal__IsSoftwareMode(csd->dmenumclass, compdata->dmenum, topmode))
         topmode = DMEnum__Internal__GetBackingMode(csd->dmenumclass, compdata->dmenum, topmode);
 
-    /* The front screen's own mode where it fits: its refresh rate too, which
+    /* The chosen screen's own mode where it fits: its refresh rate too, which
      * FindBestHiddMode() does not look at, so composing never retimes the display */
     if ((topmode != vHidd_ModeID_Invalid) && (topmode != (HIDDT_ModeID)modeid))
     {
-        OOP_Object *sync, *pf;
-        IPTR w = 0, h = 0, d = 0;
+        OOP_Object *sync, *pf, *fsync, *fpf;
+        IPTR w = 0, h = 0, d = 0, fw = 0, fh = 0;
 
         if (HIDD_DMEnum_GetMode(compdata->dmenum, topmode, &sync, &pf)
-            && (comp_IsTrueColor(compdata, pf)))
+            && (comp_IsTrueColor(compdata, pf))
+            && HIDD_DMEnum_GetMode(compdata->dmenum, modeid, &fsync, &fpf))
         {
             comp_SyncSize(compdata, sync, &w, &h);
             OOP_GetAttr(pf, aHidd_PixFmt_Depth, &d);
-            if ((w == wantedwidth) && (h == wantedheight)
-                && (d == found_depth))
+            comp_SyncSize(compdata, fsync, &fw, &fh);
+            if ((w == fw) && (h == fh) && (d == found_depth))
                 modeid = topmode;
         }
     }
