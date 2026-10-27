@@ -206,6 +206,29 @@ diff -ruN mesa-26.2.5/src/egl/main/egldisplay.h mesa-26.2.5.aros/src/egl/main/eg
  
     _EGL_NUM_PLATFORMS,
     _EGL_INVALID_PLATFORM = -1
+diff -ruN mesa-26.2.5/src/gallium/auxiliary/cso_cache/cso_cache.h mesa-26.2.5.aros/src/gallium/auxiliary/cso_cache/cso_cache.h
+--- mesa-26.2.5/src/gallium/auxiliary/cso_cache/cso_cache.h	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/gallium/auxiliary/cso_cache/cso_cache.h	2026-10-26 19:03:29.000000000 +0000
+@@ -182,11 +182,17 @@
+    const unsigned *ikey = (const unsigned *)key;
+    unsigned num_elements = key_size / 4;
+ 
+-   assert(key_size % 4 == 0);
+-
++   /* Not every key is a whole number of words: m68k aligns structures to
++    * two bytes, and the compact blend key comes out two bytes short of a
++    * multiple of four. Fold the tail in rather than assert on it.
++    */
+    for (unsigned i = 0; i < num_elements; i++)
+       hash ^= ikey[i];
+ 
++   const unsigned char *tail = (const unsigned char *)key + num_elements * 4;
++   for (unsigned i = 0; i < (unsigned)key_size % 4; i++)
++      hash ^= (unsigned)tail[i] << (8 * i);
++
+    return hash;
+ }
+ 
 diff -ruN mesa-26.2.5/src/gallium/auxiliary/nir/nir_to_tgsi.c mesa-26.2.5.aros/src/gallium/auxiliary/nir/nir_to_tgsi.c
 --- mesa-26.2.5/src/gallium/auxiliary/nir/nir_to_tgsi.c	2026-10-14 16:12:24.000000000 +0100
 +++ mesa-26.2.5.aros/src/gallium/auxiliary/nir/nir_to_tgsi.c	2026-10-24 22:33:57.364380604 +0100
@@ -1020,6 +1043,177 @@ diff -ruN mesa-26.2.5/src/util/os_drm.h mesa-26.2.5.aros/src/util/os_drm.h
  #endif
 +
 +#endif
+diff -ruN mesa-26.2.5/src/util/ralloc.c mesa-26.2.5.aros/src/util/ralloc.c
+--- mesa-26.2.5/src/util/ralloc.c	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/util/ralloc.c	2026-10-26 18:49:10.000000000 +0000
+@@ -23,6 +23,7 @@
+ 
+ #include <assert.h>
+ #include <stdarg.h>
++#include <stddef.h>
+ #include <stdint.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+@@ -30,7 +31,9 @@
+ 
+ #include "util/list.h"
+ #include "util/macros.h"
++#include "util/os_memory.h"
+ #include "util/u_math.h"
++#include "util/u_overflow.h"
+ #include "util/u_printf.h"
+ 
+ #include "ralloc.h"
+@@ -55,9 +58,14 @@
+ #ifndef NDEBUG
+    /* A canary value used to determine whether a pointer is ralloc'd. */
+    unsigned canary;
+-   unsigned size;
+ #endif
+ 
++   /* The payload size. resize() needs it where it cannot use realloc(); see
++    * MALLOC_ALIGNS_HEADER. It fills padding the header has anyway, so it
++    * does not make the header bigger on 32- or 64-bit targets.
++    */
++   unsigned size;
++
+    struct ralloc_header *parent;
+ 
+    /* The first child (head of a linked list) */
+@@ -86,6 +94,54 @@
+ 
+ #define PTR_FROM_HEADER(info) (((char *) info) + sizeof(ralloc_header))
+ 
++/* C11 only promises that malloc() returns memory aligned for max_align_t.
++ * Where that is less than the header's alignment (on m68k it is 2), blocks
++ * come from os_malloc_aligned() instead, and resize() allocates, copies and
++ * frees rather than calling realloc(). Everywhere else this is a constant
++ * true and the aligned path compiles away.
++ */
++#define MALLOC_ALIGNS_HEADER (alignof(max_align_t) >= alignof(ralloc_header))
++
++/* The size of the block holding a header and a payload of the given size,
++ * or 0 if that does not fit in a size_t.
++ */
++static size_t
++block_size(size_t size)
++{
++   size_t total;
++
++   /* The aligned path copies header->size bytes on resize, so the size has
++    * to be representable there.
++    */
++   if (!MALLOC_ALIGNS_HEADER && size != (unsigned) size)
++      return 0;
++
++   if (util_add_overflow(size_t, size,
++                         sizeof(ralloc_header) + alignof(ralloc_header) - 1,
++                         &total))
++      return 0;
++
++   return total & ~(alignof(ralloc_header) - 1);
++}
++
++static ralloc_header *
++block_alloc(size_t total)
++{
++   if (MALLOC_ALIGNS_HEADER)
++      return (ralloc_header *) malloc(total);
++
++   return (ralloc_header *) os_malloc_aligned(total, alignof(ralloc_header));
++}
++
++static void
++block_free(ralloc_header *info)
++{
++   if (MALLOC_ALIGNS_HEADER)
++      free(info);
++   else
++      os_free_aligned(info);
++}
++
+ static void
+ add_child(ralloc_header *parent, ralloc_header *info)
+ {
+@@ -115,8 +171,8 @@
+     *  - Allocations of a size that rounds up to a multiple of 8 bytes and
+     *    not 16 bytes, are only required to have at least 8 byte alignment.
+     */
+-   void *block = malloc(align64(size + sizeof(ralloc_header),
+-                                alignof(ralloc_header)));
++   size_t total = block_size(size);
++   void *block = likely(total != 0) ? block_alloc(total) : NULL;
+    ralloc_header *info;
+    ralloc_header *parent;
+ 
+@@ -133,6 +189,7 @@
+    info->prev = NULL;
+    info->next = NULL;
+    info->destructor = NULL;
++   info->size = size;
+ 
+    parent = ctx != NULL ? get_header(ctx) : NULL;
+ 
+@@ -140,7 +197,6 @@
+ 
+ #ifndef NDEBUG
+    info->canary = CANARY;
+-   info->size = size;
+ #endif
+ 
+    return PTR_FROM_HEADER(info);
+@@ -162,14 +218,30 @@
+ resize(void *ptr, size_t size)
+ {
+    ralloc_header *child, *old, *info;
++   size_t total = block_size(size);
++
++   if (unlikely(total == 0))
++      return NULL;
+ 
+    old = get_header(ptr);
+-   info = realloc(old, align64(size + sizeof(ralloc_header),
+-                               alignof(ralloc_header)));
++
++   if (MALLOC_ALIGNS_HEADER) {
++      info = realloc(old, total);
++   } else {
++      /* The aligned allocator has no realloc() that keeps the old block
++       * when it fails, so copy by hand and free the old block only once
++       * the links below no longer point at it.
++       */
++      info = block_alloc(total);
++      if (info != NULL)
++         memcpy(info, old, sizeof(ralloc_header) + MIN2(old->size, size));
++   }
+ 
+    if (info == NULL)
+       return NULL;
+ 
++   info->size = size;
++
+    /* Update parent and sibling's links to the reallocated node. */
+    if (info != old && info->parent != NULL) {
+       if (info->parent->child == old)
+@@ -186,6 +258,9 @@
+    for (child = info->child; child != NULL; child = child->next)
+       child->parent = info;
+ 
++   if (!MALLOC_ALIGNS_HEADER)
++      block_free(old);
++
+    return PTR_FROM_HEADER(info);
+ }
+ 
+@@ -323,7 +398,7 @@
+    if (info->destructor != NULL)
+       info->destructor(PTR_FROM_HEADER(info));
+ 
+-   free(info);
++   block_free(info);
+ }
+ 
+ void
 diff -ruN mesa-26.2.5/src/util/set.c mesa-26.2.5.aros/src/util/set.c
 --- mesa-26.2.5/src/util/set.c	2026-10-14 16:12:24.000000000 +0100
 +++ mesa-26.2.5.aros/src/util/set.c	2026-10-24 22:32:44.542304208 +0100
