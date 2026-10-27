@@ -177,6 +177,22 @@ void BM__Hidd_BitMap__SetBitMapTags(OOP_Class *cl, OOP_Object *o, struct TagItem
 void BM__Hidd_BitMap__SetPixFmt(OOP_Class *cl, OOP_Object *o, OOP_Object *pf);
 void BM__Hidd_BitMap__SetVisible(OOP_Class *cl, OOP_Object *o, BOOL val);
 
+/*
+ * One decode interface instance (moHidd_Display_GetDecodeInterface): the
+ * vector table sits right before the driver's data, which is what the
+ * caller gets; the HIDD_Decode_*() stubs find the table at iface - sizeof.
+ */
+struct DecodeInstance
+{
+    struct MinNode              node;       /* in HIDDDisplayData.decodes */
+    IPTR                        allocsize;
+    struct HIDD_DecodeInterface vec;
+    /* driver data follows */
+};
+
+#define DECODEINST_DATA(inst)   ((APTR)(&(inst)->vec + 1))
+#define DECODEINST_FROM(iface)  ((struct DecodeInstance *)((UBYTE *)(iface) - offsetof(struct DecodeInstance, vec) - sizeof(struct HIDD_DecodeInterface)))
+
 struct HIDDBitMapData
 {
     struct _hidd_bitmap_protected prot;
@@ -198,6 +214,8 @@ struct HIDDBitMapData
     ULONG                  buffers;       /* aHidd_BitMap_Buffers (>= 1)                   */
     ULONG                  videoformat;   /* aHidd_BitMap_VideoFormat, 0 = RGB/palette     */
     ULONG                  colorspace;    /* aHidd_BitMap_ColorSpace                       */
+    BOOL                   decodetarget;  /* aHidd_BitMap_DecodeTarget                     */
+    ULONG                  videolayout;   /* aHidd_BitMap_VideoLayout                      */
     ULONG                  flags;         /* see hidd/graphic.h 'flags for                 */
     ULONG                  bytesPerRow;   /* bytes per row                                 */
     OOP_Object            *friend;        /* Friend bitmap		                   */

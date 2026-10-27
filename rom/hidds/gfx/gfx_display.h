@@ -64,6 +64,12 @@ struct HIDDDisplayData
 	UWORD        cursor_backupH;
 	BOOL         cursor_visible;   /* requested visible                          */
 	BOOL         cursor_drawn;     /* currently composited (save-under valid)    */
+
+	/* Hardware decoding: the driver's vectors and the sessions handed out */
+	struct HIDD_DecodeInterface *decodevectors;  /* aHidd_Display_DecodeVectors   */
+	ULONG        decodedatasize;   /* aHidd_Display_DecodeDataSize               */
+	struct MinList decodes;        /* struct DecodeInstance                      */
+	struct SignalSemaphore decodesem;
 };
 
 /* This has to be a #define, otherwise the HIDD_Gfx_CopyBox()

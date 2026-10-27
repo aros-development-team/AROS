@@ -1324,3 +1324,13 @@ BOOL METHOD(NouveauBitMap, Hidd_BitMap, SwapBuffers)
     }
     return TRUE;
 }
+
+/* The GEM handle of one buffer (aHidd_BitMap_BufferHandle is the back buffer's) */
+IPTR METHOD(NouveauBitMap, Hidd_BitMap, GetBufferHandle)
+{
+    struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
+
+    if (bmdata->nbufs)
+        return (msg->buffer < bmdata->nbufs && bmdata->buf[msg->buffer].bo) ? bmdata->buf[msg->buffer].bo->handle : 0;
+    return (msg->buffer == 0 && bmdata->bo) ? bmdata->bo->handle : 0;
+}
