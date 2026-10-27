@@ -4,6 +4,10 @@
     Desc: Varargs forms of the reaction class library functions
 */
 
+/* The proto headers already provide these as macros. These functions are
+   for programs that build with NO_INLINE_STDARG, as on AmigaOS where
+   reaction.lib supplies them. */
+
 #define NO_INLINE_STDARG
 #include <exec/types.h>
 #include <utility/tagitem.h>
