@@ -396,6 +396,12 @@ LONG DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, ULONG l
         Permit();
     }
 
+    if (!res && (werr == ERROR_BROKEN_PIPE || werr == ERROR_HANDLE_EOF))
+    {
+        *err = 0;
+        return 0;
+    }
+
     if (res)
     {
         *err = 0;
