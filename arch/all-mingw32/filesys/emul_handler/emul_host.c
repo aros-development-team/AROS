@@ -336,6 +336,12 @@ LONG DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, ULONG l
         return -1;
     }
 
+    if (len == 0)
+    {
+        *err = 0;
+        return 0;
+    }
+
     if (fh->type & FHD_STDIO)
     {
         /* FIXME: This is not thread-safe. */
