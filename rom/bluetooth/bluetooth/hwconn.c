@@ -3561,6 +3561,8 @@ BOOL bConnHandleEvent(struct BtHWCore *hc, UBYTE code, const UBYTE *params, ULON
     }
 
     case HC_EVT_IO_CAP_RESPONSE:
+        /* When the peer initiates pairing this precedes our IO Capability
+           Request; kept until Simple Pairing Complete. */
         if(len < 9) {
             return(TRUE);
         }
@@ -3595,7 +3597,7 @@ BOOL bConnHandleEvent(struct BtHWCore *hc, UBYTE code, const UBYTE *params, ULON
                 CopyMem((APTR) params, reply, 6);
                 bSubmitCmd(hc, HC_OP_USER_CONFIRM_REPLY, reply, 6, bIgnoreCompletion, hc);
             } else if(BluetoothBase->bt_GlobalCfg->bgc_PopupPairing) {
-                bAskUser(cn, justworks ? BPRT_CONSENT : BPRT_NUMERICCOMPARE, passkey);
+                bAskUser(cn, justworks ? BPRT_CONSENT : BPRT_NUMERICCOMPARE, justworks ? 0 : passkey);
             } else {
                 /* nobody to ask: accept (just works) */
                 UBYTE reply[6];
@@ -3642,8 +3644,7 @@ BOOL bConnHandleEvent(struct BtHWCore *hc, UBYTE code, const UBYTE *params, ULON
         btLockReadBase();
         bd = bFindDeviceByAddr(hc, &params[1]);
         btUnlockBase();
-        /* The response may precede our IO Capability Request when the
-           peer initiates pairing. Keep it until this exchange completes. */
+        /* the exchange is over: the peer's IO capability no longer applies */
         if(bd && bd->bd_Conns[0]) bd->bd_Conns[0]->cn_PeerIOCapValid = FALSE;
         if(bd && bd->bd_Conns[0] && params[0] && (bd->bd_Conns[0]->cn_PairState != PAIR_IDLE)) {
             bPairingDone(bd->bd_Conns[0], BTIOERR_SECURITY, params[0]);
