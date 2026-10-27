@@ -20,6 +20,8 @@
 
 #include LC_LIBDEFS_FILE
 
+#include "../reaction_field.h"
+
 #include <exec/libraries.h>
 
 /* Module library base with stored class pointer */
@@ -33,6 +35,7 @@ struct StringBase_intern
 
 struct StringGadData
 {
+    struct ReactionField sd_Field;   /* frame box and bevel */
     UWORD           sd_MinVisible;      /* Minimum visible characters for sizing */
     UWORD           sd_HookType;        /* Built-in hook type (SHK_*) */
 };

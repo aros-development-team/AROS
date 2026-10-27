@@ -76,6 +76,8 @@ static void integer_set(Class *cl, Object *o, struct opSet *msg)
 
 /* ------------------------------------------------------------------ */
 
+/******************************************************************************/
+
 IPTR Integer__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
     struct IntegerData *data;
@@ -96,6 +98,7 @@ IPTR Integer__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     data->maxchars     = 10;
 
     integer_set(cl, o, msg);
+    field_set_box(&data->id_Field, G(o), msg->ops_AttrList, TRUE);
 
     return (IPTR)o;
 }
@@ -105,6 +108,7 @@ IPTR Integer__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 IPTR Integer__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
     D(bug("[Integer] OM_DISPOSE: obj=%p\n", (void *)o));
+    field_dispose(&((struct IntegerData *)INST_DATA(cl, o))->id_Field);
 
     return DoSuperMethodA(cl, o, msg);
 }
@@ -119,6 +123,7 @@ IPTR Integer__OM_SET(Class *cl, Object *o, struct opSet *msg)
 
     retval = DoSuperMethodA(cl, o, (Msg)msg);
     integer_set(cl, o, msg);
+    field_set_box(&((struct IntegerData *)INST_DATA(cl, o))->id_Field, G(o), msg->ops_AttrList, FALSE);
 
     return retval;
 }
@@ -128,6 +133,9 @@ IPTR Integer__OM_SET(Class *cl, Object *o, struct opSet *msg)
 IPTR Integer__OM_GET(Class *cl, Object *o, struct opGet *msg)
 {
     struct IntegerData *data = INST_DATA(cl, o);
+
+    if (field_get(&data->id_Field, msg))
+        return TRUE;
 
     switch (msg->opg_AttrID)
     {
@@ -163,10 +171,17 @@ IPTR Integer__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 
     D(bug("[Integer] GM_RENDER: obj=%p redraw=%ld\n", (void *)o, msg->gpr_Redraw));
 
-    /* Let the STRGCLASS superclass render the string area */
+    field_draw_frame(&((struct IntegerData *)INST_DATA(cl, o))->id_Field, G(o), msg);
     retval = DoSuperMethodA(cl, o, (Msg)msg);
 
-    /* TODO: draw frame and optional inc/dec arrows around string area */
-
     return retval;
+}
+
+/******************************************************************************/
+
+IPTR Integer__GM_DOMAIN(Class *cl, Object *o, struct gpDomain *msg)
+{
+    struct IntegerData *data = INST_DATA(cl, o);
+    field_domain(msg, 0);
+    return TRUE;
 }

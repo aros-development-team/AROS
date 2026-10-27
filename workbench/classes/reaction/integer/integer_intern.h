@@ -19,6 +19,8 @@
 
 #include LC_LIBDEFS_FILE
 
+#include "../reaction_field.h"
+
 #include <exec/libraries.h>
 
 /* Module library base with stored class pointer */
@@ -32,6 +34,7 @@ struct IntegerBase_intern
 
 struct IntegerData
 {
+    struct ReactionField id_Field;   /* frame box and bevel */
     LONG    number;
     LONG    minimum;
     LONG    maximum;
