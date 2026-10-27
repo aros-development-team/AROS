@@ -93,6 +93,7 @@
 #endif
     D(BOOL injected;)
     APTR seccookie = NULL;
+    struct Library *M68KEmuBase = NULL;
 
     ASSERT_VALID_PROCESS(me);
 
@@ -104,17 +105,10 @@
         if (!elfinfo)
         {
 #if !defined(__mc68000__)
-            /* Route m68k hunk binaries through emulator */
-            if (hunkinfo) {
-                struct Library *M68KEmuBase = OpenLibrary("m68kemu.library", 0);
-                if (M68KEmuBase) {
-                    LONG m68k_ret = RunHunk(segList, stacksize, argptr, argsize);
-                    CloseLibrary(M68KEmuBase);
-                    return m68k_ret;
-                }
-            }
+            if (hunkinfo)
+                M68KEmuBase = OpenLibrary("m68kemu.library", 0);
+            if (!M68KEmuBase)
 #endif
-
             /* Segment is tracked by LoadSeg but is not ELF.
              * Reject unsupported formats (e.g. 68k HUNK without emulator). */
             return -1;
@@ -124,21 +118,26 @@
      * (e.g. internal/ROM resident command) - allow execution. */
 #endif
 
-    if(stacksize < PROC_STACKSIZE)
-        stacksize = PROC_STACKSIZE;
+    if (M68KEmuBase)
+        stack = NULL;
+    else
+    {
+        if(stacksize < PROC_STACKSIZE)
+            stacksize = PROC_STACKSIZE;
 
 #ifdef __mc68000
-    /* Keep temporary command stacks out of the low-address free region. */
-    stack=(UBYTE *)AllocMem(stacksize,MEMF_ANY | MEMF_REVERSE);
+        /* Keep temporary command stacks out of the low-address free region. */
+        stack=(UBYTE *)AllocMem(stacksize,MEMF_ANY | MEMF_REVERSE);
 #else
-    stack=(UBYTE *)AllocMem(stacksize,MEMF_ANY);
+        stack=(UBYTE *)AllocMem(stacksize,MEMF_ANY);
 #endif
-    if(stack==NULL)
-        return -1;
+        if(stack==NULL)
+            return -1;
 
-    sss.stk_Lower=stack;
-    sss.stk_Upper=stack+stacksize;
-    sss.stk_Pointer = sss.stk_Upper;
+        sss.stk_Lower=stack;
+        sss.stk_Upper=stack+stacksize;
+        sss.stk_Pointer = sss.stk_Upper;
+    }
 
     oldargs=me->pr_Arguments;
     me->pr_Arguments=(STRPTR)argptr;
@@ -163,6 +162,14 @@
     if (SECURITY_ACTIVE)
         seccookie = secSetUIDBegin(segList);
 
+#if !defined(__mc68000__)
+    if (M68KEmuBase)
+    {
+        ret = RunHunk(segList, stacksize, argptr, argsize);
+        CloseLibrary(M68KEmuBase);
+    }
+    else
+#endif
     ret = NewStackSwap(&sss, CallEntry, &args);
 
     if (seccookie)
@@ -182,7 +189,8 @@
             Flush(Input());
     }
 
-    FreeMem(stack,stacksize);
+    if (stack)
+        FreeMem(stack,stacksize);
     
     return ret;
     
