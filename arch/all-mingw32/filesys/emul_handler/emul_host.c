@@ -425,58 +425,83 @@ LONG DoWrite(struct emulbase *emulbase, struct filehandle *fh, CONST_APTR buff, 
  * and new position in newpos.
  * Used in DoSeek() and DoSetSize().
  */
-static LONG seek_file(struct emulbase *emulbase, void *fd, SIPTR *pOffset, ULONG mode, UQUAD *newpos)
+static LONG seek_file(struct emulbase *emulbase, void *fd, SIPTR *pOffset, ULONG mode,
+                      UQUAD *newpos, BOOL allow_extend)
 {
-    ULONG error, werror;
-    ULONG pos_high = 0;
-    UQUAD oldpos;
-    UQUAD offset = *pOffset;
+    ULONG low, high, werror;
+    LONG pos_high = 0;
+    UQUAD oldpos, size = 0, base, target;
+    UQUAD maxpos = (IPTR)-1 >> 1;
+    SIPTR offset = *pOffset;
 
-    DB2(bug("[emul] LSeek() - getting current position\n"));
+    if (mode != OFFSET_BEGINNING && mode != OFFSET_CURRENT && mode != OFFSET_END)
+        return ERROR_SEEK_ERROR;
+
     Forbid();
-    oldpos = emulbase->pdata.KernelIFace->SetFilePointer(fd, 0, &pos_high, FILE_CURRENT);
-    Permit();
-    oldpos |= (UQUAD)pos_high << 32;
-    DSEEK(bug("[emul] Original position: %llu\n", oldpos));
-
-    switch(mode)
-    {
-    case OFFSET_BEGINNING:
-        mode = FILE_BEGIN;
-        break;
-
-    case OFFSET_CURRENT:
-        mode = FILE_CURRENT;
-        break;
-
-    default:
-        mode = FILE_END;
-    }
-
-    pos_high = offset >> 32;
-    DB2(bug("[emul] LSeek() - setting new position\n"));
-    Forbid();
-    error = emulbase->pdata.KernelIFace->SetFilePointer(fd, offset, &pos_high, mode);
+    emulbase->pdata.KernelIFace->SetLastError(0);
+    low = emulbase->pdata.KernelIFace->SetFilePointer(fd, 0, &pos_high, FILE_CURRENT);
     werror = emulbase->pdata.KernelIFace->GetLastError();
     Permit();
+    if (low == (ULONG)-1 && werror)
+        return Errno_w2a(werror, MODE_OLDFILE);
+    oldpos = low | (UQUAD)(ULONG)pos_high << 32;
+    if (oldpos > maxpos)
+        return ERROR_SEEK_ERROR;
 
-    if (error == (ULONG)-1)
-        error = Errno_w2a(werror, MODE_OLDFILE);
-    else
+    /* A position query still works if another handle has shrunk the file. */
+    if (!allow_extend && mode == OFFSET_CURRENT && offset == 0)
     {
+        *pOffset = oldpos;
         if (newpos)
-        {
-            *newpos = error;
-            *newpos |= (UQUAD)pos_high << 32;
-        }
-        error = 0;
-        
-        offset = oldpos;
+            *newpos = oldpos;
+        return 0;
     }
 
-    *pOffset = offset;
+    if (mode == OFFSET_END || !allow_extend)
+    {
+        high = 0;
+        Forbid();
+        emulbase->pdata.KernelIFace->SetLastError(0);
+        low = emulbase->pdata.KernelIFace->GetFileSize(fd, &high);
+        werror = emulbase->pdata.KernelIFace->GetLastError();
+        Permit();
+        if (low == (ULONG)-1 && werror)
+            return Errno_w2a(werror, MODE_OLDFILE);
+        size = low | (UQUAD)high << 32;
+    }
 
-    return error;
+    base = mode == OFFSET_BEGINNING ? 0 : mode == OFFSET_CURRENT ? oldpos : size;
+    if (offset < 0)
+    {
+        /* Avoid negating the most negative SIPTR. */
+        UQUAD distance = (UQUAD)(-(offset + 1)) + 1;
+        if (distance > base)
+            return ERROR_SEEK_ERROR;
+        target = base - distance;
+    }
+    else
+    {
+        if (base > maxpos || (UQUAD)offset > maxpos - base)
+            return ERROR_SEEK_ERROR;
+        target = base + offset;
+    }
+    if (target > maxpos || (!allow_extend && target > size))
+        return ERROR_SEEK_ERROR;
+
+    pos_high = target >> 32;
+    Forbid();
+    emulbase->pdata.KernelIFace->SetLastError(0);
+    low = emulbase->pdata.KernelIFace->SetFilePointer(fd, (ULONG)target, &pos_high, FILE_BEGIN);
+    werror = emulbase->pdata.KernelIFace->GetLastError();
+    Permit();
+    /* 0xffffffff is also a valid low word, including at 4 GB minus one. */
+    if (low == (ULONG)-1 && werror)
+        return Errno_w2a(werror, MODE_OLDFILE);
+
+    if (newpos)
+        *newpos = low | (UQUAD)(ULONG)pos_high << 32;
+    *pOffset = oldpos;
+    return 0;
 }
 
 SIPTR DoSeek(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, ULONG mode, SIPTR *err)
@@ -485,7 +510,7 @@ SIPTR DoSeek(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, ULO
 
     DSEEK(bug("[emul] DoSeek(0x%p, %ld, %d)\n", fh, offset, mode));
 
-    error = seek_file(emulbase, fh->fd, &offset, mode, NULL);
+    error = seek_file(emulbase, fh->fd, &offset, mode, NULL, FALSE);
 
     *err = error;
     return error ? -1 : offset;
@@ -1007,7 +1032,7 @@ SIPTR DoSetSize(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, 
     DFSIZE(bug("[emul] DoSetSize(): mode %ld, offset %llu\n", mode, (unsigned long long)offset));
 
     /* First seek to the requested position. 'offset' will contain OLD position after that. NEW position will be in newpos */
-    error = seek_file(emulbase, fh->fd, &offset, mode, &newpos);
+    error = seek_file(emulbase, fh->fd, &offset, mode, &newpos, TRUE);
     if (!error)
     {
         /* Set EOF to NEW position */
@@ -1026,7 +1051,7 @@ SIPTR DoSetSize(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, 
         {
             LONG error2;
 
-            error2 = seek_file(emulbase, fh->fd, &offset, OFFSET_BEGINNING, NULL);
+            error2 = seek_file(emulbase, fh->fd, &offset, OFFSET_BEGINNING, NULL, TRUE);
             if (!error)
                 error = error2;
         } else
