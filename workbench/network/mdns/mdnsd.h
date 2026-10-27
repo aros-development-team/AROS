@@ -186,6 +186,9 @@ void mdnsDiscoveryFree(struct MDNSDaemon *md);
 LONG mdnsQueryMessage(struct MDNSDaemon *md, struct MDNSIPCMsg *msg);
 void mdnsQueryRecord(struct MDNSDaemon *md, const struct MDNSRecord *record,
     const UBYTE *packet, LONG length);
+void mdnsQueryLocalRecord(struct MDNSDaemon *md,
+    const struct MDNSRecord *record, const UBYTE *packet, LONG length,
+    APTR handle);
 void mdnsQueryTick(struct MDNSDaemon *md);
 void mdnsQueryReset(struct MDNSDaemon *md);
 void mdnsQueryRelease(struct MDNSDaemon *md, ULONG owner);
@@ -233,6 +236,8 @@ LONG mdnsResponseBegin(struct MDNSDaemon *md, UBYTE *pkt);
 /* mdns_reg.c */
 LONG mdnsRegAdd(struct MDNSDaemon *md, struct MDNSIPCMsg *msg);
 LONG mdnsRegUpdate(struct MDNSDaemon *md, const struct MDNSIPCMsg *msg);
+void mdnsRegAnswerLocal(struct MDNSDaemon *md, UWORD consumers,
+    APTR queryHandle);
 void mdnsRegRemove(struct MDNSDaemon *md, const struct MDNSIPCMsg *msg);
 void mdnsRegRelease(struct MDNSDaemon *md, ULONG taskID);
 void mdnsRegFree(struct MDNSDaemon *md);
@@ -255,5 +260,9 @@ void mdnsClientReap(struct MDNSDaemon *md);
 /* mdns_packet.c */
 void mdnsHandlePacket(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
     ULONG srcaddr, UWORD srcport);
+#define MDNS_REFLECT_DISCOVERY  1
+#define MDNS_REFLECT_QUERY      2
+void mdnsReflectPacket(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
+    LONG ifindex, UWORD consumers, APTR queryHandle);
 
 #endif /* MDNSD_MDNSD_H */

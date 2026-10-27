@@ -947,6 +947,7 @@ void mdnsDiscoveryTick(struct MDNSDaemon *md)
         if (s->resolve) {
             send_question(md, s->key, DNS_TYPE_TXT, 0);
         }
+        mdnsRegAnswerLocal(md, MDNS_REFLECT_DISCOVERY, NULL);
         s->nextQuery = now + s->interval;
         if (s->interval < 180000) {
             s->interval *= 2;
@@ -1074,6 +1075,7 @@ LONG mdnsDiscoveryMessage(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
         msg->mi_Handle = s->handle;
         msg->mi_DaemonID = md->md_DaemonID;
         d->changed = TRUE;
+        mdnsRegAnswerLocal(md, MDNS_REFLECT_DISCOVERY, NULL);
         for (i = 0; i < DISC_VIEWS; i++) {
             const struct DiscoveryView *v = &d->views[i];
 

@@ -234,6 +234,83 @@ service_append(struct MDNSDaemon *md, const struct MDNSRegisteredService *rs,
     return TRUE;
 }
 
+/* One local type-enumeration record. A type is withdrawn only after its last
+ * announced registration is gone. */
+static void
+type_reflect(struct MDNSDaemon *md, const struct MDNSRegisteredService *rs,
+    BOOL goodbye, LONG ifindex, UWORD consumers, APTR queryHandle)
+{
+    UBYTE *pkt = md->md_TxBuf;
+    struct MDNSHeader *hdr = (struct MDNSHeader *)pkt;
+    char type[256];
+    UBYTE target[256];
+    LONG pos, targetlen;
+    UWORD ancount = 0;
+
+    if (goodbye) {
+        struct Node *n;
+
+        FOR_SERVICES(md, n) {
+            const struct MDNSRegisteredService *other =
+                (const struct MDNSRegisteredService *)n;
+
+            if (other != rs && other->rs_State == MDNS_NAME_ANNOUNCED &&
+                Stricmp(other->rs_Type, rs->rs_Type) == 0) {
+                return;
+            }
+        }
+    }
+    type_fqdn(rs, type, (LONG)sizeof(type));
+    if (mdnsNameToWire(type, target, (LONG)sizeof(target), &targetlen) != 0) {
+        return;
+    }
+    pos = mdnsResponseBegin(md, pkt);
+    if (mdnsAppendRecord(pkt, MDNS_RESPONSE_MAX, &pos, &ancount,
+            MDNS_TYPE_SERVICES, DNS_TYPE_PTR, DNS_CLASS_IN,
+            reply_ttl(md, goodbye ? 0 : MDNS_TTL_OTHER), target,
+            (UWORD)targetlen) != 0) {
+        return;
+    }
+    hdr->ancount = htons(ancount);
+    mdnsReflectPacket(md, pkt, pos, ifindex, consumers, queryHandle);
+}
+
+static void
+service_reflect(struct MDNSDaemon *md, struct MDNSRegisteredService *rs,
+    BOOL goodbye, LONG ifindex, UWORD consumers, APTR queryHandle)
+{
+    UBYTE *pkt = md->md_TxBuf;
+    struct MDNSHeader *hdr = (struct MDNSHeader *)pkt;
+    LONG pos = mdnsResponseBegin(md, pkt);
+    UWORD ancount = 0;
+
+    if (service_append(md, rs, goodbye, ifindex, pkt, &pos, &ancount,
+            TRUE)) {
+        hdr->ancount = htons(ancount);
+        mdnsReflectPacket(md, pkt, pos, ifindex, consumers, queryHandle);
+        type_reflect(md, rs, goodbye, ifindex, consumers, queryHandle);
+    }
+}
+
+void
+mdnsRegAnswerLocal(struct MDNSDaemon *md, UWORD consumers, APTR queryHandle)
+{
+    struct Node *n;
+    LONG i;
+
+    FOR_SERVICES(md, n) {
+        struct MDNSRegisteredService *rs =
+            (struct MDNSRegisteredService *)n;
+
+        if (rs->rs_State != MDNS_NAME_ANNOUNCED) {
+            continue;
+        }
+        for (i = 0; i < md->md_IfCount; i++) {
+            service_reflect(md, rs, FALSE, i, consumers, queryHandle);
+        }
+    }
+}
+
 /* One service's records as a response of their own, to the interface a
  * question came in on or else to every one. */
 static void
@@ -258,6 +335,12 @@ service_send(struct MDNSDaemon *md, struct MDNSRegisteredService *rs,
             if (md->md_ReplyAddr == 0 && !goodbye) {
                 rs->rs_Multicast = mdnsNow();
                 rs->rs_MulticastTick[i] = mdnsTicks();
+            }
+            if (md->md_ReplyAddr == 0) {
+                mdnsReflectPacket(md, pkt, pos, i,
+                    MDNS_REFLECT_DISCOVERY | MDNS_REFLECT_QUERY, NULL);
+                type_reflect(md, rs, goodbye, i,
+                    MDNS_REFLECT_DISCOVERY | MDNS_REFLECT_QUERY, NULL);
             }
         }
     }
