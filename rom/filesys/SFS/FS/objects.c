@@ -353,7 +353,6 @@ static LONG deleteobjectquick(struct CacheBuffer *cb, struct fsObject *o, WORD s
 LONG deleteobject(struct ExtFileLock *lock, UBYTE *path, WORD sendnotify) {
   struct CacheBuffer *cb;
   struct fsObject *o;
-  NODE objectnode;
   LONG errorcode;
 
   /* This function deletes the specified object.  It will only delete directories
@@ -361,52 +360,34 @@ LONG deleteobject(struct ExtFileLock *lock, UBYTE *path, WORD sendnotify) {
 
   _XDEBUG(DEBUG_OBJECTS,"deleteobject: Entry -- deleting object %s\n",path);
 
-  if(lock==0) {
-    objectnode=ROOTNODE;
-  }
-  else {
-    objectnode=lock->objectnode;
-  }
+  if((errorcode=locateobjectorlink(lock,path,&cb,&o))==0) {
+    if((o->be_protection & L2BE(FIBF_DELETE))!=0) {
+      if(lockable(BE2L(o->be_objectnode),EXCLUSIVE_LOCK)!=DOSFALSE && (o->bits & OTYPE_UNDELETABLE)==0) {
+        /* Object to be deleted was read correctly by the above locateobject call */
 
-  if((errorcode=readobject(objectnode,&cb,&o))==0) {
-    errorcode=locateobject2(&path,&cb,&o);
+        if((o->bits & OTYPE_DIR)==0 || o->object.dir.be_firstdirblock==0) {
+          struct fsObjectContainer *oc=cb->data;
 
-    while(*path!=0) {
-      if(*path=='/') {
-        break;
-      }
-      path++;
-    }
+          /* At this point we can be sure that the object is allowed
+             to be deleted. */
 
-    if(errorcode==0 || (errorcode==ERROR_IS_SOFT_LINK && *path==0)) {
-      if((o->be_protection & L2BE(FIBF_DELETE))!=0) {
-        if(lockable(BE2L(o->be_objectnode),EXCLUSIVE_LOCK)!=DOSFALSE && (o->bits & OTYPE_UNDELETABLE)==0) {
-          /* Object to be deleted was read correctly by the above locateobject call */
-
-          if((o->bits & OTYPE_DIR)==0 || o->object.dir.be_firstdirblock==0) {
-            struct fsObjectContainer *oc=cb->data;
-
-            /* At this point we can be sure that the object is allowed
-               to be deleted. */
-
-            if((o->bits & OTYPE_DIR)!=0 || (o->bits & OTYPE_LINK)!=0 || globals->has_recycled==FALSE || oc->be_parent==L2BE(RECYCLEDNODE)) {
-              errorcode=deleteobjectquick(cb, o, sendnotify);
-            }
-            else {
-              errorcode=safedeleteobjectquick(cb, o, sendnotify);
-            }
+          if((o->bits & OTYPE_DIR)!=0 || (o->bits & OTYPE_LINK)!=0 || globals->has_recycled==FALSE || oc->be_parent==L2BE(RECYCLEDNODE)) {
+            errorcode=deleteobjectquick(cb, o, sendnotify);
           }
           else {
-            errorcode=ERROR_DIRECTORY_NOT_EMPTY;
+            errorcode=safedeleteobjectquick(cb, o, sendnotify);
           }
         }
         else {
-          errorcode=ERROR_OBJECT_IN_USE;
+          errorcode=ERROR_DIRECTORY_NOT_EMPTY;
         }
       }
       else {
-        errorcode=ERROR_DELETE_PROTECTED;
+        errorcode=ERROR_OBJECT_IN_USE;
       }
+    }
+    else {
+      errorcode=ERROR_DELETE_PROTECTED;
     }
   }
 
@@ -912,7 +893,7 @@ static LONG createobjecttagitem(struct CacheBuffer **io_cb, struct fsObject **io
       }
     }
     else {
-      if(errorcode==0) {
+      if(errorcode==0 || errorcode==ERROR_IS_SOFT_LINK) {  /* a soft link takes the name too */
         errorcode=ERROR_OBJECT_EXISTS;
       }
 
@@ -1191,7 +1172,18 @@ LONG findcreate(struct ExtFileLock **returned_lock, UBYTE *path, LONG packettype
     struct CacheBuffer *cb;
     struct fsObject *o;
 
-    errorcode=locateobjectfromlock(lock,path,&cb,&o);
+    /* For CreateDir and MakeLink a soft link given as the last name takes
+       the name (MakeLink replaces only files); opening one follows it
+       (ERROR_IS_SOFT_LINK to dos). */
+
+    if(packettype==ACTION_CREATE_DIR || packettype==ACTION_MAKE_LINK) {
+      if((errorcode=locateobjectorlink(lock,path,&cb,&o))==0 && (o->bits & OTYPE_LINK)!=0) {
+        errorcode=ERROR_OBJECT_EXISTS;
+      }
+    }
+    else {
+      errorcode=locateobjectfromlock(lock,path,&cb,&o);
+    }
 
     /* 0,                NO DELETE, CREATE
        0,                DELETE,    NO CREATE

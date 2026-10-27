@@ -33,6 +33,7 @@
 #define SFS_OWNERBITS           (FIBF_READ | FIBF_WRITE | FIBF_EXECUTE | FIBF_DELETE)
 
 extern LONG locateobjectfromlock(struct ExtFileLock *lock, UBYTE *path, struct CacheBuffer **returned_cb, struct fsObject **returned_o);
+extern LONG locateobjectorlink(struct ExtFileLock *lock, UBYTE *path, struct CacheBuffer **returned_cb, struct fsObject **returned_o);
 extern LONG locateparent(struct ExtFileLock *lock, UBYTE *path, struct CacheBuffer **returned_cb, struct fsObject **returned_o);
 extern UBYTE *validatepath(UBYTE *path);
 
@@ -201,6 +202,20 @@ LONG sfsSecCheckPath(struct ExtFileLock *lock, UBYTE *path, LONG access)
     return sfsSecCheckObject(o, access);
 }
 
+/* As sfsSecCheckPath(), for a call which acts on a soft link given as the last name (Delete) */
+LONG sfsSecCheckLinkPath(struct ExtFileLock *lock, UBYTE *path, LONG access)
+{
+    struct CacheBuffer *cb;
+    struct fsObject *o;
+    LONG err;
+
+    if (!globals->sec_Active)
+        return 0;
+    if ((err = locateobjectorlink(lock, validatepath(path), &cb, &o)))
+        return err;
+    return sfsSecCheckObject(o, access);
+}
+
 LONG sfsSecCheckParentPath(struct ExtFileLock *lock, UBYTE *path, LONG access)
 {
     struct CacheBuffer *cb;
@@ -214,6 +229,7 @@ LONG sfsSecCheckParentPath(struct ExtFileLock *lock, UBYTE *path, LONG access)
     return sfsSecCheckObject(o, access);
 }
 
+/* Rename and SetComment: a soft link as the last name is checked itself */
 LONG sfsSecCheckPropertyPath(struct ExtFileLock *lock, UBYTE *path)
 {
     struct CacheBuffer *cb;
@@ -222,7 +238,7 @@ LONG sfsSecCheckPropertyPath(struct ExtFileLock *lock, UBYTE *path)
 
     if (!globals->sec_Active)
         return 0;
-    if ((err = locateobjectfromlock(lock, validatepath(path), &cb, &o)))
+    if ((err = locateobjectorlink(lock, validatepath(path), &cb, &o)))
         return err;
     return sfsSecCheckProperty(o);
 }

@@ -30,6 +30,7 @@ void  sfsSecVolumeOnline(void);
 LONG  sfsSecCheckObject(struct fsObject *o, LONG access);
 LONG  sfsSecCheckProperty(struct fsObject *o);
 LONG  sfsSecCheckPath(struct ExtFileLock *lock, UBYTE *path, LONG access);
+LONG  sfsSecCheckLinkPath(struct ExtFileLock *lock, UBYTE *path, LONG access);
 LONG  sfsSecCheckParentPath(struct ExtFileLock *lock, UBYTE *path, LONG access);
 LONG  sfsSecCheckPropertyPath(struct ExtFileLock *lock, UBYTE *path);
 LONG  sfsSecCheckSetOwner(struct fsObject *o, ULONG newowner);
