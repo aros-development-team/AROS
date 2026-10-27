@@ -920,6 +920,11 @@ static IPTR thunk_intuition_OpenWindow(struct M68KEmuContext *ctx, void *cpu)
         bug("[m68kemu] OpenWindow %ld,%ld %ldx%ld idcmp %08lx flags %08lx -> %p\n",
             (long)(WORD)t[0].ti_Data, (long)(WORD)t[1].ti_Data, (long)(WORD)t[2].ti_Data,
             (long)(WORD)t[3].ti_Data, (unsigned long)t[6].ti_Data, (unsigned long)t[7].ti_Data, w);
+    if (ctx->trace_calls && w)
+        bug("[m68kemu]   borders %d %d %d %d, screen WBor %d %d %d %d bar %d font %d\n",
+            w->BorderLeft, w->BorderTop, w->BorderRight, w->BorderBottom,
+            w->WScreen->WBorLeft, w->WScreen->WBorTop, w->WScreen->WBorRight, w->WScreen->WBorBottom,
+            w->WScreen->BarHeight, w->WScreen->Font ? w->WScreen->Font->ta_YSize : -1);
     if (!w) return 0;
     return (IPTR)setup_window_shadow(ctx, w);
 }

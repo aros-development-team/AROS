@@ -132,6 +132,10 @@ static ULONG diskobj_out(struct M68KEmuContext *ctx, struct DiskObject *d)
     m68k_write32(ctx, m + DO_CURRENTY, (ULONG)d->do_CurrentY);
     m68k_write32(ctx, m + DO_STACKSIZE, (ULONG)d->do_StackSize);
 
+    if (ctx->trace_calls)
+        bug("[m68kemu] icon %p: render %dx%dx%d select %dx%dx%d, %lu tooltypes\n", d,
+            gr ? gr->Width : 0, gr ? gr->Height : 0, gr ? gr->Depth : 0,
+            sr ? sr->Width : 0, sr ? sr->Height : 0, sr ? sr->Depth : 0, (unsigned long)ntt);
     p = m + DO_SIZE + 2;
     if (gr)
     {
