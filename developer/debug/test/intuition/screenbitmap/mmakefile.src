@@ -1,0 +1,12 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+USER_LDFLAGS := -static
+
+# Native planar screens are selected through the Intuition component group.
+#MM test-intuition-screenbitmap : includes linklibs
+
+%build_progs mmake=test-intuition-screenbitmap \
+    files=screenbitmap targetdir=$(AROS_TESTS)/intuition/screenbitmap
+
+%common
