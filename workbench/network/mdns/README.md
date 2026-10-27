@@ -173,9 +173,7 @@ Started by hand it runs until Ctrl-C.
   restarts: it starts from the system's name again.
 - At most eight interfaces.
 - A service's text is at most 256 characters, its instance name 63 bytes.
-- A question for the service types is not delayed, known answers that
-  come in a second packet are not waited for, and a record that went to
-  the group less than a second ago is sent again all the same.
+- Known answers that come in a second packet are not waited for.
 - It needs a stack that delivers IPv4 multicast to a socket that joined a
   group, and a SANA-II driver that accepts `S2_ADDMULTICASTADDRESS` and
   `S2_MULTICAST`.
