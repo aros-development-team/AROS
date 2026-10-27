@@ -119,7 +119,7 @@ BOOL AllocDriverData(
 		}
 		driverdata->buffercurrsend_rt=driverdata->buffer_rt;
 		driverdata->buffercurr_rt=driverdata->buffer_rt;
-		driverdata->bufferend=driverdata->buffer+OUTBUFFERSIZE_RT;
+		driverdata->bufferend_rt=driverdata->buffer_rt+OUTBUFFERSIZE_RT;
 
 
 		driverdata->status=0;
