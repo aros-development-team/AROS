@@ -192,6 +192,11 @@ struct HIDD_ViewPortData
 */
 #define fHidd_Display_Show_CopyBack 0x01
 
+/* Show the bitmap scaled to fill the display, driven in the compositor's
+   aHidd_Compositor_DisplayMode rather than in the bitmap's own mode. Only
+   used where the primary plane's HIDD_PlaneInfo scale range allows it */
+#define fHidd_Display_Show_Scale    0x02
+
 enum
 {
     tHidd_Cursor_BitMap = tHidd_Gfx_CursorBASE,         /* OOP_Object *, cursor shape bitmap */

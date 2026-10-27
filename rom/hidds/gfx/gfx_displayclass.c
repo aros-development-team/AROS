@@ -2415,6 +2415,10 @@ VOID Display__Hidd_Display__SurfaceStackChanged(OOP_Class *cl, OOP_Object *o, st
         The base class has one plane, the primary: any displayable pixel
         format, no scaling, no blending. It is what Show() drives.
 
+        A primary that reports a scale range (ScaleMin/ScaleMax other than
+        unity) must handle fHidd_Display_Show_Scale in Show(): the compositor
+        then passes a scaled screen through rather than composing it.
+
 *****************************************************************************************/
 
 ULONG Display__Hidd_Display__GetPlaneInfo(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_GetPlaneInfo *msg)

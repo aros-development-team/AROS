@@ -2820,6 +2820,19 @@ static BOOL HIDDCompositorNodeNeedsComposition(struct HIDDCompositorData *compda
     return FALSE;
 }
 
+/* Can the primary plane scale this screen to fill the display (fHidd_Display_Show_Scale)? */
+static BOOL HIDDCompositorPrimaryScales(struct HIDDCompositorData *compdata, struct StackBitMapNode *n)
+{
+    struct HIDD_PlaneInfo *pi = compdata->planes;
+    ULONG sx, sy;
+
+    if (!pi || !compdata->planecount || (pi->Type != vHidd_Plane_Primary) || !n->scrw || !n->scrh)
+        return FALSE;
+    sx = (ULONG)(((UQUAD)n->dstw << 16) / n->scrw);
+    sy = (ULONG)(((UQUAD)n->dsth << 16) / n->scrh);
+    return (sx >= pi->ScaleMin) && (sx <= pi->ScaleMax) && (sy >= pi->ScaleMin) && (sy <= pi->ScaleMax);
+}
+
 /* Must the display be composed, 'topnode' being the frontmost screen that is not on a plane? */
 static BOOL HIDDCompositorNeedsComposition(struct HIDDCompositorData *compdata, struct StackBitMapNode *topnode)
 {
@@ -2838,7 +2851,7 @@ static BOOL HIDDCompositorNeedsComposition(struct HIDDCompositorData *compdata, 
     if (HIDDCompositorNodeNeedsComposition(compdata, topnode))
         return TRUE;
     if (topnode->scaled)
-        return TRUE;    /* passthrough shows the bitmap as it is: a scaled screen must be composed */
+        return !HIDDCompositorPrimaryScales(compdata, topnode);    /* else passthrough can't scale it */
     {
         /*
          * Shown as it is, a bitmap is shown in its own mode. One of another
@@ -3024,7 +3037,7 @@ static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata,
         if (ok)
             HIDDCompositorRedrawVisibleRegions(compdata, NULL);
     }
-    else if (olddisplaybitmap || newtop || (topnode->bm != compdata->passthroughbm))
+    else if (olddisplaybitmap || newtop || (topnode->bm != compdata->passthroughbm) || compdata->modeschanged)
     {
         /*
          * (d) Set passthrough mode and display the frontmost bitmap.
@@ -3051,8 +3064,12 @@ static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata,
     if (newsdispbitmap)
     {
         IPTR w, h;
+        ULONG showflags = fHidd_Display_Show_CopyBack;
 
-        compdata->screenbitmap = HIDD_Display_Show(compdata->display, newsdispbitmap, fHidd_Display_Show_CopyBack);
+        /* A scaled screen only gets here when the primary plane scales it */
+        if ((newsdispbitmap == topnode->bm) && topnode->scaled)
+            showflags |= fHidd_Display_Show_Scale;
+        compdata->screenbitmap = HIDD_Display_Show(compdata->display, newsdispbitmap, showflags);
         DTOGGLE(bug("[Compositor] %s: Displayed HiddBitMap 0x%p, Show returned 0x%p\n", __func__, newsdispbitmap, compdata->screenbitmap));
 
         /* After Show we need Update for mirroring drivers */
@@ -3417,6 +3434,9 @@ VOID Compositor__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
                 return;
             case aoHidd_Compositor_ComposedBitMap:
                 *msg->storage = (IPTR)compdata->displaybitmap;
+                return;
+            case aoHidd_Compositor_DisplayMode:
+                *msg->storage = (IPTR)compdata->displaymode;
                 return;
         }
     }
