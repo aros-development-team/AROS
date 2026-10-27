@@ -330,6 +330,12 @@ LONG DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, ULONG l
     ULONG res;
     ULONG werr;
 
+    if ((LONG)len < 0)
+    {
+        *err = ERROR_BAD_NUMBER;
+        return -1;
+    }
+
     if (fh->type & FHD_STDIO)
     {
         /* FIXME: This is not thread-safe. */
@@ -399,6 +405,12 @@ LONG DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, ULONG l
 LONG DoWrite(struct emulbase *emulbase, struct filehandle *fh, CONST_APTR buff, ULONG len, SIPTR *err)
 {
     ULONG success, werr;
+
+    if ((LONG)len < 0)
+    {
+        *err = ERROR_BAD_NUMBER;
+        return -1;
+    }
 
     Forbid();
     success = emulbase->pdata.KernelIFace->WriteFile(fh->fd, (void *)buff, len, &len, NULL);
