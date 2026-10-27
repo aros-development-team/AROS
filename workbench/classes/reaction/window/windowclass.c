@@ -205,11 +205,13 @@ static void window_set(Class *cl, Object *o, struct opSet *msg)
             case WA_InnerWidth:
             case WA_Width:
                 data->wcd_Width = (WORD)tag->ti_Data;
+                data->wcd_OuterWidth = (tag->ti_Tag == WA_Width);
                 break;
 
             case WA_InnerHeight:
             case WA_Height:
                 data->wcd_Height = (WORD)tag->ti_Data;
+                data->wcd_OuterHeight = (tag->ti_Tag == WA_Height);
                 break;
 
             case WA_PubScreen:
@@ -256,6 +258,14 @@ IPTR Window__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
 /* Detach a shared IDCMP port before closing the window, discarding any
  * pending messages that belong to this window (CloseWindowSafely) */
+/* WindowLimits() refuses a minimum above the current size, so while a
+   ChangeWindowBox() is pending the limits are set again on IDCMP_NEWSIZE */
+static void window_limits(struct WindowClassData *data)
+{
+    if (WindowLimits(data->wcd_Window, data->wcd_MinWidth, data->wcd_MinHeight, ~0, ~0))
+        data->wcd_MinWidth = data->wcd_MinHeight = 0;
+}
+
 static void window_detach_sharedport(struct WindowClassData *data)
 {
     if (data->wcd_UserPort && data->wcd_Window &&
@@ -443,12 +453,12 @@ IPTR Window__WM_OPEN(Class *cl, Object *o, Msg msg)
      * exactly the layout's minimum size; otherwise we just ensure the inner
      * area is at least large enough to hold the layout.
      */
-    if (layoutMinW)
+    if (layoutMinW && !(data->wcd_Width && data->wcd_OuterWidth))
     {
         if (data->wcd_LockWidth || width < layoutMinW)
             width = layoutMinW;
     }
-    if (layoutMinH)
+    if (layoutMinH && !(data->wcd_Height && data->wcd_OuterHeight))
     {
         if (data->wcd_LockHeight || height < layoutMinH)
             height = layoutMinH;
@@ -501,8 +511,8 @@ IPTR Window__WM_OPEN(Class *cl, Object *o, Msg msg)
     data->wcd_Window = OpenWindowTags(NULL,
         WA_Left,        left,
         WA_Top,         top,
-        WA_InnerWidth,  width,
-        WA_InnerHeight, height,
+        (data->wcd_Width && data->wcd_OuterWidth) ? WA_Width : WA_InnerWidth, width,
+        (data->wcd_Height && data->wcd_OuterHeight) ? WA_Height : WA_InnerHeight, height,
         WA_Title,       (IPTR)data->wcd_Title,
         WA_ScreenTitle, (IPTR)data->wcd_ScreenTitle,
         WA_PubScreen,   (IPTR)screen,
@@ -519,11 +529,9 @@ IPTR Window__WM_OPEN(Class *cl, Object *o, Msg msg)
                          IDCMP_INACTIVEWINDOW | data->wcd_IDCMP,
         WA_NewLookMenus, TRUE,
         WA_SizeBBottom, TRUE,
-        /* Without explicit limits Intuition caps resizing at the opening
-         * size; allow growing up to the full screen and shrinking down
-         * to the layout minimum */
-        WA_MinWidth,  (layoutMinW && layoutMinW < width) ? layoutMinW : width,
-        WA_MinHeight, (layoutMinH && layoutMinH < height) ? layoutMinH : height,
+        /* the real limits need the borders: window_limits() below */
+        WA_MinWidth,  1,
+        WA_MinHeight, 1,
         WA_MaxWidth,  ~0,
         WA_MaxHeight, ~0,
         TAG_MORE,       (IPTR)data->wcd_WinTags);
@@ -533,6 +541,28 @@ IPTR Window__WM_OPEN(Class *cl, Object *o, Msg msg)
 
     if (data->wcd_Window)
     {
+        struct Window *w = data->wcd_Window;
+        WORD minw = layoutMinW ? layoutMinW + w->BorderLeft + w->BorderRight : w->Width;
+        WORD minh = layoutMinH ? layoutMinH + w->BorderTop + w->BorderBottom : w->Height;
+
+        /* a size the program gave as the outer size can be below the
+         * layout's minimum: grow, and shrink no further than that */
+        if (w->Width < minw || w->Height < minh)
+        {
+            WORD nw = w->Width < minw ? minw : w->Width;
+            WORD nh = w->Height < minh ? minh : w->Height;
+            WORD nl = w->LeftEdge, nt = w->TopEdge;
+
+            if (nl + nw > w->WScreen->Width) nl = w->WScreen->Width - nw;
+            if (nt + nh > w->WScreen->Height) nt = w->WScreen->Height - nh;
+            if (nl < 0) nl = 0;
+            if (nt < 0) nt = 0;
+            ChangeWindowBox(w, nl, nt, nw, nh);
+        }
+        data->wcd_MinWidth = minw;
+        data->wcd_MinHeight = minh;
+        window_limits(data);
+
         /* Route IDCMP through the application's shared port
          * (WINDOW_SharedPort) so its Wait() mask sees our messages */
         if (data->wcd_UserPort && data->wcd_Window->UserPort &&
@@ -682,6 +712,8 @@ IPTR Window__WM_HANDLEINPUT(Class *cl, Object *o, Msg msg)
 
         case IDCMP_NEWSIZE:
             result = WMHI_NEWSIZE;
+            if (data->wcd_MinWidth)
+                window_limits(data);
             /* Rethink layout on resize */
             if (data->wcd_Layout)
             {

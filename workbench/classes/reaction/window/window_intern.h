@@ -70,6 +70,10 @@ struct WindowClassData
     WORD                wcd_Top;            /* Window top edge */
     WORD                wcd_Width;          /* Window width */
     WORD                wcd_Height;         /* Window height */
+    BOOL                wcd_OuterWidth;     /* wcd_Width is WA_Width, not WA_InnerWidth */
+    BOOL                wcd_OuterHeight;    /* wcd_Height is WA_Height */
+    UWORD               wcd_MinWidth;       /* outer minimum still to set by WindowLimits */
+    UWORD               wcd_MinHeight;
 
     BOOL                wcd_GadgetUserData; /* How to interpret UserData */
     BOOL                wcd_Iconified;      /* Iconified state */
