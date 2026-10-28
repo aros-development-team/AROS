@@ -39,6 +39,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <exec/types.h>
 #include <stdint.h>
 
+/*
+ * With the MMAL headers (libmmal) included first, their definitions of
+ * these names are used: same values and layouts.
+ */
+#ifndef MMAL_COMMON_H
+
 #define MMAL_FOURCC(a, b, c, d) \
     ((uint32_t)(a) | ((uint32_t)(b) << 8) | ((uint32_t)(c) << 16) | ((uint32_t)(d) << 24))
 
@@ -120,6 +126,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define MMAL_TIME_UNKNOWN       ((int64_t)1 << 63)
 
+/* Parameters (MMAL_PARAMETER_GROUP_VIDEO + n) */
+#define MMAL_PARAMETER_VIDEO_INTERPOLATE_TIMESTAMPS 0x2002f  /* MMAL_BOOL_T */
+
 /*
  * Wire layouts
  */
@@ -151,6 +160,8 @@ typedef union {
     MMAL_AUDIO_FORMAT_T audio;
     MMAL_VIDEO_FORMAT_T video;
 } MMAL_ES_SPECIFIC_FORMAT_T;
+
+#endif /* MMAL_COMMON_H */
 
 /* MMAL_ES_FORMAT_T; es and extradata are pointers on the VideoCore */
 typedef struct {
@@ -187,12 +198,15 @@ typedef struct {
 
 #define MMAL_FORMAT_EXTRADATA_MAX_SIZE  128
 
+#ifndef MMAL_COMMON_H
 typedef struct {
     uint32_t planes;
     uint32_t offset[4];
     uint32_t pitch[4];
     uint32_t flags;
 } MMAL_BUFFER_HEADER_VIDEO_SPECIFIC_T;
+
+#endif /* MMAL_COMMON_H */
 
 /*
  * The client
