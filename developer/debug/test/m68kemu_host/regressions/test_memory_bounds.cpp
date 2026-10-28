@@ -138,7 +138,8 @@ static void special_addresses()
     const auto before = memory;
     CHECK(cpu.read16(CUSTOM_BASE + 0x16) == 0xBEEF);
     cpu.write16(CUSTOM_BASE + 0x2C, 0x1234);
-    CHECK(cpu.custom_writes == 1 && memory == before);
+    CHECK(cpu.custom_writes == 1 &&
+          std::equal(memory.begin(), memory.end(), before.begin()));
     CHECK(cpu.read16OnReset(CUSTOM_BASE + 0x16) == 0);
     CHECK(cpu.read16Dasm(CUSTOM_BASE + 0x16) == 0);
     CHECK(cpu.read16(SENTINEL_ADDR) == M68K_OP_STOP && !ctx.running);
@@ -154,9 +155,11 @@ static void special_addresses()
     ctx.low_guard = true;
     m68k_write16(&ctx, 0x100, 0x1234);
     m68k_write32(&ctx, 0x100, 0x12345678);
-    CHECK(ctx.guard_calls == 2 && memory == before);
+    CHECK(ctx.guard_calls == 2 &&
+          std::equal(memory.begin(), memory.end(), before.begin()));
     cpu.write16(0x100, 0x1234);
-    CHECK(ctx.low_trap_count == 1 && memory == before);
+    CHECK(ctx.low_trap_count == 1 &&
+          std::equal(memory.begin(), memory.end(), before.begin()));
 #endif
 }
 
