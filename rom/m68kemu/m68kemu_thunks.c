@@ -18,6 +18,7 @@
 #include <proto/dos.h>
 #include <dos/notify.h>
 #include <dos/dosasl.h>
+#include <dos/exall.h>
 #include <dos/rdargs.h>
 #include <dos/dosextens.h>
 #include <string.h>
@@ -1970,19 +1971,44 @@ static void fib_to_m68k(struct M68KEmuContext *ctx, ULONG m68k_fib, struct FileI
 }
 
 /* -102: Examine(D1=lock, D2=fib) -> D0=success */
+/* The native FIB behind one of the program's: ExNext's place is in the
+   native fib_DiskKey, which a 68k FIB cannot hold. A FIB from AllocDosObject
+   has its own; others share a small table, oldest reused first. */
+static struct FileInfoBlock *fib_native(struct M68KEmuContext *ctx, ULONG mf)
+{
+    const struct M68KStructLayout *l = shadow_find_layout("FileInfoBlock");
+    struct FileInfoBlock *n;
+    ULONG k;
+
+    for (UWORD i = 0; l && i < ctx->num_shadows; i++)
+        if (ctx->shadow_map[i].m68k_addr == mf && ctx->shadow_map[i].type == l->shadow_type)
+            return ctx->shadow_map[i].native_ptr;
+    for (k = 0; k < 16; k++)
+        if (ctx->fibs[k].m68k == mf && ctx->fibs[k].native)
+            return ctx->fibs[k].native;
+    k = ctx->fib_next++ & 15;
+    if (!ctx->fibs[k].native && !(ctx->fibs[k].native = AllocDosObject(DOS_FIB, NULL)))
+        return NULL;
+    n = ctx->fibs[k].native;
+    memset(n, 0, sizeof(*n));
+    /* a FIB the program filled by other means: its own state */
+    n->fib_DiskKey = m68k_read32(ctx, mf + M68K_FIB_DISKKEY);
+    n->fib_DirEntryType = m68k_read32(ctx, mf + M68K_FIB_DIRENTRYTYPE);
+    ctx->fibs[k].m68k = mf;
+    return n;
+}
+
 static IPTR thunk_dos_Examine(struct M68KEmuContext *ctx, void *cpu)
 {
     BPTR lock = m68k_bptr_in(ctx, THUNK_D(1));
     ULONG m68k_fib = THUNK_D(2);
-    if (!m68k_fib) return 0;
+    struct FileInfoBlock *fib;
+    LONG ok;
 
-    struct FileInfoBlock *fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, NULL);
-    if (!fib) return 0;
-
-    LONG ok = Examine(lock, fib);
+    if (!m68k_fib || m68k_fib + 260 > ctx->mem_size || !(fib = fib_native(ctx, m68k_fib)))
+        return 0;
+    ok = Examine(lock, fib);
     if (ok) fib_to_m68k(ctx, m68k_fib, fib);
-
-    FreeDosObject(DOS_FIB, fib);
     return ok;
 }
 
@@ -2173,30 +2199,132 @@ static IPTR thunk_dos_ExNext(struct M68KEmuContext *ctx, void *cpu)
 {
     BPTR lock = m68k_bptr_in(ctx, THUNK_D(1));
     ULONG m68k_fib = THUNK_D(2);
-    if (!m68k_fib) return 0;
+    struct FileInfoBlock *fib;
+    LONG ok;
 
-    struct FileInfoBlock *fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, NULL);
-    if (!fib) return 0;
-
-    /* Copy current m68k FIB state to native (ExNext needs the previous state) */
-    fib->fib_DiskKey = m68k_read32(ctx, m68k_fib + M68K_FIB_DISKKEY);
-    fib->fib_DirEntryType = m68k_read32(ctx, m68k_fib + M68K_FIB_DIRENTRYTYPE);
-
-    LONG ok = ExNext(lock, fib);
+    if (!m68k_fib || m68k_fib + 260 > ctx->mem_size || !(fib = fib_native(ctx, m68k_fib)))
+        return 0;
+    ok = ExNext(lock, fib);
     if (ok) fib_to_m68k(ctx, m68k_fib, fib);
-
-    FreeDosObject(DOS_FIB, fib);
     return ok;
+}
+
+/* ExAll with the program's ExAllControl (16 bytes in its memory, a native
+   one behind it, shadow type 35) and its buffer, filled with ExAllData in
+   68k layout: ed_Next 0, ed_Name 4, ed_Type 8, ed_Size 12, ed_Prot 16,
+   ed_Days 20, ed_Mins 24, ed_Ticks 28, ed_Comment 32, ed_OwnerUID/GID 36 */
+#define SHADOW_EXALL 35
+
+static ULONG exall_control_new(struct M68KEmuContext *ctx)
+{
+    struct ExAllControl *n = AllocDosObject(DOS_EXALLCONTROL, NULL);
+    ULONG m;
+
+    if (!n)
+        return 0;
+    if (!(m = M68KEmu_HeapAlloc(ctx, 16, 0)))
+    {
+        FreeDosObject(DOS_EXALLCONTROL, n);
+        return 0;
+    }
+    memset(ctx->mem + m, 0, 16);
+    shadow_register(ctx, m, n, SHADOW_EXALL);
+    return m;
+}
+
+static struct ExAllControl *exall_control(struct M68KEmuContext *ctx, ULONG m)
+{
+    for (UWORD i = 0; m && i < ctx->num_shadows; i++)
+        if (ctx->shadow_map[i].m68k_addr == m && ctx->shadow_map[i].type == SHADOW_EXALL)
+            return (struct ExAllControl *)ctx->shadow_map[i].native_ptr;
+    return NULL;
 }
 
 static IPTR thunk_dos_ExAll(struct M68KEmuContext *ctx, void *cpu)
 {
-    return ExAll(m68k_bptr_in(ctx, THUNK_D(1)), THUNK_PTR(2), THUNK_D(3), THUNK_D(4), THUNK_PTR(5));
+    static const UBYTE recsize[8] = { 8, 8, 12, 16, 20, 32, 36, 40 };
+    BPTR lock = m68k_bptr_in(ctx, THUNK_D(1));
+    ULONG mbuf = THUNK_D(2), size = THUNK_D(3), type = THUNK_D(4), mctl = THUNK_D(5);
+    struct ExAllControl *eac = exall_control(ctx, mctl);
+    struct ExAllData *ed;
+    ULONG p, prev = 0, n = 0;
+    APTR nbuf;
+    LONG more, err;
+
+    if (!eac || !mbuf || mbuf + size > ctx->mem_size || size < 8)
+    {
+        SetIoErr(ERROR_BAD_NUMBER);
+        return DOSFALSE;
+    }
+    if (type > 7) type = 7;
+    if (!type) type = 1;
+    if (!m68k_read32(ctx, mctl + 4))
+        eac->eac_LastKey = 0;
+    eac->eac_MatchString = m68k_read32(ctx, mctl + 8) ? (STRPTR)m68k_to_host(ctx, m68k_read32(ctx, mctl + 8)) : NULL;
+    eac->eac_MatchFunc = NULL;
+    if (!(nbuf = AllocVec(size, MEMF_ANY)))
+    {
+        SetIoErr(ERROR_NO_FREE_STORE);
+        return DOSFALSE;
+    }
+    more = ExAll(lock, nbuf, size, type, eac);
+    err = IoErr();
+    p = mbuf;
+    for (ed = eac->eac_Entries ? (struct ExAllData *)nbuf : NULL; ed; ed = ed->ed_Next)
+    {
+        ULONG nl = ed->ed_Name ? strlen((char *)ed->ed_Name) + 1 : 1;
+        ULONG cl = (type >= ED_COMMENT && ed->ed_Comment) ? strlen((char *)ed->ed_Comment) + 1 : 0;
+        ULONG need = ((recsize[type] + nl + cl) + 3) & ~3;
+
+        if (p + need > mbuf + size)
+            break;
+        memset(ctx->mem + p, 0, recsize[type]);
+        memcpy(ctx->mem + p + recsize[type], ed->ed_Name ? (char *)ed->ed_Name : "", nl);
+        m68k_write32(ctx, p + 4, p + recsize[type]);
+        if (type >= ED_TYPE)       m68k_write32(ctx, p + 8, (ULONG)ed->ed_Type);
+        if (type >= ED_SIZE)       m68k_write32(ctx, p + 12, (ULONG)ed->ed_Size);
+        if (type >= ED_PROTECTION) m68k_write32(ctx, p + 16, ed->ed_Prot);
+        if (type >= ED_DATE)
+        {
+            m68k_write32(ctx, p + 20, ed->ed_Days);
+            m68k_write32(ctx, p + 24, ed->ed_Mins);
+            m68k_write32(ctx, p + 28, ed->ed_Ticks);
+        }
+        if (type >= ED_COMMENT && cl)
+        {
+            memcpy(ctx->mem + p + recsize[type] + nl, ed->ed_Comment, cl);
+            m68k_write32(ctx, p + 32, p + recsize[type] + nl);
+        }
+        if (type >= ED_OWNER)
+        {
+            m68k_write16(ctx, p + 36, ed->ed_OwnerUID);
+            m68k_write16(ctx, p + 38, ed->ed_OwnerGID);
+        }
+        if (prev)
+            m68k_write32(ctx, prev, p);
+        prev = p;
+        p += need;
+        n++;
+    }
+    FreeVec(nbuf);
+    m68k_write32(ctx, mctl, n);
+    m68k_write32(ctx, mctl + 4, eac->eac_LastKey ? ((ULONG)eac->eac_LastKey | 1) : 0);
+    SetIoErr(err);
+    return more;
 }
 
 static IPTR thunk_dos_ExAllEnd(struct M68KEmuContext *ctx, void *cpu)
 {
-    ExAllEnd(m68k_bptr_in(ctx, THUNK_D(1)), THUNK_PTR(2), THUNK_D(3), THUNK_D(4), THUNK_PTR(5));
+    struct ExAllControl *eac = exall_control(ctx, THUNK_D(5));
+    ULONG size = THUNK_D(3);
+    APTR nbuf;
+
+    if (eac && size >= 8 && (nbuf = AllocVec(size, MEMF_ANY)))
+    {
+        ExAllEnd(m68k_bptr_in(ctx, THUNK_D(1)), nbuf, size, THUNK_D(4), eac);
+        FreeVec(nbuf);
+        m68k_write32(ctx, THUNK_D(5) + 4, 0);
+    }
     return 0;
 }
 
@@ -2337,6 +2465,11 @@ static IPTR thunk_dos_AllocDosObject(struct M68KEmuContext *ctx, void *cpu)
     if (tags) FreeVec(tags);
     if (!obj) return 0;
     if (type == DOS_FIB) return shadow_create_by_name(ctx, "FileInfoBlock", obj);
+    if (type == DOS_EXALLCONTROL)
+    {
+        FreeDosObject(DOS_EXALLCONTROL, obj);
+        return exall_control_new(ctx);
+    }
     return (IPTR)obj;
 }
 
@@ -2354,6 +2487,16 @@ static IPTR thunk_dos_FreeDosObject(struct M68KEmuContext *ctx, void *cpu)
     }
     if (type == DOS_FIB)
         return 0;
+    if (type == DOS_EXALLCONTROL)
+    {
+        if ((obj = exall_control(ctx, m)))
+        {
+            FreeDosObject(DOS_EXALLCONTROL, obj);
+            shadow_remove(ctx, m);
+            M68KEmu_HeapFree(ctx, m, 16);
+        }
+        return 0;
+    }
     FreeDosObject(type, THUNK_PTR(2));
     return 0;
 }

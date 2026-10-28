@@ -102,6 +102,9 @@ void M68KEmu_DestroyContext(struct M68KEmuContext *ctx)
         FreeVec(ctx->notify[i].nr);
     }
     ctx->num_notify = 0;
+    for (int i = 0; i < 16; i++)
+        if (ctx->fibs[i].native)
+            FreeDosObject(DOS_FIB, ctx->fibs[i].native);
     /* pattern matches the program did not end hold directory locks */
     for (int i = 0; i < 16; i++)
         if (ctx->anchors[i].native)

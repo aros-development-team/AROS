@@ -187,6 +187,8 @@ struct M68KEmuContext
     struct { CONST_STRPTR native; ULONG m68k, size; } strcache[64];   /* native strings given to the program */
     ULONG   strcache_pos;
     struct { ULONG m68k, chain; struct AnchorPath *native; } anchors[16];   /* MatchFirst..MatchEnd */
+    struct { ULONG m68k; struct FileInfoBlock *native; } fibs[16];   /* native FIBs behind the program's */
+    ULONG   fib_next;
     ULONG   windowptr;          /* its pr_WindowPtr as last passed to the native process */
     APTR    windowptr_native;   /* the native process's own pr_WindowPtr, restored at the end */
     BOOL    windowptr_set;
