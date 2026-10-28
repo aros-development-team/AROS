@@ -92,6 +92,7 @@ void M68KEmu_DestroyContext(struct M68KEmuContext *ctx)
 {
     if (!ctx) return;
     m68k_vbl_close(ctx);
+    M68KEmu_FreeNestCpus(ctx);
     /* notifications the program left running would signal a port that is gone */
     for (UWORD i = 0; i < ctx->num_notify; i++)
     {

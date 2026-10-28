@@ -64,6 +64,10 @@ ULONG shadow_register(struct M68KEmuContext *ctx, ULONG m68k_addr, void *native,
 static ULONG setup_window_shadow(struct M68KEmuContext *ctx, struct Window *w);
 static void rp_state_out(struct M68KEmuContext *ctx, ULONG mrp, struct RastPort *rp, BOOL font);
 IPTR m68k_NewObjectA(struct M68KEmuContext *ctx, void *cpu);
+IPTR m68k_MakeClass(struct M68KEmuContext *ctx, void *cpu);
+IPTR m68k_AddClass(struct M68KEmuContext *ctx, void *cpu);
+IPTR m68k_RemoveClass(struct M68KEmuContext *ctx, void *cpu);
+IPTR m68k_FreeClass(struct M68KEmuContext *ctx, void *cpu);
 IPTR m68k_DisposeObject(struct M68KEmuContext *ctx, void *cpu);
 IPTR m68k_SetAttrsA(struct M68KEmuContext *ctx, void *cpu);
 IPTR m68k_GetAttr(struct M68KEmuContext *ctx, void *cpu);
@@ -4293,6 +4297,10 @@ const struct M68KThunkEntry m68kemu_thunks_intuition_manual[] = {
     { 636, m68k_NewObjectA },
     { 690, thunk_intuition_GetScreenDrawInfo_m },
     { 696, thunk_intuition_FreeScreenDrawInfo_m },
+    { 678, m68k_MakeClass },
+    { 684, m68k_AddClass },
+    { 708, m68k_RemoveClass },
+    { 714, m68k_FreeClass },
     { 642, m68k_DisposeObject },
     { 648, m68k_SetAttrsA },
     { 654, m68k_GetAttr },

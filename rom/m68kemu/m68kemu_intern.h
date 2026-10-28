@@ -166,6 +166,18 @@ struct M68KEmuContext
     UWORD   num_m68klibs;
     struct { ULONG m68k; struct NotifyRequest *nr; } notify[64];   /* the program's file notifications */
     UWORD   num_notify;
+    ULONG   cb_stack_top;       /* stack for 68k callbacks made with no 68k caller */
+    void   *cur_cpu;            /* the CPU whose library call is running */
+    #define M68KEMU_MAX_NEST 8
+    void   *nest_cpu[M68KEMU_MAX_NEST];   /* CPUs for calls from native code into 68k code */
+    UWORD   nest_depth;
+    APTR    emu_task;           /* the native task that runs the program */
+    struct M68KClassRec { struct M68KEmuContext *ctx; ULONG m68k; struct IClass *native; ULONG body; char *id; } m68kclasses[32];
+    UWORD   num_m68kclasses;    /* BOOPSI classes the program made */
+    struct { ULONG m68k; APTR native; APTR obj; } msgstack[16];   /* methods passed to 68k dispatchers */
+    UWORD   msgdepth;
+    struct { APTR native; ULONG m68k; } tagorigin[8];   /* native copies of the program's tag lists in use */
+    UWORD   num_tagorigin;
     struct { APTR font; ULONG name; } fontnames[16];   /* 68k copies of font names */
     struct { ULONG m68k; struct DiskObject *native; ULONG size; } icons[64];   /* DiskObjects in 68k layout */
     ULONG   num_icons;
@@ -256,6 +268,8 @@ ULONG m68k_eclock_now(struct M68KEmuContext *ctx, ULONG *freq);
 void  m68k_watchdog_start(struct M68KEmuContext *ctx);
 void  m68k_log(struct M68KEmuContext *ctx, const char *fmt, ...);
 void  m68k_sync_windowptr(struct M68KEmuContext *ctx);
+ULONG M68KEmu_Call68k(struct M68KEmuContext *ctx, void *outer_cpu, ULONG entry, const ULONG regs[15]);
+void  M68KEmu_FreeNestCpus(struct M68KEmuContext *ctx);
 void  m68k_restore_windowptr(struct M68KEmuContext *ctx);
 ULONG m68k_ioreq_of(struct M68KEmuContext *ctx, APTR native);
 void  m68k_ioreq_out(struct M68KEmuContext *ctx, APTR native);

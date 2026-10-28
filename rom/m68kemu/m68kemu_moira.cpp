@@ -4,14 +4,17 @@
     m68kemu.library — Moira CPU subclass
 */
 #include <aros/debug.h>
+#include <proto/exec.h>
 #include "m68kemu_intern.h"
 #include "m68kemu_offsets.h"
 #include "m68kemu_thunks.h"
 #include "Moira/Moira.h"
+#include <new>
 
 using namespace moira;
 
 #define SENTINEL_ADDR 0x00DEAD00u
+#define NEST_SENTINEL 0xFFDEAE00u /* return address of a call from native code, outside memory */
 #define RTE_ADDR      0x000100u   /* address of our RTE instruction */
 #define SV_TRAMP_ADDR 0x000108u   /* supervisor trampoline: skip frame + JMP (A5) */
 
@@ -19,6 +22,7 @@ class AROSMoira : public Moira
 {
 public:
     struct M68KEmuContext *ctx;
+    bool nested = false, nested_done = false;
 
     explicit AROSMoira(struct M68KEmuContext *c) : ctx(c) {}
 
@@ -284,6 +288,12 @@ public:
 
     u16 read16(u32 addr) const override
     {
+        if (addr >= NEST_SENTINEL && addr < NEST_SENTINEL + 2)
+        {
+            if (nested)
+                const_cast<AROSMoira*>(this)->nested_done = true;
+            return M68K_OP_STOP;
+        }
         if (addr >= SENTINEL_ADDR && addr < SENTINEL_ADDR + 2)
         {
             const_cast<AROSMoira*>(this)->ctx->running = FALSE;
@@ -508,7 +518,10 @@ public:
                             (unsigned)getD(1), (unsigned)getD(2), (unsigned)getA(0), (unsigned)getA(1),
                             (unsigned)ctx->pc_ring[(ctx->pc_ring_pos - 2) & 511], (unsigned)ctx->pc_ring[(ctx->pc_ring_pos - 3) & 511],
                             (unsigned)ctx->pc_ring[(ctx->pc_ring_pos - 4) & 511]);
+                        void *prev_cpu = ctx->cur_cpu;
+                        ctx->cur_cpu = static_cast<void *>(this);
                         IPTR ret = lib->thunks[j].thunk(ctx, static_cast<void *>(this));
+                        ctx->cur_cpu = prev_cpu;
                         if (ctx->trace_calls) bug("[m68kemu]   -> %08lx\n", (unsigned long)ret);
 
                         if (ctx->sv_redirect)
@@ -562,7 +575,10 @@ public:
                             (unsigned)getD(1), (unsigned)getD(2), (unsigned)getA(0), (unsigned)getA(1),
                             (unsigned)ctx->pc_ring[(ctx->pc_ring_pos - 2) & 511], (unsigned)ctx->pc_ring[(ctx->pc_ring_pos - 3) & 511],
                             (unsigned)ctx->pc_ring[(ctx->pc_ring_pos - 4) & 511]);
+                        void *prev_cpu = ctx->cur_cpu;
+                        ctx->cur_cpu = static_cast<void *>(this);
                         IPTR ret = lib->gen_thunks[j].thunk(ctx, static_cast<void *>(this));
+                        ctx->cur_cpu = prev_cpu;
                         if (ctx->trace_calls) bug("[m68kemu]   -> %08lx\n", (unsigned long)ret);
 
                         if (ctx->sv_redirect)
@@ -611,6 +627,90 @@ extern "C" {
 
 ULONG M68KEmu_GetD(void *cpu, int n) { return static_cast<AROSMoira *>(cpu)->getD(n); }
 ULONG M68KEmu_GetA(void *cpu, int n) { return static_cast<AROSMoira *>(cpu)->getA(n); }
+
+/* Call 68k code from native code, the way a library calls a program's hook:
+   regs holds D0-D7/A0-A6 on entry, the result is D0. The code runs on its own
+   CPU over the program's memory, on the stack below the caller's (outer_cpu,
+   or the callback stack when there is none), until it returns. */
+ULONG M68KEmu_Call68k(struct M68KEmuContext *ctx, void *outer_cpu, ULONG entry, const ULONG regs[15])
+{
+    ULONG sp, d0;
+    AROSMoira *cp;
+
+    if (!entry || (entry & 1) || entry + 4 > ctx->mem_size || ctx->nest_depth >= M68KEMU_MAX_NEST)
+        return 0;
+    /* a CPU per nesting level, made once: one is too big for the task's stack */
+    if (!(cp = static_cast<AROSMoira *>(ctx->nest_cpu[ctx->nest_depth])))
+    {
+        void *m = AllocVec(sizeof(AROSMoira), MEMF_ANY | MEMF_CLEAR);
+        if (!m)
+            return 0;
+        cp = new (m) AROSMoira(ctx);
+        cp->setModel(Model::M68LC040);
+        ctx->nest_cpu[ctx->nest_depth] = cp;
+    }
+    AROSMoira &c = *cp;
+    if (outer_cpu)
+        sp = (static_cast<AROSMoira *>(outer_cpu)->getA(7) - 256) & ~3u;
+    else
+    {
+        if (!ctx->cb_stack_top)
+        {
+            ULONG s = M68KEmu_HeapAlloc(ctx, 32768, 0);
+            if (!s)
+                return 0;
+            ctx->cb_stack_top = s + 32768;
+        }
+        sp = ctx->cb_stack_top - 16;
+    }
+    if (sp < 64 || sp > ctx->mem_size)
+        return 0;
+
+    c.reset();
+    c.setSR(0x2000);
+    c.nested_done = false;
+    for (int i = 0; i < 8; i++)
+        c.setD(i, regs[i]);
+    for (int i = 0; i < 7; i++)
+        c.setA(i, regs[8 + i]);
+    sp -= 4;
+    m68k_write32(ctx, sp, NEST_SENTINEL);
+    c.setA(7, sp);
+    c.setPC0(entry);
+    c.setPC(entry);
+    c.setIRD(m68k_read16(ctx, entry));
+    c.setIRC(m68k_read16(ctx, entry + 2));
+    c.nested = true;
+
+    ctx->nest_depth++;
+    while (!c.nested_done && ctx->running)
+    {
+        ULONG pc = c.getPC0();
+        if (pc >= ctx->mem_size)
+        {
+            m68k_log(ctx, "%s: a callback jumped to %08lx outside its memory",
+                     ctx->program_name[0] ? ctx->program_name : "68k program", (unsigned long)pc);
+            ctx->nest_depth--;
+            return 0;
+        }
+        ctx->pc_ring[ctx->pc_ring_pos++ & 511] = pc;
+        c.execute();
+    }
+    ctx->nest_depth--;
+    d0 = c.getD(0);
+    return d0;
+}
+
+void M68KEmu_FreeNestCpus(struct M68KEmuContext *ctx)
+{
+    for (int i = 0; i < M68KEMU_MAX_NEST; i++)
+        if (ctx->nest_cpu[i])
+        {
+            static_cast<AROSMoira *>(ctx->nest_cpu[i])->~AROSMoira();
+            FreeVec(ctx->nest_cpu[i]);
+            ctx->nest_cpu[i] = NULL;
+        }
+}
 void  M68KEmu_SetD(void *cpu, int n, ULONG val) { static_cast<AROSMoira *>(cpu)->setD(n, (u32)val); }
 void  M68KEmu_SetA(void *cpu, int n, ULONG val) { static_cast<AROSMoira *>(cpu)->setA(n, (u32)val); }
 UWORD M68KEmu_GetSR(void *cpu) { return static_cast<AROSMoira *>(cpu)->getSR(); }
@@ -699,6 +799,7 @@ LONG M68KEmu_Execute(struct M68KEmuContext *ctx)
     ctx->running = TRUE;
     ctx->exit_code = 0;
     ctx->low_guard = TRUE;
+    ctx->emu_task = FindTask(NULL);
 
     if (ctx->trace_calls) bug("[m68kemu] TRACE core " __DATE__ " " __TIME__ " start entry %08x sp %08x argptr %08x argsize %u sysbase %08x\n",
         (unsigned)ctx->entry_point, (unsigned)sp, (unsigned)ctx->m68k_argptr,

@@ -16,6 +16,7 @@
 
 #include <aros/debug.h>
 #include <aros/libcall.h>
+#include <aros/asmcall.h>
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <exec/lists.h>
@@ -88,6 +89,25 @@ static struct M68KBoopsiObj *bobj_of(struct M68KEmuContext *ctx, ULONG m68k)
     return NULL;
 }
 
+/* a class the program made, and the body its objects need */
+static struct M68KClassRec *class_rec(struct M68KEmuContext *ctx, Class *cl)
+{
+    for (UWORD i = 0; cl && i < ctx->num_m68kclasses; i++)
+        if (ctx->m68kclasses[i].native == cl)
+            return &ctx->m68kclasses[i];
+    return NULL;
+}
+
+static ULONG class_body(struct M68KEmuContext *ctx, Class *cl)
+{
+    struct M68KClassRec *r;
+
+    for (; cl; cl = cl->cl_Super)
+        if ((r = class_rec(ctx, cl)))
+            return r->body;
+    return O_BODY;
+}
+
 /* the m68k IClass standing in for a native class */
 static ULONG m68k_class_of(struct M68KEmuContext *ctx, Class *cl)
 {
@@ -118,7 +138,7 @@ static ULONG m68k_class_of(struct M68KEmuContext *ctx, Class *cl)
 /* the m68k stand-in for a native object, made on first sight */
 static ULONG m68k_object_of(struct M68KEmuContext *ctx, Object *o)
 {
-    ULONG stub, mo, mc;
+    ULONG stub, mo, mc, body;
     int i;
 
     if (!o)
@@ -126,9 +146,10 @@ static ULONG m68k_object_of(struct M68KEmuContext *ctx, Object *o)
     if ((mo = native_to_m68k(ctx, o, SHADOW_BOBJ)))
         return mo;
     mc = m68k_class_of(ctx, OCLASS(o));
-    if (!(stub = M68KEmu_HeapAlloc(ctx, O_HEADER + O_BODY, MEMF_CLEAR)))
+    body = class_body(ctx, OCLASS(o));
+    if (!(stub = M68KEmu_HeapAlloc(ctx, O_HEADER + body, MEMF_CLEAR)))
         return 0;
-    memset(ctx->mem + stub, 0, O_HEADER + O_BODY);
+    memset(ctx->mem + stub, 0, O_HEADER + body);
     mo = stub + O_HEADER;
     m68k_write32(ctx, mo - 4, mc);
     if (!shadow_register(ctx, mo, o, SHADOW_BOBJ))
@@ -311,6 +332,9 @@ static struct TagItem *tags_in(struct M68KEmuContext *ctx, ULONG mtags, ULONG mo
 
     if (!t)
         return NULL;
+    ctx->tagorigin[ctx->num_tagorigin & 7].native = t;
+    ctx->tagorigin[ctx->num_tagorigin & 7].m68k = mtags;
+    ctx->num_tagorigin++;
     while ((ti = NextTagItem(&tstate)))
     {
         ULONG raw = 0;
@@ -568,8 +592,81 @@ static IPTR do_method(struct M68KEmuContext *ctx, ULONG mo, Object *o, ULONG mms
 static IPTR thunk_boopsi_dispatch(struct M68KEmuContext *ctx, void *cpu)
 {
     ULONG mo = THUNK_A(2), mmsg = THUNK_A(1);
-    Object *o = shadow_lookup(ctx, mo);
+    Object *o;
 
+    /* a 68k dispatcher passing the method it was given on to its superclass:
+       the superclass gets the native method it came from */
+    if (ctx->msgdepth && ctx->msgstack[ctx->msgdepth - 1].m68k == mmsg)
+    {
+        Class *super = shadow_lookup(ctx, THUNK_A(0));
+        APTR no = ctx->msgstack[ctx->msgdepth - 1].obj;
+        Msg nmsg = ctx->msgstack[ctx->msgdepth - 1].native;
+        IPTR r;
+
+        if (!super)
+            return 0;
+        r = CoerceMethodA(super, no, nmsg);
+        if (nmsg->MethodID == OM_NEW)
+            return m68k_object_of(ctx, (Object *)r);
+        return (ULONG)r;
+    }
+    /* a 68k dispatcher's own method for a superclass of the object's class */
+    {
+        Class *super = shadow_lookup(ctx, THUNK_A(0));
+        ULONG id = mmsg ? m68k_read32(ctx, mmsg) : 0;
+
+        if (super && class_rec(ctx, (Class *)shadow_lookup(ctx, m68k_read32(ctx, mo - 4))) == NULL && id != OM_NEW)
+            super = NULL;   /* an object of a native class: the method goes to the object */
+        if (super && mmsg)
+        {
+            APTR no = shadow_lookup(ctx, mo);
+            IPTR r = 0;
+
+            switch (id)
+            {
+            case OM_NEW:
+            case OM_SET:
+            case OM_UPDATE:
+            case OM_NOTIFY:
+            {
+                struct opUpdate m;
+                struct TagItem *t = tags_in(ctx, m68k_read32(ctx, mmsg + 4), mo);
+
+                m.MethodID = id;
+                m.opu_AttrList = t;
+                m.opu_GInfo = NULL;
+                m.opu_Flags = (id == OM_UPDATE || id == OM_NOTIFY) ? m68k_read32(ctx, mmsg + 12) : 0;
+                if (no)
+                    r = CoerceMethodA(super, no, (Msg)&m);
+                FreeVec(t);
+                if (id == OM_NEW)
+                    return r ? m68k_object_of(ctx, (Object *)r) : 0;
+                return (ULONG)r;
+            }
+            case OM_GET:
+            {
+                struct opGet m;
+                IPTR v = 0;
+                ULONG ms = m68k_read32(ctx, mmsg + 8);
+
+                m.MethodID = OM_GET;
+                m.opg_AttrID = m68k_read32(ctx, mmsg + 4);
+                m.opg_Storage = &v;
+                if (no && (r = CoerceMethodA(super, no, (Msg)&m)) && ms && ms + 4 <= ctx->mem_size)
+                    m68k_write32(ctx, ms, (ULONG)v);
+                return (ULONG)r;
+            }
+            case OM_DISPOSE:
+                if (no)
+                {
+                    CoerceMethod(super, no, OM_DISPOSE);
+                    forget_object(ctx, mo);
+                }
+                return 0;
+            }
+        }
+    }
+    o = shadow_lookup(ctx, mo);
     if (!o || !mmsg)
         return 0;
     return do_method(ctx, mo, o, mmsg, NULL, NULL, FALSE);
@@ -933,4 +1030,218 @@ void m68k_boopsi_cleanup(struct M68KEmuContext *ctx)
             CloseLibrary(ctx->clibs[i].native);
     for (int i = 0; i < M68KEMU_MAX_BLISTS; i++)
         FreeVec(ctx->blists[i].native);
+}
+
+/* ---------------------------------------------------------------------- */
+/* classes written in 68k code                                            */
+/*
+   MakeClass gives the program an m68k IClass whose dispatcher hook it
+   fills in. Behind it is a native class whose dispatcher runs that hook
+   as 68k code, so native code (NewObject by name, intuition, gadgets)
+   reaches the program's methods. The method is passed in 68k layout;
+   when the 68k code hands it on to its superclass, the superclass gets
+   the native method it came from. Objects keep their instance data in
+   the m68k stand-in, behind the superclass's part.
+*/
+
+static ULONG tags_out(struct M68KEmuContext *ctx, struct TagItem *t)
+{
+    struct TagItem *ts = t, *ti;
+    ULONG n = 0, mt, p;
+
+    /* newest first: a freed copy's address comes back for the next one */
+    for (int k = 1; k <= 8 && k <= ctx->num_tagorigin; k++)
+    {
+        int i = (ctx->num_tagorigin - k) & 7;
+        ULONG m = ctx->tagorigin[i].m68k, q = m;
+        struct TagItem *s = t;
+        BOOL same = (ctx->tagorigin[i].native == t && t && m);
+
+        /* the program's own list, if the native copy still matches it */
+        while (same && (ti = NextTagItem(&s)))
+        {
+            ULONG tag;
+            do
+            {
+                tag = m68k_read32(ctx, q);
+                if (tag == TAG_MORE) q = m68k_read32(ctx, q + 4);
+                else if (tag == TAG_IGNORE) q += 8;
+                else if (tag == TAG_SKIP) q += 8 * (m68k_read32(ctx, q + 4) + 1);
+            } while (q && q < ctx->mem_size && (tag == TAG_MORE || tag == TAG_IGNORE || tag == TAG_SKIP));
+            if (!q || q >= ctx->mem_size || tag != ti->ti_Tag)
+                same = FALSE;
+            q += 8;
+        }
+        if (same)
+            return m;
+    }
+    while (NextTagItem(&ts))
+        n++;
+    if (!(mt = M68KEmu_HeapAlloc(ctx, 8 * (n + 1), 0)))
+        return 0;
+    for (p = mt, ts = t; (ti = NextTagItem(&ts)); p += 8)
+    {
+        m68k_write32(ctx, p, ti->ti_Tag);
+        m68k_write32(ctx, p + 4, (ULONG)ti->ti_Data);
+    }
+    m68k_write32(ctx, p, TAG_DONE);
+    m68k_write32(ctx, p + 4, 0);
+    return mt | 0x80000000;    /* allocated here: freed after the method */
+}
+
+AROS_UFH3(static IPTR, m68k_class_hook,
+    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(Object *, o, A2),
+    AROS_UFHA(Msg, msg, A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct M68KClassRec *rec = (struct M68KClassRec *)h->h_Data;
+    struct M68KEmuContext *ctx = rec->ctx;
+    ULONG entry = m68k_read32(ctx, rec->m68k + CL_ENTRY), mmsg, mobj, mtags = 0, mstore = 0, r;
+    ULONG regs[15] = { 0 };
+
+    /* only the program's own task runs its code; from elsewhere (an input
+       handler rendering a gadget) the superclass does the work */
+    if (FindTask(NULL) != ctx->emu_task || !entry || ctx->msgdepth >= 16 ||
+        !(mmsg = M68KEmu_HeapAlloc(ctx, 32, 0)))
+        return DoSuperMethodA(rec->native, o, msg);
+    memset(ctx->mem + mmsg, 0, 32);
+    m68k_write32(ctx, mmsg, msg->MethodID);
+    switch (msg->MethodID)
+    {
+    case OM_NEW:
+    case OM_SET:
+    case OM_UPDATE:
+    case OM_NOTIFY:
+        mtags = tags_out(ctx, ((struct opSet *)msg)->ops_AttrList);
+        m68k_write32(ctx, mmsg + 4, mtags & 0x7fffffff);
+        if (msg->MethodID != OM_NEW && msg->MethodID != OM_SET)
+            m68k_write32(ctx, mmsg + 12, ((struct opUpdate *)msg)->opu_Flags);
+        break;
+    case OM_GET:
+        if ((mstore = M68KEmu_HeapAlloc(ctx, 4, 0)))
+        {
+            m68k_write32(ctx, mstore, 0);
+            m68k_write32(ctx, mmsg + 4, ((struct opGet *)msg)->opg_AttrID);
+            m68k_write32(ctx, mmsg + 8, mstore);
+        }
+        break;
+    }
+    mobj = msg->MethodID == OM_NEW ? m68k_class_of(ctx, (Class *)o) : m68k_object_of(ctx, o);
+
+    ctx->msgstack[ctx->msgdepth].m68k = mmsg;
+    ctx->msgstack[ctx->msgdepth].native = msg;
+    ctx->msgstack[ctx->msgdepth].obj = o;
+    ctx->msgdepth++;
+    regs[8] = rec->m68k;            /* A0: the hook, which is the class */
+    regs[9] = mmsg;                 /* A1 */
+    regs[10] = mobj;                /* A2 */
+    regs[14] = ctx->m68k_sysbase;   /* A6 */
+    r = M68KEmu_Call68k(ctx, ctx->cur_cpu, entry, regs);
+    ctx->msgdepth--;
+
+    if (mstore)
+    {
+        if (r && ((struct opGet *)msg)->opg_Storage)
+            *((struct opGet *)msg)->opg_Storage = m68k_read32(ctx, mstore);
+        M68KEmu_HeapFree(ctx, mstore, 4);
+    }
+    if (mtags & 0x80000000)
+    {
+        ULONG n = 0;
+        while (m68k_read32(ctx, (mtags & 0x7fffffff) + 8 * n) != TAG_DONE)
+            n++;
+        M68KEmu_HeapFree(ctx, mtags & 0x7fffffff, 8 * (n + 1));
+    }
+    M68KEmu_HeapFree(ctx, mmsg, 32);
+    if (msg->MethodID == OM_NEW)
+        return r ? (IPTR)shadow_lookup(ctx, r) : 0;
+    return r;
+
+    AROS_USERFUNC_EXIT
+}
+
+/* intuition -678: MakeClass(A0=classID, A1=superClassID, A2=superClassPtr, D0=instSize, D1=flags) */
+IPTR m68k_MakeClass(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG mid = THUNK_A(0), msid = THUNK_A(1), size = THUNK_D(0), mc;
+    Class *super = THUNK_A(2) ? shadow_lookup(ctx, THUNK_A(2)) : NULL, *cl;
+    struct M68KClassRec *rec;
+    char *id = NULL;
+    ULONG off;
+
+    boopsi_init(ctx);
+    if ((THUNK_A(2) && !super) || ctx->num_m68kclasses >= sizeof(ctx->m68kclasses) / sizeof(ctx->m68kclasses[0]))
+        return 0;
+    if (mid && mid < ctx->mem_size && (id = AllocVec(strlen((char *)ctx->mem + mid) + 1, MEMF_ANY)))
+        strcpy(id, (char *)ctx->mem + mid);
+    cl = MakeClass((ClassID)id, super ? NULL : (msid ? (ClassID)(ctx->mem + msid) : NULL), super, size, 0);
+    if (!cl)
+    {
+        FreeVec(id);
+        return 0;
+    }
+    off = class_body(ctx, cl->cl_Super);
+    if (!(mc = M68KEmu_HeapAlloc(ctx, CL_SIZE + 64, 0)))
+    {
+        FreeClass(cl);
+        FreeVec(id);
+        return 0;
+    }
+    memset(ctx->mem + mc, 0, CL_SIZE + 64);
+    m68k_write32(ctx, mc + 24, m68k_class_of(ctx, cl->cl_Super));
+    if (id)
+    {
+        strncpy((char *)ctx->mem + mc + CL_SIZE, id, 63);
+        m68k_write32(ctx, mc + CL_ID, mc + CL_SIZE);
+    }
+    m68k_write16(ctx, mc + 32, off);
+    m68k_write16(ctx, mc + 34, size);
+
+    rec = &ctx->m68kclasses[ctx->num_m68kclasses++];
+    rec->ctx = ctx;
+    rec->m68k = mc;
+    rec->native = cl;
+    rec->body = (off + size + 3) & ~3;
+    rec->id = id;
+    cl->cl_Dispatcher.h_Entry = (HOOKFUNC)m68k_class_hook;
+    cl->cl_Dispatcher.h_Data = rec;
+    shadow_register(ctx, mc, cl, SHADOW_BCLASS);
+    return mc;
+}
+
+/* intuition -684 AddClass, -708 RemoveClass (A0=class) */
+IPTR m68k_AddClass(struct M68KEmuContext *ctx, void *cpu)
+{
+    Class *cl = THUNK_A(0) ? shadow_lookup(ctx, THUNK_A(0)) : NULL;
+    if (cl)
+        AddClass(cl);
+    return 0;
+}
+
+IPTR m68k_RemoveClass(struct M68KEmuContext *ctx, void *cpu)
+{
+    Class *cl = THUNK_A(0) ? shadow_lookup(ctx, THUNK_A(0)) : NULL;
+    if (cl)
+        RemoveClass(cl);
+    return 0;
+}
+
+/* intuition -714: FreeClass(A0=class) */
+IPTR m68k_FreeClass(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG mc = THUNK_A(0);
+    Class *cl = mc ? shadow_lookup(ctx, mc) : NULL;
+    struct M68KClassRec *rec = class_rec(ctx, cl);
+
+    if (!rec || !FreeClass(cl))
+        return FALSE;
+    FreeVec(rec->id);
+    shadow_remove(ctx, mc);
+    M68KEmu_HeapFree(ctx, mc, CL_SIZE + 64);
+    *rec = ctx->m68kclasses[--ctx->num_m68kclasses];
+    if (rec != &ctx->m68kclasses[ctx->num_m68kclasses])
+        rec->native->cl_Dispatcher.h_Data = rec;
+    return TRUE;
 }
