@@ -69,6 +69,8 @@ IPTR m68k_MakeClass(struct M68KEmuContext *ctx, void *cpu);
 IPTR m68k_AddClass(struct M68KEmuContext *ctx, void *cpu);
 IPTR m68k_RemoveClass(struct M68KEmuContext *ctx, void *cpu);
 IPTR m68k_FreeClass(struct M68KEmuContext *ctx, void *cpu);
+IPTR m68k_NextObject(struct M68KEmuContext *ctx, void *cpu);
+IPTR m68k_FindClass(struct M68KEmuContext *ctx, void *cpu);
 IPTR m68k_DisposeObject(struct M68KEmuContext *ctx, void *cpu);
 IPTR m68k_SetAttrsA(struct M68KEmuContext *ctx, void *cpu);
 IPTR m68k_GetAttr(struct M68KEmuContext *ctx, void *cpu);
@@ -4423,6 +4425,8 @@ const struct M68KThunkEntry m68kemu_thunks_intuition_manual[] = {
     { 684, m68k_AddClass },
     { 708, m68k_RemoveClass },
     { 714, m68k_FreeClass },
+    { 666, m68k_NextObject },
+    { 672, m68k_FindClass },
     { 642, m68k_DisposeObject },
     { 648, m68k_SetAttrsA },
     { 654, m68k_GetAttr },

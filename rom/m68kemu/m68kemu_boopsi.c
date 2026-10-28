@@ -1245,3 +1245,31 @@ IPTR m68k_FreeClass(struct M68KEmuContext *ctx, void *cpu)
         rec->native->cl_Dispatcher.h_Data = rec;
     return TRUE;
 }
+
+/* intuition -666: NextObject(A0=objectPtrPtr): the program's own lists of
+   objects, in its memory: the node after the state, its object after the
+   12-byte _Object header */
+IPTR m68k_NextObject(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG pp = THUNK_A(0), node, next;
+
+    if (!pp || pp + 4 > ctx->mem_size || !(node = m68k_read32(ctx, pp)) || node + 12 > ctx->mem_size)
+        return 0;
+    if (!(next = m68k_read32(ctx, node)))
+        return 0;
+    m68k_write32(ctx, pp, next);
+    return node + O_HEADER;
+}
+
+/* intuition -672: FindClass(A0=classID): the class's m68k IClass */
+IPTR m68k_FindClass(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG id = THUNK_A(0);
+    Class *cl;
+
+    if (!id || id >= ctx->mem_size)
+        return 0;
+    boopsi_init(ctx);
+    cl = FindClass((ClassID)(ctx->mem + id));
+    return cl ? m68k_class_of(ctx, cl) : 0;
+}
