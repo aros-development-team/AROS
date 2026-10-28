@@ -837,6 +837,41 @@ static void pump_raw_input(struct filehandle *fh)
     }
 }
 
+/* ACTION_STACK: the bytes go in front of all other input, readable at once */
+static LONG stack_input(struct filehandle *fh, const UBYTE *buf, LONG len)
+{
+    if (len < 0)
+        return ERROR_BAD_NUMBER;
+    if (len > INPUTBUFFER_SIZE - fh->inputsize)
+        return ERROR_OBJECT_TOO_LARGE;
+    if (len == 0)
+        return 0;
+
+    memmove(fh->inputbuffer + len, fh->inputbuffer, fh->inputsize);
+    CopyMem((APTR)buf, fh->inputbuffer, len);
+    fh->inputsize += len;
+    fh->inputpos += len;
+    fh->inputstart += len;
+
+    if (fh->flags & FHFLG_RAW)
+        HandlePendingReads(fh);
+    else
+    {
+        /* Stacked bytes count as an entered line, ahead of the one being edited */
+        fh->canreadsize = (fh->flags & FHFLG_CANREAD) ? fh->canreadsize + len : len;
+        fh->flags |= FHFLG_CANREAD;
+        while ((fh->flags & FHFLG_CANREAD) && !IsListEmpty(&fh->pendingReads))
+        {
+            struct Message *msg = (struct Message *)RemHead((struct List *)&fh->pendingReads);
+
+            con_read(fh, (struct DosPacket *)msg->mn_Node.ln_Name);
+        }
+        if (IsListEmpty(&fh->pendingReads))
+            fh->flags &= ~FHFLG_READPENDING;
+    }
+    return 0;
+}
+
 static void stopwait(struct filehandle *fh, struct DosPacket *waitingdp, ULONG result)
 {
     if (waitingdp) {
@@ -1319,6 +1354,17 @@ LONG CONMain(struct ExecBase *SysBase)
                     fh->breaktask = dp->dp_Port->mp_SigTask;
                     startread(fh);
                     answer_write_request(fh, dp);
+                    break;
+                case ACTION_STACK:
+                    {
+                        LONG err = stack_input(fh, (const UBYTE *)dp->dp_Arg2, dp->dp_Arg3);
+
+                        DACTION(bug("[con:handler] ACTION_STACK %ld\n", (long)dp->dp_Arg3));
+                        if (err)
+                            replypkt2(dp, DOSFALSE, err);
+                        else
+                            replypkt(dp, DOSTRUE);
+                    }
                     break;
                 case ACTION_SCREEN_MODE:
                     {

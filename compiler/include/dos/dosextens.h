@@ -2,7 +2,7 @@
 #define DOS_DOSEXTENS_H
 
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: LibBase and some important structures
@@ -595,6 +595,8 @@ struct DosPacket
 #define ACTION_EXAMINE_FH               1034
 #define ACTION_EXAMINE_ALL_END          1035
 #define ACTION_SET_OWNER                1036
+
+#define ACTION_STACK                    2002
 
 #define ACTION_LOCK_RECORD              2008
 #define ACTION_FREE_RECORD              2009
