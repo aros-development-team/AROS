@@ -838,6 +838,9 @@ static void startread(struct filehandle *fh)
 {
     if (fh->flags & FHFLG_ASYNCCONSOLEREAD)
         return;
+    /* Raw input still waiting in consolebuffer goes first. */
+    if ((fh->flags & FHFLG_RAW) && fh->conbufferpos < fh->conbuffersize)
+        return;
     fh->conreadio->io_Command = CMD_READ;
     fh->conreadio->io_Data = fh->consolebuffer;
     /*
@@ -846,7 +849,8 @@ static void startread(struct filehandle *fh)
      * whole count has arrived, which for a console would mean no input at all
      * until the user typed a full buffer, so ask for one character.
      */
-    fh->conreadio->io_Length = (fh->flags & FHFLG_DEVICEMODE)
+    fh->conreadio->io_Length = ((fh->flags & FHFLG_DEVICEMODE) &&
+                                !(fh->devcaps & CONCAPF_STREAMREADS))
                              ? 1 : CONSOLEBUFFER_SIZE;
     SendIO((struct IORequest*) fh->conreadio);
     fh->flags |= FHFLG_ASYNCCONSOLEREAD;
