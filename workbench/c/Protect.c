@@ -54,11 +54,12 @@
     NOTES
 
         Owner RWED bits are active low; group and other RWED bits
-        are active high. FLAGS without ADD or SUB replace the
-        classic protection flags only. Extended rights are preserved
-        unless GROUP or OTHER explicitly requests their change.
-        An omitted FLAGS argument with no GROUP or OTHER denies
-        owner RWED access and clears the classic attributes.
+        are active high. Without ADD or SUB, FLAGS replace the protection
+        word supplied to dos.library/SetProtection(). When FLAGS and
+        GROUP/OTHER are omitted, owner RWED is denied. With
+        security.library resident, DOS applies its normal
+        LIMITDOSSETPROTECTION policy to group/other rights.
+        Explicit GROUP/OTHER changes use secSetProtection().
 
     EXAMPLE
 
@@ -132,8 +133,6 @@ static BOOL parseRWED(STRPTR s, LONG shift, LONG *mask, BOOL *add, BOOL *sub)
     }
     return TRUE;
 }
-
-#define CTRL_C         (SetSignal(0L,0L) & SIGBREAKF_CTRL_C)
 
 #define ARG_TEMPLATE    "FILE/A,FLAGS,ADD/S,SUB/S,ALL/S,QUIET/S,GROUP/K,OTHER/K"
 
@@ -375,7 +374,7 @@ int doProtect(struct AnchorPath *ap, STRPTR file, LONG flags, BOOL flagsSet,
         LONG fileError = 0;
         BOOL success;
 
-        if (CTRL_C)
+        if (CheckSignal(SIGBREAKF_CTRL_C))
         {
             match = ERROR_BREAK;
             break;
@@ -423,7 +422,7 @@ int doProtect(struct AnchorPath *ap, STRPTR file, LONG flags, BOOL flagsSet,
         if (!success)
         {
             if (fileError)
-                PrintFault(fileError, "Protect");
+                PrintFault(fileError, ap->ap_Buf);
             else
                 Printf("Protect: unable to set protection for %s\n", ap->ap_Buf);
             retval = RETURN_ERROR;
@@ -454,7 +453,6 @@ int doProtect(struct AnchorPath *ap, STRPTR file, LONG flags, BOOL flagsSet,
 }
 
 #define  ALL_OFF  (FIBF_READ | FIBF_WRITE | FIBF_DELETE | FIBF_EXECUTE)
-#define  CLASSIC_MASK (ALL_OFF | FIBF_ARCHIVE | FIBF_PURE | FIBF_SCRIPT | FIBF_HOLD)
 #define addFlags(new, old)  ((~(~old | ~new) & ALL_OFF) | \
                               ((old | new) & ~ALL_OFF))
      
@@ -463,9 +461,9 @@ int doProtect(struct AnchorPath *ap, STRPTR file, LONG flags, BOOL flagsSet,
      
 /* Compute and apply the effective protection bits for one DOS path.
  * oldFlags is the protection word supplied by MatchFirst/MatchNext.
- * Owner RWED is active-low; GROUP/OTHER is active-high. Preserve unrelated
- * bits on replacement and use security.library only for requested extended
- * rights changes; otherwise use dos.library/SetProtection().
+ * Owner RWED is active-low; GROUP/OTHER is active-high. For normal
+ * changes, pass the protection word through dos.library/SetProtection().
+ * Only explicit GROUP/OTHER edits use security.library.
  * Returns the selected API's success status; the caller checks IoErr() on
  * failure. Does not own file, oldFlags or any security.library handle.
  */
@@ -474,7 +472,6 @@ BOOL setProtection(STRPTR file, LONG oldFlags, LONG flags, BOOL flagsSet,
 {
     LONG newFlags;
 
-    /* Owner flags are active low. Do not erase unrelated protection bits. */
     if (flagsSet)
     {
         if (add)
@@ -482,7 +479,7 @@ BOOL setProtection(STRPTR file, LONG oldFlags, LONG flags, BOOL flagsSet,
         else if (sub)
             newFlags = subFlags(flags, oldFlags);
         else
-            newFlags = (oldFlags & ~CLASSIC_MASK) | flags;
+            newFlags = flags;
     }
     else if (grpSet || otrSet)
     {
@@ -490,8 +487,8 @@ BOOL setProtection(STRPTR file, LONG oldFlags, LONG flags, BOOL flagsSet,
     }
     else
     {
-        /* No FLAGS argument: retain extended rights, deny owner RWED. */
-        newFlags = (oldFlags & ~CLASSIC_MASK) | ALL_OFF;
+        /* No flags or GROUP/OTHER: disable owner RWED. */
+        newFlags = ALL_OFF;
     }
 
     if (grpSet)
