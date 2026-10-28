@@ -2381,6 +2381,16 @@ static IPTR thunk_dos_RunCommand(struct M68KEmuContext *ctx, void *cpu)
 
 static IPTR thunk_dos_RunProcess(struct M68KEmuContext *ctx, void *cpu) { return 0; }
 
+/* dos -558 SetCurrentDirName, -570 SetProgramName, -582 SetPrompt (D1=name):
+   a NULL name reads as the empty string, as address 0 does on an Amiga */
+static CONST_STRPTR name_arg(struct M68KEmuContext *ctx, ULONG a)
+{
+    return (a && a < ctx->mem_size) ? (CONST_STRPTR)(ctx->mem + a) : (CONST_STRPTR)"";
+}
+static IPTR thunk_dos_SetCurrentDirName_m(struct M68KEmuContext *ctx, void *cpu) { return SetCurrentDirName(name_arg(ctx, THUNK_D(1))); }
+static IPTR thunk_dos_SetProgramName_m(struct M68KEmuContext *ctx, void *cpu)    { return SetProgramName(name_arg(ctx, THUNK_D(1))); }
+static IPTR thunk_dos_SetPrompt_m(struct M68KEmuContext *ctx, void *cpu)         { return SetPrompt(name_arg(ctx, THUNK_D(1))); }
+
 static IPTR thunk_dos_CreateNewProc(struct M68KEmuContext *ctx, void *cpu)
 {
     struct TagItem *tags = m68k_to_native_taglist(ctx, THUNK_D(1));
@@ -2638,6 +2648,9 @@ const struct M68KThunkEntry m68kemu_thunks_dos[] = {
     { 504, thunk_dos_RunCommand },
     { 498, thunk_dos_RunProcess },
     { 492, thunk_dos_CreateNewProc },
+    { 558, thunk_dos_SetCurrentDirName_m },
+    { 570, thunk_dos_SetProgramName_m },
+    { 582, thunk_dos_SetPrompt_m },
     { 138, thunk_dos_CreateProc },
     { 930, thunk_dos_CliInitNewcli },
     { 936, thunk_dos_CliInitRun },
