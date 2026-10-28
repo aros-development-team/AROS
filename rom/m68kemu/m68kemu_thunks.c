@@ -8,6 +8,7 @@
 #include <exec/memory.h>
 #include <aros/debug.h>
 #include <proto/exec.h>
+#include <dos/datetime.h>
 #include <proto/dos.h>
 #include <dos/rdargs.h>
 #include <dos/dosextens.h>
@@ -1959,7 +1960,81 @@ static IPTR thunk_dos_VFWritef(struct M68KEmuContext *ctx, void *cpu)
 }
 
 
+/* struct DateTime: dat_Stamp (3 longs), dat_Format, dat_Flags, then the
+   day, date and time string pointers (68k buffers of LEN_DATSTRING) */
+static void datetime_in(struct M68KEmuContext *ctx, ULONG md, struct DateTime *dt,
+                        char str[3][LEN_DATSTRING], BOOL strings_in)
+{
+    int i;
+
+    memset(dt, 0, sizeof(*dt));
+    dt->dat_Stamp.ds_Days   = (LONG)m68k_read32(ctx, md);
+    dt->dat_Stamp.ds_Minute = (LONG)m68k_read32(ctx, md + 4);
+    dt->dat_Stamp.ds_Tick   = (LONG)m68k_read32(ctx, md + 8);
+    dt->dat_Format = ctx->mem[md + 12];
+    dt->dat_Flags  = ctx->mem[md + 13];
+    for (i = 0; i < 3; i++)
+    {
+        ULONG ms = m68k_read32(ctx, md + 14 + i * 4);
+
+        str[i][0] = 0;
+        if (ms && strings_in)
+        {
+            strncpy(str[i], (const char *)ctx->mem + ms, LEN_DATSTRING - 1);
+            str[i][LEN_DATSTRING - 1] = 0;
+        }
+    }
+    dt->dat_StrDay  = m68k_read32(ctx, md + 14) ? (STRPTR)str[0] : NULL;
+    dt->dat_StrDate = m68k_read32(ctx, md + 18) ? (STRPTR)str[1] : NULL;
+    dt->dat_StrTime = m68k_read32(ctx, md + 22) ? (STRPTR)str[2] : NULL;
+}
+
+/* dos -744: DateToStr(D1=datetime) */
+static IPTR thunk_dos_DateToStr_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG md = THUNK_D(1);
+    struct DateTime dt;
+    char str[3][LEN_DATSTRING];
+    LONG r;
+    int i;
+
+    if (!md)
+        return 0;
+    datetime_in(ctx, md, &dt, str, FALSE);
+    r = DateToStr(&dt);
+    for (i = 0; i < 3; i++)
+    {
+        ULONG ms = m68k_read32(ctx, md + 14 + i * 4);
+        if (ms)
+            memcpy(ctx->mem + ms, str[i], strnlen(str[i], LEN_DATSTRING - 1) + 1);
+    }
+    return r;
+}
+
+/* dos -750: StrToDate(D1=datetime) */
+static IPTR thunk_dos_StrToDate_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG md = THUNK_D(1);
+    struct DateTime dt;
+    char str[3][LEN_DATSTRING];
+    LONG r;
+
+    if (!md)
+        return 0;
+    datetime_in(ctx, md, &dt, str, TRUE);
+    r = StrToDate(&dt);
+    if (r)
+    {
+        m68k_write32(ctx, md,     dt.dat_Stamp.ds_Days);
+        m68k_write32(ctx, md + 4, dt.dat_Stamp.ds_Minute);
+        m68k_write32(ctx, md + 8, dt.dat_Stamp.ds_Tick);
+    }
+    return r;
+}
+
 const struct M68KThunkEntry m68kemu_thunks_dos[] = {
+    { 744, thunk_dos_DateToStr_m },
+    { 750, thunk_dos_StrToDate_m },
     { 108, thunk_dos_ExNext },
     { 432, thunk_dos_ExAll },
     { 990, thunk_dos_ExAllEnd },
