@@ -433,6 +433,8 @@ static ULONG get_attr(struct M68KEmuContext *ctx, ULONG mo, Object *o, ULONG att
 /* ---------------------------------------------------------------------- */
 /* methods                                                                 */
 
+static ULONG node_out(struct M68KEmuContext *ctx, struct Node *n);
+
 static IPTR do_method(struct M68KEmuContext *ctx, ULONG mo, Object *o, ULONG mmsg,
                       struct Window *win, struct Requester *req, BOOL gadget)
 {
@@ -511,6 +513,42 @@ static IPTR do_method(struct M68KEmuContext *ctx, ULONG mo, Object *o, ULONG mms
     case WM_RETHINK:
         r = DoMethod(o, id);
         break;
+    case LBM_ADDNODE:
+    case LBM_EDITNODE:
+    case LBM_REMNODE:
+    case LBM_SHOWCHILDREN:
+    case LBM_HIDECHILDREN:
+    {
+        /* { MethodID, GInfo, Node, tags or depth }: an m68k node is a stand-in,
+           NULL and ~0 mean head and tail */
+        ULONG mnode = m68k_read32(ctx, mmsg + 8);
+        struct Node *node = (mnode == 0xFFFFFFFF) ? (struct Node *)~0 :
+                            mnode ? (struct Node *)shadow_lookup(ctx, mnode) : NULL;
+        struct TagItem *t = NULL;
+        IPTR m[4];
+
+        if (mnode && mnode != 0xFFFFFFFF && !node)
+            return 0;
+        m[0] = id;
+        m[1] = 0;
+        m[2] = (IPTR)node;
+        if (id == LBM_ADDNODE || id == LBM_EDITNODE)
+            m[3] = (IPTR)(t = tags_in(ctx, m68k_read32(ctx, mmsg + 12), mo));
+        else
+            m[3] = (WORD)m68k_read16(ctx, mmsg + 12);
+        r = win ? DoGadgetMethodA((struct Gadget *)o, win, req, (Msg)m)
+                : DoMethodA(o, (Msg)m);
+        FreeVec(t);
+        if (id == LBM_ADDNODE)
+        {
+            if (gadget)
+                sync_gadget(ctx, mo, o);
+            return r ? node_out(ctx, (struct Node *)r) : 0;
+        }
+        if (id == LBM_REMNODE && r && mnode)
+            shadow_remove(ctx, mnode);
+        break;
+    }
     default:
         if (!(ctx->boopsi_logged & 1))
         {
