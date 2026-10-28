@@ -270,6 +270,68 @@ in6_ifscrub(struct ifnet *ifp, struct in6_ifaddr *ia)
     ia->ia6_flags &= ~IFA_ROUTE;
 }
 
+/*
+ * in6_solicited_join - the address joins its solicited-node group,
+ * ff02::1:ffXX:XXXX from its last 24 bits (RFC 4291 section 2.7.1), which
+ * Neighbor Solicitations for it are sent to (RFC 4861 section 7.2.1). The
+ * membership belongs to the address: in6_purgeaddr() leaves it. Several
+ * addresses with the same last 24 bits share one group by reference count.
+ * An address given anew, on a record that already had one, moves its
+ * membership. Interfaces that cannot multicast do neighbour discovery
+ * without it.
+ */
+static void
+in6_solicited_join(struct ifnet *ifp, struct in6_ifaddr *ia)
+{
+    struct in6_ifaddr_priv *iap = IA6_PRIV(ia);
+    struct in6_addr maddr;
+
+    if((ifp->if_flags & IFF_MULTICAST) == 0)
+        return;
+    bzero(&maddr, sizeof(maddr));
+    maddr.s6_addr[0]  = 0xff;
+    maddr.s6_addr[1]  = 0x02;
+    maddr.s6_addr[11] = 0x01;
+    maddr.s6_addr[12] = 0xff;
+    maddr.s6_addr[13] = ia->ia_addr.sin6_addr.s6_addr[13];
+    maddr.s6_addr[14] = ia->ia_addr.sin6_addr.s6_addr[14];
+    maddr.s6_addr[15] = ia->ia_addr.sin6_addr.s6_addr[15];
+
+    if(iap->ia6p_solicited != NULL) {
+        if(iap->ia6p_solicited->in6m_ifp == ifp &&
+                IN6_ARE_ADDR_EQUAL(&iap->ia6p_solicited->in6m_addr, &maddr))
+            return;
+        in6_delmulti(iap->ia6p_solicited);
+        iap->ia6p_solicited = NULL;
+    }
+    iap->ia6p_solicited = in6_addmulti(&maddr, ifp);
+}
+
+/*
+ * in6_join_allnodes - the interface joins the all-nodes group, ff02::1
+ * (RFC 4291 section 2.8), once: Router Advertisements and MLD Queries are
+ * sent to it. The membership belongs to the interface and in6_ifdetach()
+ * releases it. No report is ever sent for this group (mld6.c). The IPv6
+ * counterpart of in_join_allhosts().
+ */
+static void
+in6_join_allnodes(struct ifnet *ifp)
+{
+    struct in6_multi *in6m;
+    struct in6_addr allnodes;
+
+    if((ifp->if_flags & IFF_MULTICAST) == 0)
+        return;
+    bzero(&allnodes, sizeof(allnodes));
+    allnodes.s6_addr[0]  = 0xff;
+    allnodes.s6_addr[1]  = 0x02;
+    allnodes.s6_addr[15] = 0x01;
+    for(in6m = in6_multihead; in6m; in6m = in6m->in6m_next)
+        if(in6m->in6m_ifp == ifp && IN6_ARE_ADDR_EQUAL(&in6m->in6m_addr, &allnodes))
+            return;
+    (void)in6_addmulti(&allnodes, ifp);
+}
+
 /* ------------------------------------------------------------------
  * in6_ifinit - initialise an IPv6 interface address and add its route.
  * ------------------------------------------------------------------ */
@@ -299,6 +361,9 @@ in6_ifinit(struct ifnet *ifp, struct in6_ifaddr *ia,
         in6_ifscrub(ifp, ia);
         ia->ia_ifa.ifa_addr = (struct sockaddr *)&ia->ia_addr;
     }
+
+    /* the address is ours from here on: neighbours must be able to ask for it */
+    in6_solicited_join(ifp, ia);
 
     /* build prefix mask from prefix length */
     if(ia->ia6_plen > 0) {
@@ -353,6 +418,12 @@ in6_purgeaddr(struct ifaddr *ifa)
     struct ifaddr *ifa2;
 
     in6_ifscrub(ifp, ia);
+
+    /* the address no longer answers neighbour solicitations */
+    if(IA6_PRIV(ia)->ia6p_solicited != NULL) {
+        in6_delmulti(IA6_PRIV(ia)->ia6p_solicited);
+        IA6_PRIV(ia)->ia6p_solicited = NULL;
+    }
 
     /* unlink from ifp address list */
     if((ifa2 = ifp->if_addrlist) == (struct ifaddr *)ia) {
@@ -467,7 +538,7 @@ in6_ifaof_ifpforlinklocal(struct ifnet *ifp)
  * compile time so growing the struct (or shrinking MSIZE) breaks the build
  * loudly instead of silently corrupting memory.
  */
-typedef char in6_ifaddr_fits_mbuf[(sizeof(struct in6_ifaddr) <= MLEN) ? 1 : -1];
+typedef char in6_ifaddr_fits_mbuf[(sizeof(struct in6_ifaddr_priv) <= MLEN) ? 1 : -1];
 
 void
 in6_if_up(struct ifnet *ifp)
@@ -589,33 +660,11 @@ in6_if_up(struct ifnet *ifp)
     (void)in6_ifinit(ifp, ia, &sin6, 0);
 
     /*
-     * Join required IPv6 multicast groups so the NIC accepts the
-     * corresponding Ethernet multicast MACs (RFC 4291 §2.8):
-     *  - ff02::1        (all-nodes) — needed to receive Router Advertisements
-     *  - ff02::1:ffXX:XXXX (solicited-node) — needed for NDP / DAD
+     * The NIC must accept the all-nodes group for Router Advertisements
+     * (RFC 4291 section 2.8). The link-local's solicited-node group, for
+     * neighbour discovery and DAD, was joined by in6_ifinit() above.
      */
-    D(bug("[AROSTCP:IN6] %s: joining multicast groups\n", __func__));
-    {
-        struct in6_addr maddr;
-
-        /* ff02::1 — all-nodes link-local multicast */
-        bzero(&maddr, sizeof(maddr));
-        maddr.s6_addr[0]  = 0xff;
-        maddr.s6_addr[1]  = 0x02;
-        maddr.s6_addr[15] = 0x01;
-        (void)in6_addmulti(&maddr, ifp);
-
-        /* ff02::1:ffXX:XXXX — solicited-node multicast for our link-local */
-        bzero(&maddr, sizeof(maddr));
-        maddr.s6_addr[0]  = 0xff;
-        maddr.s6_addr[1]  = 0x02;
-        maddr.s6_addr[11] = 0x01;
-        maddr.s6_addr[12] = 0xff;
-        maddr.s6_addr[13] = sin6.sin6_addr.s6_addr[13];
-        maddr.s6_addr[14] = sin6.sin6_addr.s6_addr[14];
-        maddr.s6_addr[15] = sin6.sin6_addr.s6_addr[15];
-        (void)in6_addmulti(&maddr, ifp);
-    }
+    in6_join_allnodes(ifp);
 
     /*
      * Initialize ND state for this interface and start DAD.
@@ -970,20 +1019,7 @@ in6_tmpifadd(struct ifnet *ifp, struct nd_prefix *pr)
               (unsigned long)preferred, (unsigned long)valid));
     }
 
-    /* join solicited-node multicast for the new address */
-    {
-        struct in6_addr maddr;
-        bzero(&maddr, sizeof(maddr));
-        maddr.s6_addr[0]  = 0xff;
-        maddr.s6_addr[1]  = 0x02;
-        maddr.s6_addr[11] = 0x01;
-        maddr.s6_addr[12] = 0xff;
-        maddr.s6_addr[13] = tmpaddr.s6_addr[13];
-        maddr.s6_addr[14] = tmpaddr.s6_addr[14];
-        maddr.s6_addr[15] = tmpaddr.s6_addr[15];
-        (void)in6_addmulti(&maddr, ifp);
-    }
-
+    /* its solicited-node group was joined by in6_ifinit() */
     return 0;
 }
 
