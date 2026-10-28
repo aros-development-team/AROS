@@ -13,7 +13,7 @@
 
 using namespace moira;
 
-#define SENTINEL_ADDR 0x00DEAD00u
+#define SENTINEL_ADDR 0xFFDEAD00u /* return address of the program itself, outside memory */
 #define NEST_SENTINEL 0xFFDEAE00u /* return address of a call from native code, outside memory */
 #define RTE_ADDR      0x000100u   /* address of our RTE instruction */
 #define SV_TRAMP_ADDR 0x000108u   /* supervisor trampoline: skip frame + JMP (A5) */
