@@ -861,6 +861,45 @@ ULONG m68k_window_shadow(struct M68KEmuContext *ctx, struct Window *w)
     return setup_window_shadow(ctx, w);
 }
 
+/* A shared IDCMP port: the program set Window->UserPort itself (its own port,
+   another window's, or NULL before closing). Give the native window the same. */
+static void window_userport_in(struct M68KEmuContext *ctx, ULONG mw, struct Window *w)
+{
+    ULONG mport = m68k_read32(ctx, mw + M68K_WIN_USERPORT);
+    struct MsgPort *port = NULL;
+    BOOL own;
+
+    if (mport && !(port = (struct MsgPort *)shadow_lookup(ctx, mport)))
+        port = m68k_port_twin(ctx, mport, &own);
+    w->UserPort = port;
+}
+
+/* The window's UserPort as an m68k MsgPort; it comes and goes with ModifyIDCMP */
+static void window_userport_sync(struct M68KEmuContext *ctx, ULONG mw, struct Window *w)
+{
+    ULONG mport = m68k_read32(ctx, mw + M68K_WIN_USERPORT);
+
+    if (mport && shadow_lookup(ctx, mport) != w->UserPort)
+    {
+        shadow_remove(ctx, mport);
+        M68KEmu_HeapFree(ctx, mport, M68K_SIZEOF_MSGPORT);
+        m68k_write32(ctx, mw + M68K_WIN_USERPORT, 0);
+        mport = 0;
+    }
+    if (w->UserPort && !mport && (mport = M68KEmu_HeapAlloc(ctx, M68K_SIZEOF_MSGPORT, 0)))
+    {
+        /* programs Wait() on 1 << mp_SigBit themselves */
+        memset(ctx->mem + mport, 0, M68K_SIZEOF_MSGPORT);
+        ctx->mem[mport + 8]  = NT_MSGPORT;
+        ctx->mem[mport + 14] = w->UserPort->mp_Flags;
+        ctx->mem[mport + 15] = w->UserPort->mp_SigBit;
+        m68k_write32(ctx, mport + 20, mport + 24);
+        m68k_write32(ctx, mport + 28, mport + 20);
+        shadow_register(ctx, mport, w->UserPort, 4);
+        m68k_write32(ctx, mw + M68K_WIN_USERPORT, mport);
+    }
+}
+
 static ULONG setup_window_shadow(struct M68KEmuContext *ctx, struct Window *w)
 {
     /* m68k Window shadow */
@@ -916,22 +955,8 @@ static ULONG setup_window_shadow(struct M68KEmuContext *ctx, struct Window *w)
     }
 
     /* UserPort — shadow the MsgPort for WaitPort/GetMsg */
-    if (w->UserPort)
-    {
-        ULONG mport = M68KEmu_HeapAlloc(ctx, M68K_SIZEOF_MSGPORT, 0);
-        if (mport)
-        {
-            /* programs Wait() on 1 << mp_SigBit themselves */
-            memset(ctx->mem + mport, 0, M68K_SIZEOF_MSGPORT);
-            ctx->mem[mport + 8]  = NT_MSGPORT;
-            ctx->mem[mport + 14] = w->UserPort->mp_Flags;
-            ctx->mem[mport + 15] = w->UserPort->mp_SigBit;
-            m68k_write32(ctx, mport + 20, mport + 24);
-            m68k_write32(ctx, mport + 28, mport + 20);
-            shadow_register(ctx, mport, w->UserPort, 4);
-            m68k_write32(ctx, mw + M68K_WIN_USERPORT, mport);
-        }
-    }
+    m68k_write32(ctx, mw + M68K_WIN_USERPORT, 0);
+    window_userport_sync(ctx, mw, w);
 
     /* WScreen: the screen's shadow, made now if the program never asked
        for the screen itself (a window opened on a public screen by name) */
@@ -1067,6 +1092,8 @@ static IPTR thunk_intuition_CloseWindow(struct M68KEmuContext *ctx, void *cpu)
     {
         struct Menu *m = strip_of(ctx, w, TRUE);
         if (m) { ClearMenuStrip(w); if (!gt_strip_native(ctx, m)) menus_free(ctx, m); }
+        /* a shared port the program cleared out of the window stays alive */
+        if (!m68k_read32(ctx, mw + M68K_WIN_USERPORT)) w->UserPort = NULL;
         CloseWindow(w);
         shadow_destroy(ctx, shadow_find_layout("Window"), mw);
     }
@@ -4769,6 +4796,20 @@ const struct M68KThunkEntry m68kemu_thunks_gadtools_manual[] = {
     { 66, thunk_gadtools_LayoutMenusA_t },
 };
 const ULONG m68kemu_thunks_gadtools_manual_count = 6;
+/* intuition -150: ModifyIDCMP(A0=window, D0=flags): the UserPort may appear or go */
+static IPTR thunk_intuition_ModifyIDCMP_p(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG mw = THUNK_A(0);
+    struct Window *w = (struct Window *)shadow_lookup(ctx, mw);
+    BOOL r;
+
+    if (!w) return FALSE;
+    window_userport_in(ctx, mw, w);
+    r = ModifyIDCMP(w, THUNK_D(0));
+    m68k_write32(ctx, mw + M68K_WIN_IDCMPFLAGS, w->IDCMPFlags);
+    window_userport_sync(ctx, mw, w);
+    return r;
+}
 
 const struct M68KThunkEntry m68kemu_thunks_intuition_manual[] = {
     { 84,  thunk_intuition_CurrentTime_m },
@@ -4816,6 +4857,7 @@ const struct M68KThunkEntry m68kemu_thunks_intuition_manual[] = {
     { 198, thunk_intuition_OpenScreen },
     { 612, thunk_intuition_OpenScreenTagList },
     { 66, thunk_intuition_CloseScreen },
+    { 150, thunk_intuition_ModifyIDCMP_p },
     { 0, NULL }
 };
 const ULONG m68kemu_thunks_intuition_manual_count = sizeof(m68kemu_thunks_intuition_manual) / sizeof(m68kemu_thunks_intuition_manual[0]);
