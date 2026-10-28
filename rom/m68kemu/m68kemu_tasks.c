@@ -23,6 +23,8 @@
 #include <exec/semaphores.h>
 #include <dos/dos.h>
 #include <dos/dostags.h>
+#include <dos/dosextens.h>
+#include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <string.h>
@@ -258,6 +260,7 @@ IPTR m68k_dos_CreateNewProc(struct M68KEmuContext *ctx, void *cpu)
     struct Process *p;
     char *name = NULL;
     int n = 0;
+    ULONG seglist = 0;
 
     if (!(ch = AllocVec(sizeof(*ch), MEMF_CLEAR)))
         return 0;
@@ -270,6 +273,7 @@ IPTR m68k_dos_CreateNewProc(struct M68KEmuContext *ctx, void *cpu)
         switch (tag)
         {
         case NP_Entry:      ch->entry = data; break;
+        case NP_Seglist:    seglist = data; break;
         case NP_StackSize:  if (data > ch->stacksize) ch->stacksize = (data + 15) & ~15; break;
         case NP_ExitCode:   ch->exitcode = data; break;
         case NP_ExitData:   ch->exitdata = data; break;
@@ -292,14 +296,46 @@ IPTR m68k_dos_CreateNewProc(struct M68KEmuContext *ctx, void *cpu)
         case NP_CloseOutput:
         case NP_CloseError:
         case NP_Cli:
+        case NP_FreeSeglist:
             t[n].ti_Tag = tag; t[n++].ti_Data = data;
             break;
+        }
+    }
+    /* a program LoadSeg() gave it: a 68k one runs in this one's memory, a
+       native one (Directory Opus starting the WBStartup programs) natively */
+    if (!ch->entry && seglist)
+    {
+        BPTR seg = m68k_bptr_in(ctx, seglist);
+        IPTR hunk = 0;
+        struct TagItem gt[] = { { GSLI_68KHUNK, (IPTR)&hunk }, { TAG_DONE, 0 } };
+
+        if (seg && (!GetSegListInfo(seg, gt) || !hunk))
+        {
+            t[n].ti_Tag = NP_Seglist; t[n++].ti_Data = (IPTR)seg;
+            t[n].ti_Tag = NP_StackSize; t[n++].ti_Data = ch->stacksize > 65536 ? ch->stacksize : 65536;
+            t[n].ti_Tag = TAG_DONE;
+            FreeVec(ch);
+            p = CreateNewProc(t);
+            FreeVec(name);
+            return p ? m68k_process_of(ctx, &p->pr_Task) : 0;
+        }
+        if (seg)
+        {
+            ULONG ep = ctx->entry_point, ss = ctx->seg_start;
+            ch->entry = M68KEmu_LoadHunks(ctx, seg);
+            ctx->entry_point = ep;
+            ctx->seg_start = ss;
         }
     }
     if (!ch->entry || !in_mem(ctx, ch->entry, 2) || !(ch->stack = M68KEmu_HeapAlloc(ctx, ch->stacksize, 0)))
     {
         if (ctx->trace_calls || ctx->trace_end)
-            bug("[m68kemu] CreateNewProc: no 68k entry (%08lx), not started\n", (unsigned long)ch->entry);
+        {
+            ULONG st = M68KEmu_GetD(cpu, 1), t2;
+            bug("[m68kemu] CreateNewProc: no 68k entry (%08lx), not started; tags:\n", (unsigned long)ch->entry);
+            while ((t2 = m68k_next_tag(ctx, &st)))
+                bug("[m68kemu]   %08lx = %08lx\n", (unsigned long)m68k_read32(ctx, t2), (unsigned long)m68k_read32(ctx, t2 + 4));
+        }
         FreeVec(ch);
         FreeVec(name);
         return 0;

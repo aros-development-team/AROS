@@ -2631,6 +2631,8 @@ static IPTR thunk_dos_CliInitRun(struct M68KEmuContext *ctx, void *cpu)
 
 static IPTR thunk_dos_LoadSeg(struct M68KEmuContext *ctx, void *cpu)
 {
+    if (ctx->trace_end || ctx->trace_calls)
+        bug("[m68kemu] LoadSeg '%s'\n", THUNK_D(1) ? (char *)m68k_to_host(ctx, THUNK_D(1)) : "");
     return (IPTR)m68k_bptr_out(ctx, LoadSeg((CONST_STRPTR)m68k_to_host(ctx, THUNK_D(1))));
 }
 
