@@ -632,31 +632,43 @@ ULONG shadow_init_execbase(struct M68KEmuContext *ctx, ULONG m68k_base, void *na
         m68k_write32(ctx, m68k_base + 24, id);
     }
 
-    /* MemList: one MemHeader for the heap the program allocates from, its
-       chunks the heap's free list */
+    /* MemList: a MemHeader per heap region, Fast RAM first (higher
+       priority), each one's chunks the region's free list */
     {
-        static const char name[] = "expansion fast memory";
-        ULONG ml = m68k_base + M68K_EXECBASE_MEMLIST;
-        ULONG mh = M68KEmu_HeapAlloc(ctx, M68K_SIZEOF_MEMHEADER + sizeof(name), MEMF_CLEAR);
-
-        if (mh)
+        static const struct { const char *name; UWORD attrs; BYTE pri; int rgn; } mem[] =
         {
-            memcpy(ctx->mem + mh + M68K_SIZEOF_MEMHEADER, name, sizeof(name));
-            m68k_write32(ctx, mh + 0, ml + 4);                          /* ln_Succ: lh_Tail */
-            m68k_write32(ctx, mh + 4, ml);                              /* ln_Pred */
+            { "expansion fast memory", MEMF_PUBLIC | MEMF_FAST | MEMF_LOCAL | MEMF_KICK, 0, RGN_FAST },
+            { "chip memory", MEMF_PUBLIC | MEMF_CHIP | MEMF_LOCAL | MEMF_24BITDMA | MEMF_KICK, -10, RGN_CHIP },
+        };
+        ULONG ml = m68k_base + M68K_EXECBASE_MEMLIST, pred = ml;
+
+        m68k_write32(ctx, ml + 4, 0);                                   /* lh_Tail */
+        ctx->mem[ml + 12] = NT_MEMORY;
+        for (int i = 0; i < 2; i++)
+        {
+            struct M68KHeapRegion *r = &ctx->rgn[mem[i].rgn];
+            ULONG len = strlen(mem[i].name) + 1;
+            ULONG mh = M68KEmu_HeapAlloc(ctx, M68K_SIZEOF_MEMHEADER + len,
+                                         MEMF_CLEAR | (mem[i].rgn == RGN_CHIP ? MEMF_CHIP : MEMF_FAST));
+
+            if (!mh)
+                continue;
+            memcpy(ctx->mem + mh + M68K_SIZEOF_MEMHEADER, mem[i].name, len);
             ctx->mem[mh + 8] = NT_MEMORY;
-            ctx->mem[mh + 9] = 0;
+            ctx->mem[mh + 9] = (UBYTE)mem[i].pri;
             m68k_write32(ctx, mh + 10, mh + M68K_SIZEOF_MEMHEADER);     /* ln_Name */
-            m68k_write16(ctx, mh + M68K_MH_ATTRIBUTES, MEMF_PUBLIC | MEMF_FAST | MEMF_LOCAL | MEMF_KICK);
-            m68k_write32(ctx, mh + M68K_MH_LOWER, ctx->heap_start);
-            m68k_write32(ctx, mh + M68K_MH_UPPER, ctx->heap_end);
-            m68k_write32(ctx, ml + 0, mh);                              /* lh_Head */
-            m68k_write32(ctx, ml + 4, 0);                               /* lh_Tail */
-            m68k_write32(ctx, ml + 8, mh);                              /* lh_TailPred */
-            ctx->mem[ml + 12] = NT_MEMORY;
-            ctx->memheader = mh;
-            m68k_write32(ctx, mh + M68K_MH_FIRST, ctx->heap_free);
-            m68k_write32(ctx, mh + M68K_MH_FREE, ctx->heap_avail);
+            m68k_write16(ctx, mh + M68K_MH_ATTRIBUTES, mem[i].attrs);
+            m68k_write32(ctx, mh + M68K_MH_LOWER, r->start);
+            m68k_write32(ctx, mh + M68K_MH_UPPER, r->end);
+            /* AddTail */
+            m68k_write32(ctx, mh + 0, ml + 4);
+            m68k_write32(ctx, mh + 4, pred);
+            m68k_write32(ctx, pred == ml ? ml : pred, mh);
+            m68k_write32(ctx, ml + 8, mh);
+            pred = mh;
+            r->mh = mh;
+            m68k_write32(ctx, mh + M68K_MH_FIRST, r->free);
+            m68k_write32(ctx, mh + M68K_MH_FREE, r->avail);
         }
     }
 

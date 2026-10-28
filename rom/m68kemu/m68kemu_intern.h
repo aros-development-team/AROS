@@ -28,6 +28,18 @@ struct M68KEmuLibBase
 #define M68KEMU_ROM_SIZE        0x080000
 #define M68KEMU_ROM_END         (M68KEMU_ROM_BASE + M68KEMU_ROM_SIZE)
 
+/* the 68k heap's regions, each with its own MemHeader */
+#define RGN_CHIP 0
+#define RGN_FAST 1
+#define M68KEMU_CHIP_END 0x200000
+struct M68KHeapRegion
+{
+    ULONG start, end;           /* address range */
+    ULONG free;                 /* first free MemChunk */
+    ULONG avail;                /* free bytes */
+    ULONG mh;                   /* its 68k MemHeader */
+};
+
 /* a free heap block is an Amiga MemChunk */
 #define FB_NEXT 0
 #define FB_SIZE 4
@@ -67,9 +79,7 @@ struct M68KEmuContext
 
     ULONG   heap_start;
     ULONG   heap_end;
-    ULONG   heap_free;
-    ULONG   heap_avail;         /* free bytes */
-    ULONG   memheader;          /* the 68k MemHeader describing the heap */
+    struct M68KHeapRegion rgn[2];   /* Chip RAM, Fast RAM */
     ULONG   lists_base;         /* ExecBase whose LibList etc. are set up */
     ULONG   cacr;               /* CacheControl() bits the program sees */
     ULONG   pch_stub;           /* 68k routine feeding characters to a hook */
@@ -314,7 +324,8 @@ void   M68KEmu_DestroyContext(struct M68KEmuContext *ctx);
 LONG   M68KEmu_Execute(struct M68KEmuContext *ctx);
 ULONG  M68KEmu_HeapAlloc(struct M68KEmuContext *ctx, ULONG size, ULONG requirements);
 void   M68KEmu_HeapFree(struct M68KEmuContext *ctx, ULONG addr, ULONG size);
-ULONG  M68KEmu_HeapLargest(struct M68KEmuContext *ctx);
+ULONG  M68KEmu_HeapAvail(struct M68KEmuContext *ctx, ULONG reqs);
+struct M68KHeapRegion *M68KEmu_HeapRegion(struct M68KEmuContext *ctx, ULONG addr);
 ULONG  M68KEmu_HeapAllocAbs(struct M68KEmuContext *ctx, ULONG size, ULONG addr);
 void   m68k_publish_base(struct M68KEmuContext *ctx, ULONG base, const char *name);
 ULONG  M68KEmu_LoadHunks(struct M68KEmuContext *ctx, BPTR segList);

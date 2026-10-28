@@ -57,13 +57,23 @@ struct M68KEmuContext *M68KEmu_CreateContext(struct M68KEmuLibBase *base)
     ctx->heap_end   = ctx->stack_bottom;
     heap_size       = ctx->heap_end - ctx->heap_start;
 
-    /* Two free blocks around the Kickstart ROM at $F80000, which holds
-       just the ROM header: programs read the Kickstart version and the
-       ROM size from it */
-    ctx->heap_free  = ctx->heap_start;
-    ctx->heap_avail = heap_size - M68KEMU_ROM_SIZE;
-    m68k_write32(ctx, ctx->heap_start + FB_NEXT, M68KEMU_ROM_END);
-    m68k_write32(ctx, ctx->heap_start + FB_SIZE, M68KEMU_ROM_BASE - ctx->heap_start);
+    /* Two regions, as on an AGA machine: 2 MB of Chip RAM above the
+       library bases, Fast RAM above that. The Fast region leaves out the
+       Kickstart ROM at $F80000, which holds just the ROM header: programs
+       read the Kickstart version and the ROM size from it. */
+    ctx->rgn[RGN_CHIP].start = ctx->heap_start;
+    ctx->rgn[RGN_CHIP].end   = M68KEMU_CHIP_END;
+    ctx->rgn[RGN_CHIP].free  = ctx->heap_start;
+    ctx->rgn[RGN_CHIP].avail = M68KEMU_CHIP_END - ctx->heap_start;
+    m68k_write32(ctx, ctx->heap_start + FB_NEXT, 0);
+    m68k_write32(ctx, ctx->heap_start + FB_SIZE, M68KEMU_CHIP_END - ctx->heap_start);
+
+    ctx->rgn[RGN_FAST].start = M68KEMU_CHIP_END;
+    ctx->rgn[RGN_FAST].end   = ctx->heap_end;
+    ctx->rgn[RGN_FAST].free  = M68KEMU_CHIP_END;
+    ctx->rgn[RGN_FAST].avail = heap_size - (M68KEMU_CHIP_END - ctx->heap_start) - M68KEMU_ROM_SIZE;
+    m68k_write32(ctx, M68KEMU_CHIP_END + FB_NEXT, M68KEMU_ROM_END);
+    m68k_write32(ctx, M68KEMU_CHIP_END + FB_SIZE, M68KEMU_ROM_BASE - M68KEMU_CHIP_END);
     m68k_write32(ctx, M68KEMU_ROM_END + FB_NEXT, 0);
     m68k_write32(ctx, M68KEMU_ROM_END + FB_SIZE, ctx->heap_end - M68KEMU_ROM_END);
 
@@ -89,22 +99,27 @@ void M68KEmu_DestroyContext(struct M68KEmuContext *ctx)
     FreeMem(ctx, sizeof(struct M68KEmuContext));
 }
 
-/* The 68k MemHeader of the heap (see shadow_init_execbase) follows the
-   free list: its first chunk and free byte count */
-static void heap_publish(struct M68KEmuContext *ctx)
+/* Each region's 68k MemHeader (see shadow_init_execbase) follows its free
+   list: the first chunk and the free byte count */
+static void heap_publish(struct M68KEmuContext *ctx, struct M68KHeapRegion *r)
 {
-    if (ctx->memheader)
+    if (r->mh)
     {
-        m68k_write32(ctx, ctx->memheader + M68K_MH_FIRST, ctx->heap_free);
-        m68k_write32(ctx, ctx->memheader + M68K_MH_FREE, ctx->heap_avail);
+        m68k_write32(ctx, r->mh + M68K_MH_FIRST, r->free);
+        m68k_write32(ctx, r->mh + M68K_MH_FREE, r->avail);
     }
 }
 
-ULONG M68KEmu_HeapLargest(struct M68KEmuContext *ctx)
+struct M68KHeapRegion *M68KEmu_HeapRegion(struct M68KEmuContext *ctx, ULONG addr)
+{
+    return &ctx->rgn[addr < M68KEMU_CHIP_END ? RGN_CHIP : RGN_FAST];
+}
+
+static ULONG heap_largest(struct M68KEmuContext *ctx, struct M68KHeapRegion *r)
 {
     ULONG largest = 0, c, n = 0;
 
-    for (c = ctx->heap_free; c && n < 100000; c = m68k_read32(ctx, c + FB_NEXT), n++)
+    for (c = r->free; c && n < 100000; c = m68k_read32(ctx, c + FB_NEXT), n++)
     {
         ULONG bs = m68k_read32(ctx, c + FB_SIZE);
         if (bs > largest) largest = bs;
@@ -112,18 +127,47 @@ ULONG M68KEmu_HeapLargest(struct M68KEmuContext *ctx)
     return largest > M68KEMU_HEAP_HDR ? largest - M68KEMU_HEAP_HDR : 0;
 }
 
+/* AvailMem() for the regions requirements select */
+ULONG M68KEmu_HeapAvail(struct M68KEmuContext *ctx, ULONG reqs)
+{
+    ULONG res = 0;
+    int i;
+
+    for (i = 0; i < 2; i++)
+    {
+        struct M68KHeapRegion *r = &ctx->rgn[i];
+        ULONG v;
+
+        if ((reqs & MEMF_CHIP) && i != RGN_CHIP) continue;
+        if ((reqs & MEMF_FAST) && i != RGN_FAST) continue;
+        if (reqs & MEMF_TOTAL)
+            v = r->end - r->start - (i == RGN_FAST ? M68KEMU_ROM_SIZE : 0);
+        else if (reqs & MEMF_LARGEST)
+            v = heap_largest(ctx, r);
+        else
+            v = r->avail;
+        if (reqs & MEMF_LARGEST)
+            res = v > res ? v : res;
+        else
+            res += v;
+    }
+    return res;
+}
+
 /* AllocAbs(): the block at a fixed address, header included, if that range
    is free; 0 otherwise, as exec answers for memory that is taken or absent */
 ULONG M68KEmu_HeapAllocAbs(struct M68KEmuContext *ctx, ULONG size, ULONG addr)
 {
+    struct M68KHeapRegion *r;
     ULONG blk, end, prev = 0, cur;
 
     if (!size || addr < ctx->heap_start + M68KEMU_HEAP_HDR || addr >= ctx->heap_end)
         return 0;
+    r = M68KEmu_HeapRegion(ctx, addr);
     blk = (addr - M68KEMU_HEAP_HDR) & ~3u;
     end = (addr + size + 3) & ~3u;
 
-    for (cur = ctx->heap_free; cur; prev = cur, cur = m68k_read32(ctx, cur + FB_NEXT))
+    for (cur = r->free; cur; prev = cur, cur = m68k_read32(ctx, cur + FB_NEXT))
     {
         ULONG csize = m68k_read32(ctx, cur + FB_SIZE), cend = cur + csize;
         ULONG next = m68k_read32(ctx, cur + FB_NEXT);
@@ -151,27 +195,22 @@ ULONG M68KEmu_HeapAllocAbs(struct M68KEmuContext *ctx, ULONG size, ULONG addr)
             if (prev)
                 m68k_write32(ctx, prev + FB_NEXT, next);
             else
-                ctx->heap_free = next;
+                r->free = next;
         }
         m68k_write32(ctx, blk, end - blk);
-        ctx->heap_avail -= end - blk;
-        heap_publish(ctx);
+        r->avail -= end - blk;
+        heap_publish(ctx, r);
         return addr;
     }
     return 0;
 }
 
-/* Free blocks are Amiga MemChunks (next, size), so the free list is the
-   MemHeader's chunk list; an allocated block starts with its size. */
-ULONG M68KEmu_HeapAlloc(struct M68KEmuContext *ctx, ULONG size, ULONG requirements)
+/* Free blocks are Amiga MemChunks (next, size), so a region's free list is
+   its MemHeader's chunk list; an allocated block starts with its size. */
+static ULONG heap_alloc_in(struct M68KEmuContext *ctx, struct M68KHeapRegion *r,
+                           ULONG size, ULONG needed, ULONG requirements)
 {
-    ULONG needed, prev, cur;
-
-    size   = (size + 3) & ~3;
-    needed = size + M68KEMU_HEAP_HDR;  /* header */
-
-    prev = 0;
-    cur  = ctx->heap_free;
+    ULONG prev = 0, cur = r->free;
 
     while (cur)
     {
@@ -189,45 +228,54 @@ ULONG M68KEmu_HeapAlloc(struct M68KEmuContext *ctx, ULONG size, ULONG requiremen
                 m68k_write32(ctx, cur + remainder, needed);
                 if (requirements & MEMF_CLEAR)
                     memset(ctx->mem + cur + remainder + M68KEMU_HEAP_HDR, 0, size);
-                ctx->heap_avail -= needed;
-                heap_publish(ctx);
+                r->avail -= needed;
+                heap_publish(ctx, r);
                 return cur + remainder + M68KEMU_HEAP_HDR;
             }
+            /* Use whole block */
+            needed = blk_size;
+            if (prev)
+                m68k_write32(ctx, prev + FB_NEXT, blk_next);
             else
-            {
-                /* Use whole block */
-                needed = blk_size;
-                if (prev)
-                    m68k_write32(ctx, prev + FB_NEXT, blk_next);
-                else
-                    ctx->heap_free = blk_next;
-                m68k_write32(ctx, cur, needed);
-                if (requirements & MEMF_CLEAR)
-                    memset(ctx->mem + cur + M68KEMU_HEAP_HDR, 0, needed - M68KEMU_HEAP_HDR);
-                ctx->heap_avail -= needed;
-                heap_publish(ctx);
-                return cur + M68KEMU_HEAP_HDR;
-            }
+                r->free = blk_next;
+            m68k_write32(ctx, cur, needed);
+            if (requirements & MEMF_CLEAR)
+                memset(ctx->mem + cur + M68KEMU_HEAP_HDR, 0, needed - M68KEMU_HEAP_HDR);
+            r->avail -= needed;
+            heap_publish(ctx, r);
+            return cur + M68KEMU_HEAP_HDR;
         }
         prev = cur;
         cur  = blk_next;
     }
-    {
-        ULONG n = 0, total = 0, largest = 0, c = ctx->heap_free;
-        while (c && n < 100000)
-        {
-            ULONG bs = m68k_read32(ctx, c + FB_SIZE);
-            n++; total += bs; if (bs > largest) largest = bs;
-            c = m68k_read32(ctx, c + FB_NEXT);
-        }
-        bug("[m68kemu] HeapAlloc(%lu) failed: free list head %08lx, %lu blocks, %lu bytes free, largest %lu\n",
-            (unsigned long)size, (unsigned long)ctx->heap_free, (unsigned long)n, (unsigned long)total, (unsigned long)largest);
-    }
+    return 0;
+}
+
+/* MEMF_CHIP comes from Chip RAM only, MEMF_FAST from Fast RAM only; other
+   requests prefer Fast RAM, as exec's MemList order does */
+ULONG M68KEmu_HeapAlloc(struct M68KEmuContext *ctx, ULONG size, ULONG requirements)
+{
+    ULONG needed, a;
+
+    size   = (size + 3) & ~3;
+    needed = size + M68KEMU_HEAP_HDR;  /* header */
+
+    if (!(requirements & MEMF_CHIP) &&
+        (a = heap_alloc_in(ctx, &ctx->rgn[RGN_FAST], size, needed, requirements)))
+        return a;
+    if (!(requirements & MEMF_FAST) &&
+        (a = heap_alloc_in(ctx, &ctx->rgn[RGN_CHIP], size, needed, requirements)))
+        return a;
+    bug("[m68kemu] HeapAlloc(%lu, %08lx) failed: chip %lu free (largest %lu), fast %lu free (largest %lu)\n",
+        (unsigned long)size, (unsigned long)requirements,
+        (unsigned long)ctx->rgn[RGN_CHIP].avail, (unsigned long)heap_largest(ctx, &ctx->rgn[RGN_CHIP]),
+        (unsigned long)ctx->rgn[RGN_FAST].avail, (unsigned long)heap_largest(ctx, &ctx->rgn[RGN_FAST]));
     return 0;
 }
 
 void M68KEmu_HeapFree(struct M68KEmuContext *ctx, ULONG addr, ULONG size)
 {
+    struct M68KHeapRegion *r;
     ULONG blk, blk_size, prev, cur;
 
     if (!addr) return;
@@ -242,13 +290,14 @@ void M68KEmu_HeapFree(struct M68KEmuContext *ctx, ULONG addr, ULONG size)
         if (ctx->trace_calls) bug("[m68kemu] FreeMem of %08lx (size %lu): not heap memory, ignored\n", (unsigned long)addr, (unsigned long)size);
         return;
     }
+    r = M68KEmu_HeapRegion(ctx, blk);
     blk_size = m68k_read32(ctx, blk);
-    if (blk_size < M68KEMU_HEAP_HDR || blk + blk_size > ctx->heap_end)
+    if (blk_size < M68KEMU_HEAP_HDR || blk + blk_size > r->end)
     {
         if (ctx->trace_calls) bug("[m68kemu] FreeMem of %08lx: bad block header %08lx, ignored\n", (unsigned long)addr, (unsigned long)blk_size);
         return;
     }
-    for (cur = ctx->heap_free; cur; cur = m68k_read32(ctx, cur + FB_NEXT))
+    for (cur = r->free; cur; cur = m68k_read32(ctx, cur + FB_NEXT))
     {
         ULONG cs = m68k_read32(ctx, cur + FB_SIZE);
         if (blk >= cur && blk < cur + cs)
@@ -258,11 +307,11 @@ void M68KEmu_HeapFree(struct M68KEmuContext *ctx, ULONG addr, ULONG size)
         }
         if (cur > blk) break;
     }
-    ctx->heap_avail += blk_size;
+    r->avail += blk_size;
 
     /* Insert in address order */
     prev = 0;
-    cur  = ctx->heap_free;
+    cur  = r->free;
     while (cur && cur < blk)
     {
         prev = cur;
@@ -275,7 +324,7 @@ void M68KEmu_HeapFree(struct M68KEmuContext *ctx, ULONG addr, ULONG size)
     if (prev)
         m68k_write32(ctx, prev + FB_NEXT, blk);
     else
-        ctx->heap_free = blk;
+        r->free = blk;
 
     /* Coalesce forward */
     if (cur && (blk + blk_size) == cur)
@@ -296,7 +345,7 @@ void M68KEmu_HeapFree(struct M68KEmuContext *ctx, ULONG addr, ULONG size)
             m68k_write32(ctx, prev + FB_NEXT, m68k_read32(ctx, blk + FB_NEXT));
         }
     }
-    heap_publish(ctx);
+    heap_publish(ctx, r);
 }
 
 /* Copy a seglist LoadSeg() built from a hunk file into containment. dos

@@ -296,7 +296,14 @@ static IPTR thunk_exec_CacheClearU(struct M68KEmuContext *ctx, void *cpu) { retu
 /* -534: TypeOfMem(A1=address) -> D0=attributes */
 static IPTR thunk_exec_TypeOfMem(struct M68KEmuContext *ctx, void *cpu)
 {
-    return MEMF_PUBLIC; /* everything is public in containment */
+    ULONG a = THUNK_A(1);
+    struct M68KHeapRegion *r;
+
+    /* the ROM and anything past the program's memory is not RAM */
+    if (a >= ctx->mem_size || (a >= M68KEMU_ROM_BASE && a < M68KEMU_ROM_END))
+        return 0;
+    r = M68KEmu_HeapRegion(ctx, a);
+    return r->mh ? m68k_read16(ctx, r->mh + M68K_MH_ATTRIBUTES) : MEMF_PUBLIC;
 }
 
 
@@ -591,15 +598,7 @@ static IPTR thunk_exec_FreeVec(struct M68KEmuContext *ctx, void *cpu)
 /* -216: AvailMem(D1=requirements) -> D0=size */
 static IPTR thunk_exec_AvailMem(struct M68KEmuContext *ctx, void *cpu)
 {
-    ULONG req = THUNK_D(1);
-
-    if (req & MEMF_CHIP)
-        return 0;                       /* no chip memory in the emulator */
-    if (req & MEMF_TOTAL)
-        return ctx->heap_end - ctx->heap_start;
-    if (req & MEMF_LARGEST)
-        return M68KEmu_HeapLargest(ctx);
-    return ctx->heap_avail;
+    return M68KEmu_HeapAvail(ctx, THUNK_D(1));
 }
 
 
