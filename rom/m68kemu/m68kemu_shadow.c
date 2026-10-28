@@ -516,6 +516,18 @@ ULONG shadow_init_execbase(struct M68KEmuContext *ctx, ULONG m68k_base, void *na
     m68k_write16(ctx, m68k_base + M68K_EXECBASE_LIBVERSION, lib->lib_Version);
     m68k_write16(ctx, m68k_base + M68K_EXECBASE_LIBREVISION, lib->lib_Revision);
 
+    /* exec's ID string lives in the Kickstart ROM: programs find the ROM
+       (and its version) from where lib_IdString points */
+    if (lib->lib_IdString)
+    {
+        ULONG id = M68KEMU_ROM_BASE + 0x100;
+        ULONG len = strnlen((const char *)lib->lib_IdString, 79);
+
+        memcpy(ctx->mem + id, lib->lib_IdString, len);
+        ctx->mem[id + len] = 0;
+        m68k_write32(ctx, m68k_base + 24, id);
+    }
+
     /* MemList: one MemHeader for the heap the program allocates from, its
        chunks the heap's free list */
     {

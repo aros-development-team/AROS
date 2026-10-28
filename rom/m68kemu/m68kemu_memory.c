@@ -56,11 +56,22 @@ struct M68KEmuContext *M68KEmu_CreateContext(struct M68KEmuLibBase *base)
     ctx->heap_end   = ctx->stack_bottom;
     heap_size       = ctx->heap_end - ctx->heap_start;
 
-    /* One big free block */
+    /* Two free blocks around the Kickstart ROM at $F80000, which holds
+       just the ROM header: programs read the Kickstart version and the
+       ROM size from it */
     ctx->heap_free  = ctx->heap_start;
-    ctx->heap_avail = heap_size;
-    m68k_write32(ctx, ctx->heap_start + FB_NEXT, 0);
-    m68k_write32(ctx, ctx->heap_start + FB_SIZE, heap_size);
+    ctx->heap_avail = heap_size - M68KEMU_ROM_SIZE;
+    m68k_write32(ctx, ctx->heap_start + FB_NEXT, M68KEMU_ROM_END);
+    m68k_write32(ctx, ctx->heap_start + FB_SIZE, M68KEMU_ROM_BASE - ctx->heap_start);
+    m68k_write32(ctx, M68KEMU_ROM_END + FB_NEXT, 0);
+    m68k_write32(ctx, M68KEMU_ROM_END + FB_SIZE, ctx->heap_end - M68KEMU_ROM_END);
+
+    m68k_write32(ctx, M68KEMU_ROM_BASE + 0, 0x11144ef9);
+    m68k_write32(ctx, M68KEMU_ROM_BASE + 4, 0x00f80002);
+    m68k_write32(ctx, M68KEMU_ROM_BASE + 8, 0x0000ffff);
+    m68k_write16(ctx, M68KEMU_ROM_BASE + 12, SysBase->LibNode.lib_Version);
+    m68k_write16(ctx, M68KEMU_ROM_BASE + 14, SysBase->LibNode.lib_Revision);
+    m68k_write32(ctx, M68KEMU_ROM_END - 20, M68KEMU_ROM_SIZE);     /* ROM size, as at $FFFFEC */
 
     return ctx;
 }
@@ -175,7 +186,8 @@ void M68KEmu_HeapFree(struct M68KEmuContext *ctx, ULONG addr, ULONG size)
     /* Only a block this heap handed out may come back: an address outside
        the heap, a size that runs past it, or a block already on the free
        list would wreck the list (the program's FreeMem() takes any pointer) */
-    if (addr < ctx->heap_start + M68KEMU_HEAP_HDR || addr >= ctx->heap_end)
+    if (addr < ctx->heap_start + M68KEMU_HEAP_HDR || addr >= ctx->heap_end ||
+        (addr >= M68KEMU_ROM_BASE && addr < M68KEMU_ROM_END + M68KEMU_HEAP_HDR))
     {
         if (ctx->trace_calls) bug("[m68kemu] FreeMem of %08lx (size %lu): not heap memory, ignored\n", (unsigned long)addr, (unsigned long)size);
         return;

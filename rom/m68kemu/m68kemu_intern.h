@@ -24,6 +24,9 @@ struct M68KEmuLibBase
 #define M68KEMU_LIBBASE_SIZE    0x010000
 #define M68KEMU_HEAP_BASE       0x010400
 #define M68KEMU_STACK_SIZE      (64 * 1024)
+#define M68KEMU_ROM_BASE        0xF80000
+#define M68KEMU_ROM_SIZE        0x080000
+#define M68KEMU_ROM_END         (M68KEMU_ROM_BASE + M68KEMU_ROM_SIZE)
 
 /* a free heap block is an Amiga MemChunk */
 #define FB_NEXT 0
