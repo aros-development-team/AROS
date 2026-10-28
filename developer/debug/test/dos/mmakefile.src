@@ -9,6 +9,7 @@ EXEDIR          := $(AROS_TESTS)/dos
 
 FILES := \
     addpart \
+    auxstartup \
     clicreatenewproc \
     consolemodes \
     doslist \
