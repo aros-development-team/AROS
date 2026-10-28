@@ -36,6 +36,8 @@ struct M68KEmuContext *M68KEmu_CreateContext(struct M68KEmuLibBase *base)
         return NULL;
 
     ctx = (struct M68KEmuContext *)AllocMem(sizeof(struct M68KEmuContext), MEMF_CLEAR);
+    if (ctx)
+        m68k_gil_init(ctx);
     if (!ctx)
     {
         FreeMem(mem, M68KEMU_MEM_SIZE);

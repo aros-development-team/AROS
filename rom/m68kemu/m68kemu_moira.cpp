@@ -753,6 +753,56 @@ ULONG M68KEmu_Call68k(struct M68KEmuContext *ctx, void *outer_cpu, ULONG entry, 
     return d0;
 }
 
+/* a process of the program: its entry runs on a CPU of its own until it
+   returns, taking turns with the program's other tasks */
+ULONG M68KEmu_RunTask(struct M68KEmuContext *ctx, ULONG entry, ULONG stacktop, const ULONG regs[15])
+{
+    void *m = AllocVec(sizeof(AROSMoira), MEMF_ANY | MEMF_CLEAR);
+    AROSMoira *cp;
+    ULONG sp = (stacktop - 16) & ~3u, d0;
+    unsigned long n = 0;
+
+    if (!m || !entry || entry + 4 > ctx->mem_size)
+    {
+        FreeVec(m);
+        return 0;
+    }
+    cp = new (m) AROSMoira(ctx);
+    AROSMoira &c = *cp;
+    c.setModel(Model::M68LC040);
+    c.reset();
+    c.setSR(0x2000);
+    for (int i = 0; i < 8; i++)
+        c.setD(i, regs[i]);
+    for (int i = 0; i < 7; i++)
+        c.setA(i, regs[8 + i]);
+    sp -= 4;
+    m68k_write32(ctx, sp, NEST_SENTINEL);
+    c.setA(7, sp);
+    c.setPC0(entry);
+    c.setPC(entry);
+    c.setIRD(m68k_read16(ctx, entry));
+    c.setIRC(m68k_read16(ctx, entry + 2));
+    c.nested = true;
+    while (!c.nested_done && ctx->running)
+    {
+        ULONG pc = c.getPC0();
+        if (pc >= ctx->mem_size)
+        {
+            m68k_log(ctx, "%s: a process jumped to %08lx outside its memory",
+                     ctx->program_name[0] ? ctx->program_name : "68k program", (unsigned long)pc);
+            break;
+        }
+        c.execute();
+        if ((++n & 0xFFFF) == 0)
+            m68k_gil_yield(ctx);
+    }
+    d0 = c.getD(0);
+    c.~AROSMoira();
+    FreeVec(m);
+    return d0;
+}
+
 void M68KEmu_FreeNestCpus(struct M68KEmuContext *ctx)
 {
     for (int i = 0; i < M68KEMU_MAX_NEST; i++)
@@ -852,6 +902,7 @@ LONG M68KEmu_Execute(struct M68KEmuContext *ctx)
     ctx->exit_code = 0;
     ctx->low_guard = TRUE;
     ctx->emu_task = FindTask(NULL);
+    m68k_gil_obtain(ctx);
 
     if (ctx->trace_calls) bug("[m68kemu] TRACE core " __DATE__ " " __TIME__ " start entry %08x sp %08x argptr %08x argsize %u sysbase %08x\n",
         (unsigned)ctx->entry_point, (unsigned)sp, (unsigned)ctx->m68k_argptr,
@@ -928,6 +979,8 @@ LONG M68KEmu_Execute(struct M68KEmuContext *ctx)
             }
             ctx->icount_lo = (ULONG)icount;
             cpu.execute();
+            if ((icount & 0xFFFF) == 0)
+                m68k_gil_yield(ctx);
             if ((++icount & 0xFFFFF) == 0)
             {
                 static ULONG lastpc = 0xFFFFFFFF;
@@ -943,6 +996,8 @@ LONG M68KEmu_Execute(struct M68KEmuContext *ctx)
     }
 
     ctx->exit_code = (LONG)cpu.getD(0);
+    m68k_wait_children(ctx);
+    m68k_gil_release(ctx);
     if (ctx->trace_end)
     {
         bug("[m68kemu] %s ended with D0 %ld after %lu library calls:\n",

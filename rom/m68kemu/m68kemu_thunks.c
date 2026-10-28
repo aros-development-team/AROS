@@ -258,18 +258,14 @@ static IPTR thunk_exec_FreeMem(struct M68KEmuContext *ctx, void *cpu)
 }
 
 /* -294: FindTask(A1=name) -> D0=task */
-static IPTR thunk_exec_FindTask(struct M68KEmuContext *ctx, void *cpu)
+/* the m68k Process standing in for a native task, made on first sight */
+ULONG m68k_process_of(struct M68KEmuContext *ctx, struct Task *task)
 {
-    CONST_STRPTR name = (CONST_STRPTR)THUNK_PTR(1);
-    struct Task *task = FindTask(name);
-    if (!task) return 0;
-    /* Allocate a Process-sized shadow (228 bytes m68k) so pr_CLI is accessible.
-       Sync Task fields, then set Process-specific fields manually. */
     const struct M68KStructLayout *layout = shadow_find_layout("Task");
-    if (!layout) return 0;
-    /* the program's own Process is ExecBase->ThisTask, whichever native
-       process the emulator runs it in */
-    if (!name && ctx->m68k_proc)
+
+    if (!task || !layout) return 0;
+    /* the program's own Process is ExecBase->ThisTask */
+    if (task == ctx->emu_task && ctx->m68k_proc)
     {
         for (UWORD i = 0; i < ctx->num_shadows; i++)
             if (ctx->shadow_map[i].m68k_addr == ctx->m68k_proc)
@@ -288,30 +284,22 @@ static IPTR thunk_exec_FindTask(struct M68KEmuContext *ctx, void *cpu)
         }
     ULONG m68k = M68KEmu_HeapAlloc(ctx, M68K_SIZEOF_PROCESS, 0); /* m68k Process size */
     if (!m68k) return 0;
+    memset(ctx->mem + m68k, 0, M68K_SIZEOF_PROCESS);
     shadow_register(ctx, m68k, task, layout->shadow_type);
     shadow_sync(ctx, layout, m68k, task);
     m68k_task_stack(ctx, m68k, task);
-    /* If this is a Process with a CLI, build a fake m68k CLI struct
-       and set pr_Arguments so SAS/C startup code can read args. */
     if (task->tc_Node.ln_Type == NT_PROCESS)
     {
         struct Process *proc = (struct Process *)task;
         if (proc->pr_CLI)
         {
-            /* Allocate m68k CLI struct (64 bytes) */
             ULONG m68k_cli = M68KEmu_HeapAlloc(ctx, M68K_SIZEOF_CLI, 0);
             if (m68k_cli)
             {
-                /* pr_CLI is a BPTR (address >> 2) */
+                memset(ctx->mem + m68k_cli, 0, M68K_SIZEOF_CLI);
                 m68k_write32(ctx, m68k + M68K_PR_CLI, m68k_cli >> 2);
-
-                /* cli_DefaultStack */
                 m68k_write32(ctx, m68k_cli + M68K_CLI_DEFAULTSTACK, 4096);
-
-                /* cli_Module — must be non-zero for CLI startup */
                 m68k_write32(ctx, m68k_cli + M68K_CLI_MODULE, ctx->seg_start ? (ctx->seg_start >> 2) : 1);
-
-                /* cli_CommandName — BPTR to BCPL string */
                 if (ctx->program_name[0])
                 {
                     ULONG len = (ULONG)strnlen(ctx->program_name, sizeof(ctx->program_name) - 1);
@@ -325,18 +313,24 @@ static IPTR thunk_exec_FindTask(struct M68KEmuContext *ctx, void *cpu)
                 }
             }
         }
-        /* pr_Arguments — pointer to arg string in containment */
-        if (ctx->m68k_argptr)
+        if (ctx->m68k_argptr && task == ctx->emu_task)
             m68k_write32(ctx, m68k + M68K_PR_ARGUMENTS, ctx->m68k_argptr);
     }
-    return (IPTR)m68k;
+    return m68k;
+}
+
+/* -294: FindTask(A1=name) -> D0=task */
+static IPTR thunk_exec_FindTask(struct M68KEmuContext *ctx, void *cpu)
+{
+    CONST_STRPTR name = (CONST_STRPTR)THUNK_PTR(1);
+    return m68k_process_of(ctx, FindTask(name));
 }
 
 /* -132: Forbid() */
-static IPTR thunk_exec_Forbid(struct M68KEmuContext *ctx, void *cpu) { return 0; }
+static IPTR thunk_exec_Forbid(struct M68KEmuContext *ctx, void *cpu) { ctx->forbid++; return 0; }
 
 /* -138: Permit() */
-static IPTR thunk_exec_Permit(struct M68KEmuContext *ctx, void *cpu) { return 0; }
+static IPTR thunk_exec_Permit(struct M68KEmuContext *ctx, void *cpu) { if (ctx->forbid > 0) ctx->forbid--; return 0; }
 
 /* -624: CopyMem(A0=source, A1=dest, D0=size) */
 static IPTR thunk_exec_CopyMem(struct M68KEmuContext *ctx, void *cpu)
@@ -1072,7 +1066,10 @@ static IPTR thunk_exec_WaitPort(struct M68KEmuContext *ctx, void *cpu)
     if (ctx->trace_calls) bug("[m68kemu] WaitPort: native=%p\n", port);
     if (port)
     {
-        struct Message *m = WaitPort(port);
+        struct Message *m;
+        m68k_gil_release(ctx);
+        m = WaitPort(port);
+        m68k_gil_obtain(ctx);
         if (ctx->trace_calls) bug("[m68kemu] WaitPort: woke with %p (sigbit %d task %p)\n", m, port->mp_SigBit, port->mp_SigTask);
         return m ? (IPTR)mp : 0;        /* non-zero; the program then calls GetMsg */
     }
@@ -1156,6 +1153,17 @@ static IPTR thunk_exec_ReplyMsg(struct M68KEmuContext *ctx, void *cpu)
         shadow_destroy(ctx, notify ? nml : shadow_find_layout("IntuiMessage"), m_msg);
     }
     return 0;
+}
+
+/* exec -318: Wait(D0=signalSet): the program's other tasks run meanwhile */
+static IPTR thunk_exec_Wait_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG sigs = THUNK_D(0), r;
+
+    m68k_gil_release(ctx);
+    r = Wait(sigs);
+    m68k_gil_obtain(ctx);
+    return r;
 }
 
 /* ── DOS notification: the request the handler sees is a native copy ──
@@ -1568,6 +1576,7 @@ const struct M68KThunkEntry m68kemu_thunks_exec[] = {
     { 204, thunk_exec_AllocAbs_m },
     { 192, thunk_exec_Deallocate_m },
     { 384, thunk_exec_WaitPort },
+    { 318, thunk_exec_Wait_m },
     { 372, thunk_exec_GetMsg },
     { 378, thunk_exec_ReplyMsg },
     { 306, thunk_exec_SetSignal },
@@ -2528,8 +2537,6 @@ static IPTR thunk_dos_RunCommand(struct M68KEmuContext *ctx, void *cpu)
                       (CONST_STRPTR)m68k_to_host(ctx, THUNK_D(3)), THUNK_D(4));
 }
 
-static IPTR thunk_dos_RunProcess(struct M68KEmuContext *ctx, void *cpu) { return 0; }
-
 /* dos -558 SetCurrentDirName, -570 SetProgramName, -582 SetPrompt (D1=name):
    a NULL name reads as the empty string, as address 0 does on an Amiga */
 static CONST_STRPTR name_arg(struct M68KEmuContext *ctx, ULONG a)
@@ -2540,13 +2547,15 @@ static IPTR thunk_dos_SetCurrentDirName_m(struct M68KEmuContext *ctx, void *cpu)
 static IPTR thunk_dos_SetProgramName_m(struct M68KEmuContext *ctx, void *cpu)    { return SetProgramName(name_arg(ctx, THUNK_D(1))); }
 static IPTR thunk_dos_SetPrompt_m(struct M68KEmuContext *ctx, void *cpu)         { return SetPrompt(name_arg(ctx, THUNK_D(1))); }
 
-static IPTR thunk_dos_CreateNewProc(struct M68KEmuContext *ctx, void *cpu)
+/* dos -198: Delay(D1=ticks): the program's other tasks run meanwhile */
+static IPTR thunk_dos_Delay_m(struct M68KEmuContext *ctx, void *cpu)
 {
-    struct TagItem *tags = m68k_to_native_taglist(ctx, THUNK_D(1));
-    struct Process *p = CreateNewProc(tags);
-    if (tags) FreeVec(tags);
-    if (!p) return 0;
-    return shadow_create_by_name(ctx, "Process", p);
+    ULONG ticks = THUNK_D(1);
+
+    m68k_gil_release(ctx);
+    Delay(ticks);
+    m68k_gil_obtain(ctx);
+    return 0;
 }
 
 static IPTR thunk_dos_CreateProc(struct M68KEmuContext *ctx, void *cpu)
@@ -2914,11 +2923,12 @@ const struct M68KThunkEntry m68kemu_thunks_dos[] = {
     { 222, thunk_dos_Execute },
     { 604, thunk_dos_SystemTagList },
     { 504, thunk_dos_RunCommand },
-    { 498, thunk_dos_RunProcess },
-    { 492, thunk_dos_CreateNewProc },
+    { 498, m68k_dos_CreateNewProc },
+    { 198, thunk_dos_Delay_m },
     { 558, thunk_dos_SetCurrentDirName_m },
     { 570, thunk_dos_SetProgramName_m },
     { 582, thunk_dos_SetPrompt_m },
+    { 492, m68k_dos_Cli },
     { 138, thunk_dos_CreateProc },
     { 930, thunk_dos_CliInitNewcli },
     { 936, thunk_dos_CliInitRun },

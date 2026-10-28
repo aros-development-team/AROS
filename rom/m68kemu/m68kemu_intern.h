@@ -8,6 +8,7 @@
 
 #include <exec/types.h>
 #include <exec/libraries.h>
+#include <exec/semaphores.h>
 #include <dos/bptr.h>
 
 struct M68KEmuLibBase
@@ -184,6 +185,9 @@ struct M68KEmuContext
     BOOL    trace_end;          /* M68KEMU_TRACE=end: the last library calls, printed when the program ends */
     struct { const char *lib; ULONG lvo, d0, d1, a0, a1, ret, from; } callring[2048];
     ULONG   callring_pos;
+    struct SignalSemaphore gil;  /* held by the task whose CPU runs the program's code */
+    LONG    forbid;             /* Forbid() nesting of the task holding it */
+    LONG    num_children;       /* the program's processes still running */
     struct { CONST_STRPTR native; ULONG m68k, size; } strcache[64];   /* native strings given to the program */
     ULONG   strcache_pos;
     struct { ULONG m68k, chain; struct AnchorPath *native; } anchors[16];   /* MatchFirst..MatchEnd */
@@ -280,6 +284,14 @@ ULONG M68KEmu_Call68k(struct M68KEmuContext *ctx, void *outer_cpu, ULONG entry, 
 void  M68KEmu_FreeNestCpus(struct M68KEmuContext *ctx);
 void  m68k_restore_windowptr(struct M68KEmuContext *ctx);
 void  m68k_dump_callring(struct M68KEmuContext *ctx);
+/* m68kemu_tasks.c */
+void  m68k_gil_init(struct M68KEmuContext *ctx);
+void  m68k_gil_obtain(struct M68KEmuContext *ctx);
+void  m68k_gil_release(struct M68KEmuContext *ctx);
+void  m68k_gil_yield(struct M68KEmuContext *ctx);
+void  m68k_wait_children(struct M68KEmuContext *ctx);
+ULONG m68k_process_of(struct M68KEmuContext *ctx, struct Task *task);
+ULONG M68KEmu_RunTask(struct M68KEmuContext *ctx, ULONG entry, ULONG stacktop, const ULONG regs[15]);
 ULONG m68k_ioreq_of(struct M68KEmuContext *ctx, APTR native);
 void  m68k_ioreq_out(struct M68KEmuContext *ctx, APTR native);
 void  m68k_watchdog_stop(struct M68KEmuContext *ctx);
