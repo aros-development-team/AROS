@@ -332,6 +332,8 @@ int main(void)
                   StackSize     = 8192;
                   Priority      = 5;
                   GlobalVec     = -1;
+                  ForceLoad     = 0;
+                  Activate      = 0;
                   HandlerString = NULL;
                   DeviceString  = NULL;
                   StartupString = NULL;
@@ -666,6 +668,8 @@ void InitParams(IPTR *params)
   StackSize              = 8192;
   Priority               = 5;
   GlobalVec              = -1;
+  ForceLoad              = 0;
+  Activate               = 0;
   HandlerString          = NULL;
   DeviceString           = NULL;
   StartupString          = NULL;
