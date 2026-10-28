@@ -336,8 +336,8 @@ static const struct nvdec_codec nvdec_codecs[] =
     { VAProfileH264High,                &HIDDNouveauDecodeH264Ops, 4096, 4096, 16, FMT_8BIT, FALSE },
     { VAProfileMPEG2Simple,             &HIDDNouveauDecodeMPEG2Ops, 4096, 4096, 3, FMT_8BIT, FALSE },
     { VAProfileMPEG2Main,               &HIDDNouveauDecodeMPEG2Ops, 4096, 4096, 3, FMT_8BIT, FALSE },
-    { VAProfileVC1Simple,               &HIDDNouveauDecodeVC1Ops, 4096, 4096, 3, FMT_8BIT, TRUE },
-    { VAProfileVC1Main,                 &HIDDNouveauDecodeVC1Ops, 4096, 4096, 3, FMT_8BIT, TRUE },
+    { VAProfileVC1Simple,               &HIDDNouveauDecodeVC1Ops, 4096, 4096, 3, FMT_8BIT, FALSE },
+    { VAProfileVC1Main,                 &HIDDNouveauDecodeVC1Ops, 4096, 4096, 3, FMT_8BIT, FALSE },
     { VAProfileVP8Version0_3,           &HIDDNouveauDecodeVP8Ops, 4096, 4096, 4, FMT_8BIT, FALSE },
     /* VP9: 8 reference slots */
     { VAProfileVP9Profile0,             &HIDDNouveauDecodeVP9Ops, 8192, 8192, 8, FMT_8BIT, FALSE },

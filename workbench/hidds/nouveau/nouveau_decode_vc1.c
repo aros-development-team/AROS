@@ -322,9 +322,10 @@ static BOOL vc1_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFr
     pic->FrameStride[1] = dec->pitch;
     pic->luma_bot_offset = (dec->pitch * (((dec->height + 127) & ~127UL) / 2)) >> 8;
     pic->chroma_bot_offset = (dec->pitch * (((dec->height + 127) & ~127UL) / 4)) >> 8;
-    pic->output_memory_layout = 1;
-    pic->ref_memory_layout[0] = 1;
-    pic->ref_memory_layout[1] = 1;
+    /* frame layout (0): 1 puts the fields in separate halves (NVIDIA's driver re-weaves them, we show the picture as is) */
+    pic->output_memory_layout = 0;
+    pic->ref_memory_layout[0] = 0;
+    pic->ref_memory_layout[1] = 0;
 
     nouveau_staging_to_gpu(f->picsetup->map, NOUVEAU_DECODE_PICSETUP_SIZE);
     nouveau_staging_to_gpu(f->bitstream->map, dec->cur.bitstreamlen);
