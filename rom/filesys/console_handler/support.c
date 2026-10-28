@@ -1392,11 +1392,19 @@ BOOL answer_write_request(struct filehandle *fh, struct DosPacket *dp)
     return TRUE;
 }
 
-void answer_read_request(struct filehandle *fh, struct DosPacket *dp, ULONG dp_Arg3)
+ULONG answer_read_request(struct filehandle *fh, struct DosPacket *dp, ULONG dp_Arg3)
 {
     ULONG readlen;
 
     readlen = (fh->inputsize < dp_Arg3) ? fh->inputsize : dp_Arg3;
+
+    if (!(fh->flags & FHFLG_RAW) && (fh->devcaps & CONCAPF_LINEREADS))
+    {
+        UBYTE *newline = memchr(fh->inputbuffer, '\n', readlen);
+
+        if (newline)
+            readlen = newline - fh->inputbuffer + 1;
+    }
 
     CopyMem(fh->inputbuffer, (UBYTE*) dp->dp_Arg2, readlen);
     CopyMem(fh->inputbuffer + readlen, fh->inputbuffer, fh->inputsize - readlen);
@@ -1406,6 +1414,8 @@ void answer_read_request(struct filehandle *fh, struct DosPacket *dp, ULONG dp_A
     fh->inputstart -= readlen;
 
     replypkt2(dp, readlen, 0);
+
+    return readlen;
 }
 
 void HandlePendingReads(struct filehandle *fh)
@@ -1442,7 +1452,7 @@ void con_read(struct filehandle *fh, struct DosPacket *dp)
     {
         ULONG readlen = (fh->canreadsize < dp->dp_Arg3) ? fh->canreadsize : dp->dp_Arg3;
 
-        answer_read_request(fh, dp, readlen);
+        readlen = answer_read_request(fh, dp, readlen);
 
         fh->canreadsize -= readlen;
         if (fh->canreadsize == 0)
