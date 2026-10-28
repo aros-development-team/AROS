@@ -148,7 +148,7 @@ BOOL CmdSetOwner(struct Handler *handler, struct Lock *lock, const TEXT *name, U
     LONG error = 0;
     struct Object *object;
 
-    object = GetHardObject(handler, lock, name, NULL);
+    object = GetObjectNoFollow(handler, lock, name, NULL);
     if (object == NULL)
         error = IoErr();
     else if (handler->locked)

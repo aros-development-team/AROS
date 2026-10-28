@@ -417,6 +417,7 @@ VOID DeleteObject(struct Handler *handler, struct Object *object)
 
       SetString(handler, (TEXT **)&((struct Node *)object)->ln_Name, NULL);
       SetString(handler, &object->comment, NULL);
+      SetString(handler, &object->soft_link_target, NULL);
       handler->block_count -= object->block_count;
       FreePooled(handler->clear_pool, object, sizeof(struct Object));
       if(object_type == ST_LINKDIR)
@@ -474,6 +475,72 @@ struct Object *GetHardObject(struct Handler *handler, struct Lock *lock,
    object = GetObject(handler, lock, name, parent, NULL);
    if(IoErr() == ERROR_IS_SOFT_LINK)
       object = NULL;
+
+   return object;
+}
+
+
+/****i* ram.handler/GetObjectNoFollow **************************************
+*
+*   NAME
+*	GetObjectNoFollow -- Find an object given a lock and path, taking a
+*	    soft link as the last part as the object itself.
+*
+*   SYNOPSIS
+*	object = GetObjectNoFollow(handler, lock, name,
+*	    parent)
+*
+*	struct Object *GetObjectNoFollow(struct Handler *, struct Lock *,
+*	    TEXT *, struct Object **);
+*
+*   FUNCTION
+*	Looks for the object corresponding to the specified lock and path
+*	combination. A soft link as the last part of the path is returned
+*	like any other object, so that calls acting on a name (rename, or a
+*	check for an existing name) can see it. If an earlier part of the
+*	path is a soft link, NULL is returned and ERROR_IS_SOFT_LINK is set,
+*	as for GetHardObject().
+*
+*   INPUTS
+*	lock - .
+*	name - .
+*	parent - parent directory will be returned here (will be NULL if
+*	    path is invalid or contains a soft link before its last part).
+*
+*   RESULT
+*	object - The located object, or NULL if not found.
+*
+*   EXAMPLE
+*
+*   NOTES
+*
+*   BUGS
+*
+*   SEE ALSO
+*	GetHardObject()
+*
+****************************************************************************
+*
+*/
+
+struct Object *GetObjectNoFollow(struct Handler *handler, struct Lock *lock,
+   const TEXT *name, struct Object **parent)
+{
+   struct Object *object;
+   LONG pos = -1;
+
+   object = GetObject(handler, lock, name, parent, &pos);
+   if(IoErr() == ERROR_IS_SOFT_LINK)
+   {
+      if(pos == -1)
+      {
+         if(parent != NULL)
+            *parent = object->parent;
+         SetIoErr(0);
+      }
+      else
+         object = NULL;
+   }
 
    return object;
 }
@@ -1141,7 +1208,7 @@ BOOL ExamineObject(struct Handler *handler, struct Object *object,
       info->fib_FileName[0] = StrSize(s) - 1;
       CopyMem(s, &info->fib_FileName[1], info->fib_FileName[0]);
       s = object->comment;
-      if(s != NULL && ((struct Node *)object)->ln_Pri != ST_SOFTLINK) {
+      if(s != NULL) {
          info->fib_Comment[0] = StrSize(s) - 1;
          CopyMem(s, &info->fib_Comment[1], info->fib_Comment[0]);
       } else
