@@ -332,8 +332,6 @@ int main(void)
                   StackSize     = 8192;
                   Priority      = 5;
                   GlobalVec     = -1;
-                  ForceLoad     = 0;
-                  Activate      = 0;
                   HandlerString = NULL;
                   DeviceString  = NULL;
                   StartupString = NULL;
@@ -670,9 +668,13 @@ void InitParams(IPTR *params)
   GlobalVec              = -1;
   ForceLoad              = 0;
   Activate               = 0;
+  StartupValue           = 0;
   HandlerString          = NULL;
   DeviceString           = NULL;
   StartupString          = NULL;
+  IsEHandler             = TRUE;
+  IsFilesystem           = TRUE;
+  SetMem(&flagargs, 0, sizeof(flagargs));
 }
 
 void FreeStuff(void)
