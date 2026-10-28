@@ -57,7 +57,7 @@ void FreeGE(FT_GlyphEngine *ge)
     if (ge->face_established)
         FT_Done_Face( ge->face );
 
-    FT_Done_Library( ge->engine );
+    FT_Done_FreeType( ge->engine );
 
     FreeVec(ge);
 }
