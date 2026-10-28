@@ -122,6 +122,7 @@ static ULONG HIDDNouveauBitMapFourCC(struct HIDDNouveauBitMapData *bmdata)
     case vHidd_VideoFmt_YUYV:   return DRM_FORMAT_YUYV;
     case vHidd_VideoFmt_UYVY:   return DRM_FORMAT_UYVY;
     case vHidd_VideoFmt_NV12:   return DRM_FORMAT_NV12;
+    case vHidd_VideoFmt_P010:   return DRM_FORMAT_P010;
     case vHidd_VideoFmt_I420:   return DRM_FORMAT_YUV420;
     case vHidd_VideoFmt_None:   break;
     default:                    return 0;
@@ -151,7 +152,7 @@ static BOOL HIDDNouveauAddFB(OOP_Class *cl, struct HIDDNouveauBitMapData *bmdata
     LONG ret = -1;
 
     /* Planar video: the chroma planes are in the same buffer object */
-    if (bmdata->videoformat == vHidd_VideoFmt_NV12)
+    if ((bmdata->videoformat == vHidd_VideoFmt_NV12) || (bmdata->videoformat == vHidd_VideoFmt_P010))
     {
         handles[1] = bo->handle;
         pitches[1] = bmdata->pitch;
@@ -352,6 +353,7 @@ VOID HIDDNouveauEnumPlanes(LONG fd, struct HIDDNouveauData *gfxdata)
                     case DRM_FORMAT_YUYV:     fmts |= KMSFMT_YUYV;     break;
                     case DRM_FORMAT_UYVY:     fmts |= KMSFMT_UYVY;     break;
                     case DRM_FORMAT_NV12:     fmts |= KMSFMT_NV12;     break;
+                    case DRM_FORMAT_P010:     fmts |= KMSFMT_P010;     break;
                     case DRM_FORMAT_YUV420:   fmts |= KMSFMT_YUV420;   break;
                     }
                 }
@@ -485,13 +487,14 @@ static ULONG HIDDNouveauPlaneVideoFmts(struct HIDDNouveauData *gfxdata, ULONG fm
         if (!(yuv & 0x1))
             fmts &= ~(KMSFMT_YUYV | KMSFMT_UYVY);
         if (!(yuv & 0x2))
-            fmts &= ~KMSFMT_NV12;
+            fmts &= ~(KMSFMT_NV12 | KMSFMT_P010);   /* same semi-planar usage bound */
         if (!(yuv & 0x4))
             fmts &= ~KMSFMT_YUV420;
     }
     if (fmts & KMSFMT_YUYV)   m |= (1UL << vHidd_VideoFmt_YUYV);
     if (fmts & KMSFMT_UYVY)   m |= (1UL << vHidd_VideoFmt_UYVY);
     if (fmts & KMSFMT_NV12)   m |= (1UL << vHidd_VideoFmt_NV12);
+    if (fmts & KMSFMT_P010)   m |= (1UL << vHidd_VideoFmt_P010);
     if (fmts & KMSFMT_YUV420) m |= (1UL << vHidd_VideoFmt_I420);
     return m;
 }

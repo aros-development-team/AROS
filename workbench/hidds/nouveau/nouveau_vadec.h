@@ -221,4 +221,56 @@ typedef struct _VASliceParameterBufferH264 {
     uint32_t                va_reserved[VA_PADDING_LOW];
 } VASliceParameterBufferH264;
 
+
+/* MPEG-2 (va.h) */
+typedef struct _VAPictureParameterBufferMPEG2 {
+    uint16_t horizontal_size;
+    uint16_t vertical_size;
+    VASurfaceID forward_reference_picture;
+    VASurfaceID backward_reference_picture;
+    int32_t picture_coding_type;
+    int32_t f_code;                 /* fwd h, fwd v, bwd h, bwd v: 4 bits each, MSB first */
+    union {
+        struct {
+            uint32_t intra_dc_precision         : 2;
+            uint32_t picture_structure          : 2;
+            uint32_t top_field_first            : 1;
+            uint32_t frame_pred_frame_dct       : 1;
+            uint32_t concealment_motion_vectors : 1;
+            uint32_t q_scale_type               : 1;
+            uint32_t intra_vlc_format           : 1;
+            uint32_t alternate_scan             : 1;
+            uint32_t repeat_first_field         : 1;
+            uint32_t progressive_frame          : 1;
+            uint32_t is_first_field             : 1;
+        } bits;
+        uint32_t value;
+    } picture_coding_extension;
+    uint32_t                va_reserved[VA_PADDING_LOW];
+} VAPictureParameterBufferMPEG2;
+
+typedef struct _VAIQMatrixBufferMPEG2 {
+    int32_t load_intra_quantiser_matrix;
+    int32_t load_non_intra_quantiser_matrix;
+    int32_t load_chroma_intra_quantiser_matrix;
+    int32_t load_chroma_non_intra_quantiser_matrix;
+    uint8_t intra_quantiser_matrix[64];         /* zig-zag scan order */
+    uint8_t non_intra_quantiser_matrix[64];
+    uint8_t chroma_intra_quantiser_matrix[64];
+    uint8_t chroma_non_intra_quantiser_matrix[64];
+    uint32_t                va_reserved[VA_PADDING_LOW];
+} VAIQMatrixBufferMPEG2;
+
+typedef struct _VASliceParameterBufferMPEG2 {
+    uint32_t slice_data_size;
+    uint32_t slice_data_offset;
+    uint32_t slice_data_flag;
+    uint32_t macroblock_offset;
+    uint32_t slice_horizontal_position;
+    uint32_t slice_vertical_position;
+    int32_t quantiser_scale_code;
+    int32_t intra_slice_flag;
+    uint32_t                va_reserved[VA_PADDING_LOW];
+} VASliceParameterBufferMPEG2;
+
 #endif /* NOUVEAU_VADEC_H */

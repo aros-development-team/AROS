@@ -19,11 +19,21 @@
 drm_private extern uint32_t libdrm_nouveau_debug;
 drm_private extern FILE *libdrm_nouveau_out;
 #define dbg_on(lvl) (libdrm_nouveau_debug & (1 << lvl))
+#if defined(__AROS__)
+/* the hidd log, not C stdio (see nouveau.c) */
+extern void nouveau_compat_log(const char *fmt, ...);
+#define dbg(lvl, fmt, args...) do {                                            \
+	if (dbg_on((lvl)))                                                     \
+		nouveau_compat_log("nouveau: "fmt, ##args);                    \
+} while(0)
+#define err(fmt, args...) nouveau_compat_log("nouveau: "fmt, ##args)
+#else
 #define dbg(lvl, fmt, args...) do {                                            \
 	if (dbg_on((lvl)))                                                     \
 		fprintf(libdrm_nouveau_out, "nouveau: "fmt, ##args);                       \
 } while(0)
 #define err(fmt, args...) fprintf(libdrm_nouveau_out, "nouveau: "fmt, ##args)
+#endif
 
 struct nouveau_client_kref {
 	struct drm_nouveau_gem_pushbuf_bo *kref;

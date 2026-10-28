@@ -95,6 +95,11 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
             if ((bytesperpixel != 1) || (width & 1) || (height & 1))
                 goto exit_fail;
             break;
+        case vHidd_VideoFmt_P010:
+            /* NV12 layout with 16-bit samples (10 significant, high bits) */
+            if ((bytesperpixel != 2) || (width & 1) || (height & 1))
+                goto exit_fail;
+            break;
         default:
             goto exit_fail;
         }
@@ -123,8 +128,9 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
     bmdata->bytesperpixel = bytesperpixel;
     bmdata->stdfmt = stdfmt;
     bmdata->videoformat = videoformat;
-    /* A decode target is an NV12 video bitmap the display's decoder writes (nouveau_decode.c) */
-    if (decodetarget && ((videoformat != vHidd_VideoFmt_NV12) || !HIDDNouveauDecodeTargetInit(carddata, bmdata)))
+    /* A decode target is an NV12 or P010 video bitmap the display's decoder writes (nouveau_decode.c) */
+    if (decodetarget && (((videoformat != vHidd_VideoFmt_NV12) && (videoformat != vHidd_VideoFmt_P010)) ||
+                         !HIDDNouveauDecodeTargetInit(carddata, bmdata)))
         goto exit_fail;
     bmdata->decodetarget = decodetarget ? TRUE : FALSE;
 
@@ -150,7 +156,8 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
         ULONG rows = height;
         ULONG chromarows = (height + 1) / 2;
 
-        if ((videoformat == vHidd_VideoFmt_NV12) || (videoformat == vHidd_VideoFmt_I420))
+        if ((videoformat == vHidd_VideoFmt_NV12) || (videoformat == vHidd_VideoFmt_I420) ||
+            (videoformat == vHidd_VideoFmt_P010))
             rows += chromarows + 2;             /* + slack for the 256-byte rounding */
         if (buffers < 1)
             buffers = 1;
@@ -184,7 +191,7 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
         bmdata->back = (bmdata->nbufs > 1) ? 1 : 0;
         bmdata->bo = bmdata->buf[0].bo;
         bmdata->planeoff[0] = bmdata->planeoff[1] = 0;
-        if (videoformat == vHidd_VideoFmt_NV12)
+        if ((videoformat == vHidd_VideoFmt_NV12) || (videoformat == vHidd_VideoFmt_P010))
             bmdata->planeoff[0] = (bmdata->pitch * height + 255) & ~255UL;
         else if (videoformat == vHidd_VideoFmt_I420)
         {

@@ -48,8 +48,11 @@ struct HIDDNouveauDecode
     OOP_Class           *bmclass;           /* the nouveau bitmap class, for the targets */
     struct Hook         *resolve;           /* surface id -> (bitmap, buffer) */
     LONG                profile;            /* VAProfile */
-    ULONG               codec;              /* NOUVEAU_DECODE_CODEC_* */
+    const struct HIDDNouveauDecodeOps *ops; /* the codec's translation */
     ULONG               width, height;      /* coded picture size (macroblock aligned) */
+    ULONG               bpp;                /* bytes per sample: 1 = 8-bit (NV12), 2 = 10/12-bit (P010) */
+    BOOL                gob32;              /* the codec's block writes the 32-bit GOB order (HEVC) */
+    ULONG               poolslots;          /* pictures the pool gets (allocated on the first frame) */
     ULONG               pitch;              /* pool picture pitch (bytes, 64-aligned) */
     ULONG               lumasize;           /* bytes of one pool luma plane (block aligned) */
     ULONG               chromaoff;          /* offset of the chroma plane in a pool picture */
@@ -69,6 +72,8 @@ struct HIDDNouveauDecode
     struct nouveau_bo   *sem;               /* GART: semaphore (seq) + status words */
     ULONG               frames;             /* frames submitted */
     BOOL                statuswarned;       /* the unlisted status word was logged */
+    BOOL                dead;               /* the engine stopped answering (channel killed) */
+    ULONG               waiters;            /* settles waiting on it without the decode lock */
     ULONG               errors;             /* frames the decoder reported as failed */
     ULONG               seq;                /* last semaphore value handed out */
 
@@ -86,8 +91,6 @@ struct HIDDNouveauDecode
     } cur;
 };
 
-/* codecs */
-#define NOUVEAU_DECODE_CODEC_H264   1
 
 
 /* Layout of a frame's picsetup buffer (GART, CPU mapped) */
@@ -101,16 +104,39 @@ LONG HIDDNouveauDecodeAllocSlot(struct HIDDNouveauDecode *dec, OOP_Object *bm, U
 BOOL HIDDNouveauDecodeResolve(struct HIDDNouveauDecode *dec, ULONG surface, OOP_Object **bm, ULONG *buffer);
 UBYTE *HIDDNouveauDecodeBitstreamReserve(struct HIDDNouveauDecode *dec, ULONG bytes);
 VOID HIDDNouveauDecodeMethod(struct HIDDNouveauDecode *dec, ULONG mthd, ULONG data);
+/*
+ * Submit a frame whose picture setup, bitstream, slice offsets and status
+ * area are in f: the common methods (application, control, buffers, the 17
+ * picture slots, the codec's own methods as {method, value} pairs) and the
+ * completion (EXECUTE notify, flushed semaphore release), then kick.
+ * extra: the codec's own buffers the engine touches. map: for codecs whose
+ * picture indices are fixed roles (VP8/VP9: LAST, GOLDEN, ...; MPEG-2/VC-1:
+ * forward, backward), map[i] is the pool slot behind decoder index i (-1 =
+ * the current picture); NULL = decoder index i is pool slot i (H.264, HEVC).
+ * slot is then the decoder index of the current picture.
+ */
+BOOL HIDDNouveauDecodeEmit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFrame *f, LONG slot,
+    const LONG *map, ULONG appid, ULONG control, struct nouveau_bo **extra, ULONG nextra,
+    const ULONG *mthds, ULONG nmthds);
 
-/* nouveau_decode_h264.c */
-BOOL HIDDNouveauDecodeH264Open(struct HIDDNouveauDecode *dec);
-VOID HIDDNouveauDecodeH264Close(struct HIDDNouveauDecode *dec);
-BOOL HIDDNouveauDecodeH264Begin(struct HIDDNouveauDecode *dec);
-BOOL HIDDNouveauDecodeH264Params(struct HIDDNouveauDecode *dec, ULONG type, APTR data, ULONG size, ULONG count);
-BOOL HIDDNouveauDecodeH264Bitstream(struct HIDDNouveauDecode *dec, APTR data, ULONG size);
-BOOL HIDDNouveauDecodeH264Submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFrame *f);
-/* the error code in a frame's status words, 0 = none (any codec) */
-ULONG HIDDNouveauDecodeStatusError(struct HIDDNouveauDecode *dec, ULONG *status);
+/*
+ * A codec's translation (nouveau_decode_<codec>.c): VA parameters and slice
+ * data in, the decoder's picture setup and method stream out. The core
+ * (nouveau_decode.c) owns sessions, the picture pool, fences and copy-out.
+ */
+struct HIDDNouveauDecodeOps
+{
+    BOOL  (*open)     (struct HIDDNouveauDecode *dec);          /* codec buffers, state */
+    VOID  (*close)    (struct HIDDNouveauDecode *dec);
+    BOOL  (*begin)    (struct HIDDNouveauDecode *dec);          /* a frame starts */
+    BOOL  (*params)   (struct HIDDNouveauDecode *dec, ULONG type, APTR data, ULONG size, ULONG count);
+    BOOL  (*bitstream)(struct HIDDNouveauDecode *dec, APTR data, ULONG size);
+    BOOL  (*submit)   (struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFrame *f);
+    ULONG (*status)   (struct HIDDNouveauDecode *dec, ULONG *status);  /* error code of a finished frame, 0 = good */
+};
+
+extern const struct HIDDNouveauDecodeOps HIDDNouveauDecodeH264Ops;
+extern const struct HIDDNouveauDecodeOps HIDDNouveauDecodeMPEG2Ops;
 
 /* nouveau_decode.c: implementation behind the display class methods */
 VOID HIDDNouveauDecodeInit(VOID);               /* once, from the hidd's New */

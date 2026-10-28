@@ -1,19 +1,6 @@
---- ./libdrm-2.4.134/nouveau_drm.h
-+++ ./libdrm/nouveau_drm.h
-@@ -84,6 +84,10 @@
- #define NOUVEAU_GETPARAM_PTIMER_TIME     14
- #define NOUVEAU_GETPARAM_HAS_BO_USAGE    15
- #define NOUVEAU_GETPARAM_HAS_PAGEFLIP    16
-+#define NOUVEAU_GETPARAM_VRAM_SIZE       128
-+#define NOUVEAU_GETPARAM_GART_SIZE       129
-+#define NOUVEAU_GETPARAM_VRAM_FREE       130
-+#define NOUVEAU_GETPARAM_GART_FREE       131
- struct drm_nouveau_getparam {
- 	uint64_t param;
- 	uint64_t value;
 --- ./libdrm-2.4.134/nouveau/nouveau.c
 +++ ./libdrm/nouveau/nouveau.c
-@@ -1,895 +1,1787 @@
+@@ -1,895 +1,1848 @@
 -/*
 - * Copyright 2012 Red Hat Inc.
 - *
@@ -78,11 +65,26 @@
 +static uint32_t nouveau_debug = 0;
 +
 +#define dbg_on(lvl) (nouveau_debug & (1 << lvl))
++#if defined(__AROS__)
++/*
++ * Not C stdio: inside the hidd "stderr" is the stream of whichever task set
++ * the library up, which may have exited (a dump from input.device then wrote
++ * through a freed file handle and halted the system). The hidd log is safe
++ * from any task.
++ */
++extern void nouveau_compat_log(const char *fmt, ...);
++#define dbg(lvl, fmt, args...) do {                                       \
++   if (dbg_on((lvl)))                                                     \
++      nouveau_compat_log("nouveau: "fmt, ##args);                         \
++} while(0)
++#define err(fmt, args...) nouveau_compat_log("nouveau: "fmt, ##args)
++#else
 +#define dbg(lvl, fmt, args...) do {                                       \
 +   if (dbg_on((lvl)))                                                     \
 +      fprintf(nouveau_out, "nouveau: "fmt, ##args);                       \
 +} while(0)
 +#define err(fmt, args...) fprintf(nouveau_out, "nouveau: "fmt, ##args)
++#endif
  
  static void
  debug_init(void)
@@ -286,13 +288,13 @@
 +   drmVersionPtr ver = drmGetVersion(fd);
 +   if (!ver)
 +      goto out_err;
- 
--	nouveau_object_sclass_put(&sclass);
--	return ret;
++
 +   drm->version = (ver->version_major << 24) |
 +                  (ver->version_minor << 8) |
 +                   ver->version_patchlevel;
-+
+ 
+-	nouveau_object_sclass_put(&sclass);
+-	return ret;
 +   drmFreeVersion(ver);
 +
 +   if (drm->version < 0x01000301)
@@ -540,14 +542,21 @@
 +   };
 +
 +   int ret = drmCommandWrite(drm->fd, DRM_NOUVEAU_CHANNEL_FREE, &req, sizeof(req));
++#if defined(__AROS__)
++   if (ret)
++      err("freeing channel %d failed (%d)\n", (int)obj->handle, ret);
++#else
 +   assert(!ret);
++#endif
  }
  
 -drm_public int
 -nouveau_drm_new(int fd, struct nouveau_drm **pdrm)
 +static void
 +nouveau_object_subchan_del(struct nouveau_object *obj)
-+{
+ {
+-	struct nouveau_drm *drm;
+-	drmVersionPtr ver;
 +   /* the drm file, as at creation: the parent's handle is a channel id, not an fd */
 +   struct nouveau_drm *drm = nouveau_drm(obj->parent);
 +   struct {
@@ -562,23 +571,9 @@
 +         .version = 0,
 +      },
 +   };
-+
-+   drmCommandWrite(drm->fd, DRM_NOUVEAU_NVIF, &args, sizeof(args));
-+}
-+
-+static void
-+nouveau_object_gpuobj_del(struct nouveau_object *obj)
- {
--	struct nouveau_drm *drm;
--	drmVersionPtr ver;
-+   struct nouveau_drm *drm = nouveau_drm(obj->parent);
-+   struct drm_nouveau_gpuobj_free req = {
-+      .channel = obj->parent->handle,
-+      .handle = obj->handle,
-+   };
  
 -	debug_init();
-+   drmCommandWrite(drm->fd, DRM_NOUVEAU_GPUOBJ_FREE, &req, sizeof(req));
++   drmCommandWrite(drm->fd, DRM_NOUVEAU_NVIF, &args, sizeof(args));
 +}
  
 -	if (!(drm = calloc(1, sizeof(*drm))))
@@ -692,14 +687,28 @@
 -		nvdev->gart_limit_percent = atoi(tmp);
 -	else
 -		nvdev->gart_limit_percent = 80;
++static void
++nouveau_object_gpuobj_del(struct nouveau_object *obj)
++{
++   struct nouveau_drm *drm = nouveau_drm(obj->parent);
++   struct drm_nouveau_gpuobj_free req = {
++      .channel = obj->parent->handle,
++      .handle = obj->handle,
++   };
++
++   drmCommandWrite(drm->fd, DRM_NOUVEAU_GPUOBJ_FREE, &req, sizeof(req));
++}
+ 
+-	nvdev->base.gart_limit =
+-		(nvdev->base.gart_size * nvdev->gart_limit_percent) / 100;
 +void
 +nouveau_object_del(struct nouveau_object **pobj)
 +{
 +   if (!*pobj)
 +      return;
  
--	nvdev->base.gart_limit =
--		(nvdev->base.gart_size * nvdev->gart_limit_percent) / 100;
+-	ret = pthread_mutex_init(&nvdev->lock, NULL);
+-	DRMINITLISTHEAD(&nvdev->bo_list);
 +   struct nouveau_object *obj = *pobj;
 +   switch (obj->oclass) {
 +   case NOUVEAU_FIFO_CHANNEL_CLASS:
@@ -907,9 +916,7 @@
 +   else
 +      nvdev->gart_limit_percent = 80;
 +   nvdev->base.gart_limit = (nvdev->base.gart_size * nvdev->gart_limit_percent) / 100;
- 
--	ret = pthread_mutex_init(&nvdev->lock, NULL);
--	DRMINITLISTHEAD(&nvdev->bo_list);
++
 +   simple_mtx_init(&nvdev->lock, mtx_plain);
 +   list_inithead(&nvdev->bo_list);
  done:
@@ -1178,9 +1185,7 @@
 -		return ret;
 -	}
 +   struct nouveau_bo_priv *nvbo = nouveau_bo(bo);
- 
--	*pbo = bo;
--	return 0;
++
 +   nvbo->map_handle = info->map_handle;
 +   bo->handle = info->handle;
 +   bo->size = info->size;
@@ -1209,7 +1214,9 @@
 +      bo->config.nv04.surf_pitch = info->tile_mode;
 +   }
 +}
-+
+ 
+-	*pbo = bo;
+-	return 0;
 +static void
 +nouveau_bo_make_global(struct nouveau_bo_priv *nvbo)
 +{
@@ -1380,15 +1387,23 @@
 +   }
 +
 +   bo_info(bo, info);
-+
-+   *pbo = bo;
-+   return 0;
-+}
  
 -	return -ENOMEM;
-+static void
++   *pbo = bo;
++   return 0;
+ }
+ 
+ static void
+-nouveau_nvbo_make_global(struct nouveau_bo_priv *nvbo)
 +nouveau_bo_del(struct nouveau_bo *bo)
-+{
+ {
+-	if (!nvbo->head.next) {
+-		struct nouveau_device_priv *nvdev = nouveau_device(nvbo->base.device);
+-		pthread_mutex_lock(&nvdev->lock);
+-		if (!nvbo->head.next)
+-			DRMLISTADD(&nvbo->head, &nvdev->bo_list);
+-		pthread_mutex_unlock(&nvdev->lock);
+-	}
 +   struct nouveau_drm *drm = nouveau_drm(&bo->device->object);
 +   struct nouveau_device_priv *nvdev = nouveau_device(bo->device);
 +   struct nouveau_bo_priv *nvbo = nouveau_bo(bo);
@@ -1408,15 +1423,18 @@
 +   free(nvbo);
  }
  
+-drm_public void
+-nouveau_bo_make_global(struct nouveau_bo *bo)
 +/* the object moved: the mapping is stale until the next map request */
- static void
--nouveau_nvbo_make_global(struct nouveau_bo_priv *nvbo)
++static void
 +nouveau_bo_unmapped(void *data)
-+{
+ {
+-    struct nouveau_bo_priv *nvbo = nouveau_bo(bo);
 +   struct nouveau_bo *bo = data;
 +   bo->map = NULL;
 +}
-+
+ 
+-    nouveau_nvbo_make_global(nvbo);
 +int
 +nouveau_bo_map(struct nouveau_bo *bo, uint32_t access, struct nouveau_client *client)
 +{
@@ -1429,11 +1447,20 @@
 +         return -EINVAL;
 +   }
 +   return nouveau_bo_wait(bo, access, client);
-+}
-+
+ }
+ 
+-drm_public int
+-nouveau_bo_wrap(struct nouveau_device *dev, uint32_t handle,
+-		struct nouveau_bo **pbo)
 +int
 +nouveau_bo_name_get(struct nouveau_bo *bo, uint32_t *name)
-+{
+ {
+-	struct nouveau_device_priv *nvdev = nouveau_device(dev);
+-	int ret;
+-	pthread_mutex_lock(&nvdev->lock);
+-	ret = nouveau_bo_wrap_locked(dev, handle, pbo, 0);
+-	pthread_mutex_unlock(&nvdev->lock);
+-	return ret;
 +   struct drm_gem_flink req = { .handle = bo->handle };
 +   struct nouveau_drm *drm = nouveau_drm(&bo->device->object);
 +   struct nouveau_bo_priv *nvbo = nouveau_bo(bo);
@@ -1496,18 +1523,19 @@
 +   }
 +   simple_mtx_unlock(&nvdev->lock);
 +   return ret;
-+}
-+
+ }
+ 
+-drm_public int
+-nouveau_bo_name_ref(struct nouveau_device *dev, uint32_t name,
+-		    struct nouveau_bo **pbo)
 +void
 +nouveau_bo_ref(struct nouveau_bo *bo, struct nouveau_bo **pref)
  {
--	if (!nvbo->head.next) {
--		struct nouveau_device_priv *nvdev = nouveau_device(nvbo->base.device);
--		pthread_mutex_lock(&nvdev->lock);
--		if (!nvbo->head.next)
--			DRMLISTADD(&nvbo->head, &nvdev->bo_list);
--		pthread_mutex_unlock(&nvdev->lock);
--	}
+-	struct nouveau_drm *drm = nouveau_drm(&dev->object);
+-	struct nouveau_device_priv *nvdev = nouveau_device(dev);
+-	struct nouveau_bo_priv *nvbo;
+-	struct drm_gem_open req = { .name = name };
+-	int ret;
 +   struct nouveau_bo *ref = *pref;
 +   if (bo) {
 +      p_atomic_inc(&nouveau_bo(bo)->refcnt);
@@ -1517,14 +1545,20 @@
 +         nouveau_bo_del(ref);
 +   }
 +   *pref = bo;
- }
++}
  
--drm_public void
--nouveau_bo_make_global(struct nouveau_bo *bo)
+-	pthread_mutex_lock(&nvdev->lock);
+-	DRMLISTFOREACHENTRY(nvbo, &nvdev->bo_list, head) {
+-		if (nvbo->name == name) {
+-			ret = nouveau_bo_wrap_locked(dev, nvbo->base.handle,
+-						     pbo, name);
+-			pthread_mutex_unlock(&nvdev->lock);
+-			return ret;
+-		}
+-	}
 +int
 +nouveau_bo_set_prime(struct nouveau_bo *bo, int *prime_fd)
- {
--    struct nouveau_bo_priv *nvbo = nouveau_bo(bo);
++{
 +   struct nouveau_drm *drm = nouveau_drm(&bo->device->object);
 +   struct nouveau_bo_priv *nvbo = nouveau_bo(bo);
 +   int ret;
@@ -1757,26 +1791,22 @@
 +   struct nouveau_bo *bos[];
 +};
  
--    nouveau_nvbo_make_global(nvbo);
+-	ret = drmIoctl(drm->fd, DRM_IOCTL_GEM_OPEN, &req);
+-	if (ret == 0) {
+-		ret = nouveau_bo_wrap_locked(dev, req.handle, pbo, name);
+-	}
 +static inline struct nouveau_pushbuf_priv *
 +nouveau_pushbuf(struct nouveau_pushbuf *push)
 +{
 +   return (struct nouveau_pushbuf_priv *)push;
- }
++}
  
--drm_public int
--nouveau_bo_wrap(struct nouveau_device *dev, uint32_t handle,
--		struct nouveau_bo **pbo)
+-	pthread_mutex_unlock(&nvdev->lock);
+-	return ret;
 +static void
 +pushbuf_dump(struct nouveau_device *dev,
 +             struct nouveau_pushbuf_krec *krec, int krec_id, int chid)
- {
--	struct nouveau_device_priv *nvdev = nouveau_device(dev);
--	int ret;
--	pthread_mutex_lock(&nvdev->lock);
--	ret = nouveau_bo_wrap_locked(dev, handle, pbo, 0);
--	pthread_mutex_unlock(&nvdev->lock);
--	return ret;
++{
 +   struct drm_nouveau_gem_pushbuf_reloc *krel;
 +   struct drm_nouveau_gem_pushbuf_push *kpsh;
 +   struct drm_nouveau_gem_pushbuf_bo *kref;
@@ -1790,6 +1820,12 @@
 +   kref = krec->buffer;
 +   for (i = 0; i < krec->nr_buffer; i++, kref++) {
 +      bo = (void *)(uintptr_t)kref->user_priv;
++#if defined(__AROS__)
++      if (!bo) {
++         err("ch%d: buf %08x %08x (no bo)\n", chid, i, kref->handle);
++         continue;
++      }
++#endif
 +      err("ch%d: buf %08x %08x %08x %08x %08x %p 0x%"PRIx64" 0x%"PRIx64"\n",
 +          chid, i, kref->handle, kref->valid_domains,
 +          kref->read_domains, kref->write_domains, bo->map, bo->offset, bo->size);
@@ -1805,8 +1841,23 @@
 +
 +   kpsh = krec->push;
 +   for (i = 0; i < krec->nr_push; i++, kpsh++) {
++#if defined(__AROS__)
++      /*
++       * After the GPU killed a channel the record can hold pushes whose
++       * buffer index is outside the list (the kernel rejects them as "buffer
++       * not in list"); dereferencing them took the whole system down.
++       */
++      if (kpsh->bo_index >= krec->nr_buffer) {
++         err("ch%d: psh %08x outside the %d buffers\n", chid, kpsh->bo_index, krec->nr_buffer);
++         continue;
++      }
++#endif
 +      kref = krec->buffer + kpsh->bo_index;
 +      bo = (void *)(unsigned long)kref->user_priv;
++#if defined(__AROS__)
++      if (!bo)
++         continue;
++#endif
 +      bgn = (uint32_t *)((char *)bo->map + kpsh->offset);
 +      end = bgn + ((kpsh->length & 0x7fffff) /4);
 +
@@ -1817,23 +1868,38 @@
 +      if (!bo->map)
 +         continue;
 +
-+      /* AROS: no class-aware push buffer decoder, dump the raw words */
-+      while (bgn < end)
-+         err("\t0x%08x\n", *bgn++);
++      /* AROS: no class-aware push buffer decoder, dump the first raw words */
++      {
++         int words = 0;
++
++         while (bgn < end && words++ < 64)
++            err("\t0x%08x\n", *bgn++);
++      }
 +   }
  }
  
 -drm_public int
--nouveau_bo_name_ref(struct nouveau_device *dev, uint32_t name,
--		    struct nouveau_bo **pbo)
+-nouveau_bo_name_get(struct nouveau_bo *bo, uint32_t *name)
 +static int
 +pushbuf_submit(struct nouveau_pushbuf *push, struct nouveau_object *chan)
  {
--	struct nouveau_drm *drm = nouveau_drm(&dev->object);
--	struct nouveau_device_priv *nvdev = nouveau_device(dev);
--	struct nouveau_bo_priv *nvbo;
--	struct drm_gem_open req = { .name = name };
--	int ret;
+-	struct drm_gem_flink req = { .handle = bo->handle };
+-	struct nouveau_drm *drm = nouveau_drm(&bo->device->object);
+-	struct nouveau_bo_priv *nvbo = nouveau_bo(bo);
+-
+-	*name = nvbo->name;
+-	if (!*name) {
+-		int ret = drmIoctl(drm->fd, DRM_IOCTL_GEM_FLINK, &req);
+-
+-		if (ret) {
+-			*name = 0;
+-			return ret;
+-		}
+-		nvbo->name = *name = req.name;
+-
+-		nouveau_nvbo_make_global(nvbo);
+-	}
+-	return 0;
 +   struct nouveau_pushbuf_priv *nvpb = nouveau_pushbuf(push);
 +   struct nouveau_pushbuf_krec *krec = nvpb->list;
 +   struct nouveau_device *dev = push->client->device;
@@ -1911,22 +1977,44 @@
 +
 +      krec = krec->next;
 +   }
- 
--	pthread_mutex_lock(&nvdev->lock);
--	DRMLISTFOREACHENTRY(nvbo, &nvdev->bo_list, head) {
--		if (nvbo->name == name) {
--			ret = nouveau_bo_wrap_locked(dev, nvbo->base.handle,
--						     pbo, name);
--			pthread_mutex_unlock(&nvdev->lock);
--			return ret;
--		}
--	}
-+   return ret;
-+}
 +
++   return ret;
+ }
+ 
+-drm_public void
+-nouveau_bo_ref(struct nouveau_bo *bo, struct nouveau_bo **pref)
 +static int
 +pushbuf_flush(struct nouveau_pushbuf *push)
-+{
+ {
+-	struct nouveau_bo *ref = *pref;
+-	if (bo) {
+-		atomic_inc(&nouveau_bo(bo)->refcnt);
+-	}
+-	if (ref) {
+-		if (atomic_dec_and_test(&nouveau_bo(ref)->refcnt))
+-			nouveau_bo_del(ref);
+-	}
+-	*pref = bo;
+-}
+-
+-drm_public int
+-nouveau_bo_prime_handle_ref(struct nouveau_device *dev, int prime_fd,
+-			    struct nouveau_bo **bo)
+-{
+-	struct nouveau_drm *drm = nouveau_drm(&dev->object);
+-	struct nouveau_device_priv *nvdev = nouveau_device(dev);
+-	int ret;
+-	unsigned int handle;
+-
+-	nouveau_bo_ref(NULL, bo);
+-
+-	pthread_mutex_lock(&nvdev->lock);
+-	ret = drmPrimeFDToHandle(drm->fd, prime_fd, &handle);
+-	if (ret == 0) {
+-		ret = nouveau_bo_wrap_locked(dev, handle, bo, 0);
+-	}
+-	pthread_mutex_unlock(&nvdev->lock);
+-	return ret;
 +   struct nouveau_pushbuf_priv *nvpb = nouveau_pushbuf(push);
 +   struct nouveau_pushbuf_krec *krec = nvpb->krec;
 +   struct drm_nouveau_gem_pushbuf_bo *kref;
@@ -2115,8 +2203,17 @@
 +   bkref = cli_kref_get(push->client, bo);
 +   krel  = &krec->reloc[krec->nr_reloc++];
 +
++#if defined(__AROS__)
++   /* never an assert here: its stderr may be a dead task's stream */
++   if (!pkref || !bkref) {
++      krec->nr_reloc--;
++      err("reloc on a buffer not in the push list (a killed channel?)\n");
++      return data;
++   }
++#else
 +   assert(pkref);
 +   assert(bkref);
++#endif
 +   krel->reloc_bo_index = pkref - krec->buffer;
 +   krel->reloc_bo_offset = (push->cur - nvpb->ptr) * 4;
 +   krel->bo_index = bkref - krec->buffer;
@@ -2136,16 +2233,12 @@
 +         reloc |= tor;
 +      krel->flags |= NOUVEAU_GEM_RELOC_OR;
 +   }
- 
--	ret = drmIoctl(drm->fd, DRM_IOCTL_GEM_OPEN, &req);
--	if (ret == 0) {
--		ret = nouveau_bo_wrap_locked(dev, req.handle, pbo, name);
--	}
++
 +   return reloc;
-+}
+ }
  
--	pthread_mutex_unlock(&nvdev->lock);
--	return ret;
+-drm_public int
+-nouveau_bo_set_prime(struct nouveau_bo *bo, int *prime_fd)
 +static int
 +pushbuf_refn_fail(struct nouveau_pushbuf *push, int sref, int srel)
 +{
@@ -2166,31 +2259,12 @@
 +   krec->nr_buffer = sref;
 +   krec->nr_reloc = srel;
 +   return 0;
- }
- 
--drm_public int
--nouveau_bo_name_get(struct nouveau_bo *bo, uint32_t *name)
++}
++
 +static int
 +pushbuf_refn(struct nouveau_pushbuf *push, bool retry,
 +        struct nouveau_pushbuf_refn *refs, int nr)
- {
--	struct drm_gem_flink req = { .handle = bo->handle };
--	struct nouveau_drm *drm = nouveau_drm(&bo->device->object);
--	struct nouveau_bo_priv *nvbo = nouveau_bo(bo);
--
--	*name = nvbo->name;
--	if (!*name) {
--		int ret = drmIoctl(drm->fd, DRM_IOCTL_GEM_FLINK, &req);
--
--		if (ret) {
--			*name = 0;
--			return ret;
--		}
--		nvbo->name = *name = req.name;
--
--		nouveau_nvbo_make_global(nvbo);
--	}
--	return 0;
++{
 +   struct nouveau_pushbuf_priv *nvpb = nouveau_pushbuf(push);
 +   struct nouveau_pushbuf_krec *krec = nvpb->krec;
 +   struct drm_nouveau_gem_pushbuf_bo *kref;
@@ -2217,42 +2291,11 @@
 +   }
 +
 +   return ret;
- }
- 
--drm_public void
--nouveau_bo_ref(struct nouveau_bo *bo, struct nouveau_bo **pref)
++}
++
 +static int
 +pushbuf_validate(struct nouveau_pushbuf *push, bool retry)
- {
--	struct nouveau_bo *ref = *pref;
--	if (bo) {
--		atomic_inc(&nouveau_bo(bo)->refcnt);
--	}
--	if (ref) {
--		if (atomic_dec_and_test(&nouveau_bo(ref)->refcnt))
--			nouveau_bo_del(ref);
--	}
--	*pref = bo;
--}
--
--drm_public int
--nouveau_bo_prime_handle_ref(struct nouveau_device *dev, int prime_fd,
--			    struct nouveau_bo **bo)
--{
--	struct nouveau_drm *drm = nouveau_drm(&dev->object);
--	struct nouveau_device_priv *nvdev = nouveau_device(dev);
--	int ret;
--	unsigned int handle;
--
--	nouveau_bo_ref(NULL, bo);
--
--	pthread_mutex_lock(&nvdev->lock);
--	ret = drmPrimeFDToHandle(drm->fd, prime_fd, &handle);
--	if (ret == 0) {
--		ret = nouveau_bo_wrap_locked(dev, handle, bo, 0);
--	}
--	pthread_mutex_unlock(&nvdev->lock);
--	return ret;
++{
 +   struct nouveau_pushbuf_priv *nvpb = nouveau_pushbuf(push);
 +   struct nouveau_pushbuf_krec *krec = nvpb->krec;
 +   struct drm_nouveau_gem_pushbuf_bo *kref;
@@ -2438,7 +2481,14 @@
 +
 +   if (bo) {
 +      kref = cli_kref_get(push->client, bo);
++#if defined(__AROS__)
++      if (!kref) {
++         err("push of a buffer not in the push list (a killed channel?)\n");
++         return;
++      }
++#else
 +      assert(kref);
++#endif
 +      kpsh = &krec->push[krec->nr_push++];
 +      kpsh->bo_index = kref - krec->buffer;
 +      kpsh->offset   = offset;
@@ -2527,10 +2577,8 @@
 +
 +   pushbuf_kref(push, nvpb->bo, push->flags);
 +   return flushed ? pushbuf_validate(push, false) : 0;
- }
- 
--drm_public int
--nouveau_bo_set_prime(struct nouveau_bo *bo, int *prime_fd)
++}
++
 +int
 +nouveau_pushbuf_validate(struct nouveau_pushbuf *push)
  {
@@ -2600,7 +2648,7 @@
  }
 --- ./libdrm-2.4.134/nouveau/private.h
 +++ ./libdrm/nouveau/private.h
-@@ -16,14 +16,14 @@
+@@ -16,14 +16,24 @@
   * 0x00000002 submit pushbuffers synchronously
   * 0x80000000 if compiled with SIMULATE return -EINVAL for all pb submissions
   */
@@ -2610,13 +2658,23 @@
 +drm_private extern uint32_t libdrm_nouveau_debug;
 +drm_private extern FILE *libdrm_nouveau_out;
 +#define dbg_on(lvl) (libdrm_nouveau_debug & (1 << lvl))
++#if defined(__AROS__)
++/* the hidd log, not C stdio (see nouveau.c) */
++extern void nouveau_compat_log(const char *fmt, ...);
  #define dbg(lvl, fmt, args...) do {                                            \
  	if (dbg_on((lvl)))                                                     \
 -		fprintf(nouveau_out, "nouveau: "fmt, ##args);                       \
-+		fprintf(libdrm_nouveau_out, "nouveau: "fmt, ##args);                       \
++		nouveau_compat_log("nouveau: "fmt, ##args);                    \
  } while(0)
 -#define err(fmt, args...) fprintf(nouveau_out, "nouveau: "fmt, ##args)
++#define err(fmt, args...) nouveau_compat_log("nouveau: "fmt, ##args)
++#else
++#define dbg(lvl, fmt, args...) do {                                            \
++	if (dbg_on((lvl)))                                                     \
++		fprintf(libdrm_nouveau_out, "nouveau: "fmt, ##args);                       \
++} while(0)
 +#define err(fmt, args...) fprintf(libdrm_nouveau_out, "nouveau: "fmt, ##args)
++#endif
  
  struct nouveau_client_kref {
  	struct drm_nouveau_gem_pushbuf_bo *kref;

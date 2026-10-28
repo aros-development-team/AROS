@@ -49,7 +49,8 @@ extern struct SignalSemaphore globalLock;
 #define KMSFMT_UYVY         (1 << 7)    /* vHidd_VideoFmt_UYVY */
 #define KMSFMT_NV12         (1 << 8)    /* semi-planar 4:2:0, vHidd_VideoFmt_NV12 */
 #define KMSFMT_YUV420       (1 << 9)    /* planar 4:2:0 (CGX I420), vHidd_VideoFmt_I420 */
-#define KMSFMT_VIDEO        (KMSFMT_YUYV | KMSFMT_UYVY | KMSFMT_NV12 | KMSFMT_YUV420)
+#define KMSFMT_P010         (1 << 10)   /* 10-bit semi-planar 4:2:0, vHidd_VideoFmt_P010 */
+#define KMSFMT_VIDEO        (KMSFMT_YUYV | KMSFMT_UYVY | KMSFMT_NV12 | KMSFMT_YUV420 | KMSFMT_P010)
 
 struct HIDDNouveauPlane
 {

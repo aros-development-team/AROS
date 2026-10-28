@@ -144,6 +144,138 @@ static VOID nvdec_channel_del(struct nouveau_object **chan, struct nouveau_pushb
         nouveau_object_del(chan);
 }
 
+static VOID nvdec_session_kill(struct HIDDNouveauDecode *dec, const char *why);
+
+#define NVDEC_SET_APPLICATION_ID            0x0200
+#define NVDEC_SEMAPHORE_A                   0x0240
+#define NVDEC_SEMAPHORE_B                   0x0244
+#define NVDEC_SEMAPHORE_C                   0x0248
+#define NVDEC_EXECUTE                       0x0300
+#define NVDEC_SEMAPHORE_D                   0x0304
+#define NVDEC_SET_CONTROL_PARAMS            0x0400
+#define NVDEC_SET_DRV_PIC_SETUP_OFFSET      0x0404
+#define NVDEC_SET_IN_BUF_BASE_OFFSET        0x0408
+#define NVDEC_SET_PICTURE_INDEX             0x040C
+#define NVDEC_SET_SLICE_OFFSETS_BUF_OFFSET  0x0410
+#define NVDEC_SET_COLOC_DATA_OFFSET         0x0414
+#define NVDEC_SET_HISTORY_OFFSET            0x0418
+#define NVDEC_SET_DISPLAY_BUF_SIZE          0x041C
+#define NVDEC_SET_HISTOGRAM_OFFSET          0x0420
+#define NVDEC_SET_NVDEC_STATUS_OFFSET       0x0424
+#define NVDEC_SET_PICTURE_LUMA_OFFSET0      0x0430  /* 17 of them */
+#define NVDEC_SET_PICTURE_CHROMA_OFFSET0    0x0474  /* 17 of them */
+#define NVDEC_SET_PIC_SCRATCH_BUF_OFFSET    0x04B8
+#define NVDEC_PICTURE_SLOTS                 17
+#define NVDEC_EXECUTE_NOTIFY_ON_END         (1 << 0)
+#define NVDEC_SEMAPHORE_D_RELEASE_FLUSH     (1 << 8)    /* RELEASE, one word, flush enabled */
+
+BOOL HIDDNouveauDecodeEmit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFrame *f, LONG slot,
+    const LONG *map, ULONG appid, ULONG control, struct nouveau_bo **extra, ULONG nextra,
+    const ULONG *mthds, ULONG nmthds)
+{
+    struct nouveau_pushbuf *push = dec->pushbuf;
+    struct nouveau_pushbuf_refn refs[8 + 8 + NOUVEAU_DECODE_SLOTS];
+    ULONG n = 0, i;
+
+    if (dec->dead || !push)
+        return FALSE;
+    if (nextra > 8)
+        return FALSE;
+    refs[n].bo = f->picsetup;   refs[n++].flags = NOUVEAU_BO_GART | NOUVEAU_BO_RDWR;
+    refs[n].bo = f->bitstream;  refs[n++].flags = NOUVEAU_BO_GART | NOUVEAU_BO_RD;
+    refs[n].bo = dec->sem;      refs[n++].flags = NOUVEAU_BO_GART | NOUVEAU_BO_RDWR;
+    if (dec->coloc)   { refs[n].bo = dec->coloc;   refs[n++].flags = NOUVEAU_BO_VRAM | NOUVEAU_BO_RDWR; }
+    if (dec->history) { refs[n].bo = dec->history; refs[n++].flags = NOUVEAU_BO_VRAM | NOUVEAU_BO_RDWR; }
+    for (i = 0; i < nextra; i++)
+    {
+        refs[n].bo = extra[i];
+        refs[n++].flags = ((extra[i]->flags & NOUVEAU_BO_GART) ? NOUVEAU_BO_GART : NOUVEAU_BO_VRAM) | NOUVEAU_BO_RDWR;
+    }
+    for (i = 0; i < dec->nslots; i++)
+    {
+        refs[n].bo = dec->slot[i].bo;
+        refs[n++].flags = NOUVEAU_BO_VRAM | (((LONG)i == (map ? map[slot] : slot)) ? NOUVEAU_BO_RDWR : NOUVEAU_BO_RD);
+    }
+    if (nouveau_pushbuf_space(push, 128 + 2 * nmthds, 0, 0) || nouveau_pushbuf_refn(push, refs, n))
+    {
+        nvlog("[Nouveau] NVDEC: no push buffer space for the frame\n");
+        return FALSE;
+    }
+    HIDDNouveauDecodeMethod(dec, NVDEC_SET_APPLICATION_ID, appid);
+    HIDDNouveauDecodeMethod(dec, NVDEC_SET_CONTROL_PARAMS, control);
+    HIDDNouveauDecodeMethod(dec, NVDEC_SET_DRV_PIC_SETUP_OFFSET, (ULONG)(f->picsetup->offset >> 8));
+    HIDDNouveauDecodeMethod(dec, NVDEC_SET_IN_BUF_BASE_OFFSET, (ULONG)(f->bitstream->offset >> 8));
+    HIDDNouveauDecodeMethod(dec, NVDEC_SET_PICTURE_INDEX, slot);
+    HIDDNouveauDecodeMethod(dec, NVDEC_SET_SLICE_OFFSETS_BUF_OFFSET,
+        (ULONG)((f->picsetup->offset + NOUVEAU_DECODE_SLICEOFFS_OFFSET) >> 8));
+    HIDDNouveauDecodeMethod(dec, NVDEC_SET_COLOC_DATA_OFFSET, dec->coloc ? (ULONG)(dec->coloc->offset >> 8) : 0);
+    HIDDNouveauDecodeMethod(dec, NVDEC_SET_HISTORY_OFFSET, dec->history ? (ULONG)(dec->history->offset >> 8) : 0);
+    HIDDNouveauDecodeMethod(dec, NVDEC_SET_DISPLAY_BUF_SIZE, 0);
+    HIDDNouveauDecodeMethod(dec, NVDEC_SET_HISTOGRAM_OFFSET, 0);
+    HIDDNouveauDecodeMethod(dec, NVDEC_SET_NVDEC_STATUS_OFFSET,
+        (ULONG)((f->picsetup->offset + NOUVEAU_DECODE_STATUS_OFFSET) >> 8));
+    /* every index gets a valid picture: unused ones point at the current one */
+    {
+        struct nouveau_bo *pics[NVDEC_PICTURE_SLOTS];
+        LONG cur = map ? map[slot] : slot;
+
+        for (i = 0; i < NVDEC_PICTURE_SLOTS; i++)
+        {
+            LONG s = map ? map[i] : (LONG)i;
+
+            pics[i] = ((s >= 0) && ((ULONG)s < dec->nslots)) ? dec->slot[s].bo : dec->slot[cur].bo;
+        }
+        for (i = 0; i < NVDEC_PICTURE_SLOTS; i++)
+            HIDDNouveauDecodeMethod(dec, NVDEC_SET_PICTURE_LUMA_OFFSET0 + 4 * i, (ULONG)(pics[i]->offset >> 8));
+        for (i = 0; i < NVDEC_PICTURE_SLOTS; i++)
+            HIDDNouveauDecodeMethod(dec, NVDEC_SET_PICTURE_CHROMA_OFFSET0 + 4 * i,
+                                    (ULONG)((pics[i]->offset + dec->chromaoff) >> 8));
+    }
+    HIDDNouveauDecodeMethod(dec, NVDEC_SET_PIC_SCRATCH_BUF_OFFSET, 0);
+    for (i = 0; i < nmthds; i++)
+        HIDDNouveauDecodeMethod(dec, mthds[2 * i], mthds[2 * i + 1]);
+    /*
+     * Completion: the EXECUTE notify writes word 0 when the decode ends, but
+     * the picture's last writes may still be in the engine's write buffer
+     * then. A SEMAPHORE_D release with flush after it writes word 1 once the
+     * picture is in memory; that is the word the session waits for (and the
+     * host fence on the pool picture, HIDDNouveauDecodeSettle).
+     */
+    HIDDNouveauDecodeMethod(dec, NVDEC_SEMAPHORE_A, (ULONG)(dec->sem->offset >> 32));
+    HIDDNouveauDecodeMethod(dec, NVDEC_SEMAPHORE_B, (ULONG)dec->sem->offset);
+    HIDDNouveauDecodeMethod(dec, NVDEC_SEMAPHORE_C, f->seq);
+    HIDDNouveauDecodeMethod(dec, NVDEC_EXECUTE, NVDEC_EXECUTE_NOTIFY_ON_END);
+    HIDDNouveauDecodeMethod(dec, NVDEC_SEMAPHORE_A, (ULONG)((dec->sem->offset + 4) >> 32));
+    HIDDNouveauDecodeMethod(dec, NVDEC_SEMAPHORE_B, (ULONG)(dec->sem->offset + 4));
+    HIDDNouveauDecodeMethod(dec, NVDEC_SEMAPHORE_C, f->seq);
+    HIDDNouveauDecodeMethod(dec, NVDEC_SEMAPHORE_D, NVDEC_SEMAPHORE_D_RELEASE_FLUSH);
+    if (nouveau_pushbuf_kick(push))
+    {
+        nvdec_session_kill(dec, "the channel refused the frame");
+        return FALSE;
+    }
+    return TRUE;
+}
+
+static VOID nvdec_pause(VOID);
+
+/*
+ * The engine stopped (its channel was killed by a fault, or it stopped
+ * answering): fail the session and drop its channel and push buffer at once.
+ * Left in place, the push buffer still listed the session's buffers, and
+ * libdrm flushes another push buffer that lists a buffer it is given: the
+ * copy engine then resubmitted the dead channel's work from the compositor
+ * (rejected, then a libdrm assertion halted the system). Decode lock held.
+ */
+static VOID nvdec_session_kill(struct HIDDNouveauDecode *dec, const char *why)
+{
+    if (!dec->dead)
+        nvlog("[Nouveau] NVDEC: session %p: %s; session failed\n", dec, why);
+    dec->dead = TRUE;
+    nvdec_channel_del(&dec->channel, &dec->pushbuf, &dec->nvdec);
+}
+
+
 /* Find the decoder class once; the result is kept for the card */
 static BOOL nvdec_probe(struct CardData *carddata)
 {
@@ -179,24 +311,29 @@ static BOOL nvdec_probe(struct CardData *carddata)
 struct nvdec_codec
 {
     LONG    profile;        /* VAProfile */
-    ULONG   codec;          /* NOUVEAU_DECODE_CODEC_* */
+    const struct HIDDNouveauDecodeOps *ops;
     ULONG   maxw, maxh;
     ULONG   maxrefs;
+    ULONG   fmts;           /* vHidd_VideoFmt_* bits the decoder writes for the profile */
 };
+
+#define FMT_8BIT    (1UL << vHidd_VideoFmt_NV12)
 
 static const struct nvdec_codec nvdec_codecs[] =
 {
-    { VAProfileH264ConstrainedBaseline, NOUVEAU_DECODE_CODEC_H264, 4096, 4096, 16 },
-    { VAProfileH264Main,                NOUVEAU_DECODE_CODEC_H264, 4096, 4096, 16 },
-    { VAProfileH264High,                NOUVEAU_DECODE_CODEC_H264, 4096, 4096, 16 },
-    { VAProfileNone, 0, 0, 0, 0 }
+    { VAProfileH264ConstrainedBaseline, &HIDDNouveauDecodeH264Ops, 4096, 4096, 16, FMT_8BIT },
+    { VAProfileH264Main,                &HIDDNouveauDecodeH264Ops, 4096, 4096, 16, FMT_8BIT },
+    { VAProfileH264High,                &HIDDNouveauDecodeH264Ops, 4096, 4096, 16, FMT_8BIT },
+    { VAProfileMPEG2Simple,             &HIDDNouveauDecodeMPEG2Ops, 4096, 4096, 3, FMT_8BIT },
+    { VAProfileMPEG2Main,               &HIDDNouveauDecodeMPEG2Ops, 4096, 4096, 3, FMT_8BIT },
+    { VAProfileNone, NULL, 0, 0, 0, 0 }
 };
 
 static const struct nvdec_codec *nvdec_codec_for(LONG profile)
 {
     const struct nvdec_codec *c;
 
-    for (c = nvdec_codecs; c->codec; c++)
+    for (c = nvdec_codecs; c->ops; c++)
         if (c->profile == profile)
             return c;
     return NULL;
@@ -231,7 +368,7 @@ ULONG HIDDNouveauDecodeQuery(OOP_Class *cl, OOP_Object *display, LONG profile, U
         caps->MaxHeight     = c->maxh;
         caps->MinWidth      = 48;
         caps->MinHeight     = 48;
-        caps->VideoFmtMask  = (1UL << vHidd_VideoFmt_NV12);
+        caps->VideoFmtMask  = c->fmts;
         caps->LayoutMask    = (1UL << vHidd_VideoLayout_Linear);
         caps->MaxReferences = c->maxrefs;
     }
@@ -328,7 +465,7 @@ static BOOL nvdec_pool_alloc(struct HIDDNouveauDecode *dec, ULONG nslots)
      */
     cfg.nvc0.memtype = (dec->carddata->dev->chipset >= 0x160) ? 0x06 : 0xfe;
     cfg.nvc0.tile_mode = NVDEC_POOL_TILE_MODE;
-    dec->pitch = (dec->width + 63) & ~63UL;
+    dec->pitch = (dec->width * dec->bpp + 63) & ~63UL;
     dec->lumasize = dec->pitch * ((dec->height + NVDEC_POOL_BLOCK_ROWS - 1) & ~(NVDEC_POOL_BLOCK_ROWS - 1));
     dec->lumasize = (dec->lumasize + 4095) & ~4095UL;
     dec->chromaoff = dec->lumasize;
@@ -440,7 +577,7 @@ BOOL HIDDNouveauDecodeOpen(OOP_Class *cl, OOP_Object *display, struct HIDDNouvea
     dec->bmclass = SD(cl)->bmclass;
     dec->resolve = resolve;
     dec->profile = profile;
-    dec->codec = c->codec;
+    dec->ops = c->ops;
     dec->width = (width + 15) & ~15UL;      /* macroblock aligned coded size */
     dec->height = (height + 15) & ~15UL;
 
@@ -449,8 +586,8 @@ BOOL HIDDNouveauDecodeOpen(OOP_Class *cl, OOP_Object *display, struct HIDDNouvea
     if (nvdec_channel_new(carddata, NVDEC_HANDLE_BASE | (decode_sessions << 16),
                           &dec->channel, &dec->pushbuf, &dec->nvdec, &dec->oclass))
         goto fail;
-    if (!nvdec_pool_alloc(dec, c->maxrefs + 1))
-        goto fail;
+    /* the pool's sample size follows the targets (AV1 profile 0 is 8 or 10-bit): first frame */
+    dec->poolslots = c->maxrefs + 1;
     for (i = 0; i < NOUVEAU_DECODE_RING; i++)
         if (!nvdec_frame_alloc(carddata, &dec->ring[i], 2 * 1024 * 1024))
             goto fail;
@@ -459,15 +596,8 @@ BOOL HIDDNouveauDecodeOpen(OOP_Class *cl, OOP_Object *display, struct HIDDNouvea
     memset(dec->sem->map, 0, 4096);
     nouveau_staging_to_gpu(dec->sem->map, 4096);
 
-    switch (dec->codec)
-    {
-    case NOUVEAU_DECODE_CODEC_H264:
-        if (!HIDDNouveauDecodeH264Open(dec))
-            goto fail;
-        break;
-    default:
+    if (!dec->ops->open(dec))
         goto fail;
-    }
     D(bug("[Nouveau] NVDEC: session %p: profile %ld %lux%lu, class %04lx, %lu picture slots of %lu KB\n",
         dec, (long)profile, (unsigned long)dec->width, (unsigned long)dec->height,
         (unsigned long)dec->oclass, (unsigned long)dec->nslots, (unsigned long)(dec->slotsize / 1024)));
@@ -494,7 +624,15 @@ VOID HIDDNouveauDecodeClose(struct HIDDNouveauDecode *dec)
     if (!dec->carddata)
         return;
     decode_lock();
-    nvdec_session_idle(dec);
+    /* settles waiting on this session without the lock finish first */
+    while (dec->waiters)
+    {
+        decode_unlock();
+        nvdec_pause();
+        decode_lock();
+    }
+    if (!dec->dead)
+        nvdec_session_idle(dec);
     /* targets still waiting for a copy-out get it; then they forget the session */
     for (i = 0; i < dec->nslots; i++)
     {
@@ -512,12 +650,8 @@ VOID HIDDNouveauDecodeClose(struct HIDDNouveauDecode *dec)
         }
         dec->slot[i].valid = FALSE;
     }
-    switch (dec->codec)
-    {
-    case NOUVEAU_DECODE_CODEC_H264:
-        HIDDNouveauDecodeH264Close(dec);
-        break;
-    }
+    if (dec->ops)
+        dec->ops->close(dec);
     for (i = 0; i < dec->nslots; i++)
         if (dec->slot[i].bo)
             nouveau_bo_ref(NULL, &dec->slot[i].bo);
@@ -603,7 +737,7 @@ static ULONG nvdec_frame_status(struct HIDDNouveauDecode *dec, struct HIDDNouvea
 
     nouveau_staging_from_gpu(status, 64);
     f->checked = TRUE;
-    return HIDDNouveauDecodeStatusError(dec, status);
+    return dec->ops->status(dec, status);
 }
 
 static ULONG nvdec_frame_error(struct HIDDNouveauDecode *dec, ULONG seq)
@@ -651,7 +785,8 @@ static VOID nvdec_frame_retire(struct HIDDNouveauDecode *dec, struct HIDDNouveau
 #define CE_OFFSET_IN_UPPER      0x0400
 #define CE_LAUNCH_DMA           0x0300
 #define CE_KIND_BPP_BL_8        (1 << 16)   /* NVCAB5_SET_SRC_BLOCK_SIZE_KIND_BPP_BL_8 */
-#define CE_KIND_BPP_BL_16       (2 << 16)   /* ..._BL_16: the NV12 chroma plane's 2-byte UV pairs */
+#define CE_KIND_BPP_BL_16       (2 << 16)   /* ..._BL_16: NV12 chroma's 2-byte UV pairs, P010 luma */
+#define CE_KIND_BPP_BL_32       (0 << 16)   /* ..._BL_32 (Turing 2D order): P010 chroma's 4-byte UV pairs */
 
 static inline VOID ce_begin(struct nouveau_pushbuf *push, ULONG mthd, ULONG count)
 {
@@ -718,11 +853,21 @@ static BOOL nvdec_copy_out(struct HIDDNouveauDecode *dec, struct HIDDNouveauBitM
     if (!src || !dst || (w > dec->width) || (h > dec->height))
         return FALSE;
     LOCK_ENGINE
-    /* luma: 1-byte samples; chroma: interleaved 2-byte UV pairs, the 16-bit order on Blackwell */
-    ok = nvdec_ce_detile(carddata, src, 0, dec->pitch, srcrows, CE_KIND_BPP_BL_8, dst, 0, bmdata->pitch, w, h);
-    if (ok)
-        ok = nvdec_ce_detile(carddata, src, dec->chromaoff, dec->pitch, chromarows, CE_KIND_BPP_BL_16,
-                             dst, bmdata->planeoff[0], bmdata->pitch, w, h / 2);
+    /*
+     * Blackwell orders a GOB by element size, and the decoder's codec blocks
+     * differ: H.264 writes the element-size order (luma samples, chroma UV
+     * pairs of twice the size); HEVC (a different core) writes the 32-bit
+     * order for its pictures (GB207, matched on a dumped frame).
+     */
+    {
+        ULONG lk = dec->gob32 ? CE_KIND_BPP_BL_32 : (dec->bpp == 2) ? CE_KIND_BPP_BL_16 : CE_KIND_BPP_BL_8;
+        ULONG ck = (dec->gob32 || (dec->bpp == 2)) ? CE_KIND_BPP_BL_32 : CE_KIND_BPP_BL_16;
+
+        ok = nvdec_ce_detile(carddata, src, 0, dec->pitch, srcrows, lk, dst, 0, bmdata->pitch, w * dec->bpp, h);
+        if (ok)
+            ok = nvdec_ce_detile(carddata, src, dec->chromaoff, dec->pitch, chromarows, ck,
+                                 dst, bmdata->planeoff[0], bmdata->pitch, w * dec->bpp, h / 2);
+    }
     if (ok)
         nouveau_pushbuf_kick(carddata->ce_pushbuf);
     UNLOCK_ENGINE
@@ -743,6 +888,58 @@ static VOID nvdec_pause(VOID)
     }
 }
 
+/*
+ * Wait for the engine without holding the decode lock: a stalled engine must
+ * not freeze every task that touches a decode target (the compositor commits
+ * the video plane from input.device; holding the lock through a dead
+ * channel's fence waits froze the whole UI). The session cannot go away
+ * meanwhile: it counts its waiters and Close waits for them.
+ */
+/*
+ * The host fence of the session's last submission, polled. It is taken on the
+ * semaphore buffer: every frame lists that one for writing. A read-only wait
+ * on a pool picture returns at once once later frames list the picture as a
+ * reference (libdrm only waits when the buffer's last listed use was a
+ * write), and the copy-out then read rows the engine was still writing.
+ */
+static BOOL nvdec_fence_done(struct HIDDNouveauDecode *dec)
+{
+    return !nouveau_bo_wait(dec->sem, NOUVEAU_BO_RDWR | NOUVEAU_BO_NOBLOCK, dec->carddata->client);
+}
+
+#define NVDEC_STALL_MS      3000    /* a frame takes under a millisecond: no answer by then = stopped */
+
+static BOOL nvdec_wait_unlocked(struct HIDDNouveauDecode *dec, ULONG seq, struct nouveau_bo *slotbo,
+    ULONG timeoutms)
+{
+    ULONG waited = 0, limit = (timeoutms == 0xffffffffUL) ? NVDEC_STALL_MS : timeoutms;
+    BOOL done = FALSE;
+
+    /*
+     * Only the semaphore word is read unlocked. libdrm is not thread safe: a
+     * buffer wait may kick the session's push buffer, and doing that from
+     * the compositor while the decoding task builds its next frame corrupted
+     * the push records (rejected as "push 0 buffer not in list").
+     */
+    dec->waiters++;
+    for (;;)
+    {
+        if (nvdec_seq_done(dec, seq) && nvdec_fence_done(dec))
+        {
+            done = TRUE;
+            break;
+        }
+        if ((waited >= limit) || dec->dead)
+            break;
+        decode_unlock();
+        nvdec_pause();
+        decode_lock();
+        waited += 20;
+    }
+    dec->waiters--;
+    return done;
+}
+
 ULONG HIDDNouveauDecodeSettle(struct CardData *carddata, struct HIDDNouveauBitMapData *bmdata, ULONG buffer,
     BOOL wait, ULONG timeoutms)
 {
@@ -752,6 +949,7 @@ ULONG HIDDNouveauDecodeSettle(struct CardData *carddata, struct HIDDNouveauBitMa
     if (buffer >= bmdata->nbufs)
         return vHidd_DecodeStatus_Error;
     decode_lock();
+retry:
     dec = bmdata->buf[buffer].dec;
     switch (bmdata->buf[buffer].decstate)
     {
@@ -763,58 +961,56 @@ ULONG HIDDNouveauDecodeSettle(struct CardData *carddata, struct HIDDNouveauBitMa
         break;
 
     case NOUVEAU_DECSTATE_DECODING:
+    {
+        ULONG seq = bmdata->buf[buffer].decseq;
+        struct nouveau_bo *slotbo;
+
         if (!dec)
         {
             bmdata->buf[buffer].decstate = NOUVEAU_DECSTATE_NONE;
             break;
         }
-        if (!nvdec_seq_done(dec, bmdata->buf[buffer].decseq))
+        slotbo = dec->slot[bmdata->buf[buffer].decslot].bo;
+        /*
+         * Finished means: the engine's semaphore (end of its method
+         * processing) and the host fence on the pool picture (its output
+         * DMA idle: on the GB207 the last 16 KB per plane were still being
+         * written when the semaphore fired).
+         */
+        if (!nvdec_seq_done(dec, seq) || !nvdec_fence_done(dec))
         {
+            BOOL done;
+
             if (!wait)
             {
                 result = vHidd_DecodeStatus_Busy;
                 break;
             }
-            if (timeoutms == 0xffffffffUL)
+            if (dec->dead)
             {
-                /* the semaphore buffer carries the channel's fences */
-                nouveau_bo_wait(dec->sem, NOUVEAU_BO_RDWR, carddata->client);
+                bmdata->buf[buffer].decstate = NOUVEAU_DECSTATE_ERROR;
+                result = vHidd_DecodeStatus_Error;
+                break;
             }
-            else
+            done = nvdec_wait_unlocked(dec, seq, slotbo, timeoutms);
+            /* the buffer may have moved on while unlocked */
+            if ((bmdata->buf[buffer].dec != dec) || (bmdata->buf[buffer].decseq != seq) ||
+                (bmdata->buf[buffer].decstate != NOUVEAU_DECSTATE_DECODING))
+                goto retry;
+            if (!done)
             {
-                ULONG waited = 0;
-
-                while (!nvdec_seq_done(dec, bmdata->buf[buffer].decseq))
+                if (timeoutms == 0xffffffffUL)
                 {
-                    if (waited >= timeoutms)
-                        break;
-                    nvdec_pause();
-                    waited += 20;
+                    nvdec_session_kill(dec, "the decoder stopped responding");
+                    bmdata->buf[buffer].decstate = NOUVEAU_DECSTATE_ERROR;
+                    result = vHidd_DecodeStatus_Error;
                 }
-            }
-            if (!nvdec_seq_done(dec, bmdata->buf[buffer].decseq))
-            {
-                result = vHidd_DecodeStatus_Busy;
+                else
+                    result = vHidd_DecodeStatus_Busy;
                 break;
             }
         }
-        /*
-         * The engine's semaphore marks the end of its method processing,
-         * not of its output DMA: the picture's last 16 KB per plane were
-         * still being written when it fired (GB207, tail check). The host
-         * fence the kernel put on the push buffer's buffers releases only
-         * once the engine is idle, so require it too before reading.
-         */
-        {
-            struct nouveau_bo *slotbo = dec->slot[bmdata->buf[buffer].decslot].bo;
-
-            if (nouveau_bo_wait(slotbo, NOUVEAU_BO_RD | (wait ? 0 : NOUVEAU_BO_NOBLOCK), carddata->client))
-            {
-                result = vHidd_DecodeStatus_Busy;
-                break;
-            }
-        }
-        if (nvdec_frame_error(dec, bmdata->buf[buffer].decseq))
+        if (nvdec_frame_error(dec, seq))
         {
             bmdata->buf[buffer].decstate = NOUVEAU_DECSTATE_ERROR;
             result = vHidd_DecodeStatus_Error;
@@ -827,6 +1023,7 @@ ULONG HIDDNouveauDecodeSettle(struct CardData *carddata, struct HIDDNouveauBitMa
             break;
         }
         bmdata->buf[buffer].decstate = NOUVEAU_DECSTATE_COPYING;
+    }
         /* fall through */
 
     case NOUVEAU_DECSTATE_COPYING:
@@ -835,8 +1032,11 @@ ULONG HIDDNouveauDecodeSettle(struct CardData *carddata, struct HIDDNouveauBitMa
             result = vHidd_DecodeStatus_Busy;
             break;
         }
-        nouveau_bo_wait(bmdata->buf[buffer].bo, NOUVEAU_BO_RDWR, carddata->client);
-        bmdata->buf[buffer].decstate = NOUVEAU_DECSTATE_NONE;
+        {
+            /* the copy engine's work: short; a libdrm call, so under the lock */
+            nouveau_bo_wait(bmdata->buf[buffer].bo, NOUVEAU_BO_RDWR, carddata->client);
+            bmdata->buf[buffer].decstate = NOUVEAU_DECSTATE_NONE;
+        }
         break;
     }
     decode_unlock();
@@ -866,7 +1066,7 @@ static BOOL nvdec_BeginFrame(APTR obj, OOP_Object *bitmap, ULONG buffer)
     struct HIDDNouveauDecodeFrame *f;
     BOOL ok;
 
-    if (!dec->carddata || dec->cur.open)
+    if (!dec->carddata || dec->cur.open || dec->dead)
         return FALSE;
     decode_lock();
     if (!nvdec_target_ok(dec, bitmap, buffer, &bmdata))
@@ -875,13 +1075,47 @@ static BOOL nvdec_BeginFrame(APTR obj, OOP_Object *bitmap, ULONG buffer)
         nvlog("[Nouveau] NVDEC: BeginFrame: %p/%lu is not a usable decode target\n", bitmap, (unsigned long)buffer);
         return FALSE;
     }
+    if (!dec->nslots)
+    {
+        dec->bpp = (bmdata->videoformat == vHidd_VideoFmt_P010) ? 2 : 1;
+        if (!nvdec_pool_alloc(dec, dec->poolslots))
+        {
+            decode_unlock();
+            return FALSE;
+        }
+    }
+    else if (((bmdata->videoformat == vHidd_VideoFmt_P010) ? 2 : 1) != dec->bpp)
+    {
+        decode_unlock();
+        nvlog("[Nouveau] NVDEC: BeginFrame: target sample size differs from the session's pictures\n");
+        return FALSE;
+    }
     /* a buffer decoded into again: whatever it still waits for is finished first */
     if (bmdata->buf[buffer].dec)
         HIDDNouveauDecodeSettle(dec->carddata, bmdata, buffer, TRUE, 0xffffffffUL);
     /* the ring entry must be idle: its last frame completed and was judged */
     f = &dec->ring[dec->ringpos];
     if (f->seq && !nvdec_seq_done(dec, f->seq))
-        nouveau_bo_wait(f->picsetup, NOUVEAU_BO_RDWR, dec->carddata->client);
+    {
+        ULONG waited = 0;
+
+        /* bounded and unlocked, as in HIDDNouveauDecodeSettle */
+        dec->waiters++;
+        decode_unlock();
+        while (!nvdec_seq_done(dec, f->seq) && (waited < NVDEC_STALL_MS))
+        {
+            nvdec_pause();
+            waited += 20;
+        }
+        decode_lock();
+        dec->waiters--;
+        if (!nvdec_seq_done(dec, f->seq))
+        {
+            nvdec_session_kill(dec, "the decoder stopped responding");
+            decode_unlock();
+            return FALSE;
+        }
+    }
     nvdec_frame_retire(dec, f);
     dec->cur.open = TRUE;
     dec->cur.failed = FALSE;
@@ -890,14 +1124,7 @@ static BOOL nvdec_BeginFrame(APTR obj, OOP_Object *bitmap, ULONG buffer)
     dec->cur.slot = -1;
     dec->cur.nslices = 0;
     dec->cur.bitstreamlen = 0;
-    switch (dec->codec)
-    {
-    case NOUVEAU_DECODE_CODEC_H264:
-        ok = HIDDNouveauDecodeH264Begin(dec);
-        break;
-    default:
-        ok = FALSE;
-    }
+    ok = dec->ops->begin(dec);
     if (!ok)
         dec->cur.failed = TRUE;
     decode_unlock();
@@ -912,12 +1139,7 @@ static BOOL nvdec_SubmitParams(APTR obj, ULONG type, APTR data, ULONG size, ULON
     if (!dec->carddata || !dec->cur.open || dec->cur.failed || !data || !size || !count)
         return FALSE;
     decode_lock();
-    switch (dec->codec)
-    {
-    case NOUVEAU_DECODE_CODEC_H264:
-        ok = HIDDNouveauDecodeH264Params(dec, type, data, size, count);
-        break;
-    }
+    ok = dec->ops->params(dec, type, data, size, count);
     if (!ok)
         dec->cur.failed = TRUE;
     decode_unlock();
@@ -932,12 +1154,7 @@ static BOOL nvdec_SubmitBitstream(APTR obj, APTR data, ULONG size)
     if (!dec->carddata || !dec->cur.open || dec->cur.failed || !data || !size)
         return FALSE;
     decode_lock();
-    switch (dec->codec)
-    {
-    case NOUVEAU_DECODE_CODEC_H264:
-        ok = HIDDNouveauDecodeH264Bitstream(dec, data, size);
-        break;
-    }
+    ok = dec->ops->bitstream(dec, data, size);
     if (!ok)
         dec->cur.failed = TRUE;
     decode_unlock();
@@ -971,12 +1188,7 @@ static BOOL nvdec_EndFrame(APTR obj)
     f->buffer = dec->cur.buffer;
     f->checked = FALSE;
     dec->frames++;
-    switch (dec->codec)
-    {
-    case NOUVEAU_DECODE_CODEC_H264:
-        ok = HIDDNouveauDecodeH264Submit(dec, f);
-        break;
-    }
+    ok = dec->ops->submit(dec, f);
     if (ok && (dec->cur.slot >= 0))
     {
         LONG slot = dec->cur.slot;
