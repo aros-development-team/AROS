@@ -72,6 +72,7 @@ struct M68KEmuContext
     ULONG   memheader;          /* the 68k MemHeader describing the heap */
     ULONG   lists_base;         /* ExecBase whose LibList etc. are set up */
     ULONG   cacr;               /* CacheControl() bits the program sees */
+    ULONG   pch_stub;           /* 68k routine feeding characters to a hook */
 
     ULONG   entry_point;
     ULONG   trace_exc;

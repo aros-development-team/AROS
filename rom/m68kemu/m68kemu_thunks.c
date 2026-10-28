@@ -8,7 +8,9 @@
 #include <exec/memory.h>
 #include <aros/debug.h>
 #include <proto/exec.h>
+#include <proto/locale.h>
 #include <dos/datetime.h>
+#include <aros/asmcall.h>
 #include <proto/dos.h>
 #include <dos/rdargs.h>
 #include <dos/dosextens.h>
@@ -43,6 +45,8 @@ extern const ULONG m68kemu_thunks_gadtools_manual_count;
 extern const ULONG m68kemu_thunks_graphics_manual_count;
 extern const struct M68KThunkEntry m68kemu_thunks_diskfont_manual[];
 extern const ULONG m68kemu_thunks_diskfont_manual_count;
+extern const struct M68KThunkEntry m68kemu_thunks_locale_manual[];
+extern const ULONG m68kemu_thunks_locale_manual_count;
 
 /* ── exec.library thunks ─────────────────────────────────────────── */
 
@@ -95,6 +99,9 @@ ULONG M68KEmu_OpenLibrary(struct M68KEmuContext *ctx, const char *name)
             } else if (strcmp(name, "diskfont.library") == 0) {
                 manual = m68kemu_thunks_diskfont_manual;
                 manual_count = m68kemu_thunks_diskfont_manual_count;
+            } else if (strcmp(name, "locale.library") == 0) {
+                manual = m68kemu_thunks_locale_manual;
+                manual_count = m68kemu_thunks_locale_manual_count;
             } else if (strcmp(name, "commodities.library") == 0) {
                 manual = m68kemu_cx_manual;
                 manual_count = m68kemu_cx_manual_count;
@@ -3727,6 +3734,127 @@ static IPTR thunk_diskfont_OpenDiskFont_m(struct M68KEmuContext *ctx, void *cpu)
     font = OpenDiskFont(&ta);
     return font ? (IPTR)shadow_create_by_name(ctx, "TextFont", font) : 0;
 }
+
+/* ── character hooks: native code formats, the program's hook gets the
+   characters. The native call collects them; a small 68k routine run after
+   the thunk (tail_pc) calls the 68k hook once per character, the closing NUL
+   included, with A0 = hook, A2 = object, A1 = character, then returns the
+   call's result in D0. ── */
+#define PCH_DATA    0x60            /* hook, object, result */
+#define PCH_BUF     0x70
+#define PCH_BUFLEN  2048
+
+struct pch_collect
+{
+    char  *buf;
+    ULONG  len;
+};
+
+AROS_UFH3(static void, pch_collect_func,
+    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(APTR, obj, A2),
+    AROS_UFHA(ULONG, ch, A1))
+{
+    AROS_USERFUNC_INIT
+    struct pch_collect *c = (struct pch_collect *)h->h_Data;
+
+    if (c->len < PCH_BUFLEN - 1 && (c->len == 0 || c->buf[c->len - 1] || (UBYTE)ch))
+        c->buf[c->len++] = (char)ch;
+    AROS_USERFUNC_EXIT
+}
+
+static ULONG pch_stub(struct M68KEmuContext *ctx)
+{
+    static const UWORD code[] =
+    {
+        0x48E7, 0x2030,                 /* movem.l d2/a2-a3,-(sp)   */
+        0x267C, 0x0000, 0x0000,         /* movea.l #buf,a3          */
+        0x7000,                         /* loop: moveq #0,d0        */
+        0x101B,                         /* move.b (a3)+,d0          */
+        0x2400,                         /* move.l d0,d2             */
+        0x2240,                         /* movea.l d0,a1            */
+        0x2079, 0x0000, 0x0000,         /* movea.l hook,a0          */
+        0x2479, 0x0000, 0x0000,         /* movea.l object,a2        */
+        0x487A, 0x0008,                 /* pea ret(pc)              */
+        0x2F28, 0x0008,                 /* move.l h_Entry(a0),-(sp) */
+        0x4E75,                         /* rts: call the hook       */
+        0x4A82,                         /* ret: tst.l d2            */
+        0x66DE,                         /* bne.b loop               */
+        0x2039, 0x0000, 0x0000,         /* move.l result,d0         */
+        0x4CDF, 0x0C04,                 /* movem.l (sp)+,d2/a2-a3   */
+        0x4E75                          /* rts                      */
+    };
+    ULONG s = ctx->pch_stub, i;
+
+    if (s)
+        return s;
+    if (!(s = M68KEmu_HeapAlloc(ctx, PCH_BUF + PCH_BUFLEN, MEMF_CLEAR)))
+        return 0;
+    for (i = 0; i < sizeof(code) / sizeof(code[0]); i++)
+        m68k_write16(ctx, s + i * 2, code[i]);
+    m68k_write32(ctx, s + 6, s + PCH_BUF);
+    m68k_write32(ctx, s + 20, s + PCH_DATA);
+    m68k_write32(ctx, s + 26, s + PCH_DATA + 4);
+    m68k_write32(ctx, s + 46, s + PCH_DATA + 8);
+    ctx->pch_stub = s;
+    return s;
+}
+
+/* after the thunk, feed the collected characters to the 68k hook */
+static void pch_emit(struct M68KEmuContext *ctx, ULONG hook, ULONG object,
+                     struct pch_collect *c, ULONG result)
+{
+    ULONG s = pch_stub(ctx);
+
+    if (!s || !hook)
+        return;
+    if (!c->len || c->buf[c->len - 1])
+        c->buf[c->len++] = 0;
+    memcpy(ctx->mem + s + PCH_BUF, c->buf, c->len);
+    m68k_write32(ctx, s + PCH_DATA, hook);
+    m68k_write32(ctx, s + PCH_DATA + 4, object);
+    m68k_write32(ctx, s + PCH_DATA + 8, result);
+    ctx->tail_pc = s;
+    ctx->tail_d0 = result;
+    ctx->tail_a0 = hook;
+    ctx->tail_a6 = ctx->m68k_sysbase;
+}
+
+/* locale -60: FormatDate(A0=locale, A1=template, A2=date, A3=hook) */
+static IPTR thunk_locale_FormatDate_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct Locale *loc = (struct Locale *)m68k_to_host_or_shadow(ctx, THUNK_A(0));
+    CONST_STRPTR tmpl = (CONST_STRPTR)m68k_to_host(ctx, THUNK_A(1));
+    ULONG md = THUNK_A(2);
+    struct DateStamp ds;
+    char buf[PCH_BUFLEN];
+    struct pch_collect c = { buf, 0 };
+    struct Hook h;
+    struct Locale *own = NULL;
+
+    if (!tmpl || !md || !THUNK_A(3))
+        return 0;
+    ds.ds_Days   = (LONG)m68k_read32(ctx, md);
+    ds.ds_Minute = (LONG)m68k_read32(ctx, md + 4);
+    ds.ds_Tick   = (LONG)m68k_read32(ctx, md + 8);
+    if (!loc)
+        loc = own = OpenLocale(NULL);
+    if (!loc)
+        return 0;
+    memset(&h, 0, sizeof(h));
+    h.h_Entry = (HOOKFUNC)pch_collect_func;
+    h.h_Data  = &c;
+    FormatDate(loc, tmpl, &ds, &h);
+    if (own)
+        CloseLocale(own);
+    pch_emit(ctx, THUNK_A(3), THUNK_A(0), &c, 0);
+    return 0;
+}
+
+const struct M68KThunkEntry m68kemu_thunks_locale_manual[] = {
+    { 60, thunk_locale_FormatDate_m },
+};
+const ULONG m68kemu_thunks_locale_manual_count = 1;
 
 const struct M68KThunkEntry m68kemu_thunks_diskfont_manual[] = {
     { 30, thunk_diskfont_OpenDiskFont_m },
