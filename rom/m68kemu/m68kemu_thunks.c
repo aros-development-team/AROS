@@ -2151,20 +2151,10 @@ static IPTR thunk_dos_FindDosEntry_m(struct M68KEmuContext *ctx, void *cpu)
     return dol ? m68k_doslist_out(ctx, FindDosEntry(dol, name, THUNK_D(3))) : 0;
 }
 
-/* dos -114: Info(D1=lock, D2=infodata): nine longs in 68k order, the
-   volume node as a BPTR to its m68k DosList copy */
-static IPTR thunk_dos_Info_m(struct M68KEmuContext *ctx, void *cpu)
+/* an InfoData in 68k layout: nine longs, the volume node as a BPTR to its
+   m68k DosList copy */
+static void infodata_out(struct M68KEmuContext *ctx, ULONG mi, struct InfoData *id)
 {
-    BPTR lock = m68k_bptr_in(ctx, THUNK_D(1));
-    ULONG mi = THUNK_D(2);
-    struct InfoData *id;
-    LONG ok;
-
-    if (!mi || !(id = AllocMem(sizeof(*id), MEMF_CLEAR)))
-        return 0;
-    ok = Info(lock, id);
-    if (ok)
-    {
         m68k_write32(ctx, mi + 0,  id->id_NumSoftErrors);
         m68k_write32(ctx, mi + 4,  id->id_UnitNumber);
         m68k_write32(ctx, mi + 8,  id->id_DiskState);
@@ -2174,7 +2164,21 @@ static IPTR thunk_dos_Info_m(struct M68KEmuContext *ctx, void *cpu)
         m68k_write32(ctx, mi + 24, id->id_DiskType);
         m68k_write32(ctx, mi + 28, m68k_doslist_out(ctx, (struct DosList *)BADDR(id->id_VolumeNode)) >> 2);
         m68k_write32(ctx, mi + 32, id->id_InUse);
-    }
+}
+
+/* dos -114: Info(D1=lock, D2=infodata) */
+static IPTR thunk_dos_Info_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    BPTR lock = m68k_bptr_in(ctx, THUNK_D(1));
+    ULONG mi = THUNK_D(2);
+    struct InfoData *id;
+    LONG ok;
+
+    if (!mi || mi + 36 > ctx->mem_size || !(id = AllocMem(sizeof(*id), MEMF_CLEAR)))
+        return 0;
+    ok = Info(lock, id);
+    if (ok)
+        infodata_out(ctx, mi, id);
     FreeMem(id, sizeof(*id));
     return ok;
 }
@@ -2589,10 +2593,129 @@ static IPTR thunk_dos_NewLoadSeg(struct M68KEmuContext *ctx, void *cpu)
 
 /* ── DOS: Packets ── */
 
+/* dos -240: DoPkt(D1=port, D2=action, D3-D7=args): the arguments name
+   structures in the program's memory, so each action is translated; those
+   with a dos call of their own go through it */
 static IPTR thunk_dos_DoPkt(struct M68KEmuContext *ctx, void *cpu)
 {
-    return DoPkt((struct MsgPort *)THUNK_PTR(1), THUNK_D(2),
-                 THUNK_D(3), THUNK_D(4), THUNK_D(5), THUNK_D(6), THUNK_D(7));
+    struct MsgPort *port = THUNK_D(1) ? (struct MsgPort *)shadow_lookup(ctx, THUNK_D(1)) : NULL;
+    ULONG action = THUNK_D(2), a1 = THUNK_D(3), a2 = THUNK_D(4), a3 = THUNK_D(5);
+    LONG r = 0;
+
+    switch (action)
+    {
+    case ACTION_DISK_INFO:
+    case ACTION_INFO:
+    {
+        ULONG mi = (action == ACTION_INFO ? a2 : a1) << 2;
+        struct InfoData *id;
+        if (!mi || mi + 36 > ctx->mem_size || !(id = AllocMem(sizeof(*id), MEMF_CLEAR)))
+            break;
+        if (action == ACTION_INFO)
+            r = Info(m68k_bptr_in(ctx, a1), id);
+        else if (port)
+            r = DoPkt(port, ACTION_DISK_INFO, (SIPTR)MKBADDR(id), 0, 0, 0, 0);
+        if (r)
+            infodata_out(ctx, mi, id);
+        FreeMem(id, sizeof(*id));
+        return r;
+    }
+    case ACTION_LOCATE_OBJECT:
+    {
+        ULONG bs = a2 << 2;
+        char name[256];
+        BPTR old, l;
+        if (!bs || bs >= ctx->mem_size)
+            break;
+        memcpy(name, ctx->mem + bs + 1, ctx->mem[bs]);
+        name[ctx->mem[bs]] = 0;
+        old = CurrentDir(m68k_bptr_in(ctx, a1));
+        l = Lock((STRPTR)name, a3 == EXCLUSIVE_LOCK ? EXCLUSIVE_LOCK : SHARED_LOCK);
+        CurrentDir(old);
+        return l ? m68k_bptr_out(ctx, l) : 0;
+    }
+    case ACTION_FREE_LOCK:
+        UnLock(m68k_bptr_in(ctx, a1));
+        return DOSTRUE;
+    case ACTION_COPY_DIR:
+    {
+        BPTR l = DupLock(m68k_bptr_in(ctx, a1));
+        return l ? m68k_bptr_out(ctx, l) : 0;
+    }
+    case ACTION_PARENT:
+    {
+        BPTR l = ParentDir(m68k_bptr_in(ctx, a1));
+        return l ? m68k_bptr_out(ctx, l) : 0;
+    }
+    case ACTION_SAME_LOCK:
+        return SameLock(m68k_bptr_in(ctx, a1), m68k_bptr_in(ctx, a2)) == LOCK_SAME ? DOSTRUE : DOSFALSE;
+    case ACTION_EXAMINE_OBJECT:
+    case ACTION_EXAMINE_NEXT:
+    {
+        ULONG mf = a2 << 2;
+        struct FileInfoBlock *fib;
+        if (!mf || mf + 260 > ctx->mem_size || !(fib = fib_native(ctx, mf)))
+            break;
+        r = action == ACTION_EXAMINE_OBJECT ? Examine(m68k_bptr_in(ctx, a1), fib) : ExNext(m68k_bptr_in(ctx, a1), fib);
+        if (r)
+            fib_to_m68k(ctx, mf, fib);
+        return r;
+    }
+    case ACTION_IS_FILESYSTEM:
+        return port ? DoPkt(port, ACTION_IS_FILESYSTEM, 0, 0, 0, 0, 0) : DOSFALSE;
+    case ACTION_CURRENT_VOLUME:
+    {
+        BPTR v = port ? (BPTR)DoPkt(port, ACTION_CURRENT_VOLUME, 0, 0, 0, 0, 0) : BNULL;
+        return v ? m68k_doslist_out(ctx, (struct DosList *)BADDR(v)) >> 2 : 0;
+    }
+    }
+    if (ctx->trace_calls || ctx->trace_end)
+        bug("[m68kemu] DoPkt action %lu is not translated\n", (unsigned long)action);
+    SetIoErr(ERROR_ACTION_NOT_KNOWN);
+    return r;
+}
+
+/* dos -642: GetDeviceProc(D1=name, D2=dp): a DevProc in 68k layout,
+   dvp_Port the handler's port, dvp_Lock a lock the program can pass on */
+#define SHADOW_DEVPROC 36
+static IPTR thunk_dos_GetDeviceProc_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG mprev = THUNK_D(2), m;
+    struct DevProc *prev = NULL, *dp;
+
+    for (UWORD i = 0; mprev && i < ctx->num_shadows; i++)
+        if (ctx->shadow_map[i].m68k_addr == mprev && ctx->shadow_map[i].type == SHADOW_DEVPROC)
+            prev = ctx->shadow_map[i].native_ptr;
+    dp = GetDeviceProc(THUNK_D(1) ? (CONST_STRPTR)m68k_to_host(ctx, THUNK_D(1)) : (CONST_STRPTR)"", prev);
+    if (prev)
+    {
+        shadow_remove(ctx, mprev);
+        M68KEmu_HeapFree(ctx, mprev, 16);
+    }
+    if (!dp || !(m = M68KEmu_HeapAlloc(ctx, 16, 0)))
+        return 0;
+    m68k_write32(ctx, m, dp->dvp_Port ? shadow_create_by_name(ctx, "MsgPort", dp->dvp_Port) : 0);
+    m68k_write32(ctx, m + 4, dp->dvp_Lock ? m68k_bptr_out(ctx, dp->dvp_Lock) : 0);
+    m68k_write32(ctx, m + 8, dp->dvp_Flags);
+    m68k_write32(ctx, m + 12, dp->dvp_DevNode ? m68k_doslist_out(ctx, dp->dvp_DevNode) : 0);
+    shadow_register(ctx, m, dp, SHADOW_DEVPROC);
+    return m;
+}
+
+/* dos -648: FreeDeviceProc(D1=dp) */
+static IPTR thunk_dos_FreeDeviceProc_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG m = THUNK_D(1);
+
+    for (UWORD i = 0; m && i < ctx->num_shadows; i++)
+        if (ctx->shadow_map[i].m68k_addr == m && ctx->shadow_map[i].type == SHADOW_DEVPROC)
+        {
+            FreeDeviceProc(ctx->shadow_map[i].native_ptr);
+            shadow_remove(ctx, m);
+            M68KEmu_HeapFree(ctx, m, 16);
+            break;
+        }
+    return 0;
 }
 
 static IPTR thunk_dos_SendPkt(struct M68KEmuContext *ctx, void *cpu)
@@ -2803,6 +2926,8 @@ const struct M68KThunkEntry m68kemu_thunks_dos[] = {
     { 156, thunk_dos_UnLoadSeg },
     { 768, thunk_dos_NewLoadSeg },
     { 240, thunk_dos_DoPkt },
+    { 642, thunk_dos_GetDeviceProc_m },
+    { 648, thunk_dos_FreeDeviceProc_m },
     { 246, thunk_dos_SendPkt },
     { 252, thunk_dos_WaitPkt },
     { 258, thunk_dos_ReplyPkt },
