@@ -36,7 +36,7 @@ static LONG emu_proc_entry(void)
 static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
                               CONST_STRPTR argPtr, ULONG argSize,
                               ULONG stackSize, const char *programName,
-                              struct M68KEmuLibBase *M68KEmuBase)
+                              BPTR homeDir, struct M68KEmuLibBase *M68KEmuBase)
 {
     ULONG m68k_sysbase, m68k_argptr;
     LONG result = -1;
@@ -92,7 +92,14 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
     /* If stackSize is 0, run directly (non-threaded) */
     if (stackSize == 0)
     {
+        /* PROGDIR: is the program's own directory, not the caller's */
+        BPTR oldHome = homeDir ? SetProgramDir(homeDir) : BNULL;
         LONG rc = M68KEmu_Execute(ctx);
+        if (homeDir)
+        {
+            SetProgramDir(oldHome);
+            UnLock(homeDir);
+        }
         m68k_restore_windowptr(ctx);
         return rc;
     }
@@ -121,6 +128,7 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
             { NP_Output,      (IPTR)Output() },
             { NP_CloseOutput, FALSE },
             { NP_CurrentDir,  (IPTR)dirlock },
+            { homeDir ? NP_HomeDir : TAG_IGNORE, (IPTR)homeDir },
             { NP_Cli,         is_cli },
             { TAG_DONE,       0 }
         };
@@ -133,6 +141,7 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
         else
         {
             UnLock(dirlock);
+            if (homeDir) UnLock(homeDir);
             result = -1;
         }
     }
@@ -205,7 +214,7 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
             snprintf(name, sizeof(name), "%s", me->tc_Node.ln_Name ? me->tc_Node.ln_Name : "");
         }
         result = setup_and_execute(ctx, entry, argPtr, argSize,
-                                   stackSize, name[0] ? name : NULL, M68KEmuBase);
+                                   stackSize, name[0] ? name : NULL, BNULL, M68KEmuBase);
     }
     if (ctx && 0) bug("[m68kemu] TRACE RunHunk result %ld\n", (long)result);
 
@@ -257,8 +266,13 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
     FreeMem(fileData, fileSize);
 
     if (entry)
+    {
+        BPTR lock = Lock(fileName, SHARED_LOCK);
+        BPTR homeDir = lock ? ParentDir(lock) : BNULL;
+        UnLock(lock);
         result = setup_and_execute(ctx, entry, argPtr, argSize,
-                                   stackSize, fileName, M68KEmuBase);
+                                   stackSize, fileName, homeDir, M68KEmuBase);
+    }
 
     M68KEmu_DestroyContext(ctx);
     return result;
