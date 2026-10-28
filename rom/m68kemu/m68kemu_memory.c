@@ -9,6 +9,7 @@
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <dos/notify.h>
 #include <dos/bptr.h>
 #include <dos/dostags.h>
 #include <utility/tagitem.h>
@@ -91,6 +92,14 @@ void M68KEmu_DestroyContext(struct M68KEmuContext *ctx)
 {
     if (!ctx) return;
     m68k_vbl_close(ctx);
+    /* notifications the program left running would signal a port that is gone */
+    for (UWORD i = 0; i < ctx->num_notify; i++)
+    {
+        EndNotify(ctx->notify[i].nr);
+        FreeVec(ctx->notify[i].nr->nr_Name);
+        FreeVec(ctx->notify[i].nr);
+    }
+    ctx->num_notify = 0;
     if (ctx->handles) FreeVec(ctx->handles);
     m68k_boopsi_cleanup(ctx);
     for (int i = 0; i < 32; i++)

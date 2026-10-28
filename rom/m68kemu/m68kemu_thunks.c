@@ -16,6 +16,7 @@
 #include <dos/filehandler.h>
 #include <aros/asmcall.h>
 #include <proto/dos.h>
+#include <dos/notify.h>
 #include <dos/rdargs.h>
 #include <dos/dosextens.h>
 #include <string.h>
@@ -1068,6 +1069,7 @@ static IPTR thunk_exec_WaitPort(struct M68KEmuContext *ctx, void *cpu)
 
 /* exec -372: GetMsg(A0=port) — shadow-aware */
 static ULONG imsg_to_m68k(struct M68KEmuContext *ctx, struct IntuiMessage *imsg);
+static ULONG notifymsg_to_m68k(struct M68KEmuContext *ctx, struct NotifyMessage *nm);
 
 static IPTR thunk_exec_GetMsg(struct M68KEmuContext *ctx, void *cpu)
 {
@@ -1077,6 +1079,11 @@ static IPTR thunk_exec_GetMsg(struct M68KEmuContext *ctx, void *cpu)
 
     struct IntuiMessage *imsg = (struct IntuiMessage *)GetMsg(port);
     if (!imsg) return 0;
+    {
+        struct NotifyMessage *nm = (struct NotifyMessage *)imsg;
+        if (nm->nm_Class == NOTIFY_CLASS && nm->nm_Code == NOTIFY_CODE)
+            return notifymsg_to_m68k(ctx, nm);
+    }
     /* a device returning one of the program's I/O requests */
     {
         ULONG mio = m68k_ioreq_of(ctx, imsg);
@@ -1124,11 +1131,120 @@ static ULONG imsg_to_m68k(struct M68KEmuContext *ctx, struct IntuiMessage *imsg)
 static IPTR thunk_exec_ReplyMsg(struct M68KEmuContext *ctx, void *cpu)
 {
     ULONG m_msg = THUNK_A(1);
+    const struct M68KStructLayout *nml = shadow_find_layout("NotifyMessage");
+    BOOL notify = FALSE;
     struct Message *msg = (struct Message *)shadow_lookup(ctx, m_msg);
+
+    for (UWORD i = 0; nml && i < ctx->num_shadows; i++)
+        if (ctx->shadow_map[i].m68k_addr == m_msg && ctx->shadow_map[i].type == nml->shadow_type)
+            notify = TRUE;
     if (msg) {
         ReplyMsg(msg);
-        shadow_destroy(ctx, shadow_find_layout("IntuiMessage"), m_msg);
+        shadow_destroy(ctx, notify ? nml : shadow_find_layout("IntuiMessage"), m_msg);
     }
+    return 0;
+}
+
+/* ── DOS notification: the request the handler sees is a native copy ──
+   m68k NotifyRequest: nr_Name 0, nr_FullName 4, nr_UserData 8,
+   nr_Flags 12, nr_Port / nr_Task 16, nr_SignalNum 20 */
+static ULONG notifymsg_to_m68k(struct M68KEmuContext *ctx, struct NotifyMessage *nm)
+{
+    ULONG mm = shadow_create(ctx, shadow_find_layout("NotifyMessage"), nm), mnr = 0;
+
+    if (!mm)
+    {
+        ReplyMsg(&nm->nm_ExecMessage);
+        return 0;
+    }
+    for (UWORD i = 0; i < ctx->num_notify; i++)
+        if (ctx->notify[i].nr == nm->nm_NReq)
+            mnr = ctx->notify[i].m68k;
+    m68k_write32(ctx, mm + 20, nm->nm_Class);
+    m68k_write16(ctx, mm + 24, nm->nm_Code);
+    m68k_write32(ctx, mm + 26, mnr);
+    return mm;
+}
+
+static char *m68k_strdup_native(struct M68KEmuContext *ctx, ULONG s)
+{
+    ULONG len;
+    char *d;
+
+    if (!s || s >= ctx->mem_size)
+        return NULL;
+    len = strnlen((const char *)ctx->mem + s, ctx->mem_size - s);
+    if ((d = AllocVec(len + 1, MEMF_ANY)))
+    {
+        memcpy(d, ctx->mem + s, len);
+        d[len] = 0;
+    }
+    return d;
+}
+
+/* dos -888: StartNotify(D1=notify) */
+static IPTR thunk_dos_StartNotify_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG m = THUNK_D(1), flags, fn;
+    struct NotifyRequest *nr;
+
+    if (!m || m + 48 > ctx->mem_size || ctx->num_notify >= sizeof(ctx->notify) / sizeof(ctx->notify[0]))
+        return DOSFALSE;
+    if (!(nr = AllocVec(sizeof(*nr), MEMF_CLEAR)))
+        return DOSFALSE;
+    flags = m68k_read32(ctx, m + 12);
+    nr->nr_Name = (STRPTR)m68k_strdup_native(ctx, m68k_read32(ctx, m));
+    nr->nr_UserData = m;
+    nr->nr_Flags = flags & ~NRF_MAGIC;
+    if (flags & NRF_SEND_MESSAGE)
+        nr->nr_stuff.nr_Msg.nr_Port = (struct MsgPort *)shadow_lookup(ctx, m68k_read32(ctx, m + 16));
+    else if (flags & NRF_SEND_SIGNAL)
+    {
+        nr->nr_stuff.nr_Signal.nr_Task = FindTask(NULL);
+        nr->nr_stuff.nr_Signal.nr_SignalNum = ctx->mem[m + 20];
+    }
+    if (!nr->nr_Name || ((flags & NRF_SEND_MESSAGE) && !nr->nr_stuff.nr_Msg.nr_Port) || !StartNotify(nr))
+    {
+        FreeVec(nr->nr_Name);
+        FreeVec(nr);
+        return DOSFALSE;
+    }
+    fn = 0;
+    if (nr->nr_FullName)
+    {
+        ULONG len = strlen((const char *)nr->nr_FullName);
+        if ((fn = M68KEmu_HeapAlloc(ctx, len + 1, 0)))
+            memcpy(ctx->mem + fn, nr->nr_FullName, len + 1);
+    }
+    m68k_write32(ctx, m + 4, fn);
+    ctx->notify[ctx->num_notify].m68k = m;
+    ctx->notify[ctx->num_notify].nr = nr;
+    ctx->num_notify++;
+    return DOSTRUE;
+}
+
+/* dos -894: EndNotify(D1=notify) */
+static IPTR thunk_dos_EndNotify_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG m = THUNK_D(1);
+
+    for (UWORD i = 0; i < ctx->num_notify; i++)
+        if (ctx->notify[i].m68k == m)
+        {
+            struct NotifyRequest *nr = ctx->notify[i].nr;
+            ULONG fn = m68k_read32(ctx, m + 4);
+
+            EndNotify(nr);
+            FreeVec(nr->nr_Name);
+            FreeVec(nr);
+            if (fn && fn < ctx->mem_size)
+            {
+                M68KEmu_HeapFree(ctx, fn, strlen((const char *)ctx->mem + fn) + 1);
+                m68k_write32(ctx, m + 4, 0);
+            }
+            ctx->notify[i] = ctx->notify[--ctx->num_notify];
+            break;
+        }
     return 0;
 }
 
@@ -2104,9 +2220,21 @@ static IPTR thunk_dos_AllocDosObject(struct M68KEmuContext *ctx, void *cpu)
     return (IPTR)obj;
 }
 
+/* a FileInfoBlock from AllocDosObject is a shadow: free the native one and its 68k copy */
 static IPTR thunk_dos_FreeDosObject(struct M68KEmuContext *ctx, void *cpu)
 {
-    FreeDosObject(THUNK_D(1), THUNK_PTR(2));
+    ULONG type = THUNK_D(1), m = THUNK_D(2);
+    APTR obj;
+
+    if (type == DOS_FIB && m && (obj = shadow_lookup(ctx, m)))
+    {
+        FreeDosObject(DOS_FIB, obj);
+        shadow_destroy(ctx, shadow_find_layout("FileInfoBlock"), m);
+        return 0;
+    }
+    if (type == DOS_FIB)
+        return 0;
+    FreeDosObject(type, THUNK_PTR(2));
     return 0;
 }
 
@@ -2385,6 +2513,8 @@ const struct M68KThunkEntry m68kemu_thunks_dos[] = {
     { 834, thunk_dos_MatchEnd },
     { 228, thunk_dos_AllocDosObject },
     { 234, thunk_dos_FreeDosObject },
+    { 888, thunk_dos_StartNotify_m },
+    { 894, thunk_dos_EndNotify_m },
     { 222, thunk_dos_Execute },
     { 604, thunk_dos_SystemTagList },
     { 504, thunk_dos_RunCommand },

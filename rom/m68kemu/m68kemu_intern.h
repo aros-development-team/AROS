@@ -164,6 +164,8 @@ struct M68KEmuContext
     ULONG   m68k_proc;          /* the program's 68k Process */
     struct { char name[64]; ULONG base, reopen; } m68klibs[16];   /* 68k libraries loaded from disk */
     UWORD   num_m68klibs;
+    struct { ULONG m68k; struct NotifyRequest *nr; } notify[64];   /* the program's file notifications */
+    UWORD   num_notify;
     ULONG   windowptr;          /* its pr_WindowPtr as last passed to the native process */
     APTR    windowptr_native;   /* the native process's own pr_WindowPtr, restored at the end */
     BOOL    windowptr_set;
