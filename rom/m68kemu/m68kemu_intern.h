@@ -83,6 +83,7 @@ struct M68KEmuContext
     ULONG   lists_base;         /* ExecBase whose LibList etc. are set up */
     ULONG   cacr;               /* CacheControl() bits the program sees */
     ULONG   pch_stub;           /* 68k routine feeding characters to a hook */
+    APTR    own_rps[32];        /* native twins of the program's own RastPorts */
 
     ULONG   entry_point;
     ULONG   trace_exc;
@@ -325,6 +326,7 @@ LONG   M68KEmu_Execute(struct M68KEmuContext *ctx);
 ULONG  M68KEmu_HeapAlloc(struct M68KEmuContext *ctx, ULONG size, ULONG requirements);
 void   M68KEmu_HeapFree(struct M68KEmuContext *ctx, ULONG addr, ULONG size);
 ULONG  M68KEmu_HeapAvail(struct M68KEmuContext *ctx, ULONG reqs);
+struct BitMap *m68k_bitmap_in(struct M68KEmuContext *ctx, ULONG mb, struct BitMap *scratch);
 struct M68KHeapRegion *M68KEmu_HeapRegion(struct M68KEmuContext *ctx, ULONG addr);
 ULONG  M68KEmu_HeapAllocAbs(struct M68KEmuContext *ctx, ULONG size, ULONG addr);
 void   m68k_publish_base(struct M68KEmuContext *ctx, ULONG base, const char *name);

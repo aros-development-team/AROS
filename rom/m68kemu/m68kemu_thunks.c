@@ -9,6 +9,7 @@
 #include <aros/debug.h>
 #include <proto/exec.h>
 #include <proto/locale.h>
+#include <graphics/gfxbase.h>
 #include <dos/datetime.h>
 #include <dos/filehandler.h>
 #include <aros/asmcall.h>
@@ -54,6 +55,7 @@ extern const ULONG m68kemu_thunks_locale_manual_count;
 /* Forward declarations for shadow helpers defined below */
 ULONG shadow_register(struct M68KEmuContext *ctx, ULONG m68k_addr, void *native, UWORD type);
 static ULONG setup_window_shadow(struct M68KEmuContext *ctx, struct Window *w);
+static void rp_state_out(struct M68KEmuContext *ctx, ULONG mrp, struct RastPort *rp, BOOL font);
 IPTR m68k_NewObjectA(struct M68KEmuContext *ctx, void *cpu);
 IPTR m68k_DisposeObject(struct M68KEmuContext *ctx, void *cpu);
 IPTR m68k_SetAttrsA(struct M68KEmuContext *ctx, void *cpu);
@@ -780,11 +782,12 @@ static ULONG setup_window_shadow(struct M68KEmuContext *ctx, struct Window *w)
     /* RPort — shadow the Window's RastPort */
     if (w->RPort)
     {
-        ULONG mrp = M68KEmu_HeapAlloc(ctx, M68K_SIZEOF_RASTPORT, 0);
+        ULONG mrp = M68KEmu_HeapAlloc(ctx, M68K_SIZEOF_RASTPORT, MEMF_CLEAR);
         if (mrp)
         {
             shadow_register(ctx, mrp, w->RPort, 3);
             m68k_write32(ctx, mw + M68K_WIN_RPORT, mrp);
+            rp_state_out(ctx, mrp, w->RPort, TRUE);
         }
     }
 
@@ -826,18 +829,24 @@ static ULONG setup_window_shadow(struct M68KEmuContext *ctx, struct Window *w)
         }
     }
 
-    /* WScreen — find existing screen shadow */
+    /* WScreen: the screen's shadow, made now if the program never asked
+       for the screen itself (a window opened on a public screen by name) */
     if (w->WScreen)
     {
+        ULONG ms = 0;
+
         for (UWORD i = 0; i < ctx->num_shadows; i++)
-            if (ctx->shadow_map[i].native_ptr == (void *)w->WScreen)
-            {
-                ULONG mrp = m68k_read32(ctx, mw + M68K_WIN_RPORT);
-                m68k_write32(ctx, mw + M68K_WIN_WSCREEN, ctx->shadow_map[i].m68k_addr);
-                if (mrp)                                      /* window rp_BitMap = the screen's */
-                    m68k_write32(ctx, mrp + 4, ctx->shadow_map[i].m68k_addr + 184);
-                break;
-            }
+            if (ctx->shadow_map[i].native_ptr == (void *)w->WScreen && ctx->shadow_map[i].type == 5)
+                { ms = ctx->shadow_map[i].m68k_addr; break; }
+        if (!ms)
+            ms = shadow_create_by_name(ctx, "Screen", w->WScreen);
+        if (ms)
+        {
+            ULONG mrp = m68k_read32(ctx, mw + M68K_WIN_RPORT);
+            m68k_write32(ctx, mw + M68K_WIN_WSCREEN, ms);
+            if (mrp)                                          /* window rp_BitMap = the screen's */
+                m68k_write32(ctx, mrp + 4, ms + M68K_SCR_BITMAP);
+        }
     }
 
     /* Title */
@@ -2623,11 +2632,104 @@ static IPTR thunk_intuition_EasyRequestArgs(struct M68KEmuContext *ctx, void *cp
 
 /* ── Graphics shadow-aware thunks ──────────────────────────────── */
 
+/* an m68k struct BitMap: BytesPerRow(2) Rows(2) Flags(1) Depth(1) pad(2) Planes[8](4 each) */
+struct M68KBitMapView { ULONG bpr, rows, depth; ULONG planes[8]; };
+static BOOL bitmap_view(struct M68KEmuContext *ctx, ULONG mbm, struct M68KBitMapView *v);
+static void bitmap_native(struct M68KEmuContext *ctx, struct M68KBitMapView *v, struct BitMap *nb);
+
+/* A BitMap the program names: a native one (shadow or handle), a screen's
+   m68k view (its sc_BitMap), or planes in the program's memory, which get
+   a native planar BitMap in scratch */
+struct BitMap *m68k_bitmap_in(struct M68KEmuContext *ctx, ULONG mb, struct BitMap *scratch)
+{
+    struct BitMap *bm;
+    struct M68KBitMapView v;
+
+    if (!mb)
+        return NULL;
+    if ((bm = (struct BitMap *)shadow_lookup(ctx, mb)))
+        return bm;
+    if (mb >= M68KEMU_HANDLE_BASE)
+        return (struct BitMap *)m68k_bptr_in(ctx, mb);
+    for (UWORD i = 0; i < ctx->num_shadows; i++)
+        if (ctx->shadow_map[i].type == 5 && ctx->shadow_map[i].m68k_addr + M68K_SCR_BITMAP == mb)
+            return ((struct Screen *)ctx->shadow_map[i].native_ptr)->RastPort.BitMap;
+    if (!scratch || !bitmap_view(ctx, mb, &v))
+        return NULL;
+    bitmap_native(ctx, &v, scratch);
+    return scratch;
+}
+
+/* A RastPort in the program's own memory (InitRastPort on its own BitMap)
+   gets a native twin, made once; the program's fields are copied in before
+   every call, and rp_state_out() copies pens and text state back after */
+#define SHADOW_OWNRP 14
+struct M68KOwnRP { struct RastPort rp; struct BitMap bm; };
+
+static struct RastPort *own_rp_in(struct M68KEmuContext *ctx, ULONG mrp, struct M68KOwnRP *own)
+{
+    struct RastPort *rp = &own->rp;
+    struct TextFont *tf = (struct TextFont *)shadow_lookup(ctx, m68k_read32(ctx, mrp + 52));
+    ULONG ml = m68k_read32(ctx, mrp);
+
+    rp->BitMap = m68k_bitmap_in(ctx, m68k_read32(ctx, mrp + 4), &own->bm);
+    rp->Layer = ml ? (struct Layer *)shadow_lookup(ctx, ml) : NULL;
+    SetABPenDrMd(rp, ctx->mem[mrp + 25], ctx->mem[mrp + 26], ctx->mem[mrp + 28]);
+    if (tf && rp->Font != tf)
+        SetFont(rp, tf);
+    rp->cp_x = (WORD)m68k_read16(ctx, mrp + 36);
+    rp->cp_y = (WORD)m68k_read16(ctx, mrp + 38);
+    return rp;
+}
+
 struct RastPort *resolve_rp(struct M68KEmuContext *ctx, ULONG m68k_rp)
 {
-    struct RastPort *rp = (struct RastPort *)shadow_lookup(ctx, m68k_rp);
-    if (rp) return rp;
-    return (struct RastPort *)m68k_to_host(ctx, m68k_rp);
+    struct M68KOwnRP *own;
+
+    for (UWORD i = 0; i < ctx->num_shadows; i++)
+        if (ctx->shadow_map[i].m68k_addr == m68k_rp)
+        {
+            if (ctx->shadow_map[i].type == SHADOW_OWNRP)
+                return own_rp_in(ctx, m68k_rp, (struct M68KOwnRP *)ctx->shadow_map[i].native_ptr);
+            return (struct RastPort *)ctx->shadow_map[i].native_ptr;
+        }
+    if (!m68k_rp || m68k_rp + 100 > ctx->mem_size || m68k_rp >= M68KEMU_HANDLE_BASE)
+        return NULL;
+    if (!(own = AllocVec(sizeof(*own), MEMF_CLEAR)))
+        return NULL;
+    InitRastPort(&own->rp);
+    if (!shadow_register(ctx, m68k_rp, own, SHADOW_OWNRP))
+    {
+        FreeVec(own);
+        return NULL;
+    }
+    for (int i = 0; i < 32; i++)
+        if (!ctx->own_rps[i]) { ctx->own_rps[i] = own; break; }
+    return own_rp_in(ctx, m68k_rp, own);
+}
+
+/* After a call that changes a RastPort the program reads back (its own
+   text renderer reads Font, pens, DrawMode and the text metrics; layout
+   code reads TxHeight and the pen position), copy that state into the
+   m68k RastPort shadow. A RastPort in the program's memory is its own. */
+static void rp_state_out(struct M68KEmuContext *ctx, ULONG mrp, struct RastPort *rp, BOOL font)
+{
+    if (!mrp || !rp || shadow_lookup(ctx, mrp) != rp)
+        return;
+    ctx->mem[mrp + 25] = rp->FgPen;
+    ctx->mem[mrp + 26] = rp->BgPen;
+    ctx->mem[mrp + 27] = rp->AOlPen;
+    ctx->mem[mrp + 28] = rp->DrawMode;
+    m68k_write16(ctx, mrp + 36, rp->cp_x);
+    m68k_write16(ctx, mrp + 38, rp->cp_y);
+    if (font)
+        m68k_write32(ctx, mrp + 52, rp->Font ? shadow_create_by_name(ctx, "TextFont", rp->Font) : 0);
+    ctx->mem[mrp + 56] = rp->AlgoStyle;
+    ctx->mem[mrp + 57] = rp->TxFlags;
+    m68k_write16(ctx, mrp + 58, rp->TxHeight);
+    m68k_write16(ctx, mrp + 60, rp->TxWidth);
+    m68k_write16(ctx, mrp + 62, rp->TxBaseline);
+    m68k_write16(ctx, mrp + 64, rp->TxSpacing);
 }
 
 /* graphics -240: Move(A1=rp, D0=x, D1=y) */
@@ -2635,6 +2737,7 @@ static IPTR thunk_gfx_Move(struct M68KEmuContext *ctx, void *cpu)
 {
     struct RastPort *rp = resolve_rp(ctx, THUNK_A(1));
     Move(rp, (WORD)THUNK_D(0), (WORD)THUNK_D(1));
+    rp_state_out(ctx, THUNK_A(1), rp, FALSE);
     return 0;
 }
 
@@ -2644,6 +2747,7 @@ static IPTR thunk_gfx_Text(struct M68KEmuContext *ctx, void *cpu)
     struct RastPort *rp = resolve_rp(ctx, THUNK_A(1));
     CONST_STRPTR str = (CONST_STRPTR)THUNK_PTR(0);
     Text(rp, str, (ULONG)THUNK_D(0));
+    rp_state_out(ctx, THUNK_A(1), rp, FALSE);
     return 0;
 }
 
@@ -2652,6 +2756,7 @@ static IPTR thunk_gfx_SetAPen(struct M68KEmuContext *ctx, void *cpu)
 {
     struct RastPort *rp = resolve_rp(ctx, THUNK_A(1));
     SetAPen(rp, (ULONG)THUNK_D(0));
+    rp_state_out(ctx, THUNK_A(1), rp, FALSE);
     return 0;
 }
 
@@ -2660,6 +2765,7 @@ static IPTR thunk_gfx_SetBPen(struct M68KEmuContext *ctx, void *cpu)
 {
     struct RastPort *rp = resolve_rp(ctx, THUNK_A(1));
     SetBPen(rp, (ULONG)THUNK_D(0));
+    rp_state_out(ctx, THUNK_A(1), rp, FALSE);
     return 0;
 }
 
@@ -2668,6 +2774,7 @@ static IPTR thunk_gfx_SetDrMd(struct M68KEmuContext *ctx, void *cpu)
 {
     struct RastPort *rp = resolve_rp(ctx, THUNK_A(1));
     SetDrMd(rp, (ULONG)THUNK_D(0));
+    rp_state_out(ctx, THUNK_A(1), rp, FALSE);
     return 0;
 }
 
@@ -2684,6 +2791,7 @@ static IPTR thunk_gfx_Draw(struct M68KEmuContext *ctx, void *cpu)
 {
     struct RastPort *rp = resolve_rp(ctx, THUNK_A(1));
     Draw(rp, (WORD)THUNK_D(0), (WORD)THUNK_D(1));
+    rp_state_out(ctx, THUNK_A(1), rp, FALSE);
     return 0;
 }
 
@@ -2700,6 +2808,7 @@ static IPTR thunk_gfx_SetABPenDrMd(struct M68KEmuContext *ctx, void *cpu)
 {
     struct RastPort *rp = resolve_rp(ctx, THUNK_A(1));
     SetABPenDrMd(rp, THUNK_D(0), THUNK_D(1), THUNK_D(2));
+    rp_state_out(ctx, THUNK_A(1), rp, FALSE);
     return 0;
 }
 
@@ -2709,6 +2818,7 @@ static IPTR thunk_gfx_SetFont(struct M68KEmuContext *ctx, void *cpu)
     struct RastPort *rp = resolve_rp(ctx, THUNK_A(1));
     struct TextFont *font = (struct TextFont *)THUNK_PTR(0);
     SetFont(rp, font);
+    rp_state_out(ctx, THUNK_A(1), rp, TRUE);
     return 0;
 }
 
@@ -3899,6 +4009,111 @@ static IPTR thunk_exec_Deallocate_m(struct M68KEmuContext *ctx, void *cpu)
     return 0;
 }
 
+/* -960: GetBitMapAttr(A0=bitmap, D1=attribute): a native bitmap answers for
+   itself; a BitMap in the program's memory (its own, or a screen's 68k
+   view) from its fields */
+static IPTR thunk_gfx_GetBitMapAttr_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG mb = THUNK_A(0), attr = THUNK_D(1);
+    struct BitMap *bm = m68k_bitmap_in(ctx, mb, NULL);
+
+    if (bm)
+        return GetBitMapAttr(bm, attr);
+    if (!mb || mb + 40 >= ctx->mem_size)
+        return 0;
+    switch (attr)
+    {
+    case BMA_HEIGHT: return m68k_read16(ctx, mb + 2);
+    case BMA_DEPTH:  return ctx->mem[mb + 5];
+    case BMA_WIDTH:  return (ULONG)m68k_read16(ctx, mb) * 8;
+    case BMA_FLAGS:  return ctx->mem[mb + 4] & (BMF_DISPLAYABLE | BMF_INTERLEAVED);
+    }
+    return 0;
+}
+
+/* -198: InitRastPort(A1=rp) and -390: InitBitMap(A0=bm, D0=depth, D1=w, D2=h)
+   on structures in the program's memory: the 68k layouts, as exec's
+   graphics.library fills them (the native ones are larger) */
+static IPTR thunk_gfx_InitRastPort_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG mrp = THUNK_A(1);
+
+    if (!mrp || mrp + 100 > ctx->mem_size)
+        return 0;
+    /* a window's or screen's RastPort keeps its fields */
+    for (UWORD i = 0; i < ctx->num_shadows; i++)
+        if (ctx->shadow_map[i].m68k_addr == mrp && ctx->shadow_map[i].type != SHADOW_OWNRP)
+            return 0;
+    memset(ctx->mem + mrp, 0, 100);
+    ctx->mem[mrp + 24] = 0xFF;                          /* Mask */
+    ctx->mem[mrp + 25] = 0xFF;                          /* FgPen -1 */
+    ctx->mem[mrp + 27] = 0xFF;                          /* AOlPen -1 */
+    ctx->mem[mrp + 28] = JAM2;                          /* DrawMode */
+    m68k_write16(ctx, mrp + 34, 0xFFFF);                /* LinePtrn */
+    m68k_write16(ctx, mrp + 48, 1);                     /* PenWidth */
+    m68k_write16(ctx, mrp + 50, 1);                     /* PenHeight */
+    if (GfxBase->DefaultFont)
+    {
+        struct TextFont *tf = GfxBase->DefaultFont;
+        m68k_write32(ctx, mrp + 52, shadow_create_by_name(ctx, "TextFont", tf));
+        m68k_write16(ctx, mrp + 58, tf->tf_YSize);
+        m68k_write16(ctx, mrp + 60, tf->tf_XSize);
+        m68k_write16(ctx, mrp + 62, tf->tf_Baseline);
+    }
+    return 0;
+}
+
+static IPTR thunk_gfx_InitBitMap_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG mb = THUNK_A(0);
+
+    if (!mb || mb + 40 > ctx->mem_size || shadow_lookup(ctx, mb))
+        return 0;
+    m68k_write16(ctx, mb, (UWORD)(((THUNK_D(1) + 15) >> 4) << 1));   /* BytesPerRow */
+    m68k_write16(ctx, mb + 2, (UWORD)THUNK_D(2));                     /* Rows */
+    ctx->mem[mb + 4] = 0;                                             /* Flags */
+    ctx->mem[mb + 5] = (UBYTE)THUNK_D(0);                             /* Depth */
+    m68k_write16(ctx, mb + 6, 0);
+    return 0;
+}
+
+/* -552: ClipBlit(A0=srcRP, D0/D1=src, A1=destRP, D2/D3=dest, D4/D5=size, D6=minterm) */
+static IPTR thunk_gfx_ClipBlit_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct RastPort *src = resolve_rp(ctx, THUNK_A(0));
+    struct RastPort *dst = resolve_rp(ctx, THUNK_A(1));
+
+    if (!src || !dst)
+        return 0;
+    ClipBlit(src, (WORD)THUNK_D(0), (WORD)THUNK_D(1), dst, (WORD)THUNK_D(2), (WORD)THUNK_D(3),
+             (WORD)THUNK_D(4), (WORD)THUNK_D(5), (UBYTE)THUNK_D(6));
+    return 0;
+}
+
+/* -36: BltTemplate(A0=source, D0=xSrc, D1=srcMod, A1=destRP, D2/D3=dest, D4/D5=size):
+   the template is bytes in the program's memory, read as they are */
+static IPTR thunk_gfx_BltTemplate_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct RastPort *dst = resolve_rp(ctx, THUNK_A(1));
+    PLANEPTR src = (PLANEPTR)m68k_to_host(ctx, THUNK_A(0));
+
+    if (!dst || !src)
+        return 0;
+    BltTemplate(src, (WORD)THUNK_D(0), (WORD)THUNK_D(1), dst, (WORD)THUNK_D(2), (WORD)THUNK_D(3),
+                (WORD)THUNK_D(4), (WORD)THUNK_D(5));
+    rp_state_out(ctx, THUNK_A(1), dst, FALSE);
+    return 0;
+}
+
+/* -918: AllocBitMap(D0=w, D1=h, D2=depth, D3=flags, A0=friend): the friend may
+   be a screen's m68k view or the program's own BitMap */
+static IPTR thunk_gfx_AllocBitMap_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct BitMap scratch, *friend = m68k_bitmap_in(ctx, THUNK_A(0), &scratch);
+
+    return (IPTR)AllocBitMap(THUNK_D(0), THUNK_D(1), THUNK_D(2), THUNK_D(3), friend);
+}
+
 /* -900: GetRGB32(A0=cm, D0=first, D1=ncolors, A1=table): the table is m68k longs */
 static IPTR thunk_gfx_GetRGB32(struct M68KEmuContext *ctx, void *cpu)
 {
@@ -4242,8 +4457,6 @@ static void planar_refresh(struct M68KEmuContext *ctx, LONG x0, LONG y0, LONG w,
     FreeVec(row);
 }
 
-/* an m68k struct BitMap: BytesPerRow(2) Rows(2) Flags(1) Depth(1) pad(2) Planes[8](4 each) */
-struct M68KBitMapView { ULONG bpr, rows, depth; ULONG planes[8]; };
 
 static BOOL bitmap_view(struct M68KEmuContext *ctx, ULONG mbm, struct M68KBitMapView *v)
 {
@@ -4373,6 +4586,12 @@ const struct M68KThunkEntry m68kemu_thunks_graphics_manual[] = {
     { 72,  thunk_gfx_OpenFont },
     { 192, thunk_gfx_LoadRGB4 },
     { 900, thunk_gfx_GetRGB32 },
+    { 960, thunk_gfx_GetBitMapAttr_m },
+    { 552, thunk_gfx_ClipBlit_m },
+    { 198, thunk_gfx_InitRastPort_m },
+    { 390, thunk_gfx_InitBitMap_m },
+    { 36,  thunk_gfx_BltTemplate_m },
+    { 918, thunk_gfx_AllocBitMap_m },
     { 882, thunk_gfx_LoadRGB32 },
     { 240, thunk_gfx_Move },
     { 60,  thunk_gfx_Text },

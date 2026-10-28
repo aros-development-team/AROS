@@ -95,6 +95,9 @@ void M68KEmu_DestroyContext(struct M68KEmuContext *ctx)
     m68k_boopsi_cleanup(ctx);
     for (int i = 0; i < 32; i++)
         FreeVec(ctx->gfx_owned[i]);
+    for (int i = 0; i < 32; i++)
+        if (ctx->own_rps[i])
+            FreeVec(ctx->own_rps[i]);
     if (ctx->mem) FreeMem(ctx->mem, ctx->mem_size);
     FreeMem(ctx, sizeof(struct M68KEmuContext));
 }
