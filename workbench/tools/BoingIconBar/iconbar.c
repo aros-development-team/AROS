@@ -122,6 +122,7 @@ static BOOL DrainAndReplyPort(struct MsgPort *port);                    // drain
 static BOOL NoIconBouncing(void);                                       // check if no icon is bouncing
 static BOOL MouseOverToolbar(void);                                     // check if mouse is over the toolbar
 static void HandleFocus(void);                                          // focus follows the mouse
+static void ToolbarToFront(void);                                       // alpha toolbar in front of other windows
 static BOOL ToolbarAreaBlocked(LONG left, LONG top, LONG right, LONG bottom); // check if another window covers the toolbar area
 static void ParseAlign(STRPTR str);                                     // parse ALIGN parameter
 static void ComputeWindowPosition(void);                                // set toolbar position from Align
@@ -1665,8 +1666,14 @@ static BOOL OpenMainWindow(void)
     Window_Open = TRUE;
     Window_Active = TRUE;
 
-    /* The toolbar is a background element: push it behind all other windows. */
-    WindowToBack(MainWindow);
+    /* With the wallpaper capture the toolbar is a background element and
+       goes behind all other windows (it would hide them otherwise). The
+       alpha window is composed over whatever is behind it, so it stays in
+       front. */
+    if (AlphaWindow)
+        ToolbarToFront();
+    else
+        WindowToBack(MainWindow);
 
     return TRUE;
 }
@@ -2050,6 +2057,15 @@ static BOOL MouseOverToolbar(void)
 }
 
 
+/* Bring the alpha toolbar to the front, only when it is not there already:
+   a depth change refreshes every window it uncovers. */
+static void ToolbarToFront(void)
+{
+    if (MainWindow && MyScreen && MyScreen->FirstWindow != MainWindow)
+        WindowToFront(MainWindow);
+}
+
+
 static void HandleFocus(void)
 {
     BOOL over;
@@ -2084,6 +2100,9 @@ static void HandleFocus(void)
             if (PrevActiveWindow == NULL)
                 PrevActiveWindow = IntuitionBase->ActiveWindow;
             ActivateWindow(MainWindow);
+            /* another window may have opened over the alpha toolbar */
+            if (AlphaWindow)
+                ToolbarToFront();
         }
     }
     else if (PrevActiveWindow != NULL)
