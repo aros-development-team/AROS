@@ -181,6 +181,7 @@ struct in6_multi *in6_addmulti(struct in6_addr *, struct ifnet *);
 void in6_delmulti(struct in6_multi *);
 struct ip6_moptions;
 void ip6_freemoptions(struct ip6_moptions *);
+void in6_ifdetach(struct ifnet *);
 
 /*
  * The stack's own view of an IPv6 interface address. The public record

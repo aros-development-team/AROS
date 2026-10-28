@@ -877,11 +877,15 @@ in6_delmulti(struct in6_multi *in6m)
     if(--in6m->in6m_refcount > 0)
         return;
 
-    /* Send MLD Done before removing from list */
-    mld6_stop_listening(in6m);
+    /* a membership that outlived its interface has nobody to tell;
+     * see in6_ifdetach() */
+    if(in6m->in6m_ifp != NULL) {
+        /* Send MLD Done before removing from list */
+        mld6_stop_listening(in6m);
 
-    /* unregister Ethernet multicast address from the NIC */
-    sana_del_mcast6(in6m->in6m_ifp, &in6m->in6m_addr);
+        /* unregister Ethernet multicast address from the NIC */
+        sana_del_mcast6(in6m->in6m_ifp, &in6m->in6m_addr);
+    }
 
     for(p = &in6_multihead; *p; p = &(*p)->in6m_next) {
         if(*p == in6m) {
@@ -890,6 +894,53 @@ in6_delmulti(struct in6_multi *in6m)
         }
     }
     FREE(in6m, M_IFADDR);
+}
+
+/*
+ * in6_ifdetach - the interface is going away for good: nothing may keep an
+ * IPv6 membership that names it. Another ifnet can be allocated at the same
+ * address later, and would then look as if it had joined already, so the
+ * device would never be told the group's address; and the MLD timer and
+ * in6_delmulti() would go on using the freed interface.
+ *
+ * By now its addresses are gone (sana_if_deconfigure()), and their
+ * solicited-node memberships with them. The interface's own membership of
+ * the all-nodes group, from in6_join_allnodes(), is released here. What
+ * sockets still hold cannot be freed under them: those entries are cut
+ * loose from the interface and go when their sockets drop them. Nothing is
+ * sent and the device is not asked to forget the addresses: it is offline
+ * and about to be closed. The IPv6 counterpart of in_ifdetach().
+ */
+void
+in6_ifdetach(struct ifnet *ifp)
+{
+    struct in6_multi *in6m, **p;
+    struct in6_addr allnodes;
+    spl_t s = splimp();
+
+    bzero(&allnodes, sizeof(allnodes));
+    allnodes.s6_addr[0]  = 0xff;
+    allnodes.s6_addr[1]  = 0x02;
+    allnodes.s6_addr[15] = 0x01;
+
+    p = &in6_multihead;
+    while((in6m = *p) != NULL) {
+        if(in6m->in6m_ifp != ifp) {
+            p = &in6m->in6m_next;
+            continue;
+        }
+        in6m->in6m_timer = 0;
+        in6m->in6m_state = MLD6_IDLE_MEMBER;
+        in6m->in6m_ifp = NULL;
+        if(IN6_ARE_ADDR_EQUAL(&in6m->in6m_addr, &allnodes) &&
+                --in6m->in6m_refcount == 0) {
+            *p = in6m->in6m_next;
+            FREE(in6m, M_IFADDR);
+            continue;
+        }
+        p = &in6m->in6m_next;
+    }
+    splx(s);
 }
 
 /* ==================================================================
