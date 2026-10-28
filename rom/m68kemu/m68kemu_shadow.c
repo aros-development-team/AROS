@@ -95,7 +95,8 @@ void m68k_task_stack(struct M68KEmuContext *ctx, ULONG mtask, struct Task *task)
    its ColorMap goes to the pen functions: give them shadows as well. */
 /* A deep screen's ColorMap has 256 entries, but only the 8 the palette prefs
    set have colours; the free ones are black. Give the free pens an AGA-like
-   palette (a 6x6x6 colour cube, then a grey ramp), once per ColorMap, so a
+   palette (the pointer colours in 17-19 as on AGA, a 6x6x6 colour cube, then
+   a grey ramp), once per ColorMap, so a
    program that draws or shows pens by number sees 256 colours. Allocated
    pens are left alone and ObtainPen() still sets a free pen's colour. */
 static void m68k_aga_palette(struct M68KEmuContext *ctx, struct Screen *scr)
@@ -125,7 +126,15 @@ static void m68k_aga_palette(struct M68KEmuContext *ctx, struct Screen *scr)
     {
         ULONG r, g, b;
 
-        if (idx < 216)
+        if (idx >= 17 && idx <= 19)
+        {
+            /* the pointer's pens on AGA, which programs use as plain colours */
+            static const UBYTE pointer[3][3] = { { 0xee, 0x44, 0x44 }, { 0x00, 0x00, 0x00 }, { 0xee, 0xee, 0xcc } };
+            r = pointer[idx - 17][0];
+            g = pointer[idx - 17][1];
+            b = pointer[idx - 17][2];
+        }
+        else if (idx < 216)
         {
             r = (idx / 36) * 51;
             g = ((idx / 6) % 6) * 51;
