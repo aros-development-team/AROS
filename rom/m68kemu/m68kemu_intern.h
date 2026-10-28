@@ -162,6 +162,8 @@ struct M68KEmuContext
     BOOL    classic_borders;    /* show classic window borders, grow windows by the decoration's extra */
     ULONG   rexx_id;            /* "REXX", the ln_Name of the program's RexxMsgs */
     ULONG   m68k_proc;          /* the program's 68k Process */
+    struct { char name[64]; ULONG base, reopen; } m68klibs[16];   /* 68k libraries loaded from disk */
+    UWORD   num_m68klibs;
     ULONG   windowptr;          /* its pr_WindowPtr as last passed to the native process */
     APTR    windowptr_native;   /* the native process's own pr_WindowPtr, restored at the end */
     BOOL    windowptr_set;
@@ -339,7 +341,7 @@ ULONG  M68KEmu_HeapAllocAbs(struct M68KEmuContext *ctx, ULONG size, ULONG addr);
 void   m68k_publish_base(struct M68KEmuContext *ctx, ULONG base, const char *name);
 ULONG  M68KEmu_LoadHunks(struct M68KEmuContext *ctx, BPTR segList);
 ULONG  M68KEmu_LoadHunksFromMemory(struct M68KEmuContext *ctx, UBYTE *data, LONG size);
-ULONG  M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name);
+ULONG  M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name, ULONG version);
 ULONG  M68KEmu_SetupLibBase(struct M68KEmuContext *ctx, UWORD lib_id,
                              const char *name, UWORD num_vectors,
                              const struct M68KThunkEntry *thunks, ULONG num_thunks,

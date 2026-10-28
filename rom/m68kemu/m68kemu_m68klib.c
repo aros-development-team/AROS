@@ -66,7 +66,7 @@ static void m68k_init_struct(struct M68KEmuContext *ctx, ULONG tab, ULONG mem)
     }
 }
 
-ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name)
+ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name, ULONG version)
 {
     char path[256];
     BPTR fh;
@@ -85,12 +85,17 @@ ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name)
         static const char *const dirs[] = { "LIBS68K:", "SYS:Libs68k/", "LIBS:m68k/", "LIBS:" };
         ULONG d;
 
+        BOOL is_path = strchr(name, ':') || strchr(name, '/');
+
         fh = BNULL;
-        for (d = 0; d < sizeof(dirs) / sizeof(dirs[0]) && !fh; d++)
+        for (d = is_path ? 0 : 1; d <= sizeof(dirs) / sizeof(dirs[0]) && !fh; d++)
         {
             ULONG magic = 0;
 
-            snprintf(path, sizeof(path), "%s%s", dirs[d], name);
+            if (d == 0)
+                snprintf(path, sizeof(path), "%s", name);
+            else
+                snprintf(path, sizeof(path), "%s%s", dirs[d - 1], name);
             fh = Open(path, MODE_OLDFILE);
             /* only a hunk file: LIBS: also holds the native libraries */
             if (fh && (Read(fh, &magic, 4) != 4 || AROS_BE2LONG(magic) != 0x3F3))
@@ -231,16 +236,56 @@ ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name)
     if (dataInit)
         m68k_init_struct(ctx, dataInit, base);
 
-    /* The library's init function stores the bases its functions use; it
-       runs as 68k code when the program's OpenLibrary returns (tail call:
-       D0 = base, A0 = seglist, A6 = SysBase), and its result is the
-       OpenLibrary result. */
-    if (initFunc)
+    /* As exec does, the library's init function runs, then its Open
+       vector; both as 68k code when the program's OpenLibrary returns, and
+       the result of Open is the OpenLibrary result. The caller's A6 is
+       kept. A later OpenLibrary calls only Open. */
     {
-        ctx->tail_pc = initFunc;
-        ctx->tail_d0 = base;
+        ULONG t = M68KEmu_HeapAlloc(ctx, 28 + 16, 0), r = t + 28;
+        static const UWORD first[] = {
+            0x2f0e,                     /* move.l a6,-(sp) */
+            0x4eb9, 0, 0,               /* jsr init */
+            0x4a80,                     /* tst.l d0 */
+            0x670c,                     /* beq.s 1f */
+            0x2c40,                     /* movea.l d0,a6 */
+            0x203c, 0, 0,               /* move.l #version,d0 */
+            0x4eae, 0xfffa,             /* jsr -6(a6) */
+            0x2c5f,                     /* 1: movea.l (sp)+,a6 */
+            0x4e75 };                   /* rts */
+        static const UWORD again[] = {
+            0x2f0e,                     /* move.l a6,-(sp) */
+            0x2c7c, 0, 0,               /* movea.l #base,a6 */
+            0x4eae, 0xfffa,             /* jsr -6(a6) */
+            0x2c5f,                     /* movea.l (sp)+,a6 */
+            0x4e75 };                   /* rts */
+
+        if (!t)
+            return 0;
+        for (ULONG i = 0; i < 14; i++)
+            m68k_write16(ctx, t + 2 * i, first[i]);
+        for (ULONG i = 0; i < 8; i++)
+            m68k_write16(ctx, r + 2 * i, again[i]);
+        m68k_write32(ctx, t + 4, initFunc);
+        m68k_write32(ctx, t + 16, version);
+        m68k_write32(ctx, r + 4, base);
+        if (initFunc)
+            ctx->tail_pc = t;
+        else
+        {
+            ctx->tail_pc = r;
+            ctx->tail_d0 = version;
+        }
+        if (initFunc)
+            ctx->tail_d0 = base;
         ctx->tail_a0 = 0;
-        ctx->tail_a6 = ctx->m68k_sysbase;
+
+        if (ctx->num_m68klibs < sizeof(ctx->m68klibs) / sizeof(ctx->m68klibs[0]))
+        {
+            snprintf(ctx->m68klibs[ctx->num_m68klibs].name, sizeof(ctx->m68klibs[0].name), "%s", (const char *)FilePart((STRPTR)name));
+            ctx->m68klibs[ctx->num_m68klibs].base = base;
+            ctx->m68klibs[ctx->num_m68klibs].reopen = r;
+            ctx->num_m68klibs++;
+        }
     }
 
     if (ctx->trace_calls) bug("[m68kemu] m68klib: %s loaded at base=0x%lx (%d funcs)\n",

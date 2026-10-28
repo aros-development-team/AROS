@@ -148,8 +148,23 @@ static IPTR thunk_exec_OpenLibrary(struct M68KEmuContext *ctx, void *cpu)
     base = m68k_open_class_library(ctx, name, THUNK_D(0));
     if (base) return (IPTR)base;
 
+    /* a 68k library already loaded: its own Open vector opens it again */
+    for (UWORD i = 0; i < ctx->num_m68klibs; i++)
+        if (!strcasecmp(ctx->m68klibs[i].name, (const char *)FilePart((STRPTR)name)))
+        {
+            base = ctx->m68klibs[i].base;
+            if (m68k_read16(ctx, base + M68K_LIB_VERSION) < THUNK_D(0))
+                return 0;
+            ctx->tail_pc = ctx->m68klibs[i].reopen;
+            ctx->tail_d0 = THUNK_D(0);
+            ctx->tail_a0 = 0;
+            ctx->tail_a6 = THUNK_A(6);
+            return base;
+        }
+
     /* No native library found — try loading m68k .library from LIBS: */
-    base = M68KEmu_LoadM68KLibrary(ctx, name);
+    ctx->tail_a6 = THUNK_A(6);
+    base = M68KEmu_LoadM68KLibrary(ctx, name, THUNK_D(0));
     if (base) {
         if (ctx->trace_calls) bug("[m68kemu] Loaded m68k library %s at 0x%lx\n", name, (unsigned long)base);
         return (IPTR)base;
