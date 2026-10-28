@@ -15,7 +15,7 @@
   The handover is:
     - Find con-handler via FindSegment()
     - Point the startup packet at a FileSysStartupMsg naming the device
-    - Set AUXF_DEVICE in dp_Arg2
+    - Set dp_Arg4 to say that dp_Arg2 names a device
     - Post the packet back to our own port
     - Call con-handler's entry point
     - Then con-handler starts up in this same process and picks up the
@@ -32,14 +32,6 @@
 
 #include <proto/exec.h>
 #include <proto/dos.h>
-
-/*
- * Set in the startup BPTR of con-handler's startup packet to ask for a device
- * rather than a console window. This only has room to live where a BPTR is a
- * longword address shifted right by two; on a target with AROS_FAST_BPTR the
- * BPTR is the address itself and this bit belongs to it.
- */
-#define AUXF_DEVICE             0x40000000
 
 #define DEFAULT_DEVICE          "serial.device"
 
@@ -144,7 +136,8 @@ LONG aux_handler(struct ExecBase *SysBase)
                 }
             }
 
-            dp->dp_Arg2 = (SIPTR)((IPTR)MKBADDR(fssm) | AUXF_DEVICE);
+            dp->dp_Arg2 = (SIPTR)MKBADDR(fssm);
+            dp->dp_Arg4 = DOSTRUE;
 
             /* con-handler collects this once it starts up below. */
             PutMsg(mp, mn);
