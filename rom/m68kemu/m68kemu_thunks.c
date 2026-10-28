@@ -88,6 +88,9 @@ ULONG M68KEmu_OpenLibrary(struct M68KEmuContext *ctx, const char *name)
     if (strcmp(name, m68kemu_wb_lib.name) == 0)
         return M68KEmu_SetupLibBase(ctx, ctx->num_libs, name, M68KEMU_MAX_LVO,
                                     m68kemu_wb_lib.thunks, m68kemu_wb_lib.count, NULL, 0);
+    if (strcmp(name, m68kemu_rexx_lib.name) == 0)
+        return M68KEmu_SetupLibBase(ctx, ctx->num_libs, name, M68KEMU_MAX_LVO,
+                                    m68kemu_rexx_lib.thunks, m68kemu_rexx_lib.count, NULL, 0);
 
     for (ULONG i = 0; i < m68kemu_math_libs_count; i++)
         if (strcmp(name, m68kemu_math_libs[i].name) == 0)

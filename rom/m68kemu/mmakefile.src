@@ -49,6 +49,7 @@ M68KEMU_FILES := \
     m68kemu_m68klib \
     m68kemu_stubs \
     m68kemu_math \
+    m68kemu_rexx \
     m68kemu_devices \
     m68kemu_boopsi \
     m68kemu_thunks_gen
