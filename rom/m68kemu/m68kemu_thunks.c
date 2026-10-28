@@ -3833,7 +3833,7 @@ static struct Image *image_from_m68k(struct M68KEmuContext *ctx, ULONG mi, int d
     words = (ULONG)((im->Width + 15) / 16) * (ULONG)im->Height * planes;
     if (data && words && words < 0x100000)
     {
-        UWORD *copy = AllocMem(words * 2 + 2, MEMF_ANY);
+        UWORD *copy = (data + words * 2 <= ctx->mem_size) ? AllocMem(words * 2 + 2, MEMF_ANY) : NULL;
         if (copy)
         {
             for (i = 0; i < words; i++)
