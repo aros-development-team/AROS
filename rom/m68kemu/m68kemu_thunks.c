@@ -55,6 +55,7 @@ IPTR m68k_GetAttr(struct M68KEmuContext *ctx, void *cpu);
 IPTR m68k_SetGadgetAttrsA(struct M68KEmuContext *ctx, void *cpu);
 IPTR m68k_DoGadgetMethodA(struct M68KEmuContext *ctx, void *cpu);
 static IPTR thunk_exec_Allocate_m(struct M68KEmuContext *ctx, void *cpu);
+static IPTR thunk_exec_CacheControl_m(struct M68KEmuContext *ctx, void *cpu);
 static IPTR thunk_exec_AllocAbs_m(struct M68KEmuContext *ctx, void *cpu);
 static IPTR thunk_exec_Deallocate_m(struct M68KEmuContext *ctx, void *cpu);
 
@@ -1328,6 +1329,7 @@ const struct M68KThunkEntry m68kemu_thunks_exec[] = {
     { 690, thunk_exec_FreeVec },
     { 216, thunk_exec_AvailMem },
     { 186, thunk_exec_Allocate_m },
+    { 648, thunk_exec_CacheControl_m },
     { 204, thunk_exec_AllocAbs_m },
     { 192, thunk_exec_Deallocate_m },
     { 384, thunk_exec_WaitPort },
@@ -3488,6 +3490,20 @@ static IPTR thunk_gfx_LoadRGB4(struct M68KEmuContext *ctx, void *cpu)
 static IPTR thunk_exec_AllocAbs_m(struct M68KEmuContext *ctx, void *cpu)
 {
     return M68KEmu_HeapAllocAbs(ctx, THUNK_D(0), THUNK_A(1));
+}
+
+/* exec -648: CacheControl(D0=bits, D1=mask) -> D0=old bits. The program
+   sees a 68040's cache control: instruction and data cache and copyback
+   can be switched, the 020/030-only bits (freeze, burst) never stick, the
+   clear bits only clear. There is no cache behind it to switch. */
+#define M68K_CACR_040 (CACRF_EnableI | CACRF_EnableD | CACRF_CopyBack)
+
+static IPTR thunk_exec_CacheControl_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG bits = THUNK_D(0), mask = THUNK_D(1), old = ctx->cacr;
+
+    ctx->cacr = (old & ~(mask & M68K_CACR_040)) | (bits & mask & M68K_CACR_040);
+    return old;
 }
 
 /* Allocate() and Deallocate() on a MemHeader the program built in its own

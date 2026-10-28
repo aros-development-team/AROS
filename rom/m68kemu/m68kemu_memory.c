@@ -48,6 +48,7 @@ struct M68KEmuContext *M68KEmu_CreateContext(struct M68KEmuLibBase *base)
         ctx->classic_borders = !(GetVar((CONST_STRPTR)"M68KEMU_CLASSICBORDERS", (STRPTR)v, sizeof(v), 0) > 0 && v[0] == '0');
     }
     ctx->emuBase  = base;
+    ctx->cacr     = CACRF_EnableI | CACRF_EnableD | CACRF_CopyBack;
 
     ctx->stack_top    = M68KEMU_MEM_SIZE;
     ctx->stack_bottom = M68KEMU_MEM_SIZE - M68KEMU_STACK_SIZE;
