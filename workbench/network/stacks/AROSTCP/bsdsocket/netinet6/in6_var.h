@@ -179,6 +179,8 @@ int  in6_localaddr(struct in6_addr *);
 void in6_if_up(struct ifnet *);
 struct in6_multi *in6_addmulti(struct in6_addr *, struct ifnet *);
 void in6_delmulti(struct in6_multi *);
+struct ip6_moptions;
+void ip6_freemoptions(struct ip6_moptions *);
 
 /* Privacy extensions (RFC 4941) */
 extern int ip6_use_tempaddr;   /* enable temporary addresses (0=off, 1=on) */
