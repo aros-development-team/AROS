@@ -13,6 +13,11 @@ case opens a fresh handle, so zero is the expected old position on success.
 It checks absolute, current and end-relative positions, reads after seeking,
 and rejects negative or out-of-range destinations. The unmodified handler
 rejects five valid destinations in the large file with ERROR_SEEK_ERROR.
+A handler with only the unsigned size comparison still fails the wraparound
+cases: end/current-relative addition must not wrap past 4 GiB. The test checks
+resulting positions after ordinary seeks and unchanged position after failures.
+For a write handle already above LONG_MAX, an EOF read checks that a rejected
+current-relative seek leaves it at EOF.
 The corrected handler must finish with failures=0 and exit code 0.
 Exit 10 means a failed assertion; exit 20 means setup, I/O or cleanup failed.
 

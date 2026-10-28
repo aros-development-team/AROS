@@ -2047,23 +2047,26 @@ sfsSecBeginPacket(globals->packet);
                                     struct ExtFileLock *lock = (struct ExtFileLock *)globals->packet->dp_Arg1;
                                     struct GlobalHandle *gh = lock->gh;
                                     ULONG oldpos = lock->offset;
-                                    LONG newpos;
+                                    /* Check the full sum before narrowing to the legacy
+                                     * nonnegative LONG destination range. */
+                                    QUAD newpos;
+                                    LONG offset = (LONG)globals->packet->dp_Arg2;
                                     LONG errorcode;
 
                                     if(globals->packet->dp_Arg3 == OFFSET_BEGINNING) {
-                                        newpos = globals->packet->dp_Arg2;
+                                        newpos = offset;
                                     } else if(globals->packet->dp_Arg3 == OFFSET_END) {
-                                        newpos = gh->size + globals->packet->dp_Arg2;
+                                        newpos = (QUAD)gh->size + offset;
                                     } else if(globals->packet->dp_Arg3 == OFFSET_CURRENT) {
-                                        newpos = lock->offset + globals->packet->dp_Arg2;
+                                        newpos = (QUAD)lock->offset + offset;
                                     } else {
                                         returnpacket(-1, ERROR_BAD_NUMBER);
                                         break;
                                     }
 
-                                    if(newpos >= 0 && (ULONG)newpos <= gh->size) {
+                                    if(newpos >= 0 && newpos <= 0x7fffffff && newpos <= (QUAD)gh->size) {
                                         if((ULONG)newpos != oldpos) {
-                                            errorcode = seek(lock, newpos);
+                                            errorcode = seek(lock, (ULONG)newpos);
                                         } else {
                                             errorcode = 0;
                                         }

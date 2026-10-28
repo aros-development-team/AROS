@@ -7,6 +7,7 @@
 #include <dos/dosextens.h>
 
 static int failures;
+static ULONG file_size;
 static const char *name = "SFST:audit-seek-regression.tmp";
 
 static void check(const char *label, LONG offset, LONG mode, int success)
@@ -27,6 +28,14 @@ static void check(const char *label, LONG offset, LONG mode, int success)
         if (Read(f, &byte, 1) != 1 || byte != 0) failures++;
         if (Seek(f, -2, OFFSET_CURRENT) != 2) failures++;
         if (Seek(f, 0, OFFSET_CURRENT) != 0) failures++;
+    }
+    {
+        LONG position = Seek(f, 0, OFFSET_CURRENT);
+        LONG expected = success ? (mode == OFFSET_END ? file_size + offset : offset) : 0;
+        /* The read/relative subtest above deliberately returns to zero. */
+        if (success && offset == 1 && mode == OFFSET_BEGINNING) expected = 0;
+        if (position != expected) failures++;
+        Printf("position=%ld expected=%ld\n", position, expected);
     }
     Close(f);
     Flush(Output());
@@ -58,6 +67,7 @@ int main(void)
     if (!file) { PrintFault(IoErr(), "create"); FreeVec(buffer); return 20; }
     i = Write(file, buffer, 16); Close(file);
     if (i != 16) { FreeVec(buffer); DeleteFile((CONST_STRPTR)name); return 20; }
+    file_size = 16;
     check("small-zero", 0, OFFSET_BEGINNING, 1);
     check("small-read-relative", 1, OFFSET_BEGINNING, 1);
     check("small-eof", 16, OFFSET_BEGINNING, 1);
@@ -70,9 +80,21 @@ int main(void)
     for (i=0; i<2049; i++) {
         if (Write(file, buffer, 1048576) != 1048576) { PrintFault(IoErr(), "write"); break; }
     }
+    if (i == 2049) {
+        LONG result, error, count;
+        UBYTE byte;
+        /* Writes can leave the current position above LONG_MAX. */
+        SetIoErr(0);
+        result = Seek(file, 2147483647L, OFFSET_CURRENT);
+        error = IoErr();
+        count = Read(file, &byte, 1);
+        if (result != -1 || error != ERROR_SEEK_ERROR || count != 0) failures++;
+        Printf("large-current-wrap result=%ld error=%ld eof_read=%ld\n", result, error, count);
+    }
     Close(file); FreeVec(buffer);
     Printf("written_MiB=%ld\n", i); Flush(Output());
     if(i != 2049) { DeleteFile((CONST_STRPTR)name); return 20; }
+    file_size = 2049UL * 1048576UL;
     check("large-zero", 0, OFFSET_BEGINNING, 1);
     check("large-read-relative", 1, OFFSET_BEGINNING, 1);
     check("large-LONG_MAX", 2147483647L, OFFSET_BEGINNING, 1);
@@ -80,6 +102,8 @@ int main(void)
     check("large-current-zero", 0, OFFSET_CURRENT, 1);
     check("large-current-negative", -1, OFFSET_CURRENT, 0);
     check("large-end-in-range", -2147483647L, OFFSET_END, 1);
+    check("large-end-wrap", 2147483647L, OFFSET_END, 0);
+    check("large-end-past-eof", 1, OFFSET_END, 0);
     /* The existing signed destination limit remains unchanged. */
     check("large-end-out-of-range", 0, OFFSET_END, 0);
     if (!DeleteFile((CONST_STRPTR)name)) { PrintFault(IoErr(), "cleanup"); return 20; }
