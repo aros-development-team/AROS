@@ -181,6 +181,8 @@ struct M68KEmuContext
     struct { APTR font; ULONG name; } fontnames[16];   /* 68k copies of font names */
     struct { ULONG m68k; struct DiskObject *native; ULONG size; } icons[64];   /* DiskObjects in 68k layout */
     ULONG   num_icons;
+    struct { CONST_STRPTR native; ULONG m68k, size; } strcache[64];   /* native strings given to the program */
+    ULONG   strcache_pos;
     ULONG   windowptr;          /* its pr_WindowPtr as last passed to the native process */
     APTR    windowptr_native;   /* the native process's own pr_WindowPtr, restored at the end */
     BOOL    windowptr_set;

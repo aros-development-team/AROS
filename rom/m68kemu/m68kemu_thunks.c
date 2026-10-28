@@ -5032,10 +5032,54 @@ static IPTR thunk_locale_FormatDate_m(struct M68KEmuContext *ctx, void *cpu)
     return 0;
 }
 
+/* a native string the program reads: inside its memory as is, otherwise a
+   copy in its memory, made again if the native text has changed */
+static ULONG native_str_out(struct M68KEmuContext *ctx, CONST_STRPTR s)
+{
+    ULONG len, i, m;
+
+    if (!s)
+        return 0;
+    if ((IPTR)s >= (IPTR)ctx->mem && (IPTR)s < (IPTR)ctx->mem + ctx->mem_size)
+        return (ULONG)((IPTR)s - (IPTR)ctx->mem);
+    len = strlen((const char *)s) + 1;
+    for (i = 0; i < 64; i++)
+        if (ctx->strcache[i].native == s && ctx->strcache[i].size == len &&
+            !memcmp(ctx->mem + ctx->strcache[i].m68k, s, len))
+            return ctx->strcache[i].m68k;
+    if (!(m = M68KEmu_HeapAlloc(ctx, len, 0)))
+        return 0;
+    memcpy(ctx->mem + m, s, len);
+    i = ctx->strcache_pos++ & 63;
+    if (ctx->strcache[i].m68k)
+        M68KEmu_HeapFree(ctx, ctx->strcache[i].m68k, ctx->strcache[i].size);
+    ctx->strcache[i].native = s;
+    ctx->strcache[i].m68k = m;
+    ctx->strcache[i].size = len;
+    return m;
+}
+
+/* locale -72: GetCatalogStr(A0=catalog, D0=stringNum, A1=defaultString) */
+static IPTR thunk_locale_GetCatalogStr_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    APTR cat = THUNK_A(0) ? THUNK_PTR(0) : NULL;
+    ULONG def = THUNK_A(1);
+    CONST_STRPTR s = GetCatalogStr(cat, THUNK_D(0), def ? (CONST_STRPTR)m68k_to_host(ctx, def) : NULL);
+    return native_str_out(ctx, s);
+}
+
+/* locale -78: GetLocaleStr(A0=locale, D0=stringNum) */
+static IPTR thunk_locale_GetLocaleStr_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    return native_str_out(ctx, GetLocaleStr(THUNK_A(0) ? THUNK_PTR(0) : NULL, THUNK_D(0)));
+}
+
 const struct M68KThunkEntry m68kemu_thunks_locale_manual[] = {
     { 60, thunk_locale_FormatDate_m },
+    { 72, thunk_locale_GetCatalogStr_m },
+    { 78, thunk_locale_GetLocaleStr_m },
 };
-const ULONG m68kemu_thunks_locale_manual_count = 1;
+const ULONG m68kemu_thunks_locale_manual_count = 3;
 
 const struct M68KThunkEntry m68kemu_thunks_diskfont_manual[] = {
     { 30, thunk_diskfont_OpenDiskFont_m },

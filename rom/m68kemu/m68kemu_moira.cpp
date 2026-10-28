@@ -10,6 +10,7 @@
 #include "m68kemu_thunks.h"
 #include "Moira/Moira.h"
 #include <new>
+#include <string.h>
 
 using namespace moira;
 
@@ -17,6 +18,24 @@ using namespace moira;
 #define NEST_SENTINEL 0xFFDEAE00u /* return address of a call from native code, outside memory */
 #define RTE_ADDR      0x000100u   /* address of our RTE instruction */
 #define SV_TRAMP_ADDR 0x000108u   /* supervisor trampoline: skip frame + JMP (A5) */
+
+/* generated calls whose result points into a buffer or string the program
+   passed: the result is that address in the program's memory */
+static bool returns_arg_pointer(const char *lib, ULONG lvo)
+{
+    static const struct { const char *lib; UWORD lvo; } t[] = {
+        { "dos.library", 336 },        /* FGets */
+        { "dos.library", 870 },        /* FilePart */
+        { "dos.library", 876 },        /* PathPart */
+        { "iffparse.library", 270 },   /* IDtoStr */
+        { "intuition.library", 534 },  /* NextPubScreen */
+        { "icon.library", 108 },       /* BumpRevision */
+    };
+    for (unsigned i = 0; i < sizeof(t) / sizeof(t[0]); i++)
+        if (t[i].lvo == lvo && !strcmp(t[i].lib, lib))
+            return true;
+    return false;
+}
 
 class AROSMoira : public Moira
 {
@@ -531,7 +550,9 @@ public:
                         }
 
                         if ((ret >> 32) != 0 && (ret >> 32) != 0xFFFFFFFFUL)
-                            ret = m68k_bptr_out(ctx, (BPTR)ret);
+                            ret = (ret >= (IPTR)ctx->mem && ret < (IPTR)ctx->mem + ctx->mem_size)
+                                ? ret - (IPTR)ctx->mem          /* into the program's memory: its address */
+                                : m68k_bptr_out(ctx, (BPTR)ret);
                         setD(0, (u32)ret);
                         if (ctx->ccr_valid)
                         {
@@ -579,6 +600,8 @@ public:
                         ctx->cur_cpu = static_cast<void *>(this);
                         IPTR ret = lib->gen_thunks[j].thunk(ctx, static_cast<void *>(this));
                         ctx->cur_cpu = prev_cpu;
+                        if (ret >= (IPTR)ctx->mem && ret < (IPTR)ctx->mem + ctx->mem_size && returns_arg_pointer(lib->name, lvo_offset))
+                            ret -= (IPTR)ctx->mem;
                         if (ctx->trace_calls) bug("[m68kemu]   -> %08lx\n", (unsigned long)ret);
 
                         if (ctx->sv_redirect)
@@ -590,7 +613,9 @@ public:
                         /* a native pointer (an opaque object: VisualInfo, CxObj,
                            BOOPSI object...) does not fit in D0: hand out a handle */
                         if ((ret >> 32) != 0 && (ret >> 32) != 0xFFFFFFFFUL)
-                            ret = m68k_bptr_out(ctx, (BPTR)ret);
+                            ret = (ret >= (IPTR)ctx->mem && ret < (IPTR)ctx->mem + ctx->mem_size)
+                                ? ret - (IPTR)ctx->mem          /* into the program's memory: its address */
+                                : m68k_bptr_out(ctx, (BPTR)ret);
                         setD(0, (u32)ret);
                         setPC0(ret_addr);
                         setPC(ret_addr + 2);
