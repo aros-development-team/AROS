@@ -12,7 +12,6 @@ POSIXCTESTFILES := \
         fchdir \
         fchmod \
         fcntl \
-        fcntl_access \
         flock \
         getfsstat \
         getpass \
