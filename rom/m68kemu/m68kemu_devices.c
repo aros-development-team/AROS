@@ -16,6 +16,8 @@
 #include <exec/errors.h>
 #include <devices/timer.h>
 #include <devices/audio.h>
+#include <devices/input.h>
+#include <devices/inputevent.h>
 #include <proto/exec.h>
 #include <proto/timer.h>
 #include <proto/alib.h>
@@ -40,7 +42,7 @@ void *shadow_lookup(struct M68KEmuContext *ctx, ULONG m68k_addr);
 #define IO_DATA      40
 #define IO_OFFSET    44
 
-enum { DEV_STD, DEV_TIMER, DEV_AUDIO };
+enum { DEV_STD, DEV_TIMER, DEV_AUDIO, DEV_INPUT };
 
 /* m68k IOAudio after the IORequest: ioa_AllocKey 32, ioa_Data 34,
    ioa_Length 38, ioa_Period 42, ioa_Volume 44, ioa_Cycles 46 */
@@ -57,7 +59,7 @@ static const struct { const char *name; UBYTE kind; } known_devices[] = {
     { "timer.device", DEV_TIMER },
     { "audio.device", DEV_AUDIO },
     { "console.device", DEV_STD },
-    { "input.device", DEV_STD },
+    { "input.device", DEV_INPUT },
     { "keyboard.device", DEV_STD },
     { "gameport.device", DEV_STD },
     { "trackdisk.device", DEV_STD },
@@ -80,6 +82,8 @@ ULONG m68k_ioreq_of(struct M68KEmuContext *ctx, APTR native)
         if (ctx->ioreqs[i].native == native) return ctx->ioreqs[i].m68k;
     return 0;
 }
+
+static BOOL input_request(struct M68KEmuContext *ctx, struct M68KIoMap *m);
 
 static void io_in(struct M68KEmuContext *ctx, struct M68KIoMap *m)
 {
@@ -175,6 +179,8 @@ static IPTR dev_BeginIO(struct M68KEmuContext *ctx, void *cpu)
     struct M68KIoMap *m = io_find(ctx, M68KEmu_GetA(cpu, 1));
     if (!m) return 0;
     io_in(ctx, m);
+    if (input_request(ctx, m))
+        return 0;
     m->pending = TRUE;
     BeginIO(m->native);
     if (m->native->io_Flags & IOF_QUICK) m68k_ioreq_out(ctx, m->native);
@@ -351,6 +357,51 @@ IPTR m68k_CloseDevice(struct M68KEmuContext *ctx, void *cpu)
     return 0;
 }
 
+/* input.device requests carrying 68k structures. A handler (IND_ADDHANDLER)
+   is 68k code input.device would call as native code: it is accepted and not
+   installed, so the program's handler sees no events. Events written with
+   IND_WRITEEVENT are made native: m68k struct InputEvent: ie_NextEvent 0,
+   ie_Class 4, ie_SubClass 5, ie_Code 6, ie_Qualifier 8, ie_X/ie_Y 10/12,
+   ie_TimeStamp 14 */
+static struct InputEvent input_events[16];
+
+static BOOL input_request(struct M68KEmuContext *ctx, struct M68KIoMap *m)
+{
+    struct IOStdReq *sr = (struct IOStdReq *)m->native;
+    ULONG a = m->m68k, e;
+    int n = 0;
+
+    if (m->kind != DEV_INPUT)
+        return FALSE;
+    switch (m68k_read16(ctx, a + IO_COMMAND))
+    {
+    case IND_ADDHANDLER:
+    case IND_REMHANDLER:
+        if (ctx->trace_calls || ctx->trace_end)
+            bug("[m68kemu] input.device: a 68k input handler is not installed\n");
+        ctx->mem[a + IO_ERROR] = 0;
+        return TRUE;
+    case IND_WRITEEVENT:
+        for (e = m68k_read32(ctx, a + IO_DATA); e && e + 22 <= ctx->mem_size && n < 16; e = m68k_read32(ctx, e), n++)
+        {
+            struct InputEvent *ie = &input_events[n];
+            memset(ie, 0, sizeof(*ie));
+            ie->ie_Class = ctx->mem[e + 4];
+            ie->ie_SubClass = ctx->mem[e + 5];
+            ie->ie_Code = m68k_read16(ctx, e + 6);
+            ie->ie_Qualifier = m68k_read16(ctx, e + 8);
+            ie->ie_X = (WORD)m68k_read16(ctx, e + 10);
+            ie->ie_Y = (WORD)m68k_read16(ctx, e + 12);
+            if (n)
+                input_events[n - 1].ie_NextEvent = ie;
+        }
+        sr->io_Data = n ? &input_events[0] : NULL;
+        sr->io_Length = sizeof(struct InputEvent);
+        return FALSE;
+    }
+    return FALSE;
+}
+
 /* exec -456: DoIO(A1) -> D0 error */
 IPTR m68k_DoIO(struct M68KEmuContext *ctx, void *cpu)
 {
@@ -358,6 +409,8 @@ IPTR m68k_DoIO(struct M68KEmuContext *ctx, void *cpu)
     BYTE err;
     if (!m) return (IPTR)(LONG)IOERR_NOCMD;
     io_in(ctx, m);
+    if (input_request(ctx, m))
+        return 0;
     err = DoIO(m->native);
     m68k_ioreq_out(ctx, m->native);
     return (IPTR)(LONG)err;
@@ -369,6 +422,8 @@ IPTR m68k_SendIO(struct M68KEmuContext *ctx, void *cpu)
     struct M68KIoMap *m = io_find(ctx, M68KEmu_GetA(cpu, 1));
     if (!m) return 0;
     io_in(ctx, m);
+    if (input_request(ctx, m))
+        return 0;
     m->pending = TRUE;
     SendIO(m->native);
     return 0;
