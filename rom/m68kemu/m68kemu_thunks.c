@@ -52,6 +52,8 @@ extern const struct M68KThunkEntry m68kemu_thunks_diskfont_manual[];
 extern const ULONG m68kemu_thunks_diskfont_manual_count;
 extern const struct M68KThunkEntry m68kemu_thunks_locale_manual[];
 extern const struct M68KThunkEntry m68kemu_thunks_utility_manual[];
+extern const struct M68KThunkEntry m68kemu_icon_manual[];
+extern const ULONG m68kemu_icon_manual_count;
 extern const ULONG m68kemu_thunks_utility_manual_count;
 extern const ULONG m68kemu_thunks_locale_manual_count;
 
@@ -119,6 +121,9 @@ ULONG M68KEmu_OpenLibrary(struct M68KEmuContext *ctx, const char *name)
             } else if (strcmp(name, "utility.library") == 0) {
                 manual = m68kemu_thunks_utility_manual;
                 manual_count = m68kemu_thunks_utility_manual_count;
+            } else if (strcmp(name, "icon.library") == 0) {
+                manual = m68kemu_icon_manual;
+                manual_count = m68kemu_icon_manual_count;
             } else if (strcmp(name, "locale.library") == 0) {
                 manual = m68kemu_thunks_locale_manual;
                 manual_count = m68kemu_thunks_locale_manual_count;
@@ -4551,6 +4556,43 @@ static IPTR thunk_exec_FreeEntry_m(struct M68KEmuContext *ctx, void *cpu)
     M68KEmu_HeapFree(ctx, ml, 0);
     return 0;
 }
+
+/* icon -96: FindToolType(A0=toolTypeArray, A1=typeName): an array of 68k
+   string pointers. The whole name before '=' must match, blanks around
+   '=' allowed (V44); the result points into the program's string. */
+IPTR thunk_icon_FindToolType_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG tt = THUNK_A(0), name = THUNK_A(1), s;
+    ULONG namelen;
+
+    if (!tt || !name || name >= ctx->mem_size)
+        return 0;
+    namelen = strnlen((const char *)ctx->mem + name, ctx->mem_size - name);
+    for (; tt + 4 <= ctx->mem_size && (s = m68k_read32(ctx, tt)); tt += 4)
+    {
+        const char *e, *p;
+        ULONG len;
+
+        if (s >= ctx->mem_size)
+            break;
+        e = (const char *)ctx->mem + s;
+        for (len = 0; s + len < ctx->mem_size && e[len] && e[len] != '='; len++)
+            ;
+        while (len > 0 && e[len - 1] == ' ')
+            len--;
+        if (len != namelen || Strnicmp((CONST_STRPTR)e, (CONST_STRPTR)ctx->mem + name, len))
+            continue;
+        p = e + len;
+        while (*p == ' ')
+            p++;
+        if (*p == '=')
+            for (p++; *p == ' '; p++)
+                ;
+        return s + (ULONG)(p - e);
+    }
+    return 0;
+}
+
 
 const struct M68KThunkEntry m68kemu_thunks_utility_manual[] = {
     { 30, m68k_utility_FindTagItem },
