@@ -32,6 +32,7 @@
 #include <intuition/intuition.h>
 #include <intuition/sghooks.h>
 #include <devices/conunit.h>
+#include <devices/console.h>
 
 #include <string.h>
 #include <stdio.h>
@@ -1211,6 +1212,19 @@ BOOL process_input(struct filehandle *fh)
     } /* while((inp = scan_input(fh, &c)) != INP_DONE) */
 
     return FALSE;
+}
+
+/* The console window, or one borrowed from a device that has its own. */
+struct Window *con_window(struct filehandle *fh)
+{
+    if (fh->window)
+        return fh->window;
+    if ((fh->flags & FHFLG_DEVICEMODE) &&
+        (fh->flags & FHFLG_CONSOLEDEVICEOPEN) &&
+        (fh->devcaps & CONCAPF_OWNWINDOW) &&
+        fh->conreadio && fh->conreadio->io_Unit)
+        return ((struct ConUnit *)fh->conreadio->io_Unit)->cu_Window;
+    return NULL;
 }
 
 BOOL answer_write_request(struct filehandle *fh, struct DosPacket *dp)

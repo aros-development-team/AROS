@@ -106,3 +106,5 @@ BOOL process_input(struct filehandle *fh);
 
 void replypkt(struct DosPacket *dp, SIPTR res1);
 void replypkt2(struct DosPacket *dp, SIPTR res1, SIPTR res2);
+
+struct Window *con_window(struct filehandle *fh);

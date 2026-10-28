@@ -106,6 +106,7 @@ struct filehandle
     UBYTE                   devname[64];
     ULONG                   devunit;
     ULONG                   devflags;
+    ULONG                   devcaps;    /* CONCAPF_* the device reported */
     struct DeviceNode       *dn;
 
     struct Device           *inputbase;

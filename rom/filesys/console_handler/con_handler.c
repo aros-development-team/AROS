@@ -34,6 +34,7 @@
 #include <workbench/workbench.h>
 #include <workbench/startup.h>
 #include <devices/conunit.h>
+#include <devices/console.h>
 
 #include <stddef.h>
 #include <string.h>
@@ -211,11 +212,13 @@ static BOOL ensure_appmsgport(struct filehandle *fh)
 
 static void add_con_appwindow(struct filehandle *fh)
 {
+    struct Window *window = con_window(fh);
+
     if (!(fh->flags & FHFLG_ICONIFIED) &&
-        !fh->appwindow && fh->workbenchbase && fh->window &&
+        !fh->appwindow && fh->workbenchbase && window &&
         ensure_appmsgport(fh))
     {
-        fh->appwindow = AddAppWindow(0, 0, fh->window,
+        fh->appwindow = AddAppWindow(0, 0, window,
                                      fh->appmsgport, NULL);
         if (fh->appwindow)
             D(bug("[con:handler] %s: promoted to AppWindow\n", __func__));
@@ -316,14 +319,18 @@ static BOOL deiconify_con_window(struct filehandle *fh)
     return TRUE;
 }
 
-void close_con_window(struct filehandle *fh)
+static void remove_con_appwindow(struct filehandle *fh)
 {
     if (fh->appwindow) {
         D(bug("[con:handler] Unpromote console window from being an AppWindow\n"));
         RemoveAppWindow(fh->appwindow);
         fh->appwindow = NULL;
     }
+}
 
+void close_con_window(struct filehandle *fh)
+{
+    remove_con_appwindow(fh);
     remove_con_appicon(fh);
     fh->flags &= ~FHFLG_ICONIFIED;
 
@@ -478,6 +485,21 @@ static LONG MakeConWindow(struct filehandle *fh)
     return err;
 }
 
+static ULONG query_devcaps(struct filehandle *fh)
+{
+    struct IOStdReq query = fh->conwriteio;
+    ULONG caps = 0;
+
+    query.io_Command = CD_GETCAPS;
+    query.io_Data = &caps;
+    query.io_Length = sizeof(caps);
+    query.io_Actual = 0;
+    if (DoIO(ioReq(&query)) || query.io_Actual != sizeof(caps))
+        caps = 0;
+
+    return caps;
+}
+
 /*
  * Device mode: everything above this layer only ever issues CMD_READ and
  * CMD_WRITE, so any device answering those can stand in for console.device.
@@ -507,6 +529,10 @@ static LONG MakeConDevice(struct filehandle *fh)
          * the structure.
          */
         fh->conwriteio.io_Message.mn_Length = sizeof(fh->conwriteio);
+
+        fh->devcaps = query_devcaps(fh);
+
+        add_con_appwindow(fh);
 
         /* No linefeed-mode escape here: that is a console.device control
            sequence, and a serial line would simply print it. */
@@ -555,6 +581,9 @@ static void close_con(struct filehandle *fh)
 
     D(bug("[con:handler] Deleting timer port 0x%p\n", fh->timermp));
     DeleteMsgPort(fh->timermp);
+
+    /* The window may go with the device. */
+    remove_con_appwindow(fh);
 
     if (fh->flags & FHFLG_CONSOLEDEVICEOPEN) {
         D(bug("[con:handler] Closing console.device...\n"));
@@ -914,9 +943,11 @@ LONG CONMain(struct ExecBase *SysBase)
     /*
      * A device-backed console is a single stream, so publish the port and let
      * everyone share this handler. CON: deliberately does not do this: leaving
-     * dn_Task clear is what gets each open its own window.
+     * dn_Task clear is what gets each open its own window. A device that
+     * opens a window per open is treated the same way.
      */
-    if (fh->flags & FHFLG_DEVICEMODE)
+    if ((fh->flags & FHFLG_DEVICEMODE) &&
+        !(fh->devcaps & CONCAPF_OWNWINDOW))
         fh->dn->dn_Task = mp;
 
     replypkt(dp, DOSTRUE);
