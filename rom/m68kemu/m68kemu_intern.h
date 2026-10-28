@@ -166,6 +166,7 @@ struct M68KEmuContext
     UWORD   num_m68klibs;
     struct { ULONG m68k; struct NotifyRequest *nr; } notify[64];   /* the program's file notifications */
     UWORD   num_notify;
+    struct { APTR font; ULONG name; } fontnames[16];   /* 68k copies of font names */
     struct { ULONG m68k; struct DiskObject *native; ULONG size; } icons[64];   /* DiskObjects in 68k layout */
     ULONG   num_icons;
     ULONG   windowptr;          /* its pr_WindowPtr as last passed to the native process */

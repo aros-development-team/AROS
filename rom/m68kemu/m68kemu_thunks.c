@@ -2612,22 +2612,182 @@ static void note_screen_in_bases(struct M68KEmuContext *ctx, ULONG ms, BOOL open
     }
 }
 
+struct screen_req
+{
+    WORD left, top, width, height, depth;
+    UBYTE dpen, bpen;
+    UWORD type;
+    CONST_STRPTR title;
+};
+
+static void newscreen_in(struct M68KEmuContext *ctx, ULONG ns, struct screen_req *r)
+{
+    ULONG m68k_title = m68k_read32(ctx, ns + M68K_NS_DEFAULTTITLE);
+
+    r->left   = (WORD)m68k_read16(ctx, ns + M68K_NS_LEFTEDGE);
+    r->top    = (WORD)m68k_read16(ctx, ns + M68K_NS_TOPEDGE);
+    r->width  = (WORD)m68k_read16(ctx, ns + M68K_NS_WIDTH);
+    r->height = (WORD)m68k_read16(ctx, ns + M68K_NS_HEIGHT);
+    r->depth  = (WORD)m68k_read16(ctx, ns + M68K_NS_DEPTH);
+    r->dpen   = ctx->mem[ns + M68K_NS_DETAILPEN];
+    r->bpen   = ctx->mem[ns + M68K_NS_BLOCKPEN];
+    r->type   = m68k_read16(ctx, ns + M68K_NS_TYPE);
+    r->title  = m68k_title ? (CONST_STRPTR)m68k_to_host(ctx, m68k_title) : NULL;
+}
+
+static ULONG open_screen(struct M68KEmuContext *ctx, const struct screen_req *r, struct TagItem *more);
+
 static IPTR thunk_intuition_OpenScreen(struct M68KEmuContext *ctx, void *cpu)
 {
+    struct screen_req r;
     ULONG ns = THUNK_A(0);
-    if (!ns) return 0;
 
-    /* Read m68k NewScreen fields */
-    WORD left   = (WORD)m68k_read16(ctx, ns + M68K_NS_LEFTEDGE);
-    WORD top    = (WORD)m68k_read16(ctx, ns + M68K_NS_TOPEDGE);
-    WORD width  = (WORD)m68k_read16(ctx, ns + M68K_NS_WIDTH);
-    WORD height = (WORD)m68k_read16(ctx, ns + M68K_NS_HEIGHT);
-    WORD depth  = (WORD)m68k_read16(ctx, ns + M68K_NS_DEPTH);
-    UBYTE dpen  = ctx->mem[ns + M68K_NS_DETAILPEN];
-    UBYTE bpen  = ctx->mem[ns + M68K_NS_BLOCKPEN];
-    UWORD type  = m68k_read16(ctx, ns + M68K_NS_TYPE);
-    ULONG m68k_title = m68k_read32(ctx, ns + M68K_NS_DEFAULTTITLE);
-    CONST_STRPTR title = m68k_title ? (CONST_STRPTR)m68k_to_host(ctx, m68k_title) : NULL;
+    if (!ns) return 0;
+    newscreen_in(ctx, ns, &r);
+    return open_screen(ctx, &r, NULL);
+}
+
+/* intuition -612: OpenScreenTagList(A0=newScreen, A1=tags): the tags
+   override the NewScreen; those carrying 68k data are converted */
+static IPTR thunk_intuition_OpenScreenTagList(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct screen_req r = { 0, 0, 640, 480, 8, 0, 1, CUSTOMSCREEN, NULL };
+    struct TagItem t[24];
+    APTR owned[4] = { NULL, NULL, NULL, NULL };
+    ULONG state = THUNK_A(1), ti, errp = 0, ms;
+    ULONG err = 0;
+    int n = 0, no = 0;
+
+    if (THUNK_A(0))
+        newscreen_in(ctx, THUNK_A(0), &r);
+    while ((ti = m68k_next_tag(ctx, &state)) && n < 20)
+    {
+        ULONG tag = m68k_read32(ctx, ti), data = m68k_read32(ctx, ti + 4);
+
+        switch (tag)
+        {
+        case SA_Left:      r.left = (WORD)data; break;
+        case SA_Top:       r.top = (WORD)data; break;
+        case SA_Width:     r.width = (WORD)data; break;
+        case SA_Height:    r.height = (WORD)data; break;
+        case SA_Depth:     r.depth = (WORD)data; break;
+        case SA_DetailPen: r.dpen = (UBYTE)data; break;
+        case SA_BlockPen:  r.bpen = (UBYTE)data; break;
+        case SA_Type:      r.type = (UWORD)data; break;
+        case SA_Title:     r.title = data ? (CONST_STRPTR)m68k_to_host(ctx, data) : NULL; break;
+        case SA_ErrorCode: errp = data; break;
+        case SA_PubName:
+            if (data && data < ctx->mem_size && no < 4 &&
+                (owned[no] = AllocVec(strlen((char *)ctx->mem + data) + 1, MEMF_ANY)))
+            {
+                strcpy(owned[no], (char *)ctx->mem + data);
+                t[n].ti_Tag = tag; t[n++].ti_Data = (IPTR)owned[no++];
+            }
+            break;
+        case SA_PubTask:
+            t[n].ti_Tag = tag; t[n++].ti_Data = (IPTR)FindTask(NULL);
+            break;
+        case SA_Pens:
+        {
+            ULONG c = 0, i;
+            UWORD *pens;
+            while (data + 2 * c + 2 <= ctx->mem_size && m68k_read16(ctx, data + 2 * c) != 0xFFFF && c < 64)
+                c++;
+            if (data && no < 4 && (pens = AllocVec(2 * (c + 1), MEMF_ANY)))
+            {
+                for (i = 0; i < c; i++)
+                    pens[i] = m68k_read16(ctx, data + 2 * i);
+                pens[c] = (UWORD)~0;
+                owned[no++] = pens;
+                t[n].ti_Tag = tag; t[n++].ti_Data = (IPTR)pens;
+            }
+            break;
+        }
+        case SA_Colors32:
+        {
+            /* runs of (count << 16 | first, R, G, B ...), ended by a zero count */
+            ULONG len = 0, i;
+            ULONG *tab;
+            while (data && data + 4 * len + 4 <= ctx->mem_size && (m68k_read32(ctx, data + 4 * len) >> 16) && len < 4096)
+                len += 1 + 3 * (m68k_read32(ctx, data + 4 * len) >> 16);
+            if (data && no < 4 && (tab = AllocVec(4 * (len + 1), MEMF_ANY)))
+            {
+                for (i = 0; i < len; i++)
+                    tab[i] = m68k_read32(ctx, data + 4 * i);
+                tab[len] = 0;
+                owned[no++] = tab;
+                t[n].ti_Tag = tag; t[n++].ti_Data = (IPTR)tab;
+            }
+            break;
+        }
+        case SA_Colors:
+        {
+            /* ColorSpecs: WORD index, UWORD red, green, blue; index -1 ends */
+            ULONG c = 0, i;
+            struct ColorSpec *cs;
+            while (data && data + 8 * c + 8 <= ctx->mem_size && (WORD)m68k_read16(ctx, data + 8 * c) != -1 && c < 256)
+                c++;
+            if (data && no < 4 && (cs = AllocVec(sizeof(*cs) * (c + 1), MEMF_ANY)))
+            {
+                for (i = 0; i < c; i++)
+                {
+                    cs[i].ColorIndex = (WORD)m68k_read16(ctx, data + 8 * i);
+                    cs[i].Red   = m68k_read16(ctx, data + 8 * i + 2);
+                    cs[i].Green = m68k_read16(ctx, data + 8 * i + 4);
+                    cs[i].Blue  = m68k_read16(ctx, data + 8 * i + 6);
+                }
+                cs[c].ColorIndex = -1;
+                owned[no++] = cs;
+                t[n].ti_Tag = tag; t[n++].ti_Data = (IPTR)cs;
+            }
+            break;
+        }
+        case SA_PubSig:
+        case SA_Overscan:
+        case SA_ShowTitle:
+        case SA_Behind:
+        case SA_Quiet:
+        case SA_AutoScroll:
+        case SA_FullPalette:
+        case SA_ColorMapEntries:
+        case SA_Draggable:
+        case SA_Exclusive:
+        case SA_SharePens:
+        case SA_Interleaved:
+        case SA_LikeWorkbench:
+        case SA_SysFont:
+            t[n].ti_Tag = tag; t[n++].ti_Data = data;
+            break;
+        }
+    }
+    t[n].ti_Tag = SA_ErrorCode; t[n++].ti_Data = (IPTR)&err;
+    t[n].ti_Tag = TAG_DONE;
+    ms = open_screen(ctx, &r, t);
+    if (errp && errp + 4 <= ctx->mem_size)
+        m68k_write32(ctx, errp, err);
+    /* the public name stays with the screen; the converted tables were copied */
+    for (int i = 0; i < no; i++)
+    {
+        BOOL keep = FALSE;
+        for (int k = 0; k < n; k++)
+            if (t[k].ti_Tag == SA_PubName && t[k].ti_Data == (IPTR)owned[i] && ms)
+                keep = TRUE;
+        if (!keep)
+            FreeVec(owned[i]);
+    }
+    return ms;
+}
+
+static ULONG open_screen(struct M68KEmuContext *ctx, const struct screen_req *r, struct TagItem *more)
+{
+    WORD left = r->left, top = r->top, width = r->width, height = r->height, depth = r->depth;
+    UBYTE dpen = r->dpen, bpen = r->bpen;
+    UWORD type = r->type;
+    CONST_STRPTR title = r->title;
+
+    if (width <= 0) width = 640;
+    if (height <= 0) height = 480;
+    if (depth <= 0) depth = 8;
 
     /* An Amiga-sized request (640x200/256, 2-4 planes) has no mode on a PC
        card; ask for the nearest real one and let the program's own size be
@@ -2658,7 +2818,7 @@ static IPTR thunk_intuition_OpenScreen(struct M68KEmuContext *ctx, void *cpu)
         SA_Type, (IPTR)(type & 0x000F),
         SA_ShowTitle, TRUE,
         (modeid != (ULONG)INVALID_ID) ? SA_DisplayID : TAG_IGNORE, (IPTR)modeid,
-        TAG_DONE);
+        more ? TAG_MORE : TAG_DONE, (IPTR)more);
 
     if (ctx->trace_calls)
         bug("[m68kemu] OpenScreen %dx%dx%d requested -> mode %08lx, screen %p %dx%d\n",
@@ -2716,7 +2876,7 @@ static IPTR thunk_intuition_OpenScreen(struct M68KEmuContext *ctx, void *cpu)
 
     note_screen_in_bases(ctx, ms, TRUE);
 
-    return (IPTR)ms;
+    return ms;
 }
 
 /* intuition -66: CloseScreen(A0=screen) */
@@ -2780,6 +2940,33 @@ static IPTR thunk_intuition_AutoRequest(struct M68KEmuContext *ctx, void *cpu)
                               THUNK_D(0), THUNK_D(1), THUNK_D(2), THUNK_D(3));
     if (m_body) free_intuitext_chain(&body);
     return (IPTR)result;
+}
+
+/* intuition -690: GetScreenDrawInfo(A0=screen): the DrawInfo in 68k layout,
+   one per native DrawInfo */
+static IPTR thunk_intuition_GetScreenDrawInfo_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct Screen *scr = THUNK_A(0) ? (struct Screen *)shadow_lookup(ctx, THUNK_A(0)) : NULL;
+    const struct M68KStructLayout *l = shadow_find_layout("DrawInfo");
+    struct DrawInfo *dri;
+
+    if (!scr || !l || !(dri = GetScreenDrawInfo(scr)))
+        return 0;
+    for (UWORD i = 0; i < ctx->num_shadows; i++)
+        if (ctx->shadow_map[i].native_ptr == dri && ctx->shadow_map[i].type == l->shadow_type)
+        {
+            FreeScreenDrawInfo(scr, dri);   /* the one reference the program holds is the first */
+            return ctx->shadow_map[i].m68k_addr;
+        }
+    return shadow_create(ctx, l, dri);
+}
+
+/* intuition -696: FreeScreenDrawInfo(A0=screen, A1=drawInfo): the 68k copy
+   stays for the next GetScreenDrawInfo */
+static IPTR thunk_intuition_FreeScreenDrawInfo_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    (void)ctx; (void)cpu;
+    return 0;
 }
 
 /* intuition -426: GetScreenData(A0=buffer, D0=size, D1=type, A1=screen)
@@ -4104,6 +4291,8 @@ const struct M68KThunkEntry m68kemu_thunks_intuition_manual[] = {
     { 588, thunk_intuition_EasyRequestArgs },
     { 426, thunk_intuition_GetScreenData_m },
     { 636, m68k_NewObjectA },
+    { 690, thunk_intuition_GetScreenDrawInfo_m },
+    { 696, thunk_intuition_FreeScreenDrawInfo_m },
     { 642, m68k_DisposeObject },
     { 648, m68k_SetAttrsA },
     { 654, m68k_GetAttr },
@@ -4112,6 +4301,7 @@ const struct M68KThunkEntry m68kemu_thunks_intuition_manual[] = {
     { 606, thunk_intuition_OpenWindowTagList },
     { 72, thunk_intuition_CloseWindow },
     { 198, thunk_intuition_OpenScreen },
+    { 612, thunk_intuition_OpenScreenTagList },
     { 66, thunk_intuition_CloseScreen },
     { 0, NULL }
 };
@@ -4665,6 +4855,38 @@ static BOOL textattr_in(struct M68KEmuContext *ctx, ULONG m68k_ta, struct TextAt
     return ta->ta_Name != NULL;
 }
 
+/* graphics -474: AskFont(A1=rp, A0=textAttr): the name as a 68k string */
+static IPTR thunk_gfx_AskFont(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct RastPort *rp = resolve_rp(ctx, THUNK_A(1));
+    struct TextFont *tf = rp && rp->Font ? rp->Font : GfxBase->DefaultFont;
+    ULONG ta = THUNK_A(0), name = 0;
+    int i, free_slot = -1;
+
+    if (!tf || !ta || ta + 8 > ctx->mem_size)
+        return 0;
+    for (i = 0; i < 16; i++)
+    {
+        if (ctx->fontnames[i].font == tf) { name = ctx->fontnames[i].name; break; }
+        if (!ctx->fontnames[i].font && free_slot < 0) free_slot = i;
+    }
+    if (!name && tf->tf_Message.mn_Node.ln_Name && free_slot >= 0)
+    {
+        ULONG len = strlen(tf->tf_Message.mn_Node.ln_Name);
+        if ((name = M68KEmu_HeapAlloc(ctx, len + 1, 0)))
+        {
+            memcpy(ctx->mem + name, tf->tf_Message.mn_Node.ln_Name, len + 1);
+            ctx->fontnames[free_slot].font = tf;
+            ctx->fontnames[free_slot].name = name;
+        }
+    }
+    m68k_write32(ctx, ta, name);
+    m68k_write16(ctx, ta + 4, tf->tf_YSize);
+    ctx->mem[ta + 6] = tf->tf_Style;
+    ctx->mem[ta + 7] = tf->tf_Flags;
+    return 0;
+}
+
 /* graphics -72: OpenFont(A0=textAttr) -> D0=font */
 static IPTR thunk_gfx_OpenFont(struct M68KEmuContext *ctx, void *cpu)
 {
@@ -5084,6 +5306,7 @@ const struct M68KThunkEntry m68kemu_thunks_graphics_manual[] = {
     { 726, thunk_graphics_FindDisplayInfo_h },
     { 756, thunk_graphics_GetDisplayInfoData_m },
     { 72,  thunk_gfx_OpenFont },
+    { 474, thunk_gfx_AskFont },
     { 192, thunk_gfx_LoadRGB4 },
     { 900, thunk_gfx_GetRGB32 },
     { 960, thunk_gfx_GetBitMapAttr_m },
