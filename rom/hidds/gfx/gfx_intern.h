@@ -214,6 +214,7 @@ struct HIDDBitMapData
     ULONG                  buffers;       /* aHidd_BitMap_Buffers (>= 1)                   */
     ULONG                  videoformat;   /* aHidd_BitMap_VideoFormat, 0 = RGB/palette     */
     ULONG                  colorspace;    /* aHidd_BitMap_ColorSpace                       */
+    ULONG                  colorrange;    /* aHidd_BitMap_ColorRange                       */
     BOOL                   decodetarget;  /* aHidd_BitMap_DecodeTarget                     */
     ULONG                  videolayout;   /* aHidd_BitMap_VideoLayout                      */
     ULONG                  flags;         /* see hidd/graphic.h 'flags for                 */

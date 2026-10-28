@@ -755,6 +755,11 @@ struct HIDD_PlaneState
 /* aHidd_BitMap_ColorSpace */
 #define vHidd_ColorSpace_BT601  0
 #define vHidd_ColorSpace_BT709  1
+#define vHidd_ColorSpace_BT2020 2
+
+/* aHidd_BitMap_ColorRange: luma 16-235 / chroma 16-240, or all of 0-255 */
+#define vHidd_ColorRange_Limited    0
+#define vHidd_ColorRange_Full       1
 
 /* moHidd_BitMap_SwapBuffers flags */
 #define fHidd_Swap_NoWait       (1 << 0)    /* return before the displaced buffer is off scan-out */

@@ -972,6 +972,10 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
                     data->colorspace = tag->ti_Data;
                     break;
 
+                case aoHidd_BitMap_ColorRange:
+                    data->colorrange = tag->ti_Data;
+                    break;
+
                 case aoHidd_BitMap_DecodeTarget:
                     data->decodetarget = tag->ti_Data ? TRUE : FALSE;
                     break;
@@ -1296,6 +1300,10 @@ VOID BM__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
 
         case aoHidd_BitMap_ColorSpace:
             *msg->storage = data->colorspace;
+            return;
+
+        case aoHidd_BitMap_ColorRange:
+            *msg->storage = data->colorrange;
             return;
 
         case aoHidd_BitMap_DecodeTarget:
@@ -4729,6 +4737,10 @@ IPTR BM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
             {
             case aoHidd_BitMap_ColorSpace:
                 data->colorspace = tag->ti_Data;
+                break;
+
+            case aoHidd_BitMap_ColorRange:
+                data->colorrange = tag->ti_Data;
                 break;
 
             case aoHidd_BitMap_LeftEdge:
