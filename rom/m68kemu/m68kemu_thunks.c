@@ -54,6 +54,8 @@ IPTR m68k_SetAttrsA(struct M68KEmuContext *ctx, void *cpu);
 IPTR m68k_GetAttr(struct M68KEmuContext *ctx, void *cpu);
 IPTR m68k_SetGadgetAttrsA(struct M68KEmuContext *ctx, void *cpu);
 IPTR m68k_DoGadgetMethodA(struct M68KEmuContext *ctx, void *cpu);
+static IPTR thunk_exec_Allocate_m(struct M68KEmuContext *ctx, void *cpu);
+static IPTR thunk_exec_Deallocate_m(struct M68KEmuContext *ctx, void *cpu);
 
 /* Open a library by name and return its fake base (no cpu needed) */
 ULONG M68KEmu_OpenLibrary(struct M68KEmuContext *ctx, const char *name)
@@ -1324,6 +1326,8 @@ const struct M68KThunkEntry m68kemu_thunks_exec[] = {
     { 684, thunk_exec_AllocVec },
     { 690, thunk_exec_FreeVec },
     { 216, thunk_exec_AvailMem },
+    { 186, thunk_exec_Allocate_m },
+    { 192, thunk_exec_Deallocate_m },
     { 384, thunk_exec_WaitPort },
     { 372, thunk_exec_GetMsg },
     { 378, thunk_exec_ReplyMsg },
@@ -3474,6 +3478,81 @@ static IPTR thunk_gfx_LoadRGB4(struct M68KEmuContext *ctx, void *cpu)
     }
     LoadRGB4(vp, native_colors, count);
     FreeMem(native_colors, count * sizeof(UWORD));
+    return 0;
+}
+
+/* Allocate() and Deallocate() on a MemHeader the program built in its own
+   memory (C runtimes keep their malloc pools this way): the chunk list is
+   m68k (mc_Next, mc_Bytes) and blocks are 8-byte aligned, as in exec */
+#define M68K_MEM_BLOCKSIZE 8
+
+/* exec -186: Allocate(A0=memHeader, D0=byteSize) -> D0=block */
+static IPTR thunk_exec_Allocate_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG mh = THUNK_A(0), size = THUNK_D(0), prev, mc;
+    int guard = 0;
+
+    if (!mh || !size)
+        return 0;
+    size = (size + M68K_MEM_BLOCKSIZE - 1) & ~(M68K_MEM_BLOCKSIZE - 1);
+    if (m68k_read32(ctx, mh + M68K_MH_FREE) < size)
+        return 0;
+    for (prev = mh + M68K_MH_FIRST, mc = m68k_read32(ctx, prev);
+         mc && guard++ < 1000000;
+         prev = mc, mc = m68k_read32(ctx, mc))
+    {
+        ULONG bytes = m68k_read32(ctx, mc + 4);
+
+        if (bytes < size)
+            continue;
+        if (bytes == size)
+            m68k_write32(ctx, prev, m68k_read32(ctx, mc));
+        else
+        {
+            m68k_write32(ctx, mc + size, m68k_read32(ctx, mc));
+            m68k_write32(ctx, mc + size + 4, bytes - size);
+            m68k_write32(ctx, prev, mc + size);
+        }
+        m68k_write32(ctx, mh + M68K_MH_FREE, m68k_read32(ctx, mh + M68K_MH_FREE) - size);
+        return mc;
+    }
+    return 0;
+}
+
+/* exec -192: Deallocate(A0=memHeader, A1=block, D0=byteSize) */
+static IPTR thunk_exec_Deallocate_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG mh = THUNK_A(0), blk = THUNK_A(1), size = THUNK_D(0), prev, mc, end, freed;
+    int guard = 0;
+
+    if (!mh || !blk || !size)
+        return 0;
+    size = (size + (blk & (M68K_MEM_BLOCKSIZE - 1)) + M68K_MEM_BLOCKSIZE - 1) & ~(M68K_MEM_BLOCKSIZE - 1);
+    blk &= ~(M68K_MEM_BLOCKSIZE - 1);
+    end = blk + size;
+    freed = size;
+
+    for (prev = mh + M68K_MH_FIRST, mc = m68k_read32(ctx, prev);
+         mc && mc < blk && guard++ < 1000000;
+         prev = mc, mc = m68k_read32(ctx, mc))
+        ;
+    /* merge with the following chunk */
+    if (mc && mc == end)
+    {
+        size += m68k_read32(ctx, mc + 4);
+        mc = m68k_read32(ctx, mc);
+    }
+    m68k_write32(ctx, blk, mc);
+    m68k_write32(ctx, blk + 4, size);
+    /* merge with the preceding chunk */
+    if (prev != mh + M68K_MH_FIRST && prev + m68k_read32(ctx, prev + 4) == blk)
+    {
+        m68k_write32(ctx, prev, mc);
+        m68k_write32(ctx, prev + 4, m68k_read32(ctx, prev + 4) + size);
+    }
+    else
+        m68k_write32(ctx, prev, blk);
+    m68k_write32(ctx, mh + M68K_MH_FREE, m68k_read32(ctx, mh + M68K_MH_FREE) + freed);
     return 0;
 }
 
