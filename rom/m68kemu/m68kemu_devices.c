@@ -20,6 +20,8 @@
 #include <devices/inputevent.h>
 #include <proto/exec.h>
 #include <proto/timer.h>
+#define __CONSOLE_NOLIBBASE__
+#include <proto/console.h>
 #include <proto/alib.h>
 #include <string.h>
 
@@ -42,7 +44,7 @@ void *shadow_lookup(struct M68KEmuContext *ctx, ULONG m68k_addr);
 #define IO_DATA      40
 #define IO_OFFSET    44
 
-enum { DEV_STD, DEV_TIMER, DEV_AUDIO, DEV_INPUT };
+enum { DEV_STD, DEV_TIMER, DEV_AUDIO, DEV_INPUT, DEV_CONSOLE };
 
 /* m68k IOAudio after the IORequest: ioa_AllocKey 32, ioa_Data 34,
    ioa_Length 38, ioa_Period 42, ioa_Volume 44, ioa_Cycles 46 */
@@ -58,7 +60,7 @@ enum { DEV_STD, DEV_TIMER, DEV_AUDIO, DEV_INPUT };
 static const struct { const char *name; UBYTE kind; } known_devices[] = {
     { "timer.device", DEV_TIMER },
     { "audio.device", DEV_AUDIO },
-    { "console.device", DEV_STD },
+    { "console.device", DEV_CONSOLE },
     { "input.device", DEV_INPUT },
     { "keyboard.device", DEV_STD },
     { "gameport.device", DEV_STD },
@@ -268,6 +270,35 @@ static IPTR tm_GetSysTime(struct M68KEmuContext *ctx, void *cpu)
     return 0;
 }
 
+static struct Device *console_base(struct M68KEmuContext *ctx)
+{
+    ULONG i;
+    for (i = 0; i < M68KEMU_MAX_IOREQS; i++)
+        if (ctx->ioreqs[i].native && ctx->ioreqs[i].kind == DEV_CONSOLE)
+            return ctx->ioreqs[i].native->io_Device;
+    return NULL;
+}
+
+/* m68k InputEvent: ie_Class 4, ie_SubClass 5, ie_Code 6, ie_Qualifier 8,
+   ie_position 10 (dead-key bytes for RAWKEY) */
+static IPTR con_RawKeyConvert(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct Device *ConsoleDevice = console_base(ctx);
+    struct InputEvent ie = { 0 };
+    ULONG mie = M68KEmu_GetA(cpu, 0), mbuf = M68KEmu_GetA(cpu, 1);
+    LONG len = (LONG)M68KEmu_GetD(cpu, 1);
+
+    if (!ConsoleDevice || !mie || !mbuf || len < 0 || mbuf + len > ctx->mem_size)
+        return (IPTR)-1;
+    ie.ie_Class     = ctx->mem[mie + 4];
+    ie.ie_SubClass  = ctx->mem[mie + 5];
+    ie.ie_Code      = m68k_read16(ctx, mie + 6);
+    ie.ie_Qualifier = m68k_read16(ctx, mie + 8);
+    CopyMem(ctx->mem + mie + 10, &ie.ie_position, 4);
+    /* an m68k KeyMap has a different layout: use the default one */
+    return (IPTR)RawKeyConvert(&ie, (STRPTR)(ctx->mem + mbuf), len, NULL);
+}
+
 static const struct M68KThunkEntry dev_std_tab[] = {
     { 30, dev_BeginIO }, { 36, dev_AbortIO },
 };
@@ -275,6 +306,9 @@ static const struct M68KThunkEntry dev_timer_tab[] = {
     { 30, dev_BeginIO }, { 36, dev_AbortIO },
     { 42, tm_AddTime }, { 48, tm_SubTime }, { 54, tm_CmpTime },
     { 60, tm_ReadEClock }, { 66, tm_GetSysTime },
+};
+static const struct M68KThunkEntry dev_console_tab[] = {
+    { 30, dev_BeginIO }, { 36, dev_AbortIO }, { 48, con_RawKeyConvert },
 };
 
 /* exec -444: OpenDevice(A0=name, D0=unit, A1=ioRequest, D1=flags) -> D0 error */
@@ -335,8 +369,9 @@ IPTR m68k_OpenDevice(struct M68KEmuContext *ctx, void *cpu)
     devbase = M68KEmu_FindLibBase(ctx, name);
     if (!devbase)
         devbase = M68KEmu_SetupLibBase(ctx, ctx->num_libs, name, 16,
-                                       kind == DEV_TIMER ? dev_timer_tab : dev_std_tab,
-                                       kind == DEV_TIMER ? 7 : 2, NULL, 0);
+                                       kind == DEV_TIMER ? dev_timer_tab :
+                                       kind == DEV_CONSOLE ? dev_console_tab : dev_std_tab,
+                                       kind == DEV_TIMER ? 7 : kind == DEV_CONSOLE ? 3 : 2, NULL, 0);
     m68k_write32(ctx, mio + IO_DEVICE, devbase);
     m68k_write32(ctx, mio + IO_UNIT, m68k_bptr_out(ctx, (BPTR)io->io_Unit));
     ctx->mem[mio + IO_ERROR] = 0;
