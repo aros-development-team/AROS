@@ -264,9 +264,14 @@ LONG locateobjectfromlock(struct ExtFileLock *lock, UBYTE *path, struct CacheBuf
 
 
 
-LONG locatelockableobject(struct ExtFileLock *lock, UBYTE *path, struct CacheBuffer **returned_cb, struct fsObject **returned_o) {
+LONG locateobjectorlink(struct ExtFileLock *lock, UBYTE *path, struct CacheBuffer **returned_cb, struct fsObject **returned_o) {
   NODE objectnode;
   LONG errorcode;
+
+  /* As locateobjectfromlock(), but a soft link which is the last name of the
+     path is returned as the object itself, for calls which act on a link
+     rather than follow it.  A link earlier in the path still returns
+     ERROR_IS_SOFT_LINK, so dos resolves it. */
 
   if(lock==0) {
     objectnode=ROOTNODE;
@@ -276,10 +281,41 @@ LONG locatelockableobject(struct ExtFileLock *lock, UBYTE *path, struct CacheBuf
   }
 
   if((errorcode=readobject(objectnode, returned_cb, returned_o))==0) {
-    if((errorcode=locateobject2(&path, returned_cb, returned_o))==0) {
-      if(objectnode!=BE2L((*returned_o)->be_objectnode) && lockable(BE2L((*returned_o)->be_objectnode), SHARED_LOCK)==DOSFALSE) {
-        errorcode=ERROR_OBJECT_IN_USE;
+    errorcode=locateobject2(&path, returned_cb, returned_o);
+
+    if(errorcode==ERROR_IS_SOFT_LINK) {
+      while(*path!=0 && *path!='/') {
+        path++;
       }
+
+      if(*path==0) {
+        errorcode=0;
+      }
+    }
+  }
+
+  return(errorcode);
+}
+
+
+
+LONG locatelockableobject(struct ExtFileLock *lock, UBYTE *path, struct CacheBuffer **returned_cb, struct fsObject **returned_o) {
+  NODE objectnode;
+  LONG errorcode;
+
+  /* A soft link as the last name is the object (SetProtection, SetComment,
+     SetDate and SetOwner act on the link itself). */
+
+  if(lock==0) {
+    objectnode=ROOTNODE;
+  }
+  else {
+    objectnode=lock->objectnode;
+  }
+
+  if((errorcode=locateobjectorlink(lock, path, returned_cb, returned_o))==0) {
+    if(objectnode!=BE2L((*returned_o)->be_objectnode) && lockable(BE2L((*returned_o)->be_objectnode), SHARED_LOCK)==DOSFALSE) {
+      errorcode=ERROR_OBJECT_IN_USE;
     }
   }
 

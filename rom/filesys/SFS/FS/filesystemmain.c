@@ -1742,7 +1742,7 @@ sfsSecBeginPacket(globals->packet);
                                 _DEBUG("ACTION_DELETE_OBJECT(0x%08lx,'%s')\n", BADDR(globals->packet->dp_Arg1), globals->string);
 
                                 /* multi-user: delete access to the object, write access to its directory */
-                                if((errorcode = sfsSecCheckPath(BADDR(globals->packet->dp_Arg1), globals->string, SFS_ACCESS_DELETE)) == 0)
+                                if((errorcode = sfsSecCheckLinkPath(BADDR(globals->packet->dp_Arg1), globals->string, SFS_ACCESS_DELETE)) == 0)
                                     errorcode = sfsSecCheckParentPath(BADDR(globals->packet->dp_Arg1), globals->string, SFS_ACCESS_WRITE);
                                 if(errorcode == 0) do {
                                     newtransaction();
@@ -1859,7 +1859,8 @@ sfsSecBeginPacket(globals->packet);
                                             copybstrasstr((BSTR)globals->packet->dp_Arg4, globals->string2, 258);
                                             errorcode = sfsSecCheckParentPath(BADDR(globals->packet->dp_Arg3), globals->string2, SFS_ACCESS_WRITE);
                                         }
-                                        if(errorcode == 0 && (errorcode = locateobjectfromlock(lock, validatepath(globals->string), &cb, &o)) == 0) {
+                                        /* a soft link as the old name is renamed itself */
+                                        if(errorcode == 0 && (errorcode = locateobjectorlink(lock, validatepath(globals->string), &cb, &o)) == 0) {
                                             copybstrasstr((BSTR)globals->packet->dp_Arg4, globals->string, 258);
 
                                             settemporarylock(BE2L(o->be_objectnode));
