@@ -67,6 +67,10 @@ struct filehandle
     struct NewWindow        nw;
     struct MsgPort          *timermp;
     struct timerequest      *timerreq;
+    struct MsgPort          *rawprefixmp;
+    struct timerequest      *rawprefixreq;
+    BOOL                    rawprefixpending;
+    BOOL                    rawprefixexpired;
     struct MsgPort          *appmsgport;
     struct AppMessage       *appmsg;
     struct AppWindow        *appwindow;
@@ -81,6 +85,7 @@ struct filehandle
 #endif
     WORD                    conbufferpos;
     WORD                    conbuffersize;
+    UBYTE                   rawpasteprefix; /* paste request bytes held back */
     WORD                    inputstart; /* usually 0, but needed for multi-lines (CONTROL RETURN) */
     WORD                    inputpos; /* cursor pos. inside line */
     WORD                    inputsize; /* length of input string */
