@@ -2,7 +2,7 @@
 #define CAMD_INTERN_H
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -158,6 +158,7 @@ struct DriverData{
 	UWORD *re_end;
 	int unpicked;
 	UWORD *re_read;
+	ULONG re_overflow;		// input is dropped until the receiver resets
 
 // To know the status of a ReceiverProcess. 0=not alive, or not initialized yet. 1=alive and fine. 2=signal failed.
 	LONG isReceiverProcessAlive;
@@ -341,6 +342,10 @@ void EndReceiverProc(
 );
 
 void Receiver_SysExSuperTreat(
+	struct DriverData *driverdata,
+	UBYTE data
+);
+void Receiver_SysEx(
 	struct DriverData *driverdata,
 	UBYTE data
 );
