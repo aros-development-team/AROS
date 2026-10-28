@@ -122,7 +122,8 @@ struct M68KEmuContext
     #define M68KEMU_MAX_BCLASSES 64
     #define M68KEMU_MAX_BLISTS   64
     #define M68KEMU_MAX_CLIBS    32
-    APTR    gfx_owned[32];         /* native AreaInfo/TmpRas and buffers of the program's */
+    APTR    gfx_owned[32];
+    struct { ULONG m68k; APTR native; } imgcache[64];   /* plain m68k Images given to native classes */         /* native AreaInfo/TmpRas and buffers of the program's */
     ULONG   boopsi_base;           /* pseudo library: vector -30 dispatches methods */
     ULONG   boopsi_logged;
     ULONG   bclasses[M68KEMU_MAX_BCLASSES];
@@ -212,6 +213,9 @@ ULONG m68k_bptr_out(struct M68KEmuContext *ctx, BPTR b);
 /* m68kemu_boopsi.c */
 ULONG m68k_open_class_library(struct M68KEmuContext *ctx, const char *name, ULONG version);
 void  m68k_boopsi_cleanup(struct M68KEmuContext *ctx);
+/* m68kemu_thunks.c: a native copy of a plain m68k struct Image (chain), kept for the run */
+APTR  m68k_image_cached(struct M68KEmuContext *ctx, ULONG mi);
+void  m68k_image_cache_free(struct M68KEmuContext *ctx);
 BPTR  m68k_bptr_in(struct M68KEmuContext *ctx, ULONG v);
 void  m68k_bptr_drop(struct M68KEmuContext *ctx, ULONG v);
 void  m68k_low_write_trap(struct M68KEmuContext *ctx, ULONG addr, const char *who);

@@ -34,6 +34,9 @@
 #include <gadgets/listbrowser.h>
 #include <gadgets/clicktab.h>
 #include <gadgets/radiobutton.h>
+#include <gadgets/button.h>
+#include <gadgets/speedbar.h>
+#include <images/label.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
@@ -335,16 +338,46 @@ static struct TagItem *tags_in(struct M68KEmuContext *ctx, ULONG mtags, ULONG mo
             ti->ti_Data = raw ? (IPTR)keep(ctx, mo, columninfo_in(ctx, raw)) : 0;
             break;
         case GA_TextAttr:
+        case IA_Font:
             ti->ti_Data = raw ? (IPTR)keep(ctx, mo, textattr_in(ctx, raw)) : 0;
             break;
+        case LABEL_Mapping:
+            /* UWORD pens indexed by the next image's colours */
+            if (raw && raw < ctx->mem_size)
+            {
+                UWORD *map = AllocVec(256 * sizeof(UWORD), MEMF_CLEAR);
+                if (map)
+                {
+                    for (int k = 0; k < 256 && raw + 2 * k + 2 <= ctx->mem_size; k++)
+                        map[k] = m68k_read16(ctx, raw + 2 * k);
+                    ti->ti_Data = (IPTR)keep(ctx, mo, map);
+                }
+            }
+            break;
         case CHOOSER_LabelArray:
-        case RADIOBUTTON_Labels:
+        case RADIOBUTTON_LabelArray:
             ti->ti_Data = raw ? (IPTR)keep(ctx, mo, strarray_in(ctx, raw)) : 0;
             break;
         case CHOOSER_Labels:
         case LISTBROWSER_Labels:
         case CLICKTAB_Labels:
+        case RADIOBUTTON_Labels:
+        case SPEEDBAR_Buttons:
             ti->ti_Data = raw ? (IPTR)list_in(ctx, raw) : 0;
+            break;
+        /* images: a BOOPSI one is a stand-in, a plain struct Image is copied */
+        case LABEL_Image:
+        case GA_Image:
+        case GA_SelectRender:
+        case GA_LabelImage:
+        case SBNA_Image:
+        case SBNA_SelImage:
+        case LBNCA_Image:
+        case LBNCA_SelImage:
+        case CNA_Image:
+        case TNA_Image:
+            if (raw && raw < ctx->mem_size && !shadow_lookup(ctx, raw))
+                ti->ti_Data = (IPTR)m68k_image_cached(ctx, raw);
             break;
         case ICA_TARGET:
             if (raw == ICTARGET_IDCMP) ti->ti_Data = (IPTR)ICTARGET_IDCMP;
@@ -826,6 +859,7 @@ ULONG m68k_open_class_library(struct M68KEmuContext *ctx, const char *name, ULON
 
 void m68k_boopsi_cleanup(struct M68KEmuContext *ctx)
 {
+    m68k_image_cache_free(ctx);
     for (int i = 0; i < M68KEMU_MAX_CLIBS; i++)
         if (ctx->clibs[i].native)
             CloseLibrary(ctx->clibs[i].native);

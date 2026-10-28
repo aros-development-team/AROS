@@ -2525,6 +2525,31 @@ static void image_free(struct Image *im)
     }
 }
 
+/* plain images handed to native classes live as long as the program */
+APTR m68k_image_cached(struct M68KEmuContext *ctx, ULONG mi)
+{
+    struct Image *im;
+    int i, free_i = -1;
+
+    for (i = 0; i < 64; i++)
+    {
+        if (ctx->imgcache[i].m68k == mi && mi) return ctx->imgcache[i].native;
+        if (!ctx->imgcache[i].m68k && free_i < 0) free_i = i;
+    }
+    if (free_i < 0 || !(im = image_from_m68k(ctx, mi, 16)))
+        return NULL;
+    ctx->imgcache[free_i].m68k = mi;
+    ctx->imgcache[free_i].native = im;
+    return im;
+}
+
+void m68k_image_cache_free(struct M68KEmuContext *ctx)
+{
+    for (int i = 0; i < 64; i++)
+        if (ctx->imgcache[i].native)
+            image_free(ctx->imgcache[i].native);
+}
+
 static struct Border *border_from_m68k(struct M68KEmuContext *ctx, ULONG mb, int depth_left)
 {
     struct Border *b;
