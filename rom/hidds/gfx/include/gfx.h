@@ -124,6 +124,8 @@ struct HIDD_ModeProperties
 
 struct ViewPort;
 struct View;
+struct HIDD_DecodeCaps;
+struct HIDD_DecodeInterface;
 
 /*
  * One thing the compositor places on a display: a whole screen bitmap or a
@@ -736,7 +738,19 @@ struct HIDD_PlaneState
 #define vHidd_VideoFmt_NV12     3   /* planar Y + interleaved UV, 4:2:0           */
 #define vHidd_VideoFmt_I420     4   /* planar Y, U, V, 4:2:0                      */
 #define vHidd_VideoFmt_YV12     5   /* planar Y, V, U, 4:2:0                      */
-#define num_Hidd_VideoFmt       6
+#define vHidd_VideoFmt_P010     6   /* as NV12, 16 bits per sample, value in the  */
+                                    /* top 10 bits (10-bit 4:2:0)                 */
+#define num_Hidd_VideoFmt       7
+
+/*
+ * aHidd_BitMap_VideoLayout: how a video bitmap's buffers lie in memory. Linear
+ * is what moHidd_BitMap_LockBuffer always hands the CPU; a driver that keeps
+ * buffers in another layout (its decoder's or its planes' native one) gives
+ * the CPU a linear staging copy.
+ */
+#define vHidd_VideoLayout_Linear    0
+#define vHidd_VideoLayout_Tiled     1   /* the driver's own tiling              */
+#define vHidd_VideoLayout_SAND128   2   /* 128-byte wide column strips (Broadcom) */
 
 /* aHidd_BitMap_ColorSpace */
 #define vHidd_ColorSpace_BT601  0
@@ -760,6 +774,107 @@ struct HIDD_ScanoutCaps
 #define SCF_PLANE               (1 << 0)    /* a plane can show this format at this size   */
 #define SCF_COLORKEY            (1 << 1)    /* ... with a destination colour key           */
 #define SCF_SCALE               (1 << 2)    /* ... scaled (ScaleMin/ScaleMax give the range) */
+
+/*
+ * Hardware video decoding.
+ *
+ * A display with a decoder hands out decode interfaces
+ * (moHidd_Display_GetDecodeInterface), one per decode session, in the
+ * manner of ata.device's PIO and DMA interfaces: the base class allocates
+ * the driver's vector table (aHidd_Display_DecodeVectors) followed by the
+ * driver's session data (aHidd_Display_DecodeDataSize) and returns a pointer
+ * to the data part. Callers use the HIDD_Decode_*() stubs below, which find
+ * the table just before it.
+ *
+ * Frames are decoded into buffers of video bitmaps the same display created
+ * with aHidd_BitMap_DecodeTarget: each frame names its target as (bitmap,
+ * buffer), so a session can decode into as many bitmaps as its caller
+ * creates, at any time. Decoded buffers are shown like any other video
+ * bitmap buffer (planes, SwapBuffers, client surfaces).
+ *
+ * Codec vocabulary is VA-API's (<va/va.h>): a profile is a VAProfile value,
+ * SubmitParams' type a VABufferType (VAPictureParameterBufferType,
+ * VAIQMatrixBufferType, VASliceParameterBufferType, ...) and its data the
+ * matching VA structures. The surface IDs inside them (reference frames) are
+ * the caller's: the driver resolves each through the resolve hook given to
+ * GetDecodeInterface, CallHookPkt(resolve, iface, struct HIDD_DecodeSurfaceMsg *).
+ */
+struct HIDD_DecodeInterface
+{
+    ULONG   di_Size;        /* sizeof() the driver was built with. The base class
+                               always builds a full current table and fills the
+                               entries a shorter driver table lacks with stubs  */
+    BOOL  (*di_BeginFrame)     (APTR obj, OOP_Object *bitmap, ULONG buffer);
+    BOOL  (*di_SubmitParams)   (APTR obj, ULONG type, APTR data, ULONG size, ULONG count);
+    BOOL  (*di_SubmitBitstream)(APTR obj, APTR data, ULONG size);
+    BOOL  (*di_EndFrame)       (APTR obj);
+    ULONG (*di_Sync)           (APTR obj, OOP_Object *bitmap, ULONG buffer, ULONG timeoutms);
+    ULONG (*di_Status)         (APTR obj, OOP_Object *bitmap, ULONG buffer);
+};
+
+/* Message of the resolve hook: map SurfaceID to the buffer holding it */
+struct HIDD_DecodeSurfaceMsg
+{
+    ULONG        SurfaceID;     /* in: a surface ID from a VA structure     */
+    OOP_Object  *BitMap;        /* out: decode-target video bitmap          */
+    ULONG        Buffer;        /* out: buffer index                        */
+};                              /* the hook returns FALSE for unknown IDs   */
+
+/* di_Sync / di_Status results */
+#define vHidd_DecodeStatus_Ready    0   /* no decode pending on the buffer   */
+#define vHidd_DecodeStatus_Busy     1   /* decode in flight (Sync: timeout)  */
+#define vHidd_DecodeStatus_Error    2   /* the last decode into it failed    */
+
+/* Begin a frame decoded into buffer 'buffer' of decode-target 'bitmap' */
+static inline BOOL HIDD_Decode_BeginFrame(APTR iface, OOP_Object *bitmap, ULONG buffer)
+{
+    return ((struct HIDD_DecodeInterface *)iface)[-1].di_BeginFrame(iface, bitmap, buffer);
+}
+
+/* Pass 'count' VA structures of VABufferType 'type', each 'size' bytes */
+static inline BOOL HIDD_Decode_SubmitParams(APTR iface, ULONG type, APTR data, ULONG size, ULONG count)
+{
+    return ((struct HIDD_DecodeInterface *)iface)[-1].di_SubmitParams(iface, type, data, size, count);
+}
+
+/* Pass slice data (the bitstream of the slices given by the slice parameters) */
+static inline BOOL HIDD_Decode_SubmitBitstream(APTR iface, APTR data, ULONG size)
+{
+    return ((struct HIDD_DecodeInterface *)iface)[-1].di_SubmitBitstream(iface, data, size);
+}
+
+/* Start decoding the frame; returns without waiting for it */
+static inline BOOL HIDD_Decode_EndFrame(APTR iface)
+{
+    return ((struct HIDD_DecodeInterface *)iface)[-1].di_EndFrame(iface);
+}
+
+/* Wait up to timeoutms (~0 = for ever) for the decode into (bitmap, buffer) */
+static inline ULONG HIDD_Decode_Sync(APTR iface, OOP_Object *bitmap, ULONG buffer, ULONG timeoutms)
+{
+    return ((struct HIDD_DecodeInterface *)iface)[-1].di_Sync(iface, bitmap, buffer, timeoutms);
+}
+
+static inline ULONG HIDD_Decode_Status(APTR iface, OOP_Object *bitmap, ULONG buffer)
+{
+    return ((struct HIDD_DecodeInterface *)iface)[-1].di_Status(iface, bitmap, buffer);
+}
+
+/* moHidd_Display_QueryDecode */
+struct HIDD_DecodeCaps
+{
+    ULONG   Flags;          /* DCF_*                                           */
+    ULONG   MaxWidth;       /* largest picture the decoder handles             */
+    ULONG   MaxHeight;
+    ULONG   MinWidth;
+    ULONG   MinHeight;
+    ULONG   VideoFmtMask;   /* bit per vHidd_VideoFmt_* it can write           */
+    ULONG   LayoutMask;     /* bit per vHidd_VideoLayout_* it can write        */
+    ULONG   MaxReferences;  /* reference frames it can hold, 0 = codec maximum */
+};
+
+#define DCF_DECODE              (1 << 0)    /* the profile can be decoded at this size     */
+#define DCF_SCANOUT             (1 << 1)    /* ... into buffers a plane can scan out       */
 
 /*
  * Client surfaces (moHidd_Display_AttachSurface). The hook is called from the

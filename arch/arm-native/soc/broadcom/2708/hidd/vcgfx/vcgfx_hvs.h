@@ -19,6 +19,9 @@
 */
 
 #include <exec/types.h>
+#include <oop/oop.h>
+
+#include "vcgfx_vblwait.h"
 
 /* ------------------------------------------------------------------ */
 /* HVS: bus 0x7E400000                                                 */
@@ -80,6 +83,8 @@
 #define HVS_CTL0_SIZE_MASK      0x3f
 #define HVS_CTL0_ORDER_SHIFT    13          /* pixel channel order; fb uses 3 */
 #define HVS_CTL0_ORDER_MASK     0x3
+/* The low order bit swaps R and B; the 16-bit formats need the fb's swapped */
+#define HVS_CTL0_ORDER_RB       (1UL << HVS_CTL0_ORDER_SHIFT)
 #define HVS_CTL0_UNITY          (1UL << 4)  /* no scaler pipeline (1:1) */
 #define HVS_CTL0_FORMAT_MASK    0xf         /* bits 3:0 */
 
@@ -98,12 +103,26 @@
                                  ((((ULONG)(src) << 16) / (dst)) & 0xffff) << 8 | \
                                  0x60)
 
-/* Line Buffer Memory allocation for our single scaled plane. Units and
- * pool size are undocumented (firmware used 0x9400-0xa300 for its own
- * scaled fb); we only author a scaled plane on UNITY desktops, so the
- * pool is otherwise unused and base 0 is assumed free. One-line change
- * if real HW disagrees. */
-#define HVS_OVL_LBM             0
+/* LBM as on HVS5: the firmware hands it out downwards from 0xbc00 at 8
+ * bytes per source pixel of width (its scaled fb planes sit at 0x9400 for
+ * 1280 wide and 0xa300 for 800). Our planes take it upwards from 0, up
+ * to all 48K (Linux's size) unless a scaled fb plane holds the top. */
+#define HVS_LBM_SIZE            0xc000
+#define HVS_LBM_BYTES(w)        (((ULONG)(w) * 8 + 31) & ~31UL)
+
+/* HVS_PPF() keeps 16 bits of ratio: upscale only. */
+#define HVS_PPF_FITS(src, dst)  ((((ULONG)(src) << 16) / (ULONG)(dst)) <= 0xffff)
+
+/* Word offsets in a scaled entry; the ones not listed are context. */
+#define HVS_SC_POS1             2
+#define HVS_SC_POS2             3
+#define HVS_SC_PTR0             5
+#define HVS_SC_PITCH            7
+#define HVS_SC_LBM              8
+#define HVS_SC_PPFX             9
+#define HVS_SC_PPFY             10
+#define HVS_SC_KRN0             12
+#define HVS_SC_KRN1             13
 
 /* Our copy of the firmware's 11-word Mitchell/Netravali filter kernel.
  * The firmware parks its own at word 0xff4 (4084); ours lives below it,
@@ -217,18 +236,16 @@
 
 /* Our own display lists live high in the known-readable dlist RAM,
  * clear of the firmware allocator's observed range (~word 2500), in a
- * round-robin of slots so a list being written is never the one the
- * HVS is scanning (it holds at most LACT plus one pending LIST).
+ * set of slots, so a list being written is never one the HVS is scanning
+ * or about to (see hvs_free_slot()).
  *
- * NOTE: 7 slots, not 8. Slot 7 would start at 3584+7*64=4032 and a full
- * scaled dlist (fb + scaled overlay + cursor + end, ~36 words) reaches
- * 4068 — clobbering HVS_OWN_KERNEL at 4064. That corrupts the PPF filter
- * kernel a scaled overlay scanout reads, wedging the HVS a few frames
- * later (the ~2-3s delay = time to round-robin up to slot 7). Slot 6 ends
- * at 3968+64=4032, clear of the kernel. */
-#define HVS_OWN_SLOTS           7
+ * The slots must end at or below HVS_OWN_KERNEL: a list running into the
+ * kernel corrupts every scaled plane and wedges the HVS a few frames
+ * later. Four of 120 words end exactly there and hold four scaled screen
+ * planes, a scaled overlay, the fb entry, the cursor and END. */
+#define HVS_OWN_SLOTS           4
 #define HVS_OWN_SLOT_BASE       3584
-#define HVS_OWN_SLOT_STRIDE     64
+#define HVS_OWN_SLOT_STRIDE     120
 
 /* Takeover state, embedded in VideoCoreGfx_staticdata. hvs_Active FALSE
  * means the firmware owns the display and all callers must use the
@@ -255,24 +272,24 @@ struct vc4_hvs_state
     /* HVS5 authors its own planes, so their shape is recorded here. */
     ULONG       hvs_CurPtrOff;          /* pointer word within that entry */
     ULONG       hvs_CurWords;           /* its length */
-    BOOL        hvs_OvlUsable;          /* fb plane is plain enough to compose over */
     BOOL        hvs_CurShown;           /* last validity written to the cursor plane */
 
-    /* Zero-copy overlay plane (windowed GL): composited above the fb
-     * plane, below the cursor. hvs_OvlOff = entry offset in the current
-     * list, 0 = none. Dest != src size = HVS-scaled (upscale only). */
-    BOOL        hvs_OvlActive;
-    ULONG       hvs_OvlPhys, hvs_OvlPitch;
-    ULONG       hvs_OvlW, hvs_OvlH;         /* source size */
-    ULONG       hvs_OvlDestW, hvs_OvlDestH; /* on-screen size */
-    LONG        hvs_OvlX, hvs_OvlY;
-    ULONG       hvs_OvlOff;
-    ULONG       hvs_OvlWords;               /* entry length in the list */
-    ULONG       hvs_OvlLBM;                 /* line-buffer base, scaled only */
     ULONG       hvs_FBLBM;                  /* LBM ceiling left by the fb plane */
 
+    /* HVS5 with screens as planes: the firmware's framebuffer is a token
+     * one, and the fb plane shows a buffer of ours, ShowW x ShowH. */
+    BOOL        hvs_Tiny;
+    ULONG       hvs_ShowPtr, hvs_ShowPitch;
+    ULONG       hvs_ShowW, hvs_ShowH;
+    ULONG       hvs_FBPitch;
+
+    /* HVS5: a list waiting for the vblank interrupt to repoint at it, and
+     * the last one written to DISPLIST - neither may be rewritten. */
+    volatile ULONG  hvs_PendList;
+    volatile ULONG  hvs_LastList;
+
     /* Filter kernel for scaled planes, copied from the firmware's at
-     * takeover; hvs_KernelOK gates scaled-overlay support. */
+     * takeover; hvs_KernelOK gates scaled planes. */
     BOOL        hvs_KernelOK;
 
     /* PV2 vsync interrupt: frame counter for flip pacing.
@@ -285,10 +302,9 @@ struct vc4_hvs_state
     volatile ULONG  hvs_VSyncCount;
     ULONG           hvs_FlipArmed;
 
-    /* The vsync IRQ signals hvs_VSyncTask (NULL = no waiter).
+    /* HVS5: the vsync IRQ signals the tasks in hvs_VSyncWait.
      * hvs_VSyncStamp: time of the last counted vsync. */
-    struct Task * volatile hvs_VSyncTask;
-    ULONG           hvs_VSyncSigMask;
+    struct vcgfx_vblwait hvs_VSyncWait;
     volatile ULONG  hvs_VSyncStamp;
 };
 
@@ -315,25 +331,19 @@ void vc4_hvs_init(struct VideoCoreGfx_staticdata *xsd);
 BOOL vc4_hvs_takeover(struct VideoCoreGfx_staticdata *xsd,
                       ULONG fb_phys, ULONG fb_pitch);
 
-/* Retarget the fb plane at another framebuffer page (page flip).
- * Returns FALSE when we don't own the display (caller falls back to
- * SETVOFFSET). Caller holds the mailbox lock (vc4_fb_flip). */
-BOOL vc4_hvs_flip_page(struct VideoCoreGfx_staticdata *xsd, ULONG page_phys);
-
 /* Rebuild + repoint after any vcsd_Cur* cursor state change. No-op
  * when not owning. Takes the mailbox lock itself. */
 void vc4_hvs_update_cursor(struct VideoCoreGfx_staticdata *xsd);
 
-/* Show (ovl != NULL) or remove (ovl == NULL) the zero-copy overlay
- * plane. Returns FALSE when unavailable (firmware owns the display, or
- * the fb plane is scaled) — caller falls back to blitting. Position
- * updates on a live overlay are patched in place and latch at vblank
- * like page flips. Takes the mailbox lock itself. */
-struct vc4gfx_overlay;
-BOOL vc4_hvs_overlay(struct VideoCoreGfx_staticdata *xsd,
-                     const struct vc4gfx_overlay *ovl);
-
-/* Wait for the last armed flip/overlay to latch (VC4GFX_OVL_NOWAIT). */
+/* Wait for the last armed list update to latch. */
 void vc4_hvs_latch_wait(struct VideoCoreGfx_staticdata *xsd);
+
+/* Screens as planes (vcgfx_planes.c), VideoCore IV. */
+BOOL vc4_hvs_planes_ok(void);
+BOOL vc4_hvs_plane_fits(struct VideoCoreGfx_staticdata *xsd, ULONG w, ULONG h);
+void vc4_hvs_planes_commit(struct VideoCoreGfx_staticdata *xsd);
+void vc4_hvs_planes_try(struct VideoCoreGfx_staticdata *xsd);
+struct vcgfx_plane;
+BOOL vc4_hvs_plane_flip(struct VideoCoreGfx_staticdata *xsd, struct vcgfx_plane *pl);
 
 #endif /* _VIDEOCOREGFX_HVS_H */

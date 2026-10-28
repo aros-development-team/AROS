@@ -696,7 +696,12 @@ struct ExtNewWindow
    WA_Opaqueness is the AmigaOS 4 name; the value is AROS specific. */
 #define WA_Opaqueness	     (WA_Dummy + 104)	/* 0..255, 255 = opaque */
 #define WA_AlphaSurface      (WA_Dummy + 105)	/* BOOL: surface with per pixel alpha; starts transparent,
-                                                   pens render with alpha 0, see LA_AlphaSurface */
+                                                   pens and alpha-less blits render opaque, see LA_AlphaSurface */
+/* AROS: where the window takes input, apart from where it is seen (struct
+   Region *, window relative; copied). See LA_InputShape. Change it later with
+   layers.library's ChangeLayerInputShape(window->WLayer, region). Not for
+   GZZ windows (ignored there). */
+#define WA_InputRegion       (WA_Dummy + 106)
 
 /* Flags */
 #define WFLG_SIZEGADGET     (1L<<0)

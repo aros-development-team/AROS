@@ -91,6 +91,17 @@ void UpdateScreenBitMap(struct Screen *screen, struct IntuitionBase *IntuitionBa
     struct BitMap *bm = screen->RastPort.BitMap;
     struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
 
+    /* A classic bitmap has a real row stride and layout flags. In particular,
+     * interleaved rows span all planes, not just the pixel width. Raw custom
+     * screens also draw through BitMap_OBSOLETE itself, so reconstructing that
+     * header would corrupt the active drawing and display layout in place. */
+    if (!IS_HIDD_BM(bm))
+    {
+        if (bm != &screen->BitMap_OBSOLETE)
+            CopyMem(bm, &screen->BitMap_OBSOLETE, sizeof(*bm));
+        return;
+    }
+
     /* Patch up the obsolete screen bitmap as best we can for old programs
      */
     screen->BitMap_OBSOLETE.BytesPerRow = GetBitMapAttr(bm, BMA_WIDTH) / 8;

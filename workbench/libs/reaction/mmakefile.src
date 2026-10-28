@@ -19,6 +19,12 @@ FILES := reaction_init
 #MM     kernel-graphics-includes \
 #MM     kernel-intuition-includes \
 #MM     kernel-layers-includes \
+#MM     workbench-classes-reaction-chooser-includes \
+#MM     workbench-classes-reaction-clicktab-includes \
+#MM     workbench-classes-reaction-layout-includes \
+#MM     workbench-classes-reaction-listbrowser-includes \
+#MM     workbench-classes-reaction-radiobutton-includes \
+#MM     workbench-classes-reaction-speedbar-includes \
 #MM     includes-copy
 
 #MM- workbench-libs-reaction : linklibs
@@ -26,6 +32,6 @@ FILES := reaction_init
 %build_module mmake=workbench-libs-reaction \
     modname=reaction modtype=library \
     files="$(FUNCS) $(FILES)" \
-    linklibfiles="reaction_classes_autoinit"
+    linklibfiles="reaction_classes_autoinit reaction_labels reaction_varargs"
 
 %common

@@ -5,6 +5,7 @@
 */
 
 #include "__stdc_intbase.h"
+#include "__memalign.h"
 
 #include <errno.h>
 #include <stdint.h>
@@ -59,18 +60,18 @@
 
     /* Guard against (size + header) wrapping size_t, which would otherwise
        under-allocate the block and let the caller overrun it. */
-    if (size > SIZE_MAX - AROS_ALIGN(sizeof(size_t)))
+    if (size > SIZE_MAX - MALLOC_HDRSIZE)
     {
         errno = ENOMEM;
         return NULL;
     }
 
     /* Allocate the memory */
-    mem = AllocPooled (StdCBase->mempool, size + AROS_ALIGN(sizeof(size_t)));
+    mem = AllocPooled (StdCBase->mempool, size + MALLOC_HDRSIZE);
     if (mem)
     {
         *((size_t *)mem) = size;
-        mem += AROS_ALIGN(sizeof(size_t));
+        mem += MALLOC_HDRSIZE;
     }
     else
         errno = ENOMEM;

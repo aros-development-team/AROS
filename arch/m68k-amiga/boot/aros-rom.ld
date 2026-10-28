@@ -16,15 +16,22 @@ SECTIONS
 INCLUDE ext_strs.ld
                                 } >valid
   .romstr                     : { *(.romstrings .rodata.str1.1) } >valid
+  /* The 8-byte constants (the modules' empty symbol sets), pooled the same
+   * way, one pool per bank. */
+  .extsets                    : {
+INCLUDE ext_sets.ld
+                                } >valid
+  .romsets                    : { *(.romsets .rodata.cst8) } >valid
   .ext                        : { _ext_start = .;
 INCLUDE ext_objs.ld
   /* Static-lib code used ONLY by .ext modules. The catch-all in .rom below
    * would otherwise pull these into the main bank, where nothing calls them.
    * Keep this list to objects with no .rom-resident caller - a .rom module
    * calling into .ext would make the main bank depend on the extended ROM.
+   * Objects can go the other way to balance the banks: WriteStruct() and
+   * its Write*() and CallHookA() helpers are .ext-only but stay in .rom.
    */
   *libamiga.a:andrectrect.o(.text .text.* .rodata .rodata.*)
-  *libamiga.a:callhook.o(.text .text.* .rodata .rodata.*)
   *libamiga.a:coercemethod.o(.text .text.* .rodata .rodata.*)
   *libamiga.a:createport.o(.text .text.* .rodata .rodata.*)
   *libamiga.a:domethod.o(.text .text.* .rodata .rodata.*)
@@ -43,13 +50,6 @@ INCLUDE ext_objs.ld
   *libarossupport.a:readstruct.o(.text .text.* .rodata .rodata.*)
   *libarossupport.a:readword.o(.text .text.* .rodata .rodata.*)
   *libarossupport.a:rkprintf.o(.text .text.* .rodata .rodata.*)
-  *libarossupport.a:writebyte.o(.text .text.* .rodata .rodata.*)
-  *libarossupport.a:writedouble.o(.text .text.* .rodata .rodata.*)
-  *libarossupport.a:writefloat.o(.text .text.* .rodata .rodata.*)
-  *libarossupport.a:writelong.o(.text .text.* .rodata .rodata.*)
-  *libarossupport.a:writestring.o(.text .text.* .rodata .rodata.*)
-  *libarossupport.a:writestruct.o(.text .text.* .rodata .rodata.*)
-  *libarossupport.a:writeword.o(.text .text.* .rodata .rodata.*)
   *libstdc.static.a:abs.o(.text .text.* .rodata .rodata.*)
   *libstdc.static.a:atol.o(.text .text.* .rodata .rodata.*)
   *libstdc.static.a:strlcat.o(.text .text.* .rodata .rodata.*)

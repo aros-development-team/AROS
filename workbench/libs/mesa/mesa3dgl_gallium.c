@@ -19,6 +19,7 @@
 #include <stdbool.h>
 
 #include "util/os_misc.h"
+#include "util/os_time.h"
 #include "pipe/p_defines.h"
 #include "pipe/p_screen.h"
 #include "pipe/p_state.h"
@@ -240,9 +241,6 @@ static BOOL MESA3DGLScanoutCreate(struct mesa3dgl_framebuffer * amfb)
         return FALSE;
     if (amfb->width == 0 || amfb->height == 0)
         return FALSE;
-    /* The render-scale path presents through the driver's own scaler */
-    if (mesa3dgl_render_scale != 1)
-        return FALSE;
     /* Only for the window's own RastPort (the rectangle is layer relative) */
     if (ctx->visible_rp->Layer != ctx->window->WLayer)
         return FALSE;
@@ -274,6 +272,23 @@ static BOOL MESA3DGLScanoutCreate(struct mesa3dgl_framebuffer * amfb)
         (unsigned long)GetScanoutFrameBufferAttr(amfb->scanout, SFBA_Buffers)));
 
     return TRUE;
+}
+
+/* The scan-out buffers are display memory, gone with the framebuffer: no
+ * job may still render into them by then. */
+VOID MESA3DGLScanoutIdle(struct mesa3dgl_framebuffer * amfb, struct st_context * st)
+{
+    struct pipe_fence_handle * fence = NULL;
+
+    if (!amfb->scanout || !st || !st->pipe)
+        return;
+
+    st->pipe->flush(st->pipe, &fence, 0);
+    if (fence)
+    {
+        amfb->screen->fence_finish(amfb->screen, NULL, fence, OS_TIMEOUT_INFINITE);
+        amfb->screen->fence_reference(amfb->screen, &fence, NULL);
+    }
 }
 
 static VOID MESA3DGLScanoutDestroy(struct mesa3dgl_framebuffer * amfb)
@@ -336,6 +351,7 @@ static bool MESA3DGLFrameBufferValidate(struct st_context *stctx,
     if (amfb->resized)
     {
         amfb->resized = FALSE;
+        MESA3DGLScanoutIdle(amfb, stctx);
         pipe_resource_reference(&amfb->render_resource, NULL);
 
         for (i = 0; i < ST_ATTACHMENT_COUNT; i++)

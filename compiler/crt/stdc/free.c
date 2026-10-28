@@ -51,7 +51,7 @@
         unsigned char *mem;
         size_t         size;
 
-        mem = ((UBYTE *)memory) - AROS_ALIGN(sizeof(size_t));
+        mem = ((UBYTE *)memory) - MALLOC_HDRSIZE;
 
         size = *((size_t *) mem);
         if (size == MEMALIGN_MAGIC) {
@@ -59,7 +59,7 @@
             free(((void **) mem)[0]);
         }
         else {
-            size += AROS_ALIGN(sizeof(size_t));
+            size += MALLOC_HDRSIZE;
             FreePooled (StdCBase->mempool, mem, size);
         }
     }

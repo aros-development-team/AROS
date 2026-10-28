@@ -112,7 +112,7 @@ CONVERTFUNC(BGR24,ABGR32)
         {
             ULONG s = GET24;
 
-            dst[x] = s;
+            dst[x] = (s) | ABGR32_AMASK;   /* source has no alpha: opaque */
         }
         src = (UBYTE *)(((UBYTE *)src) + srcMod);
         dst = (ULONG *)(((UBYTE *)dst) + dstMod);
@@ -137,7 +137,7 @@ CONVERTFUNC(BGR24,RGBA32)
         {
             ULONG s = GET24;
 
-            dst[x] = SHUFFLE24(s, BGR24, RGBA32);
+            dst[x] = (SHUFFLE24(s, BGR24, RGBA32)) | RGBA32_AMASK;   /* source has no alpha: opaque */
         }
         src = (UBYTE *)(((UBYTE *)src) + srcMod);
         dst = (ULONG *)(((UBYTE *)dst) + dstMod);
@@ -162,7 +162,7 @@ CONVERTFUNC(BGR24,BGRA32)
         {
             ULONG s = GET24;
 
-            dst[x] = s << 8;
+            dst[x] = (s << 8) | BGRA32_AMASK;   /* source has no alpha: opaque */
         }
         src = (UBYTE *)(((UBYTE *)src) + srcMod);
         dst = (ULONG *)(((UBYTE *)dst) + dstMod);
@@ -178,7 +178,7 @@ CONVERTFUNC(BGR24,ARGB32)
 {
     CONVERTFUNC_INIT
 
-    SWAP2432CODE
+    SWAP2432OPAQUECODE(ARGB32_AMASK)
     
     CONVERTFUNC_EXIT
 }

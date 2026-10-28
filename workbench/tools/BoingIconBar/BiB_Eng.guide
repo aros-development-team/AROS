@@ -111,6 +111,8 @@ Version 1.02
     @{FG HighLight}ALIGN/K@{FG Text} - alignment of the toolbar on the screen: LEFT, RIGHT or CENTER (default). LEFT aligns the toolbar to the left edge of the screen, RIGHT to the right edge.
 
     @{FG HighLight}AUTOREMAP/S@{FG Text} - this parameter is unavailable for MorphOS users. It can happen that the icons might be displayed inappropriately, e.g. after choosing an option from the menu of Workbench "Tools -> ResetWB". Using this parameter causes automatic remapping of icons to the actual colour palette, before displaying the toolbar.
+
+    @{FG HighLight}FAKEALPHA/S@{FG Text} - (AROS only) By default the toolbar is a window with a per pixel alpha channel that the display composes over the live wallpaper, so the transparent parts of the background images and the gaps between the icons always show what is behind the toolbar. With this parameter (and on screens that cannot compose windows with an alpha channel, e.g. 16 bit screens) the toolbar instead draws itself over a copy of the wallpaper taken when it opens, as earlier versions did.
    
     @{FG HighLight}BACKGROUND/S@{FG Text} - (AROS only) Displays the toolbar background images.
         Images are:

@@ -51,6 +51,12 @@ void internal_SetRGB32Colors(struct ViewPort *vp, HIDDT_Color *colors,
                              ULONG first, ULONG count,
                              struct GfxBase *GfxBase);
 
+/* alphapixtab.c */
+BOOL gfx_AddAlphaPixTab(struct BitMap *bm, OOP_Object *colmap, struct GfxBase *GfxBase);
+void gfx_ForgetAlphaPixTab(struct BitMap *bm, struct GfxBase *GfxBase);
+void gfx_UpdateAlphaPixTabs(OOP_Object *colmap, HIDDT_Color *colors, ULONG first, ULONG count,
+                            struct GfxBase *GfxBase);
+
 struct RegionRectangleExt {
     struct RegionRectangle     RR;
     IPTR                       Counter;
@@ -278,6 +284,22 @@ struct GfxBase_intern {
      */
     struct MinList              layersurfaces;
     struct SignalSemaphore      layersurfaces_sema;
+
+    /*
+     * Bitmaps with an alpha channel allocated as friends of a bitmap without
+     * one (composited layer surfaces, see AllocBitMap()) have a colormap and
+     * pixel table of their own, with the friend's colours mapped opaque. They
+     * are listed here so that colour changes on the friend reach them.
+     */
+    struct MinList              alphapixtabs;
+    struct SignalSemaphore      alphapixtabs_sema;
+};
+
+struct AlphaPixTabNode
+{
+    struct MinNode                node;
+    struct BitMap                *bitmap;    /* the bitmap with its own colormap and pixtab */
+    OOP_Object                   *colmap;    /* the friend's colormap its colours come from */
 };
 
 struct LayerSurfaceNode

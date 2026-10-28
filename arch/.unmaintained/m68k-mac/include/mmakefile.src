@@ -1,6 +1,0 @@
-
-include $(SRCDIR)/config/aros.cfg
-
-INCLUDE_FILES := $(wildcard *.[hi] aros/*.[hi] aros/m68k/*.[hi] asm/*.[hi] exec/*.[hi])
-
-%copy_includes mmake=includes-mac-m68k

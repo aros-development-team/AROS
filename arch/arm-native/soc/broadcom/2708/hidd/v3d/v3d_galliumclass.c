@@ -42,6 +42,8 @@
 #include "v3d_bufmgr.h"
 #include "v3d_resource.h"
 #include "v3d_tiling.h"
+#include "frontend/winsys_handle.h"
+#include "drm-uapi/drm_fourcc.h"
 
 /* Compiled outside the driver archive, so objcopy does not rename the plain
  * names the v3d_bo_unreference inline reaches for. Forward each to its
@@ -112,300 +114,74 @@ static BOOL v3d_fb_target(struct V3DData *sd, struct BitMap *bitmap,
     return (*fb && *bpr);
 }
 
-/*
- * Zero-copy present state (vc4gallium's proven model, without the bridge:
- * Mesa's types are linked into this module, so the resource is rebound
- * directly).
- *
- * Fullscreen: the render resource's BO is replaced with a wrap of the
- * framebuffer back page - the GPU renders straight into scanout and each
- * present is a page flip, no pixels move. Windowed: the rendered BO goes
- * on an HVS overlay plane, ping-ponging with one private page (the page
- * leaving the plane is off-screen once the Set latches, so two suffice).
- *
- * Single-session state, like the BO table. On a dirty exit (no GL
- * teardown) the pointers go stale; CreatePipeScreen drops them without
- * dereferencing when a new session starts.
- */
-static struct
+/* The session a pipe screen belongs to, 0 for none. */
+static ULONG v3d_session_of(struct V3DData *sd, APTR screen)
 {
-    struct pipe_resource *rsc;      /* resource bound to a page (identity) */
-    ULONG           page_handle;    /* shim handle of the bound page */
-    ULONG           name[2];        /* page names (phys addrs) */
-    struct v3d_bo  *page_bo[2];     /* held refs: rebinding must not close
-                                     * and reopen a page (with its MMU
-                                     * unmap/map and TLB flushes) per frame */
-} v3d_scan;
-
-/* Four pages, not two: the present shows the PREVIOUS frame, whose jobs
- * retired while this one was built, so it never waits on the frame just
- * submitted. Costs one frame of latency. The fourth lets the Set skip the
- * latch wait: a displaced page parks in `retiring` for one present. */
-static struct
-{
-    struct pipe_resource *rsc;
-    struct v3d_bo  *onplane;        /* page the overlay currently scans */
-    struct v3d_bo  *queued;         /* rendered; goes on the plane next */
-    ULONG           queued_seqno;   /* the jobs that filled `queued` */
-    struct v3d_bo  *freep;          /* parked spare, ring not yet full */
-    struct v3d_bo  *retiring;       /* displaced last present, latch due */
-    BOOL            latch_due;      /* a NOWAIT Set is still unlatched */
-    ULONG           page_handle;    /* BO bound in rsc (render target) */
-    BOOL            shown;
-    struct pipe_resource *refused;  /* overlay said no (scaled desktop /
-                                     * no takeover): don't retry per frame */
-    OOP_Object     *bm;
-} v3d_ovl;
-
-/* Raw drop, for the dirty-exit reset where the Mesa objects are gone. */
-static void v3d_scan_forget(void)
-{
-    v3d_scan.rsc = NULL;
-    v3d_scan.page_handle = 0;
-    v3d_scan.name[0] = v3d_scan.name[1] = 0;
-    v3d_scan.page_bo[0] = v3d_scan.page_bo[1] = NULL;
-}
-
-/* Normal teardown: give the held page refs back first. */
-static void v3d_scan_release(void)
-{
-    if (v3d_scan.page_bo[0])
-        v3d_bo_unreference(&v3d_scan.page_bo[0]);
-    if (v3d_scan.page_bo[1])
-        v3d_bo_unreference(&v3d_scan.page_bo[1]);
-    v3d_scan_forget();
-}
-
-struct v3d_scanout_info
-{
-    ULONG name[2];      /* page phys addrs, ascending (stable identity) */
-    UBYTE back;         /* index of the current back page */
-    ULONG pitch, width, height;
-};
-
-/* Resolve the vcgfx flip pages and publish them as GEM_OPEN names. */
-static BOOL v3d_get_scanout(struct V3DData *sd, OOP_Object *bmobj,
-                            struct v3d_scanout_info *out)
-{
-    IPTR front = 0, back = 0, pitch = 0, width = 0, height = 0;
-
-    if (!bmobj || !sd->hiddVCGfxBMAB || !sd->hiddBitMapAB)
-        return FALSE;
-
-    OOP_GetAttr(bmobj, sd->hiddVCGfxBMAB + aoVCGfxBM_Drawable, &front);
-    OOP_GetAttr(bmobj, sd->hiddVCGfxBMAB + aoVCGfxBM_BackDrawable, &back);
-    OOP_GetAttr(bmobj, sd->hiddBitMapAB + aoHidd_BitMap_BytesPerRow, &pitch);
-    OOP_GetAttr(bmobj, sd->hiddBitMapAB + aoHidd_BitMap_Width, &width);
-    OOP_GetAttr(bmobj, sd->hiddBitMapAB + aoHidd_BitMap_Height, &height);
-
-    if (!front || !back || !pitch || !width || !height)
-        return FALSE;
-
-    out->name[0] = (front < back) ? (ULONG)front : (ULONG)back;
-    out->name[1] = (front < back) ? (ULONG)back : (ULONG)front;
-    out->back    = ((ULONG)back == out->name[1]) ? 1 : 0;
-    out->pitch   = (ULONG)pitch;
-    out->width   = (ULONG)width;
-    out->height  = (ULONG)height;
+    ULONG i, sid = 0;
 
     ObtainSemaphore(&sd->bo_lock);
-    sd->scanout_phys[0] = out->name[0];
-    sd->scanout_phys[1] = out->name[1];
-    sd->scanout_size = (ULONG)pitch * (ULONG)height;
-    ReleaseSemaphore(&sd->bo_lock);
-    return TRUE;
-}
-
-/* Flip the framebuffer pages; the hidd waits for the vblank latch.
- * Success iff the back page changed. */
-static BOOL v3d_flip_fb(struct V3DData *sd, OOP_Object *bmobj)
-{
-    struct TagItem fliptags[] =
+    for (i = 0; i < V3D_MAX_SESSIONS; i++)
     {
-        { sd->hiddVCGfxBMAB + aoVCGfxBM_Flip, TRUE },
-        { TAG_DONE, 0 }
-    };
-    IPTR before = 0, after = 0;
-
-    OOP_GetAttr(bmobj, sd->hiddVCGfxBMAB + aoVCGfxBM_BackDrawable, &before);
-    if (!before)
-        return FALSE;
-    OOP_SetAttrs(bmobj, fliptags);
-    OOP_GetAttr(bmobj, sd->hiddVCGfxBMAB + aoVCGfxBM_BackDrawable, &after);
-    return (after && after != before);
+        if (sd->sessions[i].vs_Used && (sd->sessions[i].vs_Screen == screen))
+        {
+            sid = i + 1;
+            break;
+        }
+    }
+    ReleaseSemaphore(&sd->bo_lock);
+    return sid;
 }
 
-/* Bind the current back page into the render resource: the next frame
- * is rendered directly into scanout. Both page BOs are opened once and
- * the refs held in v3d_scan - the steady state is pointer swaps, not a
- * GEM close/open (each of which is an MMU unmap/map plus TLB flushes)
- * per frame. */
-static BOOL v3d_scan_bind_back(struct V3DData *sd, struct v3d_resource *rsc,
-                               OOP_Object *bmobj)
+/* Forget every job in flight. Caller holds job_lock, the GPU is idle or
+ * about to be reset. */
+static void v3d_pipeline_reset(struct V3DData *sd)
 {
-    struct v3d_scanout_info so;
-    struct v3d_bo *nb;
+    sd->recoveries = 0;
+    sd->bin_running = FALSE;
+    sd->render_running = FALSE;
+    sd->rcl_head = 0;
+    sd->rcl_count = 0;
+    sd->bin_flushed_seqno = sd->seqno;
+    sd->finished_seqno = sd->seqno;
+    sd->bin_end = 0;
+    sd->render_end = 0;
+}
+
+/* Sessions whose task died without destroying its screen: their BOs go. */
+static void v3d_sweep_dead(struct V3DData *sd)
+{
     ULONG i;
-
-    if (!v3d_get_scanout(sd, bmobj, &so))
-        return FALSE;
-
-    if (so.name[0] != v3d_scan.name[0] || so.name[1] != v3d_scan.name[1])
-        v3d_scan_release();     /* other pages (mode switch) */
-
-    for (i = 0; i < 2; i++)
-        if (!v3d_scan.page_bo[i])
-            v3d_scan.page_bo[i] =
-                v3d_bo_open_name(v3d_screen(rsc->base.screen), so.name[i]);
-
-    nb = v3d_scan.page_bo[so.back];
-    if (!nb)
-    {
-        v3d_scan_release();
-        return FALSE;
-    }
-
-    v3d_bo_reference(nb);
-    v3d_bo_unreference(&rsc->bo);
-    rsc->bo = nb;
-    rsc->slices[0].offset = 0;
-
-    v3d_scan.rsc = &rsc->base;
-    v3d_scan.page_handle = nb->handle;
-    v3d_scan.name[0] = so.name[0];
-    v3d_scan.name[1] = so.name[1];
-    return TRUE;
-}
-
-/* Detach from the page: a private BO again, so windowed rendering can't
- * scribble into the framebuffer. */
-static void v3d_scan_unbind(struct v3d_resource *rsc)
-{
-    struct v3d_bo *nb = v3d_bo_alloc(v3d_screen(rsc->base.screen),
-                                     rsc->slices[0].size, "scanout-exit");
-
-    if (nb)
-    {
-        v3d_bo_unreference(&rsc->bo);
-        rsc->bo = nb;
-        rsc->slices[0].offset = 0;
-    }
-    v3d_scan_release();
-}
-
-/* Retire a NOWAIT Set; normally its vblank has already passed. */
-static void v3d_ovl_latch_wait(struct V3DData *sd)
-{
-    IPTR dummy = 0;
-
-    if (!v3d_ovl.latch_due)
-        return;
-    if (v3d_ovl.bm && sd->hiddVCGfxBMAB)
-        OOP_GetAttr(v3d_ovl.bm, sd->hiddVCGfxBMAB + aoVCGfxBM_LatchWait,
-                    &dummy);
-    v3d_ovl.latch_due = FALSE;
-}
-
-/* Show a BO on the HVS overlay plane at fb coords x,y. A NOWAIT Set
- * returns before the vblank latch. */
-static BOOL v3d_show_overlay(struct V3DData *sd, OOP_Object *bmobj,
-                             struct v3d_bo *bo, ULONG stride,
-                             LONG x, LONG y, ULONG w, ULONG h)
-{
-    struct vc4gfx_overlay desc;
-    struct TagItem ovltags[] =
-    {
-        { sd->hiddVCGfxBMAB + aoVCGfxBM_Overlay, (IPTR)&desc },
-        { TAG_DONE, 0 }
-    };
-    IPTR active = 0;
-    ULONG paddr = 0;
-
-    if (!bmobj || !sd->hiddVCGfxBMAB || !w || !h)
-        return FALSE;
+    BOOL dead = FALSE;
 
     ObtainSemaphore(&sd->bo_lock);
-    if (bo->handle < V3D_MAX_BOS && sd->bo_table[bo->handle].refcount
-        && stride * h <= sd->bo_table[bo->handle].size)
-        paddr = sd->bo_table[bo->handle].paddr;
+    for (i = 0; (i < V3D_MAX_SESSIONS) && !dead; i++)
+        dead = sd->sessions[i].vs_Used && sd->sessions[i].vs_Dead;
     ReleaseSemaphore(&sd->bo_lock);
-    if (!paddr)
-        return FALSE;
+    if (!dead)
+        return;
 
-    desc.ovl_Phys   = paddr;
-    desc.ovl_Pitch  = stride;
-    desc.ovl_Width  = w;
-    desc.ovl_Height = h;
-    desc.ovl_X      = x;
-    desc.ovl_Y      = y;
-    /* Always 1:1. The field is the Pi 3 scaled-plane request (HVS4
-     * implements it, HVS5 does not), and desc is not zeroed, so leaving
-     * it out would hand the hidd stack garbage. */
-    desc.ovl_DestW  = 0;
-    desc.ovl_DestH  = 0;
-    desc.ovl_Flags  = V3D_OVL_NOWAIT ? VC4GFX_OVL_NOWAIT : 0;
+    v3d_wait_idle(sd);
 
-    OOP_SetAttrs(bmobj, ovltags);
-    OOP_GetAttr(bmobj, sd->hiddVCGfxBMAB + aoVCGfxBM_Overlay, &active);
-    return active != 0;
-}
-
-/* Hide the plane but keep the pages: obscure/reveal cycles must not
- * allocate or free BOs. */
-static void v3d_ovl_suspend(struct V3DData *sd)
-{
-    struct TagItem ovltags[] =
+    for (i = 0; i < V3D_MAX_SESSIONS; i++)
     {
-        { sd->hiddVCGfxBMAB + aoVCGfxBM_Overlay, 0 },
-        { TAG_DONE, 0 }
-    };
+        /* Claim it, so a concurrent sweep leaves it alone. */
+        ObtainSemaphore(&sd->bo_lock);
+        dead = sd->sessions[i].vs_Used && sd->sessions[i].vs_Dead;
+        if (dead)
+            sd->sessions[i].vs_Dead = FALSE;
+        ReleaseSemaphore(&sd->bo_lock);
+        if (!dead)
+            continue;
 
-    /* Clearing over an unlatched Set would leave `retiring` unretired. */
-    v3d_ovl_latch_wait(sd);
+        v3d_release_session(sd, i + 1);
+        bug("[V3D] session %u: its task ended without a GL teardown, swept\n",
+            (unsigned)(i + 1));
 
-    if (v3d_ovl.shown && v3d_ovl.bm)
-    {
-        OOP_SetAttrs(v3d_ovl.bm, ovltags);
-        /* `onplane` shows until the clear latches. Not waited for here
-         * (obscure must stay cheap); whoever frees the pages waits. */
-        v3d_ovl.latch_due = TRUE;
+        ObtainSemaphore(&sd->bo_lock);
+        sd->sessions[i].vs_Used = FALSE;
+        sd->sessions[i].vs_Dead = FALSE;
+        ReleaseSemaphore(&sd->bo_lock);
     }
-    v3d_ovl.shown = FALSE;
-
-    /* Retire the queued frame: it goes stale while the plane is hidden
-     * (the blit path is drawing meanwhile), and showing it on reveal
-     * would put one old image on screen. Park it as the spare instead,
-     * so the ring refills exactly as it does at entry. */
-    if (v3d_ovl.queued)
-    {
-        if (v3d_ovl.freep)
-            v3d_bo_unreference(&v3d_ovl.queued);
-        else
-            v3d_ovl.freep = v3d_ovl.queued;
-        v3d_ovl.queued = NULL;
-        v3d_ovl.queued_seqno = 0;
-    }
-}
-
-/* Full teardown: resource changed or the session is going away. */
-static void v3d_ovl_exit(struct V3DData *sd)
-{
-    v3d_ovl_suspend(sd);
-    /* The clear must latch before the pages go back to Mesa. */
-    v3d_ovl_latch_wait(sd);
-    if (v3d_ovl.onplane)
-        v3d_bo_unreference(&v3d_ovl.onplane);
-    if (v3d_ovl.queued)
-        v3d_bo_unreference(&v3d_ovl.queued);
-    if (v3d_ovl.freep)
-        v3d_bo_unreference(&v3d_ovl.freep);
-    if (v3d_ovl.retiring)
-        v3d_bo_unreference(&v3d_ovl.retiring);
-    v3d_ovl.queued_seqno = 0;
-    v3d_ovl.latch_due = FALSE;
-    v3d_ovl.rsc = NULL;
-    v3d_ovl.page_handle = 0;
-    v3d_ovl.bm = NULL;
 }
 
 OOP_Object *HiddV3D__Root__New(OOP_Class *cl, OOP_Object *o,
@@ -423,21 +199,16 @@ APTR HiddV3D__Hidd_Gallium__CreatePipeScreen(OOP_Class *cl, OOP_Object *o,
 {
     struct V3DData *sd = SD(cl);
     struct pipe_screen *screen;
+    ULONG i;
     int bres;
 
     /* The teardown that resets the recovery fuse rarely runs, so a new
      * session revives a fused-off GPU itself. */
     if (!sd->powered)
     {
-        sd->recoveries = 0;
-        sd->bin_running = FALSE;
-        sd->render_running = FALSE;
-        sd->rcl_head = 0;
-        sd->rcl_count = 0;
-        sd->bin_flushed_seqno = sd->seqno;
-        sd->finished_seqno = sd->seqno;
-        sd->bin_end = 0;
-        sd->render_end = 0;
+        ObtainSemaphore(&sd->job_lock);
+        v3d_pipeline_reset(sd);
+        ReleaseSemaphore(&sd->job_lock);
         if (v3d_block_reset() && v3d_hw_init(sd))
             bug("[V3D] GPU revived for this session\n");
     }
@@ -470,59 +241,46 @@ APTR HiddV3D__Hidd_Gallium__CreatePipeScreen(OOP_Class *cl, OOP_Object *o,
 
     g_v3d_data = sd;
 
-    /* Sweep a previous session that exited without GL teardown. The test
-     * is a gap since the last submission, as screen_count cannot tell a new
-     * session from an app's second screen; session_swept keeps the screen
-     * this call creates from being swept. One GL session at a time. */
-    if (!sd->session_swept && sd->screen_count > 0
-        && (v3d_now_us() - sd->last_submit_us) > 1000000)
+    v3d_sweep_dead(sd);
+
+    /* A session per screen, named to the shim by the fd. */
+    ObtainSemaphore(&sd->bo_lock);
+    for (i = 0; (i < V3D_MAX_SESSIONS) && sd->sessions[i].vs_Used; i++)
+        ;
+    if (i < V3D_MAX_SESSIONS)
     {
-        sd->session_swept = TRUE;
-
-        ObtainSemaphore(&sd->bo_lock);
-        /* Pointers into freed Mesa objects: drop, never dereference. */
-        v3d_scan_forget();
-        v3d_ovl.rsc = NULL;
-        v3d_ovl.onplane = NULL;
-        v3d_ovl.queued = NULL;
-        v3d_ovl.freep = NULL;
-        v3d_ovl.retiring = NULL;
-        v3d_ovl.queued_seqno = 0;
-        v3d_ovl.latch_due = FALSE;
-        v3d_ovl.page_handle = 0;
-        v3d_ovl.shown = FALSE;
-        v3d_ovl.refused = NULL;
-        v3d_ovl.bm = NULL;
-        ReleaseSemaphore(&sd->bo_lock);
-
-        v3d_release_all_bos(sd);
-        sd->screen_count = 0;
-        sd->recoveries = 0;
-        sd->bin_running = FALSE;
-        sd->render_running = FALSE;
-        sd->rcl_head = 0;
-        sd->rcl_count = 0;
-        sd->bin_flushed_seqno = sd->seqno;
-        sd->finished_seqno = sd->seqno;
-        sd->bin_end = 0;
-        sd->render_end = 0;
+        sd->sessions[i].vs_Used   = TRUE;
+        sd->sessions[i].vs_Dead   = FALSE;
+        sd->sessions[i].vs_Screen = NULL;
+        sd->sessions[i].vs_Task   = FindTask(NULL);
+    }
+    ReleaseSemaphore(&sd->bo_lock);
+    if (i == V3D_MAX_SESSIONS)
+    {
+        bug("[V3D] %u GL screens open already - GL falls back to softpipe\n",
+            (unsigned)V3D_MAX_SESSIONS);
+        return NULL;
     }
 
-    /* fd is a dummy and there is no renderonly - we present ourselves. The
-     * config must be a real object: v3d_screen_create derefs it for driconf. */
+    /* There is no renderonly - we present ourselves. The config must be a
+     * real object: v3d_screen_create derefs it for driconf. */
     {
         static const struct pipe_screen_config v3d_no_config = { 0 };
 
-        screen = v3d_screen_create(0, &v3d_no_config, NULL);
+        screen = v3d_screen_create((int)(V3D_SCREENFD_TAG | (i + 1)),
+                                   &v3d_no_config, NULL);
     }
     if (!screen)
     {
         bug("[V3D] v3d_screen_create failed\n");
+        v3d_release_session(sd, i + 1);
+        ObtainSemaphore(&sd->bo_lock);
+        sd->sessions[i].vs_Used = FALSE;
+        ReleaseSemaphore(&sd->bo_lock);
         return NULL;
     }
-
     ObtainSemaphore(&sd->bo_lock);
-    sd->screen_count++;
+    sd->sessions[i].vs_Screen = screen;
     ReleaseSemaphore(&sd->bo_lock);
 
     D(bug("[V3D] pipe_screen at %p\n", screen));
@@ -533,52 +291,45 @@ VOID HiddV3D__Hidd_Gallium__DestroyPipeScreen(OOP_Class *cl, OOP_Object *o,
     struct pHidd_Gallium_DestroyPipeScreen *msg)
 {
     struct V3DData *sd = SD(cl);
-    BOOL last;
+    struct pipe_screen *screen = (struct pipe_screen *)msg->screen;
+    ULONG sid, i;
 
-    if (msg->screen)
-    {
-        struct pipe_screen *screen = (struct pipe_screen *)msg->screen;
-
-        /* Quiesce first: context teardown can flush a trailing job, and
-         * the screen is about to free the memory it renders from. */
-        v3d_wait_idle(sd);
-
-        /* Drop the present state while every screen is still alive - the
-         * overlay page and the scanout wrap belong to one of them, and
-         * which one cannot be told from here. Re-entry is one blitted
-         * frame for a survivor. */
-        v3d_ovl_exit(sd);
-        v3d_scan_release();
-
-        screen->destroy(screen);
-    }
-
-    /* Session teardown only with the LAST screen gone - a GL app holds
-     * more than one (the capability probe's, then the real one), and a
-     * sweep under a live screen would free its BOs mid-render. */
-    ObtainSemaphore(&sd->bo_lock);
-    last = (--sd->screen_count <= 0);
-    if (last)
-        sd->screen_count = 0;
-    ReleaseSemaphore(&sd->bo_lock);
-    if (!last)
+    if (!screen)
         return;
 
-    /* Sweep what Mesa leaked and drop the per-session state, so the next
-     * GL session starts clean instead of inheriting a stale latch or a
-     * blown recovery fuse - and give a fuse-disabled GPU a fresh chance. */
+    sid = v3d_session_of(sd, screen);
+
+    /* Quiesce first: context teardown can flush a trailing job, and
+     * the screen is about to free the memory it renders from. */
+    v3d_wait_idle(sd);
+
+    screen->destroy(screen);
+
+    if (sid)
+    {
+        v3d_release_session(sd, sid);
+        ObtainSemaphore(&sd->bo_lock);
+        sd->sessions[sid - 1].vs_Used = FALSE;
+        ReleaseSemaphore(&sd->bo_lock);
+    }
+    v3d_sweep_dead(sd);
+
+    ObtainSemaphore(&sd->bo_lock);
+    for (i = 0; (i < V3D_MAX_SESSIONS) && !sd->sessions[i].vs_Used; i++)
+        ;
+    ReleaseSemaphore(&sd->bo_lock);
+    if (i < V3D_MAX_SESSIONS)
+        return;
+
+    /* The last GL screen is gone: sweep what is left, and start the next
+     * one clean instead of inheriting a stale latch or a blown recovery
+     * fuse - and give a fuse-disabled GPU a fresh chance. */
     v3d_release_all_bos(sd);
     /* Only a real teardown frees the arenas: nothing uses them now. */
     v3d_mem_release(sd);
-    sd->bin_running = FALSE;
-    sd->render_running = FALSE;
-    sd->rcl_head = 0;
-    sd->rcl_count = 0;
-    sd->bin_flushed_seqno = sd->seqno;
-    sd->finished_seqno = sd->seqno;
-    sd->bin_end = 0;
-    sd->render_end = 0;
-    sd->recoveries = 0;
+    ObtainSemaphore(&sd->job_lock);
+    v3d_pipeline_reset(sd);
+    ReleaseSemaphore(&sd->job_lock);
     if (sd->powered)
     {
         /* W1C any leftover completion latches so the next session's
@@ -598,9 +349,7 @@ VOID HiddV3D__Hidd_Gallium__DestroyPipeScreen(OOP_Class *cl, OOP_Object *o,
  * The GPU has to be idle before the pixels are read, and the read itself
  * goes through Mesa's detiler unless the slice is already raster - both
  * are correctness, not optimisation. WritePixelArray then places the
- * linear rows, which works for any bitmap; routing a linear resource
- * straight into the vcgfx framebuffer through DMA is the obvious next
- * step, and the reason this is a separate method from the flip path.
+ * linear rows, which works for any bitmap.
  */
 VOID HiddV3D__Hidd_Gallium__DisplayResource(OOP_Class *cl, OOP_Object *o,
     struct pHidd_Gallium_DisplayResource *msg)
@@ -697,17 +446,9 @@ VOID HiddV3D__Hidd_Gallium__DisplayResource(OOP_Class *cl, OOP_Object *o,
 }
 
 /*
- * Whole-window present. Decides between the three ways a frame reaches
- * the screen, in falling order of preference:
- *
- *   flip     - fullscreen surface matching the flippable framebuffer:
- *              the resource renders straight into the back page, so the
- *              present is OOP_SetAttrs(Flip) and a rebind. Zero copy.
- *   overlay  - fully visible window: the rendered BO goes on the HVS
- *              plane at the window's position; the resource ping-pongs
- *              with one private page. Zero copy.
- *   blit     - everything else (partially obscured, entry/exit frames):
- *              per-cliprect WritePixelArray, raster source.
+ * Whole-window present: a per-cliprect WritePixelArray from the raster
+ * resource. GL that renders straight into display memory goes through
+ * gallium.library's scan-out framebuffers (ResourceFromBitMap) instead.
  *
  * TRUE = handled here. FALSE sends gallium.library to the per-cliprect
  * DisplayResource loop - the only cases are a resource this method
@@ -723,14 +464,11 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
     LONG xSrc = msg->srcx, ySrc = msg->srcy;
     LONG xDest = msg->dstx, yDest = msg->dsty;
     LONG xSize = msg->width, ySize = msg->height;
-    LONG req_w, req_h;
     struct Layer *L;
     struct Rectangle renderableLayerRect, result;
     struct ClipRect *CR;
     OOP_Object *scr_bm_obj;
     ULONG stride;
-    BOOL fullscreen, bound, windowed;
-    BOOL enter_scanout = FALSE, detach_after_blit = FALSE;
     BOOL copied = FALSE;
     UBYTE *base;
 
@@ -746,10 +484,7 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
         return TRUE;
 
     /* Clamp to the resource: during a resize the new window size arrives
-     * while the resource is still last frame's allocation. req_w/req_h
-     * keep the caller's request for the geometry checks. */
-    req_w = xSize;
-    req_h = ySize;
+     * while the resource is still last frame's allocation. */
     if (xSrc >= (LONG)rsc->base.width0 || ySrc >= (LONG)rsc->base.height0)
         return TRUE;
     if (xSize > (LONG)rsc->base.width0 - xSrc)
@@ -762,358 +497,6 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
     LockLayerRom(L);
     scr_bm_obj = HIDD_BM_OBJ(rp->BitMap);
 
-    /* Drop stale state when the bound resource went away (resize). */
-    if (v3d_scan.rsc && v3d_scan.rsc != &rsc->base)
-        v3d_scan_release();
-    if (v3d_ovl.rsc && v3d_ovl.rsc != &rsc->base)
-        v3d_ovl_exit(sd);
-    if (v3d_ovl.refused && v3d_ovl.refused != &rsc->base)
-        v3d_ovl.refused = NULL;
-
-    fullscreen = (xSrc == 0 && ySrc == 0 && xDest == 0 && yDest == 0 &&
-                  L->bounds.MinX == 0 && L->bounds.MinY == 0 &&
-                  L->ClipRect && !L->ClipRect->Next && !L->ClipRect->lobs);
-    bound = (v3d_scan.rsc == &rsc->base &&
-             rsc->bo->handle == v3d_scan.page_handle);
-
-    /* Flip is tried first only when the overlay is not preferred, or
-     * when the overlay has already refused this resource - so a display
-     * the HVS plane cannot serve still gets a zero-copy path. */
-    if (fullscreen
-        && (!V3D_OVERLAY_ENABLE || !V3D_PREFER_OVERLAY
-            || v3d_ovl.refused == &rsc->base))
-    {
-        struct v3d_scanout_info so;
-#if V3D_PROFILE
-        ULONG t0, t1;
-#endif
-
-        if (v3d_get_scanout(sd, scr_bm_obj, &so)
-            && (ULONG)xSize == so.width && (ULONG)ySize == so.height
-            && stride == so.pitch)
-        {
-            /* The frame must be complete before it goes on scanout. */
-#if V3D_PROFILE
-            t0 = V3D_NOW_US();
-#endif
-            v3d_wait_idle(sd);
-#if V3D_PROFILE
-            t1 = V3D_NOW_US();
-#endif
-
-            if (bound && so.name[0] == v3d_scan.name[0]
-                && so.name[1] == v3d_scan.name[1])
-            {
-                /* Steady state: the frame is already in the back page.
-                 * Make it visible and rebind at the new back page. */
-                if (v3d_flip_fb(sd, scr_bm_obj)
-                    && v3d_scan_bind_back(sd, rsc, scr_bm_obj))
-                {
-                    static ULONG n;
-#if V3D_PROFILE
-                    /* emit = app plus Mesa on the CPU since the last
-                     * present, render = the wait for this frame's jobs,
-                     * vsync = the latch wait. */
-                    static ULONG emit_acc, rend_acc, vs_acc, prev, job_acc;
-                    ULONG t2 = V3D_NOW_US();
-
-                    if (prev)
-                        emit_acc += t0 - prev;
-                    rend_acc += t1 - t0;
-                    vs_acc   += t2 - t1;
-                    prev = t2;
-                    job_acc += sd->prof_submits;
-                    sd->prof_submits = 0;
-#endif
-                    /* Twice only, and unconditional: enough to tell from
-                     * a serial log that the zero-copy path engaged. */
-                    if (++n <= 2)
-                        bug("[V3D] present flip #%u: %ldx%ld\n",
-                            (unsigned)n, (long)xSize, (long)ySize);
-#if V3D_PROFILE
-                    if (n % V3D_PROF_PERIOD == 0)
-                    {
-                        ULONG f = V3D_PROF_PERIOD;
-
-                        V3D_PROF("[V3DProf] flip: %lu frames emit=%luus "
-                                 "render-wait=%luus vsync-wait=%luus "
-                                 "jobs=%lu.%02lu/f\n",
-                                 (unsigned long)f,
-                                 (unsigned long)(emit_acc / f),
-                                 (unsigned long)(rend_acc / f),
-                                 (unsigned long)(vs_acc / f),
-                                 (unsigned long)(job_acc / f),
-                                 (unsigned long)(job_acc * 100 / f % 100));
-                        emit_acc = rend_acc = vs_acc = job_acc = 0;
-                    }
-#endif
-                    UnlockLayerRom(L);
-                    return TRUE;
-                }
-                /* Flip refused: this frame's pixels sit in the page
-                 * rsc->bo still points at - blit them out, detach. */
-                bug("[V3D] present: flip refused, leaving scanout mode\n");
-                v3d_scan_release();
-                detach_after_blit = TRUE;
-            }
-            else
-            {
-                /* Enter scanout mode: this frame is still in a private
-                 * BO, so blit it below, then bind the back page for the
-                 * next one. */
-                bug("[V3D] present: entering scanout mode %ldx%ld "
-                    "pitch=%u pages %08x/%08x\n", (long)xSize, (long)ySize,
-                    (unsigned)so.pitch, so.name[0], so.name[1]);
-                if (v3d_ovl.rsc == &rsc->base)
-                    v3d_ovl_exit(sd);
-                enter_scanout = TRUE;
-            }
-        }
-        else if (bound)
-        {
-            /* Geometry changed under us. */
-            bug("[V3D] present: leaving scanout mode (geometry changed)\n");
-            detach_after_blit = TRUE;
-        }
-        else
-        {
-            /* Once: missing flip pages are a vcgfx question, a geometry
-             * mismatch a mode/drawable one. */
-            static BOOL said = FALSE;
-
-            if (!said)
-            {
-                said = TRUE;
-                if (!v3d_get_scanout(sd, scr_bm_obj, &so))
-                    bug("[V3D] present: no flip pages on this bitmap "
-                        "(scaled or single-buffered mode) - trying the "
-                        "overlay\n");
-                else
-                    bug("[V3D] present: drawable %ldx%ld stride=%u does not "
-                        "match framebuffer %ux%u pitch=%u - trying the "
-                        "overlay\n",
-                        (long)xSize, (long)ySize, (unsigned)stride,
-                        (unsigned)so.width, (unsigned)so.height,
-                        (unsigned)so.pitch);
-            }
-        }
-    }
-    else if (bound)
-    {
-        bug("[V3D] present: leaving scanout mode (windowed/obscured)\n");
-        detach_after_blit = TRUE;
-    }
-
-    /*
-     * Zero-copy overlay present. Serves a fully visible window, and
-     * equally a fullscreen surface the flip path declined - the common
-     * case on a non-native mode. Gating it on !fullscreen sent exactly
-     * that case to the CPU blit instead.
-     */
-    if (!bound && !detach_after_blit && !enter_scanout)
-    {
-        LONG absX = L->bounds.MinX + xDest;
-        LONG absY = L->bounds.MinY + yDest;
-
-        windowed = (xSrc == 0 && ySrc == 0 &&
-                    xSize == (LONG)rsc->base.width0 &&
-                    ySize == (LONG)rsc->base.height0 &&
-                    req_w == xSize && req_h == ySize &&
-                    L->ClipRect && !L->ClipRect->Next &&
-                    !L->ClipRect->lobs);
-
-        if (v3d_ovl.rsc == &rsc->base)
-        {
-            if (windowed && rsc->bo->handle == v3d_ovl.page_handle)
-            {
-#if V3D_PROFILE
-                ULONG t0 = V3D_NOW_US(), t1;
-#endif
-                if (!v3d_ovl.queued)
-                {
-                    /* The ring only empties at entry or after a
-                     * suspend. Counting up during a running app means
-                     * presents are being dropped. */
-                    static ULONG refills = 0;
-
-                    if (++refills <= 8 || (refills & 63) == 0)
-                        bug("[V3D] present: overlay ring refill #%u "
-                            "(a present showed nothing new)\n",
-                            (unsigned)refills);
-
-                    /* Ring not full yet (the present right after entry,
-                     * or after a reveal): queue the frame just rendered,
-                     * take the parked page as the next target, and leave
-                     * the plane showing what it already has. */
-                    v3d_ovl.queued = rsc->bo;
-                    v3d_ovl.queued_seqno = sd->seqno;
-                    rsc->bo = v3d_ovl.freep;
-                    v3d_ovl.freep = NULL;
-                    rsc->slices[0].offset = 0;
-                    v3d_ovl.page_handle = rsc->bo->handle;
-                    UnlockLayerRom(L);
-                    return TRUE;
-                }
-
-                /* Show the PREVIOUS frame. Its jobs ran while this one
-                 * was being built, so this wait is normally a no-op -
-                 * that is the whole point of the third page. */
-                v3d_hw_wait_seqno(sd, v3d_ovl.queued_seqno);
-
-                /* Before the next Set, or this waits for its latch
-                 * instead; `retiring` is off-screen after this. */
-                v3d_ovl_latch_wait(sd);
-#if V3D_PROFILE
-                t1 = V3D_NOW_US();
-#endif
-                if (v3d_show_overlay(sd, scr_bm_obj, v3d_ovl.queued, stride,
-                                     absX, absY, xSize, ySize))
-                {
-                    /* Rotate: the page leaving the plane parks in
-                     * `retiring`; the one parked last time is rendered. */
-                    struct v3d_bo *off = v3d_ovl.onplane;
-                    static ULONG n = 0;
-
-                    /* Twice, at startup, and never again: one serial
-                     * line is ~8ms at 115200 - two frames' worth - and
-                     * a periodic log turns into a periodic stutter in
-                     * anything with time-based animation. */
-                    if (++n <= 2)
-                        bug("[V3D] present overlay #%u: %ldx%ld at %ld,%ld\n",
-                            (unsigned)n, (long)xSize, (long)ySize,
-                            (long)absX, (long)absY);
-#if V3D_PROFILE
-                    /* Same phases as the flip path - the overlay's Set
-                     * waits for the latch too, so the numbers compare. */
-                    {
-                        static ULONG emit_acc, rend_acc, lat_acc, prev,
-                                     job_acc;
-                        ULONG t2 = V3D_NOW_US();
-
-                        if (prev)
-                            emit_acc += t0 - prev;
-                        rend_acc += t1 - t0;
-                        lat_acc  += t2 - t1;
-                        prev = t2;
-                        job_acc += sd->prof_submits;
-                        sd->prof_submits = 0;
-
-                        if (n % V3D_PROF_PERIOD == 0)
-                        {
-                            ULONG f = V3D_PROF_PERIOD;
-
-                            V3D_PROF("[V3DProf] overlay: %lu frames "
-                                     "emit=%luus render-wait=%luus "
-                                     "latch-wait=%luus jobs=%lu.%02lu/f "
-                                     "%ldx%ld\n",
-                                     (unsigned long)f,
-                                     (unsigned long)(emit_acc / f),
-                                     (unsigned long)(rend_acc / f),
-                                     (unsigned long)(lat_acc / f),
-                                     (unsigned long)(job_acc / f),
-                                     (unsigned long)(job_acc * 100 / f % 100),
-                                     (long)xSize, (long)ySize);
-                            emit_acc = rend_acc = lat_acc = job_acc = 0;
-                        }
-                    }
-#endif
-
-                    v3d_ovl.onplane = v3d_ovl.queued;
-                    v3d_ovl.queued = rsc->bo;
-                    v3d_ovl.queued_seqno = sd->seqno;
-                    v3d_ovl.shown = TRUE;
-                    v3d_ovl.bm = scr_bm_obj;
-                    v3d_ovl.latch_due = V3D_OVL_NOWAIT;
-                    rsc->bo = v3d_ovl.retiring;
-                    v3d_ovl.retiring = off;
-                    rsc->slices[0].offset = 0;
-                    v3d_ovl.page_handle = rsc->bo->handle;
-                    UnlockLayerRom(L);
-                    return TRUE;
-                }
-                /* Refused a present that worked before (mode change):
-                 * tear down, don't retry for this resource. */
-                bug("[V3D] present: overlay refused mid-session, "
-                    "back to blitting\n");
-                v3d_ovl_exit(sd);
-                v3d_ovl.refused = &rsc->base;
-            }
-            else if (!windowed)
-            {
-                /* Obscured: hide the plane, keep the pages, blit. */
-                v3d_ovl_suspend(sd);
-            }
-            else
-            {
-                /* Mesa replaced the BO under us - bookkeeping void. */
-                v3d_ovl_exit(sd);
-            }
-        }
-        else if (V3D_OVERLAY_ENABLE && windowed && !v3d_ovl.rsc
-                 && rsc->slices[0].size && v3d_ovl.refused != &rsc->base)
-        {
-            /* Three more pages: the next render target, a parked spare,
-             * and a latch-free seed for `retiring`. */
-            struct v3d_bo *nb = v3d_bo_alloc(v3d_screen(rsc->base.screen),
-                                             rsc->slices[0].size,
-                                             "overlay-page");
-            struct v3d_bo *nb2 = nb
-                ? v3d_bo_alloc(v3d_screen(rsc->base.screen),
-                               rsc->slices[0].size, "overlay-page")
-                : NULL;
-            struct v3d_bo *nb3 = nb2
-                ? v3d_bo_alloc(v3d_screen(rsc->base.screen),
-                               rsc->slices[0].size, "overlay-page")
-                : NULL;
-
-            if (nb && nb2 && nb3)
-            {
-                /* Entry frame only: nothing is queued yet, so this one
-                 * has to be waited for before it goes on the plane. */
-                v3d_wait_idle(sd);
-                if (v3d_show_overlay(sd, scr_bm_obj, rsc->bo, stride,
-                                     absX, absY, xSize, ySize))
-                {
-                    bug("[V3D] present: overlay mode %ldx%ld at %ld,%ld\n",
-                        (long)xSize, (long)ySize, (long)absX, (long)absY);
-                    v3d_ovl.rsc = &rsc->base;
-                    v3d_ovl.onplane = rsc->bo;
-                    v3d_ovl.queued = NULL;
-                    v3d_ovl.queued_seqno = 0;
-                    v3d_ovl.freep = nb2;
-                    v3d_ovl.retiring = nb3;
-                    v3d_ovl.latch_due = FALSE;
-                    v3d_ovl.shown = TRUE;
-                    v3d_ovl.bm = scr_bm_obj;
-                    rsc->bo = nb;
-                    rsc->slices[0].offset = 0;
-                    v3d_ovl.page_handle = nb->handle;
-                    UnlockLayerRom(L);
-                    return TRUE;
-                }
-                v3d_bo_unreference(&nb);
-                v3d_bo_unreference(&nb2);
-                v3d_bo_unreference(&nb3);
-                /* Scaled desktop or no takeover: remember and stop
-                 * paying an alloc+refusal every present. */
-                bug("[V3D] present: overlay unavailable, blitting\n");
-                v3d_ovl.refused = &rsc->base;
-            }
-            else if (nb)
-            {
-                /* Not all three pages came back: blit this session. */
-                v3d_bo_unreference(&nb);
-                if (nb2)
-                    v3d_bo_unreference(&nb2);
-                bug("[V3D] present: no memory for the overlay ring, "
-                    "blitting\n");
-                v3d_ovl.refused = &rsc->base;
-            }
-        }
-    }
-
-    /* Blit path: entry/exit frames and everything the fast paths
-     * declined. Raster source, so a per-cliprect WritePixelArray. */
     {
         /* Log on geometry change only - steady blitting (obscured
          * window) would flood the serial log per frame. */
@@ -1126,10 +509,8 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
             blast.count++;
             blast.w = xSize; blast.h = ySize;
             blast.x = xDest; blast.y = yDest;
-            bug("[V3D] present blit: %ldx%ld at %ld,%ld%s%s\n",
-                (long)xSize, (long)ySize, (long)xDest, (long)yDest,
-                enter_scanout ? " (scanout entry)" : "",
-                detach_after_blit ? " (scanout exit)" : "");
+            bug("[V3D] present blit: %ldx%ld at %ld,%ld\n",
+                (long)xSize, (long)ySize, (long)xDest, (long)yDest);
         }
     }
     v3d_wait_idle(sd);
@@ -1195,13 +576,104 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
         OOP_DoMethod(scr_bm_obj, (OOP_Msg)&urmsg);
     }
 
-    /* This frame is on screen; switch the resource for the next one. */
-    if (enter_scanout)
-        v3d_scan_bind_back(sd, rsc, scr_bm_obj);
-    else if (detach_after_blit)
-        v3d_scan_unbind(rsc);
-
     UnlockLayerRom(L);
     return TRUE;
 }
 
+/*
+ * Alias buffer msg->buffer of a scan-out bitmap (vcgfx, in its scanout
+ * memory) as a linear render target of the pipe screen: its address is
+ * published as a GEM_OPEN name and imported by Mesa with the bitmap's
+ * pitch, so GL renders straight into what a plane scans out.
+ */
+APTR HiddV3D__Hidd_Gallium__ResourceFromBitMap(OOP_Class *cl, OOP_Object *o,
+    struct pHidd_Gallium_ResourceFromBitMap *msg)
+{
+    struct V3DData *sd = SD(cl);
+    struct pipe_screen *pscreen = (struct pipe_screen *)msg->screen;
+    OOP_Object *bm = msg->bitmap, *pf = NULL;
+    IPTR scanout = 0, width = 0, height = 0, stdpf = 0;
+    struct pHidd_BitMap_LockBuffer lmsg;
+    struct pHidd_BitMap_UnlockBuffer umsg;
+    struct Rectangle none = { 0, 0, -1, -1 };
+    struct winsys_handle wh;
+    struct pipe_resource templ;
+    enum pipe_format format;
+    UBYTE *addr = NULL;
+    ULONG pitch = 0, name, i;
+
+    if (!pscreen || !pscreen->resource_from_handle || !bm
+        || !sd->hiddBitMapAB || !sd->hiddPixFmtAB)
+        return NULL;
+
+    OOP_GetAttr(bm, sd->hiddBitMapAB + aoHidd_BitMap_Scanout, &scanout);
+    OOP_GetAttr(bm, sd->hiddBitMapAB + aoHidd_BitMap_Width, &width);
+    OOP_GetAttr(bm, sd->hiddBitMapAB + aoHidd_BitMap_Height, &height);
+    OOP_GetAttr(bm, sd->hiddBitMapAB + aoHidd_BitMap_PixFmt, (IPTR *)&pf);
+    if (pf)
+        OOP_GetAttr(pf, sd->hiddPixFmtAB + aoHidd_PixFmt_StdPixFmt, &stdpf);
+    if (!scanout || !width || !height)
+        return NULL;
+
+    switch (stdpf)
+    {
+    case vHidd_StdPixFmt_BGRA32:
+        format = PIPE_FORMAT_B8G8R8A8_UNORM;
+        break;
+    case vHidd_StdPixFmt_BGR032:
+        format = PIPE_FORMAT_B8G8R8X8_UNORM;
+        break;
+    case vHidd_StdPixFmt_RGB16_LE:
+        format = PIPE_FORMAT_B5G6R5_UNORM;
+        break;
+    default:
+        return NULL;
+    }
+
+    lmsg.mID           = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_LockBuffer);
+    lmsg.buffer        = msg->buffer;
+    lmsg.addressReturn = &addr;
+    lmsg.pitchReturn   = &pitch;
+    lmsg.planeOffsets  = NULL;
+    if (!OOP_DoMethod(bm, (OOP_Msg)&lmsg) || !addr || !pitch)
+        return NULL;
+    umsg.mID    = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_UnlockBuffer);
+    umsg.buffer = msg->buffer;
+    umsg.dirty  = &none;
+    OOP_DoMethod(bm, (OOP_Msg)&umsg);
+
+    /* Scanout memory is identity mapped: the address is the page's */
+    name = (ULONG)(IPTR)addr;
+    ObtainSemaphore(&sd->bo_lock);
+    for (i = 0; i < V3D_EXT_NAMES; i++)
+        if (sd->ext_name[i] == name)
+            break;
+    if (i == V3D_EXT_NAMES)
+    {
+        i = sd->ext_next;
+        sd->ext_next = (sd->ext_next + 1) % V3D_EXT_NAMES;
+    }
+    sd->ext_name[i] = name;
+    sd->ext_size[i] = pitch * height;
+    ReleaseSemaphore(&sd->bo_lock);
+
+    memset(&wh, 0, sizeof(wh));
+    wh.type     = WINSYS_HANDLE_TYPE_SHARED;
+    wh.handle   = name;
+    wh.stride   = pitch;
+    wh.modifier = DRM_FORMAT_MOD_LINEAR;
+
+    memset(&templ, 0, sizeof(templ));
+    templ.target     = PIPE_TEXTURE_2D;
+    templ.format     = format;
+    templ.width0     = width;
+    templ.height0    = height;
+    templ.depth0     = 1;
+    templ.array_size = 1;
+    templ.bind       = PIPE_BIND_RENDER_TARGET | PIPE_BIND_SAMPLER_VIEW
+                     | PIPE_BIND_SCANOUT | PIPE_BIND_LINEAR | PIPE_BIND_SHARED;
+    templ.usage      = PIPE_USAGE_DEFAULT;
+
+    return pscreen->resource_from_handle(pscreen, &templ, &wh,
+                                         PIPE_HANDLE_USAGE_FRAMEBUFFER_WRITE);
+}

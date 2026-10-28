@@ -14,8 +14,11 @@
 
 #ifndef __cplusplus
 #define NULL ((void *)0)
+#elif defined(__GNUG__)
+/* Pointer sized: NULL also ends C++ varargs lists */
+#define NULL __null
 #else
-#define NULL 0
+#define NULL 0L
 #endif
 
 #endif /* _AROS_TYPES_NULL_H */

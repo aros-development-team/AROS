@@ -94,7 +94,7 @@
                 colors[t].red = table[0] >> 16;
                 colors[t].green = table[1] >> 16;
                 colors[t].blue = table[2] >> 16;
-                colors[t].alpha = 0;
+                colors[t].alpha = 0xFFFF;   /* pens are opaque */
 
                 table += 3;
             }

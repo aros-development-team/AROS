@@ -43,6 +43,27 @@ void ctodstr(const unsigned char *a0, unsigned char *a1)
 	*lenp = len;
 }
 
+/*
+;-----------------------------------------------------------------------------
+;	void ctodstrn(cstring *a0, dstring *a1, ULONG max)
+;
+;	as ctodstr, but copies at most max (< 256) characters of a0.
+;	a1 must hold max + 2 bytes
+;-----------------------------------------------------------------------------
+*/
+void ctodstrn(const unsigned char *a0, unsigned char *a1, ULONG max)
+{
+	unsigned char *lenp = a1++;
+	unsigned int len = 0;
+	while (len < max && (*a1 = *a0++))
+	{
+		a1++;
+		len++;
+	}
+	*a1 = 0;
+	*lenp = len;
+}
+
 /* SAS/C compatibility routines - only included if not SAS/C */
 #ifndef __SASC
 

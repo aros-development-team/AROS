@@ -112,7 +112,7 @@ CONVERTFUNC(RGBX32,RGBA32)
         {
             ULONG s = src[x];
 
-            dst[x] = s & 0xFFFFFF00;
+            dst[x] = (s & 0xFFFFFF00) | RGBA32_AMASK;   /* source has no alpha: opaque */
         }
         src = (ULONG *)(((UBYTE *)src) + srcMod);
         dst = (ULONG *)(((UBYTE *)dst) + dstMod);
@@ -138,7 +138,7 @@ CONVERTFUNC(RGBX32,ABGR32)
         {
             ULONG s = src[x];
 
-            dst[x] = SHUFFLE24(s, RGBA32, ABGR32);
+            dst[x] = (SHUFFLE24(s, RGBA32, ABGR32)) | ABGR32_AMASK;   /* source has no alpha: opaque */
         }
         src = (ULONG *)(((UBYTE *)src) + srcMod);
         dst = (ULONG *)(((UBYTE *)dst) + dstMod);
@@ -163,7 +163,7 @@ CONVERTFUNC(RGBX32,ARGB32)
         {
             ULONG s = src[x];
 
-            dst[x] = SHUFFLE24(s, RGBA32, ARGB32);
+            dst[x] = (SHUFFLE24(s, RGBA32, ARGB32)) | ARGB32_AMASK;   /* source has no alpha: opaque */
         }
         src = (ULONG *)(((UBYTE *)src) + srcMod);
         dst = (ULONG *)(((UBYTE *)dst) + dstMod);
@@ -189,7 +189,7 @@ CONVERTFUNC(RGBX32,BGRA32)
         {
             ULONG s = src[x];
 
-            dst[x] = SHUFFLE24(s, RGBA32, BGRA32);
+            dst[x] = (SHUFFLE24(s, RGBA32, BGRA32)) | BGRA32_AMASK;   /* source has no alpha: opaque */
         }
         src = (ULONG *)(((UBYTE *)src) + srcMod);
         dst = (ULONG *)(((UBYTE *)dst) + dstMod);

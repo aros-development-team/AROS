@@ -9,7 +9,9 @@
 #include <aros/asmcall.h>
 #include <devices/cd.h>
 #include <exec/errors.h>
+#include <exec/execbase.h>
 #include <exec/memory.h>
+#include <exec/resident.h>
 #include <exec/tasks.h>
 #include <hardware/intbits.h>
 #include <proto/exec.h>
@@ -768,6 +770,86 @@ static int cd32mpeg_Init(LIBBASETYPE *base)
 }
 
 ADD2INITLIB(cd32mpeg_Init, 0)
+
+/* The ROM scan precedes expansion configuration. Advertise a boot probe, not
+ * a device, until the cartridge is known to exist. A game may use Version's
+ * resident lookup without ever calling OpenDevice().
+ */
+extern const APTR GM_UNIQUENAME(FuncTable)[];
+extern const char GM_UNIQUENAME(End)[];
+extern const char GM_UNIQUENAME(LibID)[];
+AROS_UFP3(LIBBASETYPEPTR, GM_UNIQUENAME(InitLib),
+    AROS_UFPA(LIBBASETYPEPTR, base, D0),
+    AROS_UFPA(BPTR, segList, A0),
+    AROS_UFPA(struct ExecBase *, sysBase, A6));
+
+static const struct
+{
+    IPTR size;
+    const APTR *functions;
+    APTR data;
+    APTR init;
+} mpegInitTable = {
+    sizeof(LIBBASETYPE), GM_UNIQUENAME(FuncTable), NULL,
+    (APTR)GM_UNIQUENAME(InitLib)
+};
+
+static AROS_UFP3(APTR, mpegProbe,
+    AROS_UFPA(APTR, base, D0),
+    AROS_UFPA(BPTR, segList, A0),
+    AROS_UFPA(struct ExecBase *, sysBase, A6));
+
+/* Keep these tags together: the probe's EndSkip hides the device tag from
+ * both the kernel and AROSBootstrap ROM scans.
+ */
+__section(".text.romtag") const struct
+{
+    struct Resident probe;
+    struct Resident device;
+} mpegResidents = {
+    {
+        RTC_MATCHWORD, (struct Resident *)&mpegResidents.probe,
+        (APTR)GM_UNIQUENAME(End), RTF_COLDSTART, VERSION_NUMBER,
+        NT_UNKNOWN, RESIDENTPRI, "cd32mpeg.hardware",
+        GM_UNIQUENAME(LibID) + 6, (APTR)mpegProbe
+    },
+    {
+        RTC_MATCHWORD, (struct Resident *)&mpegResidents.device,
+        (APTR)GM_UNIQUENAME(End), RTF_AUTOINIT, VERSION_NUMBER,
+        NT_DEVICE, RESIDENTPRI, MOD_NAME_STRING,
+        GM_UNIQUENAME(LibID) + 6, (APTR)&mpegInitTable
+    }
+};
+
+static AROS_UFH3(APTR, mpegProbe,
+    AROS_UFHA(APTR, base, D0),
+    AROS_UFHA(BPTR, segList, A0),
+    AROS_UFHA(struct ExecBase *, SysBase, A6))
+{
+    AROS_USERFUNC_INIT
+
+    IPTR *entry = SysBase->ResModules;
+
+    if (!fmvFindBoard() || FindResident(MOD_NAME_STRING))
+        return NULL;
+
+    while (entry && *entry)
+    {
+        if (*entry & RESLIST_NEXT)
+            entry = (IPTR *)(*entry & ~RESLIST_NEXT);
+        else if (*entry == (IPTR)&mpegResidents.probe)
+        {
+            if (InitResident((struct Resident *)&mpegResidents.device, BNULL))
+                *entry = (IPTR)&mpegResidents.device;
+            break;
+        }
+        else
+            entry++;
+    }
+    return NULL;
+
+    AROS_USERFUNC_EXIT
+}
 
 static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR base,
     struct IOMPEGReq *request, ULONG unit, ULONG flags)

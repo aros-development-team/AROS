@@ -9,6 +9,7 @@
 #include <stdio.h>
 
 #include "vcgfx_hidd.h"
+#include "vcgfx_hvs5.h"
 #include "vcgfx_hvs6.h"
 
 #ifdef MBoxBase
@@ -192,6 +193,21 @@ int FNAME_SUPPORT(HDMI_SyncGen)(struct List *modelist, OOP_Class *cl)
     if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
         vc4_hvs6_mode_capture(xsd);
 
+    /* BCM2711 too, and there the firmware can boot below the sink's
+     * preferred mode (CEA 1080p on a 1440p monitor): make that native
+     * when we can set it. */
+    if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS5)
+    {
+        const struct vcgfx_timing *p = &xsd->vcsd_EDID.timings[0];
+
+        vc4_hvs5_mode_capture(xsd);
+        if (xsd->vcsd_EDID.ntimings && vc4_hvs5_mode_usable(xsd, p))
+        {
+            native_w = xsd->vcsd_NativeWidth  = p->hdisp;
+            native_h = xsd->vcsd_NativeHeight = p->vdisp;
+        }
+    }
+
     if (native_w && native_h)
     {
         const struct vcgfx_timing *t = vcgfx_edid_find(xsd, native_w, native_h);
@@ -233,16 +249,18 @@ int FNAME_SUPPORT(HDMI_SyncGen)(struct List *modelist, OOP_Class *cl)
     /* BCM2712 TESTRES echoes the current mode and SETRES is a no-op, so
      * offer what vcgfx_hvs6_mode.c can set - nothing when mode setting
      * is off. */
-    if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
+    /* BCM2711 with mode setting: likewise, what vcgfx_hvs5_mode.c can set. */
+    if ((xsd->vcsd_HVSGen == VCGFX_HVS_HVS6) || xsd->vcsd_HVS5M.m5_ModeOK)
     {
+        BOOL hvs6 = (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6);
         const struct vcgfx_timing *t;
 
-        for (i = 0; (t = vc4_hvs6_mode(xsd, i)) != NULL; i++)
+        for (i = 0; (t = hvs6 ? vc4_hvs6_mode(xsd, i) : vc4_hvs5_mode(xsd, i)) != NULL; i++)
         {
             struct VC4ModeEntry e = { t->hdisp, t->vdisp, t->clock,
                 t->hstart, t->hend, t->htotal, t->vstart, t->vend, t->vtotal };
 
-            if (!vc4_hvs6_mode_usable(xsd, t)
+            if (!(hvs6 ? vc4_hvs6_mode_usable(xsd, t) : vc4_hvs5_mode_usable(xsd, t))
                 || VC4_HaveMode(modelist, t))
                 continue;
             if ((hdmi_mode = VC4_BuildMode(&e)) != NULL)
@@ -257,7 +275,8 @@ int FNAME_SUPPORT(HDMI_SyncGen)(struct List *modelist, OOP_Class *cl)
             }
         }
         VC4_SortModes(modelist);
-        bug("[VideoCoreGfx] BCM2712: %d HDMI mode(s)\n", hdmi_modecount);
+        bug("[VideoCoreGfx] %s: %d HDMI mode(s)\n", hvs6 ? "BCM2712" : "BCM2711",
+            hdmi_modecount);
         return hdmi_modecount;
     }
 

@@ -714,10 +714,10 @@ static BOOL SearchInDir(ULONG dirnodenr, STRPTR objectname, union objectinfo *in
 	struct direntry *entry = NULL;
 	BOOL found = FALSE, eod = FALSE;
 	ULONG anodeoffset;
-	UBYTE intl_name[PATHSIZE];
+	UBYTE intl_name[PATHSIZE + 1];   /* ctodstr(): length, name and NUL */
 
 	ENTER("SearchInDir");
-	ctodstr(objectname, intl_name);
+	ctodstrn(objectname, intl_name, PATHSIZE - 1);
 
 	/* truncate */
 	if (intl_name[0] > FILENAMESIZE - 1)
@@ -3586,8 +3586,9 @@ static BOOL MakeDirEntry(BYTE type, UBYTE *name, UBYTE *entrybuffer, globaldata 
 	if (g->muFS_ready)
 	{
 		extrafields.link = 0;
-		extrafields.uid = g->user->uid;
-		extrafields.gid = g->user->gid;
+		/* a task owned by nobody has no muExtOwner (g->user is NULL) */
+		extrafields.uid = g->user ? g->user->uid : muNOBODY_UID;
+		extrafields.gid = g->user ? g->user->gid : muNOBODY_GID;
 		extrafields.prot = muGetDefProtection(g->action->dp_Port->mp_SigTask);
 		direntry->protection = extrafields.prot;
 		extrafields.prot &= 0xffffff00;
@@ -4055,7 +4056,7 @@ static struct deldirentry *SearchInDeldir(STRPTR delname, union objectinfo *resu
 	struct deldirentry *dde;
 	struct cdeldirblock *dblk;
 	UBYTE *delnumptr;
-	UBYTE intl_name[PATHSIZE];
+	UBYTE intl_name[PATHSIZE + 1];   /* ctodstr(): length, name and NUL */
 	unsigned slotnr, offset;
 
 	ENTER("SearchInDeldir");
@@ -4064,7 +4065,7 @@ static struct deldirentry *SearchInDeldir(STRPTR delname, union objectinfo *resu
 	stcd_i(delnumptr + 1, (int *) &slotnr);  /* retrieve the slotnr  */
 
 	*delnumptr = 0;             /* patch string to get filename part  */
-	ctodstr(delname, intl_name);
+	ctodstrn(delname, intl_name, PATHSIZE - 1);
 
 	/* truncate to maximum length */
 	if (intl_name[0] > FILENAMESIZE - 1)

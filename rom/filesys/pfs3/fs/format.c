@@ -335,7 +335,7 @@ static rootblock_t *MakeRootBlock (DSTR diskname, BOOL showrequesters, globaldat
 {
   struct rootblock *rbl;
   struct DateStamp time;
-  UBYTE c_diskname[DNSIZE];
+  UBYTE c_diskname[PATHSIZE];
   ULONG diskname_length;
   ULONG numreserved;
   ULONG rescluster;

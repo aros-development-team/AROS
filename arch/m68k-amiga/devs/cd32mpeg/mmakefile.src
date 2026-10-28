@@ -1,4 +1,12 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
 include $(SRCDIR)/config/aros.cfg
+
+# Native FMV visibility checks belong to the MPEG device component.
+#MM- test-amiga-m68k : test-devices-cd32mpeg
+#MM- test-amiga-m68k-quick : test-devices-cd32mpeg-quick
+#MM- test-devices-cd32mpeg : test-devices-cd32mpeg-presence
+#MM- test-devices-cd32mpeg-quick : test-devices-cd32mpeg-presence-quick
 
 %build_module mmake=kernel-amiga-m68k-cd32mpeg \
     modname=cd32mpeg modtype=device \

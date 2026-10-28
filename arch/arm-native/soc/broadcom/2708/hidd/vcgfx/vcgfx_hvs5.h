@@ -15,6 +15,7 @@
 */
 
 #include <exec/types.h>
+#include <oop/oop.h>
 
 /* hvs@7e400000, "brcm,bcm2711-hvs": same base as VideoCore IV, but a
  * 0x8000 register window instead of 0x6000. */
@@ -142,11 +143,15 @@
 #define HVS5_PPF(src, dst)      ((1UL << 30) \
                                  | ((((ULONG)(src) << 16) / (ULONG)(dst)) << 8) \
                                  | 0x60)
-/* The ratio field is 16 bits, so a plane cannot shrink by more than 2:1. */
-#define HVS5_PPF_FITS(src, dst) ((((ULONG)(src) << 16) / (ULONG)(dst)) <= 0xffff)
+/* The firmware's lists only ever upscaled. Shrinking to 2/3 takes the
+ * ratio field up to bit 24; a 1280 to 1024 shrink showed right on a Pi 4. */
+#define HVS5_PPF_FITS(src, dst) ((((ULONG)(src) << 16) / (ULONG)(dst)) <= 0x18000)
 
-#define HVS5_LBM_TOP            0xbc00
-#define HVS5_LBM_BYTES(w)       ((ULONG)(w) * 8)
+/* All 60K words (Linux's size); the firmware's own planes stay below
+ * 0xbc00. A word holds four pixels' worth of a PPF line, where the
+ * firmware allots two, and a plane's share starts on 64 words. */
+#define HVS5_LBM_SIZE           0xf000
+#define HVS5_LBM_BYTES(w)       (((ULONG)(w) * 4 + 63) & ~63UL)
 
 /* pixelvalve@..., "brcm,bcm2711-pixelvalveN". PV2 has moved (0x7e807000
  * on BCM283x) and PV3/PV4 are new.
@@ -196,10 +201,12 @@ void vc4_hvs5_dump(struct VideoCoreGfx_staticdata *xsd,
 
 /* Our own lists live high in list RAM, clear of the firmware's (which
  * ran from word 4 to about word 840) and of the filter kernel at 0xff4.
- * Two slots so a mode switch never rewrites the list being scanned. */
-#define HVS5_OWN_SLOTS      2
-#define HVS5_OWN_SLOT_BASE  3584
-#define HVS5_OWN_SLOT_STRIDE 128
+ * Four slots: the one scanned, the last repointed at, the one waiting for
+ * vblank, and the one being written. A slot holds the backdrop, every
+ * screen and overlay scaled (15 words each), the cursor and END. */
+#define HVS5_OWN_SLOTS      4
+#define HVS5_OWN_SLOT_STRIDE 384
+#define HVS5_OWN_SLOT_BASE  (4064 - HVS5_OWN_SLOTS * HVS5_OWN_SLOT_STRIDE)
 
 /* Take the HDMI channel: copy the firmware's live list into a slot of
  * our own, retarget the framebuffer plane and repoint the channel. The
@@ -209,23 +216,39 @@ void vc4_hvs5_dump(struct VideoCoreGfx_staticdata *xsd,
 BOOL vc4_hvs5_takeover(struct VideoCoreGfx_staticdata *xsd,
                        ULONG fb_phys, ULONG fb_pitch);
 
-/* Retarget the framebuffer plane at another page. One word, latched by
- * the HVS at frame start. */
-BOOL vc4_hvs5_flip_page(struct VideoCoreGfx_staticdata *xsd, ULONG page_phys);
-
 /* Patch the cursor plane in place. No-op when there is no cursor buffer. */
 void vc4_hvs5_update_cursor(struct VideoCoreGfx_staticdata *xsd);
 
-/* Wait for the last armed overlay/flip to latch (VC4GFX_OVL_NOWAIT). */
+/* Wait for the last armed list update to latch. */
 void vc4_hvs5_latch_wait(struct VideoCoreGfx_staticdata *xsd);
 
-/* Show (ovl != NULL) or drop (ovl == NULL) a plane composited over the
- * framebuffer, below the cursor - what lets the GL stack present without
- * a blit. Returns FALSE when unavailable, and the caller blits: scaling
- * would need the filter kernel and the wider entry that goes with it,
- * neither of which is decoded on HVS5 yet. */
-struct vc4gfx_overlay;
-BOOL vc4_hvs5_overlay(struct VideoCoreGfx_staticdata *xsd,
-                      const struct vc4gfx_overlay *ovl);
+/* Screens as planes (vcsd_Plane[]). planes_ok says whether the list can
+ * be owned at all; commit rebuilds it and hands it to the next vblank.
+ * The caller holds the mailbox lock. */
+BOOL vc4_hvs5_planes_ok(void);
+void vc4_hvs5_planes_commit(struct VideoCoreGfx_staticdata *xsd);
+void vc4_hvs5_planes_try(struct VideoCoreGfx_staticdata *xsd);
+
+/* Can a screen of a w x h mode scale to fill the current output? */
+BOOL vc4_hvs5_plane_fits(struct VideoCoreGfx_staticdata *xsd, ULONG w, ULONG h);
+
+/* HDMI0 mode setting (vcgfx_hvs5_mode.c). Capture records the firmware's
+ * boot mode and decides whether any other can be set; restore puts it
+ * back before the firmware is asked for a framebuffer again, and apply
+ * sets a mode of ours after a takeover. */
+struct vcgfx_timing;
+void vc4_hvs5_mode_capture(struct VideoCoreGfx_staticdata *xsd);
+const struct vcgfx_timing *vc4_hvs5_mode(struct VideoCoreGfx_staticdata *xsd, ULONG i);
+BOOL vc4_hvs5_mode_usable(struct VideoCoreGfx_staticdata *xsd, const struct vcgfx_timing *t);
+const struct vcgfx_timing *vc4_hvs5_mode_lookup(struct VideoCoreGfx_staticdata *xsd,
+                                                ULONG w, ULONG h,
+                                                const struct vcgfx_timing *want, BOOL *boot);
+BOOL vc4_hvs5_mode_set(struct VideoCoreGfx_staticdata *xsd, ULONG ch, ULONG list,
+                       const struct vcgfx_timing *t, BOOL boot);
+void vc4_hvs5_mode_restore(struct VideoCoreGfx_staticdata *xsd);
+BOOL vc4_hvs5_mode_apply(struct VideoCoreGfx_staticdata *xsd, ULONG w, ULONG h,
+                         ULONG pitch, const struct vcgfx_timing *want);
+BOOL vc4_hvs5_mode_switch(struct VideoCoreGfx_staticdata *xsd, ULONG w, ULONG h,
+                          ULONG fb_phys, ULONG pitch, const struct vcgfx_timing *want);
 
 #endif /* _VIDEOCOREGFX_HVS5_H */

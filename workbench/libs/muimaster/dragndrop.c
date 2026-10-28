@@ -561,7 +561,7 @@ STATIC VOID BltBitMapNode(struct BitMapNode *src_bmn, LONG offx, LONG offy,
                  * acquired from src_bmn->bmn_BitMap */
                 WritePixelArrayAlpha(src_bmn->bmn_BitMapBuffer, offx, offy,
                     src_bmn->bmn_Width * sizeof(ULONG), rp, x, y, width,
-                    height, 0);
+                    height, 0xFFFFFFFF);
             }
             else
             {

@@ -59,7 +59,10 @@
             /* the state tracker keeps per-drawable state; drop it before
              * the drawable memory goes away */
             if (_ctx->framebuffer)
+            {
+                MESA3DGLScanoutIdle(_ctx->framebuffer, st_ctx);
                 st_api_destroy_drawable(&_ctx->framebuffer->base);
+            }
             st_destroy_context(_ctx->st);
             MESA3DGLFreeFrameBuffer(_ctx->framebuffer);
             MESA3DGLFreeStManager(_ctx->driver, _ctx->stmanager);

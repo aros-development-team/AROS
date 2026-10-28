@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 2013-2026, The AROS Development Team. All rights reserved.
 */
 
 /******************************************************************************
@@ -26,16 +26,18 @@
 
     INPUTS
 
-        NAME    --  the name of the command or application whose help
-                    you want to view. The name is case-insensitive.
-        SECTION --  Help section to search: Commands or System. If omitted,
-                    Commands is searched first, followed by System. The
-                    first matching document is displayed. Section names
-                    are case-insensitive.
+        NAME    --  Name of a command or application whose guide is requested.
+                    Required when SECTION is specified.
+        SECTION --  Subdirectory of HELP:English to search. When omitted,
+                    Commands is searched first, followed by System.
+                    Name matching follows the underlying file system.
 
     RESULT
 
-    NOTES
+        RETURN_OK (0) after normal viewer termination.
+        RETURN_ERROR (10) for invalid arguments, a missing document,
+        or failure to start the viewer. Other viewer statuses are
+        returned unchanged.
 
     EXAMPLE
 
@@ -43,19 +45,13 @@
         Help dir commands
         Help help
 
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
 ******************************************************************************/
 
+#include <dos/dos.h>
 #include <proto/dos.h>
 
 #include <string.h>
 #include <stdio.h>
-#include <stdlib.h>
 
 //#define DEBUG 1
 #include <aros/debug.h>
@@ -80,13 +76,60 @@ static TEXT viewpath[256];
 static CONST_STRPTR section_arr[] = {"Commands", "System", NULL};
 
 
-static void clean_exit(CONST_STRPTR s)
+/****i* Help/clean_exit ***************************************************
+*
+*   NAME
+*       clean_exit -- Release parsed arguments and return a status.
+*
+*   SYNOPSIS
+*       status = clean_exit(message, status)
+*
+*   FUNCTION
+*       Prints message if it is not NULL, and releases the RDArgs allocation
+*       held in rda if one exists. Does not terminate the process.
+*
+*   INPUTS
+*       message - Optional NUL-terminated diagnostic string.
+*       status  - DOS return code to pass back to the caller.
+*
+*   RESULT
+*       The supplied status, unchanged.
+*
+****************************************************************************
+*
+*/
+
+static LONG clean_exit(CONST_STRPTR s, LONG result)
 {
     if (s) PutStr(s);
     if (rda) FreeArgs(rda);
-    exit(0);
+    return result;
 }
 
+
+/****i* Help/show_file ****************************************************
+*
+*   NAME
+*       show_file -- Display a guide using the system MultiView command.
+*
+*   SYNOPSIS
+*       status = show_file(buffer, buflen, path)
+*
+*   INPUTS
+*       buffer - Caller-owned command buffer.
+*       buflen - Capacity of buffer, including its NUL terminator.
+*       path   - Guide path to append to the MultiView command line.
+*
+*   RESULT
+*       RETURN_OK for a SystemTags() status of 0 or 1. All other statuses
+*       are returned unchanged, including -1 when the shell cannot start.
+*
+*   NOTES
+*       The command buffer is not checked for truncation.
+*
+****************************************************************************
+*
+*/
 
 static LONG show_file(STRPTR buffer, ULONG buflen, CONST_STRPTR path)
 {
@@ -99,9 +142,40 @@ static LONG show_file(STRPTR buffer, ULONG buflen, CONST_STRPTR path)
         buffer,
         TAG_DONE
     );
-    return error;
+    /* MultiView returns 1 on normal shutdown. */
+    return error == 1 ? RETURN_OK : error;
 }
 
+
+/****i* Help/find_file ****************************************************
+*
+*   NAME
+*       find_file -- Locate a regular guide file in a help section.
+*
+*   SYNOPSIS
+*       match = find_file(buffer, buflen, name, section)
+*
+*   FUNCTION
+*       Formats HELP:English/section/name.guide, then uses Lock() and
+*       Examine() to check whether the path denotes a file.
+*
+*   INPUTS
+*       buffer  - Caller-owned pathname buffer.
+*       buflen  - Capacity of buffer, including its NUL terminator.
+*       name    - Non-NULL guide name.
+*       section - Non-NULL section directory name.
+*
+*   RESULT
+*       buffer when a regular file is found; NULL otherwise, including
+*       allocation, Lock() and Examine() failures.
+*
+*   NOTES
+*       Only .guide files are searched. A truncated pathname is not
+*       distinguished from a missing document.
+*
+****************************************************************************
+*
+*/
 
 static STRPTR find_file
 (
@@ -136,8 +210,10 @@ static STRPTR find_file
 }
 
 
+/* Shell and Wanderer entry point; see the public Help AutoDoc above. */
 int main(int argc, char **argv)
 {
+    LONG result = RETURN_OK;
     if (argc) // started from Shell
     {
         IPTR args[ARG_COUNT] = {0};
@@ -146,7 +222,7 @@ int main(int argc, char **argv)
         if (!rda)
         {
             PrintFault(IoErr(), argv[0]);
-            clean_exit("ReadArgs() failed.\n");
+            return clean_exit("ReadArgs() failed.\n", RETURN_ERROR);
         }
         
         if (args[ARG_NAME])
@@ -154,7 +230,7 @@ int main(int argc, char **argv)
             name = (STRPTR)args[ARG_NAME];
             if (strpbrk(name, ":/()#?~"))
             {
-                clean_exit("Illegal characters in argument 'name'.\n");
+                return clean_exit("Illegal characters in argument 'name'.\n", RETURN_ERROR);
             }
         }
 
@@ -163,8 +239,13 @@ int main(int argc, char **argv)
             section = (STRPTR)args[ARG_SECTION];
             if (strpbrk(section, ":/()#?~"))
             {
-                clean_exit("Illegal characters in argument 'section'.\n");
+                return clean_exit("Illegal characters in argument 'section'.\n", RETURN_ERROR);
             }
+        }
+
+        if (section && !name)
+        {
+            return clean_exit("NAME is required when SECTION is specified.\n", RETURN_ERROR);
         }
 
         D(bug("[Help] name %s section %s\n", name, section));
@@ -172,7 +253,7 @@ int main(int argc, char **argv)
         if (name == NULL && section == NULL)
         {
             strcpy(docpath, "HELP:English/Index.guide");
-            show_file(viewpath, sizeof(viewpath), docpath);
+            result = show_file(viewpath, sizeof(viewpath), docpath);
         }
         else if (section == NULL || *section == '\0')
         {
@@ -182,33 +263,32 @@ int main(int argc, char **argv)
             {
                 if (find_file(docpath, sizeof(docpath), name, *sect))
                 {
-                    show_file(viewpath, sizeof(viewpath), docpath);
+                    result = show_file(viewpath, sizeof(viewpath), docpath);
                     found = TRUE;
                 }
             }
             if (found == FALSE)
             {
-                clean_exit("Can't find help document.\n");
+                return clean_exit("Can't find help document.\n", RETURN_ERROR);
             }
         }
         else
         {
             if (find_file(docpath, sizeof(docpath), name, section))
             {
-                show_file(viewpath, sizeof(viewpath), docpath);
+                result = show_file(viewpath, sizeof(viewpath), docpath);
             }
             else
             {
-                clean_exit("Can't find help document.\n");
+                return clean_exit("Can't find help document.\n", RETURN_ERROR);
             }
         }
     }
     else // started from Wanderer
     {
         strcpy(docpath, "HELP:English/Index.guide");
-        show_file(viewpath, sizeof(viewpath), docpath);
+        result = show_file(viewpath, sizeof(viewpath), docpath);
     }
 
-    clean_exit(NULL);
-    return 0;
+    return clean_exit(NULL, result == -1 ? RETURN_ERROR : result);
 }

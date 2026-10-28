@@ -15,15 +15,17 @@
  *   dnssd -B type [domain]                browse for instances of a type
  *   dnssd -L name type [domain]           look up (resolve) one instance
  *   dnssd -Z type [domain]                browse, as available zone records
+ *   dnssd -q name rrtype                  ask for any DNS record
+ *   dnssd -G v4 hostname                  look up a host's IPv4 address
  *   dnssd -V                              show the bonami.library version
  *   dnssd -h                              this help
  *
  * The domain may be omitted or given as "." for the default, which is the
  * only one bonami.library serves: the multicast "local" domain.
  *
- * -R, -P, -B and -Z run until Ctrl-C; -L until the instance is resolved or
- * mdnsd gives up on it, five seconds later. Browse and resolve use queued
- * discovery (DISCOVERY.md): the events are read in this task, which sleeps
+ * -R, -P, -B, -Z and -q run until Ctrl-C; -L until the instance is resolved
+ * or mdnsd gives up on it, five seconds later. Browse, resolve and record
+ * query use queues (DISCOVERY.md): events are read in this task, which sleeps
  * on a request lent to mdnsd until there are some.
  *
  *   dnssd -B _http._tcp
@@ -46,7 +48,14 @@
 #include "ba_common.h"
 
 static const char version_tag[] __attribute__((used)) =
-    "\0$VER: dnssd 41.1 (22.10.2026)";
+    "\0$VER: dnssd 41.2 (25.10.2026)";
+
+#define DS_DNS_A       1
+#define DS_DNS_PTR     12
+#define DS_DNS_TXT     16
+#define DS_DNS_AAAA    28
+#define DS_DNS_SRV     33
+#define DS_DNS_ANY     255
 
 /*------------------------------------------------------------------------*/
 /* Helpers */
@@ -118,25 +127,227 @@ DSVersion(void)
     return 0;
 }
 
+/* LVOs 22 through 25 were appended in bonami.library 41.3. Opening version
+ * 41 alone is not enough to make those vectors callable. */
+static BOOL
+DSHasRecordAPI(void)
+{
+    struct Library *lib = (struct Library *)BonamiBase;
+
+    return lib->lib_Version > BONAMI_LIB_VERSION ||
+        (lib->lib_Version == BONAMI_LIB_VERSION &&
+         lib->lib_Revision >= BONAMI_LIB_REVISION);
+}
+
+static UWORD
+DSRecordType(CONST_STRPTR word)
+{
+    LONG value;
+
+    if (BAStrEqual(word, "A")) {
+        return DS_DNS_A;
+    }
+    if (BAStrEqual(word, "PTR")) {
+        return DS_DNS_PTR;
+    }
+    if (BAStrEqual(word, "TXT")) {
+        return DS_DNS_TXT;
+    }
+    if (BAStrEqual(word, "AAAA")) {
+        return DS_DNS_AAAA;
+    }
+    if (BAStrEqual(word, "SRV")) {
+        return DS_DNS_SRV;
+    }
+    if (BAStrEqual(word, "ANY")) {
+        return DS_DNS_ANY;
+    }
+    if (!BAParseNum(word, &value) || value < 1 || value > 65535) {
+        return 0;
+    }
+    return (UWORD)value;
+}
+
+/* An uncompressed wire name from a record event, with a final dot. Literal
+ * dots and backslashes inside labels are escaped for readable zone output. */
+static BOOL
+DSRecordName(const UBYTE *data, LONG pos, LONG length, char *out, LONG outmax,
+    LONG *end)
+{
+    LONG at = 0;
+
+    while (pos < length) {
+        LONG n = data[pos++];
+        LONG i;
+
+        if (n == 0) {
+            if (at == 0) {
+                if (outmax < 2) {
+                    return FALSE;
+                }
+                out[at++] = '.';
+            } else {
+                if (at >= outmax - 1) {
+                    return FALSE;
+                }
+                out[at++] = '.';
+            }
+            out[at] = '\0';
+            if (end != NULL) {
+                *end = pos;
+            }
+            return TRUE;
+        }
+        if (n > 63 || n > length - pos) {
+            return FALSE;
+        }
+        if (at != 0) {
+            if (at >= outmax - 1) {
+                return FALSE;
+            }
+            out[at++] = '.';
+        }
+        for (i = 0; i < n; i++) {
+            UBYTE c = data[pos++];
+
+            if (c == '.' || c == '\\') {
+                if (at >= outmax - 2) {
+                    return FALSE;
+                }
+                out[at++] = '\\';
+            } else if (c < 0x20 || c >= 0x7f) {
+                c = '?';
+            }
+            if (at >= outmax - 1) {
+                return FALSE;
+            }
+            out[at++] = (char)c;
+        }
+    }
+    return FALSE;
+}
+
+static void
+DSPrintRecord(const struct MDNSRecordEvent *record)
+{
+    LONG length = record->re_DataLength;
+    char name[512];
+
+    if (length > MDNS_RECORD_DATA_MAX) {
+        length = MDNS_RECORD_DATA_MAX;
+    }
+    BAPrintf("%s.  type %ld  ttl %ld  ", record->re_Name,
+        (LONG)record->re_Type, (LONG)record->re_TTL);
+    if (record->re_Type == DS_DNS_A && length == 4) {
+        BAPrintf("%ld.%ld.%ld.%ld", (LONG)record->re_Data[0],
+            (LONG)record->re_Data[1], (LONG)record->re_Data[2],
+            (LONG)record->re_Data[3]);
+    } else if (record->re_Type == DS_DNS_PTR &&
+               DSRecordName(record->re_Data, 0, length, name,
+                   (LONG)sizeof(name), NULL)) {
+        BAPrintf("%s", name);
+    } else if (record->re_Type == DS_DNS_SRV && length > 6 &&
+               DSRecordName(record->re_Data, 6, length, name,
+                   (LONG)sizeof(name), NULL)) {
+        BAPrintf("%ld %ld %ld %s",
+            (LONG)((record->re_Data[0] << 8) | record->re_Data[1]),
+            (LONG)((record->re_Data[2] << 8) | record->re_Data[3]),
+            (LONG)((record->re_Data[4] << 8) | record->re_Data[5]), name);
+    } else if (record->re_Type == DS_DNS_TXT) {
+        BAPrintTXT(record->re_Data, length);
+    } else {
+        LONG i;
+
+        for (i = 0; i < length && i < 32; i++) {
+            BAPrintf("%02lx", (LONG)record->re_Data[i]);
+        }
+    }
+    BAPrintf("\n");
+}
+
+/* Ask for the SRV whose browse snapshot refers to. The browse operation has
+ * already resolved it, but its compatible event intentionally has no target
+ * field. A bounded record query obtains that name without changing the event
+ * ABI. */
+static BOOL
+DSZoneSRV(const struct MDNSDiscoveryEvent *discovery, char *target,
+    LONG targetmax, UWORD *priority, UWORD *weight, UWORD *port)
+{
+    MDNSQueryRef ref = NULL;
+    struct TagItem tags[] = {
+        { MDNS_EventMode, MDNS_EVENT_QUEUE },
+        { MDNS_QueryRef, (IPTR)&ref },
+        { TAG_END, 0 }
+    };
+    struct BAWatch watch;
+    struct MDNSRecordEvent record;
+    char owner[256];
+    LONG rc;
+    LONG why = BA_WAIT_EVENTS;
+    BOOL found = FALSE;
+
+    BAStrCopy(owner, discovery->de_Name, (LONG)sizeof(owner));
+    BAStrAppend(owner, ".", (LONG)sizeof(owner));
+    BAStrAppend(owner, discovery->de_Type, (LONG)sizeof(owner));
+    BAStrAppend(owner, ".local", (LONG)sizeof(owner));
+    rc = QueryRecordA(owner, DS_DNS_SRV, tags);
+    if (rc != MDNS_OK) {
+        return FALSE;
+    }
+    rc = BAWatchStart(&watch, ref, 3);
+    if (rc != MDNS_OK) {
+        StopQuery(ref);
+        return FALSE;
+    }
+    while (!found && (why = BAWatchWait(&watch)) == BA_WAIT_EVENTS) {
+        while (ReadMDNSRecordEvent(ref, &record) == MDNS_OK) {
+            LONG end;
+
+            if (record.re_Type != DS_DNS_SRV ||
+                record.re_Interface != discovery->de_Interface ||
+                record.re_DataLength <= 6 ||
+                !DSRecordName(record.re_Data, 6, record.re_DataLength,
+                    target, targetmax, &end) || end != record.re_DataLength) {
+                continue;
+            }
+            *priority = (UWORD)((record.re_Data[0] << 8) | record.re_Data[1]);
+            *weight = (UWORD)((record.re_Data[2] << 8) | record.re_Data[3]);
+            *port = (UWORD)((record.re_Data[4] << 8) | record.re_Data[5]);
+            found = TRUE;
+            break;
+        }
+    }
+    StopQuery(ref);
+    BAWatchEnd(&watch);
+    if (why == BA_WAIT_BREAK) {
+        SetSignal(SIGBREAKF_CTRL_C, SIGBREAKF_CTRL_C);
+    }
+    return found;
+}
+
 /*------------------------------------------------------------------------*/
-/* -B / -Z : browse. Zone output includes only records the queued event can
- * represent faithfully. It has the instance address and port but not the SRV
- * target host name, so inventing an SRV target and an A owner would produce
- * incorrect DNS-SD data. Those values are reported in a comment instead. */
+/* -B / -Z : browse. Zone output obtains the real SRV target through the
+ * generic record queue before it writes an SRV record or names the A owner. */
 
 static void
 DSPrintZone(const struct MDNSDiscoveryEvent *ev)
 {
     LONG length = ev->de_TXTLength;
+    UWORD priority, weight, port;
+    char target[512];
+    BOOL haveSRV;
 
+    haveSRV = DSZoneSRV(ev, target, (LONG)sizeof(target), &priority, &weight,
+        &port);
     BAPrintf("%s.local.\tPTR\t%s.%s.local.\n", ev->de_Type, ev->de_Name,
         ev->de_Type);
-    BAPrintf("; %s.%s.local.: port %ld", ev->de_Name, ev->de_Type,
-        (LONG)ev->de_Port);
-    if (ev->de_Address != 0) {
-        BAPrintf(", address %ld.%ld.%ld.%ld", BA_IP_ARGS(ev->de_Address));
+    if (haveSRV) {
+        BAPrintf("%s.%s.local.\tSRV\t%ld %ld %ld %s\n", ev->de_Name,
+            ev->de_Type, (LONG)priority, (LONG)weight, (LONG)port, target);
+    } else {
+        BAPrintf("; %s.%s.local.: SRV target unavailable\n", ev->de_Name,
+            ev->de_Type);
     }
-    BAPrintf("; SRV target unavailable\n");
     if (length > 0) {
         if (length > MDNS_DISCOVERY_TXT_MAX) {
             length = MDNS_DISCOVERY_TXT_MAX;
@@ -144,6 +355,10 @@ DSPrintZone(const struct MDNSDiscoveryEvent *ev)
         BAPrintf("%s.%s.local.\tTXT\t", ev->de_Name, ev->de_Type);
         BAPrintTXT(ev->de_TXT, length);
         BAPrintf("\n");
+    }
+    if (haveSRV && ev->de_Address != 0) {
+        BAPrintf("%s\tA\t%ld.%ld.%ld.%ld\n", target,
+            BA_IP_ARGS(ev->de_Address));
     }
 }
 
@@ -268,6 +483,78 @@ DSResolve(CONST_STRPTR name, CONST_STRPTR type, CONST_STRPTR domain)
 }
 
 /*------------------------------------------------------------------------*/
+/* -G : a bounded IPv4 host lookup. */
+
+static int
+DSLookup(CONST_STRPTR family, CONST_STRPTR host)
+{
+    ULONG address = 0;
+    LONG rc;
+
+    if (!BAStrEqual(family, "v4")) {
+        BAPrintf("dnssd -G: only v4 is supported\n");
+        return 5;
+    }
+    rc = LookupHostA((STRPTR)host, &address, NULL);
+    if (rc != MDNS_OK) {
+        BAAppPrintMDNSError("LookupHostA", rc);
+        return rc == MDNSERR_TIMEOUT ? 5 : 20;
+    }
+    BAPrintf("%s  %ld.%ld.%ld.%ld\n", host, BA_IP_ARGS(address));
+    return 0;
+}
+
+/*------------------------------------------------------------------------*/
+/* -q : a standing queued query, stopped by Ctrl-C. */
+
+static int
+DSQuery(CONST_STRPTR name, CONST_STRPTR typeWord)
+{
+    MDNSQueryRef ref = NULL;
+    struct TagItem tags[] = {
+        { MDNS_EventMode, MDNS_EVENT_QUEUE },
+        { MDNS_QueryRef, (IPTR)&ref },
+        { TAG_END, 0 }
+    };
+    struct BAWatch watch;
+    struct MDNSRecordEvent record;
+    UWORD type = DSRecordType(typeWord);
+    LONG rc;
+    LONG why;
+    int result = 0;
+
+    if (type == 0) {
+        BAPrintf("dnssd -q: unknown record type \"%s\"\n", typeWord);
+        return 5;
+    }
+    rc = QueryRecordA((STRPTR)name, type, tags);
+    if (rc != MDNS_OK) {
+        BAAppPrintMDNSError("QueryRecordA", rc);
+        return 20;
+    }
+    rc = BAWatchStart(&watch, ref, 0);
+    if (rc != MDNS_OK) {
+        StopQuery(ref);
+        BAAppPrintMDNSError("RequestMDNSEvent", rc);
+        return 20;
+    }
+    BAPrintf("Asking for %s %s (Ctrl-C to stop)...\n\n", name, typeWord);
+    while ((why = BAWatchWait(&watch)) == BA_WAIT_EVENTS) {
+        while (ReadMDNSRecordEvent(ref, &record) == MDNS_OK) {
+            DSPrintRecord(&record);
+        }
+    }
+    if (why == BA_WAIT_END) {
+        result = DSWatchEnded(&watch, (CONST_STRPTR)"query");
+    } else {
+        BAPrintf("\n(Ctrl-C)\n");
+    }
+    StopQuery(ref);
+    BAWatchEnd(&watch);
+    return result;
+}
+
+/*------------------------------------------------------------------------*/
 /* -R / -P : register a service, for this host or for another one. */
 
 static int
@@ -381,13 +668,17 @@ DSUsage(void)
     BAPrintf("  dnssd -P name type dom port host ip [k=v ...]  register for another host\n");
     BAPrintf("  dnssd -B type [domain]        browse a service type\n");
     BAPrintf("  dnssd -L name type [domain]   look up (resolve) an instance\n");
-    BAPrintf("  dnssd -Z type [domain]        browse, available zone records\n");
+    BAPrintf("  dnssd -Z type [domain]        browse, complete zone records\n");
+    BAPrintf("  dnssd -q name rrtype          ask for any DNS record\n");
+    BAPrintf("  dnssd -G v4 hostname          look up an IPv4 address\n");
     BAPrintf("  dnssd -V                      show library version\n");
     BAPrintf("  dnssd -h                      this help\n\n");
     BAPrintf("Examples:\n");
     BAPrintf("  dnssd -B _http._tcp\n");
     BAPrintf("  dnssd -B _services._dns-sd._udp     (list service types)\n");
     BAPrintf("  dnssd -L \"My Mac\" _companion-link._tcp\n");
+    BAPrintf("  dnssd -q _http._tcp.local PTR\n");
+    BAPrintf("  dnssd -G v4 printer.local\n");
     BAPrintf("  dnssd -R AmigaShare _http._tcp . 80 path=/ vers=1\n");
 }
 
@@ -419,6 +710,14 @@ main(int argc, char **argv)
         BAPrintf("dnssd -L needs <name> <type> [domain]\n");
         return 5;
     }
+    if (BAStrEqual(argv[1], "-q") && argc < 4) {
+        BAPrintf("dnssd -q needs <name> <rrtype>\n");
+        return 5;
+    }
+    if (BAStrEqual(argv[1], "-G") && argc < 4) {
+        BAPrintf("dnssd -G needs v4 <hostname>\n");
+        return 5;
+    }
     if (BAStrEqual(argv[1], "-R") && argc < 6) {
         BAPrintf("dnssd -R needs <name> <type> <domain> <port>\n");
         return 5;
@@ -436,7 +735,8 @@ main(int argc, char **argv)
     if (!BAStrEqual(argv[1], "-B") && !BAStrEqual(argv[1], "-Z") &&
         !BAStrEqual(argv[1], "-L") && !BAStrEqual(argv[1], "-R") &&
         !BAStrEqual(argv[1], "-P") && !BAStrEqual(argv[1], "-E") &&
-        !BAStrEqual(argv[1], "-F") && !BAStrEqual(argv[1], "-V")) {
+        !BAStrEqual(argv[1], "-F") && !BAStrEqual(argv[1], "-V") &&
+        !BAStrEqual(argv[1], "-q") && !BAStrEqual(argv[1], "-G")) {
         BAPrintf("Unknown mode: %s\n", argv[1]);
         DSUsage();
         return 5;
@@ -453,6 +753,11 @@ main(int argc, char **argv)
         result = DSEnumDomains((CONST_STRPTR)"registration");
     } else if (BAStrEqual(argv[1], "-F")) {
         result = DSEnumDomains((CONST_STRPTR)"browsing");
+    } else if ((BAStrEqual(argv[1], "-q") ||
+                BAStrEqual(argv[1], "-G") ||
+                BAStrEqual(argv[1], "-Z")) && !DSHasRecordAPI()) {
+        BAPrintf("dnssd %s needs bonami.library 41.3 or newer\n", argv[1]);
+        result = 20;
     } else if ((rc = BAAppOpenEngine()) != MDNS_OK) {
         BAAppPrintMDNSError("OpenMDNSEngine", rc);
         result = 20;
@@ -463,6 +768,10 @@ main(int argc, char **argv)
     } else if (BAStrEqual(argv[1], "-L")) {
         result = DSResolve((CONST_STRPTR)argv[2], (CONST_STRPTR)argv[3],
             argc > 4 ? (CONST_STRPTR)argv[4] : NULL);
+    } else if (BAStrEqual(argv[1], "-q")) {
+        result = DSQuery((CONST_STRPTR)argv[2], (CONST_STRPTR)argv[3]);
+    } else if (BAStrEqual(argv[1], "-G")) {
+        result = DSLookup((CONST_STRPTR)argv[2], (CONST_STRPTR)argv[3]);
     } else if (BAStrEqual(argv[1], "-P")) {
         result = DSRegister((CONST_STRPTR)argv[2], (CONST_STRPTR)argv[3],
             (CONST_STRPTR)argv[4], (UWORD)port,

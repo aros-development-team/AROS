@@ -109,7 +109,7 @@ PRIV_KERNEL_INCLUDES = \
 # Make sure we optimize this code for size ..
 OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
 
-USELIBS := amiga arossupport autoinit libinit stdc.static
+USELIBS := arossupport amiga autoinit libinit stdc.static
 LIBS    := -L$(GENDIR)/lib -lloadseg $(addprefix -l,$(USELIBS))
 DEPLIBS := $(addprefix $(AROS_LIB)/lib,$(addsuffix .a,$(USELIBS)))
 
@@ -154,10 +154,10 @@ kick_modfiles = \
 
 KLIBS   := exec aros dos utility oop expansion partition debug \
            keymap
-KDEVS   := timer input keyboard console trackdisk gameport audio
+KDEVS   := timer input keyboard console trackdisk gameport
 KHNDLRS := con afs ram
 KHIDDS  := amigakbd amigamouse amigavideo ata_gayle gfx hiddclass inputclass keyboard mouse
-KRSRCS  := kernel processor task lddemon dosboot cia disk FileSystem shell card bootloader
+KRSRCS  := kernel processor task lddemon dosboot cia FileSystem shell card bootloader
 KHOOKS  := diag romboot
 
 KOBJS_rom := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.ko ,$(KLIBS))) \
@@ -185,10 +185,10 @@ KLIBS   :=  graphics layers intuition gadtools icon workbench \
             freeanim nonvolatile nvdisk \
             mathffp mathieeesingbas \
             setpatch lowlevel
-KDEVS   := cd cd32mpeg ata ramdrive
+KDEVS   := cd cd32mpeg ata ramdrive audio
 KHNDLRS := cdrom
 KHIDDS  := bus storage system p96gfx
-KRSRCS  := battclock battmem potgo misc shellcommands workbook wbtag
+KRSRCS  := battclock battmem potgo misc shellcommands workbook wbtag disk
 KHOOKS  := alert
 
 ROMLOC_ext := 0xe00000
@@ -253,13 +253,21 @@ $(GENDIR)/ext_strs.ld: $(SRCDIR)/$(CURDIR)/mmakefile.src
 		echo "$$file(.romstrings .rodata.str1.1)" >>$@; \
 	done
 
+# Likewise their 8-byte constants (the empty symbol sets, .romsets).
+$(GENDIR)/ext_sets.ld: $(SRCDIR)/$(CURDIR)/mmakefile.src
+	$(Q)rm -f $@
+	$(Q)for file in $(OBJS_ext) $(KOBJS_ext); do \
+		echo "$$file(.romsets .rodata.cst8)" >>$@; \
+	done
+
 $(GENDIR)/boot/aros-amiga-m68k-reloc.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/mmakefile.src \
 	$(OBJS_rom) $(KOBJS_rom) \
 	$(OBJS_ext) $(KOBJS_ext) \
 	$(SRCDIR)/$(CURDIR)/aros-rom.ld \
 	$(GENDIR)/rom_objs.ld \
 	$(GENDIR)/ext_objs.ld \
-	$(GENDIR)/ext_strs.ld
+	$(GENDIR)/ext_strs.ld \
+	$(GENDIR)/ext_sets.ld
 	@$(MKDIR) $(GENDIR)/boot
 	@$(ECHO) Linking $@...
 	$(Q)$(KERNEL_CC) -Wl,-r \
