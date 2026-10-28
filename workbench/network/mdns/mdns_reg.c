@@ -257,10 +257,19 @@ service_send(struct MDNSDaemon *md, struct MDNSRegisteredService *rs,
             mdnsNetSendOn(md, i, pkt, pos);
             if (md->md_ReplyAddr == 0 && !goodbye) {
                 rs->rs_Multicast = mdnsNow();
+                rs->rs_MulticastTick[i] = mdnsTicks();
             }
         }
     }
 }
+
+static BOOL
+sent_recently(ULONG sent, ULONG now)
+{
+    return sent != 0 && (LONG)(now - sent) < 50;
+}
+
+static void types_send(struct MDNSDaemon *md, LONG ifindex, BOOL multicast);
 
 /*
  * Answers to browse questions are not sent at once. A PTR record is shared:
@@ -291,6 +300,7 @@ answers_flush(struct MDNSDaemon *md, ULONG now)
     struct MDNSHeader *hdr = (struct MDNSHeader *)pkt;
     struct Node *n;
     BOOL due = FALSE;
+    BOOL types = md->md_TypesAnswerTick != 0;
     LONG i;
 
     md->md_AnswerPending = FALSE;
@@ -308,6 +318,11 @@ answers_flush(struct MDNSDaemon *md, ULONG now)
             md->md_AnswerPending = TRUE;
         }
     }
+    if (types && (LONG)(now - md->md_TypesAnswerTick) >= 0) {
+        due = TRUE;
+    } else if (types) {
+        md->md_AnswerPending = TRUE;
+    }
     if (!due) {
         return;
     }
@@ -322,7 +337,8 @@ answers_flush(struct MDNSDaemon *md, ULONG now)
                 (struct MDNSRegisteredService *)n;
 
             if (rs->rs_AnswerTick == 0 ||
-                (rs->rs_AnswerIf >= 0 && rs->rs_AnswerIf != i)) {
+                (rs->rs_AnswerIf >= 0 && rs->rs_AnswerIf != i) ||
+                sent_recently(rs->rs_MulticastTick[i], now)) {
                 continue;
             }
             /* the host's address once; a stand-in's host has its own */
@@ -345,20 +361,24 @@ answers_flush(struct MDNSDaemon *md, ULONG now)
             if (!rs->rs_Proxy) {
                 addrDone = TRUE;
             }
+            rs->rs_Multicast = mdnsNow();
+            rs->rs_MulticastTick[i] = now;
         }
         if (ancount != 0) {
             hdr->ancount = htons(ancount);
             mdnsNetSendOn(md, i, pkt, pos);
         }
+        if (types && (md->md_TypesAnswerIf < 0 ||
+                md->md_TypesAnswerIf == i)) {
+            types_send(md, i, TRUE);
+        }
     }
     FOR_SERVICES(md, n) {
         struct MDNSRegisteredService *rs = (struct MDNSRegisteredService *)n;
 
-        if (rs->rs_AnswerTick != 0) {
-            rs->rs_Multicast = mdnsNow();
-        }
         rs->rs_AnswerTick = 0;
     }
+    md->md_TypesAnswerTick = 0;
     md->md_AnswerPending = FALSE;
 }
 
@@ -410,7 +430,10 @@ mdnsRegRestartAll(struct MDNSDaemon *md)
         rs->rs_Step = 0;
         rs->rs_NextTick = mdnsTicks();
         rs->rs_AnswerTick = 0;
+        memset(rs->rs_MulticastTick, 0, sizeof(rs->rs_MulticastTick));
+        memset(rs->rs_TypeTick, 0, sizeof(rs->rs_TypeTick));
     }
+    md->md_TypesAnswerTick = 0;
     md->md_AnswerPending = FALSE;
 }
 
@@ -786,16 +809,34 @@ mdnsRegTick(struct MDNSDaemon *md)
     return probing;
 }
 
-/* Answers "which service types are there" (RFC 6763 section 9) with one
- * PTR record per type. */
+/* Marks every registration of one type. If its first registration goes away,
+ * another one must still remember when their shared type PTR last went out. */
 static void
-types_send(struct MDNSDaemon *md)
+type_sent(struct MDNSDaemon *md, const char *type, LONG ifindex, ULONG now)
+{
+    struct Node *n;
+
+    FOR_SERVICES(md, n) {
+        struct MDNSRegisteredService *rs = (struct MDNSRegisteredService *)n;
+
+        if (Stricmp(rs->rs_Type, type) == 0) {
+            rs->rs_TypeTick[ifindex] = now;
+        }
+    }
+}
+
+/* Answers "which service types are there" (RFC 6763 section 9) with one
+ * PTR record per type. A multicast answer is confined to ifindex and leaves
+ * out records that were multicast there less than a second ago. */
+static void
+types_send(struct MDNSDaemon *md, LONG ifindex, BOOL multicast)
 {
     UBYTE *pkt = md->md_TxBuf;
     struct MDNSHeader *hdr = (struct MDNSHeader *)pkt;
     struct Node *n;
     LONG pos = mdnsResponseBegin(md, pkt);
     UWORD ancount = 0;
+    ULONG now = mdnsTicks();
 
     FOR_SERVICES(md, n) {
         const struct MDNSRegisteredService *rs =
@@ -806,6 +847,9 @@ types_send(struct MDNSDaemon *md)
         LONG targetlen;
 
         if (rs->rs_State != MDNS_NAME_ANNOUNCED) {
+            continue;
+        }
+        if (multicast && sent_recently(rs->rs_TypeTick[ifindex], now)) {
             continue;
         }
         /* once per type */
@@ -823,16 +867,37 @@ types_send(struct MDNSDaemon *md)
         }
         type_fqdn(rs, type, (LONG)sizeof(type));
         if (mdnsNameToWire(type, target, (LONG)sizeof(target),
-                &targetlen) == 0) {
+                &targetlen) == 0 &&
             mdnsAppendRecord(pkt, (LONG)MDNS_MAX_PACKET, &pos, &ancount,
                 MDNS_TYPE_SERVICES, DNS_TYPE_PTR, DNS_CLASS_IN,
-                reply_ttl(md, MDNS_TTL_OTHER), target, (UWORD)targetlen);
+                reply_ttl(md, MDNS_TTL_OTHER), target,
+                (UWORD)targetlen) == 0 && multicast) {
+            type_sent(md, rs->rs_Type, ifindex, now);
         }
     }
     if (ancount != 0) {
         hdr->ancount = htons(ancount);
-        mdnsNetSendAll(md, pkt, pos);
+        if (multicast) {
+            mdnsNetSendOn(md, ifindex, pkt, pos);
+        } else {
+            mdnsNetSendAll(md, pkt, pos);
+        }
     }
+}
+
+static void
+types_schedule(struct MDNSDaemon *md)
+{
+    if (md->md_TypesAnswerTick == 0) {
+        md->md_TypesAnswerTick = mdnsTicks() + answer_delay(md);
+        if (md->md_TypesAnswerTick == 0) {
+            md->md_TypesAnswerTick = 1;
+        }
+        md->md_TypesAnswerIf = md->md_SendIf;
+    } else if (md->md_TypesAnswerIf != md->md_SendIf) {
+        md->md_TypesAnswerIf = -1;
+    }
+    md->md_AnswerPending = TRUE;
 }
 
 /*
@@ -865,9 +930,11 @@ mdnsRegHandleQuery(struct MDNSDaemon *md, struct MDNSQuestion *q,
         Stricmp(q->qname, MDNS_TYPE_SERVICES) == 0) {
         if (legacy) {
             reply_to_asker(md, q, TRUE);
+            types_send(md, md->md_SendIf, FALSE);
+            reply_to_group(md);
+        } else {
+            types_schedule(md);
         }
-        types_send(md);
-        reply_to_group(md);
         return;
     }
 

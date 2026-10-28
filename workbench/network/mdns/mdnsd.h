@@ -67,6 +67,10 @@ struct MDNSRegisteredService
     ULONG           rs_Answered;    /* md_PacketSerial it last answered */
     ULONG           rs_Multicast;   /* mdnsNow() when its records last went
                                      * to the group */
+    ULONG           rs_MulticastTick[MDNS_IFS_MAX];
+                                    /* exact send tick on each interface */
+    ULONG           rs_TypeTick[MDNS_IFS_MAX];
+                                    /* the service-type PTR on each link */
     ULONG           rs_AnswerTick;  /* when an answer to a browse question
                                      * is due, or 0 for none */
     LONG            rs_AnswerIf;    /* to which interface, or -1 for all */
@@ -136,6 +140,10 @@ struct MDNSDaemon
     ULONG                   md_NextHandle;
     ULONG                   md_PacketSerial; /* counts received queries */
     BOOL                    md_AnswerPending; /* an rs_AnswerTick is set */
+    ULONG                   md_TypesAnswerTick;
+                                            /* delayed type-enumeration reply */
+    LONG                    md_TypesAnswerIf;
+                                            /* its interface, or -1 for all */
 };
 
 /* Text of at most max characters: its length, and a copy that always ends
