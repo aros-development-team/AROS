@@ -94,6 +94,24 @@ void arda_ctl_exit(struct Arda *a)
     }
 }
 
+/*
+ * Make a volume's handler write its buffers out now. A file handler may keep
+ * dirty blocks after Close() (the FAT handler does); a reboot right after a
+ * PUT then leaves a truncated file on the medium (seen with a 34 MB driver
+ * on the Titan's USB key).
+ */
+void arda_ctl_flush(const char *path)
+{
+    struct DevProc *dvp = GetDeviceProc((STRPTR)path, NULL);
+
+    if (dvp)
+    {
+        if (dvp->dvp_Port)
+            DoPkt(dvp->dvp_Port, ACTION_FLUSH, 0, 0, 0, 0, 0);
+        FreeDeviceProc(dvp);
+    }
+}
+
 /* ---- PUT: raw body into a file ---------------------------------------- */
 
 void arda_cmd_put(struct Arda *a, char *args)
@@ -125,6 +143,8 @@ void arda_cmd_put(struct Arda *a, char *args)
         return;
     }
     a->client.rawfile = fh;
+    strncpy(a->client.rawpath, path, sizeof(a->client.rawpath) - 1);
+    a->client.rawpath[sizeof(a->client.rawpath) - 1] = '\0';
     a->client.rawleft = size;
     a->client.rawtotal = size;
     a->client.rawfailed = FALSE;
@@ -157,6 +177,7 @@ ULONG arda_ctl_raw_input(struct Arda *a, const char *data, ULONG n)
 
         Close(c->rawfile);
         c->rawfile = BNULL;
+        arda_ctl_flush(c->rawpath);     /* on the medium before we say so */
         if (failed)
             arda_resp_err(&a->resp, 500, "write failed, file incomplete");
         else
@@ -611,6 +632,7 @@ void arda_cmd_reboot(struct Arda *a, char *args)
 {
     if (!ctl_enabled(a))
         return;
+    arda_ctl_flush("SYS:");         /* buffered writes reach the boot medium first */
     a->reboot = TRUE;               /* the main loop reboots after the reply went out */
     arda_resp_ok(&a->resp, "REBOOTING");
 }

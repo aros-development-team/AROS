@@ -153,7 +153,7 @@ is for a trusted development network only; there is still no authentication.
 
 | Command | Response |
 |---------|----------|
-| `PUT <path> <size>` | `OK READY`, after which the client sends exactly `size` raw bytes, written to `path` (created or truncated). Then `OK WROTE <size>`, or `ERR 500 write failed, file incomplete`. A zero `size` answers `OK WROTE 0` with no body. Up to 512 MiB. |
+| `PUT <path> <size>` | `OK READY`, after which the client sends exactly `size` raw bytes, written to `path` (created or truncated) and the volume flushed (ACTION_FLUSH). Then `OK WROTE <size>`, or `ERR 500 write failed, file incomplete`. A zero `size` answers `OK WROTE 0` with no body. Up to 512 MiB. |
 | `GET <path>` | `OK SIZE <n>` followed immediately by `n` raw bytes of the file, or `ERR 404`. |
 | `DIR [path]` | multi-line `ENTRY NAME="..." TYPE=file\|dir SIZE= DATE="..."` records, then `COUNT=`. Without a path: the agent's current directory. |
 | `DELETE <path>` | `OK DELETED` |
@@ -164,7 +164,7 @@ is for a trusted development network only; there is still no authentication.
 | `JOBS` | multi-line `JOB ID= STATE=running\|done RC= OUTPUT="..." STARTED= ELAPSED= COMMAND="..."`, then `COUNT=` |
 | `JOB <n>` | one `JOB` record |
 | `WAIT <n> [secs]` | blocks up to `secs` (default 60, max 600) for job `n`; `OK RC <rc>` or `ERR 408 job still running`. The agent serves nothing else meanwhile. |
-| `REBOOT` | `OK REBOOTING`; the agent closes the connection and calls `ColdReboot()` half a second later. |
+| `REBOOT` | `OK REBOOTING`; the agent flushes `SYS:`, closes the connection and calls `ColdReboot()` half a second later. |
 
 Raw bodies are the only place bytes outside printable ASCII travel; the line
 parser resumes right after them. Paths are AROS paths (`SYS:`, `RAM:`, ...)

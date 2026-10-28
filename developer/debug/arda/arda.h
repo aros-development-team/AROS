@@ -53,6 +53,7 @@ struct ArdaClient
     ULONG   rawleft;
     ULONG   rawtotal;
     BOOL    rawfailed;
+    char    rawpath[200];                   /* for the flush when the body is complete */
 };
 
 /* control mode: a RUN job; the wrapper process writes rc and finished */
@@ -140,6 +141,7 @@ void  arda_ctl_exit(struct Arda *a);
 void  arda_ctl_poll(struct Arda *a);
 ULONG arda_ctl_raw_input(struct Arda *a, const char *data, ULONG n);
 void  arda_ctl_raw_abort(struct Arda *a);
+void  arda_ctl_flush(const char *path);
 void  arda_cmd_put(struct Arda *a, char *args);
 void  arda_cmd_get(struct Arda *a, char *args);
 void  arda_cmd_dir(struct Arda *a, char *args);
