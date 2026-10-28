@@ -1020,6 +1020,13 @@ static ULONG imsg_to_m68k(struct M68KEmuContext *ctx, struct IntuiMessage *imsg)
         if (ctx->shadow_map[s].native_ptr == (void *)imsg->IDCMPWindow && ctx->shadow_map[s].type == 1)
             { m68k_win = ctx->shadow_map[s].m68k_addr; break; }
     m68k_write32(ctx, mi + M68K_IMSG_IDCMPWINDOW, m68k_win);
+    /* the generated layout leaves out the fields between IAddress and
+       IDCMPWindow: programs hit-test with MouseX/MouseY and tell double
+       clicks apart with Seconds/Micros */
+    m68k_write16(ctx, mi + 32, (UWORD)imsg->MouseX);
+    m68k_write16(ctx, mi + 34, (UWORD)imsg->MouseY);
+    m68k_write32(ctx, mi + 36, imsg->Seconds);
+    m68k_write32(ctx, mi + 40, imsg->Micros);
     /* IAddress (offset 28): a gadget message names the program's own gadget */
     {
         ULONG mg = gadget_m68k(ctx, imsg->IAddress);
