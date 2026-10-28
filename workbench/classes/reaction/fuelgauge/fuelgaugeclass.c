@@ -26,6 +26,7 @@
 #include <string.h>
 
 #include "fuelgauge_intern.h"
+#include "../reaction_box.h"
 
 #define FuelGaugeBase ((struct Library *)(cl->cl_UserData))
 
@@ -221,10 +222,7 @@ IPTR FuelGauge__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     if (!rp)
         return FALSE;
 
-    x = gad->LeftEdge;
-    y = gad->TopEdge;
-    w = gad->Width;
-    h = gad->Height;
+    reaction_gadget_box(gad, msg->gpr_GInfo, &x, &y, &w, &h);
 
     /* Compute the filled portion */
     range = data->fgd_Max - data->fgd_Min;

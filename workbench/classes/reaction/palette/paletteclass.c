@@ -25,6 +25,7 @@
 #include <string.h>
 
 #include "palette_intern.h"
+#include "../reaction_box.h"
 
 #define PaletteBase ((struct Library *)(cl->cl_UserData))
 
@@ -144,10 +145,7 @@ IPTR Palette__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     if (!rp)
         return FALSE;
 
-    x = gad->LeftEdge;
-    y = gad->TopEdge;
-    w = gad->Width;
-    h = gad->Height;
+    reaction_gadget_box(gad, msg->gpr_GInfo, &x, &y, &w, &h);
 
     cols = data->pd_NumColors;
     if (cols == 0) cols = 1;

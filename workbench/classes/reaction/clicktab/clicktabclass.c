@@ -25,6 +25,7 @@
 #include <string.h>
 
 #include "clicktab_intern.h"
+#include "../reaction_box.h"
 
 #define ClickTabBase ((struct Library *)(cl->cl_UserData))
 
@@ -579,10 +580,7 @@ IPTR ClickTab__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     if (!rp)
         return FALSE;
 
-    x = gad->LeftEdge;
-    y = gad->TopEdge;
-    w = gad->Width;
-    h = gad->Height;
+    reaction_gadget_box(gad, msg->gpr_GInfo, &x, &y, &w, &h);
 
     /* Compute tab widths if not yet done */
     if (!data->td_TabWidths)
@@ -662,6 +660,21 @@ done:
         ReleaseGIRPort(rp);
 
     return TRUE;
+}
+
+/******************************************************************************/
+
+IPTR ClickTab__GM_HITTEST(Class *cl, Object *o, struct gpHitTest *msg)
+{
+    struct ClickTabData *data = INST_DATA(cl, o);
+    WORD th = data->td_TabHeight ? data->td_TabHeight : 18;
+
+    /* only the tab row: the rest of the box is the page group, whose
+       gadgets are in the window's list after us */
+    if (msg->gpht_Mouse.Y >= 0 && msg->gpht_Mouse.Y < th)
+        return GMR_GADGETHIT;
+
+    return 0;
 }
 
 /******************************************************************************/

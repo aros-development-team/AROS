@@ -27,11 +27,48 @@
 #include <string.h>
 
 #include "checkbox_intern.h"
+#include "../reaction_box.h"
 
 #define CheckboxBase ((struct Library *)(cl->cl_UserData))
 
 #define CHECKBOX_WIDTH  26
 #define CHECKBOX_HEIGHT 11
+#define CHECKBOX_GAP    6
+
+/* label text: an underscore marks the next character as the shortcut,
+   which is drawn underlined; the underscore itself is not drawn */
+static UWORD checkbox_text_width(struct RastPort *rp, STRPTR txt)
+{
+    UWORD w = 0;
+    for (; *txt; txt++)
+        if (*txt != '_')
+            w += TextLength(rp, txt, 1);
+    return w;
+}
+
+static void checkbox_draw_text(struct RastPort *rp, WORD x, WORD y, STRPTR txt)
+{
+    BOOL under = FALSE;
+    for (; *txt; txt++)
+    {
+        WORD cw;
+        if (*txt == '_' && !under)
+        {
+            under = TRUE;
+            continue;
+        }
+        cw = TextLength(rp, txt, 1);
+        Move(rp, x, y);
+        Text(rp, txt, 1);
+        if (under)
+        {
+            Move(rp, x, y + 1);
+            Draw(rp, x + cw - 1, y + 1);
+            under = FALSE;
+        }
+        x += cw;
+    }
+}
 
 /******************************************************************************/
 
@@ -177,10 +214,7 @@ IPTR CheckBox__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     if (!rp)
         return FALSE;
 
-    x = gad->LeftEdge;
-    y = gad->TopEdge;
-    w = gad->Width;
-    h = gad->Height;
+    reaction_gadget_box(gad, msg->gpr_GInfo, &x, &y, &w, &h);
 
     /* Clear gadget area */
     SetAPen(rp, dri ? dri->dri_Pens[BACKGROUNDPEN] : 0);
@@ -200,7 +234,7 @@ IPTR CheckBox__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
         if (!data->cd_BevelImage)
         {
             data->cd_BevelImage = NewObject(NULL, "bevel.image",
-                BEVEL_Style, BVS_FIELD,
+                BEVEL_Style, BVS_BUTTON,
                 TAG_END);
         }
         if (data->cd_BevelImage)
@@ -210,7 +244,7 @@ IPTR CheckBox__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
             idmsg.imp_RPort        = rp;
             idmsg.imp_Offset.X     = bx;
             idmsg.imp_Offset.Y     = by;
-            idmsg.imp_State        = data->cd_Checked ? IDS_SELECTED : IDS_NORMAL;
+            idmsg.imp_State        = IDS_NORMAL;
             idmsg.imp_DrInfo       = dri;
             idmsg.imp_Dimensions.Width  = bw;
             idmsg.imp_Dimensions.Height = bh;
@@ -218,19 +252,17 @@ IPTR CheckBox__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
         }
     }
 
-    /* Draw checkmark if checked */
+    /* Draw the checkmark: a tick, two pixels wide, in the text pen */
     if (data->cd_Checked && dri)
     {
-        UWORD pen = dri->dri_Pens[FILLPEN];
-        SetAPen(rp, pen);
-        Move(rp, bx + 4, by + 3);
-        Draw(rp, bx + bw - 5, by + bh - 4);
-        Move(rp, bx + bw - 5, by + 3);
-        Draw(rp, bx + 4, by + bh - 4);
-        Move(rp, bx + 5, by + 3);
-        Draw(rp, bx + bw - 4, by + bh - 4);
-        Move(rp, bx + bw - 4, by + 3);
-        Draw(rp, bx + 5, by + bh - 4);
+        WORD l = bx + (bw - 14) / 2, t = by + (bh - 7) / 2, i;
+        SetAPen(rp, dri->dri_Pens[TEXTPEN]);
+        for (i = 0; i < 2; i++)
+        {
+            Move(rp, l + i, t + 3);
+            Draw(rp, l + 3 + i, t + 6);
+            Draw(rp, l + 13 + i - 1, t);
+        }
     }
 
     /* Draw label text from gadget text (BOOPSI stores GA_Text as STRPTR) */
@@ -251,12 +283,12 @@ IPTR CheckBox__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
         if (data->cd_3DLabel && !(gad->Flags & GFLG_DISABLED) && dri)
         {
             SetAPen(rp, dri->dri_Pens[SHINEPEN]);
-            Move(rp, bx + bw + 7, by + rp->TxBaseline + 1);
-            Text(rp, txt, strlen(txt));
+            checkbox_draw_text(rp, bx + bw + CHECKBOX_GAP + 1,
+                               y + (h - rp->TxHeight) / 2 + rp->TxBaseline + 1, txt);
             SetAPen(rp, pen);
         }
-        Move(rp, bx + bw + 6, by + rp->TxBaseline);
-        Text(rp, txt, strlen(txt));
+        checkbox_draw_text(rp, bx + bw + CHECKBOX_GAP,
+                           y + (h - rp->TxHeight) / 2 + rp->TxBaseline, txt);
     }
 
     /* Disabled rendering */
@@ -319,4 +351,35 @@ IPTR CheckBox__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
     D(bug("[CheckBox] GM_HANDLEINPUT: obj=%p\n", (void *)o));
 
     return GMR_MEACTIVE;
+}
+
+/******************************************************************************/
+
+IPTR CheckBox__GM_DOMAIN(Class *cl, Object *o, struct gpDomain *msg)
+{
+    struct Gadget *gad = G(o);
+    struct TextFont *font = NULL;
+    UWORD w = CHECKBOX_WIDTH, h = CHECKBOX_HEIGHT;
+
+    if (msg->gpd_GInfo && msg->gpd_GInfo->gi_DrInfo)
+        font = msg->gpd_GInfo->gi_DrInfo->dri_Font;
+    if (!font && msg->gpd_RPort)
+        font = msg->gpd_RPort->Font;
+    if (font)
+    {
+        if (gad->GadgetText)
+        {
+            struct RastPort rp;
+            InitRastPort(&rp);
+            SetFont(&rp, font);
+            w += CHECKBOX_GAP + checkbox_text_width(&rp, (STRPTR)gad->GadgetText);
+        }
+        if (font->tf_YSize + 2 > h)
+            h = font->tf_YSize + 2;
+    }
+    msg->gpd_Domain.Left   = 0;
+    msg->gpd_Domain.Top    = 0;
+    msg->gpd_Domain.Width  = w;
+    msg->gpd_Domain.Height = h;
+    return TRUE;
 }

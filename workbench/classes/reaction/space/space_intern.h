@@ -36,6 +36,7 @@ struct SpaceData
     UWORD           sd_MinHeight;       /* Minimum height */
     ULONG           sd_BevelStyle;      /* Bevel style */
     BOOL            sd_Transparent;     /* Transparent background */
+    struct IBox     sd_AreaBox;         /* SPACE_AreaBox */
 };
 
 #endif /* SPACE_INTERN_H */
