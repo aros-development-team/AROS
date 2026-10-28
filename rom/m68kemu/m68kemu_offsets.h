@@ -257,6 +257,12 @@
 #define HUNK_BSS                    0x3EB
 #define HUNK_RELOC32                0x3EC
 #define HUNK_END                    0x3F2
+#define HUNK_NAME                   0x3E8
+#define HUNK_SYMBOL                 0x3F0
+#define HUNK_DEBUG                  0x3F1
+#define HUNK_DREL32                 0x3F7
+#define HUNK_RELOC32SHORT           0x3FC
+#define HUNK_RELRELOC32             0x3FD
 #define HUNK_TYPE_MASK              0x3FFFFFFF
 
 /* ── Function table terminator ───────────────────────────────────── */

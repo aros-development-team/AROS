@@ -597,6 +597,7 @@ ULONG M68KEmu_LoadHunksFromMemory(struct M68KEmuContext *ctx, UBYTE *data, LONG 
     ULONG magic, num_hunks, first, last;
     ULONG *hunk_sizes = NULL;
     ULONG *hunk_addrs = NULL;
+    ULONG *hunk_reqs = NULL;
     ULONG i, entry_point = 0;
 
     if (p + 4 > end) return 0;
@@ -622,19 +623,34 @@ ULONG M68KEmu_LoadHunksFromMemory(struct M68KEmuContext *ctx, UBYTE *data, LONG 
     /* Read hunk sizes (in longwords) */
     hunk_sizes = (ULONG *)AllocMem(num_hunks * sizeof(ULONG), MEMF_CLEAR);
     hunk_addrs = (ULONG *)AllocMem(num_hunks * sizeof(ULONG), MEMF_CLEAR);
-    if (!hunk_sizes || !hunk_addrs) goto fail;
+    hunk_reqs  = (ULONG *)AllocMem(num_hunks * sizeof(ULONG), MEMF_CLEAR);
+    if (!hunk_sizes || !hunk_addrs || !hunk_reqs) goto fail;
 
     for (i = 0; i < num_hunks; i++)
     {
+        ULONG v, reqs;
+
         if (p + 4 > end) goto fail;
-        hunk_sizes[i] = (rd32(&p) & HUNK_TYPE_MASK) * 4; /* mask off MEMF flags */
+        v = rd32(&p);
+        /* bits 30/31: Chip or Fast RAM; both set, the requirements follow */
+        reqs = (v >> 30) == 1 ? MEMF_CHIP : (v >> 30) == 2 ? MEMF_FAST : 0;
+        if ((v >> 30) == 3)
+        {
+            if (p + 4 > end) goto fail;
+            reqs = rd32(&p) & (MEMF_CHIP | MEMF_FAST);
+        }
+        hunk_sizes[i] = (v & HUNK_TYPE_MASK) * 4;
+        hunk_reqs[i] = reqs;
     }
 
-    /* Allocate space for each hunk in containment memory */
+    /* Allocate space for each hunk in containment memory, cleared: BSS and
+       the part of a hunk its block does not fill read as zero */
     for (i = 0; i < num_hunks; i++)
     {
-        ULONG addr = M68KEmu_HeapAlloc(ctx, hunk_sizes[i], 0);
+        ULONG addr = M68KEmu_HeapAlloc(ctx, hunk_sizes[i], hunk_reqs[i]);
+        if (!addr && hunk_reqs[i]) addr = M68KEmu_HeapAlloc(ctx, hunk_sizes[i], 0);
         if (!addr) goto fail;
+        memset(ctx->mem + addr, 0, hunk_sizes[i]);
         hunk_addrs[i] = addr;
         if (i == 0) entry_point = addr;
     }
@@ -648,9 +664,9 @@ ULONG M68KEmu_LoadHunksFromMemory(struct M68KEmuContext *ctx, UBYTE *data, LONG 
         if (type == HUNK_CODE || type == HUNK_DATA)
         {
             if (p + 4 > end) goto fail;
-            ULONG longs = rd32(&p);
+            ULONG longs = rd32(&p) & HUNK_TYPE_MASK;
             ULONG bytes = longs * 4;
-            if (p + bytes > end || i >= num_hunks) goto fail;
+            if (p + bytes > end || i >= num_hunks || bytes > hunk_sizes[i]) goto fail;
 
             /* Copy data into containment space */
             memcpy(m68k_to_host(ctx, hunk_addrs[i]), p, bytes);
@@ -686,14 +702,68 @@ ULONG M68KEmu_LoadHunksFromMemory(struct M68KEmuContext *ctx, UBYTE *data, LONG 
                 }
             }
         }
+        else if (type == HUNK_RELOC32SHORT || type == HUNK_DREL32 || type == HUNK_RELRELOC32)
+        {
+            /* 16-bit counts, hunk numbers and offsets, padded to a long;
+               RELRELOC32 adds the distance to the target hunk */
+            const UBYTE *start = p;
+            for (;;)
+            {
+                ULONG count, ref_hunk, j;
+
+                if (p + 2 > end) goto fail;
+                count = (p[0] << 8) | p[1]; p += 2;
+                if (count == 0) break;
+                if (p + 2 > end) goto fail;
+                ref_hunk = (p[0] << 8) | p[1]; p += 2;
+                if (ref_hunk >= num_hunks || i >= num_hunks) goto fail;
+                for (j = 0; j < count; j++)
+                {
+                    ULONG offset;
+
+                    if (p + 2 > end) goto fail;
+                    offset = (p[0] << 8) | p[1]; p += 2;
+                    if (offset + 3 < hunk_sizes[i])
+                    {
+                        ULONG addr = hunk_addrs[i] + offset;
+                        ULONG add = type == HUNK_RELRELOC32 ? hunk_addrs[ref_hunk] - hunk_addrs[i] : hunk_addrs[ref_hunk];
+                        m68k_write32(ctx, addr, m68k_read32(ctx, addr) + add);
+                    }
+                }
+            }
+            if ((p - start) & 2)
+                p += 2;
+        }
+        else if (type == HUNK_SYMBOL)
+        {
+            for (;;)
+            {
+                ULONG n;
+
+                if (p + 4 > end) goto fail;
+                n = rd32(&p) & 0x00FFFFFF;
+                if (n == 0) break;
+                if (p + 4 * (n + 1) > end) goto fail;
+                p += 4 * (n + 1);
+            }
+        }
+        else if (type == HUNK_DEBUG || type == HUNK_NAME)
+        {
+            ULONG n;
+
+            if (p + 4 > end) goto fail;
+            n = rd32(&p);
+            if (p + 4 * n > end) goto fail;
+            p += 4 * n;
+        }
         else if (type == HUNK_END)
         {
             i++;
         }
         else
         {
-            /* Unknown hunk type — skip */
-            break;
+            m68k_log(ctx, "hunk file: block type %lx is not supported", (unsigned long)type);
+            goto fail;
         }
     }
 
@@ -712,6 +782,7 @@ ULONG M68KEmu_LoadHunksFromMemory(struct M68KEmuContext *ctx, UBYTE *data, LONG 
 
     FreeMem(hunk_sizes, num_hunks * sizeof(ULONG));
     FreeMem(hunk_addrs, num_hunks * sizeof(ULONG));
+    FreeMem(hunk_reqs, num_hunks * sizeof(ULONG));
     return entry_point;
 
 fail:
@@ -723,6 +794,7 @@ fail:
         FreeMem(hunk_addrs, num_hunks * sizeof(ULONG));
     }
     if (hunk_sizes) FreeMem(hunk_sizes, num_hunks * sizeof(ULONG));
+    if (hunk_reqs) FreeMem(hunk_reqs, num_hunks * sizeof(ULONG));
     return 0;
 }
 
