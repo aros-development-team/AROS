@@ -70,6 +70,10 @@ IPTR m68k_utility_RefreshTagItemClones(struct M68KEmuContext *ctx, void *cpu);
 IPTR m68k_utility_TagInArray(struct M68KEmuContext *ctx, void *cpu);
 IPTR m68k_utility_FilterTagItems(struct M68KEmuContext *ctx, void *cpu);
 IPTR m68k_utility_CallHookPkt(struct M68KEmuContext *ctx, void *cpu);
+IPTR m68k_utility_SDivMod32(struct M68KEmuContext *ctx, void *cpu);
+IPTR m68k_utility_UDivMod32(struct M68KEmuContext *ctx, void *cpu);
+IPTR m68k_utility_SMult64(struct M68KEmuContext *ctx, void *cpu);
+IPTR m68k_utility_UMult64(struct M68KEmuContext *ctx, void *cpu);
 extern const struct M68KThunkEntry m68kemu_cx_manual[];
 extern const ULONG m68kemu_cx_manual_count;
 

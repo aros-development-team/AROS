@@ -4944,11 +4944,15 @@ const struct M68KThunkEntry m68kemu_thunks_utility_manual[] = {
     { 90, m68k_utility_TagInArray },
     { 96, m68k_utility_FilterTagItems },
     { 102, m68k_utility_CallHookPkt },
+    { 150, m68k_utility_SDivMod32 },
+    { 156, m68k_utility_UDivMod32 },
+    { 198, m68k_utility_SMult64 },
+    { 204, m68k_utility_UMult64 },
     { 120, thunk_utility_Amiga2Date_m },
     { 126, thunk_utility_Date2Amiga_m },
     { 132, thunk_utility_CheckDate_m },
 };
-const ULONG m68kemu_thunks_utility_manual_count = 16;
+const ULONG m68kemu_thunks_utility_manual_count = sizeof(m68kemu_thunks_utility_manual) / sizeof(m68kemu_thunks_utility_manual[0]);
 
 /* -900: GetRGB32(A0=cm, D0=first, D1=ncolors, A1=table): the table is m68k longs */
 static IPTR thunk_gfx_GetRGB32(struct M68KEmuContext *ctx, void *cpu)

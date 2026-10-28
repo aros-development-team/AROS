@@ -260,4 +260,43 @@ T(m68k_utility_CallHookPkt)
     return 0;
 }
 
+/* -150 SDivMod32, -156 UDivMod32 (D0=dividend, D1=divisor): the quotient
+   in D0 and the remainder in D1 */
+T(m68k_utility_SDivMod32)
+{
+    LONG a = (LONG)M68KEmu_GetD(cpu, 0), b = (LONG)M68KEmu_GetD(cpu, 1);
+    (void)ctx;
+    if (!b)
+        return 0;
+    M68KEmu_SetD(cpu, 1, (ULONG)(a % b));
+    return (ULONG)(a / b);
+}
+
+T(m68k_utility_UDivMod32)
+{
+    ULONG a = M68KEmu_GetD(cpu, 0), b = M68KEmu_GetD(cpu, 1);
+    (void)ctx;
+    if (!b)
+        return 0;
+    M68KEmu_SetD(cpu, 1, a % b);
+    return a / b;
+}
+
+/* -198 SMult64, -204 UMult64 (D0, D1): the 64-bit product, high half in D0 */
+T(m68k_utility_SMult64)
+{
+    QUAD p = (QUAD)(LONG)M68KEmu_GetD(cpu, 0) * (QUAD)(LONG)M68KEmu_GetD(cpu, 1);
+    (void)ctx;
+    M68KEmu_SetD(cpu, 1, (ULONG)p);
+    return (ULONG)((UQUAD)p >> 32);
+}
+
+T(m68k_utility_UMult64)
+{
+    UQUAD p = (UQUAD)M68KEmu_GetD(cpu, 0) * (UQUAD)M68KEmu_GetD(cpu, 1);
+    (void)ctx;
+    M68KEmu_SetD(cpu, 1, (ULONG)p);
+    return (ULONG)(p >> 32);
+}
+
 #undef T
