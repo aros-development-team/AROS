@@ -192,6 +192,7 @@ static ULONG diskobj_out(struct M68KEmuContext *ctx, struct DiskObject *d)
         M68KEmu_HeapFree(ctx, m, size);
         return 0;
     }
+    memset(&ctx->icons[ctx->num_icons], 0, sizeof(ctx->icons[0]));
     ctx->icons[ctx->num_icons].m68k = m;
     ctx->icons[ctx->num_icons].native = d;
     ctx->icons[ctx->num_icons].size = size;
@@ -212,6 +213,13 @@ static void diskobj_forget(struct M68KEmuContext *ctx, ULONG m)
     for (ULONG i = 0; i < ctx->num_icons; i++)
         if (ctx->icons[i].m68k == m)
         {
+            for (int k = 0; k < 2; k++)
+            {
+                if (ctx->icons[i].img[k])
+                    M68KEmu_HeapFree(ctx, ctx->icons[i].img[k], ctx->icons[i].imgsize[k]);
+                if (ctx->icons[i].pal[k])
+                    M68KEmu_HeapFree(ctx, ctx->icons[i].pal[k], ctx->icons[i].palsize[k]);
+            }
             shadow_remove(ctx, m);
             M68KEmu_HeapFree(ctx, m, ctx->icons[i].size);
             ctx->icons[i] = ctx->icons[--ctx->num_icons];
@@ -488,11 +496,41 @@ T(ic_PutIconTagList)
     return r;
 }
 
+/* a chunky image or palette of an icon, copied once into the program's memory */
+static ULONG icon_data_out(struct M68KEmuContext *ctx, ULONG m, struct DiskObject *d, ULONG tag)
+{
+    BOOL pal = (tag == ICONCTRLA_GetPalette1 || tag == ICONCTRLA_GetPalette2);
+    int k = (tag == ICONCTRLA_GetImageData2 || tag == ICONCTRLA_GetPalette2) ? 1 : 0;
+    IPTR data = 0, w = 0, h = 0, n = 0;
+    ULONG i, size, c;
+
+    for (i = 0; i < ctx->num_icons; i++)
+        if (ctx->icons[i].m68k == m)
+            break;
+    if (i == ctx->num_icons)
+        return 0;
+    if (pal ? ctx->icons[i].pal[k] : ctx->icons[i].img[k])
+        return pal ? ctx->icons[i].pal[k] : ctx->icons[i].img[k];
+    {
+        struct TagItem t[] = {
+            { tag, (IPTR)&data }, { ICONCTRLA_GetWidth, (IPTR)&w }, { ICONCTRLA_GetHeight, (IPTR)&h },
+            { k ? ICONCTRLA_GetPaletteSize2 : ICONCTRLA_GetPaletteSize1, (IPTR)&n }, { TAG_DONE, 0 } };
+        IconControlA(d, t);
+    }
+    size = pal ? 3 * (ULONG)n : (ULONG)(w * h);
+    if (!data || !size || size > 0x100000 || !(c = M68KEmu_HeapAlloc(ctx, size, 0)))
+        return 0;
+    memcpy(ctx->mem + c, (APTR)data, size);
+    if (pal) { ctx->icons[i].pal[k] = c; ctx->icons[i].palsize[k] = size; }
+    else     { ctx->icons[i].img[k] = c; ctx->icons[i].imgsize[k] = size; }
+    return c;
+}
+
 /* -156: IconControlA(A0=icon, A1=tags) */
 T(ic_IconControlA)
 {
     struct icon_tags it;
-    ULONG m = M68KEmu_GetA(cpu, 0);
+    ULONG m = M68KEmu_GetA(cpu, 0), state, ti;
     struct DiskObject *d = m ? diskobj_in(ctx, m) : NULL;
     IPTR r;
 
@@ -500,6 +538,15 @@ T(ic_IconControlA)
         return 0;
     r = IconControlA(d, icon_tags_in(ctx, M68KEmu_GetA(cpu, 1), &it));
     icon_tags_out(ctx, &it);
+    /* the chunky images and palettes, which icon_tags_in answered with 0 */
+    for (state = M68KEmu_GetA(cpu, 1); d && (ti = m68k_next_tag(ctx, &state)); )
+    {
+        ULONG tag = m68k_read32(ctx, ti), store = m68k_read32(ctx, ti + 4);
+        if ((tag == ICONCTRLA_GetImageData1 || tag == ICONCTRLA_GetImageData2 ||
+             tag == ICONCTRLA_GetPalette1 || tag == ICONCTRLA_GetPalette2) &&
+            store && store + 4 <= ctx->mem_size)
+            m68k_write32(ctx, store, icon_data_out(ctx, m, d, tag));
+    }
     return r;
 }
 

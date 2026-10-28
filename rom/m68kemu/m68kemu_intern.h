@@ -179,7 +179,7 @@ struct M68KEmuContext
     struct { APTR native; ULONG m68k; } tagorigin[8];   /* native copies of the program's tag lists in use */
     UWORD   num_tagorigin;
     struct { APTR font; ULONG name; } fontnames[16];   /* 68k copies of font names */
-    struct { ULONG m68k; struct DiskObject *native; ULONG size; } icons[64];   /* DiskObjects in 68k layout */
+    struct { ULONG m68k; struct DiskObject *native; ULONG size; ULONG img[2], imgsize[2], pal[2], palsize[2]; } icons[64];   /* DiskObjects in 68k layout */
     ULONG   num_icons;
     struct { CONST_STRPTR native; ULONG m68k, size; } strcache[64];   /* native strings given to the program */
     ULONG   strcache_pos;
