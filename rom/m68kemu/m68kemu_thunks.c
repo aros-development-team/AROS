@@ -4645,14 +4645,42 @@ static IPTR thunk_gadtools_CreateMenusA_t(struct M68KEmuContext *ctx, void *cpu)
     return first;
 }
 
+static BOOL textattr_in(struct M68KEmuContext *ctx, ULONG m68k_ta, struct TextAttr *ta);
+
+/* the layout tags with GTMN_TextAttr in the native layout (*ta holds it) */
+static struct TagItem *menu_layout_tags(struct M68KEmuContext *ctx, ULONG mtags, struct TextAttr *ta)
+{
+    struct TagItem *tags = m68k_to_native_taglist(ctx, mtags), *ti;
+    ULONG p = mtags, mta = 0, guard = 0;
+
+    if (!tags || !(ti = FindTagItem(GTMN_TextAttr, tags)))
+        return tags;
+    /* the generic copy handed out m68k memory: find the m68k pointer again */
+    while (p && guard++ < 2048)
+    {
+        ULONG tag = m68k_read32(ctx, p), v = m68k_read32(ctx, p + 4);
+        if (tag == TAG_DONE) break;
+        if (tag == TAG_MORE) { p = v; continue; }
+        if (tag == TAG_SKIP) { p += 8 * (v + 1); continue; }
+        if (tag == GTMN_TextAttr) { mta = v; break; }
+        p += 8;
+    }
+    if (textattr_in(ctx, mta, ta))
+        ti->ti_Data = (IPTR)ta;
+    else
+        ti->ti_Tag = TAG_IGNORE;
+    return tags;
+}
+
 /* -66: LayoutMenusA(A0=firstmenu, A1=vi, A2=tags) / -60: LayoutMenuItemsA(A0=firstitem, ...) */
 static IPTR thunk_gadtools_LayoutMenusA_t(struct M68KEmuContext *ctx, void *cpu)
 {
     struct Menu *m = (struct Menu *)gt_native_of(ctx, THUNK_A(0));
     struct TagItem *tags;
+    struct TextAttr ta;
     BOOL ok;
     if (!m) return FALSE;
-    tags = m68k_to_native_taglist(ctx, THUNK_A(2));
+    tags = menu_layout_tags(ctx, THUNK_A(2), &ta);
     ok = LayoutMenusA(m, m68k_to_host_or_shadow(ctx, THUNK_A(1)), tags);
     if (tags) FreeVec(tags);
     gt_sync_mirror(ctx, m);
@@ -4664,11 +4692,12 @@ static IPTR thunk_gadtools_LayoutMenuItemsA_t(struct M68KEmuContext *ctx, void *
     ULONG i;
     struct MenuItem *it = NULL;
     struct TagItem *tags;
+    struct TextAttr ta;
     BOOL ok;
     for (i = 0; i < ctx->num_menumap; i++)
         if (ctx->menumap[i].m68k == THUNK_A(0) && !ctx->menumap[i].is_menu) it = ctx->menumap[i].native;
     if (!it) return FALSE;
-    tags = m68k_to_native_taglist(ctx, THUNK_A(2));
+    tags = menu_layout_tags(ctx, THUNK_A(2), &ta);
     ok = LayoutMenuItemsA(it, m68k_to_host_or_shadow(ctx, THUNK_A(1)), tags);
     if (tags) FreeVec(tags);
     return ok;
