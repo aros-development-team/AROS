@@ -55,6 +55,7 @@ IPTR m68k_GetAttr(struct M68KEmuContext *ctx, void *cpu);
 IPTR m68k_SetGadgetAttrsA(struct M68KEmuContext *ctx, void *cpu);
 IPTR m68k_DoGadgetMethodA(struct M68KEmuContext *ctx, void *cpu);
 static IPTR thunk_exec_Allocate_m(struct M68KEmuContext *ctx, void *cpu);
+static IPTR thunk_exec_AllocAbs_m(struct M68KEmuContext *ctx, void *cpu);
 static IPTR thunk_exec_Deallocate_m(struct M68KEmuContext *ctx, void *cpu);
 
 /* Open a library by name and return its fake base (no cpu needed) */
@@ -1327,6 +1328,7 @@ const struct M68KThunkEntry m68kemu_thunks_exec[] = {
     { 690, thunk_exec_FreeVec },
     { 216, thunk_exec_AvailMem },
     { 186, thunk_exec_Allocate_m },
+    { 204, thunk_exec_AllocAbs_m },
     { 192, thunk_exec_Deallocate_m },
     { 384, thunk_exec_WaitPort },
     { 372, thunk_exec_GetMsg },
@@ -3479,6 +3481,13 @@ static IPTR thunk_gfx_LoadRGB4(struct M68KEmuContext *ctx, void *cpu)
     LoadRGB4(vp, native_colors, count);
     FreeMem(native_colors, count * sizeof(UWORD));
     return 0;
+}
+
+/* exec -204: AllocAbs(D0=byteSize, A1=location): in the program's memory,
+   never at the host address of the same value */
+static IPTR thunk_exec_AllocAbs_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    return M68KEmu_HeapAllocAbs(ctx, THUNK_D(0), THUNK_A(1));
 }
 
 /* Allocate() and Deallocate() on a MemHeader the program built in its own

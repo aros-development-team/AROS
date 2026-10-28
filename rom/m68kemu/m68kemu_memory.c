@@ -111,6 +111,55 @@ ULONG M68KEmu_HeapLargest(struct M68KEmuContext *ctx)
     return largest > M68KEMU_HEAP_HDR ? largest - M68KEMU_HEAP_HDR : 0;
 }
 
+/* AllocAbs(): the block at a fixed address, header included, if that range
+   is free; 0 otherwise, as exec answers for memory that is taken or absent */
+ULONG M68KEmu_HeapAllocAbs(struct M68KEmuContext *ctx, ULONG size, ULONG addr)
+{
+    ULONG blk, end, prev = 0, cur;
+
+    if (!size || addr < ctx->heap_start + M68KEMU_HEAP_HDR || addr >= ctx->heap_end)
+        return 0;
+    blk = (addr - M68KEMU_HEAP_HDR) & ~3u;
+    end = (addr + size + 3) & ~3u;
+
+    for (cur = ctx->heap_free; cur; prev = cur, cur = m68k_read32(ctx, cur + FB_NEXT))
+    {
+        ULONG csize = m68k_read32(ctx, cur + FB_SIZE), cend = cur + csize;
+        ULONG next = m68k_read32(ctx, cur + FB_NEXT);
+
+        if (blk < cur || end > cend)
+            continue;
+        /* the part after the block stays free, if big enough */
+        if (cend - end >= M68KEMU_HEAP_MIN_SPLIT)
+        {
+            m68k_write32(ctx, end + FB_NEXT, next);
+            m68k_write32(ctx, end + FB_SIZE, cend - end);
+            next = end;
+        }
+        else
+            end = cend;
+        /* and so does the part before it */
+        if (blk - cur >= M68KEMU_HEAP_MIN_SPLIT)
+        {
+            m68k_write32(ctx, cur + FB_SIZE, blk - cur);
+            m68k_write32(ctx, cur + FB_NEXT, next);
+        }
+        else
+        {
+            blk = cur;
+            if (prev)
+                m68k_write32(ctx, prev + FB_NEXT, next);
+            else
+                ctx->heap_free = next;
+        }
+        m68k_write32(ctx, blk, end - blk);
+        ctx->heap_avail -= end - blk;
+        heap_publish(ctx);
+        return addr;
+    }
+    return 0;
+}
+
 /* Free blocks are Amiga MemChunks (next, size), so the free list is the
    MemHeader's chunk list; an allocated block starts with its size. */
 ULONG M68KEmu_HeapAlloc(struct M68KEmuContext *ctx, ULONG size, ULONG requirements)
