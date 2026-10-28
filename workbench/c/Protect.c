@@ -33,6 +33,7 @@
                     S - Script
                     P - Pure
                     A - Archive
+                    H - Hold
                     R - Read
                     W - Write
                     E - Execute
@@ -41,13 +42,24 @@
         ADD    --  Allows the bits to be set and hence allowable.
         SUB    --  Allows the bits to be cleared and hence not allowable.
         ALL    --  Allows a recursive scan of the volume/directory.
-        QUIET  --  Suppresses any output to the shell.
+        QUIET  --  Suppresses progress output; errors are still reported.
+        GROUP  --  Group RWED permissions, available with security.library.
+                  Prefix + to add, - to remove; otherwise replace.
+        OTHER  --  Other-user RWED permissions, with the same syntax.
 
     RESULT
 
         Standard DOS return codes.
 
     NOTES
+
+        Owner RWED bits are active low; group and other RWED bits
+        are active high. Without ADD or SUB, FLAGS replace the protection
+        word supplied to dos.library/SetProtection(). When FLAGS and
+        GROUP/OTHER are omitted, owner RWED is denied. With
+        security.library resident, DOS applies its normal
+        LIMITDOSSETPROTECTION policy to group/other rights.
+        Explicit GROUP/OTHER changes use secSetProtection().
 
     EXAMPLE
 
@@ -90,12 +102,22 @@ static LONG grpMask = 0, otrMask = 0;       /* FIBF_GRP_#? / FIBF_OTR_#? bits to
 static BOOL grpSet = FALSE, otrSet = FALSE;
 static BOOL grpAdd = FALSE, grpSub = FALSE, otrAdd = FALSE, otrSub = FALSE;
 
-/* Parse "[+|-]rwed" into active-high bits shifted to 'shift' */
+/* Parse one GROUP/OTHER RWED argument into the active-high FIBF mask.
+ * A leading '+' or '-' selects additive or subtractive updates; an absent
+ * prefix requests replacement. Empty and invalid flag lists are rejected.
+ * Caller supplies the relevant group/other bit offset and output storage.
+ * Returns FALSE after reporting invalid input, without changing a file.
+ */
 static BOOL parseRWED(STRPTR s, LONG shift, LONG *mask, BOOL *add, BOOL *sub)
 {
     *mask = 0;
     if (*s == '+') { *add = TRUE; s++; }
     else if (*s == '-') { *sub = TRUE; s++; }
+    if (!*s)
+    {
+        Printf("GROUP/OTHER flags must contain at least one of RWED\n");
+        return FALSE;
+    }
     for (; *s; s++)
     {
         switch (ToUpper(*s))
@@ -111,12 +133,6 @@ static BOOL parseRWED(STRPTR s, LONG shift, LONG *mask, BOOL *add, BOOL *sub)
     }
     return TRUE;
 }
-
-#define CTRL_C         (SetSignal(0L,0L) & SIGBREAKF_CTRL_C)
-
-#define Bit_Mask(bit)           (1L << bit)
-#define Bit_Clear(name, bit)    name &= ~Bit_Mask(bit)
-#define Bit_Set(name, bit)      name |= Bit_Mask(bit)
 
 #define ARG_TEMPLATE    "FILE/A,FLAGS,ADD/S,SUB/S,ALL/S,QUIET/S,GROUP/K,OTHER/K"
 
@@ -141,16 +157,9 @@ enum
 };
 
 
-/* To define whether a command line switch was set or not.
- */
-#define NOT_SET(x)      (x == 0)
-#define IS_SET(x)       (!NOT_SET(x))
-
 #define MAX_PATH_LEN    512
 
-const TEXT version[] = "$VER: Protect 41.1 (2.12.2000)\n";
-
-int Do_Protect(struct AnchorPath *, STRPTR, STRPTR, BOOL, BOOL, BOOL, BOOL);
+const TEXT version[] = "$VER: Protect 41.2 (28.10.2026)\n";
 
 int doProtect(struct AnchorPath *ap, STRPTR file, LONG flags, BOOL flagsSet,
               BOOL add, BOOL sub, BOOL all, BOOL quiet);
@@ -159,6 +168,10 @@ BOOL setProtection(STRPTR file, LONG oldFlags, LONG flags, BOOL flagsSet,
 
 int __nocommandline;
 
+/* The Shell entry point uses the Protect command contract documented above.
+ * Parse errors return RETURN_FAIL before directory matching or mutation;
+ * the optional security.library handle is closed on every exit path.
+ */
 int main(void)
 {
     struct RDArgs     *rda;
@@ -180,6 +193,7 @@ int main(void)
     {
         /* Make sure DOS knows the buffer size. */
         apath->ap_Strlen = MAX_PATH_LEN;
+        apath->ap_BreakBits = SIGBREAKF_CTRL_C;
 
         rda = ReadArgs(ARG_TEMPLATE, args, NULL);
 
@@ -191,21 +205,25 @@ int main(void)
             BOOL    sub = (BOOL)args[ARG_SUB];
             BOOL    all = (BOOL)args[ARG_ALL];
             BOOL    quiet = (BOOL)args[ARG_QUIET];
+            BOOL    hasFlags = FALSE;
 
-            /* GROUP/OTHER only exist on multi-user systems (security.library resident) */
-            if (FindResident(SECURITYNAME))
-                secBase = OpenLibrary(SECURITYNAME, 0);
-            if ((args[ARG_GROUP] || args[ARG_OTHER]) && !secBase)
+            /* Only explicit GROUP/OTHER changes need the unrestricted API. */
+            if (args[ARG_GROUP] || args[ARG_OTHER])
             {
-                Printf("GROUP and OTHER require security.library (multi-user system)\n");
-                retval = RETURN_FAIL;
+                if (FindResident(SECURITYNAME))
+                    secBase = OpenLibrary(SECURITYNAME, 0);
+                if (!secBase)
+                {
+                    Printf("GROUP and OTHER require security.library (multi-user system)\n");
+                    retval = RETURN_FAIL;
+                }
             }
-            else if (args[ARG_GROUP])
+            if (retval == RETURN_OK && args[ARG_GROUP])
             {
                 grpSet = parseRWED((STRPTR)args[ARG_GROUP], FIBB_GRP_DELETE, &grpMask, &grpAdd, &grpSub);
                 if (!grpSet) retval = RETURN_FAIL;
             }
-            if (args[ARG_OTHER] && secBase)
+            if (retval == RETURN_OK && args[ARG_OTHER])
             {
                 otrSet = parseRWED((STRPTR)args[ARG_OTHER], FIBB_OTR_DELETE, &otrMask, &otrAdd, &otrSub);
                 if (!otrSet) retval = RETURN_FAIL;
@@ -275,6 +293,7 @@ int main(void)
                             retval = RETURN_FAIL;
                     }
 
+                    if (retval == RETURN_OK) hasFlags = TRUE;
                     flags++;
                 } /* while (*flags != 0) */
             }
@@ -282,6 +301,11 @@ int main(void)
             if (add && sub)
             {
                 Printf("ADD and SUB are mutually exclusive\n");
+                retval = RETURN_FAIL;
+            }
+            if ((add || sub) && !hasFlags && !grpSet && !otrSet)
+            {
+                Printf("ADD or SUB requires protection flags\n");
                 retval = RETURN_FAIL;
             }
 
@@ -313,9 +337,15 @@ int main(void)
     }
     else
     {
+        PrintFault(ERROR_NO_FREE_STORE, "Protect");
         retval = RETURN_FAIL;
     }
 
+    if (secBase)
+    {
+        CloseLibrary(secBase);
+        secBase = NULL;
+    }
     FreeVec(apath);
 
     return retval;
@@ -323,87 +353,102 @@ int main(void)
 
 #define  isDir(fib) ((fib)->fib_DirEntryType >= 0)
 
+/* Walk the DOS pattern rooted at file and update each matched entry.
+ * ap owns the AnchorPath storage and is passed to MatchFirst/MatchNext;
+ * MatchEnd releases the matching state before returning. When all is set,
+ * request traversal of matched directories via APF_DODIR.
+ * Stop on the first SetProtection failure, matching failure or Ctrl-C;
+ * return RETURN_OK, RETURN_WARN for a break, or RETURN_ERROR for failures.
+ * Quiet mode suppresses per-entry progress, not diagnostics.
+ */
 int doProtect(struct AnchorPath *ap, STRPTR file, LONG flags, BOOL flagsSet,
               BOOL add, BOOL sub, BOOL all, BOOL quiet)
 {
-    LONG  match;
-    int   retval = RETURN_OK;
-    LONG  indent = 0;
-    int   i;                    /* Loop variable */
-    BOOL  success;
+    LONG match = MatchFirst(file, ap);
+    int retval = RETURN_OK;
+    LONG indent = 0;
     ULONG match_count = 0;
 
-    for (match = MatchFirst(file, ap);
-         match == 0 && retval == RETURN_OK && !CTRL_C;
-         match = MatchNext(ap))
+    while (match == 0)
     {
-        match_count++;
+        LONG fileError = 0;
+        BOOL success;
+
+        if (CheckSignal(SIGBREAKF_CTRL_C))
+        {
+            match = ERROR_BREAK;
+            break;
+        }
+
         if (isDir(&ap->ap_Info))
         {
             if (ap->ap_Flags & APF_DIDDIR)
             {
-                indent--;
-                ap->ap_Flags &= ~APF_DIDDIR; /* Should not be necessary */
+                if (indent > 0) indent--;
+                ap->ap_Flags &= ~APF_DIDDIR;
+                match = MatchNext(ap);
                 continue;
             }
-            else if (all)
+            if (all)
             {
                 ap->ap_Flags |= APF_DODIR;
                 indent++;
             }
-
-
         }
 
-        success = setProtection(ap->ap_Buf, ap->ap_Info.fib_Protection, flags,
-                              flagsSet, add, sub);
+        match_count++;
+        success = setProtection(ap->ap_Buf, ap->ap_Info.fib_Protection,
+                                flags, flagsSet, add, sub);
+        if (!success)
+            fileError = IoErr();
 
         if (!quiet)
         {
-            LONG ioerr = IoErr();
+            int i;
 
-            /* Fix indentation level */
             for (i = 0; i < indent; i++)
-            {
                 PutStr("     ");
-            }
-
             if (!isDir(&ap->ap_Info))
-            {
                 PutStr("   ");
-            }
-
             PutStr(ap->ap_Info.fib_FileName);
-
             if (isDir(&ap->ap_Info))
-            {
                 PutStr(" (dir)");
-            }
-
-            if (!success)
-            {
-                PrintFault(ioerr, "..error");
-            }
-            else
-            {
+            if (success)
                 PutStr("..done\n");
-            }
+            else
+                PutStr("..error\n");
         }
 
         if (!success)
         {
+            if (fileError)
+                PrintFault(fileError, ap->ap_Buf);
+            else
+                Printf("Protect: unable to set protection for %s\n", ap->ap_Buf);
             retval = RETURN_ERROR;
+            break;
+        }
+        match = MatchNext(ap);
+    }
+
+    if (retval == RETURN_OK)
+    {
+        if (match == ERROR_NO_MORE_ENTRIES)
+        {
+            if (match_count == 0)
+            {
+                PrintFault(ERROR_OBJECT_NOT_FOUND, "Protect");
+                retval = RETURN_ERROR;
+            }
+        }
+        else
+        {
+            PrintFault(match, "Protect");
+            retval = match == ERROR_BREAK ? RETURN_WARN : RETURN_ERROR;
         }
     }
 
-    if (match_count == 0 || IoErr() != ERROR_NO_MORE_ENTRIES)
-    {
-        PrintFault(IoErr(), NULL);
-        retval = RETURN_ERROR;
-    }
-
     MatchEnd(ap);
-
     return retval;
 }
 
@@ -414,52 +459,38 @@ int doProtect(struct AnchorPath *ap, STRPTR file, LONG flags, BOOL flagsSet,
 #define  subFlags(new, old)  (((old | ~new) & ALL_OFF) | \
                               ((old & ~new) & ~ALL_OFF))
      
+/* Compute and apply the effective protection bits for one DOS path.
+ * oldFlags is the protection word supplied by MatchFirst/MatchNext.
+ * Owner RWED is active-low; GROUP/OTHER is active-high. For normal
+ * changes, pass the protection word through dos.library/SetProtection().
+ * Only explicit GROUP/OTHER edits use security.library.
+ * Returns the selected API's success status; the caller checks IoErr() on
+ * failure. Does not own file, oldFlags or any security.library handle.
+ */
 BOOL setProtection(STRPTR file, LONG oldFlags, LONG flags, BOOL flagsSet,
                    BOOL add, BOOL sub)
 {
-    LONG  newFlags;
-    
-    if (flags != ALL_OFF || grpSet || otrSet)
+    LONG newFlags;
+
+    if (flagsSet)
     {
         if (add)
-        {
-            /* Enable permission */
             newFlags = addFlags(flags, oldFlags);
-        }
         else if (sub)
-        {
-            /* Disable permissions */
             newFlags = subFlags(flags, oldFlags);
-        }
-        else if (flags == ALL_OFF && !flagsSet)
-        {
-            /* Only GROUP/OTHER given: leave the owner bits alone */
-            newFlags = oldFlags;
-        }
         else
-        {
-            /* Clear all permissions then set the ones given. */
             newFlags = flags;
-        }
+    }
+    else if (grpSet || otrSet)
+    {
+        newFlags = oldFlags;
     }
     else
     {
-        /* No flags were given */
-        newFlags = oldFlags;
-        if (!add && !sub)
-        {
-            /* Disable all permissions */
-            newFlags = ALL_OFF;
-        }
-        else
-        {
-            /* Do nothing */
-            return FALSE;
-        }
+        /* No flags or GROUP/OTHER: disable owner RWED. */
+        newFlags = ALL_OFF;
     }
 
-    /* GROUP and OTHER bits are active high; ADD/SUB from the switches or the
-       +/- prefix of the GROUP/OTHER argument */
     if (grpSet)
     {
         LONG grpBits = FIBF_GRP_READ | FIBF_GRP_WRITE | FIBF_GRP_EXECUTE | FIBF_GRP_DELETE;
@@ -481,13 +512,8 @@ BOOL setProtection(STRPTR file, LONG oldFlags, LONG flags, BOOL flagsSet,
             newFlags = (newFlags & ~otrBits) | otrMask;
     }
 
-    /* On a multi-user system use the unrestricted call, so that the GROUP/OTHER
-       bits are not filtered by LIMITDOSSETPROTECTION */
-    if (secBase)
+    /* Only explicit GROUP/OTHER changes require unrestricted setting. */
+    if (grpSet || otrSet)
         return secSetProtection(file, newFlags) ? TRUE : FALSE;
-    if (!SetProtection(file, newFlags))
-    {
-        return FALSE;
-    }
-    return TRUE;
+    return SetProtection(file, newFlags) ? TRUE : FALSE;
 }
