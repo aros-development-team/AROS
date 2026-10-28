@@ -1169,6 +1169,8 @@ static VOID copybox_impl(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_CopyBo
 #endif
                     {
                         HIDD_BM_UnmapPixel(src, pix, &col);
+                        if (!srcpf->alpha_mask)
+                            col.alpha = 0xFFFF; /* a source without alpha is opaque */
                         GC_FG(gc) = HIDD_BM_MapColor(msg->dest, &col);
                     }
 
@@ -1218,6 +1220,8 @@ static VOID copybox_impl(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_CopyBo
 
                    pix = HIDD_BM_GetPixel(src, srcX + x, srcY + y);
                    HIDD_BM_UnmapPixel(src, pix, &col);
+                   if (!srcpf->alpha_mask)
+                       col.alpha = 0xFFFF;  /* a source without alpha is opaque */
 
                    HIDD_BM_PutPixel(dest, destX + x, destY + y,
                        HIDD_BM_MapColor(dest, &col));

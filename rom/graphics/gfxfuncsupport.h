@@ -79,6 +79,7 @@ do                                                                             \
 /* HIDD BM Flags */
 
 #define HIDD_BMF_SHARED_PIXTAB    	1
+#define HIDD_BMF_ALPHA_PIXTAB    	2	/* own colormap and pixtab with the friend's colours mapped opaque (alphapixtab.c) */
 #define HIDD_BMF_SCREEN_BITMAP	      512
 #define HIDD_BMF_LAYERSURFACES	     1024	/* has a LayerSurfaceNode (composited layers) */
 
@@ -193,6 +194,8 @@ BOOL int_bltbitmap(struct BitMap *srcBitMap, OOP_Object *srcbm_obj, WORD xSrc, W
                    OOP_Object *gc, struct GfxBase *GfxBase);
 
 
+HIDDT_PixelLUT *alpha_pixtab_lut(OOP_Object *dstbm_obj, struct RastPort *rp, HIDDT_PixelLUT *lut,
+                                 HIDDT_PixelLUT *store, struct GfxBase *GfxBase);
 LONG write_pixels_8(struct RastPort *rp, UBYTE *array, ULONG modulo,
                     WORD xstart, WORD ystart, WORD xstop, WORD ystop,
                     HIDDT_PixelLUT *pixlut, BOOL do_update, struct GfxBase *GfxBase);

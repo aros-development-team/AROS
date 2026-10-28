@@ -17,7 +17,7 @@
 
     SYNOPSIS
 
-        SPACE/N/K, STATIC/N/K, AUTOREMAP/S/K, NAMES/S/K, SYSFONT/K, LABELFONT/K, FONTSIZE/N/K
+        SPACE/N/K, STATIC/N/K, ALIGN/K, AUTOREMAP/S/K, NAMES/S/K, SYSFONT/K, LABELFONT/K, FONTSIZE/N/K, FAKEALPHA/S
 
     LOCATION
 
@@ -37,6 +37,11 @@
         SYSFONT     -- font for the menu
         LABELFONT   -- font for the labels
         FONTSIZE    -- size of the label font
+        ALIGN       -- LEFT, RIGHT or CENTER (default) alignment of the toolbar
+        FAKEALPHA   -- draw the toolbar over a copy of the wallpaper taken when it
+                       opens, instead of as a window with a per pixel alpha channel
+                       composed over the live wallpaper (the default on screens
+                       that support it)
 
     RESULT
 
@@ -68,6 +73,7 @@
 #include <proto/dos.h>
 #include <proto/datatypes.h>
 #include <proto/diskfont.h> 
+#include <proto/cybergraphics.h>
 
 #include <exec/types.h>
 #include <exec/libraries.h>
@@ -76,6 +82,8 @@
 #include <workbench/startup.h>
 #include <intuition/intuition.h>
 #include <intuition/imageclass.h>
+#include <graphics/clip.h>
+#include <cybergraphx/cybergraphics.h>
 #include <datatypes/datatypes.h>
 #include <datatypes/pictureclass.h>
 #include <dos/dos.h>
@@ -118,7 +126,10 @@ static BOOL ToolbarAreaBlocked(LONG left, LONG top, LONG right, LONG bottom); //
 static void ParseAlign(STRPTR str);                                     // parse ALIGN parameter
 static void ComputeWindowPosition(void);                                // set toolbar position from Align
 static void RefreshBackground(void);                                    // refresh toolbar background
-static void IconLabel(void);                                            // add label to icon
+static void IconLabel(struct RastPort *rp);                             // add label to icon
+static void DrawTiles(struct RastPort *rp);                             // draw the bar background tiles
+static BOOL AllocWallpaperBuffer(void);                                 // buffer for the wallpaper capture
+static void FreeBuffers(void);                                          // free all render buffers
 
 // ------------------------------
 // App data...
@@ -128,7 +139,7 @@ static void IconLabel(void);                                            // add l
 #define ICON_ACTIVE (1<<7)
 #define SELECTED_ICON (1<<6)
 
-#define TEMPLATE        "SPACE/N/K,STATIC/N/K,ALIGN/K,AUTOREMAP/S/K,NAMES/S/K,SYSFONT/K,LABELFONT/K,FONTSIZE/N/K"
+#define TEMPLATE        "SPACE/N/K,STATIC/N/K,ALIGN/K,AUTOREMAP/S/K,NAMES/S/K,SYSFONT/K,LABELFONT/K,FONTSIZE/N/K,FAKEALPHA/S"
 
 // ------------------------------
 
@@ -141,12 +152,13 @@ enum {
     ARG_SYSFONT,
     ARG_LABELFONT,
     ARG_FONTSIZE,
+    ARG_FAKEALPHA,
     ARG_TOTAL
 };
 
 #define BIB_PREFS "ENV:Iconbar.prefs"
 
-const TEXT version[]="$VER: BoingIconBar 1.13 (23.08.2026) by Robert 'Phibrizzo' Krajcarz - AROS port by LuKeJerry";
+const TEXT version[]="$VER: BoingIconBar 1.14 (27.10.2026) by Robert 'Phibrizzo' Krajcarz - AROS port by LuKeJerry";
 
 static BOOL                                     BiB_Exit=FALSE, Icon_Remap=FALSE, PositionMenuOK=FALSE; 
 static BOOL                                     Window_Active=FALSE, Window_Open=FALSE, MenuWindow_Open=FALSE, FirstOpening=TRUE;
@@ -186,6 +198,16 @@ static ULONG                                    WallpaperMask = 0;
 static struct NotifyRequest                     *WallpaperNotRequest = NULL;
 static BOOL                                     WallpaperPending = FALSE;
 
+/* Transparency: by default the toolbar is a composited window with a per
+   pixel alpha surface (WA_AlphaSurface) that the display blends over the
+   live wallpaper; the toolbar is rendered into an ARGB buffer (transparent
+   where nothing is drawn) and blitted into the window. FAKEALPHA (or a
+   screen without source alpha support) selects the old method: the
+   wallpaper under the toolbar is copied from the screen when the window
+   opens and the toolbar is drawn over the copy. */
+static BOOL                                     FakeAlpha = FALSE;      // FAKEALPHA option
+static BOOL                                     AlphaWindow = FALSE;    // the toolbar window has an alpha surface
+
 static IPTR                                     args[ARG_TOTAL] = {
                         (IPTR)&Spacing,
                         (IPTR)&Static,
@@ -194,7 +216,8 @@ static IPTR                                     args[ARG_TOTAL] = {
                         0,
                         0,
                         0,
-                        (IPTR)&FontSize
+                        (IPTR)&FontSize,
+                        0
 };
 
 static struct DiskObject                        *Icon[SUM_ICON]; 
@@ -291,6 +314,11 @@ int main(int argc, char *argv[])
         {
             FontSize = *(LONG*)args[ARG_FONTSIZE];
         }
+
+        if (args[ARG_FAKEALPHA])
+        {
+            FakeAlpha = TRUE;
+        }
     }
     else
     {   //reading ToolTypes parameters 
@@ -337,6 +365,9 @@ int main(int argc, char *argv[])
 
                     if ((str = FindToolType(dob->do_ToolTypes, "FONTSIZE")))
                         FontSize = atoi(str);
+
+                    if ((str = FindToolType(dob->do_ToolTypes, "FAKEALPHA")))
+                        FakeAlpha = TRUE;
                 }
                 CurrentDir(oldcd);
             }
@@ -561,7 +592,10 @@ int main(int argc, char *argv[])
                 if(WindowSignal & WallpaperMask)
                 {
                     DrainAndReplyPort(WallpaperPort);
-                    WallpaperPending = TRUE;
+                    /* An alpha window is composed over the live wallpaper:
+                       there is nothing to recapture. */
+                    if (!AlphaWindow)
+                        WallpaperPending = TRUE;
                 }
 
                 if(WindowSignal & FocusMask)
@@ -696,12 +730,7 @@ EndNotify(WallpaperNotRequest);
         }
     }
 
-    if(BMP_Buffer)
-        FreeBitMap(BMP_Buffer);
-    if(BMP_DoubleBuffer)
-        FreeBitMap(BMP_DoubleBuffer);
-    if(BMP_Wallpaper)
-        FreeBitMap(BMP_Wallpaper);
+    FreeBuffers();
 
     for(x=0; x<3; x++)
     {
@@ -941,19 +970,128 @@ static void LoadBackground(void)
 }
 
 
-static void DrawBarTile(Object *obj, struct BitMap *bm, LONG x, LONG y, LONG w, LONG h)
+/* A screen friend bitmap of the given size with an unlayered RastPort on
+   it, in the screen's format or, for the alpha window, ARGB32 (pens and
+   opaque blits render opaque into it, alpha blits keep their alpha).
+   MyScreen must be locked. */
+static struct BitMap *AllocBuffer(LONG w, LONG h, struct RastPort *rp, BOOL alpha)
+{
+    struct BitMap *bitmap;
+
+    if (alpha)
+        bitmap = AllocBitMap(w, h, 32,
+            BMF_SPECIALFMT | SHIFT_PIXFMT(PIXFMT_ARGB32) | BMF_CLEAR,
+            MyScreen->RastPort.BitMap);
+    else
+        bitmap = AllocBitMap(w, h,
+            GetBitMapAttr(MyScreen->RastPort.BitMap, BMA_DEPTH),
+            BMF_MINPLANES|BMF_CLEAR,
+            MyScreen->RastPort.BitMap);
+
+    if (bitmap)
+    {
+        InitRastPort(rp);
+        rp->BitMap = bitmap;
+        rp->Layer = NULL;
+    }
+    return bitmap;
+}
+
+
+static BOOL AllocWallpaperBuffer(void)
+{
+    if (BMP_Wallpaper)
+        return TRUE;
+
+    if((MyScreen=LockPubScreen(NULL)))
+    {
+        BMP_Wallpaper = AllocBuffer(Window_Max_X, Window_Max_Y, &RP_Wallpaper, FALSE);
+        UnlockPubScreen(NULL,MyScreen);
+    }
+    return BMP_Wallpaper ? TRUE : FALSE;
+}
+
+
+static void FreeBuffers(void)
+{
+    if(BMP_Buffer)
+        FreeBitMap(BMP_Buffer);
+    if(BMP_DoubleBuffer)
+        FreeBitMap(BMP_DoubleBuffer);
+    if(BMP_Wallpaper)
+        FreeBitMap(BMP_Wallpaper);
+    BMP_Buffer = BMP_DoubleBuffer = BMP_Wallpaper = NULL;
+    RP_Buffer.BitMap = NULL;
+    RP_DoubleBuffer.BitMap = NULL;
+    RP_Wallpaper.BitMap = NULL;
+}
+
+
+static void DrawBarTile(struct RastPort *rp, Object *obj, struct BitMap *bm, LONG x, LONG y, LONG w, LONG h)
 {
     APTR dti;
 
     dti = ObtainDTDrawInfoA(obj, NULL);
     if (dti)
     {
-        if (DrawDTObjectA(&RP_Buffer, obj, x, y, w, h, 0, 0, NULL) == FALSE)
-            BltBitMapRastPort(bm, 0, 0, &RP_Buffer, x, y, w, h, 0xC0);
+        if (DrawDTObjectA(rp, obj, x, y, w, h, 0, 0, NULL) == FALSE)
+            BltBitMapRastPort(bm, 0, 0, rp, x, y, w, h, 0xC0);
         ReleaseDTDrawInfo(obj, dti);
     }
     else
-        BltBitMapRastPort(bm, 0, 0, &RP_Buffer, x, y, w, h, 0xC0);
+        BltBitMapRastPort(bm, 0, 0, rp, x, y, w, h, 0xC0);
+}
+
+
+/* The bar background (left, middle tiles, right) along the bottom of the
+   cache area, at the current window's offset within it. */
+static void DrawTiles(struct RastPort *rp)
+{
+    LONG x, y, a;
+
+    if(picture[0] && picture[1] && picture[2])
+    {
+        y = WindowWidth - BackgroundData[0].Width - BackgroundData[2].Width;
+        a = y / BackgroundData[1].Width;
+
+        DrawBarTile(rp, picture[0], bm[0],
+            CacheRelX + 0,
+            Window_Max_Y - BackgroundData[0].Height,
+            BackgroundData[0].Width,
+            BackgroundData[0].Height);
+
+        for(x=0; x<a; x++)
+        {
+            DrawBarTile(rp, picture[1], bm[1],
+                CacheRelX + BackgroundData[0].Width + x * BackgroundData[1].Width,
+                Window_Max_Y - BackgroundData[1].Height,
+                BackgroundData[1].Width,
+                BackgroundData[1].Height);
+        }
+
+        DrawBarTile(rp, picture[1], bm[1],
+            CacheRelX + BackgroundData[0].Width + x * BackgroundData[1].Width,
+            Window_Max_Y - BackgroundData[1].Height,
+            y - BackgroundData[1].Width * a,
+            BackgroundData[1].Height);
+
+        DrawBarTile(rp, picture[2], bm[2],
+            CacheRelX + WindowWidth - BackgroundData[2].Width,
+            Window_Max_Y - BackgroundData[2].Height,
+            BackgroundData[2].Width,
+            BackgroundData[2].Height);
+    }
+    else if(picture[1])
+    {
+        for(x=0; x<WindowWidth; x=x+BackgroundData[1].Width)
+        {
+            DrawBarTile(rp, picture[1], bm[1],
+                CacheRelX + x,
+                Window_Max_Y - BackgroundData[1].Height,
+                BackgroundData[1].Width,
+                BackgroundData[1].Height);
+        }
+    }
 }
 
 
@@ -1057,56 +1195,36 @@ static BOOL SetWindowParameters(void)
 
     if((MyScreen=LockPubScreen(NULL)))
     {
-        BMP_Buffer = AllocBitMap(Window_Max_X,
-            Window_Max_Y,
-            GetBitMapAttr(MyScreen->RastPort.BitMap,
-            BMA_DEPTH),
-            BMF_MINPLANES|BMF_CLEAR,
-            MyScreen->RastPort.BitMap);
+        IPTR srcalpha = 0;
 
-        if (BMP_Buffer == NULL)
+        /* Per pixel alpha window (the default) only where the screen composes
+           layers with a source alpha channel: a 32 bit screen on a composing
+           display. Otherwise, and with FAKEALPHA, use the wallpaper capture. */
+        AlphaWindow = FALSE;
+        if (!FakeAlpha)
         {
-            return FALSE;
+            GetAttr(SA_SourceAlphaSupport, (Object *)MyScreen, &srcalpha);
+            AlphaWindow = srcalpha ? TRUE : FALSE;
         }
+        D(bug("[IconBar] alpha window %d (SA_SourceAlphaSupport %d, FAKEALPHA %d)\n",
+            AlphaWindow, (int)srcalpha, FakeAlpha));
 
-        InitRastPort(&RP_Buffer);
-        RP_Buffer.BitMap = BMP_Buffer;
-        RP_Buffer.Layer = NULL;
+        if (!(BMP_Buffer = AllocBuffer(Window_Max_X, Window_Max_Y, &RP_Buffer, AlphaWindow)))
+            goto fail;
 
-        BMP_Wallpaper = AllocBitMap(Window_Max_X,
-            Window_Max_Y,
-            GetBitMapAttr(MyScreen->RastPort.BitMap,
-            BMA_DEPTH),
-            BMF_MINPLANES|BMF_CLEAR,
-            MyScreen->RastPort.BitMap);
+        if (!(BMP_DoubleBuffer = AllocBuffer(IconWidth + 8, Window_Max_Y, &RP_DoubleBuffer, AlphaWindow)))
+            goto fail;
 
-        if (BMP_Wallpaper == NULL)
-        {
-            return FALSE;
-        }
-
-        InitRastPort(&RP_Wallpaper);
-        RP_Wallpaper.BitMap = BMP_Wallpaper;
-        RP_Wallpaper.Layer = NULL;
-
-        BMP_DoubleBuffer = AllocBitMap(IconWidth + 8,
-            Window_Max_Y,
-            GetBitMapAttr(MyScreen->RastPort.BitMap,
-            BMA_DEPTH),
-            BMF_MINPLANES|BMF_CLEAR,
-            MyScreen->RastPort.BitMap);
-        if (BMP_DoubleBuffer == NULL)
-        {
-            return FALSE;
-        }
-
-        InitRastPort(&RP_DoubleBuffer);
-        RP_DoubleBuffer.BitMap = BMP_DoubleBuffer;
-        RP_DoubleBuffer.Layer = NULL;
+        if (!AlphaWindow && !(BMP_Wallpaper = AllocBuffer(Window_Max_X, Window_Max_Y, &RP_Wallpaper, FALSE)))
+            goto fail;
 
         UnlockPubScreen(NULL,MyScreen);
     }
     return TRUE;
+
+fail:
+    UnlockPubScreen(NULL,MyScreen);
+    return FALSE;
 }
 
 
@@ -1217,16 +1335,7 @@ static void Decode_Toolbar_IDCMP(struct IntuiMessage *KomIDCMP)
                     {
                         if(Icon[x] != NULL)
                         {
-                            DrawIconState(MainWindow->RPort,
-                                Icon[x],
-                                NULL,
-                                Icons[x].Icon_PositionX,
-                                Icons[x].Icon_PositionY,
-                                IDS_NORMAL,
-                                ICONDRAWA_Frameless, TRUE,
-                                ICONDRAWA_Borderless, TRUE,
-                                ICONDRAWA_EraseBackground, FALSE,
-                                TAG_DONE);
+                            Insert_Icon((Icons[x].Icon_Status & SELECTED_ICON) ? IDS_SELECTED : IDS_NORMAL, x);
                         }
                     }
                     break;
@@ -1329,6 +1438,10 @@ static void Change_State(LONG Mode)
 
 static void Insert_Icon(LONG Mode, LONG NrIcon)
 {
+    LONG y = Icons[NrIcon].Icon_PositionY - MovingTable[(Icons[NrIcon].Icon_Status & 0x07)];
+
+    /* the icon's column of the background, with the icon drawn at its
+       current bounce offset */
     BltBitMapRastPort(BMP_Buffer,
         CacheRelX + Icons[NrIcon].Icon_PositionX,
         CacheRelY,
@@ -1343,7 +1456,7 @@ static void Insert_Icon(LONG Mode, LONG NrIcon)
         Icon[NrIcon],
         NULL,
         0,
-        Icons[NrIcon].Icon_PositionY - MovingTable[(Icons[NrIcon].Icon_Status & 0x07)],
+        y,
         Mode,
         ICONDRAWA_Frameless, TRUE,
         ICONDRAWA_Borderless, TRUE,
@@ -1381,17 +1494,18 @@ static void Blink_Icon(LONG NrIcon)
 
 static BOOL OpenMainWindow(void)
 {
-    LONG x, y, a;
+    LONG x;
     LONG cacheX;
+    struct Region *inputregion = NULL;
 
     PrevActiveWindow = NULL;
     FocusOver = FALSE;
     FocusStableTicks = 0;
 
-    /* The wallpaper cache is anchored to a fixed screen region so that a
-       stale capture (used while a window covers the toolbar) still lines up
-       with the current window. Vertically it covers the bottom Window_Max_Y
-       screen rows; horizontally it depends on the alignment. */
+    /* The render buffers are anchored to a fixed screen region so that a
+       stale wallpaper capture (used while a window covers the toolbar) still
+       lines up with the current window. Vertically it covers the bottom
+       Window_Max_Y screen rows; horizontally it depends on the alignment. */
     if (Align == 1)                          /* LEFT */
         cacheX = 0;
     else if (Align == 2)                     /* RIGHT */
@@ -1404,7 +1518,14 @@ static BOOL OpenMainWindow(void)
 
     if((MyScreen=LockPubScreen(NULL)))
     {
-        if (!ToolbarAreaBlocked(BeginningWindow,
+        if (AlphaWindow)
+        {
+            /* The display composes the window over the live wallpaper, so
+               nothing is captured: start from a fully transparent buffer
+               (alpha 0 everywhere). */
+            BltBitMap(BMP_Buffer, 0, 0, BMP_Buffer, 0, 0, Window_Max_X, Window_Max_Y, 0x00, 0xFF, NULL);
+        }
+        else if (!ToolbarAreaBlocked(BeginningWindow,
                 ScreenHeight - WindowHeight,
                 BeginningWindow + Window_Max_X - 1,
                 ScreenHeight - 1))
@@ -1446,122 +1567,102 @@ static BOOL OpenMainWindow(void)
         UnlockPubScreen(NULL,MyScreen);
     }
 
-    if(picture[0] && picture[1] && picture[2])
+    DrawTiles(&RP_Buffer);
+
+    // ---------- Labeling icon if NAMES is ON
+    if(B_Labels == TRUE)
+        IconLabel(&RP_Buffer);
+
+    if(Icon_Remap == TRUE)
     {
-        y = WindowWidth - BackgroundData[0].Width - BackgroundData[2].Width;
-        a = y / BackgroundData[1].Width;
-
-        DrawBarTile(picture[0], bm[0],
-            CacheRelX + 0,
-            Window_Max_Y - BackgroundData[0].Height,
-            BackgroundData[0].Width,
-            BackgroundData[0].Height);
-
-        for(x=0; x<a; x++)
-        {
-            DrawBarTile(picture[1], bm[1],
-                CacheRelX + BackgroundData[0].Width + x * BackgroundData[1].Width,
-                Window_Max_Y - BackgroundData[1].Height,
-                BackgroundData[1].Width,
-                BackgroundData[1].Height);
-        }
-
-        DrawBarTile(picture[1], bm[1],
-            CacheRelX + BackgroundData[0].Width + x * BackgroundData[1].Width,
-            Window_Max_Y - BackgroundData[1].Height,
-            y - BackgroundData[1].Width * a,
-            BackgroundData[1].Height);
-
-        DrawBarTile(picture[2], bm[2],
-            CacheRelX + WindowWidth - BackgroundData[2].Width,
-            Window_Max_Y - BackgroundData[2].Height,
-            BackgroundData[2].Width,
-            BackgroundData[2].Height);
-        }
-        else if(picture[1])
-        {
-            for(x=0; x<WindowWidth; x=x+BackgroundData[1].Width)
-            {
-                DrawBarTile(picture[1], bm[1],
-                    CacheRelX + x,
-                    Window_Max_Y - BackgroundData[1].Height,
-                    BackgroundData[1].Width,
-                    BackgroundData[1].Height);
-            }
-        }
-
-        // ---------- Labeling icon if NAMES is ON
-        if(B_Labels == TRUE)
-            IconLabel();
-
-        if(Icon_Remap == TRUE)
-        {
-            for(x=Levels[CurrentLevel].Beginning; x<IconCounter; x++)
-            {
-                if(Icon[x]!=NULL)
-                {
-                    LayoutIcon(Icon[x], MyScreen, NULL);
-                }
-            }
-        }
-
-        if((MainWindow=OpenWindowTags(NULL,
-            WA_Left, BeginningWindow,
-            WA_Top, ScreenHeight - WindowHeight,
-            WA_InnerWidth,  WindowWidth,
-            WA_InnerHeight, WindowHeight,
-            WA_ReportMouse, TRUE,
-            WA_MouseQueue, 3,
-            WA_Borderless, TRUE,
-            WA_SizeGadget, FALSE,
-            WA_Activate, FALSE,
-            WA_PubScreenName, NULL,
-            WA_BackFill, LAYERS_NOBACKFILL,
-            WA_Flags, WFLG_NOCAREREFRESH|
-            WFLG_SMART_REFRESH|
-            WFLG_RMBTRAP,
-            WA_IDCMP, IDCMP_NEWSIZE|
-            IDCMP_RAWKEY|
-            IDCMP_INACTIVEWINDOW|
-            IDCMP_MOUSEMOVE|
-            IDCMP_INTUITICKS|
-            IDCMP_MOUSEBUTTONS,
-            TAG_END)))
-        {
-            WindowMask = 1 << MainWindow->UserPort->mp_SigBit;
-
-            BltBitMapRastPort(BMP_Buffer,
-                CacheRelX, CacheRelY,
-                MainWindow->RPort,
-                0, 0,
-                WindowWidth,
-                WindowHeight,
-                0xC0);
-
         for(x=Levels[CurrentLevel].Beginning; x<IconCounter; x++)
         {
-            if(Icon[x] != NULL)
+            if(Icon[x]!=NULL)
             {
-                DrawIconState(MainWindow->RPort,
-                    Icon[x],
-                    NULL,
-                    Icons[x].Icon_PositionX,
-                    Icons[x].Icon_PositionY,
-                    IDS_NORMAL,
-                    ICONDRAWA_Frameless, TRUE,
-                    ICONDRAWA_Borderless, TRUE,
-                    ICONDRAWA_EraseBackground, FALSE,
-                    TAG_DONE);
+                LayoutIcon(Icon[x], MyScreen, NULL);
             }
         }
     }
-    else
+
+    if (AlphaWindow)
+    {
+        /* Take input over the whole window, as an opaque window does, not
+           only where the surface has visible pixels. */
+        if ((inputregion = NewRegion()))
+        {
+            struct Rectangle rect = { 0, 0, WindowWidth - 1, WindowHeight - 1 };
+            OrRectRegion(inputregion, &rect);
+        }
+    }
+
+    MainWindow = OpenWindowTags(NULL,
+        WA_Left, BeginningWindow,
+        WA_Top, ScreenHeight - WindowHeight,
+        WA_InnerWidth,  WindowWidth,
+        WA_InnerHeight, WindowHeight,
+        WA_ReportMouse, TRUE,
+        WA_MouseQueue, 3,
+        WA_Borderless, TRUE,
+        WA_SizeGadget, FALSE,
+        WA_Activate, FALSE,
+        WA_PubScreenName, NULL,
+        WA_BackFill, LAYERS_NOBACKFILL,
+        WA_Flags, WFLG_NOCAREREFRESH|
+        WFLG_SMART_REFRESH|
+        WFLG_RMBTRAP,
+        WA_IDCMP, IDCMP_NEWSIZE|
+        IDCMP_RAWKEY|
+        IDCMP_INACTIVEWINDOW|
+        IDCMP_MOUSEMOVE|
+        IDCMP_INTUITICKS|
+        IDCMP_MOUSEBUTTONS,
+        AlphaWindow ? WA_AlphaSurface : TAG_IGNORE, TRUE,
+        inputregion ? WA_InputRegion : TAG_IGNORE, (IPTR)inputregion,
+        TAG_END);
+
+    if (inputregion)
+        DisposeRegion(inputregion);      /* layers.library keeps a copy */
+
+    if (!MainWindow)
     {
         printf("Can't open main toolbar window\n");
         return FALSE;
     }
 
-    Window_Open = TRUE;        
+    if (AlphaWindow && !(MainWindow->WLayer->Flags & LAYERCOMPOSITED))
+    {
+        /* layers.library could not give the window a surface (surface memory
+           budget): it is an ordinary window and would show the transparent
+           parts black. Use the wallpaper capture until the next reload. */
+        D(bug("[IconBar] window not composited, using the wallpaper capture\n"));
+        CloseWindow(MainWindow);
+        MainWindow = NULL;
+        AlphaWindow = FALSE;
+        if (!AllocWallpaperBuffer())
+            return FALSE;
+        return OpenMainWindow();
+    }
+
+    WindowMask = 1 << MainWindow->UserPort->mp_SigBit;
+
+    /* the alpha window's surface takes the buffer's alpha with it */
+    BltBitMapRastPort(BMP_Buffer,
+        CacheRelX, CacheRelY,
+        MainWindow->RPort,
+        0, 0,
+        WindowWidth,
+        WindowHeight,
+        0xC0);
+
+    for(x=Levels[CurrentLevel].Beginning; x<IconCounter; x++)
+    {
+        if(Icon[x] != NULL)
+        {
+            Insert_Icon(IDS_NORMAL, x);
+        }
+    }
+
+    Window_Open = TRUE;
     Window_Active = TRUE;
 
     /* The toolbar is a background element: push it behind all other windows. */
@@ -1850,19 +1951,7 @@ static void ScreenResetCleanup(void)
         Icons[x].IK_Label_Length  = 0;
     }
 
-    if(BMP_Buffer)
-    {
-        FreeBitMap(BMP_Buffer);
-        BMP_Buffer = NULL;
-    }
-    if(BMP_DoubleBuffer)
-    {
-        FreeBitMap(BMP_DoubleBuffer);
-        BMP_DoubleBuffer = NULL;
-    }
-    RP_Buffer.BitMap = NULL;
-    RP_DoubleBuffer.BitMap = NULL;
-    RP_Wallpaper.BitMap = NULL;
+    FreeBuffers();
 
     for(x=0; x<3; x++)
     {
@@ -2103,24 +2192,7 @@ static void Reload(void)
         Icons[x].IK_Label_Length  = 0;
     }
 
-    if(BMP_Buffer)
-    {
-        FreeBitMap(BMP_Buffer);
-        BMP_Buffer = NULL;
-    }
-    if(BMP_DoubleBuffer)
-    {
-        FreeBitMap(BMP_DoubleBuffer);
-        BMP_DoubleBuffer = NULL;
-    }
-    if(BMP_Wallpaper)
-    {
-        FreeBitMap(BMP_Wallpaper);
-        BMP_Wallpaper = NULL;
-    }
-    RP_Buffer.BitMap = NULL;
-    RP_DoubleBuffer.BitMap = NULL;
-    RP_Wallpaper.BitMap = NULL;
+    FreeBuffers();
 
     if(ReadPrefs() == FALSE)
     {
@@ -2137,7 +2209,7 @@ static void Reload(void)
 }
 
 
-static void IconLabel(void)
+static void IconLabel(struct RastPort *rp)
 {
     LONG x, y, pos_x;
 
@@ -2159,14 +2231,14 @@ static void IconLabel(void)
 
         Labels.FrontPen = 1;
 
-        PrintIText(&RP_Buffer,
+        PrintIText(rp,
             &Labels,
             CacheRelX + pos_x,
             Window_Max_Y - (LabelFont.ta_YSize + 3));
 
         Labels.FrontPen = 2;
 
-        PrintIText(&RP_Buffer,
+        PrintIText(rp,
             &Labels,
             CacheRelX + pos_x + 1,
             Window_Max_Y - (LabelFont.ta_YSize + 4));

@@ -407,6 +407,9 @@ OOP_Object *Display__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
         data->cursor_visible = FALSE;
         data->cursor_drawn = FALSE;
 
+        NEWLIST((struct List *)&data->decodes);
+        InitSemaphore(&data->decodesem);
+
         while ((tag = NextTagItem(&tstate)))
         {
             ULONG idx;
@@ -430,6 +433,12 @@ OOP_Object *Display__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
                 break;
             case aoHidd_Display_ConnectorID:
                 data->connectorid = tag->ti_Data;
+                break;
+            case aoHidd_Display_DecodeVectors:
+                data->decodevectors = (struct HIDD_DecodeInterface *)tag->ti_Data;
+                break;
+            case aoHidd_Display_DecodeDataSize:
+                data->decodedatasize = tag->ti_Data;
                 break;
             }
         }
@@ -505,6 +514,16 @@ VOID Display__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
         FreeVec(data->cursor_backup);
     if (NULL != data->cursor_argb)
         FreeVec(data->cursor_argb);
+
+    /*
+     * Decode interfaces their owners did not free. The driver ended their
+     * sessions in its own Dispose (before calling us); only memory is left.
+     */
+    while (!IsListEmpty((struct List *)&data->decodes))
+    {
+        struct DecodeInstance *inst = (struct DecodeInstance *)RemHead((struct List *)&data->decodes);
+        FreeMem(inst, inst->allocsize);
+    }
 
     OOP_DoSuperMethod(cl, o, msg);
 }
@@ -2425,6 +2444,214 @@ ULONG Display__Hidd_Display__QueryScanout(OOP_Class *cl, OOP_Object *o, struct p
     if (msg->caps)
         SetMem(msg->caps, 0, sizeof(struct HIDD_ScanoutCaps));
     return 0;
+}
+
+/*****************************************************************************************
+
+    NAME
+        moHidd_Display_QueryDecode
+
+    SYNOPSIS
+        ULONG OOP_DoMethod(OOP_Object *obj, struct pHidd_Display_QueryDecode *msg);
+
+        ULONG HIDD_Display_QueryDecode(OOP_Object *display, LONG profile, ULONG width,
+                                       ULONG height, struct HIDD_DecodeCaps *caps);
+
+    LOCATION
+        hidd.gfx.display
+
+    FUNCTION
+        Asks whether this display's hardware decoder can decode a stream of
+        the given VA-API profile (a VAProfile value, <va/va.h>) and picture
+        size. The answer is DCF_* flags, 0 when it cannot; caps (may be NULL)
+        receives the details: size limits, the vHidd_VideoFmt_* and
+        vHidd_VideoLayout_* it writes, and how many reference frames it holds.
+        A size of 0 x 0 asks about the profile alone.
+
+        Decoding then goes through a decode interface
+        (moHidd_Display_GetDecodeInterface) into video bitmaps created with
+        aHidd_BitMap_DecodeTarget through moHidd_Display_CreateObject.
+
+        The base class answers 0: there is no software decoder in the system.
+
+    INPUTS
+        display - the display
+        profile - VAProfile value
+        width   - picture width in pixels, or 0
+        height  - picture height in pixels, or 0
+        caps    - filled in when non-NULL
+
+    RESULT
+        DCF_* flags, 0 = not possible.
+
+    SEE ALSO
+        moHidd_Display_GetDecodeInterface, moHidd_Display_QueryScanout
+
+*****************************************************************************************/
+
+ULONG Display__Hidd_Display__QueryDecode(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_QueryDecode *msg)
+{
+    struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
+
+    if (msg->caps)
+        SetMem(msg->caps, 0, sizeof(struct HIDD_DecodeCaps));
+    return 0;
+}
+
+/* Entries a driver's (older, shorter) decode table does not have */
+static BOOL DecodeStub_BeginFrame(APTR obj, OOP_Object *bitmap, ULONG buffer)            { return FALSE; }
+static BOOL DecodeStub_SubmitParams(APTR obj, ULONG type, APTR data, ULONG size, ULONG count) { return FALSE; }
+static BOOL DecodeStub_SubmitBitstream(APTR obj, APTR data, ULONG size)                 { return FALSE; }
+static BOOL DecodeStub_EndFrame(APTR obj)                                                { return FALSE; }
+static ULONG DecodeStub_Sync(APTR obj, OOP_Object *bitmap, ULONG buffer, ULONG timeoutms) { return vHidd_DecodeStatus_Error; }
+static ULONG DecodeStub_Status(APTR obj, OOP_Object *bitmap, ULONG buffer)              { return vHidd_DecodeStatus_Error; }
+
+static const struct HIDD_DecodeInterface DecodeStubs =
+{
+    sizeof(struct HIDD_DecodeInterface),
+    DecodeStub_BeginFrame,
+    DecodeStub_SubmitParams,
+    DecodeStub_SubmitBitstream,
+    DecodeStub_EndFrame,
+    DecodeStub_Sync,
+    DecodeStub_Status
+};
+
+/*****************************************************************************************
+
+    NAME
+        moHidd_Display_GetDecodeInterface
+
+    SYNOPSIS
+        APTR OOP_DoMethod(OOP_Object *obj, struct pHidd_Display_GetDecodeInterface *msg);
+
+        APTR HIDD_Display_GetDecodeInterface(OOP_Object *display, LONG profile, ULONG width,
+                                             ULONG height, struct Hook *resolve, ULONG flags);
+
+    LOCATION
+        hidd.gfx.display
+
+    FUNCTION
+        Starts a hardware decode session for a stream of the given VA-API
+        profile and coded size, and returns its decode interface: an opaque
+        object used with the HIDD_Decode_*() stubs of <hidd/gfx.h>. Each call
+        starts a new session; a caller decoding two streams gets two
+        interfaces. End a session with moHidd_Display_FreeDecodeInterface.
+
+        Frames are decoded into buffers of video bitmaps created through this
+        display with aHidd_BitMap_DecodeTarget; HIDD_Decode_BeginFrame() names
+        the target of each. Surface IDs in the VA structures the caller
+        submits (reference frames) are resolved with the resolve hook:
+        CallHookPkt(resolve, iface, struct HIDD_DecodeSurfaceMsg *), which
+        fills in the bitmap and buffer holding that surface and returns TRUE.
+
+    INPUTS
+        display - the display
+        profile - VAProfile value (<va/va.h>)
+        width   - coded picture width
+        height  - coded picture height
+        resolve - surface ID hook, must stay valid for the session
+        flags   - reserved, 0
+
+    RESULT
+        The interface, or NULL when the display cannot decode the stream.
+
+    NOTES
+        The base class only builds the instance: it allocates the driver's
+        vector table (aHidd_Display_DecodeVectors) followed by
+        aHidd_Display_DecodeDataSize bytes of cleared driver data and returns
+        the data part, or NULL when the driver gave no vectors. A driver
+        overrides the method, calls the superclass and sets up its session in
+        the data part, as ata.device bus drivers do for their PIO and DMA
+        interfaces; it must not allocate the interface itself.
+
+        A driver's Dispose ends the sessions still open before it calls the
+        superclass, which then frees their memory.
+
+    SEE ALSO
+        moHidd_Display_FreeDecodeInterface, moHidd_Display_QueryDecode,
+        aHidd_BitMap_DecodeTarget
+
+*****************************************************************************************/
+
+APTR Display__Hidd_Display__GetDecodeInterface(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_GetDecodeInterface *msg)
+{
+    struct HIDDDisplayData *data = OOP_INST_DATA(cl, o);
+    struct DecodeInstance *inst;
+    IPTR size;
+    ULONG vecsize;
+
+    if (!data->decodevectors || !msg->resolve)
+        return NULL;
+
+    size = sizeof(struct DecodeInstance) + data->decodedatasize;
+    inst = AllocMem(size, MEMF_PUBLIC | MEMF_CLEAR);
+    if (!inst)
+        return NULL;
+
+    inst->allocsize = size;
+
+    /* Driver entries over the stubs; the table always has the current size */
+    CopyMem((APTR)&DecodeStubs, &inst->vec, sizeof(struct HIDD_DecodeInterface));
+    vecsize = data->decodevectors->di_Size;
+    if (vecsize > sizeof(struct HIDD_DecodeInterface))
+        vecsize = sizeof(struct HIDD_DecodeInterface);
+    if (vecsize > offsetof(struct HIDD_DecodeInterface, di_BeginFrame))
+        CopyMem((UBYTE *)data->decodevectors + offsetof(struct HIDD_DecodeInterface, di_BeginFrame),
+                &inst->vec.di_BeginFrame,
+                vecsize - offsetof(struct HIDD_DecodeInterface, di_BeginFrame));
+    inst->vec.di_Size = sizeof(struct HIDD_DecodeInterface);
+
+    ObtainSemaphore(&data->decodesem);
+    AddTail((struct List *)&data->decodes, (struct Node *)&inst->node);
+    ReleaseSemaphore(&data->decodesem);
+
+    return DECODEINST_DATA(inst);
+}
+
+/*****************************************************************************************
+
+    NAME
+        moHidd_Display_FreeDecodeInterface
+
+    SYNOPSIS
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_Display_FreeDecodeInterface *msg);
+
+        VOID HIDD_Display_FreeDecodeInterface(OOP_Object *display, APTR iface);
+
+    LOCATION
+        hidd.gfx.display
+
+    FUNCTION
+        Ends a decode session started with moHidd_Display_GetDecodeInterface.
+        Decoding in flight completes first; the target buffers keep what was
+        decoded into them.
+
+    INPUTS
+        display - the display the interface was obtained from
+        iface   - the interface, may be NULL
+
+    NOTES
+        A driver overrides it to end its session (waiting for its engine) and
+        then calls the superclass, which frees the instance.
+
+*****************************************************************************************/
+
+VOID Display__Hidd_Display__FreeDecodeInterface(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_FreeDecodeInterface *msg)
+{
+    struct HIDDDisplayData *data = OOP_INST_DATA(cl, o);
+    struct DecodeInstance *inst;
+
+    if (!msg->iface)
+        return;
+
+    inst = DECODEINST_FROM(msg->iface);
+
+    ObtainSemaphore(&data->decodesem);
+    Remove((struct Node *)&inst->node);
+    ReleaseSemaphore(&data->decodesem);
+
+    FreeMem(inst, inst->allocsize);
 }
 
 /*****************************************************************************************

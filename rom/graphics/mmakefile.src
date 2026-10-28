@@ -197,6 +197,7 @@ FUNCTIONS := \
 	updatebitmap \
 	compositelayerssupported \
 	layersurfaceschanged \
+	alphapixtab \
 	layersurfacealpha \
 	unlocklayerrom \
 	vbeampos \

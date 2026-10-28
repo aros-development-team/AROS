@@ -30,9 +30,9 @@ static void fill(struct Window *w, ULONG rgb, ULONG border)
 }
 
 /*
- * Per pixel alpha: pens render with alpha 0 into an alpha surface, so the
- * content is written as ARGB. Left half alpha 0x40, right half opaque, a
- * fully transparent hole in the middle.
+ * Per pixel alpha: the content is written as ARGB. Left half alpha 0x40,
+ * right half opaque, a fully transparent hole in the middle. (Pens and
+ * alpha-less blits render opaque into an alpha surface.)
  */
 static void fill_alpha(struct Window *w)
 {
@@ -94,6 +94,17 @@ int main(void)
         alpha ? WA_AlphaSurface : TAG_IGNORE, TRUE,
         WA_Activate, TRUE, TAG_END);
     if (!b) { printf("FAIL: composited window\n"); CloseWindow(a); return RETURN_FAIL; }
+    if (alpha && (b->WLayer->Flags & LAYERCOMPOSITED))
+    {
+        /* an alpha surface starts fully transparent (BMF_CLEAR clears to alpha 0) */
+        ReadPixelArray(pix, 0, 0, 4, b->RPort, b->BorderLeft + 5, b->BorderTop + 5, 1, 1, RECTFMT_ARGB);
+        if (pix[0] != 0)
+        {
+            printf("FAIL: fresh alpha surface has alpha %02x, wanted 00\n", pix[0]);
+            fails++;
+        }
+    }
+
     if (alpha)
         fill_alpha(b);
     else
@@ -105,6 +116,46 @@ int main(void)
     if (!(b->WLayer->Flags & LAYERCOMPOSITED))
     {
         printf("NOTE: screen cannot compose; plain smart refresh window instead\n");
+    }
+
+    /*
+     * Pens and blits from a bitmap without an alpha channel render opaque
+     * into an alpha surface (the surface has its own colormap, see
+     * AllocBitMap(); a source without alpha converts to full alpha).
+     */
+    if (alpha && (b->WLayer->Flags & LAYERCOMPOSITED))
+    {
+        struct BitMap *plain = AllocBitMap(16, 16, 8, BMF_CLEAR, b->WScreen->RastPort.BitMap);
+        WORD x0 = b->BorderLeft, y0 = b->BorderTop;
+
+        SetAPen(b->RPort, 1);
+        RectFill(b->RPort, x0 + 20, y0 + 20, x0 + 39, y0 + 39);
+        ReadPixelArray(pix, 0, 0, 4, b->RPort, x0 + 30, y0 + 30, 1, 1, RECTFMT_ARGB);
+        if (pix[0] != 0xFF)
+        {
+            printf("FAIL: pen 1 RectFill in the alpha surface has alpha %02x, wanted ff\n", pix[0]);
+            fails++;
+        }
+
+        if (plain)
+        {
+            struct RastPort prp;
+
+            InitRastPort(&prp);
+            prp.BitMap = plain;
+            FillPixelArray(&prp, 0, 0, 16, 16, 0x0000FF);
+            BltBitMapRastPort(plain, 0, 0, b->RPort, x0 + 50, y0 + 20, 16, 16, 0xC0);
+            ReadPixelArray(pix, 0, 0, 4, b->RPort, x0 + 58, y0 + 28, 1, 1, RECTFMT_ARGB);
+            got = ((ULONG)pix[1] << 16) | ((ULONG)pix[2] << 8) | pix[3];
+            if (pix[0] != 0xFF || got != 0x0000FF)
+            {
+                printf("FAIL: alpha-less blit into the alpha surface gives %02x/%06lx, wanted ff/0000ff\n",
+                       pix[0], (unsigned long)got);
+                fails++;
+            }
+            FreeBitMap(plain);
+        }
+        printf("pens and alpha-less blits into the alpha surface: %s\n", fails ? "FAIL" : "opaque");
     }
 
     /* the composited window's own content is intact under the overlap */

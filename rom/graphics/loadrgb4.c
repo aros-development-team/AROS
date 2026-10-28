@@ -92,7 +92,7 @@
             hidd_colors[t].red = red >> 16;
             hidd_colors[t].green = green >> 16;
             hidd_colors[t].blue = blue >> 16;
-            hidd_colors[t].alpha = 0;
+            hidd_colors[t].alpha = 0xFFFF;  /* pens are opaque */
         }
 
         internal_SetRGB32Colors(vp, hidd_colors, 0, count, GfxBase);

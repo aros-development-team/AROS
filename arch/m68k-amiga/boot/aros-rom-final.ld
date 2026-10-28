@@ -1,11 +1,11 @@
 /*
  * Final link of the ROM image (addresses come from --section-start). Each
- * bank gets its string pool appended here, where the linker merges the
- * strings; see aros-rom.ld.
+ * bank gets its string and constant pools appended here, where the linker
+ * merges them; see aros-rom.ld.
  */
 SECTIONS
 {
-  .ext : { *(.ext) *(.extstr) }
-  .rom : { *(.rom) *(.romstr) }
+  .ext : { *(.ext) *(.extstr) *(.extsets) }
+  .rom : { *(.rom) *(.romstr) *(.romsets) }
   .ss  : { *(.ss) }
 }

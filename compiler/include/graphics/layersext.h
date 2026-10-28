@@ -52,10 +52,13 @@
    with ChangeLayerInputShape(). Works the same on composited and ordinary
    layers. */
 /* An LA_AlphaSurface surface has the screen's pixel layout plus an alpha
-   byte and starts fully transparent. Pens are mapped for the screen, so pen
-   rendering leaves alpha 0; WritePixelArray() with RECTFMT_ARGB sets it.
-   On screens whose layout has no spare byte (15/16/24 bit, LUT) the tag is
-   ignored and the layer gets a constant opacity surface. */
+   byte and starts fully transparent. Pens render opaque, as does anything
+   blitted from a bitmap or written from an array without an alpha channel;
+   an explicit alpha arrives through WritePixelArray() with RECTFMT_ARGB,
+   WritePixelArrayAlpha(), BltBitMapAlpha() or ARGB colours given to
+   FillPixelArray() and RPTAG_FgColor. On screens whose layout has no spare
+   byte (15/16/24 bit, LUT) the tag is ignored and the layer gets a constant
+   opacity surface. */
 /* Memory: the surfaces of all composited layers of a screen together may
    take at most four times the screen bitmap (layers.library's
    LAYERS_SURFACE_BUDGET_FACTOR), and a surface is never allocated when it

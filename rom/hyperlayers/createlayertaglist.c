@@ -270,8 +270,8 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
       /*
        * The surface: the screen's format or, for per pixel alpha, the
        * screen's pixel layout with an alpha byte (cleared, i.e. fully
-       * transparent; pens render with alpha 0, WritePixelArray() with
-       * RECTFMT_ARGB sets it). A screen whose layout has no room for alpha
+       * transparent; pens and blits without alpha render opaque, see
+       * <graphics/layersext.h>). A screen whose layout has no room for alpha
        * gets a constant opacity surface instead.
        *
        * Memory: the screen's composited surfaces together stay within

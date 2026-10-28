@@ -50,6 +50,9 @@ void internal_SetRGB32Colors(struct ViewPort *vp, HIDDT_Color *colors,
             for (i = 0; i < count; i++)
                 HIDD_BM_PIXTAB(vp->RasInfo->BitMap)[first + i] =
                     colors[i].pixval;
+
+            /* bitmaps with an alpha channel that derive their colours from this one */
+            gfx_UpdateAlphaPixTabs(HIDD_BM_COLMAP(vp->RasInfo->BitMap), colors, first, count, GfxBase);
         }
     }
 }
@@ -119,7 +122,7 @@ void internal_SetRGB32Colors(struct ViewPort *vp, HIDDT_Color *colors,
     hidd_col.red   = r >> 16;
     hidd_col.green = g >> 16;
     hidd_col.blue  = b >> 16;
-    hidd_col.alpha = 0;
+    hidd_col.alpha = 0xFFFF;    /* pens are opaque (matters on bitmaps with an alpha channel) */
 
     internal_SetRGB32Colors(vp, &hidd_col, n, 1, GfxBase);
 

@@ -21,7 +21,7 @@
       - PAGE_Current change: removes the old current's gadgets and
         adds the new current's, then refreshes.
 */
-#define DEBUG 1
+#define DEBUG 0
 
 #include <proto/exec.h>
 #include <proto/intuition.h>

@@ -971,12 +971,24 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
                 case aoHidd_BitMap_ColorSpace:
                     data->colorspace = tag->ti_Data;
                     break;
+
+                case aoHidd_BitMap_DecodeTarget:
+                    data->decodetarget = tag->ti_Data ? TRUE : FALSE;
+                    break;
+
+                case aoHidd_BitMap_VideoLayout:
+                    data->videolayout = tag->ti_Data;
+                    break;
                 }
             }
         }
 
         if (!data->buffers)
             data->buffers = 1;
+
+        /* Only video bitmaps are decoded into */
+        if (data->decodetarget && !data->videoformat)
+            ok = FALSE;
 
         /*
          * A video bitmap has no RGB layout. It gets a private pixel format of
@@ -991,7 +1003,7 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
             {
                 /* An inherited RGB pixfmt (friend) does not describe a video buffer */
                 data->prot.pixfmt = NULL;
-                ULONG bpp = (data->videoformat <= vHidd_VideoFmt_UYVY) ? 2 : 1;
+                ULONG bpp = ((data->videoformat <= vHidd_VideoFmt_UYVY) || (data->videoformat == vHidd_VideoFmt_P010)) ? 2 : 1;
                 struct TagItem vtags[] =
                 {
                     { aHidd_PixFmt_ColorModel,     vHidd_ColorModel_Video    },
@@ -1284,6 +1296,14 @@ VOID BM__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
 
         case aoHidd_BitMap_ColorSpace:
             *msg->storage = data->colorspace;
+            return;
+
+        case aoHidd_BitMap_DecodeTarget:
+            *msg->storage = data->decodetarget;
+            return;
+
+        case aoHidd_BitMap_VideoLayout:
+            *msg->storage = data->videolayout;
             return;
 
         case aoHidd_BitMap_PixFmt:
@@ -5552,6 +5572,10 @@ VOID BM__Hidd_BitMap__UnlockBuffer(OOP_Class *cl, OOP_Object *o, struct pHidd_Bi
         buffer is no longer scanned out and may be written again; it is then
         aHidd_BitMap_BackBuffer.
 
+        On a decode target (aHidd_BitMap_DecodeTarget) the driver first waits
+        for the decode still writing newFront, so a frame is never shown
+        half decoded.
+
         The base classes return FALSE.
 
     INPUTS
@@ -5567,4 +5591,38 @@ VOID BM__Hidd_BitMap__UnlockBuffer(OOP_Class *cl, OOP_Object *o, struct pHidd_Bi
 BOOL BM__Hidd_BitMap__SwapBuffers(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SwapBuffers *msg)
 {
     return FALSE;
+}
+
+/*****************************************************************************************
+
+    NAME
+        moHidd_BitMap_GetBufferHandle
+
+    SYNOPSIS
+        IPTR OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_GetBufferHandle *msg);
+
+        IPTR HIDD_BM_GetBufferHandle(OOP_Object *obj, ULONG buffer);
+
+    LOCATION
+        hidd.gfx.bitmap
+
+    FUNCTION
+        Returns the driver's handle of one buffer of a scan-out bitmap: what its
+        own GPU code (gallium import, the decoder) uses to name the buffer's
+        memory. aHidd_BitMap_BufferHandle gives the same for the back buffer.
+
+        The base classes return 0.
+
+    INPUTS
+        obj    - a scan-out bitmap
+        buffer - buffer index, 0 .. aHidd_BitMap_Buffers - 1
+
+    RESULT
+        The handle, 0 when there is none.
+
+*****************************************************************************************/
+
+IPTR BM__Hidd_BitMap__GetBufferHandle(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetBufferHandle *msg)
+{
+    return 0;
 }

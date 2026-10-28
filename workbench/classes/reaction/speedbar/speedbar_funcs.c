@@ -3,7 +3,7 @@
 
     Desc: Reaction speedbar.gadget - Button node management functions
 */
-#define DEBUG 1
+#define DEBUG 0
 
 #include <proto/exec.h>
 #include <proto/utility.h>
