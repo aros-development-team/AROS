@@ -4187,11 +4187,27 @@ static void gadgets_sync_back(struct M68KEmuContext *ctx)
     }
 }
 
+/* Programs walk Window->FirstGadget themselves: link the mirrors of the
+   window's gadgets in native order (system gadgets have none, left out) */
+static void window_gadgets_sync(struct M68KEmuContext *ctx, ULONG mw, struct Window *w)
+{
+    ULONG link = mw + M68K_WIN_FIRSTGADGET, mg;
+    struct Gadget *g;
+
+    for (g = w->FirstGadget; g; g = g->NextGadget)
+        if ((mg = gadget_m68k(ctx, g)))
+        {
+            m68k_write32(ctx, link, mg);
+            link = mg + M68K_GAD_NEXT;
+        }
+    m68k_write32(ctx, link, 0);
+}
+
 /* -438: AddGList(A0=window, A1=gadget, D0=position, D1=numGad, A2=requester) */
 static IPTR thunk_intuition_AddGList_t(struct M68KEmuContext *ctx, void *cpu)
 {
     struct Window *w = (struct Window *)shadow_lookup(ctx, THUNK_A(0));
-    LONG n = (LONG)THUNK_D(1);
+    LONG n = (LONG)THUNK_D(1), r;
     struct Gadget *g = gt_gadget_native(ctx, THUNK_A(1));
     /* a GadTools list is already linked natively, with gadgets the m68k mirror skips */
     if (g)
@@ -4202,7 +4218,9 @@ static IPTR thunk_intuition_AddGList_t(struct M68KEmuContext *ctx, void *cpu)
         bug("[m68kemu] AddGList window %08lx (%p) first %08lx n %ld -> native %p\n",
             (unsigned long)THUNK_A(0), w, (unsigned long)THUNK_A(1), (long)n, g);
     if (!g) return (IPTR)-1;
-    return (IPTR)(LONG)AddGList(w, g, (LONG)(WORD)THUNK_D(0), n, NULL);
+    r = AddGList(w, g, (LONG)(WORD)THUNK_D(0), n, NULL);
+    window_gadgets_sync(ctx, THUNK_A(0), w);
+    return (IPTR)r;
 }
 
 /* -42: AddGadget(A0=window, A1=gadget, D0=position) */
@@ -4210,8 +4228,11 @@ static IPTR thunk_intuition_AddGadget_t(struct M68KEmuContext *ctx, void *cpu)
 {
     struct Window *w = (struct Window *)shadow_lookup(ctx, THUNK_A(0));
     struct Gadget *g = w ? gadgets_from_m68k(ctx, THUNK_A(1), 1) : NULL;
+    LONG r;
     if (!g) return (IPTR)-1;
-    return (IPTR)(LONG)AddGadget(w, g, (LONG)(WORD)THUNK_D(0));
+    r = AddGadget(w, g, (LONG)(WORD)THUNK_D(0));
+    window_gadgets_sync(ctx, THUNK_A(0), w);
+    return (IPTR)r;
 }
 
 /* -432: RefreshGList(A0=gadgets, A1=window, A2=requester, D0=numGad) */
@@ -4241,6 +4262,7 @@ static IPTR thunk_intuition_RemoveGList_t(struct M68KEmuContext *ctx, void *cpu)
     if (!w || !g) return (IPTR)-1;
     r = RemoveGList(w, g, cnt);
     while (g && cnt-- != 0) { n = g->NextGadget; gadget_unmap(ctx, g); g = n; }
+    window_gadgets_sync(ctx, THUNK_A(0), w);
     return (IPTR)r;
 }
 
@@ -4253,6 +4275,7 @@ static IPTR thunk_intuition_RemoveGadget_t(struct M68KEmuContext *ctx, void *cpu
     if (!w || !g) return (IPTR)-1;
     r = RemoveGadget(w, g);
     gadget_unmap(ctx, g);
+    window_gadgets_sync(ctx, THUNK_A(0), w);
     return (IPTR)r;
 }
 

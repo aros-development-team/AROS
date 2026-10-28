@@ -100,6 +100,7 @@
 #define M68K_WIN_MOUSEX             14
 #define M68K_WIN_FLAGS              24
 #define M68K_WIN_TITLE              32
+#define M68K_WIN_FIRSTGADGET        62
 #define M68K_WIN_WSCREEN            46
 #define M68K_WIN_RPORT              50
 #define M68K_WIN_IDCMPFLAGS         82
