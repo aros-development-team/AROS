@@ -2969,7 +2969,7 @@ static ULONG open_screen(struct M68KEmuContext *ctx, const struct screen_req *r,
        for, so code that draws into the bitplanes has somewhere to draw;
        m68k_planar_touch() mirrors each written word onto the screen. */
     {
-        ULONG bpr = (ULONG)((width + 15) / 16) * 2, rows = (ULONG)height, d = (ULONG)(depth > 0 ? depth : 1);
+        ULONG bpr = (ULONG)((width + 15) / 16) * 2, rows = (ULONG)height, d = (ULONG)(depth > 8 ? 8 : depth > 0 ? depth : 1);
         ULONG psize = bpr * rows, i;
         ULONG base = (d <= 8 && psize) ? M68KEmu_HeapAlloc(ctx, psize * d, 0) : 0;
         m68k_write16(ctx, ms + 184 + 0, (UWORD)bpr);

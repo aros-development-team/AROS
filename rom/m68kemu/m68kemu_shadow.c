@@ -256,6 +256,10 @@ static void m68k_drawinfo_extras(struct M68KEmuContext *ctx, ULONG md, struct Dr
     }
     m68k_write32(ctx, md + 4, pens);
     m68k_write32(ctx, md + 8, dri->dri_Font ? shadow_create_by_name(ctx, "TextFont", dri->dri_Font) : 0);
+    /* the program's screens are 8-plane views of the display: a deeper
+       dri_Depth has it fill more Planes[] than a BitMap holds */
+    if (dri->dri_Depth > 8)
+        m68k_write16(ctx, md + 12, 8);
 }
 
 /* A program that draws text itself reads the glyphs: tf_CharData (bitplane
