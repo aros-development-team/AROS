@@ -284,6 +284,7 @@ void  m68k_log(struct M68KEmuContext *ctx, const char *fmt, ...);
 void  m68k_sync_windowptr(struct M68KEmuContext *ctx);
 ULONG M68KEmu_Call68k(struct M68KEmuContext *ctx, void *outer_cpu, ULONG entry, const ULONG regs[15]);
 void  M68KEmu_FreeNestCpus(struct M68KEmuContext *ctx);
+void  M68KEmu_StopCpu(struct M68KEmuContext *ctx, void *cpu);
 void  m68k_restore_windowptr(struct M68KEmuContext *ctx);
 void  m68k_dump_callring(struct M68KEmuContext *ctx);
 /* m68kemu_tasks.c */

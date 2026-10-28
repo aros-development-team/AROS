@@ -803,6 +803,18 @@ ULONG M68KEmu_RunTask(struct M68KEmuContext *ctx, ULONG entry, ULONG stacktop, c
     return d0;
 }
 
+/* dos Exit(): the task whose CPU calls it ends - a process of the program,
+   or the program itself */
+void M68KEmu_StopCpu(struct M68KEmuContext *ctx, void *cpu)
+{
+    AROSMoira *c = static_cast<AROSMoira *>(cpu);
+
+    if (c->nested)
+        c->nested_done = true;
+    else
+        ctx->running = FALSE;
+}
+
 void M68KEmu_FreeNestCpus(struct M68KEmuContext *ctx)
 {
     for (int i = 0; i < M68KEMU_MAX_NEST; i++)

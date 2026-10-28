@@ -2588,6 +2588,14 @@ static IPTR thunk_dos_SetCurrentDirName_m(struct M68KEmuContext *ctx, void *cpu)
 static IPTR thunk_dos_SetProgramName_m(struct M68KEmuContext *ctx, void *cpu)    { return SetProgramName(name_arg(ctx, THUNK_D(1))); }
 static IPTR thunk_dos_SetPrompt_m(struct M68KEmuContext *ctx, void *cpu)         { return SetPrompt(name_arg(ctx, THUNK_D(1))); }
 
+/* dos -144: Exit(D1=returnCode): the calling task of the program ends; the
+   native Exit() would end the emulator's process inside this call */
+static IPTR thunk_dos_Exit_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    M68KEmu_StopCpu(ctx, cpu);
+    return THUNK_D(1);
+}
+
 /* dos -198: Delay(D1=ticks): the program's other tasks run meanwhile */
 static IPTR thunk_dos_Delay_m(struct M68KEmuContext *ctx, void *cpu)
 {
@@ -2966,6 +2974,7 @@ const struct M68KThunkEntry m68kemu_thunks_dos[] = {
     { 504, thunk_dos_RunCommand },
     { 498, m68k_dos_CreateNewProc },
     { 198, thunk_dos_Delay_m },
+    { 144, thunk_dos_Exit_m },
     { 558, thunk_dos_SetCurrentDirName_m },
     { 570, thunk_dos_SetProgramName_m },
     { 582, thunk_dos_SetPrompt_m },
