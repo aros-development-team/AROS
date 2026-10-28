@@ -1172,6 +1172,12 @@ static ULONG imsg_to_m68k(struct M68KEmuContext *ctx, struct IntuiMessage *imsg)
     m68k_write16(ctx, mi + 34, (UWORD)imsg->MouseY);
     m68k_write32(ctx, mi + 36, imsg->Seconds);
     m68k_write32(ctx, mi + 40, imsg->Micros);
+    /* programs read the pointer position from the window (Blitz WMouseX/Y) */
+    if (m68k_win && imsg->IDCMPWindow)
+    {
+        m68k_write16(ctx, m68k_win + M68K_WIN_MOUSEY, (UWORD)imsg->IDCMPWindow->MouseY);
+        m68k_write16(ctx, m68k_win + M68K_WIN_MOUSEX, (UWORD)imsg->IDCMPWindow->MouseX);
+    }
     /* IAddress (offset 28): a gadget message names the program's own gadget */
     {
         ULONG mg = gadget_m68k(ctx, imsg->IAddress);
