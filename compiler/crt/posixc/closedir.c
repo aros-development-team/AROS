@@ -67,6 +67,7 @@
     {
         UnLock(desc->fcb->handle);
         __fcb_unlock(desc->fcb);
+        __flock_release(desc->fcb);
         FreeVec(desc->fcb);
     }
     else

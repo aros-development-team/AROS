@@ -27,6 +27,7 @@ struct __random_state;
 struct __env_item;
 struct _fdesc;
 struct vfork_data;
+struct __flock_registry;
 
 struct PosixCIntBase
 {
@@ -96,8 +97,8 @@ struct PosixCIntBase
     int cd_changed;
     BPTR cd_lock;
 
-    /* flock.c */
-    struct MinList _file_locks, *file_locks;
+    /* flock.c: registry shared by all bases of this library */
+    struct __flock_registry *flock_registry;
 
     /* umask */
     mode_t umask;
