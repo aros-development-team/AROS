@@ -91,6 +91,11 @@ Version 41.3 also provides `LookupHostA()` and queued generic record queries:
 `RequestMDNSEvent()` wakeup. See `DISCOVERY.md` for ownership, record format,
 bounds and restart behavior. Hook delivery remains deliberately unavailable;
 queries do not execute client code in mdnsd.
+The queued browse, resolve and generic query APIs include services registered
+with this same mdnsd. Their canonical PTR, SRV, TXT, address and service-type
+records are reflected internally per interface; the daemon does not depend on
+receiving its own multicast packets. Updates and withdrawals produce the same
+queued changes as records learned from the link.
 `FreeTXTRecord` and `UnpublishNIPCEntitiesA`
 do nothing. They invoke no callbacks, change no output buffers and take
 ownership of no memory. Public headers include the upstream handles,
