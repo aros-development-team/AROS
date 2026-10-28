@@ -38,8 +38,11 @@ target) and a stack that provides `bsdsocket.library` v4 (AROSTCP).
 ## Running the agent on AROS
 
 ```
-ARDA [PORT=<n>] [ADDRESS=<dotted quad>] [IDLE=<secs>] [QUIET]
+ARDA [PORT=<n>] [ADDRESS=<dotted quad>] [IDLE=<secs>] [QUIET] [CONTROL]
 ```
+* `CONTROL` enables the control mode (PROTOCOL.md): file transfer (`PUT`/`GET`),
+  `DIR`/`DELETE`/`MKDIR`, `SETENV`/`GETENV`, `RUN`/`JOBS`/`JOB`/`WAIT` and
+  `REBOOT`. Off by default; the agent is then read-only as documented.
 
 * Default: port 7777 on **127.0.0.1**.  Remote access requires an explicit
   `ADDRESS=` (the interface address or `0.0.0.0`) and should only be used on
@@ -70,6 +73,15 @@ python3 aros_debug.py --host 10.0.0.2 --output mem.txt memory
 python3 aros_debug.py --host 10.0.0.2 log read 50
 python3 aros_debug.py --host 10.0.0.2 net interfaces
 python3 aros_debug.py --host 10.0.0.2 raw "LOG READ SINCE=120 SRC=app"
+
+# control mode (agent started with CONTROL)
+python3 aros_debug.py --host 10.0.0.2 put build/nouveau.hidd SYS:Devs/Drivers/nouveau.hidd
+python3 aros_debug.py --host 10.0.0.2 get SYS:nouveau.log nouveau.log
+python3 aros_debug.py --host 10.0.0.2 setenv NOUVEAU_NVDEC_EXP 6
+python3 aros_debug.py --host 10.0.0.2 run RAM:job.out SYS:Extras/MultiMedia/Video/vadecode -n 2 clip.mp4
+python3 aros_debug.py --host 10.0.0.2 --timeout 300 wait 1 240
+python3 aros_debug.py --host 10.0.0.2 dir SYS:nouveau-dump
+python3 aros_debug.py --host 10.0.0.2 reboot
 ```
 
 * `ARDA_HOST` / `ARDA_PORT` in the environment set the defaults.

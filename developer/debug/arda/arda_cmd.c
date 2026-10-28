@@ -132,7 +132,8 @@ static void cmd_ping(struct Arda *a, char *args)
 
 static void cmd_version(struct Arda *a, char *args)
 {
-    arda_resp_ok(&a->resp, "ARDA/" ARDA_PROTOCOL " agent " ARDA_AGENT_VERSION);
+    arda_resp_ok(&a->resp, a->control ? "ARDA/" ARDA_PROTOCOL " agent " ARDA_AGENT_VERSION " control"
+                                      : "ARDA/" ARDA_PROTOCOL " agent " ARDA_AGENT_VERSION);
 }
 
 static const struct ArdaCommand commands[];
@@ -162,6 +163,7 @@ static void cmd_status(struct Arda *a, char *args)
     arda_resp_line(&a->resp, "ERRORS=%lu", (unsigned long)a->errors);
     arda_resp_line(&a->resp, "MAX_LINE=%d", ARDA_MAX_LINE);
     arda_resp_line(&a->resp, "MAX_RESPONSE=%d", ARDA_MAX_RESP);
+    arda_resp_line(&a->resp, "CONTROL=%d", a->control ? 1 : 0);
     arda_resp_end(&a->resp);
 }
 
@@ -183,6 +185,19 @@ static const struct ArdaCommand commands[] =
     { "LOG",     arda_cmd_log,     "STATUS | READ [n] [SINCE=seq] [SRC=x] | CLEAR" },
     { "NET",     arda_cmd_net,     "STATUS | INTERFACES | ROUTES | ARP | STATS [IP|TCP|UDP]" },
     { "QUIT",    cmd_quit,    "close this connection"                        },
+    /* control mode (CONTROL switch): these change state */
+    { "PUT",     arda_cmd_put,    "(control) <path> <size>: write the raw body that follows to a file" },
+    { "GET",     arda_cmd_get,    "(control) <path>: OK SIZE <n> then the file's raw bytes" },
+    { "DIR",     arda_cmd_dir,    "(control) [path]: directory entries"      },
+    { "DELETE",  arda_cmd_delete, "(control) <path>: delete a file"          },
+    { "MKDIR",   arda_cmd_mkdir,  "(control) <path>: create a directory"     },
+    { "SETENV",  arda_cmd_setenv, "(control) <name> [value]: set or unset a global env variable" },
+    { "GETENV",  arda_cmd_getenv, "(control) <name>: read a global env variable" },
+    { "RUN",     arda_cmd_run,    "(control) <output-file> <command line>: start a job, OK JOB <n>" },
+    { "JOBS",    arda_cmd_jobs,   "(control) list jobs"                      },
+    { "JOB",     arda_cmd_job,    "(control) <n>: one job's record"          },
+    { "WAIT",    arda_cmd_wait,   "(control) <n> [secs]: wait for a job, OK RC <rc>" },
+    { "REBOOT",  arda_cmd_reboot, "(control) cold reboot after the reply"    },
     { NULL,      NULL,        NULL                                           }
 };
 
@@ -224,7 +239,14 @@ void arda_dispatch(struct Arda *a, char *line)
     if (c->name)
     {
         arda_resp_reset(&a->resp);
+        a->replied = FALSE;
         c->fn(a, args);
+        if (a->replied)
+        {
+            /* the handler sent its own bytes (GET) */
+            a->replied = FALSE;
+            return;
+        }
         if (a->resp.multi)
             arda_resp_end(&a->resp);
         if (a->resp.len == 0)

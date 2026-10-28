@@ -16,7 +16,7 @@
 #include <dos/dos.h>
 
 #define ARDA_PROTOCOL        "1"            /* protocol version, see PROTOCOL.md */
-#define ARDA_AGENT_VERSION   "0.1"
+#define ARDA_AGENT_VERSION   "0.2"
 #define ARDA_DEFAULT_PORT    7777
 #define ARDA_DEFAULT_ADDRESS "127.0.0.1"    /* loopback unless told otherwise */
 #define ARDA_DEFAULT_IDLE    60             /* seconds before an idle client is dropped */
@@ -25,6 +25,7 @@
 #define ARDA_MAX_RESP        65536          /* response buffer, incl. terminator */
 #define ARDA_RESP_RESERVE    32             /* kept free for "END TRUNCATED\n" */
 #define ARDA_RECV_CHUNK      512
+#define ARDA_MAX_JOBS        8              /* control mode: RUN job slots */
 
 /* A response under construction.  Multi-line responses start with a bare
    "OK" line and finish with "END" (or "END TRUNCATED" when the buffer
@@ -47,6 +48,29 @@ struct ArdaClient
     BOOL    closing;                        /* close after the pending reply */
     ULONG   idle;                           /* seconds since last input */
     char    peer[48];
+    /* control mode: a PUT body in progress (raw bytes, not lines) */
+    BPTR    rawfile;
+    ULONG   rawleft;
+    ULONG   rawtotal;
+    BOOL    rawfailed;
+};
+
+/* control mode: a RUN job; the wrapper process writes rc and finished */
+#define ARDA_JOB_FREE       0
+#define ARDA_JOB_RUNNING    1
+#define ARDA_JOB_DONE       2
+
+struct ArdaJob
+{
+    ULONG           id;
+    ULONG           state;
+    volatile BOOL   finished;               /* set by the wrapper, last */
+    BOOL            orphaned;               /* agent shut down while it ran */
+    LONG            rc;
+    ULONG           started, ended;         /* agent uptime seconds */
+    struct Process *proc;
+    char            output[200];
+    char            command[256];
 };
 
 struct Arda
@@ -56,6 +80,11 @@ struct Arda
     ULONG               idle_limit;         /* 0 disables the idle timeout */
     BOOL                quiet;
     BOOL                running;
+    BOOL                control;            /* CONTROL switch: files, env, jobs, reboot */
+    BOOL                replied;            /* a handler sent its own reply (raw body) */
+    BOOL                reboot;             /* ColdReboot() once the reply is out */
+    struct ArdaJob      jobs[ARDA_MAX_JOBS];
+    ULONG               jobseq;
     struct ArdaClient   client;
     struct ArdaResp     resp;
     char                respbuf[ARDA_MAX_RESP];
@@ -104,5 +133,24 @@ void  arda_cmd_log(struct Arda *a, char *args);
 
 /* arda_netdiag.c */
 void  arda_cmd_net(struct Arda *a, char *args);
+
+/* arda_ctl.c (control mode) */
+void  arda_ctl_init(struct Arda *a);
+void  arda_ctl_exit(struct Arda *a);
+void  arda_ctl_poll(struct Arda *a);
+ULONG arda_ctl_raw_input(struct Arda *a, const char *data, ULONG n);
+void  arda_ctl_raw_abort(struct Arda *a);
+void  arda_cmd_put(struct Arda *a, char *args);
+void  arda_cmd_get(struct Arda *a, char *args);
+void  arda_cmd_dir(struct Arda *a, char *args);
+void  arda_cmd_delete(struct Arda *a, char *args);
+void  arda_cmd_mkdir(struct Arda *a, char *args);
+void  arda_cmd_setenv(struct Arda *a, char *args);
+void  arda_cmd_getenv(struct Arda *a, char *args);
+void  arda_cmd_run(struct Arda *a, char *args);
+void  arda_cmd_jobs(struct Arda *a, char *args);
+void  arda_cmd_job(struct Arda *a, char *args);
+void  arda_cmd_wait(struct Arda *a, char *args);
+void  arda_cmd_reboot(struct Arda *a, char *args);
 
 #endif /* ARDA_H */
