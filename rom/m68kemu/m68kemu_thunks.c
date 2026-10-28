@@ -524,13 +524,13 @@ static IPTR thunk_exec_RawDoFmt(struct M68KEmuContext *ctx, void *cpu)
     return (IPTR)(out - buf);
 }
 
-/* -372: InitSemaphore(A0=semaphore) */
+/* -558: InitSemaphore(A0=semaphore) */
 static IPTR thunk_exec_InitSemaphore(struct M68KEmuContext *ctx, void *cpu) { return 0; }
 
-/* -378: ObtainSemaphore(A0=semaphore) */
+/* -564: ObtainSemaphore(A0=semaphore) */
 static IPTR thunk_exec_ObtainSemaphore(struct M68KEmuContext *ctx, void *cpu) { return 0; }
 
-/* -384: ReleaseSemaphore(A0=semaphore) */
+/* -570: ReleaseSemaphore(A0=semaphore) */
 static IPTR thunk_exec_ReleaseSemaphore(struct M68KEmuContext *ctx, void *cpu) { return 0; }
 
 /* The rest of the semaphore family, consistent with the three above: the
@@ -579,16 +579,27 @@ static IPTR thunk_exec_AddPort(struct M68KEmuContext *ctx, void *cpu) { return 0
 static IPTR thunk_exec_RemPort(struct M68KEmuContext *ctx, void *cpu) { return 0; }
 
 
+/* Pools come from the containment heap. The header keeps the pool's memory
+   flags and a list of its allocations, so DeletePool frees them all:
+     pool:  requirements, 'POOL', first
+     each:  next, prev (0 = first), size, 0, then the memory */
+#define POOL_MAGIC 0x504F4F4C
+#define POOL_HDR   16
+
+static BOOL is_pool(struct M68KEmuContext *ctx, ULONG pool)
+{
+    return pool && pool + 12 <= ctx->mem_size && m68k_read32(ctx, pool + 4) == POOL_MAGIC;
+}
+
 /* -696: CreatePool(D0=requirements, D1=puddleSize, D2=threshSize) -> D0=pool */
 static IPTR thunk_exec_CreatePool(struct M68KEmuContext *ctx, void *cpu)
 {
-    /* The pool's allocations come from the containment heap; the header
-       only keeps the pool's memory flags (MEMF_CLEAR) for AllocPooled */
-    ULONG pool = M68KEmu_HeapAlloc(ctx, 8, MEMF_CLEAR);
+    ULONG pool = M68KEmu_HeapAlloc(ctx, 12, 0);
     if (pool)
     {
         m68k_write32(ctx, pool, THUNK_D(0));
-        m68k_write32(ctx, pool + 4, 0x504F4F4C);   /* 'POOL' */
+        m68k_write32(ctx, pool + 4, POOL_MAGIC);
+        m68k_write32(ctx, pool + 8, 0);
     }
     return pool;
 }
@@ -596,31 +607,58 @@ static IPTR thunk_exec_CreatePool(struct M68KEmuContext *ctx, void *cpu)
 /* -708: AllocPooled(A0=poolHeader, D0=memSize) -> D0=memory */
 static IPTR thunk_exec_AllocPooled(struct M68KEmuContext *ctx, void *cpu)
 {
-    ULONG size = THUNK_D(0), pool = THUNK_A(0), reqs = 0;
-    if (pool && pool + 8 <= ctx->mem_size && m68k_read32(ctx, pool + 4) == 0x504F4F4C)
-        reqs = m68k_read32(ctx, pool);
-    return (IPTR)M68KEmu_HeapAlloc(ctx, size, reqs);
+    ULONG size = THUNK_D(0), pool = THUNK_A(0), b, first;
+
+    if (!is_pool(ctx, pool) || !size || size > ctx->mem_size)
+        return 0;
+    b = M68KEmu_HeapAlloc(ctx, POOL_HDR + size, m68k_read32(ctx, pool));
+    if (!b)
+        return 0;
+    first = m68k_read32(ctx, pool + 8);
+    m68k_write32(ctx, b, first);
+    m68k_write32(ctx, b + 4, 0);
+    m68k_write32(ctx, b + 8, size);
+    m68k_write32(ctx, b + 12, 0);
+    if (first)
+        m68k_write32(ctx, first + 4, b);
+    m68k_write32(ctx, pool + 8, b);
+    return b + POOL_HDR;
+}
+
+static void pool_unlink_free(struct M68KEmuContext *ctx, ULONG pool, ULONG b)
+{
+    ULONG next = m68k_read32(ctx, b), prev = m68k_read32(ctx, b + 4);
+
+    if (prev)
+        m68k_write32(ctx, prev, next);
+    else
+        m68k_write32(ctx, pool + 8, next);
+    if (next)
+        m68k_write32(ctx, next + 4, prev);
+    M68KEmu_HeapFree(ctx, b, POOL_HDR + m68k_read32(ctx, b + 8));
 }
 
 /* -714: FreePooled(A0=poolHeader, A1=memory, D0=memSize) */
 static IPTR thunk_exec_FreePooled(struct M68KEmuContext *ctx, void *cpu)
 {
-    ULONG addr = THUNK_A(1);
-    ULONG size = THUNK_D(0);
-    M68KEmu_HeapFree(ctx, addr, size);
+    ULONG pool = THUNK_A(0), mem = THUNK_A(1);
+
+    if (is_pool(ctx, pool) && mem >= POOL_HDR && mem <= ctx->mem_size)
+        pool_unlink_free(ctx, pool, mem - POOL_HDR);
     return 0;
 }
 
-/* -720: DeletePool(A0=poolHeader) */
+/* -702: DeletePool(A0=poolHeader) */
 static IPTR thunk_exec_DeletePool(struct M68KEmuContext *ctx, void *cpu)
 {
-    /* the pool's allocations stay until the context is destroyed */
-    ULONG pool = THUNK_A(0);
-    if (pool && pool + 8 <= ctx->mem_size && m68k_read32(ctx, pool + 4) == 0x504F4F4C)
-    {
-        m68k_write32(ctx, pool + 4, 0);
-        M68KEmu_HeapFree(ctx, pool, 8);
-    }
+    ULONG pool = THUNK_A(0), b;
+
+    if (!is_pool(ctx, pool))
+        return 0;
+    while ((b = m68k_read32(ctx, pool + 8)))
+        pool_unlink_free(ctx, pool, b);
+    m68k_write32(ctx, pool + 4, 0);
+    M68KEmu_HeapFree(ctx, pool, 12);
     return 0;
 }
 
@@ -1390,7 +1428,7 @@ const struct M68KThunkEntry m68kemu_thunks_exec[] = {
     { 696, thunk_exec_CreatePool },
     { 708, thunk_exec_AllocPooled },
     { 714, thunk_exec_FreePooled },
-    { 720, thunk_exec_DeletePool },
+    { 702, thunk_exec_DeletePool },
     { 684, thunk_exec_AllocVec },
     { 690, thunk_exec_FreeVec },
     { 216, thunk_exec_AvailMem },
