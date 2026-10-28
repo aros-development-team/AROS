@@ -800,12 +800,72 @@ static void set_pastebuffer(struct filehandle *fh, APTR data, ULONG size,
     fh->pastebufferpos = 0;
 }
 
+#define PASTE_FRAME_SIZE 12
+
+static BOOL bracketed_paste(struct filehandle *fh)
+{
+    struct IOStdReq query;
+    ULONG enabled = 0;
+
+    if (!(fh->flags & FHFLG_RAW) ||
+        !(fh->devcaps & CONCAPF_BRACKETEDPASTE))
+        return FALSE;
+
+    query = fh->conwriteio;
+    query.io_Command = CD_GETPASTEMODE;
+    query.io_Data = &enabled;
+    query.io_Length = sizeof(enabled);
+    query.io_Actual = 0;
+
+    return !DoIO(ioReq(&query)) &&
+        query.io_Actual == sizeof(enabled) && enabled == 1;
+}
+
+/* Wrap the text in place, dropping ESC and Ctrl-C from it. The buffer
+   must have PASTE_FRAME_SIZE bytes to spare. */
+static ULONG frame_paste(UBYTE *buffer, ULONG length)
+{
+    ULONG in, out = 0;
+
+    for (in = 0; in < length; in++)
+        if (buffer[in] != 0x1B && buffer[in] != 0x03)
+            buffer[out++] = buffer[in];
+    memmove(buffer + 6, buffer, out);
+    CopyMem("\x1B[200~", buffer, 6);
+    CopyMem("\x1B[201~", buffer + 6 + out, 6);
+
+    return out + PASTE_FRAME_SIZE;
+}
+
+/* ConClip's buffer may have no room to spare for the frame. */
+static BOOL frame_text(struct ConClipTextMsg *text)
+{
+    if (text->length > 0x7fffffffUL - PASTE_FRAME_SIZE)
+        return FALSE;
+    if (text->capacity - text->length < PASTE_FRAME_SIZE)
+    {
+        ULONG capacity = text->length + PASTE_FRAME_SIZE;
+        UBYTE *data = AllocMem(capacity, MEMF_ANY);
+
+        if (!data)
+            return FALSE;
+        CopyMem(text->data, data, text->length);
+        FreeMem(text->data, text->capacity);
+        text->data = data;
+        text->capacity = capacity;
+    }
+    text->length = frame_paste(text->data, text->length);
+
+    return TRUE;
+}
+
 void do_paste(struct filehandle * fh)
 {
     struct MsgPort replyport, *port;
     struct SGWork sgw;
     struct MyEditHookMsg msg;
     struct StringInfo sinfo;
+    BOOL bracketed;
 
     if (!(port = FindPort(CONCLIP_PORTNAME)))
     {
@@ -846,7 +906,8 @@ void do_paste(struct filehandle * fh)
             {
                 D(bug("Pasting %lu bytes\n", (unsigned long)text.length));
 
-                if (text.length && text.length <= text.capacity)
+                if (text.length && text.length <= text.capacity &&
+                    (!bracketed_paste(fh) || frame_text(&text)))
                     set_pastebuffer(fh, text.data, text.length, text.capacity);
                 else
                     FreeMem(text.data, text.capacity);
@@ -856,7 +917,8 @@ void do_paste(struct filehandle * fh)
     }
 
     /* ConClip only ever looks at MaxChars in StringInfo */
-    sinfo.MaxChars = PASTEBUFSIZE;
+    bracketed = bracketed_paste(fh);
+    sinfo.MaxChars = bracketed ? PASTEBUFSIZE - PASTE_FRAME_SIZE : PASTEBUFSIZE;
 
     memset( &sgw, 0, sizeof( struct SGWork ) );
     sgw.WorkBuffer = AllocMem(PASTEBUFSIZE, MEMF_CLEAR | MEMF_ANY);
@@ -885,6 +947,8 @@ void do_paste(struct filehandle * fh)
         FreeMem(sgw.WorkBuffer, PASTEBUFSIZE);
         return;
     }
+    if (bracketed)
+        sgw.BufferPos = frame_paste((UBYTE *)sgw.WorkBuffer, sgw.BufferPos);
     set_pastebuffer(fh, sgw.WorkBuffer, sgw.BufferPos, PASTEBUFSIZE);
 }
 
