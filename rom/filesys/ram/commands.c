@@ -1480,10 +1480,7 @@ BOOL CmdExamineAll(struct Handler *handler, struct Lock *lock,
          struct_size = examine_sizes[type - 1];
          name = ((struct Node *)object)->ln_Name;
          name_size = StrSize(name);
-         if(((struct Node *)object)->ln_Pri == ST_SOFTLINK)
-            comment = &((struct Node *)object)->ln_Type;
-         else
-            comment = object->comment;
+         comment = object->comment;
          if(comment)
             comment_size = StrSize(comment);
          else
@@ -1746,7 +1743,7 @@ BOOL CmdSetProtect(struct Handler *handler, struct Lock *lock,
 
    /* Set new protection flags if object isn't in use */
 
-   object = GetHardObject(handler, lock, name, NULL);
+   object = GetObjectNoFollow(handler, lock, name, NULL);
    if(object != NULL)
    {
       if(handler->locked)
@@ -1813,7 +1810,7 @@ BOOL CmdSetComment(struct Handler *handler, struct Lock *lock,
 
    /* Get object */
 
-   object = GetHardObject(handler, lock, name, NULL);
+   object = GetObjectNoFollow(handler, lock, name, NULL);
    if(object == NULL)
       error = IoErr();
    else
@@ -2102,7 +2099,7 @@ BOOL CmdSetDate(struct Handler *handler, struct Lock *lock, STRPTR name,
 
    if(error == 0)
    {
-      object = GetHardObject(handler, lock, name, NULL);
+      object = GetObjectNoFollow(handler, lock, name, NULL);
       if(object != NULL)
       {
          error = ramSecCheckProperty(handler, object);

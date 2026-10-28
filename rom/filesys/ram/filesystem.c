@@ -417,6 +417,7 @@ VOID DeleteObject(struct Handler *handler, struct Object *object)
 
       SetString(handler, (TEXT **)&((struct Node *)object)->ln_Name, NULL);
       SetString(handler, &object->comment, NULL);
+      SetString(handler, &object->soft_link_target, NULL);
       handler->block_count -= object->block_count;
       FreePooled(handler->clear_pool, object, sizeof(struct Object));
       if(object_type == ST_LINKDIR)
@@ -1207,7 +1208,7 @@ BOOL ExamineObject(struct Handler *handler, struct Object *object,
       info->fib_FileName[0] = StrSize(s) - 1;
       CopyMem(s, &info->fib_FileName[1], info->fib_FileName[0]);
       s = object->comment;
-      if(s != NULL && ((struct Node *)object)->ln_Pri != ST_SOFTLINK) {
+      if(s != NULL) {
          info->fib_Comment[0] = StrSize(s) - 1;
          CopyMem(s, &info->fib_Comment[1], info->fib_Comment[0]);
       } else

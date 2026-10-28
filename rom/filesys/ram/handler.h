@@ -115,11 +115,11 @@ struct Object
    ULONG protection;
    ULONG owner;             /* uid<<16 | gid (multi-user), secOWNER_NOBODY if unowned */
    TEXT *comment;
+   TEXT *soft_link_target;
    struct MinNode hard_link;
    struct MinList notifications;
    struct Block start_block;   /* a zero-length block */
 };
-#define soft_link_target comment
 
 
 struct Opening
