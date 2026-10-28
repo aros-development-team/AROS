@@ -1,12 +1,19 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
-    m68kemu.library — more than one task in a 68k program: its processes.
+    m68kemu.library — more than one task in a 68k program: its processes,
+    and the messages they and other programs send each other.
 
     Every task of the program runs its own CPU over the program's memory.
     The emulator's state is shared, so a CPU runs 68k code only while it
     holds the program's lock; it lets go in calls that wait, and now and
     then between instructions, so the tasks take turns as on AmigaOS.
+
+    A message the program makes lives in its memory in 68k layout. Sent to
+    a port in its memory, it is queued there as exec queues it, and the
+    port's task is signalled. Sent to a native port (CreateMsgPort, a
+    process's pr_MsgPort), it travels in a small native carrier; GetMsg
+    hands the program its own message again.
 */
 
 #include <aros/debug.h>
@@ -23,6 +30,8 @@
 #include "m68kemu_intern.h"
 #include "m68kemu_thunks.h"
 #include "m68kemu_offsets.h"
+
+void *shadow_lookup(struct M68KEmuContext *ctx, ULONG m68k_addr);
 
 /* ---------------------------------------------------------------------- */
 /* the program's lock                                                     */
@@ -67,9 +76,140 @@ void m68k_wait_children(struct M68KEmuContext *ctx)
                  ctx->program_name[0] ? ctx->program_name : "68k program", (long)ctx->num_children);
 }
 
+/* ---------------------------------------------------------------------- */
+/* exec lists in the program's memory                                     */
+/* struct List: lh_Head 0, lh_Tail 4, lh_TailPred 8; struct MsgPort:
+   mp_Flags 14, mp_SigBit 15, mp_SigTask 16, mp_MsgList 20 */
+
+#define MP_FLAGS   14
+#define MP_SIGBIT  15
+#define MP_SIGTASK 16
+#define MP_LIST    20
+#define MN_REPLY   14
+#define LN_TYPE    8
+
 static BOOL in_mem(struct M68KEmuContext *ctx, ULONG a, ULONG len)
 {
     return a && a < ctx->mem_size && len <= ctx->mem_size - a;
+}
+
+static void list_addtail(struct M68KEmuContext *ctx, ULONG list, ULONG node)
+{
+    ULONG pred = m68k_read32(ctx, list + 8);
+
+    m68k_write32(ctx, node, list + 4);
+    m68k_write32(ctx, node + 4, pred);
+    m68k_write32(ctx, pred, node);
+    m68k_write32(ctx, list + 8, node);
+}
+
+static ULONG list_remhead(struct M68KEmuContext *ctx, ULONG list)
+{
+    ULONG head = m68k_read32(ctx, list), succ;
+
+    if (!in_mem(ctx, head, 8) || !(succ = m68k_read32(ctx, head)))
+        return 0;
+    m68k_write32(ctx, list, succ);
+    m68k_write32(ctx, succ + 4, list);
+    return head;
+}
+
+/* a port in the program's memory: one without a native port behind it */
+BOOL m68k_port_is_68k(struct M68KEmuContext *ctx, ULONG mport)
+{
+    return in_mem(ctx, mport, 34) && !shadow_lookup(ctx, mport);
+}
+
+ULONG m68k_port_getmsg(struct M68KEmuContext *ctx, ULONG mport)
+{
+    return list_remhead(ctx, mport + MP_LIST);
+}
+
+/* WaitPort on a port in the program's memory */
+ULONG m68k_port_wait(struct M68KEmuContext *ctx, ULONG mport)
+{
+    ULONG head;
+
+    while (!(head = m68k_read32(ctx, mport + MP_LIST)) || !m68k_read32(ctx, head))
+    {
+        UBYTE bit = ctx->mem[mport + MP_SIGBIT];
+        m68k_gil_release(ctx);
+        Wait(1UL << (bit & 31));
+        m68k_gil_obtain(ctx);
+    }
+    return head;
+}
+
+/* ---------------------------------------------------------------------- */
+/* sending                                                                */
+
+static const char carrier_name[] = "m68kemu carrier";
+
+struct M68KCarrier
+{
+    struct Message msg;
+    ULONG mmsg;
+    UBYTE type;
+};
+
+void m68k_deliver(struct M68KEmuContext *ctx, ULONG mport, ULONG mmsg, UBYTE type)
+{
+    struct MsgPort *port;
+
+    if (!in_mem(ctx, mmsg, 20))
+        return;
+    ctx->mem[mmsg + LN_TYPE] = type;
+    if ((port = (struct MsgPort *)shadow_lookup(ctx, mport)))
+    {
+        struct M68KCarrier *c = AllocVec(sizeof(*c), MEMF_PUBLIC | MEMF_CLEAR);
+        if (!c)
+            return;
+        c->msg.mn_Node.ln_Name = (STRPTR)carrier_name;
+        c->msg.mn_Length = sizeof(*c);
+        c->mmsg = mmsg;
+        c->type = type;
+        PutMsg(port, &c->msg);
+        return;
+    }
+    if (!in_mem(ctx, mport, 34))
+        return;
+    list_addtail(ctx, mport + MP_LIST, mmsg);
+    if ((ctx->mem[mport + MP_FLAGS] & PF_ACTION) == PA_SIGNAL)
+    {
+        struct Task *t = (struct Task *)shadow_lookup(ctx, m68k_read32(ctx, mport + MP_SIGTASK));
+        if (t)
+            Signal(t, 1UL << (ctx->mem[mport + MP_SIGBIT] & 31));
+    }
+}
+
+/* a native message from a native port: the program's own, if it came in a carrier */
+ULONG m68k_msg_from_native(struct M68KEmuContext *ctx, struct Message *m)
+{
+    struct M68KCarrier *c = (struct M68KCarrier *)m;
+    ULONG mmsg;
+
+    if (!m || (const char *)m->mn_Node.ln_Name != carrier_name)
+        return 0;
+    mmsg = c->mmsg;
+    ctx->mem[mmsg + LN_TYPE] = c->type;
+    FreeVec(c);
+    return mmsg;
+}
+
+/* ReplyMsg of a message in the program's memory */
+void m68k_reply(struct M68KEmuContext *ctx, ULONG mmsg)
+{
+    ULONG rp;
+
+    if (!in_mem(ctx, mmsg, 20))
+        return;
+    if (ctx->trace_calls)
+        bug("[m68kemu] ReplyMsg %08lx to port %08lx (%s)\n", (unsigned long)mmsg, (unsigned long)m68k_read32(ctx, mmsg + MN_REPLY),
+            shadow_lookup(ctx, m68k_read32(ctx, mmsg + MN_REPLY)) ? "native" : "in memory");
+    if ((rp = m68k_read32(ctx, mmsg + MN_REPLY)))
+        m68k_deliver(ctx, rp, mmsg, NT_REPLYMSG);
+    else
+        ctx->mem[mmsg + LN_TYPE] = NT_FREEMSG;
 }
 
 /* ---------------------------------------------------------------------- */

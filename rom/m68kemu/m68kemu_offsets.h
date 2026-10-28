@@ -39,6 +39,7 @@
 #define M68K_PR_COS                 160
 #define M68K_PR_CLI                 172
 #define M68K_PR_WINDOWPTR           184
+#define M68K_PR_MSGPORT             92
 #define M68K_PR_ARGUMENTS           204
 #define M68K_PR_PAD                 126
 

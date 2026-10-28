@@ -63,6 +63,7 @@ extern const ULONG m68kemu_thunks_locale_manual_count;
 
 /* Forward declarations for shadow helpers defined below */
 ULONG shadow_register(struct M68KEmuContext *ctx, ULONG m68k_addr, void *native, UWORD type);
+void *shadow_lookup(struct M68KEmuContext *ctx, ULONG m68k_addr);
 static ULONG setup_window_shadow(struct M68KEmuContext *ctx, struct Window *w);
 static void rp_state_out(struct M68KEmuContext *ctx, ULONG mrp, struct RastPort *rp, BOOL font);
 IPTR m68k_NewObjectA(struct M68KEmuContext *ctx, void *cpu);
@@ -258,7 +259,8 @@ static IPTR thunk_exec_FreeMem(struct M68KEmuContext *ctx, void *cpu)
 }
 
 /* -294: FindTask(A1=name) -> D0=task */
-/* the m68k Process standing in for a native task, made on first sight */
+/* the m68k Process standing in for a native task, made on first sight;
+   a process's pr_MsgPort is a port the program can use */
 ULONG m68k_process_of(struct M68KEmuContext *ctx, struct Task *task)
 {
     const struct M68KStructLayout *layout = shadow_find_layout("Task");
@@ -272,6 +274,9 @@ ULONG m68k_process_of(struct M68KEmuContext *ctx, struct Task *task)
                 ctx->shadow_map[i].native_ptr = task;
         shadow_sync(ctx, layout, ctx->m68k_proc, task);
         m68k_task_stack(ctx, ctx->m68k_proc, task);
+        if (task->tc_Node.ln_Type == NT_PROCESS && !shadow_lookup(ctx, ctx->m68k_proc + M68K_PR_MSGPORT))
+            shadow_register(ctx, ctx->m68k_proc + M68K_PR_MSGPORT, &((struct Process *)task)->pr_MsgPort,
+                            shadow_find_layout("MsgPort")->shadow_type);
         return ctx->m68k_proc;
     }
     /* one shadow per task: programs call FindTask(NULL) in their loops */
@@ -291,6 +296,7 @@ ULONG m68k_process_of(struct M68KEmuContext *ctx, struct Task *task)
     if (task->tc_Node.ln_Type == NT_PROCESS)
     {
         struct Process *proc = (struct Process *)task;
+        shadow_register(ctx, m68k + M68K_PR_MSGPORT, &proc->pr_MsgPort, shadow_find_layout("MsgPort")->shadow_type);
         if (proc->pr_CLI)
         {
             ULONG m68k_cli = M68KEmu_HeapAlloc(ctx, M68K_SIZEOF_CLI, 0);
@@ -1064,6 +1070,8 @@ static IPTR thunk_exec_WaitPort(struct M68KEmuContext *ctx, void *cpu)
     if (ctx->trace_calls) bug("[m68kemu] WaitPort: m68k_port=0x%lx\n", (unsigned long)mp);
     struct MsgPort *port = (struct MsgPort *)shadow_lookup(ctx, mp);
     if (ctx->trace_calls) bug("[m68kemu] WaitPort: native=%p\n", port);
+    if (!port && m68k_port_is_68k(ctx, mp))
+        return m68k_port_wait(ctx, mp);
     if (port)
     {
         struct Message *m;
@@ -1083,12 +1091,15 @@ static ULONG notifymsg_to_m68k(struct M68KEmuContext *ctx, struct NotifyMessage 
 
 static IPTR thunk_exec_GetMsg(struct M68KEmuContext *ctx, void *cpu)
 {
-    ULONG mp = THUNK_A(0);
+    ULONG mp = THUNK_A(0), mmsg;
     struct MsgPort *port = (struct MsgPort *)shadow_lookup(ctx, mp);
-    if (!port) return 0;
+    if (!port)
+        return m68k_port_is_68k(ctx, mp) ? m68k_port_getmsg(ctx, mp) : 0;
 
     struct IntuiMessage *imsg = (struct IntuiMessage *)GetMsg(port);
     if (!imsg) return 0;
+    if ((mmsg = m68k_msg_from_native(ctx, &imsg->ExecMessage)))
+        return mmsg;
     {
         struct NotifyMessage *nm = (struct NotifyMessage *)imsg;
         if (nm->nm_Class == NOTIFY_CLASS && nm->nm_Code == NOTIFY_CODE)
@@ -1149,9 +1160,27 @@ static IPTR thunk_exec_ReplyMsg(struct M68KEmuContext *ctx, void *cpu)
         if (ctx->shadow_map[i].m68k_addr == m_msg && ctx->shadow_map[i].type == nml->shadow_type)
             notify = TRUE;
     if (msg) {
+        if (ctx->trace_calls) bug("[m68kemu] ReplyMsg %08lx: a native message %p\n", (unsigned long)m_msg, msg);
         ReplyMsg(msg);
         shadow_destroy(ctx, notify ? nml : shadow_find_layout("IntuiMessage"), m_msg);
     }
+    else
+        m68k_reply(ctx, m_msg);         /* a message the program made */
+    return 0;
+}
+
+/* exec -366: PutMsg(A0=port, A1=message): a native message the program got
+   goes on as it is; one it made travels as described in m68kemu_tasks.c */
+static IPTR thunk_exec_PutMsg_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG mport = THUNK_A(0), mmsg = THUNK_A(1);
+    struct Message *nm = (struct Message *)shadow_lookup(ctx, mmsg);
+    struct MsgPort *np = (struct MsgPort *)shadow_lookup(ctx, mport);
+
+    if (nm && np)
+        PutMsg(np, nm);
+    else if (!nm)
+        m68k_deliver(ctx, mport, mmsg, NT_MESSAGE);
     return 0;
 }
 
@@ -1576,6 +1605,7 @@ const struct M68KThunkEntry m68kemu_thunks_exec[] = {
     { 204, thunk_exec_AllocAbs_m },
     { 192, thunk_exec_Deallocate_m },
     { 384, thunk_exec_WaitPort },
+    { 366, thunk_exec_PutMsg_m },
     { 318, thunk_exec_Wait_m },
     { 372, thunk_exec_GetMsg },
     { 378, thunk_exec_ReplyMsg },

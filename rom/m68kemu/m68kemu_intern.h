@@ -9,6 +9,7 @@
 #include <exec/types.h>
 #include <exec/libraries.h>
 #include <exec/semaphores.h>
+#include <exec/ports.h>
 #include <dos/bptr.h>
 
 struct M68KEmuLibBase
@@ -290,6 +291,12 @@ void  m68k_gil_obtain(struct M68KEmuContext *ctx);
 void  m68k_gil_release(struct M68KEmuContext *ctx);
 void  m68k_gil_yield(struct M68KEmuContext *ctx);
 void  m68k_wait_children(struct M68KEmuContext *ctx);
+BOOL  m68k_port_is_68k(struct M68KEmuContext *ctx, ULONG mport);
+ULONG m68k_port_getmsg(struct M68KEmuContext *ctx, ULONG mport);
+ULONG m68k_port_wait(struct M68KEmuContext *ctx, ULONG mport);
+void  m68k_deliver(struct M68KEmuContext *ctx, ULONG mport, ULONG mmsg, UBYTE type);
+ULONG m68k_msg_from_native(struct M68KEmuContext *ctx, struct Message *m);
+void  m68k_reply(struct M68KEmuContext *ctx, ULONG mmsg);
 ULONG m68k_process_of(struct M68KEmuContext *ctx, struct Task *task);
 ULONG M68KEmu_RunTask(struct M68KEmuContext *ctx, ULONG entry, ULONG stacktop, const ULONG regs[15]);
 ULONG m68k_ioreq_of(struct M68KEmuContext *ctx, APTR native);
