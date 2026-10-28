@@ -206,12 +206,19 @@ BOOL HIDDNouveauDecodeEmit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDeco
     HIDDNouveauDecodeMethod(dec, NVDEC_SET_DRV_PIC_SETUP_OFFSET, (ULONG)(f->picsetup->offset >> 8));
     HIDDNouveauDecodeMethod(dec, NVDEC_SET_IN_BUF_BASE_OFFSET, (ULONG)(f->bitstream->offset >> 8));
     HIDDNouveauDecodeMethod(dec, NVDEC_SET_PICTURE_INDEX, slot);
-    HIDDNouveauDecodeMethod(dec, NVDEC_SET_SLICE_OFFSETS_BUF_OFFSET,
-        (ULONG)((f->picsetup->offset + NOUVEAU_DECODE_SLICEOFFS_OFFSET) >> 8));
-    HIDDNouveauDecodeMethod(dec, NVDEC_SET_COLOC_DATA_OFFSET, dec->coloc ? (ULONG)(dec->coloc->offset >> 8) : 0);
-    HIDDNouveauDecodeMethod(dec, NVDEC_SET_HISTORY_OFFSET, dec->history ? (ULONG)(dec->history->offset >> 8) : 0);
-    HIDDNouveauDecodeMethod(dec, NVDEC_SET_DISPLAY_BUF_SIZE, 0);
-    HIDDNouveauDecodeMethod(dec, NVDEC_SET_HISTOGRAM_OFFSET, 0);
+    /* codecs that want NVIDIA's minimal set (dec->minimal) get no slice offsets / history / display / histogram */
+    if (!dec->minimal)
+        HIDDNouveauDecodeMethod(dec, NVDEC_SET_SLICE_OFFSETS_BUF_OFFSET,
+            (ULONG)((f->picsetup->offset + NOUVEAU_DECODE_SLICEOFFS_OFFSET) >> 8));
+    if (!dec->minimal || dec->coloc)
+        HIDDNouveauDecodeMethod(dec, NVDEC_SET_COLOC_DATA_OFFSET, dec->coloc ? (ULONG)(dec->coloc->offset >> 8) : 0);
+    if (!dec->minimal || dec->history)
+        HIDDNouveauDecodeMethod(dec, NVDEC_SET_HISTORY_OFFSET, dec->history ? (ULONG)(dec->history->offset >> 8) : 0);
+    if (!dec->minimal)
+    {
+        HIDDNouveauDecodeMethod(dec, NVDEC_SET_DISPLAY_BUF_SIZE, 0);
+        HIDDNouveauDecodeMethod(dec, NVDEC_SET_HISTOGRAM_OFFSET, 0);
+    }
     HIDDNouveauDecodeMethod(dec, NVDEC_SET_NVDEC_STATUS_OFFSET,
         (ULONG)((f->picsetup->offset + NOUVEAU_DECODE_STATUS_OFFSET) >> 8));
     /* every index gets a valid picture: unused ones point at the current one */
@@ -231,7 +238,8 @@ BOOL HIDDNouveauDecodeEmit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDeco
             HIDDNouveauDecodeMethod(dec, NVDEC_SET_PICTURE_CHROMA_OFFSET0 + 4 * i,
                                     (ULONG)((pics[i]->offset + dec->chromaoff) >> 8));
     }
-    HIDDNouveauDecodeMethod(dec, NVDEC_SET_PIC_SCRATCH_BUF_OFFSET, 0);
+    if (!dec->minimal)
+        HIDDNouveauDecodeMethod(dec, NVDEC_SET_PIC_SCRATCH_BUF_OFFSET, 0);
     for (i = 0; i < nmthds; i++)
         HIDDNouveauDecodeMethod(dec, mthds[2 * i], mthds[2 * i + 1]);
     /*
@@ -315,18 +323,31 @@ struct nvdec_codec
     ULONG   maxw, maxh;
     ULONG   maxrefs;
     ULONG   fmts;           /* vHidd_VideoFmt_* bits the decoder writes for the profile */
+    BOOL    experimental;   /* not working yet: offered only with NOUVEAU_NVDEC_EXPERIMENTAL set */
 };
 
 #define FMT_8BIT    (1UL << vHidd_VideoFmt_NV12)
+#define FMT_10BIT   (1UL << vHidd_VideoFmt_P010)
 
 static const struct nvdec_codec nvdec_codecs[] =
 {
-    { VAProfileH264ConstrainedBaseline, &HIDDNouveauDecodeH264Ops, 4096, 4096, 16, FMT_8BIT },
-    { VAProfileH264Main,                &HIDDNouveauDecodeH264Ops, 4096, 4096, 16, FMT_8BIT },
-    { VAProfileH264High,                &HIDDNouveauDecodeH264Ops, 4096, 4096, 16, FMT_8BIT },
-    { VAProfileMPEG2Simple,             &HIDDNouveauDecodeMPEG2Ops, 4096, 4096, 3, FMT_8BIT },
-    { VAProfileMPEG2Main,               &HIDDNouveauDecodeMPEG2Ops, 4096, 4096, 3, FMT_8BIT },
-    { VAProfileNone, NULL, 0, 0, 0, 0 }
+    { VAProfileH264ConstrainedBaseline, &HIDDNouveauDecodeH264Ops, 4096, 4096, 16, FMT_8BIT, FALSE },
+    { VAProfileH264Main,                &HIDDNouveauDecodeH264Ops, 4096, 4096, 16, FMT_8BIT, FALSE },
+    { VAProfileH264High,                &HIDDNouveauDecodeH264Ops, 4096, 4096, 16, FMT_8BIT, FALSE },
+    { VAProfileMPEG2Simple,             &HIDDNouveauDecodeMPEG2Ops, 4096, 4096, 3, FMT_8BIT, FALSE },
+    { VAProfileMPEG2Main,               &HIDDNouveauDecodeMPEG2Ops, 4096, 4096, 3, FMT_8BIT, FALSE },
+    { VAProfileVC1Simple,               &HIDDNouveauDecodeVC1Ops, 4096, 4096, 3, FMT_8BIT, TRUE },
+    { VAProfileVC1Main,                 &HIDDNouveauDecodeVC1Ops, 4096, 4096, 3, FMT_8BIT, TRUE },
+    { VAProfileVP8Version0_3,           &HIDDNouveauDecodeVP8Ops, 4096, 4096, 4, FMT_8BIT, FALSE },
+    /* VP9: 8 reference slots */
+    { VAProfileVP9Profile0,             &HIDDNouveauDecodeVP9Ops, 8192, 8192, 8, FMT_8BIT, FALSE },
+    { VAProfileVP9Profile2,             &HIDDNouveauDecodeVP9Ops, 8192, 8192, 8, FMT_10BIT, FALSE },
+    /* AV1 profile 0: 8 or 10-bit; 8 reference slots, and with film grain a second picture per frame */
+    { VAProfileAV1Profile0,             &HIDDNouveauDecodeAV1Ops, 8192, 8192, 15, FMT_8BIT | FMT_10BIT, FALSE },
+    /* HEVC: 16 picture slots at most (the long-term mask and POC differences are 16 wide) */
+    { VAProfileHEVCMain,                &HIDDNouveauDecodeHEVCOps, 8192, 8192, 15, FMT_8BIT, FALSE },
+    { VAProfileHEVCMain10,              &HIDDNouveauDecodeHEVCOps, 8192, 8192, 15, FMT_10BIT, FALSE },
+    { VAProfileNone, NULL, 0, 0, 0, 0, FALSE }
 };
 
 static const struct nvdec_codec *nvdec_codec_for(LONG profile)
@@ -335,7 +356,19 @@ static const struct nvdec_codec *nvdec_codec_for(LONG profile)
 
     for (c = nvdec_codecs; c->ops; c++)
         if (c->profile == profile)
+        {
+            if (c->experimental)
+            {
+                extern char *nouveau_aros_getenv(const char *name);
+                extern void kfree(const void *p);
+                char *v = nouveau_aros_getenv("NOUVEAU_NVDEC_EXPERIMENTAL");
+
+                if (!v)
+                    return NULL;
+                kfree(v);
+            }
             return c;
+        }
     return NULL;
 }
 
@@ -466,11 +499,19 @@ static BOOL nvdec_pool_alloc(struct HIDDNouveauDecode *dec, ULONG nslots)
     cfg.nvc0.memtype = (dec->carddata->dev->chipset >= 0x160) ? 0x06 : 0xfe;
     cfg.nvc0.tile_mode = NVDEC_POOL_TILE_MODE;
     dec->pitch = (dec->width * dec->bpp + 63) & ~63UL;
-    dec->lumasize = dec->pitch * ((dec->height + NVDEC_POOL_BLOCK_ROWS - 1) & ~(NVDEC_POOL_BLOCK_ROWS - 1));
+    {
+        /* rows: block aligned, or the codec's coding-block alignment (HEVC: 64, as NVIDIA lays its pictures out) */
+        ULONG align = dec->rowalign ? dec->rowalign : NVDEC_POOL_BLOCK_ROWS;
+
+        dec->lumasize = dec->pitch * ((dec->height + align - 1) & ~(align - 1));
+    }
     dec->lumasize = (dec->lumasize + 4095) & ~4095UL;
     dec->chromaoff = dec->lumasize;
-    dec->slotsize = dec->lumasize +
-        dec->pitch * (((dec->height / 2) + NVDEC_POOL_BLOCK_ROWS - 1) & ~(NVDEC_POOL_BLOCK_ROWS - 1));
+    {
+        ULONG calign = dec->rowalign ? dec->rowalign / 2 : NVDEC_POOL_BLOCK_ROWS;
+
+        dec->slotsize = dec->lumasize + dec->pitch * (((dec->height / 2) + calign - 1) & ~(calign - 1));
+    }
     dec->slotsize = (dec->slotsize + 4095) & ~4095UL;
     for (i = 0; i < nslots; i++)
     {
@@ -853,6 +894,7 @@ static BOOL nvdec_copy_out(struct HIDDNouveauDecode *dec, struct HIDDNouveauBitM
     if (!src || !dst || (w > dec->width) || (h > dec->height))
         return FALSE;
     LOCK_ENGINE
+    /* luma: 1-byte samples; chroma: interleaved 2-byte UV pairs, the 16-bit order on Blackwell */
     /*
      * Blackwell orders a GOB by element size, and the decoder's codec blocks
      * differ: H.264 writes the element-size order (luma samples, chroma UV
@@ -938,6 +980,17 @@ static BOOL nvdec_wait_unlocked(struct HIDDNouveauDecode *dec, ULONG seq, struct
     }
     dec->waiters--;
     return done;
+}
+
+/* For a codec that needs a finished frame's results (VP9's symbol counters); called with the lock held */
+BOOL HIDDNouveauDecodeWait(struct HIDDNouveauDecode *dec, ULONG seq)
+{
+    if (nvdec_seq_done(dec, seq))
+        return TRUE;
+    if (nvdec_wait_unlocked(dec, seq, NULL, 0xffffffffUL))
+        return TRUE;
+    nvdec_session_kill(dec, "the decoder stopped responding");
+    return FALSE;
 }
 
 ULONG HIDDNouveauDecodeSettle(struct CardData *carddata, struct HIDDNouveauBitMapData *bmdata, ULONG buffer,
