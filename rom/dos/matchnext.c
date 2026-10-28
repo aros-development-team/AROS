@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -154,7 +154,7 @@
             {
                 ac->an_Lock = DupLock(origdir);
 
-                if (!ac->an_Lock)
+                if (!ac->an_Lock && origdir)
                 {
                     error = IoErr();
                     goto done;
