@@ -177,6 +177,9 @@ void __setfdesc(register int fd, fdesc *desc)
         (struct PosixCIntBase *)__aros_getbase_PosixCBase();
 
     /* FIXME: Check if fd is in valid range... */
+    if (fd < 0)
+        return;
+
     /* Publish the slot pointer under the table guard so a concurrent grow
        (which reallocates the array) cannot write into a stale array. */
     FD_LOCK(PosixCBase);
