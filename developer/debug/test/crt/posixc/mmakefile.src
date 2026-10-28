@@ -13,6 +13,7 @@ POSIXCTESTFILES := \
         fchmod \
         fcntl \
         flock \
+        flock_description \
         getfsstat \
         getpass \
         ioctl_tty \

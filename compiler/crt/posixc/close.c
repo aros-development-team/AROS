@@ -109,6 +109,7 @@
         }
 
         __fcb_unlock(fdesc->fcb);
+        __flock_release(fdesc->fcb);
         FreeVec(fdesc->fcb);
     }
     else
