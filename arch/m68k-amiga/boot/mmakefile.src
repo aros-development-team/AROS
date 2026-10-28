@@ -253,13 +253,21 @@ $(GENDIR)/ext_strs.ld: $(SRCDIR)/$(CURDIR)/mmakefile.src
 		echo "$$file(.romstrings .rodata.str1.1)" >>$@; \
 	done
 
+# Likewise their 8-byte constants (the empty symbol sets, .romsets).
+$(GENDIR)/ext_sets.ld: $(SRCDIR)/$(CURDIR)/mmakefile.src
+	$(Q)rm -f $@
+	$(Q)for file in $(OBJS_ext) $(KOBJS_ext); do \
+		echo "$$file(.romsets .rodata.cst8)" >>$@; \
+	done
+
 $(GENDIR)/boot/aros-amiga-m68k-reloc.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/mmakefile.src \
 	$(OBJS_rom) $(KOBJS_rom) \
 	$(OBJS_ext) $(KOBJS_ext) \
 	$(SRCDIR)/$(CURDIR)/aros-rom.ld \
 	$(GENDIR)/rom_objs.ld \
 	$(GENDIR)/ext_objs.ld \
-	$(GENDIR)/ext_strs.ld
+	$(GENDIR)/ext_strs.ld \
+	$(GENDIR)/ext_sets.ld
 	@$(MKDIR) $(GENDIR)/boot
 	@$(ECHO) Linking $@...
 	$(Q)$(KERNEL_CC) -Wl,-r \

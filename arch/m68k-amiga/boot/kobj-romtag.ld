@@ -19,6 +19,9 @@
  * scanner there, the pools lie past _rom_end/_ext_end. The section is named
  * .romstrings because collect-aros' own second partial link would fold any
  * .rodata.* into .rodata, losing the merge flags; it leaves this one alone.
+ * The 8-byte mergeable constants (.rodata.cst8: the empty {0,0} symbol sets
+ * of DEFINESET(), see <aros/symbolsets.h>) are pooled the same way, as
+ * .romsets.
  *
  * NOTE: AROS linker-set sub-sections (__INITLIB_LIST__, __aros_set_*, etc.) stay
  * in .rodata deliberately - the KOBJ link's OBJCOPY -L step collects/renames them,
@@ -34,6 +37,7 @@
  */
 SECTIONS {
   .romstrings : { *(.rodata.str1.1) }
+  .romsets : { *(.rodata.cst8) }
   .text : {
     . = ALIGN(2);
     *(.text.romtag)

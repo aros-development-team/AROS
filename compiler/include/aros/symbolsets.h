@@ -36,8 +36,27 @@ struct rellibraryset
 #define DECLARESET(set) \
 extern const void * const SETNAME(set)[] __attribute__((weak));
 
+#if defined(__mc68000__)
+/*
+ * The default (empty) set goes in a mergeable constant section, so that the
+ * Kickstart link keeps one copy of {0,0} per ROM bank instead of one per set
+ * in every module (see arch/m68k-amiga/boot/kobj-romtag.ld).
+ */
+#define __SETNAME_STR(set) "__" #set "_LIST__"
+#define DEFINESET(set) \
+DECLARESET(set) \
+__asm__("\t.pushsection .rodata.cst8,\"aM\",@progbits,8\n" \
+        "\t.balign 4\n" \
+        "\t.weak " __SETNAME_STR(set) "\n" \
+        "\t.type " __SETNAME_STR(set) ",@object\n" \
+        "\t.size " __SETNAME_STR(set) ",8\n" \
+        __SETNAME_STR(set) ":\n" \
+        "\t.long 0,0\n" \
+        "\t.popsection");
+#else
 #define DEFINESET(set) \
 const void * const SETNAME(set)[] __attribute__((weak))={0,0};
+#endif
 
 #define ADD2SET(symbol, _set, pri)\
 	static const void * const __aros_set_##_set##_##symbol __attribute__((__section__(".aros.set." #_set "." #pri))) __used = (void *)&symbol;
