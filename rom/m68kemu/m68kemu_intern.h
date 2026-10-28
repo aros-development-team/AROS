@@ -121,7 +121,7 @@ struct M68KEmuContext
 
     /* m68k Gadget <-> native copy (AddGList & co translate the list) */
     #define M68KEMU_MAX_GADGETS 256
-    struct { ULONG m68k; APTR native; } gadmap[M68KEMU_MAX_GADGETS];
+    struct { ULONG m68k; APTR native; UWORD gt; } gadmap[M68KEMU_MAX_GADGETS];  /* gt: GadTools kind + 1, GadTools owns the native one */
     ULONG   num_gadmap;
 
     /* m68k Menu/MenuItem <-> native copy (SetMenuStrip translates the strip) */

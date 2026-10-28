@@ -4038,6 +4038,16 @@ static struct Gadget *gadget_native(struct M68KEmuContext *ctx, ULONG mg)
     return NULL;
 }
 
+static void gt_generic_in(struct M68KEmuContext *ctx, ULONG mg);
+
+static struct Gadget *gt_gadget_native(struct M68KEmuContext *ctx, ULONG mg)
+{
+    ULONG i;
+    for (i = 0; i < ctx->num_gadmap; i++)
+        if (ctx->gadmap[i].m68k == mg && ctx->gadmap[i].gt) return (struct Gadget *)ctx->gadmap[i].native;
+    return NULL;
+}
+
 static ULONG gadget_m68k(struct M68KEmuContext *ctx, APTR native)
 {
     ULONG i;
@@ -4075,6 +4085,7 @@ static void gadget_unmap(struct M68KEmuContext *ctx, APTR native)
     for (i = 0; i < ctx->num_gadmap; i++)
         if (ctx->gadmap[i].native == native)
         {
+            if (ctx->gadmap[i].gt) return;      /* FreeGadgets frees it */
             gadget_free_one((struct Gadget *)native);
             ctx->gadmap[i] = ctx->gadmap[--ctx->num_gadmap];
             return;
@@ -4138,6 +4149,7 @@ static struct Gadget *gadgets_from_m68k(struct M68KEmuContext *ctx, ULONG mg, LO
             }
             ctx->gadmap[ctx->num_gadmap].m68k = mg;
             ctx->gadmap[ctx->num_gadmap].native = g;
+            ctx->gadmap[ctx->num_gadmap].gt = 0;
             ctx->num_gadmap++;
             if (ctx->trace_calls)
                 bug("[m68kemu] Gadget %08lx id %u type %04x act %04x flags %04x at %d,%d %dx%d render %p text %p\n",
@@ -4180,7 +4192,12 @@ static IPTR thunk_intuition_AddGList_t(struct M68KEmuContext *ctx, void *cpu)
 {
     struct Window *w = (struct Window *)shadow_lookup(ctx, THUNK_A(0));
     LONG n = (LONG)THUNK_D(1);
-    struct Gadget *g = w ? gadgets_from_m68k(ctx, THUNK_A(1), n) : NULL;
+    struct Gadget *g = gt_gadget_native(ctx, THUNK_A(1));
+    /* a GadTools list is already linked natively, with gadgets the m68k mirror skips */
+    if (g)
+        gt_generic_in(ctx, THUNK_A(1));
+    else
+        g = w ? gadgets_from_m68k(ctx, THUNK_A(1), n) : NULL;
     if (ctx->trace_calls)
         bug("[m68kemu] AddGList window %08lx (%p) first %08lx n %ld -> native %p\n",
             (unsigned long)THUNK_A(0), w, (unsigned long)THUNK_A(1), (long)n, g);
@@ -4679,6 +4696,7 @@ static IPTR thunk_gadtools_CreateMenusA_t(struct M68KEmuContext *ctx, void *cpu)
 }
 
 static BOOL textattr_in(struct M68KEmuContext *ctx, ULONG m68k_ta, struct TextAttr *ta);
+static APTR gfx_own(struct M68KEmuContext *ctx, ULONG size);
 
 /* the layout tags with GTMN_TextAttr in the native layout (*ta holds it) */
 static struct TagItem *menu_layout_tags(struct M68KEmuContext *ctx, ULONG mtags, struct TextAttr *ta)
@@ -4793,7 +4811,303 @@ static IPTR thunk_gadtools_GT_ReplyIMsg_t(struct M68KEmuContext *ctx, void *cpu)
     return 0;
 }
 
+/* ── GadTools gadgets: GadTools builds them natively; the program walks an
+   m68k mirror of each (GadgetID, box, flags, NextGadget) kept in gadmap ── */
+#define M68K_SIZEOF_GADGET 44
+/* AROS builds GadTools gadgets as BOOPSI objects; the 44-byte mirror is no
+   ExtGadget and has no StringInfo extension. Blitz also reads STRINGEXTEND/
+   TABCYCLE as "free GadgetRender/SelectRender" and loses its stack on NULL. */
+#define GT_MIRROR_FLAGS(f) ((UWORD)((f) & ~(GFLG_EXTENDED | GFLG_STRINGEXTEND | GFLG_TABCYCLE)))
+
+static ULONG gt_mirror(struct M68KEmuContext *ctx, struct Gadget *g, ULONG mprev, ULONG kind)
+{
+    ULONG mg;
+    if (ctx->num_gadmap >= M68KEMU_MAX_GADGETS || !(mg = M68KEmu_HeapAlloc(ctx, M68K_SIZEOF_GADGET, 0)))
+        return 0;
+    memset(ctx->mem + mg, 0, M68K_SIZEOF_GADGET);
+    m68k_write16(ctx, mg + M68K_GAD_LEFT,   (UWORD)g->LeftEdge);
+    m68k_write16(ctx, mg + M68K_GAD_TOP,    (UWORD)g->TopEdge);
+    m68k_write16(ctx, mg + M68K_GAD_WIDTH,  (UWORD)g->Width);
+    m68k_write16(ctx, mg + M68K_GAD_HEIGHT, (UWORD)g->Height);
+    m68k_write16(ctx, mg + M68K_GAD_FLAGS,  GT_MIRROR_FLAGS(g->Flags));
+    m68k_write16(ctx, mg + M68K_GAD_ACTIV,  g->Activation);
+    m68k_write16(ctx, mg + M68K_GAD_TYPE,   g->GadgetType);
+    m68k_write16(ctx, mg + M68K_GAD_ID,     g->GadgetID);
+    m68k_write32(ctx, mg + M68K_GAD_USERDATA, (ULONG)(IPTR)g->UserData);
+    ctx->gadmap[ctx->num_gadmap].m68k = mg;
+    ctx->gadmap[ctx->num_gadmap].native = g;
+    ctx->gadmap[ctx->num_gadmap].gt = (UWORD)kind + 1;
+    ctx->num_gadmap++;
+    if (mprev) m68k_write32(ctx, mprev + M68K_GAD_NEXT, mg);
+    return mg;
+}
+
+/* GadTools tags: the generic copy, with the label string arrays rebuilt
+   natively (they stay with the gadget, so gfx_own keeps them) */
+static struct TagItem *gt_tags_in(struct M68KEmuContext *ctx, ULONG mtags)
+{
+    struct TagItem *tags = m68k_to_native_taglist(ctx, mtags), *ti, *tstate = tags;
+
+    while (tags && (ti = NextTagItem(&tstate)))
+    {
+        if ((ti->ti_Tag == GTCY_Labels || ti->ti_Tag == GTMX_Labels) && ti->ti_Data)
+        {
+            ULONG ma = host_to_m68k(ctx, (APTR)ti->ti_Data), n = 0, i;
+            STRPTR *labels;
+            while (n < 64 && m68k_read32(ctx, ma + n * 4)) n++;
+            if ((labels = gfx_own(ctx, (n + 1) * sizeof(STRPTR))))
+                for (i = 0; i < n; i++)
+                    labels[i] = (STRPTR)m68k_to_host(ctx, m68k_read32(ctx, ma + i * 4));
+            ti->ti_Data = (IPTR)labels;
+        }
+    }
+    return tags;
+}
+
+/* GENERIC_KIND gadgets are finished by the program in its mirror (imagery,
+   activation, type): carry that over before the list goes into a window */
+static void gt_generic_in(struct M68KEmuContext *ctx, ULONG mg)
+{
+    ULONG i, guard = 0;
+
+    for (; mg && guard++ < M68KEMU_MAX_GADGETS; mg = m68k_read32(ctx, mg + M68K_GAD_NEXT))
+    {
+        struct Gadget *g;
+        for (i = 0; i < ctx->num_gadmap && ctx->gadmap[i].m68k != mg; i++)
+            ;
+        if (i == ctx->num_gadmap || ctx->gadmap[i].gt != GENERIC_KIND + 1) continue;
+        g = (struct Gadget *)ctx->gadmap[i].native;
+        g->LeftEdge   = (WORD)m68k_read16(ctx, mg + M68K_GAD_LEFT);
+        g->TopEdge    = (WORD)m68k_read16(ctx, mg + M68K_GAD_TOP);
+        g->Width      = (WORD)m68k_read16(ctx, mg + M68K_GAD_WIDTH);
+        g->Height     = (WORD)m68k_read16(ctx, mg + M68K_GAD_HEIGHT);
+        g->Flags      = m68k_read16(ctx, mg + M68K_GAD_FLAGS);
+        g->Activation = m68k_read16(ctx, mg + M68K_GAD_ACTIV);
+        g->GadgetType = m68k_read16(ctx, mg + M68K_GAD_TYPE);
+        if (!g->GadgetRender)
+            g->GadgetRender = gadget_render_from_m68k(ctx, m68k_read32(ctx, mg + M68K_GAD_RENDER), (g->Flags & GFLG_GADGIMAGE) != 0);
+        if (!g->SelectRender && (g->Flags & GFLG_GADGHIGHBITS) == GFLG_GADGHIMAGE)
+            g->SelectRender = gadget_render_from_m68k(ctx, m68k_read32(ctx, mg + M68K_GAD_SELRENDER), (g->Flags & GFLG_GADGIMAGE) != 0);
+    }
+}
+
+static void gt_generic_free(struct M68KEmuContext *ctx, ULONG mg)
+{
+    ULONG i, guard = 0;
+
+    for (; mg && guard++ < M68KEMU_MAX_GADGETS; mg = m68k_read32(ctx, mg + M68K_GAD_NEXT))
+        for (i = 0; i < ctx->num_gadmap; i++)
+            if (ctx->gadmap[i].m68k == mg && ctx->gadmap[i].gt == GENERIC_KIND + 1)
+            {
+                struct Gadget *g = (struct Gadget *)ctx->gadmap[i].native;
+                BOOL img = (g->Flags & GFLG_GADGIMAGE) != 0;
+                if (g->GadgetRender) { if (img) image_free(g->GadgetRender); else border_free(g->GadgetRender); }
+                if (g->SelectRender) { if (img) image_free(g->SelectRender); else border_free(g->SelectRender); }
+                g->GadgetRender = g->SelectRender = NULL;
+                break;
+            }
+}
+
+/* -102: GT_FilterIMsg(A1=imsg): the generated thunk re-synced the message
+   shadow, wiping the IAddress/IDCMPWindow GetMsg had translated */
+static IPTR thunk_gadtools_GT_FilterIMsg_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct IntuiMessage *imsg = (struct IntuiMessage *)shadow_lookup(ctx, THUNK_A(1));
+    struct IntuiMessage *r = imsg ? GT_FilterIMsg(imsg) : NULL;
+
+    if (!r) return 0;
+    return r == imsg ? THUNK_A(1) : imsg_to_m68k(ctx, r);
+}
+
+/* -108: GT_PostFilterIMsg(A1=modimsg) -> the original message */
+static IPTR thunk_gadtools_GT_PostFilterIMsg_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    const struct M68KStructLayout *layout = shadow_find_layout("IntuiMessage");
+    struct IntuiMessage *mod = (struct IntuiMessage *)shadow_lookup(ctx, THUNK_A(1));
+    struct IntuiMessage *r = mod ? GT_PostFilterIMsg(mod) : NULL;
+    UWORD i;
+
+    if (!r) return 0;
+    if (r == mod) return THUNK_A(1);
+    /* the original keeps its own shadow; the filtered copy's goes */
+    for (i = 0; i < ctx->num_shadows; i++)
+        if (ctx->shadow_map[i].native_ptr == r && ctx->shadow_map[i].type == layout->shadow_type)
+        {
+            ULONG orig = ctx->shadow_map[i].m68k_addr;
+            shadow_destroy(ctx, layout, THUNK_A(1));
+            return orig;
+        }
+    return imsg_to_m68k(ctx, r);
+}
+
+/* -114: CreateContext(A0=&glist) */
+static IPTR thunk_gadtools_CreateContext_g(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG mlist = THUNK_A(0), mg;
+    struct Gadget *nlist = NULL, *g = CreateContext(&nlist);
+
+    mg = g ? gt_mirror(ctx, g, 0, GENERIC_KIND) : 0;
+    if (mlist && mlist + 4 <= ctx->mem_size) m68k_write32(ctx, mlist, mg);
+    return mg;
+}
+
+/* -30: CreateGadgetA(D0=kind, A0=previous, A1=newGadget, A2=tags)
+   m68k NewGadget: LeftEdge 0, TopEdge 2, Width 4, Height 6, GadgetText 8,
+   TextAttr 12, GadgetID 16, Flags 18, VisualInfo 22, UserData 26 */
+static IPTR thunk_gadtools_CreateGadgetA_g(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct Gadget *prev = gadget_native(ctx, THUNK_A(0)), *g;
+    ULONG mng = THUNK_A(1);
+    struct NewGadget ng;
+    struct TextAttr ta;
+    struct TextFont *font = NULL;
+    struct TagItem *tags;
+
+    if (!prev || !mng || mng + 30 > ctx->mem_size) return 0;
+    ng.ng_LeftEdge   = (WORD)m68k_read16(ctx, mng + 0);
+    ng.ng_TopEdge    = (WORD)m68k_read16(ctx, mng + 2);
+    ng.ng_Width      = (WORD)m68k_read16(ctx, mng + 4);
+    ng.ng_Height     = (WORD)m68k_read16(ctx, mng + 6);
+    ng.ng_GadgetText = (CONST_STRPTR)m68k_to_host(ctx, m68k_read32(ctx, mng + 8));
+    ng.ng_TextAttr   = textattr_in(ctx, m68k_read32(ctx, mng + 12), &ta) ? &ta : NULL;
+    ng.ng_GadgetID   = m68k_read16(ctx, mng + 16);
+    ng.ng_Flags      = m68k_read32(ctx, mng + 18);
+    ng.ng_VisualInfo = m68k_to_host_or_shadow(ctx, m68k_read32(ctx, mng + 22));
+    ng.ng_UserData   = (APTR)(IPTR)m68k_read32(ctx, mng + 26);
+
+    /* GadTools only uses fonts already in memory; on AmigaOS IPrefs loads the
+       Font.Prefs fonts programs ask for, on AROS they may still be on disk,
+       or missing: then the screen's font stands in */
+    if (ng.ng_TextAttr && !(font = OpenFont(ng.ng_TextAttr)) && !(font = OpenDiskFont(ng.ng_TextAttr)))
+    {
+        m68k_log(ctx, "%s: font %s/%d not found, using the screen font",
+                 ctx->program_name[0] ? ctx->program_name : "68k program", ta.ta_Name, ta.ta_YSize);
+        ng.ng_TextAttr = NULL;
+    }
+    tags = gt_tags_in(ctx, THUNK_A(2));
+    g = CreateGadgetA(THUNK_D(0), prev, &ng, tags);
+    if (font) CloseFont(font);
+    if (ctx->trace_calls)
+    {
+        struct TagItem *t, *ts = tags;
+        bug("[m68kemu] CreateGadget kind %lu id %u at %d,%d %dx%d vi %p ta %s/%d text '%s' flags %lx -> %p\n", (unsigned long)THUNK_D(0),
+            ng.ng_GadgetID, ng.ng_LeftEdge, ng.ng_TopEdge, ng.ng_Width, ng.ng_Height, ng.ng_VisualInfo,
+            ng.ng_TextAttr ? (char *)ng.ng_TextAttr->ta_Name : "-", ng.ng_TextAttr ? ng.ng_TextAttr->ta_YSize : 0,
+            ng.ng_GadgetText ? (char *)ng.ng_GadgetText : "", (unsigned long)ng.ng_Flags, g);
+        while (ts && (t = NextTagItem(&ts)))
+            bug("[m68kemu]   tag %08lx = %p\n", (unsigned long)t->ti_Tag, (APTR)t->ti_Data);
+    }
+    if (tags) FreeVec(tags);
+    return g ? gt_mirror(ctx, g, THUNK_A(0), THUNK_D(0)) : 0;
+}
+
+/* -36: FreeGadgets(A0=glist) */
+static IPTR thunk_gadtools_FreeGadgets_g(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG mg = THUNK_A(0), i;
+    struct Gadget *g = gt_gadget_native(ctx, mg);
+
+    if (!g) return 0;
+    gt_generic_free(ctx, mg);
+    FreeGadgets(g);
+    /* drop the mirrors along the m68k chain */
+    while (mg)
+    {
+        ULONG next = m68k_read32(ctx, mg + M68K_GAD_NEXT);
+        for (i = 0; i < ctx->num_gadmap; i++)
+            if (ctx->gadmap[i].m68k == mg && ctx->gadmap[i].gt)
+            {
+                ctx->gadmap[i] = ctx->gadmap[--ctx->num_gadmap];
+                M68KEmu_HeapFree(ctx, mg, M68K_SIZEOF_GADGET);
+                break;
+            }
+        mg = next;
+    }
+    return 0;
+}
+
+/* -42: GT_SetGadgetAttrsA(A0=gadget, A1=window, A2=req, A3=tags) */
+static IPTR thunk_gadtools_GT_SetGadgetAttrsA_g(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG mg = THUNK_A(0);
+    struct Gadget *g = gadget_native(ctx, mg);
+    struct Window *w = THUNK_A(1) ? (struct Window *)shadow_lookup(ctx, THUNK_A(1)) : NULL;
+    struct TagItem *tags;
+
+    if (!g) return 0;
+    tags = gt_tags_in(ctx, THUNK_A(3));
+    GT_SetGadgetAttrsA(g, w, NULL, tags);
+    if (tags) FreeVec(tags);
+    m68k_write16(ctx, mg + M68K_GAD_FLAGS, GT_MIRROR_FLAGS(g->Flags));
+    return 0;
+}
+
+/* -174: GT_GetGadgetAttrsA(A0=gadget, A1=window, A2=req, A3=tags) -> D0=count
+   each ti_Data is the address of an m68k ULONG to fill */
+static IPTR thunk_gadtools_GT_GetGadgetAttrsA_g(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct Gadget *g = gadget_native(ctx, THUNK_A(0));
+    struct Window *w = THUNK_A(1) ? (struct Window *)shadow_lookup(ctx, THUNK_A(1)) : NULL;
+    struct TagItem tags[33];
+    IPTR vals[32];
+    ULONG dst[32], p = THUNK_A(3), n = 0, i, guard = 0;
+    LONG r;
+
+    if (!g) return 0;
+    while (p && n < 32 && guard++ < 256)
+    {
+        ULONG tag = m68k_read32(ctx, p), v = m68k_read32(ctx, p + 4);
+        if (tag == TAG_DONE) break;
+        if (tag == TAG_MORE) { p = v; continue; }
+        if (tag != TAG_IGNORE && tag != TAG_SKIP)
+        {
+            vals[n] = 0;
+            dst[n] = v;
+            tags[n].ti_Tag = tag;
+            tags[n].ti_Data = (IPTR)&vals[n];
+            n++;
+        }
+        p += (tag == TAG_SKIP) ? 8 * (v + 1) : 8;
+    }
+    tags[n].ti_Tag = TAG_DONE;
+    r = GT_GetGadgetAttrsA(g, w, NULL, tags);
+    for (i = 0; i < n; i++)
+        if (dst[i] && dst[i] + 4 <= ctx->mem_size) m68k_write32(ctx, dst[i], (ULONG)vals[i]);
+    return (IPTR)r;
+}
+
+/* -126: GetVisualInfoA(A0=screen, A1=tags): an opaque native object, handed
+   out as a handle - its raw address can fall inside the program's 32 MB */
+static IPTR thunk_gadtools_GetVisualInfoA_h(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct TagItem *tags = m68k_to_native_taglist(ctx, THUNK_A(1));
+    APTR vi = GetVisualInfoA((struct Screen *)m68k_to_host_or_shadow(ctx, THUNK_A(0)), tags);
+    if (tags) FreeVec(tags);
+    return vi ? m68k_bptr_out(ctx, (BPTR)vi) : 0;
+}
+
+/* -132: FreeVisualInfo(A0=vi) */
+static IPTR thunk_gadtools_FreeVisualInfo_h(struct M68KEmuContext *ctx, void *cpu)
+{
+    APTR vi = m68k_to_host_or_shadow(ctx, THUNK_A(0));
+    if (vi && THUNK_A(0) >= M68KEMU_HANDLE_BASE)
+    {
+        FreeVisualInfo(vi);
+        m68k_bptr_drop(ctx, THUNK_A(0));
+    }
+    return 0;
+}
+
 const struct M68KThunkEntry m68kemu_thunks_gadtools_manual[] = {
+    { 102, thunk_gadtools_GT_FilterIMsg_m },
+    { 108, thunk_gadtools_GT_PostFilterIMsg_m },
+    { 114, thunk_gadtools_CreateContext_g },
+    { 30,  thunk_gadtools_CreateGadgetA_g },
+    { 36,  thunk_gadtools_FreeGadgets_g },
+    { 42,  thunk_gadtools_GT_SetGadgetAttrsA_g },
+    { 174, thunk_gadtools_GT_GetGadgetAttrsA_g },
+    { 126, thunk_gadtools_GetVisualInfoA_h },
+    { 132, thunk_gadtools_FreeVisualInfo_h },
     { 72, thunk_gadtools_GT_GetIMsg_t },
     { 78, thunk_gadtools_GT_ReplyIMsg_t },
     { 48, thunk_gadtools_CreateMenusA_t },
@@ -4801,7 +5115,8 @@ const struct M68KThunkEntry m68kemu_thunks_gadtools_manual[] = {
     { 60, thunk_gadtools_LayoutMenuItemsA_t },
     { 66, thunk_gadtools_LayoutMenusA_t },
 };
-const ULONG m68kemu_thunks_gadtools_manual_count = 6;
+const ULONG m68kemu_thunks_gadtools_manual_count = sizeof(m68kemu_thunks_gadtools_manual) / sizeof(m68kemu_thunks_gadtools_manual[0]);
+
 /* intuition -150: ModifyIDCMP(A0=window, D0=flags): the UserPort may appear or go */
 static IPTR thunk_intuition_ModifyIDCMP_p(struct M68KEmuContext *ctx, void *cpu)
 {
