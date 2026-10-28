@@ -46,7 +46,8 @@
         mask - the new protection bits.
 
     RESULT
-        success
+        success; on failure IoErr() gives the reason (ERROR_NOT_IMPLEMENTED
+        before the library is started, otherwise SetProtection()'s error).
 
 ******************************************************************************/
 {
@@ -56,7 +57,10 @@
     BOOL res;
 
     if (!secBase->sec_AfterDOSDone)
+    {
+        SetIoErr(ERROR_NOT_IMPLEMENTED);
         return FALSE;
+    }
 
     ObtainSemaphore(&secBase->TaskOwnerSem);
     if ((node = FindOrCreateTaskNode(secBase, FindTask(NULL))))
