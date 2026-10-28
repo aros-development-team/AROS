@@ -307,6 +307,8 @@ ULONG M68KEmu_RunTask(struct M68KEmuContext *ctx, ULONG entry, ULONG stacktop, c
 ULONG m68k_ioreq_of(struct M68KEmuContext *ctx, APTR native);
 void  m68k_ioreq_out(struct M68KEmuContext *ctx, APTR native);
 void  m68k_watchdog_stop(struct M68KEmuContext *ctx);
+/* m68kemu_thunks.c */
+void  m68k_publish_screens(struct M68KEmuContext *ctx, ULONG ib, struct Library *native);
 #ifdef __cplusplus
 }
 #endif

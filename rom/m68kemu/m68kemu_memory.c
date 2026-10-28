@@ -553,6 +553,8 @@ ULONG M68KEmu_SetupLibBase(struct M68KEmuContext *ctx, UWORD lib_id,
         {
             shadow_register(ctx, base_addr, native, base_layout->shadow_type);
             shadow_sync(ctx, base_layout, base_addr, native);
+            if (strcmp(name, "intuition.library") == 0)
+                m68k_publish_screens(ctx, base_addr, native);
         }
         if (native)
             CloseLibrary(native);

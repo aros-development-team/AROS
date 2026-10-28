@@ -29,6 +29,7 @@
 #include <graphics/text.h>
 #include <intuition/intuition.h>
 #include <intuition/screens.h>
+#include <intuition/intuitionbase.h>
 #include <graphics/displayinfo.h>
 #include "m68kemu_intern.h"
 #include "m68kemu_offsets.h"
@@ -3032,6 +3033,25 @@ const ULONG m68kemu_thunks_dos_count = sizeof(m68kemu_thunks_dos) / sizeof(m68ke
 #define M68K_IB_FIRSTSCREEN  60
 #define M68K_GB_ACTIVIEW     34
 #define M68K_SIZEOF_VIEW     18
+/* Programs also walk the system's screen list from FirstScreen (Blitz looks
+   for the Workbench screen there): link shadows of the native screens */
+void m68k_publish_screens(struct M68KEmuContext *ctx, ULONG ib, struct Library *native)
+{
+    struct IntuitionBase *ibase = (struct IntuitionBase *)native;
+    ULONG link = ib + M68K_IB_FIRSTSCREEN, ms;
+    ULONG ilock = LockIBase(0);
+
+    for (struct Screen *scr = ibase->FirstScreen; scr; scr = scr->NextScreen)
+    {
+        if (!(ms = shadow_create_by_name(ctx, "Screen", scr))) break;
+        m68k_write32(ctx, link, ms);
+        link = ms;      /* NextScreen is the first field */
+    }
+    if (ibase->ActiveScreen && (ms = shadow_create_by_name(ctx, "Screen", ibase->ActiveScreen)))
+        m68k_write32(ctx, ib + M68K_IB_ACTIVESCREEN, ms);
+    UnlockIBase(ilock);
+}
+
 static void note_screen_in_bases(struct M68KEmuContext *ctx, ULONG ms, BOOL opened)
 {
     ULONG ib = M68KEmu_FindLibBase(ctx, "intuition.library");
