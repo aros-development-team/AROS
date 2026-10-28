@@ -1,0 +1,21 @@
+SFS legacy seek regression
+==========================
+
+Build sfs_seek through test-dos-common or with the target AROS C compiler.
+Mount a disposable SFS volume as SFST: with at least 2200000000 free bytes.
+Run sfs_seek with stdout redirected to a log on another volume. It refuses
+an existing SFST:audit-seek-regression.tmp and deletes its own test file.
+Do not run two copies at once. An interrupted test may leave its file behind.
+This test does not format a disk or install a handler.
+
+The test writes and reopens a 16-byte file, then a 2049 MiB file. Each seek
+case opens a fresh handle, so zero is the expected old position on success.
+It checks absolute, current and end-relative positions, reads after seeking,
+and rejects negative or out-of-range destinations. The unmodified handler
+rejects five valid destinations in the large file with ERROR_SEEK_ERROR.
+The corrected handler must finish with failures=0 and exit code 0.
+Exit 10 means a failed assertion; exit 20 means setup, I/O or cleanup failed.
+
+This tests destinations representable as nonnegative LONG values only.
+It does not establish 64-bit seek support or change the handling of offsets
+above LONG_MAX. It requires about 2 GiB of physical writes per execution.

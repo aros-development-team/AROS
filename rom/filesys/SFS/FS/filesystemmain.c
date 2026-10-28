@@ -2061,7 +2061,7 @@ sfsSecBeginPacket(globals->packet);
                                         break;
                                     }
 
-                                    if(newpos >= 0 && newpos <= (LONG)gh->size) {
+                                    if(newpos >= 0 && (ULONG)newpos <= gh->size) {
                                         if((ULONG)newpos != oldpos) {
                                             errorcode = seek(lock, newpos);
                                         } else {
