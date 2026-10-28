@@ -1760,6 +1760,22 @@ static IPTR thunk_dos_Examine(struct M68KEmuContext *ctx, void *cpu)
     return ok;
 }
 
+/* -390: ExamineFH(D1=fh, D2=fib) -> D0=success */
+static IPTR thunk_dos_ExamineFH_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    BPTR fh = m68k_bptr_in(ctx, THUNK_D(1));
+    ULONG m68k_fib = THUNK_D(2);
+    struct FileInfoBlock *fib;
+    LONG ok;
+
+    if (!m68k_fib || !(fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, NULL)))
+        return 0;
+    ok = ExamineFH(fh, fib);
+    if (ok) fib_to_m68k(ctx, m68k_fib, fib);
+    FreeDosObject(DOS_FIB, fib);
+    return ok;
+}
+
 static IPTR thunk_dos_ExNext(struct M68KEmuContext *ctx, void *cpu)
 {
     BPTR lock = m68k_bptr_in(ctx, THUNK_D(1));
@@ -1996,6 +2012,52 @@ static void datetime_in(struct M68KEmuContext *ctx, ULONG md, struct DateTime *d
     dt->dat_StrTime = m68k_read32(ctx, md + 22) ? (STRPTR)str[2] : NULL;
 }
 
+/* dos -192: DateStamp(D1=date): the three longs in 68k order */
+static IPTR thunk_dos_DateStamp_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG md = THUNK_D(1);
+    struct DateStamp ds;
+
+    if (!md)
+        return 0;
+    DateStamp(&ds);
+    m68k_write32(ctx, md,     ds.ds_Days);
+    m68k_write32(ctx, md + 4, ds.ds_Minute);
+    m68k_write32(ctx, md + 8, ds.ds_Tick);
+    return md;
+}
+
+static void datestamp_in(struct M68KEmuContext *ctx, ULONG md, struct DateStamp *ds)
+{
+    ds->ds_Days   = (LONG)m68k_read32(ctx, md);
+    ds->ds_Minute = (LONG)m68k_read32(ctx, md + 4);
+    ds->ds_Tick   = (LONG)m68k_read32(ctx, md + 8);
+}
+
+/* dos -738: CompareDates(D1=date1, D2=date2) */
+static IPTR thunk_dos_CompareDates_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct DateStamp a, b;
+
+    if (!THUNK_D(1) || !THUNK_D(2))
+        return 0;
+    datestamp_in(ctx, THUNK_D(1), &a);
+    datestamp_in(ctx, THUNK_D(2), &b);
+    return (IPTR)(LONG)CompareDates(&a, &b);
+}
+
+/* dos -396: SetFileDate(D1=name, D2=date) */
+static IPTR thunk_dos_SetFileDate_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    CONST_STRPTR name = (CONST_STRPTR)m68k_to_host(ctx, THUNK_D(1));
+    struct DateStamp ds;
+
+    if (!name || !THUNK_D(2))
+        return 0;
+    datestamp_in(ctx, THUNK_D(2), &ds);
+    return SetFileDate(name, &ds);
+}
+
 /* dos -744: DateToStr(D1=datetime) */
 static IPTR thunk_dos_DateToStr_m(struct M68KEmuContext *ctx, void *cpu)
 {
@@ -2040,6 +2102,10 @@ static IPTR thunk_dos_StrToDate_m(struct M68KEmuContext *ctx, void *cpu)
 }
 
 const struct M68KThunkEntry m68kemu_thunks_dos[] = {
+    { 192, thunk_dos_DateStamp_m },
+    { 738, thunk_dos_CompareDates_m },
+    { 396, thunk_dos_SetFileDate_m },
+    { 390, thunk_dos_ExamineFH_m },
     { 744, thunk_dos_DateToStr_m },
     { 750, thunk_dos_StrToDate_m },
     { 108, thunk_dos_ExNext },
