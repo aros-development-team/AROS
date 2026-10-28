@@ -560,6 +560,16 @@ ULONG shadow_init_execbase(struct M68KEmuContext *ctx, ULONG m68k_base, void *na
     m68k_write16(ctx, m68k_base + M68K_EXECBASE_LIBVERSION, lib->lib_Version);
     m68k_write16(ctx, m68k_base + M68K_EXECBASE_LIBREVISION, lib->lib_Revision);
 
+    /* ex_EClockFrequency is what ReadEClock() counts at; AROS leaves the
+       field 0 where the E clock is no CIA */
+    {
+        ULONG freq = 0;
+
+        m68k_eclock_now(ctx, &freq);
+        if (freq)
+            m68k_write32(ctx, m68k_base + 568, freq);
+    }
+
     /* exec's ID string lives in the Kickstart ROM: programs find the ROM
        (and its version) from where lib_IdString points */
     if (lib->lib_IdString)
