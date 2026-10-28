@@ -411,7 +411,9 @@ IPTR m68k_DoIO(struct M68KEmuContext *ctx, void *cpu)
     io_in(ctx, m);
     if (input_request(ctx, m))
         return 0;
+    m68k_gil_release(ctx);
     err = DoIO(m->native);
+    m68k_gil_obtain(ctx);
     m68k_ioreq_out(ctx, m->native);
     return (IPTR)(LONG)err;
 }
@@ -445,7 +447,9 @@ IPTR m68k_WaitIO(struct M68KEmuContext *ctx, void *cpu)
     struct M68KIoMap *m = io_find(ctx, M68KEmu_GetA(cpu, 1));
     BYTE err;
     if (!m) return (IPTR)(LONG)IOERR_NOCMD;
+    m68k_gil_release(ctx);
     err = WaitIO(m->native);
+    m68k_gil_obtain(ctx);
     m68k_ioreq_out(ctx, m->native);
     return (IPTR)(LONG)err;
 }
