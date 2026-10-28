@@ -594,6 +594,17 @@ WORD scan_input(struct filehandle *fh, UBYTE *buffer)
             result = INP_EOF;
             break;
 
+        case 0x1B: /* ESC [ is CSI on a device that sends it that way */
+            if (!(fh->devcaps & CONCAPF_CSI7) ||
+                fh->conbufferpos >= fh->conbuffersize ||
+                fh->consolebuffer[fh->conbufferpos] != '[')
+            {
+                *buffer = c;
+                result = INP_STRING;
+                break;
+            }
+            fh->conbufferpos++;
+            /* Fallthrough */
         case 0x9B: /* CSI */
             result = INP_UNKNOWN;
 
