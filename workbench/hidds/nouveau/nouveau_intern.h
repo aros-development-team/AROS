@@ -76,7 +76,9 @@ struct HIDDNouveauPlane
 };
 
 /* Buffers of one scan-out bitmap (aHidd_BitMap_Scanout); QueryScanout reports it */
-#define NOUVEAU_MAX_BUFFERS 3
+#define NOUVEAU_MAX_SCANOUT_BUFFERS 3
+/* A decode target (aHidd_BitMap_DecodeTarget) holds a codec's whole set of surfaces */
+#define NOUVEAU_MAX_BUFFERS 32
 
 struct HIDDNouveauData
 {
@@ -171,12 +173,28 @@ struct HIDDNouveauBitMapData
     ULONG       front;          /* buffer scanned out / addressed by bo */
     ULONG       back;           /* buffer a client should write next */
     ULONG       planeoff[2];    /* planar video: byte offsets of the U (or UV) and V planes */
+    BOOL        decodetarget;   /* aHidd_BitMap_DecodeTarget: NVDEC output lands in the buffers */
     struct
     {
         struct nouveau_bo   *bo;
         ULONG               fbid;
+        /*
+         * Decode target: the last decode into this buffer. The session's
+         * semaphore reaching decseq means the decoder has finished its
+         * block-linear picture; the copy engine then detiles it into bo
+         * (nouveau_decode.c, HIDDNouveauDecodeSettle).
+         */
+        struct HIDDNouveauDecode *dec;      /* session, NULL = nothing pending */
+        ULONG               decseq;
+        LONG                decslot;        /* pool slot holding the picture */
+        UBYTE               decstate;       /* NOUVEAU_DECSTATE_* */
     } buf[NOUVEAU_MAX_BUFFERS];
 };
+
+#define NOUVEAU_DECSTATE_NONE       0   /* no decode pending */
+#define NOUVEAU_DECSTATE_DECODING   1   /* submitted; copy-out not issued */
+#define NOUVEAU_DECSTATE_COPYING    2   /* copy-out issued, not waited for */
+#define NOUVEAU_DECSTATE_ERROR      3   /* the decoder reported an error */
 
 #define CLID_Hidd_I2C_Nouveau           "hidd.i2c.nouveau"
 #define IID_Hidd_I2C_Nouveau            "hidd.i2c.nouveau"
@@ -253,6 +271,9 @@ struct CardData
             struct nouveau_bo *, uint32_t, int, int, int, int, int, int,
             uint32_t);
 
+    /* NVDEC (nouveau_decode.c): the decoder class found on the first query */
+    ULONG nvdec_class;      /* NVxxB0 class the channel accepts, 0 = none */
+    LONG  nvdec_probe;      /* 0 = not tried, 1 = found, -1 = no decoder */
     struct nouveau_bo       *GART;                  /* Buffer in GART for upload/download of images */
     ULONG gart_pos;         /* Ring position in the GART buffer: uploads stream
                                without waiting until the ring wraps */

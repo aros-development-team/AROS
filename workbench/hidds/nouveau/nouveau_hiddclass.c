@@ -7,6 +7,7 @@
 #include <exec/pm.h>
 #include <proto/exec.h>
 #include "nouveau_intern.h"
+#include "nouveau_decode.h"
 
 #include <graphics/displayinfo.h>
 #include <graphics/driver.h>
@@ -633,6 +634,16 @@ OOP_Object * METHOD(Nouveau, Root, New)
 
             /* Create the display object and its mode enumerator */
             {
+                /*
+                 * Video decoding: Turing and later run NVDEC behind GSP-RM
+                 * (nouveau_decode.c). Older chips have no usable decoder
+                 * firmware; they get no vectors and the base class answers
+                 * "no decoder". NOUVEAU_DECODE=0 disables it.
+                 */
+                extern int nouveau_decode_enable;
+                BOOL decoder = nouveau_decode_enable && (nvdev->chipset >= 0x160);
+
+                HIDDNouveauDecodeInit();
                 struct TagItem displaytags[] =
                 {
                     { aHidd_Display_GfxHidd,       (IPTR)o        },
@@ -640,6 +651,8 @@ OOP_Object * METHOD(Nouveau, Root, New)
                     { aHidd_Display_ConnectorType,
                       HIDDNouveauConnectorType(selectedconnector->connector_type) },
                     { aHidd_Display_ConnectorID,   selectedconnector->connector_type_id },
+                    { decoder ? aHidd_Display_DecodeVectors : TAG_IGNORE, (IPTR)&HIDDNouveauDecodeVectors },
+                    { decoder ? aHidd_Display_DecodeDataSize : TAG_IGNORE, sizeof(struct HIDDNouveauDecode) },
                     { TAG_DONE,                    0              }
                 };
                 SD(cl)->display = OOP_NewObject(SD(cl)->displayclass, NULL, displaytags);

@@ -1578,6 +1578,11 @@ nouveau_aros_params(void)
 		nouveau_wndw_live_owner = (*v != '0');
 		kfree(v);
 	}
+	if ((v = nouveau_aros_getenv("NOUVEAU_DECODE"))) {
+		extern int nouveau_decode_enable;
+		nouveau_decode_enable = (*v != '0');
+		kfree(v);
+	}
 	if ((v = nouveau_aros_getenv("NOUVEAU_WINDOW_PLANES"))) {
 		extern int nouveau_window_planes;
 		nouveau_window_planes = (*v != '0');

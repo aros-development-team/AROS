@@ -282,6 +282,8 @@ NOUVEAU_HIDD_C_SOURCES := \
             nouveau_init \
             nouveau_bitmapclass \
             nouveau_accel \
+            nouveau_decode \
+            nouveau_decode_h264 \
             nouveau_i2cclass \
             nouveau_galliumclass \
             $(addprefix $(XF86_NOUVEAU_PATH), $(XF86_NOUVEAU_SOURCES))  \

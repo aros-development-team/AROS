@@ -3,6 +3,7 @@
 */
 
 #include "nouveau_intern.h"
+#include "nouveau_decode.h"
 
 #include <graphics/displayinfo.h>
 #include <proto/utility.h>
@@ -1226,6 +1227,9 @@ BOOL METHOD(NouveauDisplay, Hidd_Display, CommitPlanes)
             {
                 struct HIDDNouveauBitMapData *bmdata = OOP_INST_DATA(SD(cl)->bmclass, st->BitMap);
 
+                /* a decode target: its front buffer must hold a finished picture */
+                if (bmdata->decodetarget)
+                    HIDDNouveauDecodeSettle(&(SD(cl)->carddata), bmdata, bmdata->front, TRUE, 0xffffffffUL);
                 if (!HIDDNouveauEnsureFB(st->BitMap))
                     ret = -1;
                 else
@@ -1441,7 +1445,7 @@ VOID METHOD(NouveauDisplay, Hidd_Display, WaitLatch)
  * size? Answered from the crtc's overlay planes: SCF_PLANE when one scans
  * the format out and the size is a framebuffer the kernel takes,
  * SCF_COLORKEY when that plane keys on the primary (dispnv50 windows),
- * never SCF_SCALE (see GetPlaneInfo). Up to NOUVEAU_MAX_BUFFERS buffers.
+ * never SCF_SCALE (see GetPlaneInfo). Up to NOUVEAU_MAX_SCANOUT_BUFFERS buffers.
  */
 ULONG METHOD(NouveauDisplay, Hidd_Display, QueryScanout)
 {
@@ -1483,7 +1487,7 @@ ULONG METHOD(NouveauDisplay, Hidd_Display, QueryScanout)
         msg->caps->Flags      = flags;
         msg->caps->MaxWidth   = gfxdata->maxfbw;
         msg->caps->MaxHeight  = gfxdata->maxfbh;
-        msg->caps->MaxBuffers = NOUVEAU_MAX_BUFFERS;
+        msg->caps->MaxBuffers = NOUVEAU_MAX_SCANOUT_BUFFERS;
         msg->caps->ScaleMin   = HIDD_PLANE_SCALE_UNITY;
         msg->caps->ScaleMax   = HIDD_PLANE_SCALE_UNITY;
         msg->caps->ColorKey   = (flags & SCF_COLORKEY) ? (ULONG)key : 0;
@@ -1557,4 +1561,38 @@ VOID METHOD(NouveauDisplay, Hidd_Display, NominalDimensions)
         *(msg->height) = height;
     if (msg->depth)
         *(msg->depth) = 24;
+}
+
+/*
+ * Hardware video decoding (nouveau_decode.c): the display answers for the
+ * NVDEC class its channel accepts; sessions are decode interfaces.
+ */
+ULONG METHOD(NouveauDisplay, Hidd_Display, QueryDecode)
+{
+    return HIDDNouveauDecodeQuery(cl, o, msg->profile, msg->width, msg->height, msg->caps);
+}
+
+APTR METHOD(NouveauDisplay, Hidd_Display, GetDecodeInterface)
+{
+    struct HIDDNouveauDecode *dec = (struct HIDDNouveauDecode *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+    if (!dec)
+        return NULL;
+    if (!HIDDNouveauDecodeOpen(cl, o, dec, msg->profile, msg->width, msg->height, msg->resolve))
+    {
+        struct pHidd_Display_FreeDecodeInterface fmsg;
+
+        fmsg.mID = OOP_GetMethodID(IID_Hidd_Display, moHidd_Display_FreeDecodeInterface);
+        fmsg.iface = dec;
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)&fmsg);
+        return NULL;
+    }
+    return dec;
+}
+
+VOID METHOD(NouveauDisplay, Hidd_Display, FreeDecodeInterface)
+{
+    if (msg->iface)
+        HIDDNouveauDecodeClose((struct HIDDNouveauDecode *)msg->iface);
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }

@@ -1,0 +1,649 @@
+/*
+    Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+    H.264 on NVDEC: VA-API picture, matrix and slice parameters become the
+    decoder's picture setup (nvdec_h264_pic_s, NVIDIA's MIT header in Mesa's
+    nouveau/headers tree), the slices an Annex B bitstream with an offset
+    table, and the frame one EXECUTE on the session's channel.
+
+    NVDEC is a full VLD decoder: it parses the slice headers itself, so the
+    reference picture lists, weights and QP deltas of the VA slice parameters
+    are not needed; the DPB description (frame numbers, POCs, markings) is.
+*/
+
+#include "nouveau_intern.h"
+#include "nouveau_decode.h"
+#include "nouveau_vadec.h"
+
+#define DEBUG 0
+#include <aros/debug.h>
+#include <proto/exec.h>
+#include <string.h>
+
+#include <nvidia/video/nvdec_drv.h>
+
+/* Class methods (NVC9B0 numbering; unchanged since NVC5B0, see NVDEC-H264-REFERENCE.md) */
+#define NVDEC_SET_APPLICATION_ID            0x0200
+#define NVDEC_SEMAPHORE_A                   0x0240
+#define NVDEC_SEMAPHORE_B                   0x0244
+#define NVDEC_SEMAPHORE_C                   0x0248
+#define NVDEC_EXECUTE                       0x0300
+#define NVDEC_SEMAPHORE_D                   0x0304
+#define NVDEC_SET_CONTROL_PARAMS            0x0400
+#define NVDEC_SET_DRV_PIC_SETUP_OFFSET      0x0404
+#define NVDEC_SET_IN_BUF_BASE_OFFSET        0x0408
+#define NVDEC_SET_PICTURE_INDEX             0x040C
+#define NVDEC_SET_SLICE_OFFSETS_BUF_OFFSET  0x0410
+#define NVDEC_SET_COLOC_DATA_OFFSET         0x0414
+#define NVDEC_SET_HISTORY_OFFSET            0x0418
+#define NVDEC_SET_DISPLAY_BUF_SIZE          0x041C
+#define NVDEC_SET_HISTOGRAM_OFFSET          0x0420
+#define NVDEC_SET_NVDEC_STATUS_OFFSET       0x0424
+#define NVDEC_SET_PICTURE_LUMA_OFFSET0      0x0430  /* 17 of them */
+#define NVDEC_SET_PICTURE_CHROMA_OFFSET0    0x0474  /* 17 of them */
+#define NVDEC_SET_PIC_SCRATCH_BUF_OFFSET    0x04B8
+#define NVDEC_H264_SET_MBHIST_BUF_OFFSET    0x0500
+
+#define NVDEC_APPLICATION_ID_H264           3
+#define NVDEC_CONTROL_CODEC_H264            3
+#define NVDEC_CONTROL_GPTIMER_ON            (1 << 4)
+#define NVDEC_CONTROL_ALL_INTRA_FRAME       (1 << 17)
+#define NVDEC_EXECUTE_NOTIFY_ON_END         (1 << 0)
+#define NVDEC_EXECUTE_AWAKEN                (1 << 8)
+/* SEMAPHORE_D: RELEASE, one 32-bit word, flush enabled (writes visible first), awaken */
+#define NVDEC_SEMAPHORE_D_RELEASE_FLUSH     (1 << 8)
+
+#define NVDEC_H264_SLOTS                    17
+#define NVDEC_H264_HISTORY_SIZE             (2 * 1024 * 1024)
+#define NVDEC_H264_COLOC_PER_MB             192
+
+/* The picture layout the pool uses: KBL block-linear, 2 GOBs (16 rows) per block */
+#define NVDEC_TILEFORMAT_KBL                1
+#define NVDEC_GOB_HEIGHT_2                  0
+
+struct nvdec_h264_slice
+{
+    ULONG   offset;         /* of the start code in the bitstream */
+    UBYTE   type;           /* slice_type % 5 */
+    UBYTE   datadone;       /* its bytes are in the bitstream */
+    UBYTE   l0, l1;         /* num_ref_idx_lX_active_minus1 of the slice */
+    ULONG   dataoff, datasize;  /* into the VA data buffer it belongs to */
+};
+
+struct nvdec_h264
+{
+    VAPictureParameterBufferH264    pp;
+    VAIQMatrixBufferH264            iq;
+    BOOL    have_pp, have_iq;
+    LONG    defrefs[2];             /* PPS num_ref_idx_lX_default_active_minus1 as last seen */
+    struct nvdec_h264_slice slices[NOUVEAU_DECODE_MAX_SLICES];
+    ULONG   nslices;                /* parameters received */
+    ULONG   nextdata;               /* first slice whose data has not arrived */
+};
+
+BOOL HIDDNouveauDecodeH264Open(struct HIDDNouveauDecode *dec)
+{
+    struct nvdec_h264 *h;
+    ULONG mbs = (dec->width / 16) * (dec->height / 16);
+    ULONG colocsize = (mbs * NVDEC_H264_COLOC_PER_MB + 4095) & ~4095UL;
+    LONG ret;
+
+    h = AllocMem(sizeof(*h), MEMF_PUBLIC | MEMF_CLEAR);
+    if (!h)
+        return FALSE;
+    dec->cur.codecstate = h;
+    h->defrefs[0] = h->defrefs[1] = 0;
+    ret = nouveau_bo_new(dec->carddata->dev, NOUVEAU_BO_VRAM, 4096, (uint64_t)colocsize * NVDEC_H264_SLOTS, NULL, &dec->coloc);
+    if (ret)
+    {
+        nvlog("[Nouveau] NVDEC: H.264 colocated buffer (%lu KB) failed (%ld)\n",
+            (unsigned long)(colocsize * NVDEC_H264_SLOTS / 1024), (long)ret);
+        return FALSE;
+    }
+    ret = nouveau_bo_new(dec->carddata->dev, NOUVEAU_BO_VRAM, 4096, NVDEC_H264_HISTORY_SIZE, NULL, &dec->history);
+    if (ret)
+    {
+        nvlog("[Nouveau] NVDEC: H.264 history buffer failed (%ld)\n", (long)ret);
+        return FALSE;
+    }
+    return TRUE;
+}
+
+VOID HIDDNouveauDecodeH264Close(struct HIDDNouveauDecode *dec)
+{
+    if (dec->cur.codecstate)
+    {
+        FreeMem(dec->cur.codecstate, sizeof(struct nvdec_h264));
+        dec->cur.codecstate = NULL;
+    }
+}
+
+BOOL HIDDNouveauDecodeH264Begin(struct HIDDNouveauDecode *dec)
+{
+    struct nvdec_h264 *h = dec->cur.codecstate;
+
+    if (!h)
+        return FALSE;
+    h->have_pp = h->have_iq = FALSE;
+    h->nslices = 0;
+    h->nextdata = 0;
+    return TRUE;
+}
+
+/*
+ * Exp-Golomb reader for the slice header prefix, only to find
+ * num_ref_idx_active_override_flag: VA does not carry the PPS defaults of
+ * num_ref_idx_lX_active_minus1, and a slice without the override uses them.
+ */
+struct bitreader
+{
+    const UBYTE *p, *end;
+    ULONG bit;
+};
+
+static ULONG br_bit(struct bitreader *br)
+{
+    ULONG v;
+
+    if (br->p >= br->end)
+        return 0;
+    v = (br->p[0] >> (7 - br->bit)) & 1;
+    if (++br->bit == 8)
+    {
+        br->bit = 0;
+        br->p++;
+    }
+    return v;
+}
+
+static ULONG br_bits(struct bitreader *br, ULONG n)
+{
+    ULONG v = 0;
+
+    while (n--)
+        v = (v << 1) | br_bit(br);
+    return v;
+}
+
+static ULONG br_ue(struct bitreader *br)
+{
+    ULONG zeros = 0;
+
+    while (!br_bit(br) && (zeros < 32) && (br->p < br->end))
+        zeros++;
+    if (!zeros)
+        return 0;
+    return ((1UL << zeros) - 1) + br_bits(br, zeros);
+}
+
+static LONG br_se(struct bitreader *br)
+{
+    ULONG k = br_ue(br);
+
+    return (k & 1) ? (LONG)((k + 1) / 2) : -(LONG)(k / 2);
+}
+
+/*
+ * Walk a slice header up to num_ref_idx_active_override_flag; when the flag
+ * is 0 the slice's num_ref_idx_lX_active_minus1 (from VA) are the PPS
+ * defaults. Returns TRUE when the defaults could be taken from this slice.
+ */
+static BOOL h264_slice_defaults(struct nvdec_h264 *h, const UBYTE *nal, ULONG len, ULONG l0, ULONG l1)
+{
+    const VAPictureParameterBufferH264 *pp = &h->pp;
+    struct bitreader br;
+    ULONG nal_unit_type, slice_type, field_pic = 0;
+
+    if (len < 2)
+        return FALSE;
+    nal_unit_type = nal[0] & 0x1f;
+    if ((nal_unit_type != 1) && (nal_unit_type != 5))
+        return FALSE;
+    br.p = nal + 1;
+    br.end = nal + len;
+    br.bit = 0;
+    br_ue(&br);                                     /* first_mb_in_slice */
+    slice_type = br_ue(&br) % 5;
+    br_ue(&br);                                     /* pic_parameter_set_id */
+    if (pp->seq_fields.bits.chroma_format_idc == 3 && 0)
+        br_bits(&br, 2);                            /* colour_plane_id: separate planes only */
+    br_bits(&br, pp->seq_fields.bits.log2_max_frame_num_minus4 + 4);   /* frame_num */
+    if (!pp->seq_fields.bits.frame_mbs_only_flag)
+    {
+        field_pic = br_bit(&br);
+        if (field_pic)
+            br_bit(&br);                            /* bottom_field_flag */
+    }
+    if (nal_unit_type == 5)
+        br_ue(&br);                                 /* idr_pic_id */
+    if (pp->seq_fields.bits.pic_order_cnt_type == 0)
+    {
+        br_bits(&br, pp->seq_fields.bits.log2_max_pic_order_cnt_lsb_minus4 + 4);
+        if (pp->pic_fields.bits.pic_order_present_flag && !field_pic)
+            br_se(&br);                             /* delta_pic_order_cnt_bottom */
+    }
+    if ((pp->seq_fields.bits.pic_order_cnt_type == 1) && !pp->seq_fields.bits.delta_pic_order_always_zero_flag)
+    {
+        br_se(&br);
+        if (pp->pic_fields.bits.pic_order_present_flag && !field_pic)
+            br_se(&br);
+    }
+    if (pp->pic_fields.bits.redundant_pic_cnt_present_flag)
+        br_ue(&br);
+    if (slice_type == 1)                            /* B */
+        br_bit(&br);                                /* direct_spatial_mv_pred_flag */
+    if ((slice_type == 0) || (slice_type == 3) || (slice_type == 1))    /* P, SP, B */
+    {
+        if (br_bit(&br))                            /* num_ref_idx_active_override_flag */
+            return FALSE;
+        h->defrefs[0] = l0;
+        if (slice_type == 1)
+            h->defrefs[1] = l1;
+        return TRUE;
+    }
+    return FALSE;
+}
+
+BOOL HIDDNouveauDecodeH264Params(struct HIDDNouveauDecode *dec, ULONG type, APTR data, ULONG size, ULONG count)
+{
+    struct nvdec_h264 *h = dec->cur.codecstate;
+    ULONG i;
+
+    if (!h)
+        return FALSE;
+    switch (type)
+    {
+    case VAPictureParameterBufferType:
+        if (size < sizeof(VAPictureParameterBufferH264))
+            return FALSE;
+        memcpy(&h->pp, data, sizeof(h->pp));
+        h->have_pp = TRUE;
+        return TRUE;
+
+    case VAIQMatrixBufferType:
+        if (size < sizeof(VAIQMatrixBufferH264))
+            return FALSE;
+        memcpy(&h->iq, data, sizeof(h->iq));
+        h->have_iq = TRUE;
+        return TRUE;
+
+    case VASliceParameterBufferType:
+        if (size < sizeof(VASliceParameterBufferH264))
+            return FALSE;
+        for (i = 0; i < count; i++)
+        {
+            const VASliceParameterBufferH264 *sp = (const VASliceParameterBufferH264 *)((UBYTE *)data + i * size);
+            struct nvdec_h264_slice *sl;
+
+            if (h->nslices >= NOUVEAU_DECODE_MAX_SLICES)
+            {
+                nvlog("[Nouveau] NVDEC: H.264 frame with more than %lu slices\n", (unsigned long)NOUVEAU_DECODE_MAX_SLICES);
+                return FALSE;
+            }
+            sl = &h->slices[h->nslices++];
+            sl->offset = 0;
+            sl->type = sp->slice_type % 5;
+            sl->datadone = 0;
+            sl->dataoff = sp->slice_data_offset;
+            sl->datasize = sp->slice_data_size;
+            sl->l0 = sp->num_ref_idx_l0_active_minus1;
+            sl->l1 = sp->num_ref_idx_l1_active_minus1;
+        }
+        return TRUE;
+
+    default:
+        /* nothing else carries information the VLD decoder needs */
+        nvlog("[Nouveau] NVDEC: H.264 parameter buffer type %lu not supported\n", (unsigned long)type);
+        return FALSE;
+    }
+}
+
+/*
+ * Slice data: each VA data buffer carries the slices whose parameters came
+ * before it (ffmpeg: one parameter buffer, then one data buffer, per slice).
+ * Every slice gets a start code, as the decoder expects Annex B.
+ */
+BOOL HIDDNouveauDecodeH264Bitstream(struct HIDDNouveauDecode *dec, APTR data, ULONG size)
+{
+    struct nvdec_h264 *h = dec->cur.codecstate;
+    ULONG first = h ? h->nextdata : 0, i;
+
+    if (!h)
+        return FALSE;
+    if (first >= h->nslices)
+    {
+        /* data without parameters: one slice, whole buffer */
+        struct nvdec_h264_slice *sl;
+
+        if (h->nslices >= NOUVEAU_DECODE_MAX_SLICES)
+            return FALSE;
+        sl = &h->slices[h->nslices++];
+        sl->type = 0;
+        sl->dataoff = 0;
+        sl->datasize = size;
+        sl->datadone = 0;
+        sl->l0 = sl->l1 = 0;
+    }
+    for (i = first; i < h->nslices; i++)
+    {
+        struct nvdec_h264_slice *sl = &h->slices[i];
+        UBYTE *p;
+
+        if (sl->datadone)
+            continue;
+        if ((sl->dataoff > size) || (sl->datasize > size - sl->dataoff) || !sl->datasize)
+        {
+            nvlog("[Nouveau] NVDEC: H.264 slice %lu data (%lu+%lu) outside its %lu byte buffer\n",
+                (unsigned long)i, (unsigned long)sl->dataoff, (unsigned long)sl->datasize, (unsigned long)size);
+            return FALSE;
+        }
+        p = HIDDNouveauDecodeBitstreamReserve(dec, 3 + sl->datasize);
+        if (!p)
+            return FALSE;
+        sl->offset = (ULONG)(p - (UBYTE *)dec->ring[dec->ringpos].bitstream->map);
+        p[0] = 0;
+        p[1] = 0;
+        p[2] = 1;
+        memcpy(p + 3, (UBYTE *)data + sl->dataoff, sl->datasize);
+        sl->datadone = 1;
+        /* the PPS reference count defaults, from a slice that does not override them */
+        if (h->have_pp && (sl->type != 2) && (sl->type != 4))
+            h264_slice_defaults(h, (UBYTE *)data + sl->dataoff, sl->datasize, sl->l0, sl->l1);
+        dec->cur.nslices++;
+    }
+    h->nextdata = h->nslices;
+    return TRUE;
+}
+
+/*
+ * Build the picture setup and submit the frame.
+ */
+static VOID h264_dpb_entry(nvdec_dpb_entry_s *e, const VAPictureH264 *ref, LONG slot)
+{
+    ULONG state;
+
+    memset(e, 0, sizeof(*e));
+    state = 0;
+    if (ref->flags & VA_PICTURE_H264_TOP_FIELD)
+        state |= 1;
+    if (ref->flags & VA_PICTURE_H264_BOTTOM_FIELD)
+        state |= 2;
+    if (!state)
+        state = 3;                                  /* frame reference: both fields */
+    e->index = slot;
+    e->col_idx = slot;
+    e->state = state;
+    e->is_long_term = (ref->flags & VA_PICTURE_H264_LONG_TERM_REFERENCE) ? 1 : 0;
+    e->not_existing = 0;
+    e->is_field = (ref->flags & (VA_PICTURE_H264_TOP_FIELD | VA_PICTURE_H264_BOTTOM_FIELD)) ? 1 : 0;
+    e->top_field_marking = (state & 1) ? (e->is_long_term ? 2 : 1) : 0;
+    e->bottom_field_marking = (state & 2) ? (e->is_long_term ? 2 : 1) : 0;
+    e->output_memory_layout = 0;
+    e->FieldOrderCnt[0] = (unsigned int)ref->TopFieldOrderCnt;
+    e->FieldOrderCnt[1] = (unsigned int)ref->BottomFieldOrderCnt;
+    e->FrameIdx = (int)ref->frame_idx;
+}
+
+ULONG HIDDNouveauDecodeStatusError(struct HIDDNouveauDecode *dec, ULONG *status)
+{
+    nvdec_status_s *st = (nvdec_status_s *)status;
+    ULONG mbs = (dec->width / 16) * (dec->height / 16);
+
+    if (!st->error_status && !st->mbs_in_error && !st->slice_header_error_code &&
+        (st->mbs_correctly_decoded >= mbs))
+        return 0;
+    /*
+     * A status word the class headers do not list (the GB207 reports 0x20
+     * on every frame) with every macroblock decoded and none in error is
+     * taken as a warning: the picture is complete. Logged once per session.
+     */
+    if ((st->error_status < 0x100) && !st->mbs_in_error && !st->slice_header_error_code &&
+        (st->mbs_correctly_decoded >= mbs))
+    {
+        if (!dec->statuswarned)
+        {
+            dec->statuswarned = TRUE;
+            D(bug("[Nouveau] NVDEC: session %p: frames report status %08lx with all %lu macroblocks decoded: taken as a warning\n",
+                dec, (unsigned long)st->error_status, (unsigned long)st->mbs_correctly_decoded));
+        }
+        return 0;
+    }
+    /* the first few per session in full; the total goes out when it closes */
+    if (dec->errors++ < 4)
+        nvlog("[Nouveau] NVDEC: frame error %08lx (mbs ok %lu of %lu, in error %lu, slice header error %lu)\n",
+            (unsigned long)st->error_status, (unsigned long)st->mbs_correctly_decoded, (unsigned long)mbs,
+            (unsigned long)st->mbs_in_error, (unsigned long)st->slice_header_error_code);
+    return st->error_status ? st->error_status : 1;
+}
+
+BOOL HIDDNouveauDecodeH264Submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFrame *f)
+{
+    struct nvdec_h264 *h = dec->cur.codecstate;
+    const VAPictureParameterBufferH264 *pp;
+    nvdec_h264_pic_s *pic;
+    ULONG *sliceoffs, *status;
+    struct nouveau_pushbuf *push = dec->pushbuf;
+    struct nouveau_pushbuf_refn refs[6 + NVDEC_H264_SLOTS];
+    LONG refslot[16], slot, i, n, nrefs = 0;
+    ULONG avoid = 0, control, allintra = 1, colocsize;
+    UBYTE *pad;
+
+    if (!h || !h->have_pp || !dec->cur.nslices)
+        return FALSE;
+    pp = &h->pp;
+    if (((ULONG)(pp->picture_width_in_mbs_minus1 + 1) * 16 > dec->width) ||
+        ((ULONG)(pp->picture_height_in_mbs_minus1 + 1) * 16 > dec->height))
+    {
+        nvlog("[Nouveau] NVDEC: H.264 picture %lux%lu MBs exceeds the session's %lux%lu\n",
+            (unsigned long)pp->picture_width_in_mbs_minus1 + 1, (unsigned long)pp->picture_height_in_mbs_minus1 + 1,
+            (unsigned long)dec->width / 16, (unsigned long)dec->height / 16);
+        return FALSE;
+    }
+    if (pp->pic_fields.bits.field_pic_flag || pp->seq_fields.bits.mb_adaptive_frame_field_flag)
+    {
+        /* field pictures and MBAFF need the field layout work (reference, 7.5) */
+        nvlog("[Nouveau] NVDEC: H.264 interlaced coding not supported yet\n");
+        return FALSE;
+    }
+    for (i = 0; i < (LONG)h->nslices; i++)
+        if ((h->slices[i].type != 2) && (h->slices[i].type != 4))
+            allintra = 0;
+
+    /* References: resolve each VA surface to a pool slot it still occupies */
+    for (i = 0; i < 16; i++)
+    {
+        const VAPictureH264 *ref = &pp->ReferenceFrames[i];
+        OOP_Object *bm;
+        ULONG buffer;
+
+        refslot[i] = -1;
+        if ((ref->flags & VA_PICTURE_H264_INVALID) || (ref->picture_id == VA_INVALID_SURFACE))
+            continue;
+        if (!HIDDNouveauDecodeResolve(dec, ref->picture_id, &bm, &buffer))
+        {
+            D(bug("[Nouveau] NVDEC: H.264 reference surface %lu unknown\n", (unsigned long)ref->picture_id));
+            continue;
+        }
+        slot = HIDDNouveauDecodeFindSlot(dec, bm, buffer);
+        if (slot < 0)
+        {
+            D(bug("[Nouveau] NVDEC: H.264 reference %lu (%p/%lu) is not in the pool any more\n",
+                (unsigned long)ref->picture_id, bm, (unsigned long)buffer));
+            continue;
+        }
+        refslot[i] = slot;
+        avoid |= 1UL << slot;
+        dec->slot[slot].lastuse = dec->frames;
+        nrefs++;
+    }
+    slot = HIDDNouveauDecodeAllocSlot(dec, dec->cur.bm, dec->cur.buffer, avoid);
+    if (slot < 0)
+        return FALSE;
+    dec->cur.slot = slot;
+
+    /* Picture setup */
+    pic = (nvdec_h264_pic_s *)f->picsetup->map;
+    sliceoffs = (ULONG *)((UBYTE *)f->picsetup->map + NOUVEAU_DECODE_SLICEOFFS_OFFSET);
+    status = (ULONG *)((UBYTE *)f->picsetup->map + NOUVEAU_DECODE_STATUS_OFFSET);
+    memset(pic, 0, sizeof(*pic));
+    memset(status, 0, 256);
+
+    /* the bitstream: slice offsets, then a zero pad the VLD may read ahead into */
+    for (i = 0; i < (LONG)h->nslices; i++)
+        sliceoffs[i] = h->slices[i].offset;
+    sliceoffs[h->nslices] = dec->cur.bitstreamlen;
+    /*
+     * End of stream: the decoder's output stage holds the last ~62
+     * macroblocks of the picture until it sees one. GB207, verified
+     * bit-exact against FFmpeg's software decoder over 1022 frames: with
+     * the end-of-stream NAL passed through eos[] / explicitEOSPresentFlag
+     * ("to pass end of stream data separately if not present in bitstream
+     * surface", nvdec_drv.h) the picture is complete; without it the final
+     * 16 KB of luma and 3.5 KB of chroma are never written. The pad after
+     * the slices is for the VLD's read-ahead.
+     */
+    pad = HIDDNouveauDecodeBitstreamReserve(dec, 256);
+    if (!pad)
+        return FALSE;
+    memset(pad, 0, 256);
+    pic->stream_len = dec->cur.bitstreamlen - 256;
+    pic->eos[0] = 0;
+    pic->eos[1] = 0;
+    pic->eos[2] = 1;
+    pic->eos[3] = 0x0b;                     /* NAL unit type 11: end of stream */
+    pic->explicitEOSPresentFlag = 1;
+    pic->slice_count = h->nslices;
+
+    pic->log2_max_pic_order_cnt_lsb_minus4 = pp->seq_fields.bits.log2_max_pic_order_cnt_lsb_minus4;
+    pic->delta_pic_order_always_zero_flag = pp->seq_fields.bits.delta_pic_order_always_zero_flag;
+    pic->frame_mbs_only_flag = pp->seq_fields.bits.frame_mbs_only_flag;
+    pic->PicWidthInMbs = pp->picture_width_in_mbs_minus1 + 1;
+    pic->FrameHeightInMbs = pp->picture_height_in_mbs_minus1 + 1;
+    pic->tileFormat = NVDEC_TILEFORMAT_KBL;
+    pic->gob_height = NVDEC_GOB_HEIGHT_2;
+    pic->entropy_coding_mode_flag = pp->pic_fields.bits.entropy_coding_mode_flag;
+    pic->pic_order_present_flag = pp->pic_fields.bits.pic_order_present_flag;
+    pic->num_ref_idx_l0_active_minus1 = h->defrefs[0];
+    pic->num_ref_idx_l1_active_minus1 = h->defrefs[1];
+    pic->deblocking_filter_control_present_flag = pp->pic_fields.bits.deblocking_filter_control_present_flag;
+    pic->redundant_pic_cnt_present_flag = pp->pic_fields.bits.redundant_pic_cnt_present_flag;
+    pic->transform_8x8_mode_flag = pp->pic_fields.bits.transform_8x8_mode_flag;
+    pic->pitch_luma = dec->pitch;
+    pic->pitch_chroma = dec->pitch;
+    pic->HistBufferSize = NVDEC_H264_HISTORY_SIZE >> 8;
+    pic->MbaffFrameFlag = 0;
+    pic->direct_8x8_inference_flag = pp->seq_fields.bits.direct_8x8_inference_flag;
+    pic->weighted_pred_flag = pp->pic_fields.bits.weighted_pred_flag;
+    pic->constrained_intra_pred_flag = pp->pic_fields.bits.constrained_intra_pred_flag;
+    pic->ref_pic_flag = pp->pic_fields.bits.reference_pic_flag;
+    pic->field_pic_flag = 0;
+    pic->bottom_field_flag = 0;
+    pic->second_field = 0;
+    pic->log2_max_frame_num_minus4 = pp->seq_fields.bits.log2_max_frame_num_minus4;
+    pic->chroma_format_idc = pp->seq_fields.bits.chroma_format_idc;
+    pic->pic_order_cnt_type = pp->seq_fields.bits.pic_order_cnt_type;
+    pic->pic_init_qp_minus26 = pp->pic_init_qp_minus26;
+    pic->chroma_qp_index_offset = pp->chroma_qp_index_offset;
+    pic->second_chroma_qp_index_offset = pp->second_chroma_qp_index_offset;
+    pic->weighted_bipred_idc = pp->pic_fields.bits.weighted_bipred_idc;
+    pic->CurrPicIdx = slot;
+    pic->CurrColIdx = slot;
+    pic->frame_num = pp->frame_num;
+    pic->frame_surfaces = 1;
+    pic->output_memory_layout = 0;
+    pic->CurrFieldOrderCnt[0] = pp->CurrPic.TopFieldOrderCnt;
+    pic->CurrFieldOrderCnt[1] = pp->CurrPic.BottomFieldOrderCnt;
+    for (i = 0, n = 0; i < 16; i++)
+    {
+        if (refslot[i] < 0)
+            continue;
+        h264_dpb_entry(&pic->dpb[n++], &pp->ReferenceFrames[i], refslot[i]);
+    }
+    if (h->have_iq)
+    {
+        memcpy(pic->WeightScale, h->iq.ScalingList4x4, sizeof(pic->WeightScale));
+        memcpy(pic->WeightScale8x8[0], h->iq.ScalingList8x8[0], 64);
+        memcpy(pic->WeightScale8x8[1], h->iq.ScalingList8x8[1], 64);
+    }
+    else
+    {
+        memset(pic->WeightScale, 16, sizeof(pic->WeightScale));
+        memset(pic->WeightScale8x8, 16, sizeof(pic->WeightScale8x8));
+    }
+    nouveau_staging_to_gpu(f->picsetup->map, NOUVEAU_DECODE_PICSETUP_SIZE);
+    nouveau_staging_to_gpu(f->bitstream->map, dec->cur.bitstreamlen);
+
+    /* Methods */
+    n = 0;
+    refs[n].bo = f->picsetup;   refs[n++].flags = NOUVEAU_BO_GART | NOUVEAU_BO_RDWR;
+    refs[n].bo = f->bitstream;  refs[n++].flags = NOUVEAU_BO_GART | NOUVEAU_BO_RD;
+    refs[n].bo = dec->coloc;    refs[n++].flags = NOUVEAU_BO_VRAM | NOUVEAU_BO_RDWR;
+    refs[n].bo = dec->history;  refs[n++].flags = NOUVEAU_BO_VRAM | NOUVEAU_BO_RDWR;
+    refs[n].bo = dec->sem;      refs[n++].flags = NOUVEAU_BO_GART | NOUVEAU_BO_RDWR;
+    for (i = 0; i < (LONG)dec->nslots; i++)
+    {
+        refs[n].bo = dec->slot[i].bo;
+        refs[n++].flags = NOUVEAU_BO_VRAM | ((i == slot) ? NOUVEAU_BO_RDWR : NOUVEAU_BO_RD);
+    }
+    if (nouveau_pushbuf_space(push, 128, 0, 0) || nouveau_pushbuf_refn(push, refs, n))
+    {
+        nvlog("[Nouveau] NVDEC: no push buffer space for the frame\n");
+        return FALSE;
+    }
+    colocsize = dec->coloc->size / NVDEC_H264_SLOTS;
+    (void)colocsize;
+
+    control = NVDEC_CONTROL_CODEC_H264 | (allintra ? NVDEC_CONTROL_ALL_INTRA_FRAME : 0);
+    HIDDNouveauDecodeMethod(dec, NVDEC_SET_APPLICATION_ID, NVDEC_APPLICATION_ID_H264);
+    HIDDNouveauDecodeMethod(dec, NVDEC_SET_CONTROL_PARAMS, control);
+    HIDDNouveauDecodeMethod(dec, NVDEC_SET_DRV_PIC_SETUP_OFFSET, (ULONG)(f->picsetup->offset >> 8));
+    HIDDNouveauDecodeMethod(dec, NVDEC_SET_IN_BUF_BASE_OFFSET, (ULONG)(f->bitstream->offset >> 8));
+    HIDDNouveauDecodeMethod(dec, NVDEC_SET_PICTURE_INDEX, slot);
+    HIDDNouveauDecodeMethod(dec, NVDEC_SET_SLICE_OFFSETS_BUF_OFFSET,
+        (ULONG)((f->picsetup->offset + NOUVEAU_DECODE_SLICEOFFS_OFFSET) >> 8));
+    HIDDNouveauDecodeMethod(dec, NVDEC_SET_COLOC_DATA_OFFSET, (ULONG)(dec->coloc->offset >> 8));
+    HIDDNouveauDecodeMethod(dec, NVDEC_SET_HISTORY_OFFSET, (ULONG)(dec->history->offset >> 8));
+    HIDDNouveauDecodeMethod(dec, NVDEC_SET_DISPLAY_BUF_SIZE, 0);
+    HIDDNouveauDecodeMethod(dec, NVDEC_SET_HISTOGRAM_OFFSET, 0);
+    HIDDNouveauDecodeMethod(dec, NVDEC_SET_NVDEC_STATUS_OFFSET,
+        (ULONG)((f->picsetup->offset + NOUVEAU_DECODE_STATUS_OFFSET) >> 8));
+    for (i = 0; i < NVDEC_H264_SLOTS; i++)
+    {
+        /* every slot gets a valid picture: unused ones point at the current one */
+        struct nouveau_bo *bo = (i < (LONG)dec->nslots) ? dec->slot[i].bo : dec->slot[slot].bo;
+
+        HIDDNouveauDecodeMethod(dec, NVDEC_SET_PICTURE_LUMA_OFFSET0 + 4 * i, (ULONG)(bo->offset >> 8));
+    }
+    for (i = 0; i < NVDEC_H264_SLOTS; i++)
+    {
+        struct nouveau_bo *bo = (i < (LONG)dec->nslots) ? dec->slot[i].bo : dec->slot[slot].bo;
+
+        HIDDNouveauDecodeMethod(dec, NVDEC_SET_PICTURE_CHROMA_OFFSET0 + 4 * i, (ULONG)((bo->offset + dec->chromaoff) >> 8));
+    }
+    HIDDNouveauDecodeMethod(dec, NVDEC_SET_PIC_SCRATCH_BUF_OFFSET, 0);
+    HIDDNouveauDecodeMethod(dec, NVDEC_H264_SET_MBHIST_BUF_OFFSET, 0);
+    /*
+     * Completion: the EXECUTE notify writes word 0 when the decode ends, but
+     * the picture's last 16 KB per plane were still in the engine's write
+     * buffer when that fired (seen on the GB207). A SEMAPHORE_D release with
+     * flush after it writes word 1 once the picture is in memory; that is
+     * the word the session waits for.
+     */
+    HIDDNouveauDecodeMethod(dec, NVDEC_SEMAPHORE_A, (ULONG)(dec->sem->offset >> 32));
+    HIDDNouveauDecodeMethod(dec, NVDEC_SEMAPHORE_B, (ULONG)dec->sem->offset);
+    HIDDNouveauDecodeMethod(dec, NVDEC_SEMAPHORE_C, f->seq);
+    HIDDNouveauDecodeMethod(dec, NVDEC_EXECUTE, NVDEC_EXECUTE_NOTIFY_ON_END);
+    HIDDNouveauDecodeMethod(dec, NVDEC_SEMAPHORE_A, (ULONG)((dec->sem->offset + 4) >> 32));
+    HIDDNouveauDecodeMethod(dec, NVDEC_SEMAPHORE_B, (ULONG)(dec->sem->offset + 4));
+    HIDDNouveauDecodeMethod(dec, NVDEC_SEMAPHORE_C, f->seq);
+    HIDDNouveauDecodeMethod(dec, NVDEC_SEMAPHORE_D, NVDEC_SEMAPHORE_D_RELEASE_FLUSH);
+    if (nouveau_pushbuf_kick(push))
+    {
+        nvlog("[Nouveau] NVDEC: submitting the frame failed\n");
+        return FALSE;
+    }
+    D(bug("[Nouveau] NVDEC: H.264 frame %lu: slot %ld, %lu refs, %lu slices, %lu bytes%s\n",
+        (unsigned long)dec->frames, (long)slot, (unsigned long)nrefs, (unsigned long)h->nslices,
+        (unsigned long)pic->stream_len, allintra ? " (intra)" : ""));
+    return TRUE;
+}

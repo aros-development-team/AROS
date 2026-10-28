@@ -3,6 +3,7 @@
 */
 
 #include "nouveau_intern.h"
+#include "nouveau_decode.h"
 
 unsigned long nouveau_compat_irq_count(void);
 unsigned long nouveau_compat_usecs(void);
@@ -39,7 +40,7 @@ VOID HIDDNouveauSetOffsets(OOP_Object * bm, LONG newxoffset, LONG newyoffset)
 OOP_Object * METHOD(NouveauBitMap, Root, New)
 {
     IPTR width, height, depth, displayable, bytesperpixel;
-    IPTR scanout = FALSE, buffers = 1, videoformat = vHidd_VideoFmt_None;
+    IPTR scanout = FALSE, buffers = 1, videoformat = vHidd_VideoFmt_None, decodetarget = FALSE;
     OOP_Object * pf;
     struct HIDDNouveauBitMapData * bmdata = NULL;
     HIDDT_StdPixFmt stdfmt = vHidd_StdPixFmt_Unknown;
@@ -67,6 +68,7 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
     OOP_GetAttr(o, aHidd_BitMap_Scanout, &scanout);
     OOP_GetAttr(o, aHidd_BitMap_Buffers, &buffers);
     OOP_GetAttr(o, aHidd_BitMap_VideoFormat, &videoformat);
+    OOP_GetAttr(o, aHidd_BitMap_DecodeTarget, &decodetarget);
     OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdfmt);
     OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &bytesperpixel);
     OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
@@ -121,6 +123,10 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
     bmdata->bytesperpixel = bytesperpixel;
     bmdata->stdfmt = stdfmt;
     bmdata->videoformat = videoformat;
+    /* A decode target is an NV12 video bitmap the display's decoder writes (nouveau_decode.c) */
+    if (decodetarget && ((videoformat != vHidd_VideoFmt_NV12) || !HIDDNouveauDecodeTargetInit(carddata, bmdata)))
+        goto exit_fail;
+    bmdata->decodetarget = decodetarget ? TRUE : FALSE;
 
     if (displayable) bmdata->displayable = TRUE; else bmdata->displayable = FALSE;
     InitSemaphore(&bmdata->semaphore);
@@ -148,8 +154,8 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
             rows += chromarows + 2;             /* + slack for the 256-byte rounding */
         if (buffers < 1)
             buffers = 1;
-        if (buffers > NOUVEAU_MAX_BUFFERS)
-            buffers = NOUVEAU_MAX_BUFFERS;
+        if (buffers > (bmdata->decodetarget ? NOUVEAU_MAX_BUFFERS : NOUVEAU_MAX_SCANOUT_BUFFERS))
+            buffers = bmdata->decodetarget ? NOUVEAU_MAX_BUFFERS : NOUVEAU_MAX_SCANOUT_BUFFERS;
         LOCK_ENGINE
         for (i = 0; i < buffers; i++)
         {
@@ -157,6 +163,8 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
 
             bmdata->buf[i].bo = NULL;
             bmdata->buf[i].fbid = 0;
+            bmdata->buf[i].dec = NULL;
+            bmdata->buf[i].decstate = NOUVEAU_DECSTATE_NONE;
             HIDDNouveauAccelAllocSurface(carddata, width, rows, bytesperpixel * 8, &pitch, &bmdata->buf[i].bo);
             if (!bmdata->buf[i].bo)
                 break;
@@ -227,6 +235,13 @@ VOID NouveauBitMap__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
     D(bug("[Nouveau] Dispose %x\n", o));
 
+    /*
+     * A decode target: let the decoder finish with its buffers and forget
+     * them. Before the engine lock: the decode lock is taken first elsewhere.
+     */
+    if (bmdata->decodetarget && bmdata->nbufs)
+        HIDDNouveauDecodeTargetFree(&(SD(cl)->carddata), bmdata);
+
     LOCK_ENGINE
     /* Unregister from framebuffer if needed */
     if (bmdata->fbid != 0)
@@ -244,6 +259,7 @@ VOID NouveauBitMap__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
         struct nouveau_device *nvdev = SD(cl)->carddata.dev;
         struct CardData *carddata = &(SD(cl)->carddata);
         ULONG i;
+
 
         if (bmdata->gpu_dirty)
         {
@@ -1248,6 +1264,9 @@ BOOL METHOD(NouveauBitMap, Hidd_BitMap, LockBuffer)
     if (!bo)
         return FALSE;
 
+    /* a decode target: the CPU reads the decoded picture, so finish its decode and copy-out */
+    if (bmdata->decodetarget)
+        HIDDNouveauDecodeSettle(carddata, bmdata, msg->buffer, TRUE, 0xffffffffUL);
     LOCK_ENGINE
     LOCK_BITMAP
     if (!bo->map)
@@ -1301,6 +1320,10 @@ BOOL METHOD(NouveauBitMap, Hidd_BitMap, SwapBuffers)
 
     if (msg->newFront == bmdata->front)
         return TRUE;
+
+    /* a decode target: the plane must not show a picture still being decoded */
+    if (bmdata->decodetarget)
+        HIDDNouveauDecodeSettle(&(SD(cl)->carddata), bmdata, msg->newFront, TRUE, 0xffffffffUL);
 
     /* Both framebuffers must exist before the plane can be switched */
     if (!HIDDNouveauEnsureBufferFB(o, msg->newFront))
