@@ -4817,6 +4817,51 @@ static IPTR thunk_intuition_ModifyIDCMP_p(struct M68KEmuContext *ctx, void *cpu)
     return r;
 }
 
+/* Intuition moves/sizes asynchronously: wait for the box to change, then
+   refresh the shadow, since programs poll LeftEdge/Width after the call */
+static void sync_window_box(struct M68KEmuContext *ctx, ULONG mw, struct Window *w,
+                            WORD left, WORD top, WORD width, WORD height)
+{
+    for (int i = 0; i < 50; i++)
+    {
+        if (w->LeftEdge != left || w->TopEdge != top || w->Width != width || w->Height != height)
+            break;
+        Delay(1);
+    }
+    m68k_write16(ctx, mw + M68K_WIN_LEFTEDGE, (UWORD)w->LeftEdge);
+    m68k_write16(ctx, mw + M68K_WIN_TOPEDGE,  (UWORD)w->TopEdge);
+    m68k_write16(ctx, mw + M68K_WIN_WIDTH,    (UWORD)w->Width);
+    m68k_write16(ctx, mw + M68K_WIN_HEIGHT,   (UWORD)w->Height);
+}
+
+/* intuition -168: MoveWindow(A0=window, D0=dx, D1=dy) - Intuition only uses the low words */
+static IPTR thunk_intuition_MoveWindow_w(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG mw = THUNK_A(0);
+    struct Window *w = (struct Window *)shadow_lookup(ctx, mw);
+    WORD dx = (WORD)THUNK_D(0), dy = (WORD)THUNK_D(1);
+    if (!w || (!dx && !dy)) return 0;
+
+    WORD left = w->LeftEdge, top = w->TopEdge, width = w->Width, height = w->Height;
+    MoveWindow(w, dx, dy);
+    sync_window_box(ctx, mw, w, left, top, width, height);
+    return 0;
+}
+
+/* intuition -288: SizeWindow(A0=window, D0=dx, D1=dy) - Intuition only uses the low words */
+static IPTR thunk_intuition_SizeWindow_w(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG mw = THUNK_A(0);
+    struct Window *w = (struct Window *)shadow_lookup(ctx, mw);
+    WORD dx = (WORD)THUNK_D(0), dy = (WORD)THUNK_D(1);
+    if (!w || (!dx && !dy)) return 0;
+
+    WORD left = w->LeftEdge, top = w->TopEdge, width = w->Width, height = w->Height;
+    SizeWindow(w, dx, dy);
+    sync_window_box(ctx, mw, w, left, top, width, height);
+    return 0;
+}
+
 const struct M68KThunkEntry m68kemu_thunks_intuition_manual[] = {
     { 84,  thunk_intuition_CurrentTime_m },
     { 618, thunk_intuition_DrawImageState_m },
@@ -4864,6 +4909,8 @@ const struct M68KThunkEntry m68kemu_thunks_intuition_manual[] = {
     { 612, thunk_intuition_OpenScreenTagList },
     { 66, thunk_intuition_CloseScreen },
     { 150, thunk_intuition_ModifyIDCMP_p },
+    { 168, thunk_intuition_MoveWindow_w },
+    { 288, thunk_intuition_SizeWindow_w },
     { 0, NULL }
 };
 const ULONG m68kemu_thunks_intuition_manual_count = sizeof(m68kemu_thunks_intuition_manual) / sizeof(m68kemu_thunks_intuition_manual[0]);
