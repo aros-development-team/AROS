@@ -17,6 +17,7 @@
 #include <aros/asmcall.h>
 #include <proto/dos.h>
 #include <dos/notify.h>
+#include <dos/dosasl.h>
 #include <dos/rdargs.h>
 #include <dos/dosextens.h>
 #include <string.h>
@@ -2199,20 +2200,128 @@ static IPTR thunk_dos_ExAllEnd(struct M68KEmuContext *ctx, void *cpu)
 
 /* ── DOS: Pattern Matching ── */
 
+/* The program's AnchorPath (68k layout) has a native one behind it: the
+   program's settings go in before each call, the match comes back after.
+   m68k AnchorPath: ap_Base 0, ap_Last 4, ap_BreakBits 8, ap_FoundBreak 12,
+   ap_Flags 16, ap_Strlen 18, ap_Info 20, ap_Buf 280. ap_Last (ap_Current)
+   is a 68k AChain naming the directory of the match: an_Lock 8, an_Info 12,
+   an_Flags 272. */
+#define AP_INFO 20
+#define AP_BUF  280
+#define AN_SIZE 276
+
+static int anchor_slot(struct M68KEmuContext *ctx, ULONG m)
+{
+    for (int i = 0; i < 16; i++)
+        if (ctx->anchors[i].m68k == m && ctx->anchors[i].native)
+            return i;
+    return -1;
+}
+
+static void anchor_in(struct M68KEmuContext *ctx, ULONG m, struct AnchorPath *ap)
+{
+    ap->ap_BreakBits = m68k_read32(ctx, m + 8);
+    ap->ap_Flags = (ap->ap_Flags & ~(APF_DODIR | APF_DODOT | APF_FollowHLinks)) |
+                   (ctx->mem[m + 16] & (APF_DODIR | APF_DODOT | APF_FollowHLinks));
+}
+
+static void anchor_out(struct M68KEmuContext *ctx, int i, struct AnchorPath *ap)
+{
+    ULONG m = ctx->anchors[i].m68k, ch = ctx->anchors[i].chain;
+    UWORD len = m68k_read16(ctx, m + 18);
+
+    m68k_write32(ctx, m + 12, ap->ap_FoundBreak);
+    ctx->mem[m + 16] = ap->ap_Flags;
+    fib_to_m68k(ctx, m + AP_INFO, &ap->ap_Info);
+    if (len)
+    {
+        strncpy((char *)ctx->mem + m + AP_BUF, (char *)ap->ap_Buf, len);
+        ctx->mem[m + AP_BUF + len - 1] = 0;
+    }
+    if (ch && ap->ap_Last)
+    {
+        m68k_write32(ctx, ch + 8, ap->ap_Last->an_Lock ? m68k_bptr_out(ctx, ap->ap_Last->an_Lock) : 0);
+        fib_to_m68k(ctx, ch + 12, &ap->ap_Last->an_Info);
+        ctx->mem[ch + 272] = ap->ap_Last->an_Flags;
+    }
+    m68k_write32(ctx, m + 0, ap->ap_Base ? ch : 0);
+    m68k_write32(ctx, m + 4, ap->ap_Last ? ch : 0);
+}
+
+static void anchor_free(struct M68KEmuContext *ctx, int i)
+{
+    UWORD len = m68k_read16(ctx, ctx->anchors[i].m68k + 18);
+
+    FreeVec(ctx->anchors[i].native);
+    if (ctx->anchors[i].chain)
+        M68KEmu_HeapFree(ctx, ctx->anchors[i].chain, AN_SIZE);
+    ctx->anchors[i].native = NULL;
+    ctx->anchors[i].m68k = 0;
+    ctx->anchors[i].chain = 0;
+    (void)len;
+}
+
+/* dos -822: MatchFirst(D1=pattern, D2=anchor) */
 static IPTR thunk_dos_MatchFirst(struct M68KEmuContext *ctx, void *cpu)
 {
-    return MatchFirst((CONST_STRPTR)m68k_to_host(ctx, THUNK_D(1)),
-                      (struct AnchorPath *)m68k_to_host(ctx, THUNK_D(2)));
+    ULONG m = THUNK_D(2), pat = THUNK_D(1);
+    struct AnchorPath *ap;
+    UWORD len;
+    LONG r;
+    int i;
+
+    if (!m || m + AP_BUF > ctx->mem_size || !pat || pat >= ctx->mem_size)
+        return ERROR_REQUIRED_ARG_MISSING;
+    if ((i = anchor_slot(ctx, m)) >= 0)
+    {
+        MatchEnd(ctx->anchors[i].native);
+        anchor_free(ctx, i);
+    }
+    for (i = 0; i < 16 && ctx->anchors[i].native; i++)
+        ;
+    len = m68k_read16(ctx, m + 18);
+    if (i == 16 || !(ap = AllocVec(sizeof(*ap) + len, MEMF_CLEAR)))
+        return ERROR_NO_FREE_STORE;
+    ap->ap_Strlen = len;
+    anchor_in(ctx, m, ap);
+    ctx->anchors[i].m68k = m;
+    ctx->anchors[i].native = ap;
+    if ((ctx->anchors[i].chain = M68KEmu_HeapAlloc(ctx, AN_SIZE, 0)))
+        memset(ctx->mem + ctx->anchors[i].chain, 0, AN_SIZE);
+    r = MatchFirst((CONST_STRPTR)m68k_to_host(ctx, pat), ap);
+    anchor_out(ctx, i, ap);
+    return r;
 }
 
+/* dos -828: MatchNext(D1=anchor) */
 static IPTR thunk_dos_MatchNext(struct M68KEmuContext *ctx, void *cpu)
 {
-    return MatchNext((struct AnchorPath *)m68k_to_host(ctx, THUNK_D(1)));
+    int i = anchor_slot(ctx, THUNK_D(1));
+    struct AnchorPath *ap;
+    LONG r;
+
+    if (i < 0)
+        return ERROR_NO_MORE_ENTRIES;
+    ap = ctx->anchors[i].native;
+    anchor_in(ctx, ctx->anchors[i].m68k, ap);
+    r = MatchNext(ap);
+    anchor_out(ctx, i, ap);
+    return r;
 }
 
+/* dos -834: MatchEnd(D1=anchor) */
 static IPTR thunk_dos_MatchEnd(struct M68KEmuContext *ctx, void *cpu)
 {
-    MatchEnd((struct AnchorPath *)m68k_to_host(ctx, THUNK_D(1)));
+    ULONG m = THUNK_D(1);
+    int i = anchor_slot(ctx, m);
+
+    if (i >= 0)
+    {
+        MatchEnd(ctx->anchors[i].native);
+        anchor_free(ctx, i);
+        m68k_write32(ctx, m + 0, 0);
+        m68k_write32(ctx, m + 4, 0);
+    }
     return 0;
 }
 

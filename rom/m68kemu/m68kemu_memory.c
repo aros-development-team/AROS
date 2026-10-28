@@ -10,6 +10,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <dos/notify.h>
+#include <dos/dosasl.h>
 #include <dos/bptr.h>
 #include <dos/dostags.h>
 #include <utility/tagitem.h>
@@ -101,6 +102,14 @@ void M68KEmu_DestroyContext(struct M68KEmuContext *ctx)
         FreeVec(ctx->notify[i].nr);
     }
     ctx->num_notify = 0;
+    /* pattern matches the program did not end hold directory locks */
+    for (int i = 0; i < 16; i++)
+        if (ctx->anchors[i].native)
+        {
+            MatchEnd(ctx->anchors[i].native);
+            FreeVec(ctx->anchors[i].native);
+            ctx->anchors[i].native = NULL;
+        }
     if (ctx->handles) FreeVec(ctx->handles);
     m68k_boopsi_cleanup(ctx);
     for (int i = 0; i < 32; i++)
