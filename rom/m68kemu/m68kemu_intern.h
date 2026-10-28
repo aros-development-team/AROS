@@ -161,6 +161,10 @@ struct M68KEmuContext
     APTR    aga_cmaps[4];       /* ColorMaps whose free pens got the AGA palette */
     BOOL    classic_borders;    /* show classic window borders, grow windows by the decoration's extra */
     ULONG   rexx_id;            /* "REXX", the ln_Name of the program's RexxMsgs */
+    ULONG   m68k_proc;          /* the program's 68k Process */
+    ULONG   windowptr;          /* its pr_WindowPtr as last passed to the native process */
+    APTR    windowptr_native;   /* the native process's own pr_WindowPtr, restored at the end */
+    BOOL    windowptr_set;
 
     /* CIA-A ($BFE001, odd bytes) and CIA-B ($BFD000, even bytes): ports,
        timers and TOD derived from the E clock on every read; writes only
@@ -244,6 +248,8 @@ void  m68k_vbl_close(struct M68KEmuContext *ctx);
 ULONG m68k_eclock_now(struct M68KEmuContext *ctx, ULONG *freq);
 void  m68k_watchdog_start(struct M68KEmuContext *ctx);
 void  m68k_log(struct M68KEmuContext *ctx, const char *fmt, ...);
+void  m68k_sync_windowptr(struct M68KEmuContext *ctx);
+void  m68k_restore_windowptr(struct M68KEmuContext *ctx);
 ULONG m68k_ioreq_of(struct M68KEmuContext *ctx, APTR native);
 void  m68k_ioreq_out(struct M68KEmuContext *ctx, APTR native);
 void  m68k_watchdog_stop(struct M68KEmuContext *ctx);

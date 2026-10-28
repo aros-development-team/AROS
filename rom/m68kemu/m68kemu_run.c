@@ -27,6 +27,7 @@ static LONG emu_proc_entry(void)
     if (!ctx) return -1;
 
     ctx->exit_code = M68KEmu_Execute(ctx);
+    m68k_restore_windowptr(ctx);
     return ctx->exit_code;
 }
 
@@ -90,7 +91,11 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
 
     /* If stackSize is 0, run directly (non-threaded) */
     if (stackSize == 0)
-        return M68KEmu_Execute(ctx);
+    {
+        LONG rc = M68KEmu_Execute(ctx);
+        m68k_restore_windowptr(ctx);
+        return rc;
+    }
 
     /* Spawn emulator in its own AROS process.
      * NP_Synchronous=TRUE makes us block until the child exits.

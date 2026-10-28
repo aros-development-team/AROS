@@ -593,6 +593,8 @@ ULONG shadow_init_execbase(struct M68KEmuContext *ctx, ULONG m68k_base, void *na
                         }
                     }
                 }
+                m68k_write32(ctx, m68k_proc + M68K_PR_WINDOWPTR, 0);
+                ctx->m68k_proc = m68k_proc;
                 /* pr_Arguments (offset 204) */
                 if (ctx->m68k_argptr)
                     m68k_write32(ctx, m68k_proc + M68K_PR_ARGUMENTS, ctx->m68k_argptr);
@@ -698,4 +700,45 @@ ULONG shadow_init_execbase(struct M68KEmuContext *ctx, ULONG m68k_base, void *na
     }
 
     return m68k_base;
+}
+
+/* A program sets pr_WindowPtr in its Process to choose where DOS puts its
+   requesters, -1 for none. DOS reads it from the native process, so the
+   value goes there before each library call: -1 and 0 as they are, a
+   window as its native window. */
+void m68k_sync_windowptr(struct M68KEmuContext *ctx)
+{
+    struct Process *me;
+    ULONG v;
+
+    if (!ctx->m68k_proc)
+        return;
+    v = m68k_read32(ctx, ctx->m68k_proc + M68K_PR_WINDOWPTR);
+    if (v == ctx->windowptr)
+        return;
+    ctx->windowptr = v;
+    me = (struct Process *)FindTask(NULL);
+    if (me->pr_Task.tc_Node.ln_Type != NT_PROCESS)
+        return;
+    if (!ctx->windowptr_set)
+    {
+        ctx->windowptr_native = me->pr_WindowPtr;
+        ctx->windowptr_set = TRUE;
+    }
+    if (v == 0xffffffff)
+        me->pr_WindowPtr = (APTR)-1;
+    else if (v == 0)
+        me->pr_WindowPtr = NULL;
+    else
+        me->pr_WindowPtr = shadow_lookup(ctx, v);
+}
+
+void m68k_restore_windowptr(struct M68KEmuContext *ctx)
+{
+    struct Process *me = (struct Process *)FindTask(NULL);
+
+    if (ctx->windowptr_set && me->pr_Task.tc_Node.ln_Type == NT_PROCESS)
+        me->pr_WindowPtr = ctx->windowptr_native;
+    ctx->windowptr_set = FALSE;
+    ctx->windowptr = 0;
 }

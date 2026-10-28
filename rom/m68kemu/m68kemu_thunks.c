@@ -238,6 +238,17 @@ static IPTR thunk_exec_FindTask(struct M68KEmuContext *ctx, void *cpu)
        Sync Task fields, then set Process-specific fields manually. */
     const struct M68KStructLayout *layout = shadow_find_layout("Task");
     if (!layout) return 0;
+    /* the program's own Process is ExecBase->ThisTask, whichever native
+       process the emulator runs it in */
+    if (!name && ctx->m68k_proc)
+    {
+        for (UWORD i = 0; i < ctx->num_shadows; i++)
+            if (ctx->shadow_map[i].m68k_addr == ctx->m68k_proc)
+                ctx->shadow_map[i].native_ptr = task;
+        shadow_sync(ctx, layout, ctx->m68k_proc, task);
+        m68k_task_stack(ctx, ctx->m68k_proc, task);
+        return ctx->m68k_proc;
+    }
     /* one shadow per task: programs call FindTask(NULL) in their loops */
     for (UWORD i = 0; i < ctx->num_shadows; i++)
         if (ctx->shadow_map[i].native_ptr == task && ctx->shadow_map[i].type == layout->shadow_type)

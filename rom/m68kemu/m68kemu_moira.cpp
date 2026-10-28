@@ -491,6 +491,8 @@ public:
             {
                 ULONG lvo_offset = lib->m68k_addr - pc;
 
+                m68k_sync_windowptr(ctx);
+
                 /* Search thunk table */
                 for (ULONG j = 0; j < lib->num_thunks; j++)
                 {
