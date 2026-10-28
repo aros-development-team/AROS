@@ -1046,6 +1046,35 @@ ULONG m68k_eclock_now(struct M68KEmuContext *ctx, ULONG *freq)
     return ev.ev_lo;
 }
 
+/* the last library calls (M68KEMU_TRACE=end), string compares only counted:
+   a loop that walks a list hides the calls that drive it */
+void m68k_dump_callring(struct M68KEmuContext *ctx)
+{
+    ULONG n = ctx->callring_pos < 2048 ? ctx->callring_pos : 2048, cmp = 0, shown = 0;
+
+    for (ULONG i = ctx->callring_pos - n; i < ctx->callring_pos && shown < 200; i++)
+    {
+        ULONG k = i & 2047;
+        if (!strcmp(ctx->callring[k].lib, "utility.library") &&
+            (ctx->callring[k].lvo == 162 || ctx->callring[k].lvo == 168))
+        {
+            cmp++;
+            continue;
+        }
+        if (cmp)
+            bug("[m68kemu]   (%lu string compares)\n", (unsigned long)cmp);
+        cmp = 0;
+        shown++;
+        bug("[m68kemu]   %s -%lu d0 %08lx d1 %08lx a0 %08lx a1 %08lx -> %08lx (from %08lx)\n",
+            ctx->callring[k].lib, (unsigned long)ctx->callring[k].lvo,
+            (unsigned long)ctx->callring[k].d0, (unsigned long)ctx->callring[k].d1,
+            (unsigned long)ctx->callring[k].a0, (unsigned long)ctx->callring[k].a1,
+            (unsigned long)ctx->callring[k].ret, (unsigned long)ctx->callring[k].from);
+    }
+    if (cmp)
+        bug("[m68kemu]   (%lu string compares)\n", (unsigned long)cmp);
+}
+
 /* Diagnostic watchdog (M68KEMU_TRACE set): a native process that prints
    where the emulated CPU is every two seconds, so a stall inside one
    instruction shows up as a frozen count and PC */
@@ -1054,12 +1083,36 @@ static struct M68KEmuContext *wd_ctx;
 static void wd_entry(void)
 {
     struct M68KEmuContext *ctx = wd_ctx;
-    ULONG last = 0xFFFFFFFF;
+    ULONG last = 0xFFFFFFFF, stuck = 0, ticks = 0;
     while (!ctx->watchdog_quit)
     {
         ULONG ic, pc;
         Delay(100);
         if (ctx->watchdog_quit) break;
+        /* M68KEMU_TRACE=end: once the program has sat in one call for ten
+           seconds, the calls that led there */
+        if (ctx->trace_end && !ctx->trace_calls)
+        {
+            ic = ctx->icount_lo;
+            stuck = ic == last ? stuck + 1 : 0;
+            last = ic;
+            if (stuck == 5 || ++ticks == 30)
+            {
+                bug("[m68kemu] %s %s, after %lu calls:\n",
+                    ctx->program_name[0] ? ctx->program_name : "68k program",
+                    stuck == 5 ? "has been in one library call for 10 s" : "is still running at 60 s",
+                    (unsigned long)ctx->callring_pos);
+                m68k_dump_callring(ctx);
+                pc = ctx->pc_ring[(ctx->pc_ring_pos - 1) & 511];
+                bug("[m68kemu]   now at pc %08lx (%04x %04x)\n", (unsigned long)pc,
+                    (unsigned)m68k_read16(ctx, pc), (unsigned)m68k_read16(ctx, pc + 2));
+                for (UWORD l = 0; l < ctx->num_libs; l++)
+                    if (pc >= ctx->libs[l].jt_start && pc < ctx->libs[l].m68k_addr)
+                        bug("[m68kemu]   in %s -%lu, called from %08lx\n", ctx->libs[l].name[0] ? ctx->libs[l].name : "(library)",
+                            (unsigned long)(ctx->libs[l].m68k_addr - pc), (unsigned long)ctx->pc_ring[(ctx->pc_ring_pos - 2) & 511]);
+            }
+            continue;
+        }
         if (!ctx->trace_calls) continue;           /* quiet until the trace starts */
         ic = ctx->icount_lo;
         pc = ctx->pc_ring[(ctx->pc_ring_pos - 1) & 511];

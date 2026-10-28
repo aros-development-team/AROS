@@ -181,6 +181,9 @@ struct M68KEmuContext
     struct { APTR font; ULONG name; } fontnames[16];   /* 68k copies of font names */
     struct { ULONG m68k; struct DiskObject *native; ULONG size; ULONG img[2], imgsize[2], pal[2], palsize[2]; } icons[64];   /* DiskObjects in 68k layout */
     ULONG   num_icons;
+    BOOL    trace_end;          /* M68KEMU_TRACE=end: the last library calls, printed when the program ends */
+    struct { const char *lib; ULONG lvo, d0, d1, a0, a1, ret, from; } callring[2048];
+    ULONG   callring_pos;
     struct { CONST_STRPTR native; ULONG m68k, size; } strcache[64];   /* native strings given to the program */
     ULONG   strcache_pos;
     struct { ULONG m68k, chain; struct AnchorPath *native; } anchors[16];   /* MatchFirst..MatchEnd */
@@ -274,6 +277,7 @@ void  m68k_sync_windowptr(struct M68KEmuContext *ctx);
 ULONG M68KEmu_Call68k(struct M68KEmuContext *ctx, void *outer_cpu, ULONG entry, const ULONG regs[15]);
 void  M68KEmu_FreeNestCpus(struct M68KEmuContext *ctx);
 void  m68k_restore_windowptr(struct M68KEmuContext *ctx);
+void  m68k_dump_callring(struct M68KEmuContext *ctx);
 ULONG m68k_ioreq_of(struct M68KEmuContext *ctx, APTR native);
 void  m68k_ioreq_out(struct M68KEmuContext *ctx, APTR native);
 void  m68k_watchdog_stop(struct M68KEmuContext *ctx);

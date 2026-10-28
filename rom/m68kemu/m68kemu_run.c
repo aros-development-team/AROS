@@ -187,6 +187,7 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
         if (GetVar((CONST_STRPTR)"M68KEMU_TRACE", (STRPTR)tracebuf, sizeof(tracebuf), 0) > 0)
         {
             if (tracebuf[0] == 'm') ctx->trace_after_msg = TRUE;    /* "msg": start at the first IntuiMessage */
+            else if (tracebuf[0] == 'e') ctx->trace_end = TRUE;     /* "end": the last calls when it ends */
             else ctx->trace_calls = TRUE;
         }
     }

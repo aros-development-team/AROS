@@ -500,11 +500,20 @@ public:
                 (unsigned)getD(0), (unsigned)getD(1), (unsigned)getD(2), (unsigned)getA(0), (unsigned)getA(1),
                 (unsigned)getA(2), (unsigned)getA(5), (unsigned)getA(6), (unsigned)getA(7));
             bug("[m68kemu]   last instructions:\n");
-            for (i = 464; i < 512; i++)
             {
-                ULONG p = ctx->pc_ring[(ctx->pc_ring_pos + i) & 511];
-                bug("[m68kemu]   %08x: %04x %04x %04x\n", (unsigned)p,
-                    (unsigned)m68k_read16(ctx, p), (unsigned)m68k_read16(ctx, p + 2), (unsigned)m68k_read16(ctx, p + 4));
+                /* a run through low memory (a jump to 0) hides where it came from:
+                   show what led into it */
+                ULONG end = 512, j;
+                while (end > 1 && ctx->pc_ring[(ctx->pc_ring_pos + end - 1) & 511] < 0x400)
+                    end--;
+                if (end < 512)
+                    bug("[m68kemu]   (then %lu instructions in low memory)\n", (unsigned long)(512 - end));
+                for (j = end > 40 ? end - 40 : 0; j < end; j++)
+                {
+                    ULONG p = ctx->pc_ring[(ctx->pc_ring_pos + j) & 511];
+                    bug("[m68kemu]   %08x: %04x %04x %04x\n", (unsigned)p,
+                        (unsigned)m68k_read16(ctx, p), (unsigned)m68k_read16(ctx, p + 2), (unsigned)m68k_read16(ctx, p + 4));
+                }
             }
             }
             ctx->running = FALSE;
@@ -539,8 +548,17 @@ public:
                             (unsigned)ctx->pc_ring[(ctx->pc_ring_pos - 4) & 511]);
                         void *prev_cpu = ctx->cur_cpu;
                         ctx->cur_cpu = static_cast<void *>(this);
+                        ULONG in_d0 = getD(0), in_d1 = getD(1), in_a0 = getA(0), in_a1 = getA(1);
                         IPTR ret = lib->thunks[j].thunk(ctx, static_cast<void *>(this));
                         ctx->cur_cpu = prev_cpu;
+                        if (ctx->trace_end)
+                        {
+                            ULONG k = ctx->callring_pos++ & 2047;
+                            ctx->callring[k].lib = lib->name; ctx->callring[k].lvo = lvo_offset;
+                            ctx->callring[k].d0 = in_d0; ctx->callring[k].d1 = in_d1;
+                            ctx->callring[k].a0 = in_a0; ctx->callring[k].a1 = in_a1;
+                            ctx->callring[k].ret = (ULONG)ret; ctx->callring[k].from = ret_addr;
+                        }
                         if (ctx->trace_calls) bug("[m68kemu]   -> %08lx\n", (unsigned long)ret);
 
                         if (ctx->sv_redirect)
@@ -598,10 +616,19 @@ public:
                             (unsigned)ctx->pc_ring[(ctx->pc_ring_pos - 4) & 511]);
                         void *prev_cpu = ctx->cur_cpu;
                         ctx->cur_cpu = static_cast<void *>(this);
+                        ULONG in_d0 = getD(0), in_d1 = getD(1), in_a0 = getA(0), in_a1 = getA(1);
                         IPTR ret = lib->gen_thunks[j].thunk(ctx, static_cast<void *>(this));
                         ctx->cur_cpu = prev_cpu;
                         if (ret >= (IPTR)ctx->mem && ret < (IPTR)ctx->mem + ctx->mem_size && returns_arg_pointer(lib->name, lvo_offset))
                             ret -= (IPTR)ctx->mem;
+                        if (ctx->trace_end)
+                        {
+                            ULONG k = ctx->callring_pos++ & 2047;
+                            ctx->callring[k].lib = lib->name; ctx->callring[k].lvo = lvo_offset;
+                            ctx->callring[k].d0 = in_d0; ctx->callring[k].d1 = in_d1;
+                            ctx->callring[k].a0 = in_a0; ctx->callring[k].a1 = in_a1;
+                            ctx->callring[k].ret = (ULONG)ret; ctx->callring[k].from = ret_addr;
+                        }
                         if (ctx->trace_calls) bug("[m68kemu]   -> %08lx\n", (unsigned long)ret);
 
                         if (ctx->sv_redirect)
@@ -744,7 +771,7 @@ void  M68KEmu_SetPC(void *cpu, ULONG val) { static_cast<AROSMoira *>(cpu)->setPC
 
 LONG M68KEmu_Execute(struct M68KEmuContext *ctx)
 {
-    if (ctx->trace_calls || ctx->trace_after_msg)
+    if (ctx->trace_calls || ctx->trace_after_msg || ctx->trace_end)
         m68k_watchdog_start(ctx);
     AROSMoira cpu(ctx);
     cpu.setModel(Model::M68LC040);          /* Moira has no FPU: F-line instructions trap as on an LC040 */
@@ -916,6 +943,13 @@ LONG M68KEmu_Execute(struct M68KEmuContext *ctx)
     }
 
     ctx->exit_code = (LONG)cpu.getD(0);
+    if (ctx->trace_end)
+    {
+        bug("[m68kemu] %s ended with D0 %ld after %lu library calls:\n",
+            ctx->program_name[0] ? ctx->program_name : "68k program", (long)ctx->exit_code,
+            (unsigned long)ctx->callring_pos);
+        m68k_dump_callring(ctx);
+    }
     m68k_watchdog_stop(ctx);
     return ctx->exit_code;
 }
