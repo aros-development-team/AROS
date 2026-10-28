@@ -4612,6 +4612,35 @@ static IPTR thunk_gfx_InitBitMap_m(struct M68KEmuContext *ctx, void *cpu)
     return 0;
 }
 
+/* -606: BltBitMapRastPort(A0=srcBitMap, D0/D1=src, A1=destRP, D2/D3=dest, D4/D5=size, D6=minterm) */
+static IPTR thunk_gfx_BltBitMapRastPort_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct BitMap scratch, *src = m68k_bitmap_in(ctx, THUNK_A(0), &scratch);
+    struct RastPort *dst = resolve_rp(ctx, THUNK_A(1));
+
+    if (src && dst)
+        BltBitMapRastPort(src, (WORD)THUNK_D(0), (WORD)THUNK_D(1), dst, (WORD)THUNK_D(2), (WORD)THUNK_D(3),
+                          (WORD)THUNK_D(4), (WORD)THUNK_D(5), (UBYTE)THUNK_D(6));
+    return 0;
+}
+
+/* -636: BltMaskBitMapRastPort(A0=srcBitMap, D0/D1=src, A1=destRP, D2/D3=dest, D4/D5=size,
+   D6=minterm, A2=bltMask): the mask is a plane in the program's memory */
+static IPTR thunk_gfx_BltMaskBitMapRastPort_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct BitMap scratch, *src = m68k_bitmap_in(ctx, THUNK_A(0), &scratch);
+    struct RastPort *dst = resolve_rp(ctx, THUNK_A(1));
+    ULONG mask = THUNK_A(2);
+
+    if (src && dst && mask && mask < ctx->mem_size)
+        BltMaskBitMapRastPort(src, (WORD)THUNK_D(0), (WORD)THUNK_D(1), dst, (WORD)THUNK_D(2), (WORD)THUNK_D(3),
+                              (WORD)THUNK_D(4), (WORD)THUNK_D(5), (UBYTE)THUNK_D(6), (PLANEPTR)(ctx->mem + mask));
+    else if (src && dst && !mask)
+        BltBitMapRastPort(src, (WORD)THUNK_D(0), (WORD)THUNK_D(1), dst, (WORD)THUNK_D(2), (WORD)THUNK_D(3),
+                          (WORD)THUNK_D(4), (WORD)THUNK_D(5), (UBYTE)THUNK_D(6));
+    return 0;
+}
+
 /* -552: ClipBlit(A0=srcRP, D0/D1=src, A1=destRP, D2/D3=dest, D4/D5=size, D6=minterm) */
 static IPTR thunk_gfx_ClipBlit_m(struct M68KEmuContext *ctx, void *cpu)
 {
@@ -5477,6 +5506,8 @@ const struct M68KThunkEntry m68kemu_thunks_graphics_manual[] = {
     { 522, thunk_gfx_ClearRectRegion_m },
     { 558, thunk_gfx_XorRectRegion_m },
     { 552, thunk_gfx_ClipBlit_m },
+    { 606, thunk_gfx_BltBitMapRastPort_m },
+    { 636, thunk_gfx_BltMaskBitMapRastPort_m },
     { 198, thunk_gfx_InitRastPort_m },
     { 390, thunk_gfx_InitBitMap_m },
     { 36,  thunk_gfx_BltTemplate_m },
