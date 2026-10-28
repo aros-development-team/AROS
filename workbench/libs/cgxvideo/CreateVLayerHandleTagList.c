@@ -67,6 +67,14 @@ static void cgxv_FreeHandle(struct VLayerHandle *vh, struct Library *CGXVideoBas
                                         a Y plane followed by one interleaved
                                         U,V plane; even sizes; see LockVLayer())
 
+                VOA_ColorSpace (ULONG) - AROS extension: VOCS_BT601 (default),
+                        VOCS_BT709 or VOCS_BT2020, the matrix a YCbCr source
+                        was encoded with; a driver may not support
+                        VOCS_BT2020
+
+                VOA_ColorRange (ULONG) - AROS extension: VOCR_LIMITED
+                        (default) or VOCR_FULL
+
                 VOA_SrcWidth (ULONG) - source width in pixel units
 
                 VOA_SrcHeight (ULONG) -  source height in pixel units
@@ -233,7 +241,9 @@ static void cgxv_FreeHandle(struct VLayerHandle *vh, struct Library *CGXVideoBas
             { videofmt ? aHidd_BitMap_VideoFormat : aHidd_BitMap_StdPixFmt,
                                         videofmt ? videofmt : (IPTR)pixfmt },
             { aHidd_BitMap_Friend,      (IPTR)bmobj            },
-            { aHidd_BitMap_ColorSpace,  vHidd_ColorSpace_BT601 },
+            /* VOCS_* and VOCR_* are vHidd_ColorSpace_* and vHidd_ColorRange_* */
+            { aHidd_BitMap_ColorSpace,  GetTagData(VOA_ColorSpace, VOCS_BT601, TagItems) },
+            { aHidd_BitMap_ColorRange,  GetTagData(VOA_ColorRange, VOCR_LIMITED, TagItems) },
             { TAG_DONE,                 0                      }
         };
 

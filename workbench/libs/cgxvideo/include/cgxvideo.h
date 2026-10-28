@@ -98,6 +98,19 @@ struct VLayerHandle;
 /* AttachVLayerTagList() */
 #define VOA_ColorKeyFill	(VOA_TAGBASE+0x70)
 
+/* CreateVLayerHandleTagList() and SetVLayerAttrTagList(), AROS extension:
+   how a YCbCr source is encoded. Defaults are VOCS_BT601 and VOCR_LIMITED.
+   A driver may not support VOCS_BT2020. */
+#define VOA_ColorSpace		(VOA_TAGBASE+0x71)	/* VOCS_* */
+#define VOA_ColorRange		(VOA_TAGBASE+0x72)	/* VOCR_* */
+
+#define VOCS_BT601			0
+#define VOCS_BT709			1
+#define VOCS_BT2020			2
+
+#define VOCR_LIMITED		0	/* luma 16-235, chroma 16-240 */
+#define VOCR_FULL			1	/* 0-255 */
+
 /* QueryVLayerAttr() attributes */
 
 #define VSQ_Dummy				(TAG_USER+0xa5000)

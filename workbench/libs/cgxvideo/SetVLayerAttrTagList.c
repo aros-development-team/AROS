@@ -4,6 +4,7 @@
 #include <aros/debug.h>
 #include <proto/exec.h>
 #include <proto/utility.h>
+#include <proto/oop.h>
 
 #include "cgxvideo_intern.h"
 
@@ -47,8 +48,15 @@
                 VOA_BottomIndent (ULONG) - additional offset from the bottom window
                                                 border
 
-        A changed indent moves the overlay at once. Subpicture and
-        colour key tags are ignored.
+                VOA_ColorSpace (ULONG) - AROS extension: VOCS_BT601,
+                                                VOCS_BT709 or VOCS_BT2020
+
+                VOA_ColorRange (ULONG) - AROS extension: VOCR_LIMITED or
+                                                VOCR_FULL
+
+        A changed indent moves the overlay at once; a changed colour space
+        or range applies from the next frame, for a stream that changes its
+        encoding. Subpicture and colour key tags are ignored.
 
     EXAMPLE
 
@@ -84,6 +92,18 @@
         case VOA_TopIndent:    idx = 1; break;
         case VOA_RightIndent:  idx = 2; break;
         case VOA_BottomIndent: idx = 3; break;
+        case VOA_ColorSpace:
+            /* VOCS_* are vHidd_ColorSpace_* */
+            if (!(vh->flags & VHF_NULL))
+                OOP_SetAttrsTags(vh->bm, aHidd_BitMap_ColorSpace, tag->ti_Data, TAG_DONE);
+            idx = -1;
+            break;
+        case VOA_ColorRange:
+            /* VOCR_* are vHidd_ColorRange_* */
+            if (!(vh->flags & VHF_NULL))
+                OOP_SetAttrsTags(vh->bm, aHidd_BitMap_ColorRange, tag->ti_Data, TAG_DONE);
+            idx = -1;
+            break;
         default:               idx = -1; break;
         }
 
