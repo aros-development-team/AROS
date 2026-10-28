@@ -5290,6 +5290,62 @@ static BOOL textattr_in(struct M68KEmuContext *ctx, ULONG m68k_ta, struct TextAt
     return ta->ta_Name != NULL;
 }
 
+/* struct TextExtent in 68k order: te_Width, te_Height, te_Extent MinX/MinY/MaxX/MaxY */
+static void textextent_out(struct M68KEmuContext *ctx, ULONG m, struct TextExtent *te)
+{
+    if (!m || m + 12 > ctx->mem_size)
+        return;
+    m68k_write16(ctx, m, (UWORD)te->te_Width);
+    m68k_write16(ctx, m + 2, (UWORD)te->te_Height);
+    m68k_write16(ctx, m + 4, (UWORD)te->te_Extent.MinX);
+    m68k_write16(ctx, m + 6, (UWORD)te->te_Extent.MinY);
+    m68k_write16(ctx, m + 8, (UWORD)te->te_Extent.MaxX);
+    m68k_write16(ctx, m + 10, (UWORD)te->te_Extent.MaxY);
+}
+
+static void textextent_in(struct M68KEmuContext *ctx, ULONG m, struct TextExtent *te)
+{
+    te->te_Width = (WORD)m68k_read16(ctx, m);
+    te->te_Height = (WORD)m68k_read16(ctx, m + 2);
+    te->te_Extent.MinX = (WORD)m68k_read16(ctx, m + 4);
+    te->te_Extent.MinY = (WORD)m68k_read16(ctx, m + 6);
+    te->te_Extent.MaxX = (WORD)m68k_read16(ctx, m + 8);
+    te->te_Extent.MaxY = (WORD)m68k_read16(ctx, m + 10);
+}
+
+/* graphics -690: TextExtent(A1=rp, A0=string, D0=count, A2=textExtent) */
+static IPTR thunk_gfx_TextExtent_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct RastPort *rp = resolve_rp(ctx, THUNK_A(1));
+    struct TextExtent te;
+
+    if (!rp || !THUNK_A(0))
+        return 0;
+    memset(&te, 0, sizeof(te));
+    TextExtent(rp, (CONST_STRPTR)m68k_to_host(ctx, THUNK_A(0)), THUNK_D(0), &te);
+    textextent_out(ctx, THUNK_A(2), &te);
+    return 0;
+}
+
+/* graphics -696: TextFit(A1=rp, A0=string, D0=strLen, A2=textExtent,
+   A3=constrainingExtent, D1=strDirection, D2=bitWidth, D3=bitHeight) */
+static IPTR thunk_gfx_TextFit_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct RastPort *rp = resolve_rp(ctx, THUNK_A(1));
+    struct TextExtent te, ce;
+    ULONG r;
+
+    if (!rp || !THUNK_A(0))
+        return 0;
+    memset(&te, 0, sizeof(te));
+    if (THUNK_A(3))
+        textextent_in(ctx, THUNK_A(3), &ce);
+    r = TextFit(rp, (CONST_STRPTR)m68k_to_host(ctx, THUNK_A(0)), THUNK_D(0), &te,
+                THUNK_A(3) ? &ce : NULL, (LONG)THUNK_D(1), THUNK_D(2), THUNK_D(3));
+    textextent_out(ctx, THUNK_A(2), &te);
+    return r;
+}
+
 /* graphics -474: AskFont(A1=rp, A0=textAttr): the name as a 68k string */
 static IPTR thunk_gfx_AskFont(struct M68KEmuContext *ctx, void *cpu)
 {
@@ -5786,6 +5842,8 @@ const struct M68KThunkEntry m68kemu_thunks_graphics_manual[] = {
     { 756, thunk_graphics_GetDisplayInfoData_m },
     { 72,  thunk_gfx_OpenFont },
     { 474, thunk_gfx_AskFont },
+    { 690, thunk_gfx_TextExtent_m },
+    { 696, thunk_gfx_TextFit_m },
     { 192, thunk_gfx_LoadRGB4 },
     { 900, thunk_gfx_GetRGB32 },
     { 960, thunk_gfx_GetBitMapAttr_m },
