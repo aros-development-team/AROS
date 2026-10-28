@@ -335,6 +335,15 @@ static IPTR thunk_exec_FindTask(struct M68KEmuContext *ctx, void *cpu)
 /* -132: Forbid() */
 static IPTR thunk_exec_Forbid(struct M68KEmuContext *ctx, void *cpu) { ctx->forbid++; return 0; }
 
+/* -120: Disable() / -126: Enable(): the program's own tasks and its
+   vertical blank wait; native interrupts are never turned off for it */
+static IPTR thunk_exec_Disable_m(struct M68KEmuContext *ctx, void *cpu) { ctx->forbid++; ctx->disable++; return 0; }
+static IPTR thunk_exec_Enable_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    if (ctx->disable > 0) { ctx->disable--; if (ctx->forbid > 0) ctx->forbid--; }
+    return 0;
+}
+
 /* -138: Permit() */
 static IPTR thunk_exec_Permit(struct M68KEmuContext *ctx, void *cpu) { if (ctx->forbid > 0) ctx->forbid--; return 0; }
 
@@ -1587,6 +1596,8 @@ const struct M68KThunkEntry m68kemu_thunks_exec[] = {
     { 210, thunk_exec_FreeMem },
     { 294, thunk_exec_FindTask },
     { 132, thunk_exec_Forbid },
+    { 120, thunk_exec_Disable_m },
+    { 126, thunk_exec_Enable_m },
     { 138, thunk_exec_Permit },
     { 624, thunk_exec_CopyMem },
     { 636, thunk_exec_CacheClearU },

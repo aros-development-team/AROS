@@ -188,6 +188,7 @@ struct M68KEmuContext
     ULONG   callring_pos;
     struct SignalSemaphore gil;  /* held by the task whose CPU runs the program's code */
     LONG    forbid;             /* Forbid() nesting of the task holding it */
+    LONG    disable;            /* Disable() nesting: no vertical blank meanwhile */
     LONG    num_children;       /* the program's processes still running */
     struct { CONST_STRPTR native; ULONG m68k, size; } strcache[64];   /* native strings given to the program */
     ULONG   strcache_pos;

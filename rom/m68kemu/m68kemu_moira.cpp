@@ -926,7 +926,7 @@ LONG M68KEmu_Execute(struct M68KEmuContext *ctx)
                                 (unsigned)cpu.getSR(), (unsigned)cpu.getA(7));
                     }
                 }
-                else if ((icount & 0x3FF) == 0 && m68k_vbl_due(ctx))
+                else if ((icount & 0x3FF) == 0 && !ctx->disable && m68k_vbl_due(ctx))
                 {
                     if (!(cpu.getSR() & 0x2000) && ctx->irq_stack_top)
                         cpu.setISP(ctx->irq_stack_top);
