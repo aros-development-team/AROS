@@ -279,7 +279,21 @@ ULONG shadow_create(struct M68KEmuContext *ctx,
             return 0;
         }
     }
-    sync_fields(ctx, layout->fields, m, native);
+    {
+        /* a library base keeps its m68k node: it is linked into the
+           ExecBase lists and named in m68k memory */
+        UBYTE node[14];
+        BOOL lib = FALSE;
+
+        for (int i = 0; i < ctx->num_libs; i++)
+            if (ctx->libs[i].m68k_addr == m)
+                lib = TRUE;
+        if (lib)
+            memcpy(node, ctx->mem + m, sizeof(node));
+        sync_fields(ctx, layout->fields, m, native);
+        if (lib)
+            memcpy(ctx->mem + m, node, sizeof(node));
+    }
     if (!strcmp(layout->name, "Screen"))
         m68k_screen_extras(ctx, m, (struct Screen *)native);
     else if (!strcmp(layout->name, "DrawInfo"))
@@ -427,16 +441,46 @@ void *m68k_to_native_struct(struct M68KEmuContext *ctx,
 
 /* ExecBase embedded list offsets (m68k -> AROS) */
 static const struct { UWORD m68k_off; UWORD native_off; const char *name; } execbase_lists[] = {
-    { M68K_EXECBASE_RESOURCELIST,  656, "ResourceList" },
-    { M68K_EXECBASE_DEVICELIST,    688, "DeviceList" },
     { M68K_EXECBASE_INTRLIST,      720, "IntrList" },
-    { M68K_EXECBASE_LIBLIST,       752, "LibList" },
     { M68K_EXECBASE_PORTLIST,      784, "PortList" },
     { M68K_EXECBASE_TASKREADY,     816, "TaskReady" },
     { M68K_EXECBASE_TASKWAIT,      848, "TaskWait" },
     { M68K_EXECBASE_SEMAPHORELIST, 1104, "SemaphoreList" },
     {   0,    0, NULL },
 };
+
+/* Name a library, device or resource base and add it to its ExecBase list */
+void m68k_publish_base(struct M68KEmuContext *ctx, ULONG base, const char *name)
+{
+    ULONG len, mname, list, pred;
+    UBYTE type;
+
+    if (!base || !name || !name[0] || !ctx->lists_base)
+        return;
+    len = strlen(name);
+    if (len > 9 && !strcmp(name + len - 7, ".device"))
+        list = M68K_EXECBASE_DEVICELIST, type = NT_DEVICE;
+    else if (len > 9 && !strcmp(name + len - 9, ".resource"))
+        list = M68K_EXECBASE_RESOURCELIST, type = NT_RESOURCE;
+    else
+        list = M68K_EXECBASE_LIBLIST, type = NT_LIBRARY;
+    list += ctx->lists_base;
+
+    mname = m68k_read32(ctx, base + 10);
+    if (!(mname >= M68KEMU_HEAP_BASE && mname < ctx->mem_size) &&
+        (mname = M68KEmu_HeapAlloc(ctx, len + 1, 0)))
+    {
+        memcpy(ctx->mem + mname, name, len + 1);
+        m68k_write32(ctx, base + 10, mname);
+    }
+    ctx->mem[base + 8] = type;
+
+    pred = m68k_read32(ctx, list + 8);                  /* AddTail */
+    m68k_write32(ctx, base + 0, list + 4);
+    m68k_write32(ctx, base + 4, pred);
+    m68k_write32(ctx, pred, base);
+    m68k_write32(ctx, list + 8, base);
+}
 
 ULONG shadow_init_execbase(struct M68KEmuContext *ctx, ULONG m68k_base, void *native_sysbase)
 {
@@ -554,6 +598,25 @@ ULONG shadow_init_execbase(struct M68KEmuContext *ctx, ULONG m68k_base, void *na
             m68k_write32(ctx, mh + M68K_MH_FIRST, ctx->heap_free);
             m68k_write32(ctx, mh + M68K_MH_FREE, ctx->heap_avail);
         }
+    }
+
+    /* LibList, DeviceList and ResourceList hold the program's own bases,
+       exec first, so a program walking them finds what it can open */
+    {
+        static const UWORD lists[] = { M68K_EXECBASE_LIBLIST, M68K_EXECBASE_DEVICELIST, M68K_EXECBASE_RESOURCELIST };
+        static const UBYTE types[] = { NT_LIBRARY, NT_DEVICE, NT_RESOURCE };
+
+        for (int i = 0; i < 3; i++)
+        {
+            ULONG l = m68k_base + lists[i];
+            m68k_write32(ctx, l + 0, l + 4);
+            m68k_write32(ctx, l + 4, 0);
+            m68k_write32(ctx, l + 8, l);
+            ctx->mem[l + 12] = types[i];
+        }
+        ctx->lists_base = m68k_base;
+        for (int i = 0; i < ctx->num_libs; i++)
+            m68k_publish_base(ctx, ctx->libs[i].m68k_addr, ctx->libs[i].name);
     }
 
     /* Embedded lists: register each native list as a shadow */

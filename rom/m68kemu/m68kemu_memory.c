@@ -451,6 +451,7 @@ ULONG M68KEmu_SetupLibBase(struct M68KEmuContext *ctx, UWORD lib_id,
         snprintf(ctx->libs[ctx->num_libs].name, sizeof(ctx->libs[ctx->num_libs].name), "%s", name);
     }
     ctx->num_libs++;
+    m68k_publish_base(ctx, base_addr, name);
 
     /* Register in libmap for OpenLibrary lookups */
     if (name && ctx->num_libmap < M68KEMU_MAX_LIBMAP)

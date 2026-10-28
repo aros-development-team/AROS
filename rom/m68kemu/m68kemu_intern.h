@@ -70,6 +70,7 @@ struct M68KEmuContext
     ULONG   heap_free;
     ULONG   heap_avail;         /* free bytes */
     ULONG   memheader;          /* the 68k MemHeader describing the heap */
+    ULONG   lists_base;         /* ExecBase whose LibList etc. are set up */
 
     ULONG   entry_point;
     ULONG   trace_exc;
@@ -312,6 +313,7 @@ LONG   M68KEmu_Execute(struct M68KEmuContext *ctx);
 ULONG  M68KEmu_HeapAlloc(struct M68KEmuContext *ctx, ULONG size, ULONG requirements);
 void   M68KEmu_HeapFree(struct M68KEmuContext *ctx, ULONG addr, ULONG size);
 ULONG  M68KEmu_HeapLargest(struct M68KEmuContext *ctx);
+void   m68k_publish_base(struct M68KEmuContext *ctx, ULONG base, const char *name);
 ULONG  M68KEmu_LoadHunks(struct M68KEmuContext *ctx, BPTR segList);
 ULONG  M68KEmu_LoadHunksFromMemory(struct M68KEmuContext *ctx, UBYTE *data, LONG size);
 ULONG  M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name);
