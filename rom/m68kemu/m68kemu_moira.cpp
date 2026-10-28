@@ -487,7 +487,7 @@ public:
                         u32 sp = getA(7);
                         u32 ret_addr = m68k_read32(ctx, sp);
                         setA(7, sp + 4);
-                        if (ctx->trace_calls) bug("[m68kemu] GEN %s LVO -%lu d1 %08x d2 %08x a0 %08x a1 %08x from %08x %08x %08x\n", lib->name, lvo_offset,
+                        if (ctx->trace_calls) bug("[m68kemu] GEN %s LVO -%lu d0 %08x d1 %08x d2 %08x a0 %08x a1 %08x from %08x %08x %08x\n", lib->name, lvo_offset, (unsigned)getD(0),
                             (unsigned)getD(1), (unsigned)getD(2), (unsigned)getA(0), (unsigned)getA(1),
                             (unsigned)ctx->pc_ring[(ctx->pc_ring_pos - 2) & 511], (unsigned)ctx->pc_ring[(ctx->pc_ring_pos - 3) & 511],
                             (unsigned)ctx->pc_ring[(ctx->pc_ring_pos - 4) & 511]);

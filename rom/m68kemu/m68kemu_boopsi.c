@@ -460,6 +460,30 @@ static IPTR do_method(struct M68KEmuContext *ctx, ULONG mo, Object *o, ULONG mms
     {
         struct Window *w = (struct Window *)DoMethod(o, WM_OPEN);
         ULONG mw = w ? native_to_m68k(ctx, w, 1) : 0;
+        if (w && ctx->trace_calls)
+        {
+            int k = 0;
+            for (struct Window *ow = w->WScreen->FirstWindow; ow && k < 50; ow = ow->NextWindow, k++)
+                bug("[m68kemu]   window %p '%s' at %d,%d %dx%d flags %08lx%s\n", ow, ow->Title ? (const char *)ow->Title : "",
+                    ow->LeftEdge, ow->TopEdge, ow->Width, ow->Height, (unsigned long)ow->Flags, ow == w ? " (this)" : "");
+            k = 0;
+            for (struct Gadget *g = w->FirstGadget; g && k < 200; g = g->NextGadget, k++)
+            {
+                IPTR hit = 0;
+                if ((g->GadgetType & GTYP_GTYPEMASK) == GTYP_CUSTOMGADGET && g->Width > 0 && g->Height > 0)
+                {
+                    struct gpHitTest ht;
+                    ht.MethodID = GM_HITTEST;
+                    ht.gpht_GInfo = NULL;
+                    ht.gpht_Mouse.X = g->Width / 2;
+                    ht.gpht_Mouse.Y = g->Height / 2;
+                    hit = DoMethodA((Object *)g, (Msg)&ht);
+                }
+                bug("[m68kemu]   gadget %p id %u %s at %d,%d %dx%d flags %04x act %04x type %04x hit %lx\n", g, g->GadgetID,
+                    ((g->GadgetType & GTYP_GTYPEMASK) == GTYP_CUSTOMGADGET && OCLASS(g) && OCLASS(g)->cl_ID) ? (const char *)OCLASS(g)->cl_ID : "-",
+                    g->LeftEdge, g->TopEdge, g->Width, g->Height, g->Flags, g->Activation, g->GadgetType, (unsigned long)hit);
+            }
+        }
         r = w ? (mw ? mw : m68k_window_shadow(ctx, w)) : 0;
         return r;
     }
@@ -545,6 +569,12 @@ IPTR m68k_NewObjectA(struct M68KEmuContext *ctx, void *cpu)
     }
     t = tags_in(ctx, THUNK_A(2), 0);
     o = NewObjectA(cl, cl ? NULL : (ClassID)id, t);
+    if (ctx->trace_calls)
+    {
+        bug("[m68kemu] NewObject %s -> %p\n", cl ? (cl->cl_ID ? (const char *)cl->cl_ID : "(private)") : (id ? (const char *)id : "?"), o);
+        for (struct TagItem *ti = t; ti && ti->ti_Tag != TAG_DONE; ti++)
+            bug("[m68kemu]   tag %08lx = %p\n", (unsigned long)ti->ti_Tag, (APTR)ti->ti_Data);
+    }
     FreeVec(t);
     if (!o)
         return 0;
