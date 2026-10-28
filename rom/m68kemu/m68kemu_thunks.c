@@ -4553,11 +4553,24 @@ static IPTR thunk_exec_FreeEntry_m(struct M68KEmuContext *ctx, void *cpu)
 }
 
 const struct M68KThunkEntry m68kemu_thunks_utility_manual[] = {
+    { 30, m68k_utility_FindTagItem },
+    { 36, m68k_utility_GetTagData },
+    { 42, m68k_utility_PackBoolTags },
+    { 48, m68k_utility_NextTagItem },
+    { 54, m68k_utility_FilterTagChanges },
+    { 60, m68k_utility_MapTags },
+    { 66, m68k_utility_AllocateTagItems },
+    { 72, m68k_utility_CloneTagItems },
+    { 78, m68k_utility_FreeTagItems },
+    { 84, m68k_utility_RefreshTagItemClones },
+    { 90, m68k_utility_TagInArray },
+    { 96, m68k_utility_FilterTagItems },
+    { 102, m68k_utility_CallHookPkt },
     { 120, thunk_utility_Amiga2Date_m },
     { 126, thunk_utility_Date2Amiga_m },
     { 132, thunk_utility_CheckDate_m },
 };
-const ULONG m68kemu_thunks_utility_manual_count = 3;
+const ULONG m68kemu_thunks_utility_manual_count = 16;
 
 /* -900: GetRGB32(A0=cm, D0=first, D1=ncolors, A1=table): the table is m68k longs */
 static IPTR thunk_gfx_GetRGB32(struct M68KEmuContext *ctx, void *cpu)

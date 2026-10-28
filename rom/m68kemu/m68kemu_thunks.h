@@ -55,6 +55,21 @@ extern const struct M68KLibThunkSet m68kemu_math_libs[];
 extern const ULONG m68kemu_math_libs_count;
 extern const struct M68KLibThunkSet m68kemu_wb_lib;
 extern const struct M68KLibThunkSet m68kemu_rexx_lib;
+/* m68kemu_tags.c */
+ULONG m68k_next_tag(struct M68KEmuContext *ctx, ULONG *state);
+IPTR m68k_utility_FindTagItem(struct M68KEmuContext *ctx, void *cpu);
+IPTR m68k_utility_GetTagData(struct M68KEmuContext *ctx, void *cpu);
+IPTR m68k_utility_PackBoolTags(struct M68KEmuContext *ctx, void *cpu);
+IPTR m68k_utility_NextTagItem(struct M68KEmuContext *ctx, void *cpu);
+IPTR m68k_utility_FilterTagChanges(struct M68KEmuContext *ctx, void *cpu);
+IPTR m68k_utility_MapTags(struct M68KEmuContext *ctx, void *cpu);
+IPTR m68k_utility_AllocateTagItems(struct M68KEmuContext *ctx, void *cpu);
+IPTR m68k_utility_CloneTagItems(struct M68KEmuContext *ctx, void *cpu);
+IPTR m68k_utility_FreeTagItems(struct M68KEmuContext *ctx, void *cpu);
+IPTR m68k_utility_RefreshTagItemClones(struct M68KEmuContext *ctx, void *cpu);
+IPTR m68k_utility_TagInArray(struct M68KEmuContext *ctx, void *cpu);
+IPTR m68k_utility_FilterTagItems(struct M68KEmuContext *ctx, void *cpu);
+IPTR m68k_utility_CallHookPkt(struct M68KEmuContext *ctx, void *cpu);
 extern const struct M68KThunkEntry m68kemu_cx_manual[];
 extern const ULONG m68kemu_cx_manual_count;
 
