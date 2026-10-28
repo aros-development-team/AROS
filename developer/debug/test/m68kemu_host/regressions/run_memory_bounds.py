@@ -1,11 +1,8 @@
 #!/usr/bin/env python3
-"""
-Compile the actual memory-access functions with a small host fixture.
-
-No AROS SDK or Moira checkout is needed. Only the selected production
-functions are extracted; their bodies are not replaced by test copies.
-"""
+"""Compile the actual memory-access functions with a host fixture."""
 # Copyright (C) 2026, The AROS Development Team. All rights reserved.
+# No AROS SDK or Moira checkout is needed. Selected production function
+# bodies are extracted verbatim and compiled with small fixture types.
 
 import argparse
 import os
