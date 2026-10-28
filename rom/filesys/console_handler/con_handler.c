@@ -607,7 +607,7 @@ static void close_con(struct filehandle *fh)
     if (fh->wintitle)
         FreeVec(fh->wintitle);
     if (fh->pastebuffer)
-        FreeMem(fh->pastebuffer, PASTEBUFSIZE);
+        FreeMem(fh->pastebuffer, fh->pastebuffercapacity);
 
     CloseLibrary((struct Library*) fh->intuibase);
     CloseLibrary((struct Library*) fh->dosbase);
@@ -838,8 +838,9 @@ static void startread(struct filehandle *fh)
 {
     if (fh->flags & FHFLG_ASYNCCONSOLEREAD)
         return;
-    /* Raw input still waiting in consolebuffer goes first. */
-    if ((fh->flags & FHFLG_RAW) && fh->conbufferpos < fh->conbuffersize)
+    /* Raw input and pasted text still waiting go first. */
+    if ((fh->flags & FHFLG_RAW) &&
+        (fh->conbufferpos < fh->conbuffersize || fh->pastebuffer))
         return;
     fh->conreadio->io_Command = CMD_READ;
     fh->conreadio->io_Data = fh->consolebuffer;
@@ -858,26 +859,45 @@ static void startread(struct filehandle *fh)
 
 static void pump_raw_input(struct filehandle *fh)
 {
-    while (fh->conbufferpos < fh->conbuffersize)
+    while (fh->pastebuffer || fh->conbufferpos < fh->conbuffersize)
     {
-        LONG available = fh->conbuffersize - fh->conbufferpos;
         LONG space = INPUTBUFFER_SIZE - fh->inputsize;
-        LONG copylen;
+        ULONG copylen;
 
         if (space <= 0)
             break;
 
-        copylen = available < space ? available : space;
-        CopyMem(fh->consolebuffer + fh->conbufferpos,
-            fh->inputbuffer + fh->inputsize, copylen);
-        fh->conbufferpos += copylen;
-        fh->inputsize += copylen;
+        if (fh->pastebuffer)
+        {
+            copylen = fh->pastebuffersize - fh->pastebufferpos;
+            if (copylen > (ULONG)space)
+                copylen = space;
+            CopyMem(fh->pastebuffer + fh->pastebufferpos,
+                fh->inputbuffer + fh->inputsize, copylen);
+            fh->pastebufferpos += copylen;
+            fh->inputsize += copylen;
+            if (fh->pastebufferpos >= fh->pastebuffersize)
+            {
+                FreeMem(fh->pastebuffer, fh->pastebuffercapacity);
+                fh->pastebuffer = NULL;
+            }
+        }
+        else
+        {
+            copylen = fh->conbuffersize - fh->conbufferpos;
+            if (copylen > (ULONG)space)
+                copylen = space;
+            CopyMem(fh->consolebuffer + fh->conbufferpos,
+                fh->inputbuffer + fh->inputsize, copylen);
+            fh->conbufferpos += copylen;
+            fh->inputsize += copylen;
+        }
         fh->inputpos = fh->inputstart = fh->inputsize;
 
         HandlePendingReads(fh);
 
-        /* Without a pending application read, keep the remaining device
-         * bytes in consolebuffer until space is made by ACTION_READ. */
+        /* Without a pending application read, keep the remaining bytes
+         * until space is made by ACTION_READ. */
         if (fh->inputsize != 0)
             break;
     }
@@ -1158,7 +1178,10 @@ LONG CONMain(struct ExecBase *SysBase)
                                             {
                                                 D(bug("[con:handler] %s: Menu: Paste\n", __func__));
                                                 do_paste(fh);
-                                                process_input(fh);
+                                                if (fh->flags & FHFLG_RAW)
+                                                    pump_raw_input(fh);
+                                                else
+                                                    process_input(fh);
                                             }
                                             break;
                                         case MEN_CONSOLE_CLIP0:

@@ -98,8 +98,9 @@ struct filehandle
     UBYTE                   historybuffer[CMD_HISTORY_SIZE][INPUTBUFFER_SIZE + 1];
 
     /* If pastebuffer != 0, this contains data to paste from ConClip */
-    WORD                    pastebufferpos;
-    WORD                    pastebuffersize;
+    ULONG                   pastebufferpos;
+    ULONG                   pastebuffersize;
+    ULONG                   pastebuffercapacity;
     STRPTR                  pastebuffer;
     /* Device mode: what to open instead of console.device. Copied out of the
        startup FileSysStartupMsg, which may live on the caller's stack. */

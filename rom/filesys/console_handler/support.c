@@ -493,7 +493,7 @@ static void copy_from_pastebuf(struct filehandle * fh)
         fh->pastebufferpos += len;
         if (fh->pastebufferpos >= fh->pastebuffersize)
         {
-            FreeMem(fh->pastebuffer, PASTEBUFSIZE);
+            FreeMem(fh->pastebuffer, fh->pastebuffercapacity);
             fh->pastebuffer = 0;
         }
     }
@@ -789,6 +789,17 @@ struct MyEditHookMsg
     WORD            code;
 };
 
+static void set_pastebuffer(struct filehandle *fh, APTR data, ULONG size,
+                            ULONG capacity)
+{
+    if (fh->pastebuffer)
+        FreeMem(fh->pastebuffer, fh->pastebuffercapacity);
+    fh->pastebuffer = data;
+    fh->pastebuffersize = size;
+    fh->pastebuffercapacity = capacity;
+    fh->pastebufferpos = 0;
+}
+
 void do_paste(struct filehandle * fh)
 {
     struct MsgPort replyport, *port;
@@ -811,11 +822,46 @@ void do_paste(struct filehandle * fh)
     replyport.mp_SigTask = FindTask(NULL);
     NEWLIST(&replyport.mp_MsgList);
 
+    if (fh->flags & FHFLG_RAW)
+    {
+        struct ConClipTextMsg text;
+
+        memset(&text, 0, sizeof(text));
+        text.msg.mn_Node.ln_Type = NT_MESSAGE;
+        text.msg.mn_ReplyPort = &replyport;
+        text.msg.mn_Length = sizeof(text);
+        text.code = CODE_READ_TEXT;
+        text.version = TEXT_VERSION;
+
+        SetSignal(0, SIGF_SINGLE);
+        PutMsg(port, &text.msg);
+        WaitPort(&replyport);
+        GetMsg(&replyport);
+
+        /* Older ConClip leaves the status alone. Fall back to the string
+           gadget request only then, never after an error. */
+        if (text.status != TEXT_UNSUPPORTED)
+        {
+            if (text.status == TEXT_OK && text.data)
+            {
+                D(bug("Pasting %lu bytes\n", (unsigned long)text.length));
+
+                if (text.length && text.length <= text.capacity)
+                    set_pastebuffer(fh, text.data, text.length, text.capacity);
+                else
+                    FreeMem(text.data, text.capacity);
+            }
+            return;
+        }
+    }
+
     /* ConClip only ever looks at MaxChars in StringInfo */
     sinfo.MaxChars = PASTEBUFSIZE;
 
     memset( &sgw, 0, sizeof( struct SGWork ) );
     sgw.WorkBuffer = AllocMem(PASTEBUFSIZE, MEMF_CLEAR | MEMF_ANY);
+    if (!sgw.WorkBuffer)
+        return;
     sgw.Code = CODE_PASTE;
     sgw.EditOp = EO_BIGCHANGE;
     sgw.StringInfo = &sinfo;
@@ -830,14 +876,16 @@ void do_paste(struct filehandle * fh)
     SetSignal(0, SIGF_SINGLE);
     PutMsg(port, &msg.msg);
     WaitPort(&replyport);
+    GetMsg(&replyport);
 
     D(bug("Pasting %d bytes\n", sgw.BufferPos));
 
-    if (fh->pastebuffer)
-        FreeMem(fh->pastebuffer, PASTEBUFSIZE);
-    fh->pastebuffer = sgw.WorkBuffer;
-    fh->pastebuffersize = sgw.BufferPos;
-    fh->pastebufferpos = 0;
+    if (sgw.BufferPos <= 0 || sgw.BufferPos > sinfo.MaxChars)
+    {
+        FreeMem(sgw.WorkBuffer, PASTEBUFSIZE);
+        return;
+    }
+    set_pastebuffer(fh, sgw.WorkBuffer, sgw.BufferPos, PASTEBUFSIZE);
 }
 
 /****************************************************************************************/

@@ -11,6 +11,24 @@
 
 #define CODE_PASTE 'V'
 
+/* ConClip whole-text request */
+#define CODE_READ_TEXT  0x100
+#define TEXT_VERSION     1
+#define TEXT_UNSUPPORTED 0
+#define TEXT_OK          1
+
+struct ConClipTextMsg
+{
+    struct Message  msg;
+    struct SGWork   *sgw;
+    WORD            code;
+    ULONG           version;
+    ULONG           status;
+    UBYTE           *data;
+    ULONG           length;
+    ULONG           capacity;
+};
+
 #define INP_DONE                0
 #define INP_CURSORLEFT          1
 #define INP_CURSORRIGHT         2
