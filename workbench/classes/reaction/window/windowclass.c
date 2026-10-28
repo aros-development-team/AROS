@@ -399,6 +399,9 @@ IPTR Window__WM_OPEN(Class *cl, Object *o, Msg msg)
     struct Screen *screen;
     WORD left, top, width, height;
     UWORD layoutMinW = 0, layoutMinH = 0;
+    /* a locked size is the layout's, which is an inner size */
+    BOOL outerw = data->wcd_Width && data->wcd_OuterWidth && !data->wcd_LockWidth;
+    BOOL outerh = data->wcd_Height && data->wcd_OuterHeight && !data->wcd_LockHeight;
 
     D(bug("[Window] WM_OPEN: obj 0x%p title='%s'\n", o,
         data->wcd_Title ? data->wcd_Title : (STRPTR)"(null)"));
@@ -453,12 +456,12 @@ IPTR Window__WM_OPEN(Class *cl, Object *o, Msg msg)
      * exactly the layout's minimum size; otherwise we just ensure the inner
      * area is at least large enough to hold the layout.
      */
-    if (layoutMinW && !(data->wcd_Width && data->wcd_OuterWidth))
+    if (layoutMinW && !outerw)
     {
         if (data->wcd_LockWidth || width < layoutMinW)
             width = layoutMinW;
     }
-    if (layoutMinH && !(data->wcd_Height && data->wcd_OuterHeight))
+    if (layoutMinH && !outerh)
     {
         if (data->wcd_LockHeight || height < layoutMinH)
             height = layoutMinH;
@@ -511,8 +514,8 @@ IPTR Window__WM_OPEN(Class *cl, Object *o, Msg msg)
     data->wcd_Window = OpenWindowTags(NULL,
         WA_Left,        left,
         WA_Top,         top,
-        (data->wcd_Width && data->wcd_OuterWidth) ? WA_Width : WA_InnerWidth, width,
-        (data->wcd_Height && data->wcd_OuterHeight) ? WA_Height : WA_InnerHeight, height,
+        outerw ? WA_Width : WA_InnerWidth, width,
+        outerh ? WA_Height : WA_InnerHeight, height,
         WA_Title,       (IPTR)data->wcd_Title,
         WA_ScreenTitle, (IPTR)data->wcd_ScreenTitle,
         WA_PubScreen,   (IPTR)screen,
