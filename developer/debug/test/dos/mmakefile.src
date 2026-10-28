@@ -26,6 +26,7 @@ FILES := \
     match \
     matchtest \
     minicat \
+    mountcarry \
     mountlist \
     namefromfh \
     nil \
