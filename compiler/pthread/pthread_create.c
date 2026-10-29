@@ -24,6 +24,10 @@
 #include <proto/dos.h>
 #include <exec/semaphores.h>
 #include <exec/lists.h>
+#if defined(__AROSEXEC_SMP__)
+#include <dos/dostags.h>
+#include <exec/tasks.h>
+#endif
 
 #include <stdio.h>
 #include <string.h>
@@ -263,7 +267,9 @@ static void StarterFunc(void)
 
         The worker runs in a DOS process and applies attr's scheduling priority.
         Scheduling inheritance and contention-scope fields are not implemented
-        by this creation path. The start routine must return a pointer whose
+        by this creation path. On an SMP build the worker may run on any CPU,
+        whatever its creator's affinity; SetTaskAffinity() can narrow it
+        afterwards. The start routine must return a pointer whose
         lifetime permits its eventual use by the joiner, not worker-stack data.
 
         Worker exit runs non-NULL thread-specific destructors before releasing
@@ -355,6 +361,13 @@ static void StarterFunc(void)
         NP_UserData, inf,
 #endif
         NP_Name, (IPTR)name,
+#if defined(__AROSEXEC_SMP__)
+        /* Without NP_Affinity the worker inherits its creator's mask, and
+           every task started from the boot tree carries the boot CPU's
+           mask, so a program's whole thread pool would run on one CPU.
+           Let the worker run on any CPU, as the exec housekeeper does. */
+        NP_Affinity, TASKAFFINITY_ANY,
+#endif
         TAG_DONE);
 
     ReleaseSemaphore(&thread_sem);
