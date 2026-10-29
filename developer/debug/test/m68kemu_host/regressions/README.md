@@ -3,9 +3,16 @@
 Run from the repository root:
 
 ```sh
-python3 developer/debug/test/m68kemu_host/regressions/run_memory_bounds.py
-python3 developer/debug/test/m68kemu_host/regressions/run_memory_bounds.py --sanitize
+make -C developer/debug/test/m68kemu_host test-memory-bounds
+make -C developer/debug/test/m68kemu_host test-memory-bounds-sanitize
 ```
+
+The ordinary bounds regression also runs with the host Makefile's `test`
+target. The sanitizer target is optional. `PYTHON` and `CXX` select the
+interpreter and compiler; `MEMORY_BOUNDS_ARGS` passes runner options, such as
+`--build-dir /tmp/m68kemu-memory-bounds`, to either target. The runner can
+also be invoked directly as `python3 regressions/run_memory_bounds.py` from
+the host test directory.
 
 These tests require Python 3.9+ and a C++17 compiler, with ASan/UBSan for
 `--sanitize`. `--cxx` selects the compiler; `--source-root` tests another

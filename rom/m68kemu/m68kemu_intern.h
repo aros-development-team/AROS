@@ -130,6 +130,10 @@ static inline ULONG host_to_m68k(struct M68KEmuContext *ctx, void *ptr)
     return (ULONG)((UBYTE *)ptr - ctx->mem);
 }
 
+/* TODO: Check guest buffer spans in thunks and shadow synchronization that
+   index ctx->mem directly (e.g. pens, IntuiText/TextAttr and FIB copies).
+   The checked accessors and CPU callbacks do not cover those paths. */
+
 /* Check the whole access before adding to a 32-bit guest address. */
 static inline UWORD m68k_read16(struct M68KEmuContext *ctx, ULONG addr)
 {
