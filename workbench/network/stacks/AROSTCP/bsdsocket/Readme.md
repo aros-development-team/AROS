@@ -320,6 +320,16 @@ are freed when their sockets drop them, and `in6_delmulti()` tells nobody about 
 interface. The IPv4 side follows the same rules (`in_join_allhosts()`, `ip_freemoptions()`,
 `in_ifdetach()`).
 
+A group datagram is delivered on the same terms as for IPv4. `ip6_input()` accepts it only if the
+receiving interface is a member (`IN6_LOOKUP_MULTI()`), which covers the all-nodes and solicited-node
+groups as well; this host does not forward multicast. `udp6_input()` then gives a copy to every IPv6
+socket whose port, bound address, peer and `SO_BINDTODEVICE` interface match - it stops early at a
+socket that does not share its port - without filtering by the socket's own memberships, as
+`udp_input()` does. A datagram this host sends to a group it is a member of on the outgoing interface
+is looped back to its local members by `ip6_mloopback()` unless the sender turned
+`IPV6_MULTICAST_LOOP` off; the stack's own ND and MLD messages pass zeroed options and are never
+looped back.
+
 ### 6.3 Path MTU Discovery (RFC 8201)
 
 IPv6 routers never fragment, so an oversized datagram is dropped and reported with ICMPv6 Packet Too
