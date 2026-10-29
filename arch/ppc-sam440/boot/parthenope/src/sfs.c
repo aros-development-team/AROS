@@ -162,15 +162,23 @@ static int get_bnode(sfs_boot_dev_t *self, uint32_t key,
 {
 	void *buffer;
 	struct BNode *bnode, *tmp;
-	uint32_t next;
+	/* Even a binary tree over 32-bit block numbers needs no more levels. */
+	uint32_t next, remaining = 32;
 	int i, found = 0;
 
 	buffer = malloc(self->blocksize);
 	if (buffer == NULL)
 		return 0;
 	next = self->extentbnoderoot;
-	while (sfs_loadsector(self, next, buffer)) {
+	while (remaining-- != 0 && sfs_loadsector(self, next, buffer)) {
 		if (calcchecksum(SBH(buffer), self->blocksize))
+			break;
+		if (SBH(buffer)->id != SBNC_ID || SBH(buffer)->ownblock != next
+		    || SBNC(buffer)->btc.nodesize != (SBNC(buffer)->btc.isleaf
+		        ? sizeof(*result) : sizeof(struct BNode))
+		    || SBNC(buffer)->btc.nodecount >
+		       (self->blocksize - sizeof(struct SfsBNodeContainer)) /
+		       SBNC(buffer)->btc.nodesize)
 			break;
 		bnode = NULL;
 		for (i = SBNC(buffer)->btc.nodecount - 1; i >= 0; i--) {
@@ -184,6 +192,8 @@ static int get_bnode(sfs_boot_dev_t *self, uint32_t key,
 		if (bnode == NULL)
 			break;
 		if (SBNC(buffer)->btc.isleaf) {
+			if (bnode->key != key)
+				break;
 			memmove(result, bnode, sizeof(*result));
 			found = 1;
 			break;
@@ -198,7 +208,7 @@ static int sfs_loadfile(sfs_boot_dev_t * self, char *filename, void *filebuffer)
 {
 	struct SfsObject object, *o = &object;
 	void *buffer;
-	uint32_t i, next, readed, size, tocopy;
+	uint32_t i, next, readed, size, tocopy, previous = 0;
 	struct SfsExtentBNode extent, *sebn = &extent;
 
 	if (!sfs_find(self, filename, o)) {
@@ -214,7 +224,11 @@ static int sfs_loadfile(sfs_boot_dev_t * self, char *filename, void *filebuffer)
 	size = o->object.file.size;
 	readed = 0;
 	while (next != 0 && readed < size) {
-		if (!get_bnode(self, next, sebn)) {
+		if ((readed != 0 && next == o->object.file.data)
+		    || !get_bnode(self, next, sebn) || sebn->blocks == 0
+		    || (previous != 0 && sebn->prev != previous)
+		    || next >= self->totalblocks
+		    || sebn->blocks > self->totalblocks - next) {
 			free(buffer);
 			return -1;
 		}
@@ -229,6 +243,7 @@ static int sfs_loadfile(sfs_boot_dev_t * self, char *filename, void *filebuffer)
 				memmove(filebuffer + readed, buffer, tocopy);
 			readed += tocopy;
 		}
+		previous = next;
 		next = sebn->next;
 	}
 	free(buffer);

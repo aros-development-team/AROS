@@ -127,6 +127,7 @@ struct SfsBNodeContainer {
 	struct SfsBlockHeader bheader;
 	struct BTreeContainer btc;
 };
+#define SBNC_ID (('B'<<24)|('N'<<16)|('D'<<8)|'C')
 #define SBNC(b) ((struct SfsBNodeContainer *) (b))
 
 struct SfsExtentBNode {
