@@ -92,7 +92,7 @@ struct SfsObject {
 
 	uint8_t name[0];
 	uint8_t comment[0];
-};
+} __attribute__((packed));
 #define SO(b) ((struct SfsObject *) (b))
 #define SO_ID 0x53465300
 
@@ -113,7 +113,7 @@ struct SfsObjectContainer {
 struct BNode {
 	uint32_t key;
 	uint32_t data;
-};
+} __attribute__((packed));
 
 struct BTreeContainer {
 	uint16_t nodecount;
@@ -134,7 +134,7 @@ struct SfsExtentBNode {
 	uint32_t next;
 	uint32_t prev;
 	uint16_t blocks;
-};
+} __attribute__((packed));
 
 boot_dev_t *sfs_create(struct RdbPartition *partition);
 
