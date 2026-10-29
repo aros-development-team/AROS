@@ -30,6 +30,8 @@ ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *, const char *) { return 0;
 #include "../../rom/m68kemu/m68kemu_moira.cpp"
 
 #include <cstdio>
+#include <array>
+#include <cstring>
 #include <vector>
 static int pass = 0, fail = 0;
 #define TEST(n) printf("  %-50s ", n)
@@ -142,6 +144,11 @@ void t_exec_memory_access()
 
 /* The M68040 containment address is 32 bits. Only $00DFF000-$00DFFFFF
    belongs to custom registers; the page at $01DFF000 is ordinary RAM. */
+static std::array<ULONG, 3> beam_state(const M68KEmuContext &ctx)
+{
+    return {ctx.beam_v, ctx.beam_h, ctx.beam_lof};
+}
+
 void t_custom_address_decode()
 {
     std::vector<UBYTE> memory(M68KEMU_MEM_SIZE, 0);
@@ -151,6 +158,7 @@ void t_custom_address_decode()
     AROSMoira cpu(&ctx);
     cpu.setModel(Model::M68040);
     const ULONG high = 0x01DFF016, outside = 0x02DFF016;
+    const auto idle_beam = beam_state(ctx);
     auto check = [](const char *name, bool ok) {
         TEST(name);
         if (ok) { OK(); }
@@ -161,27 +169,27 @@ void t_custom_address_decode()
     m68k_write16(&ctx, 0x01DFFFFE, 0x6C93);
     check("High RAM: byte reads and lanes",
           cpu.read8(high) == 0xA5 && cpu.read8(high + 1) == 0x5A &&
-          cpu.read8(0x01DFFFFF) == 0x93 && ctx.beam_v == 0 && ctx.beam_h == 0);
+          cpu.read8(0x01DFFFFF) == 0x93 && beam_state(ctx) == idle_beam);
     ctx.beam_v = ctx.beam_h = 0;
     check("High RAM: word reads and page end",
           cpu.read16(high) == 0xA55A && cpu.read16(0x01DFFFFE) == 0x6C93 &&
-          ctx.beam_v == 0 && ctx.beam_h == 0);
+          beam_state(ctx) == idle_beam);
     ctx.beam_v = ctx.beam_h = 0;
     cpu.write8(high, 0x12);
     cpu.write8(high + 1, 0x34);
     check("High RAM: byte writes and lanes", m68k_read16(&ctx, high) == 0x1234);
     cpu.write16(high + 0x14, 0x0001); /* same low bits as VPOSW */
     check("High RAM: word write does not touch VPOSW",
-          m68k_read16(&ctx, high + 0x14) == 1 && ctx.beam_v == 0 && ctx.beam_h == 0);
+          m68k_read16(&ctx, high + 0x14) == 1 && beam_state(ctx) == idle_beam);
 
     ctx.beam_v = ctx.beam_h = 0;
     check("Beyond arena: byte aliases read zero",
           cpu.read8(outside) == 0 && cpu.read8(0xFFDFF016) == 0 &&
-          ctx.beam_v == 0 && ctx.beam_h == 0);
+          beam_state(ctx) == idle_beam);
     ctx.beam_v = ctx.beam_h = 0;
     check("Beyond arena: word aliases read zero",
           cpu.read16(outside) == 0 && cpu.read16(0xFFDFF016) == 0 &&
-          ctx.beam_v == 0 && ctx.beam_h == 0);
+          beam_state(ctx) == idle_beam);
     ctx.beam_v = ctx.beam_h = 0;
     const auto before = memory;
     cpu.write8(outside, 0x56);
@@ -189,7 +197,8 @@ void t_custom_address_decode()
     cpu.write16(outside + 0x14, 1);
     cpu.write16(0xFFDFF02A, 1);
     check("Beyond arena: writes have no RAM or chip effect",
-          memory == before && ctx.beam_v == 0 && ctx.beam_h == 0);
+          std::memcmp(ctx.mem, before.data(), before.size()) == 0 &&
+          beam_state(ctx) == idle_beam);
 
     /* The real custom page must retain its register semantics even though
        these addresses are numerically inside the containment arena. */
