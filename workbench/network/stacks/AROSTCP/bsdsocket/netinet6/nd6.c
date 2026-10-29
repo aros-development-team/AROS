@@ -911,6 +911,14 @@ nd6_rtrequest(int req, struct rtentry *rt, struct sockaddr *sa)
 
     if(rt == NULL)
         return;
+    /*
+     * A route through a router is not a neighbour: its gateway is the
+     * router's address, resolved through the router's own neighbour entry
+     * when a packet is sent (nd6_resolve()), and must be left alone - as
+     * FreeBSD 4.11's nd6_rtrequest() does.
+     */
+    if(rt->rt_flags & RTF_GATEWAY)
+        return;
     gate = rt->rt_gateway;
     ln = (struct llinfo_nd6 *)rt->rt_llinfo;
     ifp = rt->rt_ifp;
