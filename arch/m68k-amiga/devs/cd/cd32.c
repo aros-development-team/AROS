@@ -1522,24 +1522,31 @@ static LONG CD32_DoIO(struct IOStdReq *io, APTR priv)
         }
         break;
     case CD_PLAYTRACK:
-        if (io->io_Length == 0) {
-            err = CDERR_BADLENGTH;
-        } else if (io->io_Offset <= cu->cu_CDTOC[0].Summary.LastTrack) {
-            ULONG start;
-            ULONG end;
-            ULONG last = io->io_Offset + io->io_Length;
+        {
+            /* CD32 Kickstart consumes word-sized track arguments. Legacy
+             * callers may initialise only the low words of these fields. */
+            UWORD track = (UWORD)io->io_Offset;
+            UWORD count = (UWORD)io->io_Length;
 
-            start = bcdmsf2sec(&cu->cu_CDTOC[io->io_Offset].Entry.Position.MSF);
-            if (last > cu->cu_CDTOC[0].Summary.LastTrack) {
-                end = bcdmsf2sec(&cu->cu_CDTOC[0].Summary.LeadOut.MSF);
-            } else {
-                end = bcdmsf2sec(&cu->cu_CDTOC[last].Entry.Position.MSF);
+            if (count == 0) {
+                err = CDERR_BADLENGTH;
+            } else if (track <= cu->cu_CDTOC[0].Summary.LastTrack) {
+                ULONG start;
+                ULONG end;
+                ULONG last = (ULONG)track + count;
+
+                start = bcdmsf2sec(&cu->cu_CDTOC[track].Entry.Position.MSF);
+                if (last > cu->cu_CDTOC[0].Summary.LastTrack) {
+                    end = bcdmsf2sec(&cu->cu_CDTOC[0].Summary.LeadOut.MSF);
+                } else {
+                    end = bcdmsf2sec(&cu->cu_CDTOC[last].Entry.Position.MSF);
+                }
+                err = end > start ?
+                    CD32_StartPlay(cu, io, start, end - start) :
+                    CDERR_BADLENGTH;
             }
-            err = end > start ?
-                CD32_StartPlay(cu, io, start, end - start) :
-                CDERR_BADLENGTH;
+            break;
         }
-        break;
     case CD_PLAYMSF:
         {
             union LSNMSF start, length;
