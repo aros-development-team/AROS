@@ -6,10 +6,6 @@ void udp_init(void);
 
 void udp_input(void *args, ...);
 
-struct mbuf * udp_saveopt(caddr_t p,
-                          register int size,
-                          int type);
-
 void udp_notify(register struct inpcb * inp,
 		int error);
 
