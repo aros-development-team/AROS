@@ -1833,7 +1833,7 @@ Optional Packages:
   --with-iconset=NAME     Use a specific Icon-set (default=Gorilla).
   --with-theme=NAME       Use a specific GUI Theme
   --with-mesagl=family    Which version of MesaGL to build (defaults to
-                          26.0.0)
+                          26.2.5)
   --with-resolution=XRESxYRESxDEPTH
                           Default resolution of the initial WorkbenchScreen
   --with-serial-debug     Enable serial debug output in native (default=no)
@@ -11377,6 +11377,11 @@ printf '%s\n' "$darwin_sdk_path" >&6; }
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
                 aros_target_cpu="riscv64"
                 aros_object_format="riscv64elf_aros"
+                case "$aros_target_variant" in
+                    smp)
+                        ENABLE_EXECSMP="#define __AROSEXEC_SMP__"
+                    ;;
+                esac
                 ;;
             *riscv*)
                 aros_target_cpu="riscv"

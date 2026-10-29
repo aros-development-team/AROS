@@ -141,6 +141,9 @@ mdnsHandlePacket(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
         if (mdnsParseRecord(pkt, pktlen, offset, &record, &consumed) != 0) {
             return;
         }
+        if (i < answers) {
+            md->md_RxAnswers++;
+        }
         mdnsHostHandleRecord(md, &record);
         if (i < answers || i >= (UWORD)(answers + authorities)) {
             mdnsRegHandleRecord(md, &record, pkt, pktlen);

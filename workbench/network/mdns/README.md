@@ -70,9 +70,10 @@ It can also list the service types present on the link (RFC 6763 section
 
 ## bonami.library
 
-The library holds no state: each call is a message to mdnsd's public port,
-and the reply is waited for. Without mdnsd the calls return
-`MDNSERR_NOENGINE`.
+The library holds no network state: network operations are messages to mdnsd's
+public port, and the reply is waited for. Without mdnsd those calls return
+`MDNSERR_NOENGINE`. `MakeTXTRecordA()` and `FreeTXTRecord()` are local memory
+helpers and do not need the daemon.
 
 | Function | What it does |
 |---|---|
@@ -83,8 +84,13 @@ and the reply is waited for. Without mdnsd the calls return
 | `DeregisterService(ref)` | withdraws it |
 
 Some upstream ABI slots remain compatibility stubs.
-`MakeTXTRecordA`, `GetMDNSStatusA`,
 `InquiryFromNIPCTagsA` and `PublishNIPCEntitiesA` return `MDNSERR_NOTREADY`.
+
+`GetMDNSStatusA()` returns one daemon-wide counter snapshot through the six
+existing `MDNS_Status*` output tags. RX/TX count successful datagrams and RX
+answers count answer-section records parsed from responses. The debug values
+count records offered to queued discovery, PTR records among them, and queue
+delivery attempts. Counters reset when mdnsd starts.
 
 Version 41.3 also provides `LookupHostA()` and queued generic record queries:
 `QueryRecordA()` / `StopQuery()`, `ReadMDNSRecordEvent()` and the existing
@@ -96,9 +102,9 @@ with this same mdnsd. Their canonical PTR, SRV, TXT, address and service-type
 records are reflected internally per interface; the daemon does not depend on
 receiving its own multicast packets. Updates and withdrawals produce the same
 queued changes as records learned from the link.
-`FreeTXTRecord` and `UnpublishNIPCEntitiesA`
-do nothing. They invoke no callbacks, change no output buffers and take
-ownership of no memory. Public headers include the upstream handles,
+`UnpublishNIPCEntitiesA` does nothing. The remaining compatibility stubs
+invoke no callbacks, change no output buffers and take ownership of no memory.
+Public headers include the upstream handles,
 events, flags, service snapshots, tags and Envoy definitions. These
 definitions preserve source compatibility; only the registration tags
 documented by the implemented functions are acted on in this release.
@@ -112,8 +118,8 @@ invents either value from the instance name.
 ### Task lifetime and compatibility
 
 The first fifteen slots, their order/registers and existing tag/error values
-follow upstream Bonami. The AROS implementation is version 41.3. Its daemon
-and library must be installed together: their private IPC is now version 4.
+follow upstream Bonami. The AROS implementation is version 41.5. Its daemon
+and library must be installed together: their private IPC is now version 5.
 
 Registration lifetime deliberately differs from upstream Bonami:
 

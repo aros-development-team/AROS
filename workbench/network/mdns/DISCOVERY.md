@@ -14,8 +14,8 @@ Generic record queries append `LookupHostA()`, `QueryRecordA()`,
 `StopQuery()` and `ReadMDNSRecordEvent()` at LVOs 22 through 25. Library
 version is 41.3 and private IPC version 4 with these calls; the library and
 daemon must be installed together. Because `OpenLibrary()` checks the major
-version only, a caller that can run with 41.2 must check
-`lib_Revision >= BONAMI_LIB_REVISION` before calling LVO 22 or later. The
+version only, a caller that can run with 41.2 must require a version later than
+41, or version 41 with revision 3 or later, before calling LVO 22 or later. The
 record query is a new AROS interface, not a published original-BonAmi vector,
 so it is queue-native and has no unused Hook argument.
 

@@ -171,6 +171,11 @@ VOID HIDDNouveauDecodeTargetFree(struct CardData *carddata, struct HIDDNouveauBi
 /* Make buffer 'buffer' of a decode target hold its last decode: issue the
    copy-out if it is still pending and, with wait, wait for it. Returns a
    vHidd_DecodeStatus_* value. timeoutms ~0 = for ever (wait only) */
+/* CPU access to a decode target buffer through a GART copy: the address, or NULL to map
+   the buffer itself; the unlock copies a written copy back (dirty NULL = all of it) */
+UBYTE *HIDDNouveauDecodeLockCPU(struct CardData *carddata, struct HIDDNouveauBitMapData *bmdata, ULONG buffer);
+VOID HIDDNouveauDecodeUnlockCPU(struct CardData *carddata, struct HIDDNouveauBitMapData *bmdata, ULONG buffer,
+    struct Rectangle *dirty);
 ULONG HIDDNouveauDecodeSettle(struct CardData *carddata, struct HIDDNouveauBitMapData *bmdata, ULONG buffer,
     BOOL wait, ULONG timeoutms);
 

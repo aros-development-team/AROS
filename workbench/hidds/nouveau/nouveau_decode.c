@@ -265,7 +265,8 @@ BOOL HIDDNouveauDecodeEmit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDeco
     return TRUE;
 }
 
-static VOID nvdec_pause(VOID);
+static ULONG nvdec_pause(ULONG *step);
+#define NVDEC_PAUSE_FIRST   100     /* first nap of a wait, us (nvdec_pause) */
 
 /*
  * The engine stopped (its channel was killed by a fault, or it stopped
@@ -666,11 +667,15 @@ VOID HIDDNouveauDecodeClose(struct HIDDNouveauDecode *dec)
         return;
     decode_lock();
     /* settles waiting on this session without the lock finish first */
-    while (dec->waiters)
     {
-        decode_unlock();
-        nvdec_pause();
-        decode_lock();
+        ULONG step = NVDEC_PAUSE_FIRST;
+
+        while (dec->waiters)
+        {
+            decode_unlock();
+            nvdec_pause(&step);
+            decode_lock();
+        }
     }
     if (!dec->dead)
         nvdec_session_idle(dec);
@@ -726,6 +731,8 @@ BOOL HIDDNouveauDecodeTargetInit(struct CardData *carddata, struct HIDDNouveauBi
     {
         bmdata->buf[i].dec = NULL;
         bmdata->buf[i].decstate = NOUVEAU_DECSTATE_NONE;
+        bmdata->buf[i].shadow = NULL;
+        bmdata->buf[i].shadowlocked = FALSE;
     }
     return TRUE;
 }
@@ -739,6 +746,8 @@ VOID HIDDNouveauDecodeTargetFree(struct CardData *carddata, struct HIDDNouveauBi
     {
         struct HIDDNouveauDecode *dec = bmdata->buf[i].dec;
 
+        if (bmdata->buf[i].shadow)
+            nouveau_bo_ref(NULL, &bmdata->buf[i].shadow);
         if (!dec)
             continue;
         HIDDNouveauDecodeSettle(carddata, bmdata, i, TRUE, 0xffffffffUL);
@@ -918,16 +927,94 @@ static BOOL nvdec_copy_out(struct HIDDNouveauDecode *dec, struct HIDDNouveauBitM
     return ok;
 }
 
-/* Sleep a little while polling a timed wait */
-static VOID nvdec_pause(VOID)
+/*
+ * CPU access to a decode target. The CPU reads VRAM through the BAR
+ * uncached, at a few tens of MB/s, so a lock
+ * hands out a copy in GART instead: the copy engine fills it, and the
+ * unlock copies it back when it was written.
+ */
+static BOOL nvdec_ce_linear(struct CardData *carddata, struct nouveau_bo *src, ULONG srcdom,
+    struct nouveau_bo *dst, ULONG dstdom, ULONG pitch, ULONG rows)
 {
-    struct Library *DOSBase = OpenLibrary("dos.library", 0);
+    struct nouveau_pushbuf *push = carddata->ce_pushbuf;
+    struct nouveau_pushbuf_refn refs[] = {
+        { src, srcdom | NOUVEAU_BO_RD },
+        { dst, dstdom | NOUVEAU_BO_WR },
+    };
 
-    if (DOSBase)
-    {
-        Delay(1);
-        CloseLibrary(DOSBase);
-    }
+    if (nouveau_pushbuf_space(push, 16, 0, 0) || nouveau_pushbuf_refn(push, refs, 2))
+        return FALSE;
+    ce_begin(push, CE_OFFSET_IN_UPPER, 8);
+    *push->cur++ = (ULONG)(src->offset >> 32);
+    *push->cur++ = (ULONG)src->offset;
+    *push->cur++ = (ULONG)(dst->offset >> 32);
+    *push->cur++ = (ULONG)dst->offset;
+    *push->cur++ = pitch;
+    *push->cur++ = pitch;
+    *push->cur++ = pitch;               /* line length, bytes */
+    *push->cur++ = rows;
+    ce_begin(push, CE_LAUNCH_DMA, 1);
+    *push->cur++ = 0x00000206 | 0x00000180;     /* non-pipelined, flush, multi-line; both pitch */
+    nouveau_pushbuf_kick(push);
+    return TRUE;
+}
+
+UBYTE *HIDDNouveauDecodeLockCPU(struct CardData *carddata, struct HIDDNouveauBitMapData *bmdata, ULONG buffer)
+{
+    struct nouveau_bo *bo = bmdata->buf[buffer].bo;
+    struct nouveau_bo **shadow = &bmdata->buf[buffer].shadow;
+    BOOL ok;
+
+    bmdata->buf[buffer].shadowlocked = FALSE;
+    if (!carddata->NvCopy || !bo || !bmdata->pitch)
+        return NULL;
+    if (!*shadow && !nvdec_bo_new(carddata, NOUVEAU_BO_GART | NOUVEAU_BO_MAP, 4096, bo->size, NULL, shadow))
+        return NULL;
+    LOCK_ENGINE
+    ok = nvdec_ce_linear(carddata, bo, NOUVEAU_BO_VRAM, *shadow, NOUVEAU_BO_GART,
+                         bmdata->pitch, bo->size / bmdata->pitch);
+    UNLOCK_ENGINE
+    if (!ok || nouveau_bo_wait(*shadow, NOUVEAU_BO_RD, carddata->client))
+        return NULL;
+    bmdata->buf[buffer].shadowlocked = TRUE;
+    return (UBYTE *)(*shadow)->map;
+}
+
+VOID HIDDNouveauDecodeUnlockCPU(struct CardData *carddata, struct HIDDNouveauBitMapData *bmdata, ULONG buffer,
+    struct Rectangle *dirty)
+{
+    struct nouveau_bo *bo = bmdata->buf[buffer].bo, *shadow = bmdata->buf[buffer].shadow;
+
+    if (!bmdata->buf[buffer].shadowlocked)
+        return;
+    bmdata->buf[buffer].shadowlocked = FALSE;
+    /* an empty rectangle: only read */
+    if (dirty && ((dirty->MaxX < dirty->MinX) || (dirty->MaxY < dirty->MinY)))
+        return;
+    LOCK_ENGINE
+    if (!nvdec_ce_linear(carddata, shadow, NOUVEAU_BO_GART, bo, NOUVEAU_BO_VRAM,
+                         bmdata->pitch, bo->size / bmdata->pitch))
+        nvlog("[Nouveau] NVDEC: writing back buffer %lu failed\n", (unsigned long)buffer);
+    UNLOCK_ENGINE
+}
+
+/* Sleep a little while polling a timed wait */
+extern unsigned long compat_sleep_usecs(unsigned long usecs);
+
+/*
+ * A frame takes well under a millisecond, so a wait naps briefly and backs
+ * off: 100 us doubling to 2 ms. A dos.library Delay() is a whole 20 ms tick,
+ * which every waited-for frame paid. Returns the microseconds slept.
+ */
+#define NVDEC_PAUSE_MAX     2000
+
+static ULONG nvdec_pause(ULONG *step)
+{
+    ULONG us = *step;
+
+    compat_sleep_usecs(us);
+    *step = (us * 2 > NVDEC_PAUSE_MAX) ? NVDEC_PAUSE_MAX : us * 2;
+    return us;
 }
 
 /*
@@ -955,6 +1042,7 @@ static BOOL nvdec_wait_unlocked(struct HIDDNouveauDecode *dec, ULONG seq, struct
     ULONG timeoutms)
 {
     ULONG waited = 0, limit = (timeoutms == 0xffffffffUL) ? NVDEC_STALL_MS : timeoutms;
+    ULONG step = NVDEC_PAUSE_FIRST;
     BOOL done = FALSE;
 
     /*
@@ -971,12 +1059,11 @@ static BOOL nvdec_wait_unlocked(struct HIDDNouveauDecode *dec, ULONG seq, struct
             done = TRUE;
             break;
         }
-        if ((waited >= limit) || dec->dead)
+        if ((waited / 1000 >= limit) || dec->dead)
             break;
         decode_unlock();
-        nvdec_pause();
+        waited += nvdec_pause(&step);
         decode_lock();
-        waited += 20;
     }
     dec->waiters--;
     return done;
@@ -1150,16 +1237,13 @@ static BOOL nvdec_BeginFrame(APTR obj, OOP_Object *bitmap, ULONG buffer)
     f = &dec->ring[dec->ringpos];
     if (f->seq && !nvdec_seq_done(dec, f->seq))
     {
-        ULONG waited = 0;
+        ULONG waited = 0, step = NVDEC_PAUSE_FIRST;
 
         /* bounded and unlocked, as in HIDDNouveauDecodeSettle */
         dec->waiters++;
         decode_unlock();
-        while (!nvdec_seq_done(dec, f->seq) && (waited < NVDEC_STALL_MS))
-        {
-            nvdec_pause();
-            waited += 20;
-        }
+        while (!nvdec_seq_done(dec, f->seq) && (waited / 1000 < NVDEC_STALL_MS))
+            waited += nvdec_pause(&step);
         decode_lock();
         dec->waiters--;
         if (!nvdec_seq_done(dec, f->seq))

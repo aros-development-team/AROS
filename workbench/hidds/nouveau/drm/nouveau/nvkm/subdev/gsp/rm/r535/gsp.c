@@ -19,6 +19,7 @@
  * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
+#include <linux/dma-mapping.h>
 #include <rm/rpc.h>
 
 #include "priv.h"
@@ -1902,6 +1903,86 @@ r535_gsp_elf_section(struct nvkm_gsp *gsp, const char *name, const u8 **pdata, u
 	nvkm_error(&gsp->subdev, "section '%s' not found\n", name);
 	return -ENOENT;
 }
+
+#if defined(__AROS__)
+/*
+ * The GSP-RM image the GPU is given can arrive damaged when the firmware
+ * file is read, a few wrong bytes, different ones on every read, and
+ * GSP-FMC then refuses the image (mailbox 0xb). After a refused boot,
+ * read the firmware file twice more and take each bit by majority of the
+ * three copies; a damaged spot is in one copy only. Returns the pages put
+ * right (0 = the image was intact).
+ */
+int
+r535_gsp_verify_image(struct nvkm_gsp *gsp)
+{
+	struct nvkm_subdev *subdev = &gsp->subdev;
+	const struct firmware *keep = gsp->fws.rm, *fresh[2] = { NULL, NULL };
+	struct sg_dma_page_iter it;
+	const u8 *data[2];
+	u8 *img = gsp->fw.img;
+	u64 size, off = 0;
+	int ret = 0, bad = 0, r;
+
+	if (!img || !gsp->fw_ver)
+		return -EINVAL;
+	for (r = 0; r < 2 && !ret; r++) {
+		u64 sz;
+
+		ret = nvkm_gsp_load_fw(gsp, "gsp", gsp->fw_ver, &fresh[r]);
+		if (ret) {
+			nvkm_error(subdev, "verify: cannot read the firmware again: %d\n", ret);
+			break;
+		}
+		gsp->fws.rm = fresh[r];
+		ret = r535_gsp_elf_section(gsp, ".fwimage", &data[r], &sz);
+		gsp->fws.rm = keep;
+		if (!ret && sz != gsp->fw.len)
+			ret = -EINVAL;
+		size = sz;
+	}
+	if (ret)
+		goto done;
+
+	for_each_sgtable_dma_page(&gsp->fw.mem.sgt, &it, 0) {
+		u64 len = min_t(u64, PAGE_SIZE, size - off), i;
+		const u8 *a = data[0] + off, *b = data[1] + off;
+		u8 *c = img + off;
+
+		if (off >= size)
+			break;
+		if (memcmp(c, a, len) || memcmp(c, b, len)) {
+			int n = 0, which = 0;
+
+			for (i = 0; i < len; i++) {
+				u8 m = (a[i] & b[i]) | (a[i] & c[i]) | (b[i] & c[i]);
+
+				if (m != c[i] || m != a[i] || m != b[i]) {
+					if (!n++ && bad < 24)
+						nvkm_error(subdev, "verify: page %06llx (bus %010llx) +%03llx: "
+							   "image %02x, reads %02x %02x -> %02x\n", off,
+							   (u64)sg_page_iter_dma_address(&it), i, c[i], a[i], b[i], m);
+					which |= (m != c[i]) ? 1 : (m != a[i]) ? 2 : 4;
+				}
+				c[i] = m;
+			}
+			if (which & 1)
+				bad++;
+		}
+		off += PAGE_SIZE;
+	}
+	if (bad) {
+		dma_sync_sgtable_for_device(subdev->device->dev, &gsp->fw.mem.sgt, DMA_TO_DEVICE);
+		nvkm_error(subdev, "verify: %d damaged pages of the image put right\n", bad);
+	} else
+		nvkm_info(subdev, "verify: the image matches the file\n");
+	ret = bad;
+done:
+	nvkm_firmware_put(fresh[0]);
+	nvkm_firmware_put(fresh[1]);
+	return ret;
+}
+#endif
 
 #ifdef CONFIG_DEBUG_FS
 

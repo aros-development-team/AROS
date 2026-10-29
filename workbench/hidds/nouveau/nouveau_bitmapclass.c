@@ -1273,7 +1273,22 @@ BOOL METHOD(NouveauBitMap, Hidd_BitMap, LockBuffer)
 
     /* a decode target: the CPU reads the decoded picture, so finish its decode and copy-out */
     if (bmdata->decodetarget)
+    {
+        UBYTE *cpu;
+
         HIDDNouveauDecodeSettle(carddata, bmdata, msg->buffer, TRUE, 0xffffffffUL);
+        if (bmdata->nbufs && (cpu = HIDDNouveauDecodeLockCPU(carddata, bmdata, msg->buffer)))
+        {
+            *msg->addressReturn = cpu;
+            *msg->pitchReturn = bmdata->pitch;
+            if (msg->planeOffsets)
+            {
+                msg->planeOffsets[0] = bmdata->planeoff[0];
+                msg->planeOffsets[1] = bmdata->planeoff[1];
+            }
+            return TRUE;
+        }
+    }
     LOCK_ENGINE
     LOCK_BITMAP
     if (!bo->map)
@@ -1302,7 +1317,11 @@ BOOL METHOD(NouveauBitMap, Hidd_BitMap, LockBuffer)
 
 VOID METHOD(NouveauBitMap, Hidd_BitMap, UnlockBuffer)
 {
-    /* Direct VRAM mapping: the writes are already where the plane reads them */
+    struct HIDDNouveauBitMapData *bmdata = OOP_INST_DATA(cl, o);
+
+    /* a decode target's lock may be a GART copy; otherwise the mapping was the buffer itself */
+    if (bmdata->decodetarget && (msg->buffer < bmdata->nbufs))
+        HIDDNouveauDecodeUnlockCPU(&(SD(cl)->carddata), bmdata, msg->buffer, msg->dirty);
 }
 
 /*

@@ -189,6 +189,8 @@ struct HIDDNouveauBitMapData
         ULONG               decseq;
         LONG                decslot;        /* pool slot holding the picture */
         UBYTE               decstate;       /* NOUVEAU_DECSTATE_* */
+        struct nouveau_bo   *shadow;        /* GART copy the CPU gets for a lock (nouveau_decode.c) */
+        BOOL                shadowlocked;   /* the current lock handed out the shadow */
     } buf[NOUVEAU_MAX_BUFFERS];
 };
 
