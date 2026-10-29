@@ -169,6 +169,12 @@ bonamiSend(struct MDNSIPCMsg *msg)
     msg->mi_DaemonID = copy->mi_DaemonID;
     msg->mi_Event = copy->mi_Event;
     msg->mi_RecordEvent = copy->mi_RecordEvent;
+    msg->mi_StatusRxPackets = copy->mi_StatusRxPackets;
+    msg->mi_StatusTxPackets = copy->mi_StatusTxPackets;
+    msg->mi_StatusRxAnswers = copy->mi_StatusRxAnswers;
+    msg->mi_StatusDbgRecs = copy->mi_StatusDbgRecs;
+    msg->mi_StatusDbgPtr = copy->mi_StatusDbgPtr;
+    msg->mi_StatusDbgNotify = copy->mi_StatusDbgNotify;
     FreeMem(copy, sizeof(*copy));
     DeleteMsgPort(replyPort);
     return msg->mi_Result;

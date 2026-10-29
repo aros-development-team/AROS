@@ -102,6 +102,10 @@ struct MDNSDaemon
     ULONG                   md_HostAddr;    /* the first interface's */
     ULONG                   md_RxPackets;
     ULONG                   md_TxPackets;
+    ULONG                   md_RxAnswers;
+    ULONG                   md_DiscoveryRecords;
+    ULONG                   md_DiscoveryPTR;
+    ULONG                   md_DiscoveryNotify;
 
     char                    md_HostName[MDNS_MAX_HOST + 1];
                                             /* the name in use: the system's

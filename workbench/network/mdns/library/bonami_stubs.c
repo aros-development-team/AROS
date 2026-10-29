@@ -125,19 +125,69 @@
         struct BonamiIntern *, BonamiBase, 16, Bonami)
 
 /*  FUNCTION
-        Compatibility stub for the upstream Bonami ABI. This registration
-        release does not implement this operation. No callback is invoked,
-        output buffer modified, or memory/reference freed.
+        Requests one daemon-wide diagnostic snapshot. Recognized tags contain
+        ULONG * output pointers. Unknown tags and NULL output pointers are
+        ignored.
+
+        MDNS_StatusRxPackets and MDNS_StatusTxPackets count successful socket
+        receives and sends. MDNS_StatusRxAnswers counts answer-section records
+        parsed from responses. The three debug values count records offered to
+        discovery, PTR records among them, and attempts to deliver discovery
+        events to client queues.
+
+    INPUTS
+        tags - Output tags, or NULL to test daemon reachability.
 
     RESULT
-        MDNSERR_NOTREADY.
+        MDNS_OK, or an MDNSERR_* value. Outputs are changed only on success.
+
+    NOTES
+        Counters reset when mdnsd starts. The daemon reads them in its single
+        task, so all values belong to one dispatch point.
 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
+    struct MDNSIPCMsg msg;
+    struct TagItem *state = tags;
+    struct TagItem *tag;
+    ULONG *out;
+    LONG rc;
+
     (void)BonamiBase;
-    (void)tags;
-    return MDNSERR_NOTREADY;
+    memset(&msg, 0, sizeof(msg));
+    msg.mi_Command = MDNS_IPC_STATUS;
+    rc = bonamiSend(&msg);
+    while (rc == MDNS_OK && state != NULL &&
+           (tag = NextTagItem(&state)) != NULL) {
+        out = (ULONG *)tag->ti_Data;
+        if (out == NULL) {
+            continue;
+        }
+        switch (tag->ti_Tag) {
+        case MDNS_StatusRxPackets:
+            *out = msg.mi_StatusRxPackets;
+            break;
+        case MDNS_StatusTxPackets:
+            *out = msg.mi_StatusTxPackets;
+            break;
+        case MDNS_StatusRxAnswers:
+            *out = msg.mi_StatusRxAnswers;
+            break;
+        case MDNS_StatusDbgRecs:
+            *out = msg.mi_StatusDbgRecs;
+            break;
+        case MDNS_StatusDbgPtr:
+            *out = msg.mi_StatusDbgPtr;
+            break;
+        case MDNS_StatusDbgNotify:
+            *out = msg.mi_StatusDbgNotify;
+            break;
+        default:
+            break;
+        }
+    }
+    return rc;
     AROS_LIBFUNC_EXIT
 }
 

@@ -84,8 +84,13 @@ helpers and do not need the daemon.
 | `DeregisterService(ref)` | withdraws it |
 
 Some upstream ABI slots remain compatibility stubs.
-`GetMDNSStatusA`, `InquiryFromNIPCTagsA` and `PublishNIPCEntitiesA` return
-`MDNSERR_NOTREADY`.
+`InquiryFromNIPCTagsA` and `PublishNIPCEntitiesA` return `MDNSERR_NOTREADY`.
+
+`GetMDNSStatusA()` returns one daemon-wide counter snapshot through the six
+existing `MDNS_Status*` output tags. RX/TX count successful datagrams and RX
+answers count answer-section records parsed from responses. The debug values
+count records offered to queued discovery, PTR records among them, and queue
+delivery attempts. Counters reset when mdnsd starts.
 
 Version 41.3 also provides `LookupHostA()` and queued generic record queries:
 `QueryRecordA()` / `StopQuery()`, `ReadMDNSRecordEvent()` and the existing
@@ -113,8 +118,8 @@ invents either value from the instance name.
 ### Task lifetime and compatibility
 
 The first fifteen slots, their order/registers and existing tag/error values
-follow upstream Bonami. The AROS implementation is version 41.4. Its daemon
-and library must be installed together: their private IPC is now version 4.
+follow upstream Bonami. The AROS implementation is version 41.5. Its daemon
+and library must be installed together: their private IPC is now version 5.
 
 Registration lifetime deliberately differs from upstream Bonami:
 
