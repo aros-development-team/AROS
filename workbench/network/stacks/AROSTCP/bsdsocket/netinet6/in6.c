@@ -236,7 +236,14 @@ done_plen:
             if(error)
                 return error;
         }
-        ia->ia6_flags    = ifra->ifra_flags;
+        /*
+         * The request's IN6_IFF_* flags are the address's, in ia6_ifaflags;
+         * ia6_flags is the generic ifaddr's, where in6_ifinit() has just set
+         * IFA_ROUTE for in6_ifscrub() to find. The states the stack keeps -
+         * tentative, duplicated, deprecated - are not the caller's to set.
+         */
+        ia->ia6_ifaflags = (ia->ia6_ifaflags & IN6_IFF_STACKSTATE) |
+                           (ifra->ifra_flags & ~IN6_IFF_STACKSTATE);
         ia->ia6_lifetime_vltime = ifra->ifra_lifetime.ia6t_vltime;
         ia->ia6_lifetime_pltime = ifra->ifra_lifetime.ia6t_pltime;
         rt_newaddrmsg(RTM_NEWADDR, &ia->ia_ifa, 0, NULL);
