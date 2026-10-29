@@ -43,8 +43,12 @@
 #define NVDEC_SET_PICTURE_CHROMA_OFFSET0    0x0474  /* 17 of them */
 #define NVDEC_SET_PIC_SCRATCH_BUF_OFFSET    0x04B8
 #define NVDEC_H264_SET_MBHIST_BUF_OFFSET    0x0500
+#define NVDEC_SET_INTRA_TOP_BUF_OFFSET      0x04C8
+#define NVDEC_SET_FILTER_BUFFER_OFFSET      0x04D0
+#define NVDEC_H264_SET_SCALING_LIST_OFFSET  0x0680  /* Blackwell's H.264 application: the matrices in the setup */
 
 #define NVDEC_APPLICATION_ID_H264           3
+#define NVDEC_APPLICATION_ID_H264_BW        8       /* Blackwell's H.264 application: high bit depth */
 #define NVDEC_CONTROL_CODEC_H264            3
 #define NVDEC_CONTROL_GPTIMER_ON            (1 << 4)
 #define NVDEC_CONTROL_ALL_INTRA_FRAME       (1 << 17)
@@ -84,6 +88,7 @@ struct nvdec_h264
     BYTE    fieldslot;                      /* slot the last field picture went to, or -1 */
     BYTE    fieldbottom;                    /* and its parity */
     UWORD   fieldframe;                     /* and its frame_num */
+    struct nouveau_bo *filter, *intratop, *blkbuf;  /* Blackwell's H.264 application */
 };
 
 static BOOL h264_open(struct HIDDNouveauDecode *dec)
@@ -120,9 +125,14 @@ static BOOL h264_open(struct HIDDNouveauDecode *dec)
 
 static VOID h264_close(struct HIDDNouveauDecode *dec)
 {
-    if (dec->cur.codecstate)
+    struct nvdec_h264 *h = dec->cur.codecstate;
+
+    if (h)
     {
-        FreeMem(dec->cur.codecstate, sizeof(struct nvdec_h264));
+        if (h->filter)   nouveau_bo_ref(NULL, &h->filter);
+        if (h->intratop) nouveau_bo_ref(NULL, &h->intratop);
+        if (h->blkbuf)   nouveau_bo_ref(NULL, &h->blkbuf);
+        FreeMem(h, sizeof(struct nvdec_h264));
         dec->cur.codecstate = NULL;
     }
 }
@@ -403,6 +413,19 @@ static ULONG h264_status(struct HIDDNouveauDecode *dec, ULONG *status)
     /* an interlaced stream's field pictures hold half the frame's macroblocks */
     if (dec->fields)
         mbs /= 2;
+    /*
+     * Blackwell's H.264 application (dec->minimal) counts no macroblocks:
+     * its status has the cycle count and the error word only (seen: 5 for a
+     * rejected setup), so a frame is good when that is clear.
+     */
+    if (dec->minimal)
+    {
+        if (!st->error_status)
+            return 0;
+        if (dec->errors++ < 4)
+            nvlog("[Nouveau] NVDEC: frame error %08lx\n", (unsigned long)st->error_status);
+        return st->error_status;
+    }
     if (!st->error_status && !st->mbs_in_error && !st->slice_header_error_code &&
         (st->mbs_correctly_decoded >= mbs))
         return 0;
@@ -430,6 +453,198 @@ static ULONG h264_status(struct HIDDNouveauDecode *dec, ULONG *status)
     return st->error_status ? st->error_status : 1;
 }
 
+/*
+ * Blackwell's H.264 application (id 8), the only one with a bit depth:
+ * NVIDIA's driver uses it for H.264 except MBAFF streams. Its 4 KB setup is
+ * not in nvdec_drv.h; the layout below was traced from NVIDIA's driver with
+ * the decoder reported as NVCFB0 (the old setup's fields, packed, plus the
+ * initial reference lists the old application derived itself). Built from
+ * the old setup of the same picture.
+ */
+#define H264BW_DPB              0x040   /* nvdec_dpb_entry_s[16], as the old setup's */
+#define H264BW_LISTS            0x140   /* P list0, B list0, B list1, unused: 32 bytes each */
+#define H264BW_PARAMS           0x1c0
+#define H264BW_MATRICES         0x200   /* WeightScale, WeightScale8x8, as the old setup's */
+#define H264BW_NOREF            0x1f    /* list entry: none; else the DPB index, 0x20 for a bottom field */
+
+struct h264_listref
+{
+    UBYTE   i, top, bottom;     /* DPB index, the fields it has as references */
+    LONG    key;                /* FrameNumWrap / POC / LongTermFrameIdx: the ordering */
+};
+
+static LONG h264_minpoc(LONG a, LONG b)
+{
+    return (a < b) ? a : b;
+}
+
+/* insertion sort of n references by key, descending or ascending */
+static VOID h264_sort(struct h264_listref *r, LONG n, BOOL down)
+{
+    LONG i, k;
+
+    for (i = 1; i < n; i++)
+    {
+        struct h264_listref t = r[i];
+
+        for (k = i; (k > 0) && (down ? (r[k - 1].key < t.key) : (r[k - 1].key > t.key)); k--)
+            r[k] = r[k - 1];
+        r[k] = t;
+    }
+}
+
+/* list entries for references in order: frames as they are, or fields by 8.2.4.2.5 (same parity first) */
+static LONG h264_entries(UBYTE *out, LONG pos, const struct h264_listref *r, LONG n, BOOL field, BOOL bottom)
+{
+    LONG same = 0, opp = 0;
+
+    if (!field)
+    {
+        for (same = 0; (same < n) && (pos < 32); same++)
+            out[pos++] = r[same].i;
+        return pos;
+    }
+    while (pos < 32)
+    {
+        while ((same < n) && !(bottom ? r[same].bottom : r[same].top))
+            same++;
+        while ((opp < n) && !(bottom ? r[opp].top : r[opp].bottom))
+            opp++;
+        if ((same >= n) && (opp >= n))
+            break;
+        if (same < n)
+        {
+            out[pos++] = r[same].i | (bottom ? 0x20 : 0);
+            same++;
+        }
+        if ((opp < n) && (pos < 32))
+        {
+            out[pos++] = r[opp].i | (bottom ? 0 : 0x20);
+            opp++;
+        }
+    }
+    return pos;
+}
+
+/* H.264 8.2.4.2: the initial reference picture lists, from the setup's DPB */
+static VOID h264_initial_lists(const nvdec_h264_pic_s *pic, UBYTE *lists)
+{
+    struct h264_listref st[16], lt[16], a[16], b[16];
+    LONG nst = 0, nlt = 0, na, nb, i, n, maxfn = 1L << (pic->log2_max_frame_num_minus4 + 4), cur;
+    BOOL field = pic->field_pic_flag, bottom = pic->bottom_field_flag;
+    UBYTE *p0 = lists, *b0 = lists + 32, *b1 = lists + 64;
+
+    memset(lists, H264BW_NOREF, 4 * 32);
+    cur = field ? pic->CurrFieldOrderCnt[bottom ? 1 : 0] : h264_minpoc(pic->CurrFieldOrderCnt[0], pic->CurrFieldOrderCnt[1]);
+    for (i = 0; i < 16; i++)
+    {
+        const nvdec_dpb_entry_s *e = &pic->dpb[i];
+        struct h264_listref r;
+
+        if (!e->state || (!field && (e->state != 3)))
+            continue;
+        r.i = i;
+        r.top = e->state & 1;
+        r.bottom = (e->state >> 1) & 1;
+        if (e->is_long_term)
+        {
+            r.key = e->FrameIdx;
+            lt[nlt++] = r;
+            continue;
+        }
+        /* FrameNumWrap; the POC (of the reference fields) goes in a second pass */
+        r.key = ((LONG)e->FrameIdx > (LONG)pic->frame_num) ? (LONG)e->FrameIdx - maxfn : (LONG)e->FrameIdx;
+        st[nst++] = r;
+    }
+    h264_sort(lt, nlt, FALSE);
+
+    /* P: short-term by FrameNumWrap, highest first, then long-term */
+    memcpy(a, st, nst * sizeof(*a));
+    h264_sort(a, nst, TRUE);
+    n = h264_entries(p0, 0, a, nst, field, bottom);
+    h264_entries(p0, n, lt, nlt, field, bottom);
+
+    /* B: short-term by POC, before the current picture (highest first), then after (lowest first) */
+    for (i = 0; i < nst; i++)
+    {
+        const nvdec_dpb_entry_s *e = &pic->dpb[st[i].i];
+
+        st[i].key = (st[i].top && st[i].bottom) ? h264_minpoc(e->FieldOrderCnt[0], e->FieldOrderCnt[1]) :
+                    st[i].top ? (LONG)e->FieldOrderCnt[0] : (LONG)e->FieldOrderCnt[1];
+    }
+    for (i = na = nb = 0; i < nst; i++)
+    {
+        /* fields: "less than or equal" goes with the past (the first field of the current frame) */
+        if (field ? (st[i].key <= cur) : (st[i].key < cur))
+            a[na++] = st[i];
+        else if (field || (st[i].key > cur))
+            b[nb++] = st[i];
+    }
+    h264_sort(a, na, TRUE);
+    h264_sort(b, nb, FALSE);
+    n = h264_entries(b0, 0, a, na, field, bottom);
+    n = h264_entries(b0, n, b, nb, field, bottom);
+    h264_entries(b0, n, lt, nlt, field, bottom);
+    n = h264_entries(b1, 0, b, nb, field, bottom);
+    n = h264_entries(b1, n, a, na, field, bottom);
+    n = h264_entries(b1, n, lt, nlt, field, bottom);
+    /* a list1 equal to list0 with more than one entry has its first two swapped */
+    if ((n > 1) && !memcmp(b0, b1, 32))
+    {
+        UBYTE t = b1[0];
+
+        b1[0] = b1[1];
+        b1[1] = t;
+    }
+}
+
+static VOID h264_setup_bw(struct HIDDNouveauDecode *dec, const VAPictureParameterBufferH264 *pp,
+    const nvdec_h264_pic_s *pic, UBYTE *page, BOOL intra)
+{
+    ULONG *w = (ULONG *)(page + H264BW_PARAMS);
+    ULONG width = (ULONG)pic->PicWidthInMbs * 16, depth = pp->bit_depth_luma_minus8 + 8;
+    ULONG small = !(pic->frame_mbs_only_flag && pic->direct_8x8_inference_flag);
+
+    memset(page, 0, H264BW_MATRICES + sizeof(pic->WeightScale) + sizeof(pic->WeightScale8x8));
+    memcpy(page + H264BW_DPB, pic->dpb, sizeof(pic->dpb));
+    h264_initial_lists(pic, page + H264BW_LISTS);
+    memcpy(page + H264BW_MATRICES, pic->WeightScale, sizeof(pic->WeightScale));
+    memcpy(page + H264BW_MATRICES + sizeof(pic->WeightScale), pic->WeightScale8x8, sizeof(pic->WeightScale8x8));
+    w[0] = 0x4d3f640;                   /* the decode timeout NVIDIA's driver sets; 0 is not a default here */
+    w[1] = pic->stream_len;
+    w[2] = ((dec->bpp == 2) ? 2 : 9) << 14;                         /* surface code, as Blackwell HEVC */
+    w[3] = pic->CurrPicIdx | (pic->CurrColIdx << 5) | (1 << 10) | (1 << 18) | ((3 * ((depth - 8) / 2)) << 19);
+    w[4] = 0xffff0000 | (pic->pitch_luma / dec->bpp / 16);          /* pitches in samples */
+    w[5] = pic->pitch_chroma / dec->bpp / 16;
+    w[6] = depth | ((pp->bit_depth_chroma_minus8 + 8) << 4) | (pic->PicWidthInMbs << 8) |
+           (pic->FrameHeightInMbs << 18) | (pic->chroma_format_idc << 28);
+    w[7] = (pic->log2_max_frame_num_minus4 << 16) | (pic->log2_max_pic_order_cnt_lsb_minus4 << 20) |
+           (pic->pic_order_cnt_type << 24) | (pic->delta_pic_order_always_zero_flag << 26) |
+           ((ULONG)pp->num_ref_frames << 27);
+    w[8] = pic->num_ref_idx_l0_active_minus1 | (pic->num_ref_idx_l1_active_minus1 << 5) |
+           ((pic->chroma_qp_index_offset & 0x1f) << 10) | ((pic->second_chroma_qp_index_offset & 0x1f) << 15) |
+           ((pic->pic_init_qp_minus26 & 0x7f) << 20) | (pic->pic_order_present_flag << 27) |
+           (pic->deblocking_filter_control_present_flag << 28) | (pic->transform_8x8_mode_flag << 30);
+    /* units: as NVIDIA's driver, a width in 128 (32 with field or 4x4 direct motion) sample columns */
+    w[9] = pic->entropy_coding_mode_flag | (pic->weighted_pred_flag << 1) | (pic->weighted_bipred_idc << 2) |
+           (pic->direct_8x8_inference_flag << 14) | (pic->frame_mbs_only_flag << 15) |
+           (((width + (small ? 31 : 127)) / (small ? 32 : 128)) << 16) | (small << 26);
+    w[10] = pic->frame_num | (pic->field_pic_flag << 16) | (pic->bottom_field_flag << 17) |
+            (pic->second_field << 18) | (pic->ref_pic_flag << 19) | ((intra ? 1 : 0) << 20);
+    w[11] = pic->CurrFieldOrderCnt[0];
+    w[12] = pic->CurrFieldOrderCnt[1];
+    w[15] = (width + 191) / 128;
+}
+
+static BOOL h264_zeroed(struct HIDDNouveauDecode *dec, ULONG size, struct nouveau_bo **bo)
+{
+    if (nouveau_bo_new(dec->carddata->dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP, 4096, size, NULL, bo) ||
+        nouveau_bo_map(*bo, NOUVEAU_BO_WR, dec->carddata->client))
+        return FALSE;
+    memset((*bo)->map, 0, size);
+    return TRUE;
+}
+
 static BOOL h264_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFrame *f)
 {
     struct nvdec_h264 *h = dec->cur.codecstate;
@@ -440,6 +655,7 @@ static BOOL h264_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeF
     struct nouveau_pushbuf_refn refs[6 + NVDEC_H264_SLOTS];
     LONG refslot[16], slot, i, n, nrefs = 0;
     ULONG avoid = 0, control, allintra = 1, colocsize;
+    BOOL bw;
     UBYTE *pad;
 
     if (!h || !h->have_pp || !dec->cur.nslices)
@@ -456,6 +672,28 @@ static BOOL h264_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeF
     for (i = 0; i < (LONG)h->nslices; i++)
         if ((h->slices[i].type != 2) && (h->slices[i].type != 4))
             allintra = 0;
+    /*
+     * High bit depth takes Blackwell's H.264 application: its own buffers
+     * (sizes as NVIDIA's driver's, with room to spare) and no history buffer.
+     */
+    bw = (dec->oclass >= NVDEC_CLASS_BLACKWELL) && (dec->bpp == 2);
+    if (bw && pp->seq_fields.bits.mb_adaptive_frame_field_flag)
+    {
+        /* NVIDIA's driver submits nothing for these either (traced): MBAFF is the old application's alone */
+        if (!dec->errors++)
+            nvlog("[Nouveau] NVDEC: high bit depth H.264 with MBAFF is not decodable\n");
+        return FALSE;
+    }
+    if (bw && !h->filter)
+    {
+        if (!h264_zeroed(dec, ((dec->width / 16) + 1) * 1024, &h->filter) ||
+            !h264_zeroed(dec, ((dec->width + 63) / 64) * 1024, &h->intratop) ||
+            !h264_zeroed(dec, NVDEC_BLK_BUF_SIZE(dec->width), &h->blkbuf))
+            return FALSE;
+        if (dec->history)
+            nouveau_bo_ref(NULL, &dec->history);
+        dec->minimal = TRUE;
+    }
 
     /* References: resolve each VA surface to a pool slot it still occupies */
     for (i = 0; i < 16; i++)
@@ -561,7 +799,8 @@ static BOOL h264_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeF
     pic->log2_max_frame_num_minus4 = pp->seq_fields.bits.log2_max_frame_num_minus4;
     pic->chroma_format_idc = pp->seq_fields.bits.chroma_format_idc;
     pic->pic_order_cnt_type = pp->seq_fields.bits.pic_order_cnt_type;
-    pic->pic_init_qp_minus26 = pp->pic_init_qp_minus26;
+    /* FFmpeg's value includes QpBdOffsetY (6 per bit above 8); the engine wants the PPS field */
+    pic->pic_init_qp_minus26 = pp->pic_init_qp_minus26 - 6 * pp->bit_depth_luma_minus8;
     pic->chroma_qp_index_offset = pp->chroma_qp_index_offset;
     pic->second_chroma_qp_index_offset = pp->second_chroma_qp_index_offset;
     pic->weighted_bipred_idc = pp->pic_fields.bits.weighted_bipred_idc;
@@ -642,9 +881,32 @@ static BOOL h264_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeF
         memset(pic->WeightScale, 16, sizeof(pic->WeightScale));
         memset(pic->WeightScale8x8, 16, sizeof(pic->WeightScale8x8));
     }
+    if (bw)
+    {
+        nvdec_h264_pic_s old = *pic;
+
+        h264_setup_bw(dec, pp, &old, (UBYTE *)pic, allintra);
+    }
     nouveau_staging_to_gpu(f->picsetup->map, NOUVEAU_DECODE_PICSETUP_SIZE);
     nouveau_staging_to_gpu(f->bitstream->map, dec->cur.bitstreamlen);
 
+    if (bw)
+    {
+        struct nouveau_bo *extra[3] = { h->filter, h->intratop, h->blkbuf };
+        ULONG m[2 * 4] =
+        {
+            NVDEC_H264_SET_SCALING_LIST_OFFSET, (ULONG)((f->picsetup->offset + H264BW_MATRICES) >> 8),
+            NVDEC_SET_FILTER_BUFFER_OFFSET,     (ULONG)(h->filter->offset >> 8),
+            NVDEC_SET_INTRA_TOP_BUF_OFFSET,     (ULONG)(h->intratop->offset >> 8),
+            NVDEC_SET_BLK_BUF_OFFSET,           (ULONG)(h->blkbuf->offset >> 8),
+        };
+
+        /* NVIDIA's control word (traced): the old application takes the codec alone, this one does not */
+        if (!HIDDNouveauDecodeEmit(dec, f, slot, NULL, NVDEC_APPLICATION_ID_H264_BW, NVDEC_CONTROL_CODEC_H264 | 0x52050,
+                                   extra, 3, m, 4))
+            return FALSE;
+    }
+    else
     {
         static const ULONG none[] = { NVDEC_H264_SET_MBHIST_BUF_OFFSET, 0 };
 

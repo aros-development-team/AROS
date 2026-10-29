@@ -326,6 +326,7 @@ struct nvdec_codec
     ULONG   maxrefs;
     ULONG   fmts;           /* vHidd_VideoFmt_* bits the decoder writes for the profile */
     BOOL    experimental;   /* not working yet: offered only with NOUVEAU_NVDEC_EXPERIMENTAL set */
+    ULONG   minclass;       /* the decoder class it needs, 0 any */
 };
 
 #define FMT_8BIT    (1UL << vHidd_VideoFmt_NV12)
@@ -343,6 +344,9 @@ static const struct nvdec_codec nvdec_codecs[] =
     { VAProfileH264ConstrainedBaseline, &HIDDNouveauDecodeH264Ops, 4096, 4096, 16, FMT_8BIT, FALSE },
     { VAProfileH264Main,                &HIDDNouveauDecodeH264Ops, 4096, 4096, 16, FMT_8BIT, FALSE },
     { VAProfileH264High,                &HIDDNouveauDecodeH264Ops, 4096, 4096, 16, FMT_8BIT, FALSE },
+    /* 10-bit H.264: Blackwell's H.264 application (nouveau_decode_h264.c) */
+    { VAProfileH264High10,              &HIDDNouveauDecodeH264Ops, 4096, 4096, 16, FMT_8BIT | FMT_10BIT, FALSE,
+      NVDEC_CLASS_BLACKWELL },
     { VAProfileMPEG2Simple,             &HIDDNouveauDecodeMPEG2Ops, 4096, 4096, 3, FMT_8BIT, FALSE },
     { VAProfileMPEG2Main,               &HIDDNouveauDecodeMPEG2Ops, 4096, 4096, 3, FMT_8BIT, FALSE },
     { VAProfileVC1Simple,               &HIDDNouveauDecodeVC1Ops, 4096, 4096, 3, FMT_8BIT, FALSE },
@@ -400,7 +404,7 @@ ULONG HIDDNouveauDecodeQuery(OOP_Class *cl, OOP_Object *display, LONG profile, U
     if (!c || !nouveau_decode_enable)
         return 0;
     decode_lock();
-    if (!nvdec_probe(carddata))
+    if (!nvdec_probe(carddata) || (carddata->nvdec_class < c->minclass))
     {
         decode_unlock();
         return 0;
@@ -627,7 +631,7 @@ BOOL HIDDNouveauDecodeOpen(OOP_Class *cl, OOP_Object *display, struct HIDDNouvea
     if (!c || !resolve || !width || !height)
         return FALSE;
     decode_lock();
-    if (!nvdec_probe(carddata))
+    if (!nvdec_probe(carddata) || (carddata->nvdec_class < c->minclass))
     {
         decode_unlock();
         return FALSE;
