@@ -94,19 +94,6 @@ extern u_long udp_recvspace;
 #define IN6P_HOPLIMIT	0x02		/* receive hop limit (IPV6_HOPLIMIT) */
 #endif
 
-/*
- * Ancillary data carried by IPV6_PKTINFO / IPV6_RECVPKTINFO (RFC 3542):
- * the datagram's destination address and the receiving interface index.
- * Defined defensively here as the shared headers do not provide it.
- */
-#ifndef IN6_PKTINFO_DEFINED
-#define IN6_PKTINFO_DEFINED
-struct in6_pktinfo {
-	struct in6_addr	ipi6_addr;	/* src/dst IPv6 address */
-	unsigned int	ipi6_ifindex;	/* send/recv interface index */
-};
-#endif
-
 /* ------------------------------------------------------------------ *
  * udp6_saveopt - build a control (ancillary data) mbuf carrying a
  * single cmsg of the given type at IPPROTO_IPV6 level, mirroring the
