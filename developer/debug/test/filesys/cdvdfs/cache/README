@@ -1,0 +1,18 @@
+Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+Run test-filesys-cdvdfs-cache or test-filesys-cdvdfs-cache-quick through the
+filesystem test component, or invoke python3 host_test.py here.
+
+The host harness compiles the production cache/reclamation/read functions
+from CDVDFS cdrom.c. Its adapter supplies deterministic drive data and
+bounded optional allocations. ASan/UBSan check the real buffer accesses.
+No game image or hardware is required. The host pointer width is printed.
+This is a cache-core test, not a boot test of a complete 64-bit AROS system.
+
+The UFO-pattern case alternates between two distant file positions after
+all optional caches have been reclaimed. Correct data must be returned and
+only two physical reads are needed when cache memory becomes available.
+Other cases cover failed/partial recovery, preserving DMA requirements,
+no-expunge allocations, metadata traffic, active I/O, concurrent reclamation
+during an allocator wait, and repeated memory pressure. Pass an original cdrom.c using --source and --expect-failure to
+check that the original implementation fails the observable cache cases.
