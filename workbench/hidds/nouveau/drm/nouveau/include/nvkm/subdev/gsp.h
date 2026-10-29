@@ -64,6 +64,10 @@ enum nvkm_gsp_rpc_reply_policy {
 struct nvkm_gsp {
 	const struct nvkm_gsp_func *func;
 	struct nvkm_subdev subdev;
+#if defined(__AROS__)
+	int boot_attempts;		/* GSP-FMC boots refused so far (gh100_gsp_init) */
+	const char *fw_ver;		/* firmware version, to read gsp-<ver> again */
+#endif
 
 	struct nvkm_falcon falcon;
 

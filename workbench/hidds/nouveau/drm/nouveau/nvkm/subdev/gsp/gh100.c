@@ -661,6 +661,75 @@ gh100_gsp_aros_snapshot(struct nvkm_gsp *gsp, const char *when)
 }
 #endif
 
+#if defined(__AROS__)
+#include "../fsp/priv.h"
+
+/*
+ * After the FMC has refused a boot it leaves the GSP locked (reset PLM
+ * 0x00800f8f): the host can no longer reset it, and a repeated COT request
+ * just finds the old verdict. A function level reset takes the whole GPU,
+ * FSP included, back through its own boot; then a retry is a real one.
+ */
+static int
+gh100_gsp_fmc_recover(struct nvkm_gsp *gsp)
+{
+	struct nvkm_subdev *subdev = &gsp->subdev;
+	struct nvkm_device *device = subdev->device;
+	struct pci_dev *pdev = container_of(device, struct nvkm_device_pci, device)->pdev;
+	u32 cfg[64], devcap, id;
+	u16 devctl;
+	u8 pos = pdev->pcie_cap;
+	int i, t, ret;
+
+	if (!pos) {
+		u8 next, cap;
+
+		pci_read_config_byte(pdev, 0x34, &next);
+		for (i = 0; next && i < 32; i++) {
+			pci_read_config_byte(pdev, next, &cap);
+			if (cap == 0x10) {
+				pos = next;
+				break;
+			}
+			pci_read_config_byte(pdev, next + 1, &next);
+		}
+	}
+	if (!pos)
+		return -ENODEV;
+	pci_read_config_dword(pdev, pos + 4, &devcap);
+	if (!(devcap & (1 << 28))) {
+		nvkm_error(subdev, "GSP-FMC recovery: the device has no function level reset\n");
+		return -ENODEV;
+	}
+	for (i = 0; i < 64; i++)
+		pci_read_config_dword(pdev, i * 4, &cfg[i]);
+	pci_read_config_word(pdev, pos + 8, &devctl);
+	pci_write_config_word(pdev, pos + 8, devctl | 0x8000);
+	msleep(100);
+
+	/* the function answers again once its configuration space is back */
+	for (t = 0; t < 1000; t += 10) {
+		pci_read_config_dword(pdev, 0, &id);
+		if (id == cfg[0])
+			break;
+		msleep(10);
+	}
+	if (id != cfg[0]) {
+		nvkm_error(subdev, "GSP-FMC recovery: device gone after FLR (id %08x)\n", id);
+		return -EIO;
+	}
+	for (i = 1; i < 64; i++)
+		pci_write_config_dword(pdev, i * 4, cfg[i]);
+	pci_write_config_dword(pdev, 4, cfg[1]);
+
+	/* and the FSP has been through its boot (its chip's own boot-complete register) */
+	ret = device->fsp->func->wait_secure_boot(device->fsp);
+	nvkm_warn(subdev, "GSP-FMC recovery: FLR done, FSP %s\n",
+		  ret ? "did not finish its boot" : "booted");
+	return ret;
+}
+#endif
+
 int
 gh100_gsp_init(struct nvkm_gsp *gsp)
 {
@@ -732,96 +801,71 @@ gh100_gsp_init(struct nvkm_gsp *gsp)
 	compat_dma_sync_all_coherent();
 	gh100_gsp_aros_snapshot(gsp, "before reset");
 	/*
-	 * The FMC/ACR occasionally refuses the first boot on this platform
-	 * (mailbox 0xb) although a fresh attempt a moment later succeeds;
-	 * give it a few tries before giving up. Not when WPR2 is already up:
-	 * then a GSP-RM the previous driver instance never unloaded is still
-	 * running behind it and every attempt is refused the same way.
+	 * GSP-FMC refuses a boot (mailbox 0xb) when the GSP-RM image it is
+	 * given is damaged, as data read from storage can occasionally be.
+	 * Then the image is put right from the firmware file
+	 * (r535_gsp_verify_image), the GPU, which a refused boot
+	 * leaves locked against the host, goes through a function level
+	 * reset, and as that clears what the other subdevs set up, the whole
+	 * device init is run again (-EAGAIN to nvkm_device_init). Not when
+	 * WPR2 is already up: then a GSP-RM the previous driver instance never
+	 * unloaded is still running behind it and every attempt is refused.
 	 */
 	{
-		int attempt;
+		u32 wpr2_hi = nvkm_rd32(device, 0x1fa828);
 
-		for (attempt = 0; attempt < 4; attempt++) {
-			u32 wpr2_hi = nvkm_rd32(device, 0x1fa828);
+		if (wpr2_hi) {
+			nvkm_error(subdev, "WPR2 is up (0x%08x, RISC-V %s): a previous "
+				   "instance's GSP-RM is still loaded and GSP-FMC will "
+				   "refuse to boot another - the card needs a reset it "
+				   "takes as power-on\n", wpr2_hi,
+				   nvkm_falcon_riscv_active(&gsp->falcon) ? "active" : "halted");
+			return -EBUSY;
+		}
+		if (gsp->boot_attempts)
+			nvkm_warn(subdev, "GSP-FMC boot attempt %d\n", gsp->boot_attempts + 1);
+		gh100_gsp_reset_hw(gsp);
+		/* the firmware page table's level 2 is not a coherent block: clean it too */
+		dma_sync_sgtable_for_device(device->dev, &gsp->radix3.lvl2, DMA_TO_DEVICE);
+		gh100_gsp_aros_snapshot(gsp, gsp->boot_attempts ? "before retry" : "before boot");
+		ret = nvkm_fsp_boot_gsp_fmc(device->fsp, gsp->fmc.args.addr, rsvd_size, resume,
+					    gsp->fmc.fw.addr, gsp->fmc.hash, gsp->fmc.pkey, gsp->fmc.sig);
+		if (ret) {
+			nvkm_error(subdev, "GSP-FMC boot request failed: %d\n", ret);
+			return ret;
+		}
 
-			if (wpr2_hi) {
-				nvkm_error(subdev, "WPR2 is up (0x%08x, RISC-V %s): a previous "
-					   "instance's GSP-RM is still loaded and GSP-FMC will "
-					   "refuse to boot another - the card needs a reset it "
-					   "takes as power-on\n", wpr2_hi,
-					   nvkm_falcon_riscv_active(&gsp->falcon) ? "active" : "halted");
-				ret = -EBUSY;
+		time = 4000;
+		mbox0 = 0;
+		do {
+			if (gh100_gsp_lockdown_released(gsp, &mbox0))
 				break;
-			}
-			u32 rsvd = rsvd_size;
+			usleep_range(1000, 2000);
+		} while (time--);
 
-			if (attempt) {
-				u64 margin = 0;
-
-				if (!resume) {
-					/* kgspGetWprEndMargin: a retry puts the whole
-					 * firmware region further from the end of memory,
-					 * in case the first attempt failed on the memory it
-					 * was given - one region's worth per attempt. The
-					 * FMC lays the region out from that offset, so this
-					 * is the only place it has to change. */
-					GspFwWprMeta *wpr = gsp->wpr_meta.data;
-
-					margin = 4096 + wpr->pmuReservedSize + wpr->frtsSize +
-						 wpr->sizeOfBootloader + wpr->sizeOfRadix3Elf +
-						 wpr->gspFwHeapSize + wpr->nonWprHeapSize;
-					margin = ALIGN(margin * attempt, 0x200000);
-					wpr->flags |= GSP_FW_FLAGS_RECOVERY_MARGIN_PRESENT;
-					rsvd += margin;
-				}
-				nvkm_warn(subdev, "GSP-FMC boot retry %d, firmware region moved %llu MiB down\n",
-					  attempt, (unsigned long long)(margin >> 20));
-				/* the mailbox keeps the last verdict; clear it so a
-				   fresh answer (or none) is what we wait for */
-				nvkm_falcon_wr32(&gsp->falcon, NV_PFALCON_FALCON_MAILBOX0, 0);
-				nvkm_falcon_wr32(&gsp->falcon, NV_PFALCON_FALCON_MAILBOX1, 0);
-				msleep(1000);
-				compat_dma_sync_all_coherent();
-			}
-			gh100_gsp_reset_hw(gsp);
-			/* the firmware page table's level 2 is not a coherent block: clean it too */
-			dma_sync_sgtable_for_device(device->dev, &gsp->radix3.lvl2, DMA_TO_DEVICE);
-			gh100_gsp_aros_snapshot(gsp, attempt ? "before retry" : "before boot");
-			ret = nvkm_fsp_boot_gsp_fmc(device->fsp, gsp->fmc.args.addr, rsvd, resume,
-						    gsp->fmc.fw.addr, gsp->fmc.hash, gsp->fmc.pkey, gsp->fmc.sig);
-			if (ret) {
-				nvkm_error(subdev, "GSP-FMC boot request failed: %d\n", ret);
-				continue;
-			}
-
-			time = 4000;
-			mbox0 = 0;
-			do {
-				if (gh100_gsp_lockdown_released(gsp, &mbox0))
-					break;
-				usleep_range(1000, 2000);
-			} while (time--);
-
-			if (time < 0) {
+		if (time < 0 || mbox0) {
+			if (time < 0)
 				nvkm_error(subdev, "GSP-FMC boot timed out\n");
-				ret = -ETIMEDOUT;
-				continue;
-			}
-			if (mbox0) {
+			else
 				nvkm_error(subdev, "GSP-FMC boot failed (mbox: 0x%08x, mbox1 0x%08x, "
 					   "hwcfg2 0x%08x, reset plm 0x%08x, GPU up %llu ms)\n", mbox0,
 					   nvkm_falcon_rd32(&gsp->falcon, NV_PFALCON_FALCON_MAILBOX1),
 					   nvkm_falcon_rd32(&gsp->falcon, NV_PFALCON_FALCON_HWCFG2),
 					   nvkm_falcon_rd32(&gsp->falcon, 0x3c4),
 					   device->timer ? (unsigned long long)(nvkm_timer_read(device->timer) / 1000000) : 0ULL);
-				ret = -EIO;
-				continue;
+			if (!resume && gsp->boot_attempts + 1 < 4) {
+				int r535_gsp_verify_image(struct nvkm_gsp *);
+
+				r535_gsp_verify_image(gsp);
+				if (!gh100_gsp_fmc_recover(gsp)) {
+					gsp->boot_attempts++;
+					return -EAGAIN;
+				}
 			}
-			ret = 0;
-			break;
+			return (time < 0) ? -ETIMEDOUT : -EIO;
 		}
-		if (ret)
-			return ret;
+		gsp->boot_attempts = 0;
+		ret = 0;
 	}
 #else
 	ret = nvkm_fsp_boot_gsp_fmc(device->fsp, gsp->fmc.args.addr, rsvd_size, resume,

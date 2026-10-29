@@ -409,6 +409,9 @@ tu102_gsp_load_rm(struct nvkm_gsp *gsp, const struct nvkm_gsp_fwif *fwif)
 	ret = nvkm_gsp_load_fw(gsp, "gsp", fwif->ver, &gsp->fws.rm);
 	if (ret)
 		return ret;
+#if defined(__AROS__)
+	gsp->fw_ver = fwif->ver;
+#endif
 
 	ret = nvkm_gsp_load_fw(gsp, "bootloader", fwif->ver, &gsp->fws.bl);
 	if (ret)
