@@ -54,6 +54,27 @@ OOP_Object *FBGfxDisplay__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
         {aHidd_PixFmt_BitMapType,   vHidd_BitMapType_Chunky}, /* 15 */
         {TAG_DONE, 0UL }
     };
+    /* Software LUT8, expanded to the truecolor framebuffer on refresh */
+    struct TagItem pftags_lut8[] =
+    {
+        {aHidd_PixFmt_RedShift,     0}, /*  0 */
+        {aHidd_PixFmt_GreenShift,   0}, /*  1 */
+        {aHidd_PixFmt_BlueShift,    0}, /*  2 */
+        {aHidd_PixFmt_AlphaShift,   0}, /*  3 */
+        {aHidd_PixFmt_RedMask,      0}, /*  4 */
+        {aHidd_PixFmt_GreenMask,    0}, /*  5 */
+        {aHidd_PixFmt_BlueMask,     0}, /*  6 */
+        {aHidd_PixFmt_AlphaMask,    0}, /*  7 */
+        {aHidd_PixFmt_ColorModel,   vHidd_ColorModel_Palette}, /*  8 */
+        {aHidd_PixFmt_Depth,        8}, /*  9 */
+        {aHidd_PixFmt_BytesPerPixel,1}, /* 10 */
+        {aHidd_PixFmt_BitsPerPixel, 8}, /* 11 */
+        {aHidd_PixFmt_StdPixFmt,    vHidd_StdPixFmt_LUT8}, /* 12 */
+        {aHidd_PixFmt_CLUTShift,    0}, /* 13 */
+        {aHidd_PixFmt_CLUTMask,     0xFF}, /* 14 */
+        {aHidd_PixFmt_BitMapType,   vHidd_BitMapType_Chunky}, /* 15 */
+        {TAG_DONE, 0UL }
+    };
     struct TagItem sync_mode[] =
     {
         {aHidd_Sync_PixelClock,         0                       },
@@ -68,6 +89,7 @@ OOP_Object *FBGfxDisplay__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     struct TagItem modetags[] =
     {
         {aHidd_DMEnum_PixFmtTags, (IPTR)pftags},
+        {aHidd_DMEnum_PixFmtTags, (IPTR)pftags_lut8},
         {aHidd_DMEnum_SyncTags,   (IPTR)sync_mode},
         {TAG_DONE, 0UL}
     };
@@ -94,7 +116,15 @@ OOP_Object *FBGfxDisplay__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     pftags[9].ti_Data = (XSD(cl)->data.depth > 24) ? 24 : XSD(cl)->data.depth;
     pftags[10].ti_Data = XSD(cl)->data.bytesperpixel;
     pftags[11].ti_Data = (XSD(cl)->data.bitsperpixel > 24) ? 24 : XSD(cl)->data.bitsperpixel;
-    pftags[14].ti_Data = (1 << XSD(cl)->data.depth) - 1;
+    pftags[14].ti_Data = XSD(cl)->data.depth <= 8 ? (1UL << XSD(cl)->data.depth) - 1 : 0;
+
+    /* Palette entries keep 8 bits per component, laid out like the framebuffer */
+    pftags_lut8[0].ti_Data = XSD(cl)->data.redshift;
+    pftags_lut8[1].ti_Data = XSD(cl)->data.greenshift;
+    pftags_lut8[2].ti_Data = XSD(cl)->data.blueshift;
+    pftags_lut8[4].ti_Data = XSD(cl)->data.redmask;
+    pftags_lut8[5].ti_Data = XSD(cl)->data.greenmask;
+    pftags_lut8[6].ti_Data = XSD(cl)->data.bluemask;
 
     sync_mode[0].ti_Data = 60 * XSD(cl)->data.width * XSD(cl)->data.height;
     sync_mode[1].ti_Data = XSD(cl)->data.width;
