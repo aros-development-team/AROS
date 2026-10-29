@@ -61,18 +61,22 @@ static int sfs_loadsector(sfs_boot_dev_t *self, uint32_t block, void *buffer)
 	return loadsector(start, self->partition->info->blksz, sectors, buffer);
 }
 
-static struct SfsObject *sfs_nextobject(struct SfsObject *o)
+/* Object records have two terminated strings and word-aligned successors. */
+static struct SfsObject *sfs_nextobject(struct SfsObject *o, uint8_t *end)
 {
 	int i;
 	uint8_t *p = o->name;
 
-	for (i = 2; i > 0; p++)
-		if (*p == '\0')
-			i--;
-	if ((p - (uint8_t *) o) & 0x01)
+	for (i = 0; i < 2; i++) {
+		while (p < end && *p != 0)
+			p++;
+		if (p == end)
+			return NULL;
 		p++;
-
-	return ((struct SfsObject *)p);
+	}
+	if ((p - (uint8_t *)o) & 1)
+		p++;
+	return p <= end ? (struct SfsObject *)p : NULL;
 }
 
 /* Copy fixed object fields out before releasing the directory block. */
@@ -80,32 +84,48 @@ static int sfs_findobject(sfs_boot_dev_t *self, struct SfsObject *cwd,
                          char *dirname, uint8_t type, struct SfsObject *result)
 {
 	void *buffer;
-	uint32_t next;
-	struct SfsObject *o;
+	uint32_t next, remaining = self->totalblocks;
+	uint32_t anchor, span = 1, distance = 0;
+	struct SfsObject *o, *following;
+	uint8_t *end;
 	int found = 0;
 
 	buffer = malloc(self->blocksize);
 	if (buffer == NULL)
 		return 0;
 	next = cwd->object.dir.firstdirblock;
-	while (next != 0) {
+	anchor = next;
+	while (next != 0 && remaining-- != 0) {
+		/* Detect chain cycles without extra reads or a visited-block array. */
+		if (distance == span) {
+			anchor = next;
+			span = span <= self->totalblocks / 2 ? span * 2 : self->totalblocks;
+			distance = 0;
+		}
 		if (!sfs_loadsector(self, next, buffer))
 			break;
 		if (calcchecksum(SBH(buffer), self->blocksize))
 			break;
-		if (SBH(buffer)->id != SOC_ID)
+		if (SBH(buffer)->id != SOC_ID || SBH(buffer)->ownblock != next)
 			break;
 		o = SOC(buffer)->object;
-		while (o->objectnode > 0) {
+		end = (uint8_t *)buffer + self->blocksize;
+		while (end - (uint8_t *)o >= sizeof(*o) && o->objectnode > 0) {
+			following = sfs_nextobject(o, end);
+			if (following == NULL)
+				goto out;
 			if (strcasecmp((char *)o->name, dirname) == 0
 			    && (!type || o->bits & type)) {
 				memmove(result, o, sizeof(*result));
 				found = 1;
 				goto out;
 			}
-			o = sfs_nextobject(o);
+			o = following;
 		}
 		next = SOC(buffer)->next;
+		distance++;
+		if (next == anchor)
+			break;
 	}
 out:
 	free(buffer);
@@ -273,7 +293,9 @@ boot_dev_t *sfs_create(struct RdbPartition *partition)
 	if (!sfs_loadsector(boot, rootblock, buffer)
 	    || SBH(buffer)->id != SOC_ID || SBH(buffer)->ownblock != rootblock
 	    || calcchecksum(SBH(buffer), boot->blocksize)
-	    || !(SOC(buffer)->object->bits & OTYPE_DIR))
+	    || !(SOC(buffer)->object->bits & OTYPE_DIR)
+	    || sfs_nextobject(SOC(buffer)->object,
+	                      (uint8_t *)buffer + boot->blocksize) == NULL)
 		goto fail;
 
 	printf("Found sfs partition! Name: %s\n",
