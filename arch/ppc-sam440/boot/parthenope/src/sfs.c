@@ -84,7 +84,8 @@ static int sfs_findobject(sfs_boot_dev_t *self, struct SfsObject *cwd,
 		return 0;
 	next = cwd->object.dir.firstdirblock;
 	while (next != 0) {
-		sfs_loadsector(self, next, buffer);
+		if (!sfs_loadsector(self, next, buffer))
+			break;
 		if (!calcchecksum(SBH(buffer), self->blocksize))
 			break;
 		if (SBH(buffer)->id != SOC_ID)
@@ -192,8 +193,11 @@ static int sfs_loadfile(sfs_boot_dev_t * self, char *filename, void *filebuffer)
 			free(buffer);
 			return -1;
 		}
-		for (i = 0; i < sebn->blocks; i++) {
-			sfs_loadsector(self, next + i, buffer);
+		for (i = 0; i < sebn->blocks && readed < size; i++) {
+			if (!sfs_loadsector(self, next + i, buffer)) {
+				free(buffer);
+				return -1;
+			}
 			tocopy = (size - readed >= self->blocksize 
 				  ? self->blocksize : size - readed);
 			if (filebuffer != NULL)
@@ -203,7 +207,7 @@ static int sfs_loadfile(sfs_boot_dev_t * self, char *filename, void *filebuffer)
 		next = sebn->next;
 	}
 	free(buffer);
-	return readed;
+	return readed == size ? readed : -1;
 }
 
 static int sfs_destroy(sfs_boot_dev_t * this)
@@ -229,9 +233,8 @@ boot_dev_t *sfs_create(struct RdbPartition *partition)
 		free(boot);
 		return NULL;
 	}
-	loadsector(boot->partition->info->start, boot->partition->info->blksz, 
-		   64, buffer);
-	if (SBH(buffer)->id != SRB_ID) {
+	if (!loadsector(boot->partition->info->start, boot->partition->info->blksz,
+		        64, buffer) || SBH(buffer)->id != SRB_ID) {
 		printf("** Bad sfs partition or disk - %d:%d **\n",
 		       boot->partition->disk, boot->partition->partition);
 		free(buffer);
@@ -242,9 +245,8 @@ boot_dev_t *sfs_create(struct RdbPartition *partition)
 	boot->extentbnoderoot = SRB(buffer)->extentbnoderoot;
 	boot->blocksize = SRB(buffer)->blocksize;
 
-	sfs_loadsector(boot, SRB(buffer)->rootobjectcontainer, buffer);
-
-	if (SBH(buffer)->id != SOC_ID) {
+	if (!sfs_loadsector(boot, SRB(buffer)->rootobjectcontainer, buffer)
+	    || SBH(buffer)->id != SOC_ID) {
 		printf("** Root Object Container not found - %d:%d **\n",
 		       boot->partition->disk, boot->partition->partition);
 		free(buffer);
