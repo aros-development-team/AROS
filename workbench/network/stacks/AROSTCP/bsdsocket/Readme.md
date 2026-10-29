@@ -289,6 +289,15 @@ group via `in6_addmulti` → `S2_ADDMULTICASTADDRESS`, mapping `ff02::X` → `33
 `nd6_lookup` returns a neighbour route with its reference **held** (KAME semantics); every caller
 `rtfree()`s it when done.
 
+Every new unicast address, not only the link-local, is tentative until duplicate address detection
+finishes (RFC 4862 §5.4): `in6_if_up()` starts it for the link-local and `in6_control()` for an
+address added with `SIOCAIFADDR_IN6` - SLAAC, temporary or configured by hand - on an interface that
+can multicast. The first Router Solicitation follows the link-local's DAD; later addresses do not
+send another. An address's `IN6_IFF_*` flags are kept in `ia6_ifaflags`, apart from the generic
+`ifa_flags` (`ia6_flags`) where `IFA_ROUTE` records the prefix route `in6_ifscrub()` removes with
+the address. A prefix gets one temporary address (RFC 4941) at a time: another is made when a Router
+Advertisement repeats the prefix after the current one is deprecated.
+
 ### 6.2 Multicast Listener Discovery (MLD)
 
 `mld6.c` is the host side of MLD. `in6_addmulti`/`in6_delmulti` maintain the `in6_multihead` list

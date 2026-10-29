@@ -1017,6 +1017,20 @@ in6_tmpifadd(struct ifnet *ifp, struct nd_prefix *pr)
     if(pr->ndpr_plen != 64)
         return 0;  /* SLAAC temporary addresses require /64 */
 
+    /*
+     * One temporary address per prefix at a time (RFC 4941 section 3.4): a
+     * Router Advertisement repeating the prefix makes another only once the
+     * current one is deprecated - its preferred lifetime has run out - or
+     * was found to be a duplicate.
+     */
+    for(struct in6_ifaddr *ia = in6_ifaddr; ia; ia = ia->ia_next) {
+        if(ia->ia6_ifp == ifp &&
+                (ia->ia6_ifaflags & IN6_IFF_TEMPORARY) &&
+                !(ia->ia6_ifaflags & (IN6_IFF_DEPRECATED | IN6_IFF_DUPLICATED)) &&
+                bcmp(&ia->ia_addr.sin6_addr, &pr->ndpr_prefix.sin6_addr, 8) == 0)
+            return 0;
+    }
+
     /* build the temporary address: prefix + random IID */
     bzero(&tmpaddr, sizeof(tmpaddr));
     bcopy(&pr->ndpr_prefix.sin6_addr, &tmpaddr, 8);
