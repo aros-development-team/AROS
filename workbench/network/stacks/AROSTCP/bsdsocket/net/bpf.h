@@ -268,6 +268,8 @@ u_int	bpf_filter(const struct bpf_insn *, const u_char *, u_int, u_int);
 int	bpf_validate(const struct bpf_insn *, int);
 void	bpf_tap(struct ifnet *, u_char *, u_int, int);
 void	bpf_mtap(struct ifnet *, struct mbuf *, int);
+void	bpf_mtap2(struct ifnet *, const void *, u_int, struct mbuf *, int);
+int	bpf_dlt_for_ifp(struct ifnet *);
 void	bpf_init(void);
 void	bpf_cleanup(void);
 

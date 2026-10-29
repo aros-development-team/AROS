@@ -304,29 +304,66 @@ AROS_LH3(long, bpf_write,
 
     ifp = d->bd_ifp;
 
-    if(len > (long)ifp->if_mtu) {
+    /*
+     * The buffer is a whole frame, link header included, sent as it is
+     * (SANA2IOF_RAW): what an Ethernet descriptor captures (DLT_EN10MB).
+     * A DLT_RAW capture has no link header to write one with.
+     */
+    if(d->bd_dlt != DLT_EN10MB) {
+        writeErrnoValue(libPtr, EAFNOSUPPORT);
+        return -1;
+    }
+    if(len < SANA_ETHER_HDRLEN) {
+        writeErrnoValue(libPtr, EINVAL);
+        return -1;
+    }
+    if(len > (long)ifp->if_mtu + SANA_ETHER_HDRLEN) {
         writeErrnoValue(libPtr, EMSGSIZE);
         return -1;
     }
 
-    /* Allocate mbuf with header and copy user data */
+    /* Copy the frame into an mbuf chain: a large MTU takes several clusters */
     m = m_gethdr(M_DONTWAIT, MT_DATA);
     if(m == NULL) {
         writeErrnoValue(libPtr, ENOBUFS);
         return -1;
     }
-    if(len > (int)MHLEN) {
-        MCLGET(m, M_DONTWAIT);
-        if((m->m_flags & M_EXT) == 0) {
-            m_freem(m);
-            writeErrnoValue(libPtr, ENOBUFS);
-            return -1;
-        }
-    }
-    memcpy(mtod(m, char *), buffer, len);
-    m->m_len = len;
+    m->m_len = 0;
     m->m_pkthdr.len = len;
     m->m_pkthdr.rcvif = NULL;
+    {
+        struct mbuf *n = m;
+        long done = 0;
+
+        for(;;) {
+            long room, chunk;
+
+            if(len - done > (long)(n == m ? MHLEN : MLEN)) {
+                MCLGET(n, M_DONTWAIT);
+                if((n->m_flags & M_EXT) == 0) {
+                    m_freem(m);
+                    writeErrnoValue(libPtr, ENOBUFS);
+                    return -1;
+                }
+                room = MCLBYTES;
+            } else {
+                room = (n == m) ? MHLEN : MLEN;
+            }
+            chunk = (len - done < room) ? len - done : room;
+            memcpy(mtod(n, char *), (char *)buffer + done, chunk);
+            n->m_len = chunk;
+            done += chunk;
+            if(done == len)
+                break;
+            MGET(n->m_next, M_DONTWAIT, MT_DATA);
+            if(n->m_next == NULL) {
+                m_freem(m);
+                writeErrnoValue(libPtr, ENOBUFS);
+                return -1;
+            }
+            n = n->m_next;
+        }
+    }
 
     /* Send as raw packet via AF_UNSPEC */
     memset(&dst, 0, sizeof(dst));
