@@ -11,9 +11,10 @@
  * uses it. This looks for DRIVERS:'s lock in every other directory assign,
  * main lock and multi-assign list, and changes nothing.
  *
- * Only pointer identity is checked, and only for DRIVERS:: ram-handler
- * shares one counted lock per object, so two RAM: assigns may legally hold
- * the same pointer.
+ * Run this test after boot with DRIVERS: on SFS, whose DupLock() returns
+ * a distinct lock. Pointer identity alone cannot test ownership on handlers
+ * with counted shared locks (such as RAM:); do not use this test there.
+ * The test does not change any assigns.
  *
  * Returns 0 if no other assign holds DRIVERS:'s lock, RETURN_FAIL if one
  * does, RETURN_WARN if there is no DRIVERS: directory assign.
