@@ -129,14 +129,17 @@ DSVersion(void)
 
 /* LVOs 22 through 25 were appended in bonami.library 41.3. Opening version
  * 41 alone is not enough to make those vectors callable. */
+#define DS_RECORD_API_VERSION  41
+#define DS_RECORD_API_REVISION 3
+
 static BOOL
 DSHasRecordAPI(void)
 {
     struct Library *lib = (struct Library *)BonamiBase;
 
-    return lib->lib_Version > BONAMI_LIB_VERSION ||
-        (lib->lib_Version == BONAMI_LIB_VERSION &&
-         lib->lib_Revision >= BONAMI_LIB_REVISION);
+    return lib->lib_Version > DS_RECORD_API_VERSION ||
+        (lib->lib_Version == DS_RECORD_API_VERSION &&
+         lib->lib_Revision >= DS_RECORD_API_REVISION);
 }
 
 static UWORD
