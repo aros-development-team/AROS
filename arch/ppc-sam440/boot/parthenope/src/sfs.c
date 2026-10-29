@@ -31,6 +31,7 @@ typedef struct {
 	struct SfsObject *root;
 	uint32_t extentbnoderoot;
 	uint32_t blocksize;
+	uint32_t totalblocks;
 } sfs_boot_dev_t;
 
 static uint32_t calcchecksum(struct SfsBlockHeader *block, uint32_t blocksize)
@@ -49,10 +50,15 @@ static uint32_t calcchecksum(struct SfsBlockHeader *block, uint32_t blocksize)
 
 static int sfs_loadsector(sfs_boot_dev_t *self, uint32_t block, void *buffer)
 {
-	return loadsector(self->partition->info->start
-			  + (block * (self->blocksize / 512)),
-			  self->partition->info->blksz, self->blocksize / 512, 
-			  buffer);
+	uint32_t sectors = self->blocksize / self->partition->info->blksz;
+	uint32_t start = self->partition->info->start;
+
+	if (block >= self->totalblocks || block > (~0U - start) / sectors)
+		return 0;
+	start += block * sectors;
+	if (sectors - 1 > ~0U - start)
+		return 0;
+	return loadsector(start, self->partition->info->blksz, sectors, buffer);
 }
 
 static struct SfsObject *sfs_nextobject(struct SfsObject *o)
@@ -220,7 +226,11 @@ boot_dev_t *sfs_create(struct RdbPartition *partition)
 {
 	sfs_boot_dev_t *boot;
 	void *buffer;
+	uint32_t rootblock, sectors;
 
+	if (partition->info->blksz < 512 || partition->info->blksz > 32768
+	    || (partition->info->blksz & (partition->info->blksz - 1)) != 0)
+		return NULL;
 
 	boot = malloc(sizeof(sfs_boot_dev_t));
 	if (boot == NULL)
@@ -233,7 +243,7 @@ boot_dev_t *sfs_create(struct RdbPartition *partition)
 		return NULL;
 	}
 	if (!loadsector(boot->partition->info->start, boot->partition->info->blksz,
-		        64, buffer) || SBH(buffer)->id != SRB_ID) {
+		        1, buffer) || SBH(buffer)->id != SRB_ID) {
 		printf("** Bad sfs partition or disk - %d:%d **\n",
 		       boot->partition->disk, boot->partition->partition);
 		free(buffer);
@@ -241,25 +251,30 @@ boot_dev_t *sfs_create(struct RdbPartition *partition)
 		return NULL;
 	}
 
-	boot->extentbnoderoot = SRB(buffer)->extentbnoderoot;
 	boot->blocksize = SRB(buffer)->blocksize;
-	if (boot->blocksize == 0 || boot->blocksize > 64 * 512
-	    || (boot->blocksize & 3) != 0
-	    || calcchecksum(SBH(buffer), boot->blocksize)) {
-		free(buffer);
-		free(boot);
-		return NULL;
-	}
-
-	if (!sfs_loadsector(boot, SRB(buffer)->rootobjectcontainer, buffer)
-	    || SBH(buffer)->id != SOC_ID
-	    || calcchecksum(SBH(buffer), boot->blocksize)) {
-		printf("** Root Object Container not found - %d:%d **\n",
-		       boot->partition->disk, boot->partition->partition);
-		free(buffer);
-		free(boot);
-		return NULL;
-	}
+	boot->totalblocks = SRB(buffer)->totalblocks;
+	boot->extentbnoderoot = SRB(buffer)->extentbnoderoot;
+	rootblock = SRB(buffer)->rootobjectcontainer;
+	if (boot->blocksize < partition->info->blksz || boot->blocksize > 32768
+	    || (boot->blocksize & (boot->blocksize - 1)) != 0
+	    || boot->totalblocks == 0)
+		goto fail;
+	sectors = boot->blocksize / partition->info->blksz;
+	/* RdbPartition's size is the last relative sector, not a count. */
+	if (boot->totalblocks - 1 > partition->info->size / sectors
+	    || (boot->totalblocks - 1 == partition->info->size / sectors
+	        && partition->info->size % sectors != sectors - 1))
+		goto fail;
+	if (sectors > 1 && !sfs_loadsector(boot, 0, buffer))
+		goto fail;
+	if (SRB(buffer)->version != 3 || SBH(buffer)->ownblock != 0
+	    || calcchecksum(SBH(buffer), boot->blocksize))
+		goto fail;
+	if (!sfs_loadsector(boot, rootblock, buffer)
+	    || SBH(buffer)->id != SOC_ID || SBH(buffer)->ownblock != rootblock
+	    || calcchecksum(SBH(buffer), boot->blocksize)
+	    || !(SOC(buffer)->object->bits & OTYPE_DIR))
+		goto fail;
 
 	printf("Found sfs partition! Name: %s\n",
 	       (char *)SOC(buffer)->object->name);
@@ -277,5 +292,11 @@ boot_dev_t *sfs_create(struct RdbPartition *partition)
 	boot->destroy = (void (*)(void *))sfs_destroy;
 
 	return (boot_dev_t *) boot;
+fail:
+	printf("** Unable to read valid SFS metadata - %d:%d **\n",
+	       partition->disk, partition->partition);
+	free(buffer);
+	free(boot);
+	return NULL;
 }
 
