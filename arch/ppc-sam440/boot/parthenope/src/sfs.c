@@ -32,6 +32,7 @@ typedef struct {
 	uint32_t extentbnoderoot;
 	uint32_t blocksize;
 	uint32_t totalblocks;
+	uint8_t casesensitive;
 } sfs_boot_dev_t;
 
 static uint32_t calcchecksum(struct SfsBlockHeader *block, uint32_t blocksize)
@@ -114,7 +115,9 @@ static int sfs_findobject(sfs_boot_dev_t *self, struct SfsObject *cwd,
 			following = sfs_nextobject(o, end);
 			if (following == NULL)
 				goto out;
-			if (strcasecmp((char *)o->name, dirname) == 0
+			if ((self->casesensitive
+			     ? strcmp((char *)o->name, dirname)
+			     : strcasecmp((char *)o->name, dirname)) == 0
 			    && (!type || o->bits & type)) {
 				memmove(result, o, sizeof(*result));
 				found = 1;
@@ -293,6 +296,7 @@ boot_dev_t *sfs_create(struct RdbPartition *partition)
 
 	boot->blocksize = SRB(buffer)->blocksize;
 	boot->totalblocks = SRB(buffer)->totalblocks;
+	boot->casesensitive = SRB(buffer)->bits & ROOTBITS_CASESENSITIVE;
 	boot->extentbnoderoot = SRB(buffer)->extentbnoderoot;
 	rootblock = SRB(buffer)->rootobjectcontainer;
 	if (boot->blocksize < partition->info->blksz || boot->blocksize > 32768

@@ -68,6 +68,7 @@ struct SfsRootBlock {
 };
 #define SRB(b) ((struct SfsRootBlock *) (b))
 #define SRB_ID 0x53465300
+#define ROOTBITS_CASESENSITIVE 128
 
 struct SfsObject {
 	uint16_t owneruid;
