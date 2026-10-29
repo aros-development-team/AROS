@@ -197,6 +197,7 @@ static int sfs_loadfile(sfs_boot_dev_t * self, char *filename, void *filebuffer)
 
 static int sfs_destroy(sfs_boot_dev_t * this)
 {
+	free(this->root);
 	free(this);
 	return 0;
 }
@@ -208,9 +209,15 @@ boot_dev_t *sfs_create(struct RdbPartition *partition)
 
 
 	boot = malloc(sizeof(sfs_boot_dev_t));
+	if (boot == NULL)
+		return NULL;
 	boot->partition = partition;
 
 	buffer = malloc(64 * 512);
+	if (buffer == NULL) {
+		free(boot);
+		return NULL;
+	}
 	loadsector(boot->partition->info->start, boot->partition->info->blksz, 
 		   64, buffer);
 	if (SBH(buffer)->id != SRB_ID) {
@@ -238,6 +245,11 @@ boot_dev_t *sfs_create(struct RdbPartition *partition)
 	       (char *)SOC(buffer)->object->name);
 
 	boot->root = malloc(sizeof(struct SfsObject));
+	if (boot->root == NULL) {
+		free(buffer);
+		free(boot);
+		return NULL;
+	}
 	memmove(boot->root, SOC(buffer)->object, sizeof(struct SfsObject));
 	free(buffer);
 
