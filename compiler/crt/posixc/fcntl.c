@@ -182,7 +182,7 @@
         }
 
         case F_GETFL:
-            return desc->fcb->flags & (O_NONBLOCK|O_APPEND|O_ASYNC);
+            return desc->fcb->flags & (O_ACCMODE|O_NONBLOCK|O_APPEND|O_ASYNC);
 
         case F_SETFL:
         {

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <sys/file.h>
@@ -61,7 +61,7 @@ LONG entry()
 int main()
 {
     tmpname = mktemp("T:flockXXXXXX");
-    int fd = open(tmpname, O_CREAT);
+    int fd = open(tmpname, O_RDWR | O_CREAT, 0644);
     TEST((fd != -1));
 
     TEST((flock(fd, LOCK_SH|LOCK_NB) == 0));

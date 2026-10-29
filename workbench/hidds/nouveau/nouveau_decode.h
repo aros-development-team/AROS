@@ -53,6 +53,8 @@ struct HIDDNouveauDecode
     ULONG               bpp;                /* bytes per sample: 1 = 8-bit (NV12), 2 = 10/12-bit (P010) */
     BOOL                gob32;              /* the codec's block writes the 32-bit GOB order (HEVC) */
     ULONG               poolslots;          /* pictures the pool gets (allocated on the first frame) */
+    ULONG               rowalign;           /* picture row alignment the codec needs (0 = block rows) */
+    BOOL                minimal;            /* emit only the methods NVIDIA's driver uses for this codec */
     ULONG               pitch;              /* pool picture pitch (bytes, 64-aligned) */
     ULONG               lumasize;           /* bytes of one pool luma plane (block aligned) */
     ULONG               chromaoff;          /* offset of the chroma plane in a pool picture */
@@ -93,6 +95,16 @@ struct HIDDNouveauDecode
 
 
 
+/*
+ * Blackwell (NVCFB0): NVIDIA's driver gives the HEVC / VP9 / new-H.264 paths
+ * one more buffer (method 0x4DC, after the intra-top buffer) and a field of
+ * ceil(width / 128) + 1 in the setup (traced with the class reported as CFB0).
+ */
+#define NVDEC_CLASS_BLACKWELL               0xcfb0
+#define NVDEC_SET_BLK_BUF_OFFSET            0x04DC
+#define NVDEC_BLK_UNITS(w)                  ((((w) + 127) / 128) + 1)
+#define NVDEC_BLK_BUF_SIZE(w)               (NVDEC_BLK_UNITS(w) * 16384)
+
 /* Layout of a frame's picsetup buffer (GART, CPU mapped) */
 #define NOUVEAU_DECODE_PICSETUP_SIZE        0x3000
 #define NOUVEAU_DECODE_SLICEOFFS_OFFSET     0x1000  /* uint32 per slice + terminator */
@@ -103,6 +115,7 @@ LONG HIDDNouveauDecodeFindSlot(struct HIDDNouveauDecode *dec, OOP_Object *bm, UL
 LONG HIDDNouveauDecodeAllocSlot(struct HIDDNouveauDecode *dec, OOP_Object *bm, ULONG buffer, ULONG avoid);
 BOOL HIDDNouveauDecodeResolve(struct HIDDNouveauDecode *dec, ULONG surface, OOP_Object **bm, ULONG *buffer);
 UBYTE *HIDDNouveauDecodeBitstreamReserve(struct HIDDNouveauDecode *dec, ULONG bytes);
+BOOL HIDDNouveauDecodeWait(struct HIDDNouveauDecode *dec, ULONG seq);   /* frame seq finished (lock held) */
 VOID HIDDNouveauDecodeMethod(struct HIDDNouveauDecode *dec, ULONG mthd, ULONG data);
 /*
  * Submit a frame whose picture setup, bitstream, slice offsets and status
@@ -136,7 +149,12 @@ struct HIDDNouveauDecodeOps
 };
 
 extern const struct HIDDNouveauDecodeOps HIDDNouveauDecodeH264Ops;
+extern const struct HIDDNouveauDecodeOps HIDDNouveauDecodeHEVCOps;
 extern const struct HIDDNouveauDecodeOps HIDDNouveauDecodeMPEG2Ops;
+extern const struct HIDDNouveauDecodeOps HIDDNouveauDecodeVC1Ops;
+extern const struct HIDDNouveauDecodeOps HIDDNouveauDecodeVP8Ops;
+extern const struct HIDDNouveauDecodeOps HIDDNouveauDecodeVP9Ops;
+extern const struct HIDDNouveauDecodeOps HIDDNouveauDecodeAV1Ops;
 
 /* nouveau_decode.c: implementation behind the display class methods */
 VOID HIDDNouveauDecodeInit(VOID);               /* once, from the hidd's New */

@@ -177,6 +177,9 @@ void __setfdesc(register int fd, fdesc *desc)
         (struct PosixCIntBase *)__aros_getbase_PosixCBase();
 
     /* FIXME: Check if fd is in valid range... */
+    if (fd < 0)
+        return;
+
     /* Publish the slot pointer under the table guard so a concurrent grow
        (which reallocates the array) cannot write into a stale array. */
     FD_LOCK(PosixCBase);
@@ -250,7 +253,11 @@ int __getfdslot(int wanted_fd)
            before stdc.library's relbase is available. */
         tmp = AllocPooled(FD_POOL(PosixCBase), (wanted_fd+1)*sizeof(fdesc *));
 
-        if (!tmp) { FD_UNLOCK(PosixCBase); return -1; }
+        if (!tmp) {
+            FD_UNLOCK(PosixCBase);
+            __set_errno(PosixCBase, ENOMEM);
+            return -1;
+        }
 
         if (FD_ARRAY(PosixCBase))
         {

@@ -206,9 +206,9 @@ copy_rdata(struct MDNSRecordEvent *event, const struct MDNSRecord *record,
     return MDNS_OK;
 }
 
-void
-mdnsQueryRecord(struct MDNSDaemon *md, const struct MDNSRecord *record,
-    const UBYTE *packet, LONG length)
+static void
+deliver_record(struct MDNSDaemon *md, const struct MDNSRecord *record,
+    const UBYTE *packet, LONG length, APTR handle)
 {
     struct MDNSQueryState *state = md->md_Query;
     struct MDNSRecordEvent event;
@@ -224,7 +224,9 @@ mdnsQueryRecord(struct MDNSDaemon *md, const struct MDNSRecord *record,
     for (i = 0; i < QUERY_SESSIONS; i++) {
         struct QuerySession *session = &state->sessions[i];
 
-        if (session->handle == NULL || session->failed || session->ended ||
+        if (session->handle == NULL ||
+            (handle != NULL && session->handle != handle) ||
+            session->failed || session->ended ||
             (session->type != DNS_TYPE_ANY && session->type != record->type) ||
             Stricmp(session->name, record->name) != 0) {
             continue;
@@ -244,6 +246,20 @@ mdnsQueryRecord(struct MDNSDaemon *md, const struct MDNSRecord *record,
         }
         enqueue(session, &event);
     }
+}
+
+void
+mdnsQueryRecord(struct MDNSDaemon *md, const struct MDNSRecord *record,
+    const UBYTE *packet, LONG length)
+{
+    deliver_record(md, record, packet, length, NULL);
+}
+
+void
+mdnsQueryLocalRecord(struct MDNSDaemon *md, const struct MDNSRecord *record,
+    const UBYTE *packet, LONG length, APTR handle)
+{
+    deliver_record(md, record, packet, length, handle);
 }
 
 LONG
@@ -309,6 +325,7 @@ mdnsQueryMessage(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
         msg->mi_Handle = session->handle;
         msg->mi_DaemonID = md->md_DaemonID;
         answer_own_host(md, session);
+        mdnsRegAnswerLocal(md, MDNS_REFLECT_QUERY, session->handle);
         return MDNS_OK;
     }
     for (i = 0; i < QUERY_SESSIONS; i++) {
@@ -383,6 +400,7 @@ mdnsQueryTick(struct MDNSDaemon *md)
             continue;
         }
         send_question(md, session);
+        mdnsRegAnswerLocal(md, MDNS_REFLECT_QUERY, session->handle);
         session->nextQuery = now + session->interval;
         if (session->interval < 180000) {
             session->interval *= 2;

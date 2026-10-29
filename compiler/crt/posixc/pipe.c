@@ -43,6 +43,7 @@
     BPTR reader, writer;
     fcb *rfcb = NULL, *wfcb = NULL;
     fdesc *rdesc = NULL, *wdesc = NULL;
+    int rfd, wfd, error;
     /* PIPE:cpipe-%08x-%d, where %x is the getpid(), %d is the nth pipe */
     char pipe_name[5 + 6 + 8 + 1 + 16 + 1];
     static int pipeno = 0;
@@ -103,22 +104,48 @@
     InitSemaphore(&rfcb->io_lock);
     InitSemaphore(&wfcb->io_lock);
 
-    pipedes[0] = __getfdslot(__getfirstfd(0));
+    rfd = __getfdslot(__getfirstfd(0));
+    if (rfd < 0)
+        goto err;
     rdesc->fdflags = 0;
     rdesc->fcb = rfcb;
     rdesc->fcb->handle    = reader;
     rdesc->fcb->flags     = O_RDONLY;
     rdesc->fcb->opencount = 1;
-    __setfdesc(pipedes[0], rdesc);
+    __setfdesc(rfd, rdesc);
 
-    pipedes[1] = __getfdslot(__getfirstfd(pipedes[0]));
+    wfd = __getfdslot(__getfirstfd(rfd));
+    if (wfd < 0)
+        goto err;
     wdesc->fdflags = 0;
     wdesc->fcb = wfcb;
     wdesc->fcb->handle    = writer;
     wdesc->fcb->flags     = O_WRONLY;
     wdesc->fcb->opencount = 1;
-    __setfdesc(pipedes[1], wdesc);
+    __setfdesc(wfd, wdesc);
+
+    pipedes[0] = rfd;
+    pipedes[1] = wfd;
 
     return 0;
+
+err:
+    error = errno;
+    if (rfd >= 0)
+    {
+        /* The published reader owns its handle, fdesc and fcb. */
+        close(rfd);
+    }
+    else
+    {
+        Close(reader);
+        __free_fdesc(rdesc);
+        FreeVec(rfcb);
+    }
+    Close(writer);
+    __free_fdesc(wdesc);
+    FreeVec(wfcb);
+    errno = error;
+    return -1;
 }
 
