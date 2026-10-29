@@ -25,6 +25,30 @@
 extern BOOL Exec_InitETask(struct Task *, struct Task *, struct ExecBase *);
 
 
+/* Pin a task that predates CPU affinity to the boot CPU */
+static BOOL cpu_AssignBootMask(struct Task *task)
+{
+    struct IntETask *iet;
+    void *aff;
+
+    if (!task || !(task->tc_Flags & TF_ETASK) || !task->tc_UnionETask.tc_ETask)
+        return TRUE;
+
+    iet = IntETask(task->tc_UnionETask.tc_ETask);
+    if (iet->iet_CpuAffinity)
+        return TRUE;
+
+    if (!(aff = KrnAllocCPUMask()))
+    {
+        bug("[Kernel:SMP] no memory for task affinity masks - staying on one CPU\n");
+        return FALSE;
+    }
+    KrnGetCPUMask(0, aff);
+    iet->iet_CpuAffinity = aff;
+
+    return TRUE;
+}
+
 void cpu_PrepareExec(struct ExecBase *SysBase)
 {
     struct Task *currentTask;
@@ -40,21 +64,21 @@ void cpu_PrepareExec(struct ExecBase *SysBase)
     PrivExecBase(SysBase)->CPUMask = SystemCPUMask;
 
     /*
-     * make sure all current tasks have affinity masks
+     * make sure all current tasks have affinity masks. A NULL mask is
+     * invalid, so affinity is only switched on once every one has one.
      */
-    currentTask = FindTask(NULL);
-    IntETask(currentTask->tc_UnionETask.tc_ETask)->iet_CpuAffinity = KrnAllocCPUMask();
-    KrnGetCPUMask(0, IntETask(currentTask->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
+    if (!cpu_AssignBootMask(FindTask(NULL)))
+        return;
 
     ForeachNode(&SysBase->TaskReady, currentTask)
     {
-        IntETask(currentTask->tc_UnionETask.tc_ETask)->iet_CpuAffinity = KrnAllocCPUMask();
-        KrnGetCPUMask(0, IntETask(currentTask->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
+        if (!cpu_AssignBootMask(currentTask))
+            return;
     }
     ForeachNode(&SysBase->TaskWait, currentTask)
     {
-        IntETask(currentTask->tc_UnionETask.tc_ETask)->iet_CpuAffinity = KrnAllocCPUMask();
-        KrnGetCPUMask(0, IntETask(currentTask->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
+        if (!cpu_AssignBootMask(currentTask))
+            return;
     }
 
     PrivExecBase(SysBase)->IntFlags |= EXECF_CPUAffinity;

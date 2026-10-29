@@ -12,7 +12,7 @@
 #include "kernel_base.h"
 #include "kernel_intern.h"
 
-AROS_LH1(void, KrnFreeCPUMask,
+AROS_LH1(void *, KrnFreeCPUMask,
         AROS_LHA(void *, mask, A0),
         struct KernelBase *, KernelBase, 43, Kernel)
 {
@@ -22,8 +22,10 @@ AROS_LH1(void, KrnFreeCPUMask,
     struct APICData *apicData;
     int count;
 
-    if ((IPTR)mask == TASKAFFINITY_ANY)
-        return;
+    /* NULL is not a mask, and the TASKAFFINITY_* values are sentinels */
+    if (!mask || ((IPTR)mask == TASKAFFINITY_ANY) ||
+        ((IPTR)mask == TASKAFFINITY_ALL_BUT_SELF))
+        return NULL;
 
     if ((pdata) && (pdata->kb_APIC))
     {
@@ -37,7 +39,8 @@ AROS_LH1(void, KrnFreeCPUMask,
         FreeMem(mask, count * sizeof(ULONG));
     }
 
-    return;
+    /* kernel.conf: void *KrnFreeCPUMask(void *) */
+    return NULL;
 
     AROS_LIBFUNC_EXIT
 }
