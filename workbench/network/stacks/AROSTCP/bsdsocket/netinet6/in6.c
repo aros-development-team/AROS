@@ -94,7 +94,7 @@ in6_control_locked(struct socket *so, int cmd, caddr_t data, struct ifnet *ifp)
     struct in6_ifreq  *ifr  = (struct in6_ifreq *)data;
     struct in6_aliasreq *ifra = (struct in6_aliasreq *)data;
     struct in6_ifaddr *ia   = NULL, *oia;
-    int error = 0;
+    int error = 0, isnew = 0;
 
     /* locate existing IPv6 address for this interface */
     if(ifp) {
@@ -130,6 +130,7 @@ in6_control_locked(struct socket *so, int cmd, caddr_t data, struct ifnet *ifp)
             m = m_getclr(M_WAIT, MT_IFADDR);
             if(m == NULL)
                 return ENOBUFS;
+            isnew = 1;
             if((oia = in6_ifaddr) != NULL) {
                 for(; oia->ia_next; oia = oia->ia_next)
                     ;
@@ -246,6 +247,15 @@ done_plen:
                            (ifra->ifra_flags & ~IN6_IFF_STACKSTATE);
         ia->ia6_lifetime_vltime = ifra->ifra_lifetime.ia6t_vltime;
         ia->ia6_lifetime_pltime = ifra->ifra_lifetime.ia6t_pltime;
+        /*
+         * A new unicast address is tentative until duplicate address
+         * detection finds nobody else using it (RFC 4862 section 5.4), as the
+         * link-local is (in6_if_up()). Interfaces that cannot multicast
+         * cannot ask, and the loopback has nobody to ask.
+         */
+        if(isnew && !IN6_IS_ADDR_MULTICAST(&ia->ia_addr.sin6_addr) &&
+                (ifp->if_flags & (IFF_MULTICAST | IFF_LOOPBACK)) == IFF_MULTICAST)
+            nd6_dad_start(ia);
         rt_newaddrmsg(RTM_NEWADDR, &ia->ia_ifa, 0, NULL);
         return 0;
 
