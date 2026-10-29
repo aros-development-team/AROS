@@ -40,7 +40,7 @@
 
     NOTES
         The all-pc implementation invokes failhook while waiting for a
-        contended lock. ARM implementations do not invoke it.
+        contended lock. The ARM and RISC-V implementations do not invoke it.
         The generic fallback returns lock without acquiring it.
 
     EXAMPLE
