@@ -805,10 +805,24 @@ efi_status_t efi_stub_entry(efi_handle_t image, struct efi_system_table *st)
     else
         efi_puts("AROS: no device tree - describing the machine from EFI\n");
 
-    /* The boot hart id, if the firmware implements the protocol */
-    if (bs->handle_protocol(image, &RISCV_BOOT_GUID, (void **)&rvboot) ==
-        EFI_SUCCESS && rvboot)
+    /*
+     * The boot hart id, if the firmware implements the protocol. It is
+     * installed on a handle of its own, not on the image, so it has to
+     * be located (EDK2 on QEMU starts on any hart, and handle_protocol
+     * on the image never found it - the id silently stayed 0).
+     */
+    if ((bs->locate_protocol(&RISCV_BOOT_GUID, 0, (void **)&rvboot) ==
+         EFI_SUCCESS && rvboot) ||
+        (bs->handle_protocol(image, &RISCV_BOOT_GUID, (void **)&rvboot) ==
+         EFI_SUCCESS && rvboot))
+    {
         rvboot->get_boot_hartid(rvboot, &hartid);
+        efi_puts("AROS: boot hart ");
+        efi_puthex((u64)hartid);
+        efi_puts("\n");
+    }
+    else
+        efi_puts("AROS: no RISCV_EFI_BOOT_PROTOCOL - boot hart assumed 0\n");
 
     efi_load_package(st, image);
 

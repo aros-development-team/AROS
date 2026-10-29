@@ -39,6 +39,57 @@ static unsigned int pt_pool_used;
 
 static pte_t *pt_root;
 
+#if defined(__AROSEXEC_SMP__)
+#include "kernel_spinlock.h"
+
+/* What the secondary harts load into satp (startup.S) */
+unsigned long __riscv_satp;
+
+/*
+ * Every hart walks the same tables, so changes are serialised (the
+ * table pool is shared too) and, once other harts are online, their
+ * TLBs are fenced as well as ours (SBI RFENCE, synchronous).
+ */
+static spinlock_t mmu_lock;
+
+static inline unsigned int krnMMULock(void)
+{
+    unsigned int prev = krnRVIntrDisable();
+
+    while (!krnRVSpinTryWrite(&mmu_lock))
+    {
+        while (mmu_lock.lock != SPINLOCK_UNLOCKED)
+            krnRVPause();
+    }
+    return prev;
+}
+
+static inline void krnMMUUnlock(unsigned int prev)
+{
+    asm volatile("amoswap.w.rl zero, zero, (%0)" :: "r"(&mmu_lock.lock) : "memory");
+    krnRVIntrRestore(prev);
+}
+
+/* After the local sfence.vma: the same on every other online hart */
+static void krnMMURemoteFence(void)
+{
+    ULONG mask[RISCV_CPUMASK_WORDS];
+
+    if ((__riscv_cpu_count < 2) || !__riscv_arosintern.RVI_RemoteSFence)
+        return;
+
+    krnRVResolveMask((void *)(IPTR)-2, krnRVCPUNumber(), mask);   /* all but self */
+    __riscv_arosintern.RVI_RemoteSFence(mask, 0, 0);
+}
+#define MMU_LOCK()          unsigned int __mmuprev = krnMMULock()
+#define MMU_UNLOCK()        krnMMUUnlock(__mmuprev)
+#define MMU_REMOTE_FENCE()  krnMMURemoteFence()
+#else
+#define MMU_LOCK()          do { } while (0)
+#define MMU_UNLOCK()        do { } while (0)
+#define MMU_REMOTE_FENCE()  do { } while (0)
+#endif
+
 static pte_t *krnPTAlloc(void)
 {
     unsigned int i;
@@ -150,6 +201,7 @@ int krnMMUMapPages(unsigned long va, unsigned long pa, unsigned long size,
                    unsigned long perms)
 {
     unsigned long off;
+    int ok = 1;
 
     if (!pt_root || !size)
         return 0;
@@ -165,6 +217,9 @@ int krnMMUMapPages(unsigned long va, unsigned long pa, unsigned long size,
      * left. A PCIe ECAM window is 256MiB; mapping that a page at a
      * time would need 128 page tables of its own and exhaust the pool.
      */
+    {
+    MMU_LOCK();
+
     for (off = 0; off < size; )
     {
         unsigned long v = va + off, p = pa + off;
@@ -175,7 +230,10 @@ int krnMMUMapPages(unsigned long va, unsigned long pa, unsigned long size,
             pte_t *l1 = krnPTWalkL1(v);
 
             if (!l1)
-                return 0;
+            {
+                ok = 0;
+                break;
+            }
             l1[SV39_VPN(v, 1)] = PA_TO_PTE(p) | perms | PTE_A | PTE_D |
                                  PTE_G | PTE_V;
             off += MEGAPAGE_SIZE;
@@ -185,7 +243,10 @@ int krnMMUMapPages(unsigned long va, unsigned long pa, unsigned long size,
             pte_t *l0 = krnPTWalk(v);
 
             if (!l0)
-                return 0;
+            {
+                ok = 0;
+                break;
+            }
             l0[SV39_VPN(v, 0)] = PA_TO_PTE(p) | perms | PTE_A | PTE_D |
                                  PTE_G | PTE_V;
             off += PAGE_SIZE;
@@ -193,7 +254,10 @@ int krnMMUMapPages(unsigned long va, unsigned long pa, unsigned long size,
     }
 
     asm volatile("sfence.vma zero, zero" ::: "memory");
-    return 1;
+    MMU_REMOTE_FENCE();
+    MMU_UNLOCK();
+    }
+    return ok;
 }
 
 /* Drop a mapping made by krnMMUMapPages() */
@@ -208,6 +272,9 @@ int krnMMUUnmapPages(unsigned long va, unsigned long size)
     va   &= ~(PAGE_SIZE - 1);
     size  = (size + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
 
+    {
+    MMU_LOCK();
+
     for (off = 0; off < size; off += PAGE_SIZE)
     {
         pte_t *l0 = krnPTWalk(va + off);
@@ -217,6 +284,9 @@ int krnMMUUnmapPages(unsigned long va, unsigned long size)
     }
 
     asm volatile("sfence.vma zero, zero" ::: "memory");
+    MMU_REMOTE_FENCE();
+    MMU_UNLOCK();
+    }
     return 1;
 }
 
@@ -264,6 +334,7 @@ static void krnMapGiga(unsigned long pa, unsigned long size, unsigned long perms
 void krnMMUSetPerms(IPTR lo, IPTR hi, unsigned long perms)
 {
     unsigned long va;
+    MMU_LOCK();
 
     for (va = lo & ~(PAGE_SIZE - 1); va < hi; va += PAGE_SIZE)
     {
@@ -273,6 +344,8 @@ void krnMMUSetPerms(IPTR lo, IPTR hi, unsigned long perms)
     }
 
     asm volatile("sfence.vma zero, zero" ::: "memory");
+    MMU_REMOTE_FENCE();
+    MMU_UNLOCK();
 }
 
 /*
@@ -451,6 +524,9 @@ void krnInitMMU(struct krnFDTInfo *info)
     asm volatile("sfence.vma zero, zero" ::: "memory");
     csr_write(satp, SATP_MODE_SV39 | SATP_PPN(pt_root));
     asm volatile("sfence.vma zero, zero" ::: "memory");
+#if defined(__AROSEXEC_SMP__)
+    __riscv_satp = SATP_MODE_SV39 | SATP_PPN(pt_root);
+#endif
 
     krnSBIPutStr("mmu:       Sv39 enabled, root table ");
     krnSBIPutHex((uint64_t)(uintptr_t)pt_root);

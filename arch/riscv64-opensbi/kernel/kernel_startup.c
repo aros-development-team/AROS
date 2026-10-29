@@ -461,6 +461,23 @@ void __attribute__((noreturn)) krnWarmKick(void)
     unsigned long hartid = __boot_hartid;
     void *fdt = __boot_fdt;
 
+#if defined(__AROSEXEC_SMP__)
+    /*
+     * The reset callback may run on any CPU, and whichever hart runs it
+     * becomes the boot hart of the restarted kernel. The others must be
+     * out of the way first - they would go on running the old kernel
+     * in memory the new one reuses. If one does not stop (it may be
+     * spinning with interrupts off), a warm restart is not safe: reset
+     * the machine instead.
+     */
+    hartid = (unsigned long)TLS_GET(HartID);
+    if (!krnRVStopOtherCPUs())
+    {
+        krnSBIPutStr("[boot] a hart did not stop - cold reset instead\n");
+        sbi_system_reset(SBI_SRST_TYPE_COLD_REBOOT, 0);
+    }
+#endif
+
     /*
      * The user-mode pass of DoResetCallbacks takes no Disable(), so the
      * timer may still be live here - quiesce interrupts before touching
@@ -500,6 +517,11 @@ void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
 
     __boot_hartid = hartid;
     __boot_fdt = fdt;
+
+#if defined(__AROSEXEC_SMP__)
+    /* A warm restart left the secondary harts stopped (krnWarmKick) */
+    krnRVResetCPUs();
+#endif
 
     krnSBIPutStr("AROS64/riscv (OpenSBI)\n");
     krnSBIPutStr("boot hart: ");
@@ -666,6 +688,16 @@ void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
     if (!fdtinfo.plic_base)
         krnACPIPLICInfo(&fdtinfo);
     krnPLICInit(&fdtinfo);
+
+    /*
+     * The same for the harts: without a device tree the EFI path could
+     * only describe the boot hart. The MADT has one RINTC per hart.
+     */
+    if (!fdt && (fdtinfo.ncpus <= 1) && krnACPIHartInfo(&fdtinfo, hartid))
+    {
+        __ncpus = fdtinfo.ncpus;
+        __boot_cpu_index = fdtinfo.boot_cpu;
+    }
 
     /*
      * The package (and the device tree itself) can live in memory the

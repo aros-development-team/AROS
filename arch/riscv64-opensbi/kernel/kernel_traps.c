@@ -24,6 +24,10 @@
 
 #include <proto/kernel.h>
 
+#if defined(__AROSEXEC_SMP__)
+#include "kernel_ipi.h"
+#endif
+
 #define SCAUSE_INTERRUPT    (1UL << 63)
 #define SCAUSE_BREAKPOINT   3
 
@@ -88,8 +92,8 @@ static void krnDumpContext(struct ExceptionContext *ctx)
     krnSBIPutStr("\n");
 }
 
-/* Trap/interrupt nesting depth, reported through KrnIsSuper() */
-extern int __riscv64_trap_depth;
+/* Trap/interrupt nesting depth, reported through KrnIsSuper():
+   KRN_TRAPDEPTH (kernel_riscv.h) - per hart on SMP */
 
 /* Instruction-side faults: sepc itself may not be readable */
 #define SCAUSE_IS_IFETCH(c) ((c) == 0 || (c) == 1 || (c) == 12)
@@ -157,7 +161,7 @@ void krnTrapHandler(struct ExceptionContext *ctx, unsigned long scause,
 {
     int action;
 
-    __riscv64_trap_depth++;
+    KRN_TRAPDEPTH++;
     action = krnTrapDispatch(ctx, scause, stval);
 
     /*
@@ -169,7 +173,7 @@ void krnTrapHandler(struct ExceptionContext *ctx, unsigned long scause,
      * The depth is held across the call so that nesting stays visible to
      * it, and released once it is done.
      */
-    if (SysBase && (__riscv64_trap_depth == 1))
+    if (SysBase && (KRN_TRAPDEPTH == 1))
     {
         if (action == TRAP_RESCHEDULE)
             core_ExitInterrupt(ctx);
@@ -178,7 +182,7 @@ void krnTrapHandler(struct ExceptionContext *ctx, unsigned long scause,
     }
 
     /*
-     * __riscv64_trap_depth is released at the very end of the assembly exit
+     * The depth is released at the very end of the assembly exit
      * in traps.S (after the register restore, immediately before sret), NOT
      * here: decrementing it now would leave the whole exit sequence running
      * at depth 0, so a trap taken mid-exit would be treated as the outermost
@@ -212,8 +216,13 @@ static int krnTrapDispatch(struct ExceptionContext *ctx, unsigned long scause,
             return TRAP_RESCHEDULE;
         }
 
+#if defined(__AROSEXEC_SMP__)
         case SCAUSE_IRQ_SSI:
-            /* IPIs arrive here once SMP bring-up exists */
+            /* An inter-processor interrupt (riscv-native kernel_ipi.c) */
+            core_IPIHandle();
+            return TRAP_RESCHEDULE;
+#endif
+
         default:
             krnSBIPutStr("\n[trap] unexpected interrupt, code ");
             krnSBIPutDec(irq);
@@ -252,7 +261,7 @@ static int krnTrapDispatch(struct ExceptionContext *ctx, unsigned long scause,
          * Only the outermost trap can do this - a fault taken inside
          * another trap has no task context to give the crash to.
          */
-        if ((__riscv64_trap_depth == 1) && getKernelBase() &&
+        if ((KRN_TRAPDEPTH == 1) && getKernelBase() &&
             (code < sizeof(exc_trap)) && (exc_trap[code] != -1) &&
             core_Trap(exc_trap[code], ctx))
             return TRAP_DONE;
