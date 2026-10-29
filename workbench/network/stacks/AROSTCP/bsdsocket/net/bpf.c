@@ -34,7 +34,7 @@
 #include <kern/amiga_includes.h>
 
 #include <net/if.h>
-#include <net/bpf.h>
+#include "bpf.h"
 #include <net/if_sana.h>
 
 #include <string.h>

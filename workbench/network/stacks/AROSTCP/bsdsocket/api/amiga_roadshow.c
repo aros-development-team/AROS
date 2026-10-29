@@ -23,7 +23,7 @@
 #include <net/route.h>
 #include <net/if.h>
 #include <net/radix.h>
-#include <net/bpf.h>
+#include "../net/bpf.h"
 #include <net/if_sana.h>
 #if INET6
 #include <netinet6/nd6.h>	/* struct llinfo_nd6 (ND6 neighbour expiry) */
