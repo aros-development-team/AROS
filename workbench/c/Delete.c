@@ -198,6 +198,48 @@ static inline BOOL isDirectory(struct AnchorPath *ap, BOOL followflag)
     return isdir;
 }
 
+/* MatchFirst() Lock()s and Examine()s a name given without a pattern, so
+   for a soft link ap_Info describes the link's target and never says
+   ST_SOFTLINK. Ask the link's directory whether the name is a soft link.
+*/
+static BOOL isNamedSoftLink(struct AnchorPath *ap)
+{
+    CONST_STRPTR file, path;
+    STRPTR dir;
+    BPTR lock;
+    LONG len;
+    TEXT target[2];
+    BOOL islink = FALSE;
+
+    if (ap->ap_Current->an_Flags & DDF_PatternBit)
+        return FALSE;
+
+    file = FilePart(ap->ap_Buf);
+    if (*file == '\0')
+        return FALSE;
+
+    path = PathPart(ap->ap_Buf);
+    dir = AllocVec(path - ap->ap_Buf + 1, MEMF_ANY);
+    if (dir)
+    {
+        CopyMem(ap->ap_Buf, dir, path - ap->ap_Buf);
+        dir[path - ap->ap_Buf] = '\0';
+
+        lock = Lock(dir, SHARED_LOCK);
+        if (lock)
+        {
+            /* -2: a link whose target doesn't fit the buffer */
+            len = ReadLink(((struct FileLock *)BADDR(lock))->fl_Task, lock,
+                           file, target, sizeof(target));
+            islink = (len == -2 || (len >= 0 && IoErr() == 0));
+            UnLock(lock);
+        }
+        FreeVec(dir);
+    }
+
+    return islink;
+}
+
 #define isDeletable(fib) (!((fib)->fib_Protection & FIBF_DELETE))
 
 int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
@@ -210,6 +252,7 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
     BOOL  deleteit = FALSE;
     BOOL  deletedfile = FALSE;
     BOOL  firstmatch = TRUE;
+    BOOL  namedlink = FALSE;
 
     if (!files)
     {
@@ -272,9 +315,13 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
                 deleteit = FALSE;
             }
 
+            /* A soft link given by name is deleted itself, as one met
+               inside a directory is, unless FOLLOWLINKS is set. */
+            namedlink = !forcelinks && isNamedSoftLink(ap);
+
             /* If this is a directory, we enter it regardless if the ALL
                switch is set. */
-            if (isDirectory(ap, forcelinks))
+            if (!namedlink && isDirectory(ap, forcelinks))
             {
                 /* This is a directory. It's important to check if we just left
                    the directory or is about to enter it. This is because we
@@ -310,8 +357,9 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
             /* Mark the entry for deletion */
             deleteit = TRUE;
 
-            /* Check permissions */
-            if (!isDeletable(&ap->ap_Info))
+            /* Check permissions. For a named soft link ap_Info holds the
+               target's bits, so the handler checks the link's own. */
+            if (!namedlink && !isDeletable(&ap->ap_Info))
             {
                 /* Count a protected match for the final no-file message. */
                 deletedfile = TRUE;
