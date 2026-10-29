@@ -54,6 +54,12 @@ typedef VAGenericID VASurfaceID;
 #define VAProfileVP8Version0_3              14
 #define VAProfileHEVCMain                   17
 #define VAProfileHEVCMain10                 18
+#define VAProfileHEVCMain12                 23
+#define VAProfileHEVCMain422_10             24
+#define VAProfileHEVCMain422_12             25
+#define VAProfileHEVCMain444                26
+#define VAProfileHEVCMain444_10             27
+#define VAProfileHEVCMain444_12             28
 #define VAProfileVP9Profile0                19
 #define VAProfileVP9Profile2                21
 #define VAProfileAV1Profile0                32
@@ -385,6 +391,37 @@ typedef struct  _VAPictureParameterBufferHEVC {
     /** \brief Reserved bytes for future use, must be zero */
     uint32_t                va_reserved[VA_PADDING_MEDIUM];
 } VAPictureParameterBufferHEVC;
+
+/* Range extension: follows VAPictureParameterBufferHEVC in the same buffer (VAPictureParameterBufferHEVCExtension) */
+typedef struct _VAPictureParameterBufferHEVCRext
+{
+    union
+    {
+        struct
+        {
+            uint32_t transform_skip_rotation_enabled_flag       : 1;
+            uint32_t transform_skip_context_enabled_flag        : 1;
+            uint32_t implicit_rdpcm_enabled_flag                : 1;
+            uint32_t explicit_rdpcm_enabled_flag                : 1;
+            uint32_t extended_precision_processing_flag         : 1;
+            uint32_t intra_smoothing_disabled_flag              : 1;
+            uint32_t high_precision_offsets_enabled_flag        : 1;
+            uint32_t persistent_rice_adaptation_enabled_flag    : 1;
+            uint32_t cabac_bypass_alignment_enabled_flag        : 1;
+            uint32_t cross_component_prediction_enabled_flag    : 1;
+            uint32_t chroma_qp_offset_list_enabled_flag         : 1;
+            uint32_t reserved                                   : 21;
+        } bits;
+        uint32_t value;
+    } range_extension_pic_fields;
+    uint8_t diff_cu_chroma_qp_offset_depth;
+    uint8_t chroma_qp_offset_list_len_minus1;
+    uint8_t log2_sao_offset_scale_luma;
+    uint8_t log2_sao_offset_scale_chroma;
+    uint8_t log2_max_transform_skip_block_size_minus2;
+    int8_t  cb_qp_offset_list[6];
+    int8_t  cr_qp_offset_list[6];
+} VAPictureParameterBufferHEVCRext;
 
 typedef struct  _VASliceParameterBufferHEVC {
     /** @name Codec-independent Slice Parameter Buffer base. */

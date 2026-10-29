@@ -740,7 +740,18 @@ struct HIDD_PlaneState
 #define vHidd_VideoFmt_YV12     5   /* planar Y, V, U, 4:2:0                      */
 #define vHidd_VideoFmt_P010     6   /* as NV12, 16 bits per sample, value in the  */
                                     /* top 10 bits (10-bit 4:2:0)                 */
-#define num_Hidd_VideoFmt       7
+#define vHidd_VideoFmt_P012     7   /* as P010, value in the top 12 bits          */
+                                    /* (12-bit 4:2:0)                             */
+#define vHidd_VideoFmt_NV16     8   /* planar Y + interleaved UV, 4:2:2: the UV   */
+                                    /* plane has full height                      */
+#define vHidd_VideoFmt_P210     9   /* as NV16, 16 bits per sample, top 10 bits   */
+#define vHidd_VideoFmt_P212     10  /* as NV16, 16 bits per sample, top 12 bits   */
+#define vHidd_VideoFmt_NV24     11  /* planar Y + interleaved UV, 4:4:4: the UV   */
+                                    /* plane has full height and twice the Y      */
+                                    /* plane's row length                         */
+#define vHidd_VideoFmt_P410     12  /* as NV24, 16 bits per sample, top 10 bits   */
+#define vHidd_VideoFmt_P412     13  /* as NV24, 16 bits per sample, top 12 bits   */
+#define num_Hidd_VideoFmt       14
 
 /*
  * aHidd_BitMap_VideoLayout: how a video bitmap's buffers lie in memory. Linear

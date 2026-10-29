@@ -80,6 +80,10 @@ struct nvdec_h264
     ULONG   nslices;                /* parameters received */
     ULONG   nextdata;               /* first slice whose data has not arrived */
     BYTE    dpbpos[NOUVEAU_DECODE_SLOTS];   /* pool slot -> its DPB entry while it is a reference, or -1 */
+    UBYTE   slotfields[NOUVEAU_DECODE_SLOTS];   /* the slot's picture was coded as fields */
+    BYTE    fieldslot;                      /* slot the last field picture went to, or -1 */
+    BYTE    fieldbottom;                    /* and its parity */
+    UWORD   fieldframe;                     /* and its frame_num */
 };
 
 static BOOL h264_open(struct HIDDNouveauDecode *dec)
@@ -95,6 +99,9 @@ static BOOL h264_open(struct HIDDNouveauDecode *dec)
     dec->cur.codecstate = h;
     h->defrefs[0] = h->defrefs[1] = 0;
     memset(h->dpbpos, -1, sizeof(h->dpbpos));
+    h->fieldslot = -1;
+    /* interlaced streams: room for two fields of whole 16-row blocks */
+    dec->rowalign = 64;
     ret = nouveau_bo_new(dec->carddata->dev, NOUVEAU_BO_VRAM, 4096, (uint64_t)colocsize * NVDEC_H264_SLOTS, NULL, &dec->coloc);
     if (ret)
     {
@@ -360,7 +367,7 @@ static BOOL h264_bitstream(struct HIDDNouveauDecode *dec, APTR data, ULONG size)
 /*
  * Build the picture setup and submit the frame.
  */
-static VOID h264_dpb_entry(nvdec_dpb_entry_s *e, const VAPictureH264 *ref, LONG slot)
+static VOID h264_dpb_entry(nvdec_dpb_entry_s *e, const VAPictureH264 *ref, LONG slot, BOOL fields)
 {
     ULONG state;
 
@@ -377,12 +384,14 @@ static VOID h264_dpb_entry(nvdec_dpb_entry_s *e, const VAPictureH264 *ref, LONG 
     e->state = state;
     e->is_long_term = (ref->flags & VA_PICTURE_H264_LONG_TERM_REFERENCE) ? 1 : 0;
     e->not_existing = 0;
-    e->is_field = (ref->flags & (VA_PICTURE_H264_TOP_FIELD | VA_PICTURE_H264_BOTTOM_FIELD)) ? 1 : 0;
+    /* as NVIDIA's driver sets it (traced): the reference was coded as fields, not as a frame */
+    e->is_field = fields ? 1 : 0;
     e->top_field_marking = (state & 1) ? (e->is_long_term ? 2 : 1) : 0;
     e->bottom_field_marking = (state & 2) ? (e->is_long_term ? 2 : 1) : 0;
     e->output_memory_layout = 0;
-    e->FieldOrderCnt[0] = (unsigned int)ref->TopFieldOrderCnt;
-    e->FieldOrderCnt[1] = (unsigned int)ref->BottomFieldOrderCnt;
+    /* a single field reference: both counts its own (traced) */
+    e->FieldOrderCnt[0] = (state & 1) ? (unsigned int)ref->TopFieldOrderCnt : (unsigned int)ref->BottomFieldOrderCnt;
+    e->FieldOrderCnt[1] = (state & 2) ? (unsigned int)ref->BottomFieldOrderCnt : (unsigned int)ref->TopFieldOrderCnt;
     e->FrameIdx = (int)ref->frame_idx;
 }
 
@@ -391,6 +400,9 @@ static ULONG h264_status(struct HIDDNouveauDecode *dec, ULONG *status)
     nvdec_status_s *st = (nvdec_status_s *)status;
     ULONG mbs = (dec->width / 16) * (dec->height / 16);
 
+    /* an interlaced stream's field pictures hold half the frame's macroblocks */
+    if (dec->fields)
+        mbs /= 2;
     if (!st->error_status && !st->mbs_in_error && !st->slice_header_error_code &&
         (st->mbs_correctly_decoded >= mbs))
         return 0;
@@ -439,12 +451,6 @@ static BOOL h264_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeF
         nvlog("[Nouveau] NVDEC: H.264 picture %lux%lu MBs exceeds the session's %lux%lu\n",
             (unsigned long)pp->picture_width_in_mbs_minus1 + 1, (unsigned long)pp->picture_height_in_mbs_minus1 + 1,
             (unsigned long)dec->width / 16, (unsigned long)dec->height / 16);
-        return FALSE;
-    }
-    if (pp->pic_fields.bits.field_pic_flag || pp->seq_fields.bits.mb_adaptive_frame_field_flag)
-    {
-        /* field pictures and MBAFF need the field layout work (reference, 7.5) */
-        nvlog("[Nouveau] NVDEC: H.264 interlaced coding not supported yet\n");
         return FALSE;
     }
     for (i = 0; i < (LONG)h->nslices; i++)
@@ -533,14 +539,25 @@ static BOOL h264_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeF
     pic->pitch_luma = dec->pitch;
     pic->pitch_chroma = dec->pitch;
     pic->HistBufferSize = NVDEC_H264_HISTORY_SIZE >> 8;
-    pic->MbaffFrameFlag = 0;
+    pic->MbaffFrameFlag = (pp->seq_fields.bits.mb_adaptive_frame_field_flag && !pp->pic_fields.bits.field_pic_flag) ? 1 : 0;
     pic->direct_8x8_inference_flag = pp->seq_fields.bits.direct_8x8_inference_flag;
     pic->weighted_pred_flag = pp->pic_fields.bits.weighted_pred_flag;
     pic->constrained_intra_pred_flag = pp->pic_fields.bits.constrained_intra_pred_flag;
     pic->ref_pic_flag = pp->pic_fields.bits.reference_pic_flag;
-    pic->field_pic_flag = 0;
-    pic->bottom_field_flag = 0;
-    pic->second_field = 0;
+    pic->field_pic_flag = pp->pic_fields.bits.field_pic_flag;
+    pic->bottom_field_flag = (pp->CurrPic.flags & VA_PICTURE_H264_BOTTOM_FIELD) ? 1 : 0;
+    /* the second field of a pair goes to the slot of the first, with the other parity */
+    pic->second_field = (pic->field_pic_flag && (h->fieldslot == slot) && (h->fieldbottom != pic->bottom_field_flag) &&
+                         (h->fieldframe == pp->frame_num)) ? 1 : 0;
+    h->slotfields[slot] = pic->field_pic_flag;
+    if (pic->field_pic_flag && !pic->second_field)
+    {
+        h->fieldslot = slot;
+        h->fieldbottom = pic->bottom_field_flag;
+        h->fieldframe = pp->frame_num;
+    }
+    else
+        h->fieldslot = -1;
     pic->log2_max_frame_num_minus4 = pp->seq_fields.bits.log2_max_frame_num_minus4;
     pic->chroma_format_idc = pp->seq_fields.bits.chroma_format_idc;
     pic->pic_order_cnt_type = pp->seq_fields.bits.pic_order_cnt_type;
@@ -551,10 +568,34 @@ static BOOL h264_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeF
     pic->CurrPicIdx = slot;
     pic->CurrColIdx = slot;
     pic->frame_num = pp->frame_num;
-    pic->frame_surfaces = 1;
     pic->output_memory_layout = 0;
-    pic->CurrFieldOrderCnt[0] = pp->CurrPic.TopFieldOrderCnt;
-    pic->CurrFieldOrderCnt[1] = pp->CurrPic.BottomFieldOrderCnt;
+    if (!pp->seq_fields.bits.frame_mbs_only_flag)
+    {
+        /*
+         * Interlaced: the surface fields as NVIDIA's driver sets them
+         * (traced): bottom offsets one field's worth of whole 16-row blocks
+         * in. The engine still leaves the picture in frame order.
+         */
+        ULONG rows = (ULONG)pic->FrameHeightInMbs * 16;
+
+        dec->fields = TRUE;
+        pic->frame_surfaces = 0;
+        pic->luma_bot_offset = ((((rows / 2) + 15) & ~15UL) * dec->pitch) >> 8;
+        pic->chroma_bot_offset = ((((rows / 4) + 15) & ~15UL) * dec->pitch) >> 8;
+    }
+    else
+    {
+        dec->fields = FALSE;
+        pic->frame_surfaces = 1;
+    }
+    if (pic->field_pic_flag)
+        pic->CurrFieldOrderCnt[0] = pic->CurrFieldOrderCnt[1] = pic->bottom_field_flag ?
+            pp->CurrPic.BottomFieldOrderCnt : pp->CurrPic.TopFieldOrderCnt;
+    else
+    {
+        pic->CurrFieldOrderCnt[0] = pp->CurrPic.TopFieldOrderCnt;
+        pic->CurrFieldOrderCnt[1] = pp->CurrPic.BottomFieldOrderCnt;
+    }
     /*
      * Each reference keeps its DPB entry for as long as it is one (as a
      * Vulkan DPB slot does in NVK); new references take the lowest free
@@ -587,7 +628,8 @@ static BOOL h264_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeF
         memcpy(h->dpbpos, keep, sizeof(keep));
         for (i = 0; i < 16; i++)
             if (refslot[i] >= 0)
-                h264_dpb_entry(&pic->dpb[(LONG)keep[refslot[i]]], &pp->ReferenceFrames[i], refslot[i]);
+                h264_dpb_entry(&pic->dpb[(LONG)keep[refslot[i]]], &pp->ReferenceFrames[i], refslot[i],
+                               h->slotfields[refslot[i]]);
     }
     if (h->have_iq)
     {
@@ -606,7 +648,12 @@ static BOOL h264_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeF
     {
         static const ULONG none[] = { NVDEC_H264_SET_MBHIST_BUF_OFFSET, 0 };
 
-        control = NVDEC_CONTROL_CODEC_H264 | (allintra ? NVDEC_CONTROL_ALL_INTRA_FRAME : 0);
+        /*
+         * Never the all-intra bit (NVIDIA's driver does not set it): with it
+         * an intra field leaves its colocated motion data unwritten, and B
+         * fields that take it as their direct-mode reference read stale data.
+         */
+        control = NVDEC_CONTROL_CODEC_H264;
         if (!HIDDNouveauDecodeEmit(dec, f, slot, NULL, NVDEC_APPLICATION_ID_H264, control, NULL, 0, none, 1))
             return FALSE;
     }
