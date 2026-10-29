@@ -45,6 +45,7 @@ FILES := \
     scantest \
     scanvarstest \
     seektest \
+    sfs_seek \
     setfiledate \
     setenv \
     setfilesize \
