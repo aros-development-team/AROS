@@ -30,6 +30,8 @@ static const struct M68KFieldMap shadow_fields_AChain[] = {
 static const struct M68KFieldMap shadow_fields_AmigaGuideHost[] = {
     {    0,    0, SF_PTR  , 0, 0, NULL },  /* mln_Succ */
     {    4,    8, SF_PTR  , 0, 0, NULL },  /* mln_Pred */
+    {    8,   16, SF_PTR  , 0, 0, NULL },  /* h_Entry */
+    {   12,   24, SF_PTR  , 0, 0, NULL },  /* h_SubEntry */
     {   16,   32, SF_PTR  , 0, 0, NULL },  /* h_Data */
     {   20,   40, SF_LONG , 0, 0, NULL },  /* agh_Reserved */
     {   24,   44, SF_LONG , 0, 0, NULL },  /* agh_Flags */
@@ -106,17 +108,35 @@ static const struct M68KFieldMap shadow_fields_AnimComp[] = {
 
 /* AnimHeader: m68k=40B, aros=40B, 5 fields */
 static const struct M68KFieldMap shadow_fields_AnimHeader[] = {
+    {    0,    0, SF_BYTE , 0, 0, NULL },  /* ah_Operation */
+    {    1,    1, SF_BYTE , 0, 0, NULL },  /* ah_Mask */
     {    2,    2, SF_WORD , 0, 0, NULL },  /* ah_Width */
     {    4,    4, SF_WORD , 0, 0, NULL },  /* ah_Height */
     {    6,    6, SF_WORD , 0, 0, NULL },  /* ah_Left */
     {    8,    8, SF_WORD , 0, 0, NULL },  /* ah_Top */
+    {   10,   10, SF_LONG , 0, 0, NULL },  /* ah_AbsTime */
+    {   14,   14, SF_LONG , 0, 0, NULL },  /* ah_RelTime */
+    {   18,   18, SF_BYTE , 0, 0, NULL },  /* ah_Interleave */
     {   19,   19, SF_BYTE , 0, 0, NULL },  /* ah_Pad0 */
+    {   20,   20, SF_LONG , 0, 0, NULL },  /* ah_Flags */
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
 /* AnimOb: m68k=42B, aros=64B, 3 fields */
 static const struct M68KFieldMap shadow_fields_AnimOb[] = {
+    {    0,    0, SF_PTR  , 0, 0, NULL },  /* NextOb */
+    {    4,    8, SF_PTR  , 0, 0, NULL },  /* PrevOb */
     {    8,   16, SF_LONG , 0, 0, NULL },  /* Clock */
+    {   12,   20, SF_WORD , 0, 0, NULL },  /* AnOldY */
+    {   14,   22, SF_WORD , 0, 0, NULL },  /* AnOldX */
+    {   16,   24, SF_WORD , 0, 0, NULL },  /* AnY */
+    {   18,   26, SF_WORD , 0, 0, NULL },  /* AnX */
+    {   20,   28, SF_WORD , 0, 0, NULL },  /* YVel */
+    {   22,   30, SF_WORD , 0, 0, NULL },  /* XVel */
+    {   24,   32, SF_WORD , 0, 0, NULL },  /* YAccel */
+    {   26,   34, SF_WORD , 0, 0, NULL },  /* XAccel */
+    {   28,   36, SF_WORD , 0, 0, NULL },  /* RingYTrans */
+    {   30,   38, SF_WORD , 0, 0, NULL },  /* RingXTrans */
     {   36,   48, SF_PTR  , 0, 0, NULL },  /* HeadComp */
     {   40,   56, SF_WORD , 0, 0, NULL },  /* AUserExt */
     {    0,    0, SF_END  , 0, 0, NULL }
@@ -124,7 +144,10 @@ static const struct M68KFieldMap shadow_fields_AnimOb[] = {
 
 /* AppIconRenderMsg: m68k=28B, aros=48B, 6 fields */
 static const struct M68KFieldMap shadow_fields_AppIconRenderMsg[] = {
+    {    0,    0, SF_PTR  , 0, 0, NULL },  /* arm_RastPort */
+    {    4,    8, SF_PTR  , 0, 0, NULL },  /* arm_Icon */
     {    8,   16, SF_PTR  , 0, 0, NULL },  /* arm_Label */
+    {   12,   24, SF_PTR  , 0, 0, NULL },  /* arm_Tags */
     {   16,   32, SF_WORD , 0, 0, NULL },  /* arm_Left */
     {   18,   34, SF_WORD , 0, 0, NULL },  /* arm_Top */
     {   20,   36, SF_WORD , 0, 0, NULL },  /* arm_Width */
@@ -158,6 +181,7 @@ static const struct M68KFieldMap shadow_fields_AppMessage[] = {
 
 /* AppWindowDropZoneMsg: m68k=24B, aros=40B, 5 fields */
 static const struct M68KFieldMap shadow_fields_AppWindowDropZoneMsg[] = {
+    {    0,    0, SF_PTR  , 0, 0, NULL },  /* adzm_RastPort */
     {    4,    8, SF_WORD , 0, 0, NULL },  /* Left */
     {    6,   10, SF_WORD , 0, 0, NULL },  /* Top */
     {   12,   16, SF_PTR  , 0, 0, NULL },  /* adzm_ID */
@@ -174,6 +198,8 @@ static const struct M68KFieldMap shadow_fields_AreaInfo[] = {
     {   12,   24, SF_PTR  , 0, 0, NULL },  /* FlagPtr */
     {   16,   32, SF_WORD , 0, 0, NULL },  /* Count */
     {   18,   34, SF_WORD , 0, 0, NULL },  /* MaxCount */
+    {   20,   36, SF_WORD , 0, 0, NULL },  /* FirstX */
+    {   22,   38, SF_WORD , 0, 0, NULL },  /* FirstY */
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
@@ -230,9 +256,23 @@ static const struct M68KFieldMap shadow_fields_BitMapHeader[] = {
 
 /* BitScaleArgs: m68k=48B, aros=56B, 5 fields */
 static const struct M68KFieldMap shadow_fields_BitScaleArgs[] = {
+    {    0,    0, SF_WORD , 0, 0, NULL },  /* bsa_SrcX */
+    {    2,    2, SF_WORD , 0, 0, NULL },  /* bsa_SrcY */
+    {    4,    4, SF_WORD , 0, 0, NULL },  /* bsa_SrcWidth */
+    {    6,    6, SF_WORD , 0, 0, NULL },  /* bsa_SrcHeight */
+    {    8,    8, SF_WORD , 0, 0, NULL },  /* bsa_XSrcFactor */
+    {   10,   10, SF_WORD , 0, 0, NULL },  /* bsa_YSrcFactor */
+    {   12,   12, SF_WORD , 0, 0, NULL },  /* bsa_DestX */
+    {   14,   14, SF_WORD , 0, 0, NULL },  /* bsa_DestY */
+    {   16,   16, SF_WORD , 0, 0, NULL },  /* bsa_DestWidth */
+    {   18,   18, SF_WORD , 0, 0, NULL },  /* bsa_DestHeight */
+    {   20,   20, SF_WORD , 0, 0, NULL },  /* bsa_XDestFactor */
+    {   22,   22, SF_WORD , 0, 0, NULL },  /* bsa_YDestFactor */
     {   24,   24, SF_PTR  , 0, 0, NULL },  /* bsa_SrcBitMap */
     {   28,   32, SF_PTR  , 0, 0, NULL },  /* bsa_DestBitMap */
     {   32,   40, SF_LONG , 0, 0, NULL },  /* bsa_Flags */
+    {   36,   44, SF_WORD , 0, 0, NULL },  /* bsa_XDDA */
+    {   38,   46, SF_WORD , 0, 0, NULL },  /* bsa_YDDA */
     {   40,   48, SF_LONG , 0, 0, NULL },  /* bsa_Reserved1 */
     {   44,   52, SF_LONG , 0, 0, NULL },  /* bsa_Reserved2 */
     {    0,    0, SF_END  , 0, 0, NULL }
@@ -240,6 +280,7 @@ static const struct M68KFieldMap shadow_fields_BitScaleArgs[] = {
 
 /* BoolInfo: m68k=10B, aros=24B, 1 fields */
 static const struct M68KFieldMap shadow_fields_BoolInfo[] = {
+    {    2,    8, SF_PTR  , 0, 0, NULL },  /* Mask */
     {    6,   16, SF_LONG , 0, 0, NULL },  /* Reserved */
     {    0,    0, SF_END  , 0, 0, NULL }
 };
@@ -266,6 +307,10 @@ static const struct M68KFieldMap shadow_fields_BootNode[] = {
 
 /* Border: m68k=16B, aros=24B, 4 fields */
 static const struct M68KFieldMap shadow_fields_Border[] = {
+    {    0,    0, SF_WORD , 0, 0, NULL },  /* LeftEdge */
+    {    2,    2, SF_WORD , 0, 0, NULL },  /* TopEdge */
+    {    4,    4, SF_BYTE , 0, 0, NULL },  /* FrontPen */
+    {    5,    5, SF_BYTE , 0, 0, NULL },  /* BackPen */
     {    6,    6, SF_BYTE , 0, 0, NULL },  /* DrawMode */
     {    7,    7, SF_BYTE , 0, 0, NULL },  /* Count */
     {    8,    8, SF_PTR  , 0, 0, NULL },  /* XY */
@@ -295,6 +340,7 @@ static const struct M68KFieldMap shadow_fields_CDXL[] = {
     {   12,   24, SF_LONG , 0, 0, NULL },  /* Length */
     {   16,   28, SF_LONG , 0, 0, NULL },  /* Actual */
     {   20,   32, SF_PTR  , 0, 0, NULL },  /* IntData */
+    {   24,   40, SF_PTR  , 0, 0, NULL },  /* IntCode */
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
@@ -378,6 +424,10 @@ static const struct M68KFieldMap shadow_fields_ClipHookMsg[] = {
 /* ClipRect: m68k=36B, aros=64B, 2 fields */
 static const struct M68KFieldMap shadow_fields_ClipRect[] = {
     {    0,    0, SF_PTR  , 0, 0, NULL },  /* Next */
+    {   16,   32, SF_WORD , 0, 0, NULL },  /* MinX */
+    {   18,   34, SF_WORD , 0, 0, NULL },  /* MinY */
+    {   20,   36, SF_WORD , 0, 0, NULL },  /* MaxX */
+    {   22,   38, SF_WORD , 0, 0, NULL },  /* MaxY */
     {   32,   56, SF_LONG , 0, 0, NULL },  /* reserved */
     {    0,    0, SF_END  , 0, 0, NULL }
 };
@@ -633,6 +683,7 @@ static const struct M68KFieldMap shadow_fields_ConfigDev[] = {
     {   40,   76, SF_WORD , 0, 0, NULL },  /* cd_SlotAddr */
     {   42,   78, SF_WORD , 0, 0, NULL },  /* cd_SlotSize */
     {   44,   80, SF_PTR  , 0, 0, NULL },  /* cd_Driver */
+    {   48,   88, SF_PTR  , 0, 0, NULL },  /* cd_NextCD */
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
@@ -682,7 +733,11 @@ static const struct M68KFieldMap shadow_fields_CopyBeginMsg[] = {
 static const struct M68KFieldMap shadow_fields_CopyDataMsg[] = {
     {    0,    0, SF_LONG , 0, 0, NULL },  /* cdm_Length */
     {    4,    4, SF_LONG , 0, 0, NULL },  /* cdm_Action */
+    {    8,    8, SF_PTR  , 0, 0, NULL },  /* cdm_SourceLock */
     {   12,   16, SF_PTR  , 0, 0, NULL },  /* cdm_SourceName */
+    {   16,   24, SF_PTR  , 0, 0, NULL },  /* cdm_DestinationLock */
+    {   20,   32, SF_PTR  , 0, 0, NULL },  /* cdm_DestinationName */
+    {   24,   40, SF_LONG , 0, 0, NULL },  /* cdm_DestinationX */
     {   28,   44, SF_LONG , 0, 0, NULL },  /* cdm_DestinationY */
     {    0,    0, SF_END  , 0, 0, NULL }
 };
@@ -696,6 +751,7 @@ static const struct M68KFieldMap shadow_fields_CopyEndMsg[] = {
 
 /* CurrentBinding: m68k=16B, aros=32B, 2 fields */
 static const struct M68KFieldMap shadow_fields_CurrentBinding[] = {
+    {    0,    0, SF_PTR  , 0, 0, NULL },  /* cb_ConfigDev */
     {    4,    8, SF_PTR  , 0, 0, NULL },  /* cb_FileName */
     {    8,   16, SF_PTR  , 0, 0, NULL },  /* cb_ProductString */
     {    0,    0, SF_END  , 0, 0, NULL }
@@ -727,6 +783,8 @@ static const struct M68KFieldMap shadow_fields_DBufInfo[] = {
 
 /* DBufPacket: m68k=12B, aros=24B, 2 fields */
 static const struct M68KFieldMap shadow_fields_DBufPacket[] = {
+    {    0,    0, SF_WORD , 0, 0, NULL },  /* BufY */
+    {    2,    2, SF_WORD , 0, 0, NULL },  /* BufX */
     {    4,    8, SF_PTR  , 0, 0, NULL },  /* BufPath */
     {    8,   16, SF_PTR  , 0, 0, NULL },  /* BufBuffer */
     {    0,    0, SF_END  , 0, 0, NULL }
@@ -853,12 +911,16 @@ static const struct M68KFieldMap shadow_fields_DateTime[] = {
 /* DeleteBeginMsg: m68k=8B, aros=8B, 1 fields */
 static const struct M68KFieldMap shadow_fields_DeleteBeginMsg[] = {
     {    0,    0, SF_LONG , 0, 0, NULL },  /* dbm_Length */
+    {    4,    4, SF_LONG , 0, 0, NULL },  /* dbm_Action */
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
 /* DeleteDataMsg: m68k=16B, aros=24B, 1 fields */
 static const struct M68KFieldMap shadow_fields_DeleteDataMsg[] = {
     {    0,    0, SF_LONG , 0, 0, NULL },  /* ddm_Length */
+    {    4,    4, SF_LONG , 0, 0, NULL },  /* ddm_Action */
+    {    8,    8, SF_PTR  , 0, 0, NULL },  /* ddm_Lock */
+    {   12,   16, SF_PTR  , 0, 0, NULL },  /* ddm_Name */
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
@@ -941,6 +1003,7 @@ static const struct M68KFieldMap shadow_fields_DeviceData[] = {
 static const struct M68KFieldMap shadow_fields_DeviceList[] = {
     {    0,    0, SF_PTR  , 0, 0, NULL },  /* dl_Next */
     {    4,    8, SF_LONG , 0, 0, NULL },  /* dl_Type */
+    {    8,   16, SF_PTR  , 0, 0, NULL },  /* dl_Task */
     {   12,   24, SF_PTR  , 0, 0, NULL },  /* dl_Lock */
     {   16,   32, SF_LONG , 0, 0, NULL },  /* ds_Days */
     {   20,   36, SF_LONG , 0, 0, NULL },  /* ds_Minute */
@@ -956,11 +1019,14 @@ static const struct M68KFieldMap shadow_fields_DeviceList[] = {
 static const struct M68KFieldMap shadow_fields_DeviceNode[] = {
     {    0,    0, SF_PTR  , 0, 0, NULL },  /* dn_Next */
     {    4,    8, SF_LONG , 0, 0, NULL },  /* dn_Type */
+    {    8,   16, SF_PTR  , 0, 0, NULL },  /* dn_Task */
     {   12,   24, SF_PTR  , 0, 0, NULL },  /* dn_Lock */
     {   16,   32, SF_PTR  , 0, 0, NULL },  /* dn_Handler */
     {   20,   40, SF_LONG , 0, 0, NULL },  /* dn_StackSize */
     {   24,   44, SF_LONG , 0, 0, NULL },  /* dn_Priority */
     {   28,   48, SF_PTR  , 0, 0, NULL },  /* dn_Startup */
+    {   32,   56, SF_PTR  , 0, 0, NULL },  /* dn_SegList */
+    {   36,   64, SF_PTR  , 0, 0, NULL },  /* dn_GlobalVec */
     {   40,   72, SF_PTR  , 0, 0, NULL },  /* dn_Name */
     {    0,    0, SF_END  , 0, 0, NULL }
 };
@@ -998,6 +1064,10 @@ static const struct M68KFieldMap shadow_fields_DimensionInfo[] = {
     {   20,   20, SF_WORD , 0, 0, NULL },  /* MinRasterHeight */
     {   22,   22, SF_WORD , 0, 0, NULL },  /* MaxRasterWidth */
     {   24,   24, SF_WORD , 0, 0, NULL },  /* MaxRasterHeight */
+    {   26,   26, SF_WORD , 0, 0, NULL },  /* MinX */
+    {   28,   28, SF_WORD , 0, 0, NULL },  /* MinY */
+    {   30,   30, SF_WORD , 0, 0, NULL },  /* MaxX */
+    {   32,   32, SF_WORD , 0, 0, NULL },  /* MaxY */
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
@@ -1049,6 +1119,8 @@ static const struct M68KFieldMap shadow_fields_DiskObject[] = {
     {    0,    0, SF_WORD , 0, 0, NULL },  /* do_Magic */
     {    2,    2, SF_WORD , 0, 0, NULL },  /* do_Version */
     {    4,    8, SF_PTR  , 0, 0, NULL },  /* NextGadget */
+    {    8,   16, SF_WORD , 0, 0, NULL },  /* LeftEdge */
+    {   10,   18, SF_WORD , 0, 0, NULL },  /* TopEdge */
     {   18,   26, SF_WORD , 0, 0, NULL },  /* Activation */
     {   20,   28, SF_WORD , 0, 0, NULL },  /* GadgetType */
     {   22,   32, SF_PTR  , 0, 0, NULL },  /* GadgetRender */
@@ -1060,8 +1132,10 @@ static const struct M68KFieldMap shadow_fields_DiskObject[] = {
     {   44,   80, SF_PTR  , 0, 0, NULL },  /* UserData */
     {   48,   88, SF_BYTE , 0, 0, NULL },  /* do_Type */
     {   50,   96, SF_PTR  , 0, 0, NULL },  /* do_DefaultTool */
+    {   54,  104, SF_PTR  , 0, 0, NULL },  /* do_ToolTypes */
     {   58,  112, SF_LONG , 0, 0, NULL },  /* do_CurrentX */
     {   62,  116, SF_LONG , 0, 0, NULL },  /* do_CurrentY */
+    {   66,  120, SF_PTR  , 0, 0, NULL },  /* do_DrawerData */
     {   70,  128, SF_PTR  , 0, 0, NULL },  /* do_ToolWindow */
     {   74,  136, SF_LONG , 0, 0, NULL },  /* do_StackSize */
     {    0,    0, SF_END  , 0, 0, NULL }
@@ -1103,6 +1177,10 @@ static const struct M68KFieldMap shadow_fields_DisplayMode[] = {
     {   34,   52, SF_WORD , 0, 0, NULL },  /* MinRasterHeight */
     {   36,   54, SF_WORD , 0, 0, NULL },  /* MaxRasterWidth */
     {   38,   56, SF_WORD , 0, 0, NULL },  /* MaxRasterHeight */
+    {   40,   58, SF_WORD , 0, 0, NULL },  /* MinX */
+    {   42,   60, SF_WORD , 0, 0, NULL },  /* MinY */
+    {   44,   62, SF_WORD , 0, 0, NULL },  /* MaxX */
+    {   46,   64, SF_WORD , 0, 0, NULL },  /* MaxY */
     {  102,  128, SF_LONG , 0, 0, NULL },  /* dm_PropertyFlags */
     {    0,    0, SF_END  , 0, 0, NULL }
 };
@@ -1196,6 +1274,8 @@ static const struct M68KFieldMap shadow_fields_DosList[] = {
 static const struct M68KFieldMap shadow_fields_DosPacket[] = {
     {    0,    0, SF_PTR  , 0, 0, NULL },  /* dp_Link */
     {    4,    8, SF_PTR  , 0, 0, NULL },  /* dp_Port */
+    {    8,   16, SF_LONG , 0, 0, NULL },  /* dp_Type */
+    {   12,   24, SF_PTR  , 0, 0, NULL },  /* dp_Res1 */
     {   20,   40, SF_PTR  , 0, 0, NULL },  /* dp_Arg1 */
     {   24,   48, SF_PTR  , 0, 0, NULL },  /* dp_Arg2 */
     {   28,   56, SF_PTR  , 0, 0, NULL },  /* dp_Arg3 */
@@ -1218,11 +1298,17 @@ static const struct M68KFieldMap shadow_fields_DrawInfo[] = {
 
 /* DrawerData: m68k=62B, aros=96B, 10 fields */
 static const struct M68KFieldMap shadow_fields_DrawerData[] = {
+    {    0,    0, SF_WORD , 0, 0, NULL },  /* LeftEdge */
+    {    2,    2, SF_WORD , 0, 0, NULL },  /* TopEdge */
     {   10,   12, SF_LONG , 0, 0, NULL },  /* IDCMPFlags */
     {   18,   24, SF_PTR  , 0, 0, NULL },  /* FirstGadget */
     {   22,   32, SF_PTR  , 0, 0, NULL },  /* CheckMark */
     {   26,   40, SF_PTR  , 0, 0, NULL },  /* Title */
     {   30,   48, SF_PTR  , 0, 0, NULL },  /* Screen */
+    {   38,   64, SF_WORD , 0, 0, NULL },  /* MinWidth */
+    {   40,   66, SF_WORD , 0, 0, NULL },  /* MinHeight */
+    {   42,   68, SF_WORD , 0, 0, NULL },  /* MaxWidth */
+    {   44,   70, SF_WORD , 0, 0, NULL },  /* MaxHeight */
     {   46,   72, SF_WORD , 0, 0, NULL },  /* Type */
     {   48,   80, SF_LONG , 0, 0, NULL },  /* dd_CurrentX */
     {   52,   84, SF_LONG , 0, 0, NULL },  /* dd_CurrentY */
@@ -1265,6 +1351,7 @@ static const struct M68KFieldMap shadow_fields_EasyStruct[] = {
 
 /* ErrorString: m68k=8B, aros=16B, 1 fields */
 static const struct M68KFieldMap shadow_fields_ErrorString[] = {
+    {    0,    0, SF_PTR  , 0, 0, NULL },  /* estr_Nums */
     {    4,    8, SF_PTR  , 0, 0, NULL },  /* estr_Strings */
     {    0,    0, SF_END  , 0, 0, NULL }
 };
@@ -1433,6 +1520,8 @@ static const struct M68KFieldMap shadow_fields_ExpansionRom[] = {
 /* ExtGadget: m68k=56B, aros=96B, 15 fields */
 static const struct M68KFieldMap shadow_fields_ExtGadget[] = {
     {    0,    0, SF_PTR  , 0, 0, NULL },  /* NextGadget */
+    {    4,    8, SF_WORD , 0, 0, NULL },  /* LeftEdge */
+    {    6,   10, SF_WORD , 0, 0, NULL },  /* TopEdge */
     {   14,   18, SF_WORD , 0, 0, NULL },  /* Activation */
     {   16,   20, SF_WORD , 0, 0, NULL },  /* GadgetType */
     {   18,   24, SF_PTR  , 0, 0, NULL },  /* GadgetRender */
@@ -1463,6 +1552,10 @@ static const struct M68KFieldMap shadow_fields_ExtIntuiMessage[] = {
     {   24,   52, SF_WORD , 0, 0, NULL },  /* Code */
     {   26,   54, SF_WORD , 0, 0, NULL },  /* Qualifier */
     {   28,   56, SF_PTR  , 0, 0, NULL },  /* IAddress */
+    {   32,   64, SF_WORD , 0, 0, NULL },  /* MouseX */
+    {   34,   66, SF_WORD , 0, 0, NULL },  /* MouseY */
+    {   36,   68, SF_LONG , 0, 0, NULL },  /* Seconds */
+    {   40,   72, SF_LONG , 0, 0, NULL },  /* Micros */
     {   44,   80, SF_PTR  , 0, 0, NULL },  /* IDCMPWindow */
     {   48,   88, SF_PTR  , 0, 0, NULL },  /* SpecialLink */
     {   52,   96, SF_PTR  , 0, 0, NULL },  /* eim_TabletData */
@@ -1471,6 +1564,8 @@ static const struct M68KFieldMap shadow_fields_ExtIntuiMessage[] = {
 
 /* ExtNewScreen: m68k=36B, aros=56B, 7 fields */
 static const struct M68KFieldMap shadow_fields_ExtNewScreen[] = {
+    {    0,    0, SF_WORD , 0, 0, NULL },  /* LeftEdge */
+    {    2,    2, SF_WORD , 0, 0, NULL },  /* TopEdge */
     {   12,   12, SF_WORD , 0, 0, NULL },  /* ViewModes */
     {   14,   14, SF_WORD , 0, 0, NULL },  /* Type */
     {   16,   16, SF_PTR  , 0, 0, NULL },  /* Font */
@@ -1483,11 +1578,17 @@ static const struct M68KFieldMap shadow_fields_ExtNewScreen[] = {
 
 /* ExtNewWindow: m68k=52B, aros=88B, 7 fields */
 static const struct M68KFieldMap shadow_fields_ExtNewWindow[] = {
+    {    0,    0, SF_WORD , 0, 0, NULL },  /* LeftEdge */
+    {    2,    2, SF_WORD , 0, 0, NULL },  /* TopEdge */
     {   10,   12, SF_LONG , 0, 0, NULL },  /* IDCMPFlags */
     {   18,   24, SF_PTR  , 0, 0, NULL },  /* FirstGadget */
     {   22,   32, SF_PTR  , 0, 0, NULL },  /* CheckMark */
     {   26,   40, SF_PTR  , 0, 0, NULL },  /* Title */
     {   30,   48, SF_PTR  , 0, 0, NULL },  /* Screen */
+    {   38,   64, SF_WORD , 0, 0, NULL },  /* MinWidth */
+    {   40,   66, SF_WORD , 0, 0, NULL },  /* MinHeight */
+    {   42,   68, SF_WORD , 0, 0, NULL },  /* MaxWidth */
+    {   44,   70, SF_WORD , 0, 0, NULL },  /* MaxHeight */
     {   46,   72, SF_WORD , 0, 0, NULL },  /* Type */
     {   48,   80, SF_PTR  , 0, 0, NULL },  /* Extension */
     {    0,    0, SF_END  , 0, 0, NULL }
@@ -1497,6 +1598,8 @@ static const struct M68KFieldMap shadow_fields_ExtNewWindow[] = {
 static const struct M68KFieldMap shadow_fields_ExtSprite[] = {
     {    0,    0, SF_PTR  , 0, 0, NULL },  /* posctldata */
     {    4,    8, SF_WORD , 0, 0, NULL },  /* height */
+    {    6,   10, SF_WORD , 0, 0, NULL },  /* x */
+    {    8,   12, SF_WORD , 0, 0, NULL },  /* y */
     {   10,   14, SF_WORD , 0, 0, NULL },  /* num */
     {   12,   16, SF_WORD , 0, 0, NULL },  /* es_wordwidth */
     {   14,   18, SF_WORD , 0, 0, NULL },  /* es_flags */
@@ -1549,6 +1652,7 @@ static const struct M68KFieldMap shadow_fields_FileLock[] = {
     {    0,    0, SF_PTR  , 0, 0, NULL },  /* fl_Link */
     {    4,    8, SF_PTR  , 0, 0, NULL },  /* fl_Key */
     {    8,   16, SF_LONG , 0, 0, NULL },  /* fl_Access */
+    {   12,   24, SF_PTR  , 0, 0, NULL },  /* fl_Task */
     {   16,   32, SF_PTR  , 0, 0, NULL },  /* fl_Volume */
     {    0,    0, SF_END  , 0, 0, NULL }
 };
@@ -1649,6 +1753,7 @@ static const struct M68KFieldMap shadow_fields_FontRequester[] = {
     {   16,   24, SF_BYTE , 0, 0, NULL },  /* fo_FrontPen */
     {   17,   25, SF_BYTE , 0, 0, NULL },  /* fo_BackPen */
     {   18,   26, SF_BYTE , 0, 0, NULL },  /* fo_DrawMode */
+    {   19,   27, SF_BYTE , 0, 0, NULL },  /* fo_Reserved1 */
     {   20,   32, SF_PTR  , 0, 0, NULL },  /* fo_UserData */
     {   24,   40, SF_WORD , 0, 0, NULL },  /* fo_LeftEdge */
     {   26,   42, SF_WORD , 0, 0, NULL },  /* fo_TopEdge */
@@ -1686,6 +1791,8 @@ static const struct M68KFieldMap shadow_fields_FreeList[] = {
 /* Gadget: m68k=44B, aros=80B, 10 fields */
 static const struct M68KFieldMap shadow_fields_Gadget[] = {
     {    0,    0, SF_PTR  , 0, 0, NULL },  /* NextGadget */
+    {    4,    8, SF_WORD , 0, 0, NULL },  /* LeftEdge */
+    {    6,   10, SF_WORD , 0, 0, NULL },  /* TopEdge */
     {   14,   18, SF_WORD , 0, 0, NULL },  /* Activation */
     {   16,   20, SF_WORD , 0, 0, NULL },  /* GadgetType */
     {   18,   24, SF_PTR  , 0, 0, NULL },  /* GadgetRender */
@@ -1721,8 +1828,17 @@ static const struct M68KFieldMap shadow_fields_GamePortTrigger[] = {
 
 /* GelsInfo: m68k=38B, aros=72B, 2 fields */
 static const struct M68KFieldMap shadow_fields_GelsInfo[] = {
+    {    0,    0, SF_BYTE , 0, 0, NULL },  /* sprRsrvd */
+    {    2,    8, SF_PTR  , 0, 0, NULL },  /* gelHead */
+    {    6,   16, SF_PTR  , 0, 0, NULL },  /* gelTail */
     {   10,   24, SF_PTR  , 0, 0, NULL },  /* nextLine */
     {   18,   40, SF_PTR  , 0, 0, NULL },  /* collHandler */
+    {   22,   48, SF_WORD , 0, 0, NULL },  /* leftmost */
+    {   24,   50, SF_WORD , 0, 0, NULL },  /* rightmost */
+    {   26,   52, SF_WORD , 0, 0, NULL },  /* topmost */
+    {   28,   54, SF_WORD , 0, 0, NULL },  /* bottommost */
+    {   30,   56, SF_PTR  , 0, 0, NULL },  /* firstBlissObj */
+    {   34,   64, SF_PTR  , 0, 0, NULL },  /* lastBlissObj */
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
@@ -1837,6 +1953,8 @@ static const struct M68KFieldMap shadow_fields_GfxBase[] = {
 static const struct M68KFieldMap shadow_fields_Hook[] = {
     {    0,    0, SF_PTR  , 0, 0, NULL },  /* mln_Succ */
     {    4,    8, SF_PTR  , 0, 0, NULL },  /* mln_Pred */
+    {    8,   16, SF_PTR  , 0, 0, NULL },  /* h_Entry */
+    {   12,   24, SF_PTR  , 0, 0, NULL },  /* h_SubEntry */
     {   16,   32, SF_PTR  , 0, 0, NULL },  /* h_Data */
     {    0,    0, SF_END  , 0, 0, NULL }
 };
@@ -1868,6 +1986,14 @@ static const struct M68KFieldMap shadow_fields_IClass[] = {
 /* IENewTablet: m68k=32B, aros=40B, 2 fields */
 static const struct M68KFieldMap shadow_fields_IENewTablet[] = {
     {    0,    0, SF_PTR  , 0, 0, NULL },  /* ient_CallBack */
+    {    4,    8, SF_WORD , 0, 0, NULL },  /* ient_ScaledX */
+    {    6,   10, SF_WORD , 0, 0, NULL },  /* ient_ScaledY */
+    {    8,   12, SF_WORD , 0, 0, NULL },  /* ient_ScaledXFraction */
+    {   10,   14, SF_WORD , 0, 0, NULL },  /* ient_ScaledYFraction */
+    {   12,   16, SF_LONG , 0, 0, NULL },  /* ient_TabletX */
+    {   16,   20, SF_LONG , 0, 0, NULL },  /* ient_TabletY */
+    {   20,   24, SF_LONG , 0, 0, NULL },  /* ient_RangeX */
+    {   24,   28, SF_LONG , 0, 0, NULL },  /* ient_RangeY */
     {   28,   32, SF_PTR  , 0, 0, NULL },  /* ient_TagList */
     {    0,    0, SF_END  , 0, 0, NULL }
 };
@@ -2209,8 +2335,14 @@ static const struct M68KFieldMap shadow_fields_IOTArray[] = {
 
 /* IconIdentifyMsg: m68k=36B, aros=72B, 2 fields */
 static const struct M68KFieldMap shadow_fields_IconIdentifyMsg[] = {
+    {    0,    0, SF_PTR  , 0, 0, NULL },  /* iim_SysBase */
+    {    4,    8, SF_PTR  , 0, 0, NULL },  /* iim_DOSBase */
+    {    8,   16, SF_PTR  , 0, 0, NULL },  /* iim_UtilityBase */
+    {   12,   24, SF_PTR  , 0, 0, NULL },  /* iim_IconBase */
     {   16,   32, SF_PTR  , 0, 0, NULL },  /* iim_FileLock */
     {   20,   40, SF_PTR  , 0, 0, NULL },  /* iim_ParentLock */
+    {   24,   48, SF_PTR  , 0, 0, NULL },  /* iim_FIB */
+    {   32,   64, SF_PTR  , 0, 0, NULL },  /* iim_Tags */
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
@@ -2221,6 +2353,9 @@ static const struct M68KFieldMap shadow_fields_IconSelectMsg[] = {
     {    8,   16, SF_PTR  , 0, 0, NULL },  /* ism_Name */
     {   12,   24, SF_WORD , 0, 0, NULL },  /* ism_Type */
     {   14,   26, SF_WORD , 0, 0, NULL },  /* ism_Selected */
+    {   16,   32, SF_PTR  , 0, 0, NULL },  /* ism_Tags */
+    {   20,   40, SF_PTR  , 0, 0, NULL },  /* ism_DrawerWindow */
+    {   24,   48, SF_PTR  , 0, 0, NULL },  /* ism_ParentWindow */
     {   28,   56, SF_WORD , 0, 0, NULL },  /* ism_Left */
     {   30,   58, SF_WORD , 0, 0, NULL },  /* ism_Top */
     {   32,   60, SF_WORD , 0, 0, NULL },  /* ism_Width */
@@ -2233,6 +2368,8 @@ static const struct M68KFieldMap shadow_fields_Image[] = {
     {    0,    0, SF_WORD , 0, 0, NULL },  /* LeftEdge */
     {    2,    2, SF_WORD , 0, 0, NULL },  /* TopEdge */
     {   10,   16, SF_PTR  , 0, 0, NULL },  /* ImageData */
+    {   14,   24, SF_BYTE , 0, 0, NULL },  /* PlanePick */
+    {   15,   25, SF_BYTE , 0, 0, NULL },  /* PlaneOnOff */
     {   16,   32, SF_PTR  , 0, 0, NULL },  /* NextImage */
     {    0,    0, SF_END  , 0, 0, NULL }
 };
@@ -2266,7 +2403,9 @@ static const struct M68KFieldMap shadow_fields_InputXpression[] = {
     {    0,    0, SF_BYTE , 0, 0, NULL },  /* ix_Version */
     {    1,    1, SF_BYTE , 0, 0, NULL },  /* ix_Class */
     {    2,    2, SF_WORD , 0, 0, NULL },  /* ix_Code */
+    {    4,    4, SF_WORD , 0, 0, NULL },  /* ix_CodeMask */
     {    6,    6, SF_WORD , 0, 0, NULL },  /* ix_Qualifier */
+    {    8,    8, SF_WORD , 0, 0, NULL },  /* ix_QualMask */
     {   10,   10, SF_WORD , 0, 0, NULL },  /* ix_QualSame */
     {    0,    0, SF_END  , 0, 0, NULL }
 };
@@ -2302,6 +2441,10 @@ static const struct M68KFieldMap shadow_fields_IntuiMessage[] = {
     {   24,   52, SF_WORD , 0, 0, NULL },  /* Code */
     {   26,   54, SF_WORD , 0, 0, NULL },  /* Qualifier */
     {   28,   56, SF_PTR  , 0, 0, NULL },  /* IAddress */
+    {   32,   64, SF_WORD , 0, 0, NULL },  /* MouseX */
+    {   34,   66, SF_WORD , 0, 0, NULL },  /* MouseY */
+    {   36,   68, SF_LONG , 0, 0, NULL },  /* Seconds */
+    {   40,   72, SF_LONG , 0, 0, NULL },  /* Micros */
     {   44,   80, SF_PTR  , 0, 0, NULL },  /* IDCMPWindow */
     {   48,   88, SF_PTR  , 0, 0, NULL },  /* SpecialLink */
     {    0,    0, SF_END  , 0, 0, NULL }
@@ -2309,9 +2452,12 @@ static const struct M68KFieldMap shadow_fields_IntuiMessage[] = {
 
 /* IntuiText: m68k=20B, aros=32B, 5 fields */
 static const struct M68KFieldMap shadow_fields_IntuiText[] = {
+    {    0,    0, SF_BYTE , 0, 0, NULL },  /* FrontPen */
+    {    1,    1, SF_BYTE , 0, 0, NULL },  /* BackPen */
     {    2,    2, SF_BYTE , 0, 0, NULL },  /* DrawMode */
     {    4,    4, SF_WORD , 0, 0, NULL },  /* LeftEdge */
     {    6,    6, SF_WORD , 0, 0, NULL },  /* TopEdge */
+    {    8,    8, SF_PTR  , 0, 0, NULL },  /* ITextFont */
     {   12,   16, SF_PTR  , 0, 0, NULL },  /* IText */
     {   16,   24, SF_PTR  , 0, 0, NULL },  /* NextText */
     {    0,    0, SF_END  , 0, 0, NULL }
@@ -2372,6 +2518,10 @@ static const struct M68KFieldMap shadow_fields_LVDrawMsg[] = {
     {    0,    0, SF_LONG , 0, 0, NULL },  /* lvdm_MethodID */
     {    4,    8, SF_PTR  , 0, 0, NULL },  /* lvdm_RastPort */
     {    8,   16, SF_PTR  , 0, 0, NULL },  /* lvdm_DrawInfo */
+    {   12,   24, SF_WORD , 0, 0, NULL },  /* MinX */
+    {   14,   26, SF_WORD , 0, 0, NULL },  /* MinY */
+    {   16,   28, SF_WORD , 0, 0, NULL },  /* MaxX */
+    {   18,   30, SF_WORD , 0, 0, NULL },  /* MaxY */
     {   20,   32, SF_LONG , 0, 0, NULL },  /* lvdm_State */
     {    0,    0, SF_END  , 0, 0, NULL }
 };
@@ -2620,14 +2770,22 @@ static const struct M68KFieldMap shadow_fields_MemList[] = {
 /* Menu: m68k=30B, aros=48B, 3 fields */
 static const struct M68KFieldMap shadow_fields_Menu[] = {
     {    0,    0, SF_PTR  , 0, 0, NULL },  /* NextMenu */
+    {    4,    8, SF_WORD , 0, 0, NULL },  /* LeftEdge */
+    {    6,   10, SF_WORD , 0, 0, NULL },  /* TopEdge */
     {   14,   24, SF_PTR  , 0, 0, NULL },  /* MenuName */
     {   18,   32, SF_PTR  , 0, 0, NULL },  /* FirstItem */
+    {   22,   40, SF_WORD , 0, 0, NULL },  /* JazzX */
+    {   24,   42, SF_WORD , 0, 0, NULL },  /* JazzY */
+    {   26,   44, SF_WORD , 0, 0, NULL },  /* BeatX */
+    {   28,   46, SF_WORD , 0, 0, NULL },  /* BeatY */
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
 /* MenuItem: m68k=34B, aros=64B, 7 fields */
 static const struct M68KFieldMap shadow_fields_MenuItem[] = {
     {    0,    0, SF_PTR  , 0, 0, NULL },  /* NextItem */
+    {    4,    8, SF_WORD , 0, 0, NULL },  /* LeftEdge */
+    {    6,   10, SF_WORD , 0, 0, NULL },  /* TopEdge */
     {   14,   20, SF_LONG , 0, 0, NULL },  /* MutualExclude */
     {   18,   24, SF_PTR  , 0, 0, NULL },  /* ItemFill */
     {   22,   32, SF_PTR  , 0, 0, NULL },  /* SelectFill */
@@ -2673,6 +2831,10 @@ static const struct M68KFieldMap shadow_fields_MonitorInfo[] = {
     {   16,   16, SF_PTR  , 0, 0, NULL },  /* Mspc */
     {   20,   24, SF_LONG , 0, 0, NULL },  /* ViewPosition */
     {   24,   28, SF_LONG , 0, 0, NULL },  /* ViewResolution */
+    {   28,   32, SF_WORD , 0, 0, NULL },  /* MinX */
+    {   30,   34, SF_WORD , 0, 0, NULL },  /* MinY */
+    {   32,   36, SF_WORD , 0, 0, NULL },  /* MaxX */
+    {   34,   38, SF_WORD , 0, 0, NULL },  /* MaxY */
     {   36,   40, SF_WORD , 0, 0, NULL },  /* TotalRows */
     {   38,   42, SF_WORD , 0, 0, NULL },  /* TotalColorClocks */
     {   40,   44, SF_WORD , 0, 0, NULL },  /* MinRow */
@@ -2813,7 +2975,12 @@ static const struct M68KFieldMap shadow_fields_NewBroker[] = {
 
 /* NewGadget: m68k=30B, aros=48B, 5 fields */
 static const struct M68KFieldMap shadow_fields_NewGadget[] = {
+    {    0,    0, SF_WORD , 0, 0, NULL },  /* ng_LeftEdge */
+    {    2,    2, SF_WORD , 0, 0, NULL },  /* ng_TopEdge */
+    {    4,    4, SF_WORD , 0, 0, NULL },  /* ng_Width */
+    {    6,    6, SF_WORD , 0, 0, NULL },  /* ng_Height */
     {    8,    8, SF_PTR  , 0, 0, NULL },  /* ng_GadgetText */
+    {   12,   16, SF_PTR  , 0, 0, NULL },  /* ng_TextAttr */
     {   16,   24, SF_WORD , 0, 0, NULL },  /* ng_GadgetID */
     {   18,   28, SF_LONG , 0, 0, NULL },  /* ng_Flags */
     {   22,   32, SF_PTR  , 0, 0, NULL },  /* ng_VisualInfo */
@@ -2834,6 +3001,8 @@ static const struct M68KFieldMap shadow_fields_NewMenu[] = {
 
 /* NewScreen: m68k=32B, aros=48B, 6 fields */
 static const struct M68KFieldMap shadow_fields_NewScreen[] = {
+    {    0,    0, SF_WORD , 0, 0, NULL },  /* LeftEdge */
+    {    2,    2, SF_WORD , 0, 0, NULL },  /* TopEdge */
     {   12,   12, SF_WORD , 0, 0, NULL },  /* ViewModes */
     {   14,   14, SF_WORD , 0, 0, NULL },  /* Type */
     {   16,   16, SF_PTR  , 0, 0, NULL },  /* Font */
@@ -2845,11 +3014,17 @@ static const struct M68KFieldMap shadow_fields_NewScreen[] = {
 
 /* NewWindow: m68k=48B, aros=80B, 6 fields */
 static const struct M68KFieldMap shadow_fields_NewWindow[] = {
+    {    0,    0, SF_WORD , 0, 0, NULL },  /* LeftEdge */
+    {    2,    2, SF_WORD , 0, 0, NULL },  /* TopEdge */
     {   10,   12, SF_LONG , 0, 0, NULL },  /* IDCMPFlags */
     {   18,   24, SF_PTR  , 0, 0, NULL },  /* FirstGadget */
     {   22,   32, SF_PTR  , 0, 0, NULL },  /* CheckMark */
     {   26,   40, SF_PTR  , 0, 0, NULL },  /* Title */
     {   30,   48, SF_PTR  , 0, 0, NULL },  /* Screen */
+    {   38,   64, SF_WORD , 0, 0, NULL },  /* MinWidth */
+    {   40,   66, SF_WORD , 0, 0, NULL },  /* MinHeight */
+    {   42,   68, SF_WORD , 0, 0, NULL },  /* MaxWidth */
+    {   44,   70, SF_WORD , 0, 0, NULL },  /* MaxHeight */
     {   46,   72, SF_WORD , 0, 0, NULL },  /* Type */
     {    0,    0, SF_END  , 0, 0, NULL }
 };
@@ -2892,11 +3067,17 @@ static const struct M68KFieldMap shadow_fields_NotifyRequest[] = {
 
 /* OldDrawerData: m68k=56B, aros=88B, 8 fields */
 static const struct M68KFieldMap shadow_fields_OldDrawerData[] = {
+    {    0,    0, SF_WORD , 0, 0, NULL },  /* LeftEdge */
+    {    2,    2, SF_WORD , 0, 0, NULL },  /* TopEdge */
     {   10,   12, SF_LONG , 0, 0, NULL },  /* IDCMPFlags */
     {   18,   24, SF_PTR  , 0, 0, NULL },  /* FirstGadget */
     {   22,   32, SF_PTR  , 0, 0, NULL },  /* CheckMark */
     {   26,   40, SF_PTR  , 0, 0, NULL },  /* Title */
     {   30,   48, SF_PTR  , 0, 0, NULL },  /* Screen */
+    {   38,   64, SF_WORD , 0, 0, NULL },  /* MinWidth */
+    {   40,   66, SF_WORD , 0, 0, NULL },  /* MinHeight */
+    {   42,   68, SF_WORD , 0, 0, NULL },  /* MaxWidth */
+    {   44,   70, SF_WORD , 0, 0, NULL },  /* MaxHeight */
     {   46,   72, SF_WORD , 0, 0, NULL },  /* Type */
     {   48,   80, SF_LONG , 0, 0, NULL },  /* dd_CurrentX */
     {   52,   84, SF_LONG , 0, 0, NULL },  /* dd_CurrentY */
@@ -2959,6 +3140,8 @@ static const struct M68KFieldMap shadow_fields_Preferences[] = {
     {  116,  116, SF_WORD , 0, 0, NULL },  /* color3 */
     {  118,  118, SF_BYTE , 0, 0, NULL },  /* ViewXOffset */
     {  119,  119, SF_BYTE , 0, 0, NULL },  /* ViewYOffset */
+    {  120,  120, SF_WORD , 0, 0, NULL },  /* ViewInitX */
+    {  122,  122, SF_WORD , 0, 0, NULL },  /* ViewInitY */
     {  124,  124, SF_WORD , 0, 0, NULL },  /* EnableCLI */
     {  126,  126, SF_WORD , 0, 0, NULL },  /* PrinterType */
     {  158,  158, SF_WORD , 0, 0, NULL },  /* PrintPitch */
@@ -3041,9 +3224,11 @@ static const struct M68KFieldMap shadow_fields_PrinterExtendedData[] = {
     {   30,   52, SF_LONG , 0, 0, NULL },  /* ped_MaxYDots */
     {   34,   56, SF_WORD , 0, 0, NULL },  /* ped_XDotsInch */
     {   36,   58, SF_WORD , 0, 0, NULL },  /* ped_YDotsInch */
+    {   38,   64, SF_PTR  , 0, 0, NULL },  /* ped_Commands */
     {   50,   88, SF_LONG , 0, 0, NULL },  /* ped_TimeoutSecs */
     {   54,   96, SF_PTR  , 0, 0, NULL },  /* ped_8BitChars */
     {   58,  104, SF_LONG , 0, 0, NULL },  /* ped_PrintMode */
+    {   66,  120, SF_PTR  , 0, 0, NULL },  /* ped_TagList */
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
@@ -3063,9 +3248,11 @@ static const struct M68KFieldMap shadow_fields_PrinterSegment[] = {
     {   42,   68, SF_LONG , 0, 0, NULL },  /* ped_MaxYDots */
     {   46,   72, SF_WORD , 0, 0, NULL },  /* ped_XDotsInch */
     {   48,   74, SF_WORD , 0, 0, NULL },  /* ped_YDotsInch */
+    {   50,   80, SF_PTR  , 0, 0, NULL },  /* ped_Commands */
     {   62,  104, SF_LONG , 0, 0, NULL },  /* ped_TimeoutSecs */
     {   66,  112, SF_PTR  , 0, 0, NULL },  /* ped_8BitChars */
     {   70,  120, SF_LONG , 0, 0, NULL },  /* ped_PrintMode */
+    {   78,  136, SF_PTR  , 0, 0, NULL },  /* ped_TagList */
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
@@ -3138,6 +3325,8 @@ static const struct M68KFieldMap shadow_fields_PropInfo[] = {
     {    8,    8, SF_WORD , 0, 0, NULL },  /* VertBody */
     {   10,   10, SF_WORD , 0, 0, NULL },  /* CWidth */
     {   12,   12, SF_WORD , 0, 0, NULL },  /* CHeight */
+    {   14,   14, SF_WORD , 0, 0, NULL },  /* HPotRes */
+    {   16,   16, SF_WORD , 0, 0, NULL },  /* VPotRes */
     {   18,   18, SF_WORD , 0, 0, NULL },  /* LeftBorder */
     {   20,   20, SF_WORD , 0, 0, NULL },  /* TopBorder */
     {    0,    0, SF_END  , 0, 0, NULL }
@@ -3189,7 +3378,10 @@ static const struct M68KFieldMap shadow_fields_PrtInfo[] = {
     {  108,  168, SF_WORD , 0, 0, NULL },  /* pi_threshold */
     {  110,  170, SF_WORD , 0, 0, NULL },  /* pi_tempwidth */
     {  112,  172, SF_WORD , 0, 0, NULL },  /* pi_flags */
+    {  114,  176, SF_PTR  , 0, 0, NULL },  /* pi_ReduceBuf */
     {  118,  184, SF_WORD , 0, 0, NULL },  /* pi_ReduceBufSize */
+    {  120,  192, SF_PTR  , 0, 0, NULL },  /* pi_SourceHook */
+    {  124,  200, SF_PTR  , 0, 0, NULL },  /* pi_InvertHookBuf */
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
@@ -3265,6 +3457,8 @@ static const struct M68KFieldMap shadow_fields_RastPort[] = {
     {   30,   54, SF_BYTE , 0, 0, NULL },  /* linpatcnt */
     {   31,   55, SF_BYTE , 0, 0, NULL },  /* dummy */
     {   34,   58, SF_WORD , 0, 0, NULL },  /* LinePtrn */
+    {   36,   60, SF_WORD , 0, 0, NULL },  /* cp_x */
+    {   38,   62, SF_WORD , 0, 0, NULL },  /* cp_y */
     {   48,   72, SF_WORD , 0, 0, NULL },  /* PenWidth */
     {   50,   74, SF_WORD , 0, 0, NULL },  /* PenHeight */
     {   52,   80, SF_PTR  , 0, 0, NULL },  /* Font */
@@ -3313,6 +3507,10 @@ static const struct M68KFieldMap shadow_fields_RecordLock[] = {
 
 /* Region: m68k=12B, aros=16B, 1 fields */
 static const struct M68KFieldMap shadow_fields_Region[] = {
+    {    0,    0, SF_WORD , 0, 0, NULL },  /* MinX */
+    {    2,    2, SF_WORD , 0, 0, NULL },  /* MinY */
+    {    4,    4, SF_WORD , 0, 0, NULL },  /* MaxX */
+    {    6,    6, SF_WORD , 0, 0, NULL },  /* MaxY */
     {    8,    8, SF_PTR  , 0, 0, NULL },  /* RegionRectangle */
     {    0,    0, SF_END  , 0, 0, NULL }
 };
@@ -3328,6 +3526,10 @@ static const struct M68KFieldMap shadow_fields_Remember[] = {
 /* Requester: m68k=112B, aros=152B, 9 fields */
 static const struct M68KFieldMap shadow_fields_Requester[] = {
     {    0,    0, SF_PTR  , 0, 0, NULL },  /* OlderRequest */
+    {    4,    8, SF_WORD , 0, 0, NULL },  /* LeftEdge */
+    {    6,   10, SF_WORD , 0, 0, NULL },  /* TopEdge */
+    {   12,   16, SF_WORD , 0, 0, NULL },  /* RelLeft */
+    {   14,   18, SF_WORD , 0, 0, NULL },  /* RelTop */
     {   16,   24, SF_PTR  , 0, 0, NULL },  /* ReqGadget */
     {   20,   32, SF_PTR  , 0, 0, NULL },  /* ReqBorder */
     {   24,   40, SF_PTR  , 0, 0, NULL },  /* ReqText */
@@ -3594,6 +3796,8 @@ static const struct M68KFieldMap shadow_fields_SignalSemaphore[] = {
 static const struct M68KFieldMap shadow_fields_SimpleSprite[] = {
     {    0,    0, SF_PTR  , 0, 0, NULL },  /* posctldata */
     {    4,    8, SF_WORD , 0, 0, NULL },  /* height */
+    {    6,   10, SF_WORD , 0, 0, NULL },  /* x */
+    {    8,   12, SF_WORD , 0, 0, NULL },  /* y */
     {   10,   14, SF_WORD , 0, 0, NULL },  /* num */
     {    0,    0, SF_END  , 0, 0, NULL }
 };
@@ -3644,6 +3848,8 @@ static const struct M68KFieldMap shadow_fields_StandardPacket[] = {
     {   18,   40, SF_WORD , 0, 0, NULL },  /* mn_Length */
     {   20,   48, SF_PTR  , 0, 0, NULL },  /* dp_Link */
     {   24,   56, SF_PTR  , 0, 0, NULL },  /* dp_Port */
+    {   28,   64, SF_LONG , 0, 0, NULL },  /* dp_Type */
+    {   32,   72, SF_PTR  , 0, 0, NULL },  /* dp_Res1 */
     {   40,   88, SF_PTR  , 0, 0, NULL },  /* dp_Arg1 */
     {   44,   96, SF_PTR  , 0, 0, NULL },  /* dp_Arg2 */
     {   48,  104, SF_PTR  , 0, 0, NULL },  /* dp_Arg3 */
@@ -3682,6 +3888,8 @@ static const struct M68KFieldMap shadow_fields_StringInfo[] = {
     {   14,   22, SF_WORD , 0, 0, NULL },  /* UndoPos */
     {   16,   24, SF_WORD , 0, 0, NULL },  /* NumChars */
     {   18,   26, SF_WORD , 0, 0, NULL },  /* DispCount */
+    {   20,   28, SF_WORD , 0, 0, NULL },  /* CLeft */
+    {   22,   30, SF_WORD , 0, 0, NULL },  /* CTop */
     {   24,   32, SF_PTR  , 0, 0, NULL },  /* Extension */
     {   28,   40, SF_LONG , 0, 0, NULL },  /* LongInt */
     {   32,   48, SF_PTR  , 0, 0, NULL },  /* AltKeyMap */
@@ -3724,6 +3932,12 @@ static const struct M68KFieldMap shadow_fields_TTextAttr[] = {
 
 /* TabletData: m68k=24B, aros=32B, 1 fields */
 static const struct M68KFieldMap shadow_fields_TabletData[] = {
+    {    0,    0, SF_WORD , 0, 0, NULL },  /* td_XFraction */
+    {    2,    2, SF_WORD , 0, 0, NULL },  /* td_YFraction */
+    {    4,    4, SF_LONG , 0, 0, NULL },  /* td_TabletX */
+    {    8,    8, SF_LONG , 0, 0, NULL },  /* td_TabletY */
+    {   12,   12, SF_LONG , 0, 0, NULL },  /* td_RangeX */
+    {   16,   16, SF_LONG , 0, 0, NULL },  /* td_RangeY */
     {   20,   24, SF_PTR  , 0, 0, NULL },  /* td_TagList */
     {    0,    0, SF_END  , 0, 0, NULL }
 };
@@ -3790,6 +4004,10 @@ static const struct M68KFieldMap shadow_fields_TextAttr[] = {
 static const struct M68KFieldMap shadow_fields_TextExtent[] = {
     {    0,    0, SF_WORD , 0, 0, NULL },  /* te_Width */
     {    2,    2, SF_WORD , 0, 0, NULL },  /* te_Height */
+    {    4,    4, SF_WORD , 0, 0, NULL },  /* MinX */
+    {    6,    6, SF_WORD , 0, 0, NULL },  /* MinY */
+    {    8,    8, SF_WORD , 0, 0, NULL },  /* MaxX */
+    {   10,   10, SF_WORD , 0, 0, NULL },  /* MaxY */
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
@@ -3915,13 +4133,17 @@ static const struct M68KFieldMap shadow_fields_UtilityBase[] = {
 static const struct M68KFieldMap shadow_fields_VSprite[] = {
     {    0,    0, SF_PTR  , 0, 0, NULL },  /* NextVSprite */
     {    4,    8, SF_PTR  , 0, 0, NULL },  /* PrevVSprite */
+    {    8,   16, SF_PTR  , 0, 0, NULL },  /* IntVSprite */
     {   12,   24, SF_PTR  , 0, 0, NULL },  /* ClearPath */
+    {   16,   32, SF_WORD , 0, 0, NULL },  /* OldY */
+    {   18,   34, SF_WORD , 0, 0, NULL },  /* OldX */
     {   32,   48, SF_WORD , 0, 0, NULL },  /* MeMask */
     {   34,   50, SF_WORD , 0, 0, NULL },  /* HitMask */
     {   36,   56, SF_PTR  , 0, 0, NULL },  /* ImageData */
     {   40,   64, SF_PTR  , 0, 0, NULL },  /* BorderLine */
     {   44,   72, SF_PTR  , 0, 0, NULL },  /* CollMask */
     {   48,   80, SF_PTR  , 0, 0, NULL },  /* SprColors */
+    {   52,   88, SF_PTR  , 0, 0, NULL },  /* VSBob */
     {   56,   96, SF_BYTE , 0, 0, NULL },  /* PlanePick */
     {   57,   97, SF_BYTE , 0, 0, NULL },  /* PlaneOnOff */
     {   58,   98, SF_WORD , 0, 0, NULL },  /* VUserExt */
@@ -3945,6 +4167,8 @@ static const struct M68KFieldMap shadow_fields_View[] = {
     {    0,    0, SF_PTR  , 0, 0, NULL },  /* ViewPort */
     {    4,    8, SF_PTR  , 0, 0, NULL },  /* LOFCprList */
     {    8,   16, SF_PTR  , 0, 0, NULL },  /* SHFCprList */
+    {   12,   24, SF_WORD , 0, 0, NULL },  /* DyOffset */
+    {   14,   26, SF_WORD , 0, 0, NULL },  /* DxOffset */
     {   16,   28, SF_WORD , 0, 0, NULL },  /* Modes */
     {    0,    0, SF_END  , 0, 0, NULL }
 };
@@ -3973,6 +4197,10 @@ static const struct M68KFieldMap shadow_fields_ViewPort[] = {
     {   12,   24, SF_PTR  , 0, 0, NULL },  /* SprIns */
     {   16,   32, SF_PTR  , 0, 0, NULL },  /* ClrIns */
     {   20,   40, SF_PTR  , 0, 0, NULL },  /* UCopIns */
+    {   24,   48, SF_WORD , 0, 0, NULL },  /* DWidth */
+    {   26,   50, SF_WORD , 0, 0, NULL },  /* DHeight */
+    {   28,   52, SF_WORD , 0, 0, NULL },  /* DxOffset */
+    {   30,   54, SF_WORD , 0, 0, NULL },  /* DyOffset */
     {   32,   56, SF_WORD , 0, 0, NULL },  /* Modes */
     {   34,   58, SF_BYTE , 0, 0, NULL },  /* SpritePriorities */
     {   35,   59, SF_BYTE , 0, 0, NULL },  /* ExtendedModes */
@@ -3991,6 +4219,10 @@ static const struct M68KFieldMap shadow_fields_ViewPortExtra[] = {
     {   15,   33, SF_BYTE , 0, 0, NULL },  /* xln_Subtype */
     {   16,   40, SF_PTR  , 0, 0, NULL },  /* xln_Library */
     {   24,   56, SF_PTR  , 0, 0, NULL },  /* ViewPort */
+    {   28,   64, SF_WORD , 0, 0, NULL },  /* MinX */
+    {   30,   66, SF_WORD , 0, 0, NULL },  /* MinY */
+    {   32,   68, SF_WORD , 0, 0, NULL },  /* MaxX */
+    {   34,   70, SF_WORD , 0, 0, NULL },  /* MaxY */
     {   36,   72, SF_PTR  , 0, 0, NULL },  /* VecTable */
     {   58,  108, SF_LONG , 0, 0, NULL },  /* cop1ptr */
     {   62,  112, SF_LONG , 0, 0, NULL },  /* cop2ptr */
@@ -4005,6 +4237,7 @@ static const struct M68KFieldMap shadow_fields_VoiceHeader[] = {
     {   12,   12, SF_WORD , 0, 0, NULL },  /* vh_SamplesPerSec */
     {   14,   14, SF_BYTE , 0, 0, NULL },  /* vh_Octaves */
     {   15,   15, SF_BYTE , 0, 0, NULL },  /* vh_Compression */
+    {   16,   16, SF_LONG , 0, 0, NULL },  /* vh_Volume */
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
@@ -4024,15 +4257,25 @@ static const struct M68KFieldMap shadow_fields_WBStartup[] = {
     {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
     {   14,   32, SF_PTR  , 0, 0, NULL },  /* mn_ReplyPort */
     {   18,   40, SF_WORD , 0, 0, NULL },  /* mn_Length */
+    {   20,   48, SF_PTR  , 0, 0, NULL },  /* sm_Process */
     {   24,   56, SF_PTR  , 0, 0, NULL },  /* sm_Segment */
     {   28,   64, SF_LONG , 0, 0, NULL },  /* sm_NumArgs */
     {   32,   72, SF_PTR  , 0, 0, NULL },  /* sm_ToolWindow */
+    {   36,   80, SF_PTR  , 0, 0, NULL },  /* sm_ArgList */
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
 /* Window: m68k=136B, aros=272B, 26 fields */
 static const struct M68KFieldMap shadow_fields_Window[] = {
     {    0,    0, SF_PTR  , 0, 0, NULL },  /* NextWindow */
+    {    4,    8, SF_WORD , 0, 0, NULL },  /* LeftEdge */
+    {    6,   10, SF_WORD , 0, 0, NULL },  /* TopEdge */
+    {   12,   16, SF_WORD , 0, 0, NULL },  /* MouseY */
+    {   14,   18, SF_WORD , 0, 0, NULL },  /* MouseX */
+    {   16,   20, SF_WORD , 0, 0, NULL },  /* MinWidth */
+    {   18,   22, SF_WORD , 0, 0, NULL },  /* MinHeight */
+    {   20,   24, SF_WORD , 0, 0, NULL },  /* MaxWidth */
+    {   22,   26, SF_WORD , 0, 0, NULL },  /* MaxHeight */
     {   28,   32, SF_PTR  , 0, 0, NULL },  /* MenuStrip */
     {   32,   40, SF_PTR  , 0, 0, NULL },  /* Title */
     {   36,   48, SF_PTR  , 0, 0, NULL },  /* FirstRequest */
@@ -4040,12 +4283,22 @@ static const struct M68KFieldMap shadow_fields_Window[] = {
     {   44,   64, SF_WORD , 0, 0, NULL },  /* ReqCount */
     {   46,   72, SF_PTR  , 0, 0, NULL },  /* WScreen */
     {   50,   80, SF_PTR  , 0, 0, NULL },  /* RPort */
+    {   54,   88, SF_BYTE , 0, 0, NULL },  /* BorderLeft */
+    {   55,   89, SF_BYTE , 0, 0, NULL },  /* BorderTop */
+    {   56,   90, SF_BYTE , 0, 0, NULL },  /* BorderRight */
+    {   57,   91, SF_BYTE , 0, 0, NULL },  /* BorderBottom */
     {   58,   96, SF_PTR  , 0, 0, NULL },  /* BorderRPort */
     {   62,  104, SF_PTR  , 0, 0, NULL },  /* FirstGadget */
+    {   66,  112, SF_PTR  , 0, 0, NULL },  /* Parent */
+    {   70,  120, SF_PTR  , 0, 0, NULL },  /* Descendant */
     {   74,  128, SF_PTR  , 0, 0, NULL },  /* Pointer */
     {   78,  136, SF_BYTE , 0, 0, NULL },  /* PtrHeight */
     {   79,  137, SF_BYTE , 0, 0, NULL },  /* PtrWidth */
+    {   80,  138, SF_BYTE , 0, 0, NULL },  /* XOffset */
+    {   81,  139, SF_BYTE , 0, 0, NULL },  /* YOffset */
     {   82,  140, SF_LONG , 0, 0, NULL },  /* IDCMPFlags */
+    {   86,  144, SF_PTR  , 0, 0, NULL },  /* UserPort */
+    {   90,  152, SF_PTR  , 0, 0, NULL },  /* WindowPort */
     {   94,  160, SF_PTR  , 0, 0, NULL },  /* MessageKey */
     {  100,  176, SF_PTR  , 0, 0, NULL },  /* CheckMark */
     {  104,  184, SF_PTR  , 0, 0, NULL },  /* ScreenTitle */

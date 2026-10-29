@@ -27,6 +27,7 @@ static LONG emu_proc_entry(void)
     if (!ctx) return -1;
 
     ctx->exit_code = M68KEmu_Execute(ctx);
+    m68k_restore_windowptr(ctx);
     return ctx->exit_code;
 }
 
@@ -35,7 +36,7 @@ static LONG emu_proc_entry(void)
 static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
                               CONST_STRPTR argPtr, ULONG argSize,
                               ULONG stackSize, const char *programName,
-                              struct M68KEmuLibBase *M68KEmuBase)
+                              BPTR homeDir, struct M68KEmuLibBase *M68KEmuBase)
 {
     ULONG m68k_sysbase, m68k_argptr;
     LONG result = -1;
@@ -90,7 +91,18 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
 
     /* If stackSize is 0, run directly (non-threaded) */
     if (stackSize == 0)
-        return M68KEmu_Execute(ctx);
+    {
+        /* PROGDIR: is the program's own directory, not the caller's */
+        BPTR oldHome = homeDir ? SetProgramDir(homeDir) : BNULL;
+        LONG rc = M68KEmu_Execute(ctx);
+        if (homeDir)
+        {
+            SetProgramDir(oldHome);
+            UnLock(homeDir);
+        }
+        m68k_restore_windowptr(ctx);
+        return rc;
+    }
 
     /* Spawn emulator in its own AROS process.
      * NP_Synchronous=TRUE makes us block until the child exits.
@@ -100,6 +112,9 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
         CurrentDir(curdir);  /* restore */
 
         BPTR dirlock = DupLock(curdir);
+        struct Process *me = (struct Process *)FindTask(NULL);
+        /* started from a Shell: the program checks pr_CLI to know it */
+        IPTR is_cli = (me->pr_Task.tc_Node.ln_Type == NT_PROCESS && me->pr_CLI) ? TRUE : FALSE;
 
         struct TagItem tags[] = {
             { NP_Entry,       (IPTR)emu_proc_entry },
@@ -108,10 +123,13 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
             { NP_UserData,    (IPTR)ctx },
             { NP_FreeSeglist, FALSE },
             { NP_Input,       (IPTR)Input() },
+            { NP_Arguments,   (IPTR)argPtr },
             { NP_CloseInput,  FALSE },
             { NP_Output,      (IPTR)Output() },
             { NP_CloseOutput, FALSE },
             { NP_CurrentDir,  (IPTR)dirlock },
+            { homeDir ? NP_HomeDir : TAG_IGNORE, (IPTR)homeDir },
+            { NP_Cli,         is_cli },
             { TAG_DONE,       0 }
         };
 
@@ -123,6 +141,7 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
         else
         {
             UnLock(dirlock);
+            if (homeDir) UnLock(homeDir);
             result = -1;
         }
     }
@@ -172,12 +191,32 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
     if (!ctx)
         return -1;
 
-    entry = M68KEmu_LoadHunks(ctx, segList);
-    if (entry)
-        result = setup_and_execute(ctx, entry, argPtr, argSize,
-                                   stackSize, NULL, M68KEmuBase);
+    {
+        char tracebuf[4];
+        if (GetVar((CONST_STRPTR)"M68KEMU_TRACE", (STRPTR)tracebuf, sizeof(tracebuf), 0) > 0)
+        {
+            if (tracebuf[0] == 'm') ctx->trace_after_msg = TRUE;    /* "msg": start at the first IntuiMessage */
+            else if (tracebuf[0] == 'e') ctx->trace_end = TRUE;     /* "end": the last calls when it ends */
+            else ctx->trace_calls = TRUE;
+        }
+    }
 
-    M68KEmu_DestroyContext(ctx);
+    entry = M68KEmu_LoadHunks(ctx, segList);
+    if (ctx->trace_calls) bug("[m68kemu] TRACE build " __DATE__ " " __TIME__ " RunHunk seglist %p stack %u args %u -> entry %08x\n",
+        BADDR(segList), (unsigned)stackSize, (unsigned)argSize, (unsigned)entry);
+    if (entry)
+    {
+        char name[108];
+        /* the Shell's command name, or the task name, for messages */
+        if (!GetProgramName((STRPTR)name, sizeof(name)) || !name[0])
+        {
+            struct Task *me = FindTask(NULL);
+            snprintf(name, sizeof(name), "%s", me->tc_Node.ln_Name ? me->tc_Node.ln_Name : "");
+        }
+        result = setup_and_execute(ctx, entry, argPtr, argSize,
+                                   stackSize, name[0] ? name : NULL, BNULL, M68KEmuBase);
+    }
+    m68k_context_release(ctx);
     return result;
 
     AROS_LIBFUNC_EXIT
@@ -225,10 +264,15 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
     FreeMem(fileData, fileSize);
 
     if (entry)
+    {
+        BPTR lock = Lock(fileName, SHARED_LOCK);
+        BPTR homeDir = lock ? ParentDir(lock) : BNULL;
+        UnLock(lock);
         result = setup_and_execute(ctx, entry, argPtr, argSize,
-                                   stackSize, fileName, M68KEmuBase);
+                                   stackSize, fileName, homeDir, M68KEmuBase);
+    }
 
-    M68KEmu_DestroyContext(ctx);
+    m68k_context_release(ctx);
     return result;
 
     AROS_LIBFUNC_EXIT
