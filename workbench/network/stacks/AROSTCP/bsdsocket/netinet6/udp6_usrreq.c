@@ -65,6 +65,7 @@
 /* Explicit declarations (in_pcb_protos.h has stale signatures) */
 extern int  in_pcballoc(struct socket *, struct inpcbinfo *);
 extern void in_pcbdetach(struct inpcb *);
+int in_pcbisipv6(struct inpcb *);             /* netinet/in_pcb.c */
 extern int  soreserve(struct socket *, u_long, u_long);
 extern int  in6_control(struct socket *, int, caddr_t, struct ifnet *);
 extern int  in6_pcbbind(struct inpcb *, struct mbuf *);
@@ -320,6 +321,60 @@ release:
     return error;
 }
 
+/*
+ * udp6_append - hand one datagram to one socket. m is the whole packet, its
+ * IPv6 and UDP headers still in front at off; the ancillary data the socket
+ * asked for is taken from the IPv6 header before the headers are stripped.
+ * m is consumed.
+ */
+static void
+udp6_append(struct inpcb *inp, struct mbuf *m, int off,
+            struct sockaddr_in6 *src6)
+{
+    struct ip6_hdr *ip6 = mtod(m, struct ip6_hdr *);
+    {
+        struct mbuf *opts = NULL, **optp = &opts;
+
+        /*
+         * Assemble any requested ancillary data before stripping the
+         * headers, taken from the IPv6 header while it is still present.
+         * Each requested item becomes one cmsg mbuf; they are chained via
+         * m_next so sbappendaddr() delivers them together.
+         */
+        if(inp->in6p_flags & IN6P_PKTINFO) {
+            struct in6_pktinfo pi6;
+
+            bzero(&pi6, sizeof(pi6));
+            pi6.ipi6_addr    = ip6->ip6_dst;
+            pi6.ipi6_ifindex = (m->m_pkthdr.rcvif != NULL)
+                               ? m->m_pkthdr.rcvif->if_index : 0;
+            *optp = udp6_saveopt((caddr_t)&pi6, sizeof(pi6), IPV6_PKTINFO);
+            if(*optp != NULL)
+                optp = &(*optp)->m_next;
+        }
+        if(inp->in6p_flags & IN6P_HOPLIMIT) {
+            int hlim = ip6->ip6_hlim;
+
+            *optp = udp6_saveopt((caddr_t)&hlim, sizeof(int), IPV6_HOPLIMIT);
+            if(*optp != NULL)
+                optp = &(*optp)->m_next;
+        }
+
+        /* Strip the IPv6 (+ extension) and UDP headers, leaving data. */
+        m_adj(m, off + sizeof(struct udphdr));
+
+        if(sbappendaddr(&inp->inp_socket->so_rcv,
+                        (struct sockaddr *)src6,
+                        m, opts) == 0) {
+            m_freem(m);
+            if(opts)
+                m_freem(opts);
+            return;
+        }
+        sorwakeup(inp->inp_socket);
+    }
+}
+
 /* ------------------------------------------------------------------ *
  * udp6_input - demultiplex an incoming UDP/IPv6 datagram to a socket.
  *
@@ -386,6 +441,54 @@ udp6_input(void *args, ...)
     dst6.sin6_addr   = ip6->ip6_dst;
     dst6.sin6_port   = uh->uh_dport;
 
+    if(IN6_IS_ADDR_MULTICAST(&ip6->ip6_dst)) {
+        struct inpcb *last = NULL;
+
+        /*
+         * Deliver a group datagram to every IPv6 socket whose port, bound
+         * address and peer match, as udp_input() does for IPv4: more than
+         * one program may listen on a group's port (SO_REUSEADDR or
+         * SO_REUSEPORT). ip6_input() has already checked that the host is
+         * a member on the receiving interface; as for IPv4, the sockets
+         * are not filtered by their own memberships.
+         */
+        LIST_FOREACH(inp, &udb, inp_list) {
+            if(inp->inp_lport != uh->uh_dport || !in_pcbisipv6(inp))
+                continue;
+            /* a socket bound to an interface only hears that interface */
+            if(inp->inp_boundif && inp->inp_boundif != m->m_pkthdr.rcvif)
+                continue;
+            if(!IN6_IS_ADDR_UNSPECIFIED(&inp->inp_laddr6) &&
+                    !IN6_ARE_ADDR_EQUAL(&inp->inp_laddr6, &dst6.sin6_addr))
+                continue;
+            if(!IN6_IS_ADDR_UNSPECIFIED(&inp->inp_faddr6) &&
+                    (!IN6_ARE_ADDR_EQUAL(&inp->inp_faddr6, &src6.sin6_addr) ||
+                     inp->inp_fport != uh->uh_sport))
+                continue;
+
+            if(last != NULL) {
+                struct mbuf *n = m_copy(m, 0, M_COPYALL);
+
+                if(n != NULL)
+                    udp6_append(last, n, off, &src6);
+            }
+            last = inp;
+            /*
+             * A socket without SO_REUSEPORT or SO_REUSEADDR does not share
+             * its port, so there is nobody else to look for.
+             */
+            if((last->inp_socket->so_options & (SO_REUSEPORT | SO_REUSEADDR)) == 0)
+                break;
+        }
+        if(last == NULL) {
+            /* no ICMPv6 Port Unreachable for a group datagram */
+            m_freem(m);
+            return;
+        }
+        udp6_append(last, m, off, &src6);
+        return;
+    }
+
     /* Find matching socket */
     inp = in6_pcblookup(&udb, &src6.sin6_addr, uh->uh_sport,
                         &dst6.sin6_addr, uh->uh_dport);
@@ -395,48 +498,7 @@ udp6_input(void *args, ...)
         return;
     }
 
-    /* Deliver to socket */
-    {
-        struct mbuf *opts = NULL, **optp = &opts;
-
-        /*
-         * Assemble any requested ancillary data before stripping the
-         * headers, taken from the IPv6 header while it is still present.
-         * Each requested item becomes one cmsg mbuf; they are chained via
-         * m_next so sbappendaddr() delivers them together.
-         */
-        if(inp->in6p_flags & IN6P_PKTINFO) {
-            struct in6_pktinfo pi6;
-
-            bzero(&pi6, sizeof(pi6));
-            pi6.ipi6_addr    = ip6->ip6_dst;
-            pi6.ipi6_ifindex = (m->m_pkthdr.rcvif != NULL)
-                               ? m->m_pkthdr.rcvif->if_index : 0;
-            *optp = udp6_saveopt((caddr_t)&pi6, sizeof(pi6), IPV6_PKTINFO);
-            if(*optp != NULL)
-                optp = &(*optp)->m_next;
-        }
-        if(inp->in6p_flags & IN6P_HOPLIMIT) {
-            int hlim = ip6->ip6_hlim;
-
-            *optp = udp6_saveopt((caddr_t)&hlim, sizeof(int), IPV6_HOPLIMIT);
-            if(*optp != NULL)
-                optp = &(*optp)->m_next;
-        }
-
-        /* Strip the IPv6 (+ extension) and UDP headers, leaving data. */
-        m_adj(m, off + sizeof(struct udphdr));
-
-        if(sbappendaddr(&inp->inp_socket->so_rcv,
-                        (struct sockaddr *)&src6,
-                        m, opts) == 0) {
-            m_freem(m);
-            if(opts)
-                m_freem(opts);
-            return;
-        }
-        sorwakeup(inp->inp_socket);
-    }
+    udp6_append(inp, m, off, &src6);
 }
 
 /* ------------------------------------------------------------------ *
