@@ -143,6 +143,10 @@ AS_OpenAsyncFH( BPTR handle, OpenModes mode, LONG bufferSize, BOOL closeIt )
 			 * bit for the port. It is quite efficient.
 			 */
 
+			/* On SMP the port has an mp_SpinLock that PutMsg() locks; garbage
+			 * there makes the packet reply spin forever with interrupts off.
+			 */
+			memset( &file->af_PacketPort, 0, sizeof( file->af_PacketPort ) );
 			file->af_PacketPort.mp_MsgList.lh_Head		= ( struct Node * ) &file->af_PacketPort.mp_MsgList.lh_Tail;
 			file->af_PacketPort.mp_MsgList.lh_Tail		= NULL;
 			file->af_PacketPort.mp_MsgList.lh_TailPred	= ( struct Node * ) &file->af_PacketPort.mp_MsgList.lh_Head;
