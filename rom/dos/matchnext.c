@@ -37,6 +37,9 @@
         Zero on success, or error code on failure.
 
     NOTES
+        If APF_DODIR requests recursion but an AChain cannot be allocated,
+        MatchNext() returns ERROR_NO_FREE_STORE rather than skipping the
+        directory. The caller should stop iteration and call MatchEnd().
 
     EXAMPLE
 
@@ -94,10 +97,11 @@
             dir_changed = TRUE;
         }
         
-        /*
-        ** If the allocation did not work, we simple ignore APF_DODIR. Just
-        ** like if the user did not set this flag. Good idea or bad idea?
-        */
+        else
+        {
+            error = ERROR_NO_FREE_STORE;
+            goto done;
+        }
     }
 
     
