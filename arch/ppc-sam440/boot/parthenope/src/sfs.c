@@ -33,19 +33,18 @@ typedef struct {
 	uint32_t blocksize;
 } sfs_boot_dev_t;
 
-uint32_t calcchecksum(struct SfsBlockHeader *block, uint32_t blocksize)
+static uint32_t calcchecksum(struct SfsBlockHeader *block, uint32_t blocksize)
 {
 	uint32_t *data = (uint32_t *) block;
 	uint32_t checksum = 1;
 
-	block->checksum = 0;
 
 	while (blocksize > 0) {
 		checksum += *data++;
 		blocksize -= 4;
 	}
 
-	return -checksum;
+	return checksum;
 }
 
 static int sfs_loadsector(sfs_boot_dev_t *self, uint32_t block, void *buffer)
@@ -86,7 +85,7 @@ static int sfs_findobject(sfs_boot_dev_t *self, struct SfsObject *cwd,
 	while (next != 0) {
 		if (!sfs_loadsector(self, next, buffer))
 			break;
-		if (!calcchecksum(SBH(buffer), self->blocksize))
+		if (calcchecksum(SBH(buffer), self->blocksize))
 			break;
 		if (SBH(buffer)->id != SOC_ID)
 			break;
@@ -145,7 +144,7 @@ static int get_bnode(sfs_boot_dev_t *self, uint32_t key,
 		return 0;
 	next = self->extentbnoderoot;
 	while (sfs_loadsector(self, next, buffer)) {
-		if (!calcchecksum(SBH(buffer), self->blocksize))
+		if (calcchecksum(SBH(buffer), self->blocksize))
 			break;
 		bnode = NULL;
 		for (i = SBNC(buffer)->btc.nodecount - 1; i >= 0; i--) {
@@ -244,9 +243,17 @@ boot_dev_t *sfs_create(struct RdbPartition *partition)
 
 	boot->extentbnoderoot = SRB(buffer)->extentbnoderoot;
 	boot->blocksize = SRB(buffer)->blocksize;
+	if (boot->blocksize == 0 || boot->blocksize > 64 * 512
+	    || (boot->blocksize & 3) != 0
+	    || calcchecksum(SBH(buffer), boot->blocksize)) {
+		free(buffer);
+		free(boot);
+		return NULL;
+	}
 
 	if (!sfs_loadsector(boot, SRB(buffer)->rootobjectcontainer, buffer)
-	    || SBH(buffer)->id != SOC_ID) {
+	    || SBH(buffer)->id != SOC_ID
+	    || calcchecksum(SBH(buffer), boot->blocksize)) {
 		printf("** Root Object Container not found - %d:%d **\n",
 		       boot->partition->disk, boot->partition->partition);
 		free(buffer);
