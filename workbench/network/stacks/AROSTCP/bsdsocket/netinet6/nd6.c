@@ -540,15 +540,12 @@ nd6_cache_lladdr(struct ifnet *ifp, struct in6_addr *from,
 }
 
 /* ------------------------------------------------------------------
- * nd6_resolve - resolve an IPv6 address to a link-layer address.
- *
- * Called by interface output routines needing a link-layer address.
- *
- * Returns 0 on success (lladdr filled), EAGAIN if resolution in progress.
+ * nd6_resolve_neighbor - resolve a neighbour's IPv6 address, dst, whose
+ * route (its neighbour cache entry) is rt, to a link-layer address.
  * ------------------------------------------------------------------ */
-int
-nd6_resolve(struct ifnet *ifp, struct rtentry *rt, struct mbuf *m,
-            struct sockaddr *dst, u_char *lladdr)
+static int
+nd6_resolve_neighbor(struct ifnet *ifp, struct rtentry *rt, struct mbuf *m,
+                     struct sockaddr *dst, u_char *lladdr)
 {
     struct llinfo_nd6 *ln;
     struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)dst;
@@ -642,6 +639,39 @@ nd6_resolve(struct ifnet *ifp, struct rtentry *rt, struct mbuf *m,
 
     /* caller frees mbuf on error */
     return EHOSTUNREACH;
+}
+
+/* ------------------------------------------------------------------
+ * nd6_resolve - resolve the next hop of a packet to a link-layer address.
+ *
+ * Called by interface output routines needing a link-layer address, with
+ * the route the packet follows and its next hop: the destination itself,
+ * or for a route through a router (RTF_GATEWAY) the router's address. A
+ * router is resolved through its own neighbour cache entry on the route's
+ * interface, as KAME's nd6_output() does with rt_gwroute, so that its
+ * Neighbor Advertisements reach the state used, one entry serves every
+ * route through it, and the route through it is left as it is.
+ *
+ * Returns 0 on success (lladdr filled), EAGAIN if resolution in progress.
+ * ------------------------------------------------------------------ */
+int
+nd6_resolve(struct ifnet *ifp, struct rtentry *rt, struct mbuf *m,
+            struct sockaddr *dst, u_char *lladdr)
+{
+    if(rt != NULL && (rt->rt_flags & RTF_GATEWAY) &&
+            dst != NULL && dst->sa_family == AF_INET6) {
+        struct in6_addr gw = ((struct sockaddr_in6 *)dst)->sin6_addr;
+        struct rtentry *nrt;
+        int error;
+
+        /* nd6_lookup() hands back the entry with a reference held */
+        if((nrt = nd6_lookup(&gw, 1, ifp)) == NULL)
+            return EHOSTUNREACH;
+        error = nd6_resolve_neighbor(ifp, nrt, m, dst, lladdr);
+        rtfree(nrt);
+        return error;
+    }
+    return nd6_resolve_neighbor(ifp, rt, m, dst, lladdr);
 }
 
 /* ------------------------------------------------------------------
