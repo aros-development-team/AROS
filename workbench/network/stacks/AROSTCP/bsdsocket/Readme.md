@@ -289,6 +289,14 @@ group via `in6_addmulti` → `S2_ADDMULTICASTADDRESS`, mapping `ff02::X` → `33
 `nd6_lookup` returns a neighbour route with its reference **held** (KAME semantics); every caller
 `rtfree()`s it when done.
 
+A route through a router (`RTF_GATEWAY`) is not a neighbour: `nd6_rtrequest()` leaves it alone and
+its gateway stays the router's IPv6 address. When a packet follows it, `nd6_resolve()` resolves the
+router through the router's own neighbour entry on the route's interface (`nd6_lookup()`), as KAME's
+`nd6_output()` does, so one entry serves every route through that router and its Neighbor
+Advertisements update the state in use. The default router learned from Router Advertisements is
+installed as `::/0` with an all-zero netmask, like a `GW6` default from the interface database; a
+route to `::` without a netmask would be a host route, which the routing table refuses.
+
 ### 6.2 Multicast Listener Discovery (MLD)
 
 `mld6.c` is the host side of MLD. `in6_addmulti`/`in6_delmulti` maintain the `in6_multihead` list
