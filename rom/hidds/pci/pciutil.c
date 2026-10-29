@@ -68,11 +68,26 @@ void getPCIClassDesc( UBYTE class, UBYTE sub, UBYTE prgif, STRPTR *cdesc, STRPTR
 ULONG sizePCIBaseReg(OOP_Object *driver, struct pci_staticdata *psd, struct DeviceData *device, UBYTE bus, UBYTE dev, UBYTE func, UBYTE basenum )
 {
     ULONG bak,sz;
+    UWORD cmd;
+
+    /*
+     * Sizing writes all-ones to the BAR, so turn decoding off meanwhile,
+     * as Linux does. Host bridges are left alone.
+     */
+    cmd = HIDD_PCIDriver_ReadConfigWord(driver, (OOP_Object *)device, bus, dev, func, PCICS_COMMAND);
+    if (device->Class == 0x06 && device->SubClass == 0x00)
+        cmd = 0;
+    if (cmd & (PCICMF_IODECODE | PCICMF_MEMDECODE))
+        HIDD_PCIDriver_WriteConfigWord(driver, (OOP_Object *)device, bus, dev, func, PCICS_COMMAND,
+            cmd & ~(PCICMF_IODECODE | PCICMF_MEMDECODE));
 
     bak = HIDD_PCIDriver_ReadConfigLong(driver, (OOP_Object *)device, bus, dev, func, PCICS_BAR0 + (basenum << 2));
     HIDD_PCIDriver_WriteConfigLong(driver, (OOP_Object *)device, bus, dev, func, PCICS_BAR0 + (basenum << 2), ~0);
     sz = HIDD_PCIDriver_ReadConfigLong(driver, (OOP_Object *)device, bus, dev, func, PCICS_BAR0 + (basenum << 2));
     HIDD_PCIDriver_WriteConfigLong(driver, (OOP_Object *)device, bus, dev, func, PCICS_BAR0 + (basenum << 2), bak);
+
+    if (cmd & (PCICMF_IODECODE | PCICMF_MEMDECODE))
+        HIDD_PCIDriver_WriteConfigWord(driver, (OOP_Object *)device, bus, dev, func, PCICS_COMMAND, cmd);
 
     if ((sz & PCIBAR_MASK_TYPE) == PCIBAR_TYPE_IO)
     {
