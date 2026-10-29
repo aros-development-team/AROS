@@ -36,13 +36,20 @@ static ULONG core_TaskUsageStamp = 0;
 
 #if defined(__AROSEXEC_SMP__)
 /* iet_CpuAffinity is a cpumask buffer or the TASKAFFINITY_ANY sentinel,
- * never a raw bitmask. NULL means "run anywhere". */
+ * never a raw bitmask. NULL is invalid and matches no CPU - masks only
+ * count once exec has given every task one (EXECF_CPUAffinity). */
 static inline BOOL core_AffinityMatch(struct Task *t, uint32_t cpumask)
 {
-    void *aff = (void *)(IPTR)GetIntETask(t)->iet_CpuAffinity;
+    void *aff;
 
-    if (!aff || (IPTR)aff == TASKAFFINITY_ANY)
+    if (!(PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity))
         return TRUE;
+
+    aff = (void *)(IPTR)GetIntETask(t)->iet_CpuAffinity;
+    if ((IPTR)aff == TASKAFFINITY_ANY)
+        return TRUE;
+    if (!aff || (IPTR)aff == TASKAFFINITY_ALL_BUT_SELF)
+        return FALSE;
 
     return (((uint32_t *)aff)[0] & cpumask) != 0;
 }
@@ -62,7 +69,7 @@ static inline BOOL core_TrySpinLockWrite(spinlock_t *lock)
             "2:     clrex                   \n\t"   // Drop the dangling exclusive monitor
             "3:                             \n\t"
             : "=&r"(lock_value), "=&r"(result)
-            : "r"(&lock->lock), "r"(0x80000000)
+            : "r"(&lock->lock), "r"(SPINLOCKF_WRITE)
             : "memory"
     );
 

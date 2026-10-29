@@ -16,7 +16,8 @@
 #include <proto/kernel.h>
 
 /*
- * Lock word: 0 free, bit 31 write-held, anything else a reader count.
+ * Lock word (<aros/types/spinlock_s.h>): 0 free, SPINLOCKF_WRITE (bit 27)
+ * write-held, otherwise the reader count in bits 0-23.
  * Waiters park in wfe and are woken by the sev in KrnSpinUnLock; the sevl
  * primes the event register so a free lock is never waited on.
  */
@@ -40,7 +41,7 @@ AROS_LH3(spinlock_t *, KrnSpinLock,
                 "       stxr    %w1, %w3, [%2]  \n\t"   // Try to write the write-locked value
                 "       cbnz    %w1, 2b         \n\t"   // Exclusive access lost - re-examine the lock
                 : "=&r"(lock_value), "=&r"(result)
-                : "r"(&lock->lock), "r"(0x80000000)
+                : "r"(&lock->lock), "r"(SPINLOCKF_WRITE)
                 : "memory"
         );
 
@@ -53,7 +54,7 @@ AROS_LH3(spinlock_t *, KrnSpinLock,
                 "       sevl                    \n\t"
                 "1:     wfe                     \n\t"
                 "2:     ldaxr   %w0, [%2]       \n\t"   // Load the lock value, gaining exclusive access
-                "       tbnz    %w0, #31, 1b    \n\t"   // Write-held? Wait for the unlock event
+                "       tbnz    %w0, #27, 1b    \n\t"   // Write-held (SPINLOCKB_WRITE)? Wait for the unlock event
                 "       add     %w0, %w0, #1    \n\t"   // One more reader
                 "       stxr    %w1, %w0, [%2]  \n\t"   // Try to write the new reader count
                 "       cbnz    %w1, 2b         \n\t"   // Exclusive access lost - re-examine the lock

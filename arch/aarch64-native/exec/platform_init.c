@@ -51,22 +51,24 @@ int Exec_ARMCPUInit(struct ExecBase *SysBase)
 
     D(bug("[Exec] %s: launched from %s @ 0x%p\n", __PRETTY_FUNCTION__, BootTask->tc_Node.ln_Name, BootTask));
 
+    /* The boot task runs on the kernel's boot stack. (Under SMP this was
+     * only done when KrnGetCPUCount() returned 0, which it never does.) */
+    BootTask->tc_SPLower = stack;
+    BootTask->tc_SPUpper = stack + AROS_STACKSIZE;
 #if defined(__AROSEXEC_SMP__)
-    if (cpunum == 0)
-    {
-#endif
-        BootTask->tc_SPLower = stack;
-        BootTask->tc_SPUpper = stack + AROS_STACKSIZE;
-#if defined(__AROSEXEC_SMP__)
-    }
 
     for (cpu = 0; cpu < cpunum; cpu++)
     {
         taskName = AllocVec(15, MEMF_CLEAR);
         sprintf(taskName, "CPU #%02d Idle", cpu);
-        cpuMask = KrnAllocCPUMask();
-        if (cpuMask)
-            KrnGetCPUMask(cpu, cpuMask);
+        /* Not optional: affinity 0 would mean the boot CPU, not this one */
+        if ((cpuMask = KrnAllocCPUMask()) == NULL)
+        {
+            D(bug("[Exec] %s: no CPU mask for CPU #%02d's idle task\n", __PRETTY_FUNCTION__, cpu));
+            FreeVec(taskName);
+            continue;
+        }
+        KrnGetCPUMask(cpu, cpuMask);
 #else
     taskName = "System Idle";
 #endif
@@ -200,29 +202,52 @@ void Exec_SuicideSwitch(void)
     EXEC_FIQ_RESTORE(__fiq);
 }
 
+/* Pin a task that predates EXECF_CPUAffinity to the boot CPU */
+static BOOL Exec_ARMAssignBootMask(struct Task *task)
+{
+    struct IntETask *iet;
+    void *aff;
+
+    if (!task || !(task->tc_Flags & TF_ETASK) || !task->tc_UnionETask.tc_ETask)
+        return TRUE;
+
+    iet = IntETask(task->tc_UnionETask.tc_ETask);
+    if (iet->iet_CpuAffinity)
+        return TRUE;
+
+    if (!(aff = KrnAllocCPUMask()))
+        return FALSE;
+    KrnGetCPUMask(0, aff);
+    iet->iet_CpuAffinity = aff;
+    iet->iet_CpuNumber = 0;
+
+    return TRUE;
+}
+
 int Exec_ARMCPUSMPInit(struct ExecBase *SysBase)
 {
-    /* Gate for signal.c's cross-CPU paths; without it remote wakes
-     * silently fail. */
-    PrivExecBase(SysBase)->IntFlags |= EXECF_CPUAffinity;
+    struct Task *task;
+    BOOL ok;
 
-    /* The boot task predates EXECF_CPUAffinity, so it has no affinity -
-     * but the coldstart sequence is not migration-safe. */
-    {
-        struct Task *bootTask = GET_THIS_TASK;
-        struct IntETask *iet = bootTask ? (struct IntETask *)GetETask(bootTask) : NULL;
+    /*
+     * Every task that predates EXECF_CPUAffinity gets a mask first (the
+     * coldstart sequence is not migration-safe, so the boot CPU's), as
+     * all-pc does: a NULL mask is invalid and would leave a task no CPU
+     * dispatches. Only then is the gate for signal.c's cross-CPU paths
+     * opened.
+     */
+    Disable();
+    ok = Exec_ARMAssignBootMask(GET_THIS_TASK);
+    ForeachNode(&SysBase->TaskReady, task)
+        ok = ok && Exec_ARMAssignBootMask(task);
+    ForeachNode(&SysBase->TaskWait, task)
+        ok = ok && Exec_ARMAssignBootMask(task);
+    if (ok)
+        PrivExecBase(SysBase)->IntFlags |= EXECF_CPUAffinity;
+    Enable();
 
-        if (iet && !iet->iet_CpuAffinity)
-        {
-            void *aff = KrnAllocCPUMask();
-            if (aff)
-            {
-                KrnGetCPUMask(0, aff);
-                iet->iet_CpuAffinity = aff;
-                iet->iet_CpuNumber = 0;
-            }
-        }
-    }
+    if (!ok)
+        bug("[Exec] %s: no memory for task affinity masks\n", __PRETTY_FUNCTION__);
 
     return TRUE;
 }

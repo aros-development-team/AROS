@@ -37,7 +37,7 @@ AROS_LH2(spinlock_t *, KrnSpinTryLock,
                     "1:     clrex                   \n\t"   // Drop the dangling exclusive monitor
                     "2:                             \n\t"
                     : "=&r"(lock_value), "=&r"(tmp)
-                    : "r"(&lock->lock), "r"(0x80000000), "1"(0)
+                    : "r"(&lock->lock), "r"(SPINLOCKF_WRITE), "1"(0)
                     : "memory"
             );
         } while(tmp);
@@ -56,7 +56,7 @@ AROS_LH2(spinlock_t *, KrnSpinTryLock,
         {
             asm volatile(
                     "       ldaxr   %w0, [%2]       \n\t"   // Load the lock value, gaining exclusive access
-                    "       tbnz    %w0, #31, 1f    \n\t"   // Write-held - give up without spinning
+                    "       tbnz    %w0, #27, 1f    \n\t"   // Write-held (SPINLOCKB_WRITE) - give up without spinning
                     "       add     %w0, %w0, #1    \n\t"   // One more reader
                     "       stxr    %w1, %w0, [%2]  \n\t"   // Try to write the new reader count
                     "       b       2f              \n\t"
@@ -68,7 +68,7 @@ AROS_LH2(spinlock_t *, KrnSpinTryLock,
             );
         } while(tmp);
 
-        if (lock_value < 0x80000000)
+        if (!(lock_value & SPINLOCKF_WRITE))
             return lock;
         else
             return NULL;
