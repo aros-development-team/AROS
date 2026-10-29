@@ -4,13 +4,14 @@
  *
  * ----------------------------------------------------------------------
  * This code is (C) Copyright 1993,1994 by Frank Munkert.
- *              (C) Copyright 2002-2012 The AROS Development Team
+ *              (C) Copyright 2002-2026 The AROS Development Team
  * All rights reserved.
  * This software may be freely distributed and redistributed for
  * non-commercial purposes, provided this notice is included.
  * ----------------------------------------------------------------------
  * History:
  *
+ * 29-Oct-26 aros    Recover small file caches after memory pressure eases.
  * 28-Dec-12 neil    Pass corrected TOC length back from Read_TOC instead of
  *                   the raw TOC header. Errors in the length field of this
  *                   header were causing buffer overruns with many drives.
@@ -188,6 +189,45 @@ static UBYTE *IO_Buffer(CDROM *cd)
     return cd->buffer_io;
 }
 
+/* Reclamation must not permanently turn small alternating file reads into
+ * physical seeks. Recreate only the two small file slots, without expunging
+ * anything to obtain them. They remain reclaimable by the same handler.
+ */
+static void Recover_File_Cache(CDROM *cd)
+{
+    ULONG flags = cd->cache_memory_type | MEMF_NO_EXPUNGE;
+    unsigned short busy = cd->cache_io_busy;
+
+    if (!cd->split_cache || cd->buffer_file2 != NULL)
+        return;
+
+    /* A managed allocator can wait even without expunging. Keep another
+     * task's low-memory handler out until the recovered state is complete. */
+    cd->cache_io_busy = TRUE;
+    if (cd->buffer_data == NULL)
+    {
+        cd->buffer_data = AllocVec(2 * SCSI_BUFSIZE + 15, flags);
+        if (cd->buffer_data == NULL)
+            goto out;
+        cd->cache_slots[0].current_sector = -1;
+        cd->cache_slots[0].valid_sectors = 0;
+        cd->buffer_sectors = 2;
+        cd->file_slots = 1;
+        cd->cache_reclaimed = 1;
+    }
+
+    cd->buffer_file2 = AllocVec(2 * SCSI_BUFSIZE + 15, flags);
+    if (cd->buffer_file2 != NULL)
+    {
+        cd->cache_slots[1].current_sector = -1;
+        cd->cache_slots[1].valid_sectors = 0;
+        cd->file_slots = 2;
+        cd->cache_reclaimed = 0;
+    }
+out:
+    cd->cache_io_busy = busy;
+}
+
 CDROM *Open_CDROM
         (
                 struct CDVDBase *global,
@@ -215,6 +255,7 @@ CDROM *Open_CDROM
             break;
 
         cd->global = global;
+        cd->cache_memory_type = MEMF_PUBLIC | p_memory_type;
         cd->io_sector = -1;
         /* Preserve the historical 32 KiB minimum cache allocation. */
         if (p_std_buffers == 1)
@@ -466,6 +507,9 @@ static int Read_Chunk_Internal(CDROM *p_cd, long p_sector, int file_data)
     p_cd->buffer_bytes = 0;
     if (p_sector < 0)
         return 0;
+
+    if (file_data && p_cd->io_sector != p_sector)
+        Recover_File_Cache(p_cd);
 
     /* A declared endpoint limits read-ahead, not access to an existing sector. */
     if ((read_end && (uint64_t)p_sector >= read_end) ||
