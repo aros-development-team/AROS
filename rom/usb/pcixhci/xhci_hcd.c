@@ -2461,8 +2461,7 @@ void xhciFinishRequest(struct PCIController *hc, struct PCIUnit *unit, struct IO
         }
 
         if(driprivate->dpBounceBuf) {
-            xhciReleaseDMABuffer(hc, ioreq, 0, driprivate->dpBounceDir,
-                                 driprivate->dpBounceBuf);
+            xhciReleaseDMABuffer(hc, ioreq, driprivate, 0, driprivate->dpBounceDir);
             driprivate->dpBounceBuf = NULL;
             driprivate->dpBounceData = NULL;
             driprivate->dpBounceLen = 0;
@@ -3089,7 +3088,7 @@ BOOL xhciIntWorkProcess(struct PCIController *hc, struct IOUsbHWReq *ioreq, ULON
          * leaks and to complete CachePostDMA on partial transfers.
          */
         if(ioreq->iouh_Data) {
-            xhciReleaseDMABuffer(hc, ioreq, transferred, effdir, driprivate->dpBounceBuf);
+            xhciReleaseDMABuffer(hc, ioreq, driprivate, transferred, effdir);
             driprivate->dpBounceBuf = NULL;
             driprivate->dpBounceData = NULL;
             driprivate->dpBounceLen = 0;

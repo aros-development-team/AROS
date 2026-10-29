@@ -44,10 +44,19 @@ UBYTE xhciEndpointIDFromIndex(UWORD wIndex)
     return epid;
 }
 
+/* The cache-line aligned start of a bounce allocation */
+static inline APTR xhciBounceData(APTR bounce)
+{
+    return (APTR)(((IPTR)bounce + XHCI_DMA_LINE - 1) & ~(IPTR)(XHCI_DMA_LINE - 1));
+}
+
 APTR xhciPrepareDMABuffer(struct PCIController *hc, struct IOUsbHWReq *ioreq,
+                          struct pciusbXHCIIODevPrivate *driprivate,
                           ULONG *dmalen, UWORD effdir, APTR *bounceOut)
 {
     APTR data = ioreq->iouh_Data;
+    APTR bounce = NULL;
+    BOOL needbounce = FALSE;
 
     if(bounceOut)
         *bounceOut = NULL;
@@ -56,22 +65,42 @@ APTR xhciPrepareDMABuffer(struct PCIController *hc, struct IOUsbHWReq *ioreq,
         return data;
 
 #if __WORDSIZE == 64
-    APTR bounce = NULL;
-    if(!(hc->hc_Flags & HCF_ADDR64)) {
-        if((((IPTR)data + *dmalen - 1) >> 32) != 0) {
-            bounce = AllocVec(*dmalen, MEMF_31BIT | MEMF_PUBLIC);
-            if(!bounce)
-                return NULL;
-
-            if(effdir == UHDIR_OUT)
-                CopyMem(data, bounce, *dmalen);
-
-            if(bounceOut)
-                *bounceOut = bounce;
-        }
-    }
-    data = bounce ? bounce : data;
+    if(!(hc->hc_Flags & HCF_ADDR64) && ((((IPTR)data + *dmalen - 1) >> 32) != 0))
+        needbounce = TRUE;
 #endif
+#if defined(__arm__) || defined(__aarch64__)
+    /*
+     * DMA is not cache coherent here, so an IN buffer must own its cache
+     * lines: a neighbour dirtied during the transfer (e.g. the caller's
+     * stack) is written back over the device's data by CachePostDMA.
+     */
+    if((effdir == UHDIR_IN) && ((((IPTR)data | *dmalen) & (XHCI_DMA_LINE - 1)) != 0))
+        needbounce = TRUE;
+#endif
+
+    if(needbounce) {
+#if defined(__arm__) || defined(__aarch64__)
+        if(*dmalen <= XHCI_BOUNCE_INLINE) {
+            bounce = driprivate->dpBounceInline;
+#if __WORDSIZE == 64
+            if(!(hc->hc_Flags & HCF_ADDR64) &&
+                    ((((IPTR)xhciBounceData(bounce) + *dmalen - 1) >> 32) != 0))
+                bounce = NULL;
+#endif
+        }
+#endif
+        if(!bounce)
+            bounce = AllocVec(*dmalen + 2 * XHCI_DMA_LINE, MEMF_31BIT | MEMF_PUBLIC);
+        if(!bounce)
+            return NULL;
+
+        data = xhciBounceData(bounce);
+        if(effdir == UHDIR_OUT)
+            CopyMem(ioreq->iouh_Data, data, *dmalen);
+
+        if(bounceOut)
+            *bounceOut = bounce;
+    }
     CachePreDMA(data, dmalen,
                 (effdir == UHDIR_IN) ? DMAFLAGS_PREREAD : DMAFLAGS_PREWRITE);
 
@@ -79,9 +108,11 @@ APTR xhciPrepareDMABuffer(struct PCIController *hc, struct IOUsbHWReq *ioreq,
 }
 
 void xhciReleaseDMABuffer(struct PCIController *hc, struct IOUsbHWReq *ioreq,
-                          ULONG actual, UWORD effdir, APTR bounceBuf)
+                          struct pciusbXHCIIODevPrivate *driprivate,
+                          ULONG actual, UWORD effdir)
 {
-    APTR data = bounceBuf ? bounceBuf : ioreq->iouh_Data;
+    APTR bounceBuf = driprivate->dpBounceBuf;
+    APTR data = bounceBuf ? xhciBounceData(bounceBuf) : ioreq->iouh_Data;
     ULONG postlen = actual;
 
     if(data && actual) {
@@ -91,8 +122,11 @@ void xhciReleaseDMABuffer(struct PCIController *hc, struct IOUsbHWReq *ioreq,
 
     if(bounceBuf) {
         if((effdir == UHDIR_IN) && actual)
-            CopyMem(bounceBuf, ioreq->iouh_Data, actual);
-        FreeVec(bounceBuf);
+            CopyMem(data, ioreq->iouh_Data, actual);
+#if defined(__arm__) || defined(__aarch64__)
+        if(bounceBuf != (APTR)driprivate->dpBounceInline)
+#endif
+            FreeVec(bounceBuf);
     }
 
     (void)hc;
@@ -333,7 +367,7 @@ WORD xhciQueuePayloadTRBs(struct PCIController *hc, struct IOUsbHWReq *ioreq,
 
     UWORD effdir = xhciEffectiveDataDir(ioreq);
     APTR bounce = NULL;
-    APTR dmaptr = xhciPrepareDMABuffer(hc, ioreq, &dmalen, effdir, &bounce);
+    APTR dmaptr = xhciPrepareDMABuffer(hc, ioreq, driprivate, &dmalen, effdir, &bounce);
     if(!dmaptr && dmalen) {
         ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
         return -1;
@@ -355,7 +389,7 @@ WORD xhciQueuePayloadTRBs(struct PCIController *hc, struct IOUsbHWReq *ioreq,
         driprivate->dpTxETRB = (epring->next > 0) ? (epring->next - 1) : (XHCI_EVENT_RING_TRBS - 1);
 
     } else if(driprivate->dpBounceBuf) {
-        xhciReleaseDMABuffer(hc, ioreq, 0, effdir, driprivate->dpBounceBuf);
+        xhciReleaseDMABuffer(hc, ioreq, driprivate, 0, effdir);
         driprivate->dpBounceBuf = NULL;
         driprivate->dpBounceData = NULL;
         driprivate->dpBounceLen = 0;
