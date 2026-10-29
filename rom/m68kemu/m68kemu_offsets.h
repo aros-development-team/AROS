@@ -39,6 +39,7 @@
 #define M68K_PR_COS                 160
 #define M68K_PR_CLI                 172
 #define M68K_PR_WINDOWPTR           184
+#define M68K_PR_MSGPORT             92
 #define M68K_PR_ARGUMENTS           204
 #define M68K_PR_PAD                 126
 
@@ -82,6 +83,8 @@
 #define M68K_NW_BLOCKPEN            9
 #define M68K_NW_IDCMPFLAGS          10
 #define M68K_NW_FLAGS               14
+#define M68K_NW_FIRSTGADGET         18
+#define M68K_NW_CHECKMARK           22
 #define M68K_NW_TITLE               26
 #define M68K_NW_SCREEN              30
 #define M68K_NW_MINWIDTH            38
@@ -99,10 +102,31 @@
 #define M68K_WIN_MOUSEX             14
 #define M68K_WIN_FLAGS              24
 #define M68K_WIN_TITLE              32
+#define M68K_WIN_FIRSTGADGET        62
 #define M68K_WIN_WSCREEN            46
 #define M68K_WIN_RPORT              50
 #define M68K_WIN_IDCMPFLAGS         82
 #define M68K_WIN_USERPORT           86
+#define M68K_WIN_BORDERLEFT         54
+#define M68K_WIN_BORDERTOP          55
+#define M68K_WIN_BORDERRIGHT        56
+#define M68K_WIN_BORDERBOTTOM       57
+#define M68K_WIN_GZZWIDTH           112
+#define M68K_WIN_GZZHEIGHT          114
+#define M68K_WIN_WLAYER             124
+/* AmigaOS 3 hires window borders, what 68k programs size their windows by */
+#define M68K_CLASSIC_WBORTOP        2
+#define M68K_CLASSIC_WBORLEFT       4
+#define M68K_CLASSIC_WBORRIGHT      4
+#define M68K_CLASSIC_WBORBOTTOM     2
+#define M68K_CLASSIC_SIZEWIDTH      18      /* hires sizing gadget */
+#define M68K_CLASSIC_SIZEHEIGHT     10
+#define M68K_RP_LAYER               0
+#define M68K_RP_TMPRAS              12
+#define M68K_RP_AREAINFO            16
+#define M68K_LAYER_RP               12
+#define M68K_LAYER_BOUNDS           16
+#define M68K_SIZEOF_LAYER_SHADOW    160
 
 /* ── NewScreen struct offsets (m68k) ─────────────────────────────── */
 
@@ -127,6 +151,7 @@
 #define M68K_SCR_TITLE              22
 #define M68K_SCR_VIEWPORT           44
 #define M68K_SCR_RASTPORT           84
+#define M68K_SCR_BITMAP            184
 
 /* ── IntuiText struct offsets (m68k) ─────────────────────────────── */
 
@@ -215,6 +240,14 @@
 
 /* ── Heap constants ──────────────────────────────────────────────── */
 
+/* struct MemHeader */
+#define M68K_MH_ATTRIBUTES          14
+#define M68K_MH_FIRST               16
+#define M68K_MH_LOWER               20
+#define M68K_MH_UPPER               24
+#define M68K_MH_FREE                28
+#define M68K_SIZEOF_MEMHEADER       32
+
 #define M68KEMU_HEAP_HDR            8   /* heap block header size */
 #define M68KEMU_HEAP_MIN_SPLIT      16  /* minimum remainder to split */
 
@@ -224,12 +257,8 @@
 
 /* ── Hunk type constants ─────────────────────────────────────────── */
 
-#define HUNK_HEADER                 0x3F3
-#define HUNK_CODE                   0x3E9
-#define HUNK_DATA                   0x3EA
-#define HUNK_BSS                    0x3EB
-#define HUNK_RELOC32                0x3EC
-#define HUNK_END                    0x3F2
+#include <dos/doshunks.h>
+
 #define HUNK_TYPE_MASK              0x3FFFFFFF
 
 /* ── Function table terminator ───────────────────────────────────── */
@@ -242,6 +271,19 @@
 
 /* ── AttnFlags value for 68040+FPU ───────────────────────────────── */
 
-#define M68K_ATTNFLAGS_040FPU       0x004F
+#define M68K_ATTNFLAGS_040FPU      0x000F   /* AFF_68010-68040, no FPU: Moira executes no FPU instructions */
 
 #endif /* M68KEMU_OFFSETS_H */
+
+/* struct StringInfo */
+#define M68K_SI_BUFFER              0
+#define M68K_SI_UNDOBUFFER          4
+#define M68K_SI_BUFFERPOS           8
+#define M68K_SI_MAXCHARS            10
+#define M68K_SI_DISPPOS             12
+#define M68K_SI_UNDOPOS             14
+#define M68K_SI_NUMCHARS            16
+#define M68K_SI_DISPCOUNT           18
+#define M68K_SI_CLEFT               20
+#define M68K_SI_CTOP                22
+#define M68K_SI_LONGINT             28
