@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Free memory allocated by Allocate().
 */
@@ -42,6 +42,12 @@
     NOTES
         The start and end borders of the block are aligned to
         a multiple of sizeof(struct MemChunk) and to include the block.
+
+        Freeing blocks back to a private region restores its original free
+        count, including a terminal remainder smaller than the alignment.
+
+        Calls on an unmanaged region use the same task synchronisation as
+        Allocate(), preserving the caller's task-switch nesting.
 
         On SMP builds this function serialises through the header's
         embedded spinlock (mh_SpinLock) - see the corresponding note in
@@ -91,7 +97,15 @@
         }
 #endif
 
+        /* Match the SMP header lock with task-switch protection on single
+         * CPU targets. Managed callbacks keep their own locking path. */
+#if !defined(__AROSEXEC_SMP__)
+        MEM_LOCK;
+#endif
         stdDealloc(freeList, NULL /* by design */, memoryBlock, byteSize, &tp, SysBase);
+#if !defined(__AROSEXEC_SMP__)
+        MEM_UNLOCK;
+#endif
 
     }
 

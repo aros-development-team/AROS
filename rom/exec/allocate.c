@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Allocate memory from a specific MemHeader.
 */
@@ -46,6 +46,14 @@
     NOTES
         The memory is aligned to sizeof(struct MemChunk). All requests
         are rounded up to a multiple of that size.
+
+        A private region may end with fewer bytes than that alignment.
+        These bytes remain in mh_Free but cannot satisfy an allocation;
+        no free-chunk header is written past the end of the region.
+
+        Calls on an unmanaged region are serialised against other tasks.
+        The owner must still synchronise initialisation and destruction of
+        the region, and must not manipulate its free list during a call.
 
         On SMP builds this function serialises through the header's
         embedded spinlock (mh_SpinLock), so a hand-built MemHeader MUST
@@ -130,7 +138,17 @@
         if(freeList->mh_Free<byteSize)
             return NULL;
 
+        /* stdAlloc takes the header lock on SMP. On a single CPU, protect
+         * the traversal and update from task switches with the normal
+         * memory lock (Forbid, or the hosted target's memory semaphore).
+         */
+#if !defined(__AROSEXEC_SMP__)
+        MEM_LOCK;
+#endif
         res = stdAlloc(freeList, NULL /* by design */, byteSize, 0, &tp, SysBase);
+#if !defined(__AROSEXEC_SMP__)
+        MEM_UNLOCK;
+#endif
 
         if ((PrivExecBase(SysBase)->IntFlags & EXECF_MungWall) && res) {
             MUNGE_BLOCK(res, MEMFILL_ALLOC, byteSize);
