@@ -255,6 +255,7 @@ void testROUTE6_ASKS_FOR_ROUTER(void)
 
     NEED_IF();
     CU_ASSERT_EQUAL(addr6(1, SRCNET), 0);
+    Delay(3 * 50);      /* the new address is tentative until DAD completes */
     CU_ASSERT_EQUAL(route(RTM_ADD, NET, 64, GW), 0);
     s = socket(AF_INET6, SOCK_DGRAM, 0);
     sa6(&d, DST);
