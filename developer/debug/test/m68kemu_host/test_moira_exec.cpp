@@ -30,6 +30,7 @@ ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *, const char *) { return 0;
 #include "../../rom/m68kemu/m68kemu_moira.cpp"
 
 #include <cstdio>
+#include <vector>
 static int pass = 0, fail = 0;
 #define TEST(n) printf("  %-50s ", n)
 #define OK() do { printf("PASS\n"); pass++; } while(0)
@@ -139,6 +140,97 @@ void t_exec_memory_access()
     OK();
 }
 
+/* The M68040 containment address is 32 bits. Only $00DFF000-$00DFFFFF
+   belongs to custom registers; the page at $01DFF000 is ordinary RAM. */
+void t_custom_address_decode()
+{
+    std::vector<UBYTE> memory(M68KEMU_MEM_SIZE, 0);
+    struct M68KEmuContext ctx = {};
+    ctx.mem = memory.data();
+    ctx.mem_size = memory.size();
+    AROSMoira cpu(&ctx);
+    cpu.setModel(Model::M68040);
+    const ULONG high = 0x01DFF016, outside = 0x02DFF016;
+    auto check = [](const char *name, bool ok) {
+        TEST(name);
+        if (ok) { OK(); }
+        else { printf("FAIL\n"); fail++; }
+    };
+
+    m68k_write16(&ctx, high, 0xA55A);
+    m68k_write16(&ctx, 0x01DFFFFE, 0x6C93);
+    check("High RAM: byte reads and lanes",
+          cpu.read8(high) == 0xA5 && cpu.read8(high + 1) == 0x5A &&
+          cpu.read8(0x01DFFFFF) == 0x93 && ctx.beam_v == 0 && ctx.beam_h == 0);
+    ctx.beam_v = ctx.beam_h = 0;
+    check("High RAM: word reads and page end",
+          cpu.read16(high) == 0xA55A && cpu.read16(0x01DFFFFE) == 0x6C93 &&
+          ctx.beam_v == 0 && ctx.beam_h == 0);
+    ctx.beam_v = ctx.beam_h = 0;
+    cpu.write8(high, 0x12);
+    cpu.write8(high + 1, 0x34);
+    check("High RAM: byte writes and lanes", m68k_read16(&ctx, high) == 0x1234);
+    cpu.write16(high + 0x14, 0x0001); /* same low bits as VPOSW */
+    check("High RAM: word write does not touch VPOSW",
+          m68k_read16(&ctx, high + 0x14) == 1 && ctx.beam_v == 0 && ctx.beam_h == 0);
+
+    ctx.beam_v = ctx.beam_h = 0;
+    check("Beyond arena: byte aliases read zero",
+          cpu.read8(outside) == 0 && cpu.read8(0xFFDFF016) == 0 &&
+          ctx.beam_v == 0 && ctx.beam_h == 0);
+    ctx.beam_v = ctx.beam_h = 0;
+    check("Beyond arena: word aliases read zero",
+          cpu.read16(outside) == 0 && cpu.read16(0xFFDFF016) == 0 &&
+          ctx.beam_v == 0 && ctx.beam_h == 0);
+    ctx.beam_v = ctx.beam_h = 0;
+    const auto before = memory;
+    cpu.write8(outside, 0x56);
+    cpu.write8(0xFFDFF017, 0x78);
+    cpu.write16(outside + 0x14, 1);
+    cpu.write16(0xFFDFF02A, 1);
+    check("Beyond arena: writes have no RAM or chip effect",
+          memory == before && ctx.beam_v == 0 && ctx.beam_h == 0);
+
+    /* The real custom page must retain its register semantics even though
+       these addresses are numerically inside the containment arena. */
+    m68k_write16(&ctx, CUSTOM_BASE + 0x16, 0xA55A);
+    check("Custom page: POTGOR byte and word reads",
+          cpu.read8(CUSTOM_BASE + 0x16) == 0xFF &&
+          cpu.read8(CUSTOM_BASE + 0x17) == 0 && cpu.read16(CUSTOM_BASE + 0x16) == 0xFF00);
+    cpu.write8(CUSTOM_BASE + 0x16, 0x12);
+    cpu.write8(CUSTOM_BASE + 0x17, 0x34);
+    cpu.write16(CUSTOM_BASE + 0x16, 0x5678);
+    ctx.beam_v = ctx.beam_h = 0;
+    cpu.write16(CUSTOM_BASE + 0x2A, 1);
+    check("Custom page: writes stay on custom registers",
+          m68k_read16(&ctx, CUSTOM_BASE + 0x16) == 0xA55A &&
+          m68k_read16(&ctx, CUSTOM_BASE + 0x2A) == 0 && ctx.beam_v == 0x100);
+}
+
+void t_exec_high_ram()
+{
+    TEST("Execute M68040 word write/read in high RAM");
+    struct M68KEmuLibBase base = {};
+    auto *ctx = M68KEmu_CreateContext(&base);
+    CHK(ctx, "ctx null");
+    const ULONG data = 0x01DFF016;
+    ULONG code = M68KEmu_HeapAlloc(ctx, 16, 0);
+    if (!code) { M68KEmu_DestroyContext(ctx); NG("alloc failed"); }
+    /* MOVE.W #$1234,$01DFF016; MOVE.W $01DFF016,D0; RTS */
+    const UWORD words[] = {0x33FC, 0x1234, 0x01DF, 0xF016,
+                           0x3039, 0x01DF, 0xF016, 0x4E75};
+    for (unsigned i = 0; i < sizeof(words)/sizeof(words[0]); i++)
+        m68k_write16(ctx, code + i*2, words[i]);
+    m68k_write16(ctx, data, 0xA55A);
+    ctx->entry_point = code;
+    ctx->m68k_argptr = ctx->m68k_argsize = ctx->m68k_sysbase = 0;
+    LONG result = M68KEmu_Execute(ctx);
+    bool ok = result == 0x1234 && m68k_read16(ctx, data) == 0x1234;
+    M68KEmu_DestroyContext(ctx);
+    CHK(ok, "high RAM was intercepted as custom registers");
+    OK();
+}
+
 int main()
 {
     printf("m68kemu Moira execution tests\n");
@@ -147,6 +239,8 @@ int main()
     t_exec_add();
     t_exec_loop();
     t_exec_memory_access();
+    t_custom_address_decode();
+    t_exec_high_ram();
     printf("\n%d passed, %d failed\n", pass, fail);
     return fail ? 1 : 0;
 }
