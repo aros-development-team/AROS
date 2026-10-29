@@ -28,7 +28,7 @@
 #include <conf.h>
 #include <sys/param.h>
 #include <sys/types.h>
-#include <net/bpf.h>
+#include "bpf.h"
 
 #define EXTRACT_SHORT(p) \
 	((u_int16_t) \

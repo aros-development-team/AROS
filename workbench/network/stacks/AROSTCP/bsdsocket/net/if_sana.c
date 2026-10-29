@@ -69,7 +69,7 @@
 #include <net/if_sana.h>
 #include <net/if_types.h>
 #include <net/sana2arp.h>
-#include <net/bpf.h>
+#include "bpf.h"
 
 #include <net/sana2config.h>
 #include <net/sana2request.h>
