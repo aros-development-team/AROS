@@ -220,6 +220,11 @@ static int sfs_loadfile(sfs_boot_dev_t * self, char *filename, void *filebuffer)
 	if (buffer == NULL)
 		return -1;
 
+	if ((o->bits & (OTYPE_DIR | OTYPE_LINK)) != 0
+	    || o->object.file.size > 0x7fffffffU) {
+		free(buffer);
+		return -1;
+	}
 	next = o->object.file.data;
 	size = o->object.file.size;
 	readed = 0;
