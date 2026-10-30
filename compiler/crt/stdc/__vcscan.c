@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Function to scan a string like scanf().
 */
@@ -28,26 +28,7 @@
 #define PREV(c) do{if((c)!=EOF)(*unget_char)((c),data);size--;incount--;}while(0)
 #define VAL(a)    ((a)&&size<=width)
 
-extern unsigned char *__stdc_char_decimalpoint;
-
-struct vcs_ieeetype
-{
-    union
-    {
-        double doub;
-        unsigned char uchar[sizeof(double)];
-    };
-};
-
-#ifdef FULL_SPECIFIERS
-const static struct vcs_ieeetype undef[3] = /* Undefined numeric values, IEEE */
-{
-    { .uchar = { 0x7f,0xf0,0x00,0x00,0x00,0x00,0x00,0x00 }}, /* +inf */
-    { .uchar = { 0xff,0xf0,0x00,0x00,0x00,0x00,0x00,0x00 }}, /* -inf */
-    { .uchar = { 0x7f,0xf1,0x00,0x00,0x00,0x00,0x00,0x00 }}  /* NaN */
-};
-#endif
-
+extern const unsigned char * const __stdc_char_decimalpoint;
 
 /*****************************************************************************
 
@@ -252,142 +233,94 @@ const static struct vcs_ieeetype undef[3] = /* Undefined numeric values, IEEE */
             }
 #ifdef FULL_SPECIFIERS
             case 'e':
+            case 'E':
             case 'f':
+            case 'F':
             case 'g':
+            case 'G':
+            case 'a':
+            case 'A':
             {
+                char local[128], *buf = local, *end;
+                size_t used = 0, cap = sizeof(local);
+                int hex = 0, dot = 0, exponent = 0, mode = 0;
+                size_t sign = 0, word = 0;
                 double v;
-                int ex=0;
-                int min=0,mine=0; /* This is a workaround for gcc 2.3.3: should be char */
 
-                do /* This is there just to be able to break out */
+                /* Collect the longest input item, including incomplete exponent
+                   prefixes, with only one character of stream lookahead. The
+                   conversion itself is shared with strtod, not a second decimal
+                   arithmetic implementation. Field widths exclude whitespace. */
+                while (VAL(c != EOF))
                 {
-                    if(VAL(c=='-'||c=='+'))
+                    int take = 0;
+                    int lower = tolower((unsigned char)c);
+                    if (!used && (c == '+' || c == '-'))
+                        take = 1, sign = 1;
+                    else if (used == sign && (lower == 'i' || lower == 'n'))
+                        mode = lower, word = 1, take = 1;
+                    else if (mode == 'i')
                     {
-                        min=c;
-                        NEXT(c);
+                        if (word < 8 && lower == "infinity"[word])
+                            word++, take = 1;
                     }
-
-                    if(VAL(tolower(c)=='i')) /* +- inf */
+                    else if (mode == 'n')
                     {
-                        int d;
-                        NEXT(d);
-                        if(VAL(tolower(d)=='n'))
-                        {
-                            int e;
-                            NEXT(e);
-                            if(VAL(tolower(e)=='f'))
-                            {
-                                v=*(double *)&undef[min=='-'];
-                                break;
-                            } /* break out */
-                            PREV(e);
-                        }
-                        PREV(d);
+                        if (word < 3 && lower == "nan"[word])
+                            word++, take = 1;
+                        else if (word == 3 && c == '(')
+                            word = 4, take = 1;
+                        else if (word == 4 && (isalnum((unsigned char)c) || c == '_'))
+                            take = 1;
+                        else if (word == 4 && c == ')')
+                            word = 5, take = 1;
                     }
-                    else if(VAL(toupper(c)=='N')) /* NaN */
+                    else if (isdigit((unsigned char)c) ||
+                             (hex && !exponent && isxdigit((unsigned char)c)))
+                        take = 1;
+                    else if (!exponent && !dot && c == __stdc_char_decimalpoint[0])
+                        dot = 1, take = 1;
+                    else if (used == sign + 1 && buf[sign] == '0' && lower == 'x')
+                        hex = 1, take = 1;
+                    else if (!exponent && used > sign && lower == (hex ? 'p' : 'e'))
+                        exponent = 1, take = 1;
+                    else if (exponent && (c == '+' || c == '-') && used &&
+                             tolower((unsigned char)buf[used - 1]) == (hex ? 'p' : 'e'))
+                        take = 1;
+                    if (!take) break;
+                    if (used + 1 == cap)
                     {
-                        int d;
-                        NEXT(d);
-                        if(VAL(tolower(d)=='a'))
+                        char *next;
+                        size_t newcap = cap * 2;
+                        if (newcap <= cap || !(next = malloc(newcap)))
                         {
-                            int e;
-                            NEXT(e);
-                            if(VAL(toupper(e)=='N'))
-                            {
-                                v=*(double *)&undef[2];
-                                break;
-                            }
-                            PREV(e);
+                            if (buf != local) free(buf);
+                            return blocks ? (int)blocks : EOF;
                         }
-                        PREV(d);
+                        for (i = 0; i < used; i++) next[i] = buf[i];
+                        if (buf != local) free(buf);
+                        buf = next;
+                        cap = newcap;
                     }
-
-                    v=0.0;
-                    while(VAL(isdigit(c)))
-                    {
-                        v=v*10.0+(c-'0');
-                        NEXT(c);
-                    }
-
-                    if(VAL(c==__stdc_char_decimalpoint[0]))
-                    {
-                        double dp=0.1;
-                        NEXT(c);
-                        while(VAL(isdigit(c)))
-                        {
-                            v=v+dp*(c-'0');
-                            dp=dp/10.0;
-                            NEXT(c);
-                        }
-                        if(size==2+(min!=0)) /* No number read till now -> malformatted */
-                        {
-                            PREV(c);
-                            c=__stdc_char_decimalpoint[0];
-                        }
-                    }
-
-                    if(min&&size==2) /* No number read till now -> malformatted */
-                    {
-                        PREV(c);
-                        c=min;
-                    }
-                    if(size==1) {
-                        PREV(c);
-                        break;
-                    }
-
-                    if(VAL(tolower(c)=='e'))
-                    {
-                        int d;
-                        NEXT(d);
-                        if(VAL(d=='-'||d=='+'))
-                        {
-                            mine=d;
-                            NEXT(d);
-                        }
-
-                        if(VAL(isdigit(d)))
-                        {
-                            do
-                            {
-                                ex=ex*10+(d-'0');
-                                NEXT(d);
-                            }while(VAL(isdigit(d)&&ex<100));
-                            c=d;
-                        }
-                        else
-                        {
-                            PREV(d);
-                            if(mine)
-                                PREV(mine);
-                        }
-                    }
-                    PREV(c);
-
-                    if(mine=='-')
-                        v=v/pow(10.0,ex);
-                    else
-                        v=v*pow(10.0,ex);
-
-                    if(min=='-')
-                        v=-v;
-
-                }while(0);
-
-                if(!ignore&&size)
+                    buf[used++] = c;
+                    NEXT(c);
+                }
+                PREV(c);
+                buf[used] = '\0';
+                v = strtod(buf, &end);
+                if (!used || end != buf + used)
                 {
-                    switch(subtype)
-                    {
-                    case 'l':
-                    case 'L':
-                        *va_arg(args,double *)=v;
-                        break;
-                    case 'i':
-                        *va_arg(args,float *)=v;
-                        break;
-                    }
+                    if (buf != local) free(buf);
+                    return c == EOF && !used && !blocks ? EOF : (int)blocks;
+                }
+                if (!ignore)
+                {
+                    if (subtype == 'L') *va_arg(args,long double *) = (long double)v;
+                    else if (subtype == 'l') *va_arg(args,double *) = v;
+                    else *va_arg(args,float *) = (float)v;
                     blocks++;
                 }
+                if (buf != local) free(buf);
                 break;
             }
 #endif
