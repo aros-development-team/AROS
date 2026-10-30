@@ -315,8 +315,7 @@ multicast_output:
         int frag_pl = (mtu - hlen - sizeof(struct ip6_frag)) & ~7;
         struct mbuf *m0;
         u_int32_t id;
-        int off2;
-        u_int16_t offlg;
+        int off2, total;
         u_int8_t  nxt8;
 
         if(frag_pl <= 0) {
@@ -333,10 +332,16 @@ multicast_output:
         /* rewrite next-header to IPPROTO_FRAGMENT */
         ip6->ip6_nxt = IPPROTO_FRAGMENT;
 
+        /*
+         * The fragmentable part is everything after the IPv6 header; each
+         * fragment carries the next frag_pl bytes of it (a multiple of 8)
+         * until what is left fits (RFC 8200 section 4.5).
+         */
+        total = m->m_pkthdr.len - hlen;
         off2 = 0;
-        while(m->m_pkthdr.len > hlen) {
-            int flen = MIN(frag_pl, m->m_pkthdr.len - hlen);
-            int more = (m->m_pkthdr.len - hlen - flen) > 0;
+        while(off2 < total) {
+            int flen = MIN(frag_pl, total - off2);
+            int more = off2 + flen < total;
             struct ip6_frag fh;
 
             /*
@@ -358,11 +363,14 @@ multicast_output:
             bcopy(mtod(m, caddr_t), mtod(m0, caddr_t), hlen);
 
             /* fill fragment header */
+            /* the offset in 8-octet units sits above the M flag; off2 is a
+             * multiple of 8, so in network order it is htons(off2), and
+             * IP6F_MORE_FRAG is defined in network order already */
             fh.ip6f_nxt      = nxt8;
             fh.ip6f_reserved = 0;
-            offlg            = (u_int16_t)off2;
-            if(more) offlg |= IP6F_MORE_FRAG;
-            fh.ip6f_offlg    = htons(offlg);
+            fh.ip6f_offlg    = htons((u_int16_t)off2);
+            if(more)
+                fh.ip6f_offlg |= IP6F_MORE_FRAG;
             fh.ip6f_ident    = id;
 
             bcopy(&fh, mtod(m0, caddr_t) + hlen, sizeof(fh));
@@ -381,8 +389,9 @@ multicast_output:
                 htons(sizeof(fh) + flen);
 
             s = splimp();
+            /* a group datagram has no route (rt is NULL) */
             error = (*ifp->if_output)(rcvifp ? rcvifp : ifp, m0,
-                                      (rt->rt_flags & RTF_GATEWAY) ? rt->rt_gateway
+                                      (rt && (rt->rt_flags & RTF_GATEWAY)) ? rt->rt_gateway
                                       : (struct sockaddr *)dst,
                                       rt);
             splx(s);

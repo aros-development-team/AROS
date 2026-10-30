@@ -574,7 +574,10 @@ Properties the implementation provides:
   guards) and query construction (`res_mkquery`).
 - **IPv6 fragmentation** builds each output fragment as a header mbuf with the fragment payload
   chained on via `m_copy`, so a fragment is not limited to one cluster and jumbo-MTU IPv6 fragments
-  are emitted correctly; payload is never copied into a bare `MHLEN` mbuf.
+  are emitted correctly; payload is never copied into a bare `MHLEN` mbuf. Each fragment carries the next
+  `(MTU - 48) & ~7` bytes of what follows the IPv6 header, at its offset and with the M flag on every
+  fragment but the last (RFC 8200 §4.5); `IP6F_MORE_FRAG` is a network-order constant, so it is set
+  after the offset is converted. A group datagram, which has no route, is fragmented like any other.
 - **IPv4 reassembly** links held fragments through separately allocated `struct ipqent` nodes
   (`ip_input.c`) rather than overlaying list pointers on the IP header as 4.3BSD did. Two 8-byte
   pointers do not fit in the header's address fields on a 64-bit target, so the old overlay ran past
