@@ -5,6 +5,7 @@
 */
 
 
+#include <aros/atomic.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 
@@ -441,7 +442,7 @@ void Receiver_first(
 		(*driverdata->Input_Treat)(driverdata,input);
 	}
 
-	driverdata->unpicked--;
+	AROS_ATOMIC_DEC(driverdata->unpicked);
 }
 
 
@@ -460,12 +461,21 @@ SAVEDS void ASM Receiver(
 	REG(a2) struct DriverData *driverdata
 #endif
 ){
+	/* Keep unread bytes intact when the producer catches the consumer. Once
+	   overflowed, discard the rest of this burst until the receiver process
+	   has reset its MIDI stream state. */
+	if(driverdata->re_overflow ||
+	   driverdata->unpicked>=RECEIVERPROCBUFFERSIZE-1){
+		AROS_ATOMIC_OR(driverdata->re_overflow,1);
+		Signal(&driverdata->ReceiverProc->pr_Task,1L<<driverdata->ReceiverSig);
+		return;
+	}
 	*driverdata->re_write=input;
 	driverdata->re_write++;
 	if(driverdata->re_write==driverdata->re_end){
 		driverdata->re_write=driverdata->re_start;
 	}
-	driverdata->unpicked++;
+	AROS_ATOMIC_INC(driverdata->unpicked);
 	Signal(&driverdata->ReceiverProc->pr_Task,1L<<driverdata->ReceiverSig);
 
 }

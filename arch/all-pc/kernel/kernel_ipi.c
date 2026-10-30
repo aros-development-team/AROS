@@ -324,6 +324,11 @@ int core_IPIHandle(struct ExceptionContext *regs, void *data1, struct KernelBase
             core_IPICallHookHandle(regs, KernelBase);
             APIC_REG(__APICBase, APIC_EOI) = 0;
             break;
+
+        default:
+            /* Nothing to do, but the local APIC still needs its EOI */
+            APIC_REG(__APICBase, APIC_EOI) = 0;
+            break;
     }
 
     return TRUE;

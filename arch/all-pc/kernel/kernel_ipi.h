@@ -11,14 +11,21 @@
 #include "apic_ia32.h"
 
 /*
-    Private KERNEL IPI messages
+    Private KERNEL IPI messages.
+
+    Each message is the offset of its vector from APIC_EXCEPT_IPI_NOP:
+    core_DoIPI() sends vector APIC_EXCEPT_IPI_NOP + message, and the
+    handler is registered with exactly that offset as its data
+    (apic_ia32.c). They used to be counted from X86_CPU_EXCEPT_COUNT,
+    one below APIC_EXCEPT_IPI_NOP, so every message travelled on the
+    next vector up and IPI_CAUSE on the APIC error vector.
 */
-#define IPI_NOP         (APIC_EXCEPT_IPI_NOP - X86_CPU_EXCEPT_COUNT)
-#define IPI_STOP        (APIC_EXCEPT_IPI_STOP - X86_CPU_EXCEPT_COUNT)
-#define IPI_RESUME      (APIC_EXCEPT_IPI_RESUME - X86_CPU_EXCEPT_COUNT)
-#define IPI_RESCHEDULE  (APIC_EXCEPT_IPI_RESCHEDULE - X86_CPU_EXCEPT_COUNT)
-#define IPI_CALL_HOOK   (APIC_EXCEPT_IPI_CALL_HOOK - X86_CPU_EXCEPT_COUNT)
-#define IPI_CAUSE       (APIC_EXCEPT_IPI_CAUSE - X86_CPU_EXCEPT_COUNT)
+#define IPI_NOP         (APIC_EXCEPT_IPI_NOP - APIC_EXCEPT_IPI_NOP)
+#define IPI_STOP        (APIC_EXCEPT_IPI_STOP - APIC_EXCEPT_IPI_NOP)
+#define IPI_RESUME      (APIC_EXCEPT_IPI_RESUME - APIC_EXCEPT_IPI_NOP)
+#define IPI_RESCHEDULE  (APIC_EXCEPT_IPI_RESCHEDULE - APIC_EXCEPT_IPI_NOP)
+#define IPI_CALL_HOOK   (APIC_EXCEPT_IPI_CALL_HOOK - APIC_EXCEPT_IPI_NOP)
+#define IPI_CAUSE       (APIC_EXCEPT_IPI_CAUSE - APIC_EXCEPT_IPI_NOP)
 
 int core_IPIHandle(struct ExceptionContext *regs, void *data1, struct KernelBase *KernelBase);
 void core_DoIPI(uint8_t ipi_number, void *cpu_mask, struct KernelBase *KernelBase);

@@ -68,6 +68,10 @@
     case KATTR_CPULoad:
         return core->cpu_Load;
 
+    case KATTR_CPUHardwareID:
+        /* The local APIC id behind the CPU number */
+        return (intptr_t)core->cpu_LocalID;
+
     case KATTR_CPUFrequencyKHz:
         {
             UQUAD khz = core->cpu_TSCFreq / 1000;

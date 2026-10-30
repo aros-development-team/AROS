@@ -27,9 +27,16 @@
     INPUTS
 
     RESULT
-        Pointer to the allocated mask, or NULL if allocation fails.
+        Pointer to the allocated mask, or NULL if allocation fails (or the
+        platform has no CPU masks, as on uniprocessor builds).
 
     NOTES
+        Masks are a fixed size for the lifetime of the boot, large enough
+        for every CPU the platform can number, so a mask stays valid as
+        CPUs come online.
+        A NULL mask is not valid: no CPU is ever selected by it. The
+        TASKAFFINITY_ANY and TASKAFFINITY_ALL_BUT_SELF values are sentinels
+        rather than mask storage.
 
     EXAMPLE
 

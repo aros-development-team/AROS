@@ -73,6 +73,7 @@ struct hevc_slice
 struct hevc_state
 {
     VAPictureParameterBufferHEVC    pp;
+    VAPictureParameterBufferHEVCRext rext;      /* range extension (4:2:2, 4:4:4, 12-bit profiles), zero otherwise */
     VAIQMatrixBufferHEVC            iq;
     BOOL                have_pp, have_iq;
     struct hevc_slice   slices[NOUVEAU_DECODE_MAX_SLICES];
@@ -173,6 +174,11 @@ static BOOL hevc_params(struct HIDDNouveauDecode *dec, ULONG type, APTR data, UL
         if (size < sizeof(VAPictureParameterBufferHEVC))
             return FALSE;
         memcpy(&h->pp, data, sizeof(h->pp));
+        /* a range-extension profile's buffer carries its parameters right after the base ones */
+        if (size >= sizeof(VAPictureParameterBufferHEVC) + sizeof(VAPictureParameterBufferHEVCRext))
+            memcpy(&h->rext, (UBYTE *)data + sizeof(VAPictureParameterBufferHEVC), sizeof(h->rext));
+        else
+            memset(&h->rext, 0, sizeof(h->rext));
         h->have_pp = TRUE;
         return TRUE;
 
@@ -358,8 +364,11 @@ static BOOL hevc_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeF
         return FALSE;
     pp = &h->pp;
     bitdepth = pp->bit_depth_luma_minus8 + 8;
-    if ((pp->pic_fields.bits.chroma_format_idc != 1) || (bitdepth > 10) ||
-        ((bitdepth == 10) != (dec->bpp == 2)) ||
+    /* the chroma format must be the target's: 4:2:0 half-height, 4:2:2 full, 4:4:4 full and twice as wide */
+    if ((pp->pic_fields.bits.chroma_format_idc < 1) || (pp->pic_fields.bits.chroma_format_idc > 3) ||
+        ((pp->pic_fields.bits.chroma_format_idc == 1) != (dec->chalf != 0)) ||
+        ((pp->pic_fields.bits.chroma_format_idc == 3) != (dec->cwide == 2)) || (bitdepth > 12) ||
+        ((bitdepth > 8) != (dec->bpp == 2)) ||
         (pp->pic_width_in_luma_samples > dec->width) || (pp->pic_height_in_luma_samples > dec->height))
     {
         nvlog("[Nouveau] NVDEC: HEVC stream (%ux%u, %lu-bit, chroma %u) does not fit the session\n",
@@ -421,7 +430,7 @@ static BOOL hevc_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeF
     pic->sw_start_code_e = 1;
     pic->disp_output_mode = 0;                       /* native 10-bit P010 output (NVIDIA's driver: 0) */
     pic->framestride[0] = dec->pitch / dec->bpp;     /* in samples */
-    pic->framestride[1] = dec->pitch / dec->bpp;
+    pic->framestride[1] = dec->pitch * dec->cwide / dec->bpp;     /* 4:4:4: a U/V pair per pixel */
     pic->colMvBuffersize = h->colmvsize >> 8;
     pic->HevcSaoBufferOffset = HEVC_FLT_SAO_LEFT * h->fltscale;
     pic->HevcBsdCtrlOffset = HEVC_FLT_BSD_CTRL * h->fltscale;
@@ -578,7 +587,33 @@ static BOOL hevc_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeF
         }
         pic->sw_hdr_skip_length = skip;
     }
-    pic->v1.hevc_main10_444_ext.log2MaxTransformSkipSize = 2;       /* minus2 + 2: no range extension */
+    {
+        nvdec_hevc_main10_444_ext_s *x = &pic->v1.hevc_main10_444_ext;
+        const VAPictureParameterBufferHEVCRext *r = &h->rext;
+
+        /* the range extension's tools (zero for Main / Main10) */
+        x->transformSkipRotationEnableFlag = r->range_extension_pic_fields.bits.transform_skip_rotation_enabled_flag;
+        x->transformSkipContextEnableFlag = r->range_extension_pic_fields.bits.transform_skip_context_enabled_flag;
+        x->implicitRdpcmEnableFlag = r->range_extension_pic_fields.bits.implicit_rdpcm_enabled_flag;
+        x->explicitRdpcmEnableFlag = r->range_extension_pic_fields.bits.explicit_rdpcm_enabled_flag;
+        x->extendedPrecisionProcessingFlag = r->range_extension_pic_fields.bits.extended_precision_processing_flag;
+        x->intraSmoothingDisabledFlag = r->range_extension_pic_fields.bits.intra_smoothing_disabled_flag;
+        x->highPrecisionOffsetsEnableFlag = r->range_extension_pic_fields.bits.high_precision_offsets_enabled_flag;
+        x->fastRiceAdaptationEnableFlag = r->range_extension_pic_fields.bits.persistent_rice_adaptation_enabled_flag;
+        x->cabacBypassAlignmentEnableFlag = r->range_extension_pic_fields.bits.cabac_bypass_alignment_enabled_flag;
+        x->log2MaxTransformSkipSize = r->log2_max_transform_skip_block_size_minus2 + 2;
+        x->crossComponentPredictionEnableFlag = r->range_extension_pic_fields.bits.cross_component_prediction_enabled_flag;
+        x->chromaQpAdjustmentEnableFlag = r->range_extension_pic_fields.bits.chroma_qp_offset_list_enabled_flag;
+        if (x->chromaQpAdjustmentEnableFlag)
+        {
+            x->diffCuChromaQpAdjustmentDepth = r->diff_cu_chroma_qp_offset_depth;
+            x->chromaQpAdjustmentTableSize = r->chroma_qp_offset_list_len_minus1 + 1;
+            memcpy(x->cb_qp_adjustment, r->cb_qp_offset_list, 6);
+            memcpy(x->cr_qp_adjustment, r->cr_qp_offset_list, 6);
+        }
+        x->log2SaoOffsetScaleLuma = r->log2_sao_offset_scale_luma;
+        x->log2SaoOffsetScaleChroma = r->log2_sao_offset_scale_chroma;
+    }
     pic->v1.hevc_main10_444_ext.HevcFltAboveOffset = HEVC_FLT_DBLK_ABOVE * h->fltscale;
     pic->v1.hevc_main10_444_ext.HevcSaoAboveOffset = HEVC_FLT_SAO_ABOVE * h->fltscale;
     pic->v3.HevcSliceEdgeOffset = HEVC_FLT_SLICE_EDGE * h->fltscale;
@@ -587,7 +622,8 @@ static BOOL hevc_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeF
     {
         /* Blackwell's additions, as NVIDIA's driver fills them for the CFB0 class (traced) */
         pic->reserved6 = (dec->bpp == 2) ? 2 : 9;
-        pic->reserved7 = (dec->bpp == 2) ? 3 : 0;
+        /* 3 x (8, 10, 12-bit: 0, 1, 2) + (4:2:0, 4:2:2, 4:4:4: 0, 1, 2), traced */
+        pic->reserved7 = 3 * ((bitdepth - 8) / 2) + (pp->pic_fields.bits.chroma_format_idc - 1);
         *(ULONG *)((UBYTE *)pic + 0x11c) = NVDEC_BLK_UNITS(pp->pic_width_in_luma_samples);
         *(UWORD *)((UBYTE *)pic + 0x120) = 0xffff;
     }

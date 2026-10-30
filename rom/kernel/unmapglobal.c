@@ -31,9 +31,7 @@
         length - Length of the region in bytes.
 
     RESULT
-        Port specific. On x86_64, 0 on success and -1 on failure; on aarch64
-        and riscv64, 0 on failure and a non-zero value on success. Callers
-        that work across ports must not assume either; see KrnMapGlobal().
+        Non-zero on success, 0 on failure, on every port.
 
     NOTES
         The range is rounded out to whole pages; accessing it afterwards
@@ -50,7 +48,7 @@
         unmapped.
 
         On architectures without an MMU, or where this is not implemented,
-        the call does nothing and returns 0.
+        the call does nothing and returns 0 (failure).
 
     EXAMPLE
 

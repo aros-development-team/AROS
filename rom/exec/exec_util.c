@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Exec utility functions.
 */
@@ -132,6 +132,18 @@ Exec_InitETask(struct Task *task, struct Task *parent, struct ExecBase *SysBase)
             IntETask(parent->tc_UnionETask.tc_ETask) : NULL;
         void *aff = KrnAllocCPUMask();
         void *paff = NULL;
+
+        /*
+         * A NULL mask is not valid: no CPU would dispatch the task.
+         * Fail the ETask, as a failed ETask allocation does.
+         */
+        if (!aff)
+        {
+            task->tc_UnionETask.tc_ETask = NULL;
+            task->tc_Flags &= ~TF_ETASK;
+            FreeMem(et, sizeof(struct IntETask));
+            return FALSE;
+        }
 
         /* Inherit the parent's mask, not the creating core, or affinity
          * narrows to one core per generation. SetTaskAffinity() rewrites

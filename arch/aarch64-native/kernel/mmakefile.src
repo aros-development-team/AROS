@@ -33,6 +33,7 @@ CFILES := \
         platform_init \
         kernel_debug \
         getsystemattr \
+        getcpuattr \
         timestamp \
         getcpucount \
         alloccpumask \

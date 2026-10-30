@@ -34,6 +34,9 @@
         None.
 
     NOTES
+        The CPU is added to whatever the mask already selects, so a set
+        of CPUs is built with repeated calls. NULL, the TASKAFFINITY_*
+        sentinels and out-of-range CPU numbers are ignored.
 
     EXAMPLE
 

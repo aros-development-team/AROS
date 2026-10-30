@@ -2,7 +2,7 @@
 #define __MMAKE_CACHE_H
 
 /* MetaMake - A Make extension
-   Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+   Copyright ï¿½ 1995-2004, The AROS Development Team. All rights reserved.
 
 This file is part of MetaMake.
 
@@ -36,17 +36,30 @@ struct MakefileRef
    
 struct Target
 {
-    struct Node node;
+    struct Node node;        /* entry in cache->targets (authoritative list) */
+    struct Node hashnode;    /* entry in the target hash index buckets */
+
     int  updated : 1;
 
     struct List makefiles;
 };
 
+/* Opaque hash index over the targets collection.
+ * The linked list cache->targets remains the authoritative container
+ * (iteration, debug output, freeing).
+ */
+struct TargetHash;
+
 /* The public part of the Cache structure */
 struct Cache
 {
     struct List targets;
+    struct TargetHash * targets_hash;
 }; 
+
+/* Lookup/add a target by name against the hash index */
+struct Target * cachetarget_find (struct Cache * cache, const char * name);
+void cachetarget_add (struct Cache * cache, struct Target * target);
 
 
 struct Cache *activatecache(struct Project *);

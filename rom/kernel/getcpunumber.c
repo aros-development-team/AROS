@@ -28,7 +28,10 @@
         None
 
     RESULT
-        Number of the CPU on which the function is called
+        Number of the CPU on which the function is called: a logical
+        number from 0 to KrnGetCPUCount() - 1, the boot CPU being 0. CPU
+        masks and KrnGetCPUAttr() are indexed by it; the hardware id
+        behind it is KrnGetCPUAttr(KATTR_CPUHardwareID, n).
 
     NOTES
 

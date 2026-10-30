@@ -78,6 +78,103 @@ struct Regenerate
     char *dest;
 };
 
+/* ------------------------------------------------------------------ *
+ * Hash index over cache->targets
+ *
+ * For source trees with tens of thousands of metatargets the former
+ * linear FindNode() scans inside buildtargetlist() cost O(T^2/2)
+ * strcmp operations. This index keeps the linked list as the
+ * authoritative container but provides O(1) lookup by name.
+ * ------------------------------------------------------------------ */
+
+#define TARGETHASH_BITS     14u
+#define TARGETHASH_BUCKETS  (1u << TARGETHASH_BITS)
+#define TARGETHASH_MASK     (TARGETHASH_BUCKETS - 1u)
+
+struct TargetHash
+{
+    struct List buckets[TARGETHASH_BUCKETS];
+    unsigned long count;
+};
+
+/* djb2 string hash */
+static unsigned long
+targethash (const char * s)
+{
+    unsigned long h = 5381;
+
+    while (*s)
+        h = h * 33 + (unsigned char)*s++;
+
+    return h;
+}
+
+static struct TargetHash *
+newtargethash (void)
+{
+    struct TargetHash * th = xmalloc (sizeof (struct TargetHash));
+    unsigned long b;
+
+    for (b = 0; b < TARGETHASH_BUCKETS; b++)
+        NewList (&th->buckets[b]);
+
+    th->count = 0;
+
+    return th;
+}
+
+static void
+freetargethash (struct TargetHash * th)
+{
+    /* Buckets reference nodes owned by the targets list - nothing to free here */
+    xfree (th);
+}
+
+static struct Target *
+targethash_find (struct TargetHash * th, const char * name)
+{
+    unsigned long h;
+    struct Node * n;
+
+    if (!th)
+        return NULL;
+
+    h = targethash (name) & TARGETHASH_MASK;
+
+    ForeachNode (&th->buckets[h], n)
+    {
+        struct Target *t = (struct Target *)((char *)n - offsetof (struct Target, hashnode));
+        if (!strcmp (t->node.name, name))
+            return t;
+    }
+
+    return NULL;
+}
+
+static void
+targethash_add (struct TargetHash * th, struct Target * target)
+{
+    unsigned long h = targethash (target->node.name) & TARGETHASH_MASK;
+
+    target->hashnode.name = NULL;
+    AddTail (&th->buckets[h], (struct Node *)&target->hashnode);
+    th->count++;
+}
+
+struct Target *
+cachetarget_find (struct Cache * cache, const char * name)
+{
+    return targethash_find (cache->targets_hash, name);
+}
+
+/* Adds the target to both the hash index and the authoritative list */
+void
+cachetarget_add (struct Cache * cache, struct Target * target)
+{
+    targethash_add (cache->targets_hash, target);
+    AddTail (&cache->targets, (struct Node *)target);
+}
+
 
 static char *
 makecachepath (struct Cache_priv * cache)
@@ -641,14 +738,14 @@ buildtargetlist (struct Cache_priv * cache, struct DirNode * node)
                 }
             }
 
-            target = FindNode (&cache->publicpart.targets, mftarget->node.name);
+            target = targethash_find (cache->publicpart.targets_hash, mftarget->node.name);
 
             if (target ==  NULL)
             {
                 target = newnodesize (mftarget->node.name, sizeof(struct Target));
                 target->updated = 0;
                 NewList (&target->makefiles);
-                AddTail (&cache->publicpart.targets, target);
+                cachetarget_add (&cache->publicpart, target);
             }
 
             mfref = newnodesize ("", sizeof(struct MakefileRef));
@@ -685,6 +782,7 @@ activatecache (struct Project *prj)
 
     NewList (&cache->addedfiles);
     NewList (&cache->publicpart.targets);
+    cache->publicpart.targets_hash = newtargethash ();
 
     readcache (cache);
 
@@ -786,4 +884,10 @@ closecache (struct Cache * gl_cache)
     struct Cache_priv * cache = (struct Cache_priv *)gl_cache;
 
     freetargetlist (cache);
+
+    if (cache->publicpart.targets_hash)
+    {
+        freetargethash (cache->publicpart.targets_hash);
+        cache->publicpart.targets_hash = NULL;
+    }
 }

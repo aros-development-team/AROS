@@ -281,17 +281,20 @@ distfiles-raspi-aarch64le-bootimg: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img
 distfiles-raspi-aarch64le-bootimg-quick: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img
 
 # gpu_mem: GL takes its memory from ARM RAM (vc4gallium, v3d), and screens
-# are HVS planes in ARM RAM with only a token framebuffer for the firmware,
-# so the VideoCore partition holds little more than the firmware: 32 is
-# enough. A failed display list takeover falls back to a full framebuffer,
-# which at 32 only fits about 1080p. Not 16: that selects start_cd.elf or
-# start4cd.elf, which are not shipped. (Pi 5 ignores this.)
+# are HVS planes in ARM RAM with only a token framebuffer for the firmware.
+# The VideoCore codecs behind vchiq.library (H.264 decode for FFmpeg's
+# h264_mmal, JPEG) work in the VideoCore partition, and 32 is too little
+# for them: MMAL answers ENOSPC. 128 decodes 720p H.264. Not 16:
+# that selects start_cd.elf or start4cd.elf, which are not shipped.
+# (Pi 5 ignores this.)
 # max_framebuffer: the Pi 4 firmware caps its framebuffer at 1920x1280 by
 # default and scales it onto a larger display, so a 1440p monitor gave AROS
 # a 3:2 framebuffer and no native mode.
 # disable_overscan: otherwise a CEA mode gets a 48 pixel border.
+# hdmi_drive=2: HDMI rather than DVI signalling, which carries no audio. The
+# Pi 3 firmware picks DVI for some sinks, and only it sets that mode there.
 $(AROSDIR)/config.txt: $(AROSDIR)/$(ARM_BSP) $(SRCDIR)/$(CURDIR)/mmakefile.src
-	@printf "kernel=aros-$(AROS_TARGET_CPU)-raspi.img\nkernel_address=0x80000\ninitramfs $(ARM_BSP) 0x00800000\narm_64bit=1\ngpu_mem=32\nenable_uart=1\nframebuffer_depth=32\nframebuffer_ignore_alpha=1\ndisable_overscan=1\n[pi4]\nmax_framebuffer_width=3840\nmax_framebuffer_height=2160\n[pi5]\nenable_rp1_uart=1\npciex4_reset=0\ndtparam=nvme\nframebuffer_swap=0\n" > $@
+	@printf "kernel=aros-$(AROS_TARGET_CPU)-raspi.img\nkernel_address=0x80000\ninitramfs $(ARM_BSP) 0x00800000\narm_64bit=1\nenable_uart=1\nframebuffer_depth=32\nframebuffer_ignore_alpha=1\ndisable_overscan=1\ngpu_mem=128\n[pi3]\nhdmi_drive=2\n[pi4]\nmax_framebuffer_width=3840\nmax_framebuffer_height=2160\n[pi5]\nenable_rp1_uart=1\npciex4_reset=0\ndtparam=nvme\nframebuffer_swap=0\n" > $@
 
 # .d depfiles are only generated for C sources, not startup64.S
 $(AROSDIR)/aros-aarch64-raspi.img: $(TARGETDIR)/core.bin.o $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $(foreach f, $(filter-out startup64,$(FILES)), $(TARGETDIR)/$(f).d)

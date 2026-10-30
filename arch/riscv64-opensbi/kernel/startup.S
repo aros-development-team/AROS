@@ -12,6 +12,9 @@
     Both are passed through untouched to kernel_cstart().
 */
 
+#include <aros/config.h>
+#include "tls.h"
+
 	.section .aros.init,"ax"
 	.globl	_start
 	.type	_start,%function
@@ -160,6 +163,13 @@ _start_kernel:
 	addi	t0, t0, 8
 	j	1b
 2:
+#if defined(__AROSEXEC_SMP__)
+	/* Per-hart TLS (see riscv-native/kernel/tls.h): the boot hart's is
+	   static, so tp is valid before the first C call - the trap path
+	   counts its nesting through it */
+	la	tp, __riscv_boot_tls
+	sd	a0, TLS_HARTID_OFFSET(tp)
+#endif
 	/* kernel_cstart(hartid, fdt) - a0/a1 still hold the SBI values */
 	call	kernel_cstart
 
@@ -168,6 +178,45 @@ _start_kernel:
 __trap_hang:
 3:	wfi
 	j	3b
+
+#if defined(__AROSEXEC_SMP__)
+/*
+ * Secondary hart entry, from SBI HSM hart_start: S-mode, MMU off,
+ * interrupts off, a0 = hart id, a1 = the opaque value, which is the
+ * hart's TLS. The kernel map is an identity map, so the addresses here
+ * are valid both before and after translation goes on.
+ */
+	.text
+	.balign	4
+	.globl	__secondary_entry
+	.type	__secondary_entry,%function
+__secondary_entry:
+	csrw	sie, zero
+.option push
+.option norelax
+	la	gp, __global_pointer$
+.option pop
+	mv	tp, a1
+	sd	a0, TLS_HARTID_OFFSET(tp)
+	ld	sp, TLS_STACKTOP_OFFSET(tp)
+
+	la	t0, __trap_entry
+	csrw	stvec, t0
+
+	li	t0, 0x2000		/* SSTATUS_FS_INITIAL             */
+	csrs	sstatus, t0
+
+	/* The boot hart's page tables (kernel_mmu.c) */
+	la	t0, __riscv_satp
+	ld	t0, 0(t0)
+	sfence.vma
+	csrw	satp, t0
+	sfence.vma
+
+	call	cpu_Register
+4:	wfi
+	j	4b
+#endif
 
 	.section .bss
 	.balign	16

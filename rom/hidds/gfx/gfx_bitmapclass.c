@@ -1007,7 +1007,12 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
             {
                 /* An inherited RGB pixfmt (friend) does not describe a video buffer */
                 data->prot.pixfmt = NULL;
-                ULONG bpp = ((data->videoformat <= vHidd_VideoFmt_UYVY) || (data->videoformat == vHidd_VideoFmt_P010)) ? 2 : 1;
+                ULONG bpp = ((data->videoformat <= vHidd_VideoFmt_UYVY) || (data->videoformat == vHidd_VideoFmt_P010) ||
+                              (data->videoformat == vHidd_VideoFmt_P012) ||
+                              (data->videoformat == vHidd_VideoFmt_P210) ||
+                              (data->videoformat == vHidd_VideoFmt_P212) ||
+                              (data->videoformat == vHidd_VideoFmt_P410) ||
+                              (data->videoformat == vHidd_VideoFmt_P412)) ? 2 : 1;
                 struct TagItem vtags[] =
                 {
                     { aHidd_PixFmt_ColorModel,     vHidd_ColorModel_Video    },

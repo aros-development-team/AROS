@@ -26,6 +26,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <string.h>
+#include <stdio.h>
 
 #undef HiddBitMapAttrBase
 #undef HiddDisplayAttrBase
@@ -174,12 +175,12 @@ BOOL HIDDNouveauDecodeEmit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDeco
     const ULONG *mthds, ULONG nmthds)
 {
     struct nouveau_pushbuf *push = dec->pushbuf;
-    struct nouveau_pushbuf_refn refs[8 + 8 + NOUVEAU_DECODE_SLOTS];
+    struct nouveau_pushbuf_refn refs[8 + 12 + NOUVEAU_DECODE_SLOTS];
     ULONG n = 0, i;
 
     if (dec->dead || !push)
         return FALSE;
-    if (nextra > 8)
+    if (nextra > 12)
         return FALSE;
     refs[n].bo = f->picsetup;   refs[n++].flags = NOUVEAU_BO_GART | NOUVEAU_BO_RDWR;
     refs[n].bo = f->bitstream;  refs[n++].flags = NOUVEAU_BO_GART | NOUVEAU_BO_RD;
@@ -325,29 +326,48 @@ struct nvdec_codec
     ULONG   maxrefs;
     ULONG   fmts;           /* vHidd_VideoFmt_* bits the decoder writes for the profile */
     BOOL    experimental;   /* not working yet: offered only with NOUVEAU_NVDEC_EXPERIMENTAL set */
+    ULONG   minclass;       /* the decoder class it needs, 0 any */
 };
 
 #define FMT_8BIT    (1UL << vHidd_VideoFmt_NV12)
 #define FMT_10BIT   (1UL << vHidd_VideoFmt_P010)
+#define FMT_12BIT   (1UL << vHidd_VideoFmt_P012)
+#define FMT_422_8   (1UL << vHidd_VideoFmt_NV16)
+#define FMT_422_10  (1UL << vHidd_VideoFmt_P210)
+#define FMT_422_12  (1UL << vHidd_VideoFmt_P212)
+#define FMT_444_8   (1UL << vHidd_VideoFmt_NV24)
+#define FMT_444_10  (1UL << vHidd_VideoFmt_P410)
+#define FMT_444_12  (1UL << vHidd_VideoFmt_P412)
 
 static const struct nvdec_codec nvdec_codecs[] =
 {
     { VAProfileH264ConstrainedBaseline, &HIDDNouveauDecodeH264Ops, 4096, 4096, 16, FMT_8BIT, FALSE },
     { VAProfileH264Main,                &HIDDNouveauDecodeH264Ops, 4096, 4096, 16, FMT_8BIT, FALSE },
     { VAProfileH264High,                &HIDDNouveauDecodeH264Ops, 4096, 4096, 16, FMT_8BIT, FALSE },
+    /* 10-bit H.264: Blackwell's H.264 application (nouveau_decode_h264.c) */
+    { VAProfileH264High10,              &HIDDNouveauDecodeH264Ops, 4096, 4096, 16, FMT_8BIT | FMT_10BIT, FALSE,
+      NVDEC_CLASS_BLACKWELL },
     { VAProfileMPEG2Simple,             &HIDDNouveauDecodeMPEG2Ops, 4096, 4096, 3, FMT_8BIT, FALSE },
     { VAProfileMPEG2Main,               &HIDDNouveauDecodeMPEG2Ops, 4096, 4096, 3, FMT_8BIT, FALSE },
     { VAProfileVC1Simple,               &HIDDNouveauDecodeVC1Ops, 4096, 4096, 3, FMT_8BIT, FALSE },
     { VAProfileVC1Main,                 &HIDDNouveauDecodeVC1Ops, 4096, 4096, 3, FMT_8BIT, FALSE },
+    { VAProfileVC1Advanced,             &HIDDNouveauDecodeVC1Ops, 4096, 4096, 3, FMT_8BIT, FALSE },
     { VAProfileVP8Version0_3,           &HIDDNouveauDecodeVP8Ops, 4096, 4096, 4, FMT_8BIT, FALSE },
     /* VP9: 8 reference slots */
     { VAProfileVP9Profile0,             &HIDDNouveauDecodeVP9Ops, 8192, 8192, 8, FMT_8BIT, FALSE },
-    { VAProfileVP9Profile2,             &HIDDNouveauDecodeVP9Ops, 8192, 8192, 8, FMT_10BIT, FALSE },
+    { VAProfileVP9Profile2,             &HIDDNouveauDecodeVP9Ops, 8192, 8192, 8, FMT_10BIT | FMT_12BIT, FALSE },
     /* AV1 profile 0: 8 or 10-bit; 8 reference slots, and with film grain a second picture per frame */
     { VAProfileAV1Profile0,             &HIDDNouveauDecodeAV1Ops, 8192, 8192, 15, FMT_8BIT | FMT_10BIT, FALSE },
     /* HEVC: 16 picture slots at most (the long-term mask and POC differences are 16 wide) */
     { VAProfileHEVCMain,                &HIDDNouveauDecodeHEVCOps, 8192, 8192, 15, FMT_8BIT, FALSE },
     { VAProfileHEVCMain10,              &HIDDNouveauDecodeHEVCOps, 8192, 8192, 15, FMT_10BIT, FALSE },
+    /* a range-extension profile also carries lower bit depths: FFmpeg picks the surface format by the stream's */
+    { VAProfileHEVCMain12,              &HIDDNouveauDecodeHEVCOps, 8192, 8192, 15, FMT_8BIT | FMT_10BIT | FMT_12BIT, FALSE },
+    { VAProfileHEVCMain422_10,          &HIDDNouveauDecodeHEVCOps, 8192, 8192, 15, FMT_422_8 | FMT_422_10, FALSE },
+    { VAProfileHEVCMain422_12,          &HIDDNouveauDecodeHEVCOps, 8192, 8192, 15, FMT_422_8 | FMT_422_10 | FMT_422_12, FALSE },
+    { VAProfileHEVCMain444,             &HIDDNouveauDecodeHEVCOps, 8192, 8192, 15, FMT_444_8, FALSE },
+    { VAProfileHEVCMain444_10,          &HIDDNouveauDecodeHEVCOps, 8192, 8192, 15, FMT_444_8 | FMT_444_10, FALSE },
+    { VAProfileHEVCMain444_12,          &HIDDNouveauDecodeHEVCOps, 8192, 8192, 15, FMT_444_8 | FMT_444_10 | FMT_444_12, FALSE },
     { VAProfileNone, NULL, 0, 0, 0, 0, FALSE }
 };
 
@@ -384,7 +404,7 @@ ULONG HIDDNouveauDecodeQuery(OOP_Class *cl, OOP_Object *display, LONG profile, U
     if (!c || !nouveau_decode_enable)
         return 0;
     decode_lock();
-    if (!nvdec_probe(carddata))
+    if (!nvdec_probe(carddata) || (carddata->nvdec_class < c->minclass))
     {
         decode_unlock();
         return 0;
@@ -511,7 +531,10 @@ static BOOL nvdec_pool_alloc(struct HIDDNouveauDecode *dec, ULONG nslots)
     {
         ULONG calign = dec->rowalign ? dec->rowalign / 2 : NVDEC_POOL_BLOCK_ROWS;
 
-        dec->slotsize = dec->lumasize + dec->pitch * (((dec->height / 2) + calign - 1) & ~(calign - 1));
+        ULONG crows = dec->chalf ? dec->height / 2 : dec->height;
+
+        /* the chroma plane: half or all the rows, twice as long for 4:4:4 */
+        dec->slotsize = dec->lumasize + dec->pitch * dec->cwide * ((crows + calign - 1) & ~(calign - 1));
     }
     dec->slotsize = (dec->slotsize + 4095) & ~4095UL;
     for (i = 0; i < nslots; i++)
@@ -608,7 +631,7 @@ BOOL HIDDNouveauDecodeOpen(OOP_Class *cl, OOP_Object *display, struct HIDDNouvea
     if (!c || !resolve || !width || !height)
         return FALSE;
     decode_lock();
-    if (!nvdec_probe(carddata))
+    if (!nvdec_probe(carddata) || (carddata->nvdec_class < c->minclass))
     {
         decode_unlock();
         return FALSE;
@@ -897,7 +920,9 @@ static BOOL nvdec_copy_out(struct HIDDNouveauDecode *dec, struct HIDDNouveauBitM
     ULONG w = bmdata->drawable.width, h = bmdata->drawable.height;
     /* the block-linear planes' heights: whole blocks (the slot is 4 KB padded beyond) */
     ULONG srcrows = (dec->height + NVDEC_POOL_BLOCK_ROWS - 1) & ~(NVDEC_POOL_BLOCK_ROWS - 1);
-    ULONG chromarows = ((dec->height / 2) + NVDEC_POOL_BLOCK_ROWS - 1) & ~(NVDEC_POOL_BLOCK_ROWS - 1);
+    ULONG chromarows = (((dec->chalf ? dec->height / 2 : dec->height)) + NVDEC_POOL_BLOCK_ROWS - 1) &
+                       ~(NVDEC_POOL_BLOCK_ROWS - 1);
+    ULONG ch = dec->chalf ? h / 2 : h, cw = dec->cwide;
     BOOL ok;
 
     if (!src || !dst || (w > dec->width) || (h > dec->height))
@@ -914,10 +939,29 @@ static BOOL nvdec_copy_out(struct HIDDNouveauDecode *dec, struct HIDDNouveauBitM
         ULONG lk = dec->gob32 ? CE_KIND_BPP_BL_32 : (dec->bpp == 2) ? CE_KIND_BPP_BL_16 : CE_KIND_BPP_BL_8;
         ULONG ck = (dec->gob32 || (dec->bpp == 2)) ? CE_KIND_BPP_BL_32 : CE_KIND_BPP_BL_16;
 
-        ok = nvdec_ce_detile(carddata, src, 0, dec->pitch, srcrows, lk, dst, 0, bmdata->pitch, w * dec->bpp, h);
-        if (ok)
-            ok = nvdec_ce_detile(carddata, src, dec->chromaoff, dec->pitch, chromarows, ck,
-                                 dst, bmdata->planeoff[0], bmdata->pitch, w * dec->bpp, h / 2);
+        if (dec->weaverows)
+        {
+            /* a field-separated picture: each field to every other row of the target */
+            ULONG fld, p2 = bmdata->pitch * 2;
+
+            ok = TRUE;
+            for (fld = 0; ok && (fld < 2); fld++)
+            {
+                ok = nvdec_ce_detile(carddata, src, fld * dec->weaverows * dec->pitch, dec->pitch, dec->weaverows, lk,
+                                     dst, fld * bmdata->pitch, p2, w * dec->bpp, (h + 1 - fld) / 2);
+                if (ok)
+                    ok = nvdec_ce_detile(carddata, src, dec->chromaoff + fld * dec->cweaverows * dec->pitch, dec->pitch,
+                                         dec->cweaverows, ck, dst, bmdata->planeoff[0] + fld * bmdata->pitch, p2,
+                                         w * dec->bpp, (h / 2 + 1 - fld) / 2);
+            }
+        }
+        else
+        {
+            ok = nvdec_ce_detile(carddata, src, 0, dec->pitch, srcrows, lk, dst, 0, bmdata->pitch, w * dec->bpp, h);
+            if (ok)
+                ok = nvdec_ce_detile(carddata, src, dec->chromaoff, dec->pitch * cw, chromarows, ck,
+                                     dst, bmdata->planeoff[0], bmdata->pitch * cw, w * dec->bpp * cw, ch);
+        }
     }
     if (ok)
         nouveau_pushbuf_kick(carddata->ce_pushbuf);
@@ -1204,6 +1248,7 @@ static BOOL nvdec_BeginFrame(APTR obj, OOP_Object *bitmap, ULONG buffer)
     struct HIDDNouveauDecode *dec = obj;
     struct HIDDNouveauBitMapData *bmdata;
     struct HIDDNouveauDecodeFrame *f;
+    ULONG bps, chalf, cwide;
     BOOL ok;
 
     if (!dec->carddata || dec->cur.open || dec->dead)
@@ -1217,14 +1262,15 @@ static BOOL nvdec_BeginFrame(APTR obj, OOP_Object *bitmap, ULONG buffer)
     }
     if (!dec->nslots)
     {
-        dec->bpp = (bmdata->videoformat == vHidd_VideoFmt_P010) ? 2 : 1;
+        nouveau_semiplanar(bmdata->videoformat, &dec->bpp, &dec->chalf, &dec->cwide);
         if (!nvdec_pool_alloc(dec, dec->poolslots))
         {
             decode_unlock();
             return FALSE;
         }
     }
-    else if (((bmdata->videoformat == vHidd_VideoFmt_P010) ? 2 : 1) != dec->bpp)
+    else if (!nouveau_semiplanar(bmdata->videoformat, &bps, &chalf, &cwide) ||
+             (bps != dec->bpp) || (chalf != dec->chalf) || (cwide != dec->cwide))
     {
         decode_unlock();
         nvlog("[Nouveau] NVDEC: BeginFrame: target sample size differs from the session's pictures\n");

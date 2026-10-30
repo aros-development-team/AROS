@@ -21,7 +21,8 @@ FILES := \
     scrollerwin \
     compflicker \
     windowinputregion \
-    windowinputdrop
+    windowinputdrop \
+    strgtextval
 
 EXEDIR := $(AROS_TESTS)/intuition
 

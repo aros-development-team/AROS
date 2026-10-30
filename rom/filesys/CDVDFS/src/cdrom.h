@@ -1,8 +1,10 @@
+/* Copyright (C) 2026, The AROS Development Team. All rights reserved. */
 /* cdrom.h: */
 
 /*
  * History:
  *
+ * 29-Oct-26 aros      Remember cache allocation requirements for recovery.
  * 06-Mar-09 error     - Removed madness, fixed insanity. Cleanup started
  */
 
@@ -60,6 +62,8 @@ typedef struct CDROM {
   short			device_open;
   struct IOStdReq *iochangeint;
   struct Interrupt changeint;
+
+  uint32_t cache_memory_type;
 
 } CDROM;
 

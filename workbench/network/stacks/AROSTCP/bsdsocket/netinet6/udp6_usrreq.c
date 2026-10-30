@@ -61,6 +61,7 @@
 #include <netinet6/in6_var.h>
 
 #include <netinet/in_cksum_protos.h>
+#include <kern/uipc_socket2_protos.h>
 
 /* Explicit declarations (in_pcb_protos.h has stale signatures) */
 extern int  in_pcballoc(struct socket *, struct inpcbinfo *);
@@ -95,41 +96,6 @@ extern u_long udp_recvspace;
 #define IN6P_HOPLIMIT	0x02		/* receive hop limit (IPV6_HOPLIMIT) */
 #endif
 
-/*
- * Ancillary data carried by IPV6_PKTINFO / IPV6_RECVPKTINFO (RFC 3542):
- * the datagram's destination address and the receiving interface index.
- * Defined defensively here as the shared headers do not provide it.
- */
-#ifndef IN6_PKTINFO_DEFINED
-#define IN6_PKTINFO_DEFINED
-struct in6_pktinfo {
-	struct in6_addr	ipi6_addr;	/* src/dst IPv6 address */
-	unsigned int	ipi6_ifindex;	/* send/recv interface index */
-};
-#endif
-
-/* ------------------------------------------------------------------ *
- * udp6_saveopt - build a control (ancillary data) mbuf carrying a
- * single cmsg of the given type at IPPROTO_IPV6 level, mirroring the
- * IPv4 udp_saveopt() helper.
- * ------------------------------------------------------------------ */
-static struct mbuf *
-udp6_saveopt(caddr_t p, int size, int type)
-{
-    struct cmsghdr *cp;
-    struct mbuf *m;
-
-    if((m = m_get(M_DONTWAIT, MT_CONTROL)) == NULL)
-        return (struct mbuf *)NULL;
-    cp = (struct cmsghdr *)mtod(m, struct cmsghdr *);
-    bcopy(p, CMSG_DATA(cp), size);
-    size += sizeof(*cp);
-    m->m_len = size;
-    cp->cmsg_len   = size;
-    cp->cmsg_level = IPPROTO_IPV6;
-    cp->cmsg_type  = type;
-    return m;
-}
 
 /* ------------------------------------------------------------------ *
  * udp6_output - build and transmit a UDP/IPv6 datagram.
@@ -348,14 +314,14 @@ udp6_append(struct inpcb *inp, struct mbuf *m, int off,
             pi6.ipi6_addr    = ip6->ip6_dst;
             pi6.ipi6_ifindex = (m->m_pkthdr.rcvif != NULL)
                                ? m->m_pkthdr.rcvif->if_index : 0;
-            *optp = udp6_saveopt((caddr_t)&pi6, sizeof(pi6), IPV6_PKTINFO);
+            *optp = sbcreatecontrol((caddr_t)&pi6, sizeof(pi6), IPV6_PKTINFO, IPPROTO_IPV6);
             if(*optp != NULL)
                 optp = &(*optp)->m_next;
         }
         if(inp->in6p_flags & IN6P_HOPLIMIT) {
             int hlim = ip6->ip6_hlim;
 
-            *optp = udp6_saveopt((caddr_t)&hlim, sizeof(int), IPV6_HOPLIMIT);
+            *optp = sbcreatecontrol((caddr_t)&hlim, sizeof(int), IPV6_HOPLIMIT, IPPROTO_IPV6);
             if(*optp != NULL)
                 optp = &(*optp)->m_next;
         }

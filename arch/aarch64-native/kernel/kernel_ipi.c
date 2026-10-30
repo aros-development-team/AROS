@@ -235,9 +235,9 @@ int core_DoCallIPI(struct Hook *hook, void *cpu_mask, int async,
      * buffer pointers - resolve them to bitmaps before dereference.
      */
     if ((IPTR)cpu_mask == TASKAFFINITY_ANY)
-        mask = 0xf;
+        mask = __arm_arosintern.ARMI_AffinityMask;      /* the online cores */
     else if ((IPTR)cpu_mask == TASKAFFINITY_ALL_BUT_SELF)
-        mask = 0xf & ~(1U << srcCpu);
+        mask = __arm_arosintern.ARMI_AffinityMask & ~(1U << srcCpu);
     else
         mask = *(uint32_t *)cpu_mask;
 

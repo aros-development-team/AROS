@@ -32,6 +32,7 @@
         None.
 
     NOTES
+        NULL and the TASKAFFINITY_* sentinels are ignored.
 
     EXAMPLE
 
