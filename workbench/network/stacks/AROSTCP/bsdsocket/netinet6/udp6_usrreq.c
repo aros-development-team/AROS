@@ -170,22 +170,35 @@ udp6_output(struct inpcb *inp, struct mbuf *m,
             error = EISCONN;
             goto release;
         }
-        s = splnet();
-        error = in6_pcbconnect(inp, addr_m);
-        if(error) {
-            splx(s);
+        if(IN6_IS_ADDR_UNSPECIFIED(&dst6->sin6_addr)) {
+            error = EADDRNOTAVAIL;
             goto release;
         }
+        /*
+         * The destination and the source are this datagram's only, as in
+         * udp_output() for IPv4 and KAME's udp6_output(): the socket keeps
+         * its bound address, so it goes on receiving on every address it
+         * listens on, and a later IPV6_PKTINFO source still applies. Only
+         * a port it lacks is bound for good.
+         */
+        if(inp->inp_lport == 0) {
+            s = splnet();
+            error = in6_pcbbind(inp, NULL);
+            splx(s);
+            if(error)
+                goto release;
+        }
+        faddr6 = dst6->sin6_addr;
+        fport  = dst6->sin6_port;
     } else {
         if(IN6_IS_ADDR_UNSPECIFIED(&inp->inp_faddr6)) {
             error = ENOTCONN;
             goto release;
         }
+        faddr6 = inp->inp_faddr6;
+        fport  = inp->inp_fport;
     }
-
-    faddr6 = inp->inp_faddr6;
-    fport  = inp->inp_fport;
-    lport  = inp->inp_lport;
+    lport = inp->inp_lport;
 
     /* ---- Resolve source address ---- */
     if(!IN6_IS_ADDR_UNSPECIFIED(&inp->inp_laddr6)) {
@@ -216,17 +229,16 @@ udp6_output(struct inpcb *inp, struct mbuf *m,
             RTFREE(ro.ro_rt);
         }
     }
+    /* never send from :: (the peer's ip6_input() discards it) */
+    if(IN6_IS_ADDR_UNSPECIFIED(&laddr6)) {
+        error = EADDRNOTAVAIL;
+        goto release;
+    }
 
     /* ---- Prepend UDP header ---- */
     M_PREPEND(m, sizeof(struct udphdr), M_DONTWAIT);
-    if(m == NULL) {
-        error = ENOBUFS;
-        if(addr_m) {
-            in6_pcbdisconnect(inp);
-            splx(s);
-        }
-        return error;
-    }
+    if(m == NULL)
+        return ENOBUFS;
     uh = mtod(m, struct udphdr *);
     uh->uh_sport = lport;
     uh->uh_dport = fport;
@@ -235,14 +247,8 @@ udp6_output(struct inpcb *inp, struct mbuf *m,
 
     /* ---- Prepend IPv6 header ---- */
     M_PREPEND(m, sizeof(struct ip6_hdr), M_DONTWAIT);
-    if(m == NULL) {
-        error = ENOBUFS;
-        if(addr_m) {
-            in6_pcbdisconnect(inp);
-            splx(s);
-        }
-        return error;
-    }
+    if(m == NULL)
+        return ENOBUFS;
     ip6 = mtod(m, struct ip6_hdr *);
     ip6->ip6_flow = 0;
     ip6->ip6_vfc  = IPV6_VERSION;	/* must follow ip6_flow (they overlap) */
@@ -275,11 +281,6 @@ udp6_output(struct inpcb *inp, struct mbuf *m,
     } else
         error = ip6_output(m, (struct mbuf *)NULL, (struct route *)NULL, 0,
                            inp->in6p_moptions, (struct ifnet **)NULL, inp);
-
-    if(addr_m) {
-        in6_pcbdisconnect(inp);
-        splx(s);
-    }
     return error;
 
 release:
