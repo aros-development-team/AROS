@@ -144,9 +144,7 @@ struct signal_func_data *__stdc_sig_getfuncdata(int signum)
         fatal system alert.
 
     BUGS
-        The diagnostic uses an unbounded task name in a 50-byte
-        stack buffer. A long name can corrupt the stack before
-        the program reaches the exit path.
+        A very long task name is truncated in the diagnostic.
 
     SEE ALSO
         raise(), signal(), __stdc_jmp2exit()
@@ -157,20 +155,20 @@ void __sig_default(int signum)
     struct StdCIntBase *StdCBase =
         (struct StdCIntBase *)__aros_getbase_StdCBase();
     char *taskname = FindTask(NULL)->tc_Node.ln_Name;
-    char s[50];
- 
+    char s[128];
+
     switch (signum)
     {
     case SIGABRT:
-        sprintf(s, "Program '%s' aborted.", taskname);
+        snprintf(s, sizeof(s), "Program '%s' aborted.", taskname);
         break;
 
     case SIGTERM:
-        sprintf(s, "Program '%s' terminated.", taskname);
+        snprintf(s, sizeof(s), "Program '%s' terminated.", taskname);
         break;
 
     default:
-        sprintf(s, "Program '%s' caught signal %d\naborting...",
+        snprintf(s, sizeof(s), "Program '%s' caught signal %d\naborting...",
                 taskname, signum
         );
         break;
