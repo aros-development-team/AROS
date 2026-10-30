@@ -21,6 +21,10 @@
 
 #include <proto/exec.h>
 #include <exec/execbase.h>
+#ifdef __AROS__
+#define __KERNEL_NOLIBBASE__
+#include <proto/kernel.h>
+#endif
 
 
 #include "sched.h"
@@ -139,3 +143,49 @@
 
     return 0;
 }
+
+#ifdef __AROS__
+/****************************************************************************
+    NAME */
+        int sched_getcpu(
+
+/*  SYNOPSIS */
+        void)
+
+/*  FUNCTION
+        Return the number of the CPU the caller is running on.
+
+    RESULT
+        The kernel's logical CPU number (0 on a uniprocessor system), or
+        -1 if kernel.resource is not available.
+
+    NOTES
+        The task may move to another CPU at any time, so the result can be
+        out of date by the time it is used, unless the task's affinity
+        allows only one CPU.
+
+    SEE ALSO
+        pthread_setaffinity_np()
+
+*****************************************************************************/
+{
+    APTR KernelBase = OpenResource("kernel.resource");
+
+    if (!KernelBase)
+        return -1;
+
+    return (int)KrnGetCPUNumber();
+}
+
+/* CPU_COUNT_S(): the number of CPUs in a set of setsize bytes */
+int __sched_cpucount(size_t setsize, const cpu_set_t *set)
+{
+    size_t i, words = setsize / sizeof(unsigned long);
+    int count = 0;
+
+    for (i = 0; i < words; i++)
+        count += __builtin_popcountl(set->__bits[i]);
+
+    return count;
+}
+#endif

@@ -8,7 +8,7 @@ include $(SRCDIR)/config/aros.cfg
 
 %copy_includes mmake=pthread-includes-copy includes="pthread.h sched.h semaphore.h"
 
-LINKLIBFILES := pthread sched semaphore
+LINKLIBFILES := pthread sched semaphore pthread_affinity
 LIBRARYFILES := 
 
 PTHREADFUNCS :=  \
@@ -25,6 +25,10 @@ PTHREADFUNCS :=  \
     pthread_attr_destroy \
     pthread_attr_init \
     pthread_attr_setstacksize \
+    pthread_attr_setaffinity_np \
+    pthread_attr_getaffinity_np \
+    pthread_setaffinity_np \
+    pthread_getaffinity_np \
     pthread_cond_destroy \
     pthread_cond_init \
     pthread_cond_signal \
