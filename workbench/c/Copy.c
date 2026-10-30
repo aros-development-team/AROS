@@ -294,6 +294,13 @@
         prevents recursive copies to RAM: from leaving the destination
         directory locked when shared-lock references use the same BPTR.
 
+        October 2026, Espen Otterstad
+        The soft link check asks the handler of the directory being walked.
+        ALL creates the destination directory of a soft link it enters.
+        DELETE deletes a soft link itself instead of entering it, and MOVE
+        copies a soft link's contents but deletes only the link, so neither
+        deletes files through a link.
+
 ******************************************************************************/
 
 #define CTRL_C          (SetSignal(0L,0L) & SIGBREAKF_CTRL_C)
@@ -324,7 +331,7 @@ typedef ULONG IPTR;
 
 #include <string.h>
 
-const TEXT version[] = "\0$VER: Copy 50.20 (02.10.2026)";
+const TEXT version[] = "\0$VER: Copy 50.21 (30.10.2026)";
 
 static const UBYTE *PARAM =
 "FROM/M/A,TO/A,PAT=PATTERN/K,BUF=BUFFER/K/N,ALL/S,"
@@ -457,6 +464,7 @@ struct CopyData
     UBYTE       RetVal2;        /* when set, error output must be done */
     LONG        IoErr;
     UBYTE       Deep;
+    ULONG       LinkLen;  /* MOVE: path length of the soft link entered */
     UBYTE       FileName[FILEPATH_SIZE];
     UBYTE       DestName[FILEPATH_SIZE];
 
@@ -537,6 +545,7 @@ const CONST_STRPTR texts[] =
 LONG  CopyFile(BPTR, BPTR, ULONG, struct CopyData *);
 void  DoWork(STRPTR, struct CopyData *);
 LONG  IsMatchPattern(STRPTR name, struct CopyData *cd);
+BOOL  IsNamedSoftLink(STRPTR name, struct CopyData *cd);
 LONG  IsPattern(STRPTR, struct CopyData *); /* return 0 -> NOPATTERN, return -1 --> ERROR */
 LONG  KillFile(STRPTR, ULONG, struct CopyData *);
 LONG  KillFileKeepErr(STRPTR name, ULONG doit, struct CopyData *);
@@ -1318,13 +1327,30 @@ void PatCopy(STRPTR name, struct CopyData *cd)
             CopyMem(APath->ap_Buf, cd->FileName, FILEPATH_SIZE);
             CopyMem(&APath->ap_Info, &cd->Fib, sizeof(struct FileInfoBlock));
 
-            if (first && APath->ap_Info.fib_DirEntryType > 0)
+            if (first && APath->ap_Info.fib_DirEntryType > 0 &&
+                cd->Mode == COPYMODE_DELETE && IsNamedSoftLink(APath->ap_Buf, cd))
+            {
+                /* A soft link given by name is deleted itself, as one met
+                   inside a directory is. MatchFirst() examined its target. */
+                cd->Fib.fib_DirEntryType = ST_SOFTLINK;
+                strncpy(cd->Fib.fib_FileName, FilePart(APath->ap_Buf), sizeof(cd->Fib.fib_FileName) - 1);
+                cd->Fib.fib_FileName[sizeof(cd->Fib.fib_FileName) - 1] = '\0';
+                doit = 1;
+            }
+            else if (first && APath->ap_Info.fib_DirEntryType > 0)
             {
 #if USE_ALWAYSVERBOSE
                 /* If the source is a directory, be verbose - Piru */
                 cd->Flags |= COPYFLAG_VERBOSE;
 #endif
                 APath->ap_Flags |= APF_DODIR;
+
+                /* MOVE copies a soft link's contents, then deletes only the link */
+                if (cd->Mode == COPYMODE_MOVE && IsNamedSoftLink(APath->ap_Buf, cd))
+                {
+                    cd->Mode = COPYMODE_COPY;
+                    cd->LinkLen = strlen(APath->ap_Buf);
+                }
             }
             else if (APath->ap_Flags & APF_DIDDIR)
             {
@@ -1333,6 +1359,15 @@ void PatCopy(STRPTR name, struct CopyData *cd)
                 cd->Flags |= COPYFLAG_ENTERSECOND;
                 APath->ap_Flags &= ~APF_DIDDIR;
                 --cd->Deep;
+
+                /* Leaving the soft link entered in MOVE mode: delete the link */
+                if (cd->LinkLen && strlen(APath->ap_Buf) <= cd->LinkLen)
+                {
+                    cd->Mode = COPYMODE_MOVE;
+                    cd->LinkLen = 0;
+                    strncpy(cd->Fib.fib_FileName, FilePart(APath->ap_Buf), sizeof(cd->Fib.fib_FileName) - 1);
+                    cd->Fib.fib_FileName[sizeof(cd->Fib.fib_FileName) - 1] = '\0';
+                }
 
                 if (cd->Mode == COPYMODE_DELETE || cd->Mode == COPYMODE_MOVE)
                 {
@@ -1361,6 +1396,12 @@ void PatCopy(STRPTR name, struct CopyData *cd)
                 {
                     BOOL enter;
 
+                    if (cd->Mode == COPYMODE_DELETE && APath->ap_Info.fib_DirEntryType == ST_SOFTLINK)
+                    {
+                        /* Delete a soft link itself, never what it points to */
+                        enter = FALSE;
+                    }
+                    else
 #if USE_SOFTLINKCHECK
 
 #define BUFFERSIZE 512
@@ -1374,9 +1415,12 @@ void PatCopy(STRPTR name, struct CopyData *cd)
     
                         if (buffer)
                         {
-                            struct DevProc *dvp = GetDeviceProc("", NULL);
+                            BPTR dirlock = APath->ap_Current->an_Lock;
+                            /* The handler owning the directory, not the current dir's */
+                            struct MsgPort *port = dirlock ?
+                                ((struct FileLock *)BADDR(dirlock))->fl_Task : GetFileSysTask();
 
-                            if (ReadLink(dvp->dvp_Port, APath->ap_Current->an_Lock, APath->ap_Info.fib_FileName, buffer, BUFFERSIZE - 1) > 0)
+                            if (ReadLink(port, dirlock, APath->ap_Info.fib_FileName, buffer, BUFFERSIZE - 1) > 0)
                             {
                                 BOOL link_ok = FALSE;
                                 BPTR dir, lock;
@@ -1398,7 +1442,11 @@ void PatCopy(STRPTR name, struct CopyData *cd)
                                             D(Printf("Target type: %ld\n", fib->fib_DirEntryType));
 
                                             if (fib->fib_DirEntryType > 0)
+                                            {
+                                                /* DoWork() creates and enters its destination */
                                                 enter = TRUE;
+                                                doit = TRUE;
+                                            }
                                             else
                                                 /*
                                                  * FIXME: This currently just prevents treating symlinks to files as
@@ -1420,7 +1468,6 @@ void PatCopy(STRPTR name, struct CopyData *cd)
                                                APath->ap_Info.fib_FileName, buffer);
                                 }
                             }
-                            FreeDeviceProc(dvp);
                             FreeMem(buffer, BUFFERSIZE);
                         }
                     }
@@ -1432,6 +1479,13 @@ void PatCopy(STRPTR name, struct CopyData *cd)
                     {
                         APath->ap_Flags |= APF_DODIR;
                         deep = 1;
+
+                        /* MOVE copies a soft link's contents, then deletes only the link */
+                        if (cd->Mode == COPYMODE_MOVE && APath->ap_Info.fib_DirEntryType == ST_SOFTLINK)
+                        {
+                            cd->Mode = COPYMODE_COPY;
+                            cd->LinkLen = strlen(APath->ap_Buf);
+                        }
                     }
                 }
             }
@@ -1461,6 +1515,13 @@ void PatCopy(STRPTR name, struct CopyData *cd)
         if (doit)
         {
             DoWork(cd->Fib.fib_FileName, cd);
+        }
+
+        /* The walk stopped inside a soft link entered in MOVE mode */
+        if (cd->LinkLen)
+        {
+            cd->Mode = COPYMODE_MOVE;
+            cd->LinkLen = 0;
         }
 
         /* No need to clear the flags here, as they are cleared on next PatJoin
@@ -1527,6 +1588,45 @@ LONG IsMatchPattern(STRPTR name, struct CopyData *cd)
     return ret;
 }
 
+
+/* MatchFirst() Lock()s and Examine()s a name given without a pattern, so
+   for a soft link ap_Info describes the link's target and never says
+   ST_SOFTLINK. Ask the link's directory whether the name is a soft link.
+*/
+BOOL IsNamedSoftLink(STRPTR name, struct CopyData *cd)
+{
+    CONST_STRPTR file, path;
+    STRPTR dir;
+    BPTR lock;
+    LONG len;
+    TEXT target[2];
+    BOOL islink = FALSE;
+
+    file = FilePart(name);
+    if (*file == '\0')
+        return FALSE;
+
+    path = PathPart(name);
+    dir = AllocVec(path - name + 1, MEMF_ANY);
+    if (dir)
+    {
+        CopyMem(name, dir, path - name);
+        dir[path - name] = '\0';
+
+        lock = Lock(dir, SHARED_LOCK);
+        if (lock)
+        {
+            /* -2: a link whose target doesn't fit the buffer */
+            len = ReadLink(((struct FileLock *)BADDR(lock))->fl_Task, lock,
+                           file, target, sizeof(target));
+            islink = (len == -2 || (len >= 0 && IoErr() == 0));
+            UnLock(lock);
+        }
+        FreeVec(dir);
+    }
+
+    return islink;
+}
 
 LONG KillFile(STRPTR name, ULONG doit, struct CopyData *cd)
 {
@@ -1724,8 +1824,9 @@ ULONG TestFileSys(STRPTR name, struct CopyData *cd)
 
 void DoWork(STRPTR name, struct CopyData *cd)
 {
-    BPTR pdir, lock = 0;
+    BPTR pdir = BNULL, lock = 0;
     CONST_STRPTR printerr = NULL, printok = "";
+    BOOL islink;
 
 #if DEBUG
     Printf("DoWork(%s, .)\n", name);
@@ -1833,7 +1934,11 @@ void DoWork(STRPTR name, struct CopyData *cd)
         return;
     }
 
-    if (!(lock = Lock(cd->FileName, SHARED_LOCK)))
+    /* DELETE deletes a soft link itself. Lock() would follow it (or fail if
+       it dangles), and a link is never a device. */
+    islink = (cd->Mode == COPYMODE_DELETE && cd->Fib.fib_DirEntryType == ST_SOFTLINK);
+
+    if (!islink && !(lock = Lock(cd->FileName, SHARED_LOCK)))
     {
         cd->RetVal = RETURN_WARN;
         cd->IoErr = IoErr();
@@ -1850,7 +1955,7 @@ void DoWork(STRPTR name, struct CopyData *cd)
         return;
     }
 
-    if (!(pdir = ParentDir(lock)))
+    if (lock && !(pdir = ParentDir(lock)))
     {
         cd->RetVal = RETURN_ERROR;
 
@@ -1884,7 +1989,7 @@ void DoWork(STRPTR name, struct CopyData *cd)
         }
     }
 
-    if ((cd->Flags & COPYFLAG_ENTERSECOND) || (cd->Mode == COPYMODE_DELETE &&
+    if ((cd->Flags & COPYFLAG_ENTERSECOND) || islink || (cd->Mode == COPYMODE_DELETE &&
         (!(cd->Flags & COPYFLAG_ALL) || cd->Fib.fib_DirEntryType < 0)))
     {
         UnLock(lock);
