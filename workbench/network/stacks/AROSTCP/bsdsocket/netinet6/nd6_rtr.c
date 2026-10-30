@@ -706,6 +706,32 @@ nd6_prefix_timer(void)
     }
 }
 
+/*
+ * nd6_purge_prefixes - the interface is being deconfigured or going away:
+ * forget the prefixes heard on it, with their on-link routes, as FreeBSD's
+ * nd6_purge() does. The deconfigure deletes the addresses SLAAC made from
+ * them, but an entry left behind still says its address exists
+ * (ndpr_autoconf), so the next Router Advertisement for the prefix would
+ * never make it again; and the entry would keep a pointer to the interface.
+ * The next Router Advertisement on the interface learns them again.
+ */
+void
+nd6_purge_prefixes(struct ifnet *ifp)
+{
+    struct nd_prefix *pr, **pp;
+
+    pp = &nd6_prefixlist;
+    while((pr = *pp) != NULL) {
+        if(pr->ndpr_ifp == ifp) {
+            nd6_prefix_offlink(pr);
+            *pp = pr->next;
+            FREE(pr, M_PCB);
+            continue;
+        }
+        pp = &pr->next;
+    }
+}
+
 /* ==================================================================
  * SLAAC - Stateless Address Autoconfiguration (RFC 4862)
  * ================================================================== */
