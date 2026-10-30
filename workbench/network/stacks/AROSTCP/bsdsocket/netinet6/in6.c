@@ -434,6 +434,10 @@ in6_purgeaddr(struct ifaddr *ifa)
     struct ifnet *ifp = ia->ia6_ifp;
     struct ifaddr *ifa2;
 
+    /* an address deleted during duplicate address detection must not be
+     * probed for, or written to, by the DAD timer once it is freed */
+    nd6_dad_stop(ia);
+
     in6_ifscrub(ifp, ia);
 
     /* the address no longer answers neighbour solicitations */

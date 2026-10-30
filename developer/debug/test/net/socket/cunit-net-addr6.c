@@ -7,6 +7,7 @@
     (RFC 4862 section 5.4) - a Neighbor Solicitation for it from the
     unspecified address - and adding it does not make the host solicit routers
     again (RFC 4861 section 6.3.7: that is for an interface coming up).
+    Deleting an address while it is still being checked stops the check.
 
     Routes are read with RTM_GET on a routing socket; the solicitations are
     watched with the bsdsocket BPF calls. The test needs a multicast-capable
@@ -188,6 +189,22 @@ void testADDR6_DAD(void)
     addr6(0, "fd00:4d54:52::1");
 }
 
+/* An address deleted while it is still being checked is not probed for
+ * any more: duplicate address detection stops with it. */
+void testADDR6_DELETE_STOPS_DAD(void)
+{
+    int ns, rs;
+    char buf[BPF_DFLTBUFSIZE];
+    NEED_IF();
+    CU_ASSERT_EQUAL(addr6(1, "fd00:4d54:54::1"), 0);
+    Delay(10);
+    CU_ASSERT_EQUAL(addr6(0, "fd00:4d54:54::1"), 0);
+    while (bpf_read(bpf, buf, sizeof(buf)) > 0)
+        ;
+    watch("fd00:4d54:54::1", 3, &ns, &rs);
+    CU_ASSERT_EQUAL(ns, 0);
+}
+
 /* Adding an address does not make the host solicit routers. */
 void testADDR6_NO_ROUTER_SOLICITATION(void)
 {
@@ -232,6 +249,7 @@ int main(int argc, char **argv)
     if (p == NULL ||
         !CU_add_test(p, "deleting an address removes its prefix route", testADDR6_DELETE_REMOVES_PREFIX_ROUTE) ||
         !CU_add_test(p, "a new address goes through DAD", testADDR6_DAD) ||
+        !CU_add_test(p, "deleting an address stops its DAD", testADDR6_DELETE_STOPS_DAD) ||
         !CU_add_test(p, "adding an address solicits no routers", testADDR6_NO_ROUTER_SOLICITATION))
     {
         CU_cleanup_registry();
