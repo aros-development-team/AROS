@@ -18,7 +18,8 @@ CUNITSOCKETTESTFILES := \
     cunit-net-inet6 \
     cunit-net-mld6 \
     cunit-net-route6 \
-    cunit-net-cmsg
+    cunit-net-cmsg \
+    cunit-net-addr6
 
 #MM test-socket : includes linklibs
 
