@@ -89,6 +89,15 @@ struct tap_tracker {
     struct Sana2PacketTypeStats stats;
 };
 
+/* A multicast address range added with S2_ADDMULTICASTADDRESS(ES), counted
+ * per add so that each S2_DELMULTICASTADDRESS(ES) undoes one. */
+struct tap_mcast_range {
+    struct MinNode              node;
+    ULONG                       refcount;
+    UBYTE                       lower[ETH_ALEN];
+    UBYTE                       upper[ETH_ALEN];
+};
+
 struct tap_unit
 {
     ULONG                       num;
@@ -112,6 +121,8 @@ struct tap_unit
 
     struct MinList              trackers;
     struct Sana2DeviceStats     stats;
+
+    struct MinList              mcast_ranges;
 
     struct MsgPort              *iosyncport;
     struct Task              	*iotask;
