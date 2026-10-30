@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2026, The AROS Development Team. All rights reserved.
 
     Desc: PCI configuration mechanism 1 access functions
 */
@@ -23,6 +23,23 @@ ULONG ReadConfig1Long(UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg)
     Enable();
 
     return temp;
+}
+
+/*
+ * The data port is four bytes wide and the low two bits of the register
+ * number pick the lanes inside it, so a narrow access has to be issued at
+ * the matching offset. Writing the whole long instead would put the
+ * neighbouring register back, and for PCICS_COMMAND that neighbour is
+ * PCICS_STATUS, whose error bits are write-1-to-clear.
+ */
+void WriteConfig1Word(UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg, UWORD val)
+{
+    Disable();
+
+    outl(CFGADD(bus, dev, sub, reg),PCI_AddressPort);
+    outw(val,PCI_DataPort + (reg & 2));
+
+    Enable();
 }
 
 void WriteConfig1Long(UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg, ULONG val)

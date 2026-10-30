@@ -66,6 +66,7 @@ void icmp6_slowtimo(void);
 void icmp6_drain(void);
 
 int  ip6_output(void *args, ...);
+void rip6_init(void);
 void rip6_input(void *args, ...);
 int  rip6_output(void *args, ...);
 int  rip6_usrreq(struct socket *, int, struct mbuf *, struct mbuf *,
@@ -83,11 +84,9 @@ void udp6_input(void *args, ...);
 int  udp6_usrreq(struct socket *, int, struct mbuf *, struct mbuf *,
                  struct mbuf *);
 
-/* ctloutput stubs: old BSD 5-arg signature */
+/* ctloutput: old BSD 5-arg signature */
 int rip6_ctloutput(int op, struct socket *so, int level, int optname,
                    struct mbuf **m);
-int icmp6_ctloutput(int op, struct socket *so, int level, int optname,
-                    struct mbuf **m);
 int ip6_ctloutput(int op, struct socket *so, int level, int optname,
                   struct mbuf **m);
 
@@ -119,22 +118,22 @@ struct protosw inet6sw[] = {
         tcp_usrreq,
         NULL,         NULL,           NULL,           tcp_drain,
     },
-    /* ICMPv6 */
+    /* ICMPv6; its raw sockets are raw IPv6 sockets (netinet6/raw_ip6.c) */
     {
         SOCK_RAW,     &inet6domain,   IPPROTO_ICMPV6, PR_ATOMIC | PR_ADDR,
         icmp6_input,
         rip6_output,
         NULL,
-        icmp6_ctloutput,
+        rip6_ctloutput,
         rip6_usrreq,
         icmp6_init,   icmp6_fasttimo, icmp6_slowtimo, icmp6_drain,
     },
-    /* raw IPv6 */
+    /* raw IPv6, and the input of protocols with no handler of their own */
     {
         SOCK_RAW,     &inet6domain,   IPPROTO_RAW,    PR_ATOMIC | PR_ADDR,
         rip6_input,   rip6_output,    NULL,           rip6_ctloutput,
         rip6_usrreq,
-        NULL,         NULL,           NULL,           NULL,
+        rip6_init,    NULL,           NULL,           NULL,
     },
     /* raw IPv6 wildcard */
     {

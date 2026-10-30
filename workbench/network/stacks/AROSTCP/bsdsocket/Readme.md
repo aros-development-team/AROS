@@ -34,7 +34,7 @@ library and use the Berkeley socket API (`socket`/`bind`/`connect`/`send`/`recv`
 | `kern/`     | Kernel glue and the socket layer: `uipc_socket*.c` (socket layer), `uipc_mbuf.c` (mbufs), `kern_malloc.c` (pooled allocator), `kern_synch.c` (`spl`/`tsleep`/`wakeup`), `subr_prf.c` (kernel `printf`/`log`), `amiga_main.c` (daemon init), configuration/ARexx/GUI/DHCP integration (`amiga_config.c`, `amiga_rexx.c`, `amiga_gui.c`, `amiga_dhcp.c`), name database (`amiga_netdb.c`), access control (`accesscontrol.c`). |
 | `net/`      | Link and routing layer: routing (`route.c`, `radix.c`, `rtsock.c`), interfaces (`if.c`, `if_loop.c`), the SANA-II driver interface (`if_sana.c`, `sana2arp.c`, `sana2*.c`), the 6in4 IPv6-in-IPv4 tunnel pseudo-interface (`if_stf.c`), BPF (`bpf*.c`), packet filter hooks (`pfil.c`, `ipfilter.c`), and the software-interrupt queue (`netisr.c`). |
 | `netinet/`  | IPv4 and the (dual-stack) TCP engine: `ip_input.c`/`ip_output.c`/`ip_icmp.c`, `in.c`/`in_pcb.c`/`in_proto.c`, IGMPv2 host membership (`igmp.c`), the TCP engine (`tcp_input.c`, `tcp_output.c`, `tcp_subr.c`, `tcp_usrreq.c`, `tcp_timer.c`), the SYN cache (`tcp_syncache.c`), congestion control (`tcp_cc_newreno.c`, `tcp_cc_cubic.c`, `tcp_cc.h`), UDP (`udp_usrreq.c`), raw IP (`raw_ip.c`), and the Internet checksum (`in_cksum.c` / `in_cksum_sse2.c` / `in_cksum_neon.c`). |
-| `netinet6/` | IPv6 (KAME-derived): `ip6_input.c`/`ip6_output.c`, `icmp6.c`, neighbour discovery (`nd6.c`, `nd6_nbr.c`, `nd6_rtr.c`), MLD (`mld6.c`), `in6.c`/`in6_pcb.c`/`in6_proto.c`, UDP6 (`udp6_usrreq.c`), and the IPv6 checksum (`in6_cksum.c` / `in6_cksum_sse2.c` / `in6_cksum_neon.c`). |
+| `netinet6/` | IPv6 (KAME-derived): `ip6_input.c`/`ip6_output.c`, `icmp6.c`, neighbour discovery (`nd6.c`, `nd6_nbr.c`, `nd6_rtr.c`), MLD (`mld6.c`), `in6.c`/`in6_pcb.c`/`in6_proto.c`, UDP6 (`udp6_usrreq.c`), raw IPv6 sockets (`raw_ip6.c`), and the IPv6 checksum (`in6_cksum.c` / `in6_cksum_sse2.c` / `in6_cksum_neon.c`). |
 | `sys/`, `conf/` | Local system headers and the `conf.h` build configuration (`INET6`, debug gates, compiler macros). Shared protocol headers live in `AROS/workbench/network/common/include`. |
 
 ---
@@ -171,7 +171,9 @@ UDP shares `udb`.
 - **IPv4** (`netinet/in_proto.c`, `inetsw`): TCP (`SOCK_STREAM`) → `tcp_input`/`tcp_usrreq`;
   UDP → `udp_input`/`udp_usrreq`.
 - **IPv6** (`netinet6/in6_proto.c`, `inet6sw`): TCP6 (`SOCK_STREAM`) → the shared dual-stack
-  `tcp_input`/`tcp_usrreq`; UDP6 → `udp6_input`/`udp6_usrreq` (a separate path).
+  `tcp_input`/`tcp_usrreq`; UDP6 → `udp6_input`/`udp6_usrreq` (a separate path); raw IPv6
+  (`SOCK_RAW`, ICMPv6 or any other protocol) → `rip6_usrreq`, with `icmp6_input` and `rip6_input`
+  handing packets to the raw sockets.
 - `ip6_input` demuxes with `pr = &inet6sw[ip6_protox[nxt]]; pr->pr_input(m, off = 40, nxt)` — the
   same vararg convention as IPv4, where the header offset is the first vararg.
 
@@ -283,6 +285,19 @@ IPv4: the socket keeps its bound address, and only a missing port is bound for g
   `struct in6_pktinfo` (public in `<netinet/in.h>`: destination address + receiving interface index)
   as `IPPROTO_IPV6` ancillary `cmsg`s, chained via `m_next` and assembled before the headers are
   stripped (RFC 3542).
+- **Raw IPv6 sockets** (`raw_ip6.c`, after KAME's `raw_ip6.c`; RFC 3542 §3) have an `inpcb` on
+  their own list (`rip6cb`), so the IPv6 options are the ones `ip6_ctloutput()` keeps for UDP6. The
+  socket's protocol and its `ICMP6_FILTER` (level `IPPROTO_ICMPV6`, pass-all by default) live in a
+  `struct rip6pcb` hung off `inp_ppcb`. `icmp6_input()` gives its handlers copies and, once they are
+  done, hands every message to `rip6_input()`, which queues it to each socket of that protocol (or of
+  protocol 0) whose bound and connected addresses match and whose filter passes the type. Protocols
+  with no handler reach `rip6_input()` through the `IPPROTO_RAW` protosw entry. Data is queued
+  without the IPv6 header or the extension headers before it, with `IPV6_PKTINFO`/`IPV6_HOPLIMIT`
+  ancillary data when asked for. The Echo Request reply is written into headers of its own
+  (`icmp6_echo_copy()`), because `m_copym()` shares clusters. On output the kernel computes the ICMPv6
+  checksum; `IPV6_PKTINFO` and `IPV6_HOPLIMIT` may come as ancillary data, and the hop limit is
+  `IPV6_HOPLIMIT`, else `IPV6_MULTICAST_HOPS` (default 1) or `IPV6_UNICAST_HOPS`, else the system
+  default. `IPV6_CHECKSUM` for other protocols is not implemented (its number is `IPV6_V6ONLY`'s).
 - **Control messages.** Protocols build each one with `sbcreatecontrol()` (`kern/uipc_socket2.c`,
   4.4BSD-Lite): one `cmsghdr` per mbuf, `cmsg_len` = `CMSG_LEN(size)` and the mbuf `CMSG_SPACE(size)`
   long. On LP64 `CMSG_DATA()` starts past padding after the 12-byte header, which a length of
@@ -327,7 +342,9 @@ flagged so timer expiry emits an ICMPv6 type-143 Report — a single `MODE_IS_EX
 sources (equivalent to a plain membership) sent to `ff02::16`. A v1 querier still receives v1
 Reports. Per-source filtering is not tracked. Every MLD message (v1 and v2) is emitted with a
 Hop-by-Hop Options header carrying the Router Alert option (RFC 2711, `mld6_prepend_ra`) so that
-on-link multicast routers intercept it.
+on-link multicast routers intercept it. MLD reports and done messages carry the interface's
+link-local address as their source (RFC 3810 section 5, RFC 2710 section 3), whatever the group's
+scope.
 
 Every `in6_multihead` entry is reference counted, and each reference has one owner that releases it:
 
@@ -346,6 +363,16 @@ Interfaces without `IFF_MULTICAST` join nothing. When an interface goes away for
 are freed when their sockets drop them, and `in6_delmulti()` tells nobody about an entry without an
 interface. The IPv4 side follows the same rules (`in_join_allhosts()`, `ip_freemoptions()`,
 `in_ifdetach()`).
+
+A group datagram is delivered on the same terms as for IPv4. `ip6_input()` accepts it only if the
+receiving interface is a member (`IN6_LOOKUP_MULTI()`), which covers the all-nodes and solicited-node
+groups as well; this host does not forward multicast. `udp6_input()` then gives a copy to every IPv6
+socket whose port, bound address, peer and `SO_BINDTODEVICE` interface match - it stops early at a
+socket that does not share its port - without filtering by the socket's own memberships, as
+`udp_input()` does. A datagram this host sends to a group it is a member of on the outgoing interface
+is looped back to its local members by `ip6_mloopback()` unless the sender turned
+`IPV6_MULTICAST_LOOP` off; the stack's own ND and MLD messages pass zeroed options and are never
+looped back.
 
 ### 6.3 Path MTU Discovery (RFC 8201)
 
@@ -411,6 +438,11 @@ single shared `fe80::/64` route: the egress link is taken from the one the calle
 `sin6_scope_id` on the destination, an `IPV6_PKTINFO` ancillary interface index, or the interface the
 chosen source address lives on — so a link-local send leaves the correct link on a multi-homed host.
 `HOST` database entries may also carry an IPv6 address.
+
+Among an interface's usable addresses (not tentative or duplicated), `in6_ifawithifp()` picks the
+source by RFC 6724 section 5 rules 2, 3 and 7: the smaller of two scopes unless it is smaller than
+the destination's (a link-scope destination gets the link-local, a global one a global address),
+then a preferred address over a deprecated one, then a temporary address over a public one.
 
 ---
 

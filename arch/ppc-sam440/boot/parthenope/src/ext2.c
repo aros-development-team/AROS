@@ -91,6 +91,9 @@ boot_dev_t *ext2_create(struct RdbPartition *partition)
 	ext2fs_close();
 
 	boot = malloc(sizeof(ext2_boot_dev_t));
+	if (boot == NULL)
+		return NULL;
+
 	boot->load_file = (int (*)(void *, char *, void *))load_file;
 	boot->destroy = (void (*)(void *))destroy;
 	boot->discno = partition->disk;
