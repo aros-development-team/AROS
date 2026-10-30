@@ -465,6 +465,40 @@ nd6_defrouter_timer(void)
     }
 }
 
+/*
+ * nd6_purge_routers - the interface is being deconfigured or going away:
+ * forget the default routers heard on it and the routes they gave, with
+ * their routing table entries, as FreeBSD's nd6_purge() does. An entry left
+ * behind would keep a pointer to the interface, and, marked installed after
+ * rt_purgeif() took its route, would never be put back when the router
+ * advertises again. Another interface's routers take over meanwhile.
+ */
+void
+nd6_purge_routers(struct ifnet *ifp)
+{
+    struct nd_defrouter *dr, *next;
+    struct nd_route_info *ri;
+
+    for(dr = nd6_defrtrlist; dr; dr = next) {
+        next = dr->next;
+        if(dr->ifp == ifp)
+            defrouter_del(dr);
+    }
+    defrouter_select();
+
+    for(ri = nd6_rtinfolist; ri; ) {
+        if(ri->ifp == ifp) {
+            struct in6_addr prefix = ri->prefix;
+            int plen = ri->plen;
+
+            rtinfo_del(ri);
+            rtinfo_select(&prefix, plen);
+            ri = nd6_rtinfolist;
+        } else
+            ri = ri->next;
+    }
+}
+
 /* ==================================================================
  * Prefix List Management
  * ================================================================== */

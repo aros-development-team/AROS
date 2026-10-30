@@ -242,6 +242,7 @@ void defrouter_select(void);
 struct nd_prefix *nd6_prefix_lookup(struct sockaddr_in6 *, int);
 void nd6_prefix_timer(void);
 void nd6_defrouter_timer(void);
+void nd6_purge_routers(struct ifnet *);
 
 #endif /* KERNEL */
 
