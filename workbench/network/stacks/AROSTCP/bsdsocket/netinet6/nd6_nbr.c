@@ -721,8 +721,13 @@ nd6_dad_timer(void)
             D(bug("[AROSTCP:ND6] %s: DAD complete for %s%d, sending RS\n",
                   __func__, dp->ifp->if_name, dp->ifp->if_unit));
             dp->ia->ia6_ifaflags &= ~IN6_IFF_TENTATIVE;
-            /* send initial Router Solicitation now that addr is valid */
-            nd6_rs_output(dp->ifp);
+            /*
+             * The interface can ask for routers once its link-local address
+             * is valid (RFC 4861 section 6.3.7); other addresses, checked
+             * later, do not start that again.
+             */
+            if(IN6_IS_ADDR_LINKLOCAL(&dp->ia->ia_addr.sin6_addr))
+                nd6_rs_output(dp->ifp);
             /* remove from queue */
             *pp = dp->next;
             FREE(dp, M_PCB);

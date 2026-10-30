@@ -94,7 +94,7 @@ in6_control_locked(struct socket *so, int cmd, caddr_t data, struct ifnet *ifp)
     struct in6_ifreq  *ifr  = (struct in6_ifreq *)data;
     struct in6_aliasreq *ifra = (struct in6_aliasreq *)data;
     struct in6_ifaddr *ia   = NULL, *oia;
-    int error = 0;
+    int error = 0, isnew = 0;
 
     /* locate existing IPv6 address for this interface */
     if(ifp) {
@@ -130,6 +130,7 @@ in6_control_locked(struct socket *so, int cmd, caddr_t data, struct ifnet *ifp)
             m = m_getclr(M_WAIT, MT_IFADDR);
             if(m == NULL)
                 return ENOBUFS;
+            isnew = 1;
             if((oia = in6_ifaddr) != NULL) {
                 for(; oia->ia_next; oia = oia->ia_next)
                     ;
@@ -236,9 +237,25 @@ done_plen:
             if(error)
                 return error;
         }
-        ia->ia6_flags    = ifra->ifra_flags;
+        /*
+         * The request's IN6_IFF_* flags are the address's, in ia6_ifaflags;
+         * ia6_flags is the generic ifaddr's, where in6_ifinit() has just set
+         * IFA_ROUTE for in6_ifscrub() to find. The states the stack keeps -
+         * tentative, duplicated, deprecated - are not the caller's to set.
+         */
+        ia->ia6_ifaflags = (ia->ia6_ifaflags & IN6_IFF_STACKSTATE) |
+                           (ifra->ifra_flags & ~IN6_IFF_STACKSTATE);
         ia->ia6_lifetime_vltime = ifra->ifra_lifetime.ia6t_vltime;
         ia->ia6_lifetime_pltime = ifra->ifra_lifetime.ia6t_pltime;
+        /*
+         * A new unicast address is tentative until duplicate address
+         * detection finds nobody else using it (RFC 4862 section 5.4), as the
+         * link-local is (in6_if_up()). Interfaces that cannot multicast
+         * cannot ask, and the loopback has nobody to ask.
+         */
+        if(isnew && !IN6_IS_ADDR_MULTICAST(&ia->ia_addr.sin6_addr) &&
+                (ifp->if_flags & (IFF_MULTICAST | IFF_LOOPBACK)) == IFF_MULTICAST)
+            nd6_dad_start(ia);
         rt_newaddrmsg(RTM_NEWADDR, &ia->ia_ifa, 0, NULL);
         return 0;
 
@@ -415,6 +432,10 @@ in6_purgeaddr(struct ifaddr *ifa)
     struct in6_ifaddr *oia;
     struct ifnet *ifp = ia->ia6_ifp;
     struct ifaddr *ifa2;
+
+    /* an address deleted during duplicate address detection must not be
+     * probed for, or written to, by the DAD timer once it is freed */
+    nd6_dad_stop(ia);
 
     in6_ifscrub(ifp, ia);
 
@@ -998,6 +1019,20 @@ in6_tmpifadd(struct ifnet *ifp, struct nd_prefix *pr)
 
     if(pr->ndpr_plen != 64)
         return 0;  /* SLAAC temporary addresses require /64 */
+
+    /*
+     * One temporary address per prefix at a time (RFC 4941 section 3.4): a
+     * Router Advertisement repeating the prefix makes another only once the
+     * current one is deprecated - its preferred lifetime has run out - or
+     * was found to be a duplicate.
+     */
+    for(struct in6_ifaddr *ia = in6_ifaddr; ia; ia = ia->ia_next) {
+        if(ia->ia6_ifp == ifp &&
+                (ia->ia6_ifaflags & IN6_IFF_TEMPORARY) &&
+                !(ia->ia6_ifaflags & (IN6_IFF_DEPRECATED | IN6_IFF_DUPLICATED)) &&
+                bcmp(&ia->ia_addr.sin6_addr, &pr->ndpr_prefix.sin6_addr, 8) == 0)
+            return 0;
+    }
 
     /* build the temporary address: prefix + random IID */
     bzero(&tmpaddr, sizeof(tmpaddr));
