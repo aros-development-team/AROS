@@ -218,11 +218,11 @@ cpu_registerfatal:
     Permit();
     Enable();
 
-    /* Become this core's idle context - do NOT return: we were reached by
-     * a `br`, so x30 still holds firmware leftovers. An IPI arrives as an
-     * FIQ and its exit path dispatches whatever became ready. */
-    for (;;)
-        asm volatile("wfi");
+    /* The bootstrap's work is done. Do NOT return: we were reached by a
+     * `br`, so x30 still holds firmware leftovers. Leave through exec's
+     * task exit code instead, as every task does; the scheduler then runs
+     * this core's idle task (Exec_ARMCPUInit). */
+    ((void (*)(void))SysBase->TaskExitCode)();
 #endif
 }
 
