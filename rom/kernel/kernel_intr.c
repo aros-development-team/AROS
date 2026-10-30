@@ -14,6 +14,10 @@
 #include <kernel_scheduler.h>
 #include <kernel_syscall.h>
 
+#if defined(__AROSEXEC_SMP__)
+#include "exec_platform.h"
+#endif
+
 #define D(x)
 
 /*
@@ -76,6 +80,22 @@ void core_SysCall(int sc, regs_t *regs)
         /* Fallthrough */
 
     case SC_DISPATCH:
+#if defined(__AROSEXEC_SMP__)
+        {
+            /*
+             * Only a task that removes itself dispatches (RemTask). It has
+             * left its stack with this trap, which every SMP port takes on
+             * the CPU's own stack: only now may the service task, perhaps
+             * on another CPU, free that stack (it does once TS_INVALID).
+             * Not when SC_SWITCH falls through: a finalising task switched
+             * away still has its RemTask to finish.
+             */
+            struct Task *task = GET_THIS_TASK;
+
+            if ((sc == SC_DISPATCH) && task && (task->tc_State == TS_TOMBSTONED))
+                __atomic_store_n(&task->tc_State, TS_INVALID, __ATOMIC_RELEASE);
+        }
+#endif
         cpu_Dispatch(regs);
         break;
     }

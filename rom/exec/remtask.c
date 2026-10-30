@@ -158,8 +158,17 @@
             */
 
             DREMTASK("Switching away..");
+#if defined(__AROSEXEC_SMP__)
+            /*
+             * It stays TS_TOMBSTONED: the service task frees its stack as
+             * soon as it reads TS_INVALID, perhaps on another CPU, and this
+             * call still uses that stack. The kernel marks it TS_INVALID once
+             * the task has left it (SC_DISPATCH, rom/kernel/kernel_intr.c).
+             */
+#else
             /* It is  no longer a valid task.. */
             task->tc_State = TS_INVALID;
+#endif
             KrnDispatch();
         }
         else
