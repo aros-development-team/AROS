@@ -436,6 +436,19 @@ single shared `fe80::/64` route: the egress link is taken from the one the calle
 chosen source address lives on — so a link-local send leaves the correct link on a multi-homed host.
 `HOST` database entries may also carry an IPv6 address.
 
+A link-scope address (`fe80::/10`, `ff01::/16`, `ff02::/16`) names a link only together with its zone
+(RFC 4007), the interface index in `sin6_scope_id`; the zone is never embedded in the address. A
+socket's zone is `inp_boundif`, the interface `SO_BINDTODEVICE` also sets. `in6_pcbbind()` accepts
+only one of our addresses (or a group, or `::`), a link-scope one only in its zone, and sets the
+socket's zone; `in6_pcbconnect()` takes the zone from the peer's `sin6_scope_id` (`ENXIO` if no
+interface has that index, `EINVAL` if the socket is in another zone) and picks the source on that
+link. Without a zone the routing table picks the link, as RFC 4007 section 6 allows for a default
+zone. `getsockname()`/`getpeername()`/`accept()` report the zone of link-scope addresses (for an
+accepted connection, the link its link-local address is on), and `recvfrom()` the link a link-scope
+source arrived on. A packet sent to one of our own link-local addresses is looped back through
+`lo0` but received on the interface the address belongs to, as KAME's `origifp` does, so the zone
+and `IPV6_PKTINFO` name that link.
+
 Among an interface's usable addresses (not tentative or duplicated), `in6_ifawithifp()` picks the
 source by RFC 6724 section 5 rules 2, 3 and 7: the smaller of two scopes unless it is smaller than
 the destination's (a link-scope destination gets the link-local, a global one a global address),

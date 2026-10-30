@@ -79,6 +79,7 @@ extern void in_pcbdetach(struct inpcb *);
 extern int  soreserve(struct socket *, u_long, u_long);
 extern void in6_setsockaddr(struct inpcb *, struct mbuf *);
 extern void in6_setpeeraddr(struct inpcb *, struct mbuf *);
+extern u_int32_t in6_rcvzone(struct mbuf *, const struct in6_addr *);
 extern struct in6_ifaddr *in6_ifawithifp(struct ifnet *, struct in6_addr *);
 extern int  ip6_ctloutput(int, struct socket *, int, int, struct mbuf **);
 extern int  ip6_output(void *args, ...);
@@ -225,6 +226,7 @@ rip6_input(void *args, ...)
     from.sin6_len    = sizeof(from);
     from.sin6_family = AF_INET6;
     from.sin6_addr   = src;
+    from.sin6_scope_id = in6_rcvzone(m, &src);
 
     for(inp = rip6cb.lh_first; inp != NULL; inp = inp->inp_list.le_next) {
         struct rip6pcb *rp = intorip6(inp);
