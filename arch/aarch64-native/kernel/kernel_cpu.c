@@ -35,7 +35,6 @@
 #define DREGS(x)
 
 #if defined(__AROSEXEC_SMP__)
-extern struct Task *cpu_InitBootStrap(struct ExecBase *);
 extern void cpu_BootStrap(struct Task *, struct ExecBase *);
 #endif
 
@@ -165,7 +164,8 @@ void cpu_Register()
     bug("[Kernel:%02d] KernelBase @ 0x%p\n", cpunum, KernelBase);
     bug("[Kernel:%02d] SysBase @ 0x%p\n", cpunum, SysBase);
 
-    if ((__tls->ThisTask = cpu_InitBootStrap(SysBase)) == NULL)
+    /* Built for this core by the boot CPU (bcm27xx_init) */
+    if (__tls->ThisTask == NULL)
         goto cpu_registerfatal;
 
     if (__arm_arosintern.ARMI_InitCore)
