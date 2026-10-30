@@ -343,6 +343,12 @@ send another. An address's `IN6_IFF_*` flags are kept in `ia6_ifaflags`, apart f
 the address. A prefix gets one temporary address (RFC 4941) at a time: another is made when a Router
 Advertisement repeats the prefix after the current one is deprecated.
 
+An in-place reload deletes every address of every interface, the link-local included, and forgets
+the routers and prefixes heard on it (`nd6_purge_routers()`, `nd6_purge_prefixes()`). For an
+interface that stays up and running, `addifent()` then makes the link-local again with `in6_if_up()`,
+as when the interface comes up: DAD, then a Router Solicitation, whose answer brings back the default
+route and the SLAAC addresses.
+
 ### 6.2 Multicast Listener Discovery (MLD)
 
 `mld6.c` is the host side of MLD. `in6_addmulti`/`in6_delmulti` maintain the `in6_multihead` list
