@@ -232,9 +232,16 @@ nd6_ns_input(struct mbuf *m, int off, int icmp6len)
     goto bad;
 
 found:
-    /* if target address is tentative, this is a DAD conflict */
+    /*
+     * A solicitation for an address still under DAD is never answered. Only
+     * one from the unspecified address - another node probing for the same
+     * address - is a conflict; one from a real source is address resolution
+     * by a node that already took the address as ours, and is silently
+     * discarded (RFC 4862 section 5.4.3, as KAME's nd6_ns_input()).
+     */
     if(ia->ia6_ifaflags & IN6_IFF_TENTATIVE) {
-        nd6_dad_ns_input(ia);
+        if(is_dad)
+            nd6_dad_ns_input(ia);
         goto bad;
     }
 
