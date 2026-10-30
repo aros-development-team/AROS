@@ -278,7 +278,8 @@ overlay), so header building and the state machine are shared; only the family e
   `if_loop.c loconfig()` configures `lo0` with `::1` (and `127.0.0.1`); `::1` is in `in6_ifaddr` so
   `ip6_input` treats it as "ours". `IPV6_V6ONLY` and `IPV6_UNICAST_HOPS` round-trip. A `sendto()`
 on an unconnected socket chooses the source for that datagram only (the bound address, an
-`IPV6_PKTINFO` source, the asked-for interface's address, or the route's), as `udp_output()` does for
+`IPV6_PKTINFO` source, the asked-for interface's address, or the route's; for a group with no
+interface named, the `IPV6_MULTICAST_IF` one's), as `udp_output()` does for
 IPv4: the socket keeps its bound address, and only a missing port is bound for good. When the
   `IN6P_HOPLIMIT` (`IPV6_RECVHOPLIMIT`, or the RFC 2292 `IPV6_HOPLIMIT`) or `IN6P_PKTINFO`
   (`IPV6_RECVPKTINFO`) flag is set, `udp6_input` delivers the received hop limit and/or a
