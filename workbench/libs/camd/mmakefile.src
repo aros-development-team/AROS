@@ -5,7 +5,7 @@ USER_LDFLAGS := -static
 
 FILES :=    drivers clusters init camdwait mididistr midifromdriver \
 	    midimsgtype2 miditodriver receiverproc strings sysexdistr \
-	    unlinkmidilink getmidilinkfromownernode
+	    unlinkmidilink getmidilinkfromownernode camdclock
 
 FUNCS := \
     lockcamd \
@@ -43,7 +43,12 @@ FUNCS := \
     startclusternotify \
     endclusternotify \
     goodputmidi \
-    midi2driver
+    midi2driver \
+    getclusterattrsa \
+    camdtime \
+    startclusterwatcha \
+    endclusterwatch \
+    getclusterwatchevent
 
 #MM workbench-libs-camd-includes : \
 #MM     kernel-exec-includes \
