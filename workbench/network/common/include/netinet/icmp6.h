@@ -549,6 +549,9 @@ struct rr_result {		/* router renumbering result message */
  * icmp6 filter structures.
  */
 
+/* level IPPROTO_ICMPV6: the ICMPv6 types a raw socket receives (RFC 3542 3.2) */
+#define	ICMP6_FILTER	18	/* struct icmp6_filter */
+
 struct icmp6_filter {
 	u_int32_t icmp6_filt[8];
 };

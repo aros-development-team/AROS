@@ -34,7 +34,7 @@ library and use the Berkeley socket API (`socket`/`bind`/`connect`/`send`/`recv`
 | `kern/`     | Kernel glue and the socket layer: `uipc_socket*.c` (socket layer), `uipc_mbuf.c` (mbufs), `kern_malloc.c` (pooled allocator), `kern_synch.c` (`spl`/`tsleep`/`wakeup`), `subr_prf.c` (kernel `printf`/`log`), `amiga_main.c` (daemon init), configuration/ARexx/GUI/DHCP integration (`amiga_config.c`, `amiga_rexx.c`, `amiga_gui.c`, `amiga_dhcp.c`), name database (`amiga_netdb.c`), access control (`accesscontrol.c`). |
 | `net/`      | Link and routing layer: routing (`route.c`, `radix.c`, `rtsock.c`), interfaces (`if.c`, `if_loop.c`), the SANA-II driver interface (`if_sana.c`, `sana2arp.c`, `sana2*.c`), the 6in4 IPv6-in-IPv4 tunnel pseudo-interface (`if_stf.c`), BPF (`bpf*.c`), packet filter hooks (`pfil.c`, `ipfilter.c`), and the software-interrupt queue (`netisr.c`). |
 | `netinet/`  | IPv4 and the (dual-stack) TCP engine: `ip_input.c`/`ip_output.c`/`ip_icmp.c`, `in.c`/`in_pcb.c`/`in_proto.c`, IGMPv2 host membership (`igmp.c`), the TCP engine (`tcp_input.c`, `tcp_output.c`, `tcp_subr.c`, `tcp_usrreq.c`, `tcp_timer.c`), the SYN cache (`tcp_syncache.c`), congestion control (`tcp_cc_newreno.c`, `tcp_cc_cubic.c`, `tcp_cc.h`), UDP (`udp_usrreq.c`), raw IP (`raw_ip.c`), and the Internet checksum (`in_cksum.c` / `in_cksum_sse2.c` / `in_cksum_neon.c`). |
-| `netinet6/` | IPv6 (KAME-derived): `ip6_input.c`/`ip6_output.c`, `icmp6.c`, neighbour discovery (`nd6.c`, `nd6_nbr.c`, `nd6_rtr.c`), MLD (`mld6.c`), `in6.c`/`in6_pcb.c`/`in6_proto.c`, UDP6 (`udp6_usrreq.c`), and the IPv6 checksum (`in6_cksum.c` / `in6_cksum_sse2.c` / `in6_cksum_neon.c`). |
+| `netinet6/` | IPv6 (KAME-derived): `ip6_input.c`/`ip6_output.c`, `icmp6.c`, neighbour discovery (`nd6.c`, `nd6_nbr.c`, `nd6_rtr.c`), MLD (`mld6.c`), `in6.c`/`in6_pcb.c`/`in6_proto.c`, UDP6 (`udp6_usrreq.c`), raw IPv6 sockets (`raw_ip6.c`), and the IPv6 checksum (`in6_cksum.c` / `in6_cksum_sse2.c` / `in6_cksum_neon.c`). |
 | `sys/`, `conf/` | Local system headers and the `conf.h` build configuration (`INET6`, debug gates, compiler macros). Shared protocol headers live in `AROS/workbench/network/common/include`. |
 
 ---
@@ -171,7 +171,9 @@ UDP shares `udb`.
 - **IPv4** (`netinet/in_proto.c`, `inetsw`): TCP (`SOCK_STREAM`) → `tcp_input`/`tcp_usrreq`;
   UDP → `udp_input`/`udp_usrreq`.
 - **IPv6** (`netinet6/in6_proto.c`, `inet6sw`): TCP6 (`SOCK_STREAM`) → the shared dual-stack
-  `tcp_input`/`tcp_usrreq`; UDP6 → `udp6_input`/`udp6_usrreq` (a separate path).
+  `tcp_input`/`tcp_usrreq`; UDP6 → `udp6_input`/`udp6_usrreq` (a separate path); raw IPv6
+  (`SOCK_RAW`, ICMPv6 or any other protocol) → `rip6_usrreq`, with `icmp6_input` and `rip6_input`
+  handing packets to the raw sockets.
 - `ip6_input` demuxes with `pr = &inet6sw[ip6_protox[nxt]]; pr->pr_input(m, off = 40, nxt)` — the
   same vararg convention as IPv4, where the header offset is the first vararg.
 
@@ -280,6 +282,19 @@ overlay), so header building and the state machine are shared; only the family e
   `struct in6_pktinfo` (public in `<netinet/in.h>`: destination address + receiving interface index)
   as `IPPROTO_IPV6` ancillary `cmsg`s, chained via `m_next` and assembled before the headers are
   stripped (RFC 3542).
+- **Raw IPv6 sockets** (`raw_ip6.c`, after KAME's `raw_ip6.c`; RFC 3542 §3) have an `inpcb` on
+  their own list (`rip6cb`), so the IPv6 options are the ones `ip6_ctloutput()` keeps for UDP6. The
+  socket's protocol and its `ICMP6_FILTER` (level `IPPROTO_ICMPV6`, pass-all by default) live in a
+  `struct rip6pcb` hung off `inp_ppcb`. `icmp6_input()` gives its handlers copies and, once they are
+  done, hands every message to `rip6_input()`, which queues it to each socket of that protocol (or of
+  protocol 0) whose bound and connected addresses match and whose filter passes the type. Protocols
+  with no handler reach `rip6_input()` through the `IPPROTO_RAW` protosw entry. Data is queued
+  without the IPv6 header or the extension headers before it, with `IPV6_PKTINFO`/`IPV6_HOPLIMIT`
+  ancillary data when asked for. The Echo Request reply is written into headers of its own
+  (`icmp6_echo_copy()`), because `m_copym()` shares clusters. On output the kernel computes the ICMPv6
+  checksum; `IPV6_PKTINFO` and `IPV6_HOPLIMIT` may come as ancillary data, and the hop limit is
+  `IPV6_HOPLIMIT`, else `IPV6_MULTICAST_HOPS` (default 1) or `IPV6_UNICAST_HOPS`, else the system
+  default. `IPV6_CHECKSUM` for other protocols is not implemented (its number is `IPV6_V6ONLY`'s).
 - **Control messages.** Protocols build each one with `sbcreatecontrol()` (`kern/uipc_socket2.c`,
   4.4BSD-Lite): one `cmsghdr` per mbuf, `cmsg_len` = `CMSG_LEN(size)` and the mbuf `CMSG_SPACE(size)`
   long. On LP64 `CMSG_DATA()` starts past padding after the 12-byte header, which a length of
