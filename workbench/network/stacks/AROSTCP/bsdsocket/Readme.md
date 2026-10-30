@@ -315,7 +315,9 @@ flagged so timer expiry emits an ICMPv6 type-143 Report — a single `MODE_IS_EX
 sources (equivalent to a plain membership) sent to `ff02::16`. A v1 querier still receives v1
 Reports. Per-source filtering is not tracked. Every MLD message (v1 and v2) is emitted with a
 Hop-by-Hop Options header carrying the Router Alert option (RFC 2711, `mld6_prepend_ra`) so that
-on-link multicast routers intercept it.
+on-link multicast routers intercept it. MLD reports and done messages carry the interface's
+link-local address as their source (RFC 3810 section 5, RFC 2710 section 3), whatever the group's
+scope.
 
 Every `in6_multihead` entry is reference counted, and each reference has one owner that releases it:
 
