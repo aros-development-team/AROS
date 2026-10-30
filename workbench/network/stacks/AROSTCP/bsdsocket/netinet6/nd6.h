@@ -32,6 +32,7 @@
 
 /* Limits */
 #define ND6_MAX_DEFROUTERS	8	/* max tracked default routers */
+#define ND6_MAX_RTINFO		32	/* max tracked (prefix, router) routes, RFC 4191 */
 #define ND6_MAX_PREFIXES	16	/* max tracked prefixes */
 #define ND6_MAX_DAD_NS		1	/* DAD NS transmissions */
 
@@ -87,9 +88,26 @@ struct nd_defrouter {
 	struct nd_defrouter *next;
 	struct in6_addr rtaddr;		/* router link-local address */
 	struct ifnet *ifp;		/* receiving interface */
-	u_int16_t rtlifetime;		/* router lifetime (seconds) */
-	long expire;			/* expiry time (seconds) */
+	u_int32_t rtlifetime;		/* router lifetime (seconds; 0xffffffff infinite) */
+	long expire;			/* expiry time (seconds; 0 = never) */
 	u_int8_t flags;			/* ND_RA_FLAG_* */
+	int8_t pref;			/* RFC 4191 preference: 1 high, 0 medium, -1 low */
+	u_int8_t installed;		/* route installed in FIB */
+};
+
+/*
+ * A route learned from a Route Information Option (RFC 4191 section 3.1),
+ * one per (prefix, router): the routing table gets the route through the
+ * most preferred router advertising the prefix.
+ */
+struct nd_route_info {
+	struct nd_route_info *next;
+	struct in6_addr prefix;		/* masked to plen */
+	u_int8_t plen;
+	struct in6_addr rtaddr;		/* router link-local address */
+	struct ifnet *ifp;		/* interface it was advertised on */
+	int8_t pref;			/* 1 high, 0 medium, -1 low */
+	long expire;			/* expiry time (seconds; 0 = never) */
 	u_int8_t installed;		/* route installed in FIB */
 };
 

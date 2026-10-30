@@ -58,23 +58,111 @@ static struct nd_defrouter *nd6_defrtrlist = NULL;
 static struct nd_prefix *nd6_prefixlist = NULL;
 
 /* ==================================================================
- * Default Router List Management
+ * Router preferences and routes (RFC 4191)
  * ================================================================== */
 
 /*
- * The netmask of the default route, ::/0. Without one the route to :: would
- * be a host route to the unspecified address - which the routing table
- * refuses, its key being the tree's own all-zeros node - rather than the
- * route every destination falls back to; as for a GW6 default route from
- * the interface database (kern/amiga_netdb.c).
+ * The preference in an RA's flags or a Route Information Option's flags,
+ * both in bits 3-4 (RFC 4191 section 2.1): 1 high, 0 medium, -1 low. The
+ * reserved value is not handled here: an RA header counts it as medium,
+ * and a Route Information Option that carries it is ignored (sections 2.2
+ * and 2.3).
  */
-static void
-nd6_defmask(struct sockaddr_in6 *mask)
+static int
+nd6_rtpref(u_int8_t flags)
 {
-    bzero(mask, sizeof(*mask));
-    mask->sin6_family = AF_INET6;
-    mask->sin6_len    = sizeof(*mask);
+    switch(flags & ND_RA_FLAG_RTPREF_MASK) {
+    case ND_RA_FLAG_RTPREF_HIGH:
+        return 1;
+    case ND_RA_FLAG_RTPREF_LOW:
+        return -1;
+    default:
+        return 0;
+    }
 }
+
+/* Expiry time for a lifetime in seconds; 0 means it never expires. */
+static long
+nd6_rtexpire(u_int32_t lifetime)
+{
+    struct timeval _tv;
+
+    if(lifetime == 0xffffffff)
+        return 0;
+    GetSysTime(&_tv);
+    if(lifetime > (u_int32_t)(0x7fffffff - _tv.tv_sec))
+        return 0;
+    return _tv.tv_sec + (long)lifetime;
+}
+
+static int
+nd6_rtexpired(long expire)
+{
+    struct timeval _tv;
+
+    if(expire == 0)
+        return 0;
+    GetSysTime(&_tv);
+    return expire < _tv.tv_sec;
+}
+
+/*
+ * Add or delete the route to prefix/plen through the router gw on ifp. The
+ * netmask is always given: for plen 0, the default route, a route to ::
+ * without one would be a host route to the unspecified address, which the
+ * routing table refuses (its key is the tree's own all-zeros node), rather
+ * than the route every destination falls back to; as for a GW6 default
+ * route from the interface database (kern/amiga_netdb.c). The route is put
+ * on ifp, the interface the router advertised on: the routing table holds
+ * fe80::/64 once, so the link-local gateway would otherwise resolve to
+ * whichever interface registered that prefix first.
+ */
+static int
+nd6_router_route(int cmd, struct in6_addr *prefix, int plen,
+                 struct in6_addr *gw, struct ifnet *ifp)
+{
+    struct sockaddr_in6 dst, gate, mask;
+    struct rtentry *rt = NULL;
+    int error, i, bits;
+
+    bzero(&dst, sizeof(dst));
+    dst.sin6_family = AF_INET6;
+    dst.sin6_len    = sizeof(dst);
+    dst.sin6_addr   = *prefix;
+    bzero(&gate, sizeof(gate));
+    gate.sin6_family = AF_INET6;
+    gate.sin6_len    = sizeof(gate);
+    gate.sin6_addr   = *gw;
+    bzero(&mask, sizeof(mask));
+    mask.sin6_family = AF_INET6;
+    mask.sin6_len    = sizeof(mask);
+    for(i = 0, bits = plen; i < 16 && bits >= 8; i++, bits -= 8)
+        mask.sin6_addr.s6_addr[i] = 0xff;
+    if(i < 16 && bits > 0)
+        mask.sin6_addr.s6_addr[i] = (0xff << (8 - bits)) & 0xff;
+
+    error = rtrequest(cmd, (struct sockaddr *)&dst, (struct sockaddr *)&gate,
+                      (struct sockaddr *)&mask, RTF_GATEWAY | RTF_DYNAMIC,
+                      cmd == RTM_ADD ? &rt : NULL);
+    if(error == 0 && rt != NULL) {
+        if(rt->rt_ifp != ifp) {
+            struct in6_ifaddr *ia = in6_ifaof_ifpforlinklocal(ifp);
+
+            rt->rt_ifp = ifp;
+            if(ia)
+                rt->rt_ifa = &ia->ia_ifa;
+        }
+        rt->rt_refcnt--;
+    }
+    return error;
+}
+
+/* Routes learned from Route Information Options, one per (prefix, router) */
+static struct nd_route_info *nd6_rtinfolist = NULL;
+
+/* ==================================================================
+ * Default Router List Management
+ * ================================================================== */
 
 /* ------------------------------------------------------------------
  * defrouter_lookup - find a default router by address and interface.
@@ -93,54 +181,48 @@ defrouter_lookup(struct in6_addr *addr, struct ifnet *ifp)
 }
 
 /* ------------------------------------------------------------------
- * defrouter_insert - add or update a default router entry.
+ * defrouter_insert - add or update a default router entry, with its
+ * lifetime in seconds (0xffffffff, infinite, can come from a ::/0 Route
+ * Information Option) and its RFC 4191 preference.
  * ------------------------------------------------------------------ */
 static struct nd_defrouter *
 defrouter_insert(struct in6_addr *addr, struct ifnet *ifp,
-                 u_int16_t lifetime, u_int8_t raflags)
+                 u_int32_t lifetime, u_int8_t raflags, int pref)
 {
-    struct nd_defrouter *dr;
-    struct timeval _tv;
-
-    GetSysTime(&_tv);
+    struct nd_defrouter *dr, **pp;
+    int count = 0;
 
     dr = defrouter_lookup(addr, ifp);
     if(dr) {
         /* update existing entry */
         dr->rtlifetime = lifetime;
-        dr->flags = raflags;
-        if(lifetime == 0) {
-            dr->expire = 0;	/* will be pruned */
-        } else {
-            dr->expire = _tv.tv_sec + lifetime;
-        }
+        dr->flags  = raflags;
+        dr->pref   = pref;
+        dr->expire = nd6_rtexpire(lifetime);
         return dr;
     }
 
-    /* count existing entries */
-    {
-        int count = 0;
-        for(dr = nd6_defrtrlist; dr; dr = dr->next)
-            count++;
-        if(count >= ND6_MAX_DEFROUTERS)
-            return NULL;	/* too many */
-    }
+    for(dr = nd6_defrtrlist; dr; dr = dr->next)
+        count++;
+    if(count >= ND6_MAX_DEFROUTERS)
+        return NULL;	/* too many */
 
     MALLOC(dr, struct nd_defrouter *, sizeof(*dr), M_PCB, M_NOWAIT);
     if(dr == NULL)
         return NULL;
     bzero(dr, sizeof(*dr));
-    dr->rtaddr    = *addr;
-    dr->ifp       = ifp;
+    dr->rtaddr     = *addr;
+    dr->ifp        = ifp;
     dr->rtlifetime = lifetime;
-    dr->flags     = raflags;
-    dr->expire    = (lifetime == 0) ? 0 : _tv.tv_sec + lifetime;
-    dr->installed = 0;
+    dr->flags      = raflags;
+    dr->pref       = pref;
+    dr->expire     = nd6_rtexpire(lifetime);
+    dr->installed  = 0;
 
-    /* insert at head */
-    dr->next = nd6_defrtrlist;
-    nd6_defrtrlist = dr;
-
+    /* append, so that among equals the router heard first stays first */
+    for(pp = &nd6_defrtrlist; *pp; pp = &(*pp)->next)
+        ;
+    *pp = dr;
     return dr;
 }
 
@@ -154,22 +236,10 @@ defrouter_del(struct nd_defrouter *dr)
 
     /* remove route if installed */
     if(dr->installed) {
-        struct sockaddr_in6 defrt, gate, defmask;
+        struct in6_addr any;
 
-        nd6_defmask(&defmask);
-        bzero(&defrt, sizeof(defrt));
-        defrt.sin6_family = AF_INET6;
-        defrt.sin6_len    = sizeof(defrt);
-        /* defrt addr = :: (default route) */
-
-        bzero(&gate, sizeof(gate));
-        gate.sin6_family = AF_INET6;
-        gate.sin6_len    = sizeof(gate);
-        gate.sin6_addr   = dr->rtaddr;
-
-        rtrequest(RTM_DELETE, (struct sockaddr *)&defrt,
-                  (struct sockaddr *)&gate, (struct sockaddr *)&defmask,
-                  RTF_GATEWAY, NULL);
+        bzero(&any, sizeof(any));
+        nd6_router_route(RTM_DELETE, &any, 0, &dr->rtaddr, dr->ifp);
         dr->installed = 0;
     }
 
@@ -184,88 +254,215 @@ defrouter_del(struct nd_defrouter *dr)
 }
 
 /* ------------------------------------------------------------------
- * defrouter_select - install the best default router as default route.
- *
- * Simple policy: pick the first non-expired entry.
+ * defrouter_select - install the best default router as the default
+ * route: the most preferred one that has not expired (RFC 4191 section
+ * 3.2), the one heard first among equals.
  * ------------------------------------------------------------------ */
 void
 defrouter_select(void)
 {
     struct nd_defrouter *dr, *best = NULL;
-    struct timeval _tv;
-    struct sockaddr_in6 defrt, gate, defmask;
-
-    GetSysTime(&_tv);
-    nd6_defmask(&defmask);
+    struct in6_addr any;
 
     for(dr = nd6_defrtrlist; dr; dr = dr->next) {
-        if(dr->expire != 0 && dr->expire < _tv.tv_sec)
-            continue;	/* expired */
-        if(dr->rtlifetime == 0)
-            continue;	/* lifetime 0 = don't use */
-        best = dr;
-        break;
+        if(nd6_rtexpired(dr->expire) || dr->rtlifetime == 0)
+            continue;
+        if(best == NULL || dr->pref > best->pref)
+            best = dr;
     }
 
+    bzero(&any, sizeof(any));
     /* remove any currently installed default routes */
     for(dr = nd6_defrtrlist; dr; dr = dr->next) {
         if(dr->installed && dr != best) {
-            bzero(&defrt, sizeof(defrt));
-            defrt.sin6_family = AF_INET6;
-            defrt.sin6_len    = sizeof(defrt);
-
-            bzero(&gate, sizeof(gate));
-            gate.sin6_family = AF_INET6;
-            gate.sin6_len    = sizeof(gate);
-            gate.sin6_addr   = dr->rtaddr;
-
-            rtrequest(RTM_DELETE, (struct sockaddr *)&defrt,
-                      (struct sockaddr *)&gate, (struct sockaddr *)&defmask,
-                      RTF_GATEWAY, NULL);
+            nd6_router_route(RTM_DELETE, &any, 0, &dr->rtaddr, dr->ifp);
             dr->installed = 0;
         }
     }
 
     /* install the selected router */
-    if(best && !best->installed) {
-        bzero(&defrt, sizeof(defrt));
-        defrt.sin6_family = AF_INET6;
-        defrt.sin6_len    = sizeof(defrt);
+    if(best && !best->installed &&
+            nd6_router_route(RTM_ADD, &any, 0, &best->rtaddr, best->ifp) == 0)
+        best->installed = 1;
+}
 
-        bzero(&gate, sizeof(gate));
-        gate.sin6_family = AF_INET6;
-        gate.sin6_len    = sizeof(gate);
-        gate.sin6_addr   = best->rtaddr;
+/* ==================================================================
+ * More-specific routes (RFC 4191 Route Information Options)
+ * ================================================================== */
 
-        if(rtrequest(RTM_ADD, (struct sockaddr *)&defrt,
-                     (struct sockaddr *)&gate, (struct sockaddr *)&defmask,
-                     RTF_GATEWAY | RTF_DYNAMIC, NULL) == 0) {
-            best->installed = 1;
+/*
+ * rtinfo_select - for prefix/plen, install the route through the most
+ * preferred router that advertises it and has not expired, the one heard
+ * first among equals, and remove the route through any other. Between
+ * prefixes of different lengths the routing table's longest match decides
+ * (section 3.2).
+ */
+static void
+rtinfo_select(struct in6_addr *prefix, int plen)
+{
+    struct nd_route_info *ri, *best = NULL;
+
+    for(ri = nd6_rtinfolist; ri; ri = ri->next) {
+        if(ri->plen != plen || !IN6_ARE_ADDR_EQUAL(&ri->prefix, prefix))
+            continue;
+        if(nd6_rtexpired(ri->expire))
+            continue;
+        if(best == NULL || ri->pref > best->pref)
+            best = ri;
+    }
+    for(ri = nd6_rtinfolist; ri; ri = ri->next) {
+        if(ri->plen != plen || !IN6_ARE_ADDR_EQUAL(&ri->prefix, prefix))
+            continue;
+        if(ri->installed && ri != best) {
+            nd6_router_route(RTM_DELETE, &ri->prefix, ri->plen, &ri->rtaddr, ri->ifp);
+            ri->installed = 0;
         }
     }
+    if(best && !best->installed &&
+            nd6_router_route(RTM_ADD, &best->prefix, best->plen,
+                             &best->rtaddr, best->ifp) == 0)
+        best->installed = 1;
+}
+
+static void
+rtinfo_del(struct nd_route_info *ri)
+{
+    struct nd_route_info **pp;
+
+    if(ri->installed) {
+        nd6_router_route(RTM_DELETE, &ri->prefix, ri->plen, &ri->rtaddr, ri->ifp);
+        ri->installed = 0;
+    }
+    for(pp = &nd6_rtinfolist; *pp; pp = &(*pp)->next) {
+        if(*pp == ri) {
+            *pp = ri->next;
+            break;
+        }
+    }
+    FREE(ri, M_PCB);
+}
+
+/*
+ * rtinfo_update - a router on ifp advertised prefix/plen with this
+ * preference and lifetime (RFC 4191 section 3.1): add or refresh the
+ * (prefix, router) entry, or remove it for lifetime 0; then reselect.
+ */
+static void
+rtinfo_update(struct in6_addr *prefix, int plen, struct in6_addr *router,
+              struct ifnet *ifp, int pref, u_int32_t lifetime)
+{
+    struct nd_route_info *ri, **pp;
+    int count = 0;
+
+    for(ri = nd6_rtinfolist; ri; ri = ri->next) {
+        if(ri->ifp == ifp && ri->plen == plen &&
+                IN6_ARE_ADDR_EQUAL(&ri->prefix, prefix) &&
+                IN6_ARE_ADDR_EQUAL(&ri->rtaddr, router))
+            break;
+        count++;
+    }
+    if(ri == NULL) {
+        if(lifetime == 0 || count >= ND6_MAX_RTINFO)
+            return;
+        MALLOC(ri, struct nd_route_info *, sizeof(*ri), M_PCB, M_NOWAIT);
+        if(ri == NULL)
+            return;
+        bzero(ri, sizeof(*ri));
+        ri->prefix = *prefix;
+        ri->plen   = plen;
+        ri->rtaddr = *router;
+        ri->ifp    = ifp;
+        for(pp = &nd6_rtinfolist; *pp; pp = &(*pp)->next)
+            ;
+        *pp = ri;
+    } else if(lifetime == 0) {
+        rtinfo_del(ri);
+        rtinfo_select(prefix, plen);
+        return;
+    }
+    ri->pref   = pref;
+    ri->expire = nd6_rtexpire(lifetime);
+    rtinfo_select(prefix, plen);
+}
+
+/*
+ * nd6_rtinfo_input - a Route Information Option, other than ::/0, of an RA
+ * from router on ifp (RFC 4191 section 2.3). A malformed option, or one
+ * with the reserved preference, is ignored.
+ */
+static void
+nd6_rtinfo_input(struct nd_opt_route_info *rio, int optlen,
+                 struct in6_addr *router, struct ifnet *ifp)
+{
+    struct in6_addr prefix;
+    int plen = rio->nd_opt_rti_prefixlen, len = rio->nd_opt_rti_len;
+    int i, bits, n;
+    u_int32_t lifetime;
+
+    /* the option length must fit the prefix length (section 2.3) */
+    if(plen > 128 || len < 1 || len > 3 ||
+            (plen > 64 && len != 3) || (plen > 0 && len < 2))
+        return;
+    if((rio->nd_opt_rti_flags & ND_RA_FLAG_RTPREF_MASK) == ND_RA_FLAG_RTPREF_RSV)
+        return;
+
+    /* the prefix field holds (len - 1) * 8 bytes; bits past plen are ignored */
+    bzero(&prefix, sizeof(prefix));
+    n = (len - 1) * 8;
+    if(n > optlen - 8)
+        n = optlen - 8;
+    bcopy((u_int8_t *)(rio + 1), &prefix, n);
+    for(i = 0, bits = plen; i < 16; i++, bits -= 8) {
+        if(bits >= 8)
+            continue;
+        prefix.s6_addr[i] &= (bits > 0) ? (0xff << (8 - bits)) & 0xff : 0;
+    }
+    /*
+     * A route through a router to a link-local or multicast prefix would
+     * take traffic that never leaves the link, or a group's scope, off it.
+     */
+    if((plen >= 10 && IN6_IS_ADDR_LINKLOCAL(&prefix)) ||
+            (plen >= 8 && IN6_IS_ADDR_MULTICAST(&prefix)))
+        return;
+
+    bcopy(&rio->nd_opt_rti_lifetime, &lifetime, sizeof(lifetime));
+    rtinfo_update(&prefix, plen, router, ifp,
+                  nd6_rtpref(rio->nd_opt_rti_flags), ntohl(lifetime));
 }
 
 /* ------------------------------------------------------------------
- * nd6_defrouter_timer - expire default routers (called from nd6_timer).
+ * nd6_defrouter_timer - expire default routers and learned routes
+ * (called from nd6_timer).
  * ------------------------------------------------------------------ */
 void
 nd6_defrouter_timer(void)
 {
     struct nd_defrouter *dr, *next;
-    struct timeval _tv;
+    struct nd_route_info *ri;
     int changed = 0;
-
-    GetSysTime(&_tv);
 
     for(dr = nd6_defrtrlist; dr; dr = next) {
         next = dr->next;
-        if(dr->expire != 0 && dr->expire < _tv.tv_sec) {
+        if(nd6_rtexpired(dr->expire)) {
             defrouter_del(dr);
             changed = 1;
         }
     }
     if(changed)
         defrouter_select();
+
+    /* rtinfo_select() may install another entry: start over after each */
+    for(ri = nd6_rtinfolist; ri; ) {
+        if(nd6_rtexpired(ri->expire)) {
+            struct in6_addr prefix = ri->prefix;
+            int plen = ri->plen;
+
+            rtinfo_del(ri);
+            rtinfo_select(&prefix, plen);
+            ri = nd6_rtinfolist;
+        } else
+            ri = ri->next;
+    }
 }
 
 /* ==================================================================
@@ -664,6 +861,8 @@ nd6_ra_input(struct mbuf *m, int off, int icmp6len)
     struct nd_ifinfo *ndi;
     struct in6_addr src6;
     u_int8_t *opts, *end;
+    u_int32_t rtlifetime;
+    int rtpref;
 
     nd6stat.nd6s_rcv_ra++;
 
@@ -713,21 +912,15 @@ nd6_ra_input(struct mbuf *m, int off, int icmp6len)
         ndi->retrans = ntohl(nd_ra->nd_ra_retransmit);
     }
 
-    /* manage default router list */
-    {
-        struct nd_defrouter *dr;
-        u_int16_t rtlifetime = ntohs(nd_ra->nd_ra_router_lifetime);
-        dr = defrouter_lookup(&src6, ifp);
-        if(rtlifetime == 0 && dr) {
-            /* router no longer default */
-            defrouter_del(dr);
-            defrouter_select();
-        } else if(rtlifetime > 0) {
-            dr = defrouter_insert(&src6, ifp,
-                                  rtlifetime, nd_ra->nd_ra_flags_reserved);
-            defrouter_select();
-        }
-    }
+    /*
+     * The router as a default router. A router lifetime of 0 means it is not
+     * one, and then its preference is ignored; the reserved preference counts
+     * as medium (RFC 4191 section 2.2). A ::/0 Route Information Option among
+     * the options overrides both (section 3.1), so the list is updated once
+     * they have been read.
+     */
+    rtlifetime = ntohs(nd_ra->nd_ra_router_lifetime);
+    rtpref = (rtlifetime == 0) ? 0 : nd6_rtpref(nd_ra->nd_ra_flags_reserved);
 
     /* update neighbor cache for the router */
     nd6_cache_lladdr(ifp, &src6, NULL, 0,
@@ -807,12 +1000,44 @@ nd6_ra_input(struct mbuf *m, int off, int icmp6len)
             }
             break;
 
+        case ND_OPT_ROUTE_INFO:
+            if(optlen >= (int)sizeof(struct nd_opt_route_info)) {
+                struct nd_opt_route_info *rio = (struct nd_opt_route_info *)opts;
+
+                if(rio->nd_opt_rti_prefixlen != 0)
+                    nd6_rtinfo_input(rio, optlen, &src6, ifp);
+                else if(rio->nd_opt_rti_len <= 3 &&
+                        (rio->nd_opt_rti_flags & ND_RA_FLAG_RTPREF_MASK) !=
+                        ND_RA_FLAG_RTPREF_RSV) {
+                    u_int32_t lt;
+
+                    /* ::/0 is the router's default route */
+                    bcopy(&rio->nd_opt_rti_lifetime, &lt, sizeof(lt));
+                    rtlifetime = ntohl(lt);
+                    rtpref = nd6_rtpref(rio->nd_opt_rti_flags);
+                }
+            }
+            break;
+
         default:
             /* ignore unknown options */
             break;
         }
 
         opts += optlen;
+    }
+
+    {
+        struct nd_defrouter *dr = defrouter_lookup(&src6, ifp);
+
+        if(rtlifetime == 0) {
+            if(dr) {
+                defrouter_del(dr);
+                defrouter_select();
+            }
+        } else if(defrouter_insert(&src6, ifp, rtlifetime,
+                                   nd_ra->nd_ra_flags_reserved, rtpref) != NULL)
+            defrouter_select();
     }
 
     m_freem(m);

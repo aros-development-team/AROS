@@ -322,6 +322,17 @@ Advertisements update the state in use. The default router learned from Router A
 installed as `::/0` with an all-zero netmask, like a `GW6` default from the interface database; a
 route to `::` without a netmask would be a host route, which the routing table refuses.
 
+Router Advertisements are processed as by an RFC 4191 type C host. Each default router keeps its
+preference (high, medium, low; the reserved value counts as medium) and the default route goes
+through the most preferred one that has not expired, the one heard first among equals. A Route
+Information Option installs a route to its prefix through the advertising router, on the interface
+it was heard on, one entry per (prefix, router) with its own lifetime and preference: the most
+preferred router for a prefix gets the route, and between prefixes the routing table's longest match
+decides. An option with the reserved preference, a length that does not fit its prefix length, or a
+link-local or multicast prefix is ignored; a `::/0` option overrides the router lifetime and
+preference of its RA. This is how a host learns the route to a Thread mesh behind a border router
+that is not its default router.
+
 Every new unicast address, not only the link-local, is tentative until duplicate address detection
 finishes (RFC 4862 §5.4): `in6_if_up()` starts it for the link-local and `in6_control()` for an
 address added with `SIOCAIFADDR_IN6` - SLAAC, temporary or configured by hand - on an interface that
