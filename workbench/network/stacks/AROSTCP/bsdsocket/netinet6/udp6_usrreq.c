@@ -74,6 +74,7 @@ extern int  in6_pcbconnect(struct inpcb *, struct mbuf *);
 extern void in6_pcbdisconnect(struct inpcb *);
 extern void in6_setsockaddr(struct inpcb *, struct mbuf *);
 extern void in6_setpeeraddr(struct inpcb *, struct mbuf *);
+extern u_int32_t in6_rcvzone(struct mbuf *, const struct in6_addr *);
 extern struct inpcb *in6_pcblookup(struct inpcbhead *,
                                    struct in6_addr *, u_int,
                                    struct in6_addr *, u_int);
@@ -400,6 +401,7 @@ udp6_input(void *args, ...)
     src6.sin6_family = AF_INET6;
     src6.sin6_len    = sizeof(src6);
     src6.sin6_addr   = ip6->ip6_src;
+    src6.sin6_scope_id = in6_rcvzone(m, &src6.sin6_addr);
     src6.sin6_port   = uh->uh_sport;
 
     bzero(&dst6, sizeof(dst6));

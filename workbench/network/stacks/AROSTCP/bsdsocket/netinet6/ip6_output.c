@@ -103,6 +103,13 @@ ip6_output(void *args, ...)
 
     struct ip6_hdr *ip6 = mtod(m, struct ip6_hdr *);
     struct ifnet   *ifp = NULL;
+    /*
+     * The interface a looped-back packet is received on: the one that owns
+     * the link-scope address it is sent to (lo0 for everything else), so
+     * the receiving side sees the zone the address belongs to, as KAME's
+     * origifp does.
+     */
+    struct ifnet   *rcvifp = NULL;
     struct route_in6 iproute;
     struct route    *ro;
     struct sockaddr_in6 *dst;
@@ -248,6 +255,8 @@ ip6_output(void *args, ...)
         for(ia6 = in6_ifaddr; ia6; ia6 = ia6->ia_next) {
             if(IN6_ARE_ADDR_EQUAL(&ia6->ia_addr.sin6_addr, &ip6->ip6_dst)) {
                 ifp = &loif;
+                if(IN6_IS_ADDR_LINKLOCAL(&ia6->ia_addr.sin6_addr))
+                    rcvifp = ia6->ia6_ifp;
                 break;
             }
         }
@@ -279,7 +288,7 @@ multicast_output:
 
         /* add link-layer header via ifp */
         s = splimp();
-        error = (*ifp->if_output)(ifp, m,
+        error = (*ifp->if_output)(rcvifp ? rcvifp : ifp, m,
                                   (rt && (rt->rt_flags & RTF_GATEWAY)) ? rt->rt_gateway
                                   : (struct sockaddr *)dst,
                                   rt);
@@ -372,7 +381,7 @@ multicast_output:
                 htons(sizeof(fh) + flen);
 
             s = splimp();
-            error = (*ifp->if_output)(ifp, m0,
+            error = (*ifp->if_output)(rcvifp ? rcvifp : ifp, m0,
                                       (rt->rt_flags & RTF_GATEWAY) ? rt->rt_gateway
                                       : (struct sockaddr *)dst,
                                       rt);
