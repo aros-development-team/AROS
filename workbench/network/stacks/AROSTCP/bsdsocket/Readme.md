@@ -400,6 +400,11 @@ single shared `fe80::/64` route: the egress link is taken from the one the calle
 chosen source address lives on — so a link-local send leaves the correct link on a multi-homed host.
 `HOST` database entries may also carry an IPv6 address.
 
+Among an interface's usable addresses (not tentative or duplicated), `in6_ifawithifp()` picks the
+source by RFC 6724 section 5 rules 2, 3 and 7: the smaller of two scopes unless it is smaller than
+the destination's (a link-scope destination gets the link-local, a global one a global address),
+then a preferred address over a deprecated one, then a temporary address over a public one.
+
 ---
 
 ## 7. IPv4, ICMP, and UDP
