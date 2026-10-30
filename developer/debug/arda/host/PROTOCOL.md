@@ -142,6 +142,34 @@ from `SIOCGARPT` (as C:arp); statistics from `MiamiSysCtl()` over
 address for point-to-point links and `-` otherwise.  `ADDR6` is `-` when the
 stack has no IPv6 socket support.
 
+## Control mode (agent 0.2, protocol 1)
+
+Everything above is read-only. An agent started with the `CONTROL` switch
+additionally accepts the commands below, which change the system: write
+files, set environment variables, run programs, reboot. Without the switch
+each of them answers `ERR 501 control mode off (start ARDA with CONTROL)`.
+`VERSION` ends in ` control` and `STATUS` has `CONTROL=1` when it is on. This
+is for a trusted development network only; there is still no authentication.
+
+| Command | Response |
+|---------|----------|
+| `PUT <path> <size>` | `OK READY`, after which the client sends exactly `size` raw bytes, written to `path` (created or truncated) and the volume flushed (ACTION_FLUSH). Then `OK WROTE <size>`, or `ERR 500 write failed, file incomplete`. A zero `size` answers `OK WROTE 0` with no body. Up to 512 MiB. |
+| `GET <path>` | `OK SIZE <n>` followed immediately by `n` raw bytes of the file, or `ERR 404`. |
+| `DIR [path]` | multi-line `ENTRY NAME="..." TYPE=file\|dir SIZE= DATE="..."` records, then `COUNT=`. Without a path: the agent's current directory. |
+| `DELETE <path>` | `OK DELETED` |
+| `MKDIR <path>` | `OK CREATED` |
+| `SETENV <name> [value]` | `OK SET`; without a value `OK UNSET` (global environment, `GVF_GLOBAL_ONLY`) |
+| `GETENV <name>` | `OK <value>` or `ERR 404` |
+| `RUN <output-file> <command line>` | `OK JOB <n>`. The command runs in its own process (user shell, 256 KB stack) with `NIL:` as input and `output-file` as output and error; the agent does not wait. Up to 8 job records are kept; a finished one is reused. |
+| `JOBS` | multi-line `JOB ID= STATE=running\|done RC= OUTPUT="..." STARTED= ELAPSED= COMMAND="..."`, then `COUNT=` |
+| `JOB <n>` | one `JOB` record |
+| `WAIT <n> [secs]` | blocks up to `secs` (default 60, max 600) for job `n`; `OK RC <rc>` or `ERR 408 job still running`. The agent serves nothing else meanwhile. |
+| `REBOOT` | `OK REBOOTING`; the agent flushes `SYS:`, closes the connection and calls `ColdReboot()` half a second later. |
+
+Raw bodies are the only place bytes outside printable ASCII travel; the line
+parser resumes right after them. Paths are AROS paths (`SYS:`, `RAM:`, ...)
+relative to the agent's current directory when not absolute.
+
 ## Versioning
 
 `VERSION` reports `ARDA/<protocol>`.  The protocol number only changes when

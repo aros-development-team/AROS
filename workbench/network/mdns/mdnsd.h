@@ -67,6 +67,10 @@ struct MDNSRegisteredService
     ULONG           rs_Answered;    /* md_PacketSerial it last answered */
     ULONG           rs_Multicast;   /* mdnsNow() when its records last went
                                      * to the group */
+    ULONG           rs_MulticastTick[MDNS_IFS_MAX];
+                                    /* exact send tick on each interface */
+    ULONG           rs_TypeTick[MDNS_IFS_MAX];
+                                    /* the service-type PTR on each link */
     ULONG           rs_AnswerTick;  /* when an answer to a browse question
                                      * is due, or 0 for none */
     LONG            rs_AnswerIf;    /* to which interface, or -1 for all */
@@ -98,6 +102,10 @@ struct MDNSDaemon
     ULONG                   md_HostAddr;    /* the first interface's */
     ULONG                   md_RxPackets;
     ULONG                   md_TxPackets;
+    ULONG                   md_RxAnswers;
+    ULONG                   md_DiscoveryRecords;
+    ULONG                   md_DiscoveryPTR;
+    ULONG                   md_DiscoveryNotify;
 
     char                    md_HostName[MDNS_MAX_HOST + 1];
                                             /* the name in use: the system's
@@ -136,6 +144,10 @@ struct MDNSDaemon
     ULONG                   md_NextHandle;
     ULONG                   md_PacketSerial; /* counts received queries */
     BOOL                    md_AnswerPending; /* an rs_AnswerTick is set */
+    ULONG                   md_TypesAnswerTick;
+                                            /* delayed type-enumeration reply */
+    LONG                    md_TypesAnswerIf;
+                                            /* its interface, or -1 for all */
 };
 
 /* Text of at most max characters: its length, and a copy that always ends
@@ -178,6 +190,9 @@ void mdnsDiscoveryFree(struct MDNSDaemon *md);
 LONG mdnsQueryMessage(struct MDNSDaemon *md, struct MDNSIPCMsg *msg);
 void mdnsQueryRecord(struct MDNSDaemon *md, const struct MDNSRecord *record,
     const UBYTE *packet, LONG length);
+void mdnsQueryLocalRecord(struct MDNSDaemon *md,
+    const struct MDNSRecord *record, const UBYTE *packet, LONG length,
+    APTR handle);
 void mdnsQueryTick(struct MDNSDaemon *md);
 void mdnsQueryReset(struct MDNSDaemon *md);
 void mdnsQueryRelease(struct MDNSDaemon *md, ULONG owner);
@@ -225,6 +240,8 @@ LONG mdnsResponseBegin(struct MDNSDaemon *md, UBYTE *pkt);
 /* mdns_reg.c */
 LONG mdnsRegAdd(struct MDNSDaemon *md, struct MDNSIPCMsg *msg);
 LONG mdnsRegUpdate(struct MDNSDaemon *md, const struct MDNSIPCMsg *msg);
+void mdnsRegAnswerLocal(struct MDNSDaemon *md, UWORD consumers,
+    APTR queryHandle);
 void mdnsRegRemove(struct MDNSDaemon *md, const struct MDNSIPCMsg *msg);
 void mdnsRegRelease(struct MDNSDaemon *md, ULONG taskID);
 void mdnsRegFree(struct MDNSDaemon *md);
@@ -247,5 +264,9 @@ void mdnsClientReap(struct MDNSDaemon *md);
 /* mdns_packet.c */
 void mdnsHandlePacket(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
     ULONG srcaddr, UWORD srcport);
+#define MDNS_REFLECT_DISCOVERY  1
+#define MDNS_REFLECT_QUERY      2
+void mdnsReflectPacket(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
+    LONG ifindex, UWORD consumers, APTR queryHandle);
 
 #endif /* MDNSD_MDNSD_H */

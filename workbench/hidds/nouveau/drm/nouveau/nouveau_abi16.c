@@ -397,6 +397,12 @@ nouveau_abi16_ioctl_channel_alloc(ABI16_IOCTL_ARGS)
 			case NOUVEAU_FIFO_ENGINE_CE:
 				engine = NV_DEVICE_HOST_RUNLIST_ENGINES_CE;
 				break;
+#if defined(__AROS__)
+			case NOUVEAU_FIFO_ENGINE_NVDEC:
+				/* AROS: nouveau.hidd's decode sessions run NVDEC on its own runlist */
+				engine = NV_DEVICE_HOST_RUNLIST_ENGINES_NVDEC;
+				break;
+#endif
 			default:
 				return nouveau_abi16_put(abi16, -ENOSYS);
 			}

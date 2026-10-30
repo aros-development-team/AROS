@@ -310,14 +310,28 @@ nv50_wndw_atomic_check_acquire_yuv(struct nv50_wndw *wndw, struct nv50_wndw_atom
 	case DRM_FORMAT_NV12:
 		/*
 		 * Semi-planar 4:2:0, the format nvkms uses for video on the
-		 * windows: Y plane, then interleaved chroma. The hardware format
-		 * is named V8U8; nvkms maps its U8V8 (NV12) layout to it with
-		 * SWAP_UV off and the V8U8 (NV21) one with SWAP_UV on
-		 * (IsSurfaceFormatUVSwapped), so DRM's U-first NV12 needs no swap.
+		 * windows: Y plane, then interleaved chroma. nvidia-drm maps
+		 * DRM_FORMAT_NV12 (Cb first) to NvKms Y8___V8U8_N420, which is
+		 * in nvkms' IsSurfaceFormatUVSwapped list: the hardware's native
+		 * order for this format is Cr first, so NV12 needs SWAP_UV on
+		 * (verified on the GB207: without it blue showed as yellow).
 		 */
 		if (asyw->image.kind || chipset < 0x160)
 			return -EINVAL;		/* pitch layout; Turing+ (nvkms supportsSemiPlanar) */
 		asyw->image.format = NVC37E_SET_PARAMS_FORMAT_Y8___V8U8_N420;
+		asyw->image.swapuv = 1;
+		break;
+	case DRM_FORMAT_P010:
+		/*
+		 * 10-bit semi-planar 4:2:0 (decoder output for Main10 / profile 2):
+		 * nvidia-drm maps P010 to Y10___V10U10_N420, also in nvkms'
+		 * swapped list; same window rules as NV12. The 10 bpc limited-range
+		 * FMT coefficients equal the 8 bpc ones (nvkms FMTMatrix).
+		 */
+		if (asyw->image.kind || chipset < 0x160)
+			return -EINVAL;
+		asyw->image.format = NVC37E_SET_PARAMS_FORMAT_Y10___V10U10_N420;
+		asyw->image.swapuv = 1;
 		break;
 	case DRM_FORMAT_YUV420:
 		/* Full planar 4:2:0 (CGX I420): Y, U, V planes; Ampere+ windows (supportsPlanar) */

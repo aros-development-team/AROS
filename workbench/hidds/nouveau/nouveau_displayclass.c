@@ -3,6 +3,7 @@
 */
 
 #include "nouveau_intern.h"
+#include "nouveau_decode.h"
 
 #include <graphics/displayinfo.h>
 #include <proto/utility.h>
@@ -121,6 +122,10 @@ static ULONG HIDDNouveauBitMapFourCC(struct HIDDNouveauBitMapData *bmdata)
     case vHidd_VideoFmt_YUYV:   return DRM_FORMAT_YUYV;
     case vHidd_VideoFmt_UYVY:   return DRM_FORMAT_UYVY;
     case vHidd_VideoFmt_NV12:   return DRM_FORMAT_NV12;
+    case vHidd_VideoFmt_P010:   return DRM_FORMAT_P010;
+    case vHidd_VideoFmt_P012:   return DRM_FORMAT_P010;     /* the same memory; a plane shows the top 10 bits */
+    case vHidd_VideoFmt_NV16:   return DRM_FORMAT_NV16;
+    case vHidd_VideoFmt_NV24:   return DRM_FORMAT_NV24;
     case vHidd_VideoFmt_I420:   return DRM_FORMAT_YUV420;
     case vHidd_VideoFmt_None:   break;
     default:                    return 0;
@@ -146,14 +151,15 @@ static BOOL HIDDNouveauAddFB(OOP_Class *cl, struct HIDDNouveauBitMapData *bmdata
     ULONG fourcc = HIDDNouveauBitMapFourCC(bmdata);
     uint32_t handles[4] = { bo->handle, 0, 0, 0 };
     uint32_t pitches[4] = { bmdata->pitch, 0, 0, 0 };
+    ULONG cwide;
     uint32_t offsets[4] = { 0, 0, 0, 0 };
     LONG ret = -1;
 
     /* Planar video: the chroma planes are in the same buffer object */
-    if (bmdata->videoformat == vHidd_VideoFmt_NV12)
+    if (nouveau_semiplanar(bmdata->videoformat, NULL, NULL, &cwide))
     {
         handles[1] = bo->handle;
-        pitches[1] = bmdata->pitch;
+        pitches[1] = bmdata->pitch * cwide;
         offsets[1] = bmdata->planeoff[0];
     }
     else if (bmdata->videoformat == vHidd_VideoFmt_I420)
@@ -351,6 +357,7 @@ VOID HIDDNouveauEnumPlanes(LONG fd, struct HIDDNouveauData *gfxdata)
                     case DRM_FORMAT_YUYV:     fmts |= KMSFMT_YUYV;     break;
                     case DRM_FORMAT_UYVY:     fmts |= KMSFMT_UYVY;     break;
                     case DRM_FORMAT_NV12:     fmts |= KMSFMT_NV12;     break;
+                    case DRM_FORMAT_P010:     fmts |= KMSFMT_P010;     break;
                     case DRM_FORMAT_YUV420:   fmts |= KMSFMT_YUV420;   break;
                     }
                 }
@@ -484,13 +491,14 @@ static ULONG HIDDNouveauPlaneVideoFmts(struct HIDDNouveauData *gfxdata, ULONG fm
         if (!(yuv & 0x1))
             fmts &= ~(KMSFMT_YUYV | KMSFMT_UYVY);
         if (!(yuv & 0x2))
-            fmts &= ~KMSFMT_NV12;
+            fmts &= ~(KMSFMT_NV12 | KMSFMT_P010);   /* same semi-planar usage bound */
         if (!(yuv & 0x4))
             fmts &= ~KMSFMT_YUV420;
     }
     if (fmts & KMSFMT_YUYV)   m |= (1UL << vHidd_VideoFmt_YUYV);
     if (fmts & KMSFMT_UYVY)   m |= (1UL << vHidd_VideoFmt_UYVY);
     if (fmts & KMSFMT_NV12)   m |= (1UL << vHidd_VideoFmt_NV12);
+    if (fmts & KMSFMT_P010)   m |= (1UL << vHidd_VideoFmt_P010) | (1UL << vHidd_VideoFmt_P012);
     if (fmts & KMSFMT_YUV420) m |= (1UL << vHidd_VideoFmt_I420);
     return m;
 }
@@ -1226,6 +1234,9 @@ BOOL METHOD(NouveauDisplay, Hidd_Display, CommitPlanes)
             {
                 struct HIDDNouveauBitMapData *bmdata = OOP_INST_DATA(SD(cl)->bmclass, st->BitMap);
 
+                /* a decode target: its front buffer must hold a finished picture */
+                if (bmdata->decodetarget)
+                    HIDDNouveauDecodeSettle(&(SD(cl)->carddata), bmdata, bmdata->front, TRUE, 0xffffffffUL);
                 if (!HIDDNouveauEnsureFB(st->BitMap))
                     ret = -1;
                 else
@@ -1441,7 +1452,7 @@ VOID METHOD(NouveauDisplay, Hidd_Display, WaitLatch)
  * size? Answered from the crtc's overlay planes: SCF_PLANE when one scans
  * the format out and the size is a framebuffer the kernel takes,
  * SCF_COLORKEY when that plane keys on the primary (dispnv50 windows),
- * never SCF_SCALE (see GetPlaneInfo). Up to NOUVEAU_MAX_BUFFERS buffers.
+ * never SCF_SCALE (see GetPlaneInfo). Up to NOUVEAU_MAX_SCANOUT_BUFFERS buffers.
  */
 ULONG METHOD(NouveauDisplay, Hidd_Display, QueryScanout)
 {
@@ -1483,7 +1494,7 @@ ULONG METHOD(NouveauDisplay, Hidd_Display, QueryScanout)
         msg->caps->Flags      = flags;
         msg->caps->MaxWidth   = gfxdata->maxfbw;
         msg->caps->MaxHeight  = gfxdata->maxfbh;
-        msg->caps->MaxBuffers = NOUVEAU_MAX_BUFFERS;
+        msg->caps->MaxBuffers = NOUVEAU_MAX_SCANOUT_BUFFERS;
         msg->caps->ScaleMin   = HIDD_PLANE_SCALE_UNITY;
         msg->caps->ScaleMax   = HIDD_PLANE_SCALE_UNITY;
         msg->caps->ColorKey   = (flags & SCF_COLORKEY) ? (ULONG)key : 0;
@@ -1557,4 +1568,38 @@ VOID METHOD(NouveauDisplay, Hidd_Display, NominalDimensions)
         *(msg->height) = height;
     if (msg->depth)
         *(msg->depth) = 24;
+}
+
+/*
+ * Hardware video decoding (nouveau_decode.c): the display answers for the
+ * NVDEC class its channel accepts; sessions are decode interfaces.
+ */
+ULONG METHOD(NouveauDisplay, Hidd_Display, QueryDecode)
+{
+    return HIDDNouveauDecodeQuery(cl, o, msg->profile, msg->width, msg->height, msg->caps);
+}
+
+APTR METHOD(NouveauDisplay, Hidd_Display, GetDecodeInterface)
+{
+    struct HIDDNouveauDecode *dec = (struct HIDDNouveauDecode *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+    if (!dec)
+        return NULL;
+    if (!HIDDNouveauDecodeOpen(cl, o, dec, msg->profile, msg->width, msg->height, msg->resolve))
+    {
+        struct pHidd_Display_FreeDecodeInterface fmsg;
+
+        fmsg.mID = OOP_GetMethodID(IID_Hidd_Display, moHidd_Display_FreeDecodeInterface);
+        fmsg.iface = dec;
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)&fmsg);
+        return NULL;
+    }
+    return dec;
+}
+
+VOID METHOD(NouveauDisplay, Hidd_Display, FreeDecodeInterface)
+{
+    if (msg->iface)
+        HIDDNouveauDecodeClose((struct HIDDNouveauDecode *)msg->iface);
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }

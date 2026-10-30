@@ -141,6 +141,12 @@
     desc->fcb->privflags |= _FCB_ISDIR;
 
     fd = __getfdslot(__getfirstfd(3));
+    /* Slot allocation may fail; never publish through a negative index. */
+    if (fd < 0)
+    {
+        __free_fdesc(desc);
+        goto err5;
+    }
     __setfdesc(fd, desc);
 
     dir->fd = fd;

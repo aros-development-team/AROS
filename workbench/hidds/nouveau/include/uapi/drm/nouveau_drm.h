@@ -96,6 +96,9 @@ struct drm_nouveau_getparam {
 #define NOUVEAU_FIFO_ENGINE_PPP 0x04
 #define NOUVEAU_FIFO_ENGINE_BSP 0x08
 #define NOUVEAU_FIFO_ENGINE_CE  0x30
+#if defined(__AROS__)
+#define NOUVEAU_FIFO_ENGINE_NVDEC 0x80	/* AROS: a channel on the NVDEC runlist (video decode sessions) */
+#endif
 
 struct drm_nouveau_channel_alloc {
 	__u32     fb_ctxdma_handle;

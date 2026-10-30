@@ -509,7 +509,7 @@ AROS_LH4I(int, KrnMapGlobal,
     /* Both addresses carry the same offset inside the page, so they must agree
        below 4 KiB. */
     if (!length || ((vaddr ^ paddr) & MAP_4K_MASK))
-        return -1;
+        return 0;
 
     /* An IPTR local: rounding back into the uint32_t parameter wraps to zero near
        4 GiB, and the call then maps nothing and reports success. */
@@ -519,7 +519,7 @@ AROS_LH4I(int, KrnMapGlobal,
 
     /* Before Forbid()/SuperState(): AllocMem() must not run with IF clear. */
     if (core_PTPoolPrepare(vaddr, vaddr + maplen, paddr, FALSE, &pool))
-        return -1;
+        return 0;
 
     if (!Kernel_13_KrnIsSuper()) {
         /*
@@ -538,7 +538,7 @@ AROS_LH4I(int, KrnMapGlobal,
         if (!ssp) {
             Permit();
             core_PTPoolDispose(pool);
-            return -1;
+            return 0;
         }
     }
 
@@ -574,7 +574,8 @@ AROS_LH4I(int, KrnMapGlobal,
 
     core_PTPoolDispose(pool);
 
-    return ret;
+    /* Non-zero on success, 0 on failure - the same on every port */
+    return (ret == 0);
 
     AROS_LIBFUNC_EXIT
 }

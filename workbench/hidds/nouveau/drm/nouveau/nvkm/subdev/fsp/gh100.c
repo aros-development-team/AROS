@@ -201,50 +201,6 @@ gh100_fsp_send_sync(struct nvkm_fsp *fsp, u8 nvdm_type, const u8 *packet, u32 pa
 	return 0;
 }
 
-#if defined(__AROS__)
-/* Send a bare command and report what the FSP answers; for experiments. */
-int
-gh100_fsp_aros_cmd(struct nvkm_fsp *fsp, u8 nvdm_type)
-{
-	struct nvkm_subdev *subdev = &fsp->subdev;
-	struct {
-		u32 mctp_header;
-		u32 nvdm_header;
-		u32 payload;
-	} msg = {};
-	struct {
-		u32 mctp_header;
-		u32 nvdm_header;
-		NVDM_PAYLOAD_COMMAND_RESPONSE response;
-	} reply = {};
-	int ret;
-
-	msg.mctp_header = NVVAL(MCTP, HEADER, SOM, 1) |
-			  NVVAL(MCTP, HEADER, EOM, 1) |
-			  NVVAL(MCTP, HEADER, SEID, 0) |
-			  NVVAL(MCTP, HEADER, SEQ, 0);
-	msg.nvdm_header = NVDEF(MCTP, MSG_HEADER, TYPE, VENDOR_PCI) |
-			  NVDEF(MCTP, MSG_HEADER, VENDOR_ID, NV) |
-			  NVVAL(MCTP, MSG_HEADER, NVDM_TYPE, nvdm_type);
-
-	ret = gh100_fsp_send(fsp, (const u8 *)&msg, sizeof(msg));
-	if (ret) {
-		nvkm_info(subdev, "cmd 0x%02x: send failed %d\n", nvdm_type, ret);
-		return ret;
-	}
-	ret = gh100_fsp_wait(fsp);
-	if (ret) {
-		nvkm_info(subdev, "cmd 0x%02x: no reply\n", nvdm_type);
-		return ret;
-	}
-	ret = gh100_fsp_recv(fsp, (u8 *)&reply, sizeof(reply));
-	nvkm_info(subdev, "cmd 0x%02x: reply %d bytes mctp %08x nvdm %08x task %08x type %08x error %08x\n",
-		  nvdm_type, ret, reply.mctp_header, reply.nvdm_header,
-		  reply.response.taskId, reply.response.commandNvdmType, reply.response.errorCode);
-	return ret < 0 ? ret : (int)reply.response.errorCode;
-}
-#endif
-
 int
 gh100_fsp_boot_gsp_fmc(struct nvkm_fsp *fsp, u64 args_addr, u32 rsvd_size, bool resume,
 		       u64 img_addr, const u8 *hash, const u8 *pkey, const u8 *sig)

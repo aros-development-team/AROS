@@ -10,6 +10,7 @@
 LONG locateobject(UBYTE *path,struct CacheBuffer **io_cb,struct fsObject **io_o);
 LONG locateobject2(UBYTE **io_path,struct CacheBuffer **io_cb,struct fsObject **io_o);
 LONG locateobjectfromlock(struct ExtFileLock *lock,UBYTE *path,struct CacheBuffer **returned_cb,struct fsObject **returned_o);
+LONG locateobjectorlink(struct ExtFileLock *lock,UBYTE *path,struct CacheBuffer **returned_cb,struct fsObject **returned_o);
 LONG locatelockableobject(struct ExtFileLock *lock,UBYTE *path,struct CacheBuffer **returned_cb,struct fsObject **returned_o);
 LONG lockobject(struct ExtFileLock *,UBYTE *,LONG,struct ExtFileLock **);
 LONG lockobject2(struct fsObject *o, LONG accessmode, struct ExtFileLock **returned_efl);

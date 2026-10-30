@@ -184,6 +184,7 @@ struct nvc0_fifo {
 #define NVE0_FIFO_ENGINE_CE0 0x00000010
 #define NVE0_FIFO_ENGINE_CE1 0x00000020
 #define NVE0_FIFO_ENGINE_ENC 0x00000040
+#define NVE0_FIFO_ENGINE_NVDEC 0x00000080 /* nouveau.hidd decode sessions (NOUVEAU_FIFO_ENGINE_NVDEC) */
 #endif
 struct nve0_fifo {
    struct nouveau_fifo base;

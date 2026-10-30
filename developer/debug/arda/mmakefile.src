@@ -12,7 +12,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM debug-tools-arda-linklib : debug-tools-arda-includes
 #MM debug-tools-arda-tracetest : debug-tools-arda-linklib
 
-FILES := arda arda_net arda_cmd arda_sys arda_log arda_netdiag
+FILES := arda arda_net arda_cmd arda_sys arda_log arda_netdiag arda_ctl
 
 USER_CFLAGS   := $(CFLAGS_GNU99)
 USER_CPPFLAGS := -D__BSD_VISIBLE=1

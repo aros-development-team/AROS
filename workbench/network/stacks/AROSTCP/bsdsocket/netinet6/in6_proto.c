@@ -172,6 +172,24 @@ ip6_getmoptions(struct ip6_moptions **imop)
     return im6o;
 }
 
+/*
+ * ip6_freemoptions - release a socket's IPv6 multicast options when it goes
+ * away: each group it joined is left (and, with the last reference, MLD Done
+ * is sent and the device forgets the address), then the options are freed.
+ * The IPv6 counterpart of ip_freemoptions().
+ */
+void
+ip6_freemoptions(struct ip6_moptions *im6o)
+{
+    int i;
+
+    if(im6o == NULL)
+        return;
+    for(i = 0; i < im6o->im6o_num_memberships; i++)
+        in6_delmulti(im6o->im6o_membership[i]);
+    FREE(im6o, M_SOOPTS);
+}
+
 /* ------------------------------------------------------------------
  * Helper: join a multicast group on an inpcb socket.
  * ------------------------------------------------------------------ */

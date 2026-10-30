@@ -91,11 +91,16 @@ struct LayoutChild
 
     /* Label */
     Object              *lc_Label;      /* Label image object */
+    UWORD               lc_LabelW;      /* its natural size */
+    UWORD               lc_LabelH;
 };
+
+#define LAYOUT_LABEL_GAP 4               /* between a label and its child */
 
 /* Layout gadget instance data */
 struct LayoutData
 {
+    UWORD               ld_LabelCol;    /* vertical groups: width of the label column */
     struct MinList      ld_Children;     /* List of LayoutChild */
     ULONG               ld_Orientation;  /* LAYOUT_ORIENT_HORIZ/VERT */
     ULONG               ld_BevelStyle;   /* Bevel style */

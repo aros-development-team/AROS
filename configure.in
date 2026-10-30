@@ -2213,6 +2213,11 @@ case "$target_os" in
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
                 aros_target_cpu="riscv64"
                 aros_object_format="riscv64elf_aros"
+                case "$aros_target_variant" in
+                    smp)
+                        ENABLE_EXECSMP="#define __AROSEXEC_SMP__"
+                    ;;
+                esac
                 ;;
             *riscv*)
                 aros_target_cpu="riscv"

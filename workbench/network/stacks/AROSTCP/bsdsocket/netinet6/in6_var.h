@@ -179,6 +179,22 @@ int  in6_localaddr(struct in6_addr *);
 void in6_if_up(struct ifnet *);
 struct in6_multi *in6_addmulti(struct in6_addr *, struct ifnet *);
 void in6_delmulti(struct in6_multi *);
+struct ip6_moptions;
+void ip6_freemoptions(struct ip6_moptions *);
+void in6_ifdetach(struct ifnet *);
+
+/*
+ * The stack's own view of an IPv6 interface address. The public record
+ * (struct in6_ifaddr, common/include/netinet/in_var.h) comes first, so a
+ * pointer to one is a pointer to the other; in6.c allocates the whole of it,
+ * zeroed, in one mbuf. What only the stack needs lives here, out of the
+ * public header.
+ */
+struct in6_ifaddr_priv {
+	struct in6_ifaddr ia6p_ia;
+	struct in6_multi *ia6p_solicited; /* the address's solicited-node group */
+};
+#define IA6_PRIV(ia)	((struct in6_ifaddr_priv *)(ia))
 
 /* Privacy extensions (RFC 4941) */
 extern int ip6_use_tempaddr;   /* enable temporary addresses (0=off, 1=on) */

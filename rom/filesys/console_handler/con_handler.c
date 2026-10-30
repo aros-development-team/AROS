@@ -115,17 +115,6 @@ static void MakeConsAbout(struct Window *win, struct IntuitionBase *IntuitionBas
 #include "con_handler_intern.h"
 #include "support.h"
 
-/*
- * Set in the startup BPTR to ask for a device instead of a console window,
- * with the rest of the BPTR pointing at a FileSysStartupMsg naming it. A BPTR
- * is a longword address shifted right by two, so the top bits are spare.
- *
- * This is the established convention between an AUX: handler stub and the
- * console handler it hands over to, so stubs and console handlers from
- * different sources interoperate.
- */
-#define AUXF_DEVICE     0x40000000
-
 #if defined(CONSOLE_SHOW_MENU)
 enum
 {
@@ -615,14 +604,12 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
     fh->dn = dn;
 
     /*
-     * The startup is either a small number selecting CON: or RAW:, or, with
-     * AUXF_DEVICE set, a FileSysStartupMsg naming a device to run over. Only
-     * the flag can tell those apart: a startup given as a string is a valid
-     * pointer too, so no test on the value alone is enough.
+     * aux-handler sets dp_Arg4 to ask for a device instead of a console
+     * window; dp_Arg2 is then a FileSysStartupMsg naming it. DOS clears
+     * dp_Arg4 in the startup packets it sends.
      */
-    if ((IPTR)dp->dp_Arg2 & AUXF_DEVICE) {
-        struct FileSysStartupMsg *fssm =
-            BADDR((BPTR)((IPTR)dp->dp_Arg2 & ~AUXF_DEVICE));
+    if (dp->dp_Arg4) {
+        struct FileSysStartupMsg *fssm = BADDR(dp->dp_Arg2);
 
         if (fssm && fssm->fssm_Device != BNULL) {
             ULONG len = AROS_BSTR_strlen(fssm->fssm_Device);

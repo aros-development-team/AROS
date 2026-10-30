@@ -14,8 +14,9 @@ AROS_LH0(unsigned int, KrnGetCPUCount,
 {
     AROS_LIBFUNC_INIT
 
+    /* Always at least the CPU this runs on */
     if (!KernelBase->kb_PlatformData)
-        return 0;
+        return 1;
 
     if (!KernelBase->kb_PlatformData->kb_APIC)
         return 1;

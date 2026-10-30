@@ -79,6 +79,8 @@ struct KernelInterface
     ULONG  __stdcall (*_DeleteFile)(char *lpFileName);
     ULONG  __stdcall (*RemoveDirectory)(char *lpPathName);
     ULONG  __stdcall (*GetDiskFreeSpace)(char *lpRootPathName, ULONG *lpSectorsPerCluster, ULONG *lpBytesPerSector, ULONG *lpNumberOfFreeClusters, ULONG *lpTotalNumberOfClusters);
+    void   __stdcall (*SetLastError)(ULONG dwErrCode);
+    ULONG  __stdcall (*GetFileSize)(void *hFile, ULONG *lpFileSizeHigh);
 };
 
 struct PlatformHandle

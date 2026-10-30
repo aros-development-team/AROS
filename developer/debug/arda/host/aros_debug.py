@@ -150,6 +150,57 @@ class ArdaClient:
         self.send_line(line)
         return self.read_response()
 
+    # ---- control mode: raw bodies ----
+    def _read_exact(self, n):
+        """n raw bytes after a status line; bytes already buffered come first."""
+        out = bytearray()
+        if self.buf:
+            take = self.buf[:n]
+            out += take
+            self.buf = self.buf[len(take):]
+        while len(out) < n:
+            try:
+                chunk = self.sock.recv(min(1 << 20, n - len(out)))
+            except socket.timeout:
+                raise ArdaError("timeout while receiving a file body (%d of %d bytes)" % (len(out), n))
+            except OSError as e:
+                raise ArdaError("receive failed: %s" % e)
+            if not chunk:
+                raise ArdaError("connection closed by agent during a file body")
+            out += chunk
+        return bytes(out)
+
+    def put(self, local, remote):
+        """PUT: upload a local file as remote path (control mode). Returns the agent's reply."""
+        with open(local, "rb") as f:
+            data = f.read()
+        r = self.command("PUT %s %d" % (remote, len(data)))
+        if not r.ok:
+            return r
+        if r.text != "READY":
+            return r                    # zero-length file: WROTE 0
+        try:
+            self.sock.sendall(data)
+        except OSError as e:
+            raise ArdaError("send failed during the body: %s" % e)
+        return self.read_response()
+
+    def get(self, remote, local):
+        """GET: download remote path into local file (control mode). Returns the reply."""
+        self.send_line("GET %s" % remote)
+        r = Response(self._readline())
+        if not r.ok:
+            return r
+        words = r.text.split()
+        if len(words) != 2 or words[0] != "SIZE":
+            raise ArdaError("unexpected GET reply: %s" % r.text)
+        n = int(words[1])
+        data = self._read_exact(n)
+        with open(local, "wb") as f:
+            f.write(data)
+        r.text = "READ %d" % n
+        return r
+
     def quit(self):
         try:
             self.send_line("QUIT")
@@ -176,8 +227,8 @@ def main(argv=None):
     ap.add_argument("--host", default=os.environ.get("ARDA_HOST", "127.0.0.1"))
     ap.add_argument("--port", type=int, default=int(os.environ.get("ARDA_PORT", "7777")))
     ap.add_argument("--connect-timeout", type=float, default=5.0, metavar="SECS")
-    ap.add_argument("--timeout", type=float, default=10.0, metavar="SECS",
-                    help="response timeout (default 10)")
+    ap.add_argument("--timeout", type=float, default=60.0, metavar="SECS",
+                    help="response timeout (default 60; WAIT and transfers may need more)")
     ap.add_argument("--json", action="store_true", help="machine-readable output")
     ap.add_argument("--output", "-o", metavar="FILE", help="also write the output to FILE")
     ap.add_argument("--quiet", "-q", action="store_true", help="no stdout when --output is used")
@@ -186,18 +237,34 @@ def main(argv=None):
     a = ap.parse_args(argv)
 
     words = a.command
-    if words[0].lower() == "raw":
+    verb = words[0].lower()
+    transfer = None
+    if verb == "raw":
         if len(words) < 2:
             ap.error("raw needs the line to send")
         line = " ".join(words[1:])
+    elif verb in ("put", "get"):
+        # put LOCAL REMOTE / get REMOTE LOCAL: file transfers (control mode)
+        if len(words) != 3:
+            ap.error("%s needs two paths" % verb)
+        transfer = (verb, words[1], words[2])
+        line = verb.upper() + " " + (words[2] if verb == "put" else words[1])
+    elif verb in ("run", "setenv", "getenv", "dir", "delete", "mkdir", "job", "wait", "jobs", "reboot"):
+        # control commands keep their arguments' case (paths, command lines, values)
+        line = verb.upper() + ((" " + " ".join(words[1:])) if len(words) > 1 else "")
     else:
         line = " ".join(words).upper()
 
     started = time.time()
     try:
         with ArdaClient(a.host, a.port, a.connect_timeout, a.timeout) as c:
-            r = c.command(line)
-            if not a.no_quit and line.split(" ", 1)[0] != "QUIT":
+            if transfer and transfer[0] == "put":
+                r = c.put(transfer[1], transfer[2])
+            elif transfer:
+                r = c.get(transfer[1], transfer[2])
+            else:
+                r = c.command(line)
+            if not a.no_quit and line.split(" ", 1)[0] not in ("QUIT", "REBOOT"):
                 c.quit()
     except ArdaError as e:
         if a.json:

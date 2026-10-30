@@ -83,6 +83,7 @@ void arda_net_close_client(struct Arda *a, const char *why)
 {
     if (a->client.fd >= 0)
     {
+        arda_ctl_raw_abort(a);
         CloseSocket(a->client.fd);
         arda_log(a, "ARDA: client %s disconnected (%s)", a->client.peer, why);
     }
@@ -218,7 +219,15 @@ void arda_net_input(struct Arda *a)
 
     for (i = 0; i < n && a->client.fd >= 0; i++)
     {
-        char ch = buf[i];
+        char ch;
+
+        /* control mode: the bytes of a PUT body go to its file, not the line parser */
+        if (c->rawleft)
+        {
+            i += arda_ctl_raw_input(a, buf + i, n - i) - 1;
+            continue;
+        }
+        ch = buf[i];
 
         if (ch == '\n')
         {

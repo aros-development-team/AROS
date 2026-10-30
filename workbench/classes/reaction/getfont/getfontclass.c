@@ -26,6 +26,7 @@
 #include <stdio.h>
 
 #include "getfont_intern.h"
+#include "../reaction_box.h"
 
 #define GetFontBase ((struct Library *)(cl->cl_UserData))
 
@@ -168,10 +169,7 @@ IPTR GetFont__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     if (!rp)
         return FALSE;
 
-    x = gad->LeftEdge;
-    y = gad->TopEdge;
-    w = gad->Width;
-    h = gad->Height;
+    reaction_gadget_box(gad, msg->gpr_GInfo, &x, &y, &w, &h);
 
     bgpen     = dri ? dri->dri_Pens[BACKGROUNDPEN] : 0;
     textpen   = dri ? dri->dri_Pens[TEXTPEN] : 1;

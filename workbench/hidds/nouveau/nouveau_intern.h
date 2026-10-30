@@ -49,7 +49,34 @@ extern struct SignalSemaphore globalLock;
 #define KMSFMT_UYVY         (1 << 7)    /* vHidd_VideoFmt_UYVY */
 #define KMSFMT_NV12         (1 << 8)    /* semi-planar 4:2:0, vHidd_VideoFmt_NV12 */
 #define KMSFMT_YUV420       (1 << 9)    /* planar 4:2:0 (CGX I420), vHidd_VideoFmt_I420 */
-#define KMSFMT_VIDEO        (KMSFMT_YUYV | KMSFMT_UYVY | KMSFMT_NV12 | KMSFMT_YUV420)
+#define KMSFMT_P010         (1 << 10)   /* 10-bit semi-planar 4:2:0, vHidd_VideoFmt_P010 */
+
+/*
+ * Semi-planar video formats: a Y plane, then one plane of interleaved U/V
+ * pairs. bps: bytes per sample; chalf: the UV plane has half the picture's
+ * rows (4:2:0) or all of them (4:2:2, 4:4:4); cwide: its rows are this many
+ * Y rows long (4:4:4 has a UV pair per pixel: 2). FALSE for other formats.
+ */
+static inline BOOL nouveau_semiplanar(ULONG fmt, ULONG *bps, ULONG *chalf, ULONG *cwide)
+{
+    ULONG b = 1, h = 1, w = 1;
+
+    switch (fmt)
+    {
+    case vHidd_VideoFmt_NV12:                               break;
+    case vHidd_VideoFmt_P010: case vHidd_VideoFmt_P012:     b = 2; break;
+    case vHidd_VideoFmt_NV16:                               h = 0; break;
+    case vHidd_VideoFmt_P210: case vHidd_VideoFmt_P212:     b = 2; h = 0; break;
+    case vHidd_VideoFmt_NV24:                               h = 0; w = 2; break;
+    case vHidd_VideoFmt_P410: case vHidd_VideoFmt_P412:     b = 2; h = 0; w = 2; break;
+    default:                                                return FALSE;
+    }
+    if (bps)   *bps = b;
+    if (chalf) *chalf = h;
+    if (cwide) *cwide = w;
+    return TRUE;
+}
+#define KMSFMT_VIDEO        (KMSFMT_YUYV | KMSFMT_UYVY | KMSFMT_NV12 | KMSFMT_YUV420 | KMSFMT_P010)
 
 struct HIDDNouveauPlane
 {
@@ -76,7 +103,9 @@ struct HIDDNouveauPlane
 };
 
 /* Buffers of one scan-out bitmap (aHidd_BitMap_Scanout); QueryScanout reports it */
-#define NOUVEAU_MAX_BUFFERS 3
+#define NOUVEAU_MAX_SCANOUT_BUFFERS 3
+/* A decode target (aHidd_BitMap_DecodeTarget) holds a codec's whole set of surfaces */
+#define NOUVEAU_MAX_BUFFERS 32
 
 struct HIDDNouveauData
 {
@@ -171,12 +200,30 @@ struct HIDDNouveauBitMapData
     ULONG       front;          /* buffer scanned out / addressed by bo */
     ULONG       back;           /* buffer a client should write next */
     ULONG       planeoff[2];    /* planar video: byte offsets of the U (or UV) and V planes */
+    BOOL        decodetarget;   /* aHidd_BitMap_DecodeTarget: NVDEC output lands in the buffers */
     struct
     {
         struct nouveau_bo   *bo;
         ULONG               fbid;
+        /*
+         * Decode target: the last decode into this buffer. The session's
+         * semaphore reaching decseq means the decoder has finished its
+         * block-linear picture; the copy engine then detiles it into bo
+         * (nouveau_decode.c, HIDDNouveauDecodeSettle).
+         */
+        struct HIDDNouveauDecode *dec;      /* session, NULL = nothing pending */
+        ULONG               decseq;
+        LONG                decslot;        /* pool slot holding the picture */
+        UBYTE               decstate;       /* NOUVEAU_DECSTATE_* */
+        struct nouveau_bo   *shadow;        /* GART copy the CPU gets for a lock (nouveau_decode.c) */
+        BOOL                shadowlocked;   /* the current lock handed out the shadow */
     } buf[NOUVEAU_MAX_BUFFERS];
 };
+
+#define NOUVEAU_DECSTATE_NONE       0   /* no decode pending */
+#define NOUVEAU_DECSTATE_DECODING   1   /* submitted; copy-out not issued */
+#define NOUVEAU_DECSTATE_COPYING    2   /* copy-out issued, not waited for */
+#define NOUVEAU_DECSTATE_ERROR      3   /* the decoder reported an error */
 
 #define CLID_Hidd_I2C_Nouveau           "hidd.i2c.nouveau"
 #define IID_Hidd_I2C_Nouveau            "hidd.i2c.nouveau"
@@ -253,6 +300,9 @@ struct CardData
             struct nouveau_bo *, uint32_t, int, int, int, int, int, int,
             uint32_t);
 
+    /* NVDEC (nouveau_decode.c): the decoder class found on the first query */
+    ULONG nvdec_class;      /* NVxxB0 class the channel accepts, 0 = none */
+    LONG  nvdec_probe;      /* 0 = not tried, 1 = found, -1 = no decoder */
     struct nouveau_bo       *GART;                  /* Buffer in GART for upload/download of images */
     ULONG gart_pos;         /* Ring position in the GART buffer: uploads stream
                                without waiting until the ring wraps */

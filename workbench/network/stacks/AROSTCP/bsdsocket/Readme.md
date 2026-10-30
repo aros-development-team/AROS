@@ -302,6 +302,24 @@ Reports. Per-source filtering is not tracked. Every MLD message (v1 and v2) is e
 Hop-by-Hop Options header carrying the Router Alert option (RFC 2711, `mld6_prepend_ra`) so that
 on-link multicast routers intercept it.
 
+Every `in6_multihead` entry is reference counted, and each reference has one owner that releases it:
+
+- **The interface** owns its membership of the all-nodes group `ff02::1` (RFC 4291 §2.8), joined
+  once by `in6_join_allnodes()` from `in6_if_up()` and released by `in6_ifdetach()`.
+- **An address** owns its solicited-node group `ff02::1:ffXX:XXXX` (RFC 4861 §7.2.1), joined by
+  `in6_ifinit()` for every address - link-local, SLAAC, temporary or configured by hand - and left by
+  `in6_purgeaddr()`. The reference is kept in `struct in6_ifaddr_priv` (`netinet6/in6_var.h`), the
+  stack's own record around the public `struct in6_ifaddr`. Addresses whose last 24 bits agree share
+  the group.
+- **A socket** owns what it joined with `IPV6_JOIN_GROUP`; `IPV6_LEAVE_GROUP` releases one, and
+  `ip6_freemoptions()` releases the rest when the socket is detached (`in_pcbdetach()`).
+
+Interfaces without `IFF_MULTICAST` join nothing. When an interface goes away for good (`if_detach()`),
+`in6_ifdetach()` releases the all-nodes membership and cuts the sockets' entries loose from it; they
+are freed when their sockets drop them, and `in6_delmulti()` tells nobody about an entry without an
+interface. The IPv4 side follows the same rules (`in_join_allhosts()`, `ip_freemoptions()`,
+`in_ifdetach()`).
+
 ### 6.3 Path MTU Discovery (RFC 8201)
 
 IPv6 routers never fragment, so an oversized datagram is dropped and reported with ICMPv6 Packet Too

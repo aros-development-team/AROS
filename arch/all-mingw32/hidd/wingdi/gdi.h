@@ -16,8 +16,8 @@
 /*
  * GDI virtual hardware registers.
  * !!! WARNING !!! This structure is shared between Windows-side .dll and AROS code.
- * 64-bit versions of Windows and AROS have different alignment (Windows has 4 for backwards compatibility),
- * and this must be taken into account. Take care when adding/removing members!
+ * Its layout must agree on both sides for each target architecture.
+ * Take care when adding/removing members!
  */
 struct GDI_Control
 {

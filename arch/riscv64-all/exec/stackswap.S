@@ -8,10 +8,16 @@
     symbolic offsets from <aros/riscv64/asm.h> (Disable, Enable,
     tc_SPLower, tc_SPUpper, stk_Lower, stk_Upper, stk_Pointer, ThisTask)
     - no magic numbers. On a non-SMP build FindTask(NULL) simply returns
-    SysBase->ThisTask, so ThisTask is read directly.
+    SysBase->ThisTask, so ThisTask is read directly; on SMP builds the
+    running task is per hart, in the native TLS (riscv-native tls.h).
 */
 
+	#include <aros/config.h>
 	#include <aros/riscv64/asm.h>
+#if defined(__AROSEXEC_SMP__)
+	/* The running task is per hart, in the TLS tp points to */
+	#include "tls.h"
+#endif
 
 	.text
 	.balign 4
@@ -28,7 +34,11 @@ AROS_SLIB_ENTRY(StackSwap,Exec,122):
 	// that spans the swap (it would move with the stack).
 
 	mv	t0, a0			// t0 = newStack
+#if defined(__AROSEXEC_SMP__)
+	ld	t1, TLS_THISTASK_OFFSET(tp)	// t1 = current task (this hart's)
+#else
 	ld	t1, ThisTask(a1)	// t1 = current task
+#endif
 
 	// Disable() - arg0 = SysBase. t0/t1 are caller-saved, so preserve
 	// a1, t0, t1 and ra across the call.

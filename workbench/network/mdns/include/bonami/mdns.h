@@ -29,7 +29,7 @@
 /* Library identity (subsystem name, not API prefix) */
 
 #define BONAMI_LIB_VERSION   41
-#define BONAMI_LIB_REVISION  3
+#define BONAMI_LIB_REVISION  5
 
 /*------------------------------------------------------------------------*/
 /* DNS-SD well-known values */
@@ -136,9 +136,9 @@ struct MDNSEventRequest
 #define MDNS_StatusRxPackets    (MDNS_Dummy + 20)  /* ULONG * RX datagram count */
 #define MDNS_StatusTxPackets    (MDNS_Dummy + 21)  /* ULONG * TX datagram count */
 #define MDNS_StatusRxAnswers    (MDNS_Dummy + 22)  /* ULONG * RX answer records */
-#define MDNS_StatusDbgRecs      (MDNS_Dummy + 23)  /* ULONG * records into handler */
-#define MDNS_StatusDbgPtr       (MDNS_Dummy + 24)  /* ULONG * PTR records seen */
-#define MDNS_StatusDbgNotify    (MDNS_Dummy + 25)  /* ULONG * hook fires attempted */
+#define MDNS_StatusDbgRecs      (MDNS_Dummy + 23)  /* ULONG * discovery records */
+#define MDNS_StatusDbgPtr       (MDNS_Dummy + 24)  /* ULONG * discovery PTR records */
+#define MDNS_StatusDbgNotify    (MDNS_Dummy + 25)  /* ULONG * queue delivery attempts */
 
 /*------------------------------------------------------------------------*/
 /* Registration / browse flags (DNSServiceFlags subset) */

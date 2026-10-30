@@ -23,6 +23,7 @@
 #include <string.h>
 
 #include "space_intern.h"
+#include "../reaction_box.h"
 
 #define SpaceBase ((struct Library *)(cl->cl_UserData))
 
@@ -123,6 +124,17 @@ IPTR Space__OM_GET(Class *cl, Object *o, struct opGet *msg)
         case SPACE_Transparent:
             *msg->opg_Storage = data->sd_Transparent;
             return TRUE;
+
+        case SPACE_AreaBox:
+        {
+            WORD b = data->sd_BevelStyle != 0 ? 1 : 0;
+            data->sd_AreaBox.Left   = G(o)->LeftEdge + b;
+            data->sd_AreaBox.Top    = G(o)->TopEdge + b;
+            data->sd_AreaBox.Width  = G(o)->Width - 2 * b;
+            data->sd_AreaBox.Height = G(o)->Height - 2 * b;
+            *msg->opg_Storage = (IPTR)&data->sd_AreaBox;
+            return TRUE;
+        }
     }
 
     return DoSuperMethodA(cl, o, (Msg)msg);
@@ -146,10 +158,7 @@ IPTR Space__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     if (!rp)
         return FALSE;
 
-    x = gad->LeftEdge;
-    y = gad->TopEdge;
-    w = gad->Width;
-    h = gad->Height;
+    reaction_gadget_box(gad, msg->gpr_GInfo, &x, &y, &w, &h);
 
     /* Fill background unless transparent */
     if (!data->sd_Transparent)
@@ -180,5 +189,19 @@ IPTR Space__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     if (!msg->gpr_RPort && msg->gpr_GInfo)
         ReleaseGIRPort(rp);
 
+    return TRUE;
+}
+
+/******************************************************************************/
+
+IPTR Space__GM_DOMAIN(Class *cl, Object *o, struct gpDomain *msg)
+{
+    struct SpaceData *data = INST_DATA(cl, o);
+    WORD b = data->sd_BevelStyle != 0 ? 2 : 0;
+
+    msg->gpd_Domain.Left   = 0;
+    msg->gpd_Domain.Top    = 0;
+    msg->gpd_Domain.Width  = data->sd_MinWidth + b;
+    msg->gpd_Domain.Height = data->sd_MinHeight + b;
     return TRUE;
 }

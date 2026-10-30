@@ -226,10 +226,12 @@ static BOOL live(const struct DiscoverySession *s)
     return s->handle != NULL && !s->failed && !(s->resolve && s->resolved);
 }
 
-static void enqueue(struct DiscoverySession *s, const struct MDNSDiscoveryEvent *event)
+static void enqueue(struct MDNSDaemon *md, struct DiscoverySession *s,
+    const struct MDNSDiscoveryEvent *event)
 {
     UWORD i;
 
+    md->md_DiscoveryNotify++;
     if (s->failed) {
         return;
     }
@@ -256,8 +258,10 @@ static void enqueue(struct DiscoverySession *s, const struct MDNSDiscoveryEvent 
     wake(s, MDNS_OK);
 }
 
-static void notify(struct MDNSDiscovery *d, const struct DiscoveryView *view, ULONG code)
+static void notify(struct MDNSDaemon *md, const struct DiscoveryView *view,
+    ULONG code)
 {
+    struct MDNSDiscovery *d = md->md_Discovery;
     LONG i;
     struct MDNSDiscoveryEvent event = view->event;
 
@@ -268,7 +272,7 @@ static void notify(struct MDNSDiscovery *d, const struct DiscoveryView *view, UL
         if (s->handle != NULL && !s->resolve &&
             same_key(s->key, view->type ? services_key :
                 view->key + view->key[0] + 1)) {
-            enqueue(s, &event);
+            enqueue(md, s, &event);
         }
     }
 }
@@ -653,6 +657,10 @@ void mdnsDiscoveryRecord(struct MDNSDaemon *md, const struct MDNSRecord *record,
     ULONG now = mdnsTicks();
     ULONG link = md->md_SendIf >= 0 ? md->md_Ifs[md->md_SendIf].mi_Addr : 0;
 
+    md->md_DiscoveryRecords++;
+    if (record->type == DNS_TYPE_PTR) {
+        md->md_DiscoveryPTR++;
+    }
     if (d == NULL || (record->rclass & 0x7fff) != DNS_CLASS_IN ||
         link == 0 || decode(pkt, length, ownerOffset, key) < 0 ||
         record->rdoffset < 0 || record->rdoffset + size > length) {
@@ -818,7 +826,7 @@ static void refresh_views(struct MDNSDaemon *md, ULONG now)
 
         if (v->key[0] != 0 && !v->active) {
             if (v->present) {
-                notify(d, v, MEVENT_REMOVE);
+                notify(md, v, MEVENT_REMOVE);
             }
             memset(v, 0, sizeof(*v));
         }
@@ -872,11 +880,11 @@ static void refresh_views(struct MDNSDaemon *md, ULONG now)
             present = snapshot(d, v->key, v->link, &event, now);
         }
         if (v->present && (!present || memcmp(&event, &v->event, sizeof(event)) != 0)) {
-            notify(d, v, MEVENT_REMOVE);
+            notify(md, v, MEVENT_REMOVE);
         }
         if (present && (!v->present || memcmp(&event, &v->event, sizeof(event)) != 0)) {
             v->event = event;
-            notify(d, v, MEVENT_ADD);
+            notify(md, v, MEVENT_ADD);
         }
         v->present = present;
     }
@@ -922,7 +930,7 @@ void mdnsDiscoveryTick(struct MDNSDaemon *md)
             for (j = 0; rebuild && j < md->md_IfCount; j++) {
                 if (snapshot(d, s->key, md->md_Ifs[j].mi_Addr, &event, now)) {
                     event.de_Code = MEVENT_RESOLVED;
-                    enqueue(s, &event);
+                    enqueue(md, s, &event);
                     s->resolved = TRUE;
                     d->changed = TRUE;
                     break;
@@ -931,7 +939,7 @@ void mdnsDiscoveryTick(struct MDNSDaemon *md)
             if (!s->resolved && due(now, s->deadline)) {
                 memset(&event, 0, sizeof(event));
                 event.de_Code = MEVENT_RESOLVE_FAILED;
-                enqueue(s, &event);
+                enqueue(md, s, &event);
                 s->resolved = TRUE;
                 d->changed = TRUE;
             }
@@ -947,6 +955,7 @@ void mdnsDiscoveryTick(struct MDNSDaemon *md)
         if (s->resolve) {
             send_question(md, s->key, DNS_TYPE_TXT, 0);
         }
+        mdnsRegAnswerLocal(md, MDNS_REFLECT_DISCOVERY, NULL);
         s->nextQuery = now + s->interval;
         if (s->interval < 180000) {
             s->interval *= 2;
@@ -1074,6 +1083,7 @@ LONG mdnsDiscoveryMessage(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
         msg->mi_Handle = s->handle;
         msg->mi_DaemonID = md->md_DaemonID;
         d->changed = TRUE;
+        mdnsRegAnswerLocal(md, MDNS_REFLECT_DISCOVERY, NULL);
         for (i = 0; i < DISC_VIEWS; i++) {
             const struct DiscoveryView *v = &d->views[i];
 
@@ -1082,7 +1092,7 @@ LONG mdnsDiscoveryMessage(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
                 struct MDNSDiscoveryEvent event = v->event;
 
                 event.de_Code = MEVENT_ADD;
-                enqueue(s, &event);
+                enqueue(md, s, &event);
             }
         }
         return MDNS_OK;
@@ -1194,7 +1204,7 @@ void mdnsDiscoveryReset(struct MDNSDaemon *md)
     }
     for (i = 0; i < DISC_VIEWS; i++) {
         if (d->views[i].present) {
-            notify(d, &d->views[i], MEVENT_REMOVE);
+            notify(md, &d->views[i], MEVENT_REMOVE);
         }
     }
     memset(d->records, 0, sizeof(d->records));

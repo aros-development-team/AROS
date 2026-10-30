@@ -50,6 +50,15 @@ mdnsClientMessage(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
         return;
     }
     switch (msg->mi_Command) {
+    case MDNS_IPC_STATUS:
+        msg->mi_StatusRxPackets = md->md_RxPackets;
+        msg->mi_StatusTxPackets = md->md_TxPackets;
+        msg->mi_StatusRxAnswers = md->md_RxAnswers;
+        msg->mi_StatusDbgRecs = md->md_DiscoveryRecords;
+        msg->mi_StatusDbgPtr = md->md_DiscoveryPTR;
+        msg->mi_StatusDbgNotify = md->md_DiscoveryNotify;
+        msg->mi_Result = MDNS_OK;
+        break;
     case MDNS_IPC_REGISTER:
         msg->mi_Result = mdnsRegAdd(md, msg);
         break;

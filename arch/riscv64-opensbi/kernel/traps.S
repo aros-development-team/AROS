@@ -21,6 +21,9 @@
     context (matching RISCV_REGSAVE_CNT).
 */
 
+#include <aros/config.h>
+#include "tls.h"
+
 	.text
 	.balign	4
 	.globl	__trap_entry
@@ -125,10 +128,17 @@ __trap_entry:
 	   nested and cannot enter the scheduler and snapshot this half-restored
 	   exit state as a task context. t0/t1 are still scratch (restored just
 	   below, before sp). */
+#if defined(__AROSEXEC_SMP__)
+	/* per hart, in the TLS tp points to */
+	lw	t1, TLS_TRAPDEPTH_OFFSET(tp)
+	addiw	t1, t1, -1
+	sw	t1, TLS_TRAPDEPTH_OFFSET(tp)
+#else
 	la	t0, __riscv64_trap_depth
 	lw	t1, 0(t0)
 	addiw	t1, t1, -1
 	sw	t1, 0(t0)
+#endif
 	ld	t1, 24(sp)
 	ld	t0, 16(sp)
 	/* Load sp last, directly from the context - the dispatcher may

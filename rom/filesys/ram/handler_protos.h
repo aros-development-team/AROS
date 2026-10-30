@@ -100,6 +100,8 @@ BOOL AttemptDeleteObject(struct Handler *handler, struct Object *object,
 VOID DeleteObject(struct Handler *handler, struct Object *object);
 struct Object *GetHardObject(struct Handler *handler, struct Lock *lock,
    const TEXT *name, struct Object **parent);
+struct Object *GetObjectNoFollow(struct Handler *handler, struct Lock *lock,
+   const TEXT *name, struct Object **parent);
 struct Object *GetObject(struct Handler *handler, struct Lock *lock,
    const TEXT *name, struct Object **parent, LONG *remainder_pos);
 PINT ChangeFileSize(struct Handler *handler, struct Opening *opening,

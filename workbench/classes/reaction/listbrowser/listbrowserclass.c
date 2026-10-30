@@ -24,8 +24,10 @@
 #include <proto/graphics.h>
 #include <proto/utility.h>
 #include <proto/alib.h>
+#include <proto/listbrowser.h>
 
 #include "listbrowser_intern.h"
+#include "../reaction_box.h"
 
 #define ListBrowserBase ((struct Library *)(cl->cl_UserData))
 
@@ -234,6 +236,97 @@ IPTR ListBrowser__OM_GET(Class *cl, Object *obj, struct opGet *msg)
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
+/* After the attached list changed: recount, re-find the selection, redraw */
+static void lb_list_changed(Class *cl, Object *obj, struct GadgetInfo *gi)
+{
+    struct ListBrowserData *data = INST_DATA_LB(cl, obj);
+    struct Node *node;
+    LONG i = 0;
+
+    data->lbd_TotalNodes = CountNodes(data->lbd_Labels);
+    data->lbd_Selected = -1;
+    if (data->lbd_SelectedNode)
+    {
+        for (node = data->lbd_Labels->lh_Head; node->ln_Succ; node = node->ln_Succ, i++)
+            if (node == (struct Node *)data->lbd_SelectedNode)
+                data->lbd_Selected = i;
+        if (data->lbd_Selected < 0)
+            data->lbd_SelectedNode = NULL;
+    }
+    if (data->lbd_Position > data->lbd_TotalNodes - data->lbd_VisibleRows)
+        data->lbd_Position = data->lbd_TotalNodes - data->lbd_VisibleRows;
+    if (data->lbd_Position < 0)
+        data->lbd_Position = 0;
+
+    if (gi)
+    {
+        struct RastPort *rp = ObtainGIRPort(gi);
+        if (rp)
+        {
+            DoMethod(obj, GM_RENDER, (IPTR)gi, (IPTR)rp, GREDRAW_UPDATE);
+            ReleaseGIRPort(rp);
+        }
+    }
+}
+
+IPTR ListBrowser__LBM_ADDNODE(Class *cl, Object *obj, struct lbAddNode *msg)
+{
+    struct ListBrowserData *data = INST_DATA_LB(cl, obj);
+    struct Node *node, *pred = msg->lba_Node;
+    UWORD columns = 1;
+
+    if (!data->lbd_Labels)
+        return 0;
+
+    if (data->lbd_ColumnInfo)
+    {
+        for (columns = 0; data->lbd_ColumnInfo[columns].ci_Width != -1; columns++)
+            ;
+        if (columns == 0)
+            columns = 1;
+    }
+    else if (data->lbd_Labels->lh_Head->ln_Succ)
+        columns = ((struct ListBrowserNode *)data->lbd_Labels->lh_Head)->lbn_Columns;
+
+    node = AllocListBrowserNodeA(columns, msg->lba_NodeAttrs);
+    if (!node)
+        return 0;
+
+    /* NULL inserts at the head, ~0 at the tail */
+    if (pred == (struct Node *)~0)
+        AddTail(data->lbd_Labels, node);
+    else
+        Insert(data->lbd_Labels, node, pred);
+
+    lb_list_changed(cl, obj, msg->lba_GInfo);
+    return (IPTR)node;
+}
+
+IPTR ListBrowser__LBM_REMNODE(Class *cl, Object *obj, struct lbRemNode *msg)
+{
+    struct ListBrowserData *data = INST_DATA_LB(cl, obj);
+
+    if (!data->lbd_Labels || !msg->lbr_Node)
+        return 0;
+
+    Remove(msg->lbr_Node);
+    FreeListBrowserNode(msg->lbr_Node);
+    lb_list_changed(cl, obj, msg->lbr_GInfo);
+    return 1;
+}
+
+IPTR ListBrowser__LBM_EDITNODE(Class *cl, Object *obj, struct lbEditNode *msg)
+{
+    struct ListBrowserData *data = INST_DATA_LB(cl, obj);
+
+    if (!data->lbd_Labels || !msg->lbe_Node)
+        return 0;
+
+    SetListBrowserNodeAttrsA(msg->lbe_Node, msg->lbe_NodeAttrs);
+    lb_list_changed(cl, obj, msg->lbe_GInfo);
+    return 1;
+}
+
 /* Shared layout metrics for render and input hit-testing */
 #define LB_VPROP_W  14
 #define LB_HPROP_H  12
@@ -249,12 +342,15 @@ struct lb_metrics
 };
 
 static void lb_get_metrics(struct ListBrowserData *data, struct Gadget *g,
-    struct RastPort *rp, struct lb_metrics *m)
+    struct GadgetInfo *gi, struct RastPort *rp, struct lb_metrics *m)
 {
-    m->left = g->LeftEdge;
-    m->top = g->TopEdge;
-    m->width = g->Width;
-    m->height = g->Height;
+    WORD x, y, w, h;
+
+    reaction_gadget_box(g, gi, &x, &y, &w, &h);
+    m->left = x;
+    m->top = y;
+    m->width = w;
+    m->height = h;
 
     if (rp && rp->Font)
         m->row_h = rp->Font->tf_YSize + 2;
@@ -406,7 +502,7 @@ IPTR ListBrowser__GM_RENDER(Class *cl, Object *obj, struct gpRender *msg)
     if (!dri || !rp)
         return FALSE;
 
-    lb_get_metrics(data, G(obj), rp, &m);
+    lb_get_metrics(data, G(obj), msg->gpr_GInfo, rp, &m);
 
     if (m.width <= 4 || m.height <= 4)
         return FALSE;
@@ -670,7 +766,7 @@ static IPTR lb_handle_input(Class *cl, Object *obj, struct gpInput *msg)
             WORD my = msg->gpi_Mouse.Y;
             struct RastPort *girp = NULL;
 
-            lb_get_metrics(data, G(obj), NULL, &m);
+            lb_get_metrics(data, G(obj), msg->gpi_GInfo, NULL, &m);
             if (data->lbd_RowHeight)
                 m.row_h = data->lbd_RowHeight;
 

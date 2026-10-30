@@ -21,6 +21,19 @@
 
 /* SBI_EXT_RFENCE function IDs */
 #define SBI_RFENCE_REMOTE_FENCE_I   0
+#define SBI_RFENCE_REMOTE_SFENCE_VMA 1
+
+/* SBI_EXT_IPI function IDs */
+#define SBI_IPI_SEND_IPI            0
+
+/* SBI_EXT_HSM function IDs and hart states */
+#define SBI_HSM_HART_START          0
+#define SBI_HSM_HART_STOP           1
+#define SBI_HSM_HART_GET_STATUS     2
+#define SBI_HSM_STATE_STARTED       0
+#define SBI_HSM_STATE_STOPPED       1
+#define SBI_HSM_STATE_START_PENDING 2
+#define SBI_HSM_STATE_STOP_PENDING  3
 
 /* SBI_EXT_BASE function IDs */
 #define SBI_BASE_GET_SPEC_VERSION   0
@@ -158,6 +171,58 @@ static inline void sbi_remote_fence_i(void)
         /* v0.1 took a pointer to the mask; NULL means every hart */
         sbi_ecall(SBI_EXT_LEGACY_FENCE_I, 0, 0, 0, 0, 0, 0, 0);
     }
+}
+
+/*
+ * Hart state management (HSM, SBI v0.2+): start a stopped hart in
+ * S-mode at the physical address start_addr, with a0 = its hart id and
+ * a1 = opaque, the MMU off and interrupts disabled.
+ */
+static inline long sbi_hart_start(unsigned long hartid,
+                                  unsigned long start_addr,
+                                  unsigned long opaque)
+{
+    struct sbiret ret = sbi_ecall(SBI_EXT_HSM, SBI_HSM_HART_START,
+                                  hartid, start_addr, opaque, 0, 0, 0);
+    return ret.error;
+}
+
+/* Stop the calling hart; it returns to the firmware's stopped state */
+static inline void sbi_hart_stop(void)
+{
+    sbi_ecall(SBI_EXT_HSM, SBI_HSM_HART_STOP, 0, 0, 0, 0, 0, 0);
+}
+
+/* The hart's HSM state, or a negative SBI error */
+static inline long sbi_hart_get_status(unsigned long hartid)
+{
+    struct sbiret ret = sbi_ecall(SBI_EXT_HSM, SBI_HSM_HART_GET_STATUS,
+                                  hartid, 0, 0, 0, 0, 0);
+    return (ret.error == SBI_SUCCESS) ? ret.value : ret.error;
+}
+
+/*
+ * Raise the supervisor software interrupt on the harts in hart_mask,
+ * counted from hart id hart_mask_base (IPI extension, SBI v0.2+).
+ */
+static inline long sbi_send_ipi(unsigned long hart_mask,
+                                unsigned long hart_mask_base)
+{
+    struct sbiret ret = sbi_ecall(SBI_EXT_IPI, SBI_IPI_SEND_IPI,
+                                  hart_mask, hart_mask_base, 0, 0, 0, 0);
+    return ret.error;
+}
+
+/* sfence.vma for [start, start + size) on the harts in hart_mask;
+   size 0 (or -1) fences the whole address space */
+static inline long sbi_remote_sfence_vma(unsigned long hart_mask,
+                                         unsigned long hart_mask_base,
+                                         unsigned long start,
+                                         unsigned long size)
+{
+    struct sbiret ret = sbi_ecall(SBI_EXT_RFENCE, SBI_RFENCE_REMOTE_SFENCE_VMA,
+                                  hart_mask, hart_mask_base, start, size, 0, 0);
+    return ret.error;
 }
 
 #endif /* KERNEL_SBI_H */

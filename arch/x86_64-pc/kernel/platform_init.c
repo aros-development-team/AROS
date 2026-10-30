@@ -207,6 +207,12 @@ static int Platform_Init(struct KernelBase *LIBBASE)
             bug("[Kernel:x86_64] %s: Performing Post-Exec initialization\n", __func__);
             bug("[Kernel:x86_64] %s: KernelBase @ %p\n", __func__, LIBBASE);)
 
+    /*
+     * The boot CPU's TLS gets KernelBase too, as the APs' does
+     * (smp.c) - it only exists from this point on.
+     */
+    TLS_SET(KernelBase, LIBBASE);
+
         /*
      * Setup the Interrupt Controller Environment ...
      */

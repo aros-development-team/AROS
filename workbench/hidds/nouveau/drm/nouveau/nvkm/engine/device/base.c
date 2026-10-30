@@ -3032,8 +3032,30 @@ fail:
 	return ret;
 }
 
+#if defined(__AROS__)
+static int nvkm_device_init_once(struct nvkm_device *);
+
+/* a subdev may ask for the whole init again (-EAGAIN): the GSP after a refused boot and a GPU reset */
 int
 nvkm_device_init(struct nvkm_device *device)
+{
+	int ret, pass;
+
+	for (pass = 0; pass < 4; pass++) {
+		ret = nvkm_device_init_once(device);
+		if (ret != -EAGAIN)
+			break;
+		nvdev_warn(device, "init asked to be run again\n");
+	}
+	return ret;
+}
+
+static int
+nvkm_device_init_once(struct nvkm_device *device)
+#else
+int
+nvkm_device_init(struct nvkm_device *device)
+#endif
 {
 	struct nvkm_subdev *subdev;
 	int ret;

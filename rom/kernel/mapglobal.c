@@ -35,9 +35,7 @@
         flags  - Mapping attributes specified by KRN_MapAttr.
 
     RESULT
-        Port specific. On x86_64, 0 on success and -1 on failure; on aarch64
-        and riscv64, 0 on failure and a non-zero value on success. Callers
-        that work across ports must not assume either; see BUGS.
+        Non-zero on success, 0 on failure, on every port.
 
     NOTES
         The range is rounded out to whole pages, and virt and phys must
@@ -58,16 +56,11 @@
         had already processed mapped.
 
         On architectures without an MMU, or where this is not implemented,
-        the call does nothing and returns 0.
+        the call does nothing and returns 0 (failure).
 
     EXAMPLE
 
     BUGS
-        The return value convention is not consistent across ports: x86_64
-        returns 0 on success, aarch64 and riscv64 return non-zero on success.
-        A caller written for one convention misreads the other. Reconciling
-        the ports is a separate change; until then, check the port you are
-        building for.
 
     SEE ALSO
         KrnUnmapGlobal(), KrnVirtualToPhysical(), KrnSetProtection()

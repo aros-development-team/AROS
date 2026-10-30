@@ -22,11 +22,26 @@ static FILE *nouveau_out = NULL;
 static uint32_t nouveau_debug = 0;
 
 #define dbg_on(lvl) (nouveau_debug & (1 << lvl))
+#if defined(__AROS__)
+/*
+ * Not C stdio: inside the hidd "stderr" is the stream of whichever task set
+ * the library up, which may have exited (a dump from input.device then wrote
+ * through a freed file handle and halted the system). The hidd log is safe
+ * from any task.
+ */
+extern void nouveau_compat_log(const char *fmt, ...);
+#define dbg(lvl, fmt, args...) do {                                       \
+   if (dbg_on((lvl)))                                                     \
+      nouveau_compat_log("nouveau: "fmt, ##args);                         \
+} while(0)
+#define err(fmt, args...) nouveau_compat_log("nouveau: "fmt, ##args)
+#else
 #define dbg(lvl, fmt, args...) do {                                       \
    if (dbg_on((lvl)))                                                     \
       fprintf(nouveau_out, "nouveau: "fmt, ##args);                       \
 } while(0)
 #define err(fmt, args...) fprintf(nouveau_out, "nouveau: "fmt, ##args)
+#endif
 
 static void
 debug_init(void)
@@ -220,12 +235,19 @@ nouveau_object_channel_del(struct nouveau_object *obj)
    };
 
    int ret = drmCommandWrite(drm->fd, DRM_NOUVEAU_CHANNEL_FREE, &req, sizeof(req));
+#if defined(__AROS__)
+   if (ret)
+      err("freeing channel %d failed (%d)\n", (int)obj->handle, ret);
+#else
    assert(!ret);
+#endif
 }
 
 static void
 nouveau_object_subchan_del(struct nouveau_object *obj)
 {
+   /* the drm file, as at creation: the parent's handle is a channel id, not an fd */
+   struct nouveau_drm *drm = nouveau_drm(obj->parent);
    struct {
       struct nvif_ioctl_v0 ioctl;
       struct nvif_ioctl_del del;
@@ -239,7 +261,7 @@ nouveau_object_subchan_del(struct nouveau_object *obj)
       },
    };
 
-   drmCommandWrite(obj->parent->handle, DRM_NOUVEAU_NVIF, &args, sizeof(args));
+   drmCommandWrite(drm->fd, DRM_NOUVEAU_NVIF, &args, sizeof(args));
 }
 
 static void
@@ -1112,6 +1134,12 @@ pushbuf_dump(struct nouveau_device *dev,
    kref = krec->buffer;
    for (i = 0; i < krec->nr_buffer; i++, kref++) {
       bo = (void *)(uintptr_t)kref->user_priv;
+#if defined(__AROS__)
+      if (!bo) {
+         err("ch%d: buf %08x %08x (no bo)\n", chid, i, kref->handle);
+         continue;
+      }
+#endif
       err("ch%d: buf %08x %08x %08x %08x %08x %p 0x%"PRIx64" 0x%"PRIx64"\n",
           chid, i, kref->handle, kref->valid_domains,
           kref->read_domains, kref->write_domains, bo->map, bo->offset, bo->size);
@@ -1127,8 +1155,23 @@ pushbuf_dump(struct nouveau_device *dev,
 
    kpsh = krec->push;
    for (i = 0; i < krec->nr_push; i++, kpsh++) {
+#if defined(__AROS__)
+      /*
+       * After the GPU killed a channel the record can hold pushes whose
+       * buffer index is outside the list (the kernel rejects them as "buffer
+       * not in list"); dereferencing them took the whole system down.
+       */
+      if (kpsh->bo_index >= krec->nr_buffer) {
+         err("ch%d: psh %08x outside the %d buffers\n", chid, kpsh->bo_index, krec->nr_buffer);
+         continue;
+      }
+#endif
       kref = krec->buffer + kpsh->bo_index;
       bo = (void *)(unsigned long)kref->user_priv;
+#if defined(__AROS__)
+      if (!bo)
+         continue;
+#endif
       bgn = (uint32_t *)((char *)bo->map + kpsh->offset);
       end = bgn + ((kpsh->length & 0x7fffff) /4);
 
@@ -1139,9 +1182,13 @@ pushbuf_dump(struct nouveau_device *dev,
       if (!bo->map)
          continue;
 
-      /* AROS: no class-aware push buffer decoder, dump the raw words */
-      while (bgn < end)
-         err("\t0x%08x\n", *bgn++);
+      /* AROS: no class-aware push buffer decoder, dump the first raw words */
+      {
+         int words = 0;
+
+         while (bgn < end && words++ < 64)
+            err("\t0x%08x\n", *bgn++);
+      }
    }
 }
 
@@ -1420,8 +1467,17 @@ pushbuf_krel(struct nouveau_pushbuf *push, struct nouveau_bo *bo,
    bkref = cli_kref_get(push->client, bo);
    krel  = &krec->reloc[krec->nr_reloc++];
 
+#if defined(__AROS__)
+   /* never an assert here: its stderr may be a dead task's stream */
+   if (!pkref || !bkref) {
+      krec->nr_reloc--;
+      err("reloc on a buffer not in the push list (a killed channel?)\n");
+      return data;
+   }
+#else
    assert(pkref);
    assert(bkref);
+#endif
    krel->reloc_bo_index = pkref - krec->buffer;
    krel->reloc_bo_offset = (push->cur - nvpb->ptr) * 4;
    krel->bo_index = bkref - krec->buffer;
@@ -1687,7 +1743,14 @@ nouveau_pushbuf_data(struct nouveau_pushbuf *push, struct nouveau_bo *bo, uint64
 
    if (bo) {
       kref = cli_kref_get(push->client, bo);
+#if defined(__AROS__)
+      if (!kref) {
+         err("push of a buffer not in the push list (a killed channel?)\n");
+         return;
+      }
+#else
       assert(kref);
+#endif
       kpsh = &krec->push[krec->nr_push++];
       kpsh->bo_index = kref - krec->buffer;
       kpsh->offset   = offset;

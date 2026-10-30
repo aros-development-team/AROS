@@ -1199,7 +1199,7 @@ struct Lock *CmdCreateDir(struct Handler *handler,
 
    /* Find parent directory and possible name clash */
 
-   dir = GetHardObject(handler, lock, name, &parent);
+   dir = GetObjectNoFollow(handler, lock, name, &parent);
    lock = NULL;
 
    /* Create a new directory */
@@ -1480,10 +1480,7 @@ BOOL CmdExamineAll(struct Handler *handler, struct Lock *lock,
          struct_size = examine_sizes[type - 1];
          name = ((struct Node *)object)->ln_Name;
          name_size = StrSize(name);
-         if(((struct Node *)object)->ln_Pri == ST_SOFTLINK)
-            comment = &((struct Node *)object)->ln_Type;
-         else
-            comment = object->comment;
+         comment = object->comment;
          if(comment)
             comment_size = StrSize(comment);
          else
@@ -1746,7 +1743,7 @@ BOOL CmdSetProtect(struct Handler *handler, struct Lock *lock,
 
    /* Set new protection flags if object isn't in use */
 
-   object = GetHardObject(handler, lock, name, NULL);
+   object = GetObjectNoFollow(handler, lock, name, NULL);
    if(object != NULL)
    {
       if(handler->locked)
@@ -1813,7 +1810,7 @@ BOOL CmdSetComment(struct Handler *handler, struct Lock *lock,
 
    /* Get object */
 
-   object = GetHardObject(handler, lock, name, NULL);
+   object = GetObjectNoFollow(handler, lock, name, NULL);
    if(object == NULL)
       error = IoErr();
    else
@@ -1903,14 +1900,14 @@ BOOL CmdRenameObject(struct Handler *handler, struct Lock *old_lock,
 
    /* Get object to be moved */
 
-   object = GetHardObject(handler, old_lock, old_name, NULL);
+   object = GetObjectNoFollow(handler, old_lock, old_name, NULL);
    if(object == NULL)
       error = IoErr();
 
    /* Get destination directory and check if a different object already has
       the target name */
 
-   duplicate = GetHardObject(handler, new_lock, new_name, &parent);
+   duplicate = GetObjectNoFollow(handler, new_lock, new_name, &parent);
    if(duplicate && duplicate != object)
       error = ERROR_OBJECT_EXISTS;
    if(parent == NULL)
@@ -1971,7 +1968,7 @@ BOOL CmdRenameObject(struct Handler *handler, struct Lock *old_lock,
          /* Update notifications */
 
          NotifyAll(handler, object, FALSE);
-         if(object->node.ln_Pri > 0)
+         if(object->node.ln_Pri > 0 && object->node.ln_Pri != ST_SOFTLINK)
             RematchNotifyRequests(handler);
          else
          {
@@ -2102,7 +2099,7 @@ BOOL CmdSetDate(struct Handler *handler, struct Lock *lock, STRPTR name,
 
    if(error == 0)
    {
-      object = GetHardObject(handler, lock, name, NULL);
+      object = GetObjectNoFollow(handler, lock, name, NULL);
       if(object != NULL)
       {
          error = ramSecCheckProperty(handler, object);
@@ -2342,7 +2339,7 @@ BOOL CmdMakeLink(struct Handler *handler, struct Lock *lock, STRPTR name,
 
    /* Find parent directory and possible name clash */
 
-   link = GetHardObject(handler, lock, name, &parent);
+   link = GetObjectNoFollow(handler, lock, name, &parent);
    if(link != NULL)
       error = ERROR_OBJECT_EXISTS;
    else if(parent == NULL)

@@ -141,6 +141,9 @@ mdnsHandlePacket(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
         if (mdnsParseRecord(pkt, pktlen, offset, &record, &consumed) != 0) {
             return;
         }
+        if (i < answers) {
+            md->md_RxAnswers++;
+        }
         mdnsHostHandleRecord(md, &record);
         if (i < answers || i >= (UWORD)(answers + authorities)) {
             mdnsRegHandleRecord(md, &record, pkt, pktlen);
@@ -151,4 +154,55 @@ mdnsHandlePacket(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
         }
         offset += consumed;
     }
+}
+
+/* Feed records produced by this daemon to its discovery/query clients.
+ * Multicast loopback is deliberately ignored by mdnsHandlePacket(), so local
+ * registrations otherwise exist on the wire but not in the local API view. */
+void
+mdnsReflectPacket(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
+    LONG ifindex, UWORD consumers, APTR queryHandle)
+{
+    const struct MDNSHeader *hdr;
+    struct MDNSQuestion q;
+    LONG offset, consumed, previous;
+    UWORD i, flags, answers, authorities, additionals;
+
+    if (pktlen < (LONG)sizeof(struct MDNSHeader) || ifindex < 0 ||
+        ifindex >= md->md_IfCount || (consumers &
+            (MDNS_REFLECT_DISCOVERY | MDNS_REFLECT_QUERY)) == 0) {
+        return;
+    }
+    hdr = (const struct MDNSHeader *)pkt;
+    flags = ntohs(hdr->flags);
+    if ((flags & DNS_FLAG_QR) == 0 || (flags & 0x780f) != 0) {
+        return;
+    }
+    offset = (LONG)sizeof(struct MDNSHeader);
+    for (i = 0; i < ntohs(hdr->qdcount); i++) {
+        if (mdnsParseQuestion(pkt, pktlen, offset, &q, &consumed) != 0) {
+            return;
+        }
+        offset += consumed;
+    }
+    answers = ntohs(hdr->ancount);
+    authorities = ntohs(hdr->nscount);
+    additionals = ntohs(hdr->arcount);
+    previous = md->md_SendIf;
+    md->md_SendIf = ifindex;
+    for (i = 0; i < (UWORD)(answers + authorities + additionals); i++) {
+        if (mdnsParseRecord(pkt, pktlen, offset, &record, &consumed) != 0) {
+            break;
+        }
+        if (i < answers || i >= (UWORD)(answers + authorities)) {
+            if (consumers & MDNS_REFLECT_DISCOVERY) {
+                mdnsDiscoveryRecord(md, &record, pkt, pktlen, offset);
+            }
+            if (consumers & MDNS_REFLECT_QUERY) {
+                mdnsQueryLocalRecord(md, &record, pkt, pktlen, queryHandle);
+            }
+        }
+        offset += consumed;
+    }
+    md->md_SendIf = previous;
 }

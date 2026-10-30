@@ -22,13 +22,15 @@
         struct KernelBase *, KernelBase, 40, Kernel)
 
 /*  FUNCTION
-        Return total number of processors in the system
+        Return the number of processors running AROS
 
     INPUTS
         None
 
     RESULT
-        Number of running CPUs in this system
+        Number of running CPUs in this system, at least 1. It grows while
+        secondary CPUs are brought up, then stays fixed; CPUs the
+        hardware describes but that are not running are not counted.
 
     NOTES
 

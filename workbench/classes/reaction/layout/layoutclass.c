@@ -25,6 +25,7 @@
 #include <string.h>
 
 #include "layout_intern.h"
+#include "../reaction_box.h"
 
 #define LayoutBase ((struct Library *)(cl->cl_UserData))
 
@@ -458,6 +459,16 @@ static void query_child_size(struct LayoutChild *lc, struct GadgetInfo *gi,
         }
     }
 
+    lc->lc_LabelW = lc->lc_LabelH = 0;
+    if (lc->lc_Label)
+    {
+        IPTR lw = 0, lh = 0;
+        GetAttr(IA_Width, lc->lc_Label, &lw);
+        GetAttr(IA_Height, lc->lc_Label, &lh);
+        lc->lc_LabelW = (UWORD)lw;
+        lc->lc_LabelH = (UWORD)lh;
+    }
+
     *outW = w;
     *outH = h;
 
@@ -528,11 +539,24 @@ void layout_compute_domain(Class *cl, Object *o, struct LayoutData *data)
     spacing = (data->ld_Orientation == LAYOUT_ORIENT_HORIZ)
               ? data->ld_HorizSpacing : data->ld_VertSpacing;
 
+    data->ld_LabelCol = 0;
     ForeachNode(&data->ld_Children, lc)
     {
         UWORD childW = 0, childH = 0;
 
         query_child_size(lc, gi, rp, &childW, &childH);
+
+        /* labels: a column left of the children in a vertical group, in
+           front of their own child in a horizontal one */
+        if (lc->lc_LabelW)
+        {
+            if (data->ld_Orientation == LAYOUT_ORIENT_HORIZ)
+                childW += lc->lc_LabelW + LAYOUT_LABEL_GAP;
+            else if (lc->lc_LabelW + LAYOUT_LABEL_GAP > data->ld_LabelCol)
+                data->ld_LabelCol = lc->lc_LabelW + LAYOUT_LABEL_GAP;
+        }
+        if (lc->lc_LabelH > childH)
+            childH = lc->lc_LabelH;
 
         if (data->ld_Orientation == LAYOUT_ORIENT_HORIZ)
         {
@@ -569,6 +593,9 @@ void layout_compute_domain(Class *cl, Object *o, struct LayoutData *data)
      * the available area and push trailing children past the layout edge. */
     if (data->ld_EvenSize && count > 0 && (ULONG)maxMain * count > totalMin)
         totalMin = (ULONG)maxMain * count;
+
+    if (data->ld_Orientation != LAYOUT_ORIENT_HORIZ)
+        maxCross += data->ld_LabelCol;
 
     /* Add spacing between children */
     if (count > 1)
@@ -647,11 +674,11 @@ void layout_perform_layout(Class *cl, Object *o, struct LayoutData *data,
     ULONG count = 0;
     ULONG spacing;
     ULONG outerSpaceW = 0, outerSpaceH = 0;
+    WORD bw, bh;
 
-    x = G(o)->LeftEdge;
-    y = G(o)->TopEdge;
-    availW = (UWORD)G(o)->Width;
-    availH = (UWORD)G(o)->Height;
+    reaction_gadget_box(G(o), gi, &x, &y, &bw, &bh);
+    availW = (UWORD)bw;
+    availH = (UWORD)bh;
 
     /* Apply frame inset (bevel border + label) */
     {
@@ -683,6 +710,21 @@ void layout_perform_layout(Class *cl, Object *o, struct LayoutData *data,
 
     spacing = (data->ld_Orientation == LAYOUT_ORIENT_HORIZ)
               ? data->ld_HorizSpacing : data->ld_VertSpacing;
+
+    /* the label column comes off the children's width in a vertical group */
+    if (data->ld_Orientation != LAYOUT_ORIENT_HORIZ && data->ld_LabelCol)
+    {
+        x += data->ld_LabelCol;
+        availW = (availW > data->ld_LabelCol) ? availW - data->ld_LabelCol : 0;
+    }
+    /* in a horizontal group each label takes its room before its child */
+    if (data->ld_Orientation == LAYOUT_ORIENT_HORIZ)
+    {
+        ULONG lw = 0;
+        ForeachNode(&data->ld_Children, lc)
+            if (lc->lc_LabelW) lw += lc->lc_LabelW + LAYOUT_LABEL_GAP;
+        availW = (availW > lw) ? availW - lw : 0;
+    }
 
     D(bug("[Layout] perform_layout: obj %p orient=%ld gad=(%d,%d %dx%d) avail=(%d,%d %dx%d) spacing=%d\n",
         o, (LONG)data->ld_Orientation,
@@ -797,6 +839,9 @@ void layout_perform_layout(Class *cl, Object *o, struct LayoutData *data,
                 if (childW > 0xFFFF) childW = 0xFFFF;
                 if (childH > 0xFFFF) childH = 0xFFFF;
 
+                if (data->ld_Orientation == LAYOUT_ORIENT_HORIZ && lc->lc_LabelW)
+                    x += lc->lc_LabelW + LAYOUT_LABEL_GAP;
+
                 lc->lc_Left   = x;
                 lc->lc_Top    = y;
 
@@ -810,6 +855,15 @@ void layout_perform_layout(Class *cl, Object *o, struct LayoutData *data,
 
                 lc->lc_Width  = (UWORD)childW;
                 lc->lc_Height = (UWORD)childH;
+
+                /* the label, right-aligned against the child and centred on it */
+                if (lc->lc_Label && lc->lc_LabelW)
+                {
+                    WORD lx = lc->lc_Left - LAYOUT_LABEL_GAP - lc->lc_LabelW;
+                    WORD ly = lc->lc_Top + ((WORD)childH - (WORD)lc->lc_LabelH) / 2;
+                    SetAttrs(lc->lc_Label, IA_Left, lx, IA_Top, ly,
+                             IA_Width, lc->lc_LabelW, IA_Height, lc->lc_LabelH, TAG_DONE);
+                }
 
                 D(bug("[Layout] perform_layout: obj %p assigning child %p isImage=%d -> (%d,%d) %dx%d (nat=%dx%d weight=%ld)\n",
                     o, lc->lc_Object, (int)lc->lc_IsImage,
@@ -861,6 +915,39 @@ void layout_perform_layout(Class *cl, Object *o, struct LayoutData *data,
 
 /******************************************************************************/
 
+/* Fill the group's box except where gadget children are: they draw
+   themselves, after the group when the window refreshes its list */
+static void layout_erase(struct RastPort *rp, struct LayoutData *data,
+                         WORD x, WORD y, WORD w, WORD h)
+{
+    struct Rectangle box = { x, y, x + w - 1, y + h - 1 };
+    struct Region *rg = NewRegion();
+    struct RegionRectangle *rr;
+    struct LayoutChild *lc;
+
+    if (!rg || !OrRectRegion(rg, &box))
+    {
+        RectFill(rp, box.MinX, box.MinY, box.MaxX, box.MaxY);
+        if (rg)
+            DisposeRegion(rg);
+        return;
+    }
+    ForeachNode(&data->ld_Children, lc)
+    {
+        if (lc->lc_Object && !lc->lc_IsImage && lc->lc_Width && lc->lc_Height)
+        {
+            struct Rectangle c = { lc->lc_Left, lc->lc_Top,
+                                   lc->lc_Left + lc->lc_Width - 1,
+                                   lc->lc_Top + lc->lc_Height - 1 };
+            ClearRectRegion(rg, &c);
+        }
+    }
+    for (rr = rg->RegionRectangle; rr; rr = rr->Next)
+        RectFill(rp, rg->bounds.MinX + rr->bounds.MinX, rg->bounds.MinY + rr->bounds.MinY,
+                 rg->bounds.MinX + rr->bounds.MaxX, rg->bounds.MinY + rr->bounds.MaxY);
+    DisposeRegion(rg);
+}
+
 IPTR Layout__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 {
     struct LayoutData *data = INST_DATA(cl, o);
@@ -879,29 +966,30 @@ IPTR Layout__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     {
         struct LayoutChild *lc;
         struct DrawInfo *dri = msg->gpr_GInfo ? msg->gpr_GInfo->gi_DrInfo : NULL;
-        struct Gadget *gad = G(o);
+        WORD gx, gy, gw, gh;
 
-        /* Erase the group's box first so content rendered at previous
-         * positions (e.g. before a window resize shrank us) doesn't
-         * survive; the bevel and the children repaint over this. */
-        if (dri && gad->Width > 0 && gad->Height > 0)
+        reaction_gadget_box(G(o), msg->gpr_GInfo, &gx, &gy, &gw, &gh);
+
+        /* Erase what was drawn at previous positions (e.g. before a window
+         * resize shrank us); the bevel and the children repaint over this. */
+        if (dri && gw > 0 && gh > 0)
         {
             SetDrMd(rp, JAM1);
             SetAPen(rp, data->ld_FillPen >= 0 ? (UWORD)data->ld_FillPen
                                               : dri->dri_Pens[BACKGROUNDPEN]);
-            RectFill(rp, gad->LeftEdge, gad->TopEdge,
-                gad->LeftEdge + gad->Width - 1,
-                gad->TopEdge + gad->Height - 1);
+            layout_erase(rp, data, gx, gy, gw, gh);
         }
 
         /* Draw bevel frame if requested. cap_3DLook=FALSE in UIPrefs
-         * suppresses the frame. */
+         * suppresses the frame. The group is filled above: the frame
+         * only draws its edges, also when LAYOUT_BevelState recesses it. */
         if (data->ld_BevelStyle != BVS_NONE && dri && data->ld_3DLook)
         {
             if (!data->ld_BevelImage)
             {
                 data->ld_BevelImage = NewObject(NULL, "bevel.image",
                     BEVEL_Style, data->ld_BevelStyle,
+                    BEVEL_Transparent, TRUE,
                     data->ld_Label ? BEVEL_Label : TAG_IGNORE,
                     data->ld_Label,
                     data->ld_FillPen >= 0 ? BEVEL_FillPen : TAG_IGNORE,
@@ -913,12 +1001,12 @@ IPTR Layout__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
                 struct impDraw idmsg;
                 idmsg.MethodID         = IM_DRAWFRAME;
                 idmsg.imp_RPort        = rp;
-                idmsg.imp_Offset.X     = gad->LeftEdge;
-                idmsg.imp_Offset.Y     = gad->TopEdge;
+                idmsg.imp_Offset.X     = gx;
+                idmsg.imp_Offset.Y     = gy;
                 idmsg.imp_State        = data->ld_BevelState;
                 idmsg.imp_DrInfo       = dri;
-                idmsg.imp_Dimensions.Width  = gad->Width;
-                idmsg.imp_Dimensions.Height = gad->Height;
+                idmsg.imp_Dimensions.Width  = gw;
+                idmsg.imp_Dimensions.Height = gh;
                 DoMethodA(data->ld_BevelImage, (Msg)&idmsg);
             }
         }
@@ -944,6 +1032,11 @@ IPTR Layout__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
                     0, 0,
                     IDS_NORMAL, dri);
             }
+            /* child labels: their IA_Left/IA_Top are absolute as well */
+            if (lc->lc_Label && lc->lc_LabelW)
+                DrawImageState(rp, (struct Image *)lc->lc_Label, 0, 0,
+                    (lc->lc_Object && !lc->lc_IsImage &&
+                     (G(lc->lc_Object)->Flags & GFLG_DISABLED)) ? IDS_DISABLED : IDS_NORMAL, dri);
         }
 
         if (!msg->gpr_RPort && msg->gpr_GInfo)

@@ -8,7 +8,7 @@
     one TCP port (loopback by default) and answers line-oriented commands;
     see host/PROTOCOL.md and host/README.md.
 
-    Usage:  ARDA [PORT=<n>] [ADDRESS=<dotted quad>] [IDLE=<secs>] [QUIET]
+    Usage:  ARDA [PORT=<n>] [ADDRESS=<dotted quad>] [IDLE=<secs>] [QUIET] [CONTROL]
 
     Remote access requires an explicit ADDRESS (e.g. the interface address or
     0.0.0.0) and should only be enabled on a trusted development network.
@@ -32,8 +32,8 @@ struct Library *SocketBase = NULL;
 
 const char version[] = "$VER: ARDA " ARDA_AGENT_VERSION " (25.10.2026) AROS Remote Debug Agent";
 
-static const char arg_template[] = "PORT/N,ADDRESS/K,IDLE/N,QUIET/S";
-enum { ARG_PORT, ARG_ADDRESS, ARG_IDLE, ARG_QUIET, ARG_COUNT };
+static const char arg_template[] = "PORT/N,ADDRESS/K,IDLE/N,QUIET/S,CONTROL/S";
+enum { ARG_PORT, ARG_ADDRESS, ARG_IDLE, ARG_QUIET, ARG_CONTROL, ARG_COUNT };
 
 /* Kept static: the response buffer is 64 KiB and must not live on the stack. */
 static struct Arda arda;
@@ -86,6 +86,7 @@ int main(void)
     arda.ls         = -1;
     arda.client.fd  = -1;
     arda.quiet      = args[ARG_QUIET] ? TRUE : FALSE;
+    arda.control    = args[ARG_CONTROL] ? TRUE : FALSE;
     arda.idle_limit = idle;
     arda.resp.buf   = arda.respbuf;
     arda.resp.cap   = ARDA_MAX_RESP;
@@ -101,6 +102,7 @@ int main(void)
 
     arda_logsrc_init(&arda);
     arda_sys_init(&arda);
+    arda_ctl_init(&arda);
 
     if (!arda_net_listen(&arda, address, port))
     {
@@ -108,8 +110,9 @@ int main(void)
         goto out;
     }
 
-    arda_log(&arda, "ARDA %s listening on %s:%ld (protocol %s), Ctrl-C to stop",
-             ARDA_AGENT_VERSION, address, (long)port, ARDA_PROTOCOL);
+    arda_log(&arda, "ARDA %s listening on %s:%ld (protocol %s)%s, Ctrl-C to stop",
+             ARDA_AGENT_VERSION, address, (long)port, ARDA_PROTOCOL,
+             arda.control ? ", control mode (files, env, jobs, reboot)" : "");
 
     arda.running = TRUE;
     while (arda.running)
@@ -134,6 +137,14 @@ int main(void)
         n = WaitSelect(nfds, &rf, NULL, NULL, &tv, &sigs);
 
         arda_logsrc_poll(&arda);
+        arda_ctl_poll(&arda);
+        if (arda.reboot)
+        {
+            arda_log(&arda, "ARDA: rebooting on request");
+            arda_net_close_client(&arda, "reboot");
+            Delay(25);
+            ColdReboot();
+        }
 
         if (sigs & SIGBREAKF_CTRL_C)
         {
@@ -174,6 +185,7 @@ out:
         CloseSocket(arda.ls);
     CloseLibrary(SocketBase);
     SocketBase = NULL;
+    arda_ctl_exit(&arda);
     arda_sys_exit();
     arda_log(&arda, "ARDA: stopped");
     arda_logsrc_exit();

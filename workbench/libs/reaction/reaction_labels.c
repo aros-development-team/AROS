@@ -63,41 +63,50 @@ static void free_labels(int kind, struct List *list)
     FreeVec(list);
 }
 
-static struct List *make_labels(int kind, STRPTR *labels)
+static struct List *new_labels(void)
 {
     struct List *list = AllocVec(sizeof(struct List), MEMF_ANY);
-    WORD i;
 
-    if (!list)
-        return NULL;
-    NewList(list);
-    for (i = 0; labels && labels[i]; i++)
-    {
-        struct Node *n = alloc_label(kind, labels[i], i);
-        if (!n)
-        {
-            free_labels(kind, list);
-            return NULL;
-        }
-        AddTail(list, n);
-    }
+    if (list)
+        NewList(list);
     return list;
 }
 
-/* the varargs forms collect their NULL-terminated strings into an array */
+static BOOL add_label(int kind, struct List *list, STRPTR text, WORD num)
+{
+    struct Node *n = alloc_label(kind, text, num);
+
+    if (!n)
+    {
+        free_labels(kind, list);
+        return FALSE;
+    }
+    AddTail(list, n);
+    return TRUE;
+}
+
+static struct List *make_labels(int kind, STRPTR *labels)
+{
+    struct List *list = new_labels();
+    WORD i;
+
+    for (i = 0; list && labels && labels[i]; i++)
+        if (!add_label(kind, list, labels[i], i))
+            return NULL;
+    return list;
+}
+
+/* the varargs forms take NULL-terminated strings */
 static struct List *make_labels_va(int kind, STRPTR first, va_list ap)
 {
-    STRPTR buf[64];
-    int n = 0;
-    STRPTR s = first;
+    struct List *list = new_labels();
+    STRPTR s;
+    WORD i = 0;
 
-    while (s && n < 63)
-    {
-        buf[n++] = s;
-        s = va_arg(ap, STRPTR);
-    }
-    buf[n] = NULL;
-    return make_labels(kind, buf);
+    for (s = first; list && s; s = va_arg(ap, STRPTR))
+        if (!add_label(kind, list, s, i++))
+            return NULL;
+    return list;
 }
 
 #define LABEL_FUNCS(Name, FreeName, kind) \

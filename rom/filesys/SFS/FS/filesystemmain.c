@@ -1742,7 +1742,7 @@ sfsSecBeginPacket(globals->packet);
                                 _DEBUG("ACTION_DELETE_OBJECT(0x%08lx,'%s')\n", BADDR(globals->packet->dp_Arg1), globals->string);
 
                                 /* multi-user: delete access to the object, write access to its directory */
-                                if((errorcode = sfsSecCheckPath(BADDR(globals->packet->dp_Arg1), globals->string, SFS_ACCESS_DELETE)) == 0)
+                                if((errorcode = sfsSecCheckLinkPath(BADDR(globals->packet->dp_Arg1), globals->string, SFS_ACCESS_DELETE)) == 0)
                                     errorcode = sfsSecCheckParentPath(BADDR(globals->packet->dp_Arg1), globals->string, SFS_ACCESS_WRITE);
                                 if(errorcode == 0) do {
                                     newtransaction();
@@ -1859,7 +1859,8 @@ sfsSecBeginPacket(globals->packet);
                                             copybstrasstr((BSTR)globals->packet->dp_Arg4, globals->string2, 258);
                                             errorcode = sfsSecCheckParentPath(BADDR(globals->packet->dp_Arg3), globals->string2, SFS_ACCESS_WRITE);
                                         }
-                                        if(errorcode == 0 && (errorcode = locateobjectfromlock(lock, validatepath(globals->string), &cb, &o)) == 0) {
+                                        /* a soft link as the old name is renamed itself */
+                                        if(errorcode == 0 && (errorcode = locateobjectorlink(lock, validatepath(globals->string), &cb, &o)) == 0) {
                                             copybstrasstr((BSTR)globals->packet->dp_Arg4, globals->string, 258);
 
                                             settemporarylock(BE2L(o->be_objectnode));
@@ -2046,23 +2047,26 @@ sfsSecBeginPacket(globals->packet);
                                     struct ExtFileLock *lock = (struct ExtFileLock *)globals->packet->dp_Arg1;
                                     struct GlobalHandle *gh = lock->gh;
                                     ULONG oldpos = lock->offset;
-                                    LONG newpos;
+                                    /* Check the full sum before narrowing to the legacy
+                                     * nonnegative LONG destination range. */
+                                    QUAD newpos;
+                                    LONG offset = (LONG)globals->packet->dp_Arg2;
                                     LONG errorcode;
 
                                     if(globals->packet->dp_Arg3 == OFFSET_BEGINNING) {
-                                        newpos = globals->packet->dp_Arg2;
+                                        newpos = offset;
                                     } else if(globals->packet->dp_Arg3 == OFFSET_END) {
-                                        newpos = gh->size + globals->packet->dp_Arg2;
+                                        newpos = (QUAD)gh->size + offset;
                                     } else if(globals->packet->dp_Arg3 == OFFSET_CURRENT) {
-                                        newpos = lock->offset + globals->packet->dp_Arg2;
+                                        newpos = (QUAD)lock->offset + offset;
                                     } else {
                                         returnpacket(-1, ERROR_BAD_NUMBER);
                                         break;
                                     }
 
-                                    if(newpos >= 0 && newpos <= (LONG)gh->size) {
+                                    if(newpos >= 0 && newpos <= 0x7fffffff && newpos <= (QUAD)gh->size) {
                                         if((ULONG)newpos != oldpos) {
-                                            errorcode = seek(lock, newpos);
+                                            errorcode = seek(lock, (ULONG)newpos);
                                         } else {
                                             errorcode = 0;
                                         }

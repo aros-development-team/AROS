@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -37,6 +37,9 @@
         Zero on success, or error code on failure.
 
     NOTES
+        If APF_DODIR requests recursion but an AChain cannot be allocated,
+        MatchNext() returns ERROR_NO_FREE_STORE rather than skipping the
+        directory. The caller should stop iteration and call MatchEnd().
 
     EXAMPLE
 
@@ -94,10 +97,11 @@
             dir_changed = TRUE;
         }
         
-        /*
-        ** If the allocation did not work, we simple ignore APF_DODIR. Just
-        ** like if the user did not set this flag. Good idea or bad idea?
-        */
+        else
+        {
+            error = ERROR_NO_FREE_STORE;
+            goto done;
+        }
     }
 
     
@@ -154,7 +158,7 @@
             {
                 ac->an_Lock = DupLock(origdir);
 
-                if (!ac->an_Lock)
+                if (!ac->an_Lock && origdir)
                 {
                     error = IoErr();
                     goto done;

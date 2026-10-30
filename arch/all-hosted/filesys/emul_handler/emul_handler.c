@@ -888,7 +888,7 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
         if (fh->type == FHD_FILE)
             Res1 = DoSeek(emulbase, fh, dp->dp_Arg2, dp->dp_Arg3, &Res2);
         else {
-            Res1 = DOSFALSE;
+            Res1 = -1;
             Res2 = ERROR_OBJECT_WRONG_TYPE;
         }
 

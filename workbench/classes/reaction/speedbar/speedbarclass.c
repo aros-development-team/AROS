@@ -25,6 +25,7 @@
 #include <string.h>
 
 #include "speedbar_intern.h"
+#include "../reaction_box.h"
 
 #define SpeedBarBase ((struct Library *)(cl->cl_UserData))
 
@@ -148,10 +149,7 @@ IPTR SpeedBar__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     if (!rp)
         return FALSE;
 
-    x = gad->LeftEdge;
-    y = gad->TopEdge;
-    w = gad->Width;
-    h = gad->Height;
+    reaction_gadget_box(gad, msg->gpr_GInfo, &x, &y, &w, &h);
 
     /* Clear gadget background */
     SetAPen(rp, dri ? dri->dri_Pens[BACKGROUNDPEN] : 0);

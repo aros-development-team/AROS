@@ -1,0 +1,26 @@
+include $(SRCDIR)/config/aros.cfg
+
+#
+# vchiq.library: the message queue to the VideoCore firmware services
+# (MMAL codecs, ISP). The core is Broadcom's, by way of FreeBSD
+# sys/contrib/vchiq; the vchiq_aros_* files put it on exec.
+#
+#MM- workbench-raspi-aarch64 : workbench-libs-vchiq-bcm2708
+#MM workbench-libs-vchiq-bcm2708 : includes kernel-mbox-bcm2708-includes
+
+USER_LDFLAGS := -static
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)
+
+FILES := \
+    vchiq_lib \
+    vchiq_aros_compat \
+    vchiq_aros_platform \
+    vchiq_aros_arm \
+    interface/vchiq_arm/vchiq_core \
+    interface/vchiq_arm/vchiq_kern_lib \
+    interface/vchiq_arm/vchiq_util \
+    interface/vchiq_arm/vchiq_connected
+
+%build_module mmake=workbench-libs-vchiq-bcm2708 \
+    modname=vchiq modtype=library \
+    files="$(FILES)"

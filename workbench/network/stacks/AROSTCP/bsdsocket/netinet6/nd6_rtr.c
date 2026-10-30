@@ -515,21 +515,8 @@ nd6_prefix_slaac(struct ifnet *ifp, struct nd_prefix *pr)
             ifra.ifra_prefixmask.sin6_addr.s6_addr[j] = 0xff;
     }
 
+    /* in6_ifinit() joins the address's solicited-node group */
     in6_control(NULL, SIOCAIFADDR_IN6, (caddr_t)&ifra, ifp);
-
-    /* join solicited-node multicast for the new address */
-    {
-        struct in6_addr maddr;
-        bzero(&maddr, sizeof(maddr));
-        maddr.s6_addr[0]  = 0xff;
-        maddr.s6_addr[1]  = 0x02;
-        maddr.s6_addr[11] = 0x01;
-        maddr.s6_addr[12] = 0xff;
-        maddr.s6_addr[13] = addr.sin6_addr.s6_addr[13];
-        maddr.s6_addr[14] = addr.sin6_addr.s6_addr[14];
-        maddr.s6_addr[15] = addr.sin6_addr.s6_addr[15];
-        (void)in6_addmulti(&maddr, ifp);
-    }
 
     pr->ndpr_autoconf = 1;
     pr->ndpr_refcount++;

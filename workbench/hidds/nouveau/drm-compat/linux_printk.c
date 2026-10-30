@@ -400,7 +400,31 @@ static void nlog_rotate(const char *cur)
     UnLock(lock);
     snprintf(prev, sizeof(prev), "%s.1", cur);
     DeleteFile(prev);
-    Rename(cur, prev);
+    if (!Rename(cur, prev))
+    {
+        /*
+         * Some handlers refuse the rename (FAT reports "write protected"):
+         * copy instead, or the last boot's log, the one that says why it
+         * hung, is lost to the new one.
+         */
+        BPTR in = Open(cur, MODE_OLDFILE), out;
+        char *buf;
+        LONG n;
+
+        if (!in)
+            return;
+        out = Open(prev, MODE_NEWFILE);
+        buf = AllocMem(16384, MEMF_ANY);
+        if (out && buf)
+            while ((n = Read(in, buf, 16384)) > 0)
+                if (Write(out, buf, n) != n)
+                    break;
+        if (buf)
+            FreeMem(buf, 16384);
+        if (out)
+            Close(out);
+        Close(in);
+    }
 }
 
 static void nlog_flusher(void)

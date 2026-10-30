@@ -274,6 +274,8 @@ struct BtHWConn
     /* pairing */
     UWORD               cn_PairState;
     struct BtChannel   *cn_PairReq;
+    BOOL                cn_PeerIOCapValid; /* cn_PeerIOCap came from IO Capability Response */
+    UBYTE               cn_PeerIOCap;     /* peer's BPIO_xxx for the current SSP pairing */
     /* LE pairing: btcore Security Manager, driven over fixed CID 6 */
     /* RFCOMM multiplexer (one per BR/EDR link, all DLCs of all services) */
     struct bt_rfcomm_session cn_RFCOMM;
