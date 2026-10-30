@@ -351,7 +351,7 @@ static void
 rtinfo_update(struct in6_addr *prefix, int plen, struct in6_addr *router,
               struct ifnet *ifp, int pref, u_int32_t lifetime)
 {
-    struct nd_route_info *ri, **pp;
+    struct nd_route_info *ri;
     int count = 0;
 
     for(ri = nd6_rtinfolist; ri; ri = ri->next) {
@@ -362,6 +362,8 @@ rtinfo_update(struct in6_addr *prefix, int plen, struct in6_addr *router,
         count++;
     }
     if(ri == NULL) {
+        struct nd_route_info **pp;
+
         if(lifetime == 0 || count >= ND6_MAX_RTINFO)
             return;
         MALLOC(ri, struct nd_route_info *, sizeof(*ri), M_PCB, M_NOWAIT);
