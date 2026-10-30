@@ -1401,7 +1401,11 @@ void PatCopy(STRPTR name, struct CopyData *cd)
                                             D(Printf("Target type: %ld\n", fib->fib_DirEntryType));
 
                                             if (fib->fib_DirEntryType > 0)
+                                            {
+                                                /* DoWork() creates and enters its destination */
                                                 enter = TRUE;
+                                                doit = TRUE;
+                                            }
                                             else
                                                 /*
                                                  * FIXME: This currently just prevents treating symlinks to files as
