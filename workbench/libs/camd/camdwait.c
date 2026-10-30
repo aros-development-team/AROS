@@ -14,12 +14,12 @@
 #  include AROS_DEBUG_H_FILE
 
 
-struct SignalSemaphore camdwaitsemaphore={{0}};
 struct SignalSemaphore camdwaitsemaphore2={{0}};
 
 struct Task *camdwaittask;
-ULONG camdwaitsig;
-ULONG camdwaitsig2;
+struct Task *camdwaitcaller;	// under camdwaitsemaphore2
+ULONG camdwaitcallersig;
+BYTE camdwaitsig;
 
 ULONG camdwaitprocstatus=0;	//0=not alive or not initialized, 1=alive and fine, 2=failed, 3=dead.
 
@@ -40,16 +40,8 @@ SAVEDS void CamdTimerProc(void){
 		camdwaitprocstatus=2;
 		return;
 	}
-	camdwaitsig2=AllocSignal(-1);
-	if(camdwaitsig2==-1){
-		FreeSignal(camdwaitsig);
-		camdwaitprocstatus=2;
-		return;
-	}
-
 	TimerMP=CreateMsgPort();
 	if(TimerMP==NULL){
-		FreeSignal(camdwaitsig2);
 		FreeSignal(camdwaitsig);
 		camdwaitprocstatus=2;
 		return;
@@ -58,7 +50,6 @@ SAVEDS void CamdTimerProc(void){
 	TimerIO=(struct timerequest *)AllocMem(sizeof(struct timerequest),MEMF_ANY|MEMF_CLEAR|MEMF_PUBLIC);
 
 	if(TimerIO==NULL){
-		FreeSignal(camdwaitsig2);
 		FreeSignal(camdwaitsig);
 		DeleteMsgPort(TimerMP);
 		camdwaitprocstatus=2;
@@ -80,7 +71,6 @@ SAVEDS void CamdTimerProc(void){
 	))!=0){
 #endif
 
-		FreeSignal(camdwaitsig2);
 		FreeSignal(camdwaitsig);
 		TimerIO->tr_node.io_Message.mn_Node.ln_Type=(UBYTE)-1;
 		TimerIO->tr_node.io_Device=(struct Device *)-1L;
@@ -90,8 +80,6 @@ SAVEDS void CamdTimerProc(void){
 		camdwaitprocstatus=2;
 		return;
 	}
-
-	ObtainSemaphore(&camdwaitsemaphore);
 
 	camdwaittask=FindTask(0L);
 
@@ -129,22 +117,16 @@ SAVEDS void CamdTimerProc(void){
 		}
 #endif
 
-		if(sig & 1L<<camdwaitsig){				// Someone wants to obtain the semaphore?
+		if(sig & 1L<<camdwaitsig){				// Someone wants to wait a little.
 			TimerIO->tr_node.io_Command=TR_ADDREQUEST;
 			TimerIO->tr_time.tv_secs=0;
 			TimerIO->tr_time.tv_micro=10;
-			DoIO((struct IORequest *)TimerIO);	// ..Better let them wait.
+			DoIO((struct IORequest *)TimerIO);
 
-			ReleaseSemaphore(&camdwaitsemaphore);		// Well, okey then.
-
-			Wait(1L<<camdwaitsig2);					// Finished soon?
-
-			ObtainSemaphore(&camdwaitsemaphore);		// But I want it back!
+			Signal(camdwaitcaller,camdwaitcallersig);
 		}
 
 	}
-
-	ReleaseSemaphore(&camdwaitsemaphore);
 
 #ifndef __amigaos4__
 	if(notifying) EndNotify(drivernotify);
@@ -152,7 +134,6 @@ SAVEDS void CamdTimerProc(void){
 	if(notifysig!=-1) FreeSignal(notifysig);
 #endif
 
-	FreeSignal(camdwaitsig2);
 	FreeSignal(camdwaitsig);
 	CloseDevice((struct IORequest *)TimerIO);
 	TimerIO->tr_node.io_Message.mn_Node.ln_Type=(UBYTE)-1;
@@ -170,7 +151,6 @@ SAVEDS void CamdTimerProc(void){
 BOOL InitCamdTimer(void){
 	struct Process *process;
 
-	InitSemaphore(&camdwaitsemaphore);
 	InitSemaphore(&camdwaitsemaphore2);
 
 	process=CreateNewProcTags(
@@ -209,6 +189,8 @@ void CamdWait(void){
 
 	static BOOL iswaiting=FALSE;
 	BOOL imjustgoingtoreturnsoon=iswaiting;
+	BYTE replysig;
+	ULONG oldsingle=0;
 
 	ObtainSemaphore(&camdwaitsemaphore2);
 
@@ -219,10 +201,25 @@ void CamdWait(void){
 
 		iswaiting=TRUE;
 
-		Signal(camdwaittask,1L<<camdwaitsig);		// Give me the semaphore!
-		ObtainSemaphore(&camdwaitsemaphore);			// This should take some time.
-			Signal(camdwaittask,1L<<camdwaitsig2);	// Okey, I've got it.
-		ReleaseSemaphore(&camdwaitsemaphore);		// You're welcome.
+		/* Wait for the timer process's answer. Borrowing a semaphore only
+		   waited while that process happened to own it; after the first call
+		   a caller holding Forbid() could repeatedly acquire it without ever
+		   letting the timer process run. */
+		replysig=AllocSignal(-1);
+		if(replysig==-1){
+			camdwaitcallersig=SIGF_SINGLE;
+			oldsingle=SetSignal(0,SIGF_SINGLE)&SIGF_SINGLE;
+		}else{
+			camdwaitcallersig=1L<<replysig;
+		}
+		camdwaitcaller=FindTask(0L);
+		Signal(camdwaittask,1L<<camdwaitsig);
+		Wait(camdwaitcallersig);
+		if(replysig==-1){
+			if(oldsingle) Signal(camdwaitcaller,SIGF_SINGLE);
+		}else{
+			FreeSignal(replysig);
+		}
 
 		iswaiting=FALSE;
 

@@ -190,6 +190,10 @@ void in6_ifdetach(struct ifnet *);
  * zeroed, in one mbuf. What only the stack needs lives here, out of the
  * public header.
  */
+/* The IN6_IFF_* states the stack keeps for an address, not a caller's to set */
+#define	IN6_IFF_STACKSTATE	(IN6_IFF_TENTATIVE | IN6_IFF_DUPLICATED | \
+				 IN6_IFF_DETACHED | IN6_IFF_DEPRECATED)
+
 struct in6_ifaddr_priv {
 	struct in6_ifaddr ia6p_ia;
 	struct in6_multi *ia6p_solicited; /* the address's solicited-node group */

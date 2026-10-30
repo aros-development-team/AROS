@@ -61,6 +61,21 @@ static struct nd_prefix *nd6_prefixlist = NULL;
  * Default Router List Management
  * ================================================================== */
 
+/*
+ * The netmask of the default route, ::/0. Without one the route to :: would
+ * be a host route to the unspecified address - which the routing table
+ * refuses, its key being the tree's own all-zeros node - rather than the
+ * route every destination falls back to; as for a GW6 default route from
+ * the interface database (kern/amiga_netdb.c).
+ */
+static void
+nd6_defmask(struct sockaddr_in6 *mask)
+{
+    bzero(mask, sizeof(*mask));
+    mask->sin6_family = AF_INET6;
+    mask->sin6_len    = sizeof(*mask);
+}
+
 /* ------------------------------------------------------------------
  * defrouter_lookup - find a default router by address and interface.
  * ------------------------------------------------------------------ */
@@ -139,8 +154,9 @@ defrouter_del(struct nd_defrouter *dr)
 
     /* remove route if installed */
     if(dr->installed) {
-        struct sockaddr_in6 defrt, gate;
+        struct sockaddr_in6 defrt, gate, defmask;
 
+        nd6_defmask(&defmask);
         bzero(&defrt, sizeof(defrt));
         defrt.sin6_family = AF_INET6;
         defrt.sin6_len    = sizeof(defrt);
@@ -152,7 +168,8 @@ defrouter_del(struct nd_defrouter *dr)
         gate.sin6_addr   = dr->rtaddr;
 
         rtrequest(RTM_DELETE, (struct sockaddr *)&defrt,
-                  (struct sockaddr *)&gate, NULL, RTF_GATEWAY, NULL);
+                  (struct sockaddr *)&gate, (struct sockaddr *)&defmask,
+                  RTF_GATEWAY, NULL);
         dr->installed = 0;
     }
 
@@ -176,9 +193,10 @@ defrouter_select(void)
 {
     struct nd_defrouter *dr, *best = NULL;
     struct timeval _tv;
-    struct sockaddr_in6 defrt, gate;
+    struct sockaddr_in6 defrt, gate, defmask;
 
     GetSysTime(&_tv);
+    nd6_defmask(&defmask);
 
     for(dr = nd6_defrtrlist; dr; dr = dr->next) {
         if(dr->expire != 0 && dr->expire < _tv.tv_sec)
@@ -202,7 +220,7 @@ defrouter_select(void)
             gate.sin6_addr   = dr->rtaddr;
 
             rtrequest(RTM_DELETE, (struct sockaddr *)&defrt,
-                      (struct sockaddr *)&gate, NULL,
+                      (struct sockaddr *)&gate, (struct sockaddr *)&defmask,
                       RTF_GATEWAY, NULL);
             dr->installed = 0;
         }
@@ -220,7 +238,7 @@ defrouter_select(void)
         gate.sin6_addr   = best->rtaddr;
 
         if(rtrequest(RTM_ADD, (struct sockaddr *)&defrt,
-                     (struct sockaddr *)&gate, NULL,
+                     (struct sockaddr *)&gate, (struct sockaddr *)&defmask,
                      RTF_GATEWAY | RTF_DYNAMIC, NULL) == 0) {
             best->installed = 1;
         }
