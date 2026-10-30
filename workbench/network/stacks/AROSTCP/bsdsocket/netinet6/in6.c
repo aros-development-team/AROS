@@ -439,6 +439,16 @@ in6_purgeaddr(struct ifaddr *ifa)
 
     in6_ifscrub(ifp, ia);
 
+    /*
+     * Routes hold no reference on their rt_ifa: the host routes cloned from
+     * the prefix route in6_ifscrub() just removed, and any other route that
+     * resolved through this address, would be left pointing at it once it is
+     * freed below, and deleting them later (rt_purgeif() on a reload, for
+     * one) would call ifa_rtrequest through freed memory. Delete them now,
+     * as in_control() does for an IPv4 address.
+     */
+    rt_purgeifa((struct ifaddr *)ia);
+
     /* the address no longer answers neighbour solicitations */
     if(IA6_PRIV(ia)->ia6p_solicited != NULL) {
         in6_delmulti(IA6_PRIV(ia)->ia6p_solicited);

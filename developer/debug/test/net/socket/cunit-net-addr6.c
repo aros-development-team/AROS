@@ -7,7 +7,8 @@
     (RFC 4862 section 5.4) - a Neighbor Solicitation for it from the
     unspecified address - and adding it does not make the host solicit routers
     again (RFC 4861 section 6.3.7: that is for an interface coming up).
-    Deleting an address while it is still being checked stops the check.
+    Deleting an address while it is still being checked stops the check, and
+    deleting it removes the host routes cloned from its prefix as well.
 
     Routes are read with RTM_GET on a routing socket; the solicitations are
     watched with the bsdsocket BPF calls. The test needs a multicast-capable
@@ -178,6 +179,27 @@ void testADDR6_DELETE_REMOVES_PREFIX_ROUTE(void)
     CU_ASSERT(!has_route("fd00:4d54:51::2"));
 }
 
+/* ...and the host routes cloned from it: a route left behind would still
+ * point at the deleted address. */
+void testADDR6_DELETE_REMOVES_CLONED_ROUTES(void)
+{
+    struct sockaddr_in6 d;
+    int s;
+    NEED_IF();
+    CU_ASSERT_EQUAL(addr6(1, "fd00:4d54:52::1"), 0);
+    Delay(3 * 50);      /* duplicate address detection */
+    /* a datagram to a neighbour on the prefix clones its host route */
+    s = socket(AF_INET6, SOCK_DGRAM, 0);
+    CU_ASSERT_FATAL(s >= 0);
+    sa6(&d, "fd00:4d54:52::2");
+    d.sin6_port = htons(9);
+    CU_ASSERT_EQUAL(sendto(s, "c", 1, 0, (struct sockaddr *)&d, sizeof(d)), 1);
+    CloseSocket(s);
+    CU_ASSERT(has_route("fd00:4d54:52::2"));
+    CU_ASSERT_EQUAL(addr6(0, "fd00:4d54:52::1"), 0);
+    CU_ASSERT(!has_route("fd00:4d54:52::2"));
+}
+
 /* A new address is checked for duplicates before it is used. */
 void testADDR6_DAD(void)
 {
@@ -248,6 +270,7 @@ int main(int argc, char **argv)
     p = CU_add_suite("ADDR6_Suite", init_suite, clean_suite);
     if (p == NULL ||
         !CU_add_test(p, "deleting an address removes its prefix route", testADDR6_DELETE_REMOVES_PREFIX_ROUTE) ||
+        !CU_add_test(p, "deleting an address removes the routes cloned from it", testADDR6_DELETE_REMOVES_CLONED_ROUTES) ||
         !CU_add_test(p, "a new address goes through DAD", testADDR6_DAD) ||
         !CU_add_test(p, "deleting an address stops its DAD", testADDR6_DELETE_STOPS_DAD) ||
         !CU_add_test(p, "adding an address solicits no routers", testADDR6_NO_ROUTER_SOLICITATION))
