@@ -343,10 +343,9 @@ in6_join_allnodes(struct ifnet *ifp)
     allnodes.s6_addr[0]  = 0xff;
     allnodes.s6_addr[1]  = 0x02;
     allnodes.s6_addr[15] = 0x01;
-    for(in6m = in6_multihead; in6m; in6m = in6m->in6m_next)
-        if(in6m->in6m_ifp == ifp && IN6_ARE_ADDR_EQUAL(&in6m->in6m_addr, &allnodes))
-            return;
-    (void)in6_addmulti(&allnodes, ifp);
+    IN6_LOOKUP_MULTI(allnodes, ifp, in6m);
+    if(in6m == NULL)
+        (void)in6_addmulti(&allnodes, ifp);
 }
 
 /* ------------------------------------------------------------------
