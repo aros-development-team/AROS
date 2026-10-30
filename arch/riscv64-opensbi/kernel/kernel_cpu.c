@@ -28,6 +28,9 @@
 #include "kernel_intern.h"
 #include "kernel_cpu.h"
 
+#define AROS_NO_ATOMIC_OPERATIONS
+#include <exec_platform.h>
+
 /*
  * Copy the volatile part of a context: the x registers, pc and sr.
  * Flags and the fpuContext/vecContext pointers are deliberately
@@ -105,11 +108,19 @@ static void krnInitFPU(void)
 
 void cpu_Switch(regs_t *regs)
 {
-    struct Task *task = SysBase->ThisTask;
+    struct Task *task = GET_THIS_TASK;
     struct ExceptionContext *ctx = task->tc_UnionETask.tc_ETask->et_RegFrame;
 
     copyContext(ctx, regs);
     task->tc_SPReg = (APTR)regs->sp;
+
+#if defined(__AROSEXEC_SMP__)
+    /* Wait() carries tc_SpinLock across KrnSwitch so no other CPU can
+     * dispatch this task before its context is saved. Stored now (as on
+     * aarch64-native and x86_64-pc). */
+    if (task->tc_State == TS_WAIT)
+        Kernel_53_KrnSpinUnLock(&task->tc_SpinLock, NULL);
+#endif
 
     /*
      * Lazy FPU switching: the task's FS state was captured into sr at
@@ -179,6 +190,10 @@ void cpu_Dispatch(regs_t *regs)
         if (SysBase->SysFlags & SFF_SoftInt)
             core_Cause(INTB_SOFTINT, 1L << INTB_SOFTINT);
 
+#if defined(__AROSEXEC_SMP__)
+        /* The load figure is the boot CPU's (kernel_timer.c) */
+        if (krnRVCPUNumber() == 0)
+#endif
         __cpu_sleeptime += krnReadTime() - idlefrom;
 
         if (csr_read(sip) & SIE_STIE)
@@ -203,7 +218,13 @@ void cpu_Dispatch(regs_t *regs)
 
     /* The task starts running now - stamp its launch time */
     if ((task->tc_Flags & TF_ETASK) && task->tc_UnionETask.tc_ETask)
+    {
         IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 = krnReadTime();
+#if defined(__AROSEXEC_SMP__)
+        /* Where it runs: Signal()/SetTaskPri() aim their IPIs by this */
+        IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber = krnRVCPUNumber();
+#endif
+    }
 
     /* Handle task's flags */
     if (task->tc_Flags & TF_EXCEPT)

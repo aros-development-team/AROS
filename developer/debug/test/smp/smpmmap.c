@@ -230,7 +230,8 @@ static int TestSplit2M(void)
         goto out;
     }
 
-    if (KrnMapGlobal(target, target, PAGE, MAP_FLAGS))
+    /* KrnMapGlobal(): non-zero on success, 0 on failure, on every port */
+    if (!KrnMapGlobal(target, target, PAGE, MAP_FLAGS))
     {
         bug("[smpmmap] phase 1: *** FAIL *** KrnMapGlobal of a 4 KiB page "
             "inside a 2 MiB mapping returned failure\n");
@@ -303,7 +304,7 @@ static void MapChurn(void)
 
             KrnUnmapGlobal(addr, PAGE);
 
-            if (KrnMapGlobal(addr, addr, PAGE, MAP_FLAGS))
+            if (!KrnMapGlobal(addr, addr, PAGE, MAP_FLAGS))
             {
                 w->w_Errors++;
                 continue;
@@ -329,7 +330,7 @@ static void MapChurn(void)
    the block must not go back to exec's pool. */
 static BOOL restore_slice(UBYTE *base)
 {
-    return KrnMapGlobal(base, base, MAP_SLOTS * PAGE, MAP_FLAGS) == 0;
+    return KrnMapGlobal(base, base, MAP_SLOTS * PAGE, MAP_FLAGS) != 0;
 }
 
 /* Restore both slices, then free the block; keep it if a slice cannot be

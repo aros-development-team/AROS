@@ -31,6 +31,11 @@
 
           KATTR_CPUFrequencyKHz  [.G] (IPTR)  - Current core clock, in kHz.
 
+          KATTR_CPUHardwareID    [.G] (IPTR)  - The hardware id behind the
+                                                CPU number (RISC-V hart id,
+                                                x86 local APIC id, ARM
+                                                MPIDR affinity fields).
+
     INPUTS
         id  - ID of the attribute to get
         cpu - CPU number, 0 .. KrnGetCPUCount() - 1

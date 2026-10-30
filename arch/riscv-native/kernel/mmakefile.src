@@ -1,17 +1,44 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+#
+# Native (supervisor-mode) RISC-V kernel code shared by the platforms:
+# per-hart TLS, CPU numbering and masks, spinlocks, the SMP scheduler,
+# IPIs and secondary hart bring-up. Firmware-specific operations are
+# reached through __riscv_arosintern (kernel_riscv.h), which the
+# platform fills in.
+#
+# Keyed on the opensbi ARCH, so it is built for every opensbi CPU. The
+# include priority sorts it after the platform directory (10) and before
+# riscv64-all (5): the flag files are concatenated in lexical order.
+#
+# Every file is built for both variants; the SMP bodies are guarded by
+# __AROSEXEC_SMP__ and the uniprocessor ones match the generic code.
+#
+
 CFILES := \
-        intr kernel_cpu kernel_scheduler tags
-
-PLATFILES := 
-
-AFILES := 
-
-#MM kernel-kernel-native-riscv : includes
+        kernel_riscv \
+        kernel_scheduler \
+        kernel_ipi \
+        kernel_cpusmp \
+        kernel_execsmp \
+        issuper \
+        getcpucount \
+        getcpunumber \
+        alloccpumask \
+        freecpumask \
+        clearcpumask \
+        getcpumask \
+        cpuinmask \
+        schedulecpu \
+        spininit \
+        spinislocked \
+        spintrylock \
+        spinlock \
+        spinunlock
 
 %set_archincludes mainmmake=kernel-kernel maindir=rom/kernel \
-  modname=kernel pri=2 arch=native-riscv \
+  modname=kernel pri=4 arch=opensbi \
   includes="-I$(SRCDIR)/$(CURDIR)"
 
 %get_archincludes modname=kernel \
@@ -26,11 +53,11 @@ PRIV_KERNEL_INCLUDES = \
 	$(TARGET_EXEC_INCLUDES) \
 	-I$(SRCDIR)/rom/exec
 
-USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) -I$(GENINCDIR) -I$(AROS_DEVELOPER)/include -I$(SRCDIR)/rom/openfirmware
-USER_CPPFLAGS := -DTARGET_SECTION_COMMENT=\"$(AROS_SECTION_COMMENT)\"
+USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) -I$(GENINCDIR)
+USER_CPPFLAGS := -D__AROS_EXEC_LIBRARY__
 
 %build_archspecific \
-  mainmmake=kernel-kernel modname=kernel maindir=rom/kernel arch=native-riscv \
-  files="$(CFILES) $(PLATFILES)" asmfiles="$(AFILES)" compiler=kernel
+  mainmmake=kernel-kernel modname=kernel maindir=rom/kernel arch=opensbi \
+  files="$(CFILES)" compiler=kernel
 
 %common

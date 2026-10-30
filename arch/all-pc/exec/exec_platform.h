@@ -278,7 +278,7 @@ extern void Kernel_53_KrnSpinUnLock(spinlock_t *, void *);
     })
 #define FLAG_SCHEDDISPATCH_ISSET \
     ({ \
-        tls_t *__tls = TLS_PTR_GET(); \
+        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
         BOOL __ret = FALSE; \
         if (__schd) \
             __ret = (__schd->ScheduleFlags & TLSSF_Dispatch); \

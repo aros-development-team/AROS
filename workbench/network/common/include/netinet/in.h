@@ -521,4 +521,10 @@ struct ipv6_mreq {
 	unsigned int    ipv6mr_interface;
 };
 
+/* IPV6_PKTINFO ancillary data and option (RFC 3542 section 6.1) */
+struct in6_pktinfo {
+	struct in6_addr	ipi6_addr;	/* src/dst IPv6 address */
+	unsigned int	ipi6_ifindex;	/* send/recv interface index */
+};
+
 #endif /* !IN_H */

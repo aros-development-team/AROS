@@ -22,8 +22,16 @@ AROS_LH1(intptr_t, KrnGetSystemAttr,
 {
     AROS_LIBFUNC_INIT
 
+    /* The per-CPU load, in the older KrnGetSystemAttr() form */
+    if ((id >= KATTR_CPULoad) && (id < KATTR_CPULoad_END))
+        return KrnGetCPUAttr(KATTR_CPULoad, id - KATTR_CPULoad);
+
     switch (id)
     {
+    case KATTR_AffinityMask:
+        /* The CPUs running AROS, as a bitmap of logical CPU numbers */
+        return (intptr_t)__riscv_cpu_online[0];
+
     case KATTR_Architecture:
         return (intptr_t)AROS_ARCHITECTURE;
 

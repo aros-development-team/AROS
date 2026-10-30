@@ -136,7 +136,11 @@ VOID ARM_AnswerTag(struct ProcessorBase * ProcessorBase, ULONG coreNo, struct Ta
         break;
     case(GCIT_ProcessorLoad):
 #if defined(__AROSEXEC_SMP__)
-        *((ULONG *)tag->ti_Data) = KrnGetSystemAttr(KATTR_CPULoad + coreNo);
+        {
+            intptr_t load = KrnGetCPUAttr(KATTR_CPULoad, coreNo);
+
+            *((ULONG *)tag->ti_Data) = (load == -1) ? 0 : (ULONG)load;
+        }
 #else
         *((ULONG *)tag->ti_Data) = 0; /* TODO: IMPLEMENT */
 #endif

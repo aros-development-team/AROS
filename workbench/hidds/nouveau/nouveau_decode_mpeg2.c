@@ -47,7 +47,6 @@ struct mpeg2_state
     BOOL                have_pp, have_iq;
     struct mpeg2_slice  slices[NOUVEAU_DECODE_MAX_SLICES];
     ULONG               nslices, nextdata;
-    BOOL                fieldwarned;
 };
 
 /* zig-zag scan position -> raster position (the normal MPEG-2 scan) */
@@ -199,6 +198,9 @@ static ULONG mpeg2_status(struct HIDDNouveauDecode *dec, ULONG *status)
     nvdec_status_s *st = (nvdec_status_s *)status;
     ULONG mbs = ((dec->width + 15) / 16) * ((dec->height + 15) / 16);
 
+    /* a field picture holds half the frame's macroblocks */
+    if (dec->fields)
+        mbs /= 2;
     if (!st->mbs_in_error && !st->slice_header_error_code && (st->mbs_correctly_decoded >= mbs) &&
         (!st->error_status || (st->error_status == 0x20)))
         return 0;
@@ -236,14 +238,6 @@ static BOOL mpeg2_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecode
     if (!m || !m->have_pp || !dec->cur.nslices)
         return FALSE;
     pp = &m->pp;
-    if (pp->picture_coding_extension.bits.picture_structure != 3)
-    {
-        /* field pictures need the field offsets / second-field work */
-        if (!m->fieldwarned)
-            nvlog("[Nouveau] NVDEC: MPEG-2 field pictures are not supported yet\n");
-        m->fieldwarned = TRUE;
-        return FALSE;
-    }
     if ((pp->horizontal_size > dec->width) || (pp->vertical_size > dec->height))
     {
         nvlog("[Nouveau] NVDEC: MPEG-2 picture %ux%u does not fit the session\n",
@@ -318,6 +312,20 @@ static BOOL mpeg2_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecode
     pic->alternate_scan = pp->picture_coding_extension.bits.alternate_scan;
     pic->q_scale_type = pp->picture_coding_extension.bits.q_scale_type;
     pic->top_field_first = pp->picture_coding_extension.bits.top_field_first;
+    /*
+     * Field pictures: the bottom field's offsets as NVIDIA's driver sets them
+     * (traced: whole 32-row field halves); the second field of a pair goes to
+     * the slot of the first, which the engine finds there itself.
+     */
+    {
+        ULONG rows = (ULONG)pic->FrameHeightInMbs * 16;
+
+        pic->luma_bot_offset = ((((rows / 2) + 31) & ~31UL) * dec->pitch) >> 8;
+        pic->chroma_bot_offset = ((((rows / 4) + 31) & ~31UL) * dec->pitch) >> 8;
+        pic->secondfield = (pic->picture_structure != 3) && !pp->picture_coding_extension.bits.is_first_field;
+        if (pic->picture_structure != 3)
+            dec->fields = TRUE;     /* status is checked frames later: stays set */
+    }
     /* the engine takes the matrices in raster order; VA gives zig-zag order */
     for (i = 0; i < 64; i++)
     {

@@ -31,6 +31,30 @@
 #include "kernel_sbi.h"
 #include "kernel_intern.h"
 
+#if defined(__AROSEXEC_SMP__)
+#include <aros/types/spinlock_s.h>
+
+#define AROS_NO_ATOMIC_OPERATIONS
+#include <exec_platform.h>
+
+#define __AROS_KERNEL__
+#include "exec_intern.h"
+
+extern spinlock_t *Kernel_52_KrnSpinLock(spinlock_t *, struct Hook *, ULONG, void *);
+extern void Kernel_53_KrnSpinUnLock(spinlock_t *, void *);
+
+/*
+ * The secondary harts' own ticks. Each hart has its own S-mode timer
+ * (SBI set_timer is per hart), and uses it only to count its running
+ * task's quantum down: VERTB, timer.device's deadline and the load and
+ * usage accounting all stay with the boot CPU (as on aarch64-native).
+ */
+static uint64_t hart_nexttick[RISCV_MAXCPUS];
+/* Their load samples: when, and the idle time then */
+static uint64_t hart_lastload[RISCV_MAXCPUS];
+static uint64_t hart_lastidle[RISCV_MAXCPUS];
+#endif
+
 /*
  * Answering a keypress on the serial console costs a read of the console
  * on every tick, and pulls the task lists and backtrace printing in with
@@ -52,6 +76,8 @@ uint64_t __timebase_freq;
 
 static uint64_t tick_interval;
 static uint64_t last_load_time;
+/* The boot CPU's idle-task time at the last load sample */
+static uint64_t last_idle_time;
 
 /*
  * The timer as seen by timer.device (KATTR_PlatformTimer): the tick
@@ -260,6 +286,101 @@ void krnTimerInit(uint32_t timebase_hz, uint32_t tick_hz)
     csr_set(sie, SIE_STIE);
 }
 
+#if defined(__AROSEXEC_SMP__)
+/* Start the calling secondary hart's tick (RVI_InitTimerCore) */
+void krnTimerInitCore(void)
+{
+    uint32_t cpu = krnRVCPUNumber();
+
+    if (!tick_interval || cpu >= RISCV_MAXCPUS)
+        return;
+
+    hart_lastload[cpu] = krnReadTime();
+    hart_lastidle[cpu] = __riscv_cpu_idletime[cpu];
+    hart_nexttick[cpu] = hart_lastload[cpu] + tick_interval;
+    sbi_set_timer(hart_nexttick[cpu]);
+    csr_set(sie, SIE_STIE);
+}
+
+/*
+ * A secondary hart's tick: what exec's VBlank server does for the boot
+ * CPU (intserver_vblank.c), counting the running task's quantum down
+ * and asking for a switch once it is used up.
+ */
+static void krnTimerTickCore(uint32_t cpu)
+{
+    uint64_t now = krnReadTime();
+    uint64_t next = hart_nexttick[cpu] + tick_interval;
+    UWORD current;
+
+    if ((int64_t)(next - now) <= 0)
+        next = now + tick_interval;
+    hart_nexttick[cpu] = next;
+    sbi_set_timer(next);
+
+    current = SCHEDELAPSED_GET;
+    if (current)
+        SCHEDELAPSED_SET(--current);
+    if (current == 0)
+    {
+        FLAG_SCHEDQUANTUM_SET;
+        FLAG_SCHEDSWITCH_SET;
+    }
+
+    /* This hart's load, once a second, as the boot CPU does its own */
+    if (__timebase_freq && (now - hart_lastload[cpu]) >= __timebase_freq)
+    {
+        struct HartData *hd = (struct HartData *)TLS_GET(Platform);
+        uint64_t window = now - hart_lastload[cpu];
+        uint64_t idle = __riscv_cpu_idletime[cpu];
+        uint64_t slept = idle - hart_lastidle[cpu];
+
+        if (slept > window)
+            slept = window;
+        if (hd)
+        {
+            hd->hd_Load = (uint32_t)(((window - slept) << 32) / window);
+            hd->hd_SleepTime = slept;
+            hd->hd_LastLoadTime = now;
+        }
+        hart_lastidle[cpu] = idle;
+        hart_lastload[cpu] = now;
+    }
+}
+
+/* Every task's share of the window, with the scheduler lists locked */
+static void krnTaskUsageAll(uint64_t now, uint64_t window)
+{
+    struct IntExecBase *pe = PrivExecBase(SysBase);
+    struct Task *t;
+
+    Kernel_52_KrnSpinLock(&pe->TaskReadySpinLock, NULL, SPINLOCK_MODE_READ, NULL);
+    ForeachNode(&SysBase->TaskReady, t)
+        krnTaskUsage(t, window);
+    Kernel_53_KrnSpinUnLock(&pe->TaskReadySpinLock, NULL);
+
+    Kernel_52_KrnSpinLock(&pe->TaskWaitSpinLock, NULL, SPINLOCK_MODE_READ, NULL);
+    ForeachNode(&SysBase->TaskWait, t)
+        krnTaskUsage(t, window);
+    Kernel_53_KrnSpinUnLock(&pe->TaskWaitSpinLock, NULL);
+
+    /* Running tasks, on every CPU: fold in the segment still running */
+    Kernel_52_KrnSpinLock(&pe->TaskRunningSpinLock, NULL, SPINLOCK_MODE_READ, NULL);
+    ForeachNode(&pe->TaskRunning, t)
+    {
+        if ((t->tc_Flags & TF_ETASK) && t->tc_UnionETask.tc_ETask)
+        {
+            struct IntETask *iet = IntETask(t->tc_UnionETask.tc_ETask);
+
+            iet->iet_private2 += now - iet->iet_private1;
+            iet->iet_private1 = now;
+            krnTaskUsage(t, window);
+        }
+    }
+    Kernel_53_KrnSpinUnLock(&pe->TaskRunningSpinLock, NULL);
+}
+#endif /* __AROSEXEC_SMP__ */
+
 /*
  * The one S-mode timer serves the periodic tick and timer.device's
  * next deadline: whichever is due is handled, then the hardware is
@@ -268,8 +389,23 @@ void krnTimerInit(uint32_t timebase_hz, uint32_t tick_hz)
 void krnTimerTick(struct ExceptionContext *ctx)
 {
     struct KrnPlatformTimer *kpt = &__platform_timer;
-    uint64_t now = krnReadTime();
+    uint64_t now;
     uint64_t next;
+
+#if defined(__AROSEXEC_SMP__)
+    {
+        uint32_t cpu = krnRVCPUNumber();
+
+        if (cpu != 0)
+        {
+            (void)ctx;
+            krnTimerTickCore(cpu);
+            return;
+        }
+    }
+#endif
+
+    now = krnReadTime();
 
     if (kpt->kpt_Deadline && (int64_t)(now - kpt->kpt_Deadline) >= 0)
     {
@@ -309,13 +445,16 @@ void krnTimerTick(struct ExceptionContext *ctx)
     if (__timebase_freq && (now - last_load_time) >= __timebase_freq)
     {
         uint64_t window = now - last_load_time;
-        uint64_t slept = __cpu_sleeptime;
+        uint64_t idle = __riscv_cpu_idletime[0];
+        /* Asleep in the dispatcher, and in the idle task */
+        uint64_t slept = __cpu_sleeptime + (idle - last_idle_time);
         struct KernelBase *kbase = getKernelBase();
 
         if (slept > window)
             slept = window;
         __cpu_load = (uint32_t)(((window - slept) << 32) / window);
         __cpu_sleeptime = 0;
+        last_idle_time = idle;
         last_load_time = now;
 
         /* Record the result in the boot hart's entry; the accumulator
@@ -331,6 +470,10 @@ void krnTimerTick(struct ExceptionContext *ctx)
         }
 
         /* And every task's share of the window */
+#if defined(__AROSEXEC_SMP__)
+        if (SysBase)
+            krnTaskUsageAll(now, window);
+#else
         if (SysBase)
         {
             struct Task *t;
@@ -352,6 +495,7 @@ void krnTimerTick(struct ExceptionContext *ctx)
                 krnTaskUsage(t, window);
             }
         }
+#endif
     }
 
     /*

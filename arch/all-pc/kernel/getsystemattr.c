@@ -33,6 +33,8 @@
 
           KATTR_PeripheralBase [.G] IPTR   - IO Base address for ARM peripherals
 
+          KATTR_AffinityMask [.G] IPTR     - Bitmap of the CPUs, by CPU number
+
     INPUTS
         id - ID of the attribute to get
 
@@ -54,7 +56,7 @@
     AROS_LIBFUNC_INIT
 
     struct PlatformData *pdata = KernelBase->kb_PlatformData;
-    struct APICData *apicData = pdata->kb_APIC;
+    struct APICData *apicData = pdata ? pdata->kb_APIC : NULL;
 
     intptr_t retval = -1;
 
@@ -63,6 +65,17 @@
         id -= KATTR_CPULoad;
         if (id < apicData->apic_count)
             retval = apicData->cores[id].cpu_Load;
+    }
+    else if (id == KATTR_AffinityMask)
+    {
+        /*
+         * The CPUs as a bitmap of CPU numbers, as on the other SMP
+         * ports. IPTR-wide, so it describes at most the first 64.
+         */
+        int count = apicData ? apicData->apic_count : 1;
+
+        retval = (count >= (int)(sizeof(IPTR) * 8)) ? (intptr_t)-1
+                                                    : (intptr_t)((1ULL << count) - 1);
     }
     else if (id == KATTR_Architecture)
     {

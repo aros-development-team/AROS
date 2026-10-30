@@ -382,8 +382,18 @@ struct Task *Exec_X86CreateIdleTask(APTR sysBase)
     struct MemList *ml;
     void *cpuMask;
 
-    cpuMask = KrnAllocCPUMask();
-    
+    /*
+     * An AP's idle task needs its mask: affinity 0 would mean the boot CPU.
+     * The boot CPU's is created before the APIC data exists, so no mask can
+     * be had yet - and none is needed: affinity is not in force until
+     * cpu_PrepareExec(), which pins every task that predates it to CPU 0.
+     */
+    if (((cpuMask = KrnAllocCPUMask()) == NULL) && (cpuNo != 0))
+    {
+        bug("[Exec:X86.%03u] FATAL : Failed to allocate the idle task's CPU mask\n", cpuNo);
+        return NULL;
+    }
+
     if ((ml = AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR)) == NULL)
     {
         bug("[Exec:X86.%03u] FATAL : Failed to allocate memory for idle task name info", cpuNo);

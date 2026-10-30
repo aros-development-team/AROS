@@ -22,15 +22,15 @@ AROS_LH1(void, KrnScheduleCPU,
 #if defined(__AROSEXEC_SMP__)
     if (cpu_mask && __arm_arosintern.ARMI_SendIPI)
     {
-        /* One word covers the 4 cores. TASKAFFINITY_ANY and
+        /* One word covers every core. TASKAFFINITY_ANY and
          * TASKAFFINITY_ALL_BUT_SELF are sentinels, not pointers. */
         int srcCpu = GetCPUNumber();
         uint32_t mask;
 
         if ((IPTR)cpu_mask == TASKAFFINITY_ANY)
-            mask = 0xf;
+            mask = __arm_arosintern.ARMI_AffinityMask;      /* the online cores */
         else if ((IPTR)cpu_mask == TASKAFFINITY_ALL_BUT_SELF)
-            mask = 0xf & ~(1U << srcCpu);
+            mask = __arm_arosintern.ARMI_AffinityMask & ~(1U << srcCpu);
         else
             mask = *(uint32_t *)cpu_mask;
 

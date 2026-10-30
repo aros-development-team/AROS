@@ -141,12 +141,14 @@ BOOL core_APIC_CPUInMask(apicid_t cpuNo, cpumask_t *mask)
 
     D(bug("[APIC] %s()\n", __func__));
 
+    /*
+     * A NULL mask is invalid and selects no CPU. (It used to mean "CPU 0
+     * only"; exec now never stores one - see InitETask, PrepareContext
+     * and cpu_PrepareExec - and TASKAFFINITY_BOOT is turned into a real
+     * CPU 0 mask where it is accepted.)
+     */
     if (mask == NULL)
-    {
-        if (cpuNo == 0)
-            return TRUE;
         return FALSE;
-    }
 
     if ((IPTR)mask == TASKAFFINITY_ANY)
     {

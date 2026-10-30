@@ -69,6 +69,8 @@ int sbappendcontrol(struct sockbuf * sb,
                     struct mbuf * m0,
                     struct mbuf * control);
 
+struct mbuf * sbcreatecontrol(caddr_t p, int size, int type, int level);
+
 void sbcompress(register struct sockbuf * sb,
                register struct mbuf * m,
                register struct mbuf * n);

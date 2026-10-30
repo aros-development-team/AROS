@@ -28,12 +28,30 @@
 #define SFLG_WORKBUF_ALLOCATED  (1 << 3)
 #define SFLG_UNDOBUF_ALLOCATED  (1 << 4)
 
+/* Copy a text into the edit buffer. MaxChars is the buffer's size including
+   the terminating NUL, so a longer text is cut to MaxChars - 1 characters. */
+static void set_buffer_text(struct StringInfo *StrInfo, CONST_STRPTR text)
+{
+    LONG len = strlen(text);
+
+    if (StrInfo->MaxChars <= 0)
+        return;
+    if (len >= StrInfo->MaxChars)
+        len = StrInfo->MaxChars - 1;
+
+    memmove(StrInfo->Buffer, text, len);
+    StrInfo->Buffer[len] = '\0';
+}
+
 static void set_buffer_str(struct StringInfo *StrInfo)
 {
     char  buf[64];
     char *ptr = buf + sizeof(buf);
     LONG  value = StrInfo->LongInt;
     int   len;
+
+    if (StrInfo->MaxChars <= 0)
+        return;
 
     if (value < 0)
         value = -value;
@@ -105,7 +123,7 @@ STATIC IPTR strg_set(Class *cl, struct Gadget * g, struct opSet *msg)
                 {
                     /* OM_NEW STRINGA_TextVal is handled in strg_new! */
 
-                    strcpy(data->StrInfo.Buffer, (STRPTR)tidata ? (STRPTR)tidata : (STRPTR)"");
+                    set_buffer_text(&data->StrInfo, (STRPTR)tidata ? (STRPTR)tidata : (STRPTR)"");
                     g->Activation &= ~GACT_LONGINT;
                     retval = 1UL;
                     notify = TRUE;
@@ -310,7 +328,7 @@ IPTR StrGClass__OM_NEW(Class *cl, Object * o, struct opSet *msg)
         textval = (STRPTR)GetTagData(STRINGA_TextVal, 0, msg->ops_AttrList);
         if (textval)
         {
-            strcpy(data->StrInfo.Buffer, textval);
+            set_buffer_text(&data->StrInfo, textval);
             D(bug("strgclass:Initializing string gadget to text value %s\n", textval));
             g->Activation &= ~GACT_LONGINT;
         }

@@ -348,7 +348,8 @@ ip6_ctloutput(int op, struct socket *so, int level, int optname,
                 inp->in6p_flags &= ~IN6P_PKTINFO;
             break;
 
-        case IPV6_HOPLIMIT:
+        case IPV6_RECVHOPLIMIT:     /* RFC 3542 */
+        case IPV6_HOPLIMIT:         /* RFC 2292, kept for older programs */
             if(*m == NULL || (*m)->m_len != sizeof(int)) {
                 error = EINVAL;
                 break;
@@ -500,6 +501,7 @@ ip6_ctloutput(int op, struct socket *so, int level, int optname,
             *mtod(*m, int *) = (inp->in6p_flags & IN6P_PKTINFO) ? 1 : 0;
             break;
 
+        case IPV6_RECVHOPLIMIT:
         case IPV6_HOPLIMIT:
             *m = m_get(M_WAIT, MT_SOOPTS);
             if(*m == NULL) {

@@ -123,6 +123,9 @@ static ULONG HIDDNouveauBitMapFourCC(struct HIDDNouveauBitMapData *bmdata)
     case vHidd_VideoFmt_UYVY:   return DRM_FORMAT_UYVY;
     case vHidd_VideoFmt_NV12:   return DRM_FORMAT_NV12;
     case vHidd_VideoFmt_P010:   return DRM_FORMAT_P010;
+    case vHidd_VideoFmt_P012:   return DRM_FORMAT_P010;     /* the same memory; a plane shows the top 10 bits */
+    case vHidd_VideoFmt_NV16:   return DRM_FORMAT_NV16;
+    case vHidd_VideoFmt_NV24:   return DRM_FORMAT_NV24;
     case vHidd_VideoFmt_I420:   return DRM_FORMAT_YUV420;
     case vHidd_VideoFmt_None:   break;
     default:                    return 0;
@@ -148,14 +151,15 @@ static BOOL HIDDNouveauAddFB(OOP_Class *cl, struct HIDDNouveauBitMapData *bmdata
     ULONG fourcc = HIDDNouveauBitMapFourCC(bmdata);
     uint32_t handles[4] = { bo->handle, 0, 0, 0 };
     uint32_t pitches[4] = { bmdata->pitch, 0, 0, 0 };
+    ULONG cwide;
     uint32_t offsets[4] = { 0, 0, 0, 0 };
     LONG ret = -1;
 
     /* Planar video: the chroma planes are in the same buffer object */
-    if ((bmdata->videoformat == vHidd_VideoFmt_NV12) || (bmdata->videoformat == vHidd_VideoFmt_P010))
+    if (nouveau_semiplanar(bmdata->videoformat, NULL, NULL, &cwide))
     {
         handles[1] = bo->handle;
-        pitches[1] = bmdata->pitch;
+        pitches[1] = bmdata->pitch * cwide;
         offsets[1] = bmdata->planeoff[0];
     }
     else if (bmdata->videoformat == vHidd_VideoFmt_I420)
@@ -494,7 +498,7 @@ static ULONG HIDDNouveauPlaneVideoFmts(struct HIDDNouveauData *gfxdata, ULONG fm
     if (fmts & KMSFMT_YUYV)   m |= (1UL << vHidd_VideoFmt_YUYV);
     if (fmts & KMSFMT_UYVY)   m |= (1UL << vHidd_VideoFmt_UYVY);
     if (fmts & KMSFMT_NV12)   m |= (1UL << vHidd_VideoFmt_NV12);
-    if (fmts & KMSFMT_P010)   m |= (1UL << vHidd_VideoFmt_P010);
+    if (fmts & KMSFMT_P010)   m |= (1UL << vHidd_VideoFmt_P010) | (1UL << vHidd_VideoFmt_P012);
     if (fmts & KMSFMT_YUV420) m |= (1UL << vHidd_VideoFmt_I420);
     return m;
 }

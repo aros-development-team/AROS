@@ -52,7 +52,8 @@
 
 #define AV1_CDF_BYTES                       0x3000      /* one table (12256 bytes), 256-byte aligned */
 #define AV1_GRAIN_BYTES                     0x3400      /* AV1FilmGrainMemory, 256-byte aligned */
-#define AV1_RING_BYTES                      (AV1_CDF_BYTES + AV1_GRAIN_BYTES)   /* per ring entry: default CDFs, grain */
+#define AV1_RING_BYTES                      AV1_GRAIN_BYTES     /* per ring entry: film grain memory */
+#define AV1_CDF_TABLES                      (NOUVEAU_DECODE_SLOTS + 1)  /* one per slot, plus the one being written */
 #define AV1_REFS                            7
 #define AV1_PIC_CUR                         8           /* decoder picture index of the current picture */
 #define AV1_PRIMARY_NONE                    7
@@ -67,6 +68,7 @@ struct av1_saved
     UBYTE   order_hint;
     UBYTE   ref_order_hint[AV1_REFS];
     BOOL    segmap;                 /* its segment map was written */
+    WORD    cdf;                    /* its saved CDFs: table n - 1, the defaults for q context -n - 1, 0 none */
     UWORD   upscaled_width, height;
     UWORD   mi_cols, mi_rows;
 };
@@ -79,8 +81,11 @@ struct av1_state
     ULONG               nsp;
     struct { ULONG start, end; } tile[AV1_MAX_TILES_HERE];
     ULONG               ntiles;
-    struct nouveau_bo   *cdf, *seg, *mv;        /* per pool slot */
-    struct nouveau_bo   *gart;                  /* per ring entry: default CDF tables, film grain memory */
+    struct nouveau_bo   *cdf;                   /* AV1_CDF_TABLES tables, shared by the slots' saved CDFs */
+    UBYTE               cdfrefs[AV1_CDF_TABLES];
+    struct nouveau_bo   *defcdf;                /* the default tables for the four q contexts */
+    struct nouveau_bo   *seg, *mv;              /* per pool slot */
+    struct nouveau_bo   *gart;                  /* per ring entry: film grain memory */
     uint64_t            zero;                   /* zeroed segment map / MVs (after the per-slot MVs) */
     struct nouveau_bo   *filter, *intratop, *blkbuf;
     ULONG               segsize, mvsize;
@@ -131,7 +136,8 @@ static BOOL av1_open(struct HIDDNouveauDecode *dec)
         total += sizes[i];
     }
 
-    if (!av1_zeroed(dec, NOUVEAU_BO_VRAM, NOUVEAU_DECODE_SLOTS * AV1_CDF_BYTES, &v->cdf) ||
+    if (!av1_zeroed(dec, NOUVEAU_BO_VRAM, AV1_CDF_TABLES * AV1_CDF_BYTES, &v->cdf) ||
+        !av1_zeroed(dec, NOUVEAU_BO_GART, 4 * AV1_CDF_BYTES, &v->defcdf) ||
         !av1_zeroed(dec, NOUVEAU_BO_VRAM, NOUVEAU_DECODE_SLOTS * v->segsize, &v->seg) ||
         !av1_zeroed(dec, NOUVEAU_BO_VRAM, (NOUVEAU_DECODE_SLOTS + 1) * v->mvsize, &v->mv) ||
         !av1_zeroed(dec, NOUVEAU_BO_GART, NOUVEAU_DECODE_RING * AV1_RING_BYTES, &v->gart) ||
@@ -139,6 +145,14 @@ static BOOL av1_open(struct HIDDNouveauDecode *dec)
         !av1_zeroed(dec, NOUVEAU_BO_VRAM, 8 * 8192, &v->intratop))
         return FALSE;
     v->zero = v->mv->offset + (uint64_t)NOUVEAU_DECODE_SLOTS * v->mvsize;      /* mvsize >= segsize */
+    for (i = 0; i < 4; i++)
+    {
+        UWORD *t = (UWORD *)((UBYTE *)v->defcdf->map + i * AV1_CDF_BYTES);
+
+        memcpy(t, av1_default_cdfs, sizeof(av1_default_cdfs));
+        memcpy(t + AV1_CDF_COEF_U16, av1_default_coef_cdfs[i], sizeof(av1_default_coef_cdfs[0]));
+    }
+    nouveau_staging_to_gpu(v->defcdf->map, 4 * AV1_CDF_BYTES);
     if ((dec->oclass >= NVDEC_CLASS_BLACKWELL) &&
         !av1_zeroed(dec, NOUVEAU_BO_VRAM, NVDEC_BLK_BUF_SIZE(w), &v->blkbuf))
         return FALSE;
@@ -152,6 +166,7 @@ static VOID av1_close(struct HIDDNouveauDecode *dec)
     if (!v)
         return;
     if (v->cdf)      nouveau_bo_ref(NULL, &v->cdf);
+    if (v->defcdf)   nouveau_bo_ref(NULL, &v->defcdf);
     if (v->seg)      nouveau_bo_ref(NULL, &v->seg);
     if (v->mv)       nouveau_bo_ref(NULL, &v->mv);
     if (v->gart)     nouveau_bo_ref(NULL, &v->gart);
@@ -231,6 +246,14 @@ static BOOL av1_bitstream(struct HIDDNouveauDecode *dec, APTR data, ULONG size)
     return TRUE;
 }
 
+/* the slot's picture is replaced: release the CDF table it saved */
+static VOID av1_cdf_drop(struct av1_state *v, LONG slot)
+{
+    if (v->saved[slot].cdf > 0)
+        v->cdfrefs[v->saved[slot].cdf - 1]--;
+    v->saved[slot].cdf = 0;
+}
+
 static ULONG av1_status(struct HIDDNouveauDecode *dec, ULONG *status)
 {
     nvdec_status_s *st = (nvdec_status_s *)status;
@@ -238,7 +261,10 @@ static ULONG av1_status(struct HIDDNouveauDecode *dec, ULONG *status)
     if (!st->error_status || (st->error_status == 0x20))
         return 0;
     if (dec->errors++ < 4)
-        nvlog("[Nouveau] NVDEC: AV1 frame error %08lx\n", (unsigned long)st->error_status);
+        nvlog("[Nouveau] NVDEC: AV1 frame error %08lx (blocks %lu ok, %lu bad, %lu cycles, header %08lx)\n",
+              (unsigned long)st->error_status, (unsigned long)st->mbs_correctly_decoded,
+              (unsigned long)st->mbs_in_error, (unsigned long)st->cycle_count,
+              (unsigned long)st->slice_header_error_code);
     return st->error_status;
 }
 
@@ -346,6 +372,9 @@ static BOOL av1_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFr
     ULONG rbuffer = 0;
     BOOL grain;
     struct av1_saved *cs;
+    ULONG cdfw;
+    uint64_t cdfr;
+    WORD newcdf;
 
     if (!v || !v->have_pp || !v->ntiles)
         return FALSE;
@@ -586,10 +615,9 @@ static BOOL av1_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFr
                    (pp->loop_restoration_fields.bits.cbframe_restoration_type << 2) |
                    (pp->loop_restoration_fields.bits.crframe_restoration_type << 4);
     {
+        /* VA's lr_unit_shift already includes the spec's increment for 128x128 superblocks */
         ULONG y = 1 + pp->loop_restoration_fields.bits.lr_unit_shift, uv;
 
-        if (pp->seq_info_fields.fields.use_128x128_superblock)
-            y++;                                /* the spec reads one shift bit fewer with 128x128 superblocks (untested) */
         uv = y - pp->loop_restoration_fields.bits.lr_uv_shift;
         /* as NVIDIA's driver: 3 (256) everywhere when no plane uses restoration, else the frame's sizes */
         pic->lr_unit_size = pic->lr_type ? (y | (uv << 2) | (uv << 4)) : 0x3f;
@@ -752,8 +780,8 @@ static BOOL av1_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFr
         memcpy(gp.ar_y, fg->ar_coeffs_y, 24);
         memcpy(gp.ar_cb, fg->ar_coeffs_cb, 25);
         memcpy(gp.ar_cr, fg->ar_coeffs_cr, 25);
-        av1_grain_generate(&gp, (UBYTE *)v->gart->map + ring * AV1_RING_BYTES + AV1_CDF_BYTES);
-        nouveau_staging_to_gpu((UBYTE *)v->gart->map + ring * AV1_RING_BYTES + AV1_CDF_BYTES, AV1_GRAIN_BYTES);
+        av1_grain_generate(&gp, (UBYTE *)v->gart->map + ring * AV1_RING_BYTES);
+        nouveau_staging_to_gpu((UBYTE *)v->gart->map + ring * AV1_RING_BYTES, AV1_GRAIN_BYTES);
 
         pic->enable_fgs = 1;
         pic->fgs_cfg.apply_grain = 1;
@@ -791,15 +819,27 @@ static BOOL av1_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFr
         av1_shear(pp->wm[i].wmmat, (WORD *)(g + 24));
     }
 
-    /* the CDFs the frame starts from: the defaults for its q context, or the primary reference's adapted ones */
-    if (defaults)
+    /*
+     * The CDFs the frame starts from: the defaults for its q context, or the
+     * primary reference's saved ones. It saves the adapted ones to a free
+     * table, or, with the frame-end update disabled, keeps the ones it
+     * started from (the engine writes nothing then; NVIDIA's driver reads
+     * the reference's input table, traced).
+     */
     {
-        UWORD *t = (UWORD *)((UBYTE *)v->gart->map + ring * AV1_RING_BYTES);
         ULONG q = pp->base_qindex, qctx = (q <= 20) ? 0 : (q <= 60) ? 1 : (q <= 120) ? 2 : 3;
+        WORD in = defaults ? -(WORD)qctx - 1 : v->saved[prim].cdf;
 
-        memcpy(t, av1_default_cdfs, sizeof(av1_default_cdfs));
-        memcpy(t + AV1_CDF_COEF_U16, av1_default_coef_cdfs[qctx], sizeof(av1_default_coef_cdfs[0]));
-        nouveau_staging_to_gpu(t, AV1_CDF_BYTES);
+        if (!in)
+            in = -(WORD)qctx - 1;          /* the reference saved none (it failed): the defaults */
+        av1_cdf_drop(v, slot);
+        for (cdfw = 0; (cdfw < AV1_CDF_TABLES) && v->cdfrefs[cdfw]; cdfw++)
+            ;
+        if (cdfw == AV1_CDF_TABLES)
+            return FALSE;
+        cdfr = (in > 0) ? v->cdf->offset + (uint64_t)(in - 1) * AV1_CDF_BYTES :
+                          v->defcdf->offset + (uint64_t)(-in - 1) * AV1_CDF_BYTES;
+        newcdf = pp->pic_info_fields.bits.disable_frame_end_update_cdf ? in : (WORD)(cdfw + 1);
     }
 
     nouveau_staging_to_gpu(base, NOUVEAU_DECODE_PICSETUP_SIZE);
@@ -811,7 +851,7 @@ static BOOL av1_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFr
 
     {
         ULONG m[2 * 20], nm = 0;
-        struct nouveau_bo *extra[8];
+        struct nouveau_bo *extra[10];
         ULONG nextra;
         uint64_t zero = v->zero;
         uint64_t mvw = v->mv->offset + (uint64_t)slot * v->mvsize;
@@ -821,7 +861,7 @@ static BOOL av1_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFr
         M(NVDEC_SET_COLOC_DATA_OFFSET, zero);
         M(NVDEC_SET_TILE_SIZE_BUF_OFFSET, f->picsetup->offset + AV1_TILES_OFFSET);
         M(NVDEC_AV1_SET_GLOBAL_MODEL, f->picsetup->offset + AV1_GLOBAL_OFFSET);
-        M(NVDEC_AV1_SET_FILM_GRAIN, v->gart->offset + ring * AV1_RING_BYTES + AV1_CDF_BYTES);
+        M(NVDEC_AV1_SET_FILM_GRAIN, v->gart->offset + ring * AV1_RING_BYTES);
         M(NVDEC_AV1_SET_SEGMENT_READ, pic->prevsegid_flag ? v->seg->offset + (uint64_t)prim * v->segsize : zero);
         M(NVDEC_AV1_SET_SEGMENT_WRITE, v->seg->offset + (uint64_t)slot * v->segsize);
         for (i = 0; i < 3; i++)
@@ -830,9 +870,8 @@ static BOOL av1_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFr
         M(NVDEC_AV1_SET_COL_MVWRITE, mvw);
         M(NVDEC_SET_FILTER_BUFFER_OFFSET, v->filter->offset);
         M(NVDEC_SET_INTRA_TOP_BUF_OFFSET, v->intratop->offset);
-        M(NVDEC_AV1_SET_PROB_TAB_READ, defaults ? v->gart->offset + ring * AV1_RING_BYTES :
-                                                  v->cdf->offset + (uint64_t)prim * AV1_CDF_BYTES);
-        M(NVDEC_AV1_SET_PROB_TAB_WRITE, v->cdf->offset + (uint64_t)slot * AV1_CDF_BYTES);
+        M(NVDEC_AV1_SET_PROB_TAB_READ, cdfr);
+        M(NVDEC_AV1_SET_PROB_TAB_WRITE, v->cdf->offset + (uint64_t)cdfw * AV1_CDF_BYTES);
         if (v->blkbuf)
             M(NVDEC_SET_BLK_BUF_OFFSET, v->blkbuf->offset);
         if (grain)
@@ -844,6 +883,7 @@ static BOOL av1_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFr
 #undef M
         nextra = 0;
         extra[nextra++] = v->cdf;
+        extra[nextra++] = v->defcdf;
         extra[nextra++] = v->seg;
         extra[nextra++] = v->mv;
         extra[nextra++] = v->gart;
@@ -891,6 +931,9 @@ static BOOL av1_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFr
     for (i = 0; i < AV1_REFS; i++)
         cs->ref_order_hint[i] = (refslot[i] >= 0) ? v->saved[refslot[i]].order_hint : 0;
     cs->segmap = pp->seg_info.segment_info_fields.bits.enabled;
+    cs->cdf = newcdf;
+    if (newcdf > 0)
+        v->cdfrefs[newcdf - 1]++;
     cs->upscaled_width = upw;
     cs->height = fh;
     cs->mi_cols = micols;
