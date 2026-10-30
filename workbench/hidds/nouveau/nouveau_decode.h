@@ -19,7 +19,7 @@
  */
 #define NOUVEAU_DECODE_SLOTS        17      /* H.264 DPB (16) + the picture being decoded */
 #define NOUVEAU_DECODE_RING         4       /* frames in flight per session */
-#define NOUVEAU_DECODE_MAX_SLICES   512     /* slice offsets per frame */
+#define NOUVEAU_DECODE_MAX_SLICES   8191    /* slice offsets per frame: one per macroblock at 1080p fits */
 
 struct HIDDNouveauDecodeSlot
 {
@@ -50,7 +50,9 @@ struct HIDDNouveauDecode
     LONG                profile;            /* VAProfile */
     const struct HIDDNouveauDecodeOps *ops; /* the codec's translation */
     ULONG               width, height;      /* coded picture size (macroblock aligned) */
-    ULONG               bpp;                /* bytes per sample: 1 = 8-bit (NV12), 2 = 10/12-bit (P010) */
+    ULONG               bpp;                /* bytes per sample: 1 = 8-bit, 2 = 10/12-bit */
+    ULONG               chalf;              /* chroma plane: half the rows (4:2:0), else all (4:2:2, 4:4:4) */
+    ULONG               cwide;              /* chroma rows this many luma rows long (4:4:4: 2) */
     BOOL                gob32;              /* the codec's block writes the 32-bit GOB order (HEVC) */
     ULONG               poolslots;          /* pictures the pool gets (allocated on the first frame) */
     ULONG               rowalign;           /* picture row alignment the codec needs (0 = block rows) */
@@ -59,6 +61,9 @@ struct HIDDNouveauDecode
     ULONG               lumasize;           /* bytes of one pool luma plane (block aligned) */
     ULONG               chromaoff;          /* offset of the chroma plane in a pool picture */
     ULONG               slotsize;           /* bytes of one pool picture */
+    BOOL                fields;             /* interlaced stream: a picture may be a single field */
+    ULONG               weaverows;          /* pool pictures keep the fields apart: rows of one luma field (0 = frame order) */
+    ULONG               cweaverows;         /* and of one chroma field; the bottom field starts that far in */
 
     struct nouveau_object   *channel;       /* NVDEC runlist channel */
     struct nouveau_pushbuf  *pushbuf;
@@ -106,9 +111,9 @@ struct HIDDNouveauDecode
 #define NVDEC_BLK_BUF_SIZE(w)               (NVDEC_BLK_UNITS(w) * 16384)
 
 /* Layout of a frame's picsetup buffer (GART, CPU mapped) */
-#define NOUVEAU_DECODE_PICSETUP_SIZE        0x3000
-#define NOUVEAU_DECODE_SLICEOFFS_OFFSET     0x1000  /* uint32 per slice + terminator */
-#define NOUVEAU_DECODE_STATUS_OFFSET        0x2000  /* nvdec_status_s, zeroed per frame */
+#define NOUVEAU_DECODE_PICSETUP_SIZE        0xA000
+#define NOUVEAU_DECODE_SLICEOFFS_OFFSET     0x1000  /* uint32 per slice + terminator (MAX_SLICES + 1) */
+#define NOUVEAU_DECODE_STATUS_OFFSET        0x9000  /* nvdec_status_s, zeroed per frame */
 
 /* nouveau_decode.c helpers for the codec files */
 LONG HIDDNouveauDecodeFindSlot(struct HIDDNouveauDecode *dec, OOP_Object *bm, ULONG buffer);
@@ -171,6 +176,11 @@ VOID HIDDNouveauDecodeTargetFree(struct CardData *carddata, struct HIDDNouveauBi
 /* Make buffer 'buffer' of a decode target hold its last decode: issue the
    copy-out if it is still pending and, with wait, wait for it. Returns a
    vHidd_DecodeStatus_* value. timeoutms ~0 = for ever (wait only) */
+/* CPU access to a decode target buffer through a GART copy: the address, or NULL to map
+   the buffer itself; the unlock copies a written copy back (dirty NULL = all of it) */
+UBYTE *HIDDNouveauDecodeLockCPU(struct CardData *carddata, struct HIDDNouveauBitMapData *bmdata, ULONG buffer);
+VOID HIDDNouveauDecodeUnlockCPU(struct CardData *carddata, struct HIDDNouveauBitMapData *bmdata, ULONG buffer,
+    struct Rectangle *dirty);
 ULONG HIDDNouveauDecodeSettle(struct CardData *carddata, struct HIDDNouveauBitMapData *bmdata, ULONG buffer,
     BOOL wait, ULONG timeoutms);
 

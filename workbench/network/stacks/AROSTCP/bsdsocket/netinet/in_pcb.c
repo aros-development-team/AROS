@@ -60,6 +60,9 @@
 #include "in_var.h"
 #include <netinet/ip_var.h>
 #include <netinet/ip_output_protos.h>
+#if INET6
+#include <netinet6/in6_var.h>
+#endif
 
 extern u_char inetctlerrmap[];
 
@@ -408,6 +411,9 @@ struct inpcb *inp;
         rtfree(inp->inp_route.ro_rt);
 #ifdef ENABLE_MULTICAST
     ip_freemoptions(inp->inp_moptions);
+#endif
+#if INET6
+    ip6_freemoptions(inp->in6p_moptions);
 #endif
     s = splnet();
     LIST_REMOVE(inp, inp_hash);

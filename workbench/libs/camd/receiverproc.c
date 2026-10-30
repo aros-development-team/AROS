@@ -2,6 +2,7 @@
     Copyright (C) 1995-2004, The AROS Development Team. All rights reserved.
 */
 
+#include <aros/atomic.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <dos/dostags.h>
@@ -34,6 +35,21 @@ SAVEDS void ReceiverFunc(void){
 		if(sig&1L<<driverdata->ReceiverSig){
 			while(driverdata->unpicked>0){
 				Receiver_first(driverdata);
+			}
+			if(driverdata->re_overflow){
+				/* The missing bytes make both a partial message and running
+				   status unusable. The producer drops while overflow is set, so
+				   one last bounded drain collects bytes written between the first
+				   drain and its overflow check. */
+				while(driverdata->unpicked>0){
+					Receiver_first(driverdata);
+				}
+				Receiver_SetError(driverdata,CMEF_RecvOverflow);
+				if(driverdata->Input_Treat==Receiver_SysEx){
+					Receiver_SysExSuperTreat(driverdata,0xff);
+				}
+				driverdata->Input_Treat=Receiver_init;
+				AROS_ATOMIC_AND(driverdata->re_overflow,0);
 			}
 		}
 		if(sig&SIGBREAKF_CTRL_C) break;

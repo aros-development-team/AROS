@@ -50,6 +50,32 @@ extern struct SignalSemaphore globalLock;
 #define KMSFMT_NV12         (1 << 8)    /* semi-planar 4:2:0, vHidd_VideoFmt_NV12 */
 #define KMSFMT_YUV420       (1 << 9)    /* planar 4:2:0 (CGX I420), vHidd_VideoFmt_I420 */
 #define KMSFMT_P010         (1 << 10)   /* 10-bit semi-planar 4:2:0, vHidd_VideoFmt_P010 */
+
+/*
+ * Semi-planar video formats: a Y plane, then one plane of interleaved U/V
+ * pairs. bps: bytes per sample; chalf: the UV plane has half the picture's
+ * rows (4:2:0) or all of them (4:2:2, 4:4:4); cwide: its rows are this many
+ * Y rows long (4:4:4 has a UV pair per pixel: 2). FALSE for other formats.
+ */
+static inline BOOL nouveau_semiplanar(ULONG fmt, ULONG *bps, ULONG *chalf, ULONG *cwide)
+{
+    ULONG b = 1, h = 1, w = 1;
+
+    switch (fmt)
+    {
+    case vHidd_VideoFmt_NV12:                               break;
+    case vHidd_VideoFmt_P010: case vHidd_VideoFmt_P012:     b = 2; break;
+    case vHidd_VideoFmt_NV16:                               h = 0; break;
+    case vHidd_VideoFmt_P210: case vHidd_VideoFmt_P212:     b = 2; h = 0; break;
+    case vHidd_VideoFmt_NV24:                               h = 0; w = 2; break;
+    case vHidd_VideoFmt_P410: case vHidd_VideoFmt_P412:     b = 2; h = 0; w = 2; break;
+    default:                                                return FALSE;
+    }
+    if (bps)   *bps = b;
+    if (chalf) *chalf = h;
+    if (cwide) *cwide = w;
+    return TRUE;
+}
 #define KMSFMT_VIDEO        (KMSFMT_YUYV | KMSFMT_UYVY | KMSFMT_NV12 | KMSFMT_YUV420 | KMSFMT_P010)
 
 struct HIDDNouveauPlane
@@ -189,6 +215,8 @@ struct HIDDNouveauBitMapData
         ULONG               decseq;
         LONG                decslot;        /* pool slot holding the picture */
         UBYTE               decstate;       /* NOUVEAU_DECSTATE_* */
+        struct nouveau_bo   *shadow;        /* GART copy the CPU gets for a lock (nouveau_decode.c) */
+        BOOL                shadowlocked;   /* the current lock handed out the shadow */
     } buf[NOUVEAU_MAX_BUFFERS];
 };
 

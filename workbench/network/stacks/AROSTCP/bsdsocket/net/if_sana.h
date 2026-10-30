@@ -159,6 +159,13 @@ int sana_output(struct ifnet *ifp, struct mbuf *m0,
 int sana_ioctl(register struct ifnet *ifp, int cmd, caddr_t data);
 
 /*
+ * The Ethernet header a SANA-II driver adds and strips, as BPF captures
+ * and bpf_write() takes it (destination, source, type).
+ */
+#define SANA_ETHER_ADDRLEN  6
+#define SANA_ETHER_HDRLEN   14
+
+/*
  * The SANA-II interface behind an ifnet, or NULL for any other kind: a
  * tunnel and the loopback are a struct ifnet with something else behind it.
  */

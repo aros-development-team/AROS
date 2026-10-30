@@ -105,6 +105,8 @@ const char *KernelSymbols[] = {
     "DeleteFileA",
     "RemoveDirectoryA",
     "GetDiskFreeSpaceA",
+    "SetLastError",
+    "GetFileSize",
     NULL
 };
 

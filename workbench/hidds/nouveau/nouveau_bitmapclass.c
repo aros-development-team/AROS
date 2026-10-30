@@ -90,18 +90,20 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
             if (bytesperpixel != 2)
                 goto exit_fail;
             break;
-        case vHidd_VideoFmt_NV12:
         case vHidd_VideoFmt_I420:
             if ((bytesperpixel != 1) || (width & 1) || (height & 1))
                 goto exit_fail;
             break;
-        case vHidd_VideoFmt_P010:
-            /* NV12 layout with 16-bit samples (10 significant, high bits) */
-            if ((bytesperpixel != 2) || (width & 1) || (height & 1))
+        default:
+        {
+            /* the semi-planar ones: NV12 and its 16-bit, 4:2:2 and 4:4:4 relatives */
+            ULONG bps;
+
+            if (!nouveau_semiplanar(videoformat, &bps, NULL, NULL) || (bytesperpixel != bps) ||
+                (width & 1) || (height & 1))
                 goto exit_fail;
             break;
-        default:
-            goto exit_fail;
+        }
         }
         scanout = TRUE;
     }
@@ -128,8 +130,8 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
     bmdata->bytesperpixel = bytesperpixel;
     bmdata->stdfmt = stdfmt;
     bmdata->videoformat = videoformat;
-    /* A decode target is an NV12 or P010 video bitmap the display's decoder writes (nouveau_decode.c) */
-    if (decodetarget && (((videoformat != vHidd_VideoFmt_NV12) && (videoformat != vHidd_VideoFmt_P010)) ||
+    /* A decode target is a semi-planar video bitmap the display's decoder writes (nouveau_decode.c) */
+    if (decodetarget && (!nouveau_semiplanar(videoformat, NULL, NULL, NULL) ||
                          !HIDDNouveauDecodeTargetInit(carddata, bmdata)))
         goto exit_fail;
     bmdata->decodetarget = decodetarget ? TRUE : FALSE;
@@ -155,10 +157,12 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
          */
         ULONG rows = height;
         ULONG chromarows = (height + 1) / 2;
+        ULONG chalf, cwide;
 
-        if ((videoformat == vHidd_VideoFmt_NV12) || (videoformat == vHidd_VideoFmt_I420) ||
-            (videoformat == vHidd_VideoFmt_P010))
-            rows += chromarows + 2;             /* + slack for the 256-byte rounding */
+        if (nouveau_semiplanar(videoformat, NULL, &chalf, &cwide))
+            rows += (chalf ? chromarows : height) * cwide + 2;     /* + slack for the 256-byte rounding */
+        else if (videoformat == vHidd_VideoFmt_I420)
+            rows += chromarows + 2;
         if (buffers < 1)
             buffers = 1;
         if (buffers > (bmdata->decodetarget ? NOUVEAU_MAX_BUFFERS : NOUVEAU_MAX_SCANOUT_BUFFERS))
@@ -191,7 +195,7 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
         bmdata->back = (bmdata->nbufs > 1) ? 1 : 0;
         bmdata->bo = bmdata->buf[0].bo;
         bmdata->planeoff[0] = bmdata->planeoff[1] = 0;
-        if ((videoformat == vHidd_VideoFmt_NV12) || (videoformat == vHidd_VideoFmt_P010))
+        if (nouveau_semiplanar(videoformat, NULL, NULL, NULL))
             bmdata->planeoff[0] = (bmdata->pitch * height + 255) & ~255UL;
         else if (videoformat == vHidd_VideoFmt_I420)
         {
@@ -1273,7 +1277,22 @@ BOOL METHOD(NouveauBitMap, Hidd_BitMap, LockBuffer)
 
     /* a decode target: the CPU reads the decoded picture, so finish its decode and copy-out */
     if (bmdata->decodetarget)
+    {
+        UBYTE *cpu;
+
         HIDDNouveauDecodeSettle(carddata, bmdata, msg->buffer, TRUE, 0xffffffffUL);
+        if (bmdata->nbufs && (cpu = HIDDNouveauDecodeLockCPU(carddata, bmdata, msg->buffer)))
+        {
+            *msg->addressReturn = cpu;
+            *msg->pitchReturn = bmdata->pitch;
+            if (msg->planeOffsets)
+            {
+                msg->planeOffsets[0] = bmdata->planeoff[0];
+                msg->planeOffsets[1] = bmdata->planeoff[1];
+            }
+            return TRUE;
+        }
+    }
     LOCK_ENGINE
     LOCK_BITMAP
     if (!bo->map)
@@ -1302,7 +1321,11 @@ BOOL METHOD(NouveauBitMap, Hidd_BitMap, LockBuffer)
 
 VOID METHOD(NouveauBitMap, Hidd_BitMap, UnlockBuffer)
 {
-    /* Direct VRAM mapping: the writes are already where the plane reads them */
+    struct HIDDNouveauBitMapData *bmdata = OOP_INST_DATA(cl, o);
+
+    /* a decode target's lock may be a GART copy; otherwise the mapping was the buffer itself */
+    if (bmdata->decodetarget && (msg->buffer < bmdata->nbufs))
+        HIDDNouveauDecodeUnlockCPU(&(SD(cl)->carddata), bmdata, msg->buffer, msg->dirty);
 }
 
 /*

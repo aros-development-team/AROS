@@ -81,7 +81,9 @@ struct AsyncReaderControl * __declspec(dllexport) __aros Emul_Init_Native(void)
                 return &ControlStruct;
             }
             CloseHandle(ControlStruct.CmdEvent);
+            ControlStruct.CmdEvent = NULL;
         }
+        KrnFreeSystemIRQ(irq);
     }
     return NULL;
 }

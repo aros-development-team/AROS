@@ -1,0 +1,13 @@
+include $(SRCDIR)/config/aros.cfg
+
+#
+# libvcmmal.a: MMAL client over vchiq.library, shared by the VideoCore
+# codec, ISP and camera drivers. API in <hardware/vcmmal.h>.
+#
+#MM- workbench-raspi-aarch64 : linklibs-vcmmal
+#MM linklibs-vcmmal : includes workbench-libs-vchiq-bcm2708-includes
+
+%build_linklib mmake=linklibs-vcmmal libname=vcmmal \
+    files="vcmmal"
+
+%common

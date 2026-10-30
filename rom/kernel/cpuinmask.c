@@ -31,9 +31,15 @@
         mask - CPU affinity mask allocated by KrnAllocCPUMask().
 
     RESULT
-        TRUE if the CPU is selected; FALSE otherwise.
+        TRUE if the CPU is selected; FALSE otherwise. TRUE for any CPU
+        with TASKAFFINITY_ANY, and for any CPU but the caller's with
+        TASKAFFINITY_ALL_BUT_SELF.
 
     NOTES
+        A NULL mask is not valid and selects no CPU, so FALSE is returned
+        for it on SMP platforms. This generic uniprocessor version, where
+        KrnAllocCPUMask() returns NULL and affinity is never in force,
+        returns TRUE.
 
     EXAMPLE
 

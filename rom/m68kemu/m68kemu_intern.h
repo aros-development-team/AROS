@@ -130,17 +130,21 @@ static inline ULONG host_to_m68k(struct M68KEmuContext *ctx, void *ptr)
     return (ULONG)((UBYTE *)ptr - ctx->mem);
 }
 
-/* TODO: bounds checks here guard all containment memory access paths */
+/* TODO: Check guest buffer spans in thunks and shadow synchronization that
+   index ctx->mem directly (e.g. pens, IntuiText/TextAttr and FIB copies).
+   The checked accessors and CPU callbacks do not cover those paths. */
+
+/* Check the whole access before adding to a 32-bit guest address. */
 static inline UWORD m68k_read16(struct M68KEmuContext *ctx, ULONG addr)
 {
-    if (addr + 1 >= ctx->mem_size) return 0;
+    if (addr >= ctx->mem_size || ctx->mem_size - addr < 2) return 0;
     UBYTE *p = ctx->mem + addr;
     return (UWORD)((p[0] << 8) | p[1]);
 }
 
 static inline ULONG m68k_read32(struct M68KEmuContext *ctx, ULONG addr)
 {
-    if (addr + 3 >= ctx->mem_size) return 0;
+    if (addr >= ctx->mem_size || ctx->mem_size - addr < 4) return 0;
     UBYTE *p = ctx->mem + addr;
     return ((ULONG)p[0] << 24) | ((ULONG)p[1] << 16) |
            ((ULONG)p[2] << 8)  |  (ULONG)p[3];
@@ -148,7 +152,7 @@ static inline ULONG m68k_read32(struct M68KEmuContext *ctx, ULONG addr)
 
 static inline void m68k_write16(struct M68KEmuContext *ctx, ULONG addr, UWORD val)
 {
-    if (addr + 1 >= ctx->mem_size) return;
+    if (addr >= ctx->mem_size || ctx->mem_size - addr < 2) return;
     UBYTE *p = ctx->mem + addr;
     p[0] = (UBYTE)(val >> 8);
     p[1] = (UBYTE)(val);
@@ -156,7 +160,7 @@ static inline void m68k_write16(struct M68KEmuContext *ctx, ULONG addr, UWORD va
 
 static inline void m68k_write32(struct M68KEmuContext *ctx, ULONG addr, ULONG val)
 {
-    if (addr + 3 >= ctx->mem_size) return;
+    if (addr >= ctx->mem_size || ctx->mem_size - addr < 4) return;
     UBYTE *p = ctx->mem + addr;
     p[0] = (UBYTE)(val >> 24);
     p[1] = (UBYTE)(val >> 16);

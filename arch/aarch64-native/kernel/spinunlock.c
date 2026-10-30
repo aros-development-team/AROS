@@ -23,7 +23,7 @@ AROS_LH1(void, KrnSpinUnLock,
 
     /* stlr publishes the critical section before the clear; the dsb keeps
      * the sev from overtaking it and leaving a waiter parked. */
-    if (lock->lock & 0x80000000)
+    if (lock->lock & SPINLOCKF_WRITE)
     {
         lock->s_Owner = NULL;
         asm volatile("stlr wzr, [%0]" :: "r"(&lock->lock) : "memory");

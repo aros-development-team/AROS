@@ -1,7 +1,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 #MM- core-linklibs : linklibs-pthread
-#MM linklibs-pthreads : includes
+#MM linklibs-pthread : includes kernel-task-includes
 
 #MM- includes-copy : pthread-includes-copy
 #MM- compiler-includes : pthread-includes-copy

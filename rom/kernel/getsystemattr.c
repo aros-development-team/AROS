@@ -36,7 +36,8 @@
                                    attribute range. Add the CPU index;
                                    KATTR_CPULoad_END is exclusive.
 
-          KATTR_AffinityMask   [.G]
+          KATTR_AffinityMask   [.G] IPTR     - Bitmap of the running CPUs, by
+                                   CPU number (KrnGetCPUNumber()).
 
           KATTR_PeripheralBase [.G] IPTR     - (ARM only) peripheral IO Base address.
 

@@ -29,8 +29,10 @@
         mask - CPU affinity mask returned by KrnAllocCPUMask().
 
     RESULT
+        NULL.
 
     NOTES
+        NULL and the TASKAFFINITY_* sentinels are ignored.
 
     EXAMPLE
 

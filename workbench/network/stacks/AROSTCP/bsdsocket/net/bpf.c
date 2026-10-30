@@ -34,7 +34,7 @@
 #include <kern/amiga_includes.h>
 
 #include <net/if.h>
-#include <net/bpf.h>
+#include "bpf.h"
 #include <net/if_sana.h>
 
 #include <string.h>
@@ -217,25 +217,25 @@ bpf_rotate(struct bpf_d *d)
 }
 
 /*
- * Determine the DLT type for an interface based on its hardware type.
+ * The link type of what an interface's taps capture (if_sana.c), or -1 for
+ * an interface that has no taps.
+ *
+ * A SANA-II driver adds and strips the link header itself, so the stack
+ * never holds a whole frame. On Ethernet the taps rebuild the header from
+ * the request's addresses and packet type, and the capture is DLT_EN10MB,
+ * as bpf_write() expects too. Other wire types have no header the stack can
+ * rebuild in general: their taps give the bare IPv4 and IPv6 packets, which
+ * is DLT_RAW. The loopback and tunnels are not SANA-II interfaces and have
+ * no taps.
  */
-static int
+int
 bpf_dlt_for_ifp(struct ifnet *ifp)
 {
-    struct sana_softc *ssc = (struct sana_softc *)ifp;
+    struct sana_softc *ssc = sana_softc_of(ifp);
 
-    switch(ssc->ss_hwtype) {
-    case 1:		/* IFT_ETHER */
-        return DLT_EN10MB;
-    case 24:	/* IFT_LOOP / loopback */
-        return DLT_NULL;
-    case 23:	/* IFT_PPP */
-        return DLT_PPP;
-    case 28:	/* IFT_SLIP */
-        return DLT_SLIP;
-    default:
-        return DLT_EN10MB;	/* default to Ethernet */
-    }
+    if(ssc == NULL)
+        return -1;
+    return ssc->ss_hwtype == S2WireType_Ethernet ? DLT_EN10MB : DLT_RAW;
 }
 
 /*
@@ -246,6 +246,7 @@ int
 bpf_setif(struct bpf_d *d, const char *ifname)
 {
     struct ifnet *ifp;
+    int dlt;
     spl_t s;
 
     /* Find the interface by name */
@@ -256,6 +257,9 @@ bpf_setif(struct bpf_d *d, const char *ifname)
             break;
     }
     if(ifp == NULL)
+        return ENXIO;
+    /* nothing would ever be captured on an interface without taps */
+    if((dlt = bpf_dlt_for_ifp(ifp)) < 0)
         return ENXIO;
 
     s = splnet();
@@ -283,7 +287,7 @@ bpf_setif(struct bpf_d *d, const char *ifname)
 
     /* Attach to new interface */
     d->bd_ifp = ifp;
-    d->bd_dlt = bpf_dlt_for_ifp(ifp);
+    d->bd_dlt = dlt;
 
     /*
      * Set if_bpf to point to us.  In a full BSD BPF this would be
@@ -443,8 +447,9 @@ bpf_tap(struct ifnet *ifp, u_char *pkt, u_int pktlen, int direction)
  * m         — mbuf chain
  * direction — BPF_D_IN or BPF_D_OUT
  */
-void
-bpf_mtap(struct ifnet *ifp, struct mbuf *m, int direction)
+static void
+bpf_mtap_common(struct ifnet *ifp, const void *hdr, u_int hlen,
+                struct mbuf *m, int direction)
 {
     struct bpf_d *d;
     u_int pktlen, slen;
@@ -463,31 +468,53 @@ bpf_mtap(struct ifnet *ifp, struct mbuf *m, int direction)
 
     d->bd_rcount++;
 
-    pktlen = m->m_pkthdr.len;
-    if(pktlen == 0)
+    if(m->m_pkthdr.len == 0)
         return;
+    pktlen = hlen + m->m_pkthdr.len;
 
     s = splnet();
 
     /*
-     * If the mbuf is contiguous (single mbuf or data fits in first),
-     * filter directly.  Otherwise, linearize into a temporary buffer.
+     * A single mbuf with nothing in front of it is filtered where it is.
+     * Otherwise the header and the chain are put together in a temporary
+     * buffer, so the filter sees one contiguous frame.
      */
-    if(m->m_next == NULL) {
+    if(hlen == 0 && m->m_next == NULL) {
         buf = mtod(m, u_char *);
         slen = bpf_filter(d->bd_filter, buf, pktlen, m->m_len);
         if(slen != 0)
             catchpacket(d, buf, pktlen, slen);
     } else {
-        /* Linearize: copy mbuf chain into contiguous buffer */
         buf = bsd_malloc(pktlen, NULL, NULL);
         if(buf != NULL) {
-            m_copydata(m, 0, (int)pktlen, (caddr_t)buf);
+            if(hlen != 0)
+                bcopy(hdr, buf, hlen);
+            m_copydata(m, 0, (int)m->m_pkthdr.len, (caddr_t)(buf + hlen));
             slen = bpf_filter(d->bd_filter, buf, pktlen, pktlen);
             if(slen != 0)
                 catchpacket(d, buf, pktlen, slen);
             bsd_free(buf, NULL);
+        } else {
+            d->bd_dcount++;
         }
     }
     splx(s);
+}
+
+void
+bpf_mtap(struct ifnet *ifp, struct mbuf *m, int direction)
+{
+    bpf_mtap_common(ifp, NULL, 0, m, direction);
+}
+
+/*
+ * bpf_mtap2: the same, for a packet whose link header is not in the mbuf
+ * chain: hdr (hlen bytes) is captured in front of it. The chain itself is
+ * not changed.
+ */
+void
+bpf_mtap2(struct ifnet *ifp, const void *hdr, u_int hlen, struct mbuf *m,
+          int direction)
+{
+    bpf_mtap_common(ifp, hdr, hlen, m, direction);
 }

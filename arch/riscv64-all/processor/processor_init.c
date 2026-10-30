@@ -256,6 +256,19 @@ static void ParseISAExtensions(struct RiscVProcessorInformation *info,
     info->ISAString = out;
 }
 
+/* The most cpu nodes looked at; more than any kernel numbers */
+#define PROCESSOR_MAX_DTCPUS    64
+
+/* A cpu node's hart id ("reg"), or ~0 if it has none */
+static UQUAD CPUNodeHartID(fdt_node_t cpu)
+{
+    CONST_APTR prop;
+    ULONG len;
+
+    prop = FDT_GetProp(cpu, "reg", &len);
+    return (prop && len >= 4) ? FDT_ReadCells(prop, len / 4) : ~(UQUAD)0;
+}
+
 static void ParseCPUNode(struct RiscVProcessorInformation *info,
                          fdt_node_t cpu, ULONG index)
 {
@@ -425,7 +438,7 @@ static LONG Processor_Init(struct ProcessorBase *ProcessorBase)
     }
 
     cpunodes = AllocVec(ProcessorBase->cpucount * sizeof(fdt_node_t),
-                        MEMF_ANY);
+                        MEMF_ANY | MEMF_CLEAR);
 
     bootinfo = KrnGetBootInfo();
     if (bootinfo)
@@ -438,18 +451,48 @@ static LONG Processor_Init(struct ProcessorBase *ProcessorBase)
 
         if (cpus != FDT_NONE)
         {
+            fdt_node_t dtnodes[PROCESSOR_MAX_DTCPUS];
+            ULONG dtcount = 0;
+
             for (node = FDT_NextNode(cpus);
-                 node != FDT_NONE && found < ProcessorBase->cpucount;
+                 node != FDT_NONE && dtcount < PROCESSOR_MAX_DTCPUS;
                  node = FDT_NextNode(node))
             {
                 CONST_STRPTR name = FDT_NodeName(node);
 
                 if (name && !strcmp(name, "cpu") && FDT_HasProp(node, "reg"))
+                    dtnodes[dtcount++] = node;
+            }
+
+            /*
+             * Core n is the kernel's CPU n (KrnGetCPUNumber()), so the
+             * numbering is the same everywhere: the boot hart is 0 and
+             * need not be the first cpu node. Each CPU's hart id picks
+             * its node; a kernel that cannot say falls back to tree
+             * order.
+             */
+            for (i = 0; i < ProcessorBase->cpucount; i++)
+            {
+                intptr_t hartid = KrnGetCPUAttr(KATTR_CPUHardwareID, i);
+                ULONG n, pick = (i < dtcount) ? i : dtcount;
+
+                if (hartid != -1)
                 {
-                    cpunodes[found] = node;
-                    ParseCPUNode(&info[found], node, found);
-                    found++;
+                    for (n = 0; n < dtcount; n++)
+                    {
+                        if (CPUNodeHartID(dtnodes[n]) == (UQUAD)hartid)
+                        {
+                            pick = n;
+                            break;
+                        }
+                    }
                 }
+                if (pick >= dtcount)
+                    break;
+
+                cpunodes[found] = dtnodes[pick];
+                ParseCPUNode(&info[found], dtnodes[pick], found);
+                found++;
             }
         }
 

@@ -113,6 +113,9 @@ struct aarch64_CPULoadData
 #define CPULOAD_MINWINDOW       100000  /* microseconds */
 
 extern struct Task *aarch64_IdleTask[AARCH64_MAXCPUS];
+/* Each core's MPIDR_EL1 affinity fields, recorded by cpu_Init() on that
+   core (KATTR_CPUHardwareID) */
+extern uint64_t aarch64_CPUHwID[AARCH64_MAXCPUS];
 extern struct aarch64_CPULoadData aarch64_CPULoad[AARCH64_MAXCPUS];
 #endif
 
