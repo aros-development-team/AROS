@@ -3,8 +3,10 @@
 
     Desc: SMP coverage for networking from pthreads (SMP-Net covers it
           with native tasks): posixc read()/write()/close() on a socket from
-          threads on several CPUs that never opened bsdsocket.library.
-          Needs the TCP/IP stack running.
+          threads that never opened bsdsocket.library - the reader on CPU 0
+          and one writer on each other CPU, placed with
+          pthread_attr_setaffinity_np() (by default threads inherit their
+          creator's CPUs). Needs the TCP/IP stack running.
 */
 
 #include <exec/tasks.h>
@@ -23,6 +25,7 @@
 #include <libraries/bsdsocket.h>
 
 #include <pthread.h>
+#include <sched.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
@@ -76,6 +79,17 @@ static void loopback(struct sockaddr_in *sin, UWORD port)
     sin->sin_port = port;
 }
 
+/* A thread attribute placing the thread on one cpu */
+static void attr_on_cpu(pthread_attr_t *attr, int cpu)
+{
+    cpu_set_t set;
+
+    CPU_ZERO(&set);
+    CPU_SET(cpu, &set);
+    pthread_attr_init(attr);
+    pthread_attr_setaffinity_np(attr, sizeof(set), &set);
+}
+
 /* ---- posixc socket I/O from threads ---- */
 
 #define PX_ROUNDS   100
@@ -83,7 +97,7 @@ static void loopback(struct sockaddr_in *sin, UWORD port)
 
 static LONG g_PxWr, g_PxRd;
 static ULONG g_PxWriters;
-static volatile ULONG g_PxBad, g_PxRead, g_PxReadDone;
+static volatile ULONG g_PxBad, g_PxRead, g_PxReadDone, g_PxCPUs;
 static volatile LONG g_PxCloseRet;
 
 static void *PxWriter(void *arg)
@@ -91,6 +105,7 @@ static void *PxWriter(void *arg)
     UBYTE buf[PX_CHUNK];
     int r;
 
+    __atomic_or_fetch(&g_PxCPUs, 1UL << KrnGetCPUNumber(), __ATOMIC_RELAXED);
     for (r = 0; r < PX_ROUNDS; r++)
     {
         /* One value per chunk, so a split write shows up as a mixed chunk */
@@ -145,6 +160,7 @@ static void test_posix_threads(void)
     struct sockaddr_in sin;
     socklen_t len = sizeof(sin);
     pthread_t thr[MAXCPUS + 1];
+    pthread_attr_t attr;
     LONG l, before, after;
     ULONG i;
     BOOL done;
@@ -164,12 +180,19 @@ static void test_posix_threads(void)
     g_PxRd = accept(l, NULL, NULL);
     CloseSocket(l);
 
-    g_PxBad = g_PxRead = g_PxReadDone = 0;
+    g_PxBad = g_PxRead = g_PxReadDone = g_PxCPUs = 0;
     g_PxCloseRet = -2;
     g_PxWriters = g_NumCPUs - 1;
-    pthread_create(&thr[0], NULL, PxReader, NULL);
+    /* The reader on cpu 0, writer n on cpu n */
+    attr_on_cpu(&attr, 0);
+    pthread_create(&thr[0], &attr, PxReader, NULL);
+    pthread_attr_destroy(&attr);
     for (i = 0; i < g_PxWriters; i++)
-        pthread_create(&thr[i + 1], NULL, PxWriter, (void *)(IPTR)(i + 1));
+    {
+        attr_on_cpu(&attr, i + 1);
+        pthread_create(&thr[i + 1], &attr, PxWriter, (void *)(IPTR)(i + 1));
+        pthread_attr_destroy(&attr);
+    }
 
     for (i = 0; i < DONE_TICKS && !g_PxReadDone; i++)
         Delay(1);
@@ -189,9 +212,10 @@ static void test_posix_threads(void)
     Delay(10);
     cnt1 = master_opencnt();
 
-    bug("[smppthreadsnet] posix: %lu writers, read %lu bytes, bad=%lu, close=%ld, fd %ld -> %ld, opencnt %u -> %u\n",
-        (unsigned long)g_PxWriters, (unsigned long)g_PxRead, (unsigned long)g_PxBad,
+    bug("[smppthreadsnet] posix: %lu writers on cpu mask 0x%lx, read %lu bytes, bad=%lu, close=%ld, fd %ld -> %ld, opencnt %u -> %u\n",
+        (unsigned long)g_PxWriters, (unsigned long)g_PxCPUs, (unsigned long)g_PxRead, (unsigned long)g_PxBad,
         (long)g_PxCloseRet, (long)before, (long)after, cnt0, cnt1);
+    check(g_PxCPUs == (((1UL << g_PxWriters) - 1) << 1), "every writer ran on the cpu it asked for");
     check(done && g_PxRead == g_PxWriters * PX_ROUNDS * PX_CHUNK, "posixc threads moved all the data");
     check(g_PxBad == 0, "no write failed or was split");
     check(g_PxCloseRet == 0, "another thread closed the socket");

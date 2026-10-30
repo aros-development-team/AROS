@@ -2,9 +2,15 @@
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
     Desc: SMP coverage for pthreads (the native-task SMP tests do not use
-          them; SMP-PThreads-Net covers sockets from pthreads):
-          pthread_create() while every CPU hammers OpenLibrary() - the
-          child's DosEntry waits on the LDDemon semaphore as it starts.
+          them; SMP-PThreads-Net covers sockets from pthreads). Threads are
+          placed with the affinity API - by default they inherit their
+          creator's CPUs:
+          1. pthread_create() while every CPU hammers OpenLibrary() - the
+             child's DosEntry waits on the LDDemon semaphore as it starts;
+             each thread is created on one CPU (pthread_attr_setaffinity_np)
+             and must run there
+          2. pthread_setaffinity_np() moves a running thread to each CPU in
+             turn; pthread_getaffinity_np() and sched_getcpu() confirm it
           A corrupted semaphore or a lost wakeup can show up as a hang or
           an alert instead of a FAIL line: a thread that never starts may
           own the LDDemon semaphore, and every later OpenLibrary() waits.
@@ -20,6 +26,8 @@
 #include <proto/kernel.h>
 
 #include <pthread.h>
+#include <sched.h>
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -85,7 +93,7 @@ static BOOL wait_count(volatile ULONG *count, ULONG want, int ticks)
     return *count >= want;
 }
 
-/* ---- thread start under OpenLibrary contention ---- */
+/* ---- 1. thread start under OpenLibrary contention ---- */
 
 static volatile ULONG g_Hammers;
 
@@ -105,6 +113,7 @@ struct ThrSlot
 {
     volatile ULONG  ts_Started;
     volatile ULONG  ts_CPU;
+    ULONG           ts_Want;        /* the cpu it was created on */
 };
 
 static void *ThreadFunc(void *arg)
@@ -121,7 +130,7 @@ static void test_pthread_start(void)
     struct ThrSlot slot[THR_COUNT];
     pthread_t thr[THR_COUNT];
     char names[MAXCPUS][32];
-    ULONG cpus = 0, created = 0;
+    ULONG cpus = 0, created = 0, misplaced = 0;
     int r, i, n, hammers = 0;
     BOOL ok = TRUE;
 
@@ -138,8 +147,22 @@ static void test_pthread_start(void)
     {
         memset(slot, 0, sizeof(slot));
         for (n = 0; n < THR_COUNT; n++)
-            if (pthread_create(&thr[n], NULL, ThreadFunc, &slot[n]) != 0)
+        {
+            /* Each thread asks for one cpu, round robin over all of them */
+            pthread_attr_t attr;
+            cpu_set_t set;
+            int err;
+
+            slot[n].ts_Want = (r * THR_COUNT + n) % g_NumCPUs;
+            CPU_ZERO(&set);
+            CPU_SET(slot[n].ts_Want, &set);
+            pthread_attr_init(&attr);
+            pthread_attr_setaffinity_np(&attr, sizeof(set), &set);
+            err = pthread_create(&thr[n], &attr, ThreadFunc, &slot[n]);
+            pthread_attr_destroy(&attr);
+            if (err != 0)
                 break;
+        }
         created += n;
 
         for (i = 0; i < n; i++)
@@ -156,6 +179,8 @@ static void test_pthread_start(void)
                 break;
             }
             cpus |= 1UL << slot[i].ts_CPU;
+            if (slot[i].ts_CPU != slot[i].ts_Want)
+                misplaced++;
         }
         if (!ok)
             break;
@@ -171,15 +196,55 @@ static void test_pthread_start(void)
     g_Stop = 1;
     wait_count(&g_Hammers, hammers, DONE_TICKS);
 
-    bug("[smppthreads] pthread: %lu threads, cpu mask 0x%lx, %d hammers\n",
-        (unsigned long)created, (unsigned long)cpus, hammers);
-    if (ok && (cpus & ~1UL) == 0)
+    bug("[smppthreads] pthread: %lu threads, cpu mask 0x%lx, %lu off their cpu, %d hammers\n",
+        (unsigned long)created, (unsigned long)cpus, (unsigned long)misplaced, hammers);
+    check(ok, "pthread start under OpenLibrary load");
+    check(misplaced == 0, "every thread ran on the cpu it asked for");
+}
+
+/* ---- 2. moving a running thread ---- */
+
+static void test_setaffinity(void)
+{
+    cpu_set_t set, back, saved;
+    pthread_t self = pthread_self();
+    int i, err, moved = 0, readback = 0;
+
+    if ((err = pthread_getaffinity_np(self, sizeof(saved), &saved)) != 0)
     {
-        bug("[smppthreads] INVALID pthread start: no thread ran off cpu 0\n");
-        invalid++;
+        bug("[smppthreads] pthread_getaffinity_np failed (%d)\n", err);
+        check(FALSE, "reading this thread's affinity");
+        return;
     }
-    else
-        check(ok, "pthread start under OpenLibrary load");
+
+    for (i = 0; i < g_NumCPUs; i++)
+    {
+        int ticks = START_TICKS;
+
+        CPU_ZERO(&set);
+        CPU_SET(i, &set);
+        if (pthread_setaffinity_np(self, sizeof(set), &set) != 0)
+            break;
+        /* It moves at its CPU's next scheduling point */
+        while (sched_getcpu() != i && ticks-- > 0)
+            Delay(1);
+        if (sched_getcpu() == i)
+            moved++;
+        if (pthread_getaffinity_np(self, sizeof(back), &back) == 0 &&
+            CPU_COUNT(&back) == 1 && CPU_ISSET(i, &back))
+            readback++;
+    }
+    pthread_setaffinity_np(self, sizeof(saved), &saved);
+
+    bug("[smppthreads] setaffinity: moved to %d of %d cpus, %d read back\n",
+        moved, g_NumCPUs, readback);
+    check(moved == g_NumCPUs, "pthread_setaffinity_np moves the thread to each cpu");
+    check(readback == g_NumCPUs, "pthread_getaffinity_np reads the set back");
+
+    CPU_ZERO(&set);
+    CPU_SET(CPU_SETSIZE - 1, &set);
+    check(pthread_setaffinity_np(self, sizeof(set), &set) == EINVAL,
+          "a set naming no existing cpu is rejected");
 }
 
 int main(void)
@@ -199,6 +264,7 @@ int main(void)
     }
 
     test_pthread_start();
+    test_setaffinity();
 
     bug("[smppthreads] DONE: %d PASS, %d FAIL, %d INVALID\n", pass, fail, invalid);
     return fail ? RETURN_FAIL : RETURN_OK;
