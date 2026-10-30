@@ -216,10 +216,12 @@ sana_if_deconfigure(struct ifnet *ifp)
         autoip_stop(ifp);
 
 #if INET6
-    /* Forget the routers heard on it and the routes they gave: the routes go
-     * below anyway, and an entry left marked installed would never be put
-     * back when its router advertises again after a reload. */
+    /* Forget the routers heard on it and the routes they gave, and the
+     * prefixes: the routes and addresses go below anyway, and an entry left
+     * marked installed (or its address made) would never be put back when
+     * the router advertises again after a reload. */
     nd6_purge_routers(ifp);
+    nd6_purge_prefixes(ifp);
 #endif
     /* Flush all routes on the interface before dropping its addresses, so no
      * live route is left referencing an ifaddr we are about to free. */
