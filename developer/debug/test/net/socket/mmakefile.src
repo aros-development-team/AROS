@@ -24,7 +24,8 @@ CUNITSOCKETTESTFILES := \
     cunit-net-mcast6 \
     cunit-net-raw6 \
     cunit-net-sendto6 \
-    cunit-net-scope6
+    cunit-net-scope6 \
+    cunit-net-rio6
 
 #MM test-socket : includes linklibs
 
