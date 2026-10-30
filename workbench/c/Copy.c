@@ -1374,9 +1374,12 @@ void PatCopy(STRPTR name, struct CopyData *cd)
     
                         if (buffer)
                         {
-                            struct DevProc *dvp = GetDeviceProc("", NULL);
+                            BPTR dirlock = APath->ap_Current->an_Lock;
+                            /* The handler owning the directory, not the current dir's */
+                            struct MsgPort *port = dirlock ?
+                                ((struct FileLock *)BADDR(dirlock))->fl_Task : GetFileSysTask();
 
-                            if (ReadLink(dvp->dvp_Port, APath->ap_Current->an_Lock, APath->ap_Info.fib_FileName, buffer, BUFFERSIZE - 1) > 0)
+                            if (ReadLink(port, dirlock, APath->ap_Info.fib_FileName, buffer, BUFFERSIZE - 1) > 0)
                             {
                                 BOOL link_ok = FALSE;
                                 BPTR dir, lock;
@@ -1420,7 +1423,6 @@ void PatCopy(STRPTR name, struct CopyData *cd)
                                                APath->ap_Info.fib_FileName, buffer);
                                 }
                             }
-                            FreeDeviceProc(dvp);
                             FreeMem(buffer, BUFFERSIZE);
                         }
                     }
