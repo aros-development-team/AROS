@@ -1,4 +1,4 @@
-/* ext2.c */
+/* sfs.c */
 
 /* <project_name> -- <project_description>
  *
