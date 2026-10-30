@@ -5,7 +5,8 @@
     the stack picks for one datagram must not stick to the socket. The
     socket stays bound to the unspecified address, keeps receiving
     datagrams sent to its other addresses, and an IPV6_PKTINFO source on a
-    later datagram is used.
+    later datagram is used. A group datagram leaves by, and takes its source
+    from, the IPV6_MULTICAST_IF interface.
 
     Everything runs over the loopback addresses ::1 and the link-local of
     an interface (default eth0, as the first argument). Without that
@@ -161,6 +162,33 @@ void testSENDTO6_PKTINFO_SOURCE(void)
     CloseSocket(s);
 }
 
+/* A group datagram from a [::] socket leaves by the IPV6_MULTICAST_IF
+ * interface, from its link-local address (RFC 3493 section 5.2). The
+ * looped-back copy to a member on that interface shows the source. */
+void testSENDTO6_MULTICAST_IF(void)
+{
+    struct in6_addr any = IN6ADDR_ANY_INIT;
+    struct sockaddr_in6 d, from;
+    struct ipv6_mreq mr;
+    unsigned short sp, rp;
+    int s, r;
+    NEED_LL();
+    s = udp_bound(&any, &sp);
+    r = udp_bound(&any, &rp);
+    CU_ASSERT_FATAL(s >= 0 && r >= 0);
+    bzero(&mr, sizeof(mr));
+    inet_pton(AF_INET6, "ff02::4d54:63", &mr.ipv6mr_multiaddr);
+    mr.ipv6mr_interface = ifindex;
+    CU_ASSERT_EQUAL(setsockopt(r, IPPROTO_IPV6, IPV6_JOIN_GROUP, &mr, sizeof(mr)), 0);
+    CU_ASSERT_EQUAL(setsockopt(s, IPPROTO_IPV6, IPV6_MULTICAST_IF, &ifindex, sizeof(ifindex)), 0);
+    sa6(&d, &mr.ipv6mr_multiaddr, rp, 0);
+    CU_ASSERT_EQUAL(sendto(s, "m", 1, 0, (struct sockaddr *)&d, sizeof(d)), 1);
+    CU_ASSERT_EQUAL(recv_from(r, &from), 1);
+    CU_ASSERT(memcmp(&from.sin6_addr, &linklocal, sizeof(linklocal)) == 0);
+    CloseSocket(r);
+    CloseSocket(s);
+}
+
 static int setup(void)
 {
     struct ifreq ifr;
@@ -217,7 +245,8 @@ int main(int argc, char **argv)
     if (p == NULL ||
         !CU_add_test(p, "sendto() leaves the socket unbound", testSENDTO6_STAYS_UNBOUND) ||
         !CU_add_test(p, "after sendto() the socket receives on its other addresses", testSENDTO6_STILL_RECEIVES) ||
-        !CU_add_test(p, "an IPV6_PKTINFO source is used", testSENDTO6_PKTINFO_SOURCE))
+        !CU_add_test(p, "an IPV6_PKTINFO source is used", testSENDTO6_PKTINFO_SOURCE) ||
+        !CU_add_test(p, "IPV6_MULTICAST_IF names a group datagram's source", testSENDTO6_MULTICAST_IF))
     {
         CU_cleanup_registry();
         CloseLibrary(SocketBase);

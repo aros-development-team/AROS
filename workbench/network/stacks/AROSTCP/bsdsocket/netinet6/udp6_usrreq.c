@@ -201,6 +201,14 @@ udp6_output(struct inpcb *inp, struct mbuf *m,
     }
     lport = inp->inp_lport;
 
+    /*
+     * A group datagram with no interface named on it leaves by the one
+     * IPV6_MULTICAST_IF set (RFC 3493 section 5.2), so the source comes
+     * from there too.
+     */
+    if(oifp == NULL && IN6_IS_ADDR_MULTICAST(&faddr6) && inp->in6p_moptions)
+        oifp = inp->in6p_moptions->im6o_multicast_ifp;
+
     /* ---- Resolve source address ---- */
     if(!IN6_IS_ADDR_UNSPECIFIED(&inp->inp_laddr6)) {
         laddr6 = inp->inp_laddr6;
