@@ -66,6 +66,7 @@
 #include <netinet/udp_var.h>
 
 #include <kern/kern_subr_protos.h>
+#include <kern/uipc_socket2_protos.h>
 
 /*
  * UDP protocol implementation.
@@ -94,7 +95,6 @@ extern int ip_defttl;
 
 static	void udp_detach __P((struct inpcb *));
 static	void udp_notify __P((struct inpcb *, int));
-static	struct mbuf *udp_saveopt __P((caddr_t, int, int));
 
 void
 udp_init()
@@ -333,23 +333,26 @@ void udp_input(void *args, ...)
         struct mbuf **mp = &opts;
 
         if(inp->inp_flags & INP_RECVDSTADDR) {
-            *mp = udp_saveopt((caddr_t) &ip->ip_dst,
-                              sizeof(struct in_addr), IP_RECVDSTADDR);
+            *mp = sbcreatecontrol((caddr_t) &ip->ip_dst,
+                                  sizeof(struct in_addr), IP_RECVDSTADDR,
+                                  IPPROTO_IP);
             if(*mp)
                 mp = &(*mp)->m_next;
         }
 #ifdef notyet
         /* options were tossed above */
         if(inp->inp_flags & INP_RECVOPTS) {
-            *mp = udp_saveopt((caddr_t) opts_deleted_above,
-                              sizeof(struct in_addr), IP_RECVOPTS);
+            *mp = sbcreatecontrol((caddr_t) opts_deleted_above,
+                                  sizeof(struct in_addr), IP_RECVOPTS,
+                                  IPPROTO_IP);
             if(*mp)
                 mp = &(*mp)->m_next;
         }
         /* ip_srcroute doesn't do what we want here, need to fix */
         if(inp->inp_flags & INP_RECVRETOPTS) {
-            *mp = udp_saveopt((caddr_t) ip_srcroute(),
-                              sizeof(struct in_addr), IP_RECVRETOPTS);
+            *mp = sbcreatecontrol((caddr_t) ip_srcroute(),
+                                  sizeof(struct in_addr), IP_RECVRETOPTS,
+                                  IPPROTO_IP);
             if(*mp)
                 mp = &(*mp)->m_next;
         }
@@ -370,31 +373,6 @@ bad:
     m_freem(m);
     if(opts)
         m_freem(opts);
-}
-
-/*
- * Create a "control" mbuf containing the specified data
- * with the specified type for presentation with a datagram.
- */
-struct mbuf *
-udp_saveopt(p, size, type)
-caddr_t p;
-register int size;
-int type;
-{
-    register struct cmsghdr *cp;
-    struct mbuf *m;
-
-    if((m = m_get(M_DONTWAIT, MT_CONTROL)) == NULL)
-        return ((struct mbuf *) NULL);
-    cp = (struct cmsghdr *) mtod(m, struct cmsghdr *);
-    (void)memcpy(CMSG_DATA(cp), p, size);
-    size += sizeof(*cp);
-    m->m_len = size;
-    cp->cmsg_len = size;
-    cp->cmsg_level = IPPROTO_IP;
-    cp->cmsg_type = type;
-    return (m);
 }
 
 /*

@@ -28,11 +28,11 @@ AROS_LH2I(int, KrnUnmapGlobal,
     int ret;
 
     if (!length)
-        return -1;
+        return 0;
 
     /* Before Forbid()/SuperState(), as in mapglobal.c. */
     if (core_PTPoolPrepare(vaddr, vend, 0, TRUE, &pool))
-        return -1;
+        return 0;
 
     if (!Kernel_13_KrnIsSuper()) {
         /* Forbid() covers the window from here to the shootdown; see the
@@ -42,7 +42,7 @@ AROS_LH2I(int, KrnUnmapGlobal,
         if (!ssp) {
             Permit();
             core_PTPoolDispose(pool);
-            return -1;
+            return 0;
         }
     }
 
@@ -62,7 +62,8 @@ AROS_LH2I(int, KrnUnmapGlobal,
 
     core_PTPoolDispose(pool);
 
-    return ret;
+    /* Non-zero on success, 0 on failure - the same on every port */
+    return (ret == 0);
 
     AROS_LIBFUNC_EXIT
 }

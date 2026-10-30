@@ -57,6 +57,9 @@ struct Task *cpu_InitBootStrap(struct ExecBase *SysBase)
     bstask->tc_SPLower = (APTR)(((uintptr_t)ml->ml_ME[1].me_Addr + 15) & ~0xF);
     bstask->tc_SPUpper = bstask->tc_SPLower + (sizeof(IPTR) * BOOTSTRAP_STACKWORDS);
 
+    /* The list must exist before anything goes on it (the task is
+     * fresh MEMF_CLEAR memory, so lh_Head is NULL until then) */
+    NEWLIST(&bstask->tc_MemEntry);
     AddHead(&bstask->tc_MemEntry, &ml->ml_Node);
 
     D(bug("[Kernel:%02d] Bootstrap task @ 0x%p\n", cpunum, bstask));
@@ -72,7 +75,6 @@ struct Task *cpu_InitBootStrap(struct ExecBase *SysBase)
 
     D(bug("[Kernel:%02d] CPU Ctx @ 0x%p\n", cpunum, bsctx));
 
-    NEWLIST(&bstask->tc_MemEntry);
 
     if ((bstask->tc_Node.ln_Name = AllocVec(20, MEMF_CLEAR)) != NULL)
     {
@@ -101,8 +103,14 @@ struct Task *cpu_InitBootStrap(struct ExecBase *SysBase)
     IntETask(bstask->tc_UnionETask.tc_ETask)->iet_CpuNumber = cpunum;
     {
         void *aff = KrnAllocCPUMask();
-        if (aff)
-            KrnGetCPUMask(cpunum, aff);
+
+        /* A NULL mask is invalid: without one this task can not be */
+        if (!aff)
+        {
+            bug("[Kernel:%02d] FATAL : Failed to allocate the bootstrap affinity mask\n", cpunum);
+            return NULL;
+        }
+        KrnGetCPUMask(cpunum, aff);
         IntETask(bstask->tc_UnionETask.tc_ETask)->iet_CpuAffinity = aff;
     }
 

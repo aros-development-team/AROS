@@ -317,6 +317,60 @@ static const struct acpi_header *acpi_find(const char *sig)
  *
  * Returns 0 when there is nothing to find, leaving info untouched.
  */
+/*
+ * The harts, from the MADT's RINTC entries, for a machine that handed
+ * over no device tree: one entry per hart, the enabled ones usable.
+ * Fills ncpus, hartids and boot_cpu (the entry of the hart we booted
+ * on). Returns the number of harts found, 0 if ACPI describes none.
+ */
+int krnACPIHartInfo(struct krnFDTInfo *info, unsigned long boothart)
+{
+    const struct acpi_header *madt = acpi_find("APIC");
+    const uint8_t *p, *end;
+    uint32_t n = 0;
+
+    if (!madt)
+        return 0;
+
+    p = (const uint8_t *)madt + sizeof(struct acpi_madt);
+    end = (const uint8_t *)madt + madt->length;
+
+    info->boot_cpu = 0;
+
+    while (p + sizeof(struct acpi_madt_entry) <= end)
+    {
+        const struct acpi_madt_entry *e = (const struct acpi_madt_entry *)p;
+
+        if (e->length < sizeof(*e))
+            break;
+
+        if (e->type == ACPI_MADT_TYPE_RISCV_INTC &&
+            e->length >= sizeof(struct acpi_madt_rintc))
+        {
+            const struct acpi_madt_rintc *r = (const struct acpi_madt_rintc *)p;
+
+            if ((r->flags & 1) && (n < KRN_MAX_HARTS))
+            {
+                if (r->hart_id == boothart)
+                    info->boot_cpu = n;
+                info->hartids[n++] = r->hart_id;
+            }
+        }
+
+        p += e->length;
+    }
+
+    if (n)
+    {
+        info->ncpus = n;
+        krnSBIPutStr("cpus:      ");
+        put_dec(n);
+        krnSBIPutStr(" hart(s) described by ACPI\n");
+    }
+
+    return (int)n;
+}
+
 int krnACPIPLICInfo(struct krnFDTInfo *info)
 {
     const struct acpi_header *madt = acpi_find("APIC");

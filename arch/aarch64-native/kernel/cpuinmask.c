@@ -18,13 +18,15 @@ AROS_LH2(BOOL, KrnCPUInMask,
 {
     AROS_LIBFUNC_INIT
 
-    /* No affinity assigned = run anywhere, not unschedulable. */
+    /* A NULL mask is invalid and selects no CPU (exec never stores one). */
     if (!mask)
-        return TRUE;
+        return FALSE;
 
     /* TASKAFFINITY_ANY is a sentinel, not a buffer pointer. */
     if ((IPTR)mask == TASKAFFINITY_ANY)
         return TRUE;
+    if ((IPTR)mask == TASKAFFINITY_ALL_BUT_SELF)
+        return (id != GetCPUNumber());
 
     return (((uint32_t *)mask)[id >> 5] & (1U << (id & 31))) ? TRUE : FALSE;
 

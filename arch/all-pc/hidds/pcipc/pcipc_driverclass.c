@@ -243,8 +243,8 @@ APTR PCIPC__Hidd_PCIDriver__MapPCI(OOP_Class *cl, OOP_Object *o,
         DMMIO(bug("[PCIPC:Driver] %s: mapping 0x%p (%u bytes)\n", __func__,
                   cpuaddr, msg->Length);)
 
-        if (KrnMapGlobal((APTR)start, (APTR)start, end - start,
-                         MAP_Readable | MAP_Writable | MAP_CacheInhibit) != 0)
+        if (!KrnMapGlobal((APTR)start, (APTR)start, end - start,
+                          MAP_Readable | MAP_Writable | MAP_CacheInhibit))
         {
             bug("[PCIPC:Driver] %s: failed to map BAR @ 0x%p\n", __func__, cpuaddr);
             return NULL;

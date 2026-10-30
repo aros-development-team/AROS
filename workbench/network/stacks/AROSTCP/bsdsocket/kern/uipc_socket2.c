@@ -805,6 +805,36 @@ struct mbuf *control, *m0;
 }
 
 /*
+ * Create a control mbuf holding one control message - a cmsghdr of the given
+ * level and type followed by size bytes from p - for a protocol to hand to
+ * sbappendaddr() with a datagram. The data starts at CMSG_DATA(), which on
+ * an LP64 target lies past padding after the header, so cmsg_len is
+ * CMSG_LEN(size), and the mbuf holds CMSG_SPACE(size) so the next message in
+ * a chain starts aligned, as 4.4BSD-Lite's sbcreatecontrol(). Returns NULL
+ * when no mbuf is free or the message does not fit in one.
+ */
+struct mbuf *
+sbcreatecontrol(caddr_t p, int size, int type, int level)
+{
+    struct cmsghdr *cp;
+    struct mbuf *m;
+
+    if(CMSG_SPACE((u_int)size) > MLEN)
+        return ((struct mbuf *)NULL);
+    if((m = m_get(M_DONTWAIT, MT_CONTROL)) == NULL)
+        return ((struct mbuf *)NULL);
+    cp = mtod(m, struct cmsghdr *);
+    bzero(cp, CMSG_SPACE((u_int)size));
+    if(size)
+        bcopy(p, CMSG_DATA(cp), size);
+    m->m_len = CMSG_SPACE((u_int)size);
+    cp->cmsg_len = CMSG_LEN((u_int)size);
+    cp->cmsg_level = level;
+    cp->cmsg_type = type;
+    return (m);
+}
+
+/*
  * Compress mbuf chain m into the socket
  * buffer sb following mbuf n.  If n
  * is null, the buffer is presumed empty.

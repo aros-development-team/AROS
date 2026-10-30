@@ -399,20 +399,34 @@ static LONG recvit(struct SocketBase *p,
             *namelenp = len;
     }
     if(mp->msg_control) {
-        len = mp->msg_controllen;
-        if(len <= 0 || control == 0)
-            len = 0;
-        else {
-            if(len >= control->m_len)
-                len = control->m_len;
-            /*      else
-            	flags |= MSG_CTRUNC;  no syscall ever does something w/ mp->flags */
+        /*
+         * Every control message the protocol attached, one per mbuf, each
+         * padded to CMSG_SPACE() so the next starts aligned; what does not
+         * fit in the caller's buffer is cut off and reported with MSG_CTRUNC
+         * (4.4BSD-Lite2 recvit()).
+         */
+        struct mbuf *cm = control;
+        caddr_t ctlbuf = (caddr_t)mp->msg_control;
+        long room = (long)mp->msg_controllen;
 
-            aligned_bcopy(mtod(control, caddr_t),
-                          (caddr_t)mp->msg_control, (unsigned)len);
+        while(cm && room > 0) {
+            long tocopy = cm->m_len;
+
+            if(tocopy > room) {
+                tocopy = room;
+                flags |= MSG_CTRUNC;
+            }
+            aligned_bcopy(mtod(cm, caddr_t), ctlbuf, (unsigned)tocopy);
+            ctlbuf += tocopy;
+            room -= tocopy;
+            cm = cm->m_next;
         }
-        mp->msg_controllen = len;
-    }
+        if(cm)
+            flags |= MSG_CTRUNC;
+        mp->msg_controllen = ctlbuf - (caddr_t)mp->msg_control;
+    } else if(control)
+        flags |= MSG_CTRUNC;
+    mp->msg_flags = flags;
 out:
     if(from)
         m_freem(from);

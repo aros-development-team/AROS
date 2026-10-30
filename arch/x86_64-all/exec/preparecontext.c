@@ -45,10 +45,29 @@ BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
         {
 #if defined(__AROSEXEC_SMP__)
             case TASKTAG_AFFINITY:
-                if ((IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity) && ((IPTR)IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity != TASKAFFINITY_ANY))
-                    KrnFreeCPUMask(IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
-                IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity = (void *)t->ti_Data;
+            {
+                struct IntETask *iet = IntETask(task->tc_UnionETask.tc_ETask);
+                void *aff = (void *)t->ti_Data;
+
+                /*
+                 * NULL is not a valid mask. The value 0 is also
+                 * TASKAFFINITY_BOOT, so honour that meaning with a real
+                 * mask for the boot CPU rather than storing NULL (which
+                 * no CPU would dispatch). If even that can not be had,
+                 * keep the mask InitETask gave the task.
+                 */
+                if ((IPTR)aff == TASKAFFINITY_BOOT)
+                {
+                    if (!(aff = KrnAllocCPUMask()))
+                        break;
+                    KrnGetCPUMask(0, aff);
+                }
+
+                if (iet->iet_CpuAffinity && ((IPTR)iet->iet_CpuAffinity != TASKAFFINITY_ANY))
+                    KrnFreeCPUMask(iet->iet_CpuAffinity);
+                iet->iet_CpuAffinity = aff;
                 break;
+            }
 #endif
 #define REGARG(x, reg)                \
         case TASKTAG_ARG ## x:        \

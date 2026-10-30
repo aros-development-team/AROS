@@ -49,7 +49,7 @@ struct vc1_state
     ULONG               nslices, nextdata;
     struct nouveau_bo   *scratch;
     ULONG               scratchsize;
-    BOOL                warned;
+    LONG                fieldfwd, fieldbwd; /* the first field's references, for the second */
 };
 
 /* a zeroed VRAM buffer: the engine keeps state in these */
@@ -189,6 +189,8 @@ static ULONG vc1_status(struct HIDDNouveauDecode *dec, ULONG *status)
     nvdec_status_s *st = (nvdec_status_s *)status;
     ULONG mbs = ((dec->width + 15) / 16) * ((dec->height + 15) / 16);
 
+    if (dec->fields)
+        mbs /= 2;
     if (!st->mbs_in_error && !st->slice_header_error_code && (st->mbs_correctly_decoded >= mbs) &&
         (!st->error_status || (st->error_status == 0x20)))
         return 0;
@@ -226,19 +228,23 @@ static BOOL vc1_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFr
     if (!v || !v->have_pp || !dec->cur.nslices)
         return FALSE;
     pp = &v->pp;
-    if ((pp->sequence_fields.bits.profile == 3) || pp->picture_fields.bits.frame_coding_mode)
-    {
-        if (!v->warned)
-            nvlog("[Nouveau] NVDEC: VC-1 advanced profile / interlaced pictures are not supported yet\n");
-        v->warned = TRUE;
-        return FALSE;
-    }
     if ((pp->coded_width > dec->width) || (pp->coded_height > dec->height))
     {
         nvlog("[Nouveau] NVDEC: VC-1 picture %ux%u does not fit the session\n", pp->coded_width, pp->coded_height);
         return FALSE;
     }
     ptype = pp->picture_fields.bits.picture_type;   /* I 0, P 1, B 2, BI 3, skipped 4: NVDEC's numbering */
+    if (pp->picture_fields.bits.frame_coding_mode == 2)
+    {
+        /*
+         * A field picture: the type is the pair's (FPTYPE: I/I, I/P, P/I,
+         * P/P, B/B, B/BI, BI/B, BI/BI); this field's own one picks the
+         * references.
+         */
+        static const UBYTE first[8] = { 0, 0, 1, 1, 2, 2, 3, 3 }, second[8] = { 0, 1, 0, 1, 2, 3, 2, 3 };
+
+        ptype = pp->picture_fields.bits.is_first_field ? first[ptype & 7] : second[ptype & 7];
+    }
 
     /* references */
     fwd = bwd = -1;
@@ -248,6 +254,17 @@ static BOOL vc1_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFr
         bwd = vc1_refslot(dec, pp->backward_reference_picture);
     if (bwd < 0)
         bwd = fwd;
+    /* a second field takes the references of the first, as NVIDIA's driver does (traced) */
+    if ((pp->picture_fields.bits.frame_coding_mode == 2) && !pp->picture_fields.bits.is_first_field)
+    {
+        fwd = v->fieldfwd;
+        bwd = v->fieldbwd;
+    }
+    else
+    {
+        v->fieldfwd = fwd;
+        v->fieldbwd = bwd;
+    }
     if (fwd >= 0)
         avoid |= 1UL << fwd;
     if (bwd >= 0)
@@ -282,8 +299,10 @@ static BOOL vc1_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFr
      * sizes and strides; every picture-layer field stays 0 (the engine reads
      * the picture header, bitplanes included, from the frame data).
      */
+    /* FFmpeg passes the data after the start code: put it back (a second field has its own) */
     pic->prefixStartCode[2] = 1;
-    pic->prefixStartCode[3] = 0x0d;                     /* frame start code */
+    pic->prefixStartCode[3] = ((pp->picture_fields.bits.frame_coding_mode == 2) &&
+                               !pp->picture_fields.bits.is_first_field) ? 0x0c : 0x0d;
     pic->eos[2] = 1;
     pic->eos[3] = 0x0a;                                 /* end of sequence */
     pic->eos[10] = 1;
@@ -295,7 +314,8 @@ static BOOL vc1_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFr
     pic->FrameHeight = pp->coded_height;
     pic->CodedWidth = pp->coded_width;
     pic->CodedHeight = pp->coded_height;
-    pic->profile = 1;                                   /* simple or main */
+    pic->profile = (pp->sequence_fields.bits.profile == 3) ? 2 : 1;    /* advanced, else simple or main */
+    pic->refdist_flag = pp->reference_fields.bits.reference_distance_flag;
     pic->postprocflag = pp->post_processing ? 1 : 0;
     pic->pulldown = pp->sequence_fields.bits.pulldown;
     pic->interlace = pp->sequence_fields.bits.interlace;
@@ -307,7 +327,7 @@ static BOOL vc1_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFr
     pic->multires = pp->sequence_fields.bits.multires;
     pic->syncmarker = pp->sequence_fields.bits.syncmarker;
     pic->rangered = pp->sequence_fields.bits.rangered;
-    pic->maxbframes = pp->sequence_fields.bits.max_b_frames;
+    pic->maxbframes = (pic->profile == 2) ? 0 : pp->sequence_fields.bits.max_b_frames;   /* simple/main only (traced) */
     pic->dquant = pp->pic_quantizer_fields.bits.dquant;
     pic->panscan_flag = pp->entrypoint_fields.bits.panscan_flag;
     pic->quantizer = pp->pic_quantizer_fields.bits.quantizer;
@@ -320,12 +340,43 @@ static BOOL vc1_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFr
     pic->HistBufferSize = ((pp->coded_width + 15) / 16) * 3;    /* 768 bytes per macroblock column, as NVIDIA's driver (traced) */
     pic->FrameStride[0] = dec->pitch;
     pic->FrameStride[1] = dec->pitch;
-    pic->luma_bot_offset = (dec->pitch * (((dec->height + 127) & ~127UL) / 2)) >> 8;
-    pic->chroma_bot_offset = (dec->pitch * (((dec->height + 127) & ~127UL) / 4)) >> 8;
-    /* frame layout (0): 1 puts the fields in separate halves (NVIDIA's driver re-weaves them, we show the picture as is) */
-    pic->output_memory_layout = 0;
-    pic->ref_memory_layout[0] = 0;
-    pic->ref_memory_layout[1] = 0;
+    if (pic->profile == 2)
+    {
+        /* as NVIDIA's driver sets them for the advanced profile (traced): a 32-row aligned luma field, chroma half */
+        ULONG rows = ((pp->coded_height / 2) + 31) & ~31UL;
+
+        pic->luma_bot_offset = (dec->pitch * rows) >> 8;
+        pic->chroma_bot_offset = (dec->pitch * (rows / 2)) >> 8;
+    }
+    else
+    {
+        pic->luma_bot_offset = (dec->pitch * (((dec->height + 127) & ~127UL) / 2)) >> 8;
+        pic->chroma_bot_offset = (dec->pitch * (((dec->height + 127) & ~127UL) / 4)) >> 8;
+    }
+    if (pp->picture_fields.bits.frame_coding_mode == 2)
+        dec->fields = TRUE;                             /* field pictures: half the macroblocks (status) */
+    /*
+     * Layout 1 keeps the two fields in separate halves of the picture, 0
+     * stores it in frame order. Progressive streams use 0. Interlaced ones
+     * need 1, as NVIDIA's driver sets it (traced): field-coded motion
+     * compensation from frame-order references smeared every moving area.
+     * The copy-out weaves the fields together again.
+     */
+    if (pp->sequence_fields.bits.interlace)
+    {
+        pic->output_memory_layout = 1;
+        pic->ref_memory_layout[0] = 1;
+        pic->ref_memory_layout[1] = 1;
+        dec->weaverows = (pic->luma_bot_offset << 8) / dec->pitch;
+        dec->cweaverows = (pic->chroma_bot_offset << 8) / dec->pitch;
+    }
+    else
+    {
+        pic->output_memory_layout = 0;
+        pic->ref_memory_layout[0] = 0;
+        pic->ref_memory_layout[1] = 0;
+        dec->weaverows = dec->cweaverows = 0;
+    }
 
     nouveau_staging_to_gpu(f->picsetup->map, NOUVEAU_DECODE_PICSETUP_SIZE);
     nouveau_staging_to_gpu(f->bitstream->map, dec->cur.bitstreamlen);
@@ -345,7 +396,7 @@ static BOOL vc1_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFr
         nmt = 4;
         /* each picture its own index, as NVIDIA's driver (its surface number): the engine keeps per-picture state by it */
         mt[8] = 0x040C;         /* SET_PICTURE_INDEX */
-        mt[9] = (ULONG)slot;
+        mt[9] = dec->frames;    /* a running count, every field its own (traced) */
         nmt = 5;
         if (!HIDDNouveauDecodeEmit(dec, f, VC1_PIC_CUR, map, NVDEC_APPLICATION_ID_VC1,
                                    NVDEC_CONTROL_CODEC_VC1 | 0x52050, &v->scratch, 1, mt, nmt))

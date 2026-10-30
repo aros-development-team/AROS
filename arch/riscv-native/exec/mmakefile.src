@@ -1,19 +1,18 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-ifneq ($(AROS_TARGET_VARIANT),)
-#MM- kernel-exec-$(ARCH)-$(CPU) : \
-#MM     kernel-exec-includes-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) \
-#MM     kernel-kernel-includes-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) \
-#MM     kernel-rtas-$(ARCH)-$(CPU) \
-#MM     includes-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT)
-endif
+#
+# Native (supervisor-mode) RISC-V exec code shared by the platforms:
+# exec_platform.h (per-hart TLS scheduler state on SMP), the idle task
+# and exec's SMP support. See ../kernel/mmakefile.src for the layering.
+#
 
-CFILES          := \
-        platform_init exec_idle superstate userstate coldreboot cachepredma cachecleare
+CFILES := \
+        exec_idle \
+        exec_smp
 
 %set_archincludes mainmmake=kernel-exec maindir=rom/exec \
-  modname=exec pri=2 arch=native-riscv \
+  modname=exec pri=4 arch=opensbi \
   includes="-I$(SRCDIR)/$(CURDIR)"
 
 %get_archincludes modname=kernel \
@@ -28,19 +27,10 @@ PRIV_EXEC_INCLUDES = \
     $(TARGET_KERNEL_INCLUDES) \
     -I$(SRCDIR)/rom/kernel
 
-##exec_init
-
-#MM kernel-exec-native-riscv : kernel-kernel-riscv-includes kernel-kernel-includes
-
-#MM- kernel-exec-includes-native-riscv : kernel-kernel-includes
-
-USER_INCLUDES     := $(PRIV_EXEC_INCLUDES)
-USER_AFLAGS     := $(PRIV_EXEC_INCLUDES) -I$(GENINCDIR)
-
-OPTIMIZATION_CFLAGS :=  -Os
+USER_INCLUDES := $(PRIV_EXEC_INCLUDES)
 
 %build_archspecific \
-  mainmmake=kernel-exec maindir=rom/exec arch=native-riscv \
-  files=$(CFILES) modname=exec
+  mainmmake=kernel-exec maindir=rom/exec arch=opensbi \
+  files="$(CFILES)" modname=exec
 
-TARGETDIR = $(BD_OBJDIR$(BDID))
+%common

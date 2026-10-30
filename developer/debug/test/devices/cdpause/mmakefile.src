@@ -1,0 +1,11 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+USER_LDFLAGS := -static
+
+#MM test-devices-cdpause : includes linklibs
+
+%build_progs mmake=test-devices-cdpause \
+    files=cdpausetest targetdir=$(AROS_TESTS)/devices/cdpause
+
+%common

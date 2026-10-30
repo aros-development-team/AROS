@@ -266,7 +266,7 @@ static BOOL vp9_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFr
         return FALSE;
     }
     if ((h->width > (int)dec->width) || (h->height > (int)dec->height) || ((h->bit_depth > 8) != (dec->bpp == 2)) ||
-        (h->bit_depth > 10) || (h->profile & 1))
+        (h->bit_depth > 12) || (h->profile & 1))
     {
         nvlog("[Nouveau] NVDEC: VP9 stream (%dx%d, profile %d, %d-bit) does not fit the session\n",
             h->width, h->height, h->profile, h->bit_depth);
@@ -389,7 +389,7 @@ static BOOL vp9_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFr
     {
         /* Blackwell's additions, as NVIDIA's driver fills them for the CFB0 class (traced) */
         pic->reserved5 = (dec->bpp == 2) ? 2 : 9;
-        pic->reserved1[2] = (dec->bpp == 2) ? 3 : 0;
+        pic->reserved1[2] = 3 * ((h->bit_depth - 8) / 2);   /* 8 / 10 / 12-bit: 0, 3, 6 (as HEVC's 4:2:0 codes) */
         *(ULONG *)(base + 0x108) = NVDEC_BLK_UNITS(h->width);
     }
 

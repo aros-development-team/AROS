@@ -320,9 +320,20 @@ void cpu_Probe(struct ARM_Implementation *krnARMImpl)
     krnARMImpl->ARMI_Delay = &cpu_Delay;
 }
 
+uint64_t aarch64_CPUHwID[AARCH64_MAXCPUS];
+
 void cpu_Init(struct ARM_Implementation *krnARMImpl, struct TagItem *msg)
 {
     cpuid_t cpunum = GetCPUNumber();
+
+    if (cpunum < AARCH64_MAXCPUS)
+    {
+        uint64_t mpidr;
+
+        asm volatile("mrs %0, mpidr_el1" : "=r"(mpidr));
+        /* Aff3 (39:32) and Aff2..Aff0 (23:0) - the hardware id */
+        aarch64_CPUHwID[cpunum] = mpidr & 0xff00ffffffULL;
+    }
 
     core_SetupMMU(msg);
 

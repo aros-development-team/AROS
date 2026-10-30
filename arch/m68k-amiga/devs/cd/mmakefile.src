@@ -1,5 +1,5 @@
 # 
-#  Copyright (C) 2013, The AROS Development Team
+#  Copyright (C) 2013-2026, The AROS Development Team
 #  All right reserved.
 #  Author: Jason S. McMullan <jason.mcmullan@gmail.com>
 # 
@@ -9,6 +9,12 @@
 include $(SRCDIR)/config/aros.cfg
 
 FILES := cd cd32
+
+# Native CD32 regressions belong to the CD device component.
+#MM- test-amiga-m68k : test-devices-cd-amiga-m68k
+#MM- test-amiga-m68k-quick : test-devices-cd-amiga-m68k-quick
+#MM- test-devices-cd-amiga-m68k : test-devices-cdpause test-devices-cdplaytrack
+#MM- test-devices-cd-amiga-m68k-quick : test-devices-cdpause-quick test-devices-cdplaytrack-quick
 
 #USER_CPPFLAGS += -DDEBUG=1
 

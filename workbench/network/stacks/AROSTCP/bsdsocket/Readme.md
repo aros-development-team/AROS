@@ -275,10 +275,17 @@ overlay), so header building and the state machine are shared; only the family e
 - **UDP6** is a separate path (`udp6_usrreq`/`udp6_output`/`udp6_input`) reusing the shared `inpcb`.
   `if_loop.c loconfig()` configures `lo0` with `::1` (and `127.0.0.1`); `::1` is in `in6_ifaddr` so
   `ip6_input` treats it as "ours". `IPV6_V6ONLY` and `IPV6_UNICAST_HOPS` round-trip. When the
-  `IN6P_HOPLIMIT` (`IPV6_HOPLIMIT`) or `IN6P_PKTINFO` (`IPV6_RECVPKTINFO`) flag is set, `udp6_input`
-  delivers the received hop limit and/or a `struct in6_pktinfo` (destination address + receiving
-  interface index) as `IPPROTO_IPV6` ancillary `cmsg`s built by `udp6_saveopt`, chained via `m_next`
-  and assembled before the headers are stripped (RFC 3542).
+  `IN6P_HOPLIMIT` (`IPV6_RECVHOPLIMIT`, or the RFC 2292 `IPV6_HOPLIMIT`) or `IN6P_PKTINFO`
+  (`IPV6_RECVPKTINFO`) flag is set, `udp6_input` delivers the received hop limit and/or a
+  `struct in6_pktinfo` (public in `<netinet/in.h>`: destination address + receiving interface index)
+  as `IPPROTO_IPV6` ancillary `cmsg`s, chained via `m_next` and assembled before the headers are
+  stripped (RFC 3542).
+- **Control messages.** Protocols build each one with `sbcreatecontrol()` (`kern/uipc_socket2.c`,
+  4.4BSD-Lite): one `cmsghdr` per mbuf, `cmsg_len` = `CMSG_LEN(size)` and the mbuf `CMSG_SPACE(size)`
+  long. On LP64 `CMSG_DATA()` starts past padding after the 12-byte header, which a length of
+  `sizeof(struct cmsghdr) + size` would cut from the data's end. `recvmsg()` copies the whole chain
+  into the caller's buffer and reports what did not fit with `MSG_CTRUNC` in `msg_flags`. IPv4's
+  `IP_RECVDSTADDR` uses the same helper.
 
 ### 6.1 Neighbour Discovery
 
@@ -288,6 +295,14 @@ dispatches ICMPv6, and `in6.c` performs link-local autoconfiguration and joins t
 group via `in6_addmulti` → `S2_ADDMULTICASTADDRESS`, mapping `ff02::X` → `33:33:XX:XX:XX:XX`.
 `nd6_lookup` returns a neighbour route with its reference **held** (KAME semantics); every caller
 `rtfree()`s it when done.
+
+A route through a router (`RTF_GATEWAY`) is not a neighbour: `nd6_rtrequest()` leaves it alone and
+its gateway stays the router's IPv6 address. When a packet follows it, `nd6_resolve()` resolves the
+router through the router's own neighbour entry on the route's interface (`nd6_lookup()`), as KAME's
+`nd6_output()` does, so one entry serves every route through that router and its Neighbor
+Advertisements update the state in use. The default router learned from Router Advertisements is
+installed as `::/0` with an all-zero netmask, like a `GW6` default from the interface database; a
+route to `::` without a netmask would be a host route, which the routing table refuses.
 
 Every new unicast address, not only the link-local, is tentative until duplicate address detection
 finishes (RFC 4862 §5.4): `in6_if_up()` starts it for the link-local and `in6_control()` for an
