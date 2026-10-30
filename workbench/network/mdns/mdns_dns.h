@@ -9,6 +9,7 @@
 
 #define MDNS_DNS_PORT           5353
 #define MDNS_MCAST_ADDR         "224.0.0.251"
+#define MDNS_MCAST_ADDR6        "ff02::fb"
 #define MDNS_MAX_PACKET         8972
 #define MDNS_DEFAULT_TTL        120
 /* RFC 6762 section 10: records that name a host live two minutes, the
@@ -19,6 +20,7 @@
 #define DNS_TYPE_A              1
 #define DNS_TYPE_PTR            12
 #define DNS_TYPE_TXT            16
+#define DNS_TYPE_AAAA           28
 #define DNS_TYPE_SRV            33
 #define DNS_TYPE_ANY            255
 #define DNS_CLASS_IN            1

@@ -21,7 +21,7 @@
 #define DISC_SESSIONS 16
 #define DISC_QUEUE 8
 #define DISC_TTL_MAX 4500
-#define DISC_PENDING 8      /* A records held for an SRV yet to come */
+#define DISC_PENDING 8      /* A/AAAA records held for an SRV yet to come */
 #define DISC_PENDING_TICKS 50
 
 struct DiscoveryRecord
@@ -31,13 +31,16 @@ struct DiscoveryRecord
     UWORD type, length;
     ULONG link, expires, received, refresh, ttl, serial;
     ULONG nextMissing, missingInterval;
-    UWORD refreshStep;
+    UWORD refreshStep, missingAddressQueries;
 };
+
+#define DISC_ASKED_A       1
+#define DISC_ASKED_AAAA    2
 struct PendingAddress
 {
     UBYTE key[256];
-    UBYTE data[4];
-    UWORD rclass;
+    UBYTE data[16];
+    UWORD type, length, rclass;
     ULONG link, ttl, received;
 };
 struct DiscoveryView
@@ -298,7 +301,7 @@ static struct DiscoveryRecord *find_record(struct MDNSDiscovery *d,
 /*
  * What an active operation can reach, and so what is cached, refreshed and
  * asked for: the PTRs of a browsed type; the SRV and TXT of an instance of
- * a browsed type, or of an instance being resolved; the A of a host that
+ * a browsed type, or of an instance being resolved; the A/AAAA of a host that
  * such an SRV names. Everything else on the network is left alone
  * (RFC 6762 section 5.2 asks for queries only for what someone wants).
  */
@@ -356,6 +359,7 @@ static BOOL wanted(const struct MDNSDiscovery *d, UWORD type, const UBYTE *key,
     case DNS_TYPE_TXT:
         return wanted_instance(d, key);
     case DNS_TYPE_A:
+    case DNS_TYPE_AAAA:
         return wanted_host(d, key, link, now);
     }
     return FALSE;
@@ -375,6 +379,7 @@ static void mark_wanted_records(const struct MDNSDiscovery *d, ULONG now,
         const struct DiscoveryRecord *r = &d->records[i];
 
         if (r->type != 0 && r->type != DNS_TYPE_A &&
+            r->type != DNS_TYPE_AAAA &&
             !due(now, r->expires) &&
             wanted(d, r->type, r->key, r->link, now)) {
             marked[i] = TRUE;
@@ -389,7 +394,8 @@ static void mark_wanted_records(const struct MDNSDiscovery *d, ULONG now,
         for (j = 0; j < DISC_RECORDS; j++) {
             const struct DiscoveryRecord *addr = &d->records[j];
 
-            if (addr->type == DNS_TYPE_A && addr->link == srv->link &&
+            if ((addr->type == DNS_TYPE_A || addr->type == DNS_TYPE_AAAA) &&
+                addr->link == srv->link &&
                 !due(now, addr->expires) &&
                 same_key(addr->key, srv->data + 6)) {
                 marked[j] = TRUE;
@@ -405,7 +411,7 @@ static void fail_wanting(struct MDNSDiscovery *d, UWORD type, const UBYTE *key,
 {
     LONG i;
 
-    if (type == DNS_TYPE_A) {
+    if (type == DNS_TYPE_A || type == DNS_TYPE_AAAA) {
         for (i = 0; i < DISC_RECORDS; i++) {
             const struct DiscoveryRecord *r = &d->records[i];
 
@@ -429,8 +435,20 @@ static void fail_wanting(struct MDNSDiscovery *d, UWORD type, const UBYTE *key,
     }
 }
 
-static BOOL snapshot(struct MDNSDiscovery *d, const UBYTE *key, ULONG link,
-    struct MDNSDiscoveryEvent *out, ULONG now)
+static ULONG interface_address4(const struct MDNSDaemon *md, ULONG link)
+{
+    LONG i;
+
+    for (i = 0; i < md->md_IfCount; i++) {
+        if (md->md_Ifs[i].mi_Index == link) {
+            return md->md_Ifs[i].mi_Addr;
+        }
+    }
+    return 0;
+}
+
+static BOOL snapshot(const struct MDNSDaemon *md, struct MDNSDiscovery *d,
+    const UBYTE *key, ULONG link, struct MDNSDiscoveryEvent *out, ULONG now)
 {
     const struct DiscoveryRecord *srv = find_record(d, key, link, DNS_TYPE_SRV, now);
     const struct DiscoveryRecord *txt = find_record(d, key, link, DNS_TYPE_TXT, now);
@@ -456,7 +474,7 @@ static BOOL snapshot(struct MDNSDiscovery *d, const UBYTE *key, ULONG link,
     memcpy(out->de_Type + n + 1, type + n + 2, 4);
     out->de_Port = ((UWORD)srv->data[4] << 8) | srv->data[5];
     memcpy(&out->de_Address, addr->data, 4);
-    out->de_Interface = htonl(link);
+    out->de_Interface = htonl(interface_address4(md, link));
     out->de_TXTLength = txt->length;
     memcpy(out->de_TXT, txt->data, txt->length);
     return TRUE;
@@ -485,8 +503,8 @@ static BOOL valid_type(const UBYTE *key)
 }
 
 /* What a type found by enumeration is told as: its type, no instance. */
-static void type_event(const UBYTE *key, ULONG link,
-    struct MDNSDiscoveryEvent *out)
+static void type_event(const struct MDNSDaemon *md, const UBYTE *key,
+    ULONG link, struct MDNSDiscoveryEvent *out)
 {
     LONG n = key[0];
 
@@ -494,7 +512,7 @@ static void type_event(const UBYTE *key, ULONG link,
     memcpy(out->de_Type, key + 1, n);
     out->de_Type[n] = '.';
     memcpy(out->de_Type + n + 1, key + n + 2, 4);
-    out->de_Interface = htonl(link);
+    out->de_Interface = htonl(interface_address4(md, link));
 }
 
 static BOOL valid_instance(const UBYTE *key)
@@ -517,8 +535,9 @@ static BOOL discovering(const struct MDNSDiscovery *d)
     }
     return FALSE;
 }
-static void hold_address(struct MDNSDiscovery *d, UWORD rclass, ULONG ttl,
-    const UBYTE *key, const UBYTE *data, ULONG link, ULONG now)
+static void hold_address(struct MDNSDiscovery *d, UWORD type, UWORD rclass,
+    ULONG ttl, const UBYTE *key, const UBYTE *data, UWORD length,
+    ULONG link, ULONG now)
 {
     struct PendingAddress *slot = &d->pending[0];
     LONG i;
@@ -526,7 +545,7 @@ static void hold_address(struct MDNSDiscovery *d, UWORD rclass, ULONG ttl,
     for (i = 0; i < DISC_PENDING; i++) {
         struct PendingAddress *a = &d->pending[i];
 
-        if (a->link == link && same_key(a->key, key)) {
+        if (a->type == type && a->link == link && same_key(a->key, key)) {
             slot = a;
             break;
         }
@@ -536,7 +555,9 @@ static void hold_address(struct MDNSDiscovery *d, UWORD rclass, ULONG ttl,
         }
     }
     memcpy(slot->key, key, 256);
-    memcpy(slot->data, data, 4);
+    memcpy(slot->data, data, length);
+    slot->type = type;
+    slot->length = length;
     slot->rclass = rclass;
     slot->ttl = ttl;
     slot->link = link;
@@ -549,6 +570,7 @@ static void cache(struct MDNSDiscovery *d, UWORD type, UWORD rclass, ULONG ttl,
     LONG i;
     struct DiscoveryRecord *slot = NULL;
     ULONG missingAt = 0, missingInterval = 50;
+    UWORD missingAddressQueries = 0;
 
     for (i = 0; i < DISC_RECORDS; i++) {
         struct DiscoveryRecord *r = &d->records[i];
@@ -582,12 +604,14 @@ static void cache(struct MDNSDiscovery *d, UWORD type, UWORD rclass, ULONG ttl,
     if (slot != NULL) {
         missingAt = slot->nextMissing;
         missingInterval = slot->missingInterval;
+        missingAddressQueries = slot->missingAddressQueries;
     }
     /* A record already held is renewed; a new one only when an operation
      * can reach it. */
     if (slot == NULL && !wanted(d, type, key, link, now)) {
-        if (type == DNS_TYPE_A && discovering(d)) {
-            hold_address(d, rclass, ttl, key, data, link, now);
+        if ((type == DNS_TYPE_A || type == DNS_TYPE_AAAA) && discovering(d)) {
+            hold_address(d, type, rclass, ttl, key, data, (UWORD)size,
+                link, now);
         }
         return;
     }
@@ -629,6 +653,7 @@ static void cache(struct MDNSDiscovery *d, UWORD type, UWORD rclass, ULONG ttl,
     slot->serial = ++d->serial;
     slot->nextMissing = missingAt;
     slot->missingInterval = missingInterval;
+    slot->missingAddressQueries = missingAddressQueries;
     slot->expires = now + slot->ttl * 50;
     slot->refresh = now + slot->ttl * (40 + now % 2); /* 80–82 percent */
     if (type == DNS_TYPE_SRV) {
@@ -641,8 +666,8 @@ static void cache(struct MDNSDiscovery *d, UWORD type, UWORD rclass, ULONG ttl,
                 struct PendingAddress held = *a;
 
                 memset(a, 0, sizeof(*a));
-                cache(d, DNS_TYPE_A, held.rclass, held.ttl, held.key, held.data,
-                      4, held.link, now);
+                cache(d, held.type, held.rclass, held.ttl, held.key,
+                      held.data, held.length, held.link, now);
             }
         }
     }
@@ -655,7 +680,7 @@ void mdnsDiscoveryRecord(struct MDNSDaemon *md, const struct MDNSRecord *record,
     UBYTE key[256] = {0}, data[512] = {0};
     LONG size = record->rdlength, consumed;
     ULONG now = mdnsTicks();
-    ULONG link = md->md_SendIf >= 0 ? md->md_Ifs[md->md_SendIf].mi_Addr : 0;
+    ULONG link = md->md_SendIf >= 0 ? md->md_Ifs[md->md_SendIf].mi_Index : 0;
 
     md->md_DiscoveryRecords++;
     if (record->type == DNS_TYPE_PTR) {
@@ -704,6 +729,11 @@ void mdnsDiscoveryRecord(struct MDNSDaemon *md, const struct MDNSRecord *record,
             return;
         }
         memcpy(data, record->rdata, 4);
+    } else if (record->type == DNS_TYPE_AAAA) {
+        if (size != 16) {
+            return;
+        }
+        memcpy(data, record->rdata, 16);
     } else {
         return;
     }
@@ -722,7 +752,7 @@ static void send_question(struct MDNSDaemon *md, const UBYTE *key, UWORD type, U
 
     if (link == 0) {
         for (i = 0; i < md->md_IfCount; i++) {
-            send_question(md, key, type, md->md_Ifs[i].mi_Addr);
+            send_question(md, key, type, md->md_Ifs[i].mi_Index);
         }
         return;
     }
@@ -767,7 +797,7 @@ static void send_question(struct MDNSDaemon *md, const UBYTE *key, UWORD type, U
     pkt[6] = answers >> 8;
     pkt[7] = answers;
     for (i = 0; i < md->md_IfCount; i++) {
-        if (link == 0 || md->md_Ifs[i].mi_Addr == link) {
+        if (link == 0 || md->md_Ifs[i].mi_Index == link) {
             mdnsNetSendOn(md, i, pkt, pos);
         }
     }
@@ -874,10 +904,10 @@ static void refresh_views(struct MDNSDaemon *md, ULONG now)
             continue;
         }
         if (v->type) {
-            type_event(v->key, v->link, &event);
+            type_event(md, v->key, v->link, &event);
             present = TRUE;
         } else {
-            present = snapshot(d, v->key, v->link, &event, now);
+            present = snapshot(md, d, v->key, v->link, &event, now);
         }
         if (v->present && (!present || memcmp(&event, &v->event, sizeof(event)) != 0)) {
             notify(md, v, MEVENT_REMOVE);
@@ -928,7 +958,8 @@ void mdnsDiscoveryTick(struct MDNSDaemon *md)
             struct MDNSDiscoveryEvent event;
 
             for (j = 0; rebuild && j < md->md_IfCount; j++) {
-                if (snapshot(d, s->key, md->md_Ifs[j].mi_Addr, &event, now)) {
+                if (snapshot(md, d, s->key, md->md_Ifs[j].mi_Index,
+                        &event, now)) {
                     event.de_Code = MEVENT_RESOLVED;
                     enqueue(md, s, &event);
                     s->resolved = TRUE;
@@ -996,10 +1027,33 @@ void mdnsDiscoveryTick(struct MDNSDaemon *md)
                 send_question(md, r->data, DNS_TYPE_TXT, r->link);
                 missing = TRUE;
             }
-        } else if (r->type == DNS_TYPE_SRV &&
-            find_record(d, r->data + 6, r->link, DNS_TYPE_A, now) == NULL) {
-            send_question(md, r->data + 6, DNS_TYPE_A, r->link);
-            missing = TRUE;
+        } else if (r->type == DNS_TYPE_SRV) {
+            BOOL haveA = find_record(d, r->data + 6, r->link,
+                DNS_TYPE_A, now) != NULL;
+            BOOL haveAAAA = find_record(d, r->data + 6, r->link,
+                DNS_TYPE_AAAA, now) != NULL;
+
+            /* Until one usable address arrives, retry both families with
+             * the normal backoff. Once either family is known, the service
+             * is reachable: ask for the other family once, but do not keep
+             * querying forever when the host intentionally publishes only
+             * A or only AAAA. */
+            if (!haveA && !haveAAAA) {
+                send_question(md, r->data + 6, DNS_TYPE_A, r->link);
+                send_question(md, r->data + 6, DNS_TYPE_AAAA, r->link);
+                r->missingAddressQueries = 0;
+                missing = TRUE;
+            } else if (!haveA &&
+                !(r->missingAddressQueries & DISC_ASKED_A)) {
+                send_question(md, r->data + 6, DNS_TYPE_A, r->link);
+                r->missingAddressQueries |= DISC_ASKED_A;
+            } else if (!haveAAAA &&
+                !(r->missingAddressQueries & DISC_ASKED_AAAA)) {
+                send_question(md, r->data + 6, DNS_TYPE_AAAA, r->link);
+                r->missingAddressQueries |= DISC_ASKED_AAAA;
+            } else if (haveA && haveAAAA) {
+                r->missingAddressQueries = 0;
+            }
         }
         if (!missing) {
             r->missingInterval = 50;

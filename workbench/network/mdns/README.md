@@ -1,6 +1,6 @@
 # mdnsd and bonami.library
 
-`mdnsd` is a multicast DNS responder (RFC 6762) for AROSTCP. It answers for
+`mdnsd` is a dual-stack multicast DNS responder (RFC 6762) for AROSTCP. It answers for
 the host's name in the mDNS domain, `<hostname>.local`, on every interface
 that can multicast, so that other machines on the link find this one by name
 without a DNS server: `ping amiga.local`, `ssh amiga.local`.
@@ -27,15 +27,17 @@ It can also list the service types present on the link (RFC 6763 section
   `name-2`, then `name-3`, and probes for that. When two hosts probe for the
   same name at the same moment, the one whose address sorts earlier waits a
   second and probes again (section 8.2).
-- **Answers.** An `A` or `ANY` question for the name is answered with the
-  address of the interface it came in on. A question from another port than
+- **Answers.** An `A`, `AAAA` or `ANY` question for the name is answered with
+  the addresses of the interface it came in on. A question from another port than
   5353, from a resolver that knows plain DNS, is answered to that port alone
   with its ID and question, a time to live of ten seconds and no cache-flush
   bit (section 6.7). A question with the unicast-response bit is answered to
   the asker alone when the group had the record within the last 30 seconds,
   and to the group otherwise (section 5.4).
-- **Interfaces.** One UDP 5353 socket for each interface that is up, can
-  multicast and has an IPv4 address, bound to it with `SO_BINDTODEVICE`. The
+- **Interfaces.** An IPv4 UDP 5353 socket for each usable IPv4 interface,
+  bound with `SO_BINDTODEVICE`, and one IPv6 UDP 5353 socket joined to
+  `ff02::fb` on every usable IPv6 link. `IPV6_PKTINFO` identifies the input
+  link and scoped destinations select the output link. The
   interfaces are looked at every three seconds; one that came, went or
   changed its address makes mdnsd probe again.
 - **Goodbye.** When it stops, or lets go of the stack, it withdraws the
@@ -97,6 +99,9 @@ Version 41.3 also provides `LookupHostA()` and queued generic record queries:
 `RequestMDNSEvent()` wakeup. See `DISCOVERY.md` for ownership, record format,
 bounds and restart behavior. Hook delivery remains deliberately unavailable;
 queries do not execute client code in mdnsd.
+Version 41.6 adds AAAA answers to generic queries. `MDNSRecordEvent` keeps
+the IPv4 interface address in `re_Interface` (zero on an IPv6-only link) and
+uses its existing reserved word as `re_InterfaceIndex`, the IPv6 scope ID.
 The queued browse, resolve and generic query APIs include services registered
 with this same mdnsd. Their canonical PTR, SRV, TXT, address and service-type
 records are reflected internally per interface; the daemon does not depend on
@@ -118,7 +123,7 @@ invents either value from the instance name.
 ### Task lifetime and compatibility
 
 The first fifteen slots, their order/registers and existing tag/error values
-follow upstream Bonami. The AROS implementation is version 41.5. Its daemon
+follow upstream Bonami. The AROS implementation is version 41.6. Its daemon
 and library must be installed together: their private IPC is now version 5.
 
 Registration lifetime deliberately differs from upstream Bonami:
@@ -179,15 +184,20 @@ Started by hand it runs until Ctrl-C.
 
 ## Limits
 
-- IPv4 only: no `AAAA` record, and nothing is sent to `ff02::fb`.
+- The legacy `MDNSDiscoveryEvent` still contains one IPv4 endpoint and IPv4
+  interface address. AAAA records are cached and available through
+  `QueryRecordA()`, but an IPv6-only service does not complete legacy
+  browse/resolve until a compatible extended event API is added.
+- One IPv6 link-local address is selected per interface. AROSTCP's public
+  address enumeration does not yet expose tentative/deprecated flags.
 - The number after a name that was lost is not remembered when mdnsd
   restarts: it starts from the system's name again.
 - At most eight interfaces.
 - A service's text is at most 256 characters, its instance name 63 bytes.
 - Known answers that come in a second packet are not waited for.
-- It needs a stack that delivers IPv4 multicast to a socket that joined a
-  group, and a SANA-II driver that accepts `S2_ADDMULTICASTADDRESS` and
-  `S2_MULTICAST`.
+- It needs a stack that delivers IPv4/IPv6 multicast to sockets that joined
+  their groups, and a SANA-II driver that accepts the corresponding multicast
+  MAC registrations.
 
 ## Files
 
