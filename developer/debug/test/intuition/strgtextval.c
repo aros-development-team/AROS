@@ -10,7 +10,8 @@
           pattern to such a gadget, so a pattern longer than 256 characters
           overwrote the memory after the gadget's buffer. The guard area is
           longer than the longest text, so an unfixed gadget is detected
-          without damaging anything else.
+          without damaging anything else in the length tests. The invalid
+          capacity tests can crash an unfixed class; use a test system.
 
     Usage: strgtextval
     Result: prints PASS and returns 0, or prints FAIL and returns 20.
@@ -51,7 +52,7 @@ static int check(const char *when, int len, Object *gad, const char *text)
             return 1;
         }
     }
-    if (strlen((char *)buffer) != expect || strncmp((char *)buffer, text, expect) != 0)
+    if (strlen((char *)buffer) != (size_t)expect || strncmp((char *)buffer, text, expect) != 0)
     {
         printf("FAIL %s, %d characters: buffer holds %lu characters, expected %d\n",
                when, len, (unsigned long)strlen((char *)buffer), expect);
@@ -72,7 +73,7 @@ static int run(int len)
     text[len] = '\0';
     memset(buffer, 0xA5, sizeof(buffer));
 
-    gad = NewObject(NULL, STRGCLASS,
+    gad = NewObject(NULL, (UBYTE *)STRGCLASS,
                     STRINGA_Buffer, (IPTR)buffer,
                     STRINGA_MaxChars, MAXCHARS,
                     STRINGA_TextVal, (IPTR)text,
@@ -95,13 +96,75 @@ static int run(int len)
     return fail;
 }
 
+/* The edit buffer itself (or a suffix) may be passed back to OM_SET. */
+static int run_overlap(void)
+{
+    Object *gad;
+    int fail;
+
+    memset(buffer, 0xA5, sizeof(buffer));
+    gad = NewObject(NULL, (UBYTE *)STRGCLASS,
+                    STRINGA_Buffer, (IPTR)buffer,
+                    STRINGA_MaxChars, MAXCHARS,
+                    STRINGA_TextVal, (IPTR)"abcdefghijk",
+                    TAG_DONE);
+    if (!gad)
+        return 1;
+    SetAttrs(gad, STRINGA_TextVal, (IPTR)buffer, TAG_DONE);
+    fail = check("OM_SET same buffer", 11, gad, "abcdefghijk");
+    SetAttrs(gad, STRINGA_TextVal, (IPTR)(buffer + 2), TAG_DONE);
+    fail |= check("OM_SET overlapping suffix", 9, gad, "cdefghijk");
+    DisposeObject(gad);
+    return fail;
+}
+
+/* Supply all buffers so invalid capacities do not request allocations.
+   On an unfixed class these LongVal cases can crash; run on a test system. */
+static int run_limit(int limit, int numeric)
+{
+    UBYTE guarded[32], expected[32], undo[32], work[32];
+    Object *gad;
+    int fail;
+    Tag value_tag = numeric ? STRINGA_LongVal : STRINGA_TextVal;
+    IPTR value = numeric ? 123 : (IPTR)"abc";
+
+    memset(guarded, 0xA5, sizeof(guarded));
+    guarded[8] = 0;
+    memcpy(expected, guarded, sizeof(expected));
+    gad = NewObject(NULL, (UBYTE *)STRGCLASS,
+                    STRINGA_Buffer, (IPTR)(guarded + 8),
+                    STRINGA_UndoBuffer, (IPTR)undo,
+                    STRINGA_WorkBuffer, (IPTR)work,
+                    STRINGA_MaxChars, (IPTR)limit,
+                    value_tag, value,
+                    TAG_DONE);
+    if (!gad)
+        return 1;
+    fail = memcmp(guarded, expected, sizeof(guarded)) != 0;
+    SetAttrs(gad, value_tag, value, TAG_DONE);
+    fail |= memcmp(guarded, expected, sizeof(guarded)) != 0;
+    printf("%s MaxChars %d, %s, OM_NEW and OM_SET\n",
+           fail ? "FAIL" : "ok", limit, numeric ? "LongVal" : "TextVal");
+    DisposeObject(gad);
+    return fail;
+}
+
 int main(void)
 {
     static const int lengths[] = { 0, 5, MAXCHARS - 1, MAXCHARS, LONGTEXT };
-    int i, fail = 0;
+    size_t i;
+    int fail = 0;
 
     for (i = 0; i < sizeof(lengths) / sizeof(lengths[0]); i++)
         fail |= run(lengths[i]);
+
+    fail |= run_overlap();
+    fail |= run_limit(1, 0);
+    fail |= run_limit(1, 1);
+    fail |= run_limit(0, 0);
+    fail |= run_limit(0, 1);
+    fail |= run_limit(-1, 0);
+    fail |= run_limit(-1, 1);
 
     printf("%s\n", fail ? "FAIL" : "PASS");
     return fail ? 20 : 0;

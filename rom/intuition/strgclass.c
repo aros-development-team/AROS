@@ -39,7 +39,7 @@ static void set_buffer_text(struct StringInfo *StrInfo, CONST_STRPTR text)
     if (len >= StrInfo->MaxChars)
         len = StrInfo->MaxChars - 1;
 
-    memcpy(StrInfo->Buffer, text, len);
+    memmove(StrInfo->Buffer, text, len);
     StrInfo->Buffer[len] = '\0';
 }
 
@@ -49,6 +49,9 @@ static void set_buffer_str(struct StringInfo *StrInfo)
     char *ptr = buf + sizeof(buf);
     LONG  value = StrInfo->LongInt;
     int   len;
+
+    if (StrInfo->MaxChars <= 0)
+        return;
 
     if (value < 0)
         value = -value;
