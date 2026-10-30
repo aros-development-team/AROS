@@ -16,7 +16,8 @@ CUNITSOCKETTESTFILES := \
     cunit-net-tcp \
     cunit-net-udp \
     cunit-net-inet6 \
-    cunit-net-mld6
+    cunit-net-mld6 \
+    cunit-net-cmsg
 
 #MM test-socket : includes linklibs
 

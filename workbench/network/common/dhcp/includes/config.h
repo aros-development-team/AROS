@@ -218,16 +218,6 @@ const char *aros_inet_ntop(int af, const void *src, char *dst, LONG size);
     (((a)->s6_addr[0] == 0xfe) && (((a)->s6_addr[1] & 0xc0) == 0xc0))
 #endif
 
-/* struct in6_pktinfo (RFC 3542) - AROS netinet/in.h defines IPV6_PKTINFO
- * but doesn't declare the struct */
-#ifndef HAVE_IN6_PKTINFO
-# include <netinet/in.h>
-struct in6_pktinfo {
-	struct in6_addr ipi6_addr;
-	unsigned int    ipi6_ifindex;
-};
-# define HAVE_IN6_PKTINFO 1
-#endif
 
 #endif /* __AROS__ */
 

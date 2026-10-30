@@ -275,10 +275,17 @@ overlay), so header building and the state machine are shared; only the family e
 - **UDP6** is a separate path (`udp6_usrreq`/`udp6_output`/`udp6_input`) reusing the shared `inpcb`.
   `if_loop.c loconfig()` configures `lo0` with `::1` (and `127.0.0.1`); `::1` is in `in6_ifaddr` so
   `ip6_input` treats it as "ours". `IPV6_V6ONLY` and `IPV6_UNICAST_HOPS` round-trip. When the
-  `IN6P_HOPLIMIT` (`IPV6_HOPLIMIT`) or `IN6P_PKTINFO` (`IPV6_RECVPKTINFO`) flag is set, `udp6_input`
-  delivers the received hop limit and/or a `struct in6_pktinfo` (destination address + receiving
-  interface index) as `IPPROTO_IPV6` ancillary `cmsg`s built by `udp6_saveopt`, chained via `m_next`
-  and assembled before the headers are stripped (RFC 3542).
+  `IN6P_HOPLIMIT` (`IPV6_RECVHOPLIMIT`, or the RFC 2292 `IPV6_HOPLIMIT`) or `IN6P_PKTINFO`
+  (`IPV6_RECVPKTINFO`) flag is set, `udp6_input` delivers the received hop limit and/or a
+  `struct in6_pktinfo` (public in `<netinet/in.h>`: destination address + receiving interface index)
+  as `IPPROTO_IPV6` ancillary `cmsg`s, chained via `m_next` and assembled before the headers are
+  stripped (RFC 3542).
+- **Control messages.** Protocols build each one with `sbcreatecontrol()` (`kern/uipc_socket2.c`,
+  4.4BSD-Lite): one `cmsghdr` per mbuf, `cmsg_len` = `CMSG_LEN(size)` and the mbuf `CMSG_SPACE(size)`
+  long. On LP64 `CMSG_DATA()` starts past padding after the 12-byte header, which a length of
+  `sizeof(struct cmsghdr) + size` would cut from the data's end. `recvmsg()` copies the whole chain
+  into the caller's buffer and reports what did not fit with `MSG_CTRUNC` in `msg_flags`. IPv4's
+  `IP_RECVDSTADDR` uses the same helper.
 
 ### 6.1 Neighbour Discovery
 
