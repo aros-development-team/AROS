@@ -148,6 +148,7 @@ rip6_append(struct inpcb *inp, struct mbuf *m, int off,
     if(inp->in6p_flags & (IN6P_PKTINFO | IN6P_HOPLIMIT)) {
         struct ip6_hdr ip6;
 
+        bzero(&ip6, sizeof(ip6));
         m_copydata(m, 0, sizeof(ip6), (caddr_t)&ip6);
         if(inp->in6p_flags & IN6P_PKTINFO) {
             struct in6_pktinfo pi6;
@@ -164,8 +165,6 @@ rip6_append(struct inpcb *inp, struct mbuf *m, int off,
             int hlim = ip6.ip6_hlim;
 
             *optp = sbcreatecontrol((caddr_t)&hlim, sizeof(int), IPV6_HOPLIMIT, IPPROTO_IPV6);
-            if(*optp != NULL)
-                optp = &(*optp)->m_next;
         }
     }
 
@@ -296,7 +295,7 @@ rip6_ctlparse(struct mbuf *control, struct rip6_sendopts *o)
                 break;
             }
             case IPV6_HOPLIMIT: {
-                int hlim;
+                int hlim = 0;
 
                 if(cm->cmsg_len != CMSG_LEN(sizeof(int)))
                     return EINVAL;
