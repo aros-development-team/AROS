@@ -165,6 +165,35 @@ icmp6_update_pmtu(struct in6_addr *dst, u_int32_t mtu)
 }
 
 /* ------------------------------------------------------------------
+ * icmp6_echo_copy - the packet to turn into the Echo Reply for m.
+ *
+ * m stays as it came, for the raw sockets: the headers up to and
+ * including the ICMPv6 header are copied into a new mbuf, and only the
+ * data after them is shared with m, read but never written.
+ * ------------------------------------------------------------------ */
+static struct mbuf *
+icmp6_echo_copy(struct mbuf *m, int off)
+{
+    struct mbuf *n;
+    int hlen = off + sizeof(struct icmp6_hdr);
+
+    if(hlen > MHLEN || m->m_pkthdr.len < hlen)
+        return NULL;
+    n = m_gethdr(M_DONTWAIT, MT_DATA);
+    if(n == NULL)
+        return NULL;
+    M_COPY_PKTHDR(n, m);
+    m_copydata(m, 0, hlen, mtod(n, caddr_t));
+    n->m_len = hlen;
+    if(m->m_pkthdr.len > hlen &&
+            (n->m_next = m_copym(m, hlen, M_COPYALL, M_DONTWAIT)) == NULL) {
+        m_freem(n);
+        return NULL;
+    }
+    return n;
+}
+
+/* ------------------------------------------------------------------
  * icmp6_input - process an inbound ICMPv6 message.
  *
  * Called via protosw pr_input: void *args is struct mbuf *,
@@ -176,6 +205,7 @@ icmp6_input(void *args, ...)
     struct mbuf  *m = args;
     struct ip6_hdr   *ip6;
     struct icmp6_hdr *icmp6;
+    struct mbuf *n;
     int off, icmp6len;
     va_list va;
 
@@ -204,48 +234,63 @@ icmp6_input(void *args, ...)
         return;
     }
 
+    /*
+     * The kernel's handlers get a copy; m itself goes to the raw sockets
+     * at the end, untouched (RFC 3542 section 3.2). m_copym() shares
+     * clusters, which the handlers only read.
+     */
     switch(icmp6->icmp6_type) {
     /* ----- Multicast Listener Discovery (delegated to mld6.c) ----- */
     case MLD_LISTENER_QUERY:
     case MLD_LISTENER_REPORT:
     case MLD_LISTENER_DONE:
-        mld6_input(m, off, icmp6len);
-        return;
+        if((n = m_copym(m, 0, M_COPYALL, M_DONTWAIT)) != NULL)
+            mld6_input(n, off, icmp6len);
+        break;
 
     /* ----- Neighbor Discovery (delegated to nd6.c) ----- */
     case ND_NEIGHBOR_SOLICIT:
-        nd6_ns_input(m, off, icmp6len);
-        return;
+        if((n = m_copym(m, 0, M_COPYALL, M_DONTWAIT)) != NULL)
+            nd6_ns_input(n, off, icmp6len);
+        break;
 
     case ND_NEIGHBOR_ADVERT:
-        nd6_na_input(m, off, icmp6len);
-        return;
+        if((n = m_copym(m, 0, M_COPYALL, M_DONTWAIT)) != NULL)
+            nd6_na_input(n, off, icmp6len);
+        break;
 
     case ND_ROUTER_SOLICIT:
-        nd6_rs_input(m, off, icmp6len);
-        return;
+        if((n = m_copym(m, 0, M_COPYALL, M_DONTWAIT)) != NULL)
+            nd6_rs_input(n, off, icmp6len);
+        break;
 
     case ND_ROUTER_ADVERT:
-        nd6_ra_input(m, off, icmp6len);
-        return;
+        if((n = m_copym(m, 0, M_COPYALL, M_DONTWAIT)) != NULL)
+            nd6_ra_input(n, off, icmp6len);
+        break;
 
     case ND_REDIRECT:
-        nd6_redirect_input(m, off, icmp6len);
-        return;
+        if((n = m_copym(m, 0, M_COPYALL, M_DONTWAIT)) != NULL)
+            nd6_redirect_input(n, off, icmp6len);
+        break;
 
     /* ----- Echo ----- */
     case ICMP6_ECHO_REQUEST:
-        icmp6stat.icp6s_reflect++;
-        icmp6->icmp6_type = ICMP6_ECHO_REPLY;
-        icmp6->icmp6_code = 0;
-        /* clear checksum so reflect recalculates */
-        icmp6->icmp6_cksum = 0;
-        icmp6_reflect(m, off);
-        return;
+        /* the reply is written into headers of its own */
+        if((n = icmp6_echo_copy(m, off)) != NULL) {
+            struct icmp6_hdr *nicmp6 =
+                (struct icmp6_hdr *)(mtod(n, u_int8_t *) + off);
+
+            icmp6stat.icp6s_reflect++;
+            nicmp6->icmp6_type  = ICMP6_ECHO_REPLY;
+            nicmp6->icmp6_code  = 0;
+            nicmp6->icmp6_cksum = 0;
+            icmp6_reflect(n, off);
+        }
+        break;
 
     case ICMP6_ECHO_REPLY:
-        rip6_input(m, off, IPPROTO_ICMPV6);
-        return;
+        break;          /* for the raw sockets only */
 
     /* ----- Error messages ----- */
     case ICMP6_PACKET_TOO_BIG:
@@ -284,7 +329,7 @@ icmp6_input(void *args, ...)
         break;
     }
 
-    m_freem(m);
+    rip6_input(m, off, IPPROTO_ICMPV6);
 }
 
 /* ------------------------------------------------------------------
