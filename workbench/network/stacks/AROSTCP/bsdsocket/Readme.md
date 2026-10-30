@@ -324,7 +324,9 @@ flagged so timer expiry emits an ICMPv6 type-143 Report — a single `MODE_IS_EX
 sources (equivalent to a plain membership) sent to `ff02::16`. A v1 querier still receives v1
 Reports. Per-source filtering is not tracked. Every MLD message (v1 and v2) is emitted with a
 Hop-by-Hop Options header carrying the Router Alert option (RFC 2711, `mld6_prepend_ra`) so that
-on-link multicast routers intercept it.
+on-link multicast routers intercept it. MLD reports and done messages carry the interface's
+link-local address as their source (RFC 3810 section 5, RFC 2710 section 3), whatever the group's
+scope.
 
 Every `in6_multihead` entry is reference counted, and each reference has one owner that releases it:
 
@@ -418,6 +420,11 @@ single shared `fe80::/64` route: the egress link is taken from the one the calle
 `sin6_scope_id` on the destination, an `IPV6_PKTINFO` ancillary interface index, or the interface the
 chosen source address lives on — so a link-local send leaves the correct link on a multi-homed host.
 `HOST` database entries may also carry an IPv6 address.
+
+Among an interface's usable addresses (not tentative or duplicated), `in6_ifawithifp()` picks the
+source by RFC 6724 section 5 rules 2, 3 and 7: the smaller of two scopes unless it is smaller than
+the destination's (a link-scope destination gets the link-local, a global one a global address),
+then a preferred address over a deprecated one, then a temporary address over a public one.
 
 ---
 
