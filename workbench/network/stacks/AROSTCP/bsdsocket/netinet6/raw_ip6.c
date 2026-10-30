@@ -55,6 +55,7 @@
 #include <sys/synch.h>
 #include <sys/queue.h>
 #include <stdarg.h>
+#include <string.h>      /* memcpy */
 
 #include <net/if.h>
 #include <net/route.h>
@@ -295,11 +296,11 @@ rip6_ctlparse(struct mbuf *control, struct rip6_sendopts *o)
                 break;
             }
             case IPV6_HOPLIMIT: {
-                int hlim = 0;
+                int hlim;
 
                 if(cm->cmsg_len != CMSG_LEN(sizeof(int)))
                     return EINVAL;
-                bcopy(CMSG_DATA(cm), (caddr_t)&hlim, sizeof(int));
+                memcpy(&hlim, CMSG_DATA(cm), sizeof(int));
                 if(hlim < -1 || hlim > 255)
                     return EINVAL;
                 o->hlim = hlim;
