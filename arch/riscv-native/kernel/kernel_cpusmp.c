@@ -38,10 +38,12 @@
 #undef D
 #define D(x)
 
-/* The stack a secondary hart runs cpu_Register() on, before its task */
-#define SECONDARY_STACKSIZE     16384
+/* The stack a secondary hart runs cpu_Register() on, before its task,
+ * and then takes its traps on (traps.S) - as large as all-pc's */
+#define SECONDARY_STACKSIZE     65536
 
-extern struct Task *cpu_InitBootStrap(struct ExecBase *SysBase);
+extern struct Task *cpu_InitBootStrap(struct ExecBase *SysBase, uint32_t cpunum);
+extern void cpu_DisposeBootStrap(struct Task *bstask, struct ExecBase *SysBase);
 extern void cpu_BootStrap(struct Task *bstask, struct ExecBase *SysBase);
 /* exec_idle.c - kernel and exec share one core image */
 extern struct Task *Exec_RVCreateIdleTask(struct ExecBase *SysBase);
@@ -95,7 +97,8 @@ void __attribute__((noreturn)) cpu_Register(void)
     if (__riscv_arosintern.RVI_InitCore)
         __riscv_arosintern.RVI_InitCore(KernelBase, SysBase);
 
-    if ((bstask = cpu_InitBootStrap(SysBase)) == NULL)
+    /* Built for this hart by the boot CPU (krnRVStartCPUs) */
+    if ((bstask = tls->ThisTask) == NULL)
     {
         bug("[Kernel:%02u] FATAL : no bootstrap task - hart parked\n", cpunum);
         Kernel_53_KrnSpinUnLock(&startup_lock, NULL);
@@ -180,6 +183,14 @@ void krnRVStartCPUs(struct KernelBase *KernelBase, struct ExecBase *SysBase)
         /* exec keeps the quantum per CPU; start with the boot CPU's */
         tls->Quantum = __riscv_boot_tls.Quantum;
         tls->Elapsed = tls->Quantum;
+        /* The hart itself must not allocate before it has a task */
+        if ((tls->ThisTask = cpu_InitBootStrap(SysBase, cpu)) == NULL)
+        {
+            FreeMem(stack, SECONDARY_STACKSIZE);
+            FreeMem(tls, sizeof(tls_t));
+            bug("[Kernel] %s: out of memory for CPU #%02u\n", __func__, cpu);
+            break;
+        }
         __riscv_tls[cpu] = tls;
 
         Kernel_52_KrnSpinLock(&startup_lock, NULL, SPINLOCK_MODE_WRITE, NULL);
@@ -190,6 +201,7 @@ void krnRVStartCPUs(struct KernelBase *KernelBase, struct ExecBase *SysBase)
         {
             Kernel_53_KrnSpinUnLock(&startup_lock, NULL);
             __riscv_tls[cpu] = NULL;
+            cpu_DisposeBootStrap(tls->ThisTask, SysBase);
             FreeMem(stack, SECONDARY_STACKSIZE);
             FreeMem(tls, sizeof(tls_t));
             if (r < 0)

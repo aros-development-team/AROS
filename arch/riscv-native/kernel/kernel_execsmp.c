@@ -2,7 +2,10 @@
     Copyright (C) 2015-2026, The AROS Development Team. All rights reserved.
 
     Desc: The bootstrap task each secondary hart starts scheduling with
-          (from aarch64-native).
+          (from aarch64-native). The boot CPU builds it before starting the
+          hart, so the hart never allocates before it has a task: if the
+          allocator's semaphore were contended then, it would wait on
+          behalf of no task at all.
 */
 
 #include <aros/config.h>
@@ -33,14 +36,14 @@
 
 #if defined(__AROSEXEC_SMP__)
 extern BOOL Exec_InitETask(struct Task *, struct Task *, struct ExecBase *);
+extern void Exec_CleanupETask(struct Task *, struct ExecBase *);
 
-struct Task *cpu_InitBootStrap(struct ExecBase *SysBase)
+struct Task *cpu_InitBootStrap(struct ExecBase *SysBase, uint32_t cpunum)
 {
     struct ExceptionContext *bsctx;
     struct MemList *ml;
 #define bstask          ((struct Task *)(ml->ml_ME[0].me_Addr))
 #define bstaskmlsize    (sizeof(struct MemList) + 2 * sizeof(struct MemEntry))
-    uint32_t cpunum = krnRVCPUNumber();
 
     /* Build bootstraps memory list */
     if ((ml = AllocMem(bstaskmlsize, MEMF_PUBLIC|MEMF_CLEAR)) == NULL)
@@ -118,26 +121,34 @@ struct Task *cpu_InitBootStrap(struct ExecBase *SysBase)
     }
     bstask->tc_UnionETask.tc_ETask->et_RegFrame = bsctx;
 
-    /* This CPU only. iet_CpuAffinity is a mask buffer, not a bitmask. */
+    /* Its hart only. Exec_InitETask gave it the creating CPU's mask, so
+     * rewrite that one in place. */
     IntETask(bstask->tc_UnionETask.tc_ETask)->iet_CpuNumber = cpunum;
-    {
-        void *aff = KrnAllocCPUMask();
-
-        /* A NULL mask is invalid: without one this task can not be */
-        if (!aff)
-        {
-            bug("[Kernel:%02d] FATAL : Failed to allocate the bootstrap affinity mask\n", cpunum);
-            return NULL;
-        }
-        KrnGetCPUMask(cpunum, aff);
-        IntETask(bstask->tc_UnionETask.tc_ETask)->iet_CpuAffinity = aff;
-    }
+    KrnClearCPUMask(IntETask(bstask->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
+    KrnGetCPUMask(cpunum, IntETask(bstask->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
 
     bsctx->x[REG_X_FP_OFF] = 0;
     bsctx->ra = (IPTR)SysBase->TaskExitCode;
 
     return bstask;
 #undef  bstask
+}
+
+/* Free a bootstrap task whose hart was never started */
+void cpu_DisposeBootStrap(struct Task *bstask, struct ExecBase *SysBase)
+{
+    struct MemList *mb, *mbnext;
+
+    KrnDeleteContext(bstask->tc_UnionETask.tc_ETask->et_RegFrame);
+    Exec_CleanupETask(bstask, SysBase);
+
+    /* The task itself is in one of these MemLists */
+    bstask->tc_MemEntry.lh_TailPred->ln_Succ = NULL;
+    for (mb = (struct MemList *)bstask->tc_MemEntry.lh_Head; mb; mb = mbnext)
+    {
+        mbnext = (struct MemList *)mb->ml_Node.ln_Succ;
+        FreeEntry(mb);
+    }
 }
 
 void cpu_BootStrap(struct Task *bstask, struct ExecBase *SysBase)

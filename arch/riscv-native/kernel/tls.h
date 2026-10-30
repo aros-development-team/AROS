@@ -22,6 +22,9 @@
 #define TLS_HARTID_OFFSET       48
 #define TLS_STACKTOP_OFFSET     56
 
+/* The boot hart's trap stack (secondaries trap on their start-up stack) */
+#define RISCV_BOOT_TRAPSTACKSIZE    65536
+
 #ifndef __ASSEMBLER__
 
 #include <exec/types.h>
@@ -41,7 +44,7 @@ typedef struct tls
     /* RISC-V specific from here on */
     LONG                TrapDepth;      /* Trap nesting depth (traps.S, issuper)*/
     UQUAD               HartID;         /* SBI hart id, for firmware calls only */
-    APTR                StackTop;       /* Initial sp for a secondary hart      */
+    APTR                StackTop;       /* Trap stack (a secondary's initial sp) */
     APTR                Platform;       /* Platform per-hart data (HartData)    */
 } tls_t;
 

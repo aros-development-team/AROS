@@ -5,7 +5,8 @@
     Desc: S-mode trap entry for the opensbi-riscv64 target.
 
     Saves the interrupted state as a struct ExceptionContext
-    (see aros/riscv64/cpucontext.h) on the current stack and calls
+    (see aros/riscv64/cpucontext.h) on the current stack - on SMP, a
+    trap from task context first moves to the hart's own stack - and calls
     krnTrapHandler(ctx, scause, stval). On return the (possibly
     modified) context is restored and execution resumes via sret.
 
@@ -29,9 +30,31 @@
 	.globl	__trap_entry
 	.type	__trap_entry,%function
 __trap_entry:
+#if defined(__AROSEXEC_SMP__)
+	/* A trap taken in task context (nesting depth 0) moves to this hart's
+	   own stack (TLS StackTop), as x86_64 (TSS rsp0) and aarch64 (SP_EL1)
+	   take theirs on a per-CPU stack. The frame and the whole dispatch then
+	   never touch the task's stack: a task that removes itself has its
+	   stack freed by the service task on another CPU as soon as it marks
+	   itself TS_INVALID, while it is still on its way out through here.
+	   A nested trap stays on the stack it interrupted. */
+	csrw	sscratch, t0
+	mv	t0, sp
+	lw	sp, TLS_TRAPDEPTH_OFFSET(tp)
+	bnez	sp, 1f
+	ld	sp, TLS_STACKTOP_OFFSET(tp)
+	j	2f
+1:	mv	sp, t0
+2:	addi	sp, sp, -272
+	sd	t0, 8(sp)		/* interrupted sp */
+	csrr	t0, sscratch
+	sd	ra, 0(sp)
+	sd	t0, 16(sp)
+#else
 	addi	sp, sp, -272
 	sd	ra, 0(sp)
 	sd	t0, 16(sp)
+#endif
 	sd	t1, 24(sp)
 	sd	t2, 32(sp)
 	sd	s0, 40(sp)
@@ -59,8 +82,10 @@ __trap_entry:
 	sd	t5, 216(sp)
 	sd	t6, 224(sp)
 	/* interrupted sp, pc and sstatus */
+#if !defined(__AROSEXEC_SMP__)
 	addi	t0, sp, 272
 	sd	t0, 8(sp)
+#endif
 	csrr	t0, sepc
 	sd	t0, 232(sp)
 	csrr	t0, sstatus

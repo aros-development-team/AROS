@@ -169,6 +169,11 @@ _start_kernel:
 	   counts its nesting through it */
 	la	tp, __riscv_boot_tls
 	sd	a0, TLS_HARTID_OFFSET(tp)
+	/* and the stack its traps are taken on (traps.S) */
+	la	t0, __riscv_boot_trapstack
+	li	t1, RISCV_BOOT_TRAPSTACKSIZE
+	add	t0, t0, t1
+	sd	t0, TLS_STACKTOP_OFFSET(tp)
 #endif
 	/* kernel_cstart(hartid, fdt) - a0/a1 still hold the SBI values */
 	call	kernel_cstart
