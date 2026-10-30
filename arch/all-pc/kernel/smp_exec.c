@@ -23,6 +23,7 @@
 #include "etask.h"
 
 extern BOOL Exec_InitETask(struct Task *, struct Task *, struct ExecBase *);
+extern void Exec_CleanupETask(struct Task *, struct ExecBase *);
 
 
 /* Pin a task that predates CPU affinity to the boot CPU */
@@ -84,7 +85,8 @@ void cpu_PrepareExec(struct ExecBase *SysBase)
     PrivExecBase(SysBase)->IntFlags |= EXECF_CPUAffinity;
 }
 
-static struct ExceptionContext *cpu_SMPInitCtx(cpuid_t cpuNo)
+/* Runs on the core itself: the control registers are per core */
+static void cpu_SMPInitAVX(cpuid_t cpuNo)
 {
     if (KernelBase->kb_ContextSize > CPUSSEContxtSize)
     {
@@ -112,8 +114,14 @@ static struct ExceptionContext *cpu_SMPInitCtx(cpuid_t cpuNo)
             );
         D(bug("[Kernel:%03u] %s: AVX Ready!\n", cpuNo, __func__);)
     }
-    return KrnCreateContext();
 }
+
+/*
+ * Build the bootstrap task for core cpuNo. Runs on the boot CPU before the
+ * core is woken (smp_Wake), so the core never allocates before it has a
+ * task: if the allocator's semaphore were contended then, it would wait
+ * on behalf of no task at all.
+ */
 
 struct Task *cpu_InitBootStrap(cpuid_t cpuNo)
 {
@@ -146,7 +154,7 @@ struct Task *cpu_InitBootStrap(cpuid_t cpuNo)
     NEWLIST(&bstask->tc_MemEntry);
 
     D(bug("[Kernel:%03u] %s: Allocating CPU context...\n", cpuNo, __func__);)
-    if ((bsctx = cpu_SMPInitCtx(cpuNo)) == NULL)
+    if ((bsctx = KrnCreateContext()) == NULL)
     {
         bug("[Kernel:%03u] FATAL : Failed to create the bootstrap Task context\n", cpuNo);
         FreeMem(ml->ml_ME[0].me_Addr, ml->ml_ME[0].me_Length);
@@ -193,18 +201,10 @@ struct Task *cpu_InitBootStrap(cpuid_t cpuNo)
 
     D(bug("[Kernel:%03u] %s: ETask initialized\n", cpuNo, __func__);)
 
-    /* the bootstrap can only run on this CPU */
+    /* the bootstrap can only run on its core. Exec_InitETask gave it the
+     * creating CPU's mask, so rewrite that one in place. */
     IntETask(bstask->tc_UnionETask.tc_ETask)->iet_CpuNumber = cpuNo;
-    IntETask(bstask->tc_UnionETask.tc_ETask)->iet_CpuAffinity = KrnAllocCPUMask();
-    if (!IntETask(bstask->tc_UnionETask.tc_ETask)->iet_CpuAffinity)
-    {
-        bug("[Kernel:%03u] FATAL : Failed to initialize bootstrap CPU Affinity\n", cpuNo);
-        KrnDeleteContext(bsctx);
-        FreeMem(ml->ml_ME[1].me_Addr, ml->ml_ME[1].me_Length);
-        FreeMem(ml->ml_ME[0].me_Addr, ml->ml_ME[0].me_Length);
-        FreeMem(ml, bstaskmlsize);
-        return NULL;
-    }
+    KrnClearCPUMask(IntETask(bstask->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
     KrnGetCPUMask(cpuNo, IntETask(bstask->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
 
     D(bug("[Kernel:%03u] %s: Initialization Complete\n", cpuNo, __func__);)
@@ -212,6 +212,23 @@ struct Task *cpu_InitBootStrap(cpuid_t cpuNo)
     bsctx->Flags = 0;
 
     return bstask;
+}
+
+/* Free a bootstrap task whose core was never started */
+void cpu_DisposeBootStrap(struct Task *bstask)
+{
+    struct MemList *mb, *mbnext;
+
+    KrnDeleteContext(bstask->tc_UnionETask.tc_ETask->et_RegFrame);
+    Exec_CleanupETask(bstask, SysBase);
+
+    /* The task itself is in one of these MemLists */
+    bstask->tc_MemEntry.lh_TailPred->ln_Succ = NULL;
+    for (mb = (struct MemList *)bstask->tc_MemEntry.lh_Head; mb; mb = mbnext)
+    {
+        mbnext = (struct MemList *)mb->ml_Node.ln_Succ;
+        FreeEntry(mb);
+    }
 }
 
 void cpu_BootStrap(struct Task *bstask)
@@ -225,6 +242,8 @@ void cpu_BootStrap(struct Task *bstask)
         if (IntETask(bstask->tc_UnionETask.tc_ETask)->iet_CpuNumber != cpuNo)
             bug("[Kernel:%03u] %s: bstask running on wrong CPU? (task cpu = %03u)\n", cpuNo, __func__, IntETask(bstask->tc_UnionETask.tc_ETask)->iet_CpuNumber);
     )
+
+    cpu_SMPInitAVX(cpuNo);
 
     bstask->tc_State = TS_RUN;
     SET_THIS_TASK(bstask);
