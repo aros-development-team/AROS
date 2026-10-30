@@ -61,6 +61,7 @@
 #include <netinet/ip_var.h>
 #include <netinet/ip_icmp.h>
 #include <netinet/in_cksum_protos.h>
+#include <protos/net/route_protos.h>
 #include <netinet/tcp.h>
 #include <netinet/tcp_fsm.h>
 #include <netinet/tcp_seq.h>
@@ -304,6 +305,10 @@ tcp_syncookie_validate(struct in_addr src, struct in_addr dst,
 /* patchable/settable parameters for tcp */
 int	ip_defttl = 60;				  /* default time to live for TCP segs */
 int 	tcp_mssdflt = 1460;			  /* Ethernet MSS (1500 - 40) */
+/* IPv6: the minimum link MTU less the IPv6 and TCP headers (1280 - 60); the
+ * MSS to assume when a peer sends none (RFC 9293 section 3.7.1) and the most
+ * to use towards a destination off the link with no path MTU known */
+int 	tcp_v6mssdflt = 1220;
 int 	tcp_rttdflt = TCPTV_SRTTDFLT / PR_SLOWHZ;
 int	tcp_do_rfc1323 = 1;
 int	tcp_do_rfc1644 = 1;
@@ -840,6 +845,28 @@ struct inpcb *inp;
     }
     return rt;
 }
+
+#if INET6
+/*
+ * tcp_rtlookup6 - the route to an IPv6 connection's peer. inp_route has no
+ * room for an IPv6 destination, so the route is looked up each time and
+ * comes back with a reference the caller drops with rtfree(). NULL if there
+ * is no peer or no route.
+ */
+struct rtentry *
+tcp_rtlookup6(struct inpcb *inp)
+{
+    struct sockaddr_in6 dst;
+
+    if(IN6_IS_ADDR_UNSPECIFIED(&inp->inp_faddr6))
+        return NULL;
+    bzero(&dst, sizeof(dst));
+    dst.sin6_family = AF_INET6;
+    dst.sin6_len    = sizeof(dst);
+    dst.sin6_addr   = inp->inp_faddr6;
+    return rtalloc1((struct sockaddr *)&dst, 1);
+}
+#endif
 
 /*
  * Return a pointer to the cached information about the remote host.
