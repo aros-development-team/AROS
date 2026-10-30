@@ -93,14 +93,18 @@ static inline void SendIPIAll(uint32_t ipi, uint32_t ipi_param)
 
 void core_TaskCPUUsage(void);
 
+#define AARCH64_MAXCPUS     4
+
+/* Each core's MPIDR_EL1 affinity fields, recorded by cpu_Init() on that
+   core (KATTR_CPUHardwareID) */
+extern uint64_t aarch64_CPUHwID[AARCH64_MAXCPUS];
+
 #if defined(__AROSEXEC_SMP__)
 /*
  * Per-core load for KrnGetSystemAttr(KATTR_CPULoad + cpu): the inverse of
  * the idle task's share of the window. Its busy time is already in
  * iet_private2, so only the previous sample is kept here.
  */
-#define AARCH64_MAXCPUS     4
-
 struct aarch64_CPULoadData
 {
     UQUAD       cpl_LastIdle;       /* idle busy time at the last sample */
@@ -113,9 +117,6 @@ struct aarch64_CPULoadData
 #define CPULOAD_MINWINDOW       100000  /* microseconds */
 
 extern struct Task *aarch64_IdleTask[AARCH64_MAXCPUS];
-/* Each core's MPIDR_EL1 affinity fields, recorded by cpu_Init() on that
-   core (KATTR_CPUHardwareID) */
-extern uint64_t aarch64_CPUHwID[AARCH64_MAXCPUS];
 extern struct aarch64_CPULoadData aarch64_CPULoad[AARCH64_MAXCPUS];
 #endif
 
