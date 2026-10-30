@@ -143,20 +143,9 @@ struct ip6_moptions {
 #define IP6_TEMP_REGEN_ADVANCE       5       /* seconds before deprecation to regen */
 #define IP6_TEMP_MAX_DESYNC_FACTOR   600     /* max random desync (seconds) */
 
-/* IN6P socket flags (stored in in6p_flags / in6_rawcb.flags) */
+/* IN6P socket flags (stored in in6p_flags) */
 #define IN6P_PKTINFO	0x01		/* receive packet info (RECVPKTINFO) */
-
-/*
- * Extended rawcb for raw IPv6 sockets (in6_rawcb.rcb must be first).
- */
-struct in6_rawcb {
-	struct rawcb		rcb;	/* common rawcb (must be first) */
-	struct ip6_moptions    *im6o;	/* multicast options */
-	int			hops;	/* unicast hop limit (-1 = default) */
-	int			v6only;	/* IPv6-only socket flag */
-	int			tclass;	/* traffic class */
-	int			flags;	/* IN6P_* flags */
-};
+#define IN6P_HOPLIMIT	0x02		/* receive hop limit (RECVHOPLIMIT) */
 
 #ifdef KERNEL
 extern struct ip6stat ip6stat;
