@@ -628,7 +628,7 @@ maketarget (FILE * deplogfh, struct Project * prj, char * tname, unsigned int de
     if (!*tname)
         tname = prj->defaulttarget;
 
-    target = FindNode (&prj->cache->targets, tname);
+    target = cachetarget_find (prj->cache, tname);
 
     if (!target)
     {
@@ -658,7 +658,7 @@ maketarget (FILE * deplogfh, struct Project * prj, char * tname, unsigned int de
 #endif
     ForeachNode (&deps, node)
     {
-        subtarget = FindNode (&prj->cache->targets, node->name);
+        subtarget = cachetarget_find (prj->cache, node->name);
 
         if (subtarget)
         {
@@ -693,7 +693,7 @@ maketarget (FILE * deplogfh, struct Project * prj, char * tname, unsigned int de
 #endif
         ForeachNode (&deps, node)
         {
-            subtarget = FindNode (&prj->cache->targets, node->name);
+            subtarget = cachetarget_find (prj->cache, node->name);
 
             if (!subtarget)
             {
