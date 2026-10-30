@@ -44,6 +44,26 @@
 #include <netinet/in_var.h>
 #include <netinet6/in6_var.h>
 #include <netinet6/nd6.h>
+#include <net/if_loop_protos.h>
+
+/*
+ * ip6_mloopback - give a copy of a group datagram being sent on ifp to this
+ * host's own members of the group there, through the loopback driver's
+ * output routine with ifp as the receiving interface, as ip_mloopback()
+ * does for IPv4. ip6_input() then treats it as having arrived on ifp.
+ */
+static void
+ip6_mloopback(struct ifnet *ifp, struct mbuf *m, struct sockaddr_in6 *dst)
+{
+    struct ip6_hdr *ip6 = mtod(m, struct ip6_hdr *);
+    struct mbuf *copym;
+
+    /* the payload length is otherwise only filled in on the way out */
+    ip6->ip6_plen = htons((u_int16_t)(m->m_pkthdr.len - sizeof(struct ip6_hdr)));
+    copym = m_copy(m, 0, M_COPYALL);
+    if(copym != NULL)
+        (void)looutput(ifp, copym, (struct sockaddr *)dst, NULL);
+}
 
 /* ------------------------------------------------------------------
  * ip6_output - send an IPv6 datagram.
@@ -141,6 +161,21 @@ ip6_output(void *args, ...)
         if(ip6->ip6_hlim == 0)
             ip6->ip6_hlim = im6o ? im6o->im6o_multicast_hlim
                             : IP6_DEFAULT_MULTICAST_HLIM;
+        /*
+         * If this host is a member of the group on the outgoing interface
+         * and the sender did not forbid it with IPV6_MULTICAST_LOOP (on by
+         * default, RFC 3493 section 5.2), loop a copy back, as ip_output()
+         * does for IPv4. The stack's own neighbour discovery and MLD
+         * messages pass zeroed options, so they never come back to it.
+         */
+        {
+            struct in6_addr grp = ip6->ip6_dst;     /* the header is packed */
+            struct in6_multi *in6m;
+
+            IN6_LOOKUP_MULTI(grp, ifp, in6m);
+            if(in6m != NULL && (im6o == NULL || im6o->im6o_multicast_loop))
+                ip6_mloopback(ifp, m, dst);
+        }
         goto multicast_output;
     }
 

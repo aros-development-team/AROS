@@ -30,6 +30,20 @@ struct in6_multi {
 };
 
 /*
+ * Look up the in6_multi record for a given (group, interface) pair; the
+ * IPv6 counterpart of IN_LOOKUP_MULTI().
+ */
+#define	IN6_LOOKUP_MULTI(addr, ifp, in6m)				\
+{									\
+	struct in6_multi *_in6m;					\
+	for(_in6m = in6_multihead; _in6m != NULL; _in6m = _in6m->in6m_next) \
+		if(_in6m->in6m_ifp == (ifp) &&				\
+		   IN6_ARE_ADDR_EQUAL(&_in6m->in6m_addr, &(addr)))	\
+			break;						\
+	(in6m) = _in6m;							\
+}
+
+/*
  * Macros for IPv6 address classification.
  */
 /*

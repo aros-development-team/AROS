@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #ifndef _PCIPC_H
@@ -50,6 +50,7 @@ struct pcipc_staticdata
 
     /* Low-level sub-methods */
     ULONG                       (*ReadConfigLong)(UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg);
+    void                        (*WriteConfigWord)(UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg, UWORD val);
     void                        (*WriteConfigLong)(UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg, ULONG val);
 
     /* ACPI related */
@@ -143,6 +144,7 @@ static inline UWORD ReadConfigByte(struct pcipc_staticdata *psd, UBYTE bus,
 }
 
 ULONG ReadConfig1Long(UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg);
+void WriteConfig1Word(UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg, UWORD val);
 void WriteConfig1Long(UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg, ULONG val);
 
 #ifdef LEGACY_SUPPORT

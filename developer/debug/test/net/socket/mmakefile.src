@@ -20,6 +20,7 @@ CUNITSOCKETTESTFILES := \
     cunit-net-route6 \
     cunit-net-cmsg \
     cunit-net-addr6 \
+    cunit-net-mcast6 \
     cunit-net-raw6
 
 #MM test-socket : includes linklibs

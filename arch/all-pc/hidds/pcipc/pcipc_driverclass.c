@@ -22,6 +22,8 @@
 #include <acpica/acnames.h>
 #include <acpica/accommon.h>
 
+#include <asm/io.h>
+
 #include <string.h>
 
 #include "pcipc.h"
@@ -218,6 +220,42 @@ void PCIPC__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o,
             Use legacy access if MMIO isnt possible.
         */
         PSD(cl)->WriteConfigLong(msg->bus, msg->dev, msg->sub, msg->reg, msg->val);
+    }
+}
+
+/*
+    A word write has to reach the hardware as a word. The base class
+    emulates this method with a read-modify-write of the containing long,
+    which puts the neighbouring register back as well. For PCICS_COMMAND
+    that neighbour is PCICS_STATUS, and handing its error bits back is a
+    write-1-to-clear of every one that was latched.
+*/
+void PCIPC__Hidd_PCIDriver__WriteConfigWord(OOP_Class *cl, OOP_Object *o,
+                                            struct pHidd_PCIDriver_WriteConfigWord *msg)
+{
+    struct PCIPCBusData *data = OOP_INST_DATA(cl, o);
+    struct PCIPCDeviceData *devdata = OOP_INST_DATA(PSD(cl)->pcipcDeviceClass, msg->device);
+
+    if (msg->reg & 1)
+    {
+        bug("[PCIPC:Driver] %s: missaligned word access! (reg = %u)\n", __func__, msg->reg);
+    }
+
+    if ((data->ecam && devdata->mmconfig) ||
+        (devdata->mmconfig && (msg->reg < 0x100)))
+    {
+        /* use MMIO word write access for ECAM */
+        UWORD volatile *wordreg;
+        wordreg = (UWORD volatile *) (devdata->mmconfig + (msg->reg & 0xffe));
+        DMMIO(bug("[PCIPC:Driver] %s: MMIO Write %04x @ %p\n", __func__, msg->val, wordreg));
+        mmio_outw(msg->val, wordreg);
+    }
+    else
+    {
+        /*
+            Use legacy access if MMIO isnt possible.
+        */
+        PSD(cl)->WriteConfigWord(msg->bus, msg->dev, msg->sub, msg->reg, msg->val);
     }
 }
 
@@ -583,6 +621,7 @@ static int PCIPC_InitClass(LIBBASETYPEPTR LIBBASE)
 
     /* Default to using config mechanism 1 */
     _psd->ReadConfigLong  = ReadConfig1Long;
+    _psd->WriteConfigWord = WriteConfig1Word;
     _psd->WriteConfigLong = WriteConfig1Long;
     PCIPC_ProbeConfMech(&LIBBASE->psd);
 
