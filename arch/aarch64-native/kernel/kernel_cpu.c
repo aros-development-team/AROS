@@ -35,7 +35,6 @@
 #define DREGS(x)
 
 #if defined(__AROSEXEC_SMP__)
-extern struct Task *cpu_InitBootStrap(struct ExecBase *);
 extern void cpu_BootStrap(struct Task *, struct ExecBase *);
 #endif
 
@@ -165,7 +164,8 @@ void cpu_Register()
     bug("[Kernel:%02d] KernelBase @ 0x%p\n", cpunum, KernelBase);
     bug("[Kernel:%02d] SysBase @ 0x%p\n", cpunum, SysBase);
 
-    if ((__tls->ThisTask = cpu_InitBootStrap(SysBase)) == NULL)
+    /* Built for this core by the boot CPU (bcm27xx_init) */
+    if (__tls->ThisTask == NULL)
         goto cpu_registerfatal;
 
     if (__arm_arosintern.ARMI_InitCore)
@@ -218,11 +218,11 @@ cpu_registerfatal:
     Permit();
     Enable();
 
-    /* Become this core's idle context - do NOT return: we were reached by
-     * a `br`, so x30 still holds firmware leftovers. An IPI arrives as an
-     * FIQ and its exit path dispatches whatever became ready. */
-    for (;;)
-        asm volatile("wfi");
+    /* The bootstrap's work is done. Do NOT return: we were reached by a
+     * `br`, so x30 still holds firmware leftovers. Leave through exec's
+     * task exit code instead, as every task does; the scheduler then runs
+     * this core's idle task (Exec_ARMCPUInit). */
+    ((void (*)(void))SysBase->TaskExitCode)();
 #endif
 }
 

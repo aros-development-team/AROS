@@ -44,6 +44,26 @@
 #include <netinet/in_var.h>
 #include <netinet6/in6_var.h>
 #include <netinet6/nd6.h>
+#include <net/if_loop_protos.h>
+
+/*
+ * ip6_mloopback - give a copy of a group datagram being sent on ifp to this
+ * host's own members of the group there, through the loopback driver's
+ * output routine with ifp as the receiving interface, as ip_mloopback()
+ * does for IPv4. ip6_input() then treats it as having arrived on ifp.
+ */
+static void
+ip6_mloopback(struct ifnet *ifp, struct mbuf *m, struct sockaddr_in6 *dst)
+{
+    struct ip6_hdr *ip6 = mtod(m, struct ip6_hdr *);
+    struct mbuf *copym;
+
+    /* the payload length is otherwise only filled in on the way out */
+    ip6->ip6_plen = htons((u_int16_t)(m->m_pkthdr.len - sizeof(struct ip6_hdr)));
+    copym = m_copy(m, 0, M_COPYALL);
+    if(copym != NULL)
+        (void)looutput(ifp, copym, (struct sockaddr *)dst, NULL);
+}
 
 /* ------------------------------------------------------------------
  * ip6_output - send an IPv6 datagram.
@@ -83,6 +103,13 @@ ip6_output(void *args, ...)
 
     struct ip6_hdr *ip6 = mtod(m, struct ip6_hdr *);
     struct ifnet   *ifp = NULL;
+    /*
+     * The interface a looped-back packet is received on: the one that owns
+     * the link-scope address it is sent to (lo0 for everything else), so
+     * the receiving side sees the zone the address belongs to, as KAME's
+     * origifp does.
+     */
+    struct ifnet   *rcvifp = NULL;
     struct route_in6 iproute;
     struct route    *ro;
     struct sockaddr_in6 *dst;
@@ -141,6 +168,21 @@ ip6_output(void *args, ...)
         if(ip6->ip6_hlim == 0)
             ip6->ip6_hlim = im6o ? im6o->im6o_multicast_hlim
                             : IP6_DEFAULT_MULTICAST_HLIM;
+        /*
+         * If this host is a member of the group on the outgoing interface
+         * and the sender did not forbid it with IPV6_MULTICAST_LOOP (on by
+         * default, RFC 3493 section 5.2), loop a copy back, as ip_output()
+         * does for IPv4. The stack's own neighbour discovery and MLD
+         * messages pass zeroed options, so they never come back to it.
+         */
+        {
+            struct in6_addr grp = ip6->ip6_dst;     /* the header is packed */
+            struct in6_multi *in6m;
+
+            IN6_LOOKUP_MULTI(grp, ifp, in6m);
+            if(in6m != NULL && (im6o == NULL || im6o->im6o_multicast_loop))
+                ip6_mloopback(ifp, m, dst);
+        }
         goto multicast_output;
     }
 
@@ -213,6 +255,8 @@ ip6_output(void *args, ...)
         for(ia6 = in6_ifaddr; ia6; ia6 = ia6->ia_next) {
             if(IN6_ARE_ADDR_EQUAL(&ia6->ia_addr.sin6_addr, &ip6->ip6_dst)) {
                 ifp = &loif;
+                if(IN6_IS_ADDR_LINKLOCAL(&ia6->ia_addr.sin6_addr))
+                    rcvifp = ia6->ia6_ifp;
                 break;
             }
         }
@@ -244,7 +288,7 @@ multicast_output:
 
         /* add link-layer header via ifp */
         s = splimp();
-        error = (*ifp->if_output)(ifp, m,
+        error = (*ifp->if_output)(rcvifp ? rcvifp : ifp, m,
                                   (rt && (rt->rt_flags & RTF_GATEWAY)) ? rt->rt_gateway
                                   : (struct sockaddr *)dst,
                                   rt);
@@ -271,8 +315,7 @@ multicast_output:
         int frag_pl = (mtu - hlen - sizeof(struct ip6_frag)) & ~7;
         struct mbuf *m0;
         u_int32_t id;
-        int off2;
-        u_int16_t offlg;
+        int off2, total;
         u_int8_t  nxt8;
 
         if(frag_pl <= 0) {
@@ -289,10 +332,16 @@ multicast_output:
         /* rewrite next-header to IPPROTO_FRAGMENT */
         ip6->ip6_nxt = IPPROTO_FRAGMENT;
 
+        /*
+         * The fragmentable part is everything after the IPv6 header; each
+         * fragment carries the next frag_pl bytes of it (a multiple of 8)
+         * until what is left fits (RFC 8200 section 4.5).
+         */
+        total = m->m_pkthdr.len - hlen;
         off2 = 0;
-        while(m->m_pkthdr.len > hlen) {
-            int flen = MIN(frag_pl, m->m_pkthdr.len - hlen);
-            int more = (m->m_pkthdr.len - hlen - flen) > 0;
+        while(off2 < total) {
+            int flen = MIN(frag_pl, total - off2);
+            int more = off2 + flen < total;
             struct ip6_frag fh;
 
             /*
@@ -314,11 +363,14 @@ multicast_output:
             bcopy(mtod(m, caddr_t), mtod(m0, caddr_t), hlen);
 
             /* fill fragment header */
+            /* the offset in 8-octet units sits above the M flag; off2 is a
+             * multiple of 8, so in network order it is htons(off2), and
+             * IP6F_MORE_FRAG is defined in network order already */
             fh.ip6f_nxt      = nxt8;
             fh.ip6f_reserved = 0;
-            offlg            = (u_int16_t)off2;
-            if(more) offlg |= IP6F_MORE_FRAG;
-            fh.ip6f_offlg    = htons(offlg);
+            fh.ip6f_offlg    = htons((u_int16_t)off2);
+            if(more)
+                fh.ip6f_offlg |= IP6F_MORE_FRAG;
             fh.ip6f_ident    = id;
 
             bcopy(&fh, mtod(m0, caddr_t) + hlen, sizeof(fh));
@@ -337,8 +389,9 @@ multicast_output:
                 htons(sizeof(fh) + flen);
 
             s = splimp();
-            error = (*ifp->if_output)(ifp, m0,
-                                      (rt->rt_flags & RTF_GATEWAY) ? rt->rt_gateway
+            /* a group datagram has no route (rt is NULL) */
+            error = (*ifp->if_output)(rcvifp ? rcvifp : ifp, m0,
+                                      (rt && (rt->rt_flags & RTF_GATEWAY)) ? rt->rt_gateway
                                       : (struct sockaddr *)dst,
                                       rt);
             splx(s);

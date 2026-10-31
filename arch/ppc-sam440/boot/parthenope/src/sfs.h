@@ -68,6 +68,7 @@ struct SfsRootBlock {
 };
 #define SRB(b) ((struct SfsRootBlock *) (b))
 #define SRB_ID 0x53465300
+#define ROOTBITS_CASESENSITIVE 128
 
 struct SfsObject {
 	uint16_t owneruid;
@@ -92,7 +93,7 @@ struct SfsObject {
 
 	uint8_t name[0];
 	uint8_t comment[0];
-};
+} __attribute__((packed));
 #define SO(b) ((struct SfsObject *) (b))
 #define SO_ID 0x53465300
 
@@ -113,7 +114,7 @@ struct SfsObjectContainer {
 struct BNode {
 	uint32_t key;
 	uint32_t data;
-};
+} __attribute__((packed));
 
 struct BTreeContainer {
 	uint16_t nodecount;
@@ -127,6 +128,7 @@ struct SfsBNodeContainer {
 	struct SfsBlockHeader bheader;
 	struct BTreeContainer btc;
 };
+#define SBNC_ID (('B'<<24)|('N'<<16)|('D'<<8)|'C')
 #define SBNC(b) ((struct SfsBNodeContainer *) (b))
 
 struct SfsExtentBNode {
@@ -134,7 +136,7 @@ struct SfsExtentBNode {
 	uint32_t next;
 	uint32_t prev;
 	uint16_t blocks;
-};
+} __attribute__((packed));
 
 boot_dev_t *sfs_create(struct RdbPartition *partition);
 

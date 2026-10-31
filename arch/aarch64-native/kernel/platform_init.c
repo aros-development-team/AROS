@@ -82,29 +82,8 @@ static int platform_PostInit(struct KernelBase *KernelBase)
 
     D(bug("[Kernel] platform_PostInit: Performing Post Init..\n"));
 
-#if defined(__AROSEXEC_SMP__)
-    /* Pin the boot task before ARMI_Init wakes the secondaries:
-     * Exec_ARMCPUSMPInit runs too late to stop one dispatching it
-     * mid-coldstart. */
-    {
-        struct Task *bootTask = FindTask(NULL);
-        struct IntETask *iet = bootTask ? (struct IntETask *)GetETask(bootTask) : NULL;
-
-        if (iet && !iet->iet_CpuAffinity)
-        {
-            void *bootAff = KrnAllocCPUMask();
-            if (bootAff)
-            {
-                KrnGetCPUMask(0, bootAff);
-                iet->iet_CpuAffinity = bootAff;
-                iet->iet_CpuNumber = 0;
-            }
-        }
-    }
-#endif
-
-    if (__arm_arosintern.ARMI_Init)
-        __arm_arosintern.ARMI_Init(KernelBase, SysBase);
+    /* The secondary cores are started later, by kernel.post
+     * (platform_post.c), as all-pc does. */
 
     D(bug("[Kernel] platform_PostInit: Registering Heartbeat timer..\n"));
 

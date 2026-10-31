@@ -39,6 +39,7 @@ struct CPUData
     void                        *cpu_TLS;
     void                        *cpu_GDT;
     void                        *cpu_IDT;
+    void                        *cpu_BSTask;    /* Bootstrap task, built by the boot CPU (SMP)          */
     struct CPUMMUConfig         *cpu_MMU;
     UQUAD                       cpu_LAPICTick;
     UQUAD                       cpu_LastCPULoadTime;

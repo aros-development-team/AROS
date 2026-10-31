@@ -538,29 +538,29 @@ ip6_input(struct mbuf *m)
         goto bad;
     }
 
+    /*
+     * A group is ours if the interface the packet arrived on is a member:
+     * a socket joined it there, or it is the interface's all-nodes group or
+     * the solicited-node group of one of its addresses (in6_join_allnodes(),
+     * in6_ifinit()). This host does not forward multicast.
+     */
+    if(IN6_IS_ADDR_MULTICAST(&ip6->ip6_dst)) {
+        struct in6_addr grp = ip6->ip6_dst;     /* the header is packed */
+        struct in6_multi *in6m;
+
+        IN6_LOOKUP_MULTI(grp, ifp, in6m);
+        if(in6m == NULL) {
+            ip6stat.ip6s_notmember++;
+            goto bad;
+        }
+        goto ours;
+    }
+
     /* check if destination is one of our addresses */
     for(struct in6_ifaddr *ia = in6_ifaddr; ia; ia = ia->ia_next) {
         if(IN6_ARE_ADDR_EQUAL(&ip6->ip6_dst, &ia->ia_addr.sin6_addr))
             goto ours;
-        /* also accept solicited-node multicast for our addr */
-        if(IN6_IS_ADDR_MULTICAST(&ip6->ip6_dst)) {
-            /* ff02::1:ffXX:XXXX */
-            if(ip6->ip6_dst.s6_addr[0] == 0xff &&
-                    ip6->ip6_dst.s6_addr[1] == 0x02 &&
-                    ip6->ip6_dst.s6_addr[11] == 0x01 &&
-                    ip6->ip6_dst.s6_addr[12] == 0xff &&
-                    ip6->ip6_dst.s6_addr[13] == ia->ia_addr.sin6_addr.s6_addr[13] &&
-                    ip6->ip6_dst.s6_addr[14] == ia->ia_addr.sin6_addr.s6_addr[14] &&
-                    ip6->ip6_dst.s6_addr[15] == ia->ia_addr.sin6_addr.s6_addr[15])
-                goto ours;
-        }
     }
-
-    /* accept all-nodes multicast ff02::1 */
-    if(ip6->ip6_dst.s6_addr[0] == 0xff &&
-            ip6->ip6_dst.s6_addr[1] == 0x02 &&
-            ip6->ip6_dst.s6_addr[15] == 0x01)
-        goto ours;
 
     /* forwarding */
     if(ip6_forwarding) {

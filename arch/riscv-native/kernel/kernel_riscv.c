@@ -25,6 +25,8 @@ ULONG    __riscv_cpu_online[RISCV_CPUMASK_WORDS] = { 1 };
  * traps.S counts nesting through it from then on.
  */
 tls_t    __riscv_boot_tls;
+/* The boot hart's trap stack: installed as its StackTop by startup.S */
+UBYTE    __riscv_boot_trapstack[RISCV_BOOT_TRAPSTACKSIZE] __attribute__((aligned(16)));
 tls_t    *__riscv_tls[RISCV_MAXCPUS] = { &__riscv_boot_tls };
 
 _Static_assert(offsetof(tls_t, ThisTask) == TLS_THISTASK_OFFSET,

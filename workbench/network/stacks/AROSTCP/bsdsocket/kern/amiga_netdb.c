@@ -850,6 +850,24 @@ addifent(struct NetDataBase *ndb,
                 }
             }
 #if INET6
+            /*
+             * The link-local address is the stack's own, made by in6_if_up()
+             * when the interface comes up. An in-place reload deletes it with
+             * every other address (sana_reconfig_teardown()) but leaves the
+             * interface up and running, so nothing would make it again, and
+             * without it the interface has no IPv6 at all: make it here, with
+             * its DAD and the Router Solicitation after it, as when the
+             * interface comes up (RFC 4861 section 6.3.7). An interface that
+             * is not up and running yet gets it when it is (SIOCSIFFLAGS,
+             * sana_restore()); one that still has it is left alone.
+             */
+            if(ifp && (flags & NETDB_IFF_MODIFYOLD) &&
+                    (ifp->if_flags & (IFF_UP | IFF_DRV_RUNNING)) ==
+                    (IFF_UP | IFF_DRV_RUNNING)) {
+                void in6_if_up(struct ifnet *);
+
+                in6_if_up(ifp);
+            }
             /* Apply IPv6 address based on configured mode */
             if((ifp) && (flags & NETDB_IFF_MODIFYOLD) && ssc->args->a_ip6) {
                 if(strncmp(ssc->args->a_ip6, "AUTO", 4) == 0) {

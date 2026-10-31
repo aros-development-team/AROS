@@ -36,6 +36,44 @@ struct sched_param
 #define SCHED_RR        2
 #define SCHED_BATCH     3
 
+#ifdef __AROS__
+/*
+ * CPU sets, as in glibc: bit n stands for CPU n (the kernel's logical
+ * numbering, KrnGetCPUNumber()). Used by pthread_attr_setaffinity_np()
+ * and pthread_setaffinity_np().
+ */
+#define CPU_SETSIZE     1024
+#define __NCPUBITS      (8 * sizeof(unsigned long))
+
+typedef struct
+{
+    unsigned long __bits[CPU_SETSIZE / __NCPUBITS];
+} cpu_set_t;
+
+#define CPU_ALLOC_SIZE(count) \
+    ((((count) + __NCPUBITS - 1) / __NCPUBITS) * sizeof(unsigned long))
+
+#define CPU_ZERO_S(size, set)   __builtin_memset((set), 0, (size))
+#define CPU_SET_S(cpu, size, set) \
+    ((size_t)(cpu) / 8 < (size) ? \
+     ((set)->__bits[(size_t)(cpu) / __NCPUBITS] |= (1UL << ((cpu) % __NCPUBITS))) : 0)
+#define CPU_CLR_S(cpu, size, set) \
+    ((size_t)(cpu) / 8 < (size) ? \
+     ((set)->__bits[(size_t)(cpu) / __NCPUBITS] &= ~(1UL << ((cpu) % __NCPUBITS))) : 0)
+#define CPU_ISSET_S(cpu, size, set) \
+    ((size_t)(cpu) / 8 < (size) ? \
+     (((set)->__bits[(size_t)(cpu) / __NCPUBITS] & (1UL << ((cpu) % __NCPUBITS))) != 0) : 0)
+#define CPU_COUNT_S(size, set)  __sched_cpucount((size), (set))
+#define CPU_EQUAL_S(size, a, b) (__builtin_memcmp((a), (b), (size)) == 0)
+
+#define CPU_ZERO(set)           CPU_ZERO_S(sizeof(cpu_set_t), set)
+#define CPU_SET(cpu, set)       CPU_SET_S(cpu, sizeof(cpu_set_t), set)
+#define CPU_CLR(cpu, set)       CPU_CLR_S(cpu, sizeof(cpu_set_t), set)
+#define CPU_ISSET(cpu, set)     CPU_ISSET_S(cpu, sizeof(cpu_set_t), set)
+#define CPU_COUNT(set)          CPU_COUNT_S(sizeof(cpu_set_t), set)
+#define CPU_EQUAL(a, b)         CPU_EQUAL_S(sizeof(cpu_set_t), a, b)
+#endif
+
 #ifdef  __cplusplus
 extern "C" {
 #endif
@@ -48,6 +86,10 @@ int sched_get_priority_min(int);
 //int sched_setparam(pid_t, const struct sched_param *);
 //int sched_setscheduler(pid_t, int, const struct sched_param *);
 int sched_yield(void);
+#ifdef __AROS__
+int sched_getcpu(void);
+int __sched_cpucount(size_t setsize, const cpu_set_t *set);
+#endif
 
 #ifdef  __cplusplus
 }

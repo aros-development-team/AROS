@@ -486,6 +486,7 @@ STDC := \
     __stdc_time \
     __stdc_startup \
     __stdc_fpuprivate \
+    __decimalpoint \
     __vcformat \
     __vcscan \
     abort \
@@ -838,6 +839,7 @@ endif
 
 STDC_STATIC := \
     __ctype \
+    __decimalpoint \
     __vcformat \
     __vcscan \
     abs labs llabs \

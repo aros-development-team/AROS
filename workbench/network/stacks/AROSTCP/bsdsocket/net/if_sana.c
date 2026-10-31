@@ -215,6 +215,14 @@ sana_if_deconfigure(struct ifnet *ifp)
     if(ssc->ss_autoip.state != AUTOIP_DISABLED)
         autoip_stop(ifp);
 
+#if INET6
+    /* Forget the routers heard on it and the routes they gave, and the
+     * prefixes: the routes and addresses go below anyway, and an entry left
+     * marked installed (or its address made) would never be put back when
+     * the router advertises again after a reload. */
+    nd6_purge_routers(ifp);
+    nd6_purge_prefixes(ifp);
+#endif
     /* Flush all routes on the interface before dropping its addresses, so no
      * live route is left referencing an ifaddr we are about to free. */
     rt_purgeif(ifp, AF_UNSPEC);

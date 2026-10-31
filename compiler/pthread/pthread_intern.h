@@ -145,6 +145,11 @@ extern int _pthread_cond_broadcast(pthread_cond_t *cond, BOOL onlyfirst);
 /* .c */
 extern int _pthread_mutex_init(pthread_mutex_t *mutex, const pthread_mutexattr_t *attr, BOOL staticinit);
 
+/* pthread_affinity.c */
+extern int _pthread_cpuset_to_mask(size_t setsize, const cpu_set_t *set, APTR *maskptr);
+extern int _pthread_task_to_cpuset(struct Task *task, size_t setsize, cpu_set_t *set);
+extern void _pthread_free_affinity(APTR mask);
+
 /* .c */
 extern BOOL OpenTimerDevice(struct IORequest *io, struct MsgPort *mp, struct Task *task);
 extern void CloseTimerDevice(struct IORequest *io);

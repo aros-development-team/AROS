@@ -1,22 +1,18 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
-    Desc: SMP coverage for starting threads and using bsdsocket.library from
-          several CPUs at once:
-          1. pthread_create() while every CPU hammers OpenLibrary() - the
-             child's DosEntry waits on the LDDemon semaphore as it starts
-          2. per-task bsdsocket bases opened and closed on every CPU
-          3. TCP echo over loopback with a client on every CPU; every other
+    Desc: SMP coverage for using bsdsocket.library from several CPUs at
+          once, with native tasks only (SMP-PThreads covers pthreads):
+          1. per-task bsdsocket bases opened and closed on every CPU
+          2. TCP echo over loopback with a client on every CPU; every other
              round connects non-blocking and waits in WaitSelect()
-          4. sockets handed between tasks on different CPUs with
+          3. sockets handed between tasks on different CPUs with
              ReleaseSocket()/ReleaseCopyOfSocket() and ObtainSocket(),
              half of them obtained by unique id alone (domain 0)
-          5. posixc read()/write()/close() from threads that never
-             opened bsdsocket.library, and an exited FIOSETOWN owner
+          4. an exited FIOSETOWN owner
           A corrupted semaphore or a lost wakeup can show up as a hang or
-          an alert instead of a FAIL line: a thread that never starts may
-          own the LDDemon semaphore, and every later OpenLibrary() waits.
-          Parts 2-5 need the TCP/IP stack running.
+          an alert instead of a FAIL line.
+          Every part needs the TCP/IP stack running.
 */
 
 #include <exec/tasks.h>
@@ -35,8 +31,7 @@
 #include <netinet/in.h>
 #include <libraries/bsdsocket.h>
 
-#include <pthread.h>
-#include <unistd.h>
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -52,9 +47,7 @@ static int pass, fail, invalid;
 #define STACKSIZE       32768
 #define MAXCPUS         8
 
-#define THR_ROUNDS      100
-#define THR_COUNT       8
-#define START_TICKS     250     /* 5s for a thread to start */
+#define START_TICKS     250     /* 5s for a task to start */
 
 #define BASE_PER_CPU    2
 #define BASE_ROUNDS     300
@@ -125,104 +118,7 @@ static UWORD master_opencnt(void)
     return cnt;
 }
 
-/* ---- 1. pthread start under OpenLibrary contention ---- */
-
-static volatile ULONG g_Hammers;
-
-static void Hammer(void)
-{
-    while (!g_Stop)
-    {
-        struct Library *lib = OpenLibrary("dos.library", 0);
-
-        if (lib)
-            CloseLibrary(lib);
-    }
-    __atomic_add_fetch(&g_Hammers, 1, __ATOMIC_RELAXED);
-}
-
-struct ThrSlot
-{
-    volatile ULONG  ts_Started;
-    volatile ULONG  ts_CPU;
-};
-
-static void *ThreadFunc(void *arg)
-{
-    struct ThrSlot *s = arg;
-
-    s->ts_CPU = (ULONG)KrnGetCPUNumber();
-    s->ts_Started = 1;
-    return arg;
-}
-
-static void test_pthread_start(void)
-{
-    struct ThrSlot slot[THR_COUNT];
-    pthread_t thr[THR_COUNT];
-    char names[MAXCPUS][32];
-    ULONG cpus = 0, created = 0;
-    int r, i, n, hammers = 0;
-    BOOL ok = TRUE;
-
-    g_Stop = 0;
-    g_Hammers = 0;
-    for (i = 0; i < g_NumCPUs; i++)
-    {
-        snprintf(names[i], sizeof(names[i]), "smpnet.hammer.%d", i);
-        if (spawn(Hammer, names[i], i, NULL))
-            hammers++;
-    }
-
-    for (r = 0; r < THR_ROUNDS && ok; r++)
-    {
-        memset(slot, 0, sizeof(slot));
-        for (n = 0; n < THR_COUNT; n++)
-            if (pthread_create(&thr[n], NULL, ThreadFunc, &slot[n]) != 0)
-                break;
-        created += n;
-
-        for (i = 0; i < n; i++)
-        {
-            int ticks = START_TICKS;
-
-            while (!slot[i].ts_Started && ticks-- > 0)
-                Delay(1);
-            if (!slot[i].ts_Started)
-            {
-                /* It will never finish: joining it would hang the test */
-                bug("[smpnet] round %d: thread %d never started (lost wakeup?)\n", r, i);
-                ok = FALSE;
-                break;
-            }
-            cpus |= 1UL << slot[i].ts_CPU;
-        }
-        if (!ok)
-            break;
-        for (i = 0; i < n; i++)
-            pthread_join(thr[i], NULL);
-        if (n < THR_COUNT)
-        {
-            bug("[smpnet] round %d: pthread_create failed after %d threads\n", r, n);
-            ok = FALSE;
-        }
-    }
-
-    g_Stop = 1;
-    wait_count(&g_Hammers, hammers, DONE_TICKS);
-
-    bug("[smpnet] pthread: %lu threads, cpu mask 0x%lx, %d hammers\n",
-        (unsigned long)created, (unsigned long)cpus, hammers);
-    if (ok && (cpus & ~1UL) == 0)
-    {
-        bug("[smpnet] INVALID pthread start: no thread ran off cpu 0\n");
-        invalid++;
-    }
-    else
-        check(ok, "pthread start under OpenLibrary load");
-}
-
-/* ---- 2. bsdsocket bases on every CPU ---- */
+/* ---- 1. bsdsocket bases on every CPU ---- */
 
 static volatile ULONG g_BaseDone, g_NullOpens, g_BadSockets;
 
@@ -288,7 +184,7 @@ static void test_bases(void)
     check(after == before, "master base open count restored");
 }
 
-/* ---- 3. TCP echo over loopback ---- */
+/* ---- 2. TCP echo over loopback ---- */
 
 static volatile UWORD g_Port;           /* network order, 0 until listening */
 static volatile ULONG g_ServerUp, g_ServerDone, g_ClientDone;
@@ -473,7 +369,7 @@ static void test_tcp(void)
           "every loopback echo matched");
 }
 
-/* ---- 4. socket hand-off between CPUs ---- */
+/* ---- 3. socket hand-off between CPUs ---- */
 
 #define HAND_MAX (MAXCPUS * HAND_ROUNDS)
 
@@ -592,67 +488,7 @@ static void test_handoff(void)
     check(after == before, "no descriptor number leaked");
 }
 
-/* ---- 5. posixc threads on a socket they did not open ---- */
-
-#define PX_ROUNDS   100
-#define PX_CHUNK    64
-
-static LONG g_PxWr, g_PxRd;
-static ULONG g_PxWriters;
-static volatile ULONG g_PxBad, g_PxRead, g_PxReadDone;
-static volatile LONG g_PxCloseRet;
-
-static void *PxWriter(void *arg)
-{
-    UBYTE buf[PX_CHUNK];
-    int r;
-
-    for (r = 0; r < PX_ROUNDS; r++)
-    {
-        /* One value per chunk, so a split write shows up as a mixed chunk */
-        memset(buf, (int)(((IPTR)arg << 4) | (r & 15)), PX_CHUNK);
-        if (write(g_PxWr, buf, PX_CHUNK) != PX_CHUNK)
-            __atomic_add_fetch(&g_PxBad, 1, __ATOMIC_RELAXED);
-    }
-    return NULL;
-}
-
-static void *PxReader(void *arg)
-{
-    ULONG want = g_PxWriters * PX_ROUNDS * PX_CHUNK;
-    UBYTE buf[PX_CHUNK];
-    ULONG have = 0;
-
-    while (g_PxRead < want)
-    {
-        LONG n = read(g_PxRd, buf + have, PX_CHUNK - have);
-
-        if (n <= 0)
-            break;
-        have += n;
-        g_PxRead += n;
-        if (have == PX_CHUNK)
-        {
-            int i;
-
-            for (i = 1; i < PX_CHUNK; i++)
-                if (buf[i] != buf[0])
-                {
-                    __atomic_add_fetch(&g_PxBad, 1, __ATOMIC_RELAXED);
-                    break;
-                }
-            have = 0;
-        }
-    }
-    g_PxReadDone = 1;
-    return arg;
-}
-
-static void *PxCloser(void *arg)
-{
-    g_PxCloseRet = close(g_PxWr);
-    return arg;
-}
+/* ---- 4. an exited FIOSETOWN owner ---- */
 
 static volatile ULONG g_OwnerUp, g_OwnerGo;
 
@@ -668,52 +504,15 @@ static void ShortOwner(void)
     g_OwnerUp = 2;
 }
 
-static void test_posix_threads(void)
+static void test_owner(void)
 {
-    UWORD cnt0 = master_opencnt(), cnt1;    /* before our own base */
     struct Library *SocketBase = OpenLibrary("bsdsocket.library", 4);
-    struct sockaddr_in sin;
-    socklen_t len = sizeof(sin);
-    pthread_t thr[MAXCPUS + 1];
     struct Task *owner = NULL, *got = (struct Task *)1;
     struct Process *op;
-    LONG l, before, after, on = 1;
-    ULONG i;
-    BOOL done;
+    LONG l, on = 1;
 
     if (!SocketBase)
         return;
-    before = socket(AF_INET, SOCK_STREAM, 0);
-    CloseSocket(before);
-
-    l = socket(AF_INET, SOCK_STREAM, 0);
-    loopback(&sin, 0);
-    bind(l, (struct sockaddr *)&sin, sizeof(sin));
-    listen(l, 2);
-    getsockname(l, (struct sockaddr *)&sin, &len);
-    g_PxWr = socket(AF_INET, SOCK_STREAM, 0);
-    connect(g_PxWr, (struct sockaddr *)&sin, sizeof(sin));
-    g_PxRd = accept(l, NULL, NULL);
-    CloseSocket(l);
-
-    g_PxBad = g_PxRead = g_PxReadDone = 0;
-    g_PxCloseRet = -2;
-    g_PxWriters = g_NumCPUs - 1;
-    pthread_create(&thr[0], NULL, PxReader, NULL);
-    for (i = 0; i < g_PxWriters; i++)
-        pthread_create(&thr[i + 1], NULL, PxWriter, (void *)(IPTR)(i + 1));
-
-    for (i = 0; i < DONE_TICKS && !g_PxReadDone; i++)
-        Delay(1);
-    done = g_PxReadDone;
-    if (done)
-    {
-        for (i = 0; i <= g_PxWriters; i++)
-            pthread_join(thr[i], NULL);
-        pthread_create(&thr[0], NULL, PxCloser, NULL);
-        pthread_join(thr[0], NULL);
-    }
-    CloseSocket(g_PxRd);
 
     /* A socket owned by a task that has exited must not name its base */
     op = spawn(ShortOwner, "smpnet.owner", 1, NULL);
@@ -728,19 +527,9 @@ static void test_posix_threads(void)
     IoctlSocket(l, FIOGETOWN, (char *)&got);
     CloseSocket(l);
 
-    after = socket(AF_INET, SOCK_STREAM, 0);
-    CloseSocket(after);
     CloseLibrary(SocketBase);
-    Delay(10);
-    cnt1 = master_opencnt();
 
-    bug("[smpnet] posix: %lu writers, read %lu bytes, bad=%lu, close=%ld, fd %ld -> %ld, opencnt %u -> %u, owner after exit %p\n",
-        (unsigned long)g_PxWriters, (unsigned long)g_PxRead, (unsigned long)g_PxBad,
-        (long)g_PxCloseRet, (long)before, (long)after, cnt0, cnt1, got);
-    check(done && g_PxRead == g_PxWriters * PX_ROUNDS * PX_CHUNK, "posixc threads moved all the data");
-    check(g_PxBad == 0, "no write failed or was split");
-    check(g_PxCloseRet == 0, "another thread closed the socket");
-    check(after == before && cnt1 == cnt0, "no base or descriptor leaked");
+    bug("[smpnet] owner: owner after exit %p\n", got);
     check(got == NULL, "an exited owner is forgotten");
 }
 
@@ -762,8 +551,6 @@ int main(void)
         return RETURN_WARN;
     }
 
-    test_pthread_start();
-
     SocketBase = OpenLibrary("bsdsocket.library", 4);
     if (SocketBase)
     {
@@ -771,7 +558,7 @@ int main(void)
         test_bases();
         test_tcp();
         test_handoff();
-        test_posix_threads();
+        test_owner();
     }
     else
     {

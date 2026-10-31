@@ -114,14 +114,6 @@ void cpu_Switch(regs_t *regs)
     copyContext(ctx, regs);
     task->tc_SPReg = (APTR)regs->sp;
 
-#if defined(__AROSEXEC_SMP__)
-    /* Wait() carries tc_SpinLock across KrnSwitch so no other CPU can
-     * dispatch this task before its context is saved. Stored now (as on
-     * aarch64-native and x86_64-pc). */
-    if (task->tc_State == TS_WAIT)
-        Kernel_53_KrnSpinUnLock(&task->tc_SpinLock, NULL);
-#endif
-
     /*
      * Lazy FPU switching: the task's FS state was captured into sr at
      * trap entry. Only a dirty FPU needs saving; resume Clean so the
@@ -165,6 +157,14 @@ void cpu_Switch(regs_t *regs)
             iet->iet_CpuTime.tv_sec++;
         }
     }
+
+#if defined(__AROSEXEC_SMP__)
+    /* Wait() carries tc_SpinLock across KrnSwitch so no other CPU can
+     * dispatch this task before its context is saved. Released last, once
+     * the FPU state and the accounting are stored too (as x86_64-pc). */
+    if (task->tc_State == TS_WAIT)
+        Kernel_53_KrnSpinUnLock(&task->tc_SpinLock, NULL);
+#endif
 
     core_Switch();
 }

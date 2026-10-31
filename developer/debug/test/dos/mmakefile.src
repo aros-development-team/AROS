@@ -9,6 +9,7 @@ EXEDIR          := $(AROS_TESTS)/dos
 
 FILES := \
     addpart \
+    assignlocks \
     auxstartup \
     clicreatenewproc \
     consolemodes \
