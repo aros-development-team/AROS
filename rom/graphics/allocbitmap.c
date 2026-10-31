@@ -40,16 +40,40 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] = {
     vHidd_StdPixFmt_RGBA32
 };
 
+/* The same pixel layout: pixel values mean the same in both */
+static BOOL same_pixel_layout(OOP_Object *pf1, OOP_Object *pf2, struct GfxBase *GfxBase)
+{
+    IPTR a, b;
+
+    if (pf1 == pf2)
+        return TRUE;
+
+    OOP_GetAttr(pf1, aHidd_PixFmt_StdPixFmt, &a);
+    OOP_GetAttr(pf2, aHidd_PixFmt_StdPixFmt, &b);
+    if (a != b)
+        return FALSE;
+    if (a != vHidd_StdPixFmt_Unknown)
+        return TRUE;
+
+#define SAME_ATTR(attr) (OOP_GetAttr(pf1, attr, &a), OOP_GetAttr(pf2, attr, &b), a == b)
+    return SAME_ATTR(aHidd_PixFmt_ColorModel) && SAME_ATTR(aHidd_PixFmt_BytesPerPixel) &&
+           SAME_ATTR(aHidd_PixFmt_RedMask) && SAME_ATTR(aHidd_PixFmt_GreenMask) &&
+           SAME_ATTR(aHidd_PixFmt_BlueMask) && SAME_ATTR(aHidd_PixFmt_AlphaMask) &&
+           SAME_ATTR(aHidd_PixFmt_SwapPixelBytes);
+#undef SAME_ATTR
+}
+
 /*
- * A bitmap with an alpha channel allocated as a friend of a bitmap without
- * one cannot share the friend's colormap and pixel table: their pixel values
- * have no alpha bits, so every pen would render fully transparent. Give it a
- * colormap and pixel table of its own, with the friend's colours mapped
+ * A bitmap allocated as a friend of a bitmap in another pixel layout cannot
+ * share the friend's colormap and pixel table: their pixel values are in the
+ * friend's layout (and a friend without an alpha channel gives no alpha bits,
+ * so every pen would render fully transparent on a bitmap with one). Give it
+ * a colormap and pixel table of its own, with the friend's colours mapped
  * through its own pixel format and opaque, and register it for colour
  * updates on the friend. Returns FALSE when the bitmap is to share the
  * friend's colours in the ordinary way.
  */
-static BOOL alpha_friend_colors(struct BitMap *nbm, struct BitMap *friend_bitmap, struct GfxBase *GfxBase)
+static BOOL own_friend_colors(struct BitMap *nbm, struct BitMap *friend_bitmap, struct GfxBase *GfxBase)
 {
     OOP_Object  *bm_obj = HIDD_BM_OBJ(nbm);
     OOP_Object  *pf, *friendpf;
@@ -66,7 +90,7 @@ static BOOL alpha_friend_colors(struct BitMap *nbm, struct BitMap *friend_bitmap
     OOP_GetAttr(HIDD_BM_OBJ(friend_bitmap), aHidd_BitMap_PixFmt, (IPTR *)&friendpf);
     OOP_GetAttr(friendpf, aHidd_PixFmt_AlphaMask, &friendalphamask);
 
-    if (!alphamask || friendalphamask)
+    if (same_pixel_layout(pf, friendpf, GfxBase))
         return FALSE;
 
     colors = AllocMem(sizeof(HIDDT_Color) * AROS_PALETTE_SIZE, MEMF_ANY);
@@ -91,9 +115,11 @@ static BOOL alpha_friend_colors(struct BitMap *nbm, struct BitMap *friend_bitmap
 
             HIDD_BM_COLMAP(nbm) = (OOP_Object *)OOP_GET(bm_obj, aHidd_BitMap_ColorMap);
 
-            if (gfx_AddAlphaPixTab(nbm, HIDD_BM_COLMAP(friend_bitmap), GfxBase))
+            if (gfx_AddAlphaPixTab(nbm, gfx_PixTabSource(friend_bitmap, GfxBase), GfxBase))
             {
-                HIDD_BM_FLAGS(nbm) |= HIDD_BMF_ALPHA_PIXTAB;
+                HIDD_BM_FLAGS(nbm) |= HIDD_BMF_OWN_PIXTAB;
+                if (alphamask && !friendalphamask)
+                    HIDD_BM_FLAGS(nbm) |= HIDD_BMF_CLEAR_ALPHA;
                 ok = TRUE;
             }
         }
@@ -479,11 +505,12 @@ static BOOL alpha_friend_colors(struct BitMap *nbm, struct BitMap *friend_bitmap
                     HIDD_BM_FLAGS(nbm) |= HIDD_BMF_SCREEN_BITMAP;
 
                     if(friend_bitmap && IS_HIDD_BM(friend_bitmap) &&
-                       alpha_friend_colors(nbm, friend_bitmap, GfxBase)) {
+                       own_friend_colors(nbm, friend_bitmap, GfxBase)) {
                         /*
-                         * A bitmap with an alpha channel whose friend has none
-                         * (a composited layer's alpha surface on a 0RGB
-                         * screen): the friend's pixel values carry no alpha,
+                         * A bitmap in another pixel format than its friend (for
+                         * instance a composited layer's alpha surface on a 0RGB
+                         * screen, or an off-screen bitmap of a special format):
+                         * the friend's pixel values mean nothing in its layout,
                          * so it got a colormap and pixel table of its own with
                          * the friend's colours mapped opaque. SetRGB32() and
                          * friends on the friend keep them up to date
