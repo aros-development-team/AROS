@@ -580,6 +580,10 @@ Properties the implementation provides:
 
 - **SYN-flood resistance** via the SYN cache plus stateless cookies (§5.2).
 - **ICMP error rate limiting** via a token bucket (§7).
+- **No silent data loss on close.** Closing a TCP connection whose received data is still unread
+  resets it instead of sending a FIN (`tcp_disconnect`), and data that arrives after the close is
+  answered with a reset (`tcp_input`), so the peer learns the data was lost (RFC 9293 §3.6.1,
+  RFC 1122 §4.2.2.13).
 - **Memory-pressure safety.** Because `M_WAIT` can fail (§3.3), socket-layer and protocol
   allocation sites NULL-check and return `ENOBUFS` rather than dereferencing `NULL`.
 - **Input bounds validation.** Header and length fields are validated against the actual packet
