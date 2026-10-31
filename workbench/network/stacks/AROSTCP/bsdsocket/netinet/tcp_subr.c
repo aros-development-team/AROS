@@ -80,6 +80,7 @@
 #include <kern/amiga_includes.h>
 
 #include <kern/kern_subr_protos.h>
+#include <protos/kern/kern_random_protos.h>
 
 /*
  * Dual-stack helper: true if the socket bound to this PCB is an AF_INET6
@@ -337,31 +338,11 @@ void
 tcp_init()
 {
     /*
-     * Seed the ISN secret key and initial sequence number from
-     * available entropy (system time, task pointer).
+     * The ISN secret key (RFC 6528), also the SYN cookies' (tcp_syncookie_*),
+     * and the start of the ISN clock, from arc4random_buf() (kern_random.c).
      */
-    {
-        struct timeval tv;
-        APTR task;
-        u_int32_t seed;
-
-        GetSysTime(&tv);
-        task = FindTask(NULL);
-        seed = (u_int32_t)tv.tv_secs ^ ((u_int32_t)tv.tv_micro << 16)
-             ^ (u_int32_t)(IPTR)task;
-
-        /* Fill secret key with mixed entropy */
-        tcp_secret_key[0] = seed * 0x5bd1e995;
-        seed ^= seed >> 16;
-        tcp_secret_key[1] = seed * 0x85ebca6b;
-        seed ^= seed >> 13;
-        tcp_secret_key[2] = seed * 0xc2b2ae35;
-        seed ^= seed >> 16;
-        tcp_secret_key[3] = seed * 0xcc9e2d51;
-
-        /* Start tcp_iss at an unpredictable value */
-        tcp_iss = (int)(tcp_secret_key[0] ^ tcp_secret_key[2]);
-    }
+    kern_random(tcp_secret_key, sizeof(tcp_secret_key));
+    tcp_iss = (tcp_seq)kern_random32();
     tcp_ccgen = 1;
     tcp_cc_init();
     tcp_cleartaocache();
