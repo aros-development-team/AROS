@@ -263,8 +263,13 @@ udp6_output(struct inpcb *inp, struct mbuf *m,
     ip6->ip6_vfc  = IPV6_VERSION;	/* must follow ip6_flow (they overlap) */
     ip6->ip6_plen = htons((u_short)udplen);
     ip6->ip6_nxt  = IPPROTO_UDP;
-    ip6->ip6_hlim = (inp->in6p_hops >= 0) ? (u_int8_t)inp->in6p_hops
-                    : (u_int8_t)ip6_defhlim;
+    if(IN6_IS_ADDR_MULTICAST(&faddr6))
+        ip6->ip6_hlim = inp->in6p_moptions
+            ? inp->in6p_moptions->im6o_multicast_hlim
+            : IP6_DEFAULT_MULTICAST_HLIM;
+    else
+        ip6->ip6_hlim = (inp->in6p_hops >= 0) ? (u_int8_t)inp->in6p_hops
+                        : (u_int8_t)ip6_defhlim;
     ip6->ip6_src  = laddr6;
     ip6->ip6_dst  = faddr6;
 
