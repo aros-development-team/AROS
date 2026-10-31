@@ -430,6 +430,12 @@ destination from that port, as `in_pcbnotify()` does for IPv4: a connected UDP s
 `pfctlinput()` with no address, which reached the IPv4 handlers of every protocol, and
 `in_pcbnotify()` dereferenced the missing address: any ICMPv6 error took the stack down.
 
+On the sending side, a unicast UDP datagram for a port with no socket gets a Destination
+Unreachable, port unreachable (RFC 4443 §3.1), as `udp_input()` gives the IPv4 one. `icmp6_error()`
+sends no error about a packet to a group or from the unspecified or a multicast address (§2.4 (e)),
+and sends it from the address the offending packet was sent to when that is one of ours (§2.2 (a);
+for a link-local one, on the interface it came in on), else from an address on that interface.
+
 ### 6.4 Extension-header processing (RFC 8200)
 
 The `ip6_input` header-skip loop enforces conformant handling of options and routing headers.

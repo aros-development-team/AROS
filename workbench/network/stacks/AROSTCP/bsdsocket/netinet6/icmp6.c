@@ -421,6 +421,7 @@ icmp6_error(struct mbuf *m, int type, int code, int param)
 {
     struct ip6_hdr *oip6, *nip6;
     struct icmp6_hdr *icmp6;
+    struct in6_addr osrc, odst;
     int hlen, prepend;
 
     icmp6stat.icp6s_error++;
@@ -431,11 +432,16 @@ icmp6_error(struct mbuf *m, int type, int code, int param)
 
     oip6 = mtod(m, struct ip6_hdr *);
 
-    /* never send ICMPv6 errors in response to multicast */
-    if(IN6_IS_ADDR_MULTICAST(&oip6->ip6_dst)) {
+    /* never send ICMPv6 errors in response to multicast, nor to a packet
+     * whose source does not identify a single node (RFC 4443 2.4 (e)) */
+    if(IN6_IS_ADDR_MULTICAST(&oip6->ip6_dst) ||
+            IN6_IS_ADDR_UNSPECIFIED(&oip6->ip6_src) ||
+            IN6_IS_ADDR_MULTICAST(&oip6->ip6_src)) {
         m_freem(m);
         return;
     }
+    osrc = oip6->ip6_src;
+    odst = oip6->ip6_dst;
     /* never send ICMPv6 errors in response to ICMPv6 errors */
     if(oip6->ip6_nxt == IPPROTO_ICMPV6) {
         struct icmp6_hdr *oicmp6 = (struct icmp6_hdr *)(oip6 + 1);
@@ -471,11 +477,22 @@ icmp6_error(struct mbuf *m, int type, int code, int param)
     nip6->ip6_vfc  = IPV6_VERSION;
     nip6->ip6_nxt  = IPPROTO_ICMPV6;
     nip6->ip6_hlim = ip6_defhlim;
-    nip6->ip6_dst  = oip6->ip6_src;
-    /* source: find appropriate local address */
+    nip6->ip6_dst  = osrc;
+    /*
+     * source: the address the packet was sent to, if it is one of ours
+     * (RFC 4443 2.2 (a)) - on the interface it came in on, for a link-scope
+     * one; else an address on that interface
+     */
     {
-        struct in6_ifaddr *ia = NULL;
-        if(m->m_pkthdr.rcvif) {
+        struct in6_ifaddr *ia;
+
+        for(ia = in6_ifaddr; ia; ia = ia->ia_next)
+            if(IN6_ARE_ADDR_EQUAL(&ia->ia_addr.sin6_addr, &odst) &&
+                    !(ia->ia6_ifaflags & (IN6_IFF_TENTATIVE | IN6_IFF_DUPLICATED)) &&
+                    (!IN6_IS_ADDR_LINKLOCAL(&odst) || m->m_pkthdr.rcvif == NULL ||
+                     ia->ia6_ifp == m->m_pkthdr.rcvif))
+                break;
+        if(ia == NULL && m->m_pkthdr.rcvif) {
             struct in6_addr dst_copy = nip6->ip6_dst;
             ia = in6_ifawithifp(m->m_pkthdr.rcvif, &dst_copy);
         }
