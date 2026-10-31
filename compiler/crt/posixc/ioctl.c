@@ -11,6 +11,8 @@
 #include <errno.h>
 
 #include <libraries/fd.h>
+#include <dos/dosextens.h>
+#include <proto/dos.h>
 #include "__fdesc.h"
 
 /*****************************************************************************
@@ -42,16 +44,17 @@
         ...     - Other arguments for the specified request
 
     RESULT
-        DOS handles return -1 with errno set to EBADF (invalid descriptor)
-        or ENOTTY (unsupported operation). Foreign hooks define their own
-        return values and errors.
+        0 on success. -1 with errno set to EBADF for an invalid descriptor,
+        EFAULT for a missing output structure, EOVERFLOW for a size that
+        does not fit struct winsize, and ENOTTY for a request the descriptor
+        does not support. Foreign hooks define their own return values and
+        errors.
 
     NOTES
-        DOS terminal geometry is currently unsupported. ACTION_DISK_INFO
-        does not provide a validated geometry contract: mainline CON stores
-        a use count in id_InUse, not a console.device IO request pointer.
-        See rom/filesys/console_handler/con_handler.c, ACTION_DISK_INFO:
-        id->id_InUse = fh->usecount;
+        TIOCGWINSZ asks the console handler with ACTION_CONSOLE_GEOMETRY,
+        which reads nothing from and writes nothing to the console and
+        leaves its mode alone. A descriptor whose handler does not answer
+        the packet (a file, a pipe, an older console handler) gives ENOTTY.
         Foreign descriptor hooks retain their own request handling.
 
     EXAMPLE
@@ -77,8 +80,8 @@
         }
 
     BUGS
-        TIOCGWINSZ on DOS handles returns ENOTTY until a terminal-control
-        protocol is available. The output structure is left unchanged.
+        TIOCSWINSZ and window change notification are not implemented. On
+        failure the output structure is left unchanged.
 
     SEE ALSO
 
@@ -120,9 +123,40 @@
         errno = EBADF;
         return -1;
     }
-    /* Never reinterpret handler-private InfoData fields as pointers.
-       No DOS request is supported here yet, so do not consume its varargs
-       or inspect its handle (which may be a directory FileLock). */
+    if (request == TIOCGWINSZ)
+    {
+        struct ConsoleGeometry cg;
+        struct FileHandle *h;
+        struct winsize *ws;
+        va_list ap;
+
+        va_start(ap, request);
+        ws = va_arg(ap, struct winsize *);
+        va_end(ap);
+        if (!ws)
+        {
+            errno = EFAULT;
+            return -1;
+        }
+        /* A directory descriptor holds a FileLock, not a FileHandle */
+        h = (desc->fcb->privflags & _FCB_ISDIR) ? NULL : BADDR(desc->fcb->handle);
+        if (!h || !h->fh_Type ||
+            DoPkt(h->fh_Type, ACTION_CONSOLE_GEOMETRY, (SIPTR)h->fh_Arg1, (SIPTR)&cg, sizeof(cg), 0, 0) != DOSTRUE)
+        {
+            errno = ENOTTY;
+            return -1;
+        }
+        if (cg.cg_Columns > 0xFFFF || cg.cg_Rows > 0xFFFF || cg.cg_Width > 0xFFFF || cg.cg_Height > 0xFFFF)
+        {
+            errno = EOVERFLOW;
+            return -1;
+        }
+        ws->ws_row    = cg.cg_Rows;
+        ws->ws_col    = cg.cg_Columns;
+        ws->ws_xpixel = cg.cg_Width;
+        ws->ws_ypixel = cg.cg_Height;
+        return 0;
+    }
     errno = ENOTTY;
     return -1;
 }
