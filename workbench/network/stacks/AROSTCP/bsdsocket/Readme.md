@@ -584,6 +584,11 @@ Properties the implementation provides:
   resets it instead of sending a FIN (`tcp_disconnect`), and data that arrives after the close is
   answered with a reset (`tcp_input`), so the peer learns the data was lost (RFC 9293 §3.6.1,
   RFC 1122 §4.2.2.13).
+- **Unpredictable ephemeral ports.** A port the stack picks for a TCP or UDP socket, IPv4 or IPv6
+  (bind to port 0, or the implicit bind of `connect()`/`sendto()`), is a random one from the IANA
+  dynamic range 49152-65535, else the next free one after it (RFC 6056 algorithm 1,
+  `in_pcbpickport()`), so an off-path attacker cannot guess it - nor the source port of a DNS
+  query (RFC 5452). With every port in use, the bind fails with `EADDRNOTAVAIL`.
 - **Memory-pressure safety.** Because `M_WAIT` can fail (§3.3), socket-layer and protocol
   allocation sites NULL-check and return `ENOBUFS` rather than dereferencing `NULL`.
 - **Input bounds validation.** Header and length fields are validated against the actual packet

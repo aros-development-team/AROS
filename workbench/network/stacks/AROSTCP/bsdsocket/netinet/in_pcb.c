@@ -69,6 +69,73 @@ extern u_char inetctlerrmap[];
 struct	in_addr zeroin_addr;
 
 /*
+ * Ephemeral ports (RFC 6056): a random one from the IANA dynamic range
+ * (RFC 6335 section 6), else the next free one after it - algorithm 1,
+ * section 3.3.1 - so that an off-path attacker cannot guess the port of
+ * the next connection or query. The range keeps clear of the registered
+ * ports services listen on.
+ */
+#define EPHEMERAL_FIRST	49152
+#define EPHEMERAL_LAST	65535
+
+u_int32_t tcp_isn_hash(u_int32_t, u_int32_t, u_int32_t, u_int32_t,
+                       u_int32_t *);
+
+static u_int32_t
+in_pcbrandom(void)
+{
+    static u_int32_t key[4], count;
+    struct timeval tv;
+
+    GetSysTime(&tv);
+    if(count == 0) {
+        u_int32_t seed = (u_int32_t)tv.tv_secs ^ ((u_int32_t)tv.tv_micro << 12) ^
+                         (u_int32_t)(IPTR)FindTask(NULL);
+        int i;
+
+        for(i = 0; i < 4; i++)
+            key[i] = tcp_isn_hash(seed, (u_int32_t)i, (u_int32_t)tv.tv_micro,
+                                  (u_int32_t)(IPTR)&tv, key);
+    }
+    count++;
+    return tcp_isn_hash(count, (u_int32_t)tv.tv_micro, (u_int32_t)tv.tv_secs,
+                        0, key);
+}
+
+/*
+ * Pick an ephemeral port for inp that taken() says is free; arg is passed
+ * on to it. The port is stored in network byte order in *lportp. Returns
+ * EADDRNOTAVAIL if every port in the range is taken.
+ */
+int
+in_pcbpickport(struct inpcb *inp, int (*taken)(struct inpcb *, u_short, void *),
+               void *arg, u_short *lportp)
+{
+    u_int32_t num = EPHEMERAL_LAST - EPHEMERAL_FIRST + 1, offset, count;
+
+    offset = in_pcbrandom() % num;
+    for(count = num; count > 0; count--) {
+        u_short lport = htons((u_short)(EPHEMERAL_FIRST + offset));
+
+        if(!taken(inp, lport, arg)) {
+            *lportp = lport;
+            return 0;
+        }
+        offset = (offset + 1) % num;
+    }
+    return EADDRNOTAVAIL;
+}
+
+/* Whether lport is in use for inp's local address; arg is the wildcard
+ * flag for in_pcblookup(). */
+static int
+in_porttaken(struct inpcb *inp, u_short lport, void *arg)
+{
+    return in_pcblookup(inp->inp_pcbinfo->listhead, zeroin_addr, 0,
+                        inp->inp_laddr, lport, *(int *)arg) != NULL;
+}
+
+/*
  * IPv4 and IPv6 PCBs share one list, and an IPv6 PCB leaves the IPv4
  * address fields zeroed, so a wildcard-bound IPv6 socket would look to
  * in_pcblookup() like a wildcard IPv4 one and take IPv4 connections
@@ -151,7 +218,6 @@ struct mbuf *nam;
 {
     register struct socket *so = inp->inp_socket;
     struct inpcbhead *head = inp->inp_pcbinfo->listhead;
-    unsigned short *lastport = &inp->inp_pcbinfo->lastport;
     struct sockaddr_in *sin;
 //	struct proc *p = curproc;		/* XXX */
     u_short lport = 0;
@@ -208,15 +274,14 @@ struct mbuf *nam;
         }
         inp->inp_laddr = sin->sin_addr;
     }
-    if(lport == 0)
-        do {
-            ++*lastport;
-            if(*lastport < IPPORT_RESERVED ||
-                    *lastport > IPPORT_USERRESERVED)
-                *lastport = IPPORT_RESERVED;
-            lport = htons(*lastport);
-        } while(in_pcblookup(head,
-                             zeroin_addr, 0, inp->inp_laddr, lport, wild));
+    if(lport == 0) {
+        int error = in_pcbpickport(inp, in_porttaken, &wild, &lport);
+
+        if(error) {
+            inp->inp_laddr.s_addr = INADDR_ANY;
+            return (error);
+        }
+    }
     inp->inp_lport = lport;
     in_pcbrehash(inp);
     return (0);
@@ -374,8 +439,8 @@ struct mbuf *nam;
                         inp->inp_lport) != NULL)
         return (EADDRINUSE);
     if(inp->inp_laddr.s_addr == INADDR_ANY) {
-        if(inp->inp_lport == 0)
-            (void)in_pcbbind(inp, (struct mbuf *)0);
+        if(inp->inp_lport == 0 && (error = in_pcbbind(inp, (struct mbuf *)0)) != 0)
+            return (error);
         inp->inp_laddr = ifaddr->sin_addr;
     }
     inp->inp_faddr = sin->sin_addr;
