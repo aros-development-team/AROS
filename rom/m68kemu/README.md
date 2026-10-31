@@ -43,9 +43,10 @@ all AmigaOS library calls to forward them to the native AROS implementations.
 The m68k CPU is emulated by [Moira](https://github.com/dirkwhoffmann/Moira),
 a cycle-accurate Motorola 680x0 emulator written by Dirk W. Hoffmann. Moira is
 integrated as a git submodule and provides instruction-level emulation of the
-M68040 instruction set including the built-in FPU. The emulator runs in M68040
-mode with a proper `Supervisor()` implementation that executes user functions in
-supervisor mode, enabling CPU detection code used by programs like SysInfo.
+M68040 instruction set. The emulator runs as an M68LC040 (no FPU: F-line
+instructions trap, and a program's own FPU emulator gets them) with a proper
+`Supervisor()` implementation that executes user functions in supervisor
+mode, enabling CPU detection code used by programs like SysInfo.
 
 **Not emulated**: Interrupts, DMA.
 
@@ -194,17 +195,19 @@ Type tags distinguish shadow kinds: 1=Window, 3=RastPort, 4=MsgPort, 5=Screen,
 ### m68k Library Loading
 
 Libraries without native AROS equivalents (e.g., `reqtools.library`) are loaded
-as m68k hunk files. The loader searches in this order:
+as m68k hunk files. They belong in `LIBS68K:`. The loader searches in this order:
 
 1. `LIBS68K:<name>` — dedicated assign for m68k libraries
-2. `LIBS:m68k/<name>` — subdirectory, no assign needed
-3. `LIBS:<name>` — fallback for compatibility
+2. `SYS:Libs68k/<name>` — the default when `LIBS68K:` is not assigned
+3. `LIBS:m68k/<name>` — subdirectory
+4. `LIBS:<name>` — fallback for compatibility
 
-This keeps m68k libraries separate from native AROS libraries, avoiding
-name conflicts. Users can set up `LIBS68K:` in their Startup-Sequence:
+Only hunk files are taken from any of them, so the native AROS libraries in
+`LIBS:` are never mistaken for m68k ones. To keep the m68k libraries
+elsewhere:
 
 ```
-Assign LIBS68K: SYS:Libs/m68k
+Assign LIBS68K: Work:Libs68k
 ```
 
 The loader:
@@ -240,10 +243,10 @@ This makes m68k binary execution fully transparent: no special commands needed.
 2. `RunHunk` creates a 32 MB containment buffer and heap
 3. Hunk segments are loaded into containment memory (with relocations applied)
 4. exec.library and dos.library fake bases are set up with A-line trap jump tables
-5. ExecBase shadow is initialized at address 4 (AttnFlags set to 68040+FPU)
+5. ExecBase shadow is initialized at address 4 (AttnFlags set to 68040, no FPU)
 6. `AutoOpenLibs` scans for C startup library tables and pre-fills them
 7. Sentinel address (`0x00DEAD00`) is pushed as return address
-8. Moira CPU starts executing at the entry point in M68040 mode (with FPU)
+8. Moira CPU starts executing at the entry point in M68LC040 mode
 9. Library calls trigger A-line traps → thunk dispatch → native AROS calls
 10. When the program does RTS to the sentinel, execution stops
 11. Context is destroyed, exit code returned to AROS
@@ -314,8 +317,10 @@ within the emulator.
 
 ### Shadow System
 
-- Max 64 simultaneous shadows (linear scan lookup)
-- Max 32 libraries, max 16 library name mappings
+- Max 1024 simultaneous shadows (linear scan lookup)
+- Max 64 libraries, looked up by name in the same table; jump tables sized
+  from each library's highest LVO
+- Max 32 tasks of one program (its own process and the ones it creates)
 - 1 of 298 structs lacks a shadow layout (RegionRectangle — no scalar fields)
 
 ### Custom Chips
