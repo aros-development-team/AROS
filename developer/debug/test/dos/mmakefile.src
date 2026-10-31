@@ -46,6 +46,7 @@ FILES := \
     scantest \
     scanvarstest \
     seektest \
+    seglistrelocs \
     sfs_seek \
     setfiledate \
     setenv \

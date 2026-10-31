@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -23,6 +23,66 @@
 #include "include/loadseg.h"
 
 #define GETHUNKPTR(x) ((UBYTE*)(BADDR(hunktab[x]) + sizeof(BPTR)))
+
+#ifndef __mc68000
+/* The relocations applied so far, for GSLI_68KRELOCS. An allocation failure
+   drops them and marks the list lost. */
+static BOOL acc_room(APTR *p, ULONG *cap, ULONG used, ULONG need, ULONG elem)
+{
+    ULONG want = used + need, ncap = *cap ? *cap : 16;
+    APTR n;
+
+    if (want < used || want > ~(ULONG)0 / elem)
+        return FALSE;
+    while (ncap < want)
+        ncap = ncap > want / 2 ? want : ncap * 2;
+    if (ncap == *cap)
+        return TRUE;
+    if (!(n = AllocVec(ncap * elem, MEMF_ANY)))
+        return FALSE;
+    if (*p)
+    {
+        CopyMem(*p, n, used * elem);
+        FreeVec(*p);
+    }
+    *p = n;
+    *cap = ncap;
+    return TRUE;
+}
+
+static void note_group(struct HunkRelocList *acc, ULONG hunk, ULONG target, ULONG kind, ULONG count)
+{
+    struct HunkRelocGroup *g;
+
+    if (acc->lost)
+        return;
+    if (!acc_room((APTR *)&acc->groups, &acc->gcap, acc->ngroups, 1, sizeof(*acc->groups)) ||
+        !acc_room((APTR *)&acc->offsets, &acc->ocap, acc->noffsets, count, sizeof(*acc->offsets)))
+    {
+        acc->lost = TRUE;
+        return;
+    }
+    g = &acc->groups[acc->ngroups++];
+    g->hrg_Hunk    = hunk;
+    g->hrg_Target  = target;
+    g->hrg_Kind    = kind;
+    g->hrg_Count   = 0;
+    g->hrg_Offsets = NULL;
+}
+
+static void note_offset(struct HunkRelocList *acc, ULONG offset)
+{
+    if (acc->lost)
+        return;
+    acc->offsets[acc->noffsets++] = offset;
+    acc->groups[acc->ngroups - 1].hrg_Count++;
+}
+#define NOTE_GROUP(h, t, k, n) do { if (DOSBase) note_group(&relocacc, (h), (t), (k), (n)); } while (0)
+#define NOTE_OFFSET(o)          do { if (DOSBase) note_offset(&relocacc, (o)); } while (0)
+#else
+#define NOTE_GROUP(h, t, k, n)  do { } while (0)
+#define NOTE_OFFSET(o)          do { } while (0)
+#endif
 
 #define LOADSEG_HUNK_BUFFER 2048
 
@@ -106,6 +166,9 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
   ULONG tmp, req;
   SIPTR dummy;
   struct SRBuffer srbbuf, *srb;
+#ifndef __mc68000
+  struct HunkRelocList relocacc = { NULL, 0, 0, NULL, 0, 0, FALSE };
+#endif
 #if DEBUG
   static STRPTR segtypes[] = { "CODE", "DATA", "BSS", };
 #endif
@@ -310,6 +373,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
           lcount = AROS_BE2LONG(lcount);
 
           D(bug("\tHunk #%ld:\n", lcount));
+          NOTE_GROUP(lasthunk, lcount, HUNKRELOC_ABS, i);
           while (i > 0)
           {
             if (read_block_buffered(fh, &offset, sizeof(offset), funcarray, srb, DOSBase))
@@ -319,6 +383,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
 
             //D(bug("\t\t0x%06lx\n", offset));
             addr = (ULONG *)(GETHUNKPTR(lasthunk) + offset);
+            NOTE_OFFSET(offset);
 
             val = AROS_BE2LONG(*addr) + (IPTR)GETHUNKPTR(lcount);
 
@@ -356,6 +421,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
             wcount = AROS_BE2WORD(wcount);
 
             D(bug("\tHunk #%ld:\n", wcount));
+            NOTE_GROUP(lasthunk, wcount, HUNKRELOC_BASE, i);
             while (i > 0)
             {
               Wordcount++;
@@ -366,6 +432,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
 
               //D(bug("\t\t0x%06lx\n", offset));
               addr = (ULONG *)(GETHUNKPTR(lasthunk) + offset);
+              NOTE_OFFSET(offset);
 
               val = AROS_BE2LONG(*addr) + (IPTR)(GETHUNKPTR(wcount) - GETHUNKPTR(lasthunk));
 
@@ -399,7 +466,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
             if (wcount == 0L)
               break;
 
-            wcount = AROS_BE2LONG(wcount);
+            wcount = AROS_BE2WORD(wcount);
 
             i = wcount;
             Wordcount++;
@@ -410,6 +477,8 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
 
             lcount = wcount;
             D(bug("\tHunk #%ld @%p: %ld relocations\n", lcount, GETHUNKPTR(lasthunk), i));
+            NOTE_GROUP(lasthunk, lcount,
+                       ((hunktype & 0xFFFFFF) == HUNK_ABSRELOC16) ? HUNKRELOC_REL : HUNKRELOC_ABS, i);
             while (i > 0)
             {
               /* read a 16bit number (2 bytes) */
@@ -424,6 +493,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
 
               D(bug("\t\t0x%06lx += 0x%lx\n", offset, GETHUNKPTR(lcount)));
               addr = (ULONG *)(GETHUNKPTR(lasthunk) + offset);
+              NOTE_OFFSET(offset);
 
               if ((hunktype & 0xFFFFFF) == HUNK_ABSRELOC16)
               {
@@ -574,13 +644,21 @@ done:
 
     last_p = firsthunk;
 
-    register_hunk(fh, firsthunk, NULL, DOSBase);
+#ifndef __mc68000
+    register_hunk(fh, firsthunk, NULL, &relocacc, DOSBase);
+#else
+    register_hunk(fh, firsthunk, NULL, NULL, DOSBase);
+#endif
 
     ilsFreeVec(hunktab);
     hunktab = NULL;
   }
 
 end:
+#ifndef __mc68000
+  FreeVec(relocacc.groups);
+  FreeVec(relocacc.offsets);
+#endif
   if (hunktab != NULL)
   {
     for (t = 0 /* first */; t < numhunks /* last */; t++)

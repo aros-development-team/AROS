@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2022, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2011-2026, The AROS Development Team.  All rights reserved.
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
  */
@@ -752,7 +752,7 @@ void register_elf(BPTR file, BPTR hunks, struct elfheader *eh, struct sheader *s
 {
 
 }
-void register_hunk(BPTR file, BPTR hunks, APTR header, struct DosLibrary *DOSBase)
+void register_hunk(BPTR file, BPTR hunks, APTR header, const struct HunkRelocList *relocs, struct DosLibrary *DOSBase)
 {
 
 }
