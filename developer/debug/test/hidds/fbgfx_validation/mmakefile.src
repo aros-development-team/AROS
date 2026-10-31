@@ -1,0 +1,15 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+# Author: Michele Dipace (@kaffeine1)
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_INCLUDES := -I$(SRCDIR)/arch/aarch64-raspi/hidd/fbgfx
+
+#MM- test : test-hidd-fbgfx-validation
+#MM- test-quick : test-hidd-fbgfx-validation-quick
+#MM test-hidd-fbgfx-validation : includes linklibs
+
+%build_progs mmake=test-hidd-fbgfx-validation \
+    files=fbgfx_validation targetdir=$(AROS_TESTS)/hidds/gfx
+
+%common
