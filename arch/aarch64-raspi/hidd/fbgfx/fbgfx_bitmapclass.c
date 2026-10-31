@@ -20,6 +20,7 @@
 #include <string.h>
 
 #include "fbgfx_hidd.h"
+#include "fbgfx_refresh.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -37,7 +38,8 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         OOP_MethodID       disp_mid;
         struct FBGfxBitMapData *data;
         HIDDT_ModeID       modeid;
-        OOP_Object        *sync, *pf, *dmenum;
+        OOP_Object        *sync = NULL, *pf = NULL, *dmenum;
+        uint32_t bytes;
 
         data = OOP_INST_DATA(cl, o);
 
@@ -47,8 +49,12 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         OOP_GetAttr(o, aHidd_BitMap_ModeID  , &modeid);
         OOP_GetAttr(o, aHidd_ChunkyBM_Buffer, (IPTR *)&data->VideoData);
 
-        OOP_GetAttr(data->displayhidd, aHidd_Display_DMEnumerator, (APTR)&dmenum);
+        dmenum = (OOP_Object *)OOP_GET(data->displayhidd, aHidd_Display_DMEnumerator);
+        if (!dmenum)
+            goto dispose;
         HIDD_DMEnum_GetMode(dmenum, modeid, &sync, &pf);
+        if (!sync || !pf)
+            goto dispose;
 
         data->width        = OOP_GET(o, aHidd_BitMap_Width);
         data->height       = OOP_GET(o, aHidd_BitMap_Height);
@@ -58,6 +64,11 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         data->disp_width   = OOP_GET(sync, aHidd_Sync_HDisp);
         data->disp_height  = OOP_GET(sync, aHidd_Sync_VDisp);
 
+        if (data->width <= 0 || data->height <= 0 || !data->VideoData ||
+            !fbgfx_buffer_size(data->width, data->height, data->bytesperline,
+                               data->bytesperpix, &bytes))
+            goto dispose;
+
         D(bug("[FBGfx:BitMap] Bitmap %ld x %ld, %u bytes per pixel, %u bytes per line\n",
               data->width, data->height, data->bytesperpix, data->bytesperline));
         D(bug("[FBGfx:BitMap] Video data at 0x%p (%u bytes)\n", data->VideoData, data->bytesperline * data->height));
@@ -65,11 +76,13 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         if (OOP_GET(data->pixfmtobj, aHidd_PixFmt_ColorModel) != vHidd_ColorModel_Palette)
             ReturnPtr("FBGfx.BitMap::New()", OOP_Object *, o);
 
-        data->DAC = AllocMem(768, MEMF_ANY);
+        /* Software palette: 256 R,G,B entries, black until set */
+        data->DAC = AllocMem(768, MEMF_ANY | MEMF_CLEAR);
         D(bug("[FBGfx:BitMap] Palette data at 0x%p\n", data->DAC));
         if (data->DAC)
             ReturnPtr("FBGfx.BitMap::New()", OOP_Object *, o);
 
+dispose:
         disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
 
         OOP_CoerceMethod(cl, o, (OOP_Msg) &disp_mid);
@@ -120,8 +133,14 @@ VOID MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
     struct FBGfxBitMapData *data = OOP_INST_DATA(cl, o);
     struct TagItem  *tag, *tstate;
     ULONG           idx;
-    IPTR xoffset = data->xoffset;
-    IPTR yoffset = data->yoffset;
+    IPTR xoffset, yoffset;
+    BOOL was_visible;
+    BOOL moved;
+
+    LOCK_FRAMEBUFFER(XSD(cl));
+    xoffset = data->xoffset;
+    yoffset = data->yoffset;
+    was_visible = (data->disp != 0);
 
     tstate = msg->attrList;
     while((tag = NextTagItem(&tstate)))
@@ -132,11 +151,7 @@ VOID MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
             {
             case aoHidd_BitMap_Visible:
                 D(bug("[FBGfx:BitMap] Setting Visible to %d\n", tag->ti_Data));
-                data->disp = tag->ti_Data;
-                if (data->disp) {
-                    if (data->DAC)
-                        DACLoad(XSD(cl), data->DAC, 0, 256);
-                }
+                data->disp = tag->ti_Data ? 1 : 0;
                 break;
             }
         }
@@ -148,19 +163,28 @@ VOID MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
     OOP_GetAttr(o, aHidd_BitMap_LeftEdge, &xoffset);
     OOP_GetAttr(o, aHidd_BitMap_TopEdge, &yoffset);
 
-    if ((xoffset != data->xoffset) || (yoffset != data->yoffset))
+    moved = ((LONG)xoffset != data->xoffset) || ((LONG)yoffset != data->yoffset);
+    if (moved)
     {
-        D(bug("[FBGfx:BitMap] Scroll to (%d, %d)\n", xoffset, yoffset));
-        data->xoffset = xoffset;
-        data->yoffset = yoffset;
-
-        if (data->disp)
-        {
-            LOCK_FRAMEBUFFER(XSD(cl));
-            fbDoRefreshArea(&XSD(cl)->data, data, 0, 0, data->width, data->height);
-            UNLOCK_FRAMEBUFFER(XSD(cl));
-        }
+        D(bug("[FBGfx:BitMap] Scroll to (%d, %d)\n", (LONG)xoffset, (LONG)yoffset));
+        data->xoffset = (LONG)xoffset;
+        data->yoffset = (LONG)yoffset;
     }
+
+    /*
+     * A bitmap that has just become visible may already hold rendered
+     * content, so it is copied out once with the final offsets, exactly as
+     * after a scroll.
+     */
+    if (data->disp && (moved || !was_visible))
+    {
+        /* A single visible bitmap leaves uncovered bands black. */
+        ClearBuffer(&XSD(cl)->data);
+        if (!was_visible && data->DAC)
+            DACLoad(XSD(cl), data->DAC, 0, 256);
+        fbDoRefreshArea(&XSD(cl)->data, data, 0, 0, data->width, data->height);
+    }
+    UNLOCK_FRAMEBUFFER(XSD(cl));
 }
 
 /*** BitMap::SetColors() *************************************/
@@ -168,40 +192,53 @@ VOID MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 BOOL MNAME_BM(SetColors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetColors *msg)
 {
     struct FBGfxBitMapData *data = OOP_INST_DATA(cl, o);
-    struct HWData *hwdata = &XSD(cl)->data;
+    ULONG first = msg->firstColor;
+    ULONG count = msg->numColors;
+    ULONG limit;
     ULONG xc_i, col_i;
-    UBYTE p_shift;
-    UWORD red, green, blue;
 
-    D(bug("[FBGfx:BitMap] SetColors(%u, %u)\n", msg->firstColor, msg->numColors));
+    D(bug("[FBGfx:BitMap] SetColors(%u, %u)\n", first, count));
 
+    /* The software palette has 256 entries; truecolor is bounded by depth */
+    if (data->DAC)
+        limit = 256;
+    else if ((data->bpp > 0) && (data->bpp < 32))
+        limit = 1UL << data->bpp;
+    else
+        limit = 0xFFFFFFFF;
+
+    /* Reject out of range requests before the superclass sees them */
+    if ((first > limit) || (count > limit - first))
+        return FALSE;
+    if (count == 0)
+        return TRUE;
+    if (!msg->colors)
+        return FALSE;
+
+    LOCK_FRAMEBUFFER(XSD(cl));
     if (!OOP_DoSuperMethod(cl, o, (OOP_Msg)msg)) {
         D(bug("[FBGfx:BitMap] DoSuperMethod() failed\n"));
+        UNLOCK_FRAMEBUFFER(XSD(cl));
         return FALSE;
     }
-
-    if ((msg->firstColor + msg->numColors) > (1 << data->bpp))
-        return FALSE;
 
     if (data->DAC) {
-        for ( xc_i = msg->firstColor, col_i = 0;
-              col_i < msg->numColors;
+        /* The palette is applied in software and needs full 8 bit components */
+        for ( xc_i = first, col_i = 0;
+              col_i < count;
               xc_i ++, col_i ++) {
-            red   = msg->colors[col_i].red   >> 8;
-            green = msg->colors[col_i].green >> 8;
-            blue  = msg->colors[col_i].blue  >> 8;
-
-            /* Update DAC register values */
-            p_shift = 8 - hwdata->palettewidth;
-            data->DAC[xc_i*3] = red >> p_shift;
-            data->DAC[xc_i*3+1] = green >> p_shift;
-            data->DAC[xc_i*3+2] = blue >> p_shift;
+            data->DAC[xc_i*3]   = msg->colors[col_i].red   >> 8;
+            data->DAC[xc_i*3+1] = msg->colors[col_i].green >> 8;
+            data->DAC[xc_i*3+2] = msg->colors[col_i].blue  >> 8;
         }
 
-        /* Upload palette to the DAC if the current bitmap is on display */
-        if (data->disp)
-            DACLoad(XSD(cl), data->DAC, msg->firstColor, msg->numColors);
+        /* The display shows converted pixels, so redraw them in the new colours */
+        if (data->disp) {
+            DACLoad(XSD(cl), data->DAC, first, count);
+            fbDoRefreshArea(&XSD(cl)->data, data, 0, 0, data->width, data->height);
+        }
     }
+    UNLOCK_FRAMEBUFFER(XSD(cl));
     return TRUE;
 }
 
@@ -210,9 +247,11 @@ VOID MNAME_BM(UpdateRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Upda
     struct FBGfxBitMapData *data = OOP_INST_DATA(cl, o);
 
     D(bug("[FBGfx:BitMap] UpdateRect(%d, %d, %d, %d), bitmap 0x%p\n", msg->x, msg->y, msg->width, msg->height, o));
+    LOCK_FRAMEBUFFER(XSD(cl));
     if (data->disp) {
-        LOCK_FRAMEBUFFER(XSD(cl));
-        fbDoRefreshArea(&XSD(cl)->data, data, msg->x, msg->y, msg->x + msg->width, msg->y + msg->height);
-        UNLOCK_FRAMEBUFFER(XSD(cl));
+        /* WORD coordinates and extents promote to LONG without overflow. */
+        fbDoRefreshArea(&XSD(cl)->data, data, msg->x, msg->y,
+                        (LONG)msg->x + msg->width, (LONG)msg->y + msg->height);
     }
+    UNLOCK_FRAMEBUFFER(XSD(cl));
 }
