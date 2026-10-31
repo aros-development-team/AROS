@@ -118,12 +118,39 @@ IPTR sizePCIBaseReg(OOP_Object *driver, struct pci_staticdata *psd, struct Devic
         sz &= PCIBAR_MASK_MEM;
         if (is64)
         {
+            /*
+             * The size is the lowest set bit of the combined mask, which must
+             * be a contiguous run of ones from there to the top of the decoded
+             * width: bit 31 when the upper dword reads back zero, bit 63
+             * otherwise. Any other mask cannot be sized: return 0.
+             */
 #if (__WORDSIZE == 64)
-            return ~(((IPTR)szhi << 32) | sz) + 1;
+            IPTR mask = (((IPTR)szhi << 32) | sz);
+            IPTR ones = ~0;
+            IPTR size;
+
+            if (szhi == 0)
+                ones = (IPTR)0xFFFFFFFFu;   /* upper half reads zeroes: decoded width is 32 bits */
+
+            size = mask & (~mask + 1);
+
+            if (mask != (~ (size - 1) & ones))
+                return 0;
+            return size;
 #else
-            /* The size cannot be represented */
+            if (szhi == 0)
+            {
+                /* 64-bit BAR that answers zeroes above dword 0: 32-bit sized */
+                sz = ~sz;
+                sz++;
+
+                if (sz == 0 || (sz & (sz - 1)) != 0)
+                    return 0;
+                return (IPTR)sz;
+            }
             if (szhi != ~0)
                 return 0;
+            /* szhi == ~0: fall through to the low-half sizing below */
 #endif
         }
         sz = ~sz;
