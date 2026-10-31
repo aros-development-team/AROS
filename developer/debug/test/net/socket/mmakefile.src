@@ -18,6 +18,7 @@ CUNITSOCKETTESTFILES := \
     cunit-net-inet6 \
     cunit-net-mcast6 \
     cunit-net-mld6 \
+    cunit-net-ports \
     cunit-net-raw6 \
     cunit-net-rio6 \
     cunit-net-route6 \
