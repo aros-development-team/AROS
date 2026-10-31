@@ -300,6 +300,8 @@
         DELETE deletes a soft link itself instead of entering it, and MOVE
         copies a soft link's contents but deletes only the link, so neither
         deletes files through a link.
+        MOVE and HARDLINK with ALL walk a source directory into a destination
+        that doesn't exist yet, as they do into an existing one.
 
 ******************************************************************************/
 
@@ -331,7 +333,7 @@ typedef ULONG IPTR;
 
 #include <string.h>
 
-const TEXT version[] = "\0$VER: Copy 50.21 (30.10.2026)";
+const TEXT version[] = "\0$VER: Copy 50.22 (30.10.2026)";
 
 static const UBYTE *PARAM =
 "FROM/M/A,TO/A,PAT=PATTERN/K,BUF=BUFFER/K/N,ALL/S,"
@@ -1081,7 +1083,8 @@ __startup static AROS_PROCH(Start, argstr, argsize, SysBase)
                                     if (Examine(lock, &cd->Fib))
                                     {
                                         cd->RetVal2 = RETURN_OK;
-                                        if (cd->Mode != COPYMODE_COPY ||
+                                        /* with ALL a directory is walked, as into an existing one */
+                                        if ((cd->Mode != COPYMODE_COPY && !(cd->Flags & COPYFLAG_ALL)) ||
                                             cd->Fib.fib_DirEntryType < 0)
                                         {
                                             UBYTE sep;
