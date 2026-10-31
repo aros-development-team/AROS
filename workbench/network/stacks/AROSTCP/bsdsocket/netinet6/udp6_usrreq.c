@@ -58,6 +58,7 @@
 #include <netinet/in_pcb.h>
 #include <netinet/in_var.h>
 #include <netinet/udp.h>
+#include <netinet/icmp6.h>
 #include <netinet6/in6_var.h>
 
 #include <netinet/in_cksum_protos.h>
@@ -65,6 +66,7 @@
 
 /* Explicit declarations (in_pcb_protos.h has stale signatures) */
 extern int  in_pcballoc(struct socket *, struct inpcbinfo *);
+extern void icmp6_error(struct mbuf *, int, int, int);
 extern void in_pcbdetach(struct inpcb *);
 int in_pcbisipv6(struct inpcb *);             /* netinet/in_pcb.c */
 extern int  soreserve(struct socket *, u_long, u_long);
@@ -475,8 +477,10 @@ udp6_input(void *args, ...)
     inp = in6_pcblookup(&udb, &src6.sin6_addr, uh->uh_sport,
                         &dst6.sin6_addr, uh->uh_dport);
     if(inp == NULL) {
-        /* No match: drop */
-        m_freem(m);
+        /* No socket: Destination Unreachable, port unreachable (RFC 4443
+         * section 3.1), as udp_input() does for IPv4; icmp6_error() takes
+         * the packet, and leaves out what must not be answered */
+        icmp6_error(m, ICMP6_DST_UNREACH, ICMP6_DST_UNREACH_NOPORT, 0);
         return;
     }
 
