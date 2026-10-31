@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -399,7 +399,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
             if (wcount == 0L)
               break;
 
-            wcount = AROS_BE2LONG(wcount);
+            wcount = AROS_BE2WORD(wcount);
 
             i = wcount;
             Wordcount++;
