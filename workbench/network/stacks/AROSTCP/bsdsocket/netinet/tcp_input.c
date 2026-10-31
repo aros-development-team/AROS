@@ -1671,52 +1671,57 @@ close:
         if(tp->t_flagsext & TF_IN_FASTRECOV) {
             if(SEQ_LT(ti->ti_ack, tp->snd_recover)) {
                 /*
-                 * Partial ACK (RFC 3782 step 3):
-                 * - Retransmit first unacked segment
-                 * - Deflate cwnd by amount ACKed, add back 1 MSS
-                 * - Do not exit fast recovery
+                 * Partial ACK (RFC 6582 section 3.2, step 3): retransmit
+                 * the first unacknowledged segment, deflate cwnd, stay in
+                 * fast recovery - and then process the ACK as any other
+                 * (below), so that snd_una advances, the acknowledged data
+                 * leaves the send buffer and the retransmit timer runs
+                 * again. snd_una has not advanced yet when the segment is
+                 * sent, so cwnd must cover the bytes this ACK acknowledges
+                 * as well as the segment, as in FreeBSD's
+                 * tcp_newreno_partial_ack(); with one segment's worth,
+                 * tcp_output() found no room and sent nothing.
                  */
                 tcp_seq old_snd_nxt = tp->snd_nxt;
+                u_long ocwnd = tp->snd_cwnd;
+                u_long acked_now = ti->ti_ack - tp->snd_una;
+                tcp_seq rxt = ti->ti_ack;
+
                 tcpstat.tcps_newreno_partial++;
                 tp->t_timer[TCPT_REXMT] = 0;
+                tp->t_rtt = 0;
+                if((tp->t_flagsext & TF_PRR) && (tp->t_flags & TF_SACK_PERMIT))
+                    (void) tcp_sack_nextseg(tp, &rxt);
+                tp->snd_nxt = rxt;
+                tp->snd_cwnd = tp->t_maxseg + acked_now;
+                tp->t_flags |= TF_ACKNOW;
+                (void) tcp_output(tp);
+                if(SEQ_GT(old_snd_nxt, tp->snd_nxt))
+                    tp->snd_nxt = old_snd_nxt;
                 if(tp->t_flagsext & TF_PRR) {
                     /*
-                     * PRR (RFC 6937) partial ACK: account the
-                     * bytes newly delivered (measured against
-                     * snd_prr_hiack, since the classic path below
-                     * does not advance snd_una on a partial ACK),
-                     * retransmit the first hole and let PRR
+                     * PRR (RFC 6937): account the bytes newly delivered
+                     * (measured against snd_prr_hiack) and let PRR
                      * recompute the effective cwnd.
                      */
                     u_long delivered = 0;
-                    tcp_seq rxt = ti->ti_ack;
+
                     if(SEQ_GT(ti->ti_ack, tp->snd_prr_hiack)) {
                         delivered = ti->ti_ack - tp->snd_prr_hiack;
                         tp->snd_prr_hiack = ti->ti_ack;
                     }
-                    if(tp->t_flags & TF_SACK_PERMIT)
-                        (void) tcp_sack_nextseg(tp, &rxt);
-                    tp->snd_nxt = rxt;
-                    tp->snd_cwnd = tp->t_maxseg;
-                    (void) tcp_output(tp);
-                    if(SEQ_GT(old_snd_nxt, tp->snd_nxt))
-                        tp->snd_nxt = old_snd_nxt;
                     tcp_prr_ack(tp, delivered);
-                    tp->t_dupacks = 0;
-                    goto drop;
+                } else {
+                    /* deflate by what was acknowledged, add back one
+                     * segment (RFC 6582) */
+                    tp->snd_cwnd = ocwnd;
+                    if(tp->snd_cwnd > acked_now)
+                        tp->snd_cwnd -= acked_now;
+                    else
+                        tp->snd_cwnd = 0;
+                    tp->snd_cwnd += tp->t_maxseg;
                 }
-                tp->snd_nxt = ti->ti_ack;
-                tp->snd_cwnd = tp->t_maxseg;
-                (void) tcp_output(tp);
-                /* Deflate: partial_ack bytes left the pipe */
-                tp->snd_cwnd = tp->snd_ssthresh +
-                    tp->t_maxseg * (tp->t_dupacks - tcprexmtthresh);
-                if(tp->snd_cwnd < tp->t_maxseg)
-                    tp->snd_cwnd = tp->t_maxseg;
-                if(SEQ_GT(old_snd_nxt, tp->snd_nxt))
-                    tp->snd_nxt = old_snd_nxt;
                 tp->t_dupacks = 0;
-                goto drop;
             } else {
                 /*
                  * Full ACK (RFC 3782 step 3):
