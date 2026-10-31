@@ -1,6 +1,7 @@
 /*
     Copyright (C) 2009-2020, The AROS Development Team. All rights reserved.
 */
+#include <dos/dos.h>
 #include <dos/stdio.h>
 #include <exec/alerts.h>
 #include <proto/exec.h>
@@ -60,6 +61,7 @@
 
     StdCBase->startup_errorptr = errorptr;
     *StdCBase->exit_jmpbuf = *exitjmp;
+    StdCBase->startup_task = FindTask(NULL);
 }
 
 /*****************************************************************************
@@ -222,6 +224,7 @@
    
     *previousjmp = *StdCBase->exit_jmpbuf;
     *StdCBase->exit_jmpbuf = *exitjmp;
+    StdCBase->startup_task = FindTask(NULL);
 }
 
 /*****************************************************************************
@@ -272,6 +275,27 @@
         Alert(AT_DeadEnd | AG_BadParm);
     }
 
+    /* exit_jmpbuf points into the stack of the task that started the
+       program. Another task sharing this base (a pthread calling exit() or
+       abort()) must not jump there: it would run the exit code on a stack
+       that task is still using. Ask the program's task to stop and park
+       this one: a threading library ends it through the function it gave
+       __stdc_set_taskexit(), otherwise it is parked for good. */
+    if (StdCBase->startup_task && FindTask(NULL) != StdCBase->startup_task)
+    {
+        struct Task *me = FindTask(NULL);
+
+        kprintf("[%s] %s(%d) called by task '%s', not the program's task '%s': signalling that to break\n",
+            STDCNAME, normal ? "exit" : "abort", retcode,
+            me->tc_Node.ln_Name ? me->tc_Node.ln_Name : "",
+            StdCBase->startup_task->tc_Node.ln_Name ? StdCBase->startup_task->tc_Node.ln_Name : "");
+        Signal(StdCBase->startup_task, SIGBREAKF_CTRL_C);
+        if (StdCBase->taskexit)
+            StdCBase->taskexit(retcode);
+        for (;;)
+            Wait(0);
+    }
+
     if (!normal)
         StdCBase->flags |= ABNORMAL_EXIT;
 
@@ -280,4 +304,49 @@
     longjmp(StdCBase->exit_jmpbuf, 1);
 
     assert(0); /* Not reached */
+}
+
+/*****************************************************************************
+
+    NAME */
+        void __stdc_set_taskexit(
+
+/*  SYNOPSIS */
+        void (*taskexit)(int returncode))
+
+/*  FUNCTION
+        Set how exit(), abort() and an unhandled signal end a task that shares
+        the program's stdc.library base but is not the task that started the
+        program, such as a thread.
+
+    INPUTS
+        taskexit - Called with the exit code in such a task; it must not
+                   return. NULL leaves such a task waiting forever.
+
+    RESULT
+        -
+
+    NOTES
+        This function is private and meant for threading libraries; the
+        pthread link library sets a function that calls pthread_exit().
+
+        exit() cannot run the program's exit code in such a task: that code
+        has to run on the stack of the program's task. Before taskexit is
+        called the program's task is sent SIGBREAKF_CTRL_C.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        exit(), abort()
+
+    INTERNALS
+
+******************************************************************************/
+{
+    struct StdCIntBase *StdCBase =
+        (struct StdCIntBase *)__aros_getbase_StdCBase();
+
+    StdCBase->taskexit = taskexit;
 }
