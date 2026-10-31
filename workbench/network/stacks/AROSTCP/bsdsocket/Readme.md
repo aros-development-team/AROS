@@ -417,10 +417,20 @@ looped back.
 IPv6 routers never fragment, so an oversized datagram is dropped and reported with ICMPv6 Packet Too
 Big. `icmp6_input` handles that type by reading the reported next-hop MTU and the quoted packet's
 destination (copied out of the packed headers into aligned locals for strict-alignment targets) and
-calling `icmp6_update_pmtu`, which records the MTU on the destination route
+calling `icmp6_update_pmtu`, which records the MTU on the destination's route
 (`rt_rmx.rmx_mtu`, clamped to `IPV6_MMTU`, lowered only). No socket is told: `ip6_output` caps each
 datagram at the route's discovered PMTU (never above the link MTU), so subsequent traffic fits the
 bottleneck link instead of being black-holed.
+
+That route is the destination's own. On the link it is the neighbour's host route, cloned by
+neighbour discovery. Through a router the table only has the router's route (a prefix, or `::/0`),
+which every destination behind it shares, so - as KAME's `icmp6_mtudisc_clone()` does - a host route
+through the same router (`RTF_HOST | RTF_GATEWAY | RTF_DYNAMIC`, the router route's metrics) is
+added for the destination and the MTU put on that. A lowered MTU is kept 10 minutes (`rmx_expire`
+says when), then the larger one is tried again (RFC 8201 section 4): `icmp6_slowtimo()` deletes a
+host route added for it and gives any other route its previous MTU back. The routes are held,
+with a reference, in a table of 32 (`pmtu_routes[]`); when it is full the one closest to expiring
+gives way.
 
 The other ICMPv6 errors (Destination Unreachable, Time Exceeded, Parameter Problem) go to the
 upper-layer protocol of the packet they quote, as in KAME: `icmp6_notify_error()` copies out the
