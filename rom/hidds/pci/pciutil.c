@@ -138,19 +138,22 @@ IPTR sizePCIBaseReg(OOP_Object *driver, struct pci_staticdata *psd, struct Devic
                 return 0;
             return size;
 #else
-            if (szhi == 0)
-            {
-                /* 64-bit BAR that answers zeroes above dword 0: 32-bit sized */
-                sz = ~sz;
-                sz++;
-
-                if (sz == 0 || (sz & (sz - 1)) != 0)
-                    return 0;
-                return (IPTR)sz;
-            }
-            if (szhi != ~0)
+            if (szhi != 0 && szhi != ~0)
                 return 0;
-            /* szhi == ~0: fall through to the low-half sizing below */
+            /*
+             * Rule at this width, same shape test for both upper-dword cases
+             * (reads back zeroes or all ones): the low dword mask must be a
+             * contiguous run of ones from its lowest set bit to bit 31, the
+             * size is that lowest set bit. sz == 0 with szhi == ~0 is a size
+             * of 4 GB or more, not representable here: return 0.
+             */
+            {
+                IPTR size = (IPTR)sz & ((~(IPTR)sz) + 1);
+
+                if (size == 0 || (IPTR)sz != ~ (size - 1))
+                    return 0;
+                return size;
+            }
 #endif
         }
         sz = ~sz;
