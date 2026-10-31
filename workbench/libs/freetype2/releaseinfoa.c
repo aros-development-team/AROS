@@ -30,6 +30,7 @@ AROS_LH2(ULONG, ReleaseInfoA,
     struct TagItem *tstate;
     struct TagItem *tag;
     struct GlyphMap *GMap;
+    struct ColorGlyphMap *CMap;
 
     D(bug("ReleaseInfoA engine = 0x%lx tags = 0x%lx\n",engine,tags));
 
@@ -46,6 +47,13 @@ AROS_LH2(ULONG, ReleaseInfoA,
             GMap = (struct GlyphMap *)otagdata;
             if (GMap->glm_BitMap) FreeVec(GMap->glm_BitMap);
             FreeVec(GMap);
+            break;
+
+        case OT_ColorGlyphMap32:
+            CMap = (struct ColorGlyphMap *)otagdata;
+            if (CMap->cgm_ARGBMap)
+                FreeVec(CMap->cgm_ARGBMap);
+            FreeVec(CMap);
             break;
 
         case OT_WidthList:
