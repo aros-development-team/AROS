@@ -20,6 +20,70 @@ static struct vulkanstaticdata *vulkan_global_sd = NULL;
  * Public GPU registration — called by driver HIDDs at init time.
  * Exported as library function slot 5 in vulkan.hidd.
  */
+/*****************************************************************************
+    NAME
+        int32_t VulkanHidd_RegisterGPU(
+
+    SYNOPSIS
+        const char *class_id, OOP_Object *pci_device, uint32_t vendor_id, uint32_t device_id, uint32_t flags, uint64_t vram_size, const char *name, int32_t priority, const struct VulkanDriverCallbacks *callbacks, APTR driver_data, uint8_t pci_bus, uint8_t pci_dev_num, uint8_t pci_func)
+
+    FUNCTION
+        Register a GPU or refresh the registry entry with the same PCI identity.
+
+    INPUTS
+        class_id - NUL-terminated driver class ID. Copied to a 64-byte field;
+            at most 63 bytes are retained. NULL stores an empty string.
+        pci_device - PCI device object retained by reference.
+        vendor_id, device_id - Values used with the PCI address to identify
+            an existing entry.
+        flags - Bitwise combination of VULKAN_GPU_* capability flags. Stored
+            without checking the indicated capabilities.
+        vram_size - Reported VRAM size in bytes; stored without hardware probing.
+        name - NUL-terminated display name, copied with a 63-byte limit.
+            NULL stores "Unknown GPU".
+        priority - Selection priority; lower values are preferred.
+        callbacks - Callback table copied by value. NULL clears the stored table.
+            Callback code and objects referenced by it must remain valid.
+        driver_data - Driver context retained by reference.
+        pci_bus, pci_dev_num, pci_func - PCI bus, device and function identifiers.
+            These values and the vendor/device IDs form the lookup key.
+
+    RESULT
+        Registry slot index from zero through VULKAN_MAX_GPUS - 1, or -1 if
+        the registry is unavailable or no matching or free slot exists.
+        A slot is not a Vulkan physical-device handle or proof of driver readiness.
+
+    NOTES
+        Requires an initialized vulkan.hidd registry and task context. May wait
+        for the registry semaphore. Coordinate registry lifetime with driver
+        shutdown and library expunge.
+
+        The strings and callback structure need remain valid only until return;
+        retained device/context pointers and callback targets must remain valid
+        for subsequent registry users. Registration does not take ownership of
+        or reference-count these objects.
+
+        A matching PCI identity is refreshed in place, including its strings,
+        priority, flags, callback table and driver context. Its existing driver
+        object, use count, exclusive-use state and firmware-loaded flag remain
+        unchanged. A new entry starts with those states cleared and increments
+        the registry count. Re-registering does not increment the count.
+
+        The key has no PCI segment/domain component. Use identities that are
+        unique within the registry. The function neither creates a driver object
+        nor initializes firmware, validates callbacks or negotiates capabilities.
+
+    BUGS
+        Refreshing an entry in use can combine existing driver state with new
+        callbacks or context. The registry semaphore does not establish a safe
+        handover for users retaining those fields. Quiesce affected users before
+        replacing them. Truncated class IDs can cease to identify the intended
+        class, and re-registration does not invalidate a stale firmware flag.
+
+    SEE ALSO
+        VulkanHidd_SetGPUPSPLoaded(), VulkanHidd_IsGPUPSPLoaded()
+
+*****************************************************************************/
 AROS_LH13(int32_t, VulkanHidd_RegisterGPU,
     AROS_LHA(const char *, class_id, A0),
     AROS_LHA(OOP_Object *, pci_device, A1),
@@ -95,6 +159,40 @@ AROS_LH13(int32_t, VulkanHidd_RegisterGPU,
  *
  * Library slot 6.
  */
+/*****************************************************************************
+    NAME
+        BOOL VulkanHidd_SetGPUPSPLoaded(
+
+    SYNOPSIS
+        uint8_t pci_bus, uint8_t pci_dev_num, uint8_t pci_func, uint32_t vendor_id, uint32_t device_id, BOOL loaded)
+
+    FUNCTION
+        Set the stored firmware-loaded flag for a registered GPU.
+
+    INPUTS
+        pci_bus, pci_dev_num, pci_func - PCI address used at registration.
+        vendor_id, device_id - Vendor and device IDs used at registration.
+        loaded - Zero clears the flag; any nonzero value stores TRUE.
+
+    RESULT
+        TRUE if a matching occupied slot was found and updated, including
+        when the value was unchanged. FALSE if the registry is unavailable
+        or no matching slot exists.
+
+    NOTES
+        May wait for the registry write semaphore. All five identity fields
+        must match. No slot is created. The update changes only a software flag;
+        it does not load firmware, access the device or validate its readiness.
+
+        Set the flag after establishing firmware readiness, and clear it when
+        that state becomes invalid. Registration refresh preserves this flag.
+        Coordinate hardware reset, driver teardown and library lifetime with
+        other users; the flag is not a firmware-initialization lock.
+
+    SEE ALSO
+        VulkanHidd_RegisterGPU(), VulkanHidd_IsGPUPSPLoaded()
+
+*****************************************************************************/
 AROS_LH6(BOOL, VulkanHidd_SetGPUPSPLoaded,
     AROS_LHA(uint8_t,  pci_bus,     D0),
     AROS_LHA(uint8_t,  pci_dev_num, D1),
@@ -122,6 +220,39 @@ AROS_LH6(BOOL, VulkanHidd_SetGPUPSPLoaded,
  *
  * Library slot 7.
  */
+/*****************************************************************************
+    NAME
+        BOOL VulkanHidd_IsGPUPSPLoaded(
+
+    SYNOPSIS
+        uint8_t pci_bus, uint8_t pci_dev_num, uint8_t pci_func, uint32_t vendor_id, uint32_t device_id)
+
+    FUNCTION
+        Read the stored firmware-loaded flag for a registered GPU.
+
+    INPUTS
+        pci_bus, pci_dev_num, pci_func - PCI address used at registration.
+        vendor_id, device_id - Vendor and device IDs used at registration.
+
+    RESULT
+        TRUE if the first matching occupied slot is marked loaded. FALSE if
+        its flag is clear, no slot matches, or the registry is unavailable.
+        These FALSE cases cannot be distinguished through this function.
+
+    NOTES
+        May wait for the registry read semaphore. The returned value is a
+        snapshot of software state. It does not probe the hardware or certify
+        that firmware remains usable after a reset or power-state change.
+
+        Validate the required device state before submitting work. A read
+        followed by firmware initialization and a flag update is not atomic;
+        callers must serialize that sequence separately. Keep the registry and
+        associated driver lifecycle valid throughout the operation.
+
+    SEE ALSO
+        VulkanHidd_RegisterGPU(), VulkanHidd_SetGPUPSPLoaded()
+
+*****************************************************************************/
 AROS_LH5(BOOL, VulkanHidd_IsGPUPSPLoaded,
     AROS_LHA(uint8_t,  pci_bus,     D0),
     AROS_LHA(uint8_t,  pci_dev_num, D1),
