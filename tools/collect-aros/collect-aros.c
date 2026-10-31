@@ -556,8 +556,10 @@ int main(int argc, char *argv[])
      * libraries (and all -L search paths) to the final link so ld can pull the
      * required members and resolve those symbols (including any further symbols
      * those members pull from the standard libraries). The compiler's own
-     * support libraries (-lgcc*) are skipped: they live on search paths that
-     * are private to the gcc driver and are already linked in.
+     * support libraries go back too: a member pulled in here can reference
+     * one of their helpers - libstdc++'s aligned operator new calls
+     * __popcountsi2 on a target with no popcount instruction - and the
+     * driver passes their search paths as -L, so ld finds them again.
      */
     char **libargv = xmalloc(sizeof(char *) * (argc + 2));
     int libargc = 0;
@@ -604,21 +606,10 @@ int main(int argc, char *argv[])
             }
             else if (argv[i][1] == 'l')
             {
-                const char *name;
-                int separate = (argv[i][2] == '\0' && (i + 1) < argc);
-
-                name = separate ? argv[i + 1] : &argv[i][2];
-
-                /* skip the gcc support libraries (private driver search paths) */
-                if (strncmp(name, "gcc", 3) == 0)
-                {
-                    if (separate)
-                        i++;
-                    continue;
-                }
-
+                /* keep every library, including the separate "-l" "name"
+                   form */
                 libargv[libargc++] = argv[i];
-                if (separate)
+                if (argv[i][2] == '\0' && (i + 1) < argc)
                     libargv[libargc++] = argv[++i];
             }
         }
