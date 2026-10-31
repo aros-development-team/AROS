@@ -455,7 +455,7 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
         /* Keep About usable without QRCode.mcc, including on older images. */
         {
-            static const UBYTE qrText[] = "Let's have fun with ~~Kitty~~ AROS!";
+            static const UBYTE qrText[] = "https://github.com/aros-development-team/AROS";
             struct MUI_QRCodePayload qrPayload;
             IPTR qrStatus = MUIV_QRCode_Status_Invalid;
 
@@ -468,8 +468,8 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 qrCode = MUI_NewObject(MUIC_QRCode,
                     MUIA_QRCode_Data, (IPTR)&qrPayload,
                     MUIA_QRCode_ECC, MUIV_QRCode_ECC_M,
-                    MUIA_FixWidth, 111,
-                    MUIA_FixHeight, 111,
+                    MUIA_FixWidth, 123,
+                    MUIA_FixHeight, 123,
                     TAG_DONE);
                 if (qrCode != NULL)
                 {
