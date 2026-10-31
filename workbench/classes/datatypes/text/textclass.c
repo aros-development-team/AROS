@@ -25,6 +25,9 @@
 #include <proto/dos.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
+#ifdef __AROS__
+#include <proto/diskfont.h>
+#endif
 #include <proto/utility.h>
 #include <proto/iffparse.h>
 #include <proto/layers.h>
@@ -278,6 +281,16 @@ static int InitText(struct Text_Data *td)
 	td->mark_y2 = -1;
 
 	InitRastPort(&td->font_rp);
+
+#ifdef __AROS__
+	/* Request the disk font before looking for a resident substitute. */
+	/* Disk I/O is permitted here only from a process. */
+	if (FindTask(NULL)->tc_Node.ln_Type == NT_PROCESS)
+	{
+	    if ((td->font = OpenDiskFont(&td->attr)))
+	        return 1;
+	}
+#endif
 
 	if ((td->font = OpenFont(&td->attr)))
 	    return 1;
