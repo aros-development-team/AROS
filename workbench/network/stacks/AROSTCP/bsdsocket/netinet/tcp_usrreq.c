@@ -706,6 +706,8 @@ struct socket *so;
  * Initiate (or continue) disconnect.
  * If embryonic state, just send reset (once).
  * If in ``let data drain'' option and linger null, just drop.
+ * If received data is still unread, drop with a reset too, so the peer
+ * learns it was lost (RFC 9293 section 3.6.1; RFC 1122 4.2.2.13).
  * Otherwise (hard), mark socket disconnecting and drop
  * current input data; switch states based on user close, and
  * send segment to peer (with FIN).
@@ -720,6 +722,8 @@ register struct tcpcb *tp;
         tp = tcp_close(tp);
     else if((so->so_options & SO_LINGER) && so->so_linger.tv_sec == 0)
         tp = tcp_drop(tp, 0);
+    else if(so->so_rcv.sb_cc > 0)
+        tp = tcp_drop(tp, ECONNRESET);
     else {
         soisdisconnecting(so);
         sbflush(&so->so_rcv);
