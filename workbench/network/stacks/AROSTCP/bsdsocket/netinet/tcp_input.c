@@ -65,6 +65,7 @@
 #include <netinet/in_pcb.h>
 #include <netinet/ip_var.h>
 #include <netinet/in_cksum_protos.h>
+#include <protos/net/route_protos.h>
 #include <netinet/tcp.h>
 #include <netinet/tcp_fsm.h>
 #include <netinet/tcp_seq.h>
@@ -2469,6 +2470,13 @@ short rtt;
  * setup as well (offer = -1), to initialize maxseg from the cached
  * MSS of our peer.
  */
+#if INET6
+extern int tcp_v6mssdflt;
+extern int in6_localaddr(struct in6_addr *);
+struct rtentry *tcp_rtlookup6(struct inpcb *);
+int tcp_mssopt6(const struct ifnet *, const struct in6_addr *);
+#endif
+
 void
 tcp_mss(tp, offer)
 struct tcpcb *tp;
@@ -2482,13 +2490,43 @@ int offer;
     struct socket *so;
     struct rmxp_tao *taop;
     int origoffer = offer;
+    /*
+     * The headers in front of the data and the MSS to fall back on depend on
+     * the family: an IPv6 header is 40 bytes, not 20 (RFC 6691), and the
+     * IPv6 default is 1220 (RFC 9293 section 3.7.1). inp_route cannot hold
+     * an IPv6 destination, so an IPv6 route is looked up here and released
+     * at the end.
+     */
+    int isipv6 = 0, local, min_protoh = sizeof(struct tcpiphdr), mssdflt = tcp_mssdflt;
 
     inp = tp->t_inpcb;
-    if((rt = tcp_rtlookup(inp)) == NULL) {
-        tp->t_maxopd = tp->t_maxseg = tcp_mssdflt;
+#if INET6
+    if(tcp_isipv6(inp)) {
+        isipv6 = 1;
+        min_protoh = sizeof(struct ip6_hdr) + sizeof(struct tcphdr);
+        mssdflt = tcp_v6mssdflt;
+    }
+    rt = isipv6 ? tcp_rtlookup6(inp) : tcp_rtlookup(inp);
+#else
+    rt = tcp_rtlookup(inp);
+#endif
+    if(rt == NULL) {
+        /* still never more than the peer said it takes */
+        mss = mssdflt;
+        if(offer > 0)
+            mss = MIN(mss, MAX(offer, 64));
+        tp->t_maxopd = tp->t_maxseg = mss;
         return;
     }
     ifp = rt->rt_ifp;
+#if INET6
+    /* a link-local peer is on the link of the connection's zone (RFC 4007) */
+    if(isipv6 && inp->inp_boundif)
+        ifp = inp->inp_boundif;
+    local = isipv6 ? in6_localaddr(&inp->inp_faddr6) : in_localaddr(inp->inp_faddr);
+#else
+    local = in_localaddr(inp->inp_faddr);
+#endif
     so = inp->inp_socket;
 
     taop = rmx_taop(rt->rt_rmx);
@@ -2503,7 +2541,7 @@ int offer;
      * in this case we use tcp_mssdflt.
      */
     if(offer == 0)
-        offer = tcp_mssdflt;
+        offer = mssdflt;
     else
         /*
          * Sanity check: make sure that maxopd will be large
@@ -2543,13 +2581,13 @@ int offer;
      * if there's an mtu associated with the route, use it
      */
     if(rt->rt_rmx.rmx_mtu)
-        mss = rt->rt_rmx.rmx_mtu - sizeof(struct tcpiphdr);
+        mss = rt->rt_rmx.rmx_mtu - min_protoh;
     else
 #endif /* RTV_MTU */
     {
-        mss = ifp->if_mtu - sizeof(struct tcpiphdr);
-        if(!in_localaddr(inp->inp_faddr))
-            mss = MIN(mss, tcp_mssdflt);
+        mss = ifp->if_mtu - min_protoh;
+        if(!local)
+            mss = MIN(mss, mssdflt);
     }
     mss = MIN(mss, offer);
     /*
@@ -2621,7 +2659,7 @@ int offer;
      * (10 segments) for non-local destinations instead of
      * the original 1-segment slow start.
      */
-    if(!in_localaddr(inp->inp_faddr))
+    if(!local)
         tp->snd_cwnd = MIN(10 * mss, MAX(2 * mss, 14600));
 
 #ifdef RTV_SSTHRESH
@@ -2635,7 +2673,41 @@ int offer;
         tp->snd_ssthresh = MAX(2 * mss, rt->rt_rmx.rmx_ssthresh);
     }
 #endif
+    if(isipv6)
+        rtfree(rt);
 }
+
+#if INET6
+/*
+ * tcp_mssopt6 - the MSS option to send to the IPv6 peer faddr: the path MTU
+ * of the route, else the MTU of the link the peer is on (ifp, the zone, if
+ * given; else the route's), less the IPv6 and TCP headers.
+ */
+int
+tcp_mssopt6(const struct ifnet *ifp, const struct in6_addr *faddr)
+{
+    struct sockaddr_in6 dst;
+    struct rtentry *rt;
+    int mss;
+
+    bzero(&dst, sizeof(dst));
+    dst.sin6_family = AF_INET6;
+    dst.sin6_len    = sizeof(dst);
+    dst.sin6_addr   = *faddr;
+    rt = rtalloc1((struct sockaddr *)&dst, 0);
+    if(rt != NULL && rt->rt_rmx.rmx_mtu)
+        mss = rt->rt_rmx.rmx_mtu;
+    else if(ifp != NULL)
+        mss = ifp->if_mtu;
+    else if(rt != NULL)
+        mss = rt->rt_ifp->if_mtu;
+    else
+        mss = tcp_v6mssdflt + sizeof(struct ip6_hdr) + sizeof(struct tcphdr);
+    if(rt != NULL)
+        rtfree(rt);
+    return mss - (int)(sizeof(struct ip6_hdr) + sizeof(struct tcphdr));
+}
+#endif
 
 /*
  * Determine the MSS option to send on an outgoing SYN.
@@ -2646,6 +2718,10 @@ struct tcpcb *tp;
 {
     struct rtentry *rt;
 
+#if INET6
+    if(tcp_isipv6(tp->t_inpcb))
+        return tcp_mssopt6(tp->t_inpcb->inp_boundif, &tp->t_inpcb->inp_faddr6);
+#endif
     rt = tcp_rtlookup(tp->t_inpcb);
     if(rt == NULL)
         return tcp_mssdflt;

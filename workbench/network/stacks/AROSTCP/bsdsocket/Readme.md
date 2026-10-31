@@ -271,6 +271,15 @@ overlay), so header building and the state machine are shared; only the family e
 - **Source address selection.** `in6_pcbconnect` selects a source via `rtalloc()` +
   `in6_ifawithifp()` (mirroring `udp6_output`); an unbound socket must not connect from the
   unspecified address (`::`), which `ip6_input` discards on receipt (RFC 4291 scope).
+- **Segment size.** `tcp_mss()` and `tcp_mssopt()` work out the MSS from the family's headers: 60
+  bytes in front of the data on IPv6 (RFC 6691), 40 on IPv4. `inp_route` cannot hold an IPv6
+  destination, so for IPv6 `tcp_rtlookup6()` looks the route up each time and the caller releases it;
+  the link is the connection's zone for a link-local peer. The MSS is the route's path MTU, else the
+  link MTU, less the headers, at most `tcp_v6mssdflt` (1220) towards a destination off the link with
+  no path MTU known, and never more than the peer's MSS option, also when no route is found. The
+  syncache's SYN-ACK advertises the same for IPv6 (`tcp_mssopt6()`), and a peer that sends no MSS is
+  taken to accept 1220 (RFC 9293 §3.7.1). `in6_localaddr()` counts an address on one of our prefixes
+  as local, as `in_localaddr()` does for IPv4.
 - **Port allocation.** `in6_pcballoclport` (IPPORT range + `in6_pcblookup` collision check) is used
   for both wildcard and explicit-address binds. An explicit `{addr, port}` bind that collides with
   an existing PCB is rejected with `EADDRINUSE` unless `SO_REUSEADDR`/`SO_REUSEPORT` is set.

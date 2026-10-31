@@ -490,8 +490,15 @@ in6_localaddr(struct in6_addr *in6)
     if(IN6_IS_ADDR_LOOPBACK(in6) || IN6_IS_ADDR_LINKLOCAL(in6))
         return 1;
 
+    /* on a link we have an address on, as in_localaddr() for IPv4 and KAME */
     for(ia = in6_ifaddr; ia; ia = ia->ia_next) {
-        if(IN6_ARE_ADDR_EQUAL(in6, &ia->ia_addr.sin6_addr))
+        int i;
+
+        for(i = 0; i < 16; i++)
+            if((in6->s6_addr[i] ^ ia->ia_addr.sin6_addr.s6_addr[i]) &
+                    ia->ia_prefixmask.sin6_addr.s6_addr[i])
+                break;
+        if(i == 16)
             return 1;
     }
     return 0;
