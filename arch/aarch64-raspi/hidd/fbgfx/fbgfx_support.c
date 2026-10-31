@@ -22,11 +22,14 @@
 
 #include "fbgfx_intern.h"
 #include "fbgfx_hidd.h"
+#include "fbgfx_validation.h"
 
 BOOL initFBGfxHW(struct HWData *data)
 {
     struct KernelBase *KernelBase = OpenResource("kernel.resource");
     IPTR fb = KernelBase ? (IPTR)KrnGetSystemAttr(KATTR_FrameBuffer) : 0;
+    IPTR width, height, pitch, depth;
+    uint32_t bytes;
 
     /* KrnGetSystemAttr() answers -1 for anything it does not know, so a
        kernel without the framebuffer attributes hands back a pointer that
@@ -34,6 +37,17 @@ BOOL initFBGfxHW(struct HWData *data)
     if (fb == 0 || fb == (IPTR)-1)
     {
         D(bug("[FBGfx] HwInit: framebuffer not available\n"));
+        return FALSE;
+    }
+
+    width = KrnGetSystemAttr(KATTR_FrameBufferWidth);
+    height = KrnGetSystemAttr(KATTR_FrameBufferHeight);
+    pitch = KrnGetSystemAttr(KATTR_FrameBufferPitch);
+    depth = KrnGetSystemAttr(KATTR_FrameBufferDepth);
+    if (depth != 32 || !fbgfx_buffer_size(width, height, pitch, 4, &bytes) ||
+        !fbgfx_buffer_span(fb, bytes))
+    {
+        D(bug("[FBGfx] HwInit: invalid framebuffer geometry\n"));
         return FALSE;
     }
 
@@ -49,9 +63,9 @@ BOOL initFBGfxHW(struct HWData *data)
 #endif
 
     data->framebuffer  = (APTR)fb;
-    data->width        = KrnGetSystemAttr(KATTR_FrameBufferWidth);
-    data->height       = KrnGetSystemAttr(KATTR_FrameBufferHeight);
-    data->bytesperline = KrnGetSystemAttr(KATTR_FrameBufferPitch);
+    data->width        = width;
+    data->height       = height;
+    data->bytesperline = pitch;
     data->depth        = 32;
     data->bitsperpixel = 32;
     data->bytesperpixel = 4;
@@ -66,7 +80,7 @@ BOOL initFBGfxHW(struct HWData *data)
     data->greenmask = 0x0000FF00; data->greenshift = 16;
     data->bluemask  = 0x00FF0000; data->blueshift  = 8;
     data->palettewidth = 8;
-    data->fbsize = data->height * data->bytesperline;
+    data->fbsize = bytes;
 
     D(bug("[FBGfx] HwInit: %ux%ux%u linear FB @ 0x%p, pitch %u\n",
           data->width, data->height, data->depth,
@@ -130,5 +144,5 @@ void DACLoad(struct FBGfx_staticdata *xsd, UBYTE *DAC, unsigned char first, int 
 void ClearBuffer(struct HWData *data)
 {
     if (data->framebuffer)
-        memset(data->framebuffer, 0, data->height * data->bytesperline);
+        memset(data->framebuffer, 0, data->fbsize);
 }
