@@ -173,7 +173,6 @@ wait_and_receive(struct MDNSDaemon *md, ULONG sigmask, BOOL probing)
         struct in6_pktinfo packetInfo;
         struct msghdr message;
         struct iovec vector;
-        struct cmsghdr *header;
         BOOL havePacketInfo = FALSE;
         int got;
 
@@ -190,6 +189,8 @@ wait_and_receive(struct MDNSDaemon *md, ULONG sigmask, BOOL probing)
         got = recvmsg((int)md->md_Socket6, &message, 0);
 
         if (got > 0) {
+            struct cmsghdr *header;
+
             for (header = CMSG_FIRSTHDR(&message); header != NULL;
                     header = CMSG_NXTHDR(&message, header)) {
                 if (header->cmsg_level == IPPROTO_IPV6 &&
