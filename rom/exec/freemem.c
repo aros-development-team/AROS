@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Free memory allocated by AllocMem()
 */
@@ -65,10 +65,7 @@
     if(!byteSize || !memoryBlock)
         ReturnVoid ("FreeMem");
 
-    memoryBlock = MungWall_Check(memoryBlock, byteSize, &tp, SysBase);
-
-    if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
-        byteSize += MUNGWALL_TOTAL_SIZE;
+    memoryBlock = MungWall_Check(memoryBlock, &byteSize, &tp, SysBase);
 
     InternalFreeMem(memoryBlock, byteSize, &tp, SysBase);
 
