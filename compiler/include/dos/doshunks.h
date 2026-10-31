@@ -2,7 +2,7 @@
 #define DOS_DOSHUNKS_H
 
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Definition of hunks, used in executable files.
@@ -71,5 +71,28 @@
 #define HUNKF_ADVISORY (1L<<HUNKB_ADVISORY)
 #define HUNKF_CHIP     (1L<<HUNKB_CHIP)
 #define HUNKF_FAST     (1L<<HUNKB_FAST)
+
+/* The 32-bit relocations LoadSeg() applied to a hunk file, for
+   GetSegListInfo(GSLI_68KRELOCS): one group per relocation block and target
+   hunk, as the file stores them. Kept on non-68k hosts only, for an emulator
+   that copies the segments elsewhere and relocates them again; the table
+   lives as long as the seglist. */
+struct HunkRelocGroup
+{
+    ULONG  hrg_Hunk;        /* hunk holding the relocated longwords */
+    ULONG  hrg_Target;      /* hunk whose base was added */
+    ULONG  hrg_Kind;        /* HUNKRELOC_* */
+    ULONG  hrg_Count;
+    ULONG *hrg_Offsets;     /* byte offsets of the longwords in hrg_Hunk */
+};
+#define HUNKRELOC_ABS   0   /* longword = target base + original */
+#define HUNKRELOC_REL   1   /* longword = target base + original - address of the longword */
+#define HUNKRELOC_BASE  2   /* longword = target base + original - base of the hunk holding it */
+
+struct HunkRelocTable
+{
+    ULONG                  hrt_Groups;  /* ~0: the relocations could not be kept */
+    struct HunkRelocGroup *hrt_Group;
+};
 
 #endif /* DOS_DOSHUNKS_H */
