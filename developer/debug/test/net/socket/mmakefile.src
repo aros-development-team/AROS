@@ -28,6 +28,7 @@ CUNITSOCKETTESTFILES := \
     cunit-net-srcaddr6 \
     cunit-net-tcp \
     cunit-net-tcpmss6 \
+    cunit-net-tcpsyn6 \
     cunit-net-udp
 
 #MM test-socket : includes linklibs

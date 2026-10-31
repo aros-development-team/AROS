@@ -230,6 +230,15 @@ The SYN cache is fully dual-stack (see §6).
 (with exponential backoff), persist, keepalive, 2MSL/TIME-WAIT, and delayed-ACK. `tcp_slowtimo`
 also advances the ISS clock and expires SYN-cache entries.
 
+### 5.4 Options in the SYN
+
+A connection asks for the MSS (§6, segment size, for IPv6), window scale and timestamps
+(RFC 7323, `tcp_do_rfc1323`) and SACK (RFC 2018, `tcp_do_sack`). ECN (`tcp_do_ecn`) is off by
+default. T/TCP (RFC 1644: the CC, CC.NEW and CC.ECHO options, the TAO cache, the shortened
+TIME-WAIT) is off by default too: RFC 6247 moved it to Historic, as it lets a SYN with a guessed
+CC skip the three-way handshake. It is still in the source, and `tcp_do_rfc1644` (sysctl
+`net.inet.tcp.rfc1644`) turns it back on.
+
 ---
 
 ## 6. Dual-stack IPv6 (TCP6 / UDP6)
