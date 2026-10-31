@@ -228,7 +228,9 @@ The SYN cache is fully dual-stack (see §6).
 
 `tcp_timer.c` runs the fast (200 ms) and slow (500 ms) timers driven from the daemon: retransmit
 (with exponential backoff), persist, keepalive, 2MSL/TIME-WAIT, and delayed-ACK. `tcp_slowtimo`
-also advances the ISS clock and expires SYN-cache entries.
+also expires SYN-cache entries, and advances the ISS clock (`tcp_iss`, RFC 6528) and `tcp_now`
+every tick, whether or not there are connections: `tcp_now` is the timestamp clock (RFC 7323)
+and paces the IPv4 ICMP error rate limit (§7).
 
 ### 5.4 Options in the SYN
 
