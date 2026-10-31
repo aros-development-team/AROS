@@ -150,7 +150,7 @@ MUIA_Application_Menu [I.G]               unimplemented (OBSOLETE)
 MUIA_Application_MenuAction [..G]         done
 MUIA_Application_MenuHelp [..G]           not triggered yet
 MUIA_Application_Menustrip [I..]          done
-MUIA_Application_RexxHook [ISG]           stored; not invoked
+MUIA_Application_RexxHook [ISG]           done
 MUIA_Application_RexxMsg [..G]            done
 MUIA_Application_RexxString [.S.]         done
 MUIA_Application_SingleTask [I..]         done
@@ -1709,7 +1709,9 @@ static IPTR Application__MUIM_NewInput(struct IClass *cl, Object *obj,
                 {
                     STRPTR commandstr = (STRPTR)rmsg->rm_Args[0];
                     struct MUI_Command *cmd = data->app_Commands;
-                    while (cmd->mc_Name)
+                    BOOL matched = FALSE;
+
+                    while (cmd != NULL && cmd->mc_Name)
                     {
                         LONG len = 0;
                         while ((commandstr[len] != ' ') && (commandstr[len] != '\0')) len++;
@@ -1765,9 +1767,26 @@ static IPTR Application__MUIM_NewInput(struct IClass *cl, Object *obj,
                                 rmsg->rm_Result2 = (IPTR)CreateArgstring(data->app_RexxString, strlen(data->app_RexxString));
                             }
 
+                            matched = TRUE;
                             break;
                         }
                         cmd++;
+                    }
+
+                    if (!matched)
+                    {
+                        if (data->app_RexxHook)
+                        {
+                            data->app_RexxMsg = rmsg;
+                            rmsg->rm_Result1 = (LONG)CallHookPkt(data->app_RexxHook, obj, rmsg);
+                            data->app_RexxMsg = NULL;
+                            if ((rmsg->rm_Action & RXFF_RESULT) && data->app_RexxString)
+                            {
+                                rmsg->rm_Result2 = (IPTR)CreateArgstring(data->app_RexxString, strlen(data->app_RexxString));
+                            }
+                        }
+                        else
+                            rmsg->rm_Result1 = RC_ERROR;
                     }
                 }
 

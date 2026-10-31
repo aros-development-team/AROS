@@ -27,7 +27,8 @@ FILES  := test             \
           dynlist          \
           listinsertactive \
           mui4test         \
-          flextest
+          flextest         \
+          rexxunknown
 
 USER_CFLAGS := -I $(SRCDIR)/workbench/system/Wanderer/Classes
 
