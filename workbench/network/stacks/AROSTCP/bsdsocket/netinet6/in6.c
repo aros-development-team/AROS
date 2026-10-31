@@ -343,10 +343,9 @@ in6_join_allnodes(struct ifnet *ifp)
     allnodes.s6_addr[0]  = 0xff;
     allnodes.s6_addr[1]  = 0x02;
     allnodes.s6_addr[15] = 0x01;
-    for(in6m = in6_multihead; in6m; in6m = in6m->in6m_next)
-        if(in6m->in6m_ifp == ifp && IN6_ARE_ADDR_EQUAL(&in6m->in6m_addr, &allnodes))
-            return;
-    (void)in6_addmulti(&allnodes, ifp);
+    IN6_LOOKUP_MULTI(allnodes, ifp, in6m);
+    if(in6m == NULL)
+        (void)in6_addmulti(&allnodes, ifp);
 }
 
 /* ------------------------------------------------------------------
@@ -440,6 +439,16 @@ in6_purgeaddr(struct ifaddr *ifa)
 
     in6_ifscrub(ifp, ia);
 
+    /*
+     * Routes hold no reference on their rt_ifa: the host routes cloned from
+     * the prefix route in6_ifscrub() just removed, and any other route that
+     * resolved through this address, would be left pointing at it once it is
+     * freed below, and deleting them later (rt_purgeif() on a reload, for
+     * one) would call ifa_rtrequest through freed memory. Delete them now,
+     * as in_control() does for an IPv4 address.
+     */
+    rt_purgeifa((struct ifaddr *)ia);
+
     /* the address no longer answers neighbour solicitations */
     if(IA6_PRIV(ia)->ia6p_solicited != NULL) {
         in6_delmulti(IA6_PRIV(ia)->ia6p_solicited);
@@ -488,6 +497,39 @@ in6_localaddr(struct in6_addr *in6)
     return 0;
 }
 
+/*
+ * in6_srcbetter - whether a is a better source address than b for a
+ * destination of scope dstscope, by the rules of RFC 6724 section 5 that
+ * apply to addresses of one interface:
+ *  2. appropriate scope: of two scopes, the smaller one unless it is smaller
+ *     than the destination's (so a link-scope destination gets the
+ *     link-local, and a global one a global address);
+ *  3. a preferred address over a deprecated one;
+ *  7. a temporary address over a public one (RFC 4941).
+ * Otherwise the earlier address stays.
+ */
+static int
+in6_srcbetter(struct in6_ifaddr *a, struct in6_ifaddr *b, int dstscope)
+{
+    int sa = in6_addrscope(&a->ia_addr.sin6_addr);
+    int sb = in6_addrscope(&b->ia_addr.sin6_addr);
+    int da = (a->ia6_ifaflags & IN6_IFF_DEPRECATED) != 0;
+    int db = (b->ia6_ifaflags & IN6_IFF_DEPRECATED) != 0;
+    int ta = (a->ia6_ifaflags & IN6_IFF_TEMPORARY) != 0;
+    int tb = (b->ia6_ifaflags & IN6_IFF_TEMPORARY) != 0;
+
+    if(sa != sb) {
+        if(sa < sb)
+            return sa >= dstscope;
+        return sb < dstscope;
+    }
+    if(da != db)
+        return db;
+    if(ta != tb)
+        return ta;
+    return 0;
+}
+
 /* ------------------------------------------------------------------
  * in6_ifawithifp - find best IPv6 source address for given ifp/dest.
  * ------------------------------------------------------------------ */
@@ -495,39 +537,15 @@ struct in6_ifaddr *
 in6_ifawithifp(struct ifnet *ifp, struct in6_addr *dst)
 {
     struct in6_ifaddr *ia, *besta = NULL;
-    int bestscope = -1;
-    int dstscope  = in6_addrscope(dst);
+    int dstscope = in6_addrscope(dst);
 
     for(ia = in6_ifaddr; ia; ia = ia->ia_next) {
         if(ia->ia6_ifp != ifp)
             continue;
         if(ia->ia6_ifaflags & (IN6_IFF_TENTATIVE | IN6_IFF_DUPLICATED))
             continue;
-        /* skip deprecated addresses if we have a better candidate */
-        if((ia->ia6_ifaflags & IN6_IFF_DEPRECATED) && besta != NULL)
-            continue;
-        int sc = in6_addrscope(&ia->ia_addr.sin6_addr);
-        if(sc == dstscope) {
-            /*
-             * RFC 4941: prefer non-deprecated temporary addresses
-             * for outgoing connections (privacy).
-             */
-            if(besta == NULL || bestscope != dstscope) {
-                besta = ia;
-                bestscope = sc;
-            } else if((ia->ia6_ifaflags & IN6_IFF_TEMPORARY) &&
-                      !(ia->ia6_ifaflags & IN6_IFF_DEPRECATED) &&
-                      (!(besta->ia6_ifaflags & IN6_IFF_TEMPORARY) ||
-                       (besta->ia6_ifaflags & IN6_IFF_DEPRECATED))) {
-                besta = ia;
-                /* bestscope unchanged — already equals sc (== dstscope) */
-            }
-            continue;
-        }
-        if(sc > bestscope) {
-            bestscope = sc;
+        if(besta == NULL || in6_srcbetter(ia, besta, dstscope))
             besta = ia;
-        }
     }
     return besta;
 }

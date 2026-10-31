@@ -180,14 +180,9 @@ static int Exec_RVSMPInit(struct ExecBase *SysBase)
         PrivExecBase(SysBase)->IntFlags |= EXECF_CPUAffinity;
     Enable();
 
+    /* The other harts are started later, by kernel.post (platform_post.c) */
     if (!ok)
-    {
         bug("[Exec] %s: out of memory for affinity masks - staying on one CPU\n", __func__);
-        return TRUE;
-    }
-
-    /* Only now can another CPU be given work safely */
-    krnRVStartCPUs(KernelBase, SysBase);
 
     return TRUE;
 }

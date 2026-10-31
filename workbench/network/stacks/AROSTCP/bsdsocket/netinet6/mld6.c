@@ -440,11 +440,12 @@ mld6_sendpkt(struct in6_multi *in6m, int type, const struct in6_addr *dst)
 	ip6->ip6_hlim = 1;		/* MLD requires hop limit = 1 */
 	/* ip6_nxt is set to IPPROTO_HOPOPTS by mld6_prepend_ra() below */
 
-	/* Source: link-local address of the interface */
-	{
-		struct in6_addr dst_tmp = in6m->in6m_addr;
-		ia = in6_ifawithifp(ifp, &dst_tmp);
-	}
+	/*
+	 * Source: the interface's link-local address, whatever the group's
+	 * scope (RFC 3810 section 5, RFC 2710 section 3); the unspecified
+	 * address while it is still tentative.
+	 */
+	ia = in6_ifaof_ifpforlinklocal(ifp);
 	if(ia)
 		ip6->ip6_src = ia->ia_addr.sin6_addr;
 	/* else: unspecified (valid per RFC 2710 §4 for initial report) */
@@ -528,11 +529,12 @@ mld6_sendpkt_v2(struct in6_multi *in6m)
 	ip6->ip6_hlim = 1;		/* MLD requires hop limit = 1 */
 	/* ip6_nxt is set to IPPROTO_HOPOPTS by mld6_prepend_ra() below */
 
-	/* Source: link-local address of the interface */
-	{
-		struct in6_addr dst_tmp = in6m->in6m_addr;
-		ia = in6_ifawithifp(ifp, &dst_tmp);
-	}
+	/*
+	 * Source: the interface's link-local address, whatever the group's
+	 * scope (RFC 3810 section 5, RFC 2710 section 3); the unspecified
+	 * address while it is still tentative.
+	 */
+	ia = in6_ifaof_ifpforlinklocal(ifp);
 	if(ia)
 		ip6->ip6_src = ia->ia_addr.sin6_addr;
 

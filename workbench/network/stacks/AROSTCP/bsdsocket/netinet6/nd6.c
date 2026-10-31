@@ -144,6 +144,8 @@ nd6_ifattach(struct ifnet *ifp)
 void
 nd6_ifdetach(struct ifnet *ifp)
 {
+    nd6_purge_routers(ifp);     /* the routers heard on it and their routes */
+    nd6_purge_prefixes(ifp);    /* the prefixes heard on it */
     if(ifp->if_index < ND6_MAXIFS)
         bzero((caddr_t)&nd6_ndi[ifp->if_index], sizeof(nd6_ndi[ifp->if_index]));
 }

@@ -235,6 +235,9 @@ static int GM_UNIQUENAME(open)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req, U
             /* and for the trackers */
             NEWLIST(&(unit->trackers));
 
+            /* and for the multicast addresses the openers added */
+            NEWLIST(&(unit->mcast_ranges));
+
             /* only bring the io task up if the buffers were allocated */
             if (error == 0)
             {
@@ -322,6 +325,7 @@ static int GM_UNIQUENAME(close)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req) 
     struct tap_unit *unit = (struct tap_unit *) req->ios2_Req.io_Unit;
     struct tap_opener *opener = (struct tap_opener *) req->ios2_BufferManagement;
     struct tap_tracker *tracker, *tracker_next;
+    struct tap_mcast_range *range, *range_next;
     ULONG unitnum = unit->num;
 
     D(bug("[tap] in close\n"));
@@ -352,6 +356,10 @@ static int GM_UNIQUENAME(close)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req) 
         /* kill trackers */
         ForeachNodeSafe(&(unit->trackers), tracker, tracker_next)
             FreeVec(tracker);
+
+        /* and the multicast addresses */
+        ForeachNodeSafe(&(unit->mcast_ranges), range, range_next)
+            FreeVec(range);
 
         /* release the frame buffers */
         FreeVec(unit->rxbuf);

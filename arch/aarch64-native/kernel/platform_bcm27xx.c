@@ -48,6 +48,8 @@ extern uint64_t mpcore_mair;
 extern spinlock_t startup_lock;
 
 extern void cpu_Register(void);
+extern struct Task *cpu_InitBootStrap(struct ExecBase *, cpuid_t);
+extern void cpu_DisposeBootStrap(struct Task *, struct ExecBase *);
 extern void aarch64_flush_cache(uintptr_t, uint32_t);
 #if defined(__AROSEXEC_SMP__)
 extern void handle_ipi(uint32_t, uint32_t);
@@ -376,8 +378,14 @@ void bcm27xx_init(APTR _kernelBase, APTR _sysBase)
         __tls = (tls_t *)AllocMem(sizeof(tls_t) + sizeof(struct cpu_ipidata), MEMF_CLEAR);
         __tls->SysBase = _sysBase;
         __tls->KernelBase = _kernelBase;
-        __tls->ThisTask = NULL;
         __tls->CPUNumber = cpu;     /* logical id - GetCPUNumber reads this */
+        /* The core itself must not allocate before it has a task */
+        if ((__tls->ThisTask = cpu_InitBootStrap(SysBase, cpu)) == NULL)
+        {
+            FreeMem(__tls, sizeof(tls_t) + sizeof(struct cpu_ipidata));
+            FreeMem(cpu_stack, AROS_STACKSIZE * sizeof(uint64_t));
+            continue;
+        }
         aarch64_flush_cache(((uintptr_t)__tls) & ~63, 512);
         ((uint64_t *)(trampoline_dst + trampoline_data_offset))[3] = (uint64_t)__tls;
 
@@ -402,6 +410,7 @@ void bcm27xx_init(APTR _kernelBase, APTR _sysBase)
             {
                 bug("[Kernel:BCM27xx] CPU #%02d: PSCI CPU_ON failed (%d)\n", cpu, (int)err);
                 KrnSpinUnLock(&startup_lock);
+                cpu_DisposeBootStrap(__tls->ThisTask, SysBase);
                 continue;
             }
         }

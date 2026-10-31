@@ -31,6 +31,12 @@
 #include "pthread_intern.h"
 #include "debug.h"
 
+#if defined(__AROS__)
+#include <aros/config.h>
+#else
+#define _pthread_free_affinity(mask)
+#endif
+
 /*
  * Loosely-coupled C-runtime per-thread hook registry.  Kept in sync with the
  * identical declarations in compiler/crt/posixc/__threadhook.c and found by
@@ -292,11 +298,25 @@ static void StarterFunc(void)
     char name[NAMELEN];
     size_t oldlen;
     pthread_t threadnew;
+#if defined(__AROS__)
+    APTR affinity = NULL;
+#endif
 
     D(bug("%s(%p, %p, %p, %p)\n", __FUNCTION__, thread, attr, start, arg));
 
     if (thread == NULL || start == NULL)
         return EINVAL;
+
+#if defined(__AROS__)
+    /* pthread_attr_setaffinity_np(): the CPUs the new thread may run on */
+    if (attr && attr->affinityset)
+    {
+        int err = _pthread_cpuset_to_mask(sizeof(cpu_set_t), &attr->affinity, &affinity);
+
+        if (err)
+            return err;
+    }
+#endif
 
     ObtainSemaphore(&thread_sem);
 
@@ -305,6 +325,7 @@ static void StarterFunc(void)
     if (threadnew == PTHREAD_THREADS_MAX)
     {
         ReleaseSemaphore(&thread_sem);
+        _pthread_free_affinity(affinity);
         return EAGAIN;
     }
 
@@ -314,6 +335,7 @@ static void StarterFunc(void)
         if (!(threads[threadnew] = AllocVec(sizeof(ThreadInfo), MEMF_ANY)))
         {
             ReleaseSemaphore(&thread_sem);
+            _pthread_free_affinity(affinity);
             return EAGAIN;
         }
         __atomic_store_n(&threads_used, threadnew + 1, __ATOMIC_RELEASE);
@@ -355,6 +377,10 @@ static void StarterFunc(void)
         NP_UserData, inf,
 #endif
         NP_Name, (IPTR)name,
+#if defined(__AROS__)
+        /* the mask becomes the system's once the process exists */
+        affinity ? NP_Affinity : TAG_IGNORE, (IPTR)affinity,
+#endif
         TAG_DONE);
 
     ReleaseSemaphore(&thread_sem);
@@ -362,6 +388,7 @@ static void StarterFunc(void)
     if (!inf->task)
     {
         inf->parent = NULL;
+        _pthread_free_affinity(affinity);
         return EAGAIN;
     }
 

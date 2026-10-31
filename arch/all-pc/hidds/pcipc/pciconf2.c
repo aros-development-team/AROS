@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2026, The AROS Development Team. All rights reserved.
 
     Desc: PCI configuration mechanism 2 access functions
 */
@@ -34,6 +34,20 @@ static ULONG ReadConfig2Long(UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg)
     }
     else
         return 0xffffffff;
+}
+
+/* As with mechanism 1, a word has to be written at its own offset */
+static void WriteConfig2Word(UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg, UWORD val)
+{
+    if (dev < 16)
+    {
+        Disable();
+        outb(0xf0|(sub<<1),PCI_CSEPort);
+        outb(bus,PCI_ForwardPort);
+        outw(val,CFG2ADD(dev, reg) | (reg & 2));
+        outb(0,PCI_AddressPort);
+        Enable();
+    }
 }
 
 static void WriteConfig2Long(UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg, ULONG val)
@@ -114,6 +128,7 @@ void PCIPC_ProbeConfMech(struct pcipc_staticdata *psd)
         D(bug("[PCI.PC] configuration mechanism 2 detected\n"));
 
         psd->ReadConfigLong  = ReadConfig2Long;
+        psd->WriteConfigWord = WriteConfig2Word;
         psd->WriteConfigLong = WriteConfig2Long;
 
         if (SanityCheck(psd))
@@ -131,6 +146,7 @@ void PCIPC_ProbeConfMech(struct pcipc_staticdata *psd)
     D(bug("[PCI.PC] Failing back to configuration mechanism 1\n"));
 
     psd->ReadConfigLong  = ReadConfig1Long;
+    psd->WriteConfigWord = WriteConfig1Word;
     psd->WriteConfigLong = WriteConfig1Long;
 }
 

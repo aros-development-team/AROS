@@ -31,6 +31,7 @@ CFILES := \
         spinlock \
         spinunlock \
         platform_init \
+        platform_post \
         kernel_debug \
         getsystemattr \
         getcpuattr \

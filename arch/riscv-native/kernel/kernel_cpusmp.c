@@ -7,8 +7,9 @@
     platform's RVI_StartCPU hook, and waits for it to report in under
     startup_lock, as the ARM ports do. A hart enters cpu_Register() on
     the stack its TLS names, with tp, gp, stvec and satp already set up
-    by the platform entry code. There it builds a bootstrap task, joins
-    the scheduler and from then on idles in that task.
+    by the platform entry code. There it builds a bootstrap task and joins
+    the scheduler; the bootstrap task creates the hart's idle task,
+    releases startup_lock and exits, as all-pc's does.
 */
 
 #include <aros/config.h>
@@ -37,13 +38,15 @@
 #undef D
 #define D(x)
 
-/* The stack a secondary hart runs cpu_Register() on, before its task */
-#define SECONDARY_STACKSIZE     16384
+/* The stack a secondary hart runs cpu_Register() on, before its task,
+ * and then takes its traps on (traps.S) - as large as all-pc's */
+#define SECONDARY_STACKSIZE     65536
 
-extern struct Task *cpu_InitBootStrap(struct ExecBase *SysBase);
+extern struct Task *cpu_InitBootStrap(struct ExecBase *SysBase, uint32_t cpunum);
+extern void cpu_DisposeBootStrap(struct Task *bstask, struct ExecBase *SysBase);
 extern void cpu_BootStrap(struct Task *bstask, struct ExecBase *SysBase);
 /* exec_idle.c - kernel and exec share one core image */
-extern void riscv64IdleTask(struct ExecBase *SysBase);
+extern struct Task *Exec_RVCreateIdleTask(struct ExecBase *SysBase);
 
 static spinlock_t startup_lock;
 
@@ -55,7 +58,12 @@ static inline UQUAD krnRVTime(void)
     return v;
 }
 
-static void __attribute__((noreturn)) cpu_IdleLoop(void)
+/*
+ * The bootstrap task's code: it only gets scheduling going on this hart.
+ * It returns into exec's task exit code like any other task, and this
+ * hart's first dispatch then finds its idle task.
+ */
+static void cpu_BootStrapEntry(void)
 {
     struct ExecBase *SysBase = TLS_GET(SysBase);
 
@@ -63,10 +71,12 @@ static void __attribute__((noreturn)) cpu_IdleLoop(void)
     Permit();
     Enable();
 
-    riscv64IdleTask(SysBase);
+    if (!Exec_RVCreateIdleTask(SysBase))
+        bug("[Kernel:%02u] FATAL : no idle task\n", krnRVCPUNumber());
 
-    for (;;)
-        asm volatile("wfi");
+    /* Only now may the boot CPU bring up the next hart (as all-pc's
+     * ready lock): that one allocates before it has a task. */
+    Kernel_53_KrnSpinUnLock(&startup_lock, NULL);
 }
 
 /*
@@ -87,7 +97,8 @@ void __attribute__((noreturn)) cpu_Register(void)
     if (__riscv_arosintern.RVI_InitCore)
         __riscv_arosintern.RVI_InitCore(KernelBase, SysBase);
 
-    if ((bstask = cpu_InitBootStrap(SysBase)) == NULL)
+    /* Built for this hart by the boot CPU (krnRVStartCPUs) */
+    if ((bstask = tls->ThisTask) == NULL)
     {
         bug("[Kernel:%02u] FATAL : no bootstrap task - hart parked\n", cpunum);
         Kernel_53_KrnSpinUnLock(&startup_lock, NULL);
@@ -108,26 +119,27 @@ void __attribute__((noreturn)) cpu_Register(void)
 
     bug("[Kernel:%02u] Operational\n", cpunum);
 
-    Kernel_53_KrnSpinUnLock(&startup_lock, NULL);
-
     /*
-     * Continue on the bootstrap task's own stack, so that it is the
-     * context the first trap saves - it is this hart's idle task from
-     * now on.
+     * Continue as the bootstrap task, on its own stack, so that it is the
+     * context the first trap saves. Its code returns to TaskExitCode, as
+     * every task's does (PrepareContext).
      */
     asm volatile(
         "mv     sp, %0  \n"
-        "tail   %1      \n"
-        : : "r"(bstask->tc_SPUpper), "i"(cpu_IdleLoop)
+        "mv     ra, %1  \n"
+        "tail   %2      \n"
+        : : "r"(bstask->tc_SPUpper), "r"(SysBase->TaskExitCode),
+            "i"(cpu_BootStrapEntry)
         : "memory");
 
     __builtin_unreachable();
 }
 
 /*
- * Start every hart the platform can offer. Called by exec once all
- * existing tasks have affinity masks (exec_smp.c): from then on a new
- * CPU can only pick up work that is allowed on it.
+ * Start every hart the platform can offer. Called by kernel.post
+ * (platform_post.c) once exec is fully up. Every task that exists has
+ * an affinity mask by then (exec_smp.c), so a new CPU can only pick up
+ * work that is allowed on it; without them, stay on one CPU.
  */
 void krnRVStartCPUs(struct KernelBase *KernelBase, struct ExecBase *SysBase)
 {
@@ -135,7 +147,8 @@ void krnRVStartCPUs(struct KernelBase *KernelBase, struct ExecBase *SysBase)
                      __riscv_arosintern.RVI_TimebaseFreq : 10000000;
     uint32_t cpu = 1;
 
-    if (!__riscv_arosintern.RVI_StartCPU)
+    if (!__riscv_arosintern.RVI_StartCPU ||
+        !(PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity))
         return;
 
     core_IPIInit();
@@ -145,6 +158,7 @@ void krnRVStartCPUs(struct KernelBase *KernelBase, struct ExecBase *SysBase)
         tls_t *tls;
         APTR stack;
         UQUAD deadline;
+        BOOL released;
         int r;
 
         tls = AllocMem(sizeof(tls_t), MEMF_PUBLIC | MEMF_CLEAR);
@@ -163,12 +177,20 @@ void krnRVStartCPUs(struct KernelBase *KernelBase, struct ExecBase *SysBase)
         tls->KernelBase = (void *)KernelBase;
         tls->CPUNumber = cpu;
         tls->StackTop = (APTR)(((IPTR)stack + SECONDARY_STACKSIZE) & ~(IPTR)15);
-        /* Disable()d and Forbid()den until cpu_IdleLoop lifts both */
+        /* Disable()d and Forbid()den until cpu_BootStrapEntry lifts both */
         tls->IDNestCnt = 0;
         tls->TDNestCnt = 0;
         /* exec keeps the quantum per CPU; start with the boot CPU's */
         tls->Quantum = __riscv_boot_tls.Quantum;
         tls->Elapsed = tls->Quantum;
+        /* The hart itself must not allocate before it has a task */
+        if ((tls->ThisTask = cpu_InitBootStrap(SysBase, cpu)) == NULL)
+        {
+            FreeMem(stack, SECONDARY_STACKSIZE);
+            FreeMem(tls, sizeof(tls_t));
+            bug("[Kernel] %s: out of memory for CPU #%02u\n", __func__, cpu);
+            break;
+        }
         __riscv_tls[cpu] = tls;
 
         Kernel_52_KrnSpinLock(&startup_lock, NULL, SPINLOCK_MODE_WRITE, NULL);
@@ -179,6 +201,7 @@ void krnRVStartCPUs(struct KernelBase *KernelBase, struct ExecBase *SysBase)
         {
             Kernel_53_KrnSpinUnLock(&startup_lock, NULL);
             __riscv_tls[cpu] = NULL;
+            cpu_DisposeBootStrap(tls->ThisTask, SysBase);
             FreeMem(stack, SECONDARY_STACKSIZE);
             FreeMem(tls, sizeof(tls_t));
             if (r < 0)
@@ -186,16 +209,16 @@ void krnRVStartCPUs(struct KernelBase *KernelBase, struct ExecBase *SysBase)
             continue;           /* that hart refused - try the next one */
         }
 
-        /* The hart releases the lock once it is operational */
+        /* The hart releases the lock once its idle task exists */
         deadline = krnRVTime() + timebase;
-        while (!krnRVSpinTryWrite(&startup_lock))
+        while (!(released = krnRVSpinTryWrite(&startup_lock)))
         {
             if ((QUAD)(krnRVTime() - deadline) > 0)
                 break;
             krnRVPause();
         }
 
-        if (!(__riscv_cpu_online[cpu / 32] & (1UL << (cpu % 32))))
+        if (!released || !(__riscv_cpu_online[cpu / 32] & (1UL << (cpu % 32))))
         {
             /*
              * It did not report in within a second. It may still be on

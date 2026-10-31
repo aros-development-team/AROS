@@ -10,6 +10,8 @@
 #define DEBUG 0
 #define DWRITE(x)
 
+#include <string.h>
+
 #include "tap.h"
 
 static const UWORD tap_supported_commands[] = {
@@ -19,6 +21,11 @@ static const UWORD tap_supported_commands[] = {
     S2_ONLINE,
     S2_OFFLINE,
     S2_BROADCAST,
+    S2_MULTICAST,
+    S2_ADDMULTICASTADDRESS,
+    S2_DELMULTICASTADDRESS,
+    S2_ADDMULTICASTADDRESSES,
+    S2_DELMULTICASTADDRESSES,
     CMD_READ,
     CMD_WRITE,
     CMD_FLUSH,
@@ -244,6 +251,111 @@ static BOOL tap_broadcast(struct IOSana2Req *req, struct tap_unit *unit) {
     return tap_write(req, unit);
 }
 
+static BOOL tap_multicast(struct IOSana2Req *req, struct tap_unit *unit) {
+    /* a group frame goes out like any other, to a group address */
+    if ((((UBYTE *) req->ios2_DstAddr)[0] & 0x1) == 0) {
+        D(bug("[tap] [%d] S2_MULTICAST to a unicast address\n", unit->num));
+
+        req->ios2_Req.io_Error = S2ERR_BAD_ADDRESS;
+        req->ios2_WireError = S2WERR_BAD_MULTICAST;
+
+        return TRUE;
+    }
+
+    return tap_write(req, unit);
+}
+
+/*
+ * The multicast addresses an opener wants. The tap is a virtual wire with no
+ * hardware filter and tap_receive() hands every multicast frame up (the
+ * stack's group memberships decide what is kept), so the list is the only
+ * state: it is kept, counted per add, so that a delete of what was never
+ * added is refused as on real hardware.
+ */
+static struct tap_mcast_range *tap_find_mcast_range(struct tap_unit *unit,
+    const UBYTE *lower, const UBYTE *upper) {
+    struct tap_mcast_range *range;
+
+    ForeachNode(&(unit->mcast_ranges), range) {
+        if (memcmp(range->lower, lower, ETH_ALEN) == 0 &&
+            memcmp(range->upper, upper, ETH_ALEN) == 0)
+            return range;
+    }
+
+    return NULL;
+}
+
+static BOOL tap_add_multicast(struct IOSana2Req *req, struct tap_unit *unit) {
+    const UBYTE *lower = (const UBYTE *) req->ios2_SrcAddr, *upper;
+    struct tap_mcast_range *range;
+
+    upper = req->ios2_Req.io_Command == S2_ADDMULTICASTADDRESS ?
+        lower : (const UBYTE *) req->ios2_DstAddr;
+
+    D(bug("[tap] [%d] add multicast %02x:%02x:%02x:%02x:%02x:%02x - %02x:%02x:%02x:%02x:%02x:%02x\n", unit->num,
+          lower[0], lower[1], lower[2], lower[3], lower[4], lower[5],
+          upper[0], upper[1], upper[2], upper[3], upper[4], upper[5]));
+
+    if ((lower[0] & 0x1) == 0 || (upper[0] & 0x1) == 0 ||
+        memcmp(lower, upper, ETH_ALEN) > 0) {
+        req->ios2_Req.io_Error = S2ERR_BAD_ADDRESS;
+        req->ios2_WireError = S2WERR_BAD_MULTICAST;
+
+        return TRUE;
+    }
+
+    range = tap_find_mcast_range(unit, lower, upper);
+    if (range != NULL) {
+        range->refcount ++;
+        return TRUE;
+    }
+
+    range = AllocVec(sizeof(struct tap_mcast_range), MEMF_PUBLIC | MEMF_CLEAR);
+    if (range == NULL) {
+        req->ios2_Req.io_Error = S2ERR_NO_RESOURCES;
+        req->ios2_WireError = S2WERR_GENERIC_ERROR;
+
+        return TRUE;
+    }
+    range->refcount = 1;
+    CopyMem((APTR) lower, range->lower, ETH_ALEN);
+    CopyMem((APTR) upper, range->upper, ETH_ALEN);
+
+    Disable();
+    AddTail((APTR) &(unit->mcast_ranges), (APTR) range);
+    Enable();
+
+    return TRUE;
+}
+
+static BOOL tap_del_multicast(struct IOSana2Req *req, struct tap_unit *unit) {
+    const UBYTE *lower = (const UBYTE *) req->ios2_SrcAddr, *upper;
+    struct tap_mcast_range *range;
+
+    upper = req->ios2_Req.io_Command == S2_DELMULTICASTADDRESS ?
+        lower : (const UBYTE *) req->ios2_DstAddr;
+
+    range = tap_find_mcast_range(unit, lower, upper);
+    if (range == NULL) {
+        D(bug("[tap] [%d] delete of a multicast address never added\n", unit->num));
+
+        req->ios2_Req.io_Error = S2ERR_BAD_STATE;
+        req->ios2_WireError = S2WERR_BAD_MULTICAST;
+
+        return TRUE;
+    }
+
+    if (-- range->refcount == 0) {
+        Disable();
+        Remove((APTR) range);
+        Enable();
+
+        FreeVec(range);
+    }
+
+    return TRUE;
+}
+
 void tap_handle_request(struct IOSana2Req *req) {
     struct tap_unit *unit = (struct tap_unit *) req->ios2_Req.io_Unit;
     BOOL completed = FALSE;
@@ -318,6 +430,23 @@ void tap_handle_request(struct IOSana2Req *req) {
         case S2_BROADCAST:
             D(bug("[tap] [%d] S2_BROADCAST\n", unit->num));
             completed = tap_broadcast(req, unit);
+            break;
+
+        case S2_MULTICAST:
+            D(bug("[tap] [%d] S2_MULTICAST\n", unit->num));
+            completed = tap_multicast(req, unit);
+            break;
+
+        case S2_ADDMULTICASTADDRESS:
+        case S2_ADDMULTICASTADDRESSES:
+            D(bug("[tap] [%d] S2_ADDMULTICASTADDRESS(ES)\n", unit->num));
+            completed = tap_add_multicast(req, unit);
+            break;
+
+        case S2_DELMULTICASTADDRESS:
+        case S2_DELMULTICASTADDRESSES:
+            D(bug("[tap] [%d] S2_DELMULTICASTADDRESS(ES)\n", unit->num));
+            completed = tap_del_multicast(req, unit);
             break;
 
         case S2_TRACKTYPE:
