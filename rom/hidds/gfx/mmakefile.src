@@ -12,6 +12,7 @@ FILES       := \
                 gfx_hiddclass \
                 gfx_displayclass \
                 gfx_compositorclass \
+                gfx_palette \
                 gfx_cursorfbclass \
                 gfx_dmenumclass \
                 gfx_bitmapclass \
