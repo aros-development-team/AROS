@@ -1,6 +1,6 @@
 # Queued DNS-SD discovery
 
-bonami.library and mdnsd implement IPv4 service browse and asynchronous
+bonami.library and mdnsd implement service browse and asynchronous
 resolve, without running client hooks in mdnsd or starting dispatch
 processes. Each operation has one event queue, read in the
 caller's own task. A caller either reads it from a loop it already runs, or
@@ -18,6 +18,13 @@ version only, a caller that can run with 41.2 must require a version later than
 41, or version 41 with revision 3 or later, before calling LVO 22 or later. The
 record query is a new AROS interface, not a published original-BonAmi vector,
 so it is queue-native and has no unused Hook argument.
+
+Library revision 41.6 accepts and publishes AAAA records through the same
+generic query interface. `MDNSRecordEvent.re_Interface` remains the IPv4
+interface address in network byte order (zero on an IPv6-only link), and the
+existing reserved `UWORD` is named `re_InterfaceIndex` and contains the
+receiving link's scope/interface index. The structure size and old binaries
+are unchanged.
 
 ## Calls and ownership
 
@@ -78,6 +85,13 @@ It issues SRV/TXT queries, follows the target with an A query and reports
 require a prior browse/PTR. Stop the operation with `StopResolve()` after
 either result. Browse automatically resolves its instances and only emits
 complete snapshots, using `MEVENT_ADD` and `MEVENT_REMOVE`.
+
+The discovery-event ABI remains IPv4: an A record is required for its
+`de_Address`. AAAA-only hosts can be followed with the generic SRV and AAAA
+record-query API, which reports the link index without changing existing
+event structures. Once either A or AAAA is known, the daemon asks once for
+the other family but does not keep querying an address family the host does
+not publish.
 
 The queue-mode tag and an output reference are required. Non-NULL hooks and
 calls without the mode return `MDNSERR_NOTREADY`; no hook is dereferenced.
@@ -195,7 +209,8 @@ after an `MDNS_OK` reply, drain with `ReadMDNSRecordEvent()` instead. Query
 references have the same task ownership as browse and resolve references.
 
 `MDNSRecordEvent` contains the owner name, type, class without the cache-flush
-bit, remaining TTL, receiving interface and at most 512 bytes of RDATA. PTR
+bit, remaining TTL, receiving interface address and index, and at most 512
+bytes of RDATA. PTR
 targets and the target following the first six bytes of SRV data are expanded
 to uncompressed DNS wire labels, so no compression pointer refers to a packet
 the caller cannot see. Other RDATA remains in wire byte order.
@@ -224,9 +239,9 @@ Instances containing embedded NUL cannot be represented and are rejected.
 
 The cache is keyed by interface, owner/type and data, and holds only what an
 active operation can reach: the PTRs of a browsed type, the SRV and TXT of an
-instance of a browsed type or of an instance being resolved, and the A of a
+instance of a browsed type or of an instance being resolved, and the A/AAAA of a
 host such an SRV names. Records of services nobody asked for are not cached,
-refreshed or queried for (RFC 6762 section 5.2). An A record that arrives
+refreshed or queried for (RFC 6762 section 5.2). An address record that arrives
 before any SRV naming its host is held for one second (eight at most) and
 cached when that SRV comes; an older one is asked for again by the
 missing-record query. When the cache is full, the oldest
@@ -263,7 +278,10 @@ each interface. A browse, resolve, service-type enumeration or record query
 therefore sees local and remote services through the same event structures.
 Registration announcements, updates and goodbyes keep those local views in
 step; starting or refreshing an operation also replays the current local
-records without relying on multicast loopback. IPv6, passive
+records without relying on multicast loopback. IPv6 sockets, AAAA
+publication/query and shared per-link A/AAAA caching are implemented. The
+legacy discovery event cannot represent an IPv6 endpoint, so IPv6-only
+browse/resolve remains for an appended, size-safe event API. Passive
 duplicate-question suppression, negative caching/NSEC and continuation of
 oversized known-answer lists are not implemented. The parent service's other
 RFC limitations still apply.

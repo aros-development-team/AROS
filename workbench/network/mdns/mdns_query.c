@@ -93,7 +93,9 @@ wake(struct QuerySession *session, LONG result)
 static BOOL
 same_record(const struct MDNSRecordEvent *a, const struct MDNSRecordEvent *b)
 {
-    return a->re_Interface == b->re_Interface && a->re_Type == b->re_Type &&
+    return a->re_Interface == b->re_Interface &&
+        a->re_InterfaceIndex == b->re_InterfaceIndex &&
+        a->re_Type == b->re_Type &&
         a->re_Class == b->re_Class && a->re_DataLength == b->re_DataLength &&
         Stricmp(a->re_Name, b->re_Name) == 0 &&
         memcmp(a->re_Data, b->re_Data, a->re_DataLength) == 0;
@@ -146,27 +148,44 @@ send_question(struct MDNSDaemon *md, const struct QuerySession *session)
 static void
 answer_own_host(struct MDNSDaemon *md, struct QuerySession *session)
 {
-    struct MDNSRecordEvent event;
     char host[MDNS_MAX_HOST + 8];
+    LONG i;
 
-    if ((session->type != DNS_TYPE_A && session->type != DNS_TYPE_ANY) ||
-        md->md_HostAddr == 0 || md->md_HostState != MDNS_NAME_ANNOUNCED) {
+    if ((session->type != DNS_TYPE_A && session->type != DNS_TYPE_AAAA &&
+         session->type != DNS_TYPE_ANY) ||
+        md->md_HostState != MDNS_NAME_ANNOUNCED) {
         return;
     }
     mdnsHostFqdn(md, host, sizeof(host));
     if (Stricmp(host, session->name) != 0) {
         return;
     }
-    memset(&event, 0, sizeof(event));
-    event.re_Code = MEVENT_RECORD;
-    event.re_Interface = htonl(md->md_HostAddr);
-    event.re_TTL = MDNS_TTL_HOST;
-    event.re_Type = DNS_TYPE_A;
-    event.re_Class = DNS_CLASS_IN;
-    event.re_DataLength = 4;
-    mdnsTextCopy(event.re_Name, sizeof(event.re_Name), host);
-    mdnsAddrData(md->md_HostAddr, event.re_Data);
-    enqueue(session, &event);
+    for (i = 0; i < md->md_IfCount; i++) {
+        struct MDNSRecordEvent event;
+
+        memset(&event, 0, sizeof(event));
+        event.re_Code = MEVENT_RECORD;
+        event.re_Interface = htonl(md->md_Ifs[i].mi_Addr);
+        event.re_InterfaceIndex = (UWORD)md->md_Ifs[i].mi_Index;
+        event.re_TTL = MDNS_TTL_HOST;
+        event.re_Class = DNS_CLASS_IN;
+        mdnsTextCopy(event.re_Name, sizeof(event.re_Name), host);
+        if ((session->type == DNS_TYPE_A || session->type == DNS_TYPE_ANY) &&
+            md->md_Ifs[i].mi_Addr != 0) {
+            event.re_Type = DNS_TYPE_A;
+            event.re_DataLength = 4;
+            mdnsAddrData(md->md_Ifs[i].mi_Addr, event.re_Data);
+            enqueue(session, &event);
+        }
+        if ((session->type == DNS_TYPE_AAAA ||
+             session->type == DNS_TYPE_ANY) &&
+            !IN6_IS_ADDR_UNSPECIFIED(&md->md_Ifs[i].mi_Addr6)) {
+            event.re_Type = DNS_TYPE_AAAA;
+            event.re_DataLength = 16;
+            mdnsAddr6Data(&md->md_Ifs[i].mi_Addr6, event.re_Data);
+            enqueue(session, &event);
+        }
+    }
 }
 
 static LONG
@@ -213,6 +232,7 @@ deliver_record(struct MDNSDaemon *md, const struct MDNSRecord *record,
     struct MDNSQueryState *state = md->md_Query;
     struct MDNSRecordEvent event;
     ULONG link;
+    UWORD linkIndex;
     LONG i;
     BOOL filled = FALSE;
 
@@ -221,6 +241,7 @@ deliver_record(struct MDNSDaemon *md, const struct MDNSRecord *record,
         return;
     }
     link = md->md_Ifs[md->md_SendIf].mi_Addr;
+    linkIndex = (UWORD)md->md_Ifs[md->md_SendIf].mi_Index;
     for (i = 0; i < QUERY_SESSIONS; i++) {
         struct QuerySession *session = &state->sessions[i];
 
@@ -235,6 +256,7 @@ deliver_record(struct MDNSDaemon *md, const struct MDNSRecord *record,
             memset(&event, 0, sizeof(event));
             event.re_Code = MEVENT_RECORD;
             event.re_Interface = htonl(link);
+            event.re_InterfaceIndex = linkIndex;
             event.re_TTL = record->ttl;
             event.re_Type = record->type;
             event.re_Class = (UWORD)(record->rclass & 0x7fff);

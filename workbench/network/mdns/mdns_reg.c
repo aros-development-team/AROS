@@ -134,7 +134,7 @@ txt_data(const struct MDNSRegisteredService *rs, UBYTE *data, LONG size)
 static BOOL
 reply_legacy(const struct MDNSDaemon *md)
 {
-    return md->md_ReplyAddr != 0 && md->md_ReplyLegacy;
+    return mdnsReplyIsUnicast(md) && md->md_ReplyLegacy;
 }
 
 static ULONG
@@ -147,7 +147,10 @@ reply_ttl(const struct MDNSDaemon *md, ULONG ttl)
 static void
 reply_to_asker(struct MDNSDaemon *md, struct MDNSQuestion *q, BOOL legacy)
 {
+    md->md_ReplyFamily = md->md_QueryFamily != 0 ?
+        md->md_QueryFamily : AF_INET;
     md->md_ReplyAddr = md->md_QueryAddr;
+    md->md_ReplyAddr6 = md->md_QueryAddr6;
     md->md_ReplyPort = legacy ? md->md_QueryPort : MDNS_DNS_PORT;
     md->md_ReplyLegacy = legacy;
     md->md_ReplyQuestion = q;
@@ -156,7 +159,9 @@ reply_to_asker(struct MDNSDaemon *md, struct MDNSQuestion *q, BOOL legacy)
 static void
 reply_to_group(struct MDNSDaemon *md)
 {
+    md->md_ReplyFamily = 0;
     md->md_ReplyAddr = 0;
+    memset(&md->md_ReplyAddr6, 0, sizeof(md->md_ReplyAddr6));
     md->md_ReplyPort = 0;
     md->md_ReplyLegacy = FALSE;
     md->md_ReplyQuestion = NULL;
@@ -225,6 +230,18 @@ service_append(struct MDNSDaemon *md, const struct MDNSRegisteredService *rs,
         if (mdnsAppendRecord(pkt, MDNS_RESPONSE_MAX, &pos, &ancount, target,
                 DNS_TYPE_A, unique,
                 reply_ttl(md, goodbye ? 0 : MDNS_TTL_HOST), data, 4) != 0) {
+            return FALSE;
+        }
+    }
+    if (!rs->rs_Proxy && withAddr && !goodbye &&
+        !IN6_IS_ADDR_UNSPECIFIED(&md->md_Ifs[ifindex].mi_Addr6)) {
+        char target[256];
+
+        target_fqdn(md, rs, target, (LONG)sizeof(target));
+        mdnsAddr6Data(&md->md_Ifs[ifindex].mi_Addr6, data);
+        if (mdnsAppendRecord(pkt, MDNS_RESPONSE_MAX, &pos, &ancount, target,
+                DNS_TYPE_AAAA, unique, reply_ttl(md, MDNS_TTL_HOST), data,
+                16) != 0) {
             return FALSE;
         }
     }
@@ -332,11 +349,11 @@ service_send(struct MDNSDaemon *md, struct MDNSRegisteredService *rs,
         if (service_append(md, rs, goodbye, i, pkt, &pos, &ancount, TRUE)) {
             hdr->ancount = htons(ancount);
             mdnsNetSendOn(md, i, pkt, pos);
-            if (md->md_ReplyAddr == 0 && !goodbye) {
+            if (!mdnsReplyIsUnicast(md) && !goodbye) {
                 rs->rs_Multicast = mdnsNow();
                 rs->rs_MulticastTick[i] = mdnsTicks();
             }
-            if (md->md_ReplyAddr == 0) {
+            if (!mdnsReplyIsUnicast(md)) {
                 mdnsReflectPacket(md, pkt, pos, i,
                     MDNS_REFLECT_DISCOVERY | MDNS_REFLECT_QUERY, NULL);
                 type_reflect(md, rs, goodbye, i,
@@ -376,6 +393,32 @@ answer_delay(const struct MDNSDaemon *md)
     return 2 + ((seed >> 16) % 5);
 }
 
+#define ANSWER_FAMILY4 1
+#define ANSWER_FAMILY6 2
+
+static UWORD
+answer_family(const struct MDNSDaemon *md)
+{
+    return md->md_SendFamily == AF_INET6 ? ANSWER_FAMILY6 : ANSWER_FAMILY4;
+}
+
+static void
+send_delayed(struct MDNSDaemon *md, LONG ifindex, const UBYTE *pkt, LONG length,
+    UWORD families)
+{
+    UWORD saved = md->md_SendFamily;
+
+    if (families & ANSWER_FAMILY4) {
+        md->md_SendFamily = AF_INET;
+        mdnsNetSendOn(md, ifindex, pkt, length);
+    }
+    if (families & ANSWER_FAMILY6) {
+        md->md_SendFamily = AF_INET6;
+        mdnsNetSendOn(md, ifindex, pkt, length);
+    }
+    md->md_SendFamily = saved;
+}
+
 static void
 answers_flush(struct MDNSDaemon *md, ULONG now)
 {
@@ -412,6 +455,7 @@ answers_flush(struct MDNSDaemon *md, ULONG now)
     for (i = 0; i < md->md_IfCount; i++) {
         LONG pos = (LONG)sizeof(struct MDNSHeader);
         UWORD ancount = 0;
+        UWORD families = 0;
         BOOL addrDone = FALSE;
 
         mdnsInitHeader(hdr, DNS_FLAG_QR | DNS_FLAG_AA, 0);
@@ -424,17 +468,19 @@ answers_flush(struct MDNSDaemon *md, ULONG now)
                 sent_recently(rs->rs_MulticastTick[i], now)) {
                 continue;
             }
+            families |= rs->rs_AnswerFamilies;
             /* the host's address once; a stand-in's host has its own */
             if (!service_append(md, rs, FALSE, i, pkt, &pos, &ancount,
                     rs->rs_Proxy || !addrDone)) {
                 /* full: send what there is and start another */
                 if (ancount != 0) {
                     hdr->ancount = htons(ancount);
-                    mdnsNetSendOn(md, i, pkt, pos);
+                    send_delayed(md, i, pkt, pos, families);
                 }
                 mdnsInitHeader(hdr, DNS_FLAG_QR | DNS_FLAG_AA, 0);
                 pos = (LONG)sizeof(struct MDNSHeader);
                 ancount = 0;
+                families = rs->rs_AnswerFamilies;
                 addrDone = FALSE;
                 if (!service_append(md, rs, FALSE, i, pkt, &pos, &ancount,
                         TRUE)) {
@@ -449,19 +495,34 @@ answers_flush(struct MDNSDaemon *md, ULONG now)
         }
         if (ancount != 0) {
             hdr->ancount = htons(ancount);
-            mdnsNetSendOn(md, i, pkt, pos);
+            send_delayed(md, i, pkt, pos, families);
         }
         if (types && (md->md_TypesAnswerIf < 0 ||
                 md->md_TypesAnswerIf == i)) {
-            types_send(md, i, TRUE);
+            UWORD saved = md->md_SendFamily;
+
+            if (md->md_TypesAnswerFamilies ==
+                    (ANSWER_FAMILY4 | ANSWER_FAMILY6)) {
+                md->md_SendFamily = 0;
+                types_send(md, i, TRUE);
+            } else if (md->md_TypesAnswerFamilies & ANSWER_FAMILY4) {
+                md->md_SendFamily = AF_INET;
+                types_send(md, i, TRUE);
+            } else if (md->md_TypesAnswerFamilies & ANSWER_FAMILY6) {
+                md->md_SendFamily = AF_INET6;
+                types_send(md, i, TRUE);
+            }
+            md->md_SendFamily = saved;
         }
     }
     FOR_SERVICES(md, n) {
         struct MDNSRegisteredService *rs = (struct MDNSRegisteredService *)n;
 
         rs->rs_AnswerTick = 0;
+        rs->rs_AnswerFamilies = 0;
     }
     md->md_TypesAnswerTick = 0;
+    md->md_TypesAnswerFamilies = 0;
     md->md_AnswerPending = FALSE;
 }
 
@@ -513,10 +574,12 @@ mdnsRegRestartAll(struct MDNSDaemon *md)
         rs->rs_Step = 0;
         rs->rs_NextTick = mdnsTicks();
         rs->rs_AnswerTick = 0;
+        rs->rs_AnswerFamilies = 0;
         memset(rs->rs_MulticastTick, 0, sizeof(rs->rs_MulticastTick));
         memset(rs->rs_TypeTick, 0, sizeof(rs->rs_TypeTick));
     }
     md->md_TypesAnswerTick = 0;
+    md->md_TypesAnswerFamilies = 0;
     md->md_AnswerPending = FALSE;
 }
 
@@ -980,6 +1043,7 @@ types_schedule(struct MDNSDaemon *md)
     } else if (md->md_TypesAnswerIf != md->md_SendIf) {
         md->md_TypesAnswerIf = -1;
     }
+    md->md_TypesAnswerFamilies |= answer_family(md);
     md->md_AnswerPending = TRUE;
 }
 
@@ -1112,6 +1176,7 @@ mdnsRegHandleQuery(struct MDNSDaemon *md, struct MDNSQuestion *q,
             } else if (rs->rs_AnswerIf != md->md_SendIf) {
                 rs->rs_AnswerIf = -1;
             }
+            rs->rs_AnswerFamilies |= answer_family(md);
             md->md_AnswerPending = TRUE;
         } else {
             /* a question for this one name: nobody else answers it */
