@@ -2,7 +2,7 @@
 #define DOS_DOSEXTENS_H
 
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: LibBase and some important structures
@@ -606,6 +606,21 @@ struct DosPacket
 
 /* AROS Extension(s) */
 #define ACTION_GET_FILE_BLOCKS          2019
+#define ACTION_CONSOLE_GEOMETRY         2020
+
+/* ACTION_CONSOLE_GEOMETRY: Arg1 = fh_Arg1, Arg2 = struct ConsoleGeometry *,
+   Arg3 = its size. A console handler fills in as much of the structure as
+   fits and returns DOSTRUE with Res2 = sizeof(struct ConsoleGeometry); the
+   text area of the window, in characters and in pixels. Nothing is written
+   to or read from the console, and its mode is left alone. A handler without
+   a window answers DOSFALSE, Res2 = ERROR_ACTION_NOT_KNOWN. */
+struct ConsoleGeometry
+{
+    ULONG cg_Columns;
+    ULONG cg_Rows;
+    ULONG cg_Width;     /* pixels */
+    ULONG cg_Height;
+};
 
 /* AmigaOS 4 (tm) compatable Extension(s) */
 #define ACTION_CHANGE_FILE_POSITION64   8001
