@@ -194,6 +194,53 @@ icmp6_echo_copy(struct mbuf *m, int off)
 }
 
 /* ------------------------------------------------------------------
+ * icmp6_notify_error - pass an ICMPv6 error to the upper-layer protocol
+ * of the packet it quotes (RFC 4443 section 2.4), as KAME's
+ * icmp6_notify_error() does: that protocol's pr_ctlinput gets the quoted
+ * destination as a sockaddr_in6 and, in an ip6ctlparam, the quoted source
+ * and ports. Only an upper-layer header that follows the IPv6 header
+ * directly is found. The quoted headers are copied out, so m is left as
+ * it is for the raw sockets.
+ * ------------------------------------------------------------------ */
+static void
+icmp6_notify_error(struct mbuf *m, int off, int cmd)
+{
+    extern struct protosw inet6sw[];
+    extern u_char ip6_protox[];
+    struct ip6_hdr oip6;
+    struct sockaddr_in6 sa6;
+    struct ip6ctlparam ip6cp;
+    struct protosw *pr;
+    int qoff = off + sizeof(struct icmp6_hdr);  /* the quoted IPv6 header */
+
+    if(m->m_pkthdr.len < qoff + (int)sizeof(oip6)) {
+        icmp6stat.icp6s_tooshort++;
+        return;
+    }
+    m_copydata(m, qoff, sizeof(oip6), (caddr_t)&oip6);
+
+    bzero(&ip6cp, sizeof(ip6cp));
+    ip6cp.ip6c_src = oip6.ip6_src;
+    if((oip6.ip6_nxt == IPPROTO_TCP || oip6.ip6_nxt == IPPROTO_UDP) &&
+            m->m_pkthdr.len >= qoff + (int)sizeof(oip6) + 4) {
+        u_int16_t ports[2];     /* TCP and UDP both begin with them */
+
+        m_copydata(m, qoff + sizeof(oip6), sizeof(ports), (caddr_t)ports);
+        ip6cp.ip6c_sport = ports[0];
+        ip6cp.ip6c_dport = ports[1];
+    }
+
+    bzero(&sa6, sizeof(sa6));
+    sa6.sin6_len    = sizeof(sa6);
+    sa6.sin6_family = AF_INET6;
+    sa6.sin6_addr   = oip6.ip6_dst;
+
+    pr = &inet6sw[ip6_protox[oip6.ip6_nxt]];
+    if(pr->pr_protocol == oip6.ip6_nxt && pr->pr_ctlinput != NULL)
+        (*pr->pr_ctlinput)(cmd, (struct sockaddr *)&sa6, &ip6cp);
+}
+
+/* ------------------------------------------------------------------
  * icmp6_input - process an inbound ICMPv6 message.
  *
  * Called via protosw pr_input: void *args is struct mbuf *,
@@ -312,17 +359,48 @@ icmp6_input(void *args, ...)
              * unaligned access occurs on strict-alignment architectures. */
             bcopy(&oip6->ip6_dst, &odst, sizeof(odst));
             bcopy(&ic6->icmp6_mtu, &omtu, sizeof(omtu));
+            /* the route keeps the path MTU, which ip6_output() and
+             * tcp_mss() use: no socket needs to be told */
             icmp6_update_pmtu(&odst, ntohl(omtu));
-            pfctlinput(PRC_MSGSIZE, (struct sockaddr *)NULL);
             break;
         }
         return;			/* m_pullup freed the mbuf */
 
+    /*
+     * Tell the protocol of the quoted packet, with the destination it was
+     * for: not every protocol of every domain (pfctlinput()), whose IPv4
+     * handlers know no IPv6 address. The codes map as KAME's do.
+     */
     case ICMP6_DST_UNREACH:
+        switch(icmp6->icmp6_code) {
+        case ICMP6_DST_UNREACH_NOROUTE:
+        case ICMP6_DST_UNREACH_REJECT:
+            icmp6_notify_error(m, off, PRC_UNREACH_NET);
+            break;
+        case ICMP6_DST_UNREACH_ADMIN:
+        case ICMP6_DST_UNREACH_POLICY:
+            icmp6_notify_error(m, off, PRC_UNREACH_PROTOCOL);
+            break;
+        case ICMP6_DST_UNREACH_BEYONDSCOPE:
+        case ICMP6_DST_UNREACH_SRCROUTE:
+            icmp6_notify_error(m, off, PRC_UNREACH_SRCFAIL);
+            break;
+        case ICMP6_DST_UNREACH_ADDR:
+            icmp6_notify_error(m, off, PRC_HOSTDEAD);
+            break;
+        case ICMP6_DST_UNREACH_NOPORT:
+            icmp6_notify_error(m, off, PRC_UNREACH_PORT);
+            break;
+        }
+        break;
+
     case ICMP6_TIME_EXCEEDED:
+        icmp6_notify_error(m, off, icmp6->icmp6_code == ICMP6_TIME_EXCEED_TRANSIT
+                           ? PRC_TIMXCEED_INTRANS : PRC_TIMXCEED_REASS);
+        break;
+
     case ICMP6_PARAM_PROB:
-        /* notify upper layer protocols */
-        pfctlinput(PRC_UNREACH_NET, (struct sockaddr *)NULL);
+        icmp6_notify_error(m, off, PRC_PARAMPROB);
         break;
 
     default:

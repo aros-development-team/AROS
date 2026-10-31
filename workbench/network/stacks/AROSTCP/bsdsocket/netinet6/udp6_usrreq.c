@@ -615,4 +615,31 @@ release:
     return error;
 }
 
+/* ------------------------------------------------------------------ *
+ * udp6_ctlinput - an ICMPv6 error about a UDP/IPv6 datagram we sent
+ * (icmp6_notify_error()): sa is its destination, arg an ip6ctlparam with
+ * its source and ports. A socket connected to the destination gets the
+ * error, as udp_ctlinput() gives one to an IPv4 socket.
+ * ------------------------------------------------------------------ */
+static void
+udp6_notify(struct inpcb *inp, int error)
+{
+    inp->inp_socket->so_error = error;
+    sorwakeup(inp->inp_socket);
+    sowwakeup(inp->inp_socket);
+}
+
+void
+udp6_ctlinput(int cmd, struct sockaddr *sa, void *arg)
+{
+    struct ip6ctlparam *ip6cp = arg;
+
+    if(ip6cp != NULL)
+        in6_pcbnotify(&udb, (struct sockaddr_in6 *)sa, ip6cp->ip6c_dport,
+                      &ip6cp->ip6c_src, ip6cp->ip6c_sport, cmd, udp6_notify);
+    else
+        in6_pcbnotify(&udb, (struct sockaddr_in6 *)sa, 0, NULL, 0, cmd,
+                      udp6_notify);
+}
+
 #endif /* INET6 */

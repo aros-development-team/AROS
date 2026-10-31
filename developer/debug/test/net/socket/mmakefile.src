@@ -15,6 +15,7 @@ CUNITSOCKETTESTFILES := \
     cunit-net-addr6 \
     cunit-net-cmsg \
     cunit-net-frag6 \
+    cunit-net-icmp6err \
     cunit-net-inet6 \
     cunit-net-mcast6 \
     cunit-net-mld6 \

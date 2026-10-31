@@ -56,6 +56,7 @@
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
 #include <netinet/ip6.h>
+#include <netinet6/in6_var.h>
 #include <netinet/in_pcb.h>
 #include <netinet/in_var.h>
 #include <netinet/ip_var.h>
@@ -800,6 +801,26 @@ void *arg;
     } else
         in_pcbnotify(&tcb, sa, 0, zeroin_addr, 0, cmd, notify);
 }
+
+#if INET6
+/*
+ * tcp6_ctlinput - an ICMPv6 error about a TCP/IPv6 segment we sent
+ * (icmp6_notify_error()): sa is its destination, arg an ip6ctlparam with
+ * its source and ports. tcp_notify() keeps it as a soft error.
+ */
+void
+tcp6_ctlinput(int cmd, struct sockaddr *sa, void *arg)
+{
+    struct ip6ctlparam *ip6cp = arg;
+
+    if(ip6cp != NULL)
+        in6_pcbnotify(&tcb, (struct sockaddr_in6 *)sa, ip6cp->ip6c_dport,
+                      &ip6cp->ip6c_src, ip6cp->ip6c_sport, cmd, tcp_notify);
+    else
+        in6_pcbnotify(&tcb, (struct sockaddr_in6 *)sa, 0, NULL, 0, cmd,
+                      tcp_notify);
+}
+#endif
 
 /*
  * When a source quench is received, close congestion window

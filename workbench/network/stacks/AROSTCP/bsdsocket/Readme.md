@@ -416,9 +416,19 @@ IPv6 routers never fragment, so an oversized datagram is dropped and reported wi
 Big. `icmp6_input` handles that type by reading the reported next-hop MTU and the quoted packet's
 destination (copied out of the packed headers into aligned locals for strict-alignment targets) and
 calling `icmp6_update_pmtu`, which records the MTU on the destination route
-(`rt_rmx.rmx_mtu`, clamped to `IPV6_MMTU`, lowered only) and notifies upper layers via
-`pfctlinput(PRC_MSGSIZE)`. `ip6_output` then caps each datagram at the route's discovered PMTU (never
-above the link MTU), so subsequent traffic fits the bottleneck link instead of being black-holed.
+(`rt_rmx.rmx_mtu`, clamped to `IPV6_MMTU`, lowered only). No socket is told: `ip6_output` caps each
+datagram at the route's discovered PMTU (never above the link MTU), so subsequent traffic fits the
+bottleneck link instead of being black-holed.
+
+The other ICMPv6 errors (Destination Unreachable, Time Exceeded, Parameter Problem) go to the
+upper-layer protocol of the packet they quote, as in KAME: `icmp6_notify_error()` copies out the
+quoted IPv6 header and ports and calls that protocol's `pr_ctlinput` (`udp6_ctlinput`,
+`tcp6_ctlinput`) with the quoted destination as a `sockaddr_in6` and the source and ports in a
+`struct ip6ctlparam`. `in6_pcbnotify()` then passes the error to the IPv6 sockets connected to that
+destination from that port, as `in_pcbnotify()` does for IPv4: a connected UDP socket gets
+`ECONNREFUSED` for a Port Unreachable, and TCP keeps it as a soft error. They were once passed to
+`pfctlinput()` with no address, which reached the IPv4 handlers of every protocol, and
+`in_pcbnotify()` dereferenced the missing address: any ICMPv6 error took the stack down.
 
 ### 6.4 Extension-header processing (RFC 8200)
 

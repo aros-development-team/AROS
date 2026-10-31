@@ -432,4 +432,47 @@ in6_pcblookup(struct inpcbhead *head,
     return match;
 }
 
+/* ------------------------------------------------------------------ *
+ * in6_pcbnotify - pass an error for the IPv6 destination dst to the
+ * sockets connected to it, as in_pcbnotify() does for IPv4: those whose
+ * peer is dst and, when they are given (non-zero, non-unspecified), whose
+ * ports and local address are those of the packet the error is about.
+ * notify gets the errno that inetctlerrmap[] gives for cmd; commands
+ * with none are not passed on.
+ * ------------------------------------------------------------------ */
+void
+in6_pcbnotify(struct inpcbhead *head, const struct sockaddr_in6 *dst,
+              u_int fport_arg, const struct in6_addr *laddr, u_int lport_arg,
+              int cmd, void (*notify)(struct inpcb *, int))
+{
+    extern u_char inetctlerrmap[];
+    struct inpcb *inp, *oinp;
+    u_short fport = fport_arg, lport = lport_arg;
+    int error, s;
+
+    if((unsigned)cmd >= PRC_NCMDS || dst == NULL ||
+            dst->sin6_family != AF_INET6 ||
+            IN6_IS_ADDR_UNSPECIFIED(&dst->sin6_addr) || notify == NULL)
+        return;
+    if((error = inetctlerrmap[cmd]) == 0)
+        return;
+    if(laddr != NULL && IN6_IS_ADDR_UNSPECIFIED(laddr))
+        laddr = NULL;
+
+    s = splnet();
+    for(inp = head->lh_first; inp != NULL;) {
+        oinp = inp;
+        inp = inp->inp_list.le_next;    /* notify may free oinp */
+        if(oinp->inp_socket == NULL || !in_pcbisipv6(oinp) ||
+                !IN6_ARE_ADDR_EQUAL(&oinp->inp_faddr6, &dst->sin6_addr) ||
+                (fport && oinp->inp_fport != fport) ||
+                (lport && oinp->inp_lport != lport) ||
+                (laddr != NULL && !IN6_IS_ADDR_UNSPECIFIED(&oinp->inp_laddr6) &&
+                 !IN6_ARE_ADDR_EQUAL(&oinp->inp_laddr6, laddr)))
+            continue;
+        (*notify)(oinp, error);
+    }
+    splx(s);
+}
+
 #endif /* INET6 */

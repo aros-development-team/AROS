@@ -544,7 +544,8 @@ void (*notify) __P((struct inpcb *, int));
     u_short fport = fport_arg, lport = lport_arg;
     int _errno, s;
 
-    if((unsigned)cmd > PRC_NCMDS || dst->sa_family != AF_INET)
+    /* only an IPv4 destination: an IPv6 one goes to in6_pcbnotify() */
+    if((unsigned)cmd >= PRC_NCMDS || dst == NULL || dst->sa_family != AF_INET)
         return;
     faddr = ((struct sockaddr_in *)dst)->sin_addr;
     if(faddr.s_addr == INADDR_ANY)
