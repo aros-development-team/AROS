@@ -25,6 +25,7 @@
 #include <proto/workbench.h>
 
 #include <zune/aboutwindow.h>
+#include <zune/qrcode.h>
 #include <zune/customclasses.h>
 
 #include <stdio.h>
@@ -66,6 +67,9 @@ static const char *tpp_Plain = "\0333";
 static const char *tpp_Bold = "\0333\033b";
 
 /*** Utility Functions ******************************************************/
+/* Return the borrowed localized label for a recognized SID_* value.
+ * Return NULL for an unrecognized section; callers must not free the label.
+ */
 STRPTR Section2Name(ULONG section)
 {
     switch (section)
@@ -95,6 +99,12 @@ STRPTR Section2Name(ULONG section)
     }
 }
 
+/* Append section headings and names from a TagItem sequence to a MUI list.
+ * The list and data->aad_Pool must be valid; NAME_STRING entries must
+ * contain valid NUL-terminated strings. Inserted strings are pool-owned.
+ * Return FALSE for NULL tags or a failed pool allocation, TRUE otherwise.
+ * List insertion results are not checked; partial insertion is not undone.
+ */
 BOOL NamesToList
 (
     Object *list, struct TagItem *tags, struct AboutAROS_DATA *data
@@ -186,6 +196,15 @@ BOOL NamesToList
 }
 
 /*** Methods ****************************************************************/
+/* Construct the AboutAROS application, window, lists and optional QR view.
+ * Forward construction to the MUI superclass. A ready QR object is
+ * inserted only when its external class is available; successful group
+ * insertion transfers the QR object's lifetime to the group.
+ * Return the application object on success or NULL on constructor
+ * failure. The instance owns its allocation pool after successful
+ * construction. The pre-existing superclass-failure path does not
+ * release a pool allocated before DoSuperNewTags.
+ */
 Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
     Object                *window,
@@ -206,6 +225,7 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     BOOL                   showLogotype;
     BPTR                   lock;
     APTR                   pool;
+    Object                *qrGroup = NULL;
 
     /* Allocate memory pool ------------------------------------------------*/
     pool = CreatePool(MEMF_ANY, 4096, 4096);
@@ -335,54 +355,65 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 End,
 #endif
                 Child, (IPTR) VSpace(4),
-                Child, (IPTR) TextObject,
-                    MUIA_Text_PreParse, (IPTR) "\0333\033c",
-                    MUIA_Text_Contents,        __(MSG_COPYRIGHT),
-                End,
-                Child, (IPTR) HGroup,
-                    InnerSpacing(0,0),
-                    GroupSpacing(0),
+                Child, (IPTR) (qrGroup = (Object *)HGroup,
+                    MUIA_InnerLeft, 0,
+                    MUIA_InnerTop, 0,
+                    MUIA_InnerRight, 8,
+                    MUIA_InnerBottom, 0,
+                    GroupSpacing(6),
+                    Child, (IPTR) VGroup,
+                        InnerSpacing(0,0),
+                        GroupSpacing(2),
+                        Child, (IPTR) TextObject,
+                            MUIA_Text_PreParse, (IPTR) "\0333\033c",
+                            MUIA_Text_Contents,        __(MSG_COPYRIGHT),
+                        End,
+                        Child, (IPTR) HGroup,
+                            InnerSpacing(0,0),
+                            GroupSpacing(0),
 
-                    Child, (IPTR) HVSpace,
-                    Child, (IPTR) TextObject,
-                        MUIA_Text_PreParse, (IPTR) tpp_Plain,
-                        MUIA_Text_Contents,        __(MSG_LICENSE_1),
-                        MUIA_Weight,               0,
-                    End,
-                    Child, (IPTR) TextObject,
-                        MUIA_Text_PreParse, (IPTR) tpp_Plain,
-                        MUIA_Text_Contents,        (IPTR)" ",
-                        MUIA_Weight,               0,
-                    End,
-                    Child, (IPTR) (licenseButton = (Object *)TextObject,
-                        MUIA_InputMode,            MUIV_InputMode_RelVerify,
-                        MUIA_Text_PreParse, (IPTR) "\0333\033u",
-                        MUIA_Text_Contents,        __(MSG_LICENSE_2),
-                        MUIA_Weight,        0,
-                    End),
-                    Child, (IPTR) TextObject,
-                        MUIA_Text_PreParse, (IPTR) tpp_Plain,
-                        MUIA_Text_Contents,        __(MSG_LICENSE_3),
-                        MUIA_Weight,               0,
-                    End,
-                    Child, (IPTR) HVSpace,
-                End,
-                Child, (IPTR) TextObject,
-                    MUIA_Text_PreParse, (IPTR) "\0333\033c",
-                    MUIA_Text_Contents,        __(MSG_MORE_INFORMATION),
-                End,
-                Child, (IPTR) VSpace(4),
+                            Child, (IPTR) HVSpace,
+                            Child, (IPTR) TextObject,
+                                MUIA_Text_PreParse, (IPTR) tpp_Plain,
+                                MUIA_Text_Contents,        __(MSG_LICENSE_1),
+                                MUIA_Weight,               0,
+                            End,
+                            Child, (IPTR) TextObject,
+                                MUIA_Text_PreParse, (IPTR) tpp_Plain,
+                                MUIA_Text_Contents,        (IPTR)" ",
+                                MUIA_Weight,               0,
+                            End,
+                            Child, (IPTR) (licenseButton = (Object *)TextObject,
+                                MUIA_InputMode,            MUIV_InputMode_RelVerify,
+                                MUIA_Text_PreParse, (IPTR) "\0333\033u",
+                                MUIA_Text_Contents,        __(MSG_LICENSE_2),
+                                MUIA_Weight,        0,
+                            End),
+                            Child, (IPTR) TextObject,
+                                MUIA_Text_PreParse, (IPTR) tpp_Plain,
+                                MUIA_Text_Contents,        __(MSG_LICENSE_3),
+                                MUIA_Weight,               0,
+                            End,
+                            Child, (IPTR) HVSpace,
+                        End,
+                        Child, (IPTR) TextObject,
+                            MUIA_Text_PreParse, (IPTR) "\0333\033c",
+                            MUIA_Text_Contents,        __(MSG_MORE_INFORMATION),
+                        End,
+                        Child, (IPTR) VSpace(4),
 #if defined(BUILDCPU)
-                Child, (IPTR) TextObject,
-                    MUIA_Text_PreParse, (IPTR) "\0333\033c",
-                    MUIA_Text_Contents, (IPTR) str_buildcpu,
-                    MUIA_Weight,               0,
-                End,
-                Child, (IPTR) RectangleObject,
-                    MUIA_FixHeightTxt, (IPTR) " ",
-                    MUIA_Weight,               0,
-                End,
+                        Child, (IPTR) TextObject,
+                            MUIA_Text_PreParse, (IPTR) "\0333\033c",
+                            MUIA_Text_Contents, (IPTR) str_buildcpu,
+                            MUIA_Weight,               0,
+                        End,
+                        Child, (IPTR) RectangleObject,
+                            MUIA_FixHeightTxt, (IPTR) " ",
+                            MUIA_Weight,               0,
+                        End,
 #endif
+                    End,
+                End),
                 Child, (IPTR) VGroup,
                     InnerSpacing(4,4),
 
@@ -422,6 +453,38 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->aad_Window = window;
         data->aad_Pool   = pool;
 
+        /* Keep About usable without QRCode.mcc, including on older images. */
+        {
+            static const UBYTE qrText[] = "https://github.com/aros-development-team/AROS";
+            struct MUI_QRCodePayload qrPayload;
+            IPTR qrStatus = MUIV_QRCode_Status_Invalid;
+
+            if (qrGroup != NULL)
+            {
+                Object *qrCode;
+
+                qrPayload.Bytes = qrText;
+                qrPayload.Length = (ULONG)(sizeof(qrText) - 1);
+                qrCode = MUI_NewObject(MUIC_QRCode,
+                    MUIA_QRCode_Data, (IPTR)&qrPayload,
+                    MUIA_QRCode_ECC, MUIV_QRCode_ECC_M,
+                    MUIA_FixWidth, 123,
+                    MUIA_FixHeight, 123,
+                    TAG_DONE);
+                if (qrCode != NULL)
+                {
+                    if (GetAttr(MUIA_QRCode_Status, qrCode, &qrStatus) &&
+                        qrStatus == MUIV_QRCode_Status_Ready)
+                    {
+                        if (!DoMethod(qrGroup, OM_ADDMEMBER, (IPTR)qrCode))
+                            MUI_DisposeObject(qrCode);
+                    }
+                    else
+                        MUI_DisposeObject(qrCode);
+                }
+            }
+        }
+
         /*-- Initialize lists --------------------------------------------------*/
         NamesToList(authorsList, AUTHORS, data);
         NamesToList(sponsorsList, SPONSORS, data);
@@ -449,6 +512,10 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     return self;
 }
 
+/* Release the instance pool, then forward OM_DISPOSE to the superclass.
+ * Return the superclass result. The inherited Zune hierarchy owns
+ * the child objects, including a successfully inserted QR object.
+ */
 IPTR AboutAROS__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
 {
     SETUP_INST_DATA;
@@ -458,6 +525,9 @@ IPTR AboutAROS__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
     return DoSuperMethodA(CLASS, self, message);
 }
 
+/* Open the About window, execute the superclass application loop, and
+ * close the window on return. Return zero, not the superclass result.
+ */
 IPTR AboutAROS__MUIM_Application_Execute(Class *CLASS, Object *self, Msg message)
 {
     SETUP_INST_DATA;
@@ -469,6 +539,9 @@ IPTR AboutAROS__MUIM_Application_Execute(Class *CLASS, Object *self, Msg message
     return 0;
 }
 
+/* Attempt to open HELP:LICENSE through workbench.library.
+ * Return zero without forwarding the OpenWorkbenchObject result.
+ */
 IPTR AboutAROS__MUIM_AboutAROS_ShowLicense(Class *CLASS, Object *self, Msg message)
 {
     OpenWorkbenchObject("HELP:LICENSE", TAG_DONE);
@@ -476,6 +549,12 @@ IPTR AboutAROS__MUIM_AboutAROS_ShowLicense(Class *CLASS, Object *self, Msg messa
     return 0;
 }
 
+/* ZUNE_CUSTOMCLASS_4 generates AboutAROS_Dispatcher, AboutAROS_Initialize
+ * and AboutAROS_Deinitialize, plus the AboutAROS_CLASS pointer. The
+ * dispatcher routes the four methods above and forwards other methods.
+ * ADD2INIT/ADD2EXIT register class creation and deletion. These are
+ * macro-owned internal entrypoints, not public AboutAROS interfaces.
+ */
 /*** Setup ******************************************************************/
 ZUNE_CUSTOMCLASS_4
 (
