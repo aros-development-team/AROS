@@ -92,6 +92,7 @@
 #include <kern/uipc_domain_protos.h>
 
 #include "ip_compat.h"
+#include <protos/kern/kern_random_protos.h>
 
 #ifndef	IPFORWARDING
 #define	IPFORWARDING	0
@@ -168,17 +169,7 @@ ip_init()
                 pr->pr_protocol && pr->pr_protocol != IPPROTO_RAW)
             ip_protox[pr->pr_protocol] = pr - inetsw;
     ipq.next = ipq.prev = &ipq;
-    {
-        struct timeval time;
-        APTR task;
-        u_int32_t seed;
-        GetSysTime(&time);
-        task = FindTask(NULL);
-        seed = (u_int32_t)time.tv_sec ^ ((u_int32_t)time.tv_micro << 16)
-             ^ (u_int32_t)(IPTR)task;
-        if(seed == 0) seed = 1;
-        ip_id = seed & 0xffff;
-    }
+    kern_random(&ip_id, sizeof(ip_id));
     ipintrq.ifq_maxlen = ipqmaxlen;
 
 #if USE_IF_MATRIX

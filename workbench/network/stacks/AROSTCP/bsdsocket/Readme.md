@@ -594,6 +594,12 @@ Properties the implementation provides:
   resets it instead of sending a FIN (`tcp_disconnect`), and data that arrives after the close is
   answered with a reset (`tcp_input`), so the peer learns the data was lost (RFC 9293 §3.6.1,
   RFC 1122 §4.2.2.13).
+- **Random values from the system CSPRNG.** The ISN key (RFC 6528, also the SYN cookies'), the
+  ephemeral ports, the IPv4 IDs and IPv6 fragment identifications (RFC 7739) and the interface
+  identifiers of temporary addresses (RFC 8981) come from `kern_random()` (`kern/kern_random.c`).
+  It takes them from the C runtime's `arc4random_buf()`, which draws on `entropy.resource`, 256
+  bytes at a time into a pool it hands out and wipes: every `GetEntropy()` call gathers and
+  reseeds, too much for every packet.
 - **Unpredictable ephemeral ports.** A port the stack picks for a TCP or UDP socket, IPv4 or IPv6
   (bind to port 0, or the implicit bind of `connect()`/`sendto()`), is a random one from the IANA
   dynamic range 49152-65535, else the next free one after it (RFC 6056 algorithm 1,

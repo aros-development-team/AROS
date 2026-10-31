@@ -45,6 +45,7 @@
 #include <netinet6/in6_var.h>
 #include <netinet6/nd6.h>
 #include <net/if_loop_protos.h>
+#include <protos/kern/kern_random_protos.h>
 
 /*
  * ip6_mloopback - give a copy of a group datagram being sent on ifp to this
@@ -324,9 +325,9 @@ multicast_output:
             goto bad;
         }
 
-        /* generate fragment identification */
-        static u_int32_t ip6_id = 0;
-        id = htonl(++ip6_id);
+        /* a random fragment identification, not a counter: RFC 7739
+         * section 5 (arc4random_buf(), through kern_random.c) */
+        id = kern_random32();
         nxt8 = ip6->ip6_nxt;
 
         /* rewrite next-header to IPPROTO_FRAGMENT */

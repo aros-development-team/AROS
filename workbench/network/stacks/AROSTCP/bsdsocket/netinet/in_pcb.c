@@ -60,6 +60,7 @@
 #include "in_var.h"
 #include <netinet/ip_var.h>
 #include <netinet/ip_output_protos.h>
+#include <protos/kern/kern_random_protos.h>
 #if INET6
 #include <netinet6/in6_var.h>
 #endif
@@ -78,28 +79,11 @@ struct	in_addr zeroin_addr;
 #define EPHEMERAL_FIRST	49152
 #define EPHEMERAL_LAST	65535
 
-u_int32_t tcp_isn_hash(u_int32_t, u_int32_t, u_int32_t, u_int32_t,
-                       u_int32_t *);
-
+/* The random start of the search: arc4random_buf(), through kern_random.c. */
 static u_int32_t
 in_pcbrandom(void)
 {
-    static u_int32_t key[4], count;
-    struct timeval tv;
-
-    GetSysTime(&tv);
-    if(count == 0) {
-        u_int32_t seed = (u_int32_t)tv.tv_secs ^ ((u_int32_t)tv.tv_micro << 12) ^
-                         (u_int32_t)(IPTR)FindTask(NULL);
-        int i;
-
-        for(i = 0; i < 4; i++)
-            key[i] = tcp_isn_hash(seed, (u_int32_t)i, (u_int32_t)tv.tv_micro,
-                                  (u_int32_t)(IPTR)&tv, key);
-    }
-    count++;
-    return tcp_isn_hash(count, (u_int32_t)tv.tv_micro, (u_int32_t)tv.tv_secs,
-                        0, key);
+    return kern_random32();
 }
 
 /*
