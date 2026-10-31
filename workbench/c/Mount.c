@@ -1803,6 +1803,8 @@ LONG mount(IPTR *params, STRPTR name)
     struct DosEnvec *vec;
     LONG error = RETURN_OK;
     struct DeviceNode *dn;
+    struct FileSysStartupMsg *allocatedfssm;
+    BOOL startupreplaced;
     STRPTR cp;
 
     for (cp = name; *cp != 0; cp++)
@@ -1851,6 +1853,10 @@ LONG mount(IPTR *params, STRPTR name)
 
     if ((dn=MyMakeDosNode(name, IsEHandler ? params : NULL, StartupString)))
     {
+        struct DosEnvec *allocatedenvec;
+        /* Preserve constructor ownership across filesystem.resource patching. */
+        allocatedfssm = IsEHandler ? (struct FileSysStartupMsg *)BADDR(dn->dn_Startup) : NULL;
+        allocatedenvec = allocatedfssm ? (struct DosEnvec *)BADDR(allocatedfssm->fssm_Environ) : NULL;
         DEBUG_MOUNT(KPrintF("MountDev: DeviceNode 0x%lx\n", (IPTR)dn));
 
         dn->dn_StackSize = StackSize;
@@ -1884,6 +1890,8 @@ LONG mount(IPTR *params, STRPTR name)
                 HandlerString = NULL;
             }
         }
+        startupreplaced = allocatedfssm &&
+            dn->dn_Startup != MKBADDR(allocatedfssm);
         DEBUG_MOUNT(KPrintF("MountDev: Name      %b\n",dn->dn_Name));
         DEBUG_MOUNT(KPrintF("MountDev: Handler   0x%lx <%b>\n",dn->dn_Handler,dn->dn_Handler));
         DEBUG_MOUNT(KPrintF("MountDev: SegList   0x%lx\n",dn->dn_SegList));
@@ -1896,12 +1904,16 @@ LONG mount(IPTR *params, STRPTR name)
         {
             if (AddDosEntry((struct DosList *)dn))
             {
+                    /* Patched-out startup storage was not transferred to DOS. */
+                    if (startupreplaced)
+                    {
+                        FreeVec(allocatedenvec);
+                        FreeVec(allocatedfssm);
+                    }
                     DEBUG_MOUNT(KPrintF("MountDev: AddDosEntry worked\n"));
-                    /*
-                     * Don't free these anymore as they belong to the dosnode
-                     */
+                    /* Transfer only pointers retained by the registered node. */
                     HandlerString = NULL;
-                    if (IsEHandler)
+                    if (IsEHandler && !startupreplaced)
                     {
                         UnitString = NULL;
                         FlagsString = NULL;
@@ -1919,16 +1931,19 @@ LONG mount(IPTR *params, STRPTR name)
             {
                     DEBUG_MOUNT(KPrintF("MountDev: AddDosEntry failed\n"));
                     error = ERROR_INVALID_RESIDENT_LIBRARY;
-                    if (HandlerString)
-                    {
-                            FreeVec(HandlerString);
-                    }
             }
         }
         else
         {
                 DEBUG_MOUNT(KPrintF("MountDev: no loadseg and no handler specified\n"));
                 error = ERROR_OBJECT_NOT_FOUND;
+        }
+        if (error != RETURN_OK)
+        {
+            FreeVec(allocatedenvec);
+            FreeVec(allocatedfssm);
+            FreeVec(BADDR(dn->dn_Name));
+            FreeVec(dn);
         }
     }
     else
