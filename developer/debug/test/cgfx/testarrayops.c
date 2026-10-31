@@ -67,7 +67,6 @@ struct Dest
     struct RastPort *rp;
     LONG             x0, y0;    /* region origin in the RastPort */
     BOOL             alpha;     /* holds alpha; without, alpha reads back undefined */
-    BOOL             pens;      /* check pen rendering */
     UBYTE            tol;       /* per channel tolerance of a stored colour */
     struct BitMap   *bm;        /* off-screen bitmap we allocated */
     struct RastPort  ownrp;
@@ -76,6 +75,7 @@ struct Dest
 static ULONG checks, fails;
 static BOOL quick;
 static struct Screen *testscr;    /* the screen the checks run on */
+static LONG testpen = -1;           /* a pen of colour 0x2266AA: no component equal to another */
 
 #define CHECK(cond, ...) \
     do { checks++; if (!(cond)) { fails++; if (fails <= 80) { printf("FAIL: "); printf(__VA_ARGS__); printf("\n"); } } } while (0)
@@ -570,13 +570,23 @@ static void test_fill(struct Dest *d)
               after[(FY * RW + FX) * 4], after[(FY * RW + FX) * 4 + 1], after[(FY * RW + FX) * 4 + 2], after[(FY * RW + FX) * 4 + 3]);
     }
 
-    /* Back to pens: opaque, the pen's colour */
+    /*
+     * Back to pens: opaque, the pen's colour, in the destination's own pixel
+     * layout (a friend in another layout must not lend it its pixel values).
+     * The pen's components differ, so a component order mix-up shows.
+     */
     background(d);
     SetRPAttrs(rp, RPTAG_PenMode, TRUE, TAG_DONE);
-    SetAPen(rp, 2);
+    SetAPen(rp, testpen);
     RectFill(rp, d->x0 + FX, d->y0 + FY, d->x0 + FX + FW - 1, d->y0 + FY + FH - 1);
-    if (d->pens)
-        check_fill(d, "pen 2 RectFill", 0xFF000000 | pen_argb(d, 2), FX, FY, FW, FH);
+    check_fill(d, "test pen RectFill", 0xFF2266AA, FX, FY, FW, FH);
+
+    /* A palette change on the screen reaches the destination's colours */
+    SetRGB32(&testscr->ViewPort, testpen, 0x99999999, 0x33333333, 0x55555555);
+    background(d);
+    RectFill(rp, d->x0 + FX, d->y0 + FY, d->x0 + FX + FW - 1, d->y0 + FY + FH - 1);
+    check_fill(d, "test pen RectFill after SetRGB32", 0xFF993355, FX, FY, FW, FH);
+    SetRGB32(&testscr->ViewPort, testpen, 0x22222222, 0x66666666, 0xAAAAAAAA);
     SetAPen(rp, 1);
 
     printf("  %-28s FillPixelArray/RPTAG colours: %lu checks, %lu failed\n", d->name,
@@ -592,13 +602,6 @@ static BOOL offscreen(struct Dest *d, const char *name, ULONG pixfmt, ULONG dept
     d->name  = name;
     d->alpha = alpha;
     d->tol   = tol;
-    /*
-     * Pens on an off-screen bitmap in another pixel format than its friend
-     * are rendered with the friend's pixel values (a separate
-     * graphics.library issue, not what this test is about): not checked
-     * there.
-     */
-    d->pens  = (GetCyberMapAttr(friend, CYBRMATTR_PIXFMT) == pixfmt);
     d->bm = AllocBitMap(RW + 8, RH + 6, depth, BMF_SPECIALFMT | SHIFT_PIXFMT(pixfmt) | BMF_CLEAR, friend);
     if (!d->bm)
     {
@@ -681,6 +684,18 @@ static int run_checks(BOOL ownscreen)
     }
     testscr = scr;
     friend = scr->RastPort.BitMap;
+
+    /* Exclusive, so that the test may change its colour (SetRGB32()) */
+    testpen = ObtainPen(scr->ViewPort.ColorMap, -1, 0x22222222, 0x66666666, 0xAAAAAAAA, PEN_EXCLUSIVE);
+    if (testpen < 0)
+    {
+        printf("testarrayops CHECK: no pen for the test colour\n");
+        if (pub)
+            UnlockPubScreen(NULL, pub);
+        else
+            CloseScreen(scr);
+        return RETURN_FAIL;
+    }
     printf("testarrayops CHECK: screen %ldx%ld, pixel format %lu, %lu bytes per pixel%s\n",
            (long)scr->Width, (long)scr->Height,
            (unsigned long)GetCyberMapAttr(friend, CYBRMATTR_PIXFMT),
@@ -706,7 +721,6 @@ static int run_checks(BOOL ownscreen)
         d.x0 = aw->BorderLeft;
         d.y0 = aw->BorderTop;
         d.alpha = TRUE;
-        d.pens = TRUE;
         run(&d);
     }
     else
@@ -736,7 +750,6 @@ static int run_checks(BOOL ownscreen)
         d.y0 = pw->BorderTop;
         /* A screen's 32-bit format may be reported as ...A32 for a pad byte: no alpha assumed */
         d.alpha = FALSE;
-        d.pens = TRUE;
         d.tol = tol;
         run(&d);
     }
@@ -745,6 +758,7 @@ static int run_checks(BOOL ownscreen)
     if (pw)
         CloseWindow(pw);
 
+    ReleasePen(scr->ViewPort.ColorMap, testpen);
     if (pub)
         UnlockPubScreen(NULL, pub);
     else

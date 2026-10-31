@@ -53,6 +53,7 @@ void internal_SetRGB32Colors(struct ViewPort *vp, HIDDT_Color *colors,
 
 /* alphapixtab.c */
 BOOL gfx_AddAlphaPixTab(struct BitMap *bm, OOP_Object *colmap, struct GfxBase *GfxBase);
+OOP_Object *gfx_PixTabSource(struct BitMap *friend_bitmap, struct GfxBase *GfxBase);
 void gfx_ForgetAlphaPixTab(struct BitMap *bm, struct GfxBase *GfxBase);
 void gfx_UpdateAlphaPixTabs(OOP_Object *colmap, HIDDT_Color *colors, ULONG first, ULONG count,
                             struct GfxBase *GfxBase);

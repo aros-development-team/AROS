@@ -1,8 +1,8 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
-    Desc: Colour updates for bitmaps with an alpha channel that derive their
-          colours from a friend without one (AllocBitMap()).
+    Desc: Colour updates for bitmaps that derive their colours from a friend
+          in another pixel layout (AllocBitMap()).
 */
 
 #include <aros/debug.h>
@@ -14,12 +14,40 @@
 #include "gfxfuncsupport.h"
 
 /*
- * Such a bitmap (HIDD_BMF_ALPHA_PIXTAB) has a colormap and pixel table of its
+ * Such a bitmap (HIDD_BMF_OWN_PIXTAB) has a colormap and pixel table of its
  * own, filled from the friend's colormap with every colour opaque, because the
- * friend's pixel values have no alpha bits. The friend is identified by its
- * colormap object, which all of its ordinary friends share, so a SetRGB32()
- * on the screen reaches every surface allocated from it.
+ * friend's pixel values are in another layout (or have no alpha bits). The
+ * source is identified by its colormap object, which all of its ordinary
+ * friends share, so a SetRGB32() on the screen reaches every bitmap allocated
+ * from it.
  */
+
+/*
+ * The colormap a friend's colours come from: its own, or for a bitmap that
+ * derives its colours itself, the one those come from, so that a chain of
+ * friends follows the screen.
+ */
+OOP_Object *gfx_PixTabSource(struct BitMap *friend_bitmap, struct GfxBase *GfxBase)
+{
+    OOP_Object *colmap = HIDD_BM_COLMAP(friend_bitmap);
+    struct AlphaPixTabNode *n;
+
+    if (!(HIDD_BM_FLAGS(friend_bitmap) & HIDD_BMF_OWN_PIXTAB))
+        return colmap;
+
+    ObtainSemaphoreShared(&PrivGBase(GfxBase)->alphapixtabs_sema);
+    ForeachNode(&PrivGBase(GfxBase)->alphapixtabs, n)
+    {
+        if (n->bitmap == friend_bitmap)
+        {
+            colmap = n->colmap;
+            break;
+        }
+    }
+    ReleaseSemaphore(&PrivGBase(GfxBase)->alphapixtabs_sema);
+
+    return colmap;
+}
 
 BOOL gfx_AddAlphaPixTab(struct BitMap *bm, OOP_Object *colmap, struct GfxBase *GfxBase)
 {

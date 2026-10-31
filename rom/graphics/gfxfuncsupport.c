@@ -69,8 +69,9 @@ VOID release_planarbm_object(OOP_Object *pbm_obj, struct GfxBase *GfxBase)
 
 /*
  * A layer's ClipRect bitmap may render pens from a colormap of its own
- * (HIDD_BMF_ALPHA_PIXTAB: a composited layer's alpha surface on a screen
- * without an alpha channel, see AllocBitMap()). The GC was prepared with the
+ * (HIDD_BMF_OWN_PIXTAB: a bitmap in another pixel layout than the screen,
+ * such as a composited layer's alpha surface on a screen without an alpha
+ * channel, see AllocBitMap()). The GC was prepared with the
  * RastPort bitmap's pixel values, which carry no alpha, so for such a
  * destination the GC colours are mapped again for the destination: pens
  * through its colormap, explicit RPTAG_FgColor/RPTAG_BgColor colours
@@ -79,7 +80,7 @@ VOID release_planarbm_object(OOP_Object *pbm_obj, struct GfxBase *GfxBase)
 static inline BOOL alpha_pixtab_dest(struct RastPort *rp, struct BitMap *bm)
 {
     return rp && rp->BitMap && bm != rp->BitMap && IS_HIDD_BM(rp->BitMap) && IS_HIDD_BM(bm) &&
-           (HIDD_BM_FLAGS(bm) & HIDD_BMF_ALPHA_PIXTAB);
+           (HIDD_BM_FLAGS(bm) & HIDD_BMF_OWN_PIXTAB);
 }
 
 static HIDDT_Pixel pen_pixel_for(struct RastPort *rp, struct BitMap *bm, HIDDT_Pixel pix, struct GfxBase *GfxBase)
@@ -152,7 +153,7 @@ HIDDT_PixelLUT *alpha_pixtab_lut(OOP_Object *dstbm_obj, struct RastPort *rp, HID
         return lut;
 
     OOP_GetAttr(dstbm_obj, aHidd_BitMap_BMStruct, (IPTR *)&bm);
-    if (!bm || bm == rp->BitMap || !IS_HIDD_BM(bm) || !(HIDD_BM_FLAGS(bm) & HIDD_BMF_ALPHA_PIXTAB) ||
+    if (!bm || bm == rp->BitMap || !IS_HIDD_BM(bm) || !(HIDD_BM_FLAGS(bm) & HIDD_BMF_OWN_PIXTAB) ||
         !HIDD_BM_PIXTAB(bm))
         return lut;
 
@@ -829,11 +830,12 @@ BOOL int_bltbitmap(struct BitMap *srcBitMap, OOP_Object *srcbm_obj, WORD xSrc, W
             OOP_GetAttr(gc, aHidd_GC_Foreground, &old_fg);
 
             /*
-             * An alpha-channel bitmap with a colormap of its own (a composited
+             * An alpha-channel bitmap whose friend has none (a composited
              * layer's surface, see AllocBitMap()) clears to transparent: pen 0
-             * is opaque there, so a plain 0 pixel is written instead.
+             * is opaque there, so a plain 0 pixel is written instead. Any
+             * other bitmap clears to pen 0 in its own pixel values.
              */
-            if (HIDD_BM_FLAGS(dstBitMap) & HIDD_BMF_ALPHA_PIXTAB)
+            if (HIDD_BM_FLAGS(dstBitMap) & HIDD_BMF_CLEAR_ALPHA)
                 frtags[0].ti_Data = 0;
             else
                 frtags[0].ti_Data = HIDD_BM_PIXTAB(dstBitMap)[0];
