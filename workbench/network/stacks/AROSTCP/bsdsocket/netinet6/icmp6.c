@@ -349,6 +349,20 @@ icmp6_notify_error(struct mbuf *m, int off, int cmd)
         ip6cp.ip6c_sport = ports[0];
         ip6cp.ip6c_dport = ports[1];
     }
+    if(oip6.ip6_nxt == IPPROTO_TCP &&
+            m->m_pkthdr.len >= qoff + (int)sizeof(oip6) + 8) {
+        u_int32_t seq = 0;      /* after the ports */
+
+        m_copydata(m, qoff + sizeof(oip6) + 4, sizeof(seq), (caddr_t)&seq);
+        ip6cp.ip6c_seq = ntohl(seq);
+        ip6cp.ip6c_haveseq = 1;
+    }
+    if(cmd == PRC_MSGSIZE) {
+        u_int32_t mtu = 0;      /* the Packet Too Big's MTU field */
+
+        m_copydata(m, off + 4, sizeof(mtu), (caddr_t)&mtu);
+        ip6cp.ip6c_mtu = ntohl(mtu) < IPV6_MMTU ? IPV6_MMTU : ntohl(mtu);
+    }
 
     bzero(&sa6, sizeof(sa6));
     sa6.sin6_len    = sizeof(sa6);
@@ -479,9 +493,11 @@ icmp6_input(void *args, ...)
              * unaligned access occurs on strict-alignment architectures. */
             bcopy(&oip6->ip6_dst, &odst, sizeof(odst));
             bcopy(&ic6->icmp6_mtu, &omtu, sizeof(omtu));
-            /* the route keeps the path MTU, which ip6_output() and
-             * tcp_mss() use: no socket needs to be told */
+            /* the route keeps the path MTU, which ip6_output() and a new
+             * connection's tcp_mss() use; a TCP connection under way is
+             * told too, to send smaller segments (tcp6_ctlinput()) */
             icmp6_update_pmtu(&odst, ntohl(omtu));
+            icmp6_notify_error(m, off, PRC_MSGSIZE);
             break;
         }
         return;			/* m_pullup freed the mbuf */

@@ -432,9 +432,17 @@ IPv6 routers never fragment, so an oversized datagram is dropped and reported wi
 Big. `icmp6_input` handles that type by reading the reported next-hop MTU and the quoted packet's
 destination (copied out of the packed headers into aligned locals for strict-alignment targets) and
 calling `icmp6_update_pmtu`, which records the MTU on the destination's route
-(`rt_rmx.rmx_mtu`, clamped to `IPV6_MMTU`, lowered only). No socket is told: `ip6_output` caps each
-datagram at the route's discovered PMTU (never above the link MTU), so subsequent traffic fits the
-bottleneck link instead of being black-holed.
+(`rt_rmx.rmx_mtu`, clamped to `IPV6_MMTU`, lowered only). `ip6_output` caps each datagram at the
+route's discovered PMTU (never above the link MTU), so subsequent traffic fits the bottleneck link
+instead of being black-holed, and a new TCP connection takes its MSS from it (`tcp_mss`).
+
+A TCP connection under way is told too (RFC 8201 section 5.2), so that it sends smaller segments
+rather than fragments: `icmp6_notify_error()` passes the Packet Too Big to `tcp6_ctlinput()` as
+`PRC_MSGSIZE`, with the MTU and the quoted segment's sequence number in the `ip6ctlparam`. When that
+segment is still unacknowledged - anything else is old, or forged by someone who does not see the
+connection (RFC 5927 section 7.2) - `tcp_mtudisc6()` lowers `t_maxopd`/`t_maxseg` as `tcp_mss`
+would for that MTU and resends from `snd_una`, as FreeBSD's `tcp_mtudisc()`. UDP sockets ignore
+`PRC_MSGSIZE`: a datagram is fragmented to the path MTU anyway.
 
 That route is the destination's own. On the link it is the neighbour's host route, cloned by
 neighbour discovery. Through a router the table only has the router's route (a prefix, or `::/0`),

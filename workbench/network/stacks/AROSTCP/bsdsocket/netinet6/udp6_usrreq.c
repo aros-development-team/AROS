@@ -638,6 +638,10 @@ udp6_ctlinput(int cmd, struct sockaddr *sa, void *arg)
 {
     struct ip6ctlparam *ip6cp = arg;
 
+    /* a Packet Too Big is not an error for a datagram socket: the route
+     * keeps the path MTU, and ip6_output() fragments to it */
+    if(cmd == PRC_MSGSIZE)
+        return;
     if(ip6cp != NULL)
         in6_pcbnotify(&udb, (struct sockaddr_in6 *)sa, ip6cp->ip6c_dport,
                       &ip6cp->ip6c_src, ip6cp->ip6c_sport, cmd, udp6_notify);

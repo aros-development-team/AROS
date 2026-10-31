@@ -784,22 +784,73 @@ void *arg;
 }
 
 #if INET6
+void tcp_mtudisc6(struct tcpcb *, u_int32_t);
+
 /*
  * tcp6_ctlinput - an ICMPv6 error about a TCP/IPv6 segment we sent
  * (icmp6_notify_error()): sa is its destination, arg an ip6ctlparam with
- * its source and ports. tcp_notify() keeps it as a soft error.
+ * its source and ports. tcp_notify() keeps it as a soft error; a Packet
+ * Too Big (PRC_MSGSIZE) about a segment still unacknowledged makes the
+ * connection send smaller ones (tcp_mtudisc6()).
  */
 void
 tcp6_ctlinput(int cmd, struct sockaddr *sa, void *arg)
 {
     struct ip6ctlparam *ip6cp = arg;
 
+    if(cmd == PRC_MSGSIZE) {
+        /* a Packet Too Big about a segment of a connection under way */
+        struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)sa;
+        struct inpcb *inp;
+        struct tcpcb *tp;
+
+        if(ip6cp == NULL || !ip6cp->ip6c_haveseq)
+            return;
+        inp = in6_pcblookup(&tcb, &sin6->sin6_addr, ip6cp->ip6c_dport,
+                            &ip6cp->ip6c_src, ip6cp->ip6c_sport);
+        if(inp == NULL || (tp = intotcpcb(inp)) == NULL)
+            return;
+        /* only for a segment that is still unacknowledged: anything else
+         * is old, or forged blind (RFC 5927 section 7.2) */
+        if(SEQ_LT(ip6cp->ip6c_seq, tp->snd_una) ||
+                SEQ_GEQ(ip6cp->ip6c_seq, tp->snd_max))
+            return;
+        tcp_mtudisc6(tp, ip6cp->ip6c_mtu);
+        return;
+    }
     if(ip6cp != NULL)
         in6_pcbnotify(&tcb, (struct sockaddr_in6 *)sa, ip6cp->ip6c_dport,
                       &ip6cp->ip6c_src, ip6cp->ip6c_sport, cmd, tcp_notify);
     else
         in6_pcbnotify(&tcb, (struct sockaddr_in6 *)sa, 0, NULL, 0, cmd,
                       tcp_notify);
+}
+#endif
+
+#if INET6
+/*
+ * tcp_mtudisc6 - the path to tp's peer takes packets of at most mtu bytes
+ * (RFC 8201 section 5.2): send segments that fit, and resend what was not
+ * acknowledged, as FreeBSD's tcp_mtudisc() does. The MSS is set as
+ * tcp_mss() sets it; only ever lowered.
+ */
+void
+tcp_mtudisc6(struct tcpcb *tp, u_int32_t mtu)
+{
+    int mss = (int)mtu - (int)(sizeof(struct ip6_hdr) + sizeof(struct tcphdr));
+
+    if(mss <= 0 || mss >= tp->t_maxopd)
+        return;
+    tp->t_maxopd = mss;
+    if((tp->t_flags & (TF_REQ_TSTMP | TF_NOOPT)) == TF_REQ_TSTMP &&
+            (tp->t_flags & TF_RCVD_TSTMP) == TF_RCVD_TSTMP)
+        mss -= TCPOLEN_TSTAMP_APPA;
+    if(mss >= tp->t_maxseg)
+        return;
+    tp->t_maxseg = mss;
+    tp->t_rtt = 0;                  /* do not time the resent segment */
+    tp->snd_nxt = tp->snd_una;
+    (void)tcp_output(tp);
 }
 #endif
 

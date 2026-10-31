@@ -212,6 +212,9 @@ struct ip6ctlparam {
 	struct in6_addr ip6c_src;	/* the quoted packet's source (ours) */
 	u_int16_t ip6c_sport;		/* its ports, network byte order; */
 	u_int16_t ip6c_dport;		/* 0 when not known */
+	u_int32_t ip6c_seq;		/* TCP: its sequence number, host order */
+	int ip6c_haveseq;		/* ip6c_seq was quoted */
+	u_int32_t ip6c_mtu;		/* PRC_MSGSIZE: the path MTU, >= IPV6_MMTU */
 };
 struct inpcb;
 struct inpcbhead;
