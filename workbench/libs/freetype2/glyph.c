@@ -54,6 +54,43 @@ int UnicodeToGlyphIndex(FT_GlyphEngine *ge)
     return ge->glyph_code;
 }
 
+/* the line height of a strike, which SetInstance() fits to the point size
+   for an outline font */
+static long strike_height(FT_Bitmap_Size *size)
+{
+    return size->height > 0 ? size->height : size->y_ppem >> 6;
+}
+
+/* Colour bitmap fonts such as Noto Color Emoji have fixed strikes and no
+   outlines, so FT_Set_Char_Size() fails for any other size. Take the
+   smallest strike whose line height is at least the point size (the largest
+   if none is); RenderColorGlyph() scales every glyph by the same factor. As
+   in SetInstance(), the pixel size is the point size whatever the DPI. */
+static int SetColorStrike(FT_GlyphEngine *ge)
+{
+    FT_Bitmap_Size *sizes = ge->face->available_sizes;
+    long want = ge->point_size, px, best_px = 0;
+    int i, best = -1;
+
+    for (i = 0; i < ge->face->num_fixed_sizes; i++) {
+        px = strike_height(&sizes[i]);
+        if (best < 0 || (px >= want && (best_px < want || px < best_px)) || (best_px < want && px > best_px)) {
+            best = i;
+            best_px = px;
+        }
+    }
+
+    if (best < 0 || FT_Select_Size(ge->face, best))
+        return set_last_error(ge, OTERR_Failure);
+
+    /* font units, as everywhere else; a bitmap-only face without them has
+       its strike's pixels as the em */
+    ge->corrected_upem = ge->face->units_per_EM ? ge->face->units_per_EM : best_px;
+
+    set_transform(ge);
+    return set_last_error(ge, OTERR_Success);
+}
+
 int SetInstance(FT_GlyphEngine *ge)
 {
     FT_Error error;
@@ -283,11 +320,13 @@ void RenderGlyph(FT_GlyphEngine *ge, int glyph_8bits)
 #endif
 
     /* horizontal pixels per EM square as 16.16 */
-    GMap->glm_Width =
-        (metrics->horiAdvance << 10) /
-        (( ge->face->size->metrics.x_ppem
-           * ge->corrected_upem)
-         / ge->face->units_per_EM);
+    {
+        long em = ge->face->units_per_EM
+            ? (ge->face->size->metrics.x_ppem * ge->corrected_upem) / ge->face->units_per_EM
+            : ge->face->size->metrics.x_ppem;
+
+        GMap->glm_Width = em ? (metrics->horiAdvance << 10) / em : 0;
+    }
 
 
     GMap->glm_BitMap      = bitmap.buffer;
@@ -485,3 +524,169 @@ void switch_family(FT_GlyphEngine *engine)
     return;
 }
 
+/* FreeType gives colour strikes as premultiplied B, G, R, A bytes. The
+   average of a box of them, with straight alpha, as A, R, G, B bytes in
+   memory order: averaging before the division keeps the colour of edge
+   pixels when a strike is scaled down. */
+static ULONG box_argb(const FT_Bitmap *bitmap, ULONG x0, ULONG x1, ULONG y0, ULONG y1)
+{
+    ULONG sum[4] = { 0, 0, 0, 0 }, n = (x1 - x0) * (y1 - y0), x, y, c, value, argb;
+    UBYTE *dst = (UBYTE *)&argb;
+
+    for (y = y0; y < y1; y++)
+    {
+        const UBYTE *px = bitmap->pitch < 0
+            ? bitmap->buffer + (bitmap->rows - 1 - y) * -bitmap->pitch + x0 * 4
+            : bitmap->buffer + y * bitmap->pitch + x0 * 4;
+
+        for (x = x0; x < x1; x++, px += 4)
+            for (c = 0; c < 4; c++)
+                sum[c] += px[c];
+    }
+    dst[0] = (sum[3] + n / 2) / n;
+    for (c = 0; c < 3; c++)
+    {
+        value = sum[3] ? (sum[2 - c] * 255 + sum[3] / 2) / sum[3] : 0;
+        dst[c + 1] = value > 255 ? 255 : value;
+    }
+    return argb;
+}
+
+static LONG scale_dim(LONG value, ULONG from, ULONG to)
+{
+    LONG sign = value < 0 ? -1 : 1;
+
+    return sign * (LONG)(((ULONG)(value * sign) * to + from / 2) / from);
+}
+
+/* The fields mean what the GlyphMap's do: the glyph as it comes from
+   FreeType, scaled by one factor for the whole instance, the point size
+   over the strike's line height, as SetInstance() fits an outline font's
+   height to the point size. A scalable face is rendered at the instance
+   size already, so it is not scaled and its width comes as in
+   RenderGlyph(). */
+static void RenderColorGlyph(FT_GlyphEngine *ge, struct ColorGlyphMap *CMap)
+{
+    FT_GlyphSlot slot;
+    FT_Bitmap *src;
+    ULONG x, y, width, rows, *out;
+    LONG advance, left, top, strike, want_x, want_y;
+    FIXED em_width;
+
+    if (FT_Load_Glyph(ge->face, ge->glyph_code, FT_LOAD_DEFAULT | FT_LOAD_COLOR))
+        return;
+
+    slot = ge->face->glyph;
+    if (slot->format != ft_glyph_format_bitmap &&
+        FT_Render_Glyph(slot, FT_RENDER_MODE_NORMAL))
+        return;
+
+    src = &slot->bitmap;
+    if (src->pixel_mode != FT_PIXEL_MODE_BGRA || !src->buffer || !src->width || !src->rows)
+        return;
+
+    strike = ge->face->size->metrics.height >> 6;
+    if (strike <= 0)
+        strike = ge->face->size->metrics.y_ppem;
+    if (strike <= 0)
+        strike = src->rows;
+    want_x = want_y = ge->point_size;
+    if (FT_IS_SCALABLE(ge->face) || want_x <= 0)
+        want_x = want_y = strike;
+
+    width = scale_dim(src->width, strike, want_x);
+    rows = scale_dim(src->rows, strike, want_y);
+    if (!width)
+        width = 1;
+    if (!rows)
+        rows = 1;
+    left = scale_dim(slot->bitmap_left, strike, want_x);
+    top = scale_dim(slot->bitmap_top, strike, want_y);
+    advance = scale_dim(slot->advance.x >> 6, strike, want_x);
+    if (advance <= 0)
+        advance = width;
+
+    if (FT_IS_SCALABLE(ge->face))
+    {
+        long em = ge->face->units_per_EM
+            ? (ge->face->size->metrics.x_ppem * ge->corrected_upem) / ge->face->units_per_EM
+            : ge->face->size->metrics.x_ppem;
+
+        em_width = em ? (slot->metrics.horiAdvance << 10) / em : 0;
+    }
+    else
+        em_width = (advance << 16) / want_x;
+
+    if (width > 65535 || rows > 65535 || width > 0x7fffffffUL / sizeof(ULONG) / rows)
+        return;
+
+    out = AllocVec(width * rows * sizeof(ULONG), MEMF_PUBLIC);
+    if (!out)
+        return;
+
+    for (y = 0; y < rows; y++)
+    {
+        ULONG y0 = y * src->rows / rows, y1 = (y + 1) * src->rows / rows;
+
+        if (y1 <= y0)
+            y1 = y0 + 1;
+        for (x = 0; x < width; x++)
+        {
+            ULONG x0 = x * src->width / width, x1 = (x + 1) * src->width / width;
+
+            if (x1 <= x0)
+                x1 = x0 + 1;
+            out[y * width + x] = box_argb(src, x0, x1, y0, y1);
+        }
+    }
+
+    CMap->cgm_BMModulo    = width * sizeof(ULONG);
+    CMap->cgm_BMRows      = rows;
+    CMap->cgm_BlackLeft   = 0;
+    CMap->cgm_BlackTop    = 0;
+    CMap->cgm_BlackWidth  = width;
+    CMap->cgm_BlackHeight = rows;
+    CMap->cgm_XOrigin     = -left * 65536;
+    CMap->cgm_YOrigin     = top * 65536;
+    CMap->cgm_X0          = -left;
+    CMap->cgm_Y0          = top;
+    CMap->cgm_X1          = advance - left;
+    CMap->cgm_Y1          = top;
+    CMap->cgm_Width       = em_width;
+    CMap->cgm_ARGBMap     = out;
+}
+
+struct ColorGlyphMap *GetColorGlyph(FT_GlyphEngine *ge)
+{
+    struct ColorGlyphMap *CMap;
+    BOOL strike = !FT_IS_SCALABLE(ge->face) && FT_HAS_COLOR(ge->face) && ge->face->num_fixed_sizes > 0;
+
+    /* a bitmap-only colour face has no instance for the other requests,
+       so OpenDiskFont() on one still fails as it did; the strike is not
+       kept as the instance for them either, whatever happens below */
+    if (strike ? SetColorStrike(ge) != OTERR_Success
+               : ge->instance_changed && SetInstance(ge) != OTERR_Success)
+        return NULL;
+    if (strike)
+        ge->instance_changed = TRUE;
+
+    if (!UnicodeToGlyphIndex(ge)) {
+        set_last_error(ge, OTERR_UnknownGlyph);
+        return NULL;
+    }
+
+    CMap = AllocVec(sizeof(struct ColorGlyphMap), MEMF_PUBLIC | MEMF_CLEAR);
+    if (!CMap) {
+        set_last_error(ge, OTERR_NoMemory);
+        return NULL;
+    }
+
+    RenderColorGlyph(ge, CMap);
+    if (!CMap->cgm_ARGBMap) {
+        FreeVec(CMap);
+        set_last_error(ge, OTERR_UnknownGlyph);
+        return NULL;
+    }
+
+    return CMap;
+}

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -35,15 +35,21 @@
 
 /*  FUNCTION
         Applies one of a variety of transformations to a rectangular portion
-        of a RastPort.
+        of a RastPort, in place. The pixels are read and written as 32-bit
+        ARGB, so the RastPort's bitmap should be a 15-bit or deeper
+        CyberGraphX bitmap; POP_SETALPHA needs one with 4 bytes per pixel.
 
     INPUTS
         rp - the RastPort to process.
         destX, destY - top-lefthand corner of portion of RastPort to process.
         sizeX, sizeY - size of the affected area.
         operation - one of the following transformation types:
-            POP_TINT - tint the rectangle with an ARGB32 color ('value' input).
-            POP_BLUR - blur the rectangle.
+            POP_BLUR - blur the rectangle with a Gaussian kernel. 'value'
+                (0 to 255) selects the radius, from 1 to 32 pixels. Alpha
+                is blurred like the colour channels.
+            POP_TINT - tint the rectangle with the ARGB32 colour in 'value':
+                each colour channel is multiplied by the colour's matching
+                channel / 255. Alpha is kept.
             POP_BRIGHTEN - brighten the rectangle. The amount of brightening
                 to be done is defined by the 'value' input, which must be in
                 the range 0 to 255.
@@ -53,10 +59,10 @@
             POP_SETALPHA - set the alpha channel value for all pixels in the
                 rectangle to that specified in the 'value' input. The valid
                 range is 0 to 255.
-            POP_GRADIENT - apply a gradient to the rectangle. Gradient
-                parameters are supplied through the taglist.
+            POP_GRADIENT, POP_COLOR2GREY, POP_NEGATIVE, POP_NEGFADE,
+            POP_TINTFADE, POP_SHIFTRGB - accepted, see BUGS.
         value - see description of 'operation' input.
-        taglist - currently describes gradient parameters, as follows:
+        taglist - parameters of POP_GRADIENT:
             PPAOPTAG_GRADIENTTYPE - GRADTYPE_HORIZONTAL or GRADTYPE_VERTICAL.
             PPAOPTAG_GRADCOLOR1 - The starting color of the gradient (ARGB32).
             PPAOPTAG_GRADCOLOR2 - The ending color of the gradient (ARGB32).
@@ -64,21 +70,31 @@
             PPAOPTAG_GRADOFFSET
 
     RESULT
-        count - the number of pixels processed.
+        None.
 
     NOTES
 
     EXAMPLE
+        Frosted glass behind an application's own rendering: copy the
+        background into the window's RastPort, then
+
+            ProcessPixelArray(rp, x, y, w, h, POP_BLUR, 64, NULL);
+            ProcessPixelArray(rp, x, y, w, h, POP_TINT, 0x00E0E8FF, NULL);
+
+        and draw the foreground over it.
 
     BUGS
-        This function is not implemented.
+        POP_GRADIENT, POP_COLOR2GREY, POP_NEGATIVE, POP_NEGFADE,
+        POP_TINTFADE and POP_SHIFTRGB are not implemented yet: the
+        rectangle is left unchanged.
 
     SEE ALSO
+        ReadPixelArray(), WritePixelArray()
 
     INTERNALS
-        This function exists to get Scalos compiled. Because Scalos
-        has its own fallback code for the case that lib_Version < 50
-        it's not so urgent to implement it.
+        Each operation reads the rectangle a line at a time with
+        ReadPixelArray(), processes it on the CPU and writes it back with
+        WritePixelArray().
 
 *****************************************************************************/
 {

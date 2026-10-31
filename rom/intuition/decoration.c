@@ -80,6 +80,17 @@ BOOL int_LoadDecorator(const char *name, struct IntScreen *screen, struct Intuit
         screen->WinDecorObj  = NewObjectA(GetPrivIBase(IntuitionBase)->WinDecorClass, NULL, GetPrivIBase(IntuitionBase)->WinDecorTags);
     }
 
+    if (!screen->ScrDecorObj || !screen->MenuDecorObj || !screen->WinDecorObj)
+    {
+        /*
+            A decoration object failed to build.  GetAttr() on a NULL object
+            would leave userbuffersize unset.  OpenScreen() disposes the screen
+            on failure, and the ScreenClass dispose frees the objects that
+            were built, so do not free them here.
+        */
+        return FALSE;
+    }
+
     GetAttr(SDA_UserBuffer, screen->ScrDecorObj, &userbuffersize);
     screen->DecorUserBufferSize = userbuffersize;
     if (userbuffersize)

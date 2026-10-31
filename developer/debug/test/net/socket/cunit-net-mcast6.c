@@ -118,6 +118,45 @@ static int got(int s, const char *msg, int secs)
     return 0;
 }
 
+/* The hop limit delivered with msg, or -1 if the message did not arrive
+ * with IPV6_HOPLIMIT ancillary data. */
+static int got_hlim(int s, const char *msg, int secs)
+{
+    union { struct cmsghdr c; char b[CMSG_SPACE(sizeof(int))]; } ctl;
+    struct msghdr mh;
+    struct iovec iov;
+    struct cmsghdr *c;
+    char buf[64];
+    int n;
+
+    while (sock_wait(s, 0, secs) > 0) {
+        bzero(&mh, sizeof(mh));
+        bzero(&ctl, sizeof(ctl));
+        iov.iov_base = buf;
+        iov.iov_len = sizeof(buf) - 1;
+        mh.msg_iov = &iov;
+        mh.msg_iovlen = 1;
+        mh.msg_control = &ctl;
+        mh.msg_controllen = sizeof(ctl);
+        n = recvmsg(s, &mh, 0);
+        if (n < 0)
+            return -1;
+        buf[n] = 0;
+        if (strcmp(buf, msg) != 0)
+            continue;
+        for (c = CMSG_FIRSTHDR(&mh); c != NULL; c = CMSG_NXTHDR(&mh, c)) {
+            if (c->cmsg_level == IPPROTO_IPV6 &&
+                    c->cmsg_type == IPV6_HOPLIMIT &&
+                    c->cmsg_len >= CMSG_LEN(sizeof(int))) {
+                int hlim;
+                memcpy(&hlim, CMSG_DATA(c), sizeof(hlim));
+                return hlim;
+            }
+        }
+    }
+    return -1;
+}
+
 #define NEED_IF() do { if (!ready) { CU_PASS("no multicast interface - skipping"); return; } } while (0)
 
 /* ----------------------------------------------------------------- tests */
@@ -206,6 +245,26 @@ void testMCAST6_NOT_A_MEMBER(void)
     CloseSocket(r);
 }
 
+/* IPV6_MULTICAST_HOPS, rather than the unicast default, supplies the IPv6
+ * header of a UDP group datagram. */
+void testMCAST6_HOPS(void)
+{
+    int r, s, on = 1, hops = 255;
+    NEED_IF();
+    r = listener();
+    s = sender(1);
+    CU_ASSERT(r >= 0 && s >= 0);
+    CU_ASSERT_EQUAL(join(r, "ff12::4d54:36"), 0);
+    CU_ASSERT_EQUAL(setsockopt(r, IPPROTO_IPV6, IPV6_RECVHOPLIMIT,
+                              &on, sizeof(on)), 0);
+    CU_ASSERT_EQUAL(setsockopt(s, IPPROTO_IPV6, IPV6_MULTICAST_HOPS,
+                              &hops, sizeof(hops)), 0);
+    CU_ASSERT(send_group(s, "ff12::4d54:36", "hops") > 0);
+    CU_ASSERT_EQUAL(got_hlim(r, "hops", 2), 255);
+    CloseSocket(s);
+    CloseSocket(r);
+}
+
 int main(int argc, char **argv)
 {
     CU_pSuite p;
@@ -256,11 +315,12 @@ int main(int argc, char **argv)
     }
     p = CU_add_suite("MCAST6_Suite", init_suite, clean_suite);
     if (p == NULL ||
+        !CU_add_test(p, "a group nobody joined is not delivered", testMCAST6_NOT_A_MEMBER) ||
         !CU_add_test(p, "a member receives a group datagram", testMCAST6_MEMBER_RECEIVES) ||
-        !CU_add_test(p, "every socket on the port gets a copy", testMCAST6_EVERY_SOCKET) ||
         !CU_add_test(p, "a socket on the port without a membership receives", testMCAST6_PORT_WITHOUT_MEMBERSHIP) ||
-        !CU_add_test(p, "IPV6_MULTICAST_LOOP 0 keeps it off the host", testMCAST6_LOOP_OFF) ||
-        !CU_add_test(p, "a group nobody joined is not delivered", testMCAST6_NOT_A_MEMBER))
+        !CU_add_test(p, "every socket on the port gets a copy", testMCAST6_EVERY_SOCKET) ||
+        !CU_add_test(p, "IPV6_MULTICAST_HOPS applies to UDP", testMCAST6_HOPS) ||
+        !CU_add_test(p, "IPV6_MULTICAST_LOOP 0 keeps it off the host", testMCAST6_LOOP_OFF))
     {
         CU_cleanup_registry();
         CloseLibrary(SocketBase);

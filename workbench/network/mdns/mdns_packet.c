@@ -25,9 +25,10 @@ static struct MDNSRecord record;
 /* what the sender of a probe says it is about to publish */
 static struct MDNSRecord proposed[MDNS_PROPOSED_MAX];
 
-void
-mdnsHandlePacket(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
-    ULONG srcaddr, UWORD srcport)
+static void
+handle_packet(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
+    UWORD family, ULONG srcaddr, const struct in6_addr *srcaddr6,
+    UWORD srcport)
 {
     const struct MDNSHeader *hdr;
     struct MDNSQuestion q;
@@ -38,7 +39,8 @@ mdnsHandlePacket(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
         return;
     }
     /* The group's traffic may be looped back to the sender. */
-    if (mdnsNetIsOwn(md, srcaddr)) {
+    if ((family == AF_INET && mdnsNetIsOwn(md, srcaddr)) ||
+        (family == AF_INET6 && mdnsNetIsOwn6(md, srcaddr6))) {
         return;
     }
 
@@ -117,6 +119,10 @@ mdnsHandlePacket(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
         md->md_PacketSerial++;
         /* who asked, for an answer that goes back to the asker alone */
         md->md_QueryAddr = srcaddr;
+        md->md_QueryFamily = family;
+        if (family == AF_INET6) {
+            md->md_QueryAddr6 = *srcaddr6;
+        }
         md->md_QueryPort = srcport;
         md->md_ReplyId = ntohs(hdr->id);
         for (i = 0; i < nq; i++) {
@@ -124,6 +130,8 @@ mdnsHandlePacket(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
             mdnsRegHandleQuery(md, &questions[i], known, nknown);
         }
         md->md_QueryAddr = 0;
+        md->md_QueryFamily = 0;
+        memset(&md->md_QueryAddr6, 0, sizeof(md->md_QueryAddr6));
         md->md_QueryPort = 0;
         return;
     }
@@ -153,6 +161,22 @@ mdnsHandlePacket(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
             }
         }
         offset += consumed;
+    }
+}
+
+void
+mdnsHandlePacket(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
+    ULONG srcaddr, UWORD srcport)
+{
+    handle_packet(md, pkt, pktlen, AF_INET, srcaddr, NULL, srcport);
+}
+
+void
+mdnsHandlePacket6(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
+    const struct in6_addr *srcaddr, UWORD srcport)
+{
+    if (srcaddr != NULL) {
+        handle_packet(md, pkt, pktlen, AF_INET6, 0, srcaddr, srcport);
     }
 }
 

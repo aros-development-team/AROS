@@ -1,11 +1,18 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: AROS Graphics function FreeRastPort
 */
 
 #include <graphics/rastport.h>
 #include <proto/exec.h>
+
+/*
+ * RP_Extra is graphics.library's private data of a RastPort; its first
+ * field is the RastPort it belongs to. A copy of a RastPort (CloneRastPort(),
+ * or one copied by hand) shares the pointer but not the data.
+ */
+#define RP_EXTRA_OWNED(rp)  ((rp)->RP_Extra && (*(struct RastPort **)(rp)->RP_Extra == (rp)))
 
 /*****************************************************************************
 
@@ -41,7 +48,8 @@
 
 *****************************************************************************/
 {
-    FreeVec(rp->RP_Extra);
+    if (RP_EXTRA_OWNED(rp))
+        FreeVec(rp->RP_Extra);
 
     FreeMem (rp, sizeof (struct RastPort));
 

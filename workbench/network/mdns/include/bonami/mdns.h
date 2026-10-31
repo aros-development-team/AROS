@@ -29,7 +29,7 @@
 /* Library identity (subsystem name, not API prefix) */
 
 #define BONAMI_LIB_VERSION   41
-#define BONAMI_LIB_REVISION  5
+#define BONAMI_LIB_REVISION  6
 
 /*------------------------------------------------------------------------*/
 /* DNS-SD well-known values */
@@ -101,7 +101,8 @@ struct MDNSDiscoveryEvent
 
 /* One answer to QueryRecordA(). Names in PTR and SRV RDATA are expanded
  * into uncompressed DNS wire labels, so the event never refers to the
- * received packet. Interface is an IPv4 address in network byte order. */
+ * received packet. Interface is an IPv4 address in network byte order (zero
+ * on an IPv6-only link); InterfaceIndex is the scope/interface index. */
 #define MDNS_RECORD_DATA_MAX   512
 struct MDNSRecordEvent
 {
@@ -115,6 +116,7 @@ struct MDNSRecordEvent
     char  re_Name[256];
     UBYTE re_Data[MDNS_RECORD_DATA_MAX];
 };
+#define re_InterfaceIndex re_Reserved
 
 /* Optional wakeup for a queue: a message the caller lends to mdnsd with
  * RequestMDNSEvent(). The caller sets er_Msg.mn_ReplyPort and mn_Length;

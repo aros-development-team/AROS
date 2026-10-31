@@ -102,8 +102,13 @@ struct MinList *GetWidthList(FT_GlyphEngine *ge)
 #if 0
             howwide = ((metrics->horiAdvance)<<16) / units_per_em;
 #else
-            howwide = (metrics->horiAdvance << 10) /
-                      (( ge->face->size->metrics.x_ppem * units_per_em) / ge->face->units_per_EM);
+            {
+                long em = ge->face->units_per_EM
+                    ? (ge->face->size->metrics.x_ppem * units_per_em) / ge->face->units_per_EM
+                    : ge->face->size->metrics.x_ppem;
+
+                howwide = em ? (metrics->horiAdvance << 10) / em : 0;
+            }
 #endif
         }
 
@@ -154,5 +159,5 @@ int get_kerning_dir(FT_GlyphEngine *ge)
     if (FT_Get_Kerning(ge->face, l, r, ft_kerning_unscaled, &kerning))
         return 0;
 
-    return (-kerning.x << 16) / ge->corrected_upem;
+    return ge->corrected_upem ? (-kerning.x << 16) / ge->corrected_upem : 0;
 }

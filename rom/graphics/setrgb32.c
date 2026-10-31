@@ -51,7 +51,7 @@ void internal_SetRGB32Colors(struct ViewPort *vp, HIDDT_Color *colors,
                 HIDD_BM_PIXTAB(vp->RasInfo->BitMap)[first + i] =
                     colors[i].pixval;
 
-            /* bitmaps with an alpha channel that derive their colours from this one */
+            /* bitmaps in another pixel layout that derive their colours from this one */
             gfx_UpdateAlphaPixTabs(HIDD_BM_COLMAP(vp->RasInfo->BitMap), colors, first, count, GfxBase);
         }
     }

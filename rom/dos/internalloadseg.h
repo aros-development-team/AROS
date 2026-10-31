@@ -1,9 +1,34 @@
 #ifndef INTERNALLOADSEG_H
 #define INTERNALLOADSEG_H
 
+#include <exec/nodes.h>
+#include <dos/doshunks.h>
+
 #define SEGTYPE_HUNK            1
 #define SEGTYPE_HUNK_OVERLAY    2
 #define SEGTYPE_ELF             10
+
+struct HunkRelocList;
+
+#ifndef __mc68000
+/* what the hunk loader collects for register_hunk() */
+struct HunkRelocList
+{
+    struct HunkRelocGroup *groups;
+    ULONG                  ngroups, gcap;
+    ULONG                 *offsets;
+    ULONG                  noffsets, ocap;
+    BOOL                   lost;
+};
+
+/* segdata node of a SEGTYPE_HUNK seglist; the groups and offsets follow it
+   in the same allocation, so UnLoadSeg() frees them with the node */
+struct HunkSegNode
+{
+    struct Node             hsn_Node;
+    struct HunkRelocTable   hsn_Relocs;
+};
+#endif
 
 BPTR InternalLoadSeg_AOS(BPTR file,
                          BPTR table,

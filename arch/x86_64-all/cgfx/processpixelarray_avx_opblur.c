@@ -101,10 +101,10 @@ static void gaussian_horizontal_avx(ULONG *dst, const ULONG *src, int w, int h, 
                 acc_b = _mm256_add_ps(acc_b, _mm256_mul_ps(_mm256_cvtepi32_ps(b_i), wgt));
             }
 
-            __m256i a32 = _mm256_cvtps_epi32(_mm256_add_ps(acc_a, half));
-            __m256i r32 = _mm256_cvtps_epi32(_mm256_add_ps(acc_r, half));
-            __m256i g32 = _mm256_cvtps_epi32(_mm256_add_ps(acc_g, half));
-            __m256i b32 = _mm256_cvtps_epi32(_mm256_add_ps(acc_b, half));
+            __m256i a32 = _mm256_cvttps_epi32(_mm256_add_ps(acc_a, half));
+            __m256i r32 = _mm256_cvttps_epi32(_mm256_add_ps(acc_r, half));
+            __m256i g32 = _mm256_cvttps_epi32(_mm256_add_ps(acc_g, half));
+            __m256i b32 = _mm256_cvttps_epi32(_mm256_add_ps(acc_b, half));
 
             /* Clamp to 0-255 to prevent channel contamination */
             __m256i zero = _mm256_setzero_si256();
@@ -201,10 +201,10 @@ static void gaussian_vertical_avx(ULONG *dst, const ULONG *src, int w, int h, co
                 acc_b = _mm256_add_ps(acc_b, _mm256_mul_ps(_mm256_cvtepi32_ps(b_i), wgt));
             }
 
-            __m256i a32 = _mm256_cvtps_epi32(_mm256_add_ps(acc_a, half));
-            __m256i r32 = _mm256_cvtps_epi32(_mm256_add_ps(acc_r, half));
-            __m256i g32 = _mm256_cvtps_epi32(_mm256_add_ps(acc_g, half));
-            __m256i b32 = _mm256_cvtps_epi32(_mm256_add_ps(acc_b, half));
+            __m256i a32 = _mm256_cvttps_epi32(_mm256_add_ps(acc_a, half));
+            __m256i r32 = _mm256_cvttps_epi32(_mm256_add_ps(acc_r, half));
+            __m256i g32 = _mm256_cvttps_epi32(_mm256_add_ps(acc_g, half));
+            __m256i b32 = _mm256_cvttps_epi32(_mm256_add_ps(acc_b, half));
 
             /* Clamp to 0-255 to prevent channel contamination */
             __m256i zero = _mm256_setzero_si256();
@@ -414,10 +414,10 @@ static void box_blur_avx(ULONG *dst, const ULONG *src, int w, int h, int radius)
             __m256 g = _mm256_div_ps(_mm256_cvtepi32_ps(acc_g), count);
             __m256 b = _mm256_div_ps(_mm256_cvtepi32_ps(acc_b), count);
 
-            __m256i a32 = _mm256_cvtps_epi32(_mm256_add_ps(a, half));
-            __m256i r32 = _mm256_cvtps_epi32(_mm256_add_ps(r, half));
-            __m256i g32 = _mm256_cvtps_epi32(_mm256_add_ps(g, half));
-            __m256i b32 = _mm256_cvtps_epi32(_mm256_add_ps(b, half));
+            __m256i a32 = _mm256_cvttps_epi32(_mm256_add_ps(a, half));
+            __m256i r32 = _mm256_cvttps_epi32(_mm256_add_ps(r, half));
+            __m256i g32 = _mm256_cvttps_epi32(_mm256_add_ps(g, half));
+            __m256i b32 = _mm256_cvttps_epi32(_mm256_add_ps(b, half));
 
             /* Clamp values to 0-255 to prevent corruption */
             __m256i zero = _mm256_setzero_si256();

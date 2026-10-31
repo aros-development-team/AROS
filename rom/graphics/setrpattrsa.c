@@ -16,6 +16,7 @@
     NAME */
 #include <graphics/rastport.h>
 #include <graphics/rpattr.h>
+#include <graphics/clip.h>
 #include <utility/tagitem.h>
 #include <proto/graphics.h>
 
@@ -157,6 +158,26 @@
                     _gc->fg = pixval;
                 else
                     _gc->bg = pixval;
+
+                /*
+                 * Keep the colour itself too: a composited layer's surface
+                 * with an alpha channel the RastPort's bitmap lacks maps it
+                 * again, with its alpha (see remap_gc_pens()). The extra data
+                 * is only allocated where such a surface can exist; elsewhere
+                 * (and without memory) only the pixel above is used, as before.
+                 */
+                driverdata = AllocDriverData(rp, rp->Layer && (rp->Layer->Flags & LAYERCOMPOSITED), GfxBase);
+                if(driverdata) {
+                    if(tag->ti_Tag == RPTAG_FgColor) {
+                        driverdata->dd_FgColor = rgb;
+                        driverdata->dd_FgPixel = pixval;
+                        driverdata->dd_ColorFlags |= DDCF_FGCOLOR;
+                    } else {
+                        driverdata->dd_BgColor = rgb;
+                        driverdata->dd_BgPixel = pixval;
+                        driverdata->dd_ColorFlags |= DDCF_BGCOLOR;
+                    }
+                }
             }
             break;
 

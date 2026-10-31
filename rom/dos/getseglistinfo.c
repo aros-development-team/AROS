@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -35,9 +35,18 @@
 
     INPUTS
         seglist - The segment list.
+        taglist - What to return; each ti_Data points to the storage for it:
+            GSLI_ElfHandle (APTR *) - the ELF handle of an ELF seglist.
+            GSLI_68KHUNK (APTR *) - the first hunk of a hunk seglist.
+            GSLI_68KRELOCS (struct HunkRelocTable **) - the 32-bit
+                relocations LoadSeg() applied to a hunk seglist, grouped as
+                dos/doshunks.h describes, for an emulator that copies the
+                segments and relocates them again. The table lives as long
+                as the seglist. Not answered on 68k, where the segments run
+                where they were loaded.
 
     RESULT
-        returns number of tags aknowledged.
+        returns number of tags acknowledged.
 
     NOTES
 
@@ -96,6 +105,17 @@
                             count++;
                         }
                         break;
+
+#ifndef __mc68000
+                    case GSLI_68KRELOCS:
+                        if ((tag->ti_Data) && (segfound->ln_Type == SEGTYPE_HUNK))
+                        {
+                            IPTR *storage = (IPTR *)tag->ti_Data;
+                            *storage = (IPTR)&((struct HunkSegNode *)segfound)->hsn_Relocs;
+                            count++;
+                        }
+                        break;
+#endif
                 }
             }
 

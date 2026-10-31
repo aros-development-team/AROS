@@ -63,6 +63,10 @@ ULONG M68KEmu_HeapAlloc(struct M68KEmuContext *ctx, ULONG size, ULONG requiremen
 {
     ULONG needed, prev, cur;
 
+    /* Round the guest size and add its header without wrapping ULONG. */
+    if (size > (ULONG)-1 - M68KEMU_HEAP_HDR - 3)
+        return 0;
+
     size   = (size + 3) & ~3;
     needed = size + M68KEMU_HEAP_HDR;  /* header */
 

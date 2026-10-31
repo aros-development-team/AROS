@@ -21,12 +21,12 @@
 #include <exec/ports.h>
 #include <dos/dos.h>
 #include <string.h>
+#include <sys/socket.h>
 
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/bsdsocket.h>
 #include <libraries/bsdsocket.h>
-#include <sys/socket.h>
 #include <netinet/in.h>
 
 #include "mdnsd.h"
@@ -110,12 +110,9 @@ static ULONG
 wait_and_receive(struct MDNSDaemon *md, ULONG sigmask, BOOL probing)
 {
     struct Library *SocketBase = md->md_SocketBase;
-    struct sockaddr_in from;
     struct timeval tv;
-    socklen_t fromlen;
     fd_set readfds;
-    LONG i, sock, top = -1;
-    int got;
+    LONG i, top = -1;
 
     if (SocketBase == NULL) {
         /* Between "reconfigure begin" and "end" there is no stack to ask. */
@@ -126,10 +123,19 @@ wait_and_receive(struct MDNSDaemon *md, ULONG sigmask, BOOL probing)
     tv.tv_sec = (probing || md->md_AnswerPending) ? 0 : 1;
     tv.tv_usec = md->md_AnswerPending ? 20000 : probing ? 250000 : 0;
     for (i = 0; i < md->md_IfCount; i++) {
-        sock = md->md_Ifs[i].mi_Socket;
-        FD_SET(sock, &readfds);
-        if (sock > top) {
-            top = sock;
+        LONG sock = md->md_Ifs[i].mi_Socket;
+
+        if (sock >= 0) {
+            FD_SET(sock, &readfds);
+            if (sock > top) {
+                top = sock;
+            }
+        }
+    }
+    if (md->md_Socket6 >= 0) {
+        FD_SET(md->md_Socket6, &readfds);
+        if (md->md_Socket6 > top) {
+            top = md->md_Socket6;
         }
     }
     if (WaitSelect(top + 1, top >= 0 ? &readfds : NULL, NULL, NULL, &tv,
@@ -138,21 +144,81 @@ wait_and_receive(struct MDNSDaemon *md, ULONG sigmask, BOOL probing)
     }
 
     for (i = 0; i < md->md_IfCount; i++) {
-        sock = md->md_Ifs[i].mi_Socket;
-        if (!FD_ISSET(sock, &readfds)) {
-            continue;
+        LONG sock = md->md_Ifs[i].mi_Socket;
+
+        if (sock >= 0 && FD_ISSET(sock, &readfds)) {
+            struct sockaddr_in from;
+            socklen_t fromlen = sizeof(from);
+            int got = recvfrom(sock, (char *)md->md_RxBuf, MDNS_MAX_PACKET,
+                0, (struct sockaddr *)&from, &fromlen);
+
+            if (got > 0) {
+                md->md_RxPackets++;
+                md->md_SendIf = i;
+                md->md_SendFamily = AF_INET;
+                mdnsHandlePacket(md, md->md_RxBuf, (LONG)got,
+                    (ULONG)ntohl((unsigned long)from.sin_addr.s_addr),
+                    (UWORD)ntohs(from.sin_port));
+                md->md_SendIf = -1;
+                md->md_SendFamily = 0;
+            }
         }
-        fromlen = sizeof(from);
-        got = recvfrom(sock, (char *)md->md_RxBuf, MDNS_MAX_PACKET, 0,
-            (struct sockaddr *)&from, &fromlen);
+    }
+    if (md->md_Socket6 >= 0 && FD_ISSET(md->md_Socket6, &readfds)) {
+        union {
+            struct cmsghdr align;
+            UBYTE data[CMSG_SPACE(sizeof(struct in6_pktinfo))];
+        } control;
+        struct sockaddr_in6 from6;
+        struct in6_pktinfo packetInfo;
+        struct msghdr message;
+        struct iovec vector;
+        struct cmsghdr *header;
+        BOOL havePacketInfo = FALSE;
+        int got;
+
+        memset(&message, 0, sizeof(message));
+        memset(&from6, 0, sizeof(from6));
+        vector.iov_base = md->md_RxBuf;
+        vector.iov_len = MDNS_MAX_PACKET;
+        message.msg_name = &from6;
+        message.msg_namelen = sizeof(from6);
+        message.msg_iov = &vector;
+        message.msg_iovlen = 1;
+        message.msg_control = &control;
+        message.msg_controllen = sizeof(control);
+        got = recvmsg((int)md->md_Socket6, &message, 0);
+
         if (got > 0) {
+            for (header = CMSG_FIRSTHDR(&message); header != NULL;
+                    header = CMSG_NXTHDR(&message, header)) {
+                if (header->cmsg_level == IPPROTO_IPV6 &&
+                    header->cmsg_type == IPV6_PKTINFO &&
+                    header->cmsg_len >=
+                        CMSG_LEN(sizeof(struct in6_pktinfo))) {
+                    memcpy(&packetInfo, CMSG_DATA(header),
+                        sizeof(packetInfo));
+                    havePacketInfo = TRUE;
+                    break;
+                }
+            }
+        }
+
+        for (i = 0; havePacketInfo && i < md->md_IfCount; i++) {
+            if (packetInfo.ipi6_ifindex == md->md_Ifs[i].mi_Index) {
+                break;
+            }
+        }
+        if (got > 0 && havePacketInfo && i < md->md_IfCount) {
             md->md_RxPackets++;
-            /* what this packet causes to be sent goes back to its link */
+            /* What this packet causes to be sent goes back to its link
+             * and, for unicast, its address family. */
             md->md_SendIf = i;
-            mdnsHandlePacket(md, md->md_RxBuf, (LONG)got,
-                (ULONG)ntohl((unsigned long)from.sin_addr.s_addr),
-                (UWORD)ntohs(from.sin_port));
+            md->md_SendFamily = AF_INET6;
+            mdnsHandlePacket6(md, md->md_RxBuf, (LONG)got,
+                &from6.sin6_addr, (UWORD)ntohs(from6.sin6_port));
             md->md_SendIf = -1;
+            md->md_SendFamily = 0;
         }
     }
     return sigmask;
@@ -180,6 +246,7 @@ main(void)
     }
 
     md->md_Socket = -1;
+    md->md_Socket6 = -1;
     md->md_SendIf = -1;
     md->md_NextHandle = 1;
     md->md_DaemonID = GetETaskID(FindTask(NULL));

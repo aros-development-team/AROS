@@ -210,7 +210,7 @@
 /* ── Custom chip constants ───────────────────────────────────────── */
 
 #define CUSTOM_BASE                 0x00DFF000
-#define CUSTOM_MASK                 0x00FFF000
+#define CUSTOM_MASK                 0xFFFFF000u
 #define POTGOR_DEFAULT              0xFF00
 
 /* ── Heap constants ──────────────────────────────────────────────── */
