@@ -369,6 +369,14 @@ interface that stays up and running, `addifent()` then makes the link-local agai
 as when the interface comes up: DAD, then a Router Solicitation, whose answer brings back the default
 route and the SLAAC addresses.
 
+While a neighbour's link-layer address is being resolved, the packets for it are queued on its
+cache entry (`ln_hold`, chained through `m_nextpkt`): up to `ND6_MAXQUEUELEN` (16), the oldest
+dropped first, all sent in order when the Neighbor Advertisement comes (RFC 4861 section 7.2.2). A
+single slot would keep only the last fragment of a datagram fragmented on its way out. When the
+resolution fails, each queued packet gets an ICMPv6 Destination Unreachable, address unreachable
+(the section says MUST); it comes back to the socket that sent the packet, so a connected one
+learns the neighbour is not there.
+
 ### 6.2 Multicast Listener Discovery (MLD)
 
 `mld6.c` is the host side of MLD. `in6_addmulti`/`in6_delmulti` maintain the `in6_multihead` list

@@ -48,17 +48,25 @@
  * Neighbor cache entry (llinfo_nd6).
  * One per neighbor, linked in a doubly-linked list with sentinel.
  */
+#define ND6_MAXQUEUELEN	16		/* packets queued per neighbour while resolving */
+
 struct llinfo_nd6 {
 	struct llinfo_nd6 *ln_next;
 	struct llinfo_nd6 *ln_prev;
 	struct rtentry *ln_rt;		/* back-pointer to routing entry */
-	struct mbuf *ln_hold;		/* queued packet while resolving */
+	struct mbuf *ln_hold;		/* packets queued while resolving (m_nextpkt) */
+	short ln_holdlen;		/* how many, at most ND6_MAXQUEUELEN */
 	long ln_asked;			/* # of NS sent */
 	short ln_state;			/* ND6_LLINFO_* */
 	short ln_router;		/* neighbor is a router */
 	long ln_expire;			/* expiry time (seconds) */
 	long ln_ntick;			/* ticks for state transitions */
 };
+
+void nd6_hold_add(struct llinfo_nd6 *, struct mbuf *);
+void nd6_hold_free(struct llinfo_nd6 *, int);
+void nd6_hold_send(struct llinfo_nd6 *, struct ifnet *, struct sockaddr *, struct rtentry *);
+
 
 /*
  * Per-interface ND information (RFC 4861 §6.3.2).
