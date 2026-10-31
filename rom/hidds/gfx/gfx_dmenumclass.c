@@ -19,6 +19,7 @@
 
 #include "gfx_intern.h"
 #include "gfx_display.h"
+#include "gfx_softmodes.h"
 
 #include <string.h>
 #include <stddef.h>
@@ -56,6 +57,11 @@ static inline BOOL cmp_pfs(HIDDT_PixelFormat *tmppf, HIDDT_PixelFormat *dbpf)
 #define MODEID_TO_SYNCIDX(id) (((id) & 0X0000FF00) >> 8)
 #define MODEID_TO_PFIDX(id)   ( (id) & 0x000000FF)
 
+static inline BOOL is_base_dmenum(OOP_Class *cl, OOP_Object *o)
+{
+    return (cl != NULL && o != NULL && OOP_OCLASS(o) == cl);
+}
+
 static inline BOOL alloc_mode_bm(struct mode_bm *bm, ULONG numsyncs, ULONG numpfs,
                                  OOP_Class *cl)
 {
@@ -64,7 +70,10 @@ static inline BOOL alloc_mode_bm(struct mode_bm *bm, ULONG numsyncs, ULONG numpf
     
     bm->bm = AllocVec(bm->bpr * numsyncs, MEMF_CLEAR);
     if (NULL == bm->bm)
+    {
+        bm->bpr = 0;
         return FALSE;
+    }
         
     /* We initialize the mode bitmap to all modes valid */
     SetMem(bm->bm, 0xFF, bm->bpr * numsyncs);
@@ -276,6 +285,7 @@ static HIDDT_ModeID *querymode(struct modequery *mq)
 
 static BOOL alloc_mode_db(struct mode_db *mdb, ULONG numsyncs, ULONG numpfs, OOP_Class *cl)
 {
+    struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
     BOOL ok = FALSE;
     
     if (0 == numsyncs || 0 == numpfs)
@@ -286,11 +296,11 @@ static BOOL alloc_mode_db(struct mode_db *mdb, ULONG numsyncs, ULONG numpfs, OOP
     mdb->num_pixfmts    = numpfs;
     mdb->num_syncs      = numsyncs;
 
-    mdb->syncs   = AllocMem(sizeof (OOP_Object *) * numsyncs, MEMF_CLEAR);
+    mdb->syncs   = AllocVec(sizeof (OOP_Object *) * numsyncs, MEMF_CLEAR);
     
     if (NULL != mdb->syncs)
     {
-        mdb->pixfmts = AllocMem(sizeof (OOP_Object *) * numpfs,   MEMF_CLEAR);
+        mdb->pixfmts = AllocVec(sizeof (OOP_Object *) * numpfs,   MEMF_CLEAR);
         
         if (NULL != mdb->pixfmts)
         {
@@ -299,6 +309,16 @@ static BOOL alloc_mode_db(struct mode_db *mdb, ULONG numsyncs, ULONG numpfs, OOP
                 if (alloc_mode_bm(&mdb->checked_mode_bm, numsyncs, numpfs, cl))
                 {
                     ok = TRUE;
+
+                    /*
+                     * Software-mode tracking is optional: if allocating
+                     * soft_mode_bm fails, keep native mode registration valid
+                     * and skip software LUT8 synthesis.
+                     */
+                    if (alloc_mode_bm(&mdb->soft_mode_bm, numsyncs, numpfs, cl))
+                    {
+                        SetMem(mdb->soft_mode_bm.bm, 0, mdb->soft_mode_bm.bpr * numsyncs);
+                    }
                 }
             }
         }
@@ -325,7 +345,7 @@ static VOID free_mode_db(struct mode_db *mdb, OOP_Class *cl)
     {
     
         /* Pixelformats are shared objects and never freed */
-        FreeMem(mdb->pixfmts, sizeof (OOP_Object *) * mdb->num_pixfmts);
+        FreeVec(mdb->pixfmts);
         mdb->pixfmts = NULL; mdb->num_pixfmts = 0;
     }
 
@@ -341,7 +361,7 @@ static VOID free_mode_db(struct mode_db *mdb, OOP_Class *cl)
             }
         }
         
-        FreeMem(mdb->syncs, sizeof (OOP_Object *) * mdb->num_syncs);
+        FreeVec(mdb->syncs);
         mdb->syncs = NULL; mdb->num_syncs = 0;
     }
     
@@ -354,10 +374,32 @@ static VOID free_mode_db(struct mode_db *mdb, OOP_Class *cl)
     {
         free_mode_bm(&mdb->checked_mode_bm, cl);
     }
+
+    if (NULL != mdb->soft_mode_bm.bm)
+    {
+        free_mode_bm(&mdb->soft_mode_bm, cl);
+    }
     
     ReleaseSemaphore(&mdb->sema);
     
     return;
+}
+
+static BOOL sync_has_native_truecolor(struct mode_db *mdb, ULONG syncidx, ULONG driver_numpfs)
+{
+    ULONG i;
+
+    for (i = 0; i < driver_numpfs; i++)
+    {
+        if (mdb->pixfmts[i] &&
+            is_valid_mode(&mdb->checked_mode_bm, syncidx, i) &&
+            (!mdb->soft_mode_bm.bm || !is_valid_mode(&mdb->soft_mode_bm, syncidx, i)) &&
+            HIDD_PF_COLMODEL(PF(mdb->pixfmts[i])) == vHidd_ColorModel_TrueColor)
+        {
+            return TRUE;
+        }
+    }
+    return FALSE;
 }
 
 static BOOL register_modes(OOP_Class *cl, OOP_Object *o, struct TagItem *modetags)
@@ -432,6 +474,7 @@ static BOOL register_modes(OOP_Class *cl, OOP_Object *o, struct TagItem *modetag
     struct TagItem          def_pixfmt_tags[num_Hidd_PixFmt_Attrs + 1];
     
     ULONG                   numpfs = 0,numsyncs = 0;
+    ULONG                   alloc_numpfs = 0;
     ULONG                   pfidx = 0, syncidx = 0;
     
     struct TagItem temporary_tags[] = {
@@ -498,6 +541,7 @@ static BOOL register_modes(OOP_Class *cl, OOP_Object *o, struct TagItem *modetag
     if (0 == numpfs)
     {
         D(bug("!!! WE MUST AT LEAST HAVE ONE PIXFMT IN Gfx::RegisterModes() !!!\n"));
+        return FALSE;
     }
 
     if (0 == numsyncs)
@@ -510,10 +554,34 @@ static BOOL register_modes(OOP_Class *cl, OOP_Object *o, struct TagItem *modetag
     }
 
     ObtainSemaphore(&mdb->sema);
-    
-    /* Allocate memory for mode db */
-    if (!alloc_mode_db(&data->mdb, numsyncs, numpfs, cl))
-        goto failure;
+
+    alloc_numpfs = (is_base_dmenum(cl, o) && numpfs < 256) ? (numpfs + 1) : numpfs;
+
+    /*
+     * Allocate memory for mode db, optionally reserving one extra slot for
+     * synthetic LUT8 on base CLID_Hidd_DMEnum instances. If the extra slot
+     * allocation fails, fall back to exact native numpfs so native mode
+     * registration still succeeds.
+     */
+    if (!alloc_mode_db(&data->mdb, numsyncs, alloc_numpfs, cl))
+    {
+        if (alloc_numpfs == numpfs || !alloc_mode_db(&data->mdb, numsyncs, numpfs, cl))
+            goto failure;
+        alloc_numpfs = numpfs;
+    }
+
+    if (alloc_numpfs > numpfs)
+    {
+        ULONG s;
+
+        for (s = 0; s < numsyncs; s++)
+        {
+            set_valid_mode(&mdb->orig_mode_bm, s, numpfs, FALSE);
+            set_valid_mode(&mdb->checked_mode_bm, s, numpfs, FALSE);
+        }
+    }
+
+    mdb->num_pixfmts = numpfs;
     
     
     for (tstate = modetags; (tag = NextTagItem(&tstate));)
@@ -575,6 +643,78 @@ static BOOL register_modes(OOP_Class *cl, OOP_Object *o, struct TagItem *modetag
             {
                 def_pixfmt_tags[idx].ti_Tag  = tag->ti_Tag;
                 def_pixfmt_tags[idx].ti_Data = tag->ti_Data;
+            }
+        }
+    }
+
+    /*
+     * Synthesize software LUT8 modes for base CLID_Hidd_DMEnum instances when:
+     * - the optional soft_mode_bm bitmap and extra pixelformat slot are available,
+     * - the driver did not already register vHidd_StdPixFmt_LUT8 natively, and
+     * - at least one sync has a valid native TrueColor backing mode.
+     *
+     * Contract note: DMEnum does not invoke CheckMode during mode registration
+     * (and CheckMode has no callers in the tree), so every native pixelformat
+     * registered by the driver (0 .. numpfs - 1) remains valid across all
+     * syncs in both orig_mode_bm and checked_mode_bm. Consequently, if a
+     * driver registers LUT8 natively, LUT8 is already natively valid for every
+     * sync and no per-sync reuse of a native LUT8 slot is needed. Software LUT8
+     * is therefore only synthesized by appending a slot at lut8_pfidx = numpfs,
+     * preserving all native pf slots (0 .. numpfs - 1) and their ModeIDs.
+     */
+    if (is_base_dmenum(cl, o) && mdb->soft_mode_bm.bm != NULL && alloc_numpfs > numpfs)
+    {
+        BOOL has_native_lut8 = FALSE;
+        BOOL has_any_truecolor = FALSE;
+        ULONG i, s;
+
+        for (i = 0; i < numpfs; i++)
+        {
+            if (mdb->pixfmts[i] && PF(mdb->pixfmts[i])->stdpixfmt == vHidd_StdPixFmt_LUT8)
+            {
+                has_native_lut8 = TRUE;
+                break;
+            }
+        }
+
+        if (!has_native_lut8)
+        {
+            for (s = 0; s < numsyncs; s++)
+            {
+                if (sync_has_native_truecolor(mdb, s, numpfs))
+                {
+                    has_any_truecolor = TRUE;
+                    break;
+                }
+            }
+        }
+
+        if (!has_native_lut8 && has_any_truecolor)
+        {
+            OOP_Object *lut8_pf = DMEnum__Internal__GetPixFmt(cl, vHidd_StdPixFmt_LUT8);
+
+            if (lut8_pf)
+            {
+                ULONG lut8_pfidx = numpfs;
+
+                mdb->pixfmts[lut8_pfidx] = lut8_pf;
+                mdb->num_pixfmts = numpfs + 1;
+
+                for (s = 0; s < numsyncs; s++)
+                {
+                    set_valid_mode(&mdb->orig_mode_bm, s, lut8_pfidx, FALSE);
+                    if (sync_has_native_truecolor(mdb, s, numpfs) &&
+                        COMPUTE_HIDD_MODEID(s, lut8_pfidx) != vHidd_ModeID_Invalid)
+                    {
+                        set_valid_mode(&mdb->checked_mode_bm, s, lut8_pfidx, TRUE);
+                        set_valid_mode(&mdb->soft_mode_bm, s, lut8_pfidx, TRUE);
+                    }
+                    else
+                    {
+                        set_valid_mode(&mdb->checked_mode_bm, s, lut8_pfidx, FALSE);
+                        set_valid_mode(&mdb->soft_mode_bm, s, lut8_pfidx, FALSE);
+                    }
+                }
             }
         }
     }
@@ -1274,6 +1414,35 @@ VOID DMEnum__Internal__ReleasePixFmt(OOP_Class *cl, OOP_Object *pf)
 
 BOOL DMEnum__Hidd_DMEnum__CheckMode(OOP_Class *cl, OOP_Object *o, struct pHidd_DMEnum_CheckMode *msg)
 {
+    if (is_base_dmenum(cl, o))
+    {
+        struct HIDDDMEnumData *data = OOP_INST_DATA(cl, o);
+        struct mode_db *mdb = &data->mdb;
+        ULONG pfidx, syncidx;
+        BOOL is_orig = TRUE;
+
+        if (DMEnum__Internal__IsSoftwareMode(cl, o, msg->modeID))
+            return (DMEnum__Internal__GetBackingMode(cl, o, msg->modeID) != vHidd_ModeID_Invalid);
+
+        if (msg->modeID != vHidd_ModeID_Invalid && mdb->orig_mode_bm.bm &&
+            mdb->num_pixfmts > 0 && mdb->num_syncs > 0)
+        {
+            pfidx   = MODEID_TO_PFIDX(msg->modeID);
+            syncidx = MODEID_TO_SYNCIDX(msg->modeID);
+
+            ObtainSemaphoreShared(&mdb->sema);
+            if (pfidx >= mdb->num_pixfmts || syncidx >= mdb->num_syncs ||
+                !is_valid_mode(&mdb->orig_mode_bm, syncidx, pfidx))
+            {
+                is_orig = FALSE;
+            }
+            ReleaseSemaphore(&mdb->sema);
+
+            if (!is_orig)
+                return FALSE;
+        }
+    }
+
     /* As a default we allways return TRUE, ie. the mode is OK */
     return TRUE;
 }
@@ -1384,4 +1553,166 @@ OOP_Object *DMEnum__Hidd_DMEnum__GetSync(OOP_Class *cl, OOP_Object *o, struct pH
         D(bug("!!! Illegal sync index passed to Gfx::GetSync(): %d\n", msg->num));
         return NULL;
     }
+}
+
+BOOL DMEnum__Internal__IsSoftwareMode(OOP_Class *cl, OOP_Object *o, HIDDT_ModeID modeID)
+{
+    struct HIDDDMEnumData *data;
+    struct mode_db *mdb;
+    ULONG pfidx, syncidx;
+    BOOL is_soft = FALSE;
+
+    if (!is_base_dmenum(cl, o) || modeID == vHidd_ModeID_Invalid)
+        return FALSE;
+
+    data = OOP_INST_DATA(cl, o);
+    mdb = &data->mdb;
+    if (!mdb->soft_mode_bm.bm || mdb->num_pixfmts == 0 || mdb->num_syncs == 0)
+        return FALSE;
+
+    pfidx   = MODEID_TO_PFIDX(modeID);
+    syncidx = MODEID_TO_SYNCIDX(modeID);
+
+    ObtainSemaphoreShared(&mdb->sema);
+    if (pfidx < mdb->num_pixfmts && syncidx < mdb->num_syncs && mdb->soft_mode_bm.bm)
+    {
+        if (is_valid_mode(&mdb->checked_mode_bm, syncidx, pfidx) &&
+            is_valid_mode(&mdb->soft_mode_bm, syncidx, pfidx))
+        {
+            is_soft = TRUE;
+        }
+    }
+    ReleaseSemaphore(&mdb->sema);
+
+    return is_soft;
+}
+
+HIDDT_ModeID DMEnum__Internal__GetBackingMode(OOP_Class *cl, OOP_Object *o, HIDDT_ModeID modeID)
+{
+    struct HIDDDMEnumData *data;
+    struct mode_db *mdb;
+    ULONG pfidx, syncidx, i;
+    HIDDT_ModeID backing_id = vHidd_ModeID_Invalid;
+
+    if (!is_base_dmenum(cl, o) || modeID == vHidd_ModeID_Invalid)
+        return vHidd_ModeID_Invalid;
+
+    data = OOP_INST_DATA(cl, o);
+    mdb = &data->mdb;
+    if (mdb->num_pixfmts == 0 || mdb->num_syncs == 0)
+        return vHidd_ModeID_Invalid;
+
+    pfidx   = MODEID_TO_PFIDX(modeID);
+    syncidx = MODEID_TO_SYNCIDX(modeID);
+
+    ObtainSemaphoreShared(&mdb->sema);
+    if (pfidx < mdb->num_pixfmts && syncidx < mdb->num_syncs &&
+        is_valid_mode(&mdb->checked_mode_bm, syncidx, pfidx))
+    {
+        if (!mdb->soft_mode_bm.bm || !is_valid_mode(&mdb->soft_mode_bm, syncidx, pfidx))
+        {
+            backing_id = modeID;
+        }
+        else
+        {
+            ULONG best_pfidx = mdb->num_pixfmts;
+            ULONG best_depth = 0;
+            ULONG best_bpp   = 0;
+
+            for (i = 0; i < mdb->num_pixfmts; i++)
+            {
+                if (mdb->pixfmts[i] &&
+                    is_valid_mode(&mdb->checked_mode_bm, syncidx, i) &&
+                    (!mdb->soft_mode_bm.bm || !is_valid_mode(&mdb->soft_mode_bm, syncidx, i)) &&
+                    HIDD_PF_COLMODEL(PF(mdb->pixfmts[i])) == vHidd_ColorModel_TrueColor)
+                {
+                    ULONG depth = PF(mdb->pixfmts[i])->depth;
+                    ULONG bpp   = PF(mdb->pixfmts[i])->bytes_per_pixel;
+
+                    if (best_pfidx == mdb->num_pixfmts ||
+                        (best_bpp < 3 && bpp >= 3) ||
+                        (best_bpp < 3 && bpp < 3 && depth > best_depth))
+                    {
+                        best_pfidx = i;
+                        best_depth = depth;
+                        best_bpp   = bpp;
+                    }
+                }
+            }
+
+            if (best_pfidx < mdb->num_pixfmts)
+                backing_id = COMPUTE_HIDD_MODEID(syncidx, best_pfidx);
+        }
+    }
+    ReleaseSemaphore(&mdb->sema);
+
+    return backing_id;
+}
+
+BOOL DMEnum__Internal__HasNativeModes(OOP_Class *cl, OOP_Object *o)
+{
+    struct HIDDDMEnumData *data;
+    struct mode_db *mdb;
+    ULONG s, p;
+    BOOL has_native = FALSE;
+
+    if (!is_base_dmenum(cl, o))
+        return FALSE;
+
+    data = OOP_INST_DATA(cl, o);
+    mdb = &data->mdb;
+    if (mdb->num_pixfmts == 0 || mdb->num_syncs == 0)
+        return FALSE;
+
+    ObtainSemaphoreShared(&mdb->sema);
+    for (s = 0; s < mdb->num_syncs && !has_native; s++)
+    {
+        for (p = 0; p < mdb->num_pixfmts; p++)
+        {
+            if (is_valid_mode(&mdb->checked_mode_bm, s, p) &&
+                (!mdb->soft_mode_bm.bm || !is_valid_mode(&mdb->soft_mode_bm, s, p)))
+            {
+                has_native = TRUE;
+                break;
+            }
+        }
+    }
+    ReleaseSemaphore(&mdb->sema);
+
+    return has_native;
+}
+
+VOID DMEnum__Internal__DisableSoftwareModes(OOP_Class *cl, OOP_Object *o)
+{
+    struct HIDDDMEnumData *data;
+    struct mode_db *mdb;
+    ULONG s, p;
+
+    if (!is_base_dmenum(cl, o))
+        return;
+
+    data = OOP_INST_DATA(cl, o);
+    mdb = &data->mdb;
+    if (!mdb->soft_mode_bm.bm || mdb->num_pixfmts == 0 || mdb->num_syncs == 0)
+        return;
+
+    ObtainSemaphore(&mdb->sema);
+    for (s = 0; s < mdb->num_syncs; s++)
+    {
+        for (p = 0; p < mdb->num_pixfmts; p++)
+        {
+            if (is_valid_mode(&mdb->soft_mode_bm, s, p))
+            {
+                set_valid_mode(&mdb->checked_mode_bm, s, p, FALSE);
+                set_valid_mode(&mdb->soft_mode_bm, s, p, FALSE);
+            }
+        }
+    }
+    while (mdb->num_pixfmts > 0 && mdb->orig_mode_bm.bm &&
+           !is_valid_mode(&mdb->orig_mode_bm, 0, mdb->num_pixfmts - 1))
+    {
+        mdb->num_pixfmts--;
+        mdb->pixfmts[mdb->num_pixfmts] = NULL;
+    }
+    ReleaseSemaphore(&mdb->sema);
 }

@@ -355,68 +355,74 @@ static VOID true_to_pal(OOP_Class *cl, OOP_Object *o,
 static VOID pal_to_true(OOP_Class *cl, OOP_Object *o,
                         struct pHidd_BitMap_ConvertPixels *msg)
 {
-    HIDDT_PixelLUT *lut;
-    struct HIDDBitMapData *data = OOP_INST_DATA(cl, o);
+    struct
+    {
+        HIDDT_Color colors[256];
+        HIDDT_Pixel pixels[256];
+    } *palette = NULL;
+    struct HIDDBitMapData *locked_data = NULL;
+    HIDDT_PixelLUT *lut = msg->pixlut;
+    LONG x, y;
 
     INIT_VARS()
     INIT_FMTVARS()
-    
-    LONG x, y;
 
-    lut = msg->pixlut;
-    D(bug("[ConvertPixels] pal_to_true(): pixlut is 0x%p, colormap is 0x%p\n", lut, data->colmap));
+    if (!lut)
+    {
+        palette = AllocVec(sizeof(*palette), MEMF_ANY);
+        if (palette)
+        {
+            BM__Internal__SnapshotPalette(CSD(cl), o, palette->colors, 256);
+            for (x = 0; x < 256; x++)
+                palette->pixels[x] = MAP_RGBA(palette->colors[x].red, palette->colors[x].green,
+                                              palette->colors[x].blue, palette->colors[x].alpha, dstfmt);
+        }
+        else
+        {
+            /* Keep converting without a temporary table if allocation fails.
+             * Only ColorMap::GetColor is called while the owner is locked. */
+            locked_data = OOP_INST_DATA(cl, o);
+            ObtainSemaphoreShared(&locked_data->lock);
+        }
+    }
 
-    DB2(bug("[ConvertPixels] Buffer contents:\n"));
-    for (y = 0; y < msg->height; y ++)
+    for (y = 0; y < msg->height; y++)
     {
         APTR s = src;
         APTR d = dst;
 
-        for (x = 0; x < msg->width; x ++)
+        for (x = 0; x < msg->width; x++)
         {
             ULONG srcpix = 0;
 
             if (lut)
             {
                 GET_PAL_PIX(s, srcpix, srcfmt, lut->pixels);
-
-                DB2(bug("0x%08lX ", srcpix));
-                /* We now have a pixel in Native32 format. Put it back */
-                PUT_TRUE_PIX(d, srcpix, dstfmt);
             }
             else
             {
-                if (data->colmap)
+                GET_PAL_PIX_CM(s, srcpix, srcfmt);
+                if (palette)
+                    srcpix = srcpix < 256 ? palette->pixels[srcpix] : 0;
+                else
                 {
-                    HIDDT_Color col = {0};
-                    HIDDT_Pixel red, green, blue, alpha;
+                    HIDDT_Color color = {0};
 
-                    /* For optimization purposes we don't swap bytes after MAP_RGBA
-                       in order not to swap them back when putting into destination
-                       buffer. */
-                    GET_PAL_PIX_CM(s, srcpix, srcfmt);
-                    HIDD_CM_GetColor(data->colmap, srcpix, &col);
-                    red   = col.red;
-                    green = col.green;
-                    blue  = col.blue;
-                    alpha = col.alpha;
-                    srcpix = MAP_RGBA(red, green, blue, alpha, dstfmt);
+                    if (srcpix < 256 && locked_data->colmap)
+                        HIDD_CM_GetColor(locked_data->colmap, srcpix, &color);
+                    srcpix = MAP_RGBA(color.red, color.green, color.blue, color.alpha, dstfmt);
                 }
-                /* If there's neither pixlut nor colormap provided
-                   we'll end up in all black. At least won't crash
-                   and make the problem clearly visible */
-                DB2(bug("0x%08lX ", srcpix));
-                PUT_TRUE_PIX_CM(d, srcpix, dstfmt);
             }
+            PUT_TRUE_PIX(d, srcpix, dstfmt);
         }
-
         src += msg->srcMod;
         dst += msg->dstMod;
-        DB2(bug("\n"));
     }
-    
+    if (locked_data)
+        ReleaseSemaphore(&locked_data->lock);
+    FreeVec(palette);
     *msg->srcPixels = src;
-    *msg->dstBuf    = dst;
+    *msg->dstBuf = dst;
 }
 
 /****************************************************************************************/

@@ -19,6 +19,7 @@
 
 #include "gfx_intern.h"
 #include "gfx_display.h"
+#include "gfx_softmodes.h"
 
 #include <string.h>
 #include <stddef.h>
@@ -494,6 +495,8 @@ OOP_Object *Display__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
             data->comp_RectChanged = OOP_GetMethod(data->compositor,
                                                    HiddCompositorBase + moHidd_Compositor_BitMapRectChanged,
                                                    &data->comp_RectChanged_cl);
+            if (!Compositor__Internal__CanHandleSoftware(CSD(cl)->compositorclass, data->compositor))
+                DMEnum__Internal__DisableSoftwareModes(CSD(cl)->dmenumclass, data->dmenum);
         }
     }
     return o;
@@ -758,6 +761,9 @@ VOID Display__Hidd_Display__BMToDisplayCoords(OOP_Class *cl, OOP_Object *o, stru
 *****************************************************************************************/
 VOID Display__Hidd_Display__NominalDimensions(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_NominalDimensions *msg)
 {
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
+    struct HIDDDisplayData *data = OOP_INST_DATA(cl, o);
+
     EnterFunc(bug("HIDDGfx::NominalDimensions()\n"));
 
     if (msg->width)
@@ -765,7 +771,36 @@ VOID Display__Hidd_Display__NominalDimensions(OOP_Class *cl, OOP_Object *o, stru
     if (msg->height)
         *(msg->height) = AROS_NOMINAL_HEIGHT;
     if (msg->depth)
-        *(msg->depth) = AROS_NOMINAL_DEPTH;
+    {
+        UBYTE nomdepth = AROS_NOMINAL_DEPTH;
+
+        if (data->dmenum)
+        {
+            HIDDT_ModeID mode = vHidd_ModeID_Invalid;
+            OOP_Object *sync = NULL, *pf = NULL;
+            ULONG min_ge_nom = ~0UL;
+
+            while ((mode = HIDD_DMEnum_NextModeID(data->dmenum, mode, &sync, &pf)) != vHidd_ModeID_Invalid)
+            {
+                IPTR d = 0;
+
+                if (DMEnum__Internal__IsSoftwareMode(CSD(cl)->dmenumclass, data->dmenum, mode))
+                    continue;
+
+                if (pf)
+                {
+                    OOP_GetAttr(pf, aHidd_PixFmt_Depth, &d);
+                    if (d >= AROS_NOMINAL_DEPTH && (ULONG)d < min_ge_nom)
+                        min_ge_nom = (ULONG)d;
+                }
+            }
+
+            if (min_ge_nom != ~0UL)
+                nomdepth = (UBYTE)min_ge_nom;
+        }
+
+        *(msg->depth) = nomdepth;
+    }
 }
 
 /*****************************************************************************************
@@ -910,12 +945,18 @@ OOP_Object *Display__Hidd_Display__CreateObject(OOP_Class *cl, OOP_Object *o, st
             {TAG_MORE        , 0},      /* 6 */
         };
         struct TagItem *tag, *tstate = msg->attrList;
+        struct TagItem *cloned_attrlist = NULL;
         ULONG idx;
 
         STRPTR        classid     = NULL;
         OOP_Class    *classptr    = NULL;
         BOOL          displayable = FALSE;
         BOOL          framebuffer = FALSE;
+        BOOL          scanout     = FALSE;
+        HIDDT_ModeID  modeid      = vHidd_ModeID_Invalid;
+        BOOL          got_modeid  = FALSE;
+        BOOL          softmode    = FALSE;
+        BOOL          softfriend  = FALSE;
         HIDDT_StdPixFmt pixfmt    = vHidd_StdPixFmt_Unknown;
         OOP_Object   *friend_bm   = NULL;
         OOP_Object   *sync            = NULL;
@@ -955,6 +996,10 @@ OOP_Object *Display__Hidd_Display__CreateObject(OOP_Class *cl, OOP_Object *o, st
                         framebuffer = tag->ti_Data;
                         break;
 
+                    case aoHidd_BitMap_Scanout:
+                        scanout = tag->ti_Data;
+                        break;
+
                     case aoHidd_BitMap_Width:
                         got_width = TRUE;
                         break;
@@ -974,6 +1019,8 @@ OOP_Object *Display__Hidd_Display__CreateObject(OOP_Class *cl, OOP_Object *o, st
                             D(bug("!!! Gfx::CreateObject: USER PASSED INVALID MODEID !!!\n"));
                             return NULL;
                         }
+                        modeid = (HIDDT_ModeID)tag->ti_Data;
+                        got_modeid = TRUE;
                         break;
 
                     case aoHidd_BitMap_Friend:
@@ -999,6 +1046,88 @@ OOP_Object *Display__Hidd_Display__CreateObject(OOP_Class *cl, OOP_Object *o, st
                         break;
                 }
             }
+        }
+
+        if (got_modeid && data->dmenum)
+        {
+            softmode = DMEnum__Internal__IsSoftwareMode(CSD(cl)->dmenumclass, data->dmenum, modeid);
+        }
+        else if (friend_bm && pixfmt == vHidd_StdPixFmt_Unknown &&
+                 !GetTagData(aHidd_BitMap_VideoFormat, vHidd_VideoFmt_None, msg->attrList))
+        {
+            IPTR friend_modeid = vHidd_ModeID_Invalid;
+
+            OOP_GetAttr(friend_bm, aHidd_BitMap_ModeID, &friend_modeid);
+            if (friend_modeid != vHidd_ModeID_Invalid && data->dmenum)
+            {
+                softfriend = DMEnum__Internal__IsSoftwareMode(CSD(cl)->dmenumclass, data->dmenum,
+                                                              (HIDDT_ModeID)friend_modeid);
+            }
+        }
+
+        if ((softmode || softfriend) && scanout)
+        {
+            /* Software modes are never hardware scanout targets */
+            return NULL;
+        }
+
+        if (softmode && framebuffer)
+        {
+            /*
+             * Hardware framebuffers must use the sync's native TrueColor ModeID.
+             * Clone msg->attrList and rewrite every aHidd_BitMap_ModeID tag so
+             * caller tag arrays are never mutated in place and BM__Root__New
+             * sees only the native backing ModeID.
+             */
+            HIDDT_ModeID backing_mode = DMEnum__Internal__GetBackingMode(CSD(cl)->dmenumclass,
+                                                                         data->dmenum, modeid);
+            if (backing_mode == vHidd_ModeID_Invalid ||
+                !HIDD_DMEnum_GetMode(data->dmenum, backing_mode, &sync, &pf))
+            {
+                return NULL;
+            }
+
+            cloned_attrlist = CloneTagItems(msg->attrList);
+            if (!cloned_attrlist)
+                return NULL;
+
+            tstate = cloned_attrlist;
+            while ((tag = NextTagItem(&tstate)))
+            {
+                if (tag->ti_Tag == aHidd_BitMap_ModeID)
+                    tag->ti_Data = (IPTR)backing_mode;
+            }
+
+            modeid = backing_mode;
+            softmode = FALSE;
+        }
+        else if (softmode)
+        {
+            /*
+             * Ensure the compositor's palette worker exists before creating a
+             * software-mode bitmap. If worker creation fails, reject only the
+             * optional software bitmap without failing native display operation.
+             */
+            if (!data->compositor ||
+                !Compositor__Internal__CanHandleSoftware(CSD(cl)->compositorclass, data->compositor) ||
+                !Compositor__Internal__EnsurePaletteTask(CSD(cl)->compositorclass, data->compositor))
+            {
+                return NULL;
+            }
+
+            /*
+             * Software-mode screen and offscreen bitmaps always live in RAM
+             * (ChunkyBM), even if a driver subclass prepended its own ClassPtr.
+             */
+            classptr = CSD(cl)->chunkybmclass;
+            classid  = NULL;
+            gotclass = TRUE;
+        }
+        else if (softfriend)
+        {
+            classptr = CSD(cl)->chunkybmclass;
+            classid  = NULL;
+            gotclass = TRUE;
         }
 
         /* If we have a friend bitmap, we can inherit some attributes from it */
@@ -1056,6 +1185,8 @@ OOP_Object *Display__Hidd_Display__CreateObject(OOP_Class *cl, OOP_Object *o, st
             if (!gotclass)
             {
                 D(bug("!!! Gfx::CreateObject: SUBCLASS DID NOT PASS CLASS FOR DISPLAYABLE BITMAP !!!\n"));
+                if (cloned_attrlist)
+                    FreeTagItems(cloned_attrlist);
                 return NULL;
             }
         }
@@ -1163,9 +1294,12 @@ OOP_Object *Display__Hidd_Display__CreateObject(OOP_Class *cl, OOP_Object *o, st
         /* Set the tags we want to pass to the selected bitmap class */
         bmtags[0].ti_Data = (IPTR)o;
         bmtags[1].ti_Data = (IPTR)pf;
-        bmtags[6].ti_Data = (IPTR)msg->attrList;
+        bmtags[6].ti_Data = (IPTR)(cloned_attrlist ? cloned_attrlist : msg->attrList);
 
         object = OOP_NewObject(classptr, classid, bmtags);
+
+        if (cloned_attrlist)
+            FreeTagItems(cloned_attrlist);
 
         /*
          * Drivers without a hardware sprite get a software pointer rendered by
@@ -1174,7 +1308,7 @@ OOP_Object *Display__Hidd_Display__CreateObject(OOP_Class *cl, OOP_Object *o, st
          * in a CursorFB bitmap that brackets every drawing operation with a
          * hide/show of the pointer. The drivers themselves are untouched.
          */
-        if (object && (displayable || framebuffer) && display_NeedSoftCursor(cl, o))
+        if (object && !softmode && (displayable || framebuffer) && display_NeedSoftCursor(cl, o))
         {
             OOP_Object *wrapped = create_cursorfb(CSD(cl), o, object);
             if (wrapped)
@@ -1278,6 +1412,15 @@ OOP_Object *Display__Hidd_Display__Show(OOP_Class *cl, OOP_Object *o, struct pHi
 
     if (NULL == data->framebuffer)
     {
+        if (bm && data->dmenum)
+        {
+            IPTR modeid = vHidd_ModeID_Invalid;
+
+            OOP_GetAttr(bm, aHidd_BitMap_ModeID, &modeid);
+            if (DMEnum__Internal__IsSoftwareMode(CSD(cl)->dmenumclass, data->dmenum, (HIDDT_ModeID)modeid))
+                return NULL;
+        }
+
         /*
          * No framebuffer: the shown bitmap is scanned out directly (e.g. vesagfx).
          * The driver's own Show() has already made the bitmap visible. Here we
@@ -1330,6 +1473,12 @@ OOP_Object *Display__Hidd_Display__Show(OOP_Class *cl, OOP_Object *o, struct pHi
          * This operation can fail if the bitmap has inappropriate mode.
          */
         OOP_GetAttr(bm, aHidd_BitMap_ModeID, &modeid);
+        if (data->dmenum &&
+            DMEnum__Internal__IsSoftwareMode(CSD(cl)->dmenumclass, data->dmenum, (HIDDT_ModeID)modeid))
+        {
+            modeid = DMEnum__Internal__GetBackingMode(CSD(cl)->dmenumclass, data->dmenum,
+                                                      (HIDDT_ModeID)modeid);
+        }
         if (!OOP_SetAttrsTags(data->framebuffer, aHidd_BitMap_ModeID, modeid, TAG_DONE))
         {
             ReleaseSemaphore(&data->fbsem);

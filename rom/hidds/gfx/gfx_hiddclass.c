@@ -1122,7 +1122,14 @@ static VOID copybox_impl(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_CopyBo
                  * Supply NULL pixlut. In this case bitmap's own colormap will be used
                  * for color lookup (if needed).
                  */
-                HIDD_BM_ConvertPixels(msg->dest,
+                OOP_Object *convertbm = msg->dest;
+
+                if (IS_PALETTE(srcpf) && IS_TRUECOLOR(dstpf))
+                {
+                    if (BM__Internal__SnapshotPalette(CSD(cl), src, NULL, 0))
+                        convertbm = src;
+                }
+                HIDD_BM_ConvertPixels(convertbm,
                                       &srcPixels, srcpf, src_bytesperline,
                                       &destPixels, dstpf, dest_bytesperline,
                                       msg->width, msg->height, NULL);
@@ -1230,8 +1237,16 @@ static VOID copybox_impl(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_CopyBo
         }
         else if (IS_TRUECOLOR(dstpf))
         {
-            /* Get the colortab */
-            HIDDT_Color *ctab = ((HIDDT_ColorLUT *)HBM(src)->colmap)->colors;
+            HIDDT_Color *ctab = AllocVec(256 * sizeof(*ctab), MEMF_ANY);
+
+            if (!ctab)
+            {
+                GC_FG(gc) = memFG;
+                return;
+            }
+
+            if (!BM__Internal__SnapshotPalette(CSD(cl), src, ctab, 256))
+                BM__Internal__SnapshotPalette(CSD(cl), dest, ctab, 256);
 
             DCOPYBOX(bug("COPY FROM PALETTE TO TRUECOLOR, DRAWMODE %d, CTAB %p\n", GC_DRMD(gc), ctab));
 
@@ -1243,7 +1258,7 @@ static VOID copybox_impl(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_CopyBo
                     HIDDT_Color col;
                     
                     pix = HIDD_BM_GetPixel(src, srcX + x, srcY + y);
-                    col = ctab[pix];
+                    col = pix < 256 ? ctab[pix] : (HIDDT_Color){0};
 
                     /*
                      * !!!! HIDD_BM_MapColor() pokes pixval of the passed HIDDT_Color,
@@ -1256,6 +1271,7 @@ static VOID copybox_impl(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_CopyBo
                     
                 }
             }
+            FreeVec(ctab);
         }
         
     } /* if (HIDD_PF_COLMODEL(srcpf) == HIDD_PF_COLMODEL(dstpf)) else ... */
@@ -1404,6 +1420,7 @@ static IPTR copyboxmasked_impl(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_
     OOP_Object *src_pf, *dest_pf;
     HIDDT_ColorModel src_colmod, dest_colmod;
     HIDDT_Color *ctab = NULL;
+    BOOL palette_conversion = FALSE;
     ULONG bytes_per_line, lines_per_step, doing_lines, lines_done;
     IPTR mask_align, mask_bpr;
     HIDDT_Pixel pixmask = ~0;
@@ -1425,18 +1442,7 @@ static IPTR copyboxmasked_impl(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_
          * case destination bitmap needs to have a palette. This will happen if it's either a displayable
          * bitmap, or is a friend of displayable bitmap (will share friend's palette then).
          */
-        HIDDT_ColorLUT *colmap = (HIDDT_ColorLUT *)HBM(msg->src)->colmap;
-
-        if (!colmap)
-            colmap = (HIDDT_ColorLUT *)HBM(msg->dest)->colmap;
-
-        if (!colmap)
-        {
-            D(bug("BltMaskBitMapRastPort could not retrieve pixel table for blit from palette to truecolor bitmap"));
-            return FALSE;
-        }
-
-        ctab = colmap->colors;
+        palette_conversion = TRUE;
     }
     else if ((src_colmod == vHidd_ColorModel_TrueColor) && (dest_colmod == vHidd_ColorModel_TrueColor))
     {
@@ -1505,6 +1511,24 @@ static IPTR copyboxmasked_impl(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_
     {
         UBYTE *destbuf = srcbuf + lines_per_step * bytes_per_line;
         HIDDT_DrawMode drawmode = GC_DRMD(msg->gc);
+
+        if (palette_conversion)
+        {
+            ctab = AllocVec(256 * sizeof(*ctab), MEMF_ANY);
+            if (!ctab)
+            {
+                FreeMem(srcbuf, 2 * lines_per_step * bytes_per_line);
+                return FALSE;
+            }
+            if (!BM__Internal__SnapshotPalette(CSD(cl), msg->src, ctab, 256) &&
+                !BM__Internal__SnapshotPalette(CSD(cl), msg->dest, ctab, 256))
+            {
+                D(bug("BltMaskBitMapRastPort could not retrieve pixel table for blit from palette to truecolor bitmap"));
+                FreeVec(ctab);
+                FreeMem(srcbuf, 2 * lines_per_step * bytes_per_line);
+                return FALSE;
+            }
+        }
 
         /* PutImage needs to be called in Copy mode for proper operation */
         GC_DRMD(msg->gc) = vHidd_GC_DrawMode_Copy;
@@ -1576,7 +1600,7 @@ static IPTR copyboxmasked_impl(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_
                                  * itself will be modified, if we pass "&ctab[pix]" to HIDD_BM_MapColor() !!!!
                                  */
                                  
-                                HIDDT_Color col = ctab[pix];
+                                HIDDT_Color col = pix < 256 ? ctab[pix] : (HIDDT_Color){0};
 
                                 pix = HIDD_BM_MapColor(msg->dest, &col);
                             }
@@ -1605,6 +1629,7 @@ static IPTR copyboxmasked_impl(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_
         GC_DRMD(msg->gc) = drawmode;
 
         /* Free our temporary buffer */
+        FreeVec(ctab);
         FreeMem(srcbuf, 2 * lines_per_step * bytes_per_line);
 
         return TRUE;

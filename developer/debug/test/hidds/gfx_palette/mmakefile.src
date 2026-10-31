@@ -1,0 +1,14 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- test : test-hidd-gfx-palette
+#MM- test-quick : test-hidd-gfx-palette-quick
+
+#MM test-hidd-gfx-palette : includes linklibs
+
+%build_progs mmake=test-hidd-gfx-palette \
+    files=gfx_palette targetdir=$(AROS_TESTS)/hidds/gfx \
+    uselibs="hiddstubs"
+
+%common
