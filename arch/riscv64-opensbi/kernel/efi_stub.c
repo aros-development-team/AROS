@@ -556,6 +556,28 @@ static void efi_collect_firmware(u8 *map, uintn mapsize, uintn descsize)
     __efi_nfwregions = n;
 }
 
+/* The package's directory on the boot volume (kernel mmakefile) */
+#ifndef AROS_DIR_BOOTARCH
+#define AROS_DIR_BOOTARCH "boot/opensbi"
+#endif
+
+/* dir and file joined as a UEFI path: UTF-16, backslash separators */
+static void efi_path(u16 *dst, int max, const char *dir, const char *file)
+{
+    int n = 0;
+
+    while (*dir && n < max - 1)
+    {
+        dst[n++] = (*dir == '/') ? '\\' : (u16)*dir;
+        dir++;
+    }
+    if (n < max - 1)
+        dst[n++] = '\\';
+    while (*file && n < max - 1)
+        dst[n++] = (u16)*file++;
+    dst[n] = 0;
+}
+
 /* Load the BSP package from the volume this image was loaded from */
 static void efi_load_package(struct efi_system_table *st, efi_handle_t image)
 {
@@ -563,7 +585,9 @@ static void efi_load_package(struct efi_system_table *st, efi_handle_t image)
     struct efi_loaded_image *li = 0;
     struct efi_simple_file_system *fs = 0;
     struct efi_file_protocol *root = 0, *file = 0;
-    /* L"aros-bsp.pkg" */
+    /* AROS_DIR_BOOTARCH "/aros-bsp.pkg", and L"aros-bsp.pkg" in the root
+       as a fallback for volumes laid out before the package moved */
+    static u16 path[128];
     static u16 name[] = { 'a','r','o','s','-','b','s','p','.','p','k','g',0 };
     /* L"aros.cmd" - optional command line, one line of plain text */
     static u16 cmdname[] = { 'a','r','o','s','.','c','m','d',0 };
@@ -632,12 +656,20 @@ static void efi_load_package(struct efi_system_table *st, efi_handle_t image)
         cmd->close(cmd);
     }
 
-    if (root->open(root, &file, name, EFI_FILE_MODE_READ, 0) != EFI_SUCCESS
+    efi_path(path, sizeof(path) / sizeof(path[0]), AROS_DIR_BOOTARCH,
+             "aros-bsp.pkg");
+    if (root->open(root, &file, path, EFI_FILE_MODE_READ, 0) != EFI_SUCCESS
         || !file)
     {
-        efi_puts("AROS: no aros-bsp.pkg on the boot volume\n");
-        root->close(root);
-        return;
+        file = 0;
+        if (root->open(root, &file, name, EFI_FILE_MODE_READ, 0) !=
+            EFI_SUCCESS || !file)
+        {
+            efi_puts("AROS: no " AROS_DIR_BOOTARCH "/aros-bsp.pkg on the boot volume\n");
+            root->close(root);
+            return;
+        }
+        efi_puts("AROS: no " AROS_DIR_BOOTARCH "/aros-bsp.pkg - using the one in the volume root\n");
     }
 
     if (file->get_info(file, &FILE_INFO_GUID, &infosz, info) != EFI_SUCCESS)

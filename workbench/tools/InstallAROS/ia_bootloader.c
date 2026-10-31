@@ -395,7 +395,6 @@ static void EFI_DoInstall(Class * CLASS, Object * self)
     };
     /* The stub reads these from the root of the volume it was loaded from */
     CONST_STRPTR efi_files[] = {
-        "aros-bsp.pkg",
         "aros.cmd",
         "startup.nsh",
         NULL
