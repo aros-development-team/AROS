@@ -160,12 +160,25 @@
                 if(rp->Flags & RPF_NO_PENS) {
                     /* Remap pixel value back from bitmap's format to ARGB8888 */
                     HIDDT_GC_Intern *_gc = GCINT(&((rp)->longreserved[1]));
+                    struct gfx_driverdata *dd = ObtainDriverData(rp);
                     HIDDT_Pixel pixval;
 
                     if(tag->ti_Tag == RPTAG_FgColor)
                         pixval = _gc->fg;
                     else
                         pixval = _gc->bg;
+
+                    /* The colour as set, alpha included, while it is the one in use */
+                    if(dd && (tag->ti_Tag == RPTAG_FgColor) && (dd->dd_ColorFlags & DDCF_FGCOLOR) &&
+                       (pixval == dd->dd_FgPixel)) {
+                        *((IPTR *)tag->ti_Data) = dd->dd_FgColor;
+                        break;
+                    }
+                    if(dd && (tag->ti_Tag == RPTAG_BgColor) && (dd->dd_ColorFlags & DDCF_BGCOLOR) &&
+                       (pixval == dd->dd_BgPixel)) {
+                        *((IPTR *)tag->ti_Data) = dd->dd_BgColor;
+                        break;
+                    }
 
                     HIDD_BM_UnmapPixel(HIDD_BM_OBJ(rp->BitMap), pixval, &col);
                 } else {
@@ -178,10 +191,11 @@
                 }
             }
 
-            *((IPTR *)tag->ti_Data) = ((col.alpha & 0xFF00) << 16) |
-                                      ((col.red   & 0xFF00) <<  8) |
-                                      (col.green & 0xFF00)        |
-                                      ((col.blue  & 0xFF00) >> 8);
+            /* ULONG: an int shift would sign-extend alpha >= 0x80 into a 64-bit IPTR */
+            *((IPTR *)tag->ti_Data) = (((ULONG)col.alpha & 0xFF00) << 16) |
+                                      (((ULONG)col.red   & 0xFF00) <<  8) |
+                                      ((ULONG)col.green & 0xFF00)         |
+                                      (((ULONG)col.blue  & 0xFF00) >> 8);
             break;
 
         case RPTAG_ClipRectangle:

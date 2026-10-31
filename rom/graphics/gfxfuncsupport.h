@@ -147,7 +147,22 @@ struct gfx_driverdata {
     struct RastPort *dd_RastPort;	/* This RastPort		*/
     struct Rectangle  dd_ClipRectangle;
     UBYTE   	      dd_ClipRectangleFlags;
+    UBYTE             dd_ColorFlags;    /* DDCF_*                       */
+    /*
+     * RPTAG_FgColor/RPTAG_BgColor as given (ARGB) and as mapped for the
+     * RastPort's bitmap when they were set. The GC keeps only the mapped
+     * pixel, which has no alpha when the RastPort's bitmap has none; a
+     * destination with an alpha channel of its own (a composited layer's
+     * alpha surface) maps the ARGB colour again (see remap_gc_pens()).
+     */
+    ULONG             dd_FgColor;
+    ULONG             dd_BgColor;
+    HIDDT_Pixel       dd_FgPixel;
+    HIDDT_Pixel       dd_BgPixel;
 };
+
+#define DDCF_FGCOLOR    (1 << 0)    /* dd_FgColor/dd_FgPixel valid */
+#define DDCF_BGCOLOR    (1 << 1)    /* dd_BgColor/dd_BgPixel valid */
 
 static inline struct gfx_driverdata *ObtainDriverData(struct RastPort *rp)
 {

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2025-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -21,8 +21,9 @@ void ProcessPixelArrayAlphaFunc(struct RastPort *opRast, struct Rectangle *opRec
     LONG width, height;
     ULONG *buffer;
 
-    if (GetBitMapAttr(opRast->BitMap, BMA_DEPTH) < 32) {
-        bug("[Cgfx] %s not possible for bitmap depth < 32\n", __func__);
+    /* Only bitmaps with 4 bytes per pixel can hold alpha */
+    if (GetCyberMapAttr(opRast->BitMap, CYBRMATTR_BPPIX) < 4) {
+        bug("[Cgfx] %s not possible for selected bitmap\n", __func__);
         return;
     }
 
@@ -34,6 +35,7 @@ void ProcessPixelArrayAlphaFunc(struct RastPort *opRast, struct Rectangle *opRec
         ReadPixelArray(buffer, 0, 0, width * 4, opRast,
                        opRect->MinX, opRect->MinY, width, height, RECTFMT_ARGB);
 
+        // RECTFMT_ARGB is a byte order: alpha is the low byte of an x86 word
         // Prepare SSE2 constants
         __m128i mask_keep_rgb = _mm_set1_epi32(0xFFFFFF00);       // mask to keep RGB
         __m128i alpha_val     = _mm_set1_epi32(alphalevel);       // alpha in low byte

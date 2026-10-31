@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function CloneRastPort()
 */
@@ -49,7 +49,11 @@
     struct RastPort *newRP = AllocMem (sizeof (struct RastPort), MEMF_ANY);
 
     if (newRP)
+    {
         CopyMem (rp, newRP, sizeof (struct RastPort));
+        /* graphics' private data stays with the original (see FreeRastPort()) */
+        newRP->RP_Extra = NULL;
+    }
 
     return newRP;
 
