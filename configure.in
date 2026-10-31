@@ -67,18 +67,24 @@ else
 fi
 AC_MSG_RESULT($target)
 
+# Record the build and source directories by their real paths, symlinks
+# resolved: TOP prefixes every target in the .d dependency files, and make
+# matches targets as strings, so a directory configured once through a
+# symlink and once directly would leave the old rules matching nothing.
 if test "$host_os" = "mingw32" ; then
     PWDCMD="pwd -W"
+else
+    PWDCMD="pwd -P"
 fi
 
 # Don't know where else to put this...
 AC_MSG_CHECKING([building AROS in])
-AROS_BUILDDIR=`${PWDCMD-pwd}`
-AROS_BUILDDIR_UNIX=${PWD}
+AROS_BUILDDIR=`${PWDCMD}`
+AROS_BUILDDIR_UNIX=`pwd -P`
 AC_MSG_RESULT($AROS_BUILDDIR)
 
 AC_MSG_CHECKING([AROS source in])
-srcpwd=`cd ${srcdir} ; ${PWDCMD-pwd}`
+srcpwd=`cd -P ${srcdir} ; ${PWDCMD}`
 SRCDIR=${srcpwd}
 AC_MSG_RESULT($SRCDIR)
 
