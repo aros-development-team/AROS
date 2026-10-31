@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2003-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 2003-2026, The AROS Development Team. All rights reserved.
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
@@ -546,6 +546,14 @@ static inline double fromdeci(LONG units, LONG value)
     return val;
 }
 
+/* The file holds the PS_ index, as AmigaOS writes it; files this editor
+   wrote before held the intuition/preferences.h value, the index shifted
+   by four, which an index never is. */
+STATIC LONG PaperSizeIndex(UWORD saved)
+{
+    return (saved && (saved & 0xF) == 0) ? saved >> 4 : saved;
+}
+
 STATIC void UpdatePrintMax (struct PrinterEditor_DATA *data, int units, BOOL from_prefs)
 {
     LONG width, height;
@@ -553,7 +561,7 @@ STATIC void UpdatePrintMax (struct PrinterEditor_DATA *data, int units, BOOL fro
     LONG pt_PaperSize;
     
     if (from_prefs) {
-        pt_PaperSize = printerprefs.pp_Txt.pt_PaperSize;
+        pt_PaperSize = PaperSizeIndex(printerprefs.pp_Txt.pt_PaperSize) << 4;
     } else {
         pt_PaperSize = XGET(data->pt_PaperSize, MUIA_Cycle_Active) << 4;
     }
@@ -642,7 +650,7 @@ STATIC void Gadgets2PrinterPrefs (Class *CLASS, Object *self)
     strcpy(txt->pt_Driver, (CONST_STRPTR)XGET(data->pt_Driver, MUIA_Text_Contents));
 
     txt->pt_PaperType = XGET(data->pt_PaperType, MUIA_Cycle_Active);
-    txt->pt_PaperSize = XGET(data->pt_PaperSize, MUIA_Cycle_Active) << 4;
+    txt->pt_PaperSize = XGET(data->pt_PaperSize, MUIA_Cycle_Active);
 
     UpdatePrintMax(data, units, FALSE);
 
@@ -711,7 +719,7 @@ STATIC VOID PrinterPrefs2Gadgets(Class *CLASS, Object *self)
     NNSET(data->pt_Driver, MUIA_Text_Contents, txt->pt_Driver);
     NNSET(data->pt_Port, MUIA_Cycle_Active, txt->pt_Port);
     NNSET(data->pt_PaperType, MUIA_Cycle_Active, txt->pt_PaperType);
-    NNSET(data->pt_PaperSize, MUIA_Cycle_Active, txt->pt_PaperSize >> 4);
+    NNSET(data->pt_PaperSize, MUIA_Cycle_Active, PaperSizeIndex(txt->pt_PaperSize));
     NNSET(data->pt_PaperLength, MUIA_String_Integer, txt->pt_PaperLength);
     NNSET(data->pt_Pitch, MUIA_Cycle_Active, txt->pt_Pitch);
     NNSET(data->pt_Spacing, MUIA_Cycle_Active, txt->pt_Spacing);

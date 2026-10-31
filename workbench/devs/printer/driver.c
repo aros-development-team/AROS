@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012-2017, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2012-2026, The AROS Development Team.  All rights reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
@@ -17,8 +17,10 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
+#include <proto/utility.h>
 
 #include <devices/printer.h>
+#include <devices/newstyle.h>
 #include <datatypes/datatypesclass.h>
 
 #include <string.h>
@@ -92,6 +94,78 @@ static BOOL initMsgPort(struct MsgPort *port)
     return TRUE;
 }
 
+/* "printer.device unit N" for a prefs file without a PDEV chunk */
+static void pd_DefaultUnitName(UBYTE *name, LONG unitnum)
+{
+    static const char prefix[] = "printer.device unit ";
+    char digits[12];
+    int n = 0, i;
+
+    CopyMem((APTR)prefix, name, sizeof(prefix) - 1);
+    i = sizeof(prefix) - 1;
+    do {
+        digits[n++] = '0' + unitnum % 10;
+        unitnum /= 10;
+    } while (unitnum && n < (int)sizeof(digits));
+    while (n > 0 && i < UNITNAMESIZE - 1)
+        name[i++] = digits[--n];
+    name[i] = 0;
+}
+
+/* Whether the output device lists PRD_SETJOBINFO in its NSCMD_DEVICEQUERY
+   reply; a device that does not is never sent it. */
+static void pd_QueryJobInfo(struct PrinterData *pd)
+{
+    struct PrinterUnit *pu = pd->pd_PUnit;
+    struct IOStdReq *io = (struct IOStdReq *)&pd->pd_ior0;
+    struct NSDeviceQueryResult nsd;
+    UWORD *cmd;
+
+    pu->pu_JobInfoSupported = FALSE;
+    memset(&nsd, 0, sizeof(nsd));
+    io->io_Command = NSCMD_DEVICEQUERY;
+    io->io_Flags = 0;
+    io->io_Data = &nsd;
+    io->io_Length = sizeof(nsd);
+    io->io_Message.mn_Length = sizeof(*io);
+    if (DoIO((struct IORequest *)io) != 0 || io->io_Actual < sizeof(nsd) || nsd.SupportedCommands == NULL)
+        return;
+    for (cmd = nsd.SupportedCommands; *cmd; cmd++)
+        if (*cmd == PRD_SETJOBINFO)
+            pu->pu_JobInfoSupported = TRUE;
+}
+
+/* The opener's program name: its CLI command name, or its task name. */
+static void pd_SetJobApplication(struct PrinterUnit *pu)
+{
+    struct Task *task = FindTask(NULL);
+    CONST_STRPTR name = task->tc_Node.ln_Name;
+    TEXT command[64];
+
+    if (task->tc_Node.ln_Type == NT_PROCESS && ((struct Process *)task)->pr_CLI != BNULL) {
+        struct CommandLineInterface *cli = BADDR(((struct Process *)task)->pr_CLI);
+        LONG len = AROS_BSTR_strlen(cli->cli_CommandName);
+
+        if (len > 0) {
+            CONST_STRPTR start;
+            STRPTR c;
+
+            if (len >= (LONG)sizeof(command))
+                len = sizeof(command) - 1;
+            CopyMem(AROS_BSTR_ADDR(cli->cli_CommandName), command, len);
+            command[len] = 0;
+            start = command;
+            for (c = command; *c; c++)
+                if (*c == ':' || *c == '/')
+                    start = c + 1;
+            name = start;
+        }
+    }
+    strncpy(pu->pu_JobApplication, name ? (const char *)name : "", sizeof(pu->pu_JobApplication) - 1);
+    pu->pu_JobApplication[sizeof(pu->pu_JobApplication) - 1] = 0;
+    pu->pu_JobDocument[0] = 0;
+}
+
 STATIC AROS_LH3(LONG, OpenDevice,
                 AROS_LHA(struct IORequest *, io, A1),
                 AROS_LHA(IPTR, unitNumber, D0),
@@ -105,6 +179,8 @@ STATIC AROS_LH3(LONG, OpenDevice,
 
     if ((mp = CreateMsgPort())) {
         struct IORequest ior = *io;
+
+        pd_SetJobApplication(pu);
         ior.io_Message.mn_ReplyPort = mp;
         ior.io_Command = CMD_OPENDEVICE;
         ret = DoIO(&ior);
@@ -254,6 +330,29 @@ static LONG pd_PBothReady(VOID)
     WaitIOStd((struct IOStdReq *)&pd->pd_ior1);
 
     return 0;
+}
+
+/* Tells the output device what is being printed; devices that do not know
+   PRD_SETJOBINFO ignore it. */
+static void pd_SendJobInfo(struct PrinterData *pd)
+{
+    struct PrinterUnit *pu = pd->pd_PUnit;
+    struct IOStdReq *io = (struct IOStdReq *)&pd->pd_ior0;
+    struct TagItem tags[] = {
+        { PJIA_Application, (IPTR)pu->pu_JobApplication },
+        { PJIA_Document,    (IPTR)pu->pu_JobDocument },
+        { TAG_END, 0 }
+    };
+
+    if ((pd->pd_Flags & PDF_NOIO) || !pu->pu_JobInfoSupported)
+        return;
+    WaitIOStd(io);
+    io->io_Command = PRD_SETJOBINFO;
+    io->io_Flags = 0;
+    io->io_Data = tags;
+    io->io_Length = 0;
+    io->io_Message.mn_Length = sizeof(*io);
+    DoIOStd(io);
 }
 
 static LONG pd_PRead(char * buffer, LONG *length, struct timeval *tv)
@@ -423,6 +522,7 @@ static LONG pd_Init(struct PrinterData *pd)
                                     (struct IORequest *)&pd->pd_ior0, 0)) {
                     D(bug("%s: open %s %d for io 0\n", __func__, devname, pd->pd_Preferences.DefaultPrtUnit));
                     pd->pd_ior0.pd_p0.IOPar.io_Message.mn_Node.ln_Type = 0;
+                    pd_QueryJobInfo(pd);
 
                     pd->pd_ior1.pd_p1.io_ParFlags = PARF_SHARED;
                     if ((pd->pd_ior1.pd_p1.IOPar.io_Message.mn_ReplyPort=CreateMsgPort())) {
@@ -467,7 +567,7 @@ static VOID pd_Close(struct PrinterData *pd, union printerIO *pio)
 {
     struct PrinterBase *PrinterBase = pd->pd_PUnit->pu_PrinterBase;
     struct PrinterExtendedData *ped = &pd->pd_SegmentData->ps_PED;
-    LONG unitnum = pd->pd_PUnit->pu_Prefs.pp_DeviceUnit.pd_UnitNum;
+    LONG unitnum = pd->pd_UnitNumber;
 
     ped->ped_Close(pio);
 
@@ -581,9 +681,35 @@ static LONG pd_DriverTask(VOID)
         switch (cmd) {
         case CMD_OPENDEVICE:
             err = ped->ped_Open(pio);
-            if (err == 0)
+            if (err == 0) {
+                pd_SendJobInfo(pd);
                 Printer_Text_Write(pd, "\033#1", 3); /* aRIN */
+            }
             break;
+        case PRD_SETJOBINFO:
+        {
+            struct TagItem *tags = (struct TagItem *)pio->ios.io_Data, *tag;
+            struct PrinterUnit *pu = pd->pd_PUnit;
+
+            while ((tag = LibNextTagItem(&tags))) {
+                STRPTR dest = NULL;
+                LONG size = 0;
+
+                if (tag->ti_Tag == PJIA_Application) {
+                    dest = pu->pu_JobApplication;
+                    size = sizeof(pu->pu_JobApplication);
+                } else if (tag->ti_Tag == PJIA_Document) {
+                    dest = pu->pu_JobDocument;
+                    size = sizeof(pu->pu_JobDocument);
+                }
+                if (dest != NULL) {
+                    strncpy(dest, tag->ti_Data ? (const char *)tag->ti_Data : "", size - 1);
+                    dest[size - 1] = 0;
+                }
+            }
+            pd_SendJobInfo(pd);
+            break;
+        }
         case CMD_CLOSEDEVICE:
             pd_Close(pd, pio);
             break;
@@ -679,17 +805,17 @@ static void pd_SyncPrefs(struct PrinterData *pd)
             sizeof(dprefs->PrinterFilename));
     dprefs->PrinterFilename[sizeof(dprefs->PrinterFilename)-1] = 0;
 
-    dprefs->PrintPitch = uprefs->pp_Txt.pt_Pitch;
-    dprefs->PrintQuality = uprefs->pp_Txt.pt_Quality;
-    dprefs->PrintSpacing = uprefs->pp_Txt.pt_Spacing;
+    dprefs->PrintPitch = uprefs->pp_Txt.pt_Pitch << 10;
+    dprefs->PrintQuality = uprefs->pp_Txt.pt_Quality << 8;
+    dprefs->PrintSpacing = uprefs->pp_Txt.pt_Spacing << 9;
     dprefs->PrintLeftMargin = uprefs->pp_Txt.pt_LeftMargin;
     dprefs->PrintRightMargin = uprefs->pp_Txt.pt_RightMargin;
     dprefs->PrintImage = uprefs->pp_Gfx.pg_Image;
     dprefs->PrintAspect = uprefs->pp_Gfx.pg_Aspect;
     dprefs->PrintShade = uprefs->pp_Gfx.pg_Shade;
     dprefs->PrintThreshold = uprefs->pp_Gfx.pg_Threshold;
-    dprefs->PaperSize = uprefs->pp_Txt.pt_PaperSize;
-    dprefs->PaperType = uprefs->pp_Txt.pt_PaperType;
+    dprefs->PaperSize = uprefs->pp_Txt.pt_PaperSize << 4;
+    dprefs->PaperType = uprefs->pp_Txt.pt_PaperType << 7;
     dprefs->PaperLength = uprefs->pp_Txt.pt_PaperLength;
 
     if (uprefs->pp_Unit.pu_DeviceName[0] == 0) {
@@ -734,13 +860,17 @@ static void pd_SyncPrefs(struct PrinterData *pd)
 struct PrinterUnit *Printer_Unit(struct PrinterBase *PrinterBase, LONG unitnum)
 {
     struct PrinterUnit *pu;
-    struct PrinterPrefs prefs;
+    struct PrinterPrefs prefs = { 0 };
     BPTR olddir, dir, driverseg;
 
     if (!Printer_LoadPrefs(PrinterBase, unitnum, &prefs) || prefs.pp_Txt.pt_Driver[0] == 0) {
         D(bug("%s: No valid prefs for printer.device %d\n", __func__, unitnum));
         return NULL;
     }
+    if (prefs.pp_Txt.pt_PaperSize && (prefs.pp_Txt.pt_PaperSize & 0xF) == 0)
+        prefs.pp_Txt.pt_PaperSize >>= 4;    /* saved by an older Prefs/Printer, already shifted */
+    if (prefs.pp_DeviceUnit.pd_UnitName[0] == 0)
+        pd_DefaultUnitName(prefs.pp_DeviceUnit.pd_UnitName, unitnum);
 
     if ((dir = Lock("DEVS:Printers", SHARED_LOCK)) != BNULL) {
         olddir = CurrentDir(dir);

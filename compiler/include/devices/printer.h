@@ -2,7 +2,7 @@
 #define DEVICES_PRINTER_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: printer device commands and structures
@@ -39,6 +39,9 @@
 #define PRD_EDITPREFS	    	(CMD_NONSTD + 10)
 #define PRD_SETERRHOOK	    	(CMD_NONSTD + 11)
 #define PRD_DUMPRPORTTAGS   	(CMD_NONSTD + 12)
+#define PRD_PRIVATECMD		(CMD_NONSTD + 13)	/* AmigaOS: private */
+#define PRD_LASTSAVEDPREFS	(CMD_NONSTD + 14)	/* AmigaOS: private */
+#define PRD_SETJOBINFO		(CMD_NONSTD + 15)	/* AROS: io_Data = PJIA_ tags */
 
 /* printer command definitions */
 
@@ -254,6 +257,16 @@ struct DRPSourceMsg
     LONG     height;
     ULONG   *buf;
 };
+
+/* Tags for PRD_SETJOBINFO (AROS): what is being printed, for print queues.
+   The job is kept per printer.device unit, not per opener. printer.device
+   passes the command to an output device only if its NSCMD_DEVICEQUERY
+   reply lists it; the tags are on the sender's stack, so the receiver must
+   copy the strings. */
+
+#define PJIA_Dummy		(TAG_USER + 0x80000)
+#define PJIA_Application	(PJIA_Dummy + 1)	/* STRPTR */
+#define PJIA_Document		(PJIA_Dummy + 2)	/* STRPTR */
 
 /* Tags for PRD_EDITPREFS */
 
