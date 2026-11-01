@@ -70,6 +70,8 @@ error_t GetResBlock(cachedblock_t *blok, uint16 bloktype, uint32 seqnr, bool fix
 	}
 
 	blk.data = calloc(1, SIZEOF_RESBLOCK);
+	if (!blk.data)
+		return e_out_of_memory;
 	index = seqnr/INDEX_PER_BLOCK;
 	offset = seqnr%INDEX_PER_BLOCK;
 	switch(bloktype)

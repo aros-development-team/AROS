@@ -236,6 +236,8 @@ static error_t mainStandardScan(uint32 flags)
 	/* read rootblockextension */
 	volume.progress(0, 30);
 	rext.data = calloc(1, SIZEOF_RESBLOCK);
+	if (!rext.data)
+		return exitStandardScan(e_out_of_memory);
 	rext.mode = check;
 	if ((error = GetRext()) || aborting)
 		return exitStandardScan(error);
