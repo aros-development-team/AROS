@@ -287,7 +287,8 @@ BOOL OpenDiskDevice(struct FileSysStartupMsg *startup, struct MsgPort **port,
 		*request = (struct IOExtTD *)CreateIORequest(*port, sizeof(struct IOExtTD));
 		if(*request)
 		{
-			BCPLtoCString(name, (UBYTE *)BADDR(startup->fssm_Device));
+			if (!BCPLtoCString(name, (UBYTE *)BADDR(startup->fssm_Device)))
+				return FALSE;
 			*trackdisk = (strcmp(name, "trackdisk.device") == 0) || (strcmp(name, "diskspare.device") == 0);
 			if(OpenDevice(name, startup->fssm_Unit, (struct IORequest *)*request,
 				startup->fssm_Flags) == 0)
@@ -571,17 +572,18 @@ int DoSCSICommand(UBYTE *data, ULONG datalen, UBYTE *command,
  */
 UBYTE *BCPLtoCString(STRPTR dest, UBYTE *src)
 {
-  UBYTE len, *to;
+	size_t len;
 
-	len  = *(src++);
-	len	 = min (len, PATHSIZE);
-	to	 = dest;
-
-	while (len--)
-		*(dest++) = *(src++);
-	*dest = 0x0;
-
-	return to;
+#ifdef AROS_FAST_BSTR
+	len = strlen((char *)src);
+#else
+	len = *src++;
+#endif
+	if (len >= FNSIZE)
+		return NULL;
+	memcpy(dest, src, len);
+	dest[len] = 0;
+	return (UBYTE *)dest;
 }
 
 /* ACCESS MODE AUTODETECT */
