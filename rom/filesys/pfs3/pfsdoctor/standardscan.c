@@ -325,7 +325,8 @@ static error_t ss_CheckDirTree(void)
 
 			/* initialize reserved bitmap generation */
 			if (ss.flags & SSF_GEN_RESBITMAP)
-				InitReservedBitmap();
+				if ((error = InitReservedBitmap()))
+					return error;
 
 			if (rext.mode == check)
 				if ((error = ResBlockUsed(rext.blocknr)))
@@ -2500,6 +2501,7 @@ error_t RepairIndexBlock(uint16 bloktype, error_t (*repairchild)(uint32 *, uint3
 
 static error_t InitReservedBitmap(void)
 {
+	error_t error;
 	uint32 reservedsize, bloknr, cluster;
 
 	KillReservedBitmap();
@@ -2511,20 +2513,26 @@ static error_t InitReservedBitmap(void)
 
 	// reservedsize cannot be smaller then 0 and is not allowed to take more than
     // 1/8th of the partition.
-	volume.lastreserved = rbl->lastreserved;
-	reservedsize = rbl->lastreserved/volume.rescluster - rbl->firstreserved + 1;
+	volume.lastreserved = volume.disksize - 1;
+	reservedsize = rbl->lastreserved < rbl->firstreserved ? 0 :
+		(rbl->lastreserved - rbl->firstreserved) / volume.rescluster + 1;
 
 	if (reservedsize <=0 || reservedsize > volume.disksize/8)
 	{
 		sprintf(bericht, "illegal reserved area size of %lu blocks", reservedsize);
 		adderror(bericht);
 		
-		if (!(bloknr = SearchLastReserved(&volume)))
+		if ((error = SearchLastReserved(&volume, &bloknr)))
+			return error;
+		if (!bloknr)
 			return e_fatal_error;
 
 		fixederror(NULL);
 		rbl->lastreserved = volume.lastreserved = bloknr;
 	}
+
+	volume.lastreserved = rbl->lastreserved;
+	reservedsize = (rbl->lastreserved - rbl->firstreserved) / volume.rescluster + 1;
 
 	if ((rext.data->reserved_roving + 31)/32 > reservedsize)
 	{

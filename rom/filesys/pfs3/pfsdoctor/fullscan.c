@@ -273,7 +273,8 @@ error_t BuildRootBlock(rootblock_t *rbl)
 	rbl->creationtick = (UWORD)time.ds_Tick;
 	rbl->protection	= 0xf0;
 	rbl->firstreserved = 2;
-	rbl->lastreserved = SearchLastReserved(&volume);
+	if ((error = SearchLastReserved(&volume, &rbl->lastreserved)))
+		return error;
 	volume.progress(0,1);
 	rbl->reserved_free = (rbl->lastreserved - rbl->firstreserved)/volume.rescluster;
 
@@ -481,12 +482,15 @@ error_t SearchBlock(uint16 bloktype, uint32 seqnr, uint32 last, uint32 datestamp
 }
 
 /* Get last reserved block */
-uint32 SearchLastReserved(volume_t *vol)
+error_t SearchLastReserved(volume_t *vol, uint32 *result)
 {
 	cachedblock_t blk;
 	uint32 i, last, cdwn;
+	error_t error = e_none;
 
 	blk.data = calloc(1, SIZEOF_RESBLOCK);
+	if (blk.data == NULL)
+		return e_out_of_memory;
 	cdwn = 4096;
 	i = last = vol->disksize/256;
 	i -= i % volume.rescluster;
@@ -501,7 +505,7 @@ uint32 SearchLastReserved(volume_t *vol)
 			break;
 		}
 
-		if (vol_GetRawBlock(&blk, i))
+		if ((error = vol_GetRawBlock(&blk, i)))
 			goto s_ret;
 
 		switch (PFS3DiskBlockId((uint8 *)blk.data))
@@ -532,7 +536,9 @@ uint32 SearchLastReserved(volume_t *vol)
  s_ret:
  	free (blk.data);
 	vol->status(1, " ", 100);
-	return last;
+	if (error == e_none)
+		*result = last;
+	return error;
 }
 
 /* Search filesystem on specified execdevice/unit. Start at startblok,
