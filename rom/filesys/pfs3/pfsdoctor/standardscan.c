@@ -51,6 +51,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <proto/asl.h>
+#include <proto/dos.h>
 #include <proto/exec.h>
 #include "pfs3.h"
 #include "doctor.h"
@@ -124,7 +125,7 @@ static error_t MainBlockUsed(uint32 bloknr);
 static error_t AnodeUsed(uint32 bloknr);
 static error_t bg_ItemUsed(bitmap_t *bm, uint32 nr);
 static BOOL IsAnodeUsed(uint32 nr);
-static uint32 vol_SearchFileSystem(void);
+static error_t vol_SearchFileSystem(uint32 *result);
 static bitmap_t *bg_InitBitmap(int32 start, int32 stop, int32 step);
 static void bg_KillBitmap(bitmap_t **bm);
 static BOOL bg_IsItemUsed(bitmap_t *bm, uint32 nr);
@@ -235,6 +236,8 @@ static error_t mainStandardScan(uint32 flags)
 	/* read rootblockextension */
 	volume.progress(0, 30);
 	rext.data = calloc(1, SIZEOF_RESBLOCK);
+	if (!rext.data)
+		return exitStandardScan(e_out_of_memory);
 	rext.mode = check;
 	if ((error = GetRext()) || aborting)
 		return exitStandardScan(error);
@@ -263,18 +266,20 @@ static error_t mainStandardScan(uint32 flags)
 	}
 
 	if (ss.stage != finished)
-		return e_max_pass_exceeded;
+		return exitStandardScan(e_max_pass_exceeded);
 
 	volume.status(0, "finishing up", 2);
 	volume.progress(0, 1);
-	exitStandardScan(e_none);
+	error = exitStandardScan(e_none);
 	volume.progress(0, 1);
-	return e_none;
+	return error;
 }
 
 static error_t exitStandardScan(error_t error)
 {
-	UpdateCache();
+	error_t write_error = UpdateCache();
+	if (error == e_none)
+		error = write_error;
 
 	if (rbl)
 	{
@@ -322,7 +327,8 @@ static error_t ss_CheckDirTree(void)
 
 			/* initialize reserved bitmap generation */
 			if (ss.flags & SSF_GEN_RESBITMAP)
-				InitReservedBitmap();
+				if ((error = InitReservedBitmap()))
+					return error;
 
 			if (rext.mode == check)
 				if ((error = ResBlockUsed(rext.blocknr)))
@@ -584,10 +590,11 @@ static error_t BuildRootBlock_hub(void)
 	{
 		if (!(error = BuildRootBlock(rbl)))
 		{
-			fixederror("new rootblock build");
-			WritePFS3Metadata((uint8 *)rbl,
+			error = WritePFS3Metadata((uint8 *)rbl,
 				ROOTBLOCK + volume.firstblock, volume.blocksize,
 				PFS3_METADATA_ROOT);
+			if (!error)
+				fixederror("new rootblock build");
 		}
 	}
 	else
@@ -599,14 +606,49 @@ static error_t BuildRootBlock_hub(void)
 /* read from disk and check
  * Returns error (0 = ERROR_NONE = ok).
  */
+static error_t RequestMountFile(void)
+{
+	struct FileRequester *freq;
+	char *mfname;
+	size_t length;
+	bool ok = false;
+
+	freq = AllocAslRequestTags(ASL_FileRequest, ASLFR_SleepWindow, TRUE,
+		ASLFR_TitleText, "Select mountfile", ASLFR_InitialFile, "mountme",
+		ASLFR_InitialDrawer, "df0:", ASLFR_DoSaveMode, TRUE, TAG_DONE);
+	if (freq == NULL)
+		return e_out_of_memory;
+	while (!ok) {
+		if (!AslRequestTags(freq, ASLFR_Window, CheckRepairWnd, TAG_DONE)) {
+			volume.showmsg("No mountlist written\n");
+			FreeAslRequest(freq);
+			return e_aborted;
+		}
+		length = strlen(freq->fr_Drawer) + strlen(freq->fr_File) + 2;
+		mfname = malloc(length);
+		if (mfname == NULL) {
+			FreeAslRequest(freq);
+			return e_out_of_memory;
+		}
+		strcpy(mfname, freq->fr_Drawer);
+		if (!AddPart(mfname, freq->fr_File, length)) {
+			free(mfname);
+			FreeAslRequest(freq);
+			return e_options_error;
+		}
+		ok = MakeMountFile(mfname);
+		free(mfname);
+		volume.showmsg(ok ? "Mountlist written\n" : "Could not write mountlist\n");
+	}
+	FreeAslRequest(freq);
+	return e_none;
+}
+
 static error_t GetRootBlock(void)
 {
 	error_t error = e_none;
 	uint32 bloknr;
 	int okuser;
-	struct FileRequester *freq;
-	char mfname[FNSIZE], *t;
-	bool ok = false;
 
 	enterblock(ROOTBLOCK);
 	volume.showmsg("Checking rootblock\n");
@@ -635,7 +677,10 @@ static error_t GetRootBlock(void)
 		okuser = volume.askuser("Rootblock not found.\n"
 			"Select ok to search for misplaced rootblock.", "ok", "cancel");
 
-		if (okuser && (bloknr = vol_SearchFileSystem()))
+		bloknr = 0;
+		if (okuser && (error = vol_SearchFileSystem(&bloknr)))
+			return error;
+		if (okuser && bloknr)
 		{
 			volume.showmsg("\nRootblock found. Repartitioning .. \n");
 			if ((error = Repartition(bloknr)))
@@ -649,26 +694,9 @@ static error_t GetRootBlock(void)
 				"Press CONTINUE to select location to store the\n"
 				"mountlist", "CONTINUE", NULL);
 
-			freq = AllocAslRequestTags(ASL_FileRequest, ASLFR_SleepWindow, TRUE, 
-				ASLFR_TitleText, "Select mountfile", ASLFR_InitialFile, "mountme",
-				ASLFR_InitialDrawer, "df0:", ASLFR_DoSaveMode, TRUE, TAG_DONE);
+			if ((error = RequestMountFile()))
+				return error;
 
-			do
-			{
-				if (AslRequestTags(freq, ASLFR_Window, CheckRepairWnd, TAG_DONE))
-				{
-					t = stpcpy(mfname, freq->fr_Drawer);
-					t = stpcpy(t, freq->fr_File);
-					if ((ok = MakeMountFile(mfname)))
-						volume.showmsg("Mountlist written\n");
-				}
-				else
-				{
-					volume.showmsg("no mountlist written\n");
-				}
-			} while (!ok);
-
-			FreeAslRequest(freq);	
 			volume.askuser("Now starting to check/repair\n"
 				"relocated partition", "CONTINUE", NULL);
 
@@ -713,26 +741,9 @@ static error_t GetRootBlock(void)
 				"Press CONTINUE to select location to store the\n"
 				"mountlist", "CONTINUE", NULL);
 
-			freq = AllocAslRequestTags(ASL_FileRequest, ASLFR_SleepWindow, TRUE, 
-				ASLFR_TitleText, "Select mountfile", ASLFR_InitialFile, "mountme",
-				ASLFR_InitialDrawer, "df0:", ASLFR_DoSaveMode, TRUE, TAG_DONE);
+			if ((error = RequestMountFile()))
+				return error;
 
-			do
-			{
-				if (AslRequestTags(freq, ASLFR_Window, CheckRepairWnd, TAG_DONE))
-				{
-					t = stpcpy(mfname, freq->fr_Drawer);
-					t = stpcpy(t, freq->fr_File);
-					if ((ok = MakeMountFile(mfname)))
-						volume.showmsg("Mountlist written\n");
-				}
-				else
-				{
-					volume.showmsg("no mountlist written\n");
-				}
-			} while (!ok);
-
-			FreeAslRequest(freq);	
 			volume.askuser("Now starting to check/repair\n"
 				"redefined partition", "CONTINUE", NULL);
 
@@ -752,6 +763,7 @@ static error_t GetRootBlock(void)
 static bool MakeMountFile(char *fname)
 {
 	FILE *mf;
+	bool ok;
 
 	if ((mf = fopen(fname, "w")))
 	{
@@ -777,17 +789,19 @@ static bool MakeMountFile(char *fname)
 		fprintf(mf, "\tStackSize      = 600\n");
 		fprintf(mf, "\tMaxTransfer    = %lu\n", volume.dosenvec->de_MaxTransfer);
 		fprintf(mf, "\tMask           = %#lx\n", volume.dosenvec->de_Mask);
-		fclose(mf);
-		return true;
+		ok = !ferror(mf);
+		if (fclose(mf) != 0)
+			ok = false;
+		return ok;
 	}
 	return false;
 }
 
-static uint32 vol_SearchFileSystem(void)
+static error_t vol_SearchFileSystem(uint32 *result)
 {
 	return SearchFileSystem(
 			(volume.firstblock > 1024) ? volume.firstblock - 1024 : 0,
-			volume.firstblock + 1024);
+			volume.firstblock + 1024, result);
 }
 
 bool IsRootBlock(rootblock_t *r)
@@ -848,10 +862,10 @@ static error_t CheckRootBlock(void)
 		}
 	}
 
-	strncpy (volume.diskname, (char *)&rbl->diskname[1], rbl->diskname[0]);
-	volume.diskname[rbl->diskname[0]+1] = 0;
+	memcpy(volume.diskname, &rbl->diskname[1], min(rbl->diskname[0], sizeof(rbl->diskname) - 1));
+	volume.diskname[min(rbl->diskname[0], sizeof(rbl->diskname) - 1)] = 0;
 	volume.showmsg("Checking disk ");
-	volume.showmsg(volume.diskname);
+	volume.showmsg("%s", volume.diskname);
 	volume.showmsg("\n");
 	volume.showmsg("Reserved blocksize: %lu\n", rbl->reserved_blksize);
 
@@ -921,10 +935,13 @@ static error_t CheckRootBlock(void)
 		dirty = true;
 	}
 
-	if (dirty)
-		return WritePFS3Metadata((uint8 *)rbl,
+	if (dirty) {
+		error_t write_error = WritePFS3Metadata((uint8 *)rbl,
 			ROOTBLOCK + volume.firstblock, volume.blocksize,
 			PFS3_METADATA_ROOT);
+		if (write_error)
+			return write_error;
+	}
 
 	return error;
 }
@@ -959,7 +976,8 @@ static error_t GetRext(void)
 		{
 			volume.status(1, "Searching rext", 256);
 			oldbloknr = bloknr;
-			bloknr = SearchBlock(EXTENSIONID, 0, bloknr, 0, 0, 0);
+			if ((error = SearchBlock(EXTENSIONID, 0, bloknr, 0, 0, 0, &bloknr)))
+				return error;
 			if (bloknr)
 			{
 				sprintf(bericht, "replaced block %lu with backup %lu", oldbloknr, bloknr);
@@ -2215,7 +2233,13 @@ error_t RepairAnodeBlock(uint32 *bloknr, uint32 seqnr)
 			{
 				volume.status(1, "Searching anode block", 256);
 				oldbloknr = *bloknr;
-				if ((*bloknr = SearchBlock(ABLKID, seqnr, oldbloknr, 0, 0, 0)))
+				if ((error = SearchBlock(ABLKID, seqnr, oldbloknr, 0, 0, 0, bloknr)))
+				{
+					free(ablk.data);
+					exitblock();
+					return error;
+				}
+				if (*bloknr)
 				{
 					sprintf(bericht, "replaced block %lu with backup %lu", oldbloknr, *bloknr);
 					fixederror(bericht);
@@ -2294,9 +2318,11 @@ error_t RepairBitmapBlock(uint32 *bloknr, uint32 seqnr)
 	uint32 oldbloknr;
 
 	// get anodeblock
-	bmblk.data = calloc(1, SIZEOF_RESBLOCK);
 	if (GetBuildBlock(BMBLKID, seqnr))
 		return e_none;
+	bmblk.data = calloc(1, SIZEOF_RESBLOCK);
+	if (!bmblk.data)
+		return e_out_of_memory;
 
 	if (*bloknr)
 	{
@@ -2324,7 +2350,13 @@ error_t RepairBitmapBlock(uint32 *bloknr, uint32 seqnr)
 			{
 				volume.status(1, "Searching bitmap block", 256);
 				oldbloknr = *bloknr;
-				if ((*bloknr = SearchBlock(BMBLKID, seqnr, oldbloknr, 0, 0, 0)))
+				if ((error = SearchBlock(BMBLKID, seqnr, oldbloknr, 0, 0, 0, bloknr)))
+				{
+					free(bmblk.data);
+					exitblock();
+					return error;
+				}
+				if (*bloknr)
 				{
 					sprintf(bericht, "replaced block %lu with backup %lu", oldbloknr, *bloknr);
 					fixederror(bericht);
@@ -2398,7 +2430,13 @@ error_t RepairIndexBlock(uint16 bloktype, error_t (*repairchild)(uint32 *, uint3
 				{
 					volume.status(1, "Searching index block", 256);
 					oldbloknr = *bloknr;
-					if ((*bloknr = SearchBlock(bloktype, seqnr, oldbloknr, 0, 0, 0)))
+					if ((error = SearchBlock(bloktype, seqnr, oldbloknr, 0, 0, 0, bloknr)))
+					{
+						free(iblk.data);
+						exitblock();
+						return error;
+					}
+					if (*bloknr)
 					{
 						sprintf(bericht, "replaced block %lu with backup %lu", oldbloknr, *bloknr);
 						fixederror(bericht);
@@ -2477,6 +2515,7 @@ error_t RepairIndexBlock(uint16 bloktype, error_t (*repairchild)(uint32 *, uint3
 
 static error_t InitReservedBitmap(void)
 {
+	error_t error;
 	uint32 reservedsize, bloknr, cluster;
 
 	KillReservedBitmap();
@@ -2488,20 +2527,26 @@ static error_t InitReservedBitmap(void)
 
 	// reservedsize cannot be smaller then 0 and is not allowed to take more than
     // 1/8th of the partition.
-	volume.lastreserved = rbl->lastreserved;
-	reservedsize = rbl->lastreserved/volume.rescluster - rbl->firstreserved + 1;
+	volume.lastreserved = volume.disksize - 1;
+	reservedsize = rbl->lastreserved < rbl->firstreserved ? 0 :
+		(rbl->lastreserved - rbl->firstreserved) / volume.rescluster + 1;
 
 	if (reservedsize <=0 || reservedsize > volume.disksize/8)
 	{
 		sprintf(bericht, "illegal reserved area size of %lu blocks", reservedsize);
 		adderror(bericht);
 		
-		if (!(bloknr = SearchLastReserved(&volume)))
+		if ((error = SearchLastReserved(&volume, &bloknr)))
+			return error;
+		if (!bloknr)
 			return e_fatal_error;
 
 		fixederror(NULL);
 		rbl->lastreserved = volume.lastreserved = bloknr;
 	}
+
+	volume.lastreserved = rbl->lastreserved;
+	reservedsize = (rbl->lastreserved - rbl->firstreserved) / volume.rescluster + 1;
 
 	if ((rext.data->reserved_roving + 31)/32 > reservedsize)
 	{

@@ -124,6 +124,7 @@ struct cacheline
 	struct cacheline *prev;
 	uint32 blocknr;			/* 1 == unused */
 	bool dirty;
+	uint32 dirtyfirst, dirtylast;
 	uint8 *data;
 };
 
@@ -397,10 +398,10 @@ error_t BuildRootBlock(rootblock_t *rbl);
 error_t BuildRext(c_extensionblock_t *rext);
 error_t BuildIndexBlock(c_indexblock_t *blk, uint16 bloktype, uint32 seqnr);
 error_t BuildBitmapBlock(c_bitmapblock_t *blk, uint32 seqnr);
-void SearchBlocks(scanelement_t el[], uint32 seqlow, uint32 seqhigh, uint32 start, uint32 stop, uint16 bloktype);
-uint32 SearchBlock(uint16 bloktype, uint32 seqnr, uint32 last, uint32 datestamp, uint32 anodenr, uint32 parent);
-uint32 SearchLastReserved(volume_t *vol);
-uint32 SearchFileSystem(int32 startblok, int32 endblok);
+error_t SearchBlocks(scanelement_t el[], uint32 seqlow, uint32 seqhigh, uint32 start, uint32 stop, uint16 bloktype);
+error_t SearchBlock(uint16 bloktype, uint32 seqnr, uint32 last, uint32 datestamp, uint32 anodenr, uint32 parent, uint32 *result);
+error_t SearchLastReserved(volume_t *vol, uint32 *result);
+error_t SearchFileSystem(int32 startblok, int32 endblok, uint32 *result);
 
 /**********************************************************************/
 /*                        Lists                                       */
@@ -467,7 +468,7 @@ error_t ReadPFS3Metadata(uint8 *data, uint32 bloknr, uint32 bytes,
 	enum pfs3_metadata_type type);
 error_t WritePFS3Metadata(uint8 *data, uint32 bloknr, uint32 bytes,
 	enum pfs3_metadata_type type);
-void UpdateCache(void);
+error_t UpdateCache(void);
 void FreeCache(void);
 
 /* access.c */
