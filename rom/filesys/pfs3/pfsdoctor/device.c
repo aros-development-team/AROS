@@ -200,6 +200,9 @@ static struct cacheline *c_GetCacheLine(uint32 bloknr)
 			cl = HeadOf(&cache.LRUpool);
 		}
 
+		/* A failed read may already have overwritten part of the buffer. */
+		cl->blocknr = CL_UNUSED;
+		cl->dirty = false;
 		error = volume.getrawblocks(cl->data, cache.linesize, bloknr);
 		if (error)
 			return NULL;
