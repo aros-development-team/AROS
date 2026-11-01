@@ -30,6 +30,8 @@ typedef struct _fcb
        state and are not safe for concurrent use, so read/write serialise
        on this. Initialised at fcb creation. */
     struct SignalSemaphore io_lock;
+    /* Never held across DOS IO: table snapshots must not wait for a reader. */
+    struct SignalSemaphore ref_lock;
     /* flock(): an advisory lock belongs to the open file description, so it
        is kept here and released when the last descriptor is closed. Guarded
        by the flock registry lock (flock.c), not by io_lock. */
@@ -53,6 +55,14 @@ typedef struct _fcb
    (which also lock). A NULL/absent handle needs no serialisation. */
 static inline void __fcb_lock(fcb *f)   { if (f) ObtainSemaphore(&f->io_lock); }
 static inline void __fcb_unlock(fcb *f) { if (f) ReleaseSemaphore(&f->io_lock); }
+
+static inline void __fcb_addref(fcb *f)
+{
+    ObtainSemaphore(&f->ref_lock);
+    f->opencount++;
+    ReleaseSemaphore(&f->ref_lock);
+}
+void __fcb_release(fcb *f);
 
 /* privflags */
 #define _FCB_ISDIR        ((unsigned int)1<<0)
@@ -83,6 +93,9 @@ typedef struct _fdesc
 } fdesc;
 
 struct PosixCIntBase;
+/* Pin table entries while copying or destroying them. Recursive per task. */
+void __lock_fdtable(void);
+void __unlock_fdtable(void);
 int __getfdslots(void);
 void __getfdarray(APTR *arrayptr, int *slotsptr);
 void __setfdarray(APTR array, int slots);
@@ -110,5 +123,9 @@ void __flock_release(fcb *f);
    file descriptor (handled locally) or when fd.library is unavailable. */
 struct fd_hooks;
 const struct fd_hooks *__getfdhooks(int fd, APTR *datap);
+
+/* Atomic duplicate into a free slot, with descriptor flags set before publication. */
+int __dupfd(int fd, int minimum, int flags);
+int __publish_newfd(fdesc *desc, int minimum);
 
 #endif /* ___FDESC_H */
