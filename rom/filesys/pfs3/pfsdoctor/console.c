@@ -117,16 +117,20 @@ static BOOL OpenVolume(void)
 	if (!dl || dl->dol_Type == DLT_VOLUME)
 	{
 		UnLockDosList(OV_Flags|LDF_READ);
-		guiMsg("DEVICE "); guiMsg(targetdevice.name);
+		guiMsg("DEVICE %s", targetdevice.name);
 		guiMsg(" not found\nEXITING ...\n\n");
 		return FALSE;
 	}
 
 	UnLockDosList(OV_Flags|LDF_READ);
 
+	/* Leave room for both the colon and terminator in volume.devicename. */
+	if (strlen(targetdevice.name) >= FNSIZE - 1)
+		return FALSE;
+
 	/* inhibit device */
-	targetdevice.name[strlen(targetdevice.name)] = ':';
-	targetdevice.name[strlen(targetdevice.name)] = 0;
+	if (targetdevice.name[0] && targetdevice.name[strlen(targetdevice.name) - 1] != ':')
+		strcat(targetdevice.name, ":");
 	if (!(inhibited = Inhibit(targetdevice.name, DOSTRUE)))
 	{
 		guiMsg("Device could not be inhibited.\nEXITING ...\n\n");
@@ -268,6 +272,11 @@ int main(int argc, char *argv[])
 		return RETURN_FAIL;
 	}
 
+	if (strlen((char *)args[ARGS_DEVICE]) >= FNSIZE - 1) {
+		printf("Device name too long.\n");
+		FreeArgs(rdarg);
+		return RETURN_FAIL;
+	}
 	strcpy(targetdevice.name, (char*)args[ARGS_DEVICE]);
 
 	if (args[ARGS_VERBOSE])
