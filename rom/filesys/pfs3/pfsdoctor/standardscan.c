@@ -599,14 +599,37 @@ static error_t BuildRootBlock_hub(void)
 /* read from disk and check
  * Returns error (0 = ERROR_NONE = ok).
  */
+static error_t RequestMountFile(void)
+{
+	struct FileRequester *freq;
+	char mfname[FNSIZE], *t;
+	bool ok = false;
+
+	freq = AllocAslRequestTags(ASL_FileRequest, ASLFR_SleepWindow, TRUE,
+		ASLFR_TitleText, "Select mountfile", ASLFR_InitialFile, "mountme",
+		ASLFR_InitialDrawer, "df0:", ASLFR_DoSaveMode, TRUE, TAG_DONE);
+	if (freq == NULL)
+		return e_out_of_memory;
+	while (!ok) {
+		if (!AslRequestTags(freq, ASLFR_Window, CheckRepairWnd, TAG_DONE)) {
+			volume.showmsg("No mountlist written\n");
+			FreeAslRequest(freq);
+			return e_aborted;
+		}
+		t = stpcpy(mfname, freq->fr_Drawer);
+		stpcpy(t, freq->fr_File);
+		ok = MakeMountFile(mfname);
+		volume.showmsg(ok ? "Mountlist written\n" : "Could not write mountlist\n");
+	}
+	FreeAslRequest(freq);
+	return e_none;
+}
+
 static error_t GetRootBlock(void)
 {
 	error_t error = e_none;
 	uint32 bloknr;
 	int okuser;
-	struct FileRequester *freq;
-	char mfname[FNSIZE], *t;
-	bool ok = false;
 
 	enterblock(ROOTBLOCK);
 	volume.showmsg("Checking rootblock\n");
@@ -649,26 +672,9 @@ static error_t GetRootBlock(void)
 				"Press CONTINUE to select location to store the\n"
 				"mountlist", "CONTINUE", NULL);
 
-			freq = AllocAslRequestTags(ASL_FileRequest, ASLFR_SleepWindow, TRUE, 
-				ASLFR_TitleText, "Select mountfile", ASLFR_InitialFile, "mountme",
-				ASLFR_InitialDrawer, "df0:", ASLFR_DoSaveMode, TRUE, TAG_DONE);
+			if ((error = RequestMountFile()))
+				return error;
 
-			do
-			{
-				if (AslRequestTags(freq, ASLFR_Window, CheckRepairWnd, TAG_DONE))
-				{
-					t = stpcpy(mfname, freq->fr_Drawer);
-					t = stpcpy(t, freq->fr_File);
-					if ((ok = MakeMountFile(mfname)))
-						volume.showmsg("Mountlist written\n");
-				}
-				else
-				{
-					volume.showmsg("no mountlist written\n");
-				}
-			} while (!ok);
-
-			FreeAslRequest(freq);	
 			volume.askuser("Now starting to check/repair\n"
 				"relocated partition", "CONTINUE", NULL);
 
@@ -713,26 +719,9 @@ static error_t GetRootBlock(void)
 				"Press CONTINUE to select location to store the\n"
 				"mountlist", "CONTINUE", NULL);
 
-			freq = AllocAslRequestTags(ASL_FileRequest, ASLFR_SleepWindow, TRUE, 
-				ASLFR_TitleText, "Select mountfile", ASLFR_InitialFile, "mountme",
-				ASLFR_InitialDrawer, "df0:", ASLFR_DoSaveMode, TRUE, TAG_DONE);
+			if ((error = RequestMountFile()))
+				return error;
 
-			do
-			{
-				if (AslRequestTags(freq, ASLFR_Window, CheckRepairWnd, TAG_DONE))
-				{
-					t = stpcpy(mfname, freq->fr_Drawer);
-					t = stpcpy(t, freq->fr_File);
-					if ((ok = MakeMountFile(mfname)))
-						volume.showmsg("Mountlist written\n");
-				}
-				else
-				{
-					volume.showmsg("no mountlist written\n");
-				}
-			} while (!ok);
-
-			FreeAslRequest(freq);	
 			volume.askuser("Now starting to check/repair\n"
 				"redefined partition", "CONTINUE", NULL);
 
