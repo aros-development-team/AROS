@@ -12,6 +12,7 @@ POSIXCTESTFILES := \
         fchdir \
         fchmod \
         fcntl \
+        fcntl_duplicate \
         fd_reservation \
         vfork_fd \
         flock \
