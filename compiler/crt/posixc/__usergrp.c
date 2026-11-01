@@ -4,6 +4,7 @@
     Desc: single user defintion for POSIX user/groups
 */
 
+#include LC_LIBDEFS_FILE
 #include "__posixc_intbase.h"
 
 #include <exec/types.h>
@@ -31,10 +32,24 @@ void __fill_passwd(struct passwd *pwd, uid_t uid)
 
 int __init_usergrp(struct PosixCIntBase *PosixCIntBase)
 {
-    PosixCIntBase->uid      = DEF_USER_UID;
-    PosixCIntBase->euid     = DEF_USER_UID;
-    PosixCIntBase->gid     = DEF_USER_GID;
-    PosixCIntBase->egid     = DEF_USER_GID;
+    struct PosixCIntBase *parent = __GM_GetBaseParent(PosixCIntBase);
+
+    /* Match umask inheritance: a new program CRT must retain all four IDs
+     * across vfork/exec instead of resetting them to the default user. */
+    if (parent && (parent->flags & (VFORK_PARENT | EXEC_PARENT)))
+    {
+        PosixCIntBase->uid  = parent->uid;
+        PosixCIntBase->euid = parent->euid;
+        PosixCIntBase->gid  = parent->gid;
+        PosixCIntBase->egid = parent->egid;
+    }
+    else
+    {
+        PosixCIntBase->uid  = DEF_USER_UID;
+        PosixCIntBase->euid = DEF_USER_UID;
+        PosixCIntBase->gid  = DEF_USER_GID;
+        PosixCIntBase->egid = DEF_USER_GID;
+    }
 
     return 1;
 }
