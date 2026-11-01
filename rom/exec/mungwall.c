@@ -173,24 +173,51 @@ static void CheckHeader(struct MungwallHeader *header, IPTR byteSize, struct Tra
  *
  * 'memoryBlock' is an address of the block from user's point of view
  * (i. e. what was returned by allocation call)
- * 'byteSize' is length of the block (again, from user's point of view(
+ * '*byteSize' is length of the block (again, from user's point of view).
+ * When a mungwall header is found, it is updated to the complete raw block
+ * size that the allocator must release. It is left untouched for a foreign
+ * block.
  *
  * Returns address of the raw block (what really needs to be deallocated)
  */
-APTR MungWall_Check(APTR memoryBlock, IPTR byteSize, struct TraceLocation *loc, struct ExecBase *SysBase)
+APTR MungWall_Check(APTR memoryBlock, IPTR *byteSize, struct TraceLocation *loc, struct ExecBase *SysBase)
 {
     if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
     {
-        struct MungwallHeader *header;
+        APTR originalBlock = memoryBlock;
+        IPTR originalSize = *byteSize;
+        IPTR displacement = (IPTR)memoryBlock & (MEMCHUNK_TOTAL - 1);
+        struct MungwallHeader *header = NULL;
+        struct MungwallHeader *exactHeader = memoryBlock - MUNGWALL_BLOCK_SHIFT;
 
-        D(bug("[MungWall] Freeing %u bytes at 0x%p\n", byteSize, memoryBlock);)
+        D(bug("[MungWall] Freeing %u bytes at 0x%p\n", *byteSize, memoryBlock);)
 
-        /* Align size and block to the requirements (needed because of AllocAbs) */
-        byteSize += (IPTR)memoryBlock & (MEMCHUNK_TOTAL - 1);
-        memoryBlock = (APTR)AROS_ROUNDDOWN2((IPTR)memoryBlock, MEMCHUNK_TOTAL);
+        /*
+         * Normal allocations must be checked at the address the caller was
+         * given. A managed allocator can return blocks aligned more finely
+         * than MEMCHUNK_TOTAL; rounding such a pointer first moves a valid
+         * header lookup into its pre-wall.
+         *
+         * AllocAbs is the exception: callers are allowed to free from the
+         * requested address, which can lie a few bytes into the returned
+         * block. Only use that rounded-down address as a fallback. Avoid an
+         * unaligned ULONG access while probing an arbitrary AllocAbs address.
+         */
+        if (!((IPTR)memoryBlock & (sizeof(ULONG) - 1)) &&
+            exactHeader->mwh_magicid == MUNGWALL_HEADER_ID)
+        {
+            header = exactHeader;
+        }
+        else if (displacement)
+        {
+            memoryBlock = (APTR)AROS_ROUNDDOWN2((IPTR)memoryBlock, MEMCHUNK_TOTAL);
+            header = memoryBlock - MUNGWALL_BLOCK_SHIFT;
 
-        /* Take address of mungwall header */
-        header = memoryBlock - MUNGWALL_BLOCK_SHIFT;
+            if (header->mwh_magicid == MUNGWALL_HEADER_ID)
+                *byteSize += displacement;
+            else
+                header = NULL;
+        }
 
         /*
          * A block allocated before mungwall was switched on has no
@@ -202,13 +229,17 @@ APTR MungWall_Check(APTR memoryBlock, IPTR byteSize, struct TraceLocation *loc, 
          * came: freeing it unshifted and unmunged is exactly what
          * FreeMem() would have done with mungwall off.
          */
-        if (header->mwh_magicid != MUNGWALL_HEADER_ID)
+        if (!header)
         {
             bug("[MungWall] FreeMem(0x%p, %lu) from %s: no mungwall header"
                 " (pre-mungwall or foreign allocation) - freeing as-is\n",
-                memoryBlock, (unsigned long)byteSize,
+                originalBlock, (unsigned long)originalSize,
                 loc && loc->function ? loc->function : "<unknown>");
-            return memoryBlock;
+
+            /* A damaged neighbour can explain a missing header. */
+            MungWall_Scan(NULL, loc, SysBase);
+
+            return originalBlock;
         }
 
         /*
@@ -229,7 +260,7 @@ APTR MungWall_Check(APTR memoryBlock, IPTR byteSize, struct TraceLocation *loc, 
         /* Reset fault state in order to see who is freeing the bad entry */
         header->mwh_fault = FALSE;
 
-        CheckHeader(header, byteSize, loc, SysBase);
+        CheckHeader(header, *byteSize, loc, SysBase);
 
         /* Fill block with weird stuff to esploit bugs in applications
          *
@@ -248,10 +279,11 @@ APTR MungWall_Check(APTR memoryBlock, IPTR byteSize, struct TraceLocation *loc, 
            whole reason for looking is a quirk of RemTask() - so no task
            simply means the block is safe to munge. */
         if ((GET_THIS_TASK == NULL) || (GET_THIS_TASK->tc_State != TS_REMOVED))
-                MUNGE_BLOCK(memoryBlock, MEMFILL_FREE, byteSize);
+                MUNGE_BLOCK(memoryBlock, MEMFILL_FREE, *byteSize);
 
         /* Return real start of the block to deallocate */
         memoryBlock = header;
+        *byteSize += MUNGWALL_TOTAL_SIZE;
     }
 
     return memoryBlock;
