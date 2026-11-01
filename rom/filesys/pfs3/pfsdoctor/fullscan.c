@@ -617,6 +617,7 @@ error_t BuildRext(c_extensionblock_t *rext)
 	if (!(bbl = malloc(sizeof(struct buildblock))))
 	{
 		FreeBufMem(r);
+		rext->data = NULL;
 		return e_out_of_memory;
 	}
 
@@ -668,6 +669,7 @@ error_t BuildIndexBlock(c_indexblock_t *blk, uint16 bloktype, uint32 seqnr)
 	scanelement_t *ind;
 
 	volume.status(1, "Building indexblock", INDEX_PER_BLOCK);	
+	blk->data = NULL;
 	if (!(ind = calloc(INDEX_PER_BLOCK, sizeof(scanelement_t))))
 		return e_out_of_memory;
 
@@ -679,6 +681,7 @@ error_t BuildIndexBlock(c_indexblock_t *blk, uint16 bloktype, uint32 seqnr)
 	if (!(bbl = malloc(sizeof(struct buildblock))))
 	{
 		FreeBufMem(ib);
+		blk->data = NULL;
 		free(ind);
 		return e_out_of_memory;
 	}
@@ -734,6 +737,7 @@ error_t BuildBitmapBlock(c_bitmapblock_t *blk, uint32 seqnr)
 	if (!(bbl = malloc(sizeof(struct buildblock))))
 	{
 		FreeBufMem(bmb);
+		blk->data = NULL;
 		return e_out_of_memory;
 	}
 
