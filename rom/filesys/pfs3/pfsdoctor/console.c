@@ -61,8 +61,12 @@ int guiAskUser(char *message, char *okstr, char *cancelstr)
 	char ch = 0;
 	for (;;) {
 		printf("%s\n", message);
-		printf("1=<%s> 0=<%s>\n", okstr, cancelstr);
-		scanf("%c", &ch);
+		if (cancelstr != NULL)
+			printf("1=<%s> 0=<%s>\n", okstr, cancelstr);
+		else
+			printf("1=<%s>\n", okstr);
+		if (scanf(" %c", &ch) != 1)
+			return 0;
 		if (ch == '1')
 			return 1;
 		if (ch == '0')
