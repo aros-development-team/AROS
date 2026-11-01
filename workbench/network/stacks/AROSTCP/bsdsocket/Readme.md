@@ -449,10 +449,10 @@ neighbour discovery. Through a router the table only has the router's route (a p
 which every destination behind it shares, so - as KAME's `icmp6_mtudisc_clone()` does - a host route
 through the same router (`RTF_HOST | RTF_GATEWAY | RTF_DYNAMIC`, the router route's metrics) is
 added for the destination and the MTU put on that. A lowered MTU is kept 10 minutes (`rmx_expire`
-says when), then the larger one is tried again (RFC 8201 section 4): `icmp6_slowtimo()` deletes a
-host route added for it and gives any other route its previous MTU back. The routes are held,
-with a reference, in a table of 32 (`pmtu_routes[]`); when it is full the one closest to expiring
-gives way.
+says when), then the larger one is tried again (RFC 8201 section 4): `rt_pmtu_timer()` (from
+`ip_slowtimo()`) deletes a host route added for it and gives any other route its previous MTU back.
+The routes are held, with a reference, in a table of 32 (`pmtu_routes[]`, `net/route.c`, shared with
+IPv4 - §7); when it is full the one closest to expiring gives way.
 
 The other ICMPv6 errors (Destination Unreachable, Time Exceeded, Parameter Problem) go to the
 upper-layer protocol of the packet they quote, as in KAME: `icmp6_notify_error()` copies out the
@@ -556,6 +556,16 @@ then a preferred address over a deprecated one, then a temporary address over a 
   is rate-limited by a token bucket (`icmp_ratelimit`): a burst of 10 tokens refills at 5 tokens per
   500 ms slow-tick, keyed off the `tcp_now` clock; suppressed errors are counted in
   `icmpstat.icps_ratelimit`, bounding ICMP error amplification.
+- **Path MTU discovery** (RFC 1191). TCP sends with DF set (`tcp_do_pmtud`, in `tcp_output` and the
+  syncache's SYN-ACK). An ICMP "fragmentation needed" gives the next hop's MTU; an older router gives
+  0, and the next plateau below the quoted datagram's length is taken (section 7). It is never below
+  552 (`IP_PMTU_MIN`, as Linux), so a forged message cannot shrink packets further. `icmp_mtudisc()`
+  puts it on the destination's own route through `rt_pmtu_update()`, as for IPv6 (§6.3: a host route
+  through the router, given back after 10 minutes), and `ip_output` sizes packets by the route's MTU.
+  `tcp_ctlinput` (`PRC_MSGSIZE`) lowers the MSS of the connection the quoted segment belongs to,
+  when that segment is still unacknowledged (RFC 5927 section 7.2), with `tcp_mtudisc()`, shared with
+  IPv6; and when `ip_output` refuses a segment larger than the route's MTU (`EMSGSIZE`),
+  `tcp_output` does the same from the route. UDP ignores `PRC_MSGSIZE`: it does not set DF.
 - **UDP** (`udp_usrreq.c`) is the standard datagram path over the shared `udb` table. The default
   UDP receive buffer (`udp_recvspace`, 256 datagrams) and the IP input queue depth
   (`ipqmaxlen = 4·IFQ_MAXLEN`, `ip_input.c`) are sized to absorb short high-rate receive bursts
@@ -606,7 +616,10 @@ locals before summing rather than reading them through a `u_int16_t *` taken fro
   feeds queued packets into the pool of write requests as earlier ones complete, so a burst of sends
   cannot drain the request or cluster pool and wedge the interface. `sana2arp.c` implements IPv4
   ARP with a **per-interface** ARP table (each `sana_softc` has its own `ss_arp.table` under
-  `ARPTAB_LOCK`).
+  `ARPTAB_LOCK`). While an address is resolved, up to `ARP_MAXHOLD` (16) packets are queued on its
+  entry (`at_hold`, chained through `m_nextpkt`, oldest dropped first) and all are sent when the reply
+  comes, so the fragments of a datagram all leave; the request is sent again at most once a second
+  (RFC 1122 section 2.3.2.1), not for every packet queued.
 - **Tunnel pseudo-interface.** `if_stf.c` provides a deviceless 6in4 (SIT) interface that
   encapsulates IPv6 in IPv4 (protocol 41) over the existing IPv4 stack — no SANA-II device is bound.
   See §6.5.

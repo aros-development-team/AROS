@@ -136,7 +136,7 @@ int	STKARGFUN ip_output(void *args, ...)
     register struct ifnet *ifp;
     register struct mbuf *m = m0;
     register int hlen = sizeof(struct ip);
-    int len, off, error = 0;
+    int len, off, error = 0, mtu;
     struct route iproute;
     struct sockaddr_in *dst;
     struct in_ifaddr *ia;
@@ -421,9 +421,18 @@ sendit:
     }
 
     /*
-     * If small enough for interface, can just send directly.
+     * The MTU: the interface's, or the path MTU the route has learned
+     * (RFC 1191) if that is smaller, as in ip6_output().
      */
-    if((u_short)ip->ip_len <= ifp->if_mtu) {
+    mtu = ifp->if_mtu;
+    if(ro->ro_rt != NULL && ro->ro_rt->rt_rmx.rmx_mtu != 0 &&
+            ro->ro_rt->rt_rmx.rmx_mtu < (u_long)mtu)
+        mtu = (int)ro->ro_rt->rt_rmx.rmx_mtu;
+
+    /*
+     * If small enough for the path, can just send directly.
+     */
+    if((u_short)ip->ip_len <= mtu) {
         ip->ip_len = htons((u_short)ip->ip_len);
         ip->ip_off = htons((u_short)ip->ip_off);
         ip->ip_sum = 0;
@@ -441,7 +450,7 @@ sendit:
         ipstat.ips_cantfrag++;
         goto bad;
     }
-    len = (ifp->if_mtu - hlen) & ~ 7;
+    len = (mtu - hlen) & ~ 7;
     if(len < 8) {
         error = EMSGSIZE;
         goto bad;

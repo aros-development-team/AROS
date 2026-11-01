@@ -107,7 +107,6 @@ void icmp6_fasttimo(void)
 }
 
 extern void frag6_slowtimo(void);
-static void pmtu_timer(void);
 extern void in6_tmpaddrtimer(void);
 
 void
@@ -126,7 +125,6 @@ icmp6_slowtimo(void)
     nd6_timer(NULL);
     frag6_slowtimo();
     in6_tmpaddrtimer();
-    pmtu_timer();
     if(icmp6_slow_ticks <= 10) {
         D(bug("[AROSTCP:ICMP6] %s: nd6_timer returned (tick=%d)\n",
               __func__, icmp6_slow_ticks));
@@ -136,152 +134,22 @@ icmp6_slowtimo(void)
 void icmp6_drain(void)    {}
 
 /* ------------------------------------------------------------------
- * Path MTU (RFC 8201).
- *
- * A Packet Too Big lowers the MTU of the route to the destination of the
- * packet it quotes, and ip6_output() then sizes what it sends there to fit.
- * That route must be the destination's own: on the link it is the
- * neighbour's host route, which neighbour discovery clones; through a
- * router the table only has the router's route (a prefix, or the default
- * one), so - as in KAME (icmp6_mtudisc_clone()) - a host route through the
- * same router is added for the destination, and the MTU put on it, so it
- * does not apply to every other destination behind that router.
- *
- * A lowered MTU is kept PMTU_EXPIRE seconds, then the larger one is tried
- * again (RFC 8201 section 4: no sooner than 5 minutes, 10 recommended): a
- * host route added for it is deleted, another one gets its MTU back. The
- * routes are kept, with a reference, in pmtu_routes[]; with the table full,
- * the entry closest to expiring gives way.
- * ------------------------------------------------------------------ */
-#define PMTU_EXPIRE     600     /* seconds */
-#define PMTU_ROUTES     32
-
-static struct {
-    struct rtentry *rt;         /* NULL: free */
-    u_long expire;              /* seconds (GetSysTime()) */
-    u_long old_mtu;             /* the route's MTU before */
-    int added;                  /* the host route was added for the MTU */
-} pmtu_routes[PMTU_ROUTES];
-
-static u_long
-pmtu_now(void)
-{
-    struct timeval tv;
-
-    GetSysTime(&tv);
-    return tv.tv_sec;
-}
-
-/* Give the route back its MTU, or delete it if it was added for it. */
-static void
-pmtu_restore(int i)
-{
-    struct rtentry *rt = pmtu_routes[i].rt;
-
-    if(rt->rt_flags & RTF_UP) {
-        if(pmtu_routes[i].added)
-            rtrequest(RTM_DELETE, rt_key(rt), rt->rt_gateway, rt_mask(rt),
-                      rt->rt_flags, NULL);
-        else {
-            rt->rt_rmx.rmx_mtu = pmtu_routes[i].old_mtu;
-            rt->rt_rmx.rmx_expire = 0;
-        }
-    }
-    rtfree(rt);
-    pmtu_routes[i].rt = NULL;
-}
-
-/* Keep rt (whose reference this takes) for PMTU_EXPIRE seconds. */
-static void
-pmtu_keep(struct rtentry *rt, u_long old_mtu, int added)
-{
-    int i, slot = -1;
-
-    for(i = 0; i < PMTU_ROUTES; i++) {
-        if(pmtu_routes[i].rt == rt) {
-            rtfree(rt);                 /* kept already: the new reference goes */
-            slot = i;
-            break;
-        }
-        if(pmtu_routes[i].rt == NULL && slot < 0)
-            slot = i;
-    }
-    if(slot < 0) {
-        slot = 0;
-        for(i = 1; i < PMTU_ROUTES; i++)
-            if(pmtu_routes[i].expire < pmtu_routes[slot].expire)
-                slot = i;
-        pmtu_restore(slot);
-    }
-    if(pmtu_routes[slot].rt == NULL) {
-        pmtu_routes[slot].rt = rt;
-        pmtu_routes[slot].old_mtu = old_mtu;
-        pmtu_routes[slot].added = added;
-    }
-    pmtu_routes[slot].expire = pmtu_now() + PMTU_EXPIRE;
-    rt->rt_rmx.rmx_expire = pmtu_routes[slot].expire;
-}
-
-/* From icmp6_slowtimo(): give back the MTUs whose time is up. */
-static void
-pmtu_timer(void)
-{
-    u_long now = pmtu_now();
-    int i;
-
-    for(i = 0; i < PMTU_ROUTES; i++)
-        if(pmtu_routes[i].rt != NULL &&
-                (pmtu_routes[i].expire <= now || !(pmtu_routes[i].rt->rt_flags & RTF_UP)))
-            pmtu_restore(i);
-}
-
-/* ------------------------------------------------------------------
- * icmp6_update_pmtu - record the path MTU a Packet Too Big reports for dst:
- * clamped to the IPv6 minimum, only ever lowered, on dst's own route.
+ * icmp6_update_pmtu - record the path MTU a Packet Too Big reports for dst
+ * (RFC 8201): clamped to the IPv6 minimum; rt_pmtu_update() (route.c) puts
+ * it on dst's own route and gives it back after a while.
  * ------------------------------------------------------------------ */
 static void
 icmp6_update_pmtu(struct in6_addr *dst, u_int32_t mtu)
 {
     struct sockaddr_in6 sin6;
-    struct rtentry *rt;
-    u_long old_mtu;
-    int added = 0;
 
     if(mtu < IPV6_MMTU)
         mtu = IPV6_MMTU;
-
     bzero(&sin6, sizeof(sin6));
     sin6.sin6_family = AF_INET6;
     sin6.sin6_len    = sizeof(sin6);
     sin6.sin6_addr   = *dst;
-
-    rt = rtalloc1((struct sockaddr *)&sin6, 0);
-    if(rt == NULL)
-        return;
-    if(rt->rt_rmx.rmx_mtu != 0 && mtu >= rt->rt_rmx.rmx_mtu) {
-        rtfree(rt);                     /* not lower: nothing to do */
-        return;
-    }
-    if(!(rt->rt_flags & RTF_HOST)) {
-        struct rtentry *nrt = NULL;
-
-        /* an on-link destination with no neighbour entry is not one we
-         * have been sending to: leave the prefix alone */
-        if(!(rt->rt_flags & RTF_GATEWAY) ||
-                rtrequest(RTM_ADD, (struct sockaddr *)&sin6, rt->rt_gateway, NULL,
-                          RTF_HOST | RTF_GATEWAY | RTF_DYNAMIC, &nrt) != 0 ||
-                nrt == NULL) {
-            rtfree(rt);
-            return;
-        }
-        nrt->rt_rmx = rt->rt_rmx;       /* the router's route's metrics */
-        rtfree(rt);
-        rt = nrt;
-        added = 1;
-    }
-    old_mtu = rt->rt_rmx.rmx_mtu;
-    rt->rt_rmx.rmx_mtu = mtu;
-    pmtu_keep(rt, old_mtu, added);
+    rt_pmtu_update((struct sockaddr *)&sin6, mtu);
 }
 
 /* ------------------------------------------------------------------
