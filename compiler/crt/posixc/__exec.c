@@ -758,7 +758,8 @@ static char *appendargs(char *argptr, int *argssizeptr, char *const args[], APTR
     
     for (argsit = args; *argsit && argptr; argsit++)
     {
-        if(containswhite(*argsit))
+        /* DOS needs quotes to distinguish an empty argument from spacing. */
+        if (**argsit == '\0' || containswhite(*argsit))
         {
             char *escaped = escape(*argsit);
             if(!escaped)
