@@ -217,7 +217,7 @@ static struct cacheline *c_GetCacheLine(uint32 bloknr)
 
 /* update alle dirty blocks in the cache
  */
-void UpdateCache(void)
+error_t UpdateCache(void)
 {
 	struct cacheline *cl;
 	error_t error;
@@ -227,10 +227,14 @@ void UpdateCache(void)
 		if (cl->dirty)
 		{
 			error = volume.writerawblocks(cl->data, cache.linesize, cl->blocknr);
-			if (error)
+			if (error) {
 				adderror("write error");
+				return error;
+			}
+			cl->dirty = false;
 		}
 	}
+	return e_none;
 }
 
 /* destroy cache
