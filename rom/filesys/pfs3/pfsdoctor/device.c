@@ -315,7 +315,8 @@ retry_read:
 			request->iotd_Req.io_Command = NSCMD_TD_READ64;
 		}			
 
-		if (DoIO((struct IORequest*)request))
+		if (DoIO((struct IORequest*)request)
+		    || request->iotd_Req.io_Actual != io_transfer)
 		{
 			volume.showmsg("READ ERROR\n");
 			if (!retry--)
@@ -462,7 +463,8 @@ retry_write:
 			request->iotd_Req.io_Command = NSCMD_TD_WRITE64;
 		}
 
-		if (DoIO((struct IORequest*)request))
+		if (DoIO((struct IORequest*)request)
+		    || request->iotd_Req.io_Actual != io_transfer)
 		{
 			volume.showmsg("WRITE ERROR\n");
 			if (!retry--)
@@ -655,11 +657,12 @@ static BOOL testread_td(UBYTE *buffer)
 		io->iotd_Req.io_Length  = BLOCKSIZE;
 		io->iotd_Req.io_Data    = buffer;
 		io->iotd_Req.io_Offset  = volume.lastblock << BLOCKSHIFT;
+		io->iotd_Req.io_Actual  = 0;
 		if (volume.accessmode >= ACCESS_TD64) {
 			io->iotd_Req.io_Actual  = volume.lastblock >> (32 - BLOCKSHIFT);
 			io->iotd_Req.io_Command = volume.accessmode == ACCESS_NSD ? NSCMD_TD_READ64 : TD_READ64;
 		}
-		if (DoIO((struct IORequest*)io) != 0)
+		if (DoIO((struct IORequest*)io) != 0 || io->iotd_Req.io_Actual != BLOCKSIZE)
 			return FALSE;
 		if (testbuffer(buffer, cnt))
 			return TRUE;
