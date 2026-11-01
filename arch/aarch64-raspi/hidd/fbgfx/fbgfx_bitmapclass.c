@@ -20,6 +20,7 @@
 #include <string.h>
 
 #include "fbgfx_hidd.h"
+#include "fbgfx_validation.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -37,7 +38,9 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         OOP_MethodID       disp_mid;
         struct FBGfxBitMapData *data;
         HIDDT_ModeID       modeid;
-        OOP_Object        *sync, *pf, *dmenum;
+        OOP_Object        *sync = NULL, *pf = NULL, *dmenum;
+        IPTR width, height, pitch, bytesperpix;
+        uint32_t bytes;
 
         data = OOP_INST_DATA(cl, o);
 
@@ -47,13 +50,25 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         OOP_GetAttr(o, aHidd_BitMap_ModeID  , &modeid);
         OOP_GetAttr(o, aHidd_ChunkyBM_Buffer, (IPTR *)&data->VideoData);
 
-        OOP_GetAttr(data->displayhidd, aHidd_Display_DMEnumerator, (APTR)&dmenum);
-        HIDD_DMEnum_GetMode(dmenum, modeid, &sync, &pf);
+        if (!data->displayhidd || !data->pixfmtobj || !data->VideoData)
+            goto dispose;
+        dmenum = (OOP_Object *)OOP_GET(data->displayhidd, aHidd_Display_DMEnumerator);
+        if (!dmenum || !HIDD_DMEnum_GetMode(dmenum, modeid, &sync, &pf) || !sync || !pf)
+            goto dispose;
 
-        data->width        = OOP_GET(o, aHidd_BitMap_Width);
-        data->height       = OOP_GET(o, aHidd_BitMap_Height);
-        data->bytesperline = OOP_GET(o, aHidd_BitMap_BytesPerRow);
-        data->bytesperpix  = OOP_GET(data->pixfmtobj, aHidd_PixFmt_BytesPerPixel);
+        width = OOP_GET(o, aHidd_BitMap_Width);
+        height = OOP_GET(o, aHidd_BitMap_Height);
+        pitch = OOP_GET(o, aHidd_BitMap_BytesPerRow);
+        bytesperpix = OOP_GET(data->pixfmtobj, aHidd_PixFmt_BytesPerPixel);
+        if (width > INT32_MAX || height > INT32_MAX ||
+            !fbgfx_buffer_size(width, height, pitch, bytesperpix, &bytes) ||
+            !fbgfx_buffer_span((uintptr_t)data->VideoData, bytes))
+            goto dispose;
+
+        data->width        = width;
+        data->height       = height;
+        data->bytesperline = pitch;
+        data->bytesperpix  = bytesperpix;
         data->bpp          = OOP_GET(data->pixfmtobj, aHidd_PixFmt_BitsPerPixel);
         data->disp_width   = OOP_GET(sync, aHidd_Sync_HDisp);
         data->disp_height  = OOP_GET(sync, aHidd_Sync_VDisp);
@@ -70,6 +85,7 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         if (data->DAC)
             ReturnPtr("FBGfx.BitMap::New()", OOP_Object *, o);
 
+dispose:
         disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
 
         OOP_CoerceMethod(cl, o, (OOP_Msg) &disp_mid);
@@ -175,13 +191,17 @@ BOOL MNAME_BM(SetColors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetCo
 
     D(bug("[FBGfx:BitMap] SetColors(%u, %u)\n", msg->firstColor, msg->numColors));
 
+    /* Validate before the superclass can mutate or allocate its colormap. */
+    if (!fbgfx_color_range(data->bpp, data->DAC != NULL, msg->firstColor,
+                           msg->numColors, msg->colors))
+        return FALSE;
+    if (msg->numColors == 0)
+        return TRUE;
+
     if (!OOP_DoSuperMethod(cl, o, (OOP_Msg)msg)) {
         D(bug("[FBGfx:BitMap] DoSuperMethod() failed\n"));
         return FALSE;
     }
-
-    if ((msg->firstColor + msg->numColors) > (1 << data->bpp))
-        return FALSE;
 
     if (data->DAC) {
         for ( xc_i = msg->firstColor, col_i = 0;
