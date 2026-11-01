@@ -544,18 +544,18 @@ error_t SearchLastReserved(volume_t *vol, uint32 *result)
 /* Search filesystem on specified execdevice/unit. Start at startblok,
  * end at endblok
  */
-uint32 SearchFileSystem(int32 startblok, int32 endblok)
+error_t SearchFileSystem(int32 startblok, int32 endblok, uint32 *result)
 {
 	rootblock_t *rbl;
 	uint32 blnr = 0, b;
+	error_t error = e_none;
 
 	if (!(rbl = (rootblock_t *)AllocBufMem (MAXRESBLOCKSIZE)))
 		return e_out_of_memory;
 
 	volume.status(0, "Searching filesystem", endblok-startblok);
-	startblok = max(startblok, 0);
-	startblok &= ~1;		/* even bloknr */
-	for (b = startblok; b<endblok; b += volume.rescluster)
+	startblok = max(startblok, ROOTBLOCK);
+	for (b = startblok; b<endblok; b++)
 	{
 		volume.progress(0,1);
 		if (aborting)
@@ -566,8 +566,13 @@ uint32 SearchFileSystem(int32 startblok, int32 endblok)
 		}
 
 		// read block and check if it is a rootblock */
-		if (ReadPFS3Metadata((uint8 *)rbl, b, volume.blocksize,
-			PFS3_METADATA_ROOT))
+		error = ReadPFS3Metadata((uint8 *)rbl, b, volume.blocksize,
+			PFS3_METADATA_ROOT);
+		if (error == e_syntax_error) {
+			error = e_none;
+			continue;
+		}
+		if (error)
 			break;
 
 		if (IsRootBlock(rbl))
@@ -578,7 +583,9 @@ uint32 SearchFileSystem(int32 startblok, int32 endblok)
 	}
 
 	FreeBufMem(rbl);
-	return blnr;
+	if (error == e_none)
+		*result = blnr;
+	return error;
 }
 
 /* cached block structure is managed by caller

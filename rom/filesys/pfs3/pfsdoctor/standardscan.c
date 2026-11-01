@@ -125,7 +125,7 @@ static error_t MainBlockUsed(uint32 bloknr);
 static error_t AnodeUsed(uint32 bloknr);
 static error_t bg_ItemUsed(bitmap_t *bm, uint32 nr);
 static BOOL IsAnodeUsed(uint32 nr);
-static uint32 vol_SearchFileSystem(void);
+static error_t vol_SearchFileSystem(uint32 *result);
 static bitmap_t *bg_InitBitmap(int32 start, int32 stop, int32 step);
 static void bg_KillBitmap(bitmap_t **bm);
 static BOOL bg_IsItemUsed(bitmap_t *bm, uint32 nr);
@@ -674,7 +674,10 @@ static error_t GetRootBlock(void)
 		okuser = volume.askuser("Rootblock not found.\n"
 			"Select ok to search for misplaced rootblock.", "ok", "cancel");
 
-		if (okuser && (bloknr = vol_SearchFileSystem()))
+		bloknr = 0;
+		if (okuser && (error = vol_SearchFileSystem(&bloknr)))
+			return error;
+		if (okuser && bloknr)
 		{
 			volume.showmsg("\nRootblock found. Repartitioning .. \n");
 			if ((error = Repartition(bloknr)))
@@ -788,11 +791,11 @@ static bool MakeMountFile(char *fname)
 	return false;
 }
 
-static uint32 vol_SearchFileSystem(void)
+static error_t vol_SearchFileSystem(uint32 *result)
 {
 	return SearchFileSystem(
 			(volume.firstblock > 1024) ? volume.firstblock - 1024 : 0,
-			volume.firstblock + 1024);
+			volume.firstblock + 1024, result);
 }
 
 bool IsRootBlock(rootblock_t *r)

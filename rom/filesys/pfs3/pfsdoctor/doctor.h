@@ -401,7 +401,7 @@ error_t BuildBitmapBlock(c_bitmapblock_t *blk, uint32 seqnr);
 error_t SearchBlocks(scanelement_t el[], uint32 seqlow, uint32 seqhigh, uint32 start, uint32 stop, uint16 bloktype);
 error_t SearchBlock(uint16 bloktype, uint32 seqnr, uint32 last, uint32 datestamp, uint32 anodenr, uint32 parent, uint32 *result);
 error_t SearchLastReserved(volume_t *vol, uint32 *result);
-uint32 SearchFileSystem(int32 startblok, int32 endblok);
+error_t SearchFileSystem(int32 startblok, int32 endblok, uint32 *result);
 
 /**********************************************************************/
 /*                        Lists                                       */
