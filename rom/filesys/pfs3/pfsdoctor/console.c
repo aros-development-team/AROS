@@ -104,9 +104,11 @@ static BOOL OpenVolume(void)
 				unsigned char *dname;
 
 				dl = dl2;
-				dname = (char *)BADDR(dl->dol_Name);
-				strncpy(targetdevice.name, dname+1, *dname);
-				targetdevice.name[*dname] = 0;
+				dname = (UBYTE *)BADDR(dl->dol_Name);
+				if (!BCPLtoCString(targetdevice.name, dname)) {
+					UnLockDosList(OV_Flags|LDF_READ);
+					return FALSE;
+				}
 				break;
 			}
 		}
@@ -154,7 +156,8 @@ static BOOL OpenVolume(void)
 	volume.updatestats = guiUpdateStats;
 	volume.getblock = vol_GetBlock;
 	volume.writeblock = vol_WriteBlock;
-	BCPLtoCString(volume.execdevice, (UBYTE *)BADDR(volume.fssm->fssm_Device));
+	if (!BCPLtoCString(volume.execdevice, (UBYTE *)BADDR(volume.fssm->fssm_Device)))
+		return FALSE;
 	volume.execunit = volume.fssm->fssm_Unit;
 
 	if (verbose) {
