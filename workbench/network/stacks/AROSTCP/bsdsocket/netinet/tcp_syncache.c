@@ -59,6 +59,7 @@ void in_pcbsetv4mapped(struct inpcb *);
 #include <kern/uipc_socket2_protos.h>
 
 extern int tcp_v6mssdflt;
+extern int tcp_do_pmtud;
 int tcp_mssopt6(const struct ifnet *, const struct in6_addr *);
 extern int ip_defttl;			/* default TTL for TCP segments */
 
@@ -414,6 +415,8 @@ syncache_respond(struct syncache *sc)
     ti->ti_sum = in_cksum(m, tlen);
     ((struct ip *)ti)->ip_len = tlen;
     ((struct ip *)ti)->ip_ttl = sc->sc_ip_ttl ? sc->sc_ip_ttl : ip_defttl;
+    if(tcp_do_pmtud)            /* path MTU discovery (RFC 1191) */
+        ((struct ip *)ti)->ip_off |= IP_DF;
 
 #ifdef ENABLE_MULTICAST
     (void) ip_output(m, (struct mbuf *)NULL, (struct route *)NULL, 0,

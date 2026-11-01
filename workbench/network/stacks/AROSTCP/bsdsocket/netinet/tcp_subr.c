@@ -61,6 +61,7 @@
 #include <netinet/in_var.h>
 #include <netinet/ip_var.h>
 #include <netinet/ip_icmp.h>
+#include <stddef.h>		/* offsetof */
 #include <netinet/in_cksum_protos.h>
 #include <protos/net/route_protos.h>
 #include <netinet/tcp.h>
@@ -318,6 +319,7 @@ int	tcp_do_sack = 1;	/* enable SACK (RFC 2018) */
 int	tcp_do_newreno = 1;	/* enable NewReno (RFC 3782) */
 int	tcp_do_ecn = 0;		/* enable ECN (RFC 3168) - off by default */
 int	tcp_do_prr = 0;		/* enable PRR (RFC 6937) - off by default */
+int	tcp_do_pmtud = 1;	/* IPv4 path MTU discovery: DF on (RFC 1191) */
 static	void tcp_cleartaocache(void);
 
 extern u_char inetctlerrmap[];
@@ -760,6 +762,8 @@ int error;
     sowwakeup(so);
 }
 
+void tcp_mtudisc(struct tcpcb *, u_int32_t);
+
 void
 tcp_ctlinput(cmd, sa, arg)
 int cmd;
@@ -769,6 +773,34 @@ void *arg;
     register struct ip *ip = arg;
     void (*notify) __P((struct inpcb *, int)) = tcp_notify;
 
+    if(cmd == PRC_MSGSIZE) {
+        /*
+         * "Fragmentation needed" (RFC 1191) about a segment of a
+         * connection under way: icmp_input() has put the path MTU on the
+         * route and in the message (icmp_mtudisc()). Only for a segment
+         * still unacknowledged - anything else is old, or forged blind
+         * (RFC 5927 section 7.2) - the connection sends smaller ones.
+         */
+        const struct icmp *icp;
+        struct tcphdr *th;
+        struct inpcb *inp;
+        struct tcpcb *tp;
+        tcp_seq seq;
+
+        if(ip == NULL)
+            return;
+        icp = (const struct icmp *)((caddr_t)ip - offsetof(struct icmp, icmp_ip));
+        th = (struct tcphdr *)((caddr_t)ip + (ip->ip_hl << 2));
+        inp = in_pcblookup(&tcb, ip->ip_dst, th->th_dport, ip->ip_src,
+                           th->th_sport, 0);
+        if(inp == NULL || (tp = intotcpcb(inp)) == NULL)
+            return;
+        seq = ntohl(th->th_seq);
+        if(SEQ_LT(seq, tp->snd_una) || SEQ_GEQ(seq, tp->snd_max))
+            return;
+        tcp_mtudisc(tp, ntohs(icp->icmp_nextmtu));
+        return;
+    }
     if(cmd == PRC_QUENCH)
         notify = tcp_quench;
     else if(!PRC_IS_REDIRECT(cmd) &&
@@ -784,14 +816,13 @@ void *arg;
 }
 
 #if INET6
-void tcp_mtudisc6(struct tcpcb *, u_int32_t);
 
 /*
  * tcp6_ctlinput - an ICMPv6 error about a TCP/IPv6 segment we sent
  * (icmp6_notify_error()): sa is its destination, arg an ip6ctlparam with
  * its source and ports. tcp_notify() keeps it as a soft error; a Packet
  * Too Big (PRC_MSGSIZE) about a segment still unacknowledged makes the
- * connection send smaller ones (tcp_mtudisc6()).
+ * connection send smaller ones (tcp_mtudisc()).
  */
 void
 tcp6_ctlinput(int cmd, struct sockaddr *sa, void *arg)
@@ -815,7 +846,7 @@ tcp6_ctlinput(int cmd, struct sockaddr *sa, void *arg)
         if(SEQ_LT(ip6cp->ip6c_seq, tp->snd_una) ||
                 SEQ_GEQ(ip6cp->ip6c_seq, tp->snd_max))
             return;
-        tcp_mtudisc6(tp, ip6cp->ip6c_mtu);
+        tcp_mtudisc(tp, ip6cp->ip6c_mtu);
         return;
     }
     if(ip6cp != NULL)
@@ -827,17 +858,32 @@ tcp6_ctlinput(int cmd, struct sockaddr *sa, void *arg)
 }
 #endif
 
-#if INET6
 /*
- * tcp_mtudisc6 - the path to tp's peer takes packets of at most mtu bytes
- * (RFC 8201 section 5.2): send segments that fit, and resend what was not
- * acknowledged, as FreeBSD's tcp_mtudisc() does. The MSS is set as
- * tcp_mss() sets it; only ever lowered.
+ * tcp_mtudisc - the path to tp's peer takes packets of at most mtu bytes
+ * (RFC 1191, RFC 8201 section 5.2): send segments that fit, and resend
+ * what was not acknowledged, as FreeBSD's tcp_mtudisc() does. With mtu 0,
+ * the MTU is the connection's route's (IPv4, after ip_output() said
+ * EMSGSIZE). The MSS is set as tcp_mss() sets it; only ever lowered.
  */
 void
-tcp_mtudisc6(struct tcpcb *tp, u_int32_t mtu)
+tcp_mtudisc(struct tcpcb *tp, u_int32_t mtu)
 {
-    int mss = (int)mtu - (int)(sizeof(struct ip6_hdr) + sizeof(struct tcphdr));
+    int hdrs = sizeof(struct tcpiphdr), mss;
+
+#if INET6
+    if(tcp_isipv6(tp->t_inpcb))
+        hdrs = sizeof(struct ip6_hdr) + sizeof(struct tcphdr);
+    else
+#endif
+    if(mtu == 0) {
+        struct rtentry *rt = tp->t_inpcb->inp_route.ro_rt;
+
+        if(rt == NULL)
+            return;
+        mtu = rt->rt_rmx.rmx_mtu ? rt->rt_rmx.rmx_mtu :
+              rt->rt_ifp ? rt->rt_ifp->if_mtu : 0;
+    }
+    mss = (int)mtu - hdrs;
 
     if(mss <= 0 || mss >= tp->t_maxopd)
         return;
@@ -852,7 +898,6 @@ tcp_mtudisc6(struct tcpcb *tp, u_int32_t mtu)
     tp->snd_nxt = tp->snd_una;
     (void)tcp_output(tp);
 }
-#endif
 
 /*
  * When a source quench is received, close congestion window
