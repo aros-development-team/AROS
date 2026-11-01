@@ -371,6 +371,9 @@ again:
     }
     if(*cp && !isspace(*cp))
         return (INADDR_NONE);
+    /* a fifth part has no room in parts[] (4.4BSD wrote it past the end) */
+    if(pp >= parts + 4)
+        return (INADDR_NONE);
     *pp++ = val;
     n = pp - parts;
     if(n > 4)

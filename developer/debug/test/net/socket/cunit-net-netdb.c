@@ -6,7 +6,8 @@
     inet_network() reads it - so getnetbyaddr(127, AF_INET) finds the
     "loop 127 loopback" line AROS ships in db/networks, and
     getnetbyname("loopback") gives 127. And inet_network() itself: each
-    part a byte, the last rightmost. Usage:  cunit-net-netdb
+    part a byte, the last rightmost; five parts refused, without writing
+    past the four it has room for. Usage:  cunit-net-netdb
 */
 
 #include "socktest.h"
@@ -33,6 +34,7 @@ void testNETDB_INET_NETWORK(void)
     CU_ASSERT_EQUAL(inet_network("192.168.166"), 0xc0a8a6);
     CU_ASSERT_EQUAL(inet_network("1.2.3.4"), 0x01020304);
     CU_ASSERT_EQUAL(inet_network("0x7f"), 127);
+    CU_ASSERT_EQUAL(inet_network("1.2.3.4.5"), INADDR_NONE);
     CU_ASSERT_EQUAL(inet_network("net"), INADDR_NONE);
 }
 
