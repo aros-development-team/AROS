@@ -1,0 +1,18 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+EXEDIR := $(AROS_TESTS)/application
+
+FILES := \
+    apptest
+
+#MM- test : test-application
+#MM- test-quick : test-application-quick
+
+#MM  test-application : includes linklibs workbench-libs-application
+
+%build_progs mmake=test-application \
+    files=$(FILES) targetdir=$(EXEDIR)
+
+%common
