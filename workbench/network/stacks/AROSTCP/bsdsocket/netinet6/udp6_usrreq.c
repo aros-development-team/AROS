@@ -349,6 +349,10 @@ udp6_append(struct inpcb *inp, struct mbuf *m, int off,
          * Each requested item becomes one cmsg mbuf; they are chained via
          * m_next so sbappendaddr() delivers them together.
          */
+        /* the receive time first (SO_TIMESTAMP), as FreeBSD */
+        *optp = sbcreatetimestamp(inp->inp_socket);
+        if(*optp != NULL)
+            optp = &(*optp)->m_next;
         if(inp->in6p_flags & IN6P_PKTINFO) {
             struct in6_pktinfo pi6;
 

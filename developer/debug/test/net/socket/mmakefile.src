@@ -38,6 +38,7 @@ CUNITSOCKETTESTFILES := \
     cunit-net-tcp \
     cunit-net-tcpmss6 \
     cunit-net-tcpsyn6 \
+    cunit-net-timestamp \
     cunit-net-udp \
     cunit-net-udppmtu \
     cunit-net-unreach6 \

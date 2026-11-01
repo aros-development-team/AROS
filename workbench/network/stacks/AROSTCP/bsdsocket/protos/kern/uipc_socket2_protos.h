@@ -70,6 +70,7 @@ int sbappendcontrol(struct sockbuf * sb,
                     struct mbuf * control);
 
 struct mbuf * sbcreatecontrol(caddr_t p, int size, int type, int level);
+struct mbuf * sbcreatetimestamp(struct socket *so);
 
 void sbcompress(register struct sockbuf * sb,
                register struct mbuf * m,

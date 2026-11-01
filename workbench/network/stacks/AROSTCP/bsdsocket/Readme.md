@@ -373,6 +373,21 @@ IPv4: the socket keeps its bound address, and only a missing port is bound for g
   `sizeof(struct cmsghdr) + size` would cut from the data's end. `recvmsg()` copies the whole chain
   into the caller's buffer and reports what did not fit with `MSG_CTRUNC` in `msg_flags`. IPv4's
   `IP_RECVDSTADDR` and `IP_RECVTOS` use the same helper.
+- **Receive time.** A UDP socket with `SO_TIMESTAMP` gets, first in each datagram's ancillary data,
+  the time the stack handed it to the socket - before it waits in the buffer, so a late
+  `recvmsg()` does not move it (`sbcreatetimestamp()`, `kern/uipc_socket2.c`, from
+  `udp_savecontrol()` and `udp6_append()`). `SO_TS_CLOCK` (FreeBSD's) chooses the clock, read once
+  per datagram, and so the message: `SO_TS_REALTIME_MICRO`, the default, gives `SCM_TIMESTAMP`, a
+  `struct timeval` from the C runtime's `timespec_get(TIME_UTC)` - the time posixc's
+  `gettimeofday()` gives, the system time from 1970 in UTC by the locale's offset of that moment,
+  so the stack keeps no conversion of its own; `SO_TS_MONOTONIC` gives `SCM_MONOTONIC`, a
+  `struct timespec` from timer.device's `GetUpTime()`, which is posixc's `CLOCK_MONOTONIC`. A
+  datagram keeps the kind it came in with. `SO_TS_REALTIME` and `SO_TS_BINTIME` are refused with
+  `EOPNOTSUPP` (an AROS choice; FreeBSD has them), other values with `EINVAL`. Both options change
+  at `splnet`, as the daemon reads them. `struct timeval` is two 32-bit fields on every target;
+  `struct timespec` is a 32-bit `time_t` and a `long`, 8 bytes on 32-bit targets and 16 on 64-bit
+  ones, so code that must read stamps across targets (an m68k program under emulation) should use
+  `SCM_TIMESTAMP`.
 
 ### 6.1 Neighbour Discovery
 

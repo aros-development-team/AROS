@@ -122,6 +122,7 @@ struct socket {
 
 	u_long	so_eventmask;		/* FD_* event classes to report (SO_EVENTMASK) */
 	caddr_t	so_tpcb;		/* Wisc. protocol control block XXX */
+	short	so_ts_clock;		/* SO_TS_CLOCK: which SO_TIMESTAMP message */
 };
 
 /* A reported event, queued on the owning base's EventList until
