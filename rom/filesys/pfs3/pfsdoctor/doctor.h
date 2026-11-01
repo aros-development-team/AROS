@@ -467,7 +467,7 @@ error_t ReadPFS3Metadata(uint8 *data, uint32 bloknr, uint32 bytes,
 	enum pfs3_metadata_type type);
 error_t WritePFS3Metadata(uint8 *data, uint32 bloknr, uint32 bytes,
 	enum pfs3_metadata_type type);
-void UpdateCache(void);
+error_t UpdateCache(void);
 void FreeCache(void);
 
 /* access.c */

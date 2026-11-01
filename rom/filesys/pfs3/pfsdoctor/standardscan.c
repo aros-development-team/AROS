@@ -264,18 +264,20 @@ static error_t mainStandardScan(uint32 flags)
 	}
 
 	if (ss.stage != finished)
-		return e_max_pass_exceeded;
+		return exitStandardScan(e_max_pass_exceeded);
 
 	volume.status(0, "finishing up", 2);
 	volume.progress(0, 1);
-	exitStandardScan(e_none);
+	error = exitStandardScan(e_none);
 	volume.progress(0, 1);
-	return e_none;
+	return error;
 }
 
 static error_t exitStandardScan(error_t error)
 {
-	UpdateCache();
+	error_t write_error = UpdateCache();
+	if (error == e_none)
+		error = write_error;
 
 	if (rbl)
 	{
