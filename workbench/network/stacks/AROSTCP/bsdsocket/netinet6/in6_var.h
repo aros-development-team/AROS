@@ -164,6 +164,7 @@ struct ip6_moptions {
 #define IN6P_DONTFRAG	0x08		/* IPV6_DONTFRAG */
 #define IN6P_MINMTU	0x10		/* IPV6_USE_MIN_MTU 1 */
 #define IN6P_PMTU	0x20		/* IPV6_USE_MIN_MTU 0 (neither: -1) */
+#define IN6P_TCLASS	0x40		/* receive the traffic class (RECVTCLASS) */
 
 /* ip6_output() flags: the RFC 3542 section 11 options for one datagram */
 #define IPV6_OUT_MINMTU	0x01		/* send at most IPV6_MMTU bytes a packet */

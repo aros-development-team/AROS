@@ -328,12 +328,31 @@ ip6_ctloutput(int op, struct socket *so, int level, int optname,
             inp->in6p_v6only = (*mtod(*m, int *) != 0);
             break;
 
-        case IPV6_TCLASS:
+        case IPV6_TCLASS: {         /* RFC 3542 section 6.5: -1 is 0 */
+            int v;
+
             if(*m == NULL || (*m)->m_len != sizeof(int)) {
                 error = EINVAL;
                 break;
             }
-            inp->in6p_tclass = *mtod(*m, int *);
+            v = *mtod(*m, int *);
+            if(v < -1 || v > 255) {
+                error = EINVAL;
+                break;
+            }
+            inp->in6p_tclass = v < 0 ? 0 : v;
+        }
+        break;
+
+        case IPV6_RECVTCLASS:
+            if(*m == NULL || (*m)->m_len != sizeof(int)) {
+                error = EINVAL;
+                break;
+            }
+            if(*mtod(*m, int *))
+                inp->in6p_flags |= IN6P_TCLASS;
+            else
+                inp->in6p_flags &= ~IN6P_TCLASS;
             break;
 
         case IPV6_RECVPKTINFO:
@@ -537,6 +556,16 @@ ip6_ctloutput(int op, struct socket *so, int level, int optname,
             }
             (*m)->m_len = sizeof(int);
             *mtod(*m, int *) = (inp->in6p_flags & IN6P_PKTINFO) ? 1 : 0;
+            break;
+
+        case IPV6_RECVTCLASS:
+            *m = m_get(M_WAIT, MT_SOOPTS);
+            if(*m == NULL) {
+                error = ENOBUFS;
+                break;
+            }
+            (*m)->m_len = sizeof(int);
+            *mtod(*m, int *) = (inp->in6p_flags & IN6P_TCLASS) ? 1 : 0;
             break;
 
         case IPV6_RECVPATHMTU:

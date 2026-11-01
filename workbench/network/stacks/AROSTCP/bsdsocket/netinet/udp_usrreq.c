@@ -47,6 +47,7 @@
 #include <sys/stat.h>
 #include <sys/queue.h>
 #include <sys/synch.h>
+#include <string.h>      /* memcpy */
 #ifdef ENABLE_SYSCTL
 #include <sys/sysctl.h>
 #endif
@@ -96,6 +97,36 @@ extern int ip_defttl;
 static	void udp_detach __P((struct inpcb *));
 static	void udp_notify __P((struct inpcb *, int));
 
+/*
+ * udp_savecontrol - the ancillary data inp asked for, from the IP header ip
+ * of the datagram (as it arrived: before the checksum overwrote part of
+ * it): IP_RECVDSTADDR, IP_RECVTOS. NULL when it asked for none.
+ */
+static struct mbuf *
+udp_savecontrol(const struct inpcb *inp, const struct ip *ip)
+{
+    struct mbuf *opts = NULL, **mp = &opts;
+
+    if(!(inp->inp_flags & INP_CONTROLOPTS))
+        return NULL;
+    if(inp->inp_flags & INP_RECVDSTADDR) {
+        struct in_addr dst = ip->ip_dst;
+
+        *mp = sbcreatecontrol((caddr_t)&dst, sizeof(struct in_addr),
+                              IP_RECVDSTADDR, IPPROTO_IP);
+        if(*mp)
+            mp = &(*mp)->m_next;
+    }
+    if(inp->inp_flags & INP_RECVTOS) {      /* one byte, as FreeBSD */
+        u_char tos = ip->ip_tos;
+
+        *mp = sbcreatecontrol((caddr_t)&tos, sizeof(tos), IP_RECVTOS, IPPROTO_IP);
+        if(*mp)
+            mp = &(*mp)->m_next;
+    }
+    return opts;
+}
+
 void
 udp_init()
 {
@@ -112,6 +143,7 @@ void udp_input(void *args, ...)
     struct mbuf *opts = 0;
     int len;
     struct ip save_ip;
+    const struct inpcb *lastinp;
     register struct mbuf *m = args;
     int iphlen;
     va_list va;
@@ -210,6 +242,7 @@ void udp_input(void *args, ...)
          * (Algorithm copied from raw_intr().)
          */
         last = NULL;
+        lastinp = NULL;
         for(inp = udb.lh_first; inp != NULL; inp = inp->inp_list.le_next) {
             if(inp->inp_lport != uh->uh_dport)
                 continue;
@@ -232,16 +265,20 @@ void udp_input(void *args, ...)
                 struct mbuf *n;
 
                 if((n = m_copy(m, 0, M_COPYALL)) != NULL) {
+                    opts = udp_savecontrol(lastinp, &save_ip);
                     if(sbappendaddr(&last->so_rcv,
                                     (struct sockaddr *)&udp_in,
-                                    n, (struct mbuf *)0) == 0) {
+                                    n, opts) == 0) {
                         m_freem(n);
+                        if(opts)
+                            m_freem(opts);
                         udpstat.udps_fullsock++;
                     } else
                         sorwakeup(last);
                 }
             }
             last = inp->inp_socket;
+            lastinp = inp;
             /*
              * Don't look for additional matches if this one does
              * not have either the SO_REUSEPORT or SO_REUSEADDR
@@ -263,8 +300,9 @@ void udp_input(void *args, ...)
             udpstat.udps_noportbcast++;
             goto bad;
         }
+        opts = udp_savecontrol(lastinp, &save_ip);
         if(sbappendaddr(&last->so_rcv, (struct sockaddr *)&udp_in,
-                        m, (struct mbuf *)0) == 0) {
+                        m, opts) == 0) {
             udpstat.udps_fullsock++;
             goto bad;
         }
@@ -329,35 +367,7 @@ void udp_input(void *args, ...)
      */
     udp_in.sin_port = uh->uh_sport;
     udp_in.sin_addr = ip->ip_src;
-    if(inp->inp_flags & INP_CONTROLOPTS) {
-        struct mbuf **mp = &opts;
-
-        if(inp->inp_flags & INP_RECVDSTADDR) {
-            *mp = sbcreatecontrol((caddr_t) &ip->ip_dst,
-                                  sizeof(struct in_addr), IP_RECVDSTADDR,
-                                  IPPROTO_IP);
-            if(*mp)
-                mp = &(*mp)->m_next;
-        }
-#ifdef notyet
-        /* options were tossed above */
-        if(inp->inp_flags & INP_RECVOPTS) {
-            *mp = sbcreatecontrol((caddr_t) opts_deleted_above,
-                                  sizeof(struct in_addr), IP_RECVOPTS,
-                                  IPPROTO_IP);
-            if(*mp)
-                mp = &(*mp)->m_next;
-        }
-        /* ip_srcroute doesn't do what we want here, need to fix */
-        if(inp->inp_flags & INP_RECVRETOPTS) {
-            *mp = sbcreatecontrol((caddr_t) ip_srcroute(),
-                                  sizeof(struct in_addr), IP_RECVRETOPTS,
-                                  IPPROTO_IP);
-            if(*mp)
-                mp = &(*mp)->m_next;
-        }
-#endif
-    }
+    opts = udp_savecontrol(inp, &save_ip);
     iphlen += sizeof(struct udphdr);
     m->m_len -= iphlen;
     m->m_pkthdr.len -= iphlen;
@@ -423,6 +433,7 @@ udp_output(void *arg, ...)
     register int len;
     struct in_addr laddr;
     int s = 0, error = 0;
+    u_char tos;
     va_list va;
 
     va_start(va, arg);
@@ -432,9 +443,36 @@ udp_output(void *arg, ...)
     va_end(va);
 
     len = m->m_pkthdr.len;
+    tos = inp->inp_ip.ip_tos;
 
-    if(control)
-        m_freem(control);		/* XXX */
+    /*
+     * Ancillary data: IP_TOS for this datagram (a byte, as FreeBSD, or an
+     * int, as Linux), so an application can set the ECN field per packet
+     * (RFC 9000 section 13.4). Anything else is ignored, as before.
+     */
+    if(control) {
+        struct cmsghdr *cm = mtod(control, struct cmsghdr *);
+        int left = control->m_len;
+
+        while(left >= (int)sizeof(*cm) && cm->cmsg_len >= sizeof(*cm) &&
+                (int)cm->cmsg_len <= left) {
+            if(cm->cmsg_level == IPPROTO_IP && cm->cmsg_type == IP_TOS) {
+                if(cm->cmsg_len == CMSG_LEN(sizeof(u_char)))
+                    tos = *(u_char *)CMSG_DATA(cm);
+                else if(cm->cmsg_len == CMSG_LEN(sizeof(int))) {
+                    int v;
+
+                    memcpy(&v, CMSG_DATA(cm), sizeof(v));
+                    tos = v & 0xff;
+                }
+            }
+            if(left < (int)_ALIGN(cm->cmsg_len))
+                break;
+            left -= _ALIGN(cm->cmsg_len);
+            cm = (struct cmsghdr *)((caddr_t)cm + _ALIGN(cm->cmsg_len));
+        }
+        m_freem(control);
+    }
 
     if(addr) {
         int tobroadcast = (mtod(addr, struct sockaddr_in *)->sin_addr.s_addr ==
@@ -517,7 +555,7 @@ udp_output(void *arg, ...)
     }
     ((struct ip *)ui)->ip_len = sizeof(struct udpiphdr) + len;
     ((struct ip *)ui)->ip_ttl = inp->inp_ip.ip_ttl;	/* XXX */
-    ((struct ip *)ui)->ip_tos = inp->inp_ip.ip_tos;	/* XXX */
+    ((struct ip *)ui)->ip_tos = tos;
     /* IP_DONTFRAG: DF, so ip_output() says EMSGSIZE above the path MTU
      * instead of fragmenting (RFC 9000 section 14, FreeBSD) */
     if(inp->inp_flags & INP_DONTFRAG)

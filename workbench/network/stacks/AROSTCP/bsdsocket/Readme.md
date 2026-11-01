@@ -325,7 +325,9 @@ IPv4: the socket keeps its bound address, and only a missing port is bound for g
   (`IPV6_RECVPKTINFO`) flag is set, `udp6_input` delivers the received hop limit and/or a
   `struct in6_pktinfo` (public in `<netinet/in.h>`: destination address + receiving interface index)
   as `IPPROTO_IPV6` ancillary `cmsg`s, chained via `m_next` and assembled before the headers are
-  stripped (RFC 3542).
+  stripped (RFC 3542). `IPV6_RECVTCLASS` (`IN6P_TCLASS`) adds the traffic class (section 6.5), so
+  an application sees the ECN field (QUIC, RFC 9000 section 13.4). `IPV6_TCLASS`, as a socket option
+  or ancillary data on one datagram, is the traffic class UDP and raw sockets send with (-1 is 0).
 - **Raw IPv6 sockets** (`raw_ip6.c`, after KAME's `raw_ip6.c`; RFC 3542 §3) have an `inpcb` on
   their own list (`rip6cb`), so the IPv6 options are the ones `ip6_ctloutput()` keeps for UDP6. The
   socket's protocol and its `ICMP6_FILTER` (level `IPPROTO_ICMPV6`, pass-all by default) live in a
@@ -344,7 +346,7 @@ IPv4: the socket keeps its bound address, and only a missing port is bound for g
   long. On LP64 `CMSG_DATA()` starts past padding after the 12-byte header, which a length of
   `sizeof(struct cmsghdr) + size` would cut from the data's end. `recvmsg()` copies the whole chain
   into the caller's buffer and reports what did not fit with `MSG_CTRUNC` in `msg_flags`. IPv4's
-  `IP_RECVDSTADDR` uses the same helper.
+  `IP_RECVDSTADDR` and `IP_RECVTOS` use the same helper.
 
 ### 6.1 Neighbour Discovery
 
@@ -605,7 +607,11 @@ then a preferred address over a deprecated one, then a temporary address over a 
   (`ipqmaxlen = 4·IFQ_MAXLEN`, `ip_input.c`) are sized to absorb short high-rate receive bursts
   before the owning task drains them, rather than dropping at the ~40-datagram default. `SO_BINDTODEVICE`
   pins a UDP socket to one interface, so a limited broadcast (`255.255.255.255`) or a reply can be
-  directed out a chosen link even on a multi-homed host with no default route.
+  directed out a chosen link even on a multi-homed host with no default route. A datagram carries
+  the ancillary data its socket asked for - `IP_RECVDSTADDR`, and `IP_RECVTOS` (FreeBSD's: the TOS
+  byte, so the ECN field) - whether it was sent to one address or to a group or broadcast address
+  (`udp_savecontrol()`). `IP_TOS` as ancillary data (a byte, or an int as Linux takes it) sets the
+  TOS byte of one datagram.
 - **IPv4 multicast** (built under `-DENABLE_MULTICAST`) provides host-side group membership,
   mirroring the IPv6 path. `in_addmulti`/`in_delmulti` (`in.c`) maintain the reference-counted
   `in_multihead` list and program the NIC hardware filter over SANA-II (RFC 1112 class-D →

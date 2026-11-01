@@ -126,6 +126,7 @@ udp6_output(struct inpcb *inp, struct mbuf *m,
     /* RFC 3542 section 11: the socket's, unless this datagram says */
     int minmtu = IN6P_MINMTU_OPT(inp);
     int dontfrag = (inp->in6p_flags & IN6P_DONTFRAG) != 0;
+    int tclass = inp->in6p_tclass;      /* IPV6_TCLASS, RFC 3542 section 6.5 */
     int oflags;
 
     bzero(&osrc, sizeof(osrc));
@@ -153,6 +154,13 @@ udp6_output(struct inpcb *inp, struct mbuf *m,
                     dontfrag = v != 0;
                 else if(v >= -1 && v <= 1)
                     minmtu = v;
+            } else if(cm->cmsg_level == IPPROTO_IPV6 && cm->cmsg_type == IPV6_TCLASS &&
+                      cm->cmsg_len == CMSG_LEN(sizeof(int))) {
+                int v;
+
+                memcpy(&v, CMSG_DATA(cm), sizeof(v));
+                if(v >= -1 && v <= 255)
+                    tclass = v < 0 ? 0 : v;
             }
             left -= _ALIGN(cm->cmsg_len);
             cm = (struct cmsghdr *)((caddr_t)cm + _ALIGN(cm->cmsg_len));
@@ -277,8 +285,8 @@ udp6_output(struct inpcb *inp, struct mbuf *m,
     if(m == NULL)
         return ENOBUFS;
     ip6 = mtod(m, struct ip6_hdr *);
-    ip6->ip6_flow = 0;
-    ip6->ip6_vfc  = IPV6_VERSION;	/* must follow ip6_flow (they overlap) */
+    /* version 6 and the traffic class; no flow label */
+    ip6->ip6_flow = htonl(0x60000000 | ((u_int32_t)tclass << 20));
     ip6->ip6_plen = htons((u_short)udplen);
     ip6->ip6_nxt  = IPPROTO_UDP;
     if(IN6_IS_ADDR_MULTICAST(&faddr6))
@@ -356,6 +364,13 @@ udp6_append(struct inpcb *inp, struct mbuf *m, int off,
             int hlim = ip6->ip6_hlim;
 
             *optp = sbcreatecontrol((caddr_t)&hlim, sizeof(int), IPV6_HOPLIMIT, IPPROTO_IPV6);
+            if(*optp != NULL)
+                optp = &(*optp)->m_next;
+        }
+        if(inp->in6p_flags & IN6P_TCLASS) {    /* RFC 3542 section 6.5 */
+            int tclass = (ntohl(ip6->ip6_flow) >> 20) & 0xff;
+
+            *optp = sbcreatecontrol((caddr_t)&tclass, sizeof(int), IPV6_TCLASS, IPPROTO_IPV6);
             if(*optp != NULL)
                 optp = &(*optp)->m_next;
         }

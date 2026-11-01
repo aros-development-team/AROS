@@ -336,6 +336,7 @@ struct ip_opts {
 #define	IP_ADD_SOURCE_MEMBERSHIP 25	/* add source-specific multicast */
 #define	IP_DROP_SOURCE_MEMBERSHIP 26	/* drop source-specific multicast */
 #define	IP_DONTFRAG		67	/* bool; send datagrams with DF, never fragmented */
+#define	IP_RECVTOS		68	/* bool; receive the TOS byte (ECN) w/datagram */
 
 /*
  * Argument structure for IP_ADD_MEMBERSHIP and IP_DROP_MEMBERSHIP.
@@ -520,6 +521,7 @@ struct sockaddr_in6 {
 #define IPV6_RECVPATHMTU	43	/* bool; IPV6_PATHMTU message when the path MTU falls */
 #define IPV6_PATHMTU		44	/* ip6_mtuinfo; get: the path MTU to the peer */
 #define IPV6_DONTFRAG		62	/* bool; never fragment, EMSGSIZE above the link MTU */
+#define IPV6_RECVTCLASS		57	/* bool; receive the traffic class (RFC 3542 6.5) */
 
 /* IPv6 multicast request */
 struct ipv6_mreq {

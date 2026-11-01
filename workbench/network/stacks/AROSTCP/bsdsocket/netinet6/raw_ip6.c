@@ -147,7 +147,7 @@ rip6_append(struct inpcb *inp, struct mbuf *m, int off,
     struct socket *so = inp->inp_socket;
     struct mbuf *opts = NULL, **optp = &opts;
 
-    if(inp->in6p_flags & (IN6P_PKTINFO | IN6P_HOPLIMIT)) {
+    if(inp->in6p_flags & (IN6P_PKTINFO | IN6P_HOPLIMIT | IN6P_TCLASS)) {
         struct ip6_hdr ip6;
 
         bzero(&ip6, sizeof(ip6));
@@ -167,6 +167,13 @@ rip6_append(struct inpcb *inp, struct mbuf *m, int off,
             int hlim = ip6.ip6_hlim;
 
             *optp = sbcreatecontrol((caddr_t)&hlim, sizeof(int), IPV6_HOPLIMIT, IPPROTO_IPV6);
+            if(*optp != NULL)
+                optp = &(*optp)->m_next;
+        }
+        if(inp->in6p_flags & IN6P_TCLASS) {    /* RFC 3542 section 6.5 */
+            int tclass = (ntohl(ip6.ip6_flow) >> 20) & 0xff;
+
+            *optp = sbcreatecontrol((caddr_t)&tclass, sizeof(int), IPV6_TCLASS, IPPROTO_IPV6);
         }
     }
 
@@ -268,6 +275,7 @@ struct rip6_sendopts {
     int             hlim;       /* IPV6_HOPLIMIT, or -1 */
     int             minmtu;     /* IPV6_USE_MIN_MTU, else the socket's */
     int             dontfrag;   /* IPV6_DONTFRAG, else the socket's */
+    int             tclass;     /* IPV6_TCLASS, else the socket's */
 };
 
 static int
@@ -280,6 +288,7 @@ rip6_ctlparse(struct inpcb *inp, struct mbuf *control, struct rip6_sendopts *o)
     o->hlim = -1;
     o->minmtu = IN6P_MINMTU_OPT(inp);
     o->dontfrag = (inp->in6p_flags & IN6P_DONTFRAG) != 0;
+    o->tclass = inp->in6p_tclass;
     if(control == NULL)
         return 0;
 
@@ -310,6 +319,17 @@ rip6_ctlparse(struct inpcb *inp, struct mbuf *control, struct rip6_sendopts *o)
                 if(hlim < -1 || hlim > 255)
                     return EINVAL;
                 o->hlim = hlim;
+                break;
+            }
+            case IPV6_TCLASS: {         /* section 6.5: -1 is 0 */
+                int v;
+
+                if(cm->cmsg_len != CMSG_LEN(sizeof(int)))
+                    return EINVAL;
+                memcpy(&v, CMSG_DATA(cm), sizeof(int));
+                if(v < -1 || v > 255)
+                    return EINVAL;
+                o->tclass = v < 0 ? 0 : v;
                 break;
             }
             case IPV6_USE_MIN_MTU:      /* RFC 3542 section 11 */
@@ -447,8 +467,8 @@ rip6_send(struct inpcb *inp, struct mbuf *m, struct mbuf *nam,
     if(m == NULL)
         return ENOBUFS;
     ip6 = mtod(m, struct ip6_hdr *);
-    ip6->ip6_flow = 0;
-    ip6->ip6_vfc  = IPV6_VERSION;	/* must follow ip6_flow (they overlap) */
+    /* version 6 and the traffic class; no flow label */
+    ip6->ip6_flow = htonl(0x60000000 | ((u_int32_t)o.tclass << 20));
     ip6->ip6_plen = htons((u_int16_t)plen);
     ip6->ip6_nxt  = (u_int8_t)rp->rp_proto;
     ip6->ip6_dst  = dst;
