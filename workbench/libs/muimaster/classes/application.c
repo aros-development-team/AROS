@@ -2466,8 +2466,9 @@ static IPTR Application__MUIM_RemInputHandler(struct IClass *cl,
 
 
 /* Window event consumer defined in window.c. Pass a dequeued live
- * IntuiMessage; the callee processes and replies to it. Do not reuse it
- * after the call or reply a second time.
+ * IntuiMessage; reply behavior depends on the Window path. GADGETUP and an
+ * eaten IDCMPUPDATE currently lack a reply. Do not reuse a possibly replied
+ * message or issue a speculative second reply.
  */
 void _zune_window_message(struct IntuiMessage *imsg);   /* from window.c */
 
@@ -2490,7 +2491,8 @@ void _zune_window_message(struct IntuiMessage *imsg);   /* from window.c */
 *       Always TRUE.
 *
 *   NOTES
-*       The window handler replies to the consumed message. This method does not
+*       Reply behavior follows the Window event path. GADGETUP and an eaten
+*       IDCMPUPDATE currently lack a reply. This method does not
 *       drain all window events, process timer/Rexx/broker/AppMessage sources,
 *       or return queued ReturnIDs. Continuously self-replenishing pushed
 *       methods can prevent completion.
@@ -2511,7 +2513,7 @@ static IPTR Application__MUIM_InputBuffered(struct IClass *cl, Object *obj,
     if (imsg != NULL)
     {
         /* Let window object process message */
-        _zune_window_message(imsg);     /* will reply the message */
+        _zune_window_message(imsg);     /* reply follows Window path */
     }
     return TRUE;
 }
@@ -2619,7 +2621,7 @@ static IPTR Application__MUIM_NewInput(struct IClass *cl, Object *obj,
                         mgi_WindowsPort)))
             {
                 /* Let window object process message */
-                _zune_window_message(imsg);     /* will reply the message */
+                _zune_window_message(imsg);     /* reply follows Window path */
             }
         }
 
