@@ -15,6 +15,7 @@ CUNITSOCKETTESTFILES := \
     cunit-net-addr6 \
     cunit-net-arpqueue \
     cunit-net-cmsg \
+    cunit-net-dontwait \
     cunit-net-frag6 \
     cunit-net-icmp6err \
     cunit-net-inet6 \

@@ -498,7 +498,8 @@ restart:
             if((atomic && resid > so->so_snd.sb_hiwat) ||
                     clen > so->so_snd.sb_hiwat)
                 snderr(EMSGSIZE);
-            if(so->so_state & SS_NBIO)
+            /* a non-blocking socket, or this call only (MSG_DONTWAIT) */
+            if((so->so_state & SS_NBIO) || (flags & MSG_DONTWAIT))
                 snderr(EWOULDBLOCK);
             sbunlock(&so->so_snd);
             error = sbwait(&so->so_snd, uio->uio_procp);
@@ -792,7 +793,8 @@ restart:
         if(uio->uio_resid == 0)
             goto release;
 
-        if(so->so_state & SS_NBIO) {
+        /* a non-blocking socket, or this call only (MSG_DONTWAIT) */
+        if((so->so_state & SS_NBIO) || (flags & MSG_DONTWAIT)) {
             error = EWOULDBLOCK;
             goto release;
         }

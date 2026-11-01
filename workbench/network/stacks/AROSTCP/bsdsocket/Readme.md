@@ -65,6 +65,8 @@ The API layer (`amiga_syscalls.c`) implements the Berkeley calls: each builds th
 `mbuf`s (for example, an address `mbuf` with `m_len = addrlen` and `sa_len` set) and invokes the
 socket-layer entry points (`sobind`, `soconnect`, `sosend`, `soreceive`, …), which in turn dispatch
 to the protocol via `so->so_proto->pr_usrreq(so, PRU_*, …)`.
+A send or receive that would block returns `EWOULDBLOCK` when the socket is non-blocking
+(`FIONBIO`, `SS_NBIO`) or the call has `MSG_DONTWAIT`, which applies to that call only.
 
 Name lookup (`gethostnamadr.c`) is what `gethostbyname()`, `gethostbyname_r()`, Miami's
 `gethostbyname2()` and both `getaddrinfo()`s (Roadshow's and Miami's) share. An address literal is
