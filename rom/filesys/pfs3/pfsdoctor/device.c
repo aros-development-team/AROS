@@ -520,6 +520,8 @@ int DoSCSICommand(UBYTE *data, ULONG datalen, UBYTE *command,
 {
 	scsicmd.scsi_Data = (UWORD *)data;
 	scsicmd.scsi_Length = datalen;
+	scsicmd.scsi_Actual = 0;
+	scsicmd.scsi_Status = 0;
 	scsicmd.scsi_Command = command;
 	scsicmd.scsi_CmdLength = commandlen;
 	scsicmd.scsi_Flags = SCSIF_AUTOSENSE | direction; /* SCSIF_READ or SCSIF_WRITE */
@@ -530,8 +532,8 @@ int DoSCSICommand(UBYTE *data, ULONG datalen, UBYTE *command,
 	volume.request->iotd_Req.io_Length = sizeof(struct SCSICmd);
 	volume.request->iotd_Req.io_Data = (APTR)&scsicmd;
 	volume.request->iotd_Req.io_Command = HD_SCSICMD;
-	DoIO((struct IORequest *)volume.request);
-	if (scsicmd.scsi_Status)
+	if (DoIO((struct IORequest *)volume.request)
+	    || scsicmd.scsi_Status || scsicmd.scsi_Actual != datalen)
 		return 0;
 	else 
 		return 1;
