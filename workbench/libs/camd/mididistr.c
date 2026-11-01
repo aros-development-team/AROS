@@ -1,10 +1,11 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: 
 */
 
 
+#include <aros/atomic.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/utility.h>
@@ -27,6 +28,7 @@ void PutMidi2Link(
 	struct MyMidiNode *mymidinode=(struct MyMidiNode *)midilink->ml_MidiNode;
 
 	if(mymidinode->error&CMEF_BufferFull){
+		AROS_ATOMIC_INC(((struct MyMidiCluster *)midilink->ml_Location)->overflows);
 		return;
 	}
 
@@ -147,6 +149,7 @@ outofhere:
 
 		if(mymidinode->unpicked+1==mymidinode->midinode.mi_MsgQueueSize-1){
 			SetMidiError(mymidinode,CMEF_BufferFull);
+			AROS_ATOMIC_INC(((struct MyMidiCluster *)midilink->ml_Location)->overflows);
 			return;
 		}
 
