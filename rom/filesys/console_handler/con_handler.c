@@ -1413,6 +1413,31 @@ LONG CONMain(struct ExecBase *SysBase)
                         replypkt(dp, DOSTRUE);
                     }
                     break;
+                case ACTION_CONSOLE_GEOMETRY:
+                    {
+                        struct ConsoleGeometry cg;
+                        struct ConUnit *cu;
+
+                        DACTION(bug("[con:handler] ACTION_CONSOLE_GEOMETRY\n"));
+                        if (!dp->dp_Arg2 || dp->dp_Arg3 <= 0) {
+                            replypkt2(dp, DOSFALSE, ERROR_BAD_NUMBER);
+                            break;
+                        }
+                        if ((fh->flags & FHFLG_DEVICEMODE) || !MakeSureWinIsOpen(fh) ||
+                            !fh->conreadio || !fh->conreadio->io_Unit) {
+                            replypkt2(dp, DOSFALSE, ERROR_ACTION_NOT_KNOWN);
+                            break;
+                        }
+                        cu = (struct ConUnit *)fh->conreadio->io_Unit;
+                        cg.cg_Columns = cu->cu_XMax + 1;
+                        cg.cg_Rows    = cu->cu_YMax + 1;
+                        cg.cg_Width   = cu->cu_XRExtant - cu->cu_XROrigin + 1;
+                        cg.cg_Height  = cu->cu_YRExtant - cu->cu_YROrigin + 1;
+                        CopyMem(&cg, (APTR)dp->dp_Arg2,
+                                (ULONG)dp->dp_Arg3 < sizeof(cg) ? (ULONG)dp->dp_Arg3 : sizeof(cg));
+                        replypkt2(dp, DOSTRUE, sizeof(cg));
+                    }
+                    break;
                 case ACTION_INHIBIT:
                     /* Nothing is buffered on our side, so there is nothing to
                        stop doing. */
