@@ -961,7 +961,8 @@ static error_t GetRext(void)
 		{
 			volume.status(1, "Searching rext", 256);
 			oldbloknr = bloknr;
-			bloknr = SearchBlock(EXTENSIONID, 0, bloknr, 0, 0, 0);
+			if ((error = SearchBlock(EXTENSIONID, 0, bloknr, 0, 0, 0, &bloknr)))
+				return error;
 			if (bloknr)
 			{
 				sprintf(bericht, "replaced block %lu with backup %lu", oldbloknr, bloknr);
@@ -2217,7 +2218,13 @@ error_t RepairAnodeBlock(uint32 *bloknr, uint32 seqnr)
 			{
 				volume.status(1, "Searching anode block", 256);
 				oldbloknr = *bloknr;
-				if ((*bloknr = SearchBlock(ABLKID, seqnr, oldbloknr, 0, 0, 0)))
+				if ((error = SearchBlock(ABLKID, seqnr, oldbloknr, 0, 0, 0, bloknr)))
+				{
+					free(ablk.data);
+					exitblock();
+					return error;
+				}
+				if (*bloknr)
 				{
 					sprintf(bericht, "replaced block %lu with backup %lu", oldbloknr, *bloknr);
 					fixederror(bericht);
@@ -2326,7 +2333,13 @@ error_t RepairBitmapBlock(uint32 *bloknr, uint32 seqnr)
 			{
 				volume.status(1, "Searching bitmap block", 256);
 				oldbloknr = *bloknr;
-				if ((*bloknr = SearchBlock(BMBLKID, seqnr, oldbloknr, 0, 0, 0)))
+				if ((error = SearchBlock(BMBLKID, seqnr, oldbloknr, 0, 0, 0, bloknr)))
+				{
+					free(bmblk.data);
+					exitblock();
+					return error;
+				}
+				if (*bloknr)
 				{
 					sprintf(bericht, "replaced block %lu with backup %lu", oldbloknr, *bloknr);
 					fixederror(bericht);
@@ -2400,7 +2413,13 @@ error_t RepairIndexBlock(uint16 bloktype, error_t (*repairchild)(uint32 *, uint3
 				{
 					volume.status(1, "Searching index block", 256);
 					oldbloknr = *bloknr;
-					if ((*bloknr = SearchBlock(bloktype, seqnr, oldbloknr, 0, 0, 0)))
+					if ((error = SearchBlock(bloktype, seqnr, oldbloknr, 0, 0, 0, bloknr)))
+					{
+						free(iblk.data);
+						exitblock();
+						return error;
+					}
+					if (*bloknr)
 					{
 						sprintf(bericht, "replaced block %lu with backup %lu", oldbloknr, *bloknr);
 						fixederror(bericht);
