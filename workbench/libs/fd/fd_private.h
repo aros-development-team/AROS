@@ -13,6 +13,7 @@
 typedef struct fd_entry {
     fd_owner_t owner;
     APTR data;
+    ULONG references; /* independent descriptor tables retaining this number */
 } fd_entry;
 
 struct fd_base {
