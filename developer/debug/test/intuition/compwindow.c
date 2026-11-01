@@ -4,7 +4,9 @@
     Desc: Opens two windows on the Workbench screen: an ordinary one and,
           partly over it, one with WA_Opaqueness (composited layer, see
           layers.library LA_Composited). Reports the layer flags and whether
-          the composited window kept its content where the two overlap.
+          the composited window kept its content where the two overlap,
+          and that the screen's display composes while it is open (the
+          window's surface reaches the display only through composition).
 
     Usage: compwindow [DELAY=seconds] [OPACITY=n] [ALPHA]
 */
@@ -14,10 +16,36 @@
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 #include <proto/cybergraphics.h>
+#include <proto/oop.h>
 #include <intuition/intuition.h>
+#include <hidd/gfx.h>
 #include <graphics/clip.h>
 #include <cybergraphx/cybergraphics.h>
 #include <stdio.h>
+
+OOP_AttrBase HiddBitMapAttrBase, HiddDisplayAttrBase, HiddCompositorAttrBase;
+
+/*
+ * Is the display of the screen composing? A composited layer is only seen
+ * on the display through composition; -1 when this cannot be told (no HIDD
+ * bitmap or no compositor).
+ */
+static int display_composing(struct Screen *scr)
+{
+    OOP_Object *bm, *display = NULL, *compositor = NULL;
+    IPTR active = 0;
+
+    if (!IS_HIDD_BM(scr->RastPort.BitMap) || !HiddBitMapAttrBase || !HiddDisplayAttrBase || !HiddCompositorAttrBase)
+        return -1;
+    bm = HIDD_BM_OBJ(scr->RastPort.BitMap);
+    OOP_GetAttr(bm, aHidd_BitMap_Display, (IPTR *)&display);
+    if (display)
+        OOP_GetAttr(display, aHidd_Display_Compositor, (IPTR *)&compositor);
+    if (!compositor)
+        return -1;
+    OOP_GetAttr(compositor, aHidd_Compositor_Active, &active);
+    return active ? 1 : 0;
+}
 
 static void fill(struct Window *w, ULONG rgb, ULONG border)
 {
@@ -117,6 +145,22 @@ int main(void)
     {
         printf("NOTE: screen cannot compose; plain smart refresh window instead\n");
     }
+    else
+    {
+        int composing;
+
+        HiddBitMapAttrBase     = OOP_ObtainAttrBase(IID_Hidd_BitMap);
+        HiddDisplayAttrBase    = OOP_ObtainAttrBase(IID_Hidd_Display);
+        HiddCompositorAttrBase = OOP_ObtainAttrBase(IID_Hidd_Compositor);
+        composing = display_composing(b->WScreen);
+        if (composing == 0)
+        {
+            printf("FAIL: the display does not compose with a composited window open\n");
+            fails++;
+        }
+        else
+            printf("display composing: %s\n", composing > 0 ? "yes" : "cannot tell");
+    }
 
     /*
      * Pens and blits from a bitmap without an alpha channel render opaque
@@ -186,6 +230,9 @@ int main(void)
 
     CloseWindow(b);
     CloseWindow(a);
+    if (HiddCompositorAttrBase) OOP_ReleaseAttrBase(IID_Hidd_Compositor);
+    if (HiddDisplayAttrBase)    OOP_ReleaseAttrBase(IID_Hidd_Display);
+    if (HiddBitMapAttrBase)     OOP_ReleaseAttrBase(IID_Hidd_BitMap);
     printf("%s\n", fails ? "FAIL" : "PASS");
     return fails ? RETURN_FAIL : RETURN_OK;
 }

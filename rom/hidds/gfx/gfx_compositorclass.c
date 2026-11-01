@@ -4085,6 +4085,7 @@ BOOL Compositor__Hidd_Compositor__AttachSurface(OOP_Class *cl, OOP_Object *o, st
     struct ClientSurface *cs;
     struct HookFires fires;
     struct Region *dirty;
+    OOP_Object *screenbm;
 
     if (!compdata->GraphicsBase || !msg->request || !msg->screenBitMap)
         return FALSE;
@@ -4093,7 +4094,25 @@ BOOL Compositor__Hidd_Compositor__AttachSurface(OOP_Class *cl, OOP_Object *o, st
 
     LOCK_COMPOSITOR_WRITE
 
-    n = HIDDCompositorFindBitMapStackNode(compdata, msg->screenBitMap);
+    screenbm = msg->screenBitMap;
+    n = HIDDCompositorFindBitMapStackNode(compdata, screenbm);
+    if (!n && compdata->passthroughbm)
+    {
+        /*
+         * On a direct framebuffer driver graphics.library swaps the frontmost
+         * screen's bitmap object for the framebuffer while that screen is
+         * shown alone (passthrough), so the client hands in the framebuffer:
+         * it stands for the screen in passthrough.
+         */
+        OOP_Object *fb = NULL;
+
+        OOP_GetAttr(compdata->display, aHidd_Display_FrameBuffer, (IPTR *)&fb);
+        if (fb && (screenbm == fb))
+        {
+            screenbm = compdata->passthroughbm;
+            n = HIDDCompositorFindBitMapStackNode(compdata, screenbm);
+        }
+    }
     if (!n || HIDDCompositorFindClientSurface(compdata, msg->request))
     {
         UNLOCK_COMPOSITOR
@@ -4106,7 +4125,7 @@ BOOL Compositor__Hidd_Compositor__AttachSurface(OOP_Class *cl, OOP_Object *o, st
         UNLOCK_COMPOSITOR
         return FALSE;
     }
-    cs->screenbm  = msg->screenBitMap;
+    cs->screenbm  = screenbm;
     cs->req       = msg->request;
     cs->hook      = msg->hook;
     cs->hookplane = -1;
