@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/layers.h>
@@ -22,20 +22,25 @@
 /*  LOCATION */
         struct Library *, MUIMasterBase, 33, MUIMaster)
 /*  FUNCTION
+        Finish a refresh pass with intuition.library/EndRefresh(window, TRUE),
+        unlock the screen's LayerInfo, and clear the context's refresh flag.
 
     INPUTS
+        mri - Rendering context for a successful MUI_BeginRefresh() call,
+              with the same window and screen still valid.
+        flags - Ignored by this implementation; pass zero.
 
     RESULT
+        None.
 
     NOTES
-
-    EXAMPLE
-
-    BUGS
+        Call exactly once after MUI_BeginRefresh() returns TRUE, in the same
+        task. This function does not check whether refresh mode is active.
+        A NULL mri_Window causes an early return without clearing the flag
+        or releasing the lock; it is not a substitute for a matched end.
 
     SEE ALSO
-
-    INTERNALS
+        MUI_BeginRefresh(), intuition.library/EndRefresh()
 
 *****************************************************************************/
 {

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/exec.h>
@@ -22,25 +22,24 @@
         struct Library *, MUIMasterBase, 19, MUIMaster)
 
 /*  FUNCTION
-        Delete private or public custom classes.
+        Attempt to free a custom class. If intuition.library/FreeClass()
+        succeeds, free the descriptor and call MUI_FreeClass() on the
+        stored superclass.
 
     INPUTS
-        mcc - pointer from MUI_CreateCustomClass()
+        mcc - Descriptor returned by MUI_CreateCustomClass(), or NULL.
 
     RESULT
-        TRUE  : success
-        FALSE : some objects or sub classes were still in use.
+        TRUE if the class and descriptor were freed. FALSE if mcc is NULL
+        or FreeClass() refuses to free the class, for example because
+        instances or subclasses remain.
 
     NOTES
-
-    EXAMPLE
-
-    BUGS
+        On FALSE for a non-NULL descriptor, the descriptor remains allocated.
+        On TRUE, do not use the descriptor or its class again.
 
     SEE ALSO
-        MUI_CreateCustomClass()
-
-    INTERNALS
+        MUI_CreateCustomClass(), MUI_FreeClass(), intuition.library/FreeClass()
 
 *****************************************************************************/
 {

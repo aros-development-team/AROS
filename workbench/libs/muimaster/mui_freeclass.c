@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <string.h>
@@ -24,24 +24,31 @@
         struct Library *, MUIMasterBase, 14, MUIMaster)
 
 /*  FUNCTION
-        Frees a class returned by MUI_GetClass(). This function is
-        obsolete. Use MUI_DeleteCustomClass() instead.
+        Release a class obtained through MUI_GetClass(). For built-in
+        classes, update the internal class accounting and attempt to free
+        the class when that accounting reaches zero. For external classes,
+        close the library stored in the class dispatcher's data field.
 
     INPUTS
-        cl - The pointer to the class.
+        cl - Non-NULL class pointer obtained through MUI_GetClass().
 
     RESULT
+        None. The function does not report whether a built-in class was
+        actually freed.
 
     NOTES
-
-    EXAMPLE
+        Do not use the class after releasing it. This legacy interface
+        is not the disposal function for a MUI_CustomClass descriptor;
+        use MUI_DeleteCustomClass() for that descriptor.
+        The implementation obtains the MUI class semaphore and can wait.
 
     BUGS
+        After FreeClass() successfully frees a built-in class, this
+        implementation writes to that class's dispatcher data field.
+        This is a use-after-free defect, not a valid class-lifetime rule.
 
     SEE ALSO
         MUI_GetClass(), MUI_CreateCustomClass(), MUI_DeleteCustomClass()
-
-    INTERNALS
 
 *****************************************************************************/
 {
