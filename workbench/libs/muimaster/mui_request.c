@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <string.h>
@@ -24,6 +24,9 @@
 extern struct Library *MUIMasterBase;
 
 #ifdef __AROS__
+/* RawDoFmt callback: append chr, including its terminating NUL, and advance
+ * the caller-owned output cursor. The caller supplies sufficient storage.
+ */
 AROS_UFH2S(void, cpy_func,
     AROS_UFHA(UBYTE, chr, D0),
     AROS_UFHA(STRPTR *, strPtrPtr, A3))
@@ -35,6 +38,9 @@ AROS_UFH2S(void, cpy_func,
     AROS_USERFUNC_EXIT
 }
 
+/* RawDoFmt callback: count each emitted byte, including the terminating NUL.
+ * lenPtr must point to writable counter storage.
+ */
 AROS_UFH2S(void, len_func,
     AROS_UFHA(UBYTE, chr, D0),
     AROS_UFHA(LONG *, lenPtr, A3))
@@ -46,6 +52,11 @@ AROS_UFH2S(void, len_func,
     AROS_USERFUNC_EXIT
 }
 
+/* Query the format argument layout through GetDataStreamFromFormat().
+ * This wrapper supplies an empty variadic list; callers request sizes and
+ * offsets with dataStream == NULL, never argument values. Output pointers
+ * may be NULL as allowed by GetDataStreamFromFormat().
+ */
 static void muiDataStreamFromFormat(CONST_STRPTR format, APTR dataStream,  ULONG *dataSize,
                              ULONG *indexStream, ULONG *indexSize, ...)
 {
@@ -75,20 +86,53 @@ static void muiDataStreamFromFormat(CONST_STRPTR format, APTR dataStream,  ULONG
         struct Library *, MUIMasterBase, 7, MUIMaster)
 
 /*  FUNCTION
+        Display a requester and wait for a response. With a MUI application,
+        create a temporary window and process the application's input until
+        a requester return ID is received. With app == NULL, delegate to
+        intuition.library/EasyRequestArgs() instead.
 
     INPUTS
+        app - MUI Application object, or NULL for the Intuition fallback.
+        win - MUI Window object used as the reference window, or NULL.
+              Ignored by the Intuition fallback.
+        flags - Ignored by this implementation; pass zero.
+        title - Requester title. With a MUI application, NULL selects
+                MUIA_Application_Title.
+        gadgets - Non-NULL NUL-terminated button labels separated by |.
+                  Supply at least one label and no more than 32 labels.
+                  On the MUI path, a leading * selects the active button;
+                  if several labels have it, the last one takes precedence.
+        format - Non-NULL RawDoFmt-compatible message format.
+        params - Array of IPTR-sized format arguments in AROS, in format
+                 order. Supply a valid array whenever arguments are used.
+                 This is neither a tag list nor an already packed RAWARG.
 
     RESULT
+        On the MUI path, buttons except the last return their one-based
+        position; the last returns 0. A single button returns 1. Allocation
+        or window-opening failure also returns 0. On the fallback path,
+        return the result of EasyRequestArgs() unchanged.
 
     NOTES
-
-    EXAMPLE
+        This is a synchronous GUI call. Application methods and input
+        handlers may run before it returns; the application is not put to
+        sleep. The temporary requester is removed and disposed of before
+        returning. Keep input strings, formatting arguments, and referenced
+        objects valid for the duration of the call.
+        MUI_Request() supplies positional formatting arguments, not tags.
 
     BUGS
+        The 32-button array has no bounds check. More labels can overwrite
+        memory. A button-construction failure can leave a partial requester.
+        On 32-bit AROS, one IPTR slot cannot preserve the full value of
+        an eight-byte formatting argument during the packing step.
+        Application return IDs are neither saved nor replayed. IDs from
+        1 through the number of constructed buttons plus 1 can terminate
+        the requester even if they came from another application action;
+        other return IDs are consumed without being returned to the caller.
 
     SEE ALSO
-
-    INTERNALS
+        exec.library/RawDoFmt(), intuition.library/EasyRequestArgs()
 
 *****************************************************************************/
 {

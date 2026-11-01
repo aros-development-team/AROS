@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/muimaster.h>
@@ -20,24 +20,29 @@
         struct Library *, MUIMasterBase, 8, MUIMaster)
 
 /*  FUNCTION
-        Interface to asl.library.
+        Allocate an ASL requester by forwarding reqType and tagList to
+        asl.library/AllocAslRequest(). No MUI-specific attributes are added.
 
     INPUTS
-        see asl.library/AllocAslRequest()
+        reqType - ASL_FileRequest, ASL_FontRequest, or ASL_ScreenModeRequest.
+        tagList - Requester-specific ASL tags terminated by TAG_DONE, or
+                  NULL to use defaults.
 
     RESULT
-        Pointer to AslRequest
+        The allocated requester, or NULL. In the AROS ASL implementation,
+        allocation failure sets IoErr() to ERROR_NO_FREE_STORE; an unsupported
+        requester type returns NULL with IoErr() set to zero.
 
     NOTES
+        MUI_AllocAslRequestTags() is the variadic tag-list wrapper.
 
-    EXAMPLE
-
-    BUGS
+        Run the requester with MUI_AslRequest() and release it with
+        MUI_FreeAslRequest(). Refer to ASL for the lifetime of tag payloads
+        and requester-specific result fields.
 
     SEE ALSO
+        MUI_AslRequest(), MUI_FreeAslRequest(),
         asl.library/AllocAslRequest()
-
-    INTERNALS
 
 *****************************************************************************/
 {

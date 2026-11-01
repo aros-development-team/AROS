@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <clib/alib_protos.h>
@@ -24,30 +24,26 @@
         struct Library *, MUIMasterBase, 15, MUIMaster)
 
 /*  FUNCTION
-        For custom class implementors. Valid between MUIM_Setup/MUIM_Cleanup.
-        Indicates that this object wants to receive some events. MUIM_HandleInput
-        will then be called on this object whenever there's a matching event.
+        Add IDCMP event bits to an Area-derived object's legacy input handler.
+        If the object is set up and has a window, remove the existing
+        handler, update its event mask, and register the resulting handler.
+        Otherwise, store the bits for subsequent setup.
 
     INPUTS
-        obj   - an object whose class is derived from Area
-        flags - IDCMP flags
+        obj - Non-NULL Area-derived object.
+        flags - IDCMP event bits to add; existing bits are retained.
 
     RESULT
         None.
 
     NOTES
-        Deprecated in favor of MUIM_Window_AddEventHandler and MUIM_HandleEvent
-        event handling model (introduced in MUI V16).
-
-    EXAMPLE
-
-    BUGS
+        Matching events use the legacy MUIM_HandleInput delivery path.
+        Area setup registers the stored handler; cleanup removes it.
+        For new class implementations, prefer MUIM_Window_AddEventHandler
+        with MUIM_HandleEvent. Call in the object's owning GUI task.
 
     SEE ALSO
-
-    INTERNALS
-        This is a wrapper around MUIM_Window_RemEventHandler and
-        MUIM_Window_AddEventHandler.
+        MUI_RejectIDCMP()
 
 *****************************************************************************/
 {

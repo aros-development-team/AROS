@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2012, The AROS Development Team.
+    Copyright (C) 2002-2026, The AROS Development Team.
     All rights reserved.
     
 */
@@ -25,23 +25,31 @@
         struct Library *, MUIMasterBase, 31, MUIMaster)
 
 /*  FUNCTION
+        Pop and dispose of the most recently pushed MUI clipping region.
+        Install the preceding MUI region, or NULL when the stack becomes
+        empty. Refresh processing is suspended and resumed when necessary.
 
     INPUTS
+        mri - Valid rendering context used when the region was pushed.
+        handle - Token from the matching add call. (APTR)-1 does nothing;
+                 all other values, including NULL, request a stack pop.
 
     RESULT
+        None.
 
     NOTES
-
-        sba: This function frees the region given in MUI_AddClipRegion, but this seems wrong to me.
-        MUI_AddClipRegion should better duplicate the region.
-
-    EXAMPLE
+        Use strict reverse order and remove each successful push once.
+        Except for the sentinel, an unmatched call underflows the stack.
+        mri is accessed before the sentinel is checked and must not be NULL.
+        If the target layer is absent, no region is popped or freed.
 
     BUGS
+        The token is not used to restore a previous independently installed
+        layer clip region. Preserve the MUI-owned stack discipline; do not
+        interleave independent InstallClipRegion() calls.
 
     SEE ALSO
-
-    INTERNALS
+        MUI_AddClipRegion(), MUI_AddClipping(), MUI_RemoveClipping()
 
 *****************************************************************************/
 {

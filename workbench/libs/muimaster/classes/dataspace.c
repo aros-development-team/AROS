@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <stdlib.h>
@@ -18,6 +18,58 @@
 #include "support.h"
 
 extern struct Library *MUIMasterBase;
+
+/****** Dataspace.mui/MUIC_Dataspace ************
+*
+*   NAME
+*       MUIC_Dataspace
+*
+*   SUPERCLASS
+*       Semaphore.mui
+*
+*   DESCRIPTION
+*       Store copied byte records under nonzero ULONG identifiers. The class
+*       supports insertion/replacement, lookup, removal, and an IFF record format.
+*       Storage comes from a caller-supplied pool or an internally created pool.
+*
+*       Public record methods take the inherited semaphore. Find holds a shared
+*       lock only during the search; mutation and IFF methods take an exclusive
+*       lock. Object disposal is not synchronized by these method locks. The
+*       caller must keep the object alive throughout all operations and uses of
+*       borrowed record pointers.
+*
+*   BUGS
+*       Merge is a stub. Clear frees records without resetting the list links.
+*       ReadIFF can return success after an incomplete import. Consult the method
+*       entries before relying on these operations.
+*
+*   SEE ALSO
+*       MUIA_Dataspace_Pool, MUIM_Dataspace_Add, MUIM_Dataspace_Find
+*
+*/
+
+/****** Dataspace.mui/MUIA_Dataspace_Pool ************
+*
+*   NAME
+*       MUIA_Dataspace_Pool
+*
+*   FUNCTION
+*       Select the Exec pool used for record allocation. This is an
+*       initialization-only APTR attribute. Omission or NULL creates an owned
+*       pool using CreatePool(0, 4096, 4096); construction fails if that fails.
+*       A non-NULL value is borrowed and is not deleted by Dataspace.
+*
+*   NOTES
+*       Keep a supplied pool alive until the Dataspace object is disposed of.
+*       The object's semaphore protects its own record methods, not unrelated
+*       users of a shared pool. Coordinate those users separately.
+*       Disposal deletes an owned pool, or frees the object's records from a
+*       borrowed pool.
+*
+*   SEE ALSO
+*       MUIC_Dataspace, MUIM_Dataspace_Clear
+*
+*/
 
 struct Dataspace_Node
 {
@@ -39,6 +91,10 @@ struct MUI_DataspaceData
     APTR current_pool;
 };
 
+/* Construct the Semaphore superclass, initialize the record list, and bind
+ * a borrowed pool or create an owned one. On pool failure, dispose of the
+ * partially built object and return zero; otherwise return the object.
+ */
 IPTR Dataspace__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_DataspaceData *data;
@@ -80,6 +136,10 @@ IPTR Dataspace__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 }
 
 
+/* Dispose after all users have finished. Delete an owned pool wholesale,
+ * or free this object's records from a borrowed pool, then dispose of the
+ * superclass. This method does not acquire the inherited semaphore.
+ */
 IPTR Dataspace__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_DataspaceData *data = INST_DATA(cl, obj);
@@ -90,6 +150,40 @@ IPTR Dataspace__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
+/****** Dataspace.mui/MUIM_Dataspace_Add ************
+*
+*   NAME
+*       MUIM_Dataspace_Add
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Dataspace_Add, (IPTR)data, len, id);
+*
+*   FUNCTION
+*       Copy a record into the dataspace. A record with the same identifier is
+*       replaced after new storage has been allocated. The new record is appended
+*       to the list, including when it replaces an existing record.
+*
+*   INPUTS
+*       data - Non-NULL pointer to at least len readable bytes.
+*       len - Positive LONG byte count that fits the record allocation, including
+*             the internal node header.
+*       id - Nonzero ULONG identifier.
+*
+*   RESULT
+*       1 after insertion; 0 for NULL data, a nonpositive length, id == 0,
+*       or allocation failure. Those failures leave an existing record intact.
+*
+*   NOTES
+*       The caller retains its input storage. The dataspace owns the copy until
+*       replacement, removal, clearing, or disposal. Do not use the old payload
+*       of the same identifier as input: replacement frees that record before
+*       CopyMem() reads the supplied bytes. Copy such data to separate storage
+*       first. The dispatcher holds an exclusive semaphore lock.
+*
+*   SEE ALSO
+*       MUIM_Dataspace_Find, MUIM_Dataspace_Remove
+*
+*/
 IPTR Dataspace__MUIM_Add(struct IClass *cl, Object *obj,
     struct MUIP_Dataspace_Add *msg)
 {
@@ -126,6 +220,34 @@ IPTR Dataspace__MUIM_Add(struct IClass *cl, Object *obj,
     return 1;
 }
 
+/****** Dataspace.mui/MUIM_Dataspace_Clear ************
+*
+*   NAME
+*       MUIM_Dataspace_Clear
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Dataspace_Clear);
+*
+*   FUNCTION
+*       Free each record allocation while holding the exclusive semaphore.
+*
+*   INPUTS
+*       No arguments beyond MethodID.
+*
+*   RESULT
+*       Always 1 after the loop completes.
+*
+*   BUGS
+*       The implementation does not unlink the freed records or reinitialize
+*       the list. After clearing a nonempty dataspace, its list contains dangling
+*       pointers. The return value does not establish a reusable empty object.
+*       Subsequent record operations or borrowed-pool disposal can access freed
+*       storage. Do not use this method to reset a live nonempty dataspace.
+*
+*   SEE ALSO
+*       MUIM_Dataspace_Remove, MUIA_Dataspace_Pool
+*
+*/
 IPTR Dataspace__MUIM_Clear(struct IClass *cl, Object *obj,
     struct MUIP_Dataspace_Clear *msg)
 {
@@ -144,6 +266,36 @@ IPTR Dataspace__MUIM_Clear(struct IClass *cl, Object *obj,
     return 1;
 }
 
+/****** Dataspace.mui/MUIM_Dataspace_Find ************
+*
+*   NAME
+*       MUIM_Dataspace_Find
+*
+*   SYNOPSIS
+*       APTR data = (APTR)DoMethod(obj, MUIM_Dataspace_Find, id);
+*
+*   FUNCTION
+*       Search the record list for an identifier and return its payload.
+*
+*   INPUTS
+*       id - ULONG identifier to find.
+*
+*   RESULT
+*       Borrowed pointer to the stored bytes, or NULL if no record matches.
+*       No length is returned; the caller must know the record format.
+*
+*   NOTES
+*       Do not free the pointer. Replacement of that identifier, removal,
+*       clearing, or disposal invalidates it. The dispatcher releases its shared
+*       lock before returning, so the result alone is not protected against
+*       concurrent changes. Keep the object alive and prevent mutation throughout
+*       the use of its payload. For concurrent access, hold the inherited
+*       semaphore exclusively around both lookup and payload use, then release it.
+*
+*   SEE ALSO
+*       MUIM_Dataspace_Add, MUIM_Semaphore_Obtain, MUIM_Semaphore_Release
+*
+*/
 IPTR Dataspace__MUIM_Find(struct IClass *cl, Object *obj,
     struct MUIP_Dataspace_Find *msg)
 {
@@ -163,12 +315,62 @@ IPTR Dataspace__MUIM_Find(struct IClass *cl, Object *obj,
     return (IPTR) NULL;
 }
 
+/****** Dataspace.mui/MUIM_Dataspace_Merge ************
+*
+*   NAME
+*       MUIM_Dataspace_Merge
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Dataspace_Merge, (IPTR)dataspace);
+*
+*   FUNCTION
+*       Return 1 without copying or changing records. This is a stub.
+*
+*   INPUTS
+*       dataspace - Declared source-object argument; ignored.
+*
+*   RESULT
+*       Always 1. This value does not indicate that a merge occurred.
+*
+*   NOTES
+*       The dispatcher takes and releases the destination object's exclusive
+*       semaphore even though the method body does no work.
+*
+*   SEE ALSO
+*       MUIM_Dataspace_Add
+*
+*/
 IPTR Dataspace__MUIM_Merge(struct IClass *cl, Object *obj,
     struct MUIP_Dataspace_Merge *msg)
 {
     return 1;
 }
 
+/****** Dataspace.mui/MUIM_Dataspace_Remove ************
+*
+*   NAME
+*       MUIM_Dataspace_Remove
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Dataspace_Remove, id);
+*
+*   FUNCTION
+*       Unlink and free the first record with the specified identifier.
+*
+*   INPUTS
+*       id - ULONG identifier to remove.
+*
+*   RESULT
+*       1 if a record was removed; 0 if no record matched.
+*
+*   NOTES
+*       The dispatcher holds an exclusive semaphore lock. A successful removal
+*       invalidates all borrowed pointers to that record.
+*
+*   SEE ALSO
+*       MUIM_Dataspace_Find, MUIM_Dataspace_Add
+*
+*/
 IPTR Dataspace__MUIM_Remove(struct IClass *cl, Object *obj,
     struct MUIP_Dataspace_Remove *msg)
 {
@@ -190,6 +392,44 @@ IPTR Dataspace__MUIM_Remove(struct IClass *cl, Object *obj,
     return 0;
 }
 
+/****** Dataspace.mui/MUIM_Dataspace_ReadIFF ************
+*
+*   NAME
+*       MUIM_Dataspace_ReadIFF
+*
+*   SYNOPSIS
+*       LONG result = (LONG)DoMethod(obj, MUIM_Dataspace_ReadIFF, (IPTR)handle);
+*
+*   FUNCTION
+*       Read bytes from the current IFF chunk and interpret successive records
+*       as a big-endian 32-bit identifier, a big-endian 32-bit payload length,
+*       and that many payload bytes. Pass each complete record to MUIM_Dataspace_Add.
+*       Existing records are retained except where an imported identifier replaces
+*       them. Payload bytes are copied without byte-order conversion.
+*
+*   INPUTS
+*       handle - Valid IFF handle opened for reading and positioned in the
+*                intended chunk. This method does not scan for a chunk type or ID.
+*
+*   RESULT
+*       IFFERR_EOF if there is no current chunk; IFFERR_NOMEM if temporary
+*       buffer allocation fails; a negative ReadChunkBytes() error on read failure;
+*       otherwise 0, including incomplete or partially failed imports.
+*
+*   NOTES
+*       The handle remains caller-owned. The dispatcher holds an exclusive
+*       semaphore throughout reading and insertion. I/O can block.
+*
+*   BUGS
+*       The method ignores Add failures. It stops without an error when a record
+*       length exceeds the remaining bytes, and ignores fewer than eight trailing
+*       bytes. It does not roll back records already imported or distinguish these
+*       conditions from a complete import.
+*
+*   SEE ALSO
+*       MUIM_Dataspace_WriteIFF, MUIM_Dataspace_Add
+*
+*/
 IPTR Dataspace__MUIM_ReadIFF(struct IClass *cl, Object *obj,
     struct MUIP_Dataspace_ReadIFF *msg)
 {
@@ -243,6 +483,45 @@ IPTR Dataspace__MUIM_ReadIFF(struct IClass *cl, Object *obj,
     return 0;
 }
 
+/****** Dataspace.mui/MUIM_Dataspace_WriteIFF ************
+*
+*   NAME
+*       MUIM_Dataspace_WriteIFF
+*
+*   SYNOPSIS
+*       LONG result = (LONG)DoMethod(obj, MUIM_Dataspace_WriteIFF,
+*                                   (IPTR)handle, type, id);
+*
+*   FUNCTION
+*       Push an IFF chunk, write records in current list order, then pop the
+*       chunk. Each record contains a big-endian 32-bit identifier and length
+*       followed by the unchanged payload bytes. No per-record padding is added
+*       by Dataspace.
+*
+*   INPUTS
+*       handle - Caller-owned IFF handle opened for writing.
+*       type - Type passed unchanged to PushChunk().
+*       id - Chunk identifier passed unchanged to PushChunk().
+*
+*   RESULT
+*       0 after a successful PopChunk(); otherwise the PushChunk() error,
+*       a negative WriteChunkBytes() result, or the PopChunk() error.
+*
+*   NOTES
+*       The dispatcher holds an exclusive semaphore throughout the operation;
+*       I/O can block. Internal identifier and length fields are temporarily
+*       converted in place and restored after each write. Do not access the
+*       dataspace concurrently outside its locking discipline.
+*
+*   BUGS
+*       A negative record-write result returns without popping the chunk.
+*       Nonnegative short writes are not checked against the requested size.
+*       Failure can leave partial output; no rollback is performed.
+*
+*   SEE ALSO
+*       MUIM_Dataspace_ReadIFF
+*
+*/
 IPTR Dataspace__MUIM_WriteIFF(struct IClass *cl, Object *obj,
     struct MUIP_Dataspace_WriteIFF *msg)
 {
@@ -277,6 +556,11 @@ IPTR Dataspace__MUIM_WriteIFF(struct IClass *cl, Object *obj,
 }
 
 
+/* Dispatch record methods under the inherited semaphore: shared for Find,
+ * exclusive for mutations and IFF operations. Release before returning the
+ * method result. Construction and disposal are dispatched without this
+ * lock; unknown methods are forwarded to Semaphore.
+ */
 BOOPSI_DISPATCHER(IPTR, Dataspace_Dispatcher, cl, obj, msg)
 {
     IPTR res;

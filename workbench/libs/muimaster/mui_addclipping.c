@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/graphics.h>
@@ -27,20 +27,34 @@
         struct Library *, MUIMasterBase, 28, MUIMaster)
 
 /*  FUNCTION
+        Restrict drawing to a rectangle by creating a region and passing it
+        to MUI_AddClipRegion(). Existing MUI clipping remains in effect.
 
     INPUTS
+        mri - Valid rendering context for the target layer.
+        left, top - Rectangle origin in the layer's drawing coordinates.
+        width, height - Positive rectangle dimensions in pixels. Values
+                        greater than or equal to MUI_MAXMAX skip clipping.
 
     RESULT
+        A removal token, which can be NULL, or (APTR)-1 if no region was
+        pushed. The latter includes allocation failure, a rejected region,
+        a skipped dimension, and a rectangle containing the current clip
+        region's entire bounds.
 
     NOTES
-
-    EXAMPLE
+        Pair this call with MUI_RemoveClipping() using the same context
+        and the exact token. Remove nested clips in reverse order. NULL
+        is a valid success token; do not test the token as a Boolean.
+        Failure and an unnecessary clip share the same sentinel, so this
+        interface cannot guarantee that a new restriction was installed.
 
     BUGS
+        The result of OrRectRegion() is not checked before the region is
+        passed to MUI_AddClipRegion().
 
     SEE ALSO
-
-    INTERNALS
+        MUI_RemoveClipping(), MUI_AddClipRegion(), MUI_RemoveClipRegion()
 
 *****************************************************************************/
 {
