@@ -1,0 +1,135 @@
+TABLE OF CONTENTS
+
+Linktext.mcc/Linktext.mcc
+Linktext.mcc/MUIA_Linktext_ActionHook
+Linktext.mcc/MUIA_Linktext_First
+Linktext.mcc/MUIA_Linktext_FixHeight
+Linktext.mcc/MUIA_Linktext_LineCount
+Linktext.mcc/MUIA_Linktext_Lines
+Linktext.mcc/MUIA_Linktext_Scroller
+Linktext.mcc/MUIM_Linktext_LinkBox
+Linktext.mcc/MUIM_Linktext_SetContent
+Linktext.mcc/Linktext.mcc
+
+   Linktext.mcc is a Zune custom class derived from MUIC_Area. It shows
+   read-only text that wraps and scrolls, with links inside its paragraphs.
+   A link wraps with the text around it, and has its own target, so its
+   label can differ from the address it stands for.
+
+   The application gives plain text and explicit spans. A span covers bytes
+   of the text and either makes them a link (it has a target) or only sets
+   their style. The class does not look for addresses in the text and does
+   not parse a target. It opens nothing itself: it starts no browser, runs
+   no Shell command and makes no network request. It reports what the user
+   asked for through MUIA_Linktext_ActionHook, and the application decides.
+
+   Text is one byte per character in the system's 8-bit character set, as
+   for Text() and Floattext. Offsets count those bytes, and UTF-8 must be
+   converted first. A newline ends a paragraph. Any other control character
+   is shown as a space. No escape codes are interpreted.
+
+   Mouse: a click on a link opens it. A drag selects text without opening
+   anything, also when it starts on a link. The context menu opens or copies
+   the link under the pointer, or copies the selection. A bubble shows the
+   whole target of the link under the pointer.
+
+   Keyboard, when the object is active: Left and Right go from link to link,
+   Return opens, Amiga+C copies the link or else the selection, Up, Down and
+   the page keys scroll, and Tab goes on to the next object in the window.
+
+   Links are drawn in the text pen and underlined, with the font and pens
+   of the user's preferences. A selection uses the fill and shine pens.
+Linktext.mcc/MUIA_Linktext_ActionHook
+
+   MUIA_Linktext_ActionHook -- [ISG], struct Hook *
+
+   Called for each action, with the object and a
+   struct MUI_LinktextAction *:
+
+       Action        MUIV_Linktext_Action_Open or MUIV_Linktext_Action_Copy
+       Link          which link, in text order; style spans are not counted
+       ID            the span's ID
+       Target        the span's target
+       TargetLength  its length in bytes
+       Qualifier     of the click or key; 0 from the context menu
+
+   The hook runs on the application's task, inside the object's event
+   handling. Target stays valid until the hook returns, even if the hook
+   replaces the content; copy it to keep it. The hook may replace the
+   content and close the window. To dispose the object use
+   MUIM_Application_PushMethod.
+
+   Return TRUE when handled. For Copy, FALSE makes the class copy Target to
+   clipboard unit 0 itself, which is also what happens without a hook.
+Linktext.mcc/MUIA_Linktext_First
+
+   MUIA_Linktext_First -- [.SG], ULONG
+
+   The wrapped line at the top. A value past the end shows the last lines.
+Linktext.mcc/MUIA_Linktext_FixHeight
+
+   MUIA_Linktext_FixHeight -- [I..], BOOL
+
+   Makes the object exactly MUIA_Linktext_Lines high instead of stretching.
+   Text that needs more lines scrolls by wheel and keyboard. Default FALSE.
+Linktext.mcc/MUIA_Linktext_LineCount
+
+   MUIA_Linktext_LineCount -- [..G], ULONG
+
+   Wrapped lines at the current width, 0 before the object was first shown.
+Linktext.mcc/MUIA_Linktext_Lines
+
+   MUIA_Linktext_Lines -- [I.G], ULONG
+
+   Lines of text to ask for in the default height. Default 4.
+Linktext.mcc/MUIA_Linktext_Scroller
+
+   MUIA_Linktext_Scroller -- [I..], Object *
+
+   A Scrollbar or Prop object to keep in step, as MUIA_TextEditor_Slider
+   does. The object must outlive this one or be disposed with it; this class
+   does not dispose it.
+Linktext.mcc/MUIM_Linktext_LinkBox
+
+   DoMethod(obj, MUIM_Linktext_LinkBox, ULONG Link, ULONG Fragment,
+            struct IBox *Box);
+
+   Where a link is on screen now, for tests and for placing a hint. A link
+   has one fragment per line it reaches. Box gets the place of that fragment
+   in window coordinates. Returns TRUE when the fragment exists and is at
+   least partly visible. FALSE with Box unchanged when there is no such
+   fragment; FALSE with Box set when it is scrolled out of view.
+Linktext.mcc/MUIM_Linktext_SetContent
+
+   ULONG DoMethod(obj, MUIM_Linktext_SetContent, CONST_STRPTR Text,
+                  ULONG Length, const struct MUI_LinktextSpan *Spans,
+                  ULONG SpanCount);
+
+   Replaces the whole content, at once or not at all, and returns a
+   MUIV_Linktext_Status_*. On any failure the content shown before stays and
+   nothing changes. The object copies the text and the targets during the
+   call, so nothing passed in needs to outlive it.
+
+   Text may be NULL for none. Length is in bytes; ~0UL means up to the first
+   NUL. Each span has:
+
+       Start   byte offset into the text
+       Length  bytes, at least 1
+       Flags   MUIV_Linktext_Span_Bold or 0
+       Target  NUL-terminated text, kept exactly; NULL for a style span
+       ID      the application's, handed back in actions
+
+   Spans come in text order and do not overlap. Several links may share a
+   target or an ID. A target is any non-empty text.
+
+   Result:
+
+       MUIV_Linktext_Status_OK
+       MUIV_Linktext_Status_Range     a span outside the text, or empty
+       MUIV_Linktext_Status_Order     spans overlap or are out of order
+       MUIV_Linktext_Status_Target    a link with an empty target
+       MUIV_Linktext_Status_TooLarge  over a limit below
+       MUIV_Linktext_Status_NoMemory
+
+   Limits: LINKTEXT_MAX_TEXT bytes of text (64 MiB), LINKTEXT_MAX_SPANS spans
+   (1000000), LINKTEXT_MAX_TARGET bytes per target (16 MiB).
