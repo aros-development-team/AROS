@@ -935,10 +935,13 @@ static error_t CheckRootBlock(void)
 		dirty = true;
 	}
 
-	if (dirty)
-		return WritePFS3Metadata((uint8 *)rbl,
+	if (dirty) {
+		error_t write_error = WritePFS3Metadata((uint8 *)rbl,
 			ROOTBLOCK + volume.firstblock, volume.blocksize,
 			PFS3_METADATA_ROOT);
+		if (write_error)
+			return write_error;
+	}
 
 	return error;
 }
