@@ -392,7 +392,7 @@ retry_write:
 		*((UWORD *)&cmdbuf[0]) = 0x2a00;
 		*((ULONG *)&cmdbuf[2]) = blocknr;
 		*((ULONG *)&cmdbuf[6]) = transfer<<8;
-		if (!DoSCSICommand(buffer,blocks<<BLOCKSHIFT,cmdbuf,10,SCSIF_WRITE))
+		if (!DoSCSICommand(buffer,transfer<<BLOCKSHIFT,cmdbuf,10,SCSIF_WRITE))
 		{
 			volume.showmsg("WRITE ERROR\n");
 			if (!retry--)
