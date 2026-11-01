@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -439,16 +439,31 @@ static ULONG memAlerts[] =
 /*
  * MemHeader validation routine. Rules are:
  *
- * 1. Both mh_First and mh_Free must be MEMCHUNK_TOTAL-aligned.
+ * 1. mh_First must be MEMCHUNK_TOTAL-aligned. An uneven free count may
+ *    include only the trailing bytes of an uneven upper bound.
  * 2. Free space (if present) must completely fit in between mh_Lower and mh_Upper.
  * We intentionally don't check header's own location. We assume that in future we'll
  * be able to put MEMF_CHIP headers inside MEMF_FAST memory, for speed up.
  */
 static BOOL validateHeader(struct MemHeader *mh, UBYTE op, APTR addr, IPTR size, struct TraceLocation *tp, struct ExecBase *SysBase)
 {
-    if (((IPTR)mh->mh_First & (MEMCHUNK_TOTAL - 1)) || (mh->mh_Free & (MEMCHUNK_TOTAL - 1)) ||        /* 1 */
-    (mh->mh_First &&
-     (((APTR)mh->mh_First < mh->mh_Lower) || ((APTR)mh->mh_First + mh->mh_Free > mh->mh_Upper))))    /* 2 */
+    IPTR first = (IPTR)mh->mh_First;
+    IPTR lower = (IPTR)mh->mh_Lower;
+    IPTR upper = (IPTR)mh->mh_Upper;
+    IPTR mask = MEMCHUNK_TOTAL - 1;
+    IPTR remainder = mh->mh_Free & mask;
+    IPTR block = (IPTR)addr & ~mask;
+    IPTR offset = (IPTR)addr & mask;
+
+    if (lower > upper || (first & mask) ||
+        (remainder && (remainder != (upper & mask) ||
+                       (!first && mh->mh_Free != remainder))) ||
+        (first && (first < lower || first > upper ||
+                   mh->mh_Free > upper - first)) ||
+        (op == MM_FREE &&
+         (block < lower || block > upper ||
+          size > (IPTR)-1 - offset - mask ||
+          AROS_ROUNDUP2(size + offset, MEMCHUNK_TOTAL) > upper - block)))
     {
         if (tp)
         {
@@ -478,7 +493,8 @@ static BOOL validateHeader(struct MemHeader *mh, UBYTE op, APTR addr, IPTR size,
 /*
  * MemChunk consistency check. Rules are:
  *
- * 1. Both mc_Next and mc_Bytes must me MEMCHUNK_TOTAL-aligned, and mc_Bytes can not be zero.
+ * 1. Chunk addresses must be aligned and their headers must fit. Only the
+ *    final chunk ending at mh_Upper may have an uneven byte count.
  * 2. End of this chunk must not be greater than mh->mh_Upper
  * 3. mc_Next (if present) must point in between end of this chunk and mh->mh_Upper - MEMCHUNK_TOTAL.
  *    There must be at least MEMHCUNK_TOTAL allocated bytes between free chunks.
@@ -489,10 +505,20 @@ static inline BOOL validateChunk(struct MemChunk *p2, struct MemChunk *p1, struc
                  UBYTE op, APTR addr, IPTR size,
                  struct TraceLocation *tp, struct ExecBase *SysBase)
 {
-    if (((IPTR)p2->mc_Next & (MEMCHUNK_TOTAL-1)) || (p2->mc_Bytes == 0) || (p2->mc_Bytes & (MEMCHUNK_TOTAL-1))    ||    /* 1 */
-    ((APTR)p2 + p2->mc_Bytes > mh->mh_Upper)                                ||    /* 2 */
-    (p2->mc_Next && (((APTR)p2->mc_Next < (APTR)p2 + p2->mc_Bytes + MEMCHUNK_TOTAL) ||                /* 3 */
-                 ((APTR)p2->mc_Next > mh->mh_Upper - MEMCHUNK_TOTAL))))
+    IPTR start = (IPTR)p2;
+    IPTR next = (IPTR)p2->mc_Next;
+    IPTR upper = (IPTR)mh->mh_Upper;
+    IPTR mask = MEMCHUNK_TOTAL - 1;
+    IPTR remainder = p2->mc_Bytes & mask;
+
+    if (((start | next) & mask) || p2->mc_Bytes < sizeof(*p2) ||
+        start < (IPTR)mh->mh_Lower || start > upper ||
+        p2->mc_Bytes > upper - start ||
+        (remainder && (next || p2->mc_Bytes != upper - start ||
+                        remainder != (mh->mh_Free & mask))) ||
+        (next && (next < start + p2->mc_Bytes ||
+                   next - start - p2->mc_Bytes < MEMCHUNK_TOTAL ||
+                   next > upper || sizeof(*p2) > upper - next)))
     {
         if (tp)
         {
@@ -563,8 +589,12 @@ APTR stdAlloc(struct MemHeader *mh, struct MemHeaderAllocatorCtx *mhac, IPTR siz
     else
     {
         /* First round byteSize up to a multiple of MEMCHUNK_TOTAL */
-        IPTR byteSize = AROS_ROUNDUP2(size, MEMCHUNK_TOTAL);
+        IPTR byteSize;
         struct MemChunk *mc=NULL, *p1, *p2;
+
+        if (!size || size > (IPTR)-1 - (MEMCHUNK_TOTAL - 1))
+            return NULL;
+        byteSize = AROS_ROUNDUP2(size, MEMCHUNK_TOTAL);
 
 #if defined(__AROSEXEC_SMP__)
         EXEC_SPINLOCK_LOCK(&mh->mh_SpinLock, NULL, SPINLOCK_MODE_WRITE);
@@ -635,8 +665,11 @@ retry_alloc:
 
             mhac_MemChunkClaimed(p2, mhac);
 
-            /* Remove the block from the list and return it. */
-            if (p2->mc_Bytes == byteSize)
+            /* An unusable tail is still included in mh_Free, but must not
+             * become a MemChunk smaller than its own header. Deallocate
+             * rejoins it when the block preceding the upper bound is freed.
+             */
+            if ((p2->mc_Bytes & ~(MEMCHUNK_TOTAL - 1)) == byteSize)
             {
                 /* Fits exactly. Just relink the list. */
                 p1->mc_Next = p2->mc_Next;
@@ -650,7 +683,8 @@ retry_alloc:
                 {
                     /* Return the last bytes. */
                     p1->mc_Next=p2;
-                    mc = (struct MemChunk *)((UBYTE *)p2+p2->mc_Bytes-byteSize);
+                    mc = (struct MemChunk *)((UBYTE *)p2 +
+                        (p2->mc_Bytes & ~(MEMCHUNK_TOTAL - 1)) - byteSize);
                 }
                 else
                 {
@@ -661,7 +695,9 @@ retry_alloc:
 
                 p1           = p1->mc_Next;
                     p1->mc_Next  = p2->mc_Next;
-                p1->mc_Bytes = p2->mc_Bytes-byteSize;
+                p1->mc_Bytes = p2->mc_Bytes - byteSize;
+                if (requirements & MEMF_REVERSE)
+                    p1->mc_Bytes &= ~(MEMCHUNK_TOTAL - 1);
 
                 mhac_MemChunkCreated(p1, pp, mhac);
             }
@@ -759,6 +795,9 @@ void stdDealloc(struct MemHeader *freeList, struct MemHeaderAllocatorCtx *mhac, 
         if (p2 == NULL)
         {
             p3->mc_Bytes = byteSize;
+            if ((freeList->mh_Free & (MEMCHUNK_TOTAL - 1)) &&
+                (IPTR)p4 == ((IPTR)freeList->mh_Upper & ~(MEMCHUNK_TOTAL - 1)))
+                p3->mc_Bytes += freeList->mh_Free & (MEMCHUNK_TOTAL - 1);
             p3->mc_Next = NULL;
             p1->mc_Next = p3;
             freeList->mh_Free += byteSize;
@@ -805,6 +844,14 @@ void stdDealloc(struct MemHeader *freeList, struct MemHeaderAllocatorCtx *mhac, 
 
             /* If the loop ends with p2 zero add it at the end. */
         } while (p2 != NULL);
+
+        /* Recover a terminal remainder that was too small to carry a free
+         * chunk header. It was already counted as free; only the chunk span
+         * grows here, not byteSize or the amount added back to mh_Free.
+         */
+        if (!p2 && (freeList->mh_Free & (MEMCHUNK_TOTAL - 1)) &&
+            (IPTR)p4 == ((IPTR)freeList->mh_Upper & ~(MEMCHUNK_TOTAL - 1)))
+            p4 += freeList->mh_Free & (MEMCHUNK_TOTAL - 1);
 
         /* If there was a previous block merge with it. */
         if (p1 != (struct MemChunk *)&freeList->mh_First)

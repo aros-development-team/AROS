@@ -1,0 +1,22 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+USER_CFLAGS := -noposixc
+USER_LDFLAGS := -static
+
+#MM- test-exec : test-exec-privatepool
+#MM- test-exec-quick : test-exec-privatepool-quick
+#MM test-exec-privatepool : includes linklibs
+
+%build_progs mmake=test-exec-privatepool \
+    files=privatepool targetdir=$(AROS_TESTS)/exec/privatepool
+
+# Explicit host execution of the same production allocator core.
+#MM
+test-exec-privatepool-host:
+	$(PYTHON) $(SRCDIR)/$(CURDIR)/host_test.py --cc "$(HOST_CC)"
+
+#MM
+test-exec-privatepool-host-quick: test-exec-privatepool-host
+
+%common

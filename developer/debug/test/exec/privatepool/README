@@ -1,0 +1,39 @@
+Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+Private Allocate/Deallocate pool regressions
+==========================================
+
+Build test-exec-privatepool or test-exec-privatepool-quick. Both belong to
+the Exec test component and are available on every AROS target; these tests
+do not use Amiga hardware. Run exec/privatepool/privatepool on the target.
+
+The tests exercise UFO's 128140-byte private pool and all terminal remainder
+sizes below MEMCHUNK_TOTAL. They exhaust the usable space, free blocks in
+every order, and verify original free counts, coalescing, returned addresses,
+and guards immediately outside the declared pool.
+
+A mixed-size stress test checks live data and free-list invariants after
+every operation. On AROS, four processes also share one pool through the
+public Allocate/Deallocate API; each verifies its blocks before freeing
+them. This detects task switches during a free-list update. Non-SMP tests
+also verify that calls preserve the caller's Forbid nesting.
+
+On a 64-bit host, also run:
+
+    python3 host_test.py
+
+or select test-exec-privatepool-host / test-exec-privatepool-host-quick.
+The script compiles the production validation, stdAlloc and stdDealloc
+functions directly from rom/exec/memory.c using a small host ABI adapter.
+It does not duplicate the allocation algorithm. AddressSanitizer and
+UndefinedBehaviorSanitizer check 16- and 32-byte alignments, with and without
+the SMP path. The SMP cases run concurrent allocations/deallocations using
+host atomic locks. Additional checks cover reverse allocation, requests
+larger than 4 GiB delegated to managed allocators, oversized requests/frees,
+and rejection of corrupt aligned pools. This is a 64-bit host core test,
+not a boot test of a complete 64-bit AROS kernel.
+
+For a before/after check, pass an earlier production memory.c with --source
+and --expect-failure. A failing original allocator is expected to return
+status 20 from its test binary. Sanitizer failures are never a passing result
+for the corrected allocator.
