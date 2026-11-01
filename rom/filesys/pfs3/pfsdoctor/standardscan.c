@@ -51,6 +51,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <proto/asl.h>
+#include <proto/dos.h>
 #include <proto/exec.h>
 #include "pfs3.h"
 #include "doctor.h"
@@ -602,7 +603,8 @@ static error_t BuildRootBlock_hub(void)
 static error_t RequestMountFile(void)
 {
 	struct FileRequester *freq;
-	char mfname[FNSIZE], *t;
+	char *mfname;
+	size_t length;
 	bool ok = false;
 
 	freq = AllocAslRequestTags(ASL_FileRequest, ASLFR_SleepWindow, TRUE,
@@ -616,9 +618,20 @@ static error_t RequestMountFile(void)
 			FreeAslRequest(freq);
 			return e_aborted;
 		}
-		t = stpcpy(mfname, freq->fr_Drawer);
-		stpcpy(t, freq->fr_File);
+		length = strlen(freq->fr_Drawer) + strlen(freq->fr_File) + 2;
+		mfname = malloc(length);
+		if (mfname == NULL) {
+			FreeAslRequest(freq);
+			return e_out_of_memory;
+		}
+		strcpy(mfname, freq->fr_Drawer);
+		if (!AddPart(mfname, freq->fr_File, length)) {
+			free(mfname);
+			FreeAslRequest(freq);
+			return e_options_error;
+		}
 		ok = MakeMountFile(mfname);
+		free(mfname);
 		volume.showmsg(ok ? "Mountlist written\n" : "Could not write mountlist\n");
 	}
 	FreeAslRequest(freq);
