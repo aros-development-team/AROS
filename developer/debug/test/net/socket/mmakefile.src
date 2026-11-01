@@ -19,6 +19,8 @@ CUNITSOCKETTESTFILES := \
     cunit-net-inet6 \
     cunit-net-mcast6 \
     cunit-net-mld6 \
+    cunit-net-ndqueue6 \
+    cunit-net-pmtu6 \
     cunit-net-ports \
     cunit-net-raw6 \
     cunit-net-rio6 \
@@ -31,7 +33,8 @@ CUNITSOCKETTESTFILES := \
     cunit-net-tcp \
     cunit-net-tcpmss6 \
     cunit-net-tcpsyn6 \
-    cunit-net-udp
+    cunit-net-udp \
+    cunit-net-unreach6
 
 #MM test-socket : includes linklibs
 

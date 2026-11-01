@@ -32,6 +32,7 @@ SYS_H= \
 PROTOS_H= \
 	protos/kern/amiga_api_protos.h 	protos/kern/amiga_main_protos.h \
 	protos/kern/amiga_select_protos.h protos/kern/amiga_time_protos.h \
+	protos/kern/kern_random_protos.h \
 	protos/kern/amiga_userlib_protos.h protos/kern/kern_malloc_protos.h \
 	protos/kern/kern_synch_protos.h protos/kern/subr_prf_protos.h \
 	protos/kern/uipc_domain_protos.h \
@@ -121,7 +122,8 @@ KERN_C= \
 	kern/uipc_domain kern/uipc_socket kern/uipc_socket2 \
 	kern/amiga_log kern/amiga_cstat kern/amiga_rexx \
 	kern/subr_prf kern/accesscontrol kern/config_var \
-	kern/kern_sysctl kern/amiga_netsvc kern/amiga_svcmgr
+	kern/kern_sysctl kern/amiga_netsvc kern/amiga_svcmgr \
+	kern/kern_random
 
 KERN_H= \
 	kern/amiga_includes.h kern/amiga_time.h kern/amiga_config.h \

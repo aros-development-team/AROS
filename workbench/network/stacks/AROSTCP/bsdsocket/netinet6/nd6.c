@@ -50,6 +50,76 @@
 #include <netinet6/in6_var.h>
 #include <netinet6/nd6.h>
 
+extern void icmp6_error(struct mbuf *, int, int, int);
+
+/* ------------------------------------------------------------------
+ * The packets queued for a neighbour while its address is resolved
+ * (RFC 4861 section 7.2.2): up to ND6_MAXQUEUELEN, oldest first, chained
+ * through m_nextpkt. One was not enough: the fragments of a datagram are
+ * queued one after the other, and only the last one would have been sent.
+ * ------------------------------------------------------------------ */
+void
+nd6_hold_add(struct llinfo_nd6 *ln, struct mbuf *m)
+{
+    struct mbuf **mp;
+
+    if(ln->ln_holdlen >= ND6_MAXQUEUELEN && ln->ln_hold != NULL) {
+        struct mbuf *old = ln->ln_hold;     /* full: the oldest gives way */
+
+        ln->ln_hold = old->m_nextpkt;
+        old->m_nextpkt = NULL;
+        m_freem(old);
+        ln->ln_holdlen--;
+        nd6stat.nd6s_res_holdq_full++;
+    }
+    m->m_nextpkt = NULL;
+    for(mp = &ln->ln_hold; *mp != NULL; mp = &(*mp)->m_nextpkt)
+        ;
+    *mp = m;
+    ln->ln_holdlen++;
+}
+
+/*
+ * Drop the queued packets. With unreachable set, address resolution has
+ * failed: each gets an ICMPv6 Destination Unreachable, address unreachable
+ * (section 7.2.2 says MUST), which comes back to the socket that sent it.
+ */
+void
+nd6_hold_free(struct llinfo_nd6 *ln, int unreachable)
+{
+    struct mbuf *m, *next;
+    struct ifnet *ifp = ln->ln_rt ? ln->ln_rt->rt_ifp : NULL;
+
+    for(m = ln->ln_hold; m != NULL; m = next) {
+        next = m->m_nextpkt;
+        m->m_nextpkt = NULL;
+        if(unreachable && ifp != NULL) {
+            /* our own packet: the error comes from our address on ifp */
+            m->m_pkthdr.rcvif = ifp;
+            icmp6_error(m, ICMP6_DST_UNREACH, ICMP6_DST_UNREACH_ADDR, 0);
+        } else
+            m_freem(m);
+    }
+    ln->ln_hold = NULL;
+    ln->ln_holdlen = 0;
+}
+
+/* The address is resolved: send the queued packets, in order. */
+void
+nd6_hold_send(struct llinfo_nd6 *ln, struct ifnet *ifp, struct sockaddr *dst,
+              struct rtentry *rt)
+{
+    struct mbuf *m = ln->ln_hold, *next;
+
+    ln->ln_hold = NULL;
+    ln->ln_holdlen = 0;
+    for(; m != NULL; m = next) {
+        next = m->m_nextpkt;
+        m->m_nextpkt = NULL;
+        (*ifp->if_output)(ifp, m, dst, rt);
+    }
+}
+
 /* Forward declaration */
 struct rtentry *rtalloc1(struct sockaddr *, int);
 
@@ -325,10 +395,7 @@ nd6_lookup(struct in6_addr *dst, int create, struct ifnet *ifp)
                 sdl->sdl_type  = ifp->if_type;
                 sdl->sdl_alen  = 0;
             }
-            if(ln->ln_hold) {
-                m_freem(ln->ln_hold);
-                ln->ln_hold = NULL;
-            }
+            nd6_hold_free(ln, 0);
             GetSysTime(&_tv);
             ln->ln_state  = ND6_LLINFO_NOSTATE;
             ln->ln_asked  = 0;
@@ -521,20 +588,15 @@ nd6_cache_lladdr(struct ifnet *ifp, struct in6_addr *from,
 
     /* flush held packet if address was resolved */
     if(do_update && ln->ln_hold) {
-        struct mbuf *held = ln->ln_hold;
-        ln->ln_hold = NULL;
-
         if(sdl && sdl->sdl_alen > 0) {
             struct sockaddr_in6 dst_sa;
             bzero(&dst_sa, sizeof(dst_sa));
             dst_sa.sin6_family = AF_INET6;
             dst_sa.sin6_len    = sizeof(dst_sa);
             dst_sa.sin6_addr   = *from;
-            (*ifp->if_output)(ifp, held,
-                              (struct sockaddr *)&dst_sa, rt);
-        } else {
-            m_freem(held);
-        }
+            nd6_hold_send(ln, ifp, (struct sockaddr *)&dst_sa, rt);
+        } else
+            nd6_hold_free(ln, 0);
     }
 
     rtfree(rt);             /* release the ref held by nd6_lookup */
@@ -615,11 +677,7 @@ nd6_resolve_neighbor(struct ifnet *ifp, struct rtentry *rt, struct mbuf *m,
 
     case ND6_LLINFO_INCOMPLETE:
         /* queue the packet and send NS */
-        if(ln->ln_hold) {
-            m_freem(ln->ln_hold);
-            nd6stat.nd6s_res_holdq_full++;
-        }
-        ln->ln_hold = m;
+        nd6_hold_add(ln, m);
         if(ln->ln_asked < ND6_MAX_MULTICAST_SOLICIT) {
             ln->ln_asked++;
             nd6_ns_output(ifp, NULL, &sin6->sin6_addr, ln, 0);
@@ -630,11 +688,7 @@ nd6_resolve_neighbor(struct ifnet *ifp, struct rtentry *rt, struct mbuf *m,
     default:
         ln->ln_state = ND6_LLINFO_INCOMPLETE;
         ln->ln_asked = 1;
-        if(ln->ln_hold) {
-            m_freem(ln->ln_hold);
-            nd6stat.nd6s_res_holdq_full++;
-        }
-        ln->ln_hold = m;
+        nd6_hold_add(ln, m);
         nd6_ns_output(ifp, NULL, &sin6->sin6_addr, ln, 0);
         return EAGAIN;
     }
@@ -740,10 +794,7 @@ nd6_timer(void *arg)
             if(ln->ln_asked >= ND6_MAX_MULTICAST_SOLICIT) {
                 /* unreachable: free held packet */
                 nd6stat.nd6s_nud_incomplete++;
-                if(ln->ln_hold) {
-                    m_freem(ln->ln_hold);
-                    ln->ln_hold = NULL;
-                }
+                nd6_hold_free(ln, 1);
                 ln->ln_state = ND6_LLINFO_NOSTATE;
             } else {
                 /* retransmit NS */
@@ -782,10 +833,7 @@ nd6_timer(void *arg)
             if(ln->ln_asked >= ND6_MAX_UNICAST_SOLICIT) {
                 /* NUD failed */
                 nd6stat.nd6s_nud_probe++;
-                if(ln->ln_hold) {
-                    m_freem(ln->ln_hold);
-                    ln->ln_hold = NULL;
-                }
+                nd6_hold_free(ln, 0);
                 ln->ln_state = ND6_LLINFO_NOSTATE;
             } else {
                 /* send unicast NS */
@@ -1073,11 +1121,8 @@ nd6_rtrequest(int req, struct rtentry *rt, struct sockaddr *sa)
         if(ln == NULL)
             break;
         nd6_inuse--;
-        /* free held packet */
-        if(ln->ln_hold) {
-            m_freem(ln->ln_hold);
-            ln->ln_hold = NULL;
-        }
+        /* free held packets */
+        nd6_hold_free(ln, 0);
         /* unlink from list */
         ln->ln_prev->ln_next = ln->ln_next;
         ln->ln_next->ln_prev = ln->ln_prev;

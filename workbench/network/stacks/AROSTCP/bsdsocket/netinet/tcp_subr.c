@@ -80,6 +80,7 @@
 #include <kern/amiga_includes.h>
 
 #include <kern/kern_subr_protos.h>
+#include <protos/kern/kern_random_protos.h>
 
 /*
  * Dual-stack helper: true if the socket bound to this PCB is an AF_INET6
@@ -337,31 +338,11 @@ void
 tcp_init()
 {
     /*
-     * Seed the ISN secret key and initial sequence number from
-     * available entropy (system time, task pointer).
+     * The ISN secret key (RFC 6528), also the SYN cookies' (tcp_syncookie_*),
+     * and the start of the ISN clock, from arc4random_buf() (kern_random.c).
      */
-    {
-        struct timeval tv;
-        APTR task;
-        u_int32_t seed;
-
-        GetSysTime(&tv);
-        task = FindTask(NULL);
-        seed = (u_int32_t)tv.tv_secs ^ ((u_int32_t)tv.tv_micro << 16)
-             ^ (u_int32_t)(IPTR)task;
-
-        /* Fill secret key with mixed entropy */
-        tcp_secret_key[0] = seed * 0x5bd1e995;
-        seed ^= seed >> 16;
-        tcp_secret_key[1] = seed * 0x85ebca6b;
-        seed ^= seed >> 13;
-        tcp_secret_key[2] = seed * 0xc2b2ae35;
-        seed ^= seed >> 16;
-        tcp_secret_key[3] = seed * 0xcc9e2d51;
-
-        /* Start tcp_iss at an unpredictable value */
-        tcp_iss = (int)(tcp_secret_key[0] ^ tcp_secret_key[2]);
-    }
+    kern_random(tcp_secret_key, sizeof(tcp_secret_key));
+    tcp_iss = (tcp_seq)kern_random32();
     tcp_ccgen = 1;
     tcp_cc_init();
     tcp_cleartaocache();
@@ -803,22 +784,73 @@ void *arg;
 }
 
 #if INET6
+void tcp_mtudisc6(struct tcpcb *, u_int32_t);
+
 /*
  * tcp6_ctlinput - an ICMPv6 error about a TCP/IPv6 segment we sent
  * (icmp6_notify_error()): sa is its destination, arg an ip6ctlparam with
- * its source and ports. tcp_notify() keeps it as a soft error.
+ * its source and ports. tcp_notify() keeps it as a soft error; a Packet
+ * Too Big (PRC_MSGSIZE) about a segment still unacknowledged makes the
+ * connection send smaller ones (tcp_mtudisc6()).
  */
 void
 tcp6_ctlinput(int cmd, struct sockaddr *sa, void *arg)
 {
     struct ip6ctlparam *ip6cp = arg;
 
+    if(cmd == PRC_MSGSIZE) {
+        /* a Packet Too Big about a segment of a connection under way */
+        struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)sa;
+        struct inpcb *inp;
+        struct tcpcb *tp;
+
+        if(ip6cp == NULL || !ip6cp->ip6c_haveseq)
+            return;
+        inp = in6_pcblookup(&tcb, &sin6->sin6_addr, ip6cp->ip6c_dport,
+                            &ip6cp->ip6c_src, ip6cp->ip6c_sport);
+        if(inp == NULL || (tp = intotcpcb(inp)) == NULL)
+            return;
+        /* only for a segment that is still unacknowledged: anything else
+         * is old, or forged blind (RFC 5927 section 7.2) */
+        if(SEQ_LT(ip6cp->ip6c_seq, tp->snd_una) ||
+                SEQ_GEQ(ip6cp->ip6c_seq, tp->snd_max))
+            return;
+        tcp_mtudisc6(tp, ip6cp->ip6c_mtu);
+        return;
+    }
     if(ip6cp != NULL)
         in6_pcbnotify(&tcb, (struct sockaddr_in6 *)sa, ip6cp->ip6c_dport,
                       &ip6cp->ip6c_src, ip6cp->ip6c_sport, cmd, tcp_notify);
     else
         in6_pcbnotify(&tcb, (struct sockaddr_in6 *)sa, 0, NULL, 0, cmd,
                       tcp_notify);
+}
+#endif
+
+#if INET6
+/*
+ * tcp_mtudisc6 - the path to tp's peer takes packets of at most mtu bytes
+ * (RFC 8201 section 5.2): send segments that fit, and resend what was not
+ * acknowledged, as FreeBSD's tcp_mtudisc() does. The MSS is set as
+ * tcp_mss() sets it; only ever lowered.
+ */
+void
+tcp_mtudisc6(struct tcpcb *tp, u_int32_t mtu)
+{
+    int mss = (int)mtu - (int)(sizeof(struct ip6_hdr) + sizeof(struct tcphdr));
+
+    if(mss <= 0 || mss >= tp->t_maxopd)
+        return;
+    tp->t_maxopd = mss;
+    if((tp->t_flags & (TF_REQ_TSTMP | TF_NOOPT)) == TF_REQ_TSTMP &&
+            (tp->t_flags & TF_RCVD_TSTMP) == TF_RCVD_TSTMP)
+        mss -= TCPOLEN_TSTAMP_APPA;
+    if(mss >= tp->t_maxseg)
+        return;
+    tp->t_maxseg = mss;
+    tp->t_rtt = 0;                  /* do not time the resent segment */
+    tp->snd_nxt = tp->snd_una;
+    (void)tcp_output(tp);
 }
 #endif
 

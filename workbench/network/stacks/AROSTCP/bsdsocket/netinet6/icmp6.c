@@ -107,6 +107,7 @@ void icmp6_fasttimo(void)
 }
 
 extern void frag6_slowtimo(void);
+static void pmtu_timer(void);
 extern void in6_tmpaddrtimer(void);
 
 void
@@ -125,6 +126,7 @@ icmp6_slowtimo(void)
     nd6_timer(NULL);
     frag6_slowtimo();
     in6_tmpaddrtimer();
+    pmtu_timer();
     if(icmp6_slow_ticks <= 10) {
         D(bug("[AROSTCP:ICMP6] %s: nd6_timer returned (tick=%d)\n",
               __func__, icmp6_slow_ticks));
@@ -134,19 +136,116 @@ icmp6_slowtimo(void)
 void icmp6_drain(void)    {}
 
 /* ------------------------------------------------------------------
- * icmp6_update_pmtu - record a discovered path MTU (RFC 8201).
+ * Path MTU (RFC 8201).
  *
- * On receiving an ICMPv6 Packet Too Big, the reported next-hop MTU is stored
- * on the route to the destination that provoked the error, so ip6_output()
- * sizes subsequent datagrams to fit the bottleneck link instead of having them
- * black-holed (IPv6 routers never fragment).  The MTU is clamped to the IPv6
- * minimum and only ever lowered.
+ * A Packet Too Big lowers the MTU of the route to the destination of the
+ * packet it quotes, and ip6_output() then sizes what it sends there to fit.
+ * That route must be the destination's own: on the link it is the
+ * neighbour's host route, which neighbour discovery clones; through a
+ * router the table only has the router's route (a prefix, or the default
+ * one), so - as in KAME (icmp6_mtudisc_clone()) - a host route through the
+ * same router is added for the destination, and the MTU put on it, so it
+ * does not apply to every other destination behind that router.
+ *
+ * A lowered MTU is kept PMTU_EXPIRE seconds, then the larger one is tried
+ * again (RFC 8201 section 4: no sooner than 5 minutes, 10 recommended): a
+ * host route added for it is deleted, another one gets its MTU back. The
+ * routes are kept, with a reference, in pmtu_routes[]; with the table full,
+ * the entry closest to expiring gives way.
+ * ------------------------------------------------------------------ */
+#define PMTU_EXPIRE     600     /* seconds */
+#define PMTU_ROUTES     32
+
+static struct {
+    struct rtentry *rt;         /* NULL: free */
+    u_long expire;              /* seconds (GetSysTime()) */
+    u_long old_mtu;             /* the route's MTU before */
+    int added;                  /* the host route was added for the MTU */
+} pmtu_routes[PMTU_ROUTES];
+
+static u_long
+pmtu_now(void)
+{
+    struct timeval tv;
+
+    GetSysTime(&tv);
+    return tv.tv_sec;
+}
+
+/* Give the route back its MTU, or delete it if it was added for it. */
+static void
+pmtu_restore(int i)
+{
+    struct rtentry *rt = pmtu_routes[i].rt;
+
+    if(rt->rt_flags & RTF_UP) {
+        if(pmtu_routes[i].added)
+            rtrequest(RTM_DELETE, rt_key(rt), rt->rt_gateway, rt_mask(rt),
+                      rt->rt_flags, NULL);
+        else {
+            rt->rt_rmx.rmx_mtu = pmtu_routes[i].old_mtu;
+            rt->rt_rmx.rmx_expire = 0;
+        }
+    }
+    rtfree(rt);
+    pmtu_routes[i].rt = NULL;
+}
+
+/* Keep rt (whose reference this takes) for PMTU_EXPIRE seconds. */
+static void
+pmtu_keep(struct rtentry *rt, u_long old_mtu, int added)
+{
+    int i, slot = -1;
+
+    for(i = 0; i < PMTU_ROUTES; i++) {
+        if(pmtu_routes[i].rt == rt) {
+            rtfree(rt);                 /* kept already: the new reference goes */
+            slot = i;
+            break;
+        }
+        if(pmtu_routes[i].rt == NULL && slot < 0)
+            slot = i;
+    }
+    if(slot < 0) {
+        slot = 0;
+        for(i = 1; i < PMTU_ROUTES; i++)
+            if(pmtu_routes[i].expire < pmtu_routes[slot].expire)
+                slot = i;
+        pmtu_restore(slot);
+    }
+    if(pmtu_routes[slot].rt == NULL) {
+        pmtu_routes[slot].rt = rt;
+        pmtu_routes[slot].old_mtu = old_mtu;
+        pmtu_routes[slot].added = added;
+    }
+    pmtu_routes[slot].expire = pmtu_now() + PMTU_EXPIRE;
+    rt->rt_rmx.rmx_expire = pmtu_routes[slot].expire;
+}
+
+/* From icmp6_slowtimo(): give back the MTUs whose time is up. */
+static void
+pmtu_timer(void)
+{
+    u_long now = pmtu_now();
+    int i;
+
+    for(i = 0; i < PMTU_ROUTES; i++)
+        if(pmtu_routes[i].rt != NULL &&
+                (pmtu_routes[i].expire <= now || !(pmtu_routes[i].rt->rt_flags & RTF_UP)))
+            pmtu_restore(i);
+}
+
+/* ------------------------------------------------------------------
+ * icmp6_update_pmtu - record the path MTU a Packet Too Big reports for dst:
+ * clamped to the IPv6 minimum, only ever lowered, on dst's own route.
  * ------------------------------------------------------------------ */
 static void
 icmp6_update_pmtu(struct in6_addr *dst, u_int32_t mtu)
 {
     struct sockaddr_in6 sin6;
     struct rtentry *rt;
+    u_long old_mtu;
+    int added = 0;
 
     if(mtu < IPV6_MMTU)
         mtu = IPV6_MMTU;
@@ -159,9 +258,30 @@ icmp6_update_pmtu(struct in6_addr *dst, u_int32_t mtu)
     rt = rtalloc1((struct sockaddr *)&sin6, 0);
     if(rt == NULL)
         return;
-    if(rt->rt_rmx.rmx_mtu == 0 || mtu < rt->rt_rmx.rmx_mtu)
-        rt->rt_rmx.rmx_mtu = mtu;
-    rtfree(rt);
+    if(rt->rt_rmx.rmx_mtu != 0 && mtu >= rt->rt_rmx.rmx_mtu) {
+        rtfree(rt);                     /* not lower: nothing to do */
+        return;
+    }
+    if(!(rt->rt_flags & RTF_HOST)) {
+        struct rtentry *nrt = NULL;
+
+        /* an on-link destination with no neighbour entry is not one we
+         * have been sending to: leave the prefix alone */
+        if(!(rt->rt_flags & RTF_GATEWAY) ||
+                rtrequest(RTM_ADD, (struct sockaddr *)&sin6, rt->rt_gateway, NULL,
+                          RTF_HOST | RTF_GATEWAY | RTF_DYNAMIC, &nrt) != 0 ||
+                nrt == NULL) {
+            rtfree(rt);
+            return;
+        }
+        nrt->rt_rmx = rt->rt_rmx;       /* the router's route's metrics */
+        rtfree(rt);
+        rt = nrt;
+        added = 1;
+    }
+    old_mtu = rt->rt_rmx.rmx_mtu;
+    rt->rt_rmx.rmx_mtu = mtu;
+    pmtu_keep(rt, old_mtu, added);
 }
 
 /* ------------------------------------------------------------------
@@ -228,6 +348,20 @@ icmp6_notify_error(struct mbuf *m, int off, int cmd)
         m_copydata(m, qoff + sizeof(oip6), sizeof(ports), (caddr_t)ports);
         ip6cp.ip6c_sport = ports[0];
         ip6cp.ip6c_dport = ports[1];
+    }
+    if(oip6.ip6_nxt == IPPROTO_TCP &&
+            m->m_pkthdr.len >= qoff + (int)sizeof(oip6) + 8) {
+        u_int32_t seq = 0;      /* after the ports */
+
+        m_copydata(m, qoff + sizeof(oip6) + 4, sizeof(seq), (caddr_t)&seq);
+        ip6cp.ip6c_seq = ntohl(seq);
+        ip6cp.ip6c_haveseq = 1;
+    }
+    if(cmd == PRC_MSGSIZE) {
+        u_int32_t mtu = 0;      /* the Packet Too Big's MTU field */
+
+        m_copydata(m, off + 4, sizeof(mtu), (caddr_t)&mtu);
+        ip6cp.ip6c_mtu = ntohl(mtu) < IPV6_MMTU ? IPV6_MMTU : ntohl(mtu);
     }
 
     bzero(&sa6, sizeof(sa6));
@@ -359,9 +493,11 @@ icmp6_input(void *args, ...)
              * unaligned access occurs on strict-alignment architectures. */
             bcopy(&oip6->ip6_dst, &odst, sizeof(odst));
             bcopy(&ic6->icmp6_mtu, &omtu, sizeof(omtu));
-            /* the route keeps the path MTU, which ip6_output() and
-             * tcp_mss() use: no socket needs to be told */
+            /* the route keeps the path MTU, which ip6_output() and a new
+             * connection's tcp_mss() use; a TCP connection under way is
+             * told too, to send smaller segments (tcp6_ctlinput()) */
             icmp6_update_pmtu(&odst, ntohl(omtu));
+            icmp6_notify_error(m, off, PRC_MSGSIZE);
             break;
         }
         return;			/* m_pullup freed the mbuf */
@@ -421,6 +557,7 @@ icmp6_error(struct mbuf *m, int type, int code, int param)
 {
     struct ip6_hdr *oip6, *nip6;
     struct icmp6_hdr *icmp6;
+    struct in6_addr osrc, odst;
     int hlen, prepend;
 
     icmp6stat.icp6s_error++;
@@ -431,11 +568,16 @@ icmp6_error(struct mbuf *m, int type, int code, int param)
 
     oip6 = mtod(m, struct ip6_hdr *);
 
-    /* never send ICMPv6 errors in response to multicast */
-    if(IN6_IS_ADDR_MULTICAST(&oip6->ip6_dst)) {
+    /* never send ICMPv6 errors in response to multicast, nor to a packet
+     * whose source does not identify a single node (RFC 4443 2.4 (e)) */
+    if(IN6_IS_ADDR_MULTICAST(&oip6->ip6_dst) ||
+            IN6_IS_ADDR_UNSPECIFIED(&oip6->ip6_src) ||
+            IN6_IS_ADDR_MULTICAST(&oip6->ip6_src)) {
         m_freem(m);
         return;
     }
+    osrc = oip6->ip6_src;
+    odst = oip6->ip6_dst;
     /* never send ICMPv6 errors in response to ICMPv6 errors */
     if(oip6->ip6_nxt == IPPROTO_ICMPV6) {
         struct icmp6_hdr *oicmp6 = (struct icmp6_hdr *)(oip6 + 1);
@@ -471,11 +613,22 @@ icmp6_error(struct mbuf *m, int type, int code, int param)
     nip6->ip6_vfc  = IPV6_VERSION;
     nip6->ip6_nxt  = IPPROTO_ICMPV6;
     nip6->ip6_hlim = ip6_defhlim;
-    nip6->ip6_dst  = oip6->ip6_src;
-    /* source: find appropriate local address */
+    nip6->ip6_dst  = osrc;
+    /*
+     * source: the address the packet was sent to, if it is one of ours
+     * (RFC 4443 2.2 (a)) - on the interface it came in on, for a link-scope
+     * one; else an address on that interface
+     */
     {
-        struct in6_ifaddr *ia = NULL;
-        if(m->m_pkthdr.rcvif) {
+        struct in6_ifaddr *ia;
+
+        for(ia = in6_ifaddr; ia; ia = ia->ia_next)
+            if(IN6_ARE_ADDR_EQUAL(&ia->ia_addr.sin6_addr, &odst) &&
+                    !(ia->ia6_ifaflags & (IN6_IFF_TENTATIVE | IN6_IFF_DUPLICATED)) &&
+                    (!IN6_IS_ADDR_LINKLOCAL(&odst) || m->m_pkthdr.rcvif == NULL ||
+                     ia->ia6_ifp == m->m_pkthdr.rcvif))
+                break;
+        if(ia == NULL && m->m_pkthdr.rcvif) {
             struct in6_addr dst_copy = nip6->ip6_dst;
             ia = in6_ifawithifp(m->m_pkthdr.rcvif, &dst_copy);
         }
