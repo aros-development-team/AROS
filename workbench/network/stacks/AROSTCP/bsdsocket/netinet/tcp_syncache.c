@@ -717,8 +717,20 @@ syncache_socket(struct syncache *sc, struct socket *lso, struct tcpiphdr *ti)
     /* Compute t_maxseg/t_maxopd (and the initial window) from the peer MSS. */
     tcp_mss(tp, sc->sc_peer_mss);
 
+    /* the listening socket's keepalive values, as FreeBSD's syncache */
+    {
+        const struct tcpcb *ltp = intotcpcb(sotoinpcb(lso));
+
+        if (ltp != NULL) {
+            tp->t_keepinit = ltp->t_keepinit;
+            tp->t_keepidle = ltp->t_keepidle;
+            tp->t_keepintvl = ltp->t_keepintvl;
+            tp->t_keepcnt = ltp->t_keepcnt;
+        }
+    }
+
     tp->t_flags |= TF_ACKNOW;
-    tp->t_timer[TCPT_KEEP] = tcp_keepidle;
+    tp->t_timer[TCPT_KEEP] = TP_KEEPIDLE(tp);
 
     tcpstat.tcps_accepts++;
     tcpstat.tcps_connects++;

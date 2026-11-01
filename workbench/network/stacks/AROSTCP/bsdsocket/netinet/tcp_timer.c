@@ -146,7 +146,8 @@ tcp_slowtimo()
                     goto tpgone;
             }
         }
-        tp->t_idle++;
+        if(tp->t_idle < 32767)      /* a short: saturate, never wrap */
+            tp->t_idle++;
         tp->t_duration++;
         if(tp->t_rtt)
             tp->t_rtt++;
@@ -194,8 +195,8 @@ int timer;
      */
     case TCPT_2MSL:
         if(tp->t_state != TCPS_TIME_WAIT &&
-                tp->t_idle <= tcp_maxidle)
-            tp->t_timer[TCPT_2MSL] = tcp_keepintvl;
+                tp->t_idle <= TP_MAXIDLE(tp))
+            tp->t_timer[TCPT_2MSL] = TP_KEEPINTVL(tp);
         else
             tp = tcp_close(tp);
         break;
@@ -310,7 +311,13 @@ int timer;
             goto dropit;
         if(tp->t_inpcb->inp_socket->so_options & SO_KEEPALIVE &&
                 tp->t_state <= TCPS_CLOSE_WAIT) {
-            if(tp->t_idle >= tcp_keepidle + tcp_maxidle)
+            /* idle past the probes: keepalive time plus count x interval,
+             * as far as the 16-bit idle counter reaches */
+            int limit = TP_KEEPIDLE(tp) + TP_MAXIDLE(tp);
+
+            if(limit > 32767)
+                limit = 32767;
+            if(tp->t_idle >= limit)
                 goto dropit;
             /*
              * Send a packet designed to force a response
@@ -338,9 +345,9 @@ int timer;
                         tp->rcv_nxt, tp->snd_una - 1, 0,
                         0, NULL, NULL);
 #endif
-            tp->t_timer[TCPT_KEEP] = tcp_keepintvl;
+            tp->t_timer[TCPT_KEEP] = TP_KEEPINTVL(tp);
         } else
-            tp->t_timer[TCPT_KEEP] = tcp_keepidle;
+            tp->t_timer[TCPT_KEEP] = TP_KEEPIDLE(tp);
         break;
 dropit:
         tcpstat.tcps_keepdrops++;

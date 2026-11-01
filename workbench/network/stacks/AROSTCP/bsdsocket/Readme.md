@@ -247,6 +247,14 @@ the path, and the MSS and DF come back. A lowered MSS that gets through is kept,
 MTU is. The steps are FreeBSD's (`tcp_timer_rexmt()`); detection is on by default, as in XNU
 (sysctl `net.inet.tcp.pmtud_blackhole`).
 
+Keepalive is per connection, with FreeBSD's options: `TCP_KEEPIDLE` (idle time before the first
+probe), `TCP_KEEPINTVL` (between probes) and `TCP_KEEPINIT` (to establish the connection) in
+seconds, `TCP_KEEPCNT` in probes; 0 gives back the system value (2 hours, 75 s, 75 s, 8), and
+`getsockopt()` reads what the connection uses (`TP_KEEPIDLE()` and the rest, `tcp_var.h`). A
+change re-arms the timer it concerns; a connection accepted by a listening socket has its values.
+The slow-tick timers are 16-bit, so a time is at most 16383 s (`TCP_KEEP_MAXSECS`); the idle
+counter saturates rather than wrapping.
+
 ### 5.4 Options in the SYN
 
 A connection asks for the MSS (§6, segment size, for IPv6), window scale and timestamps

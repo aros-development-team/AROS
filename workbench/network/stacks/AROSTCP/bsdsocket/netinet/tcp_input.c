@@ -865,7 +865,7 @@ findpcb:
      * Reset idle time and keep-alive timer.
      */
     tp->t_idle = 0;
-    tp->t_timer[TCPT_KEEP] = tcp_keepidle;
+    tp->t_timer[TCPT_KEEP] = TP_KEEPIDLE(tp);
 
     /*
      * Process options if not in LISTEN state,
@@ -1864,7 +1864,7 @@ process_ACK:
                  */
                 if(so->so_state & SS_CANTRCVMORE) {
                     soisdisconnected(so);
-                    tp->t_timer[TCPT_2MSL] = tcp_maxidle;
+                    tp->t_timer[TCPT_2MSL] = TP_MAXIDLE(tp);
                 }
                 tp->t_state = TCPS_FIN_WAIT_2;
             }
