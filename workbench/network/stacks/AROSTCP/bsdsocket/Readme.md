@@ -236,7 +236,9 @@ The SYN cache is fully dual-stack (see §6).
 (with exponential backoff), persist, keepalive, 2MSL/TIME-WAIT, and delayed-ACK. `tcp_slowtimo`
 also expires SYN-cache entries, and advances the ISS clock (`tcp_iss`, RFC 6528) and `tcp_now`
 every tick, whether or not there are connections: `tcp_now` is the timestamp clock (RFC 7323)
-and paces the IPv4 ICMP error rate limit (§7).
+and paces the IPv4 ICMP error rate limit (§7). Each connection's timers are counted down every tick, and its idle,
+duration and RTT clocks advanced; `tcp_timers()` hands the connection back, or NULL once a timer
+has closed it.
 
 The retransmission timer also detects a path MTU black hole (RFC 2923 section 2.1): a path that
 drops large packets without saying so, because the ICMP that would say so is filtered. After the 2nd

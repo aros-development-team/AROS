@@ -148,11 +148,17 @@ tcp_slowtimo()
             (void) tcp_drop(tp, ETIMEDOUT);
             continue;
         }
+        /*
+         * tcp_timers() gives the connection back, or NULL once it is gone.
+         * (tcp_usrreq(PRU_SLOWTIMO) returns 0 for success, and the test
+         * here took that for "gone": every tick on which one of a
+         * connection's timers went off skipped its other timers and its
+         * idle, duration and RTT clocks - keepalive probes counted at half
+         * speed.)
+         */
         for(i = 0; i < TCPT_NTIMERS; i++) {
             if(tp->t_timer[i] && --tp->t_timer[i] == 0) {
-                if(tcp_usrreq(tp->t_inpcb->inp_socket,
-                              PRU_SLOWTIMO, (struct mbuf *)0,
-                              (struct mbuf *)i, (struct mbuf *)0) == 0)
+                if((tp = tcp_timers(tp, i)) == NULL)
                     goto tpgone;
             }
         }
