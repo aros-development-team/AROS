@@ -2,7 +2,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES           := availfonts fontinfo glyphengine opendiskfont
+FILES           := availfonts colorglyph fontinfo glyphengine opendiskfont
 EXEDIR          := $(AROS_TESTS)/diskfont
 
 #MM- test : test-diskfont

@@ -13,11 +13,17 @@ CUNITEXEDIR := $(AROS_TESTS)/cunit/net/socket
 
 CUNITSOCKETTESTFILES := \
     cunit-net-addr6 \
+    cunit-net-arpqueue \
     cunit-net-cmsg \
     cunit-net-frag6 \
+    cunit-net-icmp6err \
     cunit-net-inet6 \
     cunit-net-mcast6 \
     cunit-net-mld6 \
+    cunit-net-ndqueue6 \
+    cunit-net-pmtu4 \
+    cunit-net-pmtu6 \
+    cunit-net-ports \
     cunit-net-raw6 \
     cunit-net-rio6 \
     cunit-net-route6 \
@@ -27,7 +33,10 @@ CUNITSOCKETTESTFILES := \
     cunit-net-socket \
     cunit-net-srcaddr6 \
     cunit-net-tcp \
-    cunit-net-udp
+    cunit-net-tcpmss6 \
+    cunit-net-tcpsyn6 \
+    cunit-net-udp \
+    cunit-net-unreach6
 
 #MM test-socket : includes linklibs
 

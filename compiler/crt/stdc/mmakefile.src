@@ -772,7 +772,8 @@ USER_CPPFLAGS := \
         -D_GNU_SOURCE \
         -D__ISO_C_VISIBLE=2011 \
         -Dlint '-D__FBSDID(x)=' \
-        -DSTDC_IO
+        -DSTDC_IO \
+        -include $(SRCDIR)/$(CURDIR)/__stdcio_errno.h
 #USER_CPPFLAGS += -DDEBUG=1
 
 %build_module mmake=compiler-stdcio \

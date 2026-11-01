@@ -519,8 +519,6 @@ nd6_na_input(struct mbuf *m, int off, int icmp6len)
           ? (struct sockaddr_dl *)rt->rt_gateway : NULL;
 
     if(ln->ln_state == ND6_LLINFO_INCOMPLETE) {
-        struct mbuf *held;
-
         /* entry was waiting for address resolution */
         if(lladdr == NULL)
             goto bad;	/* need TLLA for INCOMPLETE */
@@ -541,20 +539,16 @@ nd6_na_input(struct mbuf *m, int off, int icmp6len)
         }
         ln->ln_router = is_router;
 
-        /* send queued packet */
-        held = ln->ln_hold;
-        ln->ln_hold = NULL;
-        if(held && sdl && sdl->sdl_alen > 0) {
+        /* send the queued packets */
+        if(ln->ln_hold && sdl && sdl->sdl_alen > 0) {
             struct sockaddr_in6 dst_sa;
             bzero(&dst_sa, sizeof(dst_sa));
             dst_sa.sin6_family = AF_INET6;
             dst_sa.sin6_len    = sizeof(dst_sa);
             dst_sa.sin6_addr   = tgt;
-            (*ifp->if_output)(ifp, held,
-                              (struct sockaddr *)&dst_sa, rt);
-        } else if(held) {
-            m_freem(held);
-        }
+            nd6_hold_send(ln, ifp, (struct sockaddr *)&dst_sa, rt);
+        } else
+            nd6_hold_free(ln, 0);
     } else {
         /* existing entry in REACHABLE/STALE/DELAY/PROBE */
         int llchange = 0;

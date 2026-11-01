@@ -398,6 +398,10 @@ void *arg;
     register struct ip *ip = arg;
     register struct udphdr *uh;
 
+    /* "fragmentation needed": UDP sends without DF, and the route keeps
+     * the path MTU (icmp_mtudisc()); not an error for the socket */
+    if(cmd == PRC_MSGSIZE)
+        return;
     if(!PRC_IS_REDIRECT(cmd) &&
             ((unsigned)cmd >= PRC_NCMDS || inetctlerrmap[cmd] == 0))
         return;

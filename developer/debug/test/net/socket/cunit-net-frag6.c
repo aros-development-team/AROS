@@ -4,7 +4,9 @@
     CUnit tests for IPv6 fragmentation on output (RFC 8200 section 4.5): a
     datagram larger than the link MTU leaves as fragments that carry it
     whole - offsets that follow each other, the M flag on every fragment but
-    the last, each within the MTU - and one that fits leaves unfragmented.
+    the last, each within the MTU - and one that fits leaves unfragmented;
+    and the identifications of successive datagrams do not follow each
+    other (RFC 7739 section 5).
 
     The test sends UDP datagrams to a link-scope group on the interface and
     reads its own output with the bsdsocket BPF calls, so it needs no peer,
@@ -35,6 +37,7 @@ static long bpf = -1;
 /* One fragment of the datagram with this identification, as captured. */
 struct frag {
     unsigned off, len, more;
+    unsigned long id;
     unsigned char data[1500];
 };
 
@@ -96,6 +99,7 @@ static int capture(struct frag *f, int max, int secs, int *whole)
                             have_id = 1;
                         }
                         if (fid == id) {
+                            f[n].id = fid;
                             f[n].off = offlg & 0xfff8;
                             f[n].more = offlg & 1;
                             f[n].len = iplen - 48;
@@ -215,6 +219,26 @@ void testFRAG6_FITS_NOT_FRAGMENTED(void)
     CU_ASSERT_EQUAL(whole, 8 + size);
 }
 
+/* The identifications of successive fragmented datagrams do not follow
+ * each other: fewer than half of the steps are +1 (RFC 7739 section 5). */
+void testFRAG6_IDS_UNPREDICTABLE(void)
+{
+    static struct frag f[8];
+    unsigned long ids[8];
+    int i, n = 0, whole, steps = 0;
+    NEED_IF();
+    for (i = 0; i < 8; i++) {
+        CU_ASSERT_EQUAL(send_group(BIG, 'e' + i), BIG);
+        if (capture(f, 8, 2, &whole) >= 2)
+            ids[n++] = f[0].id;
+    }
+    CU_ASSERT_EQUAL_FATAL(n, 8);
+    for (i = 1; i < n; i++)
+        if (ids[i] == ids[i - 1] + 1)
+            steps++;
+    CU_ASSERT(steps < (n - 1) / 2);
+}
+
 static int setup(void)
 {
     struct ifreq ifr;
@@ -260,7 +284,8 @@ int main(int argc, char **argv)
         !CU_add_test(p, "a large datagram leaves as all its fragments", testFRAG6_ALL_FRAGMENTS) ||
         !CU_add_test(p, "fragment offsets follow each other, M on all but the last", testFRAG6_OFFSETS_AND_M) ||
         !CU_add_test(p, "the fragments reassemble to the datagram sent", testFRAG6_REASSEMBLES) ||
-        !CU_add_test(p, "a datagram that fits is not fragmented", testFRAG6_FITS_NOT_FRAGMENTED))
+        !CU_add_test(p, "a datagram that fits is not fragmented", testFRAG6_FITS_NOT_FRAGMENTED) ||
+        !CU_add_test(p, "fragment identifications are unpredictable", testFRAG6_IDS_UNPREDICTABLE))
     {
         CU_cleanup_registry();
         CloseLibrary(SocketBase);

@@ -23,6 +23,10 @@
 void __dos64_probe(fcb *fcb);
 
 QUAD __dos64_seek(fcb *fcb, QUAD position, LONG mode);
+/* POSIX lseek() semantics: returns the new absolute position, or -1 with
+   IoErr() set. A position beyond the end of the file is accepted without
+   changing the file (see fcb.seekpastend). */
+QUAD __dos64_lseek(fcb *fcb, QUAD offset, LONG mode);
 QUAD __dos64_getpos(fcb *fcb);
 QUAD __dos64_getsize(fcb *fcb);
 QUAD __dos64_setfilesize(fcb *fcb, QUAD size, LONG mode);

@@ -109,7 +109,7 @@
 
     /* Restore the original position */
     if (oldpos != -1)
-        __dos64_seek(fdesc->fcb, oldpos, OFFSET_BEGINNING);
+        __dos64_lseek(fdesc->fcb, oldpos, OFFSET_BEGINNING);
 
     return 0;
 }

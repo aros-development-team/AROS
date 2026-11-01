@@ -133,31 +133,30 @@ in6_rcvzone(struct mbuf *m, const struct in6_addr *addr)
     return m->m_pkthdr.rcvif->if_index;
 }
 
-/* ------------------------------------------------------------------ *
- * in6_pcballoclport - allocate an unused ephemeral local port for inp.
- *
- * Mirrors the IPv4 in_pcbbind() ephemeral algorithm: pick a port in the
- * [IPPORT_RESERVED, IPPORT_USERRESERVED] range and skip any already in use.
- * Returns the port in network byte order.  inp->inp_laddr6 must already be
- * set (it may be the unspecified/wildcard address).
- * ------------------------------------------------------------------ */
-static u_short
-in6_pcballoclport(struct inpcb *inp)
+int in_pcbpickport(struct inpcb *, int (*)(struct inpcb *, u_short, void *),
+                   void *, u_short *);
+
+/* Whether lport is in use for the local address arg (in6_pcblookup()). */
+static int
+in6_porttaken(struct inpcb *inp, u_short lport, void *arg)
 {
-    struct inpcbinfo *pcbinfo = inp->inp_pcbinfo;
-    struct inpcbhead *head = pcbinfo->listhead;
-    unsigned short *lastport = &pcbinfo->lastport;
     struct in6_addr wild;
-    u_short lport;
 
     bzero(&wild, sizeof(wild));
-    do {
-        ++*lastport;
-        if(*lastport < IPPORT_RESERVED || *lastport > IPPORT_USERRESERVED)
-            *lastport = IPPORT_RESERVED;
-        lport = htons(*lastport);
-    } while(in6_pcblookup(head, &wild, 0, &inp->inp_laddr6, lport) != NULL);
-    return lport;
+    return in6_pcblookup(inp->inp_pcbinfo->listhead, &wild, 0,
+                         (struct in6_addr *)arg, lport) != NULL;
+}
+
+/* ------------------------------------------------------------------ *
+ * in6_pcballoclport - pick an unused ephemeral local port for inp on the
+ * local address laddr (it may be the unspecified/wildcard address), as
+ * in_pcbbind() does for IPv4 (RFC 6056, in_pcbpickport()). The port goes
+ * to *lportp in network byte order; EADDRNOTAVAIL if none is free.
+ * ------------------------------------------------------------------ */
+static int
+in6_pcballoclport(struct inpcb *inp, struct in6_addr *laddr, u_short *lportp)
+{
+    return in_pcbpickport(inp, in6_porttaken, laddr, lportp);
 }
 
 /* ------------------------------------------------------------------ *
@@ -176,8 +175,7 @@ in6_pcbbind(struct inpcb *inp, struct mbuf *nam)
 
     if(nam == NULL) {
         /* wildcard bind: ephemeral port, wildcard (unspecified) address */
-        inp->inp_lport = in6_pcballoclport(inp);
-        return 0;
+        return in6_pcballoclport(inp, &inp->inp_laddr6, &inp->inp_lport);
     }
 
     if(nam->m_len < (int)sizeof(struct sockaddr_in6))
@@ -230,14 +228,20 @@ in6_pcbbind(struct inpcb *inp, struct mbuf *nam)
             }
         }
 
+        if(sin6->sin6_port == 0) {
+            /* explicit address, but port 0 means "pick an ephemeral one";
+             * picked before inp changes, so an error leaves it unbound */
+            u_short lport;
+            int error = in6_pcballoclport(inp, &sin6->sin6_addr, &lport);
+
+            if(error)
+                return error;
+            inp->inp_lport = lport;
+        } else
+            inp->inp_lport = sin6->sin6_port; /* already in network byte order */
         inp->inp_laddr6 = sin6->sin6_addr;
         if(zone != NULL)
             inp->inp_boundif = zone;
-        if(sin6->sin6_port == 0)
-            /* explicit address, but port 0 means "pick an ephemeral one" */
-            inp->inp_lport = in6_pcballoclport(inp);
-        else
-            inp->inp_lport = sin6->sin6_port; /* already in network byte order */
     }
 
     return 0;
@@ -426,6 +430,49 @@ in6_pcblookup(struct inpcbhead *head,
     }
 
     return match;
+}
+
+/* ------------------------------------------------------------------ *
+ * in6_pcbnotify - pass an error for the IPv6 destination dst to the
+ * sockets connected to it, as in_pcbnotify() does for IPv4: those whose
+ * peer is dst and, when they are given (non-zero, non-unspecified), whose
+ * ports and local address are those of the packet the error is about.
+ * notify gets the errno that inetctlerrmap[] gives for cmd; commands
+ * with none are not passed on.
+ * ------------------------------------------------------------------ */
+void
+in6_pcbnotify(struct inpcbhead *head, const struct sockaddr_in6 *dst,
+              u_int fport_arg, const struct in6_addr *laddr, u_int lport_arg,
+              int cmd, void (*notify)(struct inpcb *, int))
+{
+    extern u_char inetctlerrmap[];
+    struct inpcb *inp, *oinp;
+    u_short fport = fport_arg, lport = lport_arg;
+    int error, s;
+
+    if((unsigned)cmd >= PRC_NCMDS || dst == NULL ||
+            dst->sin6_family != AF_INET6 ||
+            IN6_IS_ADDR_UNSPECIFIED(&dst->sin6_addr) || notify == NULL)
+        return;
+    if((error = inetctlerrmap[cmd]) == 0)
+        return;
+    if(laddr != NULL && IN6_IS_ADDR_UNSPECIFIED(laddr))
+        laddr = NULL;
+
+    s = splnet();
+    for(inp = head->lh_first; inp != NULL;) {
+        oinp = inp;
+        inp = inp->inp_list.le_next;    /* notify may free oinp */
+        if(oinp->inp_socket == NULL || !in_pcbisipv6(oinp) ||
+                !IN6_ARE_ADDR_EQUAL(&oinp->inp_faddr6, &dst->sin6_addr) ||
+                (fport && oinp->inp_fport != fport) ||
+                (lport && oinp->inp_lport != lport) ||
+                (laddr != NULL && !IN6_IS_ADDR_UNSPECIFIED(&oinp->inp_laddr6) &&
+                 !IN6_ARE_ADDR_EQUAL(&oinp->inp_laddr6, laddr)))
+            continue;
+        (*notify)(oinp, error);
+    }
+    splx(s);
 }
 
 #endif /* INET6 */

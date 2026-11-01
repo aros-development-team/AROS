@@ -7,6 +7,7 @@
 */
 #include "m68kemu_intern.h"
 #include "m68kemu_thunks.h"
+#include "m68kemu_host_stubs.inc"
 
 /* Stub thunk tables */
 const struct M68KThunkEntry m68kemu_thunks_exec[] = { { 0, nullptr } };
@@ -20,7 +21,7 @@ ULONG M68KEmu_GetA(void *, int) { return 0; }
 void  M68KEmu_SetD(void *, int, ULONG) {}
 void  M68KEmu_SetA(void *, int, ULONG) {}
 ULONG M68KEmu_OpenLibrary(struct M68KEmuContext *, const char *) { return 0; }
-ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *, const char *) { return 0; }
+ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *, const char *, ULONG) { return 0; }
 }
 
 /* Include memory manager source */
@@ -83,9 +84,136 @@ void t_libbase() {
     M68KEmu_DestroyContext(c); OK();
 }
 
+/* Keep guest sizes explicitly 32-bit even on a 64-bit host. The whole
+   production memory manager above operates on this small guarded arena. */
+#include <algorithm>
+#include <array>
+#include <cstdint>
+static_assert(sizeof(ULONG) == 4, "the guest byte count must be 32-bit");
+
+struct HeapFixture
+{
+    M68KEmuContext ctx = {};
+    std::array<UBYTE, 0x2000> bytes;
+    explicit HeapFixture(ULONG size = 256)
+    {
+        bytes.fill(0xA5);
+        ctx.mem = bytes.data();
+        ctx.mem_size = bytes.size();
+        ctx.heap_start = 0x1000;
+        ctx.heap_end = ctx.heap_start + size;
+        /* 0x1000 is in the Chip RAM region (below M68KEMU_CHIP_END) */
+        ctx.rgn[RGN_CHIP].start = ctx.rgn[RGN_CHIP].free = ctx.heap_start;
+        ctx.rgn[RGN_CHIP].end = ctx.heap_end;
+        ctx.rgn[RGN_CHIP].avail = size;
+        m68k_write32(&ctx, ctx.heap_start, 0);
+        m68k_write32(&ctx, ctx.heap_start + 4, size);
+    }
+    ULONG heap_free() const { return ctx.rgn[RGN_CHIP].free; }
+    bool restored() const
+    {
+        auto *c = const_cast<M68KEmuContext *>(&ctx);
+        return heap_free() == ctx.heap_start &&
+            m68k_read32(c, ctx.heap_start + FB_SIZE) == ctx.heap_end - ctx.heap_start &&
+            m68k_read32(c, ctx.heap_start + FB_NEXT) == 0;
+    }
+};
+
+void t_heap_overflow()
+{
+    TEST("Heap size overflow rejected atomically");
+    bool ok = true;
+    const ULONG requirement_sets[] = {0, MEMF_CLEAR, (ULONG)-1};
+    const ULONG sizes[] = {
+        0x7FFFFFFFu, 0x80000000u, 0xFFFFFFF0u, 0xFFFFFFF1u,
+        0xFFFFFFF2u, 0xFFFFFFF3u, 0xFFFFFFF4u, 0xFFFFFFF5u,
+        0xFFFFFFF6u, 0xFFFFFFF7u, 0xFFFFFFF8u, 0xFFFFFFF9u,
+        0xFFFFFFFAu, 0xFFFFFFFBu, 0xFFFFFFFCu, 0xFFFFFFFDu,
+        0xFFFFFFFEu, 0xFFFFFFFFu
+    };
+    for (ULONG requirements : requirement_sets)
+        for (ULONG size : sizes)
+        {
+            HeapFixture f;
+            const auto before = f.bytes;
+            const ULONG head = f.heap_free();
+            const ULONG result = M68KEmu_HeapAlloc(&f.ctx, size, requirements);
+            if (result || f.heap_free() != head || f.bytes != before)
+            {
+                std::printf("\n    size %08x flags %08x -> %08x, changed=%d",
+                            unsigned(size), unsigned(requirements), unsigned(result),
+                            f.heap_free() != head || f.bytes != before);
+                ok = false;
+            }
+        }
+    CHK(ok, "an impossible allocation changed the heap or adjacent bytes");
+    OK();
+}
+
+void t_heap_rounding()
+{
+    TEST("Heap rounding, exact fit and OOM");
+    const ULONG sizes[] = {
+        0, 1, 2, 3, 4, 5, 7, 8, 15, 16, 17, 31, 32, 231, 232, 233,
+        235, 236, 237, 240, 244, 245, 248, 249, 250, 251, 252, 256
+    };
+    for (ULONG size : sizes)
+    {
+        HeapFixture f;
+        const auto before = f.bytes;
+        const uint64_t needed = ((uint64_t(size) + 3) / 4) * 4 + M68KEMU_HEAP_HDR;
+        const ULONG result = M68KEmu_HeapAlloc(&f.ctx, size, 0);
+        if (needed > 256)
+        {
+            CHK(!result && f.restored() && f.bytes == before, "normal OOM must not mutate the heap");
+            continue;
+        }
+        const ULONG remainder = 256 - ULONG(needed);
+        const ULONG actual = remainder >= M68KEMU_HEAP_MIN_SPLIT ? ULONG(needed) : 256;
+        const ULONG header = remainder >= M68KEMU_HEAP_MIN_SPLIT ? f.ctx.heap_end - actual : f.ctx.heap_start;
+        CHK(result == header + M68KEMU_HEAP_HDR && !(result & 3), "rounded allocation address");
+        CHK(m68k_read32(&f.ctx, header) == actual && uint64_t(result) + size <= f.ctx.heap_end,
+            "rounded size must hold all requested payload bytes");
+        CHK(std::equal(before.begin(), before.begin() + f.ctx.heap_start, f.bytes.begin()) &&
+            std::equal(before.begin() + f.ctx.heap_end, before.end(), f.bytes.begin() + f.ctx.heap_end),
+            "allocator touched bytes outside its heap");
+        M68KEmu_HeapFree(&f.ctx, result, size);
+        CHK(f.restored(), "free restores the original free chunk");
+    }
+    OK();
+}
+
+void t_heap_zero_and_coalescence()
+{
+    TEST("Heap internal zero and coalescence");
+    {
+        HeapFixture f;
+        const ULONG zero = M68KEmu_HeapAlloc(&f.ctx, 0, 0);
+        CHK(zero == f.ctx.heap_end && m68k_read32(&f.ctx, zero - M68KEMU_HEAP_HDR) == M68KEMU_HEAP_HDR,
+            "internal zero payload still reserves its header");
+        CHK(m68k_read32(&f.ctx, f.ctx.heap_start + FB_SIZE) == 256 - M68KEMU_HEAP_HDR,
+            "zero consumes only the header");
+        M68KEmu_HeapFree(&f.ctx, zero, 0);
+        CHK(f.restored(), "internal zero is still freeable");
+    }
+    {
+        HeapFixture f;
+        const ULONG a = M68KEmu_HeapAlloc(&f.ctx, 5, 0);
+        const ULONG b = M68KEmu_HeapAlloc(&f.ctx, 1, 0);
+        const ULONG z = M68KEmu_HeapAlloc(&f.ctx, 0, 0);
+        CHK(a && b && z && a != b && a != z && b != z, "distinct live header and payload reservations");
+        M68KEmu_HeapFree(&f.ctx, b, 1);
+        M68KEmu_HeapFree(&f.ctx, a, 5);
+        M68KEmu_HeapFree(&f.ctx, z, 0);
+        CHK(f.restored(), "out-of-order frees coalesce both sides including a zero payload");
+    }
+    OK();
+}
+
 int main() {
     printf("m68kemu host-side tests\n=======================\n");
     t_ctx(); t_heap(); t_stress(); t_endian(); t_xlat(); t_libbase();
+    t_heap_overflow(); t_heap_rounding(); t_heap_zero_and_coalescence();
     printf("\n%d passed, %d failed\n", pass, fail);
     return fail ? 1 : 0;
 }

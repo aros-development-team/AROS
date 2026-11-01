@@ -105,7 +105,7 @@ struct protosw inet6sw[] = {
         SOCK_DGRAM,   &inet6domain,   IPPROTO_UDP,    PR_ATOMIC | PR_ADDR,
         udp6_input,
         NULL,
-        udp_ctlinput,
+        udp6_ctlinput,
         ip6_ctloutput,
         udp6_usrreq,
         NULL,         NULL,           NULL,           NULL,
@@ -114,7 +114,7 @@ struct protosw inet6sw[] = {
     {
         SOCK_STREAM,  &inet6domain,   IPPROTO_TCP,
         PR_CONNREQUIRED | PR_IMPLOPCL | PR_WANTRCVD,
-        tcp_input,    NULL,           tcp_ctlinput,   tcp_ctloutput,
+        tcp_input,    NULL,           tcp6_ctlinput,  tcp_ctloutput,
         tcp_usrreq,
         NULL,         NULL,           NULL,           tcp_drain,
     },

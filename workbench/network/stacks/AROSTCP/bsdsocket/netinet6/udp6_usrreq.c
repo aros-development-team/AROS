@@ -58,6 +58,7 @@
 #include <netinet/in_pcb.h>
 #include <netinet/in_var.h>
 #include <netinet/udp.h>
+#include <netinet/icmp6.h>
 #include <netinet6/in6_var.h>
 
 #include <netinet/in_cksum_protos.h>
@@ -65,6 +66,7 @@
 
 /* Explicit declarations (in_pcb_protos.h has stale signatures) */
 extern int  in_pcballoc(struct socket *, struct inpcbinfo *);
+extern void icmp6_error(struct mbuf *, int, int, int);
 extern void in_pcbdetach(struct inpcb *);
 int in_pcbisipv6(struct inpcb *);             /* netinet/in_pcb.c */
 extern int  soreserve(struct socket *, u_long, u_long);
@@ -263,8 +265,13 @@ udp6_output(struct inpcb *inp, struct mbuf *m,
     ip6->ip6_vfc  = IPV6_VERSION;	/* must follow ip6_flow (they overlap) */
     ip6->ip6_plen = htons((u_short)udplen);
     ip6->ip6_nxt  = IPPROTO_UDP;
-    ip6->ip6_hlim = (inp->in6p_hops >= 0) ? (u_int8_t)inp->in6p_hops
-                    : (u_int8_t)ip6_defhlim;
+    if(IN6_IS_ADDR_MULTICAST(&faddr6))
+        ip6->ip6_hlim = inp->in6p_moptions
+            ? inp->in6p_moptions->im6o_multicast_hlim
+            : IP6_DEFAULT_MULTICAST_HLIM;
+    else
+        ip6->ip6_hlim = (inp->in6p_hops >= 0) ? (u_int8_t)inp->in6p_hops
+                        : (u_int8_t)ip6_defhlim;
     ip6->ip6_src  = laddr6;
     ip6->ip6_dst  = faddr6;
 
@@ -470,8 +477,10 @@ udp6_input(void *args, ...)
     inp = in6_pcblookup(&udb, &src6.sin6_addr, uh->uh_sport,
                         &dst6.sin6_addr, uh->uh_dport);
     if(inp == NULL) {
-        /* No match: drop */
-        m_freem(m);
+        /* No socket: Destination Unreachable, port unreachable (RFC 4443
+         * section 3.1), as udp_input() does for IPv4; icmp6_error() takes
+         * the packet, and leaves out what must not be answered */
+        icmp6_error(m, ICMP6_DST_UNREACH, ICMP6_DST_UNREACH_NOPORT, 0);
         return;
     }
 
@@ -608,6 +617,37 @@ release:
     if(m)
         m_freem(m);
     return error;
+}
+
+/* ------------------------------------------------------------------ *
+ * udp6_ctlinput - an ICMPv6 error about a UDP/IPv6 datagram we sent
+ * (icmp6_notify_error()): sa is its destination, arg an ip6ctlparam with
+ * its source and ports. A socket connected to the destination gets the
+ * error, as udp_ctlinput() gives one to an IPv4 socket.
+ * ------------------------------------------------------------------ */
+static void
+udp6_notify(struct inpcb *inp, int error)
+{
+    inp->inp_socket->so_error = error;
+    sorwakeup(inp->inp_socket);
+    sowwakeup(inp->inp_socket);
+}
+
+void
+udp6_ctlinput(int cmd, struct sockaddr *sa, void *arg)
+{
+    struct ip6ctlparam *ip6cp = arg;
+
+    /* a Packet Too Big is not an error for a datagram socket: the route
+     * keeps the path MTU, and ip6_output() fragments to it */
+    if(cmd == PRC_MSGSIZE)
+        return;
+    if(ip6cp != NULL)
+        in6_pcbnotify(&udb, (struct sockaddr_in6 *)sa, ip6cp->ip6c_dport,
+                      &ip6cp->ip6c_src, ip6cp->ip6c_sport, cmd, udp6_notify);
+    else
+        in6_pcbnotify(&udb, (struct sockaddr_in6 *)sa, 0, NULL, 0, cmd,
+                      udp6_notify);
 }
 
 #endif /* INET6 */

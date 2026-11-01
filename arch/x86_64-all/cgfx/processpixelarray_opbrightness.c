@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 2013-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/cybergraphics.h>
@@ -40,46 +40,24 @@ void ProcessPixelArrayBrightnessFunc(struct RastPort *opRast, struct Rectangle *
         __m128i *p = (__m128i*)buffer;
         ULONG simd_count = total_pixels / 4; // 4 pixels per 128-bit register
 
-        // Prepare constants
-        __m128i mask_rgb = _mm_set1_epi32(0xFFFFFF00); // mask to keep RGB channels
-        __m128i mask_alpha = _mm_set1_epi32(0x000000FF);
-        __m128i adjust;
+        /*
+         * RECTFMT_ARGB is a byte order: on x86 a pixel loaded as a 32-bit
+         * word has alpha in its low byte. The saturating add/subtract works
+         * on all 16 bytes, so the adjustment is 0 in every alpha byte.
+         */
+        LONG mag = (value >= 0) ? value : -value;
+        UBYTE amount = (mag > 255) ? 255 : mag;
+        __m128i adjust = _mm_set1_epi32(((ULONG)amount << 8) | ((ULONG)amount << 16) | ((ULONG)amount << 24));
 
         if (value >= 0) {
-            // Positive adjustment ? use saturating add
-            adjust = _mm_set1_epi8((char)value); // replicate value to all bytes
-
             for (ULONG i = 0; i < simd_count; i++) {
                 __m128i pix = _mm_loadu_si128(&p[i]);
-
-                // Separate alpha and RGB
-                __m128i alpha = _mm_and_si128(pix, mask_alpha);
-                __m128i rgb   = _mm_and_si128(pix, mask_rgb);
-
-                // Shift RGB down so each component is in its own byte (ARGB layout assumed)
-                // Add adjust to all bytes (alpha included, but we restore alpha later)
-                rgb = _mm_adds_epu8(rgb, adjust);
-
-                // Restore alpha
-                pix = _mm_or_si128(rgb, alpha);
-
-                _mm_storeu_si128(&p[i], pix);
+                _mm_storeu_si128(&p[i], _mm_adds_epu8(pix, adjust));
             }
         } else {
-            // Negative adjustment ? use saturating subtract
-            adjust = _mm_set1_epi8((char)(-value));
-
             for (ULONG i = 0; i < simd_count; i++) {
                 __m128i pix = _mm_loadu_si128(&p[i]);
-
-                __m128i alpha = _mm_and_si128(pix, mask_alpha);
-                __m128i rgb   = _mm_and_si128(pix, mask_rgb);
-
-                rgb = _mm_subs_epu8(rgb, adjust);
-
-                pix = _mm_or_si128(rgb, alpha);
-
-                _mm_storeu_si128(&p[i], pix);
+                _mm_storeu_si128(&p[i], _mm_subs_epu8(pix, adjust));
             }
         }
 

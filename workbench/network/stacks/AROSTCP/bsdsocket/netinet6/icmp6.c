@@ -134,34 +134,22 @@ icmp6_slowtimo(void)
 void icmp6_drain(void)    {}
 
 /* ------------------------------------------------------------------
- * icmp6_update_pmtu - record a discovered path MTU (RFC 8201).
- *
- * On receiving an ICMPv6 Packet Too Big, the reported next-hop MTU is stored
- * on the route to the destination that provoked the error, so ip6_output()
- * sizes subsequent datagrams to fit the bottleneck link instead of having them
- * black-holed (IPv6 routers never fragment).  The MTU is clamped to the IPv6
- * minimum and only ever lowered.
+ * icmp6_update_pmtu - record the path MTU a Packet Too Big reports for dst
+ * (RFC 8201): clamped to the IPv6 minimum; rt_pmtu_update() (route.c) puts
+ * it on dst's own route and gives it back after a while.
  * ------------------------------------------------------------------ */
 static void
 icmp6_update_pmtu(struct in6_addr *dst, u_int32_t mtu)
 {
     struct sockaddr_in6 sin6;
-    struct rtentry *rt;
 
     if(mtu < IPV6_MMTU)
         mtu = IPV6_MMTU;
-
     bzero(&sin6, sizeof(sin6));
     sin6.sin6_family = AF_INET6;
     sin6.sin6_len    = sizeof(sin6);
     sin6.sin6_addr   = *dst;
-
-    rt = rtalloc1((struct sockaddr *)&sin6, 0);
-    if(rt == NULL)
-        return;
-    if(rt->rt_rmx.rmx_mtu == 0 || mtu < rt->rt_rmx.rmx_mtu)
-        rt->rt_rmx.rmx_mtu = mtu;
-    rtfree(rt);
+    rt_pmtu_update((struct sockaddr *)&sin6, mtu);
 }
 
 /* ------------------------------------------------------------------
@@ -191,6 +179,67 @@ icmp6_echo_copy(struct mbuf *m, int off)
         return NULL;
     }
     return n;
+}
+
+/* ------------------------------------------------------------------
+ * icmp6_notify_error - pass an ICMPv6 error to the upper-layer protocol
+ * of the packet it quotes (RFC 4443 section 2.4), as KAME's
+ * icmp6_notify_error() does: that protocol's pr_ctlinput gets the quoted
+ * destination as a sockaddr_in6 and, in an ip6ctlparam, the quoted source
+ * and ports. Only an upper-layer header that follows the IPv6 header
+ * directly is found. The quoted headers are copied out, so m is left as
+ * it is for the raw sockets.
+ * ------------------------------------------------------------------ */
+static void
+icmp6_notify_error(struct mbuf *m, int off, int cmd)
+{
+    extern struct protosw inet6sw[];
+    extern u_char ip6_protox[];
+    struct ip6_hdr oip6;
+    struct sockaddr_in6 sa6;
+    struct ip6ctlparam ip6cp;
+    struct protosw *pr;
+    int qoff = off + sizeof(struct icmp6_hdr);  /* the quoted IPv6 header */
+
+    if(m->m_pkthdr.len < qoff + (int)sizeof(oip6)) {
+        icmp6stat.icp6s_tooshort++;
+        return;
+    }
+    m_copydata(m, qoff, sizeof(oip6), (caddr_t)&oip6);
+
+    bzero(&ip6cp, sizeof(ip6cp));
+    ip6cp.ip6c_src = oip6.ip6_src;
+    if((oip6.ip6_nxt == IPPROTO_TCP || oip6.ip6_nxt == IPPROTO_UDP) &&
+            m->m_pkthdr.len >= qoff + (int)sizeof(oip6) + 4) {
+        u_int16_t ports[2];     /* TCP and UDP both begin with them */
+
+        m_copydata(m, qoff + sizeof(oip6), sizeof(ports), (caddr_t)ports);
+        ip6cp.ip6c_sport = ports[0];
+        ip6cp.ip6c_dport = ports[1];
+    }
+    if(oip6.ip6_nxt == IPPROTO_TCP &&
+            m->m_pkthdr.len >= qoff + (int)sizeof(oip6) + 8) {
+        u_int32_t seq = 0;      /* after the ports */
+
+        m_copydata(m, qoff + sizeof(oip6) + 4, sizeof(seq), (caddr_t)&seq);
+        ip6cp.ip6c_seq = ntohl(seq);
+        ip6cp.ip6c_haveseq = 1;
+    }
+    if(cmd == PRC_MSGSIZE) {
+        u_int32_t mtu = 0;      /* the Packet Too Big's MTU field */
+
+        m_copydata(m, off + 4, sizeof(mtu), (caddr_t)&mtu);
+        ip6cp.ip6c_mtu = ntohl(mtu) < IPV6_MMTU ? IPV6_MMTU : ntohl(mtu);
+    }
+
+    bzero(&sa6, sizeof(sa6));
+    sa6.sin6_len    = sizeof(sa6);
+    sa6.sin6_family = AF_INET6;
+    sa6.sin6_addr   = oip6.ip6_dst;
+
+    pr = &inet6sw[ip6_protox[oip6.ip6_nxt]];
+    if(pr->pr_protocol == oip6.ip6_nxt && pr->pr_ctlinput != NULL)
+        (*pr->pr_ctlinput)(cmd, (struct sockaddr *)&sa6, &ip6cp);
 }
 
 /* ------------------------------------------------------------------
@@ -312,17 +361,50 @@ icmp6_input(void *args, ...)
              * unaligned access occurs on strict-alignment architectures. */
             bcopy(&oip6->ip6_dst, &odst, sizeof(odst));
             bcopy(&ic6->icmp6_mtu, &omtu, sizeof(omtu));
+            /* the route keeps the path MTU, which ip6_output() and a new
+             * connection's tcp_mss() use; a TCP connection under way is
+             * told too, to send smaller segments (tcp6_ctlinput()) */
             icmp6_update_pmtu(&odst, ntohl(omtu));
-            pfctlinput(PRC_MSGSIZE, (struct sockaddr *)NULL);
+            icmp6_notify_error(m, off, PRC_MSGSIZE);
             break;
         }
         return;			/* m_pullup freed the mbuf */
 
+    /*
+     * Tell the protocol of the quoted packet, with the destination it was
+     * for: not every protocol of every domain (pfctlinput()), whose IPv4
+     * handlers know no IPv6 address. The codes map as KAME's do.
+     */
     case ICMP6_DST_UNREACH:
+        switch(icmp6->icmp6_code) {
+        case ICMP6_DST_UNREACH_NOROUTE:
+        case ICMP6_DST_UNREACH_REJECT:
+            icmp6_notify_error(m, off, PRC_UNREACH_NET);
+            break;
+        case ICMP6_DST_UNREACH_ADMIN:
+        case ICMP6_DST_UNREACH_POLICY:
+            icmp6_notify_error(m, off, PRC_UNREACH_PROTOCOL);
+            break;
+        case ICMP6_DST_UNREACH_BEYONDSCOPE:
+        case ICMP6_DST_UNREACH_SRCROUTE:
+            icmp6_notify_error(m, off, PRC_UNREACH_SRCFAIL);
+            break;
+        case ICMP6_DST_UNREACH_ADDR:
+            icmp6_notify_error(m, off, PRC_HOSTDEAD);
+            break;
+        case ICMP6_DST_UNREACH_NOPORT:
+            icmp6_notify_error(m, off, PRC_UNREACH_PORT);
+            break;
+        }
+        break;
+
     case ICMP6_TIME_EXCEEDED:
+        icmp6_notify_error(m, off, icmp6->icmp6_code == ICMP6_TIME_EXCEED_TRANSIT
+                           ? PRC_TIMXCEED_INTRANS : PRC_TIMXCEED_REASS);
+        break;
+
     case ICMP6_PARAM_PROB:
-        /* notify upper layer protocols */
-        pfctlinput(PRC_UNREACH_NET, (struct sockaddr *)NULL);
+        icmp6_notify_error(m, off, PRC_PARAMPROB);
         break;
 
     default:
@@ -343,6 +425,7 @@ icmp6_error(struct mbuf *m, int type, int code, int param)
 {
     struct ip6_hdr *oip6, *nip6;
     struct icmp6_hdr *icmp6;
+    struct in6_addr osrc, odst;
     int hlen, prepend;
 
     icmp6stat.icp6s_error++;
@@ -353,11 +436,16 @@ icmp6_error(struct mbuf *m, int type, int code, int param)
 
     oip6 = mtod(m, struct ip6_hdr *);
 
-    /* never send ICMPv6 errors in response to multicast */
-    if(IN6_IS_ADDR_MULTICAST(&oip6->ip6_dst)) {
+    /* never send ICMPv6 errors in response to multicast, nor to a packet
+     * whose source does not identify a single node (RFC 4443 2.4 (e)) */
+    if(IN6_IS_ADDR_MULTICAST(&oip6->ip6_dst) ||
+            IN6_IS_ADDR_UNSPECIFIED(&oip6->ip6_src) ||
+            IN6_IS_ADDR_MULTICAST(&oip6->ip6_src)) {
         m_freem(m);
         return;
     }
+    osrc = oip6->ip6_src;
+    odst = oip6->ip6_dst;
     /* never send ICMPv6 errors in response to ICMPv6 errors */
     if(oip6->ip6_nxt == IPPROTO_ICMPV6) {
         struct icmp6_hdr *oicmp6 = (struct icmp6_hdr *)(oip6 + 1);
@@ -393,11 +481,22 @@ icmp6_error(struct mbuf *m, int type, int code, int param)
     nip6->ip6_vfc  = IPV6_VERSION;
     nip6->ip6_nxt  = IPPROTO_ICMPV6;
     nip6->ip6_hlim = ip6_defhlim;
-    nip6->ip6_dst  = oip6->ip6_src;
-    /* source: find appropriate local address */
+    nip6->ip6_dst  = osrc;
+    /*
+     * source: the address the packet was sent to, if it is one of ours
+     * (RFC 4443 2.2 (a)) - on the interface it came in on, for a link-scope
+     * one; else an address on that interface
+     */
     {
-        struct in6_ifaddr *ia = NULL;
-        if(m->m_pkthdr.rcvif) {
+        struct in6_ifaddr *ia;
+
+        for(ia = in6_ifaddr; ia; ia = ia->ia_next)
+            if(IN6_ARE_ADDR_EQUAL(&ia->ia_addr.sin6_addr, &odst) &&
+                    !(ia->ia6_ifaflags & (IN6_IFF_TENTATIVE | IN6_IFF_DUPLICATED)) &&
+                    (!IN6_IS_ADDR_LINKLOCAL(&odst) || m->m_pkthdr.rcvif == NULL ||
+                     ia->ia6_ifp == m->m_pkthdr.rcvif))
+                break;
+        if(ia == NULL && m->m_pkthdr.rcvif) {
             struct in6_addr dst_copy = nip6->ip6_dst;
             ia = in6_ifawithifp(m->m_pkthdr.rcvif, &dst_copy);
         }

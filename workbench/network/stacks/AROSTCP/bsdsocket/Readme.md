@@ -212,6 +212,12 @@ Each `tcpcb` selects an algorithm via `t_cc_algo`; `CC_ALGO(tp)` resolves it and
 NewReno if unset. The initial congestion window follows **RFC 6928 IW10**
 (`snd_cwnd = MIN(10 · mss, MAX(2 · mss, 14600))`).
 
+Loss recovery is NewReno (RFC 6582), with PRR (RFC 6937) when `tcp_do_prr` is set. A partial ACK in
+fast recovery resends the first unacknowledged segment with `cwnd` covering the bytes it
+acknowledges plus that segment (snd_una has not advanced yet), deflates `cwnd`, and is then
+processed like any ACK, so `snd_una` advances and the retransmit timer runs again, as in FreeBSD's
+`tcp_newreno_partial_ack()`.
+
 ### 5.2 SYN cache and SYN cookies
 
 `tcp_syncache.c` holds half-open connections in a hash table rather than as real sockets on the
@@ -228,7 +234,18 @@ The SYN cache is fully dual-stack (see §6).
 
 `tcp_timer.c` runs the fast (200 ms) and slow (500 ms) timers driven from the daemon: retransmit
 (with exponential backoff), persist, keepalive, 2MSL/TIME-WAIT, and delayed-ACK. `tcp_slowtimo`
-also advances the ISS clock and expires SYN-cache entries.
+also expires SYN-cache entries, and advances the ISS clock (`tcp_iss`, RFC 6528) and `tcp_now`
+every tick, whether or not there are connections: `tcp_now` is the timestamp clock (RFC 7323)
+and paces the IPv4 ICMP error rate limit (§7).
+
+### 5.4 Options in the SYN
+
+A connection asks for the MSS (§6, segment size, for IPv6), window scale and timestamps
+(RFC 7323, `tcp_do_rfc1323`) and SACK (RFC 2018, `tcp_do_sack`). ECN (`tcp_do_ecn`) is off by
+default. T/TCP (RFC 1644: the CC, CC.NEW and CC.ECHO options, the TAO cache, the shortened
+TIME-WAIT) is off by default too: RFC 6247 moved it to Historic, as it lets a SYN with a guessed
+CC skip the three-way handshake. It is still in the source, and `tcp_do_rfc1644` (sysctl
+`net.inet.tcp.rfc1644`) turns it back on.
 
 ---
 
@@ -271,6 +288,15 @@ overlay), so header building and the state machine are shared; only the family e
 - **Source address selection.** `in6_pcbconnect` selects a source via `rtalloc()` +
   `in6_ifawithifp()` (mirroring `udp6_output`); an unbound socket must not connect from the
   unspecified address (`::`), which `ip6_input` discards on receipt (RFC 4291 scope).
+- **Segment size.** `tcp_mss()` and `tcp_mssopt()` work out the MSS from the family's headers: 60
+  bytes in front of the data on IPv6 (RFC 6691), 40 on IPv4. `inp_route` cannot hold an IPv6
+  destination, so for IPv6 `tcp_rtlookup6()` looks the route up each time and the caller releases it;
+  the link is the connection's zone for a link-local peer. The MSS is the route's path MTU, else the
+  link MTU, less the headers, at most `tcp_v6mssdflt` (1220) towards a destination off the link with
+  no path MTU known, and never more than the peer's MSS option, also when no route is found. The
+  syncache's SYN-ACK advertises the same for IPv6 (`tcp_mssopt6()`), and a peer that sends no MSS is
+  taken to accept 1220 (RFC 9293 §3.7.1). `in6_localaddr()` counts an address on one of our prefixes
+  as local, as `in_localaddr()` does for IPv4.
 - **Port allocation.** `in6_pcballoclport` (IPPORT range + `in6_pcblookup` collision check) is used
   for both wildcard and explicit-address binds. An explicit `{addr, port}` bind that collides with
   an existing PCB is rejected with `EADDRINUSE` unless `SO_REUSEADDR`/`SO_REUSEPORT` is set.
@@ -349,6 +375,14 @@ interface that stays up and running, `addifent()` then makes the link-local agai
 as when the interface comes up: DAD, then a Router Solicitation, whose answer brings back the default
 route and the SLAAC addresses.
 
+While a neighbour's link-layer address is being resolved, the packets for it are queued on its
+cache entry (`ln_hold`, chained through `m_nextpkt`): up to `ND6_MAXQUEUELEN` (16), the oldest
+dropped first, all sent in order when the Neighbor Advertisement comes (RFC 4861 section 7.2.2). A
+single slot would keep only the last fragment of a datagram fragmented on its way out. When the
+resolution fails, each queued packet gets an ICMPv6 Destination Unreachable, address unreachable
+(the section says MUST); it comes back to the socket that sent the packet, so a connected one
+learns the neighbour is not there.
+
 ### 6.2 Multicast Listener Discovery (MLD)
 
 `mld6.c` is the host side of MLD. `in6_addmulti`/`in6_delmulti` maintain the `in6_multihead` list
@@ -397,10 +431,44 @@ looped back.
 IPv6 routers never fragment, so an oversized datagram is dropped and reported with ICMPv6 Packet Too
 Big. `icmp6_input` handles that type by reading the reported next-hop MTU and the quoted packet's
 destination (copied out of the packed headers into aligned locals for strict-alignment targets) and
-calling `icmp6_update_pmtu`, which records the MTU on the destination route
-(`rt_rmx.rmx_mtu`, clamped to `IPV6_MMTU`, lowered only) and notifies upper layers via
-`pfctlinput(PRC_MSGSIZE)`. `ip6_output` then caps each datagram at the route's discovered PMTU (never
-above the link MTU), so subsequent traffic fits the bottleneck link instead of being black-holed.
+calling `icmp6_update_pmtu`, which records the MTU on the destination's route
+(`rt_rmx.rmx_mtu`, clamped to `IPV6_MMTU`, lowered only). `ip6_output` caps each datagram at the
+route's discovered PMTU (never above the link MTU), so subsequent traffic fits the bottleneck link
+instead of being black-holed, and a new TCP connection takes its MSS from it (`tcp_mss`).
+
+A TCP connection under way is told too (RFC 8201 section 5.2), so that it sends smaller segments
+rather than fragments: `icmp6_notify_error()` passes the Packet Too Big to `tcp6_ctlinput()` as
+`PRC_MSGSIZE`, with the MTU and the quoted segment's sequence number in the `ip6ctlparam`. When that
+segment is still unacknowledged - anything else is old, or forged by someone who does not see the
+connection (RFC 5927 section 7.2) - `tcp_mtudisc6()` lowers `t_maxopd`/`t_maxseg` as `tcp_mss`
+would for that MTU and resends from `snd_una`, as FreeBSD's `tcp_mtudisc()`. UDP sockets ignore
+`PRC_MSGSIZE`: a datagram is fragmented to the path MTU anyway.
+
+That route is the destination's own. On the link it is the neighbour's host route, cloned by
+neighbour discovery. Through a router the table only has the router's route (a prefix, or `::/0`),
+which every destination behind it shares, so - as KAME's `icmp6_mtudisc_clone()` does - a host route
+through the same router (`RTF_HOST | RTF_GATEWAY | RTF_DYNAMIC`, the router route's metrics) is
+added for the destination and the MTU put on that. A lowered MTU is kept 10 minutes (`rmx_expire`
+says when), then the larger one is tried again (RFC 8201 section 4): `rt_pmtu_timer()` (from
+`ip_slowtimo()`) deletes a host route added for it and gives any other route its previous MTU back.
+The routes are held, with a reference, in a table of 32 (`pmtu_routes[]`, `net/route.c`, shared with
+IPv4 - §7); when it is full the one closest to expiring gives way.
+
+The other ICMPv6 errors (Destination Unreachable, Time Exceeded, Parameter Problem) go to the
+upper-layer protocol of the packet they quote, as in KAME: `icmp6_notify_error()` copies out the
+quoted IPv6 header and ports and calls that protocol's `pr_ctlinput` (`udp6_ctlinput`,
+`tcp6_ctlinput`) with the quoted destination as a `sockaddr_in6` and the source and ports in a
+`struct ip6ctlparam`. `in6_pcbnotify()` then passes the error to the IPv6 sockets connected to that
+destination from that port, as `in_pcbnotify()` does for IPv4: a connected UDP socket gets
+`ECONNREFUSED` for a Port Unreachable, and TCP keeps it as a soft error. They were once passed to
+`pfctlinput()` with no address, which reached the IPv4 handlers of every protocol, and
+`in_pcbnotify()` dereferenced the missing address: any ICMPv6 error took the stack down.
+
+On the sending side, a unicast UDP datagram for a port with no socket gets a Destination
+Unreachable, port unreachable (RFC 4443 §3.1), as `udp_input()` gives the IPv4 one. `icmp6_error()`
+sends no error about a packet to a group or from the unspecified or a multicast address (§2.4 (e)),
+and sends it from the address the offending packet was sent to when that is one of ours (§2.2 (a);
+for a link-local one, on the interface it came in on), else from an address on that interface.
 
 ### 6.4 Extension-header processing (RFC 8200)
 
@@ -488,6 +556,16 @@ then a preferred address over a deprecated one, then a temporary address over a 
   is rate-limited by a token bucket (`icmp_ratelimit`): a burst of 10 tokens refills at 5 tokens per
   500 ms slow-tick, keyed off the `tcp_now` clock; suppressed errors are counted in
   `icmpstat.icps_ratelimit`, bounding ICMP error amplification.
+- **Path MTU discovery** (RFC 1191). TCP sends with DF set (`tcp_do_pmtud`, in `tcp_output` and the
+  syncache's SYN-ACK). An ICMP "fragmentation needed" gives the next hop's MTU; an older router gives
+  0, and the next plateau below the quoted datagram's length is taken (section 7). It is never below
+  552 (`IP_PMTU_MIN`, as Linux), so a forged message cannot shrink packets further. `icmp_mtudisc()`
+  puts it on the destination's own route through `rt_pmtu_update()`, as for IPv6 (§6.3: a host route
+  through the router, given back after 10 minutes), and `ip_output` sizes packets by the route's MTU.
+  `tcp_ctlinput` (`PRC_MSGSIZE`) lowers the MSS of the connection the quoted segment belongs to,
+  when that segment is still unacknowledged (RFC 5927 section 7.2), with `tcp_mtudisc()`, shared with
+  IPv6; and when `ip_output` refuses a segment larger than the route's MTU (`EMSGSIZE`),
+  `tcp_output` does the same from the route. UDP ignores `PRC_MSGSIZE`: it does not set DF.
 - **UDP** (`udp_usrreq.c`) is the standard datagram path over the shared `udb` table. The default
   UDP receive buffer (`udp_recvspace`, 256 datagrams) and the IP input queue depth
   (`ipqmaxlen = 4·IFQ_MAXLEN`, `ip_input.c`) are sized to absorb short high-rate receive bursts
@@ -538,7 +616,10 @@ locals before summing rather than reading them through a `u_int16_t *` taken fro
   feeds queued packets into the pool of write requests as earlier ones complete, so a burst of sends
   cannot drain the request or cluster pool and wedge the interface. `sana2arp.c` implements IPv4
   ARP with a **per-interface** ARP table (each `sana_softc` has its own `ss_arp.table` under
-  `ARPTAB_LOCK`).
+  `ARPTAB_LOCK`). While an address is resolved, up to `ARP_MAXHOLD` (16) packets are queued on its
+  entry (`at_hold`, chained through `m_nextpkt`, oldest dropped first) and all are sent when the reply
+  comes, so the fragments of a datagram all leave; the request is sent again at most once a second
+  (RFC 1122 section 2.3.2.1), not for every packet queued.
 - **Tunnel pseudo-interface.** `if_stf.c` provides a deviceless 6in4 (SIT) interface that
   encapsulates IPv6 in IPv4 (protocol 41) over the existing IPv4 stack — no SANA-II device is bound.
   See §6.5.
@@ -562,6 +643,21 @@ Properties the implementation provides:
 
 - **SYN-flood resistance** via the SYN cache plus stateless cookies (§5.2).
 - **ICMP error rate limiting** via a token bucket (§7).
+- **No silent data loss on close.** Closing a TCP connection whose received data is still unread
+  resets it instead of sending a FIN (`tcp_disconnect`), and data that arrives after the close is
+  answered with a reset (`tcp_input`), so the peer learns the data was lost (RFC 9293 §3.6.1,
+  RFC 1122 §4.2.2.13).
+- **Random values from the system CSPRNG.** The ISN key (RFC 6528, also the SYN cookies'), the
+  ephemeral ports, the IPv4 IDs and IPv6 fragment identifications (RFC 7739) and the interface
+  identifiers of temporary addresses (RFC 8981) come from `kern_random()` (`kern/kern_random.c`).
+  It takes them from the C runtime's `arc4random_buf()`, which draws on `entropy.resource`, 256
+  bytes at a time into a pool it hands out and wipes: every `GetEntropy()` call gathers and
+  reseeds, too much for every packet.
+- **Unpredictable ephemeral ports.** A port the stack picks for a TCP or UDP socket, IPv4 or IPv6
+  (bind to port 0, or the implicit bind of `connect()`/`sendto()`), is a random one from the IANA
+  dynamic range 49152-65535, else the next free one after it (RFC 6056 algorithm 1,
+  `in_pcbpickport()`), so an off-path attacker cannot guess it - nor the source port of a DNS
+  query (RFC 5452). With every port in use, the bind fails with `EADDRNOTAVAIL`.
 - **Memory-pressure safety.** Because `M_WAIT` can fail (§3.3), socket-layer and protocol
   allocation sites NULL-check and return `ENOBUFS` rather than dereferencing `NULL`.
 - **Input bounds validation.** Header and length fields are validated against the actual packet

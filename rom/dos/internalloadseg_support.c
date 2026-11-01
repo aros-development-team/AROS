@@ -82,18 +82,41 @@ void register_elf(BPTR file, BPTR hunks, struct elfheader *eh, struct sheader *s
  * No DosBase = Open debug.library manually, this enables
  * us to have RDB segments in debug.library list.
  */
-void register_hunk(BPTR file, BPTR hunks, APTR header, struct DosLibrary *DOSBase)
+void register_hunk(BPTR file, BPTR hunks, APTR header, const struct HunkRelocList *relocs, struct DosLibrary *DOSBase)
 {
     struct Library *DebugBase;
     struct KernelBase *KernelBase = OpenResource("kernel.resource");
     BOOL issuper = (KernelBase && KrnIsSuper());
     if (DOSBase)
     {
+#ifndef __mc68000
+        BOOL kept = relocs && !relocs->lost;
+        ULONG ng = kept ? relocs->ngroups : 0, no = kept ? relocs->noffsets : 0;
+        struct HunkSegNode *hsn = AllocVec(sizeof(struct HunkSegNode) + ng * sizeof(struct HunkRelocGroup) + no * sizeof(ULONG), MEMF_CLEAR);
+        struct Node *segnode = hsn ? &hsn->hsn_Node : NULL;
+#else
         struct Node *segnode = AllocVec(sizeof(struct Node), MEMF_CLEAR);
+#endif
         if (segnode)
         {
             segnode->ln_Name = (char *)hunks;
             segnode->ln_Type = SEGTYPE_HUNK;
+#ifndef __mc68000
+            {
+                struct HunkRelocGroup *g = (struct HunkRelocGroup *)(hsn + 1);
+                ULONG *off = (ULONG *)(g + ng), k = 0, i;
+
+                hsn->hsn_Relocs.hrt_Groups = kept ? ng : ~0UL;
+                hsn->hsn_Relocs.hrt_Group  = g;
+                for (i = 0; i < ng; i++)
+                {
+                    g[i] = relocs->groups[i];
+                    g[i].hrg_Offsets = off + k;
+                    CopyMem(relocs->offsets + k, off + k, g[i].hrg_Count * sizeof(ULONG));
+                    k += g[i].hrg_Count;
+                }
+            }
+#endif
 
             if (issuper)
                 Forbid();

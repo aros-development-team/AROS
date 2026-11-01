@@ -203,6 +203,29 @@ struct in6_ifaddr_priv {
 };
 #define IA6_PRIV(ia)	((struct in6_ifaddr_priv *)(ia))
 
+/*
+ * What an ICMPv6 error tells the upper-layer protocol of the packet it
+ * quotes (icmp6_notify_error()): the pr_ctlinput's sockaddr is the quoted
+ * destination, and this is its arg.
+ */
+struct ip6ctlparam {
+	struct in6_addr ip6c_src;	/* the quoted packet's source (ours) */
+	u_int16_t ip6c_sport;		/* its ports, network byte order; */
+	u_int16_t ip6c_dport;		/* 0 when not known */
+	u_int32_t ip6c_seq;		/* TCP: its sequence number, host order */
+	int ip6c_haveseq;		/* ip6c_seq was quoted */
+	u_int32_t ip6c_mtu;		/* PRC_MSGSIZE: the path MTU, >= IPV6_MMTU */
+};
+struct inpcb;
+struct inpcbhead;
+struct sockaddr;
+struct sockaddr_in6;
+void in6_pcbnotify(struct inpcbhead *, const struct sockaddr_in6 *, u_int,
+                   const struct in6_addr *, u_int, int,
+                   void (*)(struct inpcb *, int));
+void udp6_ctlinput(int, struct sockaddr *, void *);
+void tcp6_ctlinput(int, struct sockaddr *, void *);
+
 /* Privacy extensions (RFC 4941) */
 extern int ip6_use_tempaddr;   /* enable temporary addresses (0=off, 1=on) */
 struct nd_prefix;  /* forward declaration for prototype below */

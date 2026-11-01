@@ -1,4 +1,4 @@
-# Copyright (C) 2003-2020, The AROS Development Team. All rights reserved.
+# Copyright (C) 2003-2026, The AROS Development Team. All rights reserved.
 
 include $(SRCDIR)/config/aros.cfg
 
@@ -21,7 +21,8 @@ USER_INCLUDES = -I$(TOP)/$(CURDIR) -I$(SRCDIR)/$(CURDIR)
 
 #MM- workbench-system : workbench-system-aboutaros
 #MM workbench-system-aboutaros : includes linklibs \
-#MM     workbench-system-aboutaros-catalogs
+#MM     workbench-system-aboutaros-catalogs \
+#MM     workbench-classes-zune-qrcode
 
 #MM- clean :  aboutaros-clean
 

@@ -45,6 +45,7 @@
 #include <net/rtsock_protos.h>
 
 #include <devices/sana2.h>
+#include <protos/kern/kern_random_protos.h>
 
 struct in6_ifaddr *in6_ifaddr = NULL;
 struct ifqueue    ip6intrq    = {0};
@@ -490,8 +491,15 @@ in6_localaddr(struct in6_addr *in6)
     if(IN6_IS_ADDR_LOOPBACK(in6) || IN6_IS_ADDR_LINKLOCAL(in6))
         return 1;
 
+    /* on a link we have an address on, as in_localaddr() for IPv4 and KAME */
     for(ia = in6_ifaddr; ia; ia = ia->ia_next) {
-        if(IN6_ARE_ADDR_EQUAL(in6, &ia->ia_addr.sin6_addr))
+        int i;
+
+        for(i = 0; i < 16; i++)
+            if((in6->s6_addr[i] ^ ia->ia_addr.sin6_addr.s6_addr[i]) &
+                    ia->ia_prefixmask.sin6_addr.s6_addr[i])
+                break;
+        if(i == 16)
             return 1;
     }
     return 0;
@@ -987,33 +995,15 @@ in6_ifdetach(struct ifnet *ifp)
  * ================================================================== */
 
 /*
- * Generate a random interface identifier for temporary addresses (RFC 4941).
- * Uses AROS-available entropy sources.
+ * A random interface identifier for a temporary address (RFC 8981 section
+ * 3.3.1), from the C runtime's arc4random_buf() through kern_random.c: a
+ * xorshift generator seeded from the clock and the task address made them
+ * guessable, and a temporary address is there so that it cannot be.
  */
 static void
 in6_generate_random_iid(struct in6_addr *addr)
 {
-    u_int32_t *p = (u_int32_t *)&addr->s6_addr[8];
-    static u_int32_t rstate1 = 0, rstate2 = 0;
-
-    /* seed from available entropy if needed */
-    if(rstate1 == 0) {
-        struct timeval _tv;
-        GetSysTime(&_tv);
-        rstate1 = (u_int32_t)(IPTR)FindTask(NULL) ^ 0xdeadbeef;
-        rstate2 = (u_int32_t)(_tv.tv_sec * 1000000 + _tv.tv_usec) ^ 0xcafebabe;
-    }
-
-    /* xorshift64 */
-    rstate1 ^= rstate1 << 13;
-    rstate1 ^= rstate1 >> 7;
-    rstate1 ^= rstate1 << 17;
-    rstate2 ^= rstate2 << 13;
-    rstate2 ^= rstate2 >> 7;
-    rstate2 ^= rstate2 << 17;
-
-    p[0] = rstate1;
-    p[1] = rstate2;
+    kern_random(&addr->s6_addr[8], 8);
 
     /* clear the universal/local bit (RFC 4941 §3.2.1) - set to "local" */
     addr->s6_addr[8] &= ~0x02;

@@ -3539,21 +3539,27 @@ fi
 { printf '%s\n' "$as_me:${as_lineno-$LINENO}: result: $target" >&5
 printf '%s\n' "$target" >&6; }
 
+# Record the build and source directories by their real paths, symlinks
+# resolved: TOP prefixes every target in the .d dependency files, and make
+# matches targets as strings, so a directory configured once through a
+# symlink and once directly would leave the old rules matching nothing.
 if test "$host_os" = "mingw32" ; then
     PWDCMD="pwd -W"
+else
+    PWDCMD="pwd -P"
 fi
 
 # Don't know where else to put this...
 { printf '%s\n' "$as_me:${as_lineno-$LINENO}: checking building AROS in" >&5
 printf %s "checking building AROS in... " >&6; }
-AROS_BUILDDIR=`${PWDCMD-pwd}`
-AROS_BUILDDIR_UNIX=${PWD}
+AROS_BUILDDIR=`${PWDCMD}`
+AROS_BUILDDIR_UNIX=`pwd -P`
 { printf '%s\n' "$as_me:${as_lineno-$LINENO}: result: $AROS_BUILDDIR" >&5
 printf '%s\n' "$AROS_BUILDDIR" >&6; }
 
 { printf '%s\n' "$as_me:${as_lineno-$LINENO}: checking AROS source in" >&5
 printf %s "checking AROS source in... " >&6; }
-srcpwd=`cd ${srcdir} ; ${PWDCMD-pwd}`
+srcpwd=`cd -P ${srcdir} ; ${PWDCMD}`
 SRCDIR=${srcpwd}
 { printf '%s\n' "$as_me:${as_lineno-$LINENO}: result: $SRCDIR" >&5
 printf '%s\n' "$SRCDIR" >&6; }

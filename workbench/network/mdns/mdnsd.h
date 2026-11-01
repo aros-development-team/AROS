@@ -14,6 +14,8 @@
 #include <exec/lists.h>
 #include <exec/ports.h>
 #include <exec/tasks.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 
 #include <bonami/mdns.h>
 
@@ -26,8 +28,10 @@
 struct MDNSInterface
 {
     char    mi_Name[20];
+    ULONG   mi_Index;           /* stack interface index: link identity */
     ULONG   mi_Addr;            /* 0xAABBCCDD == A.B.C.D */
-    LONG    mi_Socket;
+    struct in6_addr mi_Addr6;   /* link-local address, network byte order */
+    LONG    mi_Socket;          /* IPv4, or -1 */
 };
 
 /* A name is asked for three times, 250 ms apart, before it is announced
@@ -74,6 +78,7 @@ struct MDNSRegisteredService
     ULONG           rs_AnswerTick;  /* when an answer to a browse question
                                      * is due, or 0 for none */
     LONG            rs_AnswerIf;    /* to which interface, or -1 for all */
+    UWORD           rs_AnswerFamilies; /* pending AF_INET/AF_INET6 bit mask */
 };
 
 /* Known PTR answers retain their owner and remaining lifetime. */
@@ -93,10 +98,13 @@ struct MDNSDaemon
     struct Library         *md_SocketBase;  /* opened by this task itself */
     LONG                    md_Socket;      /* the first interface's, or -1:
                                              * "is there a link at all" */
+    LONG                    md_Socket6;     /* shared IPv6 UDP socket, or -1 */
     struct MDNSInterface    md_Ifs[MDNS_IFS_MAX];
     LONG                    md_IfCount;
     LONG                    md_SendIf;      /* interface of the packet being
                                              * handled, or -1 */
+    UWORD                   md_SendFamily;  /* AF_INET/AF_INET6, or 0 */
+    UWORD                   md_SendPad;
     UBYTE                  *md_RxBuf;       /* MDNS_MAX_PACKET bytes each */
     UBYTE                  *md_TxBuf;
     ULONG                   md_HostAddr;    /* the first interface's */
@@ -122,18 +130,24 @@ struct MDNSDaemon
 
     /*
      * Where the answer being sent goes when it is not for the group: to
-     * the one who asked (RFC 6762 sections 5.4 and 6.7). md_ReplyAddr is 0
-     * for the group. md_ReplyLegacy: the question came from another port
+     * the one who asked (RFC 6762 sections 5.4 and 6.7). md_ReplyFamily is
+     * zero for the group. md_ReplyLegacy: the question came from another port
      * than 5353, from a resolver that knows plain DNS only, and the answer
      * repeats its ID and question, lives ten seconds at most and has no
      * cache-flush bit.
      */
+    UWORD                   md_ReplyFamily; /* AF_INET or AF_INET6; 0=group */
+    UWORD                   md_ReplyPad;
     ULONG                   md_ReplyAddr;   /* 0xAABBCCDD == A.B.C.D */
+    struct in6_addr         md_ReplyAddr6;
     UWORD                   md_ReplyPort;
     UWORD                   md_ReplyId;
     BOOL                    md_ReplyLegacy;
     struct MDNSQuestion    *md_ReplyQuestion;
+    UWORD                   md_QueryFamily; /* family of the query in hand */
+    UWORD                   md_QueryPad;
     ULONG                   md_QueryAddr;   /* who sent the query in hand */
+    struct in6_addr         md_QueryAddr6;
     UWORD                   md_QueryPort;
 
     struct MDNSDiscovery   *md_Discovery;
@@ -148,6 +162,8 @@ struct MDNSDaemon
                                             /* delayed type-enumeration reply */
     LONG                    md_TypesAnswerIf;
                                             /* its interface, or -1 for all */
+    UWORD                   md_TypesAnswerFamilies;
+                                            /* pending address-family mask */
 };
 
 /* Text of at most max characters: its length, and a copy that always ends
@@ -220,6 +236,7 @@ void mdnsdServiceClose(void);
 BOOL mdnsNetRescan(struct MDNSDaemon *md);
 void mdnsNetClose(struct MDNSDaemon *md);
 BOOL mdnsNetIsOwn(struct MDNSDaemon *md, ULONG addr);
+BOOL mdnsNetIsOwn6(struct MDNSDaemon *md, const struct in6_addr *addr);
 BOOL mdnsNetSendOn(struct MDNSDaemon *md, LONG index, const UBYTE *pkt,
     LONG pktlen);
 void mdnsNetSendAll(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen);
@@ -235,7 +252,9 @@ void mdnsHostHandleProbe(struct MDNSDaemon *md,
 void mdnsHostHandleRecord(struct MDNSDaemon *md, const struct MDNSRecord *r);
 void mdnsHostFqdn(const struct MDNSDaemon *md, char *buf, LONG buflen);
 void mdnsAddrData(ULONG addr, UBYTE *data);
+void mdnsAddr6Data(const struct in6_addr *addr, UBYTE *data);
 LONG mdnsResponseBegin(struct MDNSDaemon *md, UBYTE *pkt);
+BOOL mdnsReplyIsUnicast(const struct MDNSDaemon *md);
 
 /* mdns_reg.c */
 LONG mdnsRegAdd(struct MDNSDaemon *md, struct MDNSIPCMsg *msg);
@@ -264,6 +283,8 @@ void mdnsClientReap(struct MDNSDaemon *md);
 /* mdns_packet.c */
 void mdnsHandlePacket(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
     ULONG srcaddr, UWORD srcport);
+void mdnsHandlePacket6(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
+    const struct in6_addr *srcaddr, UWORD srcport);
 #define MDNS_REFLECT_DISCOVERY  1
 #define MDNS_REFLECT_QUERY      2
 void mdnsReflectPacket(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,

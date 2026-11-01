@@ -56,11 +56,14 @@
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
 #include <netinet/ip6.h>
+#include <netinet6/in6_var.h>
 #include <netinet/in_pcb.h>
 #include <netinet/in_var.h>
 #include <netinet/ip_var.h>
 #include <netinet/ip_icmp.h>
+#include <stddef.h>		/* offsetof */
 #include <netinet/in_cksum_protos.h>
+#include <protos/net/route_protos.h>
 #include <netinet/tcp.h>
 #include <netinet/tcp_fsm.h>
 #include <netinet/tcp_seq.h>
@@ -78,6 +81,7 @@
 #include <kern/amiga_includes.h>
 
 #include <kern/kern_subr_protos.h>
+#include <protos/kern/kern_random_protos.h>
 
 /*
  * Dual-stack helper: true if the socket bound to this PCB is an AF_INET6
@@ -304,13 +308,18 @@ tcp_syncookie_validate(struct in_addr src, struct in_addr dst,
 /* patchable/settable parameters for tcp */
 int	ip_defttl = 60;				  /* default time to live for TCP segs */
 int 	tcp_mssdflt = 1460;			  /* Ethernet MSS (1500 - 40) */
+/* IPv6: the minimum link MTU less the IPv6 and TCP headers (1280 - 60); the
+ * MSS to assume when a peer sends none (RFC 9293 section 3.7.1) and the most
+ * to use towards a destination off the link with no path MTU known */
+int 	tcp_v6mssdflt = 1220;
 int 	tcp_rttdflt = TCPTV_SRTTDFLT / PR_SLOWHZ;
 int	tcp_do_rfc1323 = 1;
-int	tcp_do_rfc1644 = 1;
+int	tcp_do_rfc1644 = 0;	/* T/TCP (RFC 1644) - off: Historic, RFC 6247 */
 int	tcp_do_sack = 1;	/* enable SACK (RFC 2018) */
 int	tcp_do_newreno = 1;	/* enable NewReno (RFC 3782) */
 int	tcp_do_ecn = 0;		/* enable ECN (RFC 3168) - off by default */
 int	tcp_do_prr = 0;		/* enable PRR (RFC 6937) - off by default */
+int	tcp_do_pmtud = 1;	/* IPv4 path MTU discovery: DF on (RFC 1191) */
 static	void tcp_cleartaocache(void);
 
 extern u_char inetctlerrmap[];
@@ -331,31 +340,11 @@ void
 tcp_init()
 {
     /*
-     * Seed the ISN secret key and initial sequence number from
-     * available entropy (system time, task pointer).
+     * The ISN secret key (RFC 6528), also the SYN cookies' (tcp_syncookie_*),
+     * and the start of the ISN clock, from arc4random_buf() (kern_random.c).
      */
-    {
-        struct timeval tv;
-        APTR task;
-        u_int32_t seed;
-
-        GetSysTime(&tv);
-        task = FindTask(NULL);
-        seed = (u_int32_t)tv.tv_secs ^ ((u_int32_t)tv.tv_micro << 16)
-             ^ (u_int32_t)(IPTR)task;
-
-        /* Fill secret key with mixed entropy */
-        tcp_secret_key[0] = seed * 0x5bd1e995;
-        seed ^= seed >> 16;
-        tcp_secret_key[1] = seed * 0x85ebca6b;
-        seed ^= seed >> 13;
-        tcp_secret_key[2] = seed * 0xc2b2ae35;
-        seed ^= seed >> 16;
-        tcp_secret_key[3] = seed * 0xcc9e2d51;
-
-        /* Start tcp_iss at an unpredictable value */
-        tcp_iss = (int)(tcp_secret_key[0] ^ tcp_secret_key[2]);
-    }
+    kern_random(tcp_secret_key, sizeof(tcp_secret_key));
+    tcp_iss = (tcp_seq)kern_random32();
     tcp_ccgen = 1;
     tcp_cc_init();
     tcp_cleartaocache();
@@ -773,6 +762,8 @@ int error;
     sowwakeup(so);
 }
 
+void tcp_mtudisc(struct tcpcb *, u_int32_t);
+
 void
 tcp_ctlinput(cmd, sa, arg)
 int cmd;
@@ -782,6 +773,34 @@ void *arg;
     register struct ip *ip = arg;
     void (*notify) __P((struct inpcb *, int)) = tcp_notify;
 
+    if(cmd == PRC_MSGSIZE) {
+        /*
+         * "Fragmentation needed" (RFC 1191) about a segment of a
+         * connection under way: icmp_input() has put the path MTU on the
+         * route and in the message (icmp_mtudisc()). Only for a segment
+         * still unacknowledged - anything else is old, or forged blind
+         * (RFC 5927 section 7.2) - the connection sends smaller ones.
+         */
+        const struct icmp *icp;
+        struct tcphdr *th;
+        struct inpcb *inp;
+        struct tcpcb *tp;
+        tcp_seq seq;
+
+        if(ip == NULL)
+            return;
+        icp = (const struct icmp *)((caddr_t)ip - offsetof(struct icmp, icmp_ip));
+        th = (struct tcphdr *)((caddr_t)ip + (ip->ip_hl << 2));
+        inp = in_pcblookup(&tcb, ip->ip_dst, th->th_dport, ip->ip_src,
+                           th->th_sport, 0);
+        if(inp == NULL || (tp = intotcpcb(inp)) == NULL)
+            return;
+        seq = ntohl(th->th_seq);
+        if(SEQ_LT(seq, tp->snd_una) || SEQ_GEQ(seq, tp->snd_max))
+            return;
+        tcp_mtudisc(tp, ntohs(icp->icmp_nextmtu));
+        return;
+    }
     if(cmd == PRC_QUENCH)
         notify = tcp_quench;
     else if(!PRC_IS_REDIRECT(cmd) &&
@@ -794,6 +813,90 @@ void *arg;
                      cmd, notify);
     } else
         in_pcbnotify(&tcb, sa, 0, zeroin_addr, 0, cmd, notify);
+}
+
+#if INET6
+
+/*
+ * tcp6_ctlinput - an ICMPv6 error about a TCP/IPv6 segment we sent
+ * (icmp6_notify_error()): sa is its destination, arg an ip6ctlparam with
+ * its source and ports. tcp_notify() keeps it as a soft error; a Packet
+ * Too Big (PRC_MSGSIZE) about a segment still unacknowledged makes the
+ * connection send smaller ones (tcp_mtudisc()).
+ */
+void
+tcp6_ctlinput(int cmd, struct sockaddr *sa, void *arg)
+{
+    struct ip6ctlparam *ip6cp = arg;
+
+    if(cmd == PRC_MSGSIZE) {
+        /* a Packet Too Big about a segment of a connection under way */
+        struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)sa;
+        struct inpcb *inp;
+        struct tcpcb *tp;
+
+        if(ip6cp == NULL || !ip6cp->ip6c_haveseq)
+            return;
+        inp = in6_pcblookup(&tcb, &sin6->sin6_addr, ip6cp->ip6c_dport,
+                            &ip6cp->ip6c_src, ip6cp->ip6c_sport);
+        if(inp == NULL || (tp = intotcpcb(inp)) == NULL)
+            return;
+        /* only for a segment that is still unacknowledged: anything else
+         * is old, or forged blind (RFC 5927 section 7.2) */
+        if(SEQ_LT(ip6cp->ip6c_seq, tp->snd_una) ||
+                SEQ_GEQ(ip6cp->ip6c_seq, tp->snd_max))
+            return;
+        tcp_mtudisc(tp, ip6cp->ip6c_mtu);
+        return;
+    }
+    if(ip6cp != NULL)
+        in6_pcbnotify(&tcb, (struct sockaddr_in6 *)sa, ip6cp->ip6c_dport,
+                      &ip6cp->ip6c_src, ip6cp->ip6c_sport, cmd, tcp_notify);
+    else
+        in6_pcbnotify(&tcb, (struct sockaddr_in6 *)sa, 0, NULL, 0, cmd,
+                      tcp_notify);
+}
+#endif
+
+/*
+ * tcp_mtudisc - the path to tp's peer takes packets of at most mtu bytes
+ * (RFC 1191, RFC 8201 section 5.2): send segments that fit, and resend
+ * what was not acknowledged, as FreeBSD's tcp_mtudisc() does. With mtu 0,
+ * the MTU is the connection's route's (IPv4, after ip_output() said
+ * EMSGSIZE). The MSS is set as tcp_mss() sets it; only ever lowered.
+ */
+void
+tcp_mtudisc(struct tcpcb *tp, u_int32_t mtu)
+{
+    int hdrs = sizeof(struct tcpiphdr), mss;
+
+#if INET6
+    if(tcp_isipv6(tp->t_inpcb))
+        hdrs = sizeof(struct ip6_hdr) + sizeof(struct tcphdr);
+    else
+#endif
+    if(mtu == 0) {
+        struct rtentry *rt = tp->t_inpcb->inp_route.ro_rt;
+
+        if(rt == NULL)
+            return;
+        mtu = rt->rt_rmx.rmx_mtu ? rt->rt_rmx.rmx_mtu :
+              rt->rt_ifp ? rt->rt_ifp->if_mtu : 0;
+    }
+    mss = (int)mtu - hdrs;
+
+    if(mss <= 0 || mss >= tp->t_maxopd)
+        return;
+    tp->t_maxopd = mss;
+    if((tp->t_flags & (TF_REQ_TSTMP | TF_NOOPT)) == TF_REQ_TSTMP &&
+            (tp->t_flags & TF_RCVD_TSTMP) == TF_RCVD_TSTMP)
+        mss -= TCPOLEN_TSTAMP_APPA;
+    if(mss >= tp->t_maxseg)
+        return;
+    tp->t_maxseg = mss;
+    tp->t_rtt = 0;                  /* do not time the resent segment */
+    tp->snd_nxt = tp->snd_una;
+    (void)tcp_output(tp);
 }
 
 /*
@@ -840,6 +943,28 @@ struct inpcb *inp;
     }
     return rt;
 }
+
+#if INET6
+/*
+ * tcp_rtlookup6 - the route to an IPv6 connection's peer. inp_route has no
+ * room for an IPv6 destination, so the route is looked up each time and
+ * comes back with a reference the caller drops with rtfree(). NULL if there
+ * is no peer or no route.
+ */
+struct rtentry *
+tcp_rtlookup6(struct inpcb *inp)
+{
+    struct sockaddr_in6 dst;
+
+    if(IN6_IS_ADDR_UNSPECIFIED(&inp->inp_faddr6))
+        return NULL;
+    bzero(&dst, sizeof(dst));
+    dst.sin6_family = AF_INET6;
+    dst.sin6_len    = sizeof(dst);
+    dst.sin6_addr   = inp->inp_faddr6;
+    return rtalloc1((struct sockaddr *)&dst, 1);
+}
+#endif
 
 /*
  * Return a pointer to the cached information about the remote host.

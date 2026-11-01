@@ -97,9 +97,10 @@ int driver_init(struct GfxBase * GfxBase)
     __IHidd_Sync     = OOP_ObtainAttrBase(IID_Hidd_Sync);
     __IHidd_PixFmt   = OOP_ObtainAttrBase(IID_Hidd_PixFmt);
     __IHidd_PlanarBM = OOP_ObtainAttrBase(IID_Hidd_PlanarBM);
+    __IHidd_Compositor = OOP_ObtainAttrBase(IID_Hidd_Compositor);
 
     if (__IHidd_Gfx && __IHidd_Display && __IHidd_DMEnum && __IHidd_BitMap &&
-        __IHidd_GC && __IHidd_Sync && __IHidd_PixFmt && __IHidd_PlanarBM)
+        __IHidd_GC && __IHidd_Sync && __IHidd_PixFmt && __IHidd_PlanarBM && __IHidd_Compositor)
     {
         OOP_Class *baseGfx;
 

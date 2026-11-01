@@ -27,18 +27,39 @@ _Pragma("GCC target(\"ssse3\")")
 #define cpuid(num, subnum) \
     do { asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(num),"c"(subnum)); } while(0)
 
+/*
+ * AVX2 is usable when the CPU has it and the kernel saves the YMM state
+ * (OSXSAVE set, XCR0 enabling both SSE and AVX state). The answer cannot
+ * change, so it is worked out once.
+ */
 static int has_avx2(void)
 {
-    ULONG eax, ebx, ecx, edx;
-    int _ret = 0;
-    cpuid(0x00000001, 0x0);
-    _ret = (ecx & (1 << 28)) != 0; // Bit 28 of ECX = AVX
-    if (_ret)
+    static int state = -1;
+
+    if (state < 0)
     {
-        cpuid(0x00000007, 0x0); // subleaf ECX = 0
-        _ret = (ebx & (1 << 5)) != 0; // Bit 5 of EBX = AVX2
+        ULONG eax, ebx, ecx, edx;
+        int ret = 0;
+
+        cpuid(0x00000000, 0x0);
+        if (eax >= 7)
+        {
+            cpuid(0x00000001, 0x0);
+            /* Bit 27 of ECX = OSXSAVE, bit 28 = AVX */
+            if ((ecx & ((1 << 27) | (1 << 28))) == ((1 << 27) | (1 << 28)))
+            {
+                asm volatile("xgetbv" : "=a"(eax), "=d"(edx) : "c"(0));
+                if ((eax & 0x6) == 0x6)
+                {
+                    cpuid(0x00000007, 0x0);
+                    ret = (ebx & (1 << 5)) != 0;    /* Bit 5 of EBX = AVX2 */
+                }
+            }
+        }
+        state = ret;
     }
-    return _ret;
+
+    return state;
 }
 
 void ProcessPixelArrayBlurFunc_AVX(struct RastPort *opRast, struct Rectangle *opRect, LONG value, struct Library *CyberGfxBase);
@@ -62,6 +83,12 @@ static void build_gaussian_kernel(float *kernel, int radius)
     for (int i = 0; i < kernelSize; i++)
         kernel[i] /= (float)sum;
 }
+
+/*
+ * The SIMD lanes round as the scalar edges do, (int)(v + 0.5): truncating
+ * conversion after adding 0.5. (Rounding conversion after adding 0.5 would
+ * round twice and make a flat area of odd value one brighter.)
+ */
 
 /* SSE2 helper to clamp 32-bit signed integers to 0-255 range */
 static inline __m128i clamp_0_255_epi32(__m128i val)
@@ -138,10 +165,10 @@ static void gaussian_horizontal_sse2(ULONG *dst, const ULONG *src, int w, int h,
                 acc_b = _mm_add_ps(acc_b, _mm_mul_ps(_mm_cvtepi32_ps(b_i), wgt));
             }
 
-            __m128i a32 = _mm_cvtps_epi32(_mm_add_ps(acc_a, half));
-            __m128i r32 = _mm_cvtps_epi32(_mm_add_ps(acc_r, half));
-            __m128i g32 = _mm_cvtps_epi32(_mm_add_ps(acc_g, half));
-            __m128i b32 = _mm_cvtps_epi32(_mm_add_ps(acc_b, half));
+            __m128i a32 = _mm_cvttps_epi32(_mm_add_ps(acc_a, half));
+            __m128i r32 = _mm_cvttps_epi32(_mm_add_ps(acc_r, half));
+            __m128i g32 = _mm_cvttps_epi32(_mm_add_ps(acc_g, half));
+            __m128i b32 = _mm_cvttps_epi32(_mm_add_ps(acc_b, half));
 
             /* Clamp to 0-255 using SSE2-compatible operations */
             a32 = clamp_0_255_epi32(a32);
@@ -237,10 +264,10 @@ static void gaussian_vertical_sse2(ULONG *dst, const ULONG *src, int w, int h, c
                 acc_b = _mm_add_ps(acc_b, _mm_mul_ps(_mm_cvtepi32_ps(b_i), wgt));
             }
 
-            __m128i a32 = _mm_cvtps_epi32(_mm_add_ps(acc_a, half));
-            __m128i r32 = _mm_cvtps_epi32(_mm_add_ps(acc_r, half));
-            __m128i g32 = _mm_cvtps_epi32(_mm_add_ps(acc_g, half));
-            __m128i b32 = _mm_cvtps_epi32(_mm_add_ps(acc_b, half));
+            __m128i a32 = _mm_cvttps_epi32(_mm_add_ps(acc_a, half));
+            __m128i r32 = _mm_cvttps_epi32(_mm_add_ps(acc_r, half));
+            __m128i g32 = _mm_cvttps_epi32(_mm_add_ps(acc_g, half));
+            __m128i b32 = _mm_cvttps_epi32(_mm_add_ps(acc_b, half));
 
             /* Clamp to 0-255 using SSE2-compatible operations */
             a32 = clamp_0_255_epi32(a32);
@@ -449,10 +476,10 @@ static void box_blur_sse2(ULONG *dst, const ULONG *src, int w, int h, int radius
             __m128 g = _mm_div_ps(_mm_cvtepi32_ps(acc_g), count);
             __m128 b = _mm_div_ps(_mm_cvtepi32_ps(acc_b), count);
 
-            __m128i a32 = _mm_cvtps_epi32(_mm_add_ps(a, half));
-            __m128i r32 = _mm_cvtps_epi32(_mm_add_ps(r, half));
-            __m128i g32 = _mm_cvtps_epi32(_mm_add_ps(g, half));
-            __m128i b32 = _mm_cvtps_epi32(_mm_add_ps(b, half));
+            __m128i a32 = _mm_cvttps_epi32(_mm_add_ps(a, half));
+            __m128i r32 = _mm_cvttps_epi32(_mm_add_ps(r, half));
+            __m128i g32 = _mm_cvttps_epi32(_mm_add_ps(g, half));
+            __m128i b32 = _mm_cvttps_epi32(_mm_add_ps(b, half));
 
             /* Clamp to 0-255 using SSE2-compatible operations */
             a32 = clamp_0_255_epi32(a32);

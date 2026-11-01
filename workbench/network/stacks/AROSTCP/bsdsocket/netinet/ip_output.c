@@ -62,30 +62,21 @@
 
 #include <kern/amiga_subr.h>
 #include <kern/amiga_includes.h>
+#include <protos/kern/kern_random_protos.h>
 
 /*
- * Randomized IP ID generation (xorshift32 PRNG).
- * Prevents IP ID prediction attacks / idle scanning.
+ * Random IP IDs, against ID prediction (idle scans, blind fragment
+ * injection; RFC 7739 section 5), from the C runtime's arc4random_buf()
+ * through kern_random.c. A xorshift generator here gave its state away in a
+ * few IDs.
  */
-static u_int32_t ip_prng_state = 1;
-
 static u_int16_t
 ip_randomid(void)
 {
-	u_int32_t x = ip_prng_state;
-	if(x <= 1) {
-		/* Seed from available entropy on first call */
-		struct timeval tv;
-		GetSysTime(&tv);
-		x = (u_int32_t)tv.tv_secs ^ ((u_int32_t)tv.tv_micro << 16)
-		    ^ (u_int32_t)(IPTR)FindTask(NULL);
-		if(x == 0) x = 0xdeadbeef;
-	}
-	x ^= x << 13;
-	x ^= x >> 17;
-	x ^= x << 5;
-	ip_prng_state = x;
-	return (u_int16_t)(x & 0xffff);
+	u_int16_t id;
+
+	kern_random(&id, sizeof(id));
+	return id;
 }
 
 #ifdef vax
@@ -145,7 +136,7 @@ int	STKARGFUN ip_output(void *args, ...)
     register struct ifnet *ifp;
     register struct mbuf *m = m0;
     register int hlen = sizeof(struct ip);
-    int len, off, error = 0;
+    int len, off, error = 0, mtu;
     struct route iproute;
     struct sockaddr_in *dst;
     struct in_ifaddr *ia;
@@ -430,9 +421,18 @@ sendit:
     }
 
     /*
-     * If small enough for interface, can just send directly.
+     * The MTU: the interface's, or the path MTU the route has learned
+     * (RFC 1191) if that is smaller, as in ip6_output().
      */
-    if((u_short)ip->ip_len <= ifp->if_mtu) {
+    mtu = ifp->if_mtu;
+    if(ro->ro_rt != NULL && ro->ro_rt->rt_rmx.rmx_mtu != 0 &&
+            ro->ro_rt->rt_rmx.rmx_mtu < (u_long)mtu)
+        mtu = (int)ro->ro_rt->rt_rmx.rmx_mtu;
+
+    /*
+     * If small enough for the path, can just send directly.
+     */
+    if((u_short)ip->ip_len <= mtu) {
         ip->ip_len = htons((u_short)ip->ip_len);
         ip->ip_off = htons((u_short)ip->ip_off);
         ip->ip_sum = 0;
@@ -450,7 +450,7 @@ sendit:
         ipstat.ips_cantfrag++;
         goto bad;
     }
-    len = (ifp->if_mtu - hlen) & ~ 7;
+    len = (mtu - hlen) & ~ 7;
     if(len < 8) {
         error = EMSGSIZE;
         goto bad;

@@ -178,6 +178,8 @@ struct RastPort *MyCloneRastPort(struct IntuitionBase *IntuitionBase, struct Ras
         if (newrp)
         {
             CopyMem(rp, newrp, sizeof(struct RastPort));
+            /* graphics' private data stays with the original */
+            newrp->RP_Extra = NULL;
         }
     }
 
@@ -186,11 +188,12 @@ struct RastPort *MyCloneRastPort(struct IntuitionBase *IntuitionBase, struct Ras
 
 void MyFreeRastPort(struct IntuitionBase *IntuitionBase, struct RastPort *rp)
 {
-    if (rp->RP_Extra)
-    {
-        /* Just in case... What if someone plays with ClipRects? */
+    /*
+     * graphics' private data, when it belongs to this RastPort (its first
+     * field is the RastPort): a copy of another RastPort shares the pointer.
+     */
+    if (rp->RP_Extra && (*(struct RastPort **)rp->RP_Extra == rp))
         FreeVec(rp->RP_Extra);
-    }
 
     FreeMem(rp, sizeof(*rp));
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2012-2026, The AROS Development Team.  All rights reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
@@ -42,6 +42,12 @@ struct PrinterUnit {
         BYTE pt_CRLF;
         BYTE pt_Spacing;
     } pu_Text;
+
+    /* What is being printed, passed on to the output device (PRD_SETJOBINFO)
+       when it lists the command; one job per unit, the last opener's */
+    BOOL                pu_JobInfoSupported;
+    TEXT                pu_JobApplication[64];
+    TEXT                pu_JobDocument[128];
 };
 
 /*********************************************************************************************/

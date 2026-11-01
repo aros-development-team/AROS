@@ -58,6 +58,9 @@ void in_pcbsetv4mapped(struct inpcb *);
 #include <kern/amiga_includes.h>
 #include <kern/uipc_socket2_protos.h>
 
+extern int tcp_v6mssdflt;
+extern int tcp_do_pmtud;
+int tcp_mssopt6(const struct ifnet *, const struct in6_addr *);
 extern int ip_defttl;			/* default TTL for TCP segments */
 
 /* Negotiated/observed options carried for a half-open connection. */
@@ -318,11 +321,19 @@ syncache_respond(struct syncache *sc)
     u_char opt[TCP_MAXOLEN];
     int optlen, tlen, win;
 
-    /* MSS option (we advertise the Ethernet default; no per-SYN route work). */
+    /* MSS option: the Ethernet default for IPv4; for IPv6, the MTU of the
+     * peer's link less the IPv6 and TCP headers (RFC 6691), as a SYN of ours
+     * would say (tcp_mssopt6()) */
     opt[0] = TCPOPT_MAXSEG;
     opt[1] = TCPOLEN_MAXSEG;
     {
-        u_int16_t mss = htons((u_int16_t)tcp_mssdflt);
+        u_int16_t mss;
+#if INET6
+        if (sc->sc_isipv6)
+            mss = htons((u_int16_t)tcp_mssopt6(NULL, &sc->sc_faddr6));
+        else
+#endif
+            mss = htons((u_int16_t)tcp_mssdflt);
         bcopy(&mss, opt + 2, sizeof(mss));
     }
     optlen = TCPOLEN_MAXSEG;
@@ -404,6 +415,8 @@ syncache_respond(struct syncache *sc)
     ti->ti_sum = in_cksum(m, tlen);
     ((struct ip *)ti)->ip_len = tlen;
     ((struct ip *)ti)->ip_ttl = sc->sc_ip_ttl ? sc->sc_ip_ttl : ip_defttl;
+    if(tcp_do_pmtud)            /* path MTU discovery (RFC 1191) */
+        ((struct ip *)ti)->ip_off |= IP_DF;
 
 #ifdef ENABLE_MULTICAST
     (void) ip_output(m, (struct mbuf *)NULL, (struct route *)NULL, 0,
@@ -497,8 +510,8 @@ syncache_add(struct socket *lso, struct tcpiphdr *ti,
 
     scflags = syncache_parse(optp, optlen, ti->ti_flags,
         &peer_mss, &s_scale, &ts);
-    if (peer_mss == 0)
-        peer_mss = tcp_mssdflt;
+    if (peer_mss == 0)                  /* RFC 9293 section 3.7.1 defaults */
+        peer_mss = isipv6 ? tcp_v6mssdflt : tcp_mssdflt;
 
     /* Honour the locally enabled feature set, as the legacy path does. */
     if (!tcp_do_rfc1323)

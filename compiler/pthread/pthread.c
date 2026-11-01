@@ -27,6 +27,9 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/timer.h>
+#ifdef __AROS__
+#include <libraries/stdc.h>
+#endif
 
 #include <string.h>
 #include <stdio.h>
@@ -2678,6 +2681,20 @@ static void OnceCleanup(void *arg)
 // Constructors, destructors
 //
 
+#ifdef __AROS__
+// exit(), abort() or an unhandled signal in a thread: the program's exit code
+// has to run in the program's task (stdc.library asks it to break), so only
+// this thread ends
+static void __pthread_TaskExit(int returncode)
+{
+    pthread_t thread = GetThreadId(GET_THIS_TASK);
+
+    (void)returncode;
+    if (thread != 0 && thread < PTHREAD_THREADS_MAX)
+        pthread_exit(PTHREAD_CANCELED);
+}
+#endif
+
 int __pthread_Init_Func(void)
 {
     DB2(bug("%s()\n", __FUNCTION__));
@@ -2693,6 +2710,9 @@ int __pthread_Init_Func(void)
     inf->task = GET_THIS_TASK;
 
     NEWLIST((struct List *)&inf->cleanup);
+#ifdef __AROS__
+    __stdc_set_taskexit(__pthread_TaskExit);
+#endif
     return TRUE;
 }
 
@@ -2709,6 +2729,9 @@ void __pthread_Exit_Func(void)
         return;
 
     __pthread_exiting = TRUE;
+#ifdef __AROS__
+    __stdc_set_taskexit(NULL);
+#endif
 
     // if we don't do this we can easily end up with unloaded code being executed
     for (i = 1; i < threads_used; i++)

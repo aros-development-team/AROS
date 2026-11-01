@@ -113,6 +113,14 @@ tcp_slowtimo()
 
     s = splnet();
 
+    /*
+     * The clocks run whether or not there are connections: tcp_now gives
+     * the timestamps (RFC 7323) and paces the ICMP rate limiter, tcp_iss
+     * is the time component of the ISNs (RFC 6528).
+     */
+    tcp_iss += TCP_ISSINCR / PR_SLOWHZ;		/* increment iss */
+    tcp_now++;					/* for timestamps */
+
     tcp_maxidle = TCPTV_KEEPCNT * tcp_keepintvl;
 
     ip = tcb.lh_first;
@@ -143,8 +151,6 @@ tcp_slowtimo()
 tpgone:
         ;
     }
-    tcp_iss += TCP_ISSINCR / PR_SLOWHZ;		/* increment iss */
-    tcp_now++;					/* for timestamps */
     syncache_timer();				/* retransmit/expire half-opens */
     splx(s);
 }

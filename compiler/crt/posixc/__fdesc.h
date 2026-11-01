@@ -37,6 +37,13 @@ typedef struct _fcb
     struct __flock_file *flock_file;    /* NULL when no lock is held */
     struct Task *flock_task;            /* Task that obtained the lock */
     int flock_mode;                     /* LOCK_SH or LOCK_EX */
+    /* Position set by lseek() beyond the end of the file, 0 when none (a
+       position past EOF is never 0). POSIX lseek() does not change the
+       file, so the DOS handle stays where it was and the gap is only
+       zero-filled when data is written there; reads at the position see
+       EOF. Maintained by the __dos64 helpers under io_lock. */
+    QUAD seekpastend;
+
 } fcb;
 
 #include <proto/exec.h>

@@ -80,6 +80,9 @@
 #include <netinet/in_cksum_protos.h>
 #include "tcp_compat.h"
 
+extern int tcp_do_pmtud;
+void tcp_mtudisc(struct tcpcb *, u_int32_t);
+
 #ifdef notyet
 extern struct mbuf *m_copypack();
 #endif
@@ -848,6 +851,8 @@ skip_sack:
         ((struct ip *)ti)->ip_len = m->m_pkthdr.len;
         ((struct ip *)ti)->ip_ttl = tp->t_inpcb->inp_ip.ip_ttl;	/* XXX */
         ((struct ip *)ti)->ip_tos = tp->t_inpcb->inp_ip.ip_tos;	/* XXX */
+        if(tcp_do_pmtud)		/* path MTU discovery (RFC 1191) */
+            ((struct ip *)ti)->ip_off |= IP_DF;
         /*
          * ECN (RFC 3168): Set the ECT(0) codepoint in the IP header
          * for ECN-capable connections, but only on freshly transmitted
@@ -883,6 +888,12 @@ out:
             } else {
                 tcp_quench(tp->t_inpcb, 0);
             }
+            return (0);
+        }
+        if(error == EMSGSIZE && !isipv6) {
+            /* DF set, and larger than the path MTU the route now has
+             * (RFC 1191): resend in segments that fit */
+            tcp_mtudisc(tp, 0);
             return (0);
         }
         if((error == EHOSTUNREACH || error == ENETDOWN)

@@ -49,17 +49,28 @@ static uint32_t calcchecksum(struct SfsBlockHeader *block, uint32_t blocksize)
 	return checksum;
 }
 
+/* Block numbers in diagnostics are relative to the SFS volume. */
+static int sfs_error(sfs_boot_dev_t *self, uint32_t block, const char *reason)
+{
+	printf("** SFS %d:%d block %lu: %s **\n",
+	       self->partition->disk, self->partition->partition,
+	       (unsigned long)block, reason);
+	return 0;
+}
+
 static int sfs_loadsector(sfs_boot_dev_t *self, uint32_t block, void *buffer)
 {
 	uint32_t sectors = self->blocksize / self->partition->info->blksz;
 	uint32_t start = self->partition->info->start;
 
 	if (block >= self->totalblocks || block > (~0U - start) / sectors)
-		return 0;
+		return sfs_error(self, block, "block address out of range");
 	start += block * sectors;
 	if (sectors - 1 > ~0U - start)
-		return 0;
-	return loadsector(start, self->partition->info->blksz, sectors, buffer);
+		return sfs_error(self, block, "block address out of range");
+	if (!loadsector(start, self->partition->info->blksz, sectors, buffer))
+		return sfs_error(self, block, "read failed");
+	return 1;
 }
 
 /* Object records have two terminated strings and word-aligned successors. */
@@ -105,16 +116,23 @@ static int sfs_findobject(sfs_boot_dev_t *self, struct SfsObject *cwd,
 		}
 		if (!sfs_loadsector(self, next, buffer))
 			break;
-		if (calcchecksum(SBH(buffer), self->blocksize))
+		if (calcchecksum(SBH(buffer), self->blocksize)) {
+			sfs_error(self, next, "invalid checksum");
 			break;
-		if (SBH(buffer)->id != SOC_ID || SBH(buffer)->ownblock != next)
+		}
+		if (SBH(buffer)->id != SOC_ID || SBH(buffer)->ownblock != next) {
+			sfs_error(self, next, "invalid object container header");
 			break;
+		}
 		o = SOC(buffer)->object;
 		end = (uint8_t *)buffer + self->blocksize;
 		while (end - (uint8_t *)o >= sizeof(*o) && o->objectnode > 0) {
 			following = sfs_nextobject(o, end);
-			if (following == NULL)
+			if (following == NULL) {
+				sfs_error(self, next, "unterminated directory record");
+				/* Stop: skipping damaged records could select a different file. */
 				goto out;
+			}
 			if ((self->casesensitive
 			     ? strcmp((char *)o->name, dirname)
 			     : strcasecmp((char *)o->name, dirname)) == 0
@@ -127,8 +145,10 @@ static int sfs_findobject(sfs_boot_dev_t *self, struct SfsObject *cwd,
 		}
 		next = SOC(buffer)->next;
 		distance++;
-		if (next == anchor)
+		if (next == anchor) {
+			sfs_error(self, next, "directory chain cycle");
 			break;
+		}
 	}
 out:
 	free(buffer);
@@ -171,18 +191,25 @@ static int get_bnode(sfs_boot_dev_t *self, uint32_t key,
 
 	buffer = malloc(self->blocksize);
 	if (buffer == NULL)
-		return 0;
+		return sfs_error(self, self->extentbnoderoot, "out of memory for extent lookup");
 	next = self->extentbnoderoot;
-	while (remaining-- != 0 && sfs_loadsector(self, next, buffer)) {
-		if (calcchecksum(SBH(buffer), self->blocksize))
-			break;
+	while (remaining != 0) {
+		if (!sfs_loadsector(self, next, buffer))
+			goto out;
+		remaining--;
+		if (calcchecksum(SBH(buffer), self->blocksize)) {
+			sfs_error(self, next, "invalid checksum");
+			goto out;
+		}
 		if (SBH(buffer)->id != SBNC_ID || SBH(buffer)->ownblock != next
 		    || SBNC(buffer)->btc.nodesize != (SBNC(buffer)->btc.isleaf
 		        ? sizeof(*result) : sizeof(struct BNode))
 		    || SBNC(buffer)->btc.nodecount >
 		       (self->blocksize - sizeof(struct SfsBNodeContainer)) /
-		       SBNC(buffer)->btc.nodesize)
-			break;
+		       SBNC(buffer)->btc.nodesize) {
+			sfs_error(self, next, "invalid extent tree records");
+			goto out;
+		}
 		bnode = NULL;
 		for (i = SBNC(buffer)->btc.nodecount - 1; i >= 0; i--) {
 			tmp = (struct BNode *)((uint8_t *)SBNC(buffer)->btc.bnode
@@ -192,17 +219,23 @@ static int get_bnode(sfs_boot_dev_t *self, uint32_t key,
 				break;
 			}
 		}
-		if (bnode == NULL)
-			break;
+		if (bnode == NULL) {
+			sfs_error(self, next, "extent key not found");
+			goto out;
+		}
 		if (SBNC(buffer)->btc.isleaf) {
-			if (bnode->key != key)
-				break;
+			if (bnode->key != key) {
+				sfs_error(self, next, "extent key not found");
+				goto out;
+			}
 			memmove(result, bnode, sizeof(*result));
 			found = 1;
-			break;
+			goto out;
 		}
 		next = bnode->data;
 	}
+	sfs_error(self, next, "extent tree depth limit reached");
+out:
 	free(buffer);
 	return found;
 }
@@ -215,7 +248,7 @@ static int sfs_loadfile(sfs_boot_dev_t * self, char *filename, void *filebuffer)
 	struct SfsExtentBNode extent, *sebn = &extent;
 
 	if (!sfs_find(self, filename, o)) {
-		printf("%s not found!\n", filename);
+		printf("Unable to load %s!\n", filename);
 		return -1;
 	}
 
@@ -225,6 +258,8 @@ static int sfs_loadfile(sfs_boot_dev_t * self, char *filename, void *filebuffer)
 
 	if ((o->bits & (OTYPE_DIR | OTYPE_LINK)) != 0
 	    || o->object.file.size > 0x7fffffffU) {
+		printf("** Unable to load %s: not a regular file or file too large **\n",
+		       filename);
 		free(buffer);
 		return -1;
 	}
@@ -232,11 +267,20 @@ static int sfs_loadfile(sfs_boot_dev_t * self, char *filename, void *filebuffer)
 	size = o->object.file.size;
 	readed = 0;
 	while (next != 0 && readed < size) {
-		if ((readed != 0 && next == o->object.file.data)
-		    || !get_bnode(self, next, sebn) || sebn->blocks == 0
+		if (readed != 0 && next == o->object.file.data) {
+			sfs_error(self, next, "extent chain cycle");
+			free(buffer);
+			return -1;
+		}
+		if (!get_bnode(self, next, sebn)) {
+			free(buffer);
+			return -1;
+		}
+		if (sebn->blocks == 0
 		    || (previous != 0 && sebn->prev != previous)
 		    || next >= self->totalblocks
 		    || sebn->blocks > self->totalblocks - next) {
+			sfs_error(self, next, "invalid extent chain");
 			free(buffer);
 			return -1;
 		}
@@ -255,7 +299,11 @@ static int sfs_loadfile(sfs_boot_dev_t * self, char *filename, void *filebuffer)
 		next = sebn->next;
 	}
 	free(buffer);
-	return readed == size ? readed : -1;
+	if (readed != size) {
+		sfs_error(self, previous, "extent chain ends before file size");
+		return -1;
+	}
+	return readed;
 }
 
 static int sfs_destroy(sfs_boot_dev_t * this)
@@ -269,7 +317,8 @@ boot_dev_t *sfs_create(struct RdbPartition *partition)
 {
 	sfs_boot_dev_t *boot;
 	void *buffer;
-	uint32_t rootblock, sectors;
+	uint32_t rootblock, sectors, failedblock = 0;
+	const char *reason = "invalid root block geometry";
 
 	if (partition->info->blksz < 512 || partition->info->blksz > 32768
 	    || (partition->info->blksz & (partition->info->blksz - 1)) != 0)
@@ -286,7 +335,11 @@ boot_dev_t *sfs_create(struct RdbPartition *partition)
 		return NULL;
 	}
 	if (!loadsector(boot->partition->info->start, boot->partition->info->blksz,
-		        1, buffer) || SBH(buffer)->id != SRB_ID) {
+		        1, buffer)) {
+		reason = "read failed";
+		goto fail;
+	}
+	if (SBH(buffer)->id != SRB_ID) {
 		printf("** Bad sfs partition or disk - %d:%d **\n",
 		       boot->partition->disk, boot->partition->partition);
 		free(buffer);
@@ -305,18 +358,31 @@ boot_dev_t *sfs_create(struct RdbPartition *partition)
 		goto fail;
 	sectors = boot->blocksize / partition->info->blksz;
 	/* RdbPartition's size is the last relative sector, not a count. */
+	reason = "volume exceeds partition";
 	if (boot->totalblocks - 1 > partition->info->size / sectors
 	    || (boot->totalblocks - 1 == partition->info->size / sectors
 	        && partition->info->size % sectors != sectors - 1))
 		goto fail;
-	if (sectors > 1 && !sfs_loadsector(boot, 0, buffer))
+	if (sectors > 1 && !sfs_loadsector(boot, 0, buffer)) {
+		reason = NULL; /* sfs_loadsector already reported the failure. */
 		goto fail;
-	if (SRB(buffer)->version != 3 || SBH(buffer)->ownblock != 0
-	    || calcchecksum(SBH(buffer), boot->blocksize))
+	}
+	reason = "invalid root block header";
+	if (SRB(buffer)->version != 3 || SBH(buffer)->ownblock != 0)
 		goto fail;
-	if (!sfs_loadsector(boot, rootblock, buffer)
-	    || SBH(buffer)->id != SOC_ID || SBH(buffer)->ownblock != rootblock
-	    || calcchecksum(SBH(buffer), boot->blocksize)
+	reason = "invalid checksum";
+	if (calcchecksum(SBH(buffer), boot->blocksize))
+		goto fail;
+	failedblock = rootblock;
+	if (!sfs_loadsector(boot, rootblock, buffer)) {
+		reason = NULL;
+		goto fail;
+	}
+	reason = "invalid checksum";
+	if (calcchecksum(SBH(buffer), boot->blocksize))
+		goto fail;
+	reason = "invalid root object container";
+	if (SBH(buffer)->id != SOC_ID || SBH(buffer)->ownblock != rootblock
 	    || !(SOC(buffer)->object->bits & OTYPE_DIR)
 	    || sfs_nextobject(SOC(buffer)->object,
 	                      (uint8_t *)buffer + boot->blocksize) == NULL)
@@ -339,8 +405,8 @@ boot_dev_t *sfs_create(struct RdbPartition *partition)
 
 	return (boot_dev_t *) boot;
 fail:
-	printf("** Unable to read valid SFS metadata - %d:%d **\n",
-	       partition->disk, partition->partition);
+	if (reason != NULL)
+		sfs_error(boot, failedblock, reason);
 	free(buffer);
 	free(boot);
 	return NULL;
