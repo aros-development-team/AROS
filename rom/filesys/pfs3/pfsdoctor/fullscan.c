@@ -344,7 +344,8 @@ error_t SearchBlocks(scanelement_t el[], uint32 seqlow, uint32 seqhigh,
 	{
 		volume.progress(1,1);
 		error = volume.getblock(&blk, i);
-		if (error == e_syntax_error)
+		if (error == e_syntax_error || error == e_block_outside_reserved ||
+			error == e_block_outside_partition)
 			continue;
 		if (error) {
 			free(blk.data);
@@ -431,7 +432,8 @@ error_t SearchBlock(uint16 bloktype, uint32 seqnr, uint32 last, uint32 datestamp
 
 		volume.progress(1,1);
 		error = volume.getblock(&blk, i);
-		if (error == e_syntax_error)
+		if (error == e_syntax_error || error == e_block_outside_reserved ||
+			error == e_block_outside_partition)
 			continue;
 		if (error) {
 			free(blk.data);
