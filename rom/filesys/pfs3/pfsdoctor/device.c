@@ -70,7 +70,7 @@ struct cache cache;
  */
 error_t InitCache(uint32 linesize, uint32 nolines)
 {
-	int i;
+	int i, allocated = 0;
 
 	/* allocate memory for the cache */
 	if (!(cache.cachelines = calloc(nolines, sizeof(struct cacheline))))
@@ -87,7 +87,13 @@ error_t InitCache(uint32 linesize, uint32 nolines)
 		if (cache.cachelines[i].data)
 		{
 			MinAddHead(&cache.LRUpool, &cache.cachelines[i]);
+			allocated++;
 		}
+	}
+	if (!allocated) {
+		free(cache.cachelines);
+		cache.cachelines = NULL;
+		return e_out_of_memory;
 	}
 	return e_none;
 }
