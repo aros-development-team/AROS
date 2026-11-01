@@ -606,7 +606,10 @@ locals before summing rather than reading them through a `u_int16_t *` taken fro
   feeds queued packets into the pool of write requests as earlier ones complete, so a burst of sends
   cannot drain the request or cluster pool and wedge the interface. `sana2arp.c` implements IPv4
   ARP with a **per-interface** ARP table (each `sana_softc` has its own `ss_arp.table` under
-  `ARPTAB_LOCK`).
+  `ARPTAB_LOCK`). While an address is resolved, up to `ARP_MAXHOLD` (16) packets are queued on its
+  entry (`at_hold`, chained through `m_nextpkt`, oldest dropped first) and all are sent when the reply
+  comes, so the fragments of a datagram all leave; the request is sent again at most once a second
+  (RFC 1122 section 2.3.2.1), not for every packet queued.
 - **Tunnel pseudo-interface.** `if_stf.c` provides a deviceless 6in4 (SIT) interface that
   encapsulates IPv6 in IPv4 (protocol 41) over the existing IPv4 stack — no SANA-II device is bound.
   See §6.5.
