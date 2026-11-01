@@ -60,6 +60,7 @@ extern void sana_remove_unseen(void);
 #include <protos/net/route_protos.h>
 
 extern struct ifnet *iface_make(struct ssconfig *ifc);
+extern ULONG __inet_network(const char *cp);      /* api/amiga_libcalls.c */
 
 LONG read_netdb(struct NetDataBase *ndb, UBYTE *fname,
                 UBYTE **errstrp, struct CSource *res,
@@ -1154,7 +1155,7 @@ addnetent(struct NetDataBase *ndb,
     LONG retval;
     IPTR Args[NDBARGS] = { 0 };
     struct NetentNode *nn;
-    struct in_addr addr;
+    ULONG net;
     int aliases;
 
 #if defined(__AROS__)
@@ -1162,8 +1163,9 @@ addnetent(struct NetDataBase *ndb,
 #endif
 
     if(rdargs = ReadArgs(NETDBTEMPLATE, Args, rdargs)) {
-        /* convert ip address */
-        if(__inet_aton((char *)Args[KNDB_DATA], &addr)) {
+        /* the network number, in host order (getnetent(3)), read as
+         * inet_network() reads it, as the BSDs do */
+        if((net = __inet_network((char *)Args[KNDB_DATA])) != INADDR_NONE) {
             nn = node_alloc(sizeof(*nn),
                             (UBYTE *)Args[KNDB_NAME],
                             (UBYTE **)Args[KNDB_ALIAS], &aliases);
@@ -1174,7 +1176,7 @@ addnetent(struct NetDataBase *ndb,
                 nn->nn_Ent.n_addrtype = AF_INET;
                 nn->nn_Ent.n_name = name;
                 nn->nn_Ent.n_aliases = (char **)alias;
-                bcopy(&addr, &nn->nn_Ent.n_net, sizeof(addr));
+                nn->nn_Ent.n_net = net;
 
                 /* Copy aliases */
                 aliascpy(nn->nn_Ent.n_name, (UBYTE *)Args[KNDB_NAME],

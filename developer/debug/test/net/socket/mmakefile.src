@@ -24,6 +24,7 @@ CUNITSOCKETTESTFILES := \
     cunit-net-mcast6 \
     cunit-net-mld6 \
     cunit-net-ndqueue6 \
+    cunit-net-netdb \
     cunit-net-pmtu4 \
     cunit-net-pmtu6 \
     cunit-net-ports \

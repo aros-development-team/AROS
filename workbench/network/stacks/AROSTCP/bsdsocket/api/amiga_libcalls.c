@@ -331,14 +331,13 @@ AROS_LH2(ULONG, Inet_MakeAddr,
  * The library routines call this routine to interpret
  * network numbers.
  */
-/*ULONG SAVEDS inet_network(
-   REG(a0, const char *cp),
-   REG(a6, struct SocketBase *libPtr))*/
-AROS_LH1(ULONG, inet_network,
-         AROS_LHA(const char *, cp, A0),
-         struct SocketBase *, libPtr, 34, UL)
+/*
+ * __inet_network - the network number cp names, in host order, with
+ * inet_network()'s rules (each part a byte, the last one rightmost: "10.1"
+ * is 0x0a01), or INADDR_NONE. Also what reads the networks database.
+ */
+ULONG __inet_network(const char *cp)
 {
-    AROS_LIBFUNC_INIT
     register u_long val, base, n;
     register char c;
     u_long parts[4], *pp = parts;
@@ -381,6 +380,17 @@ again:
         val |= parts[i] & 0xff;
     }
     return (val);
+}
+
+/*ULONG SAVEDS inet_network(
+   REG(a0, const char *cp),
+   REG(a6, struct SocketBase *libPtr))*/
+AROS_LH1(ULONG, inet_network,
+         AROS_LHA(const char *, cp, A0),
+         struct SocketBase *, libPtr, 34, UL)
+{
+    AROS_LIBFUNC_INIT
+    return __inet_network(cp);
     AROS_LIBFUNC_EXIT
 }
 

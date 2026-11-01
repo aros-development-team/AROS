@@ -74,6 +74,9 @@ taken as it is, and a localhost name (RFC 6761 section 6.3: `localhost` and the 
 `.localhost`, any case, with or without the final dot) is the loopback address - 127.0.0.1, or
 `::1` for AF_INET6 - without the host table or the DNS; `getaddrinfo()` with AF_UNSPEC gives both.
 Anything else goes to the host table and the resolver in the configured order.
+The networks table (`db/networks`) holds each network's number in host order, as
+`getnetent(3)` and the autodoc say, read with `inet_network()`'s rules (`__inet_network()`: "10.1"
+is 0x0a01), so `getnetbyaddr(127, AF_INET)` finds `loop 127`.
 
 ### 3.2 Concurrency and synchronization
 
