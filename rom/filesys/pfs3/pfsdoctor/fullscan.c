@@ -191,8 +191,7 @@ error_t Repartition(uint32 bloknr)
 
 	// read rootblock 
 	error = ReadPFS3Metadata((uint8 *)rbl,
-		ROOTBLOCK + volume.firstblock, volume.blocksize,
-		PFS3_METADATA_ROOT);
+		bloknr, volume.blocksize, PFS3_METADATA_ROOT);
 	if (error)
 		goto ret_error;
 
