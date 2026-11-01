@@ -14,6 +14,7 @@ CUNITEXEDIR := $(AROS_TESTS)/cunit/net/socket
 CUNITSOCKETTESTFILES := \
     cunit-net-addr6 \
     cunit-net-arpqueue \
+    cunit-net-canforward \
     cunit-net-cmsg \
     cunit-net-dontwait \
     cunit-net-frag6 \

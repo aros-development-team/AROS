@@ -635,6 +635,9 @@ addresses the first on the list won, whatever the destination.
   (`struct ipq`, bounded by `maxnipq`) and linked through separately allocated `struct ipqent`
   nodes — the fragment chain is kept out of the packet rather than overlaid on the IP header, so it
   is correct on 64-bit targets and a received fragment can no longer crash the stack (§10).
+- **Forwarding** (`in_canforward()`, `netinet/in.c`, also Roadshow's `In_CanForward()`): network 0,
+  the loopback network 127, multicast and class E (224/3) and link-local 169.254/16 (RFC 3927
+  section 2.7) are never forwarded or redirected to; any other unicast destination may be.
 - **ICMP** (`ip_icmp.c`) generates and processes error and informational messages. Error generation
   is rate-limited by a token bucket (`icmp_ratelimit`): a burst of 10 tokens refills at 5 tokens per
   500 ms slow-tick, keyed off the `tcp_now` clock; suppressed errors are counted in
