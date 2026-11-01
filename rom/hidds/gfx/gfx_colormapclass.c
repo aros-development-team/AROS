@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics colormap class implementation.
 */
@@ -90,6 +90,7 @@ OOP_Object *CM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         return NULL;
         
     data = OOP_INST_DATA(cl, o);
+    InitSemaphore(&data->palette_lock);
     
     data->clut.entries = numentries;
     
@@ -147,7 +148,9 @@ VOID CM__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         switch (idx)
         {
             case aoHidd_ColorMap_NumEntries:
+                ObtainSemaphoreShared(&data->palette_lock);
                 *msg->storage = data->clut.entries;
+                ReleaseSemaphore(&data->palette_lock);
                 break;
             
             default:
@@ -242,6 +245,8 @@ BOOL CM__Hidd_ColorMap__SetColors(OOP_Class *cl, OOP_Object *o,
 
     data = OOP_INST_DATA(cl, o);
 
+    ObtainSemaphore(&data->palette_lock);
+
     numnew = msg->firstColor + msg->numColors;
     
     /* See if there is enough space in the array  */
@@ -253,7 +258,10 @@ BOOL CM__Hidd_ColorMap__SetColors(OOP_Class *cl, OOP_Object *o,
         
         newmap = AllocMem(sizeof (*newmap) * numnew, MEMF_ANY);
         if (NULL == newmap)
+        {
+            ReleaseSemaphore(&data->palette_lock);
             return FALSE;
+        }
             
         memcpy(newmap, data->clut.colors, sizeof (*newmap) * data->clut.entries);
         
@@ -295,7 +303,9 @@ BOOL CM__Hidd_ColorMap__SetColors(OOP_Class *cl, OOP_Object *o,
         col ++;
         col_idx ++;
     }
-    
+
+    ReleaseSemaphore(&data->palette_lock);
+
     return TRUE;
 }
 
@@ -336,9 +346,12 @@ HIDDT_Pixel CM__Hidd_ColorMap__GetPixel(OOP_Class *cl, OOP_Object *o,
                                         struct pHidd_ColorMap_GetPixel *msg)
 {
     struct colormap_data *data;
+    HIDDT_Pixel pixel;
      
     data = OOP_INST_DATA(cl, o);
-     
+
+    ObtainSemaphoreShared(&data->palette_lock);
+
     if (msg->pixelNo < 0 || msg->pixelNo >= data->clut.entries)
     {
         D(bug("!!! Invalid msg->pixelNo (%d) in ColorMap::GetPixel(). clutentries = %d\n",
@@ -346,11 +359,15 @@ HIDDT_Pixel CM__Hidd_ColorMap__GetPixel(OOP_Class *cl, OOP_Object *o,
                 data->clut.entries));
         
         // *((ULONG *)0) = 0;
+        ReleaseSemaphore(&data->palette_lock);
         return (HIDDT_Pixel)-1;
         
     }
     
-    return data->clut.colors[msg->pixelNo].pixval;
+    pixel = data->clut.colors[msg->pixelNo].pixval;
+    ReleaseSemaphore(&data->palette_lock);
+
+    return pixel;
 }
 
 /*****************************************************************************************
@@ -393,17 +410,46 @@ BOOL CM__Hidd_ColorMap__GetColor(OOP_Class *cl, OOP_Object *o,
     struct colormap_data *data;
     
     data = OOP_INST_DATA(cl, o);
-    
+
+    ObtainSemaphoreShared(&data->palette_lock);
+
     if (msg->colorNo < 0 || msg->colorNo >= data->clut.entries)
     {
         D(bug("!!! Invalid msg->colorNo (%d) in ColorMap::GetPixel(). clutentries = %d\n",
                 msg->colorNo,
                 data->clut.entries));
                 
+        ReleaseSemaphore(&data->palette_lock);
         return FALSE;
     }
     
     *msg->colorReturn = data->clut.colors[msg->colorNo];
-    
+    ReleaseSemaphore(&data->palette_lock);
+
     return TRUE;
+}
+
+/****************************************************************************************/
+
+/* The caller keeps the owning bitmap's colormap attached throughout this copy. */
+void CM__Internal__Snapshot(OOP_Class *cl, OOP_Object *o, HIDDT_Color *colors, ULONG capacity)
+{
+    struct colormap_data *data;
+    ULONG count;
+
+    if (!capacity)
+        return;
+
+    memset(colors, 0, sizeof(*colors) * capacity);
+    if (!o)
+        return;
+
+    data = OOP_INST_DATA(cl, o);
+    ObtainSemaphoreShared(&data->palette_lock);
+
+    count = data->clut.entries < capacity ? data->clut.entries : capacity;
+    if (count)
+        memcpy(colors, data->clut.colors, sizeof(*colors) * count);
+
+    ReleaseSemaphore(&data->palette_lock);
 }

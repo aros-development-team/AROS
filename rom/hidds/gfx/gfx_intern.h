@@ -54,6 +54,7 @@ struct HWGfxData
 struct colormap_data
 {
     HIDDT_ColorLUT clut;
+    struct SignalSemaphore palette_lock;
 };
 
 struct pixfmt_data
@@ -149,6 +150,7 @@ struct mode_db {
     
     struct mode_bm orig_mode_bm;	/* Original as supplied by subclass */
     struct mode_bm checked_mode_bm;	/* After applying monitor refresh rate checks etc. */
+    struct mode_bm soft_mode_bm;       /* Software-only modes; never native scanout. */
     
 };
 
@@ -676,5 +678,8 @@ static inline APTR BMHADDCOLOR(OOP_Class *cl, OOP_Object *o, HIDDT_Color *color,
 #else
 #define BMHADDCOLOR(cl, obj, color, count) HIDD_BMHISTOGRAM_AddColorEntry(obj, color, count)
 #endif
+
+#include "gfx_palette.h"
+#include "gfx_softmodes.h"
 
 #endif /* GFX_HIDD_INTERN_H */
