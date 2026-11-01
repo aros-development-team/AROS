@@ -102,7 +102,9 @@
     }
 
     InitSemaphore(&rfcb->io_lock);
+    InitSemaphore(&rfcb->ref_lock);
     InitSemaphore(&wfcb->io_lock);
+    InitSemaphore(&wfcb->ref_lock);
 
     rfd = __getfdslot(__getfirstfd(0));
     if (rfd < 0)

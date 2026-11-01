@@ -75,6 +75,25 @@ extern APTR TaskResBase;
 /* Holds POSIXC_THREAD_OPENING while posixc_thread_enter() opens the base, so
    __posixc_publish_stdbases() knows the opener is a worker. */
 static LONG __posixc_threadbase_slot;
+static LONG __posixc_vfork_parent_slot;
+
+/* Absolute-linked callers and the worker's pertaskbase need not be the same
+   base. The launcher supplies the actual spawning context during OpenLib. */
+BOOL __posixc_set_vfork_parent(struct PosixCIntBase *parent)
+{
+    if (__posixc_vfork_parent_slot <= 0)
+        return FALSE;
+    return SetTaskStorageSlot(__posixc_vfork_parent_slot, (IPTR)parent);
+}
+
+struct PosixCIntBase *__posixc_parent_base(struct PosixCIntBase *base)
+{
+    struct PosixCIntBase *parent = __posixc_vfork_parent_slot > 0
+        ? (struct PosixCIntBase *)GetTaskStorageSlot(__posixc_vfork_parent_slot)
+        : NULL;
+    return parent ? parent : (struct PosixCIntBase *)__GM_GetBaseParent(base);
+}
+
 #define POSIXC_THREAD_OPENING ((IPTR)1)
 
 static void posixc_thread_enter(void)
@@ -141,6 +160,9 @@ static int __posixc_threadhook_init(struct PosixCIntBase *PosixCBase)
 {
     struct CRTThreadHooks *reg = __get_threadhooks(TRUE);
 
+    if (__posixc_vfork_parent_slot <= 0)
+        __posixc_vfork_parent_slot = AllocTaskStorageSlot();
+
     if (!reg)
         return TRUE;  /* Non-fatal: workers simply won't get a CRT base. */
 
@@ -166,14 +188,24 @@ static void __posixc_threadhook_expunge(struct PosixCIntBase *PosixCBase)
 {
     struct CRTThreadHooks *reg = __get_threadhooks(FALSE);
 
-    if (!reg)
+    if (!reg) {
+        if (__posixc_vfork_parent_slot > 0) {
+            FreeTaskStorageSlot(__posixc_vfork_parent_slot);
+            __posixc_vfork_parent_slot = 0;
+        }
         return;
+    }
 
     ObtainSemaphore(&reg->th_Sem);
     if (__posixc_threadhook.th_Node.mln_Succ)
     {
         Remove((struct Node *)&__posixc_threadhook.th_Node);
         __posixc_threadhook.th_Node.mln_Succ = NULL;
+    }
+    if (__posixc_vfork_parent_slot > 0)
+    {
+        FreeTaskStorageSlot(__posixc_vfork_parent_slot);
+        __posixc_vfork_parent_slot = 0;
     }
     if (__posixc_threadbase_slot > 0)
     {
@@ -216,7 +248,7 @@ static int __posixc_publish_stdbases(struct PosixCIntBase *PosixCBase)
        the absolute case __posixc_startup() overwrites the fields afterwards, so
        behaviour there is unchanged. */
     struct PosixCIntBase *pPosixCBase =
-        (struct PosixCIntBase *)__GM_GetBaseParent(PosixCBase);
+        __posixc_parent_base(PosixCBase);
     BOOL worker = __posixc_threadbase_slot > 0
         && GetTaskStorageSlot(__posixc_threadbase_slot) == POSIXC_THREAD_OPENING;
 

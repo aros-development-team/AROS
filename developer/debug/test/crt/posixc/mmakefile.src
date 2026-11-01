@@ -12,6 +12,8 @@ POSIXCTESTFILES := \
         fchdir \
         fchmod \
         fcntl \
+        fd_reservation \
+        vfork_fd \
         flock \
         flock_description \
         getfsstat \
@@ -32,6 +34,7 @@ POSIXCTESTFILES := \
         usergroup_release usergroup_release_child \
         usleep \
         vfork \
+        vfork_context \
         vfork_execl \
         wait \
         waitpid \
@@ -154,3 +157,15 @@ USER_CPPFLAGS = -D_XOPEN_SOURCE=700
 
 %build_progs mmake=test-crt-posixc-2k8 \
     files="$(POSIXC2K8TESTFILES)" targetdir=$(EXEDIR)
+
+# Finite process inheritance and table-lifetime regressions.
+#MM- test-crt-posixc : test-crt-posixc-vfork-fd-thread test-crt-posixc-close-pipe-progress
+#MM test-crt-posixc-vfork-fd-thread : includes linklibs
+#MM : includes linklibs
+#MM test-crt-posixc-close-pipe-progress : includes linklibs
+
+USER_CPPFLAGS := -D_GNU_SOURCE
+%build_prog mmake=test-crt-posixc-vfork-fd-thread \
+    progname=vfork_fd_thread files=vfork_fd_thread targetdir=$(EXEDIR) uselibs="pthread"
+%build_prog mmake=test-crt-posixc-close-pipe-progress \
+    progname=close_pipe_progress files=close_pipe_progress targetdir=$(EXEDIR) uselibs="pthread"
