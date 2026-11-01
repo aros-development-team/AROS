@@ -337,6 +337,19 @@ retry_read:
 }
 
 
+/* SCSI command fields are big-endian, independent of the host CPU. */
+static void BuildSCSI10(uint8 *command, uint8 opcode, uint32 block, uint32 count)
+{
+	memset(command, 0, 10);
+	command[0] = opcode;
+	command[2] = block >> 24;
+	command[3] = block >> 16;
+	command[4] = block >> 8;
+	command[5] = block;
+	command[7] = count >> 8;
+	command[8] = count;
+}
+
 error_t dev_GetBlocksDS(uint8 *buffer, int32 blocks, uint32 blocknr)
 {
 	uint8  cmdbuf[10];
@@ -353,10 +366,8 @@ retry_read:
 		return e_options_error;
 	while (blocks > 0)
 	{
-		transfer = min(blocks,maxtransfer);
-		*((UWORD *)&cmdbuf[0]) = 0x2800;
-		*((ULONG *)&cmdbuf[2]) = blocknr;
-		*((ULONG *)&cmdbuf[6]) = transfer<<8;
+		transfer = min(blocks, min(maxtransfer, 65535));
+		BuildSCSI10(cmdbuf, 0x28, blocknr, transfer);
 		if (!DoSCSICommand(buffer,transfer<<BLOCKSHIFT,cmdbuf,10,SCSIF_READ))
 		{
 			volume.showmsg("READ ERROR\n");
@@ -394,10 +405,8 @@ retry_write:
 		return e_options_error;
 	while (blocks > 0)
 	{
-		transfer = min(blocks,maxtransfer);
-		*((UWORD *)&cmdbuf[0]) = 0x2a00;
-		*((ULONG *)&cmdbuf[2]) = blocknr;
-		*((ULONG *)&cmdbuf[6]) = transfer<<8;
+		transfer = min(blocks, min(maxtransfer, 65535));
+		BuildSCSI10(cmdbuf, 0x2a, blocknr, transfer);
 		if (!DoSCSICommand(buffer,transfer<<BLOCKSHIFT,cmdbuf,10,SCSIF_WRITE))
 		{
 			volume.showmsg("WRITE ERROR\n");
@@ -578,22 +587,19 @@ static BOOL testread_ds(UBYTE *buffer)
 
 		fillbuffer(buffer, 0xfe);
 		/* Read Capacity */
-		*((UWORD *)&cmdbuf[0]) = 0x2500;
-		*((ULONG *)&cmdbuf[2]) = 0;
-		*((ULONG *)&cmdbuf[6]) = 0;
+		BuildSCSI10(cmdbuf, 0x25, 0, 0);
 		if (!DoSCSICommand(buffer, 8, cmdbuf, 10, SCSIF_READ)) {
 			return FALSE;
 		}
-		capacity = *((ULONG*)buffer);
+		capacity = ((ULONG)buffer[0] << 24) | ((ULONG)buffer[1] << 16)
+		    | ((ULONG)buffer[2] << 8) | buffer[3];
 
 		if (volume.lastblock > capacity) {
 			return FALSE;
 		}
 		fillbuffer(buffer, cnt);
 		/* Read(10) */
-		*((UWORD *)&cmdbuf[0]) = 0x2800;
-		*((ULONG *)&cmdbuf[2]) = volume.lastblock;
-		*((ULONG *)&cmdbuf[6]) = 1 << 8;
+		BuildSCSI10(cmdbuf, 0x28, volume.lastblock, 1);
 		if (!DoSCSICommand(buffer, 1 << BLOCKSHIFT, cmdbuf, 10, SCSIF_READ)) {
 			return FALSE;
 		}
