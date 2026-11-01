@@ -154,3 +154,8 @@ USER_CPPFLAGS = -D_XOPEN_SOURCE=700
 
 %build_progs mmake=test-crt-posixc-2k8 \
     files="$(POSIXC2K8TESTFILES)" targetdir=$(EXEDIR)
+
+#MM- test-crt-posixc : test-crt-posixc-stdio-closed
+#MM test-crt-posixc-stdio-closed : includes linklibs
+USER_CPPFLAGS := -D_GNU_SOURCE
+%build_prog mmake=test-crt-posixc-stdio-closed progname=stdio_closed files=stdio_closed targetdir=$(EXEDIR) uselibs="pthread"
