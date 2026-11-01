@@ -266,16 +266,20 @@ struct rip6_sendopts {
     struct in6_addr src;        /* IPV6_PKTINFO source, or unspecified */
     unsigned int    ifindex;    /* IPV6_PKTINFO interface, or 0 */
     int             hlim;       /* IPV6_HOPLIMIT, or -1 */
+    int             minmtu;     /* IPV6_USE_MIN_MTU, else the socket's */
+    int             dontfrag;   /* IPV6_DONTFRAG, else the socket's */
 };
 
 static int
-rip6_ctlparse(struct mbuf *control, struct rip6_sendopts *o)
+rip6_ctlparse(struct inpcb *inp, struct mbuf *control, struct rip6_sendopts *o)
 {
     struct cmsghdr *cm;
     int left;
 
     bzero(o, sizeof(*o));
     o->hlim = -1;
+    o->minmtu = IN6P_MINMTU_OPT(inp);
+    o->dontfrag = (inp->in6p_flags & IN6P_DONTFRAG) != 0;
     if(control == NULL)
         return 0;
 
@@ -306,6 +310,21 @@ rip6_ctlparse(struct mbuf *control, struct rip6_sendopts *o)
                 if(hlim < -1 || hlim > 255)
                     return EINVAL;
                 o->hlim = hlim;
+                break;
+            }
+            case IPV6_USE_MIN_MTU:      /* RFC 3542 section 11 */
+            case IPV6_DONTFRAG: {
+                int v;
+
+                if(cm->cmsg_len != CMSG_LEN(sizeof(int)))
+                    return EINVAL;
+                memcpy(&v, CMSG_DATA(cm), sizeof(int));
+                if(cm->cmsg_type == IPV6_DONTFRAG)
+                    o->dontfrag = v != 0;
+                else if(v < -1 || v > 1)
+                    return EINVAL;
+                else
+                    o->minmtu = v;
                 break;
             }
             default:
@@ -378,7 +397,7 @@ rip6_send(struct inpcb *inp, struct mbuf *m, struct mbuf *nam,
     struct ip6_hdr *ip6;
     int plen, error;
 
-    error = rip6_ctlparse(control, &o);
+    error = rip6_ctlparse(inp, control, &o);
     if(control)
         m_freem(control);
     if(error)
@@ -476,7 +495,8 @@ rip6_send(struct inpcb *inp, struct mbuf *m, struct mbuf *nam,
         oim6o.im6o_multicast_ifp = oifp;
         im6o = &oim6o;
     }
-    return ip6_output(m, (struct mbuf *)NULL, (struct route *)NULL, 0,
+    return ip6_output(m, (struct mbuf *)NULL, (struct route *)NULL,
+                      ip6_outflags(o.minmtu, o.dontfrag, &dst),
                       im6o, (struct ifnet **)NULL, inp);
 
 bad:

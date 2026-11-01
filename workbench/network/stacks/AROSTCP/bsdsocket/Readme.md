@@ -450,8 +450,24 @@ rather than fragments: `icmp6_notify_error()` passes the Packet Too Big to `tcp6
 `PRC_MSGSIZE`, with the MTU and the quoted segment's sequence number in the `ip6ctlparam`. When that
 segment is still unacknowledged - anything else is old, or forged by someone who does not see the
 connection (RFC 5927 section 7.2) - `tcp_mtudisc6()` lowers `t_maxopd`/`t_maxseg` as `tcp_mss`
-would for that MTU and resends from `snd_una`, as FreeBSD's `tcp_mtudisc()`. UDP sockets ignore
-`PRC_MSGSIZE`: a datagram is fragmented to the path MTU anyway.
+would for that MTU and resends from `snd_una`, as FreeBSD's `tcp_mtudisc()`. A UDP datagram is
+fragmented to the path MTU, unless the application does its own path MTU discovery (QUIC, RFC 9000
+section 14; RFC 8899) with the RFC 3542 section 11 options, as KAME and FreeBSD have them:
+
+- `IPV6_USE_MIN_MTU`: -1 (the default) sends multicast at 1280 bytes a packet and unicast at the
+  path MTU, 0 everything at the path MTU, 1 everything at 1280. `IPV6_DONTFRAG`: never fragment.
+  The datagram leaves whole even above the path MTU - an application probing for a larger one - and
+  is refused with `EMSGSIZE` only above the link's MTU. Both are socket options and ancillary data
+  on one datagram (UDP and raw sockets; `ip6_outflags()` turns them into `ip6_output()` flags).
+- `IPV6_RECVPATHMTU`: a Packet Too Big about a datagram the socket sent (its port, and its address
+  if bound, and its peer if connected), or a datagram refused with `IPV6_DONTFRAG`, gives the socket
+  an `IPV6_PATHMTU` message: no data, a `struct ip6_mtuinfo` with the destination and the MTU
+  (`ip6_notify_pmtu()`, from `udp6_ctlinput()`).
+- `IPV6_PATHMTU` (get): the path MTU to a connected socket's peer, as `ip6_output()` would find it
+  (`ip6_pathmtu()`).
+
+An ICMPv6 error about a link-scope destination carries the interface it came in on as the
+destination's zone (`sin6_scope_id`), so a socket bound to another interface is not told.
 
 That route is the destination's own. On the link it is the neighbour's host route, cloned by
 neighbour discovery. Through a router the table only has the router's route (a prefix, or `::/0`),
@@ -574,7 +590,9 @@ then a preferred address over a deprecated one, then a temporary address over a 
   `tcp_ctlinput` (`PRC_MSGSIZE`) lowers the MSS of the connection the quoted segment belongs to,
   when that segment is still unacknowledged (RFC 5927 section 7.2), with `tcp_mtudisc()`, shared with
   IPv6; and when `ip_output` refuses a segment larger than the route's MTU (`EMSGSIZE`),
-  `tcp_output` does the same from the route. UDP ignores `PRC_MSGSIZE`: it does not set DF.
+  `tcp_output` does the same from the route. UDP ignores `PRC_MSGSIZE`; a socket with `IP_DONTFRAG`
+  (FreeBSD's number) sends with DF, so `ip_output` refuses a datagram above the path MTU with
+  `EMSGSIZE` instead of fragmenting it.
   Where the ICMP never comes, the retransmission timer finds the black hole (§5.3). Sysctl
   `net.inet.tcp.pmtud` turns DF off.
 - **UDP** (`udp_usrreq.c`) is the standard datagram path over the shared `udb` table. The default

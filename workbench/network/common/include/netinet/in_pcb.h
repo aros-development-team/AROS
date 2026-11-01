@@ -95,6 +95,7 @@ struct inpcbinfo {
 #define	INP_RECVDSTADDR		0x04	/* receive IP dst address */
 #define	INP_CONTROLOPTS		(INP_RECVOPTS|INP_RECVRETOPTS|INP_RECVDSTADDR)
 #define	INP_HDRINCL		0x08	/* user supplies entire IP header */
+#define	INP_DONTFRAG		0x10	/* IP_DONTFRAG: DF on datagrams */
 
 #ifdef sotorawcb		/* defined in net/raw_cb.h */
 /*

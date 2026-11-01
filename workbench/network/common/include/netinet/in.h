@@ -335,6 +335,7 @@ struct ip_opts {
 #define	IP_DROP_MEMBERSHIP	13	/* drop an IP group membership */
 #define	IP_ADD_SOURCE_MEMBERSHIP 25	/* add source-specific multicast */
 #define	IP_DROP_SOURCE_MEMBERSHIP 26	/* drop source-specific multicast */
+#define	IP_DONTFRAG		67	/* bool; send datagrams with DF, never fragmented */
 
 /*
  * Argument structure for IP_ADD_MEMBERSHIP and IP_DROP_MEMBERSHIP.
@@ -514,11 +515,22 @@ struct sockaddr_in6 {
 #define IPV6_RECVHOPLIMIT	37	/* bool; recv hop limit */
 #define IPV6_CHECKSUM		26	/* int; checksum offset for raw socket */
 #define IPV6_TCLASS		36	/* int; traffic class */
+/* path MTU (RFC 3542 section 11), numbered as in FreeBSD */
+#define IPV6_USE_MIN_MTU	42	/* int; -1: 1280 for multicast, 0: path MTU, 1: 1280 */
+#define IPV6_RECVPATHMTU	43	/* bool; IPV6_PATHMTU message when the path MTU falls */
+#define IPV6_PATHMTU		44	/* ip6_mtuinfo; get: the path MTU to the peer */
+#define IPV6_DONTFRAG		62	/* bool; never fragment, EMSGSIZE above the link MTU */
 
 /* IPv6 multicast request */
 struct ipv6_mreq {
 	struct in6_addr ipv6mr_multiaddr;
 	unsigned int    ipv6mr_interface;
+};
+
+/* IPV6_PATHMTU ancillary data and option (RFC 3542 section 11.3) */
+struct ip6_mtuinfo {
+	struct sockaddr_in6 ip6m_addr;	/* the destination */
+	uint32_t	ip6m_mtu;	/* its path MTU, host byte order */
 };
 
 /* IPV6_PKTINFO ancillary data and option (RFC 3542 section 6.1) */

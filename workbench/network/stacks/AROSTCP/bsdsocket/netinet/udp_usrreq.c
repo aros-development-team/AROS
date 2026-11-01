@@ -518,6 +518,10 @@ udp_output(void *arg, ...)
     ((struct ip *)ui)->ip_len = sizeof(struct udpiphdr) + len;
     ((struct ip *)ui)->ip_ttl = inp->inp_ip.ip_ttl;	/* XXX */
     ((struct ip *)ui)->ip_tos = inp->inp_ip.ip_tos;	/* XXX */
+    /* IP_DONTFRAG: DF, so ip_output() says EMSGSIZE above the path MTU
+     * instead of fragmenting (RFC 9000 section 14, FreeBSD) */
+    if(inp->inp_flags & INP_DONTFRAG)
+        ((struct ip *)ui)->ip_off = IP_DF;
     udpstat.udps_opackets++;
     {
         int ipflags = inp->inp_socket->so_options & (SO_DONTROUTE | SO_BROADCAST);
