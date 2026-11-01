@@ -189,8 +189,11 @@ static struct cacheline *c_GetCacheLine(uint32 bloknr)
 		if (IsMinListEmpty(&cache.LRUpool))
 		{
 			cl = (struct cacheline *)cache.LRUqueue.mlh_TailPred;
-			if (cl->dirty)
+			if (cl->dirty) {
 				error = volume.writerawblocks(cl->data, cache.linesize, cl->blocknr);
+				if (error)
+					return NULL;
+			}
 		}
 		else
 		{
