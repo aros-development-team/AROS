@@ -19,6 +19,7 @@ CUNITSOCKETTESTFILES := \
     cunit-net-icmp6err \
     cunit-net-inet6 \
     cunit-net-keepalive \
+    cunit-net-localhost \
     cunit-net-mcast6 \
     cunit-net-mld6 \
     cunit-net-ndqueue6 \

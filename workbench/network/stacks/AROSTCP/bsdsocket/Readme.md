@@ -66,6 +66,13 @@ The API layer (`amiga_syscalls.c`) implements the Berkeley calls: each builds th
 socket-layer entry points (`sobind`, `soconnect`, `sosend`, `soreceive`, …), which in turn dispatch
 to the protocol via `so->so_proto->pr_usrreq(so, PRU_*, …)`.
 
+Name lookup (`gethostnamadr.c`) is what `gethostbyname()`, `gethostbyname_r()`, Miami's
+`gethostbyname2()` and both `getaddrinfo()`s (Roadshow's and Miami's) share. An address literal is
+taken as it is, and a localhost name (RFC 6761 section 6.3: `localhost` and the names within
+`.localhost`, any case, with or without the final dot) is the loopback address - 127.0.0.1, or
+`::1` for AF_INET6 - without the host table or the DNS; `getaddrinfo()` with AF_UNSPEC gives both.
+Anything else goes to the host table and the resolver in the configured order.
+
 ### 3.2 Concurrency and synchronization
 
 The stack follows the AmiTCP model of **two serialising locks**. API calls take the global

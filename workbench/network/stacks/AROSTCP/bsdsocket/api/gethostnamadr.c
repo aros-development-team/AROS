@@ -383,6 +383,59 @@ int isipaddr(const char *name)
     return (i == 3);
 }
 
+/*
+ * The localhost names (RFC 6761 section 6.3): "localhost" and the names
+ * within ".localhost", in any case, with or without the final dot. They
+ * are the loopback addresses, never looked up in the host table or the
+ * DNS.
+ */
+static int islocalhost(const char *name)
+{
+    size_t n = strnlen(name, MAXDNAME);
+
+    if(n > 0 && name[n - 1] == '.')
+        n--;
+    if(n < 9 || strncasecmp(name + n - 9, "localhost", 9) != 0)
+        return 0;
+    return n == 9 || name[n - 10] == '.';
+}
+
+static const u_char loopback4[4] = { 127, 0, 0, 1 };
+static const u_char loopback6[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 };
+
+/*
+ * hostent_literal - the base's hostent for one address of family af
+ * (4 or 16 bytes at addr) named name: hostent | address | h_addr_list[2]
+ * (whose NULL is also the empty h_aliases) | name.
+ */
+static struct hostent *hostent_literal(struct SocketBase *libPtr, int af,
+                                       const void *addr, const char *name)
+{
+    int alen = af == AF_INET6 ? sizeof(struct in6_addr) : sizeof(struct in_addr);
+    int nlen = strnlen(name, MAXDNAME) + 1;
+    char *base, **addrlist;
+
+    if(allocDataBuffer(&libPtr->hostents, sizeof(struct hostent) + ALIGN(alen) +
+                       2 * sizeof(char *) + nlen) == FALSE) {
+        writeErrnoValue(libPtr, ENOMEM);
+        h_errno = 0;
+        return NULL;
+    }
+    HOSTENT->h_addrtype = af;
+    HOSTENT->h_length = alen;
+    base = (char *)(HOSTENT + 1);
+    bcopy(addr, base, alen);
+    addrlist = (char **)(base + ALIGN(alen));
+    addrlist[0] = base;
+    addrlist[1] = NULL;
+    HOSTENT->h_addr_list = addrlist;
+    HOSTENT->h_aliases = addrlist + 1;
+    HOSTENT->h_name = (char *)(addrlist + 2);
+    memcpy(HOSTENT->h_name, name, nlen);
+    HOSTENT->h_name[nlen - 1] = '\0';
+    return HOSTENT;
+}
+
 struct hostent *__gethostbyname(const char *name, struct SocketBase *libPtr)
 {
     querybuf *buf;
@@ -402,7 +455,6 @@ struct hostent *__gethostbyname(const char *name, struct SocketBase *libPtr)
      */
     if(isipaddr(name)) {
         struct in_addr inaddr;
-        u_long *lptr;
 
 #if defined(__AROS__)
         D(bug("[AROSTCP](gethostnameadr.c) gethostbyname: name IS an IP address\n"));
@@ -413,27 +465,10 @@ struct hostent *__gethostbyname(const char *name, struct SocketBase *libPtr)
             h_errno = 0;
             return NULL;
         }
-
-        if(allocDataBuffer(&libPtr->hostents,
-                           sizeof(struct hostent) + 3 * sizeof(char *) +
-                           strnlen(name, MAXDNAME) + 1) == FALSE) {
-            writeErrnoValue(libPtr, ENOMEM);
-            h_errno = 0;
-            return NULL;
-        }
-        HOSTENT->h_addrtype = AF_INET;
-        HOSTENT->h_length = sizeof(struct in_addr);
-        lptr = (u_long *)(HOSTENT + 1);
-        *lptr++ = inaddr.s_addr;
-        *(u_long **)(lptr) = lptr - 1;
-        HOSTENT->h_addr_list = (char **)lptr;
-        *++lptr = 0;
-        HOSTENT->h_aliases = (char **)lptr;
-        HOSTENT->h_name = (char *)++lptr;
-        memcpy(HOSTENT->h_name, name, strnlen(name, MAXDNAME) + 1);
-
-        return HOSTENT;
-    } else {
+        return hostent_literal(libPtr, AF_INET, &inaddr, name);
+    } else if(islocalhost(name))
+        return hostent_literal(libPtr, AF_INET, loopback4, name);
+    else {
 #if defined(__AROS__)
         D(bug("[AROSTCP](gethostnameadr.c) gethostbyname: name ISNT an IP address\n"));
 #endif
@@ -551,6 +586,9 @@ struct hostent *__gethostbyname2(const char *name, int af, struct SocketBase *li
 
     qtype = T_AAAA;
 
+    if(islocalhost(name))
+        return hostent_literal(libPtr, AF_INET6, loopback6, name);
+
     /*
      * Check if the name is a literal IPv6 address (contains ':')
      * If so, parse it directly rather than querying DNS.
@@ -559,32 +597,9 @@ struct hostent *__gethostbyname2(const char *name, int af, struct SocketBase *li
         struct in6_addr in6;
         extern int __inet_pton(int, const char *, void *, struct SocketBase *);
 
-        if(__inet_pton(AF_INET6, name, &in6, libPtr) == 1) {
-            if(allocDataBuffer(&libPtr->hostents,
-                               sizeof(struct hostent) + sizeof(struct in6_addr) +
-                               sizeof(char *) * 2 + strnlen(name, MAXDNAME) + 1) == FALSE) {
-                writeErrnoValue(libPtr, ENOMEM);
-                return NULL;
-            }
-            HOSTENT->h_addrtype = AF_INET6;
-            HOSTENT->h_length = sizeof(struct in6_addr);
-
-            /* Layout: hostent | in6_addr | addr_list[2] | name_string */
-            {
-                char *base = (char *)(HOSTENT + 1);
-                char **addrlist;
-
-                bcopy(&in6, base, sizeof(struct in6_addr));
-                addrlist = (char **)(base + sizeof(struct in6_addr));
-                addrlist[0] = base;
-                addrlist[1] = NULL;
-                HOSTENT->h_addr_list = addrlist;
-                HOSTENT->h_aliases = addrlist + 1;  /* points to addr_list NULL terminator */
-                HOSTENT->h_name = (char *)(addrlist + 2);
-                memcpy(HOSTENT->h_name, name, strnlen(name, MAXDNAME) + 1);
-            }
-            return HOSTENT;
-        } else {
+        if(__inet_pton(AF_INET6, name, &in6, libPtr) == 1)
+            return hostent_literal(libPtr, AF_INET6, &in6, name);
+        else {
             writeErrnoValue(libPtr, EINVAL);
             return NULL;
         }
@@ -1048,6 +1063,39 @@ _gethtbyaddr_r(struct SocketBase *libPtr, const char *addr, int len, int type,
 }
 
 /*
+ * hostent_literal_r -- the hostent for one IPv4 address named name, in the
+ * caller's buffer: address | h_addr_list[2] | h_aliases[1] | name.
+ * Returns 0, or ERANGE if buf is too small.
+ */
+static int
+hostent_literal_r(const struct in_addr *addr, const char *name,
+                  struct hostent *result, char *buf, LONG buflen)
+{
+    int nlen = strnlen(name, MAXDNAME) + 1;
+    char *bp = buf;
+    char **addrlist;
+
+    if ((int)ALIGN(sizeof(struct in_addr)) + 3 * (int)sizeof(char *) + nlen > buflen)
+        return ERANGE;
+    memcpy(bp, addr, sizeof(struct in_addr));
+    bp += ALIGN(sizeof(struct in_addr));
+    addrlist = (char **)bp;
+    addrlist[0] = buf;
+    addrlist[1] = NULL;
+    result->h_addr_list = addrlist;
+    bp += 2 * sizeof(char *);
+    result->h_aliases = (char **)bp;    /* empty */
+    *(char **)bp = NULL;
+    bp += sizeof(char *);
+    result->h_name = bp;
+    memcpy(bp, name, nlen);
+    bp[nlen - 1] = '\0';
+    result->h_addrtype = AF_INET;
+    result->h_length = sizeof(struct in_addr);
+    return 0;
+}
+
+/*
  * __gethostbyname_r -- thread-safe gethostbyname.
  * Returns result on success, NULL on failure.
  * Sets *h_errnop on DNS errors. Sets errno via writeErrnoValue.
@@ -1073,62 +1121,24 @@ __gethostbyname_r(const char *name, struct hostent *result,
     }
 
     /*
-     * Check if name is a dotted-quad IP address literal.
+     * A dotted-quad IP address literal, or a localhost name (RFC 6761
+     * section 6.3): no lookup.
      */
-    if (isipaddr(name)) {
+    if (isipaddr(name) || islocalhost(name)) {
         struct in_addr inaddr;
-        int namelen_ip;
 
-        if (!__inet_aton(name, &inaddr)) {
+        if (!isipaddr(name))
+            memcpy(&inaddr, loopback4, sizeof(inaddr));
+        else if (!__inet_aton(name, &inaddr)) {
             writeErrnoValue(libPtr, EINVAL);
             if (h_errnop) *h_errnop = HOST_NOT_FOUND;
             return NULL;
         }
-
-        namelen_ip = strnlen(name, MAXDNAME) + 1;
-        /* Need: addr data (aligned) + addr_list[2] + aliases[1] + name */
-        n = (int)ALIGN(sizeof(struct in_addr)) +
-            2 * sizeof(char *) +     /* h_addr_list */
-            1 * sizeof(char *) +     /* h_aliases (just NULL) */
-            namelen_ip;
-        if (n > buflen) {
+        if (hostent_literal_r(&inaddr, name, result, buf, buflen) != 0) {
             writeErrnoValue(libPtr, ERANGE);
             if (h_errnop) *h_errnop = NETDB_INTERNAL;
             return NULL;
         }
-
-        {
-            char *bp = buf;
-            char **addrlist;
-
-            /* Copy address data */
-            memcpy(bp, &inaddr, sizeof(struct in_addr));
-            bp += sizeof(struct in_addr);
-
-            /* Align for pointer arrays */
-            bp = (char *)(((long)bp + sizeof(char *) - 1) &
-                          ~(sizeof(char *) - 1));
-
-            /* Address list */
-            addrlist = (char **)bp;
-            addrlist[0] = buf;       /* points to the in_addr */
-            addrlist[1] = NULL;
-            result->h_addr_list = addrlist;
-            bp += 2 * sizeof(char *);
-
-            /* Empty alias list */
-            result->h_aliases = (char **)bp;
-            *(char **)bp = NULL;
-            bp += sizeof(char *);
-
-            /* Name string */
-            result->h_name = bp;
-            memcpy(bp, name, namelen_ip);
-            bp[namelen_ip - 1] = '\0';
-        }
-
-        result->h_addrtype = AF_INET;
-        result->h_length = sizeof(struct in_addr);
         if (h_errnop) *h_errnop = 0;
         return result;
     }
