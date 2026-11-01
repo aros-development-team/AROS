@@ -4,22 +4,59 @@
     Desc:
 */
 
+#include <aros/atomic.h>
 #include <aros/debug.h>
 #include <aros/kernel.h>
 #include <aros/libcall.h>
 
 #include <kernel_base.h>
 
+/* Acquire a stable resolver/private snapshot without blocking a trap reader. */
+static BOOL krnResolverAcquire(struct KernelBase *KernelBase,
+                               KrnSymResolver_t *resolver, APTR *priv)
+{
+#if defined(__i386__) || defined(__x86_64__)
+    ULONG generation = KernelBase->kb_gResolverGeneration;
+
+    if (generation & 1)
+        return FALSE;
+
+    AROS_ATOMIC_INC(KernelBase->kb_gResolverReaders);
+    if ((KernelBase->kb_gResolverGeneration != generation) ||
+        (KernelBase->kb_gResolverGeneration & 1))
+    {
+        AROS_ATOMIC_DEC(KernelBase->kb_gResolverReaders);
+        return FALSE;
+    }
+#endif
+
+    *resolver = KernelBase->kb_gResolver;
+    *priv = KernelBase->kb_gResolvPrivate;
+    return TRUE;
+}
+
+static VOID krnResolverRelease(struct KernelBase *KernelBase)
+{
+#if defined(__i386__) || defined(__x86_64__)
+    AROS_ATOMIC_DEC(KernelBase->kb_gResolverReaders);
+#else
+    (void)KernelBase;
+#endif
+}
+
 /* Internal: pretty-print one PC using resolver if present */
 static VOID krnBacktraceSingle(APTR priv, APTR pc, KrnSymResolver_t resolver)
 {
+    struct KrnSymInfo info = {0};
+    LONG resolved;
+
     if (!resolver) {
         bug("[Kernel]  %p\n", pc);
         return;
     }
 
-    struct KrnSymInfo info = {0};
-    if (resolver(priv, pc, &info)) {
+    resolved = resolver(priv, pc, &info);
+    if (resolved) {
         IPTR off = 0;
         if (info.sym_start)
             off = (IPTR)pc - (IPTR)info.sym_start;
@@ -45,6 +82,9 @@ static VOID krnBacktraceSingle(APTR priv, APTR pc, KrnSymResolver_t resolver)
     } else {
         bug("[Kernel]  %p\n", pc);
     }
+
+    if (info.release)
+        info.release(info.release_cookie);
 }
 
 /*****************************************************************************
@@ -99,21 +139,27 @@ static VOID krnBacktraceSingle(APTR priv, APTR pc, KrnSymResolver_t resolver)
         KrnBacktraceFromFrame(), KrnRegisterSymResolver(), KrnUnregisterSymResolver()
 
     INTERNALS
-        The resolver is stored in a global kernel variable and accessed without
-        locking. This function does not perform symbol resolution itself, but
-        delegates to the resolver when available.
+        On all-pc, the resolver callback and private pointer are snapshotted
+        under a non-blocking generation/reader lease. The lease spans the
+        complete backtrace so unregister cannot invalidate either pointer
+        while a frame is being resolved. A collision falls back to raw
+        addresses. Trap readers never acquire the registry writer spinlock.
 
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    /* Read once; ok if resolver changes during print. */
-    KrnSymResolver_t resolver = KernelBase->kb_gResolver;
+    KrnSymResolver_t resolver = NULL;
+    APTR priv = NULL;
+    BOOL resolverReader = krnResolverAcquire(KernelBase, &resolver, &priv);
 
     bug("%sBacktrace (%lu frames):\n",
         prefix ? (char *)prefix : "[Kernel] ", (ULONG)depth);
 
     for (ULONG i = 0; i < depth; ++i)
-        krnBacktraceSingle(KernelBase->kb_gResolvPrivate, pcs[i], resolver);
+        krnBacktraceSingle(priv, pcs[i], resolverReader ? resolver : NULL);
+
+    if (resolverReader)
+        krnResolverRelease(KernelBase);
     AROS_LIBFUNC_EXIT
 }

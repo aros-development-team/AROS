@@ -120,6 +120,10 @@ typedef void (*irqhandler_t)(void *data, void *data2);
 #define KATTR_FrameBufferPitch  (KATTR_CPULoad_END + 7) /* [.G] (IPTR)    - Framebuffer bytes per line                                  */
 #define KATTR_PlatformTimer     (KATTR_CPULoad_END + 8) /* [.G] (APTR)    - Kernel tick timer shared with timer.device (platform specific) */
 #define KATTR_CPUHardwareID     (KATTR_CPULoad_END + 9) /* [.G] (IPTR)    - Hardware id of a CPU (e.g. RISC-V hart id), per CPU via KrnGetCPUAttr() */
+#define KATTR_SymResolverABI    (KATTR_CPULoad_END + 10) /* [.G] (IPTR)   - Kernel symbol-resolver ABI level                         */
+
+#define KRN_SYMRESOLVER_ABI_LEGACY  1
+#define KRN_SYMRESOLVER_ABI_LEASE   2
 
 /* Tag IDs for KrnStatMemory() */
 #define KMS_Free		(TAG_USER + 0x04000000)
@@ -131,6 +135,9 @@ typedef void (*irqhandler_t)(void *data, void *data2);
 #define KMS_NumAlloc		(TAG_USER + 0x04000006)
 #define KMS_NumFree		(TAG_USER + 0x04000007)
 #define KMS_PageSize		(TAG_USER + 0x04000008)
+
+/* Optional result-lifetime release callback. Must be trap-safe and non-blocking. */
+typedef void (*KrnSymRelease_t)(APTR cookie);
 
 /* Public symbol info returned by resolver */
 struct KrnSymInfo
@@ -144,9 +151,16 @@ struct KrnSymInfo
     APTR        sym_end;        /* May be NULL */
     BPTR        seg_bptr;       /* Optional */
     ULONG       seg_num;        /* Optional */
+    KrnSymRelease_t release;    /* Optional result-lifetime release */
+    APTR        release_cookie; /* Passed to release */
 };
 
-/* Single-address resolver callback type (must be trap-safe, non-blocking). */
+/*
+ * Single-address resolver callback type (must be trap-safe and non-blocking
+ * in supervisor context). If release is set, the consumer must call it once
+ * after the returned pointer fields are no longer in use, even when lookup
+ * itself reports failure.
+ */
 typedef LONG (*KrnSymResolver_t)(APTR priv, APTR addr, struct KrnSymInfo *out);
 
 #endif /* AROS_KERNEL_H */

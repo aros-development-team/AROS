@@ -5,6 +5,7 @@
 */
 
 #include <aros/config.h>
+#include <aros/kernel.h>
 #include <dos/bptr.h>
 #include <exec/libraries.h>
 #include <exec/semaphores.h>
@@ -55,6 +56,13 @@ struct DebugBase
     struct Library          db_Lib;
     struct MinList          db_Modules;
     struct SignalSemaphore  db_ModSem;
+    SIPTR                   db_SymResolverABI;
+#if defined(__i386__) || defined(__x86_64__)
+    volatile ULONG          db_ResolverGeneration;
+#if defined(__AROSEXEC_SMP__)
+    volatile ULONG          db_ResolverReaders;
+#endif
+#endif
     APTR                    db_KernelBase;
     IPTR                    db_Flags;
 };
@@ -70,6 +78,12 @@ struct DebugBase
 void RegisterModule_ELF(const char *name, BPTR segList, struct elfheader *eh, struct sheader *sections,
         struct Library *DebugBase);
 
-/* Trap-context symbol resolver registered with kernel.resource (symresolver.c) */
-struct KrnSymInfo;
+/* Private resolver lifetime contract (symresolver.c / decodelocation.c). */
+BOOL Debug_ResolverAcquire(struct DebugBase *debugBase);
+void Debug_ResolverRelease(struct DebugBase *debugBase);
+void Debug_ResolverWriteBegin(struct DebugBase *debugBase);
+void Debug_ResolverWriteEnd(struct DebugBase *debugBase);
+int Debug_DecodeLocationAInternal(void *addr, struct TagItem *tags,
+        struct Library *DebugBase);
 LONG Debug_SymResolver(APTR priv, APTR addr, struct KrnSymInfo *out);
+LONG Debug_SymResolverLegacy(APTR priv, APTR addr, struct KrnSymInfo *out);
