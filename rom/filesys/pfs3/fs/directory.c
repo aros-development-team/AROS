@@ -3585,7 +3585,7 @@ static BOOL MakeDirEntry(BYTE type, UBYTE *name, UBYTE *entrybuffer, globaldata 
 #if MULTIUSER
 	if (g->muFS_ready)
 	{
-		extrafields.link = 0;
+		memset(&extrafields, 0, sizeof(extrafields));
 		/* a task owned by nobody has no muExtOwner (g->user is NULL) */
 		extrafields.uid = g->user ? g->user->uid : muNOBODY_UID;
 		extrafields.gid = g->user ? g->user->gid : muNOBODY_GID;
