@@ -852,10 +852,10 @@ static error_t CheckRootBlock(void)
 		}
 	}
 
-	strncpy (volume.diskname, (char *)&rbl->diskname[1], rbl->diskname[0]);
-	volume.diskname[rbl->diskname[0]+1] = 0;
+	memcpy(volume.diskname, &rbl->diskname[1], min(rbl->diskname[0], sizeof(rbl->diskname) - 1));
+	volume.diskname[min(rbl->diskname[0], sizeof(rbl->diskname) - 1)] = 0;
 	volume.showmsg("Checking disk ");
-	volume.showmsg(volume.diskname);
+	volume.showmsg("%s", volume.diskname);
 	volume.showmsg("\n");
 	volume.showmsg("Reserved blocksize: %lu\n", rbl->reserved_blksize);
 
