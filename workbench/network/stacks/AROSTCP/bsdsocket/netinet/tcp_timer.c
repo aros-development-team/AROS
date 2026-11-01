@@ -74,6 +74,8 @@ int	tcp_maxidle;
 #include "tcp_compat.h"
 #include "tcp_syncache.h"
 
+void tcp_pmtud_blackhole(struct tcpcb *);   /* tcp_subr.c */
+
 /*
  * Fast timeout routine for processing delayed acks
  */
@@ -222,6 +224,7 @@ int timer;
         TCPT_RANGESET(tp->t_rxtcur, rexmt,
                       tp->t_rttmin, TCPTV_REXMTMAX);
         tp->t_timer[TCPT_REXMT] = tp->t_rxtcur;
+        tcp_pmtud_blackhole(tp);    /* before CC_ON_RTO() sizes cwnd */
         /*
          * If losing, let the lower level know and try for
          * a better route.  Also, if we backed off this far,

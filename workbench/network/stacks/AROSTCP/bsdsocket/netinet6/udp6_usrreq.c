@@ -47,6 +47,7 @@
 #include <sys/errno.h>
 #include <sys/synch.h>
 #include <sys/queue.h>
+#include <string.h>      /* memcpy */
 
 #include <net/if.h>
 #include <net/route.h>
@@ -122,6 +123,11 @@ udp6_output(struct inpcb *inp, struct mbuf *m,
     struct ifnet *oifp = NULL;
     struct in6_addr osrc;
     struct ip6_moptions oim6o;
+    /* RFC 3542 section 11: the socket's, unless this datagram says */
+    int minmtu = IN6P_MINMTU_OPT(inp);
+    int dontfrag = (inp->in6p_flags & IN6P_DONTFRAG) != 0;
+    int tclass = inp->in6p_tclass;      /* IPV6_TCLASS, RFC 3542 section 6.5 */
+    int oflags;
 
     bzero(&osrc, sizeof(osrc));
     if(control) {
@@ -137,6 +143,24 @@ udp6_output(struct inpcb *inp, struct mbuf *m,
                 bcopy(CMSG_DATA(cm), (caddr_t)&pi6, sizeof(pi6));
                 oindex = pi6.ipi6_ifindex;
                 osrc   = pi6.ipi6_addr;
+            } else if(cm->cmsg_level == IPPROTO_IPV6 &&
+                      (cm->cmsg_type == IPV6_DONTFRAG ||
+                       cm->cmsg_type == IPV6_USE_MIN_MTU) &&
+                      cm->cmsg_len == CMSG_LEN(sizeof(int))) {
+                int v;
+
+                memcpy(&v, CMSG_DATA(cm), sizeof(v));
+                if(cm->cmsg_type == IPV6_DONTFRAG)
+                    dontfrag = v != 0;
+                else if(v >= -1 && v <= 1)
+                    minmtu = v;
+            } else if(cm->cmsg_level == IPPROTO_IPV6 && cm->cmsg_type == IPV6_TCLASS &&
+                      cm->cmsg_len == CMSG_LEN(sizeof(int))) {
+                int v;
+
+                memcpy(&v, CMSG_DATA(cm), sizeof(v));
+                if(v >= -1 && v <= 255)
+                    tclass = v < 0 ? 0 : v;
             }
             left -= _ALIGN(cm->cmsg_len);
             cm = (struct cmsghdr *)((caddr_t)cm + _ALIGN(cm->cmsg_len));
@@ -261,8 +285,8 @@ udp6_output(struct inpcb *inp, struct mbuf *m,
     if(m == NULL)
         return ENOBUFS;
     ip6 = mtod(m, struct ip6_hdr *);
-    ip6->ip6_flow = 0;
-    ip6->ip6_vfc  = IPV6_VERSION;	/* must follow ip6_flow (they overlap) */
+    /* version 6 and the traffic class; no flow label */
+    ip6->ip6_flow = htonl(0x60000000 | ((u_int32_t)tclass << 20));
     ip6->ip6_plen = htons((u_short)udplen);
     ip6->ip6_nxt  = IPPROTO_UDP;
     if(IN6_IS_ADDR_MULTICAST(&faddr6))
@@ -282,6 +306,7 @@ udp6_output(struct inpcb *inp, struct mbuf *m,
     if(uh->uh_sum == 0)
         uh->uh_sum = 0xffff; /* RFC 2460: UDP6 checksum must not be zero */
 
+    oflags = ip6_outflags(minmtu, dontfrag, &faddr6);
     if(oifp != NULL) {
         /* hand the interface on the way multicast options do */
         if(inp->in6p_moptions)
@@ -292,10 +317,10 @@ udp6_output(struct inpcb *inp, struct mbuf *m,
             oim6o.im6o_multicast_loop = 1;
         }
         oim6o.im6o_multicast_ifp = oifp;
-        error = ip6_output(m, (struct mbuf *)NULL, (struct route *)NULL, 0,
+        error = ip6_output(m, (struct mbuf *)NULL, (struct route *)NULL, oflags,
                            &oim6o, (struct ifnet **)NULL, inp);
     } else
-        error = ip6_output(m, (struct mbuf *)NULL, (struct route *)NULL, 0,
+        error = ip6_output(m, (struct mbuf *)NULL, (struct route *)NULL, oflags,
                            inp->in6p_moptions, (struct ifnet **)NULL, inp);
     return error;
 
@@ -339,6 +364,13 @@ udp6_append(struct inpcb *inp, struct mbuf *m, int off,
             int hlim = ip6->ip6_hlim;
 
             *optp = sbcreatecontrol((caddr_t)&hlim, sizeof(int), IPV6_HOPLIMIT, IPPROTO_IPV6);
+            if(*optp != NULL)
+                optp = &(*optp)->m_next;
+        }
+        if(inp->in6p_flags & IN6P_TCLASS) {    /* RFC 3542 section 6.5 */
+            int tclass = (ntohl(ip6->ip6_flow) >> 20) & 0xff;
+
+            *optp = sbcreatecontrol((caddr_t)&tclass, sizeof(int), IPV6_TCLASS, IPPROTO_IPV6);
             if(*optp != NULL)
                 optp = &(*optp)->m_next;
         }
@@ -638,10 +670,36 @@ udp6_ctlinput(int cmd, struct sockaddr *sa, void *arg)
 {
     struct ip6ctlparam *ip6cp = arg;
 
-    /* a Packet Too Big is not an error for a datagram socket: the route
-     * keeps the path MTU, and ip6_output() fragments to it */
-    if(cmd == PRC_MSGSIZE)
+    /*
+     * A Packet Too Big is not an error for a datagram socket: the route
+     * keeps the path MTU, and ip6_output() fragments to it. A socket that
+     * sent the datagram and asked with IPV6_RECVPATHMTU is told the new
+     * path MTU (RFC 3542 section 11.3), as KAME's in6_pcbnotify() does.
+     */
+    if(cmd == PRC_MSGSIZE) {
+        struct sockaddr_in6 *dst = (struct sockaddr_in6 *)sa;
+        struct inpcb *inp;
+
+        if(ip6cp == NULL || dst == NULL)
+            return;
+        for(inp = udb.lh_first; inp != NULL; inp = inp->inp_list.le_next) {
+            if(!in_pcbisipv6(inp) || !(inp->in6p_flags & IN6P_RECVPATHMTU) ||
+                    inp->inp_lport != ip6cp->ip6c_sport)
+                continue;
+            if(!IN6_IS_ADDR_UNSPECIFIED(&inp->inp_laddr6) &&
+                    !IN6_ARE_ADDR_EQUAL(&inp->inp_laddr6, &ip6cp->ip6c_src))
+                continue;
+            if(!IN6_IS_ADDR_UNSPECIFIED(&inp->inp_faddr6) &&
+                    (!IN6_ARE_ADDR_EQUAL(&inp->inp_faddr6, &dst->sin6_addr) ||
+                     inp->inp_fport != ip6cp->ip6c_dport))
+                continue;
+            if(inp->inp_boundif != NULL && dst->sin6_scope_id != 0 &&
+                    (u_int32_t)inp->inp_boundif->if_index != dst->sin6_scope_id)
+                continue;
+            ip6_notify_pmtu(inp, dst, ip6cp->ip6c_mtu);
+        }
         return;
+    }
     if(ip6cp != NULL)
         in6_pcbnotify(&udb, (struct sockaddr_in6 *)sa, ip6cp->ip6c_dport,
                       &ip6cp->ip6c_src, ip6cp->ip6c_sport, cmd, udp6_notify);

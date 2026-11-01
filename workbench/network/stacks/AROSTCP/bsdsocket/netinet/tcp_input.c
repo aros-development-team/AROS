@@ -876,6 +876,35 @@ findpcb:
                       &to);
 
     /*
+     * ECN (RFC 3168 section 6.1), for every segment of a connection that
+     * agreed to it - before header prediction, which in-sequence data and
+     * pure ACKs take, as FreeBSD's tcp_input() does:
+     * - receiving: a CE mark is echoed with ECE on our ACKs until the peer
+     *   says CWR;
+     * - sending: an ECE is congestion, as a loss would be: cwnd is reduced
+     *   at most once per window of data (not in fast recovery, and only
+     *   once the ACK passes the point of the last reduction), and the
+     *   first new data after the reduction carries CWR (section 6.1.2).
+     *   snd_ecn_recover is 0 until the first reduction.
+     */
+    if((tp->t_flagsext & TF_ECN_PERMIT) && !(tiflags & TH_SYN)) {
+        if(tiflags & TH_CWR)
+            tp->t_flagsext &= ~TF_ECN_SND_ECE;
+        if((iptos & IPTOS_ECN_MASK) == IPTOS_ECN_CE)
+            tp->t_flagsext |= TF_ECN_SND_ECE;
+        if((tiflags & (TH_ECE | TH_ACK)) == (TH_ECE | TH_ACK)) {
+            tcpstat.tcps_ecn_ce++;
+            if(!(tp->t_flagsext & TF_IN_FASTRECOV) &&
+                    (tp->snd_ecn_recover == 0 ||
+                     SEQ_GT(ti->ti_ack, tp->snd_ecn_recover))) {
+                CC_ON_ECN(tp);
+                tp->snd_ecn_recover = tp->snd_max;
+                tp->t_flagsext |= TF_ECN_SND_CWR;
+            }
+        }
+    }
+
+    /*
      * Header prediction: check for the two common cases
      * of a uni-directional data xfer.  If the packet has
      * no control flags, is in-sequence, the window didn't
@@ -1085,11 +1114,11 @@ findpcb:
             if(!(to.to_flag & TOF_SACK_PERMITTED))
                 tp->t_flags &= ~TF_SACK_PERMIT;
             /*
-             * ECN negotiation (RFC 3168):
-             * We sent SYN with ECE+CWR. If the SYN-ACK has ECE
-             * (without CWR), ECN is negotiated.
+             * ECN negotiation (RFC 3168 section 6.1.1): if our SYN asked
+             * with ECE+CWR and the SYN-ACK has ECE without CWR, ECN is
+             * negotiated.
              */
-            if(tcp_do_ecn &&
+            if((tp->t_flagsext & TF_ECN_SYN) &&
                     (tiflags & (TH_ECE | TH_CWR)) == TH_ECE)
                 tp->t_flagsext |= TF_ECN_PERMIT;
             else
@@ -1523,24 +1552,6 @@ close:
     case TCPS_TIME_WAIT:
 
         /*
-         * ECN (RFC 3168): If this connection is ECN-capable
-         * and the incoming IP packet has the CE codepoint set,
-         * the network is experiencing congestion. Signal the
-         * sender by setting ECE in our next ACK.
-         */
-        if((tp->t_flagsext & TF_ECN_PERMIT) &&
-                (iptos & IPTOS_ECN_MASK) == IPTOS_ECN_CE) {
-            tp->t_flagsext |= TF_ECN_SND_ECE;
-        }
-        /*
-         * ECN (RFC 3168): The data sender reduces its window on the
-         * congestion signal and sets CWR on its next data segment.
-         * Once we (the data receiver) see CWR we stop echoing ECE.
-         */
-        if((tp->t_flagsext & TF_ECN_PERMIT) && (tiflags & TH_CWR))
-            tp->t_flagsext &= ~TF_ECN_SND_ECE;
-
-        /*
          * SACK (RFC 6675): Fold any SACK blocks carried by this ACK
          * into the scoreboard.  This is pure bookkeeping -- the board
          * only influences transmission when PRR/SACK recovery is
@@ -1803,33 +1814,6 @@ process_ACK:
          */
         if(acked == 0)
             goto step6;
-
-        /*
-         * ECN (RFC 3168): If the peer sent ECE, it received a
-         * CE-marked packet from the network. Reduce cwnd once
-         * per RTT (like a single loss), and send CWR.
-         */
-        if((tp->t_flagsext & TF_ECN_PERMIT) &&
-                (tiflags & TH_ECE)) {
-            tcpstat.tcps_ecn_ce++;
-            /*
-             * Reduce at most once per window of data: only when we
-             * are not already in fast recovery and this ACK has
-             * advanced past the point recorded at the previous ECN
-             * reduction (snd_ecn_recover).  This prevents repeated
-             * cuts from the burst of ECEs the peer sends in the RTT
-             * before it sees our CWR.  snd_ecn_recover is zero until
-             * the first reduction, so a zero value always permits the
-             * initial reaction regardless of sequence sign.
-             */
-            if(!(tp->t_flagsext & TF_IN_FASTRECOV) &&
-                    (tp->snd_ecn_recover == 0 ||
-                     SEQ_GT(ti->ti_ack, tp->snd_ecn_recover))) {
-                CC_ON_ECN(tp);
-                tp->snd_ecn_recover = tp->snd_max;
-            }
-            tp->t_flagsext |= TF_ECN_SND_CWR;
-        }
 
         /*
          * When new data is acked, open the congestion window.
