@@ -31,6 +31,11 @@ struct timerequest;
 #define DMAFLAGS_POSTWRITE   (1 << 31) | DMA_ReadFromRAM
 #endif
 
+/* DMA bounce buffers own whole cache lines */
+#define XHCI_DMA_LINE           64
+/* IN transfers up to this size bounce through the request's own area */
+#define XHCI_BOUNCE_INLINE      256
+
 /* Number of TRBs in the single event ring segment. */
 #define XHCI_EVENT_RING_TRBS  USB_DEV_MAX    /* 128/256/512 */
 
@@ -271,6 +276,9 @@ struct pciusbXHCIIODevPrivate {
     ULONG                               dpBounceLen;
     UWORD                               dpBounceDir;
     BYTE                                dpCC;
+#if defined(__arm__) || defined(__aarch64__)
+    UBYTE                               dpBounceInline[XHCI_BOUNCE_INLINE + XHCI_DMA_LINE];
+#endif
 };
 
 /* Misc Stuff */
