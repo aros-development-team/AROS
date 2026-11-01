@@ -167,7 +167,10 @@ static BOOL OpenVolume(void)
 		return FALSE;
 	}
 
-	InitCache(64, 32);		/* make this configurable ? */
+	if (InitCache(64, 32) != e_none) {
+		guiMsg("Could not allocate disk cache.\n");
+		return FALSE;
+	}
 
 	detectbuf = AllocVec(volume.blocksize, MEMF_PUBLIC);
 	if (!detectbuf) {
