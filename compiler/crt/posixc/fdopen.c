@@ -61,11 +61,8 @@
 
 ******************************************************************************/
 {
-    struct PosixCIntBase *PosixCBase =
-        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
     int oflags, wanted_accmode, current_accmode;
     fdesc *fdesc;
-    FILENODE *fn;
 
     if (!(fdesc = __getfdesc(filedes)))
     {
@@ -96,13 +93,5 @@
         }
     }
 
-    fn = AllocPooled(PosixCBase->internalpool, sizeof(FILENODE));
-    if (!fn) return NULL;
-
-    AddTail ((struct List *)&PosixCBase->stdio_files, (struct Node *)fn);
-
-    fn->File.flags = __oflags2sflags(oflags);
-    fn->File.fd    = filedes;
-
-    return FILENODE2FILE(fn);
+    return __stdio_file(filedes, oflags);
 }

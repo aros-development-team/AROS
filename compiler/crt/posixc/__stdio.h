@@ -31,6 +31,9 @@ typedef struct
 #define FILENODE2FILE(fn)       (&((fn)->File))
 #define FILE2FILENODE(f)        ((FILENODE *)(((char *)(f))-offsetof(FILENODE,File)))
 
+/* Allocate a FILE wrapper without validating or changing its descriptor. */
+extern FILE *__stdio_file(int fd, int oflags);
+
 extern int __smode2oflags(const char *mode);
 extern int __oflags2sflags(int oflags);
 
