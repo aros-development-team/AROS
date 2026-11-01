@@ -238,6 +238,7 @@ error_t BuildBootBlock(void)
  */
 error_t BuildRootBlock(rootblock_t *rbl)
 {
+	error_t error;
 	struct DateStamp time;
 	uint32 i, j;
 	scanelement_t ind[104];
@@ -288,7 +289,8 @@ error_t BuildRootBlock(rootblock_t *rbl)
 	/* create bitmap index */
 	memset (ind, 0, 104*sizeof(scanelement_t));
 	volume.status(1, "Searching bitmap blocks", rbl->lastreserved - 2);
-	SearchBlocks(ind, 0, 103, rbl->firstreserved, rbl->lastreserved, BMIBLKID);
+	if ((error = SearchBlocks(ind, 0, 103, rbl->firstreserved, rbl->lastreserved, BMIBLKID)))
+		return error;
 	volume.progress(0,1);
 	if (rbl->options & MODE_SUPERINDEX)
 		j = 104;
@@ -303,7 +305,8 @@ error_t BuildRootBlock(rootblock_t *rbl)
 	{
 		memset (ind, 0, 104*sizeof(scanelement_t));
 		volume.status(1,"Searching index blocks", rbl->lastreserved - 2);
-		SearchBlocks(ind, 0, 98, rbl->firstreserved, rbl->lastreserved, IBLKID);
+		if ((error = SearchBlocks(ind, 0, 98, rbl->firstreserved, rbl->lastreserved, IBLKID)))
+			return error;
 		for (i=0; i<99; i++)
 			rbl->idx.small.indexblocks[i] = ind[i].blocknr;
 	}
@@ -320,19 +323,27 @@ error_t BuildRootBlock(rootblock_t *rbl)
  * start = first blocknr 
  * stop = last blocknr
  */
-void SearchBlocks(scanelement_t el[], uint32 seqlow, uint32 seqhigh,
+error_t SearchBlocks(scanelement_t el[], uint32 seqlow, uint32 seqhigh,
 	uint32 start, uint32 stop, uint16 bloktype)
 {
 	cachedblock_t blk;
 	uint32 i, seqnr, ds = 0;
+	error_t error;
 
 	blk.data = calloc(1, SIZEOF_RESBLOCK);
+	if (blk.data == NULL)
+		return e_out_of_memory;
 	volume.status(1, NULL, (stop-start)/volume.rescluster);
 	for (i = start; i < stop; i+=volume.rescluster) 
 	{
 		volume.progress(1,1);
-		if (volume.getblock(&blk, i))
+		error = volume.getblock(&blk, i);
+		if (error == e_syntax_error)
 			continue;
+		if (error) {
+			free(blk.data);
+			return error;
+		}
 
 		if (aborting)
 		{
@@ -357,6 +368,7 @@ void SearchBlocks(scanelement_t el[], uint32 seqlow, uint32 seqhigh,
 
 	free (blk.data);
 	volume.status(1," ",100);
+	return e_none;
 }
 
 /* search for a block on a volume.
@@ -570,6 +582,7 @@ uint32 SearchFileSystem(int32 startblok, int32 endblok)
  */
 error_t BuildRext(c_extensionblock_t *rext)
 {
+	error_t error;
 	struct DateStamp time;
 	struct buildblock *bbl;
 	extensionblock_t *r;
@@ -602,7 +615,12 @@ error_t BuildRext(c_extensionblock_t *rext)
 	if (rbl->options & MODE_SUPERINDEX)
 	{
 		memset (ind, 0, 16*sizeof(scanelement_t));
-		SearchBlocks(ind, 0, 15, rbl->firstreserved, rbl->lastreserved, SBLKID);
+		if ((error = SearchBlocks(ind, 0, 15, rbl->firstreserved, rbl->lastreserved, SBLKID))) {
+			free(bbl);
+			FreeBufMem(r);
+			rext->data = NULL;
+			return error;
+		}
 		for (i=0; i<16; i++)
 			r->superindex[i] = ind[i].blocknr;
 	}
@@ -622,6 +640,7 @@ error_t BuildRext(c_extensionblock_t *rext)
  */
 error_t BuildIndexBlock(c_indexblock_t *blk, uint16 bloktype, uint32 seqnr)
 {
+	error_t error;
 	struct buildblock *bbl;
 	indexblock_t *ib;
 	int i;
@@ -660,7 +679,13 @@ error_t BuildIndexBlock(c_indexblock_t *blk, uint16 bloktype, uint32 seqnr)
 		default:		return e_fatal_error;
 	}
 
-	SearchBlocks (ind, seqnr*INDEX_PER_BLOCK, seqnr*INDEX_PER_BLOCK + INDEX_PER_BLOCK - 1, rbl->firstreserved, rbl->lastreserved, childtype);
+	if ((error = SearchBlocks(ind, seqnr*INDEX_PER_BLOCK, seqnr*INDEX_PER_BLOCK + INDEX_PER_BLOCK - 1, rbl->firstreserved, rbl->lastreserved, childtype))) {
+		free(bbl);
+		free(ind);
+		FreeBufMem(ib);
+		blk->data = NULL;
+		return error;
+	}
 	for (i=0; i<INDEX_PER_BLOCK; i++)
 		ib->index[i] = ind[i].blocknr;
 	
