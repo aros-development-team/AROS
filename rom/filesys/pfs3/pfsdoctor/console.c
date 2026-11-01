@@ -252,6 +252,7 @@ int main(int argc, char *argv[])
 	struct RDArgs *rdarg;
 	SIPTR args[ARGS_SIZE] =  { 0 };
 	int cnt = 0;
+	int result = RETURN_FAIL;
 	uint32 opties;
 
 	if (!(rdarg = ReadArgs (TEMPLATE, args, NULL)))
@@ -314,7 +315,7 @@ int main(int argc, char *argv[])
 		opties |= SSF_VERBOSE;
 
 	if (OpenVolume()) {
-		StandardScan(opties);
+		result = StandardScan(opties) == e_none ? RETURN_OK : RETURN_FAIL;
 	}
 	CloseVolume();
 
@@ -322,5 +323,5 @@ int main(int argc, char *argv[])
 		fclose(logfh);
 
 	FreeArgs(rdarg);
-	return 0;
+	return result;
 }
