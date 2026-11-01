@@ -19,6 +19,7 @@ CUNITSOCKETTESTFILES := \
     cunit-net-dontwait \
     cunit-net-frag6 \
     cunit-net-icmp6err \
+    cunit-net-iflist \
     cunit-net-inet6 \
     cunit-net-keepalive \
     cunit-net-localhost \

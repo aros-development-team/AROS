@@ -635,6 +635,10 @@ addresses the first on the list won, whatever the destination.
   (`struct ipq`, bounded by `maxnipq`) and linked through separately allocated `struct ipqent`
   nodes — the fragment chain is kept out of the packet rather than overlaid on the IP header, so it
   is correct on 64-bit targets and a received fragment can no longer crash the stack (§10).
+- **Roadshow interface calls.** `ObtainInterfaceList()` gives one node per interface, its name
+  (`eth0`, `lo0`) in `ln_Name`, freed with `ReleaseInterfaceList()`. `QueryInterfaceTagList()` fills
+  `IFQ_Address`, `IFQ_DestinationAddress`, `IFQ_BroadcastAddress` and `IFQ_NetMask` with a
+  `struct sockaddr_in` from the interface's first IPv4 address, as the `SIOCGIF*` ioctls give them.
 - **Forwarding** (`in_canforward()`, `netinet/in.c`, also Roadshow's `In_CanForward()`): network 0,
   the loopback network 127, multicast and class E (224/3) and link-local 169.254/16 (RFC 3927
   section 2.7) are never forwarded or redirected to; any other unicast destination may be.
@@ -802,7 +806,7 @@ Properties the implementation provides:
   option on their reports, and receive-side `IPV6_HOPLIMIT`/`IPV6_PKTINFO` ancillary data is
   delivered; per-source multicast filtering (MLDv2 INCLUDE/EXCLUDE source lists) is not tracked.
 - **Unimplemented API surface.** Several Roadshow interface-management entrypoints
-  (`AddInterfaceTagList`, `ConfigureInterfaceTagList`, `ObtainInterfaceList`, …) and Miami calls
+  (`AddInterfaceTagList`, `ConfigureInterfaceTagList`, …) and Miami calls
   (`MiamiGetHardwareLen`, `sockatmark`, …) are stubs that log "not implemented". `MiamiSysCtl()`
   serves the `net.inet.{ip,tcp,udp}` MIB only (`kern/kern_sysctl.c`).
 
