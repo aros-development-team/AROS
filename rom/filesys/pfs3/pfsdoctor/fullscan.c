@@ -369,15 +369,18 @@ void SearchBlocks(scanelement_t el[], uint32 seqlow, uint32 seqhigh,
  *
  * bloktypes: REXT, BM, BMI, S, AI, A, D
  */
-uint32 SearchBlock(uint16 bloktype, uint32 seqnr, uint32 last, uint32 datestamp, uint32 anodenr,
-	uint32 parent)
+error_t SearchBlock(uint16 bloktype, uint32 seqnr, uint32 last, uint32 datestamp, uint32 anodenr,
+	uint32 parent, uint32 *result)
 {
 	cachedblock_t blk;
 	uint32 ds, tmp;
 	int32 i, bloknr;	// signed !!
 	int found = 0;
+	error_t error;
 
 	blk.data = calloc(1, SIZEOF_RESBLOCK);
+	if (blk.data == NULL)
+		return e_out_of_memory;
 	bloknr = ds = 0;
 	if (last)
 	{
@@ -409,8 +412,13 @@ uint32 SearchBlock(uint16 bloktype, uint32 seqnr, uint32 last, uint32 datestamp,
 			break;
 
 		volume.progress(1,1);
-		if (volume.getblock(&blk, i))
+		error = volume.getblock(&blk, i);
+		if (error == e_syntax_error)
 			continue;
+		if (error) {
+			free(blk.data);
+			return error;
+		}
 
 		if (aborting)
 		{
@@ -456,7 +464,8 @@ uint32 SearchBlock(uint16 bloktype, uint32 seqnr, uint32 last, uint32 datestamp,
 
 	free (blk.data);
 	volume.status(1," ",100);
-	return (uint32)bloknr;
+	*result = (uint32)bloknr;
+	return e_none;
 }
 
 /* Get last reserved block */
