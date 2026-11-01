@@ -266,6 +266,12 @@ error_t BuildRootBlock(rootblock_t *rbl)
 		}
 	}
 
+	rbl->reserved_blksize = resblocksize;
+	volume.rescluster = resblocksize / volume.blocksize;
+	if (!volume.rescluster)
+		return e_options_error;
+	volume.lastreserved = volume.disksize - 1;
+
 	rbl->datestamp = ~0;	// don't be a break on search functions
 	rbl->creationday = (UWORD)time.ds_Days;
 	rbl->creationminute = (UWORD)time.ds_Minute;
