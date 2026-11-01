@@ -21,6 +21,7 @@
 #include   "pipecreate.h"
 #include   "pipesched.h"
 #include   "pipe-handler.h"
+#include <dos/pipe.h>
 
 #if PIPEDIR
 # include   "pipedir.h"
@@ -103,6 +104,41 @@ SPIOEXIT:
       return;
     }
 
+  /* Nonblocking requests never enter a waiting list. Preserve the order of
+     older blocking requests and service readers/writers after making progress.
+     The per-handle protocol is based on John KNIPPER's APL-1.1 pipe extension;
+     both directions are handled here without changing legacy blocking reads. */
+  if (pipekey->nonblock)
+    { ULONG amt;
+      if (iotype == PIPEREAD)
+        { amt= FirstItem (&pipe->readerlist) ? 0 :
+               MoveFromPipebuf (pipe->buf, (BYTE *)pkt->dp_Arg2, (ULONG)pkt->dp_Arg3);
+          if (!amt && ((pipe->flags & OPEN_FOR_WRITE) || FirstItem (&pipe->writerlist)))
+            { pkt->dp_Res2= ERROR_PIPE_WOULD_BLOCK; goto SPIOEXIT; }
+        }
+      else
+        { if (pipe->tapfh)
+            { pkt->dp_Res2= ERROR_ACTION_NOT_KNOWN; goto SPIOEXIT; }
+          /* Preserve atomicity for writes up to POSIXC PIPE_BUF. */
+          ULONG freebytes= pipe->buf->full ? 0 :
+            (pipe->buf->head >= pipe->buf->tail
+              ? pipe->buf->len - pipe->buf->head + pipe->buf->tail
+              : pipe->buf->tail - pipe->buf->head);
+          if ((ULONG)pkt->dp_Arg3 <= PIPE_ATOMIC_WRITE &&
+              freebytes < (ULONG)pkt->dp_Arg3)
+            { pkt->dp_Res2= ERROR_PIPE_WOULD_BLOCK; goto SPIOEXIT; }
+          amt= FirstItem (&pipe->writerlist) ? 0 :
+               MoveToPipebuf (pipe->buf, (BYTE *)pkt->dp_Arg2, (ULONG)pkt->dp_Arg3);
+          if (!amt)
+            { pkt->dp_Res2= ERROR_PIPE_WOULD_BLOCK; goto SPIOEXIT; }
+        }
+      pkt->dp_Res1= amt;
+      pkt->dp_Res2= 0;
+      CheckWaiting (pipe);
+      QuickReplyPkt (pkt);
+      return;
+    }
+
   if ((wd= (WAITINGDATA *) AllocMem (sizeof (WAITINGDATA), ALLOCMEM_FLAGS)) == NULL)
     { pkt->dp_Res2= ERROR_NO_FREE_STORE;
       goto SPIOEXIT;
@@ -137,6 +173,25 @@ SPIOEXIT:
 ** UnLock() is expected to call here so that a previously locked, empty pipe
 ** will be discarded.
 */
+
+/* A tap can itself block on output, so reject nonblocking writers to taps.
+   A failed mode change must leave the old mode intact. */
+void PipeSetNonblock (struct DosPacket *pkt)
+{
+  PIPEKEY *key= (PIPEKEY *)pkt->dp_Arg1;
+  pkt->dp_Res1= DOSFALSE;
+  pkt->dp_Res2= ERROR_INVALID_LOCK;
+  if (key && key->pipe)
+    { if (pkt->dp_Arg2 && key->iotype != PIPEREAD && key->pipe->tapfh)
+        pkt->dp_Res2= ERROR_ACTION_NOT_KNOWN;
+      else
+        { key->nonblock= pkt->dp_Arg2 != 0;
+          pkt->dp_Res1= 1; /* PSNB protocol success, not DOS boolean -1 */
+          pkt->dp_Res2= 0;
+        }
+    }
+  QuickReplyPkt (pkt);
+}
 
 void  CheckWaiting (pipe)
 

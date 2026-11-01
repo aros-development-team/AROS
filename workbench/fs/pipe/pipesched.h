@@ -48,6 +48,7 @@ typedef struct waitingdata
 WAITINGDATA;
 
 extern void              StartPipeIO    ( struct DosPacket *pkt, IOTYPE iotype );
+extern void              PipeSetNonblock ( struct DosPacket *pkt );
 extern void              CheckWaiting   ( PIPEDATA *pipe );
 extern struct DosPacket  *AllocPacket   ( struct MsgPort *ReplyPort );
 extern void              FreePacket     ( struct DosPacket *pkt );

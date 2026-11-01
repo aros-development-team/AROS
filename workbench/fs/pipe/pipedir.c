@@ -199,6 +199,7 @@ struct DosPacket  *pkt;
                   pipekey->pipe = pipe;
                   pipekey->openmode = MODE_READONLY;
                   pipekey->iotype = PIPEREAD;
+                  pipekey->nonblock = 0;
                   pipe->flags |= OPEN_FOR_READ;
                   --pipe->lockct;     /* successful conversion consumes the lock */
                   fh->fh_Arg1 = (SIPTR)pipekey;

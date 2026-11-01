@@ -109,6 +109,7 @@ typedef struct pipekey
   { PIPEDATA  *pipe;
     int       openmode;     /* Type field of original open request */
     IOTYPE    iotype;       /* (somewhat redundant) see pipesched.h */
+    int       nonblock;     /* explicit per-open nonblocking IO */
   }
 PIPEKEY;
 
