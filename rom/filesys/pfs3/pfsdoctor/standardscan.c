@@ -2312,9 +2312,11 @@ error_t RepairBitmapBlock(uint32 *bloknr, uint32 seqnr)
 	uint32 oldbloknr;
 
 	// get anodeblock
-	bmblk.data = calloc(1, SIZEOF_RESBLOCK);
 	if (GetBuildBlock(BMBLKID, seqnr))
 		return e_none;
+	bmblk.data = calloc(1, SIZEOF_RESBLOCK);
+	if (!bmblk.data)
+		return e_out_of_memory;
 
 	if (*bloknr)
 	{
