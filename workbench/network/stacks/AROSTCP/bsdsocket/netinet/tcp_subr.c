@@ -119,7 +119,7 @@ tcp_isipv6(struct inpcb *inp)
  */
 int
 tcp_v6output(struct mbuf *m, struct in6_addr *laddr, struct in6_addr *faddr,
-    int hlim, int tlen, struct inpcb *inp)
+    int hlim, int tlen, int tclass, struct inpcb *inp)
 {
     struct ip6_hdr *ip6;
     struct tcphdr  *th;
@@ -140,8 +140,8 @@ tcp_v6output(struct mbuf *m, struct in6_addr *laddr, struct in6_addr *faddr,
             return (ENOBUFS);
     }
     ip6 = mtod(m, struct ip6_hdr *);
-    ip6->ip6_flow = 0;
-    ip6->ip6_vfc  = IPV6_VERSION;	/* must follow ip6_flow (they overlap) */
+    /* version 6 and the traffic class; no flow label */
+    ip6->ip6_flow = htonl(0x60000000 | ((u_int32_t)(tclass & 0xff) << 20));
     ip6->ip6_plen = htons((u_short)tlen);
     ip6->ip6_nxt  = IPPROTO_TCP;
     ip6->ip6_hlim = (hlim > 0) ? (u_int8_t)hlim : (u_int8_t)ip6_defhlim;
@@ -317,7 +317,9 @@ int	tcp_do_rfc1323 = 1;
 int	tcp_do_rfc1644 = 0;	/* T/TCP (RFC 1644) - off: Historic, RFC 6247 */
 int	tcp_do_sack = 1;	/* enable SACK (RFC 2018) */
 int	tcp_do_newreno = 1;	/* enable NewReno (RFC 3782) */
-int	tcp_do_ecn = 0;		/* enable ECN (RFC 3168) - off by default */
+/* ECN (RFC 3168): 0 off, 1 ask for it and accept it, 2 accept it when the
+ * peer asks (the default of Linux, FreeBSD and Windows) */
+int	tcp_do_ecn = 2;
 int	tcp_do_prr = 0;		/* enable PRR (RFC 6937) - off by default */
 int	tcp_do_pmtud = 1;	/* IPv4 path MTU discovery: DF on (RFC 1191) */
 /* path MTU black-hole detection (RFC 2923 section 2.1): on, as in XNU */
@@ -517,7 +519,7 @@ struct in6_addr *laddr6, *faddr6;
         m->m_data       += sizeof(struct ipovly);
         m->m_len         = t6;
         m->m_pkthdr.len  = t6;
-        (void) tcp_v6output(m, laddr6, faddr6, hlim, t6,
+        (void) tcp_v6output(m, laddr6, faddr6, hlim, t6, 0,
                             tp ? tp->t_inpcb : NULL);
         return;
     }

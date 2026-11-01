@@ -406,7 +406,7 @@ syncache_respond(struct syncache *sc)
         m->m_len        = t6;
         m->m_pkthdr.len = t6;
         (void) tcp_v6output(m, &sc->sc_laddr6, &sc->sc_faddr6,
-                            sc->sc_ip_ttl, t6, NULL);
+                            sc->sc_ip_ttl, t6, 0, NULL);
         return (0);
     }
 #endif /* INET6 */

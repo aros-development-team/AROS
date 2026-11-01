@@ -250,8 +250,13 @@ MTU is. The steps are FreeBSD's (`tcp_timer_rexmt()`); detection is on by defaul
 ### 5.4 Options in the SYN
 
 A connection asks for the MSS (§6, segment size, for IPv6), window scale and timestamps
-(RFC 7323, `tcp_do_rfc1323`) and SACK (RFC 2018, `tcp_do_sack`). ECN (`tcp_do_ecn`) is off by
-default. T/TCP (RFC 1644: the CC, CC.NEW and CC.ECHO options, the TAO cache, the shortened
+(RFC 7323, `tcp_do_rfc1323`) and SACK (RFC 2018, `tcp_do_sack`). ECN (RFC 3168, `tcp_do_ecn`,
+sysctl `net.inet.tcp.ecn`) has three modes: 0 off, 1 ask for it in the SYN and accept it, 2 accept
+it when the peer asks (the default, as Linux, FreeBSD and Windows). In mode 1 a SYN resent twice
+goes without ECE and CWR (section 6.1.1.1), and only a SYN-ACK to a SYN that asked turns it on
+(`TF_ECN_SYN`). The ECN field of a segment is TCP's: ECT(0) on new data of a connection that agreed,
+over IPv4 and IPv6 (`tcp_v6output()` takes the traffic class), the rest of the byte from `IP_TOS` or
+`IPV6_TCLASS`. T/TCP (RFC 1644: the CC, CC.NEW and CC.ECHO options, the TAO cache, the shortened
 TIME-WAIT) is off by default too: RFC 6247 moved it to Historic, as it lets a SYN with a guessed
 CC skip the three-way handshake. It is still in the source, and `tcp_do_rfc1644` (sysctl
 `net.inet.tcp.rfc1644`) turns it back on.

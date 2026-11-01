@@ -114,6 +114,7 @@ struct tcpcb {
 #define TF_PRR		0x0040		/* PRR engaged for this recovery */
 #define TF_PMTUD_BH	0x0080		/* MSS lowered: path MTU black hole suspected */
 #define TF_PMTUD_NODF	0x0100		/* IPv4: DF off after a black hole */
+#define TF_ECN_SYN	0x0200		/* our SYN asked for ECN */
 
 	struct	tcpiphdr *t_template;	/* skeletal packet for transmit */
 	struct	inpcb *t_inpcb;		/* back pointer to internet pcb */
@@ -402,7 +403,8 @@ struct	tcpstat {
 #define	TCPCTL_RECVSPACE	9	/* receive buffer space */
 #define	TCPCTL_PMTUD		10	/* IPv4 path MTU discovery (DF) */
 #define	TCPCTL_PMTUD_BLACKHOLE	11	/* path MTU black-hole detection */
-#define TCPCTL_MAXID		12
+#define	TCPCTL_ECN		12	/* ECN: 0 off, 1 ask and accept, 2 accept */
+#define TCPCTL_MAXID		13
 
 #define TCPCTL_NAMES { \
 	{ 0, 0 }, \
@@ -417,6 +419,7 @@ struct	tcpstat {
 	{ "recvspace", CTLTYPE_INT }, \
 	{ "pmtud", CTLTYPE_INT }, \
 	{ "pmtud_blackhole", CTLTYPE_INT }, \
+	{ "ecn", CTLTYPE_INT }, \
 }
 
 #ifdef KERNEL

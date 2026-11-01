@@ -824,6 +824,16 @@ size_t newlen;
     case TCPCTL_PMTUD_BLACKHOLE:
         return (sysctl_int(oldp, oldlenp, newp, newlen,
                            &tcp_do_pmtud_blackhole));
+    case TCPCTL_ECN: {
+        int v = tcp_do_ecn, error;
+
+        error = sysctl_int(oldp, oldlenp, newp, newlen, &v);
+        if(error == 0 && (v < 0 || v > 2))
+            error = EINVAL;
+        if(error == 0)
+            tcp_do_ecn = v;
+        return (error);
+    }
     default:
         return (ENOPROTOOPT);
     }

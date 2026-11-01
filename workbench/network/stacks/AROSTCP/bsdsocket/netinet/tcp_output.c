@@ -664,7 +664,12 @@ skip_sack:
      *        If peer needs us to echo congestion, set ECE.
      */
     if(tp->t_flagsext & TF_ECN_PERMIT) {
-        if(tp->t_flagsext & TF_ECN_SND_CWR) {
+        /* a SYN-ACK resent from SYN-RECEIVED agrees again (FreeBSD) */
+        if((flags & (TH_SYN | TH_ACK)) == (TH_SYN | TH_ACK))
+            ti->ti_flags |= TH_ECE;
+        /* CWR goes on the first new data after the reduction (6.1.2) */
+        if((tp->t_flagsext & TF_ECN_SND_CWR) && len > 0 &&
+                SEQ_GEQ(tp->snd_nxt, tp->snd_max)) {
             ti->ti_flags |= TH_CWR;
             tp->t_flagsext &= ~TF_ECN_SND_CWR;
             tcpstat.tcps_ecn_cwr++;
@@ -678,17 +683,19 @@ skip_sack:
             ti->ti_flags |= TH_ECE;
             tcpstat.tcps_ecn_ece++;
         }
-    } else if(flags & TH_SYN) {
+    } else if((flags & (TH_SYN | TH_ACK)) == TH_SYN) {
         /*
-         * Not yet negotiated: propose ECN in outgoing SYN.
-         * Client sends ECE+CWR; server sends ECE only.
+         * Not yet negotiated: ask for ECN in our SYN with ECE+CWR, in mode
+         * 1 only, and not after the SYN was resent twice: a path that
+         * drops it may be dropping ECN-setup SYNs (RFC 3168 section
+         * 6.1.1.1; FreeBSD's net.inet.tcp.ecn.maxretries). The SYN-ACK of
+         * a passive open comes from the syncache.
          */
-        if(tcp_do_ecn) {
-            if(!(flags & TH_ACK))
-                ti->ti_flags |= TH_ECE | TH_CWR; /* SYN */
-            else if(tp->t_flagsext & TF_ECN_PERMIT)
-                ti->ti_flags |= TH_ECE; /* SYN-ACK */
-        }
+        if(tcp_do_ecn == 1 && tp->t_rxtshift <= 1) {
+            ti->ti_flags |= TH_ECE | TH_CWR;
+            tp->t_flagsext |= TF_ECN_SYN;
+        } else
+            tp->t_flagsext &= ~TF_ECN_SYN;
     }
     /*
      * Calculate receive window.  Don't shrink window,
@@ -843,14 +850,21 @@ skip_sack:
         D(bug("[AROSTCP:TCP] %s: SEND6 mbuf=0x%p plen=%d\n",
               __func__, m, tlen));
 
+        /* the socket's IPV6_TCLASS; the ECN field is TCP's, as for IPv4 */
+        int tclass = inp->in6p_tclass & ~IPTOS_ECN_MASK;
+
+        if((tp->t_flagsext & TF_ECN_PERMIT) && ecn_ect &&
+                !(flags & (TH_SYN | TH_RST)))
+            tclass |= IPTOS_ECN_ECT0;
         error = tcp_v6output(m, &inp->inp_laddr6, &inp->inp_faddr6,
-                             inp->in6p_hops, tlen, inp);
+                             inp->in6p_hops, tlen, tclass, inp);
     } else
 #endif /* INET6 */
     {
         ((struct ip *)ti)->ip_len = m->m_pkthdr.len;
         ((struct ip *)ti)->ip_ttl = tp->t_inpcb->inp_ip.ip_ttl;	/* XXX */
-        ((struct ip *)ti)->ip_tos = tp->t_inpcb->inp_ip.ip_tos;	/* XXX */
+        /* the ECN field is TCP's (RFC 3168 section 6.1), not IP_TOS's */
+        ((struct ip *)ti)->ip_tos = tp->t_inpcb->inp_ip.ip_tos & ~IPTOS_ECN_MASK;
         if(tcp_do_pmtud &&	/* path MTU discovery (RFC 1191) */
                 !(tp->t_flagsext & TF_PMTUD_NODF))
             ((struct ip *)ti)->ip_off |= IP_DF;

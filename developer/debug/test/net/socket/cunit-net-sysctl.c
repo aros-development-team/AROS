@@ -68,6 +68,17 @@ void testSYSCTL_PMTUD_BLACKHOLE(void)
     knob(TCPCTL_PMTUD_BLACKHOLE, 1);
 }
 
+/* ECN (RFC 3168): 2, accept it when the peer asks; 0 to 2 only. */
+void testSYSCTL_ECN(void)
+{
+    LONG v = -1, n = 3;
+
+    knob(TCPCTL_ECN, 2);
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_ECN, &v, &n), EINVAL);
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_ECN, &v, NULL), 0);
+    CU_ASSERT_EQUAL(v, 2);
+}
+
 /* A leaf that does not exist. */
 void testSYSCTL_UNKNOWN(void)
 {
@@ -100,6 +111,7 @@ int main(void)
     if (p == NULL ||
         !CU_add_test(p, "net.inet.tcp.pmtud", testSYSCTL_PMTUD) ||
         !CU_add_test(p, "net.inet.tcp.pmtud_blackhole", testSYSCTL_PMTUD_BLACKHOLE) ||
+        !CU_add_test(p, "net.inet.tcp.ecn", testSYSCTL_ECN) ||
         !CU_add_test(p, "an unknown leaf is refused", testSYSCTL_UNKNOWN))
     {
         CU_cleanup_registry();
