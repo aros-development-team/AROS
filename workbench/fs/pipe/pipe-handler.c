@@ -39,6 +39,7 @@
 #include   "pipecreate.h"
 #include   "pipesched.h"
 #include   "pipe-handler.h"
+#include <dos/pipe.h>
 
 #if PIPEDIR
 # include   "pipedir.h"
@@ -259,6 +260,10 @@ LOOP:
   OS ("Close packet received\n");
 #endif /* DEBUG */
             ClosePipe (pkt);
+            break;
+
+          case ACTION_PIPE_SET_NONBLOCK:
+            PipeSetNonblock (pkt);
             break;
 
           case ACTION_READ:

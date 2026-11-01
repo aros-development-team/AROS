@@ -24,6 +24,7 @@ POSIXCTESTFILES := \
         open \
         opendir \
         pipe \
+        pipe_nonblock \
         statfs \
         strptime \
         strtok_r \
@@ -169,3 +170,7 @@ USER_CPPFLAGS := -D_GNU_SOURCE
     progname=vfork_fd_thread files=vfork_fd_thread targetdir=$(EXEDIR) uselibs="pthread"
 %build_prog mmake=test-crt-posixc-close-pipe-progress \
     progname=close_pipe_progress files=close_pipe_progress targetdir=$(EXEDIR) uselibs="pthread"
+
+#MM- test-crt-posixc : test-crt-posixc-pipe-lock-read
+#MM test-crt-posixc-pipe-lock-read : includes linklibs
+%build_prog mmake=test-crt-posixc-pipe-lock-read progname=pipe_lock_read files=pipe_lock_read targetdir=$(EXEDIR) uselibs="pthread"
