@@ -2,7 +2,7 @@
 #define DEVICES_CONSOLE_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -21,6 +21,19 @@
 #define CD_SETKEYMAP		(CMD_NONSTD + 1)
 #define CD_ASKDEFAULTKEYMAP	(CMD_NONSTD + 2)
 #define CD_SETDEFAULTKEYMAP	(CMD_NONSTD + 3)
+
+/* Commands below CMD_NONSTD + 0x80 are left to replacement console devices */
+#define CD_GETCAPS		(CMD_NONSTD + 0x80)	/* io_Data -> ULONG capability flags, io_Length >= 4 */
+#define CD_GETPASTEMODE		(CMD_NONSTD + 0x81)	/* io_Data -> ULONG, 1 while the program asked for bracketed paste */
+
+/* CD_GETCAPS flags, for the unit the request was opened on. console.device
+   does not answer CD_GETCAPS; an error means none. */
+#define CONCAPF_OWNWINDOW	(1 << 0)	/* ConUnit cu_Window is valid until CloseDevice() */
+#define CONCAPF_STREAMREADS	(1 << 1)	/* CMD_READ returns the bytes available at once */
+#define CONCAPF_CSI7		(1 << 2)	/* input sends ESC [ instead of the 8-bit CSI */
+#define CONCAPF_PASTEREQUEST	(1 << 3)	/* sends CSI 0 SPACE v to ask the handler to paste */
+#define CONCAPF_BRACKETEDPASTE	(1 << 4)	/* answers CD_GETPASTEMODE */
+#define CONCAPF_LINEREADS	(1 << 5)	/* a cooked read hands back one line at a time */
 
 /* SGR parameters */
 #define SGR_PRIMARY	0

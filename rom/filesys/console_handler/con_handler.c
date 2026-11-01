@@ -34,6 +34,7 @@
 #include <workbench/workbench.h>
 #include <workbench/startup.h>
 #include <devices/conunit.h>
+#include <devices/console.h>
 
 #include <stddef.h>
 #include <string.h>
@@ -200,11 +201,13 @@ static BOOL ensure_appmsgport(struct filehandle *fh)
 
 static void add_con_appwindow(struct filehandle *fh)
 {
+    struct Window *window = con_window(fh);
+
     if (!(fh->flags & FHFLG_ICONIFIED) &&
-        !fh->appwindow && fh->workbenchbase && fh->window &&
+        !fh->appwindow && fh->workbenchbase && window &&
         ensure_appmsgport(fh))
     {
-        fh->appwindow = AddAppWindow(0, 0, fh->window,
+        fh->appwindow = AddAppWindow(0, 0, window,
                                      fh->appmsgport, NULL);
         if (fh->appwindow)
             D(bug("[con:handler] %s: promoted to AppWindow\n", __func__));
@@ -305,14 +308,18 @@ static BOOL deiconify_con_window(struct filehandle *fh)
     return TRUE;
 }
 
-void close_con_window(struct filehandle *fh)
+static void remove_con_appwindow(struct filehandle *fh)
 {
     if (fh->appwindow) {
         D(bug("[con:handler] Unpromote console window from being an AppWindow\n"));
         RemoveAppWindow(fh->appwindow);
         fh->appwindow = NULL;
     }
+}
 
+void close_con_window(struct filehandle *fh)
+{
+    remove_con_appwindow(fh);
     remove_con_appicon(fh);
     fh->flags &= ~FHFLG_ICONIFIED;
 
@@ -467,6 +474,21 @@ static LONG MakeConWindow(struct filehandle *fh)
     return err;
 }
 
+static ULONG query_devcaps(struct filehandle *fh)
+{
+    struct IOStdReq query = fh->conwriteio;
+    ULONG caps = 0;
+
+    query.io_Command = CD_GETCAPS;
+    query.io_Data = &caps;
+    query.io_Length = sizeof(caps);
+    query.io_Actual = 0;
+    if (DoIO(ioReq(&query)) || query.io_Actual != sizeof(caps))
+        caps = 0;
+
+    return caps;
+}
+
 /*
  * Device mode: everything above this layer only ever issues CMD_READ and
  * CMD_WRITE, so any device answering those can stand in for console.device.
@@ -496,6 +518,10 @@ static LONG MakeConDevice(struct filehandle *fh)
          * the structure.
          */
         fh->conwriteio.io_Message.mn_Length = sizeof(fh->conwriteio);
+
+        fh->devcaps = query_devcaps(fh);
+
+        add_con_appwindow(fh);
 
         /* No linefeed-mode escape here: that is a console.device control
            sequence, and a serial line would simply print it. */
@@ -532,9 +558,93 @@ static BOOL MakeSureWinIsOpen(struct filehandle *fh)
     return FALSE;
 }
 
+/* What a device with CONCAPF_PASTEREQUEST sends to ask for a paste */
+static const UBYTE paste_request[] = { 0x9B, '0', ' ', 'v' };
+
+static void stop_raw_prefix_timer(struct filehandle *fh)
+{
+    if (fh->rawprefixpending)
+    {
+        AbortIO((struct IORequest *)fh->rawprefixreq);
+        WaitIO((struct IORequest *)fh->rawprefixreq);
+        fh->rawprefixpending = FALSE;
+    }
+}
+
+/* Hand a held back partial paste request to the program as input. */
+static BOOL flush_raw_prefix(struct filehandle *fh)
+{
+    if (INPUTBUFFER_SIZE - fh->inputsize < fh->rawpasteprefix)
+        return FALSE;
+    CopyMem(paste_request, fh->inputbuffer + fh->inputsize, fh->rawpasteprefix);
+    fh->inputsize += fh->rawpasteprefix;
+    fh->rawpasteprefix = 0;
+    fh->rawprefixexpired = FALSE;
+    fh->inputpos = fh->inputstart = fh->inputsize;
+    stop_raw_prefix_timer(fh);
+    HandlePendingReads(fh);
+    return TRUE;
+}
+
+/* A partial paste request is held back for at most 50 ms. */
+static void update_raw_prefix_timer(struct filehandle *fh)
+{
+    if (!fh->rawpasteprefix)
+    {
+        stop_raw_prefix_timer(fh);
+        fh->rawprefixexpired = FALSE;
+        return;
+    }
+    if (fh->rawprefixexpired)
+    {
+        flush_raw_prefix(fh);
+        return;
+    }
+    if (fh->rawprefixpending)
+        return;
+    if (!fh->rawprefixreq)
+    {
+        fh->rawprefixmp = CreateMsgPort();
+        if (fh->rawprefixmp)
+        {
+            fh->rawprefixreq = (struct timerequest *)CreateIORequest(
+                fh->rawprefixmp, sizeof(struct timerequest));
+            if (fh->rawprefixreq && OpenDevice(TIMERNAME, UNIT_MICROHZ,
+                    (struct IORequest *)fh->rawprefixreq, 0))
+            {
+                DeleteIORequest((struct IORequest *)fh->rawprefixreq);
+                fh->rawprefixreq = NULL;
+            }
+            if (!fh->rawprefixreq)
+            {
+                DeleteMsgPort(fh->rawprefixmp);
+                fh->rawprefixmp = NULL;
+            }
+        }
+    }
+    if (!fh->rawprefixreq)
+    {
+        fh->rawprefixexpired = TRUE;
+        flush_raw_prefix(fh);
+        return;
+    }
+    fh->rawprefixreq->tr_node.io_Command = TR_ADDREQUEST;
+    fh->rawprefixreq->tr_time.tv_secs = 0;
+    fh->rawprefixreq->tr_time.tv_micro = 50000;
+    fh->rawprefixpending = TRUE;
+    SendIO((struct IORequest *)fh->rawprefixreq);
+}
+
 static void close_con(struct filehandle *fh)
 {
     /* Clean up */
+    stop_raw_prefix_timer(fh);
+    if (fh->rawprefixreq) {
+        CloseDevice((struct IORequest *) fh->rawprefixreq);
+        DeleteIORequest((struct IORequest *) fh->rawprefixreq);
+    }
+    if (fh->rawprefixmp)
+        DeleteMsgPort(fh->rawprefixmp);
 
     D(bug("[con:handler] Deleting timer request 0x%p\n", fh->timerreq));
     if (fh->timerreq) {
@@ -544,6 +654,9 @@ static void close_con(struct filehandle *fh)
 
     D(bug("[con:handler] Deleting timer port 0x%p\n", fh->timermp));
     DeleteMsgPort(fh->timermp);
+
+    /* The window may go with the device. */
+    remove_con_appwindow(fh);
 
     if (fh->flags & FHFLG_CONSOLEDEVICEOPEN) {
         D(bug("[con:handler] Closing console.device...\n"));
@@ -567,7 +680,7 @@ static void close_con(struct filehandle *fh)
     if (fh->wintitle)
         FreeVec(fh->wintitle);
     if (fh->pastebuffer)
-        FreeMem(fh->pastebuffer, PASTEBUFSIZE);
+        FreeMem(fh->pastebuffer, fh->pastebuffercapacity);
 
     CloseLibrary((struct Library*) fh->intuibase);
     CloseLibrary((struct Library*) fh->dosbase);
@@ -796,6 +909,10 @@ static void startread(struct filehandle *fh)
 {
     if (fh->flags & FHFLG_ASYNCCONSOLEREAD)
         return;
+    /* Raw input and pasted text still waiting go first. */
+    if ((fh->flags & FHFLG_RAW) &&
+        (fh->conbufferpos < fh->conbuffersize || fh->pastebuffer))
+        return;
     fh->conreadio->io_Command = CMD_READ;
     fh->conreadio->io_Data = fh->consolebuffer;
     /*
@@ -804,7 +921,8 @@ static void startread(struct filehandle *fh)
      * whole count has arrived, which for a console would mean no input at all
      * until the user typed a full buffer, so ask for one character.
      */
-    fh->conreadio->io_Length = (fh->flags & FHFLG_DEVICEMODE)
+    fh->conreadio->io_Length = ((fh->flags & FHFLG_DEVICEMODE) &&
+                                !(fh->devcaps & CONCAPF_STREAMREADS))
                              ? 1 : CONSOLEBUFFER_SIZE;
     SendIO((struct IORequest*) fh->conreadio);
     fh->flags |= FHFLG_ASYNCCONSOLEREAD;
@@ -812,29 +930,88 @@ static void startread(struct filehandle *fh)
 
 static void pump_raw_input(struct filehandle *fh)
 {
-    while (fh->conbufferpos < fh->conbuffersize)
+    if (fh->rawprefixexpired && !flush_raw_prefix(fh))
+        return;
+
+    while (fh->pastebuffer || fh->conbufferpos < fh->conbuffersize)
     {
-        LONG available = fh->conbuffersize - fh->conbufferpos;
         LONG space = INPUTBUFFER_SIZE - fh->inputsize;
-        LONG copylen;
+        ULONG copylen;
 
         if (space <= 0)
             break;
 
-        copylen = available < space ? available : space;
-        CopyMem(fh->consolebuffer + fh->conbufferpos,
-            fh->inputbuffer + fh->inputsize, copylen);
-        fh->conbufferpos += copylen;
-        fh->inputsize += copylen;
+        if (fh->pastebuffer)
+        {
+            copylen = fh->pastebuffersize - fh->pastebufferpos;
+            if (copylen > (ULONG)space)
+                copylen = space;
+            CopyMem(fh->pastebuffer + fh->pastebufferpos,
+                fh->inputbuffer + fh->inputsize, copylen);
+            fh->pastebufferpos += copylen;
+            fh->inputsize += copylen;
+            if (fh->pastebufferpos >= fh->pastebuffersize)
+            {
+                FreeMem(fh->pastebuffer, fh->pastebuffercapacity);
+                fh->pastebuffer = NULL;
+            }
+        }
+        else if (fh->devcaps & CONCAPF_PASTEREQUEST)
+        {
+            /* Pick paste requests out of the device input. */
+            while (fh->conbufferpos < fh->conbuffersize && !fh->pastebuffer)
+            {
+                UBYTE ch = fh->consolebuffer[fh->conbufferpos];
+
+                if (ch == paste_request[fh->rawpasteprefix])
+                {
+                    fh->conbufferpos++;
+                    if (++fh->rawpasteprefix == sizeof(paste_request))
+                    {
+                        fh->rawpasteprefix = 0;
+                        do_paste(fh);
+                    }
+                }
+                else if (fh->rawpasteprefix)
+                {
+                    /* Not a paste request: pass on the held back bytes,
+                       then look at this one again. */
+                    if (INPUTBUFFER_SIZE - fh->inputsize < fh->rawpasteprefix)
+                        break;
+                    CopyMem(paste_request, fh->inputbuffer + fh->inputsize,
+                        fh->rawpasteprefix);
+                    fh->inputsize += fh->rawpasteprefix;
+                    fh->rawpasteprefix = 0;
+                }
+                else
+                {
+                    if (fh->inputsize >= INPUTBUFFER_SIZE)
+                        break;
+                    fh->inputbuffer[fh->inputsize++] = ch;
+                    fh->conbufferpos++;
+                }
+            }
+        }
+        else
+        {
+            copylen = fh->conbuffersize - fh->conbufferpos;
+            if (copylen > (ULONG)space)
+                copylen = space;
+            CopyMem(fh->consolebuffer + fh->conbufferpos,
+                fh->inputbuffer + fh->inputsize, copylen);
+            fh->conbufferpos += copylen;
+            fh->inputsize += copylen;
+        }
         fh->inputpos = fh->inputstart = fh->inputsize;
 
         HandlePendingReads(fh);
 
-        /* Without a pending application read, keep the remaining device
-         * bytes in consolebuffer until space is made by ACTION_READ. */
+        /* Without a pending application read, keep the remaining bytes
+         * until space is made by ACTION_READ. */
         if (fh->inputsize != 0)
             break;
     }
+    update_raw_prefix_timer(fh);
 }
 
 static void stopwait(struct filehandle *fh, struct DosPacket *waitingdp, ULONG result)
@@ -901,9 +1078,11 @@ LONG CONMain(struct ExecBase *SysBase)
     /*
      * A device-backed console is a single stream, so publish the port and let
      * everyone share this handler. CON: deliberately does not do this: leaving
-     * dn_Task clear is what gets each open its own window.
+     * dn_Task clear is what gets each open its own window. A device that
+     * opens a window per open is treated the same way.
      */
-    if (fh->flags & FHFLG_DEVICEMODE)
+    if ((fh->flags & FHFLG_DEVICEMODE) &&
+        !(fh->devcaps & CONCAPF_OWNWINDOW))
         fh->dn->dn_Task = mp;
 
     replypkt(dp, DOSTRUE);
@@ -916,6 +1095,7 @@ LONG CONMain(struct ExecBase *SysBase)
         ULONG packetmask = (1L << mp->mp_SigBit) | (1L << procmp->mp_SigBit);
         ULONG winmask;
         ULONG appwindowmask;
+        ULONG rawprefixmask;
         ULONG i, insertedlen;
         ULONG sigs;
         UBYTE iconpath[INPUTBUFFER_SIZE];
@@ -926,7 +1106,9 @@ LONG CONMain(struct ExecBase *SysBase)
             insertedlen = 0;
             winmask = fh->window ? 1L << fh->window->UserPort->mp_SigBit : 0L;
             appwindowmask = fh->appmsgport ? 1L << fh->appmsgport->mp_SigBit : 0L;
-            sigs = Wait(packetmask | conreadmask | timermask | winmask | appwindowmask);
+            rawprefixmask = fh->rawprefixmp ? 1L << fh->rawprefixmp->mp_SigBit : 0L;
+            sigs = Wait(packetmask | conreadmask | timermask | winmask |
+                        appwindowmask | rawprefixmask);
 
             if ((appwindowmask) && (sigs & appwindowmask)) {
                 D(bug("[con:handler] %s: appwindow msg signal\n", __func__));
@@ -1110,7 +1292,10 @@ LONG CONMain(struct ExecBase *SysBase)
                                             {
                                                 D(bug("[con:handler] %s: Menu: Paste\n", __func__));
                                                 do_paste(fh);
-                                                process_input(fh);
+                                                if (fh->flags & FHFLG_RAW)
+                                                    pump_raw_input(fh);
+                                                else
+                                                    process_input(fh);
                                             }
                                             break;
                                         case MEN_CONSOLE_CLIP0:
@@ -1154,7 +1339,9 @@ LONG CONMain(struct ExecBase *SysBase)
                 DREAD(bug("[con:handler] %s: console read signal\n", __func__));
                 GetMsg(fh->conreadmp);
                 fh->flags &= ~FHFLG_ASYNCCONSOLEREAD;
-                if (waitingdp) {
+                /* In raw mode, a paste request is not a character. */
+                if (waitingdp && (!(fh->flags & FHFLG_RAW) ||
+                                  !(fh->devcaps & CONCAPF_PASTEREQUEST))) {
                     stopwait(fh, waitingdp, DOSTRUE);
                     waitingdp = NULL;
                 }
@@ -1167,6 +1354,10 @@ LONG CONMain(struct ExecBase *SysBase)
                     /* raw mode */
                     DREAD(bug("[con:handler] %s: FHFLG_RAW\n", __func__));
                     pump_raw_input(fh);
+                    if (waitingdp && fh->inputsize > 0) {
+                        stopwait(fh, waitingdp, DOSTRUE);
+                        waitingdp = NULL;
+                    }
                 } /* if (fh->flags & FHFLG_RAW) */
                 else {
                     DREAD(bug("[con:handler] %s: COOKED\n", __func__));
@@ -1185,6 +1376,18 @@ LONG CONMain(struct ExecBase *SysBase)
                     (!(fh->flags & FHFLG_RAW) ||
                         fh->conbufferpos >= fh->conbuffersize))
                     startread(fh);
+            }
+
+            if ((sigs & rawprefixmask) && fh->rawprefixpending &&
+                CheckIO((struct IORequest *)fh->rawprefixreq)) {
+                WaitIO((struct IORequest *)fh->rawprefixreq);
+                fh->rawprefixpending = FALSE;
+                fh->rawprefixexpired = TRUE;
+                pump_raw_input(fh);
+                if (waitingdp && fh->inputsize > 0) {
+                    stopwait(fh, waitingdp, DOSTRUE);
+                    waitingdp = NULL;
+                }
             }
 
             /* DOS addresses a handler by the port it was started on until
@@ -1323,6 +1526,11 @@ LONG CONMain(struct ExecBase *SysBase)
                 case ACTION_SCREEN_MODE:
                     {
                         DACTION(bug("[con:handler] ACTION_SCREEN_MODE %s\n", dp->dp_Arg1 ? "RAW" : "CON"));
+                        if (!dp->dp_Arg1 && fh->rawpasteprefix &&
+                            !flush_raw_prefix(fh)) {
+                            replypkt2(dp, DOSFALSE, ERROR_NO_FREE_STORE);
+                            break;
+                        }
                         if (dp->dp_Arg1 && !(fh->flags & FHFLG_RAW)) {
                             /* Switching from CON: mode to RAW: mode */
                             fh->flags |= FHFLG_RAW;
