@@ -4,9 +4,11 @@
     Desc:
 */
 
+#include <aros/atomic.h>
 #include <aros/debug.h>
 #include <aros/kernel.h>
 #include <aros/libcall.h>
+#include <proto/exec.h>
 
 #include <kernel_base.h>
 
@@ -42,8 +44,9 @@
 
     RESULT
         Returns 0 on success, or a negative value on error:
-            -1 — resolver argument was NULL
-            -2 — a resolver is already registered
+            -1 - resolver argument was NULL
+            -2 - a resolver is already registered
+            -3 - resolver registry is currently in use
 
     NOTES
         This API allows an external component (typically debug.library) to
@@ -51,7 +54,9 @@
         the resolver will be used automatically by KrnPrintBacktrace() and
         the kernel crash handler.
 
-        The function is safe to call from user or supervisor context.
+        Registration never waits for an active backtrace reader. On all-pc
+        targets it returns -3 when the resolver pair cannot be changed without
+        crossing a live reader lease.
 
     EXAMPLE
         static LONG MyResolver(APTR addr, struct KrnSymResolve *out, APTR priv)
@@ -70,9 +75,10 @@
         KrnUnregisterSymResolver(), KrnPrintBacktrace(), KrnBacktraceFromFrame()
 
     INTERNALS
-        The resolver and private pointer are stored in KernelBase global fields
-        (kb_gResolver and kb_gResolvPrivate). Calls are made directly from
-        kernel diagnostic paths without synchronization.
+        The resolver and private pointer form one registry pair. On all-pc,
+        a generation plus reader count protects pair lifetime. SMP writers
+        additionally serialize through a writer-only kernel spinlock; trap
+        readers never acquire that spinlock.
 
 ******************************************************************************/
 {
@@ -81,13 +87,46 @@
     if (!resolver)
         return -1;
 
-    if (KernelBase->kb_gResolver != NULL) {
-        return -2; /* already installed */
+#if defined(__i386__) || defined(__x86_64__)
+    LONG result;
+
+    Disable();
+#if defined(__AROSEXEC_SMP__)
+    KrnSpinLock(&KernelBase->kb_gResolverSpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+
+    if (KernelBase->kb_gResolver != NULL)
+        result = -2;
+    else
+    {
+        AROS_ATOMIC_INC(KernelBase->kb_gResolverGeneration);
+        if (KernelBase->kb_gResolverReaders != 0)
+        {
+            AROS_ATOMIC_INC(KernelBase->kb_gResolverGeneration);
+            result = -3;
+        }
+        else
+        {
+            KernelBase->kb_gResolver = resolver;
+            KernelBase->kb_gResolvPrivate = priv;
+            AROS_ATOMIC_INC(KernelBase->kb_gResolverGeneration);
+            result = 0;
+        }
     }
+
+#if defined(__AROSEXEC_SMP__)
+    KrnSpinUnLock(&KernelBase->kb_gResolverSpinLock);
+#endif
+    Enable();
+    return result;
+#else
+    if (KernelBase->kb_gResolver != NULL)
+        return -2;
 
     KernelBase->kb_gResolver = resolver;
     KernelBase->kb_gResolvPrivate = priv;
     return 0;
+#endif
 
     AROS_LIBFUNC_EXIT
 }

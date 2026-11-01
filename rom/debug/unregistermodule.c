@@ -43,6 +43,9 @@ static BOOL RemoveSegmentRange(module_t * mod, LONG firstidx, LONG count);
         (when an existing seglist is broken and only a part of the module
         is unloaded).
 
+        On kernels with resolver leases, module storage is not modified or
+        freed until already admitted trap-side resolver readers have left.
+
     EXAMPLE
 
     BUGS
@@ -60,6 +63,7 @@ static BOOL RemoveSegmentRange(module_t * mod, LONG firstidx, LONG count);
 
     D(bug("[Debug] UnregisterModule(0x%p)\n", segList));
     ObtainSemaphore(&DBGBASE(DebugBase)->db_ModSem);
+    Debug_ResolverWriteBegin(DBGBASE(DebugBase));
 
     while (segList)
     {
@@ -118,6 +122,7 @@ static BOOL RemoveSegmentRange(module_t * mod, LONG firstidx, LONG count);
     if (mod != NULL && rangestart > -1)
         RemoveSegmentRange(mod, rangestart, (i - rangestart));
 
+    Debug_ResolverWriteEnd(DBGBASE(DebugBase));
     ReleaseSemaphore(&DBGBASE(DebugBase)->db_ModSem);
 
     AROS_LIBFUNC_EXIT
