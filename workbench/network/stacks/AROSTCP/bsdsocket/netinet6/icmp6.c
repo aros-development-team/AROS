@@ -236,6 +236,10 @@ icmp6_notify_error(struct mbuf *m, int off, int cmd)
     sa6.sin6_len    = sizeof(sa6);
     sa6.sin6_family = AF_INET6;
     sa6.sin6_addr   = oip6.ip6_dst;
+    /* a link-scope destination is on the link the error came in by */
+    if((IN6_IS_ADDR_LINKLOCAL(&sa6.sin6_addr) ||
+            IN6_IS_ADDR_MC_LINKLOCAL(&sa6.sin6_addr)) && m->m_pkthdr.rcvif)
+        sa6.sin6_scope_id = m->m_pkthdr.rcvif->if_index;
 
     pr = &inet6sw[ip6_protox[oip6.ip6_nxt]];
     if(pr->pr_protocol == oip6.ip6_nxt && pr->pr_ctlinput != NULL)

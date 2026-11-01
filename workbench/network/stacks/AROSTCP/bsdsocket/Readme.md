@@ -238,11 +238,25 @@ also expires SYN-cache entries, and advances the ISS clock (`tcp_iss`, RFC 6528)
 every tick, whether or not there are connections: `tcp_now` is the timestamp clock (RFC 7323)
 and paces the IPv4 ICMP error rate limit (§7).
 
+The retransmission timer also detects a path MTU black hole (RFC 2923 section 2.1): a path that
+drops large packets without saying so, because the ICMP that would say so is filtered. After the 2nd
+timeout in a row with a full-sized segment unacknowledged, `tcp_pmtud_blackhole()` (`tcp_subr.c`)
+tries segments that fit the IPv6 minimum MTU (1280), or 1240 bytes for IPv4; after the 4th, an IPv4
+connection stops setting DF (`TF_PMTUD_NODF`), so routers fragment again; after the 6th it was not
+the path, and the MSS and DF come back. A lowered MSS that gets through is kept, as a learned path
+MTU is. The steps are FreeBSD's (`tcp_timer_rexmt()`); detection is on by default, as in XNU
+(sysctl `net.inet.tcp.pmtud_blackhole`).
+
 ### 5.4 Options in the SYN
 
 A connection asks for the MSS (§6, segment size, for IPv6), window scale and timestamps
-(RFC 7323, `tcp_do_rfc1323`) and SACK (RFC 2018, `tcp_do_sack`). ECN (`tcp_do_ecn`) is off by
-default. T/TCP (RFC 1644: the CC, CC.NEW and CC.ECHO options, the TAO cache, the shortened
+(RFC 7323, `tcp_do_rfc1323`) and SACK (RFC 2018, `tcp_do_sack`). ECN (RFC 3168, `tcp_do_ecn`,
+sysctl `net.inet.tcp.ecn`) has three modes: 0 off, 1 ask for it in the SYN and accept it, 2 accept
+it when the peer asks (the default, as Linux, FreeBSD and Windows). In mode 1 a SYN resent twice
+goes without ECE and CWR (section 6.1.1.1), and only a SYN-ACK to a SYN that asked turns it on
+(`TF_ECN_SYN`). The ECN field of a segment is TCP's: ECT(0) on new data of a connection that agreed,
+over IPv4 and IPv6 (`tcp_v6output()` takes the traffic class), the rest of the byte from `IP_TOS` or
+`IPV6_TCLASS`. T/TCP (RFC 1644: the CC, CC.NEW and CC.ECHO options, the TAO cache, the shortened
 TIME-WAIT) is off by default too: RFC 6247 moved it to Historic, as it lets a SYN with a guessed
 CC skip the three-way handshake. It is still in the source, and `tcp_do_rfc1644` (sysctl
 `net.inet.tcp.rfc1644`) turns it back on.
@@ -311,7 +325,9 @@ IPv4: the socket keeps its bound address, and only a missing port is bound for g
   (`IPV6_RECVPKTINFO`) flag is set, `udp6_input` delivers the received hop limit and/or a
   `struct in6_pktinfo` (public in `<netinet/in.h>`: destination address + receiving interface index)
   as `IPPROTO_IPV6` ancillary `cmsg`s, chained via `m_next` and assembled before the headers are
-  stripped (RFC 3542).
+  stripped (RFC 3542). `IPV6_RECVTCLASS` (`IN6P_TCLASS`) adds the traffic class (section 6.5), so
+  an application sees the ECN field (QUIC, RFC 9000 section 13.4). `IPV6_TCLASS`, as a socket option
+  or ancillary data on one datagram, is the traffic class UDP and raw sockets send with (-1 is 0).
 - **Raw IPv6 sockets** (`raw_ip6.c`, after KAME's `raw_ip6.c`; RFC 3542 §3) have an `inpcb` on
   their own list (`rip6cb`), so the IPv6 options are the ones `ip6_ctloutput()` keeps for UDP6. The
   socket's protocol and its `ICMP6_FILTER` (level `IPPROTO_ICMPV6`, pass-all by default) live in a
@@ -330,7 +346,7 @@ IPv4: the socket keeps its bound address, and only a missing port is bound for g
   long. On LP64 `CMSG_DATA()` starts past padding after the 12-byte header, which a length of
   `sizeof(struct cmsghdr) + size` would cut from the data's end. `recvmsg()` copies the whole chain
   into the caller's buffer and reports what did not fit with `MSG_CTRUNC` in `msg_flags`. IPv4's
-  `IP_RECVDSTADDR` uses the same helper.
+  `IP_RECVDSTADDR` and `IP_RECVTOS` use the same helper.
 
 ### 6.1 Neighbour Discovery
 
@@ -441,8 +457,24 @@ rather than fragments: `icmp6_notify_error()` passes the Packet Too Big to `tcp6
 `PRC_MSGSIZE`, with the MTU and the quoted segment's sequence number in the `ip6ctlparam`. When that
 segment is still unacknowledged - anything else is old, or forged by someone who does not see the
 connection (RFC 5927 section 7.2) - `tcp_mtudisc6()` lowers `t_maxopd`/`t_maxseg` as `tcp_mss`
-would for that MTU and resends from `snd_una`, as FreeBSD's `tcp_mtudisc()`. UDP sockets ignore
-`PRC_MSGSIZE`: a datagram is fragmented to the path MTU anyway.
+would for that MTU and resends from `snd_una`, as FreeBSD's `tcp_mtudisc()`. A UDP datagram is
+fragmented to the path MTU, unless the application does its own path MTU discovery (QUIC, RFC 9000
+section 14; RFC 8899) with the RFC 3542 section 11 options, as KAME and FreeBSD have them:
+
+- `IPV6_USE_MIN_MTU`: -1 (the default) sends multicast at 1280 bytes a packet and unicast at the
+  path MTU, 0 everything at the path MTU, 1 everything at 1280. `IPV6_DONTFRAG`: never fragment.
+  The datagram leaves whole even above the path MTU - an application probing for a larger one - and
+  is refused with `EMSGSIZE` only above the link's MTU. Both are socket options and ancillary data
+  on one datagram (UDP and raw sockets; `ip6_outflags()` turns them into `ip6_output()` flags).
+- `IPV6_RECVPATHMTU`: a Packet Too Big about a datagram the socket sent (its port, and its address
+  if bound, and its peer if connected), or a datagram refused with `IPV6_DONTFRAG`, gives the socket
+  an `IPV6_PATHMTU` message: no data, a `struct ip6_mtuinfo` with the destination and the MTU
+  (`ip6_notify_pmtu()`, from `udp6_ctlinput()`).
+- `IPV6_PATHMTU` (get): the path MTU to a connected socket's peer, as `ip6_output()` would find it
+  (`ip6_pathmtu()`).
+
+An ICMPv6 error about a link-scope destination carries the interface it came in on as the
+destination's zone (`sin6_scope_id`), so a socket bound to another interface is not told.
 
 That route is the destination's own. On the link it is the neighbour's host route, cloned by
 neighbour discovery. Through a router the table only has the router's route (a prefix, or `::/0`),
@@ -565,13 +597,21 @@ then a preferred address over a deprecated one, then a temporary address over a 
   `tcp_ctlinput` (`PRC_MSGSIZE`) lowers the MSS of the connection the quoted segment belongs to,
   when that segment is still unacknowledged (RFC 5927 section 7.2), with `tcp_mtudisc()`, shared with
   IPv6; and when `ip_output` refuses a segment larger than the route's MTU (`EMSGSIZE`),
-  `tcp_output` does the same from the route. UDP ignores `PRC_MSGSIZE`: it does not set DF.
+  `tcp_output` does the same from the route. UDP ignores `PRC_MSGSIZE`; a socket with `IP_DONTFRAG`
+  (FreeBSD's number) sends with DF, so `ip_output` refuses a datagram above the path MTU with
+  `EMSGSIZE` instead of fragmenting it.
+  Where the ICMP never comes, the retransmission timer finds the black hole (§5.3). Sysctl
+  `net.inet.tcp.pmtud` turns DF off.
 - **UDP** (`udp_usrreq.c`) is the standard datagram path over the shared `udb` table. The default
   UDP receive buffer (`udp_recvspace`, 256 datagrams) and the IP input queue depth
   (`ipqmaxlen = 4·IFQ_MAXLEN`, `ip_input.c`) are sized to absorb short high-rate receive bursts
   before the owning task drains them, rather than dropping at the ~40-datagram default. `SO_BINDTODEVICE`
   pins a UDP socket to one interface, so a limited broadcast (`255.255.255.255`) or a reply can be
-  directed out a chosen link even on a multi-homed host with no default route.
+  directed out a chosen link even on a multi-homed host with no default route. A datagram carries
+  the ancillary data its socket asked for - `IP_RECVDSTADDR`, and `IP_RECVTOS` (FreeBSD's: the TOS
+  byte, so the ECN field) - whether it was sent to one address or to a group or broadcast address
+  (`udp_savecontrol()`). `IP_TOS` as ancillary data (a byte, or an int as Linux takes it) sets the
+  TOS byte of one datagram.
 - **IPv4 multicast** (built under `-DENABLE_MULTICAST`) provides host-side group membership,
   mirroring the IPv6 path. `in_addmulti`/`in_delmulti` (`in.c`) maintain the reference-counted
   `in_multihead` list and program the NIC hardware filter over SANA-II (RFC 1112 class-D →
@@ -709,7 +749,8 @@ Properties the implementation provides:
   delivered; per-source multicast filtering (MLDv2 INCLUDE/EXCLUDE source lists) is not tracked.
 - **Unimplemented API surface.** Several Roadshow interface-management entrypoints
   (`AddInterfaceTagList`, `ConfigureInterfaceTagList`, `ObtainInterfaceList`, …) and Miami calls
-  (`MiamiSysCtl`, `MiamiGetHardwareLen`, `sockatmark`, …) are stubs that log "not implemented".
+  (`MiamiGetHardwareLen`, `sockatmark`, …) are stubs that log "not implemented". `MiamiSysCtl()`
+  serves the `net.inet.{ip,tcp,udp}` MIB only (`kern/kern_sysctl.c`).
 
 ---
 

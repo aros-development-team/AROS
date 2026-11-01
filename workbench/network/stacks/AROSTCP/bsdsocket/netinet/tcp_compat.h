@@ -72,6 +72,6 @@ extern int  ip6_output(void *, ...);	/* (m, opt, ro, flags, im6o, ifpp, inp) */
  */
 struct ip6_moptions;
 int  tcp_v6output(struct mbuf *, struct in6_addr *, struct in6_addr *,
-	    int hlim, int tlen, struct inpcb *);
+                  int, int, int, struct inpcb *);
 
 #endif

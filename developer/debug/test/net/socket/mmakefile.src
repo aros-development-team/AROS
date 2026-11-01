@@ -32,10 +32,12 @@ CUNITSOCKETTESTFILES := \
     cunit-net-slaac6 \
     cunit-net-socket \
     cunit-net-srcaddr6 \
+    cunit-net-sysctl \
     cunit-net-tcp \
     cunit-net-tcpmss6 \
     cunit-net-tcpsyn6 \
     cunit-net-udp \
+    cunit-net-udppmtu \
     cunit-net-unreach6
 
 #MM test-socket : includes linklibs
