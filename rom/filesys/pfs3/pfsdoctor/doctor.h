@@ -124,6 +124,7 @@ struct cacheline
 	struct cacheline *prev;
 	uint32 blocknr;			/* 1 == unused */
 	bool dirty;
+	uint32 dirtyfirst, dirtylast;
 	uint8 *data;
 };
 

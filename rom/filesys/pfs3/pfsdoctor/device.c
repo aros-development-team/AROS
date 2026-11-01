@@ -138,6 +138,12 @@ error_t c_WriteBlock(uint8 *data, uint32 bloknr, uint32 bytes)
 			return e_read_error;
 
 		memcpy(cl->data + offset*volume.blocksize, data, volume.blocksize);
+		if (!cl->dirty)
+			cl->dirtyfirst = cl->dirtylast = offset;
+		else {
+			cl->dirtyfirst = min(cl->dirtyfirst, offset);
+			cl->dirtylast = max(cl->dirtylast, offset);
+		}
 		cl->dirty = true;
 	}
 	return error;
@@ -190,7 +196,8 @@ static struct cacheline *c_GetCacheLine(uint32 bloknr)
 		{
 			cl = (struct cacheline *)cache.LRUqueue.mlh_TailPred;
 			if (cl->dirty) {
-				error = volume.writerawblocks(cl->data, cache.linesize, cl->blocknr);
+				error = volume.writerawblocks(cl->data + cl->dirtyfirst * volume.blocksize,
+				cl->dirtylast - cl->dirtyfirst + 1, cl->blocknr + cl->dirtyfirst);
 				if (error)
 					return NULL;
 			}
@@ -226,7 +233,8 @@ error_t UpdateCache(void)
 	{
 		if (cl->dirty)
 		{
-			error = volume.writerawblocks(cl->data, cache.linesize, cl->blocknr);
+			error = volume.writerawblocks(cl->data + cl->dirtyfirst * volume.blocksize,
+				cl->dirtylast - cl->dirtyfirst + 1, cl->blocknr + cl->dirtyfirst);
 			if (error) {
 				adderror("write error");
 				return error;
