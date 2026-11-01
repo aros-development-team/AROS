@@ -782,8 +782,11 @@ int __init_fd(struct PosixCIntBase *PosixCBase)
         /* VFORK_PARENT use case - child manipulates file descriptors prior to calling exec* */
         int res = __copy_fdarray(pPosixCBase->fd_array, pPosixCBase->fd_slots);
 
-        if (pPosixCBase->flags & EXEC_PARENT)
-            /* EXEC_PARENT called through RunCommand which injected parameters to Input() */
+        if (res && (pPosixCBase->flags & EXEC_PARENT) &&
+            FD_SLOTS(PosixCBase) > STDIN_FILENO &&
+            FD_ARRAY(PosixCBase)[STDIN_FILENO] != NULL)
+            /* RunCommand injected parameters into Input(). An intentionally
+               closed stdin has no fcb to mark and must remain closed. */
             FD_ARRAY(PosixCBase)[STDIN_FILENO]->fcb->privflags |= _FCB_FLUSHONREAD;
 
         return res;
