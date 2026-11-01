@@ -968,6 +968,7 @@ findpcb:
                 tcpstat.tcps_rcvackbyte += acked;
                 sbdrop(&so->so_snd, acked);
                 tp->snd_una = ti->ti_ack;
+                TCP_UTO_PROGRESS(tp);
                 m_freem(m);
 
                 /*
@@ -1143,6 +1144,7 @@ findpcb:
 
             tp->rcv_adv += tp->rcv_wnd;
             tp->snd_una++;		/* SYN is acked */
+            TCP_UTO_PROGRESS(tp);   /* the SYN no longer waits */
             /*
              * If there's data, delay ACK; if there's also a FIN
              * ACKNOW will be turned on later.
@@ -1775,6 +1777,7 @@ close:
              */
             tp->t_flags &= ~TF_NEEDSYN;
             tp->snd_una++;
+            TCP_UTO_PROGRESS(tp);
         }
 
 process_ACK:
@@ -1837,6 +1840,7 @@ process_ACK:
         if(so->so_snd.sb_flags & SB_NOTIFY)
             sowwakeup(so);
         tp->snd_una = ti->ti_ack;
+        TCP_UTO_PROGRESS(tp);
         if(SEQ_LT(tp->snd_nxt, tp->snd_una))
             tp->snd_nxt = tp->snd_una;
         /*

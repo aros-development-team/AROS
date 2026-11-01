@@ -717,7 +717,8 @@ syncache_socket(struct syncache *sc, struct socket *lso, struct tcpiphdr *ti)
     /* Compute t_maxseg/t_maxopd (and the initial window) from the peer MSS. */
     tcp_mss(tp, sc->sc_peer_mss);
 
-    /* the listening socket's keepalive values, as FreeBSD's syncache */
+    /* the listening socket's keepalive values (as FreeBSD's syncache) and
+     * user timeout */
     {
         const struct tcpcb *ltp = intotcpcb(sotoinpcb(lso));
 
@@ -726,6 +727,7 @@ syncache_socket(struct syncache *sc, struct socket *lso, struct tcpiphdr *ti)
             tp->t_keepidle = ltp->t_keepidle;
             tp->t_keepintvl = ltp->t_keepintvl;
             tp->t_keepcnt = ltp->t_keepcnt;
+            tp->t_uto_ms = ltp->t_uto_ms;   /* as Linux */
         }
     }
 

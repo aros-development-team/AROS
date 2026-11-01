@@ -317,6 +317,7 @@ again:
             tp->t_timer[TCPT_PERSIST] == 0) {
         tp->t_rxtshift = 0;
         tcp_setpersist(tp);
+        TCP_UTO_START(tp);          /* data waits on the window */
     }
 
     /*
@@ -796,6 +797,7 @@ skip_sack:
         if(tp->t_timer[TCPT_REXMT] == 0 &&
                 tp->snd_nxt != tp->snd_una) {
             tp->t_timer[TCPT_REXMT] = tp->t_rxtcur;
+            TCP_UTO_START(tp);      /* data waits for its ACK */
             if(tp->t_timer[TCPT_PERSIST]) {
                 tp->t_timer[TCPT_PERSIST] = 0;
                 tp->t_rxtshift = 0;

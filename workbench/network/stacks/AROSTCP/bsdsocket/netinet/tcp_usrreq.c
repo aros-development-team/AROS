@@ -652,6 +652,13 @@ struct mbuf **mp;
             }
             break;
 
+        case TCP_USER_TIMEOUT:      /* ms, RFC 5482; 0 is off */
+            if(m == NULL || m->m_len < sizeof(int) || *mtod(m, int *) < 0)
+                error = EINVAL;
+            else
+                tp->t_uto_ms = (u_int)*mtod(m, int *);
+            break;
+
         default:
             error = ENOPROTOOPT;
             break;
@@ -692,6 +699,9 @@ struct mbuf **mp;
             break;
         case TCP_KEEPCNT:
             *mtod(m, int *) = TP_KEEPCNT(tp);
+            break;
+        case TCP_USER_TIMEOUT:
+            *mtod(m, int *) = (int)tp->t_uto_ms;
             break;
         default:
             error = ENOPROTOOPT;

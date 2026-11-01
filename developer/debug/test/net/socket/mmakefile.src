@@ -39,7 +39,8 @@ CUNITSOCKETTESTFILES := \
     cunit-net-tcpsyn6 \
     cunit-net-udp \
     cunit-net-udppmtu \
-    cunit-net-unreach6
+    cunit-net-unreach6 \
+    cunit-net-uto
 
 #MM test-socket : includes linklibs
 

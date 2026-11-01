@@ -138,6 +138,16 @@ tcp_slowtimo()
         tp = intotcpcb(ip);
         if(tp == 0)
             continue;
+        /*
+         * TCP_USER_TIMEOUT (RFC 5482): data sent and unacknowledged, or
+         * held back by a shut window, for that long - whichever timer is
+         * running, retransmission or persist.
+         */
+        if(TCP_UTO_EXPIRED(tp)) {
+            tcpstat.tcps_timeoutdrop++;
+            (void) tcp_drop(tp, ETIMEDOUT);
+            continue;
+        }
         for(i = 0; i < TCPT_NTIMERS; i++) {
             if(tp->t_timer[i] && --tp->t_timer[i] == 0) {
                 if(tcp_usrreq(tp->t_inpcb->inp_socket,
@@ -212,7 +222,13 @@ int timer;
               __func__, tp, tp->t_state, tp->t_rxtshift,
               (unsigned long)tp->snd_una, (unsigned long)tp->snd_nxt,
               (unsigned long)tp->snd_max));
-        if(++tp->t_rxtshift > TCP_MAXRXTSHIFT) {
+        /*
+         * The connection gives up after TCP_MAXRXTSHIFT retransmissions;
+         * with TCP_USER_TIMEOUT it goes on at the longest interval, and
+         * tcp_slowtimo() gives up when its data has waited that long
+         * (RFC 5482; as Linux, the user timeout replaces the count).
+         */
+        if(++tp->t_rxtshift > TCP_MAXRXTSHIFT && tp->t_uto_ms == 0) {
             D(bug("[AROSTCP:TCP] %s: REXMT max retries exceeded, dropping\n", __func__));
             tp->t_rxtshift = TCP_MAXRXTSHIFT;
             tcpstat.tcps_timeoutdrop++;
@@ -220,6 +236,8 @@ int timer;
                           tp->t_softerror : ETIMEDOUT);
             break;
         }
+        if(tp->t_rxtshift > TCP_MAXRXTSHIFT)
+            tp->t_rxtshift = TCP_MAXRXTSHIFT;   /* go on at the longest */
         tcpstat.tcps_rexmttimeo++;
         rexmt = TCP_REXMTVAL(tp) * tcp_backoff[tp->t_rxtshift];
         TCPT_RANGESET(tp->t_rxtcur, rexmt,
@@ -317,7 +335,15 @@ int timer;
 
             if(limit > 32767)
                 limit = 32767;
-            if(tp->t_idle >= limit)
+            /* with TCP_USER_TIMEOUT, as Linux: a probe already sent, and
+             * nothing heard for that long, instead of the probe count.
+             * t_idle is advanced after the timers each tick, so on this
+             * tick it is one short of the time idle. */
+            if(tp->t_uto_ms != 0) {
+                if(tp->t_idle > TP_KEEPIDLE(tp) &&
+                        (u_long)tp->t_idle + 1 >= TP_UTO_TICKS(tp))
+                    goto dropit;
+            } else if(tp->t_idle >= limit)
                 goto dropit;
             /*
              * Send a packet designed to force a response

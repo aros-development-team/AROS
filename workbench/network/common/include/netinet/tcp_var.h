@@ -230,6 +230,15 @@ struct tcpcb {
 	int	t_keepintvl;
 	int	t_keepcnt;
 
+/*
+ * TCP_USER_TIMEOUT (RFC 5482, as Linux): how long data may stay sent and
+ * unacknowledged, or waiting on a zero window, before the connection is
+ * dropped; 0 is off. t_acktime is tcp_now when that wait began or last made
+ * progress, 0 while nothing waits.
+ */
+	u_int	t_uto_ms;
+	u_long	t_acktime;
+
 /* TUBA stuff */
 	caddr_t	t_tuba_pcb;		/* next level down pcb for TCP over z */
 };
@@ -446,6 +455,17 @@ extern	int tcp_do_rfc1644;	/* XXX */
  * counter reach: below 32767, so a connection idle that long is past it */
 #define TP_MAXIDLE(tp)	(TP_KEEPCNT(tp) * TP_KEEPINTVL(tp) > 32766 ? 32766 : \
 			 TP_KEEPCNT(tp) * TP_KEEPINTVL(tp))
+/* TCP_USER_TIMEOUT in slow ticks, rounded up */
+/* (divided first: no overflow of a large timeout on 32-bit targets) */
+#define TP_UTO_TICKS(tp)	((tp)->t_uto_ms / (1000 / PR_SLOWHZ) + \
+			 ((tp)->t_uto_ms % (1000 / PR_SLOWHZ) != 0))
+/* data now waits for an ACK or a window: the user timeout runs from here */
+#define TCP_UTO_START(tp)	do { if((tp)->t_acktime == 0) (tp)->t_acktime = tcp_now ? tcp_now : 1; } while(0)
+/* an ACK took snd_una forward: progress, or nothing left waiting */
+#define TCP_UTO_PROGRESS(tp)	((tp)->t_acktime = ((tp)->snd_una == (tp)->snd_max) ? 0 : (tcp_now ? tcp_now : 1))
+/* the user timeout has run out */
+#define TCP_UTO_EXPIRED(tp)	((tp)->t_uto_ms != 0 && (tp)->t_acktime != 0 && \
+				 tcp_now - (tp)->t_acktime >= TP_UTO_TICKS(tp))
 /* the largest keepalive time a 16-bit slow-tick timer holds, in seconds */
 #define TCP_KEEP_MAXSECS	(32767 / PR_SLOWHZ)
 extern	int tcp_do_pmtud;		/* IPv4 path MTU discovery */

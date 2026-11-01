@@ -255,6 +255,15 @@ change re-arms the timer it concerns; a connection accepted by a listening socke
 The slow-tick timers are 16-bit, so a time is at most 16383 s (`TCP_KEEP_MAXSECS`); the idle
 counter saturates rather than wrapping.
 
+`TCP_USER_TIMEOUT` (RFC 5482; Linux's option and number, FreeBSD has none) is how long, in ms,
+data may wait - sent and unacknowledged, or held back by a shut window - before the connection is
+dropped with `ETIMEDOUT`; 0 (the default) is off. The wait starts when the retransmission or the
+persist timer is armed for it and restarts whenever an ACK takes `snd_una` forward (`t_acktime`);
+`tcp_slowtimo()` checks it for every connection, every 500 ms, whichever timer is running. With
+it the retransmission count no longer ends the connection (it goes on at the longest interval).
+With keepalive it replaces the probe count, as in Linux: a connection that has sent a probe and
+heard nothing for that long is dropped. Accepted connections inherit it.
+
 ### 5.4 Options in the SYN
 
 A connection asks for the MSS (§6, segment size, for IPv6), window scale and timestamps
