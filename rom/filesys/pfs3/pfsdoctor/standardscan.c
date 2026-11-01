@@ -763,6 +763,7 @@ static error_t GetRootBlock(void)
 static bool MakeMountFile(char *fname)
 {
 	FILE *mf;
+	bool ok;
 
 	if ((mf = fopen(fname, "w")))
 	{
@@ -788,8 +789,10 @@ static bool MakeMountFile(char *fname)
 		fprintf(mf, "\tStackSize      = 600\n");
 		fprintf(mf, "\tMaxTransfer    = %lu\n", volume.dosenvec->de_MaxTransfer);
 		fprintf(mf, "\tMask           = %#lx\n", volume.dosenvec->de_Mask);
-		fclose(mf);
-		return true;
+		ok = !ferror(mf);
+		if (fclose(mf) != 0)
+			ok = false;
+		return ok;
 	}
 	return false;
 }
