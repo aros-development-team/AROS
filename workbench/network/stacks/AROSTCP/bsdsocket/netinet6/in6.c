@@ -506,18 +506,98 @@ in6_localaddr(struct in6_addr *in6)
 }
 
 /*
- * in6_srcbetter - whether a is a better source address than b for a
- * destination of scope dstscope, by the rules of RFC 6724 section 5 that
- * apply to addresses of one interface:
+ * in6_matchlen - the number of leading bits a and b have in common.
+ */
+static int
+in6_matchlen(const struct in6_addr *a, const struct in6_addr *b)
+{
+    int i, n = 0;
+
+    for(i = 0; i < 16; i++) {
+        u_int8_t x = a->s6_addr[i] ^ b->s6_addr[i];
+
+        if(x == 0) {
+            n += 8;
+            continue;
+        }
+        while(!(x & 0x80)) {
+            n++;
+            x <<= 1;
+        }
+        break;
+    }
+    return n;
+}
+
+/* the length of ia's prefix, from its prefix mask */
+static int
+in6_ia_plen(const struct in6_ifaddr *ia)
+{
+    int i, n = 0;
+
+    for(i = 0; i < 16; i++) {
+        u_int8_t x = ia->ia_prefixmask.sin6_addr.s6_addr[i];
+
+        while(x & 0x80) {
+            n++;
+            x <<= 1;
+        }
+        if(ia->ia_prefixmask.sin6_addr.s6_addr[i] != 0xff)
+            break;
+    }
+    return n;
+}
+
+/*
+ * in6_addrlabel - the label of an address in the default policy table of
+ * RFC 6724 section 2.1 (the longest prefix that matches).
+ */
+static int
+in6_addrlabel(const struct in6_addr *a)
+{
+    static const struct {
+        u_int8_t prefix[16];
+        int len, label;
+    } policy[] = {
+        { { 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,1 },           128,  0 },  /* ::1 */
+        { { 0,0,0,0, 0,0,0,0, 0,0,0xff,0xff, 0,0,0,0 },      96,  4 },  /* ::ffff:0:0/96 */
+        { { 0 },                                              96,  3 },  /* ::/96 */
+        { { 0x20,0x01,0,0 },                                  32,  5 },  /* 2001::/32 (Teredo) */
+        { { 0x20,0x02 },                                      16,  2 },  /* 2002::/16 (6to4) */
+        { { 0x3f,0xfe },                                      16, 12 },  /* 3ffe::/16 (6bone) */
+        { { 0xfe,0xc0 },                                      10, 11 },  /* fec0::/10 (site-local) */
+        { { 0xfc },                                            7, 13 },  /* fc00::/7 (ULA) */
+    };
+    int i, best = -1, label = 1;                /* ::/0 */
+
+    for(i = 0; i < (int)(sizeof(policy) / sizeof(policy[0])); i++)
+        if(policy[i].len > best &&
+                in6_matchlen(a, (const struct in6_addr *)policy[i].prefix) >= policy[i].len) {
+            best = policy[i].len;
+            label = policy[i].label;
+        }
+    return label;
+}
+
+/*
+ * in6_srcbetter - whether a is a better source address than b for dst, of
+ * scope dstscope, by the rules of RFC 6724 section 5 that apply to addresses
+ * of one interface:
+ *  1. the destination itself;
  *  2. appropriate scope: of two scopes, the smaller one unless it is smaller
  *     than the destination's (so a link-scope destination gets the
  *     link-local, and a global one a global address);
  *  3. a preferred address over a deprecated one;
- *  7. a temporary address over a public one (RFC 4941).
+ *  6. one whose label is the destination's (so a ULA destination gets the
+ *     ULA, and a global one a global address rather than the ULA);
+ *  7. a temporary address over a public one (RFC 4941);
+ *  8. the longer prefix in common with the destination, counted no further
+ *     than the source's own prefix.
  * Otherwise the earlier address stays.
  */
 static int
-in6_srcbetter(struct in6_ifaddr *a, struct in6_ifaddr *b, int dstscope)
+in6_srcbetter(struct in6_ifaddr *a, struct in6_ifaddr *b,
+              const struct in6_addr *dst, int dstscope)
 {
     int sa = in6_addrscope(&a->ia_addr.sin6_addr);
     int sb = in6_addrscope(&b->ia_addr.sin6_addr);
@@ -525,7 +605,12 @@ in6_srcbetter(struct in6_ifaddr *a, struct in6_ifaddr *b, int dstscope)
     int db = (b->ia6_ifaflags & IN6_IFF_DEPRECATED) != 0;
     int ta = (a->ia6_ifaflags & IN6_IFF_TEMPORARY) != 0;
     int tb = (b->ia6_ifaflags & IN6_IFF_TEMPORARY) != 0;
+    int ea = IN6_ARE_ADDR_EQUAL(&a->ia_addr.sin6_addr, dst);
+    int eb = IN6_ARE_ADDR_EQUAL(&b->ia_addr.sin6_addr, dst);
+    int la, lb, ma, mb, pa, pb, ldst;
 
+    if(ea != eb)
+        return ea;
     if(sa != sb) {
         if(sa < sb)
             return sa >= dstscope;
@@ -533,9 +618,22 @@ in6_srcbetter(struct in6_ifaddr *a, struct in6_ifaddr *b, int dstscope)
     }
     if(da != db)
         return db;
+    ldst = in6_addrlabel(dst);
+    la = in6_addrlabel(&a->ia_addr.sin6_addr) == ldst;
+    lb = in6_addrlabel(&b->ia_addr.sin6_addr) == ldst;
+    if(la != lb)
+        return la;
     if(ta != tb)
         return ta;
-    return 0;
+    ma = in6_matchlen(&a->ia_addr.sin6_addr, dst);
+    mb = in6_matchlen(&b->ia_addr.sin6_addr, dst);
+    pa = in6_ia_plen(a);
+    pb = in6_ia_plen(b);
+    if(ma > pa)
+        ma = pa;
+    if(mb > pb)
+        mb = pb;
+    return ma > mb;
 }
 
 /* ------------------------------------------------------------------
@@ -552,7 +650,7 @@ in6_ifawithifp(struct ifnet *ifp, struct in6_addr *dst)
             continue;
         if(ia->ia6_ifaflags & (IN6_IFF_TENTATIVE | IN6_IFF_DUPLICATED))
             continue;
-        if(besta == NULL || in6_srcbetter(ia, besta, dstscope))
+        if(besta == NULL || in6_srcbetter(ia, besta, dst, dstscope))
             besta = ia;
     }
     return besta;

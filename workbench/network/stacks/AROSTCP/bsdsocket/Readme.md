@@ -571,9 +571,14 @@ source arrived on. A packet sent to one of our own link-local addresses is loope
 and `IPV6_PKTINFO` name that link.
 
 Among an interface's usable addresses (not tentative or duplicated), `in6_ifawithifp()` picks the
-source by RFC 6724 section 5 rules 2, 3 and 7: the smaller of two scopes unless it is smaller than
-the destination's (a link-scope destination gets the link-local, a global one a global address),
-then a preferred address over a deprecated one, then a temporary address over a public one.
+source by RFC 6724 section 5 rules 1, 2, 3, 6, 7 and 8: the destination itself, if it is one of
+them; the smaller of two scopes unless it is smaller than the destination's (a link-scope
+destination gets the link-local, a global one a global address); a preferred address over a
+deprecated one; one whose label in the default policy table (section 2.1) is the destination's (a
+ULA destination gets the ULA, a global one a global address rather than the ULA); a temporary
+address over a public one; then the one with the longest prefix in common with the destination,
+counted no further than the source's own prefix. Without rules 6 and 8, of two global-scope
+addresses the first on the list won, whatever the destination.
 
 ---
 
