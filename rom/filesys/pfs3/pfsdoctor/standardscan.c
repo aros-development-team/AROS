@@ -588,10 +588,11 @@ static error_t BuildRootBlock_hub(void)
 	{
 		if (!(error = BuildRootBlock(rbl)))
 		{
-			fixederror("new rootblock build");
-			WritePFS3Metadata((uint8 *)rbl,
+			error = WritePFS3Metadata((uint8 *)rbl,
 				ROOTBLOCK + volume.firstblock, volume.blocksize,
 				PFS3_METADATA_ROOT);
+			if (!error)
+				fixederror("new rootblock build");
 		}
 	}
 	else
