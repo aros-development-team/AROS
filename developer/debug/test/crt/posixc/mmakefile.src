@@ -12,6 +12,7 @@ POSIXCTESTFILES := \
         fchdir \
         fchmod \
         fcntl \
+        fd_reservation \
         flock \
         flock_description \
         getfsstat \
