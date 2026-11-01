@@ -238,6 +238,15 @@ also expires SYN-cache entries, and advances the ISS clock (`tcp_iss`, RFC 6528)
 every tick, whether or not there are connections: `tcp_now` is the timestamp clock (RFC 7323)
 and paces the IPv4 ICMP error rate limit (§7).
 
+The retransmission timer also detects a path MTU black hole (RFC 2923 section 2.1): a path that
+drops large packets without saying so, because the ICMP that would say so is filtered. After the 2nd
+timeout in a row with a full-sized segment unacknowledged, `tcp_pmtud_blackhole()` (`tcp_subr.c`)
+tries segments that fit the IPv6 minimum MTU (1280), or 1240 bytes for IPv4; after the 4th, an IPv4
+connection stops setting DF (`TF_PMTUD_NODF`), so routers fragment again; after the 6th it was not
+the path, and the MSS and DF come back. A lowered MSS that gets through is kept, as a learned path
+MTU is. The steps are FreeBSD's (`tcp_timer_rexmt()`); detection is on by default, as in XNU
+(sysctl `net.inet.tcp.pmtud_blackhole`).
+
 ### 5.4 Options in the SYN
 
 A connection asks for the MSS (§6, segment size, for IPv6), window scale and timestamps
@@ -566,6 +575,8 @@ then a preferred address over a deprecated one, then a temporary address over a 
   when that segment is still unacknowledged (RFC 5927 section 7.2), with `tcp_mtudisc()`, shared with
   IPv6; and when `ip_output` refuses a segment larger than the route's MTU (`EMSGSIZE`),
   `tcp_output` does the same from the route. UDP ignores `PRC_MSGSIZE`: it does not set DF.
+  Where the ICMP never comes, the retransmission timer finds the black hole (§5.3). Sysctl
+  `net.inet.tcp.pmtud` turns DF off.
 - **UDP** (`udp_usrreq.c`) is the standard datagram path over the shared `udb` table. The default
   UDP receive buffer (`udp_recvspace`, 256 datagrams) and the IP input queue depth
   (`ipqmaxlen = 4·IFQ_MAXLEN`, `ip_input.c`) are sized to absorb short high-rate receive bursts
@@ -709,7 +720,8 @@ Properties the implementation provides:
   delivered; per-source multicast filtering (MLDv2 INCLUDE/EXCLUDE source lists) is not tracked.
 - **Unimplemented API surface.** Several Roadshow interface-management entrypoints
   (`AddInterfaceTagList`, `ConfigureInterfaceTagList`, `ObtainInterfaceList`, …) and Miami calls
-  (`MiamiSysCtl`, `MiamiGetHardwareLen`, `sockatmark`, …) are stubs that log "not implemented".
+  (`MiamiGetHardwareLen`, `sockatmark`, …) are stubs that log "not implemented". `MiamiSysCtl()`
+  serves the `net.inet.{ip,tcp,udp}` MIB only (`kern/kern_sysctl.c`).
 
 ---
 

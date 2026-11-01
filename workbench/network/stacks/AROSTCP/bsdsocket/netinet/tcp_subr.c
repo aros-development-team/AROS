@@ -320,6 +320,8 @@ int	tcp_do_newreno = 1;	/* enable NewReno (RFC 3782) */
 int	tcp_do_ecn = 0;		/* enable ECN (RFC 3168) - off by default */
 int	tcp_do_prr = 0;		/* enable PRR (RFC 6937) - off by default */
 int	tcp_do_pmtud = 1;	/* IPv4 path MTU discovery: DF on (RFC 1191) */
+/* path MTU black-hole detection (RFC 2923 section 2.1): on, as in XNU */
+int	tcp_do_pmtud_blackhole = 1;
 static	void tcp_cleartaocache(void);
 
 extern u_char inetctlerrmap[];
@@ -859,14 +861,12 @@ tcp6_ctlinput(int cmd, struct sockaddr *sa, void *arg)
 #endif
 
 /*
- * tcp_mtudisc - the path to tp's peer takes packets of at most mtu bytes
- * (RFC 1191, RFC 8201 section 5.2): send segments that fit, and resend
- * what was not acknowledged, as FreeBSD's tcp_mtudisc() does. With mtu 0,
- * the MTU is the connection's route's (IPv4, after ip_output() said
- * EMSGSIZE). The MSS is set as tcp_mss() sets it; only ever lowered.
+ * tcp_setmtu - send segments of at most mtu bytes, headers included, to tp's
+ * peer: t_maxopd and t_maxseg as tcp_mss() sets them. Only ever lowers them;
+ * returns whether it did. With mtu 0, the MTU is the connection's route's.
  */
-void
-tcp_mtudisc(struct tcpcb *tp, u_int32_t mtu)
+static int
+tcp_setmtu(struct tcpcb *tp, u_int32_t mtu)
 {
     int hdrs = sizeof(struct tcpiphdr), mss;
 
@@ -879,24 +879,88 @@ tcp_mtudisc(struct tcpcb *tp, u_int32_t mtu)
         struct rtentry *rt = tp->t_inpcb->inp_route.ro_rt;
 
         if(rt == NULL)
-            return;
+            return 0;
         mtu = rt->rt_rmx.rmx_mtu ? rt->rt_rmx.rmx_mtu :
               rt->rt_ifp ? rt->rt_ifp->if_mtu : 0;
     }
     mss = (int)mtu - hdrs;
 
     if(mss <= 0 || mss >= tp->t_maxopd)
-        return;
+        return 0;
     tp->t_maxopd = mss;
     if((tp->t_flags & (TF_REQ_TSTMP | TF_NOOPT)) == TF_REQ_TSTMP &&
             (tp->t_flags & TF_RCVD_TSTMP) == TF_RCVD_TSTMP)
         mss -= TCPOLEN_TSTAMP_APPA;
     if(mss >= tp->t_maxseg)
-        return;
+        return 0;
     tp->t_maxseg = mss;
+    return 1;
+}
+
+/*
+ * tcp_mtudisc - the path to tp's peer takes packets of at most mtu bytes
+ * (RFC 1191, RFC 8201 section 5.2): send segments that fit, and resend
+ * what was not acknowledged, as FreeBSD's tcp_mtudisc() does. With mtu 0,
+ * the MTU is the connection's route's (IPv4, after ip_output() said
+ * EMSGSIZE).
+ */
+void
+tcp_mtudisc(struct tcpcb *tp, u_int32_t mtu)
+{
+    if(!tcp_setmtu(tp, mtu))
+        return;
     tp->t_rtt = 0;                  /* do not time the resent segment */
     tp->snd_nxt = tp->snd_una;
     (void)tcp_output(tp);
+}
+
+/*
+ * tcp_pmtud_blackhole - called by the retransmission timer, t_rxtshift just
+ * raised. A path that drops large packets without telling us (ICMP
+ * filtered: RFC 2923 section 2.1) loses every full-sized segment, so after
+ * the 2nd timeout in a row with one unacknowledged, try segments that fit
+ * the IPv6 minimum MTU (1280) or, for IPv4, 1240 bytes; after the 4th, an
+ * IPv4 connection stops setting DF, so routers fragment again. After the
+ * 6th, it was not the path: the MSS and DF come back. A lowered MSS that
+ * gets through is kept, as a learned path MTU is. FreeBSD's
+ * tcp_timer_rexmt() does the same, with the same steps.
+ */
+void
+tcp_pmtud_blackhole(struct tcpcb *tp)
+{
+    u_int32_t mtu = 1240;               /* IPv4 */
+
+    if(!tcp_do_pmtud_blackhole ||
+            (tp->t_state != TCPS_ESTABLISHED && tp->t_state != TCPS_CLOSE_WAIT))
+        return;
+#if INET6
+    if(tcp_isipv6(tp->t_inpcb))
+        mtu = IPV6_MMTU;
+    else
+#endif
+    if(!tcp_do_pmtud)                   /* no DF: routers fragment */
+        return;
+
+    if(tp->t_rxtshift >= 6) {
+        if(tp->t_flagsext & TF_PMTUD_BH) {
+            tp->t_maxseg = tp->t_pmtud_saved_maxseg;
+            tp->t_maxopd = tp->t_pmtud_saved_maxopd;
+            tp->t_flagsext &= ~(TF_PMTUD_BH | TF_PMTUD_NODF);
+        }
+        return;
+    }
+    if(tp->t_rxtshift < 2 || (tp->t_rxtshift & 1) ||
+            (u_long)(tp->snd_max - tp->snd_una) < tp->t_maxseg)
+        return;
+
+    if(!(tp->t_flagsext & TF_PMTUD_BH)) {
+        tp->t_pmtud_saved_maxseg = tp->t_maxseg;
+        tp->t_pmtud_saved_maxopd = tp->t_maxopd;
+    }
+    if(tcp_setmtu(tp, mtu))
+        tp->t_flagsext |= TF_PMTUD_BH;
+    else if(tp->t_flagsext & TF_PMTUD_BH)
+        tp->t_flagsext |= TF_PMTUD_NODF;    /* only IPv4 output reads it */
 }
 
 /*

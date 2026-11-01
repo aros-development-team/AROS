@@ -112,6 +112,8 @@ struct tcpcb {
 #define TF_ECN_SND_ECE	0x0010		/* need to send ECE */
 #define TF_SACK_GENERATE 0x0020		/* need to generate SACK option */
 #define TF_PRR		0x0040		/* PRR engaged for this recovery */
+#define TF_PMTUD_BH	0x0080		/* MSS lowered: path MTU black hole suspected */
+#define TF_PMTUD_NODF	0x0100		/* IPv4: DF off after a black hole */
 
 	struct	tcpiphdr *t_template;	/* skeletal packet for transmit */
 	struct	inpcb *t_inpcb;		/* back pointer to internet pcb */
@@ -209,6 +211,14 @@ struct tcpcb {
 	u_long	snd_prr_recover_fs;	/* FlightSize at recovery entry */
 	tcp_seq	snd_prr_hiack;		/* highest ack accounted for delivery */
 	u_long	snd_sacked;		/* bytes SACKed above snd_una (RFC 6675) */
+
+/*
+ * Path MTU black-hole detection (RFC 2923 section 2.1, as FreeBSD's
+ * tcp_pmtud_blackhole_detect): the MSS before it was lowered, given back
+ * when the smaller segments are lost too.
+ */
+	u_short	t_pmtud_saved_maxseg;
+	u_short	t_pmtud_saved_maxopd;
 
 /* TUBA stuff */
 	caddr_t	t_tuba_pcb;		/* next level down pcb for TCP over z */
@@ -390,7 +400,9 @@ struct	tcpstat {
 #define	TCPCTL_KEEPINTVL	7	/* interval to send keepalives */
 #define	TCPCTL_SENDSPACE	8	/* send buffer space */
 #define	TCPCTL_RECVSPACE	9	/* receive buffer space */
-#define TCPCTL_MAXID		10
+#define	TCPCTL_PMTUD		10	/* IPv4 path MTU discovery (DF) */
+#define	TCPCTL_PMTUD_BLACKHOLE	11	/* path MTU black-hole detection */
+#define TCPCTL_MAXID		12
 
 #define TCPCTL_NAMES { \
 	{ 0, 0 }, \
@@ -403,6 +415,8 @@ struct	tcpstat {
 	{ "keepintvl", CTLTYPE_INT }, \
 	{ "sendspace", CTLTYPE_INT }, \
 	{ "recvspace", CTLTYPE_INT }, \
+	{ "pmtud", CTLTYPE_INT }, \
+	{ "pmtud_blackhole", CTLTYPE_INT }, \
 }
 
 #ifdef KERNEL
@@ -411,6 +425,8 @@ extern	struct inpcbinfo tcbinfo;
 extern	struct tcpstat tcpstat;	/* tcp statistics */
 extern	int tcp_do_rfc1323;	/* XXX */
 extern	int tcp_do_rfc1644;	/* XXX */
+extern	int tcp_do_pmtud;		/* IPv4 path MTU discovery */
+extern	int tcp_do_pmtud_blackhole;	/* black-hole detection */
 extern	int tcp_mssdflt;	/* XXX */
 extern	u_long tcp_now;		/* for RFC 1323 timestamps */
 extern	int tcp_rttdflt;	/* XXX */

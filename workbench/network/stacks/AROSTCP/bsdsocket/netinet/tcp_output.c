@@ -851,7 +851,8 @@ skip_sack:
         ((struct ip *)ti)->ip_len = m->m_pkthdr.len;
         ((struct ip *)ti)->ip_ttl = tp->t_inpcb->inp_ip.ip_ttl;	/* XXX */
         ((struct ip *)ti)->ip_tos = tp->t_inpcb->inp_ip.ip_tos;	/* XXX */
-        if(tcp_do_pmtud)		/* path MTU discovery (RFC 1191) */
+        if(tcp_do_pmtud &&	/* path MTU discovery (RFC 1191) */
+                !(tp->t_flagsext & TF_PMTUD_NODF))
             ((struct ip *)ti)->ip_off |= IP_DF;
         /*
          * ECN (RFC 3168): Set the ECT(0) codepoint in the IP header

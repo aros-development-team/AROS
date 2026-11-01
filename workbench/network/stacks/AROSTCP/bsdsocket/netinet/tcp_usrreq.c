@@ -819,6 +819,11 @@ size_t newlen;
     case TCPCTL_RECVSPACE:
         return (sysctl_int(oldp, oldlenp, newp, newlen,
                            (int *)&tcp_recvspace)); /* XXX */
+    case TCPCTL_PMTUD:
+        return (sysctl_int(oldp, oldlenp, newp, newlen, &tcp_do_pmtud));
+    case TCPCTL_PMTUD_BLACKHOLE:
+        return (sysctl_int(oldp, oldlenp, newp, newlen,
+                           &tcp_do_pmtud_blackhole));
     default:
         return (ENOPROTOOPT);
     }
