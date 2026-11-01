@@ -1,6 +1,6 @@
 /*
     Copyright (C) 1999, David Le Corfec.
-    Copyright (C) 2002-2015, The AROS Development Team.
+    Copyright (C) 2002-2026, The AROS Development Team.
     All rights reserved.
 
 */
@@ -25,29 +25,119 @@ struct MUI_FamilyData
     struct List children;
 };
 
-/*
- * Family class is the base class for objects that are able
- * to handle a list of children. This is e.g. the case for
- * MUIs Menustrip, Menu and Menuitem objects.
- * Group class and application class should also be a
- * subclass of Family class, but due to BOOPSI system
- * limitations, this is currently impossible.
- */
-
-/*
-Family.mui/MUIA_Family_Child [I..]        done (note : == MUIA_Group_Child)
-Family.mui/MUIA_Family_List [..G]         done
-
-Family.mui/MUIM_Family_AddHead            done
-Family.mui/MUIM_Family_AddTail            done
-Family.mui/MUIM_Family_Insert             done
-Family.mui/MUIM_Family_Remove             done
-Family.mui/MUIM_Family_Sort               done
-Family.mui/MUIM_Family_Transfer           done
-Notify.mui/MUIM_FindUData                 done
-Notify.mui/MUIM_GetUData                  done
-Notify.mui/MUIM_SetUData                  done
-Notify.mui/MUIM_SetUDataOnce              done
+/****** Family.mui/MUIC_Family ************
+*
+*   NAME
+*       MUIC_Family
+*
+*   SUPERCLASS
+*       Notify.mui
+*
+*   DESCRIPTION
+*       Maintain an ordered list of owned child objects. Construction starts
+*       with an empty list and appends each non-NULL MUIA_Family_Child or
+*       MUIA_Group_Child tag in order. If any child tag is NULL, construction
+*       disposes of the family and all children successfully attached to it,
+*       then returns NULL. If superclass construction fails, Family has not yet
+*       attached the supplied children.
+*       Disposal disposes of every child still in the list, then the Notify
+*       superclass. Remove a child before disposing of it separately. Removing a
+*       child transfers responsibility for its lifetime back to the caller. The
+*       list and its operations are not locked; serialize traversal, mutation,
+*       and disposal.
+*       Family does not automatically forward ConnectParent or DisconnectParent
+*       to children. AddHead, AddTail, and Insert call the child's ConnectParent
+*       only if the family already has global info, and set its parent field
+*       even without an application connection.
+*
+*   METHODS
+*       The inherited user-data methods are extended as follows. FindUData
+*       compares the family first, then sends the same message to children in
+*       list order, returning the first nonzero object result or zero. Deeper
+*       traversal depends on each child's implementation.
+*       GetUData gets the attribute from the family if its UserData matches;
+*       otherwise it returns TRUE on the first child returning nonzero. TRUE
+*       indicates a match, not a successful attribute getter. Its udata message
+*       field is ULONG. No match leaves caller storage untouched.
+*       SetUData sets the family on a match, sends the method to every child,
+*       and returns TRUE even if no object matches. Setter and child return
+*       values are ignored.
+*       SetUDataOnce sets the family on a match and returns TRUE, otherwise
+*       visits children until one returns nonzero. It returns FALSE when none
+*       match. FindUData, SetUData, and SetUDataOnce use IPTR comparison values.
+*       Do not mutate or dispose of traversed children from callbacks during
+*       these walks.
+*       OM_ADDMEMBER uses AddTail; OM_REMMEMBER uses Remove. Version and
+*       Revision both return 1 for Family. Other methods, including the Notify
+*       persistence stubs, are inherited unless a subclass overrides them.
+*
+*   EXAMPLE
+*       Each supplied child must be a live, unattached object:
+*       family = MUI_NewObject(MUIC_Family,
+*                             MUIA_Family_Child, (IPTR)child,
+*                             TAG_DONE);
+*       After success, disposing family also disposes child.
+*
+*/
+/****** Family.mui/MUIA_Family_Child ************
+*
+*   NAME
+*       MUIA_Family_Child
+*
+*   FUNCTION
+*       Initialize the family with a child object. Repeat the tag to append
+*       multiple children in tag order. MUIA_Group_Child is accepted as an alias
+*       by this constructor.
+*
+*   INPUTS
+*       Object pointer; initialize only. Each child must be live, unattached,
+*       and suitable for Family membership.
+*
+*   NOTES
+*       Successful attachment makes the family responsible for disposing of the
+*       child. A NULL child tag makes construction fail after processing all
+*       tags and disposing of children attached to the new family. If superclass
+*       construction fails before attachment, the supplied children have not
+*       been adopted. There is no Family setter or getter for this tag.
+*
+*/
+/****** Family.mui/MUIA_Family_List ************
+*
+*   NAME
+*       MUIA_Family_List
+*
+*   FUNCTION
+*       Return a borrowed pointer to the internal child list.
+*
+*   INPUTS
+*       Pointer to struct MinList; get only. The implementation stores an Exec
+*       struct List and returns its address.
+*
+*   NOTES
+*       The pointer is valid only while the family lives. Use NextObject to
+*       traverse its BOOPSI children. Do not free the list or alter its links
+*       directly; use Family methods so parent fields and ownership remain
+*       consistent. Traversal must not overlap mutation or disposal.
+*
+*/
+/****** Family.mui/MUIA_Family_ChildCount ************
+*
+*   NAME
+*       MUIA_Family_ChildCount
+*
+*   FUNCTION
+*       Count the current immediate children by walking the list and return the
+*       count through the attribute getter.
+*
+*   INPUTS
+*       LONG in the public header; get only. The implementation accumulates the
+*       result in the IPTR storage supplied to OM_GET.
+*
+*   NOTES
+*       An empty family returns zero. Descendants below immediate children are
+*       not counted. This is a traversal, not a cached count, and has no
+*       synchronization against concurrent changes.
+*
 */
 
 static const int __version = 1;
@@ -79,6 +169,12 @@ static const int __revision = 1;
 
 /*
  * OM_NEW
+ */
+/* Construct Notify and initialize an empty child list. Append non-NULL
+ * Family_Child and Group_Child tags. Any NULL child marks failure: dispose
+ * the constructed family and all attached children after processing tags,
+ * then return zero. Return the family pointer otherwise. AddTail results
+ * are ignored.
  */
 IPTR Family__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
@@ -126,6 +222,11 @@ IPTR Family__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 /*
  * OM_DISPOSE
  */
+/* With all other users stopped, dispose each child still listed, then
+ * dispose Notify and return its result. Removed children are not owned
+ * here. List traversal assumes child disposal does not invalidate the next
+ * child.
+ */
 IPTR Family__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_FamilyData *data = INST_DATA(cl, obj);
@@ -144,6 +245,10 @@ IPTR Family__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 
 /*
  * OM_GET
+ */
+/* Return the borrowed child-list pointer, current immediate-child count, or
+ * local Version/Revision through writable opg_Storage and return TRUE.
+ * Forward all other attribute requests to Notify.
  */
 IPTR Family__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
@@ -178,9 +283,36 @@ IPTR Family__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 }
 
 
-/*
- * MUIM_Family_AddHead : Add an object as first object to the family.
- */
+/****** Family.mui/MUIM_Family_AddHead ************
+*
+*   NAME
+*       MUIM_Family_AddHead
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Family_AddHead, (IPTR)child);
+*
+*   FUNCTION
+*       Attach child as the first child of the family.
+*
+*   INPUTS
+*       child - Live, unattached MUI object, or NULL.
+*
+*   RESULT
+*       FALSE for NULL; otherwise TRUE. Child method results are not used as an
+*       error indication.
+*
+*   NOTES
+*       The family takes responsibility for child disposal. Its parent field is
+*       set to the family. If the family has global info, the child receives
+*       ConnectParent. AddTail uses the child's OM_ADDTAIL method; AddHead links
+*       its BOOPSI node directly.
+*
+*   BUGS
+*       Membership is not checked. Do not add an object already linked to this
+*       or another list, and do not add the family itself or create ownership
+*       cycles.
+*
+*/
 IPTR Family__MUIM_AddHead(struct IClass *cl, Object *obj,
     struct MUIP_Family_AddHead *msg)
 {
@@ -207,9 +339,36 @@ IPTR Family__MUIM_AddHead(struct IClass *cl, Object *obj,
 }
 
 
-/*
- * MUIM_Family_AddTail : Add an object as last object to the family.
- */
+/****** Family.mui/MUIM_Family_AddTail ************
+*
+*   NAME
+*       MUIM_Family_AddTail
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Family_AddTail, (IPTR)child);
+*
+*   FUNCTION
+*       Attach child as the last child of the family.
+*
+*   INPUTS
+*       child - Live, unattached MUI object, or NULL.
+*
+*   RESULT
+*       FALSE for NULL; otherwise TRUE. Child method results are not used as an
+*       error indication.
+*
+*   NOTES
+*       The family takes responsibility for child disposal. Its parent field is
+*       set to the family. If the family has global info, the child receives
+*       ConnectParent. AddTail uses the child's OM_ADDTAIL method; AddHead links
+*       its BOOPSI node directly.
+*
+*   BUGS
+*       Membership is not checked. Do not add an object already linked to this
+*       or another list, and do not add the family itself or create ownership
+*       cycles.
+*
+*/
 IPTR Family__MUIM_AddTail(struct IClass *cl, Object *obj,
     struct MUIP_Family_AddTail *msg)
 {
@@ -238,9 +397,37 @@ IPTR Family__MUIM_AddTail(struct IClass *cl, Object *obj,
 }
 
 
-/*
- * MUIM_Family_Insert : Add an object after another object to the family.
- */
+/****** Family.mui/MUIM_Family_Insert ************
+*
+*   NAME
+*       MUIM_Family_Insert
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Family_Insert, (IPTR)child,
+*       (IPTR)pred);
+*
+*   FUNCTION
+*       Attach child immediately after pred in the family list.
+*
+*   INPUTS
+*       child - Live, unattached MUI object, or NULL.
+*       pred - Non-NULL immediate child already in this family.
+*
+*   RESULT
+*       FALSE for a NULL child; otherwise TRUE.
+*
+*   NOTES
+*       The family adopts the child, sets its parent field, and sends
+*       ConnectParent if global info is available. Neither predecessor
+*       membership nor existing child membership is checked. Use AddHead to
+*       insert at the beginning.
+*
+*   BUGS
+*       The implementation applies _OBJECT to pred before calling Exec Insert.
+*       Passing NULL as pred is not a supported way to request head insertion in
+*       this implementation.
+*
+*/
 IPTR Family__MUIM_Insert(struct IClass *cl, Object *obj,
     struct MUIP_Family_Insert *msg)
 {
@@ -268,9 +455,34 @@ IPTR Family__MUIM_Insert(struct IClass *cl, Object *obj,
 }
 
 
-/*
- * MUIM_Family_Remove : Remove an object from a family.
- */
+/****** Family.mui/MUIM_Family_Remove ************
+*
+*   NAME
+*       MUIM_Family_Remove
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Family_Remove, (IPTR)child);
+*
+*   FUNCTION
+*       Send DisconnectParent, clear the child's stored parent, then send
+*       OM_REMOVE to unlink it.
+*
+*   INPUTS
+*       child - Immediate child currently belonging to this family, or NULL.
+*
+*   RESULT
+*       FALSE for NULL; otherwise TRUE, regardless of child method results.
+*
+*   NOTES
+*       The child is not disposed of. After successful removal, the caller must
+*       dispose of it or transfer it to another owner. A Notify child retains
+*       its global-info pointer because Notify's DisconnectParent is a no-op.
+*
+*   BUGS
+*       The family does not verify membership. Passing an unrelated object can
+*       unlink it from another list or operate on invalid node links.
+*
+*/
 IPTR Family__MUIM_Remove(struct IClass *cl, Object *obj,
     struct MUIP_Family_Remove *msg)
 {
@@ -290,9 +502,38 @@ IPTR Family__MUIM_Remove(struct IClass *cl, Object *obj,
 }
 
 
-/*
- * MUIM_Family_Sort : Sort the children of a family.
- */
+/****** Family.mui/MUIM_Family_Sort ************
+*
+*   NAME
+*       MUIM_Family_Sort
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Family_Sort, (IPTR)child1, ...,
+*       (IPTR)NULL);
+*
+*   FUNCTION
+*       Reset the child-list header and relink objects in the supplied order. No
+*       comparator is called.
+*
+*   INPUTS
+*       child1, ... - Every current immediate child exactly once, in the desired
+*       order, followed by NULL. For an empty family, pass only NULL.
+*
+*   RESULT
+*       Always TRUE after relinking.
+*
+*   NOTES
+*       Ownership, parent fields, and global-info pointers are not changed. The
+*       sequence is read directly from the method message and is not copied.
+*
+*   BUGS
+*       The implementation does not check completeness, duplicates, membership,
+*       or termination. Omitted children are not disposed of or disconnected but
+*       disappear from the family list. Duplicates or foreign objects can
+*       corrupt list ownership. Use this only to reorder the complete current
+*       membership.
+*
+*/
 IPTR Family__MUIM_Sort(struct IClass *cl, Object *obj,
     struct MUIP_Family_Sort *msg)
 {
@@ -308,10 +549,38 @@ IPTR Family__MUIM_Sort(struct IClass *cl, Object *obj,
 }
 
 
-/*
- * MUIM_Family_Transfer : All the children of the family are removed and
- * added to another family in the same order.
- */
+/****** Family.mui/MUIM_Family_Transfer ************
+*
+*   NAME
+*       MUIM_Family_Transfer
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Family_Transfer, (IPTR)family);
+*
+*   FUNCTION
+*       Remove each current child from the source and append it to the
+*       destination in source order.
+*
+*   INPUTS
+*       family - Different, live Family-compatible destination object that
+*       accepts every child. It must not be a source descendant that would
+*       create an ownership cycle.
+*
+*   RESULT
+*       Always TRUE after the traversal. Remove and AddTail results are ignored.
+*
+*   NOTES
+*       Existing destination children remain before transferred children. The
+*       destination becomes responsible for disposal; parent and connection
+*       changes follow Remove and AddTail. No rollback or destination validation
+*       is performed. Keep both containers and all children alive and avoid
+*       callback-driven membership changes.
+*
+*   BUGS
+*       The source and destination must differ. There is no self-transfer guard,
+*       and a failed destination attachment is not reported or rolled back.
+*
+*/
 IPTR Family__MUIM_Transfer(struct IClass *cl, Object *obj,
     struct MUIP_Family_Transfer *msg)
 {
@@ -328,10 +597,11 @@ IPTR Family__MUIM_Transfer(struct IClass *cl, Object *obj,
 }
 
 
-/**************************************************************************
- MUIM_FindUData : tests if the MUIA_UserData of the object
- contains the given <udata> and returns the object pointer in this case.
-**************************************************************************/
+/* Compare this family first, then query children in list order with the
+ * same message. Return the first matching borrowed object pointer, or zero.
+ * Keep membership stable during traversal; descendant search is delegated
+ * to child implementations.
+ */
 IPTR Family__MUIM_FindUData(struct IClass *cl, Object *obj,
     struct MUIP_FindUData *msg)
 {
@@ -352,10 +622,10 @@ IPTR Family__MUIM_FindUData(struct IClass *cl, Object *obj,
 }
 
 
-/*
- * MUIM_GetUData : This method tests if the MUIA_UserData of the object
- * contains the given <udata> and gets <attr> to <storage> for itself
- * in this case.
+/* On a local UserData match, get attr into caller storage and return TRUE
+ * regardless of getter success. Otherwise return TRUE for the first nonzero
+ * child result, or FALSE after all children. The message comparison value
+ * is ULONG; keep membership stable.
  */
 IPTR Family__MUIM_GetUData(struct IClass *cl, Object *obj,
     struct MUIP_GetUData *msg)
@@ -377,9 +647,9 @@ IPTR Family__MUIM_GetUData(struct IClass *cl, Object *obj,
 }
 
 
-/*
- * MUIM_SetUData : This method tests if the MUIA_UserData of the object
- * contains the given <udata> and sets <attr> to <val> for itself in this case.
+/* Set the family on a UserData match and forward the same message to every
+ * child. Always return TRUE, ignoring setter and child results. Do not let
+ * synchronous callbacks mutate the child traversal.
  */
 IPTR Family__MUIM_SetUData(struct IClass *cl, Object *obj,
     struct MUIP_SetUData *msg)
@@ -398,9 +668,10 @@ IPTR Family__MUIM_SetUData(struct IClass *cl, Object *obj,
 }
 
 
-/*
- * MUIM_SetUDataOnce : This method tests if the MUIA_UserData of the object
- * contains the given <udata> and sets <attr> to <val> for itself in this case.
+/* Set the family on a UserData match and return TRUE; otherwise stop at the
+ * first nonzero child result. Return FALSE if all children return zero.
+ * Setter success is not checked. Keep the child list stable during
+ * callbacks.
  */
 IPTR Family__MUIM_SetUDataOnce(struct IClass *cl, Object *obj,
     struct MUIP_SetUDataOnce *msg)
@@ -421,6 +692,35 @@ IPTR Family__MUIM_SetUDataOnce(struct IClass *cl, Object *obj,
     return FALSE;
 }
 
+/****** Family.mui/MUIM_Family_GetChild ************
+*
+*   NAME
+*       MUIM_Family_GetChild
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Family_GetChild, nr, (IPTR)ref);
+*
+*   FUNCTION
+*       Return a borrowed immediate-child pointer selected by position or by a
+*       reference child.
+*
+*   INPUTS
+*       nr - Nonnegative zero-based index, MUIV_Family_GetChild_First (0), Last
+*       (-1), Next (-2), or Previous (-3).
+*       ref - Existing immediate child for Next or Previous. Ignored for an
+*       index, First, or Last; pass NULL in those cases.
+*
+*   RESULT
+*       The selected object pointer, or NULL for an empty list, out-of-range
+*       index, absent reference, missing neighbor, or unsupported negative
+*       selector.
+*
+*   NOTES
+*       No ownership is transferred. Keep the family and child alive and prevent
+*       mutation while using the result. Descendants below immediate children
+*       are not searched.
+*
+*/
 IPTR Family__MUIM_GetChild(struct IClass *cl, Object *obj,
     struct MUIP_Family_GetChild *msg)
 {
@@ -455,6 +755,11 @@ IPTR Family__MUIM_GetChild(struct IClass *cl, Object *obj,
     return (IPTR) NULL;
 }
 
+/* Dispatch construction, disposal, getters, child management, and recursive
+ * user-data operations. Map OM_ADDMEMBER to AddTail and OM_REMMEMBER to
+ * Remove. Return handler results and forward unknown methods to Notify.
+ * Messages must contain all fields required by their method.
+ */
 BOOPSI_DISPATCHER(IPTR, Family_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
