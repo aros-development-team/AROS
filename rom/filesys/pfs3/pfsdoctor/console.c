@@ -70,6 +70,8 @@ int guiAskUser(char *message, char *okstr, char *cancelstr)
 	}
 }
 
+static BOOL deviceopened;
+
 #define OV_Flags LDF_DEVICES|LDF_VOLUMES
 static BOOL OpenVolume(void)
 {
@@ -167,6 +169,8 @@ static BOOL OpenVolume(void)
 		return FALSE;
 	}
 
+	deviceopened = TRUE;
+
 	if (InitCache(64, 32) != e_none) {
 		guiMsg("Could not allocate disk cache.\n");
 		return FALSE;
@@ -215,13 +219,10 @@ static void CloseVolume(void)
 	if (inhibited)
 		Inhibit(targetdevice.name, FALSE);
 
-	if (volume.request)
-	{
-		if (!(CheckIO((struct IORequest *)volume.request)))
-			AbortIO((struct IORequest *)volume.request);
-		
-		WaitIO((struct IORequest *)volume.request);
+	/* All requests use synchronous DoIO; none remain pending here. */
+	if (deviceopened) {
 		CloseDevice((struct IORequest *)volume.request);
+		deviceopened = FALSE;
 	}
 
 	if (volume.request)
@@ -314,8 +315,8 @@ int main(int argc, char *argv[])
 
 	if (OpenVolume()) {
 		StandardScan(opties);
-		CloseVolume();
 	}
+	CloseVolume();
 
 	if (logfh)
 		fclose(logfh);
