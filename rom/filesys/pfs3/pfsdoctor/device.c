@@ -300,6 +300,8 @@ retry_read:
 	{
 		io_transfer = min(io_length, volume.dosenvec->de_MaxTransfer);
 		io_transfer &= ~(volume.blocksize-1);
+		if (io_transfer == 0)
+			return e_options_error;
 		request = volume.request;
 		request->iotd_Req.io_Command = CMD_READ;
 		request->iotd_Req.io_Length  = io_transfer;
@@ -347,6 +349,8 @@ retry_read:
 
 	/* chop in maxtransfer chunks */
 	maxtransfer = volume.dosenvec->de_MaxTransfer >> volume.blockshift;
+	if (blocks > 0 && maxtransfer == 0)
+		return e_options_error;
 	while (blocks > 0)
 	{
 		transfer = min(blocks,maxtransfer);
@@ -386,6 +390,8 @@ retry_write:
 
 	/* chop in maxtransfer chunks */
 	maxtransfer = volume.dosenvec->de_MaxTransfer >> volume.blockshift;
+	if (blocks > 0 && maxtransfer == 0)
+		return e_options_error;
 	while (blocks > 0)
 	{
 		transfer = min(blocks,maxtransfer);
@@ -432,6 +438,8 @@ retry_write:
 	{
 		io_transfer = min(io_length, volume.dosenvec->de_MaxTransfer);
 		io_transfer &= ~(volume.blocksize-1);
+		if (io_transfer == 0)
+			return e_options_error;
 		request = volume.request;
 		request->iotd_Req.io_Command = CMD_WRITE;
 		request->iotd_Req.io_Length  = io_transfer;
