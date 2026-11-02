@@ -45,11 +45,13 @@
 #include <netinet/in_var.h>
 #include <netinet6/in6_var.h>
 #include <netinet6/nd6.h>
+#include <kern/amiga_netdb.h>
 
 /* Forward declarations */
 int ip6_output(void *, ...);
 
 #include <protos/netinet/in_cksum_protos.h>
+#include <protos/net/route_protos.h>
 
 /* Default router list (singly-linked) */
 static struct nd_defrouter *nd6_defrtrlist = NULL;
@@ -253,23 +255,85 @@ defrouter_del(struct nd_defrouter *dr)
     FREE(dr, M_PCB);
 }
 
-/* ------------------------------------------------------------------
- * defrouter_select - install the best default router as the default
- * route: the most preferred one that has not expired (RFC 4191 section
- * 3.2), the one heard first among equals.
- * ------------------------------------------------------------------ */
-void
-defrouter_select(void)
+/* A router is probed once a minute at most (RFC 4191 section 3.5). */
+#define ND6_RTR_PROBE_INTERVAL 60
+
+static long
+nd6_now(void)
 {
-    struct nd_defrouter *dr, *best = NULL;
+    struct timeval tv;
+
+    GetSysTime(&tv);
+    return tv.tv_sec;
+}
+
+static int
+defrouter_live(const struct nd_defrouter *dr)
+{
+    return !nd6_rtexpired(dr->expire) && dr->rtlifetime != 0;
+}
+
+/* Whether dr is reachable or probably reachable: its neighbour cache entry
+ * is past INCOMPLETE (RFC 4861 section 6.3.6). */
+static int
+defrouter_isreachable(struct nd_defrouter *dr)
+{
+    struct rtentry *rt = nd6_lookup(&dr->rtaddr, 0, dr->ifp);
+    int reach = 0;
+
+    if(rt) {
+        const struct llinfo_nd6 *ln = (const struct llinfo_nd6 *)rt->rt_llinfo;
+
+        reach = (rt->rt_flags & RTF_LLINFO) && ln != NULL &&
+                ln->ln_state > ND6_LLINFO_INCOMPLETE;
+        rtfree(rt);
+    }
+    return reach;
+}
+
+/* ------------------------------------------------------------------
+ * defrouter_choose - install the best default router as the default
+ * route (RFC 4191 section 3.2, RFC 4861 section 6.3.6): the most
+ * preferred of those reachable or probably reachable, the one heard first
+ * among equals. With none known reachable, the one installed stays, or
+ * the most preferred is taken - but when the installed one has just
+ * failed, failed, the next one after it: round robin. A more preferred
+ * router that is not known reachable is probed, so that it is used again
+ * once it answers (section 3.5).
+ * ------------------------------------------------------------------ */
+static void
+defrouter_choose(const struct nd_defrouter *failed)
+{
+    struct nd_defrouter *dr, *best = NULL, *installed = NULL, *pref = NULL;
     struct in6_addr any;
+    long now = nd6_now();
 
     for(dr = nd6_defrtrlist; dr; dr = dr->next) {
-        if(nd6_rtexpired(dr->expire) || dr->rtlifetime == 0)
+        if(!defrouter_live(dr))
             continue;
-        if(best == NULL || dr->pref > best->pref)
+        if(dr->installed)
+            installed = dr;
+        if(pref == NULL || dr->pref > pref->pref)
+            pref = dr;
+        if(defrouter_isreachable(dr) && (best == NULL || dr->pref > best->pref))
             best = dr;
     }
+    if(best == NULL && failed != NULL) {
+        for(dr = failed->next; dr && !defrouter_live(dr); dr = dr->next)
+            ;
+        for(dr = dr ? dr : nd6_defrtrlist; dr && !defrouter_live(dr); dr = dr->next)
+            ;
+        best = dr;
+    } else if(best == NULL)
+        best = installed ? installed : pref;
+
+    for(dr = nd6_defrtrlist; best && dr; dr = dr->next)
+        if(defrouter_live(dr) && dr->pref > best->pref &&
+                now - dr->probed >= ND6_RTR_PROBE_INTERVAL &&
+                !defrouter_isreachable(dr)) {
+            dr->probed = now;
+            nd6_probe(dr->ifp, &dr->rtaddr);
+        }
 
     bzero(&any, sizeof(any));
     /* remove any currently installed default routes */
@@ -284,6 +348,37 @@ defrouter_select(void)
     if(best && !best->installed &&
             nd6_router_route(RTM_ADD, &any, 0, &best->rtaddr, best->ifp) == 0)
         best->installed = 1;
+}
+
+void
+defrouter_select(void)
+{
+    defrouter_choose(NULL);
+}
+
+/* Neighbour unreachability detection has given up on addr on ifp: if it is
+ * the router in use, choose again; it is not probed again for a while. */
+void
+defrouter_unreachable(struct in6_addr *addr, struct ifnet *ifp)
+{
+    struct nd_defrouter *dr = defrouter_lookup(addr, ifp);
+
+    if(dr == NULL)
+        return;
+    dr->probed = nd6_now();
+    if(dr->installed)
+        defrouter_choose(dr);
+}
+
+/* addr on ifp has answered: if it is a router not in use, it may be the
+ * better one now. */
+void
+defrouter_reachable(struct in6_addr *addr, struct ifnet *ifp)
+{
+    const struct nd_defrouter *dr = defrouter_lookup(addr, ifp);
+
+    if(dr != NULL && !dr->installed)
+        defrouter_choose(NULL);
 }
 
 /* ==================================================================
@@ -506,15 +601,17 @@ nd6_purge_routers(struct ifnet *ifp)
  * ================================================================== */
 
 /* ------------------------------------------------------------------
- * nd6_prefix_lookup - find a prefix entry.
+ * nd6_prefix_lookup - find the entry for a prefix heard on ifp. A prefix
+ * is on-link on the link it is advertised on: each interface it is heard
+ * on has an entry of its own, with its own lifetimes, as in KAME.
  * ------------------------------------------------------------------ */
 struct nd_prefix *
-nd6_prefix_lookup(struct sockaddr_in6 *prefix, int plen)
+nd6_prefix_lookup(struct sockaddr_in6 *prefix, int plen, const struct ifnet *ifp)
 {
     struct nd_prefix *pr;
 
     for(pr = nd6_prefixlist; pr; pr = pr->next) {
-        if(pr->ndpr_plen == plen &&
+        if(pr->ndpr_ifp == ifp && pr->ndpr_plen == plen &&
                 IN6_ARE_ADDR_EQUAL(&pr->ndpr_prefix.sin6_addr,
                                    &prefix->sin6_addr))
             return pr;
@@ -540,7 +637,7 @@ nd6_prefix_add(struct ifnet *ifp, struct nd_opt_prefix_info *pi)
 
     GetSysTime(&_tv);
 
-    pr = nd6_prefix_lookup(&prefix, plen);
+    pr = nd6_prefix_lookup(&prefix, plen, ifp);
     if(pr) {
         /* update lifetimes */
         pr->ndpr_vltime = ntohl(pi->nd_opt_pi_valid_time);
@@ -604,6 +701,7 @@ static void
 nd6_prefix_onlink(struct nd_prefix *pr)
 {
     struct sockaddr_in6 prefix, mask;
+    struct rtentry *rt = NULL;
     struct ifaddr *ifa;
     int i, plen;
 
@@ -641,10 +739,31 @@ nd6_prefix_onlink(struct nd_prefix *pr)
     for(i = 0; i < 16; i++)
         prefix.sin6_addr.s6_addr[i] &= mask.sin6_addr.s6_addr[i];
 
+    /*
+     * The route is put on the prefix's interface: with a link-local address
+     * for gateway, rtrequest() would take whichever interface registered
+     * fe80::/64 first, as for the routes through a router (nd6_router_route()).
+     */
     if(rtrequest(RTM_ADD, (struct sockaddr *)&prefix,
                  ifa->ifa_addr, (struct sockaddr *)&mask,
-                 RTF_UP | RTF_CLONING, NULL) == 0) {
+                 RTF_UP | RTF_CLONING, &rt) == 0) {
         pr->ndpr_onlink = 1;
+        if(rt != NULL) {
+            if(rt->rt_ifp != pr->ndpr_ifp) {
+                rt->rt_ifp = pr->ndpr_ifp;
+                rt->rt_ifa = ifa;
+                /* the link-layer gateway its neighbours are cloned with
+                 * (nd6_rtrequest()) names the interface: edited in place,
+                 * as nd6_lookup() does */
+                if(rt->rt_gateway && rt->rt_gateway->sa_family == AF_LINK) {
+                    struct sockaddr_dl *sdl = (struct sockaddr_dl *)rt->rt_gateway;
+
+                    sdl->sdl_index = pr->ndpr_ifp->if_index;
+                    sdl->sdl_type  = pr->ndpr_ifp->if_type;
+                }
+            }
+            rt->rt_refcnt--;
+        }
     }
 }
 
@@ -682,6 +801,33 @@ nd6_prefix_offlink(struct nd_prefix *pr)
     pr->ndpr_onlink = 0;
 }
 
+/*
+ * nd6_prefix_drop - unlink pr from the list and free it. The routing table
+ * holds one route for a prefix: if pr had it, the entry of another
+ * interface the prefix is heard on gets it, so that the prefix stays
+ * on-link there.
+ */
+static void
+nd6_prefix_drop(struct nd_prefix **pp)
+{
+    struct nd_prefix *pr = *pp, *other;
+    int had_route = pr->ndpr_onlink;
+
+    nd6_prefix_offlink(pr);
+    *pp = pr->next;
+    if(had_route)
+        for(other = nd6_prefixlist; other; other = other->next)
+            if(!other->ndpr_onlink && other->ndpr_plen == pr->ndpr_plen &&
+                    (other->ndpr_flags & ND_OPT_PI_FLAG_ONLINK) &&
+                    IN6_ARE_ADDR_EQUAL(&other->ndpr_prefix.sin6_addr,
+                                       &pr->ndpr_prefix.sin6_addr)) {
+                nd6_prefix_onlink(other);
+                if(other->ndpr_onlink)
+                    break;
+            }
+    FREE(pr, M_PCB);
+}
+
 /* ------------------------------------------------------------------
  * nd6_prefix_timer - expire prefixes (called from nd6_timer).
  * ------------------------------------------------------------------ */
@@ -696,10 +842,7 @@ nd6_prefix_timer(void)
     pp = &nd6_prefixlist;
     while((pr = *pp) != NULL) {
         if(pr->ndpr_expire != 0 && pr->ndpr_expire < _tv.tv_sec) {
-            /* prefix expired */
-            nd6_prefix_offlink(pr);
-            *pp = pr->next;
-            FREE(pr, M_PCB);
+            nd6_prefix_drop(pp);        /* prefix expired */
             continue;
         }
         pp = &pr->next;
@@ -723,9 +866,7 @@ nd6_purge_prefixes(struct ifnet *ifp)
     pp = &nd6_prefixlist;
     while((pr = *pp) != NULL) {
         if(pr->ndpr_ifp == ifp) {
-            nd6_prefix_offlink(pr);
-            *pp = pr->next;
-            FREE(pr, M_PCB);
+            nd6_prefix_drop(pp);
             continue;
         }
         pp = &pr->next;
@@ -735,6 +876,61 @@ nd6_purge_prefixes(struct ifnet *ifp)
 /* ==================================================================
  * SLAAC - Stateless Address Autoconfiguration (RFC 4862)
  * ================================================================== */
+
+/*
+ * nd6_slaac_lifetimes - the lifetimes a Prefix Information Option gives an
+ * address autoconfigured from its prefix (RFC 4862 section 5.5.3 (d) for a
+ * new one, (e) for an existing one): as absolute expiry times, 0 for
+ * infinite. An existing address's valid lifetime is taken when it is more
+ * than two hours or more than what is left; when what is left is two hours
+ * or less it stays; otherwise it becomes two hours - so a forged
+ * advertisement cannot take the address away. A preferred lifetime of 0
+ * deprecates the address (section 5.5.4); a later one undoes that.
+ */
+static void
+nd6_slaac_lifetimes(struct in6_ifaddr *ia, u_int32_t vltime, u_int32_t pltime,
+                    int fresh)
+{
+    struct timeval _tv;
+    u_int32_t now;
+
+    GetSysTime(&_tv);
+    now = (u_int32_t)_tv.tv_sec;
+    if(!fresh && vltime <= 7200) {
+        u_int32_t left = ia->ia6_lifetime_expire == 0 ? 0xffffffff :
+                         ia->ia6_lifetime_expire > now ? ia->ia6_lifetime_expire - now : 0;
+
+        if(vltime <= left)
+            vltime = left <= 7200 ? left : 7200;
+    }
+    if(pltime > vltime)
+        pltime = vltime;
+    ia->ia6_lifetime_vltime = vltime;
+    ia->ia6_lifetime_pltime = pltime;
+    ia->ia6_lifetime_expire = vltime == 0xffffffff ? 0 : now + vltime;
+    ia->ia6_lifetime_preferred = pltime == 0xffffffff ? 0 : now + pltime;
+    if(pltime == 0)
+        ia->ia6_ifaflags |= IN6_IFF_DEPRECATED;
+    else
+        ia->ia6_ifaflags &= ~IN6_IFF_DEPRECATED;
+}
+
+/*
+ * nd6_slaac_addr - the address autoconfigured (not a temporary one) on ifp
+ * from the /64 prefix, or NULL.
+ */
+static struct in6_ifaddr *
+nd6_slaac_addr(const struct ifnet *ifp, const struct in6_addr *prefix)
+{
+    struct in6_ifaddr *ia;
+
+    for(ia = in6_ifaddr; ia; ia = ia->ia_next)
+        if(ia->ia6_ifp == ifp &&
+                (ia->ia6_ifaflags & (IN6_IFF_AUTOCONF | IN6_IFF_TEMPORARY)) == IN6_IFF_AUTOCONF &&
+                bcmp(&ia->ia_addr.sin6_addr, prefix, 8) == 0)
+            return ia;
+    return NULL;
+}
 
 /* ------------------------------------------------------------------
  * nd6_prefix_slaac - create a SLAAC address from prefix + EUI-64.
@@ -748,8 +944,15 @@ nd6_prefix_slaac(struct ifnet *ifp, struct nd_prefix *pr)
 
     if(pr->ndpr_plen != 64)
         return;			/* SLAAC requires /64 */
-    if(pr->ndpr_autoconf)
-        return;			/* already configured */
+    /*
+     * An address made from the prefix already: renew its lifetimes. Else
+     * make one - also when one was made and deleted by hand since, which
+     * the next advertisement gives back, as in FreeBSD.
+     */
+    if((ia = nd6_slaac_addr(ifp, &pr->ndpr_prefix.sin6_addr)) != NULL) {
+        nd6_slaac_lifetimes(ia, pr->ndpr_vltime, pr->ndpr_pltime, 0);
+        return;
+    }
 
     /* get link-local to derive EUI-64 interface identifier */
     ia = in6_ifaof_ifpforlinklocal(ifp);
@@ -794,6 +997,8 @@ nd6_prefix_slaac(struct ifnet *ifp, struct nd_prefix *pr)
 
     /* in6_ifinit() joins the address's solicited-node group */
     in6_control(NULL, SIOCAIFADDR_IN6, (caddr_t)&ifra, ifp);
+    if((ia = nd6_slaac_addr(ifp, &pr->ndpr_prefix.sin6_addr)) != NULL)
+        nd6_slaac_lifetimes(ia, pr->ndpr_vltime, pr->ndpr_pltime, 1);
 
     pr->ndpr_autoconf = 1;
     pr->ndpr_refcount++;
@@ -905,6 +1110,85 @@ nd6_rs_input(struct mbuf *m, int off, int icmp6len)
     m_freem(m);
 }
 
+/*
+ * The DNS options of a Router Advertisement (RFC 8106). An RDNSS option is
+ * 3 + 2n units long, n server addresses; a DNSSL option lists the domains
+ * in the DNS's own uncompressed label encoding, padded with zero octets.
+ * An option that does not parse is ignored whole (section 5.1, 5.2).
+ */
+static void
+nd6_rdnss_input(struct ifnet *ifp, const u_int8_t *opt, int optlen)
+{
+    struct in6_addr a;
+    u_int32_t lt;
+    int i;
+
+    if(opt[1] < 3 || (opt[1] & 1) == 0)
+        return;
+    bcopy(opt + 4, &lt, sizeof(lt));
+    for(i = 8; i + (int)sizeof(a) <= optlen; i += sizeof(a)) {
+        bcopy(opt + i, &a, sizeof(a));
+        if(!IN6_IS_ADDR_UNSPECIFIED(&a) && !IN6_IS_ADDR_LOOPBACK(&a) &&
+                !IN6_IS_ADDR_MULTICAST(&a))
+            ndb_ra_server(ifp, &a, ntohl(lt));
+    }
+}
+
+/* One domain from p, as a dotted name into name; the octets it took, or 0
+ * if it is not a well formed host name. */
+static int
+nd6_dnssl_name(const u_int8_t *p, const u_int8_t *end, char *name, int size)
+{
+    const u_int8_t *start = p;
+    int n = 0;
+
+    while(p < end && *p != 0) {
+        int l = *p++, i;
+
+        if(l > 63 || p + l > end || n + l + 2 > size)
+            return 0;
+        if(n > 0)
+            name[n++] = '.';
+        for(i = 0; i < l; i++) {
+            u_int8_t c = p[i];
+
+            if(!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+                    (c >= '0' && c <= '9') || c == '-' || c == '_'))
+                return 0;
+            name[n++] = c;
+        }
+        p += l;
+    }
+    if(p >= end || n == 0)
+        return 0;               /* no root label, or the root alone */
+    name[n] = '\0';
+    return p + 1 - start;
+}
+
+static void
+nd6_dnssl_input(struct ifnet *ifp, const u_int8_t *opt, int optlen)
+{
+    const u_int8_t *p, *end = opt + optlen;
+    char name[MAXHOSTNAMELEN + 1];
+    u_int32_t lt;
+    int pass, k;
+
+    if(opt[1] < 2)
+        return;
+    bcopy(opt + 4, &lt, sizeof(lt));
+    /* the first pass checks the whole option, the second takes it */
+    for(pass = 0; pass < 2; pass++) {
+        for(p = opt + 8; p < end && *p != 0; p += k)
+            if((k = nd6_dnssl_name(p, end, name, sizeof(name))) == 0)
+                return;
+            else if(pass == 1)
+                ndb_ra_domain(ifp, name, ntohl(lt));
+        for(; p < end; p++)
+            if(*p != 0)
+                return;         /* something after the padding */
+    }
+}
+
 /* ------------------------------------------------------------------
  * nd6_ra_input - process an inbound Router Advertisement.
  *
@@ -913,6 +1197,7 @@ nd6_rs_input(struct mbuf *m, int off, int icmp6len)
  *   - Manage default router list
  *   - Process prefix information options (on-link + SLAAC)
  *   - Process MTU option
+ *   - Process DNS options (RFC 8106)
  * ------------------------------------------------------------------ */
 void
 nd6_ra_input(struct mbuf *m, int off, int icmp6len)
@@ -1018,8 +1303,11 @@ nd6_ra_input(struct mbuf *m, int off, int icmp6len)
                     (struct nd_opt_prefix_info *)opts;
                 struct nd_prefix *pr;
 
-                /* skip link-local prefixes */
-                if(IN6_IS_ADDR_LINKLOCAL(&pi->nd_opt_pi_prefix))
+                /* skip link-local prefixes, and one whose preferred
+                 * lifetime exceeds its valid one (RFC 4862 5.5.3 (c)) */
+                if(IN6_IS_ADDR_LINKLOCAL(&pi->nd_opt_pi_prefix) ||
+                        ntohl(pi->nd_opt_pi_preferred_time) >
+                        ntohl(pi->nd_opt_pi_valid_time))
                     break;
 
                 /* add/update prefix entry */
@@ -1081,6 +1369,14 @@ nd6_ra_input(struct mbuf *m, int off, int icmp6len)
             }
             break;
 
+        case ND_OPT_RDNSS:
+            nd6_rdnss_input(ifp, opts, optlen);
+            break;
+
+        case ND_OPT_DNSSL:
+            nd6_dnssl_input(ifp, opts, optlen);
+            break;
+
         default:
             /* ignore unknown options */
             break;
@@ -1116,7 +1412,12 @@ bad:
 /* ------------------------------------------------------------------
  * nd6_redirect_input - process an inbound Redirect message.
  *
- * Updates the routing table to use the better next-hop.
+ * A Redirect is valid only as RFC 4861 section 8.1 says: from a link-local
+ * address with hop limit 255, code 0, at least 40 octets, every option of
+ * a length above 0 - and from the router that is now the first hop to the
+ * destination, so that no other node on the link, router or not, can
+ * draw away traffic it does not carry. Then the destination is routed
+ * through the target (section 8.3). A router ignores Redirects.
  * ------------------------------------------------------------------ */
 void
 nd6_redirect_input(struct mbuf *m, int off, int icmp6len)
@@ -1125,8 +1426,15 @@ nd6_redirect_input(struct mbuf *m, int off, int icmp6len)
     struct nd_redirect *rd;
     struct ifnet *ifp = m->m_pkthdr.rcvif;
     struct in6_addr src6, tgt, reddst;
+    struct sockaddr_in6 dst_sa, gw_sa;
+    struct rtentry *rt;
+    union nd_opts ndopts;
+    int first_hop, host;
 
     nd6stat.nd6s_rcv_redirect++;
+
+    if(ip6_forwarding)
+        goto bad;
 
     /* copy source address out of packed header */
     memcpy(&src6, &ip6->ip6_src, sizeof(src6));
@@ -1143,8 +1451,12 @@ nd6_redirect_input(struct mbuf *m, int off, int icmp6len)
         goto bad;
     }
 
-    if(m->m_len < off + (int)sizeof(*rd)) {
-        if((m = m_pullup(m, off + sizeof(*rd))) == NULL) {
+    if(icmp6len < (int)sizeof(*rd)) {
+        nd6stat.nd6s_rcv_badredirect++;
+        goto bad;
+    }
+    if(m->m_len < off + icmp6len) {
+        if((m = m_pullup(m, off + icmp6len)) == NULL) {
             nd6stat.nd6s_rcv_badredirect++;
             return;
         }
@@ -1152,14 +1464,12 @@ nd6_redirect_input(struct mbuf *m, int off, int icmp6len)
     }
 
     rd = (struct nd_redirect *)(mtod(m, u_int8_t *) + off);
-    tgt    = rd->nd_rd_target;
-    reddst = rd->nd_rd_dst;
-
-    /* validate: source must be a known default router */
-    if(defrouter_lookup(&src6, ifp) == NULL) {
+    if(rd->nd_rd_code != 0) {
         nd6stat.nd6s_rcv_badredirect++;
         goto bad;
     }
+    memcpy(&tgt, &rd->nd_rd_target, sizeof(tgt));
+    memcpy(&reddst, &rd->nd_rd_dst, sizeof(reddst));
 
     /* destination must not be multicast */
     if(IN6_IS_ADDR_MULTICAST(&reddst)) {
@@ -1174,50 +1484,60 @@ nd6_redirect_input(struct mbuf *m, int off, int icmp6len)
         goto bad;
     }
 
-    /* update routing table */
-    {
-        struct sockaddr_in6 dst_sa, gw_sa;
-        struct rtentry *rt;
+    /* the options: each of a length above 0, all within the message */
+    nd6_option_init(rd + 1, icmp6len - (int)sizeof(*rd), &ndopts);
+    if(nd6_options(&ndopts) < 0) {
+        nd6stat.nd6s_rcv_badredirect++;
+        goto bad;
+    }
 
-        bzero(&dst_sa, sizeof(dst_sa));
-        dst_sa.sin6_family = AF_INET6;
-        dst_sa.sin6_len    = sizeof(dst_sa);
-        dst_sa.sin6_addr   = reddst;
+    /* the source must be the first hop to the destination now */
+    bzero(&dst_sa, sizeof(dst_sa));
+    dst_sa.sin6_family = AF_INET6;
+    dst_sa.sin6_len    = sizeof(dst_sa);
+    dst_sa.sin6_addr   = reddst;
+    rt = rtalloc1((struct sockaddr *)&dst_sa, 0);
+    first_hop = rt != NULL && rt->rt_ifp == ifp &&
+                (rt->rt_flags & RTF_GATEWAY) && rt->rt_gateway != NULL &&
+                rt->rt_gateway->sa_family == AF_INET6 &&
+                IN6_ARE_ADDR_EQUAL(&((struct sockaddr_in6 *)rt->rt_gateway)->sin6_addr,
+                                   &src6);
+    host = rt != NULL && (rt->rt_flags & RTF_HOST);
+    if(rt)
+        rtfree(rt);
+    if(!first_hop) {
+        nd6stat.nd6s_rcv_badredirect++;
+        goto bad;
+    }
 
-        bzero(&gw_sa, sizeof(gw_sa));
-        gw_sa.sin6_family = AF_INET6;
-        gw_sa.sin6_len    = sizeof(gw_sa);
-        gw_sa.sin6_addr   = tgt;
+    /* route the destination through the target, on this interface */
+    bzero(&gw_sa, sizeof(gw_sa));
+    gw_sa.sin6_family = AF_INET6;
+    gw_sa.sin6_len    = sizeof(gw_sa);
+    gw_sa.sin6_addr   = tgt;
+    if(host)            /* from an earlier Redirect */
+        rtrequest(RTM_DELETE, (struct sockaddr *)&dst_sa,
+                  NULL, NULL, RTF_HOST, NULL);
+    rt = NULL;
+    if(rtrequest(RTM_ADD, (struct sockaddr *)&dst_sa,
+                 (struct sockaddr *)&gw_sa, NULL,
+                 RTF_HOST | RTF_GATEWAY | RTF_DYNAMIC, &rt) == 0 && rt != NULL) {
+        if(rt->rt_ifp != ifp) {
+            struct in6_ifaddr *ia = in6_ifaof_ifpforlinklocal(ifp);
 
-        /* try to update existing route, or add new one */
-        rt = nd6_lookup(&reddst, 0, ifp);
-        if(rt) {
-            /* change gateway */
-            rtrequest(RTM_DELETE, (struct sockaddr *)&dst_sa,
-                      NULL, NULL, RTF_HOST, NULL);
-            rtfree(rt);         /* release the ref held by nd6_lookup */
+            rt->rt_ifp = ifp;
+            if(ia)
+                rt->rt_ifa = &ia->ia_ifa;
         }
-        rtrequest(RTM_ADD, (struct sockaddr *)&dst_sa,
-                  (struct sockaddr *)&gw_sa, NULL,
-                  RTF_HOST | RTF_GATEWAY | RTF_DYNAMIC, NULL);
+        rt->rt_refcnt--;
     }
 
     /* update neighbor cache for the new target */
-    {
-        union nd_opts ndopts;
-        u_int8_t *optstart = (u_int8_t *)(rd + 1);
-        int optbytes = icmp6len - (int)sizeof(*rd);
+    if(ndopts.nd_opts_tgt_lladdr) {
+        char *lladdr = (char *)(ndopts.nd_opts_tgt_lladdr + 1);
 
-        if(optbytes > 0) {
-            nd6_option_init(optstart, optbytes, &ndopts);
-            if(nd6_options(&ndopts) >= 0 &&
-                    ndopts.nd_opts_tgt_lladdr) {
-                char *lladdr = (char *)
-                               (ndopts.nd_opts_tgt_lladdr + 1);
-                nd6_cache_lladdr(ifp, &tgt, lladdr,
-                                 ifp->if_addrlen, ND_REDIRECT, 0);
-            }
-        }
+        nd6_cache_lladdr(ifp, &tgt, lladdr,
+                         ifp->if_addrlen, ND_REDIRECT, 0);
     }
 
     m_freem(m);

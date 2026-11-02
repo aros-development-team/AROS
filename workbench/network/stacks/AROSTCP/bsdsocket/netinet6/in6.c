@@ -1227,15 +1227,18 @@ in6_tmpaddrtimer(void)
 
     GetSysTime(&_tv);
 
+    /* temporary addresses (RFC 4941) and those stateless autoconfiguration
+     * made (RFC 4862 section 5.5.4): deprecated at the end of the preferred
+     * lifetime, removed at the end of the valid one */
     for(ia = in6_ifaddr; ia; ia = nia) {
         nia = ia->ia_next;
-        if(!(ia->ia6_ifaflags & IN6_IFF_TEMPORARY))
+        if(!(ia->ia6_ifaflags & (IN6_IFF_TEMPORARY | IN6_IFF_AUTOCONF)))
             continue;
 
         /* check valid lifetime expiry */
         if(ia->ia6_lifetime_expire &&
            (u_int32_t)_tv.tv_sec >= ia->ia6_lifetime_expire) {
-            D(bug("[AROSTCP:IN6] %s: removing expired temporary addr\n",
+            D(bug("[AROSTCP:IN6] %s: removing expired autoconfigured addr\n",
                   __func__));
             in6_purgeaddr((struct ifaddr *)ia);
             continue;

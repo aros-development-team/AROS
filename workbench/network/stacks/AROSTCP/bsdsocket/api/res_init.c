@@ -24,6 +24,7 @@
 
 #include <sys/param.h>
 #include <sys/socket.h>
+#include <net/if.h>
 #include <netinet/in.h>
 #include <arpa/nameser.h>
 #include <kern/amiga_includes.h>
@@ -67,6 +68,9 @@ static void res_fill_ns(struct sockaddr_storage *ss, struct NameserventNode *ns)
         s6->sin6_family = AF_INET6;
         s6->sin6_port   = htons(NAMESERVER_PORT);
         s6->sin6_addr   = ns->nsn_Addr6;
+        /* a link-local server is on the link it was given for */
+        if(IN6_IS_ADDR_LINKLOCAL(&ns->nsn_Addr6) && ns->nsn_Owner != NULL)
+            s6->sin6_scope_id = ns->nsn_Owner->if_index;
     } else {
         struct sockaddr_in *s4 = (struct sockaddr_in *)ss;
         s4->sin_len         = sizeof(*s4);

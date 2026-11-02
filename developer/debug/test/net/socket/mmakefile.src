@@ -25,16 +25,22 @@ CUNITSOCKETTESTFILES := \
     cunit-net-localhost \
     cunit-net-mcast6 \
     cunit-net-mld6 \
+    cunit-net-naflags6 \
     cunit-net-ndqueue6 \
     cunit-net-netdb \
     cunit-net-pmtu4 \
     cunit-net-pmtu6 \
     cunit-net-ports \
+    cunit-net-prefix6if \
     cunit-net-raw6 \
+    cunit-net-rdnss \
+    cunit-net-redirect6 \
+    cunit-net-resolver \
     cunit-net-rio6 \
     cunit-net-route6 \
     cunit-net-scope6 \
     cunit-net-sendto6 \
+    cunit-net-slaaclife \
     cunit-net-slaac6 \
     cunit-net-socket \
     cunit-net-srcaddr6 \

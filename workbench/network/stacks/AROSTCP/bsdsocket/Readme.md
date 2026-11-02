@@ -74,6 +74,10 @@ taken as it is, and a localhost name (RFC 6761 section 6.3: `localhost` and the 
 `.localhost`, any case, with or without the final dot) is the loopback address - 127.0.0.1, or
 `::1` for AF_INET6 - without the host table or the DNS; `getaddrinfo()` with AF_UNSPEC gives both.
 Anything else goes to the host table and the resolver in the configured order.
+The resolver (`res_search()`) searches as BIND 4.9's and resolv.conf(5) say, with `ndots` 1: a name
+with a dot is first tried as it is, and one not found that way, or one without a dot, is tried in
+each domain of the search list in turn (`RES_DNSRCH` is in `RES_DEFAULT`) - the static `DOMAIN`
+entries first, then the dynamic ones (DHCP, Router Advertisements); a final dot means only as it is.
 The networks table (`db/networks`) holds each network's number in host order, as
 `getnetent(3)` and the autodoc say, read with `inet_network()`'s rules (`__inet_network()`: "10.1"
 is 0x0a01), so `getnetbyaddr(127, AF_INET)` finds `loop 127`.
@@ -413,7 +417,13 @@ route to `::` without a netmask would be a host route, which the routing table r
 
 Router Advertisements are processed as by an RFC 4191 type C host. Each default router keeps its
 preference (high, medium, low; the reserved value counts as medium) and the default route goes
-through the most preferred one that has not expired, the one heard first among equals. A Route
+through the most preferred of those that have not expired and are reachable or probably reachable -
+their neighbour entry past INCOMPLETE (RFC 4861 §6.3.6, RFC 4191 §3.2) - the one heard first among
+equals (`defrouter_choose()`). With none known reachable, the one in use stays, or the most preferred
+is taken; when neighbour unreachability detection gives up on the one in use, the next one in the
+list is (round robin, `defrouter_unreachable()`). A more preferred router passed over is probed with
+a Neighbor Solicitation once a minute at most (RFC 4191 §3.5, `nd6_probe()`), and its answer
+(`defrouter_reachable()`) brings the default route back to it. A Route
 Information Option installs a route to its prefix through the advertising router, on the interface
 it was heard on, one entry per (prefix, router) with its own lifetime and preference: the most
 preferred router for a prefix gets the route, and between prefixes the routing table's longest match
@@ -430,6 +440,43 @@ send another. An address's `IN6_IFF_*` flags are kept in `ia6_ifaflags`, apart f
 `ifa_flags` (`ia6_flags`) where `IFA_ROUTE` records the prefix route `in6_ifscrub()` removes with
 the address. A prefix gets one temporary address (RFC 4941) at a time: another is made when a Router
 Advertisement repeats the prefix after the current one is deprecated.
+
+A prefix is on-link on the link it is advertised on: the prefix list has an entry per (prefix,
+interface) (`nd6_prefix_lookup()`), each with the lifetimes heard on its link, as in KAME. The
+routing table holds one route for a prefix: it is put on its entry's interface (`nd6_prefix_onlink()`;
+with a link-local gateway `rtrequest()` would take whichever interface registered fe80::/64 first),
+and when that entry ends - expired, or its interface gone - another interface's entry for the
+prefix gets it (`nd6_prefix_drop()`).
+
+An address SLAAC makes lives by its prefix's lifetimes (RFC 4862 §5.5.3, §5.5.4): each Router
+Advertisement for the prefix renews them (`nd6_slaac_lifetimes()`), but one that would cut the valid
+lifetime below two hours brings it down to two hours at most, so a forged advertisement cannot take
+the address away; a preferred lifetime of 0 deprecates it. `in6_tmpaddrtimer()` deprecates SLAAC and
+temporary addresses at the end of their preferred lifetime and removes them at the end of the valid
+one. An option whose preferred lifetime exceeds its valid one is ignored (§5.5.3 (c)). An address
+deleted by hand comes back with the next advertisement.
+
+The flags of a Neighbor Advertisement are used as they are on the wire: `ND_NA_FLAG_*` are in
+network byte order (KAME's `<netinet/icmp6.h>`), so `nd6_na_input()` and `nd6_na_output()` neither
+swap them nor need to.
+
+A Redirect (`nd6_redirect_input()`) is taken only as RFC 4861 §8.1 says: from a link-local address
+with hop limit 255, code 0, at least 40 octets, options that parse, a target that is link-local or
+the destination itself - and from the router that is the first hop to the destination now, the
+gateway of the route the table uses for it on that interface, so that another node on the link,
+router or not, cannot draw the traffic away. It then routes the destination through the target
+(a host route, replacing one an earlier Redirect made). A router ignores Redirects.
+
+The DNS options of a Router Advertisement (RFC 8106) give the resolver servers and search domains:
+the addresses of an RDNSS option and the domains of a DNSSL option go into the dynamic database
+(`ndb_ra_server()`, `ndb_ra_domain()`), tagged with the interface and with when they end. Each
+advertisement renews them, a lifetime of 0 ends them at once, `ndb_ra_timer()` (from `nd6_timer()`)
+drops them when it is up, and taking the interface down drops them with its DNS= servers
+(`ifnet_clear_dns()`). At most three of each are kept per interface; a new one replaces the one that
+ends soonest (§5.3.1). An option that does not parse is ignored whole. A link-local server is asked on
+the interface it was heard on (its zone; see 6.6). The static `NAMESERVER` and `DOMAIN` entries are never
+touched and come first; a DHCP client's update (`ClearDynNameServ()`, `ClearDynDomain()`) replaces
+only what DHCP gave, not what an interface or a router did.
 
 An in-place reload deletes every address of every interface, the link-local included, and forgets
 the routers and prefixes heard on it (`nd6_purge_routers()`, `nd6_purge_prefixes()`). For an

@@ -349,10 +349,12 @@ AROS_LH0(void, ClearDynDomain,
     }
     for(node = DynDB.dyn_Domains.mlh_Head; node->mln_Succ;) {
         nnode = node->mln_Succ;
-        bsd_free(node, NULL);
+        if(((struct DomainentNode *)node)->dn_Owner == NULL) {
+            Remove((struct Node *)node);
+            bsd_free(node, NULL);
+        }
         node = nnode;
     }
-    NewList((struct List *)&DynDB.dyn_Domains);
 
     AROS_LIBFUNC_EXIT
 }
@@ -371,10 +373,12 @@ AROS_LH0(void, ClearDynNameServ,
     }
     for(node = DynDB.dyn_NameServers.mlh_Head; node->mln_Succ;) {
         nnode = node->mln_Succ;
-        bsd_free(node, NULL);
+        if(((struct NameserventNode *)node)->nsn_Owner == NULL) {
+            Remove((struct Node *)node);
+            bsd_free(node, NULL);
+        }
         node = nnode;
     }
-    NewList((struct List *)&DynDB.dyn_NameServers);
 
     AROS_LIBFUNC_EXIT
 }
@@ -430,6 +434,7 @@ AROS_LH1(LONG, AddDynNameServ,
     nsn->nsn_EntSize = sizeof(nsn->nsn_Ent);
     nsn->nsn_Family = AF_INET;
     nsn->nsn_Owner = NULL;	/* DHCP/global nameserver, not interface-tagged */
+    nsn->nsn_Expire = 0;
     nsn->nsn_Ent.ns_addr.s_addr = entry->sin_addr.s_addr;
 
     if(!MiamiBase->DynNameServ_Locked) {
@@ -460,6 +465,8 @@ AROS_LH1(LONG, AddDynDomain,
     }
     dn->dn_EntSize = nodesize - sizeof(struct GenentNode);
     dn->dn_Ent.d_name = (char *)(dn + 1);
+    dn->dn_Owner = NULL;	/* DHCP/global domain, not interface-tagged */
+    dn->dn_Expire = 0;
 
     memcpy((char *)(dn + 1), entry, nodesize - sizeof(*dn));
 

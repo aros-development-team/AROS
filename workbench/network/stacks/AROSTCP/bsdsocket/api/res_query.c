@@ -292,6 +292,24 @@ res_search(struct SocketBase 	*libPtr,
 #endif /* !AMITCP */
 
     /*
+     * A name with a dot is first tried as it is (BIND 4.9's res_search(),
+     * with ndots 1): it is most likely fully qualified already, and asking
+     * for it in each domain of the search list first would cost a query
+     * per domain for every such name.  No server to ask is no use trying
+     * the others.
+     */
+    if(n > 0) {
+        if((ret = res_querydomain(libPtr, name, (char *)NULL,
+                                  class, type, answer, anslen)) > 0)
+            return (ret);
+        tmp_errno = readErrnoValue(libPtr);
+        if((tmp_errno == ECONNREFUSED) || (tmp_errno == ETIMEDOUT) || (tmp_errno == EINTR)) {
+            h_errno = TRY_AGAIN;
+            return (-1);
+        }
+    }
+
+    /*
      * We do at least one level of search if
      *	- there is no dot and RES_DEFNAME is set, or
      *	- there is at least one dot, there is no trailing dot,
@@ -362,21 +380,6 @@ res_search(struct SocketBase 	*libPtr,
                 break;
             }
         }
-    }
-    /*
-     * If the search/default failed, try the name as fully-qualified,
-     * but only if it contained at least one dot (even trailing).
-     * This is purely a heuristic; we assume that any reasonable query
-     * about a top-level domain (for servers, SOA, etc) will not use
-     * res_search.
-     */
-
-    if(n && (ret = res_querydomain(libPtr, name, (char *)NULL,
-                                   class, type, answer, anslen)) > 0) {
-#if defined(__AROS__)
-        D(bug("[AROSTCP](res_query.c) res_search: returning querydomain.2 result\n"));
-#endif
-        return (ret);
     }
 #if defined(__AROS__)
     D(bug("[AROSTCP](res_query.c) res_search: finished search.\n"));
