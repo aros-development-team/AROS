@@ -175,6 +175,19 @@ static ULONG calcChkSum(ULONG *ptr, ULONG size)
   return sum;
 }
 
+/* Keep geometry consistent for newly created, edited and reopened partitions. */
+static void PartitionRDBUpdateGeometry(struct PartitionHandle *ph)
+{
+    ph->dg.dg_DeviceType = DG_DIRECT_ACCESS;
+    ph->dg.dg_SectorSize = ph->de.de_SizeBlock << 2;
+    ph->dg.dg_Heads = ph->de.de_Surfaces;
+    ph->dg.dg_TrackSectors = ph->de.de_BlocksPerTrack;
+    ph->dg.dg_CylSectors = ph->dg.dg_Heads * ph->dg.dg_TrackSectors;
+    ph->dg.dg_Cylinders = ph->de.de_HighCyl - ph->de.de_LowCyl + 1;
+    ph->dg.dg_TotalSectors = ph->dg.dg_CylSectors * ph->dg.dg_Cylinders;
+    ph->dg.dg_BufMemType = ph->de.de_BufMemType;
+}
+
 LONG PartitionRDBCheckPartitionTable
     (
         struct Library *PartitionBase,
@@ -295,12 +308,7 @@ struct PartitionHandle *ph;
                     CopyMem(pblock->pb_DriveName+1, ph->ln.ln_Name, pblock->pb_DriveName[0]);
                     ph->ln.ln_Name[pblock->pb_DriveName[0]]=0;
                     CopyBE2HostDosEnvec(pblock->pb_Environment, (SIPTR *)&ph->de, AROS_BE2LONG(pblock->pb_Environment[DE_TABLESIZE])+1);
-                    ph->dg.dg_DeviceType = DG_DIRECT_ACCESS;
-                    ph->dg.dg_SectorSize = ph->de.de_SizeBlock<<2;
-                    ph->dg.dg_Heads = ph->de.de_Surfaces;
-                    ph->dg.dg_TrackSectors = ph->de.de_BlocksPerTrack;
-                    ph->dg.dg_Cylinders = ph->de.de_HighCyl - ph->de.de_LowCyl + 1;
-                    ph->dg.dg_BufMemType = ph->de.de_BufMemType;
+                    PartitionRDBUpdateGeometry(ph);
                     return ph;
                 }
                 FreeVec(ph->ln.ln_Name);
@@ -813,6 +821,7 @@ static LONG PartitionRDBSetPartitionAttrs(struct Library *PartitionBase, struct 
 
                 CopyMem(de, &ph->de, (de->de_TableSize+1)*sizeof(IPTR));
                 CopyHost2BEDosEnvec((SIPTR *)de, data->pb_Environment, de->de_TableSize+1);
+                PartitionRDBUpdateGeometry(ph);
             }
             break;
         case PT_TYPE:
@@ -895,15 +904,6 @@ struct PartitionHandle *PartitionRDBAddPartition(struct Library *PartitionBase, 
                     }
                     else
                         AddTail(&root->table->list, &ph->ln);
-                    if (FindTagItem(PT_DOSENVEC, taglist) == NULL)
-                    {
-                        ph->dg.dg_DeviceType = DG_DIRECT_ACCESS;
-                        ph->dg.dg_SectorSize = ph->de.de_SizeBlock<<2;
-                        ph->dg.dg_Heads = ph->de.de_Surfaces;
-                        ph->dg.dg_TrackSectors = ph->de.de_BlocksPerTrack;
-                        ph->dg.dg_Cylinders = ph->de.de_HighCyl - ph->de.de_LowCyl + 1;
-                        ph->dg.dg_BufMemType = ph->de.de_BufMemType;
-                    }
                     return ph;
                 }
                 FreeVec(ph->ln.ln_Name);
