@@ -145,6 +145,9 @@ static BPTR LoadFS(struct FileSysNode *node, struct DosLibrary *DOSBase)
     LONG_FUNC FunctionArray[4];
     struct FileSysReader fakefile;
 
+    if (!node->filesystem || !node->fsblocks)
+        return BNULL;
+
 #ifndef __mc68000
     /* Prevent loading hunk files on non-m68k */
     if (AROS_BE2LONG(node->filesystem[0].lsb_LoadData[0]) == 0x000003f3)
@@ -409,25 +412,35 @@ ULONG size;
 ULONG block;
 
     size = PartitionRDBCalcFSSize(PartitionBase, root, fn, buffer);
-    if (size)
+    fn->blockbytes = root->de.de_SizeBlock << 2;
+    if (!size || size > (ULONG)-1 / fn->blockbytes)
+        return;
+
+    fn->filesystem = AllocVec(size * fn->blockbytes, MEMF_PUBLIC);
+    if (fn->filesystem)
     {
-        fn->fsblocks = size;
-        fn->blockbytes = root->de.de_SizeBlock << 2;
-        if (size > (ULONG)-1 / fn->blockbytes)
-            return;
-        fn->filesystem = AllocVec(size * fn->blockbytes, MEMF_PUBLIC);
-        if (fn->filesystem)
+        ULONG i;
+
+        block = AROS_BE2LONG(fn->fhb.fhb_SegListBlocks);
+        for (i = 0; i < size && block != (ULONG)-1; i++)
         {
-            size = 0;
-            block = AROS_BE2LONG(fn->fhb.fhb_SegListBlocks);
-            while (block != (ULONG)-1)
-            {
-                if (readBlock(PartitionBase, root, block, PartitionRDBFileSysBlock(fn, size)) !=0)
-                    return;
-                block = AROS_BE2LONG(PartitionRDBFileSysBlock(fn, size)->lsb_Next);
-                size++;
-            }
+            struct LoadSegBlock *lsb = PartitionRDBFileSysBlock(fn, i);
+
+            if (readBlock(PartitionBase, root, block, lsb) != 0 ||
+                AROS_BE2LONG(lsb->lsb_ID) != IDNAME_LOADSEG ||
+                AROS_BE2LONG(lsb->lsb_SummedLongs) < 5 ||
+                AROS_BE2LONG(lsb->lsb_SummedLongs) > fn->blockbytes / 4 ||
+                calcChkSum((ULONG *)lsb, AROS_BE2LONG(lsb->lsb_SummedLongs)) != 0)
+                break;
+            block = AROS_BE2LONG(lsb->lsb_Next);
         }
+        if (i == size && block == (ULONG)-1)
+        {
+            fn->fsblocks = size;
+            return;
+        }
+        FreeVec(fn->filesystem);
+        fn->filesystem = NULL;
     }
 }
 
